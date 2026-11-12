@@ -15,11 +15,13 @@ extern "C" {
 #endif
 
 /**
- * The store's view of the `boardart` partition, or NULL when there is none.
+ * @brief The store's view of the `boardart` partition, or NULL when there is
+ *        none.
  *
  * A build flashed with an older partition table has no such partition, and
  * that is not a fault: drawings are then fetched every time the link comes
  * up, which is slower and correct rather than fast and wrong.
+ * @return the store's view, NULL when there is no boardart partition
  */
 const art_flash_t *art_flash_esp(void);
 

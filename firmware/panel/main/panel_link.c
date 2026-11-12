@@ -28,7 +28,7 @@
 #include "panel.h"
 #include "ui_text.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
 /* ---------------------------------------------------- asking the far end */
 
@@ -181,7 +181,7 @@ bool exchange(link_host_t *host, const link_msg_t *req,
     }
 }
 
-/* exchange() and the clock, as shared/link asks for them. */
+/** @brief exchange() as the link port's exchange hook (shared/link). */
 static bool port_exchange(void *ctx, link_host_t *host, const link_msg_t *req,
                           link_msg_t *reply)
 {
@@ -217,6 +217,7 @@ const link_port_t k_port = {
     port_exchange, port_now, NULL, port_between,
 };
 
+/** @brief Write @p count registers of @p page from register 0. */
 static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
                        const uint16_t *regs, link_msg_t *reply)
 {
@@ -244,15 +245,23 @@ static bool write_page(link_host_t *host, uint8_t page, uint8_t count,
  */
 uint16_t s_arm_value;
 
-/*
- * The ARM value for the roles the policy asked for: the screen's own role
- * (MOTOR & ESC, a stick run included, the throttle; SERVO the surfaces).  An
- * IOmcu older than LINK_MINOR_ARM_ROLE takes LINK_ARM_ALL only, and
- * arms its whole bank on it.
+/**
+ * @brief The ARM value for the roles the policy asked for: the screen's own
+ *        role (MOTOR & ESC, a stick run included, the throttle; SERVO the
+ *        surfaces).  An IOmcu older than LINK_MINOR_ARM_ROLE takes
+ *        LINK_ARM_ALL only, and arms its whole bank on it.
  */
 static uint16_t arm_value_wanted(void)
 {
     return outputs_arm_value_for(s_far_minor, arming_roles(&s_arm));
+}
+
+void control_throttle_written(bool acked, uint16_t arm)
+{
+    const bool throttle = (outputs_arm_roles_of(arm)
+                           & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u;
+    bench_throttle_written(&s_bench_throttle, acked, throttle,
+                           s_throttle_hundredths);
 }
 
 /*
@@ -284,6 +293,7 @@ bool control_arm(link_msg_t *reply)
     const bool ok = write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM,
                                LINK_CT_ARM_FRAME, regs, reply)
                     && reply->op == LINK_OP_ACK;
+    control_throttle_written(ok, arm);
     if (!ok && owed) {
         atomic_store(&s_poles_owed, true);
     }
@@ -293,9 +303,9 @@ bool control_arm(link_msg_t *reply)
     return ok;
 }
 
-/*
- * The magnet count of the motor under test, read from the setting at the
- * moment of the write.
+/**
+ * @brief The magnet count of the motor under test, read from the setting at
+ *        the moment of the write.
  *
  * A bidirectional DShot ESC (electronic speed controller) reports electrical
  * periods and has no idea what it is bolted to, so this is the one number the
@@ -326,8 +336,10 @@ static bool control_write_poles(link_msg_t *reply)
  *
  * Returns whether the far end holds the current count.
  */
-/* The pole count's refusal posted, kept until a count is taken: its
- * number in the alert slot, 0 none.  Control task only. */
+/**
+ * @brief The pole count's refusal posted, kept until a count is taken: its
+ *        number in the alert slot, 0 none.  Control task only.
+ */
 static uint32_t s_poles_alert_gen;
 
 bool poles_service(void)
@@ -360,8 +372,16 @@ bool poles_service(void)
     return true;
 }
 
-/*
- * Bring the throttle channels' endpoints at the far end to the settings.
+/**
+ * @brief The pulse range's refusal or order alert posted, kept until a pair
+ *        is taken or found held: its number in the alert slot, 0 none.
+ *        Control task only.
+ */
+static uint32_t s_pulse_alert_gen;
+
+/**
+ * @brief Bring the throttle channels' endpoints at the far end to the
+ *        settings.
  *
  * Read, change, write: the page is read back, the throttle channels take the
  * two values (outputs_chan_cfg_set_throttle_range()) and every other channel
@@ -371,11 +391,6 @@ bool poles_service(void)
  *
  * Returns how it went; the alerts for a refusal are said here.
  */
-/* The pulse range's refusal or order alert posted, kept until a pair is
- * taken or found held: its number in the alert slot, 0 none.  Control task
- * only. */
-static uint32_t s_pulse_alert_gen;
-
 static endpoints_outcome_t endpoints_pay(uint16_t lo, uint16_t hi)
 {
     link_msg_t ccr;
@@ -498,8 +513,8 @@ void arm_write_failed(uint32_t quiet_before, const char *alert)
     }
 }
 
-/*
- * An exchange ended with no answer: exchange()'s one way out for it.
+/**
+ * @brief An exchange ended with no answer: exchange()'s one way out for it.
  *
  * What it means is arming_exchange_unanswered()'s decision, host-tested for
  * every kind of exchange, state and place in a pass.  With the link up the
@@ -528,8 +543,9 @@ static void exchange_unanswered(void)
     }
 }
 
-/*
- * The same report, on its way to the card.
+/**
+ * @brief Queue a link report line for the logger to append to the card; a
+ *        full queue drops the line.
  *
  * A tester can send a file; a tester cannot send a console this board does
  * not have.  Only while the link is down and only at link_report()'s 5s
@@ -555,14 +571,14 @@ static void debug_log(const char *line)
     (void)xQueueSend(s_note_q, note, 0);
 }
 
-/* A number, or "?" when it could not be read: the column keeps its place. */
+/** @brief Format @p v as decimal text in @p out; returns @p out. */
 static const char *u32(char *out, size_t n, uint32_t v)
 {
     snprintf(out, n, "%lu", (unsigned long)v);
     return out;
 }
 
-/* What can_twai_recover() found, in the screen's vocabulary. */
+/** @brief What can_twai_recover() found, in the screen's vocabulary. */
 static busfault_bus_t bus_state(void)
 {
     switch (can_twai_health()) {

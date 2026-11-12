@@ -30,7 +30,8 @@
 #error "ESP-IDF v5.5.0 and v5.5.1 send every DLC 0 CAN frame as DLC 8; build with v5.4.x or v5.5.2 or later"
 #endif
 
-static const char *TAG = "can";
+static const char *TAG = "can";  /**< ESP-IDF log tag. */
+/** @brief Whether the TWAI driver is installed and started. */
 static bool s_running;
 
 esp_err_t can_twai_start(uint32_t bitrate)

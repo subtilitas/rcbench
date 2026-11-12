@@ -40,17 +40,19 @@
 #include "ui_board.h"
 #include "ui_text.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
-/* LINK_ST_FAULTS from the IOmcu's last status poll, shown in the band. */
+/**
+ * @brief LINK_ST_FAULTS from the IOmcu's last status poll, shown in the band.
+ */
 static uint16_t s_dev_faults;
 
-/*
- * What the sensor bus, the PD mini and the phase tap hold on the IOmcu's
- * pins by their pages' last reads, for both views of OUTPUTS: a refused
- * part or relocation leaves the pins the page keeps.  With the link down
- * none is known, and the screens follow the settings.  An IOmcu without
- * the SUPPLY page holds no PD mini pin.
+/**
+ * @brief What the sensor bus, the PD mini and the phase tap hold on the
+ *        IOmcu's pins by their pages' last reads, for both views of OUTPUTS:
+ *        a refused part or relocation leaves the pins the page keeps.  With
+ *        the link down none is known, and the screens follow the settings.
+ *        An IOmcu without the SUPPLY page holds no PD mini pin.
  */
 static void iface_pins_publish(bool up)
 {
@@ -68,14 +70,17 @@ static void iface_pins_publish(bool up)
     outputs_screen_set_iface_held(OUTPUTS_IFACE_TAP, known, a, -1);
 }
 
-/*
- * The bench page, and the control page in the same pass.
+/**
+ * @brief The bench page, and the control page in the same pass.
  *
  * While the far end answers, the bench page is what is asked for; identity is
  * asked only while the far end is silent.
  */
 static bool poll_bench(bench_state_t *bench)
 {
+    /* The sample's throttle is the one in force as it is read, not the
+     * one this poll's control write sends after it. */
+    bench_throttle_sample(&s_bench_throttle);
     const bool answered = read_bench(&s_host, bench);
     if (answered) {
         link_msg_t ack = { 0 };
@@ -172,15 +177,15 @@ static bool poll_bench(bench_state_t *bench)
     return answered;
 }
 
-/*
- * Who is there, while nothing is answering.
+/* A protocol mismatch: reported, and whether its build check is owed. */
+link_uph_mismatch_t s_mismatch;
+
+/**
+ * @brief Who is there, while nothing is answering.
  *
  * True only for a DATA identity page from an IOmcu speaking
  * LINK_PROTOCOL_MAJOR; reply then holds that page.
  */
-/* A protocol mismatch: reported, and whether its build check is owed. */
-link_uph_mismatch_t s_mismatch;
-
 static bool probe_identity(link_msg_t *reply)
 {
     bool answered;
@@ -234,8 +239,9 @@ static bool probe_identity(link_msg_t *reply)
     return answered;
 }
 
-/*
- * A board this build ships no catalogue for, described by the board itself.
+/**
+ * @brief A board this build ships no catalogue for, described by the board
+ *        itself.
  */
 static void learn_board_pins(void)
 {
@@ -299,7 +305,9 @@ atomic_ullong s_throttle_pins;
 atomic_bool   s_throttle_pins_known;
 atomic_uint   s_throttle_proto;
 
-/* A reading, into the snapshot the outputs and picker screens take. */
+/**
+ * @brief A reading, into the snapshot the outputs and picker screens take.
+ */
 static void post_reading(const bind_reading_t *r)
 {
     s_bind_read = r->state;
@@ -391,8 +399,8 @@ void read_outputs_binding(void)
     }
 }
 
-/*
- * The edge: an IOmcu started answering.
+/**
+ * @brief The edge: an IOmcu started answering.
  *
  * All of it costs a transaction and none of it changes while the link is up,
  * so it runs once per edge rather than once per 50ms poll.  reply is the
@@ -400,6 +408,8 @@ void read_outputs_binding(void)
  */
 static void link_came_up(const link_msg_t *reply)
 {
+    /* Nothing in force until a control write is acknowledged. */
+    bench_throttle_reset(&s_bench_throttle);
     /*
      * Who answered, before anything is decoded against it.
      *
@@ -574,11 +584,11 @@ uint16_t far_end_faults_shown(void)
                              s_dev_faults);
 }
 
-/*
- * The status page's counters, into the bring-up record.  A 4.21 or later
- * IOmcu is asked for its refusal count as well; an older one refuses
- * a read past its 8 registers, so it is asked for those
- * (link_bringup_status_count()) and its count stays 0.
+/**
+ * @brief The status page's counters, into the bring-up record.  A 4.21 or
+ *        later IOmcu is asked for its refusal count as well; an older one
+ *        refuses a read past its 8 registers, so it is asked for those
+ *        (link_bringup_status_count()) and its count stays 0.
  */
 static void read_status_counters(void)
 {
@@ -682,6 +692,8 @@ bool poll_far_end(bool *link_up, bench_state_t *bench,
         } else if (*link_up) {
             /* The edge: it was up until this poll. */
             atomic_store(&s_link_lost_ms, now_ms());
+            /* The far end fails safe on its own silence. */
+            bench_throttle_reset(&s_bench_throttle);
             /* The identity probes go unnumbered: whoever answers next may
              * be an IOmcu older than 4.37, which refuses a numbered frame,
              * or the image an update has just started. */
@@ -803,9 +815,10 @@ static sense_link_win_t s_rail_win;
 /** @brief s_rail_win holds a window of the meter's current stretch. */
 static bool             s_rail_win_ok;
 
-/*
- * The INA3221's next window into @p bench's log fields, and a ring window
- * onto the queue to the render side as well.  Control task only.
+/**
+ * @brief The INA3221's next window into @p bench's log fields, and a ring
+ *        window onto the queue to the render side as well.  Control task
+ *        only.
  */
 static void servo_window_take(bench_state_t *bench)
 {
@@ -839,6 +852,10 @@ static void servo_window_take(bench_state_t *bench)
         (void)xQueueSend(s_win_q, &item, 0);
     }
 }
+
+/** @brief The THROTTLE in force at the IOmcu (bench_throttle_t), for the
+ *         log's rows.  Zero-initialised: nothing in force. */
+bench_throttle_t s_bench_throttle;
 
 /** @brief The pulse and the angle the render side last handed over
  *         (log_servo_pack()), none until it does. */
@@ -891,6 +908,15 @@ void advance_model_and_log(bool link_up, float emitted,
     if (log_cadence_model_due(&s_log_cad, now_ms(), link_up, &step_s)) {
         telemetry_sim_step(sim, emitted, step_s, bench);
         *new_sample = true;
+    }
+    /*
+     * The log's `throttle (%)`: on the IOmcu's sample the THROTTLE in force
+     * when it was read, which the IOmcu drives unramped; on the model's the
+     * throttle the model ran at, after Ramp limit, which
+     * telemetry_sim_step() set.
+     */
+    if (link_up) {
+        bench_throttle_to_row(&s_bench_throttle, bench);
     }
     /*
      * The run's totals, from the sample either source just wrote, over the

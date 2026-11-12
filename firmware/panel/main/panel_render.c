@@ -34,7 +34,7 @@
 #include "touch_loss.h"
 #include "ui_screen.h"
 
-static const char *TAG = "rcbench";
+static const char *TAG = "rcbench";  /**< ESP-IDF log tag. */
 
 /*
  * The programmer's model, once a frame: what the control task last
@@ -198,10 +198,10 @@ void hitec_ui_service(void)
  */
 void flush_screen_commands(uint32_t stops_now);
 
-/*
- * Queue a command, and do not lose it.  Every command is already taken from
- * its screen by the time it gets here, so a refused send is a discarded
- * disarm or a throttle that never arrives.
+/**
+ * @brief Queue a command, and do not lose it.  Every command is already taken
+ *        from its screen by the time it gets here, so a refused send is a
+ *        discarded disarm or a throttle that never arrives.
  */
 static void send_cmd(const panel_cmd_t *in)
 {
@@ -272,9 +272,9 @@ static void send_cmd(const panel_cmd_t *in)
     }
 }
 
-/*
- * The render loop's record of s_touch_q: what it has taken, and the losses it
- * found there, for the frame log.  Render loop only.
+/**
+ * @brief The render loop's record of s_touch_q: what it has taken, and the
+ *        losses it found there, for the frame log.  Render loop only.
  */
 static touch_seq_rx_t s_tq_rx = { .next = 1u };    /* touch_seq_rx_init() */
 unsigned              s_tq_lost;
@@ -397,6 +397,8 @@ knob_turn_t knob_take(void)
     const bool on = settings_get_bool(SET_KNOB_EN);
     knob_task_set_enabled(on);
     const int steps = knob_task_take();
+    /* RUDDER's step keys stand in for a knob that does not answer. */
+    servo_screen_set_knob(on && knob_task_answers());
     motor_screen_knob_frame();
     servo_screen_knob_frame();
     return (knob_turn_t){ .steps = on ? steps : 0,
@@ -404,6 +406,10 @@ knob_turn_t knob_take(void)
                           .navigations = ui_router_navigations() };
 }
 
+/**
+ * @brief Withdraw the knob's command posted in the last frame, when this
+ *        frame's first drain finds a touch loss.
+ */
 static void knob_withdraw(void)
 {
     motor_screen_knob_cancel();
@@ -607,6 +613,14 @@ void backlight_service(const shot_facts_t *facts)
     if (board_backlight_percent((int)pct) == ESP_OK) {
         s_backlight_pct = pct;
     }
+}
+
+void backlight_line(void)
+{
+    char line[SCREEN_DIM_LINE_MAX];
+    (void)screen_dim_line(&s_dim, now_ms(), settings_get_int(SET_DIM_AFTER),
+                          line, sizeof(line));
+    ESP_LOGI(TAG, "%s, PWM %u%%", line, s_backlight_pct);
 }
 
 /**

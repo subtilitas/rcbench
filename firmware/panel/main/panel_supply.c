@@ -81,8 +81,10 @@ atomic_bool        s_supply_free_off;
  */
 atomic_uintptr_t        s_escsim_profile;
 atomic_uint             s_escsim_runs;
-static esc_sim_t        s_escsim;          /* control task only */
+static esc_sim_t        s_escsim;          /**< the simulated ESC; control task only */
+/** @brief Runs of the stick screen the model has already seen. */
 static unsigned         s_escsim_runs_seen;
+/** @brief Whether the model's load is the simulated ESC. */
 static bool             s_escsim_live;
 /* The IOmcu that answered speaks protocol 4.3: it has the page. */
 bool s_supply_page;
@@ -90,21 +92,27 @@ bool s_supply_page;
 bool s_supply_auto;
 /* The PD mini, not the model, is the supply; see supply_real_follow(). */
 bool                  s_supply_is_real;
+/** @brief Whether the operator has asked for the output on. */
 static bool           s_supply_on;
 supply_state_t        s_supply;
 uint32_t              s_supply_ms;
+/**
+ * @brief Whether the next reading starts the run's extremes: the output has
+ *        just come on.
+ */
 static bool           s_supply_fresh;
 /* The stop count the supply has answered; see supply_follow_stops(). */
 uint32_t              s_supply_stops_served;
-/* The trips' time over their thresholds; see supply_trip_step(). */
+/** @brief The trips' time over their thresholds; see supply_trip_step(). */
 static supply_trip_t  s_supply_trip;
 /* When the supply was last stepped, on its own cadence; see supply_pump(). */
 uint32_t              s_supply_step_ms;
-/*
- * The ON in flight, watched as an arm is (s_arm_watch): a hold that completed
- * on a contact whose events went missing is an ON the operator may not have
- * made, and the render side can cancel only an ON it has not yet handed
- * over.  s_supply_gen numbers the ONs applied; the snapshot carries it.
+/**
+ * @brief The ON in flight, watched as an arm is (s_arm_watch): a hold that
+ *        completed on a contact whose events went missing is an ON the
+ *        operator may not have made, and the render side can cancel only an
+ *        ON it has not yet handed over.  s_supply_gen numbers the ONs
+ *        applied; the snapshot carries it.
  */
 static arm_watch_t    s_supply_watch;
 uint32_t              s_supply_gen;
@@ -141,10 +149,13 @@ void supply_log_tail(void)
     }
 }
 
-/* The set points the screen holds, applied when they change; see
- * s_supply_set_mv.  Compared as stored, in mV and mA, because the supply
- * snaps what it is given and a snapped value need not equal it. */
+/**
+ * @brief The set points the screen holds, applied when they change; see
+ *        s_supply_set_mv.  Compared as stored, in mV and mA, because the
+ *        supply snaps what it is given and a snapped value need not equal it.
+ */
 static unsigned s_supply_set_mv_applied;
+/** @brief The current set point last applied, mA. */
 static unsigned s_supply_set_ma_applied;
 
 void supply_switch(bool on)
@@ -333,7 +344,7 @@ __attribute__((noinline)) void prog_faults_follow(void)
     error_act(error_sites_follow(&s_prog_watch, prog_faults(), &b));
 }
 
-/* The operator's limits as the render side last stored them. */
+/** @brief The operator's limits as the render side last stored them. */
 static supply_limits_t supply_limits_now(void)
 {
     const supply_limits_t l = {
@@ -519,8 +530,10 @@ void prog_supply_watch_service(void)
     }
 }
 
-/* The supply as it is now, for the screen; the oldest sample goes when the
- * queue is full, as the bench's do. */
+/**
+ * @brief The supply as it is now, for the screen; the oldest sample goes when
+ *        the queue is full, as the bench's do.
+ */
 static void supply_queue_sample(void)
 {
     supply_item_t item = {
@@ -536,13 +549,13 @@ static void supply_queue_sample(void)
     }
 }
 
-/*
- * Which supply the screen drives: the PD mini whenever SUPPLY's PD MINI tab
- * enables it -- not answering while no IOmcu that speaks the SUPPLY
- * page does -- and the model otherwise.  A change switches the output off.
- * No exchange here: called from the step, inside the pump.  Returns the
- * wiring word it followed, so a write chosen after it is chosen for that
- * word and not for one stored since.
+/**
+ * @brief Which supply the screen drives: the PD mini whenever SUPPLY's PD
+ *        MINI tab enables it -- not answering while no IOmcu that speaks the
+ *        SUPPLY page does -- and the model otherwise.  A change switches the
+ *        output off. No exchange here: called from the step, inside the pump.
+ *        Returns the wiring word it followed, so a write chosen after it is
+ *        chosen for that word and not for one stored since.
  */
 static unsigned supply_real_follow(void)
 {
@@ -583,7 +596,9 @@ static unsigned supply_real_follow(void)
     return wiring;
 }
 
-/* The model's load is the simulated ESC while a stick run wants one. */
+/**
+ * @brief The model's load is the simulated ESC while a stick run wants one.
+ */
 static void escsim_load(void)
 {
     const esc_profile_t *p =
@@ -608,9 +623,9 @@ static void escsim_load(void)
     }
 }
 
-/*
- * One step of the supply at the sample cadence: its readings, the run's
- * extremes and totals, and a sample for the screen.
+/**
+ * @brief One step of the supply at the sample cadence: its readings, the
+ *        run's extremes and totals, and a sample for the screen.
  */
 static void supply_step(float step_s)
 {
@@ -683,12 +698,13 @@ static void supply_step(float step_s)
     supply_queue_sample();
 }
 
-/*
- * The ON in flight, against the touch stream: the arm watch's rules on the
- * supply's output.  Until the render side has acknowledged this ON from a
- * frame that began with the output on and found the stream whole, a loss of
- * either kind is an error: the output off again, unless a programming port
- * has taken the supply since and keeps it (error_sites_keeps()).
+/**
+ * @brief The ON in flight, against the touch stream: the arm watch's rules on
+ *        the supply's output.  Until the render side has acknowledged this ON
+ *        from a frame that began with the output on and found the stream
+ *        whole, a loss of either kind is an error: the output off again,
+ *        unless a programming port has taken the supply since and keeps it
+ *        (error_sites_keeps()).
  */
 static void supply_watch_service(void)
 {
@@ -805,17 +821,19 @@ static __attribute__((noinline)) void supply_page_off(uint16_t ev)
     }
 }
 
-/* The last alert posted for a refused wiring, kept until the page holds
- * the wiring asked (supply_link_event_stands()): its number (0 none) and
- * its event.  Control task only. */
+/**
+ * @brief The last alert posted for a refused wiring, kept until the page
+ *        holds the wiring asked (supply_link_event_stands()): its number (0
+ *        none) and its event.  Control task only.
+ */
 static uint32_t s_wire_alert_gen;
-static uint16_t s_wire_alert_ev;
+static uint16_t s_wire_alert_ev;  /**< The event of that alert. */
 
-/*
- * What the SUPPLY page said that the operator is told, and an ON it refused
- * or let go switched off here too (supply_page_off()).  An alert for a
- * refused wiring is taken back once the page holds the wiring asked: pins
- * stepped back to ones it takes.
+/**
+ * @brief What the SUPPLY page said that the operator is told, and an ON it
+ *        refused or let go switched off here too (supply_page_off()).  An
+ *        alert for a refused wiring is taken back once the page holds the
+ *        wiring asked: pins stepped back to ones it takes.
  */
 static void supply_link_alerts(void)
 {

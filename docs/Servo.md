@@ -1677,6 +1677,18 @@ the screen is `shared/ui/servo_rudder_panel.c`.
   plus TRIM. All three and the rotary knob act only while the bench is
   ARMED. The PORT button and the READY card's PORT row name the pin they
   drive.
+- -10us and +10us move the commanded pulse 10us (`RUD_STEP_US`) from the
+  pulse driven, about 0.9° on a servo with 11us a degree. They sit right of
+  RESET MAX, x 358 to 433 and 443 to 518, y 240 to 288, 75 x 48px each,
+  while SETUP > PANEL's Rotary knob is OFF or the MT6701 at 0x06 did not
+  answer its last poll; a knob that answers hides them. A press steps once;
+  a hold repeats after 0.45s at 8 steps a second and from 2.25s at 30, the
+  repeat of the programmers' `-` and `+` keys. The pulse is held to the
+  type's pulse range and, as an angle, to TRAVEL, so a hold stops where
+  1000us or 2000us stop. The pulse stays after the release. They act only
+  while ARMED and are drawn as the drive buttons: green while ARMED, grey
+  while SAFE. The knob's last poll is read every frame; a poll it misses
+  shows the keys until the next one answers, 100ms later at the soonest.
 
 | Reading | Resolution | Range |
 | --- | --- | --- |

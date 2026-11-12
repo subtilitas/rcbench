@@ -177,11 +177,17 @@ not host-tested.
 Built: a run is written while ARMED, or while the supply's output is on with the bench SAFE,
 in the format the viewer reads. The log of a bench in ARMED has one row per sample the
 control task takes (an answered BENCH read with the link up, a 50ms model step with it down)
-and its time column is the wall time since the switch to ARMED; a run armed from SERVO takes
+and its time column is the wall time since the switch to ARMED; a MOTOR file writes
+`throttle (%)` after `rpm` to 0.1%: the THROTTLE in force at the IOmcu when the sample was
+read, the last one it acknowledged and 0 under an ARM of 0 or of the surfaces alone, or with
+the link down the throttle the model runs at (`bench_throttle_t`, `bench_state_set_throttle()`
+in `shared/bench/bench_state.c`; host-tested in `test_log_throttle`, with a file without the
+column read as before; the panel's calls in `panel_poll.c` and `panel_link.c` are not
+host-tested); a run armed from SERVO takes
 `voltage`, `current`, `power`, `charge` and `energy` from the servo rail's meter (the
 INA3221 channel's newest window while it is the meter, the supply's last reading otherwise)
-and the panel's count of it since the arm, and writes `pulse (us)` and `angle (deg)` before
-`source`: the pulse shown in COMMANDED and the angle from the selected AS5600 or IMU shown in MEASURED, handed from the
+and the panel's count of it since the arm, has no `throttle` column, and writes `pulse (us)`
+and `angle (deg)` before `source`: the pulse shown in COMMANDED and the angle from the selected AS5600 or IMU shown in MEASURED, handed from the
 render side in one atomic word; a figure whose source is not the row's is an empty cell
 (`log_writer_servo_row()`, `log_rail_take()`, `log_rail_take_ina()`, `log_rail_count()`,
 `log_servo_pack()` in `shared/bench/log_writer.c`, `servo_screen_log_pulse()`,
@@ -428,7 +434,10 @@ contact together with an injector contact.
 Built and tested on the host (`shared/ui/screen_dim.c`; `test_screen_dim`):
 SETUP > PANEL's Dim after drops the backlight's PWM duty from 100% to 20% after 5 to
 60min without a touch event, only while the screenshot gate finds the bench idle; a
-frame that does not finds it lit at once. The press that wakes a dim screen reaches no
+frame that does not finds it lit at once. A line on its way to the card's fault log, which
+the link report writes every 60s, does not count (`screen_dim_idle()`). The console
+prints `dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%` every 300
+frames (`screen_dim_line()`, `backlight_line()`). The press that wakes a dim screen reaches no
 screen, except a press on STOP. `firmware/panel/main/panel_render.c` sets the duty with
 `board_backlight_percent()`; not host-tested. Not run on a panel: the dim, the wake,
 the light 20% duty gives. [PANEL: Dim after](docs/Screens.md#panel-dim-after).
@@ -554,7 +563,10 @@ source's angle, the AS5600's or the IMU's, as a control surface's deflection fro
 0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTER
 and 2000us and takes the knob only while ARMED, its PORT button over the READY rows
-(`test_servo_rudder`, `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`; host suite only). Its
+(`test_servo_rudder`, `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`; host suite only).
+Without a knob that answers (Rotary knob OFF, or the MT6701's last poll unanswered) -10us
+and +10us step the pulse 10us while ARMED, repeating while held at the programmers' rate,
+held to TRAVEL and the pulse range (`test_servo_rudder_steps`; host suite only). Its
 side view draws the surface at the deflection shown, -90 to +90° with a fixed flap of 62px,
 beyond that at ±90°, dim on the neutral line without a reading, with the MAX and, in AUTO's
 box, the targets dashed (`shared/ui/servo_rudder_flap.c`; `test_servo_rudder_flap`,
@@ -790,8 +802,10 @@ loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`.
 Built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice
 fold are host-tested. `test_out_dshot` runs the DShot pin driver on a fake of the pico-sdk
 calls it makes: a pin that sends no frames is driven low in both modes, and a bidirectional
-frame never starts from a low line. `test_outputs_hw` holds the 1000µs between the release
-of a bidirectional pin and its first frame. The binding order and the rendering are
+frame never starts from a low line. `test_outputs_hw` holds the 1000µs between an on-time
+release of a bidirectional pin and its first frame. `test_dshot_cadence` holds the DShot
+due times: a grid 1000µs apart that a late pass does not move, at least 500µs from a frame
+to the next due time, one frame after a stall, across the clock's wrap. The binding order and the rendering are
 `shared/outputs/out_render.c`; `test_out_render` runs it over a log of the pin calls and
 holds the reporting slot (the lowest-numbered bound bidirectional slot), the release of every
 moved slot and port before any bind, the DShot ports let go before a slot on PIO
@@ -1380,7 +1394,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 537 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 540 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1431,8 +1445,8 @@ The host suite is 537 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_supply_page`, `test_supply_hold`, `test_supply_boot`, `test_sense_page`,
 `test_sense_i228_setup`, `test_supply_link`, `test_supply_keep`, `test_sense_link`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
-`test_sense_limit_link`, `test_log_cols`, `test_sense_windows`, `test_servo_source`,
-`test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_out_dshot`, `test_ppm`,
+`test_sense_limit_link`, `test_log_cols`, `test_log_throttle`, `test_sense_windows`, `test_servo_source`,
+`test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_dshot_cadence`, `test_out_dshot`, `test_ppm`,
 `test_outbind`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
@@ -1490,7 +1504,7 @@ The host suite is 537 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
-`test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
+`test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
@@ -2305,7 +2319,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/link/link_update_host.c` | 444 | 441 | 99.3% |
 | `shared/artwork/art_store.c` | 193 | 187 | 96.9% |
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
-| `shared/bench/bench_state.c` | 220 | 216 | 98.2% |
+| `shared/bench/bench_state.c` | 247 | 243 | 98.4% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
 | `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
 | `shared/outputs/out_bind.c` | 562 | 549 | 97.7% |
@@ -2318,7 +2332,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/out_store_range.c` | 10 | 10 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
-| `shared/outputs/out_render.c` | 276 | 273 | 98.9% |
+| `shared/outputs/out_render.c` | 282 | 279 | 98.9% |
 | `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
 | `shared/outputs/servo_link.c` | 563 | 530 | 94.1% |
@@ -2326,7 +2340,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/sense_map.c` | 197 | 196 | 99.5% |
 | `shared/outputs/sense_limit.c` | 36 | 36 | 100.0% |
 | `shared/outputs/tone_page.c` | 257 | 257 | 100.0% |
-| `shared/bench/telemetry_sim.c` | 47 | 44 | 93.6% |
+| `shared/bench/telemetry_sim.c` | 48 | 45 | 93.8% |
 | `shared/bench/supply.c` | 170 | 168 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
 | `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
@@ -2345,7 +2359,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
-| `shared/bench/log_writer.c` | 300 | 288 | 96.0% |
+| `shared/bench/log_writer.c` | 307 | 295 | 96.1% |
 | `shared/bench/log_cols.c` | 53 | 53 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 66 | 66 | 100.0% |
@@ -2386,7 +2400,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **91060** | **89214** | **98.0%** |
+| **total** | **91066** | **89220** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2414,8 +2428,9 @@ the RUN pin held low for 100ms; pulses must not return on GPIO 0 until ARM is he
 
 No timing has been seen on an instrument. What a host test cannot reach: every bit timing,
 the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to
-its reply, the low rest of a stopped bidirectional DShot pin and its release 1000µs before
-the first frame on a real ESC, and whether an ESC other than the one AM32 2.21 ESC on a
+its reply, the low rest of a stopped bidirectional DShot pin and its release 500µs to 1000µs
+before the first frame on a real ESC, the DShot frame rate and gaps on a pin with the
+due-time grid, and whether an ESC other than the one AM32 2.21 ESC on a
 tester's bench (#172) answers.
 
 **Next evidence or work:** an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is
@@ -2789,8 +2804,8 @@ a keypad or choice already open, keep the language they were raised in until rep
 
 The comment rule ([CONTRIBUTING.md](CONTRIBUTING.md#comments)) holds new files, changed
 lines and the `@file` block of a changed file. The other gaps are listed: the Doxygen
-warnings in `tools/doc_check_baseline.txt`, the Python docstring codes per file in
-`ruff.toml`. A C file without a `@file` block is one line there, `file has no @file block`;
+warnings in `tools/doc_check_baseline.txt`. Python docstrings have no listed gaps: `ruff check .`
+passes every D rule. A C file without a `@file` block is one line there, `file has no @file block`;
 Doxygen reports nothing inside such a file, so its other gaps are not listed until the block
 is added.
 

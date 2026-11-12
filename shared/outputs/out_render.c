@@ -441,6 +441,32 @@ static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
 }
 
 /**
+ * @brief The due time after a frame sent at @p now for due time @p due.
+ *
+ * One period after @p due, so a pass late by up to
+ * OUT_RENDER_DSHOT_PERIOD_US - OUT_RENDER_DSHOT_MIN_US (500us) moves no
+ * later frame.  A due time that would then fall less than
+ * OUT_RENDER_DSHOT_MIN_US after @p now, or already lie behind it after a
+ * stall of a period or more, is put OUT_RENDER_DSHOT_MIN_US after @p now:
+ * one frame for the stall rather than a burst of the ones it missed, and
+ * the grid runs on from there.  Wrap-safe over the 2^32us clock: both tests
+ * are on differences.
+ *
+ * @param due The due time the frame was sent for, in us.
+ * @param now The clock of the pass that sends it, in us, not before @p due.
+ * @return The next due time, in us.
+ */
+static uint32_t dshot_next_due(uint32_t due, uint32_t now)
+{
+    const uint32_t next  = due + OUT_RENDER_DSHOT_PERIOD_US;
+    const uint32_t ahead = next - now;
+    if (ahead >= OUT_RENDER_DSHOT_MIN_US && ahead < 0x80000000u) {
+        return next;
+    }
+    return now + OUT_RENDER_DSHOT_MIN_US;
+}
+
+/**
  * @brief Render one DShot slot or port for this pass.
  *
  * @param r The renderer.
@@ -499,12 +525,13 @@ static void service_dshot(out_render_t *r, const outputs_t *o,
     if ((uint32_t)(now - st->next_us) >= 0x80000000u) {
         return;                              /* not due yet, wrap-safe */
     }
-    st->next_us = now + OUT_RENDER_DSHOT_PERIOD_US;
+    st->next_us = dshot_next_due(st->next_us, now);
     /*
      * A bidirectional pin at its low rest is released to its high idle on
-     * the first due pass of a run, and the first frame goes out on the next,
-     * OUT_RENDER_DSHOT_PERIOD_US (1000us) later or more: the ESC sees the
-     * line high for a whole frame period before the first frame, as before
+     * the first due pass of a run, and the first frame goes out on the next
+     * due pass, at least OUT_RENDER_DSHOT_MIN_US (500us) later and
+     * OUT_RENDER_DSHOT_PERIOD_US (1000us) later when the wake pass was on
+     * time: the ESC sees the line high before the first frame, as before
      * every other.  The pass sends nothing and asks nothing, so the ask
      * below keeps all DSHOT_CMD_REPEATS of its frames.
      */

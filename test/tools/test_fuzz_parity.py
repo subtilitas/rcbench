@@ -14,11 +14,13 @@ import fuzz_parity as f  # noqa: E402
 @pytest.mark.parametrize("count, want", [(1, 1), (19, 1), (20, 1), (39, 1),
                                          (40, 2), (1500, 75)])
 def test_each_verdict_is_reached_once_at_least(count, want):
+    """Each verdict is reached once at least."""
     assert f.least(count) == want
 
 
 @pytest.mark.parametrize("count", ["0", "-1"])
 def test_a_count_under_1_is_refused(count, capsys):
+    """A count under 1 is refused."""
     with pytest.raises(SystemExit) as e:
         f.main(["no-such-binary", "--count", count])
     assert e.value.code == 2
@@ -26,6 +28,7 @@ def test_a_count_under_1_is_refused(count, capsys):
 
 
 def test_a_run_in_which_a_verdict_is_missing_fails(monkeypatch, capsys):
+    """A run in which a verdict is missing fails."""
     for ok, bad, code in ((0, 5, 1), (5, 0, 1), (1, 4, 0)):
         monkeypatch.setattr(f, "run_seed",
                             lambda *a, ok=ok, bad=bad: ([], ok, bad))

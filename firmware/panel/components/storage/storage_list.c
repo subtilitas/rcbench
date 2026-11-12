@@ -76,12 +76,10 @@ static bool suffix_matches(const char *name, const char *suffixes)
     return false;
 }
 
-/* What one walk reads into: on the heap, because the walk runs on the task
- * that renders as well as on the run logger's, and a FILINFO with its long
- * name buffer is 280 bytes or more. */
+/** @brief What one walk reads into. */
 typedef struct {
-    FF_DIR dir;
-    FILINFO info;
+    FF_DIR dir;  /**< The open directory. */
+    FILINFO info;  /**< The entry being read. */
 } walk_buf_t;
 
 /* exFAT is on (firmware/panel/fatfs_exfat.cmake): a build that lost it

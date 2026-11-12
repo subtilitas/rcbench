@@ -472,7 +472,7 @@ bis 32 GPIO (General-Purpose Input/Output).
 | `tools/pages_changes.py` | entscheidet, ob ein Lauf von `pages.yml` ein vollständiger ist, mit den Tests und Browser-Tests des Configurators, oder nur die Seite des Configurators, die Hilfe und die API-Referenz baut: vollständig, wenn ein geänderter Pfad unter `configurator/`, `help/` oder `docs/img/` liegt oder `pages.yml`, `rcbench_version.h`, `ui_screen.h`, `tools/help_site.py` oder `tools/render_ui.py` ist; ein Push zählt seine Änderungen ab dem neuesten erfolgreichen Push-Lauf von `pages.yml` auf `main` und ist vollständig, wenn es keinen gibt |
 | `test/tools/` | pytest-Fälle für die Werkzeuge oben und für den Mock-Server des Dateimanagers: `python3 -m pytest test/tools` |
 | `test/host/wa_page_dump.c`, `test/host/wa_mock_server.py`, `test/web/` | der Browser-Test des Dateimanagers der Wi-Fi-Seite, unten |
-| `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler. `ruff.toml` listet die Dateien, denen Docstring-Codes (D) erlassen sind; jeder Datei sind die Codes ihrer Zeile erlassen; ein Code wird gelöscht, wenn seine Datei korrigiert ist |
+| `.clang-tidy`, `.cppcheck-suppress`, `ruff.toml` | Konfiguration für statische Analyse und Lint; jeder Befund ist ein Fehler. `ruff.toml` wählt die Docstring-Regeln (D) aus; keiner Datei sind sie erlassen |
 
 `doc_check.py` braucht Doxygen 1.18.0 und bricht bei einem anderen Release
 mit Exit-Code 2 ab: `tools/install_doxygen.sh 1.18.0 <SHA-256 aus ci.yml>

@@ -79,13 +79,17 @@
 
 /* ------------------------------------------------------------------ main.c */
 
+/**
+ * @brief Milliseconds since boot, from the microsecond timer.
+ * @return the time in ms, truncated to 32 bits; wraps every 49.7 days
+ */
 static inline uint32_t now_ms(void)
 {
     return (uint32_t)(esp_timer_get_time() / 1000);
 }
 
-/*
- * The panel's throttle, as a channel in an output bank.
+/**
+ * @brief The panel's throttle, as a channel in an output bank.
  *
  * The ramp is a proportion of travel per second rather than a percentage, so
  * the same number means the same speed on an output whose travel is not
@@ -93,50 +97,66 @@ static inline uint32_t now_ms(void)
  */
 #define PANEL_CH_THROTTLE     0u
 
+/** @brief Capacity of the band alert's text, bytes (UI_ALERT_MAX). */
 #define ALERT_MAX         UI_ALERT_MAX
 
-/* The control task's period; see "the two loops' plumbing" in main.c. */
+/**
+ * @brief The control task's period; see "the two loops' plumbing" in main.c.
+ */
 #define CONTROL_PERIOD_MS 5u
 
-/* The link to the IOmcu, used during bring-up and in the loop. */
+/** @brief The link to the IOmcu, used during bring-up and in the loop. */
 extern link_host_t    s_host;
-/* A link_cap_t bitmap from the IOmcu's identity page; see main.c. */
+/** @brief A link_cap_t bitmap from the IOmcu's identity page; see main.c. */
 extern atomic_uint    s_capabilities;
-extern link_bringup_t s_bring;
+extern link_bringup_t s_bring;  /**< Bring-up state of the IOmcu link. */
 
 /* When the link went, 0 while it is up; whether the screen has had its
  * turn; the recoveries of this outage and since boot.  See main.c. */
+/** @brief When the link went, now_ms(); 0 while it is up. */
 extern atomic_uint s_link_lost_ms;
+/** @brief Whether the screen has had its turn for this outage. */
 extern bool        s_link_lost_shown;
-extern uint32_t    s_recoveries;
-extern uint32_t    s_recoveries_total;
+extern uint32_t    s_recoveries;  /**< Recoveries of this outage. */
+extern uint32_t    s_recoveries_total;  /**< Recoveries since boot. */
 
 /* The panel's die temperature, read by the control task. */
 extern float s_mcu_c;
 
 /* What the IOmcu says its outputs are, both under s_snap_lock; the
  * state of the last reading, for the control task alone. */
+/** @brief What the IOmcu says its outputs are; under s_snap_lock. */
 extern bind_reading_t s_outputs_read;
+/** @brief Whether s_outputs_read is a reading; under s_snap_lock. */
 extern bool           s_outputs_read_fresh;
+/**
+ * @brief State of the last reading of the output pages; control task only.
+ */
 extern bind_read_t    s_bind_read;
 /* The IOmcu's protocol minor, and its board identity. */
-extern uint16_t       s_far_minor;
-extern uint16_t       s_board;
+extern uint16_t       s_far_minor;  /**< The IOmcu's protocol minor. */
+extern uint16_t       s_board;  /**< The IOmcu's board identity. */
 
 extern QueueHandle_t s_kst_q;     /**< app_main -> control task */
 extern QueueHandle_t s_hitec_q;   /**< app_main -> control task */
 extern QueueHandle_t s_sample_q;  /**< control task -> app_main */
 extern QueueHandle_t s_enc_q;     /**< control task -> app_main */
 
-/* The INA3221's CH1 windows from the ring, each number once and in order,
- * each with the servo rail's meter and its change count as decided in the
- * poll that took it (servo_screen_window()).  Full means the renderer is
- * SAMPLE_Q_LEN windows behind, and the oldest is dropped. */
+/**
+ * @brief The INA3221's CH1 windows from the ring, each number once and in
+ *        order, each with the servo rail's meter and its change count as
+ *        decided in the poll that took it (servo_screen_window()).  Full
+ *        means the renderer is SAMPLE_Q_LEN windows behind, and the oldest is
+ *        dropped.
+ */
 typedef struct {
-    sense_link_win_t  win;
+    sense_link_win_t  win;  /**< The window of CH1. */
+    /** @brief The servo rail's meter when the poll took the window. */
     servo_source_id_t source;
+    /** @brief The meter's change count as of the same poll. */
     uint32_t          changes;
-    servo_source_why_t dropped;     /* as supply_item_t's */
+    servo_source_why_t dropped;     /**< why it stopped being the meter */
+    /** @brief The change count at which it stopped, as supply_item_t's. */
     uint32_t          dropped_at;
 } servo_win_item_t;
 extern QueueHandle_t     s_win_q;     /**< control task -> app_main */
@@ -159,33 +179,36 @@ typedef struct {
 extern QueueHandle_t     s_meter_q;   /**< control task -> app_main */
 extern SemaphoreHandle_t s_snap_lock; /**< guards s_snap (panel_snap_t) */
 
-/*
- * The IOmcu's update as the render side needs it: an offer, numbered,
- * with the version the IOmcu runs; while an update runs, its step and
- * blocks; and the STARTs the control task has taken, so a progress screen
- * whose START was spent leaves.
+/**
+ * @brief The IOmcu's update as the render side needs it: an offer, numbered,
+ *        with the version the IOmcu runs; while an update runs, its step and
+ *        blocks; and the STARTs the control task has taken, so a progress
+ *        screen whose START was spent leaves.
  */
 typedef struct {
-    uint32_t     offer_gen;
-    bool         offered;
-    cu_version_t running;
-    bool         active;
-    uint8_t      step;      /* a cu_step_t */
-    uint16_t     block;
-    uint16_t     blocks;
-    uint32_t     starts_taken;
-    uint8_t      check;     /* a cu_check_t: the last build check        */
-    bool         mismatch;  /* an IOmcu of another protocol major
+    uint32_t     offer_gen;  /**< Number of the current offer of an update. */
+    bool         offered;  /**< Whether an update is on offer. */
+    cu_version_t running;  /**< The version the IOmcu runs. */
+    bool         active;  /**< Whether an update runs. */
+    uint8_t      step;      /**< the update's step, a cu_step_t */
+    uint16_t     block;  /**< The block being written. */
+    uint16_t     blocks;  /**< Blocks in the image. */
+    uint32_t     starts_taken;  /**< STARTs the control task has taken. */
+    uint8_t      check;     /**< the last build check, a cu_check_t */
+    bool         mismatch;  /**< an IOmcu of another protocol major
                                answers its identity (the link stays down) */
 } cu_snap_t;
 
-/* What the screen reads.  Written by the control task, copied by app_main. */
+/**
+ * @brief What the screen reads.  Written by the control task, copied by
+ *        app_main.
+ */
 typedef struct {
-    bench_state_t bench;
-    supply_state_t supply;
+    bench_state_t bench;  /**< The bench's last reading. */
+    supply_state_t supply;  /**< The supply's last reading. */
     uint32_t      supply_gen;  /**< which ON, for the render side's ack */
-    bool          link_up;
-    bool          armed;
+    bool          link_up;  /**< Whether the IOmcu answers. */
+    bool          armed;  /**< Whether the bench is armed. */
     /** The roles the bank is armed for, OUT_ROLE_BIT()s; 0 disarmed. */
     uint8_t       armed_roles;
     bool          arm_wanted;  /**< armed, or an arm waiting: arming_link_needed() */
@@ -193,51 +216,75 @@ typedef struct {
     /** @brief The stamp of the newest ARM refused (arming_refused_ask()),
      *         for the screen still waiting on it. */
     uint32_t      arm_refused;
+    /** @brief The panel's die temperature, degrees Celsius. */
     float         mcu_temp_c;
-    bool          stopped;
+    bool          stopped;  /**< Whether the stop latch is set. */
     /** @brief arming_held(): an operator's STOP stands, the band's latched
      *         STOP (ui_bench_status_t.stop_latched). */
     bool          held;
-    uint32_t      stops;
+    uint32_t      stops;  /**< STOPs counted since boot. */
     uint32_t      pressed;     /**< of the stops, those pressed */
     uint16_t      faults;      /**< STATUS faults as the band shows them */
     uint32_t      link_errors; /**< the IOmcu's CRC errors and resyncs */
     uint32_t      link_refused; /**< ui_bench_status_t's link_refused */
     uint32_t      run_seconds; /**< arming_run_seconds() */
-    /* The control task's alert, numbered: an alert posted and replaced
-     * before a frame took it was never shown (sense_link_alerts()), and one
-     * whose cause is over is taken back (control_alert_withdraw()). */
+    /**
+     * @brief The control task's alert, numbered: an alert posted and replaced
+     *        before a frame took it was never shown (sense_link_alerts()),
+     *        and one whose cause is over is taken back
+     *        (control_alert_withdraw()).
+     */
     ui_alert_slot_t alert;
-    /* The phase tap as the control task last read it, for the stick run's
-     * page. */
+    /**
+     * @brief The phase tap as the control task last read it, for the stick
+     *        run's page.
+     */
     tone_readout_t tone;
-    /* The servo rail's meter as of the last poll (servo_source.h), and the
-     * CH1 windows that left the ring untaken since boot. */
+    /**
+     * @brief The servo rail's meter as of the last poll (servo_source.h), and
+     *        the CH1 windows that left the ring untaken since boot.
+     */
     servo_source_id_t servo_source;
+    /** @brief Changes of the servo rail's meter since boot. */
     uint32_t      servo_source_changes;
-    /* Why the INA3221 is not the meter, and why and when it last stopped
-     * being it (servo_source_why(), servo_source_dropped()). */
+    /**
+     * @brief Why the INA3221 is not the meter, and why and when it last
+     *        stopped being it (servo_source_why(), servo_source_dropped()).
+     */
     servo_source_why_t servo_source_why;
+    /** @brief Why the INA3221 last stopped being the meter. */
     servo_source_why_t servo_source_dropped;
+    /** @brief The meter's change count at that stop. */
     uint32_t      servo_source_dropped_at;
+    /** @brief CH1 windows that left the ring untaken since boot. */
     uint32_t      servo_win_lost;
-    /* What the servo programmer's model is fed; see kst_publish(). */
+    /** @brief What the servo programmer's model is fed; see kst_publish(). */
     kst_prog_feed_t kst;
     /** @brief What the Hitec programmer's model is fed; see
      *         hitec_publish(). */
     hitec_prog_feed_t hitec;
     /** @brief What the ESC programmer's model is fed; see esc_publish(). */
     esc_prog_feed_t esc;
-    /* The IOmcu's update; see cu_service(). */
+    /** @brief The IOmcu's update; see cu_service(). */
     cu_snap_t     cu;
 } panel_snap_t;
+/**
+ * @brief The snapshot the control task writes and app_main copies, under
+ *        s_snap_lock.
+ */
 extern panel_snap_t s_snap;
 
+/** @brief Take s_snap_lock, waiting as long as it takes. */
 static inline void snap_lock(void)   { xSemaphoreTake(s_snap_lock, portMAX_DELAY); }
+/** @brief Give s_snap_lock back. */
 static inline void snap_unlock(void) { xSemaphoreGive(s_snap_lock); }
 
-/* Called from the control task, which must not touch the router.  The
- * slot holds one alert; a later one replaces it.  Returns its number. */
+/**
+ * @brief Called from the control task, which must not touch the router.  The
+ *        slot holds one alert; a later one replaces it.  Returns its number.
+ * @param text the alert's text
+ * @return the alert's number in the slot, never 0
+ */
 uint32_t control_alert_numbered(const char *text);
 
 /**
@@ -251,18 +298,26 @@ uint32_t control_alert_numbered(const char *text);
  */
 gfx_canvas_t *panel_canvas(void);
 
-/* Take back alert number @p gen, whose cause is over: one not yet taken
- * by a frame is dropped, and the last one a frame took is cleared from the
- * band if it is still showing (ui_router_withdraw_alert()).  An older
- * alert is left alone, so withdrawals of several causes in one frame do
- * not hide each other (ui_alert_slot.h).  Control task only. */
+/**
+ * @brief Take back alert number @p gen, whose cause is over: one not yet
+ *        taken by a frame is dropped, and the last one a frame took is
+ *        cleared from the band if it is still showing
+ *        (ui_router_withdraw_alert()).  An older alert is left alone, so
+ *        withdrawals of several causes in one frame do not hide each other
+ *        (ui_alert_slot.h).  Control task only.
+ * @param gen the number control_alert_numbered() returned
+ */
 void control_alert_withdraw(uint32_t gen);
 
-/* The same, for the callers that do not follow it.  Inlined where it is
- * called, as the compiler chose before the numbering: a frame of its own
- * puts 32 bytes on the control task's deepest chain (drv_lost() through
- * control_pump()) and moves stack_check's walk onto a deeper path through
- * ESP-IDF's logging. */
+/**
+ * @brief Post an alert as control_alert_numbered() does, for callers that do
+ *        not follow it.
+ *
+ * Inlined where it is called: a frame of its own puts 32 bytes on the control
+ * task's deepest chain (drv_lost() through control_pump()) and moves
+ * stack_check's walk onto a deeper path through ESP-IDF's logging.
+ * @param text the alert's text
+ */
 __attribute__((always_inline)) static inline void
 control_alert(const char *text)
 {
@@ -294,9 +349,13 @@ control_alert_kept(const char *text)
 }
 
 /* The safety loop's own state and the arming policy; see main.c. */
-extern outputs_t s_out;
-extern arming_t  s_arm;
-extern uint16_t  s_throttle_hundredths;   /* 0..LINK_THROTTLE_MAX */
+extern outputs_t s_out;  /**< The output bank. */
+extern arming_t  s_arm;  /**< The arming policy's state. */
+extern uint16_t  s_throttle_hundredths;   /**< the throttle command, 0 to LINK_THROTTLE_MAX */
+/**
+ * @brief A disarm asked for; set by the render side, taken by the control
+ *        task.
+ */
 extern atomic_bool s_disarm_request;
 /** @brief The reset of a latched STOP (stop_latch.h); control task only.
  *         See panel_stop.c. */
@@ -330,8 +389,8 @@ void stop_pressed_here(void);
  *         rate touch is judged. */
 void stop_touch_watch(void);
 
-/*
- * A disarm returns the command to zero, here and in the output bank.
+/**
+ * @brief A disarm returns the command to zero, here and in the output bank.
  *
  * The throttle used to survive a disarm, so the next arm wrote the previous
  * position to the control page in the same transaction that armed: the bench
@@ -346,15 +405,25 @@ static inline void throttle_to_zero(void)
 
 /* The PD mini's input in mV and its UART rate in baud, as its page last
  * read; 0 while not known. */
+/**
+ * @brief The PD mini's input, mV, as its page last read; 0 while not known.
+ */
 extern atomic_uint s_supply_vin_mv;
+/**
+ * @brief The PD mini's UART rate, baud, as the IOmcu last reported it; 0
+ *        while not known.
+ */
 extern atomic_uint s_supply_baud;
 
-/* Which arm, for the render side's ack. */
+/** @brief Which arm, for the render side's ack. */
 extern uint32_t    s_arm_gen;
 
 /* The pole count the IOmcu holds, and whether it is current. */
+/**
+ * @brief Whether the IOmcu's pole count is not current and a write is owed.
+ */
 extern atomic_bool s_poles_owed;
-extern atomic_uint s_poles_value;
+extern atomic_uint s_poles_value;  /**< The pole count the IOmcu is to hold. */
 
 /* The throttle endpoints the IOmcu holds (endpoints_link.h): owed, held
  * disarmed at a link-up, the pair and the time of the last edit.  The debt
@@ -362,10 +431,18 @@ extern atomic_uint s_poles_value;
  * ARMED with the link up is refused while it stands. */
 extern endpoints_debt_t s_endpoints;
 
-/* Where the PD mini is wired, from SUPPLY's PD MINI tab, in one word; see
- * main.c. */
+/**
+ * @brief Where the PD mini is wired, from SUPPLY's PD MINI tab, in one word;
+ *        see main.c.
+ */
 extern atomic_uint s_pdmini_wiring;
 
+/**
+ * @brief Unpack a PD mini wiring word (s_pdmini_wiring).
+ * @param word bit 24 enabled, bits 23 to 16 the TX GPIO plus 1, bits 15 to 8
+ *        the RX GPIO plus 1, bits 7 to 0 the baud setting
+ * @return the wiring; a GPIO of -1 is unset
+ */
 static inline supply_wiring_t wiring_of(unsigned word)
 {
     const supply_wiring_t w = {
@@ -377,6 +454,10 @@ static inline supply_wiring_t wiring_of(unsigned word)
     return w;
 }
 
+/**
+ * @brief The PD mini's wiring as SUPPLY's PD MINI tab left it.
+ * @return the unpacked s_pdmini_wiring
+ */
 static inline supply_wiring_t pdmini_wiring(void)
 {
     return wiring_of(atomic_load(&s_pdmini_wiring));
@@ -385,11 +466,19 @@ static inline supply_wiring_t pdmini_wiring(void)
 /* What SETUP > SENSORS left for the current monitors
  * and the phase tap, read by the control task; panel_sense.c publishes the
  * monitors' from the settings observer. */
+/**
+ * @brief Take the current monitors' set-up from the settings for the control
+ *        task; app_main, from the settings observer.
+ */
 void            publish_sense(void);
+/**
+ * @brief The current monitors' set-up SETUP > SENSORS left.
+ * @return the set-up
+ */
 sense_setup_t   sense_wanted(void);
 tone_setup_t    tone_wanted(void);
 
-/* False until the control task owns the safety state. */
+/** @brief False until the control task owns the safety state. */
 extern bool s_pump_live;
 /* The safety loop, from the top of the control task and from inside every
  * exchange. */
@@ -398,9 +487,16 @@ void control_pump(void);
 
 /* The GPIOs of the slots of the channels the SERVO screen's horn drives
  * (servo_link_binding()), and whether a binding was read; see main.c. */
+/**
+ * @brief GPIOs of the slots the SERVO screen's horn drives, packed in one word
+ *        (servo_link_binding()).
+ */
 extern atomic_ullong s_servo_pins;
-extern atomic_bool   s_servo_pins_known;
-/* For the SERVO screen's runs: the SENSE page holds the encoder enabled. */
+extern atomic_bool   s_servo_pins_known;  /**< Whether a binding was read. */
+/**
+ * @brief For the SERVO screen's runs: the SENSE page holds the encoder
+ *        enabled.
+ */
 extern atomic_bool   s_enc_held;
 
 /**
@@ -509,37 +605,64 @@ void panel_files_web_hl(void);
 
 /* ------------------------------------------------------------ panel_card.c */
 
-/* Read once at start-up, from bring_up(). */
+/** @brief Read once at start-up, from bring_up(). */
 void esc_profiles_load(void);
-/* The log viewer's way to the card. */
+/** @brief The log viewer's way to the card. */
 extern const log_viewer_io_t k_card_io;
 
 /* The runs the logger has open, held back from the viewer: the automatic
  * log's in AUTO LOG FOLDER, a test's CSV and report in USER LOG FOLDER,
  * each in the folder it was opened in (log_open_marks()). */
+/**
+ * @brief The run of the automatic log open, in AUTO LOG FOLDER; 0 for none.
+ */
 extern atomic_uint s_log_open_run;
+/** @brief The run of a test's CSV open, in USER LOG FOLDER; 0 for none. */
 extern atomic_uint s_test_open_run;
+/** @brief The run of a test's report open, in USER LOG FOLDER; 0 for none. */
 extern atomic_uint s_test_open_txt;
 /* The files the logger has created since the start, and the LOGS tab of
  * the last one (log_viewer_tab_t): stored by the logger, the tab first. */
+/** @brief Files the logger has created since the start. */
 extern atomic_uint s_card_written;
+/** @brief The LOGS tab of the last file created (log_viewer_tab_t). */
 extern atomic_int  s_card_written_tab;
 
-/* One level of a folder of the card (card_make_fn, card_tree.h): the
- * logs', the fault log's and the servo files' folders are made with it. */
+/**
+ * @brief One level of a folder of the card (card_make_fn, card_tree.h): the
+ *        logs', the fault log's and the servo files' folders are made with
+ *        it.
+ * @param ctx unused
+ * @param level the folder to make, a path from the card's root
+ * @return the result of making the folder; CARD_DIR_OK for one that exists
+ */
 card_dir_t panel_card_make_dir(void *ctx, const char *level);
 
 /* The programmer's record, KST.TXT: filled by the render loop, written by
  * the logger. */
+/** @brief The record's text, filled by the render loop. */
 extern char        s_kst_file[KST_PROG_FILE_MAX];
-extern size_t      s_kst_file_len;
+extern size_t      s_kst_file_len;  /**< Bytes of s_kst_file to write. */
 /* The mount whose record the model holds (storage_mount_count()): the
  * record is written to that volume or not at all. */
+/** @brief The mount whose record the model holds (storage_mount_count()). */
 extern unsigned    s_kst_file_mount;
+/** @brief Records the render loop handed over. */
 extern atomic_uint s_kst_file_sent;
+/** @brief Records the logger has written or given up on. */
 extern atomic_uint s_kst_file_done;
+/** @brief Whether the card took the last record whole. */
 extern atomic_bool s_kst_file_ok;
+/**
+ * @brief Write the record the render loop handed over, on the logger task;
+ *        nothing when none waits.
+ */
 void kst_record_write(void);
+/**
+ * @brief Read KST.TXT from the card into the servo programmer's model.
+ * @param late true for a card mounted after start-up, where a record the
+ *        model holds already stands; false at start-up
+ */
 void kst_record_load(bool late);
 
 /* The Hitec programmer's record, HITEC.TXT (hitec_record.c): filled by
@@ -589,13 +712,20 @@ void hitec_card_serve(void);
 
 /* A servo file request: taken from the model by the render loop, run on
  * the card by the logger. */
-extern kst_prog_card_req_t  s_kst_card_req;
+extern kst_prog_card_req_t  s_kst_card_req;  /**< The servo file request. */
 /* The mount the request was taken under (storage_mount_count()): it is
  * run on that volume or finds no card. */
+/** @brief The mount the request was taken under (storage_mount_count()). */
 extern unsigned             s_kst_card_mount;
-extern kst_prog_card_done_t s_kst_card_done;
+extern kst_prog_card_done_t s_kst_card_done;  /**< The answer. */
+/** @brief Requests the render loop handed over. */
 extern atomic_uint          s_kst_card_sent;
+/** @brief Requests the logger answered. */
 extern atomic_uint          s_kst_card_answered;
+/**
+ * @brief Run the servo file request handed over, on the logger task; nothing
+ *        when none waits.
+ */
 void kst_card_serve(void);
 
 /* ------------------------------------------------------------- panel_log.c */
@@ -606,23 +736,37 @@ void kst_card_serve(void);
  * holds one kind of row, so its header names every column it has.  All
  * runs are written to AUTO LOG FOLDER, none while AUTO LOGS is off. */
 
-/* The two folders SETUP > SD CARD names, AUTO LOG FOLDER and USER LOG
- * FOLDER. */
+/**
+ * @brief The two folders SETUP > SD CARD names, AUTO LOG FOLDER and USER LOG
+ *        FOLDER.
+ */
 typedef enum {
     LOG_FOLDER_AUTO = 0,
     LOG_FOLDER_USER,
     LOG_FOLDERS
 } log_folder_t;
 
-/* The folder the next file of @p kind is written to: one card_folder_check()
- * takes (card_folder_use()).  Called by the text observer on app_main;
- * the logger reads it at each take, so a file open stays where it is and
- * the next one is numbered in the new folder. */
+/**
+ * @brief The folder the next file of @p kind is written to: one
+ *        card_folder_check() takes (card_folder_use()).  Called by the text
+ *        observer on app_main; the logger reads it at each take, so a file
+ *        open stays where it is and the next one is numbered in the new
+ *        folder.
+ * @param kind which folder the setting names
+ * @param dir a folder card_folder_check() takes, a path from the card's root
+ */
 void log_set_folder(log_folder_t kind, const char *dir);
 
-/* The open markers and the folder each was opened in, read as one, for the
- * viewer's card_busy(): @p run_dir and @p test_dir take CARD_DIR_MAX bytes
- * and @p marks points into them. */
+/**
+ * @brief The open markers and the folder each was opened in, read as one, for
+ *        the viewer's card_busy(): @p run_dir and @p test_dir take
+ *        CARD_DIR_MAX bytes and @p marks points into them.
+ * @param marks takes the open markers; points into @p run_dir and @p test_dir
+ * @param run_dir takes the folder the automatic log's run was opened in,
+ *        CARD_DIR_MAX bytes
+ * @param test_dir takes the folder a test's files were opened in,
+ *        CARD_DIR_MAX bytes
+ */
 void log_open_marks(log_marks_t *marks, char *run_dir, char *test_dir);
 
 /**
@@ -698,15 +842,18 @@ typedef struct {
     log_servo_t    servo;
 } log_row_t;
 
-/*
- * Sixty-four rows is 3.2s of run at PANEL_SAMPLE_HZ, against the 250ms an
- * SD card may take over one write: a card that pauses costs no rows.
+/**
+ * @brief Sixty-four rows is 3.2s of run at PANEL_SAMPLE_HZ, against the 250ms
+ *        an SD card may take over one write: a card that pauses costs no
+ *        rows.
  */
 #define LOG_Q_LEN      64
 
 /* The report link_report() writes to the card, and how many may be in
  * flight.  The report is made every 5s at its fastest. */
+/** @brief Capacity of one report link_report() writes to the card, bytes. */
 #define LOG_NOTE_MAX   208
+/** @brief Reports in flight, the depth of the queue to the logger. */
 #define LOG_NOTE_Q_LEN 4
 
 /** @brief The console reports link_report() hands the logger to print,
@@ -717,13 +864,16 @@ typedef struct {
  *         queue is printed where it is made: no line is dropped. */
 #define CONSOLE_Q_LEN 2
 
-/* One line of a servo test's files, render loop -> logger. */
+/** @brief One line of a servo test's files, render loop -> logger. */
 typedef struct {
-    uint8_t kind;                        /* servo_test_out_t */
+    uint8_t kind;                        /**< a servo_test_out_t */
     uint8_t prefix;                      /**< an OPEN's log_prefix_t */
-    char    text[SERVO_TEST_LINE_MAX];
+    char    text[SERVO_TEST_LINE_MAX];  /**< The line's text. */
 } test_line_t;
 
+/**
+ * @brief Depth of the queue of a servo test's lines, render loop to logger.
+ */
 #define TEST_Q_LEN 24
 
 extern QueueHandle_t s_log_q;
@@ -737,17 +887,27 @@ void console_report_print(const link_report_in_t *r);
 /** @brief The fault log's lock (log_fault_lock()). */
 extern SemaphoreHandle_t s_note_mx;
 extern QueueHandle_t s_test_q;
-/* The run being recorded, or 0: the control task's level, which the logger
- * follows. */
+/**
+ * @brief The run being recorded, or 0: the control task's level, which the
+ *        logger follows.
+ */
 extern atomic_uint s_log_run_now;
 
 /* A servo test's OPENs and ENDs, queued by the render loop and taken by
  * the logger, and what the logger made of them. */
+/** @brief OPENs of a servo test's files the render loop queued. */
 extern atomic_uint s_test_opens_sent;
+/** @brief OPENs the logger has answered with a number in s_test_file. */
 extern atomic_uint s_test_opens_done;
+/** @brief ENDs of a servo test the render loop queued. */
 extern unsigned    s_test_ends_sent;
-extern atomic_uint s_test_ends_done;
+extern atomic_uint s_test_ends_done;  /**< ENDs the logger has taken. */
+/** @brief The test file's number, -1 when it is not recorded. */
 extern atomic_int  s_test_file;
+/**
+ * @brief Whether the last run's report reached the card whole; set at its
+ *        END.
+ */
 extern atomic_bool s_test_report;
 
 /* The runlog task: every fopen, fwrite, fsync and fclose on the card. */
@@ -755,20 +915,39 @@ void log_task(void *arg);
 
 /* main.c: the control task's side of the log, which numbers the runs and
  * posts the rows. */
+/** @brief The run's row counts and cadence; control task. */
 extern log_cadence_t  s_log_cad;
+/** @brief Which kind of run started last; control task. */
 extern log_run_kind_t s_log_kind;
+/**
+ * @brief An automatic servo test, a limit run or AUTO on RUDDER runs; stored
+ *        by the SERVO screen.
+ */
 extern atomic_bool    s_servo_testing;
+/**
+ * @brief Queue one row for the logger without waiting; a full queue drops it.
+ * @param row the row; its run is set here
+ */
 void log_post(log_row_t *row);
 
 /* ------------------------------------------------------------ panel_link.c */
 
 /* Exchanges that ended unanswered; a far end held to be answering; an
  * exchange that ended unanswered with the link up.  See panel_link.c. */
-extern uint32_t s_unanswered;
+extern uint32_t s_unanswered;  /**< Exchanges that ended unanswered. */
+/** @brief Whether a far end is held to be answering. */
 extern bool     s_link_is_up;
+/** @brief Set by an exchange that ended unanswered with the link up. */
 extern bool     s_link_quiet;
 
-/* Put a built request on the wire and wait for its answer. */
+/**
+ * @brief Put a built request on the wire and wait for its answer.
+ * @param host the link host state
+ * @param req the built request
+ * @param reply takes the answer
+ * @return true when an answer arrived, also a refusal; false when the
+ *         exchange ended unanswered
+ */
 bool exchange(link_host_t *host, const link_msg_t *req, link_msg_t *reply);
 
 
@@ -826,11 +1005,20 @@ static inline bool poll_page(link_host_t *host, uint8_t page, uint8_t count,
     return read_regs(host, page, 0u, count, reply);
 }
 
-/*
- * A write of any width goes out one frame per exchange, each acknowledged
- * before the next is sent (link_write_acked()): the far end's controller
- * buffers 2 frames and is polled, so frames sent back to back can find it
- * full.  A write of up to 4 registers is one exchange.
+/**
+ * @brief A write of any width goes out one frame per exchange, each
+ *        acknowledged before the next is sent (link_write_acked()): the far
+ *        end's controller buffers 2 frames and is polled, so frames sent back
+ *        to back can find it full.  A write of up to 4 registers is one
+ *        exchange.
+ * @param host the link host state
+ * @param page page to write
+ * @param offset first register
+ * @param count registers, at most LINK_MAX_REGS (32)
+ * @param regs the values
+ * @param reply takes the ACK or the first frame's NACK
+ * @return true when every frame sent was answered; false when one ended
+ *         unanswered
  */
 static inline bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
                               uint8_t count, const uint16_t *regs,
@@ -839,12 +1027,23 @@ static inline bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
     return link_write_acked(host, &k_port, page, offset, count, regs, reply);
 }
 
-/* The control page: ARM and THROTTLE, the frame that arms, CLEAR, the pole
- * count and the throttle's endpoints.  See panel_link.c. */
+/**
+ * @brief The control page: ARM and THROTTLE, the frame that arms, CLEAR, the
+ *        pole count and the throttle's endpoints.  See panel_link.c.
+ */
 extern uint16_t s_arm_value;
 
-/*
- * ARM and THROTTLE, the write every 50ms poll and every disarm makes.
+/**
+ * @brief A control page write of ARM @p arm and s_throttle_hundredths, and
+ *        whether the IOmcu acknowledged it, for the log's throttle
+ *        (bench_throttle_written()).  Control task only.
+ * @param acked true when the IOmcu acknowledged the write
+ * @param arm   the ARM written
+ */
+void control_throttle_written(bool acked, uint16_t arm);
+
+/**
+ * @brief ARM and THROTTLE, the write every 50ms poll and every disarm makes.
  *
  * Two registers rather than the three the frame that arms carries.  This
  * write keeps a running bench running and stops a stopping one, and the
@@ -852,9 +1051,9 @@ extern uint16_t s_arm_value;
  * paid on its own transaction by poles_service(), and a disarm has nothing
  * to convert.  Kept apart so a count the far end refuses -- or one that has
  * not changed -- never stands between the throttle and the wire.
- *
- * True when the IOmcu acknowledged; a NACK (negative acknowledge) or
- * no answer is false.
+ * @param armed whether the bench is armed
+ * @param reply takes the answer
+ * @return true when the IOmcu acknowledged; a NACK or no answer is false
  */
 static inline bool control_write(bool armed, link_msg_t *reply)
 {
@@ -862,12 +1061,30 @@ static inline bool control_write(bool armed, link_msg_t *reply)
      * non-zero ARM is refused while it is armed (LINK_MINOR_ARM_ROLE). */
     const uint16_t regs[2] = { armed ? s_arm_value : 0u,
                                s_throttle_hundredths };
-    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, reply)
-           && reply->op == LINK_OP_ACK;
+    const bool ok = write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u,
+                               regs, reply)
+                    && reply->op == LINK_OP_ACK;
+    control_throttle_written(ok, regs[0]);
+    return ok;
 }
 
+/**
+ * @brief Write the frame that arms: ARM, THROTTLE and MOTOR_POLES in one
+ *        frame.
+ * @param reply takes the answer
+ * @return true when the IOmcu acknowledged
+ */
 bool control_arm(link_msg_t *reply);
+/**
+ * @brief Pay the pole count's debt when one is owed.
+ * @return true when the far end holds the current count
+ */
 bool poles_service(void);
+/**
+ * @brief Pay the throttle endpoints' debt when one is owed
+ *        (endpoints_link.h).
+ * @param far_disarmed whether the far end reads disarmed
+ */
 void endpoints_service(bool far_disarmed);
 
 /**
@@ -899,9 +1116,24 @@ static inline bool far_line_trusted(bool *answered, uint16_t *faults)
     return data && safety_gate_line_trusted(st.regs[0]);
 }
 
+/**
+ * @brief Finish at this end a stop the policy latched for the far end: bank,
+ *        throttle, servo pin and alert.
+ */
 void far_end_stop_here(void);
+/**
+ * @brief Handle an arm whose write was refused or went unanswered.
+ * @param quiet_before s_unanswered as the arm began
+ * @param alert the alert for a refusal
+ */
 void arm_write_failed(uint32_t quiet_before, const char *alert);
 
+/**
+ * @brief Write CLEAR with LINK_CLEAR_MAGIC to the control page, lifting a
+ *        latched failsafe.
+ * @param reply takes the answer
+ * @return true when the IOmcu acknowledged
+ */
 static inline bool control_clear_failsafe(link_msg_t *reply)
 {
     const uint16_t magic = LINK_CLEAR_MAGIC;
@@ -910,17 +1142,25 @@ static inline bool control_clear_failsafe(link_msg_t *reply)
            && reply->op == LINK_OP_ACK;
 }
 
-/* What the panel knows about a link that stopped; the link report, every
- * 5s while the link is down and every 60s while it is up, handed to the
- * logger to print (console_reports_print()). */
+/**
+ * @brief What the panel knows about a link that stopped; the link report,
+ *        every 5s while the link is down and every 60s while it is up, handed
+ *        to the logger to print (console_reports_print()).
+ * @param r takes the report
+ */
 void link_lost_report(busfault_report_t *r);
 void link_report(void);
 
-/*
- * The seam between measured and modelled numbers.  When the IOmcu
- * answers, its numbers are used, and the LINK_BN_SIMULATED flag travels with
- * them.  When it does not, the panel models locally and sets the same flag.
- * Nothing above this function knows the difference.
+/**
+ * @brief The seam between measured and modelled numbers.  When the IOmcu
+ *        answers, its numbers are used, and the LINK_BN_SIMULATED flag
+ *        travels with them.  When it does not, the panel models locally and
+ *        sets the same flag. Nothing above this function knows the
+ *        difference.
+ * @param host the link host state
+ * @param out takes the reading
+ * @return true when the far end answered with data; false for no answer or a
+ *         NACK
  */
 static inline bool read_bench(link_host_t *host, bench_state_t *out)
 {
@@ -939,37 +1179,63 @@ static inline bool read_bench(link_host_t *host, bench_state_t *out)
 
 /* The link modules, SENSE (4.7), TONE (4.8), KST (4.12) and PROG (4.13),
  * and the servo rail's meter.  Control task only. */
-extern sense_link_t   s_sense_link;
-extern servo_source_t s_servo_source;
+extern sense_link_t   s_sense_link;  /**< The SENSE page's module (4.7). */
+extern servo_source_t s_servo_source;  /**< The servo rail's meter. */
+/** @brief The TONE page's module (4.8), the phase tap. */
 extern tone_link_t    s_tone_link;
-extern kst_link_t     s_kst_link;
-extern prog_link_t    s_prog_link;
+extern kst_link_t     s_kst_link;  /**< The KST page's module (4.12). */
+extern prog_link_t    s_prog_link;  /**< The PROG page's module (4.13). */
 /* What the SERVO screen wants of the PROG page, and the pin of port 0. */
+/** @brief The PROG target the SERVO screen wants. */
 extern atomic_uint    s_prog_want_target;
+/** @brief Whether the SERVO screen wants PWM on the PROG port. */
 extern atomic_bool    s_prog_want_pwm;
-extern atomic_uint    s_prog_pin;
+extern atomic_uint    s_prog_pin;  /**< The pin of PROG port 0. */
 /* The ports the PROG page reports (prog_link_count(), 0xFF while not
  * known) in bits 0 to 7, and the pins of ports 1, 2 and 3 in bits 8 to 15,
  * 16 to 23 and 24 to 31, for the OUTPUTS screen's PROG PORT entries and
  * the pin picker; one word, so the screens never read one page's count
  * with another's pins. */
+/**
+ * @brief No ports reported: the PROG page's count is unknown and no pin is
+ *        set.
+ */
 #define PROG_PORTS_NONE 0xFFFFFFFFu
+/**
+ * @brief The ports the PROG page reports in bits 0 to 7 and the pins of ports
+ *        1 to 3 in bits 8 to 31.
+ */
 extern atomic_uint    s_prog_ports;
-/* panel_ports.c: the ports' view and the screens' asks (port_view.h).
- * prog_ports_publish() and prog_ports_lost() on the control task, the
- * other two on the render loop. */
+/**
+ * @brief Publish the PROG page's ports to the screens' mail box; control
+ *        task.
+ */
 void prog_ports_publish(void);
+/** @brief Tell the mail box the PROG page is gone; control task. */
 void prog_ports_lost(void);
+/**
+ * @brief Hand the screens the hook they post their asks with; render loop.
+ */
 void prog_ports_init_screens(void);
+/**
+ * @brief Hand the screens the ports' view and the PROGRAM list's ports;
+ *        render loop.
+ */
 void prog_ports_to_screens(void);
 /* Where the tester's commands go, for the SERVO screen's TARGET row:
  * prog_link_drive()'s pin in bits 0 to 7, its target in bits 8 to 15 and its
  * pulse in bit 16.  One word, so the screen never reads one drive's target
  * with another's pin or pulse.  No link until an IOmcu answers. */
+/** @brief Bit 16 of s_drive: the drive is a pulse. */
 #define DRIVE_PWM_BIT (1u << 16)
 /* Bits 20 to 23 of s_drive: the ports the HITEC page holds
  * (prog_link_hitec_held()), for the PROGRAM list's PORT IN USE. */
+/** @brief Bit position of the ports the HITEC page holds in s_drive. */
 #define DRIVE_HELD_SHIFT 20u
+/**
+ * @brief Where the tester's commands go: pin in bits 0 to 7, target in bits 8
+ *        to 15, pulse in bit 16.
+ */
 extern atomic_uint    s_drive;
 /** @brief The programming port a servo programmer holds, for the band's
  *         SAFE chip: prog5v_box_held_port() of the KST and Hitec sessions,
@@ -983,6 +1249,7 @@ extern atomic_uint    s_prog_band;
  *         SUPPLY page's word as well (supply_link_port_holds()).  Control
  *         task only; kst_port_look(). */
 extern bool            s_prog_taken;
+/** @brief The gate the servo programmer's commands are claimed at. */
 extern kst_prog_gate_t s_kst_gate;
 /** @brief The programmers' session faults: the KST outcomes
  *         kst_link_outcome_fault() names, counted as kst_publish() takes
@@ -991,16 +1258,33 @@ extern kst_prog_gate_t s_kst_gate;
  *  @return the sum, modulo 2^32 */
 uint32_t prog_faults(void);
 /* The SENSE and TONE set-ups that are not held at the far end. */
+/** @brief The SENSE set-ups the far end does not hold. */
 extern atomic_uint s_sense_unheld;
+/** @brief The TONE set-ups the far end does not hold. */
 extern atomic_uint s_tone_unheld;
 /* Hitec D receive (HITEC, 4.24): the module and the mode the setting asks
  * (link_hitec_rx_t, from the render loop). */
+/** @brief The Hitec D receive module and the mode the setting asks. */
 extern hitec_rx_link_t s_hitec_rx_link;
 /** @brief The mode SET_HITEC_RX asks, link_hitec_rx_t. */
 extern atomic_uint     s_hitec_rx_want;
 
+/**
+ * @brief Read what the servo programmers hold, for s_prog_band and
+ *        s_prog_taken; control task.
+ */
 void kst_port_look(void);
+/**
+ * @brief Tell the operator what the SENSE and SERVO_SENSE pages said, one
+ *        event at a time; control task.
+ */
 void sense_link_alerts(void);
+/**
+ * @brief Serve the SENSE and SERVO_SENSE pages; from the poll.
+ * @param idle whether the bench is disarmed and the exchange may be spent on
+ *        a write
+ * @param bench the poll's bench sample
+ */
 void sense_link_service(bool idle, bench_state_t *bench);
 
 /* ----------------------------------------------------------- panel_sense.c */
@@ -1008,7 +1292,12 @@ void sense_link_service(bool idle, bench_state_t *bench);
 /* The SENSE_MAP page (4.25) and the INA3221 parts' states for SETUP >
  * SENSORS (sense_map_link_status()'s word).  Control task only, but
  * s_sense_parts, which app_main reads. */
+/** @brief The SENSE_MAP page's module (4.25). */
 extern sense_map_link_t s_sense_map;
+/**
+ * @brief The INA3221 parts' states for SETUP > SENSORS
+ *        (sense_map_link_status()'s word).
+ */
 extern atomic_uint      s_sense_parts;
 /** @brief The INA228's state in the same words, sense_map_link_i228()'s. */
 extern atomic_uint      s_sense_i228;
@@ -1033,13 +1322,31 @@ void sense_limit_service(void);
 /** @brief sensors_rows_set_limits()'s word; control task writes, app_main
  *         reads. */
 extern atomic_uint s_sense_limits;
+/**
+ * @brief The link came up; hand the SENSE_MAP module the minor.
+ * @param minor the IOmcu's protocol minor; below 25 nothing is sent
+ */
 void sense_map_came_up(uint16_t minor);
+/** @brief The link went; clear the parts' states and the log's columns. */
 void sense_map_lost(void);
+/**
+ * @brief Serve the SENSE_MAP page, from the poll before sense_link_service();
+ *        control task.
+ * @param idle whether the map SENSORS asks for may be written
+ */
 void sense_map_service(bool idle);
-/* SENSE_WIN_A and SENSE_WIN_B (4.25): read on every poll after SERVO_WIN;
- * the window number @p b's servo_window names attached as its chw, FAST's
- * channel from the ring's window with @p ring.  Control task. */
+/**
+ * @brief SENSE_WIN_A and SENSE_WIN_B (4.25): read on every poll after
+ *        SERVO_WIN; the window number @p b's servo_window names attached as
+ *        its chw, FAST's channel from the ring's window with @p ring.
+ *        Control task.
+ */
 void sense_win_service(void);
+/**
+ * @brief Attach the SENSE windows to the bench sample.
+ * @param b the sample; its servo_window names the window attached as chw
+ * @param ring whether FAST's channels come from the ring
+ */
 void sense_win_attach(bench_state_t *b, bool ring);
 /**
  * @brief Each channel's highest current of the windows read since the last
@@ -1048,14 +1355,29 @@ void sense_win_attach(bench_state_t *b, bool ring);
  * @return Bit c set when channel c has a window in @p out.
  */
 uint16_t sense_win_take_peaks(int16_t *out);
-/* The log's INA3221 columns for a file opened now (log_cols.h); false for
- * CH1 to CH3.  Any task. */
+/**
+ * @brief The log's INA3221 columns for a file opened now (log_cols.h); false
+ *        for CH1 to CH3.  Any task.
+ * @param out takes the columns; may be NULL
+ * @return true when a map in force made the columns, false for CH1 to CH3
+ */
 bool sense_log_cols(log_cols_t *out);
+/**
+ * @brief Tell the operator what the TONE page said, one event at a time;
+ *        control task.
+ */
 void tone_link_alerts(void);
+/** @brief Serve the TONE page, the phase tap; from poll_bench(). */
 void tone_link_service(void);
 void kst_commands(void);
+/** @brief One pass of the KST page's module; control task. */
 void kst_link_service(void);
+/** @brief One pass of the PROG page's module; control task, from the poll. */
 void prog_link_service(void);
+/**
+ * @brief Write the Hitec D receive mode to the HITEC page when one is owed;
+ *        from poll_bench().
+ */
 void hitec_rx_service(void);
 void kst_publish(kst_prog_feed_t *f);
 
@@ -1100,8 +1422,10 @@ bool esc_taken(void);
  *  @param f receives the feed */
 void esc_publish(esc_prog_feed_t *f);
 
-/* Where the tester's commands go, into s_drive for the SERVO screen: from
- * each pass of prog_link_service() and from the link-lost edge. */
+/**
+ * @brief Where the tester's commands go, into s_drive for the SERVO screen:
+ *        from each pass of prog_link_service() and from the link-lost edge.
+ */
 static inline void prog_drive_publish(void)
 {
     const prog_link_drive_t drive = prog_link_drive(&s_prog_link);
@@ -1115,22 +1439,56 @@ static inline void prog_drive_publish(void)
 
 /* The GPIOs of the throttle's slots, whether a binding was read, and the
  * protocol they are bound as (outbind_role_proto()). */
+/** @brief GPIOs of the throttle's slots, packed in one word. */
 extern atomic_ullong s_throttle_pins;
+/** @brief Whether a binding was read. */
 extern atomic_bool   s_throttle_pins_known;
+/** @brief The protocol the throttle is bound as (outbind_role_proto()). */
 extern atomic_uint   s_throttle_proto;
+/** @brief The THROTTLE in force at the IOmcu, for the log's rows.  Control
+ *         task only. */
+extern bench_throttle_t s_bench_throttle;
 
-/* The OUTPUTS page as the IOmcu holds it; the OUTPUTS screen's write
- * asks for one straight afterwards. */
+/**
+ * @brief The OUTPUTS page as the IOmcu holds it; the OUTPUTS screen's write
+ *        asks for one straight afterwards.
+ */
 void read_outputs_binding(void);
+/** @brief Tell the screens no reading is to be had: the link is down. */
 void post_no_reading(void);
 
-/* One pass of the poll: the bench page while the far end answers, the
- * identity page while it does not. */
+/**
+ * @brief One pass of the poll: the bench page while the far end answers, the
+ *        identity page while it does not.
+ * @param link_up in: whether the link is up; out: whether it is after the
+ *        pass
+ * @param bench takes the bench sample
+ * @param last_poll the bench poll gate's clock
+ * @param last_status the status gate's clock
+ * @return true when this pass produced a bench sample
+ */
 bool poll_far_end(bool *link_up, bench_state_t *bench,
                   uint32_t *last_poll, uint32_t *last_status);
+/**
+ * @brief Step the model, count the run's totals and post the bench log's rows
+ *        for this pass.
+ * @param link_up whether the link is up
+ * @param emitted the command the model follows
+ * @param sim the bench model
+ * @param bench the sample; totals are written into it
+ * @param new_sample in: a sample arrived from the far end; out: this pass
+ *        produced one
+ */
 void advance_model_and_log(bool link_up, float emitted,
                            telemetry_sim_t *sim, bench_state_t *bench,
                            bool *new_sample);
+/**
+ * @brief Publish the numbers under the snapshot's lock and queue the sample
+ *        for the renderer.
+ * @param bench the bench sample
+ * @param link_up whether the link is up
+ * @param new_sample whether the sample is new
+ */
 void publish_snapshot(const bench_state_t *bench, bool link_up,
                       bool new_sample);
 /* The IOmcu's STATUS fault bitmap at its last read, LINK_FAULT_* bits.
@@ -1151,8 +1509,20 @@ void far_end_status_now(void);
 /* ------------------------------------------------------- main.c, continued */
 
 /* The throttle's ramp, published by app_main for the control task. */
+/**
+ * @brief The throttle's ramp in proportion of travel per second; OUT_SPAN is
+ *        full travel.
+ */
 extern atomic_uint s_throttle_ramp;
+/**
+ * @brief Convert the Ramp limit setting and publish it for the control task;
+ *        app_main.
+ */
 void publish_throttle_ramp(void);
+/**
+ * @brief The throttle's ramp as app_main published it.
+ * @return the ramp in OUT_SPAN per second
+ */
 static inline uint16_t panel_throttle_ramp(void)
 {
     return (uint16_t)atomic_load(&s_throttle_ramp);
@@ -1163,18 +1533,26 @@ static inline uint16_t panel_throttle_ramp(void)
  * motor screen scales its time axis by the same number; the two have to
  * agree or the axis lies about how long ago something happened.
  */
-#define PANEL_SAMPLE_HZ   20.0f
+#define PANEL_SAMPLE_HZ   20.0f  /**< Bench samples per second. */
 
-/* PANEL_CMD_CLEAR: ARM + START's FAILSAFE CLEAR (servo_screen_take_clear()),
- * CLEAR on the control page while SAFE; see apply_clear_cmd(). */
+/**
+ * @brief The kinds of command a screen queues for the control task.
+ *
+ * PANEL_CMD_CLEAR is ARM + START's FAILSAFE CLEAR
+ * (servo_screen_take_clear()): CLEAR on the control page while SAFE; see
+ * apply_clear_cmd().
+ */
 typedef enum { PANEL_CMD_MOTOR = 0, PANEL_CMD_SERVO,
                PANEL_CMD_STOP, PANEL_CMD_OUTPUTS,
                PANEL_CMD_SUPPLY, PANEL_CMD_PROG5V,
                PANEL_CMD_CLEAR } panel_cmd_kind_t;
 
+/** @brief A screen's command, app_main to the control task over s_cmd_q. */
 typedef struct {
-    panel_cmd_kind_t kind;
+    panel_cmd_kind_t kind;  /**< Which of the fields below is used. */
+    /** @brief PANEL_CMD_MOTOR: the MOTOR & ESC screen's command. */
     motor_cmd_t      motor;
+    /** @brief PANEL_CMD_SERVO: the SERVO screen's command. */
     servo_cmd_t      servo;
     outbind_t        bind;   /**< PANEL_CMD_OUTPUTS: the protocols and their pins */
     supply_cmd_t     supply; /**< PANEL_CMD_SUPPLY: set points and the switch */
@@ -1221,33 +1599,59 @@ typedef struct {
      * suspect, and a disarm is never dropped.
      */
     uint32_t         loss_gen;
+    /**
+     * @brief The number of the last touch event the render side had taken off
+     *        s_touch_q.
+     */
     uint32_t         consumed_seq;
 } panel_cmd_t;
 
-/* What became of the last output-page write. */
+/** @brief What became of the last output-page write. */
 extern atomic_int s_outputs_result;
 
 /* The queues between the two tasks, and their items; see main.c. */
+/**
+ * @brief One entry of s_touch_q: a touch event with its number, or a loss
+ *        notice.
+ */
 typedef struct {
-    touch_event_t evt;
+    touch_event_t evt;  /**< The touch event. */
+    /** @brief The number the control task gave it (touch_loss.h). */
     uint32_t      seq;
     bool          lost;    /**< a loss notice, not an event */
 } touch_item_t;
 extern QueueHandle_t s_touch_q;   /**< control task -> app_main */
+/**
+ * @brief One entry of s_supply_q: a supply sample with the servo rail's meter
+ *        as of the same poll.
+ */
 typedef struct {
-    supply_state_t    st;
+    supply_state_t    st;  /**< The supply's sample. */
+    /** @brief The servo rail's meter when the sample was queued. */
     servo_source_id_t source;
+    /** @brief The meter's change count as of the same poll. */
     uint32_t          changes;
-    /* Why the INA3221 last stopped being the meter, and at which count
-     * (servo_source_dropped()), as of the same poll. */
+    /**
+     * @brief Why the INA3221 last stopped being the meter, and at which count
+     *        (servo_source_dropped()), as of the same poll.
+     */
     servo_source_why_t dropped;
+    /** @brief The change count at which it stopped. */
     uint32_t          dropped_at;
 } supply_item_t;
 extern QueueHandle_t s_supply_q;  /**< control task -> app_main */
 
 /* STOP's request and its count; the let-goes asked for. */
+/**
+ * @brief A press the control task's own hit test did not see: the router's
+ *        backstop STOP; app_main sets, control task takes.
+ */
 extern atomic_bool s_stop_request;
 extern atomic_uint s_stop_counted;  /**< s_touch_q number of a counted STOP, 0 none */
+/**
+ * @brief Times the panel has been told to let go: a disarm or a release of
+ *        the servo's pin.
+ */
 extern atomic_uint s_lets_go;
 /** @brief STOP latches released by their reset (stop_reset_service()); a
  *  command queued before the latest release drives nothing after it.
@@ -1258,15 +1662,30 @@ extern atomic_uint s_stop_resets;
 extern uint32_t s_render_resets;
 
 /* The supply's switch and set points, from the render side. */
+/**
+ * @brief An OFF of the supply's output asked for, as a flag a full queue
+ *        cannot lose.
+ */
 extern atomic_bool s_supply_off_request;
+/** @brief OFFs of the supply's output asked for, counted. */
 extern atomic_uint s_supply_offs;
+/** @brief The supply's voltage set point, mV, as the screen holds it. */
 extern atomic_uint s_supply_set_mv;
+/** @brief The supply's current set point, mA, as the screen holds it. */
 extern atomic_uint s_supply_set_ma;
+/** @brief The operator's cap on the voltage set point, mV. */
 extern atomic_uint s_supply_vmax_mv;
+/** @brief The operator's cap on the current set point, mA. */
 extern atomic_uint s_supply_imax_ma;
+/** @brief The overcurrent trip, mA; 0 is off. */
 extern atomic_uint s_supply_trip_ma;
-extern atomic_uint s_supply_trip_mv;
+extern atomic_uint s_supply_trip_mv;  /**< The voltage trip, mV; 0 is off. */
+/** @brief The time over a trip threshold before it cuts, ms. */
 extern atomic_uint s_supply_trip_ms;
+/**
+ * @brief The newest ON the render side has seen applied, from a frame that
+ *        found the touch stream whole.
+ */
 extern atomic_uint s_supply_ack;
 /** @brief The ports' 5V asked off from the PROG 5V box, counted; render
  *         side writes, control task reads. */
@@ -1289,20 +1708,46 @@ extern atomic_uint s_psup_gen;
 /** @brief The newest PROG 5V ON a whole frame has seen on; render side
  *         writes, see prog_supply_watch_service(). */
 extern atomic_uint s_psup_ack;
+/**
+ * @brief Whether the supply's output is on, stored by the control task when
+ *        it switches.
+ */
 extern atomic_bool s_supply_live;
+/** @brief ONs of the supply the render side has queued. */
 extern atomic_uint s_supply_ons_sent;
+/**
+ * @brief ONs of the supply the control task has taken, applied or dropped.
+ */
 extern atomic_uint s_supply_ons_taken;
+/** @brief Edits of the PD mini's wiring, counted. */
 extern atomic_uint s_pdmini_edits;
+/**
+ * @brief Whether the SUPPLY screen drives the PD mini rather than the panel's
+ *        model.
+ */
 extern atomic_bool s_supply_real;
 
 /* The touch stream's numbering and losses, and the arm watch; see
  * touch_loss.h. */
+/**
+ * @brief Events the control task found missing from the driver's touch stream
+ *        since boot.
+ */
 extern atomic_uint s_drv_gaps;
+/** @brief The last number offered to s_touch_q, stored after the offer. */
 extern atomic_uint s_tq_published;
 /** @brief s_touch_q's producer: the numbers offered and the last loss
  *         notice's (touch_loss.h); the control task's alone. */
 extern touch_seq_tx_t s_tq_tx;
+/**
+ * @brief Times the render loop dropped the screens' gestures for a touch
+ *        loss.
+ */
 extern atomic_uint s_loss_gen;
+/**
+ * @brief The arm the render loop has seen, set by a frame that began armed
+ *        and found no loss.
+ */
 extern atomic_uint s_arm_ack;
 /** @brief The render loop's progress, for the control task's watchdog; see
  *         frame_watch.h and main.c. */
@@ -1316,12 +1761,22 @@ static inline void render_progress(void)
 {
     atomic_fetch_add(&s_render_progress, 1u);
 }
+/**
+ * @brief The command's loss_gen when the arm in flight was taken; control
+ *        task only.
+ */
 extern uint32_t    s_arm_take_gen;
+/** @brief s_drv_gaps when the arm in flight was taken; control task only. */
 extern uint32_t    s_arm_take_drv;
+/** @brief The watch on the arm in flight; control task only. */
 extern arm_watch_t s_arm_watch;
 
 /* A supply run's row timestamp, and the log's run edges; see main.c. */
-extern float s_log_t;
+extern float s_log_t;  /**< The time stamp of a supply run's next row, s. */
+/**
+ * @brief End and start the log's runs as the arm and the supply change;
+ *        control task.
+ */
 void log_follow_runs(void);
 
 /* The screens' commands, app_main -> control task; see main.c. */
@@ -1330,37 +1785,66 @@ extern QueueHandle_t s_cmd_q;
 /* ---------------------------------------------------------- panel_supply.c */
 
 /* The modelled supply and the PD mini's link. */
-extern supply_sim_t   s_supply_sim;
+extern supply_sim_t   s_supply_sim;  /**< The panel's model of the supply. */
+/** @brief The PD mini's link, the SUPPLY page's module. */
 extern supply_link_t  s_supply_link;
 /* Set points the supply reported, for the screen to adopt. */
+/** @brief A set point the supply reported, mV, for the screen to adopt. */
 extern atomic_uint    s_supply_adopt_mv;
+/** @brief A set point the supply reported, mA, for the screen to adopt. */
 extern atomic_uint    s_supply_adopt_ma;
+/** @brief Number of the report; raised by the control task with each. */
 extern atomic_uint    s_supply_adopt_gen;
+/** @brief The report the render loop has put on the screen. */
 extern atomic_uint    s_supply_adopt_done;
 /** @brief The last read of the supply: no port holds it and its output is
  *         off (supply_link_port_free_off()). */
 extern atomic_bool    s_supply_free_off;
 /* The ESC (electronic speed controller) model's profile and its runs. */
+/**
+ * @brief The profile of the ESC a stick run programs, as a pointer; render
+ *        loop stores.
+ */
 extern atomic_uintptr_t s_escsim_profile;
+/** @brief Runs the stick screen has started, counted. */
 extern atomic_uint    s_escsim_runs;
+/** @brief Whether the IOmcu speaks protocol 4.3, the SUPPLY page. */
 extern bool           s_supply_page;
+/** @brief Whether the IOmcu speaks protocol 4.4, AUTO baud and BAUD_FOUND. */
 extern bool           s_supply_auto;
+/** @brief Whether the PD mini, not the model, is the supply. */
 extern bool           s_supply_is_real;
-extern supply_state_t s_supply;
+extern supply_state_t s_supply;  /**< The supply's last reading. */
+/** @brief When the supply's totals last counted, now_ms(). */
 extern uint32_t       s_supply_ms;
+/** @brief The stop count the supply has answered. */
 extern uint32_t       s_supply_stops_served;
+/** @brief When the supply was last stepped, now_ms(). */
 extern uint32_t       s_supply_step_ms;
+/** @brief Number of the ONs applied; the snapshot carries it. */
 extern uint32_t       s_supply_gen;
 
+/**
+ * @brief Count the interval since the last step into the totals and write it
+ *        as a supply run's last row.
+ */
 void supply_log_tail(void);
+/**
+ * @brief Switch the supply's output.
+ * @param on true for on, false for off
+ */
 void supply_switch(bool on);
+/**
+ * @brief Apply the screen's set points, limits and trips to the supply; every
+ *        pass.
+ */
 void supply_follow_set(void);
-/*
- * Every stop switches the output off: STOP, touch that died, an arm the
- * watch undid, the far end's refusal.  Called from control_pump(), which
- * runs inside every exchange's wait, and again wherever the supply is
- * stepped or switched, so a stop counted anywhere cuts the output before
- * the next reading is taken or logged.
+/**
+ * @brief Every stop switches the output off: STOP, touch that died, an arm
+ *        the watch undid, the far end's refusal.  Called from control_pump(),
+ *        which runs inside every exchange's wait, and again wherever the
+ *        supply is stepped or switched, so a stop counted anywhere cuts the
+ *        output before the next reading is taken or logged.
  */
 static inline void supply_follow_stops(void)
 {
@@ -1378,10 +1862,11 @@ static inline void supply_follow_stops(void)
  */
 void prog5v_off_service(void);
 
-/*
- * An OFF asked for, whether or not its queue entry survived; applying it
- * twice costs nothing.  Called before the drain, so an OFF is never left
- * waiting behind the queue's backlog.  And the set points, every pass.
+/**
+ * @brief An OFF asked for, whether or not its queue entry survived; applying
+ *        it twice costs nothing.  Called before the drain, so an OFF is never
+ *        left waiting behind the queue's backlog.  And the set points, every
+ *        pass.
  */
 static inline void supply_service(void)
 {
@@ -1392,6 +1877,11 @@ static inline void supply_service(void)
     supply_follow_set();
 }
 
+/**
+ * @brief Apply a supply command a screen queued: the switch and the set
+ *        points; control task.
+ * @param pc the command
+ */
 void apply_supply_cmd(const panel_cmd_t *pc);
 /**
  * @brief An error of the bench (error_sites_stop()): the bench to SAFE
@@ -1409,8 +1899,12 @@ void prog_faults_follow(void);
 /** @brief Card writes that failed during a run, counted by the logger at
  *         each failure's edge (panel_log.c); read by the control task. */
 extern atomic_uint s_card_faults;
-/* The supply's service, from control_pump(). */
+/** @brief The supply's service, from control_pump(). */
 void supply_pump(void);
+/**
+ * @brief Serve the SUPPLY page: write what is owed, read the page; from
+ *        poll_bench().
+ */
 void supply_link_service(void);
 /** @brief The PROG_SUPPLY page (link 4.32) on a board that switches the
  *         programming ports' own supply: its state read, and the OFF an
@@ -1468,9 +1962,16 @@ void prog5v_watch_on(prog5v_on_t *out);
 
 /* ------------------------------------------------------------- panel_arm.c */
 
+/**
+ * @brief Set up the bench's own state before the control loop; ends by
+ *        setting s_pump_live.
+ * @param sim the bench model
+ * @param bench the bench sample
+ */
 void control_setup(telemetry_sim_t *sim, bench_state_t *bench);
 /* The bench's totals, and when they last counted. */
-extern bench_totals_t s_totals;
+extern bench_totals_t s_totals;  /**< The bench's totals. */
+/** @brief When the totals last counted, now_ms(). */
 extern uint32_t       s_totals_ms;
 /** @brief The supply's last reading for a SERVO run's rows (log_rail_t).
  *         Control task only. */
@@ -1481,15 +1982,30 @@ extern bench_totals_t s_rail_totals;
  *         packed (log_servo_pack()): stored by the render side each frame,
  *         read by the control task. */
 extern atomic_uint    s_servo_log;
+/**
+ * @brief Look at the touch stream for an arm being handed over, once a pass
+ *        after the snapshot.
+ * @param link_up whether the link to the IOmcu answers
+ */
 void arm_watch_service(bool link_up);
 /* The latched stop, and the act the arming policy asks for. */
 void service_arming(bool link_up);
+/**
+ * @brief Disarm the bench, and tell the far end while there is a link.
+ * @param link_up whether the link to the IOmcu answers
+ * @return true when a disarm was applied
+ */
 bool disarm_here(bool link_up);
-/* What the screens asked for, in the order they asked it. */
+/**
+ * @brief What the screens asked for, in the order they asked it.
+ * @param link_up whether the link to the IOmcu answers
+ * @param bench the bench sample
+ */
 void drain_commands(bool link_up, bench_state_t *bench);
 
 /* ---------------------------------------------------------- panel_render.c */
 
+/** @brief Serve the servo programmer's model, once a frame on app_main. */
 void kst_ui_service(void);
 /** @brief The Hitec programmer's model, once a frame on app_main. */
 void hitec_ui_service(void);
@@ -1507,23 +2023,50 @@ extern atomic_uint     s_esc_card_sent;
 extern atomic_uint     s_esc_card_answered;
 /** @brief Runs the request handed over, on the log task. */
 void esc_card_serve(void);
-extern unsigned s_tq_lost;
+extern unsigned s_tq_lost;  /**< Touch events lost from s_touch_q, counted. */
+/**
+ * @brief Whether the supply's output is on, or an ON for it waits in the
+ *        queue.
+ * @return true while the output is on or an ON waits in the queue
+ */
 bool supply_live_or_coming(void);
 /** @brief supply_live_or_coming(), or the programming ports' own supply
  *         live (s_psup_live): what the install, update and flash gates
  *         wait on.
  *  @return true while either supply is on or coming */
 bool supplies_live_or_coming(void);
+/**
+ * @brief Publish the supply screen's limits and set points for the control
+ *        task; every frame.
+ */
 void publish_supply_levels(void);
+/** @brief Hand a servo test's lines to the logger; every frame. */
 void test_lines_service(void);
+/** @brief The rotary knob's motion, taken at the start of a frame. */
 typedef struct {
-    int            steps;
-    ui_screen_id_t route;
+    int            steps;  /**< Steps turned; signed. */
+    ui_screen_id_t route;  /**< The screen the knob was turned on. */
+    /** @brief The router's navigation count when the motion was taken. */
     uint32_t       navigations;
 } knob_turn_t;
 
+/**
+ * @brief Take the rotary knob's motion with the screen it was turned on and
+ *        the router's navigation count; start of a frame.
+ * @return the motion
+ */
 knob_turn_t knob_take(void);
+/**
+ * @brief Apply a motion taken at the start of the frame to the slider of the
+ *        screen on top; end of the frame.
+ * @param turn what knob_take() returned
+ * @param frame_lost whether the frame lost touch events
+ */
 void knob_apply(const knob_turn_t *turn, bool frame_lost);
+/**
+ * @brief Hand the screens' queued commands to the control task; once a frame.
+ * @param stops_now the stop count the commands carry
+ */
 void flush_screen_commands(uint32_t stops_now);
 bool drain_touch(uint32_t stops_now, const shot_facts_t *facts);
 /**
@@ -1532,23 +2075,62 @@ bool drain_touch(uint32_t stops_now, const shot_facts_t *facts);
  * @param facts  this frame's facts of the screenshot gate (panel_shot_frame())
  */
 void backlight_service(const shot_facts_t *facts);
+/**
+ * @brief Print Dim after's state on the console, one line
+ *        (screen_dim_line()).  Render loop only; the console's schedule
+ *        calls it once every PERF_WINDOW_FRAMES frames (panel_perf.h).
+ */
+void backlight_line(void);
+/**
+ * @brief Queue the outputs screen's choice for the control task.
+ * @param b the choice
+ */
 void outputs_apply(const outbind_t *b);
 
 /* ------------------------------------------------------------- panel_art.c */
 
+/**
+ * @brief The flash store of the boardart partition, NULL when there is none.
+ */
 extern const art_flash_t *s_artflash;
 /* A drawing fetch is under way; see art_begin(). */
+/** @brief Whether a drawing fetch is under way. */
 extern bool               s_artbusy;
+/** @brief Whether the kept copy of the drawing is being written. */
 extern atomic_bool        s_keeping;
+/** @brief Guards the published drawing: s_drawpub, its size and its board. */
 extern SemaphoreHandle_t  s_draw_lock;
+/**
+ * @brief The drawing the control task published, LINK_DRAW_MAX_BYTES in
+ *        PSRAM.
+ */
 extern uint8_t           *s_drawpub;
+/** @brief The UI task's copy of the drawing, in PSRAM. */
 extern uint8_t           *s_drawshow;
+/**
+ * @brief The picker asks for a board's drawing; UI task only.
+ * @param board the board identity
+ */
 void drawing_for_picker(uint16_t board);
+/**
+ * @brief Ask again for the drawing when a publication came since the picker
+ *        last asked; UI task only.
+ */
 void drawing_follow(void);
+/** @brief One step of the keep of the board's drawing; control task. */
 void art_keep_service(void);
-/* The board drawing, a slice of a poll at a time. */
+/**
+ * @brief End the fetch of the board's drawing.
+ * @param why the reason, for the log
+ */
 void art_stop(const char *why);
+/**
+ * @brief On the link-up edge, withdraw the last drawing and begin the fetch
+ *        of this one.
+ * @param board the board identity the IOmcu reported
+ */
 void art_begin(uint16_t board);
+/** @brief One bounded slice of the drawing's fetch; control task. */
 void art_slice(void);
 
 /* ---------------------------------------------------------- panel_update.c */
@@ -1556,27 +2138,56 @@ void art_slice(void);
 /* An install about to write the flash asks the control task to stand
  * still (s_fw_quiet_req), and the control task says it does
  * (s_fw_quiet_ack).  False when wifi_access_init() failed (s_wifi_ok). */
+/**
+ * @brief An install about to write the flash asks the control task to stand
+ *        still.
+ */
 extern atomic_bool s_fw_quiet_req;
-extern atomic_bool s_fw_quiet_ack;
-extern bool        s_wifi_ok;
+extern atomic_bool s_fw_quiet_ack;  /**< The control task stands still. */
+extern bool        s_wifi_ok;  /**< False when wifi_access_init() failed. */
 
-/* An IOmcu of another protocol major answering the probe; control
- * task.  panel_poll.c. */
+/**
+ * @brief An IOmcu of another protocol major answering the probe; control
+ *        task.  panel_poll.c.
+ */
 extern link_uph_mismatch_t s_mismatch;
 
-/* Whether the IOmcu's update may start: see fw_coproc_may_start().
- * From any task. */
+/**
+ * @brief Whether the IOmcu's update may start: see fw_coproc_may_start().
+ *        From any task.
+ * @return true when the IOmcu's update may start
+ */
 bool cu_may_start(void);
-/* The IOmcu update's check, for an IOmcu that just answered. */
+/**
+ * @brief The IOmcu update's check, for an IOmcu that just answered.
+ * @param reply the identity answer
+ */
 void cu_link_up(const link_msg_t *reply);
-/* One pass of the IOmcu's update, before the poll: true while the
- * update holds the link.  Control task. */
+/**
+ * @brief One pass of the IOmcu's update, before the poll: true while the
+ *        update holds the link.  Control task.
+ * @param link_up the poll's link flag
+ * @param bench the bench sample
+ * @param last_poll the bench poll gate's clock
+ * @param last_status the status gate's clock
+ * @return true while the update holds the link
+ */
 bool cu_service(bool *link_up, bench_state_t *bench,
                 uint32_t *last_poll, uint32_t *last_status);
 
-/* Once a frame on app_main: WI-FI, the reminder, SETUP > UPDATES
- * and the IOmcu update's screen. */
+/**
+ * @brief Serve the WI-FI screen's radio, STOP and requests; once a frame on
+ *        app_main.
+ * @param armed ARMED, or an arm waiting
+ * @param stops_now STOP presses since the start; a change is a STOP
+ */
 void wifi_service(bool armed, uint32_t stops_now);
+/**
+ * @brief Serve the update reminder; once a frame on app_main.
+ * @param armed ARMED, or an arm waiting
+ * @param unsafe ARMED, an arm waiting, or the supply's output on or coming on
+ * @param cs the IOmcu update's state this frame
+ */
 void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
 /**
  * @brief SETUP > UPDATES, the reminder and the download, once a frame.
@@ -1588,4 +2199,10 @@ void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
  */
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs);
+/**
+ * @brief Drive the IOmcu update's screen; once a frame on the render side.
+ * @param unsafe ARMED, an arm waiting, or the supply's output on or coming
+ * @param link_up whether the link to the IOmcu answers
+ * @param cs the IOmcu update's state this frame
+ */
 void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs);

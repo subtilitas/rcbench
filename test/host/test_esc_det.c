@@ -1,6 +1,6 @@
 /*
  * Stick programming: the beep detector on its own (esc_det.c), fed supply
- * readings at a chosen rate.
+ * readings at a chosen rate, and the phase tap's measured beeps.
  *
  * The cases that matter most are the ones where a count could go wrong: a
  * beep that never shows in the current must not become a selection of the
@@ -213,6 +213,84 @@ TEST_CASE(the_floor_is_the_lowest_current_before_counting)
     CHECK(!det.group_open);
 }
 
+/* ------------------------------------------------- the tap's beeps */
+
+/* The detector as a tap run starts it: counting from no beep heard, so the
+ * quiet before the first group is not known yet. */
+static void tap_fresh(void)
+{
+    esc_stick_timing_t t;
+    esc_stick_timing_defaults(&t);
+    esc_det_init(&det, &t, 0u);
+    esc_det_count(&det);
+}
+
+/* Beeps that start before GROUP GAP (700ms) of quiet has passed are the tail
+ * of a group already sounding: each opens nothing and moves the quiet's
+ * start to its end.  The first beep 700ms after the last one ended opens a
+ * group, and the silence after it ends that group. */
+TEST_CASE(tap_beeps_open_a_group_only_after_a_whole_quiet)
+{
+    CHECK_EQ(esc_det_beep(NULL, 0u, 250u), ESC_DET_NONE);
+    tap_fresh();
+    CHECK(det.wait_quiet);
+    CHECK(!det.quiet_known);
+    CHECK_EQ(esc_det_beep(&det, 1000u, 250u), ESC_DET_NONE);
+    CHECK(det.quiet_known);
+    CHECK_EQ(det.quiet_from, 1250u);
+    CHECK_EQ(esc_det_beep(&det, 1500u, 250u), ESC_DET_NONE);   /* 250ms on */
+    CHECK_EQ(det.quiet_from, 1750u);
+    CHECK(!det.group_open);
+    CHECK_EQ(esc_det_beep(&det, 2450u, 250u), ESC_DET_PULSE);  /* 700ms on */
+    CHECK(!det.wait_quiet);
+    CHECK(det.group_open);
+    CHECK_EQ(esc_det_beep(&det, 2900u, 250u), ESC_DET_PULSE);  /* gap 200ms */
+    CHECK_EQ(esc_det_quiet(&det, 3849u), ESC_DET_NONE);
+    CHECK_EQ(esc_det_quiet(&det, 3850u), ESC_DET_GROUP);
+    CHECK_EQ(det.count, 2);
+    CHECK(det.valid);
+}
+
+/* No beep heard since counting began: the quiet starts at the first quiet
+ * state, and a beep GROUP GAP after it opens a group. */
+TEST_CASE(the_tap_quiet_starts_at_the_first_quiet_state)
+{
+    tap_fresh();
+    CHECK_EQ(esc_det_quiet(&det, 5000u), ESC_DET_NONE);
+    CHECK(det.quiet_known);
+    CHECK_EQ(det.quiet_from, 5000u);
+    CHECK_EQ(esc_det_quiet(&det, 5699u), ESC_DET_NONE);
+    CHECK(det.wait_quiet);
+    CHECK_EQ(esc_det_quiet(&det, 5700u), ESC_DET_NONE);
+    CHECK(!det.wait_quiet);
+    CHECK_EQ(esc_det_beep(&det, 6000u, 250u), ESC_DET_PULSE);
+    CHECK(det.group_open);
+}
+
+/* A beep that began less than GROUP GAP after the group before ended
+ * belonged to that group, which esc_det_quiet() ended too early: the beep
+ * is ESC_DET_LATE, opens nothing, and the detector waits for a whole quiet
+ * again. */
+TEST_CASE(a_tap_beep_of_a_group_already_ended_is_late)
+{
+    tap_fresh();
+    (void)esc_det_quiet(&det, 0u);
+    (void)esc_det_quiet(&det, 700u);
+    CHECK(!det.wait_quiet);
+    CHECK_EQ(esc_det_beep(&det, 1000u, 250u), ESC_DET_PULSE);
+    CHECK_EQ(esc_det_quiet(&det, 1950u), ESC_DET_GROUP);       /* 700ms on */
+    CHECK_EQ(det.count, 1);
+    CHECK_EQ(esc_det_beep(&det, 1900u, 250u), ESC_DET_LATE);   /* 650ms on */
+    CHECK(det.wait_quiet);
+    CHECK_EQ(det.quiet_from, 2150u);
+    CHECK(!det.group_open);
+    CHECK_EQ(esc_det_beep(&det, 2400u, 250u), ESC_DET_NONE);
+    CHECK_EQ(esc_det_quiet(&det, 3350u), ESC_DET_NONE);        /* 700ms on */
+    CHECK(!det.wait_quiet);
+    CHECK_EQ(esc_det_beep(&det, 3400u, 250u), ESC_DET_PULSE);
+    CHECK(det.group_open);
+}
+
 int main(void)
 {
     RUN(beeps_make_a_group_that_silence_ends);
@@ -223,5 +301,8 @@ int main(void)
     RUN(a_current_that_stays_high_is_reported_once);
     RUN(a_pulse_ending_on_tick_zero_starts_the_quiet_at_the_fall);
     RUN(the_floor_is_the_lowest_current_before_counting);
+    RUN(tap_beeps_open_a_group_only_after_a_whole_quiet);
+    RUN(the_tap_quiet_starts_at_the_first_quiet_state);
+    RUN(a_tap_beep_of_a_group_already_ended_is_late);
     return test_summary("esc_det");
 }

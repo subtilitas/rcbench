@@ -252,12 +252,20 @@ TEST_CASE(the_rate_line_closes_each_window_and_the_window_line_follows)
 {
     CHECK_EQ(perf_line_due(0u), PERF_LINE_RATE);
     CHECK_EQ(perf_line_due(1u), PERF_LINE_WINDOW);
-    CHECK_EQ(perf_line_due(2u), PERF_LINE_LOW);
+    CHECK_EQ(perf_line_due(2u), PERF_LINE_DIM);
+    CHECK_EQ(perf_line_due(3u), PERF_LINE_LOW);
     CHECK_EQ(perf_line_due(299u), PERF_LINE_LOW);
     CHECK_EQ(perf_line_due(300u), PERF_LINE_RATE);
     CHECK_EQ(perf_line_due(301u), PERF_LINE_WINDOW);
-    CHECK_EQ(perf_line_due(302u), PERF_LINE_LOW);
+    CHECK_EQ(perf_line_due(302u), PERF_LINE_DIM);
+    CHECK_EQ(perf_line_due(303u), PERF_LINE_LOW);
     CHECK_EQ(perf_line_due(600u), PERF_LINE_RATE);
+    /* One Dim after line a window. */
+    uint32_t dims = 0u;
+    for (uint32_t f = 0u; f < 3u * PERF_WINDOW_FRAMES; ++f) {
+        dims += (perf_line_due(f) == PERF_LINE_DIM) ? 1u : 0u;
+    }
+    CHECK_EQ(dims, 3u);
 }
 
 TEST_CASE(the_window_across_the_wrap_is_196_frames)

@@ -1,6 +1,8 @@
-"""The home grid's column check: overview_screen.c compiles with its tiles as
-they are, and a fourth workbench or a fourth instrument at 4 columns fails
-the build with the assertion's message.
+"""The home grid's column check.
+
+overview_screen.c compiles with its tiles as they are, and a fourth workbench
+or a fourth instrument at 4 columns fails the build with the assertion's
+message.
 
 SPDX-License-Identifier: MIT
 """
@@ -23,8 +25,10 @@ pytestmark = pytest.mark.skipif(shutil.which("cc") is None,
 
 
 def compile_copy(tmp_path, text):
-    """cc -fsyntax-only on @p text in a copy next to nothing else: the
-    includes are the tree's."""
+    """Run cc -fsyntax-only on @p text in a copy next to nothing else.
+
+    The includes are the tree's.
+    """
     copy = tmp_path / "overview_screen.c"
     copy.write_text(text, encoding="utf-8")
     cmd = ["cc", "-std=c11", "-fsyntax-only", str(copy)]
@@ -46,23 +50,27 @@ EXTRA = ('    { SCREEN_LOGS, "EXTRA", TX_OV_LOGS, ui_icon_record, 0, '
 
 
 def test_the_grid_as_it_is_compiles(tmp_path):
+    """The grid as it is compiles."""
     proc = compile_copy(tmp_path, SRC.read_text(encoding="utf-8"))
     assert proc.returncode == 0, proc.stderr
 
 
 def test_a_fourth_workbench_fails_the_build(tmp_path):
+    """A fourth workbench fails the build."""
     proc = compile_copy(tmp_path, with_extra("k_workbenches", EXTRA))
     assert proc.returncode != 0
     assert "a workbench past column COLS - 1 needs COLS 5" in proc.stderr
 
 
 def test_a_fourth_instrument_fails_the_build(tmp_path):
+    """A fourth instrument fails the build."""
     proc = compile_copy(tmp_path, with_extra("k_instruments", EXTRA))
     assert proc.returncode != 0
     assert "an instrument past column COLS - 1 needs COLS 5" in proc.stderr
 
 
 def test_a_third_tile_in_the_last_column_fails_the_build(tmp_path):
+    """A third tile in the last column fails the build."""
     proc = compile_copy(tmp_path, with_extra("k_last_column", EXTRA))
     assert proc.returncode != 0
     assert "the last column holds LOGS over SETUP" in proc.stderr

@@ -58,15 +58,18 @@ FAMILY_DE_MAX = 120     # bytes of the German family: ESC_FAMILY_DE_MAX
 
 
 class Bad(Exception):
+    """A profile that the generator refuses."""
     pass
 
 
 def want(cond: bool, where: str, what: str) -> None:
+    """Raise Bad with @p where and @p what unless @p cond holds."""
     if not cond:
         raise Bad(f"{where}: {what}")
 
 
 def text(d: dict, key: str, where: str, empty_ok: bool = False) -> str:
+    """The string field @p key of @p d; empty only when @p empty_ok."""
     v = d.get(key)
     want(isinstance(v, str), f"{where}.{key}", "not a string")
     want(empty_ok or v != "", f"{where}.{key}", "empty")
@@ -75,6 +78,7 @@ def text(d: dict, key: str, where: str, empty_ok: bool = False) -> str:
 
 def num(d: dict, key: str, where: str, hi: int, null_ok: bool = True,
         lo: int = 0) -> int | None:
+    """The whole number field @p key of @p d in @p lo to @p hi, or None."""
     v = d.get(key)
     if v is None:
         want(null_ok, f"{where}.{key}", "missing")
@@ -86,6 +90,7 @@ def num(d: dict, key: str, where: str, hi: int, null_ok: bool = True,
 
 
 def pick(d: dict, key: str, where: str, table: dict) -> str:
+    """The table value for the string field @p key of @p d."""
     v = d.get(key)
     # A string first: a list or an object is not hashable, and the card
     # reader refuses it as it refuses any other unknown value.
@@ -101,10 +106,12 @@ MAX_MEMBERS = 64        # members of one object
 
 
 def no_twice(pairs: list[tuple[str, object]]) -> dict:
-    """An object, refused if a key comes twice: json.loads() would keep the
-    last and esc_profile_parse() refuses the file, so neither may pass it.
-    Nor one with more than MAX_MEMBERS, where the duplicate check would
-    cost the panel time quadratic in the count."""
+    """An object, refused if a key comes twice.
+
+    json.loads() would keep the last and esc_profile_parse() refuses the file,
+    so neither may pass it.  Nor one with more than MAX_MEMBERS, where the
+    duplicate check would cost the panel time quadratic in the count.
+    """
     if len(pairs) > MAX_MEMBERS:
         raise Bad(f"an object with more than {MAX_MEMBERS} members")
     out: dict = {}
@@ -116,6 +123,7 @@ def no_twice(pairs: list[tuple[str, object]]) -> dict:
 
 
 def no_constant(name: str) -> float:
+    """Refuse NaN and the infinities, which JSON has no number for."""
     raise Bad(f"{name} is not a JSON number")
 
 
@@ -131,9 +139,10 @@ def no_deeper(v: object, where: str, depth: int = 0) -> None:
 
 
 def optional(d: dict, key: str, where: str, kind: type, default: object):
-    """A field that may be absent or null, and is of @kind when present:
-    `false` or `0` is not an empty value here, as it is not to the card
-    reader."""
+    """A field that may be absent or null, and is of @kind when present.
+
+    `false` or `0` is not an empty value here, as it is not to the card reader.
+    """
     v = d.get(key)
     if v is None:
         return default
@@ -142,9 +151,12 @@ def optional(d: dict, key: str, where: str, kind: type, default: object):
 
 
 def no_nul(v: object, where: str) -> None:
-    """No string holds U+0000, which in C would end the string early, nor
+    """No string holds U+0000 or half a surrogate pair.
+
+    No string holds U+0000, which in C would end the string early, nor
     half a surrogate pair, which json.loads() keeps and UTF-8 cannot carry.
-    Keys too: esc_profile_parse() checks every string in the file."""
+    Keys too: esc_profile_parse() checks every string in the file.
+    """
     if isinstance(v, str):
         want("\0" not in v, where, "a string holds \\u0000")
         want(not any(0xD800 <= ord(c) <= 0xDFFF for c in v), where,
@@ -159,10 +171,12 @@ def no_nul(v: object, where: str) -> None:
 
 
 def after_select(v: dict, w: str, before: str) -> list[str]:
-    """The moves a value asks for after its select move: absent or null,
-    none; else 1 to AFTER_MAX of min, mid, max, each a move: not where the
-    stick already is -- @before, the store move or else the move that
-    stores the value, for the first; the one before it for the rest."""
+    """The moves a value asks for after its select move.
+
+    Absent or null, none; else 1 to AFTER_MAX of min, mid, max, each a move:
+    not where the stick already is -- @before, the store move or else the move
+    that stores the value, for the first; the one before it for the rest.
+    """
     a = v.get("after_select")
     if a is None:
         return []
@@ -181,9 +195,11 @@ def after_select(v: dict, w: str, before: str) -> list[str]:
 
 
 def check_manual(d: dict, w: str, auto: str) -> list[dict]:
-    """The operator's steps at the ESC: absent or null, none.  Only an
-    assisted profile has them, at most MANUAL_MAX, in the order a run
-    meets them."""
+    """The operator's steps at the ESC: absent or null, none.
+
+    Only an assisted profile has them, at most MANUAL_MAX, in the order a run
+    meets them.
+    """
     man = d.get("manual")
     if man is None:
         return []
@@ -479,10 +495,12 @@ def c_str(s: str) -> str:
 
 
 def ident(pid: str) -> str:
+    """The C identifier of the profile @p pid."""
     return "p_" + pid.replace("-", "_")
 
 
 def emit(profiles: list[dict]) -> str:
+    """The C source for @p profiles."""
     o = ["/*\n"
          " * Generated by tools/gen_esc_profiles.py from\n"
          " * shared/esc/profiles/.\n"
@@ -560,10 +578,13 @@ def emit(profiles: list[dict]) -> str:
 
 
 def self_test() -> list[str]:
-    """The inputs test_esc_profiles.c holds the card reader to, held to the
+    """The inputs test_esc_profiles.c holds the card reader to.
+
+    The inputs test_esc_profiles.c holds the card reader to, held to the
     generator: each mutation of a profile of record must be refused, and
     each control accepted.  Run by --check, so a rule dropped here fails CI
-    as a rule dropped in C does."""
+    as a rule dropped in C does.
+    """
     base = (SRC / "align-rce-bl15x.json").read_text(encoding="utf-8")
 
     def at(old: str, new: str) -> bytes:
@@ -876,6 +897,7 @@ def self_test() -> list[str]:
 
 
 def main() -> int:
+    """Write the C profile table, or check it with --check."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="check without writing; fail if the committed C file "

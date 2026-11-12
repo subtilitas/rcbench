@@ -153,9 +153,10 @@ static const servo_state_t k_servo[] = {
     { "LIMIT RUN", SERVO_FN_LIMRUN, false, 2, 0,
       { TX_HG_SV_TITLE_LIMRUN, TX_HG_SV_TITLE_READY },
       { 2, 5 } },
+    /* Rotary knob OFF: -10us and +10us are the fifth item. */
     { "RUDDER", SERVO_FN_RUDDER, false, 4, 0,
       { TX_HG_SV_TITLE_RUDDER, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_DRV_READY, TX_HG_SV_TITLE_CARD },
-      { 4, 3, 5, 4 } },
+      { 5, 3, 5, 4 } },
     { "RUDDER AUTO", SERVO_FN_RAUTO, false, 3, 0,
       { TX_HG_SV_TITLE_AUTO, TX_HG_SV_TITLE_RUD_READ, TX_HG_SV_TITLE_READY },
       { 3, 2, 5 } },

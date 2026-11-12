@@ -302,12 +302,15 @@ panel therefore prints at most one of these lines a frame:
 
 - every 300 frames, 5.0s at 60.4fps and 9.9s at 30.2fps, the rate line;
 - on the frame after it, the window line;
+- on the frame after that, Dim after's line
+  ([PANEL: Dim after](Screens.md#panel-dim-after)), at most 101 bytes;
 - on the frames between, one line of the lows while one is due: the stack
   scan's time, the internal heap, then one stack.
 
 ```text
 I (…) rcbench: <f> fps  DRAW <n> us  WAIT <n> us  TURN <n> us  VSYNC <f> Hz  FLIP TIMEOUTS <n>  TOUCHLOST <panel>/<driver>
 I (…) rcbench: frames <n> on <title> #<id>: DRAW <min>/<mean>/<max> WAIT <min>/<mean>/<max> TURN <min>/<mean>/<max> us
+I (…) rcbench: dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%
 ```
 
 The two lines are 110 to 135 bytes, by the counters' digits and the
@@ -404,8 +407,8 @@ its stack less 1024 bytes.
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
 | `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,512 | 2,640 |
-| `control` | `control_task` | 6,144 | 3,632 | 1,472 |
-| `runlog` | `log_task` | 6,656 | 3,824 | 1,792 |
+| `control` | `control_task` | 6,144 | 3,664 | 1,440 |
+| `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,888 | 1,168 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |

@@ -137,7 +137,7 @@ A software restart preserves the clock. FAT stores timestamps in local time at t
 
 After the set minutes without a touch, the backlight's PWM (pulse-width modulation) duty drops from 100% to 20%. 0, the default, never dims. How much light 20% duty gives is not measured.
 
-- The screen dims only while the bench is idle, by the same rules as the screenshot's popup: SAFE, nothing on, no session, run, test, update or FAULT. ARMED, an output that comes on or a FAULT sets 100% at once.
+- The screen dims only while the bench is idle, by the same rules as the screenshot's popup: SAFE, nothing on, no session, run, test, update or FAULT. ARMED, an output that comes on or a FAULT sets 100% at once. A line written to the card's fault log, every 60s while the IOmcu is linked, does not count.
 - A touch sets 100% and starts the minutes again.
 - The first press on a dim screen only wakes it: it opens, steps or switches nothing. Press again to act. While the bench is not idle, every press acts.
 - A press on STOP always stops the bench, dim or not, and wakes the screen.

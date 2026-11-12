@@ -79,11 +79,14 @@ _Static_assert(PROG_LINK_NO_PIN == SERVO_SCREEN_NO_PIN
                && PROG_LINK_TARGET_UNKNOWN == SERVO_SCREEN_TARGET_UNKNOWN
                && PROG_LINK_TARGET_NO_LINK == SERVO_SCREEN_TARGET_NO_LINK,
                "the drive crosses to the SERVO screen unchanged");
+/** @brief The id of the last command the KST page answered. */
 static uint32_t           s_kst_answer_id;
+/** @brief The answer to the last ENTER or LEAVE of the KST page. */
 static kst_link_start_t   s_kst_answer;
+/** @brief Session outcomes counted, as kst_publish() hands them over. */
 static uint32_t           s_kst_outcomes;
-static kst_link_outcome_t s_kst_outcome;
-static uint32_t           s_kst_stops;    /* stops an abort was sent for */
+static kst_link_outcome_t s_kst_outcome;  /**< The latest session outcome. */
+static uint32_t           s_kst_stops;    /**< stops an abort was sent for */
 
 /**
  * @brief Whether a servo programmer, KST or Hitec, has a port or an
@@ -127,9 +130,11 @@ uint32_t prog_faults(void)
            + esc_link_faults(&s_esc_link);
 }
 
-/* The PROG page is not written and the tester commands no port while the
- * programmer has one (prog_link.h): by the link module as it stands now,
- * after the commands of the pass. */
+/**
+ * @brief The PROG page is not written and the tester commands no port while
+ *        the programmer has one (prog_link.h): by the link module as it
+ *        stands now, after the commands of the pass.
+ */
 static __attribute__((noinline)) void prog_hold_look(void)
 {
     kst_link_readout_t rd;
@@ -141,25 +146,29 @@ static __attribute__((noinline)) void prog_hold_look(void)
                                                : PROG_LINK_WAIT_NONE);
 }
 
-/* The part names as the alerts print them. */
+/** @brief The part names as the alerts print them. */
 static const char *const k_sense_part[2] = { "INA228", "INA3221" };
 
-/* The sensor alert posted and not yet seen taken: its number in the alert
- * slot (0 none) and its event.  Control task only. */
+/**
+ * @brief The sensor alert posted and not yet seen taken: its number in the
+ *        alert slot (0 none) and its event.  Control task only.
+ */
 static uint32_t s_sense_alert_gen;
-static uint32_t s_sense_alert_ev;
-/* The last alert posted about the set-up asked or an encoder not answering
- * (SENSE_LINK_EV_ENDS), kept until its cause is over: its number (0 none)
- * and its event. */
+static uint32_t s_sense_alert_ev;  /**< The event of that alert. */
+/**
+ * @brief The last alert posted about the set-up asked or an encoder not
+ *        answering (SENSE_LINK_EV_ENDS), kept until its cause is over: its
+ *        number (0 none) and its event.
+ */
 static uint32_t s_sense_setup_gen;
-static uint32_t s_sense_setup_ev;
+static uint32_t s_sense_setup_ev;  /**< The event of that alert. */
 
-/*
- * An alert about a set-up that is over is taken back: one the band shows
- * goes from it, one waiting for a frame is dropped and not put back.  A
- * refused value stepped back on SETUP is over once the IOmcu takes the
- * frame; unset pins and one address are over with the edit; an encoder not
- * answering is over with the read that finds it online.
+/**
+ * @brief An alert about a set-up that is over is taken back: one the band
+ *        shows goes from it, one waiting for a frame is dropped and not put
+ *        back.  A refused value stepped back on SETUP is over once the IOmcu
+ *        takes the frame; unset pins and one address are over with the edit;
+ *        an encoder not answering is over with the read that finds it online.
  */
 static void alert_drop(uint32_t *setup_gen, uint32_t *alert_gen)
 {
@@ -316,12 +325,13 @@ void sense_link_alerts(void)
     }
 }
 
-/*
- * The output encoder's readings to the SERVO screen: one per SENSE read
- * that moved the sample count, so a run sees each angle once, and one
- * "none" when the angle stops being readable, and another when its reason
- * changes between "no magnet" and any other.  sense_link_enc() hands out
- * an angle only while the sensor detects its magnet.  Control task only.
+/**
+ * @brief The output encoder's readings to the SERVO screen: one per SENSE
+ *        read that moved the sample count, so a run sees each angle once, and
+ *        one "none" when the angle stops being readable, and another when its
+ *        reason changes between "no magnet" and any other.  sense_link_enc()
+ *        hands out an angle only while the sensor detects its magnet.
+ *        Control task only.
  */
 static void enc_queue(void)
 {
@@ -374,15 +384,17 @@ static void enc_queue(void)
     }
 }
 
-/* The servo meter's alert posted and not yet seen taken: its number in the
- * alert slot (0 none) and its event.  Control task only. */
+/**
+ * @brief The servo meter's alert posted and not yet seen taken: its number in
+ *        the alert slot (0 none) and its event.  Control task only.
+ */
 static uint32_t s_source_alert_gen;
-static uint32_t s_source_alert_ev;
+static uint32_t s_source_alert_ev;  /**< The event of that alert. */
 
-/*
- * What the choice of the servo rail's meter says to the operator, one
- * event at a time into a free alert slot and followed until a frame has
- * taken it, as sense_link_alerts() does for the current monitors.
+/**
+ * @brief What the choice of the servo rail's meter says to the operator, one
+ *        event at a time into a free alert slot and followed until a frame
+ *        has taken it, as sense_link_alerts() does for the current monitors.
  */
 static void servo_source_alerts(void)
 {
@@ -530,14 +542,18 @@ void sense_link_service(bool idle, bench_state_t *bench)
     }
 }
 
-/* The tone alert posted and not yet seen taken: its number in the alert
- * slot (0 none) and its event.  Control task only. */
+/**
+ * @brief The tone alert posted and not yet seen taken: its number in the
+ *        alert slot (0 none) and its event.  Control task only.
+ */
 static uint32_t s_tone_alert_gen;
-static uint16_t s_tone_alert_ev;
-/* The last alert posted about the set-up asked (TONE_LINK_EV_SETUP), kept
- * until its cause is over, as s_sense_setup_gen is. */
+static uint16_t s_tone_alert_ev;  /**< The event of that alert. */
+/**
+ * @brief The last alert posted about the set-up asked (TONE_LINK_EV_SETUP),
+ *        kept until its cause is over, as s_sense_setup_gen is.
+ */
 static uint32_t s_tone_setup_gen;
-static uint16_t s_tone_setup_ev;
+static uint16_t s_tone_setup_ev;  /**< The event of that alert. */
 
 /*
  * What the TONE page said that the operator is told, one event at a time
@@ -711,7 +727,7 @@ __attribute__((noinline)) void kst_link_service(void)
     }
 }
 
-/* One read of the programming ports' page, into s_prog_link. */
+/** @brief One read of the programming ports' page, into s_prog_link. */
 static __attribute__((noinline)) void prog_page_read(void)
 {
     link_msg_t reply = { 0 };

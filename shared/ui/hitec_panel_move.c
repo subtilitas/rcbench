@@ -39,12 +39,6 @@
 /** @brief The degree sign, UTF-8. */
 #define DEG "\xc2\xb0"
 
-/* The -/+ keys repeat as KST's and SETUP's do. */
-#define REPEAT_DELAY_S 0.45f  /**< delay before the first repeat, 0.45s  */
-#define REPEAT_SLOW_HZ 8.0f   /**< repeat rate after the delay, 8Hz      */
-#define REPEAT_FAST_S  1.8f   /**< from the first repeat to the fast rate */
-#define REPEAT_FAST_HZ 30.0f  /**< repeat rate once fast, 30Hz           */
-
 /* ------------------------------------------------------------------ keys */
 
 bool hpn_stepped(const hpn_row_t *r)
@@ -92,25 +86,14 @@ void hpn_step_draw(gfx_canvas_t *c, const hpn_row_t *r, int i)
 
 void hpn_step_tick(float dt_s)
 {
-    float before;
-    float hz;
-    int fired_before;
-    int fired_now;
+    int n;
 
     if (!hp.have || (hp.pressed != P_PLUS && hp.pressed != P_MINUS)) {
         return;
     }
-    before = hp.held_s;
-    hz = before > REPEAT_DELAY_S + REPEAT_FAST_S ? REPEAT_FAST_HZ
-                                                 : REPEAT_SLOW_HZ;
-    hp.held_s += ui_hold_credit(dt_s);
-    if (hp.held_s < REPEAT_DELAY_S) {
-        return;
-    }
-    fired_before = before < REPEAT_DELAY_S
-                       ? 0 : 1 + (int)((before - REPEAT_DELAY_S) * hz);
-    fired_now = 1 + (int)((hp.held_s - REPEAT_DELAY_S) * hz);
-    for (int i = fired_before; i < fired_now; ++i) {
+    /* The -/+ keys repeat as KST's and SETUP's do. */
+    n = ui_key_repeat(&hp.held_s, dt_s);
+    for (int i = 0; i < n; ++i) {
         if (!hpn_step(&hpn_rows[hp.row], hp.pressed == P_PLUS)) {
             /* Refused, or MOVE SERVO went off: the repeat ends. */
             hp.have = false;

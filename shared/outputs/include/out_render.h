@@ -57,11 +57,46 @@ extern "C" {
  * times the IOmcu's 50Hz sampling, fifty times the panel's 20Hz poll, and
  * inside every ESC's own signal timeout.  For bidirectional DShot it is also
  * the telemetry rate: 1,000 speed readings a second.
+ *
+ * The rate is held by the IOmcu's main loop, not by a timer: a frame sent
+ * more than OUT_RENDER_DSHOT_PERIOD_US - OUT_RENDER_DSHOT_MIN_US (500us)
+ * late moves the grid later by the excess, and a pass longer than a period
+ * costs the frames due inside it.
  */
 #define OUT_RENDER_DSHOT_HZ         1000u
 
-/** @brief The time between two DShot frames of one pin, in microseconds. */
+/**
+ * @brief The time between two DShot due times of one pin, in microseconds.
+ *
+ * The due times are a fixed grid: each is the one before it plus this
+ * period, not the pass that sent a frame plus this period.  A frame goes out
+ * on the first pass at or after its due time, so a late pass delays its own
+ * frame and no later one, and the frames average OUT_RENDER_DSHOT_HZ for as
+ * long as no frame is late by more than OUT_RENDER_DSHOT_MIN_US.
+ */
 #define OUT_RENDER_DSHOT_PERIOD_US  (1000000u / OUT_RENDER_DSHOT_HZ)
+
+/**
+ * @brief The least time from one DShot frame of a pin to the next due time,
+ *        in microseconds: half a period.
+ *
+ * A frame sent more than this late would otherwise leave its successor due
+ * less than this after it, and a frame sent after a stall of a whole period
+ * or more would leave every missed due time due at once, a burst of frames
+ * one pass apart.  The next due time is then this long after the late frame,
+ * and the grid runs on from there.
+ *
+ * 500us against the longest DShot exchange this bench runs: a bidirectional
+ * DShot150 frame of 16 bits at 6.67us is 107us, the ESC's turnaround about
+ * 30us and its 21-bit reply at 187.5kbit/s 112us, 249us in all; the
+ * receiver's capture of 4 FIFO words ends about 272us after the frame
+ * starts (calculated, not measured).  On a pin
+ * the gap can read shorter than this by the time between the due test and
+ * the frame reaching the PIO (programmable input/output) FIFO (first in
+ * first out): an interrupt taken in between delays the frame and not the
+ * grid.
+ */
+#define OUT_RENDER_DSHOT_MIN_US     (OUT_RENDER_DSHOT_PERIOD_US / 2u)
 
 /**
  * @brief The most channels one PPM frame carries: the bank's limit for a

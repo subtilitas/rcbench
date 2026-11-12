@@ -451,9 +451,9 @@ request and a new one does.
   A renamed or moved file counts as new, so splitting a file documents
   every function that moves. An old gap on a line the pull request does
   not touch stays listed.
-- ruff's D rules (pydocstyle, Google convention) in `ruff.toml`. A file
-  not listed under `[lint.per-file-ignores]` passes every D rule; a listed
-  file is excused the codes on its line.
+- ruff's D rules (pydocstyle, Google convention) in `ruff.toml`. Every
+  Python file passes every D rule: a missing or malformed docstring is an
+  error, and no file is excused.
 
 `doc_check.py` and `tools/install_doxygen.sh` run on Linux on x86-64, as
 in CI. On Windows (Git Bash), `doc_check.py` runs with a Doxygen 1.18.0
@@ -468,9 +468,6 @@ tools/install_doxygen.sh 1.18.0 <DOXYGEN_SHA256 from ci.yml> ~/doxygen-1.18.0
 python3 tools/doc_check.py --update --doxygen ~/doxygen-1.18.0/bin/doxygen
 git diff tools/doc_check_baseline.txt    # removed lines only
 ```
-
-For Python, delete the fixed codes from the file's line in `ruff.toml`,
-and the line when no code is left, then run `ruff check .`.
 
 `mkdir -p build/doxygen && doxygen` at the repository root writes the
 HTML to `build/doxygen/html/`; GitHub Pages publishes it as the

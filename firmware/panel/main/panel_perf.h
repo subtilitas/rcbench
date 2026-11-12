@@ -57,7 +57,8 @@ void perf_probe_psram(void);
  *
  * Every PERF_WINDOW_FRAMES frames the rate line and the note of the
  * internal heap's lowest free figure; on the next frame the window line;
- * on the frames between, one line for the stack scan's time, the heap or a
+ * on the frame after it Dim after's line (backlight_line()); on the frames
+ * between, one line for the stack scan's time, the heap or a
  * stack whose figure fell, while one is due.  Every 6th rate line wants a
  * scan of every task's stack high-water mark, the first at the first rate
  * line; it runs on the first rate line after that with @p quiet set.

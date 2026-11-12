@@ -929,6 +929,8 @@ void svs_tick_body(float dt_s)
     flash_frame(&s.kx_hold, dt_s, &s.kx_rev);
     /* AUTO on RUDDER: START's hold, then the run. */
     rauto_frame(dt_s);
+    /* RUDDER's -10us or +10us held: its repeats. */
+    rudder_tick(dt_s);
 
     if (s.driving) {
         s.pulse += dt_s * 3.6f;         /* a little under two seconds a cycle */

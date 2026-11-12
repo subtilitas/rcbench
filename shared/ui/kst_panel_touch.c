@@ -458,19 +458,10 @@ void kst_panel_tick(float dt_s)
         }
     }
     if (k.have && (k.pressed == P_PLUS || k.pressed == P_MINUS)) {
-        const float before = k.held_s;
-        const float hz = before > REPEAT_DELAY_S + REPEAT_FAST_S
-                             ? REPEAT_FAST_HZ : REPEAT_SLOW_HZ;
-        int fired_before, fired_now;
+        /* The plus and minus keys repeat as SETUP's do. */
+        const int n = ui_key_repeat(&k.held_s, dt_s);
 
-        k.held_s += ui_hold_credit(dt_s);
-        if (k.held_s < REPEAT_DELAY_S) {
-            return;
-        }
-        fired_before = before < REPEAT_DELAY_S
-                           ? 0 : 1 + (int)((before - REPEAT_DELAY_S) * hz);
-        fired_now = 1 + (int)((k.held_s - REPEAT_DELAY_S) * hz);
-        for (int i = fired_before; i < fired_now && k.pressed != P_NONE; ++i) {
+        for (int i = 0; i < n && k.pressed != P_NONE; ++i) {
             kpn_step(&kpn_rows[k.row], k.pressed == P_PLUS);
             if (k.warn.open) {
                 /* A soft limit: the page takes over and the repeat ends. */

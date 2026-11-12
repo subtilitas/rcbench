@@ -222,9 +222,9 @@ TEST_CASE(the_reader_takes_the_groups_as_ina3221)
     log_csv_opts_default(&opts);
     log_analysis_t a;
     CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
-    CHECK_EQ(a.n_columns, 23);
-    CHECK_STR_EQ(a.columns[13].name, "port 1 current");
-    CHECK_STR_EQ(a.columns[19].name, "supply current");
+    CHECK_EQ(a.n_columns, 24);
+    CHECK_STR_EQ(a.columns[14].name, "port 1 current");
+    CHECK_STR_EQ(a.columns[20].name, "supply current");
     CHECK_STR_EQ(log_field_meta("port 1 current").group, "INA3221");
     CHECK_STR_EQ(log_field_meta("out 8 max").group, "INA3221");
     CHECK_STR_EQ(log_field_meta("supply voltage").group, "INA3221");
@@ -252,7 +252,7 @@ TEST_CASE(a_header_cut_in_the_groups_fails_the_writer)
     log_cols_t c;
     log_cols_from_map(m, &c);
     memset(&g_sink, 0, sizeof(g_sink));
-    g_room = 151u + 10u;            /* past "window;", inside the group */
+    g_room = 164u + 10u;            /* past "window;", inside the group */
     const log_sink_t sk = { .write = short_write, .flush = NULL,
                             .ctx = &g_sink };
     log_writer_t w;
@@ -312,9 +312,9 @@ TEST_CASE(the_longest_column_name_reads_back_whole)
     log_csv_opts_default(&opts);
     log_analysis_t a;
     CHECK_EQ(log_csv_analyse(&src, &opts, &a), LOG_OK);
-    CHECK_EQ(a.n_columns, 20);
-    CHECK_STR_EQ(a.columns[15].name, "supply 0x43 ch3 voltage");
-    CHECK_STR_EQ(a.columns[15].unit, "V");
+    CHECK_EQ(a.n_columns, 21);
+    CHECK_STR_EQ(a.columns[16].name, "supply 0x43 ch3 voltage");
+    CHECK_STR_EQ(a.columns[16].unit, "V");
 }
 
 int main(void)

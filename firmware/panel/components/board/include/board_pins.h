@@ -136,6 +136,7 @@ extern "C" {
  * reset sequence.
  */
 #define BOARD_TOUCH_I2C_ADDR        0x5D
+/** @brief The GT911's second I2C address. */
 #define BOARD_TOUCH_I2C_ADDR_ALT    0x14
 #define BOARD_TOUCH_PIN_RST         GPIO_NUM_23  /**< GT911 reset line, GPIO23 */
 

@@ -432,6 +432,9 @@ typedef struct {
      * programmer off the port while the motor is armed and this screen's
      * surfaces are not (servo_screen_set_bench_armed()). */
     bool       bench_armed;
+    /** @brief The rotary knob answers (servo_screen_set_knob()): RUDDER's
+     *         step keys stay hidden while its setting is on too. */
+    bool       knob_answers;
     /* The commanded value is the surface's rest and nothing has been
      * commanded since: it follows the rest through a change of profile. */
     bool       at_rest;

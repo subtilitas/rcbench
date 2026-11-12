@@ -15,7 +15,7 @@
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 
-static const char *TAG = "board";
+static const char *TAG = "board";  /**< ESP-IDF log tag. */
 
 /**
  * @var s_board

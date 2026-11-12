@@ -131,6 +131,16 @@ typedef struct {
      *        the row of servo_window, as SERVO_SENSE's CH2 and CH3 are.
      */
     bench_chw_t chw;
+    /**
+     * @brief The throttle the panel commands at this sample, 0 to 100%, the
+     *        same for PWM and DShot: on an IOmcu's sample the THROTTLE in
+     *        force when the sample was read (bench_throttle_t), on the
+     *        model's the throttle the model runs at (telemetry_sim_step()).
+     *        0 while the motor is not ARMED.  Not on the wire.
+     */
+    float    throttle_pct;
+    /** @brief throttle_pct is set; false on a row of a window alone. */
+    bool     throttle_ok;
 } bench_state_t;
 
 /**
@@ -195,6 +205,72 @@ void bench_state_run_starts(bench_state_t *b, uint16_t *regs);
  */
 void bench_state_log_row(const bench_state_t *b, bool whole,
                          bench_state_t *out);
+
+/**
+ * @brief The commanded throttle of the sample, into @p b.
+ *
+ * Clamped to 0 to 100%.  A value that is not finite sets none
+ * (throttle_ok false), which the log writes as an empty cell.  @p b NULL
+ * does nothing.
+ *
+ * @param b   The state to write.
+ * @param pct The commanded throttle, in %.
+ */
+void bench_state_set_throttle(bench_state_t *b, float pct);
+
+/**
+ * @brief The THROTTLE in force at the IOmcu, for the row of its sample.
+ *
+ * A write of the control page is in force once the IOmcu acknowledges it:
+ * its THROTTLE while its ARM arms the throttle outputs, 0 while it does
+ * not (ARM = 0, or an ARM of the surfaces alone).  A write refused or not
+ * answered changes nothing.  A BENCH sample takes the value in force when
+ * its read was asked, so a throttle written after that read, in the same
+ * poll, is on the row of the next sample and not on this one.  The IOmcu's
+ * own failsafe, which it reports through no write, is not seen.
+ */
+typedef struct {
+    uint16_t in_force;  /**< 0.01% steps, 0 to LINK_THROTTLE_MAX */
+    uint16_t sampled;   /**< in_force when the last BENCH read was asked */
+} bench_throttle_t;
+
+/**
+ * @brief Nothing in force: at the start and on each edge of the link,
+ *        where the IOmcu fails safe.
+ *
+ * @param t The throttle; NULL does nothing.
+ */
+void bench_throttle_reset(bench_throttle_t *t);
+
+/**
+ * @brief A control page write of THROTTLE @p hundredths and an ARM, and
+ *        its answer.
+ *
+ * @param t              The throttle; NULL does nothing.
+ * @param acked          true when the IOmcu acknowledged the write.
+ * @param throttle_armed true when the ARM written arms the throttle
+ *                       outputs.
+ * @param hundredths     The THROTTLE written, 0.01% steps; clamped to
+ *                       LINK_THROTTLE_MAX.
+ */
+void bench_throttle_written(bench_throttle_t *t, bool acked,
+                            bool throttle_armed, uint16_t hundredths);
+
+/**
+ * @brief A BENCH read is asked: the value in force becomes its sample's.
+ *
+ * @param t The throttle; NULL does nothing.
+ */
+void bench_throttle_sample(bench_throttle_t *t);
+
+/**
+ * @brief The sample's throttle onto @p b, in %, by
+ *        bench_state_set_throttle().
+ *
+ * @param t The throttle; NULL does nothing.
+ * @param b The sample; NULL does nothing.
+ */
+void bench_throttle_to_row(const bench_throttle_t *t, bench_state_t *b);
 
 /**
  * @brief Clear the peaks without disturbing the live readings.
