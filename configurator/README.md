@@ -147,7 +147,7 @@ node tools/pdf-samples.ts pdf-samples   # 2 PDF files: fewest wires in English, 
 | `v` | Format version, `1`. Another value gives the base setup and a notice. |
 | `f` | Ids of the functions the visitor ticked, comma separated. A function that the parts of the setup bring is not stored. A function that needs no part has no tick; its id in a link is dropped without a notice. |
 | `p` | Ids of parts the visitor owns. A test object is no such part: the page writes none. In a link, `p=servo` is read as `f=servo` and `p=esc` as `f=esc`, without a notice. The T-plug (`usbtap`) is no such part either: only the PD mini brings it. A link with `p=usbtap` loads and the id is dropped without a notice, like the id of a function that has no tick. Copy link, the print header and the PDF name the link without the id; the address of the page keeps it until a change. An id of that spelling under `f` or `o` keeps its notice. The PD mini of the same setup still brings the T-plug; without the PD mini the setup holds none. Any other id the catalogue does not offer as a tick keeps the notice. |
-| `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`, `servo5v`. |
+| `o` | Option tokens that differ from the default: `osoyoo`, `xt90`, `pd`, `servo5v`, `stickina`. |
 | `h` | Row tokens of the "have it" ticks of "Parts to buy", comma separated, in catalogue order. A token is the part id for the row of a part without a row id (`panel`), else the part id, a dot and the row id (`wire.dmm`). A token that names no row to buy of the setup is dropped and named in the notice: an unknown row, a part outside the setup, a part ticked under "Parts you own", a part the visitor brings, a row of the other variant. A link without `h` has no "have it" tick. |
 | `m` | Values of the motor simulator that differ from the default, in the order cells, resistance, rating, wiring. See "Motor simulator". A token the page does not offer is dropped and named in the notice; its value stays the default. A second token of the same value, as in `m=6s,3s`, is dropped and named: the first counts. A link without `m` has the default values. |
 | `l` | `en` or `de`. Written when it differs from the browser language. |
@@ -172,6 +172,10 @@ row of a part has none. A token never counts rows by position.
 A link without `servo5v` keeps the external servo supply. `test/fixtures/links-v1.json`
 holds 1192 links without that token and the parts, wires, active functions
 and variants each resolves to; `test/hash.test.ts` fails when one differs.
+A link without `stickina` counts the beeps of ESC STICK programming from the
+phase tap: a link that names `stick` resolves with the parts `sim` and `tap`.
+The fixture holds that result and no key of the servo supply, the beep source
+or the servo signal pin.
 The fixture lists the power path of the PD mini as wire 19 alone. The test
 reads wire 63, the second half of that path, apart: it stands in a setup
 exactly when wire 19 does.
@@ -483,7 +487,7 @@ Every wire runs in right angles through numbered lanes and carries its wire
 number in a pill at each module end.
 
 `test/layout.test.ts` draws every distinct setup the resolver gives for every
-subset of the 12 functions with a tick and every subset of the 8 selectable parts, in all 16
+subset of the 12 functions with a tick and every subset of the 8 selectable parts, in all 32
 option combinations and both languages. It fails when:
 
 - a wire has no path, leaves the canvas or runs outside a lane gutter,

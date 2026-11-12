@@ -148,6 +148,12 @@ static uint32_t prog_signature(void)
                                 : PROG_REG_NO_PIN;
         sig = sig * 31u + (uint32_t)prog_reg_state(rows, n, i, caps) * 257u
               + pin + (uint32_t)prog_reg_port(&rows[i]) * 65537u;
+        /* And the warning a live row carries, which follows the bench. */
+        char warn[48];
+        (void)prog_reg_warning(rows, n, i, caps, warn, sizeof(warn));
+        for (const char *ch = warn; *ch != '\0'; ++ch) {
+            sig = sig * 31u + (uint8_t)*ch;
+        }
     }
     return sig;
 }

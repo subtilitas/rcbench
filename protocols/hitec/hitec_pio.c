@@ -80,7 +80,14 @@ uint32_t hitec_pio_bit_ns(const hitec_pio_clock_t *clock)
                        + clock->sys_hz / 2u) / clock->sys_hz);
 }
 
-uint32_t hitec_pio_cycles_ns(const hitec_pio_clock_t *clock, uint64_t cycles)
+/**
+ * @brief @p cycles state machine cycles of @p clock, in ns, rounded down.
+ *
+ * @param clock   Divider and counts.
+ * @param cycles  State machine cycle count.
+ * @return cycles converted to ns, rounded down.
+ */
+static uint32_t hitec_pio_cycles_ns(const hitec_pio_clock_t *clock, uint64_t cycles)
 {
     const uint64_t q = cycles * clock->div256;   /* system cycles x 256 */
     const uint64_t sc = q >> 8;

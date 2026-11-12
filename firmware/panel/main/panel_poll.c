@@ -568,6 +568,12 @@ uint16_t far_end_faults(void)
     return s_dev_faults;
 }
 
+uint16_t far_end_faults_shown(void)
+{
+    return stop_latch_faults(&s_stop_latch, now_ms(), arming_held(&s_arm),
+                             s_dev_faults);
+}
+
 /*
  * The status page's counters, into the bring-up record.  A 4.21 or later
  * IOmcu is asked for its refusal count as well; an older one refuses

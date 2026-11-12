@@ -41,7 +41,7 @@ The home tag at the top left moves up one level at a time:
 
 ![PROGRAM's list](view:motor-program)
 
-PROGRAM lists two ways to program an ESC. `ESCs via throttle stick`, under STICK MENU, opens [ESC STICK](motor-stick.md) and drives the pins bound as throttle. `AM32, Bluejay, BLHeli_S, ESCape32`, under SIGNAL WIRE, opens the [signal-wire session](motor-wire.md). The signal-wire row stays dimmed until the IOmcu reports the required capability.
+PROGRAM lists two ways to program an ESC. `ESCs via throttle stick`, under STICK MENU, opens [ESC STICK](motor-stick.md) and drives the pins bound as throttle. `AM32, Bluejay, BLHeli_S, ESCape32`, under SIGNAL WIRE, opens the [signal-wire session](motor-wire.md). The signal-wire row stays dimmed until the IOmcu reports the required capability. While the bench cannot carry a stick run, the throttle-stick row names the first reason in the warning colour, such as `RUN NEEDS A PD MINI` or `NO BEEP SOURCE`, and still opens ESC STICK; its maker list shows the same tag in its header.
 
 ESC STICK covers both columns and the footer. The tabs are replaced by a single output strip:
 

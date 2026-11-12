@@ -146,6 +146,15 @@ UI_TEXT(PL_STRIP_SUP_NONE, 26,
 UI_TEXT(BAND_SAFE, 0,
     "SAFE",
     "SAFE")
+UI_TEXT(BAND_SAFE_MOVE, 0,
+    "SAFE MOVE",
+    "SAFE MOVE")
+UI_TEXT(BAND_SAFE_PROG, 0,
+    "SAFE PROG %u",
+    "SAFE PROG %u")
+UI_TEXT(BAND_SAFE_PROG_ANY, 0,
+    "SAFE PROG",
+    "SAFE PROG")
 UI_TEXT(BAND_FAULT, 12,
     "FAULT %02X",
     "FEHLER %02X")
@@ -201,6 +210,12 @@ UI_TEXT(BH_MODE_INJECT_LOST, 0,
 UI_TEXT(BH_SAFE, 0,
     "Motor and servo outputs send no pulses. To activate them, hold ARM for 2s on MOTOR & ESC or SERVO. The PD mini output on SUPPLY is switched separately. STOP turns it off too.",
     "Motor- und Servoausgänge geben keine Pulse aus. Halte ARM auf MOTOR & ESC oder SERVO für 2s, um sie zu aktivieren. Der PD-mini-Ausgang auf SUPPLY wird getrennt davon geschaltet. STOP schaltet auch ihn aus.")
+UI_TEXT(BH_SAFE_MOVE, 0,
+    "MOVE SERVO on the HITEC page drives the servo on the held programming port while the bench is SAFE. A tap on ON, a tab change or the home tag ends it. STOP switches its supply off.",
+    "SERVO BEWEGEN auf der HITEC-Seite steuert das Servo am belegten Programmier-Port, während der Prüfstand SAFE ist. Ein Tippen auf EIN, ein Tab-Wechsel oder das Home-Feld beendet es. STOP schaltet seine Versorgung ab.")
+UI_TEXT(BH_SAFE_PROG, 0,
+    "A servo programmer, KST or HITEC, holds the programming port on the chip. It stays held after SERVO is left, and ARM is refused while it is. LEAVE on its page frees it.",
+    "Eine Servoprogrammierung, KST oder HITEC, belegt den Programmier-Port auf dem Chip. Er bleibt belegt, wenn SERVO verlassen wird, und ARM ist so lange gesperrt. VERLASSEN auf ihrer Seite gibt ihn frei.")
 UI_TEXT(BH_STOP, 0,
     "STOP is latched. Motor and servo outputs, the PD mini output and the programming ports' 5V are off. The panel withholds the heartbeat to the IOmcu. ARM and every ON are refused.",
     "STOP ist gesetzt. Motor- und Servoausgänge, der PD-mini-Ausgang und die 5V der Programmierports sind aus. Das Panel hält den Heartbeat zum IOmcu an. ARM und jedes Einschalten sind gesperrt.")
@@ -638,6 +653,21 @@ UI_TEXT(BF_HOLD, 0,
 UI_TEXT(BF_HOLD_RECONNECT, 0,
     "HOLD 2s TO RECONNECT",
     "2s HALTEN ZUM NEUVERBINDEN")
+UI_TEXT(BF_TAP_CONTINUE, 0,
+    "TAP TO CONTINUE",
+    "TIPPEN ZUM FORTFAHREN")
+UI_TEXT(BF_NOIO_TITLE, 0,
+    "NO IOMCU",
+    "KEIN IOMCU")
+UI_TEXT(BF_NOIO_TEXT, 0,
+    "No IOmcu answered.",
+    "Kein IOmcu hat geantwortet.")
+UI_TEXT(BF_NOIO_MEANS, 0,
+    "The panel runs its simulation. No output is driven.",
+    "Das Panel läuft in seiner Simulation. Kein Ausgang wird angesteuert.")
+UI_TEXT(BF_NOIO_HEAD, 0,
+    "IF AN IOMCU IS CONNECTED, CHECK IN THIS ORDER",
+    "IST EIN IOMCU ANGESCHLOSSEN, PRÜFE IN DIESER REIHENFOLGE")
 UI_TEXT(BF_TITLE_BACK, 0,
     "LINK BACK",
     "LINK WIEDER DA")
@@ -4116,6 +4146,18 @@ UI_TEXT(SP_NO_THROTTLE, 146,
 UI_TEXT(SP_NO_SOURCE, 146,
     "No beep source. Switch the phase tap on, or set an INA3221 channel to SUPPLY, on SENSORS.",
     "Keine Pieptonquelle. Schalte unter SENSORS den Phasenabgriff ein oder stelle einen INA3221-Kanal auf NETZTEIL.")
+UI_TEXT(SP_TAG_SUPPLY_MODEL, 22,
+    "RUN NEEDS A PD MINI",
+    "START BRAUCHT PD MINI")
+UI_TEXT(SP_TAG_BIND_NOT_READ, 22,
+    "THROTTLE PIN NOT READ",
+    "GAS-PIN NICHT GELESEN")
+UI_TEXT(SP_TAG_NO_THROTTLE, 22,
+    "NO THROTTLE PIN",
+    "KEIN GAS-PIN")
+UI_TEXT(SP_TAG_NO_SOURCE, 22,
+    "NO BEEP SOURCE",
+    "KEINE PIEPTONQUELLE")
 UI_TEXT(SP_KST_HELD, 146,
     "Servo programmer is using a port. Tap LEAVE on SERVO first.",
     "Servoprogrammierung belegt einen Port. Tippe zuerst auf SERVO auf VERLASSEN.")
@@ -5747,6 +5789,15 @@ UI_TEXT(ALERT_ARM_RANGE_DIFFERS, 94,
 UI_TEXT(ALERT_ARM_REFUSED, 94,
     "The IOmcu refused to switch to ARMED.",
     "Der IOmcu hat den Wechsel zu ARMED abgelehnt.")
+UI_TEXT(ALERT_ARM_REFUSED_FAULT, 94,
+    "The IOmcu refused to switch to ARMED. Tap FAULT for the reason.",
+    "Der IOmcu hat den Wechsel zu ARMED abgelehnt. Tippe auf FEHLER für den Grund.")
+UI_TEXT(ALERT_ARM_HEARTBEAT, 94,
+    "ARM refused: IOmcu gets no heartbeat. Check wire IO28 to GPIO 3 or stop button (FAULT 10).",
+    "ARM abgelehnt: IOmcu ohne Heartbeat. Prüfe Leitung IO28-GPIO 3 oder STOP-Taster (FEHLER 10).")
+UI_TEXT(ALERT_ARM_HWSTOP, 94,
+    "ARM refused: HWSTOP. Release the stop button or check its wire, IO28 to GPIO 3.",
+    "ARM abgelehnt: HWSTOP. Löse den STOP-Taster oder prüfe seine Leitung, IO28 zu GPIO 3.")
 UI_TEXT(ALERT_ARM_PROG, 94,
     "Cannot switch to ARMED: a port is in use by the servo programmer.",
     "ARMED gesperrt: Die Servoprogrammierung belegt einen Port.")
@@ -5909,6 +5960,15 @@ UI_TEXT(ALERT_TONE_OVERRUN, 94,
 UI_TEXT(ALERT_CU_OFFER, 94,
     "IOmcu runs a different build. Update it on UPDATES.",
     "IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.")
+UI_TEXT(ALERT_CU_OFFER_SAFE, 94,
+    "IOmcu runs a different build. Its update question opens once SAFE with the supply off.",
+    "IOmcu nutzt einen anderen Build. Die Update-Frage öffnet bei SAFE und Netzteilausgang aus.")
+UI_TEXT(ALERT_CU_OFFER_WIFI, 94,
+    "IOmcu runs a different build. Its update question opens once the panel's Wi-Fi is off.",
+    "IOmcu nutzt einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels aus ist.")
+UI_TEXT(ALERT_CU_OFFER_INSTALL, 94,
+    "IOmcu runs a different build. Its update question opens after the panel firmware install.",
+    "IOmcu nutzt einen anderen Build. Die Update-Frage öffnet nach der Panel-Installation.")
 UI_TEXT(ALERT_CU_USB, 94,
     "IOmcu cannot update over CAN. Install firmware once via USB.",
     "IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.")

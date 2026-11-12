@@ -328,6 +328,7 @@ INCLUDES = [
     "shared/logfile/include",
     "shared/files/include",
     "shared/clock/include",
+    "shared/mstime/include",
     "shared/settings/include",
     "shared/servo/include",
     "shared/esc/include",

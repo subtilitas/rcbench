@@ -12,8 +12,9 @@ set(SRCS link_crc.c link_can.c link_dev.c link_host.c link_bringup.c
         link_update_host.c console_relay.c)
 
 if(ESP_PLATFORM)
-    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)
+    idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include PRIV_REQUIRES mstime)
 else()
     add_library(rcbench_link STATIC ${SRCS})
     target_include_directories(rcbench_link PUBLIC include)
+    target_link_libraries(rcbench_link PRIVATE rcbench_mstime)
 endif()

@@ -47,12 +47,12 @@ test('the full selection survives format and parse', () => {
   const full: Selection = {
     functions: CATALOGUE.functions.filter((f) => !alwaysOn(CATALOGUE, f)).map((f) => f.id),
     owned: CATALOGUE.parts.filter((p) => p.selectable).map((p) => p.id),
-    options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd', servoPower: 'bench', servoPort: 'outputs' },
+    options: { connection: 'osoyoo', ina228Board: 'xt90', escPower: 'pd', servoPower: 'bench', stickBeep: 'ina3221', servoPort: 'outputs' },
   };
   const hash = formatHash(full, 'de', 'en', CATALOGUE);
   assert.ok(hash.length <= MAX_HASH);
   assert.deepEqual(parseHash(hash, DEFAULT_OPTIONS).selection, full);
-  assert.ok(hash.endsWith('&o=osoyoo,xt90,pd,servo5v&l=de'));
+  assert.ok(hash.endsWith('&o=osoyoo,xt90,pd,servo5v,stickina&l=de'));
 });
 
 test('ids stand in catalogue order whatever the tick order', () => {
@@ -263,6 +263,18 @@ test('the servo supply from the bench is one option token, and a link without it
   assert.equal(formatHash({ ...base(), functions: ['servo'] }, 'en', 'en', CATALOGUE), 'v=1&f=servo');
 });
 
+test('the beep source of ESC STICK programming is one option token, and a link without it counts the beeps from the phase tap', () => {
+  assert.equal(DEFAULT_OPTIONS.stickBeep, 'tap');
+  assert.equal(parseHash('#v=1&f=stick', DEFAULT_OPTIONS).selection.options.stickBeep, 'tap');
+  assert.equal(parseHash('#v=1&f=stick&o=stickina', DEFAULT_OPTIONS).selection.options.stickBeep, 'ina3221');
+  assert.equal(formatHash({ ...base(), functions: ['stick'], options: { ...DEFAULT_OPTIONS, stickBeep: 'ina3221' } }, 'en', 'en', CATALOGUE), 'v=1&f=stick&o=stickina');
+  assert.equal(formatHash({ ...base(), functions: ['stick'] }, 'en', 'en', CATALOGUE), 'v=1&f=stick');
+  // A link of an earlier page that names the function gets the phase tap parts.
+  const ids = (hash: string): string[] => resolve(CATALOGUE, parseHash(hash, DEFAULT_OPTIONS).selection).parts.map((r) => r.part.id);
+  assert.ok(ids('#v=1&f=stick').includes('tap') && !ids('#v=1&f=stick').includes('ina3221'));
+  assert.ok(ids('#v=1&f=stick&o=stickina').includes('ina3221') && !ids('#v=1&f=stick&o=stickina').includes('tap'));
+});
+
 test('the servo programmer is one function id; its link holds no option token for the signal pin', () => {
   const parsed = parseHash('#v=1&f=servoprog', DEFAULT_OPTIONS);
   assert.deepEqual([parsed.badVersion, parsed.unknown], [false, []]);
@@ -279,7 +291,7 @@ test('the servo programmer is one function id; its link holds no option token fo
 });
 
 test('every link of the fixture resolves to the parts, wires, functions and variants it names', () => {
-  // The fixture holds links without the keys of the servo supply and the servo signal pin: every function and every owned part alone,
+  // The fixture holds links without the keys of the servo supply, the beep source and the servo signal pin: every function and every owned part alone,
   // every pair of them, a servo or an ESC as an owned part under each of the 8 sets of variants, and the full sets.
   type Entry = { setup: string; links: string[] };
   const entries = JSON.parse(readFileSync(new URL('./fixtures/links-v1.json', import.meta.url), 'utf8')) as Entry[];
@@ -307,7 +319,7 @@ test('every link of the fixture resolves to the parts, wires, functions and vari
         setup.parts.map((r) => r.part.id).join(','),
         setup.wires.map((w) => w.n).filter((n) => n !== 63).join(','),
         setup.functions.filter((f) => f.enabled).map((f) => f.fn.id).join(','),
-        setup.options.filter((x) => x.key !== 'servoPower' && x.key !== 'servoPort').map((x) => `${x.key}=${x.value}${x.visible ? '' : '?'}`).join(','),
+        setup.options.filter((x) => x.key !== 'servoPower' && x.key !== 'servoPort' && x.key !== 'stickBeep').map((x) => `${x.key}=${x.value}${x.visible ? '' : '?'}`).join(','),
       ].join('|');
       assert.equal(got, entry.setup, link);
       // The fixture lists the power path of the PD mini as wire 19 alone. Wire 63 is its second half

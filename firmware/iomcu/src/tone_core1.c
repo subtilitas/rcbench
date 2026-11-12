@@ -37,6 +37,12 @@ static volatile uint32_t s_ack_seq;        /* core 1: the order its last
                                               pass is over                 */
 static volatile bool     s_live;           /* core 1 has taken an order    */
 
+/* The head and tail are free-running uint32_t counters indexed with
+ * `% TONE_Q_LEN`; only a power of two keeps the index continuous at the 2^32
+ * wrap. */
+_Static_assert(TONE_Q_LEN != 0u && (TONE_Q_LEN & (TONE_Q_LEN - 1u)) == 0u,
+               "TONE_Q_LEN is a power of two");
+
 static q_entry_t        s_q[TONE_Q_LEN];
 static volatile uint32_t s_q_head;         /* core 1 advances              */
 static volatile uint32_t s_q_tail;         /* core 0 advances              */

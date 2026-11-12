@@ -168,6 +168,9 @@ monitors' set-up, with the exception for an RP2350 of stepping A2 stated
 The panel can go first. Linked to an IOmcu without the partition table,
 the panel shows `IOmcu cannot update over CAN. Install firmware once via
 USB.` until step 2 is done; the link runs meanwhile.
+Started with no IOmcu answering on the bus, the panel opens `NO IOMCU`
+in place of the menu; a tap on `TAP TO CONTINUE` leads to the menu in
+simulation ([Bringing up the link](Bringup.md#the-bus-fault-screen)).
 
 ### The IOmcu over CAN
 
@@ -181,7 +184,9 @@ is 4.37, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
    another build, and the band says `IOmcu runs a different build. Update
    it on UPDATES.`.
 2. The question opens on the menu while the bench is SAFE, the supply's
-   output is off and the panel's Wi-Fi radio is off. It names the version
+   output is off and the panel's Wi-Fi radio is off. While one of them
+   holds it back, the band's line names it, such as `IOmcu runs a different
+   build. Its update question opens once the panel's Wi-Fi is off.`. It names the version
    on the IOmcu and the version in the panel. Hold START for 2s, or after
    CANCEL `HOLD 2s TO UPDATE THE IOMCU` on SETUP > UPDATES. The progress fills
    the screen ([Screens: IOmcu update](Screens.md#iomcu-update)), and back
@@ -460,7 +465,8 @@ outline.
 Nothing is wired to an output yet. This step tests the interlock, not a pin.
 
 1. **Heartbeat wire removed** → switching to ARMED must be **refused**. The IOmcu
-   answers `NOT_ARMED` because `!beat.alive`. The panel shows the refusal.
+   answers `NOT_ARMED` because `!beat.alive`. The panel shows
+   `ARM refused: IOmcu gets no heartbeat. Check wire IO28 to GPIO 3 or stop button (FAULT 10).`
 2. **Heartbeat wire fitted, panel ARMED** → the IOmcu accepts.
 3. **Pull the heartbeat wire while ARMED** → it must fail safe within
    **150ms**.

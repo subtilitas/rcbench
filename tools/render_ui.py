@@ -96,6 +96,8 @@ SCREENS = {
     "band-link":  ("band-link.png",  "overview", "dark"),
     "band-link-refused": ("band-link-refused.png", "overview", "dark"),
     "band-safe":  ("band-safe.png",  "overview", "dark"),
+    # SAFE while a programmer holds PROG PORT 2: the amber chip and its box.
+    "band-safe-prog": ("band-safe-prog.png", "overview", "dark"),
     "band-armed": ("band-armed.png", "overview", "dark"),
     # A latched STOP: the button red in its yellow frame, the chip STOP,
     # and the chip's box.
@@ -1025,6 +1027,9 @@ FIT_ONLY = {
     "band-armed-all":   (None, "overview", "dark"),
     "band-armed-sim":   (None, "overview", "sim"),
     "band-clock":       (None, "overview", "dark"),
+    # SAFE MOVE, and SAFE PROG with the port's number not known.
+    "band-safe-move":   (None, "overview", "dark"),
+    "band-safe-any":    (None, "overview", "dark"),
     "band-link-refused-max": (None, "overview", "dark"),
     "wifi-unavailable": (None, "wifi", "dark"),
     "wifi-ap-kept":     (None, "wifi", "dark"),
@@ -1076,6 +1081,8 @@ FIT_ONLY = {
     "motor-settings-leave": (None, "motor", "dark"),
     # The bus fault's other two verdicts and its other four controller
     # states, so every meaning and check is measured where it wraps.
+    # A silent echo run from an IOmcu that answered its status: the hold.
+    "busfault-silent-answered": (None, "busfault", "dark"),
     "busfault-lossy":   (None, "busfault", "dark"),
     "busfault-dropped": (None, "busfault", "dark"),
     "busfault-lost-rejoin":  (None, "busfault", "dark"),

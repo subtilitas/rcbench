@@ -1,25 +1,16 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The safety heartbeat: the panel's edge generator and the IOmcu's monitor
+ *        that judges whether the line is alive.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "heartbeat.h"
 
 #include <string.h>
 
-/**
- * @brief Every comparison is an unsigned difference against a timeout, never a
- *        comparison of two timestamps.
- *
- * A 32-bit millisecond counter wraps after 49.7 days, and `now < then` is wrong
- * for about 1ms either side of the wrap; the subtraction wraps with the
- * counter and stays correct.
- */
-static inline bool elapsed_at_least(uint32_t now, uint32_t then, uint32_t ms)
-{
-    return (uint32_t)(now - then) >= ms;
-}
-
+#include "mstime.h"
 /* --------------------------------------------------------------- generator */
 
 void heartbeat_gen_init(heartbeat_gen_t *g)
@@ -55,7 +46,7 @@ bool heartbeat_gen_step(heartbeat_gen_t *g, uint32_t now_ms, bool alive)
         return g->level;   /* still low; the first edge is one period away */
     }
 
-    if (elapsed_at_least(now_ms, g->last_ms, HEARTBEAT_PERIOD_MS)) {
+    if (mstime_elapsed(now_ms, g->last_ms, HEARTBEAT_PERIOD_MS)) {
         g->level   = !g->level;
         g->last_ms = now_ms;
     }
@@ -130,7 +121,7 @@ bool heartbeat_mon_alive(heartbeat_mon_t *m, uint32_t now_ms)
      * unplugged cable.
      */
     if (!m->have_edge
-        || elapsed_at_least(now_ms, m->last_edge_ms, HEARTBEAT_MAX_GAP_MS)) {
+        || mstime_elapsed(now_ms, m->last_edge_ms, HEARTBEAT_MAX_GAP_MS)) {
         if (m->alive || m->good_run != 0) {
             ++m->rejected_slow;
         }

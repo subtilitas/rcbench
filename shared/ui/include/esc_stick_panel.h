@@ -230,6 +230,18 @@ const char *esc_stick_panel_left_text(void);
  *  none; for tests. */
 const char *esc_stick_panel_note(void);
 
+/**
+ * @brief The first refusal that stands against every run as the bench is
+ *        now, as a short tag: the supply the panel's model (no PD mini),
+ *        the output binding not read, no throttle pin, no beep source.  In
+ *        the order RUN's note names them.  MOTOR & ESC > PROGRAM shows it on
+ *        the ESC STICK row and the maker list in its header, so the bench's
+ *        lack is known before a profile is picked.
+ * @return The tag in the language showing, at most 22 cells; NULL while
+ *         none stands.
+ */
+const char *esc_stick_panel_bench_tag(void);
+
 /** The profile whose page is open, or NULL on the list; for tests. */
 const esc_profile_t *esc_stick_panel_page(void);
 
