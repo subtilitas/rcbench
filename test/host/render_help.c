@@ -75,6 +75,10 @@ static const struct {
      * live the guide offers no session page (servo_guide.c). */
     { "help-servo-hitec-travel", "servo-hitec-travel-hand" },
     { "help-servo-hitec-read", "servo-hitec-read-hand" },
+    { "help-servo-hitec-reading", "servo-hitec-reading-hand" },
+    { "help-servo-hitec-leaving", "servo-hitec-leaving-hand" },
+    { "help-servo-hitec-other", "servo-hitec-other" },
+    { "help-servo-kst-working", "servo-kst-working" },
     { "help-servo-output", "servo-settings" },
     { "help-servo-sweep", "servo-sweep-page" },
     { "help-servo-sweepfn", "servo-sweep-safe" },

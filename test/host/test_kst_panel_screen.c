@@ -24,6 +24,7 @@
  * - a_lost_touch_stream_on_the_screen_drops_the_programmers_hold
  * - a_list_over_the_session_leaves_the_guide_its_ready_page
  * - the_guide_gives_leave_its_own_text
+ * - the_guide_gives_abort_its_own_text
  *
  * SPDX-License-Identifier: MIT
  */
@@ -948,6 +949,30 @@ TEST_CASE(the_guide_gives_leave_its_own_text)
     CHECK_EQ(p.item[1].text, TX_HG_KST_LEAVE);
 }
 
+/* While CONNECT's entry runs the port's button reads ABORT, and the
+ * guide's item carries ABORT's text. */
+TEST_CASE(the_guide_gives_abort_its_own_text)
+{
+    ui_help_page_t p;
+
+    fresh_screen();
+    link_up();
+    program_open();
+    hold_connect();
+    for (int i = 0; i < 2000 && kst_prog_state(M) != KST_PROG_ENTERING
+                    && kst_prog_state(M) != KST_PROG_WORKING;
+         ++i) {
+        rig_frame();
+        tick(0.001f);
+    }
+    show();
+    CHECK_STR_EQ(kst_panel_button(0, 0, 0), TR(KP_ABORT));
+    CHECK(scr->help_page(0, &p));
+    CHECK(p.count > 1);
+    CHECK_STR_EQ(p.item[1].label, TR(KP_ABORT));
+    CHECK_EQ(p.item[1].text, TX_HG_KST_ABORT);
+}
+
 int main(void)
 {
     RUN(the_supplys_controls_are_held_for_as_long_as_the_port);
@@ -971,5 +996,6 @@ int main(void)
     RUN(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold);
     RUN(a_list_over_the_session_leaves_the_guide_its_ready_page);
     RUN(the_guide_gives_leave_its_own_text);
+    RUN(the_guide_gives_abort_its_own_text);
     return test_summary("kst_panel_screen");
 }

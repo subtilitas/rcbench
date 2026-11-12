@@ -872,6 +872,32 @@ static void hitec_view_steps(const char *view)
         hhome();
         return;
     }
+    if (strcmp(v, "-leaving") == 0) {
+        /* LEAVE held with the bench still, and 20ms of it: the port on its
+         * way back to PWM, the button WAIT. */
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 0, 0));
+        const gfx_rect_t r = hitec_panel_apply_rect();
+        touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                            .point = { .id = 1,
+                                       .x = (int16_t)(r.x + r.w / 2),
+                                       .y = (int16_t)(UI_BAND_H + r.y
+                                                      + r.h / 2),
+                                       .strength = 40 } };
+        ui_router_event(&e);
+        for (int i = 0; i < 105; ++i) {
+            ui_router_tick(0.02f);
+        }
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+        hflash_out();
+        prun(20u);
+        ui_router_tick(0.02f);
+        if (pstate() != HITEC_PROG_LEAVING) {
+            fprintf(stderr, "render_hitec: not leaving\n");
+            exit(1);
+        }
+        return;
+    }
     if (strcmp(v, "-restore-ask") == 0 || strcmp(v, "-restore-hv") == 0) {
         /* The output on at the session's 5.0V 1.0A, the operator's set
          * points 5.5V 2.0A (7.4V for the HV warning) from before CONNECT;
