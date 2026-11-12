@@ -25,7 +25,7 @@ The footer at the bottom has three slots:
 |---|---|
 | MOTOR & ESC | the screen's name; under it the protocol and pins the throttle drives, `NO MOTOR PIN` in the warning colour with none |
 | ARM / DISARM | the 2s hold to ARMED, a tap to SAFE ([A run](#a-run)) |
-| SETTINGS | opens [Motor settings](motor-settings.md): the pack, the motor and the throttle output; grey unless the bench is SAFE |
+| OPTIONS | opens [Motor settings](motor-settings.md): the pack, the motor and the throttle output; grey unless the bench is SAFE |
 
 The home tag at the top left moves up one level at a time:
 
@@ -135,7 +135,7 @@ TABLE lists voltage, current, power and rpm, each with its peak. A channel witho
 
 ## kV, rpm/V and EFF
 
-The plot header shows rated kV, measured rpm per volt and EFF. EFF is measured rpm/V divided by rated kV, capped at 199%. Set rated kV in MOTOR & ESC's SETTINGS list, `Rated kV`: 0 to 10000rpm/V, default 0. At 0, the kV field stays empty and EFF is hidden. EFF counts only copper loss and includes ESC losses, so it is an upper bound rather than shaft efficiency.
+The plot header shows rated kV, measured rpm per volt and EFF. EFF is measured rpm/V divided by rated kV, capped at 199%. Set rated kV in MOTOR & ESC's OPTIONS list, `Rated kV`: 0 to 10000rpm/V, default 0. At 0, the kV field stays empty and EFF is hidden. EFF counts only copper loss and includes ESC losses, so it is an upper bound rather than shaft efficiency.
 
 ## The log of a run
 

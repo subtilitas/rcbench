@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The OpenYGE status byte decoded to its fields, and the names of the ESC's
+ *        states.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "openyge.h"

@@ -31,7 +31,13 @@ void hitec_prog_gate_init(hitec_prog_gate_t *g)
     atomic_store(&g->faults, 0u);
 }
 
-void hitec_prog_gate_offer(hitec_prog_gate_t *g, uint32_t id)
+/**
+ * @brief The pass of command @p id is there to be taken.
+ *
+ * @param g  The gate.
+ * @param id The command's id.
+ */
+static void hitec_prog_gate_offer(hitec_prog_gate_t *g, uint32_t id)
 {
     atomic_store(&g->pass, id);
 }
@@ -55,7 +61,14 @@ bool hitec_prog_gate_claim(hitec_prog_gate_t *g, uint32_t id)
     return gate_take(g, id);
 }
 
-bool hitec_prog_gate_revoke(hitec_prog_gate_t *g, uint32_t id)
+/**
+ * @brief The model gives command @p id up.
+ *
+ * @param g  The gate.
+ * @param id The command's id.
+ * @return true when the command is not carried out and never is.
+ */
+static bool hitec_prog_gate_revoke(hitec_prog_gate_t *g, uint32_t id)
 {
     return gate_take(g, id);
 }

@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ * @brief The MCP2515's frame arithmetic: the 29-bit identifier packed into and
+ *        unpacked from its four registers, and the receive buffer's decode.
+ *
+ * See mcp2515.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -49,7 +55,18 @@ bool mcp2515_unpack_id(const uint8_t in[4], uint32_t *id)
     return true;
 }
 
-bool mcp2515_decode_rx(const uint8_t buf[13], link_can_frame_t *f)
+/**
+ * @brief Turn the 13 registers of one receive buffer into a frame.
+ *
+ * False for a frame this link does not carry: an 11-bit identifier, a remote
+ * frame (bit 6 of the DLC register, RTR) whose data registers hold stale
+ * bytes, or a length above 8.
+ *
+ * @param buf The 13 registers of the receive buffer.
+ * @param f   Takes the frame.
+ * @return true when @p f holds a frame; false for one this link does not carry.
+ */
+static bool mcp2515_decode_rx(const uint8_t buf[13], link_can_frame_t *f)
 {
     if (buf == NULL || f == NULL) {
         return false;

@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ * @brief GT911 touch controller driver: device creation on an I2C master bus,
+ *        product ID and resolution reads, and the touch point read.
+ *
+ * See gt911.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

@@ -14,13 +14,13 @@ UPDATES checks GitHub for newer panel firmware and offers to install it. Open it
 |---|---|
 | CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
 | HOLD 2s TO DOWNLOAD & INSTALL | in the footer's middle once a check found a newer release; downloads, checks and installs it |
-| SETTINGS | in the footer's right; opens the list of Reminder at start and Releases, see [Settings](#settings); grey while a check or a download runs |
+| OPTIONS | in the footer's right; opens the list of Reminder at start and Releases, see [Settings](#settings); grey while a check or a download runs |
 | HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 | HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
 
 ## Settings
 
-![UPDATES' SETTINGS list](view:updates-settings)
+![UPDATES' OPTIONS list](view:updates-settings)
 
 | Setting | Values | What it does |
 |---|---|---|

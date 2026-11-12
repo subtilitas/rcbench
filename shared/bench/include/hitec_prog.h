@@ -441,13 +441,6 @@ typedef struct {
  */
 void hitec_prog_gate_init(hitec_prog_gate_t *g);
 /**
- * @brief The pass of command @p id is there to be taken.
- *
- * @param g  The gate.
- * @param id The command's id.
- */
-void hitec_prog_gate_offer(hitec_prog_gate_t *g, uint32_t id);
-/**
  * @brief The link's task, with command @p id out of its queue.
  *
  * @param g  The gate.
@@ -456,14 +449,6 @@ void hitec_prog_gate_offer(hitec_prog_gate_t *g, uint32_t id);
  *         dropped, with no answer.
  */
 bool hitec_prog_gate_claim(hitec_prog_gate_t *g, uint32_t id);
-/**
- * @brief The model gives command @p id up.
- *
- * @param g  The gate.
- * @param id The command's id.
- * @return true when the command is not carried out and never is.
- */
-bool hitec_prog_gate_revoke(hitec_prog_gate_t *g, uint32_t id);
 /**
  * @brief The session's operations that ended in a fault
  *        (hitec_prog_ses_fault()), counted by the model, modulo 2^32.
