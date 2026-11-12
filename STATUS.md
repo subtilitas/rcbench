@@ -2789,8 +2789,8 @@ a keypad or choice already open, keep the language they were raised in until rep
 
 The comment rule ([CONTRIBUTING.md](CONTRIBUTING.md#comments)) holds new files, changed
 lines and the `@file` block of a changed file. The other gaps are listed: the Doxygen
-warnings in `tools/doc_check_baseline.txt`, the Python docstring codes per file in
-`ruff.toml`. A C file without a `@file` block is one line there, `file has no @file block`;
+warnings in `tools/doc_check_baseline.txt`. Python docstrings have no listed gaps: `ruff check .`
+passes every D rule. A C file without a `@file` block is one line there, `file has no @file block`;
 Doxygen reports nothing inside such a file, so its other gaps are not listed until the block
 is added.
 

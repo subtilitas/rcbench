@@ -455,8 +455,8 @@ jobs:
       # The tools in tools/ are held to the same standard as the C: each of
       # them can fail a build, so a bug in one is a bug in the gate.  Their
       # tests are held to it too, and the script of the host suite.  The D
-      # rules ask for a Google-style docstring; ruff.toml lists the files
-      # excused some D codes, each with the codes on its line.
+      # rules ask for a Google-style docstring on every module, public
+      # function, class and method; no file is excused them.
       - name: ruff
         run: ruff check tools/ test/tools/ test/host/ hardware/kicad/ hardware/mechanical/
 
