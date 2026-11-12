@@ -297,10 +297,16 @@ ui_band_chip_t ui_band_chip_at(const ui_bench_status_t *st, int x, int y)
 /** @brief More between two paragraphs: 4px. */
 #define HELP_PARA    4      /* more between two paragraphs             */
 
-/* One paragraph, and one line of it.  Static: the bubble is drawn by the
- * render loop alone, and the render task's stack is budgeted. */
-static char s_para[640];
-static char s_line[400];
+/** @brief One paragraph, and one line of it.  Static: the bubble is drawn
+ *         by the render loop alone, and the render task's stack is
+ *         budgeted. */
+typedef struct {
+    char para[640];  /**< the paragraph */
+    char line[400];  /**< one line of it */
+} bubble_buf_t;
+
+/** @brief The bubble's buffers. */
+static bubble_buf_t s_bubble;
 
 /* The link_fault_t bits by name.  `never` marks a bit no firmware of this
  * release sets: STATUS's bitmap is written in one place on the
@@ -322,7 +328,7 @@ static const struct {
 };
 
 /*
- * Paragraph @p i of the FAULT bubble into s_para: one per bit that is set,
+ * Paragraph @p i of the FAULT bubble into s_bubble.para: one per bit that is set,
  * in bit order, then the bits this panel has no name for, then the advice
  * when a bit no firmware of this release sets is among them.
  */
@@ -338,7 +344,7 @@ static bool fault_para(uint16_t faults, int i)
         }
         odd = odd || k_bits[b].never;
         if (n++ == i) {
-            snprintf(s_para, sizeof(s_para), "%s (%02X): %s%s%s",
+            snprintf(s_bubble.para, sizeof(s_bubble.para), "%s (%02X): %s%s%s",
                      k_bits[b].name, (unsigned)k_bits[b].bit,
                      ui_tr(k_bits[b].text), k_bits[b].never ? " " : "",
                      k_bits[b].never ? TR(BH_F_NEVER) : "");
@@ -349,19 +355,19 @@ static bool fault_para(uint16_t faults, int i)
     if (other != 0u) {
         odd = true;
         if (n++ == i) {
-            snprintf(s_para, sizeof(s_para), TR(BH_F_OTHER),
+            snprintf(s_bubble.para, sizeof(s_bubble.para), TR(BH_F_OTHER),
                      (unsigned)other);
             return true;
         }
     }
     if (odd && n == i) {
-        snprintf(s_para, sizeof(s_para), "%s", TR(BH_F_FLASH));
+        snprintf(s_bubble.para, sizeof(s_bubble.para), "%s", TR(BH_F_FLASH));
         return true;
     }
     return false;
 }
 
-/* Paragraph @p i of @p chip's bubble into s_para, or false past the last. */
+/* Paragraph @p i of @p chip's bubble into s_bubble.para, or false past the last. */
 static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
                       int i)
 {
@@ -385,7 +391,7 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
         ids[n++] = st->link_up ? TX_BH_LINK_UP : TX_BH_NO_LINK;
         /* The frames the IOmcu refused, as MOTOR & ESC's header strip
          * has them, while the link is up and there are any. */
-        if (i == n && ui_link_refused_label(st, s_para, sizeof(s_para))) {
+        if (i == n && ui_link_refused_label(st, s_bubble.para, sizeof(s_bubble.para))) {
             return true;
         }
         break;
@@ -435,7 +441,7 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
     if (i < 0 || i >= n) {
         return false;
     }
-    snprintf(s_para, sizeof(s_para), "%s", ui_tr(ids[i]));
+    snprintf(s_bubble.para, sizeof(s_bubble.para), "%s", ui_tr(ids[i]));
     return true;
 }
 
@@ -477,18 +483,18 @@ static int help_body(gfx_canvas_t *c, const ui_bench_status_t *st,
         if (i > 0) {
             h += HELP_PARA;
         }
-        const char *at = s_para;
+        const char *at = s_bubble.para;
         while (*at == ' ') {
             ++at;
         }
         while (*at != '\0') {
             const size_t len = line_len(at, cells);
             if (c != NULL) {
-                const size_t k = (len < sizeof(s_line)) ? len
-                                                        : sizeof(s_line) - 1u;
-                memcpy(s_line, at, k);
-                s_line[k] = '\0';
-                gfx_text(c, x, y + h, s_line, UI_FONT_BAND, UI_TEXT, 1);
+                const size_t k = (len < sizeof(s_bubble.line)) ? len
+                                                        : sizeof(s_bubble.line) - 1u;
+                memcpy(s_bubble.line, at, k);
+                s_bubble.line[k] = '\0';
+                gfx_text(c, x, y + h, s_bubble.line, UI_FONT_BAND, UI_TEXT, 1);
             }
             h += HELP_PITCH;
             at += len;

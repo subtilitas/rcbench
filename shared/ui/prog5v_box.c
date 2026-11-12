@@ -19,38 +19,43 @@
 /** @brief The published state's values (prog_supply_state_t). */
 enum { ST_NONE = 0, ST_UNKNOWN = 1, ST_OFF = 2, ST_ON = 3 };
 
-/** @brief state << 16 | pin << 8 | held port, as published. */
-static atomic_uint s_state = (unsigned)PROG5V_HELD_NONE;
-/** @brief bit 31 a reading, mV in bits 16 to 30, mA as int16 in 0 to 15. */
-static atomic_uint s_read;
-/** @brief The reading's window number, as published after the reading. */
-static atomic_uint s_read_win;
-/** @brief The PROG_SUPPLY link's cuts, as published. */
-static atomic_uint s_cuts;
-/** @brief The PD mini's input, mV, as published; 0 for none. */
-static atomic_uint s_input;
-/** @brief prog5v_box_input_why()'s text.  app_main only. */
-static char s_in_why[96];
+/** @brief The box's state, one instance per image. */
+typedef struct {
+    /** @brief state << 16 | pin << 8 | held port, as published */
+    atomic_uint  state;
+    /** @brief bit 31 a reading, mV in bits 16 to 30, mA as int16 in 0 to
+     *         15 */
+    atomic_uint  read;
+    /** @brief The reading's window number, as published after the
+     *         reading */
+    atomic_uint  read_win;
+    atomic_uint  cuts;       /**< the PROG_SUPPLY link's cuts, as published */
+    /** @brief The PD mini's input, mV, as published; 0 for none */
+    atomic_uint  input;
+    char         in_why[96]; /**< prog5v_box_input_why()'s text.  app_main only */
+    /** @brief What the boxes asked and not yet polled.  app_main only */
+    prog5v_cmd_t cmd;
+    /** @brief The screen whose box switched the supply on.  app_main only */
+    prog5v_by_t  owner;
+} p5_state_t;
 
-/** @brief What the boxes asked and not yet polled.  app_main only. */
-static prog5v_cmd_t s_cmd;
-/** @brief The screen whose box switched the supply on.  app_main only. */
-static prog5v_by_t  s_owner;
+/** @brief The box's one instance. */
+static p5_state_t p5 = { .state = (unsigned)PROG5V_HELD_NONE };
 
 void prog5v_box_publish(uint8_t state, uint8_t pin, uint8_t held_port)
 {
-    atomic_store(&s_state, ((unsigned)state << 16) | ((unsigned)pin << 8)
+    atomic_store(&p5.state, ((unsigned)state << 16) | ((unsigned)pin << 8)
                                | held_port);
 }
 
 void prog5v_box_publish_cuts(uint32_t cuts)
 {
-    atomic_store(&s_cuts, cuts);
+    atomic_store(&p5.cuts, cuts);
 }
 
 void prog5v_box_publish_input(uint16_t vin_mv)
 {
-    atomic_store(&s_input, vin_mv);
+    atomic_store(&p5.input, vin_mv);
 }
 
 uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some)
@@ -67,18 +72,18 @@ uint8_t prog5v_box_held_port(int kst_port, int hitec_port, bool some)
 
 void prog5v_box_reading(bool ok, uint16_t mv, int16_t ma, uint16_t window)
 {
-    atomic_store(&s_read, ok ? (0x80000000u | ((unsigned)(mv & 0x7FFFu) << 16)
+    atomic_store(&p5.read, ok ? (0x80000000u | ((unsigned)(mv & 0x7FFFu) << 16)
                                 | (uint16_t)ma)
                              : 0u);
     /* After the reading: a reader that sees the number sees a reading at
      * least as new. */
-    atomic_store(&s_read_win, ok ? window : 0u);
+    atomic_store(&p5.read_win, ok ? window : 0u);
 }
 
 bool prog5v_box_last(uint16_t *mv, int16_t *ma, uint16_t *window)
 {
-    const unsigned n = atomic_load(&s_read_win);
-    const unsigned rd = atomic_load(&s_read);
+    const unsigned n = atomic_load(&p5.read_win);
+    const unsigned rd = atomic_load(&p5.read);
     const bool ok = (rd & 0x80000000u) != 0u;
     if (mv != NULL) {
         *mv = ok ? (uint16_t)((rd >> 16) & 0x7FFFu) : 0u;
@@ -93,11 +98,11 @@ bool prog5v_box_last(uint16_t *mv, int16_t *ma, uint16_t *window)
 }
 
 /** @brief The published state, ST_*. */
-static unsigned st(void) { return (atomic_load(&s_state) >> 16) & 0xFFu; }
+static unsigned st(void) { return (atomic_load(&p5.state) >> 16) & 0xFFu; }
 /** @brief The published pin. */
-static unsigned pin(void) { return (atomic_load(&s_state) >> 8) & 0xFFu; }
+static unsigned pin(void) { return (atomic_load(&p5.state) >> 8) & 0xFFu; }
 /** @brief The published holding port, or PROG5V_HELD_NONE. */
-static unsigned held(void) { return atomic_load(&s_state) & 0xFFu; }
+static unsigned held(void) { return atomic_load(&p5.state) & 0xFFu; }
 
 bool prog5v_box_shown(void) { return st() != ST_NONE; }
 
@@ -105,7 +110,7 @@ bool prog5v_box_on(void) { return st() == ST_ON; }
 
 uint16_t prog5v_box_input_low_mv(void)
 {
-    const unsigned vin = atomic_load(&s_input);
+    const unsigned vin = atomic_load(&p5.input);
     return (prog5v_box_shown() && vin != 0u && vin < PROG5V_INPUT_MIN_MV)
                ? (uint16_t)vin : 0u;
 }
@@ -117,14 +122,14 @@ const char *prog5v_box_input_why(void)
         return NULL;
     }
     /* Tenths, rounded down: 13.49V reads 13.4V, under the 13.5V. */
-    snprintf(s_in_why, sizeof(s_in_why), TR(P5_IN_WHY), vin / 1000u,
+    snprintf(p5.in_why, sizeof(p5.in_why), TR(P5_IN_WHY), vin / 1000u,
              (vin % 1000u) / 100u);
-    return s_in_why;
+    return p5.in_why;
 }
 
 bool prog5v_box_input_is(const char *why)
 {
-    return why != NULL && why == s_in_why;
+    return why != NULL && why == p5.in_why;
 }
 
 const char *prog5v_box_input_tag(char *buf, size_t n)
@@ -194,8 +199,8 @@ void prog5v_box_init(prog5v_box_t *b, gfx_rect_t r, prog5v_by_t by)
     b->r      = r;
     b->by     = by;
     b->was_on = prog5v_box_on();
-    b->seen   = atomic_load(&s_state);
-    b->seen_read = atomic_load(&s_read);
+    b->seen   = atomic_load(&p5.state);
+    b->seen_read = atomic_load(&p5.read);
     b->seen_in   = prog5v_box_input_low_mv();
     ui_hold_reset(&b->hold);
 }
@@ -219,18 +224,18 @@ gfx_rect_t prog5v_box_button(const prog5v_box_t *b)
 static void post(bool on, prog5v_by_t by, uint32_t cuts)
 {
     if (on) {
-        if (!s_cmd.off) {
-            s_cmd.on   = true;
-            s_cmd.by   = by;
-            s_cmd.cuts = cuts;
-            s_owner  = by;
+        if (!p5.cmd.off) {
+            p5.cmd.on   = true;
+            p5.cmd.by   = by;
+            p5.cmd.cuts = cuts;
+            p5.owner  = by;
         }
         return;
     }
-    s_cmd.off = true;
-    s_cmd.on  = false;
-    s_cmd.by  = by;
-    s_owner   = PROG5V_BY_NONE;
+    p5.cmd.off = true;
+    p5.cmd.on  = false;
+    p5.cmd.by  = by;
+    p5.owner   = PROG5V_BY_NONE;
 }
 
 bool prog5v_box_press(prog5v_box_t *b)
@@ -245,7 +250,7 @@ bool prog5v_box_press(prog5v_box_t *b)
     }
     b->pressed  = true;
     b->press_on = prog5v_box_on();
-    b->cuts     = atomic_load(&s_cuts);
+    b->cuts     = atomic_load(&p5.cuts);
     if (!b->press_on) {
         ui_hold_begin(&b->hold, TX_HOLD_HINT_PROG5V);
     }
@@ -303,8 +308,8 @@ void prog5v_box_cancel(prog5v_box_t *b)
     /* An ON this screen's hold asked and nobody collected goes with the
      * gesture: a touch loss found before the poll must not send it.  An
      * OFF asked stays. */
-    if (s_cmd.on && s_cmd.by == b->by) {
-        s_cmd.on = false;
+    if (p5.cmd.on && p5.cmd.by == b->by) {
+        p5.cmd.on = false;
     }
 }
 
@@ -313,8 +318,8 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
     if (b == NULL) {
         return;
     }
-    const uint32_t now = atomic_load(&s_state);
-    const uint32_t rd  = atomic_load(&s_read);
+    const uint32_t now = atomic_load(&p5.state);
+    const uint32_t rd  = atomic_load(&p5.read);
     const uint32_t in  = prog5v_box_input_low_mv();
     /* A new window: a point of the box's plot, and a repaint. */
     if (prog5v_box_follow(b->plot, &b->seen_win)) {
@@ -336,7 +341,7 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
                 b->pressed = false;
             }
             if (st() == ST_OFF) {
-                s_owner = PROG5V_BY_NONE;    /* off, whoever switched it */
+                p5.owner = PROG5V_BY_NONE;    /* off, whoever switched it */
             }
         }
         ++b->rev;
@@ -394,7 +399,7 @@ const char *prog5v_box_text(int line, char *buf, size_t n)
         }
         return buf;
     }
-    const uint32_t rd = atomic_load(&s_read);
+    const uint32_t rd = atomic_load(&p5.read);
     if ((rd & 0x80000000u) == 0u) {
         snprintf(buf, n, "--V  --A");
         return buf;
@@ -465,7 +470,7 @@ void prog5v_box_render(const prog5v_box_t *b, gfx_canvas_t *c)
 
 void prog5v_box_left(prog5v_by_t by)
 {
-    if (by == PROG5V_BY_NONE || s_owner != by || held() != PROG5V_HELD_NONE) {
+    if (by == PROG5V_BY_NONE || p5.owner != by || held() != PROG5V_HELD_NONE) {
         return;
     }
     /* Whether or not the ON has been read back yet: one collected and on
@@ -486,25 +491,25 @@ void prog5v_box_ask_on(prog5v_by_t by)
     if (prog5v_box_input_low_mv() != 0u) {
         return;
     }
-    post(true, by, atomic_load(&s_cuts));
+    post(true, by, atomic_load(&p5.cuts));
 }
 
 bool prog5v_box_poll_cmd(prog5v_cmd_t *out)
 {
-    if (!s_cmd.on && !s_cmd.off) {
+    if (!p5.cmd.on && !p5.cmd.off) {
         return false;
     }
     if (out != NULL) {
-        *out = s_cmd;
+        *out = p5.cmd;
     }
-    memset(&s_cmd, 0, sizeof(s_cmd));
+    memset(&p5.cmd, 0, sizeof(p5.cmd));
     return true;
 }
 
 void prog5v_box_reset(void)
 {
-    memset(&s_cmd, 0, sizeof(s_cmd));
-    s_owner = PROG5V_BY_NONE;
+    memset(&p5.cmd, 0, sizeof(p5.cmd));
+    p5.owner = PROG5V_BY_NONE;
     prog5v_box_publish(0u, 0u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_reading(false, 0u, 0, 0u);
     prog5v_box_publish_cuts(0u);

@@ -131,12 +131,17 @@ _Static_assert(OUTBIND_RBMOD_PIN_COUNT <= OUTBIND_PINS,
  * registers, and the identity is what the operator needs to match against the
  * board in front of them.
  */
-static outbind_pin_t   s_learned_pins[LINK_CAT_PINS];
-static outbind_pad_t   s_learned_pads[LINK_PAD_SLOTS];
-static outbind_shape_t s_learned_shape;
-static char            s_learned_name[16];
-static outbind_board_t s_learned;
-static bool            s_have_learned;
+typedef struct {
+    outbind_pin_t   pins[LINK_CAT_PINS];  /**< the pins board.pins points at */
+    outbind_pad_t   pads[LINK_PAD_SLOTS]; /**< the pads board.pads points at */
+    outbind_shape_t shape;                /**< the shape board.shape points at */
+    char            name[16];             /**< the name board.name points at */
+    outbind_board_t board;                /**< the board as outbind_board() returns it */
+    bool            have;                 /**< board holds a learned board */
+} learned_t;
+
+/** @brief The board learned last. */
+static learned_t s_learn;
 
 const outbind_board_t *outbind_board(uint16_t id)
 {
@@ -147,9 +152,9 @@ const outbind_board_t *outbind_board(uint16_t id)
     }
     /* Only after the table: a board this build describes uses its own
      * description, whatever the wire says about it. */
-    if (s_have_learned && id != (uint16_t)OUTBIND_BOARD_UNKNOWN
-        && s_learned.id == id) {
-        return &s_learned;
+    if (s_learn.have && id != (uint16_t)OUTBIND_BOARD_UNKNOWN
+        && s_learn.board.id == id) {
+        return &s_learn.board;
     }
     return NULL;                 /* including OUTBIND_BOARD_UNKNOWN */
 }
@@ -259,10 +264,10 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
      * overwrite. */
     for (uint8_t i = 0; i < n; ++i) {
         const uint8_t hold = LINK_CAT_HOLD(regs[i]);
-        s_learned_pins[i].gpio     = LINK_CAT_GPIO(regs[i]);
-        s_learned_pins[i].pad      = LINK_CAT_PAD(regs[i]);
-        s_learned_pins[i].reserved = (hold != LINK_PIN_FREE);
-        s_learned_pins[i].held_by  = (hold != LINK_PIN_FREE)
+        s_learn.pins[i].gpio     = LINK_CAT_GPIO(regs[i]);
+        s_learn.pins[i].pad      = LINK_CAT_PAD(regs[i]);
+        s_learn.pins[i].reserved = (hold != LINK_PIN_FREE);
+        s_learn.pins[i].held_by  = (hold != LINK_PIN_FREE)
                                          ? hold_name(hold) : NULL;
     }
 
@@ -274,33 +279,33 @@ bool outbind_learn_board(uint16_t id, const uint16_t *regs)
     {
         static const char k_pre[] = "BOARD ";
         unsigned at = sizeof(k_pre) - 1u;
-        for (unsigned i = 0; i < at; ++i) { s_learned_name[i] = k_pre[i]; }
+        for (unsigned i = 0; i < at; ++i) { s_learn.name[i] = k_pre[i]; }
         char digits[6];
         unsigned d = 0u, v = id;
         do { digits[d++] = (char)('0' + (v % 10u)); v /= 10u; } while (v != 0u);
-        while (d > 0u) { s_learned_name[at++] = digits[--d]; }
-        s_learned_name[at] = '\0';
+        while (d > 0u) { s_learn.name[at++] = digits[--d]; }
+        s_learn.name[at] = '\0';
     }
-    s_learned.id    = id;
-    s_learned.name  = s_learned_name;
-    s_learned.pins  = s_learned_pins;
-    s_learned.count = n;
+    s_learn.board.id    = id;
+    s_learn.board.name  = s_learn.name;
+    s_learn.board.pins  = s_learn.pins;
+    s_learn.board.count = n;
     /*
      * Never soldered.  `fixed` says the outputs are wired and the screen may
      * only show them, and nothing on the wire says that yet; assuming it
      * would make a board that describes itself unusable rather than usable.
      */
-    s_learned.fixed = false;
-    s_learned.roles = NULL;
+    s_learn.board.fixed = false;
+    s_learn.board.roles = NULL;
     /*
      * A shape belongs to the board it came with.  Learning a board drops it,
      * so a new IOmcu is not drawn with the last one's outline while
      * its own shape page has yet to be read.
      */
-    s_learned.shape     = NULL;
-    s_learned.pads      = NULL;
-    s_learned.pad_count = 0u;
-    s_have_learned      = true;
+    s_learn.board.shape     = NULL;
+    s_learn.board.pads      = NULL;
+    s_learn.board.pad_count = 0u;
+    s_learn.have            = true;
     return true;
 }
 
@@ -335,7 +340,7 @@ void outbind_pads_to_regs(const outbind_board_t *board, uint16_t *regs)
 
 bool outbind_learn_pads(uint16_t id, const uint16_t *regs)
 {
-    if (regs == NULL || !s_have_learned || s_learned.id != id) {
+    if (regs == NULL || !s_learn.have || s_learn.board.id != id) {
         return false;      /* pads for a board that is not the one here */
     }
 
@@ -360,8 +365,8 @@ bool outbind_learn_pads(uint16_t id, const uint16_t *regs)
          * cannot be both, and a page saying so is describing something other
          * than this board.
          */
-        for (uint8_t k = 0; k < s_learned.count; ++k) {
-            if (s_learned_pins[k].pad == pad) {
+        for (uint8_t k = 0; k < s_learn.board.count; ++k) {
+            if (s_learn.pins[k].pad == pad) {
                 return false;
             }
         }
@@ -373,12 +378,12 @@ bool outbind_learn_pads(uint16_t id, const uint16_t *regs)
     }
 
     for (uint8_t i = 0; i < n; ++i) {
-        s_learned_pads[i].pad       = LINK_PAD_NUM(regs[i]);
-        s_learned_pads[i].kind      = LINK_PAD_KIND(regs[i]);
-        s_learned_pads[i].decivolts = LINK_PAD_DV(regs[i]);
+        s_learn.pads[i].pad       = LINK_PAD_NUM(regs[i]);
+        s_learn.pads[i].kind      = LINK_PAD_KIND(regs[i]);
+        s_learn.pads[i].decivolts = LINK_PAD_DV(regs[i]);
     }
-    s_learned.pads      = s_learned_pads;
-    s_learned.pad_count = n;
+    s_learn.board.pads      = s_learn.pads;
+    s_learn.board.pad_count = n;
     return true;
 }
 
@@ -403,7 +408,7 @@ void outbind_shape_to_regs(const outbind_board_t *board, uint16_t *regs)
 
 bool outbind_learn_shape(uint16_t id, const uint16_t *regs)
 {
-    if (regs == NULL || !s_have_learned || s_learned.id != id) {
+    if (regs == NULL || !s_learn.have || s_learn.board.id != id) {
         return false;       /* a shape for a board that is not the one here */
     }
     outbind_shape_t sh;
@@ -430,14 +435,14 @@ bool outbind_learn_shape(uint16_t id, const uint16_t *regs)
      * outline, which is the failure a drawn board exists to avoid.
      */
     const unsigned pads = (unsigned)sh.per_side * 2u;
-    for (uint8_t i = 0; i < s_learned.count; ++i) {
-        if (s_learned_pins[i].pad == 0u || s_learned_pins[i].pad > pads) {
+    for (uint8_t i = 0; i < s_learn.board.count; ++i) {
+        if (s_learn.pins[i].pad == 0u || s_learn.pins[i].pad > pads) {
             return false;
         }
     }
 
-    s_learned_shape = sh;
-    s_learned.shape = &s_learned_shape;
+    s_learn.shape = sh;
+    s_learn.board.shape = &s_learn.shape;
     return true;
 }
 
@@ -492,10 +497,10 @@ bool outbind_pad_xy(const outbind_shape_t *shape, uint8_t pad,
 
 void outbind_forget_learned(void)
 {
-    s_have_learned      = false;
-    s_learned.shape     = NULL;
-    s_learned.pads      = NULL;
-    s_learned.pad_count = 0u;
+    s_learn.have            = false;
+    s_learn.board.shape     = NULL;
+    s_learn.board.pads      = NULL;
+    s_learn.board.pad_count = 0u;
 }
 
 uint8_t outbind_board_count(void)

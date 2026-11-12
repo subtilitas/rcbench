@@ -36,17 +36,6 @@
 /** @brief The screen's state; files_int.h names it s. */
 fs_state_t fs_s;
 
-/** @brief A pane's request waiting for the card's task. */
-typedef enum {
-    NEED_NONE = 0,
-    NEED_PAGE,    /**< a page: need_go                  */
-    NEED_UP,      /**< the folder above                 */
-    NEED_ENTER    /**< the folder on the selected row   */
-} need_t;
-
-/** @brief What each pane waits for (need_t), beside s.need_go. */
-static need_t s_need[2];
-
 /* ------------------------------------------------------------ the bench */
 
 void fs_read_bench(void)
@@ -211,7 +200,7 @@ bool fs_submit(void)
  */
 static void want(int i, need_t need, fm_go_t go)
 {
-    s_need[i] = need;
+    s.need_kind[i] = need;
     s.need[i] = (need != NEED_NONE);
     s.need_go[i] = go;
     if (need != NEED_NONE) {
@@ -464,10 +453,10 @@ static void send_next(void)
         return;                     /* the viewer's read goes first */
     }
     for (int i = 0; i < 2 && !s.busy; ++i) {
-        if (s_need[i] == NEED_NONE) {
+        if (s.need_kind[i] == NEED_NONE) {
             continue;
         }
-        const need_t need = s_need[i];
+        const need_t need = s.need_kind[i];
         memset(&s.req, 0, sizeof(s.req));
         s.req.kind = (need == NEED_UP)      ? FM_REQ_UP
                      : (need == NEED_ENTER) ? FM_REQ_ENTER

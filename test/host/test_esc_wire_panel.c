@@ -694,6 +694,24 @@ TEST_CASE(power_keeps_its_last_choice_over_a_restart)
     settings_init();
 }
 
+/* The gate is set once at boot; every start of the screens wipes the
+ * page set's state and hands the same gate to the new session. */
+TEST_CASE(the_gate_outlives_a_start_of_the_screens)
+{
+    esc_prog_gate_t boot;
+
+    esc_prog_gate_init(&boot);
+    esc_wire_panel_gate(&boot);
+    CHECK(esc_wire_panel_model()->gate == &boot);
+    esc_wire_pages.init(k_ew_area);
+    CHECK(esc_wire_panel_model()->gate == &boot);
+    esc_wire_pages.init(k_ew_area);
+    CHECK(esc_wire_panel_model()->gate == &boot);
+    esc_wire_panel_gate(&g_gate);
+    esc_wire_pages.init(k_ew_area);
+    CHECK(esc_wire_panel_model()->gate == &g_gate);
+}
+
 int main(void)
 {
     RUN(connect_shows_what_it_will_drive_and_takes_a_hold);
@@ -722,5 +740,6 @@ int main(void)
     RUN(a_delete_on_another_card_than_the_lists_deletes_nothing);
     RUN(a_save_answered_late_is_still_the_sessions_own);
     RUN(power_keeps_its_last_choice_over_a_restart);
+    RUN(the_gate_outlives_a_start_of_the_screens);
     return test_summary("esc_wire_panel");
 }

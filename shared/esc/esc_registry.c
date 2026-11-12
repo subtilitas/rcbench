@@ -28,10 +28,15 @@ typedef struct {
     bool          replaces;     /**< a built-in profile has this id        */
 } slot_t;
 
-/** @brief Card profiles, in the order the card was read. */
-static slot_t s_over[ESC_PROFILE_MAX_OVERRIDES];
-/** @brief Number of card profiles held in s_over. */
-static size_t s_over_n;
+/** @brief The card profiles the registry holds, one instance per image. */
+typedef struct {
+    /** @brief Card profiles, in the order the card was read */
+    slot_t slot[ESC_PROFILE_MAX_OVERRIDES];
+    size_t n;                   /**< number of card profiles held in slot */
+} reg_state_t;
+
+/** @brief The registry's one instance. */
+static reg_state_t reg;
 
 /**
  * @brief Find a built-in profile by id.
@@ -57,9 +62,9 @@ static const esc_profile_t *builtin_find(const char *id)
  */
 static slot_t *over_find(const char *id)
 {
-    for (size_t i = 0; i < s_over_n; ++i) {
-        if (strcmp(s_over[i].p.id, id) == 0) {
-            return &s_over[i];
+    for (size_t i = 0; i < reg.n; ++i) {
+        if (strcmp(reg.slot[i].p.id, id) == 0) {
+            return &reg.slot[i];
         }
     }
     return NULL;
@@ -141,8 +146,8 @@ bool esc_profiles_override_why(const esc_profile_t *p, void *block,
     if (s != NULL) {
         /* The later file wins; the earlier one's memory goes with it. */
         free(s->block);
-    } else if (s_over_n < ESC_PROFILE_MAX_OVERRIDES) {
-        s = &s_over[s_over_n++];
+    } else if (reg.n < ESC_PROFILE_MAX_OVERRIDES) {
+        s = &reg.slot[reg.n++];
     } else {
         return refuse(block, why, "more than 32 on the card");
     }
@@ -154,23 +159,23 @@ bool esc_profiles_override_why(const esc_profile_t *p, void *block,
 
 void esc_profiles_clear_overrides(void)
 {
-    for (size_t i = 0; i < s_over_n; ++i) {
-        free(s_over[i].block);
+    for (size_t i = 0; i < reg.n; ++i) {
+        free(reg.slot[i].block);
     }
-    memset(s_over, 0, sizeof(s_over));
-    s_over_n = 0;
+    memset(reg.slot, 0, sizeof(reg.slot));
+    reg.n = 0;
 }
 
 size_t esc_profiles_override_count(void)
 {
-    return s_over_n;
+    return reg.n;
 }
 
 size_t esc_profiles_count(void)
 {
     size_t added = 0;
-    for (size_t i = 0; i < s_over_n; ++i) {
-        added += s_over[i].replaces ? 0u : 1u;
+    for (size_t i = 0; i < reg.n; ++i) {
+        added += reg.slot[i].replaces ? 0u : 1u;
     }
     return esc_profiles_builtin_count + added;
 }
@@ -182,10 +187,10 @@ const esc_profile_t *esc_profiles_at(size_t i)
         return (s != NULL) ? &s->p : &esc_profiles_builtin[i];
     }
     size_t k = i - esc_profiles_builtin_count;
-    for (size_t j = 0; j < s_over_n; ++j) {
-        if (!s_over[j].replaces) {
+    for (size_t j = 0; j < reg.n; ++j) {
+        if (!reg.slot[j].replaces) {
             if (k == 0) {
-                return &s_over[j].p;
+                return &reg.slot[j].p;
             }
             k--;
         }
@@ -204,8 +209,8 @@ const esc_profile_t *esc_profiles_find(const char *id)
 
 bool esc_profiles_is_override(const esc_profile_t *p)
 {
-    for (size_t i = 0; i < s_over_n; ++i) {
-        if (p == &s_over[i].p) {
+    for (size_t i = 0; i < reg.n; ++i) {
+        if (p == &reg.slot[i].p) {
             return true;
         }
     }

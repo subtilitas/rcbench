@@ -936,6 +936,21 @@ TEST_CASE(nothing_of_setup_that_acts_is_under_the_alert_band)
     }
 }
 
+/* What the IOmcu holds does not change with a start of the screens: the
+ * marks stay until the control task says otherwise. */
+TEST_CASE(a_start_of_the_screens_keeps_the_rows_the_iomcu_does_not_hold)
+{
+    fresh_screen();
+    settings_screen_set_unheld(SENSE_LINK_ROW_PINS, TONE_LINK_ROWS_TAP);
+    fresh_screen();
+    CHECK(settings_screen_unheld(SET_SENSE_SDA));
+    CHECK(settings_screen_unheld(SET_TONE_PIN));
+    settings_screen_set_unheld(0u, 0u);
+    fresh_screen();
+    CHECK(!settings_screen_unheld(SET_SENSE_SDA));
+    CHECK(!settings_screen_unheld(SET_TONE_PIN));
+}
+
 int main(void)
 {
     RUN(sensor_sda_takes_the_pins_the_page_takes_and_no_other);
@@ -957,5 +972,6 @@ int main(void)
     RUN(the_tiles_show_and_save_what_a_list_left_unsaved);
     RUN(every_tile_icon_is_centered_over_its_name);
     RUN(nothing_of_setup_that_acts_is_under_the_alert_band);
+    RUN(a_start_of_the_screens_keeps_the_rows_the_iomcu_does_not_hold);
     return test_summary("settings_pins_hub");
 }

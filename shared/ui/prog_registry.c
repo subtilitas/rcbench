@@ -61,19 +61,30 @@ static const prog_reg_row_t k_rows[] = {
       true },
 };
 
-/* The table the lists are built from: k_rows, or one a test hands in. */
-static const prog_reg_row_t *s_rows = k_rows;
-static size_t s_count = sizeof(k_rows) / sizeof(k_rows[0]);
+/** @brief The registry's state, one instance per image. */
+typedef struct {
+    /** @brief The table the lists are built from: k_rows, or one a test
+     *         hands in */
+    const prog_reg_row_t *rows;
+    size_t  count;          /**< rows in it */
+    /** @brief The servo tester's port as the panel last read it
+     *         (prog_registry_set_ports()) */
+    uint8_t tester_port;
+    uint8_t held;           /**< the ports held, one bit a port, as read */
+} reg_state_t;
 
-/* The ports as the panel last read them (prog_registry_set_ports()). */
-static uint8_t s_tester_port = PROG_REG_NO_PORT;
-static uint8_t s_held;
+/** @brief The registry's one instance. */
+static reg_state_t reg = {
+    .rows        = k_rows,
+    .count       = sizeof(k_rows) / sizeof(k_rows[0]),
+    .tester_port = PROG_REG_NO_PORT,
+};
 
 void prog_registry_set_ports(uint8_t tester_port, uint8_t held)
 {
-    s_tester_port = (tester_port < PROG_REG_PORTS) ? tester_port
-                                                   : (uint8_t)PROG_REG_NO_PORT;
-    s_held = (uint8_t)(held & ((1u << PROG_REG_PORTS) - 1u));
+    reg.tester_port = (tester_port < PROG_REG_PORTS) ? tester_port
+                                                     : (uint8_t)PROG_REG_NO_PORT;
+    reg.held = (uint8_t)(held & ((1u << PROG_REG_PORTS) - 1u));
 }
 
 uint8_t prog_reg_port(const prog_reg_row_t *r)
@@ -82,7 +93,7 @@ uint8_t prog_reg_port(const prog_reg_row_t *r)
         return PROG_REG_NO_PORT;
     }
     if (r->port == PROG_REG_TESTER_PORT) {
-        return s_tester_port;
+        return reg.tester_port;
     }
     return (r->port < PROG_REG_PORTS) ? r->port : (uint8_t)PROG_REG_NO_PORT;
 }
@@ -101,19 +112,19 @@ const char *prog_reg_hold_alert(void)
 const prog_reg_row_t *prog_registry(size_t *count)
 {
     if (count != NULL) {
-        *count = s_count;
+        *count = reg.count;
     }
-    return s_rows;
+    return reg.rows;
 }
 
 void prog_registry_use(const prog_reg_row_t *rows, size_t count)
 {
     if (rows == NULL) {
-        s_rows  = k_rows;
-        s_count = sizeof(k_rows) / sizeof(k_rows[0]);
+        reg.rows  = k_rows;
+        reg.count = sizeof(k_rows) / sizeof(k_rows[0]);
     } else {
-        s_rows  = rows;
-        s_count = count;
+        reg.rows  = rows;
+        reg.count = count;
     }
 }
 
@@ -350,7 +361,7 @@ prog_row_state_t prog_reg_state(const prog_reg_row_t *rows, size_t n,
      * does: then it is that session's port. */
     const bool own = r->page_set != NULL && r->page_set->holds_port != NULL
                      && prog_ps_holds(r->page_set);
-    if ((s_held & (1u << port)) != 0u && !own) {
+    if ((reg.held & (1u << port)) != 0u && !own) {
         return PROG_ROW_PORT_BUSY;
     }
     /* Exclusive: another session on the port holds it.  A row sharing the

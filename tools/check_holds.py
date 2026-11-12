@@ -38,7 +38,7 @@ UI = ROOT / "shared" / "ui"
 
 #: Holds drawn outside their module, by (file of the begin, path): why.
 EXCEPTIONS = {
-    ("stop_hold.c", "s_hold"): "STOP is drawn by ui_band.c's stop_body() "
+    ("stop_hold.c", "hold"): "STOP is drawn by ui_band.c's stop_body() "
                                "from stop_hold_flash_ms(), its own red and "
                                "frame around the flash",
 }
