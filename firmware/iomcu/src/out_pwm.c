@@ -40,9 +40,9 @@
  * rate and the last count of its frame.
  */
 typedef struct {
-    bool     used;
-    uint8_t  pin;
-    uint16_t rate_hz;
+    bool     used; /**< the entry is in use */
+    uint8_t  pin; /**< GPIO number */
+    uint16_t rate_hz; /**< frame rate, Hz */
     uint16_t wrap;      /**< the last count of the frame                  */
 } binding_t;
 

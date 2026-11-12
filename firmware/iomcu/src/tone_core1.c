@@ -20,22 +20,23 @@
  * @brief One beep queued for core 0, with the generations it was made under.
  */
 typedef struct {
-    tone_rec_t rec;
-    uint16_t   gen, cap_gen;
+    tone_rec_t rec;       /**< the beep */
+    uint16_t   gen /**< set-up generation the beep was made under */,
+               cap_gen /**< capture generation the beep was made under */;
 } q_entry_t;
 
 /* --- shared between the cores ----------------------------------------- */
 
-static spin_lock_t     *s_lock;
-static tone_cmd_t       s_order;           /* core 0 writes, core 1 copies */
-static uint64_t         s_order_t0_us;
-static uint32_t         s_order_seq;       /* core 0 counts the orders     */
-static tone_status_t    s_status;          /* core 1 writes, core 0 copies */
-static volatile uint32_t s_status_seq;
-static volatile uint32_t s_ack_seq;        /* core 1: the order its last
+static spin_lock_t     *s_lock;   /**< guards the order, status and counters */
+static tone_cmd_t       s_order;           /**< core 0 writes, core 1 copies */
+static uint64_t         s_order_t0_us;     /**< the order's capture start, us */
+static uint32_t         s_order_seq;       /**< core 0 counts the orders     */
+static tone_status_t    s_status;          /**< core 1 writes, core 0 copies */
+static volatile uint32_t s_status_seq;     /**< counts the statuses core 1 wrote */
+static volatile uint32_t s_ack_seq;        /**< core 1: the order its last
                                               pass ran under, set when the
                                               pass is over                 */
-static volatile bool     s_live;           /* core 1 has taken an order    */
+static volatile bool     s_live;           /**< core 1 has taken an order    */
 
 /* The head and tail are free-running uint32_t counters indexed with
  * `% TONE_Q_LEN`; only a power of two keeps the index continuous at the 2^32
@@ -43,10 +44,11 @@ static volatile bool     s_live;           /* core 1 has taken an order    */
 _Static_assert(TONE_Q_LEN != 0u && (TONE_Q_LEN & (TONE_Q_LEN - 1u)) == 0u,
                "TONE_Q_LEN is a power of two");
 
+/** @brief The beep queue, core 1 to core 0. */
 static q_entry_t        s_q[TONE_Q_LEN];
-static volatile uint32_t s_q_head;         /* core 1 advances              */
-static volatile uint32_t s_q_tail;         /* core 0 advances              */
-static volatile uint32_t s_dropped;        /* core 1 counts                */
+static volatile uint32_t s_q_head;         /**< core 1 advances            */
+static volatile uint32_t s_q_tail;         /**< core 0 advances            */
+static volatile uint32_t s_dropped;        /**< core 1 counts the beeps it dropped */
 
 /* --- core 1's own -------------------------------------------------------- */
 
@@ -55,17 +57,17 @@ static volatile uint32_t s_dropped;        /* core 1 counts                */
  * 1's stack is small.
  */
 static tone_svc_t    s_svc;
-static tone_cmd_t    s_cmd;
-static uint64_t      s_cmd_t0_us;
-static uint32_t      s_cmd_seq;
-static tone_status_t s_snap;
-static tone_rec_t    s_rec[TONE_SVC_BEEPS];
-static bool          s_started;
+static tone_cmd_t    s_cmd;         /**< core 1's copy of the order */
+static uint64_t      s_cmd_t0_us;   /**< the copy's capture start, us */
+static uint32_t      s_cmd_seq;     /**< the copy's s_order_seq */
+static tone_status_t s_snap;        /**< core 1's status, before it is shared */
+static tone_rec_t    s_rec[TONE_SVC_BEEPS];   /**< the beeps of one pass */
+static bool          s_started;     /**< tone_core1_init() has run */
 
 /* --- core 0's own -------------------------------------------------------- */
 
-static uint32_t s_taken_seq;
-static uint32_t s_dropped_seen;
+static uint32_t s_taken_seq;     /**< the s_status_seq core 0 last copied */
+static uint32_t s_dropped_seen;  /**< the s_dropped core 0 last reported */
 
 void tone_core1_init(void)
 {

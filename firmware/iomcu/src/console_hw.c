@@ -24,6 +24,10 @@
  */
 #define CONSOLE_HW_KEYS_PER_PASS 64u
 
+/**
+ * @brief The console page: the line being read and the output waiting for the
+ *        panel.
+ */
 static page_console_t s_console;
 /** @brief The console's bytes over the link (the CONSOLE page). */
 static console_tunnel_t s_tunnel;

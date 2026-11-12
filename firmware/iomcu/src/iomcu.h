@@ -64,11 +64,11 @@
  * @brief Register images of the pages the IOmcu holds, one array per page.
  */
 typedef struct {
-    uint16_t identity[LINK_ID_COUNT];
-    uint16_t control[LINK_CT_COUNT];
-    uint16_t status[LINK_ST_COUNT];
-    uint16_t bench[LINK_BN_COUNT];
-    uint16_t channels[LINK_CH_COUNT];   /* what each output is asked for   */
+    uint16_t identity[LINK_ID_COUNT]; /**< IDENTITY page */
+    uint16_t control[LINK_CT_COUNT]; /**< CONTROL page */
+    uint16_t status[LINK_ST_COUNT]; /**< STATUS page */
+    uint16_t bench[LINK_BN_COUNT]; /**< BENCH page */
+    uint16_t channels[LINK_CH_COUNT];   /**< what each output is asked for   */
     uint16_t chan_cfg[LINK_CC_COUNT];   /**< what each channel is */
     uint16_t slots[LINK_OS_COUNT];      /**< which driver drives what */
 } iomcu_state_t;
@@ -96,8 +96,8 @@ extern servo_page_t s_servo;
  * Not kept.
  */
 extern supply_page_t s_supply;
-extern pdmini_t      s_pd;
-extern bool          s_pd_open;      /* the UART claimed for its pins */
+extern pdmini_t      s_pd; /**< the PD mini's driver state */
+extern bool          s_pd_open;      /**< the UART claimed for its pins */
 extern uint8_t       s_pd_rate;         /**< the rate it runs at, 0..6 */
 /**
  * @brief Wiring taken and not yet in flash: no ON until it is, so a restart
@@ -132,7 +132,7 @@ extern tone_page_t   s_tone;
  * outputs until core 1 has let them go, about 1ms.
  */
 extern sense_snap_t  s_sense_snap;
-extern sense_cmd_t   s_sense_cmd;    /* core 1's order as last built */
+extern sense_cmd_t   s_sense_cmd;    /**< core 1's order as last built */
 /**
  * @brief Moves on each edge of the bank into driving: core 1 starts the
  * run's peaks and the INA228's totals on it.
@@ -143,7 +143,9 @@ extern uint16_t      s_run_gen;
  * order s_edge_gen.
  */
 extern bool          s_edge_set;
+/** @brief The capture order (s_sense.cap_gen) the edge was stamped for. */
 extern uint16_t      s_edge_gen;
+/** @brief The edge's time on the 64-bit microsecond timer, us. */
 extern uint64_t      s_edge_us;
 /**
  * @brief What the board and this application hold, before the supply and the
@@ -178,7 +180,7 @@ extern prog_port_t   s_prog;
  * finds the port in PWM (pulse-width modulation) with no session.
  */
 extern kst_port_t    s_kst;
-extern kst_line_t    s_kst_line;
+extern kst_line_t    s_kst_line; /**< the wire driver of s_kst */
 /**
  * @brief The HITEC page: raw transactions of the Hitec wire on a programming
  * port (shared/outputs/hitec_port.h) and the wire driver the port's pin is
@@ -188,7 +190,7 @@ extern kst_line_t    s_kst_line;
  * a restart finds the port free.
  */
 extern hitec_port_t  s_hitec;
-extern hitec_line_t  s_hitec_line;
+extern hitec_line_t  s_hitec_line; /**< the wire driver of s_hitec */
 /**
  * @brief The ESC_WIRE and ESC_DATA pages (shared/outputs/esc_port.h) and the wire
  * driver a throttle slot's or DShot port's pin is handed to.
@@ -211,7 +213,7 @@ extern link_dev_t    s_dev; /**< the link's device end */
  */
 extern outputs_t s_outputs;
 
-#define CH_THROTTLE  LINK_OUT_CHANNELS   /* bank channel 8, off the page */
+#define CH_THROTTLE  LINK_OUT_CHANNELS   /**< bank channel 8, off the page */
 
 /**
  * @brief The panel's safety line, as judged in firmware.
@@ -268,7 +270,8 @@ extern bool s_beat_level;
  * see iomcu_can.c.
  */
 extern bool     s_can_up;
-extern uint32_t s_can_echoes;
+extern uint32_t s_can_echoes; /**< echo frames answered since power-up */
+/** @brief Receive overruns the controller reported since power-up. */
 extern uint32_t s_can_overflows;
 /** @brief Reply frames not sent because the transmit buffer stayed full
  * for IOMCU_CAN_TX_WAIT_US (iomcu_can.c), and the rest of their reply. */

@@ -80,7 +80,8 @@ void heartbeat_init(void)
  * runs at the lowest priority on the bus, so it stays in every build.
  */
 bool     s_can_up;
-uint32_t s_can_echoes;
+uint32_t s_can_echoes; /**< echo frames answered since power-up */
+/** @brief Receive overruns the controller reported since power-up. */
 uint32_t s_can_overflows;
 /** @brief Reply frames not sent because the transmit buffer stayed full. */
 uint32_t s_can_tx_dropped;

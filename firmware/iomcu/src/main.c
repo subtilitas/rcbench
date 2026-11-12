@@ -70,7 +70,7 @@
  */
 iomcu_state_t   s_state;
 servo_page_t    s_servo;
-supply_page_t   s_supply;
+supply_page_t   s_supply;   /**< the SUPPLY page */
 pdmini_t        s_pd;
 bool            s_pd_open;
 uint8_t         s_pd_rate;
