@@ -2075,7 +2075,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/kst_panel_edit.c` | 387 | 378 | 97.7% |
 | `shared/ui/kst_panel_touch.c` | 295 | 288 | 97.6% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
-| `shared/ui/kst_panel_draw.c` | 563 | 561 | 99.6% |
+| `shared/ui/kst_panel_draw.c` | 564 | 562 | 99.7% |
 | `shared/ui/esc_wire_panel.c` | 575 | 546 | 95.0% |
 | `shared/ui/hitec_panel.c` | 273 | 269 | 98.5% |
 | `shared/ui/hitec_panel_text.c` | 508 | 503 | 99.0% |
@@ -2311,6 +2311,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/out_store_range.c` | 10 | 10 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
+| `shared/outputs/out_render.c` | 276 | 273 | 98.9% |
 | `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
 | `shared/outputs/servo_link.c` | 563 | 530 | 94.1% |
@@ -2364,6 +2365,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
 | `shared/fwupdate/fw_c6.c` | 159 | 159 | 100.0% |
+| `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
 | `shared/webaccess/wa_fetch.c` | 427 | 415 | 97.2% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
