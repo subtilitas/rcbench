@@ -7,6 +7,7 @@ import copy
 import json
 
 import make_video
+import video_audio
 
 
 def _board():
@@ -80,3 +81,40 @@ def test_a_step_beyond_the_count_is_refused():
     board = _board()
     board["steps"] = 3
     assert any("from 1 to 3" in e for e in make_video.check(board))
+
+
+def test_the_track_is_as_long_as_the_video():
+    """The scenes lie end to end, a tour's steps summed."""
+    board = {"lang": "en", "steps": 1, "scenes": [
+        {"type": "end", "dur": 4, "heading": "x"},
+        {"type": "tour", "steps": [
+            {"dur": 3, "n": 1, "card": {"title": "x"}},
+            {"view": "overview", "dur": 5, "n": 1, "title": "x",
+             "points": ["a", "b"], "focus": [0, 0, 100, 100]}]}]}
+    assert make_video.check(board) == []
+    assert video_audio.scene_times(board) == [(0.0, 4), (4.0, 8)]
+
+
+def test_each_event_has_its_sound():
+    """A card chimes, a caption pops, points tick, a spotlight swells."""
+    board = {"lang": "en", "steps": 1, "scenes": [
+        {"type": "tour", "steps": [
+            {"dur": 3, "n": 1, "card": {"title": "x"}},
+            {"view": "overview", "dur": 5, "n": 1, "title": "x",
+             "points": ["a", "b"], "focus": [0, 0, 100, 100]}]}]}
+    kinds = [kind for _, kind, _ in video_audio.events(board)]
+    assert kinds.count("chime") == 1
+    assert kinds.count("pop") == 1
+    assert kinds.count("tick") == 2
+    assert kinds.count("swell") == 1
+    assert "tap" not in kinds
+
+
+def test_a_hold_sounds_for_its_two_seconds():
+    """The rising tone starts 2.45s before the step ends."""
+    events = video_audio.events(_board())
+    holds = [t for t, kind, _ in events if kind == "hold"]
+    done = [t for t, kind, _ in events if kind == "done"]
+    assert len(holds) == len(done) == 4
+    assert all(abs(d - h - 2.03) < 1e-6 for h, d in zip(holds, done,
+                                                        strict=True))

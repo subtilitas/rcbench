@@ -8,8 +8,18 @@ under `storyboards/`. It lists scenes; each scene has a type:
 | --- | --- |
 | `case` | the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
-| `tour` | the panel's screens with a caption beside them and a spotlight on a part of the display |
+| `tour` | the panel's screens with an animated caption, a path to the screen, marks that name parts of the display, a spotlight, and chapter cards |
 | `end` | a heading, a numbered recap and a note |
+
+The video has a sound track, computed from the storyboard by
+`tools/video_audio.py`: synthesizer pads, a sine bass and a plucked
+arpeggio over four chords in D major, 8s a chord, and one quiet sound per
+event (a scene change, a chapter card, a caption, a point, a mark, a
+spotlight, a tap, a hold). It has no percussion. Its loudest sample is at
+-6dBFS (decibels relative to full scale); `features` measures -18.3 LUFS
+(loudness units relative to full scale) integrated. The balance between
+the bed and the event sounds is set by calculation and has not been judged
+by ear.
 
 The screens are drawn by the host renderer (`tools/render_ui.py`) from the
 panel's own UI (user interface) code. A step names a renderer view; no
@@ -22,14 +32,16 @@ cd tools/video && npm install && cd ../..          # once: three.js 0.170.0
 python3 tools/make_video.py kst-rbmod              # build/video/kst-rbmod.mp4
 python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
+python3 tools/make_video.py features --no-sound    # the picture alone
+python3 tools/video_audio.py features -o /tmp/features.wav
 python3 tools/make_video.py --check                # every storyboard
 ```
 
-A render needs a C compiler, Pillow, Node.js with the `playwright`
-package and its Chromium, and ffmpeg. `--check` needs only Python; the
+A render needs a C compiler, Pillow, numpy for the sound, Node.js with the
+`playwright` package and its Chromium, and ffmpeg. `--check` needs only Python; the
 pytest case `test/tools/test_make_video.py` runs it in CI (continuous
-integration). The 100.4s of `kst-rbmod` are 3012 frames and the 192.2s of
-`features` 5766; the render time on a software rasteriser is not measured.
+integration). The 100.4s of `kst-rbmod` are 3012 frames and the 260.8s of
+`features` 7824; the render time on a software rasteriser is not measured.
 
 ## Files
 
@@ -40,7 +52,8 @@ integration). The 100.4s of `kst-rbmod` are 3012 frames and the 192.2s of
 | `player/case3d.js` | the case model, its connectors and its named points |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
-| `storyboards/features.json` | every screen of the bench in 8 chapters and 32 steps, 192.2s |
+| `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does, 260.8s |
+| `../video_audio.py` | the sound track of a storyboard as a WAV file |
 
 ## Storyboard fields
 
@@ -54,6 +67,7 @@ Top level:
 | `lang` | `en` or `de`: the language the renderer draws the screens in |
 | `brand` | the line beside `rcbench` at the top left |
 | `steps` | the count of step marks at the bottom left |
+| `chapters` | optional: one name per step; the names replace the step marks, each with a bar that fills while its chapter runs |
 | `words` | optional: `tap`, `hold`, `pos`, `gpio`, the player's own words, for another language |
 | `scenes` | the scenes in order; each fades in and out over 0.45s |
 
@@ -98,12 +112,15 @@ A `tour` scene has `steps`:
 
 | Field | Meaning |
 | --- | --- |
+| `card` | `{title, text}`: a chapter card in place of a screen; the step then has only `dur` (at least 2.0) and `n` |
 | `view` | the renderer's view name |
 | `lang` | optional `en` or `de`: this step's screen in another language than the storyboard's |
-| `dur` | length in s: at least 1.5, 2.5 with a spotlight |
-| `n` | the chapter: the step marks and the number behind the caption |
-| `kicker`, `title`, `text` | the caption; the kicker stays while consecutive steps share it |
-| `points` | optional list of lines under the text |
+| `dur` | length in s: at least 1.5, 2.5 with a spotlight, 1.9 plus 0.38 a mark |
+| `n` | the chapter |
+| `kicker`, `title`, `text` | the caption; the title's words rise in one after another, the kicker stays while consecutive steps share it |
+| `path` | optional list: the way to the screen, `["HOME", "SERVO", "LIVE"]`, drawn as chips |
+| `points` | optional list of lines under the text, each with a tick |
+| `marks` | optional list of `{at: [x, y], text}` and optional `side` (`l`, `r`, `t`, `b`) and `d`, the line's length in pixels: a dot on the display with a name |
 | `focus` | optional `[x, y, w, h]` on the 1024 x 600 display: the rest is dimmed from 0.9s |
 | `tag` | optional amber tag, for a limit of what the screen shows |
 
@@ -132,5 +149,7 @@ An `end` scene has `dur`, `heading`, `items` and `note`.
   estimated. J2's row order is assumed to match J1's and is not
   confirmed.
 - One board is modelled: the rbmod carrier in this case.
-- The video has no sound.
+- The XT60 socket's function is not stated in the tree; the video names
+  the socket and its place only.
+- The sound has not been judged by ear.
 - The player draws 1920 x 1080 only.

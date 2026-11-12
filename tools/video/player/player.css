@@ -54,13 +54,33 @@ svg#ov{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
 #end li{padding:22px 24px;border-radius:20px;background:var(--card);border:1px solid var(--line);font-size:24px;font-weight:600;display:flex;gap:14px;align-items:center}
 #end li span{flex:none;width:38px;height:38px;border-radius:12px;background:var(--cy);color:#001318;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px}
 #end p{margin-top:38px;color:var(--mu);font-size:24px}
-#cap{position:absolute;left:1408px;top:176px;width:462px;height:774px;display:flex;flex-direction:column;justify-content:center}
-#cap .k{font-size:19px;letter-spacing:.26em;color:var(--cy);font-weight:700;text-transform:uppercase}
-#cap h2{font-size:50px;line-height:1.06;font-weight:800;letter-spacing:-.022em;margin:18px 0 0}
+.w{display:inline-block;will-change:transform}
+#cap{position:absolute;left:1408px;top:150px;width:462px;height:800px;display:flex;flex-direction:column;justify-content:center}
+#cap .k{font-size:18px;letter-spacing:.26em;color:var(--cy);font-weight:700;text-transform:uppercase}
+#cap .path{display:flex;flex-wrap:wrap;align-items:center;gap:8px;margin-top:16px;font-size:15.5px;font-weight:700;letter-spacing:.08em}
+#cap .path span{padding:6px 11px;border-radius:8px;background:rgba(255,255,255,.07);border:1px solid var(--line);color:#aab6ca}
+#cap .path span.on{background:rgba(0,229,255,.14);border-color:rgba(0,229,255,.5);color:var(--cy)}
+#cap .path i{font-style:normal;color:#5d6a80;font-size:19px}
+#cap h2{font-size:50px;line-height:1.08;font-weight:800;letter-spacing:-.022em;margin:20px 0 0}
 #cap p{font-size:24px;line-height:1.45;color:#b8c4d8;margin-top:18px}
-#cap ul{list-style:none;margin-top:22px;border-top:1px solid var(--line)}
-#cap li{position:relative;padding:13px 0 13px 30px;font-size:21.5px;line-height:1.35;color:#dbe3f0;border-bottom:1px solid var(--line)}
-#cap li::before{content:"";position:absolute;left:4px;top:23px;width:9px;height:9px;border-radius:50%;background:var(--cy);box-shadow:0 0 12px var(--cy)}
+#cap ul{list-style:none;margin-top:20px}
+#cap li{display:flex;gap:13px;align-items:flex-start;padding:9px 0;font-size:21.5px;line-height:1.36;color:#dbe3f0}
+#cap li svg{flex:none;width:25px;height:25px;margin-top:2px}
+#cap li circle{fill:rgba(0,229,255,.13);stroke:rgba(0,229,255,.55);stroke-width:1.4}
+#cap li path{fill:none;stroke:var(--cy);stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:16}
 #cap li b{color:#fff;font-weight:700}
 #cap .tag{display:inline-block;margin-top:22px;padding:7px 13px;border-radius:9px;font-size:16.5px;font-weight:700;letter-spacing:.08em}
-#ghost{position:absolute;right:40px;top:120px;font-size:300px;font-weight:800;letter-spacing:-.05em;line-height:1;color:#fff;opacity:0}
+.pill{position:absolute;white-space:nowrap;padding:8px 14px;border-radius:999px;background:#00e5ff;color:#00161b;font-size:19px;font-weight:750;box-shadow:0 8px 28px rgba(0,0,0,.55)}
+#card{position:absolute;left:200px;top:270px;width:1520px}
+#card .num{font-size:230px;line-height:.9;font-weight:800;letter-spacing:-.05em;color:transparent;-webkit-text-stroke:2.5px var(--cy);opacity:0}
+#card h2{font-size:124px;line-height:1.02;font-weight:800;letter-spacing:-.03em;margin-top:26px}
+#card .rule{width:340px;height:5px;border-radius:3px;margin-top:34px;background:linear-gradient(90deg,var(--cy),var(--gr));transform-origin:left}
+#card p{font-size:34px;color:var(--mu);margin-top:30px;line-height:1.4}
+#nav{position:absolute;left:56px;right:56px;bottom:26px;display:flex;gap:12px;opacity:0}
+#nav div{flex:1;font-size:17px;font-weight:650;color:#5f6c82;white-space:nowrap;overflow:hidden}
+#nav u{display:block;height:4px;border-radius:2px;background:rgba(255,255,255,.12);margin-bottom:11px;text-decoration:none;overflow:hidden}
+#nav s{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cy),var(--gr));text-decoration:none}
+#nav b{margin-right:8px;font-weight:800;color:#44506a}
+#nav .done{color:#7f8ca3}
+#nav .on{color:#fff}
+#nav .on b{color:var(--cy)}

@@ -1,0 +1,311 @@
+#!/usr/bin/env python3
+"""Synthesise the sound track of a storyboard for tools/make_video.py.
+
+The track is computed, not recorded: a bed of soft synthesizer pads, a
+sine bass and a plucked arpeggio over four chords in D major, and one
+quiet sound per event of the storyboard.  There is no percussion.  The
+same storyboard gives the same samples: the noise comes from a seeded
+generator.
+
+    python3 tools/video_audio.py features -o /tmp/features.wav
+
+events() needs Python only.  render() needs numpy.
+
+Attributes:
+    RATE: Samples per second of the track.
+    BAR_S: Seconds one chord lasts.
+    BEAT_S: Seconds between two notes of the arpeggio.
+    CHORDS: The loop: a bass note and four pad notes per chord, as MIDI
+        (Musical Instrument Digital Interface) note numbers.
+    LEVEL: The loudest sample, as a part of full scale.
+
+SPDX-License-Identifier: MIT
+"""
+
+from __future__ import annotations
+
+import argparse
+import json
+import pathlib
+import sys
+import wave
+
+RATE = 44100
+BAR_S = 8.0
+BEAT_S = 0.5
+LEVEL = 0.5
+CHORDS = (
+    (38, (57, 61, 64, 66)),     # D maj7
+    (42, (57, 61, 64, 68)),     # F sharp m7
+    (43, (59, 62, 66, 69)),     # G maj7
+    (45, (57, 59, 64, 69)),     # A sus2
+)
+
+
+def scene_times(board: dict) -> list:
+    """Lay the scenes on the timeline as the player does.
+
+    Args:
+        board: A storyboard that passed make_video.check().
+
+    Returns:
+        One (start, length) in seconds per scene.
+    """
+    times, start = [], 0.0
+    for scene in board["scenes"]:
+        if scene["type"] in ("screen", "tour"):
+            length = sum(step["dur"] for step in scene["steps"])
+        else:
+            length = scene["dur"]
+        times.append((start, length))
+        start += length
+    return times
+
+
+def events(board: dict) -> list:
+    """List the sounds of a storyboard.
+
+    Args:
+        board: A storyboard that passed make_video.check().
+
+    Returns:
+        (time in s, kind, number) per sound, sorted by time.  The kinds
+        are whoosh, low, chime, pop, tick, swell, tap, hold, done and
+        final; the number is a count that sets a tick's pitch, else 0.
+    """
+    found = []
+    for scene, (start, _) in zip(board["scenes"], scene_times(board),
+                                 strict=True):
+        if start > 0:
+            found.append((start - 0.25, "whoosh", 0))
+        kind = scene["type"]
+        if kind == "case":
+            if "title" in scene:
+                found.append((start + scene["title"]["from"], "chime", 0))
+            for label in scene.get("labels", []):
+                found.append((start + label["from"] + 0.1, "pop", 0))
+            lid = scene.get("lid", [])
+            for a, b in zip(lid, lid[1:], strict=False):
+                if a[1] != b[1]:
+                    found.append((start + a[0], "low", 0))
+            if "pinout" in scene:
+                found.append((start + scene["pinout"]["from"], "pop", 0))
+            if "servo" in scene:
+                found.append((start + scene["servo"]["plug"][1] - 0.15,
+                              "tap", 0))
+        elif kind == "end":
+            found.append((start + 0.3, "final", 0))
+        at = start
+        for step in scene.get("steps", []):
+            if "card" in step:
+                found.append((at - 0.2, "whoosh", 0))
+                found.append((at + 0.25, "chime", 0))
+            else:
+                found.append((at + 0.25, "pop", 0))
+            if kind == "tour" and "card" not in step:
+                # The caption's lines: kicker, path, two for the title,
+                # the text, then the points, 0.14s apart.
+                first = 4 + (1 if step.get("path") else 0)
+                for n in range(len(step.get("points", []))):
+                    found.append((at + 0.5 + 0.14 * (first + n), "tick", n))
+                for n in range(len(step.get("marks", []))):
+                    found.append((at + 1.05 + 0.38 * n, "tick", n + 2))
+                if "focus" in step:
+                    found.append((at + 0.9, "swell", 0))
+            if step.get("action") == "tap":
+                found.append((at + step["dur"] - 0.47, "tap", 0))
+            if step.get("action") == "hold":
+                found.append((at + step["dur"] - 2.45, "hold", 0))
+                found.append((at + step["dur"] - 0.42, "done", 0))
+            at += step["dur"]
+    return sorted(f for f in found if f[0] >= 0)
+
+
+def render(board: dict, path: pathlib.Path) -> float:
+    """Write the track as a 16-bit stereo WAV file.
+
+    Args:
+        board: A storyboard that passed make_video.check().
+        path: The file to write.
+
+    Returns:
+        The track's length in seconds.
+    """
+    try:
+        import numpy as np
+    except ImportError:
+        sys.exit("the sound track needs numpy: pip install numpy")
+
+    total = sum(length for _, length in scene_times(board))
+    n = int(total * RATE)
+    rng = np.random.default_rng(2350)
+    music = np.zeros((2, n + RATE * 4))
+    fx = np.zeros((2, n + RATE * 4))
+
+    def hz(note):
+        return 440.0 * 2.0 ** ((note - 69) / 12.0)
+
+    def put(buf, t, sig, pan=0.0, gain=1.0):
+        i = int(t * RATE)
+        if i < 0 or i >= buf.shape[1]:
+            return
+        sig = sig[: buf.shape[1] - i]
+        buf[0, i:i + len(sig)] += sig * gain * (1.0 - max(0.0, pan))
+        buf[1, i:i + len(sig)] += sig * gain * (1.0 + min(0.0, pan))
+
+    def tone(freq, length, partials=((1, 1.0),)):
+        t = np.arange(int(length * RATE)) / RATE
+        return sum(a * np.sin(2 * np.pi * freq * k * t)
+                   for k, a in partials), t
+
+    def swell(length, attack, release):
+        t = np.arange(int(length * RATE)) / RATE
+        env = np.minimum(1.0, t / attack)
+        env = np.minimum(env, np.clip((length - t) / release, 0.0, 1.0))
+        return 0.5 - 0.5 * np.cos(np.pi * env)
+
+    def noise(length, low, high):
+        spec = np.fft.rfft(rng.standard_normal(int(length * RATE)))
+        f = np.fft.rfftfreq(int(length * RATE), 1.0 / RATE)
+        spec *= np.exp(-((np.log2(np.maximum(f, 1.0) / np.sqrt(low * high))
+                          / np.log2(high / low)) ** 2) * 4.0)
+        out = np.fft.irfft(spec, int(length * RATE))
+        return out / np.max(np.abs(out))
+
+    # The bed: per chord a pad of three detuned voices a note, a sine
+    # bass and a plucked note every BEAT_S.  A pad overlaps the next by
+    # 3s, so no chord starts on an edge.
+    soft = tuple((k, k ** -1.7) for k in range(1, 7))
+    pluck = ((1, 1.0), (2, 0.28), (3, 0.08))
+    order = (0, 2, 1, 3, 2, 3, 1, 2)
+    bars = int(total / BAR_S) + 1
+    for bar in range(bars):
+        t0 = bar * BAR_S
+        bass, notes = CHORDS[bar % len(CHORDS)]
+        if bar == bars - 1 or t0 > total - 9.0:
+            bass, notes = CHORDS[0]
+        env = swell(BAR_S + 3.0, 2.6, 3.2)
+        for j, note in enumerate(notes):
+            for cents, pan in ((-5, -0.6), (0, 0.0), (6, 0.6)):
+                sig, t = tone(hz(note) * 2 ** (cents / 1200), BAR_S + 3.0,
+                              soft)
+                wob = 1.0 + 0.12 * np.sin(2 * np.pi * (0.11 + 0.03 * j) * t
+                                          + j + bar)
+                put(music, t0, sig * env * wob, pan, 0.030)
+        sig, _ = tone(hz(bass), BAR_S + 3.0, ((1, 1.0), (2, 0.18)))
+        put(music, t0, sig * env, 0.0, 0.07)
+        sig, _ = tone(hz(notes[1] + 24), BAR_S + 3.0)
+        put(music, t0, sig * env * env, 0.3, 0.012)
+        if t0 < 5.0 or t0 > total - 10.0:
+            continue
+        for beat in range(int(BAR_S / BEAT_S)):
+            note = notes[order[beat % len(order)]] + 12
+            sig, t = tone(hz(note), 1.6, pluck)
+            sig *= np.exp(-t / 0.32) * np.minimum(1.0, t / 0.012)
+            vel = 0.050 * (0.7 + 0.3 * ((beat * 5 + bar * 3) % 4) / 3.0)
+            tb = t0 + beat * BEAT_S
+            put(music, tb, sig, -0.5, vel)
+            put(music, tb + 0.375, sig, 0.6, vel * 0.42)
+            put(music, tb + 0.75, sig, -0.6, vel * 0.18)
+
+    def chord_at(t):
+        return CHORDS[int(max(t, 0.0) / BAR_S) % len(CHORDS)][1]
+
+    bell = ((1, 1.0), (2.76, 0.16), (5.4, 0.05))
+    for t, kind, num in events(board):
+        notes = chord_at(t)
+        if kind == "whoosh":
+            sig = noise(0.9, 500.0, 5000.0) * swell(0.9, 0.55, 0.35) ** 2
+            put(fx, t, sig, 0.0, 0.085)
+        elif kind == "low":
+            sig = noise(1.6, 90.0, 700.0) * swell(1.6, 0.9, 0.7) ** 2
+            put(fx, t, sig, 0.0, 0.16)
+        elif kind in ("chime", "final"):
+            run = (0, 2, 3) if kind == "chime" else (0, 1, 2, 3, 0)
+            for k, idx in enumerate(run):
+                up = 24 if k < 4 else 36
+                sig, tt = tone(hz(notes[idx] + up), 2.6, bell)
+                sig *= np.exp(-tt / 0.75) * np.minimum(1.0, tt / 0.006)
+                put(fx, t + 0.11 * k, sig, (-0.5, 0.5, 0.0)[k % 3], 0.075)
+        elif kind == "pop":
+            tt = np.arange(int(0.16 * RATE)) / RATE
+            f = hz(notes[0] + 12) * (1.0 + 0.5 * np.minimum(1, tt / 0.08))
+            sig = np.sin(2 * np.pi * np.cumsum(f) / RATE)
+            sig *= np.exp(-tt / 0.045) * np.minimum(1.0, tt / 0.004)
+            put(fx, t, sig, 0.25, 0.11)
+        elif kind == "tick":
+            sig, tt = tone(hz(notes[num % 4] + 36), 0.25)
+            sig *= np.exp(-tt / 0.035) * np.minimum(1.0, tt / 0.003)
+            put(fx, t, sig, 0.4 - 0.2 * (num % 3), 0.05)
+        elif kind == "swell":
+            tt = np.arange(int(0.7 * RATE)) / RATE
+            f = hz(notes[0]) * (1.0 + 0.335 * tt / 0.7)
+            sig = np.sin(2 * np.pi * np.cumsum(f) / RATE)
+            put(fx, t, sig * swell(0.7, 0.4, 0.3), -0.2, 0.05)
+        elif kind == "tap":
+            sig, tt = tone(hz(notes[2] + 24), 0.2, ((1, 1.0), (2, 0.3)))
+            sig *= np.exp(-tt / 0.03) * np.minimum(1.0, tt / 0.002)
+            put(fx, t, sig, -0.2, 0.13)
+        elif kind == "hold":
+            tt = np.arange(int(2.0 * RATE)) / RATE
+            f = hz(notes[0]) * 2.0 ** (tt / 2.0)
+            sig = np.sin(2 * np.pi * np.cumsum(f) / RATE)
+            put(fx, t, sig * swell(2.0, 0.5, 0.08) * (0.4 + 0.3 * tt),
+                -0.2, 0.045)
+        elif kind == "done":
+            for k, idx in enumerate((0, 2)):
+                sig, tt = tone(hz(notes[idx] + 24), 1.2, bell)
+                sig *= np.exp(-tt / 0.3) * np.minimum(1.0, tt / 0.004)
+                put(fx, t + 0.09 * k, sig, 0.2, 0.09)
+
+    # A room: 2.4s of decaying noise, convolved in one transform.
+    ir_n = int(2.4 * RATE)
+    size = 1 << int(np.ceil(np.log2(music.shape[1] + ir_n)))
+    out = np.zeros_like(music)
+    decay = np.exp(-np.arange(ir_n) / (0.55 * RATE))
+    for ch in range(2):
+        ir = noise(2.4, 200.0, 6000.0) * decay
+        ir /= np.sqrt(np.sum(ir ** 2))
+        dry = music[ch] + 0.8 * fx[ch]
+        wet = np.fft.irfft(np.fft.rfft(dry, size) * np.fft.rfft(ir, size),
+                           size)[: music.shape[1]]
+        out[ch] = music[ch] + fx[ch] + 0.33 * wet
+    out = out[:, :n]
+    t = np.arange(n) / RATE
+    out *= np.minimum(1.0, t / 1.5) * np.clip((total - t) / 3.5, 0.0, 1.0)
+    # The level: the loudest sample at LEVEL of full scale, no limiter.
+    out *= LEVEL / max(1e-9, float(np.max(np.abs(out))))
+    data = (out.T * 32767.0).astype("<i2")
+    with wave.open(str(path), "wb") as wav:
+        wav.setnchannels(2)
+        wav.setsampwidth(2)
+        wav.setframerate(RATE)
+        wav.writeframes(data.tobytes())
+    return total
+
+
+def main() -> int:
+    """Write the sound track of one storyboard.
+
+    Returns:
+        The exit status.
+    """
+    import make_video
+
+    ap = argparse.ArgumentParser()
+    ap.add_argument("storyboard")
+    ap.add_argument("-o", "--output", type=pathlib.Path, required=True)
+    args = ap.parse_args()
+    path = pathlib.Path(args.storyboard)
+    if not path.suffix:
+        path = make_video.VIDEO / "storyboards" / f"{args.storyboard}.json"
+    board = json.loads(path.read_text(encoding="utf-8"))
+    errors = make_video.check(board)
+    if errors:
+        sys.exit("\n".join(errors))
+    print(f"{render(board, args.output):.1f}s")
+    return 0
+
+
+if __name__ == "__main__":
+    sys.exit(main())

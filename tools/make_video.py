@@ -11,8 +11,13 @@ screens are not recordings: each step names a view of the host renderer
     python3 tools/make_video.py kst-rbmod --stills 2.5,40
     python3 tools/make_video.py --check                  # every storyboard
 
-A render needs a C compiler, Pillow, Node.js with the playwright package
-and its Chromium, ffmpeg, and `npm install` run once in tools/video/.
+The video carries a sound track that tools/video_audio.py computes from
+the same storyboard: synthesizer pads and one quiet sound per event.
+--no-sound leaves it out.
+
+A render needs a C compiler, Pillow, numpy for the sound, Node.js with the
+playwright package and its Chromium, ffmpeg, and `npm install` run once in
+tools/video/.
 --check needs none of them: it reads every storyboard and fails on a field
 the player would not draw.  tools/video/README.md lists the fields.
 
@@ -160,16 +165,35 @@ def _check_tour(scene: dict, steps: int, where: str, errors: list) -> None:
         errors.append(f"{where}: steps is empty")
     for n, step in enumerate(scene.get("steps", [])):
         at = f"{where} step {n + 1}"
+        if not (isinstance(step.get("n"), int) and 1 <= step["n"] <= steps):
+            errors.append(f"{at}: n must be a step from 1 to {steps}")
+        if "card" in step:
+            # A chapter card: its line is drawn by 1.25s.
+            if not isinstance(step["card"].get("title"), str):
+                errors.append(f"{at}: card needs a title")
+            if not (_number(step.get("dur")) and step["dur"] >= 2.0):
+                errors.append(f"{at}: dur must be at least 2.0s")
+            continue
         for name in ("view", "title"):
             if not isinstance(step.get(name), str):
                 errors.append(f"{at}: {name} is missing")
-        # The caption takes 0.6s to appear and each point 0.13s more; the
-        # spotlight is drawn from 1.5s.
+        marks = step.get("marks", [])
+        for mark in marks if isinstance(marks, list) else [None]:
+            if not (isinstance(mark, dict) and isinstance(mark.get("text"),
+                                                          str)
+                    and isinstance(mark.get("at"), list)
+                    and len(mark["at"]) == 2
+                    and 0 <= mark["at"][0] < PANEL[0]
+                    and 0 <= mark["at"][1] < PANEL[1]
+                    and mark.get("side", "r") in ("l", "r", "t", "b")):
+                errors.append(f"{at}: a mark needs text and at, [x, y] on "
+                              f"the {PANEL[0]}x{PANEL[1]} display")
+        # The caption takes 0.6s to appear and each point 0.14s more; the
+        # spotlight is drawn by 1.5s, and a mark every 0.38s from 1.0s.
         least = 2.5 if "focus" in step else 1.5
+        least = max(least, 1.9 + 0.38 * len(marks)) if marks else least
         if not (_number(step.get("dur")) and step["dur"] >= least):
             errors.append(f"{at}: dur must be at least {least}s")
-        if not (isinstance(step.get("n"), int) and 1 <= step["n"] <= steps):
-            errors.append(f"{at}: n must be a step from 1 to {steps}")
         if step.get("lang", "en") not in ("en", "de"):
             errors.append(f"{at}: lang must be en or de")
         focus = step.get("focus")
@@ -201,6 +225,11 @@ def check(board: dict) -> list:
     if not isinstance(steps, int) or steps < 0:
         errors.append("steps must be a count of 0 or more")
         steps = 0
+    chapters = board.get("chapters")
+    if chapters is not None and not (
+            isinstance(chapters, list) and len(chapters) == steps
+            and all(isinstance(name, str) for name in chapters)):
+        errors.append("chapters must hold one name per step")
     scenes = board.get("scenes")
     if not isinstance(scenes, list) or not scenes:
         return errors + ["scenes is empty"]
@@ -242,6 +271,8 @@ def views(board: dict) -> dict:
                                    board["lang"])
         if scene["type"] in ("screen", "tour"):
             for step in scene["steps"]:
+                if "card" in step:
+                    continue
                 lang = step.get("lang")
                 name = f"{step['view']}@{lang}" if lang else step["view"]
                 found[name] = (step["view"],
@@ -362,6 +393,8 @@ def main() -> int:
     ap.add_argument("--stills", metavar="T,T,...",
                     help="write one PNG per time in seconds instead of "
                          "the video")
+    ap.add_argument("--no-sound", action="store_true",
+                    help="write the video without its sound track")
     ap.add_argument("--check", action="store_true",
                     help="read every storyboard and fail on a fault")
     args = ap.parse_args()
@@ -410,11 +443,23 @@ def main() -> int:
             threading.Thread(target=server.serve_forever,
                              daemon=True).start()
             url = f"http://127.0.0.1:{server.server_address[1]}/index.html"
+            sound = not args.stills and not args.no_sound
+            silent = shots / "silent.mp4" if sound else out
             cmd = ["node", str(VIDEO / "player" / "capture.js"), url]
             cmd += (["stills", str(out), args.stills] if args.stills
-                    else ["video", str(out), str(args.fps)])
+                    else ["video", str(silent), str(args.fps)])
             status = subprocess.run(cmd).returncode
             server.shutdown()
+        if status == 0 and sound:
+            import video_audio
+
+            track = shots / "track.wav"
+            video_audio.render(board, track)
+            status = subprocess.run(
+                ["ffmpeg", "-v", "error", "-y", "-i", str(silent),
+                 "-i", str(track), "-c:v", "copy", "-c:a", "aac",
+                 "-b:a", "192k", "-shortest", "-movflags", "+faststart",
+                 str(out)]).returncode
     if status == 0:
         print(out)
     return 1 if status else 0

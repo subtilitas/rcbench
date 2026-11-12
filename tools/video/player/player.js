@@ -51,10 +51,19 @@ for (const sc of sb.scenes) {
     for (const st of sc.steps) {
       st.t = a;
       a += st.dur;
+      if (st.card) continue;
       st.shot = st.lang ? `${st.view}@${st.lang}` : st.view;
       need.add(st.shot);
     }
     sc.dur = a;
+  }
+  if (sc.type === 'tour') {
+    // Each chapter's span of the scene, for the bar under its name.
+    sc.span = {};
+    for (const st of sc.steps) {
+      const s = sc.span[st.n] || (sc.span[st.n] = [st.t, 0]);
+      s[1] = st.t + st.dur;
+    }
   }
   if (sc.type === 'case' && sc.display) need.add(sc.display.view);
   acc += sc.dur;
@@ -79,10 +88,15 @@ for (const sc of sb.scenes) {
 }
 
 $('#brand').innerHTML = `<b>rcbench</b> · ${sb.brand || ''}`;
-const dots = $('#dots');
+const dots = $('#dots'), nav = $('#nav');
 for (let i = 0; i < (sb.steps || 0); i++) {
   dots.appendChild(document.createElement('i'));
 }
+// A storyboard with chapter names shows them in place of the step marks.
+(sb.chapters || []).forEach((name, i) => {
+  nav.insertAdjacentHTML('beforeend', '<div><u><s></s></u>'
+    + `<b>${String(i + 1).padStart(2, '0')}</b>${name}</div>`);
+});
 const bubs = $('#bubs'), ov = $('#ov');
 
 // A card with an optional pointer to (tx, ty).  o.a is its opacity.
@@ -254,73 +268,158 @@ function drawScreen(sc, lt, a, pulse, ui) {
   }
 }
 
-// A screenshot with a caption beside it and an optional spotlight on a
-// part of the display.
+// Words that rise into place one after another, from t0, 0.07s apart.
+function setWords(el, text) {
+  el.innerHTML = text.split(' ').map(
+    w => `<span class="w">${w}</span>`).join(' ');
+}
+function moveWords(el, q, t0, alpha) {
+  [...el.querySelectorAll('.w')].forEach((s, i) => {
+    const o = ramp(q, t0 + i * .07, t0 + i * .07 + .45);
+    s.style.opacity = o * alpha;
+    s.style.transform = `translateY(${(1 - o) * .55}em)`;
+    s.style.filter = o < 1 ? `blur(${(1 - o) * 7}px)` : '';
+  });
+}
+const CHECK = '<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10.5"/>'
+  + '<path d="M7 12.5l3.4 3.4L17.2 9"/></svg>';
+
+// The chapter card: a number, a title and a line, on the bare background.
+function drawCard(b, q0, a, key) {
+  const e = $('#card'), out = 1 - ramp(q0, b.dur - .4, b.dur - .05);
+  if (e.dataset.for !== key) {
+    e.querySelector('.num').textContent = String(b.n).padStart(2, '0');
+    setWords(e.querySelector('h2'), b.card.title);
+    e.querySelector('p').innerHTML = b.card.text || '';
+    e.dataset.for = key;
+  }
+  e.style.display = 'block';
+  const num = e.querySelector('.num'), o = ramp(q0, 0, .55);
+  num.style.opacity = o * out * a;
+  num.style.transform = `translateX(${(1 - o) * -40}px)`;
+  moveWords(e.querySelector('h2'), q0, .22, out * a);
+  const rule = e.querySelector('.rule');
+  rule.style.transform = `scaleX(${ramp(q0, .45, 1.15)})`;
+  rule.style.opacity = out * a;
+  const txt = e.querySelector('p'), ot = ramp(q0, .75, 1.25);
+  txt.style.opacity = ot * out * a;
+  txt.style.transform = `translateY(${(1 - ot) * 14}px)`;
+}
+
+// A screenshot with a caption beside it, an optional spotlight on a part
+// of the display and optional marks that name parts of it.
 function drawTour(sc, lt, a, ui) {
-  const dev = $('#dev'), cap = $('#cap'), ghost = $('#ghost');
+  const dev = $('#dev'), cap = $('#cap');
   let i = 0;
   while (i < sc.steps.length - 1 && lt >= sc.steps[i + 1].t) i++;
-  const b = sc.steps[i], q0 = lt - b.t, prev = sc.steps[Math.max(0, i - 1)];
+  const b = sc.steps[i], q0 = lt - b.t, key = sc.t + ':' + i;
+  ui.step = b.n;
+  ui.frac = (lt - sc.span[b.n][0]) / (sc.span[b.n][1] - sc.span[b.n][0]);
+  if (b.card) { drawCard(b, q0, a, key); return; }
+  const before = i > 0 ? sc.steps[i - 1] : null;
+  const prev = before && !before.card ? before : b;
+  const entry = !before || before.card ? ramp(q0, 0, .75) : 1;
   const zoom = 1 + .014 * q0 / b.dur;
+  const out = 1 - ramp(q0, b.dur - .32, b.dur - .04);
+  const next = sc.steps[i + 1];
+  const leave = !next || next.card ? out : 1;
   dev.style.display = 'block';
-  dev.style.opacity = a;
-  dev.style.transform = `scale(${zoom})`;
-  const xf = i === 0 ? 1 : ramp(q0, 0, .4);
+  dev.style.opacity = a * entry * leave;
+  dev.style.transform = `perspective(1800px) rotateY(${(1 - entry) * 9}deg)`
+    + ` translateX(${(1 - entry) * -46}px) scale(${zoom})`;
   $('#s0').src = imgs[prev.shot].src;
   $('#s1').src = imgs[b.shot].src;
-  $('#s1').style.opacity = xf;
-  ui.step = b.n;
-  const out = 1 - ramp(q0, b.dur - .32, b.dur - .04);
+  $('#s1').style.opacity = prev === b ? 1 : ramp(q0, 0, .4);
+  const cx = 56 + 652, cy = 176 + 387;
+  const zx = x => cx + (SX + x * SC - cx) * zoom;
+  const zy = y => cy + (SY + y * SC - cy) * zoom;
   if (b.focus) {
     const [fx, fy, fw, fh] = b.focus;
-    const x = SX + fx * SC, y = SY + fy * SC, w = fw * SC, h = fh * SC;
+    const x = zx(fx), y = zy(fy), w = fw * SC * zoom, h = fh * SC * zoom;
     const fa = ramp(q0, .9, 1.5) * out * a;
-    const cx = 56 + 652, cy = 176 + 387;
     const rr = (X, Y, W, H, r) => `M${X + r} ${Y}h${W - 2 * r}`
       + `a${r} ${r} 0 0 1 ${r} ${r}v${H - 2 * r}a${r} ${r} 0 0 1 ${-r} ${r}`
       + `h${-(W - 2 * r)}a${r} ${r} 0 0 1 ${-r} ${-r}v${-(H - 2 * r)}`
       + `a${r} ${r} 0 0 1 ${r} ${-r}z`;
     ov.insertAdjacentHTML('beforeend',
-      `<g transform="translate(${cx} ${cy}) scale(${zoom})
-         translate(${-cx} ${-cy})" opacity="${fa}">
-        <path fill-rule="evenodd" fill="rgba(4,7,12,.62)"
-          d="${rr(SX, SY, 1280, 750, 10)}${rr(x, y, w, h, 12)}"/>
+      `<g opacity="${fa}"><path fill-rule="evenodd" fill="rgba(4,7,12,.62)"
+          d="${rr(zx(0), zy(0), 1280 * zoom, 750 * zoom, 10)}`
+      + `${rr(x, y, w, h, 12)}"/>
         <path d="${rr(x, y, w, h, 12)}" fill="none" stroke="#00e5ff"
           stroke-width="9" opacity=".16"/>
         <path d="${rr(x, y, w, h, 12)}" fill="none" stroke="#00e5ff"
           stroke-width="2.5"/></g>`);
   }
-  const key = sc.t + ':' + i;
+  // Marks: a dot on the display, a short line and a pill with a name.
+  (b.marks || []).forEach((m, k) => {
+    const t0 = 1.0 + .38 * k, o = ramp(q0, t0, t0 + .4) * out * a;
+    if (o <= 0) return;
+    const x = zx(m.at[0]), y = zy(m.at[1]), d = m.d || 54;
+    const side = m.side || (m.at[1] < 90 ? 'b' : m.at[0] > 700 ? 'l' : 'r');
+    const [ex, ey] = side === 'b' ? [x, y + d] : side === 't' ? [x, y - d]
+      : side === 'l' ? [x - d, y] : [x + d, y];
+    const grow = ramp(q0, t0, t0 + .35);
+    const e = document.createElement('div');
+    e.className = 'pill';
+    e.textContent = m.text;
+    e.style.opacity = ramp(q0, t0 + .15, t0 + .5) * out * a;
+    bubs.appendChild(e);
+    const r = e.getBoundingClientRect();
+    e.style.left = (side === 'l' ? ex - r.width : side === 'r' ? ex
+      : ex - r.width / 2) + 'px';
+    e.style.top = (side === 't' ? ey - r.height : side === 'b' ? ey
+      : ey - r.height / 2) + 'px';
+    const pu = ((q0 - t0) * .8) % 1;
+    ov.insertAdjacentHTML('beforeend',
+      `<g opacity="${o}"><line x1="${x}" y1="${y}"
+         x2="${x + (ex - x) * grow}" y2="${y + (ey - y) * grow}"
+         stroke="#00e5ff" stroke-width="2.5"/>
+       <circle cx="${x}" cy="${y}" r="13" fill="rgba(4,7,12,.55)"/>
+       <circle cx="${x}" cy="${y}" r="6" fill="#00e5ff"/>
+       <circle cx="${x}" cy="${y}" r="${10 + 14 * pu}" fill="none"
+         stroke="#00e5ff" stroke-width="2" opacity="${(1 - pu) * .8}"/></g>`);
+  });
   if (cap.dataset.for !== key) {
-    const pts = (b.points || []).map(x => `<li>${x}</li>`).join('');
+    const path = (b.path || []).map((x, n, all) =>
+      `<span class="${n === all.length - 1 ? 'on' : ''}">${x}</span>`)
+      .join('<i>›</i>');
+    const pts = (b.points || []).map(
+      x => `<li>${CHECK}<span>${x}</span></li>`).join('');
     cap.innerHTML = `<div class="k">${b.kicker || ''}</div>`
-      + `<h2>${b.title}</h2>` + (b.text ? `<p>${b.text}</p>` : '')
+      + (path ? `<div class="path">${path}</div>` : '')
+      + '<h2></h2>' + (b.text ? `<p>${b.text}</p>` : '')
       + (pts ? `<ul>${pts}</ul>` : '')
       + (b.tag ? `<div><span class="tag warn">${b.tag}</span></div>` : '');
+    setWords(cap.querySelector('h2'), b.title);
     cap.dataset.for = key;
   }
   cap.style.display = 'flex';
   // The kicker stays while the chapter does; the rest comes in line by
-  // line.
-  const same = i > 0 && prev.kicker === b.kicker;
-  const next = sc.steps[i + 1];
-  const stay = next && next.kicker === b.kicker;
+  // line and leaves together.
+  const same = before && !before.card && before.kicker === b.kicker;
+  const stay = next && !next.card && next.kicker === b.kicker;
   let k = 0;
   for (const e of cap.children) {
+    if (e.tagName === 'H2') {
+      moveWords(e, q0, .2, out * a);
+      k += 2;
+      continue;
+    }
     const items = e.tagName === 'UL' ? [...e.children] : [e];
-    if (e.tagName === 'UL') e.style.opacity = 1;
     for (const it of items) {
       const hold = it.className === 'k';
-      const o = (hold && same ? 1 : ramp(q0, .18 + .13 * k, .6 + .13 * k))
-        * (hold && stay ? 1 : out) * a;
-      it.style.opacity = o;
+      const t0 = .2 + .14 * k, o = ramp(q0, t0, t0 + .45);
+      it.style.opacity = (hold && same ? 1 : o) * (hold && stay ? 1 : out)
+        * a;
       it.style.transform = hold && same ? ''
-        : `translateY(${(1 - ramp(q0, .18 + .13 * k, .7 + .13 * k)) * 16}px)`;
+        : `translateY(${(1 - o) * 16}px)`;
+      const tick = it.querySelector('path');
+      if (tick) {
+        tick.style.strokeDashoffset = 16 * (1 - ramp(q0, t0 + .2, t0 + .6));
+      }
       k++;
     }
   }
-  ghost.textContent = String(b.n).padStart(2, '0');
-  ghost.style.opacity = .055 * a;
 }
 
 function drawEnd(sc, a, ui) {
@@ -334,17 +433,16 @@ function drawEnd(sc, a, ui) {
     e.querySelector('p').textContent = sc.note || '';
     e.dataset.for = String(sc.t);
   }
-  ui.step = sb.steps || 0;
+  ui.step = (sb.steps || 0) + 1;
 }
 
 window.TOTAL = TOTAL;
 window.renderAt = t => {
   bubs.innerHTML = '';
   ov.innerHTML = '';
-  for (const id of ['#gl', '#dev', '#end', '#cap']) {
+  for (const id of ['#gl', '#dev', '#end', '#cap', '#card']) {
     $(id).style.display = 'none';
   }
-  $('#ghost').style.opacity = 0;
   $('#title').style.opacity = 0;
   $('#pin').style.opacity = 0;
   $('#bar').style.width = (t / TOTAL * 1920) + 'px';
@@ -353,7 +451,7 @@ window.renderAt = t => {
   const sc = sb.scenes[n], lt = t - sc.t, last = n === sb.scenes.length - 1;
   const a = (n === 0 ? 1 : ramp(lt, 0, FADE))
     * (last ? 1 : 1 - ramp(lt, sc.dur - FADE, sc.dur));
-  const ui = {cn: '', ct: '', step: 0};
+  const ui = {cn: '', ct: '', step: 0, frac: 1};
   // The dots keep the steps of the scenes before this one.
   for (const p of sb.scenes.slice(0, n)) {
     for (const c of p.chips || []) {
@@ -369,9 +467,17 @@ window.renderAt = t => {
   $('#chip').style.opacity = ui.cn !== '' ? a : 0;
   $('#cn').textContent = ui.cn;
   $('#ct').textContent = ui.ct;
-  [...dots.children].forEach((d, i) => { d.className = i < ui.step ? 'on' : ''; });
+  [...dots.children].forEach((d, i) => {
+    d.className = i < ui.step ? 'on' : '';
+  });
+  [...nav.children].forEach((d, i) => {
+    d.className = i + 1 === ui.step ? 'on' : i + 1 < ui.step ? 'done' : '';
+    d.querySelector('s').style.width = (i + 1 < ui.step ? 100
+      : i + 1 === ui.step ? cl(ui.frac) * 100 : 0) + '%';
+  });
+  nav.style.opacity = sc.type === 'tour' || sc.type === 'end' ? a : 0;
   const titled = sc.type === 'case' && sc.title && lt < sc.title.to;
   $('#brand').style.opacity = titled ? 0 : 1;
-  dots.style.opacity = titled ? 0 : 1;
+  dots.style.opacity = titled || sb.chapters ? 0 : 1;
 };
 window.READY = true;

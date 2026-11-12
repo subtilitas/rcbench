@@ -428,11 +428,14 @@ contact together with an injector contact.
 `tools/make_video.py` renders a storyboard, a JSON file under
 `tools/video/storyboards/`, into an MP4 video of 1920 x 1080 pixels at 30 frames per
 second: the case as a three.js model with labels, the panel's screens as the host renderer
-draws them with pointer bubbles and tap and hold marks or with a caption and a spotlight,
-and a recap. `--check` reads every
+draws them with pointer bubbles and tap and hold marks or with an animated caption, marks and
+a spotlight, and a recap. `tools/video_audio.py` computes the sound track from the same
+storyboard: synthesizer pads and one quiet sound per event, no percussion, the loudest sample
+at -6dBFS (decibels relative to full scale); its balance has not been judged by ear. `--check` reads every
 storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
 runs it. Two storyboards: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
-100.4s, and `features`, every screen of the bench in 8 chapters and 32 steps, 192.2s, with
+100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
+it does, 260.8s, with
 the tags of RECEIVER, BATTERY and BALANCE naming what is not built or not measured. The
 renderer draws the KST views on the carrier (`servo-kst-STATE-rbmod`) and MOTOR & ESC's plot
 with an IOmcu answering (`motor-plot`) for them (`test/host/render_screen.c`). The case model is a mockup: outer size, connector order and

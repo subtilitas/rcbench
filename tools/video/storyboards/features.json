@@ -3,10 +3,20 @@
  "lang": "en",
  "brand": "feature tour",
  "steps": 8,
+ "chapters": [
+  "The bench",
+  "Motor & ESC",
+  "Servo",
+  "Supply",
+  "Receiver & pack",
+  "Logs & files",
+  "Wi-Fi & updates",
+  "Setup"
+ ],
  "scenes": [
   {
    "type": "case",
-   "dur": 21,
+   "dur": 27,
    "display": {
     "view": "overview"
    },
@@ -17,6 +27,20 @@
     "heading": "Motor, ESC and<br>servo test bench",
     "text": "A 7 inch touch panel and an RP2350 IOmcu,<br>linked by CAN at 1 Mbit/s."
    },
+   "chips": [
+    {
+     "from": 5.6,
+     "to": 12.8,
+     "n": "i",
+     "text": "Inside the case"
+    },
+    {
+     "from": 13.6,
+     "to": 26.6,
+     "n": "i",
+     "text": "The connector wall"
+    }
+   ],
    "camera": [
     [
      0,
@@ -86,22 +110,35 @@
     [
      14.6,
      [
-      70,
-      82,
+      -150,
+      90,
       300
      ],
      [
-      34,
-      13,
+      -55,
+      12,
       40
      ]
     ],
     [
-     18.6,
+     19.4,
      [
-      86,
-      78,
-      286
+      -120,
+      84,
+      300
+     ],
+     [
+      -45,
+      12,
+      40
+     ]
+    ],
+    [
+     21.4,
+     [
+      80,
+      84,
+      296
      ],
      [
       40,
@@ -110,7 +147,20 @@
      ]
     ],
     [
-     21,
+     25,
+     [
+      96,
+      78,
+      286
+     ],
+     [
+      44,
+      13,
+      40
+     ]
+    ],
+    [
+     27,
      [
       40,
       330,
@@ -151,9 +201,9 @@
       180
      ],
      "size": "sm",
-     "side": "r",
      "title": "Panel · ESP32-P4",
-     "text": "Interface, settings, SD card and Wi-Fi. 1024 x 600 pixels."
+     "text": "Interface, settings, SD card and Wi-Fi. 1024 x 600 pixels.",
+     "side": "r"
     },
     {
      "from": 7.4,
@@ -176,35 +226,64 @@
       650
      ],
      "size": "sm",
-     "side": "r",
      "title": "PD mini",
-     "text": "USB-PD supply for the servo rails, set from the panel."
+     "text": "USB-PD supply for the servo rails, set from the panel.",
+     "side": "r"
     },
     {
      "from": 15.0,
-     "to": 19.4,
+     "to": 19.6,
+     "anchor": "xt60",
+     "at": [
+      330,
+      250
+     ],
+     "size": "sm",
+     "title": "XT60 socket",
+     "text": "Yellow, at the left end of the wall.",
+     "side": "b",
+     "style": "muted"
+    },
+    {
+     "from": 15.0,
+     "to": 19.6,
+     "anchor": "usbc",
+     "at": [
+      1010,
+      250
+     ],
+     "size": "sm",
+     "title": "USB-C socket",
+     "text": "Power input of the bench.",
+     "side": "b",
+     "style": "ok"
+    },
+    {
+     "from": 21.8,
+     "to": 25.6,
      "anchor": "J2",
      "at": [
-      250,
+      330,
       300
      ],
      "size": "sm",
-     "side": "b",
      "title": "J2 · outputs",
-     "text": "4 pins for servos and ESCs."
+     "text": "4 pins for servos and ESCs.",
+     "side": "b"
     },
     {
-     "from": 15.0,
-     "to": 19.4,
+     "from": 21.8,
+     "to": 25.6,
      "anchor": "J1",
      "at": [
       1370,
       300
      ],
      "size": "sm",
-     "side": "b",
      "title": "J1 · programming ports",
-     "text": "4 positions with a fixed 5 V, for the servo programmers."
+     "text": "4 positions with a fixed 5 V, for the servo programmers.",
+     "side": "b",
+     "style": "ok"
     }
    ]
   },
@@ -212,18 +291,65 @@
    "type": "tour",
    "steps": [
     {
+     "dur": 3.0,
+     "n": 1,
+     "card": {
+      "title": "The bench",
+      "text": "One touch screen, eight tiles."
+     }
+    },
+    {
      "view": "overview",
-     "dur": 4.8,
+     "dur": 6.4,
      "n": 1,
      "kicker": "01 · The bench",
+     "path": [
+      "HOME"
+     ],
      "title": "One home screen",
-     "text": "Each function opens from a tile. A tile marked SIMULATED runs from a model until its hardware answers."
+     "text": "Each function opens from a tile. A tile marked SIMULATED runs from a model until its hardware answers.",
+     "marks": [
+      {
+       "at": [
+        520,
+        28
+       ],
+       "text": "Link to the IOmcu"
+      },
+      {
+       "at": [
+        690,
+        28
+       ],
+       "text": "SAFE or ARMED",
+       "d": 100
+      },
+      {
+       "at": [
+        822,
+        28
+       ],
+       "text": "Guide"
+      },
+      {
+       "at": [
+        934,
+        28
+       ],
+       "text": "STOP",
+       "d": 100
+      }
+     ]
     },
     {
      "view": "band-stop",
-     "dur": 6.2,
+     "dur": 6.4,
      "n": 1,
      "kicker": "01 · The bench",
+     "path": [
+      "HOME",
+      "STOP"
+     ],
      "title": "STOP on one touch",
      "text": "STOP latches at first contact. Motor and servo outputs and the supply go off.",
      "points": [
@@ -239,24 +365,92 @@
      ]
     },
     {
-     "view": "motor-plot",
-     "screen": "motor",
-     "dur": 6.2,
+     "dur": 3.0,
+     "n": 2,
+     "card": {
+      "title": "Motor & ESC",
+      "text": "Run a motor, read its telemetry, program its ESC."
+     }
+    },
+    {
+     "view": "overview",
+     "dur": 3.6,
      "n": 2,
      "kicker": "02 · Motor & ESC",
+     "path": [
+      "HOME",
+      "MOTOR & ESC"
+     ],
+     "title": "Where it is",
+     "text": "The first tile of the home screen.",
+     "focus": [
+      8,
+      68,
+      240,
+      250
+     ]
+    },
+    {
+     "view": "motor-plot",
+     "dur": 6.4,
+     "n": 2,
+     "kicker": "02 · Motor & ESC",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "LIVE"
+     ],
      "title": "Live telemetry",
      "text": "Voltage, current, power and rpm, plotted while the motor runs.",
      "points": [
       "Speed and ESC temperature from bidirectional DShot",
-      "Peaks, mAh and Wh of the run",
       "Each run is logged as a CSV file"
+     ],
+     "screen": "motor",
+     "marks": [
+      {
+       "at": [
+        300,
+        250
+       ],
+       "text": "Plot of the run"
+      },
+      {
+       "at": [
+        640,
+        180
+       ],
+       "text": "Live values and peaks",
+       "side": "l"
+      },
+      {
+       "at": [
+        250,
+        440
+       ],
+       "text": "Throttle"
+      },
+      {
+       "at": [
+        500,
+        536
+       ],
+       "text": "DISARM: one touch",
+       "side": "t"
+      }
      ]
     },
     {
      "view": "motor-table",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 2,
      "kicker": "02 · Motor & ESC",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "LIVE",
+      "TABLE"
+     ],
      "title": "Bench against ESC",
      "text": "The table sets the bench's own readings beside what the ESC reports.",
      "focus": [
@@ -268,9 +462,15 @@
     },
     {
      "view": "motor-stick-run",
-     "dur": 6.2,
+     "dur": 6.4,
      "n": 2,
      "kicker": "02 · Motor & ESC",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "PROGRAM",
+      "ESC STICK"
+     ],
      "title": "ESC stick programming",
      "text": "The bench drives the throttle through an ESC's beep menu, item by item.",
      "points": [
@@ -280,59 +480,142 @@
     },
     {
      "view": "motor-wire-am",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 2,
      "kicker": "02 · Motor & ESC",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "PROGRAM"
+     ],
      "title": "ESC signal wire",
      "text": "AM32, Bluejay, BLHeli_S and ESCape32: settings are read, edited and written through the signal wire."
     },
     {
-     "view": "servo-hub",
-     "dur": 4.8,
+     "dur": 3.0,
+     "n": 3,
+     "card": {
+      "title": "Servo",
+      "text": "Test, measure and program servos."
+     }
+    },
+    {
+     "view": "overview",
+     "dur": 4.2,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO"
+     ],
+     "title": "Where it is",
+     "text": "The second tile. Servos plug into J2, programmed servos into J1.",
+     "focus": [
+      254,
+      68,
+      240,
+      250
+     ]
+    },
+    {
+     "view": "servo-hub",
+     "dur": 5.0,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO"
+     ],
      "title": "Eight servo tools",
      "text": "Tester, sweep, automatic test, limit run, rudder gauge and two programmers."
     },
     {
      "view": "servo",
-     "dur": 4.8,
+     "dur": 6.4,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "LIVE"
+     ],
      "title": "LIVE",
-     "text": "A dial commands the position. The screen reads pulse width, measured angle and current.",
-     "focus": [
-      8,
-      414,
-      612,
-      88
+     "text": "A dial commands the position while the bench is ARMED.",
+     "marks": [
+      {
+       "at": [
+        350,
+        250
+       ],
+       "text": "Dial"
+      },
+      {
+       "at": [
+        80,
+        470
+       ],
+       "text": "Commanded pulse",
+       "side": "t"
+      },
+      {
+       "at": [
+        300,
+        470
+       ],
+       "text": "Measured angle",
+       "side": "t",
+       "d": 100
+      },
+      {
+       "at": [
+        500,
+        470
+       ],
+       "text": "Current",
+       "side": "t"
+      }
      ]
     },
     {
      "view": "servo-sweep",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "SWEEP"
+     ],
      "title": "SWEEP",
      "text": "A square, sine or triangle sweep, timed by the IOmcu, with speed and pause."
     },
     {
      "view": "servo-result",
-     "dur": 6.2,
+     "dur": 6.4,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "TEST"
+     ],
      "title": "TEST",
      "text": "An automatic test steps the supply from 4.8 to 6.0 V and looks for the brown-out.",
      "points": [
-      "Result: pass or fail, with travel time and hold current",
+      "Travel time and hold current per step",
       "A CSV file and a text report on the card"
      ]
     },
     {
      "view": "servo-limrun-found",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "LIMIT RUN"
+     ],
      "title": "LIMIT RUN",
      "text": "Finds both ends of an installed linkage from the servo's current. SEARCH + PROGRAM writes them into the servo.",
      "focus": [
@@ -344,9 +627,14 @@
     },
     {
      "view": "servo-rudder",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "RUDDER"
+     ],
      "title": "RUDDER",
      "text": "Deflection in degrees and in mm at the trailing edge, from the surface's length.",
      "focus": [
@@ -358,17 +646,27 @@
     },
     {
      "view": "servo-rudder-auto",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "RUDDER AUTO"
+     ],
      "title": "RUDDER AUTO",
      "text": "Programs a servo's end points for a set deflection, on the programming port."
     },
     {
      "view": "servo-kst-tune",
-     "dur": 6.2,
+     "dur": 6.4,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "KST"
+     ],
      "title": "KST and Chaservo",
      "text": "The programmer reads 32 registers over the signal wire.",
      "points": [
@@ -379,30 +677,134 @@
     },
     {
      "view": "servo-hitec",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 3,
      "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "HITEC"
+     ],
      "title": "Hitec",
      "text": "D series and classic HS-5xxx and HS-7xxx servos, with backup, limit checks and a write switch."
     },
     {
-     "view": "supply",
-     "dur": 6.2,
+     "dur": 3.0,
+     "n": 4,
+     "card": {
+      "title": "Supply",
+      "text": "A USB-PD supply, set from the panel."
+     }
+    },
+    {
+     "view": "overview",
+     "dur": 4.2,
      "n": 4,
      "kicker": "04 · Supply",
+     "path": [
+      "HOME",
+      "SUPPLY"
+     ],
+     "title": "Where it is",
+     "text": "The third tile. The PD mini feeds the servo rails on J2.",
+     "focus": [
+      502,
+      68,
+      240,
+      250
+     ]
+    },
+    {
+     "view": "supply",
+     "dur": 7.4,
+     "n": 4,
+     "kicker": "04 · Supply",
+     "path": [
+      "HOME",
+      "SUPPLY"
+     ],
      "title": "USB-PD supply",
-     "text": "The PD mini: voltage and current limit are set on the panel, the output is switched there.",
+     "text": "Voltage and current limit are set on the panel. The output is switched there.",
      "points": [
-      "V, A and W plotted and logged",
-      "CV or CC mode shown",
-      "OUTPUT OFF on one touch"
+      "V, A and W plotted and logged"
+     ],
+     "marks": [
+      {
+       "at": [
+        300,
+        300
+       ],
+       "text": "Plot of V, A and W"
+      },
+      {
+       "at": [
+        250,
+        452
+       ],
+       "text": "Voltage set point",
+       "side": "t"
+      },
+      {
+       "at": [
+        250,
+        506
+       ],
+       "text": "Current limit",
+       "side": "b"
+      },
+      {
+       "at": [
+        840,
+        160
+       ],
+       "text": "Live values",
+       "side": "l"
+      },
+      {
+       "at": [
+        512,
+        536
+       ],
+       "text": "Output switch",
+       "side": "r",
+       "d": 110
+      }
+     ]
+    },
+    {
+     "dur": 3.0,
+     "n": 5,
+     "card": {
+      "title": "Receiver & pack",
+      "text": "Receiver signal, battery cells, rotor balance."
+     }
+    },
+    {
+     "view": "overview",
+     "dur": 3.8,
+     "n": 5,
+     "kicker": "05 · Receiver & pack",
+     "path": [
+      "HOME"
+     ],
+     "title": "Where they are",
+     "text": "The lower row: RECEIVER, BATTERY and BALANCE.",
+     "focus": [
+      8,
+      326,
+      734,
+      250
      ]
     },
     {
      "view": "analyser",
-     "dur": 6.2,
+     "dur": 6.4,
      "n": 5,
      "kicker": "05 · Receiver & pack",
+     "path": [
+      "HOME",
+      "RECEIVER"
+     ],
      "title": "RECEIVER",
      "text": "16 channels with history, the digital channels and the signal state.",
      "points": [
@@ -412,35 +814,78 @@
     },
     {
      "view": "battery",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 5,
      "kicker": "05 · Receiver & pack",
+     "path": [
+      "HOME",
+      "BATTERY"
+     ],
      "title": "BATTERY",
      "text": "Per-cell voltage, spread and a verdict.",
      "tag": "DRAWN FROM A MODEL"
     },
     {
      "view": "balance",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 5,
      "kicker": "05 · Receiver & pack",
+     "path": [
+      "HOME",
+      "BALANCE"
+     ],
      "title": "BALANCE",
      "text": "Blade count, correction mass and its angle.",
      "tag": "SENSORS NOT FITTED · NOTHING MEASURED"
     },
     {
-     "view": "logs",
-     "dur": 4.8,
+     "dur": 3.0,
+     "n": 6,
+     "card": {
+      "title": "Logs & files",
+      "text": "Every run on the SD card."
+     }
+    },
+    {
+     "view": "overview",
+     "dur": 4.2,
      "n": 6,
      "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "LOGS"
+     ],
+     "title": "Where it is",
+     "text": "The fourth tile. FILES opens from LOGS and from SETUP.",
+     "focus": [
+      750,
+      68,
+      240,
+      250
+     ]
+    },
+    {
+     "view": "logs",
+     "dur": 5.0,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "LOGS"
+     ],
      "title": "LOGS",
      "text": "Runs are recorded to the SD card while the bench is ARMED or the supply's output is on."
     },
     {
      "view": "logs-plot",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 6,
      "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "LOGS",
+      "OPEN"
+     ],
      "title": "Plot on the panel",
      "text": "A CSV file opens as a plot. A cursor steps through its samples.",
      "focus": [
@@ -452,9 +897,14 @@
     },
     {
      "view": "files",
-     "dur": 6.2,
+     "dur": 6.4,
      "n": 6,
      "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "LOGS",
+      "FILES"
+     ],
      "title": "FILES",
      "text": "The card in two panes: copy, move, rename, delete, new folders and text files.",
      "points": [
@@ -464,17 +914,54 @@
     },
     {
      "view": "files-edit",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 6,
      "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "LOGS",
+      "FILES",
+      "OPEN"
+     ],
      "title": "Text editor",
      "text": "Text files on the card are viewed and edited on the panel."
     },
     {
-     "view": "wifi-joined",
-     "dur": 6.2,
+     "dur": 3.0,
+     "n": 7,
+     "card": {
+      "title": "Wi-Fi & updates",
+      "text": "Files to a browser, firmware to the bench."
+     }
+    },
+    {
+     "view": "setup",
+     "dur": 3.8,
      "n": 7,
      "kicker": "07 · Wi-Fi & updates",
+     "path": [
+      "HOME",
+      "SETUP"
+     ],
+     "title": "Where they are",
+     "text": "Two tiles of SETUP: WI-FI and UPDATES.",
+     "focus": [
+      344,
+      206,
+      672,
+      134
+     ]
+    },
+    {
+     "view": "wifi-joined",
+     "dur": 6.4,
+     "n": 7,
+     "kicker": "07 · Wi-Fi & updates",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
      "title": "Wi-Fi",
      "text": "A browser downloads any file of the card, or the whole card as one ZIP file, and uploads panel firmware.",
      "points": [
@@ -484,9 +971,14 @@
     },
     {
      "view": "updates-newer",
-     "dur": 6.2,
+     "dur": 6.4,
      "n": 7,
      "kicker": "07 · Wi-Fi & updates",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
      "title": "UPDATES",
      "text": "The panel asks GitHub for a newer release, downloads it over HTTPS and installs it on a 2 s hold.",
      "points": [
@@ -495,42 +987,91 @@
      ]
     },
     {
-     "view": "setup",
-     "dur": 4.8,
+     "dur": 3.0,
+     "n": 8,
+     "card": {
+      "title": "Setup",
+      "text": "Panel, sensors, outputs."
+     }
+    },
+    {
+     "view": "overview",
+     "dur": 3.6,
      "n": 8,
      "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP"
+     ],
+     "title": "Where it is",
+     "text": "The last tile of the home screen.",
+     "focus": [
+      750,
+      326,
+      240,
+      250
+     ]
+    },
+    {
+     "view": "setup",
+     "dur": 5.0,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP"
+     ],
      "title": "SETUP",
      "text": "Panel, sensors, outputs, SD card, Wi-Fi, updates and the Bluetooth IMU."
     },
     {
      "view": "outputs-rbmod",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 8,
      "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "OUTPUTS"
+     ],
      "title": "OUTPUTS",
-     "text": "A protocol for each pin: PWM, PPM, DShot or bidirectional DShot."
+     "text": "A protocol for each pin of J2: PWM, PPM, DShot or bidirectional DShot."
     },
     {
      "view": "setup-sensors-rbmod",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 8,
      "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "SENSORS"
+     ],
      "title": "SENSORS",
      "text": "Current monitors INA228 and INA3221, the AS5600 angle encoder, the phase tap and the IMU."
     },
     {
      "view": "imu-connected",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 8,
      "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "IMU"
+     ],
      "title": "Bluetooth IMU",
      "text": "An angle sensor on the control surface, read over Bluetooth at 50 Hz."
     },
     {
      "view": "help-overview",
-     "dur": 4.8,
+     "dur": 5.0,
      "n": 8,
      "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "?"
+     ],
      "title": "A guide on every screen",
      "text": "The ? in the band numbers the controls of the screen and explains each.",
      "focus": [
@@ -542,18 +1083,28 @@
     },
     {
      "view": "overview",
-     "dur": 3.6,
+     "dur": 3.8,
      "n": 8,
      "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "PANEL"
+     ],
      "title": "English and German",
      "text": "The interface language is set on the panel.",
      "lang": "de"
     },
     {
      "view": "overview-light",
-     "dur": 3.6,
+     "dur": 3.8,
      "n": 8,
      "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "PANEL"
+     ],
      "title": "Dark and light theme",
      "text": "Both themes are stored with the settings."
     }
@@ -561,14 +1112,14 @@
   },
   {
    "type": "end",
-   "dur": 6,
+   "dur": 7,
    "heading": "rcbench",
    "items": [
     "The bench",
     "Motor & ESC",
     "Servo",
     "Supply",
-    "Receiver, battery, balance",
+    "Receiver & pack",
     "Logs & files",
     "Wi-Fi & updates",
     "Setup"
