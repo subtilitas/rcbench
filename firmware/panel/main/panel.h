@@ -1504,7 +1504,7 @@ typedef struct {
 knob_turn_t knob_take(void);
 void knob_apply(const knob_turn_t *turn, bool frame_lost);
 void flush_screen_commands(uint32_t stops_now);
-bool drain_touch(uint32_t stops_now);
+bool drain_touch(uint32_t stops_now, const shot_facts_t *facts);
 /**
  * @brief Once a frame, after the frame's touch: the backlight at the duty
  *        Dim after gives (screen_dim_step()), set only when it changes.

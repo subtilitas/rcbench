@@ -17,8 +17,11 @@
  * the operator could not see.  A press on the band's STOP is the exception
  * and always goes on: the control task has already applied it, and the
  * router latches it and consumes the control task's marker for it
- * (panel_control.c).  A contact that came down before the screen dimmed,
- * and every press after the wake, go on as usual.
+ * (panel_control.c).  So is a press in a frame whose facts say the bench
+ * is not idle: the screen it lands on may drive an output, and its OFF,
+ * DISARM or ABORT acts at the first press.  A contact that came down
+ * before the screen dimmed, and every press after the wake, go on as
+ * usual.
  *
  * The firmware calls screen_dim_touch() for each event before the router
  * and sets the backlight to what screen_dim_step() returns.  Pure C, no
@@ -81,12 +84,16 @@ unsigned screen_dim_step(screen_dim_t *d, uint32_t now_ms, int dim_after,
  * @param d          the state
  * @param evt        the event; NULL goes nowhere and changes nothing
  * @param stop_live  a STOP is drawn to press (ui_router_stop_live())
+ * @param facts      this frame's facts of the screenshot gate; NULL is a
+ *                   bench that is not idle
  * @param now_ms     the clock, ms
  * @return true when the router takes the event; false for a press that
- *         came down on a dim screen off STOP, its MOVEs and its UP
+ *         came down on a dim screen off STOP on an idle bench, its MOVEs
+ *         and its UP
  */
 bool screen_dim_touch(screen_dim_t *d, const touch_event_t *evt,
-                      bool stop_live, uint32_t now_ms);
+                      bool stop_live, const shot_facts_t *facts,
+                      uint32_t now_ms);
 
 /**
  * @brief Whether the backlight is dim.

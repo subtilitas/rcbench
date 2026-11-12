@@ -613,9 +613,10 @@ void backlight_service(const shot_facts_t *facts)
  * @brief Hand the screens what the control task saw of the panel.  Render
  *        loop only.
  * @param stops_now the stop count the commands flushed here carry
+ * @param facts this frame's facts of the screenshot gate, for Dim after
  * @return whether the stream was found broken
  */
-bool drain_touch(uint32_t stops_now)
+bool drain_touch(uint32_t stops_now, const shot_facts_t *facts)
 {
     bool lost = false;
     /*
@@ -650,10 +651,11 @@ bool drain_touch(uint32_t stops_now)
          * Dim after: any event wakes the backlight, and a press that came
          * down on a dim screen reaches no screen, its MOVEs and UP neither.
          * A press on STOP goes on: the control task applied it already, and
-         * the router latches it and consumes the marker for it.
+         * the router latches it and consumes the marker for it.  So does
+         * every press of a frame whose facts say the bench is not idle.
          */
         if (!screen_dim_touch(&s_dim, &item.evt, ui_router_stop_live(),
-                              now_ms())) {
+                              facts, now_ms())) {
             continue;
         }
         const ui_screen_id_t before = ui_router_current();

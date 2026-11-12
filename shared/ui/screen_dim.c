@@ -72,7 +72,8 @@ static void held_drop(screen_dim_t *d, uint8_t id)
 }
 
 bool screen_dim_touch(screen_dim_t *d, const touch_event_t *evt,
-                      bool stop_live, uint32_t now_ms)
+                      bool stop_live, const shot_facts_t *facts,
+                      uint32_t now_ms)
 {
     if (d == NULL || evt == NULL) {
         return false;
@@ -87,7 +88,9 @@ bool screen_dim_touch(screen_dim_t *d, const touch_event_t *evt,
         const bool on_stop =
             stop_live && gfx_rect_contains(ui_band_stop_rect(), evt->point.x,
                                            evt->point.y);
-        if (was_dim && !on_stop) {
+        /* A bench that is not idle is lit in this frame whatever the
+         * last step left: nothing it drives waits for a second press. */
+        if (was_dim && !on_stop && shot_gate_idle(facts)) {
             /* Full only with releases lost: the first entry goes, which a
              * DOWN of its own id would have dropped. */
             if (d->held_n >= TOUCH_MAX_POINTS) {

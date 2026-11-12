@@ -139,7 +139,7 @@ Nach den eingestellten Minuten ohne Touch sinkt das Tastverhältnis der PWM (Pul
 
 - Gedimmt wird nur, solange der Prüfstand ruht, nach denselben Regeln wie beim Popup des Screenshots: SAFE, nichts eingeschaltet, keine Sitzung, kein Lauf, kein Test, kein Update und kein FAULT. ARMED, ein Ausgang, der einschaltet, oder ein FAULT setzt sofort 100%.
 - Ein Touch setzt 100% und startet die Minuten neu.
-- Der erste Druck auf ein gedimmtes Bild weckt es nur: Er öffnet, stellt und schaltet nichts. Ein zweiter Druck wirkt.
+- Der erste Druck auf ein gedimmtes Bild weckt es nur: Er öffnet, stellt und schaltet nichts. Ein zweiter Druck wirkt. Solange der Prüfstand nicht ruht, wirkt jeder Druck.
 - Ein Druck auf STOP stoppt den Prüfstand immer, gedimmt oder nicht, und weckt das Bild.
 - Eine Drehung des Drehknopfs weckt das Bild nicht.
 

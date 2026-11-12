@@ -5718,6 +5718,9 @@ Panel berührt und der Prüfstand ruht.
   DOWN, seine MOVEs und sein UP erreichen keine Seite, er öffnet, stellt
   und schaltet also nichts. Ein zweiter Finger, der aufsetzt, während der
   erste liegt, ist ein normaler Druck.
+- Ein Druck in einem Frame, der den Prüfstand nicht ruhend findet, wird nie
+  zurückgehalten, auch wenn das Bild vom Frame davor noch gedimmt ist:
+  AUSGANG AUS, DISARM oder ABBRECHEN wirkt beim ersten Druck.
 - Ein Druck auf STOP zählt immer: Auf einem gedimmten Bild stoppt er den
   Prüfstand bei seinem DOWN wie auf einem hellen und weckt das Bild. Der
   Steuertask des Panels wendet ihn an, bevor die Render-Schleife ihn sieht.

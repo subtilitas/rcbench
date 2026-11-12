@@ -14,6 +14,7 @@
  * - a_touch_wakes_it_and_starts_the_minutes_again
  * - the_press_that_wakes_it_reaches_no_screen
  * - a_press_on_stop_wakes_it_and_stops_the_bench
+ * - a_busy_frame_never_swallows_a_press
  * - a_second_finger_after_the_wake_is_the_screens
  * - a_contact_down_before_the_dim_goes_on
  * - a_down_reusing_a_held_id_is_a_new_press
@@ -48,6 +49,14 @@ static shot_facts_t idle_facts(void)
     shot_facts_t f;
     memset(&f, 1, sizeof(f));
     return f;
+}
+
+/** @brief Every fact idle, for the touch calls. */
+static const shot_facts_t *idle_p(void)
+{
+    static shot_facts_t f;
+    f = idle_facts();
+    return &f;
 }
 
 /** @brief One event of contact @p id at (@p x, @p y). */
@@ -98,16 +107,26 @@ static void router_on_menu(void)
 
 /**
  * @brief An event through the rule and, if it lets it, the router: the
- *        render loop's drain.
+ *        render loop's drain in a frame with @p facts.
  * @return whether the router took it
  */
-static bool feed(screen_dim_t *d, touch_event_t e, uint32_t now)
+static bool feed_in(screen_dim_t *d, touch_event_t e,
+                    const shot_facts_t *facts, uint32_t now)
 {
-    if (!screen_dim_touch(d, &e, ui_router_stop_live(), now)) {
+    if (!screen_dim_touch(d, &e, ui_router_stop_live(), facts, now)) {
         return false;
     }
     ui_router_event(&e);
     return true;
+}
+
+/**
+ * @brief feed_in() in a frame that finds the bench idle.
+ * @return whether the router took it
+ */
+static bool feed(screen_dim_t *d, touch_event_t e, uint32_t now)
+{
+    return feed_in(d, e, idle_p(), now);
 }
 
 TEST_CASE(zero_minutes_never_dims)
@@ -212,18 +231,18 @@ TEST_CASE(a_touch_wakes_it_and_starts_the_minutes_again)
     dimmed(&d);
     const uint32_t t = 7u * MIN_MS;
     touch_event_t e = ev(TOUCH_EVENT_DOWN, 1u, 500, 300);
-    (void)screen_dim_touch(&d, &e, true, t);
+    (void)screen_dim_touch(&d, &e, true, idle_p(), t);
     CHECK(!screen_dim_is_dim(&d));
     CHECK_EQ(screen_dim_step(&d, t, 5, &f), SCREEN_FULL_PCT);
     e.type = TOUCH_EVENT_UP;
-    (void)screen_dim_touch(&d, &e, true, t + 100u);
+    (void)screen_dim_touch(&d, &e, true, idle_p(), t + 100u);
     CHECK_EQ(screen_dim_step(&d, t + 100u + 5u * MIN_MS - 1u, 5, &f),
              SCREEN_FULL_PCT);
     CHECK_EQ(screen_dim_step(&d, t + 100u + 5u * MIN_MS, 5, &f),
              SCREEN_DIM_PCT);
     /* A MOVE counts as a touch too. */
     e.type = TOUCH_EVENT_MOVE;
-    (void)screen_dim_touch(&d, &e, true, t + 20u * MIN_MS);
+    (void)screen_dim_touch(&d, &e, true, idle_p(), t + 20u * MIN_MS);
     CHECK(!screen_dim_is_dim(&d));
 }
 
@@ -272,7 +291,37 @@ TEST_CASE(a_press_on_stop_wakes_it_and_stops_the_bench)
     CHECK(!screen_dim_touch(&d, &(touch_event_t){ .type = TOUCH_EVENT_DOWN,
                                 .point = { .id = 3u, .x = (int16_t)sx(),
                                            .y = (int16_t)sy() } },
-                            false, t));
+                            false, idle_p(), t));
+}
+
+/*
+ * The step dimmed the screen, and the next frame's facts say the bench is
+ * no longer idle (an output reported on, a FAULT bit) before the step that
+ * lights it.  A press in that frame acts at once: on the menu, the tile's
+ * tap opens MOTOR & ESC.  Each busy fact alone, and no facts at all.
+ */
+TEST_CASE(a_busy_frame_never_swallows_a_press)
+{
+    const gfx_rect_t tile = overview_screen_tile_rect(0);
+    const int x = tile.x + tile.w / 2;
+    const int y = UI_BAND_H + tile.y + tile.h / 2;
+    const uint32_t t = 6u * MIN_MS;
+    for (size_t off = 0u; off <= sizeof(shot_facts_t); ++off) {
+        router_on_menu();
+        screen_dim_t d;
+        dimmed(&d);
+        shot_facts_t busy = idle_facts();
+        const shot_facts_t *fp = &busy;
+        if (off < sizeof(shot_facts_t)) {
+            *((bool *)&busy + off) = false;
+        } else {
+            fp = NULL;
+        }
+        CHECK(feed_in(&d, ev(TOUCH_EVENT_DOWN, 1u, x, y), fp, t));
+        CHECK(!screen_dim_is_dim(&d));
+        CHECK(feed_in(&d, ev(TOUCH_EVENT_UP, 1u, x, y), fp, t + 80u));
+        CHECK_EQ(ui_router_current(), SCREEN_MOTOR);
+    }
 }
 
 /* The first finger wakes the screen and is held; a second one that comes
@@ -301,13 +350,13 @@ TEST_CASE(a_contact_down_before_the_dim_goes_on)
     const shot_facts_t f = idle_facts();
     screen_dim_init(&d, 0u);
     touch_event_t e = ev(TOUCH_EVENT_DOWN, 4u, 300, 300);
-    CHECK(screen_dim_touch(&d, &e, true, 0u));
+    CHECK(screen_dim_touch(&d, &e, true, idle_p(), 0u));
     CHECK_EQ(screen_dim_step(&d, 5u * MIN_MS, 5, &f), SCREEN_DIM_PCT);
     e.type = TOUCH_EVENT_MOVE;
-    CHECK(screen_dim_touch(&d, &e, true, 5u * MIN_MS + 10u));
+    CHECK(screen_dim_touch(&d, &e, true, idle_p(), 5u * MIN_MS + 10u));
     CHECK(!screen_dim_is_dim(&d));
     e.type = TOUCH_EVENT_UP;
-    CHECK(screen_dim_touch(&d, &e, true, 5u * MIN_MS + 20u));
+    CHECK(screen_dim_touch(&d, &e, true, idle_p(), 5u * MIN_MS + 20u));
 }
 
 /* A release that went missing: the next DOWN of the same id is a new
@@ -317,10 +366,10 @@ TEST_CASE(a_down_reusing_a_held_id_is_a_new_press)
     screen_dim_t d;
     dimmed(&d);
     touch_event_t e = ev(TOUCH_EVENT_DOWN, 1u, 300, 300);
-    CHECK(!screen_dim_touch(&d, &e, true, 6u * MIN_MS));
-    CHECK(screen_dim_touch(&d, &e, true, 6u * MIN_MS + 500u));
+    CHECK(!screen_dim_touch(&d, &e, true, idle_p(), 6u * MIN_MS));
+    CHECK(screen_dim_touch(&d, &e, true, idle_p(), 6u * MIN_MS + 500u));
     e.type = TOUCH_EVENT_UP;
-    CHECK(screen_dim_touch(&d, &e, true, 6u * MIN_MS + 600u));
+    CHECK(screen_dim_touch(&d, &e, true, idle_p(), 6u * MIN_MS + 600u));
 }
 
 /* Releases lost every time the screen woke: the held list fills, and a
@@ -335,13 +384,13 @@ TEST_CASE(lost_releases_never_let_a_waking_press_through)
         t += 5u * MIN_MS;
         CHECK_EQ(screen_dim_step(&d, t, 5, &f), SCREEN_DIM_PCT);
         touch_event_t e = ev(TOUCH_EVENT_DOWN, id, 300, 300);
-        CHECK(!screen_dim_touch(&d, &e, true, t));
+        CHECK(!screen_dim_touch(&d, &e, true, idle_p(), t));
         CHECK(d.held_n <= TOUCH_MAX_POINTS);
     }
     /* The newest is held: its release goes nowhere. */
     touch_event_t up = ev(TOUCH_EVENT_UP, 2u * TOUCH_MAX_POINTS - 1u, 300,
                           300);
-    CHECK(!screen_dim_touch(&d, &up, true, t + 10u));
+    CHECK(!screen_dim_touch(&d, &up, true, idle_p(), t + 10u));
 }
 
 TEST_CASE(the_clock_wraps)
@@ -363,9 +412,9 @@ TEST_CASE(null_is_refused)
     screen_dim_init(NULL, 0u);
     CHECK_EQ(screen_dim_step(NULL, 0u, 5, &f), SCREEN_FULL_PCT);
     const touch_event_t e = ev(TOUCH_EVENT_DOWN, 1u, 1, 1);
-    CHECK(!screen_dim_touch(NULL, &e, true, 0u));
+    CHECK(!screen_dim_touch(NULL, &e, true, idle_p(), 0u));
     dimmed(&d);
-    CHECK(!screen_dim_touch(&d, NULL, true, 0u));
+    CHECK(!screen_dim_touch(&d, NULL, true, idle_p(), 0u));
     CHECK(screen_dim_is_dim(&d));
     CHECK(!screen_dim_is_dim(NULL));
 }
@@ -379,6 +428,7 @@ int main(void)
     RUN(a_touch_wakes_it_and_starts_the_minutes_again);
     RUN(the_press_that_wakes_it_reaches_no_screen);
     RUN(a_press_on_stop_wakes_it_and_stops_the_bench);
+    RUN(a_busy_frame_never_swallows_a_press);
     RUN(a_second_finger_after_the_wake_is_the_screens);
     RUN(a_contact_down_before_the_dim_goes_on);
     RUN(a_down_reusing_a_held_id_is_a_new_press);

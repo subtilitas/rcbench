@@ -139,7 +139,7 @@ After the set minutes without a touch, the backlight's PWM (pulse-width modulati
 
 - The screen dims only while the bench is idle, by the same rules as the screenshot's popup: SAFE, nothing on, no session, run, test, update or FAULT. ARMED, an output that comes on or a FAULT sets 100% at once.
 - A touch sets 100% and starts the minutes again.
-- The first press on a dim screen only wakes it: it opens, steps or switches nothing. Press again to act.
+- The first press on a dim screen only wakes it: it opens, steps or switches nothing. Press again to act. While the bench is not idle, every press acts.
 - A press on STOP always stops the bench, dim or not, and wakes the screen.
 - A turn of the rotary knob does not wake the screen.
 

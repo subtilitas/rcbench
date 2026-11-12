@@ -487,7 +487,7 @@ void panel_frame_loop(void)
         shot_facts_t idle_facts;
         panel_shot_frame(&shot_in, &idle_facts);
 
-        if (drain_touch(stops_now)) {
+        if (drain_touch(stops_now, &idle_facts)) {
             frame_lost = true;
         }
 
@@ -780,7 +780,7 @@ void panel_frame_loop(void)
          * found only next frame.  The second drain finds everything offered
          * up to now.
          */
-        if (drain_touch(stops_now)) {
+        if (drain_touch(stops_now, &idle_facts)) {
             frame_lost = true;
         }
         /* Dim after, on this frame's touch and the facts read before it:

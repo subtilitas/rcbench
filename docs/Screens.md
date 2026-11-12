@@ -5240,6 +5240,9 @@ bench is idle.
 - The press that comes down on a dim screen only wakes it. Its DOWN, MOVEs
   and UP reach no screen, so it opens, steps or switches nothing. A second
   finger that comes down while the first rests is a normal press.
+- A press in a frame that finds the bench not idle is never held, even
+  when the screen is still dim from the frame before: OUTPUT OFF, DISARM
+  or ABORT acts at the first press.
 - A press on STOP always counts: on a dim screen it stops the bench at its
   DOWN, as on a lit one, and wakes the screen. The panel's control task
   applies it before the render loop sees it.
