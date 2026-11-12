@@ -109,7 +109,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | reading | Messwert |
 | EFF (die Schätzung des Antriebsstrangs auf MOTOR & ESC, LIVE) | WIRK. |
 | setting (ein Eintrag in SETUP) | Einstellung |
-| SETTINGS (die eigenen Einstellungen einer Seite) | OPTIONEN |
+| OPTIONS (die eigenen Einstellungen einer Seite) | OPTIONEN |
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |
@@ -328,7 +328,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 646 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 650 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -381,7 +381,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.507
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.527
 Einträge mit ID und 105 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

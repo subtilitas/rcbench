@@ -305,6 +305,9 @@ void ui_router_shot_set_idle(bool idle);
  *  servos' and the programming ports'. */
 #define UI_ARMED_MOTOR 0x01u
 #define UI_ARMED_SERVO 0x02u
+/** @brief ui_bench_status_t's prog_port for a held port whose number is
+ *         not known. */
+#define UI_PROG_PORT_SOME 0xFFu
 
 typedef struct {
     bool     link_up;
@@ -322,6 +325,16 @@ typedef struct {
      */
     uint8_t  armed_roles;
     uint16_t faults;        /**< a link_fault_t bitmap; 0 is quiet          */
+    /**
+     * @brief The programming port a servo programmer, KST or Hitec, holds:
+     *        1 to 4, UI_PROG_PORT_SOME for one whose number is not known, 0
+     *        for none.  The SAFE chip names it (ui_band.h): the port stays
+     *        held, and ARM refused, after SERVO is left.
+     */
+    uint8_t  prog_port;
+    /** @brief MOVE SERVO on the HITEC page drives the held port's servo
+     *         while the bench is SAFE; the SAFE chip says MOVE. */
+    bool     prog_moving;
     uint32_t run_seconds;
     const char *mode;       /**< ui_band_mode(): BENCH or SIM, or NULL      */
     /**

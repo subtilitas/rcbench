@@ -19,8 +19,6 @@ The panel runs a 1200ms CAN echo self-test during every startup splash. Unless e
 - CHECK IN THIS ORDER lists the checks, starting with the least costly.
 - The right column shows the counts at both ends: sent, returned, altered and lost.
 
-![Nothing came back](view:busfault-silent)
-
 | Heading | WHAT THIS MEANS | The checks point to |
 |---|---|---|
 | `No test frames returned.` | `No response on the bus. The two boards cannot communicate.` | power, CANH and CANL crossed, the release, the terminators |
@@ -29,6 +27,18 @@ The panel runs a 1200ms CAN echo self-test during every startup splash. Unless e
 | `Test frames lost without a bus error.` | `Frames arrived intact, then were discarded unread. Not a wiring fault.` | not the wire; report it with the numbers on the right |
 
 With the bench switched off, measure about 60Ω across CANH and CANL. A reading of 120Ω means one of the two terminators is missing. Keep the total bus under 5m and each branch under 30cm.
+
+## No IOmcu answered
+
+![No IOmcu answered](view:busfault-silent)
+
+A silent bus on which no IOmcu answered either status request, the one before the echo run or the one after it, is a panel on its own: powered before the IOmcu, or with the IOmcu not yet wired. The screen names no fault then.
+
+- The bar is amber and reads NO IOMCU. The heading reads `No IOmcu answered.`
+- The checks of the silent bus stand under IF AN IOMCU IS CONNECTED, CHECK IN THIS ORDER.
+- A tap on TAP TO CONTINUE leads to the menu in simulation.
+
+Frames that came back altered or went missing, and a silent test with an IOmcu that answered a status request before or after it, keep the 2s hold.
 
 ## A link that stops
 
@@ -60,7 +70,7 @@ The counts on the right follow the link while the screen shows. Once the IOmcu h
 
 ## Leaving the screen
 
-HOLD 2s TO ACKNOWLEDGE closes the screen, using the same hold gesture and fade as ARM. Acknowledging does not repair the fault. The bench then runs in simulation without driving outputs. The self-test runs again at the next startup. Once the link answers again, HOLD 2s TO RECONNECT takes its place.
+HOLD 2s TO ACKNOWLEDGE closes the screen, using the same hold gesture and fade as ARM. Where no IOmcu answered, a tap on TAP TO CONTINUE closes it instead. Acknowledging does not repair the fault. The bench then runs in simulation without driving outputs. The self-test runs again at the next startup. Once the link answers again, HOLD 2s TO RECONNECT takes its place.
 
 A press released before 2s shows what the hold does in place of the red bar, amber, for 4s: `Hold 2s to acknowledge.` or `Hold 2s to reconnect.` A tap on the bar closes it.
 

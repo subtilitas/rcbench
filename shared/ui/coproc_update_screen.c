@@ -485,6 +485,54 @@ static void progress_done(const cu_driver_t *d)
     ui_router_goto(d->from_updates ? SCREEN_UPDATES : SCREEN_OVERVIEW);
 }
 
+cu_wait_t coproc_update_wait(const cu_feed_t *f, bool unsafe)
+{
+    if (unsafe) {
+        return CU_WAIT_UNSAFE;
+    }
+    if (f != NULL && f->radio_up) {
+        return CU_WAIT_RADIO;
+    }
+    if (f != NULL && f->installing) {
+        return CU_WAIT_INSTALL;
+    }
+    return CU_WAIT_NONE;
+}
+
+ui_text_id_t coproc_update_offer_text(cu_wait_t w)
+{
+    switch (w) {
+    case CU_WAIT_UNSAFE:  return TX_ALERT_CU_OFFER_SAFE;
+    case CU_WAIT_RADIO:   return TX_ALERT_CU_OFFER_WIFI;
+    case CU_WAIT_INSTALL: return TX_ALERT_CU_OFFER_INSTALL;
+    case CU_WAIT_NONE:
+    default:              return TX_ALERT_CU_OFFER;
+    }
+}
+
+/**
+ * @brief The band line of an offer the question has not opened for: said
+ *        once on the first frame with a band, and again when what the
+ *        question waits for changes to another reason.
+ * @param d      What the driver keeps.
+ * @param f      This frame's update.
+ * @param unsafe ARMED, an arm waiting, or the supply's output on or coming.
+ */
+static void say_offer(cu_driver_t *d, const cu_feed_t *f, bool unsafe)
+{
+    if (!f->offered || f->offer_gen == d->shown_gen
+        || !ui_router_stop_live()) {
+        return;
+    }
+    const cu_wait_t w = coproc_update_wait(f, unsafe);
+    const bool fresh = f->offer_gen != d->said_gen;
+    if (fresh || (w != CU_WAIT_NONE && (uint8_t)w != d->said_wait)) {
+        ui_router_set_alert(ui_tr(coproc_update_offer_text(w)));
+        d->said_gen  = f->offer_gen;
+        d->said_wait = (uint8_t)w;
+    }
+}
+
 void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
                          cu_hand_t *out)
 {
@@ -560,8 +608,9 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
         return;
     }
 
-    if (f->offered && f->offer_gen != d->shown_gen && !unsafe
-        && !f->radio_up && !f->installing
+    say_offer(d, f, unsafe);
+    if (f->offered && f->offer_gen != d->shown_gen
+        && coproc_update_wait(f, unsafe) == CU_WAIT_NONE
         && ui_router_current() == SCREEN_OVERVIEW) {
         d->shown_gen = f->offer_gen;
         d->from_updates = false;

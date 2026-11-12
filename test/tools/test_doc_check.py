@@ -105,18 +105,19 @@ def scratch_repo(tmp_path, files):
     return root
 
 
-def W(file, message, line=1):
+def W(file, message, line=1, source=""):
     """Make a warning.
 
     Args:
         file: The file.
         message: The message.
         line: The line.
+        source: The text of the line.
 
     Returns:
         The warning.
     """
-    return dc.DocWarning(file, line, message)
+    return dc.DocWarning(file, line, message, source)
 
 
 # --- the log -----------------------------------------------------------------
@@ -152,6 +153,24 @@ def test_the_baseline_key_has_no_line_number():
     assert a.key == b.key == "a.h: warning: x"
 
 
+def test_the_baseline_key_carries_the_text_of_the_line():
+    """Two warnings with one message in one file have two keys."""
+    a = W("a.h", "warning: x", 10, "int a;")
+    b = W("a.h", "warning: x", 99, "int a;")
+    c = W("a.h", "warning: x", 12, "int b;")
+    assert a.key == b.key == "a.h: warning: x\tint a;"
+    assert c.key != a.key
+
+
+def test_each_warning_takes_the_text_of_its_line(tmp_path):
+    """White space collapsed; no text for a line or file not in the tree."""
+    (tmp_path / "a.h").write_text("int  a;\n\t  int b(void);\n")
+    got = dc.with_source([W("a.h", "warning: x", 2), W("a.h", "warning: y", 9),
+                          W("gone.h", "warning: z", 1),
+                          W("", "warning: w", 0)], tmp_path)
+    assert [w.source for w in got] == ["int b(void);", "", "", ""]
+
+
 def test_a_line_naming_an_absolute_path_is_machine_bound():
     """A checkout's place in the baseline fails on every other machine."""
     root = pathlib.Path("/w/rcbench")
@@ -162,6 +181,12 @@ def test_a_line_naming_an_absolute_path_is_machine_bound():
         "b.h: warning: found in /w/rcbench/b.h",
     ]
     assert dc.machine_bound(lines, root) == lines[1:]
+
+
+def test_the_text_of_a_line_is_not_searched_for_a_path():
+    """A source line may quote a path; only file and message are searched."""
+    lines = ["a.c: warning: x\tconst char *p = '/etc/x';"]
+    assert dc.machine_bound(lines, pathlib.Path("/w/rcbench")) == []
 
 
 # --- the comparison ----------------------------------------------------------
@@ -187,6 +212,27 @@ def test_a_second_copy_of_a_baselined_warning_fails():
     result = dc.compare([W("a.h", "warning: x"), W("a.h", "warning: x", 5)],
                         baseline, [])
     assert result.new == [W("a.h", "warning: x", 5)]
+
+
+def test_a_fixed_warning_and_a_new_one_with_its_message_both_fail():
+    """The same message on another line of the same file does not net out.
+
+    Without a diff to read (a push to main), only the line's text tells
+    the fixed occurrence from the new one.
+    """
+    baseline = collections.Counter(["a.h: warning: x\tint old;"])
+    result = dc.compare([W("a.h", "warning: x", 7, "int new;")], baseline,
+                        [])
+    assert result.new == [W("a.h", "warning: x", 7, "int new;")]
+    assert result.stale == ["a.h: warning: x\tint old;"]
+
+
+def test_a_warning_moved_with_its_line_passes():
+    """Code that moves keeps the text of its line, so its key."""
+    baseline = collections.Counter(["a.h: warning: x\tint old;"])
+    result = dc.compare([W("a.h", "warning: x", 70, "int old;")], baseline,
+                        [])
+    assert not result.failed
 
 
 def test_a_baseline_line_that_no_longer_occurs_fails():
@@ -447,7 +493,7 @@ def test_update_then_check_passes_and_a_new_warning_fails(tmp_path):
     args = ["--root", str(root), "--log", str(log)]
     assert dc.main(["--update", *args]) == 0
     baseline = (root / "tools" / "doc_check_baseline.txt").read_text()
-    assert "src/a.h: warning: x\n" in baseline
+    assert "src/a.h: warning: x\t* @brief A documented header.\n" in baseline
     assert dc.main(["--check", *args]) == 0
     log.write_text(f"{root}/src/a.h:3: warning: x\n"
                    f"{root}/src/a.h:9: warning: y\n", encoding="utf-8")

@@ -1483,9 +1483,14 @@ const functions: Fn[] = [
   {
     id: 'stick', group: 'esc',
     name: t('ESC STICK programming', 'ESC-STICK-Programmierung'),
-    // The bench powers the ESC from the PD mini and counts the beeps from the
-    // supply current (docs/StickProgramming.md, line 6).
-    needs: ['pdmini'], drives: 'esc', forces: { escPower: 'pd' },
+    // The bench powers the ESC from the PD mini. It counts the beeps from the
+    // phase tap while the tap's capture runs, else from an INA3221 channel
+    // set to SUPPLY in the ESC supply line, and refuses a run with neither.
+    // The PD mini current is no beep source: it is read every 100 to 152ms
+    // (docs/StickProgramming.md, lines 6 to 11 and 36 to 43). The variant
+    // "ESC STICK beeps" names the source and with it the parts.
+    needs: ['pdmini'], needsBy: { option: 'stickBeep', parts: { tap: ['sim', 'tap'], ina3221: ['ina3221'] } },
+    drives: 'esc', forces: { escPower: 'pd' },
     src: repo('STATUS.md', 1168, 'PROGRAM runs 25 of the 73 profiles'),
   },
   {
@@ -1829,11 +1834,20 @@ const checks: Check[] = [
   {
     id: 'esc-programming-power', kind: 'unknown',
     text: t(
-      `ESC programming: an owner statement of 2026-10-11 says it needs no power source of the bench. docs/StickProgramming.md of release ${VERSION} powers the ESC from the PD mini and counts the beeps from the supply current. The page follows the document: ESC STICK programming needs the PD mini. What powers an ESC during other programming: not stated.`,
-      `ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release ${VERSION} versorgt den ESC aus dem PD mini und zählt die Pieptöne am Versorgungsstrom. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.`,
+      `ESC programming: an owner statement of 2026-10-11 says it needs no power source of the bench. docs/StickProgramming.md of release ${VERSION} powers the ESC from the PD mini and counts the beeps from the phase tap or from an INA3221 channel in the ESC supply line, not from the PD mini current. The page follows the document: ESC STICK programming needs the PD mini and one of the two beep sources. What powers an ESC during other programming: not stated.`,
+      `ESC-Programmierung: Eine Angabe des Projektinhabers vom 2026-10-11 nennt keine Stromquelle des Prüfstands als nötig. docs/StickProgramming.md von Release ${VERSION} versorgt den ESC aus dem PD mini und zählt die Pieptöne am Phasenabgriff oder an einem INA3221-Kanal in der ESC-Versorgungsleitung, nicht am Strom des PD mini. Die Seite folgt dem Dokument: Die ESC-STICK-Programmierung braucht den PD mini und eine der beiden Pieptonquellen. Was einen ESC bei anderer Programmierung versorgt: nicht angegeben.`,
     ),
     when: { all: [{ has: 'esc' }, { has: 'pdmini' }, { opt: 'escPower', is: 'pd' }] },
     src: repo('docs/StickProgramming.md', 6, 'PD mini'),
+  },
+  {
+    id: 'stick-ina3221', kind: 'note',
+    text: t(
+      'ESC STICK programming with an INA3221 as the beep source: put the shunt of one channel in the plus line from the PD mini output to the ESC and set the row of that channel to SUPPLY under SETUP → SENSORS. The wiring drawing shows no wire for this. A run without the phase tap or such a channel is refused.',
+      'ESC-STICK-Programmierung mit einem INA3221 als Pieptonquelle: Setze den Shunt eines Kanals in die Plusleitung vom Ausgang des PD mini zum ESC und stelle die Zeile dieses Kanals unter SETUP → SENSORS auf NETZTEIL. Die Verdrahtungszeichnung zeigt dafür keinen Draht. Ein Lauf ohne den Phasenabgriff oder einen solchen Kanal wird abgewiesen.',
+    ),
+    when: { all: [{ has: 'esc' }, { has: 'pdmini' }, { has: 'ina3221' }, { opt: 'escPower', is: 'pd' }, { opt: 'stickBeep', is: 'ina3221' }] },
+    src: repo('docs/StickProgramming.md', 38, 'put the shunt of an INA3221'),
   },
 ];
 
@@ -2117,7 +2131,7 @@ const powerSources: PowerSource[] = [
     pros: [
       t('The bench sets voltage and current limit.', 'Der Prüfstand stellt Spannung und Strombegrenzung ein.'),
       t('STOP switches its output off.', 'STOP schaltet seinen Ausgang ab.'),
-      t('ESC STICK programming counts the beeps from its current.', 'Die ESC-STICK-Programmierung zählt die Pieptöne an seinem Strom.'),
+      t('ESC STICK programming runs on its output.', 'Die ESC-STICK-Programmierung läuft an seinem Ausgang.'),
     ],
     cons: [
       t('Maximum current: 3A.', 'Maximaler Strom: 3A.'),

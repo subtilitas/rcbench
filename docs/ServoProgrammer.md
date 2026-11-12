@@ -650,12 +650,12 @@ known.
 ## Expert mode
 
 KST EXPERT MODE decides which settings and actions the programmer shows.
-It is the row SETTINGS opens on the KST screen, kept with DUT, OFF by default, and the panel keeps
+It is the row OPTIONS opens on the KST screen, kept with DUT, OFF by default, and the panel keeps
 it across restarts. OFF to ON takes a 2s hold of the row; a shorter press
 shows `Hold 2s to switch KST EXPERT MODE on.` on the alert band and changes
 nothing. A tap turns it OFF. ON is drawn in the danger colour.
 
-![KST EXPERT MODE ON, on the KST screen's SETTINGS page](img/servo-dut-expert.png)
+![KST EXPERT MODE ON, on the KST screen's OPTIONS page](img/servo-dut-expert.png)
 
 With the mode OFF these items are hidden. The reason is the warning the
 [soft limits](#a-value-that-needs-a-second-look) give, or what is not

@@ -25,7 +25,7 @@ Eight tiles, 243 x 255px each, in 4 columns and 2 rows: the workbenches in the f
 | BALANCE | vibration, phase | [Balance](balance.md) |
 | SETUP | panel, pins, card, Wi-Fi | [Setup](setup.md) |
 
-Programming has no separate tile. Use [PROGRAM](motor.md#program) on MOTOR & ESC to program electronic speed controllers (ESCs), or PROGRAM on SERVO to program servos.
+Programming has no separate tile. Electronic speed controllers (ESCs): [PROGRAM](motor.md#program) on MOTOR & ESC. Servos: the KST and HITEC tiles of [SERVO](servo-programmer.md).
 
 A tile opens when you lift your finger on the same tile you pressed. Sliding off the tile cancels the tap.
 

@@ -21,10 +21,21 @@ export const MIXED = 25_000;
 
 // The pin of the servo signal is in no selection the page makes: the function
 // that programs a servo forces it. The option sets keep the standard outputs.
-export const OPTION_SETS: ReadonlyArray<Options> = OPTION_VALUES.connection.flatMap((connection) =>
+// The beep source of ESC STICK programming is in 2 groups of sets: the
+// exhaustive walks use the phase tap, the default; the sample draws from both.
+const optionSets = (stickBeep: Options['stickBeep']): Options[] => OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
     OPTION_VALUES.escPower.flatMap((escPower) =>
-      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' as const })))));
+      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower, stickBeep, servoPort: 'outputs' as const })))));
+
+/** The option combinations of the exhaustive walks: the beep source is the phase tap. */
+export const OPTION_SETS: ReadonlyArray<Options> = optionSets('tap');
+
+/** The option combinations with the INA3221 as the beep source, on the pads: 8 of the 16. */
+export const INA_OPTION_SETS: ReadonlyArray<Options> = optionSets('ina3221').filter((o) => o.connection === 'pads');
+
+/** The option combinations the sample draws from: every combination of every option. */
+export const SAMPLE_OPTION_SETS: ReadonlyArray<Options> = [...OPTION_SETS, ...optionSets('ina3221')];
 
 /** mulberry32: a 32-bit generator with a fixed sequence per seed. */
 export function generator(seed: number): () => number {
@@ -94,15 +105,17 @@ function describe(selection: Selection): string {
 }
 
 /** Every subset of `ids` as `key` of a selection, under every option combination. */
-export function* enumerate(ids: ReadonlyArray<string>, key: 'functions' | 'owned'): Generator<Case & { mask: number; option: number }> {
+export function* enumerate(
+  ids: ReadonlyArray<string>, key: 'functions' | 'owned', sets: ReadonlyArray<Options> = OPTION_SETS,
+): Generator<Case & { mask: number; option: number }> {
   const count = 2 ** ids.length;
   for (let mask = 0; mask < count; mask++) {
     const chosen = subset(ids, mask);
-    for (let option = 0; option < OPTION_SETS.length; option++) {
+    for (let option = 0; option < sets.length; option++) {
       const selection: Selection = {
         functions: key === 'functions' ? chosen : [],
         owned: key === 'owned' ? chosen : [],
-        options: { ...(OPTION_SETS[option] as Options) },
+        options: { ...(sets[option] as Options) },
       };
       yield { selection, where: describe(selection), mask, option };
     }
@@ -121,7 +134,7 @@ export function* sample(space: Space, count: number, seed: number): Generator<Ca
     const selection: Selection = {
       functions: shuffled(pick([...space.functions, ...space.base]), random),
       owned: shuffled(pick(space.selectable), random),
-      options: { ...(OPTION_SETS[Math.floor(random() * OPTION_SETS.length)] as Options) },
+      options: { ...(SAMPLE_OPTION_SETS[Math.floor(random() * SAMPLE_OPTION_SETS.length)] as Options) },
     };
     yield { selection, where: `${describe(selection)} (seed 0x${seed.toString(16)}, case ${index})` };
   }

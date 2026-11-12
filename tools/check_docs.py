@@ -1133,6 +1133,23 @@ FACTS = [
      ("LINK_HOST_TIMEOUT_MS",)),
     ("STATUS.md", rf"the panel escalates after {N}s\.",
      (("LINK_HOST_TIMEOUT_MS", 0.001),)),
+    # The IOmcu's two bounded waits in one pass.
+    ("docs/Performance.md",
+     rf"A `printf\(\)` to the USB console waits at most {N}us for room in "
+     rf"the {N}-byte transmit buffer",
+     ("IOMCU_USB_STDOUT_WAIT_US", "IOMCU_USB_TX_BUFFER_BYTES")),
+    ("docs/Performance-de.md",
+     rf"wartet höchstens {N}us auf Platz im Sendepuffer von {N_DE} Bytes",
+     ("IOMCU_USB_STDOUT_WAIT_US", "IOMCU_USB_TX_BUFFER_BYTES")),
+    ("docs/Performance.md", rf"A reply frame on CAN waits at most {N}us",
+     ("IOMCU_CAN_TX_WAIT_US",)),
+    ("docs/Performance-de.md",
+     rf"Ein Antwortframe auf dem CAN wartet höchstens {N}us",
+     ("IOMCU_CAN_TX_WAIT_US",)),
+    ("docs/Bringup.md", rf"the transmit buffer stayed full for {N}us",
+     ("IOMCU_CAN_TX_WAIT_US",)),
+    ("docs/Bringup-de.md", rf"weil der Sendepuffer {N}us lang voll blieb",
+     ("IOMCU_CAN_TX_WAIT_US",)),
     # Pins.
     ("docs/Safety.md", rf"The safety line is panel GPIO{N} ",
      ("PANEL_HEARTBEAT_PIN",)),

@@ -30,11 +30,26 @@
  *
  * The pin is sampled in the main loop rather than by an interrupt.  A pass
  * that turns over faster than HEARTBEAT_MIN_GAP_MS (4ms) cannot miss an
- * edge the monitor would accept.  The pass time is not measured: a printf
- * every 3s goes to USB (Universal Serial Bus) stdio, and the supply's
- * UART send blocks while its PIO FIFO is full.  An ISR (interrupt service
- * routine) would notice edges faster than the floor, which the monitor
- * rejects anyway.
+ * edge the monitor would accept.  An ISR (interrupt service routine) would
+ * notice edges faster than the floor, which the monitor rejects anyway.
+ *
+ * The waits a pass can hold, with their bounds:
+ *
+ * - The 3s report goes to USB (Universal Serial Bus) stdio.  A printf()
+ *   waits for room in the transmit buffer for at most
+ *   IOMCU_USB_STDOUT_WAIT_US (1,000us) after the host last took bytes, so a
+ *   host that holds the port open and stops reading costs one wait of up
+ *   to 1,000us, and later lines are dropped at once.
+ * - can_service() waits for the transmit buffer for at most
+ *   IOMCU_CAN_TX_WAIT_US (1,000us) per reply frame, and abandons the rest
+ *   of a reply whose frame did not leave in that time: a bus that accepts
+ *   nothing costs one such wait per reply.
+ * - The supply's UART send blocks while its PIO FIFO is full; that wait is
+ *   not bounded here.
+ * - A flash window of the output store stops this core for about 19ms.
+ *
+ * The heartbeat is lost when a pass runs past HEARTBEAT_MAX_GAP_MS (150ms).
+ * The time of a whole pass on the board is not measured.
  */
 bool s_beat_level;
 
@@ -67,8 +82,21 @@ void heartbeat_init(void)
 bool     s_can_up;
 uint32_t s_can_echoes;
 uint32_t s_can_overflows;
-/** @brief Reply frames dropped after 1000 spins on a full transmit buffer. */
+/** @brief Reply frames not sent because the transmit buffer stayed full. */
 uint32_t s_can_tx_dropped;
+
+/**
+ * @brief How long one reply frame waits for the transmit buffer, in us.
+ *
+ * The buffer holds one frame, so each frame of a multi-frame reply waits for
+ * the one before it to win arbitration.  At 1Mbit/s an extended frame of 8
+ * data bytes takes at most 155us on the bus, stuff bits and the gap after it
+ * counted; 1,000us is 6 of them.  A bus that has stopped accepting (no
+ * other node acknowledges, or the controller is bus-off) costs one such wait
+ * per reply, then the rest of the reply is abandoned: the panel needs every
+ * frame of it and waits out its exchange without one.
+ */
+#define IOMCU_CAN_TX_WAIT_US 1000u
 
 /**
  * @brief When a frame was last taken out of the controller.
@@ -144,19 +172,21 @@ void can_service(uint32_t now)
         const size_t n = link_can_encode(&reply, frames, LINK_CAN_MAX_FRAMES);
         for (size_t i = 0; i < n; ++i) {
             /*
-             * The transmit buffer holds one frame, so a multi-frame answer
-             * waits for each frame to win arbitration.  Bounded at 1000
-             * spins, because a bus that has stopped accepting must not stall
-             * the failsafe.
+             * Bounded in time, not in tries, because a bus that has stopped
+             * accepting must not stall the failsafe: IOMCU_CAN_TX_WAIT_US.
+             * Each try is one SPI register read.
              */
-            int spin = 0;
-            while (!xl2515_send(&frames[i])) {
-                if (++spin >= 1000) {
-                    /* Counted: the panel then waits out its exchange. */
-                    ++s_can_tx_dropped;
-                    break;
-                }
+            const uint32_t since = time_us_32();
+            bool sent = xl2515_send(&frames[i]);
+            while (!sent && time_us_32() - since < IOMCU_CAN_TX_WAIT_US) {
                 tight_loop_contents();
+                sent = xl2515_send(&frames[i]);
+            }
+            if (!sent) {
+                /* Counted, this frame and the ones after it: the panel then
+                 * waits out its exchange. */
+                s_can_tx_dropped += (uint32_t)(n - i);
+                break;
             }
         }
     }

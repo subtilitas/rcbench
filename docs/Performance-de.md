@@ -610,7 +610,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 508 | 528 | 1 804 |
+| Kern 0 | `main` | 4 096 | 1 516 | 528 | 1 796 |
 | Kern 1 | `core1_main` | 4 096 | 644 | 528 | 2 668 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 14.2.1
@@ -623,7 +623,7 @@ ergibt 640 Bytes), und CI baut das Image mit dem Compiler aus dem Paket des
 Runners. Die unten genannten Frames stammen aus demselben Build.
 
 Die tiefste Kette von Kern 0 ist eine Anfrage, die einen Ausgang bindet und
-im pico-sdk scheitert: `main` (256 Bytes), `can_service` (352),
+im pico-sdk scheitert: `main` (256 Bytes), `can_service` (360),
 `link_dev_dispatch`, `slots_write`, `slots_take`, `ports_apply`,
 `slots_rerate`, `outputs_hw_apply_only`, `out_dshot_bind`, die Belegung einer PIO-State-Machine (PIO: Programmable
 Input/Output) im pico-sdk und `panic()` mit dem, was es zur Ausgabe
@@ -654,7 +654,14 @@ Durchläufe und 397 bis 647ms Planerzeit. Alle Zeiten gelten für 150MHz,
 sind in einem Emulator aus den ausgeführten Instruktionen mit ARM GNU 14.2
 bei -O3 berechnet und nicht auf Hardware gemessen. Die Zeit eines
 Durchlaufs mit Link, Heartbeat und Ausgängen ist nicht gemessen. Die
-Heartbeat-Lücke, die alle Ausgänge abschaltet, beträgt 150ms.
+Heartbeat-Lücke, die alle Ausgänge abschaltet, beträgt 150ms. Zwei
+Wartezeiten eines Durchlaufs sind zeitlich begrenzt. Ein `printf()` an die
+USB-Konsole wartet höchstens 1000us auf Platz im Sendepuffer von 2 048 Bytes,
+gezählt ab dem Zeitpunkt, an dem der Host zuletzt Bytes abgeholt hat, und
+verwirft dann den Rest der Zeile; ein Host, der den Port offen hält und
+nichts abholt, kostet diese Wartezeit einmal. Ein Antwortframe auf dem
+CAN wartet höchstens 1000us auf den Sendepuffer des Controllers; danach
+wird der Rest der Antwort aufgegeben und als `tx_drop` gezählt.
 
 Jede Tiefe ist eine Untergrenze:
 
