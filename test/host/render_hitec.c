@@ -688,13 +688,18 @@ static bool classic_view(const char *v)
            || strcmp(v, "-restore-page") == 0;
 }
 
-void render_hitec_view(const char *view)
+/**
+ * @brief The steps of HITEC's view @p view, as render_hitec_view() names it.
+ * @param view the view's name
+ */
+static void hitec_view_steps(const char *view)
 {
     const char *v = view + strlen("servo-hitec");
     const bool c_view = classic_view(v);
 
+    /* The PD mini answers with its output off; CONNECT switches it on. */
     rig_at(strcmp(v, "-nopd") == 0 || strcmp(v, "-move-nopd") == 0
-               ? SUPPLY_NONE : SUPPLY_ON, true);
+               ? SUPPLY_NONE : SUPPLY_READY, true);
     if (c_view) {
         servo_hs5645();
     } else {
@@ -859,6 +864,14 @@ void render_hitec_view(const char *view)
         fprintf(stderr, "render_hitec: no view %s\n", view);
         exit(1);
     }
+}
+
+void render_hitec_view(const char *view)
+{
+    hitec_view_steps(view);
+    /* The PD mini's output as the rig's supply has it, handed to the
+     * supply screen the way panel_frame.c hands it each reading. */
+    supply_screen_set_output(g_hw.has_supply && g_hw.v.online && g_hw.v.on);
 }
 
 void render_hitec_feed(bool held)
