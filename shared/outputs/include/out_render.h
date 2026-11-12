@@ -88,7 +88,9 @@ extern "C" {
  *
  * 500us against the longest DShot exchange this bench runs: a bidirectional
  * DShot150 frame of 16 bits at 6.67us is 107us, the ESC's turnaround about
- * 30us and its 21-bit reply at 187.5kbit/s 112us, 249us in all.  On a pin
+ * 30us and its 21-bit reply at 187.5kbit/s 112us, 249us in all; the
+ * receiver's capture of 4 FIFO words ends about 272us after the frame
+ * starts (calculated, not measured).  On a pin
  * the gap can read shorter than this by the time between the due test and
  * the frame reaching the PIO (programmable input/output) FIFO (first in
  * first out): an interrupt taken in between delays the frame and not the

@@ -224,7 +224,7 @@ Two kinds of pass are longer:
 
 | Pass | Length | Code |
 | --- | --- | --- |
-| A link request whose answer is more than one CAN frame, up to 8 frames for 32 registers | up to 155µs for each frame after the first: the controller has one transmit buffer, and each frame waits for the one before it to win arbitration at 1Mbit/s; up to 1,085µs for 8 frames | `can_service()` in `firmware/iomcu/src/iomcu_can.c` |
+| A link request whose answer is more than one CAN frame, up to 8 frames for 32 registers | up to 155µs for each frame after the first: the controller has one transmit buffer, and each frame waits for the one before it to win arbitration at 1Mbit/s; up to 1,085µs for 8 frames; calculated from the bit counts, not measured | `can_service()` in `firmware/iomcu/src/iomcu_can.c` |
 | The console report every 3s, up to 1,489 bytes | not measured; each `printf()` waits up to 1,000µs for room in the USB transmit buffer | `can_report()` in `firmware/iomcu/src/iomcu_report.c` |
 
 Each such pass costs the frames due inside it. Frames a second and the gaps
@@ -313,9 +313,9 @@ frame:
 | The first frame: the first of the ten `DSHOT_CMD_EDT_ENABLE` repeats at zero throttle | the next due time: 1000µs after the wake pass's due time (`OUT_RENDER_DSHOT_PERIOD_US`), and at least 500µs after the wake (`OUT_RENDER_DSHOT_MIN_US`) | `out_dshot_send()` |
 | The command after the ask | 11ms into the run | `service_dshot()` |
 
-The ESC sees the line high for 500µs or more before the first frame, and for
-a whole frame period when the wake pass is on time: the same idle it sees
-before every other frame of the run. The wake pass
+The ESC sees the line high for 500µs or more before the first frame: 1000µs
+minus the length of the pass that arms, because the wake pass's due time is
+the clock of the last disarmed pass. The wake pass
 sends no frame, so the ask keeps all ten repeats. `out_dshot_send()` on a pin
 still at its low rest releases it and sends nothing, so no frame starts from a
 low line. `test_out_dshot` holds the pad's level at each step, `test_outputs_hw`

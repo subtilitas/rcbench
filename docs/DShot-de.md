@@ -244,7 +244,7 @@ Die Pins bekommen 1000 Frames pro Sekunde, solange kein Durchlauf mehr als
 
 | Durchlauf | Dauer | Code |
 | --- | --- | --- |
-| Eine Link-Anfrage, deren Antwort mehr als einen CAN-Frame hat, bis zu 8 Frames für 32 Register | bis zu 155µs für jeden Frame nach dem ersten: der Controller hat einen Sendepuffer, und jeder Frame wartet, bis der vorige bei 1Mbit/s die Arbitrierung gewonnen hat; bis zu 1085µs für 8 Frames | `can_service()` in `firmware/iomcu/src/iomcu_can.c` |
+| Eine Link-Anfrage, deren Antwort mehr als einen CAN-Frame hat, bis zu 8 Frames für 32 Register | bis zu 155µs für jeden Frame nach dem ersten: der Controller hat einen Sendepuffer, und jeder Frame wartet, bis der vorige bei 1Mbit/s die Arbitrierung gewonnen hat; bis zu 1085µs für 8 Frames; aus den Bitzahlen gerechnet, nicht gemessen | `can_service()` in `firmware/iomcu/src/iomcu_can.c` |
 | Der Konsolenbericht alle 3s, bis zu 1489 Byte | nicht gemessen; jedes `printf()` wartet bis zu 1000µs auf Platz im USB-Sendepuffer | `can_report()` in `firmware/iomcu/src/iomcu_report.c` |
 
 Jeder solche Durchlauf kostet die Frames, die in ihm fällig werden. Frames pro
@@ -339,8 +339,9 @@ High-Idle zurück:
 | Der Befehl nach der Anfrage | 11ms nach Laufbeginn | `service_dshot()` |
 
 Der ESC sieht die Leitung 500µs oder länger high, bevor der erste Frame
-kommt, und einen ganzen Frame-Abstand lang, wenn der Wake-Durchlauf
-pünktlich ist: so wie vor jedem anderen Frame des Laufs. Der Wake-Durchlauf
+kommt: 1000µs abzüglich der Länge des Durchlaufs, der scharf schaltet, weil
+die Fälligkeit des Wake-Durchlaufs die Uhr des letzten unscharfen
+Durchlaufs ist. Der Wake-Durchlauf
 sendet keinen Frame, also behält die Anfrage alle zehn Wiederholungen.
 `out_dshot_send()` lässt einen Pin, der noch low ruht, los und sendet nichts,
 also beginnt kein Frame auf einer Low-Leitung. `test_out_dshot` hält den Pegel
