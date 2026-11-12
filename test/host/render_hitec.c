@@ -689,6 +689,35 @@ static bool classic_view(const char *v)
 }
 
 /**
+ * @brief @p n readings of the PD mini as the rig's supply has it, handed to
+ *        SERVO's meter the way panel_frame.c hands it each reading: the
+ *        set point at the output and the servo's current while it is on,
+ *        0V while it is off.
+ * @param n the readings
+ */
+static void hpd_readings(int n)
+{
+    if (!g_hw.has_supply) {
+        return;
+    }
+    const bool on = g_hw.v.online && g_hw.v.on;
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = g_hw.v.online;
+    st.ok = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+    st.output = on;
+    st.mode = on ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+    st.set_v = (float)g_hw.v.set_mv / 1000.0f;
+    st.set_i = (float)g_hw.v.set_ma / 1000.0f;
+    st.v = on ? st.set_v : 0.0f;
+    st.i = on ? (float)g_out_ma / 1000.0f : 0.0f;
+    st.p = st.v * st.i;
+    for (int i = 0; i < n; ++i) {
+        servo_screen_supply(&st);
+    }
+}
+
+/**
  * @brief The steps of HITEC's view @p view, as render_hitec_view() names it.
  * @param view the view's name
  */
@@ -723,6 +752,8 @@ static void hitec_view_steps(const char *view)
     }
     /* HITEC's screen, which opens the session. */
     ui_router_goto(SCREEN_SERVO_HITEC);
+    /* The PD mini's readings before CONNECT: 10s of them, 50ms apart. */
+    hpd_readings(200);
     /* The tester on PROG PORT 1 at GP13, as the control task reports it. */
     servo_screen_set_drive(1u, PIN, true);
     prun(50u);
@@ -869,9 +900,10 @@ static void hitec_view_steps(const char *view)
 void render_hitec_view(const char *view)
 {
     hitec_view_steps(view);
-    /* The PD mini's output as the rig's supply has it, handed to the
-     * supply screen the way panel_frame.c hands it each reading. */
+    /* The PD mini's output and readings as the rig's supply has them,
+     * handed over the way panel_frame.c hands each reading. */
     supply_screen_set_output(g_hw.has_supply && g_hw.v.online && g_hw.v.on);
+    hpd_readings(100);
 }
 
 void render_hitec_feed(bool held)

@@ -791,6 +791,32 @@ static void ksupply(void)
     supply_screen_set_output(g_rig.rail && g_rig.sup_on);
 }
 
+/* @p n readings of the PD mini as the rig's supply has it, handed to
+ * SERVO's meter the way panel_frame.c hands it each reading: the set point
+ * at the output and the servo's current while it is on, 0V while it is
+ * off; none while no PD mini answers. */
+static void kreadings(int n)
+{
+    if (!g_rig.rail) {
+        return;
+    }
+    const bool on = g_rig.sup_on;
+    supply_state_t st;
+    memset(&st, 0, sizeof(st));
+    st.online = true;
+    st.ok = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
+    st.output = on;
+    st.mode = on ? SUPPLY_MODE_CV : SUPPLY_MODE_OFF;
+    st.set_v = (float)g_rig.sup_mv / 1000.0f;
+    st.set_i = (float)g_rig.sup_ma / 1000.0f;
+    st.v = on ? st.set_v : 0.0f;
+    st.i = on ? (float)g_rig.load_ma / 1000.0f : 0.0f;
+    st.p = st.v * st.i;
+    for (int i = 0; i < n; ++i) {
+        servo_screen_supply(&st);
+    }
+}
+
 static void ksettle(void)
 {
     (void)rig_settle();
@@ -1104,6 +1130,8 @@ static void kst_view_steps(const char *view)
         tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);   /* HV SERVO */
     }
     ui_router_goto(SCREEN_SERVO_KST);
+    /* The PD mini's readings before CONNECT: 10s of them, 50ms apart. */
+    kreadings(200);
     /* The tester's drive as the control task reports it: PORT 1 on GP13
      * when SERVO's target is the programmer's port, as program_view() sets
      * it; no pin when the generator has none for the port.  With the target
@@ -1365,6 +1393,7 @@ static void kst_view(const char *view)
 {
     kst_view_steps(view);
     ksupply();
+    kreadings(100);
 }
 
 /*
@@ -4052,13 +4081,16 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         servo_cmd_t moved;
         while (servo_screen_take(&moved)) { }
         /* The supply feeding it, from the panel's supply model, for the
-         * live power plot. */
+         * live power plot.  The programmers' views take the readings of
+         * their rig's PD mini instead (kst_view(), render_hitec_view()). */
+        const bool prog = strncmp(view, "servo-kst", 9) == 0
+                          || strncmp(view, "servo-hitec", 11) == 0;
         supply_sim_t sm;
         supply_sim_init(&sm);
         supply_sim_output(&sm, true);
         supply_state_t sst;
         memset(&sst, 0, sizeof(sst));
-        for (int i = 0; i < 300; ++i) {
+        for (int i = 0; i < 300 && !prog; ++i) {
             supply_sim_step(&sm, 0.05f, &sst);
             servo_screen_supply(&sst);
         }
