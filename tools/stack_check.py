@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-"""Hold the panel's task stacks, and the IOmcu's two, to their
-deepest call chain.
+"""Hold the panel's task stacks and the IOmcu's two to their deepest chain.
 
 A task that runs past the end of its stack trips FreeRTOS's stack check and
 restarts the panel.  Neither the host build nor the size report shows how
@@ -386,8 +385,11 @@ def screen_slots() -> list:
 
 
 def screen_tables(elf: Elf) -> tuple:
-    """Every screen's callbacks by slot, {slot: {address}}; how many tables
-    came from the ELF and which from their source; and the errors."""
+    """Every screen's callbacks by slot, {slot: {address}}.
+
+    How many tables came from the ELF and which from their source; and the
+    errors.
+    """
     slots = screen_slots()
     found = {s: set() for s in slots}
     errors, from_elf, from_src = [], 0, []
@@ -436,8 +438,7 @@ def screen_tables(elf: Elf) -> tuple:
 # ----------------------------------------------------------------- tasks --
 
 def in_build_dir(rel: Path) -> bool:
-    """Whether @p rel, relative to firmware/panel, is not the panel's own
-    source.
+    """Whether @p rel, under firmware/panel, is not the panel's own source.
 
     Args:
         rel: A path relative to firmware/panel.
@@ -454,11 +455,14 @@ def in_build_dir(rel: Path) -> bool:
 
 
 def task_stacks() -> tuple:
-    """(entry function, task name, stack bytes, where) for every task the
+    """(entry function, task name, stack bytes, where) for every panel task.
+
+    (entry function, task name, stack bytes, where) for every task the
     panel's own code creates, and the errors: a creation whose entry, name
     or stack size is not a plain identifier, string or number (or a macro
     defined as one in the same file) fails the check rather than being
-    skipped."""
+    skipped.
+    """
     tasks, errors = [], []
     for src in sorted(PANEL_DIR.rglob("*.c")):
         if in_build_dir(src.relative_to(PANEL_DIR)):

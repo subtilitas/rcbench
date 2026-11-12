@@ -46,6 +46,7 @@ typedef enum {
     SUPPLY_NONE,     /* no callbacks: a build without a PD mini */
     SUPPLY_OFFLINE,  /* callbacks, and no PD mini answers */
     SUPPLY_ON,       /* asked on at MV and read on */
+    SUPPLY_READY,    /* answers, the output read off: CONNECT switches it on */
 } supply_kind_t;
 
 static hitec_port_t g_port;
@@ -478,9 +479,10 @@ static inline void fresh_at(uint32_t t0, supply_kind_t supply)
     g_hw.set_ok = true;
     g_hw.follow = true;
     g_hw.has_supply = supply != SUPPLY_NONE;
-    g_hw.v.online = supply == SUPPLY_ON;
+    g_hw.v.online = supply == SUPPLY_ON || supply == SUPPLY_READY;
     g_hw.v.asked_on = supply == SUPPLY_ON;
     g_hw.v.on = supply == SUPPLY_ON;
+    g_hw.v.off = supply == SUPPLY_READY;
     g_hw.v.set_mv = MV;
     g_hw.v.set_ma = MA;
     g_hw.v.vin_mv = 20000u;

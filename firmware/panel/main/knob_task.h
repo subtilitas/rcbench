@@ -42,3 +42,12 @@ void knob_task_set_enabled(bool on);
  * @return the steps turned since the last call, signed
  */
 int knob_task_take(void);
+
+/**
+ * @brief Whether the sensor answered its last poll: false while the
+ *        setting is off, before the first poll and after a poll it did not
+ *        answer.  Polls run every KNOB_POLL_MS while it answers and every
+ *        KNOB_POLL_IDLE_MS while it does not.
+ * @return true when the last poll was answered
+ */
+bool knob_task_answers(void);

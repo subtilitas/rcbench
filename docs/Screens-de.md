@@ -330,7 +330,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO LIVE und SWEEP | der Winkel des Ruderhorns, die Skala und die Messwerte (3) |
 | SERVO TEST | das Feld AUTOMATISCHER TEST, die Grenzen und der Verlauf (3); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO ENDLAGENLAUF | UNTERES ENDE mit OBERES ENDE und die Zustandszeilen (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
-| SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT und MAX LÖSCHEN (4); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
+| SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und ohne antwortenden Drehknopf -10us und +10us (4 oder 5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
 | SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN und TYP auf KST, SERIE (DATEIEN bei gehaltenem Port) und ALLES AUSLESEN auf HITEC, die Hinweise (5); DATEIEN und WEITERES auf KST, WEITERES und NACH STOP auf HITEC, SCHREIBEN INS SERVO FREIGEBEN, ZURÜCKSPIELEN, n WERTE SCHREIBEN (5); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
@@ -679,7 +679,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT auf RUDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us, -10us, +10us und NULLPUNKT auf RUDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -1264,12 +1264,39 @@ INA3221 eingeschaltet ist.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
+time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
 In MOTOR-Dateien entsprechen `voltage`, `current` und `power` der Anzeige
-auf MOTOR & ESC. Eine durch ARM auf SERVO begonnene SERVO-Datei hat vor
-`source` zwei zusätzliche Spalten:
+auf MOTOR & ESC.
+
+`throttle` ist das Gas, das das Panel zum Zeitpunkt der Abtastung
+vorgibt, 0 bis 100%, geschrieben auf 0,1%. Für PWM- und DShot-Ausgänge ist
+es derselbe Wert:
+
+- In einer `measured`-Zeile ist es das THROTTLE, das beim IOmcu gilt,
+  als das Panel die Abtastung liest, in Schritten von 0,01%: das letzte,
+  das der IOmcu bestätigt hat. Der IOmcu gibt es ohne Rampengrenze aus.
+  Ein Gas, das das Panel nach diesem Lesen in derselben Abfrage schreibt,
+  steht in der nächsten Zeile. Ein Schreiben, das der IOmcu ablehnt oder
+  nicht beantwortet, ändert nichts. Ein Schreiben von ARM = 0, etwa nach
+  STOP, setzt 0. Die Verzögerung vom Schreiben bis zum Pin ist nicht
+  gemessen. Einen Failsafe, den der IOmcu ohne Schreiben selbst einnimmt,
+  sieht das Panel nicht.
+- In einer `model`-Zeile ist es das Gas, mit dem das Modell läuft: der
+  Befehl nach der Rampengrenze.
+- Solange der Motor nicht ARMED ist, steht 0.0 darin.
+- Eine Zeile, die nur ein Fenster hält, hat die Zelle leer.
+
+Eine MOTOR-Datei ohne `throttle` hat `esc` direkt nach `rpm`, und LOGS
+liest sie. In beiden Formen wählt LOGS die ersten 4 Zahlenspalten. Mit
+gemessener rpm sind das `voltage`, `current`, `power` und `rpm`. Ohne
+rpm-Telemetrie, etwa von einem PWM-ESC, ist `throttle` in einer Datei mit
+dieser Spalte die vierte.
+
+Eine durch ARM auf SERVO begonnene SERVO-Datei hat keine Spalte
+`throttle`: Dieses ARM schaltet keinen Motor. Vor `source` hat sie zwei
+zusätzliche Spalten:
 
 ```
 ...;ch3 voltage (V);pulse (us);angle (deg);source
@@ -1303,7 +1330,8 @@ auf MOTOR & ESC. Eine durch ARM auf SERVO begonnene SERVO-Datei hat vor
 - Die Werte des Messgeräts, `pulse` und `angle` stehen in der letzten Zeile
   einer Abtastung. Die Zeilen davor in einem Poll halten nur das Fenster und
   die Kanalspalten.
-- Die übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei.
+- Die übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei, ohne
+  `throttle`.
 
 `source` ist `measured` bei Zeilen mit Werten eines Messgeräts und `model`
 bei Zeilen aus dem Panelmodell (Markierung SIMULIERT). Netzteildateien
@@ -1356,11 +1384,11 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   die anderen von 0x40 CH1 bis 0x43 CH3.
 - Zwei Kanäle an einem Ziel tragen den Kanal im Namen:
   `out 3 0x41 ch2 current (A)`.
-- Höchstens 3 Gruppen, 23 Spalten in einer MOTOR-Datei und 25 in einer
+- Höchstens 3 Gruppen, 24 Spalten in einer MOTOR-Datei und 25 in einer
   SERVO-Datei: der vierte überwachende Kanal und alle weiteren stehen in
   keiner Datei. LOGS liest höchstens 25 Spalten.
-- Eine Datei mit weniger Gruppen endet früher mit `source`: 13 + 3 x
-  Gruppen + 1 Spalten, in einer SERVO-Datei 2 mehr. Ohne überwachenden Kanal hat die
+- Eine Datei mit weniger Gruppen endet früher mit `source`: 14 + 3 x
+  Gruppen + 1 Spalten, in einer SERVO-Datei 1 mehr. Ohne überwachenden Kanal hat die
   Datei keine Kanalspalten.
 
 Die Gruppe für den Kanal am Ziel des Servotesters stammt aus dem
@@ -1773,7 +1801,7 @@ der Reihenfolge der Nutzung.
 | SWEEP | SWEEP | das Zifferblatt mit dem Sweep; OPTIONEN öffnet KURVE, TEMPO, BEREICH und HALTEZEIT |
 | TEST | TEST | das Feld AUTOMATISCHER TEST, die Grenzen von SUPPLY, der Verlauf und das Feld des Laufs, die Karte BEREIT an der Stelle des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet die Liste des automatischen Tests |
 | ENDLAGENLAUF | ENDLAGENLAUF | Modus- und Ausgangszeile, UNTERES ENDE und OBERES ENDE und die Zustandszeilen auf der linken Karte, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste; OPTIONEN öffnet MODUS, SERVO, SERVOPULSE, STROM, Warten vor PWM, den Namen des Prüflings und die Testaufzeichnungen ([Starten](Servo-de.md#starten)) |
-| RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
+| RUDER | RUDER | Ausschlag in ° und mm, LÄNGE, 1000us, ZENTRIEREN, 2000us, NULLPUNKT und MAX LÖSCHEN, -10us und +10us ohne antwortenden Drehknopf ([Ruderausschlag](Servo-de.md#ruderausschlag)) |
 | RUDER AUTO | RUDER AUTO | das Feld von AUTO statt LÄNGE und der Fahrtasten, die Karte BEREIT statt des Ausgangsfelds, 2s HALTEN: ARM + START in der Fußleiste ([AUTO-Endpoints](Servo-de.md#auto-endpoints)) |
 | KST | SERVO > KST | die Programmierung für KST und Chaservo über dem linken Feld, die Karte BEREIT statt des Ausgangsfelds, WERTE SCHREIBEN in der Fußleiste ([Programmierer](#programmierer)) |
 | HITEC | HITEC | die Programmierung für Hitec über dem linken Feld, Karte und Fußleiste wie KST |
@@ -2103,6 +2131,7 @@ Die Bedienelemente verhalten sich je nach Zustand so:
 | --- | --- | --- |
 | Das Zifferblatt | abgelehnt: kein Befehl, Horn und SOLL-PULSBREITE bleiben | fordert die Stellung unter dem Finger an |
 | Drehknopf | abgelehnt; die Drehung wird nicht gespeichert | bewegt das Horn vom befohlenen Wert aus |
+| -10us, +10us auf RUDER, solange `Drehknopf` AUS ist oder der Knopf nicht antwortet | abgelehnt; gedimmt gezeichnet | verschiebt den Puls um 10us vom befohlenen Wert aus, Halten wiederholt; begrenzt auf WEG und den Pulsbereich |
 | ZENTRIEREN | abgelehnt; gedimmt gezeichnet | fordert PULS MITTE plus TRIMMUNG an |
 | SWEEP, PAUSE, PAUSIERT | abgelehnt; gedimmt gezeichnet | startet, pausiert und setzt den Sweep fort |
 | FREIGEBEN | sendet die Freigabe; der gezeigte Wert bleibt | zentriert die Ruderflächen; der gezeigte Wert wird zur Ruhelage |
@@ -5811,11 +5840,14 @@ Panel berührt und der Prüfstand ruht.
   wie beim Popup des Screenshots ([Das Popup](#das-popup)): SAFE ohne
   wartendes ARM, Netzteil und PROG 5V aus, kein Port gehalten, keine
   Programmiersitzung, kein Kartenauftrag, kein Sweep, kein Test, kein
-  LIMIT RUN, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit, kein
-  Schreiben ins Fehlerprotokoll und keine offene Aufzeichnung. Ein Frame,
-  der eine davon findet, setzt sofort 100% und startet die Minuten neu. Ein
-  Prüfstand bei ARMED oder ein eingeschalteter Ausgang steht nie hinter
-  einem gedimmten Bild.
+  LIMIT RUN, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit und keine
+  offene Aufzeichnung. Ein Frame, der eine davon findet, setzt sofort 100%
+  und startet die Minuten neu. Ein Prüfstand bei ARMED oder ein
+  eingeschalteter Ausgang steht nie hinter einem gedimmten Bild.
+- Eine Zeile auf dem Weg ins Fehlerprotokoll der Karte zählt nicht. Das
+  Popup wartet auf sie, damit Screenshot und Zeile die Karte nicht
+  gleichzeitig nutzen. Der Link-Bericht schreibt eine alle 60s, solange
+  die Verbindung zum IOmcu steht, und alle 5s, solange sie fehlt.
 - Jedes Touch-Ereignis setzt 100% und startet die Minuten neu.
 - Der Druck, der auf einem gedimmten Bild aufsetzt, weckt es nur. Sein
   DOWN, seine MOVEs und sein UP erreichen keine Seite, er öffnet, stellt
@@ -5834,6 +5866,21 @@ Panel berührt und der Prüfstand ruht.
 - Die Regel ist `shared/ui/screen_dim.c`, gehalten von `test_screen_dim`;
   die Render-Schleife setzt das Tastverhältnis mit
   `board_backlight_percent()`, wenn es sich ändert.
+- Die Konsole gibt den Zustand der Regel alle 300 Frames aus, 5,0s bei
+  60,4fps ([Leistung](Performance-de.md#auf-dem-board)):
+
+  ```text
+  I (…) rcbench: dim: after 5min awake, 37s since touch UP id 0x81 injector, PWM 100%
+  ```
+
+  Die Einstellung, gedimmt (`dim`) oder hell (`awake`), die ganzen
+  Sekunden, seit die Minuten zuletzt neu starteten, was sie neu startete,
+  und das zuletzt gesetzte Tastverhältnis. Die Ursache ist `start`,
+  `touch <DOWN|MOVE|UP> id 0x<id> <glass|injector>`, `busy <Bedingung>`
+  mit der ersten Bedingung des Popups, die nicht ruht (`armed`, `supply`,
+  `recording` und die anderen), oder `off` bei 0 Minuten. Eine Track-ID
+  mit gesetztem Bit 0x80 ist ein Kontakt des Touch-Injektors neben dem
+  Glas.
 
 ### PANEL: der Drehknopf
 
@@ -5901,6 +5948,9 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   Ohne Sensor sendet `Drehknopf` EIN alle 100ms eine unbestätigte
   Adressprobe an 0x06. Im Busmodell der Host-Tests ändert das sonst nichts. Am Panel ist es
   nicht gemessen: 0x00 bis 0x07 sind auf dieser Platine nicht gescannt.
+- Ohne antwortenden Knopf zeigt RUDER an seiner Stelle -10us und +10us:
+  solange `Drehknopf` AUS ist oder EIN und die letzte Abfrage unbeantwortet
+  blieb ([Ruderausschlag](Servo-de.md#ruderausschlag)).
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.
 

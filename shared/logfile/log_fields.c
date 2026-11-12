@@ -73,6 +73,9 @@ static const rule_t k_rules[] = {
     { M_EXACT,  "ina voltage",    "INA228", "V"    },
     { M_EXACT,  "ina current",    "INA228", "A"    },
     { M_EXACT,  "esc current",    "ESC",   "A"     },
+    /* And a MOTOR file's commanded throttle, beside the blackbox's motor
+     * commands. */
+    { M_EXACT,  "throttle",       "Motor", "%"     },
     /* And the INA3221's 50ms window, once per window: CH1 to CH3, or with
      * SENSE_MAP a group per watched target (log_cols.h). */
     { M_ANY_OF, "window|ch1 current|ch1 max|ch1 voltage|ch2 current|"

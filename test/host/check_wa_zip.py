@@ -21,6 +21,7 @@ import zipfile
 
 
 def dos_time(t):
+    """The time @p t clamped to the ZIP range and rounded to 2s, as a tuple."""
     t = max(t, 315532800)
     t = min(t, 4354819198)
     g = time.gmtime(t)
@@ -29,6 +30,7 @@ def dos_time(t):
 
 
 def check_full(path, rows):
+    """The problem with a full archive against its manifest rows, or None."""
     with zipfile.ZipFile(path) as z:
         bad = z.testzip()
         if bad is not None:
@@ -66,6 +68,7 @@ def check_full(path, rows):
 
 
 def check_sparse(path, rows):
+    """The problem with a sparse archive against its manifest rows, or None."""
     try:
         with zipfile.ZipFile(path) as z:
             infos = z.infolist()
@@ -92,6 +95,7 @@ def check_sparse(path, rows):
 
 
 def main():
+    """Check every archive in the folder argv[1] and return the exit status."""
     folder = pathlib.Path(sys.argv[1])
     if shutil.which("unzip") is None:
         print("unzip is not installed", file=sys.stderr)

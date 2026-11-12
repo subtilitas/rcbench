@@ -256,6 +256,14 @@ static uint16_t arm_value_wanted(void)
     return outputs_arm_value_for(s_far_minor, arming_roles(&s_arm));
 }
 
+void control_throttle_written(bool acked, uint16_t arm)
+{
+    const bool throttle = (outputs_arm_roles_of(arm)
+                           & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u;
+    bench_throttle_written(&s_bench_throttle, acked, throttle,
+                           s_throttle_hundredths);
+}
+
 /*
  * The frame that arms: ARM, THROTTLE and MOTOR_POLES, registers 0 to 2 of
  * the control page in one CAN frame, all-or-nothing at the far end.
@@ -285,6 +293,7 @@ bool control_arm(link_msg_t *reply)
     const bool ok = write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM,
                                LINK_CT_ARM_FRAME, regs, reply)
                     && reply->op == LINK_OP_ACK;
+    control_throttle_written(ok, arm);
     if (!ok && owed) {
         atomic_store(&s_poles_owed, true);
     }

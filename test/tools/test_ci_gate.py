@@ -1,4 +1,6 @@
-"""ci_gate.py: a publishing workflow goes on only after a CI run passed on
+"""ci_gate.py: a publish waits for a CI run that passed.
+
+A publishing workflow goes on only after a CI run passed on
 its commit.
 
 SPDX-License-Identifier: MIT
@@ -16,19 +18,23 @@ QUEUED = {"status": "queued", "conclusion": None}
 
 
 def state(runs, waited=0.0):
+    """The verdict state for @p runs after @p waited seconds."""
     return gate.verdict(runs, waited)[0]
 
 
 def test_a_passed_run_lets_the_workflow_go_on():
+    """A passed run lets the workflow go on."""
     assert state([PASSED]) == "pass"
 
 
 def test_a_pass_counts_beside_a_failed_or_a_running_run():
+    """A pass counts beside a failed or a running run."""
     assert state([FAILED, PASSED]) == "pass"
     assert state([RUNNING, PASSED]) == "pass"
 
 
 def test_a_failed_run_stops_the_workflow_after_the_grace_period():
+    """A failed run stops the workflow after the grace period."""
     assert gate.verdict([FAILED], gate.APPEAR_S) == (
         "fail", "CI ended on this commit without a pass: failure")
 
@@ -42,22 +48,26 @@ def test_an_older_failed_run_does_not_stop_the_workflow_at_once():
 
 
 def test_a_cancelled_run_stops_the_workflow():
+    """A cancelled run stops the workflow."""
     assert state([CANCELLED], gate.APPEAR_S) == "fail"
     assert state([CANCELLED, FAILED], gate.APPEAR_S) == "fail"
 
 
 @pytest.mark.parametrize("run", [RUNNING, QUEUED])
 def test_a_run_that_has_not_ended_is_waited_for(run):
+    """A run that has not ended is waited for."""
     assert state([run]) == "wait"
     assert state([FAILED, run]) == "wait"      # a re-run of a failed one
     assert state([run], gate.TIMEOUT_S - 1) == "wait"
 
 
 def test_a_run_that_never_ends_stops_the_workflow_at_the_limit():
+    """A run that never ends stops the workflow at the limit."""
     assert state([RUNNING], gate.TIMEOUT_S) == "fail"
 
 
 def test_a_commit_without_a_run_is_waited_for_and_then_refused():
+    """A commit without a run is waited for and then refused."""
     assert state([]) == "wait"
     assert state([], gate.APPEAR_S - 1) == "wait"
     assert gate.verdict([], gate.APPEAR_S) == (
@@ -65,6 +75,7 @@ def test_a_commit_without_a_run_is_waited_for_and_then_refused():
 
 
 def test_a_pull_request_run_does_not_count():
+    """A pull request run does not count."""
     listed = [
         {"event": "pull_request", "status": "completed",
          "conclusion": "success", "id": 1},
@@ -78,6 +89,7 @@ def test_a_pull_request_run_does_not_count():
 
 
 def test_what_is_not_a_commit_id_or_a_repository_is_refused():
+    """What is not a commit id or a repository is refused."""
     with pytest.raises(SystemExit):
         gate.main(["--repo", "o/r", "--sha", "v1.0.0"])
     with pytest.raises(SystemExit):
@@ -85,6 +97,7 @@ def test_what_is_not_a_commit_id_or_a_repository_is_refused():
 
 
 def test_the_gate_polls_until_ci_ends(monkeypatch):
+    """The gate polls until CI ends."""
     answers = [[], [QUEUED], [RUNNING], [PASSED]]
     asked = []
 
@@ -99,6 +112,7 @@ def test_the_gate_polls_until_ci_ends(monkeypatch):
 
 
 def test_the_gate_fails_when_ci_fails(monkeypatch, capsys):
+    """The gate fails when CI fails."""
     monkeypatch.setattr(gate, "ci_runs", lambda *a: [FAILED])
     monkeypatch.setattr(gate, "APPEAR_S", 0)
     monkeypatch.setattr(gate.verdict, "__defaults__", (0, gate.TIMEOUT_S))

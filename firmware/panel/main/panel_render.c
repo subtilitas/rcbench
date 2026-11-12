@@ -397,6 +397,8 @@ knob_turn_t knob_take(void)
     const bool on = settings_get_bool(SET_KNOB_EN);
     knob_task_set_enabled(on);
     const int steps = knob_task_take();
+    /* RUDDER's step keys stand in for a knob that does not answer. */
+    servo_screen_set_knob(on && knob_task_answers());
     motor_screen_knob_frame();
     servo_screen_knob_frame();
     return (knob_turn_t){ .steps = on ? steps : 0,
@@ -611,6 +613,14 @@ void backlight_service(const shot_facts_t *facts)
     if (board_backlight_percent((int)pct) == ESP_OK) {
         s_backlight_pct = pct;
     }
+}
+
+void backlight_line(void)
+{
+    char line[SCREEN_DIM_LINE_MAX];
+    (void)screen_dim_line(&s_dim, now_ms(), settings_get_int(SET_DIM_AFTER),
+                          line, sizeof(line));
+    ESP_LOGI(TAG, "%s, PWM %u%%", line, s_backlight_pct);
 }
 
 /**

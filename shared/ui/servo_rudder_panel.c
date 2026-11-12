@@ -2,9 +2,9 @@
  * @file
  * @brief The SERVO workbench's RUDDER task: the control surface's
  *        deflection in ° and mm, LENGTH, the buttons that drive 1000us,
- *        CENTER and 2000us, ZERO, the MAX of each side, the angle
- *        source's state line and the side view of the surface at the
- *        deflection shown.
+ *        CENTER and 2000us, the step keys -10us and +10us without a knob,
+ *        ZERO, the MAX of each side, the angle source's state line and
+ *        the side view of the surface at the deflection shown.
  *
  * See servo_rudder_int.h for the layout.  The angle is the one the screen
  * takes in (servo_screen_encoder(), enc_shown(), enc_deg_now()), in the
@@ -49,6 +49,9 @@
 #define RUD_GAP    10                     /**< Between two, px. */
 #define RUD_ZERO_Y (CARD_Y + 232)         /**< ZERO and RESET MAX. */
 #define RUD_ZERO_W 160                    /**< One of them, px. */
+/** @brief -10us's left edge: right of RESET MAX, x 358. */
+#define RUD_STEP_X (RUD_X + 2 * (RUD_ZERO_W + RUD_GAP))
+#define RUD_STEP_W 75                     /**< -10us or +10us, px. */
 #define RUD_ST_Y   (CARD_Y + 292)         /**< The first state line. */
 #define RUD_ST_P   24                     /**< The state lines' pitch. */
 #define RUD_LEN_VAL_W 200                 /**< LENGTH's value, px. */
@@ -59,6 +62,9 @@ _Static_assert(3 * RUD_BTN_W + 2 * RUD_GAP == RUD_W,
                "the three buttons fill the column");
 _Static_assert(2 * RUD_ZERO_W + RUD_GAP < RUD_W,
                "ZERO and RESET MAX fit the column");
+_Static_assert(RUD_STEP_X + 2 * RUD_STEP_W + RUD_GAP == RUD_X + RUD_W,
+               "-10us and +10us fill the ZERO row's third slot");
+_Static_assert(RUD_STEP_W >= UI_TAP_MIN, "a step key is a finger wide");
 _Static_assert(RUD_X + RUD_W <= PAD + LCARD_W - 10,
                "the column ends inside the card");
 _Static_assert(RUD_ST_Y + RUD_LINES * RUD_ST_P <= CARD_FLOOR,
@@ -242,10 +248,21 @@ static float len_now(void)
 
 /* ----------------------------------------------------------- the layout */
 
+bool rudder_steps_shown(void)
+{
+    /* AUTO's view has its plot in the slot; a knob that answers moves the
+     * horn by itself. */
+    return !s.ra.view
+           && !(settings_get_bool(SET_KNOB_EN) && s.knob_answers);
+}
+
 gfx_rect_t rudder_rect(rudder_ctl_t k)
 {
     /* AUTO's box holds the place of LENGTH and the drive buttons. */
     if (s.ra.view && k >= RUD_C_LENGTH && k <= RUD_C_2000) {
+        return (gfx_rect_t){ 0, 0, 0, 0 };
+    }
+    if ((k == RUD_C_MINUS || k == RUD_C_PLUS) && !rudder_steps_shown()) {
         return (gfx_rect_t){ 0, 0, 0, 0 };
     }
     switch (k) {
@@ -263,6 +280,13 @@ gfx_rect_t rudder_rect(rudder_ctl_t k)
         const int i = (int)k - (int)RUD_C_ZERO;
         return (gfx_rect_t){ (int16_t)(RUD_X + i * (RUD_ZERO_W + RUD_GAP)),
                              RUD_ZERO_Y, RUD_ZERO_W, UI_TAP_MIN };
+    }
+    case RUD_C_MINUS:
+    case RUD_C_PLUS: {
+        const int i = (int)k - (int)RUD_C_MINUS;
+        return (gfx_rect_t){ (int16_t)(RUD_STEP_X
+                                       + i * (RUD_STEP_W + RUD_GAP)),
+                             RUD_ZERO_Y, RUD_STEP_W, UI_TAP_MIN };
     }
     default:
         return (gfx_rect_t){ 0, 0, 0, 0 };
@@ -319,6 +343,65 @@ static void drive(rudder_ctl_t k)
         (void)svs_command(us_to_deg((k == RUD_C_1000) ? 1000u : 2000u));
     }
     ++s.ctrl_rev;
+}
+
+/**
+ * @brief -10us or +10us: the commanded pulse RUD_STEP_US shorter or
+ *        longer, from the pulse it drives now, refused while the value is
+ *        not live.  It takes the horn from a run and a sweep as the drive
+ *        buttons do, and the pulse is held to the type's pulse range and,
+ *        as an angle, to TRAVEL, as 1000us and 2000us are; at an end the
+ *        pulse stays.
+ * @param k RUD_C_MINUS or RUD_C_PLUS
+ */
+static void step(rudder_ctl_t k)
+{
+    if (!value_live()) {
+        return;
+    }
+    test_end_now(SERVO_TEST_AB_OPERATOR);
+    stop_sweep();
+    /* From the pulse driven, which svs_deg_to_us() holds to MIN..MAX: a
+     * command past an end steps back from that end at once. */
+    int to = (int)svs_deg_to_us(s.commanded_deg)
+             + ((k == RUD_C_PLUS) ? RUD_STEP_US : -RUD_STEP_US);
+    if (to < (int)s.min_us) { to = (int)s.min_us; }
+    if (to > (int)s.max_us) { to = (int)s.max_us; }
+    (void)svs_command(us_to_deg_f((float)to));
+}
+
+/** @brief The press on -10us or +10us ends: the position stays, as the
+ *         drive buttons leave it. */
+static void step_end(void)
+{
+    s.rud.pressed = RUD_C_NONE;
+    ++s.ctrl_rev;
+}
+
+/**
+ * @brief Whether @p k is -10us or +10us.
+ * @param k the control
+ * @return true when it is
+ */
+static bool is_step(rudder_ctl_t k)
+{
+    return k == RUD_C_MINUS || k == RUD_C_PLUS;
+}
+
+void rudder_tick(float dt_s)
+{
+    const rudder_ctl_t k = (rudder_ctl_t)s.rud.pressed;
+    if (!is_step(k)) {
+        return;
+    }
+    if (!rudder_shown() || !rudder_steps_shown() || !value_live()) {
+        step_end();
+        return;
+    }
+    const int n = ui_key_repeat(&s.rud.held_s, dt_s);
+    for (int i = 0; i < n; ++i) {
+        step(k);
+    }
 }
 
 /**
@@ -383,6 +466,15 @@ void rudder_down(const touch_event_t *evt)
         }
         if (k == RUD_C_1000 || k == RUD_C_CENTER || k == RUD_C_2000) {
             drive((rudder_ctl_t)k);
+        } else if (is_step((rudder_ctl_t)k)) {
+            /* A step on the press, then the repeats while it is held. */
+            if (s.rud.pressed == RUD_C_NONE && value_live()) {
+                s.rud.pressed  = (uint8_t)k;
+                s.rud.press_id = evt->point.id;
+                s.rud.held_s   = 0.0f;
+                step((rudder_ctl_t)k);
+                ++s.ctrl_rev;
+            }
         } else if (s.rud.pressed == RUD_C_NONE
                    && !servo_rauto_running(&s.ra.run)) {
             s.rud.pressed  = (uint8_t)k;
@@ -399,8 +491,17 @@ bool rudder_rest(const touch_event_t *evt)
         || evt->point.id != s.rud.press_id) {
         return false;
     }
+    const rudder_ctl_t k = (rudder_ctl_t)s.rud.pressed;
+    if (is_step(k)) {
+        /* A release, or a finger that leaves the key, ends the repeat. */
+        if (evt->type == TOUCH_EVENT_UP
+            || !gfx_rect_contains(rudder_rect(k), evt->point.x,
+                                  evt->point.y)) {
+            step_end();
+        }
+        return true;
+    }
     if (evt->type == TOUCH_EVENT_UP) {
-        const rudder_ctl_t k = (rudder_ctl_t)s.rud.pressed;
         s.rud.pressed = RUD_C_NONE;
         ++s.ctrl_rev;
         if (touch_event_is_tap_up(evt) && rudder_shown()
@@ -640,7 +741,8 @@ static void draw_length(gfx_canvas_t *c)
 
 /**
  * @brief The buttons: 1000us, CENTER and 2000us dimmed while the value is
- *        not live, and not drawn with AUTO's box shown; ZERO dimmed
+ *        not live, and not drawn with AUTO's box shown; -10us and +10us
+ *        the same, and only while rudder_steps_shown(); ZERO dimmed
  *        without a reading; ZERO, RESET MAX and AUTO, or MANUAL with the
  *        box, dimmed while AUTO's run runs.
  * @param c the canvas
@@ -660,6 +762,12 @@ static void draw_buttons(gfx_canvas_t *c)
                        false, live, SV_FONT_LABEL);
         ui_button_font(c, rudder_rect(RUD_C_2000), k_us[1], go, false,
                        live, SV_FONT_LABEL);
+    }
+    if (rudder_steps_shown()) {
+        ui_button_font(c, rudder_rect(RUD_C_MINUS), TR(RUD_STEP_MINUS), go,
+                       s.rud.pressed == RUD_C_MINUS, live, SV_FONT_LABEL);
+        ui_button_font(c, rudder_rect(RUD_C_PLUS), TR(RUD_STEP_PLUS), go,
+                       s.rud.pressed == RUD_C_PLUS, live, SV_FONT_LABEL);
     }
     const bool idle = !servo_rauto_running(&s.ra.run);
     ui_button_font(c, rudder_rect(RUD_C_ZERO), TR(RUD_ZERO), go,
@@ -731,7 +839,8 @@ static uint32_t card_sig(void)
 {
     const uint32_t v[] = { value_live() ? 1u : 0u, enc_shown() ? 1u : 0u,
                            (uint32_t)lroundf(len_now()), s.rud.pressed,
-                           s.ra.view ? rauto_sig() : 0u };
+                           s.ra.view ? rauto_sig() : 0u,
+                           rudder_steps_shown() ? 1u : 0u };
     return hash_of(v, sizeof(v) / sizeof(v[0]));
 }
 

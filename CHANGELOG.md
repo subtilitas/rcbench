@@ -8,6 +8,14 @@ history is in git.
 
 ### Added
 
+- Column `throttle (%)` in the MOTOR run log, after `rpm`: the throttle
+  the panel commands at the sample, 0 to 100% to 0.1%, for PWM and DShot
+  outputs. On a measured row it is the THROTTLE in force at the IOmcu
+  when the sample was read, the last one it acknowledged; on a modelled
+  row the throttle the model runs at; 0.0 while the motor is not ARMED. A MOTOR file has 24 columns with 3 INA3221 groups. SERVO
+  files are unchanged. LOGS reads files without the column
+  ([Screens](docs/Screens.md#table-and-what-the-esc-says)).
+
 - Profile field `scheme.announce.loop_marker`: `true` where the ESC sounds
   one sound that is no item between the highest item and the lowest of each
   pass of its item loop. Absent, null or `false`: none
@@ -17,6 +25,11 @@ history is in git.
   from manual 251400-1111 V1.2. Item 8 is Battery cells, with 4 values on
   the 40A and 6 on the others. The profile states `beep_ms` 128, `long_ms`
   384 and `loop_marker`. 74 profiles, 462 models; ESC STICK runs 26.
+- The panel's console prints Dim after's state every 300 frames: the
+  setting, dim or awake, the seconds since the minutes last started, what
+  started them (a touch event with its type, track id and source, the
+  screenshot gate's first busy fact, or 0 minutes) and the backlight's
+  duty ([Performance](docs/Performance.md#on-the-board)).
 
 ### Changed
 
@@ -25,6 +38,11 @@ history is in git.
 
 ### Fixed
 
+- Dim after dims the backlight. The link report's line to the card's
+  fault log, every 60s while the IOmcu is linked, counted as a busy bench
+  and started the minutes again, so no setting from 5 to 60min was ever
+  reached. The line no longer counts for Dim after; the screenshot's popup
+  still waits for it ([PANEL: Dim after](docs/Screens.md#panel-dim-after)).
 - ESC STICK selects items 1 and 2 of a Flycolor FlyDragon. The ESC sounds
   its 12321 melody, about 808ms, before every pass of its item loop; the
   order rule took it for a group out of order, so item 1 never followed

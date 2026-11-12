@@ -53,8 +53,10 @@ FAMILY = ("-fsanitize", "-fno-sanitize")
 
 
 def flag_problems(args: list[str]) -> list[str]:
-    """What is wrong with one compile command's sanitizer flags, in words;
-    empty when it carries exactly the expected ones."""
+    """What is wrong with one compile command's sanitizer flags, in words.
+
+    Empty when it carries exactly the expected ones.
+    """
     enabled: set[str] = set()
     problems = []
     for arg in args:
@@ -116,8 +118,11 @@ def bucket(path: Path, root: Path = ROOT) -> str | None:
 
 
 def tally(entries: list[dict], root: Path = ROOT) -> tuple[dict, dict]:
-    """({part: [instrumented, compiled]}, {file: what is wrong with its
-    flags}) over a compile database."""
+    """Sanitizer flag counts and errors over a compile database.
+
+    Returns ({part: [instrumented, compiled]}, {file: what is wrong with its
+    flags}).
+    """
     counts = {name: [0, 0] for name in EXPECTED}
     wrong: dict[str, list[str]] = {}
     for entry in entries:
@@ -134,6 +139,7 @@ def tally(entries: list[dict], root: Path = ROOT) -> tuple[dict, dict]:
 
 
 def main() -> None:
+    """Check that every translation unit of the test build is instrumented."""
     if len(sys.argv) > 2 or (len(sys.argv) == 2 and sys.argv[1] != "--check"):
         sys.exit(__doc__)
 

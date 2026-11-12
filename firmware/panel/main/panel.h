@@ -1034,6 +1034,15 @@ static inline bool write_regs(link_host_t *host, uint8_t page, uint8_t offset,
 extern uint16_t s_arm_value;
 
 /**
+ * @brief A control page write of ARM @p arm and s_throttle_hundredths, and
+ *        whether the IOmcu acknowledged it, for the log's throttle
+ *        (bench_throttle_written()).  Control task only.
+ * @param acked true when the IOmcu acknowledged the write
+ * @param arm   the ARM written
+ */
+void control_throttle_written(bool acked, uint16_t arm);
+
+/**
  * @brief ARM and THROTTLE, the write every 50ms poll and every disarm makes.
  *
  * Two registers rather than the three the frame that arms carries.  This
@@ -1052,8 +1061,11 @@ static inline bool control_write(bool armed, link_msg_t *reply)
      * non-zero ARM is refused while it is armed (LINK_MINOR_ARM_ROLE). */
     const uint16_t regs[2] = { armed ? s_arm_value : 0u,
                                s_throttle_hundredths };
-    return write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u, regs, reply)
-           && reply->op == LINK_OP_ACK;
+    const bool ok = write_regs(&s_host, LINK_PAGE_CONTROL, LINK_CT_ARM, 2u,
+                               regs, reply)
+                    && reply->op == LINK_OP_ACK;
+    control_throttle_written(ok, regs[0]);
+    return ok;
 }
 
 /**
@@ -1433,6 +1445,9 @@ extern atomic_ullong s_throttle_pins;
 extern atomic_bool   s_throttle_pins_known;
 /** @brief The protocol the throttle is bound as (outbind_role_proto()). */
 extern atomic_uint   s_throttle_proto;
+/** @brief The THROTTLE in force at the IOmcu, for the log's rows.  Control
+ *         task only. */
+extern bench_throttle_t s_bench_throttle;
 
 /**
  * @brief The OUTPUTS page as the IOmcu holds it; the OUTPUTS screen's write
@@ -2060,6 +2075,12 @@ bool drain_touch(uint32_t stops_now, const shot_facts_t *facts);
  * @param facts  this frame's facts of the screenshot gate (panel_shot_frame())
  */
 void backlight_service(const shot_facts_t *facts);
+/**
+ * @brief Print Dim after's state on the console, one line
+ *        (screen_dim_line()).  Render loop only; the console's schedule
+ *        calls it once every PERF_WINDOW_FRAMES frames (panel_perf.h).
+ */
+void backlight_line(void);
 /**
  * @brief Queue the outputs screen's choice for the control task.
  * @param b the choice

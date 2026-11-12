@@ -309,7 +309,7 @@ on the left card decides the first pages:
 | SERVO LIVE and SWEEP | the horn's angle, the dial and the readings (3) |
 | SERVO TEST | the AUTOMATIC TEST card, the caps and the plot (3); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIMIT RUN | LOW END with HIGH END, and the state lines (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
-| SERVO RUDDER | LENGTH, the drive buttons, ZERO and RESET MAX (4); DEFLECTION, TRAILING EDGE and the state lines (3) |
+| SERVO RUDDER | LENGTH, the drive buttons, ZERO, RESET MAX and, without a knob that answers, -10us and +10us (4 or 5); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and OPTIONS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
 | SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL and TYPE on KST, SERIES (FILES while the port is held) and READ ALL on HITEC, the notes (5); FILES and MORE on KST, MORE and AFTER STOP on HITEC, ENABLE WRITE TO SERVO, RESTORE, WRITE n VALUES (5); PORT, READY, the rail line, WRITE and OPTIONS (5) |
@@ -631,7 +631,7 @@ The fill of a button says what a press does to an output.
 
 | Class | Buttons | Available | Active | Waiting | Refused |
 | --- | --- | --- | --- | --- | --- |
-| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN, CENTER on LIVE, SWEEP on SWEEP, 1000us, CENTER, 2000us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START and of ARM on LIVE, SWEEP and RUDDER | grey (`ui_button_off_fill()`), faint label |
+| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN, CENTER on LIVE, SWEEP on SWEEP, 1000us, CENTER, 2000us, -10us, +10us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START and of ARM on LIVE, SWEEP and RUDDER | grey (`ui_button_off_fill()`), faint label |
 | Emergency | STOP | red | red, flashes on the press | - | never |
 | Edit | `-` `+`, value boxes, RESET MAX, RESET CATEGORY on SETUP, DISCARD, READ AGAIN | neutral (`UI_C_PANEL_HI`) | - | - | grey |
 | SAVE on SETUP | SAVE, SAVED, WHEN IDLE, NOT SAVED | green while something is unsaved (SAVE) | - | amber (WHEN IDLE) | neutral with the label in red (NOT SAVED); SAVED is neutral |
@@ -1170,12 +1170,36 @@ give the spacing of the rows while the INA3221 is enabled.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
+time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
 In a MOTOR file `voltage`, `current` and `power` are what MOTOR & ESC
-shows. A SERVO file, from a switch to ARMED on SERVO, has two more
-columns before `source`:
+shows.
+
+`throttle` is the throttle the panel commands at the sample, 0 to 100%,
+written to 0.1%. It is the same figure for PWM and DShot outputs:
+
+- On a `measured` row it is the THROTTLE in force at the IOmcu when the
+  panel read the sample, in 0.01% steps: the last one the IOmcu
+  acknowledged. The IOmcu drives it without Ramp limit. A throttle the
+  panel writes after that read, in the same poll, is on the next row. A
+  write the IOmcu refuses or does not answer changes nothing. A write of
+  ARM = 0, such as after STOP, puts 0 in force. The delay from the write
+  to the pin is not measured. A failsafe the IOmcu enters on its own,
+  without a write, is not seen.
+- On a `model` row it is the throttle the model runs at: the command after
+  Ramp limit.
+- It is 0.0 while the motor is not ARMED.
+- A row that holds only a window has it empty.
+
+A MOTOR file without `throttle` has `esc` after `rpm`, and LOGS reads it.
+In both forms LOGS selects the first 4 numeric columns. With `rpm`
+measured these are `voltage`, `current`, `power` and `rpm`. Without rpm
+telemetry, as from a PWM ESC, `throttle` is the fourth in a file that has
+it.
+
+A SERVO file, from a switch to ARMED on SERVO, has no `throttle` column:
+the switch arms no motor. It has two more columns before `source`:
 
 ```
 ...;ch3 voltage (V);pulse (us);angle (deg);source
@@ -1206,7 +1230,8 @@ columns before `source`:
 - The meter's figures, `pulse` and `angle` are on the last row of a sample.
   The rows before it in one poll hold the window and the channel columns
   only.
-- The other columns of a SERVO file are a MOTOR file's.
+- The other columns of a SERVO file are a MOTOR file's, without
+  `throttle`.
 
 `source` is `measured` for rows produced by a meter and `model` for rows
 produced by the panel's model (the SIMULATED mark). Supply files use the
@@ -1254,11 +1279,11 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   others from 0x40 CH1 to 0x43 CH3.
 - Two channels on one target add the channel to the name:
   `out 3 0x41 ch2 current (A)`.
-- At most 3 groups, 23 columns in a MOTOR file and 25 in a SERVO file: the
+- At most 3 groups, 24 columns in a MOTOR file and 25 in a SERVO file: the
   fourth watching channel and later are in no file. LOGS reads at most 25
   columns.
-- A file with fewer groups ends `source` earlier: 13 + 3 x groups + 1
-  columns, and 2 more in a SERVO file. With no channel watching anything the file has no channel
+- A file with fewer groups ends `source` earlier: 14 + 3 x groups + 1
+  columns, and 1 more in a SERVO file. With no channel watching anything the file has no channel
   column.
 
 The channel watching the servo tester's target comes from the SERVO_WIN
@@ -1647,7 +1672,7 @@ SERVO opens on its hub: eight tiles of 328 x 130px in SETUP's grid, at x
 | SWEEP | SWEEP | the dial with the sweep; OPTIONS opens CURVE, SPEED, RANGE and DWELL TIME |
 | TEST | TEST | the AUTOMATIC TEST card, SUPPLY's caps, the plot and the run's box, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens the automatic test's list |
 | LIMIT RUN | LIMIT RUN | the mode and output lines, LOW END and HIGH END and the state lines on the left card, the READY card in place of the output card, HOLD 2s: ARM + START in the footer; OPTIONS opens MODE, SERVO, SERVO PULSES, CURRENT, Wait before PWM, DUT NAME and USER LOGS ([Running it](Servo.md#running-it)) |
-| RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX ([Rudder deflection](Servo.md#rudder-deflection)) |
+| RUDDER | RUDDER | deflection in ° and mm, LENGTH, 1000us, CENTER, 2000us, ZERO and RESET MAX, -10us and +10us without a knob that answers ([Rudder deflection](Servo.md#rudder-deflection)) |
 | RUDDER AUTO | RUDDER AUTO | AUTO's box in place of LENGTH and the drive buttons, the READY card in place of the output card, HOLD 2s: ARM + START in the footer ([AUTO end points](Servo.md#auto-end-points)) |
 | KST | SERVO > KST | the KST and Chaservo programmer over the left card ([Programmer](#programmer)) |
 | HITEC | HITEC | the Hitec programmer over the left card ([Hitec programmer](#hitec-programmer)) |
@@ -1944,6 +1969,7 @@ What each control does while the bench is SAFE:
 | --- | --- | --- |
 | The dial | refused: no command, the horn and COMMANDED stay | commands the position under the finger |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value |
+| -10us, +10us on RUDDER, while Rotary knob is OFF or the knob does not answer | refused; drawn dimmed | moves the pulse 10us from the commanded value, a hold repeats; held to TRAVEL and the pulse range |
 | CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
 | RELEASE | sends the release; the value shown stays | centers the surfaces; the value shown becomes the rest |
@@ -5328,10 +5354,14 @@ bench is idle.
 - It dims only while the bench is idle, by the same facts as the
   screenshot's popup ([The popup](#the-popup)): SAFE with no arm waiting,
   the supply and PROG 5V off, no port held, no programming session, card
-  job, sweep, test, limit run, ESC STICK run, update, FAULT bit, fault log
-  write or open log. A frame that finds any of them sets 100% at once and
-  starts the minutes again. An ARMED bench or an output that is on is never
-  behind a dim screen.
+  job, sweep, test, limit run, ESC STICK run, update, FAULT bit or open
+  log. A frame that finds any of them sets 100% at once and starts the
+  minutes again. An ARMED bench or an output that is on is never behind a
+  dim screen.
+- A line on its way to the card's fault log does not count. The popup
+  waits for it, so the screenshot and the line do not share the card. The
+  link report writes one every 60s while the link to the IOmcu is up and
+  every 5s while it is down.
 - Any touch event sets 100% and starts the minutes again.
 - The press that comes down on a dim screen only wakes it. Its DOWN, MOVEs
   and UP reach no screen, so it opens, steps or switches nothing. A second
@@ -5349,6 +5379,19 @@ bench is idle.
 - The rule is `shared/ui/screen_dim.c`, held by `test_screen_dim`; the
   render loop sets the duty with `board_backlight_percent()` when it
   changes.
+- The console prints the rule's state every 300 frames, 5.0s at 60.4fps
+  ([Performance](Performance.md#on-the-board)):
+
+  ```text
+  I (…) rcbench: dim: after 5min awake, 37s since touch UP id 0x81 injector, PWM 100%
+  ```
+
+  The setting, dim or awake, the whole seconds since the minutes last
+  started, what started them, and the duty last set. The cause is
+  `start`, `touch <DOWN|MOVE|UP> id 0x<id> <glass|injector>`, `busy
+  <fact>` with the popup's first fact that is not idle (`armed`, `supply`,
+  `recording` and the others), or `off` for 0 minutes. A track id with bit
+  0x80 set is a contact of the touch injector beside the glass.
 
 ### PANEL: the rotary knob
 
@@ -5413,6 +5456,9 @@ across a third of its travel from -travel to +travel.
   unacknowledged probe to 0x06 every 100ms. In the host tests' model of the
   bus that changes nothing else. On the panel it is not measured: 0x00 to
   0x07 have not been scanned on this board.
+- Without a knob that answers, RUDDER shows -10us and +10us in its place:
+  while Rotary knob is OFF, or ON and the last poll went unanswered
+  ([Rudder deflection](Servo.md#rudder-deflection)).
 - The knob's direction, noise and behaviour without a magnet have not been
   measured on hardware.
 

@@ -67,6 +67,7 @@ class Row:
     """One table row of Parts.md, reduced to what a stock check reads."""
 
     def __init__(self, table: str, cells: dict[str, str]) -> None:
+        """Read one parts-table row from its @p cells."""
         self.table = table
         self.function = cells.get("Function", "")
         self.part = cells.get("Part number", "").strip("` ")
@@ -93,6 +94,7 @@ class Row:
 
 
 def leading_int(text: str) -> int:
+    """The integer at the start of @p text, or 0."""
     m = re.match(r"\s*(\d+)", text)
     return int(m.group(1)) if m else 0
 
@@ -123,6 +125,10 @@ def gate(boards: int, placements: int) -> int:
 
 
 def http(url, data=None, headers=None, timeout=40):
+    """(status, body) of a request.
+
+    A network error gives status 0 and the error text.
+    """
     req = urllib.request.Request(url, data=data, headers=headers or {})
     try:
         with urllib.request.urlopen(req, timeout=timeout) as resp:
@@ -153,6 +159,7 @@ def jlc_exact(lcsc: str):
 
 
 def dk_credentials():
+    """The Digi-Key client ID and secret from the environment or its file."""
     cid = os.environ.get("DIGIKEY_CLIENT_ID")
     sec = os.environ.get("DIGIKEY_CLIENT_SECRET")
     path = os.environ.get("DIGIKEY_ENV_FILE")
@@ -174,6 +181,7 @@ class DigiKey:
     """Digi-Key's API with one token for the run."""
 
     def __init__(self) -> None:
+        """Request a Digi-Key access token; a failure leaves the error text."""
         self.headers = None
         self.error = "no Digi-Key credentials"
         cid, sec = dk_credentials()
@@ -196,8 +204,10 @@ class DigiKey:
         self.error = ""
 
     def stock(self, mpn: str, maker: str):
-        """(error, stock) for the part number, the maker's product when
-        several products carry it."""
+        """(error, stock) for the part number.
+
+        The maker's product is used when several products carry it.
+        """
         if self.headers is None:
             return self.error, None
         url = DK_DETAILS_URL.format(urllib.parse.quote(mpn, safe=""))
@@ -226,8 +236,10 @@ class DigiKey:
 
 
 def available(product: dict) -> int:
-    """Tape and reel, cut tape and Digi-Reel are views of one stock: the
-    product's QuantityAvailable, or else the largest of them."""
+    """Tape and reel, cut tape and Digi-Reel are views of one stock.
+
+    The product's QuantityAvailable, or else the largest of them.
+    """
     if product.get("QuantityAvailable") is not None:
         return int(product["QuantityAvailable"])
     return max((v.get("QuantityAvailableforPackageType") or 0
@@ -235,22 +247,28 @@ def available(product: dict) -> int:
 
 
 def norm(part) -> str:
+    """@p part as upper-case letters and digits only."""
     return re.sub(r"[^0-9A-Z]", "", str(part or "").upper())
 
 
 class Report:
+    """A printed report that counts its failures."""
     def __init__(self) -> None:
+        """Start a report with no failure."""
         self.fails = 0
 
     def line(self, text: str) -> None:
+        """Print @p text."""
         print(text)
 
     def fail(self, text: str) -> None:
+        """Print @p text as a failure and count it."""
         self.fails += 1
         print(f"[FAIL] {text}")
 
 
 def rule4(p: dict, row_gate: int) -> tuple[bool, int, int]:
+    """(passes, stock, presale) of a part against the row gate @p row_gate."""
     stock = int(p.get("stockCount") or 0)
     presale = p.get("canPresaleNumber")
     presale = 0 if presale is None else int(presale)
@@ -259,6 +277,10 @@ def rule4(p: dict, row_gate: int) -> tuple[bool, int, int]:
 
 def shortfalls(rep: Report, part: str, stock: int, presale: int,
                row_gate: int) -> None:
+    """Report a stock or presale shortfall of @p part.
+
+    A stock below @p row_gate and a negative presale count are failures.
+    """
     if stock < row_gate:
         rep.fail(f"{part}: stock {stock}, gate {row_gate}")
     if presale < 0:
@@ -266,8 +288,10 @@ def shortfalls(rep: Report, part: str, stock: int, presale: int,
 
 
 def check_jlc(rep: Report, row: Row, boards: int) -> set[str]:
-    """Rule 4 at JLCPCB for an on-board row and its alternate. Returns the
-    LCSC numbers read."""
+    """Rule 4 at JLCPCB for an on-board row and its alternate.
+
+    Returns the LCSC numbers read.
+    """
     row_gate = gate(boards, row.placements)
     read = {row.lcsc}
     err, p = jlc_exact(row.lcsc)
@@ -304,6 +328,7 @@ def check_jlc(rep: Report, row: Row, boards: int) -> set[str]:
 
 
 def check_digikey(rep: Report, dk: DigiKey, row: Row, boards: int) -> None:
+    """Check the Digi-Key stock of @p row for @p boards boards."""
     row_gate = gate(boards, row.placements)
     if row.lcsc:
         # On the board: Digi-Key is the second vendor (rule 5).
@@ -337,6 +362,10 @@ def check_digikey(rep: Report, dk: DigiKey, row: Row, boards: int) -> None:
 
 
 def check(boards: int) -> int:
+    """Check every selected part for @p boards boards.
+
+    Return the failure count.
+    """
     rows = read_rows()
     selected = [r for r in rows if r.table == SELECTED]
     others = [r for r in rows if r.table == OTHERS]
@@ -403,6 +432,7 @@ def check(boards: int) -> int:
 
 
 def main() -> int:
+    """Check the parts stock and return the exit status."""
     ap = argparse.ArgumentParser(
         description=__doc__,
         formatter_class=argparse.RawDescriptionHelpFormatter)

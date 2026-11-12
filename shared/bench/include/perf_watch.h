@@ -152,6 +152,7 @@ int perf_lows_take(perf_lows_t *t);
 typedef enum {
     PERF_LINE_RATE,         /**< fps, the last frame, VSYNC, the counts  */
     PERF_LINE_WINDOW,       /**< the window of the screen shown          */
+    PERF_LINE_DIM,          /**< Dim after's state (screen_dim_line())   */
     PERF_LINE_LOW,          /**< one row of the lows, if one is due      */
 } perf_line_t;
 
@@ -159,8 +160,8 @@ typedef enum {
  * @brief The line due after frame @p frames.
  *
  * The rate line closes a window of PERF_WINDOW_FRAMES frames; the window
- * line follows on the next frame; every other frame may carry one row of
- * the lows.
+ * line follows on the next frame and Dim after's line on the one after;
+ * every other frame may carry one row of the lows.
  *
  * @param frames Frames drawn since the loop started, this one included.
  *               2^32 is not a multiple of 300: the window across the wrap

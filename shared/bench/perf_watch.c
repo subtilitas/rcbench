@@ -117,6 +117,8 @@ perf_line_t perf_line_due(uint32_t frames)
         return PERF_LINE_RATE;
     case 1u:
         return PERF_LINE_WINDOW;
+    case 2u:
+        return PERF_LINE_DIM;
     default:
         return PERF_LINE_LOW;
     }

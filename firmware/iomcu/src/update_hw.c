@@ -202,7 +202,6 @@ void update_hw_init(bool (*busy)(void))
     boot.p1 = partition_at(1u);
     const fw_slots_layout_t layout = {
         IOMCU_SLOT_A_OFFSET, IOMCU_SLOT_B_OFFSET, IOMCU_SLOT_BYTES,
-        FLASH_SECTOR_SIZE,
     };
     fw_slots_choose(&s_slots, &layout, &boot);
     link_update_dev_init(&s_upd, &s_io,

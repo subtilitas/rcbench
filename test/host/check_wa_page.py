@@ -72,6 +72,10 @@ def scripts_of(html):
 
 
 def main(argv):
+    """Check the pages in the folder argv[1].
+
+    Return the exit status.
+    """
     if len(argv) != 2:
         print(__doc__, file=sys.stderr)
         return 2

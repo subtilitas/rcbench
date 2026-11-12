@@ -34,6 +34,8 @@ static const char *TAG = "knob";  /**< ESP-IDF log tag. */
 static atomic_bool s_on;  /**< Whether the sensor is polled. */
 /** @brief Steps turned since the last knob_task_take(). */
 static atomic_int  s_steps;
+/** @brief The last poll was answered (knob_task_answers()); the task's. */
+static atomic_bool s_answers;
 /** @brief The knob's own bus; NULL when it did not come up. */
 static i2c_master_bus_handle_t s_bus;
 static i2c_master_dev_handle_t s_dev;  /**< The sensor's device on s_bus. */
@@ -78,6 +80,7 @@ static void knob_task(void *arg)
             knob_reset(&s_knob);
             period_ms = KNOB_POLL_IDLE_MS;
             found = false;
+            atomic_store(&s_answers, false);
             continue;
         }
         uint8_t bytes[KNOB_POLL_READS] = { 0 };
@@ -93,6 +96,7 @@ static void knob_task(void *arg)
             answered = knob_read(knob_poll_regs[i], &bytes[i]);
         }
         const int d = knob_poll_done(&s_knob, answered, bytes);
+        atomic_store(&s_answers, answered);
         if (d != 0) {
             atomic_fetch_add(&s_steps, d);
         }
@@ -176,4 +180,9 @@ void knob_task_set_enabled(bool on)
 int knob_task_take(void)
 {
     return atomic_exchange(&s_steps, 0);
+}
+
+bool knob_task_answers(void)
+{
+    return atomic_load(&s_answers);
 }

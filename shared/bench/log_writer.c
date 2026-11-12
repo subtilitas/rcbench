@@ -18,8 +18,18 @@
  * separate units row as data, so a file in that shape reports its first row
  * as unreadable cells.
  */
+/** @brief The header of a bench file up to rpm. */
 static const char *const k_head =
-    "time (s);voltage (V);current (A);power (W);rpm (rpm);"
+    "time (s);voltage (V);current (A);power (W);rpm (rpm);";
+/**
+ * @brief A MOTOR file's commanded throttle, after rpm.
+ *
+ * A SERVO file has none: its run arms no motor, and with the column its 25
+ * cells would be 26, one more than the reader takes (LOG_MAX_COLUMNS).
+ */
+static const char *const k_throttle = "throttle (%);";
+/** @brief The header of a bench file from the ESC temperature to window. */
+static const char *const k_head_rest =
     "esc (C);motor (C);charge (mAh);energy (Wh);"
     "ina voltage (V);ina current (A);esc current (A);window;";
 /* SERVO_SENSE's three channels, without SENSE_MAP. */
@@ -163,7 +173,8 @@ static const char *const k_servo_cols = "pulse (us);angle (deg);";
 
 /**
  * @brief The header of a bench file: a motor run's, or with @p servo a
- *        SERVO run's, which adds k_servo_cols before source.
+ *        SERVO run's, which has no k_throttle and adds k_servo_cols before
+ *        source.
  *
  * @param w     The writer.
  * @param servo true for a SERVO run's file.
@@ -175,7 +186,10 @@ static bool header(log_writer_t *w, bool servo)
         return w != NULL && !w->failed;
     }
     w->header_done = true;   /* set before the write: one attempt per file */
-    if (!put(w, k_head, strlen(k_head))) {
+    const char *const throttle = servo ? "" : k_throttle;
+    if (!put(w, k_head, strlen(k_head))
+        || !put(w, throttle, strlen(throttle))
+        || !put(w, k_head_rest, strlen(k_head_rest))) {
         return false;
     }
     const char *const tail_servo = servo ? k_servo_cols : "";
@@ -438,27 +452,34 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
      * supply's (rail, RAIL_*), at the decimals of a supply file: a servo's
      * idle current is tens of mA and its power under a watt.
      */
+    /*
+     * The commanded throttle, the k_throttle column, is a MOTOR file's alone,
+     * to 0.1% as MOTOR & ESC shows it.  A row without one, a window's alone,
+     * has it empty.
+     */
     static const struct {
         int decimals; size_t offset; uint16_t flag; uint8_t counted;
-        uint8_t rail; int rail_decimals;
+        uint8_t rail; int rail_decimals; bool throttle;
     } k_cols[] = {
         { 2, offsetof(bench_state_t, voltage),    LINK_BN_VOLTAGE_OK, 0u,
-             RAIL_V, 2 },
+             RAIL_V, 2, false },
         { 2, offsetof(bench_state_t, current),    LINK_BN_CURRENT_OK, 0u,
-             RAIL_I, 3 },
+             RAIL_I, 3, false },
         { 0, offsetof(bench_state_t, power),
              (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK), 0u,
-             RAIL_P, 2 },
+             RAIL_P, 2, false },
         { 0, offsetof(bench_state_t, rpm),        LINK_BN_RPM_OK, 0u,
-             RAIL_NONE, 0 },
+             RAIL_NONE, 0, false },
+        { 1, offsetof(bench_state_t, throttle_pct), 0u, 0u,
+             RAIL_NONE, 0, true },
         { 1, offsetof(bench_state_t, temp_esc),   LINK_BN_TEMP_OK, 0u,
-             RAIL_NONE, 0 },
+             RAIL_NONE, 0, false },
         { 1, offsetof(bench_state_t, temp_motor), LINK_BN_TEMP_MOT_OK, 0u,
-             RAIL_NONE, 0 },
+             RAIL_NONE, 0, false },
         { 0, offsetof(bench_state_t, charge_mah), 0u, BENCH_COUNTED_CHARGE,
-             RAIL_Q, 0 },
+             RAIL_Q, 0, false },
         { 2, offsetof(bench_state_t, energy_wh),  0u, BENCH_COUNTED_ENERGY,
-             RAIL_E, 2 },
+             RAIL_E, 2, false },
     };
 
     /* In the writer, not on the stack: up to 25 cells, every one checked
@@ -470,6 +491,9 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
         return false;   /* a row with no time is not a row */
     }
     for (size_t i = 0; i < sizeof(k_cols) / sizeof(k_cols[0]); ++i) {
+        if (servo && k_cols[i].throttle) {
+            continue;               /* not a column of a SERVO file */
+        }
         if ((size_t)n + 2u >= cap) {
             w->failed = true;
             return false;
@@ -482,6 +506,9 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
                          k_cols[i].rail_decimals);
             }
             continue;               /* no supply figure: an empty cell */
+        }
+        if (k_cols[i].throttle && !b->throttle_ok) {
+            continue;               /* no throttle on this row */
         }
         const uint16_t need = k_cols[i].flag;
         if (need != 0u && (b->flags & need) != need) {
