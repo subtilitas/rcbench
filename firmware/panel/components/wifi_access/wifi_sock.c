@@ -16,6 +16,10 @@
 #include "esp_timer.h"
 #include "lwip/sockets.h"
 
+/**
+ * @brief wa_sink_t's put hook: send @p n bytes without waiting; returns the
+ *        bytes sent, 0 when the socket has no room, -1 on an error.
+ */
 static int32_t sock_put(void *ctx, const uint8_t *p, uint32_t n)
 {
     const wifi_sock_t *c = ctx;
@@ -26,7 +30,9 @@ static int32_t sock_put(void *ctx, const uint8_t *p, uint32_t n)
     return (errno == EAGAIN || errno == EWOULDBLOCK) ? 0 : -1;
 }
 
-/* Up to @p wait_ms for room to write, or for the receiver to close. */
+/**
+ * @brief Up to @p wait_ms for room to write, or for the receiver to close.
+ */
 static int wait_for(int fd, fd_set *rd, uint32_t wait_ms)
 {
     fd_set wr;
@@ -47,6 +53,10 @@ static int wait_for(int fd, fd_set *rd, uint32_t wait_ms)
     return n;
 }
 
+/**
+ * @brief wa_sink_t's wait hook: wait up to @p wait_ms for room or for the
+ *        receiver to close.
+ */
 static wa_wait_t sock_wait(void *ctx, uint32_t wait_ms)
 {
     const wifi_sock_t *c = ctx;
@@ -75,12 +85,14 @@ static wa_wait_t sock_wait(void *ctx, uint32_t wait_ms)
     return WA_WAIT_READY;
 }
 
+/** @brief wa_sink_t's stop hook: whether the radio is going off. */
 static bool sock_stop(void *ctx)
 {
     const wifi_sock_t *c = ctx;
     return atomic_load(c->abort);
 }
 
+/** @brief wa_sink_t's clock hook. */
 static uint32_t sock_now(void *ctx)
 {
     (void)ctx;

@@ -61,43 +61,53 @@
 #include "wifi_files.h"
 #include "wifi_zip.h"
 
-static const char *TAG = "wifi";
+static const char *TAG = "wifi";  /**< ESP-IDF log tag. */
 
-#define NVS_NS        "wifi"
+#define NVS_NS        "wifi"  /**< The NVS namespace of the kept settings. */
 #define NVS_AP_PASS   "ap_pass"   /**< HOTSPOT PASSWORD; no key: RANDOM */
 #define NVS_WEB_CODE  "web_code"  /**< WEB CODE; no key: RANDOM */
 /** @brief Stack of the wifi_ctl task, in bytes, from internal RAM. The
  *  deepest call chain, the radio stop down to snprintf(), is 3744 bytes;
  *  6912 leaves 2144 above tools/stack_check.py's 1024-byte margin. */
 #define WORKER_STACK  6912u
-#define MDNS_STACK    4096u
-#define HTTPD_STACK   8192u
+#define MDNS_STACK    4096u  /**< Stack of the mDNS task, bytes. */
+#define HTTPD_STACK   8192u  /**< Stack of the page server's task, bytes. */
 /** @brief A receive or a send of the page's server waits this long at a
  *         time, s: esp_http_server's own default (HTTPD_DEFAULT_CONFIG()),
  *         written out.  A request whose client goes quiet for it ends. */
 #define HTTPD_WAIT_S  5u
 /** @brief Waits of HTTPD_WAIT_S an upload rides out: 30s quiet. */
 #define UPLOAD_WAITS  6u
-/* Below the UI loop's priority would starve the page; above it a ZIP
- * download would starve the frame.  Equal shares the core by time slice. */
+/**
+ * @brief Below the UI loop's priority would starve the page; above it a ZIP
+ *        download would starve the frame.  Equal shares the core by time
+ *        slice.
+ */
 #define NET_PRIORITY  1u
-#define WORKER_PRIO   2u
-/* Core 0, with the UI: core 1 runs the control task, which owns STOP and
- * the heartbeat, and nothing of the radio's goes there. */
+#define WORKER_PRIO   2u  /**< Priority of the wifi_ctl task. */
+/**
+ * @brief Core 0, with the UI: core 1 runs the control task, which owns STOP
+ *        and the heartbeat, and nothing of the radio's goes there.
+ */
 #define NET_CORE      0
-#define IO_CHUNK      4096u
-#define SCAN_READ     24u
-/* The fetch task: TLS (transport layer security) needs the stack of the
- * page's server, which never runs beside it. */
+#define IO_CHUNK      4096u  /**< Bytes of one transfer buffer. */
+#define SCAN_READ     24u  /**< Scan results asked of the driver at most. */
+/**
+ * @brief The fetch task: TLS (transport layer security) needs the stack of
+ *        the page's server, which never runs beside it.
+ */
 #define FETCH_STACK   8192u
-/* A read waits this long at a time, so a job ended from outside stops its
- * task within about this much once the data flows. */
+/**
+ * @brief A read waits this long at a time, so a job ended from outside stops
+ *        its task within about this much once the data flows.
+ */
 #define FETCH_SLICE_MS 1000u
 /** @brief The radio goes off after this much, task ended or not, ms.  A
  *         connection ends with the radio; a name lookup only when lwIP
  *         gives up on it, up to about 7s a DNS server, and the radio does
  *         not wait for that (wa_fetch_start_gate()). */
 #define FETCH_GRACE_MS 1500u
+/** @brief The User-Agent of the GitHub requests. */
 #define FETCH_AGENT    "rcbench-panel"
 /** @brief How long the worker waits for the event loop to pass the radio's
  *         last events at its stop (drain()), ms. */
@@ -106,100 +116,126 @@ static const char *TAG = "wifi";
 /** @brief The worker's marker in the default event loop (drain()). */
 ESP_EVENT_DEFINE_BASE(WA_DRAIN_EVENT);
 
+/**
+ * @brief The service's state: the fields under the lock, those set once, the
+ *        worker's and the fetch task's.
+ */
 static struct {
-    SemaphoreHandle_t lock;
+    SemaphoreHandle_t lock;  /**< Guards the fields marked under the lock. */
 
     /* Under the lock. */
-    wa_t            w;
-    wa_conf_t       conf;
-    wa_pending_t    pend;         /* the settings' writes owed to NVS   */
-    wa_scan_t       scan;
-    bool            scanned;
-    fw_upload_t     up;
+    wa_t            w;  /**< The session. */
+    wa_conf_t       conf;  /**< The kept settings. */
+    wa_pending_t    pend;         /**< the settings' writes owed to NVS */
+    wa_scan_t       scan;  /**< The last scan's result. */
+    bool            scanned;  /**< Whether a scan has run. */
+    fw_upload_t     up;  /**< The upload being received or staged. */
+    /** @brief Whether the installer holds the staged image. */
     bool            taken;
-    fw_offer_t      offer;
-    uint32_t        gen;          /* sessions started                   */
-    wa_fetch_t      f;            /* the job asking GitHub              */
+    fw_offer_t      offer;  /**< The offer the staged image makes. */
+    uint32_t        gen;          /**< sessions started */
+    wa_fetch_t      f;            /**< the job asking GitHub */
     struct {
-        uint32_t     gen;         /* the job's, wa_fetch_t.gen          */
-        wa_job_t     job;
-        wa_channel_t channel;     /* CHECK's                            */
-        fw_version_t want;
-        uint32_t     start_ms;
-    } job;                        /* what the fetch task runs           */
+        uint32_t     gen;         /**< the job's, wa_fetch_t.gen */
+        wa_job_t     job;  /**< What the job fetches. */
+        wa_channel_t channel;     /**< CHECK's */
+        fw_version_t want;  /**< The release a DOWNLOAD wants. */
+        uint32_t     start_ms;  /**< When the job started, ms. */
+    } job;                        /**< what the fetch task runs */
 
     /* Set once. */
+    /** @brief The name of the access point and the page. */
     char            name[WA_NAME_MAX];
-    uint32_t        slot;
-    fw_image_info_t running;
-    bool            running_ok;   /* running.version parsed            */
-    TaskHandle_t    worker;
+    uint32_t        slot;  /**< The largest image taken, bytes. */
+    fw_image_info_t running;  /**< The build that runs. */
+    bool            running_ok;   /**< running.version parsed */
+    TaskHandle_t    worker;  /**< The wifi_ctl task. */
 
     /* The worker's. */
+    /**
+     * @brief Whether the network interface layer and the event loop are up.
+     */
     bool            net_ready;
-    bool            radio_up;
+    bool            radio_up;  /**< Whether the radio is up. */
     bool            held;         /**< up past its session for the clock */
+    /** @brief The session number the radio was brought up for. */
     uint32_t        up_gen;
-    wa_mode_t       up_mode;
-    esp_netif_t    *netif;
-    httpd_handle_t  httpd;
-    atomic_bool     mdns_alive;
-    wa_mdns_tries_t mdns_tries;
-    uint8_t         ip[4];
+    wa_mode_t       up_mode;  /**< The mode the radio was brought up in. */
+    esp_netif_t    *netif;  /**< The station or access point interface. */
+    httpd_handle_t  httpd;  /**< The page server. */
+    atomic_bool     mdns_alive;  /**< Whether the mDNS task runs. */
+    wa_mdns_tries_t mdns_tries;  /**< The mDNS task's start attempts. */
+    uint8_t         ip[4];  /**< The IPv4 address the page is served on. */
 
-    atomic_bool     abort;        /* requests under way end now         */
-    atomic_bool     mdns_run;
-    atomic_bool     down;
-    /* The session wants the radio: written under the lock, by a start and
-     * by the worker as it reads the session, so wifi_access_down() never
-     * sees a start that has not reached the radio as a radio off. */
+    atomic_bool     abort;        /**< requests under way end now */
+    atomic_bool     mdns_run;  /**< Whether the mDNS task is to run. */
+    atomic_bool     down;  /**< Whether the radio is wholly off. */
+    /**
+     * @brief The session wants the radio: written under the lock, by a start
+     *        and by the worker as it reads the session, so wifi_access_down()
+     *        never sees a start that has not reached the radio as a radio
+     *        off.
+     */
     atomic_bool     asked;
     atomic_bool     unlinger;     /**< wifi_access_end_linger() asked: the
                                        worker ends the session's linger */
-    atomic_bool     de;
+    atomic_bool     de;  /**< Whether the page is in German. */
     SemaphoreHandle_t drained;    /**< the event loop passed the marker */
 
-    /* The fetch task's.  fetch_alive from its creation to its last touch
-     * of anything shared, which can be past the radio's end; fetch_stop
-     * asks it to end, and only a new job, never started while it lives,
-     * clears it. */
+    /**
+     * @brief The fetch task's.  fetch_alive from its creation to its last
+     *        touch of anything shared, which can be past the radio's end;
+     *        fetch_stop asks it to end, and only a new job, never started
+     *        while it lives, clears it.
+     */
     atomic_bool     fetch_alive;
-    atomic_bool     fetch_stop;
-    fw_upload_t     fup;          /* its image, until staged            */
-} s;
+    atomic_bool     fetch_stop;  /**< Asks the fetch task to end. */
+    fw_upload_t     fup;          /**< its image, until staged */
+} s;  /**< The service's state. */
 
-/*
- * The server's buffers, in PSRAM (pseudo-static random-access memory) and
- * taken once: the server runs one request at a time, and internal RAM is
- * what the display and the radio are short of.  The mDNS task has its own.
+/**
+ * @brief The server's buffers, in PSRAM (pseudo-static random-access memory)
+ *        and taken once: the server runs one request at a time, and internal
+ *        RAM is what the display and the radio are short of.  The mDNS task
+ *        has its own.
  */
 typedef struct {
-    wa_out_t        out;
-    char            text[512];
+    wa_out_t        out;  /**< The response writer. */
+    char            text[512];  /**< The text of an upload's answer. */
+    /** @brief The transfer buffer of a page or file request. */
     uint8_t         io[IO_CHUNK];
+    /** @brief A file's Content-Disposition value. */
     char            disp[WA_NAME_BYTES * 3u + 64u];
+    /** @brief A response head. */
     char            head[WA_NAME_BYTES * 3u + 64u + 192u];
-    char            path[WA_PATH_MAX + 1u];
+    char            path[WA_PATH_MAX + 1u];  /**< A decoded path. */
     wifi_req_bufs_t req;          /**< a request's headers for the guard */
     /** @brief The Cookie header, whole up to the server's header limit. */
     char            cookie[CONFIG_HTTPD_MAX_REQ_HDR_LEN + 1];
-    wa_send_t       snd;
-    uint8_t         mdns_q[WA_MDNS_MAX];
-    uint8_t         mdns_out[WA_MDNS_MAX];
+    wa_send_t       snd;  /**< The state of a file send. */
+    uint8_t         mdns_q[WA_MDNS_MAX];  /**< An mDNS query. */
+    uint8_t         mdns_out[WA_MDNS_MAX];  /**< An mDNS answer. */
     /* The fetch task's. */
+    /** @brief The fetch task's request URL. */
     char            url[FW_REL_URL_MAX + 1u];
+    /** @brief The Location header of its answer. */
     char            loc[FW_REL_URL_MAX + 1u];
-    uint8_t         fio[IO_CHUNK];
+    uint8_t         fio[IO_CHUNK];  /**< The fetch task's transfer buffer. */
+    /** @brief The release's checksums file. */
     char            sums[FW_REL_SUMS_MAX];
 } bufs_t;
 
-static bufs_t *b;
+static bufs_t *b;  /**< The server's buffers, taken once. */
 
+/** @brief Milliseconds since boot, truncated to 32 bits. */
 static uint32_t ms(void) { return (uint32_t)(esp_timer_get_time() / 1000); }
 
+/** @brief Take the lock. */
 static void lock(void)   { xSemaphoreTake(s.lock, portMAX_DELAY); }
+/** @brief Give the lock back. */
 static void unlock(void) { xSemaphoreGive(s.lock); }
 
+/** @brief Wake the worker task. */
 static void poke(void)
 {
     if (s.worker != NULL) {
@@ -207,6 +243,7 @@ static void poke(void)
     }
 }
 
+/** @brief The random source for wa_start(): the hardware generator. */
 static uint32_t rand32(void *ctx)
 {
     (void)ctx;
@@ -215,6 +252,7 @@ static uint32_t rand32(void *ctx)
 
 /* ------------------------------------------------------------ the store */
 
+/** @brief wa_store_t's load hook: read the kept settings from NVS. */
 static bool nvs_conf_load(void *ctx, wa_conf_t *out)
 {
     (void)ctx;
@@ -262,6 +300,7 @@ static bool nvs_kept_save(nvs_handle_t h, const char *key, const char *value)
     return e == ESP_OK || e == ESP_ERR_NVS_NOT_FOUND;
 }
 
+/** @brief wa_store_t's save hook: write the kept settings to NVS. */
 static bool nvs_conf_save(void *ctx, const wa_conf_t *c)
 {
     (void)ctx;
@@ -286,6 +325,7 @@ static bool nvs_conf_save(void *ctx, const wa_conf_t *c)
     return ok;
 }
 
+/** @brief wa_store_t's erase hook: erase the NVS namespace. */
 static bool nvs_conf_erase(void *ctx)
 {
     (void)ctx;
@@ -298,12 +338,17 @@ static bool nvs_conf_erase(void *ctx)
     return ok;
 }
 
+/** @brief The settings store, in NVS. */
 static const wa_store_t k_store = {
     nvs_conf_load, nvs_conf_save, nvs_conf_erase, NULL,
 };
 
 /* ------------------------------------------------------------- the card */
 
+/**
+ * @brief Write the full path of @p rel under the mount point into @p out;
+ *        returns its length, 0 when it does not fit @p cap.
+ */
 static size_t card_path(char *out, size_t cap, const char *rel)
 {
     const int n = snprintf(out, cap, "%s%s%s", STORAGE_MOUNT_POINT,
@@ -322,13 +367,7 @@ static bool card_stopped(void *ctx)
     return atomic_load(&s.abort);
 }
 
-/*
- * Every folder and file open here holds the volume (storage_hold()) until
- * its close, so a card swapped while a download runs is let go after the
- * download's last close and never under a read.  A folder is read with
- * FatFs's own reads (storage_dir_open()): each entry with its size and
- * time, no f_stat() per entry.
- */
+/** @brief wa_fs_t's opendir hook: open a folder of the card, under a hold. */
 static void *card_opendir(void *ctx, const char *path)
 {
     if (card_stopped(ctx)) {
@@ -339,6 +378,7 @@ static void *card_opendir(void *ctx, const char *path)
            ? storage_dir_open(full) : NULL;
 }
 
+/** @brief wa_fs_t's readdir hook: the next entry of a folder. */
 static int card_readdir(void *ctx, void *dir, wa_dirent_t *out)
 {
     (void)ctx;
@@ -353,6 +393,9 @@ static int card_readdir(void *ctx, void *dir, wa_dirent_t *out)
     return r;
 }
 
+/**
+ * @brief wa_fs_t's closedir hook: close the folder and give its hold back.
+ */
 static void card_closedir(void *ctx, void *dir)
 {
     (void)ctx;
@@ -402,6 +445,7 @@ static int32_t card_read(void *ctx, void *file, uint8_t *dst, uint32_t len)
     return (n < 0) ? -1 : (int32_t)n;
 }
 
+/** @brief wa_fs_t's close hook: close the file and give its hold back. */
 static void card_close(void *ctx, void *file)
 {
     (void)ctx;
@@ -409,6 +453,7 @@ static void card_close(void *ctx, void *file)
     storage_release();
 }
 
+/** @brief The file API's view of the card. */
 static const wa_fs_t k_card = {
     card_opendir, card_readdir, card_closedir,
     card_open, card_read, card_close, NULL, card_stopped,
@@ -416,7 +461,7 @@ static const wa_fs_t k_card = {
 
 /* ------------------------------------------------------------- the page */
 
-/* A request under way: counted, so the idle time-out waits for it. */
+/** @brief A request under way: counted, so the idle time-out waits for it. */
 static bool req_begin(void)
 {
     lock();
@@ -428,6 +473,7 @@ static bool req_begin(void)
     return serving;
 }
 
+/** @brief End a request counted by req_begin(). */
 static void req_end(void)
 {
     lock();
@@ -474,6 +520,10 @@ static wa_code_t req_code(httpd_req_t *r, bool force)
     return c;
 }
 
+/**
+ * @brief Fill @p pi with the page's name, version, slot size, language and
+ *        highlighting.
+ */
 static void page_info(wa_page_info_t *pi)
 {
     pi->name = s.name;
@@ -550,6 +600,10 @@ void wifi_page_traffic(void)
     unlock();
 }
 
+/**
+ * @brief wa_out_t's sink: send one chunk of the page; false once the radio
+ *        goes off or the send fails.
+ */
 static bool sink_chunk(void *ctx, const void *data, size_t n)
 {
     if (atomic_load(&s.abort)) {
@@ -558,6 +612,10 @@ static bool sink_chunk(void *ctx, const void *data, size_t n)
     return httpd_resp_send_chunk(ctx, data, (ssize_t)n) == ESP_OK;
 }
 
+/**
+ * @brief Send the page: the access code form when @p code_form, with a
+ *        wrong-code notice when @p wrong.
+ */
 static esp_err_t send_page(httpd_req_t *r, bool code_form, bool wrong)
 {
     httpd_resp_set_type(r, "text/html; charset=utf-8");
@@ -576,6 +634,7 @@ static esp_err_t send_page(httpd_req_t *r, bool code_form, bool wrong)
     return httpd_resp_send_chunk(r, NULL, 0);
 }
 
+/** @brief GET /: the page. */
 static esp_err_t h_root(httpd_req_t *r)
 {
     esp_err_t g = ESP_OK;
@@ -596,6 +655,7 @@ static esp_err_t h_root(httpd_req_t *r)
     return e;
 }
 
+/** @brief POST of the access code: check it and set the session cookie. */
 static esp_err_t h_code(httpd_req_t *r)
 {
     esp_err_t g = ESP_OK;
@@ -649,6 +709,7 @@ static esp_err_t h_code(httpd_req_t *r)
     return e;
 }
 
+/** @brief wa_out_t's sink: collect the upload answer's text in b->text. */
 static bool upload_text(void *ctx, const void *data, size_t n)
 {
     char *t = ctx;
@@ -661,6 +722,10 @@ static bool upload_text(void *ctx, const void *data, size_t n)
     return true;
 }
 
+/**
+ * @brief Answer an upload with its result as text; @p cut closes the
+ *        connection with the answer.
+ */
 static esp_err_t answer_upload(httpd_req_t *r, fw_err_t e,
                                const fw_image_info_t *info, bool same,
                                bool cut)
@@ -679,10 +744,10 @@ static esp_err_t answer_upload(httpd_req_t *r, fw_err_t e,
     return cut ? ESP_FAIL : s_;
 }
 
-/*
- * The upload: the body as sent, Content-Length bytes.  A size the receiver
- * refuses is answered before a byte is read, and the connection closes
- * with the answer.
+/**
+ * @brief The upload: the body as sent, Content-Length bytes.  A size the
+ *        receiver refuses is answered before a byte is read, and the
+ *        connection closes with the answer.
  */
 static esp_err_t h_update(httpd_req_t *r)
 {
@@ -822,6 +887,7 @@ wa_send_res_t wifi_page_raw_head(httpd_req_t *r, uint64_t length,
            ? wifi_page_raw_send(r, b->head, (size_t)n) : WA_SEND_GONE;
 }
 
+/** @brief GET of a file of the card, sent as an attachment. */
 static esp_err_t h_file(httpd_req_t *r)
 {
     esp_err_t g = ESP_OK;
@@ -885,6 +951,7 @@ static esp_err_t h_file(httpd_req_t *r)
                                  : wifi_sock_drop(httpd_req_to_sockfd(r));
 }
 
+/** @brief Start the page server and register its handlers. */
 static esp_err_t httpd_up(void)
 {
     httpd_config_t cfg = HTTPD_DEFAULT_CONFIG();
@@ -918,6 +985,10 @@ static esp_err_t httpd_up(void)
 
 /* ------------------------------------------------------------ the name */
 
+/**
+ * @brief The mDNS responder: answer queries for the access point's name until
+ *        asked to end.
+ */
 static void mdns_task(void *arg)
 {
     (void)arg;
@@ -988,31 +1059,37 @@ static void mdns_task(void *arg)
 
 /* ----------------------------------------------------------- GitHub */
 
-/*
- * The HTTP client wa_fetch.c runs against: esp_http_client over TLS, the
- * server's chain checked against the certificate bundle, one request per
- * connection, no redirect followed by the client.  esp_http_client keeps
- * every header value in memory of its own, without a bound of its own;
- * only a server whose chain checks reaches it.
+/**
+ * @brief The HTTP client wa_fetch.c runs against: esp_http_client over TLS,
+ *        the server's chain checked against the certificate bundle, one
+ *        request per connection, no redirect followed by the client.
+ *        esp_http_client keeps every header value in memory of its own,
+ *        without a bound of its own; only a server whose chain checks reaches
+ *        it.
  */
 typedef struct {
-    esp_http_client_handle_t c;
-    char  *loc;
-    size_t loc_cap;
-    size_t loc_n;
-    bool   loc_cut;
-    bool   loc_seen;
-    bool   chunked;     /* Transfer-Encoding: chunked                    */
+    esp_http_client_handle_t c;  /**< The client handle; NULL when closed. */
+    char  *loc;  /**< The caller's buffer for the Location header. */
+    size_t loc_cap;  /**< Bytes of loc. */
+    size_t loc_n;  /**< Bytes of Location kept. */
+    bool   loc_cut;  /**< Whether Location did not fit. */
+    bool   loc_seen;  /**< Whether a Location header came. */
+    bool   chunked;     /**< Transfer-Encoding: chunked */
     /* The last answer's head and body bytes read, for the console at the
      * job's end: kept past h_close(). */
-    int      last_status;
-    int64_t  last_length;
-    bool     last_chunked;
-    uint32_t last_read;
+    int      last_status;  /**< The last answer's HTTP status. */
+    int64_t  last_length;  /**< Its Content-Length, -1 for none. */
+    bool     last_chunked;  /**< Whether it was chunked. */
+    uint32_t last_read;  /**< Body bytes read of it. */
 } http_ctx_t;
 
+/** @brief The HTTP client's state; one request at a time. */
 static http_ctx_t s_http;
 
+/**
+ * @brief esp_http_client's event hook: take Transfer-Encoding and Location
+ *        from the headers.
+ */
 static esp_err_t on_http(esp_http_client_event_t *e)
 {
     http_ctx_t *h = e->user_data;
@@ -1047,6 +1124,7 @@ static esp_err_t on_http(esp_http_client_event_t *e)
     return ESP_OK;
 }
 
+/** @brief wa_http_t's close hook: close the client and free it. */
 static void h_close(void *ctx)
 {
     http_ctx_t *h = ctx;
@@ -1057,6 +1135,9 @@ static void h_close(void *ctx)
     }
 }
 
+/**
+ * @brief wa_http_t's open hook: connect to @p url and read the answer's head.
+ */
 static bool h_open(void *ctx, const char *url, uint32_t timeout_ms,
                    bool api, wa_http_head_t *head, char *loc, size_t loc_cap)
 {
@@ -1119,6 +1200,10 @@ static bool h_open(void *ctx, const char *url, uint32_t timeout_ms,
     return true;
 }
 
+/**
+ * @brief wa_http_t's read hook: read up to @p n bytes in slices of
+ *        FETCH_SLICE_MS; -1 on an error, a timeout or a stopped job.
+ */
 static int32_t h_read(void *ctx, uint8_t *dst, uint32_t n,
                       uint32_t timeout_ms)
 {
@@ -1151,15 +1236,17 @@ static int32_t h_read(void *ctx, uint8_t *dst, uint32_t n,
     }
 }
 
+/** @brief The HTTP client wa_fetch.c runs against. */
 static const wa_http_t k_http = { h_open, h_read, h_close, &s_http };
 
+/** @brief wa_run_t's clock hook. */
 static uint32_t f_now(void *ctx)
 {
     (void)ctx;
     return ms();
 }
 
-/* Asked to end, or the job ended under the task. */
+/** @brief Asked to end, or the job ended under the task. */
 static bool f_stopped(void *ctx)
 {
     (void)ctx;
@@ -1172,6 +1259,9 @@ static bool f_stopped(void *ctx)
     return over;
 }
 
+/**
+ * @brief wa_run_t's report hook: record the job's phase and the bytes done.
+ */
 static void f_report(void *ctx, wa_phase_t ph, uint32_t done, uint32_t total)
 {
     (void)ctx;
@@ -1183,16 +1273,17 @@ static void f_report(void *ctx, wa_phase_t ph, uint32_t done, uint32_t total)
     unlock();
 }
 
+/** @brief wa_run_t's allocator: PSRAM for the staged image. */
 static uint8_t *f_alloc(void *ctx, uint32_t bytes)
 {
     (void)ctx;
     return heap_caps_malloc(bytes, MALLOC_CAP_SPIRAM);
 }
 
-/*
- * One job's requests, from the join on.  A staged image moves to where an
- * upload leaves one, for wifi_access_take(), if the job is still the one
- * running; anything else is freed here.
+/**
+ * @brief One job's requests, from the join on.  A staged image moves to where
+ *        an upload leaves one, for wifi_access_take(), if the job is still
+ *        the one running; anything else is freed here.
  */
 static void fetch_task(void *arg)
 {
@@ -1276,12 +1367,13 @@ static void fetch_task(void *arg)
 
 /* ------------------------------------------------------------ the radio */
 
-/*
- * The reasons a refused key gives, auth-class to wa_on_drop().  ESP-IDF
- * reports 15 (4WAY_HANDSHAKE_TIMEOUT) and 204 (HANDSHAKE_TIMEOUT) for a
- * wrong key and for a key handshake that ran out of time, and its
- * supplicant sends 15 itself after a 4th message 1 of the handshake: one of
- * them alone does not tell the two apart (WA_AUTH_TRIES).
+/**
+ * @brief The reasons a refused key gives, auth-class to wa_on_drop().
+ *        ESP-IDF reports 15 (4WAY_HANDSHAKE_TIMEOUT) and 204
+ *        (HANDSHAKE_TIMEOUT) for a wrong key and for a key handshake that ran
+ *        out of time, and its supplicant sends 15 itself after a 4th message
+ *        1 of the handshake: one of them alone does not tell the two apart
+ *        (WA_AUTH_TRIES).
  */
 static bool auth_refused(uint8_t reason)
 {
@@ -1408,6 +1500,10 @@ static void on_scan_done(const wifi_event_sta_scan_done_t *d)
     }
 }
 
+/**
+ * @brief The event handler of the Wi-Fi and IP events and of the drain
+ *        marker.
+ */
 static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
 {
     (void)arg;
@@ -1478,11 +1574,11 @@ static void on_event(void *arg, esp_event_base_t base, int32_t id, void *data)
     poke();
 }
 
-/*
- * A step of a start that failed: its name, the error, and what internal
- * RAM held at that moment.  A start that finds too little internal RAM
- * fails at the allocation that runs short; how much the radio's driver
- * through the ESP32-C6 takes is not measured.
+/**
+ * @brief A step of a start that failed: its name, the error, and what
+ *        internal RAM held at that moment.  A start that finds too little
+ *        internal RAM fails at the allocation that runs short; how much the
+ *        radio's driver through the ESP32-C6 takes is not measured.
  */
 static void start_failed(const char *step, esp_err_t e)
 {
@@ -1529,8 +1625,10 @@ static void drain(void)
     }
 }
 
-/* The network interface layer, the default event loop and the handlers,
- * once.  A step that fails is tried again at the next start. */
+/**
+ * @brief The network interface layer, the default event loop and the
+ *        handlers, once.  A step that fails is tried again at the next start.
+ */
 static bool net_once(void)
 {
     if (s.net_ready) {
@@ -1581,7 +1679,7 @@ static bool net_once(void)
     return true;
 }
 
-/* Up to @p wait_ms for the fetch task to end; whether it has. */
+/** @brief Up to @p wait_ms for the fetch task to end; whether it has. */
 static bool fetch_wait(uint32_t wait_ms)
 {
     const uint32_t t0 = ms();
