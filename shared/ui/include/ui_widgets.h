@@ -498,6 +498,33 @@ bool ui_hold_end(ui_hold_t *h, const touch_event_t *up, gfx_rect_t rect);
  */
 float ui_hold_credit(float dt_s);
 
+/** @name The repeat of a held - or + key: KST's and HITEC's steps and
+ *        RUDDER's step keys.  The press takes one step; the first repeat
+ *        follows 0.45s after it, then 8 a second, and 30 a second from
+ *        2.25s after the press.  SETUP's rows repeat at the same rates
+ *        and step on the release (ui_setlist.c). */
+/** @{ */
+#define UI_REPEAT_DELAY_S 0.45f /**< from the press to the first repeat, s */
+#define UI_REPEAT_SLOW_HZ 8.0f  /**< the rate after it, Hz                 */
+#define UI_REPEAT_FAST_S  1.8f  /**< from the first repeat to the fast rate, s */
+#define UI_REPEAT_FAST_HZ 30.0f /**< the rate from then on, Hz            */
+/** @} */
+
+/**
+ * @brief The repeats a held key owes for one frame, its hold time moved on
+ *        by the frame's credit (ui_hold_credit()).
+ *
+ * One repeat as UI_REPEAT_DELAY_S ends, then one on each crossing of the
+ * repeat period, so the rate holds when a frame runs long: a 1s stall is
+ * worth UI_HOLD_MAX_CREDIT_S and steps at most 3 times at 8Hz.  The rate of
+ * a frame is the one in force at its start.  The press's own step is the
+ * caller's, taken on the DOWN.
+ * @param held_s The time the key is held, s: 0 at the press, moved on here.
+ * @param dt_s   The frame's time, s.
+ * @return The repeats to take in this frame, 0 or more; 0 for NULL.
+ */
+int ui_key_repeat(float *held_s, float dt_s);
+
 /**
  * @brief Time passed for the press.
  *

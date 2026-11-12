@@ -1124,6 +1124,8 @@ FIT_ONLY = {
     "help-servo-kst-3":   (None, "servo", "dark"),
     "help-servo-kst-tune":   (None, "servo", "dark"),
     "help-servo-kst-tune-2": (None, "servo", "dark"),
+    # KST's SERVO tab after a read: LEAVE in CONNECT's place.
+    "help-servo-kst-read":   (None, "servo", "dark"),
     "help-servo-hitec":   (None, "servo", "dark"),
     "help-servo-hitec-2": (None, "servo", "dark"),
     "help-servo-hitec-3": (None, "servo", "dark"),
@@ -1131,6 +1133,13 @@ FIT_ONLY = {
     "help-servo-hitec-travel-2": (None, "servo", "dark"),
     # HITEC's SERVO tab with a D485HW read: FILES in SERIES' place.
     "help-servo-hitec-read":     (None, "servo", "dark"),
+    # The port's button as ABORT, WAIT and RELEASE PORT: KST working, HITEC
+    # reading and leaving on a servo powered by hand, and a port another
+    # session holds.
+    "help-servo-kst-working":    (None, "servo", "dark"),
+    "help-servo-hitec-reading":  (None, "servo", "dark"),
+    "help-servo-hitec-leaving":  (None, "servo", "dark"),
+    "help-servo-hitec-other":    (None, "servo", "dark"),
     # WI-FI's guide with the radio off at pages 2 and 3, with the access
     # point up, joined, and with Browser writes HOLD at both pages;
     # UPDATES' at page 2, with a newer release found, and over OPTIONS.

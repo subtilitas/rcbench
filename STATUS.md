@@ -563,7 +563,10 @@ source's angle, the AS5600's or the IMU's, as a control surface's deflection fro
 0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTER
 and 2000us and takes the knob only while ARMED, its PORT button over the READY rows
-(`test_servo_rudder`, `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`; host suite only). Its
+(`test_servo_rudder`, `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`; host suite only).
+Without a knob that answers (Rotary knob OFF, or the MT6701's last poll unanswered) -10us
+and +10us step the pulse 10us while ARMED, repeating while held at the programmers' rate,
+held to TRAVEL and the pulse range (`test_servo_rudder_steps`; host suite only). Its
 side view draws the surface at the deflection shown, -90 to +90° with a fixed flap of 62px,
 beyond that at ±90°, dim on the neutral line without a reading, with the MAX and, in AUTO's
 box, the targets dashed (`shared/ui/servo_rudder_flap.c`; `test_servo_rudder_flap`,
@@ -799,8 +802,10 @@ loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`.
 Built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-PWM-slice
 fold are host-tested. `test_out_dshot` runs the DShot pin driver on a fake of the pico-sdk
 calls it makes: a pin that sends no frames is driven low in both modes, and a bidirectional
-frame never starts from a low line. `test_outputs_hw` holds the 1000µs between the release
-of a bidirectional pin and its first frame. The binding order and the rendering are
+frame never starts from a low line. `test_outputs_hw` holds the 1000µs between an on-time
+release of a bidirectional pin and its first frame. `test_dshot_cadence` holds the DShot
+due times: a grid 1000µs apart that a late pass does not move, at least 500µs from a frame
+to the next due time, one frame after a stall, across the clock's wrap. The binding order and the rendering are
 `shared/outputs/out_render.c`; `test_out_render` runs it over a log of the pin calls and
 holds the reporting slot (the lowest-numbered bound bidirectional slot), the release of every
 moved slot and port before any bind, the DShot ports let go before a slot on PIO
@@ -1389,7 +1394,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 538 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 540 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1441,7 +1446,7 @@ The host suite is 538 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_i228_setup`, `test_supply_link`, `test_supply_keep`, `test_sense_link`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
 `test_sense_limit_link`, `test_log_cols`, `test_log_throttle`, `test_sense_windows`, `test_servo_source`,
-`test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_out_dshot`, `test_ppm`,
+`test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_dshot_cadence`, `test_out_dshot`, `test_ppm`,
 `test_outbind`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
@@ -1499,7 +1504,7 @@ The host suite is 538 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
-`test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
+`test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
@@ -2327,7 +2332,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/out_store_range.c` | 10 | 10 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
-| `shared/outputs/out_render.c` | 276 | 273 | 98.9% |
+| `shared/outputs/out_render.c` | 282 | 279 | 98.9% |
 | `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
 | `shared/outputs/servo_link.c` | 563 | 530 | 94.1% |
@@ -2395,7 +2400,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **91095** | **89249** | **98.0%** |
+| **total** | **91066** | **89220** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2423,8 +2428,9 @@ the RUN pin held low for 100ms; pulses must not return on GPIO 0 until ARM is he
 
 No timing has been seen on an instrument. What a host test cannot reach: every bit timing,
 the DMA ring that plays a PPM frame, the PIO turnaround from a bidirectional DShot frame to
-its reply, the low rest of a stopped bidirectional DShot pin and its release 1000µs before
-the first frame on a real ESC, and whether an ESC other than the one AM32 2.21 ESC on a
+its reply, the low rest of a stopped bidirectional DShot pin and its release 500µs to 1000µs
+before the first frame on a real ESC, the DShot frame rate and gaps on a pin with the
+due-time grid, and whether an ESC other than the one AM32 2.21 ESC on a
 tester's bench (#172) answers.
 
 **Next evidence or work:** an oscilloscope, a servo, and an ESC that does bidirectional DShot. [What is

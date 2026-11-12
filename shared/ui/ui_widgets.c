@@ -549,6 +549,25 @@ float ui_hold_credit(float dt_s)
     return (dt_s < 0.0f) ? 0.0f : dt_s;
 }
 
+int ui_key_repeat(float *held_s, float dt_s)
+{
+    if (held_s == NULL) {
+        return 0;
+    }
+    const float before = *held_s;
+    const float hz = (before > UI_REPEAT_DELAY_S + UI_REPEAT_FAST_S)
+                         ? UI_REPEAT_FAST_HZ : UI_REPEAT_SLOW_HZ;
+    *held_s += ui_hold_credit(dt_s);
+    if (*held_s < UI_REPEAT_DELAY_S) {
+        return 0;
+    }
+    const int fired_before =
+        (before < UI_REPEAT_DELAY_S)
+            ? 0 : 1 + (int)((before - UI_REPEAT_DELAY_S) * hz);
+    const int fired_now = 1 + (int)((*held_s - UI_REPEAT_DELAY_S) * hz);
+    return (fired_now > fired_before) ? fired_now - fired_before : 0;
+}
+
 void ui_hold_begin(ui_hold_t *h, int hint)
 {
     if (h == NULL) {
