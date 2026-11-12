@@ -232,10 +232,17 @@ TEST_CASE(a_throttle_written_in_one_pass_is_on_the_next_passes_row)
     const pass_t more = { true, true, 7000u };
     CHECK_NEAR(pass_row(&t, &more), 42.5f, 1e-4f);
     CHECK_NEAR(pass_row(&t, &more), 70.0f, 1e-4f);
-    /* Past LINK_THROTTLE_MAX is held to it; one step is 0.01%. */
+    /* Past LINK_THROTTLE_MAX is held to it, in force as on the row; one
+     * step is 0.01%. */
     const pass_t over = { true, true, 12000u };
     (void)pass_row(&t, &over);
+    CHECK_EQ(t.in_force, (uint16_t)LINK_THROTTLE_MAX);
     CHECK_NEAR(pass_row(&t, &over), 100.0f, 1e-4f);
+    bench_throttle_written(&t, true, true, (uint16_t)LINK_THROTTLE_MAX);
+    CHECK_EQ(t.in_force, (uint16_t)LINK_THROTTLE_MAX);
+    bench_throttle_written(&t, true, true,
+                           (uint16_t)(LINK_THROTTLE_MAX + 1u));
+    CHECK_EQ(t.in_force, (uint16_t)LINK_THROTTLE_MAX);
     const pass_t step = { true, true, 1u };
     (void)pass_row(&t, &step);
     CHECK_NEAR(pass_row(&t, &step), 0.01f, 1e-5f);
@@ -283,9 +290,15 @@ TEST_CASE(an_arm_of_0_written_puts_0_in_force)
     char got[32];
     cell_of(1u, 5u, got, sizeof(got));
     CHECK_STR_EQ(got, "0.0");
-    /* The link's edge: nothing in force until a write is acknowledged. */
+    /* The link's edge: nothing in force until a write is acknowledged,
+     * and no sample of the old link's value either. */
+    (void)pass_row(&t, &on);
     (void)pass_row(&t, &on);
     bench_throttle_reset(&t);
+    bench_state_t edge = measured(0.0f);
+    bench_throttle_to_row(&t, &edge);
+    CHECK(edge.throttle_ok);
+    CHECK_NEAR(edge.throttle_pct, 0.0f, 1e-6f);
     CHECK_NEAR(pass_row(&t, &on), 0.0f, 1e-6f);
     /* NULL does nothing. */
     bench_throttle_reset(NULL);
