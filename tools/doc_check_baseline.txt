@@ -1579,60 +1579,6 @@ shared/bench/tone_link.c: warning: Member FRAME1_CFG (macro definition) of file 
 shared/bench/tone_link.c: warning: Member FRAME_N (macro definition) of file tone_link.c is not documented.	#define FRAME_N 4u
 shared/bench/tone_link.c: warning: Member RESTART_BEHIND (macro definition) of file tone_link.c is not documented.	#define RESTART_BEHIND 1024u
 shared/bench/tone_link.c: warning: Member ST(reg) (macro definition) of file tone_link.c is not documented.	#define ST(reg) ((unsigned)(reg) - (unsigned)LINK_TN_FLAGS)
-shared/esc/esc_json.c: warning: Member k_announce[] (variable) of file esc_json.c is not documented.	static const char *const k_announce[] = { "item", "value",
-shared/esc/esc_json.c: warning: Member k_auto[] (variable) of file esc_json.c is not documented.	static const char *const k_auto[] = { "full", "assisted", "none" };
-shared/esc/esc_json.c: warning: Member k_cells[] (variable) of file esc_json.c is not documented.	static const char *const k_cells[] = { "lipo", "nimh" };
-shared/esc/esc_json.c: warning: Member k_changes[] (variable) of file esc_json.c is not documented.	static const char *const k_changes[] = { "one", "many" };
-shared/esc/esc_json.c: warning: Member k_encoding[] (variable) of file esc_json.c is not documented.	static const char *const k_encoding[] = { "count", "short_long", "melody",
-shared/esc/esc_json.c: warning: Member k_manual[] (variable) of file esc_json.c is not documented.	static const char *const k_manual[] = { "before_power", "at_power_up",
-shared/esc/esc_json.c: warning: Member k_throttle[] (variable) of file esc_json.c is not documented.	static const char *const k_throttle[] = { "min", "mid", "max", "none" };
-shared/esc/esc_json.c: warning: Member k_when[] (variable) of file esc_json.c is not documented.	static const char *const k_when[] = { "before_power_on",
-shared/esc/include/esc_profile.h: warning: Member action (variable) of struct esc_manual_t is not documented.	const char *action;
-shared/esc/include/esc_profile.h: warning: Member after[ESC_AFTER_MAX] (variable) of struct esc_value_t is not documented.	esc_throttle_t after[ESC_AFTER_MAX];
-shared/esc/include/esc_profile.h: warning: Member applies_to (variable) of struct esc_item_t is not documented.	const char *const *applies_to;
-shared/esc/include/esc_profile.h: warning: Member esc_profiles_builtin_count (variable) of file esc_profile.h is not documented.	extern const size_t esc_profiles_builtin_count;
-shared/esc/include/esc_profile.h: warning: Member manual (variable) of struct esc_profile_t is not documented.	const esc_manual_t *manual;
-shared/esc/include/esc_profile.h: warning: Member name (variable) of struct esc_item_t is not documented.	const char *name;
-shared/esc/include/esc_profile.h: warning: Member name (variable) of struct esc_model_t is not documented.	const char *name;
-shared/esc/include/esc_profile.h: warning: Member name (variable) of struct esc_value_t is not documented.	const char *name;
-shared/esc/include/esc_profile.h: warning: Member when (variable) of struct esc_manual_t is not documented.	esc_manual_when_t when;
-shared/esc/include/esc_stick.h: warning: Member before_rise_ms (variable) of struct esc_det_t is not documented.	uint32_t rise_ms, last_high_ms, before_rise_ms;
-shared/esc/include/esc_stick.h: warning: Member ch[ESC_STICK_MAX_CHANGES] (variable) of struct esc_stick_t is not documented.	esc_stick_change_t ch[ESC_STICK_MAX_CHANGES];
-shared/esc/include/esc_stick.h: warning: Member count (variable) of struct esc_det_t is not documented.	uint8_t count;
-shared/esc/include/esc_stick.h: warning: Member current_ok (variable) of struct esc_stick_t is not documented.	bool current_ok;
-shared/esc/include/esc_stick.h: warning: Member det (variable) of struct esc_stick_t is not documented.	esc_det_t det;
-shared/esc/include/esc_stick.h: warning: Member done[ESC_STICK_MAX_CHANGES] (variable) of struct esc_stick_t is not documented.	bool done[ESC_STICK_MAX_CHANGES];
-shared/esc/include/esc_stick.h: warning: Member group_bad (variable) of struct esc_det_t is not documented.	bool group_open, group_bad;
-shared/esc/include/esc_stick.h: warning: Member group_open (variable) of struct esc_det_t is not documented.	bool group_open, group_bad;
-shared/esc/include/esc_stick.h: warning: Member have_sample (variable) of struct esc_stick_t is not documented.	bool have_sample;
-shared/esc/include/esc_stick.h: warning: Member high (variable) of struct esc_det_t is not documented.	bool high;
-shared/esc/include/esc_stick.h: warning: Member kind (variable) of struct esc_stick_t is not documented.	esc_stick_kind_t kind;
-shared/esc/include/esc_stick.h: warning: Member last_count (variable) of struct esc_stick_t is not documented.	uint8_t last_count;
-shared/esc/include/esc_stick.h: warning: Member last_high_ms (variable) of struct esc_det_t is not documented.	uint32_t rise_ms, last_high_ms, before_rise_ms;
-shared/esc/include/esc_stick.h: warning: Member last_valid (variable) of struct esc_stick_t is not documented.	bool last_valid;
-shared/esc/include/esc_stick.h: warning: Member late_run (variable) of struct esc_stick_t is not documented.	uint32_t late_run;
-shared/esc/include/esc_stick.h: warning: Member link0 (variable) of struct esc_stick_t is not documented.	bool link0;
-shared/esc/include/esc_stick.h: warning: Member lo (variable) of struct esc_stick_t is not documented.	uint8_t lo, hi; /**< the loop's lowest, highest */
-shared/esc/include/esc_stick.h: warning: Member longs (variable) of struct esc_det_t is not documented.	uint8_t shorts, longs;
-shared/esc/include/esc_stick.h: warning: Member ma (variable) of struct esc_stick_t is not documented.	int32_t ma;
-shared/esc/include/esc_stick.h: warning: Member n (variable) of struct esc_stick_t is not documented.	uint8_t n;
-shared/esc/include/esc_stick.h: warning: Member n_high (variable) of struct esc_det_t is not documented.	uint32_t n_high;
-shared/esc/include/esc_stick.h: warning: Member online (variable) of struct esc_stick_t is not documented.	bool online;
-shared/esc/include/esc_stick.h: warning: Member out (variable) of struct esc_stick_t is not documented.	esc_stick_out_t out;
-shared/esc/include/esc_stick.h: warning: Member output (variable) of struct esc_stick_t is not documented.	bool output;
-shared/esc/include/esc_stick.h: warning: Member p (variable) of struct esc_stick_t is not documented.	const esc_profile_t *p;
-shared/esc/include/esc_stick.h: warning: Member phase (variable) of struct esc_stick_t is not documented.	esc_stick_phase_t phase;
-shared/esc/include/esc_stick.h: warning: Member pressed0 (variable) of struct esc_stick_t is not documented.	uint32_t pressed0;
-shared/esc/include/esc_stick.h: warning: Member reason (variable) of struct esc_stick_t is not documented.	esc_stick_reason_t reason;
-shared/esc/include/esc_stick.h: warning: Member rise_ms (variable) of struct esc_det_t is not documented.	uint32_t rise_ms, last_high_ms, before_rise_ms;
-shared/esc/include/esc_stick.h: warning: Member seq (variable) of struct esc_stick_sample_t is not documented.	uint32_t seq;
-shared/esc/include/esc_stick.h: warning: Member seq (variable) of struct esc_stick_t is not documented.	uint32_t seq;
-shared/esc/include/esc_stick.h: warning: Member shorts (variable) of struct esc_det_t is not documented.	uint8_t shorts, longs;
-shared/esc/include/esc_stick.h: warning: Member stops0 (variable) of struct esc_stick_t is not documented.	uint32_t stops0;
-shared/esc/include/esc_stick.h: warning: Member stuck_told (variable) of struct esc_det_t is not documented.	bool stuck_told;
-shared/esc/include/esc_stick.h: warning: Member t (variable) of struct esc_det_t is not documented.	esc_stick_timing_t t;
-shared/esc/include/esc_stick.h: warning: Member t (variable) of struct esc_stick_t is not documented.	esc_stick_timing_t t;
-shared/esc/include/esc_stick.h: warning: Member valid (variable) of struct esc_det_t is not documented.	bool valid;
 shared/fwupdate/fw_release.c: warning: Member fw_release_scan_init(fw_rel_scan_t *s) (function) of file fw_release.c is not documented.	void fw_release_scan_init(fw_rel_scan_t *s)
 shared/fwupdate/fw_release.c: warning: Member fw_release_status(int status) (function) of file fw_release.c is not documented.	fw_rel_status_t fw_release_status(int status)
 shared/fwupdate/fw_release.c: warning: Member hex(char ch) (function) of file fw_release.c is not documented.	static int hex(char ch)

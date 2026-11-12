@@ -362,17 +362,25 @@ static bool key_ok(const char *k, size_t max, bool dash)
 /** @brief Allowed values of the enumerated members, as the JSON spells them. */
 static const char *const k_scheme[]   = { "count", "short_long",
     "melody_groups", "yes_no", "stick_position", "other" };
+/** @brief The values of scheme.announce.encoding. */
 static const char *const k_encoding[] = { "count", "short_long", "melody",
     "yes_no" };
+/** @brief The values of scheme.announce.what. */
 static const char *const k_announce[] = { "item", "value",
     "item_then_value" };
+/** @brief The values of automatable. */
 static const char *const k_auto[]     = { "full", "assisted", "none" };
+/** @brief The stick positions: the values of every throttle member. */
 static const char *const k_throttle[] = { "min", "mid", "max", "none" };
+/** @brief The values of scheme.entry.when. */
 static const char *const k_when[]     = { "before_power_on",
     "after_power_on" };
+/** @brief The values of changes_per_entry. */
 static const char *const k_changes[]  = { "one", "many" };
+/** @brief The values of the when member of a manual step. */
 static const char *const k_manual[]   = { "before_power", "at_power_up",
     "before_menu", "during_menu", "before_power_off", "after_programming" };
+/** @brief The values of cell_type. */
 static const char *const k_cells[]    = { "lipo", "nimh" };
 
 /**

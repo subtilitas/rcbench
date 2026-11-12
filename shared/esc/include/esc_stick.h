@@ -422,7 +422,7 @@ typedef enum {
  * one and not the tail of a group already under way.
  */
 typedef struct {
-    esc_stick_timing_t t;
+    esc_stick_timing_t t; /**< the detector's timing */
     uint8_t  long_equals_short;  /**< 0: every beep is short             */
 
     bool     counting;           /**< else only the floor is tracked     */
@@ -435,9 +435,12 @@ typedef struct {
     uint32_t prev_ms;                   /**< bench time of the previous reading, ms */
     uint32_t iv_max_ms;          /**< longest interval not late          */
 
-    bool     high;
-    uint32_t rise_ms, last_high_ms, before_rise_ms;
-    uint32_t n_high;
+    bool     high; /**< the line is high */
+    uint32_t rise_ms /**< the pulse's first high reading, ms */,
+             last_high_ms /**< its last high reading, ms */,
+             before_rise_ms /**< the reading before the rise, ms */;
+    uint32_t n_high; /**< high readings in the pulse */
+    /** @brief A pulse held high for too long has been reported. */
     bool     stuck_told;
     bool     wait_quiet;         /**< no group opens until a quiet gap   */
     bool     quiet_known;               /**< whether quiet_from is set */
@@ -448,12 +451,14 @@ typedef struct {
     uint32_t fall_ms;            /**< first low reading after a pulse    */
     uint32_t n_low;                     /**< consecutive low readings since the pulse ended */
 
-    bool     group_open, group_bad;
-    uint8_t  shorts, longs;
+    bool     group_open /**< a group of beeps is open */,
+             group_bad /**< the open group is unusable */;
+    uint8_t  shorts /**< short beeps of the open group */,
+             longs /**< long beeps of the open group */;
 
     /* The last group that ended. */
-    uint8_t  count;
-    bool     valid;
+    uint8_t  count; /**< the count of the group */
+    bool     valid; /**< the group is usable */
 } esc_det_t;
 
 /**
@@ -643,7 +648,7 @@ typedef struct {
  *        panel reads its page.
  */
 typedef struct {
-    uint32_t seq;
+    uint32_t seq; /**< the supply's count of its readings, modulo 65536 */
     uint32_t at_ms;          /**< when the reading was taken               */
     int32_t  ma;             /**< supply current, mA                       */
     bool     current_ok;     /**< the current was read                     */
@@ -731,22 +736,26 @@ typedef struct {
 
 /** @brief State of one stick programming run. */
 typedef struct {
-    const esc_profile_t *p;
+    const esc_profile_t *p; /**< the profile the run follows */
+    /** @brief How the profile programs: one stage or two. */
     esc_stick_kind_t     kind;
-    esc_stick_timing_t   t;
+    esc_stick_timing_t   t; /**< the timing of the run */
+    /** @brief The changes asked for. */
     esc_stick_change_t   ch[ESC_STICK_MAX_CHANGES];
-    uint8_t              n;
+    uint8_t              n; /**< how many changes ch holds */
+    /** @brief The change was made. */
     bool                 done[ESC_STICK_MAX_CHANGES];
     uint8_t              active;        /**< the change being made       */
 
-    esc_stick_phase_t    phase;
-    esc_stick_reason_t   reason;
+    esc_stick_phase_t    phase; /**< where the run stands */
+    esc_stick_reason_t   reason; /**< why the run ended */
     uint32_t             phase_ms;      /**< when this phase began       */
     uint32_t             now_ms;        /**< the bench time of the newest step, ms */
 
-    uint32_t             stops0;
+    uint32_t             stops0; /**< the bench's stop count at the start */
+    /** @brief The stops an operator pressed, at the start. */
     uint32_t             pressed0;
-    bool                 link0;
+    bool                 link0; /**< the link was up at the start */
     bool                 link_seen;     /**< the link was up at some time */
     bool                 off_seen;      /**< the output is off: reported,
                                              and settled                 */
@@ -764,22 +773,23 @@ typedef struct {
                                              read off                     */
     bool                 armed_seen;    /**< whether the bench has been seen ARMED during ARMING */
 
-    esc_stick_out_t      out;
+    esc_stick_out_t      out; /**< what the bench is to do after the step */
 
     /* The supply as the newest sample had it. */
-    bool                 have_sample;
-    uint32_t             seq;
+    bool                 have_sample; /**< a sample has come in */
+    uint32_t             seq; /**< the newest sample's count */
     uint32_t             read_ms;       /**< the newest reading's time   */
     bool                 have_reading;  /**< one since this power-up     */
-    bool                 output;
-    bool                 online;
-    bool                 current_ok;
+    bool                 output; /**< the panel has the output on */
+    bool                 online; /**< the supply answers */
+    bool                 current_ok; /**< the current was read */
+    /** @brief The supply current of the newest reading, mA. */
     int32_t              ma;
     uint32_t             on_ms;         /**< when the output came on     */
-    uint32_t             late_run;
+    uint32_t             late_run; /**< late readings in a row */
     uint32_t             iv_ms;         /**< the last reading interval   */
 
-    esc_det_t            det;
+    esc_det_t            det; /**< the beep detector */
     uint32_t             heard_ms;      /**< the last pulse, or the
                                              listening's start           */
     /* The groups of this phase, for the sequence check. */
@@ -789,10 +799,11 @@ typedef struct {
     bool                 marker_passed; /**< the item loop's marker
                                              (loop_marker) let pass
                                              after prev                  */
+    /** @brief The loop's lowest and highest item numbers. */
     uint8_t              lo, hi;        /**< the loop's lowest, highest  */
     uint32_t             groups;        /**< groups heard this run       */
-    uint8_t              last_count;
-    bool                 last_valid;
+    uint8_t              last_count; /**< the newest group's count */
+    bool                 last_valid; /**< the newest group was usable */
     bool                 last_in_order; /**< the last group followed its
                                              predecessor                 */
     bool                 last_trusted;  /**< and so did that one: the
