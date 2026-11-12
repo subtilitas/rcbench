@@ -65,6 +65,7 @@ DE_SUFFIX = "-de.md"
 
 
 def english_pages() -> list[pathlib.Path]:
+    """The English pages under docs/."""
     return [p for p in pages() if not p.name.endswith(DE_SUFFIX)]
 
 WORDS = {
@@ -78,6 +79,7 @@ LINK_RE = re.compile(r"\]\(([^)\s#]+)(?:#[^)\s]*)?\)")
 
 
 def as_number(text: str) -> int | None:
+    """The integer @p text spells as digits or as a number word, or None."""
     text = text.strip().lower().replace(",", "")
     if text.isdigit():
         return int(text)
@@ -85,15 +87,18 @@ def as_number(text: str) -> int | None:
 
 
 def read(path: pathlib.Path) -> str:
+    """The text of @p path as UTF-8, with its line endings unchanged."""
     with open(path, encoding="utf-8", newline="") as fh:
         return fh.read()
 
 
 def pages() -> list[pathlib.Path]:
+    """Every Markdown page under docs/, sorted."""
     return sorted(DOCS.glob("*.md"))
 
 
 def hardware_pages() -> list[pathlib.Path]:
+    """Every Markdown page under the hardware folder, sorted."""
     return sorted(HARDWARE.rglob("*.md"))
 
 
@@ -153,10 +158,12 @@ def check_anchors(problems: list[str]) -> None:
 
 
 def help_images() -> set[pathlib.Path]:
-    """The screenshots the web help shows as images.  The help's own parser
-    decides what is an image, so view syntax in a code span or in prose
-    counts for nothing; tools/help_site.py --check holds that each one
-    exists."""
+    """The screenshots the web help shows as images.
+
+    The help's own parser decides what is an image, so view syntax in a code
+    span or in prose counts for nothing; tools/help_site.py --check holds that
+    each one exists.
+    """
     sys.path.insert(0, str(pathlib.Path(__file__).resolve().parent))
     try:
         import help_site
@@ -452,8 +459,10 @@ MIN_FORMAT_LETTERS = 4
 
 
 def c_strings(source: str) -> str:
-    """The text of adjacent C string literals, joined, escapes resolved
-    for the quote and the backslash."""
+    """The text of adjacent C string literals, joined.
+
+    Escapes are resolved for the quote and the backslash.
+    """
     parts = re.findall(C_STR, source)
     return "".join(p[1:-1].replace('\\"', '"').replace("\\\\", "\\")
                    for p in parts)
@@ -517,8 +526,10 @@ def string_pairs() -> list[tuple[str, str]]:
 
 
 def format_pattern(fmt: str) -> re.Pattern[str] | None:
-    """A format as a pattern a quote of its output matches, or None for a
-    literal or a format with too few words of its own."""
+    """A format as a pattern a quote of its output matches.
+
+    None for a literal or a format with too few words of its own.
+    """
     pieces = CONVERSION.split(fmt.replace("%%", "\0"))
     if len(pieces) == 1:
         return None
@@ -535,9 +546,12 @@ def format_pattern(fmt: str) -> re.Pattern[str] | None:
 
 
 def quoted_spans(page: pathlib.Path):
-    """(line, quote) for every backtick quote outside a code block, a quote
+    """(line, quote) for every backtick quote outside a code block.
+
+    (line, quote) for every backtick quote outside a code block, a quote
     wrapped over two lines joined with one space, and whether it follows
-    "Konsole: "."""
+    "Konsole: ".
+    """
     text = re.sub(r"```.*?```", lambda m: "\n" * m.group().count("\n"),
                   read(page), flags=re.S)
     for m in re.finditer(r"`([^`]+)`", text):
@@ -593,8 +607,11 @@ MODULE_ROOTS = ("shared", "protocols")
 
 
 def module_dirs() -> dict[str, pathlib.Path]:
-    """Module name -> its directory, over MODULE_ROOTS.  The three builds
-    name a module by its last path element, so a name is in one root."""
+    """Module name -> its directory, over MODULE_ROOTS.
+
+    The three builds name a module by its last path element, so a name is in
+    one root.
+    """
     found: dict[str, pathlib.Path] = {}
     for root in MODULE_ROOTS:
         base = REPO / root
@@ -607,7 +624,9 @@ def module_dirs() -> dict[str, pathlib.Path]:
 
 
 def check_shared_modules(problems: list[str]) -> None:
-    """Building.md's tree lists every module under shared/ and protocols/,
+    """Building.md's tree lists every module once.
+
+    Building.md's tree lists every module under shared/ and protocols/,
     and no module name is in both.
 
     They are the directories three build systems read, so an undocumented
@@ -649,12 +668,15 @@ def shared_modules() -> list[str]:
 
 
 def modules_built_by(cmake: pathlib.Path) -> set[str]:
+    """The shared modules that the CMake file @p cmake builds."""
     return set(MODULE_DIR_RE.findall(read(cmake))) & set(shared_modules())
 
 
 def panel_modules() -> set[str]:
-    """The modules the panel compiles: main's REQUIRES, closed over each
-    module's own REQUIRES."""
+    """The modules the panel compiles.
+
+    main's REQUIRES, closed over each module's own REQUIRES.
+    """
     dirs = module_dirs()
     shared = set(dirs)
     wanted = set()
@@ -723,8 +745,10 @@ def check_compile_table(problems: list[str]) -> None:
 
 
 def check_screenshot_count(problems: list[str]) -> None:
-    """STATUS.md's count of committed screenshots is the number in docs/img,
-    the German ones in docs/img/de included."""
+    """STATUS.md's count of committed screenshots is the number in docs/img.
+
+    The German ones in docs/img/de are included.
+    """
     text = read(REPO / "STATUS.md")
     m = re.search(r"(\w+) committed screenshots", text)
     if not m:
@@ -870,8 +894,10 @@ RED_TABLES = [
 
 
 def reason_faults() -> dict[str, bool]:
-    """ESC_STICK_R_* suffix -> whether esc_stick_reason_is_fault() lights
-    red for it, read from the switch's case labels and their returns."""
+    """ESC_STICK_R_* suffix -> whether esc_stick_reason_is_fault() lights red.
+
+    Read from the switch's case labels and their returns.
+    """
     src = read(STICK_C)
     start = src.index("bool esc_stick_reason_is_fault(")
     body = src[start:src.index("\n}\n", start)]
@@ -957,9 +983,11 @@ CI_YML = REPO / ".github" / "workflows" / "ci.yml"
 
 
 def defines() -> dict[str, str | None]:
-    """NAME -> the text of its value, for every #define with one under
-    shared/, protocols/ and firmware/; None where two definitions
-    disagree."""
+    """NAME -> the text of its value, for every #define with one.
+
+    The defines are those under shared/, protocols/ and firmware/; None where
+    two definitions disagree.
+    """
     import os
     found: dict[str, str | None] = {}
     for base in DEFINE_DIRS:
@@ -987,8 +1015,11 @@ C_NUMBER = re.compile(
 
 def constant(name: str, table: dict[str, str | None],
              depth: int = 0) -> float | None:
-    """The value of the #define @p name: a number, another constant, or
-    arithmetic over both.  None when it is not one, or not known."""
+    """The value of the #define @p name.
+
+    A number, another constant, or arithmetic over both.  None when it is not
+    one, or not known.
+    """
     import ast
     text = table.get(name)
     if text is None or depth > 8:
@@ -1035,8 +1066,10 @@ def constant(name: str, table: dict[str, str | None],
 
 
 def doc_number(text: str, german: bool) -> float | None:
-    """A number as a page writes it: 15,600 and 0.020 in English, 15 600 and
-    0,020 in German."""
+    """A number as a page writes it.
+
+    15,600 and 0.020 in English, 15 600 and 0,020 in German.
+    """
     text = re.sub(r"[\s  ]", "", text)
     text = text.replace(",", ".") if german else text.replace(",", "")
     try:
@@ -1197,6 +1230,7 @@ FACTS = [
 
 
 def fact_value(want, table: dict[str, str | None]) -> float | None:
+    """The value of a fact's right side, scaled by its factor, or None."""
     factor = 1.0
     if isinstance(want, tuple):
         want, factor = want
@@ -1211,6 +1245,7 @@ def fact_value(want, table: dict[str, str | None]) -> float | None:
 
 
 def same(a: float, b: float) -> bool:
+    """Whether two numbers agree to a relative 1e-6."""
     return abs(a - b) <= 1e-6 * max(1.0, abs(a), abs(b))
 
 
@@ -1252,9 +1287,11 @@ CONSTANT_ROW = re.compile(
 def check_constant_tables(problems: list[str],
                           table: dict[str, str | None] | None = None,
                           docs: list[pathlib.Path] | None = None) -> None:
-    """A table row that gives a C constant by name gives its value: the
-    servo test's constants in Servo.md and Servo-de.md, and any row of the
-    same shape, `| \\`NAME\\` | 1000ms |`, on any page."""
+    r"""A table row that gives a C constant by name gives its value.
+
+    The servo test's constants in Servo.md and Servo-de.md, and any row of the
+    same shape, `| \`NAME\` | 1000ms |`, on any page.
+    """
     table = defines() if table is None else table
     for page in (linked_pages() if docs is None else docs):
         german = page.name.endswith(DE_SUFFIX)
@@ -1284,8 +1321,10 @@ CEILING_PAGES = (
 
 
 def ci_ceilings(text: str) -> list[tuple[frozenset[str], int]]:
-    """(modes, ceiling) for every frame_cost.py call with --max-lines in
-    the CI workflow."""
+    """(modes, ceiling) for every frame_cost.py call with --max-lines.
+
+    The calls are those in the CI workflow.
+    """
     folded = re.sub(r"\n\s+(?=&&|--|[a-z])", " ", text)
     out = []
     for m in re.finditer(
@@ -1296,9 +1335,11 @@ def ci_ceilings(text: str) -> list[tuple[frozenset[str], int]]:
 
 
 def doc_ceilings(text: str, header: str, german: bool):
-    """(named modes, count, suffix, ceiling) for every row of the ceiling
-    table: the modes a row names in backticks, or how many it speaks of
-    and the suffix they share."""
+    """(named modes, count, suffix, ceiling) for each row of the ceiling table.
+
+    The modes a row names are in backticks; otherwise it says how many modes it
+    speaks of and the suffix they share.
+    """
     if header not in text:
         return None
     rows = text[text.index(header):].split("\n\n", 1)[0].splitlines()[2:]
@@ -1387,8 +1428,10 @@ PIN_ROWS = {"main": "Main IOmcu", "measurement":
 
 
 def check_pin_counts(problems: list[str]) -> None:
-    """Pins.md's count of the GPIO each IOmcu uses is the number of
-    pins the draft pin map gives it, and STATUS.md repeats the same two."""
+    """Pins.md's GPIO count for each IOmcu is the number its pin map gives.
+
+    The map is the draft pin map; STATUS.md repeats the same two.
+    """
     import json
     chips = {c.get("chip"): len(c.get("pins", []))
              for c in json.loads(read(PINMAP)).get("chips", [])}
@@ -1550,6 +1593,7 @@ def check_spdx(problems: list[str]) -> None:
 
 
 def main() -> int:
+    """Run every check and return the exit status."""
     problems: list[str] = []
     check_links(problems)
     check_version(problems)

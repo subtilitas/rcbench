@@ -10,12 +10,14 @@ from conftest import skip_or_fail
 
 
 def test_skips_outside_ci(monkeypatch):
+    """Skips outside CI."""
     monkeypatch.delenv("CI", raising=False)
     with pytest.raises(Skipped):
         skip_or_fail("cc is not on PATH")
 
 
 def test_fails_in_ci(monkeypatch):
+    """Fails in CI."""
     monkeypatch.setenv("CI", "true")
     with pytest.raises(Failed, match="cc is not on PATH"):
         skip_or_fail("cc is not on PATH")

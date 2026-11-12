@@ -507,11 +507,13 @@ LINES_RE = re.compile(r"Lines executed:([0-9.]+)% of (\d+)")
 
 
 def run(cmd: list[str], **kw) -> subprocess.CompletedProcess:
+    """Run @p cmd, capture its output and raise when it fails."""
     return subprocess.run(cmd, check=True, cwd=kw.pop("cwd", REPO),
                           capture_output=True, text=True, **kw)
 
 
 def require(tool: str) -> str:
+    """The path of @p tool on PATH; exits when it is missing."""
     path = shutil.which(tool)
     if not path:
         sys.exit(f"required tool not found on PATH: {tool}")
@@ -519,6 +521,7 @@ def require(tool: str) -> str:
 
 
 def build_and_run() -> None:
+    """Build the suite with coverage instrumentation and run ctest."""
     require("cmake")
     require("gcov")
     if BUILD_DIR.exists():
@@ -530,8 +533,11 @@ def build_and_run() -> None:
 
 
 def library_sources() -> list[str]:
-    """Every C file under shared/ and every protocol core's C file under
-    protocols/, as TRACKED spells it."""
+    """Every C file under shared/ and every protocol core's C file.
+
+    The protocol cores are under protocols/; the paths are spelled as TRACKED
+    spells them.
+    """
     cores = [p for p in PROTOCOLS.rglob("*.c")
              if PIN_DRIVER not in p.relative_to(PROTOCOLS).parts]
     return sorted(p.relative_to(REPO).as_posix()
@@ -539,9 +545,11 @@ def library_sources() -> list[str]:
 
 
 def build_files(suffix: str) -> dict[str, pathlib.Path]:
-    """Source basename -> its .gcno or .gcda in the build.  CMake mangles
-    object paths, so a file is found by basename; only the libraries are
-    instrumented, so a test file has neither."""
+    """Source basename -> its .gcno or .gcda in the build.
+
+    CMake mangles object paths, so a file is found by basename; only the
+    libraries are instrumented, so a test file has neither.
+    """
     return {p.name[: -len(suffix)]: p
             for p in sorted(BUILD_DIR.rglob("*" + suffix))}
 
@@ -556,10 +564,11 @@ def holds_code(gcno: pathlib.Path) -> bool:
 def completeness(sources: list[str], tracked: list[str],
                  data_only: set[str], compiled: set[str],
                  counted: set[str], with_code: set[str]) -> list[str]:
-    """What keeps the measurement from covering every source: one line per
-    problem.  @p compiled, @p counted and @p with_code are basenames: the
-    sources with a .gcno, with a .gcda, and the DATA_ONLY ones whose .gcno
-    holds a function.
+    """What keeps the measurement from covering every source.
+
+    One line per problem.  @p compiled, @p counted and @p with_code are
+    basenames: the sources with a .gcno, with a .gcda, and the DATA_ONLY ones
+    whose .gcno holds a function.
 
     measure() looks only at TRACKED, so a file missing from it is absent
     from the total and from the floors.
@@ -595,6 +604,7 @@ def completeness(sources: list[str], tracked: list[str],
 
 
 def measure() -> dict[str, dict[str, float]]:
+    """Line coverage per tracked file: {path: {lines, covered, percent}}."""
     results: dict[str, dict[str, float]] = {}
     notes, data = build_files(".gcno"), build_files(".gcda")
 
@@ -653,6 +663,7 @@ def tracked_mismatch(results: dict[str, dict[str, float]]) -> list[str]:
 
 
 def render(results: dict[str, dict[str, float]]) -> tuple[str, float]:
+    """The Markdown table of @p results and the total percentage."""
     total_lines = sum(int(r["lines"]) for r in results.values())
     total_covered = sum(int(r["covered"]) for r in results.values())
     total_pct = (100.0 * total_covered / total_lines) if total_lines else 0.0
@@ -678,12 +689,15 @@ def render(results: dict[str, dict[str, float]]) -> tuple[str, float]:
 
 
 def thousands(n: int, sep: str) -> str:
+    """@p n with @p sep between groups of three digits."""
     return f"{n:,}".replace(",", sep)
 
 
 def render_readme(results: dict[str, dict[str, float]], lang: str) -> str:
-    """The figure the README carries: the total, what it is a share of, and
-    the two floors."""
+    """The figure the README carries.
+
+    The total, what it is a share of, and the two floors.
+    """
     lines = sum(int(r["lines"]) for r in results.values())
     covered = sum(int(r["covered"]) for r in results.values())
     pct = (100.0 * covered / lines) if lines else 0.0
@@ -709,6 +723,7 @@ def render_readme(results: dict[str, dict[str, float]], lang: str) -> str:
 
 
 def splice(text: str, body: str, start: str, end: str, what: str) -> str:
+    """@p text with the part between @p start and @p end set to @p body."""
     if start not in text or end not in text:
         sys.exit(f"{what} is missing the {start} / {end} markers")
     head = text.split(start)[0]
@@ -717,6 +732,7 @@ def splice(text: str, body: str, start: str, end: str, what: str) -> str:
 
 
 def main() -> int:
+    """Measure or read the coverage, then write or check the figures."""
     ap = argparse.ArgumentParser()
     ap.add_argument("--check", action="store_true",
                     help="fail if the STATUS.md table or a README figure "

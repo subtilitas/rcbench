@@ -45,8 +45,11 @@ TIMEOUT_S = 5400
 
 def verdict(runs: list[dict], waited_s: float, appear_s: float = APPEAR_S,
             timeout_s: float = TIMEOUT_S) -> tuple[str, str]:
-    """("pass" | "fail" | "wait", why) for the CI runs on one commit after
-    @p waited_s seconds; a run is {"status": ..., "conclusion": ...}."""
+    """("pass" | "fail" | "wait", why) for the CI runs on one commit.
+
+    The verdict is taken after @p waited_s seconds; a run is {"status": ...,
+    "conclusion": ...}.
+    """
     if any(r.get("conclusion") == "success" for r in runs):
         return "pass", "CI passed on this commit"
     if not runs:
@@ -79,13 +82,16 @@ def ci_runs(repo: str, sha: str, workflow: str) -> list[dict]:
 
 
 def on_this_tree(runs: list[dict]) -> list[dict]:
-    """The runs that tested the commit itself, cut down to what verdict()
-    reads."""
+    """The runs that tested the commit itself.
+
+    Each is cut down to what verdict() reads.
+    """
     return [{"status": r.get("status"), "conclusion": r.get("conclusion")}
             for r in runs if r.get("event") in EVENTS]
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Wait for the CI verdict on a commit and return the exit status."""
     ap = argparse.ArgumentParser(description=__doc__.split("\n")[0])
     ap.add_argument("--repo", required=True, help="OWNER/REPO")
     ap.add_argument("--sha", required=True, help="the full commit ID")

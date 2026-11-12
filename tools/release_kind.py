@@ -63,8 +63,10 @@ def is_testing(tag: str) -> bool:
 
 
 def is_latest(tag: str, published: list[str] = ()) -> bool:
-    """True when `tag` is a stable release at or above every tag in
-    `published`; tags out of form there are left out."""
+    """True when `tag` is a stable release at or above all of `published`.
+
+    Tags out of form there are left out.
+    """
     if is_testing(tag):
         return False
     own = parse(tag)
@@ -90,6 +92,7 @@ def outputs(tag: str, published: list[str] = ()) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
+    """Print the $GITHUB_OUTPUT lines for a tag; return the exit status."""
     if not argv:
         print("usage: tools/release_kind.py TAG [PUBLISHED ...]",
               file=sys.stderr)

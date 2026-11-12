@@ -1,4 +1,6 @@
-"""coverage.py: every source under shared/ and every protocol core is in
+"""coverage.py: the measurement covers every source.
+
+Every source under shared/ and every protocol core is in
 the measurement, and the README figure is rendered from it.
 
 SPDX-License-Identifier: MIT
@@ -15,15 +17,18 @@ DATA = {"shared/a/table.c"}
 
 def problems(sources=SOURCES, tracked=TRACKED, data=DATA,
              compiled=("a.c", "table.c"), counted=("a.c",), with_code=()):
+    """The completeness problems for the given source lists."""
     return cov.completeness(list(sources), list(tracked), set(data),
                             set(compiled), set(counted), set(with_code))
 
 
 def test_a_complete_measurement_has_no_problem():
+    """A complete measurement has no problem."""
     assert problems() == []
 
 
 def test_a_source_in_neither_list_fails():
+    """A source in neither list fails."""
     out = problems(sources=SOURCES + ["shared/a/new.c"],
                    compiled=("a.c", "table.c", "new.c"))
     assert len(out) == 1
@@ -32,35 +37,41 @@ def test_a_source_in_neither_list_fails():
 
 
 def test_a_source_the_suite_does_not_compile_fails():
+    """A source the suite does not compile fails."""
     out = problems(compiled=("table.c",), counted=())
     assert out == ["shared/a/a.c is not compiled into the host suite: the "
                    "build has no .gcno for it"]
 
 
 def test_a_tracked_source_without_counters_fails():
+    """A tracked source without counters fails."""
     out = problems(counted=())
     assert out == ["shared/a/a.c has no counters: no test links code from "
                    "it, and it is measured at 0%"]
 
 
 def test_a_table_that_holds_a_function_fails():
+    """A table that holds a function fails."""
     out = problems(with_code=("table.c",))
     assert out == ["shared/a/table.c is in DATA_ONLY and holds a function; "
                    "move it to TRACKED"]
 
 
 def test_a_listed_file_that_is_gone_fails():
+    """A listed file that is gone fails."""
     out = problems(tracked=TRACKED + ["shared/a/gone.c"])
     assert out == ["shared/a/gone.c is listed in tools/coverage.py and is "
                    "not under shared/ or protocols/"]
 
 
 def test_a_file_in_both_lists_fails():
+    """A file in both lists fails."""
     out = problems(data=DATA | {"shared/a/a.c"})
     assert "shared/a/a.c is in TRACKED and in DATA_ONLY" in out
 
 
 def test_two_sources_of_one_name_fail():
+    """Two sources of one name fail."""
     out = problems(sources=SOURCES + ["shared/b/a.c"],
                    tracked=TRACKED + ["shared/b/a.c"])
     assert out[0].startswith(
@@ -68,6 +79,7 @@ def test_two_sources_of_one_name_fail():
 
 
 def test_a_core_of_the_same_name_as_a_shared_source_fails():
+    """A core of the same name as a shared source fails."""
     out = problems(sources=SOURCES + ["protocols/p/a.c"],
                    tracked=TRACKED + ["protocols/p/a.c"])
     assert out[0].startswith(
@@ -75,6 +87,7 @@ def test_a_core_of_the_same_name_as_a_shared_source_fails():
 
 
 def test_a_protocol_core_in_neither_list_fails():
+    """A protocol core in neither list fails."""
     out = problems(sources=SOURCES + ["protocols/p/p.c"],
                    compiled=("a.c", "table.c", "p.c"))
     assert len(out) == 1
@@ -84,6 +97,7 @@ def test_a_protocol_core_in_neither_list_fails():
 
 def test_a_pin_driver_is_not_a_source_of_the_measurement(tmp_path,
                                                          monkeypatch):
+    """A pin driver is not a source of the measurement."""
     for name in ("shared/a/a.c", "protocols/p/p.c", "protocols/p/deep/q.c",
                  "protocols/p/rp2350/p_pin.c",
                  "protocols/p/rp2350/deep/r.c"):
@@ -98,6 +112,7 @@ def test_a_pin_driver_is_not_a_source_of_the_measurement(tmp_path,
 
 
 def test_a_tree_without_protocols_still_lists_shared(tmp_path, monkeypatch):
+    """A tree without protocols still lists shared."""
     (tmp_path / "shared" / "a").mkdir(parents=True)
     (tmp_path / "shared" / "a" / "a.c").write_text("int x;\n")
     monkeypatch.setattr(cov, "REPO", tmp_path)
@@ -107,8 +122,10 @@ def test_a_tree_without_protocols_still_lists_shared(tmp_path, monkeypatch):
 
 
 def test_the_lists_name_every_source_in_the_tree():
-    """TRACKED and DATA_ONLY together are the C files under shared/ and
-    the protocol cores."""
+    """TRACKED and DATA_ONLY together are the C files of the measurement.
+
+    The files are those under shared/ and the protocol cores.
+    """
     listed = set(cov.TRACKED) | cov.DATA_ONLY
     assert listed == set(cov.library_sources())
     assert len(cov.TRACKED) == len(set(cov.TRACKED))
@@ -121,6 +138,7 @@ RESULTS = {
 
 
 def test_the_english_figure():
+    """The English figure."""
     assert cov.render_readme(RESULTS, "en") == (
         "\nHost-suite line coverage of `shared/` and `protocols/`: "
         "**97.0%**, 3,245 of 3,345 "
@@ -130,12 +148,14 @@ def test_the_english_figure():
 
 
 def test_the_german_figure_uses_a_decimal_comma_and_spaced_thousands():
+    """The German figure uses a decimal comma and spaced thousands."""
     text = cov.render_readme(RESULTS, "de")
     assert "**97,0%**, 3 245 von 3 345 Zeilen in 2 Dateien" in text
     assert "unter 94% gesamt oder unter 85% in einer Datei fehl. " in text
 
 
 def test_the_table_totals_its_rows(monkeypatch):
+    """The table totals its rows."""
     monkeypatch.setattr(cov, "TRACKED", list(RESULTS))
     body, total = cov.render(RESULTS)
     assert "| `shared/a/a.c` | 1000 | 900 | 90.0% |" in body
@@ -144,40 +164,47 @@ def test_the_table_totals_its_rows(monkeypatch):
 
 
 def test_splice_replaces_what_is_between_the_markers():
+    """Splice replaces what is between the markers."""
     text = "a\n<!-- coverage:start -->old<!-- coverage:end -->\nb\n"
     assert cov.splice(text, "\nnew\n", cov.START, cov.END, "x") == (
         "a\n<!-- coverage:start -->\nnew\n<!-- coverage:end -->\nb\n")
 
 
 def test_splice_stops_without_the_markers():
+    """Splice stops without the markers."""
     with pytest.raises(SystemExit):
         cov.splice("no markers", "x", cov.START, cov.END, "README.md")
 
 
 def test_both_readmes_carry_the_markers():
+    """Both readmes carry the markers."""
     for path in cov.READMES.values():
         text = path.read_text(encoding="utf-8")
         assert cov.START in text and cov.END in text
 
 
 def test_numbers_that_cover_exactly_the_tracked_files_match(monkeypatch):
+    """Numbers that cover exactly the tracked files match."""
     monkeypatch.setattr(cov, "TRACKED", list(RESULTS))
     assert cov.tracked_mismatch(RESULTS) == []
 
 
 def test_a_tracked_file_without_numbers_is_named(monkeypatch):
+    """A tracked file without numbers is named."""
     monkeypatch.setattr(cov, "TRACKED", list(RESULTS) + ["shared/c/c.c"])
     assert cov.tracked_mismatch(RESULTS) == [
         "shared/c/c.c is in TRACKED and not in the numbers"]
 
 
 def test_numbers_for_an_untracked_file_are_named(monkeypatch):
+    """Numbers for an untracked file are named."""
     monkeypatch.setattr(cov, "TRACKED", list(RESULTS)[:1])
     assert cov.tracked_mismatch(RESULTS) == [
         f"{list(RESULTS)[1]} is in the numbers and not in TRACKED"]
 
 
 def test_from_json_renders_the_blocks_without_measuring(tmp_path, monkeypatch):
+    """From JSON renders the blocks without measuring."""
     import json
     import sys
     monkeypatch.setattr(cov, "TRACKED", list(RESULTS))

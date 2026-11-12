@@ -1,7 +1,9 @@
-"""The IOmcu half of tools/stack_check.py: with --iomcu it reads the
-RP2350 image, decodes its Thumb code, and holds core 0's and core 1's
-stacks to their deepest call chain and one interrupt.  stack_check.py's
-docstring says how; the ELF reader and the call graph are in stack_elf.py.
+"""The IOmcu half of tools/stack_check.py.
+
+With --iomcu it reads the RP2350 image, decodes its Thumb code, and holds core
+0's and core 1's stacks to their deepest call chain and one interrupt.
+stack_check.py's docstring says how; the ELF reader and the call graph are in
+stack_elf.py.
 
 SPDX-License-Identifier: MIT
 """
@@ -76,8 +78,11 @@ NEEDLE_DIRS = (ROOT / "shared", ROOT / "protocols", IOMCU_DIR / "src")
 
 
 def long_needles() -> list:
-    """Every strstr() call under NEEDLE_DIRS whose needle is not a string
-    literal shorter than NEEDLE_LIMIT, as "file:line"."""
+    """Every strstr() call with a needle that is no short literal.
+
+    Each is a "file:line" string.  The calls are under NEEDLE_DIRS; a short
+    literal is shorter than NEEDLE_LIMIT.
+    """
     out = []
     for base in NEEDLE_DIRS:
         for src in sorted(base.rglob("*.c")):
@@ -104,6 +109,7 @@ IOMCU_MARGIN = 256
 
 
 def bits(v: int) -> int:
+    """The number of set bits in @p v."""
     return bin(v).count("1")
 
 
@@ -119,13 +125,15 @@ def thumb_imm(hw1: int, hw2: int) -> int:
 
 
 def thumb(pc: int, hw1: int, hw2: int) -> tuple:
-    """One Thumb instruction: (length, kind, argument), kind one of
-    "push" (bytes the stack pointer goes down), "pop" (bytes up, whether
-    it loads pc), "call" (target), "callx", "branch" (target), "jump"
-    (target), "jumpx" (a jump through a register or a table), "jumplit"
-    (a jump to the address a literal holds; the literal's address), "end"
-    (a return), "dynamic" (the stack pointer set from a register),
-    "lit" (register, literal address), or None."""
+    """One Thumb instruction.
+
+    (length, kind, argument), kind one of "push" (bytes the stack pointer goes
+    down), "pop" (bytes up, whether it loads pc), "call" (target), "callx",
+    "branch" (target), "jump" (target), "jumpx" (a jump through a register or a
+    table), "jumplit" (a jump to the address a literal holds; the literal's
+    address), "end" (a return), "dynamic" (the stack pointer set from a
+    register), "lit" (register, literal address), or None.
+    """
     if hw1 >> 11 < 0x1D:                               # 16 bits
         if hw1 & 0xFE00 == 0xB400:                     # push
             return 2, "push", 4 * bits(hw1 & 0x1FF)
@@ -209,10 +217,12 @@ def thumb(pc: int, hw1: int, hw2: int) -> tuple:
 
 
 class ArmFunc:
+    """One ARM function with what the stack analysis found in it."""
     __slots__ = ("addr", "name", "frame", "calls", "callx", "dynamic",
                  "stray", "asm", "tails", "handlers", "unread")
 
     def __init__(self, addr: int, name: str) -> None:
+        """A function at @p addr named @p name, with no frame or call yet."""
         self.addr = addr
         self.name = name
         self.frame = 0          # the lowest the stack pointer goes, in bytes
@@ -227,9 +237,12 @@ class ArmFunc:
 
 
 def code_spans(addr: int, size: int, marks: list) -> list:
-    """The parts of [addr, addr + size) that are Thumb code: the linker
+    """The parts of [addr, addr + size) that are Thumb code.
+
+    The parts of [addr, addr + size) that are Thumb code: the linker
     keeps the assembler's $t and $d symbols, which say where code stops and
-    a literal pool or a jump table starts."""
+    a literal pool or a jump table starts.
+    """
     end = addr + size
     i = bisect.bisect_right(marks, (addr, "~")) - 1
     state = marks[i][1] if i >= 0 else "t"
@@ -255,15 +268,15 @@ def analyse_thumb(elf: Elf, addr: int, size: int, name: str, marks: list,
     it down, pops and additions bring it back.  After a return the count
     resumes at the lowest point seen so far, because the block that follows
     is entered from a branch at a depth this pass does not know; that never
-    counts a frame too small."""
+    counts a frame too small.
+    """
     f = ArmFunc(addr, name)
 
     def inside(a: int) -> bool:
         return addr <= a < addr + size
 
     def install(target: int, regs: dict) -> None:
-        """A call or a tail jump to an installer takes its handler from
-        r1."""
+        """A call or a tail jump to an installer takes its handler from r1."""
         if target in installers:
             if 1 in regs:
                 f.handlers.add(regs[1] & ~1)
@@ -367,9 +380,12 @@ def iomcu_elf(build: Path) -> Path:
 
 
 def iomcu_check(build: Path, verbose: bool) -> tuple:
-    """(rows, fails, lines to print) for the IOmcu image: one row per
+    """(rows, fails, lines to print) for the IOmcu image.
+
+    (rows, fails, lines to print) for the IOmcu image: one row per
     core, (name, entry, stack, depth, interrupt, spare, calls and jumps
-    through a register reachable from the entry)."""
+    through a register reachable from the entry).
+    """
     path = iomcu_elf(build)
     if not path.exists():
         die(f"{path} not found; build the IOmcu first")
@@ -631,8 +647,10 @@ def number(text: str) -> int:
 
 
 def check_iomcu_prose(core0: dict) -> list:
-    """The sentences of IOMCU_PROSE against core 0's measurement:
-    {"stack", "depth", "interrupt", "spare", "calls": int}."""
+    """The sentences of IOMCU_PROSE against core 0's measurement.
+
+    {"stack", "depth", "interrupt", "spare", "calls": int}.
+    """
     out = []
     for page, pattern, names in IOMCU_PROSE:
         text = " ".join(page.read_text(encoding="utf-8").split())
@@ -651,9 +669,12 @@ def check_iomcu_prose(core0: dict) -> list:
 
 
 def check_iomcu_doc(rows: list) -> list:
-    """Core 0's row of the IOmcu table in Performance.md and its
+    """Core 0's row and the IOMCU_PROSE sentences against iomcu_check()'s rows.
+
+    Core 0's row of the IOmcu table in Performance.md and its
     German page, and the sentences of IOMCU_PROSE, against iomcu_check()'s
-    rows."""
+    rows.
+    """
     measured = [r for r in rows if r[0] == CORE0[0]]
     if len(measured) != 1:
         return ["core 0 is not measured; its row in the docs is not held"]
