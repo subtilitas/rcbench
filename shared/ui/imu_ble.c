@@ -74,7 +74,9 @@ bool imu_ble_bound(const imu_ble_t *l)
     return l->b.bound;
 }
 
-bool imu_ble_ready(const imu_ble_t *l)
+/** @brief Whether SCAN may start: ON, synced, no scan running.
+ *  @param l The link, not NULL.  @return Whether it may. */
+static bool imu_ble_ready(const imu_ble_t *l)
 {
     return l->en && l->radio == IMU_RADIO_READY && !l->b.scanning;
 }

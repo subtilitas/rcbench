@@ -8,7 +8,13 @@
 
 #include <string.h>
 
-uint16_t ew_crc16_add(uint16_t crc, uint8_t byte)
+/**
+ * @brief One step of the CRC: polynomial 0xA001 in reflected form.
+ * @param crc  the CRC so far, 0 to start
+ * @param byte the next byte
+ * @return the CRC with the byte
+ */
+static uint16_t ew_crc16_add(uint16_t crc, uint8_t byte)
 {
     uint16_t c = (uint16_t)(crc ^ byte);
 

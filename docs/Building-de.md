@@ -34,6 +34,7 @@ rcbench/
     webaccess/            WLAN-Sitzung · Kartenliste und ZIP-Strom · die Seite · mDNS
     clock/                Regeln der Uhr: echtes Datum oder nicht · Zeitstempel · Zeitzonen · die NTP-Anfrage
     text/                 die Wörter der Oberfläche, alle Sprachen in einer Tabelle (nur Header)
+    mstime/               überlaufsichere Vergleiche eines 32-Bit-Millisekundenzählers (nur Header)
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
     ppm/                  PPM-Frame-Layout · PIO- und DMA-Treiber
@@ -88,7 +89,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | Modul | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | ja | | ja |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` | ja | ja | ja |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` | ja | ja | ja |
 | `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | ja | | ja |
 | `openyge` · `ppm` · `i2c_txq` | | ja | ja |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ja | ja | ja |

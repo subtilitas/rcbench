@@ -46,27 +46,8 @@ typedef struct {
 } fm_logname_t;
 
 /**
- * @brief Start the rename of @p last to its name with label @p label.
- *
- * @param job       The job; it holds the refusal as FM_JOB_FAILED.
- * @param bench     The gate and the rules; may be NULL.
- * @param last      The log closed last.
- * @param label     The label; "" or NULL for the plain name.
- * @param new_name  Takes the new name, "" when refused before it is built.
- * @param n         Bytes at @p new_name: LOG_LABELLED_SIZE or more.
- * @return FM_OK when the job runs; FM_ERR_ARG for a NULL, no log
- *         (@p last's name "") or a name that is not a run log, and for a
- *         new name the same as the old; FM_ERR_NAME for a name over
- *         LOG_LABELLED_MAX bytes or one fm_name_check() refuses;
- *         FM_ERR_ARMED, FM_ERR_LOGGING and the other refusals of
- *         fm_job_rename().
- */
-fm_err_t fm_logname_start(fm_job_t *job, const fm_bench_t *bench,
-                          const fm_logname_t *last, const char *label,
-                          char *new_name, size_t n);
-
-/**
- * @brief fm_logname_start(), then the job's steps to its end on @p io.
+ * @brief Start the rename of @p last to its name with label @p label, then
+ *        run the job's steps to their end on @p io.
  *
  * @param job       The job.
  * @param io        The card.
