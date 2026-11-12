@@ -13,6 +13,7 @@
  * - queries_past_the_end_answer_nothing
  * - every_reason_ends_left_of_the_board
  * - the_home_tag_closes_the_pickers_list_first
+ * - a_reset_of_the_screen_keeps_the_ports_pins
  *
  * SPDX-License-Identifier: MIT
  */
@@ -622,6 +623,24 @@ TEST_CASE(every_reason_ends_left_of_the_board)
     }
 }
 
+/* The ports' pins come from the IOmcu, not from the screen: a reset of the
+ * screen forgets the binding and the presses and keeps the pins. */
+TEST_CASE(a_reset_of_the_screen_keeps_the_ports_pins)
+{
+    static const uint8_t one[1] = { 13u };
+
+    picker_screen_set_prog_ports(0u, NULL);
+    fresh();
+    CHECK_EQ(picker_screen_prog_listed(), PICKER_NO_PIN);
+    picker_screen_set_prog_ports(1u, one);
+    CHECK_EQ(picker_screen_prog_listed(), 13u);
+    fresh();
+    CHECK_EQ(picker_screen_prog_listed(), 13u);
+    picker_screen_set_prog_ports(0u, NULL);
+    fresh();
+    CHECK_EQ(picker_screen_prog_listed(), PICKER_NO_PIN);
+}
+
 int main(void)
 {
     RUN(the_in_use_table_lists_every_pin_of_the_fullest_binding);
@@ -633,5 +652,6 @@ int main(void)
     RUN(queries_past_the_end_answer_nothing);
     RUN(every_reason_ends_left_of_the_board);
     RUN(the_home_tag_closes_the_pickers_list_first);
+    RUN(a_reset_of_the_screen_keeps_the_ports_pins);
     return test_summary("picker_screen_table");
 }

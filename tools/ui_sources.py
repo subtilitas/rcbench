@@ -349,4 +349,6 @@ EXCLUDED = {
         "the control task posts to it; no screen calls it",
     "shared/ui/port_mail.c":
         "the control task fills it; the screens read port_view.c",
+    "shared/ui/screen_dim.c":
+        "the render loop's backlight and touch filter; no screen calls it",
 }

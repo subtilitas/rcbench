@@ -125,6 +125,8 @@ typedef struct {
     uint8_t    cmd_n;        /**< how many */
     bool       scan_owed;    /**< a search waits for Bluetooth LE to run
                                   before its SCAN is queued */
+    uint32_t   age_ms;       /**< the time since the newest angle frame
+                                  reached the screen, ms */
 } ims_state_t;
 
 /** @brief The state, imu_screen.c's. */

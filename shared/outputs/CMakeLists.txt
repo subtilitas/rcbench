@@ -1,23 +1,27 @@
 # The intermediary every output goes through: arming, clamping, slew and
 # staleness in one place, with a table of what each protocol is shaped like.
 # Pure logic with no pin, so it is host-tested before anything toggles.
+# out_render.c puts the bank on the pins through out_render_hw_*(), which
+# the IOmcu firmware defines; the panel links nothing that calls it.
 
 set(SRCS outputs.c outputs_pages.c out_bind.c out_board_rbmod.c board_fix.c
          out_pwm_map.c out_store_map.c out_store_range.c
          out_store_rec.c servo_page.c supply_page.c sense_page.c sense_map.c
          sense_limit.c tone_page.c prog_supply.c
          out_stage.c bind_link.c kst_port.c hitec_port.c esc_port.c esc_console.c prog_port.c
-         servo_cmd.c servo_link.c page_console.c console_tunnel.c)
+         servo_cmd.c servo_link.c page_console.c console_tunnel.c
+         out_render.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
                            REQUIRES link servo bench sense pdmini phase_tap kst
-                                    hitec escwire)
+                                    hitec escwire dshot)
 else()
     add_library(rcbench_outputs STATIC ${SRCS})
     target_include_directories(rcbench_outputs PUBLIC include)
     target_link_libraries(rcbench_outputs PUBLIC rcbench_link rcbench_servo rcbench_bench
                                                  rcbench_sense rcbench_pdmini
                                                  rcbench_phase_tap rcbench_kst
-                                                 rcbench_hitec rcbench_escwire)
+                                                 rcbench_hitec rcbench_escwire
+                                                 rcbench_dshot)
 endif()

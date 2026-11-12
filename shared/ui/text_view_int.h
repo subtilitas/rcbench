@@ -239,7 +239,7 @@ typedef struct {
     tv_note_t note;           /**< what the note says                    */
     ui_text_id_t note_id;     /**< TV_NOTE_TEXT: the text                */
     fm_err_t note_err;        /**< TV_NOTE_ERR: the refusal              */
-    size_t orig_len;          /**< bytes of tv_orig: the file on the card */
+    size_t orig_len;          /**< bytes of tv_text.orig: the file on the card */
     ui_textkey_t kb;          /**< the keyboard                          */
     uint32_t rev;             /**< moves on with every change drawn      */
 } tv_state_t;
@@ -248,12 +248,18 @@ typedef struct {
 extern tv_state_t tv_s;
 #define tv tv_s   /**< The state by its short name. */
 
-/** @brief The text, defined in text_view.c over its static buffers. */
-extern text_buf_t tv_tb;
-/** @brief The file as loaded or last saved, its BOM included, while the
- *         editor is on: what DISCARD puts back.  TEXT_BUF_FILE_MAX bytes,
- *         defined in text_view.c, in PSRAM on the panel. */
-extern uint8_t tv_orig[];
+/** @brief The text and its buffers, 2.25MiB, in PSRAM on the panel. */
+typedef struct {
+    text_buf_t tb;                        /**< the text over mem and ends */
+    uint8_t    mem[TEXT_BUF_FILE_MAX];    /**< the file's bytes, 1MiB */
+    uint32_t   ends[TEXT_BUF_ENDS_MAX];   /**< its line index, 256KiB */
+    /** @brief The file as loaded or last saved, its BOM included, while the
+     *         editor is on: what DISCARD puts back.  1MiB. */
+    uint8_t    orig[TEXT_BUF_FILE_MAX];
+} tv_text_t;
+
+/** @brief The text and its buffers, defined in text_view.c. */
+extern tv_text_t tv_text;
 
 /* --- text_view.c -------------------------------------------------------- */
 

@@ -4,9 +4,11 @@
  * The stream half is held against a model of the panel's queues: a bounded
  * FIFO with one producer that evicts the oldest entry when it is full, and a
  * consumer that drains it, with the steps of each interleaved in every order
- * a seeded generator picks.  The producer's offer is four steps -- try, evict,
- * retry, publish -- because on the panel those are separate operations on two
- * cores and the consumer can run between any two of them.
+ * a seeded generator picks.  The producer is the panel's own
+ * (touch_put_begin(), touch_put_next()): its offer is up to four steps --
+ * send, evict, send again, publish -- because on the panel those are
+ * separate operations on two cores and the consumer can run between any two
+ * of them.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -83,6 +85,114 @@ TEST_CASE(a_null_receiver_is_refused)
     CHECK_EQ(touch_seq_tail(NULL, 5u), 0u);
 }
 
+/* ------------------------------------------------------ the producer */
+
+/* A queue with room: one send, then the number, then done. */
+TEST_CASE(an_offer_with_room_sends_once_and_publishes)
+{
+    touch_seq_tx_t tx;
+    touch_seq_tx_init(&tx);
+    touch_put_t put;
+    CHECK_EQ(touch_seq_tx_next(&tx), 1u);
+    CHECK_EQ(touch_put_begin(&tx, &put, false), TOUCH_PUT_SEND);
+    CHECK_EQ(put.seq, 1u);
+    CHECK_EQ(touch_put_next(&put, true), TOUCH_PUT_PUBLISH);
+    CHECK(put.kept);
+    CHECK_EQ(touch_put_next(&put, true), TOUCH_PUT_DONE);
+    CHECK_EQ(touch_put_next(&put, true), TOUCH_PUT_DONE);
+    CHECK(put.kept);
+    CHECK_EQ(tx.lost_notice, 0u);
+}
+
+/* A full queue: the oldest entry off, a second send, then the number. */
+TEST_CASE(a_full_queue_drops_its_oldest_and_sends_again)
+{
+    touch_seq_tx_t tx;
+    touch_seq_tx_init(&tx);
+    touch_put_t put;
+    (void)touch_put_begin(&tx, &put, false);
+    CHECK_EQ(touch_put_next(&put, false), TOUCH_PUT_EVICT);
+    CHECK(!put.kept);
+    CHECK_EQ(touch_put_next(&put, true), TOUCH_PUT_SEND);
+    CHECK_EQ(touch_put_next(&put, true), TOUCH_PUT_PUBLISH);
+    CHECK(put.kept);
+    CHECK_EQ(touch_put_next(&put, true), TOUCH_PUT_DONE);
+}
+
+/* The consumer emptied the queue between the refusal and the eviction:
+ * the second send goes ahead although nothing came off. */
+TEST_CASE(the_second_send_follows_an_eviction_that_took_nothing)
+{
+    touch_seq_tx_t tx;
+    touch_seq_tx_init(&tx);
+    touch_put_t put;
+    (void)touch_put_begin(&tx, &put, false);
+    CHECK_EQ(touch_put_next(&put, false), TOUCH_PUT_EVICT);
+    CHECK_EQ(touch_put_next(&put, false), TOUCH_PUT_SEND);
+    CHECK_EQ(touch_put_next(&put, true), TOUCH_PUT_PUBLISH);
+    CHECK(put.kept);
+}
+
+/* Two refusals: no third send, and the number is published all the same,
+ * so the consumer counts the item as lost. */
+TEST_CASE(a_second_refusal_publishes_the_number_of_an_item_not_kept)
+{
+    touch_seq_tx_t tx;
+    touch_seq_tx_init(&tx);
+    touch_put_t put;
+    (void)touch_put_begin(&tx, &put, false);
+    CHECK_EQ(touch_put_next(&put, false), TOUCH_PUT_EVICT);
+    CHECK_EQ(touch_put_next(&put, true), TOUCH_PUT_SEND);
+    CHECK_EQ(touch_put_next(&put, false), TOUCH_PUT_PUBLISH);
+    CHECK(!put.kept);
+    CHECK_EQ(touch_put_next(&put, false), TOUCH_PUT_DONE);
+    CHECK(!put.kept);
+
+    touch_seq_rx_t rx;
+    touch_seq_rx_init(&rx);
+    CHECK_EQ(touch_seq_tail(&rx, put.seq), 1u);
+}
+
+/* Every offer takes the next number, kept or not; a loss notice's number
+ * is kept for the arm's check.  The numbers wrap. */
+TEST_CASE(every_offer_takes_a_number_and_a_notice_is_remembered)
+{
+    touch_seq_tx_t tx;
+    touch_seq_tx_init(&tx);
+    touch_put_t put;
+    for (uint32_t n = 1u; n <= 5u; ++n) {
+        CHECK_EQ(touch_seq_tx_next(&tx), n);
+        (void)touch_put_begin(&tx, &put, n == 3u);
+        CHECK_EQ(put.seq, n);
+        /* Refused twice: not kept, still numbered. */
+        (void)touch_put_next(&put, false);
+        (void)touch_put_next(&put, false);
+        (void)touch_put_next(&put, false);
+    }
+    CHECK_EQ(tx.seq, 5u);
+    CHECK_EQ(tx.lost_notice, 3u);
+
+    tx.seq = 0xFFFFFFFFu;
+    CHECK_EQ(touch_seq_tx_next(&tx), 0u);
+    (void)touch_put_begin(&tx, &put, true);
+    CHECK_EQ(put.seq, 0u);
+    CHECK_EQ(tx.lost_notice, 0u);
+}
+
+TEST_CASE(a_null_producer_offers_nothing)
+{
+    touch_seq_tx_t tx;
+    touch_seq_tx_init(&tx);
+    touch_put_t put;
+    touch_seq_tx_init(NULL);
+    CHECK_EQ(touch_seq_tx_next(NULL), 1u);
+    CHECK_EQ(touch_put_begin(NULL, &put, false), TOUCH_PUT_DONE);
+    CHECK_EQ(touch_put_begin(&tx, NULL, true), TOUCH_PUT_DONE);
+    CHECK_EQ(tx.seq, 0u);
+    CHECK_EQ(tx.lost_notice, 0u);
+    CHECK_EQ(touch_put_next(NULL, true), TOUCH_PUT_DONE);
+}
+
 /* ------------------------------------------- the queue, interleaved */
 
 #define QCAP 4u
@@ -121,8 +231,6 @@ static unsigned rnd(unsigned n)
     return (s_rand >> 8) % n;
 }
 
-/* Producer steps for one offer. */
-typedef enum { P_TRY, P_EVICT, P_RETRY, P_PUBLISH, P_DONE } pstep_t;
 /* Consumer steps for one drain. */
 typedef enum { C_POP, C_TAIL, C_IDLE } cstep_t;
 
@@ -142,42 +250,43 @@ static unsigned run_interleaving(uint32_t seed, unsigned consumer_bias,
     unsigned evicted_n = 0u;
 
     s_rand = seed;
-    uint32_t seq = 0u;
-    pstep_t ps = P_DONE;
+    touch_seq_tx_t tx;
+    touch_seq_tx_init(&tx);
+    touch_put_t put;
+    memset(&put, 0, sizeof(put));
+    touch_put_op_t op = TOUCH_PUT_DONE;
     cstep_t cs = C_IDLE;
     uint32_t drain_published = 0u;
 
-    while (seq < EVENTS || ps != P_DONE || q.count > 0u || cs != C_IDLE) {
-        const bool producer_can = (seq < EVENTS || ps != P_DONE);
+    while (tx.seq < EVENTS || op != TOUCH_PUT_DONE || q.count > 0u
+           || cs != C_IDLE) {
+        const bool producer_can = (tx.seq < EVENTS || op != TOUCH_PUT_DONE);
         const bool run_consumer = !producer_can || rnd(100u) < consumer_bias;
         if (!run_consumer) {
-            switch (ps) {
-            case P_DONE:
-                ++seq;
-                ps = P_TRY;
+            switch (op) {
+            case TOUCH_PUT_DONE:
+                op = touch_put_begin(&tx, &put, false);
                 break;
-            case P_TRY:
-                ps = fifo_push(&q, seq) ? P_PUBLISH : P_EVICT;
+            case TOUCH_PUT_SEND:
+                op = touch_put_next(&put, fifo_push(&q, put.seq));
+                if (op == TOUCH_PUT_PUBLISH && !put.kept) {
+                    evicted[put.seq] = true;   /* the new one is the loss */
+                    ++evicted_n;
+                }
                 break;
-            case P_EVICT: {
+            case TOUCH_PUT_EVICT: {
                 uint32_t old;
-                if (fifo_pop(&q, &old)) {
+                const bool took = fifo_pop(&q, &old);
+                if (took) {
                     evicted[old] = true;
                     ++evicted_n;
                 }
-                ps = P_RETRY;
+                op = touch_put_next(&put, took);
                 break;
             }
-            case P_RETRY:
-                if (!fifo_push(&q, seq)) {
-                    evicted[seq] = true;     /* the new one is the loss */
-                    ++evicted_n;
-                }
-                ps = P_PUBLISH;
-                break;
-            case P_PUBLISH:
-                published = seq;
-                ps = P_DONE;
+            case TOUCH_PUT_PUBLISH:
+                published = put.seq;
+                op = touch_put_next(&put, true);
                 break;
             }
             continue;
@@ -366,6 +475,12 @@ int main(void)
     RUN(a_number_behind_the_stream_moves_nothing_back);
     RUN(the_numbers_wrap);
     RUN(a_null_receiver_is_refused);
+    RUN(an_offer_with_room_sends_once_and_publishes);
+    RUN(a_full_queue_drops_its_oldest_and_sends_again);
+    RUN(the_second_send_follows_an_eviction_that_took_nothing);
+    RUN(a_second_refusal_publishes_the_number_of_an_item_not_kept);
+    RUN(every_offer_takes_a_number_and_a_notice_is_remembered);
+    RUN(a_null_producer_offers_nothing);
     RUN(every_eviction_is_reported_once_and_before_what_follows_it);
     RUN(a_consumer_that_keeps_up_reports_nothing);
     RUN(an_arm_is_taken_only_without_a_loss_since_it_was_posted);

@@ -5537,12 +5537,13 @@ FEHLER 10 ([HWSTOP](#hwstop)).
 
 ![PANEL bis Hardware-STOP gescrollt, gespeichert EIN](img/de/setup-hw-stop.png)
 
-Acht Einstellungen werden gespeichert, ohne den Firmwarebetrieb zu
-beeinflussen. Einheiten und Dimmen nach erscheinen unter PANEL; Zellen,
-Kapazität und Innenwiderstand unter MOTOR & ESC. Vibration, Optischer Tacho
-und Tacho-Pin haben gespeicherte Schlüssel, aber keinen Eintrag unter
-SENSORS. Rampengrenze beeinflusst nur die Änderungsrate des simulierten
-Prüfstands.
+Sieben Einstellungen werden gespeichert, ohne den Firmwarebetrieb zu
+beeinflussen. Zellen, Kapazität und Innenwiderstand erscheinen unter
+MOTOR & ESC. Einheiten hat einen gespeicherten Schlüssel, aber keine Zeile
+unter PANEL; ein früher gespeicherter Wert wird geladen und unverändert
+wieder gespeichert. Vibration, Optischer Tacho und Tacho-Pin haben
+gespeicherte Schlüssel, aber keinen Eintrag unter SENSORS. Rampengrenze
+beeinflusst nur die Änderungsrate des simulierten Prüfstands.
 
 ### Tasten und Liste
 
@@ -5771,6 +5772,47 @@ Systemzeit des ESP32-P4 ([Aufbau](Building-de.md#die-uhr-des-panels)).
   Uhrzeit. Laufaufzeichnungen zählen ihre Zeitspalte ab dem Start des Laufs, und die
   Berichte (ATESTnnn.TXT, LIMITnnn.TXT) tragen kein Datum: Der Zeitstempel
   der Datei ist ihr Datum.
+
+### PANEL: Dimmen nach
+
+`Dimmen nach` regelt die Hintergrundbeleuchtung herunter, wenn niemand das
+Panel berührt und der Prüfstand ruht.
+
+| Einstellung | Bereich | Vorgabe |
+| --- | --- | --- |
+| `Dimmen nach` | 0 bis 60min in Schritten von 5 | 0 |
+
+- Nach den eingestellten Minuten ohne Touch-Ereignis sinkt das
+  Tastverhältnis der PWM (Pulsweitenmodulation) der Beleuchtung an GPIO32
+  von 100% auf 20%. 0 dimmt nie. Wie viel Licht 20% Tastverhältnis geben,
+  ist nicht gemessen.
+- Gedimmt wird nur, solange der Prüfstand ruht, nach denselben Bedingungen
+  wie beim Popup des Screenshots ([Das Popup](#das-popup)): SAFE ohne
+  wartendes ARM, Netzteil und PROG 5V aus, kein Port gehalten, keine
+  Programmiersitzung, kein Kartenauftrag, kein Sweep, kein Test, kein
+  LIMIT RUN, kein ESC-STICK-Lauf, kein Update, kein FAULT-Bit, kein
+  Schreiben ins Fehlerprotokoll und keine offene Aufzeichnung. Ein Frame,
+  der eine davon findet, setzt sofort 100% und startet die Minuten neu. Ein
+  Prüfstand bei ARMED oder ein eingeschalteter Ausgang steht nie hinter
+  einem gedimmten Bild.
+- Jedes Touch-Ereignis setzt 100% und startet die Minuten neu.
+- Der Druck, der auf einem gedimmten Bild aufsetzt, weckt es nur. Sein
+  DOWN, seine MOVEs und sein UP erreichen keine Seite, er öffnet, stellt
+  und schaltet also nichts. Ein zweiter Finger, der aufsetzt, während der
+  erste liegt, ist ein normaler Druck.
+- Ein Druck in einem Frame, der den Prüfstand nicht ruhend findet, wird nie
+  zurückgehalten, auch wenn das Bild vom Frame davor noch gedimmt ist:
+  AUSGANG AUS, DISARM oder ABBRECHEN wirkt beim ersten Druck.
+- Ein Druck auf STOP zählt immer: Auf einem gedimmten Bild stoppt er den
+  Prüfstand bei seinem DOWN wie auf einem hellen und weckt das Bild. Der
+  Steuertask des Panels wendet ihn an, bevor die Render-Schleife ihn sieht.
+- Ein Kontakt, der beim Dimmen auf dem Glas lag, behält seinen Besitzer:
+  Sein nächstes MOVE oder UP weckt das Bild und erreicht die Seite, auf der
+  er gedrückt hat.
+- Eine Drehung des Drehknopfs weckt das Bild nicht.
+- Die Regel ist `shared/ui/screen_dim.c`, gehalten von `test_screen_dim`;
+  die Render-Schleife setzt das Tastverhältnis mit
+  `board_backlight_percent()`, wenn es sich ändert.
 
 ### PANEL: der Drehknopf
 

@@ -143,11 +143,11 @@ static int class_at(const text_hl_span_t *sp, size_t n, size_t *at,
 static int walk_line(row_walk_t *w, size_t line)
 {
     size_t len = 0u;
-    const char *bytes = text_buf_line(&tv_tb, line, &len);
+    const char *bytes = text_buf_line(&tv_text.tb, line, &len);
     static text_hl_span_t sp[TV_SPANS];
     const size_t nsp = text_hl_line(bytes, len, line, tv.kind,
                                     text_view_words(), sp, TV_SPANS);
-    const size_t start = text_buf_line_start(&tv_tb, line);
+    const size_t start = text_buf_line_start(&tv_text.tb, line);
     const unsigned width = text_view_cells();
     const size_t last = w->skip + (size_t)(w->rows - w->first);
     size_t row = 0u;
@@ -156,8 +156,8 @@ static int walk_line(row_walk_t *w, size_t line)
     w->used = 0u;
     for (size_t off = 0u; off < len;) {
         size_t ub = 1u;
-        const uint32_t cp = text_buf_cp(&tv_tb, start + off, &ub);
-        if (text_buf_breaks_before(&tv_tb, start + off, col, width)) {
+        const uint32_t cp = text_buf_cp(&tv_text.tb, start + off, &ub);
+        if (text_buf_breaks_before(&tv_text.tb, start + off, col, width)) {
             flush(w);
             ++row;
             col = 0u;
@@ -423,7 +423,7 @@ static void draw_footer(gfx_canvas_t *c)
                          || tv.note_id == TX_ED_LINES_FULL;
         (void)ui_text_wrap(c, gfx_rect_make(box.x, box.y + 2, box.w, 16), 16,
                            note, TV_FONT_FINE, bad ? UI_WARN : UI_TEXT_DIM);
-    } else if (shown && text_buf_mixed(&tv_tb)) {
+    } else if (shown && text_buf_mixed(&tv_text.tb)) {
         gfx_text_in(c, box, TR(ED_MIXED_ENDS), TV_FONT_LABEL, UI_WARN, 1,
                     GFX_ALIGN_LEFT);
     }

@@ -33,9 +33,6 @@
 
 ims_state_t ims;
 
-/** @brief The time since the newest angle frame reached the screen, ms. */
-static uint32_t s_age_ms;
-
 /** @brief Repaint on the next frame of each framebuffer. */
 static void touched(void) { ims.drawn_mask = 0u; }
 
@@ -162,7 +159,7 @@ void imu_screen_set(const imu_view_t *v)
         return;
     }
     if (v->r.taken_ms != ims.v.r.taken_ms || !v->r.valid) {
-        s_age_ms = 0u;
+        ims.age_ms = 0u;
     }
     _Static_assert(offsetof(imu_view_t, r) + sizeof(imu_reading_t)
                        == sizeof(imu_view_t),
@@ -433,7 +430,7 @@ const char *ims_line(int i, char *buf, size_t n, gfx_color_t *ink)
     case IMS_L_RATE:
         if (r->valid) {
             snprintf(buf, n, TR(IMU_RATE_AGE), (double)r->rate_dhz / 10.0,
-                     (unsigned)s_age_ms);
+                     (unsigned)ims.age_ms);
         } else {
             snprintf(buf, n, TR(IMU_RATE_NONE), (double)r->rate_dhz / 10.0);
         }
@@ -550,7 +547,6 @@ static void reset(void)
     memset(&ims, 0, sizeof(ims));
     ims.hit = IMS_HIT_NONE;
     ui_hold_reset(&ims.hold);
-    s_age_ms = 0u;
 }
 
 /** @brief End the press without acting. */
@@ -631,7 +627,7 @@ static void tick(float dt_s)
     if (ims.v.r.valid) {
         const float ms = dt_s * 1000.0f;
         const uint32_t add = (ms > 0.0f && ms < 60000.0f) ? (uint32_t)ms : 0u;
-        s_age_ms = (s_age_ms + add > 99999u) ? 99999u : s_age_ms + add;
+        ims.age_ms = (ims.age_ms + add > 99999u) ? 99999u : ims.age_ms + add;
     }
     if (ims.hold.down || ims.hold.flash_ms > 0) {
         ++ims.hold_rev;        /* the fill follows the hold, on its own */

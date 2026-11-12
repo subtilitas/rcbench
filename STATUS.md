@@ -418,6 +418,16 @@ contact together with an injector contact.
 
 [Screenshot](docs/Screens.md#screenshot).
 
+### Dim after
+
+Built and tested on the host (`shared/ui/screen_dim.c`; `test_screen_dim`):
+SETUP > PANEL's Dim after drops the backlight's PWM duty from 100% to 20% after 5 to
+60min without a touch event, only while the screenshot gate finds the bench idle; a
+frame that does not finds it lit at once. The press that wakes a dim screen reaches no
+screen, except a press on STOP. `firmware/panel/main/panel_render.c` sets the duty with
+`board_backlight_percent()`; not host-tested. Not run on a panel: the dim, the wake,
+the light 20% duty gives. [PANEL: Dim after](docs/Screens.md#panel-dim-after).
+
 ### Motor & ESC (electronic speed controller) screen
 
 Built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the
@@ -721,8 +731,10 @@ screen's lock in `test_supply_screen_home`; an ON the page refuses under a port'
 `supply_link_keep()`, also in `test_supply_keep`), the model switched off whoever holds a
 port, a reading fault the port keeps acted on once while it stands, a failed final commit or
 close of the run log or the automatic test's CSV counted once a run
-(`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED; the one-line
-calls into it in those files are not host-tested.
+(`error_card_close_edge()`), OUTPUT OFF and STOP TEST leaving the bench ARMED. The order
+`panel_supply.c` carries an act out in, the STOP latch first and then one step per field, is
+`error_act_steps()` in `test_error_steps`; the one-line calls into it in those files are not
+host-tested.
 
 The IOmcu switches a PD mini left on off before the rest of its start-up
 (`supply_boot_off()`; the rule `supply_page_boot_owed()` and `pdmini_hurry()` host-tested in
@@ -757,8 +769,10 @@ After the BUY the IOmcu erases the old slot's first sector, and owes the erase u
 holds when it fails or the gate is shut. The panel carries the image when built with
 `RCBENCH_IOMCU_BIN`, checks the IOmcu's build by SHA-256 at link-up and offers the update on
 a question that takes the 2s hold. `test_link_update` runs both ends over the link layer
-against a simulated flash and boot ROM; `test_coproc_update_screen` the question and the
-progress, with CANCEL and the home tag as the only declines and a forced screen over the
+against a simulated flash and boot ROM. Which slot runs, which one the update writes, the
+trial, where a write lands and when a BUY counts are `fw_slots.h` (`test_fw_slots`); the boot
+ROM's calls in `firmware/iomcu/src/update_hw.c` are not host-tested.
+`test_coproc_update_screen` runs the question and the progress, with CANCEL and the home tag as the only declines and a forced screen over the
 question declining nothing; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold
 starts the same update, also after a declined question.
 
@@ -772,7 +786,13 @@ Built; the frame arithmetic, the group code, the reply sampler and the GPIO-to-P
 fold are host-tested. `test_out_dshot` runs the DShot pin driver on a fake of the pico-sdk
 calls it makes: a pin that sends no frames is driven low in both modes, and a bidirectional
 frame never starts from a low line. `test_outputs_hw` holds the 1000µs between the release
-of a bidirectional pin and its first frame. No instrument has been on any output pin.
+of a bidirectional pin and its first frame. The binding order and the rendering are
+`shared/outputs/out_render.c`; `test_out_render` runs it over a log of the pin calls and
+holds the reporting slot (the lowest-numbered bound bidirectional slot), the release of every
+moved slot and port before any bind, the DShot ports let go before a slot on PIO
+(programmable input/output) binds, the SERVO PWM ports on a PWM slot's slice let go right
+before its bind, and the extended-telemetry ask sent in place of stop frames only. No
+instrument has been on any output pin.
 [Reference](docs/DShot.md).
 
 ### S.BUS decoder
@@ -1315,8 +1335,8 @@ rcbench/
 | Module | panel | iomcu | host |
 | --- | :-: | :-: | :-: |
 | `gfx` · `touch` · `ui` · `settings` · `logfile` · `files` · `sbus` | yes | | yes |
-| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` | yes | yes | yes |
-| `artwork` · `esc` · `fwupdate` · `webaccess` · `clock` | yes | | yes |
+| `link` · `bench` · `outputs` · `servo` · `safety` · `can` · `text` · `mstime` · `fwupdate` | yes | yes | yes |
+| `artwork` · `esc` · `webaccess` · `clock` | yes | | yes |
 | `openyge` · `ppm` · `i2c_txq` | | yes | yes |
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
@@ -1341,7 +1361,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | --- | --- | --- |
 | `ci.yml` | push, pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs and wiki-link checks; `check_protocols.py --check`; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (6140 mutants in 79 files) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (6400 mutants in 81 files) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `pages.yml` | pull request and push to `main` touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh`; a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
 
@@ -1355,7 +1375,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 532 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 536 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1393,10 +1413,10 @@ The host suite is 532 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
 `test_art_store`, `test_art_fetch`, `test_outputs`, `test_outputs_hw`,
-`test_outputs_hw_ports`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
+`test_outputs_hw_ports`, `test_out_render`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
-`test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_servo_limit`,
+`test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
 `test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
 `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_brownout`,
@@ -1454,7 +1474,7 @@ The host suite is 532 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
 `test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
-`test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
+`test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
 `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
@@ -1462,7 +1482,7 @@ The host suite is 532 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
-`test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_mstime`, `test_witmotion`,
+`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
@@ -1480,7 +1500,7 @@ feeds the router, one screen or one widget frames of contacts through
 the tracker does not emit. `test/host/tick_wrap.h` runs a case with the clock started at
 tick 0 and again a chosen number of ms before the 32-bit millisecond count wraps at 2^32ms,
 and a failure names the start it happened at. `test_outputs_hw` builds the IOmcu's output
-layer, `firmware/iomcu/src/outputs_hw.c`, over fake pin drivers and the two pico-sdk clocks
+layer, `firmware/iomcu/src/outputs_hw.c` with `shared/outputs/out_render.c`, over fake pin drivers and the two pico-sdk clocks
 in `test/host/pico_stub/pico/stdlib.h`, and holds the age of an ESC's last reading across
 that wrap.
 
@@ -1944,7 +1964,7 @@ known (none listed). `image_slot.py` holds the panel image to the smaller of its
 slots.
 
 `stack_check.py --iomcu` holds each IOmcu core's deepest chain, one interrupt and 256 bytes
-to the core's stack: core 0 reaches 1516 of 4096 with 528 for an interrupt. `stack_check.py`
+to the core's stack: core 0 reaches 1520 of 4096 with 528 for an interrupt. `stack_check.py`
 holds each panel task's deepest chain on the ESP32-P4, decoded from its RISC-V code, and
 1024 bytes to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py` holds 27
 modes to ceilings of L2 fills under the P4's caches; the bench frame has no ceiling while
@@ -1991,7 +2011,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
-| `shared/ui/overview_screen.c` | 147 | 142 | 96.6% |
+| `shared/ui/overview_screen.c` | 149 | 144 | 96.6% |
 | `shared/ui/motor_screen.c` | 289 | 282 | 97.6% |
 | `shared/ui/motor_events.c` | 217 | 213 | 98.2% |
 | `shared/ui/motor_draw.c` | 382 | 370 | 96.9% |
@@ -2013,6 +2033,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
 | `shared/ui/shot_gate.c` | 59 | 59 | 100.0% |
+| `shared/ui/screen_dim.c` | 52 | 52 | 100.0% |
 | `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
 | `shared/ui/stop_hold.c` | 45 | 45 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
@@ -2048,15 +2069,15 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
 | `shared/ui/servo_run_supply.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_angle_pick.c` | 260 | 252 | 96.9% |
-| `shared/ui/kst_panel.c` | 460 | 449 | 97.6% |
+| `shared/ui/kst_panel.c` | 462 | 451 | 97.6% |
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
 | `shared/ui/kst_panel_edit.c` | 387 | 378 | 97.7% |
 | `shared/ui/kst_panel_touch.c` | 295 | 288 | 97.6% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
 | `shared/ui/kst_panel_draw.c` | 563 | 561 | 99.6% |
-| `shared/ui/esc_wire_panel.c` | 573 | 544 | 94.9% |
-| `shared/ui/hitec_panel.c` | 271 | 267 | 98.5% |
+| `shared/ui/esc_wire_panel.c` | 575 | 546 | 95.0% |
+| `shared/ui/hitec_panel.c` | 273 | 269 | 98.5% |
 | `shared/ui/hitec_panel_text.c` | 508 | 503 | 99.0% |
 | `shared/ui/hitec_panel_edit.c` | 401 | 398 | 99.2% |
 | `shared/ui/hitec_panel_page.c` | 235 | 235 | 100.0% |
@@ -2090,7 +2111,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
-| `shared/ui/settings_screen.c` | 281 | 273 | 97.2% |
+| `shared/ui/settings_screen.c` | 285 | 277 | 97.2% |
 | `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
 | `shared/ui/ui_setlist.c` | 625 | 609 | 97.4% |
@@ -2098,13 +2119,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 109 | 109 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
-| `shared/ui/outputs_screen.c` | 561 | 556 | 99.1% |
+| `shared/ui/outputs_screen.c` | 560 | 555 | 99.1% |
 | `shared/ui/outputs_view.c` | 58 | 58 | 100.0% |
-| `shared/ui/outputs_port.c` | 198 | 196 | 99.0% |
+| `shared/ui/outputs_port.c` | 199 | 197 | 99.0% |
 | `shared/ui/outputs_port_entry.c` | 410 | 403 | 98.3% |
 | `shared/ui/port_view.c` | 97 | 97 | 100.0% |
 | `shared/ui/port_mail.c` | 103 | 103 | 100.0% |
-| `shared/ui/picker_screen.c` | 324 | 320 | 98.8% |
+| `shared/ui/picker_screen.c` | 326 | 322 | 98.8% |
 | `shared/ui/picker_geometry.c` | 155 | 151 | 97.4% |
 | `shared/ui/picker_draw.c` | 328 | 326 | 99.4% |
 | `shared/ui/picker_cat.c` | 94 | 93 | 98.9% |
@@ -2150,15 +2171,15 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/files/png_enc.c` | 217 | 217 | 100.0% |
 | `shared/files/shot_file.c` | 133 | 133 | 100.0% |
 | `shared/safety/heartbeat.c` | 56 | 56 | 100.0% |
-| `shared/safety/arming.c` | 259 | 254 | 98.1% |
+| `shared/safety/arming.c` | 273 | 268 | 98.2% |
 | `shared/safety/safety_gate.c` | 69 | 69 | 100.0% |
 | `shared/safety/flash_gate.c` | 4 | 4 | 100.0% |
 | `shared/safety/reset_cause.c` | 61 | 61 | 100.0% |
 | `shared/safety/boot_diag.c` | 34 | 34 | 100.0% |
-| `shared/safety/touch_loss.c` | 52 | 52 | 100.0% |
+| `shared/safety/touch_loss.c` | 89 | 89 | 100.0% |
 | `shared/safety/frame_watch.c` | 21 | 21 | 100.0% |
 | `shared/safety/error_stop.c` | 14 | 14 | 100.0% |
-| `shared/safety/error_sites.c` | 69 | 69 | 100.0% |
+| `shared/safety/error_sites.c` | 87 | 87 | 100.0% |
 | `shared/safety/prog5v_lost.c` | 110 | 110 | 100.0% |
 | `shared/safety/stop_latch.c` | 145 | 143 | 98.6% |
 | `shared/servo/servo_limit.c` | 141 | 135 | 95.7% |
@@ -2256,7 +2277,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/kst_prog.c` | 1390 | 1367 | 98.3% |
 | `shared/bench/kst_prog_card.c` | 313 | 306 | 97.8% |
 | `shared/bench/kst_prog_file.c` | 150 | 146 | 97.3% |
-| `shared/bench/kst_card.c` | 137 | 133 | 97.1% |
+| `shared/bench/kst_card.c` | 139 | 135 | 97.1% |
 | `shared/bench/prog_link.c` | 297 | 297 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 147 | 137 | 93.2% |
@@ -2292,7 +2313,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
 | `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
-| `shared/outputs/servo_link.c` | 561 | 528 | 94.1% |
+| `shared/outputs/servo_link.c` | 563 | 530 | 94.1% |
 | `shared/outputs/sense_page.c` | 514 | 514 | 100.0% |
 | `shared/outputs/sense_map.c` | 197 | 196 | 99.5% |
 | `shared/outputs/sense_limit.c` | 36 | 36 | 100.0% |
@@ -2587,8 +2608,8 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 
 ### IOmcu core 0's stack
 
-`stack_check.py --iomcu` measures 1516 bytes for the deepest chain and 528 for one interrupt
-on the 4096-byte stack, 1796 bytes above the 256-byte margin. The figures are those of the
+`stack_check.py --iomcu` measures 1520 bytes for the deepest chain and 528 for one interrupt
+on the 4096-byte stack, 1792 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
 holds them. The depth is a lower bound: 251 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
@@ -2672,7 +2693,11 @@ core that does not draw. Nothing exercises it deliberately: its files, `main.c`,
 `panel_art.c` and `panel_update.c` (the IOmcu's update), are not in the host suite. The
 `runlog` task beside it (`panel_log.c`), which owns every write to the card, is in the same
 position. The rules it drives are in `shared/safety/arming.c` under `test_arming`, the link-loss
-stop and the wait for the far end's word on the heartbeat included.
+stop, the wait for the far end's word on the heartbeat and the 300ms after which a disarm
+nobody takes ends its request, or the end of that pass's disarm exchange (up to 1000ms) if later
+(`disarm_hold_ends()`), included. The numbering and the eviction of the render
+loop's touch queue are `touch_put_begin()` and `touch_put_next()` in
+`shared/safety/touch_loss.c`, under `test_touch_loss`.
 
 **Next evidence or work:** a session with both boards: press ARM, drag the throttle while the screen is busy, press
 STOP, unplug the link, and confirm the heartbeat's period on a scope at the panel's

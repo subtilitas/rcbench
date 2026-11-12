@@ -282,6 +282,14 @@ typedef enum {
     FS_MSG_ERR            /**< a refusal or a failure: msg_err         */
 } fs_msg_kind_t;
 
+/** @brief A pane's request waiting for the card's task. */
+typedef enum {
+    NEED_NONE = 0,
+    NEED_PAGE,    /**< a page: need_go                  */
+    NEED_UP,      /**< the folder above                 */
+    NEED_ENTER    /**< the folder on the selected row   */
+} need_t;
+
 /** @brief The screen's state. */
 typedef struct {
     files_io_t io;            /**< the card's task                       */
@@ -297,6 +305,7 @@ typedef struct {
     unsigned mount;           /**< the card the panes are of; 0 none yet */
 
     /* The listings waiting for the card's task, one per pane. */
+    need_t need_kind[2];      /**< what each pane waits for              */
     bool need[2];             /**< a page of the pane is to be read      */
     fm_go_t need_go[2];       /**< which page                            */
     bool need_look;           /**< the next one looks at the slot first  */

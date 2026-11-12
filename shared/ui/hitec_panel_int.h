@@ -138,6 +138,9 @@ enum { KP_NONE = 0, KP_VOLTAGE, KP_CURRENT, KP_VALUE };
 /** @brief The overlay's state. */
 typedef struct {
     hitec_prog_t prog;          /**< the programmer                       */
+    /** @brief The gate hitec_panel_gate() sets; hitec_panel_init() keeps
+     *         it, so a start of the screens leaves it */
+    hitec_prog_gate_t *gate;
     gfx_rect_t   area;          /**< the overlay's area, body pixels      */
     bool         open;          /**< the overlay is shown                 */
     bool         loaded;        /**< the options were read                */

@@ -576,30 +576,36 @@ void svs_reset(void)
 /* The run is servo_test_panel.c.  What both runs and the screen use stays
  * here: the panel told whether a run is under way, and DISARM asked. */
 
-/*
- * Whether a run is under way, told to the panel where it changes
- * (servo_screen_on_testing()): after every call that can start or end the
- * engine's run.  Kept outside the screen's state, which a reset clears.
+/**
+ * @brief Whether a run is under way, told to the panel where it changes
+ *        (servo_screen_on_testing()): after every call that can start or end
+ *        the engine's run.  Kept outside the screen's state, which a reset
+ *        clears.
  */
-static void (*s_testing_told)(bool running);
-static bool s_testing_last;
+typedef struct {
+    void (*told)(bool running); /**< servo_screen_on_testing()'s, or NULL */
+    bool last;                  /**< what it was told last               */
+} testing_tell_t;
+
+/** @brief The one instance. */
+static testing_tell_t s_tell;
 
 void test_tell(void)
 {
     const bool running = servo_test_running(&s.test)
                          || servo_limrun_running(&s.lim)
                          || servo_rauto_running(&s.ra.run);
-    if (running != s_testing_last) {
-        s_testing_last = running;
-        if (s_testing_told != NULL) {
-            s_testing_told(running);
+    if (running != s_tell.last) {
+        s_tell.last = running;
+        if (s_tell.told != NULL) {
+            s_tell.told(running);
         }
     }
 }
 
 void servo_screen_on_testing(void (*told)(bool running))
 {
-    s_testing_told = told;
+    s_tell.told = told;
 }
 
 /*

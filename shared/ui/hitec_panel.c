@@ -134,9 +134,6 @@ static const ui_text_id_t k_tabs[HITEC_PANEL_PAGES] = {
 /* The state, its type in hitec_panel_int.h. */
 hpn_state_t hitec_panel_h;
 
-/** @brief Not part of hp: a start of the screens leaves it. */
-static hitec_prog_gate_t *s_gate;
-
 /* ------------------------------------------------------------------- rows */
 
 bool hpn_row_shown(const hpn_row_t *r)
@@ -440,15 +437,18 @@ const char *hitec_panel_page_line(int i)
 
 void hitec_panel_gate(hitec_prog_gate_t *g)
 {
-    s_gate = g;
+    hp.gate = g;
     hitec_prog_gate_set(&hp.prog, g);
 }
 
 void hitec_panel_init(gfx_rect_t area)
 {
+    hitec_prog_gate_t *const gate = hp.gate;
+
     memset(&hp, 0, sizeof(hp));
+    hp.gate = gate;
     hitec_prog_init(&hp.prog);
-    hitec_prog_gate_set(&hp.prog, s_gate);
+    hitec_prog_gate_set(&hp.prog, hp.gate);
     hp.area = area;
     ui_tabs_init_text(&hp.tabs, k_tabs, HITEC_PANEL_PAGES, hpn_tabs_rect());
     hp.kp.pressed = -1;

@@ -14,38 +14,41 @@ _Static_assert(UI_CAT_POSES >= 1 && UI_CAT_POSES <= 32,
                "a pick counts the poses in a 32-bit mask");
 _Static_assert(UI_CAT_SPOTS <= 32, "a pose's spots are a 32-bit mask");
 
-/** @brief The source ui_cats_roll() reads; NULL for the xorshift. */
-static ui_cats_random_fn s_random;
-/** @brief The xorshift's state, never 0. */
-static uint32_t s_state = 1u;
-/** @brief The pose ui_cats_force() set, UI_CAT_RANDOM by default. */
-static int s_forced = UI_CAT_RANDOM;
+/** @brief The cats' source and pose, one instance per image. */
+typedef struct {
+    ui_cats_random_fn random; /**< the source ui_cats_roll() reads; NULL for the xorshift */
+    uint32_t          state;  /**< the xorshift's state, never 0 */
+    int               forced; /**< the pose ui_cats_force() set, UI_CAT_RANDOM by default */
+} cats_state_t;
 
-void ui_cats_set_random(ui_cats_random_fn fn) { s_random = fn; }
+/** @brief The cats' one instance. */
+static cats_state_t cats = { .state = 1u, .forced = UI_CAT_RANDOM };
 
-void ui_cats_seed(uint32_t seed) { s_state = (seed != 0u) ? seed : 1u; }
+void ui_cats_set_random(ui_cats_random_fn fn) { cats.random = fn; }
+
+void ui_cats_seed(uint32_t seed) { cats.state = (seed != 0u) ? seed : 1u; }
 
 uint32_t ui_cats_roll(void)
 {
-    if (s_random != NULL) {
-        return s_random();
+    if (cats.random != NULL) {
+        return cats.random();
     }
     /* Marsaglia's xorshift32: period 2^32 - 1 over the nonzero states. */
-    uint32_t v = s_state;
+    uint32_t v = cats.state;
     v ^= v << 13;
     v ^= v >> 17;
     v ^= v << 5;
-    s_state = v;
+    cats.state = v;
     return v;
 }
 
 void ui_cats_force(int pose)
 {
-    s_forced = (pose == UI_CAT_RANDOM || (pose >= 0 && pose < UI_CAT_POSES))
+    cats.forced = (pose == UI_CAT_RANDOM || (pose >= 0 && pose < UI_CAT_POSES))
                    ? pose : UI_CAT_NONE;
 }
 
-int ui_cats_forced(void) { return s_forced; }
+int ui_cats_forced(void) { return cats.forced; }
 
 gfx_rect_t ui_cat_rect(int pose, const ui_cat_spot_t *spot)
 {
@@ -115,13 +118,13 @@ ui_cat_pick_t ui_cats_pick(const ui_cat_spot_t *spots, int n,
                            ui_cat_clear_fn clear, uint32_t roll)
 {
     if (spots == NULL || clear == NULL || n <= 0 || n > 32
-        || s_forced == UI_CAT_NONE) {
+        || cats.forced == UI_CAT_NONE) {
         return UI_CAT_PICK_NONE;
     }
     uint32_t fit[UI_CAT_POSES];
     uint32_t poses = 0u;
     for (int p = 0; p < UI_CAT_POSES; ++p) {
-        fit[p] = (s_forced == UI_CAT_RANDOM || s_forced == p)
+        fit[p] = (cats.forced == UI_CAT_RANDOM || cats.forced == p)
                      ? clear_spots(p, spots, n, clear) : 0u;
         if (fit[p] != 0u) {
             poses |= (uint32_t)1u << (unsigned)p;

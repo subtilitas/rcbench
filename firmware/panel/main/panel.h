@@ -59,6 +59,7 @@
 #include "prog5v_lost.h"
 #include "prog_supply_link.h"
 #include "safety_gate.h"
+#include "shot_gate.h"
 #include "sense_link.h"
 #include "sense_map_link.h"
 #include "servo_link.h"
@@ -1298,7 +1299,9 @@ extern atomic_bool s_supply_real;
  * touch_loss.h. */
 extern atomic_uint s_drv_gaps;
 extern atomic_uint s_tq_published;
-extern uint32_t    s_lost_notice_seq;
+/** @brief s_touch_q's producer: the numbers offered and the last loss
+ *         notice's (touch_loss.h); the control task's alone. */
+extern touch_seq_tx_t s_tq_tx;
 extern atomic_uint s_loss_gen;
 extern atomic_uint s_arm_ack;
 /** @brief The render loop's progress, for the control task's watchdog; see
@@ -1522,7 +1525,13 @@ typedef struct {
 knob_turn_t knob_take(void);
 void knob_apply(const knob_turn_t *turn, bool frame_lost);
 void flush_screen_commands(uint32_t stops_now);
-bool drain_touch(uint32_t stops_now);
+bool drain_touch(uint32_t stops_now, const shot_facts_t *facts);
+/**
+ * @brief Once a frame, after the frame's touch: the backlight at the duty
+ *        Dim after gives (screen_dim_step()), set only when it changes.
+ * @param facts  this frame's facts of the screenshot gate (panel_shot_frame())
+ */
+void backlight_service(const shot_facts_t *facts);
 void outputs_apply(const outbind_t *b);
 
 /* ------------------------------------------------------------- panel_art.c */
