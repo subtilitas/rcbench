@@ -379,7 +379,8 @@ static void cu_checked(void)
                  (unsigned)RCBENCH_VERSION_MINOR,
                  (unsigned)RCBENCH_VERSION_PATCH);
         cu_enter(CU_OFFERED);
-        control_alert(TR(ALERT_CU_OFFER));
+        /* The band line is the frame's (coproc_update_drive()): it names
+         * what the question waits for, which this task does not know. */
         cu_publish_offer(true);
         break;
     case LINK_UPH_TRIAL:

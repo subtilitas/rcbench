@@ -10,6 +10,7 @@
  * - a_profile_the_engine_cannot_run_goes_no_further
  * - no_run_starts_while_the_servo_programmer_holds_a_port
  * - no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply
+ * - the_first_standing_refusal_shows_before_a_profile
  * - a_bench_that_loses_its_throttle_closes_the_warning
  * - a_run_needs_a_change_and_the_warning_held_two_seconds
  * - a_hold_that_is_interrupted_starts_nothing
@@ -158,6 +159,74 @@ TEST_CASE(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply)
             supply_screen_set_model(false);
         }
     }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/** @brief Pixels of the warning colour in the maker list's header, between
+ *         the trail and the search field. */
+static int header_warn(void)
+{
+    memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
+    scr->render(&cv, 0);
+    int n = 0;
+    for (int y = ST_CRUMB_CY - 12; y < ST_CRUMB_CY + 12; ++y) {
+        for (int x = 300; x < ST_FIND_X - 140; ++x) {
+            n += fb[(size_t)y * W + x] == ui_theme_color(UI_C_WARN);
+        }
+    }
+    return n;
+}
+
+/*
+ * The first refusal that stands against every run is named before a
+ * profile is picked: as a tag in the order RUN's note names them, on the
+ * ESC STICK row of MOTOR & ESC > PROGRAM in the warning colour, the row
+ * still live, and in the maker list's header.  Put right, none is named.
+ */
+TEST_CASE(the_first_standing_refusal_shows_before_a_profile)
+{
+    size_t n = 0;
+    const prog_reg_row_t *rows = prog_registry(&n);
+    size_t row = n;
+    for (size_t i = 0; i < n; ++i) {
+        if (rows[i].page_set == &esc_stick_pages) {
+            row = i;
+        }
+    }
+    CHECK(row < n);
+    char tag[48];
+
+    for (int lang = 0; lang < UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        open_stick();
+        supply_screen_set_model(true);
+        esc_stick_panel_set_throttle(false, 0x00u);
+        CHECK_STR_EQ(esc_stick_panel_bench_tag(), TR(SP_TAG_SUPPLY_MODEL));
+        CHECK(prog_reg_warning(rows, n, row, 0u, tag, sizeof(tag)));
+        CHECK_STR_EQ(tag, TR(SP_TAG_SUPPLY_MODEL));
+        CHECK_EQ(prog_reg_state(rows, n, row, 0u), PROG_ROW_LIVE);
+        scr->tick(0.02f);
+        CHECK(header_warn() > 50);
+        supply_screen_set_model(false);
+        CHECK_STR_EQ(esc_stick_panel_bench_tag(), TR(SP_TAG_BIND_NOT_READ));
+        esc_stick_panel_set_throttle(true, 0x00u);
+        CHECK_STR_EQ(esc_stick_panel_bench_tag(), TR(SP_TAG_NO_THROTTLE));
+        esc_stick_panel_set_throttle(true, 0x01u);
+        CHECK_STR_EQ(esc_stick_panel_bench_tag(), TR(SP_TAG_NO_SOURCE));
+        supply_reads_off();      /* a window of the INA3221: a beep source */
+        CHECK(esc_stick_panel_bench_tag() == NULL);
+        CHECK(!prog_reg_warning(rows, n, row, 0u, tag, sizeof(tag)));
+        CHECK_STR_EQ(tag, "");
+        CHECK_EQ(header_warn(), 0);
+    }
+    /* No other row carries the warning. */
+    supply_screen_set_model(true);
+    for (size_t i = 0; i < n; ++i) {
+        CHECK_EQ(prog_reg_warning(rows, n, i, 0xFFFFu, tag, sizeof(tag)),
+                 i == row);
+    }
+    supply_screen_set_model(false);
     ui_text_set_language(UI_LANG_EN);
 }
 
@@ -503,6 +572,7 @@ int main(void)
     RUN(a_profile_the_engine_cannot_run_goes_no_further);
     RUN(no_run_starts_while_the_servo_programmer_holds_a_port);
     RUN(no_run_starts_without_a_throttle_pin_a_read_binding_or_a_supply);
+    RUN(the_first_standing_refusal_shows_before_a_profile);
     RUN(a_bench_that_loses_its_throttle_closes_the_warning);
     RUN(a_run_needs_a_change_and_the_warning_held_two_seconds);
     RUN(a_hold_that_is_interrupted_starts_nothing);

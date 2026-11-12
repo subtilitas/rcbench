@@ -1333,7 +1333,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 
 | Workflow | Trigger | What it does |
 | --- | --- | --- |
-| `ci.yml` | push, pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check` and the Codecov upload, which fails the job when it fails; the font, screenshot, fit, translated-format, docs and wiki-link checks; `check_protocols.py --check`; clang-tidy and cppcheck over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
+| `ci.yml` | push, pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs and wiki-link checks; `check_protocols.py --check`; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
 | `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (6140 mutants in 79 files) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
@@ -1930,14 +1930,14 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 928 committed screenshots to the current render,
-464 in English and the same 464 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 930 committed screenshots to the current render,
+465 in English and the same 465 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
 
 `stack_check.py --iomcu` holds each IOmcu core's deepest chain, one interrupt and 256 bytes
-to the core's stack: core 0 reaches 1508 of 4096 with 528 for an interrupt. `stack_check.py`
+to the core's stack: core 0 reaches 1516 of 4096 with 528 for an interrupt. `stack_check.py`
 holds each panel task's deepest chain on the ESP32-P4, decoded from its RISC-V code, and
 1024 bytes to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py` holds 27
 modes to ceilings of L2 fills under the P4's caches; the bench frame has no ceiling while
@@ -1966,7 +1966,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
 | `shared/ui/ui_widgets.c` | 409 | 401 | 98.0% |
 | `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
-| `shared/ui/ui_band.c` | 357 | 344 | 96.4% |
+| `shared/ui/ui_band.c` | 385 | 372 | 96.6% |
 | `shared/ui/ui_help.c` | 259 | 249 | 96.1% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
 | `shared/ui/help_setup.c` | 85 | 81 | 95.3% |
@@ -1978,7 +1978,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_tabs.c` | 97 | 89 | 91.8% |
 | `shared/ui/ui_workbench.c` | 65 | 65 | 100.0% |
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
-| `shared/ui/prog_registry.c` | 423 | 422 | 99.8% |
+| `shared/ui/prog_registry.c` | 438 | 436 | 99.5% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
 | `shared/ui/ui_router.c` | 651 | 640 | 98.3% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
@@ -1990,7 +1990,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/motor_draw.c` | 382 | 370 | 96.9% |
 | `shared/ui/motor_workbench.c` | 172 | 165 | 95.9% |
 | `shared/ui/motor_settings_page.c` | 87 | 87 | 100.0% |
-| `shared/ui/motor_program_page.c` | 174 | 169 | 97.1% |
+| `shared/ui/motor_program_page.c` | 177 | 172 | 97.2% |
 | `shared/ui/motor_logname.c` | 191 | 185 | 96.9% |
 | `shared/ui/supply_screen.c` | 524 | 515 | 98.3% |
 | `shared/ui/supply_events.c` | 323 | 321 | 99.4% |
@@ -2061,11 +2061,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/balance_screen.c` | 383 | 383 | 100.0% |
 | `shared/ui/battery_screen.c` | 223 | 218 | 97.8% |
 | `shared/ui/esc_stick_pages.c` | 117 | 112 | 95.7% |
-| `shared/ui/esc_stick_panel.c` | 574 | 554 | 96.5% |
+| `shared/ui/esc_stick_panel.c` | 595 | 575 | 96.6% |
 | `shared/ui/esc_stick_list.c` | 299 | 286 | 95.7% |
 | `shared/ui/esc_stick_touch.c` | 301 | 297 | 98.7% |
 | `shared/ui/esc_stick_settings.c` | 71 | 69 | 97.2% |
-| `shared/ui/esc_stick_draw.c` | 439 | 420 | 95.7% |
+| `shared/ui/esc_stick_draw.c` | 446 | 427 | 95.7% |
 | `shared/ui/esc_stick_draw_run.c` | 595 | 547 | 91.9% |
 | `shared/ui/log_viewer_screen.c` | 325 | 316 | 97.2% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
@@ -2102,12 +2102,12 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_cats.c` | 65 | 64 | 98.5% |
 | `shared/ui/picker_port.c` | 116 | 109 | 94.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
-| `shared/ui/busfault_screen.c` | 425 | 424 | 99.8% |
+| `shared/ui/busfault_screen.c` | 453 | 452 | 99.8% |
 | `shared/ui/wifi_screen.c` | 622 | 615 | 98.9% |
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
-| `shared/ui/coproc_update_screen.c` | 276 | 276 | 100.0% |
+| `shared/ui/coproc_update_screen.c` | 302 | 302 | 100.0% |
 | `shared/ui/upd_screen.c` | 661 | 635 | 96.1% |
 | `shared/ui/upd_settings.c` | 43 | 38 | 88.4% |
 | `shared/ui/upd_c6.c` | 115 | 113 | 98.3% |
@@ -2346,7 +2346,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **90049** | **88213** | **98.0%** |
+| **total** | **90177** | **88340** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -2402,20 +2402,6 @@ two orders of magnitude below 19ms on serial NOR flash, or roughly 200 to 2,000u
 
 **Next evidence or work:** a board: the page program and erase windows from the console lines, the overrun count across
 sixteen saves, the heartbeat after a window, and a power cut mid-save.
-
-### A held programming port is named on SERVO and SUPPLY only
-
-The rule is in [CONTRIBUTING.md](CONTRIBUTING.md#the-active-output). SERVO names its target on
-every function screen and under the pages, their keypads and the programmers (the PORT
-button and the footer's port line, `PROG PORT n GPIO m`). MOTOR & ESC names its throttle pins. The KST and Hitec programmers and the ESC wire
-screens name their port and pin. ARM names the roles it drives
-([Safety](docs/Safety.md#deliberate-behaviours)). One case does not meet the rule. Leaving SERVO
-while a programmer holds a port leaves the output SERVO switched on running
-([Screens, SERVO](docs/Screens.md#servo)). On the rbmod carrier the PROG 5V box on SUPPLY then
-reads `HELD BY PROG PORT n`. The status band and every other screen do not name the held port.
-On SERVO the PORT button, the port line and KST's and HITEC's PORT row name it.
-
-**Next evidence or work:** the held port named in the status band.
 
 ### Betaflight logs are listed nowhere
 
@@ -2591,8 +2577,8 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 
 ### IOmcu core 0's stack
 
-`stack_check.py --iomcu` measures 1508 bytes for the deepest chain and 528 for one interrupt
-on the 4096-byte stack, 1804 bytes above the 256-byte margin. The figures are those of the
+`stack_check.py --iomcu` measures 1516 bytes for the deepest chain and 528 for one interrupt
+on the 4096-byte stack, 1796 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
 holds them. The depth is a lower bound: 251 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image

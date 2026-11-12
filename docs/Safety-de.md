@@ -624,9 +624,12 @@ des IOmcu braucht fünf Flanken, bevor er der Leitung vertraut: 100 bis
 einmal je Durchlauf das Fault-Register von STATUS, bis das Heartbeat-Bit
 gelöscht ist, und schreibt erst dann CLEAR und den Frame, der auf ARMED schaltet. Ist
 das Bit 300ms nach dem vollendeten Halten nicht gelöscht, gibt das Panel
-das Schalten auf ARMED mit `Der IOmcu hat den Wechsel zu ARMED abgelehnt.` auf und schreibt nichts, der
+das Schalten auf ARMED auf und schreibt nichts, der
 Latch des IOmcu bleibt also gesetzt. Eine Antwort, die später als
 diese 300ms zurückkommt, wird nicht verwendet, was immer sie sagt.
+
+Der Alarm nennt die Ursache aus den Fehlerbits des IOmcu zum Zeitpunkt der
+Ablehnung ([Bildschirme, Ein ARM, das der IOmcu ablehnt](Screens-de.md#ein-arm-das-der-iomcu-ablehnt)).
 
 Dieselben 300ms gelten durch die Schreibvorgänge, die folgen. Das Panel
 fragt die Frist vor dem CLEAR und vor dem Frame, der auf ARMED schaltet, erneut ab,
@@ -1178,6 +1181,8 @@ Die Regel:
   damit das Servo. Die eigene Stromgrenze des PD mini ist die feste
   Obergrenze. Die festen 5V des rbmod-Carriers haben keinen Strommesswert:
   dort wird SERVO BEWEGEN abgelehnt.
+- Der Arm-Chip des Bands zeigt auf jeder Seite bernsteinfarben `SAFE MOVE`,
+  solange SERVO BEWEGEN läuft, `SAFE PROG n` bei belegtem Port (`ui_band_safe_drives()`).
 - ANSCHLAG SUCHEN läuft in der Schleife von SERVO BEWEGEN und mit dessen
   Zustimmung: es fährt das Ruderhorn von der Neutralstellung nach außen,
   37 Zählwerte alle 2 Durchläufe, bis eine Beurteilung blockiert, bis zum

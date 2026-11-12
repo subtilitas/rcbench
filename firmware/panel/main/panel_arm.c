@@ -33,11 +33,13 @@
 #include "sense_link.h"
 #include "servo_link.h"
 #include "servo_source.h"
+#include "settings.h"
 #include "supply.h"
 #include "supply_link.h"
 #include "telemetry_sim.h"
 #include "tone_link.h"
 #include "touch_loss.h"
+#include "ui_band.h"
 #include "ui_text.h"
 
 static uint16_t pct_to_span(float pct)
@@ -244,6 +246,30 @@ static void service_disarm(bool link_up)
     }
 }
 
+/** @brief The fault bitmap of the newest answer to the line question of the
+ *         arm under way (far_line_trusted()).  Control task only. */
+static uint16_t s_line_faults;
+/** @brief The arm under way has had an answer to its line question. */
+static bool s_line_known;
+
+/**
+ * @brief The alert for an arm the IOmcu refused or never came to trust
+ *        the line for (ui_band_arm_refused()): the bitmap the band shows,
+ *        its heartbeat bit taken from the arm's own line answer where it
+ *        had one, which is newer than the 500ms STATUS read.
+ * @return The alert, in the language showing.
+ */
+static const char *arm_refused_alert(void)
+{
+    uint16_t faults = far_end_faults_shown();
+    if (s_line_known) {
+        faults = (uint16_t)((faults & ~(uint16_t)LINK_FAULT_HEARTBEAT)
+                            | (s_line_faults
+                               & (uint16_t)LINK_FAULT_HEARTBEAT));
+    }
+    return ui_tr(ui_band_arm_refused(faults, settings_get_bool(SET_HW_STOP)));
+}
+
 /**
  * @brief The latched stop and the act the arming policy asks for, once a
  *        pass of the control task: the router's backstop STOP unless the
@@ -307,8 +333,11 @@ void service_arming(bool link_up)
         arming_line_nobody(&s_arm);
     } else if (arming_line_wanted(&s_arm, now_ms())) {
         bool answered = true;
-        const bool trusted = far_line_trusted(&answered);
+        uint16_t bits = 0u;
+        const bool trusted = far_line_trusted(&answered, &bits);
         if (answered) {
+            s_line_faults = bits;
+            s_line_known  = true;
             arming_line_report(&s_arm, trusted);
         } else if (arming_link_lost(&s_arm, outputs_armed(&s_out))) {
             far_end_stop_here();
@@ -316,7 +345,8 @@ void service_arming(bool link_up)
     }
 
     const bool was_touch_dead = arming_touch_dead(&s_arm, now_ms());
-    switch (arming_step(&s_arm, now_ms())) {
+    const arming_action_t act = arming_step(&s_arm, now_ms());
+    switch (act) {
     case ARMING_ACT_DISARM:
         outputs_arm(&s_out, false, now_ms());
         throttle_to_zero();
@@ -418,7 +448,7 @@ void service_arming(bool link_up)
             break;
         case ARMING_HS_CLOSED:
             /* Past the arm's deadline before CLEAR; see below. */
-            control_alert(TR(ALERT_ARM_REFUSED));
+            control_alert(arm_refused_alert());
             break;
         case ARMING_HS_GO: {
             /*
@@ -449,7 +479,7 @@ void service_arming(bool link_up)
              * limit: acknowledged late, it has armed the far end, at rest.
              */
             if (!control_clear_failsafe(&ack)) {
-                arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
+                arm_write_failed(quiet, arm_refused_alert());
                 break;
             }
             facts.disarm_asked   = atomic_load(&s_disarm_request);
@@ -468,11 +498,11 @@ void service_arming(bool link_up)
                 break;
             }
             if (cleared != ARMING_HS_GO) {
-                control_alert(TR(ALERT_ARM_REFUSED));
+                control_alert(arm_refused_alert());
                 break;
             }
             if (!control_arm(&ack)) {
-                arm_write_failed(quiet, TR(ALERT_ARM_REFUSED));
+                arm_write_failed(quiet, arm_refused_alert());
                 break;
             }
             /*
@@ -511,10 +541,15 @@ void service_arming(bool link_up)
     case ARMING_ACT_GIVE_UP:
         /* The far end did not come to trust the line inside the bound.
          * Nothing was written, CLEAR included, so its arm latch stands. */
-        control_alert(TR(ALERT_ARM_REFUSED));
+        control_alert(arm_refused_alert());
         break;
     default:
         break;
+    }
+    if (act == ARMING_ACT_ARM || act == ARMING_ACT_GIVE_UP) {
+        /* The arm is decided: the next one asks about the line afresh. */
+        s_line_known  = false;
+        s_line_faults = 0u;
     }
 }
 
@@ -652,7 +687,7 @@ static void apply_clear_cmd(const panel_cmd_t *pc, bool link_up)
         return;
     }
     bool answered = false;
-    const bool trusted = far_line_trusted(&answered);
+    const bool trusted = far_line_trusted(&answered, NULL);
     /* The STATUS exchange can wait up to LINK_HOST_TIMEOUT_MS (1000ms) and
      * the pump inside it applies a STOP: asked again before the write, as
      * ARM's handshake asks before each of its writes. */
