@@ -44,7 +44,7 @@ import wave
 RATE = 44100
 BAR_S = 8.0
 BEAT_S = 0.5
-LEVEL = 0.5
+LEVEL = 0.7
 PRELUDE = (
     (60, 64, 67, 72, 76), (60, 62, 69, 74, 77), (59, 62, 67, 74, 77),
     (60, 64, 67, 72, 76), (60, 64, 69, 76, 81), (60, 62, 66, 69, 74),
@@ -148,12 +148,15 @@ def events(board: dict) -> list:
     return sorted(f for f in found if f[0] >= 0)
 
 
-def render(board: dict, path: pathlib.Path) -> float:
+def render(board: dict, path: pathlib.Path, clips=()) -> float:
     """Write the track as a 16-bit stereo WAV file.
 
     Args:
         board: A storyboard that passed make_video.check().
         path: The file to write.
+        clips: The narration from video_voice.narrate(): (seconds, mono
+            samples at RATE) per line.  The bed is lowered by 11dB under
+            a line and by 4dB throughout.
 
     Returns:
         The track's length in seconds.
@@ -330,6 +333,23 @@ def render(board: dict, path: pathlib.Path) -> float:
                            size)[: music.shape[1]]
         out[ch] = music[ch] + fx[ch] + 0.33 * wet
     out = out[:, :n]
+    if len(clips):
+        voice = np.zeros(n + RATE)
+        for at, clip in clips:
+            i = int(at * RATE)
+            voice[i:i + len(clip)] += clip[: len(voice) - i]
+        voice = voice[:n]
+        # Where a line is, widened by 0.3s and smoothed over 0.4s.
+        there = (np.abs(voice) > 0.02).astype(float)
+        wide = int(0.3 * RATE)
+        csum = np.cumsum(np.concatenate(([0.0], there)))
+        idx = np.arange(n)
+        there = (csum[np.minimum(n, idx + wide)]
+                 - csum[np.maximum(0, idx - wide)]) > 0
+        win = np.hanning(int(0.4 * RATE))
+        duck = np.convolve(there.astype(float), win / win.sum(), "same")
+        out *= 0.63 * (1.0 - 0.72 * duck)
+        out += 0.9 * voice * float(np.max(np.abs(out)) / 0.20)
     t = np.arange(n) / RATE
     out *= np.minimum(1.0, t / 1.5) * np.clip((total - t) / 3.5, 0.0, 1.0)
     # The level: the loudest sample at LEVEL of full scale, no limiter.

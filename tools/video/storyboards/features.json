@@ -8,7 +8,7 @@
   "Motor & ESC",
   "Servo",
   "Supply",
-  "Receiver & pack",
+  "Receiver & battery",
   "Logs & files",
   "Wi-Fi & updates",
   "Setup"
@@ -16,27 +16,27 @@
  "scenes": [
   {
    "type": "case",
-   "dur": 27,
+   "dur": 35.5,
    "display": {
     "view": "overview"
    },
    "title": {
     "from": 0.3,
-    "to": 5.0,
+    "to": 6.0,
     "kicker": "rcbench",
     "heading": "Motor, ESC and<br>servo test bench",
     "text": "A 7 inch touch panel and an RP2350 IOmcu,<br>linked by CAN at 1 Mbit/s."
    },
    "chips": [
     {
-     "from": 5.6,
-     "to": 12.8,
+     "from": 6.6,
+     "to": 16.4,
      "n": "i",
      "text": "Inside the case"
     },
     {
-     "from": 13.6,
-     "to": 26.6,
+     "from": 17.6,
+     "to": 35,
      "n": "i",
      "text": "The connector wall"
     }
@@ -56,7 +56,7 @@
      ]
     ],
     [
-     4.6,
+     5.6,
      [
       -250,
       200,
@@ -69,7 +69,7 @@
      ]
     ],
     [
-     6,
+     7,
      [
       -170,
       215,
@@ -82,7 +82,7 @@
      ]
     ],
     [
-     7.8,
+     8.8,
      [
       -110,
       265,
@@ -95,7 +95,7 @@
      ]
     ],
     [
-     11.6,
+     15,
      [
       -80,
       275,
@@ -108,7 +108,7 @@
      ]
     ],
     [
-     14.6,
+     18.4,
      [
       -150,
       90,
@@ -121,7 +121,7 @@
      ]
     ],
     [
-     19.4,
+     24.6,
      [
       -120,
       84,
@@ -134,7 +134,7 @@
      ]
     ],
     [
-     21.4,
+     26.6,
      [
       80,
       84,
@@ -147,7 +147,7 @@
      ]
     ],
     [
-     25,
+     33,
      [
       96,
       78,
@@ -160,7 +160,7 @@
      ]
     ],
     [
-     27,
+     35.5,
      [
       40,
       330,
@@ -175,26 +175,26 @@
    ],
    "lid": [
     [
-     5.6,
+     6.6,
      0
     ],
     [
-     7.2,
+     8.2,
      48
     ],
     [
-     11.2,
+     14.8,
      48
     ],
     [
-     12.8,
+     16.4,
      0
     ]
    ],
    "labels": [
     {
-     "from": 7.4,
-     "to": 11.2,
+     "from": 8.4,
+     "to": 14.8,
      "anchor": "display",
      "at": [
       110,
@@ -206,8 +206,8 @@
      "side": "r"
     },
     {
-     "from": 7.4,
-     "to": 11.2,
+     "from": 8.4,
+     "to": 14.8,
      "anchor": "rbmod",
      "at": [
       1400,
@@ -218,8 +218,8 @@
      "text": "Outputs, measurements and every protocol with timing."
     },
     {
-     "from": 7.4,
-     "to": 11.2,
+     "from": 8.4,
+     "to": 14.8,
      "anchor": "pdmini",
      "at": [
       80,
@@ -231,8 +231,8 @@
      "side": "r"
     },
     {
-     "from": 15.0,
-     "to": 19.6,
+     "from": 18.8,
+     "to": 24.8,
      "anchor": "xt60",
      "at": [
       330,
@@ -245,8 +245,8 @@
      "style": "muted"
     },
     {
-     "from": 15.0,
-     "to": 19.6,
+     "from": 18.8,
+     "to": 24.8,
      "anchor": "usbc",
      "at": [
       1010,
@@ -259,8 +259,8 @@
      "style": "ok"
     },
     {
-     "from": 21.8,
-     "to": 25.6,
+     "from": 27.0,
+     "to": 33.2,
      "anchor": "J2",
      "at": [
       330,
@@ -272,8 +272,8 @@
      "side": "b"
     },
     {
-     "from": 21.8,
-     "to": 25.6,
+     "from": 27.0,
+     "to": 33.2,
      "anchor": "J1",
      "at": [
       1370,
@@ -284,6 +284,24 @@
      "text": "4 positions with a fixed 5 V, for the servo programmers.",
      "side": "b",
      "style": "ok"
+    }
+   ],
+   "say": [
+    {
+     "at": 0.7,
+     "text": "This is R C bench: a test bench for motors, E S Cs and servos."
+    },
+    {
+     "at": 7.4,
+     "text": "Inside the case: the touch panel, the I O M C U that drives the outputs, and the P D mini supply."
+    },
+    {
+     "at": 18.4,
+     "text": "On the connector wall: the X T 60 socket, and the U S B C socket for power."
+    },
+    {
+     "at": 26.6,
+     "text": "J 2 carries the outputs for servos and E S Cs. J 1 holds the four programming ports."
     }
    ]
   },
@@ -318,7 +336,7 @@
       "HOME"
      ],
      "title": "One home screen",
-     "text": "Each function opens from a tile. A tile marked SIMULATED runs from a model until its hardware answers.",
+     "text": "Each function of the bench opens from one of eight tiles.",
      "marks": [
       {
        "at": [
@@ -373,7 +391,8 @@
       4,
       188,
       50
-     ]
+     ],
+     "say": "Stop on one touch. Stop latches at first contact: motor and servo outputs and the supply go off. Arming takes a two second hold."
     },
     {
      "view": "band-fault",
@@ -397,7 +416,7 @@
       "LINK"
      ],
      "title": "CAN bus test",
-     "text": "Test frames run at start. A failed test lists the wiring checks, and the bench stays in simulation."
+     "text": "Test frames run at start. A failed test lists what to check on the wiring."
     },
     {
      "dur": 3.0,
@@ -473,7 +492,8 @@
        "text": "DISARM: one touch",
        "side": "t"
       }
-     ]
+     ],
+     "say": "Live telemetry. Voltage, current, power and R P M are plotted while the motor runs, and each run is logged."
     },
     {
      "view": "motor-table",
@@ -552,7 +572,8 @@
      "points": [
       "Profiles for 74 ESC families, 462 models",
       "26 of them run from ESC STICK"
-     ]
+     ],
+     "say": "E S C stick programming. The bench drives the throttle through an E S C's beep menu, item by item."
     },
     {
      "view": "motor-wire-am",
@@ -565,7 +586,8 @@
       "PROGRAM"
      ],
      "title": "ESC signal wire",
-     "text": "AM32, Bluejay, BLHeli_S and ESCape32: settings are read, edited and written through the signal wire."
+     "text": "AM32, Bluejay, BLHeli_S and ESCape32: settings are read, edited and written through the signal wire.",
+     "say": "E S C signal wire. For AM32, Bluejay, BLHeli_S and ESCape32, settings are read, edited and written through the signal wire."
     },
     {
      "dur": 3.0,
@@ -732,7 +754,8 @@
      "points": [
       "Travel time and hold current per step",
       "A CSV file and a text report on the card"
-     ]
+     ],
+     "say": "Test. An automatic test steps the supply from 4.8 to 6.0 volts and looks for the brown-out. It writes a report to the card."
     },
     {
      "view": "servo-test-settings",
@@ -746,7 +769,8 @@
       "OPTIONS"
      ],
      "title": "Test steps",
-     "text": "4.8 V and 6.0 V steps, 7.4 V and 8.4 V with HV SERVO on, and a brown-out search in 0.20 V steps."
+     "text": "4.8 V and 6.0 V steps, 7.4 V and 8.4 V with HV SERVO on, and a brown-out search in 0.20 V steps.",
+     "say": "Test steps. 4.8 and 6.0 volts; 7.4 and 8.4 volts for high voltage servos; and a brown-out search in steps of 0.2 volts."
     },
     {
      "view": "servo-limrun-found",
@@ -848,7 +872,8 @@
       "Edits are a draft until WRITE",
       "Backup to the card before the first write",
       "Every written value is read back"
-     ]
+     ],
+     "say": "K S T and Cha servo. The programmer reads 32 registers over the signal wire. Edits stay a draft until you write them."
     },
     {
      "view": "servo-kst-files",
@@ -908,7 +933,8 @@
       "HITEC"
      ],
      "title": "Hitec",
-     "text": "D series and classic HS-5xxx and HS-7xxx servos, with backup, limit checks and a write switch."
+     "text": "D series and classic HS-5xxx and HS-7xxx servos, with backup, limit checks and a write switch.",
+     "say": "High tech. D series and classic servos, with backup, limit checks and a write switch."
     },
     {
      "view": "servo-hitec-move-on",
@@ -948,7 +974,8 @@
       308,
       598,
       44
-     ]
+     ],
+     "say": "Find stop. It searches the mechanical stop of one side and sets that end one degree inside it."
     },
     {
      "view": "servo-hitec-backup-file",
@@ -1044,7 +1071,8 @@
        "side": "r",
        "d": 110
       }
-     ]
+     ],
+     "say": "U S B P D supply. Voltage and current limit are set on the panel, and the output is switched there."
     },
     {
      "view": "supply-rbmod",
@@ -1062,15 +1090,15 @@
      "dur": 3.0,
      "n": 5,
      "card": {
-      "title": "Receiver & pack",
-      "text": "Receiver signal, battery cells, rotor balance."
+      "title": "Receiver & battery",
+      "text": "Receiver signal and battery cells."
      }
     },
     {
      "view": "overview",
      "dur": 3.8,
      "n": 5,
-     "kicker": "05 · Receiver & pack",
+     "kicker": "05 · Receiver & battery",
      "path": [
       "HOME"
      ],
@@ -1087,7 +1115,7 @@
      "view": "analyser",
      "dur": 6.4,
      "n": 5,
-     "kicker": "05 · Receiver & pack",
+     "kicker": "05 · Receiver & battery",
      "path": [
       "HOME",
       "RECEIVER"
@@ -1097,72 +1125,31 @@
      "points": [
       "LIVE, FRAME LOST, FAILSAFE, NO SIGNAL"
      ],
-     "tag": "S.BUS DECODER BUILT · PIN DRIVER NOT WRITTEN"
-    },
-    {
-     "view": "analyser-failsafe",
-     "dur": 4.4,
-     "n": 5,
-     "kicker": "05 · Receiver & pack",
-     "path": [
-      "HOME",
-      "RECEIVER"
-     ],
-     "title": "FAILSAFE",
-     "text": "The state card turns red when the receiver sends its fallback values.",
-     "tag": "S.BUS DECODER BUILT · PIN DRIVER NOT WRITTEN"
+     "say": "Receiver. Sixteen channels with history, the digital channels and the signal state."
     },
     {
      "view": "battery",
      "dur": 5.0,
      "n": 5,
-     "kicker": "05 · Receiver & pack",
+     "kicker": "05 · Receiver & battery",
      "path": [
       "HOME",
       "BATTERY"
      ],
      "title": "BATTERY",
-     "text": "Per-cell voltage, spread and a verdict.",
-     "tag": "DRAWN FROM A MODEL"
+     "text": "Per-cell voltage, spread and a verdict."
     },
     {
      "view": "balance",
-     "dur": 5.0,
+     "dur": 3.6,
      "n": 5,
-     "kicker": "05 · Receiver & pack",
+     "kicker": "05 · Receiver & battery",
      "path": [
       "HOME",
       "BALANCE"
      ],
      "title": "BALANCE",
-     "text": "Blade count, correction mass and its angle.",
-     "tag": "SENSORS NOT FITTED · NOTHING MEASURED"
-    },
-    {
-     "view": "balance-edf",
-     "dur": 4.4,
-     "n": 5,
-     "kicker": "05 · Receiver & pack",
-     "path": [
-      "HOME",
-      "BALANCE"
-     ],
-     "title": "Propeller or EDF",
-     "text": "The rotor type and the blade count set where a correction mass can go.",
-     "tag": "SENSORS NOT FITTED · NOTHING MEASURED"
-    },
-    {
-     "view": "balance-rig",
-     "dur": 4.4,
-     "n": 5,
-     "kicker": "05 · Receiver & pack",
-     "path": [
-      "HOME",
-      "BALANCE",
-      "TEST RIG"
-     ],
-     "title": "Sensor placement",
-     "text": "Guides for a test rig and for an aircraft show where the accelerometer and the optical sensor go."
+     "text": "To be done."
     },
     {
      "dur": 3.0,
@@ -1262,7 +1249,8 @@
      "points": [
       "Writes only while the bench is SAFE",
       "The bench's own folders are protected"
-     ]
+     ],
+     "say": "Files. The card in two panes: copy, move, rename and delete, and new folders and text files."
     },
     {
      "view": "files-info",
@@ -1302,7 +1290,8 @@
       "BAND"
      ],
      "title": "Screenshot",
-     "text": "A 1 s hold on the empty part of the band saves the screen as a PNG file on the card."
+     "text": "A 1 s hold on the empty part of the band saves the screen as a PNG file on the card.",
+     "say": "Screenshot. A one second hold on the empty part of the band saves the screen to the card."
     },
     {
      "dur": 3.0,
@@ -1341,7 +1330,8 @@
       "WI-FI"
      ],
      "title": "Access point",
-     "text": "The panel opens its own network: WPA2, 2.4 GHz channel 6, with a random password and an access code."
+     "text": "The panel opens its own network: WPA2, 2.4 GHz channel 6, with a random password and an access code.",
+     "say": "Access point. The panel opens its own network, with a random password and an access code."
     },
     {
      "view": "wifi-joined",
@@ -1358,7 +1348,8 @@
      "points": [
       "Own access point or a saved home network",
       "Radio on only while the screen is open and for update checks"
-     ]
+     ],
+     "say": "Wi-Fi. A browser downloads any file of the card, or the whole card as one zip file, and uploads panel firmware."
     },
     {
      "view": "wifi-writes-allowed",
@@ -1401,7 +1392,8 @@
      "points": [
       "STABLE or TESTING releases",
       "The IOmcu is updated from the panel over CAN"
-     ]
+     ],
+     "say": "Updates. The panel asks GitHub for a newer release, downloads it, and installs it on a two second hold."
     },
     {
      "view": "coproc-update-progress",
@@ -1582,7 +1574,7 @@
       "SENSORS"
      ],
      "title": "Phase tap",
-     "text": "Hears an ESC's beeps on one motor phase: lowest and highest tone, pitch split and gap."
+     "text": "Listens to an ESC's beeps on one motor phase: lowest and highest tone, pitch split and gap."
     },
     {
      "view": "imu-scan",
@@ -1626,7 +1618,8 @@
       50,
       510,
       448
-     ]
+     ],
+     "say": "The screen guide. The question mark in the band numbers the controls of a screen and explains each."
     },
     {
      "view": "overview",
@@ -1640,7 +1633,8 @@
      ],
      "title": "English and German",
      "text": "The interface language is set on the panel.",
-     "lang": "de"
+     "lang": "de",
+     "say": "English and German. The interface language is set on the panel."
     },
     {
      "view": "overview-light",
@@ -1666,12 +1660,18 @@
     "Motor & ESC",
     "Servo",
     "Supply",
-    "Receiver & pack",
+    "Receiver & battery",
     "Logs & files",
     "Wi-Fi & updates",
     "Setup"
    ],
-   "note": "MIT licence · github.com/subtilitas/rcbench"
+   "note": "MIT licence · github.com/subtilitas/rcbench",
+   "say": "That is R C bench. Its source and documentation are on GitHub."
   }
- ]
+ ],
+ "voice": {
+  "name": "af_heart",
+  "lang": "en-us",
+  "speed": 1.0
+ }
 }

@@ -8,6 +8,7 @@ import json
 
 import make_video
 import video_audio
+import video_voice
 
 
 def _board():
@@ -135,3 +136,30 @@ def test_the_prelude_has_its_bars():
     assert all(len(bar) == 5 for bar in video_audio.PRELUDE)
     assert video_audio.PRELUDE[0] == (60, 64, 67, 72, 76)
     assert {n % 12 for n in video_audio.PRELUDE[-1]} == {0, 4, 7}
+
+
+def test_names_are_written_as_they_are_said():
+    """Units, spelled names and screen names reach the speaker as words."""
+    said = video_voice.spoken
+    assert said("Hold <b>CONNECT</b> 2 s.") == "Hold Connect 2 seconds."
+    assert said("a 2 s hold") == "a 2 second hold"
+    assert said("The IOmcu and the ESC") == "The I O M C U and the E S C"
+    assert said("LIMIT RUN at 6.0 V") == "Limit Run at 6.0 volts"
+    assert said("Motor & ESC") == "Motor and E S C"
+
+
+def test_every_step_has_a_line():
+    """A card says its chapter, a step its title and text or its say."""
+    board = {"lang": "en", "steps": 1, "scenes": [
+        {"type": "case", "dur": 9, "camera": [[0, [0, 0, 9], [0, 0, 0]]],
+         "say": [{"at": 1, "text": "one"}, {"at": 5, "text": "two"}]},
+        {"type": "tour", "steps": [
+            {"dur": 3, "n": 1, "card": {"title": "Servo", "text": "Test."}},
+            {"view": "overview", "dur": 5, "n": 1, "title": "LIVE",
+             "text": "A dial."},
+            {"view": "overview", "dur": 5, "n": 1, "title": "x",
+             "say": "Said instead."}]}]}
+    assert make_video.check(board) == []
+    lines = [text for _, _, _, text in video_voice.script(board)]
+    assert lines == ["one", "two", "Chapter 1. Servo. Test.",
+                     "Live. A dial.", "Said instead."]

@@ -1,6 +1,7 @@
 // Captures the player's frames with Playwright's Chromium.
 //
-//   node capture.js <url> video <out.mp4> <fps>   frames piped to ffmpeg
+//   node capture.js <url> video <out.mp4> <fps> [<first> <end>]
+//       frames piped to ffmpeg; first and end bound a part of the video
 //   node capture.js <url> stills <dir> <t,t,...>  one PNG per time in s
 //
 // SPDX-License-Identifier: MIT
@@ -9,7 +10,7 @@ const {spawn} = require('child_process');
 const path = require('path');
 
 (async () => {
-  const [url, mode, out, arg] = process.argv.slice(2);
+  const [url, mode, out, arg, first, end] = process.argv.slice(2);
   const browser = await chromium.launch({args: [
     '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
     '--ignore-gpu-blocklist', '--enable-webgl']});
@@ -39,13 +40,14 @@ const path = require('path');
       '-c:v', 'libx264', '-preset', 'medium', '-crf', '17',
       '-pix_fmt', 'yuv420p', '-movflags', '+faststart', out],
       {stdio: ['pipe', 'inherit', 'inherit']});
-    for (let i = 0; i < n; i++) {
+    const last = end === undefined ? n : Math.min(n, +end);
+    for (let i = +(first || 0); i < last; i++) {
       await page.evaluate(x => window.renderAt(x), i / fps);
       const buf = await page.screenshot({type: 'jpeg', quality: 96});
       if (!ff.stdin.write(buf)) {
         await new Promise(r => ff.stdin.once('drain', r));
       }
-      if (i % 300 === 0) console.log(`frame ${i} of ${n}`);
+      if (i % 600 === 0) console.log(`frame ${i} of ${n}`);
     }
     ff.stdin.end();
     const code = await new Promise(r => ff.on('close', r));

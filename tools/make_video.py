@@ -13,7 +13,9 @@ screens are not recordings: each step names a view of the host renderer
 
 The video carries a sound track that tools/video_audio.py computes from
 the same storyboard: synthesizer pads and one quiet sound per event.
---no-sound leaves it out.
+--no-sound leaves it out.  A storyboard with "voice" is narrated by
+tools/video_voice.py, each step stretched to its sentence; --no-voice
+leaves the narration out and the lengths as written.
 
 A render needs a C compiler, Pillow, numpy for the sound, Node.js with the
 playwright package and its Chromium, ffmpeg, and `npm install` run once in
@@ -108,6 +110,14 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
             errors.append(f"{at}: title is missing")
         if label.get("style", "ok") not in STYLES:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
+    cues = scene.get("say", [])
+    last = -1.0
+    for cue in cues if isinstance(cues, list) else [None]:
+        if not (isinstance(cue, dict) and isinstance(cue.get("text"), str)
+                and _number(cue.get("at")) and last < cue["at"] < dur):
+            errors.append(f"{where}: say holds {{at, text}} with rising at")
+            break
+        last = cue["at"]
     for name in ("servo", "pinout"):
         part = scene.get(name)
         if part is None:
@@ -225,6 +235,10 @@ def check(board: dict) -> list:
     if not isinstance(steps, int) or steps < 0:
         errors.append("steps must be a count of 0 or more")
         steps = 0
+    voice = board.get("voice")
+    if voice is not None and not (isinstance(voice, dict)
+                                  and isinstance(voice.get("name"), str)):
+        errors.append("voice needs a name, a voice of the speaker")
     if board.get("music", "pads") not in ("pads", "bach-prelude"):
         errors.append("music must be pads or bach-prelude")
     chapters = board.get("chapters")
@@ -379,6 +393,30 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         """
 
 
+def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
+             jobs: int) -> int:
+    import video_audio
+
+    total = sum(length for _, length in video_audio.scene_times(board))
+    frames = round(total * fps)
+    edges = [frames * k // jobs for k in range(jobs + 1)]
+    parts = [out.with_name(f"part{k}.mp4") for k in range(jobs)]
+    running = [subprocess.Popen(cmd + ["video", str(part), str(fps),
+                                       str(a), str(b)])
+               for part, a, b in zip(parts, edges, edges[1:], strict=False)]
+    if any(proc.wait() for proc in running):
+        return 1
+    if jobs == 1:
+        parts[0].replace(out)
+        return 0
+    listing = out.with_name("parts.txt")
+    listing.write_text("".join(f"file '{part}'\n" for part in parts),
+                       encoding="utf-8")
+    return subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat",
+                           "-safe", "0", "-i", str(listing), "-c", "copy",
+                           str(out)]).returncode
+
+
 def main() -> int:
     """Check the storyboards or render one.
 
@@ -395,6 +433,10 @@ def main() -> int:
     ap.add_argument("--stills", metavar="T,T,...",
                     help="write one PNG per time in seconds instead of "
                          "the video")
+    ap.add_argument("--no-voice", action="store_true",
+                    help="leave the narration out")
+    ap.add_argument("--jobs", type=int, default=1,
+                    help="capture the frames in this many parts at once")
     ap.add_argument("--no-sound", action="store_true",
                     help="write the video without its sound track")
     ap.add_argument("--check", action="store_true",
@@ -437,9 +479,15 @@ def main() -> int:
 
     with tempfile.TemporaryDirectory() as td:
         shots = pathlib.Path(td)
+        clips = ()
+        if "voice" in board and not args.no_voice and not args.no_sound:
+            import video_voice
+
+            board, clips = video_voice.narrate(board)
+        played = shots / "storyboard.json"
+        played.write_text(json.dumps(board), encoding="utf-8")
         render_views(board, shots)
-        handler = functools.partial(_Handler, board=path.resolve(),
-                                    shots=shots)
+        handler = functools.partial(_Handler, board=played, shots=shots)
         with http.server.ThreadingHTTPServer(("127.0.0.1", 0),
                                              handler) as server:
             threading.Thread(target=server.serve_forever,
@@ -448,15 +496,18 @@ def main() -> int:
             sound = not args.stills and not args.no_sound
             silent = shots / "silent.mp4" if sound else out
             cmd = ["node", str(VIDEO / "player" / "capture.js"), url]
-            cmd += (["stills", str(out), args.stills] if args.stills
-                    else ["video", str(silent), str(args.fps)])
-            status = subprocess.run(cmd).returncode
+            if args.stills:
+                status = subprocess.run(
+                    cmd + ["stills", str(out), args.stills]).returncode
+            else:
+                status = _capture(cmd, board, silent, args.fps,
+                                  max(1, args.jobs))
             server.shutdown()
         if status == 0 and sound:
             import video_audio
 
             track = shots / "track.wav"
-            video_audio.render(board, track)
+            video_audio.render(board, track, clips)
             status = subprocess.run(
                 ["ffmpeg", "-v", "error", "-y", "-i", str(silent),
                  "-i", str(track), "-c:v", "copy", "-c:a", "aac",
