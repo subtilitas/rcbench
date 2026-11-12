@@ -2197,17 +2197,6 @@ shared/outputs/sense_page.c: warning: Member I3221_FULL_SCALE_UV (macro definiti
 shared/outputs/sense_page.c: warning: Member MA_MAX (macro definition) of file sense_page.c is not documented.	#define MA_MAX 32767u
 shared/outputs/servo_link.c: warning: Member SERVO_MAX_US (macro definition) of file servo_link.c is not documented.	#define SERVO_MAX_US 2000u
 shared/outputs/servo_link.c: warning: Member SERVO_MIN_US (macro definition) of file servo_link.c is not documented.	#define SERVO_MIN_US 1000u
-shared/safety/include/arming.h: warning: Compound arming_t is not documented.	typedef struct {
-shared/safety/include/arming.h: warning: Member armed (variable) of struct arming_t is not documented.	bool armed;
-shared/safety/include/arming.h: warning: Member handshake_bounded (variable) of struct arming_t is not documented.	bool handshake_bounded;
-shared/safety/include/arming.h: warning: Member last_touch_ms (variable) of struct arming_t is not documented.	uint32_t last_touch_ms;
-shared/safety/include/heartbeat.h: warning: Compound heartbeat_gen_t is not documented.	typedef struct {
-shared/safety/include/heartbeat.h: warning: Compound heartbeat_mon_t is not documented.	typedef struct {
-shared/safety/include/heartbeat.h: warning: Member HEARTBEAT_MAX_GAP_MS (macro definition) of file heartbeat.h is not documented.	#define HEARTBEAT_MAX_GAP_MS 150u
-shared/safety/include/heartbeat.h: warning: Member alive (variable) of struct heartbeat_mon_t is not documented.	bool alive;
-shared/safety/include/heartbeat.h: warning: Member last_edge_ms (variable) of struct heartbeat_mon_t is not documented.	uint32_t last_edge_ms;
-shared/safety/include/touch_loss.h: warning: Member on (variable) of struct arm_watch_t is not documented.	bool on;
-shared/safety/touch_loss.c: warning: Member HALF_RANGE (macro definition) of file touch_loss.c is not documented.	#define HALF_RANGE 0x80000000u
 shared/sense/ina228.c: warning: Member CODE20_MIN (macro definition) of file ina228.c is not documented.	#define CODE20_MIN (-524288)
 shared/sense/ina3221.c: warning: Member CODE13_MIN (macro definition) of file ina3221.c is not documented.	#define CODE13_MIN (-4096)
 shared/sense/include/as5600.h: warning: Compound as5600_t is not documented.	typedef struct {

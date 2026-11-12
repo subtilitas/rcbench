@@ -215,6 +215,7 @@ bool stop_mark_keeps(uint32_t mark, uint32_t cur, bool cur_is_event);
  * loop has not been told about yet is still caught here.
  */
 typedef struct {
+    /** @brief An arm stands and has not yet been seen by the render loop. */
     bool     on;
     uint32_t loss_gen;   /**< the render loop's count the arm was posted under */
     uint32_t drv_gaps;   /**< the control task's count when it took the arm   */

@@ -11,7 +11,10 @@
 
 #include <stddef.h>
 
-/* More than this behind is taken for a stale or repeated number, not a gap. */
+/**
+ * @brief A sequence number this far behind or more is taken for a stale or
+ * repeated number, not a gap.
+ */
 #define HALF_RANGE 0x80000000u
 
 void touch_seq_rx_init(touch_seq_rx_t *rx)
