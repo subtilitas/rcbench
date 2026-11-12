@@ -2799,7 +2799,10 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
             else if (t < 30.0f)          { th = 30.0f; }
             else                         { th = 64.0f; }
             telemetry_sim_step(&tsim, th, 0.05f, &bench);
+            /* motor-plot is motor-table before the tap on TABLE: the
+             * plot of a run with an IOmcu answering, for tools/video. */
             if (strcmp(view, "motor-table") == 0
+                || strcmp(view, "motor-plot") == 0
                 || strcmp(view, "motor-refused") == 0) {
                 /* An IOmcu reading an INA228: BENCH's numbers are the
                  * INA228's, and the ESC's own telemetry reads 0.18V and
@@ -4672,6 +4675,7 @@ int main(int argc, char **argv)
     st.capabilities = s_caps;
     st.simulated = sim || (id == SCREEN_MOTOR
                            && strcmp(view, "motor-table") != 0
+                           && strcmp(view, "motor-plot") != 0
                            && strcmp(view, "motor-refused") != 0
                            && strcmp(view, "motor-idle") != 0
                            && strcmp(view, "motor-port") != 0

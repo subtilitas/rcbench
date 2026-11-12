@@ -1,7 +1,8 @@
 // Draws one frame of a storyboard.  window.renderAt(t) sets every element
 // from t alone, so frames can be captured in any order and at any rate.
 // A storyboard is a list of scenes: "case" (the 3D model with labels),
-// "screen" (panel screenshots with pointer bubbles) and "end" (a recap).
+// "screen" (panel screenshots with pointer bubbles), "tour" (panel
+// screenshots with a caption and a spotlight) and "end" (a recap).
 // tools/video/README.md describes the fields.
 //
 // SPDX-License-Identifier: MIT
@@ -45,9 +46,14 @@ const imgs = {};
 const need = new Set();
 for (const sc of sb.scenes) {
   sc.t = acc;
-  if (sc.type === 'screen') {
+  if (sc.type === 'screen' || sc.type === 'tour') {
     let a = 0;
-    for (const st of sc.steps) { st.t = a; a += st.dur; need.add(st.view); }
+    for (const st of sc.steps) {
+      st.t = a;
+      a += st.dur;
+      st.shot = st.lang ? `${st.view}@${st.lang}` : st.view;
+      need.add(st.shot);
+    }
     sc.dur = a;
   }
   if (sc.type === 'case' && sc.display) need.add(sc.display.view);
@@ -195,8 +201,8 @@ function drawScreen(sc, lt, a, pulse, ui) {
   let i = 0;
   while (i < sc.steps.length - 1 && lt >= sc.steps[i + 1].t) i++;
   const b = sc.steps[i], q0 = lt - b.t, prev = sc.steps[Math.max(0, i - 1)];
-  $('#s0').src = imgs[prev.view].src;
-  $('#s1').src = imgs[b.view].src;
+  $('#s0').src = imgs[prev.shot].src;
+  $('#s1').src = imgs[b.shot].src;
   $('#s1').style.opacity = i === 0 ? 1 : ramp(q0, 0, .28);
   ui.cn = b.n;
   ui.ct = b.chip || b.title;
@@ -248,6 +254,75 @@ function drawScreen(sc, lt, a, pulse, ui) {
   }
 }
 
+// A screenshot with a caption beside it and an optional spotlight on a
+// part of the display.
+function drawTour(sc, lt, a, ui) {
+  const dev = $('#dev'), cap = $('#cap'), ghost = $('#ghost');
+  let i = 0;
+  while (i < sc.steps.length - 1 && lt >= sc.steps[i + 1].t) i++;
+  const b = sc.steps[i], q0 = lt - b.t, prev = sc.steps[Math.max(0, i - 1)];
+  const zoom = 1 + .014 * q0 / b.dur;
+  dev.style.display = 'block';
+  dev.style.opacity = a;
+  dev.style.transform = `scale(${zoom})`;
+  const xf = i === 0 ? 1 : ramp(q0, 0, .4);
+  $('#s0').src = imgs[prev.shot].src;
+  $('#s1').src = imgs[b.shot].src;
+  $('#s1').style.opacity = xf;
+  ui.step = b.n;
+  const out = 1 - ramp(q0, b.dur - .32, b.dur - .04);
+  if (b.focus) {
+    const [fx, fy, fw, fh] = b.focus;
+    const x = SX + fx * SC, y = SY + fy * SC, w = fw * SC, h = fh * SC;
+    const fa = ramp(q0, .9, 1.5) * out * a;
+    const cx = 56 + 652, cy = 176 + 387;
+    const rr = (X, Y, W, H, r) => `M${X + r} ${Y}h${W - 2 * r}`
+      + `a${r} ${r} 0 0 1 ${r} ${r}v${H - 2 * r}a${r} ${r} 0 0 1 ${-r} ${r}`
+      + `h${-(W - 2 * r)}a${r} ${r} 0 0 1 ${-r} ${-r}v${-(H - 2 * r)}`
+      + `a${r} ${r} 0 0 1 ${r} ${-r}z`;
+    ov.insertAdjacentHTML('beforeend',
+      `<g transform="translate(${cx} ${cy}) scale(${zoom})
+         translate(${-cx} ${-cy})" opacity="${fa}">
+        <path fill-rule="evenodd" fill="rgba(4,7,12,.62)"
+          d="${rr(SX, SY, 1280, 750, 10)}${rr(x, y, w, h, 12)}"/>
+        <path d="${rr(x, y, w, h, 12)}" fill="none" stroke="#00e5ff"
+          stroke-width="9" opacity=".16"/>
+        <path d="${rr(x, y, w, h, 12)}" fill="none" stroke="#00e5ff"
+          stroke-width="2.5"/></g>`);
+  }
+  const key = sc.t + ':' + i;
+  if (cap.dataset.for !== key) {
+    const pts = (b.points || []).map(x => `<li>${x}</li>`).join('');
+    cap.innerHTML = `<div class="k">${b.kicker || ''}</div>`
+      + `<h2>${b.title}</h2>` + (b.text ? `<p>${b.text}</p>` : '')
+      + (pts ? `<ul>${pts}</ul>` : '')
+      + (b.tag ? `<div><span class="tag warn">${b.tag}</span></div>` : '');
+    cap.dataset.for = key;
+  }
+  cap.style.display = 'flex';
+  // The kicker stays while the chapter does; the rest comes in line by
+  // line.
+  const same = i > 0 && prev.kicker === b.kicker;
+  const next = sc.steps[i + 1];
+  const stay = next && next.kicker === b.kicker;
+  let k = 0;
+  for (const e of cap.children) {
+    const items = e.tagName === 'UL' ? [...e.children] : [e];
+    if (e.tagName === 'UL') e.style.opacity = 1;
+    for (const it of items) {
+      const hold = it.className === 'k';
+      const o = (hold && same ? 1 : ramp(q0, .18 + .13 * k, .6 + .13 * k))
+        * (hold && stay ? 1 : out) * a;
+      it.style.opacity = o;
+      it.style.transform = hold && same ? ''
+        : `translateY(${(1 - ramp(q0, .18 + .13 * k, .7 + .13 * k)) * 16}px)`;
+      k++;
+    }
+  }
+  ghost.textContent = String(b.n).padStart(2, '0');
+  ghost.style.opacity = .055 * a;
+}
+
 function drawEnd(sc, a, ui) {
   const e = $('#end');
   e.style.display = 'flex';
@@ -266,7 +341,10 @@ window.TOTAL = TOTAL;
 window.renderAt = t => {
   bubs.innerHTML = '';
   ov.innerHTML = '';
-  for (const id of ['#gl', '#dev', '#end']) $(id).style.display = 'none';
+  for (const id of ['#gl', '#dev', '#end', '#cap']) {
+    $(id).style.display = 'none';
+  }
+  $('#ghost').style.opacity = 0;
   $('#title').style.opacity = 0;
   $('#pin').style.opacity = 0;
   $('#bar').style.width = (t / TOTAL * 1920) + 'px';
@@ -286,6 +364,7 @@ window.renderAt = t => {
   const pulse = (t * .9) % 1;
   if (sc.type === 'case') drawCase(sc, lt, a, pulse, ui);
   else if (sc.type === 'screen') drawScreen(sc, lt, a, pulse, ui);
+  else if (sc.type === 'tour') drawTour(sc, lt, a, ui);
   else drawEnd(sc, a, ui);
   $('#chip').style.opacity = ui.cn !== '' ? a : 0;
   $('#cn').textContent = ui.cn;

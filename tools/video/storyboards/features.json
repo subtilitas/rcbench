@@ -1,0 +1,579 @@
+{
+ "name": "features",
+ "lang": "en",
+ "brand": "feature tour",
+ "steps": 8,
+ "scenes": [
+  {
+   "type": "case",
+   "dur": 21,
+   "display": {
+    "view": "overview"
+   },
+   "title": {
+    "from": 0.3,
+    "to": 5.0,
+    "kicker": "rcbench",
+    "heading": "Motor, ESC and<br>servo test bench",
+    "text": "A 7 inch touch panel and an RP2350 IOmcu,<br>linked by CAN at 1 Mbit/s."
+   },
+   "camera": [
+    [
+     0,
+     [
+      -300,
+      175,
+      300
+     ],
+     [
+      -95,
+      10,
+      0
+     ]
+    ],
+    [
+     4.6,
+     [
+      -250,
+      200,
+      300
+     ],
+     [
+      -80,
+      12,
+      0
+     ]
+    ],
+    [
+     6,
+     [
+      -170,
+      215,
+      270
+     ],
+     [
+      0,
+      18,
+      0
+     ]
+    ],
+    [
+     7.8,
+     [
+      -110,
+      265,
+      235
+     ],
+     [
+      5,
+      26,
+      0
+     ]
+    ],
+    [
+     11.6,
+     [
+      -80,
+      275,
+      235
+     ],
+     [
+      8,
+      26,
+      0
+     ]
+    ],
+    [
+     14.6,
+     [
+      70,
+      82,
+      300
+     ],
+     [
+      34,
+      13,
+      40
+     ]
+    ],
+    [
+     18.6,
+     [
+      86,
+      78,
+      286
+     ],
+     [
+      40,
+      13,
+      40
+     ]
+    ],
+    [
+     21,
+     [
+      40,
+      330,
+      150
+     ],
+     [
+      0,
+      30,
+      0
+     ]
+    ]
+   ],
+   "lid": [
+    [
+     5.6,
+     0
+    ],
+    [
+     7.2,
+     48
+    ],
+    [
+     11.2,
+     48
+    ],
+    [
+     12.8,
+     0
+    ]
+   ],
+   "labels": [
+    {
+     "from": 7.4,
+     "to": 11.2,
+     "anchor": "display",
+     "at": [
+      110,
+      180
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "Panel · ESP32-P4",
+     "text": "Interface, settings, SD card and Wi-Fi. 1024 x 600 pixels."
+    },
+    {
+     "from": 7.4,
+     "to": 11.2,
+     "anchor": "rbmod",
+     "at": [
+      1400,
+      570
+     ],
+     "size": "sm",
+     "title": "IOmcu · RP2350",
+     "text": "Outputs, measurements and every protocol with timing."
+    },
+    {
+     "from": 7.4,
+     "to": 11.2,
+     "anchor": "pdmini",
+     "at": [
+      80,
+      650
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "PD mini",
+     "text": "USB-PD supply for the servo rails, set from the panel."
+    },
+    {
+     "from": 15.0,
+     "to": 19.4,
+     "anchor": "J2",
+     "at": [
+      250,
+      300
+     ],
+     "size": "sm",
+     "side": "b",
+     "title": "J2 · outputs",
+     "text": "4 pins for servos and ESCs."
+    },
+    {
+     "from": 15.0,
+     "to": 19.4,
+     "anchor": "J1",
+     "at": [
+      1370,
+      300
+     ],
+     "size": "sm",
+     "side": "b",
+     "title": "J1 · programming ports",
+     "text": "4 positions with a fixed 5 V, for the servo programmers."
+    }
+   ]
+  },
+  {
+   "type": "tour",
+   "steps": [
+    {
+     "view": "overview",
+     "dur": 4.8,
+     "n": 1,
+     "kicker": "01 · The bench",
+     "title": "One home screen",
+     "text": "Each function opens from a tile. A tile marked SIMULATED runs from a model until its hardware answers."
+    },
+    {
+     "view": "band-stop",
+     "dur": 6.2,
+     "n": 1,
+     "kicker": "01 · The bench",
+     "title": "STOP on one touch",
+     "text": "STOP latches at first contact. Motor and servo outputs and the supply go off.",
+     "points": [
+      "ARM takes a 2 s hold",
+      "A heartbeat line and a link watchdog disable the outputs",
+      "A 2 s hold on STOP resets it"
+     ],
+     "focus": [
+      832,
+      4,
+      188,
+      50
+     ]
+    },
+    {
+     "view": "motor-plot",
+     "screen": "motor",
+     "dur": 6.2,
+     "n": 2,
+     "kicker": "02 · Motor & ESC",
+     "title": "Live telemetry",
+     "text": "Voltage, current, power and rpm, plotted while the motor runs.",
+     "points": [
+      "Speed and ESC temperature from bidirectional DShot",
+      "Peaks, mAh and Wh of the run",
+      "Each run is logged as a CSV file"
+     ]
+    },
+    {
+     "view": "motor-table",
+     "dur": 4.8,
+     "n": 2,
+     "kicker": "02 · Motor & ESC",
+     "title": "Bench against ESC",
+     "text": "The table sets the bench's own readings beside what the ESC reports.",
+     "focus": [
+      8,
+      186,
+      612,
+      160
+     ]
+    },
+    {
+     "view": "motor-stick-run",
+     "dur": 6.2,
+     "n": 2,
+     "kicker": "02 · Motor & ESC",
+     "title": "ESC stick programming",
+     "text": "The bench drives the throttle through an ESC's beep menu, item by item.",
+     "points": [
+      "Profiles for 74 ESC families, 462 models",
+      "26 of them run from ESC STICK"
+     ]
+    },
+    {
+     "view": "motor-wire-am",
+     "dur": 4.8,
+     "n": 2,
+     "kicker": "02 · Motor & ESC",
+     "title": "ESC signal wire",
+     "text": "AM32, Bluejay, BLHeli_S and ESCape32: settings are read, edited and written through the signal wire."
+    },
+    {
+     "view": "servo-hub",
+     "dur": 4.8,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "Eight servo tools",
+     "text": "Tester, sweep, automatic test, limit run, rudder gauge and two programmers."
+    },
+    {
+     "view": "servo",
+     "dur": 4.8,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "LIVE",
+     "text": "A dial commands the position. The screen reads pulse width, measured angle and current.",
+     "focus": [
+      8,
+      414,
+      612,
+      88
+     ]
+    },
+    {
+     "view": "servo-sweep",
+     "dur": 4.8,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "SWEEP",
+     "text": "A square, sine or triangle sweep, timed by the IOmcu, with speed and pause."
+    },
+    {
+     "view": "servo-result",
+     "dur": 6.2,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "TEST",
+     "text": "An automatic test steps the supply from 4.8 to 6.0 V and looks for the brown-out.",
+     "points": [
+      "Result: pass or fail, with travel time and hold current",
+      "A CSV file and a text report on the card"
+     ]
+    },
+    {
+     "view": "servo-limrun-found",
+     "dur": 4.8,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "LIMIT RUN",
+     "text": "Finds both ends of an installed linkage from the servo's current. SEARCH + PROGRAM writes them into the servo.",
+     "focus": [
+      8,
+      138,
+      612,
+      84
+     ]
+    },
+    {
+     "view": "servo-rudder",
+     "dur": 4.8,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "RUDDER",
+     "text": "Deflection in degrees and in mm at the trailing edge, from the surface's length.",
+     "focus": [
+      8,
+      56,
+      612,
+      104
+     ]
+    },
+    {
+     "view": "servo-rudder-auto",
+     "dur": 4.8,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "RUDDER AUTO",
+     "text": "Programs a servo's end points for a set deflection, on the programming port."
+    },
+    {
+     "view": "servo-kst-tune",
+     "dur": 6.2,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "KST and Chaservo",
+     "text": "The programmer reads 32 registers over the signal wire.",
+     "points": [
+      "Edits are a draft until WRITE",
+      "Backup to the card before the first write",
+      "Every written value is read back"
+     ]
+    },
+    {
+     "view": "servo-hitec",
+     "dur": 4.8,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "title": "Hitec",
+     "text": "D series and classic HS-5xxx and HS-7xxx servos, with backup, limit checks and a write switch."
+    },
+    {
+     "view": "supply",
+     "dur": 6.2,
+     "n": 4,
+     "kicker": "04 · Supply",
+     "title": "USB-PD supply",
+     "text": "The PD mini: voltage and current limit are set on the panel, the output is switched there.",
+     "points": [
+      "V, A and W plotted and logged",
+      "CV or CC mode shown",
+      "OUTPUT OFF on one touch"
+     ]
+    },
+    {
+     "view": "analyser",
+     "dur": 6.2,
+     "n": 5,
+     "kicker": "05 · Receiver & pack",
+     "title": "RECEIVER",
+     "text": "16 channels with history, the digital channels and the signal state.",
+     "points": [
+      "LIVE, FRAME LOST, FAILSAFE, NO SIGNAL"
+     ],
+     "tag": "S.BUS DECODER BUILT · PIN DRIVER NOT WRITTEN"
+    },
+    {
+     "view": "battery",
+     "dur": 4.8,
+     "n": 5,
+     "kicker": "05 · Receiver & pack",
+     "title": "BATTERY",
+     "text": "Per-cell voltage, spread and a verdict.",
+     "tag": "DRAWN FROM A MODEL"
+    },
+    {
+     "view": "balance",
+     "dur": 4.8,
+     "n": 5,
+     "kicker": "05 · Receiver & pack",
+     "title": "BALANCE",
+     "text": "Blade count, correction mass and its angle.",
+     "tag": "SENSORS NOT FITTED · NOTHING MEASURED"
+    },
+    {
+     "view": "logs",
+     "dur": 4.8,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "title": "LOGS",
+     "text": "Runs are recorded to the SD card while the bench is ARMED or the supply's output is on."
+    },
+    {
+     "view": "logs-plot",
+     "dur": 4.8,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "title": "Plot on the panel",
+     "text": "A CSV file opens as a plot. A cursor steps through its samples.",
+     "focus": [
+      4,
+      64,
+      616,
+      48
+     ]
+    },
+    {
+     "view": "files",
+     "dur": 6.2,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "title": "FILES",
+     "text": "The card in two panes: copy, move, rename, delete, new folders and text files.",
+     "points": [
+      "Writes only while the bench is SAFE",
+      "The bench's own folders are protected"
+     ]
+    },
+    {
+     "view": "files-edit",
+     "dur": 4.8,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "title": "Text editor",
+     "text": "Text files on the card are viewed and edited on the panel."
+    },
+    {
+     "view": "wifi-joined",
+     "dur": 6.2,
+     "n": 7,
+     "kicker": "07 · Wi-Fi & updates",
+     "title": "Wi-Fi",
+     "text": "A browser downloads any file of the card, or the whole card as one ZIP file, and uploads panel firmware.",
+     "points": [
+      "Own access point or a saved home network",
+      "Radio on only while the screen is open and for update checks"
+     ]
+    },
+    {
+     "view": "updates-newer",
+     "dur": 6.2,
+     "n": 7,
+     "kicker": "07 · Wi-Fi & updates",
+     "title": "UPDATES",
+     "text": "The panel asks GitHub for a newer release, downloads it over HTTPS and installs it on a 2 s hold.",
+     "points": [
+      "STABLE or TESTING releases",
+      "The IOmcu is updated from the panel over CAN"
+     ]
+    },
+    {
+     "view": "setup",
+     "dur": 4.8,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "title": "SETUP",
+     "text": "Panel, sensors, outputs, SD card, Wi-Fi, updates and the Bluetooth IMU."
+    },
+    {
+     "view": "outputs-rbmod",
+     "dur": 4.8,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "title": "OUTPUTS",
+     "text": "A protocol for each pin: PWM, PPM, DShot or bidirectional DShot."
+    },
+    {
+     "view": "setup-sensors-rbmod",
+     "dur": 4.8,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "title": "SENSORS",
+     "text": "Current monitors INA228 and INA3221, the AS5600 angle encoder, the phase tap and the IMU."
+    },
+    {
+     "view": "imu-connected",
+     "dur": 4.8,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "title": "Bluetooth IMU",
+     "text": "An angle sensor on the control surface, read over Bluetooth at 50 Hz."
+    },
+    {
+     "view": "help-overview",
+     "dur": 4.8,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "title": "A guide on every screen",
+     "text": "The ? in the band numbers the controls of the screen and explains each.",
+     "focus": [
+      508,
+      50,
+      510,
+      448
+     ]
+    },
+    {
+     "view": "overview",
+     "dur": 3.6,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "title": "English and German",
+     "text": "The interface language is set on the panel.",
+     "lang": "de"
+    },
+    {
+     "view": "overview-light",
+     "dur": 3.6,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "title": "Dark and light theme",
+     "text": "Both themes are stored with the settings."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 6,
+   "heading": "rcbench",
+   "items": [
+    "The bench",
+    "Motor & ESC",
+    "Servo",
+    "Supply",
+    "Receiver, battery, balance",
+    "Logs & files",
+    "Wi-Fi & updates",
+    "Setup"
+   ],
+   "note": "MIT licence · github.com/subtilitas/rcbench"
+  }
+ ]
+}

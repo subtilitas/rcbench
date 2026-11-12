@@ -26,8 +26,27 @@ def test_committed_storyboards_pass():
 def test_views_name_their_screen():
     """Each view comes with the renderer's screen name."""
     found = make_video.views(_board())
-    assert found["servo-hub-rbmod"] == "servo"
-    assert found["servo-kst-read-rbmod"] == "servo"
+    assert found["servo-hub-rbmod"] == ("servo-hub-rbmod", "servo", "en")
+    assert found["servo-kst-read-rbmod"][1] == "servo"
+
+
+def test_a_step_can_set_its_language():
+    """A tour step with lang is a shot of its own."""
+    board = {"lang": "en", "steps": 1, "scenes": [{"type": "tour", "steps": [
+        {"view": "overview", "dur": 3, "n": 1, "title": "x", "lang": "de"},
+        {"view": "overview", "dur": 3, "n": 1, "title": "x"}]}]}
+    assert make_video.check(board) == []
+    found = make_video.views(board)
+    assert found["overview@de"] == ("overview", None, "de")
+    assert found["overview"] == ("overview", None, "en")
+
+
+def test_a_focus_off_the_display_is_refused():
+    """A spotlight lies on the 1024 x 600 display."""
+    board = {"lang": "en", "steps": 1, "scenes": [{"type": "tour", "steps": [
+        {"view": "overview", "dur": 3, "n": 1, "title": "x",
+         "focus": [900, 10, 200, 100]}]}]}
+    assert any("focus" in e for e in make_video.check(board))
 
 
 def test_a_hold_needs_its_lead_in():

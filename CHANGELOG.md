@@ -11,7 +11,9 @@ history is in git.
 - `tools/make_video.py` renders a storyboard under `tools/video/storyboards/`
   into an MP4 video: the case as a 3D model, the panel's screens from the
   host renderer with pointer bubbles, and a recap. Storyboard `kst-rbmod`
-  shows programming a KST servo on the rbmod carrier in 8 steps and 100.4s
+  shows programming a KST servo on the rbmod carrier in 8 steps and 100.4s;
+  storyboard `features` shows every screen of the bench in 8 chapters and
+  192.2s
   ([Videos from storyboards](tools/video/README.md)).
 - Profile field `scheme.announce.loop_marker`: `true` where the ESC sounds
   one sound that is no item between the highest item and the lowest of each

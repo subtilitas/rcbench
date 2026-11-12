@@ -2,7 +2,8 @@
 """Render a storyboard under tools/video/storyboards/ into an MP4 video.
 
 A storyboard is a JSON file: a list of scenes that show the bench's case as
-a 3D model, the panel's screens with pointer bubbles, and a recap.  The
+a 3D model, the panel's screens with pointer bubbles or with a caption and
+a spotlight, and a recap.  The
 screens are not recordings: each step names a view of the host renderer
 (tools/render_ui.py), so a video shows what the display shows.
 
@@ -77,10 +78,9 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
     if "lid" in scene:
         _keys(scene["lid"], 2, f"{where} lid", errors)
-    if "display" in scene and not (
-            isinstance(scene["display"].get("view"), str)
-            and isinstance(scene["display"].get("screen"), str)):
-        errors.append(f"{where}: display needs view and screen")
+    if "display" in scene and not isinstance(
+            scene["display"].get("view"), str):
+        errors.append(f"{where}: display needs a view")
     if "title" in scene:
         _span(scene["title"], dur, f"{where} title", errors)
         if not isinstance(scene["title"].get("heading"), str):
@@ -124,9 +124,6 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
 
 
 def _check_screen(scene: dict, steps: int, where: str, errors: list) -> None:
-    if not isinstance(scene.get("screen"), str):
-        errors.append(f"{where}: screen, the renderer's screen name, is "
-                      "missing")
     if not scene.get("steps"):
         errors.append(f"{where}: steps is empty")
     for n, step in enumerate(scene.get("steps", [])):
@@ -158,6 +155,36 @@ def _check_screen(scene: dict, steps: int, where: str, errors: list) -> None:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
 
 
+def _check_tour(scene: dict, steps: int, where: str, errors: list) -> None:
+    if not scene.get("steps"):
+        errors.append(f"{where}: steps is empty")
+    for n, step in enumerate(scene.get("steps", [])):
+        at = f"{where} step {n + 1}"
+        for name in ("view", "title"):
+            if not isinstance(step.get(name), str):
+                errors.append(f"{at}: {name} is missing")
+        # The caption takes 0.6s to appear and each point 0.13s more; the
+        # spotlight is drawn from 1.5s.
+        least = 2.5 if "focus" in step else 1.5
+        if not (_number(step.get("dur")) and step["dur"] >= least):
+            errors.append(f"{at}: dur must be at least {least}s")
+        if not (isinstance(step.get("n"), int) and 1 <= step["n"] <= steps):
+            errors.append(f"{at}: n must be a step from 1 to {steps}")
+        if step.get("lang", "en") not in ("en", "de"):
+            errors.append(f"{at}: lang must be en or de")
+        focus = step.get("focus")
+        if focus is not None and not (
+                isinstance(focus, list) and len(focus) == 4
+                and focus[0] >= 0 and focus[1] >= 0
+                and focus[2] >= 24 and focus[3] >= 24
+                and focus[0] + focus[2] <= PANEL[0]
+                and focus[1] + focus[3] <= PANEL[1]):
+            errors.append(f"{at}: focus must be [x, y, w, h] on the "
+                          f"{PANEL[0]}x{PANEL[1]} display")
+        if not isinstance(step.get("points", []), list):
+            errors.append(f"{at}: points must be a list")
+
+
 def check(board: dict) -> list:
     """Find what the player would not draw.
 
@@ -184,12 +211,15 @@ def check(board: dict) -> list:
             _check_case(scene, where, errors)
         elif kind == "screen":
             _check_screen(scene, steps, where, errors)
+        elif kind == "tour":
+            _check_tour(scene, steps, where, errors)
         elif kind == "end":
             if not (_number(scene.get("dur")) and scene["dur"] > 0
                     and isinstance(scene.get("heading"), str)):
                 errors.append(f"{where}: needs dur and heading")
         else:
-            errors.append(f"{where}: type must be case, screen or end")
+            errors.append(f"{where}: type must be case, screen, tour "
+                          "or end")
     return errors
 
 
@@ -200,15 +230,23 @@ def views(board: dict) -> dict:
         board: A storyboard that passed check().
 
     Returns:
-        The view names, each with the renderer's screen name.
+        The shots by file name without suffix, the view name with @de or
+        @en where a step sets its own language.  Each holds the view, the
+        screen name the storyboard gives or None, and the language.
     """
     found = {}
     for scene in board["scenes"]:
         if scene["type"] == "case" and "display" in scene:
-            found[scene["display"]["view"]] = scene["display"]["screen"]
-        if scene["type"] == "screen":
+            shot = scene["display"]
+            found[shot["view"]] = (shot["view"], shot.get("screen"),
+                                   board["lang"])
+        if scene["type"] in ("screen", "tour"):
             for step in scene["steps"]:
-                found[step["view"]] = scene["screen"]
+                lang = step.get("lang")
+                name = f"{step['view']}@{lang}" if lang else step["view"]
+                found[name] = (step["view"],
+                               step.get("screen", scene.get("screen")),
+                               lang or board["lang"])
     return found
 
 
@@ -254,14 +292,23 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
     with tempfile.TemporaryDirectory() as td:
         tmp = pathlib.Path(td)
         exe = render_ui.build(tmp)
-        for view, screen in views(board).items():
+        known = {**render_ui.SCREENS, **render_ui.FIT_ONLY}
+        for name, (view, screen, lang) in views(board).items():
+            # A view of render_ui.py's tables brings its screen and theme;
+            # any other is a pose of the screen the storyboard names.
+            theme = "dark"
+            if view in known:
+                _, screen, theme = known[view]
+            if screen is None:
+                sys.exit(f"view {view!r} is not in render_ui.py's tables: "
+                         "the step or its scene must name the screen")
             try:
-                image = render_ui.render_one(exe, tmp, view, screen, "dark",
-                                             board["lang"])
+                image = render_ui.render_one(exe, tmp, view, screen, theme,
+                                             lang)
             except subprocess.CalledProcessError:
                 sys.exit(f"the renderer does not draw view {view!r} of "
                          f"screen {screen!r}")
-            image.save(shots / f"{view}.png")
+            image.save(shots / f"{name}.png")
 
 
 class _Handler(http.server.SimpleHTTPRequestHandler):

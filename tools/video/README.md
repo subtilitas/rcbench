@@ -8,6 +8,7 @@ under `storyboards/`. It lists scenes; each scene has a type:
 | --- | --- |
 | `case` | the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
+| `tour` | the panel's screens with a caption beside them and a spotlight on a part of the display |
 | `end` | a heading, a numbered recap and a note |
 
 The screens are drawn by the host renderer (`tools/render_ui.py`) from the
@@ -19,6 +20,7 @@ screen is recorded or drawn by hand.
 ```sh
 cd tools/video && npm install && cd ../..          # once: three.js 0.170.0
 python3 tools/make_video.py kst-rbmod              # build/video/kst-rbmod.mp4
+python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py --check                # every storyboard
 ```
@@ -26,8 +28,8 @@ python3 tools/make_video.py --check                # every storyboard
 A render needs a C compiler, Pillow, Node.js with the `playwright`
 package and its Chromium, and ffmpeg. `--check` needs only Python; the
 pytest case `test/tools/test_make_video.py` runs it in CI (continuous
-integration). The 100s of `kst-rbmod` are 3012 frames; the render time on
-a software rasteriser is not measured.
+integration). The 100.4s of `kst-rbmod` are 3012 frames and the 192.2s of
+`features` 5766; the render time on a software rasteriser is not measured.
 
 ## Files
 
@@ -38,6 +40,7 @@ a software rasteriser is not measured.
 | `player/case3d.js` | the case model, its connectors and its named points |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
+| `storyboards/features.json` | every screen of the bench in 8 chapters and 32 steps, 192.2s |
 
 ## Storyboard fields
 
@@ -61,7 +64,7 @@ A `case` scene:
 | `dur` | length in s |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
-| `display` | optional `{view, screen}`: the renderer view on the model's display |
+| `display` | optional `{view}`: the renderer view on the model's display |
 | `title` | optional `{from, to, kicker, heading, text}` |
 | `chips` | optional `{from, to, n, text}`: the chip at the top right; a numeric `n` also sets the step marks |
 | `labels` | `{from, to, anchor, at, title, text}` and optional `n`, `size` (`sm`), `side` (`l`, `r`, `t`, `b`: where the pointer leaves the bubble), `style` (`ok`, `warn`, `muted`) |
@@ -74,9 +77,12 @@ top left corner on the frame in pixels. The model's origin is the centre
 of the case floor; x runs along the 190mm side, y up, z towards the
 connector wall.
 
-A `screen` scene has `screen`, the renderer's screen name (`servo`,
-`supply`, `outputs` and the others `tools/render_ui.py` lists), and
-`steps`:
+A view in the tables of `tools/render_ui.py` brings its screen and its
+theme. Any other view is a pose of `test/host/render_screen.c` that no
+page shows; its step or its scene names the renderer's screen in `screen`
+(`servo`, `motor`, `supply` and the others).
+
+A `screen` scene has `steps`:
 
 | Field | Meaning |
 | --- | --- |
@@ -87,6 +93,19 @@ A `screen` scene has `screen`, the renderer's screen name (`servo`,
 | `target` | optional `[x, y]` on the 1024 x 600 display: where the pointer ends and the touch lands |
 | `action` | optional `tap` or `hold`; the hold ring fills in 2s |
 | `style`, `tag` | optional: `ok` or `warn`, and a warning tag's text |
+
+A `tour` scene has `steps`:
+
+| Field | Meaning |
+| --- | --- |
+| `view` | the renderer's view name |
+| `lang` | optional `en` or `de`: this step's screen in another language than the storyboard's |
+| `dur` | length in s: at least 1.5, 2.5 with a spotlight |
+| `n` | the chapter: the step marks and the number behind the caption |
+| `kicker`, `title`, `text` | the caption; the kicker stays while consecutive steps share it |
+| `points` | optional list of lines under the text |
+| `focus` | optional `[x, y, w, h]` on the 1024 x 600 display: the rest is dimmed from 0.9s |
+| `tag` | optional amber tag, for a limit of what the screen shows |
 
 An `end` scene has `dur`, `heading`, `items` and `note`.
 
@@ -99,7 +118,8 @@ An `end` scene has `dur`, `heading`, `items` and `note`.
 2. A state no page shows is added as a pose in `render_screen.c`. The KST
    views take `-rbmod` after a state, `servo-kst-read-rbmod`, for that
    state on the carrier; `-idle`, `-portlist`, `-typed` and `-edited`
-   exist for videos only.
+   exist for videos only, as does `motor-plot`, the plot of a run on
+   MOTOR & ESC with an IOmcu answering.
 3. Copy `storyboards/kst-rbmod.json`, replace the steps, and read each
    `target` from the view's PNG.
 4. `--stills` at a few times shows the layout before a full render.

@@ -54,3 +54,13 @@ svg#ov{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
 #end li{padding:22px 24px;border-radius:20px;background:var(--card);border:1px solid var(--line);font-size:24px;font-weight:600;display:flex;gap:14px;align-items:center}
 #end li span{flex:none;width:38px;height:38px;border-radius:12px;background:var(--cy);color:#001318;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:20px}
 #end p{margin-top:38px;color:var(--mu);font-size:24px}
+#cap{position:absolute;left:1408px;top:176px;width:462px;height:774px;display:flex;flex-direction:column;justify-content:center}
+#cap .k{font-size:19px;letter-spacing:.26em;color:var(--cy);font-weight:700;text-transform:uppercase}
+#cap h2{font-size:50px;line-height:1.06;font-weight:800;letter-spacing:-.022em;margin:18px 0 0}
+#cap p{font-size:24px;line-height:1.45;color:#b8c4d8;margin-top:18px}
+#cap ul{list-style:none;margin-top:22px;border-top:1px solid var(--line)}
+#cap li{position:relative;padding:13px 0 13px 30px;font-size:21.5px;line-height:1.35;color:#dbe3f0;border-bottom:1px solid var(--line)}
+#cap li::before{content:"";position:absolute;left:4px;top:23px;width:9px;height:9px;border-radius:50%;background:var(--cy);box-shadow:0 0 12px var(--cy)}
+#cap li b{color:#fff;font-weight:700}
+#cap .tag{display:inline-block;margin-top:22px;padding:7px 13px;border-radius:9px;font-size:16.5px;font-weight:700;letter-spacing:.08em}
+#ghost{position:absolute;right:40px;top:120px;font-size:300px;font-weight:800;letter-spacing:-.05em;line-height:1;color:#fff;opacity:0}
