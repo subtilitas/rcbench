@@ -41,11 +41,11 @@ LÄNGE ist der Abstand von der Scharnierlinie zur Hinterkante: 0 oder 10 bis 500
 | 1000us, 2000us | gesperrt und gedimmt | gibt diesen Puls vor, begrenzt durch WEG und den Pulsbereich des eingestellten Typs |
 | ZENTRIEREN | gesperrt und gedimmt | gibt PULS MITTE plus TRIMMUNG vor |
 | Drehknopf | gesperrt; Drehungen werden verworfen | bewegt das Horn ausgehend vom Sollwert, wie auf LIVE; bei laufendem AUTO gesperrt |
-| -10us, +10us | gesperrt und gedimmt | verschiebt den Sollpuls um 10us; gehalten wiederholt es nach 0,45s mit 8 Schritten je Sekunde und ab 2,25s mit 30; begrenzt durch WEG und den Pulsbereich wie 1000us und 2000us |
+| -10us, +10us | gesperrt und gedimmt | verschiebt den Sollpuls um 10us; gehalten wiederholt es nach 0,45s mit 8 Schritten je Sekunde und ab 2,25s mit 30; ein Halten endet an WEG oder an PULS MIN oder MAX, je nachdem, was zuerst kommt |
 | NULLPUNKT | setzt den aktuellen Winkel als Neutrallage und löscht MAX; ohne Messwert grau. Ein Nullpunkt am AS5600 wird gespeichert und kommt nach einem Neustart zurück; ein Nullpunkt an der IMU gilt bis zum Neustart, weil ihre Verbindung nicht authentifiziert ist. Änderungen an WINKELQUELLE, IMU-Achse, IMU-Vorzeichen oder IMU-Algorithmus sowie NULLPUNKT oder NULLPUNKT LÖSCHEN auf der IMU-Seite verwerfen Nullpunkt und MAX. | ebenso; bei laufendem AUTO gesperrt |
 | MAX LÖSCHEN | löscht MAX und behält den Nullpunkt | ebenso; bei laufendem AUTO gesperrt |
 
--10us und +10us stehen rechts von MAX LÖSCHEN, solange `Drehknopf` unter SETUP > PANEL AUS ist oder EIN mit einem Knopf, der nicht antwortet; ein antwortender Knopf blendet sie aus. 1000us, ZENTRIEREN, 2000us, -10us und +10us wirken beim Drücken, und der Puls bleibt beim Loslassen stehen. LÄNGE, NULLPUNKT und MAX LÖSCHEN wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. DISARM, STOP oder das Verlassen der Seite schaltet den Prüfstand auf SAFE. [RUDER AUTO](#ruder-auto) programmiert die Endpunkte auf einer eigenen Seite.
+-10us und +10us stehen rechts von MAX LÖSCHEN, solange `Drehknopf` unter SETUP > PANEL AUS ist oder EIN mit einem Knopf, der nicht antwortet; ein antwortender Knopf blendet sie aus. Ein Knopfsensor, der ohne Magnet darüber antwortet, gilt als antwortend, da er keinen Magnetstatus meldet: stelle `Drehknopf` auf AUS, um die Tasten zu bekommen. 1000us, ZENTRIEREN, 2000us, -10us und +10us wirken beim Drücken, und der Puls bleibt beim Loslassen stehen. LÄNGE, NULLPUNKT und MAX LÖSCHEN wirken, wenn du einen Tipp darauf loslässt. PULS unter den Tasten zeigt den Sollpuls. DISARM, STOP oder das Verlassen der Seite schaltet den Prüfstand auf SAFE. [RUDER AUTO](#ruder-auto) programmiert die Endpunkte auf einer eigenen Seite.
 
 ## Die Winkelquelle
 

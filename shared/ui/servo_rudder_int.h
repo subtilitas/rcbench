@@ -180,11 +180,12 @@ const servo_rudder_t *rudder_geo(void);
 #define RUD_LINES 4
 
 /**
- * @brief A DOWN on the page area while RUDDER is shown: 1000us, CENTER and
- *        2000us act on it, while the value is live, and so do -10us and
- *        +10us, which take the press and repeat while it is held; LENGTH,
- *        ZERO and RESET MAX take the press and act on its release over
- *        them.
+ * @brief A DOWN on the page area while RUDDER is shown.  1000us, CENTER
+ *        and 2000us act on it while the value is live, and end a held
+ *        -10us or +10us.  -10us and +10us step on it while the value is
+ *        live, take the press and repeat while it is held; a DOWN with the
+ *        press's own id ends it, its UP lost.  LENGTH, ZERO and RESET MAX
+ *        take the press and act on its release over them.
  * @param evt the DOWN
  */
 void rudder_down(const touch_event_t *evt);

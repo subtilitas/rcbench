@@ -1969,7 +1969,7 @@ What each control does while the bench is SAFE:
 | --- | --- | --- |
 | The dial | refused: no command, the horn and COMMANDED stay | commands the position under the finger |
 | Rotary knob | refused; the turn is not kept | moves the horn from the commanded value |
-| -10us, +10us on RUDDER, while Rotary knob is OFF or the knob does not answer | refused; drawn dimmed | moves the pulse 10us from the commanded value, a hold repeats; held to TRAVEL and the pulse range |
+| -10us, +10us on RUDDER, while Rotary knob is OFF or the knob does not answer | refused; drawn dimmed | moves the pulse 10us from the commanded value, a hold repeats; a hold stops at TRAVEL or PULSE MIN or MAX, whichever comes first |
 | CENTER | refused; drawn dimmed | commands PULSE CENTER plus TRIM |
 | SWEEP, PAUSE, PAUSED | refused; drawn dimmed | starts, pauses and resumes the sweep |
 | RELEASE | sends the release; the value shown stays | centers the surfaces; the value shown becomes the rest |
@@ -5458,7 +5458,9 @@ across a third of its travel from -travel to +travel.
   0x07 have not been scanned on this board.
 - Without a knob that answers, RUDDER shows -10us and +10us in its place:
   while Rotary knob is OFF, or ON and the last poll went unanswered
-  ([Rudder deflection](Servo.md#rudder-deflection)).
+  ([Rudder deflection](Servo.md#rudder-deflection)). A sensor that answers
+  with no magnet over it counts as answering, since it reports no magnet
+  status: the keys stay hidden until Rotary knob is OFF.
 - The knob's direction, noise and behaviour without a magnet have not been
   measured on hardware.
 
