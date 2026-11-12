@@ -76,10 +76,10 @@ typedef enum {
  */
 typedef struct {
     sense_err_t (*read)(void *ctx, uint8_t addr, uint8_t reg,
-                        uint8_t *buf, size_t n);
+                        uint8_t *buf, size_t n);  /**< reads n bytes of register reg of the part at addr into buf */
     sense_err_t (*write)(void *ctx, uint8_t addr, uint8_t reg,
-                         const uint8_t *buf, size_t n);
-    void *ctx;
+                         const uint8_t *buf, size_t n);  /**< writes n bytes from buf to register reg of the part at addr */
+    void *ctx;  /**< passed to read and write unchanged */
 } sense_i2c_t;
 
 #define SENSE_STUCK_TIMEOUTS  2u   /**< timeouts in a row: the bus is stuck  */
@@ -88,8 +88,9 @@ typedef struct {
 #define SENSE_FAILS           3u   /**< failed transactions in a row: offline */
 #define SENSE_RETRY_MS     1000u   /**< a part not online, probed again     */
 
+/** @brief The state of one sensor bus: the wire and the counters of its faults. */
 typedef struct {
-    sense_i2c_t io;
+    sense_i2c_t io;  /**< the wire */
     uint16_t errors;      /**< transactions failed on the wire, mod 65536 */
     uint8_t  timeouts;    /**< SENSE_TIMEOUT in a row                     */
     bool     stuck;       /**< nothing is sent until a recovery           */
@@ -188,9 +189,9 @@ typedef enum {
  * @brief A part on the bus: its address, state and last probe.
  */
 typedef struct {
-    sense_bus_t  *bus;
-    uint8_t       addr;
-    sense_state_t state;
+    sense_bus_t  *bus;  /**< the bus the part sits on */
+    uint8_t       addr;  /**< the 7-bit I2C address */
+    sense_state_t state;  /**< the part's state */
     uint8_t       fails;       /**< failed transactions in a row          */
     sense_err_t   last_err;    /**< the last failure                      */
     uint16_t      id_maker;    /**< manufacturer ID at the last probe     */
@@ -339,8 +340,8 @@ typedef enum {
  * range, by how much is not known, and value is 0.
  */
 typedef struct {
-    int32_t      value;
-    sense_clip_t clip;
+    int32_t      value;  /**< the reading; 0 when clip is not SENSE_CLIP_NONE */
+    sense_clip_t clip;  /**< whether the reading is at an end of its range */
 } sense_value_t;
 
 #ifdef __cplusplus

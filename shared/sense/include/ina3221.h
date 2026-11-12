@@ -71,9 +71,9 @@ enum {
 
 /** @brief Configuration bits, Table 8-4. */
 #define INA3221_CONFIG_RST    0x8000u
-#define INA3221_CONFIG_CH1EN  0x4000u
-#define INA3221_CONFIG_CH2EN  0x2000u
-#define INA3221_CONFIG_CH3EN  0x1000u
+#define INA3221_CONFIG_CH1EN  0x4000u  /**< enables channel 1, CONFIG bit 14 */
+#define INA3221_CONFIG_CH2EN  0x2000u  /**< enables channel 2, CONFIG bit 13 */
+#define INA3221_CONFIG_CH3EN  0x1000u  /**< enables channel 3, CONFIG bit 12 */
 #define INA3221_CONFIG_RESET  0x7127u   /**< power-on value */
 
 /**
@@ -94,20 +94,20 @@ enum {
  * Reading the register clears CF1-3, SF, WF1-3 and CVRF.
  */
 #define INA3221_ME_SCC1  0x4000u
-#define INA3221_ME_SCC2  0x2000u
-#define INA3221_ME_SCC3  0x1000u
-#define INA3221_ME_WEN   0x0800u
-#define INA3221_ME_CEN   0x0400u
-#define INA3221_ME_CF1   0x0200u
-#define INA3221_ME_CF2   0x0100u
-#define INA3221_ME_CF3   0x0080u
-#define INA3221_ME_SF    0x0040u
-#define INA3221_ME_WF1   0x0020u
-#define INA3221_ME_WF2   0x0010u
-#define INA3221_ME_WF3   0x0008u
-#define INA3221_ME_PVF   0x0004u
-#define INA3221_ME_TCF   0x0002u
-#define INA3221_ME_CVRF  0x0001u
+#define INA3221_ME_SCC2  0x2000u  /**< summation control, channel 2 */
+#define INA3221_ME_SCC3  0x1000u  /**< summation control, channel 3 */
+#define INA3221_ME_WEN   0x0800u  /**< warning alert latch enable */
+#define INA3221_ME_CEN   0x0400u  /**< critical alert latch enable */
+#define INA3221_ME_CF1   0x0200u  /**< critical alert flag, channel 1 */
+#define INA3221_ME_CF2   0x0100u  /**< critical alert flag, channel 2 */
+#define INA3221_ME_CF3   0x0080u  /**< critical alert flag, channel 3 */
+#define INA3221_ME_SF    0x0040u  /**< summation alert flag */
+#define INA3221_ME_WF1   0x0020u  /**< warning alert flag, channel 1 */
+#define INA3221_ME_WF2   0x0010u  /**< warning alert flag, channel 2 */
+#define INA3221_ME_WF3   0x0008u  /**< warning alert flag, channel 3 */
+#define INA3221_ME_PVF   0x0004u  /**< power-valid alert flag */
+#define INA3221_ME_TCF   0x0002u  /**< timing-control alert flag */
+#define INA3221_ME_CVRF  0x0001u  /**< conversion-ready flag */
 
 /**
  * @brief The set-ups this bench runs (DESIGN §3.4): continuous shunt and bus,
@@ -116,7 +116,7 @@ enum {
  * CH1 alone gives a fresh result every 280µs; all three every 840µs.
  */
 #define INA3221_CONFIG_BENCH_CH1 0x4007u
-#define INA3221_CONFIG_BENCH_ALL 0x7007u
+#define INA3221_CONFIG_BENCH_ALL 0x7007u  /**< Configuration with all three channels enabled */
 
 /**
  * @brief Configuration from its fields.  @p channels: bit 0 CH1, bit 1 CH2, bit
@@ -215,6 +215,7 @@ int32_t ina3221_bus_mv(int32_t code);
 
 /* -------------------------------------------------------------- driver */
 
+/** @brief The result of ina3221_init(): OK or the reason a set-up is refused. */
 typedef enum {
     INA3221_SETUP_OK = 0,
     INA3221_SETUP_BAD_ADDR,     /**< outside 0x40 to 0x43                 */
@@ -226,7 +227,7 @@ typedef enum {
  * @brief One INA3221 on a sensor bus: its part record, shunts and Configuration.
  */
 typedef struct {
-    sense_part_t part;
+    sense_part_t part;  /**< the part on the bus */
     uint32_t     shunt_uohm[INA3221_CHANNELS]; /**< CH1 to CH3; 0 for a
                                     channel the configuration leaves off */
     uint16_t     config;       /**< the Configuration register as written */

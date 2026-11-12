@@ -97,16 +97,16 @@
 extern "C" {
 #endif
 
-#define AS5600_ADDR          0x36u
-#define AS5600_REG_STATUS    0x0Bu
-#define AS5600_REG_RAW_ANGLE 0x0Cu
-#define AS5600_REG_ANGLE     0x0Eu
-#define AS5600_REG_AGC       0x1Au
-#define AS5600_REG_MAGNITUDE 0x1Bu
+#define AS5600_ADDR          0x36u  /**< 7-bit I2C address */
+#define AS5600_REG_STATUS    0x0Bu  /**< STATUS register address; 1 byte */
+#define AS5600_REG_RAW_ANGLE 0x0Cu  /**< RAW ANGLE register pair; 2 bytes, high byte first */
+#define AS5600_REG_ANGLE     0x0Eu  /**< ANGLE register pair; 2 bytes, high byte first */
+#define AS5600_REG_AGC       0x1Au  /**< AGC register address; 1 byte */
+#define AS5600_REG_MAGNITUDE 0x1Bu  /**< MAGNITUDE register pair; 2 bytes, high byte first */
 
-#define AS5600_STATUS_MH     0x08u
-#define AS5600_STATUS_ML     0x10u
-#define AS5600_STATUS_MD     0x20u
+#define AS5600_STATUS_MH     0x08u  /**< STATUS bit 3: the magnet is too strong */
+#define AS5600_STATUS_ML     0x10u  /**< STATUS bit 4: the magnet is too weak */
+#define AS5600_STATUS_MD     0x20u  /**< STATUS bit 5: a magnet is detected */
 /** @brief The bits STATUS defines; the other five are not read. */
 #define AS5600_STATUS_MASK   (AS5600_STATUS_MH | AS5600_STATUS_ML | AS5600_STATUS_MD)
 
@@ -186,8 +186,9 @@ int32_t as5600_cdeg(int32_t counts);
 
 /* -------------------------------------------------------------- driver */
 
+/** @brief A driver for one AS5600: its part record. */
 typedef struct {
-    sense_part_t part;
+    sense_part_t part;  /**< the part on the bus, address AS5600_ADDR */
 } as5600_t;
 
 /**

@@ -13,7 +13,7 @@
 
 /** @brief Ends of the 13-bit range: 7FF8h and 8000h (§8.2.2). */
 #define CODE13_MAX   4095
-#define CODE13_MIN (-4096)
+#define CODE13_MIN (-4096)  /**< lowest 13-bit code */
 
 uint16_t ina3221_config(uint8_t channels, uint8_t avg, uint8_t vbusct,
                         uint8_t vshct, uint8_t mode)

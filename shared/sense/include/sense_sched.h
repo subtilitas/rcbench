@@ -241,7 +241,7 @@ extern "C" {
 
 /** @brief INA3221 parts, at 0x40 to 0x43, and their channels. */
 #define SENSE_I3221_PARTS   4u
-#define SENSE_CHANNELS      12u
+#define SENSE_CHANNELS      12u  /**< channels of all parts: 3 a part */
 _Static_assert(SENSE_CHANNELS == SENSE_I3221_PARTS * INA3221_CHANNELS,
                "three channels a part");
 /**
@@ -255,7 +255,7 @@ static inline unsigned sense_ch(unsigned a, unsigned ch)
 {
     return a * INA3221_CHANNELS + ch - 1u;
 }
-#define SENSE_CH(a, ch)     sense_ch((unsigned)(a), (unsigned)(ch))
+#define SENSE_CH(a, ch)     sense_ch((unsigned)(a), (unsigned)(ch))  /**< sense_ch() with its arguments cast to unsigned */
 /** @brief sense_i3221_cfg_t.fast: no channel is read every tick. */
 #define SENSE_FAST_NONE     0xFFu
 
@@ -264,11 +264,11 @@ static inline unsigned sense_ch(unsigned a, unsigned ch)
  * the INA228 (the ESC's path, electronic speed controller) the one after them.
  */
 #define SENSE_SRC_INA228    SENSE_CHANNELS
-#define SENSE_SRC_COUNT     (SENSE_CHANNELS + 1u)
+#define SENSE_SRC_COUNT     (SENSE_CHANNELS + 1u)  /**< sources: the channels and the INA228 */
 
 /** @brief The wire, the clock and the bus recovery. */
 typedef struct {
-    sense_i2c_t i2c;
+    sense_i2c_t i2c;  /**< the I2C wire and its callbacks */
     uint64_t  (*now_us)(void *ctx);  /**< the IOmcu's µs timer     */
     void      (*recover)(void *ctx); /**< 9 clocks, a STOP, the block
                                           re-initialised; NULL: none     */
@@ -290,11 +290,11 @@ typedef struct {
 
 /** @brief What is fitted and how; a part not enabled is never addressed. */
 typedef struct {
-    bool     ina228_en;
-    uint8_t  ina228_addr;
-    uint32_t ina228_shunt_uohm;
-    uint32_t ina228_max_ma;
-    sense_i3221_cfg_t i3221;
+    bool     ina228_en;  /**< the INA228 is fitted */
+    uint8_t  ina228_addr;  /**< the INA228's 7-bit address, 0x40 to 0x4F */
+    uint32_t ina228_shunt_uohm;  /**< the INA228's shunt, µΩ */
+    uint32_t ina228_max_ma;  /**< the INA228's maximum current, mA */
+    sense_i3221_cfg_t i3221;  /**< the INA3221 parts */
     bool     as5600_en;            /**< the output encoder, at 0x36      */
 } sense_sched_cfg_t;
 
@@ -331,9 +331,12 @@ typedef struct {
 
 /** @brief A window being filled. */
 typedef struct {
-    int64_t  i_sum, v_sum;
-    uint16_t n_i, n_v;
-    uint16_t n_hi, n_lo;  /**< current samples at the top, at the bottom  */
+    int64_t  i_sum,    /**< sum of the current samples with a value, µA */
+                v_sum;    /**< sum of the voltage samples, µV */
+    uint16_t n_i,      /**< current samples with a value */
+             n_v;      /**< voltage samples */
+    uint16_t n_hi,     /**< current samples at the top of the range */
+             n_lo;     /**< current samples at the bottom of the range */
     bool clip_hi,                           /**< a current sample at the top of the range   */
          clip_lo;                           /**< one at the bottom                          */
     int32_t i_min,                          /**< lowest current, µA                         */
@@ -398,7 +401,7 @@ typedef struct {
 
 /** @brief A FAST sample held while armed, for the filter. */
 typedef struct {
-    float  a;
+    float  a;  /**< the current, A */
     int8_t clip;          /**< servo_move_clip_t                          */
 } sense_cap_pre_t;
 
@@ -412,7 +415,7 @@ typedef struct {
  * @brief The state of a capture of a FAST move.
  */
 typedef struct {
-    sense_cap_state_t state;
+    sense_cap_state_t state;  /**< where the capture stands */
     uint16_t seq;         /**< captures ended, modulo 65536               */
     sense_cap_arm_t arm;                /**< how the capture was armed */
     uint32_t edge_t;      /**< the edge, 0.1ms                            */
@@ -420,8 +423,9 @@ typedef struct {
     bool     rise_owed;   /**< the level before the command is FAST's,
                                taken at the first sample past the edge    */
     /* The last SENSE_CAP_FILTER_N FAST samples while armed. */
-    sense_cap_pre_t pre[SENSE_CAP_FILTER_N];
-    uint8_t  pre_n, pre_head;
+    sense_cap_pre_t pre[SENSE_CAP_FILTER_N];  /**< the last FAST samples, a ring of pre_n entries */
+    uint8_t  pre_n,     /**< entries of pre held, up to SENSE_CAP_FILTER_N */
+             pre_head;  /**< the index of pre the next sample takes */
     /* Once over: */
     uint32_t move_t;      /**< edge to movement, 0.1ms, when ARRIVED,
                                SETTLED or LATE; 0 otherwise               */
@@ -431,12 +435,12 @@ typedef struct {
     int32_t  mean_ua;     /**< mean of the move's filtered samples        */
     uint32_t samples;     /**< filtered samples with a value in the move  */
     bool     clipped;     /**< a clipped sample: peak and mean lack it    */
-    servo_move_t mv;
+    servo_move_t mv;  /**< the move tracker the capture feeds */
 } sense_cap_t;
 
 /** @brief The output encoder as last read. */
 typedef struct {
-    as5600_t dev;
+    as5600_t dev;  /**< the AS5600 driver */
     bool     have_angle;   /**< raw holds a reading of this set-up          */
     uint8_t  status;       /**< STATUS as last read                         */
     uint16_t raw;          /**< RAW ANGLE, 0 to 4095                        */
@@ -454,53 +458,56 @@ typedef struct {
  * @brief The sampling schedule of the sensor bus: its parts, windows and captures.
  */
 typedef struct {
-    sense_sched_io_t    io;
-    sense_sched_cfg_t   cfg;
-    sense_bus_t         bus;
-    ina228_t            i228;
-    ina3221_t           i3221[SENSE_I3221_PARTS];
+    sense_sched_io_t    io;  /**< the wire, the clock and the recovery */
+    sense_sched_cfg_t   cfg;  /**< what is fitted */
+    sense_bus_t         bus;  /**< the sensor bus */
+    ina228_t            i228;  /**< the INA228 driver */
+    ina3221_t           i3221[SENSE_I3221_PARTS];  /**< the INA3221 drivers */
     ina228_setup_err_t  i228_setup;   /**< INA228_SETUP_OK when disabled  */
     ina3221_setup_err_t i3221_setup[SENSE_I3221_PARTS]; /**< OK when not
                                                            fitted          */
     /* Per channel: a clipped sample is at least clip, the top and bottom
      * codes of the range stand for top and bottom; 0 for a channel off. */
-    int32_t  ch_clip_ua[SENSE_CHANNELS];
-    int32_t  ch_top_ua[SENSE_CHANNELS];
-    int32_t  ch_bottom_ua[SENSE_CHANNELS];
+    int32_t  ch_clip_ua[SENSE_CHANNELS];  /**< µA */
+    int32_t  ch_top_ua[SENSE_CHANNELS];  /**< µA at the top code */
+    int32_t  ch_bottom_ua[SENSE_CHANNELS];  /**< µA at the bottom code */
     /* The channels read in turn beside FAST, one a tick. */
-    uint8_t  others[SENSE_CHANNELS];
-    uint8_t  n_others, other_at;
+    uint8_t  others[SENSE_CHANNELS];  /**< the channels read beside FAST */
+    uint8_t  n_others,   /**< entries of others in use */
+             other_at;   /**< the entry of others the next tick reads */
     uint8_t  volt_at;        /**< the channel whose voltage is next       */
-    uint32_t ticks;
+    uint32_t ticks;  /**< ticks run since the first */
     uint32_t gen;            /**< which set-up this schedule is: 0 from
                                   sense_sched_init(), numbered by its
                                   caller (sense_svc counts them)          */
     uint32_t rot;            /**< rotation items read                     */
-    bool     started;
+    bool     started;  /**< the first tick has run: t0_ms is set */
     uint64_t t0_ms;          /**< the first tick                          */
     uint64_t win;            /**< the window being filled, from t0_ms     */
-    sense_acc_t    acc[SENSE_SRC_COUNT];
-    sense_window_t last[SENSE_SRC_COUNT];
-    bool     have_last;
+    sense_acc_t    acc[SENSE_SRC_COUNT];  /**< the window being filled, per source */
+    sense_window_t last[SENSE_SRC_COUNT];  /**< the last closed window, per source */
+    bool     have_last;  /**< last[] holds a window */
     uint8_t  last_online;    /**< bit a: part a online as last[] closed  */
     /* FAST's last windows, newest first; ring_at numbers entry 0. */
-    sense_ring_win_t ring[SENSE_WIN_RING];
-    uint64_t ring_at;
+    sense_ring_win_t ring[SENSE_WIN_RING];  /**< FAST's last windows, newest first */
+    uint64_t ring_at;  /**< the number of ring[0] */
     uint8_t  i228_resets;    /**< INA228 found reset, modulo 256           */
     uint8_t  i3221_resets[SENSE_I3221_PARTS]; /**< each INA3221, mod 256  */
     bool     have_vbus;      /**< vbus_uv is the last INA228 slot's voltage */
-    int32_t  vbus_uv;
-    bool     have_temp, have_diag;
+    int32_t  vbus_uv;  /**< the INA228's bus voltage as last read, µV */
+    bool     have_temp,   /**< temp_mdegc holds a reading */
+             have_diag;   /**< diag holds a reading */
     uint8_t  have_flags;     /**< bit a: flags[a] holds a reading          */
     int32_t  temp_mdegc;     /**< INA228 DIETEMP as last read             */
     uint16_t diag;           /**< INA228 DIAG_ALRT as last read           */
     uint16_t flags[SENSE_I3221_PARTS]; /**< each Mask/Enable as last read */
-    sense_run_t run;
-    sense_cap_t cap;
-    sense_enc_t enc;
+    sense_run_t run;  /**< the run since arming */
+    sense_cap_t cap;  /**< the capture of a FAST move */
+    sense_enc_t enc;  /**< the output encoder */
     /* The last SENSE_FAST_HISTORY FAST samples, oldest overwritten. */
-    sense_fast_t hist[SENSE_FAST_HISTORY];
-    uint8_t  hist_n, hist_head;
+    sense_fast_t hist[SENSE_FAST_HISTORY];  /**< the last FAST samples, a ring */
+    uint8_t  hist_n,     /**< entries of hist held */
+             hist_head;  /**< the index of hist the next sample takes */
 } sense_sched_t;
 
 /**
