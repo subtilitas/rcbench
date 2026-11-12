@@ -197,10 +197,38 @@ above the span of 1000 maps to zero, motor stop, not to full throttle.
 different rate or mode. The existing output keeps running. Release the
 pin before binding it with new settings.
 
-Frames go out at 1kHz. That rate is not on the wire: the OUTPUTS page's rate
+Frames are due at 1kHz. That rate is not on the wire: the OUTPUTS page's rate
 field is a bit rate for DShot rather than a frame rate, so the bench chooses it.
 1kHz is twenty times the IOmcu's 50Hz sampling, fifty times the panel's 20Hz
 poll, and well inside every ESC's own signal timeout.
+
+The due times are a fixed grid, 1000µs apart (`OUT_RENDER_DSHOT_PERIOD_US`).
+The IOmcu's main loop sends a frame on its first pass at or after the due
+time, so a frame goes out late by up to one pass. A late frame moves no later
+frame. Two rules bound the grid (`OUT_RENDER_DSHOT_MIN_US`, 500µs):
+
+- a frame sent more than 500µs late puts the next due time 500µs after it;
+- a pass after a stall of one period or more sends one frame, not one for
+  each due time it missed, and the next due time is 500µs after it.
+
+The gap between two frames is 1000µs plus the second frame's lateness minus
+the first's, so gaps under 1000µs follow every late frame. At the due test the
+gap is never under 500µs. On the pin it can be shorter by the time from the
+due test to the frame reaching the PIO FIFO (first in first out): an interrupt
+on core 0 taken in between, such as the USB (Universal Serial Bus) stack's,
+delays that frame and not the next. `test_dshot_cadence` holds the grid, the
+500µs, the stall and the wrap of the 32-bit microsecond clock.
+
+The pins get 1000 frames a second while no pass is late by more than 500µs.
+Two kinds of pass are longer:
+
+| Pass | Length | Code |
+| --- | --- | --- |
+| A link request whose answer is more than one CAN frame, up to 8 frames for 32 registers | up to 155µs for each frame after the first: the controller has one transmit buffer, and each frame waits for the one before it to win arbitration at 1Mbit/s; up to 1,085µs for 8 frames | `can_service()` in `firmware/iomcu/src/iomcu_can.c` |
+| The console report every 3s, up to 1,489 bytes | not measured; each `printf()` waits up to 1,000µs for room in the USB transmit buffer | `can_report()` in `firmware/iomcu/src/iomcu_report.c` |
+
+Each such pass costs the frames due inside it. Frames a second and the gaps
+between frames on a pin are not measured with the grid.
 
 **Nothing is sent while the bench is not driving.** No frames means no edges,
 and an ESC stops on silence after its own timeout. Sending explicit zeros
@@ -276,21 +304,23 @@ The pad stays on the block, so the inversion set and read back at the bind
 stays in place. The pull-up goes on after the pin is driven low, so the bind
 shows no high.
 
-On ARM the line goes back to its high idle one frame period before the first
+On ARM the line goes back to its high idle at least 500µs before the first
 frame:
 
 | Step | Time | Code |
 | --- | --- | --- |
 | The first due pass of the run releases the pin onto its pull-up and sends nothing | 0 | `service_dshot()` in `shared/outputs/out_render.c` calls `out_render_hw_dshot_wake()`, which calls `out_dshot_wake()` (`firmware/iomcu/src/outputs_hw.c`) |
-| The first frame: the first of the ten `DSHOT_CMD_EDT_ENABLE` repeats at zero throttle | 1000µs or later, one frame period at 1kHz (`OUT_RENDER_DSHOT_PERIOD_US`) | `out_dshot_send()` |
+| The first frame: the first of the ten `DSHOT_CMD_EDT_ENABLE` repeats at zero throttle | the next due time: 1000µs after the wake pass's due time (`OUT_RENDER_DSHOT_PERIOD_US`), and at least 500µs after the wake (`OUT_RENDER_DSHOT_MIN_US`) | `out_dshot_send()` |
 | The command after the ask | 11ms into the run | `service_dshot()` |
 
-The ESC sees the line high for a whole frame period before the first frame,
-the same idle it sees before every other frame of the run. The wake pass
+The ESC sees the line high for 500µs or more before the first frame, and for
+a whole frame period when the wake pass is on time: the same idle it sees
+before every other frame of the run. The wake pass
 sends no frame, so the ask keeps all ten repeats. `out_dshot_send()` on a pin
 still at its low rest releases it and sends nothing, so no frame starts from a
 low line. `test_out_dshot` holds the pad's level at each step, `test_outputs_hw`
-the 1000µs, also across the wrap of the 32-bit microsecond clock.
+the 1000µs after an on-time wake, also across the wrap of the 32-bit
+microsecond clock.
 
 A pin handed to the ESC signal wire session is released first: it is a plain
 input, the session sets the line, and the low rest does not apply to it.
@@ -452,12 +482,13 @@ is unconfirmed beyond that one ESC:
 - whether the specification's "wait at least 35ms" note belongs to command
   13 or to command 12 (save settings). The table admits both readings, and
   the bench waits neither way: the frame after an ask's tenth repeat is the
-  throttle, or another zero-throttle frame, at the next 1ms tick. Settling
+  throttle, or another zero-throttle frame, at the next due time. Settling
   it needs the specification text rather than a board;
 - every bit timing, against a real ESC's tolerance rather than against the
   specification;
-- the low rest of a stopped bidirectional pin and the 1000µs release before
-  the first frame, and whether an ESC completes its arming after them.
+- the low rest of a stopped bidirectional pin and the release 500µs to 1000µs
+  before the first frame, and whether an ESC completes its arming after them;
+- the frame rate and the gaps between frames on a pin with the due-time grid.
 
 ## Where the code is
 
