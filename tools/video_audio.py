@@ -22,6 +22,11 @@ bars in place of Bach's two free bars, so that the piece loops.
 of the violin's variations, which enter one after another.  It is in the
 public domain as well, and set down here in the same way.
 
+While a case scene holds a component in the air, the music stops as a
+record does under a hand: its speed falls to SLOW over BRAKE_S, pitch
+and all, and comes back over SPIN_S when the component moves on.
+freezes() lists those times.
+
 events() needs Python only.  render() needs numpy.
 
 Attributes:
@@ -38,6 +43,9 @@ Attributes:
     CANON_LINES: Three variations of the canon: 8 notes, 8 notes and 32.
     CANON_NOTE_S: Seconds one note of the ground lasts.
     BEDS: The names a storyboard's "music" takes.
+    SLOW: The music's speed during a freeze, as a part of full speed.
+    BRAKE_S: Seconds the music takes to fall to SLOW.
+    SPIN_S: Seconds it takes to return to full speed.
 
 SPDX-License-Identifier: MIT
 """
@@ -82,6 +90,9 @@ CANON_LINES = (
 )
 CANON_NOTE_S = 2.0
 BEDS = ("pads", "bach-prelude", "pachelbel-canon")
+SLOW = 0.05
+BRAKE_S = 1.1
+SPIN_S = 0.7
 CHORDS = (
     (38, (57, 61, 64, 66)),     # D maj7
     (42, (57, 61, 64, 68)),     # F sharp m7
@@ -108,6 +119,32 @@ def scene_times(board: dict) -> list:
         times.append((start, length))
         start += length
     return times
+
+
+def freezes(board: dict) -> list:
+    """List when a case scene holds a component in the air.
+
+    Args:
+        board: A storyboard that passed make_video.check().
+
+    Returns:
+        (start, end) in seconds from the video's start, merged where
+        two components' holds overlap, sorted.
+    """
+    holds = []
+    for scene, (start, _) in zip(board["scenes"], scene_times(board),
+                                 strict=True):
+        for keys in scene.get("parts", {}).values():
+            for a, b in zip(keys, keys[1:], strict=False):
+                if a[1] == b[1] and 0 < a[1] < 1:
+                    holds.append((start + a[0], start + b[0]))
+    merged = []
+    for a, b in sorted(holds):
+        if merged and a <= merged[-1][1]:
+            merged[-1] = (merged[-1][0], max(merged[-1][1], b))
+        else:
+            merged.append((a, b))
+    return merged
 
 
 def events(board: dict) -> list:
@@ -193,6 +230,18 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
 
     total = sum(length for _, length in scene_times(board))
     n = int(total * RATE)
+    # The music's speed at each sample and the place in the music it
+    # plays: the bed is written at full speed and read along this.
+    speed = np.ones(n)
+    t = np.arange(n) / RATE
+    for a, b in freezes(board):
+        down = np.clip((t - a) / BRAKE_S, 0.0, 1.0)
+        up = np.clip((t - (b - SPIN_S)) / SPIN_S, 0.0, 1.0)
+        # A hand on a record: fast at first, then slower to a stop.
+        dip = (1.0 - (1.0 - down) ** 2.2) * (1.0 - up ** 2)
+        speed = np.minimum(speed, 1.0 - (1.0 - SLOW) * dip)
+    place = np.cumsum(speed) / RATE
+    span = float(place[-1])
     rng = np.random.default_rng(2350)
     music = np.zeros((2, n + RATE * 4))
     fx = np.zeros((2, n + RATE * 4))
@@ -235,10 +284,10 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
     order = (0, 2, 1, 3, 2, 3, 1, 2)
     bed = board.get("music", "pads")
     prelude, canon = bed == "bach-prelude", bed == "pachelbel-canon"
-    bars = int(total / BAR_S) + 1 if bed == "pads" else 0
+    bars = int(span / BAR_S) + 1 if bed == "pads" else 0
     # The canon: the ground alone once, then the variations in turn over
     # it, the long ones on a soft sustained voice, the third plucked.
-    rounds = int(total / (8 * CANON_NOTE_S)) + 1 if canon else 0
+    rounds = int(span / (8 * CANON_NOTE_S)) + 1 if canon else 0
     for rnd in range(rounds):
         r0 = rnd * 8 * CANON_NOTE_S
         with_lines = ((), (0,), (0, 1), (1, 2), (0, 2))[
@@ -274,7 +323,7 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
     # twice, on plucked voices; the bar's lowest note held under them and
     # its chord as a quiet pad.  The last bar is the closing C major.
     step = PRELUDE_BAR_S / 16.0
-    count = int((total - 6.0) / PRELUDE_BAR_S) if prelude else 0
+    count = int((span - 6.0) / PRELUDE_BAR_S) if prelude else 0
     for bar in range(count):
         t0 = 1.0 + bar * PRELUDE_BAR_S
         notes = PRELUDE[-1] if bar == count - 1 else PRELUDE[
@@ -299,7 +348,7 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
     for bar in range(bars):
         t0 = bar * BAR_S
         bass, notes = CHORDS[bar % len(CHORDS)]
-        if bar == bars - 1 or t0 > total - 9.0:
+        if bar == bars - 1 or t0 > span - 9.0:
             bass, notes = CHORDS[0]
         env = swell(BAR_S + 3.0, 2.6, 3.2)
         for j, note in enumerate(notes):
@@ -313,7 +362,7 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
         put(music, t0, sig * env, 0.0, 0.07)
         sig, _ = tone(hz(notes[1] + 24), BAR_S + 3.0)
         put(music, t0, sig * env * env, 0.3, 0.012)
-        if t0 < 5.0 or t0 > total - 10.0:
+        if t0 < 5.0 or t0 > span - 10.0:
             continue
         for beat in range(int(BAR_S / BEAT_S)):
             note = notes[order[beat % len(order)]] + 12
@@ -325,7 +374,20 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             put(music, tb + 0.375, sig, 0.6, vel * 0.42)
             put(music, tb + 0.75, sig, -0.6, vel * 0.18)
 
+    # Read the bed along its place, which lowers its pitch with its
+    # speed, and fade it where it nearly stands.
+    at = place * RATE
+    low = np.minimum(at.astype(int), music.shape[1] - 2)
+    part = at - low
+    warped = np.zeros_like(music)
+    for ch in range(2):
+        warped[ch, :n] = ((music[ch, low] * (1.0 - part)
+                           + music[ch, low + 1] * part)
+                          * np.clip((speed - SLOW) / 0.25, 0.0, 1.0))
+    music = warped
+
     def chord_at(t):
+        t = float(place[min(n - 1, max(0, int(t * RATE)))])
         if canon:
             notes = CANON[int(max(t, 0.0) / CANON_NOTE_S) % len(CANON)][1]
             return notes + (notes[0] + 12,)

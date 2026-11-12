@@ -15,7 +15,9 @@ The video has a sound track, computed from the storyboard by
 `tools/video_audio.py`: synthesizer pads, a sine bass and a plucked
 arpeggio over four chords in D major, 8s a chord, and one quiet sound per
 event (a scene change, a chapter card, a caption, a point, a mark, a
-spotlight, a tap, a hold). It has no percussion. Its loudest sample is at
+spotlight, a tap, a hold). While a case scene holds a component in the
+air, the music stops as a record does under a hand: its speed and pitch
+fall to 5% over 1.1s and return over 0.7s. It has no percussion. Its loudest sample is at
 -3dBFS (decibels relative to full scale); `features` measures -20 LUFS
 (loudness units relative to full scale) integrated. The balance between
 the bed and the event sounds is set by calculation and has not been judged

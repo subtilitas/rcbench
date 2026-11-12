@@ -164,3 +164,16 @@ def test_every_step_has_a_line():
     lines = [text for _, _, _, text in video_voice.script(board)]
     assert lines == ["one", "two", "Chapter 1. Servo. Test.",
                      "Live. A dial.", "Said instead."]
+
+
+def test_a_held_component_freezes_the_music():
+    """Holds in the air are freezes; overlapping ones merge."""
+    board = {"lang": "en", "steps": 0, "scenes": [
+        {"type": "end", "dur": 10, "heading": "x"},
+        {"type": "case", "dur": 30, "camera": [[0, [0, 0, 9], [0, 0, 0]]],
+         "parts": {"case": [[0, 1], [2, 0]],
+                   "xt60": [[3, 1], [4, .4], [8, .4], [9, 0]],
+                   "usbc": [[3, 1], [5, .4], [9, .4], [10, 0]],
+                   "lid": [[12, 1], [13, .5], [15, .5], [16, 0]]}}]}
+    assert make_video.check(board) == []
+    assert video_audio.freezes(board) == [(14, 19), (23, 25)]
