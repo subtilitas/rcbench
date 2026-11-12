@@ -71,7 +71,7 @@ extern "C" {
 
 /** @brief The first address a scan asks, and how many. */
 #define SENSE_SCAN_FIRST 0x40u
-#define SENSE_SCAN_COUNT 16u
+#define SENSE_SCAN_COUNT 16u  /**< addresses scanned: 0x40 to 0x4F */
 
 /**
  * @brief What core 0 asks for.
@@ -98,7 +98,9 @@ typedef struct {
 
 /** @brief What core 1 hands back after each step. */
 typedef struct {
-    uint16_t cfg_gen, run_gen, cap_gen;   /**< the generations taken     */
+    uint16_t cfg_gen,    /**< the bus configuration's generation taken */
+             run_gen,    /**< the run command's generation taken */
+             cap_gen;    /**< the capture command's generation taken */
     bool     open;               /**< the bus runs on its pins              */
     bool     stuck;              /**< nothing is sent until a recovery     */
     uint64_t held;               /**< the pins the bus holds, a pin mask   */
@@ -136,16 +138,16 @@ typedef struct {
     uint32_t cap_samples;        /**< the capture's samples                 */
     bool     cap_clipped;        /**< a sample of it read an end of the range */
     /* The output encoder (AS5600). */
-    sense_state_t enc;
+    sense_state_t enc;  /**< the encoder's state */
     bool     enc_have_angle;     /**< enc_raw is a reading of this set-up  */
     uint8_t  enc_status;         /**< STATUS as last read                  */
     uint8_t  enc_id;             /**< STATUS at the probe                  */
     uint16_t enc_raw;            /**< RAW ANGLE, 0 to 4095                 */
     uint16_t enc_samples;        /**< angle reads taken, modulo 65536      */
     uint16_t enc_still_ms;       /**< held within the tolerance, ms        */
-    bool     enc_have_mag;
-    uint8_t  enc_agc;
-    uint16_t enc_magnitude;
+    bool     enc_have_mag;  /**< enc_agc and enc_magnitude hold a reading */
+    uint8_t  enc_agc;  /**< AGC as last read, 0 to 255 */
+    uint16_t enc_magnitude;  /**< MAGNITUDE as last read, 0 to 4095 */
     uint16_t over_n[SENSE_CHANNELS]; /**< each channel's windows over its
                                       limit, modulo 65536, since core 1
                                       started: across set-ups            */
@@ -172,7 +174,7 @@ typedef struct {
  * @brief The sensor service: its schedule and the command state it acts on.
  */
 typedef struct {
-    sense_svc_io_t io;
+    sense_svc_io_t io;  /**< the wire and the pin callbacks */
     bool     started;            /**< a command has been taken             */
     uint16_t cfg_gen,                       /**< generation of the bus's configuration taken */
              run_gen,                       /**< generation of the run command taken */

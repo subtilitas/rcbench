@@ -17,11 +17,12 @@
 #include <stddef.h>
 #include <string.h>
 
+/** @brief The marker that opens a block. */
 #define MARKER_START     0xffffded3u
-#define MARKER_END       0xab123579u
-#define ITEM_IMAGE_TYPE  0x42u
-#define ITEM_LAST        0xffu
-#define ITEM_SIZE_2BYTES 0x80u
+#define MARKER_END       0xab123579u  /**< the marker that closes a block */
+#define ITEM_IMAGE_TYPE  0x42u  /**< the type byte of the image definition item */
+#define ITEM_LAST        0xffu  /**< the type byte of the last item */
+#define ITEM_SIZE_2BYTES 0x80u  /**< a type byte with this bit has a 2-byte size */
 /** @brief The largest block the boot ROM reads (PICOBIN_MAX_BLOCK_SIZE). */
 #define MAX_BLOCK_BYTES  0x280u
 

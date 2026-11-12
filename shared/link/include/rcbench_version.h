@@ -27,7 +27,9 @@
 /** @brief The release's PATCH number. */
 #define RCBENCH_VERSION_PATCH 12
 
+/** @brief The inner step of RCBENCH_STRINGIFY(): turns the token @p x into a string. */
 #define RCBENCH_STRINGIFY_(x) #x
+/** @brief The token @p x, after macro expansion, as a string. */
 #define RCBENCH_STRINGIFY(x)  RCBENCH_STRINGIFY_(x)
 
 /** @brief "0.23.12", for anything that prints it rather than sends it. */

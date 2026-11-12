@@ -330,11 +330,22 @@ typedef enum {
     SERVO_STR_COUNT
 } servo_str_t;
 
-/** The English text of @p id; "" for one out of range. */
+/**
+ * @brief The English text of @p id; "" for one out of range.
+ *
+ * @param id The string.
+ * @return The English text, or "" when @p id is out of range.
+ */
 const char *servo_str(servo_str_t id);
 
-/** @p id from @p table, or the English where @p table is NULL or holds
- *  none; "" for one out of range. */
+/**
+ * @brief @p id from @p table, or the English where @p table is NULL or holds
+ *        none; "" for one out of range.
+ *
+ * @param table The language table of SERVO_STR_COUNT entries, or NULL.
+ * @param id The string.
+ * @return The text, or "" when @p id is out of range.
+ */
 const char *servo_str_in(const char *const *table, servo_str_t id);
 
 #ifdef __cplusplus

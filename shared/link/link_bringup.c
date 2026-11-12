@@ -22,7 +22,7 @@
  * INTERMITTENT.
  */
 #define SHORTFALL_NUM 9
-#define SHORTFALL_DEN 10
+#define SHORTFALL_DEN 10  /**< the denominator of that fraction */
 
 /**
  * @brief Fewer replies than this and there is nothing to draw conclusions from.

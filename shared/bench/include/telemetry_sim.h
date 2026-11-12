@@ -29,8 +29,8 @@ extern "C" {
  * @brief The configuration of the telemetry model: pack, motor and propeller.
  */
 typedef struct {
-    float cells;
-    float cell_nominal_v;
+    float cells;  /**< cells in series */
+    float cell_nominal_v;  /**< nominal cell voltage, V */
     float internal_ohms;                /**< pack internal resistance, Ω */
     float kv;              /**< rpm per volt, unloaded  */
     float no_load_amps;                 /**< motor current without load, A */
@@ -39,6 +39,7 @@ typedef struct {
     float rpm_tau_s;       /**< how slowly rpm follows a step    */
 } telemetry_sim_cfg_t;
 
+/** @brief The default model: 6 cells of 4.05V, 5000mAh, 920rpm per volt. */
 #define TELEMETRY_SIM_DEFAULT()          \
     (telemetry_sim_cfg_t) {              \
         .cells = 6.0f,                   \

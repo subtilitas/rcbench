@@ -128,7 +128,7 @@ extern "C" {
 
 /** @brief What came of an exchange: ACK or DATA, a NACK's reason, or none. */
 #define TONE_LINK_NO_ANSWER (-1)
-#define TONE_LINK_ACK       0
+#define TONE_LINK_ACK       0  /**< an ACK or a DATA frame came */
 
 /** @brief The set-up as SETUP > SENSORS has it. */
 typedef struct {
@@ -181,7 +181,7 @@ typedef enum {
  * @brief One exchange the TONE link asks the caller to make.
  */
 typedef struct {
-    tone_link_op_kind_t kind;
+    tone_link_op_kind_t kind;  /**< which exchange */
     bool     write;           /**< a write of regs; otherwise a read   */
     uint8_t  page;            /**< link_page_id_t                      */
     uint8_t off,                            /**< first register of the page          */
@@ -215,7 +215,7 @@ typedef enum {
  *        renderer reads.
  */
 typedef struct {
-    tone_state_t state;
+    tone_state_t state;  /**< the state of the tap */
     /**
      * @brief The state and the nine values below come from a status read
      *        younger than TONE_LINK_STALE_MS; false, and the nine 0, while
@@ -251,30 +251,31 @@ typedef struct {
     bool     page;            /**< the IOmcu has TONE (4.8)      */
 
     /* What is asked, as the page is to hold it. */
-    bool     want_set;
-    uint16_t want[LINK_TN_CONFIG_COUNT];
+    bool     want_set;  /**< a set-up is asked */
+    uint16_t want[LINK_TN_CONFIG_COUNT];  /**< the page's configuration registers as asked */
     uint32_t want_ms;         /**< when it last changed                */
 
     /* What the page holds, as read or written since the link came up. */
-    bool     known;
-    uint16_t held[LINK_TN_CONFIG_COUNT];
-    bool     refused0, refused1;
+    bool     known;  /**< held holds the page's configuration */
+    uint16_t held[LINK_TN_CONFIG_COUNT];  /**< the page's configuration registers as read or written */
+    bool     refused0,                /**< the page refused frame 0 */
+             refused1;                /**< the page refused frame 1 */
     bool     retry0;          /**< refused0 lifts after TONE_LINK_RETRY_MS */
     bool     busy_nack;       /**< the page says BUSY for a busy pin (4.17) */
     uint8_t  told;            /**< bit 0, 1: a frame's refusal said for this edit */
-    uint32_t refused0_ms;
+    uint32_t refused0_ms;  /**< when frame 0 was refused, ms */
     uint32_t retry_ms;        /**< the first frame last offered for a busy pin */
 
     /* The exchange in flight. */
-    tone_link_op_kind_t pending;
-    uint16_t out[4];
+    tone_link_op_kind_t pending;  /**< which exchange is in flight */
+    uint16_t out[4];  /**< its registers */
 
     /* The status read. */
-    bool     asked_status;
-    uint32_t status_asked_ms;
-    bool     have_status;
-    uint16_t status[TONE_LINK_STATUS_COUNT];
-    uint32_t status_ms;
+    bool     asked_status;  /**< a status read is in flight */
+    uint32_t status_asked_ms;  /**< when it was asked, ms */
+    bool     have_status;  /**< status holds a read */
+    uint16_t status[TONE_LINK_STATUS_COUNT];  /**< the status registers as last read */
+    uint32_t status_ms;  /**< when status was last read, ms */
     uint16_t was_flags;       /**< FLAGS as last read under this set-up */
     bool     win_seen;        /**< win_last holds a read's WINDOW       */
     uint16_t win_last;        /**< WINDOW as last read                  */
@@ -286,18 +287,18 @@ typedef struct {
     bool     ring_empty;      /**< the capture began again, place unknown */
     uint8_t  quiet;           /**< beeps still to ask that may predate it */
     uint16_t last;            /**< the number of the last beep taken, 0 none */
-    uint32_t missed;
+    uint32_t missed;  /**< beeps lost to the capture ring or to a read that came too late */
     bool     sel_ok;          /**< EVT_SEL holds sel_num on the page   */
-    uint16_t sel_num;
-    tone_beep_t hist[TONE_LINK_HISTORY];
+    uint16_t sel_num;  /**< the beep number EVT_SEL holds */
+    tone_beep_t hist[TONE_LINK_HISTORY];  /**< the last beeps, a ring */
     uint8_t  hist_n;          /**< held, to TONE_LINK_HISTORY          */
     uint8_t  hist_at;         /**< the slot the next beep goes to      */
-    uint32_t beeps_read;
+    uint32_t beeps_read;  /**< beeps read from the page */
 
     /* What has been said. */
-    uint16_t events;
-    bool     event_given;
-    uint32_t event_ms;
+    uint16_t events;  /**< events not yet handed out, TONE_LINK_EV_* bits */
+    bool     event_given;  /**< an event has been handed out */
+    uint32_t event_ms;  /**< when it was handed out, ms */
 } tone_link_t;
 
 /**

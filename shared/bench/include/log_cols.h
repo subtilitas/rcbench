@@ -12,7 +12,7 @@
  * A channel takes a group when its part is enabled, its shunt is not 0
  * and its WATCH is not NONE.  The group is "<target> current (A);
  * <target> max (A); <target> voltage (V)": the window's mean and highest
- * current and its lowest bus voltage.  <target> is "out N" for output
+ * current and its lowest bus voltage.  A target is "out N" for output
  * channel N, "port N" for programming port N and "supply" for the supply
  * rail.  Two channels that watch the same target each name their channel
  * after it, "out 3 0x41 ch2", so no two columns share a name.
@@ -30,6 +30,7 @@
 extern "C" {
 #endif
 
+/** @brief The most groups: one per channel of the sensor map. */
 #define LOG_COLS_MAX     LINK_SM_CHANNELS
 /**
  * @brief The groups a file carries: a MOTOR file's 15 other columns and 3

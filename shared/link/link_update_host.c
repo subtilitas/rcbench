@@ -107,6 +107,17 @@ uint16_t link_uph_permille(const link_uph_t *u)
 
 /* ---------------------------------------------------------------- the wire */
 
+/**
+ * @brief Read a window of a page, split into exchanges as the link needs.
+ *
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param page The page.
+ * @param offset The first register.
+ * @param count The registers.
+ * @param reply Receives the reply.
+ * @return X_NONE when unanswered, X_OK for data, else X_NACK.
+ */
 static x_t read_regs(link_host_t *h, const link_port_t *port, uint8_t page,
                      uint8_t offset, uint8_t count, link_msg_t *reply)
 {
@@ -250,6 +261,12 @@ static void resync(link_uph_t *u, uint8_t from)
 
 /* -------------------------------------------------------------- the check */
 
+/**
+ * @brief CHECK_HASH step: hash a piece of the image; when it is whole, keep
+ *        the build hash and go to CHECK_ASK.
+ *
+ * @param u The update state.
+ */
 static void step_check_hash(link_uph_t *u)
 {
     if (link_image_hash_step(&u->hash, &u->img[u->hash.pos],
@@ -400,6 +417,15 @@ static void step_check_wait(link_uph_t *u, link_host_t *h,
 
 /* ------------------------------------------------------------- the update */
 
+/**
+ * @brief PREPARE step: hash a piece of the image as it is sent; when it is
+ *        whole, read which slot runs now.
+ *
+ * @param u The update state.
+ * @param h The panel's link state.
+ * @param port The transport and clock.
+ * @param now_ms The current time, in ms.
+ */
 static void step_prepare(link_uph_t *u, link_host_t *h,
                          const link_port_t *port, uint32_t now_ms)
 {

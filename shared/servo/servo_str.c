@@ -121,6 +121,12 @@ servo_str_t servo_test_verdict_str(servo_test_verdict_t v)
     }
 }
 
+/**
+ * @brief The string that names why a run would not start.
+ *  *
+ *  * @param why The reason.
+ *  * @return The string id; SERVO_STR_START_OK for a reason out of range.
+ */
 static servo_str_t servo_test_start_str(servo_test_start_t why)
 {
     if ((unsigned)why > (unsigned)SERVO_TEST_START_BAD_ENDS) {
@@ -149,7 +155,7 @@ const char *servo_test_start_name(servo_test_start_t why)
     return servo_str(servo_test_start_str(why));
 }
 
-/* The columns every run has, the encoder's, and the meter's: the last
+/** @brief The columns every run has, the encoder's, and the meter's: the last
  * group follows whatever is before it, so a column of an older file keeps
  * its place. */
 #define CSV_BASE  "time (s);test;step;phase;command (us);position (us);" \
@@ -162,6 +168,7 @@ const char *servo_test_start_name(servo_test_start_t why)
 /** @brief The angle source's column, with an angle source only: after the
  *         meter's, so every column of a file without it keeps its place. */
 #define CSV_SRC   ";angle source"
+/** @brief The meter's columns, after the angle source's. */
 #define CSV_METER ";meter;window;current max (A);current min (A);" \
                   "voltage min (V);clipped"
 

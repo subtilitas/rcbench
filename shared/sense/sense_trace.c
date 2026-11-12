@@ -11,8 +11,8 @@
 
 #include <string.h>
 
-#define META_KIND(m)  ((uint8_t)((m) >> 24))
-#define META_LOST(m)  ((m) & SENSE_TRACE_LOST_MAX)
+#define META_KIND(m)  ((uint8_t)((m) >> 24))  /**< the kind of a record, bits 31 to 24 of its meta word */
+#define META_LOST(m)  ((m) & SENSE_TRACE_LOST_MAX)  /**< the lost count of a record, bits 23 to 0 of its meta word */
 
 bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
                       uint32_t size)
@@ -33,6 +33,12 @@ bool sense_trace_init(sense_trace_t *tr, sense_trace_rec_t *buf,
 
 /* ------------------------------------------------------------- core 0 */
 
+/**
+ * @brief A time in µs as 0.1ms ticks.
+ *  *
+ *  * @param us The time in µs.
+ *  * @return The time in units of 0.1ms, modulo 2^32.
+ */
 static uint32_t to_t(uint64_t us)
 {
     return (uint32_t)(us / 100u);
@@ -524,7 +530,7 @@ void sense_trace_key(sense_trace_t *tr, int c, uint64_t now_us)
 /* --------------------------------------------------------------- lines */
 
 typedef struct {
-    char   s[SENSE_TRACE_LINE_MAX];
+    char   s[SENSE_TRACE_LINE_MAX];  /**< the text, not terminated */
     size_t n;
 } line_t;
 

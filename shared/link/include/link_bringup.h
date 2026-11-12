@@ -45,7 +45,7 @@ typedef struct {
 
     /* The IOmcu's view of itself, read from the STATUS page.  Absent
      * until a status read succeeds, which is itself informative. */
-    bool     have_status;
+    bool     have_status;  /**< dev_frames and the counters after it hold a status read */
     uint32_t dev_frames;    /**< requests it decoded */
     /** @brief The IOmcu's CAN receive error counter (REC, 0 to 255) at the
      *         status read: it rises with bad frames and falls with good
@@ -66,15 +66,15 @@ typedef struct {
     uint32_t dev_refused;
 
     /* Identity, read once at link-up. */
-    bool     have_identity;
-    uint16_t proto_major;
-    uint16_t proto_minor;
+    bool     have_identity;  /**< proto_major and proto_minor hold an identity read */
+    uint16_t proto_major;  /**< the IOmcu's protocol major */
+    uint16_t proto_minor;  /**< the IOmcu's protocol minor */
 
     /* Round trip: request sent to reply accepted. */
-    uint32_t rt_samples;
-    uint32_t rt_min_us;
-    uint32_t rt_max_us;
-    uint32_t rt_mean_us;
+    uint32_t rt_samples;  /**< samples taken */
+    uint32_t rt_min_us;  /**< the shortest round trip, us */
+    uint32_t rt_max_us;  /**< the longest round trip, us */
+    uint32_t rt_mean_us;  /**< the mean round trip, us */
 } link_bringup_t;
 
 /**

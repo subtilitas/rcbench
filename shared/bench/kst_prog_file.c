@@ -13,9 +13,9 @@
 #include "kst_prog_int.h"
 #include "link_crc.h"
 
-/* The text written, and the version before it, which has no pin line. */
+/** @brief The text written, and the version before it, which has no pin line. */
 static const char k_head[] = "RCBENCH KST 2\n";
-static const char k_head_1[] = "RCBENCH KST 1\n";
+static const char k_head_1[] = "RCBENCH KST 1\n";  /**< the version before it */
 
 /* ----------------------------------------------------- the journal's file */
 
@@ -236,11 +236,11 @@ static bool take_image(const char *s, size_t left, const char *key,
  * @brief A parsed file: its journal record and its target image.
  */
 typedef struct {
-    bool journal;
-    uint8_t journal_port;
-    uint8_t journal_pin;
-    kst_image_t journal_img;
-    kst_image_t journal_target;
+    bool journal;  /**< a journal record was read */
+    uint8_t journal_port;  /**< the programming port of the journal's image */
+    uint8_t journal_pin;  /**< the GPIO of that port, KST_PROG_NO_PIN when not known */
+    kst_image_t journal_img;  /**< the servo before the write */
+    kst_image_t journal_target;  /**< what the write was to leave */
 } loaded_t;
 
 /**

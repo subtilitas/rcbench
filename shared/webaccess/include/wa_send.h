@@ -30,12 +30,13 @@ extern "C" {
 /** Bytes a piece: four 512-byte card sectors. */
 #define WA_SEND_CHUNK 4096u
 
+/** @brief One file on its way out. */
 typedef struct {
-    const wa_fs_t *fs;
-    void          *file;
+    const wa_fs_t *fs;     /**< the card */
+    void          *file;   /**< the open file */
     uint64_t       size;   /**< announced */
-    uint64_t       sent;
-    bool           failed;
+    uint64_t       sent;   /**< bytes handed out */
+    bool           failed; /**< a read failed */
 } wa_send_t;
 
 /**
@@ -88,6 +89,7 @@ typedef enum {
     WA_WAIT_GONE,      /**< the receiver closed, or the connection failed */
 } wa_wait_t;
 
+/** @brief The connection a response goes out on. */
 typedef struct {
     /** Queue up to @p n bytes without waiting: the bytes taken, 0 when
      *  none fit, -1 when the connection failed. */
@@ -98,7 +100,7 @@ typedef struct {
     bool      (*stop)(void *ctx);
     /** Milliseconds; wraps at 2^32. */
     uint32_t  (*now_ms)(void *ctx);
-    void      *ctx;
+    void      *ctx;   /**< passed to each function */
 } wa_sink_t;
 
 /** How a transfer ended. */

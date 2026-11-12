@@ -74,6 +74,7 @@ typedef struct {
     const char *const *text;    /**< the language table; NULL for English */
 } cur_t;
 
+/** @brief The text of string id in the language of c. */
 #define LS(id) servo_str_in(c->text, SERVO_STR_##id)
 
 /**

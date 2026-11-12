@@ -75,6 +75,7 @@ typedef struct {
  * same rows to MOTORnnn.CSV and SERVOnnn.CSV, the supply run to
  * SUPPLnnn.CSV (log_name.h).
  */
+/** @brief The kind of run the log records. */
 typedef enum {
     LOG_RUN_NONE = 0,
     LOG_RUN_SERVO,

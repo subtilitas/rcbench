@@ -17,18 +17,19 @@
 #include "fm_crc.h"
 #include "wall_clock.h"
 
+/** @brief The signature of a local header. */
 #define SIG_LOCAL    0x04034b50u
-#define SIG_DESC     0x08074b50u
-#define SIG_CENTRAL  0x02014b50u
-#define SIG_END64    0x06064b50u
-#define SIG_LOC64    0x07064b50u
-#define SIG_END      0x06054b50u
+#define SIG_DESC     0x08074b50u  /**< a data descriptor */
+#define SIG_CENTRAL  0x02014b50u  /**< a central directory header */
+#define SIG_END64    0x06064b50u  /**< the ZIP64 end of central directory record */
+#define SIG_LOC64    0x07064b50u  /**< the ZIP64 end of central directory locator */
+#define SIG_END      0x06054b50u  /**< the end of central directory record */
 
-/* Bit 3: sizes and CRC in a descriptor after the data.  Bit 11: UTF-8. */
+/** @brief General purpose flags: bit 3, sizes and CRC in a descriptor after the data; bit 11, UTF-8. */
 #define FLAGS        0x0808u
-#define VERSION_20   20u
-#define VERSION_45   45u
-#define ATTR_DIR     0x10u
+#define VERSION_20   20u    /**< the version needed without ZIP64 */
+#define VERSION_45   45u    /**< the version needed with ZIP64 */
+#define ATTR_DIR     0x10u  /**< the MS-DOS directory attribute */
 
 enum { PH_ENTRIES = 0, PH_CENTRAL, PH_END, PH_DONE, PH_FAILED };
 
@@ -57,6 +58,7 @@ void wa_dos_time(int64_t t, uint16_t *time, uint16_t *date)
 
 /* ------------------------------------------------------------- pieces */
 
+/** @brief Write @p v as a little-endian 16-bit value at @p p; return the byte after it. */
 static uint8_t *put16(uint8_t *p, uint32_t v)
 {
     p[0] = (uint8_t)v;
@@ -64,6 +66,7 @@ static uint8_t *put16(uint8_t *p, uint32_t v)
     return p + 2;
 }
 
+/** @brief Write @p v as a little-endian 32-bit value at @p p; return the byte after it. */
 static uint8_t *put32(uint8_t *p, uint32_t v)
 {
     p[0] = (uint8_t)v;
@@ -73,12 +76,14 @@ static uint8_t *put32(uint8_t *p, uint32_t v)
     return p + 4;
 }
 
+/** @brief Write @p v as a little-endian 64-bit value at @p p; return the byte after it. */
 static uint8_t *put64(uint8_t *p, uint64_t v)
 {
     p = put32(p, (uint32_t)v);
     return put32(p, (uint32_t)(v >> 32));
 }
 
+/** @brief @p v, or WA_ZIP_MAX32 when it is that large or larger. */
 static uint32_t clamp32(uint64_t v)
 {
     return (v >= WA_ZIP_MAX32) ? WA_ZIP_MAX32 : (uint32_t)v;
@@ -105,15 +110,19 @@ uint32_t wa_zip_desc_bytes(uint64_t size)
     return wa_zip_entry64(size) ? 24u : 16u;
 }
 
-/* Whether a central header carries its sizes in the ZIP64 field.  An
- * entry past 4GiB carries them too, set to the mark in the header: Info-ZIP
- * unzip 6.0 reads the field by the sizes of the entry before when it lists,
- * and an entry of exactly 0xFFFFFFFF bytes then shifts the next one's. */
+/**
+ * @brief Whether a central header carries its sizes in the ZIP64 field.
+ *
+ * An entry past 4GiB carries them too, set to the mark in the header:
+ * Info-ZIP unzip 6.0 reads the field by the sizes of the entry before when it
+ * lists, and an entry of exactly 0xFFFFFFFF bytes then shifts the next one's.
+ */
 static bool central_sizes64(uint64_t size, uint64_t offset)
 {
     return wa_zip_entry64(size) || offset >= WA_ZIP_MAX32;
 }
 
+/** @brief The 8-byte values of the central header's ZIP64 field: sizes (2) and offset (1). */
 static unsigned central_fields(uint64_t size, uint64_t offset)
 {
     return (central_sizes64(size, offset) ? 2u : 0u)
@@ -275,8 +284,11 @@ uint64_t wa_zip_len_total(const wa_zip_len_t *l)
 
 /* ------------------------------------------------------------- walks */
 
-/* The entry a walk event stands for: its name in the walk's path buffer,
- * a folder's with "/" added; false for the root and the walk's end. */
+/**
+ * @brief The entry a walk event stands for: its name in the walk's path
+ *        buffer, a folder's with "/" added; false for the root and the walk's
+ *        end.
+ */
 static bool entry_of(const wa_walk_t *w, wa_walk_ev_t ev, size_t *len,
                      bool *dir)
 {
@@ -467,6 +479,7 @@ void wa_zip_end_early(wa_zip_t *z)
     wa_walk_end(&z->walk);
 }
 
+/** @brief End the archive as failed with @p e; return -1. */
 static int32_t fail(wa_zip_t *z, wa_zip_err_t e)
 {
     wa_zip_end_early(z);
@@ -475,12 +488,13 @@ static int32_t fail(wa_zip_t *z, wa_zip_err_t e)
     return -1;
 }
 
+/** @brief The archive error for a walk's closing event. */
 static wa_zip_err_t walk_err(wa_walk_ev_t ev)
 {
     return (ev == WA_WALK_NO_CARD) ? WA_ZIP_NO_CARD : WA_ZIP_READ;
 }
 
-/* Queue a piece; the caller sends it before anything else. */
+/** @brief Queue a piece of @p n bytes; the caller sends it before anything else. */
 static void queue(wa_zip_t *z, size_t n)
 {
     z->piece_len = n;

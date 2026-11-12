@@ -34,12 +34,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/** @brief Where a limit search stands. */
 typedef enum {
     SERVO_LIMIT_RUNNING = 0,
     SERVO_LIMIT_FOUND,
     SERVO_LIMIT_FAULT,
 } servo_limit_state_t;
 
+/** @brief Why a limit search stopped without a limit. */
 typedef enum {
     SERVO_LIMIT_FAULT_NONE = 0,
     /** @brief Current crossed the hard ceiling.
@@ -62,8 +64,9 @@ typedef enum {
 
 /** @brief The pulse widths the search commands stay within, microseconds. */
 #define SERVO_LIMIT_MIN_US 500u
-#define SERVO_LIMIT_MAX_US 2500u
+#define SERVO_LIMIT_MAX_US 2500u  /**< the longest pulse, us */
 
+/** @brief The settings of a limit search. */
 typedef struct {
     uint16_t center_us;      /**< where the search starts */
     int16_t  step_us;        /**< signed: direction and size of a step */
@@ -82,7 +85,7 @@ typedef struct {
      * free current exceeds a threshold chosen for a small one.
      */
     float    knee_ratio;
-    float    knee_margin_a;
+    float    knee_margin_a;  /**< the absolute margin over the baseline, A */
 
     float    hard_limit_a;   /**< abort at once, wherever it happens */
 
@@ -114,10 +117,11 @@ typedef struct {
 void servo_limit_defaults(servo_limit_cfg_t *cfg, uint16_t center_us,
                           bool positive);
 
+/** @brief The state of a limit search. */
 typedef struct {
-    servo_limit_cfg_t   cfg;
-    servo_limit_state_t state;
-    servo_limit_fault_t fault;
+    servo_limit_cfg_t   cfg;  /**< the settings */
+    servo_limit_state_t state;  /**< where the search stands */
+    servo_limit_fault_t fault;  /**< why it stopped, SERVO_LIMIT_FAULT_NONE while it has not */
 
     uint16_t cmd_us;         /**< the current command to the servo */
     uint16_t last_free_us;   /**< the furthest position that was still free */
@@ -127,15 +131,15 @@ typedef struct {
     float    knee_a;         /**< the current measured at the bound position */
 
     /* Internals: the settle/measure cycle at each position. */
-    uint32_t phase_start_ms;
-    bool     measuring;
-    double   sum_a;
-    uint32_t samples;
+    uint32_t phase_start_ms;  /**< when the current settle/measure phase began, ms */
+    bool     measuring;  /**< the phase is measuring, not settling */
+    double   sum_a;  /**< sum of the current samples of the phase, A */
+    uint32_t samples;  /**< samples in sum_a */
     uint32_t baseline_steps; /**< how many positions have fed the baseline */
-    double   baseline_sum;
-    uint32_t elevated_since_ms;
-    bool     elevated;
-    bool     started;
+    double   baseline_sum;  /**< sum of the averages that fed the baseline, A */
+    uint32_t elevated_since_ms;  /**< when the current rose above stall_above_a, ms */
+    bool     elevated;  /**< the current is above stall_above_a */
+    bool     started;  /**< the first step was taken */
 } servo_limit_t;
 
 /**

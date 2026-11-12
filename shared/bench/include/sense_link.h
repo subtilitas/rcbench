@@ -146,7 +146,7 @@ extern "C" {
 
 /** @brief The registers of that read, and the windows they carry. */
 #define SENSE_LINK_WIN_HEAD ((unsigned)LINK_SW_ENTRY(2, 0))
-#define SENSE_LINK_WIN_HEAD_WINDOWS 2u
+#define SENSE_LINK_WIN_HEAD_WINDOWS 2u  /**< windows in those registers */
 
 /**
  * @brief The whole page is read instead once this long has passed since a read
@@ -176,6 +176,7 @@ extern "C" {
  *        neighbour; and without the encoder FLAGS to ESC_FLAGS.
  */
 #define SENSE_LINK_STATUS_COUNT ((unsigned)LINK_SN_COUNT - (unsigned)LINK_SN_FLAGS)
+/** @brief The count of the SENSE registers at protocol 4.8, before the encoder registers. */
 #define SENSE_LINK_STATUS_COUNT_V48 \
     ((unsigned)LINK_SN_COUNT_V48 - (unsigned)LINK_SN_FLAGS)
 /**
@@ -186,7 +187,7 @@ extern "C" {
 
 /** @brief What came of an exchange: ACK or DATA, a NACK's reason, or none. */
 #define SENSE_LINK_NO_ANSWER (-1)
-#define SENSE_LINK_ACK       0
+#define SENSE_LINK_ACK       0  /**< an ACK or a DATA frame came */
 
 /** @brief The two parts, for the accessors. */
 typedef enum {
@@ -196,7 +197,8 @@ typedef enum {
 
 /** @brief The set-up as SETUP > SENSORS has it. */
 typedef struct {
-    bool     i228, i3221;     /**< enabled                              */
+    bool     i228,        /**< the INA228 is enabled */
+             i3221;       /**< the INA3221 parts are enabled */
     bool     as5600;          /**< the output encoder, enabled          */
     int8_t sda,                             /**< IOmcu GPIO of the data line; -1 not set */
            scl;                             /**< IOmcu GPIO of the clock line; -1 not set */
@@ -329,7 +331,7 @@ typedef enum {
  * @brief One exchange the SENSE link asks the caller to make.
  */
 typedef struct {
-    sense_link_op_kind_t kind;
+    sense_link_op_kind_t kind;  /**< which exchange */
     bool     write;           /**< a write of regs; otherwise a read   */
     uint8_t  page;            /**< link_page_id_t                      */
     uint8_t off,                            /**< first register of the page          */
@@ -422,78 +424,86 @@ typedef struct {
     bool     map_held;
 
     /* What is asked, as the page is to hold it. */
-    bool     want_set;
-    bool     want_i228, want_i3221;   /**< enabled on SETUP, as asked */
+    bool     want_set;  /**< a set-up is asked */
+    bool     want_i228,               /**< the INA228, enabled on SETUP */
+             want_i3221;              /**< the INA3221 parts, enabled on SETUP */
     bool     want_enc;                /**< the encoder, likewise       */
-    int8_t   want_sda, want_scl;      /**< as asked, -1 unset         */
+    int8_t   want_sda,                /**< the data pin as asked, -1 unset */
+             want_scl;                /**< the clock pin as asked, -1 unset */
     uint8_t  want_parts;              /**< sense_setup_t.i3221_parts  */
     bool     want_unwatched;          /**< and .i3221_unwatched       */
     bool     want_off_ch1;            /**< and .i3221_fast_off_ch1    */
-    uint16_t want[LINK_SN_CONFIG_COUNT];
+    uint16_t want[LINK_SN_CONFIG_COUNT];  /**< the page's configuration registers as asked */
     uint32_t want_ms;         /**< when it last changed                */
 
     /* What the page holds, as read or written since the link came up. */
-    bool     known;
-    uint16_t held[LINK_SN_CONFIG_COUNT];
+    bool     known;  /**< held holds the page's configuration */
+    uint16_t held[LINK_SN_CONFIG_COUNT];  /**< the page's configuration registers as read or written */
     uint32_t setup_ms;        /**< when the set-up in force was taken  */
-    bool     refused_bus, refused_i228, refused_i3221;
+    bool     refused_bus,             /**< the IOmcu refused the bus frame */
+             refused_i228,            /**< the IOmcu refused the INA228 */
+             refused_i3221;           /**< the IOmcu refused the INA3221 parts */
     bool     bus_told;        /**< the bus refusal said for this edit  */
     bool     bus_retry;       /**< the refused pair may be let go of    */
-    uint32_t bus_refused_ms;
+    uint32_t bus_refused_ms;  /**< when the bus frame was refused, ms */
     bool     caps_owed;       /**< a write taken; identity not re-read */
 
     /* The exchange in flight. */
-    sense_link_op_kind_t pending;
-    uint16_t out[4];
+    sense_link_op_kind_t pending;  /**< the exchange in flight */
+    uint16_t out[4];  /**< its registers */
 
     /* The reads. */
-    bool     asked_status, asked_servo;
-    uint32_t status_asked_ms, servo_asked_ms;
-    bool     have_status, have_servo;
-    uint16_t status[SENSE_LINK_STATUS_COUNT];
-    uint16_t servo[SENSE_LINK_SERVO_COUNT];
-    uint32_t status_ms;
+    bool     asked_status,            /**< a SENSE read is in flight */
+             asked_servo;             /**< a SERVO_SENSE read is in flight */
+    uint32_t status_asked_ms,        /**< when SENSE was last asked, ms */
+             servo_asked_ms;          /**< when SERVO_SENSE was last asked, ms */
+    bool     have_status,             /**< status holds a read */
+             have_servo;              /**< servo holds a read */
+    uint16_t status[SENSE_LINK_STATUS_COUNT];  /**< SENSE as last read */
+    uint16_t servo[SENSE_LINK_SERVO_COUNT];  /**< SERVO_SENSE as last read */
+    uint32_t status_ms;  /**< when status was last read, ms */
     uint32_t status_reads;    /**< SENSE reads answered, since init    */
     bool     window_taken;    /**< a window has gone to the log        */
     uint16_t window_last;     /**< the number of the last one          */
 
     /* The window ring. */
-    bool     asked_win;
-    uint32_t win_asked_ms;
+    bool     asked_win;  /**< a SERVO_WIN read is in flight */
+    uint32_t win_asked_ms;  /**< when SERVO_WIN was last asked, ms */
     bool     win_all;         /**< the whole page is owed               */
     bool     win_synced;      /**< win_next is the next number owed     */
     bool     win_restart;     /**< every closed entry of the next read
                                    is owed                              */
-    uint16_t win_next;
+    uint16_t win_next;  /**< the next window number owed */
     uint32_t win_sync_ms;     /**< when a read last left nothing owed   */
     uint32_t win_lost;        /**< numbers that left the ring, since init */
     bool     win_have;        /**< a read showed LINK_SW_HAVE           */
     bool     win_valid;       /**< its newest entry holds current       */
-    uint16_t win_newest;
+    uint16_t win_newest;  /**< the number of the newest window seen */
     uint32_t win_moved_ms;    /**< when win_newest last moved           */
     bool     win_stands;      /**< a read found it SENSE_LINK_STALE_MS
                                    old or more; until it moves          */
     uint8_t  winq_n;          /**< windows waiting in winq, oldest first */
-    sense_link_win_t winq[LINK_SW_RING];
+    sense_link_win_t winq[LINK_SW_RING];  /**< the windows waiting to be handed out, oldest first */
     uint16_t setups;          /**< set-ups taken and links lost         */
-    bool     caps_new;
-    uint16_t caps;
+    bool     caps_new;  /**< caps holds a value not yet taken */
+    uint16_t caps;  /**< the IOmcu's CAPABILITIES register */
 
     /* What has been said. */
     uint16_t was_flags;       /**< FLAGS as last read under this set-up */
     uint16_t was_clipped;     /**< CH_FLAGS' clipped bits, likewise    */
-    bool     silent_told[2];
-    bool     online_seen[2];
-    bool     enc_silent_told, enc_online_seen;
+    bool     silent_told[2];  /**< per part: its SILENT event was raised */
+    bool     online_seen[2];  /**< per part: it has been seen online */
+    bool     enc_silent_told,         /**< the encoder's SILENT event was raised */
+             enc_online_seen;         /**< the encoder has been seen online */
     bool     enc_magnet_told;       /**< the magnet event is said          */
     uint16_t enc_magnet;            /**< the magnet bits of the last read   */
-    uint16_t was_faults;
-    uint8_t  clipped_ch;
+    uint16_t was_faults;  /**< the fault word as last given to sense_link_faults() */
+    uint8_t  clipped_ch;  /**< the lowest INA3221 channel newly clipped, 1 to 3 */
     uint8_t  clip_pending;    /**< INA3221 channels clipped, not yet
                                    handed out: bit n-1 for CHn          */
     uint16_t ev_id[2];        /**< the ID a WRONG event was raised with */
     uint8_t  ev_found[2];     /**< the address a SILENT event found     */
-    uint32_t events;
+    uint32_t events;  /**< the events not yet handed out, SENSE_LINK_EV_* bits */
     bool     event_given;     /**< an event has been handed out        */
     uint32_t event_ms;        /**< when                                */
 } sense_link_t;

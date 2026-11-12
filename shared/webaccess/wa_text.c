@@ -9,6 +9,7 @@
 
 #include <string.h>
 
+/** @brief The value of the hex digit @p c, or -1 when it is none. */
 static int hexval(char c)
 {
     if (c >= '0' && c <= '9') {
@@ -66,7 +67,7 @@ long wa_utf8_units(const char *s, size_t n)
     return units;
 }
 
-/* One name: not empty, not "." or "..", UTF-8, at most WA_NAME_UNITS. */
+/** @brief Check one name: not empty, not "." or "..", UTF-8, at most WA_NAME_UNITS. */
 static wa_path_err_t check_name(const char *s, size_t n)
 {
     if (n == 0u) {
@@ -264,6 +265,7 @@ void wa_out_json(wa_out_t *o, const char *s)
     }
 }
 
+/** @brief Whether @p c is one of A-Z a-z 0-9 - . _ ~. */
 static bool unreserved(char c)
 {
     return (c >= 'A' && c <= 'Z') || (c >= 'a' && c <= 'z')
@@ -441,6 +443,11 @@ const char *wa_basename(const char *path)
     return (slash != NULL) ? slash + 1 : path;
 }
 
+/**
+ * @def PUT(ch)
+ * @brief Append @p ch to the value in wa_disposition(), or return 0 from it
+ *        when it does not fit.
+ */
 size_t wa_disposition(char *out, size_t cap, const char *name)
 {
     static const char k_hex[] = "0123456789ABCDEF";
@@ -508,6 +515,7 @@ wa_civil_t wa_civil(int64_t t)
     return c;
 }
 
+/** @brief Write @p v as two digits. */
 static void out_2(wa_out_t *o, int v)
 {
     const char d[2] = { (char)('0' + (v / 10) % 10), (char)('0' + v % 10) };

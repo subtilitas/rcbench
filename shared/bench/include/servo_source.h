@@ -102,8 +102,8 @@ enum {
  * @brief The state of which meter measures the servo rail.
  */
 typedef struct {
-    servo_source_id_t  id;
-    servo_source_why_t why;
+    servo_source_id_t  id;  /**< the meter that measures the servo rail */
+    servo_source_why_t why;  /**< why it is the meter */
     uint32_t changes;       /**< times id has changed, modulo 2^32        */
     servo_source_why_t dropped;  /**< why the INA3221 last stopped being
                                       the meter; NONE while it never did  */

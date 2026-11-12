@@ -87,13 +87,13 @@ extern "C" {
 
 /** @brief The supply an ENTER asks for until it is set otherwise. */
 #define KST_PROG_SUPPLY_MV 5000u
-#define KST_PROG_SUPPLY_MA 1000u
+#define KST_PROG_SUPPLY_MA 1000u  /**< the current limit, mA */
 /**
  * @brief The wait between the end of a session and the first PWM pulse: its
  *        default and the highest value taken.
  */
 #define KST_PROG_WAIT_MS     100u
-#define KST_PROG_WAIT_MAX_MS 10000u
+#define KST_PROG_WAIT_MAX_MS 10000u  /**< the highest wait, ms */
 /** @brief The file text's size, with its terminator. */
 #define KST_PROG_FILE_MAX 400u
 /**
@@ -101,7 +101,7 @@ extern "C" {
  *        known.
  */
 #define KST_PROG_PIN_LAST 47u
-#define KST_PROG_NO_PIN   0xFFu
+#define KST_PROG_NO_PIN   0xFFu  /**< a pin that is not known */
 /**
  * @brief A command without an answer from the control task for this long is
  *        given up.
@@ -394,7 +394,7 @@ typedef struct {
  * @brief The card side's answer to a request.
  */
 typedef struct {
-    uint32_t id;
+    uint32_t id;  /**< the request's id */
     uint8_t result;      /**< kst_prog_card_result_t                       */
     char name[KST_PROG_NAME_MAX];  /**< KST_PROG_CARD_SAVE: the file
                               written; KST_PROG_CARD_LIST: the next preset
@@ -420,7 +420,7 @@ typedef struct {
     uint16_t total;      /**< the servo files on the card                  */
     uint8_t types[KST_PROG_FILES_MAX];  /**< each file's servo type; 0 for
                               a file that names none or does not read      */
-    char names[KST_PROG_FILES_MAX][KST_PROG_NAME_MAX];
+    char names[KST_PROG_FILES_MAX][KST_PROG_NAME_MAX];  /**< KST_PROG_CARD_LIST: the listed names, "" for an unused entry */
 } kst_prog_card_done_t;
 
 /**
@@ -436,7 +436,7 @@ typedef enum {
 
 /** @brief One call for the task that owns the link module. */
 typedef struct {
-    kst_prog_cmd_kind_t kind;
+    kst_prog_cmd_kind_t kind;  /**< what the call does */
     uint32_t id;               /**< a start's comes back in
                                     kst_prog_feed_t.answer_id */
     kst_link_request_t req;             /**< the request for kind */
@@ -515,12 +515,12 @@ kst_prog_res_t kst_prog_result_class(unsigned result);
 
 /** @brief What the task that owns the link module publishes, every frame. */
 typedef struct {
-    uint32_t now_ms;
-    kst_link_readout_t rd;
-    bool have_image;
-    kst_image_t image;
-    bool have_backup;
-    kst_image_t backup;
+    uint32_t now_ms;  /**< the time of the frame, ms */
+    kst_link_readout_t rd;  /**< the link module's readout */
+    bool have_image;  /**< image holds the servo's image */
+    kst_image_t image;  /**< the servo's image */
+    bool have_backup;  /**< backup holds a backup */
+    kst_image_t backup;  /**< the backup */
     uint32_t answer_id;        /**< the last command carried out; 0 none */
     kst_link_start_t answer;   /**< what kst_link_start() said */
     uint32_t outcomes;         /**< counts kst_link_outcome() handing one out */
@@ -556,13 +556,13 @@ typedef struct {
  * @brief The state of the servo programmer.
  */
 typedef struct {
-    kst_prog_feed_t f;
-    bool fed;
-    uint32_t outcomes_seen;
-    uint32_t next_id;
+    kst_prog_feed_t f;  /**< the programmer's input of the last frame */
+    bool fed;  /**< f holds a frame */
+    uint32_t outcomes_seen;  /**< outcomes of f already taken */
+    uint32_t next_id;  /**< the id of the last command sent */
 
-    bool have_servo;
-    bool fp_ok;
+    bool have_servo;  /**< servo holds an image read from the servo */
+    bool fp_ok;  /**< the servo's fingerprint is right: it is a servo the programmer writes to */
     kst_image_t servo;        /**< the servo as last read          */
     kst_image_t draft;        /**< what the operator made of it    */
     bool journal;             /**< an image is recorded            */
@@ -576,7 +576,7 @@ typedef struct {
     kst_image_t journal_img;     /**< the servo before the write   */
     kst_image_t journal_target;  /**< and what the write was to leave */
 
-    bool write_enabled;
+    bool write_enabled;  /**< writes to the servo are allowed */
     bool written;             /**< a write was sent in this session */
     bool backed_up;           /**< a file holds this session's servo */
     bool no_file;             /**< a write went with no card for one */
@@ -681,17 +681,17 @@ typedef struct {
     uint32_t files_seq;       /**< counts the lists that arrived   */
     char files[KST_PROG_FILES_MAX][KST_PROG_NAME_MAX];  /**< the listed files' names */
 
-    bool soft;
-    kst_image_t soft_img;
-    kst_rules_t soft_rules;
+    bool soft;  /**< a load waits for the operator to confirm soft rules */
+    kst_image_t soft_img;  /**< the image of that load */
+    kst_rules_t soft_rules;  /**< the soft rules the image breaks */
     kst_field_set_t conf_set;       /**< fields with a confirmed value   */
     uint16_t conf_raw[KST_F_COUNT]; /**< the value a soft rule was
                                          confirmed for                   */
     uint8_t plan_n;           /**< registers the write on its way writes;
                                    0 not known                          */
 
-    bool file_wanted;
-    bool file_busy;
+    bool file_wanted;  /**< a file step is owed to the card */
+    bool file_busy;  /**< the card has the text of a file step */
     bool file_stale;          /**< the text on its way is of before the
                                    write that waits: its answer is not
                                    that write's                     */
@@ -702,14 +702,14 @@ typedef struct {
 
     /* The limit run (servo_limrun.h): the servo as its first session read
      * it, kept across its sessions and after it, until the next run. */
-    bool run_hold;
+    bool run_hold;  /**< the limit run's servo image is held */
     bool run_own;             /**< the run is under way: its sessions
                                    take the file of its first write  */
     bool run_written;         /**< the run's first write was sent */
-    kst_image_t run_img;
+    kst_image_t run_img;  /**< the servo as the run's first session read it */
     char run_backup[KST_PROG_NAME_MAX];  /**< the file of run_img; "" none */
 
-    kst_prog_msg_t msg;
+    kst_prog_msg_t msg;  /**< the message the screen shows */
     kst_plan_t plan;          /**< work space; not on the stack */
 } kst_prog_t;
 
