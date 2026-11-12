@@ -370,7 +370,7 @@ void control_pump(void)
      * not since the last touch.  An untouched panel is healthy; a controller
      * that has stopped answering is not.
      */
-    if (saw_touch || touch_age_ms() < 200u) {
+    if (saw_touch || touch_age_ms() < ARMING_TOUCH_FRESH_MS) {
         arming_touch_seen(&s_arm, now_ms());
     }
     /* And the contact a reset's hold rests on: reports that stop for 100ms

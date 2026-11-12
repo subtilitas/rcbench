@@ -56,11 +56,11 @@ A profile page lists its menu items, initially set to KEEP so they remain unchan
 
 The right column contains CHANGE, the visible item range and the `^` and `v` scroll buttons. It also shows MANUAL INTERVENTION REQUIRED when applicable, the menu type, run voltage and current, entry time, and the selected item's values and default. Where the profile states measured beep lengths, it also shows BEEP MIN, LONG and GAP MIN marked "(profile)": the run uses them instead of the settings. The run's top card shows BEEP MIN and LONG for every run, marked "(profile)" or "(setting)". RUN shows how many values you have selected.
 
-The footer reads `[ESC STICK] [RUN n] [SETTINGS]`; during a run the middle reads ABORT, after it OK. A note above the footer says why RUN cannot start, or that the profile is not verified.
+The footer reads `[ESC STICK] [RUN n] [OPTIONS]`; during a run the middle reads ABORT, after it OK. A note above the footer says why RUN cannot start, or that the profile is not verified.
 
-SETTINGS opens the list of the supply settings and the beep timings. It takes a press on a SAFE bench with no run under way; an arm under the open list closes it.
+OPTIONS opens the list of the supply settings and the beep timings. It takes a press on a SAFE bench with no run under way; an arm under the open list closes it.
 
-![The SETTINGS list](view:motor-stick-timing)
+![The OPTIONS list](view:motor-stick-timing)
 
 The defaults are not measured. Where a profile states its beep lengths, the run takes BEEP MIN, LONG and LONG MAX from them instead of these settings, and GAP MIN where half the short beep is lower. Voltage 0.0V takes the voltage from the profile's cell count. A change applies at once; SAVE in the list's strip keeps it, and RESET ESC STICK sets the 14 settings to their defaults.
 

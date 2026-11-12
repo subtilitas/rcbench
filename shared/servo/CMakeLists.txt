@@ -15,10 +15,10 @@ set(SRCS servo_limit.c servo_sync.c servo_sim.c servo_sweep.c servo_move.c
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
-                           PRIV_REQUIRES text)
+                           PRIV_REQUIRES text mstime)
 else()
     add_library(rcbench_servo STATIC ${SRCS})
     target_include_directories(rcbench_servo PUBLIC include)
     # servo_move.c's noise figure takes a square root.
-    target_link_libraries(rcbench_servo PUBLIC m PRIVATE rcbench_text)
+    target_link_libraries(rcbench_servo PUBLIC m PRIVATE rcbench_text rcbench_mstime)
 endif()

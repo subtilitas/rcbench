@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The arming policy: when the bench may be armed, the stop latch the panel
+ *        keeps and the line the IOmcu is told about it.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "arming.h"
@@ -8,6 +11,7 @@
 #include <string.h>
 
 #include "heartbeat.h"
+#include "mstime.h"
 
 /* The window outlasts the IOmcu's ceiling twice over, so its monitor has
  * doubted the line and latched before the line edges again. */
@@ -33,26 +37,11 @@ void arming_set_line_wait(arming_t *a, uint32_t wait_ms)
     }
 }
 
-/**
- * @brief Wrap-safe: true from the millisecond `deadline` on, for half the
- *        range.
- */
-static bool reached(uint32_t now_ms, uint32_t deadline_ms)
-{
-    return (int32_t)(deadline_ms - now_ms) <= 0;
-}
-
-/** @brief Wrap-safe: true from the millisecond after `deadline` on. */
-static bool past(uint32_t now_ms, uint32_t deadline_ms)
-{
-    return (int32_t)(deadline_ms - now_ms) < 0;
-}
-
 bool arming_line_wanted(const arming_t *a, uint32_t now_ms)
 {
     return a != NULL && a->arming && a->line_wait_ms != 0u
-           && !a->line_trusted && reached(now_ms, a->settle_until_ms)
-           && !past(now_ms, a->settle_until_ms + a->line_wait_ms);
+           && !a->line_trusted && mstime_reached(now_ms, a->settle_until_ms)
+           && !mstime_past(now_ms, a->settle_until_ms + a->line_wait_ms);
 }
 
 void arming_line_nobody(arming_t *a)
@@ -260,7 +249,7 @@ bool arming_handshake_open(arming_t *a, uint32_t now_ms, bool cleared)
     if (a == NULL || !a->armed) {
         return false;
     }
-    if (!a->handshake_bounded || !past(now_ms, a->handshake_until_ms)) {
+    if (!a->handshake_bounded || !mstime_past(now_ms, a->handshake_until_ms)) {
         return true;
     }
     if (cleared) {
@@ -484,7 +473,7 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
         act = ARMING_ACT_DISARM;
     }
 
-    if (a->arming && reached(now_ms, a->settle_until_ms)) {
+    if (a->arming && mstime_reached(now_ms, a->settle_until_ms)) {
         const bool fit = !a->stopped && !arming_touch_dead(a, now_ms);
         const uint32_t bound = a->settle_until_ms + a->line_wait_ms;
         /*
@@ -494,7 +483,8 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
          * returns past it arms nothing.
          */
         const bool trusted = a->line_wait_ms == 0u || nobody
-                             || (a->line_trusted && !past(now_ms, bound));
+                             || (a->line_trusted
+                                 && !mstime_past(now_ms, bound));
         if (!fit || trusted) {
             a->arming = false;
             if (fit) {
@@ -505,7 +495,7 @@ arming_action_t arming_step(arming_t *a, uint32_t now_ms)
                 a->handshake_until_ms = bound;
                 a->handshake_bounded  = a->line_wait_ms != 0u && !nobody;
             }
-        } else if (reached(now_ms, bound)) {
+        } else if (mstime_reached(now_ms, bound)) {
             /* The far end has not come to trust the line in time.  Given up
              * before CLEAR is written, so its latch stays set. */
             a->arming = false;

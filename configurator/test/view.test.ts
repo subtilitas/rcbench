@@ -195,10 +195,25 @@ test('a function reads "selected by you", "included with these parts" or what it
 });
 
 test('a function whose parts are there under the other variant names the variant it needs', () => {
-  const v = view({ functions: ['esc'], owned: ['pdmini'] });
+  const owned = ['pdmini', 'sim', 'tap'];
+  const v = view({ functions: ['esc'], owned });
   assert.equal(v.setup.functions.find((f) => f.fn.id === 'stick')?.enabled, false);
   assert.equal(status(v, 'stick'), 'Not active: needs ESC power B.');
-  assert.equal(status(view({ functions: ['esc'], owned: ['pdmini'] }, 'de'), 'stick'), 'Nicht aktiv: braucht ESC-Versorgung B.');
+  assert.equal(status(view({ functions: ['esc'], owned }, 'de'), 'stick'), 'Nicht aktiv: braucht ESC-Versorgung B.');
+});
+
+test('ESC STICK programming adds the phase tap parts under the default beep source and the INA3221 under the other', () => {
+  const pd = { ...DEFAULT_OPTIONS, escPower: 'pd' as const };
+  // The PD mini alone is no beep source: the function names the parts it adds.
+  assert.equal(status(view({ functions: ['esc'], owned: ['pdmini'], options: pd }), 'stick'), 'Adds: Motor simulator, Phase tap');
+  assert.equal(status(view({ functions: ['esc'], owned: ['pdmini', 'sim', 'tap'], options: pd }), 'stick'), 'Included with these parts.');
+  const ina = { ...pd, stickBeep: 'ina3221' as const };
+  assert.equal(status(view({ functions: ['esc'], owned: ['pdmini'], options: ina }), 'stick'), `Adds: ${short('ina3221', 'en')}`);
+  assert.equal(status(view({ functions: ['esc'], owned: ['pdmini', 'ina3221'], options: ina }), 'stick'), 'Included with these parts.');
+  // The choice shows while the PD mini feeds an ESC, and the radio group names both sources.
+  const html = chooser(view({ functions: ['stick'] }), false);
+  assert.ok(html.includes('id="o-stickBeep-tap"') && html.includes('id="o-stickBeep-ina3221"'));
+  assert.ok(!chooser(view({ functions: ['esc'] }), false).includes('id="o-stickBeep-tap"'));
 });
 
 test('every part beyond the base setup has a remove control with a name, a base part and a test object have none', () => {
@@ -249,7 +264,7 @@ test('the question before a removal names the functions that go off and the part
 });
 
 test('the question names a variant that changes and a function that comes on', () => {
-  const v: View = { ...view({ functions: ['esc', 'servotest'] }), pending: { part: 'batt', at: 'result' } };
+  const v: View = { ...view({ functions: ['esc', 'servotest', 'tap'] }), pending: { part: 'batt', at: 'result' } };
   const said = text(removalWarning(v));
   assert.ok(said.includes('All functions remain available.'), said);
   assert.ok(said.includes('Variant that changes: ESC power B.'), said);

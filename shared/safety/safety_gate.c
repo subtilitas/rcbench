@@ -1,6 +1,9 @@
 /**
  * @file
- * @brief SPDX-License-Identifier: MIT
+ * @brief The IOmcu's arm decision, once a pass and at every CONTROL write, with
+ *        the latch an arm needs cleared.
+ *
+ * SPDX-License-Identifier: MIT
  */
 
 #include "safety_gate.h"

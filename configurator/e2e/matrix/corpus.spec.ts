@@ -10,7 +10,7 @@
 
 import { expect, test } from '@playwright/test';
 
-import { hashOf as textOf, namesLater, namesRetired, readCorpus, readWires } from '../../test/corpus/corpus.ts';
+import { BEEP_SOURCE, hashOf as textOf, namesLater, namesRetired, readCorpus, readWires } from '../../test/corpus/corpus.ts';
 import type { Options } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, DEFAULT_SIM, plainDrive } from '../../src/core.ts';
 import { formatHash } from '../../src/hash.ts';
@@ -50,7 +50,9 @@ for (const entry of corpus.entries) {
 
     expect(shown.lang).toBe(want.lang);
     expect(shown.functions.filter((id) => corpus.ids.functions.includes(id))).toEqual(functions.filter((id) => corpus.ids.functions.includes(id)));
-    expect(shown.parts.filter((id) => corpus.ids.parts.includes(id))).toEqual(want.parts.filter((id) => corpus.ids.parts.includes(id) && (kept || !retired.includes(id))));
+    // The entries the beep source rule changes are held to the parts of the rule.
+    const storedParts = BEEP_SOURCE[entry.name]?.parts ?? want.parts;
+    expect(shown.parts.filter((id) => corpus.ids.parts.includes(id))).toEqual(storedParts.filter((id) => corpus.ids.parts.includes(id) && (kept || !retired.includes(id))));
     // Each variant group the resolver states as visible is on the page, with the stored value.
     expect(shown.options).toEqual(expectedOf({ functions, owned, options }).options);
     for (const [key, value] of Object.entries(shown.options)) expect(value, key).toBe(options[key as keyof Options]);

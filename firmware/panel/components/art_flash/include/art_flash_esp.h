@@ -1,5 +1,6 @@
-/*
- * The board-drawing partition, as an art_flash_t.
+/**
+ * @file
+ * @brief The board-drawing partition, as an art_flash_t.
  *
  * SPDX-License-Identifier: MIT
  */

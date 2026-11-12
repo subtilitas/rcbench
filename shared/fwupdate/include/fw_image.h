@@ -155,23 +155,6 @@ fw_err_t fw_image_check(const uint8_t *img, uint32_t bytes, uint32_t slot,
                         fw_image_info_t *out);
 
 /**
- * @brief fw_image_head() for an image of chip @p chip and project @p name
- *        in place of the panel's ESP32-P4 and FW_PROJECT.
- *
- * @param head  the first bytes of the image
- * @param have  the number of bytes at @p head
- * @param bytes the length of the image
- * @param slot  the size of the slot, bytes
- * @param chip  the esp_chip_id_t the image must name (FW_CHIP_*)
- * @param name  the project name its descriptor must carry; NULL matches none
- * @param out   what the image says about itself
- * @return FW_OK or the first check that failed
- */
-fw_err_t fw_image_head_as(const uint8_t *head, uint32_t have, uint32_t bytes,
-                          uint32_t slot, uint16_t chip, const char *name,
-                          fw_image_info_t *out);
-
-/**
  * @brief fw_image_check() for an image of chip @p chip and project @p name.
  *
  * @param img   the image

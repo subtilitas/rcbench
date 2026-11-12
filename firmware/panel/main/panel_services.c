@@ -22,6 +22,7 @@
 #include "link_pages.h"
 #include "outputs.h"
 #include "panel.h"
+#include "prog5v_box.h"
 #include "prog_link.h"
 #include "sense_link.h"
 #include "sense_page.h"
@@ -104,11 +105,19 @@ bool s_prog_taken;
  * gave up is dropped there (kst_prog.h). */
 kst_prog_gate_t s_kst_gate;
 
+atomic_uint s_prog_band = PROG5V_HELD_NONE;
+
 __attribute__((noinline)) void kst_port_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
     s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken() || esc_taken();
+    /* The port the band's SAFE chip names: the KST session's, else the
+     * Hitec page's, else some port while a HITEC hold has no number. */
+    atomic_store(&s_prog_band,
+                 (unsigned)prog5v_box_held_port(
+                     kst_prog_port_taken(&rd) ? (int)rd.port_no : -1,
+                     hitec_taken_port(), hitec_taken()));
 }
 
 uint32_t prog_faults(void)

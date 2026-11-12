@@ -6,7 +6,7 @@ order: 100
 
 # IOmcu-Update
 
-Jedes Firmware-Image des Panels enthält ein IOmcu-Image. Das Panel bietet es an, wenn auf dem verbundenen IOmcu ein anderer Build läuft. Die Prüfung erfolgt bei jedem Verbindungsaufbau über den CAN-Bus (Controller Area Network). Sie vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit) statt Versionsnummern. Bei einer Abweichung erscheint der Alarm `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`.
+Jedes Firmware-Image des Panels enthält ein IOmcu-Image. Das Panel bietet es an, wenn auf dem verbundenen IOmcu ein anderer Build läuft. Die Prüfung erfolgt bei jedem Verbindungsaufbau über den CAN-Bus (Controller Area Network). Sie vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit) statt Versionsnummern. Bei einer Abweichung erscheint der Alarm `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`. Ist der Prüfstand nicht SAFE mit ausgeschaltetem Netzteil, das WLAN an oder eine Panel-Installation im Gang, nennt der Alarm stattdessen dies, etwa `IOmcu nutzt einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels aus ist.`, und erneut, wenn die Frage auf etwas anderes wartet.
 
 ## Die Frage
 
