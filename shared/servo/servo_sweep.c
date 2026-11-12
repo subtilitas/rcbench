@@ -77,7 +77,10 @@ bool sweep_resume(sweep_t *w, uint32_t now_ms)
  *        ones after four and a half.
  */
 typedef struct {
-    uint32_t period, quarter, dwell, cycle;
+    uint32_t period,    /**< the motion's period, us */
+             quarter,   /**< a quarter of the period, us */
+             dwell,     /**< the dwell at each end, us */
+             cycle;     /**< the whole cycle with both dwells, us */
 } cycle_t;
 
 /**

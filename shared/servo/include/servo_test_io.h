@@ -23,7 +23,8 @@ extern "C" {
 
 /** @brief One reading of the supply, as SUPPLY has it (supply_state_t). */
 typedef struct {
-    float    v, i;          /**< at the output, V and A                 */
+    float    v,             /**< the voltage at the output, V */
+             i;             /**< the current at the output, A */
     float    set_v;         /**< the voltage set point, read back       */
     float    set_i;         /**< the current limit, read back           */
     uint8_t  mode;          /**< 0 off, 1 CV, 2 CC (supply_mode_t)      */
@@ -128,7 +129,7 @@ typedef struct {
 
 /** @brief What the caller knows each step. */
 typedef struct {
-    bool  armed;
+    bool  armed;  /**< the bench is ARMED */
     float v_max;            /**< the voltage cap in force: SUPPLY's caps,
                                  VOLTAGE MAX and the module's input clamp */
 } servo_test_in_t;
@@ -140,6 +141,7 @@ typedef struct {
  *         247 characters. */
 #define SERVO_TEST_LINE_MAX 256u
 
+/** @brief What the run hands out for the caller to write. */
 typedef enum {
     SERVO_TEST_OUT_NONE = 0,
     SERVO_TEST_OUT_OPEN,    /**< a run begins: its files are opened     */

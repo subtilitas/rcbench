@@ -34,6 +34,7 @@
 extern "C" {
 #endif
 
+/** @brief The shape of a sweep. */
 typedef enum {
     SWEEP_OFF = 0,
     SWEEP_SQUARE,
@@ -44,7 +45,7 @@ typedef enum {
 
 /** @brief The slowest and fastest curve, in thousandths of a cycle a second. */
 #define SWEEP_MHZ_MIN      50u
-#define SWEEP_MHZ_MAX    5000u
+#define SWEEP_MHZ_MAX    5000u  /**< the fastest, in thousandths of a cycle a second */
 /** @brief The furthest from the center a sweep goes, in command units. */
 #define SWEEP_AMPLITUDE_MAX 500u
 /** @brief The longest hold at an end. */
@@ -52,18 +53,20 @@ typedef enum {
 /** @brief The center, in command units. */
 #define SWEEP_CENTER        500u
 
+/** @brief The settings of a sweep. */
 typedef struct {
-    sweep_kind_t kind;
+    sweep_kind_t kind;  /**< the shape */
     uint16_t     mhz;        /**< cycles a second, x1000                   */
     uint16_t     amplitude;  /**< command units either side of the center  */
     uint16_t     dwell_ms;   /**< held at each end                         */
     uint16_t     moves;      /**< ends to reach, 0 for no end              */
 } sweep_cfg_t;
 
+/** @brief The state of a sweep. */
 typedef struct {
-    sweep_cfg_t cfg;
-    uint32_t    start_ms;
-    bool        running;
+    sweep_cfg_t cfg;  /**< the settings */
+    uint32_t    start_ms;  /**< when it started, ms */
+    bool        running;  /**< it is running */
     bool        paused;      /**< stopped by sweep_pause(), phase kept    */
     uint32_t    paused_ms;   /**< how far into the sweep it was paused    */
 } sweep_t;

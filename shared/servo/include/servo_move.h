@@ -103,6 +103,7 @@ typedef enum {
     SERVO_MOVE_CLIP_HIGH =  1,  /**< at or above the value given         */
 } servo_move_clip_t;
 
+/** @brief The settings of a move measurement. */
 typedef struct {
     uint32_t cmd_t;         /**< the command, in the caller's time unit  */
     uint32_t window_t;      /**< late or unseen this long after cmd_t    */
@@ -115,19 +116,22 @@ typedef struct {
                                  SERVO_MOVE_FILTER_MAX                   */
 } servo_move_cfg_t;
 
+/** @brief The state of a move measurement. */
 typedef struct {
-    servo_move_cfg_t   cfg;
-    servo_move_state_t state;
+    servo_move_cfg_t   cfg;  /**< the settings */
+    servo_move_state_t state;  /**< where the move stands */
     bool     left;          /**< since movement, above ref_a by the
                                  threshold: not there yet                */
     /* The samples in a row near ref_a, after movement. */
-    uint8_t  run_n;
-    float    run_lo, run_hi;
+    uint8_t  run_n;  /**< samples in a row near ref_a, after movement */
+    float    run_lo,        /**< the lowest of them, A */
+             run_hi;        /**< the highest of them, A */
     uint32_t run_t;         /**< the first of them                       */
     /* The filter. */
-    float    fbuf[SERVO_MOVE_FILTER_MAX];
-    int8_t   fclip[SERVO_MOVE_FILTER_MAX];
-    uint8_t  f_n, f_head;
+    float    fbuf[SERVO_MOVE_FILTER_MAX];  /**< the last filter_n samples, A, a ring */
+    int8_t   fclip[SERVO_MOVE_FILTER_MAX];  /**< their clip marks, servo_move_clip_t */
+    uint8_t  f_n,          /**< samples held in fbuf */
+             f_head;       /**< the slot of fbuf the next sample takes */
     /* What it measured. */
     uint32_t moved_t;       /**< the first sample of the movement        */
     uint32_t end_t;         /**< the arrival, or when the window ran out */
@@ -135,7 +139,7 @@ typedef struct {
                                  arrival.  The sample that closes the move
                                  is not in it; for SETTLED the settle_n - 1
                                  samples of the run before that one are   */
-    uint32_t n;
+    uint32_t n;  /**< valued samples in sum */
     float    peak;          /**< the highest of them, 0 for none         */
     bool     clipped;       /**< a clipped sample among them: the mean
                                  and the peak lack it                    */

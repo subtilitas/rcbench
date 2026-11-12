@@ -37,12 +37,14 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/** @brief Where a sync search stands. */
 typedef enum {
     SERVO_SYNC_RUNNING = 0,
     SERVO_SYNC_DONE,
     SERVO_SYNC_FAULT,
 } servo_sync_state_t;
 
+/** @brief Why a sync search stopped. */
 typedef enum {
     SERVO_SYNC_FAULT_NONE = 0,
     /** @brief Current crossed the hard ceiling.
@@ -75,6 +77,7 @@ typedef enum {
 /** @brief The most points one round of a scan may have. */
 #define SERVO_SYNC_MAX_POINTS 9
 
+/** @brief The settings of a sync search. */
 typedef struct {
     uint16_t center_us;     /**< the surface's center, us          */
     uint16_t deflection_us; /**< how far out the ends are measured */
@@ -99,8 +102,8 @@ typedef struct {
      * costs the answer.
      */
     uint16_t settle_ms;
-    float    slew_us_per_ms;
-    uint16_t measure_ms;
+    float    slew_us_per_ms;  /**< the assumed slew rate of the servos, us per ms */
+    uint16_t measure_ms;  /**< how long a reading averages, ms */
 
     /**
      * @brief How far the best reading of a scan must sit below the worst before
@@ -112,17 +115,18 @@ typedef struct {
      */
     float    min_depth_a;
 
-    float    hard_limit_a;
+    float    hard_limit_a;  /**< the pair current above which the search aborts at once, A */
 } servo_sync_cfg_t;
 
 /** @brief The pulse widths the search commands stay within, microseconds. */
 #define SERVO_SYNC_MIN_US 500u
-#define SERVO_SYNC_MAX_US 2500u
+#define SERVO_SYNC_MAX_US 2500u  /**< the longest pulse, us */
 
+/** @brief The state of a sync search. */
 typedef struct {
-    servo_sync_cfg_t   cfg;
-    servo_sync_state_t state;
-    servo_sync_fault_t fault;
+    servo_sync_cfg_t   cfg;  /**< the settings */
+    servo_sync_state_t state;  /**< where the search stands */
+    servo_sync_fault_t fault;  /**< why it stopped, SERVO_SYNC_FAULT_NONE while it has not */
 
     /* The answers. All three are what the *second* servo should be commanded
      * to, given the first is at center, at +deflection and at -deflection. */
@@ -135,23 +139,23 @@ typedef struct {
      *
      * The difference is the gain from the correction. */
     float    best_a[SERVO_SYNC_STAGE_COUNT];
-    float    worst_a[SERVO_SYNC_STAGE_COUNT];
+    float    worst_a[SERVO_SYNC_STAGE_COUNT];  /**< the pair current at the worst point of each stage, A */
 
     /* Internals. */
-    servo_sync_stage_t stage;
-    uint8_t  round;
-    uint8_t  point;
+    servo_sync_stage_t stage;  /**< the stage under way */
+    uint8_t  round;  /**< the round of the stage under way */
+    uint8_t  point;  /**< the scan point of the round */
     int32_t  win_center_us; /**< middle of this round's scan window, us */
-    int32_t  win_half_us;
-    float    scan_a[SERVO_SYNC_MAX_POINTS];
-    uint32_t phase_start_ms;
+    int32_t  win_half_us;  /**< half-width of this round's scan window, us */
+    float    scan_a[SERVO_SYNC_MAX_POINTS];  /**< the pair current at each point of the round, A */
+    uint32_t phase_start_ms;  /**< when the current settle/measure phase began, ms */
     uint32_t travel_ms;     /**< extra wait for the move just commanded */
-    bool     measuring;
-    double   sum_a;
-    uint32_t samples;
-    bool     started;
-    uint16_t cmd_a_us;
-    uint16_t cmd_b_us;
+    bool     measuring;  /**< the phase is measuring, not settling */
+    double   sum_a;  /**< sum of the current samples of the phase, A */
+    uint32_t samples;  /**< samples in sum_a */
+    bool     started;  /**< the first step was taken */
+    uint16_t cmd_a_us;  /**< the pulse commanded to servo A, us */
+    uint16_t cmd_b_us;  /**< the pulse commanded to servo B, us */
 } servo_sync_t;
 
 /**
