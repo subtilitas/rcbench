@@ -133,10 +133,10 @@ extern "C" {
  * times.  DRAIN: the end of the window.
  */
 #define HITEC_PIO_IDLE_PC    1u
-#define HITEC_PIO_BIT_PC     8u
-#define HITEC_PIO_RELEASE_PC 11u
-#define HITEC_PIO_ASK_PC     22u
-#define HITEC_PIO_ANSWER_PC  24u
+#define HITEC_PIO_BIT_PC     8u    /**< the first bit time */
+#define HITEC_PIO_RELEASE_PC 11u   /**< the release before the receiver */
+#define HITEC_PIO_ASK_PC     22u   /**< the jmp !osre after a byte */
+#define HITEC_PIO_ANSWER_PC  24u   /**< the way into the answer's bit times */
 /** @brief The `mov osr, null` that starts the drain at the end of the window. */
 #define HITEC_PIO_DRAIN_PC   28u
 

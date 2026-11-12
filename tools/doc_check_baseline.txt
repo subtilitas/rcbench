@@ -1075,46 +1075,6 @@ firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t 
 firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.	static wa_why_t why_of_fw_gate(fw_gate_t g)
 firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.	void wifi_service(bool armed, uint32_t stops_now)
 firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.	static void wifi_unavailable_service(void)
-protocols/hitec/hitec_pio.c: warning: Member RELEASED (macro definition) of file hitec_pio.c is not documented.	#define RELEASED PAIR(0u, 0u)
-protocols/hitec/hitec_pre.c: warning: Member PIO_IN_PINS_1(d) (macro definition) of file hitec_pre.c is not documented.	#define PIO_IN_PINS_1(d) ((uint16_t)(0x4001u | PIO_DELAY(d)))
-protocols/hitec/hitec_pre.c: warning: Member PIO_NOP(d) (macro definition) of file hitec_pre.c is not documented.	#define PIO_NOP(d) ((uint16_t)(0xA042u | PIO_DELAY(d))) /* mov y, y */
-protocols/hitec/hitec_pre.c: warning: Member PIO_SET_PINDIRS(v, d) (macro definition) of file hitec_pre.c is not documented.	#define PIO_SET_PINDIRS(v, d) ((uint16_t)(0xE080u | (v) | PIO_DELAY(d)))
-protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_ANSWER_PC (macro definition) of file hitec_pio.h is not documented.	#define HITEC_PIO_ANSWER_PC 24u
-protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_ASK_PC (macro definition) of file hitec_pio.h is not documented.	#define HITEC_PIO_ASK_PC 22u
-protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_BIT_PC (macro definition) of file hitec_pio.h is not documented.	#define HITEC_PIO_BIT_PC 8u
-protocols/hitec/include/hitec_pio.h: warning: Member HITEC_PIO_RELEASE_PC (macro definition) of file hitec_pio.h is not documented.	#define HITEC_PIO_RELEASE_PC 11u
-protocols/hitec/include/hitec_pre.h: warning: Member HITEC_PRE_CHARGE_MAX_NS (macro definition) of file hitec_pre.h is not documented.	#define HITEC_PRE_CHARGE_MAX_NS 200u
-protocols/hitec/include/hitec_pre.h: warning: Member HITEC_PRE_MAX_HZ (macro definition) of file hitec_pre.h is not documented.	#define HITEC_PRE_MAX_HZ 250000000u
-protocols/hitec/include/hitec_pre.h: warning: Member HITEC_PRE_SAMPLE_MAX_NS (macro definition) of file hitec_pre.h is not documented.	#define HITEC_PRE_SAMPLE_MAX_NS 187u
-protocols/hitec/include/hitec_pre.h: warning: Member HITEC_PRE_SAMPLE_MIN_NS (macro definition) of file hitec_pre.h is not documented.	#define HITEC_PRE_SAMPLE_MIN_NS 40u
-protocols/hitec/include/hitec_pre.h: warning: Member HITEC_PRE_SAMPLE_NS (macro definition) of file hitec_pre.h is not documented.	#define HITEC_PRE_SAMPLE_NS 113u
-protocols/hitec/include/hitec_wire.h: warning: Member HITEC_C_REPLY_MAX_NS (macro definition) of file hitec_wire.h is not documented.	#define HITEC_C_REPLY_MAX_NS 1000000u
-protocols/hitec/include/hitec_wire.h: warning: Member HITEC_D_ANSWER_MAX_NS (macro definition) of file hitec_wire.h is not documented.	#define HITEC_D_ANSWER_MAX_NS 20000000u
-protocols/hitec/include/hitec_wire.h: warning: Member HITEC_NEXT_MAX_HALF_BITS (macro definition) of file hitec_wire.h is not documented.	#define HITEC_NEXT_MAX_HALF_BITS 30u
-protocols/hitec/rp2350/hitec_line.h: warning: Member aborted (variable) of struct hitec_line_t is not documented.	uint8_t aborted;
-protocols/hitec/rp2350/hitec_line.h: warning: Member busy (variable) of struct hitec_line_t is not documented.	uint8_t busy;
-protocols/hitec/rp2350/hitec_line.h: warning: Member clock (variable) of struct hitec_line_t is not documented.	hitec_pio_clock_t clock;
-protocols/hitec/rp2350/hitec_line.h: warning: Member dma_pre (variable) of struct hitec_line_t is not documented.	int8_t dma_pre;
-protocols/hitec/rp2350/hitec_line.h: warning: Member dma_rx (variable) of struct hitec_line_t is not documented.	int8_t dma_rx;
-protocols/hitec/rp2350/hitec_line.h: warning: Member dma_tx (variable) of struct hitec_line_t is not documented.	int8_t dma_tx;
-protocols/hitec/rp2350/hitec_line.h: warning: Member drive (variable) of struct hitec_line_t is not documented.	uint8_t drive;
-protocols/hitec/rp2350/hitec_line.h: warning: Member family (variable) of struct hitec_line_t is not documented.	uint8_t family;
-protocols/hitec/rp2350/hitec_line.h: warning: Member hitec_line_err_t (enumeration) of file hitec_line.h is not documented.	typedef enum {
-protocols/hitec/rp2350/hitec_line.h: warning: Member offset (variable) of struct hitec_line_t is not documented.	uint32_t offset;
-protocols/hitec/rp2350/hitec_line.h: warning: Member open (variable) of struct hitec_line_t is not documented.	uint8_t open;
-protocols/hitec/rp2350/hitec_line.h: warning: Member pin (variable) of struct hitec_line_t is not documented.	uint8_t pin;
-protocols/hitec/rp2350/hitec_line.h: warning: Member pio (variable) of struct hitec_line_t is not documented.	void *pio;
-protocols/hitec/rp2350/hitec_line.h: warning: Member pre (variable) of struct hitec_line_t is not documented.	hitec_pre_run_t pre;
-protocols/hitec/rp2350/hitec_line.h: warning: Member pre_len (variable) of struct hitec_line_t is not documented.	uint32_t pre_len;
-protocols/hitec/rp2350/hitec_line.h: warning: Member pre_offset (variable) of struct hitec_line_t is not documented.	uint32_t pre_offset;
-protocols/hitec/rp2350/hitec_line.h: warning: Member pre_pio (variable) of struct hitec_line_t is not documented.	void *pre_pio;
-protocols/hitec/rp2350/hitec_line.h: warning: Member pre_prog[HITEC_PRE_PROGRAM_MAX] (variable) of struct hitec_line_t is not documented.	uint16_t pre_prog[HITEC_PRE_PROGRAM_MAX];
-protocols/hitec/rp2350/hitec_line.h: warning: Member pre_sm (variable) of struct hitec_line_t is not documented.	uint32_t pre_sm;
-protocols/hitec/rp2350/hitec_line.h: warning: Member pre_timing (variable) of struct hitec_line_t is not documented.	hitec_pre_timing_t pre_timing;
-protocols/hitec/rp2350/hitec_line.h: warning: Member run (variable) of struct hitec_line_t is not documented.	hitec_pio_run_t run;
-protocols/hitec/rp2350/hitec_line.h: warning: Member samples[HITEC_PRE_WORDS] (variable) of struct hitec_line_t is not documented.	uint32_t samples[HITEC_PRE_WORDS];
-protocols/hitec/rp2350/hitec_line.h: warning: Member sm (variable) of struct hitec_line_t is not documented.	uint32_t sm;
-protocols/hitec/rp2350/hitec_line.h: warning: Member t_start_us (variable) of struct hitec_line_t is not documented.	uint32_t t_start_us;
 protocols/kst/include/kst_file.h: warning: Member kind (variable) of struct kst_file_t is not documented.	kst_file_kind_t kind;
 protocols/kst/include/kst_file.h: warning: Member verdict (variable) of struct kst_file_load_t is not documented.	kst_file_verdict_t verdict;
 protocols/kst/include/kst_limits.h: warning: Member KST_RULE_BIT(rule) (macro definition) of file kst_limits.h is not documented.	#define KST_RULE_BIT(rule) ((kst_rules_t)1 << (rule))

@@ -21,9 +21,9 @@
  * @brief PIO instruction words, without side-set: the delay in bits 8 to 12.
  */
 #define PIO_DELAY(d)          ((uint16_t)((d) << 8))
-#define PIO_SET_PINDIRS(v, d) ((uint16_t)(0xE080u | (v) | PIO_DELAY(d)))
-#define PIO_IN_PINS_1(d)      ((uint16_t)(0x4001u | PIO_DELAY(d)))
-#define PIO_NOP(d)            ((uint16_t)(0xA042u | PIO_DELAY(d)))  /* mov y, y */
+#define PIO_SET_PINDIRS(v, d) ((uint16_t)(0xE080u | (v) | PIO_DELAY(d)))   /**< set pindirs, @p v */
+#define PIO_IN_PINS_1(d)      ((uint16_t)(0x4001u | PIO_DELAY(d)))   /**< in pins, 1 */
+#define PIO_NOP(d)            ((uint16_t)(0xA042u | PIO_DELAY(d)))  /**< mov y, y */
 /** @brief Largest delay a PIO instruction carries: 31 cycles. */
 #define PIO_DELAY_MAX 31u
 
