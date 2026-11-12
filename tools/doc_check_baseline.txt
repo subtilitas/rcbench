@@ -1075,48 +1075,6 @@ firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t 
 firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.	static wa_why_t why_of_fw_gate(fw_gate_t g)
 firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.	void wifi_service(bool armed, uint32_t stops_now)
 firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.	static void wifi_unavailable_service(void)
-protocols/phase_tap/include/edge_ring.h: warning: Member EDGE_COUNT_MASK (macro definition) of file edge_ring.h is not documented.	#define EDGE_COUNT_MASK 0x7FFFFFFFu
-protocols/phase_tap/include/tone.h: warning: Member b_bursts (variable) of struct tone_t is not documented.	uint32_t b_n, b_bursts;
-protocols/phase_tap/include/tone.h: warning: Member b_flags (variable) of struct tone_t is not documented.	uint8_t b_flags;
-protocols/phase_tap/include/tone.h: warning: Member b_n (variable) of struct tone_t is not documented.	uint32_t b_n, b_bursts;
-protocols/phase_tap/include/tone.h: warning: Member b_start (variable) of struct tone_t is not documented.	uint64_t b_start;
-protocols/phase_tap/include/tone.h: warning: Member b_sum (variable) of struct tone_t is not documented.	uint64_t b_sum;
-protocols/phase_tap/include/tone.h: warning: Member burst_e_before (variable) of struct tone_t is not documented.	uint64_t burst_start, burst_e_before;
-protocols/phase_tap/include/tone.h: warning: Member burst_start (variable) of struct tone_t is not documented.	uint64_t burst_start, burst_e_before;
-protocols/phase_tap/include/tone.h: warning: Member bursts (variable) of struct tone_beep_t is not documented.	uint32_t bursts;
-protocols/phase_tap/include/tone.h: warning: Member c (variable) of struct tone_t is not documented.	tone_cfg_t c;
-protocols/phase_tap/include/tone.h: warning: Member car_max (variable) of struct tone_t is not documented.	uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
-protocols/phase_tap/include/tone.h: warning: Member gap (variable) of struct tone_t is not documented.	uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
-protocols/phase_tap/include/tone.h: warning: Member glitch (variable) of struct tone_t is not documented.	uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
-protocols/phase_tap/include/tone.h: warning: Member have_window (variable) of struct tone_t is not documented.	bool have_window;
-protocols/phase_tap/include/tone.h: warning: Member in_run (variable) of struct tone_t is not documented.	bool in_run;
-protocols/phase_tap/include/tone.h: warning: Member level (variable) of struct tone_edge_t is not documented.	bool level;
-protocols/phase_tap/include/tone.h: warning: Member n_pend (variable) of struct tone_t is not documented.	uint32_t n_pend;
-protocols/phase_tap/include/tone.h: warning: Member pend[TONE_BLOCK] (variable) of struct tone_t is not documented.	tone_pend_t pend[TONE_BLOCK];
-protocols/phase_tap/include/tone.h: warning: Member per_max (variable) of struct tone_t is not documented.	uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
-protocols/phase_tap/include/tone.h: warning: Member per_min (variable) of struct tone_t is not documented.	uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
-protocols/phase_tap/include/tone.h: warning: Member q[TONE_BEEP_QUEUE] (variable) of struct tone_t is not documented.	tone_beep_t q[TONE_BEEP_QUEUE];
-protocols/phase_tap/include/tone.h: warning: Member q_head (variable) of struct tone_t is not documented.	uint32_t q_head, q_len;
-protocols/phase_tap/include/tone.h: warning: Member q_len (variable) of struct tone_t is not documented.	uint32_t q_head, q_len;
-protocols/phase_tap/include/tone.h: warning: Member st (variable) of struct tone_t is not documented.	tone_stats_t st;
-protocols/phase_tap/include/tone.h: warning: Member t (variable) of struct tone_edge_t is not documented.	uint64_t t;
-protocols/phase_tap/include/tone.h: warning: Member tone_beep_flag_t (enumeration) of file tone.h is not documented.	typedef enum {
-protocols/phase_tap/include/tone.h: warning: Member w_bursts (variable) of struct tone_t is not documented.	uint32_t w_n, w_bursts;
-protocols/phase_tap/include/tone.h: warning: Member w_end (variable) of struct tone_t is not documented.	uint64_t w_index, w_end, w_sum;
-protocols/phase_tap/include/tone.h: warning: Member w_index (variable) of struct tone_t is not documented.	uint64_t w_index, w_end, w_sum;
-protocols/phase_tap/include/tone.h: warning: Member w_n (variable) of struct tone_t is not documented.	uint32_t w_n, w_bursts;
-protocols/phase_tap/include/tone.h: warning: Member w_sum (variable) of struct tone_t is not documented.	uint64_t w_index, w_end, w_sum;
-protocols/phase_tap/include/tone.h: warning: Member win_ticks (variable) of struct tone_t is not documented.	uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
-protocols/phase_tap/include/tone.h: warning: Member window (variable) of struct tone_t is not documented.	tone_window_t window;
-protocols/phase_tap/include/tone_svc.h: warning: Member det (variable) of struct tone_svc_t is not documented.	tone_t det;
-protocols/phase_tap/rp2350/tone_cap.c: warning: Member RING_BITS (macro definition) of file tone_cap.c is not documented.	#define RING_BITS 14u
-protocols/phase_tap/rp2350/tone_cap.c: warning: Member s_dma (variable) of file tone_cap.c is not documented.	static int s_dma = -1;
-protocols/phase_tap/rp2350/tone_cap.c: warning: Member s_offset (variable) of file tone_cap.c is not documented.	static uint s_offset;
-protocols/phase_tap/rp2350/tone_cap.c: warning: Member s_pio (variable) of file tone_cap.c is not documented.	static PIO s_pio;
-protocols/phase_tap/rp2350/tone_cap.c: warning: Member s_ring[TONE_RING_WORDS] (variable) of file tone_cap.c is not documented.	static uint32_t s_ring[TONE_RING_WORDS] __attribute__((aligned(RING_BYTES)));
-protocols/phase_tap/rp2350/tone_cap.c: warning: Member s_sm (variable) of file tone_cap.c is not documented.	static uint s_sm;
-protocols/phase_tap/tone.c: warning: Compound ratio_t is not documented.	typedef struct {
-protocols/phase_tap/tone_svc.c: warning: Member U16_MAX (macro definition) of file tone_svc.c is not documented.	#define U16_MAX 65535u
 protocols/ppm/include/ppm.h: warning: Compound ppm_cfg_t is not documented.	typedef struct {
 protocols/ppm/include/ppm.h: warning: Member PPM_CFG_DEFAULT() (macro definition) of file ppm.h is not documented.	#define PPM_CFG_DEFAULT() \
 protocols/ppm/include/ppm.h: warning: Member PPM_CHANNEL_MAX_US (macro definition) of file ppm.h is not documented.	#define PPM_CHANNEL_MAX_US 2500u

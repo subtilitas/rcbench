@@ -106,7 +106,7 @@ typedef struct {
 /** @brief State of the tone service: the detector, the ring reader and the
  *         generations last seen. */
 typedef struct {
-    tone_t         det;
+    tone_t         det;      /**< the detector */
     tone_holdoff_t hold;     /**< only its horizon is used                  */
     edge_ring_t    ring;                /**< the ring of edges */
     uint16_t gen,                           /**< the set-up generation last seen      */

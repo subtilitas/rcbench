@@ -22,9 +22,10 @@
 
 /** @brief 16kB, on a 16kB boundary: the DMA wraps its write address on it. */
 #define RING_BYTES (TONE_RING_WORDS * 4u)
-#define RING_BITS  14u
+#define RING_BITS  14u   /**< the ring's size is 2^RING_BITS bytes */
 _Static_assert(RING_BYTES == (1u << RING_BITS), "the ring's size is 2^14");
 
+/** @brief The ring the DMA writes the edge words into. */
 static uint32_t s_ring[TONE_RING_WORDS] __attribute__((aligned(RING_BYTES)));
 
 /**
@@ -32,10 +33,10 @@ static uint32_t s_ring[TONE_RING_WORDS] __attribute__((aligned(RING_BYTES)));
  *        core 1: running is set last and cleared first.
  */
 static volatile bool     s_running;
-static PIO               s_pio;
-static uint              s_sm;
-static uint              s_offset;
-static int               s_dma = -1;
+static PIO               s_pio;          /**< the PIO block */
+static uint              s_sm;           /**< the state machine */
+static uint              s_offset;       /**< the program's offset */
+static int               s_dma = -1;     /**< the DMA channel; -1 for none */
 static volatile uint32_t s_wr_base;      /**< the ring's address            */
 static uint8_t           s_pin;         /**< the capture pin, GPIO */
 static uint64_t          s_start_us;    /**< the capture's start, µs */

@@ -151,7 +151,9 @@ static float hz_of(const tone_t *d, uint32_t n, uint64_t ticks)
     return (float)d->c.tick_hz * (float)n / (float)ticks;
 }
 
-/*
+/**
+ * @brief A mean: a sum of ticks over a count.
+ *
  * Means are kept as a sum of ticks over a count and compared as fractions,
  * never divided down to whole ticks: at a few ticks a period, a mean cut
  * to a whole tick is off by tens of percent.  Sizes: a sum is at most a
