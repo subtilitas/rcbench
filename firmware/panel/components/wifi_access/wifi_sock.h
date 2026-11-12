@@ -1,5 +1,6 @@
-/*
- * The page server's raw sends on its socket (wa_send.h's sink).
+/**
+ * @file
+ * @brief The page server's raw sends on its socket (wa_send.h's sink).
  *
  * The page's server has no TLS (transport layer security) and no send of
  * its own, so a response whose length is known up front is written to the
@@ -20,8 +21,8 @@
 #include "wa_send.h"
 
 typedef struct {
-    int                fd;      /* the request's socket       */
-    const atomic_bool *abort;   /* true: the radio goes off   */
+    int                fd;      /**< the request's socket       */
+    const atomic_bool *abort;   /**< true: the radio goes off   */
 } wifi_sock_t;
 
 /** The sink of @p c, which must outlive it. */

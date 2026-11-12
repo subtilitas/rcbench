@@ -1,6 +1,9 @@
-/*
- * What a screen says of the SD (Secure Digital) card slot when no volume is
- * mounted, by what the slot holds (card_state.h) and where it is said: no
+/**
+ * @file
+ * @brief What a screen says of the SD (Secure Digital) card slot when no
+ *        volume is mounted.
+ *
+ * It depends on what the slot holds (card_state.h) and where it is said: no
  * card, a card neither FAT32 nor exFAT, or a card that cannot be read.
  *
  * One table for every place, so each of them tells the three apart the

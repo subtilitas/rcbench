@@ -1,4 +1,10 @@
-/*
+/**
+ * @file
+ * @brief Which of two wires carries SCL: the edge classifier over the levels
+ *        of GP4 and GP5, with a glitch filter and the START and STOP rules.
+ *
+ * See inj_line_id.h.
+ *
  * SPDX-License-Identifier: MIT
  */
 

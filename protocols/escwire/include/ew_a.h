@@ -69,14 +69,6 @@ typedef enum {
 } ew_ans_t;
 
 /**
- * @brief One step of the CRC: polynomial 0xA001 in reflected form.
- * @param crc  the CRC so far, 0 to start
- * @param byte the next byte
- * @return the CRC with the byte
- */
-uint16_t ew_crc16_add(uint16_t crc, uint8_t byte);
-
-/**
  * @brief The CRC of a block.
  * @param p the bytes, may be NULL with @p n 0
  * @param n their count
