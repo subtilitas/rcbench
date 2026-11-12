@@ -784,9 +784,17 @@ static void kconnect(void)
     flash_out();
 }
 
+/* The PD mini's output as the rig's supply has it, handed to the supply
+ * screen the way panel_frame.c hands it each reading of the supply. */
+static void ksupply(void)
+{
+    supply_screen_set_output(g_rig.rail && g_rig.sup_on);
+}
+
 static void ksettle(void)
 {
     (void)rig_settle();
+    ksupply();
     ui_router_tick(0.02f);
 }
 
@@ -1032,7 +1040,7 @@ static void hub_view(const char *view)
  * kst_sim.h on programming port 1, on KST's screen, which opens the
  * session.  Geometry from kst_panel.h.
  */
-static void kst_view(const char *view)
+static void kst_view_steps(const char *view)
 {
     /* A view with -expert-off is its view with KST EXPERT MODE OFF; every
      * other has it ON and shows every row. */
@@ -1349,6 +1357,14 @@ static void kst_view(const char *view)
     if (strcmp(v, "-restore") == 0) {
         ktap(kst_panel_choice_rect(0));
     }
+}
+
+/* A view of the programmer, the PD mini's output reported last as the
+ * panel reports it before it draws. */
+static void kst_view(const char *view)
+{
+    kst_view_steps(view);
+    ksupply();
 }
 
 /*
