@@ -41,6 +41,7 @@ export const VARIANTS: readonly Variant[] = [
   { key: 'ina228Board', label: 'vIna', values: [['matek', 'vMatek'], ['xt90', 'vXt']] },
   { key: 'escPower', label: 'vEscp', values: [['battery', 'vBatt'], ['pd', 'vPd']] },
   { key: 'servoPower', label: 'vServo', values: [['external', 'vSExt'], ['bench', 'vSBench']] },
+  { key: 'stickBeep', label: 'vStick', values: [['tap', 'vStTap'], ['ina3221', 'vStIna']] },
   // Never visible: the function that programs a servo forces it. Its words
   // name the variant that function needs.
   { key: 'servoPort', label: 'vPort', values: [['outputs', 'vPortOut'], ['prog', 'vPortProg']] },

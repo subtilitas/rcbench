@@ -37,9 +37,9 @@ import type {
 import { CATALOGUE } from '../../catalogue.ts';
 import { holds } from '../../cond.ts';
 import { plainDrive } from '../../groups.ts';
-import { OPTION_KEYS, OPTION_VALUES, resolve } from '../../resolve.ts';
+import { OPTION_KEYS, OPTION_VALUES, fnNeeds, resolve } from '../../resolve.ts';
 import {
-  CASE_LIMIT, MIXED, OPTION_SETS, SEED, enumerate, generator, sample, shuffled, spaceOf, subset,
+  CASE_LIMIT, INA_OPTION_SETS, MIXED, OPTION_SETS, SAMPLE_OPTION_SETS, SEED, enumerate, generator, sample, shuffled, spaceOf, subset,
 } from './space.ts';
 import type { Case } from './space.ts';
 
@@ -128,6 +128,7 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       ina228Board: selection.options.ina228Board,
       connection: selection.options.connection,
       servoPower: selection.options.servoPower,
+      stickBeep: selection.options.stickBeep,
       servoPort: selection.options.servoPort,
     },
   };
@@ -154,7 +155,7 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
       } else if (reason.kind === 'function') {
         const fn = FUNCTIONS.get(reason.id);
         assert.ok(fn && chosen.has(fn.id), `${p.part.id} names the function ${reason.id}, which is not chosen, for ${where}`);
-        assert.ok(fn.needs.includes(p.part.id) || fn.drives === p.part.id,
+        assert.ok(fnNeeds(fn, options).includes(p.part.id) || fn.drives === p.part.id,
           `${p.part.id} names the function ${reason.id}, which neither needs nor drives it, for ${where}`);
         assert.equal(fn.drives === p.part.id, p.part.testObject === true, `${p.part.id} and the function ${reason.id} disagree on the test object for ${where}`);
       } else if (reason.kind === 'rule') {
@@ -184,12 +185,12 @@ function assertSetup(catalogue: Catalogue, { selection, where }: Case, random: (
   for (const f of setup.functions) {
     for (const id of f.missing) {
       assert.ok(PARTS.has(id), `${f.fn.id} misses ${id}, which is no part, for ${where}`);
-      assert.ok(f.fn.needs.includes(id) && !present.has(id), `${f.fn.id} misses ${id} wrongly for ${where}`);
+      assert.ok(fnNeeds(f.fn, options).includes(id) && !present.has(id), `${f.fn.id} misses ${id} wrongly for ${where}`);
     }
     const unmet = OPTION_KEYS.filter((key) => f.fn.forces?.[key] !== undefined && f.fn.forces[key] !== options[key]);
     const loose = f.fn.drives !== undefined && !present.has(f.fn.drives);
     if (f.enabled) {
-      assert.ok(f.fn.needs.every((id) => present.has(id)), `${f.fn.id} is enabled without its parts for ${where}`);
+      assert.ok(fnNeeds(f.fn, options).every((id) => present.has(id)), `${f.fn.id} is enabled without its parts for ${where}`);
       assert.deepEqual(unmet, [], `${f.fn.id} is enabled against an option for ${where}`);
       assert.ok(!loose, `${f.fn.id} is enabled without the test object ${f.fn.drives} for ${where}`);
     } else {
@@ -361,6 +362,10 @@ test('the space is counted before it is walked', () => {
   assert.ok(SPACE.productCases > CASE_LIMIT, 'the product of both spaces fits: enumerate it');
   assert.ok(SPACE.functions.length > 0 && SPACE.selectable.length > 0);
   assert.equal(OPTION_SETS.length, 16);
+  // The INA3221 as the beep source is walked in a test of its own, and the sample draws from both values.
+  assert.equal(INA_OPTION_SETS.length, 8);
+  assert.equal(SAMPLE_OPTION_SETS.length, 32);
+  assert.ok(OPTION_SETS.every((o) => o.stickBeep === 'tap') && INA_OPTION_SETS.every((o) => o.stickBeep === 'ina3221'));
 });
 
 test('the generator gives the same cases for the same seed', () => {
@@ -400,6 +405,24 @@ test('every subset of the functions: the setup holds properties 1, 4 to 8 and 10
     const rules = CATALOGUE.rules.filter((r) => r.adds === id);
     assert.ok(rules.length > 0 && rules.every((r) => negated(r.when).length > 0 || optionKeys(r.when).length > 0), id);
   }
+});
+
+test('the INA3221 as the beep source: every subset of the functions and of the parts you own holds properties 1, 4 to 8 and 10', () => {
+  const random = generator(SEED + 2);
+  let count = 0;
+  for (const [ids, key] of [[SPACE.functions, 'functions'], [SPACE.selectable, 'owned']] as const) {
+    for (const c of enumerate(ids, key, INA_OPTION_SETS)) {
+      const setup = assertSetup(CATALOGUE, c, random);
+      // A chosen ESC STICK programming brings the INA3221 under this value.
+      const stick = setup.functions.find((f) => f.fn.id === 'stick');
+      if (stick?.chosen) {
+        assert.ok(setup.parts.some((p) => p.part.id === 'ina3221'), c.where);
+        assert.ok(setup.options.find((o) => o.key === 'stickBeep')?.value === 'ina3221', c.where);
+      }
+      count += 1;
+    }
+  }
+  assert.equal(count, (2 ** SPACE.functions.length + 2 ** SPACE.selectable.length) * INA_OPTION_SETS.length);
 });
 
 test('every subset of the parts you own: the setup holds properties 1, 4 to 8 and 10; adding a part holds 2 and 3', () => {

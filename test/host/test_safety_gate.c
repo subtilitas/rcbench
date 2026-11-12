@@ -126,6 +126,63 @@ TEST_CASE(clear_releases_the_latch_and_the_arm_is_taken)
     CHECK(link_dev_arm_latched(&g_dev));
 }
 
+TEST_CASE(a_clear_written_while_the_line_was_never_alive_releases_the_latch)
+{
+    /* The stop reset writes CLEAR whether or not the monitor trusts the line
+     * (stop_latch.c).  Passes with the link served and no edge on the line:
+     * the monitor never saw it alive. */
+    gate_init(0);
+    for (uint32_t t = 1; t < 200u; ++t) {
+        g_dev.last_request_ms = t;
+        g_dev.heard = true;
+        const safety_gate_t g = safety_gate_step(&g_beat, false, &g_dev,
+                                                 g_control, t);
+        CHECK(!g.off);              /* no alive-to-dead edge, so no latch event */
+        CHECK(!g.arm);
+    }
+    CHECK(!g_beat.alive);
+    CHECK(link_dev_arm_latched(&g_dev));
+
+    /* The CLEAR is taken and the latch is released. */
+    CHECK_EQ(gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC), 0);
+    CHECK(!link_dev_arm_latched(&g_dev));
+
+    /* The bench stays unarmed and reports the dead line. */
+    uint16_t state = 0, faults = 0;
+    safety_gate_status(&g_beat, &g_dev, g_control, &state, &faults);
+    CHECK_EQ(state, LINK_STATE_FAILSAFE);
+    CHECK_EQ(faults, LINK_FAULT_HEARTBEAT);
+    CHECK(!safety_gate_may_arm(&g_beat, &g_dev));
+
+    /* The line coming alive arms nothing by itself: no ARM was written. */
+    const safety_gate_t up = gate_run(200, 400);
+    CHECK(g_beat.alive);
+    CHECK(!up.arm);
+    CHECK(!up.off);
+    CHECK(!link_dev_arm_latched(&g_dev));
+    CHECK_EQ(g_control[LINK_CT_ARM], 0);
+    CHECK(safety_gate_may_arm(&g_beat, &g_dev));
+
+    /* The ARM that follows, with the line trusted, is taken. */
+    CHECK_EQ(gate_write(LINK_CT_ARM, 1u), 0);
+    CHECK(gate_run(400, 460).arm);
+}
+
+TEST_CASE(an_arm_written_while_the_line_was_never_alive_is_refused_and_latches)
+{
+    gate_init(0);
+    CHECK_EQ(gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC), 0);
+    CHECK(!link_dev_arm_latched(&g_dev));
+    CHECK(!g_beat.alive);
+
+    CHECK_EQ(gate_write(LINK_CT_ARM, 1u), LINK_NACK_NOT_ARMED);
+    CHECK(link_dev_arm_latched(&g_dev));
+    CHECK_EQ(g_control[LINK_CT_ARM], 0);
+    (void)gate_run(1, 200);
+    CHECK(g_beat.alive);
+    CHECK(!gate_run(200, 260).arm);
+}
+
 TEST_CASE(a_distrusted_heartbeat_latches_until_clear)
 {
     gate_init(0);
@@ -2167,6 +2224,8 @@ int main(void)
     RUN(a_port_returning_to_pwm_does_not_arm_on_an_old_ask);
     RUN(a_start_is_latched_and_reports_no_fault);
     RUN(clear_releases_the_latch_and_the_arm_is_taken);
+    RUN(a_clear_written_while_the_line_was_never_alive_releases_the_latch);
+    RUN(an_arm_written_while_the_line_was_never_alive_is_refused_and_latches);
     RUN(a_distrusted_heartbeat_latches_until_clear);
     RUN(a_silent_line_latches_at_the_ceiling_and_not_before);
     RUN(link_silence_latches_at_200_ms_across_the_wrap);

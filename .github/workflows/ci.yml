@@ -128,21 +128,44 @@ jobs:
                 --gcov-suspicious-hits-threshold 1099511627776 \
                 --cobertura coverage.xml --print-summary
 
-      # A failed upload fails the job: the badge in the README is Codecov's,
-      # and an upload that fails quietly leaves it at an older commit's
-      # figure under a green build.
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          files: coverage.xml
-          fail_ci_if_error: true
-
       - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: coverage
           path: coverage.json
           if-no-files-found: warn
+
+      # The report for the job below, which uploads it.
+      - uses: actions/upload-artifact@v7
+        with:
+          name: coverage-cobertura
+          path: coverage.xml
+          if-no-files-found: error
+          retention-days: 1
+
+  # The upload to Codecov, in a job of its own that host-tests does not
+  # need: the gate is coverage.py --check above, which runs offline, and an
+  # outage of Codecov does not block a merge.  A failed upload fails this job
+  # alone, and visibly: the badge in the README is Codecov's, and an upload
+  # that fails quietly leaves it at an older commit's figure.
+  coverage-upload:
+    name: Coverage upload to Codecov
+    needs: host-coverage
+    runs-on: ubuntu-26.04
+    timeout-minutes: 10
+    steps:
+      # Codecov maps the report's paths onto the commit's files.
+      - uses: actions/checkout@v6
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: coverage-cobertura
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          files: coverage.xml
+          fail_ci_if_error: true
 
   host-checks:
     name: Checks that hold prose and generated files to the tree
@@ -365,16 +388,29 @@ jobs:
     name: Lint and static analysis
     runs-on: ubuntu-26.04
     timeout-minutes: 30
+    env:
+      # clang-tidy is the PyPI wheel of this LLVM release, checked against
+      # its SHA-256: the distribution's package moves with the runner image,
+      # and another release finds other things.  CONTRIBUTING.md names the
+      # same release for a local run.
+      CLANG_TIDY_VERSION: 22.1.8
+      CLANG_TIDY_SHA256: 1a3de07ba82d4403d8b692ae63a5520d4db5c606014c92c24bbcef9259057bf1
     steps:
       - uses: actions/checkout@v6
 
       - uses: ./.github/actions/apt-prepare
 
+      # The version check fails the step when the clang-tidy on the path is
+      # not the pinned one.
       - name: Install the analysers
         run: |
-          sudo apt-get install -y --no-install-recommends \
-            cmake ninja-build clang-tidy
+          sudo apt-get install -y --no-install-recommends cmake ninja-build
           python3 -m pip install --quiet ruff==0.16.5
+          echo "clang-tidy==$CLANG_TIDY_VERSION --hash=sha256:$CLANG_TIDY_SHA256" \
+            > "$RUNNER_TEMP/clang-tidy.txt"
+          python3 -m pip install --quiet --require-hashes \
+            -r "$RUNNER_TEMP/clang-tidy.txt"
+          clang-tidy --version | grep -q "LLVM version $CLANG_TIDY_VERSION\$"
 
       # clang-tidy needs to know how each file is compiled, and CMake can say.
       - name: Describe the build
@@ -729,6 +765,13 @@ jobs:
             -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin
             -D RCBENCH_C6_BIN=$(ls c6/rcbench-c6-[0-9]*.bin) build
             && idf.py merge-bin -o rcbench-panel-merged.bin
+
+      # The sdkconfig the build generated holds every setting of
+      # sdkconfig.defaults: a misspelled option, or one whose dependencies
+      # are off, fails here rather than doing nothing.
+      - name: Every default takes effect
+        run: python3 tools/check_sdkconfig.py --check
+             --sdkconfig firmware/panel/sdkconfig
 
       # A build that rewrites the lock file resolved a version the commit
       # does not pin.

@@ -14,7 +14,7 @@ import type { OptionKey } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, plainDrive } from '../../src/core.ts';
 import { MAX_HASH, parseHash } from '../../src/hash.ts';
 import {
-  CORPUS_FILE, WIRES_FILE, expectationOf, hashOf, idsOf, namesLater, namesRetired, outcome, readCorpus, readWires,
+  BEEP_SOURCE, CORPUS_FILE, WIRES_FILE, expectationOf, hashOf, idsOf, namesLater, namesRetired, outcome, readCorpus, readWires,
 } from './corpus.ts';
 import type { Outcome } from './corpus.ts';
 import { added, corpusText, wiresOf, wiresText } from './tool.ts';
@@ -155,6 +155,11 @@ for (const entry of corpus.entries) {
       parts: reduced.parts.filter((id) => corpus.ids.parts.includes(id) && (kept || !names.includes(id))),
       enabled: reduced.enabled.filter((id) => corpus.ids.functions.includes(id)),
     };
+    const beep = BEEP_SOURCE[entry.name];
+    if (beep) {
+      if (beep.parts) expected.parts = [...beep.parts];
+      expected.enabled = [...beep.enabled];
+    }
     const got = inCorpusIds(rest, entry.expect);
     if (expected.canonical === null) {
       // The page writes the function for the part: the hash differs, the setup it gives is the same.
@@ -170,6 +175,13 @@ for (const entry of corpus.entries) {
     if (kept) assert.deepEqual(actualWires, wires[entry.name], 'the wires differ: see README.md, "When a wire of the catalogue changes"');
   });
 }
+
+test('the entries held to the beep source rule are stored in the first 164 entries, unedited', () => {
+  const first = corpus.entries.slice(0, 164).map((e) => e.name);
+  for (const name of Object.keys(BEEP_SOURCE)) assert.ok(first.includes(name), name);
+  // The stored outcome of such an entry is the one from before the rule: no `tap` function enabled by `stick` alone.
+  assert.deepEqual(corpus.entries.find((e) => e.name === 'page-f-stick')?.expect.parts, ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'usbtap']);
+});
 
 test('malformed input falls back to the base setup', () => {
   // The entries whose hash carries no selection the page can read. A "have it" tick the page keeps is a selection.

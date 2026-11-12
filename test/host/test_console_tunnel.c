@@ -339,7 +339,10 @@ TEST_CASE(a_lost_reply_frame_costs_a_second_read_and_no_byte)
     read_out();
     const char *first = strstr(g_all, "one two three");
 
-    CHECK(first != NULL);
+    if (first == NULL) {
+        CHECK(first != NULL);
+        return;
+    }
     CHECK(strstr(first + 1, "one two three") == NULL);
 }
 
@@ -551,7 +554,10 @@ TEST_CASE(a_lost_ack_does_not_print_a_window_twice)
     read_out();
     const char *first = strstr(g_all, "only once");
 
-    CHECK(first != NULL);
+    if (first == NULL) {
+        CHECK(first != NULL);
+        return;
+    }
     CHECK(strstr(first + 1, "only once") == NULL);
     CHECK_EQ(g_tunnel.win_len, 0u);
 }
@@ -718,7 +724,10 @@ TEST_CASE(an_iomcu_with_no_page_gets_one_line_and_a_look_every_5s)
     CHECK_EQ(g_relay.state, CONSOLE_RELAY_NO_PAGE);
     const char *first = strstr(g_all, "console: the IOmcu has no console. Take the update");
 
-    CHECK(first != NULL);
+    if (first == NULL) {
+        CHECK(first != NULL);
+        return;
+    }
     CHECK(strstr(first + 30, "has no console") == NULL);
     type("r 1 1");
     run(1, true);
@@ -732,6 +741,10 @@ TEST_CASE(an_iomcu_with_no_page_gets_one_line_and_a_look_every_5s)
     CHECK(g_exchanges - before >= 1);
     CHECK(g_exchanges - before <= 3);
     first = strstr(g_all, "console: the IOmcu has no console. Take");
+    if (first == NULL) {
+        CHECK(first != NULL);
+        return;
+    }
     CHECK(strstr(first + 1, "console: the IOmcu has no console. Take") == NULL);
 }
 

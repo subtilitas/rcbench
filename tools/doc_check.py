@@ -2,8 +2,13 @@
 """Hold the Doxygen comments of the C sources to a baseline.
 
 Runs Doxygen with the repository's Doxyfile and reads its warnings.  Each
-warning becomes a file and a message, without the line number, so that
-code moving inside a file changes nothing.  Two warnings are added that
+warning becomes a file, a message and the text of the line it names,
+without the line number, so that code moving inside a file changes
+nothing.  The line's text tells apart two warnings with one message in one
+file: a gap fixed in one place and the same message new in another do not
+cancel, also where no change is diffed (`--check` without `--base`).
+Doxygen's message is the whole key where the line is not in the tree.
+Two warnings are added that
 Doxygen does not give: a C file or header in the Doxyfile's input with no
 `@file` block, and a `@file` block with no `@brief`.  Without a `@file`
 block Doxygen documents nothing of a file and warns about none of it.
@@ -80,10 +85,15 @@ DOXYGEN_VERSION = "1.18.0"
 
 BASELINE_HEADER = """\
 # Doxygen warnings of the C sources that tools/doc_check.py accepts.
-# One warning a line: the file, then the message, without line numbers.
+# One warning a line: the file, then the message, without line numbers;
+# after a tab, the text of the line the warning names.
 # Written by tools/doc_check.py --update with Doxygen {version}; a fixed gap
 # leaves a stale line, which fails --check until the file is rewritten.
 """
+
+# Between a baseline line's message and the text of the line it names.
+# Neither holds a tab: both have their white space collapsed.
+SOURCE_SEP = "\t"
 
 NO_FILE_BLOCK = "file has no @file block"
 NO_FILE_BRIEF = "@file block has no @brief"
@@ -117,16 +127,20 @@ class DocWarning(NamedTuple):
             slashes; empty for a warning that names no file.
         line: The line Doxygen gives, 0 for none.  Shown, never compared.
         message: The text after the line number, white space collapsed.
+        source: The text of that line in the file, white space collapsed;
+            empty when the warning names no line of a file in the tree.
     """
 
     file: str
     line: int
     message: str
+    source: str = ""
 
     @property
     def key(self) -> str:
-        """The baseline form: the file and the message, no line."""
-        return f"{self.file}: {self.message}"
+        """The baseline form: the file, the message and the line's text."""
+        head = f"{self.file}: {self.message}"
+        return f"{head}{SOURCE_SEP}{self.source}" if self.source else head
 
 
 def read_doxyfile(path: pathlib.Path) -> dict[str, list[str]]:
@@ -358,6 +372,33 @@ def run_doxygen(doxygen: str, root: pathlib.Path,
     return log.read_text(encoding="utf-8", errors="replace")
 
 
+def with_source(warnings: list[DocWarning],
+                root: pathlib.Path) -> list[DocWarning]:
+    """Give each warning the text of the line it names.
+
+    Args:
+        warnings: Warnings of a run.
+        root: The repository root.
+
+    Returns:
+        The same warnings, each with `source` set where its file is in the
+        tree and holds its line.
+    """
+    lines: dict[str, list[str]] = {}
+    out = []
+    for w in warnings:
+        if w.file and w.line > 0 and w.file not in lines:
+            path = root / w.file
+            lines[w.file] = (path.read_text(encoding="utf-8",
+                                            errors="replace").splitlines()
+                             if path.is_file() else [])
+        text = lines.get(w.file, [])
+        source = (" ".join(text[w.line - 1].split())
+                  if w.file and 0 < w.line <= len(text) else "")
+        out.append(w._replace(source=source))
+    return out
+
+
 def collect(log_text: str, root: pathlib.Path) -> list[DocWarning]:
     """Turn a warning log into the warnings the check compares.
 
@@ -366,12 +407,13 @@ def collect(log_text: str, root: pathlib.Path) -> list[DocWarning]:
         root: The repository root.
 
     Returns:
-        Doxygen's warnings without the static helper noise, followed by
-        the missing `@file` blocks and briefs.
+        Doxygen's warnings without the static helper noise, each with the
+        text of its line, followed by the missing `@file` blocks and
+        briefs.
     """
     settings = read_doxyfile(root / "Doxyfile")
-    warnings = [w for w in parse_log(log_text, root)
-                if not is_helper_noise(w, root)]
+    warnings = with_source([w for w in parse_log(log_text, root)
+                            if not is_helper_noise(w, root)], root)
     warnings += file_block_warnings(root, source_files(root, settings))
     return warnings
 
@@ -383,7 +425,8 @@ def read_baseline(path: pathlib.Path) -> collections.Counter:
         path: The file; a missing file is an empty baseline.
 
     Returns:
-        Each "file: message" line with the number of times it occurs.
+        Each "file: message" line, with the text of the line it names
+        after a tab, and the number of times it occurs.
     """
     if not path.is_file():
         return collections.Counter()
@@ -401,14 +444,20 @@ def machine_bound(lines: list[str], root: pathlib.Path) -> list[str]:
     """Find the baseline lines that only hold on one machine.
 
     Args:
-        lines: Baseline lines, "file: message".
+        lines: Baseline lines, "file: message", each perhaps followed by the
+            text of its line, which is not searched.
         root: The checkout's root.
 
     Returns:
-        The lines that name an absolute path, the checkout's or another.
+        The lines whose file or message names an absolute path, the
+        checkout's or another.
     """
-    return [line for line in lines
-            if str(root) in line or ABSOLUTE_PATH.search(line)]
+    found = []
+    for line in lines:
+        head = line.split(SOURCE_SEP, 1)[0]
+        if str(root) in head or ABSOLUTE_PATH.search(head):
+            found.append(line)
+    return found
 
 
 def write_baseline(path: pathlib.Path, warnings: list[DocWarning]) -> None:

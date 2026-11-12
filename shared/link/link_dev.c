@@ -10,19 +10,7 @@
 
 #include <string.h>
 
-/**
- * @brief Wrap-safe: `(uint32_t)(now - then) >= timeout` holds across the 32-bit
- * millisecond wrap at 49.7 days; `now >= then + timeout` does not.
- *
- * @param now The current time, in ms.
- * @param then The time the wait started, in ms.
- * @param ms The timeout, in ms.
- * @return true when at least ms milliseconds have passed since then.
- */
-static bool elapsed(uint32_t now, uint32_t then, uint32_t ms)
-{
-    return (uint32_t)(now - then) >= ms;
-}
+#include "mstime.h"
 
 /**
  * @brief Find the page with a given number.
@@ -200,7 +188,8 @@ static bool same_request(const link_msg_t *a, const link_msg_t *b)
 static const link_msg_t *repeat_of(link_dev_t *d, const link_msg_t *req,
                                    uint32_t now_ms)
 {
-    if (req->seq != d->seq || elapsed(now_ms, d->seq_ms, LINK_DEV_REPEAT_MS)) {
+    if (req->seq != d->seq
+        || mstime_elapsed(now_ms, d->seq_ms, LINK_DEV_REPEAT_MS)) {
         /* A new exchange: what the last one kept is no answer to it. */
         d->seq        = req->seq;
         d->seq_ms     = now_ms;
@@ -364,7 +353,7 @@ bool link_dev_tick(link_dev_t *d, uint32_t now_ms)
     if (!d->heard) {
         return false;
     }
-    if (!elapsed(now_ms, d->last_request_ms, LINK_DEV_SILENCE_MS)) {
+    if (!mstime_elapsed(now_ms, d->last_request_ms, LINK_DEV_SILENCE_MS)) {
         return false;
     }
     d->silent      = true;

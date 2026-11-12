@@ -19,7 +19,7 @@ From left to right, the band contains the home tag and screen name, the status c
 | INJECT | in place of BENCH and SIM while a touch injector answers at I2C (Inter-Integrated Circuit) address 0x14; a panel looks for one once, at start-up |
 | FAULT 01 to FAULT 7F | a fault code the IOmcu reports; absent while there is none |
 | HWSTOP | in FAULT's place, red, while [SETUP > PANEL > Hardware stop](setup.md#panel) is ON and the heartbeat bit (10) is set: the bench's stop button is pressed or its cable is broken |
-| SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | what the switch to ARMED drives; STOP while a stop is latched |
+| SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | what the switch to ARMED drives; STOP while a stop is latched; SAFE PROG and SAFE MOVE while a SAFE bench holds a programming port or moves a Hitec servo |
 | run clock | the length of the current run from the switch to ARMED, minutes and seconds; it holds the last run at SAFE |
 
 The home tag goes to the [menu](overview.md).
@@ -29,6 +29,8 @@ The home tag goes to the [menu](overview.md).
 | Chip | Outputs that get pulses |
 |---|---|
 | SAFE | none |
+| SAFE PROG 2 (amber) | the programming port a KST or HITEC session holds; it stays held after SERVO is left, and ARM is refused until LEAVE. `SAFE PROG` while the port's number is not known |
+| SAFE MOVE (amber) | the servo [MOVE SERVO](servo-programmer.md) moves on the held port while the bench is SAFE |
 | ARMED MOTOR | the throttle outputs, from MOTOR & ESC's ARM or a stick run on its PROGRAM |
 | ARMED SERVO | the servo outputs and a pulsing PROG PORT, from SERVO |
 | ARMED | every bound output, on an IOmcu older than 0.18.0 |
