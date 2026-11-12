@@ -570,7 +570,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,508 | 528 | 1,804 |
+| core 0 | `main` | 4,096 | 1,512 | 528 | 1,800 |
 | core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -585,7 +585,8 @@ of the same build.
 Core 0's deepest chain is a request that binds an output and fails in the
 pico-sdk: `main` (256 bytes), `can_service` (352), `link_dev_dispatch`,
 `slots_write`, `slots_take`, `ports_apply`, `slots_rerate`,
-`outputs_hw_apply_only`, `out_dshot_bind`, the
+`outputs_hw_apply_only`, `out_render_apply`, `out_render_hw_bind`,
+`out_dshot_bind`, the
 pico-sdk's claim of a PIO (programmable input/output) state machine, and
 `panic()` with what it calls to print, 228 bytes. The deepest handler is
 the USB stack's worker, `low_priority_worker_irq`, at 420 bytes; its chain

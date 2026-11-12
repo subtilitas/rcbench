@@ -300,8 +300,8 @@ High-Idle zurück:
 
 | Schritt | Zeit | Code |
 | --- | --- | --- |
-| Der erste fällige Durchlauf des Laufs lässt den Pin auf seinen Pull-up los und sendet nichts | 0 | `out_dshot_wake()` aus `service_dshot()` in `firmware/iomcu/src/outputs_hw.c` |
-| Der erste Frame: die erste der zehn Wiederholungen von `DSHOT_CMD_EDT_ENABLE` bei Gas null | 1000µs oder später, ein Frame-Abstand bei 1kHz (`DSHOT_PERIOD_US`) | `out_dshot_send()` |
+| Der erste fällige Durchlauf des Laufs lässt den Pin auf seinen Pull-up los und sendet nichts | 0 | `out_dshot_wake()` aus `service_dshot()` in `shared/outputs/out_render.c` |
+| Der erste Frame: die erste der zehn Wiederholungen von `DSHOT_CMD_EDT_ENABLE` bei Gas null | 1000µs oder später, ein Frame-Abstand bei 1kHz (`OUT_RENDER_DSHOT_PERIOD_US`) | `out_dshot_send()` |
 | Der Befehl nach der Anfrage | 11ms nach Laufbeginn | `service_dshot()` |
 
 Der ESC sieht die Leitung einen ganzen Frame-Abstand lang high, bevor der
@@ -505,4 +505,5 @@ ist über diesen einen ESC hinaus unbestätigt:
 | Welchen PWM-Slice und -Kanal ein GPIO erreicht | `shared/outputs/out_pwm_map.c` |
 | PIO-Programme und ihre Treiber für PPM und DShot | `protocols/ppm/rp2350/`, `protocols/dshot/rp2350/` |
 | Backend für Hardware-PWM | `firmware/iomcu/src/out_pwm.c` |
-| Bindung der Bank an die Pins | `firmware/iomcu/src/outputs_hw.c` |
+| Bindung der Bank an die Pins, Reihenfolge der Bindungen und die Frames | `shared/outputs/out_render.c` |
+| Die Pin-Treiber hinter der Bindung | `firmware/iomcu/src/outputs_hw.c` |

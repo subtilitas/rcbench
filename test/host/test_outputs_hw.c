@@ -414,7 +414,7 @@ TEST_CASE(a_held_slot_is_let_go_alone_and_comes_back_the_same)
 /*
  * The edge into driving on a bidirectional slot, at microsecond @p t0: the
  * first pass wakes the pin and sends nothing, the first frame goes out
- * DSHOT_PERIOD_US (1000us) later and not at 999us, and the ask that leads
+ * OUT_RENDER_DSHOT_PERIOD_US (1000us) later and not at 999us, and the ask that leads
  * the run keeps its DSHOT_CMD_REPEATS (10) frames before the throttle's stop
  * frame.  SAFE stops the pin every pass; the next ARM wakes it again
  * before any frame.  No frame goes out from the low rest.

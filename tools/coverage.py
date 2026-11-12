@@ -387,6 +387,7 @@ TRACKED = [
     "shared/outputs/out_store_range.c",
     "shared/outputs/out_store_rec.c",
     "shared/outputs/out_stage.c",
+    "shared/outputs/out_render.c",
     "shared/outputs/bind_link.c",
     "shared/outputs/servo_cmd.c",
     "shared/outputs/servo_link.c",

@@ -281,8 +281,8 @@ frame:
 
 | Step | Time | Code |
 | --- | --- | --- |
-| The first due pass of the run releases the pin onto its pull-up and sends nothing | 0 | `out_dshot_wake()` from `service_dshot()` in `firmware/iomcu/src/outputs_hw.c` |
-| The first frame: the first of the ten `DSHOT_CMD_EDT_ENABLE` repeats at zero throttle | 1000µs or later, one frame period at 1kHz (`DSHOT_PERIOD_US`) | `out_dshot_send()` |
+| The first due pass of the run releases the pin onto its pull-up and sends nothing | 0 | `out_dshot_wake()` from `service_dshot()` in `shared/outputs/out_render.c` |
+| The first frame: the first of the ten `DSHOT_CMD_EDT_ENABLE` repeats at zero throttle | 1000µs or later, one frame period at 1kHz (`OUT_RENDER_DSHOT_PERIOD_US`) | `out_dshot_send()` |
 | The command after the ask | 11ms into the run | `service_dshot()` |
 
 The ESC sees the line high for a whole frame period before the first frame,
@@ -399,7 +399,7 @@ The two frame kinds cannot be told apart from the bits alone: the nibble that
 marks an extended frame is an ordinary exponent and mantissa in a speed frame,
 and only an ESC with extended telemetry enabled guarantees the normalisation
 that separates them. The decoder therefore takes the mode as an argument
-rather than inferring it, and `outputs_hw.c` passes true from the first repeat
+rather than inferring it, and `out_render.c` passes true from the first repeat
 of the first ask on. An ESC with AM32 firmware answers command 13 once, with a
 status frame
 (`0xE00`) after the sixth repeat, and that frame read as a speed is a period
@@ -469,4 +469,5 @@ is unconfirmed beyond that one ESC:
 | Which PWM slice and channel a GPIO reaches | `shared/outputs/out_pwm_map.c` |
 | PIO programs and their drivers for PPM and DShot | `protocols/ppm/rp2350/`, `protocols/dshot/rp2350/` |
 | Hardware PWM backend | `firmware/iomcu/src/out_pwm.c` |
-| Binding the bank to the pins | `firmware/iomcu/src/outputs_hw.c` |
+| Binding the bank to the pins, the order of binds and the frames | `shared/outputs/out_render.c` |
+| The pin drivers behind the binding | `firmware/iomcu/src/outputs_hw.c` |

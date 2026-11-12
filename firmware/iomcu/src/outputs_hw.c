@@ -1,15 +1,18 @@
 /**
  * @file
- * @brief The bank rendered onto pins.
+ * @brief The bank rendered onto pins: the pin drivers and the clocks behind
+ *        shared/outputs/out_render.c.
  *
- * See outputs_hw.h.
+ * Every rule of the rendering is in out_render.c, where the host suite holds
+ * it: the release-before-bind order of slots and ports, the extended
+ * telemetry ask sent in place of a stop frame, and the slot whose readings
+ * the bench publishes.  This file defines the out_render_hw_*() calls on the
+ * RP2350's drivers and keeps the one renderer the IOmcu runs.
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "outputs_hw.h"
-
-#include <string.h>
 
 #include "pico/stdlib.h"
 
@@ -18,227 +21,16 @@
 #include "out_dshot.h"
 #include "out_ppm.h"
 #include "out_pwm.h"
-#include "out_pwm_map.h"
+#include "out_render.h"
 #include "port_park.h"
 #include "ppm.h"
 
-/**
- * @brief How often an ESC (electronic speed controller) is told what to do.
- *
- * The OUTPUTS page's rate field is a bit rate for DShot, not a frame rate, so
- * this is the one output timing the wire does not carry.  A kilohertz is
- * twenty times the rate the panel polls at and far inside every ESC's own
- * signal timeout, and for bidirectional DShot it is also the telemetry rate:
- * a thousand speed readings a second against a bench that samples fifty.
- */
-#define DSHOT_UPDATE_HZ   1000u
-#define DSHOT_PERIOD_US   (1000000u / DSHOT_UPDATE_HZ)
+/** @brief The IOmcu's one renderer. */
+static out_render_t s_render;
 
-/**
- * @brief Render state of one slot: its DShot schedule, extended telemetry and
- * the last PWM pulse.
- */
-typedef struct {
-    bool     bound;
-    uint32_t next_us;      /* DShot only: when the next frame is due */
-    /*
-     * Extended telemetry, which an ESC only sends after it has been asked.
-     * When to ask, when to stop and when to read replies as extended frames
-     * is dshot_edt_*() in protocols/dshot, where the host suite holds it
-     * against a model of AM32's command handling.  Bidirectional slots only.
-     */
-    dshot_edt_t edt;
-    /* PWM only: the pulse rendered on the last pass, for the capture's
-     * edge (outputs_hw_watch()). */
-    bool     pwm_have;
-    uint16_t pwm_last;
-} slot_state_t;
+/* ------------------------------------------------------------ the pins */
 
-static out_slot_t   s_shadow[OUT_MAX_SLOTS];
-static slot_state_t s_state[OUT_MAX_SLOTS];
-
-/**
- * @brief The programming ports: pins of their own on the same generator,
- * each rendered from one channel of the bank.
- *
- * `as` is the port as a slot of one
- * PWM channel, so the rendering and the capture's edge are the slots' code.
- */
-typedef struct {
-    bool         bound;    /* the pin is held: bound, or parked */
-    bool         parked;                /**< FUNC NONE: an input with its pull-down */
-    out_slot_t   as;                    /**< driver PWM, or DSHOT for a DShot port */
-    slot_state_t st;                    /**< the slot's state */
-} port_state_t;
-
-static port_state_t s_port[LINK_PG_PORTS_MAX];
-
-/**
- * @brief Every DShot port let go: no frame, its state machine free, held
- * again by the next outputs_hw_ports().
- */
-static void ports_release_dshot(void)
-{
-    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
-        port_state_t *p = &s_port[i];
-        if (p->bound && !p->parked && p->as.driver == OUT_DRIVER_DSHOT) {
-            out_dshot_release(p->as.pin);
-            p->bound = false;
-        }
-    }
-}
-/**
- * @brief Every SERVO PWM port on the slice of @p pin let go, held again by
- * the next outputs_hw_ports() if the slice leaves it room.
- *
- * Two channels of one slice run at one rate, and out_pwm_bind() refuses the
- * second binding at another.  A slot comes first: a port bound earlier on
- * its slice would otherwise keep the slot unbound.  On the rbmod carrier
- * PROGP04 (GP0) shares slice 0 with PWM04 (GP1).
- *
- * @param pin  The pin of a slot about to be bound as PWM.
- */
-static void ports_release_pwm_on(uint8_t pin)
-{
-    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
-        port_state_t *p = &s_port[i];
-        if (p->bound && !p->parked && p->as.driver == OUT_DRIVER_PWM
-            && out_pwm_same_slice(p->as.pin, pin)) {
-            out_pwm_release(p->as.pin);
-            p->bound = false;
-        }
-    }
-}
-
-/**
- * @brief The ports that render their pulse (outputs_hw_ports_drive()).
- */
-static uint8_t s_port_drive;
-
-/**
- * @brief The capture's edge: the output channel watched, -1 for none, and
- * the frame stamped for it, until taken.
- */
-static int      s_watch_ch = -1;
-static bool     s_edge_ready;
-static uint64_t s_edge_us;
-
-/**
- * @brief The millisecond clock the telemetry ages and the ask schedule run on.
- */
-static uint32_t now_ms(void)
-{
-    return (uint32_t)to_ms_since_boot(get_absolute_time());
-}
-
-/**
- * @brief The last readings an ESC gave, with the clock each arrived on.
- *
- * Per slot, not per bank.  The binding allows eight outputs and any of them
- * may be bidirectional, and one set of readings shared between them would
- * publish a speed from one motor beside a voltage from another -- and a power
- * that is the product of two different ESCs.  Which slot is published is
- * decided in one place, by reporting_slot().
- *
- * Each kind keeps its own clock.  An ESC interleaves the extended frames
- * between eRPM ones, so temperature arrives far less often than speed does,
- * and one age for all of them would either throw away good readings or keep
- * stale ones.
- */
-typedef struct {
-    bool     have_erpm;
-    uint32_t erpm;
-    uint32_t erpm_ms;
-    bool     have_edt[DSHOT_TELEM_KINDS];
-    uint16_t edt[DSHOT_TELEM_KINDS];
-    uint32_t edt_ms[DSHOT_TELEM_KINDS];
-} telem_t;
-
-static telem_t s_telem[OUT_MAX_SLOTS];
-
-/**
- * @brief The slot whose readings the bench publishes: the lowest-numbered
- * bound bidirectional output.
- *
- * Defined rather than "whichever answered last", so the numbers on the screen
- * belong to one motor and stay with it. A bench running two ESCs reports the
- * first; the page carries one set of readings and choosing between them here
- * is the only place that choice can be made once.
- *
- * @return The slot index, or -1 when no bidirectional output is bound.
- */
-static int reporting_slot(void)
-{
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        if (s_state[i].bound
-            && s_shadow[i].driver == OUT_DRIVER_DSHOT_BIDIR) {
-            return (int)i;
-        }
-    }
-    return -1;
-}
-
-/* Defined with the rendering, which is what decides when a run has ended. */
-static void forget_telem(void);
-static void forget_slot_telem(unsigned slot);
-
-void outputs_hw_init(void)
-{
-    memset(s_shadow, 0, sizeof(s_shadow));
-    memset(s_state, 0, sizeof(s_state));
-    memset(s_port, 0, sizeof(s_port));
-    s_port_drive = 0u;
-    forget_telem();
-}
-
-bool outputs_hw_bound(uint8_t slot)
-{
-    return slot < OUT_MAX_SLOTS && s_state[slot].bound;
-}
-
-/* -------------------------------------------------------------- binding */
-
-/**
- * @brief Tells whether two slot configurations bind the same way.
- *
- * @param a  One slot.
- * @param b  The other slot.
- * @return True when driver, channels, pin and rate all match.
- */
-static bool same(const out_slot_t *a, const out_slot_t *b)
-{
-    return a->driver == b->driver
-           && a->first_channel == b->first_channel
-           && a->channels == b->channels
-           && a->pin == b->pin
-           && a->rate_hz == b->rate_hz;
-}
-
-/**
- * @brief Releases the pin of a slot from its driver.
- *
- * @param s  The slot whose pin is released.
- */
-static void unbind(const out_slot_t *s)
-{
-    switch (s->driver) {
-    case OUT_DRIVER_PWM:         out_pwm_release(s->pin);   break;
-    case OUT_DRIVER_PPM:         out_ppm_release(s->pin);   break;
-    case OUT_DRIVER_DSHOT:
-    case OUT_DRIVER_DSHOT_BIDIR: out_dshot_release(s->pin); break;
-    case OUT_DRIVER_NONE:
-    case OUT_DRIVER_COUNT:
-    default:                                                break;
-    }
-}
-
-/**
- * @brief Binds a slot's pin to its driver.
- *
- * @param s  The slot to bind.
- * @return True when the driver took the pin.
- */
-static bool bind(const out_slot_t *s)
+bool out_render_hw_bind(const out_slot_t *s)
 {
     switch (s->driver) {
     case OUT_DRIVER_PWM:
@@ -256,559 +48,148 @@ static bool bind(const out_slot_t *s)
     }
 }
 
+void out_render_hw_release(const out_slot_t *s)
+{
+    switch (s->driver) {
+    case OUT_DRIVER_PWM:         out_pwm_release(s->pin);   break;
+    case OUT_DRIVER_PPM:         out_ppm_release(s->pin);   break;
+    case OUT_DRIVER_DSHOT:
+    case OUT_DRIVER_DSHOT_BIDIR: out_dshot_release(s->pin); break;
+    case OUT_DRIVER_NONE:
+    case OUT_DRIVER_COUNT:
+    default:                                                break;
+    }
+}
+
+bool out_render_hw_park(uint8_t pin)
+{
+    return port_park(pin);
+}
+
+void out_render_hw_unpark(uint8_t pin)
+{
+    port_unpark(pin);
+}
+
+void out_render_hw_pwm(uint8_t pin, uint16_t pulse_us)
+{
+    out_pwm_write(pin, pulse_us);
+}
+
+bool out_render_hw_pwm_stamped(uint8_t pin, uint16_t pulse_us,
+                               uint64_t *at_us)
+{
+    return out_pwm_write_stamped(pin, pulse_us, at_us);
+}
+
+void out_render_hw_ppm(uint8_t pin, const uint16_t *us, uint8_t n)
+{
+    (void)out_ppm_write(pin, us, n);
+}
+
+void out_render_hw_ppm_stop(uint8_t pin)
+{
+    out_ppm_stop(pin);
+}
+
+bool out_render_hw_dshot_poll(uint8_t pin, bool edt, dshot_telem_t *t)
+{
+    return out_dshot_poll(pin, edt, t);
+}
+
+void out_render_hw_dshot_stop(uint8_t pin)
+{
+    out_dshot_stop(pin);
+}
+
+bool out_render_hw_dshot_wake(uint8_t pin)
+{
+    return out_dshot_wake(pin);
+}
+
+void out_render_hw_dshot_send(uint8_t pin, uint16_t value, bool telemetry)
+{
+    out_dshot_send(pin, value, telemetry);
+}
+
+uint32_t out_render_hw_us(void)
+{
+    return time_us_32();
+}
+
+uint32_t out_render_hw_ms(void)
+{
+    return (uint32_t)to_ms_since_boot(get_absolute_time());
+}
+
+/* ------------------------------------------------------------ the bank */
+
+void outputs_hw_init(void)
+{
+    out_render_init(&s_render);
+}
+
+bool outputs_hw_bound(uint8_t slot)
+{
+    return out_render_bound(&s_render, slot);
+}
+
 void outputs_hw_apply(const outputs_t *o, const uint16_t *rate_hz)
 {
-    outputs_hw_apply_only(o, rate_hz, 0xFFu);
+    out_render_apply(&s_render, o, rate_hz, 0xFFu);
 }
 
 void outputs_hw_apply_only(const outputs_t *o, const uint16_t *rate_hz,
                            uint8_t may_bind)
 {
-    if (o == NULL || rate_hz == NULL) {
-        return;
-    }
-    /* What each slot is to be: the bank's, at the rate it runs at.  A rate
-     * that moved is a slot that moved, so it is rebound like one. */
-    out_slot_t want[OUT_MAX_SLOTS];
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        want[i] = o->slot[i];
-        want[i].rate_hz = rate_hz[i];
-    }
-    /*
-     * Every slot that moved is released before any is bound.  Two slots
-     * exchanging pins is a legal reconfiguration, and binding the first one
-     * while the second still held its new pin would find the backend of a
-     * slot that is about to go and take it for its own.
-     */
-    bool moved[OUT_MAX_SLOTS];
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        moved[i] = !(same(&s_shadow[i], &want[i]) && s_state[i].bound)
-                   || (may_bind & (1u << i)) == 0u;
-        if (moved[i]) {
-            /* Whatever this slot's ESC said belongs to a binding that is
-             * going away, and so does whether that ESC was ever asked for
-             * extended telemetry.  Cleared for a slot that was never bound
-             * too: a failed bind leaves no output but the readings from
-             * before it would otherwise still be published. */
-            forget_slot_telem(i);
-            dshot_edt_bind(&s_state[i].edt, now_ms());
-        }
-        if (moved[i] && s_state[i].bound) {
-            unbind(&s_shadow[i]);
-            s_state[i].bound = false;
-        }
-        if (moved[i]) {
-            /* A slot bound afresh has rendered nothing to change from. */
-            s_state[i].pwm_have = false;
-        }
-    }
-    /*
-     * The slots come first and the programming ports follow on what they
-     * leave (hw_apply_only()).  A DShot port bound earlier holds a state
-     * machine and program space a slot bound now may need, so every DShot
-     * port is let go before a slot that runs on PIO is bound; the caller's
-     * outputs_hw_ports() binds them again from what is left.
-     */
-    bool pio_slot = false;
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        pio_slot = pio_slot
-                   || (moved[i] && (may_bind & (1u << i)) != 0u
-                       && (want[i].driver == OUT_DRIVER_DSHOT
-                           || want[i].driver == OUT_DRIVER_DSHOT_BIDIR
-                           || want[i].driver == OUT_DRIVER_PPM));
-    }
-    if (pio_slot) {
-        ports_release_dshot();
-    }
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        if (!moved[i]) {
-            continue;
-        }
-        s_shadow[i] = want[i];
-        if (s_shadow[i].driver == OUT_DRIVER_NONE
-            || (may_bind & (1u << i)) == 0u) {
-            continue;
-        }
-        if (s_shadow[i].driver == OUT_DRIVER_PWM) {
-            ports_release_pwm_on(s_shadow[i].pin);
-        }
-        /*
-         * A slot the silicon cannot serve is left unbound, which is the same
-         * way a slot the bank refused already behaves.  The OUTPUTS page
-         * still reads back what was asked for and no register on it says
-         * whether a slot is bound, so the panel draws an unbound slot exactly
-         * as it draws a driving one and the operator meets it as a lead that
-         * does not move.
-         */
-        s_state[i].bound   = bind(&s_shadow[i]);
-        s_state[i].next_us = time_us_32();
-        /* A pin that has just been taken has told its ESC nothing yet. */
-        dshot_edt_bind(&s_state[i].edt, now_ms());
-    }
+    out_render_apply(&s_render, o, rate_hz, may_bind);
 }
 
 bool outputs_hw_return_slot(const outputs_t *o, const uint16_t *rate_hz,
                             uint8_t slot)
 {
-    if (o == NULL || rate_hz == NULL || slot >= OUT_MAX_SLOTS) {
-        return false;
-    }
-    if (s_state[slot].bound) {
-        return true;
-    }
-    s_shadow[slot] = o->slot[slot];
-    s_shadow[slot].rate_hz = rate_hz[slot];
-    s_state[slot].pwm_have = false;
-    s_state[slot].bound = s_shadow[slot].driver != OUT_DRIVER_NONE
-                          && bind(&s_shadow[slot]);
-    s_state[slot].next_us = time_us_32();
-    dshot_edt_bind(&s_state[slot].edt, now_ms());
-    return s_state[slot].bound;
-}
-
-/* ------------------------------------------------------------ rendering */
-
-/**
- * @brief One reply, filed under what it turned out to be.
- *
- * Each kind keeps its own arrival clock because they do not arrive at one
- * rate: speed comes back on every frame and the extended kinds are
- * interleaved between them, a few a second at most.
- *
- * @param slot  The slot the reply came from. Ignored when out of range.
- * @param t  The reply.
- */
-static void record_telem(unsigned slot, const dshot_telem_t *t)
-{
-    if (slot >= OUT_MAX_SLOTS) {
-        return;
-    }
-    telem_t *c = &s_telem[slot];
-    const uint32_t now = now_ms();
-    if (t->kind == DSHOT_TELEM_ERPM) {
-        c->erpm      = t->erpm;
-        c->erpm_ms   = now;
-        c->have_erpm = true;
-        return;
-    }
-    if ((unsigned)t->kind < (unsigned)DSHOT_TELEM_KINDS) {
-        c->edt[t->kind]      = t->value;
-        c->edt_ms[t->kind]   = now;
-        c->have_edt[t->kind] = true;
-    }
-}
-
-/**
- * @brief Drop everything an ESC said.
- *
- * At the end of a run, because the next run need not be the same ESC: one can
- * be unplugged and another fitted between two arms, and a reading that
- * outlived its sender would be published as the new one's for as long as its
- * staleness window lasts -- and would seed that run's peaks on the way past.
- */
-static void forget_telem(void)
-{
-    memset(s_telem, 0, sizeof(s_telem));
-}
-
-/**
- * @brief The same, for one slot: what it is bound to has changed, so what
- * its ESC said belongs to an output that is no longer there.
- *
- * @param slot  The slot. Ignored when out of range.
- */
-static void forget_slot_telem(unsigned slot)
-{
-    if (slot < OUT_MAX_SLOTS) {
-        memset(&s_telem[slot], 0, sizeof(s_telem[slot]));
-    }
-}
-
-/**
- * @brief Renders one PPM slot for this pass.
- *
- * @param o  The output bank.
- * @param s  The slot, bound as PPM.
- * @param drive  True to write the channels' pulses, false to stop the pin.
- */
-static void service_ppm(const outputs_t *o, const out_slot_t *s, bool drive)
-{
-    if (!drive) {
-        out_ppm_stop(s->pin);
-        return;
-    }
-    uint16_t us[PPM_MAX_CHANNELS];
-    const uint8_t n = (s->channels > PPM_MAX_CHANNELS)
-                          ? (uint8_t)PPM_MAX_CHANNELS : s->channels;
-    for (uint8_t c = 0; c < n; ++c) {
-        us[c] = outputs_pulse_us(o, (uint8_t)(s->first_channel + c));
-    }
-    /* cppcheck-suppress uninitvar
-     * The loop above fills the n entries out_ppm_write() reads; with n at 0
-     * it reads none. */
-    (void)out_ppm_write(s->pin, us, n);
-}
-
-/**
- * @brief Renders one DShot slot or port for this pass.
- *
- * @param o  The output bank.
- * @param s  The slot or port, bound as DShot.
- * @param st  Its render state.
- * @param slot  Its slot index, or OUT_MAX_SLOTS for a programming port.
- * @param drive  True while the bank is armed for its channel.
- */
-static void service_dshot(const outputs_t *o, const out_slot_t *s,
-                          slot_state_t *st, unsigned slot, bool drive)
-{
-    /*
-     * The reply to the previous frame is read before the next one is sent.
-     * The receiver holds it in its queue until it is taken, and taking it
-     * after sending would read it against a frame it did not answer.
-     */
-    if (s->driver == OUT_DRIVER_DSHOT_BIDIR) {
-        dshot_telem_t t;
-        if (out_dshot_poll(s->pin, st->edt.asked, &t)) {
-            record_telem(slot, &t);
-            dshot_edt_heard(&st->edt, t.kind);
-        }
-    }
-
-    if (!drive) {
-        /* Driven low, in both modes, until the next run. */
-        out_dshot_stop(s->pin);
-        /*
-         * Kept current while nothing is being sent.  The comparison below is
-         * wrap-safe over half of the microsecond clock's 71 minutes, so a
-         * due time left behind by a bench that sat disarmed for more than 36
-         * of them would read as "not due yet" and stay that way for another
-         * 36 after it was armed again.
-         */
-        st->next_us = time_us_32();
-        /*
-         * And the ask is owed again.  Extended telemetry is a runtime setting
-         * an ESC forgets when it restarts -- AM32 restarts after 0.5s
-         * without a frame, and a disarmed bench sends none -- and an ESC can
-         * be swapped on a bench between one run and the next.
-         *
-         * What is not forgotten is that it was asked.  An ESC that keeps
-         * power keeps the setting across a short disarm: reading the next
-         * run's first replies as periods would take an interleaved
-         * temperature or current frame for a speed, and a current of 120A
-         * decodes as 8,900rpm -- a number nobody questions, latched into the
-         * run's peak.  dshot_edt_idle() keeps asked; only a slot that moves or
-         * a restart clears it.
-         */
-        dshot_edt_idle(&st->edt, now_ms());
-        return;
-    }
-    const uint32_t now = time_us_32();
-    if ((uint32_t)(now - st->next_us) >= 0x80000000u) {
-        return;                              /* not due yet, wrap-safe */
-    }
-    st->next_us = now + DSHOT_PERIOD_US;
-    /*
-     * A bidirectional pin at its low rest is released to its high idle on
-     * the first due pass of a run, and the first frame goes out on the next,
-     * DSHOT_PERIOD_US (1000us) later or more: the ESC sees the line high for
-     * a whole frame period before the first frame, as before every other.
-     * The pass sends nothing and asks nothing, so the ask below keeps all
-     * DSHOT_CMD_REPEATS of its frames.
-     */
-    if (out_dshot_wake(s->pin)) {
-        return;
-    }
-
-    /*
-     * The ask goes out in place of a stop frame and never in place of a
-     * throttle.  A command is an ordinary frame and an ESC tells one from a
-     * glitch by counting repeats, so one ask is DSHOT_CMD_REPEATS frames in a
-     * row, 10ms at DSHOT_UPDATE_HZ, and it is repeated every
-     * DSHOT_EDT_RETRY_MS while the throttle is zero until an extended frame
-     * comes back: AM32 takes a command only once it has armed itself on a
-     * second of zero throttle, which a run's first 10ms never are.
-     * DSHOT_CMD_EDT_ENABLE is in the command range, so nothing turns while
-     * it is being sent.
-     *
-     * An ESC that does not know the command ignores it and keeps sending
-     * periods.  Those still read as periods: this decoder only takes a frame
-     * for an extended one when the mantissa's top bit is clear and the type
-     * nibble is not zero, which an ESC that normalises its exponent
-     * never sends.
-     *
-     * The telemetry bit is set on every one of the repeats, and it is not
-     * decoration.  On a value of 1 to 47 the bit is what marks the frame as a
-     * command: the BLHeli_S family (Bluejay) discards a command whose telemetry
-     * bit is clear and zeroes its repeat counter with it, so ten frames without
-     * the bit never reach the six repeats its command handler counts and
-     * extended telemetry never comes on.  AM32 has no such gate and takes the
-     * command either way.  On a bidirectional pin the word is 0x01B5 with the
-     * bit and 0x01A4 without it -- a different payload and a different checksum
-     * nibble.  The bit's other meaning is a request on the separate serial
-     * telemetry wire; nothing on this bench reads that wire.
-     */
-    const uint16_t value =
-        dshot_throttle(outputs_actual(o, s->first_channel), OUT_SPAN);
-    if (s->driver == OUT_DRIVER_DSHOT_BIDIR
-        && dshot_edt_frame(&st->edt, value == DSHOT_CMD_MOTOR_STOP,
-                           now_ms())) {
-        out_dshot_send(s->pin, (uint16_t)DSHOT_CMD_EDT_ENABLE, true);
-        return;
-    }
-    out_dshot_send(s->pin, value, false);
+    return out_render_return_slot(&s_render, o, rate_hz, slot);
 }
 
 void outputs_hw_ports(const uint8_t *pin, const uint16_t *rate_hz,
                       uint8_t parked, uint8_t dshot, uint8_t channel0)
 {
-    if (pin == NULL || rate_hz == NULL) {
-        return;
-    }
-    /* Every port that moved is released before any is bound, as the slots
-     * are: two ports may exchange pins. */
-    bool moved[LINK_PG_PORTS_MAX];
-    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
-        const port_state_t *p = &s_port[i];
-        const bool wanted = pin[i] <= OUT_MAX_PIN;
-        const bool park_it = (parked & (1u << i)) != 0u;
-        const out_driver_t drv = (!park_it && (dshot & (1u << i)) != 0u)
-                                     ? OUT_DRIVER_DSHOT : OUT_DRIVER_PWM;
-        moved[i] = wanted != p->bound
-                   || (wanted && (p->as.pin != pin[i] || p->parked != park_it
-                                  || (!park_it
-                                      && (p->as.driver != drv
-                                          || p->as.rate_hz != rate_hz[i]))));
-        if (moved[i] && p->bound) {
-            if (p->parked) {
-                port_unpark(p->as.pin);
-            } else {
-                unbind(&p->as);
-            }
-        }
-    }
-    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
-        port_state_t *p = &s_port[i];
-        if (!moved[i]) {
-            continue;
-        }
-        memset(p, 0, sizeof(*p));
-        if (pin[i] > OUT_MAX_PIN) {
-            continue;
-        }
-        p->as.driver        = OUT_DRIVER_PWM;
-        p->as.first_channel = (uint8_t)(channel0 + i);
-        p->as.channels      = 1u;
-        p->as.pin           = pin[i];
-        p->as.rate_hz       = rate_hz[i];
-        if ((parked & (1u << i)) != 0u) {
-            p->parked = true;
-            p->bound  = port_park(pin[i]);
-        } else {
-            if ((dshot & (1u << i)) != 0u) {
-                p->as.driver = OUT_DRIVER_DSHOT;
-            }
-            p->bound = bind(&p->as);
-            /* Due at once, and asked nothing yet, as a slot bound afresh. */
-            p->st.next_us = time_us_32();
-            dshot_edt_bind(&p->st.edt, now_ms());
-        }
-    }
+    out_render_ports(&s_render, pin, rate_hz, parked, dshot, channel0);
 }
 
 uint8_t outputs_hw_ports_bound(void)
 {
-    uint8_t bound = 0u;
-    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
-        if (s_port[i].bound) {
-            bound |= (uint8_t)(1u << i);
-        }
-    }
-    return bound;
+    return out_render_ports_bound(&s_render);
 }
 
 void outputs_hw_ports_drive(uint8_t ports)
 {
-    s_port_drive = ports;
+    out_render_ports_drive(&s_render, ports);
 }
 
 void outputs_hw_watch(int ch)
 {
-    s_watch_ch   = ch;
-    s_edge_ready = false;
+    out_render_watch(&s_render, ch);
 }
 
 bool outputs_hw_edge(uint64_t *us)
 {
-    if (!s_edge_ready) {
-        return false;
-    }
-    s_edge_ready = false;
-    *us = s_edge_us;
-    return true;
-}
-
-/**
- * @brief A PWM slot's pulse for this pass.
- *
- * On the watched channel, the first
- * pulse other than the last one rendered -- a changed command, not a
- * disarm -- is written stamped: the start of the frame that first carries
- * it is the capture's edge.  Once: the watch ends with it, stamped or not.
- *
- * @param st  The render state of the slot or port.
- * @param s  The slot or port, bound as PWM.
- * @param pulse  Pulse width in microseconds. 0 stops the pin edging.
- */
-static void service_pwm(slot_state_t *st, const out_slot_t *s, uint16_t pulse)
-{
-    const bool changed = st->pwm_have && pulse != st->pwm_last;
-    if (changed && pulse != 0u && s_watch_ch == (int)s->first_channel) {
-        uint64_t at = 0u;
-        if (out_pwm_write_stamped(s->pin, pulse, &at)) {
-            s_edge_us    = at;
-            s_edge_ready = true;
-        }
-        s_watch_ch = -1;
-    } else {
-        out_pwm_write(s->pin, pulse);
-    }
-    st->pwm_last = pulse;
-    st->pwm_have = true;
-}
-
-/**
- * @brief Whether the bank is armed for the role of a channel of @p s, the
- * slot as this layer bound it.
- *
- * The shadow rather than the bank's slot: the shadow is
- * what the pin is doing.
- *
- * @param o  The output bank.
- * @param s  The slot, from s_shadow.
- * @return True when any of the slot's channels is driving.
- */
-static bool slot_driving(const outputs_t *o, const out_slot_t *s)
-{
-    for (unsigned k = 0; k < s->channels; ++k) {
-        const unsigned ch = (unsigned)s->first_channel + k;
-        if (ch < OUT_MAX_CHANNELS && outputs_channel_driving(o, (uint8_t)ch)) {
-            return true;
-        }
-    }
-    return false;
+    return out_render_edge(&s_render, us);
 }
 
 void outputs_hw_service(const outputs_t *o)
 {
-    if (o == NULL) {
-        return;
-    }
-    /*
-     * One answer for the whole bank per pass: which roles it is armed for.
-     * Every slot and port is judged against the same answer, so one output
-     * cannot keep driving on a stale one while another has already stopped.
-     * A slot drives when the arm covers the role of one of its channels; an
-     * arm for the throttle leaves a surface without a pulse, and an arm for
-     * the surface leaves a motor and its ESC without one.  A programming port
-     * is a surface.
-     *
-     * Whether a channel is still being commanded is a separate question, per
-     * channel, and it is not asked here: what reaches a pin is
-     * outputs_actual(), whatever last wrote it.  The main loop calls
-     * outputs_step() immediately before this, so an overdue channel is at its
-     * rest by then, and what goes on the pin is that rest rather than nothing.
-     * outputs_off() calls this with no step in front of it and needs none: it
-     * disarms first, which puts every channel at its rest and makes every
-     * answer false.
-     */
-    const bool drive = outputs_driving(o);
-
-    for (unsigned i = 0; i < OUT_MAX_SLOTS; ++i) {
-        if (!s_state[i].bound) {
-            continue;
-        }
-        const out_slot_t *s = &s_shadow[i];
-        const bool slot_drive = drive && slot_driving(o, s);
-        switch (s->driver) {
-        case OUT_DRIVER_PWM:
-            service_pwm(&s_state[i], s,
-                        slot_drive ? outputs_pulse_us(o, s->first_channel)
-                                   : 0u);
-            break;
-        case OUT_DRIVER_PPM:
-            service_ppm(o, s, slot_drive);
-            break;
-        case OUT_DRIVER_DSHOT:
-        case OUT_DRIVER_DSHOT_BIDIR:
-            service_dshot(o, s, &s_state[i], i, slot_drive);
-            break;
-        case OUT_DRIVER_NONE:
-        case OUT_DRIVER_COUNT:
-        default:
-            break;
-        }
-    }
-
-    for (unsigned i = 0; i < LINK_PG_PORTS_MAX; ++i) {
-        port_state_t *p = &s_port[i];
-        if (!p->bound || p->parked) {
-            continue;
-        }
-        if (p->as.driver == OUT_DRIVER_DSHOT) {
-            /* A motor slot's rendering: the throttle while the bank is
-             * armed for it, no frame while it is not.  No slot of its own
-             * for telemetry: plain DShot sends none. */
-            service_dshot(o, &p->as, &p->st, OUT_MAX_SLOTS,
-                          drive && outputs_channel_driving(
-                                       o, p->as.first_channel));
-            continue;
-        }
-        service_pwm(&p->st, &p->as,
-                    drive && (s_port_drive & (1u << i)) != 0u
-                        && outputs_channel_driving(o, p->as.first_channel)
-                        ? outputs_pulse_us(o, p->as.first_channel) : 0u);
-    }
-
-    /*
-     * The end of a run, and after the loop rather than before it: a
-     * bidirectional slot reads the reply to its last frame on the way to
-     * stopping, so a cache cleared first is repopulated by that reply with a
-     * fresh timestamp and the run's final reading outlives the run.
-     *
-     * Asked once for the bank rather than per slot: the cache is one motor's
-     * and the slots share it, so a slot that happened not to be driving must
-     * not clear what another one just heard.
-     */
-    static bool s_was_driving;
-    if (s_was_driving && !drive) {
-        forget_telem();
-    }
-    s_was_driving = drive;
+    out_render_service(&s_render, o);
 }
 
 bool outputs_hw_erpm(uint32_t *erpm, uint32_t *age_ms)
 {
-    const int slot = reporting_slot();
-    if (slot < 0 || erpm == NULL || age_ms == NULL
-        || !s_telem[slot].have_erpm) {
-        return false;
-    }
-    *erpm   = s_telem[slot].erpm;
-    *age_ms = now_ms() - s_telem[slot].erpm_ms;
-    return true;
+    return out_render_erpm(&s_render, erpm, age_ms);
 }
 
 bool outputs_hw_edt(dshot_telem_kind_t kind, uint16_t *value, uint32_t *age_ms)
 {
-    const int slot = reporting_slot();
-    if (slot < 0 || (unsigned)kind >= (unsigned)DSHOT_TELEM_KINDS
-        || value == NULL || age_ms == NULL
-        || !s_telem[slot].have_edt[kind]) {
-        return false;
-    }
-    *value  = s_telem[slot].edt[kind];
-    *age_ms = now_ms() - s_telem[slot].edt_ms[kind];
-    return true;
+    return out_render_edt(&s_render, kind, value, age_ms);
 }
 
 /*
@@ -822,6 +203,8 @@ _Static_assert(OUT_DSHOT_MAX_PINS >= OUT_MAX_SLOTS + LINK_PG_PORTS_MAX,
                "programming ports");
 _Static_assert(OUT_PPM_MAX_PINS >= OUT_MAX_SLOTS,
                "the PPM driver binds fewer pins than the bank has slots");
+_Static_assert(PPM_MAX_CHANNELS == OUT_RENDER_PPM_MAX,
+               "the PPM frame and the renderer disagree on its channels");
 _Static_assert(PPM_CHANNEL_MIN_US == OUT_FLOOR_US
                    && PPM_CHANNEL_MAX_US == OUT_CEILING_US,
                "the PPM channel range is not the bank's range");
