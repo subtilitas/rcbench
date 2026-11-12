@@ -1108,12 +1108,29 @@ give the spacing of the rows while the INA3221 is enabled.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
+time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
 In a MOTOR file `voltage`, `current` and `power` are what MOTOR & ESC
-shows. A SERVO file, from a switch to ARMED on SERVO, has two more
-columns before `source`:
+shows.
+
+`throttle` is the throttle the panel commands at the sample, 0 to 100%,
+written to 0.1%. It is the same figure for PWM and DShot outputs:
+
+- On a `measured` row it is the THROTTLE the IOmcu is sent, in 0.01%
+  steps. The IOmcu drives it without Ramp limit. The delay from the
+  command to the pin is not measured.
+- On a `model` row it is the throttle the model runs at: the command after
+  Ramp limit.
+- It is 0.0 while the motor is not ARMED.
+- A row that holds only a window has it empty.
+
+A MOTOR file without `throttle` has `esc` after `rpm`. LOGS reads it and
+plots the same four columns first in both forms: `voltage`, `current`,
+`power` and `rpm`.
+
+A SERVO file, from a switch to ARMED on SERVO, has no `throttle` column:
+the switch arms no motor. It has two more columns before `source`:
 
 ```
 ...;ch3 voltage (V);pulse (us);angle (deg);source
@@ -1144,7 +1161,8 @@ columns before `source`:
 - The meter's figures, `pulse` and `angle` are on the last row of a sample.
   The rows before it in one poll hold the window and the channel columns
   only.
-- The other columns of a SERVO file are a MOTOR file's.
+- The other columns of a SERVO file are a MOTOR file's, without
+  `throttle`.
 
 `source` is `measured` for rows produced by a meter and `model` for rows
 produced by the panel's model (the SIMULATED mark). Supply files use the
@@ -1192,11 +1210,11 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   others from 0x40 CH1 to 0x43 CH3.
 - Two channels on one target add the channel to the name:
   `out 3 0x41 ch2 current (A)`.
-- At most 3 groups, 23 columns in a MOTOR file and 25 in a SERVO file: the
+- At most 3 groups, 24 columns in a MOTOR file and 25 in a SERVO file: the
   fourth watching channel and later are in no file. LOGS reads at most 25
   columns.
-- A file with fewer groups ends `source` earlier: 13 + 3 x groups + 1
-  columns, and 2 more in a SERVO file. With no channel watching anything the file has no channel
+- A file with fewer groups ends `source` earlier: 14 + 3 x groups + 1
+  columns, and 1 more in a SERVO file. With no channel watching anything the file has no channel
   column.
 
 The channel watching the servo tester's target comes from the SERVO_WIN

@@ -893,6 +893,17 @@ void advance_model_and_log(bool link_up, float emitted,
         *new_sample = true;
     }
     /*
+     * The log's `throttle (%)`: on the IOmcu's sample the THROTTLE it is
+     * sent, which it drives unramped; on the model's the throttle the model
+     * ran at, after Ramp limit, which telemetry_sim_step() set.  0 while
+     * the motor is not ARMED.
+     */
+    if (link_up) {
+        bench_state_set_throttle_sent(
+            bench, outputs_role_armed(&s_out, OUT_ROLE_THROTTLE),
+            s_throttle_hundredths);
+    }
+    /*
      * The run's totals, from the sample either source just wrote, over the
      * time since the last one -- measured, not the 50ms the model's cadence
      * aims at: a link probe can hold this loop for a second, and an

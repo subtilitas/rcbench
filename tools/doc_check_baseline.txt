@@ -1701,7 +1701,6 @@ shared/bench/kst_prog_file.c: warning: Member journal_target (variable) of struc
 shared/bench/kst_prog_file.c: warning: Member k_head[] (variable) of file kst_prog_file.c is not documented.	static const char k_head[] = "RCBENCH KST 2\n";
 shared/bench/kst_prog_file.c: warning: Member k_head_1[] (variable) of file kst_prog_file.c is not documented.	static const char k_head_1[] = "RCBENCH KST 1\n";
 shared/bench/log_writer.c: warning: Member k_ch123 (variable) of file log_writer.c is not documented.	static const char *const k_ch123 =
-shared/bench/log_writer.c: warning: Member k_head (variable) of file log_writer.c is not documented.	static const char *const k_head =
 shared/bench/log_writer.c: warning: Member k_supply_header (variable) of file log_writer.c is not documented.	static const char *const k_supply_header =
 shared/bench/log_writer.c: warning: Member k_tail (variable) of file log_writer.c is not documented.	static const char *const k_tail = "source\n";
 shared/bench/panel_i2c.c: warning: Member panel_i2c_reserved_count (variable) of file panel_i2c.c is not documented.	const unsigned panel_i2c_reserved_count =

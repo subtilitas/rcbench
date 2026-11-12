@@ -1198,12 +1198,32 @@ INA3221 eingeschaltet ist.
 
 
 ```
-time (s);voltage (V);current (A);power (W);rpm (rpm);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
+time (s);voltage (V);current (A);power (W);rpm (rpm);throttle (%);esc (C);motor (C);charge (mAh);energy (Wh);ina voltage (V);ina current (A);esc current (A);window;ch1 current (A);ch1 max (A);ch1 voltage (V);ch2 current (A);ch2 max (A);ch2 voltage (V);ch3 current (A);ch3 max (A);ch3 voltage (V);source
 ```
 
 In MOTOR-Dateien entsprechen `voltage`, `current` und `power` der Anzeige
-auf MOTOR & ESC. Eine durch ARM auf SERVO begonnene SERVO-Datei hat vor
-`source` zwei zusätzliche Spalten:
+auf MOTOR & ESC.
+
+`throttle` ist das Gas, das das Panel zum Zeitpunkt der Abtastung
+vorgibt, 0 bis 100%, geschrieben auf 0,1%. Für PWM- und DShot-Ausgänge ist
+es derselbe Wert:
+
+- In einer `measured`-Zeile ist es das THROTTLE, das der IOmcu
+  geschickt bekommt, in Schritten von 0,01%. Der IOmcu gibt es ohne
+  Rampengrenze aus. Die Verzögerung vom Befehl bis zum Pin ist nicht
+  gemessen.
+- In einer `model`-Zeile ist es das Gas, mit dem das Modell läuft: der
+  Befehl nach der Rampengrenze.
+- Solange der Motor nicht ARMED ist, steht 0.0 darin.
+- Eine Zeile, die nur ein Fenster hält, hat die Zelle leer.
+
+Eine MOTOR-Datei ohne `throttle` hat `esc` direkt nach `rpm`. LOGS liest
+sie und zeigt in beiden Formen zuerst dieselben vier Spalten: `voltage`,
+`current`, `power` und `rpm`.
+
+Eine durch ARM auf SERVO begonnene SERVO-Datei hat keine Spalte
+`throttle`: Dieses ARM schaltet keinen Motor. Vor `source` hat sie zwei
+zusätzliche Spalten:
 
 ```
 ...;ch3 voltage (V);pulse (us);angle (deg);source
@@ -1237,7 +1257,8 @@ auf MOTOR & ESC. Eine durch ARM auf SERVO begonnene SERVO-Datei hat vor
 - Die Werte des Messgeräts, `pulse` und `angle` stehen in der letzten Zeile
   einer Abtastung. Die Zeilen davor in einem Poll halten nur das Fenster und
   die Kanalspalten.
-- Die übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei.
+- Die übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei, ohne
+  `throttle`.
 
 `source` ist `measured` bei Zeilen mit Werten eines Messgeräts und `model`
 bei Zeilen aus dem Panelmodell (Markierung SIMULIERT). Netzteildateien
@@ -1290,11 +1311,11 @@ window;port 1 current (A);port 1 max (A);port 1 voltage (V);out 3 current (A);ou
   die anderen von 0x40 CH1 bis 0x43 CH3.
 - Zwei Kanäle an einem Ziel tragen den Kanal im Namen:
   `out 3 0x41 ch2 current (A)`.
-- Höchstens 3 Gruppen, 23 Spalten in einer MOTOR-Datei und 25 in einer
+- Höchstens 3 Gruppen, 24 Spalten in einer MOTOR-Datei und 25 in einer
   SERVO-Datei: der vierte überwachende Kanal und alle weiteren stehen in
   keiner Datei. LOGS liest höchstens 25 Spalten.
-- Eine Datei mit weniger Gruppen endet früher mit `source`: 13 + 3 x
-  Gruppen + 1 Spalten, in einer SERVO-Datei 2 mehr. Ohne überwachenden Kanal hat die
+- Eine Datei mit weniger Gruppen endet früher mit `source`: 14 + 3 x
+  Gruppen + 1 Spalten, in einer SERVO-Datei 1 mehr. Ohne überwachenden Kanal hat die
   Datei keine Kanalspalten.
 
 Die Gruppe für den Kanal am Ziel des Servotesters stammt aus dem

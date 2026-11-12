@@ -164,6 +164,26 @@ void bench_state_log_row(const bench_state_t *b, bool whole,
     out->chw = b->chw;
 }
 
+void bench_state_set_throttle(bench_state_t *b, float pct)
+{
+    if (b == NULL) {
+        return;
+    }
+    if (!isfinite(pct)) {
+        b->throttle_pct = 0.0f;
+        b->throttle_ok  = false;
+        return;
+    }
+    b->throttle_pct = (pct < 0.0f) ? 0.0f : (pct > 100.0f) ? 100.0f : pct;
+    b->throttle_ok  = true;
+}
+
+void bench_state_set_throttle_sent(bench_state_t *b, bool armed,
+                                   uint16_t hundredths)
+{
+    bench_state_set_throttle(b, armed ? (float)hundredths / 100.0f : 0.0f);
+}
+
 void bench_state_reset_peaks(bench_state_t *b)
 {
     if (b == NULL) {

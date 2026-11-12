@@ -32,8 +32,9 @@ extern "C" {
 
 #define LOG_COLS_MAX     LINK_SM_CHANNELS
 /**
- * @brief The groups a file carries: its 14 other columns and 3 groups of 3 make
- *        23 of the 24 the reader takes.
+ * @brief The groups a file carries: a MOTOR file's 15 other columns and 3
+ *        groups of 3 make 24, and a SERVO file's 16 and 9 make the 25 the
+ *        reader takes (LOG_MAX_COLUMNS).
  */
 #define LOG_COLS_GROUPS  3u
 /** @brief "supply 0x43 ch3" and its terminator. */

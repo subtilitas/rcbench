@@ -131,6 +131,16 @@ typedef struct {
      *        the row of servo_window, as SERVO_SENSE's CH2 and CH3 are.
      */
     bench_chw_t chw;
+    /**
+     * @brief The throttle the panel commands at this sample, 0 to 100%, the
+     *        same for PWM and DShot: on an IOmcu's sample the THROTTLE it
+     *        is sent (bench_state_set_throttle_sent()), on the model's the
+     *        throttle the model runs at (telemetry_sim_step()).  0 while
+     *        the motor is not ARMED.  Not on the wire.
+     */
+    float    throttle_pct;
+    /** @brief throttle_pct is set; false on a row of a window alone. */
+    bool     throttle_ok;
 } bench_state_t;
 
 /**
@@ -195,6 +205,30 @@ void bench_state_run_starts(bench_state_t *b, uint16_t *regs);
  */
 void bench_state_log_row(const bench_state_t *b, bool whole,
                          bench_state_t *out);
+
+/**
+ * @brief The commanded throttle of the sample, into @p b.
+ *
+ * Clamped to 0 to 100%.  A value that is not finite sets none
+ * (throttle_ok false), which the log writes as an empty cell.  @p b NULL
+ * does nothing.
+ *
+ * @param b   The state to write.
+ * @param pct The commanded throttle, in %.
+ */
+void bench_state_set_throttle(bench_state_t *b, float pct);
+
+/**
+ * @brief The THROTTLE the IOmcu is sent (LINK_CT_THROTTLE), as the
+ *        commanded throttle of its sample: @p hundredths in 0.01% steps
+ *        while @p armed, 0% otherwise, by bench_state_set_throttle().
+ *
+ * @param b          The state to write.
+ * @param armed      true while the throttle outputs are ARMED.
+ * @param hundredths The control page's THROTTLE, 0 to LINK_THROTTLE_MAX.
+ */
+void bench_state_set_throttle_sent(bench_state_t *b, bool armed,
+                                   uint16_t hundredths);
 
 /**
  * @brief Clear the peaks without disturbing the live readings.
