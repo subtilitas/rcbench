@@ -40,15 +40,16 @@ extern "C" {
 #define INJ_LINE_MIN_AGREE_PCT  95u   /**< of them, those that agree     */
 
 /* Bit 0 of a state is GP4, bit 1 GP5; 1 is high. */
-#define INJ_LINE_GP4 0x1u
-#define INJ_LINE_GP5 0x2u
+#define INJ_LINE_GP4 0x1u   /**< GP4 */
+#define INJ_LINE_GP5 0x2u   /**< GP5 */
 
 /** One level change: from @c at on, the lines read @c state. */
 typedef struct {
-    uint32_t at;     /* sample index */
-    uint8_t  state;
+    uint32_t at;     /**< sample index */
+    uint8_t  state;  /**< the lines from then on: bit 0 GP4, bit 1 GP5 */
 } inj_edge_t;
 
+/** @brief What the wiring check found. */
 typedef enum {
     INJ_WIRING_NONE = 0,  /* no check run since reset                 */
     INJ_WIRING_OK,        /* GP4 is SDA, GP5 is SCL                   */
@@ -58,27 +59,41 @@ typedef enum {
     INJ_WIRING_NOISE,     /* edges, but no verdict                    */
 } inj_wiring_t;
 
+/** @brief The result of a wiring check. */
 typedef struct {
-    inj_wiring_t verdict;
-    uint32_t     tx;          /* transactions seen whole              */
-    uint32_t     agree_pct;   /* majority share of the named, %       */
-    uint32_t     edges4;      /* level changes on GP4, after glitches */
-    uint32_t     edges5;
-    uint8_t      end_state;   /* the lines at the end of the window   */
-    uint32_t     rate_ksps;   /* sample rate, ksample/s (as given)    */
-    uint32_t     named;       /* transactions that name a line        */
+    inj_wiring_t verdict;     /**< what the check found */
+    uint32_t     tx;          /**< transactions seen whole              */
+    uint32_t     agree_pct;   /**< majority share of the named, %       */
+    uint32_t     edges4;      /**< level changes on GP4, after glitches */
+    uint32_t     edges5;      /**< level changes on GP5, after glitches */
+    uint8_t      end_state;   /**< the lines at the end of the window   */
+    uint32_t     rate_ksps;   /**< sample rate, ksample/s (as given)    */
+    uint32_t     named;       /**< transactions that name a line        */
 } inj_line_result_t;
 
 /**
- * Classify @p n edges taken over @p samples samples at @p rate_ksps
- * ksample/s.  @p first is the state at sample 0; @p edges are in order of
- * @c at, each a change from the state before it (a repeat is ignored).
+ * @brief Classify @p n edges taken over @p samples samples at @p rate_ksps
+ * ksample/s.
+ *
+ * @p edges are in order of @c at, each a change from the state before it (a
+ * repeat is ignored).
+ *
+ * @param first      The state at sample 0.
+ * @param edges      The edges.
+ * @param n          How many.
+ * @param samples    Samples in the window.
+ * @param rate_ksps  Sample rate, ksample/s.
+ * @param out        Receives the result.
  */
 void inj_line_classify(uint8_t first, const inj_edge_t *edges, uint32_t n,
                        uint32_t samples, uint32_t rate_ksps,
                        inj_line_result_t *out);
 
-/** The verdict's word: ok, swapped, idle, low, noise, or none. */
+/**
+ * @brief The verdict's word: ok, swapped, idle, low, noise, or none.
+ * @param v  The verdict.
+ * @return The word.
+ */
 const char *inj_wiring_name(inj_wiring_t v);
 
 #ifdef __cplusplus
