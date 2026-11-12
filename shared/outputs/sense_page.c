@@ -19,10 +19,10 @@
 #include "link_msg.h"
 #include "link_pages.h"
 
-/* The INA3221's shunt full scale, 163.8mV, in uV: 4095 steps of 40 uV. */
+/** @brief The INA3221's shunt full scale, 163.8mV, in uV: 4095 steps of 40 uV. */
 #define I3221_FULL_SCALE_UV 163800uL
 
-/* The largest current a register of signed mA carries. */
+/** @brief The largest current a register of signed mA carries. */
 #define MA_MAX 32767u
 
 _Static_assert(LINK_SW_RING == SENSE_WIN_RING,

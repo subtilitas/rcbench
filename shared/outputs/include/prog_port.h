@@ -90,14 +90,14 @@ extern "C" {
 /** @brief The registers of one port that are kept in flash: PIN, SLEW, MIN_US,
  *  MAX_US.  FUNC is kept apart, in one word (prog_port_kept_func()). */
 #define PROG_PORT_KEPT 4u
-#define PROG_PORT_KEPT_COUNT (LINK_PG_PORTS_MAX * PROG_PORT_KEPT)
+#define PROG_PORT_KEPT_COUNT (LINK_PG_PORTS_MAX * PROG_PORT_KEPT)   /**< kept registers of all ports */
 
 /**
  * @brief The state of the programming ports: the PROG page's registers and
  *        which ports hold their pin.
  */
 typedef struct {
-    uint16_t regs[LINK_PG_REGS];
+    uint16_t regs[LINK_PG_REGS];   /**< the PROG page's registers */
     uint8_t  count;     /**< ports this build has */
     uint8_t  bound;     /**< bit n: the generator has port n's pin */
     uint8_t  blocked;   /**< bit n: the kept pin was taken at start; the

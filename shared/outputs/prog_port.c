@@ -16,6 +16,7 @@
 #include "out_pwm_map.h"
 #include "outputs_pages.h"
 
+/** @brief Register @p r of port @p port on the PROG page. */
 #define REG(port, r) LINK_PG_REG(port, r)
 
 /**

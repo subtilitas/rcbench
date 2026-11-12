@@ -60,11 +60,15 @@ typedef struct {
          overrun,                           /**< core 1's last status: a lap or a FIFO overflow */
          beep,                              /**< core 1's last status: a run of bursts is under way */
          tone;                              /**< core 1's last status: the last window held a tone */
-    uint16_t   window, win_freq_dhz, win_periods;
-    uint32_t   lost, glitches;   /**< counted across set-ups              */
-    uint32_t   seen_lost, seen_glitches;   /**< the status's own, last    */
+    uint16_t   window /**< the last closed window's number */,
+               win_freq_dhz /**< its frequency, 0.1Hz */,
+               win_periods /**< its periods */;
+    uint32_t   lost /**< beeps lost, counted across set-ups */,
+               glitches /**< glitches, counted across set-ups */;
+    uint32_t   seen_lost /**< the status's own lost count, last taken */,
+               seen_glitches /**< the status's own glitch count, last taken */;
     /* The beeps of this capture. */
-    tone_rec_t ring[LINK_TN_RING];
+    tone_rec_t ring[LINK_TN_RING];   /**< the ring of beeps */
     uint64_t   n;          /**< beeps taken since boot; 64 bit: no wrap   */
     uint64_t   first;      /**< the first still valid, as a count         */
     uint32_t   ms_shift;   /**< added to each start: a restart that kept

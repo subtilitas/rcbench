@@ -36,7 +36,7 @@ extern "C" {
 
 /** @brief Slices in the block, and channels in a slice. */
 #define OUT_PWM_SLICES    12u
-#define OUT_PWM_CHANNELS   2u
+#define OUT_PWM_CHANNELS   2u   /**< channels in a slice */
 
 /**
  * @brief The GPIO numbers the fold is defined over: 0 to 47.

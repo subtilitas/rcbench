@@ -200,9 +200,9 @@ typedef struct {
  *        the running or last transaction and its capture.
  */
 typedef struct {
-    hitec_port_hw_t hw;
-    uint16_t staged[LINK_HT_W_STAGED];
-    uint16_t last_cmd[LINK_HT_W_CMD_FRAME];
+    hitec_port_hw_t hw;   /**< the hardware */
+    uint16_t staged[LINK_HT_W_STAGED];   /**< the registers staged for the next command */
+    uint16_t last_cmd[LINK_HT_W_CMD_FRAME];   /**< the last command's frame */
     hitec_xfer_t xfer;      /**< the running transaction, or the last */
     hitec_capture_t cap;    /**< the last capture */
     hitec_reply_t reply;    /**< its decoding */

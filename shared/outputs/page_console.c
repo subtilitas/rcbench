@@ -14,7 +14,7 @@
 
 #include "hitec_wire.h"
 
-#define TOKENS_MAX 40u
+#define TOKENS_MAX 40u /**< tokens in a command line, at most */
 
 /* --- output ---------------------------------------------------------------- */
 
@@ -153,25 +153,32 @@ static const char *name_of(const char *const *names, unsigned count,
 #define NAME(table, v) \
     name_of((table), sizeof(table) / sizeof((table)[0]), (v))
 
+/** @brief Names of a NACK reason, by value. */
 static const char *const k_nack[] = {
     "OK", "BAD_PAGE", "BAD_RANGE", "READ_ONLY", "BAD_VALUE", "NOT_ARMED",
     "BUSY",
 };
+/** @brief Names of a HITEC port state, by value. */
 static const char *const k_state[] = {
     "FREE", "STOPPING", "OPEN", "BUSY", "POWER_OFF",
 };
+/** @brief Names of a HITEC operation, by value. */
 static const char *const k_op[] = {
     "NONE", "OPEN", "CLOSE", "SEND", "LISTEN", "LEVEL", "ABORT", "POWER",
     "CLEAR",
 };
+/** @brief Names of a HITEC operation's result, by value. */
 static const char *const k_result[] = {
     "NONE", "RUNNING", "DONE", "SUPPLY", "START", "NO_LINE", "CUT",
 };
+/** @brief Names of a refusal of a HITEC command, by value. */
 static const char *const k_refusal[] = {
     "NONE", "BUSY", "PORT", "HELD", "ARMED", "UNSAFE", "NOT_OPEN", "NO_KEY",
     "STAGED", "STOPPED", "NO_PIN", "RANGE", "SUPPLY_RANGE", "NO_SUPPLY",
 };
+/** @brief Names of a decoding, by value. */
 static const char *const k_dec[] = { "NONE", "C", "D", "LISTEN" };
+/** @brief Names of a receive result, by value. */
 static const char *const k_rx[] = {
     "OK", "ARG", "ABORTED", "OVERFLOW", "SILENT", "EARLY", "LATE", "NAK",
     "LENGTH", "FRAMING", "GAP", "ACK", "HEADER", "ADDRESS", "SUM",
@@ -544,6 +551,13 @@ static void say_flags(char *buf, size_t size, uint16_t st)
     }
 }
 
+/**
+ * @def RUN_AT
+ * @brief The index of a run block register in run[]: its offset from
+ * LINK_HT_DATA.
+ * @param reg  The register.
+ */
+
 /** @brief What the page says now: the state line, and the capture with its
  *        bytes
  * when it holds one.
@@ -731,11 +745,18 @@ static bool parse_dec(const char *v, uint16_t *out)
 
 /** @brief The options of send, listen and power, and the bytes of a send. */
 typedef struct {
-    uint32_t lead, gap, window, rx, answer, mv, ma, off;
-    bool     has_answer;
-    uint16_t dec;
-    uint8_t  tx[HITEC_TX_MAX];
-    unsigned n_tx;
+    uint32_t lead /**< lead= option, us */,
+             gap /**< gap= option, bits */,
+             window /**< window= option, us */,
+             rx /**< rx= option, bytes */,
+             answer /**< answer= option, a byte */,
+             mv /**< mv= option, mV */,
+             ma /**< ma= option, mA */,
+             off /**< off= option, ms */;
+    bool     has_answer; /**< answer= was given */
+    uint16_t dec;        /**< the dec= option, as the page takes it */
+    uint8_t  tx[HITEC_TX_MAX]; /**< the bytes to send */
+    unsigned n_tx;       /**< how many */
 } hitec_args_t;
 
 /**

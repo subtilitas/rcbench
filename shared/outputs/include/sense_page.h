@@ -55,21 +55,21 @@ extern "C" {
  * (1.638A full scale), reading CH1.
  */
 #define SENSE_DEFAULT_SDA        16u
-#define SENSE_DEFAULT_SCL        17u
-#define SENSE_DEFAULT_KHZ        LINK_SN_KHZ_BUS
-#define SENSE_DEFAULT_I228_ADDR  0x45u
-#define SENSE_DEFAULT_I228_UOHM  200u
-#define SENSE_DEFAULT_I228_DA    2048u
-#define SENSE_DEFAULT_I3221_ADDR 0x40u
-#define SENSE_DEFAULT_I3221_DMOHM 1000u
-#define SENSE_DEFAULT_I3221_CH   0x01u
+#define SENSE_DEFAULT_SCL        17u   /**< the bus's SCL, GPIO */
+#define SENSE_DEFAULT_KHZ        LINK_SN_KHZ_BUS   /**< the bus clock, kHz */
+#define SENSE_DEFAULT_I228_ADDR  0x45u   /**< the INA228's I2C address */
+#define SENSE_DEFAULT_I228_UOHM  200u    /**< its shunt, uOhm */
+#define SENSE_DEFAULT_I228_DA    2048u   /**< its range, 0.1A: 204.8A */
+#define SENSE_DEFAULT_I3221_ADDR 0x40u   /**< the INA3221's I2C address */
+#define SENSE_DEFAULT_I3221_DMOHM 1000u  /**< its shunts, 0.1mOhm: 100.0mOhm */
+#define SENSE_DEFAULT_I3221_CH   0x01u   /**< the channels read, bit 0 for CH1 */
 
 /**
  * @brief A capture armed before anything else is written: 100mA of movement
  * and a 50mA band, the servo test's SERVO_TEST_MOVE_A and SERVO_TEST_BAND_A.
  */
 #define SENSE_DEFAULT_MOVE_MA 100u
-#define SENSE_DEFAULT_BAND_MA  50u
+#define SENSE_DEFAULT_BAND_MA  50u   /**< the band, mA */
 
 /**
  * @brief The state of the SENSE page: its three register images, the

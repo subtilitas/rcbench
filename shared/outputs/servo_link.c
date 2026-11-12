@@ -300,8 +300,8 @@ static bool write_regs(uint8_t page, uint8_t offset, uint8_t count,
  * register on the wire each time.
  */
 #define SERVO_HOLD_MS   100u
-#define SERVO_MIN_US    1000u
-#define SERVO_MAX_US    2000u
+#define SERVO_MIN_US    1000u   /**< the endpoint of a servo with no entry: lowest pulse, us */
+#define SERVO_MAX_US    2000u   /**< and the highest, us */
 
 /**
  * @brief A pulse in microseconds as a proportion of the servo's own travel,
