@@ -58,10 +58,7 @@ lv_state_t lv_s;
 /* Column spans, in screen y, one pair per pixel column per series.  Computed
  * when the data changes: recomputing them per redraw would make the cursor
  * lag, and recomputing them per band would make it crawl. */
-int16_t lv_span[LOG_MAX_SERIES][PV_W][2];
-gfx_color_t lv_band[PV_W * PV_BAND];
-float lv_lo[LOG_MAX_SERIES];
-float lv_hi[LOG_MAX_SERIES];
+lv_plot_t lv_plot;
 
 log_viewer_view_t log_viewer_view(void)
 {

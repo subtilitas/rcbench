@@ -835,8 +835,27 @@ TEST_CASE(the_screenshot_gate_reads_the_hold_of_the_port)
     CHECK(!shot_facts_now().port_free);
 }
 
+/* The gate is set once at boot; every start of the screens wipes the
+ * overlay's state and hands the same gate to the new session. */
+TEST_CASE(the_gate_outlives_a_start_of_the_screens)
+{
+    hitec_prog_gate_t g;
+
+    hitec_prog_gate_init(&g);
+    hitec_panel_gate(&g);
+    CHECK(hitec_panel_model()->gate == &g);
+    hitec_panel_init(AREA);
+    CHECK(hitec_panel_model()->gate == &g);
+    hitec_panel_init(AREA);
+    CHECK(hitec_panel_model()->gate == &g);
+    hitec_panel_gate(NULL);
+    hitec_panel_init(AREA);
+    CHECK(hitec_panel_model()->gate == NULL);
+}
+
 int main(void)
 {
+    RUN(the_gate_outlives_a_start_of_the_screens);
     RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     RUN(a_held_ports_reading_moves_the_page_as_its_state_line_shows_it);
     RUN(the_series_is_chosen_before_connect_and_kept_in_the_settings);

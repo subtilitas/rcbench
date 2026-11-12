@@ -191,6 +191,11 @@ typedef struct {
     bool     drawn_list;                /**< whether the list showed at the last draw */
     setting_cat_t drawn_cat;            /**< category the last draw showed */
     bool     drawn_warn;                /**< whether the warning was drawn */
+    /** @brief The rows the IOmcu does not hold, as the control task last
+     *         said.  A reset of the screen keeps them: what the IOmcu holds
+     *         does not change with it. */
+    uint16_t sense_unheld;
+    uint8_t  tone_unheld;   /**< the tap's rows the IOmcu does not hold, TONE_LINK_ROWS_*; kept as sense_unheld */
 } stg_state_t;
 
 /* Defined in settings_screen.c. */

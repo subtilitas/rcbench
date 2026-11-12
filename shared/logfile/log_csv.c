@@ -34,13 +34,22 @@
 
 /* ----------------------------------------------------------- allocator --- */
 
-static void *(*s_alloc)(size_t) = malloc;
-static void (*s_free)(void *) = free;
+/**
+ * @brief The allocator of the series: malloc() and free() unless
+ *        log_set_allocator() names others.
+ */
+typedef struct {
+    void *(*alloc)(size_t);   /**< allocates the series */
+    void (*release)(void *);  /**< frees what alloc gave */
+} csv_mem_t;
+
+/** @brief The allocator in use. */
+static csv_mem_t s_mem = { .alloc = malloc, .release = free };
 
 void log_set_allocator(void *(*alloc_fn)(size_t), void (*free_fn)(void *))
 {
-    s_alloc = (alloc_fn != NULL) ? alloc_fn : malloc;
-    s_free = (free_fn != NULL) ? free_fn : free;
+    s_mem.alloc = (alloc_fn != NULL) ? alloc_fn : malloc;
+    s_mem.release = (free_fn != NULL) ? free_fn : free;
 }
 
 const char *log_err_str(log_err_t err)
@@ -162,15 +171,23 @@ typedef struct {
     int total;
 } row_buf_t;
 
-/*
- * Scratch, file-static rather than on the stack: a row buffer and a unit
- * tally per column come to about 3kB, which is too much for a UI task's
- * stack on this chip.  Analysis and build are called from one task, one file
- * at a time; they are not reentrant, and neither is the screen that drives
- * them.
+/**
+ * @brief The scratch of one analysis or build, apart from s_mem: without an
+ *        initialiser it stays .bss, which the panel maps to PSRAM
+ *        (psram_bss.lf).
+ *
+ * File-static rather than on the stack: a row buffer and a unit tally per
+ * column come to about 3kB, which is too much for a UI task's stack on this
+ * chip.  Analysis and build are called from one task, one file at a time;
+ * they are not reentrant, and neither is the screen that drives them.
  */
-static row_buf_t s_row;
-static log_unit_tally_t s_tally[LOG_MAX_COLUMNS];
+typedef struct {
+    row_buf_t        row;                    /**< the row buffer */
+    log_unit_tally_t tally[LOG_MAX_COLUMNS]; /**< a unit tally per column */
+} csv_work_t;
+
+/** @brief The scratch, static and not on the stack. */
+static csv_work_t s_work;
 
 /**
  * @brief Read the next row that is not a blank line.  false at end of input.
@@ -408,28 +425,28 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
     }
     log_reader_init(&reader, src);
 
-    if (!next_row(&reader, delimiter, &s_row)) {
+    if (!next_row(&reader, delimiter, &s_work.row)) {
         out->cut_row = reader.cut;   /* a header cut off is no header */
         return LOG_ERR_NO_HEADER;
     }
-    if (s_row.total > LOG_MAX_COLUMNS) {
+    if (s_work.row.total > LOG_MAX_COLUMNS) {
         return LOG_ERR_TOO_MANY_COLUMNS;
     }
-    out->n_columns = s_row.total;
-    out->max_fields = s_row.total;
-    for (int c = 0; c < s_row.n; ++c) {
-        const char *h = trim(s_row.fields[c]);
+    out->n_columns = s_work.row.total;
+    out->max_fields = s_work.row.total;
+    for (int c = 0; c < s_work.row.n; ++c) {
+        const char *h = trim(s_work.row.fields[c]);
         copy_str(out->columns[c].raw_header, LOG_NAME_MAX, h);
     }
 
     log_votes_t votes;
     log_votes_reset(&votes);
 
-    while (out->row_count < max_rows && next_row(&reader, delimiter, &s_row)) {
-        if (!row_has_content(&s_row)) {
+    while (out->row_count < max_rows && next_row(&reader, delimiter, &s_work.row)) {
+        if (!row_has_content(&s_work.row)) {
             continue;
         }
-        if (s_row.total != out->n_columns) {
+        if (s_work.row.total != out->n_columns) {
             out->ragged_rows++;
         }
         if (reader.overflow) {
@@ -439,11 +456,11 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
              * can say so instead of plotting invented samples. */
             out->long_rows++;
         }
-        if (s_row.total > out->max_fields) {
-            out->max_fields = s_row.total;
+        if (s_work.row.total > out->max_fields) {
+            out->max_fields = s_work.row.total;
         }
-        for (int c = 0; c < s_row.n && c < out->n_columns; ++c) {
-            const char *cell = trim(s_row.fields[c]);
+        for (int c = 0; c < s_work.row.n && c < out->n_columns; ++c) {
+            const char *cell = trim(s_work.row.fields[c]);
             if (cell[0] != '\0') {
                 log_votes_add(&votes, cell);
             }
@@ -464,8 +481,8 @@ static log_err_t scan_geometry(log_source_t *src, char delimiter,
          * dropped, no statistics, no allocation, one sequential read of the
          * rest of the file. */
         bool at_end = true;
-        while (next_row(&reader, delimiter, &s_row)) {
-            if (row_has_content(&s_row)) {
+        while (next_row(&reader, delimiter, &s_work.row)) {
+            if (row_has_content(&s_work.row)) {
                 out->truncated = true;
                 if (tail >= 0) {
                     cut = (tail == 1);
@@ -524,22 +541,22 @@ static log_err_t scan_columns(log_source_t *src, char delimiter,
         return LOG_ERR_READ;
     }
     log_reader_init(&reader, src);
-    if (!next_row(&reader, delimiter, &s_row)) {
+    if (!next_row(&reader, delimiter, &s_work.row)) {
         return LOG_ERR_NO_HEADER;
     }
 
     for (int c = 0; c < out->n_columns; ++c) {
-        log_unit_tally_reset(&s_tally[c]);
+        log_unit_tally_reset(&s_work.tally[c]);
     }
 
     int seen = 0;
-    while (seen < out->row_count && next_row(&reader, delimiter, &s_row)) {
-        if (!row_has_content(&s_row)) {
+    while (seen < out->row_count && next_row(&reader, delimiter, &s_work.row)) {
+        if (!row_has_content(&s_work.row)) {
             continue;
         }
         for (int c = 0; c < out->n_columns; ++c) {
             log_column_t *col = &out->columns[c];
-            const char *cell = (c < s_row.n) ? trim(s_row.fields[c]) : "";
+            const char *cell = (c < s_work.row.n) ? trim(s_work.row.fields[c]) : "";
             if (seen < LOG_SAMPLES) {
                 copy_str(col->sample[seen], LOG_SAMPLE_MAX, cell);
             }
@@ -550,7 +567,7 @@ static log_err_t scan_columns(log_source_t *src, char delimiter,
 
             log_value_t parts;
             if (log_split_value(cell, &parts)) {
-                log_unit_tally_add(&s_tally[c], parts.unit);
+                log_unit_tally_add(&s_work.tally[c], parts.unit);
             }
 
             double v;
@@ -598,7 +615,7 @@ static log_err_t scan_columns(log_source_t *src, char delimiter,
 
         char value_unit[LOG_UNIT_MAX];
         bool mixed = false;
-        log_unit_dominant(&s_tally[c], value_unit, sizeof(value_unit), &mixed);
+        log_unit_dominant(&s_work.tally[c], value_unit, sizeof(value_unit), &mixed);
         col->mixed_units = mixed;
         col->unit_from_values = (value_unit[0] != '\0');
         copy_str(col->unit, LOG_UNIT_MAX,
@@ -710,11 +727,11 @@ void log_data_free(log_data_t *data)
         return;
     }
     if (data->time != NULL) {
-        s_free(data->time);
+        s_mem.release(data->time);
     }
     for (int i = 0; i < LOG_MAX_SERIES; ++i) {
         if (data->value[i] != NULL) {
-            s_free(data->value[i]);
+            s_mem.release(data->value[i]);
         }
     }
     memset(data, 0, sizeof(*data));
@@ -872,13 +889,13 @@ static log_err_t read_series(log_source_t *src, const log_analysis_t *a,
     out->convention = a->convention;
     out->delimiter = a->delimiter;
 
-    out->time = (float *)s_alloc(sizeof(float) * (size_t)count);
+    out->time = (float *)s_mem.alloc(sizeof(float) * (size_t)count);
     if (out->time == NULL) {
         log_data_free(out);
         return LOG_ERR_MEMORY;
     }
     for (int i = 0; i < n_pick; ++i) {
-        out->value[i] = (float *)s_alloc(sizeof(float) * (size_t)count);
+        out->value[i] = (float *)s_mem.alloc(sizeof(float) * (size_t)count);
         if (out->value[i] == NULL) {
             log_data_free(out);
             return LOG_ERR_MEMORY;
@@ -908,7 +925,7 @@ static log_err_t read_series(log_source_t *src, const log_analysis_t *a,
         return LOG_ERR_READ;
     }
     log_reader_init(&reader, src);
-    if (!next_row(&reader, a->delimiter, &s_row)) {
+    if (!next_row(&reader, a->delimiter, &s_work.row)) {
         log_data_free(out);
         return LOG_ERR_NO_HEADER;
     }
@@ -918,14 +935,14 @@ static log_err_t read_series(log_source_t *src, const log_analysis_t *a,
     double t_last = 0.0;
     int i = 0;
 
-    while (i < count && next_row(&reader, a->delimiter, &s_row)) {
-        if (!row_has_content(&s_row)) {
+    while (i < count && next_row(&reader, a->delimiter, &s_work.row)) {
+        if (!row_has_content(&s_work.row)) {
             continue;
         }
 
         for (int k = 0; k < n_pick; ++k) {
             int c = pick[k];
-            const char *cell = (c < s_row.n) ? trim(s_row.fields[c]) : "";
+            const char *cell = (c < s_work.row.n) ? trim(s_work.row.fields[c]) : "";
             double v;
             if (cell[0] != '\0' && log_parse_with(cell, a->convention, &v, NULL, 0)) {
                 out->value[k][i] = (float)v;
@@ -953,7 +970,7 @@ static log_err_t read_series(log_source_t *src, const log_analysis_t *a,
         }
 
         if (a->time_index >= 0) {
-            const char *cell = (a->time_index < s_row.n) ? trim(s_row.fields[a->time_index])
+            const char *cell = (a->time_index < s_work.row.n) ? trim(s_work.row.fields[a->time_index])
                                                        : "";
             double v;
             if (cell[0] != '\0' && log_parse_with(cell, a->convention, &v, NULL, 0)) {
@@ -1013,7 +1030,7 @@ static void series_stats(log_data_t *out, int count)
 
     if (count > 1) {
         out->duration_s = (double)out->time[count - 1] - (double)out->time[0];
-        float *dts = (float *)s_alloc(sizeof(float) * (size_t)(count - 1));
+        float *dts = (float *)s_mem.alloc(sizeof(float) * (size_t)(count - 1));
         double sum = 0.0;
         for (int k = 1; k < count; ++k) {
             double dt = (double)out->time[k] - (double)out->time[k - 1];
@@ -1028,7 +1045,7 @@ static void series_stats(log_data_t *out, int count)
         if (dts != NULL) {
             qsort(dts, (size_t)(count - 1), sizeof(float), cmp_float);
             out->median_dt_s = (double)dts[(count - 1) >> 1];
-            s_free(dts);
+            s_mem.release(dts);
         } else {
             /* Without room to sort, the mean is reported, and the screen says
              * which statistic it shows. */

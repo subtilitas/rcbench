@@ -26,9 +26,6 @@
 
 ewp_state_t ewp_s;
 
-/** @brief Not part of the state: a start of the screens leaves it. */
-static esc_prog_gate_t *s_gate;
-
 /* ------------------------------------------------------------------ stages */
 
 /**
@@ -687,7 +684,7 @@ static uint32_t signature(void)
 
 void esc_wire_panel_gate(esc_prog_gate_t *g)
 {
-    s_gate = g;
+    ewp_s.gate = g;
     esc_prog_init(&ewp_s.prog);
     esc_prog_gate_set(&ewp_s.prog, g);
 }
@@ -882,14 +879,17 @@ bool esc_wire_panel_target_text(char *out, size_t size)
  */
 static void esc_wire_ps_init(gfx_rect_t area)
 {
+    esc_prog_gate_t *const gate = ewp_s.gate;
+
     memset(&ewp_s, 0, sizeof(ewp_s));
+    ewp_s.gate = gate;
     ewp_s.area = area;
     ewp_s.hold_ms = ESC_WIRE_HOLD_DEFAULT_MS;
     ewp_s.off_ms = ESC_WIRE_OFF_DEFAULT_MS;
     ewp_s.tab_set = -1;
     ewp_s.page = EWP_PAGE_NONE;
     esc_prog_init(&ewp_s.prog);
-    esc_prog_gate_set(&ewp_s.prog, s_gate);
+    esc_prog_gate_set(&ewp_s.prog, ewp_s.gate);
 }
 
 /** @brief The host screen was entered. */

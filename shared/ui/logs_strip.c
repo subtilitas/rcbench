@@ -19,10 +19,14 @@ static const ui_screen_id_t k_screens[] = {
 /** @brief How many tabs the strip has. */
 #define STRIP_TABS ((int)(sizeof(k_screens) / sizeof(k_screens[0])))
 
-/** @brief The tabs: one row, whichever of the two screens draws it. */
-static ui_tabs_t s_tabs;
-/** @brief s_tabs holds its labels and its rectangles. */
-static bool s_made;
+/** @brief The strip's state, one instance per image. */
+typedef struct {
+    ui_tabs_t tabs; /**< one row, whichever of the two screens draws it */
+    bool      made; /**< tabs holds its labels and its rectangles */
+} strip_state_t;
+
+/** @brief The strip's one instance. */
+static strip_state_t strip;
 
 /**
  * @brief The tabs, laid out on the first call.
@@ -30,17 +34,17 @@ static bool s_made;
  */
 static ui_tabs_t *tabs_made(void)
 {
-    if (!s_made) {
+    if (!strip.made) {
         const char *labels[STRIP_TABS];
         for (int i = 0; i < STRIP_TABS; ++i) {
             labels[i] = ui_router_title(k_screens[i]);
         }
-        ui_tabs_init(&s_tabs, labels, STRIP_TABS,
+        ui_tabs_init(&strip.tabs, labels, STRIP_TABS,
                      gfx_rect_make(LOGS_STRIP_X, LOGS_STRIP_Y, LOGS_STRIP_W,
                                    LOGS_STRIP_H));
-        s_made = true;
+        strip.made = true;
     }
-    return &s_tabs;
+    return &strip.tabs;
 }
 
 /**
@@ -53,10 +57,10 @@ static ui_tabs_t *tabs_for(ui_screen_id_t here)
     (void)tabs_made();
     for (int i = 0; i < STRIP_TABS; ++i) {
         if (k_screens[i] == here) {
-            s_tabs.selected = i;
+            strip.tabs.selected = i;
         }
     }
-    return &s_tabs;
+    return &strip.tabs;
 }
 
 void logs_strip_render(gfx_canvas_t *c, ui_screen_id_t here)
@@ -99,5 +103,5 @@ bool logs_strip_event(const touch_event_t *e, ui_screen_id_t here)
 
 void logs_strip_cancel(void)
 {
-    ui_tabs_cancel(&s_tabs);
+    ui_tabs_cancel(&strip.tabs);
 }

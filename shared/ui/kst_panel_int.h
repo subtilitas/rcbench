@@ -163,6 +163,9 @@ enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
 /** @brief The overlay's state. */
 typedef struct {
     kst_prog_t prog;                    /**< the programmer's session */
+    /** @brief The gate kst_panel_gate() sets; kst_panel_init() keeps it, so
+     *         a start of the screens leaves it */
+    kst_prog_gate_t *gate;
     gfx_rect_t area;                    /**< the overlay's area, body pixels */
     bool       open;                    /**< whether the overlay is open */
     uint8_t    note_page;               /**< notes page shown, when the notes take more than one */

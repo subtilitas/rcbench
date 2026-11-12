@@ -67,14 +67,18 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_LANGUAGE] = {
         "language", "",
         SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(language) },
+    /* No screen reads it: in no category (SET_CAT_COUNT), so on no
+     * screen and in no reset, loaded and saved as stored. */
     [SET_UNITS] = {
         "units", "",
-        SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(units) },
+        SET_CAT_COUNT, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(units) },
     /* The zone file dates are written in: an index into wall_clock.c's
      * POSIX TZ strings, 2 Berlin (wall_zone_posix()). */
     [SET_TIME_ZONE] = {
         "time_zone", "",
         SET_CAT_APP, SET_TYPE_ENUM, 0, 0, 1, 2, ENUM_OPTS(time_zone) },
+    /* Minutes without a touch on an idle bench before the backlight dims;
+     * 0 never (screen_dim.h). */
     [SET_DIM_AFTER] = {
         "dim_after", "min",
         SET_CAT_APP, SET_TYPE_INT, 0, 60, 5, 0, NULL, 0 },
