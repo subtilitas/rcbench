@@ -1075,8 +1075,6 @@ firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t 
 firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.	static wa_why_t why_of_fw_gate(fw_gate_t g)
 firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.	void wifi_service(bool armed, uint32_t stops_now)
 firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.	static void wifi_unavailable_service(void)
-protocols/sbus/include/sbus.h: warning: Member SBUS_RAW_MAX (macro definition) of file sbus.h is not documented.	#define SBUS_RAW_MAX 2047u
-protocols/sbus/include/sbus.h: warning: Member frames (variable) of struct sbus_decoder_t is not documented.	uint32_t frames;
 shared/bench/include/bench_state.h: warning: Member BENCH_EDT_STALE_MS (macro definition) of file bench_state.h is not documented.	#define BENCH_EDT_STALE_MS 2000u
 shared/bench/include/bench_state.h: warning: Member BENCH_ENERGY_WH_MAX (macro definition) of file bench_state.h is not documented.	#define BENCH_ENERGY_WH_MAX 6553.5f
 shared/bench/include/bench_state.h: warning: Member BENCH_FINE_WH_TOL (macro definition) of file bench_state.h is not documented.	#define BENCH_FINE_WH_TOL 0.2f
