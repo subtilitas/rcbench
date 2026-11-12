@@ -1075,32 +1075,6 @@ firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t 
 firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.	static wa_why_t why_of_fw_gate(fw_gate_t g)
 firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.	void wifi_service(bool armed, uint32_t stops_now)
 firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.	static void wifi_unavailable_service(void)
-protocols/openyge/include/openyge.h: warning: Compound openyge_header_t is not documented.	typedef struct {
-protocols/openyge/include/openyge.h: warning: Compound openyge_params_t is not documented.	typedef struct {
-protocols/openyge/include/openyge.h: warning: Compound openyge_telemetry_t is not documented.	typedef struct {
-protocols/openyge/include/openyge.h: warning: Member OPENYGE_CRC_CHECK (macro definition) of file openyge.h is not documented.	#define OPENYGE_CRC_CHECK 0x31C3u
-protocols/openyge/include/openyge.h: warning: Member OPENYGE_DEV_ADDR_MASK (macro definition) of file openyge.h is not documented.	#define OPENYGE_DEV_ADDR_MASK 0x7Fu
-protocols/openyge/include/openyge.h: warning: Member OPENYGE_DEV_BROADCAST (macro definition) of file openyge.h is not documented.	#define OPENYGE_DEV_BROADCAST 0x00u
-protocols/openyge/include/openyge.h: warning: Member OPENYGE_P_MAIN_TEETH (macro definition) of file openyge.h is not documented.	#define OPENYGE_P_MAIN_TEETH 22
-protocols/openyge/include/openyge.h: warning: Member OPENYGE_P_MOTOR_POLES (macro definition) of file openyge.h is not documented.	#define OPENYGE_P_MOTOR_POLES 20
-protocols/openyge/include/openyge.h: warning: Member OPENYGE_P_PINION_TEETH (macro definition) of file openyge.h is not documented.	#define OPENYGE_P_PINION_TEETH 21
-protocols/openyge/include/openyge.h: warning: Member any_fault (variable) of struct openyge_status_t is not documented.	bool any_fault;
-protocols/openyge/include/openyge.h: warning: Member buf[OPENYGE_MAX_FRAME] (variable) of struct openyge_decoder_t is not documented.	uint8_t buf[OPENYGE_MAX_FRAME];
-protocols/openyge/include/openyge.h: warning: Member count (variable) of struct openyge_params_t is not documented.	uint16_t count;
-protocols/openyge/include/openyge.h: warning: Member crc_errors (variable) of struct openyge_decoder_t is not documented.	uint32_t crc_errors;
-protocols/openyge/include/openyge.h: warning: Member fault_overcurrent (variable) of struct openyge_status_t is not documented.	bool fault_overcurrent;
-protocols/openyge/include/openyge.h: warning: Member fault_overtemp (variable) of struct openyge_status_t is not documented.	bool fault_overtemp;
-protocols/openyge/include/openyge.h: warning: Member fault_overvoltage (variable) of struct openyge_status_t is not documented.	bool fault_overvoltage;
-protocols/openyge/include/openyge.h: warning: Member fault_undervoltage (variable) of struct openyge_status_t is not documented.	bool fault_undervoltage;
-protocols/openyge/include/openyge.h: warning: Member frames (variable) of struct openyge_decoder_t is not documented.	uint32_t frames;
-protocols/openyge/include/openyge.h: warning: Member hdr (variable) of struct openyge_frame_t is not documented.	openyge_header_t hdr;
-protocols/openyge/include/openyge.h: warning: Member len (variable) of struct openyge_decoder_t is not documented.	uint8_t len;
-protocols/openyge/include/openyge.h: warning: Member resyncs (variable) of struct openyge_decoder_t is not documented.	uint32_t resyncs;
-protocols/openyge/include/openyge.h: warning: Member setpoint_noise (variable) of struct openyge_status_t is not documented.	bool setpoint_noise;
-protocols/openyge/include/openyge.h: warning: Member warn_overcurrent (variable) of struct openyge_status_t is not documented.	bool warn_overcurrent;
-protocols/openyge/include/openyge.h: warning: Member warn_overtemp (variable) of struct openyge_status_t is not documented.	bool warn_overtemp;
-protocols/openyge/include/openyge.h: warning: Member warn_undervoltage (variable) of struct openyge_status_t is not documented.	bool warn_undervoltage;
-protocols/openyge/openyge_status.c: warning: Member WARN_MASK (macro definition) of file openyge_status.c is not documented.	#define WARN_MASK 0xF0u
 protocols/pdmini/include/pdmini.h: warning: Member PDMINI_I_MAX_MA (macro definition) of file pdmini.h is not documented.	#define PDMINI_I_MAX_MA 3000u
 protocols/pdmini/include/pdmini.h: warning: Member PDMINI_I_MIN_MA (macro definition) of file pdmini.h is not documented.	#define PDMINI_I_MIN_MA 50u
 protocols/pdmini/include/pdmini.h: warning: Member PDMINI_V_MAX_MV (macro definition) of file pdmini.h is not documented.	#define PDMINI_V_MAX_MV 20000u

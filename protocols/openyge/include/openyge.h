@@ -68,7 +68,7 @@ extern "C" {
  * implementation at the far end is verified against it before it is trusted.
  */
 #define OPENYGE_CRC_INIT        0x0000u
-#define OPENYGE_CRC_CHECK       0x31C3u
+#define OPENYGE_CRC_CHECK       0x31C3u   /**< the CRC of "123456789" */
 
 /**
  * @brief Fold @p len bytes at @p data into @p crc and return the new
@@ -88,8 +88,8 @@ uint16_t openyge_crc(uint16_t crc, const void *data, size_t len);
 
 /** @brief Address byte: bit 7 set means the sender is the master. */
 #define OPENYGE_DEV_MASTER      0x80u
-#define OPENYGE_DEV_ADDR_MASK   0x7Fu
-#define OPENYGE_DEV_BROADCAST   0x00u
+#define OPENYGE_DEV_ADDR_MASK   0x7Fu   /**< the address bits */
+#define OPENYGE_DEV_BROADCAST   0x00u   /**< the address that every device takes */
 
 /**
  * @brief Temperatures travel as °C + 40, so −40 is representable in a uint8.
@@ -107,6 +107,7 @@ typedef enum {
 
 /* ------------------------------------------------------------ decoding */
 
+/** @brief A frame's header. */
 typedef struct {
     uint8_t version;  /**< protocol version byte                             */
     uint8_t type;     /**< one of openyge_frame_type_t                       */
@@ -117,22 +118,22 @@ typedef struct {
 
 /** @brief One decoded frame: header and payload. */
 typedef struct {
-    openyge_header_t hdr;
+    openyge_header_t hdr;   /**< the header */
     uint8_t payload[OPENYGE_MAX_FRAME];  /**< payload bytes, after the header */
     uint8_t payload_len;                 /**< payload length in bytes         */
 } openyge_frame_t;
 
 /** @brief Byte buffer and counters of the resynchronising decoder. */
 typedef struct {
-    uint8_t  buf[OPENYGE_MAX_FRAME];
-    uint8_t  len;
+    uint8_t  buf[OPENYGE_MAX_FRAME];   /**< bytes of the frame being collected */
+    uint8_t  len;                      /**< bytes held in buf */
     /* Counters for the analyser screen: a quiet line, a noisy one and a
      * wrong baud rate are distinguished here.  crc_errors and rejected count
      * a failing sync candidate once, when it reaches the front of the
      * buffer; bytes dropped ahead of a candidate count under resyncs. */
-    uint32_t frames;
-    uint32_t crc_errors;
-    uint32_t resyncs;
+    uint32_t frames;        /**< frames decoded */
+    uint32_t crc_errors;    /**< candidates that failed the CRC */
+    uint32_t resyncs;       /**< bytes dropped ahead of a candidate */
     uint32_t rejected;   /**< CRC held, contents impossible */
 } openyge_decoder_t;
 
@@ -161,6 +162,7 @@ bool openyge_decode_byte(openyge_decoder_t *d, uint8_t byte,
 
 /* ------------------------------------------------------------ telemetry */
 
+/** @brief The values of a telemetry frame. */
 typedef struct {
     float    volts;          /**< battery volts, from 10mV counts           */
     float    amps;           /**< battery amps, from 10mA counts            */
@@ -304,12 +306,12 @@ typedef struct {
      * value means the ESC reports a dirty input signal instead.  While this
      * is set, the subject and the warning flags below carry no meaning.
      */
-    bool    setpoint_noise;
+    bool    setpoint_noise;   /**< the ESC reports a dirty input signal */
 
     openyge_subject_t subject;  /**< who the warnings are about */
-    bool    warn_undervoltage;
-    bool    warn_overtemp;
-    bool    warn_overcurrent;
+    bool    warn_undervoltage;  /**< undervoltage warning */
+    bool    warn_overtemp;      /**< overtemperature warning */
+    bool    warn_overcurrent;   /**< overcurrent warning */
 
     /*
      * A warning bit alone is a caution; it is a fault only in combination
@@ -317,11 +319,11 @@ typedef struct {
      * of warnings while the power is cut.  A decoder that reports flags
      * without the state misses that condition.
      */
-    bool    fault_overvoltage;
-    bool    fault_undervoltage;
-    bool    fault_overtemp;
-    bool    fault_overcurrent;
-    bool    any_fault;
+    bool    fault_overvoltage;    /**< no warnings while the power is cut */
+    bool    fault_undervoltage;   /**< undervoltage warning in a state before OPENYGE_ST_STARTING */
+    bool    fault_overtemp;       /**< overtemperature warning with the power cut */
+    bool    fault_overcurrent;    /**< overcurrent warning with the power cut */
+    bool    any_fault;            /**< any of the four faults */
 } openyge_status_t;
 
 /**
@@ -354,16 +356,17 @@ const char *openyge_state_name(uint8_t state);
  * them before anything is written.
  */
 #define OPENYGE_P_COUNT        0
-#define OPENYGE_P_MOTOR_POLES  20
-#define OPENYGE_P_PINION_TEETH 21
-#define OPENYGE_P_MAIN_TEETH   22
+#define OPENYGE_P_MOTOR_POLES  20   /**< the motor's poles */
+#define OPENYGE_P_PINION_TEETH 21   /**< the pinion's teeth */
+#define OPENYGE_P_MAIN_TEETH   22   /**< the main gear's teeth */
 
+/** @brief The parameter cache. */
 typedef struct {
     uint16_t value[OPENYGE_MAX_PARAMS];  /**< value per index                 */
     uint64_t seen;            /**< bit per index */
     /* Parameter 0.  Zero means the count has not arrived: a table of zero
      * parameters cannot exist, so no separate flag is needed. */
-    uint16_t count;
+    uint16_t count;           /**< the parameter count */
     bool     writes_pending;  /**< table withdrawn until every index re-read */
 } openyge_params_t;
 
