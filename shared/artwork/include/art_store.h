@@ -50,10 +50,13 @@ extern "C" {
  * happen is a store that hands back a drawing that is not there.
  */
 typedef struct {
+    /** @brief Read len bytes at off; false on failure. */
     bool (*read)(void *ctx, uint32_t off, void *dst, uint32_t len);
+    /** @brief Erase len bytes from off, whole sectors; false on failure. */
     bool (*erase)(void *ctx, uint32_t off, uint32_t len);
+    /** @brief Write len bytes at off, into erased flash; false on failure. */
     bool (*write)(void *ctx, uint32_t off, const void *src, uint32_t len);
-    void    *ctx;
+    void    *ctx; /**< handed to every call */
     uint32_t size;    /**< bytes of partition                              */
     uint32_t sector;  /**< erase granularity, 4096 on this part            */
 } art_flash_t;
@@ -63,7 +66,7 @@ typedef struct {
  *        from.
  */
 typedef struct {
-    uint16_t board;
+    uint16_t board; /**< the board the drawing is for */
     uint16_t format;  /**< a link_art_format_t, never LINK_ART_NONE         */
     uint16_t width;                     /**< width, px */
     uint16_t height;                    /**< height, px */
@@ -213,10 +216,10 @@ typedef enum {
  * keep is DONE or FAILED.
  */
 typedef struct {
-    const art_flash_t *f;
-    const uint8_t     *payload;
-    art_entry_t        entry;
-    uint16_t           board;
+    const art_flash_t *f; /**< the flash the keep writes to */
+    const uint8_t     *payload; /**< the drawing's payload */
+    art_entry_t        entry; /**< what the header will say */
+    uint16_t           board; /**< the board the keep is for */
     uint8_t            phase;    /**< see art_store.c                        */
     uint32_t           at;       /**< the slot's offset                      */
     uint32_t           span;     /**< bytes from the slot's start to erase   */

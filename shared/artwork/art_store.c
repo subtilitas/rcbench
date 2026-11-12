@@ -14,30 +14,34 @@
 
 #include "link_crc.h"
 
-/*
- * On flash at the start of a slot.
+#define ART_MAGIC   0x61626372uL   /**< "rcba" */
+/**
+ * @brief Version 2 carries the format and the hash.
+ *
+ * A slot of version 1 holds a photograph, which this panel does not show, and
+ * is found as empty.
+ */
+#define ART_VERSION 2u
+
+/**
+ * @brief The header on flash at the start of a slot.
  *
  * Written last and checksummed, so it is what makes a slot findable and a
  * half-written one is not mistaken for a whole one.  The fields are fixed
  * width and the checksum covers everything before it, which is why `head`
  * sits at the end.
  */
-#define ART_MAGIC   0x61626372uL   /* "rcba" */
-/* Version 2 carries the format and the hash.  A slot of version 1 holds a
- * photograph, which this panel does not show, and is found as empty. */
-#define ART_VERSION 2u
-
 typedef struct {
-    uint32_t magic;
-    uint16_t version;
-    uint16_t board;
-    uint16_t format;
-    uint16_t width;
-    uint16_t height;
-    uint16_t crc;      /* of the payload */
-    uint32_t hash;     /* of the payload */
-    uint32_t bytes;
-    uint16_t head;     /* of everything above */
+    uint32_t magic; /**< ART_MAGIC in a written slot */
+    uint16_t version; /**< ART_VERSION in a written slot */
+    uint16_t board; /**< the board the drawing is for */
+    uint16_t format; /**< a link_art_format_t, never LINK_ART_NONE */
+    uint16_t width; /**< width, px */
+    uint16_t height; /**< height, px */
+    uint16_t crc;      /**< of the payload */
+    uint32_t hash;     /**< of the payload */
+    uint32_t bytes; /**< length of the payload, bytes */
+    uint16_t head;     /**< of everything above */
 } art_head_t;
 
 _Static_assert(offsetof(art_head_t, hash) == 16u

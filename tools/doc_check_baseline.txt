@@ -1310,32 +1310,6 @@ protocols/ppm/rp2350/out_ppm.c: warning: Member last_us[PPM_MAX_CHANNELS] (varia
 protocols/ppm/rp2350/out_ppm.c: warning: Member restart (variable) of struct ppm_out_t is not documented.	const uint32_t *restart;
 protocols/sbus/include/sbus.h: warning: Member SBUS_RAW_MAX (macro definition) of file sbus.h is not documented.	#define SBUS_RAW_MAX 2047u
 protocols/sbus/include/sbus.h: warning: Member frames (variable) of struct sbus_decoder_t is not documented.	uint32_t frames;
-shared/artwork/art_store.c: warning: Compound art_head_t is not documented.	typedef struct {
-shared/artwork/art_store.c: warning: Member ART_MAGIC (macro definition) of file art_store.c is not documented.	#define ART_MAGIC 0x61626372uL /* "rcba" */
-shared/artwork/art_store.c: warning: Member ART_VERSION (macro definition) of file art_store.c is not documented.	#define ART_VERSION 2u
-shared/artwork/art_store.c: warning: Member board (variable) of struct art_head_t is not documented.	uint16_t board;
-shared/artwork/art_store.c: warning: Member bytes (variable) of struct art_head_t is not documented.	uint32_t bytes;
-shared/artwork/art_store.c: warning: Member crc (variable) of struct art_head_t is not documented.	uint16_t crc; /* of the payload */
-shared/artwork/art_store.c: warning: Member format (variable) of struct art_head_t is not documented.	uint16_t format;
-shared/artwork/art_store.c: warning: Member hash (variable) of struct art_head_t is not documented.	uint32_t hash; /* of the payload */
-shared/artwork/art_store.c: warning: Member head (variable) of struct art_head_t is not documented.	uint16_t head; /* of everything above */
-shared/artwork/art_store.c: warning: Member height (variable) of struct art_head_t is not documented.	uint16_t height;
-shared/artwork/art_store.c: warning: Member magic (variable) of struct art_head_t is not documented.	uint32_t magic;
-shared/artwork/art_store.c: warning: Member version (variable) of struct art_head_t is not documented.	uint16_t version;
-shared/artwork/art_store.c: warning: Member width (variable) of struct art_head_t is not documented.	uint16_t width;
-shared/artwork/include/art_fetch.h: warning: Member ctx (variable) of struct art_transport_t is not documented.	void *ctx;
-shared/artwork/include/art_fetch.h: warning: Member state (variable) of struct art_fetch_t is not documented.	art_fetch_state_t state;
-shared/artwork/include/art_fetch.h: warning: Member why (variable) of struct art_fetch_t is not documented.	const char *why;
-shared/artwork/include/art_fetch.h: warning: Member x (variable) of struct art_fetch_t is not documented.	link_artxfer_t x;
-shared/artwork/include/art_store.h: warning: Member board (variable) of struct art_entry_t is not documented.	uint16_t board;
-shared/artwork/include/art_store.h: warning: Member board (variable) of struct art_keep_t is not documented.	uint16_t board;
-shared/artwork/include/art_store.h: warning: Member ctx (variable) of struct art_flash_t is not documented.	void *ctx;
-shared/artwork/include/art_store.h: warning: Member entry (variable) of struct art_keep_t is not documented.	art_entry_t entry;
-shared/artwork/include/art_store.h: warning: Member erase(void *ctx, uint32_t off, uint32_t len) (variable) of struct art_flash_t is not documented.	bool (*erase)(void *ctx, uint32_t off, uint32_t len);
-shared/artwork/include/art_store.h: warning: Member f (variable) of struct art_keep_t is not documented.	const art_flash_t *f;
-shared/artwork/include/art_store.h: warning: Member payload (variable) of struct art_keep_t is not documented.	const uint8_t *payload;
-shared/artwork/include/art_store.h: warning: Member read(void *ctx, uint32_t off, void *dst, uint32_t len) (variable) of struct art_flash_t is not documented.	bool (*read)(void *ctx, uint32_t off, void *dst, uint32_t len);
-shared/artwork/include/art_store.h: warning: Member write(void *ctx, uint32_t off, const void *src, uint32_t len) (variable) of struct art_flash_t is not documented.	bool (*write)(void *ctx, uint32_t off, const void *src, uint32_t len);
 shared/bench/include/bench_state.h: warning: Member BENCH_EDT_STALE_MS (macro definition) of file bench_state.h is not documented.	#define BENCH_EDT_STALE_MS 2000u
 shared/bench/include/bench_state.h: warning: Member BENCH_ENERGY_WH_MAX (macro definition) of file bench_state.h is not documented.	#define BENCH_ENERGY_WH_MAX 6553.5f
 shared/bench/include/bench_state.h: warning: Member BENCH_FINE_WH_TOL (macro definition) of file bench_state.h is not documented.	#define BENCH_FINE_WH_TOL 0.2f
