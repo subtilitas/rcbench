@@ -192,8 +192,8 @@ uint16_t servo_cmd_pause_root(const servo_cmd_t *c);
 
 /** @brief A pause the panel has let go of, for servo_cmd_stale(). */
 typedef struct {
-    bool     on;
-    uint16_t pause_seq;
+    bool     on;          /**< a pause is recorded as let go of */
+    uint16_t pause_seq;   /**< its sequence number */
 } servo_pause_end_t;
 
 /**

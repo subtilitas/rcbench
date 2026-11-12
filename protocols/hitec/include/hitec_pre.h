@@ -91,16 +91,16 @@ typedef enum {
  *        the release.
  */
 #define HITEC_PRE_CHARGE_NS 100u
-#define HITEC_PRE_SAMPLE_NS 113u
+#define HITEC_PRE_SAMPLE_NS 113u   /**< the wait from the release to the sample, ns */
 /**
  * @brief The measured passing window, ns.
  *
  * A clock whose rounded cycles fall outside it is refused.
  */
 #define HITEC_PRE_CHARGE_MIN_NS 7u
-#define HITEC_PRE_CHARGE_MAX_NS 200u
-#define HITEC_PRE_SAMPLE_MIN_NS 40u
-#define HITEC_PRE_SAMPLE_MAX_NS 187u
+#define HITEC_PRE_CHARGE_MAX_NS 200u   /**< the longest precharge, ns */
+#define HITEC_PRE_SAMPLE_MIN_NS 40u    /**< the shortest wait to the sample, ns */
+#define HITEC_PRE_SAMPLE_MAX_NS 187u   /**< the longest wait to the sample, ns */
 /**
  * @brief System clocks the arithmetic takes: one instruction's 32 cycles hold
  *        the wait, and 1/8 of a bit holds the precharge, the wait and the
@@ -109,7 +109,7 @@ typedef enum {
  * The bench ran at 150MHz.
  */
 #define HITEC_PRE_MIN_HZ  48000000u
-#define HITEC_PRE_MAX_HZ 250000000u
+#define HITEC_PRE_MAX_HZ 250000000u   /**< the highest system clock, Hz */
 /** @brief Longest window a run takes, us. */
 #define HITEC_PRE_WINDOW_MAX_US 30000u
 /**

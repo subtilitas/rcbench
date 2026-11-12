@@ -279,7 +279,7 @@ bool hitec_xfer_valid(const hitec_xfer_t *x);
  * bit) to 1ms.
  */
 #define HITEC_C_REPLY_MIN_NS  494792u
-#define HITEC_C_REPLY_MAX_NS 1000000u
+#define HITEC_C_REPLY_MAX_NS 1000000u   /**< the longest wait for a reply accepted, ns */
 /** @brief Receive window after a command, waiting time. */
 #define HITEC_C_WINDOW_US 1500u
 /** @brief Bytes of a reply. */
@@ -316,7 +316,7 @@ void hitec_c_xfer(uint8_t cmd, uint8_t p1, uint8_t p2, hitec_xfer_t *out);
  * Accepted 2ms to 20ms.
  */
 #define HITEC_D_ANSWER_MIN_NS  2000000u
-#define HITEC_D_ANSWER_MAX_NS 20000000u
+#define HITEC_D_ANSWER_MAX_NS 20000000u   /**< the longest wait for an answer accepted, ns */
 /** @brief Receive window after a read, waiting time. */
 #define HITEC_D_WINDOW_US 25000u
 /**
@@ -444,7 +444,7 @@ typedef enum {
  * 87us (86.8us).
  */
 #define HITEC_NEXT_MIN_HALF_BITS 19u
-#define HITEC_NEXT_MAX_HALF_BITS 30u
+#define HITEC_NEXT_MAX_HALF_BITS 30u   /**< the longest start to start: 15 bit times */
 
 /** @brief The reply shape a classic command expects. */
 typedef enum {

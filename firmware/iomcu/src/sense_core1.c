@@ -24,29 +24,35 @@
 
 /* --- shared between the cores, under s_lock --------------------------- */
 
-static spin_lock_t   *s_lock;
-static sense_cmd_t    s_order;          /* core 0 writes, core 1 copies   */
-static sense_snap_t   s_shared;         /* core 1 writes, core 0 copies   */
-/* Moved under the lock with each snapshot; read without it by core 0 to
- * see whether there is one to copy.  A 32-bit load is one access. */
+static spin_lock_t   *s_lock;   /**< guards s_order, s_shared and s_shared_seq */
+static sense_cmd_t    s_order;          /**< core 0 writes, core 1 copies   */
+static sense_snap_t   s_shared;         /**< core 1 writes, core 0 copies   */
+/**
+ * @brief Moved under the lock with each snapshot; read without it by core 0
+ * to see whether there is one to copy.  A 32-bit load is one access.
+ */
 static volatile uint32_t s_shared_seq;
 
 /* --- core 1's own ------------------------------------------------------- */
 
-/* Static rather than on core 1's stack: the service holds the schedule
- * with 13 sources' windows and FAST's history, 2,384 bytes (arm-none-eabi,
- * this build). */
+/**
+ * @brief The sensor service: static rather than on core 1's stack, because
+ * it holds the schedule with 13 sources' windows and FAST's history,
+ * 2,384 bytes (arm-none-eabi, this build).
+ */
 static sense_svc_t  s_svc;
-static sense_cmd_t  s_cmd;
-static sense_snap_t s_snap;
+static sense_cmd_t  s_cmd;   /**< core 1's copy of the order */
+static sense_snap_t s_snap;  /**< core 1's snapshot, before it is shared */
 
-/* Core 1's stack, 4kB: the default 2kB was the sensor bus's, and the tone
- * service runs on it too. */
+/**
+ * @brief Core 1's stack, 4kB: the default 2kB was the sensor bus's, and the
+ * tone service runs on it too.
+ */
 static uint32_t s_stack[1024];
 
 /* --- core 0's own ------------------------------------------------------- */
 
-static uint32_t s_taken_seq;
+static uint32_t s_taken_seq;   /**< the s_shared_seq core 0 last copied */
 
 /**
  * @brief Reads the 64-bit microsecond timer for the sensor schedule.

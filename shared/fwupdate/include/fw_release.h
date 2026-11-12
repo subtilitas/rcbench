@@ -81,17 +81,22 @@
 extern "C" {
 #endif
 
+/** @brief The repository releases come from. */
 #define FW_REL_REPO        "subtilitas/rcbench"
+/** @brief Redirects to the newest release. */
 #define FW_REL_LATEST_URL  "https://github.com/" FW_REL_REPO "/releases/latest"
+/** @brief A release's page, before its tag. */
 #define FW_REL_TAG_PREFIX  "https://github.com/" FW_REL_REPO "/releases/tag/"
+/** @brief A release's downloads, before the tag and the file name. */
 #define FW_REL_DL_PREFIX   "https://github.com/" FW_REL_REPO "/releases/download/"
+/** @brief The checksum file's name in a release. */
 #define FW_REL_SUMS_NAME   "SHA256SUMS"
 /** The newest release, testing or stable: GitHub's REST API. */
 #define FW_REL_API_URL     "https://api.github.com/repos/" FW_REL_REPO \
                            "/releases?per_page=10"
 /** The headers the API request carries besides the User-Agent. */
 #define FW_REL_API_ACCEPT  "application/vnd.github+json"
-#define FW_REL_API_VERSION "2022-11-28"
+#define FW_REL_API_VERSION "2022-11-28" /**< the X-GitHub-Api-Version value */
 
 /**
  * @name The panel's release line
@@ -167,19 +172,34 @@ typedef enum {
     FW_REL_COUNT
 } fw_rel_err_t;
 
-/** The English name of @p e, for the console. */
+/**
+ * @brief The English name of @p e, for the console.
+ *
+ * @param e  The error.
+ * @return The name; "?" for a value out of range.
+ */
 const char *fw_rel_err_str(fw_rel_err_t e);
 
 /**
- * "MAJOR.MINOR.PATCH" in exactly @p n bytes of @p s, by the tag's rule: digits
- * only, at most 5 a part, each part 0 to 65535, no leading zero.
+ * @brief Read "MAJOR.MINOR.PATCH" from exactly @p n bytes of @p s, by the
+ * tag's rule: digits only, at most 5 a part, each part 0 to 65535, no leading
+ * zero.
+ *
+ * @param s    The text, not terminated.
+ * @param n    Its length, bytes.
+ * @param out  Receives the version.
+ * @return true when the text is a version.
  */
 bool fw_release_parse_version(const char *s, size_t n, fw_version_t *out);
 
 /**
- * The release a redirect from FW_REL_LATEST_URL names: @p loc of @p n bytes,
- * not terminated; @p cut when the header was longer than the buffer that
- * took it.  FW_REL_OK and @p out, or MISSING, LONG, CHAR, PLACE or VERSION.
+ * @brief The release a redirect from FW_REL_LATEST_URL names.
+ *
+ * @param loc  The Location header's value, not terminated.
+ * @param n    Its length, bytes.
+ * @param cut  true when the header was longer than the buffer that took it.
+ * @param out  Receives the release.
+ * @return FW_REL_OK and @p out, or MISSING, LONG, CHAR, PLACE or VERSION.
  */
 fw_rel_err_t fw_release_parse_tag(const char *loc, size_t n, bool cut,
                                   fw_version_t *out);
@@ -191,12 +211,24 @@ typedef enum {
     FW_REL_REFUSED,     /**< anything else                                */
 } fw_rel_status_t;
 
+/**
+ * @brief What a step does with an HTTP status.
+ *
+ * @param status  The status code.
+ * @return FW_REL_BODY for 200, FW_REL_REDIRECT for 301, 302, 303, 307 and 308,
+ *         FW_REL_REFUSED for any other.
+ */
 fw_rel_status_t fw_release_status(int status);
 
 /**
- * Whether a download may follow a redirect to @p loc (@p n bytes, @p cut as
- * above) after @p hops redirects already followed.  FW_REL_OK, or MISSING,
- * LONG, CHAR, PLACE (not https://, or no path), HOST or HOPS.
+ * @brief Whether a download may follow a redirect.
+ *
+ * @param loc   The Location header's value, not terminated.
+ * @param n     Its length, bytes.
+ * @param cut   true when the header was longer than the buffer that took it.
+ * @param hops  The redirects already followed.
+ * @return FW_REL_OK, or MISSING, LONG, CHAR, PLACE (not https://, or no
+ *         path), HOST or HOPS.
  */
 fw_rel_err_t fw_release_redirect(const char *loc, size_t n, bool cut,
                                  unsigned hops);
@@ -205,16 +237,23 @@ fw_rel_err_t fw_release_redirect(const char *loc, size_t n, bool cut,
 extern const char *const FW_REL_HOSTS[];
 
 /**
- * A body's announced size: @p length as the client read Content-Length, -1
- * for none, and @p chunked.  FW_REL_OK, or NO_LENGTH, EMPTY or TOO_BIG
- * against @p cap bytes.
+ * @brief Check a body's announced size.
+ *
+ * @param length   Content-Length as the client read it; -1 for none.
+ * @param chunked  true for a chunked body.
+ * @param cap      The most bytes taken.
+ * @return FW_REL_OK, or NO_LENGTH, EMPTY or TOO_BIG.
  */
 fw_rel_err_t fw_release_length(int64_t length, bool chunked, uint32_t cap);
 
 /**
- * The SHA-256 SHA256SUMS gives for @p name: @p text of @p n bytes, not
- * terminated.  FW_REL_OK and @p out, or LONG, SUMS_BAD, SUMS_NONE or
- * SUMS_TWICE.
+ * @brief The SHA-256 SHA256SUMS gives for @p name.
+ *
+ * @param text  The file's text, not terminated.
+ * @param n     Its length, bytes.
+ * @param name  The file name looked for.
+ * @param out   Receives the digest.
+ * @return FW_REL_OK and @p out, or LONG, SUMS_BAD, SUMS_NONE or SUMS_TWICE.
  */
 fw_rel_err_t fw_release_parse_sums(const char *text, size_t n,
                                    const char *name,
@@ -254,20 +293,34 @@ typedef struct {
     fw_version_t found;   /**< once ended with FW_REL_OK                 */
 } fw_rel_scan_t;
 
+/**
+ * @brief Start a scan.
+ *
+ * @param s  The scan.
+ */
 void fw_release_scan_init(fw_rel_scan_t *s);
 
 /**
- * @p n more bytes of the answer.  True once the scan has ended: the tag
- * read, or the answer refused; bytes fed after that are not looked at.
+ * @brief Feed @p n more bytes of the answer.
+ *
+ * Bytes fed after the scan has ended are not looked at.
+ *
+ * @param s  The scan.
+ * @param d  The bytes.
+ * @param n  Their number.
+ * @return true once the scan has ended: the tag read, or the answer refused.
  */
 bool fw_release_scan_feed(fw_rel_scan_t *s, const uint8_t *d, size_t n);
 
 /**
- * The scan's result once the answer is whole: FW_REL_OK and the highest
- * no-draft release in @p out, or TAG_NONE (a release without a tag, none
- * but drafts, or the answer ended before the array or the
- * FW_REL_API_RELEASES-th release did), TAG_LONG, TAG_FORM, SCAN_LONG or
- * VERSION.
+ * @brief The scan's result once the answer is whole.
+ *
+ * @param s    The scan.
+ * @param out  Receives the highest no-draft release.
+ * @return FW_REL_OK and the release in @p out, or TAG_NONE (a release without
+ *         a tag, none but drafts, or the answer ended before the array or the
+ *         FW_REL_API_RELEASES-th release did), TAG_LONG, TAG_FORM, SCAN_LONG
+ *         or VERSION.
  */
 fw_rel_err_t fw_release_scan_end(const fw_rel_scan_t *s, fw_version_t *out);
 
@@ -323,7 +376,12 @@ void fw_release_set_line_capped(bool capped);
 bool fw_release_offered(fw_version_t found, fw_version_t running,
                         bool running_ok);
 
-/** "0.20.0" into @p out of FW_REL_VER_TEXT bytes. */
+/**
+ * @brief Write a version as "0.20.0" into @p out of FW_REL_VER_TEXT bytes.
+ *
+ * @param v    The version.
+ * @param out  Receives the text, terminated.
+ */
 void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT]);
 
 /**
@@ -339,8 +397,13 @@ void fw_release_version_text(fw_version_t v, char out[FW_REL_VER_TEXT]);
 void fw_release_image_name(fw_version_t v, char out[FW_REL_NAME_MAX]);
 
 /**
- * The download URL of @p file in release @p v into @p out of @p cap bytes;
- * false when it does not fit.
+ * @brief Write the download URL of @p file in release @p v into @p out.
+ *
+ * @param v     The release.
+ * @param file  The file name.
+ * @param out   Receives the URL, terminated.
+ * @param cap   Size of @p out, bytes.
+ * @return false when the URL does not fit.
  */
 bool fw_release_url(fw_version_t v, const char *file, char *out, size_t cap);
 

@@ -49,7 +49,7 @@ extern "C" {
 
 /** @brief The counter's bits a word carries. */
 #define EDGE_COUNT_BITS 31u
-#define EDGE_COUNT_MASK 0x7FFFFFFFu
+#define EDGE_COUNT_MASK 0x7FFFFFFFu   /**< the mask of those bits */
 
 /**
  * @brief The word the program pushes for an edge at counter value @p count.

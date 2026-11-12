@@ -55,6 +55,7 @@
  * held up -- a panel that has not edged for 150ms has stopped running.
  */
 #define HEARTBEAT_MIN_GAP_MS  4u
+/** @brief The ceiling: a longer interval is a stall. */
 #define HEARTBEAT_MAX_GAP_MS  150u
 
 /**
@@ -81,6 +82,7 @@
 
 /* ------------------------------------------------------- the panel's end */
 
+/** @brief The panel's end: the generator's state. */
 typedef struct {
     uint32_t last_ms;   /**< when the last edge was emitted */
     bool     level;     /**< the level the line is being held at */
@@ -115,10 +117,18 @@ bool heartbeat_gen_step(heartbeat_gen_t *g, uint32_t now_ms, bool alive);
 
 /* ------------------------------------------------ the IOmcu's end */
 
+/**
+ * @brief The IOmcu's end: the monitor's state, with the counts of the
+ *        intervals it rejected.
+ */
 typedef struct {
-    uint32_t last_edge_ms;
+    uint32_t last_edge_ms; /**< when the last edge was seen, ms */
     uint32_t good_run;      /**< consecutive in-window intervals */
     bool     have_edge;     /**< false until the first edge is seen */
+    /**
+     * @brief HEARTBEAT_GOOD_RUN good intervals in a row and no bad one or
+     *        silence since
+     */
     bool     alive;
     /* Kept for the status page: a line that is rejected is worth being able
      * to ask about, and "how" narrows a fault far faster than "not alive". */

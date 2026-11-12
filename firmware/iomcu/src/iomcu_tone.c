@@ -47,8 +47,8 @@ static void tone_order(void)
  * down, and core 1 is told again once the capture runs: it never reads a
  * ring that is being started over.
  */
-static bool s_tone_busy;   /* the last tone_rewire() found core 1 busy */
-static uint64_t s_tone_was_us;   /* the capture's start before a rewire */
+static bool s_tone_busy;   /**< the last tone_rewire() found core 1 busy */
+static uint64_t s_tone_was_us;   /**< the capture's start before a rewire */
 
 /**
  * @brief Makes the capture agree with the TONE page: stopped, then started on

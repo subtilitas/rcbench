@@ -157,7 +157,16 @@ typedef enum {
     ARMING_ACT_GIVE_UP,
 } arming_action_t;
 
+/**
+ * @brief The state of the arming policy: the stop latch, the arm in progress
+ *        and the run clock.  arming_init() clears it and the arming_*() calls
+ *        change it.
+ */
 typedef struct {
+    /**
+     * @brief An ARM has been handed out by arming_step() and no disarm or
+     *        stop has come since
+     */
     bool     armed;
     bool     stopped;         /**< the latch                              */
     /**
@@ -228,7 +237,9 @@ typedef struct {
      * arming_handshake_open().
      */
     uint32_t handshake_until_ms;
+    /** @brief False for an arm that asked no far end, so no deadline holds. */
     bool     handshake_bounded;
+    /** @brief When touch last answered, ms; arming_touch_seen() sets it. */
     uint32_t last_touch_ms;
     bool     in_run;          /**< a run is being timed                   */
     uint32_t run_start_ms;    /**< its start; any tick, 0 included; read

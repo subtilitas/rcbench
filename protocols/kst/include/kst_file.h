@@ -202,7 +202,7 @@ typedef enum {
 
 /** @brief A text as read. */
 typedef struct {
-    kst_file_kind_t kind;
+    kst_file_kind_t kind;   /**< what the file is */
     /** @brief The format version of line 1, 1 to KST_FILE_FORMAT. */
     uint32_t version;
     /**
@@ -293,7 +293,7 @@ typedef enum {
 
 /** @brief What loading a file into a servo does. */
 typedef struct {
-    kst_file_verdict_t verdict;
+    kst_file_verdict_t verdict; /**< whether the file loads */
     kst_file_kind_t kind;       /**< the file's kind, for the display */
     kst_type_t file_type;       /**< the type the file states */
     kst_type_t servo_type;      /**< the servo's type as the caller

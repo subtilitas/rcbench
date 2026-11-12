@@ -165,10 +165,10 @@ void log_csv_opts_default(log_csv_opts_t *opts)
  * @brief One row read from the file: its text, its fields and their counts.
  */
 typedef struct {
-    char store[LOG_ROW_MAX];
-    char *fields[LOG_MAX_COLUMNS];
-    int n;
-    int total;
+    char store[LOG_ROW_MAX]; /**< the row's text; the fields point into it */
+    char *fields[LOG_MAX_COLUMNS]; /**< the fields stored */
+    int n; /**< how many fields are stored */
+    int total; /**< the true field count, which may exceed LOG_MAX_COLUMNS */
 } row_buf_t;
 
 /**
@@ -230,6 +230,7 @@ static bool row_has_content(row_buf_t *row)
     return false;
 }
 
+/** @brief The column names taken for a time column, in lower case. */
 static const char *const k_time_names[] = {
     "time", "timestamp", "zeit", "zeitstempel", "t", "elapsed", "clock",
     "sekunden", "seconds", "millis", "micros",
@@ -349,8 +350,8 @@ static log_err_t sniff_delimiter(log_source_t *src, const log_csv_opts_t *opts,
  * line feed in it as the last bytes, which the reader counts as a cut row
  * and this does not.
  */
-#define TAIL_CHUNK 256u
-#define TAIL_LIMIT 4096u
+#define TAIL_CHUNK 256u /**< bytes read in one step */
+#define TAIL_LIMIT 4096u /**< bytes scanned back from the end at most */
 
 /**
  * @brief Whether the source ends inside a row, read from its last bytes.

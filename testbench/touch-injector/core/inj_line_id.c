@@ -12,31 +12,33 @@
 
 #include <string.h>
 
-#define BOTH (INJ_LINE_GP4 | INJ_LINE_GP5)
-#define NONE 0u
+#define BOTH (INJ_LINE_GP4 | INJ_LINE_GP5)   /**< both lines high */
+#define NONE 0u                              /**< no line */
 
-/* A level change waiting to outlast the glitch filter. */
+/** @brief A level change waiting to outlast the glitch filter. */
 typedef struct {
-    bool     pending;
-    uint32_t at;
-    uint8_t  level;
+    bool     pending;   /**< a change waits */
+    uint32_t at;        /**< the sample it happened at */
+    uint8_t  level;     /**< the level it changes to */
 } pend_t;
 
+/** @brief The classifier's state: the filtered lines and the transactions. */
 typedef struct {
-    uint32_t idle;          /* samples of both-high that make idle       */
-    uint8_t  s;             /* filtered state                           */
-    uint32_t high_since;    /* when s last became BOTH                  */
-    uint8_t  rise_line;     /* the line whose rise made it BOTH         */
-    bool     in_tx;
-    uint32_t start_at;
-    uint8_t  start_line;    /* NONE when both fell at once              */
-    uint32_t rise_at[2];    /* each line's last rise                    */
-    bool     rose[2];
-    uint32_t tx;
-    uint32_t named[2];      /* transactions naming GP4, GP5 as SDA      */
-    uint32_t edges[2];
+    uint32_t idle;          /**< samples of both-high that make idle       */
+    uint8_t  s;             /**< filtered state                           */
+    uint32_t high_since;    /**< when s last became BOTH                  */
+    uint8_t  rise_line;     /**< the line whose rise made it BOTH         */
+    bool     in_tx;         /**< a transaction is open */
+    uint32_t start_at;      /**< the sample its START happened at */
+    uint8_t  start_line;    /**< NONE when both fell at once              */
+    uint32_t rise_at[2];    /**< each line's last rise                    */
+    bool     rose[2];       /**< each line has risen */
+    uint32_t tx;            /**< transactions seen whole */
+    uint32_t named[2];      /**< transactions naming GP4, GP5 as SDA      */
+    uint32_t edges[2];      /**< level changes on GP4, GP5 */
 } cls_t;
 
+/** @brief Close the open transaction and count the line its START and STOP name. */
 static void end_tx(cls_t *c)
 {
     const uint8_t stop_line = c->rise_line;
@@ -47,7 +49,7 @@ static void end_tx(cls_t *c)
     }
 }
 
-/* One filtered level change of @p line to @p level at @p t. */
+/** @brief One filtered level change of @p line to @p level at @p t. */
 static void apply(cls_t *c, uint32_t t, uint8_t line, uint8_t level)
 {
     const uint8_t before = c->s;
@@ -89,7 +91,7 @@ static void apply(cls_t *c, uint32_t t, uint8_t line, uint8_t level)
     }
 }
 
-/* Emit the pending changes due by @p t, earliest first. */
+/** @brief Emit the pending changes due by @p t, earliest first. */
 static void flush(cls_t *c, pend_t p[2], uint32_t t)
 {
     for (;;) {

@@ -180,8 +180,8 @@ typedef struct {
 
 /** @brief One edge: the tick it happened at and the level after it. */
 typedef struct {
-    uint64_t t;
-    bool     level;
+    uint64_t t;       /**< the tick */
+    bool     level;   /**< the level after the edge */
 } tone_edge_t;
 
 /** @brief One window of window_us. */
@@ -193,6 +193,7 @@ typedef struct {
     uint32_t bursts;         /**< bursts starting in the window           */
 } tone_window_t;
 
+/** @brief What the ends of a beep were. */
 typedef enum {
         /** @brief Began at a pitch change, with no silence before it. */
     TONE_BEEP_AFTER_CHANGE  = 1u << 0,
@@ -209,7 +210,7 @@ typedef struct {
      *        carrier rate.
      */
     float    carrier_hz;
-    uint32_t bursts;
+    uint32_t bursts;         /**< bursts in the beep */
     uint32_t periods;        /**< in the mean                             */
     uint8_t  flags;          /**< tone_beep_flag_t                        */
 } tone_beep_t;
@@ -238,8 +239,13 @@ typedef struct {
 
 /** @brief Detector state.  The fields belong to tone.c. */
 typedef struct {
-    tone_cfg_t c;
-    uint64_t win_ticks, per_min, per_max, car_max, glitch, gap;
+    tone_cfg_t c;            /**< the settings */
+    uint64_t win_ticks /**< a window, ticks */,
+             per_min /**< the shortest period in range, ticks */,
+             per_max /**< the longest period in range, ticks */,
+             car_max /**< the longest carrier-rate interval, ticks */,
+             glitch /**< lows up to this are glitches, ticks */,
+             gap /**< silence that ends a run, ticks */;
     uint64_t start_low;      /**< twice the hold-off, ticks               */
     /**
      * @brief The shortest time between two burst starts that makes a counted
@@ -257,31 +263,37 @@ typedef struct {
              last_fall;                     /**< time of the last falling edge          */
 
     /* The run: bursts with no silence of gap between them. */
-    bool     in_run;
+    bool     in_run;         /**< a run is open */
     uint64_t car_low;        /**< shortest carrier-rate low; 0 none       */
     uint64_t car_high;       /**< longest carrier-rate high               */
     uint64_t car_rise;       /**< shortest rise interval inside a burst,
                                   not its first; 0 none                   */
     bool     rise_started;   /**< the last rise started a burst           */
-    uint64_t burst_start, burst_e_before;
+    uint64_t burst_start /**< the open burst's first rise, ticks */,
+             burst_e_before /**< the last edge before it, ticks */;
 
     /* The beep under way. */
-    uint64_t b_start;
-    uint64_t b_sum;
-    uint32_t b_n, b_bursts;
-    uint8_t  b_flags;
-    tone_pend_t pend[TONE_BLOCK];
-    uint32_t n_pend;
+    uint64_t b_start;        /**< its first rise, ticks */
+    uint64_t b_sum;          /**< the sum of its periods, ticks */
+    uint32_t b_n /**< its periods */,
+             b_bursts /**< its bursts */;
+    uint8_t  b_flags;        /**< its tone_beep_flag_t */
+    tone_pend_t pend[TONE_BLOCK];   /**< periods waiting for the pitch check */
+    uint32_t n_pend;         /**< how many */
 
     /* The window under way, and the last one finished. */
-    uint64_t w_index, w_end, w_sum;
-    uint32_t w_n, w_bursts;
-    bool     have_window;
-    tone_window_t window;
+    uint64_t w_index /**< its index */,
+             w_end /**< its end, ticks */,
+             w_sum /**< the sum of its periods, ticks */;
+    uint32_t w_n /**< its periods */,
+             w_bursts /**< its bursts */;
+    bool     have_window;    /**< a window has finished */
+    tone_window_t window;    /**< the last window finished */
 
-    tone_beep_t q[TONE_BEEP_QUEUE];
-    uint32_t q_head, q_len;
-    tone_stats_t st;
+    tone_beep_t q[TONE_BEEP_QUEUE];   /**< the queue of beeps */
+    uint32_t q_head /**< the oldest beep */,
+             q_len /**< beeps queued */;
+    tone_stats_t st;         /**< the counters */
 } tone_t;
 
 /**

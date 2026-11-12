@@ -15,9 +15,9 @@
  * Every other register has rules that read that register alone.
  */
 static const uint8_t k_position[] = { 0x07, 0x08, 0x09, 0x0A, 0x0B, 0x0C, 0x0D };
-static const uint8_t k_speed[] = { 0x04, 0x1B, 0x1C };
+static const uint8_t k_speed[] = { 0x04, 0x1B, 0x1C };   /**< the speed registers */
 
-#define GROUPS 2u
+#define GROUPS 2u   /**< register groups whose rules read each other */
 
 /**
  * @brief What a job does next.
@@ -39,6 +39,11 @@ enum {
 #define UNITS_CHOOSE KST_PLAN_PIECE_UNITS  /* a pass over 256 detour values */
 #define UNITS_SETTLE 4u                 /**< the settled mark of one write */
 
+/**
+ * @brief Whether bit @p i of the set is 1.
+ * @param set  The bit set, 8 bits a byte, bit 0 first.
+ * @param i    The bit.
+ */
 static bool bit_of(const uint8_t *set, unsigned i)
 {
     return (set[i / 8u] & (1u << (i % 8u))) != 0u;

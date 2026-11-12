@@ -133,9 +133,9 @@ extern "C" {
 
 /** @brief The module's range, from the vendor's page; not measured here. */
 #define PDMINI_V_MIN_MV   1000u
-#define PDMINI_V_MAX_MV  20000u
-#define PDMINI_I_MIN_MA     50u
-#define PDMINI_I_MAX_MA   3000u
+#define PDMINI_V_MAX_MV  20000u   /**< the highest output voltage, mV */
+#define PDMINI_I_MIN_MA     50u   /**< the lowest current limit, mA */
+#define PDMINI_I_MAX_MA   3000u   /**< the highest current limit, mA */
 /**
  * @brief The margin between the input the module reports and a live output's
  *        set point that the buck is taken to need: a buck cannot put out more
@@ -288,22 +288,23 @@ typedef struct {
 /** @brief Driver state: what is asked, what is known, and the transaction
  *         under way. */
 typedef struct {
-    pdmini_io_t     io;
-    pdmini_status_t st;
+    pdmini_io_t     io;      /**< the hardware */
+    pdmini_status_t st;      /**< what the caller reads */
 
     /* What is asked for. */
-    bool     want_output;
+    bool     want_output;    /**< the output is asked on */
     bool     want_set;       /**< set points named; none written before   */
-    uint16_t want_mv, want_ma;
+    uint16_t want_mv /**< the set voltage asked, mV */,
+             want_ma /**< the set current limit asked, mA */;
 
     /* What is known. */
-    bool     identified;
+    bool     identified;     /**< WHO_AM_I answered */
     bool     answered;       /**< identified once since pdmini_init()      */
     bool     restored;       /**< wiring from before a restart: maybe on   */
     bool     hurry;          /**< WHO_AM_I again as soon as one has failed:
                                   pdmini_hurry()                          */
     uint8_t  who_misses;     /**< WHO_AM_I answered by not a byte, so far  */
-    uint16_t who_failed;     /* WHO_AM_I without a valid answer: a count
+    uint16_t who_failed;     /**< WHO_AM_I without a valid answer: a count
                                 to compare for a change, wrapping from
                                 65535 to 0                              */
     bool     state_known;    /**< READ_OUTPUT_STATE answered since online */
@@ -316,42 +317,46 @@ typedef struct {
     bool     on_confirmed;   /**< and twice: relied on                     */
     bool     on_sent;        /**< an ON went out, not yet settled by a read */
     bool     reset_owed;     /**< SYSTEM_RESET asked, not yet sent         */
-    bool     held_off;       /* switched off for set points that would not
+    bool     held_off;       /**< switched off for set points that would not
                                 take; until an OFF is asked             */
     bool     off_owed;       /**< gone while on: an OFF is sent blind      */
     bool     blind_due;      /**< a WHO_AM_I went unanswered: OFF blind   */
     uint8_t  en_tries;       /**< OUTPUT_EN writes towards the wanted state */
     bool     en_pending;     /**< written, waiting for the confirming read */
-    uint32_t en_at;
+    uint32_t en_at;          /**< when OUTPUT_EN was written, ms */
     bool     data_pending;   /**< OUTPUT_DATA written, not yet read back   */
     uint8_t  data_tries;     /**< OUTPUT_DATA writes towards the set points */
-    uint32_t data_at;
+    uint32_t data_at;        /**< when OUTPUT_DATA was written, ms */
     uint8_t  fails;          /**< consecutive                              */
     uint8_t  state_fails;    /**< READ_OUTPUT_STATE failed, consecutive    */
     uint8_t  input_misses;   /**< READ_INPUT_STATE unanswered, consecutive */
     bool     input_known;    /**< READ_INPUT_STATE answered, the last read */
     bool     input_seen;     /**< and this firmware has answered it at all */
-    uint8_t  on_step;        /* reads before an ON: 1 data asked, 2 data
+    uint8_t  on_step;        /**< reads before an ON: 1 data asked, 2 data
                                 seen, 3 slot asked, 4 slot seen          */
-    bool     polled_late;    /* the last job a reading that went before
+    bool     polled_late;    /**< the last job a reading that went before
                                 the set points: an overdue one, or the
                                 input read before a set point or an ON  */
-    uint8_t  sag_reads;      /* input reads in a row under a live output's
+    uint8_t  sag_reads;      /**< input reads in a row under a live output's
                                 set point and the headroom              */
     uint8_t  check;          /**< pdmini_check_t, PDMINI_CHECK_SENT between */
 
     /* The transaction under way. */
-    enum { PD_IDLE, PD_ATTACH, PD_WAIT, PD_GAP } phase;
-    uint8_t  req[8];
-    size_t   req_n;
-    uint8_t  cmd;
+    enum { PD_IDLE, PD_ATTACH, PD_WAIT, PD_GAP } phase;   /**< where the transaction stands */
+    uint8_t  req[8];         /**< the request */
+    size_t   req_n;          /**< its length, bytes */
+    uint8_t  cmd;            /**< its command byte */
     bool     write;          /**< answered by nothing                     */
-    uint8_t  rx[72];
-    size_t   rx_n;
+    uint8_t  rx[72];         /**< the reply so far */
+    size_t   rx_n;           /**< its length, bytes */
     uint32_t t;              /**< when the phase began, or the deadline   */
-    uint32_t deadline;
+    uint32_t deadline;       /**< when the transaction gives up, ms */
 
-    uint32_t last_display, last_state, last_input, last_identify, last_slot;
+    uint32_t last_display /**< when the display was last read, ms */,
+             last_state /**< when the output state was last read, ms */,
+             last_input /**< when the input state was last read, ms */,
+             last_identify /**< when WHO_AM_I was last asked, ms */,
+             last_slot /**< when the slot was last read, ms */;
 } pdmini_t;
 
 /**

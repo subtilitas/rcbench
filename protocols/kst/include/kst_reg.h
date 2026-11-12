@@ -45,13 +45,13 @@ extern "C" {
 
 /** @brief The 32 registers, by address. */
 typedef struct {
-    uint8_t r[KST_REG_COUNT];
+    uint8_t r[KST_REG_COUNT];   /**< the registers, by address */
 } kst_image_t;
 
 /** @brief Register addresses that code outside the field table names. */
 #define KST_REG_DUTY_COPY 0x01u
-#define KST_REG_DUTY      0x02u
-#define KST_REG_NODE_ADDR 0x1Du
+#define KST_REG_DUTY      0x02u   /**< Max. Duty */
+#define KST_REG_NODE_ADDR 0x1Du   /**< the node address */
 
 /**
  * @brief Every bit of the 32 registers belongs to exactly one field.

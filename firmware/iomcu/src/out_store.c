@@ -43,17 +43,22 @@
  * has four; the partition table is written for the four.
  */
 #define STORE_FLASH_BYTES (4u * 1024u * 1024u)
-#define STORE_SECTORS     OUT_STORE_SECTORS
-#define STORE_SLOT_BYTES  OUT_STORE_SLOT_BYTES
+#define STORE_SECTORS     OUT_STORE_SECTORS /**< sectors of the store */
+#define STORE_SLOT_BYTES  OUT_STORE_SLOT_BYTES /**< bytes of one slot: 512 */
+/** @brief Slots in one sector. */
 #define STORE_RECORDS     (FLASH_SECTOR_SIZE / STORE_SLOT_BYTES)
+/** @brief Slots in the store. */
 #define STORE_SLOTS       (STORE_SECTORS * STORE_RECORDS)
 /**
  * @brief The one-page slots of version 7 and older, read until the first
  * version 8 record is written (out_store_rec.h).
  */
 #define STORE_V7_BYTES    OUT_STORE_SLOT_BYTES_V7
+/** @brief Version 7 slots in one sector. */
 #define STORE_V7_RECORDS  (FLASH_SECTOR_SIZE / STORE_V7_BYTES)
+/** @brief Version 7 slots in the store. */
 #define STORE_V7_SLOTS    (STORE_SECTORS * STORE_V7_RECORDS)
+/** @brief Flash offset of the store, from partitions.json. */
 #define STORE_OFFSET      IOMCU_STORE_OFFSET
 
 /**
@@ -64,6 +69,7 @@
  */
 #define STORE_OLD_OFFSET  (STORE_FLASH_BYTES - STORE_SECTORS * FLASH_SECTOR_SIZE)
 
+/** @brief The address the store is read at. */
 #define STORE_READ_BASE   XIP_NOCACHE_NOALLOC_NOTRANSLATE_BASE
 
 /*
@@ -122,11 +128,11 @@ _Static_assert(STORE_V7_BYTES == FLASH_PAGE_SIZE
  * set one to pay for one it cleared (out_store_map.h).
  */
 static bool        s_pending;
-static uint32_t    s_asked_ms;
-static out_store_t s_want;
-static bool        s_have_saved;
-static out_store_t s_saved;
-static uint8_t     s_last_record;
+static uint32_t    s_asked_ms; /**< when the pending save was asked for, ms */
+static out_store_t s_want; /**< the configuration the pending save writes */
+static bool        s_have_saved;  /**< s_saved holds a configuration */
+static out_store_t s_saved;       /**< the last one written or read */
+static uint8_t     s_last_record; /**< the slot of the live record */
 
 /**
  * @brief How long the last erase and the last program each took, with
@@ -138,8 +144,8 @@ static uint8_t     s_last_record;
  * first.  Measured rather than compensated for: what a window does to the link
  * is decided by its length, and the length belongs to the flash part.
  */
-static uint32_t    s_last_erase_us;
-static uint32_t    s_last_program_us;
+static uint32_t    s_last_erase_us;     /**< the last erase, us */
+static uint32_t    s_last_program_us;   /**< the last program, us */
 
 /**
  * @brief Whether the store is worth looking at for a sector to erase.
@@ -159,9 +165,9 @@ static bool        s_reclaim_wanted = true;
  * entitled to assume is aligned when it is not.
  */
 static union {
-    uint8_t  bytes[STORE_SLOT_BYTES];
-    uint32_t align;
-} s_page;
+    uint8_t  bytes[STORE_SLOT_BYTES]; /**< the page's bytes */
+    uint32_t align; /**< forces 32-bit alignment of bytes */
+} s_page;   /**< the page staged for the next program */
 
 /**
  * @brief The live record of the layout before version 8, by sector, while the
@@ -244,8 +250,8 @@ static void survey(out_store_rec_t *recs, uint8_t n, uint32_t bytes,
  * nothing.  The timer is a peripheral and reads with interrupts off.
  */
 typedef struct {
-    uint32_t off;
-    bool     erase;       /* a sector erase; else a program of data        */
+    uint32_t off; /**< flash offset, bytes */
+    bool     erase;       /**< a sector erase; else a program of data        */
     bool     done;                /**< the operation ran                       */
     uint32_t window_us;           /**< how long the window held interrupts off, µs */
     const uint8_t *data;                /**< what a program writes */
@@ -279,7 +285,7 @@ static void flash_op_run(void *arg)
  * @brief When core 1 last failed to stop, and whether that is recent.
  */
 static bool     s_refused;
-static uint32_t s_refused_ms;
+static uint32_t s_refused_ms; /**< the time core 1 last failed to stop, ms */
 
 /**
  * @brief How a window opens, by where core 1 stands (out_store.h):
@@ -303,6 +309,7 @@ static uint32_t s_refused_ms;
  *             take that same assert, or refuse.
  */
 typedef enum { STORE_ALONE = 0, STORE_PARKABLE, STORE_OFF } store_mode_t;
+/** @brief The mode the store is in. */
 static store_mode_t s_mode = STORE_ALONE;
 
 void out_store_core1_parkable(void)

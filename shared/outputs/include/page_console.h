@@ -20,6 +20,7 @@
  * Lines end with CR or LF; tokens are separated by spaces; numbers are
  * decimal or 0x hexadecimal.  Commands:
  *
+ * @code
  *   help                          the commands
  *   pages                         each page: number, registers, rw or ro
  *   r <page> <off> [n]            read n registers (1 to 32, default 1)
@@ -42,6 +43,7 @@
  *   hitec c <port> <cmd> <p1> <p2>          a classic command and its reply
  *   hitec d <port> read <id> <addr>         a D series read and its answer
  *   hitec d <port> write <id> <addr> <value>
+ * @endcode
  *
  * `more` as the last token of send, listen, level, power, c or d sets
  * LINK_HT_W_CMD_MORE in that command: more steps of this write follow.
@@ -50,8 +52,8 @@
  * from the servo's supply, 10000ms after the OFF at most
  * (SUPPLY_PAGE_WRITE_WAIT_MS).
  *
- * <dec> is none, c:<cmd>, d:<addr> or l:<byte> (link_hitec_dec_t and its
- * argument).  The hitec commands stage the HITEC page's registers, name
+ * `<dec>` is none, `c:<cmd>`, `d:<addr>` or `l:<byte>` (link_hitec_dec_t and
+ * its argument).  The hitec commands stage the HITEC page's registers, name
  * their CRC (cyclic redundancy check) and the next SEQ, and put
  * LINK_HITEC_WRITE_KEY in every command that puts a byte on the wire.  A
  * command that starts something is followed by its report when the port
@@ -108,7 +110,7 @@ typedef bool (*page_console_ext_fn)(void *ctx, char **tok, unsigned n);
  *        the staged HITEC registers and the work space of the requests.
  */
 typedef struct {
-    const link_dev_t *dev;
+    const link_dev_t *dev; /**< the page table's device */
     page_console_ext_fn ext; /**< a build's own commands, or NULL */
     void    *ext_ctx;        /**< and its context */
     char     line[PAGE_CONSOLE_LINE_MAX + 1u]; /**< the line so far */
@@ -122,10 +124,11 @@ typedef struct {
     uint8_t  watch;      /**< a HITEC operation runs: report its end */
     uint8_t  more;       /**< the line's step carries LINK_HT_W_CMD_MORE */
     /* Work space, here rather than on the caller's stack. */
-    char       fmt[PAGE_CONSOLE_OUT_LINE];
-    link_msg_t req;
-    link_msg_t reply;
-    uint16_t   regs[LINK_HT_COUNT];
+    char       fmt[PAGE_CONSOLE_OUT_LINE]; /**< scratch for one output line */
+    link_msg_t req; /**< scratch: the request */
+    link_msg_t reply; /**< scratch: the reply */
+    uint16_t   regs[LINK_HT_COUNT]; /**< scratch: the HITEC page registers */
+    /** @brief Scratch: the HITEC DATA views, 16 registers each. */
     uint16_t   data[3][16];
 } page_console_t;
 

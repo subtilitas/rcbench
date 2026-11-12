@@ -46,7 +46,7 @@ extern "C" {
 
 /** @brief Raw channel range: eleven bits. */
 #define SBUS_RAW_MIN 0u
-#define SBUS_RAW_MAX 2047u
+#define SBUS_RAW_MAX 2047u   /**< the highest raw value */
 
 /**
  * @brief The two ends of the range a transmitter at its endpoints actually
@@ -95,7 +95,7 @@ typedef struct {
     bool     have_time;             /**< true once last_byte_us is set */
 
     /* Diagnostics, for the analyser view. */
-    uint32_t frames;
+    uint32_t frames;        /**< frames decoded */
     uint32_t resyncs;       /**< bytes thrown away looking for a boundary */
     uint32_t bad_footer;    /**< right length, right header, wrong tail */
 } sbus_decoder_t;

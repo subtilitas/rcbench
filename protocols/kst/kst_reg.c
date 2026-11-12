@@ -23,16 +23,19 @@ enum {
     CONV_THERMO,      /* count of 1 bits upward from bit 0 */
 };
 
+/** @brief A field in one register: @p bits bits from bit @p shift. */
 #define ONE(name, reg, shift, bits, access, unit, conv) \
     { name, reg, shift, bits, 0, 0, 0, access, unit, conv }
+/** @brief A field over two registers: all of @p lo and @p hi_bits bits of @p hi from bit @p hi_shift. */
 #define TWO(name, lo, hi, hi_shift, hi_bits, access, unit, conv) \
     { name, lo, 0, 8, hi, hi_shift, hi_bits, access, unit, conv }
+/** @brief Bits the vendor tool gives no name. */
 #define UNNAMED(reg, shift, bits) \
     ONE("", reg, shift, bits, KST_ACCESS_NEVER, KST_UNIT_RAW, CONV_RAW)
 
-#define ED KST_ACCESS_EDITABLE
-#define LK KST_ACCESS_LOCKED
-#define NV KST_ACCESS_NEVER
+#define ED KST_ACCESS_EDITABLE   /**< short for KST_ACCESS_EDITABLE */
+#define LK KST_ACCESS_LOCKED     /**< short for KST_ACCESS_LOCKED */
+#define NV KST_ACCESS_NEVER      /**< short for KST_ACCESS_NEVER */
 
 /** @brief In the order of kst_field_id_t. */
 static const kst_field_t k_fields[KST_F_COUNT] = {
@@ -334,6 +337,7 @@ static void fp_fail(kst_fingerprint_t *fp, kst_fp_rule_t rule, uint32_t regs)
     fp->regs |= regs;
 }
 
+/** @brief The bit of register @p reg in a register mask. */
 #define REG_BIT(reg) ((uint32_t)1 << (reg))
 
 bool kst_fingerprint(const kst_image_t *img, kst_fingerprint_t *out)

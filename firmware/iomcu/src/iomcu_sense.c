@@ -121,9 +121,12 @@ void supply_boot_off(void)
     pdmini_hurry(&s_pd, false);
 }
 
-/*
- * The UART released and the pins this page names reserved, without
- * attaching: true when a PIO block can serve them, tried and let go again.
+/**
+ * @brief Releases the UART and reserves the pins the SUPPLY page names,
+ *        without attaching.
+ *
+ * @return true when a PIO block can serve the pins; they are tried and let go
+ *     again.
  */
 static bool supply_probe(void)
 {

@@ -277,8 +277,8 @@ typedef struct {
  *        registers and the running or last operation.
  */
 typedef struct {
-    kst_port_hw_t hw;
-    kst_session_t session;
+    kst_port_hw_t hw;       /**< the hardware */
+    kst_session_t session;  /**< the session */
     kst_image_t work;    /**< the staged image of a command: not on the
                               stack */
     uint16_t staged[LINK_KS_W_STAGED];  /**< the registers staged for the next command */

@@ -68,11 +68,11 @@ extern "C" {
  *        read from records an earlier build wrote.
  */
 #define OUT_STORE_VERSION    8u
-#define OUT_STORE_VERSION_V7 7u
-#define OUT_STORE_VERSION_V6 6u
-#define OUT_STORE_VERSION_V5 5u
-#define OUT_STORE_VERSION_V4 4u
-#define OUT_STORE_VERSION_V3 3u
+#define OUT_STORE_VERSION_V7 7u   /**< version 7, one-page slots */
+#define OUT_STORE_VERSION_V6 6u   /**< version 6, one-page slots */
+#define OUT_STORE_VERSION_V5 5u   /**< version 5, one-page slots */
+#define OUT_STORE_VERSION_V4 4u   /**< version 4, one-page slots */
+#define OUT_STORE_VERSION_V3 3u   /**< version 3, one-page slots */
 
 /**
  * @brief What is kept: the two pages that describe the outputs; the PD mini's
@@ -106,7 +106,7 @@ typedef struct {
 /** @brief The slot a version 8 record is written into, and the one-page slot of
  *  versions 3 to 7. */
 #define OUT_STORE_SLOT_BYTES    512u
-#define OUT_STORE_SLOT_BYTES_V7 256u
+#define OUT_STORE_SLOT_BYTES_V7 256u   /**< the one-page slot of versions 3 to 7 */
 
 /** @brief Magic at the start of a record: "rcbo" in ASCII. */
 #define OUT_STORE_MAGIC 0x7263626FuL
@@ -123,8 +123,8 @@ typedef struct {
 
 /** @brief A record as the newest version writes it. */
 typedef struct {
-    out_store_hdr_t hdr;
-    out_store_t     cfg;
+    out_store_hdr_t hdr;   /**< the head */
+    out_store_t     cfg;   /**< the configuration */
 } out_store_record_t;
 
 /**

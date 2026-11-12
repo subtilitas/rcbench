@@ -18,22 +18,24 @@
 #define WATCH_OPTS                                                         \
     .options = settings_opts_watch, .option_count = (uint8_t)SENS_W_COUNT
 
-/* The rows' index in k_rows: an id less the first row's. */
+/** @brief The rows' index in k_rows: an id less the first row's. */
 #define AT(id) ((int)(id) - (int)SET_INA_FIT_0)
+/** @brief The rows of the SENSORS category. */
 #define N_ROWS (SET_INA_CH_LAST - SET_INA_FIT_0 + 1)
 
+/** @brief Part @p a's FITTED row. */
 #define FIT_ROW(a)                                                         \
     [AT(SET_INA_FIT(a))] = {                                               \
         "ina_fit_" #a, "",                                                 \
         SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0, 0.0f }
 
-/*
- * A channel's rows: WATCHES, SHUNT and LIMIT.  The shunt's range is the
- * page's, 5.0 to 1000.0mOhm, and 0 switches the channel off; 100.0mOhm
- * is the DAOKAI module's 0.1Ohm, which reads to 1.638A.  0x40 CH1
- * watches OUT 1 by default (owner decision 1, 2026-10-20).  The limit's
- * range is SENSE_LIMIT's, 10 to 32767mA, in 10mA steps on the arrows,
- * 0 (OFF) for none.
+/**
+ * @brief A channel's rows: WATCHES, SHUNT and LIMIT. The shunt's range is the
+ *        page's, 5.0 to 1000.0mOhm, and 0 switches the channel off; 100.0mOhm
+ *        is the DAOKAI module's 0.1Ohm, which reads to 1.638A. 0x40 CH1
+ *        watches OUT 1 by default (owner decision 1, 2026-10-20). The limit's
+ *        range is SENSE_LIMIT's, 10 to 32767mA, in 10mA steps on the arrows,
+ *        0 (OFF) for none.
  */
 #define CH_ROWS(a, ch, watch_def)                                          \
     [AT(SET_INA_W(3 * (a) + (ch) - 1))] = {                                \
@@ -48,9 +50,14 @@
         "ina_lim_" #a #ch, "mA",                                           \
         SET_CAT_SENSORS, SET_TYPE_INT, 0, 32767, 10, 0, NULL, 0, 10.0f }
 
+/**
+ * @brief The three channel rows of part @p a, whose CH1 watches @p w1 by
+ *        default.
+ */
 #define PART_ROWS(a, w1)                                                   \
     CH_ROWS(a, 1, w1), CH_ROWS(a, 2, SENS_W_NONE), CH_ROWS(a, 3, SENS_W_NONE)
 
+/** @brief The schema rows of the SENSORS category, indexed by AT(). */
 static const setting_def_t k_rows[N_ROWS] = {
     FIT_ROW(0), FIT_ROW(1), FIT_ROW(2), FIT_ROW(3),
     PART_ROWS(0, SENS_W_OUT_1),
@@ -59,10 +66,10 @@ static const setting_def_t k_rows[N_ROWS] = {
     PART_ROWS(3, SENS_W_NONE),
 };
 
-/*
- * The one INA3221 of 0.21, kept one release for migration and for a panel
- * taken back to it: in no category (SET_CAT_COUNT), so on no screen and in
- * no category's reset, and loaded and saved as stored.
+/**
+ * @brief The one INA3221 of 0.21, kept one release for migration and for a
+ *        panel taken back to it: in no category (SET_CAT_COUNT), so on no
+ *        screen and in no category's reset, and loaded and saved as stored.
  */
 static const setting_def_t k_kept[4] = {
     {                                   /* SET_INA3221_EN */
@@ -155,7 +162,10 @@ void settings_sensors_unset(float *values)
     }
 }
 
-/* Value @p i seeded with @p v where the store had none.  Whether it was. */
+/**
+ * @brief Value @p i seeded with @p v where the store had none. Whether it
+ *        was.
+ */
 static int seed(float *values, setting_id_t id, float v)
 {
     if (!isnan(values[id])) {
@@ -266,9 +276,11 @@ bool settings_sensors_set_tester_rail(uint16_t code)
     return moved;
 }
 
-/* Whether WATCH value @p code is the servo tester's target @p target:
- * any output or the tester's rail for OUTPUTS (0), programming port n or
- * the ports' 5V for n. */
+/**
+ * @brief Whether WATCH value @p code is the servo tester's target @p target:
+ *        any output or the tester's rail for OUTPUTS (0), programming port n
+ *        or the ports' 5V for n.
+ */
 static bool watches_target(uint16_t code, int target)
 {
     if (target >= 1 && target <= (int)LINK_SM_PARTS) {

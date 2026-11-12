@@ -141,7 +141,7 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
 
 /** @brief The response rate, as a fraction of the DShot rate: 5/4. */
 #define DSHOT_TELEM_RATE_NUM 5u
-#define DSHOT_TELEM_RATE_DEN 4u
+#define DSHOT_TELEM_RATE_DEN 4u   /**< the rate's denominator */
 
 /**
  * @brief Units of the extended telemetry payload, per count of its eight bits
@@ -151,8 +151,8 @@ uint16_t dshot_throttle(uint16_t command, uint16_t span);
  * Celsius per count.
  */
 #define DSHOT_EDT_MV_PER_COUNT      250u
-#define DSHOT_EDT_A_PER_COUNT       1u
-#define DSHOT_EDT_DEGC_PER_COUNT    1u
+#define DSHOT_EDT_A_PER_COUNT       1u   /**< amperes a count */
+#define DSHOT_EDT_DEGC_PER_COUNT    1u   /**< degrees Celsius a count */
 
 /**
  * @brief Millivolts for a DSHOT_TELEM_VOLTAGE payload (at most 255 * 250 =
@@ -203,7 +203,7 @@ typedef enum {
  * @brief One decoded response.
  */
 typedef struct {
-    dshot_telem_kind_t kind;
+    dshot_telem_kind_t kind;   /**< what the response carries */
     uint16_t payload;        /**< the twelve bits, whatever they meant    */
     uint32_t period_us;      /**< kind == ERPM: one electrical period     */
     uint32_t erpm;           /**< kind == ERPM: 0 when it is not turning  */

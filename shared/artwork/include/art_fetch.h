@@ -48,7 +48,7 @@ typedef struct {
      * False when it was refused or went unanswered.
      */
     bool (*write_reg)(void *ctx, uint8_t page, uint8_t reg, uint16_t value);
-    void *ctx;
+    void *ctx; /**< handed to every call */
 } art_transport_t;
 
 /** @brief States of a fetch. */
@@ -61,9 +61,9 @@ typedef enum {
 
 /** @brief State of one fetch. */
 typedef struct {
-    link_artxfer_t    x;
-    art_fetch_state_t state;
-    const char       *why;
+    link_artxfer_t    x; /**< the transfer of the drawing's blocks */
+    art_fetch_state_t state; /**< where the fetch stands */
+    const char       *why; /**< the reason of a failure; see art_fetch_why() */
 } art_fetch_t;
 
 /**

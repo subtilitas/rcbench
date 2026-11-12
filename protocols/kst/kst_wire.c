@@ -18,7 +18,7 @@
  * No other prefix is known.
  */
 #define PREFIX_READ  0x200u
-#define PREFIX_WRITE 0x080u
+#define PREFIX_WRITE 0x080u   /**< the write prefix */
 
 /**
  * @brief Append one half-cell level to a frame.

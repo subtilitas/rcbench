@@ -43,26 +43,39 @@ extern "C" {
 
 /* ------------------------------------------------------------------ colour */
 
+/** @brief An RGB565 color: 5 bits red, 6 bits green, 5 bits blue. */
 typedef uint16_t gfx_color_t;
 
-/** Pack 8-bit R/G/B into RGB565. */
+/**
+ * @brief Pack 8-bit R/G/B into RGB565.
+ * @param r  Red, 0 to 255.
+ * @param g  Green, 0 to 255.
+ * @param b  Blue, 0 to 255.
+ */
 #define GFX_RGB(r, g, b)                                                    \
     ((gfx_color_t)((((uint16_t)(r) & 0xF8u) << 8) |                         \
                    (((uint16_t)(g) & 0xFCu) << 3) |                         \
                    (((uint16_t)(b) & 0xF8u) >> 3)))
 
-#define GFX_BLACK       GFX_RGB(0, 0, 0)
-#define GFX_WHITE       GFX_RGB(255, 255, 255)
-#define GFX_RED         GFX_RGB(255, 0, 0)
-#define GFX_GREEN       GFX_RGB(0, 255, 0)
-#define GFX_BLUE        GFX_RGB(0, 0, 255)
-#define GFX_YELLOW      GFX_RGB(255, 255, 0)
-#define GFX_CYAN        GFX_RGB(0, 255, 255)
-#define GFX_MAGENTA     GFX_RGB(255, 0, 255)
+#define GFX_BLACK       GFX_RGB(0, 0, 0)         /**< black */
+#define GFX_WHITE       GFX_RGB(255, 255, 255)   /**< white */
+#define GFX_RED         GFX_RGB(255, 0, 0)       /**< red */
+#define GFX_GREEN       GFX_RGB(0, 255, 0)       /**< green */
+#define GFX_BLUE        GFX_RGB(0, 0, 255)       /**< blue */
+#define GFX_YELLOW      GFX_RGB(255, 255, 0)     /**< yellow */
+#define GFX_CYAN        GFX_RGB(0, 255, 255)     /**< cyan */
+#define GFX_MAGENTA     GFX_RGB(255, 0, 255)     /**< magenta */
+/** @brief A grey of level @p v, 0 to 255. */
 #define GFX_GREY(v)     GFX_RGB(v, v, v)
 
 
-/** Split RGB565 back into 8-bit components (values are quantised). */
+/**
+ * @brief Split RGB565 back into 8-bit components (values are quantised).
+ * @param c  The color.
+ * @param r  Receives red, 0 to 255; NULL skips it.
+ * @param g  Receives green, 0 to 255; NULL skips it.
+ * @param b  Receives blue, 0 to 255; NULL skips it.
+ */
 static inline void gfx_unpack(gfx_color_t c, uint8_t *r, uint8_t *g, uint8_t *b)
 {
     uint8_t r5 = (uint8_t)((c >> 11) & 0x1Fu);
@@ -73,20 +86,33 @@ static inline void gfx_unpack(gfx_color_t c, uint8_t *r, uint8_t *g, uint8_t *b)
     if (b) { *b = (uint8_t)((b5 << 3) | (b5 >> 2)); }
 }
 
-/** Linear blend of two colours, t in [0,255] where 0 == a and 255 == b. */
+/**
+ * @brief Linear blend of two colours, t in [0,255] where 0 == a and 255 == b.
+ * @param a  The color at t = 0.
+ * @param b  The color at t = 255.
+ * @param t  The weight of @p b, 0 to 255.
+ * @return The blend.
+ */
 gfx_color_t gfx_lerp(gfx_color_t a, gfx_color_t b, uint8_t t);
 
 /* ----------------------------------------------------------------- geometry */
 
+/** @brief A rectangle: left and top edge, width and height, in pixels. */
 typedef struct {
-    int16_t x, y, w, h;
+    int16_t x /**< left edge */, y /**< top edge */,
+            w /**< width */, h /**< height */;
 } gfx_rect_t;
 
-/*
- * Saturate rather than truncate.  The fields are int16_t and the arguments are
- * int, so a plain cast draws a shape that is entirely off-screen back onto the
- * panel at a wrapped position -- which is the opposite of clipping, and turns
- * an out-of-range blit's source offset into a read far outside its buffer.
+/**
+ * @brief Saturate rather than truncate.
+ *
+ * The fields are int16_t and the arguments are int, so a plain cast draws a
+ * shape that is entirely off-screen back onto the panel at a wrapped
+ * position -- which is the opposite of clipping, and turns an out-of-range
+ * blit's source offset into a read far outside its buffer.
+ *
+ * @param v  The value.
+ * @return @p v limited to INT16_MIN..INT16_MAX.
  */
 static inline int16_t gfx_i16(int v)
 {
@@ -95,6 +121,14 @@ static inline int16_t gfx_i16(int v)
     return (int16_t)v;
 }
 
+/**
+ * @brief A rectangle from int arguments, each limited to the int16_t range.
+ * @param x  Left edge.
+ * @param y  Top edge.
+ * @param w  Width.
+ * @param h  Height.
+ * @return The rectangle; its far edges are limited, not its extent.
+ */
 static inline gfx_rect_t gfx_rect_make(int x, int y, int w, int h)
 {
     /* Clamp the far edge in int, so a saturated origin cannot silently shrink
@@ -111,21 +145,40 @@ static inline gfx_rect_t gfx_rect_make(int x, int y, int w, int h)
     return r;
 }
 
+/**
+ * @brief Whether a rectangle covers no pixel.
+ * @param r  The rectangle.
+ * @return true when its width or height is 0 or less.
+ */
 static inline bool gfx_rect_empty(gfx_rect_t r)
 {
     return r.w <= 0 || r.h <= 0;
 }
 
+/**
+ * @brief Whether a pixel lies inside a rectangle.
+ * @param r  The rectangle.
+ * @param x  The pixel's column.
+ * @param y  The pixel's row.
+ * @return true when (@p x, @p y) is inside.
+ */
 static inline bool gfx_rect_contains(gfx_rect_t r, int x, int y)
 {
     return x >= r.x && y >= r.y && x < r.x + r.w && y < r.y + r.h;
 }
 
-/** Intersect two rects.  Returns false (and zeroes *out) when they miss. */
+/**
+ * @brief Intersect two rects.
+ * @param a    The first rectangle.
+ * @param b    The second rectangle.
+ * @param out  Receives the intersection; zeroed when they miss.  May be NULL.
+ * @return false when they miss.
+ */
 bool gfx_rect_intersect(gfx_rect_t a, gfx_rect_t b, gfx_rect_t *out);
 
 /* ------------------------------------------------------------------- canvas */
 
+/** @brief A block of pixels with a clip rectangle. */
 typedef struct {
     gfx_color_t *pixels;  /**< top-left pixel                                */
     int16_t      width;   /**< visible width in pixels                       */
@@ -135,29 +188,88 @@ typedef struct {
 } gfx_canvas_t;
 
 /**
- * Bind a canvas to a pixel buffer.  @p stride is in pixels; pass 0 to mean
- * "tightly packed" (stride == width).
+ * @brief Bind a canvas to a pixel buffer.
+ *
+ * @p stride is in pixels; pass 0 to mean "tightly packed" (stride == width).
+ *
+ * @param c       The canvas.
+ * @param pixels  The top-left pixel.
+ * @param width   Visible width, pixels.
+ * @param height  Visible height, pixels.
+ * @param stride  Distance between rows, pixels.
  */
 void gfx_canvas_init(gfx_canvas_t *c, gfx_color_t *pixels,
                      int width, int height, int32_t stride);
 
-/** Carve a sub-canvas out of @p src.  Returns false if the window is empty. */
+/**
+ * @brief Carve a sub-canvas out of @p src.
+ * @param src     The parent canvas.
+ * @param window  The part to take, in the parent's pixels.
+ * @param out     Receives the sub-canvas.
+ * @return false if the window is empty.
+ */
 bool gfx_canvas_sub(const gfx_canvas_t *src, gfx_rect_t window, gfx_canvas_t *out);
 
-/** Restrict drawing to @p r (intersected with the canvas).  False if empty. */
+/**
+ * @brief Restrict drawing to @p r (intersected with the canvas).
+ * @param c  The canvas.
+ * @param r  The new clip.
+ * @return false if the clip is empty.
+ */
 bool gfx_clip_set(gfx_canvas_t *c, gfx_rect_t r);
-/** Restrict further, relative to the current clip.  False if empty. */
+/**
+ * @brief Restrict further, relative to the current clip.
+ * @param c  The canvas.
+ * @param r  The rectangle to narrow the clip to.
+ * @return false if the clip is empty.
+ */
 bool gfx_clip_intersect(gfx_canvas_t *c, gfx_rect_t r);
+/**
+ * @brief Set the clip to the whole canvas.
+ * @param c  The canvas.
+ */
 void gfx_clip_reset(gfx_canvas_t *c);
+/**
+ * @brief The current clip.
+ * @param c  The canvas.
+ * @return The clip rectangle.
+ */
 static inline gfx_rect_t gfx_clip_get(const gfx_canvas_t *c) { return c->clip; }
 
 /* --------------------------------------------------------------- primitives */
 
+/**
+ * @brief Fill the clip with a color.
+ * @param c      The canvas.
+ * @param color  The color.
+ */
 void gfx_clear(gfx_canvas_t *c, gfx_color_t color);
+/**
+ * @brief Set one pixel.
+ * @param c      The canvas.
+ * @param x      Column.
+ * @param y      Row.
+ * @param color  The color.
+ */
 void gfx_pixel(gfx_canvas_t *c, int x, int y, gfx_color_t color);
-/** Reads back a pixel; returns 0 when (x,y) is outside the canvas. */
+/**
+ * @brief Read back a pixel.
+ * @param c  The canvas.
+ * @param x  Column.
+ * @param y  Row.
+ * @return The pixel; 0 when (x,y) is outside the canvas.
+ */
 gfx_color_t gfx_pixel_get(const gfx_canvas_t *c, int x, int y);
 
+/**
+ * @brief Fill a rectangle.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param w      Width.
+ * @param h      Height.
+ * @param color  The color.
+ */
 void gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t color);
 /**
  * @brief Blend @p color over a rectangle: each pixel becomes @p alpha / 255
@@ -174,13 +286,55 @@ void gfx_fill_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t colo
  */
 void gfx_fill_rect_blend(gfx_canvas_t *c, int x, int y, int w, int h,
                          gfx_color_t color, uint8_t alpha);
+/**
+ * @brief Draw a 1-pixel outline just inside a rectangle.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param w      Width.
+ * @param h      Height.
+ * @param color  The color.
+ */
 void gfx_draw_rect(gfx_canvas_t *c, int x, int y, int w, int h, gfx_color_t color);
+/**
+ * @brief Draw a horizontal line.
+ * @param c      The canvas.
+ * @param x      First column.
+ * @param y      Row.
+ * @param w      Length, pixels; a negative length runs left from @p x.
+ * @param color  The color.
+ */
 void gfx_hline(gfx_canvas_t *c, int x, int y, int w, gfx_color_t color);
+/**
+ * @brief Draw a vertical line.
+ * @param c      The canvas.
+ * @param x      Column.
+ * @param y      First row.
+ * @param h      Length, pixels; a negative length runs up from @p y.
+ * @param color  The color.
+ */
 void gfx_vline(gfx_canvas_t *c, int x, int y, int h, gfx_color_t color);
+/**
+ * @brief Draw a 1-pixel line, both end pixels included.
+ * @param c      The canvas.
+ * @param x0     First end, column.
+ * @param y0     First end, row.
+ * @param x1     Second end, column.
+ * @param y1     Second end, row.
+ * @param color  The color.
+ */
 void gfx_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1, gfx_color_t color);
 void gfx_thick_line(gfx_canvas_t *c, int x0, int y0, int x1, int y1,
                     int thickness, gfx_color_t color);
 
+/**
+ * @brief Draw a 1-pixel circle outline.
+ * @param c      The canvas.
+ * @param cx     Center, column.
+ * @param cy     Center, row.
+ * @param r      Radius, pixels; nothing is drawn below 0.
+ * @param color  The color.
+ */
 void gfx_draw_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
 
 /*
@@ -193,28 +347,79 @@ void gfx_fill_circle_aa(gfx_canvas_t *c, int cx, int cy, int r,
                         gfx_color_t col);
 void gfx_capsule_aa(gfx_canvas_t *c, int ax, int ay, int bx, int by,
                     int thickness, gfx_color_t col);
+/**
+ * @brief Fill a hard-edged disc.
+ * @param c      The canvas.
+ * @param cx     Center, column.
+ * @param cy     Center, row.
+ * @param r      Radius, pixels.
+ * @param color  The color.
+ */
 void gfx_fill_circle(gfx_canvas_t *c, int cx, int cy, int r, gfx_color_t color);
 
-/*
- * An arc of @p thickness centered on (cx, cy), from @p a0_deg to @p a1_deg.
+/**
+ * @brief An arc of @p thickness centered on (cx, cy), from @p a0_deg to
+ * @p a1_deg.
+ *
  * Angles are degrees counter-clockwise from the +x axis, so 90 is straight up
  * on screen.  The radial edges are antialiased.
+ *
+ * @param c          The canvas.
+ * @param cx         Center, column.
+ * @param cy         Center, row.
+ * @param r          Radius of the arc's middle line, pixels.
+ * @param thickness  Width of the arc, pixels.
+ * @param a0_deg     Start angle, degrees.
+ * @param a1_deg     End angle, degrees.
+ * @param col        The color.
  */
 void gfx_arc(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
              float a0_deg, float a1_deg, gfx_color_t col);
 
-/*
- * The same arc, with each end brought up out of @p into over @p fade_deg and
- * taken back down into it.  An arc that stops dead has two bright full-width
- * ends that read as breakage; one that dissolves reads as an arc lit over
- * part of its length.
+/**
+ * @brief The same arc, with each end brought up out of @p into over
+ * @p fade_deg and taken back down into it.
+ *
+ * An arc that stops dead has two bright full-width ends that read as
+ * breakage; one that dissolves reads as an arc lit over part of its length.
+ *
+ * @param c          The canvas.
+ * @param cx         Center, column.
+ * @param cy         Center, row.
+ * @param r          Radius of the arc's middle line, pixels.
+ * @param thickness  Width of the arc, pixels.
+ * @param a0_deg     Start angle, degrees.
+ * @param a1_deg     End angle, degrees.
+ * @param col        The color.
+ * @param into       The color the ends fade into.
+ * @param fade_deg   Length of each fade, degrees.
  */
 void gfx_arc_fade(gfx_canvas_t *c, int cx, int cy, int r, int thickness,
                   float a0_deg, float a1_deg, gfx_color_t col,
                   gfx_color_t into, float fade_deg);
 
+/**
+ * @brief Draw a 1-pixel outline of a rounded rectangle.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param w      Width.
+ * @param h      Height.
+ * @param r      Corner radius, pixels; limited to 0 and half the shorter edge.
+ * @param color  The color.
+ */
 void gfx_draw_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                          int r, gfx_color_t color);
+/**
+ * @brief Fill a rounded rectangle.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param w      Width.
+ * @param h      Height.
+ * @param r      Corner radius, pixels; limited to 0 and half the shorter edge.
+ * @param color  The color.
+ */
 void gfx_fill_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                          int r, gfx_color_t color);
 
@@ -224,12 +429,61 @@ void gfx_fill_round_rect(gfx_canvas_t *c, int x, int y, int w, int h,
  * bottom-right of a panel gives a different look from cutting all four.  A
  * cut of 0 leaves that corner square.
  */
+/**
+ * @brief Fill a rectangle with all four corners cut by the same size.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param w      Width.
+ * @param h      Height.
+ * @param cut    Size of each cut, pixels; limited to 0 and half the shorter edge.
+ * @param color  The color.
+ */
 void gfx_fill_chamfer_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                            int cut, gfx_color_t color);
+/**
+ * @brief Draw a 1-pixel outline of a rectangle with all four corners cut by
+ * the same size.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param w      Width.
+ * @param h      Height.
+ * @param cut    Size of each cut, pixels; limited to 0 and half the shorter edge.
+ * @param color  The color.
+ */
 void gfx_draw_chamfer_rect(gfx_canvas_t *c, int x, int y, int w, int h,
                            int cut, gfx_color_t color);
+/**
+ * @brief Fill a rectangle with a cut size per corner.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param w      Width.
+ * @param h      Height.
+ * @param tl     Top-left cut, pixels; each cut is limited to 0 and half the
+ *               shorter edge.
+ * @param tr     Top-right cut, pixels.
+ * @param br     Bottom-right cut, pixels.
+ * @param bl     Bottom-left cut, pixels.
+ * @param color  The color.
+ */
 void gfx_fill_chamfer_rect_ex(gfx_canvas_t *c, int x, int y, int w, int h,
                               int tl, int tr, int br, int bl, gfx_color_t color);
+/**
+ * @brief Draw a 1-pixel outline of a rectangle with a cut size per corner.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param w      Width.
+ * @param h      Height.
+ * @param tl     Top-left cut, pixels; each cut is limited to 0 and half the
+ *               shorter edge.
+ * @param tr     Top-right cut, pixels.
+ * @param br     Bottom-right cut, pixels.
+ * @param bl     Bottom-left cut, pixels.
+ * @param color  The color.
+ */
 void gfx_draw_chamfer_rect_ex(gfx_canvas_t *c, int x, int y, int w, int h,
                               int tl, int tr, int br, int bl, gfx_color_t color);
 
@@ -250,20 +504,57 @@ void gfx_draw_chamfer_rect_ex(gfx_canvas_t *c, int x, int y, int w, int h,
 void gfx_fill_trapezoid(gfx_canvas_t *c, int y, int h, int xl_top, int xr_top,
                         int xl_bot, int xr_bot, gfx_color_t color);
 
-/** Vertical gradient fill, top colour @p a to bottom colour @p b. */
+/**
+ * @brief Vertical gradient fill, top colour @p a to bottom colour @p b.
+ * @param c  The canvas.
+ * @param x  Left edge.
+ * @param y  Top edge.
+ * @param w  Width.
+ * @param h  Height.
+ * @param a  The top row's color.
+ * @param b  The bottom row's color.
+ */
 void gfx_fill_rect_gradient(gfx_canvas_t *c, int x, int y, int w, int h,
                             gfx_color_t a, gfx_color_t b);
 
 /* -------------------------------------------------------------------- blits */
 
-/** Copy a rectangular block of pixels.  @p src_stride is in pixels. */
+/**
+ * @brief Copy a rectangular block of pixels.
+ * @param c           The canvas.
+ * @param x           Left edge of the destination.
+ * @param y           Top edge of the destination.
+ * @param src         The source pixels.
+ * @param w           Width, pixels.
+ * @param h           Height, pixels.
+ * @param src_stride  Distance between the source's rows, pixels.
+ */
 void gfx_blit(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
               int w, int h, int32_t src_stride);
-/** As gfx_blit(), but pixels equal to @p key are left untouched. */
+/**
+ * @brief As gfx_blit(), but pixels equal to @p key are left untouched.
+ * @param c           The canvas.
+ * @param x           Left edge of the destination.
+ * @param y           Top edge of the destination.
+ * @param src         The source pixels.
+ * @param w           Width, pixels.
+ * @param h           Height, pixels.
+ * @param src_stride  Distance between the source's rows, pixels.
+ * @param key         The color that is skipped.
+ */
 void gfx_blit_key(gfx_canvas_t *c, int x, int y, const gfx_color_t *src,
                   int w, int h, int32_t src_stride, gfx_color_t key);
-/** Expand a 1-bit-per-pixel mask (most significant bit first, rows padded
- *  to whole bytes). */
+/**
+ * @brief Expand a 1-bit-per-pixel mask (most significant bit first, rows
+ * padded to whole bytes).
+ * @param c     The canvas.
+ * @param x     Left edge of the destination.
+ * @param y     Top edge of the destination.
+ * @param bits  The mask.
+ * @param w     Width, pixels.
+ * @param h     Height, pixels.
+ * @param fg    The color of the set bits; the others are left untouched.
+ */
 void gfx_blit_1bpp(gfx_canvas_t *c, int x, int y, const uint8_t *bits,
                    int w, int h, gfx_color_t fg);
 
@@ -279,6 +570,7 @@ void gfx_blit_1bpp(gfx_canvas_t *c, int x, int y, const uint8_t *bits,
  * case, and the sharp s).  A code point the font does not hold draws as '?',
  * and a byte that does not start a well-formed sequence is one '?' cell.
  */
+/** @brief A monospaced bitmap font. */
 typedef struct {
     const uint8_t *glyphs;  /**< (last-first+1+extra_count) * height
                              *   * bytes_per_row bytes                      */
@@ -321,58 +613,154 @@ extern const gfx_font_t gfx_font_num_32x44;
  * seven bars, with the unlit ones optionally left showing.  Covers 0-9, '-',
  * '.', ':' and space; anything else draws as blank.
  */
+/** @brief The size and look of seven-segment numerals. */
 typedef struct {
     int  digit_w;    /**< one digit cell, excluding the gap                 */
-    int  digit_h;
+    int  digit_h;    /**< digit height                                      */
     int  thickness;  /**< bar thickness; about digit_h/7 looks right        */
     int  gap;        /**< between cells                                     */
     int  slant;      /**< pixels of lean over the full height, 0 upright    */
     bool ghost;      /**< draw the unlit segments in @p off                 */
 } gfx_seg_style_t;
 
-/** Draw @p s as segment digits.  Returns the width drawn. */
+/**
+ * @brief Draw @p s as segment digits.
+ * @param c    The canvas.
+ * @param x    Left edge.
+ * @param y    Top edge.
+ * @param s    The text.
+ * @param st   The style.
+ * @param on   The color of lit segments.
+ * @param off  The color of unlit segments, drawn when the style's ghost is set.
+ * @return The width drawn, pixels.
+ */
 int gfx_seg_text(gfx_canvas_t *c, int x, int y, const char *s,
                  const gfx_seg_style_t *st, gfx_color_t on, gfx_color_t off);
-/** Width @p s would occupy, without drawing it. */
+/**
+ * @brief Width @p s would occupy, without drawing it.
+ * @param s   The text.
+ * @param st  The style.
+ * @return The width, pixels.
+ */
 int gfx_seg_width(const char *s, const gfx_seg_style_t *st);
 
 /**
- * The next code point of the UTF-8 string at *@p s, advancing *@p s past it.
+ * @brief The next code point of a UTF-8 string, advancing past it.
+ *
  * Returns 0 at the terminator without advancing.  A malformed or truncated
  * sequence returns '?' and advances one byte, so a string cut mid-character
  * costs one cell rather than the rest of the string.
+ *
+ * @param s  The string's position; moved past the code point.
+ * @return The code point.
  */
 uint32_t gfx_utf8_next(const char **s);
 
-/** Cells @p s occupies in a monospaced face: its code point count. */
+/**
+ * @brief Cells @p s occupies in a monospaced face: its code point count.
+ * @param s  The text.
+ * @return The cell count.
+ */
 int gfx_text_cells(const char *s);
 
 /**
- * The byte length of the first @p cells cells of @p s: where to cut it so
- * the cut falls between two characters, never inside one.
+ * @brief The byte length of the first @p cells cells of @p s: where to cut it
+ * so the cut falls between two characters, never inside one.
+ * @param s      The text.
+ * @param cells  The cells to keep.
+ * @return The length, bytes.
  */
 size_t gfx_text_prefix(const char *s, int cells);
 
-/** Pixel width of @p s at integer @p scale (scale < 1 is treated as 1). */
+/**
+ * @brief Pixel width of @p s at integer @p scale.
+ * @param font   The font.
+ * @param s      The text.
+ * @param scale  The font's scale; below 1 counts as 1.
+ * @return The width, pixels.
+ */
 int gfx_text_width(const gfx_font_t *font, const char *s, int scale);
-/** Pixel height of one line at integer @p scale. */
+/**
+ * @brief Pixel height of one line at integer @p scale.
+ * @param font   The font.
+ * @param scale  The font's scale.
+ * @return The height, pixels.
+ */
 int gfx_text_height(const gfx_font_t *font, int scale);
 
-/** Draw one glyph, transparent background.  Returns the advance in pixels.
- *  @p ch is a single byte, so it reaches ASCII only; a string reaches the
- *  rest of the font through gfx_text(). */
+/**
+ * @brief Draw one glyph, transparent background.
+ *
+ * @p ch is a single byte, so it reaches ASCII only; a string reaches the
+ * rest of the font through gfx_text().
+ *
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param ch     The character.
+ * @param font   The font.
+ * @param fg     The text color.
+ * @param scale  The font's scale.
+ * @return The advance, pixels.
+ */
 int gfx_char(gfx_canvas_t *c, int x, int y, char ch, const gfx_font_t *font,
              gfx_color_t fg, int scale);
-/** Draw a string, transparent background.  Returns the advance in pixels. */
+/**
+ * @brief Draw a string, transparent background.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param s      The text.
+ * @param font   The font.
+ * @param fg     The text color.
+ * @param scale  The font's scale.
+ * @return The advance, pixels.
+ */
 int gfx_text(gfx_canvas_t *c, int x, int y, const char *s,
              const gfx_font_t *font, gfx_color_t fg, int scale);
-/** Draw a string over a solid background cell.  Returns the advance. */
+/**
+ * @brief Draw a string over a solid background cell.
+ * @param c      The canvas.
+ * @param x      Left edge.
+ * @param y      Top edge.
+ * @param s      The text.
+ * @param font   The font.
+ * @param fg     The text color.
+ * @param bg     The background color.
+ * @param scale  The font's scale.
+ * @return The advance, pixels.
+ */
 int gfx_text_bg(gfx_canvas_t *c, int x, int y, const char *s,
                 const gfx_font_t *font, gfx_color_t fg, gfx_color_t bg, int scale);
 
 /**
- * Draw @p s rotated about (@p cx, @p cy) as a stencil over what is already
- * there, covering @p alpha out of 255 of the glyph pixels.
+ * @brief The pixels gfx_text_rotated() would cover, packed as
+ * (y << 16) | x, in scan order and already clipped.
+ *
+ * The stencil depends only on the geometry and the alpha, so an overlay drawn
+ * on every frame records it once and writes the points thereafter, instead of
+ * rotating and dividing per pixel over the whole canvas each time.
+ *
+ * @param c          The canvas.
+ * @param cx         Center of the rotation, column.
+ * @param cy         Center of the rotation, row.
+ * @param s          The text.
+ * @param font       The font.
+ * @param scale      The font's scale.
+ * @param alpha      Coverage, 0 to 255.
+ * @param angle_deg  The rotation, degrees.
+ * @param out        Receives the points.
+ * @param max_out    Capacity of @p out, points.
+ * @return The count, or -1 when more than @p max_out are covered or @p out is
+ *         NULL.
+ */
+int gfx_text_rotated_points(gfx_canvas_t *c, int cx, int cy, const char *s,
+                            const gfx_font_t *font, int scale, uint8_t alpha,
+                            float angle_deg, uint32_t *out, int max_out);
+
+/**
+ * @brief Draw @p s rotated about (@p cx, @p cy) as a stencil over what is
+ * already there, covering @p alpha out of 255 of the glyph pixels.
  *
  * Inverse-mapped: every destination pixel in the rotated bounding box asks
  * which glyph pixel it comes from.  Forward mapping leaves holes at any angle
@@ -390,23 +778,11 @@ int gfx_text_bg(gfx_canvas_t *c, int x, int y, const char *s,
  * twice over the same pixels equals drawing it once, which a full-screen
  * overlay over selectively repainted screens requires.
  */
-/**
- * The pixels gfx_text_rotated() would cover, packed as (y << 16) | x, in
- * scan order and already clipped.  Returns the count, or -1 when more than
- * `max_out` are covered or `out` is NULL.
- *
- * The stencil depends only on the geometry and the alpha, so an overlay drawn
- * on every frame records it once and writes the points thereafter, instead of
- * rotating and dividing per pixel over the whole canvas each time.
- */
-int gfx_text_rotated_points(gfx_canvas_t *c, int cx, int cy, const char *s,
-                            const gfx_font_t *font, int scale, uint8_t alpha,
-                            float angle_deg, uint32_t *out, int max_out);
-
 void gfx_text_rotated(gfx_canvas_t *c, int cx, int cy, const char *s,
                       const gfx_font_t *font, gfx_color_t fg, int scale,
                       uint8_t alpha, float angle_deg);
 
+/** @brief Where text sits inside a box. */
 typedef enum {
     GFX_ALIGN_LEFT = 0,
     GFX_ALIGN_CENTER,
@@ -434,14 +810,29 @@ void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
  * that defines GFX_TEXT_TRACE defines these two.  Coordinates are the
  * canvas's own; the harness maps a sub-canvas back to the panel from its
  * pixel pointer.
- *
- * gfx_trace_text() is called for every string drawn: its box, and the box
- * gfx_text_in() was given (NULL from the other primitives).
- * gfx_trace_box() is called for every filled rounded or chamfered
- * rectangle: the shapes a label sits inside.
+ */
+/**
+ * @brief Called for every string drawn.
+ * @param c    The canvas.
+ * @param x    Left edge of the string.
+ * @param y    Top edge of the string.
+ * @param w    Width of the string.
+ * @param h    Height of the string.
+ * @param s    The text.
+ * @param box  The box gfx_text_in() was given; NULL from the other
+ *             primitives.
  */
 void gfx_trace_text(const gfx_canvas_t *c, int x, int y, int w, int h,
                     const char *s, const gfx_rect_t *box);
+/**
+ * @brief Called for every filled rounded or chamfered rectangle: the shapes a
+ * label sits inside.
+ * @param c  The canvas.
+ * @param x  Left edge.
+ * @param y  Top edge.
+ * @param w  Width.
+ * @param h  Height.
+ */
 void gfx_trace_box(const gfx_canvas_t *c, int x, int y, int w, int h);
 #endif
 

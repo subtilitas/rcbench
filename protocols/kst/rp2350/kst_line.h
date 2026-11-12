@@ -76,19 +76,19 @@ typedef enum {
  * The caller keeps the object; the fields are the driver's.
  */
 typedef struct {
-    kst_pio_clock_t clock;
-    kst_pio_run_t   run;
-    void    *pio;
-    uint32_t sm;
-    uint32_t offset;
-    uint32_t t_start_us;
-    int8_t   dma_tx;
-    int8_t   dma_rx;
-    uint8_t  pin;
-    uint8_t  open;
-    uint8_t  busy;
-    uint32_t tx[KST_PIO_TX_WORDS];
-    uint32_t rx[KST_PIO_RX_WORDS];
+    kst_pio_clock_t clock;   /**< the counts of the system clock */
+    kst_pio_run_t   run;     /**< the running transaction's timing */
+    void    *pio;            /**< the PIO block */
+    uint32_t sm;             /**< the state machine */
+    uint32_t offset;         /**< the program's offset in the PIO instruction memory */
+    uint32_t t_start_us;     /**< when the transaction started, us */
+    int8_t   dma_tx;         /**< the DMA channel that sends */
+    int8_t   dma_rx;         /**< the DMA channel that receives */
+    uint8_t  pin;            /**< the GPIO */
+    uint8_t  open;           /**< the line is open */
+    uint8_t  busy;           /**< a transaction runs */
+    uint32_t tx[KST_PIO_TX_WORDS];   /**< the words to send */
+    uint32_t rx[KST_PIO_RX_WORDS];   /**< the stamps received */
 } kst_line_t;
 
 /**

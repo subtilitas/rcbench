@@ -44,7 +44,7 @@ extern "C" {
 
 /* ---------------------------------------------------------------- the gate */
 
-/** Whether the bench lets the panel write its own flash for an update. */
+/** @brief Whether the bench lets the panel write its own flash for an update. */
 typedef enum {
     FW_GATE_OPEN = 0,
     FW_GATE_ARMED,    /**< ARMED, or a switch to ARMED waiting            */
@@ -55,19 +55,33 @@ typedef enum {
 } fw_gate_t;
 
 /**
+ * @brief The reason the panel may not write its own flash, if any.
+ *
  * flash_gate_open()'s rule, and three more: no file the logger writes is
  * open, the board drawing's transfer and keep are not running, and no
- * update of the IOmcu runs (@p coproc).  The first reason that holds,
- * in the order above.
+ * update of the IOmcu runs (@p coproc).
+ *
+ * @param armed     The bench is ARMED, or a switch to ARMED waits.
+ * @param supply    The supply's output is on or an ON is queued.
+ * @param run_open  A run's log, or a servo test's, is open.
+ * @param drawing   The board's drawing is being fetched or kept.
+ * @param coproc    The IOmcu's update runs, or its BUY.
+ * @return The first reason that holds, in the order of fw_gate_t;
+ *         FW_GATE_OPEN when none does.
  */
 fw_gate_t fw_gate(bool armed, bool supply, bool run_open, bool drawing,
                   bool coproc);
 
 /**
- * The other direction: whether the IOmcu's update may start.  Only
- * with the panel's radio wholly off (@p radio_down) and no install of a
+ * @brief The other direction: whether the IOmcu's update may start.
+ *
+ * Only with the panel's radio wholly off (@p radio_down) and no install of a
  * panel image under way (@p installing), from the moment INSTALL's hold
  * completes until the write has failed.
+ *
+ * @param radio_down  The panel's radio is wholly off.
+ * @param installing  A panel image is being installed.
+ * @return true when the update may start.
  */
 bool fw_coproc_may_start(bool radio_down, bool installing);
 
@@ -109,9 +123,10 @@ typedef struct {
     bool (*finish)(void *ctx);
     /** Give up after a failed write or finish; the boot slot stays. */
     void (*abort)(void *ctx);
-    void *ctx;
+    void *ctx; /**< handed to every call */
 } fw_flash_t;
 
+/** @brief Where an install stands. */
 typedef enum {
     FW_INSTALL_IDLE = 0,  /**< nothing to install                         */
     FW_INSTALL_WAITING,   /**< not quiet: no flash touched in this step   */
@@ -120,37 +135,60 @@ typedef enum {
     FW_INSTALL_FAILED,    /**< see fw_install_t.err; the boot slot stays  */
 } fw_install_status_t;
 
+/** @brief One install: the slot, the image and how far the write has got. */
 typedef struct {
-    const fw_flash_t *f;
-    const uint8_t    *img;
-    uint32_t          bytes;
+    const fw_flash_t *f;        /**< the slot's flash                 */
+    const uint8_t    *img;      /**< the image                        */
+    uint32_t          bytes;    /**< its length, bytes                */
     uint32_t          done;     /**< bytes written                    */
     bool              opened;   /**< begin() succeeded                 */
     bool              touched;  /**< any flash operation was attempted */
-    bool              busy;
-    fw_err_t          err;
-    fw_offer_t        offer;
-    fw_image_info_t   info;
+    bool              busy;     /**< an install is under way          */
+    fw_err_t          err;      /**< why the install failed           */
+    fw_offer_t        offer;    /**< how the image compares with the running build */
+    fw_image_info_t   info;     /**< what the image says about itself */
 } fw_install_t;
 
 /**
- * Check @p bytes of image at @p img for a slot of @p slot bytes and against
- * @p running.  FW_OK with the installer busy, or why not: anything
- * fw_image_check() refuses, FW_ERR_RUNNING for the build that is running.
- * Touches no flash.  The image must stay unchanged until DONE or FAILED.
+ * @brief Check an image and make the installer busy with it.
+ *
+ * Checks @p bytes of image at @p img for a slot of @p slot bytes and against
+ * @p running.  Touches no flash.  The image must stay unchanged until DONE or
+ * FAILED.
+ *
+ * @param in       The installer.
+ * @param f        The slot's flash.
+ * @param img      The image.
+ * @param bytes    Its length, bytes.
+ * @param slot     Size of the slot, bytes.
+ * @param running  The build that is running.
+ * @return FW_OK with the installer busy, or why not: anything
+ *         fw_image_check() refuses, FW_ERR_RUNNING for the build that is
+ *         running.
  */
 fw_err_t fw_install_begin(fw_install_t *in, const fw_flash_t *f,
                           const uint8_t *img, uint32_t bytes, uint32_t slot,
                           const fw_image_info_t *running);
 
 /**
- * One step when @p quiet: open, one write of FW_WRITE_CHUNK at most, or the
- * finish.  Not quiet: WAITING, and no flash is touched.  DONE and FAILED
- * are returned once; the installer is idle after them.
+ * @brief One step when @p quiet: open, one write of FW_WRITE_CHUNK at most, or
+ * the finish.
+ *
+ * Not quiet: WAITING, and no flash is touched.  DONE and FAILED are returned
+ * once; the installer is idle after them.
+ *
+ * @param in     The installer.
+ * @param quiet  The bench is quiet: flash may be touched.
+ * @return Where the installer stands after the step.
  */
 fw_install_status_t fw_install_step(fw_install_t *in, bool quiet);
 
-/** Whether every byte is written and only the finish is left. */
+/**
+ * @brief Whether every byte is written and only the finish is left.
+ *
+ * @param in  The installer.
+ * @return true when only the finish is left.
+ */
 bool fw_install_finishing(const fw_install_t *in);
 
 #ifdef __cplusplus

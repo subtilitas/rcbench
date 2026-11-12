@@ -56,7 +56,7 @@ extern "C" {
  * 410us.
  */
 #define OUT_FLOOR_US       400u
-#define OUT_CEILING_US    2500u
+#define OUT_CEILING_US    2500u   /**< the highest endpoint */
 
 /**
  * @brief What rest means for a channel, which is the one thing a command cannot

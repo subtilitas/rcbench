@@ -30,7 +30,10 @@
 #include "settings_int.h"
 #include "settings_sensors.h"
 
-/* A row of the schema, the SENSORS rows' included (settings_sensors.c). */
+/**
+ * @brief A row of the schema, the SENSORS rows' included
+ *        (settings_sensors.c).
+ */
 #define DEF(i) (*settings_def((setting_id_t)(i)))
 
 /** @brief The categories' names in English, from ui_text.def. */
@@ -41,12 +44,15 @@ static const char *const k_cat_names[SET_CAT_COUNT] = {
 /// @endcond
 };
 
-/* The string settings' keys, defaults and categories; NVS keys, 15
- * characters or fewer.  The log folders' defaults are CARD_AUTO_LOGS and
- * CARD_USER_LOGS (card_tree.h), which test_settings holds them to. */
+/**
+ * @brief The string settings' keys, defaults and categories; NVS keys, 15
+ *        characters or fewer. The log folders' defaults are CARD_AUTO_LOGS
+ *        and CARD_USER_LOGS (card_tree.h), which test_settings holds them to.
+ */
 static const struct {
-    const char   *key;
-    const char   *def;
+    const char   *key; /**< the NVS key */
+    const char   *def; /**< the default */
+    /** @brief The category SETUP lists it in; SET_CAT_COUNT for none. */
     setting_cat_t cat;
 } k_text_defs[SETTING_TEXT_COUNT] = {
     [SET_TEXT_DUT_NAME]     = { "srv_dut", "SERVO", SET_CAT_COUNT },
@@ -54,7 +60,7 @@ static const struct {
     [SET_TEXT_LOG_USER_DIR] = { "log_user_dir", "USER/LOGS", SET_CAT_CARD },
     [SET_TEXT_IMU_ADDR]     = { "imu_ble", "", SET_CAT_COUNT },
     [SET_TEXT_IMU_NAME]     = { "imu_name", "", SET_CAT_COUNT },
-};
+}; /**< the string settings' table */
 
 /** @brief The values, the copy the medium holds, the store and the hooks. */
 typedef struct {
@@ -91,12 +97,14 @@ typedef struct {
 /** @brief The settings' one instance. */
 static settings_state_t s;
 
-/*
- * Whether value @p i is off its stored value by a step of its grid or more.
+/**
+ * @brief Whether value @p i is off its stored value by a step of its grid or
+ *        more.
+ *
  * A value stepped away and back lands on the grid by arithmetic, which can
- * miss the stored word by a rounding (20.999998 for 21.0), and both read
- * the same on the screen: that is the same value.  Half a step tells them
- * apart from a real step.
+ * miss the stored word by a rounding (20.999998 for 21.0), and both read the
+ * same on the screen: that is the same value.  Half a step tells them apart
+ * from a real step.
  */
 static bool value_differs(int i)
 {
@@ -107,6 +115,9 @@ static bool value_differs(int i)
     return s.values[i] != s.stored[i];
 }
 
+/**
+ * @brief Whether any value or string in force differs from the stored copy.
+ */
 static bool differs_from_stored(void)
 {
     for (int i = 0; i < SETTING_COUNT; ++i) {
@@ -122,16 +133,19 @@ static bool differs_from_stored(void)
     return false;
 }
 
-/*
- * Something changed.  Dirty is whether the values in force differ from the
- * stored copy: an edit back to the stored value leaves nothing to write, and
- * a write of it would spend an erase cycle on what is there.  After a
- * refused save the copy is not known to be the medium, and dirty stands
- * until a save succeeds.  A new edit is also a fresh attempt, so it retires
- * any earlier failure: that failure described values these no longer are.
- * Nothing left to write drops a save asked for: the request was for the
- * values edited back, and the next edit is not one the operator asked to
- * keep.  Called after every value an edit moves is set, a derived one too.
+/**
+ * @brief Something changed: update the dirty flag, the failure and the save
+ *        request.
+ *
+ * Dirty is whether the values in force differ from the stored copy: an edit
+ * back to the stored value leaves nothing to write, and a write of it would
+ * spend an erase cycle on what is there.  After a refused save the copy is
+ * not known to be the medium, and dirty stands until a save succeeds.  A new
+ * edit is also a fresh attempt, so it retires any earlier failure: that
+ * failure described values these no longer are.  Nothing left to write drops
+ * a save asked for: the request was for the values edited back, and the next
+ * edit is not one the operator asked to keep.  Called after every value an
+ * edit moves is set, a derived one too.
  */
 static void mark_dirty(void)
 {
@@ -142,7 +156,7 @@ static void mark_dirty(void)
     }
 }
 
-/* The values in force are what the medium holds. */
+/** @brief The values in force are what the medium holds. */
 static void take_stored(void)
 {
     memcpy(s.stored, s.values, sizeof(s.stored));
@@ -150,6 +164,7 @@ static void take_stored(void)
     s.stored_sure = true;
 }
 
+/** @brief Limits @p v to @p lo..@p hi. */
 static float clampf(float v, float lo, float hi)
 {
     return (v < lo) ? lo : (v > hi) ? hi : v;
@@ -203,9 +218,13 @@ const char *settings_category_name(setting_cat_t cat)
     return (cat >= 0 && cat < SET_CAT_COUNT) ? k_cat_names[cat] : "";
 }
 
-/* A value that arrives off the declared grid (a stale NVS word, a schema
- * whose step differs) otherwise stays off it: settings_adjust() adds step to
- * whatever is already there. */
+/**
+ * @brief Snap a value to the grid its row declares.
+ *
+ * A value that arrives off the grid (a stale NVS word, a schema whose step
+ * differs) otherwise stays off it: settings_adjust() adds step to whatever is
+ * already there.
+ */
 static float snap_to_step(const setting_def_t *d, float v)
 {
     if (d->step <= 0.0f) {
@@ -247,8 +266,11 @@ bool settings_pdmini_same_pin(void)
     return tx >= 0 && tx == settings_get_int(SET_PDMINI_RX);
 }
 
-/* Whether the pin row @p id takes @p pin as a step: Sensor SDA a pin the
- * bus can have, PD mini TX and RX any pin but the one the other holds. */
+/**
+ * @brief Whether the pin row @p id takes @p pin as a step: Sensor SDA a pin
+ *        the bus can have, PD mini TX and RX any pin but the one the other
+ *        holds.
+ */
 static bool pin_takes(setting_id_t id, int pin)
 {
     if (id == SET_PDMINI_TX || id == SET_PDMINI_RX) {
@@ -262,6 +284,14 @@ static bool pin_takes(setting_id_t id, int pin)
     return settings_sense_sda_valid(pin);
 }
 
+/**
+ * @brief Fits a value to a setting's row.
+ *
+ * @param d The row.
+ * @param v The value.
+ * @return The value clamped and snapped for a number, 0 or 1 for a bool; the
+ *     row's default for an enum or a pin out of its range.
+ */
 static float coerce(const setting_def_t *d, float v)
 {
     if (d == &settings_schema[SET_SENSE_SDA]) {
@@ -305,8 +335,10 @@ static float coerce(const setting_def_t *d, float v)
     }
 }
 
-/* Sensor SCL from Sensor SDA: the GPIO after it, and -1 with it.  True
- * when that moved it. */
+/**
+ * @brief Sensor SCL from Sensor SDA: the GPIO after it, and -1 with it. True
+ *        when that moved it.
+ */
 static bool derive(void)
 {
     const float sda = s.values[SET_SENSE_SDA];
@@ -316,7 +348,9 @@ static bool derive(void)
     return moved;
 }
 
-/*
+/**
+ * @brief Tell the observer that value @p id moved from @p before.
+ *
  * Resetting changes values, and the observer is the only path a changed value
  * has to the hardware.  Without the notification RESET CATEGORY restores the
  * pulse range and ramp limit on screen while the ESC keeps receiving the old
@@ -329,8 +363,10 @@ static void notify_changed(int id, float before)
     }
 }
 
-/* String @p i set to @p text, cut to SETTINGS_TEXT_MAX - 1 characters; the
- * text observer hears it when it moved.  Whether it moved. */
+/**
+ * @brief String @p i set to @p text, cut to SETTINGS_TEXT_MAX - 1 characters;
+ *        the text observer hears it when it moved. Whether it moved.
+ */
 static bool text_to(int i, const char *text)
 {
     char next[SETTINGS_TEXT_MAX];
@@ -400,8 +436,10 @@ void settings_reset_rows(const setting_id_t *ids, int n)
     }
 }
 
-/* Every value and string to its default; a held value only at start-up,
- * @p held. */
+/**
+ * @brief Every value and string to its default; a held value only at
+ *        start-up, @p held.
+ */
 static void defaults(bool held)
 {
     bool moved = false;

@@ -55,10 +55,10 @@ extern "C" {
  * A width outside it is refused, not clamped.
  */
 #define PPM_CHANNEL_MIN_US       400u
-#define PPM_CHANNEL_MAX_US      2500u
+#define PPM_CHANNEL_MAX_US      2500u   /**< the widest channel, us */
 
-#define PPM_DEFAULT_MARK_US      300u
-#define PPM_DEFAULT_FRAME_US   22500u
+#define PPM_DEFAULT_MARK_US      300u     /**< the default fixed pulse, us */
+#define PPM_DEFAULT_FRAME_US   22500u     /**< the default frame length, us */
 
 /**
  * @brief The shortest gap that is unambiguously a gap.
@@ -69,12 +69,15 @@ extern "C" {
  */
 #define PPM_SYNC_MIN_US         3000u
 
+/** @brief The timing of a PPM frame. */
 typedef struct {
     uint16_t mark_us;       /**< the fixed pulse; 0 takes the default      */
     uint16_t frame_us;      /**< start of frame to start of frame          */
     uint16_t sync_min_us;   /**< below this the frame is refused           */
 } ppm_cfg_t;
 
+/** @brief The default timing: PPM_DEFAULT_MARK_US, PPM_DEFAULT_FRAME_US and
+ *  PPM_SYNC_MIN_US. */
 #define PPM_CFG_DEFAULT()               \
     (ppm_cfg_t) {                       \
         .mark_us     = PPM_DEFAULT_MARK_US,  \

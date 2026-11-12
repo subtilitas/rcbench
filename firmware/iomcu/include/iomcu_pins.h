@@ -66,10 +66,10 @@
  * 16MHz and at no other crystal; test_can_timing pins it.
  */
 #define IOMCU_CAN_SPI        spi1
-#define IOMCU_CAN_PIN_SCK    10
-#define IOMCU_CAN_PIN_MOSI   11
-#define IOMCU_CAN_PIN_MISO   12
-#define IOMCU_CAN_PIN_CS     9
+#define IOMCU_CAN_PIN_SCK    10 /**< SPI1 clock, GPIO 10 */
+#define IOMCU_CAN_PIN_MOSI   11 /**< SPI1 data out (MOSI), GPIO 11 */
+#define IOMCU_CAN_PIN_MISO   12 /**< SPI1 data in (MISO), GPIO 12 */
+#define IOMCU_CAN_PIN_CS     9 /**< chip select, GPIO 9 */
 #define IOMCU_CAN_PIN_INT    8   /**< active low, wants a pull-up */
 #define IOMCU_CAN_CRYSTAL_HZ 16000000u /**< the XL2515's crystal, Hz */
 /**

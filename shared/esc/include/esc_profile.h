@@ -114,7 +114,7 @@ typedef enum {
 
 /** @brief One model the profile lists, with its battery and input limits. */
 typedef struct {
-    const char *name;
+    const char *name; /**< the model's name */
     uint8_t     cells_min;      /**< 0: not known                           */
     uint8_t     cells_max;      /**< 0: not known                           */
     bool        nimh;           /**< cells count NiMH, not LiPo             */
@@ -130,7 +130,7 @@ typedef struct {
 
 /** @brief One value an item can take, with the moves that program it. */
 typedef struct {
-    const char *name;
+    const char *name; /**< the value's name */
     uint8_t     number;         /**< as the ESC sounds it                   */
     bool        is_default;             /**< whether this value is the ESC's factory default */
     /**
@@ -149,12 +149,12 @@ typedef struct {
      *        modes: to the brake after full throttle); 0 entries: none.
      */
     uint8_t        after_count;
-    esc_throttle_t after[ESC_AFTER_MAX];
+    esc_throttle_t after[ESC_AFTER_MAX]; /**< the moves, after_count of them */
 } esc_value_t;
 
 /** @brief One menu item: its name, sounded number and values. */
 typedef struct {
-    const char        *name;
+    const char        *name; /**< the item's name */
     const char        *key;     /**< shared across brands: "brake", ...     */
     uint8_t            number;  /**< as the ESC sounds it                   */
     uint8_t            value_count;     /**< number of values in values */
@@ -163,6 +163,7 @@ typedef struct {
      * @brief Model names this item exists on; 0 entries: every model.
      */
     uint8_t            applies_count;
+    /** @brief The model names, applies_count of them. */
     const char *const *applies_to;
     /**
      * @brief A condition in words, e.g. "model type heli"; "" when none.
@@ -208,8 +209,8 @@ typedef enum {
  * its German beside it.
  */
 typedef struct {
-    esc_manual_when_t when;
-    const char       *action;
+    esc_manual_when_t when; /**< when the step is due */
+    const char       *action; /**< the step in English */
     uint32_t          hold_ms;  /**< at_power_up: held this long after the
                                      supply comes on; 0: not stated       */
     /**
@@ -304,7 +305,7 @@ typedef struct {
      *        entries on every profile that is not assisted.
      */
     uint8_t            manual_count;
-    const esc_manual_t *manual;
+    const esc_manual_t *manual; /**< the steps, manual_count of them */
 } esc_profile_t;
 
 /* ------------------------------------------------------------ built in */
@@ -313,6 +314,7 @@ typedef struct {
  * @brief The profiles compiled in, sorted by id.
  */
 extern const esc_profile_t esc_profiles_builtin[];
+/** @brief How many profiles esc_profiles_builtin holds. */
 extern const size_t        esc_profiles_builtin_count;
 
 /* ------------------------------------------------------------ the card */

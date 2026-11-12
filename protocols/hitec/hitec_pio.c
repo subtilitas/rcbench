@@ -33,7 +33,7 @@ _Static_assert(HITEC_PIO_ANSWER_DROP_BITS + HITEC_PIO_ANSWER_BITS == 16u,
  *        the output level.
  */
 #define PAIR(dir, level) ((uint8_t)((dir) | ((level) << 1)))
-#define RELEASED PAIR(0u, 0u)
+#define RELEASED PAIR(0u, 0u)   /**< a bit time with the pad released */
 
 /** @brief Bit times of the longest SEND, padded. */
 #define MAX_BITS ((HITEC_PIO_TX_WORDS - 3u) * 16u)

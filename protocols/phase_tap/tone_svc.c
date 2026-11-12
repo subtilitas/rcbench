@@ -11,7 +11,7 @@
 
 #include <string.h>
 
-#define U16_MAX 65535u
+#define U16_MAX 65535u   /**< the largest uint16_t */
 
 /**
  * @brief Clip a 64-bit count to 16 bits.

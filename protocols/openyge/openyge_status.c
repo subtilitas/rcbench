@@ -13,7 +13,7 @@
 /** @brief Status byte: low nibble is the motor state, high nibble the
  *         warnings. */
 #define STATE_MASK      0x0Fu
-#define WARN_MASK       0xF0u
+#define WARN_MASK       0xF0u   /**< the high nibble: the warnings and the subject */
 
 #define WARN_UNDERVOLT  0x10u   /**< undervoltage warning bit              */
 #define WARN_OVERTEMP   0x20u   /**< overtemperature warning bit           */

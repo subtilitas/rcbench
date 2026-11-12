@@ -44,7 +44,7 @@ extern "C" {
 
 /** @brief The module's UART Baudrate settings, 0 to 6, and 7 to find it. */
 #define SUPPLY_BAUD_COUNT 7u
-#define SUPPLY_BAUD_AUTO  7u
+#define SUPPLY_BAUD_AUTO  7u   /**< find the rate */
 
 /**
  * @brief The baud rate of a UART setting.

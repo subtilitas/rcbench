@@ -110,8 +110,8 @@ typedef struct {
      *        BIND_READ_NONE.
      */
     bool        pages;
-    uint16_t    slots[LINK_OS_COUNT];
-    uint16_t    cfg[LINK_CC_COUNT];
+    uint16_t    slots[LINK_OS_COUNT];   /**< the OUTPUTS page */
+    uint16_t    cfg[LINK_CC_COUNT];     /**< the CHAN_CFG page */
 } bind_reading_t;
 
 /**

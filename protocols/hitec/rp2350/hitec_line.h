@@ -80,6 +80,7 @@ extern "C" {
  */
 #define HITEC_LINE_GRACE_US 1000u
 
+/** @brief Why a call on a line failed. */
 typedef enum {
     HITEC_LINE_OK = 0,
     /**
@@ -107,20 +108,20 @@ typedef enum {
  * The caller keeps the object; the fields are the driver's.
  */
 typedef struct {
-    hitec_pio_clock_t clock;
-    hitec_pio_run_t   run;
-    void    *pio;
-    uint32_t sm;
-    uint32_t offset;
-    uint32_t t_start_us;
-    int8_t   dma_tx;
-    int8_t   dma_rx;
-    uint8_t  pin;
-    uint8_t  family;
-    uint8_t  drive;
-    uint8_t  open;
-    uint8_t  busy;
-    uint8_t  aborted;
+    hitec_pio_clock_t clock;   /**< the divider and counts of the system clock */
+    hitec_pio_run_t   run;     /**< the running transaction's timing */
+    void    *pio;              /**< the PIO block */
+    uint32_t sm;               /**< the state machine */
+    uint32_t offset;           /**< the program's offset in the PIO instruction memory */
+    uint32_t t_start_us;       /**< when the transaction started, us */
+    int8_t   dma_tx;           /**< the DMA channel that sends */
+    int8_t   dma_rx;           /**< the DMA channel that receives */
+    uint8_t  pin;              /**< the GPIO */
+    uint8_t  family;           /**< hitec_family_t */
+    uint8_t  drive;            /**< open drain or push-pull */
+    uint8_t  open;             /**< the line is open */
+    uint8_t  busy;             /**< a transaction runs */
+    uint8_t  aborted;          /**< the transaction was aborted */
     uint8_t  kept;      /**< bytes received before an abort */
     uint8_t  cut;       /**< the abort came while the answer was due */
     uint32_t tx[HITEC_PIO_TX_WORDS];    /**< the words to send */
@@ -130,20 +131,20 @@ typedef struct {
     uint8_t  pre_on;    /**< the running transaction is the sampler's */
     uint8_t  pre_held;  /**< the sampler has the pad */
     uint8_t  pre_stall; /**< the sampler stalled before its last word */
-    int8_t   dma_pre;
-    void    *pre_pio;
-    uint32_t pre_sm;
-    uint32_t pre_offset;
-    uint32_t pre_len;
+    int8_t   dma_pre;       /**< the DMA channel that takes the samples */
+    void    *pre_pio;       /**< the sampler's PIO block */
+    uint32_t pre_sm;        /**< its state machine */
+    uint32_t pre_offset;    /**< its program's offset */
+    uint32_t pre_len;       /**< its program's length, words */
     uint32_t pre_t_us;      /**< the sampler's start */
     uint32_t pre_tx_us;     /**< the longest the request can take */
     uint32_t pre_span_us;   /**< the longest the sampling can take */
     uint32_t pre_ctrl;      /**< the pin's control register before */
     uint32_t pre_pad;       /**< and its pad register */
-    uint16_t pre_prog[HITEC_PRE_PROGRAM_MAX];
-    hitec_pre_timing_t pre_timing;
-    hitec_pre_run_t    pre;
-    uint32_t samples[HITEC_PRE_WORDS];
+    uint16_t pre_prog[HITEC_PRE_PROGRAM_MAX];   /**< the sampler's program */
+    hitec_pre_timing_t pre_timing;   /**< the sampler's cycle counts */
+    hitec_pre_run_t    pre;          /**< the sampler's transaction */
+    uint32_t samples[HITEC_PRE_WORDS];   /**< the words sampled */
 } hitec_line_t;
 
 /**

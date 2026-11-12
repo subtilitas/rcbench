@@ -70,7 +70,7 @@ typedef struct {
      * one.
      */
     bool (*error)(void *ctx);
-    void *ctx;
+    void *ctx; /**< handed to every callback */
     /**
      * @brief Optional, both or neither: the length of the input in bytes, and a
      *        move to an offset from its start, after which read() continues
@@ -82,6 +82,7 @@ typedef struct {
      * struct, so a source written as { read, rewind, error, ctx } has neither.
      */
     bool (*size)(void *ctx, size_t *bytes);
+    /** @brief Move to an offset; read() continues there. */
     bool (*seek)(void *ctx, size_t offset);
 } log_source_t;
 

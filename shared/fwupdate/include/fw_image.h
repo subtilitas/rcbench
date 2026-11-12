@@ -54,9 +54,9 @@ extern "C" {
 
 /** A release number, MAJOR.MINOR.PATCH. */
 typedef struct {
-    uint16_t major;
-    uint16_t minor;
-    uint16_t patch;
+    uint16_t major; /**< MAJOR */
+    uint16_t minor; /**< MINOR */
+    uint16_t patch; /**< PATCH */
 } fw_version_t;
 
 /** Why an image is refused; FW_OK is none of them. */
@@ -83,9 +83,12 @@ typedef enum {
 
 /** What an image says about itself. */
 typedef struct {
-    uint32_t     bytes;
-    fw_version_t version;
-    char         version_text[FW_TEXT_MAX];
+    uint32_t     bytes; /**< the image's length, bytes */
+    fw_version_t version; /**< the version the application descriptor holds */
+    char         version_text[FW_TEXT_MAX]; /**< the same as text, terminated */
+    /**
+     * @brief The SHA-256 of the ELF file, from the application descriptor.
+     */
     uint8_t      elf_sha[FW_SHA256_BYTES];
 } fw_image_info_t;
 

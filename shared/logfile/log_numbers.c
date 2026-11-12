@@ -846,8 +846,8 @@ void log_unit_from_header(const char *header, char *name, size_t name_size,
  * @brief Seconds per unit for the time units an exporter is likely to write.
  */
 static const struct {
-    const char *name;
-    double scale;
+    const char *name; /**< the unit's name */
+    double scale; /**< seconds in one unit */
 } k_time_units[] = {
     { "s", 1.0 },          { "sec", 1.0 },       { "secs", 1.0 },
     { "second", 1.0 },     { "seconds", 1.0 },   { "sekunde", 1.0 },
@@ -859,7 +859,7 @@ static const struct {
     { "minute", 60.0 },    { "minutes", 60.0 },  { "minuten", 60.0 },
     { "h", 3600.0 },       { "hr", 3600.0 },     { "hour", 3600.0 },
     { "hours", 3600.0 },   { "stunden", 3600.0 },
-};
+}; /**< the unit table */
 
 double log_time_unit_scale(const char *unit)
 {
