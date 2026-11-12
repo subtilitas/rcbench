@@ -19,7 +19,7 @@ Von links nach rechts stehen das Home-Feld mit dem Seitennamen, die Status-Chips
 | INJECT | ersetzt BENCH und SIM, solange ein Touch-Injector an der I2C-Adresse 0x14 (Inter-Integrated Circuit) antwortet; das Panel sucht ihn einmal beim Start |
 | FEHLER 01 bis FEHLER 7F | ein vom IOmcu gemeldeter Fehlercode; ohne Fehler ist der Chip ausgeblendet |
 | HWSTOP | rot an der Stelle von FEHLER, solange [SETUP > PANEL > Hardware-STOP](setup.md#panel) EIN ist und das Heartbeat-Bit (10) gesetzt ist: Der STOP-Taster des Prüfstands ist gedrückt oder sein Kabel unterbrochen |
-| SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | welche Ausgänge bei ARMED angesteuert werden; STOP bei eingerastetem Stopp |
+| SAFE, ARMED MOTOR, ARMED SERVO, ARMED, STOP | welche Ausgänge bei ARMED angesteuert werden; STOP bei eingerastetem Stopp; SAFE PROG und SAFE MOVE, solange ein Prüfstand bei SAFE einen Programmierport belegt oder ein Hitec-Servo bewegt |
 | Laufzeituhr | die Laufdauer seit dem Schalten auf ARMED in Minuten und Sekunden; bei SAFE bleibt die Dauer des letzten Laufs stehen |
 
 Das Home-Feld führt zum [Menü](overview.md).
@@ -29,6 +29,8 @@ Das Home-Feld führt zum [Menü](overview.md).
 | Chip | Ausgänge mit Pulsen |
 |---|---|
 | SAFE | keine |
+| SAFE PROG 2 (bernsteinfarben) | der Programmierport, den eine KST- oder HITEC-Sitzung belegt; er bleibt belegt, wenn SERVO verlassen wird, und ARM ist bis VERLASSEN gesperrt. `SAFE PROG`, solange die Nummer des Ports nicht bekannt ist |
+| SAFE MOVE (bernsteinfarben) | das Servo, das [SERVO BEWEGEN](servo-programmer.md) am belegten Port bewegt, während der Prüfstand SAFE ist |
 | ARMED MOTOR | die Gas-Ausgänge, aktiviert durch ARM auf MOTOR & ESC oder durch einen Stick-Lauf unter PROGRAMMIEREN |
 | ARMED SERVO | die Servoausgänge und ein pulsender PROG-PORT, aktiviert auf SERVO |
 | ARMED | alle zugeordneten Ausgänge, bei einem IOmcu älter als 0.18.0 |

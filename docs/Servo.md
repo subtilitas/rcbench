@@ -75,7 +75,7 @@ screen. The screen is `shared/ui/servo_limit_panel.c`, its left card
   1350us`; else the sequence's step, or the failure of the last sequence,
   or why the hold is refused; why the mode chosen is not offered; the last
   result; the mode's note.
-- SETTINGS opens the run's list: MODE (SEARCH ONLY or SEARCH + PROGRAM),
+- OPTIONS opens the run's list: MODE (SEARCH ONLY or SEARCH + PROGRAM),
   SERVO (KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, the programmer the
   run's sessions go to, [Hitec servos](#hitec-servos)), SERVO PULSES (KEEP
   or 1000-2000), CURRENT, the programmer's Wait before PWM, DUT name and
@@ -160,7 +160,7 @@ cells; the alert band and a tap on the row name the whole line
 | ARM | `ARM FIRST` | the line | the bench is SAFE. Amber: `START ARMS` |
 | ARM | `REPORT STILL BEING WRITTEN` | `WRITING REPORT` | an automatic test or a limit run is under way, or its report is still going to the card |
 | PORT | `NO SERVO PWM PIN`, `PINS NOT READ` | the line | PORT on the bench's outputs with no output bound as SERVO PWM, or the binding not read yet: the PORT button's own words. Named before the meter: on the rbmod carrier a channel watches a rail, and the outputs are on a rail only once one is bound ([Carrier: The current monitor](Carrier.md#the-current-monitor)) |
-| METER | `INA3221 NOT SET UP TO MEASURE SERVO SUPPLY CURRENT` | `NOT SET UP` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
+| METER | `SERVO CURRENT METER (INA3221) NOT SET UP` | `NOT SET UP` | no channel of a fitted INA3221 watches the tester's target in SETUP > SENSORS, CH2 or CH3 watches it on an IOmcu older than 4.25, an IOmcu older than protocol 4.11, or a SENSE page that does not hold the set-up |
 | METER | `INA3221 OFFLINE` | the line | no link, the part not answering, or its reset count moved |
 | METER | `NO INA3221 MEASUREMENT WINDOWS YET` | `NO WINDOWS YET` | the INA3221 is not the servo rail's meter yet: its set-up held for less than 1000ms, or no window with current in the last 200ms |
 | RAIL | `SERVO SUPPLY BELOW 3.0V OR NOT READ` | `BELOW 3.0V` | the last INA3221 window holds no rail voltage, or its mean is under 3.0V (`SERVO_LIMRUN_RAIL_MIN_MV`). An output that is off reads 0V, and a search there would find two free ends on a servo that never moved. 3.0V lies under the 4.8V servos are commonly specified from, so a single lithium cell's rail still starts; the voltage a given servo stops moving at is not measured. Amber while SAFE where the hold's supply feeds the rail: the PROG 5V on the carrier's port, a PD mini whose output is off. Amber in READ-BACK too, while the supply the steps switched on raises the rail |
@@ -257,7 +257,7 @@ at SUPPLY's SET A where a PD mini feeds the servo
   while the hold or the steps switch the output on. The state stays within
   its 20 cells in English and German, three digits of mA included
   (`EIN BEI START 2.125A`).
-- LIMIT RUN's and RUDDER AUTO's SETTINGS lists hold it as CURRENT,
+- LIMIT RUN's and RUDDER AUTO's OPTIONS lists hold it as CURRENT,
   `SET A 2.00A`.
 - A tap on the row, green or amber, or on CURRENT opens SUPPLY's keypad
   over the left column: CURRENT LIMIT in A, two decimals, within SUPPLY's
@@ -727,7 +727,7 @@ fired. Every end of a run, PASS included, switches the bench to SAFE.
 
 ### Method
 
-The voltage steps are the run's Step 4.8V and Step 6.0V (TEST's SETTINGS
+The voltage steps are the run's Step 4.8V and Step 6.0V (TEST's OPTIONS
 list), and with HV SERVO on, Step 7.4V and Step 8.4V. HV SERVO is off at every restart. The
 run's ends are RANGE of the travel either side of PULSE CENTER: Range on
 TEST's list is SWEEP's setting, and OUTPUT under it opens the servo
@@ -822,7 +822,7 @@ in steps of STEP to LOWEST VOLTAGE, the floor, or the supply's lowest set
 point if that is higher. STEP is 0.1 to 1.0V, 0.20V by default
 (`SERVO_TEST_BROWNOUT_STEP_V`); LOWEST VOLTAGE is 2.0 to 4.8V, 3.00V by
 default (`SERVO_TEST_BROWNOUT_FLOOR_V`). Both are set under BROWN-OUT on
-TEST's SETTINGS list, whose heading line names the walk on the supply in
+TEST's OPTIONS list, whose heading line names the walk on the supply in
 force, and kept in NVS (non-volatile storage). The k-th voltage is the start
 less k steps, to 0.01V. The cap in force is the lowest of VOLTAGE MAX, the
 supply's own maximum, and for the PD mini its input voltage less 0.7V. A
@@ -1023,7 +1023,7 @@ IOmcu holds AS5600 on: AS5600 switched on while ARMED gives a run
 without angle columns until the set-up has been taken in a SAFE state.
 
 The angle is the sensor's 12-bit count less the center count (AS5600 center,
-or ENC CENTER on RUDDER's SETTINGS list, which takes the live count with the servo at
+or ENC CENTER on RUDDER's OPTIONS list, which takes the live count with the servo at
 its neutral), in degrees from -180 to just under 180. The sensor counts up in
 the direction its DIR pin is strapped for; the test assumes the angle rises
 with the pulse width, so a DIR strap that runs the other way shows as an
@@ -1162,7 +1162,7 @@ IMU, shown with the IMU off too, and in the ANGLE SOURCE list.
 
 The ANGLE SOURCE list opens over the left column from the READY row ANGLE
 of RUDDER, RUDDER AUTO, TEST and LIMIT RUN and from the ANGLE SOURCE row
-of RUDDER's and RUDDER AUTO's SETTINGS lists, on a SAFE bench only: ARMED, an ARM asked, a run or a press held
+of RUDDER's and RUDDER AUTO's OPTIONS lists, on a SAFE bench only: ARMED, an ARM asked, a run or a press held
 refuses it, and a bench that leaves SAFE closes it. The code is
 `shared/ui/servo_angle_pick.c`. Its entries, top down, 10 at most:
 
@@ -1612,7 +1612,7 @@ mini's set points and the supply's plot
 
 | Part | Does | Limits |
 | --- | --- | --- |
-| SET V, SET A | a tap opens SUPPLY's VOLTAGE or CURRENT LIMIT keypad; OK puts the value on SUPPLY | SUPPLY's caps narrowed by its OUTPUT LIMITS. With the output live and SETTINGS, CONFIRM WHILE ON, KEYPAD on, SUPPLY's question first, ARMED or SAFE. A voltage raised past 6.0V: the HV warning's 2s hold first. Refused, the reason in the alert band, while a programming port holds the PD mini |
+| SET V, SET A | a tap opens SUPPLY's VOLTAGE or CURRENT LIMIT keypad; OK puts the value on SUPPLY | SUPPLY's caps narrowed by its OUTPUT LIMITS. With the output live and OPTIONS, CONFIRM WHILE ON, KEYPAD on, SUPPLY's question first, ARMED or SAFE. A voltage raised past 6.0V: the HV warning's 2s hold first. Refused, the reason in the alert band, while a programming port holds the PD mini |
 | plot | voltage, current and power of what feeds the servo, the last 9.0s, 180 x 48px, under a legend `5.02V  0.120A  0.60W` | the plot every function screen shows ([Screens](Screens.md#servo)): KST and HITEC under their READY rows, TEST under SUPPLY's caps, LIMIT RUN under its state lines, RUDDER AUTO right of ZERO and RESET MAX |
 
 On the rbmod carrier's programming port the servo runs from the fixed
@@ -1724,7 +1724,7 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   beside the degrees. MARGIN: 0 to 50%, 10% (`rud_margin`). TOLERANCE:
   0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the keypad. The same four,
   SERVO, SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name
-  and User logs are in SETTINGS. CURRENT is SUPPLY's SET A, as on LIMIT
+  and User logs are in OPTIONS. CURRENT is SUPPLY's SET A, as on LIMIT
   RUN ([The run's current limit](#the-runs-current-limit)); Wait before
   PWM is the KST programmer's wait the run's LEAVE sends. DUT name is the
   hub's, User logs SETUP > SD CARD's; the READY card has no room for a LOG
@@ -1773,7 +1773,7 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   that cut off a write on its way, which may have landed.
 - The servo is the SERVO row: RUDDER AUTO's own saved setting
   (`rauto_family`), KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, apart
-  from LIMIT RUN's. The card's SERVO choice and the SETTINGS list's SERVO
+  from LIMIT RUN's. The card's SERVO choice and the OPTIONS list's SERVO
   row set it; nothing else does. With HITEC D SERIES the list shows Hitec
   D receive under SERVO. On a Hitec servo the end points are LEFT END and RIGHT END in the units
   of [Hitec servos](#hitec-servos), the read session writes no pulses, and
@@ -1807,7 +1807,7 @@ sequence ends it as any leave does: SAFE, and the PROG 5V kept for another
 SERVO screen until SERVO is left. While the sequence runs the hold reads
 the step in amber, and a press on it stops them whatever is open over the
 screen; while the run runs it reads STOP RUN in red, and a press ends the
-run on the press. During the steps the left card's rows, SETTINGS, PORT and
+run on the press. During the steps the left card's rows, OPTIONS, PORT and
 the READY card take no press. The run starts on the settings as they read
 when the hold fired. PORT PWM stays ON after a failure, and the IOmcu's bit
 with it: the bench ends SAFE, and the port sends no pulse until the next
@@ -1984,7 +1984,7 @@ report still names a D series end point by its distance from NEUTRAL.
 
 ## Sweep and SPEED
 
-SWEEP on SERVO's SWEEP screen drives the servo through its SETTINGS list's
+SWEEP on SERVO's SWEEP screen drives the servo through its OPTIONS list's
 curve at its Speed in Hz over its Range, held for Dwell time at each end. Range and Dwell time are
 one setting each with TEST's list.
 SPEED on the right card limits how fast the output may move. When SPEED is

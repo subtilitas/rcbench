@@ -152,7 +152,7 @@ test('counts: parts, pads, wires, functions, stages, safety notes', () => {
     ],
   );
   assert.equal(CATALOGUE.rules.length, 7);
-  assert.equal(CATALOGUE.checks.length, 43);
+  assert.equal(CATALOGUE.checks.length, 44);
   assert.deepEqual(
     CATALOGUE.powerSources.map((s) => [s.id, s.feeds]),
     [

@@ -576,9 +576,12 @@ before it trusts the line: 100 to 125ms at the control task's 5ms period.
 The panel waits 100ms, then reads the STATUS fault register once per pass
 until the heartbeat bit reads clear, and only then writes CLEAR and the frame
 that switches to ARMED. If the bit has not cleared 300ms after the hold completed, the
-panel gives the switch up with `The IOmcu refused to switch to ARMED.` and writes nothing,
+panel gives the switch up and writes nothing,
 so the IOmcu's latch stays set. An answer that comes back later than
 those 300ms is not used, whatever it says.
+
+The alert names the cause from the IOmcu's fault bits at the refusal
+([Screens, An ARM the IOmcu refuses](Screens.md#an-arm-the-iomcu-refuses)).
 
 The same 300ms deadline applies to the writes that follow. The panel asks the
 deadline again before CLEAR and before the frame that switches to ARMED, because the
@@ -638,7 +641,7 @@ a third time after the ARMED frame is acknowledged. If an edit arrived
 during that frame, it writes ARM = 0 in the next exchange: the IOmcu is ARMED at rest
 on the range it held for that one exchange (time not measured), and the
 panel's bank does not switch to ARMED. The panel's own screens cannot
-publish an edit there: the two SETTINGS rows lock while ARM is held and
+publish an edit there: the two OPTIONS rows lock while ARM is held and
 while an ARM waits for its answer. SETUP's DISCARD, which can revert an
 unsaved value, is on another screen and takes no tap while the bench is
 ARMED, and leaving MOTOR & ESC or SERVO switches the bench to SAFE.
@@ -663,7 +666,7 @@ ARMED.
 An edit at time 0 is synchronized at the first poll at or after 300ms: a
 poll at 299ms leaves it pending; a poll at 300ms processes it. The time is taken modulo
 2^32ms, so the rest runs across the wrap of the millisecond clock. The
-SETTINGS rows for the two values lock while ARM is held, and the hold takes
+OPTIONS rows for the two values lock while ARM is held, and the hold takes
 2s, so an edit made before the press is normally synchronized during the hold.
 
 With no link the panel's own bank switches to ARMED and nothing is written.
@@ -1049,6 +1052,8 @@ The rule:
   STOP switches the PD mini off, and with it the servo. The PD mini's own
   current limit is the hard ceiling. The rbmod carrier's fixed 5V has no
   current reading: MOVE SERVO is refused there.
+- The band's arm chip reads `SAFE MOVE` in amber on every screen while MOVE
+  SERVO is on, `SAFE PROG n` while the port is held (`ui_band_safe_drives()`).
 - The knob moves nothing while MOVE SERVO is on: the `-`/`+` keys and the
   keypad edit the position, the knob rule of a SAFE bench stays.
 - FIND STOP runs inside MOVE SERVO's loop and its consent: it drives the

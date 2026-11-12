@@ -131,6 +131,12 @@ const S = {
     'B: bench power for a small servo: the 5V pin or the V pin of the Osoyoo breakout board',
     'B: Prüfstandsversorgung für ein kleines Servo: der 5V-Pin oder der V-Pin der Osoyoo-Breakout-Platine',
   ],
+  vStick: ['ESC STICK beeps counted from', 'Pieptöne der ESC-STICK-Programmierung gezählt von'],
+  vStTap: ['A: the phase tap on GPIO 22', 'A: dem Phasenabgriff an GPIO 22'],
+  vStIna: [
+    'B: an INA3221 channel in the ESC supply line, set to SUPPLY',
+    'B: einem INA3221-Kanal in der ESC-Versorgungsleitung, auf NETZTEIL gestellt',
+  ],
   vPort: ['Servo signal on', 'Servosignal an'],
   vPortOut: ['the standard outputs, GPIO 2', 'den Standardausgängen, GPIO 2'],
   vPortProg: ['the programming port, GPIO 13', 'dem Programmierport, GPIO 13'],

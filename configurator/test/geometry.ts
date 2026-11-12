@@ -143,7 +143,9 @@ const OPTION_SETS: Options[] = [];
 for (const connection of ['pads', 'osoyoo'] as const) {
   for (const ina228Board of ['matek', 'xt90'] as const) {
     for (const escPower of ['battery', 'pd'] as const) {
-      for (const servoPower of ['external', 'bench'] as const) OPTION_SETS.push({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' });
+      for (const servoPower of ['external', 'bench'] as const) {
+        for (const stickBeep of ['tap', 'ina3221'] as const) OPTION_SETS.push({ connection, ina228Board, escPower, servoPower, stickBeep, servoPort: 'outputs' });
+      }
     }
   }
 }
@@ -175,7 +177,8 @@ export function sweep(core: Core, catalogue: Catalogue = core.CATALOGUE): Sample
     const key = [
       setup.parts.map((p) => p.part.id).join(','),
       setup.wires.map((w) => w.n).join(','),
-      setup.options.map((o) => o.value).join(','),
+      // The beep source changes parts, which the key holds: its value adds no drawing.
+      setup.options.filter((o) => o.key !== 'stickBeep').map((o) => o.value).join(','),
     ].join('|');
     if (!seen.has(key)) seen.set(key, { selection, setup, key });
   }

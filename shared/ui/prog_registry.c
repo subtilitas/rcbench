@@ -438,6 +438,25 @@ bool prog_reg_detail(const prog_reg_row_t *rows, size_t n, size_t i,
     return false;
 }
 
+bool prog_reg_warning(const prog_reg_row_t *rows, size_t n, size_t i,
+                      uint16_t caps, char *out, size_t size)
+{
+    if (out == NULL || size == 0u) {
+        return false;
+    }
+    out[0] = '\0';
+    if (rows == NULL || i >= n || rows[i].page_set != &esc_stick_pages
+        || prog_reg_state(rows, n, i, caps) != PROG_ROW_LIVE) {
+        return false;
+    }
+    const char *tag = esc_stick_panel_bench_tag();
+    if (tag == NULL) {
+        return false;
+    }
+    snprintf(out, size, "%s", tag);
+    return true;
+}
+
 /* -------------------------------------------------------- the list model */
 
 void prog_list_build(prog_list_t *l, const prog_reg_row_t *rows, size_t n,
@@ -782,6 +801,14 @@ void prog_view_render(const prog_view_t *v, const prog_list_t *l,
         char detail[48];
         const bool dim = prog_reg_detail(rows, n, i, caps, detail,
                                          sizeof(detail));
+        /* A live row whose session cannot run as the bench stands says
+         * why in its detail's place, in the warning colour. */
+        char why[48];
+        const bool warn = !dim && prog_reg_warning(rows, n, i, caps, why,
+                                                   sizeof(why));
+        if (warn) {
+            memcpy(detail, why, sizeof(detail));
+        }
         gfx_color_t body = ui_theme_color(UI_C_PANEL_SUNK);
         if (v->pressed == k && !dim) {
             body = gfx_lerp(body, GFX_WHITE, 110);
@@ -798,8 +825,8 @@ void prog_view_render(const prog_view_t *v, const prog_list_t *l,
         const gfx_rect_t d = { (int16_t)(r.x + r.w / 2 - 20), r.y,
                                (int16_t)(r.w / 2 + 20 - 30), r.h };
         gfx_text_in(c, d, detail, PROG_VIEW_FONT,
-                    dim ? ui_theme_color(UI_C_WARN)
-                        : ui_theme_color(UI_C_TEXT_DIM),
+                    (dim || warn) ? ui_theme_color(UI_C_WARN)
+                                  : ui_theme_color(UI_C_TEXT_DIM),
                     1, GFX_ALIGN_RIGHT);
         if (!dim) {
             gfx_text(c, r.x + r.w - 22, ty, ">", PROG_VIEW_FONT,

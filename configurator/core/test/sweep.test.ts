@@ -1,5 +1,5 @@
 // The sweep: invariants 11 to 22 on every subset of the parts you own, on
-// every subset of the functions, each under all 16 option combinations, and on
+// every subset of the functions, each under all 32 option combinations, and on
 // 2000 mixed selections from a generator with a fixed seed.
 
 import assert from 'node:assert/strict';
@@ -8,7 +8,7 @@ import { test } from 'node:test';
 import type { Catalogue, Options, Selection, Setup, Wire } from '../../contract.ts';
 import { CATALOGUE } from '../catalogue.ts';
 import { alwaysOn } from '../groups.ts';
-import { OPTION_VALUES, resolve } from '../resolve.ts';
+import { OPTION_VALUES, fnNeeds, resolve } from '../resolve.ts';
 
 const SEED = 0x16_00_2026;
 const MIXED = 2000;
@@ -29,7 +29,8 @@ const LOCKED = CATALOGUE.parts.filter((p) => p.locked).map((p) => p.id);
 const OPTION_SETS: Options[] = OPTION_VALUES.connection.flatMap((connection) =>
   OPTION_VALUES.ina228Board.flatMap((ina228Board) =>
     OPTION_VALUES.escPower.flatMap((escPower) =>
-      OPTION_VALUES.servoPower.map((servoPower) => ({ connection, ina228Board, escPower, servoPower, servoPort: 'outputs' as const })))));
+      OPTION_VALUES.servoPower.flatMap((servoPower) =>
+        OPTION_VALUES.stickBeep.map((stickBeep) => ({ connection, ina228Board, escPower, servoPower, stickBeep, servoPort: 'outputs' as const }))))));
 
 const PADS = new Map(CATALOGUE.pads.map((p) => [p.n, p]));
 const PINS = new Set(CATALOGUE.parts.flatMap((part) => part.pins.map((pin) => `${part.id}.${pin.id}`)));
@@ -217,7 +218,7 @@ function assertInvariants(catalogue: Catalogue, selection: Selection): Setup {
   assert.deepEqual([...numbers], [...numbers].sort((a, b) => a - b), `wire order for ${where}`);
   for (const f of setup.functions) {
     assert.equal(f.chosen, selection.functions.includes(f.fn.id));
-    assert.deepEqual(f.missing, f.fn.needs.filter((id) => !present.has(id)));
+    assert.deepEqual(f.missing, fnNeeds(f.fn, options).filter((id) => !present.has(id)));
     if (f.chosen) assert.ok(f.enabled, `${f.fn.id} is chosen and not enabled for ${where}`);
     // A function that drives a test object is enabled only with the test object connected.
     if (f.enabled && f.fn.drives !== undefined) assert.ok(present.has(f.fn.drives), `${f.fn.id} without ${f.fn.drives} for ${where}`);
@@ -256,7 +257,7 @@ test('the count of subsets is inside the limit of the sweep', () => {
   assert.equal(FUNCTIONS.length, 12);
   assert.equal(BASE.length, 12);
   assert.deepEqual(TEST_OBJECTS, ['servo', 'esc']);
-  assert.equal(OPTION_SETS.length, 16);
+  assert.equal(OPTION_SETS.length, 32);
   for (const [name, count] of [['parts you own', SELECTABLE.length], ['functions', FUNCTIONS.length]] as const) {
     assert.ok(
       2 ** count <= SUBSET_LIMIT,
@@ -275,7 +276,7 @@ test('sweep: every subset of the parts you own, under every option combination',
       count += 1;
     }
   }
-  assert.equal(count, 4096);
+  assert.equal(count, 8192);
   // Every part of the catalogue is in at least one setup, but the test
   // objects: no part you own connects one.
   const seen = new Set([...partSets].flatMap((ids) => ids.split(',')));
@@ -294,7 +295,7 @@ test('sweep: every subset of the functions, under every option combination', () 
       count += 1;
     }
   }
-  assert.equal(count, 65536);
+  assert.equal(count, 131072);
   // Every part of the catalogue is in at least one setup that functions alone reach.
   assert.deepEqual(CATALOGUE.parts.map((p) => p.id).filter((id) => !parts.has(id)), []);
   // Every wire of the catalogue is in at least one setup that functions alone reach.

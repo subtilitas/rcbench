@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "link_pages.h"
+#include "prog5v_box.h"
 #include "settings.h"
 #include "status_poll.h"
 #include "ui_text.h"
@@ -85,6 +86,29 @@ bool ui_band_hwstop(const ui_bench_status_t *st)
            && status_poll_fast(settings_get_bool(SET_HW_STOP), st->faults);
 }
 
+uint8_t ui_band_prog_port(uint8_t held)
+{
+    if (held < 4u) {
+        return (uint8_t)(held + 1u);
+    }
+    return (held == PROG5V_HELD_SOME) ? (uint8_t)UI_PROG_PORT_SOME : 0u;
+}
+
+bool ui_band_safe_drives(const ui_bench_status_t *st)
+{
+    return st != NULL && !st->armed && !st->stop_latched
+           && (st->prog_moving || st->prog_port != 0u);
+}
+
+ui_text_id_t ui_band_arm_refused(uint16_t faults, bool hw_stop)
+{
+    if ((faults & (uint16_t)LINK_FAULT_HEARTBEAT) != 0u) {
+        return status_poll_fast(hw_stop, faults) ? TX_ALERT_ARM_HWSTOP
+                                                 : TX_ALERT_ARM_HEARTBEAT;
+    }
+    return (faults != 0u) ? TX_ALERT_ARM_REFUSED_FAULT : TX_ALERT_ARM_REFUSED;
+}
+
 /* The chip's label for @p st, in @p buf where it is formatted. */
 static const char *chip_label(const ui_bench_status_t *st,
                               ui_band_chip_t chip, char *buf, size_t n)
@@ -97,8 +121,23 @@ static const char *chip_label(const ui_bench_status_t *st,
         if (st->stop_latched) {
             return "STOP";
         }
-        return st->armed ? ui_band_armed_label(st->armed_roles)
-                         : TR(BAND_SAFE);
+        if (st->armed) {
+            return ui_band_armed_label(st->armed_roles);
+        }
+        /* What a SAFE bench still drives: the servo MOVE SERVO moves, or
+         * the programming port a programmer holds.  11 cells at most, as
+         * ARMED MOTOR, so the row is no wider than an armed one. */
+        if (st->prog_moving) {
+            return TR(BAND_SAFE_MOVE);
+        }
+        if (st->prog_port >= 1u && st->prog_port <= 4u) {
+            snprintf(buf, n, TR(BAND_SAFE_PROG), (unsigned)st->prog_port);
+            return buf;
+        }
+        if (st->prog_port == UI_PROG_PORT_SOME) {
+            return TR(BAND_SAFE_PROG_ANY);
+        }
+        return TR(BAND_SAFE);
     case UI_BAND_CHIP_FAULT:
         snprintf(buf, n, TR(BAND_FAULT), (unsigned)st->faults);
         return buf;
@@ -419,6 +458,11 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
             break;
         }
         if (!st->armed) {
+            if (st->prog_moving) {
+                ids[n++] = TX_BH_SAFE_MOVE;
+            } else if (st->prog_port != 0u) {
+                ids[n++] = TX_BH_SAFE_PROG;
+            }
             ids[n++] = TX_BH_SAFE;
             break;
         }
@@ -550,7 +594,8 @@ void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
         return;
     }
     gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
-    if (chip == UI_BAND_CHIP_FAULT) {
+    if (chip == UI_BAND_CHIP_FAULT
+        || (chip == UI_BAND_CHIP_ARMED && ui_band_safe_drives(st))) {
         accent = ui_theme_color(UI_C_WARN);
     } else if (chip == UI_BAND_CHIP_LINK) {
         accent = st->link_up ? ui_theme_color(UI_C_OK)
@@ -595,6 +640,11 @@ static void chip_look(const ui_bench_status_t *st, ui_band_chip_t chip,
          * on the same red badge. */
         if (st->armed || st->stop_latched) {
             *fill = ui_theme_color(UI_C_DANGER);
+            *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
+        } else if (ui_band_safe_drives(st)) {
+            /* SAFE with a port held or a servo moving: the warning's
+             * amber, as FAULT's. */
+            *fill = ui_theme_color(UI_C_WARN);
             *ink  = ui_theme_color(UI_C_TEXT_ON_LIGHT);
         }
         break;

@@ -17,6 +17,7 @@
 #include "hardware/structs/powman.h"
 #include "hardware/structs/watchdog.h"
 #include "pico/bootrom.h"
+#include "pico/stdio_usb.h"
 
 #include "iomcu.h"
 
@@ -35,14 +36,40 @@
  *
  * The bench console build sends them through the console's output: none lands
  * inside a console line that leaves in pieces, and none waits for the host.
- * Every other build prints them, and printf() waits for the host for up to 500
- * ms (PICO_STDIO_USB_STDOUT_TIMEOUT_US).
+ * Every other build prints them.  A printf() waits for room in the USB
+ * transmit buffer for at most PICO_STDIO_USB_STDOUT_TIMEOUT_US after the host
+ * last took bytes, then drops the rest of the line.
  */
 #if IOMCU_CONSOLE
 #define IOMCU_SAY console_hw_say
 #else
 #define IOMCU_SAY printf
 #endif
+
+/**
+ * @brief The longest a printf() waits for room in the USB transmit buffer
+ * after the host last took bytes, in us.
+ *
+ * The main loop samples the heartbeat, and 150ms without an edge switches
+ * every output off: a USB host that holds the port open and stops reading
+ * holds a printf() for this long at most, not the SDK's 500,000us.
+ * firmware/iomcu/CMakeLists.txt sets PICO_STDIO_USB_STDOUT_TIMEOUT_US and
+ * says why; the assert below holds the two equal.
+ */
+#define IOMCU_USB_STDOUT_WAIT_US 1000u
+
+/**
+ * @brief The USB transmit buffer, in bytes: CFG_TUD_CDC_TX_BUFSIZE.
+ *
+ * The 3s report at its widest, 1,489 bytes, fits whole, so a host that read
+ * the last report gets this one without a printf() waiting.
+ */
+#define IOMCU_USB_TX_BUFFER_BYTES 2048u
+
+_Static_assert(PICO_STDIO_USB_STDOUT_TIMEOUT_US == IOMCU_USB_STDOUT_WAIT_US,
+               "a stalled USB host must not hold the main loop");
+_Static_assert(CFG_TUD_CDC_TX_BUFSIZE == IOMCU_USB_TX_BUFFER_BYTES,
+               "the 3s report must fit the USB transmit buffer");
 
 /* reset_cause.h holds the SDK's bit values without the SDK. */
 _Static_assert(RESET_CHIP_HAD_POR == POWMAN_CHIP_RESET_HAD_POR_BITS, "POR");
@@ -259,8 +286,8 @@ void can_report(uint32_t now)
      * Said in words: an overflow is the one thing that explains a frame
      * going missing while the bus reports no error.  The part has two
      * receive buffers, so anything that stops this loop for two frame times
-     * costs a frame, and a printf to a USB host that has stopped reading is
-     * such a thing.
+     * costs a frame, and a printf that waits up to 1,000us for a USB host
+     * that has stopped reading is such a thing.
      */
     if (s_can_overflows > 0u) {
         IOMCU_SAY("rcbench-iomcu: CAN receive buffers overran %lu time(s) -- "

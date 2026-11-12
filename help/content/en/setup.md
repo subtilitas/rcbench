@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP contains bench-wide panel settings under PANEL, SENSORS and SD CARD. ESC (electronic speed controller) settings are under [MOTOR & ESC, SETTINGS](motor-settings.md). Open SETUP from the [menu](overview.md) to see its 3-by-3 tile grid. Each category opens a full-width settings list.
+SETUP contains bench-wide panel settings under PANEL, SENSORS and SD CARD. ESC (electronic speed controller) settings are under [MOTOR & ESC, OPTIONS](motor-settings.md). Open SETUP from the [menu](overview.md) to see its 3-by-3 tile grid. Each category opens a full-width settings list.
 
 ## The tiles
 
@@ -95,7 +95,7 @@ The warning also includes the DUT (device under test) name and settings from oth
 
 ![Twelve values unsaved](view:setup-leave-many)
 
-Changing a setting on [MOTOR & ESC, SETTINGS](motor-settings.md) requests a save automatically. That write includes unsaved SETUP values.
+Changing a setting on [MOTOR & ESC, OPTIONS](motor-settings.md) requests a save automatically. That write includes unsaved SETUP values.
 
 No warning shows when nothing is unsaved, when a save is asked (`WHEN IDLE`), or on the way to OUTPUTS, WI-FI and UPDATES. STOP stops the bench and leaves the warning open. A screen the panel opens by itself, such as the bus-fault screen after a link loss, closes the warning and leaves the values in force and unsaved.
 
@@ -161,7 +161,7 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of
 - OFF writes no file and takes no number. No card alert of that kind of run shows.
 - Auto logs switched off during a run ends that run's file there; switched on during an ARMED or supply run, a file starts there.
 - User logs counts when TEST's or LIMIT RUN's `HOLD 2s: ARM + START` starts the run: a run keeps what it started with. With it off, the SERVO screen names `USER LOGS OFF` where the file would be.
-- REPORT under DUT on the SERVO hub's SETTINGS list decides, with User logs ON, whether `ATESTnnn.TXT` is written.
+- REPORT under DUT on the SERVO hub's OPTIONS list decides, with User logs ON, whether `ATESTnnn.TXT` is written.
 - The fault log, `BENCH/RCBENCH.LOG`, is written whatever Auto logs says.
 - [Logs](logs.md#what-a-run-writes) lists the folders.
 

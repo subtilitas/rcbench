@@ -6,9 +6,9 @@ order: 11
 
 # Motor settings
 
-SETTINGS in the footer of [MOTOR & ESC](motor.md) opens the bench's 8 ESC (electronic speed controller) settings as one list over the whole screen, under PACK, MOTOR and THROTTLE OUTPUT. It opens on a SAFE bench only; otherwise the band reads `SETTINGS open on a SAFE bench only. Switch to SAFE first.` The list closes when the bench leaves SAFE.
+OPTIONS in the footer of [MOTOR & ESC](motor.md) opens the bench's 8 ESC (electronic speed controller) settings as one list over the whole screen, under PACK, MOTOR and THROTTLE OUTPUT. It opens on a SAFE bench only; otherwise the band reads `OPTIONS open on a SAFE bench only. Switch to SAFE first.` The list closes when the bench leaves SAFE.
 
-![SETTINGS](view:motor-settings)
+![OPTIONS](view:motor-settings)
 
 The list works as SETUP's: `-` and `+` step a value, held they repeat, and a drag scrolls. Tap a value to open the keypad over the screen. The keypad shows the setting and its range. OK accepts an in-range value. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag closes the keypad without changes. Values are rounded to the setting's step: 4321mAh becomes 4300mAh.
 

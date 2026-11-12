@@ -6,7 +6,7 @@ order: 21
 
 # Servo settings
 
-SETTINGS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test); LIVE's SETTINGS opens the same list. SWEEP, TEST, RUDDER, RUDDER AUTO, LIMIT RUN and HITEC have lists of their own, KST its EXPERT MODE page. A tap on the type pill of LIVE, SWEEP and RUDDER opens the profile in the list's place with TYPE in view; a tap on the RANGE row of LIMIT RUN's and RUDDER AUTO's READY cards, or on OUTPUT in TEST's list, opens it with PULSE MIN in view. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only, and a bench that goes live closes it and any page of rows, with any keypad, choice list or warning open over it; nothing typed or picked there is taken. The hub's opens at any time. No list opens while a programmer session holds its port, or while a finger is still on another control. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
+OPTIONS in the footer of a [SERVO](servo.md) screen opens that screen's list. The hub's list is the servo profile every function uses: OUTPUT and DUT (device under test); LIVE's OPTIONS opens the same list. SWEEP, TEST, RUDDER, RUDDER AUTO, LIMIT RUN and HITEC have lists of their own, KST its EXPERT MODE page. A tap on the type pill of LIVE, SWEEP and RUDDER opens the profile in the list's place with TYPE in view; a tap on the RANGE row of LIMIT RUN's and RUDDER AUTO's READY cards, or on OUTPUT in TEST's list, opens it with PULSE MIN in view. Use CLOSE at the top right of a run's page or the home tag to return. A function's list opens on a SAFE bench only, and a bench that goes live closes it and any page of rows, with any keypad, choice list or warning open over it; nothing typed or picked there is taken. The hub's opens at any time. No list opens while a programmer session holds its port, or while a finger is still on another control. A change on a list stays marked unsaved until SAVE in the strip. Tap a number for the keypad, a choice for its list, a switch to toggle it, or NAME for the keyboard.
 
 ## OUTPUT, on the hub's list
 
@@ -65,9 +65,9 @@ OUTPUT's heading line reports the rate status, in the warning colour while the r
 
 ## The automatic test's settings
 
-![TEST's SETTINGS list](view:servo-test-settings)
+![TEST's OPTIONS list](view:servo-test-settings)
 
-SETTINGS in TEST's footer, or a tap on RANGE on TEST's READY card, opens the automatic test's list, on a SAFE bench only. It has 21 rows under six headings; each heading's line names what its rows give, RANGE's the run's ends, `1100-1900us`. A change is kept by SAVE in the strip; leaving with a change asks SAVE or DISCARD. RESET TEST puts every row to its default and HV SERVO off. The list closes as the bench arms or a run starts. Range and Dwell time are SWEEP's too, DUT name and Report the hub's: one setting each, whichever list sets it.
+OPTIONS in TEST's footer, or a tap on RANGE on TEST's READY card, opens the automatic test's list, on a SAFE bench only. It has 21 rows under six headings; each heading's line names what its rows give, RANGE's the run's ends, `1100-1900us`. A change is kept by SAVE in the strip; leaving with a change asks SAVE or DISCARD. RESET TEST puts every row to its default and HV SERVO off. The list closes as the bench arms or a run starts. Range and Dwell time are SWEEP's too, DUT name and Report the hub's: one setting each, whichever list sets it.
 
 | Heading | Setting | Range | Default | What it does |
 |---|---|---|---|---|
@@ -105,7 +105,7 @@ After the supply steps, the walk starts at 5.0V or the voltage cap, whichever is
 
 ![LIMIT RUN's list on the bench's outputs](view:servo-limits)
 
-SETTINGS in LIMIT RUN's footer opens the list. Off a PROG PORT, MODE, SERVO and SERVO PULSES are locked with `On a PROG PORT only: choose one with PORT`.
+OPTIONS in LIMIT RUN's footer opens the list. Off a PROG PORT, MODE, SERVO and SERVO PULSES are locked with `On a PROG PORT only: choose one with PORT`.
 
 | Setting | Range | Default | What it does |
 |---|---|---|---|
@@ -122,7 +122,7 @@ The list has no voltage: a run programs at 5.0V ([The supply: 5.0V](servo.md#the
 
 ## SUPPLY's caps
 
-The active voltage and current caps constrain set points and run steps. They appear below TEST's card in a button such as `CAPS 21.00V 5.00A: OPEN SUPPLY`. Tap it to open [SUPPLY](supply.md) > SETTINGS > LIMITS, where you can set them. The home tag returns. The button is grey while the PORT button is locked, because leaving SERVO would switch the bench to SAFE.
+The active voltage and current caps constrain set points and run steps. They appear below TEST's card in a button such as `CAPS 21.00V 5.00A: OPEN SUPPLY`. Tap it to open [SUPPLY](supply.md) > OPTIONS > LIMITS, where you can set them. The home tag returns. The button is grey while the PORT button is locked, because leaving SERVO would switch the bench to SAFE.
 
 ## DUT, on the hub's list
 
@@ -142,7 +142,7 @@ The active voltage and current caps constrain set points and run steps. They app
 |---|---|---|
 | ENC CENTER | RUDDER's list | a tap takes the live AS5600 count, 0 to 4095, as the center, with the servo at neutral; with ANGLE SOURCE IMU it takes nothing |
 | ANGLE SOURCE | RUDDER's and RUDDER AUTO's lists | a tap opens the [ANGLE SOURCE list](servo-rudder.md#the-angle-source): the AS5600, the IMUs found and SEARCH FOR IMU |
-| KST EXPERT MODE | SETTINGS on SERVO > KST | whether the [KST and Chaservo programmer](servo-programmer.md#kst-expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold, OFF with a tap |
+| KST EXPERT MODE | OPTIONS on SERVO > KST | whether the [KST and Chaservo programmer](servo-programmer.md#kst-expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold, OFF with a tap |
 
 ANGLE SOURCE selects the AS5600 or IMU for run angles. IMU angles use AS5600 counts of 0.088°. The test CSV identifies the source in its last column, `angle source`; both reports use an `Angle source:` line.
 

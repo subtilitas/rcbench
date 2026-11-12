@@ -19,8 +19,6 @@ Das Panel führt bei jedem Start während des Splash einen CAN-Echo-Selbsttest �
 - PRÜFREIHENFOLGE listet die Prüfungen auf, beginnend mit dem geringsten Aufwand.
 - Die rechte Spalte zeigt die Zähler an beiden Enden: gesendet, zurück, verändert und verloren.
 
-![Nichts kam zurück](view:busfault-silent)
-
 | Überschrift | WAS DAS BEDEUTET | Die Prüfungen zielen auf |
 |---|---|---|
 | `Kein Testframe kam zurück.` | `Keine Antwort am Bus. Die beiden Platinen können keine Daten austauschen.` | Versorgung, vertauschte CANH und CANL, das Release, die Abschlüsse |
@@ -29,6 +27,18 @@ Das Panel führt bei jedem Start während des Splash einen CAN-Echo-Selbsttest �
 | `Testframes gingen ohne Busfehler verloren.` | `Frames kamen korrekt an, wurden aber ungelesen verworfen. Kein Verkabelungsfehler.` | nicht die Leitung; mit den Zahlen rechts melden |
 
 Miss bei ausgeschaltetem Prüfstand etwa 60Ω zwischen CANH und CANL. Ein Messwert von 120Ω bedeutet, dass einer der beiden Abschlüsse fehlt. Halte die gesamte Buslänge unter 5m und jede Stichleitung unter 30cm.
+
+## Kein IOmcu hat geantwortet
+
+![Kein IOmcu hat geantwortet](view:busfault-silent)
+
+Ein stiller Bus, auf dem kein IOmcu eine der beiden Statusanfragen beantwortet hat, die vor dem Echo-Lauf oder die danach, ist ein Panel allein: vor dem IOmcu eingeschaltet, oder der IOmcu ist noch nicht verdrahtet. Die Seite nennt dann keinen Fehler.
+
+- Der Balken ist bernsteinfarben und zeigt KEIN IOMCU. Die Überschrift lautet `Kein IOmcu hat geantwortet.`
+- Die Prüfungen des stillen Busses stehen unter IST EIN IOMCU ANGESCHLOSSEN, PRÜFE IN DIESER REIHENFOLGE.
+- Ein Tippen auf TIPPEN ZUM FORTFAHREN führt ins Menü in der Simulation.
+
+Frames, die verändert zurückkamen oder verloren gingen, und ein stiller Test mit einem IOmcu, der eine Statusanfrage davor oder danach beantwortet hat, behalten das Halten für 2s.
 
 ## Ein Link, der abbricht
 
@@ -60,7 +70,7 @@ Die Zähler rechts folgen der Verbindung, solange die Seite sichtbar ist. Hat de
 
 ## Den Bildschirm verlassen
 
-2s HALTEN ZUM BESTÄTIGEN schließt die Seite mit derselben Haltegeste und demselben Übergang wie ARM. Das Bestätigen behebt den Fehler nicht. Der Prüfstand läuft anschließend in der Simulation und steuert keine Ausgänge an. Beim nächsten Start läuft der Selbsttest erneut. Antwortet die Verbindung wieder, tritt 2s HALTEN ZUM NEUVERBINDEN an ihre Stelle.
+2s HALTEN ZUM BESTÄTIGEN schließt die Seite mit derselben Haltegeste und demselben Übergang wie ARM. Hat kein IOmcu geantwortet, schließt sie stattdessen ein Tippen auf TIPPEN ZUM FORTFAHREN. Das Bestätigen behebt den Fehler nicht. Der Prüfstand läuft anschließend in der Simulation und steuert keine Ausgänge an. Beim nächsten Start läuft der Selbsttest erneut. Antwortet die Verbindung wieder, tritt 2s HALTEN ZUM NEUVERBINDEN an ihre Stelle.
 
 Lässt du vor 2s los, zeigt die Seite anstelle des roten Balkens 4s lang bernsteinfarben, was die Taste tut: `Halte 2s, um zu bestätigen.` oder `Halte 2s, um neu zu verbinden.` Ein Tipp auf den Balken schließt den Hinweis.
 
