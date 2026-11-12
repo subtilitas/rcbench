@@ -262,9 +262,11 @@ def s32(value: int) -> int:
 
 
 def read_line(line: str) -> tuple[str, tuple] | None:
-    """A whole line of a trace as its kind and its fields; None for
-    anything else: a line cut short or with more than its fields, or a
-    number out of its range."""
+    """A whole line of a trace as its kind and its fields.
+
+    None for anything else: a line cut short or with more than its fields, or a
+    number out of its range.
+    """
     for kind, regex, ranges in GRAMMAR:
         m = regex.fullmatch(line)
         if m is None:
@@ -287,6 +289,7 @@ class Trace:
 
     def __init__(self, number: int, trig: str, t0: int, t0_abs: int,
                  ms: int, length: int) -> None:
+        """A trace with its trigger, start times, tick and length."""
         self.number = number
         self.trig = trig
         self.t0 = t0                # as printed, modulo 2^32
@@ -336,24 +339,29 @@ class Trace:
         return ua if code >= 0 else -ua
 
     def judged(self, k: int) -> tuple[int, int]:
-        """Sample @p k as the capture judges it: the current in uA, and 1
-        for a sample at or past the top of the range, -1 for one at or
-        past the bottom, 0 for a value.  A clipped sample is the last
-        value before that end.  Every level and the replay take a sample
-        from here."""
+        """Sample @p k as the capture judges it.
+
+        The current in uA, and 1 for a sample at or past the top of the range,
+        -1 for one at or past the bottom, 0 for a value.  A clipped sample is
+        the last value before that end.  Every level and the replay take a
+        sample from here.
+        """
         code = self.code[k]
         clip = 1 if code >= CLIP_HI else -1 if code <= CLIP_LO else 0
         return self.microamps(CLIP_AS * clip if clip else code), clip
 
 
 def parse_log(text: str) -> tuple[list[Trace], int, list[tuple[int, str]]]:
-    """The traces of a console log, the lines that belong to none, and
+    """The traces of a console log and the lines that belong to none.
+
+    The traces of a console log, the lines that belong to none, and
     (line number, text) of the lines of a trace that stand outside one.
 
     A line ends LF or CR LF.  Inside a trace a line is a whole line of the
     format, or one of the IOmcu's other console lines, or it is
     counted as damage in Trace.bad; nothing is taken off a line before it
-    is read."""
+    is read.
+    """
     traces: list[Trace] = []
     cur: Trace | None = None
     other = 0
@@ -497,8 +505,7 @@ def shown(line: str) -> str:
 
 
 def check(tr: Trace) -> None:
-    """The lines read against the format and against what the end line
-    counts."""
+    """The lines read against the format and against the end line's counts."""
     if tr.bad:
         no, line = tr.bad[0]
         tr.problems.append(
@@ -559,10 +566,13 @@ def check(tr: Trace) -> None:
 
 
 def write_csv(tr: Trace, path: pathlib.Path) -> None:
-    """Time in ms from the trigger, current in A, bus voltage in V, and
+    """Time, current, bus voltage and clip of each sample.
+
+    Time in ms from the trigger, current in A, bus voltage in V, and
     the clip: 1 at or past the top of the range, -1 at or past the
     bottom, 0 for a value.  A clipped row's current is its end code's,
-    a bound and not a value."""
+    a bound and not a value.
+    """
     rows = ["time (ms);current (A);bus voltage (V);clipped"]
     for k, (t, code) in enumerate(zip(tr.t, tr.code, strict=True)):
         volts = f"{tr.mv[k] / 1000.0:.3f}" if k in tr.mv else ""
@@ -602,6 +612,7 @@ class Move:
 
     def __init__(self, tr: Trace, t: int, ch: int | None,
                  us: int | None) -> None:
+        """A move of channel @p ch to @p us at time @p t of trace @p tr."""
         self.tr = tr
         self.t = t                  # 0.1ms from the trace's trigger
         self.ch = ch
@@ -620,6 +631,7 @@ class Move:
 
     @property
     def abs_s(self) -> float:
+        """The time of the move in seconds, unwrapped across the log."""
         return (self.tr.t0_abs + self.t) / (T_PER_MS * 1000.0)
 
 
@@ -627,6 +639,7 @@ class Level:
     """The samples of one window a level is taken from: lo <= t < hi."""
 
     def __init__(self, tr: Trace, lo: int | None, hi: int | None) -> None:
+        """The samples of @p tr from time @p lo up to @p hi."""
         # A trace that is replayed has its samples in the order of time.
         self.first = 0 if lo is None else bisect.bisect_left(tr.t, lo)
         self.last = (len(tr.t) if hi is None
@@ -645,23 +658,29 @@ class Level:
 
     @property
     def mean(self) -> float:
+        """The mean current in A."""
         return statistics.fmean(self.amps)
 
     @property
     def dev(self) -> float:
+        """The largest distance of a sample from the mean, in A."""
         return spread(self.amps)[2]
 
 
 def broken(first: int, last: int, marks: list[int]) -> bool:
-    """Whether a $L or $S line stands among the samples [first, last) or
-    at either end of them.  A line is kept as the number of samples before
+    """Whether a $L or $S line is among samples [first, last) or at an end.
+
+    A line is kept as the number of samples before
     it.  At the ends counts: the records that are missing there can be the
-    window's, and the rules count samples."""
+    window's, and the rules count samples.
+    """
     return any(first <= at <= last for at in marks)
 
 
 def pair_near(a: list[int], b: list[int], limit: int) -> dict[int, int]:
-    """Index in @p a to index in @p b for times no more than @p limit
+    """Pair the indices of @p a and @p b for times at most @p limit apart.
+
+    Index in @p a to index in @p b for times no more than @p limit
     apart, each index in one pair at most: as many pairs as there can be,
     and of the ways to pair that many the least distance in sum.
 
@@ -706,10 +725,12 @@ def pair_near(a: list[int], b: list[int], limit: int) -> dict[int, int]:
 
 def find_moves(tr: Trace, floor_a: float,
                loaded: frozenset[int] | None = None) -> list[Move]:
-    """The trace's moves with their levels; none for a trace without a
-    shunt or without commands.  With @p loaded, the moves of those
-    channels alone; the edge lines left out with the other channels are
-    counted in Trace.edges_out."""
+    """The trace's moves with their levels.
+
+    None for a trace without a shunt or without commands.  With @p loaded, the
+    moves of those channels alone; the edge lines left out with the other
+    channels are counted in Trace.edges_out.
+    """
     # A trace that does not match its end line has lines missing nobody
     # can place: the rules count samples, so nothing of it is replayed.
     if tr.shunt_uohm == 0 or tr.problems:
@@ -942,7 +963,9 @@ def number(text: str) -> float | None:
 
 
 def read_travel(path: pathlib.Path) -> tuple[list[tuple[float, float]], bool]:
-    """(row time in s, travel time in ms) for each `travel angle (ms)`, and
+    """The (row time, travel time) pairs of a servo CSV file.
+
+    (row time in s, travel time in ms) for each `travel angle (ms)`, and
     whether the file's last row was cut off and left out.
 
     A row ends at its line feed, as the panel's reader has it
@@ -1051,10 +1074,15 @@ def pair_rows(moves: list[Move], rows: list[tuple[float, float]],
 # --- the report --------------------------------------------------------------
 
 def fmt_ms(value: float | None, state: str) -> str:
+    """@p value in ms as 8 columns, or @p state when it is None."""
     return f"{value:8.1f}" if value is not None else f"{state:>8}"
 
 
 def report_noise(tr: Trace, until: int | None, out: list[str]) -> None:
+    """Append the noise of a trace to @p out.
+
+    The noise is measured up to the time @p until when it is set.
+    """
     amps = Level(tr, None, until).amps
     if not amps:
         return
@@ -1069,6 +1097,7 @@ def report_noise(tr: Trace, until: int | None, out: list[str]) -> None:
 
 def report_trace(tr: Trace, moves: list[Move], csv: pathlib.Path | None,
                  out: list[str]) -> None:
+    """Append the report of one trace and its moves to @p out."""
     span = (tr.t[-1] - tr.t[0]) / T_PER_MS if tr.t else 0.0
     out.append(f"trace {tr.number}: trigger {tr.trig} at tick {tr.ms} ms, "
                f"{len(tr.t)} samples over {span:.1f} ms, {tr.n_volts} "
@@ -1154,8 +1183,11 @@ def report_trace(tr: Trace, moves: list[Move], csv: pathlib.Path | None,
 
 
 def report_spread(moves: list[Move], out: list[str]) -> None:
-    """What the traces alone decide: which settings time every move, and
-    how far the settings' arrivals lie apart."""
+    """What the traces alone decide.
+
+    Which settings time every move, and how far the settings' arrivals lie
+    apart.
+    """
     total = len(moves)
     full = []
     medians = {}
@@ -1208,6 +1240,7 @@ def report_spread(moves: list[Move], out: list[str]) -> None:
 
 def report_summary(moves: list[Move], have_horn: bool, asked: bool,
                    out: list[str]) -> None:
+    """Append the summary over all moves to @p out."""
     if not moves:
         return
     total = len(moves)
@@ -1254,9 +1287,11 @@ def channel(text: str) -> int:
 
 
 def report_loaded(traces: list[Trace], loaded: frozenset[int]) -> str:
-    """The one line on --loaded-channel: the channels, the lines of other
-    channels that are left out, and the loaded channels with no command
-    line."""
+    """The one line on --loaded-channel.
+
+    The channels, the lines of other channels that are left out, and the loaded
+    channels with no command line.
+    """
     def named(channels: set[int] | frozenset[int]) -> str:
         return ", ".join(str(ch) for ch in sorted(channels))
 
@@ -1285,6 +1320,7 @@ def report_loaded(traces: list[Trace], loaded: frozenset[int]) -> str:
 
 
 def main() -> int:
+    """Read the log, print the report and return the exit status."""
     ap = argparse.ArgumentParser(
         description="Check and evaluate a SENSE_TRACE console log.")
     ap.add_argument("log", type=pathlib.Path,

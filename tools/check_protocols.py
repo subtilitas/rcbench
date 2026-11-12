@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hold every module under protocols/ to the rule that lets it leave.
+r"""Hold every module under protocols/ to the rule that lets it leave.
 
 A module under protocols/ is built in other pico-sdk projects, C and C++,
 without the rest of this repository (CONTRIBUTING.md, "Where code goes").
@@ -65,14 +65,14 @@ This tool reads each module and fails when one of these does not hold:
   a number is one preprocessing number, through digit separators (`1'000`, but
   not a `'` before a `.`, a `$`, a universal character name or a character
   outside ASCII), exponent signs (`1e-x`), `$`, universal character names
-  (`\\u00e9`, `\\U000000E9`, and in gnu11, gnu17, gnu23, gnu++11 or later and
-  C++23 also `\\u{e9}` and `\\N{LATIN SMALL LETTER E WITH ACUTE}`) and the
+  (`\u00e9`, `\U000000E9`, and in gnu11, gnu17, gnu23, gnu++11 or later and
+  C++23 also `\u{e9}` and `\N{LATIN SMALL LETTER E WITH ACUTE}`) and the
   characters outside ASCII that GCC 13 takes into an identifier (`1$'a` in
   C23): the ranges of ISO C11 Annex D.1, EXTENDED_RANGES below.  A number
   starts at an ASCII digit (0 to 9) after any character but a letter, a digit,
   `_`, `$` and a character of these ranges, and in gnu11, gnu17, gnu23, gnu++11
   or later and C++23 not after a delimited or named universal character name,
-  which starts an identifier (`é1`, `€1`, `\\u{e9}1`).  A decimal digit outside
+  which starts an identifier (`é1`, `€1`, `\u{e9}1`).  A decimal digit outside
   ASCII starts an identifier (`٠1`, U+0660).  A character outside ASCII and
   outside the ranges ends a number and a name, and a number or raw string
   literal starts after it, as in C (`×1'a`, `ⸯR"(...)"`, `ⸯ__has_include`).
@@ -243,18 +243,20 @@ DELIMITED_WORD = (r"(?:\\u\{[0-9A-Fa-f]+\}|\\N\{[A-Za-z0-9 _-]+\})(?:"
 
 
 def number_re(separators: bool, delimited: bool = False) -> str:
-    """A preprocessing number: an ASCII digit, after an optional `.`, then
-    digits, letters, `_`, `.`, an exponent sign after e, E, p or P, `$`,
-    universal character names and characters of EXTENDED_RANGES, as GCC's
-    lex_number reads it; with digit separators (C23, C++14) also a `'`
-    before a digit, letter or `_`; with @p delimited also delimited and
-    named universal character names.  It starts at an ASCII digit after no
-    letter, digit, `_`, `$` or character of EXTENDED_RANGES; a decimal digit
-    outside ASCII starts an identifier, as in GCC.  A `'` before a `.`, a
-    `$`, a universal character name or a character outside ASCII ends the
-    number, as GCC lexes it: `1'.x'` is `1` and the character literal
-    `'.x'`, and in C23 `1$'a'` is the number `1$'a`, then a `'` that opens
-    a character literal."""
+    """A preprocessing number.
+
+    An ASCII digit, after an optional `.`, then digits, letters, `_`, `.`, an
+    exponent sign after e, E, p or P, `$`, universal character names and
+    characters of EXTENDED_RANGES, as GCC's lex_number reads it; with digit
+    separators (C23, C++14) also a `'` before a digit, letter or `_`; with @p
+    delimited also delimited and named universal character names.  It starts at
+    an ASCII digit after no letter, digit, `_`, `$` or character of
+    EXTENDED_RANGES; a decimal digit outside ASCII starts an identifier, as in
+    GCC.  A `'` before a `.`, a `$`, a universal character name or a character
+    outside ASCII ends the number, as GCC lexes it: `1'.x'` is `1` and the
+    character literal `'.x'`, and in C23 `1$'a'` is the number `1$'a`, then a
+    `'` that opens a character literal.
+    """
     sep = "'?" if separators else ""
     return (r"(?<!" + ID_CHAR + r")\.?[0-9](?:[eEpP][+-]|" + sep
             + r"[A-Za-z0-9_]|\.|"
@@ -276,10 +278,12 @@ LITERAL_VIEWS = ((False, False, False), (True, False, False),
 
 def source_token_re(raw: bool, separators: bool,
                     delimited: bool = False) -> re.Pattern:
-    """One token that the comment remover keeps or drops: the operand of an
-    include directive, and string, character and raw string literals and
-    numbers, are kept whole, so a `//` or `/*` inside them starts no comment
-    and a digit separator opens no character literal."""
+    """One token that the comment remover keeps or drops.
+
+    The operand of an include directive, and string, character and raw string
+    literals and numbers, are kept whole, so a `//` or `/*` inside them starts
+    no comment and a digit separator opens no character literal.
+    """
     return re.compile(
         "(?P<directive>" + DIRECTIVE + WS + r'*(?:<[^>\n]*>|"[^"\n]*"))'
         + ("|(?P<raw>" + RAW_OPEN_RE + ")" if raw else "")
@@ -470,9 +474,11 @@ LANGUAGES = (("C11", "c", "-std=c11"), ("C++17", "c++", "-std=c++17"))
 
 
 def join_lines(text: str) -> tuple[str, list[int], list[int], list[int]]:
-    """@p text with its line continuations joined; for each continuation
-    removed, its index in @p text, its index in the joined text, and the
-    number of characters removed up to and including it."""
+    """@p text with its line continuations joined.
+
+    For each continuation removed, its index in @p text, its index in the
+    joined text, and the number of characters removed up to and including it.
+    """
     starts, at, removed, total, out, last = [], [], [], 0, [], 0
     for m in CONTINUATION_RE.finditer(text):
         out.append(text[last:m.start()])
@@ -486,7 +492,9 @@ def join_lines(text: str) -> tuple[str, list[int], list[int], list[int]]:
 
 
 def blank_source(text: str, token_re: re.Pattern) -> tuple[str, str]:
-    """@p text with line continuations joined and comments blanked, read
+    """@p text with line continuations joined and comments blanked.
+
+    @p text with line continuations joined and comments blanked, read
     with the literal rules of @p token_re: once with literals left whole and
     the newlines of comments and raw string literals kept, so an include
     operand stays on its line, and once with each literal and include
@@ -495,7 +503,8 @@ def blank_source(text: str, token_re: re.Pattern) -> tuple[str, str]:
     text is split into lines as GCC reads a directive: a comment or raw
     string literal across a line break continues the line.  A raw string
     literal is matched on @p text as written, from its `"` on, because a
-    line continuation inside it is not joined."""
+    line continuation inside it is not joined.
+    """
     joined, starts, at, removed = join_lines(text)
 
     def to_text(j: int) -> int:
@@ -544,13 +553,16 @@ def blank_source(text: str, token_re: re.Pattern) -> tuple[str, str]:
 
 
 def pio_c_code(text: str) -> str:
-    """The C that pioasm writes from the .pio @p text into the header it
+    """The C that pioasm writes from the .pio @p text.
+
+    The C that pioasm writes from the .pio @p text into the header it
     generates with `-o c-sdk`: the lines of each `% c-sdk {` block after the
     first `.program`, in order, without its blank lines, each block ended
     by a newline.  The code blocks are found as pioasm 2.3.0 lexes the file
     (PIO_BLOCK_RE): a `;` inside a `/* */` comment ends nothing, a `/*` in a
     `;` comment opens nothing, and a block of another language and a block
-    before the first program are not written."""
+    before the first program are not written.
+    """
     blocks, program, i, n = [], False, 0, len(text)
     while i < n:
         if text.startswith((";", "//"), i):
@@ -616,11 +628,14 @@ def view_includes(text: str, token_re: re.Pattern) -> list[tuple[str, str]]:
 
 
 def tested_as_macro(bare: str, start: int) -> bool:
-    """True when the name `__has_include` at @p start of @p bare (the text
+    """True when `__has_include` at @p start is only tested as a macro.
+
+    True when the name `__has_include` at @p start of @p bare (the text
     with comments blanked and literals replaced by `""`) is the operand of
     `#ifdef`, `#ifndef`, `#elifdef` or `#elifndef`, or of a `defined` term
     on an `#if` or `#elif` line that holds nothing but such terms, white
-    space, `(`, `)`, `!`, `&` and `|`."""
+    space, `(`, `)`, `!`, `&` and `|`.
+    """
     line_start = bare.rfind("\n", 0, start) + 1
     if IFDEF_BEFORE_RE.match(bare[line_start:start]):
         return True
@@ -638,7 +653,9 @@ def tested_as_macro(bare: str, start: int) -> bool:
 
 
 def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
-    """(form, name) for every include directive of @p text outside a C
+    """(form, name) for every include directive of @p text outside a C comment.
+
+    (form, name) for every include directive of @p text outside a C
     comment: form is `<` or `"`, or `?` when the operand is neither (a
     macro) and name is the operand as written; for `#include_next` with a
     `<...>` or `"..."` operand, form is `next` and name is the operand with
@@ -656,7 +673,8 @@ def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
     true for the text of a .pio file, whose C is read as pioasm writes it
     into the generated header (pio_c_code()).  CRLF and a lone CR end a
     line of C, after pio_c_code(), because pioasm keeps a CR as a
-    character of the line."""
+    character of the line.
+    """
     found: list[tuple[str, str]] = []
     if "\0" in text:
         before = NEWLINE_RE.sub("\n", text[:text.index("\0")])
@@ -675,19 +693,24 @@ def includes(text: str, pio: bool = False) -> list[tuple[str, str]]:
 
 
 def source_includes(path: pathlib.Path) -> list[tuple[str, str]]:
-    """includes() of the file at @p path: its bytes as UTF-8 with an
-    optional byte order mark, a .pio file read as pioasm reads it."""
+    """includes() of the file at @p path.
+
+    Its bytes as UTF-8 with an optional byte order mark, a .pio file read as
+    pioasm reads it.
+    """
     return includes(path.read_bytes().decode("utf-8-sig"),
                     path.suffix == ".pio")
 
 
 def modules(root: pathlib.Path = PROTOCOLS) -> list[pathlib.Path]:
+    """The module folders under @p root, sorted."""
     if not root.is_dir():
         return []
     return sorted(p for p in root.iterdir() if p.is_dir())
 
 
 def is_driver(path: pathlib.Path, module: pathlib.Path) -> bool:
+    """Whether @p path lies in the pin driver folder of @p module."""
     return DRIVER in path.relative_to(module).parts
 
 
@@ -698,8 +721,10 @@ def sources(module: pathlib.Path) -> list[pathlib.Path]:
 
 
 def public_headers(module: pathlib.Path) -> list[pathlib.Path]:
-    """The headers another project includes: the core's under include/ and
-    the driver's under rp2350/."""
+    """The headers another project includes.
+
+    The core's under include/ and the driver's under rp2350/.
+    """
     return sorted([*(module / "include").glob("*.h"),
                    *(module / DRIVER).glob("*.h")])
 
@@ -783,17 +808,22 @@ def include_problems(module: pathlib.Path) -> list[str]:
 
 
 def says_no_pio(module: pathlib.Path) -> bool:
-    """Whether the README of @p module says "no PIO program" outside fenced
-    code blocks and HTML comments: a pin driver on a fixed-function block of
-    the chip, such as an I2C block, has none."""
+    """Whether the README of @p module says "no PIO program".
+
+    Fenced code blocks and HTML comments do not count.  A pin driver on a
+    fixed-function block of the chip, such as an I2C block, has none.
+    """
     path = module / "README.md"
     return path.is_file() and bool(
         NO_PIO_RE.search(prose(path.read_text(encoding="utf-8"))))
 
 
 def layout_problems(module: pathlib.Path) -> list[str]:
-    """What @p module lacks of a module's parts.  A driver folder without a
-    .pio file passes when the README says "no PIO program"."""
+    """What @p module lacks of a module's parts.
+
+    A driver folder without a .pio file passes when the README says "no PIO
+    program".
+    """
     name = module.relative_to(module.parent.parent).as_posix()
     problems = []
     for part in ("README.md", "CMakeLists.txt"):
@@ -814,16 +844,18 @@ def layout_problems(module: pathlib.Path) -> list[str]:
 
 
 def prose(text: str) -> str:
-    """@p text without its HTML comments and fenced code blocks: a
-    `# comment` in a CMake or shell example is no heading.  Comments go
+    """@p text without its HTML comments and fenced code blocks.
+
+    A `# comment` in a CMake or shell example is no heading.  Comments go
     first, so a fence marker inside one opens nothing.  A fence closes on a
-    fence of the same character, at least as long, or at the end of the
-    text.  A backtick fence takes no backtick in its info string.
+    fence of the same character, at least as long, or at the end of the text.
+    A backtick fence takes no backtick in its info string.
 
     Not supported: a `<!--` inside inline code or a fenced block drops the
     text up to the next `-->` or the end; a fence indented 4 or more spaces
     in a list item is not a fence here.  The first fails by demanding
-    headings, the second counts a heading inside it."""
+    headings, the second counts a heading inside it.
+    """
     text = HTML_COMMENT_RE.sub(
         lambda m: re.sub(r"[^\n]", "", m.group(0)), text)
     out, fence = [], ""
@@ -845,9 +877,11 @@ def prose(text: str) -> str:
 
 
 def readme_problems(module: pathlib.Path) -> list[str]:
-    """What the README of @p module lacks: an Interface heading, a
-    heading with "Trademark" where a brand is named, and for a module without a
-    pin driver the statement that there is none."""
+    """What the README of @p module lacks.
+
+    An Interface heading, a heading with "Trademark" where a brand is named,
+    and for a module without a pin driver the statement that there is none.
+    """
     path = module / "README.md"
     if not path.is_file():
         return []
@@ -887,8 +921,11 @@ def cmake_problems(module: pathlib.Path) -> list[str]:
 
 
 def header_problems(module: pathlib.Path, cc: str, cxx: str) -> list[str]:
-    """Every public header of @p module that lacks `extern "C"` or does not
-    compile by itself, as C and as C++."""
+    """Every public header of @p module that is not self-contained.
+
+    A header fails when it lacks `extern "C"` or does not compile by itself, as
+    C and as C++.
+    """
     problems = []
     dirs = [d for d in (module / "include", module / DRIVER) if d.is_dir()]
     flags = [arg for d in dirs for arg in ("-I", str(d))]
@@ -918,6 +955,7 @@ def header_problems(module: pathlib.Path, cc: str, cxx: str) -> list[str]:
 
 
 def compilers() -> tuple[str, str]:
+    """The C and the C++ compiler on PATH; exits when one is missing."""
     cc = shutil.which("cc") or shutil.which("gcc")
     cxx = shutil.which("c++") or shutil.which("g++")
     if cc is None or cxx is None:
@@ -937,8 +975,10 @@ def public_names(module: pathlib.Path) -> set[str]:
 
 
 def caller_files(repo: pathlib.Path) -> list[pathlib.Path]:
-    """The C files and headers of the project outside protocols/ and outside
-    build folders."""
+    """The C files and headers of the project outside protocols/.
+
+    Build folders are left out.
+    """
     found = []
     for name in CALLER_DIRS:
         for path in (repo / name).rglob("*"):
@@ -951,16 +991,21 @@ def caller_files(repo: pathlib.Path) -> list[pathlib.Path]:
 
 
 def condition(body: str) -> str:
-    """The condition of a static assertion's argument text: the message
-    dropped, whitespace collapsed."""
+    """The condition of a static assertion's argument text.
+
+    The message dropped, whitespace collapsed.
+    """
     return " ".join(MESSAGE_RE.sub("", body).split())
 
 
 def assertion_problems(root: pathlib.Path,
                        asserted: dict[str, dict[str, tuple[str, ...]]]
                        ) -> list[str]:
-    """Where the callers' static assertions on a module's constants differ
-    from @p asserted, per module, file and condition."""
+    """Where the callers' static assertions differ from @p asserted.
+
+    The assertions are on a module's constants; the result is per module, file
+    and condition.
+    """
     repo = root.parent
     names = {m.name: public_names(m) for m in modules(root)}
     seen: dict[str, dict[str, set[str]]] = {n: {} for n in names}
@@ -1017,6 +1062,7 @@ def describe(root: pathlib.Path = PROTOCOLS) -> str:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """Check the modules under protocols/ and return the exit status."""
     args = sys.argv[1:] if argv is None else argv
     if args not in ([], ["--check"]):
         sys.exit(__doc__)
