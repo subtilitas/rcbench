@@ -112,6 +112,7 @@ TRACKED = [
     "shared/ui/ui_textkey_cursor.c",
     "shared/ui/ui_shot.c",
     "shared/ui/shot_gate.c",
+    "shared/ui/screen_dim.c",
     "shared/ui/shot_hold.c",
     "shared/ui/stop_hold.c",
     "shared/ui/ui_pinlist.c",

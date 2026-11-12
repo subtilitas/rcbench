@@ -486,9 +486,10 @@ void panel_frame_loop(void)
             .simulated = simulated_now, .cu_active = cu_active_now,
             .faults = faults_now,
         };
-        panel_shot_frame(&shot_in);
+        shot_facts_t idle_facts;
+        panel_shot_frame(&shot_in, &idle_facts);
 
-        if (drain_touch(stops_now)) {
+        if (drain_touch(stops_now, &idle_facts)) {
             frame_lost = true;
         }
 
@@ -784,9 +785,12 @@ void panel_frame_loop(void)
          * found only next frame.  The second drain finds everything offered
          * up to now.
          */
-        if (drain_touch(stops_now)) {
+        if (drain_touch(stops_now, &idle_facts)) {
             frame_lost = true;
         }
+        /* Dim after, on this frame's touch and the facts read before it:
+         * a bench that is not idle is lit in this frame. */
+        backlight_service(&idle_facts);
         ui_router_tick(dt_s);
         knob_apply(&knob_turn, frame_lost);
         wifi_service(arm_wanted_now || armed_now, stops_now);

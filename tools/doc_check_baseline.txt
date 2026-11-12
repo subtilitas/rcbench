@@ -1683,9 +1683,6 @@ shared/bench/include/tone_link.h: warning: Member status_ms (variable) of struct
 shared/bench/include/tone_link.h: warning: Member want[LINK_TN_CONFIG_COUNT] (variable) of struct tone_link_t is not documented.	uint16_t want[LINK_TN_CONFIG_COUNT];
 shared/bench/include/tone_link.h: warning: Member want_set (variable) of struct tone_link_t is not documented.	bool want_set;
 shared/bench/knob.c: warning: Member knob_poll_regs[KNOB_POLL_READS] (variable) of file knob.c is not documented.	const uint8_t knob_poll_regs[KNOB_POLL_READS] = {
-shared/bench/kst_card.c: warning: Member s_file (variable) of file kst_card.c is not documented.	static kst_file_t s_file;
-shared/bench/kst_card.c: warning: Member s_load (variable) of file kst_card.c is not documented.	static kst_file_load_t s_load;
-shared/bench/kst_card.c: warning: Member s_text[KST_FILE_MAX] (variable) of file kst_card.c is not documented.	static char s_text[KST_FILE_MAX];
 shared/bench/kst_link.c: warning: Member RES(reg) (macro definition) of file kst_link.c is not documented.	#define RES(reg) ((unsigned)(reg) - (unsigned)LINK_KS_FAIL)
 shared/bench/kst_link.c: warning: Member RESULTS_N (macro definition) of file kst_link.c is not documented.	#define RESULTS_N ((unsigned)LINK_KS_IMAGE - (unsigned)LINK_KS_FAIL)
 shared/bench/kst_link.c: warning: Member STAGE_WINDOWS (macro definition) of file kst_link.c is not documented.	#define STAGE_WINDOWS 6u

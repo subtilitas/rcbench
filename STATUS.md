@@ -412,6 +412,16 @@ contact together with an injector contact.
 
 [Screenshot](docs/Screens.md#screenshot).
 
+### Dim after
+
+Built and tested on the host (`shared/ui/screen_dim.c`; `test_screen_dim`):
+SETUP > PANEL's Dim after drops the backlight's PWM duty from 100% to 20% after 5 to
+60min without a touch event, only while the screenshot gate finds the bench idle; a
+frame that does not finds it lit at once. The press that wakes a dim screen reaches no
+screen, except a press on STOP. `firmware/panel/main/panel_render.c` sets the duty with
+`board_backlight_percent()`; not host-tested. Not run on a panel: the dim, the wake,
+the light 20% duty gives. [PANEL: Dim after](docs/Screens.md#panel-dim-after).
+
 ### Motor & ESC (electronic speed controller) screen
 
 Built; reads `bench_state` from the link or the simulator. ARM, DISARM, STOP and the
@@ -1351,7 +1361,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 530 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 531 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1457,7 +1467,7 @@ The host suite is 530 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
 `test_text_hl`, `test_text_hl_limrun`, `test_i2c_txq`, `test_i2c_txq_calls`,
 `test_i2c_txq_wire`, `test_sense_txq`, `test_sense_txq_svc`, `test_fm_name`, `test_png_enc`,
-`test_shot_file`, `test_shot`, `test_shot_popup`, `test_wall_clock`, `test_mstime`, `test_witmotion`,
+`test_shot_file`, `test_shot`, `test_shot_popup`, `test_screen_dim`, `test_wall_clock`, `test_mstime`, `test_witmotion`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
@@ -2007,6 +2017,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
 | `shared/ui/shot_gate.c` | 59 | 59 | 100.0% |
+| `shared/ui/screen_dim.c` | 52 | 52 | 100.0% |
 | `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
 | `shared/ui/stop_hold.c` | 45 | 45 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
@@ -2042,13 +2053,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
 | `shared/ui/servo_run_supply.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_angle_pick.c` | 260 | 252 | 96.9% |
-| `shared/ui/kst_panel.c` | 460 | 449 | 97.6% |
+| `shared/ui/kst_panel.c` | 462 | 451 | 97.6% |
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
 | `shared/ui/kst_panel_edit.c` | 387 | 378 | 97.7% |
 | `shared/ui/kst_panel_touch.c` | 295 | 288 | 97.6% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
-| `shared/ui/kst_panel_draw.c` | 563 | 561 | 99.6% |
+| `shared/ui/kst_panel_draw.c` | 564 | 562 | 99.7% |
 | `shared/ui/esc_wire_panel.c` | 573 | 544 | 94.9% |
 | `shared/ui/hitec_panel.c` | 271 | 267 | 98.5% |
 | `shared/ui/hitec_panel_text.c` | 508 | 503 | 99.0% |
@@ -2248,7 +2259,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/kst_prog.c` | 1390 | 1367 | 98.3% |
 | `shared/bench/kst_prog_card.c` | 313 | 306 | 97.8% |
 | `shared/bench/kst_prog_file.c` | 150 | 146 | 97.3% |
-| `shared/bench/kst_card.c` | 137 | 133 | 97.1% |
+| `shared/bench/kst_card.c` | 139 | 135 | 97.1% |
 | `shared/bench/prog_link.c` | 297 | 297 | 100.0% |
 | `shared/can/can_timing.c` | 105 | 103 | 98.1% |
 | `shared/can/can_selftest.c` | 147 | 137 | 93.2% |
