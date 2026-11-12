@@ -24,20 +24,47 @@
 extern "C" {
 #endif
 
-#define FW_SHA256_BYTES 32u
+#define FW_SHA256_BYTES 32u /**< bytes in a digest */
 
+/** @brief The state of a digest. */
 typedef struct {
-    uint32_t h[8];
+    uint32_t h[8]; /**< the eight hash words */
     uint64_t bits;        /**< message length so far */
     uint8_t  block[64];   /**< the block being filled */
     uint32_t fill;        /**< bytes in @c block */
 } fw_sha256_t;
 
+/**
+ * @brief Start a digest.
+ *
+ * @param s  The state.
+ */
 void fw_sha256_init(fw_sha256_t *s);
+
+/**
+ * @brief Take @p n more bytes into the digest.
+ *
+ * @param s     The state.
+ * @param data  The bytes.
+ * @param n     Their number.
+ */
 void fw_sha256_add(fw_sha256_t *s, const void *data, size_t n);
+
+/**
+ * @brief Finish the digest.
+ *
+ * @param s    The state.
+ * @param out  Receives the 32 bytes.
+ */
 void fw_sha256_done(fw_sha256_t *s, uint8_t out[FW_SHA256_BYTES]);
 
-/** The digest of @p n bytes at @p data in one call. */
+/**
+ * @brief The digest of @p n bytes at @p data in one call.
+ *
+ * @param data  The bytes.
+ * @param n     Their number.
+ * @param out   Receives the 32 bytes.
+ */
 void fw_sha256(const void *data, size_t n, uint8_t out[FW_SHA256_BYTES]);
 
 #ifdef __cplusplus

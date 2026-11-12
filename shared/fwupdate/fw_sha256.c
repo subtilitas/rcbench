@@ -11,6 +11,7 @@
 
 #include <string.h>
 
+/** @brief The 64 round constants. */
 static const uint32_t k_round[64] = {
     0x428a2f98u, 0x71374491u, 0xb5c0fbcfu, 0xe9b5dba5u, 0x3956c25bu,
     0x59f111f1u, 0x923f82a4u, 0xab1c5ed5u, 0xd807aa98u, 0x12835b01u,
@@ -27,11 +28,16 @@ static const uint32_t k_round[64] = {
     0x90befffau, 0xa4506cebu, 0xbef9a3f7u, 0xc67178f2u,
 };
 
+/** @brief Rotates @p x right by @p n bits, 1 to 31. */
 static uint32_t ror(uint32_t x, unsigned n)
 {
     return (x >> n) | (x << (32u - n));
 }
 
+/**
+ * @brief Runs the 64 rounds over one 64-byte block and adds the result to the
+ *        hash words.
+ */
 static void compress(fw_sha256_t *s, const uint8_t *p)
 {
     uint32_t w[64];

@@ -45,7 +45,9 @@ const char *fw_rel_err_str(fw_rel_err_t e)
     return ((unsigned)e < FW_REL_COUNT) ? k[e] : "?";
 }
 
-/* Printable ASCII, space excluded: what a URL in a header may hold. */
+/**
+ * @brief Printable ASCII, space excluded: what a URL in a header may hold.
+ */
 static bool url_bytes(const char *s, size_t n)
 {
     for (size_t i = 0; i < n; ++i) {
@@ -186,6 +188,7 @@ fw_rel_err_t fw_release_length(int64_t length, bool chunked, uint32_t cap)
     return (length > (int64_t)cap) ? FW_REL_TOO_BIG : FW_REL_OK;
 }
 
+/** @brief The value of a lowercase hex digit, or -1 for another character. */
 static int hex(char ch)
 {
     if (ch >= '0' && ch <= '9') {
@@ -197,6 +200,10 @@ static int hex(char ch)
     return -1;
 }
 
+/**
+ * @brief Whether @p ch may be in a file name SHA256SUMS lists: a letter, a
+ *        digit, '.', '-' or '_'.
+ */
 static bool name_char(char ch)
 {
     return (ch >= 'a' && ch <= 'z') || (ch >= 'A' && ch <= 'Z')
@@ -295,11 +302,13 @@ enum {
 /* Which key's value comes next. */
 enum { WANT_OTHER = 0, WANT_TAG, WANT_DRAFT };
 
+/** @brief Whether @p ch is JSON white space. */
 static bool json_space(uint8_t ch)
 {
     return ch == ' ' || ch == '\t' || ch == '\n' || ch == '\r';
 }
 
+/** @brief Whether @p ch may be in a JSON number, true, false or null. */
 static bool json_scalar(uint8_t ch)
 {
     return (ch >= '0' && ch <= '9') || (ch >= 'a' && ch <= 'z')
@@ -313,13 +322,14 @@ void fw_release_scan_init(fw_rel_scan_t *s)
     s->st = SC_TOP;
 }
 
+/** @brief Ends the scan with the result @p e. */
 static void scan_end(fw_rel_scan_t *s, fw_rel_err_t e)
 {
     s->ended = true;
     s->err = e;
 }
 
-/* A level opens: false when it would pass FW_REL_SCAN_DEPTH. */
+/** @brief A level opens: false when it would pass FW_REL_SCAN_DEPTH. */
 static bool scan_open(fw_rel_scan_t *s, bool array)
 {
     if (s->depth >= FW_REL_SCAN_DEPTH) {
@@ -334,8 +344,10 @@ static bool scan_open(fw_rel_scan_t *s, bool array)
     return true;
 }
 
-/* A level below the releases closes with @p array's bracket: false when
- * it is the other's.  Only SC_DEEP calls it, at level 3 or deeper. */
+/**
+ * @brief A level below the releases closes with @p array's bracket: false
+ *        when it is the other's. Only SC_DEEP calls it, at level 3 or deeper.
+ */
 static bool scan_close(fw_rel_scan_t *s, bool array)
 {
     const bool was = (s->arrays >> (s->depth - 1u)) & 1u;
@@ -346,8 +358,10 @@ static bool scan_close(fw_rel_scan_t *s, bool array)
     return true;
 }
 
-/* The array closed, or FW_REL_API_RELEASES releases were read: the
- * highest version among them that is no draft. */
+/**
+ * @brief The array closed, or FW_REL_API_RELEASES releases were read: the
+ *        highest version among them that is no draft.
+ */
 static void scan_finish(fw_rel_scan_t *s)
 {
     if (s->have_best) {
@@ -358,6 +372,10 @@ static void scan_finish(fw_rel_scan_t *s)
     }
 }
 
+/**
+ * @brief A release's object opens: level 2, with no tag and no draft read
+ *        yet.
+ */
 static void scan_begin_release(fw_rel_scan_t *s)
 {
     (void)scan_open(s, false);       /* level 2: always room */
@@ -399,7 +417,7 @@ static void scan_end_release(fw_rel_scan_t *s)
     }
 }
 
-/* A key whole: tag_name and draft, each once a release. */
+/** @brief A key whole: tag_name and draft, each once a release. */
 static void scan_key(fw_rel_scan_t *s)
 {
     s->want = WANT_OTHER;
@@ -418,7 +436,7 @@ static void scan_key(fw_rel_scan_t *s)
     s->st = SC_COLON;
 }
 
-/* tag_name's value whole: "v" and a version. */
+/** @brief Tag_name's value whole: "v" and a version. */
 static void scan_tag(fw_rel_scan_t *s)
 {
     if (s->tn < 2u || s->tag[0] != 'v'
@@ -430,7 +448,7 @@ static void scan_tag(fw_rel_scan_t *s)
     s->st = SC_AFTER;
 }
 
-/* draft's value whole: true or false, nothing else. */
+/** @brief Draft's value whole: true or false, nothing else. */
 static void scan_draft(fw_rel_scan_t *s)
 {
     if (s->dn == 4u && memcmp(s->dval, "true", 4u) == 0) {
@@ -442,7 +460,7 @@ static void scan_draft(fw_rel_scan_t *s)
     s->have_draft = true;
 }
 
-/* A value starts after ':'. */
+/** @brief A value starts after ':'. */
 static void scan_value(fw_rel_scan_t *s, uint8_t ch)
 {
     if (s->want == WANT_TAG) {
@@ -472,7 +490,7 @@ static void scan_value(fw_rel_scan_t *s, uint8_t ch)
     }
 }
 
-/* One byte at level 2, a release's object. */
+/** @brief One byte at level 2, a release's object. */
 static void scan_object(fw_rel_scan_t *s, uint8_t ch)
 {
     switch (s->st) {
@@ -591,7 +609,7 @@ static void scan_object(fw_rel_scan_t *s, uint8_t ch)
     }
 }
 
-/* One byte inside a value below level 2. */
+/** @brief One byte inside a value below level 2. */
 static void scan_deep(fw_rel_scan_t *s, uint8_t ch)
 {
     switch (s->st) {
@@ -630,7 +648,7 @@ static void scan_deep(fw_rel_scan_t *s, uint8_t ch)
     }
 }
 
-/* One byte at level 1, the array of releases. */
+/** @brief One byte at level 1, the array of releases. */
 static void scan_array(fw_rel_scan_t *s, uint8_t ch)
 {
     if (json_space(ch)) {
@@ -654,6 +672,10 @@ static void scan_array(fw_rel_scan_t *s, uint8_t ch)
     }
 }
 
+/**
+ * @brief Takes one byte of the answer into the scan, at the level its state
+ *        belongs to.
+ */
 static void scan_byte(fw_rel_scan_t *s, uint8_t ch)
 {
     switch (s->st) {
