@@ -134,6 +134,16 @@ test('groups: a variant that adds no part is an empty alternative', () => {
   assert.deepEqual(groups(c)[0]?.oneOf, [['batt'], []]);
 });
 
+test('groups of the data file: the parts a function takes by an option value are no extras of its group', () => {
+  const group = groups(CATALOGUE).find((g) => g.functions.includes('stick'));
+  assert.deepEqual(group?.parts, ['pdmini']);
+  assert.deepEqual(group?.also, ['charger', 'usbtap']);
+  assert.deepEqual(group?.oneOf, []);
+  // The parts of both values are the function's own.
+  const by = (CATALOGUE.functions.find((f) => f.id === 'stick') as Fn).needsBy;
+  assert.deepEqual(by?.parts, { tap: ['sim', 'tap'], ina3221: ['ina3221'] });
+});
+
 test('groups of the data file: every function is in exactly one group, keyed by its needs', () => {
   const g = groups(CATALOGUE);
   const base = new Set(baseParts(CATALOGUE));

@@ -65,10 +65,10 @@ A hash of 64kB is stored as a recipe `{ prefix, unit, count, suffix }`.
 
 7. One exception to rule 2: ESC STICK programming needs a beep source. A
    link that names `stick` without the token `stickina` resolves with the
-   parts `sim` and `tap`, and a link that reaches the PD mini through ESC
-   power B alone no longer enables `stick`. The 6 stored entries this changes
-   stay as stored; `BEEP_SOURCE` in `corpus.test.ts` holds each of them to the
-   parts and the enabled functions of the new rule.
+   parts `sim` and `tap`. A link that reaches the PD mini through ESC power B
+   alone leaves `stick` out of the enabled functions. The 6 stored entries
+   this concerns stay as stored; `BEEP_SOURCE` in `corpus.ts` holds each of
+   them to the parts and the enabled functions of this rule.
 
 ## Add an entry
 

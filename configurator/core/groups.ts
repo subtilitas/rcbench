@@ -23,6 +23,7 @@ export type GroupVariant = { part: PartId; option: OptionKey; values: string[] }
  *   need no part beyond the base setup.
  * - `variants`: parts of the set that are one of several boards.
  * - `also`: parts the rules add to the set under every variant. No test object.
+ *   The parts a function of the group takes by an option value (`needsBy`) are no extras.
  * - `oneOf`: parts the rules add under some variants only, one entry per
  *   distinct set. An empty entry is a variant that adds no part. Empty when
  *   every variant adds the same parts.
@@ -180,7 +181,9 @@ export function groups(catalogue: Catalogue): Group[] {
     // What the rules add: the setup of each function alone, under every
     // combination of variants, without the base parts, the group's parts and
     // the test objects.
-    const named = new Set([...group.parts, ...testObjects(catalogue)]);
+    // The parts a function takes by the value of an option (`needsBy`) are its own, not what a rule adds.
+    const byOption = catalogue.functions.filter((f) => group.functions.includes(f.id)).flatMap((f) => Object.values(f.needsBy?.parts ?? {}).flat());
+    const named = new Set([...group.parts, ...testObjects(catalogue), ...byOption]);
     const extras = new Map<string, PartId[]>();
     for (const fn of group.functions) {
       for (const options of sets) {

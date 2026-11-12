@@ -396,9 +396,11 @@ each function alone, unknown ids, a missing German string, a broken source
 anchor and a data file that differs from the firmware tables.
 
 `test/property/` holds the properties of the resolver and of the data file.
-`resolver.test.ts` walks the same 2 sweeps and 25 000 mixed selections from
-the seed `0x20261011`, and refuses a space of more than 100 000 cases per
-sweep. Each setup is checked for:
+`resolver.test.ts` walks the same 2 sweeps with the phase tap as the beep
+source, the same 2 sweeps on the pads with the INA3221 as the beep source
+(`stickBeep: ina3221`, 8 option combinations), and 25 000 mixed selections
+from the seed `0x20261011` that draw from both values. It refuses a phase tap
+space of more than 100 000 cases. Each setup is checked for:
 
 1. A second call and any order of the input give the same setup.
 2. A part that a function, a tick or the lock holds never leaves the setup
@@ -446,7 +448,7 @@ Line coverage of the resolver, the groups and the motor simulator, measured by `
 | --- | ---: | ---: | ---: |
 | `resolve.ts` | 227 | 227 | 100.0% |
 | `cond.ts` | 51 | 51 | 100.0% |
-| `groups.ts` | 419 | 419 | 100.0% |
+| `groups.ts` | 422 | 422 | 100.0% |
 | `sim.ts` | 120 | 120 | 100.0% |
 <!-- coverage:end -->
 

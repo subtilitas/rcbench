@@ -14,7 +14,7 @@ import type { OptionKey } from '../../contract.ts';
 import { CATALOGUE, DEFAULT_OPTIONS, plainDrive } from '../../src/core.ts';
 import { MAX_HASH, parseHash } from '../../src/hash.ts';
 import {
-  CORPUS_FILE, WIRES_FILE, expectationOf, hashOf, idsOf, namesLater, namesRetired, outcome, readCorpus, readWires,
+  BEEP_SOURCE, CORPUS_FILE, WIRES_FILE, expectationOf, hashOf, idsOf, namesLater, namesRetired, outcome, readCorpus, readWires,
 } from './corpus.ts';
 import type { Outcome } from './corpus.ts';
 import { added, corpusText, wiresOf, wiresText } from './tool.ts';
@@ -43,26 +43,6 @@ const OBJECTS = CATALOGUE.parts.filter((p) => p.testObject === true).map((p) => 
  * no longer holds; the check in each entry holds it to no tick and no notice.
  */
 const RETIRED = corpus.ids.owned.filter((id) => !now.owned.includes(id) && !OBJECTS.includes(id));
-
-/**
- * Stored entries whose setup changes because ESC STICK programming needs a beep
- * source: the phase tap parts under the default value of `stickBeep`. The
- * entry stays as stored; the parts and the enabled functions it is held to are
- * these. A link that names `stick` (alone, or through ESC power B with the PD
- * mini) draws the parts `sim` and `tap`; a link that reaches the PD mini by
- * ESC power B alone no longer enables `stick`.
- */
-const BEEP_SOURCE: Readonly<Record<string, { parts?: readonly string[]; enabled: readonly string[] }>> = {
-  'page-f-stick': { parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'sim', 'tap', 'usbtap'], enabled: ['esc', 'stick', 'tap', 'supply'] },
-  'page-esc-pd': { enabled: ['esc', 'supply'] },
-  'page-stick-esc': { parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'sim', 'tap', 'usbtap'], enabled: ['esc', 'stick', 'tap', 'supply'] },
-  'page-stick-escpow': {
-    parts: ['panel', 'copro', 'usb', 'wire', 'esc', 'pdmini', 'charger', 'pull', 'ina228', 'sim', 'tap', 'usbtap'],
-    enabled: ['esc', 'escpow', 'stick', 'tap', 'supply'],
-  },
-  'hand-order': { enabled: ['servo', 'servotest', 'esc', 'supply', 'logs'] },
-  'hand-repeats': { enabled: ['servo', 'servotest', 'esc', 'supply', 'logs'] },
-};
 
 /** An outcome reduced to the ids the corpus starts with, and to the option keys `stored` holds. */
 function inCorpusIds(o: Outcome, stored: Outcome): Outcome {
