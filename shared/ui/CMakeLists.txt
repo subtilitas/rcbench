@@ -32,6 +32,8 @@ set(SRCS
     help_setup.c
     help_logs.c
     help_files.c
+    help_upd.c
+    help_wifi.c
     ui_alert_slot.c
     ui_value_ask.c
     ui_text.c
