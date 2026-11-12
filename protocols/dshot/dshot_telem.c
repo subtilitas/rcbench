@@ -123,12 +123,12 @@ bool dshot_gcr_decode(uint32_t line, uint16_t *out)
  * guessing from the bits.
  */
 #define EDT_TYPE_TEMPERATURE  0x02u
-#define EDT_TYPE_VOLTAGE      0x04u
-#define EDT_TYPE_CURRENT      0x06u
-#define EDT_TYPE_DEBUG1       0x08u
-#define EDT_TYPE_DEBUG2       0x0Au
-#define EDT_TYPE_STRESS       0x0Cu
-#define EDT_TYPE_STATUS       0x0Eu
+#define EDT_TYPE_VOLTAGE      0x04u   /**< voltage */
+#define EDT_TYPE_CURRENT      0x06u   /**< current */
+#define EDT_TYPE_DEBUG1       0x08u   /**< debug value 1 */
+#define EDT_TYPE_DEBUG2       0x0Au   /**< debug value 2 */
+#define EDT_TYPE_STRESS       0x0Cu   /**< stress level */
+#define EDT_TYPE_STATUS       0x0Eu   /**< status flags */
 
 /** @brief The payload an ESC sends for a motor that is not turning. */
 #define ERPM_STOPPED  0x0FFFu

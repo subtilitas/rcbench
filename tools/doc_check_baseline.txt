@@ -1075,16 +1075,6 @@ firmware/panel/main/panel_update.c: warning: Member update_frame(update_state_t 
 firmware/panel/main/panel_update.c: warning: Member why_of_fw_gate(fw_gate_t g) (function) of file panel_update.c is not documented.	static wa_why_t why_of_fw_gate(fw_gate_t g)
 firmware/panel/main/panel_update.c: warning: Member wifi_service(bool armed, uint32_t stops_now) (function) of file panel_update.c is not documented.	void wifi_service(bool armed, uint32_t stops_now)
 firmware/panel/main/panel_update.c: warning: Member wifi_unavailable_service(void) (function) of file panel_update.c is not documented.	static void wifi_unavailable_service(void)
-protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_CURRENT (macro definition) of file dshot_telem.c is not documented.	#define EDT_TYPE_CURRENT 0x06u
-protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_DEBUG1 (macro definition) of file dshot_telem.c is not documented.	#define EDT_TYPE_DEBUG1 0x08u
-protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_DEBUG2 (macro definition) of file dshot_telem.c is not documented.	#define EDT_TYPE_DEBUG2 0x0Au
-protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_STATUS (macro definition) of file dshot_telem.c is not documented.	#define EDT_TYPE_STATUS 0x0Eu
-protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_STRESS (macro definition) of file dshot_telem.c is not documented.	#define EDT_TYPE_STRESS 0x0Cu
-protocols/dshot/dshot_telem.c: warning: Member EDT_TYPE_VOLTAGE (macro definition) of file dshot_telem.c is not documented.	#define EDT_TYPE_VOLTAGE 0x04u
-protocols/dshot/include/dshot.h: warning: Member DSHOT_EDT_A_PER_COUNT (macro definition) of file dshot.h is not documented.	#define DSHOT_EDT_A_PER_COUNT 1u
-protocols/dshot/include/dshot.h: warning: Member DSHOT_EDT_DEGC_PER_COUNT (macro definition) of file dshot.h is not documented.	#define DSHOT_EDT_DEGC_PER_COUNT 1u
-protocols/dshot/include/dshot.h: warning: Member DSHOT_TELEM_RATE_DEN (macro definition) of file dshot.h is not documented.	#define DSHOT_TELEM_RATE_DEN 4u
-protocols/dshot/include/dshot.h: warning: Member kind (variable) of struct dshot_telem_t is not documented.	dshot_telem_kind_t kind;
 protocols/hitec/hitec_pio.c: warning: Member RELEASED (macro definition) of file hitec_pio.c is not documented.	#define RELEASED PAIR(0u, 0u)
 protocols/hitec/hitec_pre.c: warning: Member PIO_IN_PINS_1(d) (macro definition) of file hitec_pre.c is not documented.	#define PIO_IN_PINS_1(d) ((uint16_t)(0x4001u | PIO_DELAY(d)))
 protocols/hitec/hitec_pre.c: warning: Member PIO_NOP(d) (macro definition) of file hitec_pre.c is not documented.	#define PIO_NOP(d) ((uint16_t)(0xA042u | PIO_DELAY(d))) /* mov y, y */
