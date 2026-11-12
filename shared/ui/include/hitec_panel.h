@@ -95,6 +95,13 @@ void hitec_panel_back(void);
  */
 bool hitec_panel_holds_port(void);
 /**
+ * @brief Whether the SERVO tab's second row shows FILES, not SERIES:
+ *        FILES once this panel's CONNECT opened the port, SERIES until
+ *        then, a request on its way included.
+ * @return true while FILES shows
+ */
+bool hitec_panel_files_shown(void);
+/**
  * @brief The GPIO the port the overlay names drives.
  * @return the pin, or PROG_REG_NO_PIN
  */

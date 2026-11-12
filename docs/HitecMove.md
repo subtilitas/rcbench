@@ -48,7 +48,7 @@ While it is on:
    106ms at a frame of 16ms and 132ms at one of 33ms.
 3. NEUTRAL, LEFT END and RIGHT END show `-` and `+` keys of 56 x 48px
    around the value. A key steps 8 counts (0.11°) on the press, repeats
-   after 0.45s at 8Hz and at 30Hz from 1.8s, and makes its row the
+   after 0.45s at 8Hz and at 30Hz from 2.25s, and makes its row the
    followed one; the followed row's label is in the accent colour. A tap
    on the value opens the keypad. The hold is the consent CHECK THIS
    CHANGE asks for: these edits open no page. The order LEFT END below

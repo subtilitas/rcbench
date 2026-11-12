@@ -390,12 +390,17 @@ Built and tested on the host (`shared/ui/ui_help.c`, the router's guide in `ui_r
 up to 5 controls a page, 3 rows each. The menu has 4 pages. SERVO has 12 pages over its
 tasks and OPTIONS' pages with 47 items (`shared/ui/servo_guide.c`), SUPPLY 3 with 12 items
 on LIVE and the settings list's 2 with 7 (`shared/ui/supply_guide.c`, `ui_setlist.c`);
-`test_help_guides` holds them. A page whose dock would cover OUTPUT OFF, STOP TEST or STOP
+`test_help_guides` holds them. KST and HITEC add their session's pages before the READY
+card's: the SERVO tab's two with 5 items each and a tab of values' one with 2 to 4
+(`servo_guide.c`; `test_help_guides`, `test_kst_panel_screen`, `test_hitec_panel_move`).
+A page whose dock would cover OUTPUT OFF, STOP TEST or STOP
 RUN is not offered while that control shows; SUPPLY's OUTPUT OFF, in the footer's middle
 slot, lies under either dock, so SUPPLY offers no page while its output is on. OUTPUTS, SETUP,
 LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`, `help_logs.c`,
 `help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`, `test_help_files`).
-MOTOR & ESC has 2 pages on LIVE and 2 on PROGRAM's list with 9 items each, and the OPTIONS
+WI-FI has 3 pages with the radio off and 1 or 2 with it on, UPDATES 2 and its OPTIONS
+list's 2 (`help_wifi.c`, `help_upd.c`; `test_help_net`). MOTOR & ESC has 2 pages on LIVE
+and 2 on PROGRAM's list with 9 items each, and the OPTIONS
 list's 2 (`shared/ui/motor_guide.c`; `test_help_motor`); none unless the bench is SAFE, as
 either dock covers part of DISARM. ESC STICK has 2 pages on its list and 2 on a profile, the
 note that says why RUN does not start among them (`shared/ui/esc_stick_guide.c`;
@@ -1375,14 +1380,14 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 536 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 537 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
 `test_nav_contact`, `test_nav_drag`, `test_nav_stop`, `test_nav_bubble`, `test_band_hwstop`,
 `test_help_router`, `test_help_pages`, `test_help_guides`, `test_help_setup`,
-`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_help_motor`,
+`test_help_outputs`, `test_help_logs`, `test_help_files`, `test_help_net`, `test_help_motor`,
 `test_help_stick`, `test_help_imu`, `test_widgets`, `test_slider_fingers`, `test_footer`, `test_setlist`, `test_hold_hint`, `test_hold_flash`, `test_hold_button`, `test_action_fill`,
 `test_workbench`, `test_prog_registry`,
 `test_keypad`, `test_keypad_sign`, `test_keypad_rows_setup`, `test_keypad_rows_stick`,
@@ -1957,8 +1962,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 936 committed screenshots to the current render,
-468 in English and the same 468 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 942 committed screenshots to the current render,
+471 in English and the same 471 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -1999,6 +2004,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/help_setup.c` | 85 | 81 | 95.3% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
+| `shared/ui/help_upd.c` | 34 | 33 | 97.1% |
+| `shared/ui/help_wifi.c` | 59 | 59 | 100.0% |
 | `shared/ui/ui_watermark.c` | 44 | 42 | 95.5% |
 | `shared/ui/ui_plot.c` | 196 | 187 | 95.4% |
 | `shared/ui/ui_slider.c` | 175 | 164 | 93.7% |
@@ -2061,7 +2068,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_prog_ready.c` | 209 | 196 | 93.8% |
 | `shared/ui/servo_drive_ready.c` | 449 | 428 | 95.3% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 172 | 168 | 97.7% |
+| `shared/ui/servo_guide.c` | 297 | 292 | 98.3% |
 | `shared/ui/servo_fn.c` | 83 | 82 | 98.8% |
 | `shared/ui/servo_hub.c` | 202 | 196 | 97.0% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
@@ -2075,9 +2082,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/kst_panel_edit.c` | 387 | 378 | 97.7% |
 | `shared/ui/kst_panel_touch.c` | 295 | 288 | 97.6% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
-| `shared/ui/kst_panel_draw.c` | 563 | 561 | 99.6% |
+| `shared/ui/kst_panel_draw.c` | 564 | 562 | 99.7% |
 | `shared/ui/esc_wire_panel.c` | 575 | 546 | 95.0% |
-| `shared/ui/hitec_panel.c` | 273 | 269 | 98.5% |
+| `shared/ui/hitec_panel.c` | 276 | 272 | 98.5% |
 | `shared/ui/hitec_panel_text.c` | 508 | 503 | 99.0% |
 | `shared/ui/hitec_panel_edit.c` | 401 | 398 | 99.2% |
 | `shared/ui/hitec_panel_page.c` | 235 | 235 | 100.0% |
@@ -2114,7 +2121,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/settings_screen.c` | 285 | 277 | 97.2% |
 | `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
 | `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
-| `shared/ui/ui_setlist.c` | 625 | 609 | 97.4% |
+| `shared/ui/ui_setlist.c` | 625 | 610 | 97.6% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 109 | 109 | 100.0% |
@@ -2133,13 +2140,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/picker_port.c` | 116 | 109 | 94.0% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 453 | 452 | 99.8% |
-| `shared/ui/wifi_screen.c` | 622 | 615 | 98.9% |
+| `shared/ui/wifi_screen.c` | 629 | 622 | 98.9% |
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 302 | 302 | 100.0% |
-| `shared/ui/upd_screen.c` | 661 | 635 | 96.1% |
-| `shared/ui/upd_settings.c` | 43 | 38 | 88.4% |
+| `shared/ui/upd_screen.c` | 663 | 637 | 96.1% |
+| `shared/ui/upd_settings.c` | 43 | 39 | 90.7% |
 | `shared/ui/upd_c6.c` | 115 | 113 | 98.3% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
@@ -2311,6 +2318,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/out_store_range.c` | 10 | 10 | 100.0% |
 | `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
+| `shared/outputs/out_render.c` | 276 | 273 | 98.9% |
 | `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
 | `shared/outputs/servo_link.c` | 563 | 530 | 94.1% |
@@ -2364,6 +2372,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
 | `shared/fwupdate/fw_c6.c` | 159 | 159 | 100.0% |
+| `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
 | `shared/webaccess/wa_fetch.c` | 427 | 415 | 97.2% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
@@ -2377,7 +2386,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **90367** | **88524** | **98.0%** |
+| **total** | **91060** | **89214** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
