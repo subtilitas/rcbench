@@ -16,7 +16,7 @@ The video has a sound track, computed from the storyboard by
 arpeggio over four chords in D major, 8s a chord, and one quiet sound per
 event (a scene change, a chapter card, a caption, a point, a mark, a
 spotlight, a tap, a hold). It has no percussion. Its loudest sample is at
--6dBFS (decibels relative to full scale); `features` measures -18.3 LUFS
+-6dBFS (decibels relative to full scale); `features` measures -18 LUFS
 (loudness units relative to full scale) integrated. The balance between
 the bed and the event sounds is set by calculation and has not been judged
 by ear.
@@ -40,8 +40,8 @@ python3 tools/make_video.py --check                # every storyboard
 A render needs a C compiler, Pillow, numpy for the sound, Node.js with the
 `playwright` package and its Chromium, and ffmpeg. `--check` needs only Python; the
 pytest case `test/tools/test_make_video.py` runs it in CI (continuous
-integration). The 100.4s of `kst-rbmod` are 3012 frames and the 260.8s of
-`features` 7824; the render time on a software rasteriser is not measured.
+integration). The 100.4s of `kst-rbmod` are 3012 frames and the 432.4s of
+`features` 12972; the render time on a software rasteriser is not measured.
 
 ## Files
 
@@ -52,7 +52,7 @@ integration). The 100.4s of `kst-rbmod` are 3012 frames and the 260.8s of
 | `player/case3d.js` | the case model, its connectors and its named points |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
-| `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does, 260.8s |
+| `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does, 432.4s |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 
 ## Storyboard fields

@@ -435,7 +435,7 @@ at -6dBFS (decibels relative to full scale); its balance has not been judged by 
 storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
 runs it. Two storyboards: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
 100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
-it does, 260.8s, with
+it does, 432.4s, with
 the tags of RECEIVER, BATTERY and BALANCE naming what is not built or not measured. The
 renderer draws the KST views on the carrier (`servo-kst-STATE-rbmod`) and MOTOR & ESC's plot
 with an IOmcu answering (`motor-plot`) for them (`test/host/render_screen.c`). The case model is a mockup: outer size, connector order and

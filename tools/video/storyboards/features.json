@@ -299,6 +299,17 @@
      }
     },
     {
+     "view": "splash",
+     "dur": 4.4,
+     "n": 1,
+     "kicker": "01 · The bench",
+     "path": [
+      "START"
+     ],
+     "title": "Start-up check",
+     "text": "The panel reports board, display, touch, storage, settings, link and IOmcu before the home screen."
+    },
+    {
      "view": "overview",
      "dur": 6.4,
      "n": 1,
@@ -363,6 +374,30 @@
       188,
       50
      ]
+    },
+    {
+     "view": "band-fault",
+     "dur": 4.4,
+     "n": 1,
+     "kicker": "01 · The bench",
+     "path": [
+      "HOME",
+      "FAULT"
+     ],
+     "title": "Faults in plain words",
+     "text": "A tap on the fault chip names each cause and what to check."
+    },
+    {
+     "view": "busfault",
+     "dur": 4.4,
+     "n": 1,
+     "kicker": "01 · The bench",
+     "path": [
+      "HOME",
+      "LINK"
+     ],
+     "title": "CAN bus test",
+     "text": "Test frames run at start. A failed test lists the wiring checks, and the bench stays in simulation."
     },
     {
      "dur": 3.0,
@@ -459,6 +494,47 @@
       612,
       160
      ]
+    },
+    {
+     "view": "motor-settings",
+     "dur": 4.4,
+     "n": 2,
+     "kicker": "02 · Motor & ESC",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "OPTIONS"
+     ],
+     "title": "Pack and motor data",
+     "text": "Cells, capacity and internal resistance of the pack. Pole count and rated kV of the motor."
+    },
+    {
+     "view": "motor-stick",
+     "dur": 4.4,
+     "n": 2,
+     "kicker": "02 · Motor & ESC",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "PROGRAM",
+      "ESC STICK"
+     ],
+     "title": "ESC profiles",
+     "text": "Makers and families are listed with the count of profiles a run supports. SEARCH filters the list."
+    },
+    {
+     "view": "motor-stick-items",
+     "dur": 4.4,
+     "n": 2,
+     "kicker": "02 · Motor & ESC",
+     "path": [
+      "HOME",
+      "MOTOR & ESC",
+      "PROGRAM",
+      "ESC STICK"
+     ],
+     "title": "Menu items",
+     "text": "Each item of the ESC's menu is set on the panel. The profile holds the beep timing."
     },
     {
      "view": "motor-stick-run",
@@ -590,6 +666,58 @@
      "text": "A square, sine or triangle sweep, timed by the IOmcu, with speed and pause."
     },
     {
+     "view": "servo-settings",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "OPTIONS"
+     ],
+     "title": "Servo type and pulses",
+     "text": "Type, frame rate, pulse minimum, centre and maximum, and trim."
+    },
+    {
+     "view": "servo-warning",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "OPTIONS",
+      "TYPE"
+     ],
+     "title": "A hold before a risk",
+     "text": "A type that can destroy a servo opens a warning. It applies after a 2 s hold.",
+     "focus": [
+      6,
+      44,
+      640,
+      516
+     ]
+    },
+    {
+     "view": "servo-hv",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "LIVE"
+     ],
+     "title": "HV servos only",
+     "text": "An output above 6.0 V asks for a 2 s hold as well.",
+     "focus": [
+      6,
+      44,
+      640,
+      516
+     ]
+    },
+    {
      "view": "servo-result",
      "dur": 6.4,
      "n": 3,
@@ -607,6 +735,20 @@
      ]
     },
     {
+     "view": "servo-test-settings",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "TEST",
+      "OPTIONS"
+     ],
+     "title": "Test steps",
+     "text": "4.8 V and 6.0 V steps, 7.4 V and 8.4 V with HV SERVO on, and a brown-out search in 0.20 V steps."
+    },
+    {
      "view": "servo-limrun-found",
      "dur": 5.0,
      "n": 3,
@@ -618,6 +760,25 @@
      ],
      "title": "LIMIT RUN",
      "text": "Finds both ends of an installed linkage from the servo's current. SEARCH + PROGRAM writes them into the servo.",
+     "focus": [
+      8,
+      138,
+      612,
+      84
+     ]
+    },
+    {
+     "view": "servo-limrun-pass",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "LIMIT RUN"
+     ],
+     "title": "SEARCH + PROGRAM",
+     "text": "The ends found are written into a KST, Chaservo or Hitec servo on the programming port.",
      "focus": [
       8,
       138,
@@ -643,6 +804,20 @@
       612,
       104
      ]
+    },
+    {
+     "view": "servo-rudder-angle",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "RUDDER",
+      "ANGLE"
+     ],
+     "title": "Angle source",
+     "text": "The AS5600 encoder on the horn or a Bluetooth IMU on the surface."
     },
     {
      "view": "servo-rudder-auto",
@@ -676,6 +851,53 @@
      ]
     },
     {
+     "view": "servo-kst-files",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "KST",
+      "FILES"
+     ],
+     "title": "Servo files",
+     "text": "A servo's settings are saved to the card and loaded into another servo of the same type."
+    },
+    {
+     "view": "servo-kst-restore-list",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "KST",
+      "RESTORE"
+     ],
+     "title": "RESTORE",
+     "text": "The session's first read is kept as a backup. A restore writes it back."
+    },
+    {
+     "view": "servo-kst-journal",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "KST"
+     ],
+     "title": "An interrupted write",
+     "text": "A write that did not finish is detected at the next read. The screen says so and offers RESTORE.",
+     "focus": [
+      8,
+      424,
+      612,
+      48
+     ]
+    },
+    {
      "view": "servo-hitec",
      "dur": 5.0,
      "n": 3,
@@ -687,6 +909,59 @@
      ],
      "title": "Hitec",
      "text": "D series and classic HS-5xxx and HS-7xxx servos, with backup, limit checks and a write switch."
+    },
+    {
+     "view": "servo-hitec-move-on",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "HITEC",
+      "TRAVEL"
+     ],
+     "title": "MOVE SERVO",
+     "text": "The horn follows the value being edited while the bench stays SAFE. It needs a PD mini with its output on.",
+     "focus": [
+      8,
+      362,
+      598,
+      44
+     ]
+    },
+    {
+     "view": "servo-hitec-move-found",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "HITEC",
+      "TRAVEL"
+     ],
+     "title": "FIND STOP",
+     "text": "Searches the mechanical stop of one side and sets that end 1.0° inside it, in the edits.",
+     "focus": [
+      8,
+      308,
+      598,
+      44
+     ]
+    },
+    {
+     "view": "servo-hitec-backup-file",
+     "dur": 4.4,
+     "n": 3,
+     "kicker": "03 · Servo",
+     "path": [
+      "HOME",
+      "SERVO",
+      "HITEC"
+     ],
+     "title": "Backup and verify",
+     "text": "The session's backup file is named on the screen. Written values are read back."
     },
     {
      "dur": 3.0,
@@ -772,6 +1047,18 @@
      ]
     },
     {
+     "view": "supply-rbmod",
+     "dur": 4.4,
+     "n": 4,
+     "kicker": "04 · Supply",
+     "path": [
+      "HOME",
+      "SUPPLY"
+     ],
+     "title": "On the rbmod carrier",
+     "text": "The programming ports have their own fixed 5 V. PROG 5V switches it and shows its reading."
+    },
+    {
      "dur": 3.0,
      "n": 5,
      "card": {
@@ -813,6 +1100,19 @@
      "tag": "S.BUS DECODER BUILT · PIN DRIVER NOT WRITTEN"
     },
     {
+     "view": "analyser-failsafe",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Receiver & pack",
+     "path": [
+      "HOME",
+      "RECEIVER"
+     ],
+     "title": "FAILSAFE",
+     "text": "The state card turns red when the receiver sends its fallback values.",
+     "tag": "S.BUS DECODER BUILT · PIN DRIVER NOT WRITTEN"
+    },
+    {
      "view": "battery",
      "dur": 5.0,
      "n": 5,
@@ -837,6 +1137,32 @@
      "title": "BALANCE",
      "text": "Blade count, correction mass and its angle.",
      "tag": "SENSORS NOT FITTED · NOTHING MEASURED"
+    },
+    {
+     "view": "balance-edf",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Receiver & pack",
+     "path": [
+      "HOME",
+      "BALANCE"
+     ],
+     "title": "Propeller or EDF",
+     "text": "The rotor type and the blade count set where a correction mass can go.",
+     "tag": "SENSORS NOT FITTED · NOTHING MEASURED"
+    },
+    {
+     "view": "balance-rig",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Receiver & pack",
+     "path": [
+      "HOME",
+      "BALANCE",
+      "TEST RIG"
+     ],
+     "title": "Sensor placement",
+     "text": "Guides for a test rig and for an aircraft show where the accelerometer and the optical sensor go."
     },
     {
      "dur": 3.0,
@@ -896,6 +1222,32 @@
      ]
     },
     {
+     "view": "logs-import",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "LOGS",
+      "OPEN"
+     ],
+     "title": "Import",
+     "text": "A CSV file from elsewhere: separator, number format and time axis are detected and can be changed."
+    },
+    {
+     "view": "logs-report",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "LOGS",
+      "OPEN"
+     ],
+     "title": "Reports",
+     "text": "A test or a limit run writes a text report beside its CSV file."
+    },
+    {
      "view": "files",
      "dur": 6.4,
      "n": 6,
@@ -913,6 +1265,20 @@
      ]
     },
     {
+     "view": "files-info",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "LOGS",
+      "FILES",
+      "INFO"
+     ],
+     "title": "File information",
+     "text": "Name, folder, kind, size, date and the rule that protects it."
+    },
+    {
      "view": "files-edit",
      "dur": 5.0,
      "n": 6,
@@ -925,6 +1291,18 @@
      ],
      "title": "Text editor",
      "text": "Text files on the card are viewed and edited on the panel."
+    },
+    {
+     "view": "shot-popup",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Logs & files",
+     "path": [
+      "HOME",
+      "BAND"
+     ],
+     "title": "Screenshot",
+     "text": "A 1 s hold on the empty part of the band saves the screen as a PNG file on the card."
     },
     {
      "dur": 3.0,
@@ -953,6 +1331,19 @@
      ]
     },
     {
+     "view": "wifi-ap",
+     "dur": 4.4,
+     "n": 7,
+     "kicker": "07 · Wi-Fi & updates",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "Access point",
+     "text": "The panel opens its own network: WPA2, 2.4 GHz channel 6, with a random password and an access code."
+    },
+    {
      "view": "wifi-joined",
      "dur": 6.4,
      "n": 7,
@@ -970,6 +1361,32 @@
      ]
     },
     {
+     "view": "wifi-writes-allowed",
+     "dur": 4.4,
+     "n": 7,
+     "kicker": "07 · Wi-Fi & updates",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "Browser writes",
+     "text": "Writes from the browser to the card are opened on the panel and can be shut again there."
+    },
+    {
+     "view": "panel-update",
+     "dur": 4.4,
+     "n": 7,
+     "kicker": "07 · Wi-Fi & updates",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "Panel update",
+     "text": "An uploaded or downloaded image is written after a 2 s hold on the panel."
+    },
+    {
      "view": "updates-newer",
      "dur": 6.4,
      "n": 7,
@@ -985,6 +1402,32 @@
       "STABLE or TESTING releases",
       "The IOmcu is updated from the panel over CAN"
      ]
+    },
+    {
+     "view": "coproc-update-progress",
+     "dur": 4.4,
+     "n": 7,
+     "kicker": "07 · Wi-Fi & updates",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "IOmcu update",
+     "text": "The panel sends the IOmcu image it carries over CAN. Outputs are off until the new firmware is checked."
+    },
+    {
+     "view": "updates-c6",
+     "dur": 4.4,
+     "n": 7,
+     "kicker": "07 · Wi-Fi & updates",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Radio update",
+     "text": "The ESP32-C6 that carries Wi-Fi and Bluetooth is updated from the panel too."
     },
     {
      "dur": 3.0,
@@ -1025,6 +1468,45 @@
      "text": "Panel, sensors, outputs, SD card, Wi-Fi, updates and the Bluetooth IMU."
     },
     {
+     "view": "setup-application",
+     "dur": 4.4,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "PANEL"
+     ],
+     "title": "PANEL",
+     "text": "Theme, brightness, contrast, screen rotation by 180° and language."
+    },
+    {
+     "view": "setup-time-zone",
+     "dur": 4.4,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "PANEL"
+     ],
+     "title": "Clock and knob",
+     "text": "Time zone, dim after, and a rotary knob that turns the active slider."
+    },
+    {
+     "view": "setup-card",
+     "dur": 4.4,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "SD CARD"
+     ],
+     "title": "SD CARD",
+     "text": "Which logs are written, their folders, and whether a browser may write."
+    },
+    {
      "view": "outputs-rbmod",
      "dur": 5.0,
      "n": 8,
@@ -1038,6 +1520,32 @@
      "text": "A protocol for each pin of J2: PWM, PPM, DShot or bidirectional DShot."
     },
     {
+     "view": "outputs-full",
+     "dur": 4.4,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "OUTPUTS"
+     ],
+     "title": "The board to scale",
+     "text": "On a board wired by hand the screen draws the module and where each lead goes."
+    },
+    {
+     "view": "layout-rbmod",
+     "dur": 4.4,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "LAYOUT"
+     ],
+     "title": "LAYOUT",
+     "text": "On the rbmod carrier: J1 and J2 position by position, with the protocol bound on each."
+    },
+    {
      "view": "setup-sensors-rbmod",
      "dur": 5.0,
      "n": 8,
@@ -1049,6 +1557,45 @@
      ],
      "title": "SENSORS",
      "text": "Current monitors INA228 and INA3221, the AS5600 angle encoder, the phase tap and the IMU."
+    },
+    {
+     "view": "setup-sensors-ina228",
+     "dur": 4.4,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "SENSORS"
+     ],
+     "title": "Current monitors",
+     "text": "Address, shunt value and maximum current of each monitor."
+    },
+    {
+     "view": "setup-tap",
+     "dur": 4.4,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "SENSORS"
+     ],
+     "title": "Phase tap",
+     "text": "Hears an ESC's beeps on one motor phase: lowest and highest tone, pitch split and gap."
+    },
+    {
+     "view": "imu-scan",
+     "dur": 4.4,
+     "n": 8,
+     "kicker": "08 · Setup",
+     "path": [
+      "HOME",
+      "SETUP",
+      "IMU"
+     ],
+     "title": "Find a sensor",
+     "text": "A scan lists the Bluetooth sensors in range. A tap binds one."
     },
     {
      "view": "imu-connected",
@@ -1072,8 +1619,8 @@
       "HOME",
       "?"
      ],
-     "title": "A guide on every screen",
-     "text": "The ? in the band numbers the controls of the screen and explains each.",
+     "title": "The screen guide",
+     "text": "The ? in the band numbers the controls of a screen and explains each.",
      "focus": [
       508,
       50,
