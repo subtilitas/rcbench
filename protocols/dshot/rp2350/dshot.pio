@@ -53,7 +53,7 @@ do_zero:
 ;
 ; Between frames of a run the line idles high on its pull-up.  A stopped pin
 ; does not: out_dshot.c holds it low, at a latch of 1 through the pad's
-; inverter, and releases it one frame period before the first frame.
+; inverter, and releases it 500us to one frame period before the first frame.
 ;
 .program dshot_bidir_tx
 .side_set 1
