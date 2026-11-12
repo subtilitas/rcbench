@@ -2072,19 +2072,6 @@ shared/link/link_update_image.c: warning: Member ITEM_LAST (macro definition) of
 shared/link/link_update_image.c: warning: Member ITEM_SIZE_2BYTES (macro definition) of file link_update_image.c is not documented.	#define ITEM_SIZE_2BYTES 0x80u
 shared/link/link_update_image.c: warning: Member MARKER_END (macro definition) of file link_update_image.c is not documented.	#define MARKER_END 0xab123579u
 shared/link/link_update_image.c: warning: Member MARKER_START (macro definition) of file link_update_image.c is not documented.	#define MARKER_START 0xffffded3u
-shared/logfile/include/log_csv.h: warning: Member ctx (variable) of struct log_source_t is not documented.	void *ctx;
-shared/logfile/include/log_csv.h: warning: Member seek(void *ctx, size_t offset) (variable) of struct log_source_t is not documented.	bool (*seek)(void *ctx, size_t offset);
-shared/logfile/include/log_name.h: warning: Member LOG_RUN_LAST (macro definition) of file log_name.h is not documented.	#define LOG_RUN_LAST 999
-shared/logfile/log_csv.c: warning: Member TAIL_CHUNK (macro definition) of file log_csv.c is not documented.	#define TAIL_CHUNK 256u
-shared/logfile/log_csv.c: warning: Member TAIL_LIMIT (macro definition) of file log_csv.c is not documented.	#define TAIL_LIMIT 4096u
-shared/logfile/log_csv.c: warning: Member fields[LOG_MAX_COLUMNS] (variable) of struct row_buf_t is not documented.	char *fields[LOG_MAX_COLUMNS];
-shared/logfile/log_csv.c: warning: Member k_time_names[] (variable) of file log_csv.c is not documented.	static const char *const k_time_names[] = {
-shared/logfile/log_csv.c: warning: Member n (variable) of struct row_buf_t is not documented.	int n;
-shared/logfile/log_csv.c: warning: Member store[LOG_ROW_MAX] (variable) of struct row_buf_t is not documented.	char store[LOG_ROW_MAX];
-shared/logfile/log_csv.c: warning: Member total (variable) of struct row_buf_t is not documented.	int total;
-shared/logfile/log_numbers.c: warning: Member k_time_units[] (variable) of file log_numbers.c is not documented.	};
-shared/logfile/log_numbers.c: warning: Member name (variable) of struct [struct].k_time_units is not documented.	const char *name;
-shared/logfile/log_numbers.c: warning: Member scale (variable) of struct [struct].k_time_units is not documented.	double scale;
 shared/outputs/hitec_port.c: warning: Member ST(p, reg) (macro definition) of file hitec_port.c is not documented.	#define ST(p, reg) ((p)->staged[(reg) - LINK_HT_W_LINE])
 shared/outputs/include/bind_link.h: warning: Member cfg[LINK_CC_COUNT] (variable) of struct bind_reading_t is not documented.	uint16_t cfg[LINK_CC_COUNT];
 shared/outputs/include/bind_link.h: warning: Member slots[LINK_OS_COUNT] (variable) of struct bind_reading_t is not documented.	uint16_t slots[LINK_OS_COUNT];

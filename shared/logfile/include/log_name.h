@@ -74,7 +74,7 @@ extern "C" {
  * @brief The first and the last run number the panel writes.
  */
 #define LOG_RUN_FIRST 1
-#define LOG_RUN_LAST  999
+#define LOG_RUN_LAST  999 /**< the highest run number */
 
 /**
  * @brief Room for the longest name, "SUPPL999.CSV" or "ATEST999.CSV", and its
