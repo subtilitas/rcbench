@@ -13,9 +13,12 @@ a new session needs beyond it.
    ([below](#open-build-video-for-the-rbmod-rework)); it waits for a
    reference from the owner.
 4. `rcbench-video-handover.zip`, sent to the owner on 2026-11-13, holds
-   this page, the sources of the tool as plain files, the three videos,
-   the thumbnail, the owner's STEP archive and the converted model. It
-   does not hold the speech model or `node_modules/`.
+   this page, the sources of the tool as plain files, a git bundle of
+   the branch, `kst-rbmod.mp4`, the Bach version of the feature tour,
+   the thumbnail, the owner's STEP archive and the converted model. The
+   Pachelbel version was sent beside it as a file of its own: an upload
+   takes 400MiB at most. Neither holds the speech model or
+   `node_modules/`.
 
 ## What exists
 
