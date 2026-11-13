@@ -92,6 +92,7 @@ SPELL = (
     (r"\bHV\b", "high voltage"),
     (r"\b(IMU|CSV|PNG|PWM|PPM|EDF|SD|HTTPS)\b",
      lambda m: " ".join(m.group(1))),
+    (r"\bCAN bus\b", "can, bus"),
     (r"\bCAN\b", "can"),
     (r"\bZIP\b", "zip"),
     (r"\bWI-FI\b", "Wi-Fi"),

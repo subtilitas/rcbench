@@ -430,7 +430,7 @@
     },
     {
      "at": 41.9,
-     "text": "On the connector wall, J 2 carries the outputs for servos and ESCs, and J 1 the four programming ports."
+     "text": "On the connector wall, J 2 carries the outputs for servos and speed controllers, and J 1 the four programming ports."
     }
    ],
    "model": "cad",
@@ -738,7 +738,8 @@
       "LINK"
      ],
      "title": "CAN bus test",
-     "text": "Test frames run at start. A failed test lists what to check on the wiring."
+     "text": "Test frames run at start. A failed test lists what to check on the wiring.",
+     "say": "CAN bus test. Test frames run at start. A failed test lists what to check on the wiring."
     },
     {
      "dur": 3.0,
@@ -746,7 +747,8 @@
      "card": {
       "title": "Motor & ESC",
       "text": "Run a motor, read its telemetry, program its ESC."
-     }
+     },
+     "say": "Chapter 2. Motor and electronic speed controller. Run a motor, read its telemetry, and program its controller."
     },
     {
      "view": "overview",
@@ -836,7 +838,7 @@
       612,
       160
      ],
-     "say": "Bench against ESC. The table compares the bench's own measurements with what the ESC reports, so you see how far the controller's telemetry is off."
+     "say": "Bench against controller. The table compares the bench's own measurements with what the controller reports, so you see how far its telemetry is off."
     },
     {
      "view": "motor-settings",
@@ -865,7 +867,7 @@
      ],
      "title": "Stick programming",
      "text": "Many ESCs are set up with the throttle stick, while they beep through a menu. The bench knows these menus for 74 ESC families.",
-     "say": "Stick programming. Many ESCs are set up with the throttle stick: you move it while the controller beeps through a menu. The bench knows these menus for 74 families of controllers."
+     "say": "Stick programming. Many speed controllers are set up with the throttle stick: you move it while the controller beeps through a menu. The bench knows these menus for 74 families of controllers."
     },
     {
      "view": "motor-stick-items",
@@ -909,7 +911,7 @@
      ],
      "title": "ESC signal wire",
      "text": "AM32, Bluejay, BLHeli_S and ESCape32: settings are read, edited and written through the signal wire.",
-     "say": "ESC signal wire. Newer firmware, such as AM32, Bluejay, BLHeli_S and ESCape32, is set up through the signal wire instead. The bench reads the settings, lets you edit them, and writes them back."
+     "say": "The signal wire. Newer controller firmware, such as AM32, Bluejay, BLHeli_S and ESCape32, is set up through the signal wire instead. The bench reads the settings, lets you edit them, and writes them back."
     },
     {
      "dur": 3.0,
@@ -1823,7 +1825,7 @@
      ],
      "title": "Phase tap",
      "text": "Listens to an ESC's beeps on one motor phase: lowest and highest tone, pitch split and gap.",
-     "say": "Phase tap. A wire on one motor phase lets the bench hear an ESC's beeps. These settings set what counts as a beep."
+     "say": "Phase tap. A wire on one motor phase lets the bench hear a controller's beeps. These settings set what counts as a beep."
     },
     {
      "view": "imu-scan",
