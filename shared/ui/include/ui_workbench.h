@@ -56,52 +56,90 @@ typedef enum {
  * SERVO lays its five out at its own sizes (servo_screen_int.h).  The page
  * area and the output card start at UI_WB_PAGE_Y.
  */
-#define UI_WB_STRIP_X 9
-#define UI_WB_STRIP_Y 6
-#define UI_WB_STRIP_H 24
-#define UI_WB_TAB_W   112
-#define UI_WB_TAB_GAP 4
-#define UI_WB_PAGE_Y  38
+#define UI_WB_STRIP_X 9  /**< the strip's left edge, px */
+#define UI_WB_STRIP_Y 6  /**< the strip's top, px */
+#define UI_WB_STRIP_H 24  /**< the strip's height, px */
+#define UI_WB_TAB_W   112  /**< a tab's width, px */
+#define UI_WB_TAB_GAP 4  /**< the gap between tabs, px */
+#define UI_WB_PAGE_Y  38  /**< the page area's top, px */
 
+/** @brief The task strip of a workbench screen. */
 typedef struct {
-    ui_tabs_t tabs;
+    ui_tabs_t tabs;  /**< the tabs */
     /** The task each tab shows, tab by tab. */
     uint8_t   task[UI_WB_TASKS];
 } ui_wb_strip_t;
 
 /**
- * The strip for the tasks in @p tasks (UI_WB_HAS() bits), from (@p x,
+ * @brief The strip for the tasks in @p tasks (UI_WB_HAS() bits), from (@p x,
  * @p y), LIVE selected.  LIVE is always there: a mask without it gets it.
  * Bits above UI_WB_SETTINGS are ignored.
+ *
+ * @param w the strip
+ * @param tasks the tasks, UI_WB_HAS() bits
+ * @param x the strip's left edge, px
+ * @param y its top, px
  */
 void ui_wb_strip_init(ui_wb_strip_t *w, unsigned tasks, int16_t x, int16_t y);
 
-/** The task shown now. */
+/**
+ * @brief The task shown now.
+ *
+ * @param w the strip
+ * @return the task
+ */
 ui_wb_task_t ui_wb_strip_task(const ui_wb_strip_t *w);
 
-/** Whether the strip has @p task. */
+/**
+ * @brief Whether the strip has @p task.
+ *
+ * @param w the strip
+ * @param task the task
+ * @return true when it has it
+ */
 bool ui_wb_strip_has(const ui_wb_strip_t *w, ui_wb_task_t task);
 
 /**
- * Show @p task.  Returns whether the task shown changed; a task the strip
+ * @brief Show @p task.  Returns whether the task shown changed; a task the strip
  * lacks changes nothing and returns false.  A press under way is dropped.
+ *
+ * @param w the strip
+ * @param task the task
+ * @return true when the task shown changed
  */
 bool ui_wb_strip_select(ui_wb_strip_t *w, ui_wb_task_t task);
 
-/** What a tile does: LIVE, and no press under way. */
+/**
+ * @brief What a tile does: LIVE, and no press under way.
+ *
+ * @param w the strip
+ */
 void ui_wb_strip_open(ui_wb_strip_t *w);
 
 /**
- * A touch event.  Returns true when it switched the task: the release of a
+ * @brief A touch event.  Returns true when it switched the task: the release of a
  * press that began on another tab, as a tap (touch_event_is_tap_up()), on
  * the same tab.
+ *
+ * @param w the strip
+ * @param evt the touch event
+ * @return true when it switched the task
  */
 bool ui_wb_strip_event(ui_wb_strip_t *w, const touch_event_t *evt);
 
-/** Whether a press on a tab is under way (the strip owns that contact). */
+/**
+ * @brief Whether a press on a tab is under way (the strip owns that contact).
+ *
+ * @param w the strip
+ * @return true while one is
+ */
 bool ui_wb_strip_pressed(const ui_wb_strip_t *w);
 
-/** Drop a press under way (ui_tabs_cancel()). */
+/**
+ * @brief Drop a press under way (ui_tabs_cancel()).
+ *
+ * @param w the strip
+ */
 void ui_wb_strip_cancel(ui_wb_strip_t *w);
 
 /**
@@ -111,7 +149,13 @@ void ui_wb_strip_cancel(ui_wb_strip_t *w);
  */
 gfx_rect_t ui_wb_strip_rect(const ui_wb_strip_t *w);
 
-/** The tab of @p task, or an empty rectangle when the strip lacks it. */
+/**
+ * @brief The tab of @p task, or an empty rectangle when the strip lacks it.
+ *
+ * @param w the strip
+ * @param task the task
+ * @return the rectangle
+ */
 gfx_rect_t ui_wb_strip_tab_rect(const ui_wb_strip_t *w, ui_wb_task_t task);
 
 /**

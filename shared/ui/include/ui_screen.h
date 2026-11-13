@@ -28,6 +28,7 @@
 extern "C" {
 #endif
 
+/** @brief The screens the router knows. */
 typedef enum {
     SCREEN_SPLASH = 0,
     SCREEN_OVERVIEW,
@@ -82,6 +83,7 @@ typedef enum {
 
 struct ui_help_page;
 
+/** @brief One screen's title and callbacks. */
 typedef struct {
     const char *title;   /**< shown in the band                            */
     /**
@@ -89,9 +91,9 @@ typedef struct {
      * every screen, because selection and scroll position are static state.
      */
     void (*reset)(void);
-    void (*enter)(void);
+    void (*enter)(void);  /**< called when the screen comes on top */
     void (*leave)(void); /**< a bench screen disarms here                  */
-    void (*tick)(float dt_s);
+    void (*tick)(float dt_s);  /**< called every frame while the screen is on top */
     /** Coordinates are relative to the screen's own area, not the panel. */
     void (*event)(const touch_event_t *evt);
     /**
@@ -104,6 +106,7 @@ typedef struct {
      * on being held, and the timer finishes it with nothing on the glass.
      */
     void (*cancel)(void);
+    /** @brief draws the screen into the frame buffer @p buffer_index */
     void (*render)(gfx_canvas_t *c, int buffer_index);
     /**
      * The home tag was tapped.  Return true when the screen went up a level
@@ -181,11 +184,21 @@ typedef struct {
  */
 int ui_router_alert_rows(const char *text);
 
+/** @brief Resets every screen and shows the splash. */
 void ui_router_init(void);
 
-/** Switch screens.  Calls leave() on the old and enter() on the new. */
+/**
+ * @brief Switch screens.  Calls leave() on the old and enter() on the new.
+ *
+ * @param id the screen
+ */
 void ui_router_goto(ui_screen_id_t id);
 
+/**
+ * @brief Gives the screen on top.
+ *
+ * @return its id
+ */
 ui_screen_id_t ui_router_current(void);
 
 /**
@@ -211,26 +224,41 @@ ui_screen_id_t ui_router_leaving_to(void);
 ui_screen_id_t ui_router_parent(ui_screen_id_t id);
 
 /**
- * Count of navigations since ui_router_init(): every switch to a different
+ * @brief Count of navigations since ui_router_init(): every switch to a different
  * screen adds one.  Two reads that differ tell that the router moved between
  * them, including away and back to the same screen, which comparing
  * ui_router_current() cannot.
+ *
+ * @return the count
  */
 uint32_t ui_router_navigations(void);
 
 /**
- * Count of touch events handed to a screen's event() since ui_router_init(),
+ * @brief Count of touch events handed to a screen's event() since ui_router_init(),
  * a release the router makes up for a contact that left the body included.
  * An event the router keeps -- the band's, the alert strip's, one of a
  * contact no screen owns -- does not count.
+ *
+ * @return the count
  */
 uint32_t ui_router_dispatched(void);
+/**
+ * @brief Gives a screen's title.
+ *
+ * @param id the screen
+ * @return its title; "" for none
+ */
 const char *ui_router_title(ui_screen_id_t id);
 
+/**
+ * @brief Runs the screen on top and the router's timers for one frame.
+ *
+ * @param dt_s seconds since the last call
+ */
 void ui_router_tick(float dt_s);
 
 /**
- * One touch event, in panel coordinates, in the order the tracker emits
+ * @brief One touch event, in panel coordinates, in the order the tracker emits
  * them.
  *
  * A contact has one owner from its DOWN to its UP.  The screen on top owns a
@@ -244,6 +272,8 @@ void ui_router_tick(float dt_s);
  * screen was handed, flagged TOUCH_FLAG_NO_TAP, and is the router's from
  * then on.  A flagged UP ends a press or a drag and activates no control.
  * STOP and the home tag answer to a DOWN on them only.
+ *
+ * @param evt the touch event
  */
 void ui_router_event(const touch_event_t *evt);
 
@@ -255,6 +285,12 @@ void ui_router_event(const touch_event_t *evt);
  * again.
  */
 void ui_router_cancel_gestures(void);
+/**
+ * @brief Draws the screen on top and the band.
+ *
+ * @param c the canvas to draw on
+ * @param buffer_index the frame buffer drawn into, 0 or 1
+ */
 void ui_router_render(gfx_canvas_t *c, int buffer_index);
 
 /** Repaint every screen's cached chrome into every framebuffer. */
@@ -304,14 +340,15 @@ void ui_router_shot_set_idle(bool idle);
 /** What an arm covers, for the band's chip: the motor's outputs, the
  *  servos' and the programming ports'. */
 #define UI_ARMED_MOTOR 0x01u
-#define UI_ARMED_SERVO 0x02u
+#define UI_ARMED_SERVO 0x02u  /**< servos' outputs are armed */
 /** @brief ui_bench_status_t's prog_port for a held port whose number is
  *         not known. */
 #define UI_PROG_PORT_SOME 0xFFu
 
+/** @brief What the band shows. */
 typedef struct {
-    bool     link_up;
-    bool     armed;
+    bool     link_up;  /**< the link to the IOmcu is up */
+    bool     armed;  /**< the bench is armed */
     /**
      * @brief An operator's STOP is latched and the panel withholds the
      * heartbeat (arming_held()).  The armed chip reads STOP, STOP reads STOPPED -
@@ -335,7 +372,7 @@ typedef struct {
     /** @brief MOVE SERVO on the HITEC page drives the held port's servo
      *         while the bench is SAFE; the SAFE chip says MOVE. */
     bool     prog_moving;
-    uint32_t run_seconds;
+    uint32_t run_seconds;  /**< how long the run has lasted, s */
     const char *mode;       /**< ui_band_mode(): BENCH or SIM, or NULL      */
     /**
      * The numbers are modelled, not measured.
@@ -349,8 +386,8 @@ typedef struct {
      */
     bool simulated;
 
-    /*
-     * A link_cap_t bitmap from the IOmcu's identity page.  Zero means
+    /**
+     * @brief A link_cap_t bitmap from the IOmcu's identity page.  Zero means
      * nothing is fitted or nothing answered; the menu treats both the same.
      */
     uint16_t capabilities;
@@ -377,6 +414,11 @@ typedef struct {
     float mcu_temp_c;
 } ui_bench_status_t;
 
+/**
+ * @brief Sets the status the band shows.
+ *
+ * @param status the status
+ */
 void ui_router_set_status(const ui_bench_status_t *status);
 
 /**
@@ -397,17 +439,24 @@ typedef enum {
 } ui_band_chip_t;
 
 /**
- * The chip whose help bubble is open, or UI_BAND_CHIP_NONE.
+ * @brief The chip whose help bubble is open, or UI_BAND_CHIP_NONE.
  *
  * A tap on a chip of the band opens its bubble under the band.  The bubble
  * follows the status as it changes and closes when its chip is no longer
  * drawn, when the screen changes, or on the next DOWN anywhere; that DOWN
  * reaches no screen, except that a DOWN on STOP presses STOP as well.
+ *
+ * @return the chip
  */
 ui_band_chip_t ui_router_help(void);
 
-/** Where the open bubble is drawn, in panel coordinates; false when none
- *  is. */
+/**
+ * @brief Where the open bubble is drawn, in panel coordinates; false when none
+ *  is.
+ *
+ * @param out receives the rectangle
+ * @return true when a bubble is open
+ */
 bool ui_router_help_rect(gfx_rect_t *out);
 
 /**
@@ -455,8 +504,18 @@ bool ui_router_guide_now(struct ui_help_page *out);
  */
 bool ui_router_guide_shown(void);
 
-/** True while a STOP button is drawn; false on the splash, which has none. */
+/**
+ * @brief True while a STOP button is drawn; false on the splash, which has
+ *   none.
+ *
+ * @return true while one is drawn
+ */
 bool ui_router_stop_live(void);
+/**
+ * @brief Gives the status the band shows.
+ *
+ * @return the status
+ */
 const ui_bench_status_t *ui_router_status(void);
 
 /**
@@ -520,31 +579,42 @@ void ui_router_set_notice(const char *text);
 bool ui_router_alert_is_notice(void);
 
 /**
- * The number of the alert ui_router_set_alert() shows now, 0 while none
+ * @brief The number of the alert ui_router_set_alert() shows now, 0 while none
  * does.  Every call that sets one gives it the next number, so a caller
  * that noted the number can tell whether its alert still shows: not once
  * time or a tap cleared it or another replaced it.
+ *
+ * @return the number
  */
 uint32_t ui_router_alert_number(void);
 
 /**
- * Clear the alert ui_router_set_alert() shows if it is still number
+ * @brief Clear the alert ui_router_set_alert() shows if it is still number
  * @p number (ui_router_alert_number()): for an alert whose cause is over
  * before its time is.  Another alert, a held one and a number of 0 are
  * left as they are.  True when it cleared one.
+ *
+ * @param number the alert's number
+ * @return true when the alert was cleared
  */
 bool ui_router_withdraw_alert(uint32_t number);
 
 /**
- * An alert that neither time nor a tap clears, or NULL to clear it: for a
+ * @brief An alert that neither time nor a tap clears, or NULL to clear it: for a
  * fault that lasts until restart and leaves no touch to tap with, such as a
  * touch controller that did not answer at start.  It is kept apart from the
  * alert ui_router_set_alert() shows: that one shows over it, without an x
  * for the held one, and once cleared the held one shows again.
+ *
+ * @param text the text; NULL to clear
  */
 void ui_router_hold_alert(const char *text);
 
-/** The alert showing: the passing one, else the held one, else NULL. */
+/**
+ * @brief The alert showing: the passing one, else the held one, else NULL.
+ *
+ * @return the text; NULL for none
+ */
 const char *ui_router_alert(void);
 
 #ifdef __cplusplus
