@@ -274,7 +274,10 @@ export function buildBoard(data) {
           stroke-width=".16" stroke-linejoin="round" stroke-linecap="round"
           transform="translate(-.08 -.14)" ${dash}/>`;
         g += blob(pts[0], ramp(lt, w.t[0] - .3, w.t[0]) || k);
-        if (k >= 1) g += blob(pts.at(-1), ramp(lt, w.t[1], w.t[1] + .3));
+        // A loose wire leaves the board: no joint at its far end.
+        if (k >= 1 && !w.loose) {
+          g += blob(pts.at(-1), ramp(lt, w.t[1], w.t[1] + .3));
+        }
       }
       for (const p of sc.fit || []) {
         const k = ramp(lt, p.t, p.t + .7);

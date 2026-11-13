@@ -12,7 +12,7 @@
   "speed": 0.94
  },
  "brand": "rbmod carrier build",
- "steps": 11,
+ "steps": 12,
  "scenes": [
   {
    "type": "case",
@@ -23,7 +23,7 @@
     "to": 5.2,
     "kicker": "rcbench · rbmod carrier",
     "heading": "Building the<br>rbmod carrier",
-    "text": "A rev 1 board, five modules and the rework.<br>11 steps with a soldering iron."
+    "text": "A rev 1 board, five modules and the rework.<br>12 steps with a soldering iron."
    },
    "camera": [
     [
@@ -79,7 +79,7 @@
    "say": [
     {
      "at": 0.6,
-     "text": "Building the R B mod carrier of the R C bench: a revision 1 board, five modules and the rework, in 11 steps."
+     "text": "Building the R B mod carrier of the R C bench: a revision 1 board, five modules and the rework, in 12 steps."
     }
    ],
    "labels": [
@@ -101,7 +101,7 @@
    "type": "board",
    "board": "rbmod-rev1",
    "bare": true,
-   "dur": 178.0,
+   "dur": 192.8,
    "camera": [
     [
      0,
@@ -312,7 +312,23 @@
      36
     ],
     [
-     175.4,
+     175.0,
+     [
+      12,
+      38
+     ],
+     50
+    ],
+    [
+     187.4,
+     [
+      12,
+      38
+     ],
+     50
+    ],
+    [
+     190.2,
      [
       44.5,
       40
@@ -320,7 +336,7 @@
      172
     ],
     [
-     178.0,
+     192.8,
      [
       44.5,
       40
@@ -397,9 +413,15 @@
     },
     {
      "from": 159.8,
-     "to": 178.0,
+     "to": 172.8,
      "n": 11,
      "text": "Zener on M7's output"
+    },
+    {
+     "from": 172.8,
+     "to": 192.8,
+     "n": 12,
+     "text": "Wires from J6 to the PD mini"
     }
    ],
    "labels": [
@@ -426,8 +448,8 @@
       60,
       300
      ],
-     "title": "J6 sits on the back",
-     "text": "The only part on the other side of the board.",
+     "title": "J6 takes no connector",
+     "text": "Wires to the PD mini are soldered to its pads in the last step.",
      "size": "sm",
      "side": "r"
     },
@@ -443,7 +465,7 @@
       250
      ],
      "title": "What goes on the board",
-     "text": "5 modules on straight 2.54 mm pin strips, 2 angled 3 x 4 pin headers, 6 JST PH connectors, 1 Mini-Fit Jr, a 3 V zener and 4.7 kΩ. For the rework: a wire, 2.2 kΩ and a 5.6 V zener.",
+     "text": "5 modules on straight 2.54 mm pin strips, 2 angled 3 x 4 pin headers, 5 JST PH connectors, 1 Mini-Fit Jr, a 3 V zener and 4.7 kΩ. For the rework: a wire, 2.2 kΩ and a 5.6 V zener.",
      "side": "r"
     },
     {
@@ -519,10 +541,11 @@
       60,
       300
      ],
-     "title": "J6 goes on the back",
-     "text": "A 4-pin JST PH, soldered from the module side.",
+     "title": "J6 stays empty",
+     "text": "No connector here: its pads take wires in step 12.",
      "size": "sm",
-     "side": "r"
+     "side": "r",
+     "style": "muted"
     },
     {
      "from": 51.4,
@@ -648,6 +671,21 @@
      "text": "A 2 W or 5 W part on top of the module, its <b>banded end, the cathode, on OUT+</b>. A braking servo feeds energy back into the 5 V, and M7 latches off above about 6.0 V. The zener takes that energy.",
      "side": "r",
      "n": 11
+    },
+    {
+     "from": 175.2,
+     "to": 187.2,
+     "anchor": [
+      1.5,
+      38.2
+     ],
+     "at": [
+      1300,
+      300
+     ],
+     "title": "J6: wires, no connector",
+     "text": "Solder four wires directly to J6's pads. They run to the PD mini: its supply input, <b>15 V and GND</b>, and its UART, <b>TX and RX</b>.",
+     "n": 12
     }
    ],
    "tags": [
@@ -750,6 +788,34 @@
      "at": "M7.5a",
      "text": "GND",
      "side": "r"
+    },
+    {
+     "from": 175.4,
+     "to": 187.2,
+     "at": "J6.1",
+     "text": "15 V",
+     "side": "r"
+    },
+    {
+     "from": 175.6,
+     "to": 187.2,
+     "at": "J6.2",
+     "text": "TX · GPIO 7",
+     "side": "r"
+    },
+    {
+     "from": 175.8,
+     "to": 187.2,
+     "at": "J6.3",
+     "text": "RX · GPIO 6",
+     "side": "r"
+    },
+    {
+     "from": 176.0,
+     "to": 187.2,
+     "at": "J6.4",
+     "text": "GND",
+     "side": "r"
     }
    ],
    "nets": [
@@ -795,6 +861,82 @@
       137.0,
       140.0
      ]
+    },
+    {
+     "from": "J6.1",
+     "to": [
+      -12,
+      43.583
+     ],
+     "via": [
+      [
+       -2,
+       41.183
+      ]
+     ],
+     "color": "#e5484d",
+     "loose": true,
+     "t": [
+      177.0,
+      178.6
+     ]
+    },
+    {
+     "from": "J6.2",
+     "to": [
+      -12,
+      39.983
+     ],
+     "via": [
+      [
+       -2,
+       39.183
+      ]
+     ],
+     "color": "#e8c81a",
+     "loose": true,
+     "t": [
+      177.7,
+      179.29999999999998
+     ]
+    },
+    {
+     "from": "J6.3",
+     "to": [
+      -12,
+      36.383
+     ],
+     "via": [
+      [
+       -2,
+       37.183
+      ]
+     ],
+     "color": "#3fa7e8",
+     "loose": true,
+     "t": [
+      178.4,
+      180.0
+     ]
+    },
+    {
+     "from": "J6.4",
+     "to": [
+      -12,
+      32.783
+     ],
+     "via": [
+      [
+       -2,
+       35.183
+      ]
+     ],
+     "color": "#2b2e35",
+     "loose": true,
+     "t": [
+      179.1,
+      180.7
+     ]
     }
    ],
    "fit": [
@@ -835,12 +977,6 @@
       "J8"
      ],
      "t": 38.6
-    },
-    {
-     "refs": [
-      "J6"
-     ],
-     "t": 39.8
     },
     {
      "refs": [
@@ -907,15 +1043,6 @@
      "t": [
       41.4,
       43.8
-     ]
-    },
-    {
-     "refs": [
-      "J6"
-     ],
-     "t": [
-      44.0,
-      45.0
      ]
     },
     {
@@ -1026,7 +1153,7 @@
    "say": [
     {
      "at": 0.5,
-     "text": "This is the bare R B mod carrier, seen from the module side. The eight resistor footprints stay empty. One connector, J 6, sits on the back."
+     "text": "This is the bare R B mod carrier, seen from the module side. The eight resistor footprints stay empty. J 6 gets no connector: wires go to its pads in the last step."
     },
     {
      "at": 5.0,
@@ -1034,7 +1161,7 @@
     },
     {
      "at": 9.3,
-     "text": "Step 1. On this board, programming port 3 runs to G P I O 26, which is not 5 volt tolerant. Open that track while the board is bare."
+     "text": "Step 1. On this board, programming port 3 runs to G-P-I-O 26, which is not 5 volt tolerant. Open that track while the board is bare."
     },
     {
      "at": 18.2,
@@ -1046,7 +1173,7 @@
     },
     {
      "at": 34.9,
-     "text": "Step 3. Fit the J S T connectors on the right edge and the power connector J 8 on the left, and solder them on the back. J 6 goes on the back of the board."
+     "text": "Step 3. Fit the J-S-T connectors on the right edge and the power connector J 8 on the left, and solder them on the back. J 6 stays empty."
     },
     {
      "at": 49.1,
@@ -1074,11 +1201,11 @@
     },
     {
      "at": 119.5,
-     "text": "Step 8. The U S B C, P D trigger gets the same wire and solder in its two large holes. Set its dip switch to 15 volts."
+     "text": "Step 8. The U S B C, P-D trigger gets the same wire and solder in its two large holes. Set its dip switch to 15 volts."
     },
     {
      "at": 133.1,
-     "text": "Step 9. Now the rework wire. Solder it from pad 20 of the module, G P 15, to the outer pad of R 1."
+     "text": "Step 9. Now the rework wire. Solder it from pad 20 of the module, G-P 15, to the outer pad of R 1."
     },
     {
      "at": 146.9,
@@ -1087,6 +1214,10 @@
     {
      "at": 160.1,
      "text": "Step 11. Solder the 5.6 volt zener diode on top of M 7, from the output to ground, with its band on the output pad. It takes the energy that a braking servo feeds back."
+    },
+    {
+     "at": 173.1,
+     "text": "Step 12. J 6 takes no connector. Solder four wires directly to its pads. They go to the P-D mini: 15 volts and ground for its supply, and the two lines of its serial port."
     }
    ]
   },
@@ -1097,7 +1228,7 @@
    "items": [
     "Scratch R1's track open",
     "D1 and R9",
-    "Connectors, J6 on the back",
+    "Connectors, J6 stays empty",
     "Headers J1 and J2",
     "RP2350-CAN on pin strips",
     "Buck modules M8 and M7",
@@ -1105,7 +1236,8 @@
     "PD trigger: DIP switch to 15 V",
     "Wire GP15 to R1's outer pad",
     "2.2 kΩ from M7's EN to GND",
-    "5.6 V zener on M7's OUT+"
+    "5.6 V zener on M7's OUT+",
+    "Wires from J6 to the PD mini"
    ],
    "say": "The carrier is built. Next, load the I O M C U image for the R B mod carrier.",
    "note": "Next: the IOmcu image rcbench-iomcu-rbmod. Reference: docs/Carrier.md."
