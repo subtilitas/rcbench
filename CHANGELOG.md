@@ -64,6 +64,9 @@ history is in git.
   to 8 dropped DISCONNECTs, up from 1. The IMU's scan, bind, connect
   parameters and console texts are unchanged
   ([The Bluetooth IMU](docs/IMU.md#the-link)).
+- The panel's host runs up to 10 GATT client procedures at once, up from
+  4: 2 for each of the 5 links. The pool takes 600 bytes of PSRAM, up
+  from 240 ([Performance](docs/Performance.md#on-the-board)).
 
 - The IOmcu queues each CAN reply whole, up to 16 frames, and sends it
   through the controller's 3 transmit buffers, up to 3 frames per pump and

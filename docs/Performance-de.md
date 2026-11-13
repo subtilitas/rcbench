@@ -774,7 +774,11 @@ DISCONNECTs mit 512 Bytes und der Hub der Clients (`bleu_hub_t`) mit 1 112
 Bytes. esp_hosted belegt je HCI-Paket einen Puffer; diese sind nicht
 gezählt. Die Pools und Puffer von NimBLE liegen im PSRAM
 (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); sie wachsen mit
-`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`, 5, um einen nicht gemessenen Betrag.
+`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`, 5, um einen nicht gemessenen Betrag;
+die Nachrichten- (MSYS) und ACL-Puffer für 5 Verbindungen sind nicht
+gemessen. Der Pool der GATT-Client-Prozeduren fasst 10 zu je 60 Bytes, 600
+Bytes gegen 240 Bytes beim NimBLE-Standard von 4
+(`CONFIG_BT_NIMBLE_GATT_MAX_PROCS`).
 Auf einem Panel (Station, 2026-11-05, Konsolen-Build, 1 Verbindung) belegte
 der Start 5 152 Bytes internen RAM, 264 307 frei davor und 259 155 danach,
 und 25 176 Bytes PSRAM; mit dem Hotspot danach waren 251 103 Bytes interner

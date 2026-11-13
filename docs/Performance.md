@@ -722,7 +722,10 @@ event queue of 64 x 64 = 4,096 bytes, the 8 kept DISCONNECTs of 512 bytes
 and the clients' hub (`bleu_hub_t`) of 1,112 bytes. esp_hosted takes a
 buffer per HCI packet; those are not counted. NimBLE's pools and buffers
 are in PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); they grow with
-`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`, 5, by an amount not measured. On one
+`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`, 5, by an amount not measured; the
+message (MSYS) and ACL buffers for 5 links are not measured. The pool of
+GATT client procedures holds 10 of 60 bytes, 600 bytes against 240 bytes
+at NimBLE's default of 4 (`CONFIG_BT_NIMBLE_GATT_MAX_PROCS`). On one
 panel (station, 2026-11-05, console build, 1 connection) the start took
 5,152 bytes of internal RAM, 264,307 free before and 259,155 after, and
 25,176 bytes of PSRAM; with the access point up after it, 251,103 bytes of
