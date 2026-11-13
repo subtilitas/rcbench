@@ -1126,8 +1126,9 @@ write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` a
 gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 (`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
 `test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
-SETUP > SENSORS > IMU (`test_imu_pane`) and the panel's IMU task
-(`firmware/panel/main/panel_imu.c`). The angle's low-pass, IMU filter, its seed, its wrap
+SETUP > SENSORS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
+(`firmware/panel/main/panel_imu.c`, `panel_blec.c`), which runs it through the hub of
+`protocols/bleuart` (`test_bleuart_hub`). The angle's low-pass, IMU filter, its seed, its wrap
 at ±180° and the still time that waits for it, kept per axis (`test_imu`, `test_imu_filter`),
 and AUTO on the filtered angle with the settle allowance and on yaw while pitch creeps
 (`test_servo_rauto_filter`, `test_servo_rauto_kst`). With

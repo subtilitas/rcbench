@@ -40,8 +40,30 @@ history is in git.
   started them (a touch event with its type, track id and source, the
   screenshot gate's first busy fact, or 0 minutes) and the backlight's
   duty ([Performance](docs/Performance.md#on-the-board)).
+- `protocols/bleuart` takes a profile (`bleu_profile_t`): the service
+  UUID, up to 4 characteristics by role and the connection parameters.
+  The ISSC Transparent UART profile is the default. A hub
+  (`bleuart_hub.h`) runs up to 5 central machines on one host stack:
+  events go to their machine by the owner in the token's top 3 bits or by
+  the connection handle, and one scan or connect runs at a time, a second
+  answered busy ([bleuart](protocols/bleuart/README.md#the-hub)).
+- A console line `ble: connect refused by the C6 radio, HCI 0x09: ...`
+  when the C6's controller refuses a connect for want of a link
+  ([The Bluetooth IMU](docs/IMU.md#console-lines)).
 
 ### Changed
+
+- The panel's Bluetooth LE host and the C6 radio's image hold 5
+  connections, up from 1 and 3: the IMU, the Dial, 2 sensor nodes and 1
+  spare. The C6 image sets `CONFIG_BT_LE_MAX_CONNECTIONS=5` from
+  `firmware/c6/sdkconfig.rcbench`, and `tools/c6_image.py check` fails an
+  image without it ([Building](docs/Building.md#the-image-the-panel-carries)).
+- The IMU's link runs on the `blec` task, the one task of every Bluetooth
+  LE client, through the hub, in place of the `imu` task. The event queue
+  holds 64 events (4,096 bytes of internal RAM), up from 32, and keeps up
+  to 8 dropped DISCONNECTs, up from 1. The IMU's scan, bind, connect
+  parameters and console texts are unchanged
+  ([The Bluetooth IMU](docs/IMU.md#the-link)).
 
 - The IOmcu queues each CAN reply whole, up to 16 frames, and sends it
   through the controller's 3 transmit buffers, up to 3 frames per pump and

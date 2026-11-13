@@ -30,14 +30,16 @@ the project's notice.
 
 | Part | Where |
 | --- | --- |
-| the BLE central: scan list, connect, GATT (generic attribute profile) discovery, subscribe, writes, retries | `protocols/bleuart`, no radio code |
+| the BLE central: scan list, connect, GATT (generic attribute profile) discovery, subscribe, writes, retries; the IMU's link runs its ISSC profile | `protocols/bleuart`, no radio code |
+| the hub: the panel's BLE clients on one host, events routed to each, one scan or connect at a time | `protocols/bleuart/bleuart_hub.c` |
 | the sensor's frames and commands | `protocols/witmotion`, no pin driver |
 | the reading: angles, the low-pass filter, zero, still time, rate, battery, age | `shared/bench/imu.c` |
 | the sensor's side: the reading, its commands, the calibration, the gaps, the handout to SERVO; no radio | `shared/ui/imu_sensor.c` |
 | the BLE link: the central for the IMU, its devices, errors and the C6's version in the view's types | `shared/ui/imu_ble.c` |
 | the controller: joins the link and the sensor's side, the link state, the view | `shared/ui/imu_ctl.c` |
 | the screen and SETUP's IMU entry | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
-| the IMU task: events in, actions out, every 5ms | `firmware/panel/main/panel_imu.c` |
+| the `blec` task: every client's events in and actions out through the hub, every 5ms | `firmware/panel/main/panel_blec.c` |
+| the IMU's side of that task and the frame task's glue | `firmware/panel/main/panel_imu.c` |
 | NimBLE's start, its calls and its callbacks | `firmware/panel/main/panel_ble.c` |
 
 ## Start
@@ -121,6 +123,22 @@ a lost notification breaks one frame, which it counts as bad and resyncs.
 A drop of the link (reason in the console line) reconnects after 1,000ms.
 A connection parameter update the sensor asks for is accepted and logged.
 The characteristics ACA3 and 6DAA are never written.
+
+The IMU's link is one of up to 5 on the panel's BLE host: the host and the
+C6 image hold 5 connections each (`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`,
+`CONFIG_BT_LE_MAX_CONNECTIONS`), for the IMU, the Dial, 2 sensor nodes and
+1 spare. The IMU is the one client of this release. Its tokens carry owner
+0. The hub runs one scan or one connect at a time across the clients:
+
+| The IMU asks | While another client | The hub |
+| --- | --- | --- |
+| a scan | connects | cancels that connect and starts the scan once its event came, at most 2,000ms later |
+| a scan | scans | ends the IMU's scan at once with status 0xFFFD (busy): `THE SCAN DID NOT START: CODE 65533` |
+| a connect | scans or connects | answers it busy; the IMU tries again after 1,000ms with its error unchanged |
+
+With the IMU alone every action and event passes as it did with one link.
+A C6 image with 3 links refuses a fourth connect; the console line names
+it (below).
 
 The connect values are chosen as a phone's central asks them, not
 measured against others; they sit together in
@@ -316,9 +334,12 @@ I (…) imu: command FF AA 69 88 B5
 I (…) ble: disconnect: reason 0x<r>, handle <h>, token <k>
 I (…) ble: disconnect: record: handle <h>, peer …
 I (…) ble: connect: failed to be established, reason 0x<r>
+W (…) ble: connect refused by the C6 radio, HCI 0x<c>: it holds no further link; a C6 image with 3 links takes no fourth: update the C6 radio in SETUP > UPDATES
 ```
 
-Reason 0x23E is HCI 0x3E, connection failed to be established, as NimBLE
+The last line comes for HCI 0x09 (connection limit exceeded) and 0x07
+(memory capacity exceeded). Which of the two the C6's controller gives is
+not measured. Reason 0x23E is HCI 0x3E, connection failed to be established, as NimBLE
 reports it (0x200 + the HCI code). The console build's `ble controller`
 sends the C6's controller init and enable requests again
 ([BenchConsole.md](BenchConsole.md)).
@@ -338,5 +359,6 @@ sends the C6's controller init and enable requests again
 | a run's angle | the automatic test judges in AS5600 counts: 360 / 4096 = 0.088° a count; RUDDER, AUTO, the LIMIT RUN and MEASURED take the degrees as read, shown to 0.01° |
 | a link drop | whether the sensor's module buffers or discards the bytes it cannot send is not known; the panel reconnects after 1,000ms while IMU is ON |
 | Wi-Fi beside BLE | the C6 time-shares its radio; the effect on either is not measured |
+| links on the host | 5 (IMU, Dial, 2 sensor nodes, 1 spare); a C6 image built before `CONFIG_BT_LE_MAX_CONNECTIONS=5` holds 3; the IMU beside other links is not measured |
 | writes | whether a write on 8841 reaches the sensor is not measured |
 | the reading's age | stale after 300ms |

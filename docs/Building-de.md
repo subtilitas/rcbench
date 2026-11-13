@@ -621,22 +621,24 @@ Co-proc [0.0.0]` und beantwortet die Versionsabfrage nicht. Ob er das Update
 #### Das Image, das das Panel mitbringt
 
 CI und das Release bauen die Firmware des C6 aus dem Ordner `slave/` der
-esp_hosted-Komponente, die das Panel festlegt, 2.13.0, mit ESP-IDF v6.1 für
-den ESP32-C6, mit der eigenen Konfiguration der Komponente: Wi-Fi und nur der
+esp_hosted-Komponente, die das Panel festlegt, 2.13.0, mit ESP-IDF v6.1 für den
+ESP32-C6, mit der eigenen Konfiguration der Komponente: Wi-Fi und nur der
 BT-Controller, dessen HCI über die SDIO-Verbindung im RAM läuft (VHCI); das
-braucht der NimBLE-Host des Panels über VHCI. Der Workflow ist
-`.github/workflows/c6.yml`; `tools/c6_image.py` kopiert das Projekt mit
-`firmware/c6/dependencies.lock` (die 5 Registry-Komponenten des Slave mit
-festen Versionen und Hashes) und schlägt fehl, wenn das Image keine
-ESP32-C6-Anwendung `network_adapter` der festgelegten Version mit angehängtem
-SHA-256 ist, wenn es nicht in den Anwendungs-Slot des C6 passt (`ota_0` und
-`ota_1` aus `slave/partitions.esp32c6.csv`, je 1 966 080 Bytes), wenn der
-sdkconfig eine dieser Einstellungen fehlt oder wenn der Build eine Festlegung
-der Lock-Datei verschoben hat.
+braucht der NimBLE-Host des Panels über VHCI. Dazu kommt
+`CONFIG_BT_LE_MAX_CONNECTIONS=5` aus `firmware/c6/sdkconfig.rcbench`
+(esp_hosted gibt 3 vor). Der Workflow ist `.github/workflows/c6.yml`;
+`tools/c6_image.py` kopiert das Projekt mit `firmware/c6/dependencies.lock`
+(die 5 Registry-Komponenten des Slave mit festen Versionen und Hashes), hängt
+`sdkconfig.rcbench` an dessen `sdkconfig.defaults.esp32c6` an und schlägt fehl,
+wenn das Image keine ESP32-C6-Anwendung `network_adapter` der festgelegten
+Version mit angehängtem SHA-256 ist, wenn es nicht in den Anwendungs-Slot des
+C6 passt (`ota_0` und `ota_1` aus `slave/partitions.esp32c6.csv`, je 1 966 080
+Bytes), wenn der sdkconfig eine dieser Einstellungen fehlt oder wenn der Build
+eine Festlegung der Lock-Datei verschoben hat.
 
 | Punkt | Wert |
 | --- | --- |
-| `rcbench-c6-2.13.0.bin` (über SDIO gesendet) | 1 283 616 Bytes, 65,3% des C6-Slots |
+| `rcbench-c6-2.13.0.bin` (über SDIO gesendet) | 1 283 616 Bytes, 65,3% des C6-Slots, mit 3 und mit 5 Verbindungen gleich; jede Verbindung belegt beim Start des Controllers etwa 1kB DRAM des C6 (Kconfig-Hilfe), der freie Heap ist nicht gemessen |
 | `rcbench-c6-merged-2.13.0.bin` (über H4 ab 0x0 geflasht) | 1 349 152 Bytes: Bootloader, Partitionstabelle, otadata und die Anwendung |
 | Wachstum des Panel-Images, wenn es mitgebracht wird | 1 284 272 Bytes Flash; 1 408 Bytes interner RAM (ein Puffer für einen Block von 1 400 Bytes) |
 | Panel-Image damit, mit NimBLE und einem IOmcu-Image | 4 419 968 von 8 126 464 Bytes im Update-Slot, 45,6% frei; das Release-Image mit beiden IOmcu-Images ist nicht gemessen |
@@ -904,13 +906,13 @@ BLE-Host, NimBLE. esp_hosted überträgt die HCI-Pakete (Host Controller
 Interface) zwischen beiden als VHCI (virtuelles HCI) über die SDIO-Verbindung
 des Wi-Fi, Schnittstelle `ESP_HCI_IF`: keine zusätzlichen Pins.
 `firmware/panel/sdkconfig.defaults` enthält die Konfiguration unter
-"Bluetooth LE through the ESP32-C6": Central und Observer, eine Verbindung,
+"Bluetooth LE through the ESP32-C6": Central und Observer, 5 Verbindungen,
 kein Security Manager, keine Funktionen von Bluetooth 5.0, der Speicher von
 NimBLE im PSRAM, sein Host-Task auf Kern 0.
 
 `firmware/panel/main/panel_ble.c` startet den Host einmal, mit
 `panel_ble_start()`, in einem eigenen Task, `blestart`, und der Host bleibt
-bis zum Neustart des Panels. Der IMU-Task ruft es beim ersten IMU EIN auf
+bis zum Neustart des Panels. Der Task `blec` ruft es beim ersten IMU EIN auf
 ([Die Bluetooth-IMU](IMU-de.md)), `ble scan` des Konsolen-Builds ([Die
 Prüfstandskonsole](BenchConsole-de.md)) ebenso. Die Schritte und ihre
 Zeilen auf der Konsole:
@@ -958,7 +960,7 @@ Zeilen auf der Konsole:
 Ein späterer Reset des Hosts, bei einem HCI-Fehler oder einem C6, der
 verstummt, schreibt `ble: host reset, reason <n>`; NimBLE synchronisiert
 von selbst neu und schreibt `ble: synced again`. Die Events aus den
-Callbacks des Hosts gehen in eine FreeRTOS-Queue mit 32 Elementen zu 64
+Callbacks des Hosts gehen in eine FreeRTOS-Queue mit 64 Elementen zu 64
 Bytes (`panel_ble.h`); eine volle Queue verwirft das Event und zählt es.
 
 Jeder Start des Hosts schreibt `NimBLE: Failed to persist local IRK
