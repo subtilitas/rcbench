@@ -486,6 +486,10 @@ the output card's place, HITEC with SERIES under PORT, picked there and refused 
 session holds the port (`test_hitec_series_row`), and the session's WRITE n VALUES in the footer's middle slot in
 place of ARM; their sessions have no CLOSE, the home tag is the way back
 (`servo_prog_ready.c`, `test_kst_panel_frame`, `test_hitec_panel_frame`).
+`test_kst_panel_gate` and `test_hitec_panel_gate` run the write gate around WRITE n VALUES'
+2s hold: the gate opens for the one operation a hold sends and shuts when the operation is
+refused or ends, a finger leaving, the home tag or dropped edits end the hold, and a press on
+a tab outlives the session leaving its state until the next tick ends it.
 
 The hub's OPTIONS list sets the type (STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI
 TAIL 760), the frame rate, the pulse widths, trim, travel and reverse for the session under
@@ -1394,7 +1398,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 540 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 542 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1474,7 +1478,7 @@ The host suite is 540 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
 `test_prog_port_fn`, `test_kst_file`, `test_kst_prog`, `test_kst_prog_card`,
 `test_kst_prog_cycle`, `test_kst_prog_gone`, `test_kst_cycle_wait`, `test_kst_panel`,
-`test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`,
+`test_kst_panel_leave`, `test_kst_panel_edit`, `test_kst_panel_write`, `test_kst_panel_gate`,
 `test_kst_panel_texts`, `test_kst_panel_writepage`, `test_kst_panel_screen`,
 `test_kst_panel_notes`, `test_kst_panel_files`, `test_kst_panel_nocard`,
 `test_kst_panel_limrun`, `test_kst_panel_ports`, `test_kst_panel_layout`,
@@ -1489,7 +1493,7 @@ The host suite is 540 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_prog_codes`, `test_hitec_prog_write`, `test_hitec_prog_file`,
 `test_hitec_prog_backup`, `test_hitec_prog_chain`, `test_hitec_prog_unit`,
 `test_hitec_prog_reread`, `test_hitec_panel_unit`, `test_hitec_card`, `test_hitec_card_run`, `test_servo_store`,
-`test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`,
+`test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
 `test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
@@ -1601,7 +1605,7 @@ It takes 6.2s on one x86-64 host, 8.1s in the sanitizer build, and ctest stops i
 120s. `tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0` makes 36 mutants
 and the suite fails on each. A defined test case that is never called fails the build
 (`-Werror=unused-function`). `tools/check_docs.py` holds this list to
-`test/host/CMakeLists.txt`. Of the 31 `test_kst_*` binaries, 30 run against the servo and
+`test/host/CMakeLists.txt`. Of the 32 `test_kst_*` binaries, 31 run against the servo and
 line model in `test/host/kst_sim.h`; no servo is connected. 5 run the core of
 `protocols/kst/`; `test_kst_file` is the one for the configuration file and reads 40000
 random texts from 1 fixed seed. `test_servo_store` runs the card layer for those files,
@@ -2080,7 +2084,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_auto_ready.c` | 287 | 282 | 98.3% |
 | `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
-| `shared/ui/servo_prog_ready.c` | 247 | 232 | 93.9% |
+| `shared/ui/servo_prog_ready.c` | 247 | 242 | 98.0% |
 | `shared/ui/servo_drive_ready.c` | 449 | 428 | 95.3% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 309 | 304 | 98.4% |
@@ -2094,16 +2098,16 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/kst_panel.c` | 474 | 463 | 97.7% |
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 277 | 272 | 98.2% |
-| `shared/ui/kst_panel_edit.c` | 409 | 388 | 94.9% |
-| `shared/ui/kst_panel_touch.c` | 334 | 324 | 97.0% |
+| `shared/ui/kst_panel_edit.c` | 409 | 396 | 96.8% |
+| `shared/ui/kst_panel_touch.c` | 334 | 332 | 99.4% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
 | `shared/ui/kst_panel_draw.c` | 565 | 563 | 99.7% |
 | `shared/ui/esc_wire_panel.c` | 575 | 546 | 95.0% |
-| `shared/ui/hitec_panel.c` | 284 | 282 | 99.3% |
+| `shared/ui/hitec_panel.c` | 284 | 283 | 99.7% |
 | `shared/ui/hitec_panel_text.c` | 505 | 500 | 99.0% |
-| `shared/ui/hitec_panel_edit.c` | 423 | 416 | 98.3% |
+| `shared/ui/hitec_panel_edit.c` | 423 | 418 | 98.8% |
 | `shared/ui/hitec_panel_page.c` | 201 | 199 | 99.0% |
-| `shared/ui/hitec_panel_touch.c` | 354 | 339 | 95.8% |
+| `shared/ui/hitec_panel_touch.c` | 354 | 349 | 98.6% |
 | `shared/ui/hitec_panel_draw.c` | 286 | 285 | 99.7% |
 | `shared/ui/hitec_panel_file.c` | 237 | 236 | 99.6% |
 | `shared/ui/hitec_panel_run.c` | 107 | 107 | 100.0% |
@@ -2401,7 +2405,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **91384** | **89540** | **98.0%** |
+| **total** | **91384** | **89579** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

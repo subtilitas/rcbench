@@ -576,8 +576,8 @@ bool svs_list_offered(void)
  * list would take every event, the press's release among them.  A hold
  * would then fire without its finger, a tap's control would stay latched,
  * and a later contact that reuses the id would act on it.  A press on a
- * programmer's session is one too: its warning holds confirm WRITE, ENABLE
- * WRITE and RESTORE, and CONNECT takes the port the tester names.
+ * programmer's session is one too: its holds write, restore and leave,
+ * and CONNECT takes the port the tester names.
  */
 bool svs_press_held(void)
 {
