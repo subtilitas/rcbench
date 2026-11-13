@@ -55,7 +55,7 @@ const UNITS = [
   ['buck', /DCDC_Buck/, [30, 200, 10], [-.3, .4, 0]],
   ['trigger', /USBC_PD_Trigger/, [130, 120, -60], [.3, -.4, 0]],
   ['rbmod', /rbmod_1/, [150, 230, 0], [.2, -.3, 0]],
-  ['case', /./, [0, -200, 0], [0, .5, 0]],
+  ['case', /./, [0, 190, -260], [-.35, .5, 0]],
 ];
 const PLATE = [0x12703a, .55, 0];      // a board without a name
 const OTHER = [0x23262c, .5, .15];     // a component without a name
@@ -220,7 +220,15 @@ export function buildCadCase(displayImage, gltf) {
       if (name === 'lid') u.group.position.y += lift;
       u.group.rotation.set(u.spin[0] * k, u.spin[1] * k, u.spin[2] * k);
       const seen = 1 - Math.min(1, Math.max(0, (k - .8) / .2));
-      for (const m of u.mats) m.opacity = seen;
+      // Opaque while seated or near: a transparent material is sorted,
+      // not depth-tested against the others, and faces can drop out.
+      for (const m of u.mats) {
+        m.opacity = seen;
+        if (m.transparent !== seen < 1) {
+          m.transparent = seen < 1;
+          m.needsUpdate = true;
+        }
+      }
       if (u.screen) u.screen.opacity = seen;
       u.group.visible = seen > 0;
     }

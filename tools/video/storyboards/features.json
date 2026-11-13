@@ -815,7 +815,7 @@
        "side": "t"
       }
      ],
-     "say": "Live telemetry. Voltage, current, power and R P M are plotted while the motor runs, and each run is logged."
+     "say": "Live telemetry. This screen runs a motor and shows what it draws: voltage, current, power and rpm, plotted while it runs. Each run is logged."
     },
     {
      "view": "motor-table",
@@ -835,7 +835,8 @@
       186,
       612,
       160
-     ]
+     ],
+     "say": "Bench against ESC. The table compares the bench's own measurements with what the ESC reports, so you see how far the controller's telemetry is off."
     },
     {
      "view": "motor-settings",
@@ -848,7 +849,8 @@
       "OPTIONS"
      ],
      "title": "Pack and motor data",
-     "text": "Cells, capacity and internal resistance of the pack. Pole count and rated kV of the motor."
+     "text": "Cells, capacity and internal resistance of the pack. Pole count and rated kV of the motor.",
+     "say": "Pack and motor data. Enter the pack's cells and capacity and the motor's pole count, so the bench can work out rpm and the remaining charge."
     },
     {
      "view": "motor-stick",
@@ -861,8 +863,9 @@
       "PROGRAM",
       "ESC STICK"
      ],
-     "title": "ESC profiles",
-     "text": "Makers and families are listed with the count of profiles a run supports. SEARCH filters the list."
+     "title": "Stick programming",
+     "text": "Many ESCs are set up with the throttle stick, while they beep through a menu. The bench knows these menus for 74 ESC families.",
+     "say": "Stick programming. Many ESCs are set up with the throttle stick: you move it while the controller beeps through a menu. The bench knows these menus for 74 families of controllers."
     },
     {
      "view": "motor-stick-items",
@@ -876,7 +879,8 @@
       "ESC STICK"
      ],
      "title": "Menu items",
-     "text": "Each item of the ESC's menu is set on the panel. The profile holds the beep timing."
+     "text": "You choose the settings on the panel instead of counting beeps.",
+     "say": "Menu items. Instead of counting beeps yourself, you choose the settings on the panel, for example brake or cutoff mode."
     },
     {
      "view": "motor-stick-run",
@@ -889,13 +893,9 @@
       "PROGRAM",
       "ESC STICK"
      ],
-     "title": "ESC stick programming",
-     "text": "The bench drives the throttle through an ESC's beep menu, item by item.",
-     "points": [
-      "Profiles for 74 ESC families, 462 models",
-      "26 of them run from ESC STICK"
-     ],
-     "say": "ESC stick programming. The bench drives the throttle through an ESC's beep menu, item by item."
+     "title": "The run",
+     "text": "The bench moves the throttle for you and steps through the ESC's menu until every item is set.",
+     "say": "The run. The bench then moves the throttle for you at the right moments, and steps through the menu until every item is set."
     },
     {
      "view": "motor-wire-am",
@@ -909,7 +909,7 @@
      ],
      "title": "ESC signal wire",
      "text": "AM32, Bluejay, BLHeli_S and ESCape32: settings are read, edited and written through the signal wire.",
-     "say": "ESC signal wire. For AM32, Bluejay, BLHeli_S and ESCape32, settings are read, edited and written through the signal wire."
+     "say": "ESC signal wire. Newer firmware, such as AM32, Bluejay, BLHeli_S and ESCape32, is set up through the signal wire instead. The bench reads the settings, lets you edit them, and writes them back."
     },
     {
      "dur": 3.0,
@@ -960,7 +960,7 @@
       "LIVE"
      ],
      "title": "LIVE",
-     "text": "A dial commands the position while the bench is ARMED.",
+     "text": "A servo tester: a dial commands the position while the bench is ARMED.",
      "marks": [
       {
        "at": [
@@ -994,7 +994,8 @@
        "text": "Current",
        "side": "t"
       }
-     ]
+     ],
+     "say": "Live. A servo tester: a dial commands the position, and the screen shows the pulse, the measured angle, and the current the servo draws."
     },
     {
      "view": "servo-sweep",
@@ -1007,7 +1008,8 @@
       "SWEEP"
      ],
      "title": "SWEEP",
-     "text": "A square, sine or triangle sweep, timed by the IOmcu, with speed and pause."
+     "text": "A square, sine or triangle sweep, timed by the IOmcu, with speed and pause.",
+     "say": "Sweep. Moves the servo back and forth on its own, as a square, sine or triangle, at a set speed and pause."
     },
     {
      "view": "servo-settings",
@@ -1077,7 +1079,7 @@
       "Travel time and hold current per step",
       "A CSV file and a text report on the card"
      ],
-     "say": "Test. An automatic test steps the supply from 4.8 to 6.0 volts and looks for the brown-out. It writes a report to the card."
+     "say": "Test. An automatic test shows how a servo behaves as its supply drops. It steps the voltage from 4.8 to 6.0 volts, measures travel time and current, and looks for the brown-out. It writes a report to the card."
     },
     {
      "view": "servo-test-settings",
@@ -1105,13 +1107,14 @@
       "LIMIT RUN"
      ],
      "title": "LIMIT RUN",
-     "text": "Finds both ends of an installed linkage from the servo's current. SEARCH + PROGRAM writes them into the servo.",
+     "text": "For an installed servo: finds where the linkage stops at each end, from the servo's current.",
      "focus": [
       8,
       138,
       612,
       84
-     ]
+     ],
+     "say": "Limit run. For a servo that is installed in a model: the bench moves it towards each end and finds where the linkage stops, from the servo's current. That gives the travel you can use."
     },
     {
      "view": "servo-limrun-pass",
@@ -1143,13 +1146,14 @@
       "RUDDER"
      ],
      "title": "RUDDER",
-     "text": "Deflection in degrees and in mm at the trailing edge, from the surface's length.",
+     "text": "A deflection gauge: degrees, and mm at the trailing edge, from the surface's length.",
      "focus": [
       8,
       56,
       612,
       104
-     ]
+     ],
+     "say": "Rudder. A deflection gauge: it shows how far a control surface moves, in degrees, and in millimetres at the trailing edge."
     },
     {
      "view": "servo-rudder-angle",
@@ -1176,7 +1180,8 @@
       "RUDDER AUTO"
      ],
      "title": "RUDDER AUTO",
-     "text": "Programs a servo's end points for a set deflection, on the programming port."
+     "text": "Programs a servo's end points for a set deflection, on the programming port.",
+     "say": "Rudder Auto. Set the deflection you want, and it programs the servo's end points to match, on the programming port."
     },
     {
      "view": "servo-kst-tune-rbmod",
@@ -1195,7 +1200,7 @@
       "Backup to the card before the first write",
       "Every written value is read back"
      ],
-     "say": "K S T and Cha servo. The programmer reads 32 registers over the signal wire. Edits stay a draft until you write them.",
+     "say": "KST and Chaservo. A programmer for these servos: it reads their 32 registers over the signal wire, with settings such as dead band, travel and failsafe. Edits stay a draft until you write them.",
      "screen": "servo"
     },
     {
@@ -1260,7 +1265,7 @@
      ],
      "title": "Hitec",
      "text": "D series and classic HS-5xxx and HS-7xxx servos, with backup, limit checks and a write switch.",
-     "say": "High tech. D series and classic servos, with backup, limit checks and a write switch."
+     "say": "Hitec. The same for Hitec's D series and classic digital servos, with backup, limit checks and a write switch."
     },
     {
      "view": "servo-hitec-backup-file",
@@ -1817,7 +1822,8 @@
       "SENSORS"
      ],
      "title": "Phase tap",
-     "text": "Listens to an ESC's beeps on one motor phase: lowest and highest tone, pitch split and gap."
+     "text": "Listens to an ESC's beeps on one motor phase: lowest and highest tone, pitch split and gap.",
+     "say": "Phase tap. A wire on one motor phase lets the bench hear an ESC's beeps. These settings set what counts as a beep."
     },
     {
      "view": "imu-scan",
