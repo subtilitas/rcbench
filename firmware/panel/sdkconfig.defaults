@@ -212,14 +212,17 @@ CONFIG_BT_NIMBLE_TRANSPORT_UART=n
 CONFIG_ESP_HOSTED_ENABLE_BT_NIMBLE=y
 CONFIG_ESP_HOSTED_NIMBLE_HCI_VHCI=y
 #
-# A central that scans and connects to one sensor: no advertising, no
-# GATT (generic attribute profile) server role toward a phone.
+# A central that scans and connects to its peripherals: no advertising, no
+# GATT (generic attribute profile) server role toward a phone.  5
+# connections: the IMU, the Dial, 2 sensor nodes and 1 spare
+# (main/panel_blec.c); the C6 image holds as many
+# (firmware/c6/sdkconfig.rcbench).
 CONFIG_BT_NIMBLE_ROLE_CENTRAL=y
 CONFIG_BT_NIMBLE_ROLE_OBSERVER=y
 CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=n
 CONFIG_BT_NIMBLE_ROLE_BROADCASTER=n
 CONFIG_BT_NIMBLE_GATT_CLIENT=y
-CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=5
 #
 # The sensor connects without pairing: no security manager.  Without it
 # NimBLE has no bond store, and nothing of Bluetooth's goes to NVS

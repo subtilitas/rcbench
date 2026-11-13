@@ -484,6 +484,24 @@ static void log_desc(const char *what, const struct ble_gap_conn_desc *d)
 }
 
 /**
+ * @brief Name a connect the C6's controller refused for want of a link:
+ *        HCI 0x09 (connection limit exceeded) or 0x07 (memory capacity
+ *        exceeded).  A C6 image built before CONFIG_BT_LE_MAX_CONNECTIONS=5
+ *        holds 3 links, the esp_hosted default.
+ * @param status NimBLE's status of the connect.
+ */
+static void log_link_limit(int status)
+{
+    if (status == BLE_HS_HCI_ERR(BLE_ERR_CONN_LIMIT)
+        || status == BLE_HS_HCI_ERR(BLE_ERR_MEM_CAPACITY)) {
+        ESP_LOGW(TAG, "connect refused by the C6 radio, HCI 0x%02X: it holds "
+                      "no further link; a C6 image with 3 links takes no "
+                      "fourth: update the C6 radio in SETUP > UPDATES",
+                 (unsigned)(status - BLE_HS_ERR_HCI_BASE));
+    }
+}
+
+/**
  * @brief A connection's events into the queue, each with the connect's
  *        token.  Runs on nimble_host.
  * @param ev  NimBLE's event.
@@ -506,6 +524,8 @@ static int conn_event(struct ble_gap_event *ev, void *arg)
         if (ev->connect.status == 0) {
             up_add(e.conn);
             put_params(e.conn, &e);
+        } else {
+            log_link_limit(ev->connect.status);
         }
         {
             struct ble_gap_conn_desc d;
@@ -994,6 +1014,7 @@ void panel_ble_do(const bleu_act_t *a)
         break;
     case BLEU_ACT_CONNECT:
         rc = do_connect(a);
+        log_link_limit(rc);
         answer = BLEU_EV_CONNECT;
         break;
     case BLEU_ACT_CANCEL:

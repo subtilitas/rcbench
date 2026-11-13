@@ -8,7 +8,9 @@ idf_component.yml) and the release builds the C6's firmware from the
 
     tools/c6_image.py prepare COMPONENT OUT
         copy COMPONENT/slave to OUT (emptied first) with the committed lock
-        file firmware/c6/dependencies.lock; COMPONENT is the managed
+        file firmware/c6/dependencies.lock, and append the panel's settings,
+        firmware/c6/sdkconfig.rcbench, to OUT/sdkconfig.defaults.esp32c6;
+        COMPONENT is the managed
         component firmware/panel/managed_components/espressif__esp_hosted
         and must be the version the panel pins.  Run where the build runs:
         the lock's one local component (cmd_system, an ESP-IDF example
@@ -22,8 +24,9 @@ network_adapter whose version is the pinned one, when its SHA-256 is not
 appended, when it is larger than the C6's ota_0 slot of
 PROJECT/partitions.esp32c6.csv, when the sdkconfig lacks the settings below
 (BT controller over the SDIO link, which the panel's NimBLE over VHCI
-needs), and when the build moved a registry component of the lock file to
-another version or hash, or ESP-IDF to another version.
+needs, and the 5 BLE connections of firmware/c6/sdkconfig.rcbench), and
+when the build moved a registry component of the lock file to another
+version or hash, or ESP-IDF to another version.
 
 SPDX-License-Identifier: MIT
 """
@@ -40,6 +43,8 @@ ROOT = Path(__file__).resolve().parent.parent
 PIN = ROOT / "firmware" / "panel" / "components" / "wifi_access" / \
     "idf_component.yml"
 LOCK = ROOT / "firmware" / "c6" / "dependencies.lock"
+RCBENCH = ROOT / "firmware" / "c6" / "sdkconfig.rcbench"
+TARGET_DEFAULTS = "sdkconfig.defaults.esp32c6"
 IMAGE = "network_adapter.bin"
 MERGED = "rcbench-c6-merged.bin"
 PROJECT = "network_adapter"
@@ -49,7 +54,9 @@ DESC_MAGIC = 0xABCD5432
 
 # What the panel's host side needs of the C6 build: the SDIO slave, the BT
 # controller alone (no host stack on the C6), its HCI (host controller
-# interface) over the transport in RAM (VHCI), and Wi-Fi.
+# interface) over the transport in RAM (VHCI), Wi-Fi, and the panel's own
+# settings of firmware/c6/sdkconfig.rcbench: 5 BLE connections, as many as
+# the panel's host holds.
 NEEDED = {
     "CONFIG_IDF_TARGET": '"esp32c6"',
     "CONFIG_ESP_SDIO_HOST_INTERFACE": "y",
@@ -57,6 +64,7 @@ NEEDED = {
     "CONFIG_BT_CONTROLLER_ONLY": "y",
     "CONFIG_BT_LE_HCI_INTERFACE_USE_RAM": "y",
     "CONFIG_ESP_WIFI_ENABLED": "y",
+    "CONFIG_BT_LE_MAX_CONNECTIONS": "5",
 }
 
 
@@ -198,6 +206,44 @@ def slot_bytes(csv: str) -> int:
     raise C6Error("no ota_0 in the partition table")
 
 
+def settings_of(text: str) -> dict[str, str]:
+    """The NAME=value lines of an sdkconfig or a defaults file.
+
+    Args:
+        text: the file; lines starting with ``#`` are comments.
+
+    Returns:
+        {NAME: value}, the last line of a name winning.
+    """
+    have = {}
+    for line in text.splitlines():
+        if "=" in line and not line.startswith("#"):
+            k, v = line.split("=", 1)
+            have[k.strip()] = v.strip()
+    return have
+
+
+def rcbench_defaults(text: str) -> str:
+    """The panel's settings checked against NEEDED, as a defaults block.
+
+    Args:
+        text: firmware/c6/sdkconfig.rcbench.
+
+    Returns:
+        The block appended to the project's target defaults: a comment
+        naming its source, then the file.
+
+    Raises:
+        C6Error: a setting that NEEDED does not hold with the same value,
+            which check would not hold the image to.
+    """
+    for k, v in settings_of(text).items():
+        if NEEDED.get(k) != v:
+            raise C6Error(f"{RCBENCH.name} sets {k}={v}, which NEEDED in "
+                          f"tools/c6_image.py does not hold")
+    return f"\n# tools/c6_image.py: firmware/c6/{RCBENCH.name}\n{text}"
+
+
 def sdkconfig_missing(text: str) -> list[str]:
     """The settings of NEEDED the sdkconfig does not have.
 
@@ -207,11 +253,7 @@ def sdkconfig_missing(text: str) -> list[str]:
     Returns:
         Each missing NAME=value, in NEEDED's order.
     """
-    have = {}
-    for line in text.splitlines():
-        if "=" in line and not line.startswith("#"):
-            k, v = line.split("=", 1)
-            have[k.strip()] = v.strip()
+    have = settings_of(text)
     return [f"{k}={v}" for k, v in NEEDED.items() if have.get(k) != v]
 
 
@@ -263,7 +305,7 @@ def check_image(data: bytes, want: str, slot: int) -> None:
 
 
 def prepare(component: Path, out: Path) -> str:
-    """Copy the slave project with the committed lock file.
+    """Copy the slave project with the committed lock file and settings.
 
     Args:
         component: the esp_hosted managed component.
@@ -273,7 +315,8 @@ def prepare(component: Path, out: Path) -> str:
         The version.
 
     Raises:
-        C6Error: another version than the panel pins, or no slave folder.
+        C6Error: another version than the panel pins, no slave folder, or a
+            setting of sdkconfig.rcbench that NEEDED does not hold.
     """
     want = pinned_version(PIN.read_text())
     got = component_version((component / "idf_component.yml").read_text())
@@ -281,11 +324,15 @@ def prepare(component: Path, out: Path) -> str:
         raise C6Error(f"component {got}, the panel pins {want}")
     if not (component / "slave" / "CMakeLists.txt").is_file():
         raise C6Error(f"no slave project in {component}")
+    block = rcbench_defaults(RCBENCH.read_text())
     if out.exists():
         shutil.rmtree(out)
     shutil.copytree(component / "slave", out)
     (out / "dependencies.lock").write_text(
         lock_for(LOCK.read_text(), out, os.environ.get("IDF_PATH", "")))
+    target = out / TARGET_DEFAULTS
+    base = target.read_text() if target.is_file() else ""
+    target.write_text(base + block)
     return want
 
 
