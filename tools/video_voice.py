@@ -80,7 +80,7 @@ SPELL = (
     (r"\bESP32-C6\b", "E S P 32 C 6"),
     (r"\bESP32-P4\b", "E S P 32 P 4"),
     (r"\bRP2350\b", "R P 23 50"),
-    (r"\bAM32\b", "A. M. 32"),
+    (r"\bAM32\b", "A-M 32"),
     (r"\bBLHeli_S\b", "B L Heli S"),
     (r"\bXT60\b", "X T 60"),
     (r"\bS\.BUS\b", "S bus"),
