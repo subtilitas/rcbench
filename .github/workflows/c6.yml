@@ -5,9 +5,11 @@ name: C6 radio image
 # panel pins (firmware/panel/components/wifi_access/idf_component.yml), so
 # the C6 and the panel's host side run one version, with the component's
 # default configuration: Wi-Fi and the BT controller with its HCI (host
-# controller interface) over the SDIO link (VHCI).  tools/c6_image.py
-# copies the project with firmware/c6/dependencies.lock and holds the build
-# to the pin, the C6's slot and that configuration.
+# controller interface) over the SDIO link (VHCI), and the panel's settings
+# of firmware/c6/sdkconfig.rcbench on top (5 BLE connections).
+# tools/c6_image.py copies the project with firmware/c6/dependencies.lock
+# and those settings and holds the build to the pin, the C6's slot and that
+# configuration.
 #
 # Called by ci.yml, whose panel job carries the image, and by release.yml,
 # which publishes it.  Artifact "c6": rcbench-c6-<version>.bin, the

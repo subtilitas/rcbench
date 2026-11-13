@@ -1,14 +1,21 @@
 /**
  * @file
- * @brief BLE (Bluetooth Low Energy) central for a transparent-UART sensor:
+ * @brief BLE (Bluetooth Low Energy) central for a peer with a byte stream:
  *        the scan list, the bound address, connect, GATT (generic attribute
- *        profile) discovery of the ISSC/Microchip Transparent UART service,
- *        subscribe, the write path and reconnect, as events in and actions
- *        out.  No radio code and no pin driver: the caller runs the host
- *        stack.
+ *        profile) discovery of the peer's service, subscribe, the write path
+ *        and reconnect, as events in and actions out.  No radio code and no
+ *        pin driver: the caller runs the host stack.
  *
- * Service 49535343-FE7D-4AE5-8FA9-9FAFD205E455.  Characteristics: 1E4D
- * "Transfer TX" (NOTIFY, the sensor's UART bytes to the central), 8841
+ * A profile (bleu_profile_t) names the service, its characteristics with
+ * their roles and the connection parameters; the default is the
+ * ISSC/Microchip Transparent UART service (bleu_profile_issc).  Each
+ * machine has an owner, 0 to 7, in the top 3 bits of its tokens, so a
+ * caller that runs several machines on one host stack routes an answer to
+ * its machine by the token alone (bleuart_hub.h).
+ *
+ * The default profile: service 49535343-FE7D-4AE5-8FA9-9FAFD205E455.
+ * Characteristics: 1E4D "Transfer TX" (NOTIFY, the sensor's UART bytes to
+ * the central), 8841
  * "Transfer RX" (WRITE or WRITE NO RESPONSE, bytes to the sensor's UART),
  * ACA3 "Air Patch" (module commands: never written, never subscribed) and
  * 6DAA "Connection Parameter" (read once after each subscribe, never
@@ -80,6 +87,18 @@ extern "C" {
 #define BLEU_STATUS_TIMEOUT 0xFFFFu
 /** @brief The status a dropped link gives a write in flight. */
 #define BLEU_STATUS_LOST    0xFFFEu
+/** @brief The status a scan or a connect gets while another machine on the
+ *         same host stack holds its one scan or connect (bleuart_hub.h): a
+ *         connect answered so is tried again after BLEU_RETRY_MS, and the
+ *         error of the last attempt stays. */
+#define BLEU_STATUS_BUSY    0xFFFDu
+
+/** @brief Tokens: the owner in the top 3 bits, a count in the rest.  Each
+ *         owner's count, owner 0's too, wraps from 8,191 to 1. @{ */
+#define BLEU_OWNER_SHIFT 13u     /**< the owner's first bit */
+#define BLEU_OWNER_MAX   8u      /**< owners 0 to 7 */
+#define BLEU_TOKEN_SEQ   0x1FFFu /**< the count's bits; a count is never 0 */
+/** @} */
 
 /** @brief Characteristic properties, as the GATT declaration carries
  *         them. @{ */
@@ -103,6 +122,59 @@ extern const uint8_t bleu_uuid_rx[16];
 extern const uint8_t bleu_uuid_air[16];
 extern const uint8_t bleu_uuid_param[16];
 /** @} */
+
+/** @brief A characteristic's role in a profile. */
+typedef enum {
+    BLEU_ROLE_NONE = 0, /**< named only: never written, read or subscribed */
+    BLEU_ROLE_STREAM,   /**< NOTIFY, subscribed: its notifications are the
+                             stream bytes; every profile has one */
+    BLEU_ROLE_CMD,      /**< WRITE or WRITE NO RESPONSE: bleu_send() */
+    BLEU_ROLE_PARAM,    /**< read once after each subscribe when it has
+                             READ; a peer without it is taken */
+} bleu_role_t;
+
+/** @brief Characteristics a profile names at most. */
+#define BLEU_CHR_MAX 4u
+
+/** @brief bleu_chr_spec_t.flags: a BLEU_ROLE_CMD the peer may lack; the
+ *         link then comes up and bleu_send() refuses. */
+#define BLEU_CHR_OPTIONAL 0x01u
+
+/** @brief One characteristic of a profile. */
+typedef struct {
+    const uint8_t *uuid;  /**< 128-bit UUID, least significant byte first */
+    uint8_t        role;  /**< bleu_role_t */
+    uint8_t        flags; /**< BLEU_CHR_OPTIONAL */
+} bleu_chr_spec_t;
+
+/** @brief The parameters a connect asks for.  Interval in 1.25ms units,
+ *         supervision timeout in 10ms units, the scan while connecting in
+ *         0.625ms units. */
+typedef struct {
+    uint16_t itvl_min;    /**< interval, least: 6 (7.5ms) or more */
+    uint16_t itvl_max;    /**< interval, most: itvl_min to 3,200 (4s) */
+    uint16_t latency;     /**< peripheral latency, events */
+    uint16_t supervision; /**< 10 (100ms) to 3,200 (32s), longer than twice
+                               (1 + latency) x itvl_max */
+    uint16_t scan_itvl;   /**< 4 (2.5ms) to 0x4000 */
+    uint16_t scan_window; /**< 4 to scan_itvl */
+} bleu_conn_params_t;
+
+/** @brief A peer's service as the central finds and uses it. */
+typedef struct {
+    const uint8_t     *svc;  /**< the service's 128-bit UUID, least
+                                  significant byte first */
+    bleu_chr_spec_t    chr[BLEU_CHR_MAX]; /**< its characteristics: one
+                                  STREAM, at most one CMD, at most one
+                                  PARAM, any NONE */
+    uint8_t            chr_n; /**< how many of chr[] are used */
+    bleu_conn_params_t conn; /**< the connect's parameters */
+} bleu_profile_t;
+
+/** @brief The ISSC Transparent UART profile, every machine's default:
+ *         1E4D STREAM, 8841 CMD, ACA3 NONE, 6DAA PARAM, and the BLEU_ITVL_*
+ *         set. */
+extern const bleu_profile_t bleu_profile_issc;
 
 /** @brief A device address. */
 typedef struct {
@@ -199,10 +271,11 @@ typedef enum {
     BLEU_ACT_NONE = 0,
     BLEU_ACT_SCAN,       /**< active scan, duplicates filtered, ms long */
     BLEU_ACT_SCAN_STOP,  /**< stop the scan */
-    BLEU_ACT_CONNECT,    /**< connect to addr with the BLEU_ITVL_* set, ms */
+    BLEU_ACT_CONNECT,    /**< connect to addr with cp, ms */
     BLEU_ACT_CANCEL,     /**< cancel the pending connect */
     BLEU_ACT_DISCONNECT, /**< terminate conn */
-    BLEU_ACT_DISC_SVC,   /**< find the service by bleu_uuid_svc */
+    BLEU_ACT_DISC_SVC,   /**< find the service whose 128-bit UUID is
+                              data[0..15], len 16 */
     BLEU_ACT_DISC_CHRS,  /**< every characteristic in h1..h2 */
     BLEU_ACT_DISC_DSCS,  /**< every descriptor after value handle h1 to h2 */
     BLEU_ACT_MTU,        /**< exchange the MTU, BLEU_MTU asked */
@@ -223,7 +296,9 @@ typedef struct {
     uint16_t    h2;      /**< a handle, by kind */
     uint16_t    ms;      /**< SCAN, CONNECT: the duration */
     bleu_addr_t addr;    /**< CONNECT: the address */
-    uint8_t     data[BLEU_WRITE_MAX]; /**< SUBSCRIBE, WRITE, WRITE_NR */
+    bleu_conn_params_t cp; /**< CONNECT: the profile's parameters */
+    uint8_t     data[BLEU_WRITE_MAX]; /**< SUBSCRIBE, WRITE, WRITE_NR; the
+                                           service's UUID for DISC_SVC */
 } bleu_act_t;
 
 /** @brief Where the link stands. */
@@ -238,19 +313,26 @@ typedef enum {
     BLEU_ST_MTU,       /**< the MTU exchange */
     BLEU_ST_SUBSCRIBE, /**< the CCCD write */
     BLEU_ST_UP,        /**< subscribed: the stream flows */
-    BLEU_ST_NOT_WIT,   /**< the bound device lacks the service: no retry
-                            until a new bind or OFF and on */
+    BLEU_ST_NOT_PEER,  /**< the bound device lacks the profile's service or
+                            a characteristic it needs: no retry until a new
+                            bind or OFF and on */
 } bleu_state_t;
+
+/** @brief BLEU_ST_NOT_PEER under the name the IMU's code uses. */
+#define BLEU_ST_NOT_WIT BLEU_ST_NOT_PEER
 
 /** @brief Why the last attempt or link ended. */
 typedef enum {
     BLEU_ERR_NONE = 0,  /**< none */
     BLEU_ERR_CONNECT,   /**< a connect failed or timed out */
-    BLEU_ERR_NOT_WIT,   /**< no service, no 1E4D NOTIFY, no 8841 WRITE, or
-                             no CCCD */
+    BLEU_ERR_NOT_PEER,  /**< no service, no STREAM with NOTIFY, no CMD
+                             with WRITE (unless optional), or no CCCD */
     BLEU_ERR_GATT,      /**< a GATT step failed or timed out */
     BLEU_ERR_LOST,      /**< the link dropped; reason in bleu_t.reason */
 } bleu_err_t;
+
+/** @brief BLEU_ERR_NOT_PEER under the name the IMU's code uses. */
+#define BLEU_ERR_NOT_WIT BLEU_ERR_NOT_PEER
 
 /** @brief Where the last command write stands. */
 typedef enum {
@@ -260,8 +342,12 @@ typedef enum {
     BLEU_WR_FAILED,     /**< refused, timed out or lost: wr_status */
 } bleu_wr_t;
 
-/** @brief One central's machine. */
+/** @brief One central's machine.  tx_* is the profile's STREAM, rx_* its
+ *         CMD, param_* its PARAM. */
 typedef struct {
+    const bleu_profile_t *prof; /**< private: the profile; NULL is
+                                     bleu_profile_issc */
+    uint8_t      owner;     /**< private: the tokens' top 3 bits */
     bleu_state_t st;        /**< where the link stands */
     bleu_err_t   err;       /**< why the last attempt or link ended */
     uint16_t     err_status;/**< the status that ended it, 0 for a timeout */
@@ -278,14 +364,15 @@ typedef struct {
     uint16_t     supervision; /**< supervision timeout, 10ms units */
     uint16_t     svc_start; /**< the service's handles */
     uint16_t     svc_end;   /**< its last handle */
-    uint16_t     tx_val;    /**< 1E4D's value handle */
-    uint16_t     tx_end;    /**< 1E4D's last handle */
-    uint16_t     cccd;      /**< 1E4D's CCCD */
-    uint16_t     rx_val;    /**< 8841's value handle */
-    uint8_t      rx_props;  /**< 8841's properties */
-    uint8_t      tx_props;  /**< 1E4D's properties */
-    uint16_t     param_val; /**< 6DAA's value handle, 0 without READ */
-    uint8_t      param[BLEU_PARAM_MAX]; /**< 6DAA's value as read */
+    uint16_t     tx_val;    /**< the STREAM's (1E4D's) value handle */
+    uint16_t     tx_end;    /**< its last handle */
+    uint16_t     cccd;      /**< its CCCD */
+    uint16_t     rx_val;    /**< the CMD's (8841's) value handle, 0 none */
+    uint8_t      rx_props;  /**< its properties */
+    uint8_t      tx_props;  /**< the STREAM's properties */
+    uint16_t     param_val; /**< the PARAM's (6DAA's) value handle, 0
+                                 without READ */
+    uint8_t      param[BLEU_PARAM_MAX]; /**< its value as read */
     uint8_t      param_len; /**< its length; 0 before the read */
     uint16_t     param_status; /**< the read's status */
     bool         param_due; /**< private: the read waits for the slot */
@@ -334,9 +421,38 @@ typedef struct {
  */
 bool bleu_evt_admit(uint8_t kind, uint32_t free);
 
-/** @brief Clear to OFF, nothing bound. @param b The machine; NULL does
- *         nothing. */
+/** @brief Clear to OFF, nothing bound, the ISSC profile, owner 0.
+ *  @param b The machine; NULL does nothing. */
 void bleu_init(bleu_t *b);
+
+/**
+ * @brief Whether @p p is a profile a machine takes: a service UUID, 1 to
+ *        BLEU_CHR_MAX characteristics each with a UUID, exactly one STREAM,
+ *        at most one CMD and one PARAM, and connection parameters inside
+ *        the ranges bleu_conn_params_t names.
+ * @param p The profile.
+ * @return false for NULL or any other.
+ */
+bool bleu_profile_valid(const bleu_profile_t *p);
+
+/**
+ * @brief Give a machine its profile and its owner, after bleu_init() and
+ *        before bleu_enable().  The profile is kept by pointer: it outlives
+ *        the machine.
+ * @param b     The machine.
+ * @param p     The profile, valid (bleu_profile_valid()).
+ * @param owner The tokens' top 3 bits, below BLEU_OWNER_MAX.
+ * @return false, and nothing changes, for NULL, an invalid profile or an
+ *         owner out of range.
+ */
+bool bleu_setup(bleu_t *b, const bleu_profile_t *p, uint8_t owner);
+
+/**
+ * @brief The owner a token carries.
+ * @param token The token.
+ * @return Its top 3 bits, 0 to 7.
+ */
+uint8_t bleu_token_owner(uint16_t token);
 
 /**
  * @brief Switch the central on or off.  On: a bound address is connected
@@ -372,8 +488,9 @@ bool bleu_scan(bleu_t *b, uint32_t now_ms);
 void bleu_scan_stop(bleu_t *b, uint32_t now_ms);
 
 /**
- * @brief Send @p len bytes to the sensor on 8841: with response when 8841
- *        has WRITE, without when it has WRITE NO RESPONSE only.
+ * @brief Send @p len bytes to the peer on the CMD characteristic (8841):
+ *        with response when it has WRITE, without when it has WRITE NO
+ *        RESPONSE only.
  * @param b      The machine.
  * @param data   The bytes.
  * @param len    Their count, 1 to BLEU_WRITE_MAX.
@@ -388,9 +505,9 @@ bool bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms);
  * @param b      The machine.
  * @param e      The event.
  * @param now_ms The clock.
- * @return true when @p e is a notification of 1E4D on the link: its
- *         data[0..len-1] are the sensor's UART bytes, for the caller's
- *         parser.  false for every other event and for NULL.
+ * @return true when @p e is a notification of the STREAM (1E4D) on the
+ *         link: its data[0..len-1] are the peer's stream bytes, for the
+ *         caller's parser.  false for every other event and for NULL.
  */
 bool bleu_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms);
 

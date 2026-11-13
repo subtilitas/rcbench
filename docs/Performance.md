@@ -410,7 +410,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,664 | 1,440 |
 | `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `imu` | `imu_task`, the Bluetooth IMU's link: SETUP's values, the host stack's events and the actions to NimBLE (`panel_imu.c`) | 4,096 | 1,888 | 1,168 |
+| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`) | 4,096 | 1,792 | 1,264 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -418,7 +418,7 @@ its stack less 1024 bytes.
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
-| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
+| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,216 | 1,840 |
 | `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,432 | 3,696 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
@@ -440,7 +440,7 @@ Its depth follows NimBLE's events and the IMU scan's callback by name
 (`NIMBLE_CALLS`); the host's other calls through a pointer, the
 connection's and GATT's callbacks among them, are not followed, and the
 tool's output counts them. `blestart` ends once the wait for the host's
-sync has ended. The `imu` task's depth stops at the NimBLE calls of
+sync has ended. The `blec` task's depth stops at the NimBLE calls of
 `panel_ble_do()` that go through a pointer.
 
 The console build (`RCBENCH_PANEL_CONSOLE`, [The bench
@@ -549,7 +549,7 @@ tool does not follow.
 | `control` | 6,144 | not measured |
 | `runlog` | 6,656 | not measured |
 | `knob` | 3,072 | not measured |
-| `imu` | 4,096 | not measured |
+| `blec` | 4,096 | not measured |
 | `touch` | 4,096 | not measured |
 | `wifi_ctl` | 6,912 | not measured |
 | `mdns` | 4,096 | not measured |
@@ -708,7 +708,7 @@ PSRAM free at start-up: not measured.
 Bluetooth LE (Low Energy) runs on the C6 as well; the P4 runs its host,
 NimBLE ([Building, Bluetooth LE through the
 ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)). The host starts
-at `panel_ble_start()`, which the IMU task calls at the first IMU ON and
+at `panel_ble_start()`, which the IMU's side of the `blec` task calls at the first IMU ON and
 the console build's `ble scan` calls, and stays until the panel restarts. The start logs the free memory before and
 after it:
 
@@ -717,13 +717,19 @@ I (…) ble: host started; internal RAM <n>B free before, <n>B after; PSRAM <n>B
 ```
 
 Its internal RAM: the `nimble_host` stack of 4,096 bytes for good, the
-`blestart` stack of 4,096 bytes until the start has ended, and the event
-queue of 32 x 64 = 2,048 bytes in .bss. esp_hosted takes a buffer per HCI
-packet; those are not counted. NimBLE's pools and buffers are in PSRAM
-(`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`). On one panel (station,
-2026-11-05, console build) the start took 5,152 bytes of internal RAM,
-264,307 free before and 259,155 after, and 25,176 bytes of PSRAM; with the
-access point up after it, 251,103 bytes of internal RAM were free.
+`blestart` stack of 4,096 bytes until the start has ended, and in .bss the
+event queue of 64 x 64 = 4,096 bytes, the 8 kept DISCONNECTs of 512 bytes
+and the clients' hub (`bleu_hub_t`) of 1,112 bytes. esp_hosted takes a
+buffer per HCI packet; those are not counted. NimBLE's pools and buffers
+are in PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); they grow with
+`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`, 5, by an amount not measured; the
+message (MSYS) and ACL buffers for 5 links are not measured. The pool of
+GATT client procedures holds 10 of 60 bytes, 600 bytes against 240 bytes
+at NimBLE's default of 4 (`CONFIG_BT_NIMBLE_GATT_MAX_PROCS`). On one
+panel (station, 2026-11-05, console build, 1 connection) the start took
+5,152 bytes of internal RAM, 264,307 free before and 259,155 after, and
+25,176 bytes of PSRAM; with the access point up after it, 251,103 bytes of
+internal RAM were free. With 5 connections these are not measured.
 
 The Bluetooth LE part of the image, from the linker map (`esp_idf_size`),
 ESP-IDF v6.1, built without the IOmcu images. Both builds hold the host,
@@ -731,14 +737,17 @@ since the IMU starts it:
 
 | Build | Application image (bytes) | Of it NimBLE, `libbt.a`, flash (bytes) | Of it the central, `libbleuart.a`, flash (bytes) | Internal RAM the image holds, DIRAM (bytes) | Of it NimBLE (bytes) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| default | 3,094,450 | 62,038 | 8,821 | 179,338 | 693 |
-| console (`RCBENCH_PANEL_CONSOLE`) | 3,118,804 | 62,078 | 8,821 | 189,176 | 693 |
+| default | 3,301,552 | 62,062 | 12,419 | 188,050 | 693 |
+| console (`RCBENCH_PANEL_CONSOLE`) | 3,325,872 | 62,102 | 12,419 | 197,880 | 693 |
 
-The event queue's 2,048 bytes are in the DIRAM figure, outside `libbt.a`.
-esp_hosted (157,292 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and
+The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
+DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
+of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one
+connection; `libbt.a`'s figures are the same with 1 connection and 5.
+esp_hosted (157,827 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and
 Bluetooth LE together; its Bluetooth LE share is not measured.
 
-The .bss in PSRAM is 2,587,632 bytes in both builds, with and without
+The .bss in PSRAM is 2,647,872 bytes in both builds, with and without
 Bluetooth LE.
 
 A radio start that fails logs the step, the error's name and the internal

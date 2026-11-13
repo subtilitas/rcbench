@@ -623,22 +623,23 @@ Co-proc [0.0.0]` und beantwortet die Versionsabfrage nicht. Ob er das Update
 #### Das Image, das das Panel mitbringt
 
 CI und das Release bauen die Firmware des C6 aus dem Ordner `slave/` der
-esp_hosted-Komponente, die das Panel festlegt, 2.13.0, mit ESP-IDF v6.1 für
-den ESP32-C6, mit der eigenen Konfiguration der Komponente: Wi-Fi und nur der
+esp_hosted-Komponente, die das Panel festlegt, 2.13.0, mit ESP-IDF v6.1 für den
+ESP32-C6, mit der eigenen Konfiguration der Komponente: Wi-Fi und nur der
 BT-Controller, dessen HCI über die SDIO-Verbindung im RAM läuft (VHCI); das
 braucht der NimBLE-Host des Panels über VHCI. Der Workflow ist
 `.github/workflows/c6.yml`; `tools/c6_image.py` kopiert das Projekt mit
 `firmware/c6/dependencies.lock` (die 5 Registry-Komponenten des Slave mit
-festen Versionen und Hashes) und schlägt fehl, wenn das Image keine
-ESP32-C6-Anwendung `network_adapter` der festgelegten Version mit angehängtem
-SHA-256 ist, wenn es nicht in den Anwendungs-Slot des C6 passt (`ota_0` und
-`ota_1` aus `slave/partitions.esp32c6.csv`, je 1 966 080 Bytes), wenn der
-sdkconfig eine dieser Einstellungen fehlt oder wenn der Build eine Festlegung
-der Lock-Datei verschoben hat.
+festen Versionen und Hashes), hängt `firmware/c6/sdkconfig.rcbench` an seine
+Target-Defaults an und schlägt fehl, wenn das Image keine ESP32-C6-Anwendung
+`network_adapter` der festgelegten Version mit angehängtem SHA-256 ist, wenn es
+nicht in den Anwendungs-Slot des C6 passt (`ota_0` und `ota_1` aus
+`slave/partitions.esp32c6.csv`, je 1 966 080 Bytes), wenn der sdkconfig eine
+dieser Einstellungen fehlt oder wenn der Build eine Festlegung der Lock-Datei
+verschoben hat.
 
 | Punkt | Wert |
 | --- | --- |
-| `rcbench-c6-2.13.0.bin` (über SDIO gesendet) | 1 283 616 Bytes, 65,3% des C6-Slots |
+| `rcbench-c6-2.13.0.bin` (über SDIO gesendet) | 1 283 616 Bytes, 65,3% des C6-Slots, mit `CONFIG_BT_LE_MAX_CONNECTIONS=5` wie mit 3 gleich; jede Verbindung belegt beim Start des Controllers etwa 1kB DRAM des C6 (Kconfig-Hilfe), der freie Heap ist nicht gemessen |
 | `rcbench-c6-merged-2.13.0.bin` (über H4 ab 0x0 geflasht) | 1 349 152 Bytes: Bootloader, Partitionstabelle, otadata und die Anwendung |
 | Wachstum des Panel-Images, wenn es mitgebracht wird | 1 284 272 Bytes Flash; 1 408 Bytes interner RAM (ein Puffer für einen Block von 1 400 Bytes) |
 | Panel-Image damit, mit NimBLE und einem IOmcu-Image | 4 419 968 von 8 126 464 Bytes im Update-Slot, 45,6% frei; das Release-Image mit beiden IOmcu-Images ist nicht gemessen |
@@ -666,19 +667,20 @@ cd firmware/panel && idf.py -D RCBENCH_C6_BIN=../../c6-dist/rcbench-c6-2.13.0.bi
 
 Die Zeile C6 RADIO auf SETUP > UPDATES zeigt die Version, die der C6 beim
 ersten Wi-Fi-Start gemeldet hat, oder `nicht gemeldet`, die mitgebrachte
-Version und `2s HALTEN ZUM C6-FUNK-UPDATE`. Das Halten ist aktiv, wenn der
-Build ein Image mitbringt, das seine Prüfung bestanden hat, der C6 nicht die
-mitgebrachte Version meldet, die Verbindung zum C6 nicht ausgefallen ist, die
-Bench SAFE ist und kein ARM wartet, der Netzteilausgang aus ist, kein
-Aufzeichnungslauf offen ist, keine Platinenzeichnung geladen wird, weder das
-IOmcu-Update noch Download oder Installation des Panels laufen, das WLAN aus
-ist und die Start-Task `blestart` von Bluetooth LE nicht läuft. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband. Das
-Update läuft auf der Task `c6upd` (Kern 0, Priorität 2, Stack 4 096 Bytes,
-beim ersten Update angelegt), ein Schritt nach dem anderen:
+Version und `2s HALTEN ZUM C6-FUNK-UPDATE`, bei der mitgebrachten Version `2s
+HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN`. Das Halten ist aktiv, wenn
+der Build ein Image mitbringt, das seine Prüfung bestanden hat, die Verbindung
+zum C6 nicht ausgefallen ist, die Bench SAFE ist und kein ARM wartet, der
+Netzteilausgang aus ist, kein Aufzeichnungslauf offen ist, keine
+Platinenzeichnung geladen wird, weder das IOmcu-Update noch Download oder
+Installation des Panels laufen, das WLAN aus ist und die Start-Task `blestart`
+von Bluetooth LE nicht läuft. Ein Tippen auf das graue Halten zeigt den Grund
+im Alarmband. Das Update läuft auf der Task `c6upd` (Kern 0, Priorität 2, Stack
+4 096 Bytes, beim ersten Update angelegt), ein Schritt nach dem anderen:
 
 | Schritt | Aufruf | Grenze | Endet als |
 | --- | --- | ---: | --- |
-| Verbindung | `c6_link_up()`, dann die Version des C6 | 30 000ms | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.`; ein C6, der 2.13.0 meldet, bekommt nichts: `Der C6-Funk nutzt bereits 2.13.0. Nichts gesendet.` |
+| Verbindung | `c6_link_up()`, dann die Version des C6 | 30 000ms | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.`; ein C6, der die mitgebrachte Version meldet, bekommt das Image trotzdem |
 | Beginn | `esp_hosted_slave_ota_begin()`: der C6 löscht den Slot, aus dem er nicht läuft | 20 000ms | ein Fehler: `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` |
 | Schreiben | `esp_hosted_slave_ota_write()`, 1 400 Bytes je Aufruf, 4 Aufrufe je Schritt | 10 000ms je Schritt | ein Fehler: noch einmal der Ende-Aufruf, der das OTA-Handle des C6 freigibt, dann `C6-Update abgebrochen: Schreiben fehlgeschlagen. Vorherige Firmware läuft.` |
 | Ende | `esp_hosted_slave_ota_end()`: der C6 prüft den SHA-256 des Images | 10 000ms | `... Prüfung im C6 fehlgeschlagen ...` |
@@ -906,13 +908,13 @@ BLE-Host, NimBLE. esp_hosted überträgt die HCI-Pakete (Host Controller
 Interface) zwischen beiden als VHCI (virtuelles HCI) über die SDIO-Verbindung
 des Wi-Fi, Schnittstelle `ESP_HCI_IF`: keine zusätzlichen Pins.
 `firmware/panel/sdkconfig.defaults` enthält die Konfiguration unter
-"Bluetooth LE through the ESP32-C6": Central und Observer, eine Verbindung,
+"Bluetooth LE through the ESP32-C6": Central und Observer, 5 Verbindungen,
 kein Security Manager, keine Funktionen von Bluetooth 5.0, der Speicher von
 NimBLE im PSRAM, sein Host-Task auf Kern 0.
 
 `firmware/panel/main/panel_ble.c` startet den Host einmal, mit
 `panel_ble_start()`, in einem eigenen Task, `blestart`, und der Host bleibt
-bis zum Neustart des Panels. Der IMU-Task ruft es beim ersten IMU EIN auf
+bis zum Neustart des Panels. Der Task `blec` ruft es beim ersten IMU EIN auf
 ([Die Bluetooth-IMU](IMU-de.md)), `ble scan` des Konsolen-Builds ([Die
 Prüfstandskonsole](BenchConsole-de.md)) ebenso. Die Schritte und ihre
 Zeilen auf der Konsole:
@@ -960,7 +962,7 @@ Zeilen auf der Konsole:
 Ein späterer Reset des Hosts, bei einem HCI-Fehler oder einem C6, der
 verstummt, schreibt `ble: host reset, reason <n>`; NimBLE synchronisiert
 von selbst neu und schreibt `ble: synced again`. Die Events aus den
-Callbacks des Hosts gehen in eine FreeRTOS-Queue mit 32 Elementen zu 64
+Callbacks des Hosts gehen in eine FreeRTOS-Queue mit 64 Elementen zu 64
 Bytes (`panel_ble.h`); eine volle Queue verwirft das Event und zählt es.
 
 Jeder Start des Hosts schreibt `NimBLE: Failed to persist local IRK

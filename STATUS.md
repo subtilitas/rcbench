@@ -700,6 +700,14 @@ protocol is transmitted. ESCs with BLHeli_32 firmware are not supported:
 The screen and the placement guides are built; the accelerometer and the index sensor are
 not fitted, so nothing is measured.
 
+Built and host-tested (`shared/vibe/`, `test_vibe`, `test_vibe_solve`): the balance node's
+signal processing and the panel's solvers, in no image yet. The index comparator, the
+demodulator of the 1x, 2x and blade-pass against the index, the no-index mode at an rpm
+the panel gives, and the two-run and four-run corrections. On synthetic signals at 10kHz a
+167Hz sine of 400mg at 265° reads within 0.1% and 0.1°; the figures for each case are
+in [shared/vibe/README.md](shared/vibe/README.md). The ESP32-C6's ADC (analogue-to-digital
+converter), the ADXL335 and the TCRT5000 are not measured.
+
 ### Link codec, page map, dispatcher, both watchdogs, CAN framing
 
 Built and tested on the host.
@@ -1126,8 +1134,9 @@ write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` a
 gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 (`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
 `test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
-SETUP > SENSORS > IMU (`test_imu_pane`) and the panel's IMU task
-(`firmware/panel/main/panel_imu.c`). The angle's low-pass, IMU filter, its seed, its wrap
+SETUP > SENSORS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
+(`firmware/panel/main/panel_imu.c`, `panel_blec.c`), which runs it through the hub of
+`protocols/bleuart` (`test_bleuart_hub`). The angle's low-pass, IMU filter, its seed, its wrap
 at ±180° and the still time that waits for it, kept per axis (`test_imu`, `test_imu_filter`),
 and AUTO on the filtered angle with the settle allowance and on yaw while pitch creeps
 (`test_servo_rauto_filter`, `test_servo_rauto_kst`). With
@@ -1360,7 +1369,7 @@ rcbench/
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     artwork/ gfx/ touch/ ui/ settings/ logfile/ link/ bench/ outputs/
     safety/ servo/ can/ esc/ sense/ fwupdate/ webaccess/ text/ files/
-    clock/
+    clock/ vibe/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
@@ -1385,7 +1394,7 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dialknob` | | | yes |
+| `hc05` · `dialknob` · `vibe` | | | yes |
 | `bleuart` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -1420,7 +1429,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 550 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 554 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1531,14 +1540,16 @@ The host suite is 550 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
-`test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_dialknob`,
-`test_dialknob_track`, `test_dialknob_face`, `test_imu`, `test_imu_filter`,
+`test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
+`test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
-`test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`.
+`test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
+`test_vibe` and `test_vibe_solve`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -1701,7 +1712,20 @@ and the settle's 2000ms at their limit and 1ms before it, at tick 0 and started 
 the wrap. `test_bleuart_link` runs the writes with and without response, the tables it
 refuses, a disconnect in every state, scans beside a connect, OFF in every state and late
 answers; `test_bleuart_adv` the AD (advertising data) structures at their limits, 9 matching
-devices and the hidden count.
+devices and the hidden count. `test_bleuart_profile` runs the owner in the tokens' top 3 bits
+and its count's wrap from 0x1FFF to 1, a profile with other UUIDs found by role, a command
+characteristic marked optional and missing, the connect's parameters from the profile, every
+rule of `bleu_profile_valid()` at its limit, and a connect answered busy tried again after
+1000ms, not 999ms. `test_bleuart_hub` runs the hub (`bleuart_hub.c`) with each client against
+its own scripted peer: one client action for action as without the hub, three clients coming
+up one connect at a time with each peer's bytes reaching only its own machine, routing by
+token and by handle, a scan during another client's connect, a second scan answered busy, a
+lost DISCONNECT whose handle another client gets, a held-back DISCONNECT, another client's
+cancel, stop and handle refused with each GATT step answered lost, the slot ended by its
+SCAN_END and by a connection that failed to be established, a client that holds the slot
+scanning or connecting again with no cancel and no busy answer, a stale DISCONNECT of a
+client's old handle keeping its new link, and the slot's limits of 7000ms and 12000ms and the cancel's
+2000ms at their limit and 1ms before.
 
 `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both wire
 families, the transactions and every refusal of the reply decoders, with frames and reply

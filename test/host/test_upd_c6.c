@@ -135,6 +135,27 @@ TEST_CASE(a_short_press_shows_the_hint_and_asks_nothing)
     CHECK(band_says(TR(HOLD_HINT_C6_UPDATE)));
 }
 
+/* A C6 that reports the carried version: the hold is live, says it
+ * reinstalls, and fires at 2s. */
+TEST_CASE(the_reinstall_hold_fires_at_2s_and_names_the_reinstall)
+{
+    on_updates();
+    upd_c6_view_t v = view_of(FW_C6_ROW_REINSTALL, FW_C6_WHY_NONE);
+    v.known = true;
+    v.running = k_carried;
+    upd_c6_set(&v);
+    CHECK(upd_c6_reason(&v) == NULL);
+    hold_for(0.5f);
+    ev(TOUCH_EVENT_UP, 1, UP_C6_X, UP_C6_Y);
+    CHECK(!upd_c6_take());
+    CHECK(band_says(TR(HOLD_HINT_C6_REINSTALL)));
+    hold_for(UI_HOLD_S - 0.001f);
+    CHECK(!upd_c6_take());
+    upd()->tick(0.001f);
+    CHECK(upd_c6_take());
+    ev(TOUCH_EVENT_UP, 1, UP_C6_X, UP_C6_Y);
+}
+
 TEST_CASE(a_tap_on_the_grey_hold_says_why_on_the_band)
 {
     static const struct {
@@ -146,7 +167,6 @@ TEST_CASE(a_tap_on_the_grey_hold_says_why_on_the_band)
         { FW_C6_ROW_BAD_IMAGE,   FW_C6_WHY_NONE,    TX_C6_WHY_BAD_IMAGE },
         { FW_C6_ROW_UPDATING,    FW_C6_WHY_NONE,    TX_C6_WHY_UPDATING },
         { FW_C6_ROW_LINK_FAILED, FW_C6_WHY_NONE,    TX_C6_WHY_LINK },
-        { FW_C6_ROW_SAME,        FW_C6_WHY_NONE,    TX_C6_WHY_SAME },
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_ARMED,   TX_C6_WHY_ARMED },
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_SUPPLY,  TX_C6_WHY_SUPPLY },
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_RUN,     TX_C6_WHY_RUN },
@@ -177,7 +197,7 @@ TEST_CASE(a_tap_on_the_grey_hold_says_why_on_the_band)
 TEST_CASE(a_release_off_the_grey_hold_says_nothing)
 {
     on_updates();
-    const upd_c6_view_t v = view_of(FW_C6_ROW_SAME, FW_C6_WHY_NONE);
+    const upd_c6_view_t v = view_of(FW_C6_ROW_LINK_FAILED, FW_C6_WHY_NONE);
     upd_c6_set(&v);
     ev(TOUCH_EVENT_DOWN, 1, UP_C6_X, UP_C6_Y);
     ev(TOUCH_EVENT_MOVE, 1, UP_C6_X, UP_C6_T - 40);
@@ -295,6 +315,9 @@ TEST_CASE(the_line_names_both_versions_or_says_not_reported)
     v.row = FW_C6_ROW_READY;
     upd_c6_label(&v, line, sizeof(line));
     CHECK_STR_EQ(line, "HOLD 2s TO UPDATE THE C6 RADIO");
+    v.row = FW_C6_ROW_REINSTALL;
+    upd_c6_label(&v, line, sizeof(line));
+    CHECK_STR_EQ(line, "HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE");
     ui_text_set_language(UI_LANG_DE);
     v.known = false;
     v.have_image = true;
@@ -317,6 +340,7 @@ int main(void)
 {
     RUN(the_hold_fires_at_2s_and_not_at_1999ms);
     RUN(a_short_press_shows_the_hint_and_asks_nothing);
+    RUN(the_reinstall_hold_fires_at_2s_and_names_the_reinstall);
     RUN(a_tap_on_the_grey_hold_says_why_on_the_band);
     RUN(a_release_off_the_grey_hold_says_nothing);
     RUN(a_state_change_under_the_finger_ends_the_hold_unfired);
