@@ -285,6 +285,10 @@ static esc_stick_tap_t sp_tap_state(const tone_readout_t *r)
     return st;
 }
 
+/**
+ * @brief Reads what a run needs from the page: the changes, the timing and
+ *         the supply; false, with the note saying why, when none can start.
+ */
 static bool sp_plan(esc_stick_change_t *ch, size_t *n,
                     esc_stick_timing_t *t, uint32_t *mv, uint32_t *ma)
 {
@@ -467,8 +471,10 @@ bool sp_can_run(void)
     return sp_plan(ch, &n, &t, &mv, &ma);
 }
 
-/* A command for the application.  The queue keeps the newest: a DISARM is
- * never the one dropped, because nothing is queued behind one. */
+/**
+ * @brief A command for the application.  The queue keeps the newest: a DISARM is
+ * never the one dropped, because nothing is queued behind one.
+ */
 static void sp_push(motor_cmd_kind_t kind, float value)
 {
     stick_t *t = &s.st;
@@ -508,6 +514,7 @@ void sp_follow(void)
     }
 }
 
+/** @brief Starts the run the page asks for, or says in its note why it does not. */
 static void sp_start(void)
 {
     stick_t *t = &s.st;
@@ -596,7 +603,9 @@ static void sp_done_tick(float dt_s)
     }
 }
 
-/* What the display shows of a run, to repaint only when it changes. */
+/**
+ * @brief What the display shows of a run, to repaint only when it changes.
+ */
 static uint32_t sp_signature(void)
 {
     const esc_stick_t *e = &s.st.run;
@@ -747,8 +756,8 @@ void esc_stick_panel_leave(void)
     sp_set_close();
 }
 
-/*
- * Drop the ARM and the THROTTLE a run has queued and the application has
+/**
+ * @brief Drop the ARM and the THROTTLE a run has queued and the application has
  * not taken: the hold completes in the frame's tick, after the frame has
  * handed its commands over, so they wait a frame here -- and the next frame
  * would stamp them with what it knows then, past a stop or a loss that

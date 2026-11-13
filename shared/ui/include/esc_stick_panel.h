@@ -36,17 +36,27 @@
 /** The page set MOTOR & ESC opens: the registry's STICK MENU row. */
 extern const prog_page_set_t esc_stick_pages;
 
-/** Where the session is, for tests: closed, on the list, or on a
- *  profile's page (esc_stick_int.h's STAGE_*). */
+/**
+ * @brief Where the session is, for tests: closed, on the list, or on a
+ *  profile's page (esc_stick_int.h's STAGE_*).
+ *
+ * @return STAGE_CLOSED, STAGE_LIST or STAGE_PAGE, as an int
+ */
 int esc_stick_panel_stage(void);
 
 /**
- * The bench as this frame found it, before the frame's touch: the time,
+ * @brief The bench as this frame found it, before the frame's touch: the time,
  * whether it is armed, how many stops have been counted and how many of
  * those an operator pressed (arming_pressed_count()), and whether the
  * IOmcu answers.  A stop count that moved ends the warning's hold,
  * and a run: with STOP when every new stop was pressed, else with BENCH
  * STOPPED.
+ *
+ * @param now_ms the frame's time, ms
+ * @param armed true when the bench is armed
+ * @param stops the stops counted
+ * @param pressed how many of them an operator pressed
+ * @param link_up true when the IOmcu answers
  */
 void esc_stick_panel_bench(uint32_t now_ms, bool armed, uint32_t stops,
                              uint32_t pressed, bool link_up);
@@ -60,16 +70,23 @@ void esc_stick_panel_bench(uint32_t now_ms, bool armed, uint32_t stops,
 void esc_stick_panel_stop_released(void);
 
 /**
- * The output binding, every frame: whether one is read
+ * @brief The output binding, every frame: whether one is read
  * (BIND_READ_OK), and the channels it binds as a throttle
  * (outputs_role_channels(), one bit each).  RUN is refused
  * while none is read or it binds no throttle, and while the supply is the
  * panel's model (supply_screen_model()); the note names which.  Zero at
  * start: nothing is known until the application says.
+ *
+ * @param read true when a binding is read
+ * @param channels the throttle channels, one bit each
  */
 void esc_stick_panel_set_throttle(bool read, uint8_t channels);
 
-/** One supply sample, every one, in the order they were taken. */
+/**
+ * @brief One supply sample, every one, in the order they were taken.
+ *
+ * @param st the sample
+ */
 void esc_stick_panel_supply(const supply_state_t *st);
 
 /**
@@ -113,23 +130,49 @@ void esc_stick_panel_tone(const tone_readout_t *r);
 void esc_stick_panel_meter(unsigned channel, uint16_t window, int32_t max_ma,
                            bool current_ok);
 
-/** A command a stick run asks for, oldest first; true when there was one. */
+/**
+ * @brief A command a stick run asks for, oldest first; true when there was
+ *   one.
+ *
+ * @param out receives the command
+ * @return true when there was one
+ */
 bool esc_stick_panel_poll_cmd(motor_cmd_t *out);
 
-/** The profile of a stick run under way, for the simulated ESC on the
- *  panel's modelled supply; NULL when none is. */
+/**
+ * @brief The profile of a stick run under way, for the simulated ESC on the
+ *  panel's modelled supply; NULL when none is.
+ *
+ * @return the profile; NULL when none is under way
+ */
 const esc_profile_t *esc_stick_panel_profile(void);
 
-/** How many stick runs have started, so a new one starts a fresh
- *  simulation. */
+/**
+ * @brief How many stick runs have started, so a new one starts a fresh
+ *  simulation.
+ *
+ * @return the count
+ */
 uint32_t esc_stick_panel_runs(void);
 
-/** The stick run, under way or ended, for tests. */
+/**
+ * @brief The stick run, under way or ended, for tests.
+ *
+ * @return the stick run
+ */
 const esc_stick_t *esc_stick_panel_stick(void);
 
-/** The ESC STICK search as typed, "" for none, and whether its keyboard
- *  is open; for tests. */
+/**
+ * @brief The ESC STICK search as typed, "" for none; for tests.
+ *
+ * @return the search text
+ */
 const char *esc_stick_panel_search(void);
+/**
+ * @brief Whether the search's keyboard is open; for tests.
+ *
+ * @return true while it is open
+ */
 bool esc_stick_panel_typing(void);
 
 /**
@@ -192,42 +235,104 @@ int esc_stick_settings_row(setting_id_t id);
  */
 void esc_stick_settings_show(setting_id_t id);
 
-/** How many profiles the list holds under the search, and the index in it
- *  of the top row shown; for tests. */
+/**
+ * @brief How many profiles the list holds under the search, and the index in it
+ *  of the top row shown; for tests.
+ *
+ * @param top receives the index of the top row shown; may be NULL
+ * @return the profiles held
+ */
 int esc_stick_panel_listed(int *top);
 
-/** The list's level: 0 the makers, 1 one maker's models; the maker open
- *  ("" on level 0); the page's model index (-1 for none); and the rows of
- *  each level, NULL past the end.  For tests. */
+/**
+ * @brief The list's level; for tests.
+ *
+ * @return 0 the makers, 1 one maker's models
+ */
 int esc_stick_panel_level(void);
+/**
+ * @brief The maker open on level 1; for tests.
+ *
+ * @return the maker; "" on level 0
+ */
 const char *esc_stick_panel_maker(void);
+/**
+ * @brief The model index of the page open; for tests.
+ *
+ * @return the index; -1 for none
+ */
 int esc_stick_panel_model(void);
+/**
+ * @brief Maker @p i of level 0; for tests.
+ *
+ * @param i the maker, from 0
+ * @return its name; NULL past the last
+ */
 const char *esc_stick_panel_maker_at(int i);
+/**
+ * @brief Row @p i of a maker's models; for tests.
+ *
+ * @param i the row, from 0
+ * @param model receives the row's model index; may be NULL
+ * @return the profile; NULL past the last
+ */
 const esc_profile_t *esc_stick_panel_row(int i, int *model);
 
-/** Why row @p i of a maker's models does not run, in the language
- *  showing, or NULL when it runs or there is no such row; for tests. */
+/**
+ * @brief Why row @p i of a maker's models does not run, in the language
+ *  showing, or NULL when it runs or there is no such row; for tests.
+ *
+ * @param i the row, from 0
+ * @return the reason; NULL when it runs or there is no such row
+ */
 const char *esc_stick_panel_row_why(int i);
 
-/** The item row @p i of the page shows, as an index into the profile's
- *  items; -1 past the last.  For tests. */
+/**
+ * @brief The item row @p i of the page shows, as an index into the profile's
+ *  items; -1 past the last.  For tests.
+ *
+ * @param i the row, from 0
+ * @return the item's index; -1 past the last
+ */
 int esc_stick_panel_item_at(int i);
 
-/** The warning row @p i shows while it runs: the ESC's voltage rating
- *  unknown; NULL for none.  For tests. */
+/**
+ * @brief The warning row @p i shows while it runs: the ESC's voltage rating
+ *  unknown; NULL for none.  For tests.
+ *
+ * @param i the row, from 0
+ * @return the warning; NULL for none
+ */
 const char *esc_stick_panel_row_warn(int i);
 
-/** The result's count of the selections made, and its line for the
- *  changes past the fourth ("" when all show), as drawn now; for tests. */
+/**
+ * @brief The result's count of the selections made, as drawn now; for tests.
+ *
+ * @return the line
+ */
 const char *esc_stick_panel_result_head(void);
+/**
+ * @brief The result's line for the changes past the fourth, "" when all show;
+ *         for tests.
+ *
+ * @return the line
+ */
 const char *esc_stick_panel_result_more(void);
 
-/** The prompt's line on what no DONE does, as the prompt would draw it
- *  now; for tests. */
+/**
+ * @brief The prompt's line on what no DONE does, as the prompt would draw it
+ *  now; for tests.
+ *
+ * @return the line
+ */
 const char *esc_stick_panel_left_text(void);
 
-/** The note the page shows under RUN: why a run cannot start, "" for
- *  none; for tests. */
+/**
+ * @brief The note the page shows under RUN: why a run cannot start, "" for
+ *  none; for tests.
+ *
+ * @return the note; "" for none
+ */
 const char *esc_stick_panel_note(void);
 
 /**
@@ -242,11 +347,20 @@ const char *esc_stick_panel_note(void);
  */
 const char *esc_stick_panel_bench_tag(void);
 
-/** The profile whose page is open, or NULL on the list; for tests. */
+/**
+ * @brief The profile whose page is open, or NULL on the list; for tests.
+ *
+ * @return the profile; NULL on the list
+ */
 const esc_profile_t *esc_stick_panel_page(void);
 
-/** A manual step's text in the language showing: its action_de where the
- *  profile gives one and German shows, else its English action. */
+/**
+ * @brief A manual step's text in the language showing: its action_de where the
+ *  profile gives one and German shows, else its English action.
+ *
+ * @param m the manual step
+ * @return its text
+ */
 const char *esc_stick_panel_step_text(const esc_manual_t *m);
 
 /**
@@ -275,36 +389,64 @@ const char *esc_stick_panel_family_text(const esc_profile_t *p);
 void esc_stick_panel_crumb(const esc_profile_t *p, int model, int cells,
                            char *out, size_t n);
 
-/** Why the manual steps' pop-up says its profile does not run, for the
+/**
+ * @brief Why the manual steps' pop-up says its profile does not run, for the
  *  model it was opened for; NULL when it runs or no pop-up is open.  For
- *  tests. */
+ *  tests.
+ *
+ * @return the reason; NULL when it runs or no pop-up is open
+ */
 const char *esc_stick_panel_hand_why(void);
 
-/** The entry time the profile's page shows, ms; for tests. */
+/**
+ * @brief The entry time the profile's page shows, ms; for tests.
+ *
+ * @return the time, ms
+ */
 uint32_t esc_stick_panel_entry_shown(void);
 
-/** Whether the supply reads off now, by the rule a run holds it to: its
+/**
+ * @brief Whether the supply reads off now, by the rule a run holds it to: its
  *  own state off, the current at or under ESC_STICK_OFF_MA for
  *  ESC_STICK_OFF_SETTLE_MS, in a reading no older than ESC_STICK_STALE_MS.
- *  For tests. */
+ *  For tests.
+ *
+ * @return true when the supply reads off
+ */
 bool esc_stick_panel_supply_reads_off(void);
 
-/** Whether the manual steps' pop-up is open; for tests. */
+/**
+ * @brief Whether the manual steps' pop-up is open; for tests.
+ *
+ * @return true while it is open
+ */
 bool esc_stick_panel_hand_shown(void);
 
-/** What the stack light shows; for tests. */
+/**
+ * @brief What the stack light shows; for tests.
+ *
+ * @param red receives whether the red light shows
+ * @param green receives whether the green light shows
+ */
 void esc_stick_panel_lights(bool *red, bool *green);
 
 /**
- * A refusal of the stick engine (esc_stick_kind(), esc_stick_check(),
+ * @brief A refusal of the stick engine (esc_stick_kind(), esc_stick_check(),
  * esc_stick_start()) in the language showing, found by the engine's
  * words; one the screen does not know comes back as given, and NULL as
  * "refused".
+ *
+ * @param why the engine's refusal
+ * @return the text in the language showing
  */
 const char *esc_stick_panel_why_text(const char *why);
 
 /**
- * The lines @p text takes broken as the screen breaks it, in lines of
+ * @brief The lines @p text takes broken as the screen breaks it, in lines of
  * @p cells, one cell at least; for tests.
+ *
+ * @param text the text
+ * @param cells a line's width in cells
+ * @return the lines
  */
 int esc_stick_panel_wrap_lines(const char *text, int cells);

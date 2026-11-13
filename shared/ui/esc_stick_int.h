@@ -149,8 +149,8 @@ _Static_assert(NOTE_Y + 2 * LINE_P <= UI_FOOTER_FLOOR,
 _Static_assert(BTN_Y + BTN_H + 4 == UI_ALERT_Y - UI_BAND_H,
                "the footer ends 4px above the alert band");
 
-/*
- * Each page's drawer is its own function, so the main task's stack holds
+/**
+ * @brief Each page's drawer is its own function, so the main task's stack holds
  * the buffers of the page on screen and no other.  render() runs on the
  * panel's main task, which tools/stack_check.py holds to its stack.  GCC
  * inlines a static function called once, and inlined, every page's buffers
@@ -159,7 +159,7 @@ _Static_assert(BTN_Y + BTN_H + 4 == UI_ALERT_Y - UI_BAND_H,
  */
 #define DRAWER __attribute__((noinline))
 
-/* Where the session is: closed (PROGRAM's list shows), on the profile
+/** @brief Where the session is: closed (PROGRAM's list shows), on the profile
  * list (the makers, or one maker's models), or on a profile's page. */
 typedef enum { STAGE_CLOSED = 0, STAGE_LIST, STAGE_PAGE } prog_stage_t;
 
@@ -183,24 +183,27 @@ typedef enum { STAGE_CLOSED = 0, STAGE_LIST, STAGE_PAGE } prog_stage_t;
  * a manual step, which stops a motor and does so at once; and the search's
  * keyboard, whose keys follow their own press and release.
  */
-#define TAP_SLOP 8
+#define TAP_SLOP 8  /**< the furthest a tap's release lands from its press in x and in y, px */
 
-/* A helper of this header: static, and not warned of where unused. */
+/** @brief A helper of this header: static, and not warned of where unused. */
 #define SP_SHARED static __attribute__((unused))
 enum { PASS_PRESS = 0, PASS_TAP };
 
-/* The state both files read and write.  The panel moves between the
+/** @brief The state both files read and write.  The panel moves between the
  * stages and bumps the revision a render follows; it draws and takes the
  * session's controls in their places: BACK in the crumb row, WRITE in the
  * footer's middle slot (RUN, ABORT and OK), the page keys, and the rows
  * with their steppers. */
 typedef struct {
-    prog_stage_t stage;
+    prog_stage_t stage;  /**< where the session is */
 
     gfx_rect_t back;      /**< BACK in the crumb row */
     gfx_rect_t write_btn; /**< RUN, ABORT or OK in the footer's middle slot */
-    gfx_rect_t page_up, page_dn;
-    gfx_rect_t row[ROWS_MAX], down[ROWS_MAX], up[ROWS_MAX];
+    gfx_rect_t page_up,          /**< the page-up key */
+               page_dn;          /**< the page-down key */
+    gfx_rect_t row[ROWS_MAX],    /**< each row's rectangle */
+               down[ROWS_MAX],   /**< each row's minus key */
+               up[ROWS_MAX];     /**< each row's plus key */
 
     /*
      * The press that may become a tap: the contact, where it came down,
@@ -208,22 +211,33 @@ typedef struct {
      * which of the two walks over the controls is running (hit()).
      */
     struct {
-        bool       live;
-        uint8_t    id;
-        int16_t    x, y;
-        gfx_rect_t rect;
-        uint32_t   showing;
-    } tap;
-    int        pass;
-    bool       found;
-    gfx_rect_t found_rect;
+        bool       live;  /**< the press is held */
+        uint8_t    id;  /**< the contact that pressed */
+        int16_t    x,            /**< where it came down, x */
+                   y;            /**< where it came down, y */
+        gfx_rect_t rect;  /**< the control under it */
+        uint32_t   showing;  /**< what the screen showed at the press */
+    } tap;  /**< The press that may become a tap. */
+    int        pass;  /**< which walk over the controls runs, PASS_PRESS or PASS_TAP */
+    bool       found;  /**< the first walk found a control under the point */
+    gfx_rect_t found_rect;  /**< the control the first walk found */
 
-    uint32_t rev;
+    uint32_t rev;  /**< a count the render follows */
 } stick_shared_t;
 
-/* In esc_stick_pages.c. */
+/** @brief In esc_stick_pages.c. */
 extern stick_shared_t pg;
 
+/**
+ * @brief Whether a control lies under a point: in the second walk it answers
+ *         for the control, in the first it notes the first one found and
+ *         answers false.
+ *
+ * @param r the control's rectangle
+ * @param px the point's x
+ * @param py the point's y
+ * @return true in the second walk with the point inside the rectangle
+ */
 SP_SHARED bool hit(gfx_rect_t r, int px, int py)
 {
     if (!gfx_rect_contains(r, px, py)) {
@@ -268,10 +282,14 @@ SP_SHARED void widget_enum(gfx_canvas_t *c, int y, const char *text,
 
 /* --- text in cells ------------------------------------------------------- */
 
-/*
- * @p buf cut to @p max_chars cells, with ".." in place of what did not fit.
+/**
+ * @brief @p buf cut to @p max_chars cells, with ".." in place of what did not fit.
  * Cut between characters, never inside one: a cell is a code point and a
  * German letter is two bytes.
+ *
+ * @param buf the text, cut in place
+ * @param n the buffer's size, bytes
+ * @param max_chars the cells it may take
  */
 SP_SHARED void sp_cut(char *buf, size_t n, int max_chars)
 {
@@ -286,11 +304,15 @@ SP_SHARED void sp_cut(char *buf, size_t n, int max_chars)
     }
 }
 
-/*
- * @p src into @p dst, as much as fits with its terminator.  The copy every
+/**
+ * @brief @p src into @p dst, as much as fits with its terminator.  The copy every
  * row and line makes, without snprintf(): whatever the format, a call to
  * snprintf() reaches picolibc's float conversion, and the panel's call graph
  * puts 1136 bytes of stack from snprintf() down (tools/stack_check.py -v).
+ *
+ * @param dst receives the text
+ * @param n its size, bytes
+ * @param src the text
  */
 SP_SHARED void sp_copy(char *dst, size_t n, const char *src)
 {
@@ -302,9 +324,15 @@ SP_SHARED void sp_copy(char *dst, size_t n, const char *src)
     dst[i] = '\0';
 }
 
-/* The bytes of the next line of @p at that fit @p cells: up to the last
+/**
+ * @brief The bytes of the next line of @p at that fit @p cells: up to the last
  * space in it, or the whole width where no space falls after its start.
- * A line holds one cell at least, so every line ends. */
+ * A line holds one cell at least, so every line ends.
+ *
+ * @param at the text
+ * @param cells the line's width in cells
+ * @return the bytes of the line
+ */
 SP_SHARED size_t sp_line_len(const char *at, int cells)
 {
     cells = (cells > 0) ? cells : 1;
@@ -319,13 +347,23 @@ SP_SHARED size_t sp_line_len(const char *at, int cells)
     return (cut > 0u) ? cut : len;
 }
 
-/*
- * @p text in lines of at most @p cells, broken after a space where one
+/**
+ * @brief @p text in lines of at most @p cells, broken after a space where one
  * falls in the line and inside a word where none does, from (x, y) down by
  * @p pitch.  At most @p max_lines lines; the last of them ends in ".." when
  * the text goes on.  Returns the lines drawn.  A manual step is the
  * profile's own text and can be up to ESC_MANUAL_ACTION_MAX bytes, so it is
  * wrapped, not cut to one line.
+ *
+ * @param c the canvas to draw on
+ * @param x the first line's left edge, px
+ * @param y the first line's top, px
+ * @param pitch from line to line, px
+ * @param text the text
+ * @param cells a line's width in cells
+ * @param max_lines the lines at most
+ * @param ink the text's colour
+ * @return the lines drawn
  */
 SP_SHARED int sp_wrap(gfx_canvas_t *c, int x, int y, int pitch,
                    const char *text, int cells, int max_lines,
@@ -367,7 +405,14 @@ SP_SHARED int sp_wrap(gfx_canvas_t *c, int x, int y, int pitch,
     return lines;
 }
 
-/* The lines sp_wrap() would draw, without drawing them. */
+/**
+ * @brief The lines sp_wrap() would draw, without drawing them.
+ *
+ * @param text the text
+ * @param cells a line's width in cells
+ * @param max_lines the lines at most
+ * @return the lines it takes
+ */
 static inline int sp_wrap_lines(const char *text, int cells, int max_lines)
 {
     int lines = 0;
@@ -469,8 +514,14 @@ void esc_stick_panel_cancel(void);
  */
 bool esc_stick_panel_down(const touch_event_t *evt);
 
-/** A DOWN at (x, y) lands on the ABORT of a run under way, which
- *  esc_stick_panel_down() acts on at the press. */
+/**
+ * @brief A DOWN at (x, y) lands on the ABORT of a run under way, which
+ *  esc_stick_panel_down() acts on at the press.
+ *
+ * @param px the DOWN's x
+ * @param py the DOWN's y
+ * @return true when it lands on ABORT
+ */
 bool esc_stick_panel_safe_at(int px, int py);
 
 /**
