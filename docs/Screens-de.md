@@ -236,7 +236,10 @@ beginnt, zuerst die obere rechte Ecke. Gezählt wird der Text, den die
 Seite seit dem Öffnen der Hilfeseite zeichnet; erscheint später Text unter
 einer Marke, wandert sie, und die Seite wird neu gezeichnet. Verdeckt jeder
 Platz Text, nimmt die Marke den ersten Platz, den die übrigen Regeln
-lassen.
+lassen; lassen sie keinen, den ersten Platz in der freien Hälfte. Ein
+Platz auf der Kante oder Ecke des Bedienelements zählt als außerhalb. Die
+Hilfe vergisst den Text beim Öffnen, beim Schließen und beim Wechsel der
+Seite.
 
 Bei einem Bedienelement im Statusband steht die Nummernmarke darunter,
 unter seiner linken Kante, sonst unter seiner rechten Kante, seiner Mitte,

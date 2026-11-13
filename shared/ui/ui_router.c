@@ -303,8 +303,7 @@ void ui_router_goto(ui_screen_id_t id)
      * is the old screen's too. */
     s.band_press = false;
     s.help = UI_BAND_CHIP_NONE;
-    s.guide = false;
-    s.guide_press = false;
+    guide_close();                  /* and forgets the old screen's badges */
     s.alert_press = false;
     shot_hold_end();
     memset(s.alert_ids, 0, sizeof(s.alert_ids));
@@ -596,12 +595,13 @@ bool ui_router_guide_open(void) { return s.guide; }
 
 int ui_router_guide_page(void) { return s.guide ? s.guide_page : -1; }
 
-/** @brief Close the guide; every screen repaints what the dock covered. */
+/** @brief Close the guide; every screen repaints what the dock covered,
+ *         and the badges' places start afresh at the next opening. */
 static void guide_close(void)
 {
     if (s.guide) {
-        s.guide = false;
-        s.guide_press = false;
+        s.guide = s.guide_press = false;
+        ui_help_watch_reset();
         ui_router_invalidate();
     }
 }
@@ -618,6 +618,7 @@ static void guide_open(void)
     s.guide_page  = 0;
     s.guide_press = false;
     s.guide_set   = ui_help_set_key(screen_for(s.current), s.status.armed);
+    ui_help_watch_reset();
     release_owned();
     ui_router_invalidate();
 }

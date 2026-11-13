@@ -214,8 +214,10 @@ gfx_rect_t ui_help_button_rect(ui_help_side_t side, ui_help_hit_t hit);
  * marked UI_HELP_AT_RIGHT tries inside the top-right corner first, then
  * right of it.  A control in the band has its badge under the band: below
  * its left end, its right end, its middle, then left and right of it.
- * With every place covering a string, the first place left by the other
- * rules; with none left, the first place.
+ * A place on the control's edge or corner counts as outside it.  With
+ * every place covering a string, the first place left by the other rules;
+ * with none left, the first place in the live half, else inside the
+ * control's top-left corner.
  * @param p The page.
  * @param i The item.
  * @return The badge's rect.
@@ -227,13 +229,20 @@ gfx_rect_t ui_help_badge_rect(const ui_help_page_t *p, int i);
  *        the router calls it before the screen draws a frame under the
  *        guide, and ui_help_watch_end() after.  The places of each badge
  *        that a string covers are kept until a page with other items,
- *        rects or side starts.
+ *        rects or side starts, or ui_help_watch_reset().
  * @param root The panel's canvas, whose sub-canvases the screen draws on.
  * @param p    The page showing.
  * @return True when @p p starts afresh: the screen must draw all of its
  *         strings in this frame (ui_router_invalidate()).
  */
 bool ui_help_watch_begin(const gfx_canvas_t *root, const ui_help_page_t *p);
+
+/**
+ * @brief Forget what was noted: the next ui_help_watch_begin() starts
+ *        afresh, whatever its page.  The router calls it when the guide
+ *        opens or closes and when the screen changes.
+ */
+void ui_help_watch_reset(void);
 
 /** @brief Stop noting strings (ui_help_watch_begin()). */
 void ui_help_watch_end(void);

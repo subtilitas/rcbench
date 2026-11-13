@@ -393,10 +393,24 @@ static bool rects_near(gfx_rect_t a, gfx_rect_t b, int gap)
 }
 
 /**
+ * @brief Whether @p b lies wholly in the live half of @p p's side.
+ * @param p The page.
+ * @param b The rect.
+ * @return True when it does.
+ */
+static bool in_live(const ui_help_page_t *p, gfx_rect_t b)
+{
+    const gfx_rect_t live = ui_help_live_rect(p->side);
+    return b.x >= live.x && b.y >= live.y && b.x + b.w <= live.x + live.w
+           && b.y + b.h <= live.y + live.h;
+}
+
+/**
  * @brief Whether place @p k of item @p i's badge keeps the rules that need
  *        no strings: in the live half, 2px or more from the badges of the
  *        items before it in @p chosen, and over no other item's control
- *        unless it lies on its own.
+ *        unless it lies wholly on its own.  A place on its control's edge
+ *        or corner is held to the other controls as one outside it is.
  * @param p      The page.
  * @param i      The item.
  * @param b      The place's rect.
@@ -406,9 +420,7 @@ static bool rects_near(gfx_rect_t a, gfx_rect_t b, int gap)
 static bool spot_fits(const ui_help_page_t *p, int i, gfx_rect_t b,
                       const gfx_rect_t *chosen)
 {
-    const gfx_rect_t live = ui_help_live_rect(p->side);
-    if (b.x < live.x || b.y < live.y || b.x + b.w > live.x + live.w
-        || b.y + b.h > live.y + live.h) {
+    if (!in_live(p, b)) {
         return false;
     }
     for (int k = 0; k < i; ++k) {
@@ -418,7 +430,8 @@ static bool spot_fits(const ui_help_page_t *p, int i, gfx_rect_t b,
     }
     gfx_rect_t own = p->item[i].rect;
     own.y = (int16_t)(own.y + UI_BAND_H);
-    if (rects_near(b, own, 0) && p->item[i].rect.y >= 0) {
+    if (p->item[i].rect.y >= 0 && b.x >= own.x && b.y >= own.y
+        && b.x + b.w <= own.x + own.w && b.y + b.h <= own.y + own.h) {
         return true;
     }
     for (int k = 0; k < p->count && k < UI_HELP_ITEMS; ++k) {
@@ -429,6 +442,21 @@ static bool spot_fits(const ui_help_page_t *p, int i, gfx_rect_t b,
         }
     }
     return true;
+}
+
+/**
+ * @brief Item @p i's badge inside its control's top-left corner, or under
+ *        the band below the left end of a control in the band.
+ * @param p The page.
+ * @param i The item.
+ * @return The badge's rect.
+ */
+static gfx_rect_t top_left(const ui_help_page_t *p, int i)
+{
+    const gfx_rect_t r = p->item[i].rect;
+    return gfx_rect_make(r.x + ((r.y < 0) ? 0 : BADGE_IN),
+                         UI_BAND_H + ((r.y < 0) ? 0 : r.y) + BADGE_IN, BADGE,
+                         BADGE);
 }
 
 /**
@@ -473,10 +501,14 @@ gfx_rect_t ui_help_badge_rect(const ui_help_page_t *p, int i)
                 pick = k;
             }
         }
-        if (pick < 0) {
-            pick = (fit >= 0) ? fit : 0;
+        /* With none left by the other rules: the first place in the live
+         * half, else inside the control's top-left corner. */
+        for (int k = 0; k < UI_HELP_SPOTS && pick < 0 && fit < 0; ++k) {
+            fit = in_live(p, spot_rect(p, j, k)) ? k : -1;
         }
-        chosen[j] = spot_rect(p, j, pick);
+        chosen[j] = (pick >= 0) ? spot_rect(p, j, pick)
+                    : (fit >= 0) ? spot_rect(p, j, fit)
+                                 : top_left(p, j);
     }
     return chosen[n];
 }
@@ -527,6 +559,8 @@ bool ui_help_watch_begin(const gfx_canvas_t *root, const ui_help_page_t *p)
     gfx_text_watch(note_text);
     return fresh;
 }
+
+void ui_help_watch_reset(void) { s_watch.valid = false; }
 
 void ui_help_watch_end(void)
 {

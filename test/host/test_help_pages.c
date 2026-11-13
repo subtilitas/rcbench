@@ -21,6 +21,9 @@
  *   as the screen draws; another page starts afresh
  * - a_badge_shows_on_a_fill_of_its_own_colour: a dark ring parts the
  *   badge from a lit accent button
+ * - a_guide_opened_again_notes_the_strings_afresh
+ * - a_badge_with_no_place_left_stays_in_the_live_half
+ * - a_badge_on_its_controls_edge_covers_no_neighbour
  *
  * SPDX-License-Identifier: MIT
  */
@@ -396,11 +399,97 @@ TEST_CASE(a_badge_moves_off_a_string_the_screen_drew)
     ui_help_watch_end();
     CHECK_EQ(ui_help_badge_rect(&p, 0).x, moved.x);
 
+    /* A reset forgets it, as the guide's opening, closing and a change of
+     * screen do: the same page starts afresh at its first place. */
+    ui_help_watch_reset();
+    CHECK_EQ(ui_help_badge_rect(&p, 0).x, 104);
+    CHECK(ui_help_watch_begin(&cv, &p));
+    ui_help_watch_end();
+    CHECK_EQ(ui_help_badge_rect(&p, 0).x, 104);
+
     /* Another page starts afresh: its first place again. */
     p.item[0].rect.w = 210;
     CHECK(ui_help_watch_begin(&cv, &p));
     ui_help_watch_end();
     CHECK_EQ(ui_help_badge_rect(&p, 0).x, 104);
+}
+
+/* Closing the guide and opening it again forgets what the screen drew:
+ * the router's first frame after the opening starts the page afresh. */
+TEST_CASE(a_guide_opened_again_notes_the_strings_afresh)
+{
+    fresh();
+    ui_router_goto(SCREEN_SETUP);
+    ui_router_render(&cv, 0);
+    gfx_rect_t g = ui_band_guide_rect();
+    tap(g.x + g.w / 2, g.y + g.h / 2);
+    ui_help_page_t p;
+    REQUIRE(ui_router_guide_now(&p));
+    ui_router_render(&cv, 0);
+    /* Open: the page is noted, a second start keeps it. */
+    CHECK(!ui_help_watch_begin(&cv, &p));
+    ui_help_watch_end();
+    g = ui_help_button_rect(p.side, UI_HELP_HIT_CLOSE);
+    tap(g.x + g.w / 2, g.y + g.h / 2);
+    REQUIRE(!ui_router_guide_open());
+    /* Closed: forgotten. */
+    CHECK(ui_help_watch_begin(&cv, &p));
+    ui_help_watch_end();
+    ui_help_watch_reset();
+}
+
+/* A small control at the live half's left edge, inside a marked panel whose
+ * badge takes its corner: every place is out of the live half, near that
+ * badge or over the panel from outside.  The badge falls back to the first
+ * place in the live half, never the one left of it under the dock. */
+TEST_CASE(a_badge_with_no_place_left_stays_in_the_live_half)
+{
+    fresh();
+    ui_help_watch_reset();
+    ui_help_page_t p;
+    memset(&p, 0, sizeof(p));
+    p.side = UI_HELP_DOCK_LEFT;           /* live half from x 496 */
+    p.count = 2;
+    p.item[0] = (ui_help_item_t){ "PANEL", TX_HG_OV_SERVO,
+                                  gfx_rect_make(496, 0, 528, 400),
+                                  UI_HELP_AT_LEFT };
+    p.item[1] = (ui_help_item_t){ "A", TX_HG_OV_SERVO,
+                                  gfx_rect_make(496, 0, 40, 40),
+                                  UI_HELP_AT_LEFT };
+    const gfx_rect_t b = ui_help_badge_rect(&p, 1);
+    CHECK(inside(b, ui_help_live_rect(p.side)));
+}
+
+/* A place on its control's left edge or top-left corner counts as outside
+ * it: it covers no neighbouring marked control. */
+TEST_CASE(a_badge_on_its_controls_edge_covers_no_neighbour)
+{
+    fresh();
+    ui_help_watch_reset();
+    ui_help_page_t p;
+    memset(&p, 0, sizeof(p));
+    p.side = UI_HELP_DOCK_RIGHT;
+    p.count = 2;
+    /* B left of A, 4px apart: A's left-edge place reaches into B. */
+    p.item[0] = (ui_help_item_t){ "B", TX_HG_OV_SERVO,
+                                  gfx_rect_make(20, 100, 100, 40),
+                                  UI_HELP_AT_LEFT };
+    p.item[1] = (ui_help_item_t){ "A", TX_HG_OV_SERVO,
+                                  gfx_rect_make(124, 100, 100, 40),
+                                  UI_HELP_AT_LEFT };
+    /* Strings from x 139 over A and above and under it: every place but
+     * the ones on its left edge and top-left corner is covered. */
+    REQUIRE(ui_help_watch_begin(&cv, &p));
+    for (int y = 60; y <= 180; y += 20) {
+        gfx_text(&cv, 139, UI_BAND_H + y, "AAAAAAAAAAAAAAAAAAAA",
+                 &gfx_font_10x20, GFX_WHITE, 1);
+    }
+    ui_help_watch_end();
+    const gfx_rect_t b = ui_help_badge_rect(&p, 1);
+    gfx_rect_t other = p.item[0].rect;
+    other.y = (int16_t)(other.y + UI_BAND_H);
+    CHECK(!near(b, other, 0));
+    ui_help_watch_reset();
 }
 
 TEST_CASE(a_badge_shows_on_a_fill_of_its_own_colour)
@@ -440,5 +529,8 @@ int main(void)
     RUN(an_umlaut_label_moves_the_text_by_its_cells);
     RUN(a_badge_moves_off_a_string_the_screen_drew);
     RUN(a_badge_shows_on_a_fill_of_its_own_colour);
+    RUN(a_guide_opened_again_notes_the_strings_afresh);
+    RUN(a_badge_with_no_place_left_stays_in_the_live_half);
+    RUN(a_badge_on_its_controls_edge_covers_no_neighbour);
     return test_summary("help_pages");
 }

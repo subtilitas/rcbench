@@ -217,7 +217,10 @@ left of it first; a control whose own text starts at its left edge tries
 inside the top-right corner first. The strings are those the screen draws
 in the frames since the page opened; a string that shows up later under a
 badge moves it, and the screen is drawn again. With every place covering
-a string, the badge takes the first place the other rules leave.
+a string, the badge takes the first place the other rules leave; with
+none left, the first place in the live half. A place on the control's
+edge or corner counts as outside it. The guide forgets the strings when
+it opens, when it closes and when the screen changes.
 
 A control in the band has its badge under the band, below the control's
 left end, then its right end, its middle, left and right of it. The dock
