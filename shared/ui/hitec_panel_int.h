@@ -221,6 +221,10 @@ typedef struct {
                                      for a write a hold started: it shuts
                                      when that write ends
                                      (hpn_gate_follow())                 */
+    bool     wr_card;           /**< a card was in the slot at WRITE's
+                                     press (hpn_write_refused()): one gone
+                                     when the hold completes stops the
+                                     write                               */
 } hpn_state_t;
 
 /**

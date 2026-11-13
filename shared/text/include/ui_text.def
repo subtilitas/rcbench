@@ -7009,6 +7009,9 @@ UI_TEXT(KP_NO_FILE_1_NO_FAT, 116,
 UI_TEXT(KP_NO_FILE_1_UNREADABLE, 116,
     "Cannot read the card. No backup file will be saved.",
     "Karte nicht lesbar. Es wird keine Backup-Datei gespeichert.")
+UI_TEXT(KP_CARD_PULLED, 94,
+    "Card removed. Hold again to write without a backup.",
+    "Karte entnommen. Halte erneut, um ohne Backup zu schreiben.")
 UI_TEXT(KP_NO_FILE_2, 116,
     "This session's backup is kept only in the bench's memory.",
     "Das Backup dieser Sitzung liegt nur im Speicher des Prüfstands.")

@@ -839,6 +839,19 @@ void log_follow_runs(void)
  * follows: panel_settings.c.  The render loop: panel_frame.c. */
 
 /**
+ * @brief The card slot looked at now, for the servo programmers' WRITE n
+ *        VALUES at its press and as its 2s hold completes
+ *        (kst_panel_card_check()): a card taken out is let go, one put in
+ *        is mounted.  Called on app_main, where the touch and the ticks
+ *        run and where the programmers' looks at the slot run.
+ * @return true with a card mounted
+ */
+static bool card_mounted_now(void)
+{
+    return storage_check() == CARD_STATE_MOUNTED;
+}
+
+/**
  * @brief Every task with its core and priority, once at start-up.
  *
  * A task created through xTaskCreate() or xTaskCreatePinnedToCore()
@@ -927,6 +940,8 @@ void app_main(void)
     s_hitec_q   = xQueueCreate(HITEC_Q_LEN, sizeof(hitec_prog_cmd_t));
     hitec_prog_gate_init(&s_hitec_gate);
     hitec_panel_gate(&s_hitec_gate);
+    kst_panel_card_check(card_mounted_now);
+    hitec_panel_card_check(card_mounted_now);
     s_esc_q     = xQueueCreate(ESC_Q_LEN, sizeof(esc_prog_cmd_t));
     esc_prog_gate_init(&s_esc_gate);
     esc_wire_panel_gate(&s_esc_gate);

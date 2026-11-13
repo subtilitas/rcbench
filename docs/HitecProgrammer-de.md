@@ -337,6 +337,14 @@ Die Hinweise gehen mit den Änderungen. Sie stehen nach den übrigen
 Hinweisen des Reiters, der höchstens 6 hält; ein Hinweis, der nicht über
 die Meldung passt, wird nicht gezeichnet.
 
+Das Panel prüft den Kartensteckplatz beim Drücken und noch einmal, wenn
+das 2s-Halten vollständig ist, im Reiter und in der Fußzeile. Eine Karte,
+die beim Drücken steckt und nach 2s fehlt, hält das Schreiben auf: nichts
+wird gesendet, die Änderungen bleiben, und das Band sagt
+`Karte entnommen. Halte erneut, um ohne Backup zu schreiben.` Das nächste
+2s-Halten, beim Drücken ohne Karte, schreibt ohne Backup-Datei und hält
+den Vermerk im RAM ([Ohne Karte](#ohne-karte)).
+
 1. Das zweite Lesen dessen, wovon der Plan abhängt
    ([Das zweite Lesen](#das-zweite-lesen)). Zwei Lesevorgänge, die
    voneinander abweichen, beenden das Schreiben hier, ohne dass etwas
@@ -642,7 +650,8 @@ Speichern trägt `backup=0`. Eine passende klassische Backup-Datei kann auch ges
 Ohne eingebundene Karte bleibt das Schreiben möglich. Solange Änderungen
 warten, zeigt der Reiter SERVO `Keine Karte. Es wird keine Backup-Datei
 gespeichert.` in der Warnfarbe, und 2s Halten auf **n WERTE SCHREIBEN** sendet
-das Schreiben ohne Datei. Die Halteseiten der anderen Schreibvorgänge
+das Schreiben ohne Datei. Eine Karte, die während dieses Haltens entnommen
+wird, hält das Schreiben einmal auf ([Schreiben](#schreiben)). Die Halteseiten der anderen Schreibvorgänge
 zeigen drei zusätzliche Zeilen:
 
 ```

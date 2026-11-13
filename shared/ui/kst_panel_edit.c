@@ -481,6 +481,24 @@ void kpn_act(const row_t *r)
     }
 }
 
+/** @brief The caller's look at the card slot (kst_panel_card_check());
+ *         kst_panel_init() leaves it. */
+static bool (*s_card_fn)(void);
+
+void kst_panel_card_check(bool (*fn)(void)) { s_card_fn = fn; }
+
+/**
+ * @brief Whether a card is in the slot now: the caller's look, or the last
+ *        feed's card without one.  Not inlined: tools/stack_check.py
+ *        follows its call through the pointer by this name
+ *        (UI_HOOK_CALLS).
+ * @return true with a card mounted
+ */
+static __attribute__((noinline)) bool kpn_card_now(void)
+{
+    return s_card_fn != NULL ? s_card_fn() : k.prog.fed && k.prog.f.card;
+}
+
 /* A write the session refuses whatever the gate: said at the press, and
  * no hold starts. */
 bool kpn_write_refused(void)
@@ -490,6 +508,7 @@ bool kpn_write_refused(void)
 
     /* A card put in, taken out or swapped is found at the press. */
     k.card_look = k.card_look || p->fed;
+    k.wr_card = kpn_card_now();
     if (m == KST_PROG_MSG_NONE) {
         return false;
     }
@@ -509,7 +528,16 @@ bool kpn_write_refused(void)
 bool kpn_write_go(void)
 {
     kst_prog_t *p = &k.prog;
+    const bool had_card = k.wr_card;
 
+    k.wr_card = false;
+    /* A card in the slot at the press and gone now: the write would go
+     * without the backup file the operator saw promised.  Nothing is sent;
+     * the next hold, its press without a card, writes without one. */
+    if (had_card && !kpn_card_now()) {
+        ui_action_refused(TR(KP_CARD_PULLED));
+        return false;
+    }
     if (kst_prog_enable(p, true) != KST_PROG_MSG_NONE) {
         return false;                   /* said why not */
     }

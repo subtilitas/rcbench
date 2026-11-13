@@ -764,7 +764,10 @@ edited value is marked on its tab, and [LEAVE](#leaving) lists them.
    [a new file on the card](#the-backup-before-the-first-write). A card
    that is mounted and does not take the file ends the write. With no card
    mounted the SERVO tab says `No card. No backup file will be saved.`
-   while edits wait, and the write goes without a file. While the record of an interrupted write is held no file is
+   while edits wait, and the write goes without a file. The panel looks at
+   the slot at the press and again as the hold completes: a card there at
+   the press and gone at 2s stops the write, and the band says
+   `Card removed. Hold again to write without a backup.` While the record of an interrupted write is held no file is
    saved: the servo may be half written, and the record holds its values as
    found.
 2. The panel records the image the servo holds, the image the write is to
@@ -1001,7 +1004,8 @@ servo held before the write are then not recoverable from the bench.
 | The IOmcu starts again | its session and the session's backup are gone. **CONNECT** begins a session, and its first write saves the servo as that session finds it |
 | A save through **FILES** after a write without a card | saves the servo as it stands; it does not count as the backup file |
 | The card leaves the slot while a restore or release page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2s sends the operation |
-| The card leaves the slot during the 2s hold on **WRITE n VALUES** | the write goes without a file |
+| The card leaves the slot during the 2s hold on **WRITE n VALUES**, on the tab or in the footer | nothing is written and the edits stay; the band says `Card removed. Hold again to write without a backup.` The next 2s hold, its press without a card, writes without a file |
+| No card at the press on **WRITE n VALUES** | the SERVO tab says `No card. No backup file will be saved.` and the 2s hold writes without a file |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
 | **FILES**, save and load without a card | refused: `No card. Nothing saved or written to the servo.` |
 | A card put in, taken out or swapped after the panel started | the panel looks at the slot when the programmer opens, at each **CONNECT** and at each tap on **READ ALL**, **FILES**, **RESTORE**, **MORE** and at each press on **WRITE n VALUES**: a card put in or swapped is mounted, and one taken out is let go. The look at a mounted card is one SEND_STATUS (CMD13) command. A file request (list, load, save) runs on the card it was asked of; with another card mounted in its place by then, it finds no card. The record of a write goes to the card whose record the programmer read last, never to one mounted in its place before the next look reads that card's record. The tap that finds a new card still reads the card state from before; the next one has it, and an open restore or release page changes to the page with the file |
@@ -1466,8 +1470,9 @@ line. [The link page](LinkKST.md) lists the codes.
   record the panel already holds stands, before and after the servo is
   read back: the record on such a card is not read then, and the next
   record written replaces it.
-- Card insertion and removal are checked when the programmer opens or
-  an action is tapped; the slot is not monitored continuously.
+- Card insertion and removal are checked when the programmer opens, an
+  action is tapped, and at the press and the completed 2s hold of **WRITE
+  n VALUES**; the slot is not monitored continuously.
 - The time a mount attempt without a card holds the screen is not measured.
 - On boards where the PD mini supplies the programming ports, SUPPLY's
   limits and trip settings remain editable while a port is in use. Its
@@ -1689,7 +1694,8 @@ other ends. `test_kst_file` runs format 1 and format 2
 files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card
-removed under the write's hold. A command the control task takes after
+removed under the write's hold, which writes nothing until the next hold;
+`test_kst_panel_frame` runs that hold on the tab and in the footer. A command the control task takes after
 its 2s have passed reaches no wire, for every kind of operation; a
 refusal at each later exchange of each kind of operation asks for
 **READ ALL**; every result code of the session has a class, and a code

@@ -217,6 +217,15 @@ void hitec_panel_card_done(const hitec_card_done_t *d);
  */
 bool hitec_panel_card_look(void);
 /**
+ * @brief The caller's look at the card slot now: true while a card is
+ *        mounted.  Called at WRITE n VALUES' press and as its 2s hold
+ *        completes, so a card pulled under the hold is found before the
+ *        write goes.  Kept over hitec_panel_init().  NULL, the default,
+ *        reads the last feed's card (hitec_prog_feed_t::card).
+ * @param fn the look; NULL for the feed's card
+ */
+void hitec_panel_card_check(bool (*fn)(void));
+/**
  * @brief The record's text as the card held it at the start
  *        (hitec_prog_file_load()).
  * @param text the text

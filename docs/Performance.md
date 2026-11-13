@@ -487,8 +487,8 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   an update, the SERVO screen link's callbacks into the panel, the
   hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open,
   the card functions the run logs, the fault log and the servo files
-  are written through, and the screen guide's text watch and a screen's
-  translated band title,
+  are written through, the screen guide's text watch, a screen's
+  translated band title and the servo programmers' look at the card slot,
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,

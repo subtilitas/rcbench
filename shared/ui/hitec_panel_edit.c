@@ -351,8 +351,27 @@ static hitec_prog_msg_id_t gate_held(uint8_t kind)
     return m == HITEC_PROG_MSG_WRITE_OFF ? HITEC_PROG_MSG_NONE : m;
 }
 
+/** @brief The caller's look at the card slot (hitec_panel_card_check());
+ *         hitec_panel_init() leaves it. */
+static bool (*s_card_fn)(void);
+
+void hitec_panel_card_check(bool (*fn)(void)) { s_card_fn = fn; }
+
+/**
+ * @brief Whether a card is in the slot now: the caller's look, or the last
+ *        feed's card without one.  Not inlined: tools/stack_check.py
+ *        follows its call through the pointer by this name
+ *        (UI_HOOK_CALLS).
+ * @return true with a card mounted
+ */
+static __attribute__((noinline)) bool hpn_card_now(void)
+{
+    return s_card_fn != NULL ? s_card_fn() : hp.prog.fed && hp.prog.f.card;
+}
+
 bool hpn_write_refused(void)
 {
+    hp.wr_card = hpn_card_now();
     if (gate_held((uint8_t)HITEC_PROG_WR_EDITS) == HITEC_PROG_MSG_NONE) {
         return false;
     }
@@ -389,6 +408,17 @@ static hitec_prog_msg_id_t write_call(hitec_prog_t *p, uint8_t kind)
 bool hpn_write_go(uint8_t kind)
 {
     hitec_prog_t *p = &hp.prog;
+    const bool had_card = hp.wr_card;
+
+    hp.wr_card = false;
+    /* WRITE n VALUES with a card in the slot at its press and none now:
+     * the write would go without the backup file and the record the
+     * operator saw promised.  Nothing is sent; the next hold, its press
+     * without a card, writes without them. */
+    if (kind == (uint8_t)HITEC_PROG_WR_EDITS && had_card && !hpn_card_now()) {
+        ui_action_refused(TR(KP_CARD_PULLED));
+        return false;
+    }
 
     /* The write saves a backup file and a record first: the card slot is
      * looked at, as for a tap on the write row. */

@@ -296,15 +296,20 @@ PROG_CALLS = {
 
 # The UI's hooks of one function each, on the main task: gfx's text watch,
 # which the screen guide sets to note_text() while a screen draws under it
-# (shared/gfx/gfx_text.c, shared/ui/ui_help.c), and a screen's title_now(),
-# its band title in the language showing (ui_router.c, servo_fn.c).
-# watch_text() and ui_router_title() are not inlined, so each is one
+# (shared/gfx/gfx_text.c, shared/ui/ui_help.c), a screen's title_now(),
+# its band title in the language showing (ui_router.c, servo_fn.c), and
+# the servo programmers' look at the card slot at WRITE n VALUES' press and
+# hold, which the panel sets to card_mounted_now() (kst_panel_card_check(),
+# hitec_panel_card_check(), main.c).  watch_text(), ui_router_title(),
+# kpn_card_now() and hpn_card_now() are not inlined, so each is one
 # function in the ELF.  The same checks as PORT_CALLS;
-# test/tools/test_stack_check.py holds the table to every gfx_text_watch()
-# and title_now in shared/.
+# test/tools/test_stack_check.py holds the table to every gfx_text_watch(),
+# title_now and card check in shared/ and the panel.
 UI_HOOK_CALLS = {
     "watch_text": ("note_text",),
     "ui_router_title": ("rudder_title", "rauto_title"),
+    "kpn_card_now": ("card_mounted_now",),
+    "hpn_card_now": ("card_mounted_now",),
 }
 
 # The card callbacks of shared/logfile, on the runlog task: the files of a

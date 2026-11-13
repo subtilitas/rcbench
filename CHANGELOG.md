@@ -71,6 +71,12 @@ history is in git.
   a write of the checksum in 0x1C.` for a classic one, and `Stored values
   outside the settings written too: n.` where the draft holds such values
   ([Hitec](docs/HitecProgrammer.md#writing)).
+- KST and HITEC programmers: a card in the slot at WRITE n VALUES' press
+  and gone when its 2s hold completes, on the tab or in the footer, stops
+  the write. Nothing is sent, the edits stay, and the band says `Card
+  removed. Hold again to write without a backup.` The next hold, its press
+  without a card, writes without the backup file
+  ([Servo programmer](docs/ServoProgrammer.md#without-a-card)).
 
 ### Fixed
 

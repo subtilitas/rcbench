@@ -241,6 +241,9 @@ typedef struct {
      *         write, restore or release a hold started: it closes when
      *         that operation ends (kpn_gate_follow()) */
     bool wr_on;
+    /** @brief A card was in the slot at WRITE's press (kpn_write_refused()):
+     *         one gone when the hold completes stops the write */
+    bool wr_card;
 
     /* A limit run's step of the programmer (kst_panel_run_connect()). */
     struct {

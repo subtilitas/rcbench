@@ -1878,7 +1878,9 @@ closed or taken under it.
 
 `test_hitec_panel` runs its overlay (`shared/ui/hitec_panel*.c`): SERIES kept in the
 settings, a change of series dropping the other series' read, the rows a read fills, the
-PORT row in every state, LEAVE and RELEASE PORT by their 2s holds, the supply's lock, and
+PORT row in every state, LEAVE and RELEASE PORT by their 2s holds, the supply's lock, a
+card pulled under WRITE's hold on the tab and in the footer, which writes nothing until
+the next hold, and
 every control, label, value, note and message inside its field in English and German;
 `test_hitec_panel_states` the state line of every state, MORE's keypad at its limits, READ
 ALL, ABORT and CLEAR by their buttons, the home tag, a hold the finger leaves, values shown

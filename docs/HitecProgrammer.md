@@ -319,6 +319,13 @@ The notes go with the edits. They come after the other notes of the tab,
 which holds at most 6; a note that does not fit above the message is not
 drawn.
 
+The panel looks at the card slot at the press and again as the 2s hold
+completes, on the tab and in the footer. A card in the slot at the press
+and gone at 2s stops the write: nothing is sent, the edits stay, and the
+band says `Card removed. Hold again to write without a backup.` The next
+2s hold, its press without a card, writes without the backup file and
+keeps the record in RAM ([Without a card](#without-a-card)).
+
 1. The second read of what the plan depends on
    ([The second read](#the-second-read)). Two reads that differ end the
    write here, with nothing sent.
@@ -599,7 +606,8 @@ editable setting ([Loading a backup file](#loading-a-backup-file)).
 With no card mounted the write is not blocked. While edits wait, the
 SERVO tab shows `No card. No backup file will be saved.` in the warning
 colour, and the 2s hold on **WRITE n VALUES** sends the write without a
-file. The hold pages of the other writes carry three more lines:
+file. A card taken out during that hold stops the write once
+([Writing](#writing)). The hold pages of the other writes carry three more lines:
 
 ```
 No card. No backup file will be saved.
