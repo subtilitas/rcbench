@@ -319,7 +319,8 @@ static back_t back_give(sup_back_t *b, float *sp, setting_id_t cap,
     if (!b->on) {
         return BACK_NONE;
     }
-    if (!same_point(*sp, b->clamp, step) || !cap_at(cap, settings_stored(cap), b->cap)) {
+    if (!same_point(*sp, b->clamp, step)
+        || !cap_at(cap, settings_stored(cap), b->cap)) {
         b->on = false;
         return BACK_NONE;
     }
