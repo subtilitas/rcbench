@@ -1099,6 +1099,39 @@
    ],
    "insets": [
     {
+     "from": 5.2,
+     "to": 8.8,
+     "kind": "pins",
+     "at": [
+      1220,
+      300
+     ],
+     "title": "Pin strips, 2.54 mm, straight",
+     "rows": [
+      [
+       20,
+       "RP2350-CAN, left row"
+      ],
+      [
+       20,
+       "RP2350-CAN, right row"
+      ],
+      [
+       8,
+       "INA3221"
+      ],
+      [
+       2,
+       "× 8, the pin pairs of M8 and M7"
+      ],
+      [
+       1,
+       "M7's EN"
+      ]
+     ],
+     "text": "<b>65 pins</b> in all: two strips of 40 are enough."
+    },
+    {
      "from": 62.0,
      "to": 72.6,
      "kind": "strip",

@@ -16,7 +16,10 @@ bottom.  All lengths are mm from the drawing's top left corner.
 A footprint whose name is that of a module under hardware/kicad/modules/
 takes the module's board outline as its box and, as details, the parts
 of the module's model, each a box or a circle with the colour name of the
-model, and the texts of the module's drawing, such as USB-C and CAN.
+model, the texts of the module's drawing, such as USB-C and CAN, and
+beside each pad the name of its pin where the drawing does not print it.
+A JST or Molex connector carries a short name of each pad's net, and a
+3-row pin header the names of its rows.
 
 A pad's name is REF.NUMBER, as in M1.20.  Where a footprint has more than
 one pad of a number, they take a letter in the order of the board file:
@@ -25,6 +28,8 @@ M7.2a, M7.2b.
 Attributes:
     LAYER: The copper layer whose tracks are drawn.
     MODULES: The directory of the module specs.
+    SHORT: The short name of a net on a connector, as (pattern, name),
+        first match.
 
 SPDX-License-Identifier: MIT
 """
@@ -41,6 +46,12 @@ import sys
 LAYER = "F.Cu"
 MODULES = (pathlib.Path(__file__).resolve().parent.parent / "hardware"
            / "kicad" / "modules")
+SHORT = (
+    (r"HEARTBEAT", "HB"), (r"SCL", "SCL"), (r"SDA", "SDA"),
+    (r"PDMINI_TX", "TX"), (r"PDMINI_RX", "RX"), (r"^GND$", "GND"),
+    (r"^\+5V$", "5V"), (r"^\+3\.3V$", "3V3"), (r"^\+15V$", "15V"),
+    (r"^VCC_PDMINI$", "V+"), (r"J9", "TAP"),
+)
 _TOKEN = re.compile(r'\(|\)|"(?:[^"\\]|\\.)*"|[^\s()]+')
 
 
@@ -95,8 +106,8 @@ def modules(where: pathlib.Path = MODULES) -> dict:
 
     Returns:
         Per footprint name the module's board size, the footprint's origin
-        on it, the bodies of its model and the texts of its drawing as
-        (text, x, y, height in mm).
+        on it, the bodies of its model, the texts of its drawing as
+        (text, x, y, height in mm) and the pin names by pad number.
     """
     import importlib.util
 
@@ -111,8 +122,11 @@ def modules(where: pathlib.Path = MODULES) -> dict:
             for item in fp.get("fab", []) + fp.get("silk", []):
                 if item[0] == "text" and item[1:] not in texts:
                     texts.append(item[1:])
+            names = {pin[2]: pin[1] for pin in getattr(
+                mod, "SYMBOL", {}).get("pins", [])}
+            pads = [(pad["num"], pad["x"], pad["y"]) for pad in fp["pads"]]
             found[fp["name"]] = (fp["board"], fp["origin"], getattr(
-                mod, "MODEL", {}).get("bodies", []), texts)
+                mod, "MODEL", {}).get("bodies", []), texts, names, pads)
     return found
 
 
@@ -207,7 +221,7 @@ def convert(text: str, turn: int = 90, specs: dict | None = None) -> dict:
         if specs and name in specs:
             # The module's own board, and the parts on it, laid out from
             # the footprint's origin.
-            (bw, bh), (ox, oy), bodies, texts = specs[name]
+            (bw, bh), (ox, oy), bodies, texts, names, spads = specs[name]
 
             def spot(x, y, world=world, ox=ox, oy=oy):
                 return world(x - ox, y - oy)
@@ -227,10 +241,53 @@ def convert(text: str, turn: int = 90, specs: dict | None = None) -> dict:
                     cx, cy = spot(body[1], body[2])
                     details.append({"at": [r3(cx), r3(cy)], "r": body[3],
                                     "color": body[5]})
+            # Where the pins get their names, the drawing's pad numbers
+            # would lie under them.
+            named = any(names.get(num) and names[num] not in
+                        {said for said, *_ in texts} for num, _, _ in spads)
             for said, x, y, size in texts:
+                if named and said.isdigit():
+                    continue
                 cx, cy = spot(x, y)
                 details.append({"text": said, "at": [r3(cx), r3(cy)],
                                 "size": size})
+            # A pin's name beside its pad, towards the middle of the
+            # module, where the drawing does not print it already.
+            printed = {said for said, *_ in texts}
+            for num, x, y in spads:
+                said = names.get(num, "")
+                said = said.split("_")[0] if said.startswith("GP") else said
+                if not said or said in printed or names[num] in printed:
+                    continue
+                inward = 1.5 if x < bw / 2 else -1.5
+                px, py = spot(x, y)
+                tx, ty = spot(x + inward, y)
+                side = ("start" if tx > px + 0.1 else
+                        "end" if tx < px - 0.1 else "middle")
+                details.append({"text": said, "at": [r3(tx), r3(ty)],
+                                "size": 0.7, "anchor": side})
+        elif re.search(r"JST|Molex", name):
+            # A connector: a short name of each pad's net, on its housing.
+            for pad in mine:
+                said = next((short for pattern, short in SHORT
+                             if re.search(pattern, pad["net"])), "")
+                if said:
+                    details.append({"text": said, "ink": "dark",
+                                    "at": [r3(pad["x"] - 1.75), pad["y"]],
+                                    "size": 0.65})
+        elif "PinHeader_3x" in name and mine:
+            # A 3-row header: its rows by what their nets carry.
+            rows: dict = {}
+            for pad in mine:
+                rows.setdefault(pad["y"], []).append(pad)
+            for y, row in rows.items():
+                nets = {pad["net"] for pad in row}
+                said = ("GND" if nets == {"GND"} else
+                        "+" if all(n.startswith("VCC") for n in nets)
+                        else "SIG")
+                details.append({"text": said, "anchor": "end", "size": 0.8,
+                                "at": [r3(min(p["x"] for p in row) - 1.4),
+                                       y]})
         if pts:
             parts.append({"ref": ref, "value": props.get("Value", ""),
                           "details": details,

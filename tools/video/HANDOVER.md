@@ -65,9 +65,11 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
 | the owner's server, 48 cores | 12 | 43 min |
 
 - The capture is the slow part; the 3D opening is its slowest section.
-- `--keep` names the parts by a hash of the narrated storyboard. A change
-  that leaves every step length as it was reuses all parts: only the
-  narration, the sound tracks and the mux run, about 10 min.
+- `--keep` names the parts of each scene by a hash of what its frames
+  show: the scene, its start, the video's length, the steps before it,
+  its board and the player's files. A change to one scene that leaves
+  every length as it was captures that scene alone. A change to the
+  player captures everything; a change to sound alone captures nothing.
 - A narration change alters step lengths. To keep the picture, set the
   changed step's `dur` to its length before the change, as the
   signal-wire step of `features` does (18.65).
@@ -150,6 +152,9 @@ How the modules are mounted (owner, 2026-11-13):
 - The owner found the modules too plain as rectangles. They carry the
   parts and prints of the module specs under `hardware/kicad/modules/`;
   the panel's headers are labelled in its drawing.
+- The owner asked for the pins to be named and for the pin strips to
+  be shown with their counts: the intro shows 20, 20, 8, 2 x 8 and 1,
+  65 pins.
 - The narrator read "I N A 3221" as a number of thousands; it is
   written `I-N-A 32 21`, as `A-M 32` is.
 - The narrator said "G P I O" with pauses; abbreviations are written

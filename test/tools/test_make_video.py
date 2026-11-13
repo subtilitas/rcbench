@@ -360,7 +360,8 @@ def test_a_module_brings_its_board_and_its_parts():
     specs = {"Buck": ((8.0, 6.0), (2.0, 2.0),
                       [("box", 3.0, 1.0, 6.0, 4.0, 4.5, "chip"),
                        ("cyl", 7.0, 5.0, 0.5, 1.0, "black", 1.0)],
-                      [("CAN", 4.0, 2.0, 0.8)])}
+                      [("CAN", 4.0, 2.0, 0.8), ("1", 1.0, 1.0, 0.8)],
+                      {"2": "GP7_X"}, [("2", 2.0, 2.0)])}
     plan = video_board.convert(_PCB, 0, specs)
     part = next(p for p in plan["parts"] if p["ref"] == "M7")
     # The footprint at (30, 30), a quarter turned, on a board from (10, 20).
@@ -368,7 +369,9 @@ def test_a_module_brings_its_board_and_its_parts():
     assert part["details"] == [
         {"box": [19.0, 6.0, 22.0, 9.0], "color": "chip"},
         {"at": [23.0, 5.0], "r": 0.5, "color": "black"},
-        {"text": "CAN", "at": [20.0, 8.0], "size": 0.8}]
+        {"text": "CAN", "at": [20.0, 8.0], "size": 0.8},
+        {"text": "GP7", "at": [20.0, 8.5], "size": 0.7,
+         "anchor": "middle"}]
     assert next(p for p in plan["parts"]
                 if p["ref"] == "R1")["details"] == []
     texts = [said for said, *_ in video_board.modules()["RP2350-CAN"][3]]

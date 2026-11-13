@@ -41,8 +41,9 @@ history is in git.
   steps and 83s. A `board` scene draws a circuit board flat, with a net
   lit up, a track cut, a wire and a part soldered across two pads;
   `tools/video_board.py` converts a KiCad board file into the board it
-  draws, each module with the parts and prints of its spec under
-  `hardware/kicad/modules/` ([Videos from storyboards](tools/video/README.md)).
+  draws, each module with the parts, prints and pin names of its spec
+  under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
+  scene, so that a changed scene is captured alone ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `rbmod-build`: building a rev 1 rbmod carrier and wiring
   the panel in 13 steps and 347.32s, narrated. A `board` scene mounts parts, shows solder
   joints and a cross-section card, and takes narration cues. Music bed

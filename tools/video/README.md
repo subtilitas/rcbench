@@ -51,8 +51,10 @@ python3 tools/make_video.py rbmod-build            # build/video/rbmod-build.mp4
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
 python3 tools/make_video.py features --jobs 3 --keep build/video/parts
-                                                   # parts of 900 frames are kept; a
-                                                   # run cut off continues from them
+                                                   # parts of 900 frames are kept per
+                                                   # scene; a run cut off continues
+                                                   # from them, and a changed scene
+                                                   # is captured alone
 python3 tools/make_video.py features --music bach-prelude,pachelbel-canon
                                                    # one video per bed
 python3 tools/make_video.py features --no-voice    # no narrator, lengths as written
@@ -160,7 +162,7 @@ A `board` scene:
 | `bare` | optional `true`: a part is hidden until its `mount`; the footprints of size 1206 always show |
 | `mount` | optional `{refs, t}`: the parts of these references come down onto their places from `t` on |
 | `solder` | optional `{refs, t: [t0, t1]}` or `{pads, t: [t0, t1]}` and optional `back`: a joint on every pad of the parts, or on the pads named, one after another over the span. With `back` the joint is on the other side of the board and shows as a ring that fades |
-| `insets` | optional `{from, to, kind, at, title}` and optional `text`, `good`, `bad`, `upper`, `lower`, `color`: a card at `at` with a cross-section. `strip` draws a module on the plastic of its pin strips, soldered on both sides, beside a module lying on the carrier; `fill` draws a wire through a large hole of both boards, soldered on both sides; `extract` draws a plug housing cut open, a needle on the contact's tongue and the wire leaving to the back |
+| `insets` | optional `{from, to, kind, at, title}` and optional `text`, `good`, `bad`, `upper`, `lower`, `color`: a card at `at` with a cross-section. `strip` draws a module on the plastic of its pin strips, soldered on both sides, beside a module lying on the carrier; `fill` draws a wire through a large hole of both boards, soldered on both sides; `extract` draws a plug housing cut open, a needle on the contact's tongue and the wire leaving to the back; `pins` draws one pin strip per entry of `rows`, `[count, text]`, with its count |
 | `fit` | optional `{kind, a, b, t}`: a `resistor` or a `zener` soldered across two pads from `t` on; a zener's band is at `a`; a resistor with `text` `2.2 kΩ` carries its colour bands |
 
 A board's lengths are mm from the top left corner of its drawing. A pad's
@@ -249,7 +251,9 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   `hardware/kicad/modules/` takes that module's board outline, the parts
   of its model (sockets, chips, buttons, terminals) and the texts of its
   drawing (`USB-C`, `CAN`, `EN`), all at the accuracy the module's spec
-  states. An axial part is drawn between its pads: a
+  states, and beside each pad the name of its pin where the drawing does
+  not print it. A JST or Molex connector carries a short name of each
+  pad's net (`HB`, `SCL`, `5V`), a 3-row header the names of its rows. An axial part is drawn between its pads: a
   diode with its band at pad 1, a resistor of value `4k7` with its colour
   bands. Zones, the inner and back copper, the
   silkscreen and the parts on a module are not drawn. The case scene that

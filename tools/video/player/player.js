@@ -264,6 +264,26 @@ function section(n) {
     }
     return s;
   };
+  if (n.kind === 'pins') {
+    // Pin strips to cut: one row a strip, its pins drawn one by one, its
+    // count and its place beside it.  n.rows holds [count, text].
+    const rows = n.rows || [];
+    let s = '';
+    rows.forEach(([count, said], i) => {
+      const y = 34 + i * 40;
+      s += `<rect x="14" y="${y - 7}" width="${count * 13 + 6}" height="14"
+        rx="3" fill="#15171c" stroke="#3a3f4a"/>`;
+      for (let k = 0; k < count; k++) {
+        s += `<rect x="${20 + k * 13}" y="${y - 13}" width="6" height="26"
+          rx="1.5" fill="#d9b04a"/>`;
+      }
+      s += `<text x="${count * 13 + 34}" y="${y + 6}"
+        font-family="Inter, sans-serif" font-weight="700" font-size="17"
+        fill="#fff">${count}<tspan fill="#c9d3e4" font-weight="500"
+        dx="10">${said}</tspan></text>`;
+    });
+    return `<svg viewBox="0 0 600 ${rows.length * 40 + 22}">${s}</svg>`;
+  }
   if (n.kind === 'extract') {
     // A plug's housing cut open: the contact's tongue stands in the
     // housing's window; a needle presses it down, the wire leaves to

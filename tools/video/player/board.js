@@ -126,12 +126,16 @@ export function buildBoard(data) {
         // A print of the module: dark on a light part, else white.
         const on = q.details.find(b => b.box && d.at[0] > b.box[0]
           && d.at[0] < b.box[2] && d.at[1] > b.box[1] && d.at[1] < b.box[3]);
-        const dark = on && (on.color === 'metal' || on.color === 'white');
-        h += `<text x="${d.at[0]}" y="${d.at[1]}" text-anchor="middle"
+        const dark = d.ink === 'dark'
+          || (on && (on.color === 'metal' || on.color === 'white'));
+        h += `<text x="${d.at[0]}" y="${d.at[1]}"
+          text-anchor="${d.anchor || 'middle'}"
           dominant-baseline="middle" font-family="Inter, sans-serif"
-          font-weight="700" font-size="${Math.max(.75, d.size)}"
-          fill="${dark ? '#10141c' : '#fff'}"
-          fill-opacity=".9">${d.text}</text>`;
+          font-weight="700" font-size="${Math.max(.65, d.size)}"
+          fill="${dark ? '#10141c' : '#fff'}" fill-opacity=".92"
+          ${d.anchor && !dark ? `stroke="#0b1020" stroke-width=".22"
+          stroke-opacity=".8" paint-order="stroke"` : ''}
+          >${d.text}</text>`;
         continue;
       }
       const paint = PAINT[d.color] || '#23262c';

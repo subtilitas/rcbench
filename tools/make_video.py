@@ -67,7 +67,7 @@ PART_FRAMES = 900
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
 FITS = ("resistor", "zener")
-INSETS = ("strip", "fill", "extract")
+INSETS = ("strip", "fill", "extract", "pins")
 
 
 def _number(value) -> bool:
@@ -596,6 +596,12 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         """
 
 
+def _plan(scene: dict) -> pathlib.Path:
+    # A board drawn by hand is in the tree; a converted one is not.
+    drawn = VIDEO / "boards" / f"{scene['board']}.json"
+    return drawn if drawn.is_file() else VIDEO / "cad" / drawn.name
+
+
 def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
              jobs: int, keep: pathlib.Path | None) -> int:
     import concurrent.futures
@@ -603,33 +609,67 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
 
     import video_audio
 
-    total = sum(length for _, length in video_audio.scene_times(board))
+    times = video_audio.scene_times(board)
+    total = sum(length for _, length in times)
     frames = round(total * fps)
-    # With a directory to keep them in, parts of PART_FRAMES frames: a
-    # part that is there from an earlier run of the same storyboard is
-    # not captured again.
-    count = jobs if keep is None else -(-frames // PART_FRAMES)
-    edges = [frames * k // count for k in range(count + 1)]
-    mark = hashlib.sha256(json.dumps(board, sort_keys=True).encode()
-                          ).hexdigest()[:12]
     where = out.parent if keep is None else keep
     where.mkdir(parents=True, exist_ok=True)
-    parts = [where / f"{mark}-{fps}-{a}-{b}.mp4"
-             for a, b in zip(edges, edges[1:], strict=False)]
 
-    def one(k):
-        if keep is not None and parts[k].is_file():
+    def digest(value) -> str:
+        return hashlib.sha256(json.dumps(value, sort_keys=True).encode()
+                              ).hexdigest()[:12]
+
+    # (first frame, end frame, file) per part.
+    spans = []
+    if keep is None:
+        mark = digest(board)
+        edges = [frames * k // jobs for k in range(jobs + 1)]
+        spans = [(a, b, where / f"{mark}-{fps}-{a}-{b}.mp4")
+                 for a, b in zip(edges, edges[1:], strict=False)]
+    else:
+        # With a directory to keep them in, parts of PART_FRAMES frames
+        # within each scene, named by what the scene's frames show: the
+        # scene, its place in the video, the video's length, the steps
+        # before it, its board and the player.  A change to one scene
+        # that leaves every length as it was captures that scene alone.
+        code = digest([path.read_text(encoding="utf-8") for path in sorted(
+            (VIDEO / "player").iterdir()) if path.is_file()])
+        rest = {name: value for name, value in board.items()
+                if name != "scenes"}
+        before = 0
+        for n, (scene, (start, length)) in enumerate(
+                zip(board["scenes"], times, strict=True)):
+            plan = ""
+            if scene["type"] == "board":
+                plan = _plan(scene).read_text(encoding="utf-8")
+            mark = digest([rest, scene, start, total, n,
+                           len(board["scenes"]), before, plan, code])
+            first = round(start * fps)
+            end = frames if n == len(times) - 1 else round(
+                (start + length) * fps)
+            for a in range(first, end, PART_FRAMES):
+                b = min(end, a + PART_FRAMES)
+                spans.append((a, b, where / f"{mark}-{fps}-{a}-{b}.mp4"))
+            for chip in scene.get("chips", []):
+                if _number(chip.get("n")):
+                    before = max(before, chip["n"])
+            for step in scene.get("steps", []):
+                before = max(before, step.get("n", 0))
+
+    def one(span):
+        a, b, done = span
+        if keep is not None and done.is_file():
             return 0
-        part = parts[k].with_suffix(".part.mp4")
-        code = subprocess.run(cmd + ["video", str(part), str(fps),
-                                     str(edges[k]),
-                                     str(edges[k + 1])]).returncode
-        if code == 0:
-            part.replace(parts[k])
-        return code
+        part = done.with_suffix(".part.mp4")
+        status = subprocess.run(cmd + ["video", str(part), str(fps),
+                                       str(a), str(b)]).returncode
+        if status == 0:
+            part.replace(done)
+        return status
 
+    parts = [done for _, _, done in spans]
     with concurrent.futures.ThreadPoolExecutor(jobs) as pool:
-        if any(pool.map(one, range(count))):
+        if any(pool.map(one, spans)):
             return 1
     listing = out.with_name("parts.txt")
     listing.write_text("".join(f"file '{part.resolve()}'\n"
@@ -701,9 +741,7 @@ def main() -> int:
     for n, scene in enumerate(board["scenes"]):
         if scene["type"] != "board":
             continue
-        plan = VIDEO / "boards" / f"{scene['board']}.json"
-        if not plan.is_file():
-            plan = VIDEO / "cad" / plan.name
+        plan = _plan(scene)
         if not plan.is_file():
             sys.exit(f"tools/video/cad/{plan.name} is missing; "
                      "tools/video_board.py writes it from the board's "
