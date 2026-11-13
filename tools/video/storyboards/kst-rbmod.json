@@ -1,0 +1,526 @@
+{
+ "name": "kst-rbmod",
+ "lang": "en",
+ "brand": "KST servo programmer",
+ "steps": 8,
+ "scenes": [
+  {
+   "type": "case",
+   "dur": 25.6,
+   "display": {
+    "view": "servo-hub-rbmod",
+    "screen": "servo"
+   },
+   "title": {
+    "from": 0.3,
+    "to": 4.9,
+    "kicker": "rcbench · rbmod carrier",
+    "heading": "Programming<br>a KST servo",
+    "text": "Plug in, connect, edit, write.<br>8 steps on the bench's touch screen."
+   },
+   "chips": [
+    {
+     "from": 5.2,
+     "to": 12.2,
+     "n": "i",
+     "text": "Inside the case"
+    },
+    {
+     "from": 13,
+     "to": 25.6,
+     "n": 1,
+     "text": "Plug the servo into J1"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -300,
+      175,
+      300
+     ],
+     [
+      -95,
+      10,
+      0
+     ]
+    ],
+    [
+     4.4,
+     [
+      -250,
+      200,
+      300
+     ],
+     [
+      -80,
+      12,
+      0
+     ]
+    ],
+    [
+     5.6,
+     [
+      -170,
+      215,
+      270
+     ],
+     [
+      0,
+      18,
+      0
+     ]
+    ],
+    [
+     7.4,
+     [
+      -110,
+      265,
+      235
+     ],
+     [
+      5,
+      26,
+      0
+     ]
+    ],
+    [
+     11,
+     [
+      -80,
+      275,
+      235
+     ],
+     [
+      8,
+      26,
+      0
+     ]
+    ],
+    [
+     14.3,
+     [
+      70,
+      82,
+      300
+     ],
+     [
+      34,
+      13,
+      40
+     ]
+    ],
+    [
+     18.6,
+     [
+      82,
+      74,
+      290
+     ],
+     [
+      38,
+      13,
+      40
+     ]
+    ],
+    [
+     20.6,
+     [
+      86,
+      34,
+      176
+     ],
+     [
+      62,
+      12,
+      64
+     ]
+    ],
+    [
+     25.6,
+     [
+      92,
+      32,
+      172
+     ],
+     [
+      64,
+      12,
+      64
+     ]
+    ]
+   ],
+   "lid": [
+    [
+     5.4,
+     0
+    ],
+    [
+     7,
+     48
+    ],
+    [
+     10.6,
+     48
+    ],
+    [
+     12.2,
+     0
+    ]
+   ],
+   "servo": {
+    "connector": "J1",
+    "position": 2,
+    "appear": 20.8,
+    "plug": [
+     22.0,
+     23.8
+    ]
+   },
+   "labels": [
+    {
+     "from": 7.1,
+     "to": 10.7,
+     "anchor": "rbmod",
+     "at": [
+      1390,
+      560
+     ],
+     "size": "sm",
+     "title": "rbmod carrier",
+     "text": "RP2350 IOmcu board. Its headers J1 and J2 face the case wall."
+    },
+    {
+     "from": 7.1,
+     "to": 10.7,
+     "anchor": "pdmini",
+     "at": [
+      90,
+      640
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "PD mini",
+     "text": "Adjustable supply for the servo outputs on J2."
+    },
+    {
+     "from": 7.1,
+     "to": 10.7,
+     "anchor": "display",
+     "at": [
+      120,
+      190
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "Display and panel",
+     "text": "7 inch touch screen, 1024 x 600, on the ESP32-P4."
+    },
+    {
+     "from": 14.6,
+     "to": 19.3,
+     "anchor": "J1",
+     "at": [
+      1340,
+      330
+     ],
+     "side": "b",
+     "style": "ok",
+     "n": "J1",
+     "title": "PROG ports",
+     "text": "<b>PROGP01</b> to <b>PROGP04</b>. Fixed 5 V, switched by the bench. KST servos are programmed here."
+    },
+    {
+     "from": 14.6,
+     "to": 19.3,
+     "anchor": "J2",
+     "at": [
+      250,
+      330
+     ],
+     "size": "sm",
+     "side": "b",
+     "style": "muted",
+     "title": "J2 · servo outputs",
+     "text": "PWM01 to PWM04. Not used for programming."
+    },
+    {
+     "from": 21.2,
+     "to": 25.4,
+     "anchor": "plug",
+     "at": [
+      1380,
+      560
+     ],
+     "n": 1,
+     "title": "Plug in one servo",
+     "text": "One servo on one position. <b>GND wire at the top</b>, towards the display. Signal wire at the bottom."
+    }
+   ],
+   "pinout": {
+    "from": 20.4,
+    "to": 25.4,
+    "connector": "J1",
+    "select": 2,
+    "subtitle": "Seen from outside the case, display up"
+   }
+  },
+  {
+   "type": "screen",
+   "screen": "servo",
+   "steps": [
+    {
+     "view": "servo-hub-rbmod",
+     "dur": 4.0,
+     "n": 2,
+     "chip": "Open the programmer",
+     "title": "Open the KST programmer",
+     "text": "On the <b>SERVO</b> hub, tap <b>KST</b>.",
+     "target": [
+      174,
+      415
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-idle-rbmod",
+     "dur": 3.6,
+     "n": 3,
+     "chip": "Choose the port",
+     "title": "Choose the port",
+     "text": "Tap <b>PORT</b> on the READY card.",
+     "target": [
+      880,
+      186
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-portlist-rbmod",
+     "dur": 3.8,
+     "n": 3,
+     "chip": "Choose the port",
+     "title": "Choose the port",
+     "text": "Pick the position the servo is plugged into: <b>PROGP01</b> to <b>PROGP04</b>.",
+     "target": [
+      310,
+      218
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-idle-rbmod",
+     "dur": 5.2,
+     "n": 4,
+     "chip": "Connect",
+     "title": "Connect",
+     "text": "Hold <b>CONNECT</b> for 2 s. The bench switches the port's 5 V on and reads the servo's 32 registers. The carrier input needs 15 V.",
+     "target": [
+      476,
+      171
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "servo-kst-working-rbmod",
+     "dur": 1.6,
+     "n": 4,
+     "chip": "Connect",
+     "title": "Reading the servo",
+     "text": "PROG 5V is on. <b>ABORT</b> stops the read.",
+     "target": [
+      870,
+      245
+     ]
+    },
+    {
+     "view": "servo-kst-read-rbmod",
+     "dur": 4.2,
+     "n": 5,
+     "chip": "Set the servo type",
+     "title": "Set the servo type",
+     "text": "<b>V6?</b> is a guess from one register. Tap <b>TYPE</b>.",
+     "target": [
+      530,
+      226
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-type-rbmod",
+     "dur": 3.4,
+     "n": 5,
+     "chip": "Set the servo type",
+     "title": "Set the servo type",
+     "text": "Pick <b>V6</b> or <b>V8</b>, as printed on the servo's label.",
+     "target": [
+      310,
+      152
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-typed-rbmod",
+     "dur": 3.4,
+     "n": 6,
+     "chip": "Edit the settings",
+     "title": "Edit the settings",
+     "text": "Open a tab: <b>TUNE</b>, <b>PULSE</b> or <b>FAILSAFE</b>.",
+     "target": [
+      190,
+      116
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-tune-rbmod",
+     "dur": 4.4,
+     "n": 6,
+     "chip": "Edit the settings",
+     "title": "Edit the settings",
+     "text": "Tap a value to change it. A <b>*</b> marks a value that differs from the servo. Nothing is written yet.",
+     "target": [
+      476,
+      171
+     ]
+    },
+    {
+     "view": "servo-kst-tune-rbmod",
+     "dur": 2.4,
+     "n": 6,
+     "chip": "Edit the settings",
+     "title": "Back to SERVO",
+     "text": "Tap the <b>SERVO</b> tab.",
+     "target": [
+      72,
+      116
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-edited-rbmod",
+     "dur": 3.6,
+     "n": 7,
+     "chip": "Enable and write",
+     "title": "Enable writing",
+     "text": "Tap <b>ENABLE WRITE TO SERVO</b>.",
+     "target": [
+      476,
+      335
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-enable-rbmod",
+     "dur": 4.8,
+     "n": 7,
+     "chip": "Enable and write",
+     "title": "Enable writing",
+     "text": "Read the risks. Then hold <b>HOLD 2s TO ENABLE</b> for 2 s.",
+     "target": [
+      174,
+      468
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "servo-kst-changes-rbmod",
+     "dur": 3.6,
+     "n": 7,
+     "chip": "Enable and write",
+     "title": "Write",
+     "text": "Tap <b>WRITE 3 VALUES</b>.",
+     "target": [
+      496,
+      390
+     ],
+     "action": "tap"
+    },
+    {
+     "view": "servo-kst-write-rbmod",
+     "dur": 5.4,
+     "n": 7,
+     "chip": "Enable and write",
+     "title": "Write",
+     "text": "The page lists each change. Hold <b>HOLD 2s TO WRITE</b> for 2 s. The servo's current settings are saved to the SD card first.",
+     "target": [
+      174,
+      468
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "servo-kst-writing-rbmod",
+     "dur": 2.6,
+     "n": 7,
+     "chip": "Enable and write",
+     "title": "Writing",
+     "text": "Do not unplug the servo or the bench while writing.",
+     "target": [
+      150,
+      451
+     ],
+     "style": "warn",
+     "tag": "DO NOT UNPLUG"
+    },
+    {
+     "view": "servo-kst-written-rbmod",
+     "dur": 4.4,
+     "n": 8,
+     "chip": "Leave programming",
+     "title": "Written and verified",
+     "text": "Each written value is read back. Tap <b>LEAVE</b>.",
+     "target": [
+      476,
+      171
+     ],
+     "action": "tap",
+     "style": "ok"
+    },
+    {
+     "view": "servo-kst-leave-note-rbmod",
+     "dur": 4.8,
+     "n": 8,
+     "chip": "Leave programming",
+     "title": "Leave programming",
+     "text": "Hold <b>HOLD 2s TO LEAVE</b> for 2 s. The port returns to servo PWM and the servo may move.",
+     "target": [
+      174,
+      468
+     ],
+     "action": "hold"
+    },
+    {
+     "view": "servo-kst-left-note-rbmod",
+     "dur": 4.6,
+     "n": 8,
+     "chip": "Leave programming",
+     "title": "Done",
+     "text": "The port is back in tester mode. The written values act from the servo's next power-up: switch its supply off and on.",
+     "target": [
+      290,
+      468
+     ],
+     "style": "ok"
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 5,
+   "heading": "KST servo programmed",
+   "items": [
+    "Plug into J1",
+    "SERVO › KST",
+    "Choose the port",
+    "Hold CONNECT",
+    "Set V6 or V8",
+    "Edit values",
+    "Enable, WRITE",
+    "LEAVE"
+   ],
+   "note": "Written values act from the servo's next power-up."
+  }
+ ]
+}

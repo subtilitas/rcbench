@@ -1,0 +1,9 @@
+{
+  "name": "rcbench-video",
+  "private": true,
+  "description": "Player dependencies of tools/video/make_video.py",
+  "license": "MIT",
+  "dependencies": {
+    "three": "0.170.0"
+  }
+}

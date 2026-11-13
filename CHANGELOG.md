@@ -26,6 +26,17 @@ history is in git.
   files are unchanged. LOGS reads files without the column
   ([Screens](docs/Screens.md#table-and-what-the-esc-says)).
 
+- `tools/make_video.py` renders a storyboard under `tools/video/storyboards/`
+  into an MP4 video: the case as a 3D model, the panel's screens from the
+  host renderer with pointer bubbles, and a recap. Storyboard `kst-rbmod`
+  shows programming a KST servo on the rbmod carrier in 8 steps and 100.4s;
+  storyboard `features` shows every screen of the bench in 8 chapters and
+  755.92s. `tools/video_audio.py` computes the sound track: synthesizer
+  pads and one sound per event, no percussion. `tools/video_voice.py`
+  narrates a storyboard with the Kokoro text-to-speech model on the
+  machine. `tools/video_cad.py` converts the case's STEP assembly into
+  the model the opening of `features` shows
+  ([Videos from storyboards](tools/video/README.md)).
 - Profile field `scheme.announce.loop_marker`: `true` where the ESC sounds
   one sound that is no item between the highest item and the lowest of each
   pass of its item loop. Absent, null or `false`: none

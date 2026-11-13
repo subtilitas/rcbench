@@ -429,6 +429,32 @@ contact together with an injector contact.
 
 [Screenshot](docs/Screens.md#screenshot).
 
+### Videos from storyboards
+
+`tools/make_video.py` renders a storyboard, a JSON file under
+`tools/video/storyboards/`, into an MP4 video of 1920 x 1080 pixels at 30 frames per
+second: the case as a three.js model with labels, the panel's screens as the host renderer
+draws them with pointer bubbles and tap and hold marks or with an animated caption, marks and
+a spotlight, and a recap. `tools/video_audio.py` computes the sound track from the same
+storyboard: synthesizer pads and one quiet sound per event, no percussion, the loudest sample
+at -3dBFS (decibels relative to full scale); its balance has not been judged by ear. `--check` reads every
+storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
+runs it. Two storyboards: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
+100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
+it does on the rbmod carrier, narrated, 755.92s, with Bach's Prelude in C major or Pachelbel's
+Canon in D major as its bed. `tools/video_voice.py` speaks a storyboard with Kokoro, a
+text-to-speech model that runs on the machine and whose files are not in the tree; a speech
+recogniser returned the lines with their words, and the voice has not been judged by ear.
+The
+renderer draws the KST views on the carrier (`servo-kst-STATE-rbmod`) and MOTOR & ESC's plot
+with an IOmcu answering (`motor-plot`) for them (`test/host/render_screen.c`). `features` draws the case from its CAD (computer-aided design) assembly, which
+`tools/video_cad.py` converts from a STEP file that is not in the tree; its colours are set
+by part name, and its components fly in and seat one after another, held in the air while a
+label names each. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+there is not confirmed. A render is not run in CI.
+
+[Videos from storyboards](tools/video/README.md).
+
 ### Dim after
 
 Built and tested on the host (`shared/ui/screen_dim.c`; `test_screen_dim`):
@@ -1334,6 +1360,7 @@ rcbench/
   .github/workflows/      ci · docs · pages · release
   docs/                   the wiki source, English and German
   tools/                  generators, checks and analysis scripts
+  tools/video/            the video player, the case model and the storyboards
   test/tools/             pytest cases for the tools
   test/host/              one suite over shared/ and protocols/;
                           fixtures/ holds the CSV corpus
