@@ -1,8 +1,9 @@
 /**
  * @file
  * @brief The console report every 3s: the flash store, the running slot
- * and why this start happened, the CAN bus, the current monitors as the
- * pages show them, and the main loop's pass times.
+ * and why this start happened, the flash's read set-up, the CAN bus, the
+ * current monitors as the pages show them, and the main loop's pass times
+ * with the XIP cache's misses.
  *
  * The lines are shared/bench/report_lines.c's, and report_steps.c runs
  * them: one snapshot at the due pass, then at most one line per pass, and
@@ -19,8 +20,11 @@
 #include "pico.h"
 
 #include "boot/bootrom_constants.h"
+#include "hardware/regs/qmi.h"
 #include "hardware/structs/powman.h"
+#include "hardware/structs/qmi.h"
 #include "hardware/structs/watchdog.h"
+#include "hardware/structs/xip.h"
 #include "hardware/timer.h"
 #include "pico/bootrom.h"
 #include "pico/stdio.h"
@@ -58,7 +62,7 @@
 /**
  * @brief The USB transmit buffer, in bytes: CFG_TUD_CDC_TX_BUFSIZE.
  *
- * The report at its widest, REPORT_BYTES_MAX (1,350 bytes) and one "\r" a
+ * The report at its widest, REPORT_BYTES_MAX (1,639 bytes) and one "\r" a
  * line, fits whole: a host that read the last report finds room for every
  * line of this one, one line a pass.
  */
@@ -124,6 +128,66 @@ static char s_why[RESET_CAUSE_FULL_MAX];
  */
 static char s_boot[BOOT_DIAG_TEXT_MAX];
 
+/**
+ * @brief The flash's read set-up into the snapshot: QMI M0's RCMD, RFMT and
+ * TIMING, and M1's with whether they differ from their reset values.
+ *
+ * The image carries no XIP setup of its own (PICO_EMBED_XIP_SETUP 0), so
+ * these are what the boot ROM left: the read command, its width and the
+ * clock divisor every XIP cache miss runs at.
+ *
+ * @param s  The snapshot.
+ */
+static void qmi_snap(report_snap_t *s)
+{
+    s->qmi_m0.rcmd   = qmi_hw->m[0].rcmd;
+    s->qmi_m0.rfmt   = qmi_hw->m[0].rfmt;
+    s->qmi_m0.timing = qmi_hw->m[0].timing;
+    s->qmi_m1.rcmd   = qmi_hw->m[1].rcmd;
+    s->qmi_m1.rfmt   = qmi_hw->m[1].rfmt;
+    s->qmi_m1.timing = qmi_hw->m[1].timing;
+    s->qmi_m1_set = s->qmi_m1.rcmd != QMI_M1_RCMD_RESET
+                    || s->qmi_m1.rfmt != QMI_M1_RFMT_RESET
+                    || s->qmi_m1.timing != QMI_M1_TIMING_RESET;
+}
+
+/**
+ * @brief The XIP cache's misses since the last call, and its counters
+ * cleared.
+ *
+ * CTR_ACC counts every XIP access and CTR_HIT those the cache served; both
+ * are 32-bit, saturating, and cleared by any write.  They count the
+ * accesses of both cores and of DMA alike, with no means to tell them
+ * apart, and an uncached access counts as a miss.  The accesses between
+ * the reads and the clear, a few dozen at most, are lost or counted as
+ * misses.  At 150MHz the two cores make at most 300,000,000 accesses a
+ * second, so 3s stays under the 4,294,967,295 a counter saturates at.
+ *
+ * @return CTR_ACC - CTR_HIT, or 0 when CTR_HIT is the larger.
+ */
+static uint32_t xip_take_misses(void)
+{
+    const uint32_t hit = xip_ctrl_hw->ctr_hit;
+    const uint32_t acc = xip_ctrl_hw->ctr_acc;
+    xip_ctrl_hw->ctr_hit = 0u;
+    xip_ctrl_hw->ctr_acc = 0u;
+    return acc >= hit ? acc - hit : 0u;
+}
+
+/**
+ * @brief The flash line, formatted from the registers now.
+ *
+ * @param line  Receives the line.
+ * @return The bytes @p line holds, or 0.
+ */
+static size_t flash_say_line(char line[REPORT_LINE_MAX])
+{
+    report_snap_t q;
+    memset(&q, 0, sizeof(q));
+    qmi_snap(&q);
+    return report_line(&q, REPORT_L_FLASH, line, REPORT_LINE_MAX);
+}
+
 void reset_start(void)
 {
     /* CHIP_RESET's HAD_* bits are RO (datasheet table 489) and change only
@@ -152,6 +216,10 @@ void reset_start(void)
      * repeats both every 3s. */
     printf("rcbench-iomcu: reset %s\n", s_why);
     printf("rcbench-iomcu: %s\n", s_boot);
+    char line[REPORT_LINE_MAX];
+    if (flash_say_line(line) > 0u) {
+        printf("%s", line);
+    }
 }
 
 #if IOMCU_CONSOLE
@@ -159,6 +227,10 @@ void reset_say(void)
 {
     console_hw_say("rcbench-iomcu: reset %s\n", s_why);
     console_hw_say("rcbench-iomcu: %s\n", s_boot);
+    char line[REPORT_LINE_MAX];
+    if (flash_say_line(line) > 0u) {
+        console_hw_say("%s", line);
+    }
 }
 #endif
 
@@ -217,8 +289,9 @@ static void sense_snap(report_snap_t *s)
 
 /**
  * @brief report_io_t's snapshot: every value the report prints, at the
- * pass it is due, so one report shows one instant.  The loop figures and
- * the transmit queue's peak are read and cleared here.
+ * pass it is due, so one report shows one instant.  The loop figures, the
+ * XIP cache's counters and the transmit queue's peak are read and cleared
+ * here.
  *
  * @param ctx  Unused.
  * @param s    Receives the values.
@@ -232,6 +305,7 @@ static void io_snap(void *ctx, report_snap_t *s)
     s->on_trial  = update_hw_on_trial();
     s->reset     = s_why;
     s->boot      = s_boot;
+    qmi_snap(s);
     s->can_up    = s_can_up;
     if (s_can_up) {
         s->bitrate  = IOMCU_CAN_BITRATE;
@@ -247,6 +321,7 @@ static void io_snap(void *ctx, report_snap_t *s)
         sense_snap(s);
     }
     pass_stats_take(&s_pass, &s->loop);
+    s->xip_miss = xip_take_misses();
 }
 
 /**

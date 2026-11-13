@@ -4,10 +4,11 @@
  * The expected texts below are what iomcu_report.c printed through
  * IOMCU_SAY() before the report moved to shared/bench, for the same values:
  * its format strings copied verbatim into a host program, run once, and
- * its output pasted here.  The loop line is the one exception: its text is
- * the one report_lines.c writes, with no space before a unit
- * ("loop max 1530us").  docs/Bringup.md quotes these lines and log readers
- * parse them, so a difference is a change of the console format.
+ * its output pasted here.  The flash, loop and passes lines are the
+ * exceptions: their text is the one report_lines.c writes, with no space
+ * before a unit ("loop max 1530us").  docs/Bringup.md quotes these lines
+ * and log readers parse them, so a difference is a change of the console
+ * format.
  *
  * At the limits: every field at its widest (UINT32_MAX, INT16_MIN, 0xFFFF,
  * a reset text of 143 and a boot text of 111 characters, the longest their
@@ -32,6 +33,9 @@ static report_snap_t snap_a(void)
     s.on_trial = true;
     s.reset = "WHY-TEXT";
     s.boot = "BOOT-TEXT";
+    s.qmi_m0.rcmd = 0x000000EBu;
+    s.qmi_m0.rfmt = 0x000492A8u;
+    s.qmi_m0.timing = 0x40000202u;
     s.can_up = true;
     s.bitrate = 1000000u;
     s.requests = 123456u;
@@ -77,6 +81,13 @@ static report_snap_t snap_a(void)
     s.loop.over = 12u;
     s.loop.sec_max_us[PASS_SEC_CAN] = 61u;
     s.loop.sec_max_us[PASS_SEC_REPORT] = 248u;
+    s.loop.passes = 4321u;
+    s.loop.bins[0] = 4000u;
+    s.loop.bins[1] = 309u;
+    s.loop.bins[2] = 10u;
+    s.loop.bins[3] = 1u;
+    s.loop.bins[4] = 1u;
+    s.xip_miss = 98765u;
     return s;
 }
 
@@ -134,23 +145,27 @@ TEST_CASE(the_lines_read_as_before)
         "rcbench-iomcu: running from slot B, on trial until the panel buys it\n",
         "rcbench-iomcu: reset WHY-TEXT\n",
         "rcbench-iomcu: BOOT-TEXT\n",
+        "rcbench-iomcu: flash read m0 rcmd 0x000000EB rfmt 0x000492A8 timing 0x40000202, m1 at reset\n",
         "rcbench-iomcu: CAN up, 1000000 bit/s, 123456 requests served, 7 self-test echoes, tx_err 3 rx_err 4 eflg 0x15 tx_drop 9 txq_max 11\n",
         "rcbench-iomcu: CAN receive buffers overran 2 time(s) -- frames arrived with nowhere to put them; not a bus fault\n",
         "rcbench-iomcu: sense flags 0x0123 present 0x0003 ids 0x2260 0x3220 errors 5 resets 1 2 | bench 1234 cV 567 cA 89 mAh 10 dWh flags 0x1F | temp -123 dC\n",
         "rcbench-iomcu: sense window 20 CH1 -45 mA 5012 mV ch_flags 0x03 | capture state 2 seq 17 move 456 arrive 789\n",
         "rcbench-iomcu: sense map fit 0x7 fast 1 flags 0x0301 | mA 1 -2 3 -4 5 -6 7 -8 9 -10 11 -12 | over 0x005 count 3\n",
         "rcbench-iomcu: loop max 1530us, over 500us 12, can max 61us, report max 248us\n",
+        "rcbench-iomcu: passes 4321, <=250us 4000, <=500us 309, <=1000us 10, <=2000us 1, >2000us 1, xip miss 98765\n",
     };
     report_snap_t s = snap_a();
-    check_lines(&s, a, 10u);
+    check_lines(&s, a, 12u);
 
     /* CAN down, no current monitor, slot A not on trial, the store on. */
     static const char *const b[] = {
         "rcbench-iomcu: running from slot A\n",
         "rcbench-iomcu: reset WHY-TEXT\n",
         "rcbench-iomcu: BOOT-TEXT\n",
+        "rcbench-iomcu: flash read m0 rcmd 0x000000EB rfmt 0x000492A8 timing 0x40000202, m1 at reset\n",
         "rcbench-iomcu: CAN did not answer on SPI -- module fitted? wiring on GP9-12?\n",
         "rcbench-iomcu: loop max 1530us, over 500us 12, can max 61us, report max 248us\n",
+        "rcbench-iomcu: passes 4321, <=250us 4000, <=500us 309, <=1000us 10, <=2000us 1, >2000us 1, xip miss 98765\n",
     };
     s = snap_a();
     s.store_off = false;
@@ -158,22 +173,24 @@ TEST_CASE(the_lines_read_as_before)
     s.on_trial = false;
     s.can_up = false;
     s.sense_on = false;
-    check_lines(&s, b, 5u);
+    check_lines(&s, b, 7u);
 
     /* No partition table, CAN up without an overrun. */
     static const char *const c[] = {
         "rcbench-iomcu: no partition table -- firmware updates over CAN need one USB load of rcbench-iomcu-install.uf2\n",
         "rcbench-iomcu: reset WHY-TEXT\n",
         "rcbench-iomcu: BOOT-TEXT\n",
+        "rcbench-iomcu: flash read m0 rcmd 0x000000EB rfmt 0x000492A8 timing 0x40000202, m1 at reset\n",
         "rcbench-iomcu: CAN up, 1000000 bit/s, 123456 requests served, 7 self-test echoes, tx_err 3 rx_err 4 eflg 0x15 tx_drop 9 txq_max 11\n",
         "rcbench-iomcu: loop max 1530us, over 500us 12, can max 61us, report max 248us\n",
+        "rcbench-iomcu: passes 4321, <=250us 4000, <=500us 309, <=1000us 10, <=2000us 1, >2000us 1, xip miss 98765\n",
     };
     s = snap_a();
     s.store_off = false;
     s.slot = -1;
     s.overruns = 0u;
     s.sense_on = false;
-    check_lines(&s, c, 5u);
+    check_lines(&s, c, 7u);
 }
 
 TEST_CASE(the_loop_line_reads_its_four_figures)
@@ -188,8 +205,50 @@ TEST_CASE(the_loop_line_reads_its_four_figures)
     CHECK(report_line(&s, REPORT_L_LOOP, buf, sizeof(buf)) > 0u);
     CHECK_STR_EQ(buf, "rcbench-iomcu: loop max 1us, over 500us 2, can max "
                       "3us, report max 4us\n");
-    /* It is the last line, and it always applies. */
-    CHECK_EQ(REPORT_L_LOOP, REPORT_LINES - 1);
+    /* The passes line follows it as the last line; both always apply. */
+    CHECK_EQ(REPORT_L_LOOP, REPORT_LINES - 2);
+    CHECK_EQ(REPORT_L_PASSES, REPORT_LINES - 1);
+}
+
+TEST_CASE(the_passes_line_reads_the_count_each_bin_and_the_misses)
+{
+    report_snap_t s;
+    memset(&s, 0, sizeof(s));
+    s.loop.passes = 15u;
+    for (unsigned k = 0; k < PASS_STATS_BINS; ++k) {
+        s.loop.bins[k] = k + 1u;
+    }
+    s.xip_miss = 6u;
+    char buf[REPORT_LINE_MAX];
+    CHECK(report_line(&s, REPORT_L_PASSES, buf, sizeof(buf)) > 0u);
+    CHECK_STR_EQ(buf, "rcbench-iomcu: passes 15, <=250us 1, <=500us 2, "
+                      "<=1000us 3, <=2000us 4, >2000us 5, xip miss 6\n");
+    /* A snapshot of zeros still prints it. */
+    memset(&s, 0, sizeof(s));
+    CHECK(report_line(&s, REPORT_L_PASSES, buf, sizeof(buf)) > 0u);
+    CHECK_STR_EQ(buf, "rcbench-iomcu: passes 0, <=250us 0, <=500us 0, "
+                      "<=1000us 0, <=2000us 0, >2000us 0, xip miss 0\n");
+}
+
+TEST_CASE(the_flash_line_names_m1_only_when_it_is_set_up)
+{
+    report_snap_t s;
+    memset(&s, 0, sizeof(s));
+    s.qmi_m0.rcmd = 0x0000A003u;
+    s.qmi_m0.rfmt = 0x00001000u;
+    s.qmi_m0.timing = 0x40000004u;
+    s.qmi_m1 = s.qmi_m0;
+    s.qmi_m1.rcmd = 0x000000EBu;
+    char buf[REPORT_LINE_MAX];
+    CHECK(report_line(&s, REPORT_L_FLASH, buf, sizeof(buf)) > 0u);
+    CHECK_STR_EQ(buf, "rcbench-iomcu: flash read m0 rcmd 0x0000A003 rfmt "
+                      "0x00001000 timing 0x40000004, m1 at reset\n");
+    s.qmi_m1_set = true;
+    CHECK(report_line(&s, REPORT_L_FLASH, buf, sizeof(buf)) > 0u);
+    CHECK_STR_EQ(buf, "rcbench-iomcu: flash read m0 rcmd 0x0000A003 rfmt "
+                      "0x00001000 timing 0x40000004, m1 rcmd 0x000000EB rfmt "
+                      "0x00001000 timing 0x40000004\n");
+    CHECK_EQ(REPORT_L_FLASH, REPORT_L_BOOT + 1);
 }
 
 /* Every field at its widest. */
@@ -206,6 +265,7 @@ static report_snap_t snap_widest(char *why, char *boot)
     s.on_trial = true;
     s.reset = why;
     s.boot = boot;
+    s.qmi_m1_set = true;
     s.can_up = true;
     s.bitrate = 1000000u;       /* IOMCU_CAN_BITRATE, the one rate */
     s.sense_on = true;
@@ -247,10 +307,10 @@ TEST_CASE(the_whole_report_is_at_most_report_bytes_max)
     static char out[4096];
     unsigned lines;
     CHECK_EQ(report_text(&s, out, sizeof(out), &lines), REPORT_BYTES_MAX);
-    CHECK_EQ(lines, 10);
+    CHECK_EQ(lines, 12);
     s.can_up = false;
     CHECK(report_text(&s, out, sizeof(out), &lines) < REPORT_BYTES_MAX);
-    CHECK_EQ(lines, 9);
+    CHECK_EQ(lines, 11);
 }
 
 TEST_CASE(a_line_out_of_range_or_without_a_buffer_is_empty)
@@ -276,6 +336,8 @@ int main(void)
 {
     RUN(the_lines_read_as_before);
     RUN(the_loop_line_reads_its_four_figures);
+    RUN(the_passes_line_reads_the_count_each_bin_and_the_misses);
+    RUN(the_flash_line_names_m1_only_when_it_is_set_up);
     RUN(every_line_fits_at_its_widest);
     RUN(the_whole_report_is_at_most_report_bytes_max);
     RUN(a_line_out_of_range_or_without_a_buffer_is_empty);

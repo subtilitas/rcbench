@@ -1079,18 +1079,20 @@ void can_drain(void);
 void can_report(uint32_t now);
 
 /**
- * @brief Reads why this start happened, once at boot, and prints it.
+ * @brief Reads why this start happened, once at boot, and prints it with
+ *        the flash's read set-up.
  *
  * Reads POWMAN CHIP_RESET, WATCHDOG REASON, SCRATCH2 and SCRATCH3 and the
  * boot ROM's boot info, then zeroes SCRATCH2 and SCRATCH3 (reset_cause.h).
- * The SDK's start-up code writes none of them.  can_report() repeats the
- * line every 3s.
+ * The SDK's start-up code writes none of them.  The flash line is QMI
+ * M0's RCMD, RFMT and TIMING, and M1's when they differ from their reset
+ * values.  can_report() repeats the lines every 3s.
  */
 void reset_start(void);
 #if IOMCU_CONSOLE
 /**
- * @brief reset_start()'s line through the console's output, once it exists: a
- *        panel or a USB host that comes later reads it first.
+ * @brief reset_start()'s lines through the console's output, once it exists:
+ *        a panel or a USB host that comes later reads them first.
  */
 void reset_say(void);
 #endif

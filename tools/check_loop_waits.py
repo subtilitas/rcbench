@@ -78,6 +78,8 @@ ALLOWED = (
      "rcbench-iomcu: reset %s", "the boot line, before the main loop"),
     ("firmware/iomcu/src/iomcu_report.c", "reset_start", "print",
      "rcbench-iomcu: %s", "the boot line, before the main loop"),
+    ("firmware/iomcu/src/iomcu_report.c", "reset_start", "print", "%s",
+     "the flash line, before the main loop"),
     ("firmware/iomcu/src/sense_core1.c", "core1_main", "wait", None, _CORE1),
     ("firmware/iomcu/src/sense_core1.c", "core1_main", "clock", None,
      _CORE1),

@@ -11,9 +11,12 @@ history is in git.
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the
   longest `can_service()` call and the longest report pass
-  (`loop max`, `over 500us`, `can max`, `report max`). Its CAN line ends
-  with `txq_max`, the most reply frames queued at once
-  ([Bringup](docs/Bringup.md#iomcu)).
+  (`loop max`, `over 500us`, `can max`, `report max`), then the passes
+  ended, sorted into five bins (at most 250us, 500us, 1000us, 2000us and
+  over 2000us), and the XIP cache's misses (`xip miss`). A line after the
+  boot line gives the flash's read set-up, QMI M0's RCMD, RFMT and TIMING
+  (`flash read`). Its CAN line ends with `txq_max`, the most reply frames
+  queued at once ([Bringup](docs/Bringup.md#iomcu)).
 
 - Column `throttle (%)` in the MOTOR run log, after `rpm`: the throttle
   the panel commands at the sample, 0 to 100% to 0.1%, for PWM and DShot

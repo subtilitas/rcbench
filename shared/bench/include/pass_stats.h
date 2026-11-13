@@ -1,8 +1,9 @@
 /**
  * @file
  * @brief The IOmcu main loop's pass times: the longest pass, the passes
- *        over PASS_STATS_OVER_US, and the longest run of each timed
- *        section, since the last read.
+ *        over PASS_STATS_OVER_US, the passes counted into five bins of
+ *        length, and the longest run of each timed section, since the last
+ *        read.
  *
  * Pure: the caller hands in readings of a 32-bit microsecond clock.  Every
  * figure is a wrap-safe unsigned difference of two readings, so it holds
@@ -29,6 +30,19 @@ extern "C" {
  */
 #define PASS_STATS_OVER_US 500u
 
+/** @brief The bins a pass is counted into by its length. */
+#define PASS_STATS_BINS 5u
+
+/**
+ * @brief The bins' upper edges, in us: bin k counts the passes longer than
+ *        edge k - 1 and at most edge k; bin 4 the passes longer than 2000us.
+ *        Edge 1 is PASS_STATS_OVER_US, so bins 2 to 4 hold the passes over.
+ */
+#define PASS_STATS_EDGE0_US 250u
+#define PASS_STATS_EDGE1_US 500u  /**< PASS_STATS_OVER_US */
+#define PASS_STATS_EDGE2_US 1000u /**< twice PASS_STATS_OVER_US */
+#define PASS_STATS_EDGE3_US 2000u /**< the top edge */
+
 /** @brief The timed sections of a pass. */
 typedef enum {
     PASS_SEC_CAN = 0, /**< can_service() and the transmit pump, each call */
@@ -40,6 +54,8 @@ typedef enum {
 typedef struct {
     uint32_t max_us;                   /**< the longest pass, us          */
     uint32_t over;                     /**< passes over PASS_STATS_OVER_US */
+    uint32_t passes;                   /**< passes ended                  */
+    uint32_t bins[PASS_STATS_BINS];    /**< passes by length, see the edges */
     uint32_t sec_max_us[PASS_SEC_COUNT]; /**< each section's longest run, us */
 } pass_figures_t;
 
@@ -58,7 +74,8 @@ typedef struct {
 void pass_stats_init(pass_stats_t *s);
 
 /**
- * @brief Begins a pass: ends the one before it, whose length counts.
+ * @brief Begins a pass: ends the one before it, whose length counts in
+ *        the longest pass, the passes over, the passes and one bin.
  *
  * The first call after pass_stats_init() only begins a pass.
  *

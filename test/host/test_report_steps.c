@@ -6,7 +6,7 @@
  *
  * At the limits: the first pass, 2999ms and 3000ms after a start, across
  * the wrap of the 32-bit millisecond clock, a room of 255 and 256 bytes, a
- * report of 10 lines and one of 5.
+ * report of 12 lines and one of 7.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -131,16 +131,16 @@ TEST_CASE(one_line_per_pass)
                    R.puts - before);
         }
     }
-    CHECK_EQ(lines, 10);
-    CHECK_EQ(R.puts, 10);
-    /* The 10 lines took 10 passes in a row. */
+    CHECK_EQ(lines, 12);
+    CHECK_EQ(R.puts, 12);
+    /* The 12 lines took 12 passes in a row. */
     rig_full();
     report_steps_init(&r);
-    CHECK_EQ(run_report(&r, 0u), 10);
+    CHECK_EQ(run_report(&r, 0u), 12);
     rig_short();
     report_steps_init(&r);
-    CHECK_EQ(run_report(&r, 0u), 5);
-    CHECK_EQ(R.puts, 5);
+    CHECK_EQ(run_report(&r, 0u), 7);
+    CHECK_EQ(R.puts, 7);
 }
 
 TEST_CASE(no_line_without_256_bytes_of_room)
@@ -177,7 +177,7 @@ TEST_CASE(no_host_no_snapshot_no_line)
     CHECK_EQ(r.skipped, 0);
     /* A host that comes takes the next report whole. */
     R.host = true;
-    CHECK_EQ(run_report(&r, 9000u), 10);
+    CHECK_EQ(run_report(&r, 9000u), 12);
     CHECK_EQ(R.snaps, 1);
 }
 
@@ -214,17 +214,19 @@ TEST_CASE(lines_that_do_not_apply_cost_no_pass)
     rig_short();
     report_steps_t r;
     report_steps_init(&r);
-    /* Slot, reset, boot, CAN up, then the loop line in the fifth pass:
-     * STORE_OFF before them and CAN_DOWN, OVERRUN and the three sense
-     * lines between them are passed over. */
-    for (unsigned p = 0; p < 5u; ++p) {
+    /* Slot, reset, boot, flash, CAN up, then the loop line in the sixth
+     * pass and the passes line in the seventh: STORE_OFF before them and
+     * CAN_DOWN, OVERRUN and the three sense lines between them are passed
+     * over. */
+    for (unsigned p = 0; p < 7u; ++p) {
         if (!report_steps_pass(&r, &IO, p)) {
             T_FAIL("pass %u handed out no line", p);
         }
     }
     CHECK(!r.running);
-    CHECK_EQ(R.puts, 5);
+    CHECK_EQ(R.puts, 7);
     CHECK(strstr(R.text, "loop max") != NULL);
+    CHECK(strstr(R.text, "xip miss") != NULL);
 }
 
 TEST_CASE(the_snapshot_is_taken_once_per_report)

@@ -50,16 +50,27 @@ Peripheral Interface) connection: the module is not fitted or its wiring
 on GPIO 8 to GPIO 12 is faulty. This message does not indicate a CAN bus
 fault.
 
-The last line of every report gives the main loop's pass times since the
-report before it:
+The last two lines of every report give the main loop's pass times since
+the report before it:
 
     rcbench-iomcu: loop max <us>us, over 500us <passes>, can max <us>us, report max <us>us
+    rcbench-iomcu: passes <n>, <=250us <n>, <=500us <n>, <=1000us <n>, <=2000us <n>, >2000us <n>, xip miss <n>
 
 `loop max` is the longest pass and `over 500us` counts the passes longer
 than 500us, half of the DShot frame period ([DShot](DShot.md)). `can max`
 is the longest `can_service()` call with its transmit queue pump, and
 `report max` the longest pass of the report itself. A report takes its
-figures at the pass it starts, so they cover the report before it. With
+figures at the pass it starts, so they cover the report before it.
+`passes` counts the passes that ended, and the five figures after it sort
+them by length: at most 250us, over 250us to 500us, over 500us to 1000us,
+over 1000us to 2000us, and over 2000us. The last three add up to
+`over 500us`. `xip miss` is the XIP (execute in place) cache's
+CTR_ACC minus CTR_HIT since the report before: accesses to flash that the
+16KB cache did not hold, each one a read from the flash chip. The counters
+count both cores and DMA (direct memory access) alike, with no way to tell
+them apart, and an uncached access counts as a miss. The report reads and
+clears them at its start; the few dozen accesses between the read and the
+clear are lost. With
 no USB host connected no report starts, and the figures run on to the next
 report that does. The report hands out one line a pass, and only when the
 USB transmit buffer has room for 256 bytes: a host that holds the port
@@ -279,6 +290,27 @@ with its LF. The line above is the failed power-on of a station IOmcu in
 BOOTSEL: the partition table read and verified, no image launched. The
 application prints the same line on every start it reaches, so after
 `picotool reboot -a -g 0` it shows which steps slots A and B passed.
+
+The boot line is followed by the flash's read set-up, the QMI (quad memory
+interface) registers every XIP cache miss runs with:
+
+    rcbench-iomcu: flash read m0 rcmd 0x0000A003 rfmt 0x00001000 timing 0x40000004, m1 at reset
+
+`m0` is chip select 0, the flash. `m1` is chip select 1; `m1 at reset`
+means its three registers hold their reset values, else the line gives
+them in the same form. The image carries no XIP setup of its own
+(`PICO_EMBED_XIP_SETUP` 0), so the values are the ones the boot ROM left.
+The values above are the registers' reset values: a serial 03h read at
+CLKDIV 4.
+
+| Register | Fields |
+| --- | --- |
+| `rcmd` | bits 7-0 the read command (03h serial read, 0Bh fast read, EBh quad I/O read); bits 15-8 the mode byte sent after the address |
+| `rfmt` | bits 1-0 command width, 3-2 address width, 5-4 mode-byte width, 7-6 dummy width, 9-8 data width (0 single, 1 dual, 2 quad); bit 12 command sent; bits 15-14 mode-byte length (0 none, 2 8 bits); bits 18-16 dummy length in 4-bit steps; bit 28 DTR (double transfer rate) |
+| `timing` | bits 7-0 CLKDIV: the flash clock is clk_sys / CLKDIV, 37.5MHz at 4 and 150MHz; bits 10-8 RXDELAY; bits 31-30 COOLDOWN |
+
+The start-up line leaves before a host has the USB port open in most
+cases; the 3s report repeats it.
 
 CHIP_RESET changes only at a chip-level reset, and its bits are read-only
 (RP2350 datasheet, sections 7.3 and 7.4, table 489). The boot ROM's reboot

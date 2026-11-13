@@ -36,9 +36,9 @@ extern "C" {
 /**
  * @brief The whole report at its widest, in bytes with "\n" line ends:
  *        every line that can appear together, every field at its widest.
- *        The USB console adds one "\r" a line, 10 bytes at most.
+ *        The USB console adds one "\r" a line, 12 bytes at most.
  */
-#define REPORT_BYTES_MAX 1350u
+#define REPORT_BYTES_MAX 1639u
 
 /** @brief Channels of the INA3221 map line: three parts of three. */
 #define REPORT_MAP_CHANNELS 12u
@@ -50,6 +50,7 @@ typedef enum {
     REPORT_L_SLOT,          /**< the running slot, or no partition table */
     REPORT_L_RESET,         /**< why this start happened                */
     REPORT_L_BOOT,          /**< the boot ROM's record of this boot     */
+    REPORT_L_FLASH,         /**< the flash's read set-up, QMI M0 and M1 */
     REPORT_L_CAN_DOWN,      /**< the controller did not answer on SPI   */
     REPORT_L_CAN_UP,        /**< the CAN counters, with the controller up */
     REPORT_L_CAN_OVERRUN,   /**< receive overruns, when there were any  */
@@ -57,8 +58,20 @@ typedef enum {
     REPORT_L_SENSE_WINDOW,  /**< SERVO_SENSE's window and capture       */
     REPORT_L_SENSE_MAP,     /**< the INA3221 map and SENSE_LIMIT's OVER */
     REPORT_L_LOOP,          /**< the main loop's pass times             */
+    REPORT_L_PASSES,        /**< the passes by length, the XIP misses   */
     REPORT_LINES            /**< the number of lines                    */
 } report_line_t;
+
+/**
+ * @brief One QMI (quad memory interface) window's read set-up, as the
+ *        RP2350's registers M0_* or M1_* hold it: the read command, the
+ *        read format and the timing with its clock divisor.
+ */
+typedef struct {
+    uint32_t rcmd;   /**< M<n>_RCMD: the read command and its suffix     */
+    uint32_t rfmt;   /**< M<n>_RFMT: widths and lengths of each phase    */
+    uint32_t timing; /**< M<n>_TIMING: CLKDIV, RXDELAY and the CS timing */
+} report_qmi_t;
 
 /** @brief Every value the report prints, as the pages held it. */
 typedef struct {
@@ -68,6 +81,10 @@ typedef struct {
     bool        on_trial;   /**< the slot runs on trial                 */
     const char *reset;      /**< reset_cause_full()'s text; NULL reads "" */
     const char *boot;       /**< boot_diag_text()'s text; NULL reads ""  */
+
+    report_qmi_t qmi_m0;    /**< the flash's window, chip select 0      */
+    bool         qmi_m1_set; /**< M1 differs from its reset values      */
+    report_qmi_t qmi_m1;    /**< chip select 1's window                 */
 
     bool     can_up;        /**< the controller answered at boot        */
     uint32_t bitrate;       /**< the CAN bit rate, bit/s                */
@@ -110,6 +127,8 @@ typedef struct {
     uint16_t over_count;    /**< SENSE_LIMIT OVER_COUNT                 */
 
     pass_figures_t loop;    /**< the main loop's figures (pass_stats.h) */
+    uint32_t xip_miss;      /**< XIP cache accesses that missed, both
+                                 cores, since the report before          */
 } report_snap_t;
 
 /**

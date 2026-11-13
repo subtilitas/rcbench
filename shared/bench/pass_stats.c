@@ -8,6 +8,15 @@
 
 #include <string.h>
 
+_Static_assert(PASS_STATS_EDGE1_US == PASS_STATS_OVER_US,
+               "bins 2 to 4 are the passes over");
+
+/** @brief The bins' upper edges but the last bin's, in us. */
+static const uint32_t k_edges[PASS_STATS_BINS - 1u] = {
+    PASS_STATS_EDGE0_US, PASS_STATS_EDGE1_US, PASS_STATS_EDGE2_US,
+    PASS_STATS_EDGE3_US,
+};
+
 void pass_stats_init(pass_stats_t *s)
 {
     memset(s, 0, sizeof(*s));
@@ -23,6 +32,12 @@ void pass_stats_pass(pass_stats_t *s, uint32_t now_us)
         if (len > PASS_STATS_OVER_US) {
             ++s->fig.over;
         }
+        unsigned bin = 0u;
+        while (bin < PASS_STATS_BINS - 1u && len > k_edges[bin]) {
+            ++bin;
+        }
+        ++s->fig.passes;
+        ++s->fig.bins[bin];
     }
     s->started  = true;
     s->start_us = now_us;

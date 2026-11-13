@@ -67,6 +67,34 @@ static size_t sense_line(const report_snap_t *s, char *buf, size_t cap)
 }
 
 /**
+ * @brief The flash line: QMI M0's read set-up, and M1's when it differs
+ *        from its reset values.
+ *
+ * @param s    The snapshot.
+ * @param buf  Receives the line.
+ * @param cap  Bytes @p buf holds.
+ * @return The bytes written.
+ */
+static size_t flash_line(const report_snap_t *s, char *buf, size_t cap)
+{
+    const report_qmi_t *m0 = &s->qmi_m0;
+    if (!s->qmi_m1_set) {
+        return say(buf, cap,
+                   "rcbench-iomcu: flash read m0 rcmd 0x%08lX rfmt 0x%08lX "
+                   "timing 0x%08lX, m1 at reset\n",
+                   (unsigned long)m0->rcmd, (unsigned long)m0->rfmt,
+                   (unsigned long)m0->timing);
+    }
+    const report_qmi_t *m1 = &s->qmi_m1;
+    return say(buf, cap,
+               "rcbench-iomcu: flash read m0 rcmd 0x%08lX rfmt 0x%08lX "
+               "timing 0x%08lX, m1 rcmd 0x%08lX rfmt 0x%08lX timing 0x%08lX\n",
+               (unsigned long)m0->rcmd, (unsigned long)m0->rfmt,
+               (unsigned long)m0->timing, (unsigned long)m1->rcmd,
+               (unsigned long)m1->rfmt, (unsigned long)m1->timing);
+}
+
+/**
  * @brief The SERVO_SENSE line: CH1's window and the capture.
  *
  * @param s    The snapshot.
@@ -140,6 +168,8 @@ size_t report_line(const report_snap_t *s, unsigned i, char *buf,
         return say(buf, cap, "rcbench-iomcu: reset %s\n", text(s->reset));
     case REPORT_L_BOOT:
         return say(buf, cap, "rcbench-iomcu: %s\n", text(s->boot));
+    case REPORT_L_FLASH:
+        return flash_line(s, buf, cap);
     case REPORT_L_CAN_DOWN:
         if (s->can_up) {
             return 0u;
@@ -187,6 +217,22 @@ size_t report_line(const report_snap_t *s, unsigned i, char *buf,
                    (unsigned long)s->loop.over,
                    (unsigned long)s->loop.sec_max_us[PASS_SEC_CAN],
                    (unsigned long)s->loop.sec_max_us[PASS_SEC_REPORT]);
+    case REPORT_L_PASSES:
+        return say(buf, cap,
+                   "rcbench-iomcu: passes %lu, <=%uus %lu, <=%uus %lu, "
+                   "<=%uus %lu, <=%uus %lu, >%uus %lu, xip miss %lu\n",
+                   (unsigned long)s->loop.passes,
+                   (unsigned)PASS_STATS_EDGE0_US,
+                   (unsigned long)s->loop.bins[0],
+                   (unsigned)PASS_STATS_EDGE1_US,
+                   (unsigned long)s->loop.bins[1],
+                   (unsigned)PASS_STATS_EDGE2_US,
+                   (unsigned long)s->loop.bins[2],
+                   (unsigned)PASS_STATS_EDGE3_US,
+                   (unsigned long)s->loop.bins[3],
+                   (unsigned)PASS_STATS_EDGE3_US,
+                   (unsigned long)s->loop.bins[4],
+                   (unsigned long)s->xip_miss);
     default:
         return 0u;
     }
