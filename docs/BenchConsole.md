@@ -473,7 +473,8 @@ but stops reading also holds back output.
   well.
 - The IOmcu's own lines, `rcbench-iomcu: ...` every 3s and after a flash
   write, go through the same output in this build: they come after the
-  line before them, never inside it, and end with LF alone.
+  line before them, never inside it, and end with LF alone. The 3s report
+  hands one line a pass to that output.
 - `shared/outputs/page_console.c` holds the rules and
   `test/host/test_page_console.c` tests them against a model of the HITEC
   page's driver.

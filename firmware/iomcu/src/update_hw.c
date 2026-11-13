@@ -62,6 +62,8 @@ static link_update_dev_t s_upd;
 static link_update_io_t  s_io;
 /** @brief Returns true while flash may not be written; NULL for never. */
 static bool            (*s_busy)(void);
+/** @brief Sends the queued CAN frames before the restart; NULL for none. */
+static void            (*s_drain)(void);
 /** @brief The slots of this boot, from fw_slots_choose(). */
 static fw_slots_t        s_slots = { .slot = -1 };
 
@@ -161,6 +163,10 @@ static bool io_buy(void *ctx)
 static void io_restart(void *ctx)
 {
     (void)ctx;
+    /* The ACTIVATE's ACK is queued (can_txq.h): out first. */
+    if (s_drain != NULL) {
+        s_drain();
+    }
     /* A flash update boot of the slot just written: the boot ROM prefers
      * the partition that starts at p0, and starts its image on trial. */
     (void)rom_reboot(REBOOT2_FLAG_REBOOT_TYPE_FLASH_UPDATE, 10u,
@@ -186,9 +192,10 @@ static fw_slots_part_t partition_at(unsigned n)
     return fw_slots_partition(rc, buf, FLASH_SECTOR_SIZE);
 }
 
-void update_hw_init(bool (*busy)(void))
+void update_hw_init(bool (*busy)(void), void (*drain)(void))
 {
     s_busy = busy;
+    s_drain = drain;
     s_io = (link_update_io_t){ io_erase, io_program, io_gate, io_buy,
                                io_restart, NULL };
 

@@ -8,6 +8,16 @@ history is in git.
 
 ### Added
 
+- The IOmcu's 3s console report ends with the main loop's pass times since
+  the report before it: the longest pass, the passes over 500us, the
+  longest `can_service()` call and the longest report pass
+  (`loop max`, `over 500us`, `can max`, `report max`), then the passes
+  ended, sorted into five bins (at most 250us, 500us, 1000us, 2000us and
+  over 2000us), and the XIP cache's misses (`xip miss`). A line after the
+  boot line gives the flash's read set-up, QMI M0's RCMD, RFMT and TIMING
+  (`flash read`). Its CAN line ends with `txq_max`, the most reply frames
+  queued at once ([Bringup](docs/Bringup.md#iomcu)).
+
 - Column `throttle (%)` in the MOTOR run log, after `rpm`: the throttle
   the panel commands at the sample, 0 to 100% to 0.1%, for PWM and DShot
   outputs. On a measured row it is the THROTTLE in force at the IOmcu
@@ -32,6 +42,28 @@ history is in git.
   duty ([Performance](docs/Performance.md#on-the-board)).
 
 ### Changed
+
+- The IOmcu queues each CAN reply whole, up to 16 frames, and sends it
+  through the controller's 3 transmit buffers, up to 3 frames per pump and
+  two pumps a pass, each batch after the one before it has left; no pass
+  waits for a transmit buffer. A batch still unsent 5000us after its request to
+  send is aborted with the rest of the queue and counted in `tx_drop`; a
+  reply frame waited up to 1,000us for the one transmit buffer before.
+  The firmware update's restart sends the queue first
+  ([DShot](docs/DShot.md), [Bringup](docs/Bringup.md#iomcu)).
+- The IOmcu image runs from SRAM: the start-up code copies its code and
+  read-only data out of the flash slot before `main()`. SRAM in use rises
+  from 87,536 to 365,040 bytes of 524,288. On the station, from flash with
+  the dual-I/O read at 50MHz the boot ROM sets up, against SRAM, medians
+  per 3s: loop max 2701us and 204us, can max 1218us and 165us, report max
+  1404us and 94us, passes over 500us 1440 and 0. DShot runs 1,000 frames a
+  second with a longest gap of 1,189us and no frame more than 500us late.
+  STOP to the last frame over 10 presses: median 4.5ms, at most 15.3ms. A
+  CAN update received by this image takes 24.3s
+  ([Bringup](docs/Bringup.md#iomcu)).
+- The IOmcu's 3s console report hands out one line a pass, only when the
+  USB transmit buffer has room for 256 bytes: a host that holds the port
+  and stops reading holds no pass. The text of the report is unchanged.
 
 - A screen guide's badge takes the first of 11 places beside or on its
   control that covers no string the screen draws, in either language: the

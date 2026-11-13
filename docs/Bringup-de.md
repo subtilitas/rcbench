@@ -26,14 +26,21 @@ der Page Map nicht belegt ist.
 Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des IOmcu,
 alle 3s wiederholt:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0 txq_max 0
 
 `requests served` zählt Link-Page-Anfragen, die das Panel gesendet und der
 IOmcu beantwortet hat. `self-test echoes` zählt Testframes und steht auf
 0, solange der CAN-Selbsttest des Panels nicht läuft. `tx_drop` zählt
-Antwortframes, die nicht gesendet wurden, weil der Sendepuffer 1000us lang
-voll blieb, zusammen mit dem Rest ihrer Antwort. Das Panel wartet dann bis
-zum Timeout seines Austauschs. Die ersten beiden Zähler zeigen zusammen, welche
+Antwortframes, die nicht gesendet wurden: eine Antwort, für die die
+Sendewarteschlange von 16 Frames keinen Platz hatte, und die noch
+wartenden Frames, wenn ein Stapel 5000us nach seiner Sendeanforderung noch
+anstand: die noch nicht gesendeten des Stapels und die der Warteschlange.
+Das Panel wiederholt seine Anfrage nach 50ms, und der IOmcu beantwortet
+die Wiederholung aus der Kopie, die er aufbewahrt; das schließt den
+Austausch im Normalfall ab. Erst wenn auch die Antwort auf die
+Wiederholung verloren geht, endet der Austausch nach 1000ms im Timeout.
+`txq_max` ist die größte Zahl gleichzeitig
+wartender Frames seit dem letzten Bericht. Die ersten beiden Zähler zeigen zusammen, welche
 Seite ausfällt:
 
 | Requests | Panel zeigt | Lesart |
@@ -46,6 +53,41 @@ Seite ausfällt:
 den Configuration Mode gemeldet hat. Der Fehler liegt an SPI (Serial
 Peripheral Interface; Modul nicht bestückt, Verdrahtung an GPIO 8 bis GPIO 12),
 nicht am CAN-Bus.
+
+Die letzten beiden Zeilen jedes Berichts nennen die Durchlaufzeiten der
+Hauptschleife seit dem Bericht davor:
+
+    rcbench-iomcu: loop max <us>us, over 500us <passes>, can max <us>us, report max <us>us
+    rcbench-iomcu: passes <n>, <=250us <n>, <=500us <n>, <=1000us <n>, <=2000us <n>, >2000us <n>, xip miss <n>
+
+`loop max` ist der längste Durchlauf, `over 500us` zählt die Durchläufe
+über 500us, die Hälfte der DShot-Frame-Periode ([DShot](DShot-de.md)).
+`can max` ist der längste Aufruf von `can_service()` mit dem Pumpen der
+Sendewarteschlange, `report max` der längste Durchlauf des Berichts selbst.
+Ein Bericht nimmt seine Werte in dem Durchlauf, in dem er beginnt; sie
+gelten also für den Bericht davor.
+`passes` zählt die beendeten Durchläufe, die fünf Werte danach teilen sie
+nach Länge auf: höchstens 250us, über 250us bis 500us, über 500us bis
+1000us, über 1000us bis 2000us und über 2000us. Die letzten drei ergeben
+zusammen `over 500us`. `xip miss` ist CTR_ACC minus CTR_HIT des
+XIP-Caches (Execute in Place) seit dem Bericht davor: Flash-Zugriffe, die
+der 16KB-Cache nicht hielt, jeder ein Lesen aus dem Flash-Chip. Die Zähler
+zählen beide Kerne und DMA (Direct Memory Access) gleich, ohne sie
+unterscheiden zu können, und ein Zugriff ohne Cache zählt als Fehlgriff.
+Der Bericht liest und löscht sie bei seinem Beginn; die wenigen Dutzend
+Zugriffe zwischen Lesen und Löschen gehen verloren. Das Image läuft aus
+dem SRAM (statisches RAM); `xip miss` zählt also die Flash-Lesezugriffe
+des Ausgangsspeichers und eines Updates: 0 je 3s auf der Station, wenn
+keins von beiden läuft. Ein Wert in Millionen heißt, dass Code aus dem
+Flash läuft. Die Mediane der Station je 3s im Zustand SAFE auf HOME:
+`loop max` 204us, `can max` 165us, `report max` 94us, 80.367 Durchläufe,
+alle höchstens 250us. Ohne verbundenen USB-Host beginnt kein
+Bericht, und die Werte laufen bis zum nächsten Bericht weiter, der beginnt.
+Der Bericht gibt eine Zeile je Durchlauf aus, und nur, wenn der
+USB-Sendepuffer Platz für 256 Bytes hat: Ein Host, der den Port offen hält
+und nichts abholt, bekommt keine Zeile und hält keinen Durchlauf auf. Ein
+Bericht, der 3s nach seinem Beginn nicht fertig ist, wird verworfen, und
+der nächste beginnt.
 
 ### Panel
 
@@ -272,6 +314,31 @@ IOmcu der Station in BOOTSEL: Partitionstabelle gelesen und geprüft, kein
 Image gestartet. Die Anwendung gibt dieselbe Zeile bei jedem Start aus, den
 sie erreicht; nach `picotool reboot -a -g 0` zeigt sie also, welche Schritte
 Slot A und Slot B bestanden haben.
+
+Auf die Boot-Zeile folgt die Lese-Einstellung des Flash, die Register der
+QMI (Quad Memory Interface), mit denen jedes Lesen aus dem Flash läuft:
+
+    rcbench-iomcu: flash read m0 rcmd 0x0000A003 rfmt 0x00001000 timing 0x40000004, m1 at reset
+
+`m0` ist Chip Select 0, der Flash. `m1` ist Chip Select 1; `m1 at reset`
+heißt, dass seine drei Register ihre Reset-Werte halten, sonst nennt die
+Zeile sie in derselben Form. Das Image bringt kein eigenes XIP-Setup mit
+(`PICO_EMBED_XIP_SETUP` 0); die Werte sind also die, die das Boot-ROM
+hinterlassen hat. Die Werte oben sind die Reset-Werte der Register: ein
+serielles 03h-Lesen mit CLKDIV 4. Das RP2350-CAN-Modul der Station gibt
+`m0 rcmd 0x000000BB rfmt 0x00009154 timing 0x60007203` aus und dieselben
+Werte für `m1`: ein Dual-I/O-BBh-Lesen mit 8-Bit-Mode-Byte bei CLKDIV 3,
+50MHz. Das Image läuft aus dem SRAM; so lesen nur der Ausgangsspeicher und
+die Prüfungen eines Updates den Flash.
+
+| Register | Felder |
+| --- | --- |
+| `rcmd` | Bit 7-0 der Lesebefehl (03h seriell, 0Bh Fast Read, BBh Dual-I/O, EBh Quad-I/O); Bit 15-8 das Mode-Byte nach der Adresse |
+| `rfmt` | Bit 1-0 Breite des Befehls, 3-2 der Adresse, 5-4 des Mode-Bytes, 7-6 der Dummy-Takte, 9-8 der Daten (0 einfach, 1 dual, 2 quad); Bit 12 Befehl gesendet; Bit 15-14 Länge des Mode-Bytes (0 keines, 2 8 Bit); Bit 18-16 Dummy-Länge in Schritten von 4 Bit; Bit 28 DTR (Double Transfer Rate) |
+| `timing` | Bit 7-0 CLKDIV: der Flash-Takt ist clk_sys / CLKDIV, 37,5MHz bei 4 und 150MHz; Bit 10-8 RXDELAY; Bit 31-30 COOLDOWN |
+
+Die Zeile beim Start geht meist hinaus, bevor ein Host den USB-Port
+geöffnet hat; der 3s-Bericht wiederholt sie.
 
 CHIP_RESET ändert sich nur bei einem Reset auf Chip-Ebene, und seine Bits
 sind nur lesbar (RP2350-Datenblatt, Abschnitte 7.3 und 7.4, Tabelle 489).

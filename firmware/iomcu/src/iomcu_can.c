@@ -14,6 +14,7 @@
 #include "iomcu.h"
 
 #include "can_selftest.h"
+#include "can_txq.h"
 #include "iomcu_pins.h"
 #include "xl2515.h"
 
@@ -35,21 +36,23 @@
  *
  * The waits a pass can hold, with their bounds:
  *
- * - The 3s report goes to USB (Universal Serial Bus) stdio.  A printf()
- *   waits for room in the transmit buffer for at most
- *   IOMCU_USB_STDOUT_WAIT_US (1,000us) after the host last took bytes, so a
- *   host that holds the port open and stops reading costs one wait of up
- *   to 1,000us, and later lines are dropped at once.
- * - can_service() waits for the transmit buffer for at most
- *   IOMCU_CAN_TX_WAIT_US (1,000us) per reply frame, and abandons the rest
- *   of a reply whose frame did not leave in that time: a bus that accepts
- *   nothing costs one such wait per reply.
+ * - The 3s report to USB (Universal Serial Bus) stdio waits for nothing:
+ *   one line a pass, and only with room for it in the transmit buffer
+ *   (report_steps.h).  The boot lines and the store's lines use printf(),
+ *   which waits for room for at most IOMCU_USB_STDOUT_WAIT_US (1,000us)
+ *   after the host last took bytes; a store line comes only after a flash
+ *   window, which waits until nothing drives.
+ * - can_service() waits for no transmit buffer.  A reply is queued whole
+ *   (can_txq.h) and leaves three frames per pass; a bus that accepts
+ *   nothing costs no wait, and a batch still requested CAN_TXQ_STUCK_US
+ *   (5000us) after its RTS is aborted with the rest of the queue.
  * - The supply's UART send blocks while its PIO FIFO is full; that wait is
  *   not bounded here.
  * - A flash window of the output store stops this core for about 19ms.
  *
  * The heartbeat is lost when a pass runs past HEARTBEAT_MAX_GAP_MS (150ms).
- * The time of a whole pass on the board is not measured.
+ * The report's loop line gives the longest pass since the report before it
+ * (pass_stats.h).
  */
 bool s_beat_level;
 
@@ -83,21 +86,19 @@ bool     s_can_up;
 uint32_t s_can_echoes; /**< echo frames answered since power-up */
 /** @brief Receive overruns the controller reported since power-up. */
 uint32_t s_can_overflows;
-/** @brief Reply frames not sent because the transmit buffer stayed full. */
-uint32_t s_can_tx_dropped;
+/**
+ * @brief The controller's transmit buffers, as can_txq_pump() drives them
+ * (xl2515.h).
+ */
+static const can_txq_ops_t k_txq_ops = {
+    xl2515_status, xl2515_load, xl2515_request, xl2515_abort, NULL,
+};
 
 /**
- * @brief How long one reply frame waits for the transmit buffer, in us.
- *
- * The buffer holds one frame, so each frame of a multi-frame reply waits for
- * the one before it to win arbitration.  At 1Mbit/s an extended frame of 8
- * data bytes takes at most 155us on the bus, stuff bits and the gap after it
- * counted; 1,000us is 6 of them.  A bus that has stopped accepting (no
- * other node acknowledges, or the controller is bus-off) costs one such wait
- * per reply, then the rest of the reply is abandoned: the panel needs every
- * frame of it and waits out its exchange without one.
+ * @brief Every frame this end sends, queued whole per reply and sent by
+ * can_txq_pump() at the end of each can_service(); see can_txq.h.
  */
-#define IOMCU_CAN_TX_WAIT_US 1000u
+can_txq_t s_can_txq;
 
 /**
  * @brief When a frame was last taken out of the controller.
@@ -113,23 +114,26 @@ uint32_t s_last_rx_ms;
 
 void can_start(void)
 {
+    can_txq_init(&s_can_txq, &k_txq_ops);
     s_can_up = xl2515_init(IOMCU_CAN_BITRATE);
     printf("rcbench-iomcu: CAN %s at %u bit/s\n",
            s_can_up ? "up" : "DID NOT ANSWER (module fitted? SPI wiring?)",
            (unsigned)IOMCU_CAN_BITRATE);
 }
 
-/*
+/**
+ * @brief Empties the receive buffers and answers each frame; can_service()
+ * times it.
+ *
  * One clock for the whole pass, handed in.  Every timeout is a wrap-safe
  * unsigned subtraction, so a last_request_ms stamped 1ms later than the
  * `now` that link_dev_tick() receives reads as 4,294,967,295ms of silence,
  * past every timeout there is.
+ *
+ * @param now  The pass's clock in ms.
  */
-void can_service(uint32_t now)
+static void can_serve(uint32_t now)
 {
-    if (!s_can_up) {
-        return;
-    }
     if (xl2515_take_overflow()) {
         ++s_can_overflows;
     }
@@ -137,7 +141,7 @@ void can_service(uint32_t now)
     while (xl2515_recv(&in, &s_refused)) {
         s_last_rx_ms = now;
         if (can_selftest_echo(&in, &out)) {
-            if (xl2515_send(&out)) {
+            if (can_txq_put(&s_can_txq, &out, 1u)) {
                 ++s_can_echoes;
             }
             continue;
@@ -153,7 +157,7 @@ void can_service(uint32_t now)
         st.echoes    = (uint16_t)s_can_echoes;
         st.overflows = (uint16_t)s_can_overflows;
         if (can_selftest_status_reply(&in, &st, &out)) {
-            (void)xl2515_send(&out);
+            (void)can_txq_put(&s_can_txq, &out, 1u);
             continue;
         }
 
@@ -171,24 +175,37 @@ void can_service(uint32_t now)
         }
         link_can_frame_t frames[LINK_CAN_MAX_FRAMES];
         const size_t n = link_can_encode(&reply, frames, LINK_CAN_MAX_FRAMES);
-        for (size_t i = 0; i < n; ++i) {
-            /*
-             * Bounded in time, not in tries, because a bus that has stopped
-             * accepting must not stall the failsafe: IOMCU_CAN_TX_WAIT_US.
-             * Each try is one SPI register read.
-             */
-            const uint32_t since = time_us_32();
-            bool sent = xl2515_send(&frames[i]);
-            while (!sent && time_us_32() - since < IOMCU_CAN_TX_WAIT_US) {
-                tight_loop_contents();
-                sent = xl2515_send(&frames[i]);
-            }
-            if (!sent) {
-                /* Counted, this frame and the ones after it: the panel then
-                 * waits out its exchange. */
-                s_can_tx_dropped += (uint32_t)(n - i);
-                break;
-            }
-        }
+        /* Whole or not at all; one refused counts in the queue's dropped,
+         * and the panel repeats the request after LINK_HOST_RETRY_MS. */
+        (void)can_txq_put(&s_can_txq, frames, n);
+    }
+}
+
+void can_service(uint32_t now)
+{
+    if (!s_can_up) {
+        return;
+    }
+    const uint32_t t0 = time_us_32();
+    can_serve(now);
+    /* What this call queued, and what is left of the replies before it:
+     * one status read, then up to three frames loaded and requested. */
+    can_txq_pump(&s_can_txq, time_us_32());
+    pass_stats_section(&s_pass, PASS_SEC_CAN, t0, time_us_32());
+}
+
+void can_drain(void)
+{
+    if (!s_can_up) {
+        return;
+    }
+    /* Each pump moves the next batch on or, CAN_TXQ_STUCK_US after a
+     * batch's RTS, aborts it and empties the queue.  At most 7 batches
+     * (3 frames on the wire, then CAN_TXQ_DEPTH queued in 6), so at most
+     * 35,000us on a bus that takes each batch just inside the stuck rule;
+     * 7 x 465us = 3,255us on a bus that takes every frame.  Called on the
+     * update's restart only, with arming held (update_hw_holds_arm()). */
+    while (can_txq_busy(&s_can_txq)) {
+        can_txq_pump(&s_can_txq, time_us_32());
     }
 }

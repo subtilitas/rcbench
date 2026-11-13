@@ -1174,15 +1174,26 @@ FACTS = [
     ("docs/Performance-de.md",
      rf"wartet höchstens {N}us auf Platz im Sendepuffer von {N_DE} Bytes",
      ("IOMCU_USB_STDOUT_WAIT_US", "IOMCU_USB_TX_BUFFER_BYTES")),
-    ("docs/Performance.md", rf"A reply frame on CAN waits at most {N}us",
-     ("IOMCU_CAN_TX_WAIT_US",)),
+    ("docs/Performance.md",
+     rf"queued whole in\s+a queue of {N} frames and leaves in batches of up "
+     rf"to {N} frames.*?A batch still requested {N}us after",
+     ("CAN_TXQ_DEPTH", "CAN_TXQ_BUFFERS", "CAN_TXQ_STUCK_US")),
     ("docs/Performance-de.md",
-     rf"Ein Antwortframe auf dem CAN wartet höchstens {N}us",
-     ("IOMCU_CAN_TX_WAIT_US",)),
-    ("docs/Bringup.md", rf"the transmit buffer stayed full for {N}us",
-     ("IOMCU_CAN_TX_WAIT_US",)),
-    ("docs/Bringup-de.md", rf"weil der Sendepuffer {N}us lang voll blieb",
-     ("IOMCU_CAN_TX_WAIT_US",)),
+     rf"Warteschlange von {N}\s+Frames und geht in Stapeln von bis zu {N} "
+     rf"Frames hinaus.*?Ein Stapel, der {N}us",
+     ("CAN_TXQ_DEPTH", "CAN_TXQ_BUFFERS", "CAN_TXQ_STUCK_US")),
+    ("docs/Bringup.md",
+     rf"did not fit the {N}-frame transmit queue, and\s+the frames still "
+     rf"waiting when a batch was still requested {N}us.*?repeats its "
+     rf"request after {N}ms.*?times out after {N}ms",
+     ("CAN_TXQ_DEPTH", "CAN_TXQ_STUCK_US", "LINK_HOST_RETRY_MS",
+      "LINK_HOST_TIMEOUT_MS")),
+    ("docs/Bringup-de.md",
+     rf"Sendewarteschlange von {N} Frames keinen Platz hatte, und die noch"
+     rf"\s+wartenden Frames, wenn ein Stapel {N}us.*?Anfrage nach {N}ms"
+     rf".*?nach {N}ms im Timeout",
+     ("CAN_TXQ_DEPTH", "CAN_TXQ_STUCK_US", "LINK_HOST_RETRY_MS",
+      "LINK_HOST_TIMEOUT_MS")),
     # Pins.
     ("docs/Safety.md", rf"The safety line is panel GPIO{N} ",
      ("PANEL_HEARTBEAT_PIN",)),

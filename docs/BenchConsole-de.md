@@ -487,7 +487,8 @@ Ausgabe ebenfalls auf.
   SDK hinaus.
 - Die eigenen Zeilen des IOmcu, `rcbench-iomcu: ...` alle 3s und nach einem
   Flash-Schreiben, laufen in diesem Build durch dieselbe Ausgabe: sie kommen
-  nach der Zeile davor, nie mitten in ihr, und enden nur mit LF.
+  nach der Zeile davor, nie mitten in ihr, und enden nur mit LF. Der
+  Bericht alle 3s gibt eine Zeile je Durchlauf an diese Ausgabe.
 - `shared/outputs/page_console.c` hält die Regeln, und
   `test/host/test_page_console.c` testet sie gegen ein Modell des Treibers
   der HITEC-Page.

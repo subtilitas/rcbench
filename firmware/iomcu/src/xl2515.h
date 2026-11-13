@@ -33,16 +33,49 @@
 bool xl2515_init(uint32_t bitrate);
 
 /**
- * @brief Queue one frame in TXB0 and request transmission.
+ * @brief READ STATUS: one command byte, one status byte; can_txq_ops_t's
+ *        status.
  *
- * False if the buffer is
- *  still busy with the previous one.
+ * Bits 2, 4 and 6 are TXREQ of TXB0, TXB1 and TXB2 (MCP2515_STATUS_TXREQ).
  *
- * @param f  The frame to send. NULL is refused, and so is a DLC above 8.
- * @return True when the frame is queued. False when the buffer is still busy
- *         with the previous frame, or the identifier cannot be packed.
+ * @param ctx  Unused.
+ * @return The status byte.
  */
-bool xl2515_send(const link_can_frame_t *f);
+uint8_t xl2515_status(void *ctx);
+
+/**
+ * @brief Loads one frame into a transmit buffer with one WRITE from its
+ *        TXBnCTRL on, TXREQ clear; can_txq_ops_t's load.
+ *
+ * 2 + 14 bytes on the SPI bus, about 13us at 10MHz.
+ *
+ * @param ctx  Unused.
+ * @param buf  The buffer, 0 to 2; another writes nothing.
+ * @param txp  The buffer's priority, 0 to 3.
+ * @param f    The frame; one mcp2515_tx_load() refuses writes nothing.
+ */
+void xl2515_load(void *ctx, uint8_t buf, uint8_t txp,
+                 const link_can_frame_t *f);
+
+/**
+ * @brief One RTS (request to send) for the buffers in @p mask;
+ *        can_txq_ops_t's request.
+ *
+ * @param ctx   Unused.
+ * @param mask  Bit 0 TXB0, bit 1 TXB1, bit 2 TXB2; the other bits are
+ *              ignored.
+ */
+void xl2515_request(void *ctx, uint8_t mask);
+
+/**
+ * @brief Clears TXREQ of all three transmit buffers with BIT MODIFY;
+ *        can_txq_ops_t's abort.
+ *
+ * A frame in transmission at the call still completes.
+ *
+ * @param ctx  Unused.
+ */
+void xl2515_abort(void *ctx);
 
 /**
  * @brief Take one frame from whichever receive buffer has one.

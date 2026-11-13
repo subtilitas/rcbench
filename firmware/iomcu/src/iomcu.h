@@ -33,6 +33,7 @@
 
 #include "hardware/gpio.h"
 
+#include "can_txq.h"
 #include "heartbeat.h"
 #include "hitec_line.h"
 #include "hitec_port.h"
@@ -47,6 +48,7 @@
 #include "out_stage.h"
 #include "out_store.h"
 #include "outputs.h"
+#include "pass_stats.h"
 #include "outputs_hw.h"
 #include "pdmini.h"
 #include "prog_port.h"
@@ -245,9 +247,9 @@ extern uint32_t s_refused;
  * their own.
  *
  * Read at the top of the loop and once more before its tail, and nowhere
- * else.  The second read is there because two things in a pass can stop this
- * core for longer than a pass lasts: a flash window, and a printf to a USB
- * host.  See the loop for why that matters to what is measured after them.
+ * else.  The second read is there because a flash window, with the store's
+ * printf to a USB host after it, stops this core for longer than a pass
+ * lasts.  See the loop for why that matters to what is measured after it.
  *
  * Every timeout in this application is a wrap-safe unsigned subtraction of
  * two timestamps.  A second reading of the clock inside a pass can be a
@@ -259,6 +261,13 @@ extern uint32_t s_refused;
  * was meant to wait out.
  */
 extern uint32_t s_now_ms;
+
+/**
+ * @brief The main loop's pass times: main() begins each pass, can_service()
+ * and can_report() time themselves, and the report reads and clears the
+ * figures every 3s.
+ */
+extern pass_stats_t s_pass;
 
 /**
  * @brief The heartbeat line's level at the last sample; see iomcu_can.c.
@@ -273,9 +282,11 @@ extern bool     s_can_up;
 extern uint32_t s_can_echoes; /**< echo frames answered since power-up */
 /** @brief Receive overruns the controller reported since power-up. */
 extern uint32_t s_can_overflows;
-/** @brief Reply frames not sent because the transmit buffer stayed full
- * for IOMCU_CAN_TX_WAIT_US (iomcu_can.c), and the rest of their reply. */
-extern uint32_t s_can_tx_dropped;
+/**
+ * @brief Every frame this end sends; see iomcu_can.c.  Its dropped count is
+ * the report's tx_drop, its peak the report's txq_max.
+ */
+extern can_txq_t s_can_txq;
 
 /**
  * @brief When a frame was last taken out of the controller; see iomcu_can.c.
@@ -1041,34 +1052,47 @@ void heartbeat_init(void);
  */
 void can_start(void);
 /**
- * @brief Empties the CAN receive buffers and answers each frame.
+ * @brief Empties the CAN receive buffers and answers each frame; its time
+ * goes into s_pass as PASS_SEC_CAN.
  *
  * @param now  The pass's clock in ms, stamped on each frame received and
  *             passed to the link dispatcher.
  */
 void can_service(uint32_t now);
-
-/* iomcu_report.c: every 3s at most, from the main loop */
 /**
- * @brief Prints the console report when 3s have passed.
+ * @brief Sends every queued frame before a restart: pumps the transmit
+ * queue until it is empty and its last batch has left, or the stuck rule
+ * (CAN_TXQ_STUCK_US) has emptied it.
+ *
+ * Waits, and is called only on the way to a restart (update_hw_init()).
+ */
+void can_drain(void);
+
+/* iomcu_report.c: once a pass, from the main loop */
+/**
+ * @brief One pass of the console report: a snapshot when 3s have passed,
+ * and at most one line, only with room for it in the transport
+ * (report_steps.h); its time goes into s_pass as PASS_SEC_REPORT.
  *
  * @param now  The pass's clock in ms.
  */
 void can_report(uint32_t now);
 
 /**
- * @brief Reads why this start happened, once at boot, and prints it.
+ * @brief Reads why this start happened, once at boot, and prints it with
+ *        the flash's read set-up.
  *
  * Reads POWMAN CHIP_RESET, WATCHDOG REASON, SCRATCH2 and SCRATCH3 and the
  * boot ROM's boot info, then zeroes SCRATCH2 and SCRATCH3 (reset_cause.h).
- * The SDK's start-up code writes none of them.  can_report() repeats the
- * line every 3s.
+ * The SDK's start-up code writes none of them.  The flash line is QMI
+ * M0's RCMD, RFMT and TIMING, and M1's when they differ from their reset
+ * values.  can_report() repeats the lines every 3s.
  */
 void reset_start(void);
 #if IOMCU_CONSOLE
 /**
- * @brief reset_start()'s line through the console's output, once it exists: a
- *        panel or a USB host that comes later reads it first.
+ * @brief reset_start()'s lines through the console's output, once it exists:
+ *        a panel or a USB host that comes later reads them first.
  */
 void reset_say(void);
 #endif

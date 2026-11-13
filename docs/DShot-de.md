@@ -240,16 +240,19 @@ den nächsten. `test_dshot_cadence` hält das Raster, die 500µs, den Stillstand
 und den Überlauf der 32-Bit-Mikrosekundenuhr fest.
 
 Die Pins bekommen 1000 Frames pro Sekunde, solange kein Durchlauf mehr als
-500µs zu spät kommt. Zwei Arten von Durchlauf sind länger:
+500µs zu spät kommt. Zwei Teile eines Durchlaufs tragen mehr Arbeit als der
+Rest, und keiner wartet:
 
-| Durchlauf | Dauer | Code |
+| Teil eines Durchlaufs | Dauer | Code |
 | --- | --- | --- |
-| Eine Link-Anfrage, deren Antwort mehr als einen CAN-Frame hat, bis zu 8 Frames für 32 Register | bis zu 155µs für jeden Frame nach dem ersten: der Controller hat einen Sendepuffer, und jeder Frame wartet, bis der vorige bei 1Mbit/s die Arbitrierung gewonnen hat; bis zu 1085µs für 8 Frames; aus den Bitzahlen gerechnet, nicht gemessen | `can_service()` in `firmware/iomcu/src/iomcu_can.c` |
-| Der Konsolenbericht alle 3s, bis zu 1489 Byte | nicht gemessen; jedes `printf()` wartet bis zu 1000µs auf Platz im USB-Sendepuffer | `can_report()` in `firmware/iomcu/src/iomcu_report.c` |
+| Eine Link-Anfrage, deren Antwort mehr als einen CAN-Frame hat, bis zu 8 Frames für 32 Register | kein Warten auf den Bus: die Antwort kommt ganz in eine Warteschlange und geht über die 3 Sendepuffer des Controllers hinaus, der älteste zuerst, bis zu 3 Frames je Pumpen und bis zu 6 je Durchlauf (zweimal Pumpen), jeder Stapel erst, wenn der vorige hinausgegangen ist; ein Pumpen, das 3 Frames lädt, braucht 51 SPI-Bytes, etwa 50µs bei 10MHz, aus den Byte-Zahlen geschätzt, nicht gemessen | `can_service()` in `firmware/iomcu/src/iomcu_can.c`, `shared/can/can_txq.c` |
+| Der Konsolenbericht alle 3s, bis zu 1639 Byte in 12 Zeilen | eine Zeile je Durchlauf, formatiert nur, wenn der USB-Sendepuffer Platz für 256 Byte hat; ein Host, der nichts mehr abholt, kostet eine Platzprüfung je Durchlauf; die Kosten einer Zeile sind nicht gemessen | `can_report()` in `firmware/iomcu/src/iomcu_report.c`, `shared/bench/report_steps.c` |
 
-Jeder solche Durchlauf kostet die Frames, die in ihm fällig werden. Frames pro
-Sekunde und die Abstände zwischen Frames an einem Pin sind mit dem Raster
-nicht gemessen.
+Ein Durchlauf über 500µs kostet die Frames, die in ihm fällig werden. Die
+letzte Zeile des Berichts nennt den längsten Durchlauf, die Durchläufe über
+500µs und den längsten der beiden Teile seit dem Bericht davor
+([Inbetriebnahme](Bringup-de.md#iomcu)). Frames pro Sekunde und die Abstände
+zwischen Frames an einem Pin sind mit dem Raster nicht gemessen.
 
 **Während der Prüfstand nicht treibt, wird nichts gesendet.** Keine Frames heißt
 keine Flanken, und ein ESC stoppt nach seinem eigenen Timeout auf Stille. Stattdessen ausdrückliche Nullen zu senden hielte ihn armed und wartend, und so soll

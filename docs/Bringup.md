@@ -23,14 +23,19 @@ addressed to a page that the page map does not use.
 Boot output on the IOmcu's USB (Universal Serial Bus) console, repeated
 every 3s:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0 txq_max 0
 
 `requests served` counts link page requests sent by the panel and
 answered by the IOmcu. `self-test echoes` counts probe frames and is 0
 unless the panel's CAN self-test is running. `tx_drop` counts reply
-frames not sent because the transmit buffer stayed full for 1,000us,
-together with the rest of their reply; the panel then waits for its
-exchange to time out. Together, the first two
+frames not sent: a reply that did not fit the 16-frame transmit queue, and
+the frames still waiting when a batch was still requested 5000us after its
+request to send, those of the batch not yet sent and the queued ones. The
+panel repeats its request after 50ms, and the IOmcu answers the repeat
+from the copy it keeps, which normally completes the exchange. The
+exchange times out after 1000ms only when the answer to the repeat is
+dropped as well. `txq_max` is the most frames queued at once
+since the last report. Together, the first two
 counters indicate which end has stopped:
 
 | Requests | Panel says | Reading |
@@ -44,6 +49,38 @@ configuration mode after reset. The fault is on the SPI (Serial
 Peripheral Interface) connection: the module is not fitted or its wiring
 on GPIO 8 to GPIO 12 is faulty. This message does not indicate a CAN bus
 fault.
+
+The last two lines of every report give the main loop's pass times since
+the report before it:
+
+    rcbench-iomcu: loop max <us>us, over 500us <passes>, can max <us>us, report max <us>us
+    rcbench-iomcu: passes <n>, <=250us <n>, <=500us <n>, <=1000us <n>, <=2000us <n>, >2000us <n>, xip miss <n>
+
+`loop max` is the longest pass and `over 500us` counts the passes longer
+than 500us, half of the DShot frame period ([DShot](DShot.md)). `can max`
+is the longest `can_service()` call with its transmit queue pump, and
+`report max` the longest pass of the report itself. A report takes its
+figures at the pass it starts, so they cover the report before it.
+`passes` counts the passes that ended, and the five figures after it sort
+them by length: at most 250us, over 250us to 500us, over 500us to 1000us,
+over 1000us to 2000us, and over 2000us. The last three add up to
+`over 500us`. `xip miss` is the XIP (execute in place) cache's
+CTR_ACC minus CTR_HIT since the report before: accesses to flash that the
+16KB cache did not hold, each one a read from the flash chip. The counters
+count both cores and DMA (direct memory access) alike, with no way to tell
+them apart, and an uncached access counts as a miss. The report reads and
+clears them at its start; the few dozen accesses between the read and the
+clear are lost. The image runs from SRAM (static RAM), so `xip miss`
+counts the flash reads of the output store and of an update: 0 per 3s on
+the station with neither running. A figure in the millions means code runs
+from flash. The station's medians per 3s at SAFE on HOME: `loop max`
+204us, `can max` 165us, `report max` 94us, 80,367 passes, all at most
+250us. With
+no USB host connected no report starts, and the figures run on to the next
+report that does. The report hands out one line a pass, and only when the
+USB transmit buffer has room for 256 bytes: a host that holds the port
+open and stops reading gets no line and holds no pass. A report not
+finished 3s after its start is dropped and the next one starts.
 
 ### Panel
 
@@ -258,6 +295,30 @@ with its LF. The line above is the failed power-on of a station IOmcu in
 BOOTSEL: the partition table read and verified, no image launched. The
 application prints the same line on every start it reaches, so after
 `picotool reboot -a -g 0` it shows which steps slots A and B passed.
+
+The boot line is followed by the flash's read set-up, the QMI (quad memory
+interface) registers every flash read runs with:
+
+    rcbench-iomcu: flash read m0 rcmd 0x0000A003 rfmt 0x00001000 timing 0x40000004, m1 at reset
+
+`m0` is chip select 0, the flash. `m1` is chip select 1; `m1 at reset`
+means its three registers hold their reset values, else the line gives
+them in the same form. The image carries no XIP setup of its own
+(`PICO_EMBED_XIP_SETUP` 0), so the values are the ones the boot ROM left.
+The values above are the registers' reset values: a serial 03h read at
+CLKDIV 4. The station's RP2350-CAN module prints `m0 rcmd 0x000000BB rfmt
+0x00009154 timing 0x60007203` and the same values for `m1`: a dual-I/O BBh
+read with an 8-bit mode byte at CLKDIV 3, 50MHz. The image runs from SRAM,
+so only the output store and an update's checks read the flash this way.
+
+| Register | Fields |
+| --- | --- |
+| `rcmd` | bits 7-0 the read command (03h serial read, 0Bh fast read, BBh dual I/O read, EBh quad I/O read); bits 15-8 the mode byte sent after the address |
+| `rfmt` | bits 1-0 command width, 3-2 address width, 5-4 mode-byte width, 7-6 dummy width, 9-8 data width (0 single, 1 dual, 2 quad); bit 12 command sent; bits 15-14 mode-byte length (0 none, 2 8 bits); bits 18-16 dummy length in 4-bit steps; bit 28 DTR (double transfer rate) |
+| `timing` | bits 7-0 CLKDIV: the flash clock is clk_sys / CLKDIV, 37.5MHz at 4 and 150MHz; bits 10-8 RXDELAY; bits 31-30 COOLDOWN |
+
+The start-up line leaves before a host has the USB port open in most
+cases; the 3s report repeats it.
 
 CHIP_RESET changes only at a chip-level reset, and its bits are read-only
 (RP2350 datasheet, sections 7.3 and 7.4, table 489). The boot ROM's reboot

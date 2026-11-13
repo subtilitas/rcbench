@@ -220,15 +220,18 @@ delays that frame and not the next. `test_dshot_cadence` holds the grid, the
 500µs, the stall and the wrap of the 32-bit microsecond clock.
 
 The pins get 1000 frames a second while no pass is late by more than 500µs.
-Two kinds of pass are longer:
+Two parts of a pass carry more work than the rest, and neither waits:
 
-| Pass | Length | Code |
+| Part of a pass | Length | Code |
 | --- | --- | --- |
-| A link request whose answer is more than one CAN frame, up to 8 frames for 32 registers | up to 155µs for each frame after the first: the controller has one transmit buffer, and each frame waits for the one before it to win arbitration at 1Mbit/s; up to 1,085µs for 8 frames; calculated from the bit counts, not measured | `can_service()` in `firmware/iomcu/src/iomcu_can.c` |
-| The console report every 3s, up to 1,489 bytes | not measured; each `printf()` waits up to 1,000µs for room in the USB transmit buffer | `can_report()` in `firmware/iomcu/src/iomcu_report.c` |
+| A link request whose answer is more than one CAN frame, up to 8 frames for 32 registers | no wait for the bus: the answer is queued whole and leaves through the controller's 3 transmit buffers, oldest first, up to 3 frames per pump and up to 6 a pass (two pumps), each batch only after the one before it has left; a pump that loads 3 frames spends 51 SPI bytes, about 50µs at 10MHz, estimated from the byte counts, not measured | `can_service()` in `firmware/iomcu/src/iomcu_can.c`, `shared/can/can_txq.c` |
+| The console report every 3s, up to 1,639 bytes in 12 lines | one line a pass, formatted only when the USB transmit buffer has room for 256 bytes; a host that stops reading costs one room check a pass; the cost of a line is not measured | `can_report()` in `firmware/iomcu/src/iomcu_report.c`, `shared/bench/report_steps.c` |
 
-Each such pass costs the frames due inside it. Frames a second and the gaps
-between frames on a pin are not measured with the grid.
+A pass longer than 500µs costs the frames due inside it. The report's last
+line gives the longest pass, the passes over 500µs and the longest of each
+of the two parts since the report before it
+([Bringup](Bringup.md#iomcu)). Frames a second and the gaps between frames
+on a pin are not measured with the grid.
 
 **Nothing is sent while the bench is not driving.** No frames means no edges,
 and an ESC stops on silence after its own timeout. Sending explicit zeros

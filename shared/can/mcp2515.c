@@ -39,6 +39,24 @@ bool mcp2515_pack_id(uint32_t id, uint8_t out[4])
     return true;
 }
 
+bool mcp2515_tx_load(const link_can_frame_t *f, uint8_t txp,
+                     uint8_t out[MCP2515_TXB_LOAD_BYTES])
+{
+    if (f == NULL || out == NULL || f->dlc > 8u) {
+        return false;
+    }
+    uint8_t id[4];
+    if (!mcp2515_pack_id(f->id, id)) {
+        return false;
+    }
+    memset(out, 0, MCP2515_TXB_LOAD_BYTES);
+    out[0] = (uint8_t)(txp & MCP2515_TXB_TXP_MASK);
+    memcpy(out + 1, id, sizeof(id));
+    out[5] = f->dlc;
+    memcpy(out + 6, f->data, f->dlc);
+    return true;
+}
+
 bool mcp2515_unpack_id(const uint8_t in[4], uint32_t *id)
 {
     if (in == NULL || id == NULL) {
