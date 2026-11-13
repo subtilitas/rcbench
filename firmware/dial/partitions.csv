@@ -1,0 +1,11 @@
+# Name,     Type, SubType, Offset,   Size,  Flags
+# 8MB of flash.  The second-stage bootloader sits at 0x0 and the table at
+# 0x8000 (the ESP32-S3's defaults).
+nvs,        data, nvs,     0x9000,   0x6000,
+otadata,    data, ota,     0xF000,   0x2000,
+phy_init,   data, phy,     0x11000,  0x1000,
+# Two application slots of 3072kB: USB flashing writes ota_0; the BLE
+# update of a later slice writes the slot that is not running.
+ota_0,      app,  ota_0,   0x20000,  0x300000,
+ota_1,      app,  ota_1,   0x320000, 0x300000,
+# 0x620000 to the end of the 8MB part: not allocated.

@@ -8,6 +8,30 @@ history is in git.
 
 ### Added
 
+- Protocol module `protocols/dialknob` for the M5Stack Dial v1.1 as a
+  wireless knob over BLE: the packets in both directions (EVENT, STATUS,
+  INFO; SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO, STATE),
+  20 bytes or less, every field bounded; the panel's turn tracker (the
+  first packet after a connect, a packet more than 300ms late and a jump
+  over 16 detents move nothing, a repeated seq is dropped); the link's
+  DEGRADED at 500ms and LOST at the disconnect or at 1,000ms, a loss while
+  ARMED being an error; the Dial's model of its face; host suites
+  `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`.
+- Firmware for the M5Stack Dial v1.1 (`firmware/dial`, ESP-IDF v6.1,
+  ESP32-S3): the power latch on GPIO46, the encoder on PCNT, the buttons,
+  the FT3267 touch glass, a 3ms click per detent (default ON), the GC9A01
+  display with a placeholder face, a NimBLE peripheral serving the
+  dialknob service that binds the first panel to subscribe and then
+  accepts that panel only (a 10s button hold forgets it), and a USB console
+  (`dial>`) whose test build injects turns, presses, holds, taps and a
+  battery reading and marks each injected detent on GPIO1. The battery's
+  reading pin is unknown, and STATUS reports the battery as unknown. The
+  panel's side is not built yet ([The M5Stack Dial](docs/Dial.md)).
+- CI builds the Dial's image and its test build (`.github/workflows/dial.yml`,
+  artifact `dial`); a release carries `rcbench-dial-<version>.bin` and
+  `rcbench-dial-merged-<version>.bin`. `tools/image_slot.py` takes the
+  image's file name as a second argument.
+
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the
   longest `can_service()` call and the longest report pass

@@ -49,9 +49,11 @@ rcbench/
     bleuart/              BLE-Central für den ISSC-Transparent-UART-Dienst: Advertising-Parser, Scan-Liste, Connect, Discovery, Subscribe, Schreiben, Reconnect; kein Pin-Treiber
     i2c_txq/              I2C-Transaktionswarteschlange: früheste Deadline, Timeouts, Leitungsprüfung, Bus-Clear · rp2350: i2c_txq_block auf einem I2C-Block, kein PIO-Programm
     witmotion/            WitMotion-IMU-Frames: Parser, Decoder, Befehlsencoder; kein Pin-Treiber
+    dialknob/             Knopfprotokoll des M5Stack Dial: Pakete in beide Richtungen, Drehungs-Tracker, Link-Zustand, Face-Modell; kein Pin-Treiber
   firmware/
     panel/                ESP-IDF-Projekt (ESP32-P4)
     iomcu/                pico-sdk-Projekt (RP2350)
+    dial/                 ESP-IDF-Projekt (ESP32-S3): das M5Stack Dial ([Das M5Stack Dial](Dial-de.md))
   test/host/              die Host-Suite, eine Binary je Modul oder Bildschirm
   hardware/               Platinen-Designprotokoll; keine Platine existiert
 ```
@@ -95,7 +97,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ja | ja | ja |
 | `escwire` | ja | ja | ja |
 | `witmotion` | ja | | ja |
-| `hc05` | | | ja |
+| `hc05` · `dialknob` | | | ja |
 | `bleuart` | ja | | ja |
 
 ## Toolchains
