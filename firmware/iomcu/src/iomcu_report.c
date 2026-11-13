@@ -58,7 +58,7 @@
 /**
  * @brief The USB transmit buffer, in bytes: CFG_TUD_CDC_TX_BUFSIZE.
  *
- * The report at its widest, REPORT_BYTES_MAX (1,353 bytes) and one "\r" a
+ * The report at its widest, REPORT_BYTES_MAX (1,350 bytes) and one "\r" a
  * line, fits whole: a host that read the last report finds room for every
  * line of this one, one line a pass.
  */

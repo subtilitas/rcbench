@@ -224,8 +224,8 @@ Two parts of a pass carry more work than the rest, and neither waits:
 
 | Part of a pass | Length | Code |
 | --- | --- | --- |
-| A link request whose answer is more than one CAN frame, up to 8 frames for 32 registers | no wait for the bus: the answer is queued whole and leaves 3 frames a pass through the controller's 3 transmit buffers, oldest first; a pass that loads 3 frames spends 51 SPI bytes, about 50µs at 10MHz, estimated from the byte counts, not measured | `can_service()` in `firmware/iomcu/src/iomcu_can.c`, `shared/can/can_txq.c` |
-| The console report every 3s, up to 1,353 bytes in 10 lines | one line a pass, formatted only when the USB transmit buffer has room for 256 bytes; a host that stops reading costs one room check a pass; the cost of a line is not measured | `can_report()` in `firmware/iomcu/src/iomcu_report.c`, `shared/bench/report_steps.c` |
+| A link request whose answer is more than one CAN frame, up to 8 frames for 32 registers | no wait for the bus: the answer is queued whole and leaves through the controller's 3 transmit buffers, oldest first, up to 3 frames per pump and up to 6 a pass (two pumps), each batch only after the one before it has left; a pump that loads 3 frames spends 51 SPI bytes, about 50µs at 10MHz, estimated from the byte counts, not measured | `can_service()` in `firmware/iomcu/src/iomcu_can.c`, `shared/can/can_txq.c` |
+| The console report every 3s, up to 1,350 bytes in 10 lines | one line a pass, formatted only when the USB transmit buffer has room for 256 bytes; a host that stops reading costs one room check a pass; the cost of a line is not measured | `can_report()` in `firmware/iomcu/src/iomcu_report.c`, `shared/bench/report_steps.c` |
 
 A pass longer than 500µs costs the frames due inside it. The report's last
 line gives the longest pass, the passes over 500µs and the longest of each

@@ -32,10 +32,14 @@ alle 3s wiederholt:
 IOmcu beantwortet hat. `self-test echoes` zählt Testframes und steht auf
 0, solange der CAN-Selbsttest des Panels nicht läuft. `tx_drop` zählt
 Antwortframes, die nicht gesendet wurden: eine Antwort, für die die
-Sendewarteschlange von 16 Frames keinen Platz hatte, und jeden Frame der
-Warteschlange, wenn ein Stapel 5000us nach seiner Sendeanforderung noch
-anstand. Das Panel wiederholt dann seine Anfrage nach 50ms und wartet bis
-zum Timeout seines Austauschs. `txq_max` ist die größte Zahl gleichzeitig
+Sendewarteschlange von 16 Frames keinen Platz hatte, und die noch
+wartenden Frames, wenn ein Stapel 5000us nach seiner Sendeanforderung noch
+anstand: die noch nicht gesendeten des Stapels und die der Warteschlange.
+Das Panel wiederholt seine Anfrage nach 50ms, und der IOmcu beantwortet
+die Wiederholung aus der Kopie, die er aufbewahrt; das schließt den
+Austausch im Normalfall ab. Erst wenn auch die Antwort auf die
+Wiederholung verloren geht, endet der Austausch nach 1000ms im Timeout.
+`txq_max` ist die größte Zahl gleichzeitig
 wartender Frames seit dem letzten Bericht. Die ersten beiden Zähler zeigen zusammen, welche
 Seite ausfällt:
 
@@ -53,7 +57,7 @@ nicht am CAN-Bus.
 Die letzte Zeile jedes Berichts nennt die Durchlaufzeiten der Hauptschleife
 seit dem Bericht davor:
 
-    rcbench-iomcu: loop max <us> us, over 500us <passes>, can max <us> us, report max <us> us
+    rcbench-iomcu: loop max <us>us, over 500us <passes>, can max <us>us, report max <us>us
 
 `loop max` ist der längste Durchlauf, `over 500us` zählt die Durchläufe
 über 500us, die Hälfte der DShot-Frame-Periode ([DShot](DShot-de.md)).

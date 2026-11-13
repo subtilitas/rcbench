@@ -245,8 +245,8 @@ Rest, und keiner wartet:
 
 | Teil eines Durchlaufs | Dauer | Code |
 | --- | --- | --- |
-| Eine Link-Anfrage, deren Antwort mehr als einen CAN-Frame hat, bis zu 8 Frames für 32 Register | kein Warten auf den Bus: die Antwort kommt ganz in eine Warteschlange und geht mit 3 Frames je Durchlauf über die 3 Sendepuffer des Controllers hinaus, der älteste zuerst; ein Durchlauf, der 3 Frames lädt, braucht 51 SPI-Bytes, etwa 50µs bei 10MHz, aus den Byte-Zahlen geschätzt, nicht gemessen | `can_service()` in `firmware/iomcu/src/iomcu_can.c`, `shared/can/can_txq.c` |
-| Der Konsolenbericht alle 3s, bis zu 1353 Byte in 10 Zeilen | eine Zeile je Durchlauf, formatiert nur, wenn der USB-Sendepuffer Platz für 256 Byte hat; ein Host, der nichts mehr abholt, kostet eine Platzprüfung je Durchlauf; die Kosten einer Zeile sind nicht gemessen | `can_report()` in `firmware/iomcu/src/iomcu_report.c`, `shared/bench/report_steps.c` |
+| Eine Link-Anfrage, deren Antwort mehr als einen CAN-Frame hat, bis zu 8 Frames für 32 Register | kein Warten auf den Bus: die Antwort kommt ganz in eine Warteschlange und geht über die 3 Sendepuffer des Controllers hinaus, der älteste zuerst, bis zu 3 Frames je Pumpen und bis zu 6 je Durchlauf (zweimal Pumpen), jeder Stapel erst, wenn der vorige hinausgegangen ist; ein Pumpen, das 3 Frames lädt, braucht 51 SPI-Bytes, etwa 50µs bei 10MHz, aus den Byte-Zahlen geschätzt, nicht gemessen | `can_service()` in `firmware/iomcu/src/iomcu_can.c`, `shared/can/can_txq.c` |
+| Der Konsolenbericht alle 3s, bis zu 1350 Byte in 10 Zeilen | eine Zeile je Durchlauf, formatiert nur, wenn der USB-Sendepuffer Platz für 256 Byte hat; ein Host, der nichts mehr abholt, kostet eine Platzprüfung je Durchlauf; die Kosten einer Zeile sind nicht gemessen | `can_report()` in `firmware/iomcu/src/iomcu_report.c`, `shared/bench/report_steps.c` |
 
 Ein Durchlauf über 500µs kostet die Frames, die in ihm fällig werden. Die
 letzte Zeile des Berichts nennt den längsten Durchlauf, die Durchläufe über

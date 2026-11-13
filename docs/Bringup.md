@@ -29,9 +29,12 @@ every 3s:
 answered by the IOmcu. `self-test echoes` counts probe frames and is 0
 unless the panel's CAN self-test is running. `tx_drop` counts reply
 frames not sent: a reply that did not fit the 16-frame transmit queue, and
-every frame queued when a batch was still requested 5000us after its
-request to send. The panel then repeats its request after 50ms and waits
-for its exchange to time out. `txq_max` is the most frames queued at once
+the frames still waiting when a batch was still requested 5000us after its
+request to send, those of the batch not yet sent and the queued ones. The
+panel repeats its request after 50ms, and the IOmcu answers the repeat
+from the copy it keeps, which normally completes the exchange. The
+exchange times out after 1000ms only when the answer to the repeat is
+dropped as well. `txq_max` is the most frames queued at once
 since the last report. Together, the first two
 counters indicate which end has stopped:
 
@@ -50,7 +53,7 @@ fault.
 The last line of every report gives the main loop's pass times since the
 report before it:
 
-    rcbench-iomcu: loop max <us> us, over 500us <passes>, can max <us> us, report max <us> us
+    rcbench-iomcu: loop max <us>us, over 500us <passes>, can max <us>us, report max <us>us
 
 `loop max` is the longest pass and `over 500us` counts the passes longer
 than 500us, half of the DShot frame period ([DShot](DShot.md)). `can max`

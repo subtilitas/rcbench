@@ -40,9 +40,10 @@ history is in git.
 
 ### Changed
 
-- The IOmcu queues each CAN reply whole, up to 16 frames, and sends 3
-  frames a pass through the controller's 3 transmit buffers; no pass waits
-  for a transmit buffer. A batch still unsent 5000us after its request to
+- The IOmcu queues each CAN reply whole, up to 16 frames, and sends it
+  through the controller's 3 transmit buffers, up to 3 frames per pump and
+  two pumps a pass, each batch after the one before it has left; no pass
+  waits for a transmit buffer. A batch still unsent 5000us after its request to
   send is aborted with the rest of the queue and counted in `tx_drop`; a
   reply frame waited up to 1,000us for the one transmit buffer before.
   The firmware update's restart sends the queue first

@@ -278,12 +278,12 @@ pico_enable_stdio_uart(rcbench-iomcu 0)
 # nothing.  iomcu_report.c asserts both figures below.
 #
 # The transmit buffer is 2,048 bytes in place of the SDK's 64 at full speed,
-# 1,984 bytes more RAM.  The 3s report is at most 1,353 bytes with every
-# field at its widest, 1,363 with its CR bytes (REPORT_BYTES_MAX), so it fits
-# whole into a buffer the host emptied since the last report: a host that
-# reads gets every line, one a pass.  A line needs 256 bytes of room.  The
-# bench console build hands over up to the 400 bytes console_hw.c takes at a
-# time.
+# 1,984 bytes more RAM.  The 3s report is at most 1,350 bytes with every
+# field at its widest (REPORT_BYTES_MAX), 1,360 on the wire with the CR the
+# USB console adds to each of its 10 lines, so it fits whole into a buffer
+# the host emptied since the last report: a host that reads gets every line,
+# one a pass.  A line needs 256 bytes of room.  The bench console build hands
+# over up to the 400 bytes console_hw.c takes at a time.
 target_compile_definitions(rcbench-iomcu PRIVATE
     PICO_STDIO_USB_STDOUT_TIMEOUT_US=1000
     CFG_TUD_CDC_TX_BUFSIZE=2048)

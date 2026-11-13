@@ -4,8 +4,10 @@
  * The expected texts below are what iomcu_report.c printed through
  * IOMCU_SAY() before the report moved to shared/bench, for the same values:
  * its format strings copied verbatim into a host program, run once, and
- * its output pasted here.  docs/Bringup.md quotes these lines and log
- * readers parse them, so a difference is a change of the console format.
+ * its output pasted here.  The loop line is the one exception: its text is
+ * the one report_lines.c writes, with no space before a unit
+ * ("loop max 1530us").  docs/Bringup.md quotes these lines and log readers
+ * parse them, so a difference is a change of the console format.
  *
  * At the limits: every field at its widest (UINT32_MAX, INT16_MIN, 0xFFFF,
  * a reset text of 143 and a boot text of 111 characters, the longest their
@@ -137,7 +139,7 @@ TEST_CASE(the_lines_read_as_before)
         "rcbench-iomcu: sense flags 0x0123 present 0x0003 ids 0x2260 0x3220 errors 5 resets 1 2 | bench 1234 cV 567 cA 89 mAh 10 dWh flags 0x1F | temp -123 dC\n",
         "rcbench-iomcu: sense window 20 CH1 -45 mA 5012 mV ch_flags 0x03 | capture state 2 seq 17 move 456 arrive 789\n",
         "rcbench-iomcu: sense map fit 0x7 fast 1 flags 0x0301 | mA 1 -2 3 -4 5 -6 7 -8 9 -10 11 -12 | over 0x005 count 3\n",
-        "rcbench-iomcu: loop max 1530 us, over 500us 12, can max 61 us, report max 248 us\n",
+        "rcbench-iomcu: loop max 1530us, over 500us 12, can max 61us, report max 248us\n",
     };
     report_snap_t s = snap_a();
     check_lines(&s, a, 10u);
@@ -148,7 +150,7 @@ TEST_CASE(the_lines_read_as_before)
         "rcbench-iomcu: reset WHY-TEXT\n",
         "rcbench-iomcu: BOOT-TEXT\n",
         "rcbench-iomcu: CAN did not answer on SPI -- module fitted? wiring on GP9-12?\n",
-        "rcbench-iomcu: loop max 1530 us, over 500us 12, can max 61 us, report max 248 us\n",
+        "rcbench-iomcu: loop max 1530us, over 500us 12, can max 61us, report max 248us\n",
     };
     s = snap_a();
     s.store_off = false;
@@ -164,7 +166,7 @@ TEST_CASE(the_lines_read_as_before)
         "rcbench-iomcu: reset WHY-TEXT\n",
         "rcbench-iomcu: BOOT-TEXT\n",
         "rcbench-iomcu: CAN up, 1000000 bit/s, 123456 requests served, 7 self-test echoes, tx_err 3 rx_err 4 eflg 0x15 tx_drop 9 txq_max 11\n",
-        "rcbench-iomcu: loop max 1530 us, over 500us 12, can max 61 us, report max 248 us\n",
+        "rcbench-iomcu: loop max 1530us, over 500us 12, can max 61us, report max 248us\n",
     };
     s = snap_a();
     s.store_off = false;
@@ -184,8 +186,8 @@ TEST_CASE(the_loop_line_reads_its_four_figures)
     s.loop.sec_max_us[PASS_SEC_REPORT] = 4u;
     char buf[REPORT_LINE_MAX];
     CHECK(report_line(&s, REPORT_L_LOOP, buf, sizeof(buf)) > 0u);
-    CHECK_STR_EQ(buf, "rcbench-iomcu: loop max 1 us, over 500us 2, can max "
-                      "3 us, report max 4 us\n");
+    CHECK_STR_EQ(buf, "rcbench-iomcu: loop max 1us, over 500us 2, can max "
+                      "3us, report max 4us\n");
     /* It is the last line, and it always applies. */
     CHECK_EQ(REPORT_L_LOOP, REPORT_LINES - 1);
 }

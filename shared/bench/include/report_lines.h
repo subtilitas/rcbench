@@ -38,7 +38,7 @@ extern "C" {
  *        every line that can appear together, every field at its widest.
  *        The USB console adds one "\r" a line, 10 bytes at most.
  */
-#define REPORT_BYTES_MAX 1353u
+#define REPORT_BYTES_MAX 1350u
 
 /** @brief Channels of the INA3221 map line: three parts of three. */
 #define REPORT_MAP_CHANNELS 12u

@@ -180,8 +180,8 @@ size_t report_line(const report_snap_t *s, unsigned i, char *buf,
         return s->sense_on ? map_line(s, buf, cap) : 0u;
     case REPORT_L_LOOP:
         return say(buf, cap,
-                   "rcbench-iomcu: loop max %lu us, over %uus %lu, can max "
-                   "%lu us, report max %lu us\n",
+                   "rcbench-iomcu: loop max %luus, over %uus %lu, can max "
+                   "%luus, report max %luus\n",
                    (unsigned long)s->loop.max_us,
                    (unsigned)PASS_STATS_OVER_US,
                    (unsigned long)s->loop.over,

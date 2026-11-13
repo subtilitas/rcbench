@@ -627,10 +627,12 @@ bytes. A `printf()` to the USB console waits at most 1,000us for room in
 the 2,048-byte transmit buffer after the host last took bytes, then drops
 the rest of the line; only the boot lines and the store's lines use it,
 and a host that holds the port open and stops reading costs that wait
-once. A reply on CAN waits for no transmit buffer: it is queued whole in a queue of 16
-frames and leaves 3 frames per pass. A batch still requested 5000us after
-its request to send is aborted with the rest of the queue and counted as
-`tx_drop`.
+once. A reply on CAN waits for no transmit buffer: it is queued whole in
+a queue of 16 frames and leaves in batches of up to 3 frames, one batch
+per pump and two pumps a pass, each batch only after the one before it has
+left. A batch still requested 5000us after its request to send is aborted
+with the rest of the queue, and its frames not yet sent and the queued
+ones are counted as `tx_drop`.
 
 Each depth is a lower bound:
 

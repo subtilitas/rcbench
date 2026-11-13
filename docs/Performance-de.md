@@ -672,9 +672,11 @@ verwirft dann den Rest der Zeile; nur die Boot-Zeilen und die Zeilen des
 Speichers nutzen es, und ein Host, der den Port offen hält und nichts
 abholt, kostet diese Wartezeit einmal. Eine Antwort auf dem CAN
 wartet auf keinen Sendepuffer: Sie kommt ganz in eine Warteschlange von 16
-Frames und geht mit 3 Frames je Durchlauf hinaus. Ein Stapel, der 5000us
-nach seiner Sendeanforderung noch ansteht, wird mit dem Rest der
-Warteschlange abgebrochen und als `tx_drop` gezählt.
+Frames und geht in Stapeln von bis zu 3 Frames hinaus, ein Stapel je
+Pumpen und zweimal Pumpen je Durchlauf, jeder Stapel erst, wenn der vorige
+hinausgegangen ist. Ein Stapel, der 5000us nach seiner Sendeanforderung
+noch ansteht, wird mit dem Rest der Warteschlange abgebrochen; seine noch
+nicht gesendeten Frames und die wartenden zählen als `tx_drop`.
 
 Jede Tiefe ist eine Untergrenze:
 

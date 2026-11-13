@@ -200,10 +200,11 @@ void can_drain(void)
         return;
     }
     /* Each pump moves the next batch on or, CAN_TXQ_STUCK_US after a
-     * batch's RTS, aborts it and empties the queue.  At most 6 batches
-     * (CAN_TXQ_DEPTH queued, 3 on the wire), so at most 30,000us on a bus
-     * that takes each batch just inside the stuck rule; 6 x 465us on a bus
-     * that takes every frame. */
+     * batch's RTS, aborts it and empties the queue.  At most 7 batches
+     * (3 frames on the wire, then CAN_TXQ_DEPTH queued in 6), so at most
+     * 35,000us on a bus that takes each batch just inside the stuck rule;
+     * 7 x 465us = 3,255us on a bus that takes every frame.  Called on the
+     * update's restart only, with arming held (update_hw_holds_arm()). */
     while (can_txq_busy(&s_can_txq)) {
         can_txq_pump(&s_can_txq, time_us_32());
     }
