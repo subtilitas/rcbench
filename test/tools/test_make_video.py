@@ -289,3 +289,31 @@ def test_spring_is_whole_bars():
         assert sum(length for _, length in line) == 8
         assert len(basses) == 2
     assert max(video_audio.SPRING_ORDER) == len(video_audio.SPRING) - 1
+
+
+def test_a_board_scene_is_stretched_with_its_cues():
+    """Every time of a board scene follows its narration cues."""
+    scene = _rework()["scenes"][0]
+    scene.update(say=[{"at": 2, "text": "x"}, {"at": 6, "text": "y"}],
+                 mount=[{"refs": ["M7"], "t": 4}])
+    assert make_video.check({"lang": "en", "steps": 1,
+                             "scenes": [scene]}) == []
+    # The first line needs 8s where the storyboard gives it 4.
+    video_voice._stretch(scene, [0.0, 2, 6, 10], [0.0, 2, 10, 14])
+    assert scene["dur"] == 14
+    assert scene["mount"][0]["t"] == 6
+    assert scene["cuts"][0]["t"] == [8, 10]
+    assert scene["wires"][0]["t"] == [10, 12]
+    assert scene["fit"][0]["t"] == 12.5
+    assert scene["camera"][1][0] == 8
+    assert [cue["at"] for cue in scene["say"]] == [2, 10]
+    assert (scene["tags"][0]["from"], scene["tags"][0]["to"]) == (1.0, 6)
+
+
+def test_the_music_gain_is_bounded():
+    """A storyboard sets its bed from 0 to 2 times the written level."""
+    board = _rework()
+    board["music_gain"] = 0.5
+    assert make_video.check(board) == []
+    board["music_gain"] = 3
+    assert any("music_gain" in e for e in make_video.check(board))

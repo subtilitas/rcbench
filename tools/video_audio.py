@@ -25,7 +25,7 @@ public domain as well, and set down here in the same way.
 "vivaldi-spring" is the opening of "Spring", the concerto RV 269 of
 Antonio Vivaldi (1678 to 1741), first movement: its two themes in E
 major on a bowed voice with the third below, over a bass plucked on
-every eighth, 0.3s an eighth.  It is in the public domain.  The notes are
+every eighth, 0.42s an eighth.  It is in the public domain.  The notes are
 set down from memory of the violin part and are not checked against a
 score.
 
@@ -120,7 +120,7 @@ SPRING = (
       (64, 1)), (45, 47)),
 )
 SPRING_ORDER = (0, 1, 2, 0, 1, 2, 3, 4, 5, 6, 7, 8)
-SPRING_EIGHTH_S = 0.3
+SPRING_EIGHTH_S = 0.42
 BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
 SLOW = 0.05
 BRAKE_S = 1.1
@@ -423,11 +423,11 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
 
     count_s = int((span - 3.0) / bar_s) - 1 if spring else 0
     if spring:
-        bowed(64, SPRING_EIGHTH_S * 0.9, bar_s - SPRING_EIGHTH_S, -0.2, 0.05)
+        bowed(64, SPRING_EIGHTH_S * 0.9, bar_s - SPRING_EIGHTH_S, -0.2, 0.03)
         for note in (40, 52, 64, 68, 71, 76):
             sig, _ = tone(hz(note), 3.6, soft)
             put(music, (count_s + 1) * bar_s, sig * swell(3.6, 0.05, 2.6),
-                0.0, 0.03)
+                0.0, 0.018)
     for bar in range(count_s):
         t0 = (bar + 1) * bar_s
         line, basses = SPRING[SPRING_ORDER[bar % len(SPRING_ORDER)]]
@@ -436,8 +436,8 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             length = eighths * SPRING_EIGHTH_S
             # The last upbeat is left out: the held chord follows.
             if bar < count_s - 1 or at + length < t0 + bar_s - 0.01:
-                bowed(note, length * 0.92, at, -0.2, 0.05)
-                bowed(third_below(note), length * 0.92, at, 0.3, 0.022)
+                bowed(note, length * 0.92, at, -0.2, 0.03)
+                bowed(third_below(note), length * 0.92, at, 0.3, 0.013)
             at += length
         for half, bass in enumerate(basses):
             h0 = t0 + half * bar_s / 2
@@ -445,12 +445,12 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             for note in (bass + 12, bass + 16, bass + 19):
                 sig, _ = tone(hz(note + 12), bar_s / 2 + 0.3, soft)
                 put(music, h0, sig * swell(bar_s / 2 + 0.3, 0.1, 0.3), 0.0,
-                    0.012)
+                    0.007)
             for k in range(4):
                 sig, tt = tone(hz(bass), 0.5, pluck)
                 sig *= np.exp(-tt / 0.16) * np.minimum(1.0, tt / 0.008)
                 put(music, h0 + k * SPRING_EIGHTH_S, sig, 0.0,
-                    0.07 if k == 0 else 0.045)
+                    0.042 if k == 0 else 0.027)
     for bar in range(bars):
         t0 = bar * BAR_S
         bass, notes = CHORDS[bar % len(CHORDS)]
@@ -490,7 +490,9 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
         warped[ch, :n] = ((music[ch, low] * (1.0 - part)
                            + music[ch, low + 1] * part)
                           * np.clip((speed - SLOW) / 0.25, 0.0, 1.0))
-    music = warped
+    # A storyboard's "music_gain" sets the bed against the event sounds
+    # and the narrator.
+    music = warped * float(board.get("music_gain", 1.0))
 
     def chord_at(t):
         t = float(place[min(n - 1, max(0, int(t * RATE)))])

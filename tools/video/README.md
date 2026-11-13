@@ -92,7 +92,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
-| `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 11 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder; 195s, no narration, Vivaldi's Spring as its bed |
+| `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 11 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder; narrated, 243.25s, Vivaldi's Spring as its bed at half level |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -109,7 +109,8 @@ Top level:
 | `lang` | `en` or `de`: the language the renderer draws the screens in |
 | `brand` | the line beside `rcbench` at the top left |
 | `steps` | the count of step marks at the bottom left |
-| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.3s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part and are not checked against a score. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
+| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.42s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part and are not checked against a score. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
+| `music_gain` | optional, 0 to 2, 1 by default: the bed's level against the event sounds and the narrator |
 | `voice` | optional `{name, lang, speed}`: the narrator, a voice of Kokoro such as `af_heart` with `en-us`, or `bm_george` with `en-gb`. `blend` in place of `name` mixes voices by weight: `{"af_heart": 0.6, "af_nicole": 0.4}` |
 | `chapters` | optional: one name per step; the names replace the step marks, each with a bar that fills while its chapter runs |
 | `words` | optional: `tap`, `hold`, `pos`, `gpio`, the player's own words, for another language |
@@ -148,7 +149,7 @@ A `board` scene:
 | `dur` | length in s |
 | `board` | the name of a board under `cad/`, without `.json` |
 | `camera` | keys `[t, [x, y], w]`: the point of the board at the frame's centre and the width of the frame in mm |
-| `title`, `chips` | as in a `case` scene; the board is dimmed to 35% under a title |
+| `title`, `chips`, `say` | as in a `case` scene; the board is dimmed to 35% under a title |
 | `labels` | as in a `case` scene; `anchor` is a pad's name or `[x, y]` in mm |
 | `tags` | optional `{from, to, at, text}` and optional `side` (`l`, `r`, `t`, `b`), `d`, the line's length in pixels, and `style`: a name beside a pad or a point |
 | `nets` | optional `{from, to, net}` and optional `style` (`warn`): the front tracks and the pads of a net lit up |
@@ -242,7 +243,9 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   ```
 
   The drawing holds the front copper's tracks, the pads and each part's
-  courtyard as a plain box. Zones, the inner and back copper, the
+  courtyard as a plain box. An axial part is drawn between its pads: a
+  diode with its band at pad 1, a resistor of value `4k7` with its colour
+  bands. Zones, the inner and back copper, the
   silkscreen and the parts on a module are not drawn. The case scene that
   opens `rbmod-rework` shows the assembly's carrier, which has a later
   layout.

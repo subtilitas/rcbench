@@ -90,6 +90,17 @@ def _keys(keys, size: int, where: str, errors: list) -> None:
         last = key[0]
 
 
+def _check_say(scene: dict, dur: float, where: str, errors: list) -> None:
+    cues = scene.get("say", [])
+    last = -1.0
+    for cue in cues if isinstance(cues, list) else [None]:
+        if not (isinstance(cue, dict) and isinstance(cue.get("text"), str)
+                and _number(cue.get("at")) and last < cue["at"] < dur):
+            errors.append(f"{where}: say holds {{at, text}} with rising at")
+            break
+        last = cue["at"]
+
+
 def _check_case(scene: dict, where: str, errors: list) -> None:
     dur = scene.get("dur")
     if not (_number(dur) and dur > 0):
@@ -130,14 +141,7 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
             errors.append(f"{where} parts: {name} is not one of "
                           f"{', '.join(UNITS)}")
         _keys(keys, 2, f"{where} parts {name}", errors)
-    cues = scene.get("say", [])
-    last = -1.0
-    for cue in cues if isinstance(cues, list) else [None]:
-        if not (isinstance(cue, dict) and isinstance(cue.get("text"), str)
-                and _number(cue.get("at")) and last < cue["at"] < dur):
-            errors.append(f"{where}: say holds {{at, text}} with rising at")
-            break
-        last = cue["at"]
+    _check_say(scene, dur, where, errors)
     for name in ("servo", "pinout"):
         part = scene.get(name)
         if part is None:
@@ -236,6 +240,7 @@ def _check_board(scene: dict, where: str, errors: list) -> None:
             errors.append(f"{where} wire {n + 1}: needs from, to and "
                           "t [t0, t1]")
     _check_build(scene, dur, where, errors)
+    _check_say(scene, dur, where, errors)
     for n, fit in enumerate(scene.get("fit", [])):
         if not (fit.get("kind") in FITS and _place(fit.get("a"))
                 and _place(fit.get("b")) and _number(fit.get("t"))
@@ -414,6 +419,9 @@ def check(board: dict) -> list:
                       "voices")
     if board.get("music", "pads") not in BEDS:
         errors.append(f"music must be one of {', '.join(BEDS)}")
+    gain = board.get("music_gain", 1.0)
+    if not (_number(gain) and 0 <= gain <= 2):
+        errors.append("music_gain is a number from 0 to 2")
     blend = (voice or {}).get("blend")
     if blend is not None and not (
             isinstance(blend, dict) and blend

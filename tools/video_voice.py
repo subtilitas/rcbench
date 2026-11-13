@@ -14,9 +14,10 @@ from github.com/thewh1teagle/kokoro-onnx, release model-files-v1.0.
 A storyboard with "voice" is spoken.  A step of a screen or tour scene
 says its "say", or its title and text; a chapter card its number, title
 and text.  A case scene says the cues of its "say" list at their times,
-and an end scene its "say".  A step that is shorter than its sentence is
-stretched.  A case scene whose cue runs into the next one is stretched as
-well: every time of the scene moves with the cues.
+a board scene the same, and an end scene its "say".  A step that is
+shorter than its sentence is stretched.  A case or board scene whose cue
+runs into the next one is stretched as well: every time of the scene
+moves with the cues.
 
     python3 tools/video_voice.py features          # the lines, as spoken
 
@@ -170,8 +171,18 @@ def _stretch(scene: dict, old: list, new: list) -> None:
             key[0] = move(key[0])
     spans = scene.get("labels", []) + scene.get("chips", [])
     spans += [scene[name] for name in ("title", "pinout") if name in scene]
+    # A board scene: its tags, nets and insets, the spans of its cuts,
+    # wires and joints, and the times its parts take their place.
+    for name in ("tags", "nets", "insets"):
+        spans += scene.get(name, [])
     for span in spans:
         span["from"], span["to"] = move(span["from"]), move(span["to"])
+    for name in ("cuts", "wires", "solder"):
+        for item in scene.get(name, []):
+            item["t"] = [move(t) for t in item["t"]]
+    for name in ("fit", "mount"):
+        for item in scene.get(name, []):
+            item["t"] = move(item["t"])
     if "servo" in scene:
         servo = scene["servo"]
         servo["appear"] = move(servo["appear"])
@@ -244,11 +255,12 @@ def narrate(board: dict) -> tuple:
             step["dur"] = round(max(step["dur"], need), 2)
         elif scene["type"] == "end":
             scene["dur"] = round(max(scene["dur"], need), 2)
-    # A case scene whose line runs into the next cue is stretched: the
+    # A case or board scene whose line runs into the next cue is
+    # stretched: the
     # cues keep their gaps or get the room their lines need, and every
     # other time of the scene follows them.
     for i, scene in enumerate(board["scenes"]):
-        if scene["type"] != "case" or not scene.get("say"):
+        if scene["type"] not in ("case", "board") or not scene.get("say"):
             continue
         mine = [(at, clip) for k, j, at, clip in spoken_lines if k == i]
         old = [0.0] + [at for at, _ in mine] + [scene["dur"]]
@@ -269,7 +281,7 @@ def narrate(board: dict) -> tuple:
             start = t
             continue
         cues = ([cue["at"] for cue in scene.get("say", [])]
-                if scene["type"] == "case" else [0.6])
+                if scene["type"] in ("case", "board") else [0.6])
         for (_, clip), at in zip(mine, cues, strict=False):
             clips.append((start + at, clip))
         start += scene["dur"]

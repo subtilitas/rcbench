@@ -23,8 +23,9 @@ const LOOKS = [
   [/R_1206/, 'none', 'empty'],
 ];
 const MASK = '#17503f', TRACK = '#2c8f70', GOLD = '#d9b04a', HOLE = '#0b1512';
-// The colour bands of an axial resistor by its text, and a default.
-const BANDS = {'2.2 kΩ': ['#d0122a', '#d0122a', '#d0122a', '#c9a227']};
+// The colour bands of an axial resistor by its text or its value.
+const BANDS = {'2.2 kΩ': ['#d0122a', '#d0122a', '#d0122a', '#c9a227'],
+               '4k7': ['#e8c81a', '#7a3fb0', '#d0122a', '#c9a227']};
 
 export function buildBoard(data) {
   const svg = document.querySelector('#pcb');
@@ -77,17 +78,34 @@ export function buildBoard(data) {
         height="${y1 - y0 - .5}" rx=".3" fill="none" stroke="#e8f1ec"
         stroke-opacity=".45" stroke-width=".12"/>`;
     } else if (kind === 'axial') {
-      const wide = x1 - x0 > y1 - y0, len = wide ? x1 - x0 : y1 - y0;
-      const body = Math.min(6.3, len * .52), thick = wide ? y1 - y0 : x1 - x0;
-      h += wide
-        ? `<line x1="${x0 + .9}" y1="${cy}" x2="${x1 - .9}" y2="${cy}"
-            stroke="#c8ccd2" stroke-width=".5"/>
-           <rect x="${cx - body / 2}" y="${cy - thick * .36}" width="${body}"
-            height="${thick * .72}" rx=".7" fill="${fill}"/>`
-        : `<line x1="${cx}" y1="${y0 + .9}" x2="${cx}" y2="${y1 - .9}"
-            stroke="#c8ccd2" stroke-width=".5"/>
-           <rect x="${cx - thick * .36}" y="${cy - body / 2}"
-            width="${thick * .72}" height="${body}" rx=".7" fill="${fill}"/>`;
+      // Drawn along x from its pad 1, then turned onto its pads: a
+      // diode in glass with its band at pad 1, the cathode, or a
+      // resistor with the colour bands of its value.
+      const [a, b] = data.pads.filter(p => p.ref === q.ref);
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      const deg = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+      const diode = /D_DO/.test(q.footprint);
+      const body = diode ? 3.0 : Math.min(6.3, len * .62);
+      const thick = diode ? 1.5 : 2.2, bx = (len - body) / 2;
+      let s = `<line x1="0" y1="0" x2="${len}" y2="0" stroke="#c8ccd2"
+        stroke-width=".5"/>`;
+      if (diode) {
+        s += `<rect x="${bx}" y="${-thick / 2}" width="${body}"
+          height="${thick}" rx=".45" fill="#c9622e"/>
+          <rect x="${bx + .3}" y="${-thick / 2}" width=".5"
+          height="${thick}" fill="#15171c"/>`;
+      } else {
+        s += `<rect x="${bx}" y="${-thick / 2}" width="${body}"
+          height="${thick}" rx=".9" fill="${fill}"/>`;
+        (BANDS[q.value] || []).forEach((c, i, all) => {
+          const at = bx + .9 + i * .85 + (i === all.length - 1 ? .9 : 0);
+          s += `<rect x="${at}" y="${-thick / 2}" width=".45"
+            height="${thick}" fill="${c}"/>`;
+        });
+      }
+      s += `<rect x="${bx}" y="${-thick / 2}" width="${body}"
+        height="${thick * .3}" rx=".3" fill="#fff" fill-opacity=".18"/>`;
+      h += `<g transform="translate(${a.x} ${a.y}) rotate(${deg})">${s}</g>`;
     } else {
       h += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"
         rx=".8" fill="${fill}" fill-opacity="${kind === 'module' ? .93 : .96}"

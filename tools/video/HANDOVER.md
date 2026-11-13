@@ -31,9 +31,9 @@ a new session needs beyond it.
 | `storyboards/features.json` | feature tour, 755.92s, approved by the owner on 2026-11-13 |
 | `tools/video_board.py`, `player/board.js` | a KiCad board drawn flat, with a net lit up, a cut, a wire and a part across two pads |
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
-| `storyboards/rbmod-build.json` | the build of a rev 1 carrier in 11 steps, 195s, no narration, bed `vivaldi-spring` |
+| `storyboards/rbmod-build.json` | the build of a rev 1 carrier in 11 steps, 243.25s, narrated in the voice of `features`, bed `vivaldi-spring` at half level |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 21 cases; the storyboard check, the script, the freezes |
+| `test/tools/test_make_video.py` | 23 cases; the storyboard check, the script, the freezes |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -135,7 +135,11 @@ How the modules are mounted (owner, 2026-11-13):
 - The large holes of the PD trigger (M6, 2) and of the INA3221 (M5, 9)
   take a wire through both boards and solder.
 - Music of `rbmod-build`: Vivaldi's Spring, at the owner's wish. Its
-  notes are from memory and have not been judged by ear.
+  notes are from memory. At 0.3s an eighth and full level the owner
+  found it too fast and much too loud; it plays at 0.42s an eighth and
+  `music_gain` 0.5, not yet judged.
+- The narration of `rbmod-build` has not been heard or checked with a
+  speech recogniser.
 
 Not known:
 

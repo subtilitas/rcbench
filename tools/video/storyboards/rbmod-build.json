@@ -2,6 +2,15 @@
  "name": "rbmod-build",
  "lang": "en",
  "music": "vivaldi-spring",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
  "brand": "rbmod carrier build",
  "steps": 11,
  "scenes": [
@@ -66,6 +75,12 @@
      6.6,
      62
     ]
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Building the R B mod carrier of the R C bench: a revision 1 board, five modules and the rework, in 11 steps."
+    }
    ],
    "labels": [
     {
@@ -1007,6 +1022,72 @@
      "color": "#5a2d82",
      "text": "The <b>9 large holes</b> carry the supply currents. Each takes a piece of bare wire through module and carrier and is filled with solder."
     }
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "This is the bare R B mod carrier, seen from the module side. The eight resistor footprints stay empty. One connector, J 6, sits on the back."
+    },
+    {
+     "at": 5.0,
+     "text": "You need five modules on straight pin strips, two angled pin headers, the connectors, a 3 volt zener diode and a 4.7 kilo ohm resistor. For the rework: a wire, a 2.2 kilo ohm resistor and a 5.6 volt zener diode."
+    },
+    {
+     "at": 9.3,
+     "text": "Step 1. On this board, programming port 3 runs to G P I O 26, which is not 5 volt tolerant. Open that track while the board is bare."
+    },
+    {
+     "at": 18.2,
+     "text": "Scratch the track open between the two pads of R 1, the end footprint next to J 1. Then check that the two pads no longer conduct."
+    },
+    {
+     "at": 23.9,
+     "text": "Step 2. Fit the 3 volt zener diode D 1, with its band on the square pad, and the 4.7 kilo ohm resistor R 9. Solder both on the back."
+    },
+    {
+     "at": 34.9,
+     "text": "Step 3. Fit the J S T connectors on the right edge and the power connector J 8 on the left, and solder them on the back. J 6 goes on the back of the board."
+    },
+    {
+     "at": 49.1,
+     "text": "Step 4. Fit the two angled pin headers, J 1 and J 2, with their pins pointing out over the board edge."
+    },
+    {
+     "at": 59.9,
+     "text": "Step 5. The modules sit on straight pin strips, with the plastic between module and carrier. Without the plastic, the through hole parts can short out. Solder every pin on both sides: on top of the module and on the back of the carrier. Press each module down level, because the display leaves little headroom."
+    },
+    {
+     "at": 72.9,
+     "text": "Start with the R P 23 50 can module, its U S B socket at the board edge."
+    },
+    {
+     "at": 84.5,
+     "text": "Step 6. The two buck modules go on the same way. M 7 also needs its enable pin."
+    },
+    {
+     "at": 98.9,
+     "text": "Step 7. The I N A 3221 module sits on an 8 pin strip."
+    },
+    {
+     "at": 106.5,
+     "text": "Its nine large holes carry the supply currents. Push a piece of bare wire through module and carrier, and fill each hole with solder on both sides."
+    },
+    {
+     "at": 119.5,
+     "text": "Step 8. The U S B C, P D trigger gets the same wire and solder in its two large holes. Set its dip switch to 15 volts."
+    },
+    {
+     "at": 133.1,
+     "text": "Step 9. Now the rework wire. Solder it from pad 20 of the module, G P 15, to the outer pad of R 1."
+    },
+    {
+     "at": 146.9,
+     "text": "Step 10. Solder 2.2 kilo ohm on top of M 7, from the enable pad to the ground pad beside it. It keeps the 5 volts of the programming ports off until the controller switches them on."
+    },
+    {
+     "at": 160.1,
+     "text": "Step 11. Solder the 5.6 volt zener diode on top of M 7, from the output to ground, with its band on the output pad. It takes the energy that a braking servo feeds back."
+    }
    ]
   },
   {
@@ -1026,6 +1107,7 @@
     "2.2 kΩ from M7's EN to GND",
     "5.6 V zener on M7's OUT+"
    ],
+   "say": "The carrier is built. Next, load the I O M C U image for the R B mod carrier.",
    "note": "Next: the IOmcu image rcbench-iomcu-rbmod. Reference: docs/Carrier.md."
   }
  ]
