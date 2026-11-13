@@ -50,6 +50,10 @@ eine Blattspitze im Kanal nicht erreichbar ist:
   Propellerebene und zählt Blätter.
 - Die Marke ist ein Stiftstrich, kein Reflexband. Alles, was auf die Glocke
   geklebt wird, ist Masse auf dem Teil, das ausgewuchtet wird.
+- Den Strich in Linie mit Blatt 1 ziehen. Der Bildschirm zählt Blätter und
+  Winkel ab der Marke.
+- Winkel zählen ab der Marke in der Reihenfolge, in der die Punkte den
+  Indexsensor passieren, also gegen die Drehrichtung.
 - Der Vibrationssensor gehört auf ein starres Teil, so nah am Lager wie
   möglich. Eine nachgiebige Befestigung ist ein Tiefpassfilter.
 

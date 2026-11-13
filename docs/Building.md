@@ -35,6 +35,7 @@ rcbench/
     clock/                wall clock rules: real date or not · file stamps · time zones · the NTP request
     text/                 the interface's words, every language in one table (header only)
     mstime/               wrap-safe comparisons of a 32-bit millisecond counter (header only)
+    vibe/                 balance measurement: index comparator · 1x, 2x and blade-pass demodulator · two-run and four-run solvers
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
     ppm/                  PPM frame layout · PIO and DMA driver
@@ -94,7 +95,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` | | | yes |
+| `hc05` · `vibe` | | | yes |
 | `bleuart` | yes | | yes |
 
 ## Toolchains

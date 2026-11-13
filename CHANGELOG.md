@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- Module `shared/vibe`, host-tested and in no image yet: the balance
+  node's index comparator and its demodulator of the 1x, 2x and blade-pass
+  against the index (integer only, for the ESP32-C6), a no-index mode at an
+  rpm the panel gives, and the two-run and four-run balance corrections for
+  the panel. Angles count from the index mark in the order points pass the
+  index sensor ([vibe](shared/vibe/README.md)).
+
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the
   longest `can_service()` call and the longest report pass
