@@ -10,7 +10,8 @@ commands to the peer and reconnects after a drop. The core is a state
 machine fed events and a millisecond clock. It hands its caller actions
 for the host stack and the peer's stream bytes for a parser. A profile
 (`bleu_profile_t`) names another service, its characteristics by role and
-the connection parameters.
+the connection parameters. A hub (`bleuart_hub.h`) runs up to 5 machines
+on one host stack.
 
 The module has no pin driver and no radio code: the caller runs the BLE
 host stack (NimBLE on the panel) and turns its callbacks into events and
@@ -23,6 +24,7 @@ unique identifier) 0x18F0. The stream bytes go to `protocols/witmotion`.
 | Part | Files | Depends on |
 |---|---|---|
 | Core | `bleuart.c`, `bleuart_adv.c`, `include/bleuart.h` | C11 standard headers |
+| Hub | `bleuart_hub.c`, `include/bleuart_hub.h` | the core |
 
 ## Constraints
 
@@ -33,9 +35,9 @@ unique identifier) 0x18F0. The stream bytes go to `protocols/witmotion`.
 - No heap, no floating point, no mutable global or static state, no clock
   read and no I/O (input/output). A machine (`bleu_t`) is 1000 bytes on
   x86-64, an event (`bleu_evt_t`) 64 bytes, an action (`bleu_act_t`) 52
-  bytes, a profile (`bleu_profile_t`) 88 bytes. `bleuart.c` and
-  `bleuart_adv.c` are 5243 and 2420 bytes of code and constant data with
-  gcc 13 `-Os` there.
+  bytes, a profile (`bleu_profile_t`) 88 bytes, a hub (`bleu_hub_t`) 1112
+  bytes. `bleuart.c`, `bleuart_adv.c` and `bleuart_hub.c` are 5243, 2420
+  and 2634 bytes of code and constant data with gcc 13 `-Os` there.
 - Times are unsigned differences of a free-running 32-bit millisecond
   clock the caller passes in, so a wait holds across the clock's wrap at
   2^32ms.
@@ -258,6 +260,56 @@ upper-case hex), with ` P` (public) or ` R` (random) for the stored form;
 `bleu_addr_parse()` reads hex in either case and the type letter in upper
 case only. Types other than public and random have no letter.
 
+## The hub
+
+`bleuart_hub.h` runs up to 5 machines (`BLEU_HUB_CLIENTS`) on one host
+stack. Each machine gets its owner, 0 to 4, with `bleu_setup()`, and the
+hub a client of that owner with `bleu_hub_add()`. The caller hands each
+event of the host stack to `bleu_hub_event()`, then each event
+`bleu_hub_next_event()` gives to that owner's machine. It hands each
+action of a machine to `bleu_hub_action()` with the owner, then performs
+each action `bleu_hub_next_action()` gives, in order. `bleu_hub_tick()`
+runs the hub's timers; call it at least every 10ms.
+
+| Event | Goes to |
+|---|---|
+| `BLEU_EV_ADV` | the owner of the scan under way, else the owner of the last one |
+| `BLEU_EV_CONNECT` | the token's owner; status 0 makes the handle that owner's |
+| `BLEU_EV_DISCONNECT` | the token's owner, else the owner of the handle |
+| `BLEU_EV_CONN_UPDATE`, `BLEU_EV_NOTIFY` | the owner of the handle, else the token's owner |
+| every other kind | the token's owner |
+
+NimBLE gives every event of a connection the token its connect passed, so
+a DISCONNECT that a port held back reaches its own machine after the
+handle went to another. An event that no added client takes is counted
+in `stray`. A connect that comes up on a handle another client holds ends
+that client's link first, with a DISCONNECT of status `BLEU_STATUS_LOST`:
+its own DISCONNECT was lost. An action on a handle another client holds
+is refused and counted in `refused`; a GATT step is answered with
+`BLEU_STATUS_LOST`.
+
+The host stack runs one scan or one connect at a time (NimBLE answers a
+second with `BLE_HS_EALREADY` or `BLE_HS_EBUSY`). The hub holds that slot:
+
+| A client asks | While | The hub |
+|---|---|---|
+| `BLEU_ACT_SCAN` or `BLEU_ACT_CONNECT` | the slot is free or the client's own | passes it on and gives the slot to it |
+| `BLEU_ACT_SCAN` | another client scans, or its scan waits | answers `BLEU_EV_SCAN_END` with `BLEU_STATUS_BUSY` |
+| `BLEU_ACT_SCAN` | another client connects | cancels that connect and holds the scan until the connect's event, or for 2000ms (`BLEU_SETTLE_MS`); a failed event goes to its client with `BLEU_STATUS_BUSY` |
+| `BLEU_ACT_CONNECT` | another client holds the slot | answers `BLEU_EV_CONNECT` with `BLEU_STATUS_BUSY`: the machine tries again after 1000ms |
+| `BLEU_ACT_CANCEL`, `BLEU_ACT_SCAN_STOP` | another client holds the slot | drops it |
+
+The slot ends on its answer (`BLEU_EV_SCAN_END`, `BLEU_EV_CONNECT`, or a
+`BLEU_EV_DISCONNECT` with the connect's token), on its holder's
+`BLEU_ACT_SCAN_STOP`, or 2000ms after the action's own duration (12000ms
+for a scan, 7000ms for a connect). With one client every action and every
+event passes as it would without the hub.
+
+The hub has two out queues of 8 (`BLEU_HUB_OUT`); a full one drops and
+counts in `drops`. One event or action puts at most 2 events and 2
+actions into them, so a caller that empties them after each call never
+fills them.
+
 ## Use in another project
 
 ```cmake
@@ -299,7 +351,12 @@ the drops, the scans beside a connect, OFF in every state and late
 answers; `test_bleuart_adv.c` the advertising data, the list and the
 address text; `test_bleuart_profile.c` the owner in the tokens, a profile
 with other UUIDs, an optional command characteristic, the profile's
-rules at their limits and the busy connect's retry. The table in `STATUS.md` has the line coverage per file.
+rules at their limits and the busy connect's retry;
+`test_bleuart_hub.c` one client through the hub against the same run
+without it, three clients coming up one connect at a time, routing by
+token and by handle, a scan during another client's connect, a second
+scan, a lost and a held-back DISCONNECT, another client's cancel, stop
+and handle, and the slot's time limits. The table in `STATUS.md` has the line coverage per file.
 
 ```sh
 cmake -S test/host -B test/host/build
