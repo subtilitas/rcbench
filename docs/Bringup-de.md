@@ -39,6 +39,10 @@ Das Panel wiederholt seine Anfrage nach 50ms, und der IOmcu beantwortet
 die Wiederholung aus der Kopie, die er aufbewahrt; das schließt den
 Austausch im Normalfall ab. Erst wenn auch die Antwort auf die
 Wiederholung verloren geht, endet der Austausch nach 1000ms im Timeout.
+Ein Neustart des Panels, während ein Stapel auf dem Bus ist, lässt diesen
+Stapel ohne Bestätigung: Er wird nach 5000us abgebrochen, und seine Frames
+und die der Warteschlange zählen in `tx_drop`. Auf der Station brachte ein
+Neustart des Panels 4.
 `txq_max` ist die größte Zahl gleichzeitig
 wartender Frames seit dem letzten Bericht. Die ersten beiden Zähler zeigen zusammen, welche
 Seite ausfällt:
