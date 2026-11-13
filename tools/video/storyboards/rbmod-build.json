@@ -1233,21 +1233,13 @@
     [
      9.0,
      [
-      2,
-      62
+      44,
+      84
      ],
-     56
+     62
     ],
     [
-     21.6,
-     [
-      2,
-      62
-     ],
-     56
-    ],
-    [
-     24.0,
+     36.6,
      [
       44,
       84
@@ -1255,15 +1247,23 @@
      62
     ],
     [
-     52.0,
+     39.4,
      [
-      44,
-      84
+      6,
+      71
      ],
-     62
+     74
     ],
     [
-     55.0,
+     57.0,
+     [
+      6,
+      71
+     ],
+     74
+    ],
+    [
+     60.0,
      [
       83,
       48.5
@@ -1271,7 +1271,7 @@
      190
     ],
     [
-     57.0,
+     62.0,
      [
       83,
       48.5
@@ -1302,27 +1302,11 @@
      "side": "b",
      "size": "sm",
      "title": "The panel from the back",
-     "text": "The 7 inch ESP32-P4 display board. Two cables run from here to the carrier."
+     "text": "The 7 inch ESP32-P4 display board. Three cables run from here to the carrier."
     },
     {
-     "from": 9.2,
-     "to": 21.4,
-     "anchor": [
-      -8,
-      63.8
-     ],
-     "at": [
-      1300,
-      640
-     ],
-     "side": "t",
-     "n": 13,
-     "title": "CAN header: link and supply",
-     "text": "A 4-pin PH2.0 cable. <b>H and L</b> go to the screw terminal of the RP2350-CAN. <b>5 V and GND</b> come from J7 on the carrier. The 120 Ω termination is on at both ends."
-    },
-    {
-     "from": 24.2,
-     "to": 30.8,
+     "from": 9.4,
+     "to": 16.0,
      "anchor": [
       44.25,
       99
@@ -1334,6 +1318,37 @@
      "n": 13,
      "title": "Header P3: two of twelve wires",
      "text": "The 12-pin PH2.0 cable carries the heartbeat. <b>IO28 and GND</b> go to J3 on the carrier. The other ten wires come out of the plug."
+    },
+    {
+     "from": 39.8,
+     "to": 56.8,
+     "anchor": [
+      -9,
+      63
+     ],
+     "at": [
+      1250,
+      130
+     ],
+     "n": 13,
+     "title": "CAN header: the link",
+     "text": "A 4-pin PH2.0 cable. <b>H, L and GND</b> go to the screw terminal of the RP2350-CAN. Its 5 V wire comes out. The 120 Ω termination is on at both ends."
+    },
+    {
+     "from": 40.2,
+     "to": 56.8,
+     "anchor": [
+      -9,
+      79
+     ],
+     "at": [
+      1250,
+      640
+     ],
+     "side": "t",
+     "n": 13,
+     "title": "RS485 header: the panel's supply",
+     "text": "A second 4-pin cable. Its <b>5 V and GND</b> pins take the supply from J7 on the carrier, the connector with 5 V twice and GND twice. The wires A and B come out."
     }
    ],
    "tags": [
@@ -1345,134 +1360,96 @@
      "side": "r"
     },
     {
-     "from": 1.3,
+     "from": 1.2,
+     "to": 6.6,
+     "at": "RS485.A",
+     "text": "RS485 header",
+     "side": "r"
+    },
+    {
+     "from": 1.4,
      "to": 6.6,
      "at": "P3.7",
      "text": "12-pin header P3",
      "side": "t"
     },
     {
-     "from": 9.4,
-     "to": 21.4,
-     "at": "CAN.L",
-     "text": "L → CAN L on M1",
-     "side": "r"
-    },
-    {
      "from": 9.6,
-     "to": 21.4,
-     "at": "CAN.H",
-     "text": "H → CAN H on M1",
-     "side": "r"
-    },
-    {
-     "from": 9.8,
-     "to": 21.4,
-     "at": "CAN.GND",
-     "text": "GND → J7",
-     "side": "r"
-    },
-    {
-     "from": 10.0,
-     "to": 21.4,
-     "at": "CAN.5V",
-     "text": "5 V → J7",
-     "side": "r"
-    },
-    {
-     "from": 24.4,
-     "to": 54.0,
+     "to": 36.4,
      "at": "P3.2",
      "text": "GND → J3",
      "side": "t",
      "d": 110
     },
     {
-     "from": 24.6,
-     "to": 54.0,
+     "from": 9.8,
+     "to": 36.4,
      "at": "P3.7",
      "text": "IO28 → J3 · heartbeat",
      "side": "t",
      "d": 60
+    },
+    {
+     "from": 40.0,
+     "to": 56.8,
+     "at": "CAN.L",
+     "text": "L → CAN L on M1",
+     "side": "r"
+    },
+    {
+     "from": 40.2,
+     "to": 56.8,
+     "at": "CAN.H",
+     "text": "H → CAN H on M1",
+     "side": "r"
+    },
+    {
+     "from": 40.4,
+     "to": 56.8,
+     "at": "CAN.GND",
+     "text": "GND → G on M1",
+     "side": "r"
+    },
+    {
+     "from": 40.6,
+     "to": 56.8,
+     "at": "CAN.5V",
+     "text": "5 V · taken out",
+     "side": "r",
+     "style": "muted"
+    },
+    {
+     "from": 40.8,
+     "to": 56.8,
+     "at": "RS485.B",
+     "text": "B · taken out",
+     "side": "r",
+     "style": "muted"
+    },
+    {
+     "from": 41.0,
+     "to": 56.8,
+     "at": "RS485.A",
+     "text": "A · taken out",
+     "side": "r",
+     "style": "muted"
+    },
+    {
+     "from": 41.2,
+     "to": 56.8,
+     "at": "RS485.GND",
+     "text": "GND ← J7",
+     "side": "r"
+    },
+    {
+     "from": 41.4,
+     "to": 56.8,
+     "at": "RS485.5V",
+     "text": "5 V ← J7",
+     "side": "r"
     }
    ],
    "wires": [
-    {
-     "from": "CAN.L",
-     "to": [
-      -24,
-      57.510000000000005
-     ],
-     "via": [
-      [
-       -6,
-       60.81
-      ]
-     ],
-     "color": "#3fa7e8",
-     "plain": true,
-     "t": [
-      10.2,
-      11.6
-     ]
-    },
-    {
-     "from": "CAN.H",
-     "to": [
-      -24,
-      61.71
-     ],
-     "via": [
-      [
-       -6,
-       62.81
-      ]
-     ],
-     "color": "#e8c81a",
-     "plain": true,
-     "t": [
-      10.6,
-      12.0
-     ]
-    },
-    {
-     "from": "CAN.GND",
-     "to": [
-      -24,
-      65.91
-     ],
-     "via": [
-      [
-       -6,
-       64.81
-      ]
-     ],
-     "color": "#2b2e35",
-     "plain": true,
-     "t": [
-      11.0,
-      12.4
-     ]
-    },
-    {
-     "from": "CAN.5V",
-     "to": [
-      -24,
-      70.11
-     ],
-     "via": [
-      [
-       -6,
-       66.81
-      ]
-     ],
-     "color": "#e5484d",
-     "plain": true,
-     "t": [
-      11.399999999999999,
-      12.8
-     ]
-    },
     {
      "from": "P3.1",
      "to": [
@@ -1488,12 +1465,12 @@
      "color": "#e5484d",
      "plain": true,
      "t": [
-      24.6,
-      26.0
+      9.8,
+      11.2
      ],
      "gone": [
-      36.0,
-      37.2
+      21.0,
+      22.2
      ]
     },
     {
@@ -1511,8 +1488,8 @@
      "color": "#2b2e35",
      "plain": true,
      "t": [
-      24.700000000000003,
-      26.1
+      9.9,
+      11.299999999999999
      ]
     },
     {
@@ -1530,12 +1507,12 @@
      "color": "#e8c81a",
      "plain": true,
      "t": [
-      24.8,
-      26.2
+      10.0,
+      11.399999999999999
      ],
      "gone": [
-      36.8,
-      38.0
+      21.8,
+      23.0
      ]
     },
     {
@@ -1553,12 +1530,12 @@
      "color": "#3fa7e8",
      "plain": true,
      "t": [
-      24.900000000000002,
-      26.3
+      10.100000000000001,
+      11.5
      ],
      "gone": [
-      37.6,
-      38.800000000000004
+      22.6,
+      23.8
      ]
     },
     {
@@ -1576,12 +1553,12 @@
      "color": "#4cc26a",
      "plain": true,
      "t": [
-      25.0,
-      26.4
+      10.200000000000001,
+      11.6
      ],
      "gone": [
-      38.4,
-      39.6
+      23.4,
+      24.6
      ]
     },
     {
@@ -1599,12 +1576,12 @@
      "color": "#e88a2b",
      "plain": true,
      "t": [
-      25.1,
-      26.5
+      10.3,
+      11.7
      ],
      "gone": [
-      39.2,
-      40.400000000000006
+      24.2,
+      25.4
      ]
     },
     {
@@ -1622,8 +1599,8 @@
      "color": "#f2f2f2",
      "plain": true,
      "t": [
-      25.200000000000003,
-      26.6
+      10.4,
+      11.799999999999999
      ]
     },
     {
@@ -1641,12 +1618,12 @@
      "color": "#9b59d0",
      "plain": true,
      "t": [
-      25.3,
-      26.7
+      10.5,
+      11.899999999999999
      ],
      "gone": [
-      40.0,
-      41.2
+      25.0,
+      26.2
      ]
     },
     {
@@ -1664,12 +1641,12 @@
      "color": "#8a6a4a",
      "plain": true,
      "t": [
-      25.400000000000002,
-      26.8
+      10.600000000000001,
+      12.0
      ],
      "gone": [
-      40.8,
-      42.0
+      25.8,
+      27.0
      ]
     },
     {
@@ -1687,12 +1664,12 @@
      "color": "#e86aa6",
      "plain": true,
      "t": [
-      25.5,
-      26.9
+      10.700000000000001,
+      12.1
      ],
      "gone": [
-      41.6,
-      42.800000000000004
+      26.6,
+      27.8
      ]
     },
     {
@@ -1710,12 +1687,12 @@
      "color": "#6ad0d0",
      "plain": true,
      "t": [
-      25.6,
-      27.0
+      10.8,
+      12.2
      ],
      "gone": [
-      42.4,
-      43.6
+      27.4,
+      28.6
      ]
     },
     {
@@ -1733,19 +1710,183 @@
      "color": "#c9cdd3",
      "plain": true,
      "t": [
-      25.700000000000003,
-      27.1
+      10.9,
+      12.299999999999999
      ],
      "gone": [
-      43.2,
-      44.400000000000006
+      28.2,
+      29.4
+     ]
+    },
+    {
+     "from": "CAN.L",
+     "to": [
+      -26,
+      58.410000000000004
+     ],
+     "via": [
+      [
+       -6,
+       60.81
+      ]
+     ],
+     "color": "#3fa7e8",
+     "plain": true,
+     "t": [
+      40.2,
+      41.6
+     ]
+    },
+    {
+     "from": "CAN.H",
+     "to": [
+      -26,
+      62.010000000000005
+     ],
+     "via": [
+      [
+       -6,
+       62.81
+      ]
+     ],
+     "color": "#e8c81a",
+     "plain": true,
+     "t": [
+      40.400000000000006,
+      41.800000000000004
+     ]
+    },
+    {
+     "from": "CAN.GND",
+     "to": [
+      -26,
+      65.61
+     ],
+     "via": [
+      [
+       -6,
+       64.81
+      ]
+     ],
+     "color": "#2b2e35",
+     "plain": true,
+     "t": [
+      40.6,
+      42.0
+     ]
+    },
+    {
+     "from": "CAN.5V",
+     "to": [
+      -26,
+      69.21000000000001
+     ],
+     "via": [
+      [
+       -6,
+       66.81
+      ]
+     ],
+     "color": "#e5484d",
+     "plain": true,
+     "t": [
+      40.800000000000004,
+      42.2
+     ],
+     "gone": [
+      46.0,
+      47.4
+     ]
+    },
+    {
+     "from": "RS485.B",
+     "to": [
+      -26,
+      73.19999999999999
+     ],
+     "via": [
+      [
+       -6,
+       75.6
+      ]
+     ],
+     "color": "#3fa7e8",
+     "plain": true,
+     "t": [
+      40.2,
+      41.6
+     ],
+     "gone": [
+      47.0,
+      48.4
+     ]
+    },
+    {
+     "from": "RS485.A",
+     "to": [
+      -26,
+      76.8
+     ],
+     "via": [
+      [
+       -6,
+       77.6
+      ]
+     ],
+     "color": "#e8c81a",
+     "plain": true,
+     "t": [
+      40.400000000000006,
+      41.800000000000004
+     ],
+     "gone": [
+      48.0,
+      49.4
+     ]
+    },
+    {
+     "from": "RS485.GND",
+     "to": [
+      -26,
+      80.39999999999999
+     ],
+     "via": [
+      [
+       -6,
+       79.6
+      ]
+     ],
+     "color": "#2b2e35",
+     "plain": true,
+     "t": [
+      40.6,
+      42.0
+     ]
+    },
+    {
+     "from": "RS485.5V",
+     "to": [
+      -26,
+      84.0
+     ],
+     "via": [
+      [
+       -6,
+       81.6
+      ]
+     ],
+     "color": "#e5484d",
+     "plain": true,
+     "t": [
+      40.800000000000004,
+      42.2
      ]
     }
    ],
    "insets": [
     {
-     "from": 31.0,
-     "to": 51.6,
+     "from": 16.4,
+     "to": 36.4,
      "kind": "extract",
      "at": [
       1180,
@@ -1761,19 +1902,23 @@
    "say": [
     {
      "at": 0.5,
-     "text": "Step 13. The wiring on the back of the panel. Two cables run from here to the carrier."
+     "text": "Step 13. The wiring on the back of the panel. Three cables run from here to the carrier."
     },
     {
      "at": 7.4,
-     "text": "A four pin cable goes into the can header. Can high and can low run to the screw terminal of the R P 23 50 can module. 5 volts and ground come from J 7 on the carrier. The 120 ohm termination is on at both ends."
-    },
-    {
-     "at": 22.4,
      "text": "The heartbeat uses the twelve pin header P 3. Only two of its twelve wires are needed: ground, and I-O 28. Both go to J 3 on the carrier."
     },
     {
-     "at": 31.4,
+     "at": 16.4,
      "text": "Take the ten unused wires out of the plug. Each contact is held by a small metal tongue that sits in a window of the housing. Press the tongue down with a needle, and pull the wire out to the back, without force."
+    },
+    {
+     "at": 37.4,
+     "text": "A four pin cable goes into the can header. Can high, can low and ground run to the screw terminal of the R P 23 50 can module. Its 5 volt wire is not used and comes out."
+    },
+    {
+     "at": 47.0,
+     "text": "The panel gets its supply through the R-S 4 85 header. Its 5 volt and ground pins are wired to J 7 on the carrier, the connector with 5 volts twice and ground twice. The wires A and B come out."
     }
    ]
   },
@@ -1794,7 +1939,7 @@
     "2.2 kΩ from M7's EN to GND",
     "5.6 V zener on M7's OUT+",
     "J6 to a USB-C plug for the PD mini",
-    "Panel: CAN cable, heartbeat on P3"
+    "Panel: heartbeat, CAN, 5 V on the RS485 header"
    ],
    "say": "The carrier is built and wired. Next, load the I O M C U image for the R B mod carrier.",
    "note": "Next: the IOmcu image rcbench-iomcu-rbmod. Reference: docs/Carrier.md."

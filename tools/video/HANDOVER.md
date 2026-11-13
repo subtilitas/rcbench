@@ -31,7 +31,7 @@ a new session needs beyond it.
 | `storyboards/features.json` | feature tour, 755.92s, approved by the owner on 2026-11-13 |
 | `tools/video_board.py`, `player/board.js` | a KiCad board drawn flat, with a net lit up, a cut, a wire and a part across two pads |
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
-| `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 334.48s, narrated in the voice of `features`, bed `vivaldi-spring` at half level |
+| `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 342.81s, narrated in the voice of `features`, bed `vivaldi-spring` at half level |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `test/tools/test_make_video.py` | 25 cases; the storyboard check, the script, the freezes |
 
@@ -143,6 +143,9 @@ How the modules are mounted (owner, 2026-11-13):
 - The panel's back is shown redrawn, not as the maker's photo, with the
   wiring to the carrier; the wires of the 12-pin plug that are not used
   are taken out of the plug.
+- The panel's supply: J7 on the carrier (5V twice, GND twice) to the
+  5V and GND pins of the panel's RS485 header. The CAN cable carries H,
+  L and GND only; its 5V wire is taken out.
 - The narrator said "G P I O" with pauses; abbreviations are written
   with hyphens, `G-P-I-O`, `G-P 15`, `J-S-T`, `P-D`.
 - Music of `rbmod-build`: Vivaldi's Spring, at the owner's wish. Its

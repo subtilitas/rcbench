@@ -455,12 +455,12 @@ without narration: the track cut between the pads of R1, the wire from GP15 to R
 the 2.2kΩ pull-down on M7's EN and the 5.6V zener on M7's output. It draws the board flat
 (`tools/video/player/board.js`) from a file that `tools/video_board.py` converts from the
 rev 1 KiCad board, which is not in the tree. `rbmod-build` shows the build of a rev 1 carrier
-in 13 steps and 334.48s on the same board, narrated, with Vivaldi's Spring as its bed: the parts take
+in 13 steps and 342.81s on the same board, narrated, with Vivaldi's Spring as its bed: the parts take
 their places, the modules sit on the plastic of straight pin strips and are soldered on both
 sides, the large holes of M5 and M6 take a wire and solder, J6 takes no connector but 4 wires
 to a USB-C plug board for the PD mini, and a drawing of the panel's back
-(`tools/video/boards/p4-7b-back.json`) shows the CAN cable and the 2 wires of header P3 that
-stay in its 12-pin plug. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+(`tools/video/boards/p4-7b-back.json`) shows the 2 wires of header P3 that stay in its 12-pin plug, the CAN cable and the
+supply from J7 on the RS485 header's 5V and GND pins. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
 there is not confirmed. A render is not run in CI.
 
 [Videos from storyboards](tools/video/README.md).

@@ -93,7 +93,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
-| `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with its CAN cable and the heartbeat wires of header P3; narrated, 334.48s, Vivaldi's Spring as its bed at half level |
+| `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 342.81s, Vivaldi's Spring as its bed at half level |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -264,10 +264,10 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 - The panel's back is drawn from the maker's photo of the board:
   positions within about 2mm, the header labels as read from that photo,
   those of P3's last two and P4's fourth pin not read with certainty.
-  Which of the two 12-pin headers is P3 follows from IO28 on it. In the
-  video the CAN cable's 5V and GND end at the carrier's J7 and its H and
-  L at the RP2350-CAN's terminal; the tree states the 3 link wires and
-  the 5V pin of the header, not where 5V and GND end.
+  Which of the two 12-pin headers is P3 follows from IO28 on it. The
+  CAN cable's H, L and GND end at the RP2350-CAN's terminal. The panel's
+  supply is the carrier's J7 (5V twice, GND twice) on the 5V and GND pins
+  of the RS485 header (owner, 2026-11-13).
 - How a wire leaves a PH2.0 plug is described from the JST PH contact's
   form: a lance on the contact stands in a window of the housing, is
   pressed down with a needle and the wire is pulled out to the back. It
