@@ -1332,7 +1332,7 @@
      ],
      "n": 13,
      "title": "CAN header: the link",
-     "text": "A 4-pin PH2.0 cable. <b>H, L and GND</b> go to the screw terminal of the RP2350-CAN. Its 5 V wire comes out. The 120 Ω termination is on at both ends."
+     "text": "A 4-pin PH2.0 cable. Only <b>H and L</b> go to the screw terminal of the RP2350-CAN. Its GND and 5 V wires come out: ground comes through J7. The 120 Ω termination is on at both ends."
     },
     {
      "from": 40.2,
@@ -1348,7 +1348,7 @@
      "side": "t",
      "n": 13,
      "title": "RS485 header: the panel's supply",
-     "text": "A second 4-pin cable. Its <b>5 V and GND</b> pins take the supply from J7 on the carrier, the connector with 5 V twice and GND twice. The wires A and B come out."
+     "text": "A second 4-pin cable. Its <b>5 V and GND</b> pins take the supply from J7 on the carrier, the connector with 5 V twice and GND twice. No other ground wire runs to the panel. The wires A and B come out."
     }
    ],
    "tags": [
@@ -1407,8 +1407,9 @@
      "from": 40.4,
      "to": 56.8,
      "at": "CAN.GND",
-     "text": "GND → G on M1",
-     "side": "r"
+     "text": "GND · taken out",
+     "side": "r",
+     "style": "muted"
     },
     {
      "from": 40.6,
@@ -1773,6 +1774,10 @@
      "t": [
       40.6,
       42.0
+     ],
+     "gone": [
+      46.0,
+      47.4
      ]
     },
     {
@@ -1794,8 +1799,8 @@
       42.2
      ],
      "gone": [
-      46.0,
-      47.4
+      47.0,
+      48.4
      ]
     },
     {
@@ -1817,8 +1822,8 @@
       41.6
      ],
      "gone": [
-      47.0,
-      48.4
+      48.0,
+      49.4
      ]
     },
     {
@@ -1840,8 +1845,8 @@
       41.800000000000004
      ],
      "gone": [
-      48.0,
-      49.4
+      49.0,
+      50.4
      ]
     },
     {
@@ -1914,11 +1919,11 @@
     },
     {
      "at": 37.4,
-     "text": "A four pin cable goes into the can header. Can high, can low and ground run to the screw terminal of the R P 23 50 can module. Its 5 volt wire is not used and comes out."
+     "text": "A four pin cable goes into the can header. Only can high and can low run to the screw terminal of the R P 23 50 can module. Its ground and 5 volt wires are not used and come out."
     },
     {
      "at": 47.0,
-     "text": "The panel gets its supply through the R-S 4 85 header. Its 5 volt and ground pins are wired to J 7 on the carrier, the connector with 5 volts twice and ground twice. The wires A and B come out."
+     "text": "The panel gets its supply through the R-S 4 85 header. Its 5 volt and ground pins are wired to J 7 on the carrier, the connector with 5 volts twice and ground twice. The wires A and B come out. This is the only ground between panel and carrier."
     }
    ]
   },
