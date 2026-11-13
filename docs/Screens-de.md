@@ -5884,6 +5884,11 @@ Panel berührt und der Prüfstand ruht.
   offene Aufzeichnung. Ein Frame, der eine davon findet, setzt sofort 100%
   und startet die Minuten neu. Ein Prüfstand bei ARMED oder ein
   eingeschalteter Ausgang steht nie hinter einem gedimmten Bild.
+- FAULT 01, LINK_SILENT, allein zählt nicht. Der IOmcu meldet es nach
+  einem Neustart des Panels, und es steht bis zum nächsten ARM. Jedes
+  andere FAULT-Bit hält das Bild hell, mit oder ohne Bit 01. Der Chip
+  FAULT im Band zeigt Bit 01 weiter, und das Popup des Screenshots wartet
+  weiter darauf.
 - Eine Zeile auf dem Weg ins Fehlerprotokoll der Karte zählt nicht. Das
   Popup wartet auf sie, damit Screenshot und Zeile die Karte nicht
   gleichzeitig nutzen. Der Link-Bericht schreibt eine alle 60s, solange

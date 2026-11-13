@@ -435,7 +435,9 @@ Built and tested on the host (`shared/ui/screen_dim.c`; `test_screen_dim`):
 SETUP > PANEL's Dim after drops the backlight's PWM duty from 100% to 20% after 5 to
 60min without a touch event, only while the screenshot gate finds the bench idle; a
 frame that does not finds it lit at once. A line on its way to the card's fault log, which
-the link report writes every 60s, does not count (`screen_dim_idle()`). The console
+the link report writes every 60s, does not count (`screen_dim_idle()`), nor does FAULT 01
+(LINK_SILENT) alone, the IOmcu's report after a restart of the panel until the next ARM
+(`shot_facts_t::no_lit_fault`); every other FAULT bit does. The console
 prints `dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%` every 300
 frames (`screen_dim_line()`, `backlight_line()`). The press that wakes a dim screen reaches no
 screen, except a press on STOP. `firmware/panel/main/panel_render.c` sets the duty with

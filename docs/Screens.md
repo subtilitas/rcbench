@@ -5394,6 +5394,11 @@ bench is idle.
   log. A frame that finds any of them sets 100% at once and starts the
   minutes again. An ARMED bench or an output that is on is never behind a
   dim screen.
+- FAULT 01, LINK_SILENT, alone does not count. The IOmcu reports it after
+  a restart of the panel, and it stands until the next ARM. Every other
+  FAULT bit keeps the screen lit, with bit 01 up or not. The band's FAULT
+  chip shows bit 01 as before, and the screenshot's popup still waits for
+  it.
 - A line on its way to the card's fault log does not count. The popup
   waits for it, so the screenshot and the line do not share the card. The
   link report writes one every 60s while the link to the IOmcu is up and

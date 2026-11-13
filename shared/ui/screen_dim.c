@@ -35,6 +35,11 @@ shot_wait_t screen_dim_wait(const shot_facts_t *facts)
      * link report writes one every 60s on a link that is up. */
     shot_facts_t f = *facts;
     f.no_card_fault = true;
+    /* FAULT 01, LINK_SILENT, is what the IOmcu reports after a restart of
+     * the panel, and it stands until the next ARM: it keeps the screen
+     * lit no longer.  Every other FAULT bit does, and the band's FAULT
+     * chip shows them all. */
+    f.no_fault = f.no_fault || f.no_lit_fault;
     return shot_gate(&f);
 }
 

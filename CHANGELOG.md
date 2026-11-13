@@ -83,6 +83,11 @@ history is in git.
   and the band says so in one line, such as `Current limit stays at 1.00A
   until the output is off.`
   ([Screens](docs/Screens.md#supply-settings)).
+- Dim after: FAULT 01, LINK_SILENT, alone no longer keeps the screen lit.
+  The IOmcu reports it after a restart of the panel until the next ARM, so
+  the screen never dimmed until then. Every other FAULT bit keeps the
+  screen lit, and the FAULT chip shows every bit
+  ([PANEL: Dim after](docs/Screens.md#panel-dim-after)).
 
 ### Fixed
 

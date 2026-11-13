@@ -14,6 +14,7 @@
 #include "esc_wire_panel.h"
 #include "hitec_panel.h"
 #include "kst_panel.h"
+#include "link_pages.h"
 #include "servo_screen.h"
 #include "supply_screen.h"
 
@@ -45,6 +46,8 @@ void shot_facts_read(const shot_bench_t *b, shot_facts_t *out)
     out->no_stick_run = esc_stick_panel_profile() == NULL;
     out->no_update = !b->cu_active && !b->update_busy;
     out->no_fault = b->faults == 0u;
+    out->no_lit_fault =
+        (b->faults & (uint16_t)~(uint16_t)LINK_FAULT_LINK_SILENT) == 0u;
     out->no_card_fault = !b->fault_log_out;
     out->no_recording = !b->run_open;
 }
