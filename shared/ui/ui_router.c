@@ -1468,9 +1468,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
      * leaves nothing behind.  A frame that repainted all already drew
      * every string. */
     const uint32_t drawn = guide ? ui_help_marks_key(&page) : 0u;
-    if (guide && !repaint && drawn != marks) {
-        ui_router_invalidate();
-    }
+    if (guide && !repaint && drawn != marks) { ui_router_invalidate(); }
     s.guide_marked = guide;
     s.guide_marks  = drawn;
 
