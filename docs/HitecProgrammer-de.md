@@ -437,7 +437,7 @@ ZURÜCKSPIELEN geprüft endet oder er verworfen wird. Mit Karte
 wird er beim nächsten Start des Panels wieder gelesen: ein Panel, das
 während eines Schreibens neu startet, behält ihn. Dann sagt das
 Meldungsband `Schreiben wurde unterbrochen. Die Einstellungen können unvollständig sein.` und `Benutze das Servo nicht. Schließe es an GPIO 13 an und tippe auf ALLES AUSLESEN.`, und der Reiter SERVO behält die
-erste Zeile, bis ein Servo gelesen ist. Das nächste vollständige Lesen
+erste Zeile, bis ein Servo gelesen ist. Solange das Schreiben läuft, zeigt der Reiter stattdessen den Schritt des Schreibens. Das nächste vollständige Lesen
 vergleicht das Servo mit dem Vermerk, Adresse für Adresse über die
 Adressen, die ein Schreiben ändert:
 
