@@ -8,6 +8,9 @@
  * - a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip
  * - discard_gives_back_the_set_points_a_typed_cap_brought_down
  * - discard_on_a_live_output_gives_the_set_points_back_at_the_off
+ * - a_set_point_chosen_after_the_clamp_survives_discard
+ * - a_cap_saved_at_another_value_gives_nothing_back
+ * - discard_under_a_port_or_an_on_on_its_way_says_nothing
  * - a_drag_on_a_live_output_changes_nothing_until_it_is_answered
  * - the_output_switch_works_under_every_overlay
  * - a_second_finger_on_a_track_changes_nothing_while_off_is_held
@@ -172,6 +175,140 @@ TEST_CASE(discard_on_a_live_output_gives_the_set_points_back_at_the_off)
     supply_screen_set_output(false);
     CHECK_NEAR(supply_screen_set_v(), 9.0f, 1e-4f);
     CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+}
+
+/*
+ * A set point chosen after the clamp is the operator's: a later DISCARD
+ * leaves it, by the keypad's put, by a slider and by a port's set points
+ * taken over.  Voltage and current limit alike.
+ */
+TEST_CASE(a_set_point_chosen_after_the_clamp_survives_discard)
+{
+    fresh();
+    supply_screen_put(9.0f, 2.0f);
+    settings_set(SET_SUPPLY_V_MAX, 5.0f);
+    settings_set(SET_SUPPLY_I_MAX, 0.5f);
+    supply_screen_limits_changed();
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 0.5f, 1e-4f);
+    supply_screen_put(3.3f, 0.5f);          /* the operator's own choice */
+    CHECK_NEAR(supply_screen_set_v(), 3.3f, 1e-4f);
+    (void)settings_discard();
+    settings_apply_all();
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_v(), 3.3f, 1e-4f);
+    /* The current limit, not written, comes back. */
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+
+    /* Written away and back to the clamp's value: still the operator's. */
+    fresh();
+    supply_screen_put(9.0f, 2.0f);
+    settings_set(SET_SUPPLY_V_MAX, 5.0f);
+    supply_screen_limits_changed();
+    supply_screen_put(3.3f, 2.0f);
+    supply_screen_put(5.0f, 2.0f);
+    (void)settings_discard();
+    settings_apply_all();
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+
+    /* A port's set points taken over, then the operator's own back. */
+    fresh();
+    supply_screen_put(9.0f, 2.0f);
+    settings_set(SET_SUPPLY_V_MAX, 5.0f);
+    supply_screen_limits_changed();
+    supply_screen_adopt(4.0f, 1.0f);
+    (void)settings_discard();
+    settings_apply_all();
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_v(), 4.0f, 1e-4f);
+}
+
+/** @brief A store that takes every save. */
+static bool store_takes(const float *v, int n)
+{
+    (void)v;
+    (void)n;
+    return true;
+}
+
+/** @brief The store store_takes() is. */
+static const settings_store_t k_store = { .save = store_takes };
+
+/*
+ * A cap saved at another value gives nothing back: neither the save of the
+ * lowered cap nor of one raised again but under the kept set point, nor a
+ * DISCARD after the save.
+ */
+TEST_CASE(a_cap_saved_at_another_value_gives_nothing_back)
+{
+    fresh();
+    supply_screen_put(9.0f, 2.0f);
+    settings_set(SET_SUPPLY_V_MAX, 5.0f);
+    supply_screen_limits_changed();
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    settings_set(SET_SUPPLY_V_MAX, 8.0f);
+    supply_screen_limits_changed();
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    settings_set_store(&k_store);
+    CHECK(settings_save());
+    CHECK(!settings_differs(SET_SUPPLY_V_MAX));
+    supply_screen_set_output(false);        /* the next supply report */
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    (void)settings_discard();
+    settings_apply_all();
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+
+    /* Saved at the lowered value itself. */
+    fresh();
+    supply_screen_put(9.0f, 2.0f);
+    settings_set(SET_SUPPLY_V_MAX, 5.0f);
+    supply_screen_limits_changed();
+    settings_set_store(&k_store);
+    CHECK(settings_save());
+    settings_set(SET_SUPPLY_V_MAX, 21.0f);
+    supply_screen_limits_changed();
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    settings_set_store(NULL);
+}
+
+/*
+ * DISCARD while a programming port holds the supply, or while an ON is on
+ * its way: the output is not on, so the band says nothing; the set point
+ * waits and comes back at the first supply report with the output off and
+ * the supply free.
+ */
+TEST_CASE(discard_under_a_port_or_an_on_on_its_way_says_nothing)
+{
+    fresh();
+    supply_screen_put(9.0f, 2.0f);
+    settings_set(SET_SUPPLY_V_MAX, 5.0f);
+    supply_screen_limits_changed();
+    supply_screen_set_port_held(true);
+    ui_router_set_alert(NULL);
+    (void)settings_discard();
+    settings_apply_all();
+    CHECK_STR_EQ(band(), "");
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    supply_screen_set_port_held(false);
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_v(), 9.0f, 1e-4f);
+
+    fresh();
+    supply_screen_put(9.0f, 2.0f);
+    settings_set(SET_SUPPLY_V_MAX, 5.0f);
+    supply_screen_limits_changed();
+    supply_screen_ask_on(SUPPLY_BY_SUPPLY);
+    CHECK(supply_screen_output_live());
+    ui_router_set_alert(NULL);
+    (void)settings_discard();
+    settings_apply_all();
+    CHECK_STR_EQ(band(), "");
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
 }
 
 TEST_CASE(a_drag_on_a_live_output_changes_nothing_until_it_is_answered)
@@ -841,6 +978,9 @@ int main(void)
     RUN(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip);
     RUN(discard_gives_back_the_set_points_a_typed_cap_brought_down);
     RUN(discard_on_a_live_output_gives_the_set_points_back_at_the_off);
+    RUN(a_set_point_chosen_after_the_clamp_survives_discard);
+    RUN(a_cap_saved_at_another_value_gives_nothing_back);
+    RUN(discard_under_a_port_or_an_on_on_its_way_says_nothing);
     RUN(a_drag_on_a_live_output_changes_nothing_until_it_is_answered);
     RUN(the_output_switch_works_under_every_overlay);
     RUN(a_second_finger_on_a_track_changes_nothing_while_off_is_held);

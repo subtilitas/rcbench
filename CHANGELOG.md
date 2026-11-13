@@ -81,7 +81,8 @@ history is in git.
   point the cap brought down its value from before the edit, never above
   the cap. With the output on the set point stays down until the next OFF,
   and the band says so in one line, such as `Current limit stays at 1.00A
-  until the output is off.`
+  until the output is off.` A set point changed since the clamp, or a cap
+  saved at another value, gives nothing back.
   ([Screens](docs/Screens.md#supply-settings)).
 - Dim after: FAULT 01, LINK_SILENT, alone no longer keeps the screen lit.
   The IOmcu reports it after a restart of the panel until the next ARM, so

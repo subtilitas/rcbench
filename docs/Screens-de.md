@@ -3457,8 +3457,12 @@ Ausgang wieder angehoben. Bei eingeschaltetem Ausgang bleibt der
 Sollwert, wo die Grenze ihn hingesetzt hat, bis zum nächsten AUS, und das
 Alarmband sagt es in einer Zeile:
 `Strombegrenzung bleibt bei 1.00A, bis der Ausgang aus ist.`, ebenso für
-die Spannung oder für beide in einer Zeile. Eine niedriger gespeicherte
-Grenze gibt nichts zurück.
+die Spannung oder für beide in einer Zeile. Solange ein Programmierport
+das Netzteil hält oder ein EIN unterwegs ist, wartet der Sollwert ohne
+Zeile, weil der Ausgang nicht eingeschaltet ist. Eine mit einem anderen
+Wert gespeicherte Grenze oder ein seit dem Senken geänderter Sollwert,
+vom Bediener, einem Port oder einem anderen Bildschirm, gibt nichts
+zurück.
 
 Die Zeit über einer Schwelle beginnt beim ersten Messwert darüber. Ein
 Messwert darunter setzt den Zähler zurück; ein fehlender Messwert lässt

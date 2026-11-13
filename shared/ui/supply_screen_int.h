@@ -237,6 +237,20 @@ enum { FROM_SLIDER = 0, FROM_KEYPAD };
 /* What the keypad is typing. */
 enum { KP_NONE = 0, KP_SET_V, KP_SET_I };
 
+/**
+ * @brief A set point a lowered cap brought down, kept for DISCARD
+ *        (sup_refresh_limits()).
+ */
+typedef struct {
+    bool  on;     /**< a set point is kept                                */
+    float back;   /**< the set point before the clamp, V or A             */
+    float clamp;  /**< the set point the clamp left; a set point that
+                       differs from it is a later choice, which stands    */
+    float cap;    /**< the cap's stored value when the clamp came; the cap
+                       at it again (DISCARD) gives the set point back, a
+                       save of another value gives nothing back          */
+} sup_back_t;
+
 /** @brief Why the PD mini's rows of the SETTINGS list take no press now. */
 typedef enum {
     SUP_PD_FREE = 0,    /**< they take one                                   */
@@ -340,10 +354,8 @@ typedef struct {
      * stands unsaved: the cap back at its stored value (DISCARD) gives it
      * back, at once with the output off and at the next OFF while it is
      * on.  See sup_refresh_limits(). */
-    bool  back_v_on,                        /**< whether back_v is kept */
-          back_i_on;                        /**< whether back_i is kept */
-    float back_v,                           /**< the voltage set point before the clamp, V */
-          back_i;                           /**< the current limit before the clamp, A */
+    sup_back_t back_v,                      /**< the voltage set point kept */
+               back_i;                      /**< the current limit kept */
     float pend_v,                           /**< voltage change waiting for its question, V */
           pend_i;                           /**< current change waiting for its question, A */
     gfx_rect_t apply_btn,                   /**< APPLY of the question            */

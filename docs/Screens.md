@@ -3176,8 +3176,11 @@ value from before the edit, never above the cap. A set point is raised
 back only while the output is off. With the output on the set point stays
 where the cap brought it until the next OFF, and the alert band says so
 in one line: `Current limit stays at 1.00A until the output is off.`, the
-same for the voltage, or both in one line. A cap saved lower gives
-nothing back.
+same for the voltage, or both in one line. While a programming port
+holds the supply or an ON is on its way, the set point waits without a
+line, as the output is not on. A cap saved at another value, or a set
+point changed since the clamp, by the operator, a port or another screen,
+gives nothing back.
 
 Time above a trip begins at the first reading over the threshold. A
 reading below it resets the count; a missing reading leaves it unchanged.
