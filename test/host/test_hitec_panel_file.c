@@ -574,7 +574,7 @@ TEST_CASE(factory_default_counts_the_cells_of_no_setting_it_writes)
     CHECK_EQ(g_drv.eeprom[0x1D], g_drv.eeprom[0x4D]);
 }
 
-TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back)
+TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back_and_leave_counts_them)
 {
     static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
 
@@ -624,6 +624,16 @@ TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back)
         CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 1));
         CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 1),
                      TR(KP_WRITE_ONE));
+        /* LEAVE names the cell that WRITE 1 VALUE counts; BACK keeps it. */
+        press_port();
+        CHECK_EQ(hitec_panel_editor(), 3);
+        CHECK_STR_EQ(hitec_panel_page_line(1), TR(KP_LEAVE_CHANGES));
+        snprintf(want, sizeof(want), TR(HP_LEAVE_RAW), 1u);
+        CHECK_STR_EQ(hitec_panel_page_line(2), want);
+        CHECK(page_fits());
+        tap(hitec_panel_cancel_rect());
+        CHECK_EQ(hitec_panel_editor(), 0);
+        CHECK_EQ(hitec_prog_changes(model()), 1u);
         press_write(2.1f);
         until(HITEC_PROG_HELD);
         show();
@@ -955,7 +965,7 @@ int main(void)
     RUN(restore_and_factory_default_with_an_edit_standing_say_why);
     RUN(restore_after_factory_default_counts_the_cells_of_no_setting);
     RUN(factory_default_counts_the_cells_of_no_setting_it_writes);
-    RUN(a_backup_file_names_the_stored_values_it_brings_back);
+    RUN(a_backup_file_names_the_stored_values_it_brings_back_and_leave_counts_them);
     RUN(a_count_of_stored_values_stays_on_its_sentences_row);
     RUN(restore_writes_the_session_backup_back_from_its_page);
     RUN(factory_default_comes_from_more_for_a_classic_servo);

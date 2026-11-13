@@ -820,9 +820,10 @@ and the CLOSE is always taken.
 With unwritten edits the page starts with `Unwritten changes will be lost.`
 and lists each edit as the name, the servo's value and the draft's value,
 `SOFT START: 20% -> 60%`, in tab order; with more edits than lines the
-last of these lines counts the rest. The buttons read **HOLD 2s TO LEAVE
-WITHOUT WRITING** and **BACK**. **BACK** closes the page and keeps the
-edits. The hold drops the edits, writes nothing and leaves as above.
+last of these lines counts the rest. Loaded cells of no setting are counted:
+`Stored values outside the settings not written: 1.` **HOLD 2s TO LEAVE
+WITHOUT WRITING** drops the edits, writes nothing and leaves as above;
+**BACK** closes the page and keeps them.
 
 ![LEAVE PROGRAMMING with two unwritten edits](img/servo-hitec-leave-edits.png)
 

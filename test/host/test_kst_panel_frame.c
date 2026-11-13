@@ -15,6 +15,8 @@
  * - a_tap_on_port_opens_the_list_until_the_session_holds_it
  * - a_tap_on_a_row_not_met_names_it_in_the_band
  * - the_footers_write_is_the_sessions_from_any_tab
+ * - the_session_takes_no_press_under_the_footers_write_hold
+ * - a_touch_loss_after_the_footers_hold_completes_sends_nothing
  * - the_footer_asks_no_arm_and_the_card_drives_nothing
  * - a_finger_on_the_card_or_write_keeps_settings_and_port_shut
  * - a_press_on_the_supply_while_it_reads_on_switches_it_off
@@ -225,6 +227,72 @@ TEST_CASE(the_footers_write_is_the_sessions_from_any_tab)
     CHECK_EQ(kst_prog_changes(M), 1);
 }
 
+/* A second finger on the session while the footer's WRITE is held: the
+ * session takes no press, the band says why, and the completed hold
+ * writes the draft its press began with. */
+TEST_CASE(the_session_takes_no_press_under_the_footers_write_hold)
+{
+    kst_on();
+    connected();
+    edits();
+    tap(kst_panel_tab_rect(PG_TUNE));
+    CHECK_EQ(kst_panel_page(), PG_TUNE);
+    const uint16_t was = draft(KST_F_DEAD_BAND);
+    const gfx_rect_t plus = kst_panel_step_rect(PG_TUNE, 0, true);
+
+    ui_router_set_alert(NULL);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ticks(1.0f);
+    ev(cx(plus), cy(plus), TOUCH_EVENT_DOWN, 2);
+    ticks(0.1f);
+    ev(cx(plus), cy(plus), TOUCH_EVENT_UP, 2);
+    CHECK_STR_EQ(alert(), TR(FOOT_PRESS_HELD));
+    CHECK_EQ(draft(KST_F_DEAD_BAND), was);
+    ticks(1.4f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(servo(KST_F_DEAD_BAND), was);
+    CHECK_EQ(kst_prog_changes(M), 0);
+}
+
+/* The footer's hold that completes sends on the next tick, as the tab's
+ * does: a touch loss in between sends nothing and keeps the edits; with
+ * no loss the next tick sends. */
+TEST_CASE(a_touch_loss_after_the_footers_hold_completes_sends_nothing)
+{
+    for (int lost = 1; lost >= 0; --lost) {
+        kst_on();
+        connected();
+        edits();
+        rig_frames(10);
+        const unsigned writes = g_rig.sim.n_writes;
+
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+        for (int i = 0; i < 99; ++i) {
+            scr->tick(0.02f);
+        }
+        CHECK(kst_prog_state(M) != KST_PROG_WORKING);
+        scr->tick(0.05f);       /* the hold completes in this tick */
+        CHECK(kst_prog_state(M) != KST_PROG_WORKING);
+        if (lost != 0) {
+            scr->cancel();
+        }
+        scr->tick(0.02f);
+        ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+        if (lost != 0) {
+            rig_frames(50);
+            CHECK_EQ(g_rig.sim.n_writes, writes);
+            CHECK_EQ(kst_prog_changes(M), 3);
+            CHECK(!kst_prog_write_enabled(M));
+        } else {
+            settle();
+            CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+            CHECK_EQ(kst_prog_changes(M), 0);
+        }
+    }
+}
+
 /* No ARM on KST: a finger on the footer's middle for 2.5s asks none.  The
  * output card's places -- CENTER, SWEEP, OUTPUT ON -- are the READY card
  * and command nothing. */
@@ -356,6 +424,8 @@ int main(void)
     RUN(a_tap_on_port_opens_the_list_until_the_session_holds_it);
     RUN(a_tap_on_a_row_not_met_names_it_in_the_band);
     RUN(the_footers_write_is_the_sessions_from_any_tab);
+    RUN(the_session_takes_no_press_under_the_footers_write_hold);
+    RUN(a_touch_loss_after_the_footers_hold_completes_sends_nothing);
     RUN(the_footer_asks_no_arm_and_the_card_drives_nothing);
     RUN(a_finger_on_the_card_or_write_keeps_settings_and_port_shut);
     RUN(a_press_on_the_supply_while_it_reads_on_switches_it_off);

@@ -556,7 +556,9 @@ bool kst_panel_write_go(void)
         || !kpn_row_live(w)) {
         return false;
     }
-    (void)kpn_write_go();
+    /* Sent on the next tick, as the tab's hold is: a touch loss drained
+     * before it cancels the write. */
+    k.wr_due = true;
     ++k.rev;
     return true;
 }

@@ -7909,6 +7909,9 @@ UI_TEXT(HP_RESTORE_RAW, 116,
 UI_TEXT(HP_LOAD_RAW, 116,
     "Stored values outside the settings loaded too: %u.",
     "Auch geladen: %u Werte außerhalb der Einstellungen.")
+UI_TEXT(HP_LEAVE_RAW, 116,
+    "Stored values outside the settings not written: %u.",
+    "Nicht geschrieben: %u Werte außerhalb der Einstellungen.")
 UI_TEXT(HP_FACTORY, 27,
     "FACTORY DEFAULT",
     "WERKSEINSTELLUNG")

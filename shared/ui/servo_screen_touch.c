@@ -410,7 +410,11 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         if (ps != NULL && gfx_rect_contains(overlay_area(), px, py)) {
-            if (!s.ov_have) {
+            if (prog_write_pressed()) {
+                /* The footer's WRITE writes the draft its hold began
+                 * with: nothing in the session changes under it. */
+                ui_action_refused(TR(FOOT_PRESS_HELD));
+            } else if (!s.ov_have) {
                 prog_ps_event(ps, evt);
             }
             return;

@@ -1949,7 +1949,7 @@ differ, ABORT, STOP, its time); `test_servo_restore` SERVO's question after a LE
 programmer, Tests](docs/ServoProgrammer.md#tests)). `test_hitec_panel_file` runs the
 overlay's FILES row, its pages and their turn back to the first, the keyboard of a new name
 and the names the card refuses, a load, CHECK THIS FILE, a backup file's stored values on
-the load page and in its message, the backup file's lines on the SERVO tab, the SERVO tab's
+the load page, in its message and on LEAVE, the backup file's lines on the SERVO tab, the SERVO tab's
 no-card line while edits wait, RESTORE and FACTORY DEFAULT from their rows, both refused with an
 edit standing, and every new page and message in both languages.
 

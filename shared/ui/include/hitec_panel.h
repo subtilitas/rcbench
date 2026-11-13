@@ -251,8 +251,10 @@ void hitec_panel_session(prog_session_t *out);
 /**
  * @brief The footer's WRITE n VALUES, its 2s hold completed: what the
  *        completed hold of the session's own does, from any tab -- the
- *        write of the edits, or the refusal said.  Nothing while an editor
- *        or a press is in the session, or while the session takes no write.
+ *        write of the edits on the next tick, so that a touch loss
+ *        drained before it cancels the write, or the refusal said then.
+ *        Nothing while an editor or a press is in the session, or while
+ *        the session takes no write.
  * @return whether the write was asked for
  */
 bool hitec_panel_write_go(void);
