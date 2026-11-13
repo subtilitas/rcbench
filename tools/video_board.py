@@ -16,8 +16,9 @@ bottom.  All lengths are mm from the drawing's top left corner.
 A footprint whose name is that of a module under hardware/kicad/modules/
 takes the module's board outline as its box and, as details, the parts
 of the module's model, each a box or a circle with the colour name of the
-model, the texts of the module's drawing, such as USB-C and CAN, and
-beside each pad the name of its pin where the drawing does not print it.
+model, the texts of the module's drawing, such as USB-C and CAN, on each
+pad its number and under each pad the name of its pin where the drawing
+does not print it.
 A JST or Molex connector carries a short name of each pad's net, and a
 3-row pin header the names of its rows.
 
@@ -251,21 +252,19 @@ def convert(text: str, turn: int = 90, specs: dict | None = None) -> dict:
                 cx, cy = spot(x, y)
                 details.append({"text": said, "at": [r3(cx), r3(cy)],
                                 "size": size})
-            # A pin's name beside its pad, towards the middle of the
-            # module, where the drawing does not print it already.
+            # On each pad its number; under it, on the drawing, its
+            # pin's name where the module's drawing does not print it.
             printed = {said for said, *_ in texts}
             for num, x, y in spads:
+                px, py = spot(x, y)
+                details.append({"text": num, "at": [r3(px), r3(py)],
+                                "size": 0.8, "pad": True})
                 said = names.get(num, "")
                 said = said.split("_")[0] if said.startswith("GP") else said
                 if not said or said in printed or names[num] in printed:
                     continue
-                inward = 1.5 if x < bw / 2 else -1.5
-                px, py = spot(x, y)
-                tx, ty = spot(x + inward, y)
-                side = ("start" if tx > px + 0.1 else
-                        "end" if tx < px - 0.1 else "middle")
-                details.append({"text": said, "at": [r3(tx), r3(ty)],
-                                "size": 0.7, "anchor": side})
+                details.append({"text": said, "at": [r3(px), r3(py + 1.27)],
+                                "size": 0.6, "name": True})
         elif re.search(r"JST|Molex", name):
             # A connector: a short name of each pad's net, on its housing.
             for pad in mine:

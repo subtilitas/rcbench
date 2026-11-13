@@ -370,8 +370,8 @@ def test_a_module_brings_its_board_and_its_parts():
         {"box": [19.0, 6.0, 22.0, 9.0], "color": "chip"},
         {"at": [23.0, 5.0], "r": 0.5, "color": "black"},
         {"text": "CAN", "at": [20.0, 8.0], "size": 0.8},
-        {"text": "GP7", "at": [20.0, 8.5], "size": 0.7,
-         "anchor": "middle"}]
+        {"text": "2", "at": [20.0, 10.0], "size": 0.8, "pad": True},
+        {"text": "GP7", "at": [20.0, 11.27], "size": 0.6, "name": True}]
     assert next(p for p in plan["parts"]
                 if p["ref"] == "R1")["details"] == []
     texts = [said for said, *_ in video_board.modules()["RP2350-CAN"][3]]

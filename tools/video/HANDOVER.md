@@ -152,7 +152,8 @@ How the modules are mounted (owner, 2026-11-13):
 - The owner found the modules too plain as rectangles. They carry the
   parts and prints of the module specs under `hardware/kicad/modules/`;
   the panel's headers are labelled in its drawing.
-- The owner asked for the pins to be named and for the pin strips to
+- The owner asked for the pins to be named, with the number on each
+  pad and the name under it, and for the pin strips to
   be shown with their counts: the intro shows 20, 20, 8, 2 x 8 and 1,
   65 pins.
 - The narrator read "I N A 3221" as a number of thousands; it is

@@ -37,6 +37,7 @@ export function buildBoard(data) {
   const svg = document.querySelector('#pcb');
   const still = document.createElementNS(NS, 'g');
   const live = document.createElementNS(NS, 'g');
+  const above = document.createElementNS(NS, 'g');
   const [W, H] = data.size;
   const pads = Object.fromEntries(data.pads.map(p => [p.name, p]));
   // A part of a drawn board can bring its own fill, kind and label.
@@ -73,6 +74,7 @@ export function buildBoard(data) {
     const [, fill, kind] = look(q), [x0, y0, x1, y1] = q.box;
     const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
     h = '';
+    let over = '';
     if (q.back) {
       // A part on the back: its outline, dashed.
       h += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"
@@ -122,6 +124,14 @@ export function buildBoard(data) {
     }
     // The larger parts of a module: its sockets, chips and terminals.
     for (const d of q.back ? [] : q.details || []) {
+      if (d.pad) {
+        // A pad's number, drawn over the pad and over its solder joint.
+        over += `<text x="${d.at[0]}" y="${d.at[1]}" text-anchor="middle"
+          dominant-baseline="central" font-family="Inter, sans-serif"
+          font-weight="800" font-size="${d.size}"
+          fill="#10141c">${d.text}</text>`;
+        continue;
+      }
       if (d.text) {
         // A print of the module: dark on a light part, else white.
         const on = q.details.find(b => b.box && d.at[0] > b.box[0]
@@ -133,7 +143,7 @@ export function buildBoard(data) {
           dominant-baseline="middle" font-family="Inter, sans-serif"
           font-weight="700" font-size="${Math.max(.65, d.size)}"
           fill="${dark ? '#10141c' : '#fff'}" fill-opacity=".92"
-          ${d.anchor && !dark ? `stroke="#0b1020" stroke-width=".22"
+          ${d.name && !dark ? `stroke="#0b1020" stroke-width=".2"
           stroke-opacity=".8" paint-order="stroke"` : ''}
           >${d.text}</text>`;
         continue;
@@ -172,9 +182,12 @@ export function buildBoard(data) {
     const g = document.createElementNS(NS, 'g');
     g.innerHTML = h;
     still.appendChild(g);
-    groups[q.ref] = {g, fixed: kind === 'empty'};
+    const top = document.createElementNS(NS, 'g');
+    top.innerHTML = over;
+    above.appendChild(top);
+    groups[q.ref] = {g, top, fixed: kind === 'empty'};
   }
-  svg.replaceChildren(still, live);
+  svg.replaceChildren(still, live, above);
 
   // A point of the board: a pad's name, or [x, y] in mm.  A scene's plug
   // boards add their pads, NAME.G, NAME.D+, NAME.D- and NAME.V.
@@ -247,6 +260,7 @@ export function buildBoard(data) {
         const k = part.fixed || !sc.bare ? 1
           : ref in when ? ramp(lt, when[ref], when[ref] + .7) : 0;
         part.g.setAttribute('opacity', k);
+        part.top.setAttribute('opacity', k);
         part.g.setAttribute('transform',
                             `translate(0 ${(1 - k) * -3.5})`);
       }

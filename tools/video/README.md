@@ -251,8 +251,8 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   `hardware/kicad/modules/` takes that module's board outline, the parts
   of its model (sockets, chips, buttons, terminals) and the texts of its
   drawing (`USB-C`, `CAN`, `EN`), all at the accuracy the module's spec
-  states, and beside each pad the name of its pin where the drawing does
-  not print it. A JST or Molex connector carries a short name of each
+  states, on each pad its number and under each pad the name of its pin
+  where the drawing does not print it. A JST or Molex connector carries a short name of each
   pad's net (`HB`, `SCL`, `5V`), a 3-row header the names of its rows. An axial part is drawn between its pads: a
   diode with its band at pad 1, a resistor of value `4k7` with its colour
   bands. Zones, the inner and back copper, the
