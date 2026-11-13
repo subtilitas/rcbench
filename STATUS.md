@@ -1402,7 +1402,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 547 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 548 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1513,7 +1513,8 @@ The host suite is 547 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
-`test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
+`test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
+`test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
@@ -1682,7 +1683,11 @@ and the settle's 2000ms at their limit and 1ms before it, at tick 0 and started 
 the wrap. `test_bleuart_link` runs the writes with and without response, the tables it
 refuses, a disconnect in every state, scans beside a connect, OFF in every state and late
 answers; `test_bleuart_adv` the AD (advertising data) structures at their limits, 9 matching
-devices and the hidden count.
+devices and the hidden count. `test_bleuart_profile` runs the owner in the tokens' top 3 bits
+and its count's wrap from 0x1FFF to 1, a profile with other UUIDs found by role, a command
+characteristic marked optional and missing, the connect's parameters from the profile, every
+rule of `bleu_profile_valid()` at its limit, and a connect answered busy tried again after
+1000ms, not 999ms.
 
 `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both wire
 families, the transactions and every refusal of the reply decoders, with frames and reply

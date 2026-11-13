@@ -1,13 +1,16 @@
 # bleuart
 
-This module is a BLE (Bluetooth Low Energy) central for a sensor behind a
-transparent-UART (universal asynchronous receiver-transmitter) service:
-the ISSC/Microchip Transparent UART service. It scans and lists the
+This module is a BLE (Bluetooth Low Energy) central for a peer with a
+byte stream behind a GATT (generic attribute profile) service. Its default
+profile is the ISSC/Microchip Transparent UART service, a transparent UART
+(universal asynchronous receiver-transmitter). It scans and lists the
 sensors in range, keeps one bound address, connects to it, finds the
-service's characteristics, subscribes to the sensor's byte stream, sends
-commands to the sensor and reconnects after a drop. The core is a state
+service's characteristics, subscribes to the peer's byte stream, sends
+commands to the peer and reconnects after a drop. The core is a state
 machine fed events and a millisecond clock. It hands its caller actions
-for the host stack and the sensor's stream bytes for a parser.
+for the host stack and the peer's stream bytes for a parser. A profile
+(`bleu_profile_t`) names another service, its characteristics by role and
+the connection parameters.
 
 The module has no pin driver and no radio code: the caller runs the BLE
 host stack (NimBLE on the panel) and turns its callbacks into events and
@@ -28,29 +31,51 @@ unique identifier) 0x18F0. The stream bytes go to `protocols/witmotion`.
 - The core includes `<stdbool.h>`, `<stddef.h>`, `<stdint.h>` and
   `<string.h>` and no file outside this folder.
 - No heap, no floating point, no mutable global or static state, no clock
-  read and no I/O (input/output). A machine (`bleu_t`) is 912 bytes on
-  x86-64, an event (`bleu_evt_t`) 64 bytes, an action (`bleu_act_t`) 40
-  bytes. `bleuart.c` and `bleuart_adv.c` are 4405 and 2423 bytes of code
-  and constant data with gcc `-Os` there.
+  read and no I/O (input/output). A machine (`bleu_t`) is 1000 bytes on
+  x86-64, an event (`bleu_evt_t`) 64 bytes, an action (`bleu_act_t`) 52
+  bytes, a profile (`bleu_profile_t`) 88 bytes. `bleuart.c` and
+  `bleuart_adv.c` are 5243 and 2420 bytes of code and constant data with
+  gcc 13 `-Os` there.
 - Times are unsigned differences of a free-running 32-bit millisecond
   clock the caller passes in, so a wait holds across the clock's wrap at
   2^32ms.
-- Every function of one machine is called from one context at a time.
-- One link, one scan and one command write at a time.
+- Every function of one machine, and of one hub, is called from one
+  context at a time.
+- One link, one scan and one command write at a time per machine. On one
+  host stack, one scan or one connect at a time across machines (the hub).
 - No pairing, no bond and no security: the sensor takes a connection
   without them, and so does any central in range.
 
-## The service
+## The profile
 
-Service 49535343-FE7D-4AE5-8FA9-9FAFD205E455, characteristics by their
-second UUID group:
+A profile names the service by its 128-bit UUID (universally unique
+identifier), up to 4 characteristics (`BLEU_CHR_MAX`) with a role each,
+and the connect's parameters (`bleu_conn_params_t`):
+
+| Role | The peer's characteristic must have | Used |
+|---|---|---|
+| `BLEU_ROLE_STREAM`, exactly one | NOTIFY and a CCCD (client characteristic configuration descriptor) | subscribed; every notification is stream bytes |
+| `BLEU_ROLE_CMD`, at most one | WRITE or WRITE NO RESPONSE; with `BLEU_CHR_OPTIONAL` it may be missing, and `bleu_send()` then refuses | `bleu_send()` |
+| `BLEU_ROLE_PARAM`, at most one | nothing: without READ it is not read | read once after each subscribe |
+| `BLEU_ROLE_NONE`, any | nothing | never written, read or subscribed |
+
+`bleu_profile_valid()` holds a profile to these counts and the parameters
+to their ranges: interval 6 to 3200 (7.5ms to 4s), minimum up to maximum,
+supervision timeout 10 to 3200 (100ms to 32s) and longer than twice
+(1 + latency) x the longest interval, connect scan interval 4 to 0x4000
+and window 4 up to the interval. `bleu_init()` gives a machine the ISSC
+profile, `bleu_profile_issc`, and owner 0; `bleu_setup()` gives it another
+profile and an owner, 0 to 7. The profile is kept by pointer.
+
+The ISSC profile, service 49535343-FE7D-4AE5-8FA9-9FAFD205E455,
+characteristics by their second UUID group:
 
 | Characteristic | Role | Used |
 |---|---|---|
-| 49535343-1E4D-4BD9-BA61-23C647249616 | Transfer TX: the sensor's UART bytes to the central, NOTIFY | subscribed (0x0001 to its CCCD, the client characteristic configuration descriptor); every notification is stream bytes |
-| 49535343-8841-43F4-A8D4-ECBE34729BB3 | Transfer RX: bytes to the sensor's UART, WRITE or WRITE NO RESPONSE | the commands, up to 20 bytes each |
-| 49535343-ACA3-481C-91EC-D85E28A60318 | Air Patch: the module's own commands | never written, never subscribed |
-| 49535343-6DAA-4D02-ABF6-19569ACA69FE | Connection Parameter | read once after each subscribe when it has READ; never written |
+| 49535343-1E4D-4BD9-BA61-23C647249616 | STREAM. Transfer TX: the sensor's UART bytes to the central, NOTIFY | subscribed (0x0001 to its CCCD); every notification is stream bytes |
+| 49535343-8841-43F4-A8D4-ECBE34729BB3 | CMD. Transfer RX: bytes to the sensor's UART, WRITE or WRITE NO RESPONSE | the commands, up to 20 bytes each |
+| 49535343-ACA3-481C-91EC-D85E28A60318 | NONE. Air Patch: the module's own commands | never written, never subscribed |
+| 49535343-6DAA-4D02-ABF6-19569ACA69FE | PARAM. Connection Parameter | read once after each subscribe when it has READ; never written |
 
 The core writes only two handles: 1E4D's CCCD and 8841's value. The value
 of 6DAA is kept in `param[0..param_len-1]`; its layout is not known.
@@ -59,8 +84,9 @@ of 6DAA is kept in `param[0..param_len-1]`; its layout is not known.
 
 `bleu_scan()` starts an active scan of 10000ms (`BLEU_SCAN_MS`) with
 duplicates filtered, and clears the list. A report is listed when it
-carries 0x18F0 in a 16-bit UUID list (AD types 0x02 and 0x03) or the
-service UUID in a 128-bit list (0x06 and 0x07). The listing is a hint:
+carries 0x18F0 in a 16-bit UUID list (AD types 0x02 and 0x03) or the ISSC
+service UUID in a 128-bit list (0x06 and 0x07), whatever the machine's
+profile: the list's filter is the ISSC one. The listing is a hint:
 0x18F0 is no Bluetooth SIG assignment and other modules may use it. The
 connect checks the service.
 
@@ -90,18 +116,22 @@ them, is tried again after 7000ms (`BLEU_RETRY_CONNECT_MS`).
 
 | Step | Action | Timeout | Fails as |
 |---|---|---|---|
-| connect | `BLEU_ACT_CONNECT`, interval 30 to 50ms (`BLEU_ITVL_MIN` 24, `BLEU_ITVL_MAX` 40 x 1.25ms), latency 0, supervision timeout 4000ms (`BLEU_SUPERVISION` 400 x 10ms), connect scan 30ms in every 60ms (`BLEU_CONN_SCAN_WINDOW` 0x30, `BLEU_CONN_SCAN_ITVL` 0x60 x 0.625ms); chosen as a phone's central asks them, not measured | 5000ms (`BLEU_CONNECT_MS`), then `BLEU_ACT_CANCEL` | `BLEU_ERR_CONNECT`, retry |
-| the service | `BLEU_ACT_DISC_SVC` | 5000ms (`BLEU_GATT_MS`) | none found: `BLEU_ERR_NOT_WIT`, disconnect, no retry |
-| its characteristics | `BLEU_ACT_DISC_CHRS` in the service's range | 5000ms | 1E4D without NOTIFY or 8841 without WRITE or WRITE NO RESPONSE: `BLEU_ERR_NOT_WIT` |
-| 1E4D's CCCD | `BLEU_ACT_DISC_DSCS` from 1E4D's value handle to the next declaration or the service's end | 5000ms | no 0x2902 there: `BLEU_ERR_NOT_WIT` |
+| connect | `BLEU_ACT_CONNECT` with the profile's parameters in `cp`; the ISSC profile's: interval 30 to 50ms (`BLEU_ITVL_MIN` 24, `BLEU_ITVL_MAX` 40 x 1.25ms), latency 0, supervision timeout 4000ms (`BLEU_SUPERVISION` 400 x 10ms), connect scan 30ms in every 60ms (`BLEU_CONN_SCAN_WINDOW` 0x30, `BLEU_CONN_SCAN_ITVL` 0x60 x 0.625ms); chosen as a phone's central asks them, not measured | 5000ms (`BLEU_CONNECT_MS`), then `BLEU_ACT_CANCEL` | `BLEU_ERR_CONNECT`, retry |
+| the service | `BLEU_ACT_DISC_SVC` with the profile's service UUID in `data[0..15]` | 5000ms (`BLEU_GATT_MS`) | none found: `BLEU_ERR_NOT_PEER` (`BLEU_ERR_NOT_WIT` is the same value), disconnect, no retry |
+| its characteristics | `BLEU_ACT_DISC_CHRS` in the service's range | 5000ms | the STREAM (1E4D) without NOTIFY, or a required CMD (8841) without WRITE or WRITE NO RESPONSE: `BLEU_ERR_NOT_PEER` |
+| the STREAM's CCCD | `BLEU_ACT_DISC_DSCS` from the STREAM's value handle to the next declaration or the service's end | 5000ms | no 0x2902 there: `BLEU_ERR_NOT_PEER` |
 | MTU (maximum transmission unit) | `BLEU_ACT_MTU`, 247 asked (`BLEU_MTU`) | 5000ms | an error leaves `mtu` 0 and goes on |
 | subscribe | `BLEU_ACT_SUBSCRIBE`, 0x01 0x00 to the CCCD | 5000ms | `BLEU_ERR_GATT`, retry |
-| link up | `BLEU_ST_UP`: notifications on 1E4D are stream bytes | | |
-| 6DAA | `BLEU_ACT_READ` | 5000ms | an error is kept in `param_status` and the link stays |
+| link up | `BLEU_ST_UP`: notifications on the STREAM are stream bytes | | |
+| the PARAM (6DAA) | `BLEU_ACT_READ` | 5000ms | an error is kept in `param_status` and the link stays |
 
 A step that times out, and a discovery step that ends with an error,
-disconnects with `BLEU_ERR_GATT` and retries. `BLEU_ERR_NOT_WIT` holds
-until the address is bound again or the central is switched off and on.
+disconnects with `BLEU_ERR_GATT` and retries. `BLEU_ERR_NOT_PEER` holds
+in `BLEU_ST_NOT_PEER` (`BLEU_ST_NOT_WIT`) until the address is bound again
+or the central is switched off and on. A connect answered with
+`BLEU_STATUS_BUSY` (0xFFFD), which the hub gives while another machine
+holds the host stack's one scan or connect, is tried again after
+`BLEU_RETRY_MS` and keeps the error of the attempt before it.
 A drop ends the link with `BLEU_ERR_LOST` and the reason in `reason`.
 When the host stack ends a pending step because of the drop before it
 reports the disconnect, as NimBLE does, the error is `BLEU_ERR_GATT` with
@@ -132,6 +162,9 @@ No flow control exists on this service.
 
 ```c
 void   bleu_init(bleu_t *b);
+bool   bleu_profile_valid(const bleu_profile_t *p);
+bool   bleu_setup(bleu_t *b, const bleu_profile_t *p, uint8_t owner);
+uint8_t bleu_token_owner(uint16_t token);
 void   bleu_enable(bleu_t *b, bool on, uint32_t now_ms);
 void   bleu_bind(bleu_t *b, const bleu_addr_t *addr, uint32_t now_ms);
 bool   bleu_scan(bleu_t *b, uint32_t now_ms);
@@ -152,7 +185,9 @@ bool   bleu_addr_eq(const bleu_addr_t *a, const bleu_addr_t *b);
 ```
 
 Every action with a token is answered by events with that token: the
-caller passes it to the host stack as the callback's argument. An event
+caller passes it to the host stack as the callback's argument. A token is
+the machine's owner in its top 3 bits (`BLEU_OWNER_SHIFT` 13) and a count
+of 1 to 0x1FFF (`BLEU_TOKEN_SEQ`) in the rest; 0 is never one. An event
 whose token is not the step's under way is counted in `stray` and changes
 nothing, so a late answer after a timeout, an abort or a drop reaches no
 later step. Status 0 is success; a nonzero status is the host stack's own
@@ -163,10 +198,10 @@ event with status 0, also when the host stack reports it as an end code.
 |---|---|---|
 | `BLEU_ACT_SCAN` | `ble_gap_disc()`, active, duplicates filtered, `ms` long | `BLEU_EV_ADV` per report; `BLEU_EV_SCAN_END` when it ends early or does not start |
 | `BLEU_ACT_SCAN_STOP` | `ble_gap_disc_cancel()` | nothing |
-| `BLEU_ACT_CONNECT` | `ble_gap_connect()` to `addr` with the `BLEU_ITVL_*` set | `BLEU_EV_CONNECT`, or `BLEU_EV_DISCONNECT` with the connect's token for a connection that failed to be established |
+| `BLEU_ACT_CONNECT` | `ble_gap_connect()` to `addr` with the parameters in `cp` | `BLEU_EV_CONNECT`, or `BLEU_EV_DISCONNECT` with the connect's token for a connection that failed to be established |
 | `BLEU_ACT_CANCEL` | `ble_gap_conn_cancel()` | the connect's `BLEU_EV_CONNECT` |
 | `BLEU_ACT_DISCONNECT` | `ble_gap_terminate()` of `conn` | `BLEU_EV_DISCONNECT` |
-| `BLEU_ACT_DISC_SVC` | `ble_gattc_disc_svc_by_uuid()` | `BLEU_EV_SVC`, `BLEU_EV_SVC_DONE` |
+| `BLEU_ACT_DISC_SVC` | `ble_gattc_disc_svc_by_uuid()` of the UUID in `data[0..15]` | `BLEU_EV_SVC`, `BLEU_EV_SVC_DONE` |
 | `BLEU_ACT_DISC_CHRS` | `ble_gattc_disc_all_chrs()` in `h1..h2` | `BLEU_EV_CHR` each, `BLEU_EV_CHR_DONE` |
 | `BLEU_ACT_DISC_DSCS` | `ble_gattc_disc_all_dscs()` after value handle `h1` to `h2` | `BLEU_EV_DSC` each, `BLEU_EV_DSC_DONE` |
 | `BLEU_ACT_MTU` | `ble_gattc_exchange_mtu()`, 247 as the preferred MTU | `BLEU_EV_MTU` |
@@ -178,8 +213,8 @@ Events without an action: `BLEU_EV_DISCONNECT` of a drop,
 `BLEU_EV_CONN_UPDATE` with the new interval, latency and supervision
 timeout (`itvl`, `latency`, `supervision`), and `BLEU_EV_NOTIFY`. A
 notification longer than 40 bytes (`BLEU_EVT_DATA`) comes as several
-events in order. `bleu_event()` returns true for a notification on
-1E4D's handle of the link: `data[0..len-1]` are stream bytes. Any
+events in order. `bleu_event()` returns true for a notification on the
+STREAM's handle of the link: `data[0..len-1]` are stream bytes. Any
 chunking is taken; the module cuts its notifications at its own UART
 chunks, not at the sensor's frames.
 
@@ -245,7 +280,7 @@ discovery times; whether the module sends more than one notification per
 connection event; whether writes on 8841 reach the sensor; whether the
 module answers an MTU above 23; the layout of 6DAA's value; whether a
 NimBLE cancel always reports the connect's end; the time a disconnect
-takes to report.
+takes to report; the hub with more than one client on NimBLE.
 
 ## Trademarks
 
@@ -262,7 +297,9 @@ notifications and every timeout at its limit, 1ms before it and across the
 clock's wrap; `test_bleuart_link.c` the write path, the refused tables,
 the drops, the scans beside a connect, OFF in every state and late
 answers; `test_bleuart_adv.c` the advertising data, the list and the
-address text. The table in `STATUS.md` has the line coverage per file.
+address text; `test_bleuart_profile.c` the owner in the tokens, a profile
+with other UUIDs, an optional command characteristic, the profile's
+rules at their limits and the busy connect's retry. The table in `STATUS.md` has the line coverage per file.
 
 ```sh
 cmake -S test/host -B test/host/build
