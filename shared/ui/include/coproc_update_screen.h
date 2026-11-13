@@ -34,6 +34,7 @@
 extern "C" {
 #endif
 
+/** @brief The views of the screen: the question and the progress. */
 typedef enum {
     CU_VIEW_QUESTION = 0,
     CU_VIEW_PROGRESS,
@@ -50,28 +51,52 @@ typedef enum {
 
 /** A firmware version: major, minor, patch. */
 typedef struct {
-    uint16_t major, minor, patch;
+    uint16_t major,              /**< the major number */
+             minor,              /**< the minor number */
+             patch;              /**< the patch number */
 } cu_version_t;
 
 /**
- * Whether @p carried is older than @p running: the question then says so,
+ * @brief Whether @p carried is older than @p running: the question then says so,
  * and START still takes it after the hold.
+ *
+ * @param running the version the IOmcu runs
+ * @param carried the version this panel carries
+ * @return true when it is
  */
 bool coproc_update_older(cu_version_t running, cu_version_t carried);
 
 /**
- * Offer the update: the question view, with the version the IOmcu
+ * @brief Offer the update: the question view, with the version the IOmcu
  * runs and the one this panel carries.  Clears both latches.
+ *
+ * @param running the version the IOmcu runs
+ * @param carried the version this panel carries
  */
 void coproc_update_screen_offer(cu_version_t running, cu_version_t carried);
 
-/** The step under way and the blocks committed of @p blocks. */
+/**
+ * @brief The step under way and the blocks committed of @p blocks.
+ *
+ * @param step the step
+ * @param block the blocks committed
+ * @param blocks the blocks the update has
+ */
 void coproc_update_screen_progress(cu_step_t step, uint16_t block,
                                    uint16_t blocks);
 
+/**
+ * @brief Gives the view shown.
+ *
+ * @return the view
+ */
 cu_view_t coproc_update_screen_view(void);
 
-/** True once after START's hold completed; the view is then PROGRESS. */
+/**
+ * @brief True once after START's hold completed; the view is then PROGRESS.
+ *
+ * @return true once per START
+ */
 bool coproc_update_screen_take_start(void);
 
 /**
@@ -80,6 +105,7 @@ bool coproc_update_screen_take_start(void);
  */
 bool coproc_update_screen_take_cancel(void);
 
+/** @brief Marks the whole screen to be drawn again. */
 void coproc_update_screen_invalidate(void);
 
 /** The control task's last look at the IOmcu's build. */
@@ -123,8 +149,8 @@ typedef struct {
     uint32_t     offer_gen;     /**< grows with each new offer              */
     bool         active;        /**< an update runs                         */
     cu_step_t    step;          /**< while active: the step and the blocks  */
-    uint16_t     block;
-    uint16_t     blocks;
+    uint16_t     block;  /**< the blocks committed */
+    uint16_t     blocks;  /**< the blocks the update has */
     uint32_t     starts_taken;  /**< STARTs the update side has taken      */
     cu_version_t running;       /**< the version the IOmcu runs       */
     cu_version_t carried;       /**< the version this panel carries         */
@@ -181,7 +207,7 @@ typedef struct {
 } cu_hand_t;
 
 /**
- * Whether UPDATES' hold may start the update now, and if not why: the
+ * @brief Whether UPDATES' hold may start the update now, and if not why: the
  * first of cu_sec_t's reasons that holds.  @p unsafe: ARMED, an arm
  * waiting, or the supply's output on or coming.  A START handed over and
  * not yet taken (@p d's starts_sent against @p f's starts_taken) is BUSY.
@@ -192,6 +218,12 @@ typedef struct {
  * radio wholly off and no panel install.  An older image is READY, as the
  * question offers it too.  One that runs the carried build is SAME: the
  * check found nothing to send, and the link-up offers nothing either.
+ *
+ * @param d the update side's state
+ * @param f the control task's feed
+ * @param unsafe true when the bench is ARMED, an arm waits, or the supply's
+ *   output is on or coming
+ * @return the first reason that holds
  */
 cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
                                bool unsafe);
@@ -233,6 +265,11 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
 void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
                          cu_hand_t *out);
 
+/**
+ * @brief Gives the screen's table.
+ *
+ * @return the table
+ */
 const ui_screen_t *coproc_update_screen(void);
 
 #ifdef __cplusplus

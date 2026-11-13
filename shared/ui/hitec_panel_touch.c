@@ -601,8 +601,9 @@ bool hitec_panel_write_go(void)
         || !hpn_row_live(w)) {
         return false;
     }
-    (void)hpn_write_go((uint8_t)HITEC_PROG_WR_EDITS);
-    hpn_moved();
+    /* Sent on the next tick, as the tab's hold is: a touch loss drained
+     * before it cancels the write. */
+    hp.wr_due = true;
     ++hp.rev;
     return true;
 }

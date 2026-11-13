@@ -63,6 +63,7 @@ const uint16_t mo_ok[S_COUNT] = {
 const ui_text_id_t mo_names[S_COUNT] = { TX_MO_VOLT, TX_MO_CURR,
                                          TX_MO_PWR, TX_MO_RPM };
 
+/** @brief the tabs' labels, PLOT then TABLE */
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
                                               TX_MO_TAB_TABLE };
 
@@ -177,8 +178,8 @@ void mo_end_drag(void)
     ui_slider_release(&s.slider);
 }
 
-/*
- * What an edge of the value's state does, in one place.
+/**
+ * @brief What an edge of the value's state does, in one place.
  *
  * Out of LIVE: the owners of the value end -- a drag, and the knob's
  * command -- and a throttle not yet collected is not sent.  The value shown
@@ -556,8 +557,8 @@ void motor_screen_knob(float span_fraction)
     }
 }
 
-/*
- * Leaving disarms.  Navigating away from an armed bench must not leave a
+/**
+ * @brief Leaving disarms.  Navigating away from an armed bench must not leave a
  * propeller spinning behind a screen that is not visible, and the command
  * carries the disarm rather than relying on the application to infer it
  * from the navigation.
@@ -594,8 +595,10 @@ static void leave(void)
     ++s.arm_rev;
 }
 
-/* A tile opens LIVE; the way back from OUTPUTS, which the TARGET row
- * opened, the task it was opened from. */
+/**
+ * @brief A tile opens LIVE; the way back from OUTPUTS, which the TARGET row
+ * opened, the task it was opened from.
+ */
 static void enter(void)
 {
     mwb_enter();
@@ -604,8 +607,8 @@ static void enter(void)
     ++s.ctrl_rev;
 }
 
-/*
- * The home tag: over the SETTINGS list it closes what covers the list, else
+/**
+ * @brief The home tag: over the SETTINGS list it closes what covers the list, else
  * the list, through the leave warning while something is unsaved
  * (msp_back()).  In PROGRAM's session it climbs one level: what
  * covers the page closes, a run ends, the profile's page goes back to the
@@ -627,8 +630,8 @@ static bool back(void)
     return true;
 }
 
-/*
- * Touch events were lost between two frames, so this screen's record of what
+/**
+ * @brief Touch events were lost between two frames, so this screen's record of what
  * is on the glass cannot be trusted.  Drop the gesture rather than let a
  * hold that completes on a timer finish on a contact that may have gone.
  * Nothing is commanded here: a gesture abandoned part way asks for nothing,
@@ -693,6 +696,7 @@ static bool covered(void)
     return msp_shown() || mpp_shown() != NULL || mln_shown();
 }
 
+/** @brief The screen's callbacks. */
 static const ui_screen_t k_screen = {
     .covered = covered,
     .title  = "MOTOR & ESC",

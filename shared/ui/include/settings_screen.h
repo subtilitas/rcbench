@@ -39,7 +39,13 @@ void settings_apply_ui(void);
  */
 void settings_apply_all(void);
 
+/**
+ * @brief Gives the screen's table.
+ *
+ * @return the table
+ */
 const ui_screen_t *settings_screen(void);
+/** @brief Marks the whole screen to be drawn again. */
 void settings_screen_invalidate(void);
 
 /**
@@ -63,9 +69,12 @@ void settings_screen_set_unheld(uint16_t sense_rows, uint8_t tone_rows);
 bool settings_screen_unheld(setting_id_t id);
 
 /**
- * The help line of the row of @p id: PD mini TX and RX on one pin first,
+ * @brief The help line of the row of @p id: PD mini TX and RX on one pin first,
  * then a mark's line, then the setting's help.  Hitec D receive's help
  * follows its value: PULL-UP the setting's, PRECHARGE its own.
+ *
+ * @param id the setting
+ * @return the line
  */
 const char *settings_screen_help(setting_id_t id);
 
@@ -135,19 +144,32 @@ gfx_rect_t settings_screen_row_part(int row, settings_row_part_t part);
  */
 int settings_screen_row_of(setting_cat_t cat, int index);
 
-/** The list row that shows string @p id of @p cat, after its settings
- *  (settings_texts_in_category()), or -1 for a string not in @p cat. */
+/**
+ * @brief The list row that shows string @p id of @p cat, after its settings
+ *  (settings_texts_in_category()), or -1 for a string not in @p cat.
+ *
+ * @param cat the category
+ * @param id the string
+ * @return the row
+ */
 int settings_screen_text_row(setting_cat_t cat, setting_text_id_t id);
 
-/** The rows of @p cat's list: its settings, its headings and its
- *  strings. */
+/**
+ * @brief The rows of @p cat's list: its settings, its headings and its
+ *  strings.
+ *
+ * @param cat the category
+ * @return the rows
+ */
 int settings_screen_rows(setting_cat_t cat);
 
 /**
- * The keyboard a string's row opens, in folder mode for SD CARD's log
+ * @brief The keyboard a string's row opens, in folder mode for SD CARD's log
  * folders (ui_textkey.h): open over the list and the strip until OK takes
  * the text, CANCEL or the home tag drops it, or SETUP is left.  OK sets
  * the string as an edit; SAVE keeps it.
+ *
+ * @return the keyboard
  */
 const ui_textkey_t *settings_screen_textkey(void);
 
@@ -165,21 +187,33 @@ const ui_keypad_t *settings_screen_keypad(void);
  */
 int settings_screen_keypad_setting(void);
 
-/** The category whose list is open, or -1 while the hub's tiles show. */
+/**
+ * @brief The category whose list is open, or -1 while the hub's tiles show.
+ *
+ * @return the category
+ */
 int settings_screen_category(void);
 
 /** The hub's slots: a grid of three by three tiles, one page. */
 #define SETTINGS_HUB_SLOTS 9
 
 /**
- * Where the hub draws its entry @p index, in the screen's own coordinates
+ * @brief Where the hub draws its entry @p index, in the screen's own coordinates
  * (the body under the band), into @p out when it is not NULL.  False for an
  * index outside 0 to SETTINGS_HUB_SLOTS - 1: a tenth entry has no slot on
  * the page.
+ *
+ * @param index the entry
+ * @param out receives the rectangle; may be NULL
+ * @return true when the entry has a slot
  */
 bool settings_hub_slot(int index, gfx_rect_t *out);
 
-/** The entries of the hub's tile table: its categories and its screens. */
+/**
+ * @brief The entries of the hub's tile table: its categories and its screens.
+ *
+ * @return the entries
+ */
 int settings_hub_tiles(void);
 /**
  * @brief The screen hub tile @p i opens: the last opens LAYOUT on a board
@@ -210,16 +244,21 @@ int settings_hub_cat_tile(setting_cat_t cat);
 void settings_screen_open_on(setting_cat_t cat, int entry);
 
 /**
- * Whether a tile of the hub opens screen @p id.  The home tag of such a
+ * @brief Whether a tile of the hub opens screen @p id.  The home tag of such a
  * screen leads back to SETUP rather than to the menu.
+ *
+ * @param id the screen
+ * @return true when it does
  */
 bool settings_screen_opens(ui_screen_id_t id);
 
 /**
- * Whether the warning shows: the home tag left SETUP with settings unsaved
+ * @brief Whether the warning shows: the home tag left SETUP with settings unsaved
  * and no save asked (settings_dirty() and not settings_save_asked()), and
  * nothing has answered it yet.  STAY, the home tag again, SAVE, DISCARD and
  * any change of screen close it.
+ *
+ * @return true while it shows
  */
 bool settings_screen_warning(void);
 
@@ -227,11 +266,16 @@ bool settings_screen_warning(void);
 #define SETTINGS_WARN_LINES 10
 
 /**
- * Line @p i of the warning's changes into @p line, as drawn: "name: saved
+ * @brief Line @p i of the warning's changes into @p line, as drawn: "name: saved
  * -> now", the values as the list shows them, each with its unit; the
  * values in schema order, then the strings.  With more changes than
  * SETTINGS_WARN_LINES, the last line counts the rest.  False past the last
  * line, and while the warning does not show.
+ *
+ * @param i the line, from 0
+ * @param line receives the text
+ * @param n its size, bytes
+ * @return true when there is such a line
  */
 bool settings_screen_warn_line(int i, char *line, size_t n);
 

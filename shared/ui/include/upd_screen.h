@@ -137,25 +137,26 @@ typedef enum {
     UPD_REL_SCAN_LONG,
 } upd_rel_t;
 
+/** @brief What the update screens show: what may run, and the last job. */
 typedef struct {
     /* What may run. */
     bool        unavailable;   /**< Wi-Fi could not be set up at start    */
-    bool        have_net;
-    char        net[WIFI_SSID_MAX + 1];
+    bool        have_net;  /**< a home network is kept */
+    char        net[WIFI_SSID_MAX + 1];  /**< its name */
     upd_why_t   block;         /**< why a check may not start now          */
     bool        radio_free;    /**< the radio is off and no session asks
                                     for it (wifi_access_down()): a job
                                     stopped for WI-FI shows no result     */
     upd_why_t   dl_block;      /**< why a download may not start now       */
-    char        running[WIFI_VER_MAX + 1];
+    char        running[WIFI_VER_MAX + 1];  /**< the release this panel runs, as text */
     bool        line_capped;   /**< the release line ends at 0.22
                                     (fw_release_line_capped()): the card's
                                     foot says so                          */
 
-    /* The last job. */
+    /** @brief The last job. */
     upd_job_t   job;
-    upd_phase_t phase;
-    upd_got_t   got;
+    upd_phase_t phase;  /**< where the job stands */
+    upd_got_t   got;  /**< what the job found */
     upd_why_t   why;           /**< BLOCKED, ABORTED                       */
     wifi_join_t join;          /**< JOIN                                   */
     upd_rel_t   rel;           /**< UNEXPECTED, SUMS                       */
@@ -165,7 +166,7 @@ typedef struct {
                                                 PAST_LINE; DOWNLOAD's      */
     uint32_t    left_s;        /**< while busy                             */
     uint32_t    done;          /**< IMAGE: bytes received of total         */
-    uint32_t    total;
+    uint32_t    total;  /**< IMAGE: bytes of the whole image */
 } upd_view_t;
 
 /** What the screens ask for: bits of upd_screen_take(). */
@@ -173,23 +174,35 @@ typedef struct {
 #define UPD_REQ_CANCEL    0x02u   /**< CANCEL a check                     */
 #define UPD_REQ_DOWNLOAD  0x04u   /**< the 2s hold completed              */
 
-/** Hand the screens what to show. */
+/**
+ * @brief Hand the screens what to show.
+ *
+ * @param v what to show
+ */
 void upd_screen_set(const upd_view_t *v);
 
 /** UPDATES' IOmcu section. */
 typedef struct {
-    cu_sec_t     sec;
+    cu_sec_t     sec;  /**< the state of the section */
     bool         known;      /**< running is a version an IOmcu named */
     bool         have_image; /**< carried is an image this panel holds     */
-    cu_version_t running;
-    cu_version_t carried;
+    cu_version_t running;  /**< the version the IOmcu runs */
+    cu_version_t carried;  /**< the version this panel carries */
 } upd_cu_view_t;
 
-/** Hand UPDATES its IOmcu section; a hold the state no longer
- *  allows ends unfired. */
+/**
+ * @brief Hand UPDATES its IOmcu section; a hold the state no longer
+ *  allows ends unfired.
+ *
+ * @param v the section
+ */
 void upd_screen_set_coproc(const upd_cu_view_t *v);
 
-/** What the section shows, for the driver and the tests. */
+/**
+ * @brief What the section shows, for the driver and the tests.
+ *
+ * @return the section
+ */
 const upd_cu_view_t *upd_screen_coproc(void);
 
 /**
@@ -198,17 +211,36 @@ const upd_cu_view_t *upd_screen_coproc(void);
  */
 bool upd_screen_take_coproc(void);
 
-/** The section's state line for @p v, and its colour. */
+/**
+ * @brief The section's state line for @p v, and its colour.
+ *
+ * @param v the section
+ * @param line receives the line
+ * @param col receives its color
+ */
 void upd_cu_text(const upd_cu_view_t *v, const char **line,
                  gfx_color_t *col);
 
-/** What is showing, for the application and the tests. */
+/**
+ * @brief What is showing, for the application and the tests.
+ *
+ * @return the view
+ */
 const upd_view_t *upd_screen_view(void);
 
-/** The requests since the last call, as UPD_REQ_* bits; cleared. */
+/**
+ * @brief The requests since the last call, as UPD_REQ_* bits; cleared.
+ *
+ * @return the requests
+ */
 unsigned upd_screen_take(void);
 
-/** Whether a job runs: joining to checking. */
+/**
+ * @brief Whether a job runs: joining to checking.
+ *
+ * @param v the view
+ * @return true when one does
+ */
 bool upd_busy(const upd_view_t *v);
 
 /**
@@ -251,7 +283,17 @@ struct ui_setlist;
  */
 const struct ui_setlist *upd_screen_settings_list(void);
 
+/**
+ * @brief Gives the UPDATES screen's table.
+ *
+ * @return the table
+ */
 const ui_screen_t *upd_screen(void);
+/**
+ * @brief Gives the reminder screen's table.
+ *
+ * @return the table
+ */
 const ui_screen_t *upd_remind_screen(void);
 
 /* ------------------------------------------------------ the driver */
@@ -265,10 +307,10 @@ const ui_screen_t *upd_remind_screen(void);
 
 /** What the application knows once a frame. */
 typedef struct {
-    uint32_t now_ms;
+    uint32_t now_ms;  /**< the panel's clock, ms */
     bool     remind;       /**< SET_UPD_REMIND                             */
     bool     available;    /**< Wi-Fi was set up at start                  */
-    bool     have_net;
+    bool     have_net;  /**< a home network is kept */
     bool     gate_open;    /**< SAFE, supply off, no log run, nothing else */
     bool     files_open;   /**< FILES & UPDATE is open                     */
     bool     coproc;       /**< the IOmcu's update is offered or runs */
@@ -276,6 +318,7 @@ typedef struct {
     bool     newer;        /**< the start-up check found a newer release   */
 } upd_feed_t;
 
+/** @brief What the reminder driver keeps between frames. */
 typedef struct {
     bool     started;      /**< start_ms is set                             */
     uint32_t start_ms;     /**< the first drive                             */
@@ -284,20 +327,27 @@ typedef struct {
 } upd_driver_t;
 
 /**
- * Whether the start-up check starts now: once per start, with the reminder
+ * @brief Whether the start-up check starts now: once per start, with the reminder
  * on, a home network kept, Wi-Fi available, the gate open, FILES & UPDATE
  * closed, the IOmcu's update neither offered nor running, the router
  * past the splash, and within UPD_START_WAIT_MS of the first drive.  True
  * once; the caller starts the check.
+ *
+ * @param d the driver
+ * @param f what the application knows
+ * @return true once
  */
 bool upd_startup_due(upd_driver_t *d, const upd_feed_t *f);
 
 /**
- * The reminder, once a frame, whichever screen is current.  Opens it on
+ * @brief The reminder, once a frame, whichever screen is current.  Opens it on
  * OVERVIEW when the start-up check found a newer release, the reminder is
  * on, it was not answered at this start, and the bench is not unsafe and
  * the IOmcu's update not offered or running.  Takes it down again,
  * unanswered, for any of those changing under it.  Drains its answers.
+ *
+ * @param d the driver
+ * @param f what the application knows
  */
 void upd_remind_drive(upd_driver_t *d, const upd_feed_t *f);
 

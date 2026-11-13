@@ -45,11 +45,11 @@
 extern "C" {
 #endif
 
-#define LOG_VIEWER_MAX_FILES 48
-#define LOG_VIEWER_NAME_MAX  64
+#define LOG_VIEWER_MAX_FILES 48  /**< the most entries a page of the list holds */
+#define LOG_VIEWER_NAME_MAX  64  /**< the most bytes a name takes */
 
-/*
- * The largest file OPEN reads: 2GiB less 1 byte.  The panel reads a file
+/**
+ * @brief The largest file OPEN reads: 2GiB less 1 byte.  The panel reads a file
  * through stdio, whose fseek() and ftell() take a long of 32 bits.  A
  * larger file, which an exFAT (extended File Allocation Table) card or a
  * FAT32 one up to 4GiB less 1 byte holds, is listed with its size and
@@ -57,15 +57,16 @@ extern "C" {
  */
 #define LOG_VIEWER_OPEN_MAX 0x7FFFFFFFull
 
+/** @brief One entry of the file list. */
 typedef struct {
-    char name[LOG_VIEWER_NAME_MAX];
-    uint64_t size;      /* bytes; 64-bit, as exFAT's */
+    char name[LOG_VIEWER_NAME_MAX];  /**< the entry's name */
+    uint64_t size;      /**< bytes; 64-bit, as exFAT's */
     /** @brief The time FAT stamped, in seconds since 1970 as mktime()
      *         reads FAT's local date and time (the panel:
      *         storage_stamp_mtime()), as FILES INFO's; 0 or -1 for none.
      *         The row shows it when wall_stamp_known() takes it. */
     int64_t mtime;
-    bool is_dir;
+    bool is_dir;  /**< the entry is a folder */
 } log_viewer_file_t;
 
 /** @brief The cells a row's name takes: a longer name, of up to
@@ -120,13 +121,19 @@ typedef enum {
     LOG_TAB_COUNT
 } log_viewer_tab_t;
 
-/** The folder of @p tab, a path from the card's root ("" the root itself);
+/**
+ * @brief The folder of @p tab, a path from the card's root ("" the root itself);
  *  "" for a tab outside the three.  USER and BENCH list the folders SETUP >
  *  SD CARD names in force, as the logger writes them (card_folder_use():
  *  the default folder for one card_folder_check() refuses).  Valid until
- *  the next call for the same tab. */
+ *  the next call for the same tab.
+ *
+ * @param tab the tab
+ * @return the folder
+ */
 const char *log_viewer_tab_dir(log_viewer_tab_t tab);
 
+/** @brief One page of the file list asked for, and what it holds. */
 typedef struct {
     log_page_dir_t dir;              /**< in */
     /** in: "" for FROM and AFTER is the first entry of all */
@@ -135,6 +142,7 @@ typedef struct {
     int held;    /**< out: entries written */
 } log_viewer_page_t;
 
+/** @brief The hooks through which the screen reaches the card. */
 typedef struct {
     /**
      * Fill @p out with the page @p page asks for, at most @p max_entries
@@ -193,26 +201,42 @@ typedef struct {
      * by it.  May be NULL: the name alone tells cards apart.
      */
     unsigned (*mounts)(void *ctx);
-    void *ctx;
+    void *ctx;  /**< handed to every hook */
 } log_viewer_io_t;
 
+/** @brief The views of the screen. */
 typedef enum {
     LOG_VIEW_BROWSE = 0,
     LOG_VIEW_IMPORT,
     LOG_VIEW_PLOT
 } log_viewer_view_t;
 
+/**
+ * @brief Sets the hooks through which the screen reaches the card.
+ *
+ * @param io the hooks; NULL for none
+ */
 void log_viewer_set_io(const log_viewer_io_t *io);
 
-/** Which of the three views is showing. */
+/**
+ * @brief Which of the three views is showing.
+ *
+ * @return the view
+ */
 log_viewer_view_t log_viewer_view(void);
 
-/** The tab BROWSE shows. */
+/**
+ * @brief The tab BROWSE shows.
+ *
+ * @return the tab
+ */
 log_viewer_tab_t log_viewer_tab(void);
 
 /**
- * Show @p tab and read its folder from the first page, as a tap on the tab
+ * @brief Show @p tab and read its folder from the first page, as a tap on the tab
  * does.  A tab outside the three is ignored.
+ *
+ * @param tab the tab
  */
 void log_viewer_set_tab(log_viewer_tab_t tab);
 
@@ -247,19 +271,34 @@ typedef enum {
 log_viewer_show_t log_viewer_show(log_viewer_tab_t tab, const char *name,
                                   unsigned mount);
 
-/** The file currently open, or "" -- the overview header shows this. */
+/**
+ * @brief The file currently open, or "" -- the overview header shows this.
+ *
+ * @return the name
+ */
 const char *log_viewer_open_name(void);
 
-/** What was detected, or NULL when nothing has been analysed. */
+/**
+ * @brief What was detected, or NULL when nothing has been analysed.
+ *
+ * @return the analysis
+ */
 const log_analysis_t *log_viewer_analysis(void);
 
-/** The loaded traces, or NULL when nothing is plotted. */
+/**
+ * @brief The loaded traces, or NULL when nothing is plotted.
+ *
+ * @return the data
+ */
 const log_data_t *log_viewer_data(void);
 
 /**
- * The samples the plot shows: the first in @p first and how many in
+ * @brief The samples the plot shows: the first in @p first and how many in
  * @p count.  The whole file until two fingers zoom in; both 0 with nothing
  * plotted.
+ *
+ * @param first receives the first sample
+ * @param count receives how many
  */
 void log_viewer_window(int *first, int *count);
 
@@ -273,10 +312,19 @@ void log_viewer_window(int *first, int *count);
  */
 void log_viewer_browse_title(char *out, size_t n);
 
-/** The colour series @p k is drawn in. */
+/**
+ * @brief The colour series @p k is drawn in.
+ *
+ * @param k the series
+ * @return the color
+ */
 gfx_color_t log_viewer_series_color(int k);
 
-/** The sample the cursor is on, or -1 with nothing plotted. */
+/**
+ * @brief The sample the cursor is on, or -1 with nothing plotted.
+ *
+ * @return the sample
+ */
 int log_viewer_cursor(void);
 
 /**
@@ -297,6 +345,8 @@ void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
  */
 const char *log_viewer_message(void);
 
+#define LOG_RANGE_CELLS 17u   /**< the 140px range box in 8px glyphs */
+
 /**
  * @brief The range of a numeric column as the import view writes it into @p
  *        out (@p n bytes): "lo..hiunit".  One decimal while both ends are
@@ -306,9 +356,13 @@ const char *log_viewer_message(void);
  *        "-999.9..-999.9mOhm" reads "-1000..-1000mOhm".  A text still wider,
  *        such as two 7-digit negative ends, is cut at the box's edge.  No unit
  *        with an empty @p unit.
+ *
+ * @param out receives the text
+ * @param n its size, bytes
+ * @param lo the range's lower end
+ * @param hi its upper end
+ * @param unit the unit; "" for none
  */
-#define LOG_RANGE_CELLS 17u   /**< the 140px range box in 8px glyphs */
-
 void log_viewer_range_text(char *out, size_t n, double lo, double hi,
                            const char *unit);
 
@@ -320,7 +374,13 @@ void log_viewer_range_text(char *out, size_t n, double lo, double hi,
  */
 void log_viewer_refresh(void);
 
+/**
+ * @brief Gives the screen's table.
+ *
+ * @return the table
+ */
 const ui_screen_t *log_viewer_screen(void);
+/** @brief Marks the whole screen to be drawn again. */
 void log_viewer_invalidate(void);
 
 #ifdef __cplusplus

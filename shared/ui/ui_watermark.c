@@ -13,13 +13,13 @@
 #include "settings.h"
 #include "ui_theme.h"
 
-#define TEXT "SIMULATION"
+#define TEXT "SIMULATION"  /**< the mark's text */
 
 /*
  * 15% opacity.  Below about 10% the mark disappears against the plot grid
  * in a photograph; above about 20% it competes with the readings.
  */
-#define ALPHA 38   /* 0.15 * 255 */
+#define ALPHA 38   /**< the mark's opacity, 0 to 255: 15% */
 
 /* 5,377 points on the 1024 x 600px panel; the rest is headroom for another
  * canvas size.  A mark that does not fit is drawn by scanning instead. */
@@ -32,12 +32,16 @@
  * it never matches and the first call builds.
  */
 static struct {
-    int         w, h;
-    int16_t     clip_x, clip_y, clip_w, clip_h;
-    gfx_color_t colour;
+    int         w,               /**< the canvas's width the table was built for */
+                h;               /**< the canvas's height the table was built for */
+    int16_t     clip_x,          /**< the clip's x the table was built for */
+                clip_y,          /**< the clip's y the table was built for */
+                clip_w,          /**< the clip's width the table was built for */
+                clip_h;          /**< the clip's height the table was built for */
+    gfx_color_t colour;  /**< the color the table was built for */
     int         count;              /**< -1 when the mark does not fit */
-    uint32_t    pt[WM_MAX_POINTS];
-} s_cache;
+    uint32_t    pt[WM_MAX_POINTS];  /**< the points of the mark */
+} s_cache;  /**< The cache of the mark's points for one canvas and clip. */
 
 void ui_watermark_invalidate(void)
 {

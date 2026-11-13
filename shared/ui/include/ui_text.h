@@ -67,40 +67,86 @@ typedef struct {
 
 extern const ui_language_t ui_lang_de;
 
-/** Show @p lang from now on; one out of range is English. */
+/**
+ * @brief Show @p lang from now on; one out of range is English.
+ *
+ * @param lang the language
+ */
 void ui_text_set_language(ui_lang_t lang);
+/**
+ * @brief Gives the language showing.
+ *
+ * @return the language
+ */
 ui_lang_t ui_text_language(void);
 
-/** @p id in the language showing; "" for an ID out of range. */
+/**
+ * @brief @p id in the language showing; "" for an ID out of range.
+ *
+ * @param id the text
+ * @return the text
+ */
 const char *ui_tr(ui_text_id_t id);
-#define TR(id) ui_tr(TX_##id)
+#define TR(id) ui_tr(TX_##id)  /**< looks up TX_<id> in the language showing */
 
 /**
- * Entry @p i of @p set in the language showing, padded with spaces to the
+ * @brief Entry @p i of @p set in the language showing, padded with spaces to the
  * cells of the longest entry of @p set, into @p buf.  For a label one of
  * several replaces in place: each lays out the same width, so one repaints
  * over another without a clear.
+ *
+ * @param set the entries
+ * @param count how many there are
+ * @param i the entry, from 0
+ * @param buf receives the text
+ * @param n its size, bytes
+ * @return @p buf
  */
 const char *ui_tr_pad(const ui_text_id_t *set, int count, int i, char *buf,
                       size_t n);
 
-/** @p id in @p lang, falling back to English as ui_tr() does. */
+/**
+ * @brief @p id in @p lang, falling back to English as ui_tr() does.
+ *
+ * @param lang the language
+ * @param id the text
+ * @return the text
+ */
 const char *ui_tr_in(ui_lang_t lang, ui_text_id_t id);
 
-/** Whether @p lang's own table has @p id, rather than falling back. */
+/**
+ * @brief Whether @p lang's own table has @p id, rather than falling back.
+ *
+ * @param lang the language
+ * @param id the text
+ * @return true when it does
+ */
 int ui_text_has(ui_lang_t lang, ui_text_id_t id);
 
 /**
- * The cells @p id may take where it is drawn, from ui_text.def, or 0 when
+ * @brief The cells @p id may take where it is drawn, from ui_text.def, or 0 when
  * the fit check measures it on a rendered screen instead.
+ *
+ * @param id the text
+ * @return the cells; 0 when the fit check measures it
  */
 int ui_text_cells(ui_text_id_t id);
 
-/** The ID's name without the TX_ prefix, for the host's checks; "" on the
- *  panel, which carries no names. */
+/**
+ * @brief The ID's name without the TX_ prefix, for the host's checks; "" on the
+ *  panel, which carries no names.
+ *
+ * @param id the text
+ * @return the name
+ */
 const char *ui_text_name(ui_text_id_t id);
 
-/** The table of @p lang; NULL for English. */
+/**
+ * @brief The table of @p lang; NULL for English.
+ *
+ * @param lang the language
+ * @return the table
+ */
 const ui_language_t *ui_text_table(ui_lang_t lang);
 
 /* ---------------------------------------------------- the settings schema */
@@ -109,29 +155,80 @@ const ui_language_t *ui_text_table(ui_lang_t lang);
  * The schema in shared/settings is English and is the fallback.  These
  * return a setting's words in the language showing.
  */
+/**
+ * @brief Gives a setting's label in the language showing.
+ *
+ * @param id the setting
+ * @return the label
+ */
 const char *ui_setting_label(setting_id_t id);
+/**
+ * @brief Gives a setting's help text in the language showing.
+ *
+ * @param id the setting
+ * @return the text
+ */
 const char *ui_setting_help(setting_id_t id);
+/**
+ * @brief Gives a setting category's name in the language showing.
+ *
+ * @param cat the category
+ * @return the name
+ */
 const char *ui_setting_category(setting_cat_t cat);
-/** As settings_value_text(), with ON, OFF and the options translated. */
+/**
+ * @brief As settings_value_text(), with ON, OFF and the options translated.
+ *
+ * @param id the setting
+ * @param buf receives the text
+ * @param n its size, bytes
+ * @return the text
+ */
 const char *ui_setting_value(setting_id_t id, char *buf, size_t n);
-/** As ui_setting_value(), for @p value rather than the value in force. */
+/**
+ * @brief As ui_setting_value(), for @p value rather than the value in force.
+ *
+ * @param id the setting
+ * @param value the value
+ * @param buf receives the text
+ * @param n its size, bytes
+ * @return the text
+ */
 const char *ui_setting_value_of(setting_id_t id, float value, char *buf,
                                 size_t n);
-/** Option @p k of an enum setting; "?" for one out of range. */
+/**
+ * @brief Option @p k of an enum setting; "?" for one out of range.
+ *
+ * @param id the setting
+ * @param k the option
+ * @return its text
+ */
 const char *ui_setting_option(setting_id_t id, int k);
 
 /* ----------------------------------------------------- the servo test's */
 
 /**
- * The servo test's words for the screen and the report, in the language
+ * @brief The servo test's words for the screen and the report, in the language
  * showing.  servo_str() stays English: it writes the CSV, which tools read.
+ *
+ * @param id the word
+ * @return the word
  */
 const char *ui_servo_str(servo_str_t id);
 
-/** The servo table to hand a run for its report: NULL is English. */
+/**
+ * @brief The servo table to hand a run for its report: NULL is English.
+ *
+ * @return the table
+ */
 const char *const *ui_servo_table(void);
 
-/** ON or OFF in the language showing. */
+/**
+ * @brief ON or OFF in the language showing.
+ *
+ * @param on non-zero for ON
+ * @return the word
+ */
 const char *ui_on_off(int on);
 
 /* ---------------------------------------------------------------- units */
@@ -178,7 +275,11 @@ int ui_unit_is_prefix(const char *unit);
 const char *ui_pin_holder(const char *held_by);
 
 #ifdef GFX_TEXT_TRACE
-/** Defined by the fit check's harness: @p id was looked up. */
+/**
+ * @brief Defined by the fit check's harness: @p id was looked up.
+ *
+ * @param id the text
+ */
 void ui_text_trace(ui_text_id_t id);
 #endif
 

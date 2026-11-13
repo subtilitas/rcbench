@@ -19,26 +19,61 @@
 extern "C" {
 #endif
 
+/** @brief Marks the whole screen to be drawn again. */
 void overview_invalidate(void);
+/**
+ * @brief Gives the screen's table.
+ *
+ * @return the table
+ */
 const ui_screen_t *overview_screen(void);
 
-/** Whether SUPPLY drives the PD mini; the tile is marked MODELLED while it
- *  does not. */
+/**
+ * @brief Whether SUPPLY drives the PD mini; the tile is marked MODELLED while it
+ *  does not.
+ *
+ * @param real true when SUPPLY drives the PD mini
+ */
 void overview_screen_set_supply_real(bool real);
 
-/** The grid's columns: 4. */
+/**
+ * @brief The grid's columns: 4.
+ *
+ * @return the columns
+ */
 int overview_screen_columns(void);
 
-/** The screen the tile in slot @p slot opens, row by row from the top
- *  left, or SCREEN_COUNT for an empty slot or one past the grid. */
+/**
+ * @brief The screen the tile in slot @p slot opens, row by row from the top
+ *  left, or SCREEN_COUNT for an empty slot or one past the grid.
+ *
+ * @param slot the slot
+ * @return the screen
+ */
 ui_screen_id_t overview_screen_tile(int slot);
 
-/** The tile's name and its line in the language in force, NULL for an
- *  empty slot. */
+/**
+ * @brief The tile's name and its line in the language in force, NULL for an
+ *  empty slot.
+ *
+ * @param slot the slot
+ * @return the name
+ */
 const char *overview_screen_tile_name(int slot);
+/**
+ * @brief Gives the line under a tile's name in the language in force.
+ *
+ * @param slot the slot
+ * @return the line; NULL for an empty slot
+ */
 const char *overview_screen_tile_line(int slot);
 
-/** The slot's rectangle in the screen's own coordinates. */
+/**
+ * @brief The slot's rectangle in the screen's own coordinates.
+ *
+ * @param slot the slot
+ * @return the rectangle
+ */
 gfx_rect_t overview_screen_tile_rect(int slot);
 
 #ifdef __cplusplus

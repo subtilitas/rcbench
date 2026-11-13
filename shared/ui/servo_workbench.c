@@ -45,14 +45,16 @@
  * included after it may meet. */
 #include "servo_screen_int.h"
 
-/* The tasks SERVO's function screens draw on. */
+/** @brief The tasks SERVO's function screens draw on. */
 #define SERVO_TASKS (UI_WB_HAS(UI_WB_LIVE) | UI_WB_HAS(UI_WB_TEST) \
                      | UI_WB_HAS(UI_WB_PROGRAM) | UI_WB_HAS(UI_WB_RUDDER))
 
 /* ---------------------------------------------------- PROGRAM's sessions */
 
-/* The registry's SERVO sessions, each distinct page set once, whichever
- * rows open it (prog_reg_sets()).  Their count. */
+/**
+ * @brief The registry's SERVO sessions, each distinct page set once, whichever
+ * rows open it (prog_reg_sets()).  Their count.
+ */
 static int servo_sets(const prog_page_set_t *out[PROG_LIST_MAX])
 {
     return prog_reg_sets(PROG_DEV_SERVO, out);
@@ -342,7 +344,7 @@ void draw_test_page(gfx_canvas_t *c)
     }
 }
 
-/* The protocol the SERVO PWM outputs are bound as: a name, the same in
+/** @brief The protocol the SERVO PWM outputs are bound as: a name, the same in
  * every language. */
 #define TARGET_PROTOCOL "SERVO PWM"
 /** @brief Characters the target's line holds in the 10 x 20 face: 25, the

@@ -119,17 +119,18 @@ _Static_assert(RULE_Y0 + 5 * RULE_PITCH + RULE_L2 + 16 <= TEXT_FLOOR,
 #define BLADES_MAX 6
 
 /* The rig, drawn side on: a post, an arm, a motor, and the disc it turns. */
-#define BASE_Y   356
-#define POST_X   150
-#define POST_W   40
-#define ARM_Y    196
-#define ARM_H    28
-#define MOTOR_X  300
-#define MOTOR_W  62
-#define SHAFT_Y  210
-#define SPIN_X   406
-#define BLADE_L  92
+#define BASE_Y   356  /**< the rig's bench top, y px */
+#define POST_X   150  /**< the post's left edge, px */
+#define POST_W   40  /**< the post's width, px */
+#define ARM_Y    196  /**< the arm's top, px */
+#define ARM_H    28  /**< the arm's height, px */
+#define MOTOR_X  300  /**< the motor's left edge, px */
+#define MOTOR_W  62  /**< the motor's width, px */
+#define SHAFT_Y  210  /**< the shaft's y, px */
+#define SPIN_X   406  /**< the disc's center, x px */
+#define BLADE_L  92  /**< a blade's length from the shaft, px */
 
+/** @brief the pane tabs' labels */
 static const ui_text_id_t k_tabs[] = { TX_BAL_TAB_BALANCE, TX_BAL_TAB_RIG,
                                        TX_BAL_TAB_AIRCRAFT };
 
@@ -273,8 +274,8 @@ static void leave(void)
     kp_close();
 }
 
-/*
- * Where the correction goes, modelled until a sensor is fitted.
+/**
+ * @brief Where the correction goes, modelled until a sensor is fitted.
  *
  * 265 degrees lies between two blades at every count from 2 to 6, so the
  * between-blades wording is exercised.
@@ -356,8 +357,8 @@ static void event(const touch_event_t *evt)
 
 /* ----------------------------------------------------------------- drawing */
 
-/*
- * A dot on the part, a leader to a stated place, and the word there.
+/**
+ * @brief A dot on the part, a leader to a stated place, and the word there.
  *
  * The label position is a parameter rather than derived from the leader
  * direction, so a leader can be routed clear of the propeller.
@@ -388,6 +389,7 @@ static int left_of(int lx, int right, int gap, const char *text)
     return (lx < end) ? lx : end;
 }
 
+/** @brief Draws the rig pane. */
 static void draw_rig(gfx_canvas_t *c)
 {
     const gfx_color_t steel = ui_theme_color(UI_C_PANEL_HI);
@@ -489,8 +491,8 @@ static void draw_rig(gfx_canvas_t *c)
             332, TR(BAL_OPTICAL), warn);
 }
 
-/*
- * The same two sensors on a complete aircraft, where the rigid faces are
+/**
+ * @brief The same two sensors on a complete aircraft, where the rigid faces are
  * wherever the designer put them, the cowl is in the way, and the airframe
  * rocks unless it is tied down.
  */
@@ -607,8 +609,10 @@ static void draw_aircraft(gfx_canvas_t *c)
     callout(c, 52, ground - 12, 96, 344, TR(BAL_TIED_DOWN), warn);
 }
 
-/* A point on the disc, measured from the index mark and drawn with zero at
- * the top so the picture agrees with the number. */
+/**
+ * @brief A point on the disc, measured from the index mark and drawn with zero at
+ * the top so the picture agrees with the number.
+ */
 static void disc_at(float deg, int r, int *x, int *y)
 {
     const float k = 3.14159265358979f / 180.0f;
@@ -617,6 +621,7 @@ static void disc_at(float deg, int r, int *x, int *y)
     *y = DISC_CY - (int)((float)r * sinf(a) + 0.5f);
 }
 
+/** @brief Draws the measurement pane. */
 static void draw_measure(gfx_canvas_t *c)
 {
     const gfx_color_t skin  = ui_theme_color(UI_C_PANEL_HI);
@@ -690,8 +695,14 @@ static void draw_measure(gfx_canvas_t *c)
 }
 
 /* The placement rules, numbered. */
-typedef struct { ui_text_id_t head, line1, line2; } rule_t;
+/** @brief One placement rule: a heading and two lines. */
+typedef struct {
+    ui_text_id_t head,   /**< the rule's heading */
+                 line1,  /**< its first line */
+                 line2;  /**< its second line */
+} rule_t;
 
+/** @brief the rig's placement rules */
 static const rule_t k_rig_rules[] = {
     { TX_BAL_RIG_1, TX_BAL_RIG_1A, TX_BAL_RIG_1B },
     { TX_BAL_RIG_2, TX_BAL_RIG_2A, TX_BAL_RIG_2B },
@@ -700,9 +711,11 @@ static const rule_t k_rig_rules[] = {
     { TX_BAL_RIG_5, TX_BAL_RIG_5A, TX_BAL_RIG_5B },
     { TX_BAL_RIG_6, TX_BAL_RIG_6A, TX_BAL_RIG_6B },
 };
+/** @brief how many rules k_rig_rules holds */
 #define RIG_RULES ((int)(sizeof(k_rig_rules) / sizeof(k_rig_rules[0])))
 
-#define AIR_RULES 6
+#define AIR_RULES 6  /**< how many rules k_air_rules holds */
+/** @brief the aircraft's placement rules */
 static const rule_t k_air_rules[] = {
     { TX_BAL_AIR_1, TX_BAL_AIR_1A, TX_BAL_AIR_1B },
     { TX_BAL_AIR_2, TX_BAL_AIR_2A, TX_BAL_AIR_2B },
@@ -937,6 +950,7 @@ static void cancel(void)
  */
 static bool covered(void) { return s.kp.open; }
 
+/** @brief The screen's table. */
 static const ui_screen_t k_screen = {
     .covered = covered,
     .title  = "BALANCE",

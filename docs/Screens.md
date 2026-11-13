@@ -2477,7 +2477,7 @@ KST's and HITEC's frame around the session:
 | READY card, supply | PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off; a red dot and `ON` while on, and then a tap switches it off as OUTPUT OFF does (PROG 5V not while a port holds it). KST with no supply the bench switches: amber `OFF, ON BY HAND`. Hitec D series with none: `UNCHANGED` |
 | READY card, SERVO | grey `NOT CONNECTED` before CONNECT, amber `IN PROGRESS` while a step runs, amber `NOT READ` with the port held and no servo read, the servo's model (Hitec) or type (KST, `V6?` for 20k_sel's guess) once read |
 | rail line | the meter's volts and amps, under the rows |
-| footer, middle | the session's WRITE n VALUES, from any tab: the same 2s hold as the session's own button, fading from green to amber; a tap shows `Hold 2s to write.` and sends nothing. Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
+| footer, middle | the session's WRITE n VALUES, from any tab: the same 2s hold as the session's own button, fading from green to amber; a tap shows `Hold 2s to write.` and sends nothing. While a finger is on it the session takes no press: `A finger is still on another control. Lift it first.` Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
 | footer, right | OPTIONS: KST's KST EXPERT MODE page, HITEC's Hitec series and Hitec D receive; grey while the session holds the port |
 
 A tap on a READY row that is not met names it in the alert band, for

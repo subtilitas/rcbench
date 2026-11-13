@@ -32,13 +32,20 @@ extern "C" {
 #endif
 
 /**
- * The parts' states, sense_map_link_status()'s word: 4 bits a part, part 0
+ * @brief The parts' states, sense_map_link_status()'s word: 4 bits a part, part 0
  * lowest.  A change repaints SETUP.  0 at start: every part
  * SENS_PART_UNKNOWN.
+ *
+ * @param word the states, 4 bits a part
  */
 void sensors_rows_set_status(uint16_t word);
 
-/** Part @p a's state as last set. */
+/**
+ * @brief Part @p a's state as last set.
+ *
+ * @param a the part
+ * @return its state
+ */
 sens_part_t sensors_rows_status(int a);
 
 /**
@@ -69,8 +76,19 @@ sens_part_t sensors_rows_i228(void);
  */
 const char *sensors_rows_title(int a, char *buf, size_t n);
 
-/** Part @p a's state in words, and the colour it is drawn in. */
+/**
+ * @brief Part @p a's state in words.
+ *
+ * @param a the part
+ * @return the words
+ */
 const char *sensors_rows_state(int a);
+/**
+ * @brief Part @p a's state color, the color its words are drawn in.
+ *
+ * @param a the part
+ * @return the color
+ */
 gfx_color_t sensors_rows_state_color(int a);
 
 /**
@@ -96,7 +114,12 @@ gfx_color_t sensors_rows_word_color(sens_part_t st);
  */
 bool sensors_rows_unheld(setting_id_t id);
 
-/** The line a marked row shows in place of its help. */
+/**
+ * @brief The line a marked row shows in place of its help.
+ *
+ * @param id the setting
+ * @return the line; NULL for none
+ */
 const char *sensors_rows_why(setting_id_t id);
 
 /**
@@ -177,17 +200,34 @@ const char *sensors_rows_trip_line(char *buf, size_t n, unsigned ch,
  */
 const char *sensors_rows_channel(int c, char *buf, size_t n);
 
-/** The same over SERVO's plot and on the TEST card: "INA 0x41 CH2", or
- *  "INA3221" with none; into @p buf. */
+/**
+ * @brief The same over SERVO's plot and on the TEST card: "INA 0x41 CH2", or
+ *  "INA3221" with none; into @p buf.
+ *
+ * @param buf receives the name
+ * @param n its size, bytes
+ * @return @p buf
+ */
 const char *sensors_rows_short(char *buf, size_t n);
 
-/** The servo rail's INA3221 meter as the reports and the LIMIT RUN line
+/**
+ * @brief The servo rail's INA3221 meter as the reports and the LIMIT RUN line
  *  name it: the channel watching the tester's target, "INA3221 0x41 CH2",
- *  or "INA3221" with none; into @p buf. */
+ *  or "INA3221" with none; into @p buf.
+ *
+ * @param buf receives the name
+ * @param n its size, bytes
+ * @return @p buf
+ */
 const char *sensors_rows_meter(char *buf, size_t n);
 
-/** The lowest channel with a shunt on a fitted part whose WATCH is the
- *  page code @p code (LINK_SM_WATCH_*), 0 to 11; -1 for none. */
+/**
+ * @brief The lowest channel with a shunt on a fitted part whose WATCH is the
+ *  page code @p code (LINK_SM_WATCH_*), 0 to 11; -1 for none.
+ *
+ * @param code the page code
+ * @return the channel; -1 for none
+ */
 int sensors_rows_watcher(uint16_t code);
 
 /**

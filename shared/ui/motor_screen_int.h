@@ -145,7 +145,7 @@ _Static_assert(MO_STRIP_Y + MO_STRIP_H + 3 <= MO_PAGE_Y,
 
 /* --- motor_workbench.c: the strip and the TARGET row ---------------------- */
 
-/* What a touch event was to the strip or the TARGET row. */
+/** @brief What a touch event was to the strip or the TARGET row. */
 typedef enum {
     MWB_NONE = 0,     /* neither's                                   */
     MWB_TAKEN,        /* theirs; nothing to do                       */
@@ -157,24 +157,77 @@ typedef enum {
  * comes back from the OUTPUTS screen its TARGET row opened; touch events
  * lost. */
 void mwb_reset(void);
+/**
+ * @brief Enters the strip's tasks: LIVE, unless the screen comes back from
+ *         the OUTPUTS screen its TARGET row opened.
+ */
 void mwb_enter(void);
+/**
+ * @brief Drops the press the strip or the TARGET row holds, as touch events
+ *         were lost.
+ */
 void mwb_cancel(void);
-/* The TARGET row opened the OUTPUTS screen: the navigation count to come
- * back on. */
+/**
+ * @brief The TARGET row opened the OUTPUTS screen: the navigation count to come
+ * back on.
+ */
 void mwb_opened_outputs(void);
+/**
+ * @brief Gives the task the strip shows.
+ *
+ * @return LIVE or PROGRAM
+ */
 ui_wb_task_t mwb_task(void);
-/* A touch event.  @p strip: whether the strip takes presses (no keypad
- * over it); @p locked: whether the TARGET row does. */
+/**
+ * @brief A touch event.  @p strip: whether the strip takes presses (no keypad
+ * over it); @p locked: whether the TARGET row does.
+ *
+ * @param evt the touch event
+ * @param strip whether the strip takes presses, which a keypad over it stops
+ * @param locked whether the TARGET row is locked
+ * @return what the event was to the strip or the row
+ */
 mwb_ev_t mwb_event(const touch_event_t *evt, bool strip, bool locked);
-/* Whether the strip or the TARGET row owns a press under way. */
+/**
+ * @brief Whether the strip or the TARGET row owns a press under way.
+ *
+ * @return true while one does
+ */
 bool mwb_pressed(void);
-/* Bumped when the strip's look changes. */
+/**
+ * @brief Bumped when the strip's look changes.
+ *
+ * @return the count
+ */
 uint32_t mwb_revision(void);
+/**
+ * @brief Draws the strip's tabs.
+ *
+ * @param c the canvas to draw on
+ */
 void mwb_render_strip(gfx_canvas_t *c);
+/**
+ * @brief Draws the TARGET row.
+ *
+ * @param c the canvas to draw on
+ * @param value its value text
+ * @param warn the value is drawn in the warning color
+ * @param locked the row is drawn dim
+ */
 void mwb_render_target(gfx_canvas_t *c, const char *value, bool warn,
                        bool locked);
 /* The strip's row with its trough, and the TARGET row. */
+/**
+ * @brief The strip's row with its trough.
+ *
+ * @return the rectangle
+ */
 gfx_rect_t mwb_strip_area(void);
+/**
+ * @brief The TARGET row.
+ *
+ * @return the rectangle
+ */
 gfx_rect_t mwb_target_rect(void);
 
 /* --- motor_program_page.c: PROGRAM's list and its sessions --------------- */
@@ -182,24 +235,60 @@ gfx_rect_t mwb_target_rect(void);
 /* Laid out, each MOTOR session in the body under the output strip (reset);
  * the screen entered; left (each session closes, a run ends); touch events
  * lost; the bench armed or asked to arm; a frame. */
+/** @brief Lays each MOTOR session out in the body under the output strip. */
 void mpp_reset(void);
+/** @brief Tells the sessions the screen was entered. */
 void mpp_enter(void);
+/** @brief Leaves the screen: each session closes and a run ends. */
 void mpp_leave(void);
+/** @brief Drops the presses the sessions hold, as touch events were lost. */
 void mpp_cancel(void);
+/**
+ * @brief Tells the sessions whether the bench is armed or asked to arm.
+ *
+ * @param armed true when it is
+ */
 void mpp_armed(bool armed);
+/**
+ * @brief Runs the sessions for one frame.
+ *
+ * @param dt_s seconds since the last call
+ */
 void mpp_tick(float dt_s);
-/* The session shown on PROGRAM, or NULL: the list shows. */
+/**
+ * @brief The session shown on PROGRAM, or NULL: the list shows.
+ *
+ * @return the session
+ */
 const prog_page_set_t *mpp_shown(void);
-/* The home tag in a session: its back() (one level up; from its top the
- * session closes to the list).  Whether there was a session. */
+/**
+ * @brief The home tag in a session: its back() (one level up; from its top the
+ * session closes to the list).  Whether there was a session.
+ *
+ * @return true when there was a session
+ */
 bool mpp_back(void);
-/* A touch event on the list; whether it was the list's.  A tap on a live
- * row opens its session. */
+/**
+ * @brief A touch event on the list; whether it was the list's.  A tap on a live
+ * row opens its session.
+ *
+ * @param evt the touch event
+ * @return true when it was the list's
+ */
 bool mpp_event(const touch_event_t *evt);
-/* Whether a press on the list is under way; drop it. */
+/**
+ * @brief Whether a press on the list is under way; drop it.
+ *
+ * @return true while one does
+ */
 bool mpp_pressed(void);
+/** @brief Drops the press on the list. */
 void mpp_cancel_press(void);
-/* Bumped when the list's look changes. */
+/**
+ * @brief Bumped when the list's look changes.
+ *
+ * @return the count
+ */
 uint32_t mpp_revision(void);
 /**
  * @brief The @p k-th row PROGRAM's list shows, headings not counted.
@@ -209,11 +298,25 @@ uint32_t mpp_revision(void);
  * @return False past the last row shown.
  */
 bool mpp_row(int k, gfx_rect_t *r, const prog_reg_row_t **row);
+/**
+ * @brief Draws PROGRAM's list, or the session shown.
+ *
+ * @param c the canvas to draw on
+ */
 void mpp_render_page(gfx_canvas_t *c);
 /* The output strip above a full-width session (motor_output_strip()), and
  * a number that changes whenever its text does. */
 void mpp_render_strip(gfx_canvas_t *c, uint8_t proto, uint64_t pins,
                       bool known, bool armed);
+/**
+ * @brief A number that changes whenever the output strip's text does.
+ *
+ * @param proto the throttle's protocol
+ * @param pins the throttle pins, bit n for GPIO n
+ * @param known the binding is read
+ * @param armed the bench is armed
+ * @return the number
+ */
 uint32_t mpp_strip_signature(uint8_t proto, uint64_t pins, bool known,
                              bool armed);
 

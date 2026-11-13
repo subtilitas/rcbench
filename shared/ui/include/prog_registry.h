@@ -94,6 +94,10 @@ typedef enum {
 #if defined(__GNUC__) && !defined(__clang__)
 #define PROG_ONE_CALL __attribute__((noinline, noclone))
 #else
+/**
+ * @brief a function that calls one hook of a page set and nothing else
+ *         through a pointer
+ */
 #define PROG_ONE_CALL __attribute__((noinline))
 #endif
 
@@ -115,8 +119,8 @@ typedef enum {
 
 /** The list rules (see the top of this file). */
 #define PROG_LIST_SEARCH_OVER   9
-#define PROG_LIST_HEADINGS_OVER 8
-#define PROG_LIST_MAX           48
+#define PROG_LIST_HEADINGS_OVER 8  /**< the rows from which a list is shown under headings */
+#define PROG_LIST_MAX           48  /**< the most rows a list holds */
 /** The characters a search takes, as ESC STICK's does. */
 #define PROG_LIST_QUERY_MAX     16
 
@@ -131,8 +135,8 @@ typedef struct {
     void       (*init)(gfx_rect_t area);
     /** The host screen was entered. */
     void       (*entry)(void);
-    void       (*open)(void);
-    bool       (*is_open)(void);
+    void       (*open)(void);  /**< open the session */
+    bool       (*is_open)(void);  /**< whether the session is open */
     /**
      * The home tag or BACK in the session: an editor open in it closes;
      * otherwise the session closes, or, while it holds its port, asks for
@@ -144,15 +148,16 @@ typedef struct {
     bool       (*holds_port)(void);
     /** The bench is armed or asked to arm. */
     void       (*armed)(bool armed);
-    void       (*tick)(float dt_s);
+    void       (*tick)(float dt_s);  /**< run the session for one frame */
+    /** @brief whether the session holds the press of contact @p id */
     bool       (*has_press)(uint8_t id);
-    void       (*event)(const touch_event_t *evt);
-    void       (*render)(gfx_canvas_t *c);
+    void       (*event)(const touch_event_t *evt);  /**< hand the session a touch event */
+    void       (*render)(gfx_canvas_t *c);  /**< draw the session */
     /** Changes whenever a render would show something else. */
     uint32_t   (*revision)(void);
     /** @brief Changes while a hold fills or a button's press shows; hold_rect() is where. */
     uint32_t   (*hold_revision)(void);
-    gfx_rect_t (*hold_rect)(void);
+    gfx_rect_t (*hold_rect)(void);  /**< where the session's hold shows */
     /** The host screen is left: presses and editors go, the port stays. */
     void       (*leave)(void);
     /** Touch events were lost. */
@@ -190,6 +195,7 @@ typedef struct {
     bool     write_live; /**< a 2s hold on it writes                      */
 } prog_session_t;
 
+/** @brief One row of the registry: a programmer's session and what it needs. */
 typedef struct {
     uint8_t                device;           /**< a prog_device_t        */
     uint8_t                task;             /**< a ui_wb_task_t         */
@@ -204,24 +210,43 @@ typedef struct {
     bool                   full_width;
 } prog_reg_row_t;
 
-/** The table, and its row count in @p count. */
+/**
+ * @brief The table, and its row count in @p count.
+ *
+ * @param count receives the row count
+ * @return the rows
+ */
 const prog_reg_row_t *prog_registry(size_t *count);
 
-/** For the tests: the lists are built from @p count rows of @p rows; NULL
- *  goes back to the table as it ships. */
+/**
+ * @brief For the tests: the lists are built from @p count rows of @p rows; NULL
+ *  goes back to the table as it ships.
+ *
+ * @param rows the rows; NULL for the table as it ships
+ * @param count how many
+ */
 void prog_registry_use(const prog_reg_row_t *rows, size_t count);
 
 /**
- * The ports as the panel last read them: @p tester_port, the port the
+ * @brief The ports as the panel last read them: @p tester_port, the port the
  * SERVO screen's tester drives (0 to 3), PROG_REG_NO_PORT with the
  * standard outputs or the target not known; @p held, bit n for port n
  * held by an IOmcu page no row's session drives (the HITEC page, opened
  * from the bench console).  Both start as none.
+ *
+ * @param tester_port the port the tester drives, 0 to 3, or PROG_REG_NO_PORT
+ * @param held the ports held by a page no row's session drives, bit n for
+ *   port n
  */
 void prog_registry_set_ports(uint8_t tester_port, uint8_t held);
 
-/** Row @p r's port as it stands: its own, the tester's for
- *  PROG_REG_TESTER_PORT, or PROG_REG_NO_PORT. */
+/**
+ * @brief Row @p r's port as it stands: its own, the tester's for
+ *  PROG_REG_TESTER_PORT, or PROG_REG_NO_PORT.
+ *
+ * @param r the row
+ * @return the port
+ */
 uint8_t prog_reg_port(const prog_reg_row_t *r);
 
 /**
@@ -242,6 +267,7 @@ const char *prog_reg_hold_alert(void);
 
 /* ------------------------------------------------------------ the checks */
 
+/** @brief Why a registry table is unsound. */
 typedef enum {
     PROG_REG_OK = 0,
     PROG_REG_BAD_DEVICE,     /**< device past PROG_DEVICES               */
@@ -259,10 +285,15 @@ typedef enum {
 } prog_reg_fault_t;
 
 /**
- * Checks @p n rows of @p rows: every field filled and in range, names in
+ * @brief Checks @p n rows of @p rows: every field filled and in range, names in
  * the language in force, no two rows of one list named alike, no list over
  * PROG_LIST_MAX, each row laid out as its device's host draws it.  The first fault found, with its row in @p at (may be
  * NULL); PROG_REG_OK with @p at untouched for a sound table.
+ *
+ * @param rows the rows
+ * @param n how many
+ * @param at receives the row of the fault; may be NULL
+ * @return the first fault found
  */
 prog_reg_fault_t prog_reg_check(const prog_reg_row_t *rows, size_t n,
                                 size_t *at);
@@ -270,12 +301,21 @@ prog_reg_fault_t prog_reg_check(const prog_reg_row_t *rows, size_t n,
 /* ------------------------------------------------- a device's sessions */
 
 /**
- * The page sets @p device's rows open, each once in the table's order,
+ * @brief The page sets @p device's rows open, each once in the table's order,
  * into @p out: at most PROG_LIST_MAX.  Their count.
+ *
+ * @param device the device
+ * @param out receives the page sets
+ * @return how many
  */
 int prog_reg_sets(uint8_t device, const prog_page_set_t *out[PROG_LIST_MAX]);
 
-/** Whether a row that opens @p ps is full width. */
+/**
+ * @brief Whether a row that opens @p ps is full width.
+ *
+ * @param ps the page set
+ * @return true when it is
+ */
 bool prog_reg_full_width(const prog_page_set_t *ps);
 
 /*
@@ -283,42 +323,170 @@ bool prog_reg_full_width(const prog_page_set_t *ps);
  * tools/stack_check.py follows the call by name (PROG_CALLS there).  The
  * hosts call a session through these and through nothing else.
  */
+/**
+ * @brief Starts the session over: closed, nothing held, laid out in @p area.
+ *
+ * @param ps the page set
+ * @param area the session's rectangle
+ */
 void prog_ps_init(const prog_page_set_t *ps, gfx_rect_t area);
+/**
+ * @brief Tells the session the host screen was entered.
+ *
+ * @param ps the page set
+ */
 void prog_ps_entry(const prog_page_set_t *ps);
+/**
+ * @brief Opens the session.
+ *
+ * @param ps the page set
+ */
 void prog_ps_open(const prog_page_set_t *ps);
+/**
+ * @brief Whether the session is open.
+ *
+ * @param ps the page set
+ * @return true when it is
+ */
 bool prog_ps_is_open(const prog_page_set_t *ps);
+/**
+ * @brief Handles the home tag or BACK in the session.
+ *
+ * @param ps the page set
+ */
 void prog_ps_back(const prog_page_set_t *ps);
+/**
+ * @brief Whether the session holds its port.
+ *
+ * @param ps the page set
+ * @return true when it does
+ */
 bool prog_ps_holds(const prog_page_set_t *ps);
+/**
+ * @brief Tells the session whether the bench is armed or asked to arm.
+ *
+ * @param ps the page set
+ * @param armed true when it is
+ */
 void prog_ps_armed(const prog_page_set_t *ps, bool armed);
+/**
+ * @brief Runs the session for one frame.
+ *
+ * @param ps the page set
+ * @param dt_s seconds since the last call
+ */
 void prog_ps_tick(const prog_page_set_t *ps, float dt_s);
+/**
+ * @brief Whether the session holds the press of contact @p id.
+ *
+ * @param ps the page set
+ * @param id the contact
+ * @return true when it does
+ */
 bool prog_ps_has_press(const prog_page_set_t *ps, uint8_t id);
+/**
+ * @brief Hands the session a touch event.
+ *
+ * @param ps the page set
+ * @param evt the touch event
+ */
 void prog_ps_event(const prog_page_set_t *ps, const touch_event_t *evt);
+/**
+ * @brief Draws the session.
+ *
+ * @param ps the page set
+ * @param c the canvas to draw on
+ */
 void prog_ps_render(const prog_page_set_t *ps, gfx_canvas_t *c);
+/**
+ * @brief A count that changes whenever a render would show something else.
+ *
+ * @param ps the page set
+ * @return the count
+ */
 uint32_t prog_ps_revision(const prog_page_set_t *ps);
+/**
+ * @brief A count that changes while a hold fills or a button's press shows.
+ *
+ * @param ps the page set
+ * @return the count
+ */
 uint32_t prog_ps_hold_revision(const prog_page_set_t *ps);
+/**
+ * @brief Gives the rectangle where the session's hold shows.
+ *
+ * @param ps the page set
+ * @return the rectangle
+ */
 gfx_rect_t prog_ps_hold_rect(const prog_page_set_t *ps);
+/**
+ * @brief Tells the session the host screen is left: presses and editors go,
+ *         the port stays.
+ *
+ * @param ps the page set
+ */
 void prog_ps_leave(const prog_page_set_t *ps);
+/**
+ * @brief Tells the session that touch events were lost.
+ *
+ * @param ps the page set
+ */
 void prog_ps_cancel(const prog_page_set_t *ps);
+/**
+ * @brief Gives the GPIO the session's port drives.
+ *
+ * @param ps the page set
+ * @return the GPIO, or PROG_REG_NO_PIN
+ */
 uint8_t prog_ps_pin(const prog_page_set_t *ps);
+/**
+ * @brief Whether a press lands on a control of the session that stops what
+ *         the bench drives.
+ *
+ * @param ps the page set
+ * @param x the press's x
+ * @param y the press's y
+ * @return true when it does
+ */
 bool prog_ps_safe_at(const prog_page_set_t *ps, int x, int y);
 
 /* ------------------------------------------------------- a row's state */
 
+/** @brief The state of a registry row. */
 typedef enum {
     PROG_ROW_LIVE = 0,       /**< a tap opens its session                 */
     PROG_ROW_NO_CAP,         /**< the IOmcu lacks a needed capability      */
     PROG_ROW_PORT_BUSY,      /**< another row's session holds the port    */
 } prog_row_state_t;
 
-/** Row @p i of @p rows with the IOmcu reporting @p caps (link_cap_t). */
+/**
+ * @brief Row @p i of @p rows with the IOmcu reporting @p caps (link_cap_t).
+ *
+ * @param rows the rows
+ * @param n how many
+ * @param i the row
+ * @param caps the IOmcu's capability bits
+ * @return the state
+ */
 prog_row_state_t prog_reg_state(const prog_reg_row_t *rows, size_t n,
                                 size_t i, uint16_t caps);
 
-/** The lowest link_cap_t bit row @p i needs and @p caps lacks; 0 none. */
+/**
+ * @brief The lowest link_cap_t bit row @p i needs and @p caps lacks; 0 none.
+ *
+ * @param row the row
+ * @param caps the IOmcu's capability bits
+ * @return the bit
+ */
 uint16_t prog_reg_missing(const prog_reg_row_t *row, uint16_t caps);
 
-/** A capability bit's name as the link names it ("SERVO PWM"), the same
- *  in every language; "" for a bit with no name, or for 0. */
+/**
+ * @brief A capability bit's name as the link names it ("SERVO PWM"), the same
+ *  in every language; "" for a bit with no name, or for 0.
+ *
+ * @param bit the bit
+ * @return its name
+ */
 const char *prog_reg_cap_name(uint16_t bit);
 
 /**
@@ -360,25 +528,33 @@ bool prog_reg_warning(const prog_reg_row_t *rows, size_t n, size_t i,
 /** An entry of a list: a row, or the heading of the rows under it. */
 typedef struct {
     uint8_t row;             /**< the table's row; for a heading, its first */
-    bool    heading;
+    bool    heading;  /**< the entry is a heading */
 } prog_list_entry_t;
 
+/** @brief A list of a device's rows, narrowed by a search. */
 typedef struct {
     uint8_t total;           /**< the list's rows, before a search         */
     uint8_t rows;            /**< the rows shown                           */
     uint8_t count;           /**< entries: rows shown and headings         */
     bool    search;          /**< the list offers SEARCH                   */
     bool    headings;        /**< the rows are under their headings        */
-    prog_list_entry_t e[2 * PROG_LIST_MAX];
+    prog_list_entry_t e[2 * PROG_LIST_MAX];  /**< the entries, in the order they are drawn */
 } prog_list_t;
 
 /**
- * The list of @p device's @p task from @p n rows of @p rows, narrowed to
+ * @brief The list of @p device's @p task from @p n rows of @p rows, narrowed to
  * the names @p query finds (esc_text_matches(): letters without regard to
  * case, "*" any text; NULL or "" finds all).  SEARCH stays offered while a
  * search narrows the list.  With headings, the groups come in the order
  * the table first names them and the rows keep the table's order inside
  * each.  Rows past PROG_LIST_MAX are not listed.
+ *
+ * @param l receives the list
+ * @param rows the rows
+ * @param n how many
+ * @param device the device
+ * @param task the task
+ * @param query the search; NULL or "" for none
  */
 void prog_list_build(prog_list_t *l, const prog_reg_row_t *rows, size_t n,
                      uint8_t device, uint8_t task, const char *query);
@@ -409,8 +585,9 @@ void prog_list_build(prog_list_t *l, const prog_reg_row_t *rows, size_t n,
 enum { PROG_VIEW_P_NONE = -1, PROG_VIEW_P_SEARCH = -2, PROG_VIEW_P_UP = -3,
        PROG_VIEW_P_DOWN = -4 };
 
+/** @brief A list drawn into a rectangle, with its scroll position and press. */
 typedef struct {
-    gfx_rect_t area;
+    gfx_rect_t area;  /**< where the view is drawn */
     int        top;          /**< the first entry shown                    */
     int        pressed;      /**< an entry, a PROG_VIEW_P_*                */
     uint8_t    id;           /**< the press's contact                      */
@@ -418,6 +595,7 @@ typedef struct {
     char       query[PROG_LIST_QUERY_MAX + 1];
 } prog_view_t;
 
+/** @brief What a touch event was to the view. */
 typedef enum {
     PROG_VIEW_NONE = 0,      /**< not the view's                           */
     PROG_VIEW_TAKEN,         /**< the view's, nothing to do                */
@@ -425,18 +603,48 @@ typedef enum {
     PROG_VIEW_SEARCH,        /**< SEARCH tapped                            */
 } prog_view_ev_t;
 
+/**
+ * @brief Starts the view over: laid out in @p area, at the top, nothing
+ *         pressed, no search.
+ *
+ * @param v the view
+ * @param area its rectangle
+ */
 void prog_view_init(prog_view_t *v, gfx_rect_t area);
 
-/** The list was rebuilt (a search, another language): back to its top. */
+/**
+ * @brief The list was rebuilt (a search, another language): back to its top.
+ *
+ * @param v the view
+ */
 void prog_view_top(prog_view_t *v);
 
-/** Whether the bar is drawn: SEARCH, or a list longer than the area. */
+/**
+ * @brief Whether the bar is drawn: SEARCH, or a list longer than the area.
+ *
+ * @param v the view
+ * @param l the list
+ * @return true when it is
+ */
 bool prog_view_has_bar(const prog_view_t *v, const prog_list_t *l);
 
-/** The entries shown from the top, at least 1 for a list that has one. */
+/**
+ * @brief The entries shown from the top, at least 1 for a list that has one.
+ *
+ * @param v the view
+ * @param l the list
+ * @return the entries
+ */
 int prog_view_shown(const prog_view_t *v, const prog_list_t *l);
 
-/** Entry @p k's rectangle, empty when it is not shown. */
+/**
+ * @brief Entry @p k's rectangle, empty when it is not shown.
+ *
+ * @param v the view
+ * @param l the list
+ * @param k the entry, from 0
+ * @return the rectangle
+ */
 gfx_rect_t prog_view_entry_rect(const prog_view_t *v, const prog_list_t *l,
                                 int k);
 
@@ -463,14 +671,24 @@ gfx_rect_t prog_view_up_rect(const prog_view_t *v, const prog_list_t *l);
 gfx_rect_t prog_view_down_rect(const prog_view_t *v, const prog_list_t *l);
 
 /**
- * A touch event.  "^" and "v" page the list themselves.  A heading takes a
+ * @brief A touch event.  "^" and "v" page the list themselves.  A heading takes a
  * press and does nothing.  A row tap is reported whatever its state: the
  * host opens a live row only (prog_reg_state()).
+ *
+ * @param v the view
+ * @param l the list
+ * @param evt the touch event
+ * @param row receives the table's row of a tapped row
+ * @return what the event was
  */
 prog_view_ev_t prog_view_event(prog_view_t *v, const prog_list_t *l,
                                const touch_event_t *evt, uint8_t *row);
 
-/** Drop a press under way. */
+/**
+ * @brief Drop a press under way.
+ *
+ * @param v the view
+ */
 void prog_view_cancel(prog_view_t *v);
 
 /**

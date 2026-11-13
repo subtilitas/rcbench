@@ -16,11 +16,12 @@
 extern "C" {
 #endif
 
+/** @brief The look of one hero readout. */
 typedef struct {
-    const char *label;
-    const char *unit;
-    gfx_color_t color;
-    int         decimals;
+    const char *label;  /**< its label */
+    const char *unit;  /**< its unit */
+    gfx_color_t color;  /**< its color */
+    int         decimals;  /**< the decimals of its number */
     /**
      * Label of the second number: "pk" for most channels, "min" for voltage,
      * whose extreme is the sag floor rather than a peak.  NULL selects "pk".

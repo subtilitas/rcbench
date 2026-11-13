@@ -38,19 +38,22 @@
 #include "motor_screen_int.h"
 
 static struct {
-    prog_view_t view;
-    /* Bumped when the list's look changes: a press, a page, a search. */
+    prog_view_t view;  /**< PROGRAM's list view */
+    /** @brief Bumped when the list's look changes: a press, a page, a search. */
     uint32_t    rev;
-    /* What the rows showed when last drawn (prog_signature()). */
+    /** @brief What the rows showed when last drawn (prog_signature()). */
     uint32_t    sig;
-} p;
+} p;  /**< The state of PROGRAM's list. */
 
-/* The IOmcu's capabilities, which the rows' states follow. */
+/**
+ * @brief The IOmcu's capabilities, which the rows' states follow.
+ */
 static uint16_t caps_now(void)
 {
     return ui_router_status()->capabilities;
 }
 
+/** @brief Builds the list of the rows MOTOR & ESC's PROGRAM offers. */
 static void list_now(prog_list_t *l)
 {
     size_t n = 0;
@@ -58,7 +61,9 @@ static void list_now(prog_list_t *l)
     prog_list_build(l, rows, n, PROG_DEV_MOTOR, UI_WB_PROGRAM, p.view.query);
 }
 
-/* The session's area: the body under the output strip. */
+/**
+ * @brief The session's area: the body under the output strip.
+ */
 static gfx_rect_t full_area(void)
 {
     return (gfx_rect_t){ 0, PROG_FULL_Y, W, (int16_t)(H - PROG_FULL_Y) };
@@ -132,7 +137,9 @@ const prog_page_set_t *mpp_shown(void)
     return NULL;
 }
 
-/* What PROGRAM's rows show, as one number: a change repaints the list. */
+/**
+ * @brief What PROGRAM's rows show, as one number: a change repaints the list.
+ */
 static uint32_t prog_signature(void)
 {
     size_t n = 0;
@@ -185,8 +192,10 @@ bool mpp_back(void)
     return true;
 }
 
-/* Row @p i tapped: a live row's session opens, one level down; a dimmed
- * row opens nothing, its reason drawn beside it. */
+/**
+ * @brief Row @p i tapped: a live row's session opens, one level down; a dimmed
+ * row opens nothing, its reason drawn beside it.
+ */
 static void row_open(uint8_t i)
 {
     size_t n = 0;
@@ -277,10 +286,11 @@ void mpp_render_page(gfx_canvas_t *c)
 
 /* ---------------------------------------------------- the output strip */
 
-/* The cells the TARGET value takes in the strip: the CONTROL card's 18 and
+/** @brief The cells the TARGET value takes in the strip: the CONTROL card's 18 and
  * room for two more pins. */
 #define STRIP_TARGET_CELLS 26u
 
+/** @brief Writes the supply's state as the output strip shows it. */
 static void supply_text(char *out, size_t size)
 {
     const supply_state_t *st = supply_screen_reading();

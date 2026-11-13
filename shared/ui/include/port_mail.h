@@ -42,6 +42,10 @@
 extern "C" {
 #endif
 
+/**
+ * @brief The mail between the control task and the UI task about the
+ *         programming ports.
+ */
 typedef struct {
     atomic_uint pins;       /**< port n's PIN register in byte n          */
     atomic_uint meta;       /**< functions, refusals, count, FUNC, epoch  */

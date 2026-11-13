@@ -67,6 +67,7 @@ static ports_state_t op = {
 };
 _Static_assert(LINK_PG_PORTS_MAX == 4u, "op.port_pin's initialiser");
 
+/** @brief Marks the entries' picture changed. */
 static void touched(void)
 {
     outputs_port_touched();
@@ -128,7 +129,9 @@ void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins)
 
 /* ---------------------------------------- SENSORS and SUPPLY's PD MINI */
 
-/* Pin @p v + 1 in a byte, 0 for none and anything past the mask. */
+/**
+ * @brief Pin @p v + 1 in a byte, 0 for none and anything past the mask.
+ */
 static int held_byte(int v)
 {
     return (v >= 0 && v < 64) ? v + 1 : 0;
@@ -146,16 +149,20 @@ void outputs_screen_set_iface_held(outputs_iface_t which, bool known,
                        : 0);
 }
 
-/* Whether part @p en of the sensor bus is on and the IOmcu has not
- * refused it. */
+/**
+ * @brief Whether part @p en of the sensor bus is on and the IOmcu has not
+ * refused it.
+ */
 static bool sense_part(setting_id_t en)
 {
     return settings_get_bool(en) && !settings_screen_unheld(en);
 }
 
-/* Whether an INA3221 part is fitted on SETUP > SENSORS and its rows are
+/**
+ * @brief Whether an INA3221 part is fitted on SETUP > SENSORS and its rows are
  * not marked: a part the page refused, dark or on the INA228's address
- * holds no bus (sensors_rows.h). */
+ * holds no bus (sensors_rows.h).
+ */
 static bool sensors_on(void)
 {
     const uint8_t parts = settings_sensors_fitted();
@@ -168,7 +175,9 @@ static bool sensors_on(void)
     return false;
 }
 
-/* GPIO @p v as a mask bit, or 0 for -1 and anything past the mask. */
+/**
+ * @brief GPIO @p v as a mask bit, or 0 for -1 and anything past the mask.
+ */
 static uint64_t pin_bit(int v)
 {
     return (v >= 0 && v < 64) ? ((uint64_t)1u << (unsigned)v) : 0u;

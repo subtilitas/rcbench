@@ -74,6 +74,7 @@ _Static_assert(UI_BAND_H + (ROWS - 1) * (TH + M) + M + MARK_DY + MARK_H
                    < UI_ALERT_Y,
                "the lower row's marks end above the alert band");
 
+/** @brief One tile of the menu. */
 typedef struct {
     ui_screen_id_t id;      /**< the screen the tile opens               */
     const char    *name;    /**< the screen's title: English always     */
@@ -96,6 +97,7 @@ typedef struct {
  * owner's word, and it sets COLS to 5.  "iR" (internal resistance) rather
  * than "IR", which reads as infrared.
  */
+/** @brief The workbench tiles, row 1. */
 static const tile_t k_workbenches[] = {
     { SCREEN_MOTOR,      "MOTOR & ESC", TX_OV_MOTOR,         ui_icon_motor,
       TX_HG_OV_MOTOR,
@@ -108,6 +110,7 @@ static const tile_t k_workbenches[] = {
       0, true },   /* modelled unless SETUP enables the PD mini */
 };
 
+/** @brief The instrument tiles, row 2. */
 static const tile_t k_instruments[] = {
     { SCREEN_ANALYSER,   "RECEIVER",    TX_OV_RECEIVER,      ui_icon_chart,
       TX_HG_OV_RECEIVER,
@@ -120,7 +123,7 @@ static const tile_t k_instruments[] = {
       LINK_CAP_VIBRATION, false },
 };
 
-/* The last column, top down. */
+/** @brief The last column, top down. */
 static const tile_t k_last_column[] = {
     { SCREEN_LOGS,       "LOGS",        TX_OV_LOGS,          ui_icon_record,
       TX_HG_OV_LOGS,
@@ -130,7 +133,7 @@ static const tile_t k_last_column[] = {
       0, false },
 };
 
-#define N_OF(a) ((int)(sizeof(a) / sizeof((a)[0])))
+#define N_OF(a) ((int)(sizeof(a) / sizeof((a)[0])))  /**< Counts the entries of an array. */
 
 _Static_assert(N_OF(k_workbenches) <= COLS - 1,
                "a workbench past column COLS - 1 needs COLS 5 (owner's word)");
@@ -139,10 +142,12 @@ _Static_assert(N_OF(k_instruments) <= COLS - 1,
 _Static_assert(N_OF(k_last_column) == ROWS,
                "the last column holds LOGS over SETUP");
 
-#define SLOTS (COLS * ROWS)
+#define SLOTS (COLS * ROWS)  /**< the number of tile slots */
 
-/* The tile in slot @p i (row by row from the top left), or NULL for a slot
- * its kind leaves empty. */
+/**
+ * @brief The tile in slot @p i (row by row from the top left), or NULL for a slot
+ * its kind leaves empty.
+ */
 static const tile_t *tile_in(int i)
 {
     if (i < 0 || i >= SLOTS) {
@@ -180,14 +185,14 @@ const char *overview_screen_tile_line(int slot)
 int overview_screen_columns(void) { return COLS; }
 
 static struct {
-    unsigned drawn_mask;
+    unsigned drawn_mask;  /**< the parts drawn into each buffer, a bit a part */
     int      pressed;      /**< index, or -1                              */
-    uint8_t  press_id;
-    bool     have_press;
+    uint8_t  press_id;  /**< the contact that owns the press */
+    bool     have_press;  /**< a contact owns a press */
     /** @brief The control task's word on the supply: it holds whichever
      *         screen is up, so a start of the screens keeps it */
     bool     supply_real;
-} s;
+} s;  /**< The screen's state. */
 
 void overview_invalidate(void) { s.drawn_mask = 0; }
 
@@ -199,6 +204,7 @@ void overview_screen_set_supply_real(bool real)
     }
 }
 
+/** @brief Returns the screen to its initial state. */
 static void reset(void)
 {
     const bool supply_real = s.supply_real;
@@ -208,6 +214,7 @@ static void reset(void)
     s.supply_real = supply_real;
 }
 
+/** @brief Gives the rectangle of the tile in slot @p i. */
 static gfx_rect_t tile_rect(int i)
 {
     const int col = i % COLS;
@@ -257,6 +264,7 @@ static bool mark_rect(int i, gfx_rect_t *out)
     return true;
 }
 
+/** @brief Finds the tile at a point. */
 static int tile_at(int x, int y)
 {
     for (int i = 0; i < SLOTS; ++i) {
@@ -267,6 +275,7 @@ static int tile_at(int x, int y)
     return -1;
 }
 
+/** @brief Takes a touch event of the screen. */
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -297,6 +306,7 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/** @brief Draws the screen. */
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     const unsigned bit = 1u << (buffer_index & 1);
@@ -328,8 +338,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
-/*
- * Touch events were lost between two frames, so this screen's record of what
+/**
+ * @brief Touch events were lost between two frames, so this screen's record of what
  * is on the glass cannot be trusted.  A press held open owns its track id,
  * and the GT911 reuses ids: a later contact that began somewhere else would
  * be taken for this one's release and act on a control nobody pressed.
@@ -448,6 +458,7 @@ static bool help_page(int i, ui_help_page_t *out)
     return true;
 }
 
+/** @brief The screen's table. */
 static const ui_screen_t k_screen = {
     .title  = "rcbench",
     .covered = ui_screen_not_covered,

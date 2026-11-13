@@ -321,6 +321,7 @@ void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color
 /** @brief The tag's text to its right edge: 12px. */
 #define TAG_TEXT_PAD_R  12
 
+/** @brief The width of the tag @p title makes, px. */
 static int tag_width(const char *title, bool chevron)
 {
     int tw = gfx_text_width(UI_FONT_TAG, title ? title : "", 1);

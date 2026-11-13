@@ -12,13 +12,22 @@
 
 /* --- which task and which panel hold the left column --------------------- */
 
-/* Whether a panel covers the left column: the keypad, the keyboard, the
- * list, a warning or the question. */
+/**
+ * @brief Whether a panel covers the left column: the keypad, the keyboard, the
+ * list, a warning or the question.
+ *
+ * @return true while one is open
+ */
 static inline bool modal_open(void)
 {
     return s.kp.open || s.tk.open || s.ch.open || s.warn.open || s.ask.open;
 }
 
+/**
+ * @brief Gives the task the function shown draws on.
+ *
+ * @return the task
+ */
 static inline ui_wb_task_t wb_task(void) { return ui_wb_strip_task(&s.wb); }
 
 /*
@@ -28,25 +37,56 @@ static inline ui_wb_task_t wb_task(void) { return ui_wb_strip_task(&s.wb); }
  * its port it stays shown there.
  */
 /* A page set's hooks are called through prog_ps_*() (prog_registry.h). */
-/* The session shown, or NULL. */
+/**
+ * @brief The session shown, or NULL.
+ *
+ * @return the set; NULL for none
+ */
 const prog_page_set_t *prog_shown_set(void);
+/**
+ * @brief Whether a programmer's page set is shown.
+ *
+ * @return true then
+ */
 static inline bool prog_shown(void) { return prog_shown_set() != NULL; }
-/* A session holds its port: ARM, the TARGET row and PORT PWM lock. */
+/**
+ * @brief A session holds its port: ARM, the TARGET row and PORT PWM lock.
+ *
+ * @return true while it does
+ */
 bool prog_holds(void);
 /* Every session laid out over the left column; the screen entered; left;
  * touch events lost; the bench armed or asked to arm; a frame. */
+/** @brief Lays every programmer session out over the left column. */
 void prog_init(void);
+/** @brief Enters the programmer's pages. */
 void prog_entry(void);
+/** @brief Leaves the programmer's pages. */
 void prog_leave(void);
+/** @brief Cancels what the programmer's pages hold. */
 void prog_cancel(void);
+/**
+ * @brief Tells the programmer's pages whether the bench is armed.
+ *
+ * @param armed true when it is armed
+ */
 void prog_armed(bool armed);
+/**
+ * @brief Runs the programmer's pages for one frame.
+ *
+ * @param dt_s seconds since the last call
+ */
 void prog_tick(float dt_s);
 /** @brief A session holding its port and not shown shows again, on its
  *         own screen (KST's or HITEC's). */
 void prog_follow_hold(void);
 
-/* The page of rows shown, PG_*, or -1: on KST its EXPERT MODE row.  TEST
- * and LIMIT RUN show their settings as lists. */
+/**
+ * @brief The page of rows shown, PG_*, or -1: on KST its EXPERT MODE row.  TEST
+ * and LIMIT RUN show their settings as lists.
+ *
+ * @return the page
+ */
 static inline int rows_page(void)
 {
     switch (wb_task()) {
@@ -56,15 +96,23 @@ static inline int rows_page(void)
     }
 }
 
-/* Whether a page of rows or a panel holds the left column: what took the
- * settings' presses and owned the knob as the settings overlay did. */
+/**
+ * @brief Whether a page of rows or a panel holds the left column: what took the
+ * settings' presses and owned the knob as the settings overlay did.
+ *
+ * @return true then
+ */
 static inline bool ov_shown(void)
 {
     return modal_open() || rows_page() >= 0;
 }
 
-/* Whether LIVE's dial is in sight and takes presses: LIVE or SWEEP, no
- * panel, no session.  The hub shows no dial. */
+/**
+ * @brief Whether LIVE's dial is in sight and takes presses: LIVE or SWEEP, no
+ * panel, no session.  The hub shows no dial.
+ *
+ * @return true then
+ */
 static inline bool live_shown(void)
 {
     return s.fn != SERVO_FN_HUB && wb_task() == UI_WB_LIVE && !modal_open()
@@ -109,19 +157,35 @@ int wb_meter_entry(void);
 /* The task strip at its start (reset); a screen entered; leaving (a page
  * of rows closes); touch events lost. */
 void wb_init(void);
+/** @brief Enters the task strip's tasks. */
 void wb_enter(void);
+/** @brief Leaves the task strip's tasks. */
 void wb_leave(void);
+/** @brief Cancels what the task strip's tasks hold. */
 void wb_cancel(void);
-/* The home tag: a panel closes; a page of rows closes to its screen.
- * Whether it did one; false lets the screen go. */
+/**
+ * @brief The home tag: a panel closes; a page of rows closes to its screen.
+ * Whether it did one; false lets the screen go.
+ *
+ * @return true when it took the press
+ */
 bool wb_back(void);
 /** @brief A panel or a programming page covers the screen.
  *  @return true while one does */
 bool svs_covered(void);
-/* The rest of a press on RUDDER's card, AUTO's box, the footer or the PORT
- * button: whether it was theirs. */
+/**
+ * @brief The rest of a press on RUDDER's card, AUTO's box, the footer or the PORT
+ * button: whether it was theirs.
+ *
+ * @param evt the touch event
+ * @return true when it took the press
+ */
 bool wb_rest(const touch_event_t *evt);
-/* A DOWN on TEST's page: the caps button. */
+/**
+ * @brief A DOWN on TEST's page: the caps button.
+ *
+ * @param evt the touch event
+ */
 void test_page_down(const touch_event_t *evt);
 /* TEST's page; SUPPLY's caps, read-only. */
 void draw_test_page(gfx_canvas_t *c);
@@ -149,7 +213,12 @@ bool servo_help_page(int i, struct ui_help_page *out);
 
 /* --- the page area and TEST's run cards --------------------------------- */
 
-/* The page area: the left card, down to the card's floor over the footer. */
+/**
+ * @brief The page area: the left card, down to the card's floor over the
+ *   footer.
+ *
+ * @return the rectangle
+ */
 static inline gfx_rect_t page_area(void)
 {
     return (gfx_rect_t){ PAD, CARD_Y, LCARD_W, CARD_H };

@@ -116,35 +116,36 @@ enum { HIT_NONE = 0, HIT_DD, HIT_POP, HIT_CELL, HIT_CLEAR };
 
 
 static struct {
-    outbind_t bind;
-    /* The last binding a read confirmed: what the screen goes back to when
+    outbind_t bind;  /**< the binding shown */
+    /** @brief The last binding a read confirmed: what the screen goes back to when
      * a read fails after an edit. */
     outbind_t confirmed;
-    bind_read_t read;       /* what the last reading was */
-    /* OFF was picked in the list, and is kept across readings until another
+    bind_read_t read;       /**< what the last reading was */
+    /** @brief OFF was picked in the list, and is kept across readings until another
      * entry is picked or the screen is left. */
     bool      off_picked;
-    bool      open;
-    int       hit_kind;
-    int       hit_index;
-    ui_hold_t clear;        /* the hold on UNBIND ALL PINS */
-    /* The pin whose tap a PWM clash refused last, or -1: the line under the
+    bool      open;  /**< the protocol list is open */
+    int       hit_kind;  /**< what the press is on, HIT_* */
+    int       hit_index;  /**< the cell or the list row pressed */
+    ui_hold_t clear;        /**< the hold on UNBIND ALL PINS */
+    /** @brief The pin whose tap a PWM clash refused last, or -1: the line under the
      * protocol says why, until another pick or tick. */
     int       refused;
-    outputs_result_t result;
+    outputs_result_t result;  /**< what became of the last write */
 
-    outputs_apply_fn apply;
+    outputs_apply_fn apply;  /**< the function that writes a binding */
 
-    /* The pins SENSORS and PD MINI held at the last frame. */
+    /** @brief The pins SENSORS and PD MINI held at the last frame. */
     uint64_t  iface[OUTPUTS_IFACE_COUNT];
 
-    bool      chrome_valid[MAX_FBS];
-    uint32_t  drawn_gen;
-    uint32_t  gen;          /* bumped by anything that changes the picture */
+    bool      chrome_valid[MAX_FBS];  /**< the chrome is drawn, per frame buffer */
+    uint32_t  drawn_gen;  /**< gen as last drawn */
+    uint32_t  gen;          /**< bumped by anything that changes the picture */
     bool      board_view;   /**< the board view is drawn, not this grid
                                  (outputs_view.c) */
-} s;
+} s;  /**< The screen's state. */
 
+/** @brief Marks the picture changed. */
 static void touched(void)
 {
     ++s.gen;
@@ -152,9 +153,11 @@ static void touched(void)
 
 static const outbind_proto_t *chosen_proto(void);
 
-/* Whether a programming port has pin @p index: it is a port's and no
+/**
+ * @brief Whether a programming port has pin @p index: it is a port's and no
  * protocol holds it.  A pin a stored slot holds is that slot's -- the
- * IOmcu gives the port no pin then -- and can be unticked. */
+ * IOmcu gives the port no pin then -- and can be unticked.
+ */
 static bool prog_taken(uint8_t index)
 {
     if (index >= outbind_pin_count(s.bind.board)
@@ -164,10 +167,12 @@ static bool prog_taken(uint8_t index)
     return outputs_port_holds(outbind_pins(s.bind.board)[index].gpio);
 }
 
-/* What SENSORS or PD MINI holds pin @p index for, or OUTPUTS_IFACE_NONE:
+/**
+ * @brief What SENSORS or PD MINI holds pin @p index for, or OUTPUTS_IFACE_NONE:
  * no protocol and no port holds it, and the IOmcu does not reserve it.  A
  * pin a protocol holds is that protocol's, as against a port: the IOmcu
- * refused the interface its pin then, and SETUP says so. */
+ * refused the interface its pin then, and SETUP says so.
+ */
 static outputs_iface_t iface_taken(uint8_t index)
 {
     if (index >= outbind_pin_count(s.bind.board)
@@ -178,7 +183,9 @@ static outputs_iface_t iface_taken(uint8_t index)
     return outputs_iface_at(outbind_pins(s.bind.board)[index].gpio);
 }
 
-/* The pin of the PROG PORT entry shown, or OUTPUTS_NO_PIN. */
+/**
+ * @brief The pin of the PROG PORT entry shown, or OUTPUTS_NO_PIN.
+ */
 static uint8_t shown_port_pin(void)
 {
     const int port = outputs_screen_port_shown();
@@ -186,9 +193,11 @@ static uint8_t shown_port_pin(void)
                        : OUTPUTS_NO_PIN;
 }
 
-/* Whether the IOmcu would refuse pin @p index to the protocol being
+/**
+ * @brief Whether the IOmcu would refuse pin @p index to the protocol being
  * edited: the programming port's slice, or a bound PWM pin's compare
- * register.  The port's own pin is prog_taken(), not this. */
+ * register.  The port's own pin is prog_taken(), not this.
+ */
 static bool clashes(uint8_t index)
 {
     return outbind_pwm_clash_ports(&s.bind, index, outputs_port_pins(),
@@ -208,7 +217,9 @@ uint32_t outputs_screen_revision(void)
     return s.gen + outputs_port_revision();
 }
 
-/* The hold on UNBIND ALL PINS, and the press that began it, are over. */
+/**
+ * @brief The hold on UNBIND ALL PINS, and the press that began it, are over.
+ */
 static void drop_clear_hold(void)
 {
     ui_hold_reset(&s.clear);
@@ -345,10 +356,12 @@ void outputs_screen_select(uint8_t proto)
     touched();
 }
 
-/* Every change of the binding goes out at once.  There is no APPLY key: a
+/**
+ * @brief Every change of the binding goes out at once.  There is no APPLY key: a
  * screen with an unapplied choice on it is a screen that disagrees with the
  * bench, and the operator has no way to see which of the two is driving.
- * Which protocol is selected is not part of the binding and calls nothing. */
+ * Which protocol is selected is not part of the binding and calls nothing.
+ */
 static void changed(void)
 {
     touched();
@@ -359,18 +372,23 @@ static void changed(void)
 
 /* ---------------------------------------------------------------- geometry */
 
+/** @brief Gives the protocol dropdown's face. */
 static gfx_rect_t dd_rect(void)
 {
     return gfx_rect_make(COL_X, DD_Y, COL_W, DD_H);
 }
 
-/* The list's rows: the protocols, then one PROG PORT entry a port. */
+/**
+ * @brief The list's rows: the protocols, then one PROG PORT entry a port.
+ */
 static int pop_rows(void)
 {
     return (int)OUTBIND_PROTOS + (int)outputs_screen_port_entries();
 }
 
-/* The list: one column of POP_W, two with PROG PORT entries. */
+/**
+ * @brief The list: one column of POP_W, two with PROG PORT entries.
+ */
 static gfx_rect_t pop_rect(void)
 {
     const int cols = (outputs_screen_port_entries() > 0u) ? 2 : 1;
@@ -378,8 +396,10 @@ static gfx_rect_t pop_rect(void)
                          (int)OUTBIND_PROTOS * POP_ROW + 8);
 }
 
-/* Row @p i: a protocol in the first column, PROG PORT entry
- * i - OUTBIND_PROTOS in the second, from the same top. */
+/**
+ * @brief Row @p i: a protocol in the first column, PROG PORT entry
+ * i - OUTBIND_PROTOS in the second, from the same top.
+ */
 static gfx_rect_t pop_row_rect(int i)
 {
     const int col = (i < (int)OUTBIND_PROTOS) ? 0 : 1;
@@ -388,6 +408,7 @@ static gfx_rect_t pop_row_rect(int i)
                          POP_W - 8, POP_ROW);
 }
 
+/** @brief Gives UNBIND ALL PINS' button. */
 static gfx_rect_t clear_rect(void)
 {
     return s.board_view ? gfx_rect_make(OB_CLR_X, OB_CLR_Y, OB_CLR_W, OB_CLR_H)
@@ -396,8 +417,10 @@ static gfx_rect_t clear_rect(void)
 
 gfx_rect_t outputs_unbind_rect(void) { return clear_rect(); }
 
-/* UNBIND ALL PINS is drawn, and so takes a hold: a binding read that is
- * not one, and a protocol's column, not a PROG PORT entry's. */
+/**
+ * @brief UNBIND ALL PINS is drawn, and so takes a hold: a binding read that is
+ * not one, and a protocol's column, not a PROG PORT entry's.
+ */
 static bool clear_offered(void)
 {
     return s.read == BIND_READ_ODD && outputs_screen_port_shown() < 0;
@@ -424,6 +447,7 @@ static int cell_pos(int i)
     return i;
 }
 
+/** @brief Gives the rectangle of cell @p i. */
 static gfx_rect_t cell_rect(int i)
 {
     const int pos = cell_pos(i);
@@ -433,11 +457,13 @@ static gfx_rect_t cell_rect(int i)
                          CELL_W, CELL_H);
 }
 
+/** @brief Whether (@p x, @p y) lies in @p r. */
 static bool inside(gfx_rect_t r, int x, int y)
 {
     return x >= r.x && x < r.x + r.w && y >= r.y && y < r.y + r.h;
 }
 
+/** @brief Finds the cell at (@p x, @p y). */
 static int cell_at(int x, int y)
 {
     /* Once, not per pin: the count is a board-table lookup and this runs on
@@ -486,6 +512,7 @@ void outputs_screen_set_board_view(bool board)
     }
 }
 
+/** @brief Returns the screen to its initial state. */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
@@ -499,8 +526,8 @@ static void reset(void)
     touched();
 }
 
-/*
- * A visit from SETUP opens on the overview: OFF selected, so every bound
+/**
+ * @brief A visit from SETUP opens on the overview: OFF selected, so every bound
  * pin names its protocol and no tap edits.  The operator picks the
  * protocol to edit, and picking OFF again goes back to the overview.  A
  * visit from a workbench's TARGET row opens on the entry that workbench
@@ -515,6 +542,7 @@ static void enter(void)
     outputs_port_open();
 }
 
+/** @brief Leaves the screen: the list closes and the holds drop. */
 static void leave(void)
 {
     s.open = false;
@@ -522,8 +550,10 @@ static void leave(void)
     outputs_port_cancel();
 }
 
-/* The home tag closes an open protocol list without choosing; with none
- * open it leaves the screen. */
+/**
+ * @brief The home tag closes an open protocol list without choosing; with none
+ * open it leaves the screen.
+ */
 static bool back(void)
 {
     if (!s.open) {
@@ -535,9 +565,11 @@ static bool back(void)
     return true;
 }
 
-/* UNBIND ALL PINS, held for UI_HOLD_S: the one write the screen asks for
+/**
+ * @brief UNBIND ALL PINS, held for UI_HOLD_S: the one write the screen asks for
  * while the pages read describe no binding, because it is the way out of
- * that state.  It binds nothing, so it cannot drive a pin. */
+ * that state.  It binds nothing, so it cannot drive a pin.
+ */
 static void unbind_all(void)
 {
     const uint8_t chosen = s.bind.proto;
@@ -548,6 +580,7 @@ static void unbind_all(void)
     changed();
 }
 
+/** @brief Runs the screen for one frame. */
 static void tick(float dt_s)
 {
     outputs_port_tick();
@@ -571,6 +604,7 @@ static void tick(float dt_s)
     touched();      /* the fill follows the hold */
 }
 
+/** @brief Takes a touch event of the screen. */
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -794,8 +828,10 @@ static uint8_t pins_cap(const outbind_t *b, const outbind_proto_t *p)
     return cap;
 }
 
-/* The binding can arrive from outside -- read off the wire, or restored --
- * so the index is never trusted to be one this build knows. */
+/**
+ * @brief The binding can arrive from outside -- read off the wire, or restored --
+ * so the index is never trusted to be one this build knows.
+ */
 static const outbind_proto_t *chosen_proto(void)
 {
     const uint8_t i = (s.bind.proto < OUTBIND_PROTOS) ? s.bind.proto : 0u;
@@ -973,6 +1009,7 @@ void outputs_unbind_draw(gfx_canvas_t *c)
                        pitch, label, most, font, ink, true);
 }
 
+/** @brief Draws the left column. */
 static void draw_left(gfx_canvas_t *c)
 {
     if (outputs_screen_port_shown() >= 0) {
@@ -1025,6 +1062,7 @@ static void draw_left(gfx_canvas_t *c)
                        false);
 }
 
+/** @brief Draws one pin's cell. */
 static void draw_cell(gfx_canvas_t *c, int i)
 {
     const outbind_pin_t *pin = &outbind_pins(s.bind.board)[i];
@@ -1108,6 +1146,7 @@ static void draw_cell(gfx_canvas_t *c, int i)
              1);
 }
 
+/** @brief Draws the open protocol list. */
 static void draw_popup(gfx_canvas_t *c)
 {
     ui_choice_list(c, pop_rect());
@@ -1128,6 +1167,7 @@ static void draw_popup(gfx_canvas_t *c)
     }
 }
 
+/** @brief Draws the screen. */
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     /* A row stepped on SETUP moves an interface's pin without a touch
@@ -1170,8 +1210,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
-/*
- * Touch events were lost between two frames, so this screen's record of what
+/**
+ * @brief Touch events were lost between two frames, so this screen's record of what
  * is on the glass cannot be trusted.  A hit held open acts on its release,
  * and the GT911 reuses track ids: a later contact that began somewhere else
  * would be taken for this one's release and apply a change nobody asked for.
@@ -1194,6 +1234,7 @@ static void cancel(void)
  */
 static bool covered(void) { return s.open || outputs_port_fn_open(); }
 
+/** @brief The screen's table. */
 static const ui_screen_t s_screen = {
     .covered = covered,
     .title  = "OUTPUTS",

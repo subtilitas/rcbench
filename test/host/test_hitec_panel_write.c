@@ -192,6 +192,35 @@ TEST_CASE(write_takes_a_2s_hold_and_writes_with_no_page)
     CHECK(!hitec_prog_write_on(model()));
 }
 
+/* The footer's completed hold (hitec_panel_write_go()) sends on the next
+ * tick: a cancel of the touch stream in between sends nothing and keeps
+ * the edit; with no cancel the next tick sends. */
+TEST_CASE(the_footers_write_waits_a_tick_and_a_cancel_drops_it)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    soft_start_60();
+    CHECK(hitec_panel_write_go());
+    CHECK(!hitec_prog_write_on(model()));
+    hitec_panel_cancel();
+    for (int i = 0; i < 25; ++i) {
+        hitec_panel_tick(0.02f);
+        prun(20u);
+    }
+    CHECK_EQ(g_drv.d_writes, 0u);
+    CHECK_EQ(hitec_prog_changes(model()), 1u);
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK(hitec_panel_write_go());
+    CHECK(!hitec_prog_write_on(model()));
+    hitec_panel_tick(0.02f);
+    CHECK(hitec_prog_state(model()) != HITEC_PROG_HELD);
+    until(HITEC_PROG_HELD);
+    show();
+    CHECK_EQ(g_drv.dreg[0x60], 6u);
+    CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
+}
+
 /* A write the session refuses says why at the press and starts no hold. */
 TEST_CASE(a_write_the_session_refuses_says_why_at_the_press)
 {
@@ -890,6 +919,7 @@ int main(void)
 {
     RUN(a_value_edited_by_its_list_is_marked_and_counted);
     RUN(write_takes_a_2s_hold_and_writes_with_no_page);
+    RUN(the_footers_write_waits_a_tick_and_a_cancel_drops_it);
     RUN(a_write_the_session_refuses_says_why_at_the_press);
     RUN(writes_hold_fills_through_its_own_revision);
     RUN(leave_with_edits_lists_them_back_keeps_them_the_hold_drops_them);

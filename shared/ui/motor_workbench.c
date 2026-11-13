@@ -43,13 +43,13 @@ _Static_assert(MOTOR_PROTO_MIXED == OUTBIND_PROTO_MIXED,
                "the screen's MIXED is the one outbind_role_proto() returns");
 
 static struct {
-    ui_wb_strip_t   wb;
-    ui_target_row_t trow;
-    uint32_t        rev;
-    /* ui_router_navigations() just after the TARGET row opened OUTPUTS, or
+    ui_wb_strip_t   wb;  /**< the strip's tasks */
+    ui_target_row_t trow;  /**< the TARGET row */
+    uint32_t        rev;  /**< a count of the strip's look */
+    /** @brief ui_router_navigations() just after the TARGET row opened OUTPUTS, or
      * 0: the entry one navigation later is the way back. */
     uint32_t        outputs_nav;
-} w;
+} w;  /**< The state of the strip and the TARGET row. */
 
 /**
  * @brief The strip's tabs laid out again at MOTOR & ESC's sizes, MO_TAB_W x
@@ -196,8 +196,10 @@ uint8_t motor_dshot_ports(void)
     return m;
 }
 
-/* Append @p item to @p out (length @p *n) after a space, when it fits in
- * @p cells with @p reserve cells kept free after it. */
+/**
+ * @brief Append @p item to @p out (length @p *n) after a space, when it fits in
+ * @p cells with @p reserve cells kept free after it.
+ */
 static bool put_item(char *out, size_t size, size_t *n, const char *item,
                      unsigned cells, size_t reserve)
 {
@@ -214,8 +216,10 @@ static bool put_item(char *out, size_t size, size_t *n, const char *item,
     return true;
 }
 
-/* Item @p i of the list the TARGET text names, into @p buf: the slot
- * pins in order, then the ports as PORT n. */
+/**
+ * @brief Item @p i of the list the TARGET text names, into @p buf: the slot
+ * pins in order, then the ports as PORT n.
+ */
 static void item_text(unsigned i, uint64_t pins, uint8_t ports, char *buf,
                       size_t cap)
 {
@@ -234,6 +238,7 @@ static void item_text(unsigned i, uint64_t pins, uint8_t ports, char *buf,
     buf[0] = '\0';
 }
 
+/** @brief Counts the bits set in @p m. */
 static unsigned bits(uint64_t m)
 {
     unsigned n = 0u;
@@ -243,8 +248,8 @@ static unsigned bits(uint64_t m)
     return n;
 }
 
-/*
- * The protocol, the slot pins and the DShot programming ports in @p ports,
+/**
+ * @brief The protocol, the slot pins and the DShot programming ports in @p ports,
  * in @p cells: the pins first, then each port as PORT n, and what does not
  * fit as "+N".  A single port with no pin beside it is named in full,
  * PROG PORT n GPIO x, where that fits, else PORT n GPIO x.

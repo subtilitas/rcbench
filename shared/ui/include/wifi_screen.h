@@ -140,44 +140,48 @@ typedef enum {
     WIFI_KEPT_CODE,         /**< WEB CODE                                */
 } wifi_kept_t;
 
+/**
+ * @brief What the WI-FI screen shows: the gate, what is kept, the radio, the
+ *         last scan and the upload.
+ */
 typedef struct {
-    /* The radio's gate: why it may not start now, or WIFI_WHY_NONE. */
+    /** @brief The radio's gate: why it may not start now, or WIFI_WHY_NONE. */
     wifi_why_t   block;
 
     /* What is kept. */
-    bool         have_net;
-    char         net[WIFI_SSID_MAX + 1];
-    bool         code_on;
+    bool         have_net;  /**< a home network is kept */
+    char         net[WIFI_SSID_MAX + 1];  /**< its name */
+    bool         code_on;  /**< the page's access code is on */
     char         kept_pass[WIFI_PASS_MAX + 1]; /**< HOTSPOT PASSWORD; ""
                                                     is RANDOM              */
     char         kept_code[WIFI_PASS_MAX + 1]; /**< WEB CODE; "" is RANDOM */
     bool         save_failed;  /**< the last write of the above failed    */
 
     /* The radio. */
-    wifi_radio_t radio;
+    wifi_radio_t radio;  /**< the radio's state */
     wifi_why_t   off;          /**< why it last went off                 */
     wifi_join_t  join;         /**< with WIFI_WHY_JOIN                    */
     char         name[16];     /**< "rcbench-1A2B"                        */
     char         pass[WIFI_PASS_MAX + 1];  /**< the access point's        */
     char         code[WIFI_PASS_MAX + 1];  /**< the page's access code    */
-    uint8_t      ip[4];
-    uint8_t      channel;
+    uint8_t      ip[4];  /**< the radio's address, one byte each */
+    uint8_t      channel;  /**< the access point's or the network's channel */
     uint32_t     idle_left_s;  /**< until the radio goes off unused       */
 
     /* The last scan, strongest first. */
-    bool         scanned;
-    int          scan_n;
-    char         scan[WIFI_SCAN_ROWS][WIFI_SSID_MAX + 1];
-    int8_t       rssi[WIFI_SCAN_ROWS];
+    bool         scanned;  /**< a scan ran */
+    int          scan_n;  /**< how many networks the scan found */
+    char         scan[WIFI_SCAN_ROWS][WIFI_SSID_MAX + 1];  /**< their names, strongest first */
+    int8_t       rssi[WIFI_SCAN_ROWS];  /**< their signal strengths, dBm */
 
     /* The upload, and the image that waits. */
-    wifi_up_t    up;
-    uint32_t     received;
-    uint32_t     total;
-    wifi_offer_t offer;
-    wifi_gate_t  gate;
-    char         new_ver[WIFI_VER_MAX + 1];
-    char         run_ver[WIFI_VER_MAX + 1];
+    wifi_up_t    up;  /**< the upload's state */
+    uint32_t     received;  /**< bytes of the image received */
+    uint32_t     total;  /**< bytes of the whole image */
+    wifi_offer_t offer;  /**< what the staged image is to the running one */
+    wifi_gate_t  gate;  /**< whether flash may be written now */
+    char         new_ver[WIFI_VER_MAX + 1];  /**< the version of the staged image */
+    char         run_ver[WIFI_VER_MAX + 1];  /**< the version that runs */
 
     /* Browser writes to the card, this radio session. */
     wifi_writes_t writes;      /**< what a write needs                    */
@@ -201,7 +205,11 @@ typedef struct {
 #define WIFI_REQ_KEPT_PASS 0x1000u  /**< wifi_screen_kept() is HOTSPOT PASSWORD */
 #define WIFI_REQ_KEPT_CODE 0x2000u  /**< wifi_screen_kept() is WEB CODE   */
 
-/** Hand the screen what to show. */
+/**
+ * @brief Hand the screen what to show.
+ *
+ * @param v what to show
+ */
 void wifi_screen_set(const wifi_view_t *v);
 
 /**
@@ -211,13 +219,26 @@ void wifi_screen_set(const wifi_view_t *v);
  */
 void wifi_screen_set_unavailable(void);
 
-/** What is showing, for the application and the tests. */
+/**
+ * @brief What is showing, for the application and the tests.
+ *
+ * @return the view
+ */
 const wifi_view_t *wifi_screen_view(void);
 
-/** The requests since the last call, as WIFI_REQ_* bits; cleared. */
+/**
+ * @brief The requests since the last call, as WIFI_REQ_* bits; cleared.
+ *
+ * @return the requests
+ */
 unsigned wifi_screen_take(void);
 
-/** The network WIFI_REQ_SAVE_NET keeps: its name and its password. */
+/**
+ * @brief The network WIFI_REQ_SAVE_NET keeps: its name and its password.
+ *
+ * @param ssid receives the network's name
+ * @param pass receives its password
+ */
 void wifi_screen_net(char ssid[WIFI_SSID_MAX + 1], char pass[WIFI_PASS_MAX + 1]);
 
 /**
@@ -259,8 +280,12 @@ void wifi_screen_writes_text(char *out, size_t n, unsigned written);
  */
 const ui_screen_t *wifi_screen(void);
 
-/** The lines the card's first sentence takes, WF_JOBS_1 and WF_JOBS_2
- *  joined by a space and wrapped once; for tests. */
+/**
+ * @brief The lines the card's first sentence takes, WF_JOBS_1 and WF_JOBS_2
+ *  joined by a space and wrapped once; for tests.
+ *
+ * @return the lines
+ */
 int wifi_screen_jobs_lines(void);
 
 /* ------------------------------------------------------ PANEL UPDATE */
@@ -276,15 +301,16 @@ typedef enum {
     UPDATE_FETCH_FAILED,   /**< nothing written: the running image stays  */
 } update_state_t;
 
+/** @brief What PANEL UPDATE shows: the write or the download and its progress. */
 typedef struct {
-    update_state_t state;
-    char           version[WIFI_VER_MAX + 1];
+    update_state_t state;  /**< where the update stands */
+    char           version[WIFI_VER_MAX + 1];  /**< the version of the image */
     uint32_t       written;    /**< FETCHING: bytes received              */
-    uint32_t       total;
+    uint32_t       total;  /**< FETCHING: bytes of the whole image */
     /** FETCHING: the step and the time left; FETCH_FAILED: why, in one
      *  line or two.  The application writes them (upd_result_text()). */
     char           what[96];
-    char           why[96];
+    char           why[96];  /**< the reason a download failed */
 } update_view_t;
 
 /**
@@ -293,11 +319,19 @@ typedef struct {
  */
 void update_screen_set(const update_view_t *v);
 
-/** True once CLOSE was tapped on a failed write or download; cleared when
- *  read. */
+/**
+ * @brief True once CLOSE was tapped on a failed write or download; cleared when
+ *  read.
+ *
+ * @return true once
+ */
 bool update_screen_take_close(void);
 
-/** True once CANCEL was tapped on a download; cleared when read. */
+/**
+ * @brief True once CANCEL was tapped on a download; cleared when read.
+ *
+ * @return true once
+ */
 bool update_screen_take_cancel(void);
 
 /** @brief Repaint PANEL UPDATE on the next frame. */

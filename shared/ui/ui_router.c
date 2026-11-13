@@ -51,44 +51,44 @@
 #define SHOT_GAP_M 8
 
 static struct {
-    ui_screen_id_t    current;
-    /* The screen that opened the one on top through k_openers, for its home
+    ui_screen_id_t    current;  /**< the screen on top */
+    /** @brief The screen that opened the one on top through k_openers, for its home
      * tag; SCREEN_COUNT when it was entered any other way. */
     ui_screen_id_t    opener;
     ui_screen_id_t    leaving_to;     /**< what goto() enters, during the
                                        *   old leave(); else SCREEN_COUNT */
     uint32_t          nav_count;      /**< navigations since init           */
     uint32_t          dispatched;     /**< events handed to a screen        */
-    ui_bench_status_t status;
-    char              alert[UI_ALERT_MAX];
-    bool              has_alert;
+    ui_bench_status_t status;  /**< the status the band shows */
+    char              alert[UI_ALERT_MAX];  /**< the passing alert's text */
+    bool              has_alert;  /**< an alert is showing */
     bool              alert_notice;   /**< the passing alert is a notice    */
-    float             alert_age_s;
+    float             alert_age_s;  /**< how long the passing alert has shown, s */
     bool              alert_fresh;    /**< set since the last tick          */
     uint32_t          alert_gen;      /**< counts alerts set                */
-    /* The held alert, apart from the passing one: a passing alert shows over
+    /** @brief The held alert, apart from the passing one: a passing alert shows over
      * it and, once cleared, shows it again. */
     char              held[UI_ALERT_MAX];
-    bool              has_held;
-    bool              stop_latched;
+    bool              has_held;  /**< a held alert is set */
+    bool              stop_latched;  /**< an operator's STOP was pressed and not yet taken */
     bool              demo_seen;      /**< Demo mode as the last frame saw it;
                                            a flip repaints every screen    */
 
-    /* A press that began on the alert band, by track id, held until its
+    /** @brief A press that began on the alert band, by track id, held until its
      * release even if the alert clears meanwhile: the screen beneath never
      * saw the press, so it must not see the release either. */
     bool     alert_press;
-    uint8_t  alert_id;
+    uint8_t  alert_id;  /**< the contact that pressed it */
     uint32_t alert_press_gen;   /**< the alert the press began on         */
-    /* Every contact that came down on the alert band, owner or not, so a
+    /** @brief Every contact that came down on the alert band, owner or not, so a
      * second finger's events reach no screen either. */
     uint8_t  alert_ids[256u / 8u];
 
-    /* Which contact owns a press on the band.  The GT911 reports up to five,
+    /** @brief Which contact owns a press on the band.  The GT911 reports up to five,
      * and every event carries its track id, so a second finger or a resting
      * palm cannot steal the release the first one is waiting for. */
     bool    band_press;
-    uint8_t band_id;
+    uint8_t band_id;  /**< the contact that owns it */
     bool    on_stop;      /**< the press started on STOP rather than home   */
     ui_band_chip_t on_chip; /**< or on this chip of the band              */
     bool    on_home;      /**< or on the home tag                         */
@@ -112,14 +112,14 @@ static struct {
     uint8_t       guide_id;     /**< its track id                         */
     ui_help_hit_t guide_btn;    /**< its button                           */
 
-    /*
-     * The chip whose help bubble is open, and what the last frame drew of
+    /**
+     * @brief The chip whose help bubble is open, and what the last frame drew of
      * it.  Screens cache their chrome, so a bubble that closes, moves or
      * changes size leaves pixels behind unless every screen repaints.
      */
     ui_band_chip_t help;
-    bool           help_drawn;
-    gfx_rect_t     help_rect;
+    bool           help_drawn;  /**< the last frame drew the bubble */
+    gfx_rect_t     help_rect;  /**< where the last frame drew it */
 
     /*
      * What each framebuffer holds of the band: ui_band_key() of the band
@@ -139,15 +139,16 @@ static struct {
      * is the router's and reaches no screen.
      */
     struct {
-        bool    live;
-        uint8_t id;
-        int16_t x, y;
-    } owned[TOUCH_MAX_POINTS];
+        bool    live;  /**< the contact is owned */
+        uint8_t id;  /**< its track id */
+        int16_t x,               /**< the last point handed to the screen, x */
+                y;               /**< the last point handed to the screen, y */
+    } owned[TOUCH_MAX_POINTS];  /**< The contacts the screen on top owns. */
 
     /** @brief The bench is idle (shot_gate.h), as the application last said;
      *         false until it says so. */
     bool     shot_idle;
-} s;
+} s;  /**< The router's state. */
 
 static bool has_band(ui_screen_id_t id);
 static void release_owned(void);
@@ -174,8 +175,8 @@ static void guide_close(void);
  * SERVO hub.
  */
 static const struct {
-    ui_screen_id_t screen;
-    ui_screen_id_t opener;
+    ui_screen_id_t screen;  /**< the screen that is opened */
+    ui_screen_id_t opener;  /**< the screen that opens it */
 } k_openers[] = {
     { SCREEN_OUTPUTS, SCREEN_MOTOR },
     { SCREEN_OUTPUTS, SCREEN_SETUP },
@@ -197,8 +198,9 @@ static const struct {
     { SCREEN_SETUP,   SCREEN_IMU },
     { SCREEN_SETUP,   SCREEN_LOGS },
     { SCREEN_SETUP,   SCREEN_FILES },
-};
+};  /**< which screen opens which: the home tag of the opened one returns to its opener */
 
+/** @brief Whether @p opener opens screen @p id. */
 static bool opens(ui_screen_id_t opener, ui_screen_id_t id)
 {
     for (size_t i = 0; i < sizeof(k_openers) / sizeof(k_openers[0]); ++i) {
@@ -209,6 +211,7 @@ static bool opens(ui_screen_id_t opener, ui_screen_id_t id)
     return false;
 }
 
+/** @brief Gives the table of screen @p id. */
 static const ui_screen_t *screen_for(ui_screen_id_t id)
 {
     switch (id) {
@@ -391,6 +394,7 @@ bool ui_router_shot_gap(gfx_rect_t *out)
     return true;
 }
 
+/** @brief Clears the passing alert. */
 static void clear_alert(void)
 {
     if (s.has_alert) {
@@ -563,6 +567,7 @@ bool ui_router_take_stop(void)
  * bench can be armed while the menu is showing.  The home tag is on every
  * screen except the splash and the overview.
  */
+/** @brief Whether screen @p id carries the band. */
 static bool has_band(ui_screen_id_t id)
 {
     /* The bus-fault screen carries none either. Its whole claim is that the
@@ -673,21 +678,25 @@ static void guide_act(ui_help_hit_t btn)
  */
 bool ui_router_stop_live(void) { return has_band(s.current); }
 
+/** @brief Whether @p evt lies in the alert band. */
 static bool in_alert(const touch_event_t *evt)
 {
     return evt->point.y >= PANEL_H - ALERT_H && evt->point.y < PANEL_H
            && evt->point.x >= 0 && evt->point.x < PANEL_W;
 }
 
+/** @brief Whether screen @p id carries the home tag. */
 static bool has_home(ui_screen_id_t id)
 {
     return id != SCREEN_SPLASH && id != SCREEN_OVERVIEW
            && id != SCREEN_BUSFAULT && id != SCREEN_UPDATE;
 }
 
-/* Hand @p evt, in panel coordinates, to the screen on top.  The one call
+/**
+ * @brief Hand @p evt, in panel coordinates, to the screen on top.  The one call
  * into a screen's event(): not inlined, so tools/stack_check.py finds it by
- * name. */
+ * name.
+ */
 static __attribute__((noinline)) void router_hand(touch_event_t evt)
 {
     const ui_screen_t *scr = screen_for(s.current);
@@ -702,8 +711,8 @@ static __attribute__((noinline)) void router_hand(touch_event_t evt)
     }
 }
 
-/*
- * Whether @p evt, in panel coordinates, comes down on a control of the
+/**
+ * @brief Whether @p evt, in panel coordinates, comes down on a control of the
  * screen on top that stops what the bench drives (ui_screen_t's safe_at).
  * The one call into a screen's safe_at(): not inlined, so
  * tools/stack_check.py finds it by name.
@@ -718,8 +727,8 @@ static __attribute__((noinline)) bool router_safe_at(const touch_event_t *evt)
            && scr->safe_at(evt->point.x, evt->point.y - UI_BAND_H);
 }
 
-/*
- * Release every contact the screen owns at the last point it was handed,
+/**
+ * @brief Release every contact the screen owns at the last point it was handed,
  * flagged TOUCH_FLAG_NO_TAP, as at the band's edge: the release ends a press
  * or a drag and activates nothing.  The contacts are the router's from then
  * on, so a drag left latched cannot take a later contact's travel for its
@@ -742,16 +751,18 @@ static void release_owned(void)
     }
 }
 
-/* Open the bubble of @p chip.  While it is open no event reaches the
- * screen, so what the screen owns is released first. */
+/**
+ * @brief Open the bubble of @p chip.  While it is open no event reaches the
+ * screen, so what the screen owns is released first.
+ */
 static void help_open(ui_band_chip_t chip)
 {
     s.help = chip;
     release_owned();
 }
 
-/*
- * The home tag, tapped.  The screen on top goes up a level of its own when
+/**
+ * @brief The home tag, tapped.  The screen on top goes up a level of its own when
  * it has one; otherwise it leaves for ui_router_parent(), unless the screen
  * holds that navigation.  A
  * level change inside a screen and a held navigation are a change of what
@@ -777,8 +788,10 @@ static __attribute__((noinline)) void router_back(void)
     s.opener = SCREEN_COUNT;
 }
 
-/* The slot of contact @p id in the screen's table, or -1 when the screen
- * does not own it. */
+/**
+ * @brief The slot of contact @p id in the screen's table, or -1 when the screen
+ * does not own it.
+ */
 static int owned_find(uint8_t id)
 {
     for (int i = 0; i < TOUCH_MAX_POINTS; ++i) {

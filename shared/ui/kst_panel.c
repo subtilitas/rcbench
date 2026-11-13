@@ -84,6 +84,7 @@ const row_t kpn_rows[] = {
 _Static_assert(sizeof(kpn_rows) / sizeof(kpn_rows[0]) == ROW_COUNT,
                "ROW_COUNT in kst_panel_int.h counts kpn_rows");
 
+/** @brief The tab titles, in tab order. */
 static const ui_text_id_t k_pages[PG_COUNT] = {
     TX_KP_TAB_SERVO, TX_KP_TAB_TUNE, TX_KP_TAB_PULSE, TX_KP_TAB_FAILSAFE,
     TX_KP_TAB_LOCKED,
@@ -92,8 +93,10 @@ static const ui_text_id_t k_pages[PG_COUNT] = {
 /* The state, its type in kst_panel_int.h. */
 kst_panel_state_t kst_panel_k;
 
-/* What the panel's slot holds, as the feed last said: no card, a card not
- * formatted as FAT32 or exFAT, or one that cannot be read. */
+/**
+ * @brief What the panel's slot holds, as the feed last said: no card, a card not
+ * formatted as FAT32 or exFAT, or one that cannot be read.
+ */
 static card_state_t card_state(void)
 {
     return k.prog.fed ? (card_state_t)k.prog.f.card_state : CARD_STATE_NONE;
@@ -288,9 +291,11 @@ static int text_cells(void)
     return (k.area.w - 20) / KP_CELL;
 }
 
-/* The bytes of @p s its first row takes: all of it where it fits, else up
+/**
+ * @brief The bytes of @p s its first row takes: all of it where it fits, else up
  * to the last space that leaves the row no wider than the line, and a word
- * longer than the line is cut. */
+ * longer than the line is cut.
+ */
 static size_t row_len(const char *s)
 {
     /* At least one cell: an area narrower than one, as before
@@ -308,7 +313,9 @@ static size_t row_len(const char *s)
     return cut > 0u ? cut : fit;
 }
 
-/* The start of the row after the one of @p len bytes at @p s. */
+/**
+ * @brief The start of the row after the one of @p len bytes at @p s.
+ */
 static const char *next_row(const char *s, size_t len)
 {
     s += len;

@@ -138,7 +138,7 @@ bool servo_hub_tile_refused(int i, char *why, size_t n);
 const char *servo_hub_tile_line(int i, char *buf, size_t n);
 
 /**
- * Move the horn by @p span_fraction of its travel (-travel to +travel),
+ * @brief Move the horn by @p span_fraction of its travel (-travel to +travel),
  * from the rotary knob (knob.h).  Relative to the commanded angle.  Nothing
  * happens for a zero fraction, on a disarmed bench, under a disarm waiting
  * to be taken, while a finger is on the dial, while the dial is out of
@@ -152,6 +152,9 @@ const char *servo_hub_tile_line(int i, char *buf, size_t n);
  * position command a touch does and never arms.  It posts only into an empty
  * slot or over a position: any other pending command (a release, an arm, a
  * disarm) stays and the knob's motion is dropped.
+ *
+ * @param span_fraction the move as a fraction of the travel, -1 for -travel
+ *   to +1 for +travel
  */
 void servo_screen_knob(float span_fraction);
 
@@ -178,7 +181,12 @@ void servo_screen_knob_frame(void);
  */
 void servo_screen_knob_cancel(void);
 
-/** Take the pending command, if any.  Cleared by reading. */
+/**
+ * @brief Take the pending command, if any.  Cleared by reading.
+ *
+ * @param out receives the command
+ * @return true when a command was pending
+ */
 bool servo_screen_take(servo_cmd_t *out);
 
 /**
@@ -205,9 +213,15 @@ bool servo_screen_take_clear(void);
  */
 void servo_screen_encoder(const servo_test_enc_t *e);
 
-/** What the output is actually doing, from the bench or from the model.
+/**
+ * @brief What the output is actually doing, from the bench or from the model.
  *  @p current_a is not shown: the CURRENT row reads the servo rail's meter
- *  (servo_screen_source()). */
+ *  (servo_screen_source()).
+ *
+ * @param position_us the output's pulse width, us
+ * @param current_a the output's current, A
+ * @param valid the reading is valid
+ */
 void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
 
 /**
@@ -240,14 +254,18 @@ void servo_screen_feedback(uint16_t position_us, float current_a, bool valid);
  * is called with false, the value is not live: the inputs are refused as
  * on a disarmed bench, and a sweep, a pause, a held position and a run of
  * the automatic test end where it was asked.
+ *
+ * @param armed true when the surfaces are armed
  */
 void servo_screen_set_armed(bool armed);
 
 /**
- * Whether the bench is armed for any role.  servo_screen_set_armed() is
+ * @brief Whether the bench is armed for any role.  servo_screen_set_armed() is
  * told whether the surfaces are armed, which an arm for the motor alone
  * leaves false; this is what keeps the servo programmer from taking a port
  * under a motor that is armed, as it is kept from one under armed surfaces.
+ *
+ * @param armed true when the bench is armed for any role
  */
 void servo_screen_set_bench_armed(bool armed);
 
@@ -277,7 +295,11 @@ void servo_screen_cancel_arm(void);
  */
 void servo_screen_arm_refused(uint32_t ask);
 
-/** Commanded pulse width, for the application and for tests. */
+/**
+ * @brief Commanded pulse width, for the application and for tests.
+ *
+ * @return the pulse width, us
+ */
 uint16_t servo_screen_commanded(void);
 
 /**
@@ -305,8 +327,12 @@ bool servo_screen_log_angle(float *deg);
  * @return The keypad, open or closed.
  */
 const ui_keypad_t *servo_screen_keypad(void);
-/** The value of the COMMANDED row as it is drawn: the pulse in us, and
- *  "---" while the servo programmer holds the port and no pulse is on it. */
+/**
+ * @brief The value of the COMMANDED row as it is drawn: the pulse in us, and
+ *  "---" while the servo programmer holds the port and no pulse is on it.
+ *
+ * @return the text
+ */
 const char *servo_screen_commanded_text(void);
 /**
  * @brief The steps of an automatic test as TEST's card names them: each
@@ -330,32 +356,46 @@ void servo_screen_plan_text(char *out, size_t size, const float *v,
  */
 void servo_screen_test_summary(char *out, size_t size);
 
-/** The pulse width the solid arm is drawn at: measured, or without
- *  feedback the drawing's estimate of the output.  For tests. */
+/**
+ * @brief The pulse width the solid arm is drawn at: measured, or without
+ *  feedback the drawing's estimate of the output.  For tests.
+ *
+ * @return the pulse width, us
+ */
 uint16_t servo_screen_drawn(void);
 
-/** The frame rate and the type in force, for the application and tests. */
+/**
+ * @brief The frame rate and the type in force, for the application and tests.
+ *
+ * @return the frame rate, Hz
+ */
 uint16_t servo_screen_frame_hz(void);
 const char *servo_screen_type_name(void);
 
 /**
- * One sample of the supply that feeds the servo.  The automatic test reads
+ * @brief One sample of the supply that feeds the servo.  The automatic test reads
  * every one: as its reading in a run on the PD mini or the model, and for
  * the supply's state alone in a run on the INA3221.  While the servo rail's
  * meter is not the INA3221
  * (servo_screen_source()) it is also the rail's reading: the CURRENT row,
  * the line over the plot and one point of the plot.
+ *
+ * @param s the sample
  */
 void servo_screen_supply(const supply_state_t *s);
 
 /**
- * servo_screen_supply() with the meter @p id and its change count
+ * @brief servo_screen_supply() with the meter @p id and its change count
  * @p changes as decided at the poll that took the sample, for samples that
  * waited on a queue.  A sample whose count is ahead of the meter in force
  * brings its meter with it, as servo_screen_source() would.  One whose
  * count is behind was taken under a meter replaced since: the automatic
  * test reads it and it is the supply's last reading on the line and in the
  * row, and it is no point of the plot.
+ *
+ * @param s the sample
+ * @param id the meter decided in the poll that took it
+ * @param changes that meter's change count
  */
 void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
                             uint32_t changes);
@@ -392,29 +432,36 @@ void servo_screen_supply_at(const supply_state_t *s, servo_source_id_t id,
  * another meter may have been the rail's in between.  The INA3221's last
  * window is then forgotten as well.  The plot's scale starts at 0, so a negative
  * current is drawn on its lower edge.
+ *
+ * @param id the meter
+ * @param changes the change count of the poll
  */
 void servo_screen_source(servo_source_id_t id, uint32_t changes);
 
 /**
- * @p told is called with true when a run of the automatic test starts and
+ * @brief @p told is called with true when a run of the automatic test starts and
  * with false when it ends, inside the call that starts or ends it -- a
  * touch event, a window, a supply sample, the meter, the link, a tick --
  * and not at the next frame.  The panel's control task writes no bench log
  * row between the two (log_cadence_bench_run()).  NULL for none.  It is
  * called from the task that runs the screen and must not call back into
  * it.
+ *
+ * @param told the callback; NULL for none
  */
 void servo_screen_on_testing(void (*told)(bool running));
 
 /**
- * Why the INA3221 is not the servo rail's meter now (servo_source_why()),
+ * @brief Why the INA3221 is not the servo rail's meter now (servo_source_why()),
  * every frame with servo_screen_source().  A run started on the PD mini
  * with the INA3221 on in SETUP states it in its report.
+ *
+ * @param why why it is not the meter
  */
 void servo_screen_source_why(servo_source_why_t why);
 
 /**
- * Why the INA3221 last stopped being the meter, and the change count of
+ * @brief Why the INA3221 last stopped being the meter, and the change count of
  * that step (servo_source_dropped()), as decided at the same poll as the
  * meter handed over next: before servo_screen_source(), and before each
  * servo_screen_window() and servo_screen_supply_at().  SERVO_SOURCE_WHY_NONE
@@ -427,6 +474,9 @@ void servo_screen_source_why(servo_source_why_t why);
  * change after the start, the output asked off and the servo let go.  A
  * run on the PD mini or the model goes on with it whatever the meter
  * becomes.
+ *
+ * @param why why it stopped
+ * @param at the change count of that step
  */
 void servo_screen_source_dropped(servo_source_why_t why, uint32_t at);
 
@@ -456,9 +506,11 @@ void servo_screen_source_dropped(servo_source_why_t why, uint32_t at);
 void servo_screen_window(const sense_link_win_t *w, servo_source_id_t id,
                          uint32_t changes);
 
-/** How many points the power plot holds, and its series @p series (0 the
- *  voltage in V, 1 the current in A, 2 the power in W) @p back points
- *  before the newest: ui_plot_sample().  For tests. */
+/**
+ * @brief How many points the power plot holds.  For tests.
+ *
+ * @return the points
+ */
 int   servo_screen_power_points(void);
 float servo_screen_power_sample(int series, int back);
 
@@ -495,24 +547,39 @@ bool servo_in_force_note(char *l1, char *l2, size_t size, uint16_t hz,
                          uint8_t target, uint8_t gpio, bool pwm, int setting);
 
 /**
- * What the panel last heard about the frame rate @p hz.  Called every frame;
+ * @brief What the panel last heard about the frame rate @p hz.  Called every frame;
  * a state about a rate other than the one the screen shows reads as
  * SERVO_RATE_UNSENT for it.
+ *
+ * @param st what the panel last heard
+ * @param hz the rate it is about, Hz
  */
 void servo_screen_rate(servo_rate_state_t st, uint16_t hz);
 
-/** Whether the IOmcu can sweep: protocol 4.2 or later.  SWEEP is
- *  offered only then. */
+/**
+ * @brief Whether the IOmcu can sweep: protocol 4.2 or later.  SWEEP is
+ *  offered only then.
+ *
+ * @param able true when the IOmcu can sweep
+ */
 void servo_screen_set_sweep(bool able);
 
-/** Whether a surface is bound, as the panel last read the binding: SWEEP
- *  is offered only then, since a sweep of nothing never starts. */
+/**
+ * @brief Whether a surface is bound, as the panel last read the binding: SWEEP
+ *  is offered only then, since a sweep of nothing never starts.
+ *
+ * @param any true when a surface is bound
+ */
 void servo_screen_set_surfaces(bool any);
 
-/** Whether the IOmcu holds the output encoder enabled, as SENSE's
+/**
+ * @brief Whether the IOmcu holds the output encoder enabled, as SENSE's
  *  ENABLE register was last read or written.  The SENSE set-up is written
  *  only while the bank is disarmed: a run started with the AS5600 setting on
- *  and this false has no angles, and takes no angle columns. */
+ *  and this false has no angles, and takes no angle columns.
+ *
+ * @param held true when the IOmcu holds it enabled
+ */
 void servo_screen_set_enc_held(bool held);
 
 /**
@@ -562,18 +629,30 @@ void servo_screen_set_imu_settle(uint32_t ms);
  *  answering. */
 #define SERVO_SCREEN_TARGET_NO_LINK 0xFFu
 
-/** Where the tester's commands go now (prog_link_drive()): @p target 0 for
+/**
+ * @brief Where the tester's commands go now (prog_link_drive()): @p target 0 for
  *  the standard outputs, 1 + n for programming port n,
  *  SERVO_SCREEN_TARGET_UNKNOWN or SERVO_SCREEN_TARGET_NO_LINK; @p gpio that
  *  port's GPIO or SERVO_SCREEN_NO_PIN, and @p pwm whether the port renders
  *  its pulse.  The TARGET row follows it, not the TARGET setting.
- *  @p gpio and @p pwm are ignored without a port target. */
+ *  @p gpio and @p pwm are ignored without a port target.
+ *
+ * @param target 0 for the outputs, 1 + n for programming port n, or a
+ *   SERVO_SCREEN_TARGET_* value
+ * @param gpio that port's GPIO
+ * @param pwm that port renders its pulse
+ */
 void servo_screen_set_drive(uint8_t target, uint8_t gpio, bool pwm);
 
-/** The GPIOs bound as SERVO PWM outputs (bit n is GPIO n), from the binding
+/**
+ * @brief The GPIOs bound as SERVO PWM outputs (bit n is GPIO n), from the binding
  *  the tester drives, and whether a binding has been read.  The TARGET row
  *  names them while the drive uses the outputs: as many pins as the row's
- *  23 cells hold, then "+N" (ui_pinlist()). */
+ *  23 cells hold, then "+N" (ui_pinlist()).
+ *
+ * @param gpio_mask the GPIOs, bit n = GPIO n
+ * @param known a binding was read
+ */
 void servo_screen_set_pins(uint64_t gpio_mask, bool known);
 
 /**
@@ -608,7 +687,11 @@ void servo_screen_set_pins(uint64_t gpio_mask, bool known);
 bool servo_target_line(char *out, size_t size, uint8_t target, uint8_t gpio,
                        bool pwm, uint64_t pins, bool known);
 
-/** The task the strip shows, a ui_wb_task_t.  For tests. */
+/**
+ * @brief The task the strip shows, a ui_wb_task_t.  For tests.
+ *
+ * @return the task
+ */
 int servo_screen_task(void);
 
 /**
@@ -663,9 +746,11 @@ gfx_rect_t servo_screen_port_choice_rect(int i);
 int servo_screen_run_settings(void);
 
 /**
- * Whether the TARGET row takes no press: the bench ARMED, a sweep (running
+ * @brief Whether the TARGET row takes no press: the bench ARMED, a sweep (running
  * or paused) or a run under way, the servo programmer holding the port.
  * The row names the target all the same.
+ *
+ * @return true when it takes no press
  */
 bool servo_screen_target_locked(void);
 
@@ -693,15 +778,19 @@ bool servo_screen_arm_held(void);
 bool servo_screen_arm_switches(void);
 
 /**
- * Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no
+ * @brief Whether OUTPUTS' SERVO TESTER segment (the TARGET setting) takes no
  * press: servo_screen_target_locked(), or the bench ARMED for the motor.
+ *
+ * @return true when it takes no press
  */
 bool servo_screen_tester_target_locked(void);
 
 /**
- * Whether OUTPUTS' PORT PWM segment takes no press: OUTPUTS as the
+ * @brief Whether OUTPUTS' PORT PWM segment takes no press: OUTPUTS as the
  * tester's target, the servo programmer holding the port, or a sweep or a
  * run under way; and to switch it on, the bench ARMED or asked to arm.
+ *
+ * @return true when it takes no press
  */
 bool servo_screen_port_pwm_locked(void);
 
@@ -709,7 +798,11 @@ bool servo_screen_port_pwm_locked(void);
  *  stops waiting for its start and ends the sweep. */
 void servo_screen_sweep_refused(void);
 
-/** Whether a sweep is running, for the application and tests. */
+/**
+ * @brief Whether a sweep is running, for the application and tests.
+ *
+ * @return true while a sweep runs
+ */
 bool servo_screen_sweeping(void);
 
 /**
@@ -734,8 +827,12 @@ bool servo_screen_output_held(void);
  */
 bool servo_screen_asks_restore(void);
 
-/** Whether a sweep is paused: PAUSE tapped, the hold in force, nothing
- *  else commanded since.  For tests. */
+/**
+ * @brief Whether a sweep is paused: PAUSE tapped, the hold in force, nothing
+ *  else commanded since.  For tests.
+ *
+ * @return true while a sweep is paused
+ */
 bool servo_screen_paused(void);
 
 /**
@@ -752,7 +849,7 @@ bool servo_screen_paused(void);
 void servo_screen_released(uint16_t pause_seq);
 
 /**
- * The IOmcu started the sweep with its curve's phase 0 @p age_ms ago,
+ * @brief The IOmcu started the sweep with its curve's phase 0 @p age_ms ago,
  * its output starting from @p from.  Until this, a sweep asked for is not
  * drawn: the far end is not known to move.  From it the horn is drawn along
  * the curve, and without feedback worked on from where that output was
@@ -763,28 +860,43 @@ void servo_screen_released(uint16_t pause_seq);
  * by the hold, whatever this screen took the pause's phase to be.
  * @p start_seq is the sweep command whose write it acknowledges
  * (servo_cmd_t): a start or resume waited for is ended only by its own.
+ *
+ * @param start_seq the sweep command whose write it acknowledges
+ * @param age_ms how long ago the curve's phase 0 was, ms
+ * @param from where the output starts from
+ * @param since_ms how long ago the far end froze or the resume was
+ *   acknowledged, ms
  */
 void servo_screen_sweep_started(uint16_t start_seq, uint32_t age_ms,
                                 servo_sweep_from_t from, uint32_t since_ms);
 
 /**
- * The IOmcu took the HOLD of pause @p pause_seq (servo_cmd_t) and kept
+ * @brief The IOmcu took the HOLD of pause @p pause_seq (servo_cmd_t) and kept
  * its curve @p kept_ms in (servo_phase_held()).  The curve ran on until
  * then, so the paused phase drawn here is set to it, not to the tap's.
  * Nothing unless that pause still stands: one resumed before this arrives
  * is rebased by its SERVO_SWEEP_RESUMED, and another pause's is not this
  * one's.
+ *
+ * @param pause_seq the pause whose HOLD was taken
+ * @param kept_ms how far into its curve the far end kept it, ms
  */
 void servo_screen_sweep_held(uint16_t pause_seq, uint32_t kept_ms);
 
-/** How far the sweep's curve clock is from its phase 0, paused or not.
- *  For tests, which stand in for the panel's timing. */
+/**
+ * @brief How far the sweep's curve clock is from its phase 0, paused or not.
+ *  For tests, which stand in for the panel's timing.
+ *
+ * @return the curve clock, ms
+ */
 uint32_t servo_screen_curve_ms(void);
 
 /**
- * Set the commanded angle without a touch event, for the application and
+ * @brief Set the commanded angle without a touch event, for the application and
  * for tests.  A position like the dial's: taken on an armed bench, and
  * refused with nothing changed on a disarmed one.
+ *
+ * @param deg the angle, degrees from center
  */
 void servo_screen_set_commanded(float deg);
 
@@ -799,21 +911,39 @@ void servo_screen_set_commanded(float deg);
  */
 
 /**
- * The panel's millisecond clock, every frame before the tick: the clock the
+ * @brief The panel's millisecond clock, every frame before the tick: the clock the
  * supply's readings are stamped with (supply_state_t.taken_ms), so a travel
  * time is measured on one clock.  Without it the screen's own is used.
+ *
+ * @param now_ms the clock, ms
  */
 void servo_screen_clock(uint32_t now_ms);
 
-/** Whether the link to the IOmcu is up; a run ends when it goes. */
+/**
+ * @brief Whether the link to the IOmcu is up; a run ends when it goes.
+ *
+ * @param up true when the link is up
+ */
 void servo_screen_set_link(bool up);
 
-/** Whether a run is under way, for the application and tests. */
+/**
+ * @brief Whether a run is under way, for the application and tests.
+ *
+ * @return true while a run is under way
+ */
 bool servo_screen_testing(void);
 
-/** Whether a limit run (servo_limrun.h) is under way, for the tests. */
+/**
+ * @brief Whether a limit run (servo_limrun.h) is under way, for the tests.
+ *
+ * @return true while one is under way
+ */
 bool servo_screen_limit_running(void);
-/** The limit run's phase (servo_limrun_phase_t), for the tests. */
+/**
+ * @brief The limit run's phase (servo_limrun_phase_t), for the tests.
+ *
+ * @return the phase
+ */
 int servo_screen_limit_phase(void);
 /** @brief Whether AUTO on RUDDER (servo_rudder_auto.h) is under way.
  *  @return true while its run runs */
@@ -880,6 +1010,7 @@ servo_test_out_t servo_screen_test_peek(const char **text);
  *         (log_name.h), as an int
  */
 int servo_screen_test_prefix(void);
+/** @brief Takes the item servo_screen_test_peek() handed out. */
 void servo_screen_test_pop(void);
 
 /**

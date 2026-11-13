@@ -19,7 +19,11 @@
 extern "C" {
 #endif
 
-/** Where STOP is, in panel coordinates.  The router hit-tests it. */
+/**
+ * @brief Where STOP is, in panel coordinates.  The router hit-tests it.
+ *
+ * @return the rectangle
+ */
 gfx_rect_t ui_band_stop_rect(void);
 
 /**
@@ -63,18 +67,23 @@ gfx_rect_t ui_band_guide_rect(void);
 bool ui_band_guide_at(int x, int y);
 
 /**
- * The mode the band names: BENCH while the link is up and the panel drives
+ * @brief The mode the band names: BENCH while the link is up and the panel drives
  * the IOmcu's outputs, SIM while it runs on its own models.  Mode
  * names, so English in every language.
+ *
+ * @param link_up true while the link is up
+ * @return the name
  */
 const char *ui_band_mode(bool link_up);
 
 #ifdef RCBENCH_TOUCH_INJECTOR
 /**
- * INJECT: the mode a panel built with RCBENCH_TOUCH_INJECTOR names in place
+ * @brief INJECT: the mode a panel built with RCBENCH_TOUCH_INJECTOR names in place
  * of BENCH and SIM while a touch injector (testbench/touch-injector) is
  * attached.  A mode name, so English in every language.  A build with
  * RCBENCH_TOUCH_INJECTOR=OFF has neither this nor INJECT's bubble text.
+ *
+ * @return the name
  */
 const char *ui_band_mode_inject(void);
 #endif
@@ -91,11 +100,16 @@ const char *ui_band_mode_inject(void);
 const char *ui_band_armed_label(uint8_t roles);
 
 /**
- * The label for the IOmcu's refused link frames, "Rejected link
+ * @brief The label for the IOmcu's refused link frames, "Rejected link
  * frames: N" in the language in force, into @p out of @p n bytes: the one place it
  * is built.  MOTOR & ESC shows it in its header strip.  False, with @p out
  * empty, while the link is down or the count (st->link_refused) is 0, so an
  * IOmcu older than 4.21, which sends no count, shows no label.
+ *
+ * @param st the bench's status
+ * @param out receives the label
+ * @param n its size, bytes
+ * @return true when there are refused frames and the label was written
  */
 bool ui_link_refused_label(const ui_bench_status_t *st, char *out, size_t n);
 
@@ -154,9 +168,14 @@ bool ui_band_safe_drives(const ui_bench_status_t *st);
 ui_text_id_t ui_band_arm_refused(uint16_t faults, bool hw_stop);
 
 /**
- * Where @p chip is drawn for @p st, in panel coordinates, into @p out (which
+ * @brief Where @p chip is drawn for @p st, in panel coordinates, into @p out (which
  * may be NULL).  False when @p st draws no such chip: no FAULT chip while
  * the bitmap is 0, no clock before a run, no mode chip without a mode.
+ *
+ * @param st the bench's status
+ * @param chip the chip
+ * @param out receives the rectangle; may be NULL
+ * @return true when the band draws the chip
  */
 bool ui_band_chip_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
                        gfx_rect_t *out);
@@ -188,9 +207,13 @@ bool ui_band_help_rect(const ui_bench_status_t *st, ui_band_chip_t chip,
                        gfx_rect_t *out);
 
 /**
- * Draw the help bubble of @p chip for @p st: the chip's label as its title,
+ * @brief Draw the help bubble of @p chip for @p st: the chip's label as its title,
  * then what the state means for the bench and what to do about it, in the
  * language showing.  Built from @p st each time, so it follows the state.
+ *
+ * @param c the canvas to draw on
+ * @param st the bench's status
+ * @param chip the chip
  */
 void ui_band_help_render(gfx_canvas_t *c, const ui_bench_status_t *st,
                          ui_band_chip_t chip);

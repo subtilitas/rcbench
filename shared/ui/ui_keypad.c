@@ -34,7 +34,7 @@
 /** @brief The room a key keeps left and right of its label: 6px. */
 #define KP_KEY_PAD 6
 
-/* DEL, CLR and +/- are the keys' legends in every language (the faces
+/** @brief DEL, CLR and +/- are the keys' legends in every language (the faces
  * hold no plus-minus glyph); CANCEL is translated, so it is looked up where
  * it is drawn. */
 static const char *const k_labels[UI_KEY_COUNT] = {
@@ -214,6 +214,7 @@ static void toggle_sign(ui_keypad_t *k)
     }
 }
 
+/** @brief Counts the digits typed after the point. */
 static int digits_after_point(const ui_keypad_t *k)
 {
     const char *dot = strchr(k->entry, '.');

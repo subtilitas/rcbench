@@ -35,28 +35,64 @@
 picker_pin_t picker_port_pin(const outbind_t *b, uint8_t index, uint8_t port,
                              bool locked, char *holder, size_t cap);
 
-/** A tap on catalogue entry @p index drawn @p st: a FREE pin asks for it,
- *  the TICKED pin asks for none.  Whether an ask went out. */
+/**
+ * @brief A tap on catalogue entry @p index drawn @p st: a FREE pin asks for it,
+ *  the TICKED pin asks for none.  Whether an ask went out.
+ *
+ * @param b the binding
+ * @param index the catalogue entry
+ * @param port the port picked
+ * @param st how the pin is drawn
+ * @return true when an ask went out
+ */
 bool picker_port_tap(const outbind_t *b, uint8_t index, uint8_t port,
                      picker_pin_t st);
 
-/** Whether a tap on @p index was refused for a PWM rule, which the reason
- *  line then names. */
+/**
+ * @brief Whether a tap on @p index was refused for a PWM rule, which the reason
+ *  line then names.
+ *
+ * @param b the binding
+ * @param index the catalogue entry
+ * @param port the port picked
+ * @return true when it was
+ */
 bool picker_port_clashes(const outbind_t *b, uint8_t index, uint8_t port);
 
 /**
- * The amber line with port @p port picked: the ports not read, the last
+ * @brief The amber line with port @p port picked: the ports not read, the last
  * ask for the port (port_view_ask_line()), or why the PWM rule refused
  * the pin at @p refused (an index, -1 for none).  False with none.
+ *
+ * @param b the binding
+ * @param port the port picked
+ * @param refused the pin refused, an index; -1 for none
+ * @param buf receives the line
+ * @param cap its size, bytes
+ * @return true when there is a line
  */
 bool picker_port_reason(const outbind_t *b, uint8_t port, int refused,
                         char *buf, size_t cap);
 
-/** Row @p k of the PINS table with a port picked: the port's one pin, the
- *  TICKED button, with no channel (-1).  False past it. */
+/**
+ * @brief Row @p k of the PINS table with a port picked: the port's one pin, the
+ *  TICKED button, with no channel (-1).  False past it.
+ *
+ * @param b the binding
+ * @param k the row, from 0
+ * @param out receives the row
+ * @return true when there is one
+ */
 bool picker_port_row(const outbind_t *b, uint8_t k, picker_row_t *out);
 
-/** Whether catalogue entry @p index is the pin of port @p port (-1 for
- *  none picked): listed under PINS, not IN USE. */
+/**
+ * @brief Whether catalogue entry @p index is the pin of port @p port (-1 for
+ *  none picked): listed under PINS, not IN USE.
+ *
+ * @param b the binding
+ * @param index the catalogue entry
+ * @param port the port picked; -1 for none
+ * @return true when it is
+ */
 bool picker_port_own_pin(const outbind_t *b, uint8_t index, int port);
 
