@@ -216,8 +216,8 @@ returns the detents to apply. The rules, in order:
 
 | Rule | Condition | Result |
 |---|---|---|
+| reference | the first packet after `dk_track_reset()`, which the panel calls at every connect and disconnect, whatever its seq | 0, `refs` |
 | repeat | seq equal to the last packet's | dropped, `repeats`; nothing changes, the last packet's time counts on |
-| reference | the first packet after `dk_track_reset()`, which the panel calls at every connect and disconnect | 0, `refs` |
 | stale | arrives more than 300ms (`DK_STALE_MS`) after the packet before; 300ms is taken | 0, a new reference, `stale` |
 | glitch | the counter's difference, wrapped to int16, is over 16 detents (`DK_MAX_STEP`); 16 is taken | 0, a new reference, `glitches` |
 | turn | otherwise | the difference, -16 to 16 |
@@ -234,7 +234,8 @@ caller's to act on, a stale or glitch packet's too.
 | State | When |
 |---|---|
 | DOWN | no Dial in use: after `dk_link_init()` or `dk_link_off()` |
-| UP | at the connect, and at each packet |
+| CONNECTING | at the connect, until the first EVENT; no loss clock runs, so a GATT discovery of any length is no loss, and a discovery that never ends is the central's own timeout |
+| UP | at each packet |
 | DEGRADED | 500ms (`DK_DEGRADED_MS`) or more since the last packet: a notice |
 | LOST | at the disconnect, or 1,000ms (`DK_LOST_MS`) or more since the last packet |
 
@@ -246,7 +247,21 @@ for a later ARM. A packet on the same connection after a LOST returns the
 link to UP; the tracker's stale rule makes that packet a reference.
 
 The Dial's side shows LINK LOST when no panel packet came for 500ms
-(`DK_DIAL_LOST_MS`, `dk_face_lost()`).
+(`DK_DIAL_LOST_MS`, `dk_face_lost()`). When LINK LOST has held for 500ms
+more, 1,000ms after the last panel packet on the connection
+(`DK_DIAL_DROP_MS`, `dk_face_drop()`), the Dial ends the link and sends
+nothing until it is connected again. The loss is then the same on both
+sides: the panel sees the disconnect, LOST, and switches an ARMED bench
+SAFE. A connection that has had no panel packet yet is not ended.
+
+## The encoder's detent
+
+`dk_detent_follow()` turns the encoder's accumulated quadrature count into
+the detent EVENT carries. The detent moves only when the count is 3 counts
+(`DK_DETENT_HYST`) or more from the current detent's center (4 counts a
+detent), so a detent counts at three quarters of its travel, and an
+encoder that rests between two counts never clicks. A jump of many counts
+moves by as many detents in one call.
 
 ## The face model
 
@@ -302,6 +317,8 @@ void    dk_face_link_reset(dk_face_t *f);
 bool    dk_face_feed(dk_face_t *f, const uint8_t *buf, size_t len,
                      uint32_t now_ms);
 bool    dk_face_lost(const dk_face_t *f, uint32_t now_ms);
+bool    dk_face_drop(const dk_face_t *f, uint32_t now_ms);
+int32_t dk_detent_follow(int32_t detent, int32_t count);
 ```
 
 The panel's side, once a packet arrives on EVENT:

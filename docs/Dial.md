@@ -53,7 +53,12 @@ panel's side that applies them is a later slice:
   the one before and a jump of more than 16 detents move nothing.
 - A Dial lost while ARMED is an error: 1,000ms without a packet, or the
   disconnect, switches the bench SAFE and every output off. 500ms without a
-  packet is DEGRADED, a notice.
+  packet is DEGRADED, a notice. A connection that has sent no EVENT yet,
+  while the panel discovers the service, is no loss.
+- The loss is the same in both directions. When the panel's packets stop,
+  the Dial shows LINK LOST after 500ms, and after 500ms more it ends the
+  link and sends nothing until it is connected again. The panel then sees
+  the disconnect, and an ARMED bench goes SAFE.
 - The screen button while ARMED: a tap sets the throttle to 0% on MOTOR and
   CENTER on SERVO; a 1s hold DISARMs.
 
@@ -99,7 +104,7 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The released image is
-600,960 bytes, 19.1% of a slot. Its static RAM: 211,478 of 341,760 bytes of
+601,824 bytes, 19.1% of a slot. Its static RAM: 211,478 of 341,760 bytes of
 internal DRAM and IRAM, the frame of 115,200 bytes among them; the heap that
 NimBLE takes at run time is not measured.
 
@@ -127,8 +132,13 @@ screen's title and the value the knob acts on as text (a setting's value
 with its unit, the throttle in %, the servo's pulse in us, the focused list
 row), and SAFE or ARMED. Without a bound panel it shows `NOT BOUND`, its
 name and `BIND ON THE PANEL`. 500ms without a packet from the panel it shows
-`LINK LOST` and `THE TURN MOVES NOTHING`. Its own words follow the panel's
-language, English or German.
+`LINK LOST`, `THE BENCH IS SAFE`, `ALL OUTPUTS OFF` and `ARM ON THE PANEL`:
+the Dial ends the link 500ms later, and the bench is SAFE then, either
+because it was SAFE already or because the panel switches it SAFE at the
+loss. Between the two, for up to 500ms, a turn still reaches a panel whose
+own stream stalled. Connected with no packet from the panel yet, or not
+connected, it shows `WAITING FOR THE PANEL` and `THE TURN MOVES NOTHING`.
+Its own words follow the panel's language, English or German.
 
 ## The console
 
@@ -166,10 +176,18 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
   STATUS carries 0 and its "battery unknown" flag. The charger's state is
   unknown as well.
 - Which way of the encoder counts up is not measured, nor where in its 4
-  counts the encoder rests. Clockwise positive is the protocol's rule.
+  counts the encoder rests. Clockwise positive is the protocol's rule. A
+  detent moves 3 counts from its center, so an encoder that rests between
+  two counts never clicks.
 - The touch controller's start-up time after the shared reset is taken as
   300ms, the FT5x06 family's; not measured on this part.
 - Whether GPIO46 matters while USB powers the Dial is not confirmed.
+- A panic or a software reset on battery probably releases GPIO46 for the
+  reset and switches the Dial off; not confirmed.
+- `forget`, or the 10s hold, with the bound panel in range: the panel still
+  holds the Dial's address, connects again and subscribes, and the Dial
+  binds it again. To bind another panel, unbind the Dial on the old one
+  first.
 - The face is a placeholder; characters outside ASCII and the German
   letters draw as `?`.
 - The flush of a whole frame takes about 23ms at 40MHz (arithmetic, not

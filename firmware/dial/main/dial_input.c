@@ -11,9 +11,11 @@
  * packet; a second one waits for the next tick.
  *
  * The encoder: quadrature x4 on PCNT with its glitch filter at 1,000ns,
- * channel A on GPIO41 and B on GPIO40, 4 counts a detent.  The detent is
- * the count divided by 4 and rounded to the nearest, so a detent counts at
- * half its travel and a jitter of 1 count at rest moves nothing.  Which
+ * channel A on GPIO41 and B on GPIO40, 4 counts a detent.  The detent
+ * follows the count with hysteresis (dk_detent_follow()): it moves when the
+ * count is 3 counts from the current detent's center, so a detent counts
+ * at three quarters of its travel, and a jitter of 1 count at any rest
+ * position never clicks.  Which
  * direction counts up, and where in its 4 counts the encoder rests, are
  * not measured: DIAL_ENC_SIGN holds the direction.
  *
@@ -192,17 +194,6 @@ static void gesture_pop(pending_t *out)
                 (s_in.queued - 1u) * sizeof(s_in.queue[0]));
         --s_in.queued;
     }
-}
-
-/**
- * @brief The detent count rounded to the nearest, rounding down at a half.
- * @param count PCNT's accumulated count
- * @return detents
- */
-static int32_t detents_of(int count)
-{
-    const int32_t c = (int32_t)count * DIAL_ENC_SIGN + 2;
-    return c >= 0 ? c / 4 : -((-c + 3) / 4);
 }
 
 /**
@@ -430,7 +421,8 @@ static void input_task(void *arg)
         const uint32_t now = now_ms();
         int count = 0;
         if (pcnt_unit_get_count(s_in.pcnt, &count) == ESP_OK) {
-            const int32_t d = detents_of(count);
+            const int32_t d = dk_detent_follow(s_in.detent,
+                                               (int32_t)count * DIAL_ENC_SIGN);
             if (d != s_in.detent) {
                 turned(d - s_in.detent, now);
                 s_in.detent = d;

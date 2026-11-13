@@ -101,9 +101,9 @@ void dk_link_off(dk_link_t *l)
 void dk_link_connect(dk_link_t *l, uint32_t now_ms)
 {
     if (l != NULL) {
+        (void)now_ms;   /* no clock until the first EVENT */
         l->connected = true;
-        l->last_ms = now_ms;
-        l->state = DK_LINK_UP;
+        l->state = DK_LINK_CONNECTING;
     }
 }
 
@@ -141,7 +141,8 @@ uint8_t dk_link_step(dk_link_t *l, uint32_t now_ms)
     if (l == NULL) {
         return DK_LINK_DOWN;
     }
-    if (l->connected) {
+    if (l->connected
+        && (l->state == DK_LINK_UP || l->state == DK_LINK_DEGRADED)) {
         const uint32_t quiet = now_ms - l->last_ms;
         if (quiet >= DK_LOST_MS) {
             lose(l);

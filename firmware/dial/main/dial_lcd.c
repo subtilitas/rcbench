@@ -47,6 +47,12 @@ static uint16_t *s_strip; /**< the DMA bounce buffer */
 /** @} */
 /** @brief Given when a strip's transfer ends. */
 static SemaphoreHandle_t s_done;
+/** @brief A strip's transfer was queued and its end not yet taken: the
+ *         DMA may still read s_strip. */
+static bool s_busy;
+/** @brief How long a flush waits for a transfer left from the flush
+ *         before, ms, before it skips its frame. */
+#define LCD_LATE_MS 200u
 
 /**
  * @brief esp_lcd's callback at the end of a colour transfer, in the SPI
@@ -158,6 +164,16 @@ void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
     if (y1 > DIAL_LCD_SIZE) {
         y1 = DIAL_LCD_SIZE;
     }
+    /* A strip of the flush before that timed out may still be on the
+     * wire: s_strip is not written before its end is taken.  A late end
+     * taken here cannot then count as the end of a strip of this flush. */
+    if (s_busy) {
+        if (xSemaphoreTake(s_done, pdMS_TO_TICKS(LCD_LATE_MS)) != pdTRUE) {
+            ESP_LOGW(TAG, "the strip before has not gone: frame skipped");
+            return;
+        }
+        s_busy = false;
+    }
     for (int y = y0; y < y1; y += LCD_STRIP) {
         const int rows = (y1 - y < LCD_STRIP) ? y1 - y : LCD_STRIP;
         const uint16_t *src = fb + (size_t)y * DIAL_LCD_SIZE;
@@ -166,11 +182,16 @@ void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
             s_strip[i] = (uint16_t)((src[i] >> 8) | (src[i] << 8));
         }
         if (esp_lcd_panel_draw_bitmap(s_panel, 0, y, DIAL_LCD_SIZE, y + rows,
-                                      s_strip) != ESP_OK
-            || xSemaphoreTake(s_done, pdMS_TO_TICKS(LCD_STRIP_TIMEOUT_MS))
-                   != pdTRUE) {
-            ESP_LOGW(TAG, "a strip at row %d did not go", y);
+                                      s_strip) != ESP_OK) {
+            ESP_LOGW(TAG, "a strip at row %d was refused", y);
             return;
         }
+        s_busy = true;
+        if (xSemaphoreTake(s_done, pdMS_TO_TICKS(LCD_STRIP_TIMEOUT_MS))
+            != pdTRUE) {
+            ESP_LOGW(TAG, "a strip at row %d did not go", y);
+            return;     /* s_busy stays: the next flush waits for it */
+        }
+        s_busy = false;
     }
 }

@@ -184,7 +184,8 @@ TEST_CASE(the_link_is_degraded_at_500ms_and_lost_at_1000ms_without_a_packet)
 
     dk_link_init(&l);
     CHECK_EQ(dk_link_step(&l, 0), DK_LINK_DOWN);
-    dk_link_connect(&l, 1000);
+    dk_link_connect(&l, 900);
+    dk_link_rx(&l, 1000);
     CHECK_EQ(dk_link_step(&l, 1000), DK_LINK_UP);
     CHECK_EQ(dk_link_step(&l, 1000 + DK_DEGRADED_MS - 1), DK_LINK_UP);
     CHECK_EQ(dk_link_step(&l, 1000 + DK_DEGRADED_MS), DK_LINK_DEGRADED);
@@ -201,16 +202,45 @@ TEST_CASE(the_link_is_degraded_at_500ms_and_lost_at_1000ms_without_a_packet)
     CHECK_EQ(dk_link_step(&l, 9100), DK_LINK_UP);
 }
 
+TEST_CASE(a_connect_without_any_event_yet_is_no_loss_while_armed)
+{
+    /* GATT discovery after a reconnect can take longer than 1,000ms: a
+     * Dial that has driven nothing on this connection is no loss. */
+    dk_link_t l;
+
+    dk_link_init(&l);
+    dk_link_connect(&l, 0);
+    CHECK_EQ(dk_link_step(&l, 0), DK_LINK_CONNECTING);
+    CHECK_EQ(dk_link_step(&l, DK_LOST_MS), DK_LINK_CONNECTING);
+    CHECK_EQ(dk_link_step(&l, 600000), DK_LINK_CONNECTING);
+    CHECK(!dk_link_loss_error(&l, true));
+    CHECK_EQ(l.losses, 0u);
+    /* A disconnect before the first EVENT is LOST, and no loss. */
+    dk_link_disconnect(&l);
+    CHECK_EQ(dk_link_step(&l, 600001), DK_LINK_LOST);
+    CHECK(!dk_link_loss_error(&l, true));
+    /* The first EVENT starts the clock: a real loss after UP is one. */
+    dk_link_connect(&l, 700000);
+    dk_link_rx(&l, 701500);
+    CHECK_EQ(dk_link_step(&l, 701500), DK_LINK_UP);
+    CHECK_EQ(dk_link_step(&l, 701500 + DK_LOST_MS - 1), DK_LINK_DEGRADED);
+    CHECK(!dk_link_loss_error(&l, true));
+    CHECK_EQ(dk_link_step(&l, 701500 + DK_LOST_MS), DK_LINK_LOST);
+    CHECK(dk_link_loss_error(&l, true));
+}
+
 TEST_CASE(a_step_that_skips_degraded_is_still_lost_at_1000ms)
 {
     dk_link_t l;
 
     dk_link_init(&l);
     dk_link_connect(&l, 0);
+    dk_link_rx(&l, 0);
     CHECK_EQ(dk_link_step(&l, DK_LOST_MS), DK_LINK_LOST);
     CHECK_EQ(l.losses, 1u);
     dk_link_init(&l);
-    dk_link_connect(&l, 0xFFFFFE00u);       /* across the clock's wrap */
+    dk_link_connect(&l, 0xFFFFFD00u);
+    dk_link_rx(&l, 0xFFFFFE00u);            /* across the clock's wrap */
     CHECK_EQ(dk_link_step(&l, 0xFFFFFE00u + DK_DEGRADED_MS), DK_LINK_DEGRADED);
     CHECK_EQ(dk_link_step(&l, 0xFFFFFE00u + DK_LOST_MS - 1u), DK_LINK_DEGRADED);
     CHECK_EQ(dk_link_step(&l, 0xFFFFFE00u + DK_LOST_MS), DK_LINK_LOST);
@@ -231,7 +261,9 @@ TEST_CASE(a_disconnect_is_lost_at_once)
     dk_link_disconnect(&l);                 /* a second report: no loss */
     CHECK_EQ(l.losses, 1u);
     dk_link_connect(&l, 3000);
-    CHECK_EQ(dk_link_step(&l, 3000), DK_LINK_UP);
+    CHECK_EQ(dk_link_step(&l, 3000), DK_LINK_CONNECTING);
+    dk_link_rx(&l, 3100);
+    CHECK_EQ(dk_link_step(&l, 3100), DK_LINK_UP);
 }
 
 TEST_CASE(a_loss_while_armed_is_an_error_once)
@@ -240,6 +272,7 @@ TEST_CASE(a_loss_while_armed_is_an_error_once)
 
     dk_link_init(&l);
     dk_link_connect(&l, 0);
+    dk_link_rx(&l, 0);
     CHECK(!dk_link_loss_error(&l, true));   /* no loss yet */
     dk_link_step(&l, DK_LOST_MS - 1u);
     CHECK(!dk_link_loss_error(&l, true));   /* DEGRADED is a notice */
@@ -250,6 +283,7 @@ TEST_CASE(a_loss_while_armed_is_an_error_once)
     CHECK(!dk_link_loss_error(&l, true));   /* still LOST: no new loss */
 
     dk_link_connect(&l, 60000);
+    dk_link_rx(&l, 60100);
     dk_link_disconnect(&l);
     CHECK(dk_link_loss_error(&l, true));    /* the disconnect, at once */
 }
@@ -260,12 +294,14 @@ TEST_CASE(a_loss_while_safe_is_no_error_and_is_not_kept_for_a_later_arm)
 
     dk_link_init(&l);
     dk_link_connect(&l, 0);
+    dk_link_rx(&l, 0);
     dk_link_step(&l, DK_LOST_MS);
     CHECK(!dk_link_loss_error(&l, false));  /* SAFE: taken, no error */
     CHECK(!dk_link_loss_error(&l, true));   /* the ARM afterwards */
 
     /* The Dial switched off on the panel drops a pending loss. */
     dk_link_connect(&l, 2000);
+    dk_link_rx(&l, 2000);
     dk_link_disconnect(&l);
     dk_link_off(&l);
     CHECK_EQ(dk_link_step(&l, 2001), DK_LINK_DOWN);
@@ -276,6 +312,22 @@ TEST_CASE(a_loss_while_safe_is_no_error_and_is_not_kept_for_a_later_arm)
     CHECK(!dk_link_loss_error(&l, true));
     CHECK(!dk_link_loss_error(NULL, true));
     CHECK_EQ(dk_link_step(NULL, 0), DK_LINK_DOWN);
+}
+
+TEST_CASE(the_first_packet_after_a_reset_is_a_reference_whatever_its_seq)
+{
+    /* The reference rule comes before the repeat rule: a Dial that
+     * restarted and reconnects may send the seq the tracker last held. */
+    dk_track_t t;
+    dk_take_t why;
+
+    dk_track_init(&t);
+    feed(&t, 7, 100, 0, &why);
+    dk_track_reset(&t);
+    CHECK_EQ(feed(&t, 7, -50, 10, &why), 0);
+    CHECK_EQ(why, DK_TAKE_REF);
+    CHECK_EQ(t.repeats, 0u);
+    CHECK_EQ(feed(&t, 8, -48, 20, &why), 2);
 }
 
 int main(void)
@@ -289,9 +341,11 @@ int main(void)
     RUN(a_skipped_seq_is_taken_and_counted_with_no_motion_lost);
     RUN(the_tracker_survives_null_arguments);
     RUN(the_link_is_degraded_at_500ms_and_lost_at_1000ms_without_a_packet);
+    RUN(a_connect_without_any_event_yet_is_no_loss_while_armed);
     RUN(a_step_that_skips_degraded_is_still_lost_at_1000ms);
     RUN(a_disconnect_is_lost_at_once);
     RUN(a_loss_while_armed_is_an_error_once);
     RUN(a_loss_while_safe_is_no_error_and_is_not_kept_for_a_later_arm);
+    RUN(the_first_packet_after_a_reset_is_a_reference_whatever_its_seq);
     return test_summary("dialknob_track");
 }

@@ -142,3 +142,32 @@ bool dk_face_lost(const dk_face_t *f, uint32_t now_ms)
 {
     return f == NULL || !f->any || now_ms - f->last_ms >= DK_DIAL_LOST_MS;
 }
+
+bool dk_face_drop(const dk_face_t *f, uint32_t now_ms)
+{
+    return f != NULL && f->any && now_ms - f->last_ms >= DK_DIAL_DROP_MS;
+}
+
+/**
+ * @brief a / 4 rounded toward minus infinity.
+ * @param a the dividend
+ * @return the quotient
+ */
+static int32_t floor4(int32_t a)
+{
+    return a >= 0 ? a / 4 : -((-(a + 1)) / 4) - 1;
+}
+
+int32_t dk_detent_follow(int32_t detent, int32_t count)
+{
+    /* Up: the largest d with count >= 4(d - 1) + HYST, the count past the
+     * point that moved to d.  Down likewise, mirrored. */
+    const int32_t center = detent * (int32_t)DK_COUNTS_DETENT;
+    if (count - center >= DK_DETENT_HYST) {
+        return floor4(count - DK_DETENT_HYST) + 1;
+    }
+    if (center - count >= DK_DETENT_HYST) {
+        return -(floor4(-count - DK_DETENT_HYST) + 1);
+    }
+    return detent;
+}

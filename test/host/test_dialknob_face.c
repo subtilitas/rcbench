@@ -171,6 +171,101 @@ TEST_CASE(a_new_link_empties_the_model_and_learns_the_seq_again)
     dk_face_link_reset(NULL);
 }
 
+TEST_CASE(the_dial_ends_the_link_when_link_lost_has_held_for_500ms)
+{
+    dk_face_t f;
+    dk_state_t st = { 1, 5u, 10, 10, 0 };
+    uint8_t b[DK_LEN_STATE];
+
+    dk_face_init(&f);
+    /* No panel packet on this connection yet: the panel may still be
+     * discovering the service, and the link is not ended. */
+    CHECK(!dk_face_drop(&f, 0));
+    CHECK(!dk_face_drop(&f, 600000));
+    CHECK_EQ(dk_state_encode(&st, b), DK_LEN_STATE);
+    CHECK(dk_face_feed(&f, b, sizeof b, 0xFFFFFE00u));
+    CHECK(!dk_face_drop(&f, 0xFFFFFE00u + DK_DIAL_LOST_MS));
+    CHECK(dk_face_lost(&f, 0xFFFFFE00u + DK_DIAL_LOST_MS));
+    CHECK(!dk_face_drop(&f, 0xFFFFFE00u + DK_DIAL_DROP_MS - 1u));
+    CHECK(dk_face_drop(&f, 0xFFFFFE00u + DK_DIAL_DROP_MS));   /* wraps */
+    CHECK_EQ(DK_DIAL_DROP_MS, DK_DIAL_LOST_MS + 500u);
+    /* A new connection starts the rule again. */
+    dk_face_link_reset(&f);
+    CHECK(!dk_face_drop(&f, 0xFFFFFE00u + 10u * DK_DIAL_DROP_MS));
+    CHECK(!dk_face_drop(NULL, 0));
+}
+
+/** Follow a run of counts from detent 0; return the detent at the end and
+ *  the moves taken in @p moves. */
+static int32_t follow(const int32_t *counts, unsigned n, unsigned *moves)
+{
+    int32_t d = 0;
+    *moves = 0;
+    for (unsigned i = 0; i < n; ++i) {
+        const int32_t next = dk_detent_follow(d, counts[i]);
+        if (next != d) {
+            ++*moves;
+        }
+        d = next;
+    }
+    return d;
+}
+
+TEST_CASE(a_detent_moves_3_counts_from_its_center_and_jitter_never_clicks)
+{
+    unsigned moves;
+
+    CHECK_EQ(dk_detent_follow(0, 2), 0);
+    CHECK_EQ(dk_detent_follow(0, 3), 1);
+    CHECK_EQ(dk_detent_follow(0, -2), 0);
+    CHECK_EQ(dk_detent_follow(0, -3), -1);
+    CHECK_EQ(dk_detent_follow(1, 6), 1);        /* center 4: 2 counts */
+    CHECK_EQ(dk_detent_follow(1, 7), 2);
+    CHECK_EQ(dk_detent_follow(1, 2), 1);
+    CHECK_EQ(dk_detent_follow(1, 1), 0);
+    CHECK_EQ(dk_detent_follow(-1, -2), -1);     /* center -4: 2 counts */
+    CHECK_EQ(dk_detent_follow(-1, -1), 0);
+    CHECK_EQ(dk_detent_follow(-1, -7), -2);
+    CHECK_EQ(dk_detent_follow(-1, -6), -1);
+    CHECK_EQ(dk_detent_follow(0, 64), 16);      /* one turn at once */
+    CHECK_EQ(dk_detent_follow(0, -64), -16);
+    CHECK_EQ(dk_detent_follow(16, 0), 0);
+    CHECK_EQ(dk_detent_follow(5, 20), 5);
+    /* An encoder that rests between counts 2 and 3: one move, no more. */
+    {
+        static const int32_t rest[] = { 1, 2, 3, 2, 3, 2, 3, 2, 3, 2 };
+        CHECK_EQ(follow(rest, 10, &moves), 1);
+        CHECK_EQ(moves, 1u);
+    }
+    /* And one between -2 and -3, and between 1 and 2 after a detent. */
+    {
+        static const int32_t rest[] = { -2, -3, -2, -3, -2, -3 };
+        CHECK_EQ(follow(rest, 6, &moves), -1);
+        CHECK_EQ(moves, 1u);
+    }
+    {
+        static const int32_t rest[] = { 3, 4, 5, 6, 5, 6, 5, 6, 5 };
+        CHECK_EQ(follow(rest, 9, &moves), 1);
+        CHECK_EQ(moves, 1u);
+    }
+    /* A turn of 4 detents count by count, and back. */
+    {
+        int32_t d = 0;
+        unsigned m = 0;
+        for (int32_t c = 0; c <= 16; ++c) {
+            const int32_t next = dk_detent_follow(d, c);
+            m += next != d ? 1u : 0u;
+            d = next;
+        }
+        CHECK_EQ(d, 4);
+        CHECK_EQ(m, 4u);
+        for (int32_t c = 16; c >= 0; --c) {
+            d = dk_detent_follow(d, c);
+        }
+        CHECK_EQ(d, 0);
+    }
+}
+
 int main(void)
 {
     RUN(a_new_screen_empties_the_value_of_the_screen_before);
@@ -178,5 +273,7 @@ int main(void)
     RUN(a_refused_or_repeated_packet_changes_nothing);
     RUN(the_face_says_link_lost_500ms_after_the_last_panel_packet);
     RUN(a_new_link_empties_the_model_and_learns_the_seq_again);
+    RUN(the_dial_ends_the_link_when_link_lost_has_held_for_500ms);
+    RUN(a_detent_moves_3_counts_from_its_center_and_jitter_never_clicks);
     return test_summary("dialknob_face");
 }

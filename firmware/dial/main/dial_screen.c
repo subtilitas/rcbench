@@ -35,15 +35,20 @@ typedef enum {
     W_WAITING,
     W_LINK_LOST,
     W_MOVES_NOTHING,
+    W_BENCH_SAFE,
+    W_OUTPUTS_OFF,
+    W_ARM_PANEL,
     W_COUNT,
 } word_t;
 
 /** @brief The words by language. */
 static const char *const k_words[2][W_COUNT] = {
     { "NOT BOUND", "BIND ON THE PANEL", "WAITING FOR THE PANEL",
-      "LINK LOST", "THE TURN MOVES NOTHING" },
+      "LINK LOST", "THE TURN MOVES NOTHING", "THE BENCH IS SAFE",
+      "ALL OUTPUTS OFF", "ARM ON THE PANEL" },
     { "NICHT GEBUNDEN", "AM PANEL BINDEN", "WARTE AUF DAS PANEL",
-      "LINK VERLOREN", "DREHEN BEWEGT NICHTS" },
+      "LINK VERLOREN", "DREHEN BEWEGT NICHTS", "DER PR\xC3\x9C" "FSTAND IST SAFE",
+      "ALLE AUSG\xC3\x84NGE AUS", "ARM AM PANEL" },
 };
 
 /**
@@ -119,12 +124,23 @@ void dial_screen_draw(gfx_canvas_t *c, const dk_face_t *f,
         line(c, 160, w[W_BIND_HINT], &gfx_font_8x16, COL_DIM);
         return;
     }
-    if (v->lost) {
+    if (v->lost && f->any) {
+        /* A panel packet came on this connection and the stream stopped:
+         * the Dial ends the link at DK_DIAL_DROP_MS, and the panel, which
+         * then sees LOST, switches an ARMED bench SAFE. */
         if (f->have_screen) {
             line(c, 52, f->screen.title, &gfx_font_10x20, COL_DIM);
         }
-        line(c, 104, v->ready ? w[W_LINK_LOST] : w[W_WAITING],
-             &gfx_font_10x20, COL_WARN);
+        line(c, 88, w[W_LINK_LOST], &gfx_font_10x20, COL_WARN);
+        line(c, 124, w[W_BENCH_SAFE], &gfx_font_8x16, COL_TEXT);
+        line(c, 144, w[W_OUTPUTS_OFF], &gfx_font_8x16, COL_TEXT);
+        line(c, 164, w[W_ARM_PANEL], &gfx_font_8x16, COL_DIM);
+        line(c, 196, v->name, &gfx_font_8x16, COL_DIM);
+        return;
+    }
+    if (v->lost) {
+        /* No panel packet on this connection yet, or no connection. */
+        line(c, 104, w[W_WAITING], &gfx_font_10x20, COL_WARN);
         line(c, 150, w[W_MOVES_NOTHING], &gfx_font_8x16, COL_DIM);
         line(c, 190, v->name, &gfx_font_8x16, COL_DIM);
         return;

@@ -511,6 +511,9 @@ void dial_ble_forget(void)
 void dial_ble_drop(void)
 {
     const uint16_t conn = (uint16_t)atomic_load(&s_conn);
+    /* Not ready from here: no EVENT goes before the disconnect event. */
+    atomic_store(&s_sub_event, false);
+    atomic_store(&s_sub_status, false);
     if (conn != CONN_NONE) {
         ble_gap_terminate(conn, BLE_ERR_REM_USER_CONN_TERM);
     }

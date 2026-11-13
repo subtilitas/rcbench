@@ -14,15 +14,18 @@ history is in git.
   20 bytes or less, every field bounded; the panel's turn tracker (the
   first packet after a connect, a packet more than 300ms late and a jump
   over 16 detents move nothing, a repeated seq is dropped); the link's
-  DEGRADED at 500ms and LOST at the disconnect or at 1,000ms, a loss while
-  ARMED being an error; the Dial's model of its face; host suites
+  DEGRADED at 500ms and LOST at the disconnect or at 1,000ms, counted from
+  the first EVENT of a connection, a loss while ARMED being an error; the
+  Dial's model of its face and its encoder detent with 3 counts of
+  hysteresis; host suites
   `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`.
 - Firmware for the M5Stack Dial v1.1 (`firmware/dial`, ESP-IDF v6.1,
   ESP32-S3): the power latch on GPIO46, the encoder on PCNT, the buttons,
   the FT3267 touch glass, a 3ms click per detent (default ON), the GC9A01
   display with a placeholder face, a NimBLE peripheral serving the
   dialknob service that binds the first panel to subscribe and then
-  accepts that panel only (a 10s button hold forgets it), and a USB console
+  accepts that panel only (a 10s button hold forgets it) and ends the link
+  1,000ms after the panel's last packet, and a USB console
   (`dial>`) whose test build injects turns, presses, holds, taps and a
   battery reading and marks each injected detent on GPIO1. The battery's
   reading pin is unknown, and STATUS reports the battery as unknown. The

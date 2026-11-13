@@ -55,7 +55,13 @@ Seite des Panels, die sie anwendet, folgt in einem späteren Schritt:
   nach dem vorigen und ein Sprung um mehr als 16 Rastungen bewegen nichts.
 - Ein Dial, das im Zustand ARMED verloren geht, ist ein Fehler: 1.000ms ohne
   Paket oder der Disconnect schalten den Prüfstand SAFE und alle Ausgänge
-  ab. 500ms ohne Paket sind DEGRADED, ein Hinweis.
+  ab. 500ms ohne Paket sind DEGRADED, ein Hinweis. Eine Verbindung, die noch
+  kein EVENT gesendet hat, während das Panel den Dienst sucht, ist kein
+  Verlust.
+- Der Verlust gilt in beide Richtungen. Bleiben die Pakete des Panels aus,
+  zeigt das Dial nach 500ms LINK VERLOREN, beendet nach weiteren 500ms den
+  Link und sendet nichts mehr, bis es wieder verbunden ist. Das Panel sieht
+  dann den Disconnect, und ein Prüfstand im Zustand ARMED geht auf SAFE.
 - Die Bildschirmtaste im Zustand ARMED: Ein Tippen setzt das Gas auf MOTOR
   auf 0% und auf SERVO auf CENTER; ein Halten von 1s macht DISARM.
 
@@ -103,7 +109,7 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 Die Partitionstabelle (`firmware/dial/partitions.csv`) enthält den NVS, zwei
 Anwendungsslots von 3.072kB und ihre otadata. Das veröffentlichte Image hat
-600.960 Bytes, 19,1% eines Slots. Sein statischer RAM: 211.478 von 341.760
+601.824 Bytes, 19,1% eines Slots. Sein statischer RAM: 211.478 von 341.760
 Bytes internem DRAM und IRAM, darunter der Frame von 115.200 Bytes; den
 Heap, den NimBLE zur Laufzeit nimmt, hat niemand gemessen.
 
@@ -132,8 +138,14 @@ des Panel-Bildschirms und der Wert, auf den der Knopf wirkt, als Text (der
 Wert einer Einstellung mit Einheit, das Gas in %, der Puls des Servos in us,
 die fokussierte Listenzeile), dazu SAFE oder ARMED. Ohne gebundenes Panel
 zeigt es `NICHT GEBUNDEN`, seinen Namen und `AM PANEL BINDEN`. 500ms ohne
-Paket vom Panel zeigt es `LINK VERLOREN` und `DREHEN BEWEGT NICHTS`. Seine
-eigenen Worte folgen der Sprache des Panels, Englisch oder Deutsch.
+Paket vom Panel zeigt es `LINK VERLOREN`, `DER PRÜFSTAND IST SAFE`,
+`ALLE AUSGÄNGE AUS` und `ARM AM PANEL`: Das Dial beendet den Link 500ms
+später, und dann ist der Prüfstand SAFE, entweder weil er es schon war oder
+weil das Panel ihn beim Verlust auf SAFE schaltet. Dazwischen, bis zu 500ms
+lang, erreicht eine Drehung noch ein Panel, dessen eigener Strom stockt.
+Verbunden ohne Paket vom Panel oder nicht verbunden zeigt es
+`WARTE AUF DAS PANEL` und `DREHEN BEWEGT NICHTS`. Seine eigenen Worte folgen
+der Sprache des Panels, Englisch oder Deutsch.
 
 ## Die Konsole
 
@@ -173,12 +185,20 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   Laders ist ebenfalls unbekannt.
 - Welche Drehrichtung des Encoders hochzählt, ist nicht gemessen, ebenso
   wenig, wo in seinen 4 Zählschritten der Encoder einrastet. Im Uhrzeigersinn
-  positiv ist die Regel des Protokolls.
+  positiv ist die Regel des Protokolls. Eine Rastung wechselt 3 Zählschritte
+  von ihrer Mitte, also klickt ein Encoder, der zwischen zwei Zählschritten
+  ruht, nie.
 - Die Startzeit des Touch-Controllers nach dem gemeinsamen Reset ist mit
   300ms angenommen, der Wert der FT5x06-Familie; an diesem Teil nicht
   gemessen.
 - Ob GPIO46 eine Rolle spielt, solange USB das Dial versorgt, ist nicht
   bestätigt.
+- Ein Panic oder ein Software-Reset im Akkubetrieb gibt GPIO46 für den Reset
+  wahrscheinlich frei und schaltet das Dial ab; nicht bestätigt.
+- `forget` oder das Halten von 10s mit dem gebundenen Panel in Reichweite:
+  Das Panel kennt die Adresse des Dial noch, verbindet sich wieder und
+  abonniert, und das Dial bindet es erneut. Um ein anderes Panel zu binden,
+  zuerst das Dial am alten Panel lösen.
 - Das Face ist ein Platzhalter; Zeichen außerhalb von ASCII und der
   deutschen Buchstaben erscheinen als `?`.
 - Das Senden eines ganzen Frames dauert bei 40MHz etwa 23ms (gerechnet,

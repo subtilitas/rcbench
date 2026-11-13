@@ -152,6 +152,15 @@ void app_main(void)
         view.ready = dial_ble_ready();
         view.bound = dial_ble_bound();
         view.lost = dk_face_lost(&s_face, now);
+        if (view.ready && dk_face_drop(&s_face, now)) {
+            /* LINK LOST has held for 500ms: end the link, so the panel's
+             * side is lost too and an ARMED bench goes SAFE.  No EVENT
+             * goes until the next connect. */
+            ESP_LOGW(TAG, "no panel packet for %ums: the link ends",
+                     (unsigned)DK_DIAL_DROP_MS);
+            dial_ble_drop();
+            view.ready = false;
+        }
         view.name = dial_ble_name();
         if (view.lost && !shown.lost && shown.ready && !first) {
             dial_buzz_tone(800, 80);    /* LINK LOST */

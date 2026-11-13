@@ -83,6 +83,8 @@ extern "C" {
                                      LOST; LOST while ARMED is an error */
 #define DK_DIAL_LOST_MS  500u   /**< the Dial: no panel packet for this long
                                      shows LINK LOST */
+#define DK_DIAL_DROP_MS  1000u  /**< the Dial: LINK LOST held for 500ms ends
+                                     the link, so the panel sees LOST */
 #define DK_HOLD_MS       1000u  /**< a screen button press this long is a
                                      HOLD gesture */
 #define DK_FORGET_MS     10000u /**< a screen button press this long makes
@@ -96,6 +98,9 @@ extern "C" {
 #define DK_DETENTS_TURN  16u /**< detents a turn */
 #define DK_COUNTS_DETENT 4u  /**< quadrature counts a detent */
 /** @} */
+/** @brief Quadrature counts from a detent's center that move to the
+ *         next detent; a jitter of less never clicks. */
+#define DK_DETENT_HYST   3
 /** @brief The largest counter difference between two EVENTs that is a
  *         turn; a larger one is a glitch: one turn. */
 #define DK_MAX_STEP      16
@@ -533,8 +538,9 @@ void dk_track_reset(dk_track_t *t);
 /**
  * @brief Take one decoded EVENT.
  *
- * Rules, in order: a packet whose seq repeats the last one is dropped; the
- * first packet after dk_track_reset() sets the reference; a packet more
+ * Rules, in order: the first packet after dk_track_reset() sets the
+ * reference, whatever its seq; a packet whose seq repeats the last one is
+ * dropped; a packet more
  * than DK_STALE_MS after the one before sets the reference; a difference of
  * more than DK_MAX_STEP detents is a glitch and sets the reference; else
  * the difference is the turn.  Skipped seq numbers are counted and lose no
@@ -557,6 +563,9 @@ int32_t dk_track_feed(dk_track_t *t, const dk_evt_t *e, uint32_t now_ms,
 /** @brief The link's state on the panel. */
 typedef enum {
     DK_LINK_DOWN = 0, /**< no Dial in use: never up since dk_link_off() */
+    DK_LINK_CONNECTING, /**< connected, no EVENT yet: no loss clock runs;
+                             a discovery that never ends is the central's
+                             own timeout */
     DK_LINK_UP,       /**< packets within DK_DEGRADED_MS */
     DK_LINK_DEGRADED, /**< none for DK_DEGRADED_MS: a notice */
     DK_LINK_LOST,     /**< a disconnect, or none for DK_LOST_MS */
@@ -567,7 +576,7 @@ typedef struct {
     uint8_t  state;     /**< dk_link_state_t */
     bool     connected; /**< between connect and disconnect */
     bool     loss;      /**< a loss not yet taken by dk_link_loss_error() */
-    uint32_t last_ms;   /**< the connect or the last packet */
+    uint32_t last_ms;   /**< the last packet */
     uint32_t losses;    /**< UP or DEGRADED to LOST, counted */
 } dk_link_t;
 
@@ -576,13 +585,16 @@ void dk_link_init(dk_link_t *l);
 /** @brief The Dial is switched off or unbound on the panel: DOWN, and a
  *         pending loss is dropped. @param l the link */
 void dk_link_off(dk_link_t *l);
-/** @brief The connection is up: UP, the clock starts.
+/** @brief The connection is up: CONNECTING, no clock runs until the
+ *         first EVENT.
  *         @param l the link @param now_ms the time */
 void dk_link_connect(dk_link_t *l, uint32_t now_ms);
-/** @brief A packet from the Dial: UP. @param l the link
+/** @brief A packet from the Dial: UP, the clock starts again.
+ *         @param l the link
  *         @param now_ms its arrival; ignored while not connected */
 void dk_link_rx(dk_link_t *l, uint32_t now_ms);
-/** @brief The connection ended: LOST at once. @param l the link */
+/** @brief The connection ended: LOST at once, and a loss when the link
+ *         was UP or DEGRADED. @param l the link */
 void dk_link_disconnect(dk_link_t *l);
 /**
  * @brief Move the state by the time since the last packet.
@@ -672,6 +684,29 @@ bool dk_face_feed(dk_face_t *f, const uint8_t *buf, size_t len,
  *         DK_DIAL_LOST_MS
  */
 bool dk_face_lost(const dk_face_t *f, uint32_t now_ms);
+/**
+ * @brief Whether the Dial ends the link: a panel packet came on this
+ *        connection and none since for DK_DIAL_DROP_MS, so LINK LOST has
+ *        held for 500ms.  The panel then sees the disconnect, LOST, which
+ *        while ARMED is its error.  A connection that has had no panel
+ *        packet yet, while the panel discovers the service, is not ended.
+ * @param f      the model
+ * @param now_ms the time
+ * @return true when the link is to end
+ */
+bool dk_face_drop(const dk_face_t *f, uint32_t now_ms);
+
+/**
+ * @brief The encoder's detent from its quadrature count, with hysteresis:
+ *        the detent moves only when the count is DK_DETENT_HYST or more
+ *        counts from the current detent's center (DK_COUNTS_DETENT x the
+ *        detent), so an encoder that rests between two counts never
+ *        clicks.
+ * @param detent the current detent
+ * @param count  the accumulated quadrature count, signed as the turn
+ * @return the new detent
+ */
+int32_t dk_detent_follow(int32_t detent, int32_t count);
 
 #ifdef __cplusplus
 }

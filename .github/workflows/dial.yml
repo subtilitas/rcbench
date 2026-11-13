@@ -56,6 +56,11 @@ jobs:
             && idf.py -B build-hooks -D RCBENCH_DIAL_HOOKS=ON build
             && idf.py -B build-hooks merge-bin -o rcbench-dial-merged.bin
 
+      # A build that rewrites the lock file resolved a version the commit
+      # does not pin.
+      - name: The build leaves the lock file as committed
+        run: git diff --exit-code firmware/dial/dependencies.lock
+
       - name: The generated sdkconfig holds sdkconfig.defaults
         run: >-
           python3 tools/check_sdkconfig.py --check --project firmware/dial

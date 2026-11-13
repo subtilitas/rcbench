@@ -206,7 +206,8 @@ void dial_ble_poll(uint32_t now_ms);
 /** @brief Forget the bound panel: clear NVS and the accept list, end the
  *         link, advertise to anyone. */
 void dial_ble_forget(void);
-/** @brief End the link (a test hook): the panel sees a disconnect. */
+/** @brief End the link: the panel sees a disconnect.  The console's `drop`
+ *         and the face task's LINK LOST rule (dk_face_drop()) call it. */
 void dial_ble_drop(void);
 /** @brief Whether a panel is bound. @return true when bound */
 bool dial_ble_bound(void);
