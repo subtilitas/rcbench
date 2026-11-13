@@ -182,7 +182,7 @@ A file load or a RESTORE still writes the whole image. CHECK THIS FILE, the rest
 ![Three changed values](view:servo-kst-changes)
 ![The write hold at 1s](view:servo-kst-write)
 
-WRITE n VALUES, on the SERVO tab and in the footer, writes the changes after a 2s hold. The button fades from green to amber while held. A tap or a release before 2s sends nothing; a tap shows `Hold 2s to write.` A press the session refuses starts no hold and names the reason. No page lists the values first: each edited value is marked on its tab. With no card the SERVO tab says `No card. No backup file will be saved.` while edits wait.
+WRITE n VALUES, on the SERVO tab and in the footer, writes the changes after a 2s hold. The button fades from green to amber while held. A tap or a release before 2s sends nothing; a tap shows `Hold 2s to write.` A press the session refuses starts no hold and names the reason. No page lists the values first: each edited value is marked on its tab. With no card the SERVO tab says `No card. No backup file will be saved.` while edits wait. On HITEC the SERVO tab also says, while edits wait, what the write does besides the values: `The servo saves and restarts. It ignores signals for 1s.` for a D series servo, `Each stored value is followed by a write of the checksum in 0x1C.` for a classic one, and `Stored values outside the settings written too: n.` where a loaded file brings such values.
 
 1. The first write of a session saves the servo's values to a new file on the SD (Secure Digital) card.
 2. The panel records the write in `BENCH/KST/CONF/KST.TXT`, or in memory without a card.

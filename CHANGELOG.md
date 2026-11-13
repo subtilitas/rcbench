@@ -65,6 +65,12 @@ history is in git.
   them and offers HOLD 2s TO LEAVE WITHOUT WRITING, which drops them, and
   BACK, which keeps them
   ([Servo programmer](docs/ServoProgrammer.md#leaving)).
+- HITEC programmer: while edits wait, the SERVO tab says what their write
+  does besides the values: `The servo saves and restarts. It ignores
+  signals for 1s.` for a D series servo, `Each stored value is followed by
+  a write of the checksum in 0x1C.` for a classic one, and `Stored values
+  outside the settings written too: n.` where the draft holds such values
+  ([Hitec](docs/HitecProgrammer.md#writing)).
 
 ### Fixed
 

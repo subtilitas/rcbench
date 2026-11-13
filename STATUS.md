@@ -1954,7 +1954,8 @@ programmer, Tests](docs/ServoProgrammer.md#tests)). `test_hitec_panel_file` runs
 overlay's FILES row, its pages and their turn back to the first, the keyboard of a new name
 and the names the card refuses, a load, CHECK THIS FILE, a backup file's stored values on
 the load page, in its message and on LEAVE, the backup file's lines on the SERVO tab, the SERVO tab's
-no-card line while edits wait, RESTORE and FACTORY DEFAULT from their rows, both refused with an
+no-card line and the notes of what the write does (D series, classic, stored values outside
+the settings) while edits wait, RESTORE and FACTORY DEFAULT from their rows, both refused with an
 edit standing, and every new page and message in both languages.
 
 `test_hitec_panel_write` runs the overlay's lists, keypad refusals, the D series FAILSAFE

@@ -306,6 +306,19 @@ session refuses starts no hold, and the tab names the reason at once. No
 page lists the values before the write: each edited value is marked `*`
 on its tab, and [LEAVE](#leave) lists them.
 
+While edits wait, the notes under the SERVO tab's rows say what the write
+does besides the values, in the text colour of a note:
+
+| Series | Note |
+| --- | --- |
+| D | `The servo saves and restarts. It ignores signals for 1s.` |
+| CLASSIC | `Each stored value is followed by a write of the checksum in 0x1C.` |
+| Both, with stored values outside the settings in the draft (a loaded file or backup) | `Stored values outside the settings written too: n.` |
+
+The notes go with the edits. They come after the other notes of the tab,
+which holds at most 6; a note that does not fit above the message is not
+drawn.
+
 1. The second read of what the plan depends on
    ([The second read](#the-second-read)). Two reads that differ end the
    write here, with nothing sent.

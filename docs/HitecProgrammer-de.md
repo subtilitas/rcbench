@@ -323,6 +323,20 @@ kein Halten, und der Reiter nennt den Grund sofort. Keine Seite listet die
 Werte vor dem Schreiben: jeder geänderte Wert ist auf seinem Reiter mit `*`
 markiert, und [VERLASSEN](#verlassen) listet sie.
 
+Solange Änderungen warten, sagen die Hinweise unter den Zeilen des Reiters
+SERVO, was das Schreiben außer den Werten tut, in der Textfarbe eines
+Hinweises:
+
+| Serie | Hinweis |
+| --- | --- |
+| D-SERIE | `Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.` |
+| KLASSISCH | `Nach jedem gespeicherten Wert wird die Prüfsumme in 0x1C geschrieben.` |
+| Beide, mit gespeicherten Werten außerhalb der Einstellungen im Entwurf (eine geladene Datei oder ein Backup) | `Auch geschrieben: n Werte außerhalb der Einstellungen.` |
+
+Die Hinweise gehen mit den Änderungen. Sie stehen nach den übrigen
+Hinweisen des Reiters, der höchstens 6 hält; ein Hinweis, der nicht über
+die Meldung passt, wird nicht gezeichnet.
+
 1. Das zweite Lesen dessen, wovon der Plan abhängt
    ([Das zweite Lesen](#das-zweite-lesen)). Zwei Lesevorgänge, die
    voneinander abweichen, beenden das Schreiben hier, ohne dass etwas

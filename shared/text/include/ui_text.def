@@ -7869,6 +7869,12 @@ UI_TEXT(HP_RECORD_BAD, 116,
 UI_TEXT(HP_SUM_OK, 116,
     "Stored values 0x00-0x1C sum to 0: nothing to repair.",
     "Die Summe der gespeicherten Werte 0x00-0x1C ist 0. Nichts zu reparieren.")
+UI_TEXT(HP_WRITE_D, 116,
+    "The servo saves and restarts. It ignores signals for 1s.",
+    "Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.")
+UI_TEXT(HP_WRITE_C, 116,
+    "Each stored value is followed by a write of the checksum in 0x1C.",
+    "Nach jedem gespeicherten Wert wird die Prüfsumme in 0x1C geschrieben.")
 UI_TEXT(HP_WRITE_RECORD, 116,
     "The values before the write are recorded on the card in HITEC.TXT.",
     "Die Werte vor dem Schreiben werden auf der Karte in HITEC.TXT vermerkt.")
