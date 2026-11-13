@@ -83,6 +83,7 @@ extern "C" {
 #define VIBE_F_QUALITY      0x0100u /**< quality_pct holds: 2 revolutions or more behind it */
 #define VIBE_F_EDGE_DROPPED 0x0200u /**< an edge out of order or past a full queue */
 #define VIBE_F_RPM_RANGE    0x0400u /**< no-index mode: the rpm gives a revolution outside VIBE_REV_MIN..VIBE_REV_MAX */
+#define VIBE_F_RESTARTED    0x0800u /**< the mode or the blade count changed in the window: its sums hold only the revolutions after the change */
 /** @} */
 
 /** @brief The harmonics the module demodulates. */
@@ -190,6 +191,7 @@ typedef struct {
     bool edge_dropped;            /**< an edge was dropped */
     bool lost;                    /**< the index was lost */
     bool blade_alias;             /**< a unit's blade-pass at or above half the rate */
+    bool restarted;               /**< the sums were cleared by a change of mode or blade count */
     uint32_t revs;                /**< units counted */
     uint32_t rejected;            /**< revolutions refused */
     uint64_t t_sum_q8;            /**< sum of the counted periods, Q8 */
@@ -221,6 +223,9 @@ void vibe_demod_init(vibe_demod_t *d, const vibe_cfg_t *cfg,
 /**
  * @brief Sets the blade count for the blade-pass, from the next revolution.
  *
+ * A new count clears the window's blade-pass sums, so the window reports
+ * the blade-pass of the new count only (VIBE_F_RESTARTED).
+ *
  * @param d       The state.
  * @param blades  0 (off) to VIBE_BLADES_MAX; larger is clamped.
  */
@@ -230,8 +235,10 @@ void vibe_demod_set_blades(vibe_demod_t *d, uint8_t blades);
  * @brief Chooses the mode: index (0) or no-index at @p rpm_x10.
  *
  * Switching between the modes drops the open revolution, the period lock
- * and the quality history.  A new rpm in no-index mode applies from the
- * next unit.
+ * and the quality history, and clears the window's harmonic sums, rpm and
+ * revolution counts, so the window reports the new mode only
+ * (VIBE_F_RESTARTED); its rms and DC cover the whole window.  A new rpm in
+ * no-index mode applies from the next unit.
  *
  * @param d        The state.
  * @param rpm_x10  rpm in 0.1rpm, 0 for index mode.
@@ -257,8 +264,12 @@ void vibe_demod_edge(vibe_demod_t *d, uint32_t stamp_q8);
 /**
  * @brief Pushes vibration samples; closes the windows they complete.
  *
- * A revolution counts in the window that holds the first sample after its
- * closing edge.
+ * A revolution counts in the window that is open when its closing edge is
+ * taken.  With vibe_demod_feed(), or with each edge handed in before its
+ * samples, that is the window holding the first sample after the edge.  An
+ * edge handed in after its samples is taken at once, in the window open
+ * then: if the window holding the edge has closed, the revolution counts
+ * in a later one.
  *
  * @param d  The state.
  * @param x  The samples, ADC counts 0 to cfg.adc_max.

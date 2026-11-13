@@ -7,6 +7,8 @@
  * extra pulses.  A phase p puts the harmonic's peak p degrees of rotation
  * after the index edge.
  *
+ * Include it after greatest.h: syn_feed() fails a case through T_FAIL.
+ *
  * SPDX-License-Identifier: MIT
  */
 #pragma once
@@ -171,7 +173,9 @@ static inline void syn_collect(const vibe_report_t *r, void *ctx)
 }
 
 /**
- * Feeds a run in blocks of @p block samples with the edges in each.  With @p channel the edges come from the index channel
+ * Feeds a run in blocks of @p block samples with the edges in each, and
+ * fails the case unless it closed one window per 2,500 samples (the
+ * demodulator fresh from syn_demod()).  With @p channel the edges come from the index channel
  * through vibe_edge; otherwise the exact stamps are used.
  */
 static inline void syn_feed(vibe_demod_t *d, const syn_run_t *r, size_t block,
@@ -201,6 +205,12 @@ static inline void syn_feed(vibe_demod_t *d, const syn_run_t *r, size_t block,
         }
     }
     free(found);
+    /* A run fed from a fresh start closes one window per 2,500 samples. */
+    const syn_reports_t *o = d->ctx;
+    if (o != NULL && o->n != r->n / d->cfg.window) {
+        T_FAIL("syn_feed: %zu reports, want %zu", o->n,
+               (size_t)(r->n / d->cfg.window));
+    }
 }
 
 /** A demodulator with the node's defaults and @p blades. */
@@ -211,7 +221,7 @@ static inline void syn_demod(vibe_demod_t *d, syn_reports_t *out, int blades,
     vibe_cfg_default(&c);
     c.blades = (uint8_t)blades;
     c.edge_shift_q8 = shift;
-    out->n = 0;
+    memset(out, 0, sizeof(*out));
     vibe_demod_init(d, &c, syn_collect, out);
 }
 

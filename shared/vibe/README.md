@@ -9,7 +9,7 @@ Pure C, no SDK (software development kit). Two halves:
 - The panel's corrections from measured runs (`vibe_solve`): two runs with
   an index, four runs without one. Single-precision float.
 
-No image compiles the module yet. The host suite holds it: `test_vibe` (23
+No image compiles the module yet. The host suite holds it: `test_vibe` (28
 cases) and `test_vibe_solve` (10 cases), on synthetic signals from
 `test/host/vibe_synth.h`. The report is a plain C struct
 (`vibe_report_t`); the radio packet that carries it is not part of this
@@ -86,9 +86,20 @@ vibe_demod_feed(&d, vib_samples, n, edges, ne);
   16 counted revolutions, 0 to 100%. A steady imbalance reads 99 to 100%;
   noise alone read 16% in the test.
 - Positions are Q8 (1/256 sample) and wrap at 2^24 samples, 1,677s at 10kHz.
+- A revolution counts in the window that is open when its closing edge is
+  taken. With `vibe_demod_feed()`, or each edge handed in before its
+  samples, that is the window holding the first sample after the edge.
 - `vibe_demod_edge()` and `vibe_demod_push()` can also be called apart. An
-  edge later than its samples splits the samples already pushed; at most 16
-  edges wait ahead of their samples.
+  edge later than its samples splits the samples already pushed and is taken
+  at once. If the window holding the edge has closed by then, the revolution
+  counts in the window open then: an edge at sample 2,490 handed in at
+  2,505 counts in window 1, not window 0. At most 16 edges wait ahead of
+  their samples.
+- After a lost index the next edge is not held to the last one before the
+  loss, so the index comes back after a pause of any length.
+- A new blade count (`vibe_demod_set_blades()`) clears the window's
+  blade-pass sums: that window reports the new count's blade-pass only and
+  carries `VIBE_F_RESTARTED`.
 
 ### No-index mode
 
@@ -98,7 +109,9 @@ fewest whole turns that hold 256 samples (5 at 10,000rpm, 1 at 300rpm). The
 magnitude is the root mean square of the units' magnitudes; the phase reads 0
 (`VIBE_F_NO_INDEX`). An rpm off by 1% lowers the 1x by 0.86%; the quality
 figure falls to 25%, which is how a wrong rpm shows. Switching between the
-modes drops the open revolution, the lock and the quality history.
+modes drops the open revolution, the lock and the quality history. The
+window of the switch reports the new mode's revolutions, rpm and magnitudes
+only and carries `VIBE_F_RESTARTED`; its rms and DC cover the whole window.
 
 ## Solvers
 
@@ -118,8 +131,12 @@ modes drops the open revolution, the lock and the quality history.
   d + 180°.
 - `VIBE_SOLVE_WEAK`: the trial changed the vibration by under 20%. The
   correction is given.
-- `VIBE_SOLVE_NO_EFFECT`, `VIBE_SOLVE_INCONSISTENT` (four-run rms residual
-  over 10% of the mean magnitude), `VIBE_SOLVE_BAD_INPUT`: no correction.
+- `VIBE_SOLVE_NO_EFFECT`: the trial runs read as the baseline did. No
+  correction.
+- `VIBE_SOLVE_INCONSISTENT`: the four-run fit's rms residual exceeds 10% of
+  the mean magnitude, or the trial runs differ from the baseline but the fit
+  finds no trial effect (1, 2, 2 and 2 is such a set). No correction.
+- `VIBE_SOLVE_BAD_INPUT`: no correction.
 
 ## Accuracy on synthetic signals
 

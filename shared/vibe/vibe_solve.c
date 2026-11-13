@@ -228,13 +228,24 @@ vibe_solve_status_t vibe_solve_four_run(float m0, float m1, float m2, float m3,
         par[1] = sqrtf((a > 0.0f) ? a : 0.0f);
     }
     par[2] = atan2f(q, p);
-    if (!(par[1] > NOTHING_F * big)) {
+    /* No effect is trials that read as the baseline did.  Trials that
+     * differ from it but not from each other (b = 0) are no rotor:
+     * the fit starts from a^2 - m0^2 and the residual says so. */
+    bool differ = false;
+    for (int i = 1; i < 4; ++i) {
+        differ = differ || fabsf(m[i] - m0) > NOTHING_F * big;
+    }
+    if (!differ) {
         s.status = VIBE_SOLVE_NO_EFFECT;
         s.baseline = m0;
         if (out != NULL) {
             *out = s;
         }
         return s.status;
+    }
+    if (!(par[1] > NOTHING_F * big)) {
+        const float t2 = a - m0 * m0;
+        par[1] = (t2 > 0.0f) ? sqrtf(t2) : big;
     }
 
     /* Gauss-Newton on all four magnitudes from there. */
@@ -289,9 +300,8 @@ vibe_solve_status_t vibe_solve_four_run(float m0, float m1, float m2, float m3,
     s.baseline = par[0];
     s.sens = par[1] / trial_mass;
     s.effect = (par[0] > 0.0f) ? par[1] / par[0] : FLT_MAX;
-    if (!(par[1] > NOTHING_F * big)) {
-        s.status = VIBE_SOLVE_NO_EFFECT;
-    } else if (s.residual > VIBE_SOLVE_MAX_RESIDUAL * mean) {
+    if (!(par[1] > NOTHING_F * big)
+            || s.residual > VIBE_SOLVE_MAX_RESIDUAL * mean) {
         s.status = VIBE_SOLVE_INCONSISTENT;
     } else {
         s.mass = trial_mass * par[0] / par[1];

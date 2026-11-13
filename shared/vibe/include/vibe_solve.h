@@ -53,8 +53,8 @@ typedef struct {
 typedef enum {
     VIBE_SOLVE_OK = 0,      /**< a correction */
     VIBE_SOLVE_WEAK,        /**< a correction; the trial changed the vibration by under VIBE_SOLVE_WEAK_EFFECT */
-    VIBE_SOLVE_NO_EFFECT,   /**< the trial changed nothing measurable: no correction */
-    VIBE_SOLVE_INCONSISTENT,/**< four runs that no rotor model fits: no correction */
+    VIBE_SOLVE_NO_EFFECT,   /**< the trial runs read as the baseline: no correction */
+    VIBE_SOLVE_INCONSISTENT,/**< four runs that no rotor model fits, or that fit a trial of no effect while they differ: no correction */
     VIBE_SOLVE_BAD_INPUT    /**< a negative, zero or non-finite input: no correction */
 } vibe_solve_status_t;
 

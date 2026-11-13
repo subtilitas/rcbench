@@ -221,6 +221,7 @@ static void win_reset(vibe_demod_t *d)
     d->edge_dropped = false;
     d->lost = false;
     d->blade_alias = false;
+    d->restarted = false;
     d->revs = 0u;
     d->rejected = 0u;
     d->t_sum_q8 = 0u;
@@ -305,13 +306,37 @@ void vibe_demod_init(vibe_demod_t *d, const vibe_cfg_t *cfg,
     win_reset(d);
 }
 
+/**
+ * @brief Clears the window's blade-pass sums after a change of blade count.
+ *
+ * @param d  The state.
+ */
+static void blade_clear(vibe_demod_t *d)
+{
+    vibe_sums_t *w = &d->w;
+    w->xc[VIBE_H_BLADE] = 0;
+    w->xs[VIBE_H_BLADE] = 0;
+    w->c[VIBE_H_BLADE] = 0;
+    w->s[VIBE_H_BLADE] = 0;
+    w->pw[VIBE_H_BLADE] = 0u;
+    w->x_blade = 0;
+    w->n_blade = 0u;
+    w->units_blade = 0u;
+    d->blade_alias = false;
+    d->restarted = true;
+}
+
 void vibe_demod_set_blades(vibe_demod_t *d, uint8_t blades)
 {
     if (d == NULL) {
         return;
     }
-    d->cfg.blades = (blades > VIBE_BLADES_MAX) ? (uint8_t)VIBE_BLADES_MAX
-                                               : blades;
+    const uint8_t b = (blades > VIBE_BLADES_MAX) ? (uint8_t)VIBE_BLADES_MAX
+                                                 : blades;
+    if (b != d->cfg.blades) {
+        d->cfg.blades = b;
+        blade_clear(d);
+    }
 }
 
 void vibe_demod_set_rpm(vibe_demod_t *d, uint32_t rpm_x10)
@@ -328,6 +353,15 @@ void vibe_demod_set_rpm(vibe_demod_t *d, uint32_t rpm_x10)
         d->have_last = false;
         d->rpm_bad = false;
         lock_reset(d);
+        /* The window keeps its rms and DC, not the other mode's sums. */
+        memset(&d->w, 0, sizeof(d->w));
+        d->revs = 0u;
+        d->rejected = 0u;
+        d->t_sum_q8 = 0u;
+        d->t_min_q8 = UINT32_MAX;
+        d->t_max_q8 = 0u;
+        d->blade_alias = false;
+        d->restarted = true;
     }
     if (rpm_x10 != 0u && !d->open) {
         d->nbuf = 0u;
@@ -720,6 +754,9 @@ static void close_window(vibe_demod_t *d)
     if (d->edge_dropped) {
         f |= VIBE_F_EDGE_DROPPED;
     }
+    if (d->restarted) {
+        f |= VIBE_F_RESTARTED;
+    }
     if (nx) {
         f |= VIBE_F_NO_INDEX;
         if (d->rpm_bad) {
@@ -862,6 +899,12 @@ void vibe_demod_push(vibe_demod_t *d, const int16_t *x, size_t n)
                 d->lost = true;
                 d->open = false;
                 lock_reset(d);
+                /* The last edge can lie any time back: the next one is
+                 * not held to it (a wrap after 2^23 samples would read
+                 * it as earlier). */
+                if (d->qn == 0u) {
+                    d->have_last = false;
+                }
             }
             d->nbuf = 0u;
         }

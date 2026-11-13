@@ -214,6 +214,12 @@ TEST_CASE(four_runs_without_effect_inconsistent_or_bad)
              VIBE_SOLVE_INCONSISTENT);
     CHECK_EQ(s.mass, 0);
     CHECK(s.residual > 0.1f);
+    /* Three equal trials, all twice the baseline: they differ from it,
+     * so the trial had an effect, but no rotor gives one of a single
+     * size at all three places with this baseline. */
+    CHECK_EQ(vibe_solve_four_run(1.0f, 2.0f, 2.0f, 2.0f, 1.0f, &s),
+             VIBE_SOLVE_INCONSISTENT);
+    CHECK_EQ(s.mass, 0);
     CHECK_EQ(vibe_solve_four_run(0.4f, 0.5f, 0.3f, 0.2f, -1.0f, &s),
              VIBE_SOLVE_BAD_INPUT);
     CHECK_EQ(vibe_solve_four_run(0.4f, -0.5f, 0.3f, 0.2f, 1.0f, &s),
@@ -257,6 +263,7 @@ static vibe_polar_t measure(cx_t c, cx_t u, double rpm, int with_index)
     } else {
         vibe_demod_set_rpm(&dm, (uint32_t)llround(rpm * 10.0));
         vibe_demod_push(&dm, r.vib, r.n);
+        CHECK_EQ(out.n, 8);
     }
     syn_free(&r);
     /* The panel's view: the mean of the reports after the first. */

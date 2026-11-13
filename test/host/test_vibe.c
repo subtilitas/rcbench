@@ -8,7 +8,10 @@
  * and 10,000rpm with exact edges; noise of 5mg rms; a 2x component; the
  * blade-pass and its limit at half the sample rate; an index jittered by
  * +-1 sample; a missing pulse, an extra pulse and a lost index; blocks of
- * any length and late edges giving the same reports; the no-index mode
+ * any length and late edges giving the same reports, and a late edge
+ * after its window counting in the next; an index back after a 900s
+ * pause and one unbroken across the 2^24-sample wrap of the positions; a
+ * mode switch and a blade-count change inside a window; the no-index mode
  * at the right rpm, at an rpm 1% off and out of range; clipping and the
  * DC range; the CORDIC, the square root and the comparator on their own.
  *
@@ -39,6 +42,12 @@ static errs_t errors(const syn_reports_t *o, size_t from, int h, double mag_g,
                      double ph_deg, double rpm)
 {
     errs_t e = { 0.0, 0.0, 0.0 };
+    if (o->n <= from) {
+        /* No report to measure is no accuracy. */
+        T_FAIL("errors: %zu report(s), none after %zu", o->n, from);
+        e.mag_pct = e.ph_deg = e.rpm_pct = 1e9;
+        return e;
+    }
     for (size_t i = from; i < o->n; ++i) {
         const vibe_report_t *r = &o->r[i];
         const double m = fabs((double)r->mag_ug[h] * 1e-6 - mag_g) / mag_g * 100.0;
@@ -423,6 +432,7 @@ TEST_CASE(a_late_edge_splits_the_samples_already_pushed)
             vibe_demod_edge(&dm, r.edges[ne++]);
         }
     }
+    CHECK_EQ(out.n, 8);
     for (size_t i = 0; i < out.n; ++i) {
         revs += out.r[i].revs;
     }
@@ -457,6 +467,7 @@ TEST_CASE(an_edge_out_of_order_or_past_a_full_queue_is_dropped)
     for (int i = 0; i < 25; ++i) {
         vibe_demod_push(&dm, z, 100);
     }
+    CHECK_EQ(out.n, 1);
     CHECK(out.r[0].flags & VIBE_F_EDGE_DROPPED);
     /* The queued edges are one revolution of 100 samples fewer. */
     CHECK_EQ(out.r[0].revs + out.r[0].rejected, VIBE_EDGE_QUEUE - 1u);
@@ -474,6 +485,7 @@ static void no_index(double rpm, double set, double seconds)
     syn_demod(&dm, &out, 0, 0);
     vibe_demod_set_rpm(&dm, (uint32_t)llround(set * 10.0));
     vibe_demod_push(&dm, r.vib, r.n);
+    CHECK_EQ(out.n, r.n / 2500u);
     syn_free(&r);
 }
 
@@ -516,6 +528,7 @@ TEST_CASE(an_rpm_1pct_off_loses_little_magnitude_and_shows_in_the_quality)
 TEST_CASE(an_rpm_outside_the_revolution_limits_reads_nothing)
 {
     no_index(100.0, 100.0, 1.0);
+    CHECK_EQ(out.n, 4);
     for (size_t i = 0; i < out.n; ++i) {
         CHECK(out.r[i].flags & VIBE_F_RPM_RANGE);
         CHECK(!(out.r[i].flags & VIBE_F_VALID));
@@ -526,9 +539,10 @@ TEST_CASE(an_rpm_outside_the_revolution_limits_reads_nothing)
     for (int i = 0; i < 2500; ++i) {
         z[i] = (int16_t)(2048 + (int)(100.0 * cos(2.0 * SYN_PI * 50.0 * i / SYN_FS)));
     }
-    out.n = 0;
+    memset(&out, 0, sizeof(out));
     vibe_demod_push(&dm, z, 2500);
     vibe_demod_push(&dm, z, 2500);
+    CHECK_EQ(out.n, 2);
     CHECK(!(out.r[1].flags & VIBE_F_RPM_RANGE));
     CHECK(out.r[1].flags & VIBE_F_VALID);
 }
@@ -569,6 +583,7 @@ TEST_CASE(a_clipped_sample_and_a_dc_out_of_range_are_flagged)
     syn_demod(&dm, &out, 0, 0);
     vibe_demod_push(&dm, z, 2500);
     vibe_demod_push(&dm, z, 2500);
+    CHECK_EQ(out.n, 2);
     CHECK(!(out.r[1].flags & VIBE_F_DC_OK));
     CHECK_EQ(out.r[1].dc_x16, 0);
     /* At mid-rail: in range, 1.65V. */
@@ -576,10 +591,194 @@ TEST_CASE(a_clipped_sample_and_a_dc_out_of_range_are_flagged)
         z[i] = 2048;
     }
     vibe_demod_push(&dm, z, 2500);
+    CHECK_EQ(out.n, 3);
     CHECK(out.r[2].flags & VIBE_F_DC_OK);
     CHECK(!(out.r[2].flags & VIBE_F_CLIPPED));
     CHECK_EQ(out.r[2].dc_x16, 2048 * 16);
     CHECK_EQ(out.r[2].rms_ug, 0);
+}
+
+/* A rotor streamed sample by sample: 400mg 1x at 265deg and @p a3 g of 3x
+ * at 100deg, @p spr samples a revolution, the edges exact; for runs too
+ * long to hold in memory. */
+static double s_turn;
+static vibe_report_t s_last;
+static size_t s_count;
+static size_t s_bad;
+
+static void stream_cb(const vibe_report_t *r, void *ctx)
+{
+    (void)ctx;
+    s_last = *r;
+    ++s_count;
+    if (s_count > 2u && (!(r->flags & VIBE_F_INDEX_STEADY)
+            || fabs((double)r->mag_ug[0] - 400000.0) > 2000.0
+            || fabs(syn_ddeg((double)r->phase_cdeg[0] / 100.0, 265.0)) > 1.0)) {
+        ++s_bad;
+    }
+}
+
+static void stream(uint32_t n, double spr, int with_edges, double a3)
+{
+    int16_t x[100];
+    uint32_t e[4];
+    const double k = SYN_PI / 180.0;
+    for (uint32_t done = 0; done < n; done += 100u) {
+        const uint32_t m = (n - done < 100u) ? n - done : 100u;
+        const uint32_t p0 = vibe_demod_pos_q8(&dm) >> 8;
+        size_t ne = 0;
+        for (uint32_t j = 0; j < m; ++j) {
+            const double t0 = s_turn + (double)j / spr;
+            const double t1 = s_turn + (double)(j + 1u) / spr;
+            const double th = 2.0 * SYN_PI * t0;
+            x[j] = syn_adc(SYN_DC + SYN_PER_G * (0.400 * cos(th - 265.0 * k)
+                                                + a3 * cos(3.0 * th - 100.0 * k)));
+            if (with_edges && floor(t1) != floor(t0) && ne < 4u) {
+                const double after = (floor(t1) - t0) * spr;
+                e[ne++] = (p0 + j) * 256u + (uint32_t)llround(after * 256.0);
+            }
+        }
+        s_turn += (double)m / spr;
+        vibe_demod_feed(&dm, x, m, e, ne);
+    }
+}
+
+static void stream_start(uint8_t blades)
+{
+    vibe_cfg_t c;
+    vibe_cfg_default(&c);
+    c.blades = blades;
+    vibe_demod_init(&dm, &c, stream_cb, NULL);
+    s_turn = 0.0;
+    s_count = 0u;
+    s_bad = 0u;
+    memset(&s_last, 0, sizeof(s_last));
+}
+
+TEST_CASE(the_index_back_after_a_900s_pause_is_taken)
+{
+    /* A stopped motor for 900s: more than 2^23 samples, after which the
+     * last edge before the pause reads as later than every new one. */
+    stream_start(0);
+    stream(20000u, 200.0, 1, 0.0);
+    CHECK(s_last.flags & VIBE_F_INDEX_STEADY);
+    stream(9000000u, 200.0, 0, 0.0);
+    CHECK(s_last.flags & VIBE_F_INDEX_LOST);
+    stream(20000u, 200.0, 1, 0.0);
+    CHECK_EQ(s_count, 3616);
+    CHECK(s_last.flags & VIBE_F_VALID);
+    CHECK(s_last.flags & VIBE_F_INDEX_STEADY);
+    CHECK(!(s_last.flags & VIBE_F_EDGE_DROPPED));
+    CHECK_NEAR((double)s_last.mag_ug[0], 400000.0, 2000.0);
+}
+
+TEST_CASE(an_unbroken_index_across_the_position_wrap)
+{
+    /* 2^24 samples and 100,000 more: the Q8 positions wrap once. */
+    stream_start(0);
+    stream((1u << 24) + 100000u, 199.37, 1, 0.0);
+    CHECK_EQ(s_count, ((1u << 24) + 100000u) / 2500u);
+    CHECK_EQ(s_bad, 0);
+}
+
+TEST_CASE(a_mode_switch_inside_a_window_reports_the_new_mode_only)
+{
+    /* Index, then no index from the middle of window 4, then the index
+     * again from the middle of window 7: each switch window holds the
+     * new mode's revolutions and rpm, marked. */
+    stream_start(0);
+    stream(10000u, 200.0, 1, 0.0);
+    CHECK_EQ(s_count, 4);
+    stream(1250u, 200.0, 1, 0.0);
+    vibe_demod_set_rpm(&dm, 30000u);
+    stream(1250u, 200.0, 0, 0.0);
+    CHECK_EQ(s_count, 5);
+    CHECK(s_last.flags & VIBE_F_RESTARTED);
+    CHECK(s_last.flags & VIBE_F_NO_INDEX);
+    /* Units of 2 turns, 400 samples: at most 3 in 1,250 samples. */
+    CHECK(s_last.revs <= 3);
+    CHECK_NEAR((double)s_last.mag_ug[0], 400000.0, 4000.0);
+    stream(2500u + 1250u, 200.0, 0, 0.0);
+    CHECK(!(s_last.flags & VIBE_F_RESTARTED));
+    vibe_demod_set_rpm(&dm, 0u);
+    stream(1250u, 200.0, 1, 0.0);
+    CHECK_EQ(s_count, 7);
+    CHECK(s_last.flags & VIBE_F_RESTARTED);
+    CHECK(s_last.flags & VIBE_F_VALID);
+    CHECK(!(s_last.flags & VIBE_F_NO_INDEX));
+    CHECK_NEAR((double)s_last.rpm_x10, 30000.0, 30.0);
+    CHECK_NEAR((double)s_last.mag_ug[0], 400000.0, 4000.0);
+}
+
+TEST_CASE(a_blade_count_change_inside_a_window_clears_the_blade_pass)
+{
+    /* 50mg of 3x; the count goes from 2 to 3 in the middle of window 4:
+     * that window's blade-pass is the 3x of the revolutions after it. */
+    stream_start(2);
+    stream(11250u, 200.0, 1, 0.050);
+    CHECK_EQ(s_count, 4);
+    CHECK(s_last.mag_ug[VIBE_H_BLADE] < 2000u);
+    vibe_demod_set_blades(&dm, 3);
+    stream(1250u, 200.0, 1, 0.050);
+    CHECK_EQ(s_count, 5);
+    CHECK(s_last.flags & VIBE_F_RESTARTED);
+    CHECK(s_last.flags & VIBE_F_BLADE_OK);
+    CHECK_NEAR((double)s_last.mag_ug[VIBE_H_BLADE], 50000.0, 1000.0);
+    /* The same count again changes nothing. */
+    vibe_demod_set_blades(&dm, 3);
+    stream(2500u, 200.0, 1, 0.050);
+    CHECK(!(s_last.flags & VIBE_F_RESTARTED));
+    CHECK_NEAR((double)s_last.mag_ug[VIBE_H_BLADE], 50000.0, 1000.0);
+}
+
+TEST_CASE(an_edge_handed_in_after_its_window_counts_in_the_next)
+{
+    /* Edges every 200 samples from 90; the one at 2,490 lies in window 0.
+     * Fed with its samples it counts there; handed in 15 samples late,
+     * after window 0 closed at 2,500, it counts in window 1. */
+    int16_t z[10];
+    for (int i = 0; i < 10; ++i) {
+        z[i] = 2048;
+    }
+    unsigned fed[4] = { 0 };
+    unsigned late[4] = { 0 };
+    for (int pass = 0; pass < 2; ++pass) {
+        syn_demod(&dm, &out, 0, 0);
+        for (uint32_t s0 = 0; s0 < 10000u; s0 += 10u) {
+            uint32_t e[1];
+            size_t ne = 0;
+            for (uint32_t k = 0; k < 50u; ++k) {
+                const uint32_t es = 90u + 200u * k;
+                if (pass == 0 && es >= s0 && es < s0 + 10u) {
+                    e[ne++] = es * 256u;
+                }
+            }
+            if (pass == 0) {
+                vibe_demod_feed(&dm, z, 10, e, ne);
+                continue;
+            }
+            vibe_demod_push(&dm, z, 10);
+            for (uint32_t k = 0; k < 50u; ++k) {
+                const uint32_t es = 90u + 200u * k;
+                if (es + 15u >= s0 && es + 15u < s0 + 10u) {
+                    vibe_demod_edge(&dm, es * 256u);
+                }
+            }
+        }
+        CHECK_EQ(out.n, 4);
+        for (size_t i = 0; i < 4 && i < out.n; ++i) {
+            const unsigned v = (unsigned)out.r[i].revs + out.r[i].rejected;
+            if (pass == 0) {
+                fed[i] = v;
+            } else {
+                late[i] = v;
+            }
+        }
+    }
+    CHECK_EQ(fed[0], 12);
+    CHECK_EQ(late[0], 11);
+    CHECK_EQ(late[1], fed[1] + 1u);
+    CHECK_EQ(fed[0] + fed[1] + fed[2] + fed[3], late[0] + late[1] + late[2] + late[3]);
 }
 
 TEST_CASE(the_cordic_gives_angle_and_length)
@@ -715,6 +914,11 @@ int main(void)
     RUN(an_rpm_outside_the_revolution_limits_reads_nothing);
     RUN(switching_modes_drops_the_revolution_and_the_lock);
     RUN(a_clipped_sample_and_a_dc_out_of_range_are_flagged);
+    RUN(the_index_back_after_a_900s_pause_is_taken);
+    RUN(an_unbroken_index_across_the_position_wrap);
+    RUN(a_mode_switch_inside_a_window_reports_the_new_mode_only);
+    RUN(a_blade_count_change_inside_a_window_clears_the_blade_pass);
+    RUN(an_edge_handed_in_after_its_window_counts_in_the_next);
     RUN(the_cordic_gives_angle_and_length);
     RUN(the_square_root_rounds_down);
     RUN(the_comparator_stamps_a_step_half_a_sample_early);
