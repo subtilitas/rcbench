@@ -45,8 +45,8 @@ history is in git.
   `Dim after: 5min stored, steps of 5min.` after 7 for Dim after.
 - The time labels of a plot, `NOW` or `END` and the span, sit on the plot's
   background: a trace along the bottom runs under them.
-- The band names RUDDER and RUDDER AUTO RUDER and RUDER AUTO in German, as
-  their tiles and footers do.
+- The band names RUDDER and RUDDER AUTO as their tiles and footers do:
+  RUDER and RUDER AUTO in German.
 - `tools/render_ui.py --fit` fails on a string of the screen under a badge
   of the screen guide, in either language.
 - The simulated ESC sounds an 808ms tone before each pass of its item loop
@@ -67,7 +67,7 @@ history is in git.
 ### Fixed
 
 - German guide texts of the IMU's ZERO and UNZERO: "löscht er den
-  Nullpunkt" and "löscht das den RUDER-Nullpunkt".
+  Nullpunkt" and "löscht es den RUDER-Nullpunkt".
 - Dim after dims the backlight. The link report's line to the card's
   fault log, every 60s while the IOmcu is linked, counted as a busy bench
   and started the minutes again, so no setting from 5 to 60min was ever
