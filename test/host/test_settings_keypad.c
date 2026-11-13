@@ -5,7 +5,8 @@
  *        so SAVE keeps what a step would have kept; a value outside the
  *        range, or one the steps never reach, is refused with the keypad
  *        open, the second with its reason in place of the range until the
- *        next key; CANCEL, the home tag and STOP change nothing.  The helper
+ *        next key; a value between two steps is stored on the nearer and
+ *        a notice names it; CANCEL, the home tag and STOP change nothing.  The helper
  *        every setting's keypad uses (ui_setting_keypad.h) is held here too.
  *
  * SPDX-License-Identifier: MIT
@@ -362,6 +363,49 @@ TEST_CASE(a_value_between_steps_takes_the_nearer_step)
     settings_set(SET_BRIGHTNESS, 70.0f);
     tap(PLUS_X + BTN_W / 2, show(SET_BRIGHTNESS));
     CHECK_EQ(settings_get_int(SET_BRIGHTNESS), 75);
+}
+
+/* A value between two steps names what was stored in a notice: Dim after
+ * takes 0 to 60min in steps of 5, so 7 is stored as 5 and 1 as 0.  A
+ * value on a step shows none. */
+TEST_CASE(a_value_between_steps_names_what_was_stored)
+{
+    list_of(SET_CAT_APP);
+    settings_set(SET_DIM_AFTER, 10.0f);
+    open_on(SET_DIM_AFTER);
+    type("7");
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_DIM_AFTER), 5);
+    CHECK(ui_router_alert_is_notice());
+    CHECK_STR_EQ(ui_router_alert(), "Dim after: 5min stored, steps of 5min.");
+    ui_router_set_alert(NULL);
+
+    open_on(SET_DIM_AFTER);
+    type("15");
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_DIM_AFTER), 15);
+    CHECK(ui_router_alert() == NULL || ui_router_alert()[0] == '\0');
+
+    ui_text_set_language(UI_LANG_DE);
+    open_on(SET_DIM_AFTER);
+    type("1");
+    key(UI_KEY_OK);
+    CHECK_EQ(settings_get_int(SET_DIM_AFTER), 0);
+    CHECK_STR_EQ(ui_router_alert(),
+                 "Dimmen nach: 0min gespeichert, Schritte von 5min.");
+    ui_text_set_language(UI_LANG_EN);
+    ui_router_set_alert(NULL);
+
+    /* Two decimals: 1.23A is stored as 1.25A. */
+    char line[96];
+    settings_set(SET_SUPPLY_I_MAX, 1.25f);
+    CHECK_STR_EQ(ui_setting_keypad_stored(SET_SUPPLY_I_MAX, line,
+                                          sizeof(line)),
+                 "Current max: 1.25A stored, steps of 0.05A.");
+    CHECK_STR_EQ(ui_setting_keypad_stored(SET_SUPPLY_I_MAX, NULL, 4), "");
+    CHECK_STR_EQ(ui_setting_keypad_stored((setting_id_t)SETTING_COUNT, line,
+                                          sizeof(line)),
+                 "");
 }
 
 /* ------------------------------------------- what the steps never reach */
@@ -811,6 +855,7 @@ int main(void)
     RUN(nothing_under_the_keypad_presses);
     RUN(a_typed_shunt_saves_what_556_steps_save);
     RUN(a_value_between_steps_takes_the_nearer_step);
+    RUN(a_value_between_steps_names_what_was_stored);
     RUN(a_shunt_between_off_and_five_milliohm_is_refused);
     RUN(a_pin_the_row_does_not_take_is_refused);
     RUN(a_refusal_inside_the_range_says_why_until_the_next_key);

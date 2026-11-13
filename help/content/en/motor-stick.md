@@ -64,7 +64,7 @@ OPTIONS opens the list of the supply settings and the beep timings. It takes a p
 
 The defaults are not measured. Where a profile states its beep lengths, the run takes BEEP MIN, LONG and LONG MAX from them instead of these settings, and GAP MIN where half the short beep is lower. Voltage 0.0V takes the voltage from the profile's cell count. A change applies at once; SAVE in the list's strip keeps it, and RESET ESC STICK sets the 14 settings to their defaults.
 
-Use `-` and `+` to adjust a setting, or tap its value to open the keypad. The keypad shows the name, range and unit, with decimal places matching the step size. OK rounds to the nearest step: 1.23A becomes 1.25A. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag discards the edit and leaves the list open. The home tag closes the list; with a change not saved it asks first.
+Use `-` and `+` to adjust a setting, or tap its value to open the keypad. The keypad shows the name, range and unit, with decimal places matching the step size. OK rounds to the nearest step: 1.23A becomes 1.25A, and a notice in the alert band names the value stored and the step. An out-of-range value leaves the keypad open and highlights the range in the warning colour. CANCEL or the home tag discards the edit and leaves the list open. The home tag closes the list; with a change not saved it asks first.
 
 ![The keypad of Beep min, 250 typed](view:motor-stick-timing-keypad)
 

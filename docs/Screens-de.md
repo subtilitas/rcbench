@@ -1796,7 +1796,8 @@ lautet `[ESC STICK] [ESC STICK ZURÜCKSETZEN] [SPEICHERN]`. Ein Tippen auf
 den Wert einer Zahl öffnet das Tastenfeld, 1004 x 482px. Es zeigt Name,
 Bereich und Einheit. Die Zahl der Nachkommastellen folgt der Schrittweite:
 eine bei 0,1V für Spannung, zwei bei 0,05A für Strombegrenzung. OK rundet
-auf den nächsten Schritt, wie die Tasten: 1,23A wird 1,25A. Eine Änderung
+auf den nächsten Schritt, wie die Tasten: 1,23A wird 1,25A, und ein
+Hinweis im Alarmband nennt den gespeicherten Wert und den Schritt. Eine Änderung
 gilt sofort; SPEICHERN behält sie. ESC STICK ZURÜCKSETZEN setzt die 14
 Einstellungen auf ihre Vorgaben und keine anderen. Spannung 0,0V nimmt die
 Spannung aus der Zellenzahl des Profils. Profilpunkte verwenden Listen mit
@@ -5580,6 +5581,8 @@ ZURÜCKSETZEN oder SPEICHERN. Das gilt für die Kacheln und die Listen.
 
 ![PANEL](img/de/setup-application.png)
 
+![Dimmen nach: 7 getippt, 5min gespeichert, der Hinweis im Alarmband](img/de/setup-dim-stored.png)
+
 Das Home-Feld führt eine Ebene nach der anderen zurück:
 
 | Von | Das Home-Feld führt zu |
@@ -5650,9 +5653,11 @@ Auswahl springt vom letzten Wert auf den ersten.
   nach dem Punkt, wie der Schritt hat: eine für die 0,1mΩ eines Shunts,
   keine für einen Pin. OK setzt den Wert, wie ein Schritt ihn setzt: Er gilt
   sofort, SPEICHERN behält ihn. Ein Wert zwischen zwei Schritten wird auf
-  den näheren Schritt gesetzt: 73% Helligkeit sind 75%. Ein Wert außerhalb
-  des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der
-  Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es
+  den näheren Schritt gesetzt: 73% Helligkeit sind 75%. Ein Hinweis im
+  Alarmband nennt für 4s den gespeicherten Wert und den Schritt:
+  `Dimmen nach: 5min gespeichert, Schritte von 5min.` nach 7 für Dimmen
+  nach. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und
+  nennt den Bereich in der Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es
   ebenfalls offen und nennt statt des Bereichs den Grund in der Warnfarbe:
   `0 oder 5.0 bis 1000.0mΩ` für einen Shunt zwischen 0 und 5,0mΩ,
   `0 oder 10 bis 32767mA` für eine Stromgrenze zwischen 0 und 10mA,

@@ -14,6 +14,7 @@
 
 #include "link_pages.h"
 #include "outputs.h"
+#include "ui_screen.h"
 #include "ui_text.h"
 
 int ui_setting_keypad_decimals(setting_id_t id)
@@ -246,5 +247,33 @@ ui_setkey_result_t ui_setting_keypad_ok(ui_keypad_t *k, setting_id_t id,
         return UI_SETKEY_REFUSED;
     }
     settings_set(id, v);
+    /* settings_set() put a value between two steps onto the nearer one:
+     * the notice says what was stored, so a 7 that became 5 is seen. */
+    const float stored = settings_get(id);
+    const setting_def_t *d = settings_def(id);
+    if (d->step > 0.0f && fabsf(stored - v) > 1e-3f * d->step) {
+        char line[96];
+        ui_setting_keypad_stored(id, line, sizeof(line));
+        ui_router_set_notice(line);
+    }
     return UI_SETKEY_SET;
+}
+
+const char *ui_setting_keypad_stored(setting_id_t id, char *buf, size_t n)
+{
+    if (buf == NULL || n == 0u) {
+        return "";
+    }
+    const setting_def_t *d = settings_def(id);
+    if (d == NULL) {
+        buf[0] = '\0';
+        return buf;
+    }
+    const int dec = ui_setting_keypad_decimals(id);
+    const char *unit = (d->unit != NULL) ? d->unit : "";
+    const char *gap = ui_unit_gap(unit);
+    snprintf(buf, n, TR(KEYPAD_STORED), ui_setting_label(id), dec,
+             (double)settings_get(id), gap, unit, dec, (double)d->step, gap,
+             unit);
+    return buf;
 }

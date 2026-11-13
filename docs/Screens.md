@@ -1667,7 +1667,8 @@ The list covers the whole body, the output strip included; its strip reads
 keypad, 1004 x 482px. It shows the setting's name, range and unit. Decimal
 places follow the step size: one for Voltage's 0.1V, two for Current
 limit's 0.05A. OK rounds to the nearest step, as the keys do: 1.23A
-becomes 1.25A. A change applies at once; SAVE keeps it. RESET ESC STICK
+becomes 1.25A, and a notice in the alert band names the value stored and
+the step. A change applies at once; SAVE keeps it. RESET ESC STICK
 sets the 14 settings to their defaults and no other. Voltage 0.0V takes
 the voltage from the profile's cell count. Profile items use lists of the
 ESC's own values and do not open a keypad.
@@ -5118,6 +5119,8 @@ RESET CATEGORY or SAVE, on the tiles or on a list.
 
 ![PANEL](img/setup-application.png)
 
+![Dim after: 7 typed, 5min stored, the notice in the alert band](img/setup-dim-stored.png)
+
 The home tag climbs one level at a time:
 
 | From | The home tag leads to |
@@ -5180,7 +5183,9 @@ and `+` keys: 0x40 to 0x4F. A shunt on SENSORS takes 0 (OFF) or 5.0 to
   takes as many digits after the point as the step has: one for a shunt's
   0.1mΩ, none for a pin. OK sets the value as a step sets it: in force at
   once, kept by SAVE. A value between two steps is set to the nearer step:
-  73% brightness is 75%. A value outside the range keeps the keypad open
+  73% brightness is 75%. A notice in the alert band names the value stored
+  and the step for 4s: `Dim after: 5min stored, steps of 5min.` after 7
+  typed for Dim after. A value outside the range keeps the keypad open
   and names the range in the warning colour. A value inside the range that
   the keys never reach keeps it open too and names the reason in place of
   the range, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt

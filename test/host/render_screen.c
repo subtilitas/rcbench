@@ -4405,6 +4405,13 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
         || strcmp(view, "setup-rotation") == 0) {
         setup_tile(SET_CAT_APP);
     }
+    /* PANEL's Dim after, 7 typed and OK: 5min stored, the notice says so. */
+    if (strcmp(view, "setup-dim-stored") == 0) {
+        setup_tile(SET_CAT_APP);
+        setup_value(SET_CAT_APP, SET_DIM_AFTER);
+        kp_type(settings_screen_keypad(), "7");
+        ktap(ui_keypad_key_rect(settings_screen_keypad(), UI_KEY_OK));
+    }
     /* PANEL scrolled to Time zone, stored at its longest option. */
     if (strcmp(view, "setup-time-zone") == 0) {
         setup_tile(SET_CAT_APP);

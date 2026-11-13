@@ -622,6 +622,9 @@ SCREENS = {
     # PANEL with Screen rotation stored at 180 and the bench ARMED: the
     # row without keys.
     "setup-rotation": ("setup-rotation.png", "setup", "dark"),
+    # PANEL's Dim after with 7 typed: 5min stored, and the notice that says
+    # so in the alert band.
+    "setup-dim-stored": ("setup-dim-stored.png", "setup", "dark"),
     # PANEL scrolled to Time zone, stored at LOS ANGELES, its longest
     # option.
     "setup-time-zone": ("setup-time-zone.png", "setup", "dark"),
@@ -1238,6 +1241,7 @@ FIT_ONLY.update({f"outputs-cat-{i}": (None, "outputs", "dark")
 # by design, so a fill drawn over a string is not a finding there.
 OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
+                 "setup-dim-stored",
                  "setup-folder", "servo-name", "files-new",
                  "files-edit-unsaved", "files-edit-revert",
                  "files-edit-open", "files-edit-changed", "files-edit-see25",

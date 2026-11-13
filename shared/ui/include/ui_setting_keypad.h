@@ -7,8 +7,9 @@
  *
  * settings_set() puts a value onto the setting's step inside its range,
  * so a typed value between two steps is set to the nearer one, as the
- * MOTOR & ESC and SUPPLY keypads set it.  A value the - and + keys never
- * reach is refused: the keypad stays open and shows, in the warning
+ * MOTOR & ESC and SUPPLY keypads set it, and a notice in the alert band
+ * says what was stored and the step (ui_setting_keypad_stored()).  A
+ * value the - and + keys never reach is refused: the keypad stays open and shows, in the warning
  * colour and in place of the range, why (ui_setting_keypad_why()).  That
  * is a value between 0 and off_below (a SENSORS shunt of 0.1 to 4.9mΩ:
  * "0 or 5.0 to 1000.0mΩ"; a SENSORS limit of 1 to 9mA: "0 or 10 to
@@ -124,6 +125,18 @@ const char *ui_setting_keypad_tap_pins(char *buf, size_t n);
 const char *ui_setting_keypad_why(setting_id_t id, float v, char *buf,
                                   size_t n);
 
+/**
+ * @brief The notice an OK shows when the value stored is not the one typed:
+ *        the setting's label, the value stored and the step, with the
+ *        row's unit and decimals ("Dim after: 5min stored, steps of 5min.").
+ * @param id  The setting, its value already stored.
+ * @param buf Where the text goes.
+ * @param n   The size of @p buf in bytes; 96 holds every row's.
+ * @return @p buf; "" for a NULL or empty @p buf, and empty for an id out
+ *         of range.
+ */
+const char *ui_setting_keypad_stored(setting_id_t id, char *buf, size_t n);
+
 /** @brief What an OK on a setting's keypad came to. */
 typedef enum {
     UI_SETKEY_SET = 0,    /**< set through settings_set(); keypad closed  */
@@ -137,7 +150,9 @@ typedef enum {
  * @param k The keypad that returned UI_KEYPAD_OK.
  * @param id The setting it was opened for.
  * @param v The value it handed back.
- * @return UI_SETKEY_SET after settings_set(@p id, @p v);
+ * @return UI_SETKEY_SET after settings_set(@p id, @p v), with the notice
+ *         of ui_setting_keypad_stored() when the value stored differs from
+ *         @p v;
  *         UI_SETKEY_REFUSED for a value ui_setting_keypad_takes() refuses,
  *         with @p k open again, marked and showing
  *         ui_setting_keypad_why() in place of the range; UI_SETKEY_LOCKED for a row no
