@@ -3170,6 +3170,15 @@ one step and never rounds to OFF. A value stored other than as typed
 shows the alert band's notice: `Current max: 1.00A stored, steps of
 0.05A.` after 1.03 typed. A trip of 0 is disabled.
 
+DISCARD in the leave warning, or in any other list's, puts a lowered cap
+back to its stored value and gives the set point it lowered back its
+value from before the edit, never above the cap. A set point is raised
+back only while the output is off. With the output on the set point stays
+where the cap brought it until the next OFF, and the alert band says so
+in one line: `Current limit stays at 1.00A until the output is off.`, the
+same for the voltage, or both in one line. A cap saved lower gives
+nothing back.
+
 Time above a trip begins at the first reading over the threshold. A
 reading below it resets the count; a missing reading leaves it unchanged.
 A trip switches the output off, sets MODE to TRIPPED until the next ON

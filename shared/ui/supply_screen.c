@@ -18,11 +18,13 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "settings.h"
 #include "ui_keypad.h"
 #include "ui_plot.h"
+#include "ui_screen.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -201,9 +203,104 @@ static supply_limits_t limits_from_settings(void)
     return l;
 }
 
-/* The limits as the settings hold them now, applied to the sliders. */
+/**
+ * @brief Keeps a set point a lowered cap has just brought down, the first
+ *        one of an edit of that cap that is not saved.
+ * @param on   whether a set point is kept; set here
+ * @param back the set point kept; set here
+ * @param was  the set point before the caps were applied
+ * @param now  the set point after them
+ * @param cap  the cap's setting
+ */
+static void back_keep(bool *on, float *back, float was, float now,
+                      setting_id_t cap)
+{
+    if (!*on && !s.port_held && now < was && settings_differs(cap)) {
+        *on = true;
+        *back = was;
+    }
+}
+
+/**
+ * @brief Gives a kept set point back once its cap is at its stored value
+ *        again: never above the cap, and only with the output off.  A
+ *        stored cap under the kept value, a save of the lowered cap, leaves
+ *        nothing to give back.
+ * @param on   whether a set point is kept; cleared once given or let go
+ * @param back the set point kept
+ * @param sp   the live set point
+ * @param cap  the cap's setting
+ * @param lo   the set point's bottom, as the caps allow it
+ * @param hi   its top
+ * @param step its step
+ * @return true while the set point waits for the output to go off
+ */
+static bool back_give(bool *on, float back, float *sp, setting_id_t cap,
+                      float lo, float hi, float step)
+{
+    if (!*on || settings_differs(cap)) {
+        return false;
+    }
+    const float to = supply_snap(back, lo, hi, step);
+    if (!(to > *sp)) {
+        *on = false;
+        return false;
+    }
+    if (supply_screen_output_live() || s.pending.on || s.port_held) {
+        return true;
+    }
+    *sp = to;
+    *on = false;
+    return false;
+}
+
+/**
+ * @brief The set points a lowered cap brought down, given back where their
+ *        caps are at the stored values again (sup_refresh_limits()).
+ * @param say true to say in the band which set point waits for the
+ *            output to go off
+ */
+static void back_follow(bool say)
+{
+    const float was_v = s.cv;
+    const float was_i = s.ci;
+    const bool wait_v = back_give(&s.back_v_on, s.back_v, &s.cv,
+                                  SET_SUPPLY_V_MAX, s.eff.v_min, s.eff.v_max,
+                                  s.eff.v_step);
+    const bool wait_i = back_give(&s.back_i_on, s.back_i, &s.ci,
+                                  SET_SUPPLY_I_MAX, s.eff.i_min, s.eff.i_max,
+                                  s.eff.i_step);
+    char line[96];
+
+    if (s.cv != was_v) {
+        ui_slider_set(&s.v_slider, s.cv);
+    }
+    if (s.ci != was_i) {
+        ui_slider_set(&s.i_slider, s.ci);
+    }
+    if (!say || (!wait_v && !wait_i)) {
+        return;
+    }
+    if (wait_v && wait_i) {
+        snprintf(line, sizeof(line), TR(SUP_BACK_VI), (double)s.cv,
+                 (double)s.ci);
+    } else if (wait_v) {
+        snprintf(line, sizeof(line), TR(SUP_BACK_V), (double)s.cv);
+    } else {
+        snprintf(line, sizeof(line), TR(SUP_BACK_I), (double)s.ci);
+    }
+    ui_router_set_notice(line);
+}
+
+/* The limits as the settings hold them now, applied to the sliders.  A set
+ * point a lowered cap brings down is kept, and given back when the cap is
+ * at its stored value again: at once with the output off, at the next OFF
+ * while it is on, and the band says so. */
 void sup_refresh_limits(bool persist)
 {
+    const float was_v = s.cv;
+    const float was_i = s.ci;
+
     s.lim = limits_from_settings();
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     /* A start value over a cap that was lowered under it comes down with
@@ -224,6 +321,9 @@ void sup_refresh_limits(bool persist)
         settings_request_save();
     }
     apply_caps();
+    back_keep(&s.back_v_on, &s.back_v, was_v, s.cv, SET_SUPPLY_V_MAX);
+    back_keep(&s.back_i_on, &s.back_i, was_i, s.ci, SET_SUPPLY_I_MAX);
+    back_follow(true);
     ++s.set_rev;
     ++s.ctrl_rev;
     ++s.ov_rev;
@@ -400,6 +500,12 @@ void supply_screen_set_output(bool on)
             supply_invalidate();
         }
         ++s.out_rev;
+        ++s.ctrl_rev;
+    }
+    if (!on && (s.back_v_on || s.back_i_on)) {
+        /* A set point a cap's DISCARD gives back waited for this OFF. */
+        back_follow(false);
+        ++s.set_rev;
         ++s.ctrl_rev;
     }
     sup_owner_settle();

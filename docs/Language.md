@@ -366,7 +366,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,625 entries
+A language is one more column in every entry of the table: 3,628 entries
 with an ID and 105 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

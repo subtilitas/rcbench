@@ -336,6 +336,14 @@ typedef struct {
      * than an ON hold, whatever the output does before it lifts. */
     /** @brief Whether OUTPUT's press began on a live output (an OFF tap) */
     bool            press_on;
+    /* A set point a lowered cap brought down, kept while the cap's edit
+     * stands unsaved: the cap back at its stored value (DISCARD) gives it
+     * back, at once with the output off and at the next OFF while it is
+     * on.  See sup_refresh_limits(). */
+    bool  back_v_on,                        /**< whether back_v is kept */
+          back_i_on;                        /**< whether back_i is kept */
+    float back_v,                           /**< the voltage set point before the clamp, V */
+          back_i;                           /**< the current limit before the clamp, A */
     float pend_v,                           /**< voltage change waiting for its question, V */
           pend_i;                           /**< current change waiting for its question, A */
     gfx_rect_t apply_btn,                   /**< APPLY of the question            */

@@ -6,6 +6,8 @@
  * Cases:
  * - a_drag_moves_the_set_point_by_the_distance_dragged
  * - a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip
+ * - discard_gives_back_the_set_points_a_typed_cap_brought_down
+ * - discard_on_a_live_output_gives_the_set_points_back_at_the_off
  * - a_drag_on_a_live_output_changes_nothing_until_it_is_answered
  * - the_output_switch_works_under_every_overlay
  * - a_second_finger_on_a_track_changes_nothing_while_off_is_held
@@ -25,7 +27,11 @@
  * SPDX-License-Identifier: MIT
  */
 
+#include <stdio.h>
+
 #include "supply_screen_rig.h"
+
+#include "settings_screen.h"
 
 TEST_CASE(a_drag_moves_the_set_point_by_the_distance_dragged)
 {
@@ -77,6 +83,95 @@ TEST_CASE(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip)
     list_keys("0.02");
     CHECK_NEAR(settings_get(SET_SUPPLY_TRIP_I), 0.05f, 1e-4f);
     CHECK(supply_screen_limits().trip_i > 0.0f);
+}
+
+/*
+ * A cap typed under the live set point brings it down at once.  The leave
+ * warning's DISCARD puts the cap back and, with the output off, the set
+ * point from before the edit too: voltage and current limit alike.
+ */
+TEST_CASE(discard_gives_back_the_set_points_a_typed_cap_brought_down)
+{
+    fresh();
+    const float vmax = settings_get(SET_SUPPLY_V_MAX);
+    const float imax = settings_get(SET_SUPPLY_I_MAX);
+    supply_screen_put(9.0f, 2.0f);
+    CHECK_NEAR(supply_screen_set_v(), 9.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    open_settings();
+    tap_value(SET_SUPPLY_V_MAX);
+    list_keys("5");
+    tap_value(SET_SUPPLY_I_MAX);
+    list_keys("0.5");
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 0.5f, 1e-4f);
+    CHECK(scr->back());                      /* the leave warning */
+    CHECK(supply_settings_list()->warn);
+    ui_router_set_alert(NULL);
+    {
+        const gfx_rect_t d = ui_setlist_strip_rect(1);      /* DISCARD */
+        tap(d.x + d.w / 2, d.y + d.h / 2);
+    }
+    CHECK(!supply_settings_list()->warn);
+    CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), vmax, 1e-4f);
+    CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), imax, 1e-4f);
+    CHECK_NEAR(supply_screen_set_v(), 9.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    CHECK(ui_router_alert() == NULL);
+}
+
+/** @brief The band's line, "" for none. */
+static const char *band(void)
+{
+    const char *a = ui_router_alert();
+
+    return a != NULL ? a : "";
+}
+
+/*
+ * The same DISCARD while the output is on: a live limit is never raised.
+ * The set point stays where the cap brought it, the band says so in one
+ * line, and the next OFF gives it back.
+ */
+TEST_CASE(discard_on_a_live_output_gives_the_set_points_back_at_the_off)
+{
+    char want[96];
+
+    fresh();
+    supply_screen_put(9.0f, 2.0f);
+    supply_screen_set_output(true);
+    settings_set(SET_SUPPLY_I_MAX, 0.5f);
+    supply_screen_limits_changed();
+    CHECK_NEAR(supply_screen_set_i(), 0.5f, 1e-4f);
+    ui_router_set_alert(NULL);
+    (void)settings_discard();
+    settings_apply_all();
+    CHECK_NEAR(supply_screen_set_i(), 0.5f, 1e-4f);
+    snprintf(want, sizeof(want), TR(SUP_BACK_I), 0.5);
+    CHECK_STR_EQ(band(), "Current limit stays at 0.50A until the output is off.");
+    CHECK_STR_EQ(band(), want);
+    supply_screen_set_output(true);
+    CHECK_NEAR(supply_screen_set_i(), 0.5f, 1e-4f);
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_v(), 9.0f, 1e-4f);
+
+    /* Both caps: one line names both set points. */
+    supply_screen_set_output(true);
+    settings_set(SET_SUPPLY_V_MAX, 5.0f);
+    settings_set(SET_SUPPLY_I_MAX, 0.5f);
+    supply_screen_limits_changed();
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    ui_router_set_alert(NULL);
+    (void)settings_discard();
+    settings_apply_all();
+    CHECK_NEAR(supply_screen_set_v(), 5.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 0.5f, 1e-4f);
+    snprintf(want, sizeof(want), TR(SUP_BACK_VI), 5.0, 0.5);
+    CHECK_STR_EQ(band(), want);
+    supply_screen_set_output(false);
+    CHECK_NEAR(supply_screen_set_v(), 9.0f, 1e-4f);
+    CHECK_NEAR(supply_screen_set_i(), 2.0f, 1e-4f);
 }
 
 TEST_CASE(a_drag_on_a_live_output_changes_nothing_until_it_is_answered)
@@ -744,6 +839,8 @@ int main(void)
 {
     RUN(a_drag_moves_the_set_point_by_the_distance_dragged);
     RUN(a_typed_cap_rounds_down_and_a_typed_trip_stays_a_trip);
+    RUN(discard_gives_back_the_set_points_a_typed_cap_brought_down);
+    RUN(discard_on_a_live_output_gives_the_set_points_back_at_the_off);
     RUN(a_drag_on_a_live_output_changes_nothing_until_it_is_answered);
     RUN(the_output_switch_works_under_every_overlay);
     RUN(a_second_finger_on_a_track_changes_nothing_while_off_is_held);

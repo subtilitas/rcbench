@@ -1950,6 +1950,15 @@ UI_TEXT(SUP_LINE_CV, 0,
 UI_TEXT(SUP_HELD_REFUSED, 94,
     "Servo programming holds the supply: set points and ON are locked.",
     "Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.")
+UI_TEXT(SUP_BACK_V, 94,
+    "Voltage stays at %.2fV until the output is off.",
+    "Spannung bleibt bei %.2fV, bis der Ausgang aus ist.")
+UI_TEXT(SUP_BACK_I, 94,
+    "Current limit stays at %.2fA until the output is off.",
+    "Strombegrenzung bleibt bei %.2fA, bis der Ausgang aus ist.")
+UI_TEXT(SUP_BACK_VI, 94,
+    "Set points stay at %.2fV and %.2fA until the output is off.",
+    "Sollwerte bleiben bei %.2fV und %.2fA, bis der Ausgang aus ist.")
 UI_TEXT(SUP_LINE_PORT, 0,
     "Servo programmer.",
     "Servoprogrammierung.")

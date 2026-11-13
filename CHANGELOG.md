@@ -77,6 +77,12 @@ history is in git.
   removed. Hold again to write without a backup.` The next hold, its press
   without a card, writes without the backup file
   ([Servo programmer](docs/ServoProgrammer.md#without-a-card)).
+- SUPPLY: DISCARD of a lowered VOLTAGE MAX or CURRENT MAX gives the set
+  point the cap brought down its value from before the edit, never above
+  the cap. With the output on the set point stays down until the next OFF,
+  and the band says so in one line, such as `Current limit stays at 1.00A
+  until the output is off.`
+  ([Screens](docs/Screens.md#supply-settings)).
 
 ### Fixed
 

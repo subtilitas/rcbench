@@ -3449,6 +3449,17 @@ als getippt gespeicherter Wert zeigt den Hinweis im Alarmband:
 `Strom max: 1.00A gespeichert, Schritte von 0.05A.` nach 1.03. Eine
 Schwelle von 0 ist ausgeschaltet.
 
+VERWERFEN in der Warnung beim Verlassen, oder in der einer anderen Liste,
+setzt eine gesenkte Grenze auf ihren gespeicherten Wert zurück und gibt
+dem Sollwert, den sie gesenkt hat, seinen Wert von vor der Änderung
+zurück, nie über der Grenze. Ein Sollwert wird nur bei ausgeschaltetem
+Ausgang wieder angehoben. Bei eingeschaltetem Ausgang bleibt der
+Sollwert, wo die Grenze ihn hingesetzt hat, bis zum nächsten AUS, und das
+Alarmband sagt es in einer Zeile:
+`Strombegrenzung bleibt bei 1.00A, bis der Ausgang aus ist.`, ebenso für
+die Spannung oder für beide in einer Zeile. Eine niedriger gespeicherte
+Grenze gibt nichts zurück.
+
 Die Zeit über einer Schwelle beginnt beim ersten Messwert darüber. Ein
 Messwert darunter setzt den Zähler zurück; ein fehlender Messwert lässt
 ihn unverändert. Bei Abschaltung geht der Ausgang aus. MODUS zeigt bis

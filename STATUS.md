@@ -652,7 +652,9 @@ Built and tested on the host; the control task drives the PD mini through the SU
 (`shared/bench/supply_link.c`) when SUPPLY's settings list enables it, and runs `supply_sim_t`
 otherwise. Set points shown beside their readings, a keypad, a settings list (caps, start
 values, current and voltage trips, the confirmation for live changes) kept in NVS, and a
-question before a set point changes a live output. Every stop, a trip, a lost ON and a
+question before a set point changes a live output. A cap lowered under a set point brings
+it down at once; DISCARD gives it back, with the output off only, and the band says so
+while the output is on (`test_supply_screen_home`). Every stop, a trip, a lost ON and a
 supply that stops answering switch the output off; the supply is stepped and logged from
 `control_pump()`, so it keeps its 50ms cadence while an exchange waits.
 
