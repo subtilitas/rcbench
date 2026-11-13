@@ -1037,10 +1037,12 @@ static void keypad_event(ui_setlist_t *sl, const touch_event_t *evt)
         if (sl_locked(sl, sl->kp_id) != NULL) {
             ui_keypad_close(&sl->kp);
         } else {
+            const float typed = v;
             if (sl->host->typed != NULL) {
                 v = sl->host->typed(sl->kp_id, v);
             }
-            if (ui_setting_keypad_ok(&sl->kp, sl->kp_id, v) == UI_SETKEY_SET) {
+            if (ui_setting_keypad_ok_as(&sl->kp, sl->kp_id, typed, v)
+                == UI_SETKEY_SET) {
                 value_changed(sl, sl->kp_id);
             }
         }

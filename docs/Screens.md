@@ -3163,7 +3163,9 @@ settings, and the PD mini's 4 while their rows take a press.
 Lowering a cap below a set point immediately lowers that set point and
 its startup value. Entered values are rounded in the safer direction:
 caps round down, so 12.01V permits 12.00V; a positive trip is at least
-one step and never rounds to OFF. A trip of 0 is disabled.
+one step and never rounds to OFF. A value stored other than as typed
+shows the alert band's notice: `Current max: 1.00A stored, steps of
+0.05A.` after 1.03 typed. A trip of 0 is disabled.
 
 Time above a trip begins at the first reading over the threshold. A
 reading below it resets the count; a missing reading leaves it unchanged.

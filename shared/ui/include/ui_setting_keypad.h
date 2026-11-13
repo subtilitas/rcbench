@@ -146,6 +146,21 @@ typedef enum {
 } ui_setkey_result_t;
 
 /**
+ * @brief ui_setting_keypad_ok() for a value a host's rule moved before it
+ *        is set, such as SUPPLY's caps, which round down: @p v is refused
+ *        or set, and the notice compares what was stored with @p typed.
+ * @param k     The keypad that returned UI_KEYPAD_OK.
+ * @param id    The setting it was opened for.
+ * @param typed The value it handed back.
+ * @param v     The value to set, after the host's rule.
+ * @return As ui_setting_keypad_ok() for @p v; the notice of
+ *         ui_setting_keypad_stored() when the value stored differs from
+ *         @p typed.
+ */
+ui_setkey_result_t ui_setting_keypad_ok_as(ui_keypad_t *k, setting_id_t id,
+                                           float typed, float v);
+
+/**
  * @brief Take the value an OK on @p k handed back for @p id.
  * @param k The keypad that returned UI_KEYPAD_OK.
  * @param id The setting it was opened for.

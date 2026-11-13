@@ -3441,8 +3441,10 @@ Druck annehmen.
 Sinkt eine Grenze unter einen Sollwert, werden dieser und sein Startwert
 sofort gesenkt. Eingaben werden in der sichereren Richtung gerundet:
 Grenzen nach unten, sodass 12,01V nur 12,00V erlauben; eine positive
-Abschaltschwelle auf mindestens einen Schritt, nie auf AUS. Eine Schwelle
-von 0 ist ausgeschaltet.
+Abschaltschwelle auf mindestens einen Schritt, nie auf AUS. Ein anders
+als getippt gespeicherter Wert zeigt den Hinweis im Alarmband:
+`Strom max: 1.00A gespeichert, Schritte von 0.05A.` nach 1.03. Eine
+Schwelle von 0 ist ausgeschaltet.
 
 Die Zeit über einer Schwelle beginnt beim ersten Messwert darüber. Ein
 Messwert darunter setzt den Zähler zurück; ein fehlender Messwert lässt

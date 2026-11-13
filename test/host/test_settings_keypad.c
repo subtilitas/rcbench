@@ -396,7 +396,8 @@ TEST_CASE(a_value_between_steps_names_what_was_stored)
     ui_text_set_language(UI_LANG_EN);
     ui_router_set_alert(NULL);
 
-    /* Two decimals: 1.23A is stored as 1.25A. */
+    /* Two decimals, the text of a value set to 1.25A.  Through SUPPLY's
+     * list a typed 1.23A rounds down to 1.20A (test_keypad_rows_supply). */
     char line[96];
     settings_set(SET_SUPPLY_I_MAX, 1.25f);
     CHECK_STR_EQ(ui_setting_keypad_stored(SET_SUPPLY_I_MAX, line,

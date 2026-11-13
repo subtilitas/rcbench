@@ -42,7 +42,9 @@ history is in git.
   shows on a lit accent button such as WI-FI's ACCESS POINT.
 - A number typed on a setting's keypad between two steps shows a notice in
   the alert band with the value stored and the step:
-  `Dim after: 5min stored, steps of 5min.` after 7 for Dim after.
+  `Dim after: 5min stored, steps of 5min.` after 7 for Dim after, and
+  `Current max: 1.00A stored, steps of 0.05A.` after 1.03 for SUPPLY's
+  cap, which rounds down.
 - The time labels of a plot, `NOW` or `END` and the span, sit on the plot's
   background: a trace along the bottom runs under them.
 - The band names RUDDER and RUDDER AUTO as their tiles and footers do:
