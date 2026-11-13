@@ -2,7 +2,8 @@
  * @file
  * @brief The shared overlays and widgets on the 1024 x 600 panel: the faces
  *        of the keypad's and the keyboard's keys, the tabs' and the choice
- *        list's faces, the TARGET row's cells and the plot ring.
+ *        list's faces, the TARGET row's cells, the plot ring and the
+ *        plot's time labels over its trace.
  *
  * Each face rule is held at its limit: the longest German word of a row,
  * the narrowest key it still fits, and the size one step under it.
@@ -571,6 +572,45 @@ TEST_CASE(the_plot_ring_holds_one_sample_per_panel_column)
     free(p);
 }
 
+/* A trace along the bottom row runs under NOW and under the time span on
+ * the left, not over them: each label sits on the plot's background, 2px
+ * round its cells; beside them the trace is drawn. */
+TEST_CASE(a_trace_runs_under_the_time_labels)
+{
+    ui_plot_t *p = calloc(1, sizeof(*p));
+    REQUIRE_ALLOC(p);
+    ui_plot_init(p, k_series, 1, 24.0f);
+    for (int i = 0; i < UI_PLOT_HISTORY; ++i) {
+        const float v = 0.5f;
+        ui_plot_push(p, &v);
+    }
+    p->scale[0] = 100.0f;           /* near the bottom row */
+    const gfx_rect_t r = { 40, 10, 700, 220 };
+    canvas();
+    ui_plot_render(p, &cv, r);
+    const int now_w = gfx_text_width(&gfx_font_8x16, TR(PLOT_NOW), 1);
+    const gfx_rect_t boxes[2] = {
+        gfx_rect_make(r.x + 2, r.y + r.h - 21,
+                      gfx_text_width(&gfx_font_8x16, "-24s", 1) + 4, 20),
+        gfx_rect_make(r.x + r.w - 6 - now_w, r.y + r.h - 21, now_w + 4, 20),
+    };
+    for (int b = 0; b < 2; ++b) {
+        int trace = 0;
+        for (int y = boxes[b].y; y < boxes[b].y + boxes[b].h; ++y) {
+            for (int x = boxes[b].x; x < boxes[b].x + boxes[b].w; ++x) {
+                trace += fb[y * W + x] == 0x1234;
+            }
+        }
+        CHECK_EQ(trace, 0);
+    }
+    int beside = 0;
+    for (int y = r.y + r.h - 21; y < r.y + r.h; ++y) {
+        beside += fb[y * W + r.x + 60] == 0x1234;
+    }
+    CHECK(beside > 0);
+    free(p);
+}
+
 int main(void)
 {
     RUN(a_keypad_over_a_workbench_card_has_large_keys_in_20x36);
@@ -591,6 +631,7 @@ int main(void)
     RUN(a_tall_target_row_counts_its_cells_in_10x20);
     RUN(a_tall_target_rows_text_fits_its_box);
     RUN(the_plot_ring_holds_one_sample_per_panel_column);
+    RUN(a_trace_runs_under_the_time_labels);
     free(fb);
     return test_summary("overlays");
 }

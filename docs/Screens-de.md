@@ -1076,7 +1076,9 @@ Aufzeichnung steht `TELEMETRIE LIVE` über der Grafik, beim angehaltenen
 Lauf `LETZTE TELEMETRIE`. Vor dem ersten ARM steht dort
 `TELEMETRIE INAKTIV` und in der Grafik `Noch kein Lauf aufgezeichnet.`
 Die rechte Achsenbeschriftung zeigt während der Aufzeichnung `JETZT`,
-am Ende eines angehaltenen Laufs `ENDE`. Messwertanzeigen, TABELLE,
+am Ende eines angehaltenen Laufs `ENDE`. Beide Zeitbeschriftungen, `JETZT`
+oder `ENDE` und die Spanne links, liegen auf dem Hintergrund der Grafik,
+2px um ihre Zeichen: Eine Kurve am unteren Rand läuft unter ihnen. Messwertanzeigen, TABELLE,
 Summen und Temperaturleiste werden in ARMED und SAFE laufend aktualisiert.
 
 Die Grafik ist 600 x 184px groß. Bei 20 Abtastungen pro Sekunde decken ihre

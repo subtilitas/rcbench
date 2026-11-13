@@ -998,7 +998,9 @@ clears it, and switching to SAFE freezes it. Its tag reads `LIVE TELEMETRY`
 while recording, `LAST TELEMETRY` while holding a completed run, and
 `TELEMETRY IDLE` before the first ARM, when the plot shows
 `No run recorded yet.` The right-hand axis reads `NOW` while recording and
-`END` at the end of a held run. The readouts, TABLE pane, totals and
+`END` at the end of a held run. Both time labels, `NOW` or `END` and the
+span on the left, sit on the plot's background 2px round their characters:
+a trace along the bottom runs under them. The readouts, TABLE pane, totals and
 temperature strip update continuously, whether ARMED or SAFE.
 
 The plot is 600 x 184px. The window is 600 columns at 20 samples per second,
