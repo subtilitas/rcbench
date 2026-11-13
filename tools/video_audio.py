@@ -472,7 +472,14 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
         there = (csum[np.minimum(n, idx + wide)]
                  - csum[np.maximum(0, idx - wide)]) > 0
         win = np.hanning(int(0.4 * RATE))
-        duck = np.convolve(there.astype(float), win / win.sum(), "same")
+        # In one transform: a direct convolution of the whole track with
+        # the 17640 samples of the window takes hours.
+        kern = win / win.sum()
+        size = 1 << int(np.ceil(np.log2(n + len(kern))))
+        full = np.fft.irfft(np.fft.rfft(there.astype(float), size)
+                            * np.fft.rfft(kern, size), size)
+        off = (len(kern) - 1) // 2
+        duck = np.clip(full[off:off + n], 0.0, 1.0)
         out *= 0.63 * (1.0 - 0.72 * duck)
         out += 0.9 * voice * float(np.max(np.abs(out)) / 0.20)
     t = np.arange(n) / RATE
