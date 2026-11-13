@@ -3,7 +3,8 @@
  * @brief The IMU screen (SETUP's IMU tile): the bound sensor, the Bluetooth
  *        LE (BLE) scan and its list, the C6's version and the link state,
  *        the calibration hold, ZERO, battery and the live angles.  Fed a
- *        view each frame; its commands are taken by the IMU task.
+ *        view each frame; its commands are taken by the panel's `blec`
+ *        task.
  *
  * The view's types name no radio: the link under the controller
  * (imu_ble.h) converts its devices, errors and version into them.

@@ -40,6 +40,8 @@ _Static_assert(BLEU_SCAN_MS <= 0xFFFFu && BLEU_CONNECT_MS <= 0xFFFFu,
                "bleu_act_t.ms holds the scan and connect durations");
 _Static_assert(BLEU_WRITE_MAX + 3u <= 23u,
                "a command write fits the smallest MTU");
+_Static_assert(BLEU_WRITE_MAX >= 16u,
+               "a DISC_SVC action carries a 128-bit UUID in its data");
 
 /** @brief The ISSC Transparent UART profile (bleuart.h). */
 const bleu_profile_t bleu_profile_issc = {
