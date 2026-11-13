@@ -12,8 +12,10 @@
  * error; a second scan answered busy; a DISCONNECT that was lost, the
  * handle given to another client, the old link ended; a DISCONNECT held
  * back past that, reaching its own client; another client's CANCEL,
- * SCAN_STOP and actions on a held handle dropped or refused; the slot's
- * time limits at their limit and 1ms before; strays and NULL.
+ * SCAN_STOP and actions on a held handle dropped or refused, each GATT
+ * step answered lost; the slot ended by its SCAN_END and by a connection
+ * that failed to be established; the slot's time limits at their limit
+ * and 1ms before; strays and NULL.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -740,6 +742,113 @@ TEST_CASE(a_cancel_without_its_event_lets_the_scan_go_after_2000ms)
     CHECK(!bleu_hub_next_action(&h, &out));
 }
 
+TEST_CASE(the_slot_ends_on_scan_end_and_on_a_failed_establishment)
+{
+    bleu_hub_t h;
+    bleu_hub_init(&h);
+    CHECK(bleu_hub_add(&h, 0));
+    CHECK(bleu_hub_add(&h, 1));
+    bleu_act_t a, out;
+    memset(&a, 0, sizeof a);
+    a.kind = BLEU_ACT_SCAN;
+    a.token = 1u;
+    a.ms = BLEU_SCAN_MS;
+    bleu_hub_action(&h, 0, &a, 0);
+    CHECK(bleu_hub_next_action(&h, &out));
+    /* A SCAN_END of another token leaves the slot; the scan's frees it. */
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_SCAN_END;
+    e.token = 2u;
+    bleu_hub_event(&h, &e, 1);
+    CHECK_EQ(h.gap, BLEU_HUB_GAP_SCAN);
+    e.token = 1u;
+    bleu_hub_event(&h, &e, 2);
+    CHECK_EQ(h.gap, BLEU_HUB_GAP_FREE);
+    uint8_t o;
+    bleu_evt_t got;
+    CHECK(bleu_hub_next_event(&h, &o, &got));
+    CHECK(bleu_hub_next_event(&h, &o, &got));
+    CHECK_EQ(o, 0);
+    /* A report after the scan goes to the last scan's client. */
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_ADV;
+    bleu_hub_event(&h, &e, 3);
+    CHECK(bleu_hub_next_event(&h, &o, &got));
+    CHECK_EQ(o, 0);
+    CHECK_EQ(got.kind, BLEU_EV_ADV);
+    /* Client 1's connect fails to be established: its DISCONNECT with the
+     * connect's token ends the slot, and client 0 may connect. */
+    memset(&a, 0, sizeof a);
+    a.kind = BLEU_ACT_CONNECT;
+    a.token = (uint16_t)((1u << BLEU_OWNER_SHIFT) | 4u);
+    a.ms = BLEU_CONNECT_MS;
+    bleu_hub_action(&h, 1, &a, 4);
+    CHECK(bleu_hub_next_action(&h, &out));
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_DISCONNECT;
+    e.token = a.token;
+    e.conn = 3;
+    e.status = 0x23Eu;
+    bleu_hub_event(&h, &e, 5);
+    CHECK_EQ(h.gap, BLEU_HUB_GAP_FREE);
+    CHECK(bleu_hub_next_event(&h, &o, &got));
+    CHECK_EQ(o, 1);
+    CHECK_EQ(got.status, 0x23E);
+    a.token = 5u;
+    bleu_hub_action(&h, 0, &a, 6);
+    CHECK(bleu_hub_next_action(&h, &out));
+    CHECK_EQ(out.token, 5);
+}
+
+TEST_CASE(each_gatt_step_on_another_clients_handle_is_answered_lost)
+{
+    static const struct {
+        uint8_t act, ev;
+    } k[] = {
+        { BLEU_ACT_DISC_SVC, BLEU_EV_SVC_DONE },
+        { BLEU_ACT_DISC_CHRS, BLEU_EV_CHR_DONE },
+        { BLEU_ACT_DISC_DSCS, BLEU_EV_DSC_DONE },
+        { BLEU_ACT_MTU, BLEU_EV_MTU },
+        { BLEU_ACT_SUBSCRIBE, BLEU_EV_WRITE_DONE },
+        { BLEU_ACT_WRITE, BLEU_EV_WRITE_DONE },
+        { BLEU_ACT_WRITE_NR, BLEU_EV_WRITE_DONE },
+        { BLEU_ACT_READ, BLEU_EV_READ },
+    };
+    bleu_hub_t h;
+    bleu_hub_init(&h);
+    CHECK(bleu_hub_add(&h, 0));
+    CHECK(bleu_hub_add(&h, 2));
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_CONNECT;
+    e.token = 1u;
+    e.conn = 6;
+    bleu_hub_event(&h, &e, 0);
+    uint8_t o;
+    CHECK(bleu_hub_next_event(&h, &o, &e));
+    for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
+        bleu_act_t a, out;
+        memset(&a, 0, sizeof a);
+        a.kind = k[i].act;
+        a.conn = 6;
+        a.token = (uint16_t)((2u << BLEU_OWNER_SHIFT) | (i + 1u));
+        bleu_hub_action(&h, 2, &a, 1);
+        CHECK(!bleu_hub_next_action(&h, &out));
+        CHECK(bleu_hub_next_event(&h, &o, &e));
+        CHECK_EQ(o, 2);
+        CHECK_EQ(e.kind, k[i].ev);
+        CHECK_EQ(e.token, a.token);
+        CHECK_EQ(e.status, BLEU_STATUS_LOST);
+        /* The same step on a handle nobody holds goes to the host. */
+        a.conn = 7;
+        bleu_hub_action(&h, 2, &a, 2);
+        CHECK(bleu_hub_next_action(&h, &out));
+        CHECK_EQ(out.kind, k[i].act);
+    }
+    CHECK_EQ(h.refused, sizeof k / sizeof k[0]);
+}
+
 TEST_CASE(strays_full_queues_and_null)
 {
     bleu_hub_t h;
@@ -815,6 +924,8 @@ int main(void)
     RUN(another_clients_cancel_stop_and_handle_are_left_alone);
     RUN(a_connect_slot_without_its_answer_frees_after_7000ms_not_6999);
     RUN(a_cancel_without_its_event_lets_the_scan_go_after_2000ms);
+    RUN(the_slot_ends_on_scan_end_and_on_a_failed_establishment);
+    RUN(each_gatt_step_on_another_clients_handle_is_answered_lost);
     RUN(strays_full_queues_and_null);
     return test_summary("bleuart_hub");
 }

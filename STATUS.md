@@ -1693,7 +1693,8 @@ its own scripted peer: one client action for action as without the hub, three cl
 up one connect at a time with each peer's bytes reaching only its own machine, routing by
 token and by handle, a scan during another client's connect, a second scan answered busy, a
 lost DISCONNECT whose handle another client gets, a held-back DISCONNECT, another client's
-cancel, stop and handle refused, and the slot's limits of 7000ms and 12000ms and the cancel's
+cancel, stop and handle refused with each GATT step answered lost, the slot ended by its
+SCAN_END and by a connection that failed to be established, and the slot's limits of 7000ms and 12000ms and the cancel's
 2000ms at their limit and 1ms before.
 
 `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both wire

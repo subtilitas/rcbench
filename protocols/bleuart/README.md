@@ -356,7 +356,7 @@ rules at their limits and the busy connect's retry;
 without it, three clients coming up one connect at a time, routing by
 token and by handle, a scan during another client's connect, a second
 scan, a lost and a held-back DISCONNECT, another client's cancel, stop
-and handle, and the slot's time limits. The table in `STATUS.md` has the line coverage per file.
+and handle, the slot's ends and its time limits. The table in `STATUS.md` has the line coverage per file.
 
 ```sh
 cmake -S test/host -B test/host/build
