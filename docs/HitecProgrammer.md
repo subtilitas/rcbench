@@ -319,9 +319,10 @@ The notes go with the edits. They come after the other notes of the tab,
 which holds at most 6; a note that does not fit above the message is not
 drawn.
 
-The panel looks at the card slot at the press and again as the 2s hold
-completes, on the tab and in the footer. A card in the slot at the press
-and gone at 2s stops the write: nothing is sent, the edits stay, and the
+At the press, on the tab and in the footer, the panel asks a mounted card
+whether it answers, one SEND_STATUS (CMD13) command, and sends nothing
+with no card mounted. A card found at the press is asked again as the 2s
+hold completes. Gone then, it stops the write: nothing is sent, the edits stay, and the
 band says `Card removed. Hold again to write without a backup.` The next
 2s hold, its press without a card, writes without the backup file and
 keeps the record in RAM ([Without a card](#without-a-card)).

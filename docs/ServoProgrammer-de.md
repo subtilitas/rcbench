@@ -838,10 +838,13 @@ auf seinem Reiter markiert, und [VERLASSEN](#verlassen) listet sie.
    Eine eingehängte Karte, die die Datei nicht annimmt, beendet das
    Schreiben. Ohne eingehängte Karte sagt der Reiter SERVO
    `Keine Karte. Es wird keine Backup-Datei gespeichert.`, solange
-   Änderungen warten, und das Schreiben läuft ohne Datei. Das Panel prüft
-   den Steckplatz beim Drücken und noch einmal, wenn das Halten nach 2s
-   vollständig ist: Eine Karte, die beim Drücken steckt und nach 2s fehlt,
-   hält das Schreiben auf, und das Band sagt
+   Änderungen warten, und das Schreiben läuft ohne Datei. Beim Drücken
+   fragt das Panel eine eingehängte Karte, ob sie antwortet, mit einem
+   Kommando SEND_STATUS (CMD13), und sendet ohne eingehängte Karte nichts;
+   findet es keine, prüft es den Steckplatz einmal im nächsten Frame, wo
+   eine eingesteckte Karte eingehängt wird. Eine beim Drücken gefundene
+   Karte wird noch einmal gefragt, wenn das Halten nach 2s vollständig ist:
+   Fehlt sie dann, hält sie das Schreiben auf, und das Band sagt
    `Karte entnommen. Halte erneut, um ohne Backup zu schreiben.` Solange der
    Vermerk eines unterbrochenen Schreibens gehalten wird, wird keine Datei
    gespeichert: das Servo kann halb geschrieben sein, und der Vermerk hält

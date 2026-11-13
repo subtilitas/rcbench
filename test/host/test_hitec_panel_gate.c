@@ -19,6 +19,7 @@
  * - connect_is_drawn_pressed_under_its_hold
  * - the_page_labels_are_null_with_no_page
  * - the_taps_that_look_at_the_card_slot
+ * - write_looks_at_the_card_again_only_after_a_card_at_its_press
  *
  * SPDX-License-Identifier: MIT
  */
@@ -358,6 +359,37 @@ TEST_CASE(the_taps_that_look_at_the_card_slot)
     }
 }
 
+/* The card check's answer and the calls it took (hitec_panel_card_check()). */
+static bool g_card_now;
+static int g_card_looks;
+
+/* The card check as the panel's: what the slot holds, counted. */
+static bool card_check(void)
+{
+    ++g_card_looks;
+    return g_card_now;
+}
+
+/* WRITE's press looks at the card slot through the card check once; its
+ * completed hold looks once more only where the press found a card. */
+TEST_CASE(write_looks_at_the_card_again_only_after_a_card_at_its_press)
+{
+    for (int card = 1; card >= 0; --card) {
+        edited();
+        hitec_panel_card_check(card_check);
+        g_card_now = card != 0;
+        g_card_looks = 0;
+        const gfx_rect_t r = write_btn();
+
+        hold_to_due(r);
+        CHECK_EQ(g_card_looks, 1);
+        step();
+        CHECK_EQ(g_card_looks, card != 0 ? 2 : 1);
+        ev(cx(r), cy(r), TOUCH_EVENT_UP);
+        hitec_panel_card_check(NULL);
+    }
+}
+
 int main(void)
 {
     RUN(a_card_request_between_the_hold_and_its_send_shuts_the_gate);
@@ -372,5 +404,6 @@ int main(void)
     RUN(connect_is_drawn_pressed_under_its_hold);
     RUN(the_page_labels_are_null_with_no_page);
     RUN(the_taps_that_look_at_the_card_slot);
+    RUN(write_looks_at_the_card_again_only_after_a_card_at_its_press);
     return test_summary("hitec_panel_gate");
 }

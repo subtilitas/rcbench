@@ -419,7 +419,7 @@ its stack less 1024 bytes.
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
 | `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
-| `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,416 | 3,712 |
+| `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,432 | 3,696 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the TCP/IP (transmission control protocol, internet

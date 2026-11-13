@@ -74,8 +74,10 @@ history is in git.
 - KST and HITEC programmers: a card in the slot at WRITE n VALUES' press
   and gone when its 2s hold completes, on the tab or in the footer, stops
   the write. Nothing is sent, the edits stay, and the band says `Card
-  removed. Hold again to write without a backup.` The next hold, its press
-  without a card, writes without the backup file
+  removed. Hold again to write without a backup.` The press asks a
+  mounted card one SEND_STATUS (CMD13) and sends nothing with none
+  mounted. The next hold, its press without a card, writes without the
+  backup file
   ([Servo programmer](docs/ServoProgrammer.md#without-a-card)).
 - SUPPLY: DISCARD of a lowered VOLTAGE MAX or CURRENT MAX gives the set
   point the cap brought down its value from before the edit, never above

@@ -764,9 +764,12 @@ edited value is marked on its tab, and [LEAVE](#leaving) lists them.
    [a new file on the card](#the-backup-before-the-first-write). A card
    that is mounted and does not take the file ends the write. With no card
    mounted the SERVO tab says `No card. No backup file will be saved.`
-   while edits wait, and the write goes without a file. The panel looks at
-   the slot at the press and again as the hold completes: a card there at
-   the press and gone at 2s stops the write, and the band says
+   while edits wait, and the write goes without a file. At the press the
+   panel asks a mounted card whether it answers, one SEND_STATUS (CMD13)
+   command, and sends nothing with no card mounted; with no card found it
+   looks at the slot once on the next frame, where a card put in is
+   mounted. A card found at the press is asked again as the hold
+   completes: gone at 2s, it stops the write, and the band says
    `Card removed. Hold again to write without a backup.` While the record of an interrupted write is held no file is
    saved: the servo may be half written, and the record holds its values as
    found.

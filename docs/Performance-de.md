@@ -446,7 +446,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
 | `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
-| `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 416 | 3 712 |
+| `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 432 | 3 696 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
 mit 8 192 Bytes, der TCP/IP-Stack (Transmission Control Protocol, Internet

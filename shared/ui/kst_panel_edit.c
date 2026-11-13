@@ -506,9 +506,11 @@ bool kpn_write_refused(void)
     kst_prog_t *p = &k.prog;
     const kst_prog_msg_id_t m = kst_prog_write_check(p);
 
-    /* A card put in, taken out or swapped is found at the press. */
-    k.card_look = k.card_look || p->fed;
+    /* The press looks at a mounted card (kst_panel_card_check()); with
+     * none mounted, the slot is looked at once on the frame after, where a
+     * card put in is mounted. */
     k.wr_card = kpn_card_now();
+    k.card_look = k.card_look || (p->fed && !k.wr_card);
     if (m == KST_PROG_MSG_NONE) {
         return false;
     }

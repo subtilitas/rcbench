@@ -841,14 +841,15 @@ void log_follow_runs(void)
 /**
  * @brief The card slot looked at now, for the servo programmers' WRITE n
  *        VALUES at its press and as its 2s hold completes
- *        (kst_panel_card_check()): a card taken out is let go, one put in
- *        is mounted.  Called on app_main, where the touch and the ticks
- *        run and where the programmers' looks at the slot run.
- * @return true with a card mounted
+ *        (kst_panel_card_check()): a mounted card is asked once whether it
+ *        answers (one CMD13), and one taken out is let go.  No mount: with
+ *        no volume mounted it answers false at once.  Called on app_main,
+ *        where the touch and the ticks run.
+ * @return true with a card mounted that answers
  */
 static bool card_mounted_now(void)
 {
-    return storage_check() == CARD_STATE_MOUNTED;
+    return storage_confirm() == CARD_STATE_MOUNTED;
 }
 
 /**

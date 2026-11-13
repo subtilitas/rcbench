@@ -337,9 +337,11 @@ Die Hinweise gehen mit den Änderungen. Sie stehen nach den übrigen
 Hinweisen des Reiters, der höchstens 6 hält; ein Hinweis, der nicht über
 die Meldung passt, wird nicht gezeichnet.
 
-Das Panel prüft den Kartensteckplatz beim Drücken und noch einmal, wenn
-das 2s-Halten vollständig ist, im Reiter und in der Fußzeile. Eine Karte,
-die beim Drücken steckt und nach 2s fehlt, hält das Schreiben auf: nichts
+Beim Drücken, im Reiter und in der Fußzeile, fragt das Panel eine
+eingehängte Karte, ob sie antwortet, mit einem Kommando SEND_STATUS
+(CMD13), und sendet ohne eingehängte Karte nichts. Eine beim Drücken
+gefundene Karte wird noch einmal gefragt, wenn das 2s-Halten vollständig
+ist. Fehlt sie dann, hält sie das Schreiben auf: nichts
 wird gesendet, die Änderungen bleiben, und das Band sagt
 `Karte entnommen. Halte erneut, um ohne Backup zu schreiben.` Das nächste
 2s-Halten, beim Drücken ohne Karte, schreibt ohne Backup-Datei und hält
