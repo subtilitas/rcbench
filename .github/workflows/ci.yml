@@ -446,8 +446,9 @@ jobs:
                         -e 'test/host/bench_frame.c' \
               | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 
-      # The IOmcu's main loop sends each DShot frame: no busy wait and no
-      # printf() in its sources outside the allow list of the tool.
+      # The IOmcu's main loop sends each DShot frame: no busy wait, sleep,
+      # clock-polling loop or blocking print in the code the IOmcu builds,
+      # outside the allow list of the tool.
       - name: No wait in the IOmcu main loop
         run: python3 tools/check_loop_waits.py --check
 
