@@ -426,6 +426,8 @@ TRACKED = [
     "shared/bench/log_cadence.c",
     "shared/bench/perf_watch.c",
     "shared/bench/pass_stats.c",
+    "shared/bench/report_lines.c",
+    "shared/bench/report_steps.c",
     "shared/bench/imu.c",
     "shared/sense/sense_bus.c",
     "shared/sense/ina228.c",
