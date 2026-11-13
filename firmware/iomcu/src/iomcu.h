@@ -1068,10 +1068,11 @@ void can_service(uint32_t now);
  */
 void can_drain(void);
 
-/* iomcu_report.c: every 3s at most, from the main loop */
+/* iomcu_report.c: once a pass, from the main loop */
 /**
- * @brief Prints the console report when 3s have passed; its time goes into
- * s_pass as PASS_SEC_REPORT.
+ * @brief One pass of the console report: a snapshot when 3s have passed,
+ * and at most one line, only with room for it in the transport
+ * (report_steps.h); its time goes into s_pass as PASS_SEC_REPORT.
  *
  * @param now  The pass's clock in ms.
  */

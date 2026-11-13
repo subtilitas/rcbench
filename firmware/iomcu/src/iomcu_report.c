@@ -1,8 +1,13 @@
 /**
  * @file
  * @brief The console report every 3s: the flash store, the running slot
- * and why this start happened, the CAN bus and the current monitors as the
- * pages show them.
+ * and why this start happened, the CAN bus, the current monitors as the
+ * pages show them, and the main loop's pass times.
+ *
+ * The lines are shared/bench/report_lines.c's, and report_steps.c runs
+ * them: one snapshot at the due pass, then at most one line per pass, and
+ * only with REPORT_LINE_MAX bytes of room in the transport, so no line
+ * waits for the host.  This file holds the snapshot and the transport.
  *
  * See iomcu.h.
  *
@@ -18,11 +23,15 @@
 #include "hardware/structs/watchdog.h"
 #include "hardware/timer.h"
 #include "pico/bootrom.h"
+#include "pico/stdio.h"
 #include "pico/stdio_usb.h"
+#include "tusb.h"
 
 #include "iomcu.h"
 
 #include "boot_diag.h"
+#include "report_lines.h"
+#include "report_steps.h"
 #include "reset_cause.h"
 #include "sense_limit.h"
 #include "sense_map.h"
@@ -33,37 +42,25 @@
 #endif
 
 /**
- * @brief This file's report lines.
- *
- * The bench console build sends them through the console's output: none lands
- * inside a console line that leaves in pieces, and none waits for the host.
- * Every other build prints them.  A printf() waits for room in the USB
- * transmit buffer for at most PICO_STDIO_USB_STDOUT_TIMEOUT_US after the host
- * last took bytes, then drops the rest of the line.
- */
-#if IOMCU_CONSOLE
-#define IOMCU_SAY console_hw_say
-#else
-#define IOMCU_SAY printf
-#endif
-
-/**
  * @brief The longest a printf() waits for room in the USB transmit buffer
  * after the host last took bytes, in us.
  *
- * The main loop samples the heartbeat, and 150ms without an edge switches
- * every output off: a USB host that holds the port open and stops reading
- * holds a printf() for this long at most, not the SDK's 500,000us.
- * firmware/iomcu/CMakeLists.txt sets PICO_STDIO_USB_STDOUT_TIMEOUT_US and
- * says why; the assert below holds the two equal.
+ * The report does not use printf(); the boot lines and the store's lines
+ * (main.c) do.  The main loop samples the heartbeat, and 150ms without an
+ * edge switches every output off: a USB host that holds the port open and
+ * stops reading holds such a printf() for this long at most, not the
+ * SDK's 500,000us.  firmware/iomcu/CMakeLists.txt sets
+ * PICO_STDIO_USB_STDOUT_TIMEOUT_US and says why; the assert below holds the
+ * two equal.
  */
 #define IOMCU_USB_STDOUT_WAIT_US 1000u
 
 /**
  * @brief The USB transmit buffer, in bytes: CFG_TUD_CDC_TX_BUFSIZE.
  *
- * The 3s report at its widest, 1,489 bytes, fits whole, so a host that read
- * the last report gets this one without a printf() waiting.
+ * The report at its widest, REPORT_BYTES_MAX (1,353 bytes) and one "\r" a
+ * line, fits whole: a host that read the last report finds room for every
+ * line of this one, one line a pass.
  */
 #define IOMCU_USB_TX_BUFFER_BYTES 2048u
 
@@ -71,6 +68,10 @@ _Static_assert(PICO_STDIO_USB_STDOUT_TIMEOUT_US == IOMCU_USB_STDOUT_WAIT_US,
                "a stalled USB host must not hold the main loop");
 _Static_assert(CFG_TUD_CDC_TX_BUFSIZE == IOMCU_USB_TX_BUFFER_BYTES,
                "the 3s report must fit the USB transmit buffer");
+_Static_assert(REPORT_BYTES_MAX + REPORT_LINES <= IOMCU_USB_TX_BUFFER_BYTES,
+               "the 3s report must fit the USB transmit buffer");
+_Static_assert(LINK_SM_CHANNELS == REPORT_MAP_CHANNELS,
+               "the map line prints every INA3221 channel");
 
 /* reset_cause.h holds the SDK's bit values without the SDK. */
 _Static_assert(RESET_CHIP_HAD_POR == POWMAN_CHIP_RESET_HAD_POR_BITS, "POR");
@@ -115,18 +116,13 @@ _Static_assert(RESET_PICOTOOL_P0 == (uint32_t)BOOT_PARTITION_NONE,
 
 /** @brief The registers as reset_start() read them. */
 static reset_regs_t s_reset;
-
+/** @brief Why this start happened, as reset_start() read it. */
+static char s_why[RESET_CAUSE_FULL_MAX];
 /**
- * @brief The boot ROM's record of this boot, the line after every reset
- * line: boot type, partition booted, diagnostic source and word
- * (boot_diag.h).
+ * @brief The boot ROM's record of this boot: boot type, partition booted,
+ * diagnostic source and word (boot_diag.h).
  */
-static void boot_say(void)
-{
-    char boot[BOOT_DIAG_TEXT_MAX];
-    (void)boot_diag_text(&s_reset, boot, sizeof(boot));
-    IOMCU_SAY("rcbench-iomcu: %s\n", boot);
-}
+static char s_boot[BOOT_DIAG_TEXT_MAX];
 
 void reset_start(void)
 {
@@ -150,185 +146,180 @@ void reset_start(void)
     s_reset.reboot_params[0] = info.reboot_params[0];
     s_reset.reboot_params[1] = info.reboot_params[1];
 
-    char text[RESET_CAUSE_FULL_MAX];
-    (void)reset_cause_full(&s_reset, text, sizeof(text));
-    /* Before the console exists, like can_start()'s line; can_report()
-     * repeats it every 3s. */
-    printf("rcbench-iomcu: reset %s\n", text);
-    char boot[BOOT_DIAG_TEXT_MAX];
-    (void)boot_diag_text(&s_reset, boot, sizeof(boot));
-    printf("rcbench-iomcu: %s\n", boot);
+    (void)reset_cause_full(&s_reset, s_why, sizeof(s_why));
+    (void)boot_diag_text(&s_reset, s_boot, sizeof(s_boot));
+    /* Before the console exists, like can_start()'s line; the report
+     * repeats both every 3s. */
+    printf("rcbench-iomcu: reset %s\n", s_why);
+    printf("rcbench-iomcu: %s\n", s_boot);
 }
 
 #if IOMCU_CONSOLE
 void reset_say(void)
 {
-    char why[RESET_CAUSE_FULL_MAX];
-
-    (void)reset_cause_full(&s_reset, why, sizeof(why));
-    IOMCU_SAY("rcbench-iomcu: reset %s\n", why);
-    boot_say();
+    console_hw_say("rcbench-iomcu: reset %s\n", s_why);
+    console_hw_say("rcbench-iomcu: %s\n", s_boot);
 }
 #endif
 
 /**
- * @brief The current monitors as the pages show them, with can_report()
- * every 3s, while either part is enabled: what a bench session reads before
- * the panel has a screen for them.
+ * @brief The current monitors as the pages show them, into the snapshot:
+ * FLAGS, PRESENT and the IDs, the reset counts of the INA228 and the
+ * INA3221, BENCH's 10mV and 10mA, CH1's mA and mV, times in 0.1ms, the
+ * INA3221 map with each channel's mA, and SENSE_LIMIT's OVER and
+ * OVER_COUNT read without clearing.
  *
- * The registers as published, in their own
- * units: FLAGS, PRESENT and the IDs in hex, the reset counts of the INA228
- * and the INA3221, BENCH's 10mV and 10mA, CH1's
- * mA and mV, times in 0.1ms; and the INA3221 map with each channel's mA.
+ * @param s  The snapshot; its sense_on is already set.
  */
-static void sense_report(void)
+static void sense_snap(report_snap_t *s)
 {
-    if (!sense_page_enabled(&s_sense)) {
-        return;
-    }
     sense_sync();
     const uint16_t *n = s_sense.sense;
     const uint16_t *v = s_sense.servo;
     const uint16_t *b = s_state.bench;
-    IOMCU_SAY("rcbench-iomcu: sense flags 0x%04X present 0x%04X ids 0x%04X "
-              "0x%04X errors %u resets %u %u | bench %u cV %u cA %u mAh %u dWh "
-              "flags 0x%02X | temp %d dC\n",
-              n[LINK_SN_FLAGS], n[LINK_SN_PRESENT], n[LINK_SN_I228_ID],
-              n[LINK_SN_I3221_ID], n[LINK_SN_ERRORS],
-              (unsigned)LINK_SN_RESETS_I228(n[LINK_SN_RESETS]),
-              (unsigned)LINK_SN_RESETS_I3221(n[LINK_SN_RESETS]),
-              b[LINK_BN_VOLTAGE_CV],
-              b[LINK_BN_CURRENT_CA], b[LINK_BN_CHARGE_MAH],
-              b[LINK_BN_ENERGY_DWH],
-              b[LINK_BN_FLAGS], (int)(int16_t)n[LINK_SN_I228_TEMP_DC]);
-    IOMCU_SAY("rcbench-iomcu: sense window %u CH1 %d mA %u mV "
-              "ch_flags 0x%02X | capture state %u seq %u move %u arrive %u\n",
-              v[LINK_SS_WINDOW], (int)(int16_t)v[LINK_SS_CH_MEAN_MA],
-              v[LINK_SS_CH_MEAN_MV], v[LINK_SS_CH_FLAGS], v[LINK_SS_CAP_STATE],
-              v[LINK_SS_CAP_SEQ], v[LINK_SS_CAP_MOVE_T],
-              v[LINK_SS_CAP_ARRIVE_T]);
+    s->sn_flags     = n[LINK_SN_FLAGS];
+    s->sn_present   = n[LINK_SN_PRESENT];
+    s->i228_id      = n[LINK_SN_I228_ID];
+    s->i3221_id     = n[LINK_SN_I3221_ID];
+    s->sn_errors    = n[LINK_SN_ERRORS];
+    s->i228_resets  = LINK_SN_RESETS_I228(n[LINK_SN_RESETS]);
+    s->i3221_resets = LINK_SN_RESETS_I3221(n[LINK_SN_RESETS]);
+    s->temp_dc      = (int16_t)n[LINK_SN_I228_TEMP_DC];
+    s->bn_cv        = b[LINK_BN_VOLTAGE_CV];
+    s->bn_ca        = b[LINK_BN_CURRENT_CA];
+    s->bn_mah       = b[LINK_BN_CHARGE_MAH];
+    s->bn_dwh       = b[LINK_BN_ENERGY_DWH];
+    s->bn_flags     = b[LINK_BN_FLAGS];
+    s->ss_window    = v[LINK_SS_WINDOW];
+    s->ch1_ma       = (int16_t)v[LINK_SS_CH_MEAN_MA];
+    s->ch1_mv       = v[LINK_SS_CH_MEAN_MV];
+    s->ch_flags     = v[LINK_SS_CH_FLAGS];
+    s->cap_state    = v[LINK_SS_CAP_STATE];
+    s->cap_seq      = v[LINK_SS_CAP_SEQ];
+    s->cap_move     = v[LINK_SS_CAP_MOVE_T];
+    s->cap_arrive   = v[LINK_SS_CAP_ARRIVE_T];
     /* The INA3221 map: fitted parts, FAST, its flags (bit 8 in force, bit
      * 9 derived from SENSE) and each channel's mean mA, 0 to 11. */
     uint16_t m[LINK_SM_COUNT];
     sense_map_read(&s_sense, 0u, (uint8_t)LINK_SM_COUNT, m);
-    int16_t ma[LINK_SM_CHANNELS];
+    s->map_fit   = m[LINK_SM_ENABLE];
+    s->map_fast  = m[LINK_SM_FAST];
+    s->map_flags = m[LINK_SM_FLAGS];
     for (unsigned c = 0; c < LINK_SM_CHANNELS; ++c) {
-        ma[c] = (int16_t)s_sense.xwin[c / LINK_SX_PER_PAGE]
-                    [LINK_SX_E(c % LINK_SX_PER_PAGE, LINK_SX_E_MEAN_MA)];
+        s->map_ma[c] = (int16_t)s_sense.xwin[c / LINK_SX_PER_PAGE]
+                           [LINK_SX_E(c % LINK_SX_PER_PAGE, LINK_SX_E_MEAN_MA)];
     }
-    /* And SENSE_LIMIT's OVER and OVER_COUNT, read without clearing. */
     uint16_t over[2];
     sense_limit_peek(&s_sense, (uint8_t)LINK_SL_OVER, 2u, over);
-    IOMCU_SAY("rcbench-iomcu: sense map fit 0x%X fast %u flags 0x%04X | mA "
-              "%d %d %d %d %d %d %d %d %d %d %d %d | over 0x%03X count %u\n",
-              m[LINK_SM_ENABLE], m[LINK_SM_FAST], m[LINK_SM_FLAGS], ma[0],
-              ma[1], ma[2], ma[3], ma[4], ma[5], ma[6], ma[7], ma[8], ma[9],
-              ma[10], ma[11], over[0], over[1]);
+    s->over       = over[0];
+    s->over_count = over[1];
 }
 
 /**
- * @brief The main loop's figures since the last report, and cleared
- * (pass_stats.h): the longest pass, the passes over PASS_STATS_OVER_US, the
- * longest can_service() call and the longest can_report() call.
+ * @brief report_io_t's snapshot: every value the report prints, at the
+ * pass it is due, so one report shows one instant.  The loop figures and
+ * the transmit queue's peak are read and cleared here.
  *
- * A report reads the figures before its own call ends, so its loop line
- * counts the report before it, and that report's pass.
+ * @param ctx  Unused.
+ * @param s    Receives the values.
  */
-static void loop_say(void)
+static void io_snap(void *ctx, report_snap_t *s)
 {
-    pass_figures_t f;
-    pass_stats_take(&s_pass, &f);
-    IOMCU_SAY("rcbench-iomcu: loop max %lu us, over %uus %lu, can max %lu us, "
-              "report max %lu us\n",
-              (unsigned long)f.max_us, (unsigned)PASS_STATS_OVER_US,
-              (unsigned long)f.over,
-              (unsigned long)f.sec_max_us[PASS_SEC_CAN],
-              (unsigned long)f.sec_max_us[PASS_SEC_REPORT]);
+    (void)ctx;
+    memset(s, 0, sizeof(*s));
+    s->store_off = out_store_is_off();
+    s->slot      = (int8_t)update_hw_slot();
+    s->on_trial  = update_hw_on_trial();
+    s->reset     = s_why;
+    s->boot      = s_boot;
+    s->can_up    = s_can_up;
+    if (s_can_up) {
+        s->bitrate  = IOMCU_CAN_BITRATE;
+        s->requests = s_frames;
+        s->echoes   = s_can_echoes;
+        xl2515_errors(&s->tec, &s->rec, &s->eflg);
+        s->tx_drop  = s_can_txq.dropped;
+        s->txq_max  = can_txq_take_peak(&s_can_txq);
+        s->overruns = s_can_overflows;
+    }
+    s->sense_on = sense_page_enabled(&s_sense);
+    if (s->sense_on) {
+        sense_snap(s);
+    }
+    pass_stats_take(&s_pass, &s->loop);
 }
 
 /**
- * @brief The report, when 3s have passed; can_report() times it.
+ * @brief report_io_t's host: the bench console build always takes lines
+ * (the USB port or the panel's CONSOLE page reads them); every other build
+ * while a USB host has the port open.
  *
- * Repeated every 3s rather than printed at boot alone.  USB (Universal
- * Serial Bus) CDC (communications device class) does not exist until a host
- * enumerates it, so anything printed before the terminal opens is lost.
- *
- * @param now  The pass's clock in ms.
+ * @param ctx  Unused.
+ * @return true when the report is to be written.
  */
-static void report_due(uint32_t now)
+static bool io_host(void *ctx)
 {
-    static uint32_t last;
-    if (now - last < 3000u && last != 0u) {
-        return;
-    }
-    last = now;
-
-    if (out_store_is_off()) {
-        IOMCU_SAY("rcbench-iomcu: flash store OFF -- core 1 did not "
-                  "register for the flash lock-out; set-ups run from RAM and "
-                  "are lost at restart\n");
-    }
-    /* Which slot runs: a bench without the partition table takes its
-     * next image over USB only. */
-    if (update_hw_slot() < 0) {
-        IOMCU_SAY("rcbench-iomcu: no partition table -- firmware updates over "
-                  "CAN need one USB load of rcbench-iomcu-install.uf2\n");
-    } else {
-        IOMCU_SAY("rcbench-iomcu: running from slot %c%s\n",
-                  update_hw_slot() == 0 ? 'A' : 'B',
-                  update_hw_on_trial() ? ", on trial until the panel buys it"
-                                       : "");
-    }
-    /* Why this start happened, with every raw value: the start-up line
-     * leaves before a host has the port open, so it is repeated here. */
-    char why[RESET_CAUSE_FULL_MAX];
-    (void)reset_cause_full(&s_reset, why, sizeof(why));
-    IOMCU_SAY("rcbench-iomcu: reset %s\n", why);
-    boot_say();
-    if (!s_can_up) {
-        IOMCU_SAY("rcbench-iomcu: CAN did not answer on SPI -- module fitted? "
-                  "wiring on GP9-12?\n");
-        sense_report();
-        loop_say();
-        return;
-    }
-    uint8_t tec = 0, rec = 0, eflg = 0;
-    xl2515_errors(&tec, &rec, &eflg);
-    /*
-     * Requests first, because it is the number that answers "is the other
-     * end talking to me at all".  Echoes are self-test traffic and are zero
-     * in ordinary use, which reads as nothing arriving when this line carried
-     * them alone.  A request count standing still while the panel says NO
-     * LINK means the panel has stopped transmitting; one that climbs while
-     * the panel says NO LINK means the answers are not getting back.
-     */
-    IOMCU_SAY("rcbench-iomcu: CAN up, %u bit/s, %lu requests served, "
-              "%lu self-test echoes, tx_err %u rx_err %u eflg 0x%02X "
-              "tx_drop %lu txq_max %u\n",
-              (unsigned)IOMCU_CAN_BITRATE, (unsigned long)s_frames,
-              (unsigned long)s_can_echoes, tec, rec, eflg,
-              (unsigned long)s_can_txq.dropped,
-              (unsigned)can_txq_take_peak(&s_can_txq));
-    /*
-     * Said in words: an overflow is the one thing that explains a frame
-     * going missing while the bus reports no error.  The part has two
-     * receive buffers, so anything that stops this loop for two frame times
-     * costs a frame, and a printf that waits up to 1,000us for a USB host
-     * that has stopped reading is such a thing.
-     */
-    if (s_can_overflows > 0u) {
-        IOMCU_SAY("rcbench-iomcu: CAN receive buffers overran %lu time(s) -- "
-                  "frames arrived with nowhere to put them; not a bus fault\n",
-                  (unsigned long)s_can_overflows);
-    }
-    sense_report();
-    loop_say();
+    (void)ctx;
+#if IOMCU_CONSOLE
+    return true;
+#else
+    return stdio_usb_connected();
+#endif
 }
+
+/**
+ * @brief report_io_t's room: the bench console's output never waits, so
+ * it takes a line of REPORT_LINE_MAX bytes on any pass; the USB port has
+ * what its transmit buffer has free now.
+ *
+ * @param ctx  Unused.
+ * @return Bytes a line may take without a wait.
+ */
+static size_t io_room(void *ctx)
+{
+    (void)ctx;
+#if IOMCU_CONSOLE
+    return REPORT_LINE_MAX;
+#else
+    return stdio_usb_connected() ? (size_t)tud_cdc_write_available() : 0u;
+#endif
+}
+
+/**
+ * @brief report_io_t's output: through the bench console's output in that
+ * build, so no report line lands inside a console line; else to USB
+ * stdio with "\n" sent as "\r\n", as printf() sends it.  The room check
+ * before it means the write finds room for the whole line.
+ *
+ * @param ctx   Unused.
+ * @param line  The line, terminated.
+ * @param n     Its length.
+ */
+static void io_put(void *ctx, const char *line, size_t n)
+{
+    (void)ctx;
+#if IOMCU_CONSOLE
+    (void)n;
+    console_hw_say("%s", line);
+#else
+    (void)stdio_put_string(line, (int)n, false, true);
+#endif
+}
+
+/** @brief The report's transport and snapshot. */
+static const report_io_t k_report_io = {
+    io_host, io_room, io_snap, io_put, NULL,
+};
+
+/**
+ * @brief The report's progress: the line due next, the snapshot.  Zero at
+ * start, which is report_steps_init()'s state: the first pass is due.
+ */
+static report_steps_t s_report;
 
 void can_report(uint32_t now)
 {
     const uint32_t t0 = time_us_32();
-    report_due(now);
+    (void)report_steps_pass(&s_report, &k_report_io, now);
     pass_stats_section(&s_pass, PASS_SEC_REPORT, t0, time_us_32());
 }
-

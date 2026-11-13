@@ -575,7 +575,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,516 | 528 | 1,796 |
+| core 0 | `main` | 4,096 | 1,512 | 528 | 1,800 |
 | core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -588,7 +588,7 @@ the image with the runner's packaged one. The frames named below are those
 of the same build.
 
 Core 0's deepest chain is a request that binds an output and fails in the
-pico-sdk: `main` (256 bytes), `can_service` (16), `can_serve` (352),
+pico-sdk: `main` (256 bytes), `can_service` (16), `can_serve` (336),
 `link_dev_dispatch`,
 `slots_write`, `slots_take`, `ports_apply`, `slots_rerate`,
 `outputs_hw_apply_only`, `out_render_apply`, `out_render_hw_bind`,
@@ -632,7 +632,7 @@ its request to send is aborted with the rest of the queue and counted as
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 255 such calls
+  handler, which the tool reads out of the link's page table: 261 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
   14.2.1);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.
