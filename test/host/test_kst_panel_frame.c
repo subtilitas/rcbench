@@ -17,6 +17,12 @@
  * - the_footers_write_is_the_sessions_from_any_tab
  * - the_session_takes_no_press_under_the_footers_write_hold
  * - a_touch_loss_after_the_footers_hold_completes_sends_nothing
+ * - a_second_finger_on_the_footers_write_keeps_the_first_hold
+ * - a_press_held_on_the_session_starts_no_footer_hold
+ * - the_footers_press_says_a_refusal_at_once
+ * - a_finger_that_leaves_the_footers_write_ends_its_hold
+ * - the_footers_hold_ends_when_the_write_goes_away
+ * - the_sessions_write_go_refuses_what_the_footer_does_not_offer
  * - the_footer_asks_no_arm_and_the_card_drives_nothing
  * - a_finger_on_the_card_or_write_keeps_settings_and_port_shut
  * - a_press_on_the_supply_while_it_reads_on_switches_it_off
@@ -256,6 +262,153 @@ TEST_CASE(the_session_takes_no_press_under_the_footers_write_hold)
     CHECK_EQ(kst_prog_changes(M), 0);
 }
 
+/**
+ * @brief KST's screen with the servo read and three values edited, the
+ *        footer's WRITE n VALUES live.
+ */
+static void footer_live(void)
+{
+    kst_on();
+    connected();
+    edits();
+    ui_router_set_alert(NULL);
+}
+
+/** @brief The footer's WRITE: no write went and the edits stand. */
+static void nothing_written(void)
+{
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK_EQ(kst_prog_changes(M), 3);
+    CHECK(!kst_prog_write_enabled(M));
+}
+
+/* A second finger on the footer's WRITE under its hold neither starts the
+ * hold again nor ends it: the first finger's 2s write. */
+TEST_CASE(a_second_finger_on_the_footers_write_keeps_the_first_hold)
+{
+    footer_live();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ticks(1.5f);
+    ev(ARM_X + 6, ARM_Y, TOUCH_EVENT_DOWN, 2);
+    ticks(0.7f);
+    ev(ARM_X + 6, ARM_Y, TOUCH_EVENT_UP, 2);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+}
+
+/* A finger already on the session's rows: the footer's WRITE starts no
+ * hold under it, and 2.5s on it write nothing. */
+TEST_CASE(a_press_held_on_the_session_starts_no_footer_hold)
+{
+    footer_live();
+    tap(kst_panel_tab_rect(PG_TUNE));
+    const gfx_rect_t r = val(PG_TUNE, 1, 0);
+
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 2);
+    CHECK(kst_panel_pressed());
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ticks(2.5f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    ev(r.x - 40, cy(r), TOUCH_EVENT_MOVE, 2);
+    ev(r.x - 40, cy(r), TOUCH_EVENT_UP, 2);
+    nothing_written();
+}
+
+/* A write the session refuses whatever the hold (STOP latched): the
+ * press on the footer says why at once and starts no hold. */
+TEST_CASE(the_footers_press_says_a_refusal_at_once)
+{
+    footer_live();
+    rig_stop(true);
+    settle();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK_EQ(msg(), KST_PROG_MSG_STOPPED);
+    ticks(2.5f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    nothing_written();
+    rig_stop(false);
+    settle();
+}
+
+/* A finger that slides off the footer's WRITE ends its hold; one that
+ * moves on it keeps it, and one that slides off after the hold fired
+ * leaves the write going. */
+TEST_CASE(a_finger_that_leaves_the_footers_write_ends_its_hold)
+{
+    footer_live();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ticks(0.5f);
+    ev(ARM_X + 4, ARM_Y, TOUCH_EVENT_MOVE, 1);
+    ticks(0.5f);
+    ev(ARM_X, ARM_Y - 120, TOUCH_EVENT_MOVE, 1);
+    ticks(2.0f);
+    ev(ARM_X, ARM_Y - 120, TOUCH_EVENT_UP, 1);
+    nothing_written();
+    /* Off the button after the hold fired: the write goes. */
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ticks(2.2f);
+    ev(ARM_X, ARM_Y - 120, TOUCH_EVENT_MOVE, 1);
+    ev(ARM_X, ARM_Y - 120, TOUCH_EVENT_UP, 1);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+}
+
+/* The session takes the write away under the footer's hold (DISCARD
+ * EDITS by the model), or the screen shows another function: the hold
+ * ends and nothing is written. */
+TEST_CASE(the_footers_hold_ends_when_the_write_goes_away)
+{
+    footer_live();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ticks(1.0f);
+    kst_prog_discard(M);
+    ticks(0.1f);
+    edits();
+    ticks(1.5f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    nothing_written();
+
+    footer_live();
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ticks(1.0f);
+    servo_screen_show_fn(SERVO_FN_LIVE);
+    ticks(0.1f);
+    servo_screen_show_fn(SERVO_FN_KST);
+    ticks(1.5f);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    nothing_written();
+}
+
+/* kst_panel_write_go() asks nothing with an editor open, with a press in
+ * the session or with no edit; with none of them it sends on the next
+ * tick. */
+TEST_CASE(the_sessions_write_go_refuses_what_the_footer_does_not_offer)
+{
+    footer_live();
+    kst_panel_back();
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(!kst_panel_write_go());
+    kst_panel_back();
+    {
+        const gfx_rect_t r = val(PG_SERVO, 1, 0);
+
+        ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 2);
+        CHECK(!kst_panel_write_go());
+        ev(r.x - 40, cy(r), TOUCH_EVENT_MOVE, 2);
+        ev(r.x - 40, cy(r), TOUCH_EVENT_UP, 2);
+    }
+    nothing_written();
+    kst_prog_discard(M);
+    CHECK(!kst_panel_write_go());
+    edits();
+    CHECK(kst_panel_write_go());
+    tick(0.02f);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+}
+
 /* The footer's hold that completes sends on the next tick, as the tab's
  * does: a touch loss in between sends nothing and keeps the edits; with
  * no loss the next tick sends. */
@@ -426,6 +579,12 @@ int main(void)
     RUN(the_footers_write_is_the_sessions_from_any_tab);
     RUN(the_session_takes_no_press_under_the_footers_write_hold);
     RUN(a_touch_loss_after_the_footers_hold_completes_sends_nothing);
+    RUN(a_second_finger_on_the_footers_write_keeps_the_first_hold);
+    RUN(a_press_held_on_the_session_starts_no_footer_hold);
+    RUN(the_footers_press_says_a_refusal_at_once);
+    RUN(a_finger_that_leaves_the_footers_write_ends_its_hold);
+    RUN(the_footers_hold_ends_when_the_write_goes_away);
+    RUN(the_sessions_write_go_refuses_what_the_footer_does_not_offer);
     RUN(the_footer_asks_no_arm_and_the_card_drives_nothing);
     RUN(a_finger_on_the_card_or_write_keeps_settings_and_port_shut);
     RUN(a_press_on_the_supply_while_it_reads_on_switches_it_off);

@@ -16,7 +16,7 @@
  * The SERVO screen's guide names SERIES or FILES as the row shows it, a
  * CONNECT on its way included, and gives the port's button the text of
  * what it reads: CONNECT, ABORT, LEAVE, WAIT or RELEASE PORT, in English
- * and German.
+ * and German.  The footer's WRITE n VALUES writes through its 2s hold.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -25,6 +25,7 @@
 
 #include "prog_choice.h"
 #include "servo_screen.h"
+#include "servo_spots.h"
 #include "ui_board.h"
 #include "ui_help.h"
 
@@ -947,8 +948,47 @@ TEST_CASE(the_gate_outlives_a_start_of_the_screens)
     CHECK(hitec_panel_model()->gate == NULL);
 }
 
+/* The footer's WRITE n VALUES on HITEC: the press asks the session's
+ * refusal, the 2s hold sends the edit through the session on the next
+ * tick, and the servo takes it. */
+TEST_CASE(the_footers_write_holds_and_writes_on_hitec)
+{
+    const ui_screen_t *sv = servo_fn_screen(SERVO_FN_HITEC);
+    const int x = SV_ARM_X, y = SV_ARM_Y + SV_ARM_H / 2;
+
+    sv->reset();
+    open_at(SUPPLY_NONE, UI_LANG_EN);
+    servo_d485();
+    servo_screen_show_fn(SERVO_FN_HITEC);
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    settled();
+    CHECK_EQ(pstate(), HITEC_PROG_HELD);
+    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
+             HITEC_PROG_EDIT_OK);
+    {
+        const touch_event_t down = { .type = TOUCH_EVENT_DOWN,
+                                     .point = { .id = 3, .x = (int16_t)x,
+                                                .y = (int16_t)y,
+                                                .strength = 40 } };
+        touch_event_t up = down;
+
+        up.type = TOUCH_EVENT_UP;
+        sv->event(&down);
+        for (int i = 0; i < 110; ++i) {
+            sv->tick(0.02f);
+            prun(20u);
+        }
+        sv->event(&up);
+    }
+    until(HITEC_PROG_HELD);
+    CHECK_EQ(g_drv.dreg[0x60], 6u);
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    CHECK(!hitec_prog_write_on(model()));
+}
+
 int main(void)
 {
+    RUN(the_footers_write_holds_and_writes_on_hitec);
     RUN(the_gate_outlives_a_start_of_the_screens);
     RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     RUN(a_held_ports_reading_moves_the_page_as_its_state_line_shows_it);
