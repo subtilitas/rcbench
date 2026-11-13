@@ -16,6 +16,7 @@
 #include "boot/bootrom_constants.h"
 #include "hardware/structs/powman.h"
 #include "hardware/structs/watchdog.h"
+#include "hardware/timer.h"
 #include "pico/bootrom.h"
 #include "pico/stdio_usb.h"
 
@@ -225,12 +226,36 @@ static void sense_report(void)
               ma[10], ma[11], over[0], over[1]);
 }
 
-/*
+/**
+ * @brief The main loop's figures since the last report, and cleared
+ * (pass_stats.h): the longest pass, the passes over PASS_STATS_OVER_US, the
+ * longest can_service() call and the longest can_report() call.
+ *
+ * A report reads the figures before its own call ends, so its loop line
+ * counts the report before it, and that report's pass.
+ */
+static void loop_say(void)
+{
+    pass_figures_t f;
+    pass_stats_take(&s_pass, &f);
+    IOMCU_SAY("rcbench-iomcu: loop max %lu us, over %uus %lu, can max %lu us, "
+              "report max %lu us\n",
+              (unsigned long)f.max_us, (unsigned)PASS_STATS_OVER_US,
+              (unsigned long)f.over,
+              (unsigned long)f.sec_max_us[PASS_SEC_CAN],
+              (unsigned long)f.sec_max_us[PASS_SEC_REPORT]);
+}
+
+/**
+ * @brief The report, when 3s have passed; can_report() times it.
+ *
  * Repeated every 3s rather than printed at boot alone.  USB (Universal
  * Serial Bus) CDC (communications device class) does not exist until a host
  * enumerates it, so anything printed before the terminal opens is lost.
+ *
+ * @param now  The pass's clock in ms.
  */
-void can_report(uint32_t now)
+static void report_due(uint32_t now)
 {
     static uint32_t last;
     if (now - last < 3000u && last != 0u) {
@@ -264,6 +289,7 @@ void can_report(uint32_t now)
         IOMCU_SAY("rcbench-iomcu: CAN did not answer on SPI -- module fitted? "
                   "wiring on GP9-12?\n");
         sense_report();
+        loop_say();
         return;
     }
     uint8_t tec = 0, rec = 0, eflg = 0;
@@ -295,5 +321,13 @@ void can_report(uint32_t now)
                   (unsigned long)s_can_overflows);
     }
     sense_report();
+    loop_say();
+}
+
+void can_report(uint32_t now)
+{
+    const uint32_t t0 = time_us_32();
+    report_due(now);
+    pass_stats_section(&s_pass, PASS_SEC_REPORT, t0, time_us_32());
 }
 

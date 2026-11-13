@@ -47,6 +47,7 @@
 #include "out_stage.h"
 #include "out_store.h"
 #include "outputs.h"
+#include "pass_stats.h"
 #include "outputs_hw.h"
 #include "pdmini.h"
 #include "prog_port.h"
@@ -259,6 +260,13 @@ extern uint32_t s_refused;
  * was meant to wait out.
  */
 extern uint32_t s_now_ms;
+
+/**
+ * @brief The main loop's pass times: main() begins each pass, can_service()
+ * and can_report() time themselves, and the report reads and clears the
+ * figures every 3s.
+ */
+extern pass_stats_t s_pass;
 
 /**
  * @brief The heartbeat line's level at the last sample; see iomcu_can.c.
@@ -1041,7 +1049,8 @@ void heartbeat_init(void);
  */
 void can_start(void);
 /**
- * @brief Empties the CAN receive buffers and answers each frame.
+ * @brief Empties the CAN receive buffers and answers each frame; its time
+ * goes into s_pass as PASS_SEC_CAN.
  *
  * @param now  The pass's clock in ms, stamped on each frame received and
  *             passed to the link dispatcher.
@@ -1050,7 +1059,8 @@ void can_service(uint32_t now);
 
 /* iomcu_report.c: every 3s at most, from the main loop */
 /**
- * @brief Prints the console report when 3s have passed.
+ * @brief Prints the console report when 3s have passed; its time goes into
+ * s_pass as PASS_SEC_REPORT.
  *
  * @param now  The pass's clock in ms.
  */

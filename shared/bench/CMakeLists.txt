@@ -14,6 +14,7 @@ set(SRCS
     log_cols.c
     log_cadence.c
     perf_watch.c
+    pass_stats.c
     supply.c
     supply_link.c
     prog_supply_link.c

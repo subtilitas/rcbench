@@ -575,7 +575,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,520 | 528 | 1,792 |
+| core 0 | `main` | 4,096 | 1,528 | 528 | 1,784 |
 | core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -588,7 +588,8 @@ the image with the runner's packaged one. The frames named below are those
 of the same build.
 
 Core 0's deepest chain is a request that binds an output and fails in the
-pico-sdk: `main` (256 bytes), `can_service` (360), `link_dev_dispatch`,
+pico-sdk: `main` (256 bytes), `can_service` (16), `can_serve` (352),
+`link_dev_dispatch`,
 `slots_write`, `slots_take`, `ports_apply`, `slots_rerate`,
 `outputs_hw_apply_only`, `out_render_apply`, `out_render_hw_bind`,
 `out_dshot_bind`, the

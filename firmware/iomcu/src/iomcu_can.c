@@ -119,17 +119,19 @@ void can_start(void)
            (unsigned)IOMCU_CAN_BITRATE);
 }
 
-/*
+/**
+ * @brief Empties the receive buffers and answers each frame; can_service()
+ * times it.
+ *
  * One clock for the whole pass, handed in.  Every timeout is a wrap-safe
  * unsigned subtraction, so a last_request_ms stamped 1ms later than the
  * `now` that link_dev_tick() receives reads as 4,294,967,295ms of silence,
  * past every timeout there is.
+ *
+ * @param now  The pass's clock in ms.
  */
-void can_service(uint32_t now)
+static void can_serve(uint32_t now)
 {
-    if (!s_can_up) {
-        return;
-    }
     if (xl2515_take_overflow()) {
         ++s_can_overflows;
     }
@@ -191,4 +193,14 @@ void can_service(uint32_t now)
             }
         }
     }
+}
+
+void can_service(uint32_t now)
+{
+    if (!s_can_up) {
+        return;
+    }
+    const uint32_t t0 = time_us_32();
+    can_serve(now);
+    pass_stats_section(&s_pass, PASS_SEC_CAN, t0, time_us_32());
 }

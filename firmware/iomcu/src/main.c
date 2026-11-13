@@ -99,6 +99,7 @@ heartbeat_mon_t s_beat;
 uint32_t        s_frames;
 uint32_t        s_refused;
 uint32_t        s_now_ms;
+pass_stats_t    s_pass;
 
 /**
  * @brief The bank was driving on the last pass: the edge into driving
@@ -687,6 +688,9 @@ int main(void)
     uint32_t last_sample = (uint32_t)to_ms_since_boot(get_absolute_time());
 
     for (;;) {
+        /* The pass before this one ends here: its length into the
+         * report's loop line (pass_stats.h). */
+        pass_stats_pass(&s_pass, time_us_32());
         /*
          * ONE CLOCK PER PASS, used by everything below.  Every timeout here
          * is a wrap-safe unsigned subtraction, so a timestamp 1ms ahead of

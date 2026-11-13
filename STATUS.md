@@ -1398,7 +1398,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 542 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 543 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1473,7 +1473,7 @@ The host suite is 542 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_files_view`, `test_files_edit`, `test_files_save`, `test_files_changed`,
 `test_files_rescan`, `test_logs_strip`, `test_textkey_editor`, `test_textkey_see`,
 `test_textkey_cursor`, `test_files_layout`, `test_fault_log`, `test_logwriter`, `test_servo_runlog`,
-`test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`,
+`test_servo_runlog_cols`, `test_servo_log_figures`, `test_log_cadence`, `test_perf_watch`, `test_pass_stats`,
 `test_fuzz_engines`, `test_kst_wire`, `test_kst_reg`, `test_kst_plan`, `test_kst_session`,
 `test_kst_pio`, `test_kst_port`, `test_kst_port_cut`, `test_kst_link`, `test_prog_port`,
 `test_prog_port_fn`, `test_kst_file`, `test_kst_prog`, `test_kst_prog_card`,
@@ -1988,7 +1988,7 @@ known (none listed). `image_slot.py` holds the panel image to the smaller of its
 slots.
 
 `stack_check.py --iomcu` holds each IOmcu core's deepest chain, one interrupt and 256 bytes
-to the core's stack: core 0 reaches 1520 of 4096 with 528 for an interrupt. `stack_check.py`
+to the core's stack: core 0 reaches 1528 of 4096 with 528 for an interrupt. `stack_check.py`
 holds each panel task's deepest chain on the ESP32-P4, decoded from its RISC-V code, and
 1024 bytes to the task's stack; the main task reaches 5424 of 8192. `frame_cost.py` holds 27
 modes to ceilings of L2 fills under the P4's caches; the bench frame has no ceiling while
@@ -2637,8 +2637,8 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 
 ### IOmcu core 0's stack
 
-`stack_check.py --iomcu` measures 1520 bytes for the deepest chain and 528 for one interrupt
-on the 4096-byte stack, 1792 bytes above the 256-byte margin. The figures are those of the
+`stack_check.py --iomcu` measures 1528 bytes for the deepest chain and 528 for one interrupt
+on the 4096-byte stack, 1784 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
 holds them. The depth is a lower bound: 251 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
