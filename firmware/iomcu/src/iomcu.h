@@ -247,9 +247,9 @@ extern uint32_t s_refused;
  * their own.
  *
  * Read at the top of the loop and once more before its tail, and nowhere
- * else.  The second read is there because two things in a pass can stop this
- * core for longer than a pass lasts: a flash window, and a printf to a USB
- * host.  See the loop for why that matters to what is measured after them.
+ * else.  The second read is there because a flash window, with the store's
+ * printf to a USB host after it, stops this core for longer than a pass
+ * lasts.  See the loop for why that matters to what is measured after it.
  *
  * Every timeout in this application is a wrap-safe unsigned subtraction of
  * two timestamps.  A second reading of the clock inside a pass can be a

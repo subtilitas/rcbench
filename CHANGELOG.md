@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- The IOmcu's 3s console report ends with the main loop's pass times since
+  the report before it: the longest pass, the passes over 500us, the
+  longest `can_service()` call and the longest report pass
+  (`loop max`, `over 500us`, `can max`, `report max`). Its CAN line ends
+  with `txq_max`, the most reply frames queued at once
+  ([Bringup](docs/Bringup.md#iomcu)).
+
 - Column `throttle (%)` in the MOTOR run log, after `rpm`: the throttle
   the panel commands at the sample, 0 to 100% to 0.1%, for PWM and DShot
   outputs. On a measured row it is the THROTTLE in force at the IOmcu
@@ -32,6 +39,17 @@ history is in git.
   duty ([Performance](docs/Performance.md#on-the-board)).
 
 ### Changed
+
+- The IOmcu queues each CAN reply whole, up to 16 frames, and sends 3
+  frames a pass through the controller's 3 transmit buffers; no pass waits
+  for a transmit buffer. A batch still unsent 5000us after its request to
+  send is aborted with the rest of the queue and counted in `tx_drop`; a
+  reply frame waited up to 1,000us for the one transmit buffer before.
+  The firmware update's restart sends the queue first
+  ([DShot](docs/DShot.md), [Bringup](docs/Bringup.md#iomcu)).
+- The IOmcu's 3s console report hands out one line a pass, only when the
+  USB transmit buffer has room for 256 bytes: a host that holds the port
+  and stops reading holds no pass. The text of the report is unchanged.
 
 - A screen guide's badge takes the first of 11 places beside or on its
   control that covers no string the screen draws, in either language: the

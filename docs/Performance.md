@@ -619,12 +619,15 @@ request found takes 120,136 units, at most 1,202 passes and 397 to 647ms
 of planner time. All times are for 150MHz, computed in an emulator from
 the instructions executed with ARM GNU 14.2 at -O3, and not measured on
 hardware. The time of a pass with the link, the heartbeat and the outputs
-in it is not measured. The heartbeat gap that switches every output off is
-150ms. One wait of a pass is bounded in time. A `printf()` to the USB
-console waits at most 1,000us for room in the 2,048-byte transmit buffer
-after the host last took bytes, then drops the rest of the line; a host
-that holds the port open and stops reading costs that wait once. A reply
-on CAN waits for no transmit buffer: it is queued whole in a queue of 16
+in it is not recorded here; the console report's loop line gives it on the
+board ([Bringup](Bringup.md#iomcu)). The heartbeat gap that switches every
+output off is 150ms. The 3s console report waits for no USB host: it hands
+out one line a pass, and only when the transmit buffer has room for 256
+bytes. A `printf()` to the USB console waits at most 1,000us for room in
+the 2,048-byte transmit buffer after the host last took bytes, then drops
+the rest of the line; only the boot lines and the store's lines use it,
+and a host that holds the port open and stops reading costs that wait
+once. A reply on CAN waits for no transmit buffer: it is queued whole in a queue of 16
 frames and leaves 3 frames per pass. A batch still requested 5000us after
 its request to send is aborted with the rest of the queue and counted as
 `tx_drop`.

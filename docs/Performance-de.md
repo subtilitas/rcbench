@@ -660,13 +660,17 @@ aufwendigste gefundene Auftrag benötigt 120 136 Einheiten, höchstens 1 202
 Durchläufe und 397 bis 647ms Planerzeit. Alle Zeiten gelten für 150MHz,
 sind in einem Emulator aus den ausgeführten Instruktionen mit ARM GNU 14.2
 bei -O3 berechnet und nicht auf Hardware gemessen. Die Zeit eines
-Durchlaufs mit Link, Heartbeat und Ausgängen ist nicht gemessen. Die
-Heartbeat-Lücke, die alle Ausgänge abschaltet, beträgt 150ms. Eine
-Wartezeit eines Durchlaufs ist zeitlich begrenzt. Ein `printf()` an die
+Durchlaufs mit Link, Heartbeat und Ausgängen steht hier nicht; die
+Schleifenzeile des Konsolenberichts nennt sie auf dem Board
+([Inbetriebnahme](Bringup-de.md#iomcu)). Die Heartbeat-Lücke, die alle
+Ausgänge abschaltet, beträgt 150ms. Der Konsolenbericht alle 3s wartet auf
+keinen USB-Host: Er gibt eine Zeile je Durchlauf aus, und nur, wenn der
+Sendepuffer Platz für 256 Bytes hat. Ein `printf()` an die
 USB-Konsole wartet höchstens 1000us auf Platz im Sendepuffer von 2 048 Bytes,
 gezählt ab dem Zeitpunkt, an dem der Host zuletzt Bytes abgeholt hat, und
-verwirft dann den Rest der Zeile; ein Host, der den Port offen hält und
-nichts abholt, kostet diese Wartezeit einmal. Eine Antwort auf dem CAN
+verwirft dann den Rest der Zeile; nur die Boot-Zeilen und die Zeilen des
+Speichers nutzen es, und ein Host, der den Port offen hält und nichts
+abholt, kostet diese Wartezeit einmal. Eine Antwort auf dem CAN
 wartet auf keinen Sendepuffer: Sie kommt ganz in eine Warteschlange von 16
 Frames und geht mit 3 Frames je Durchlauf hinaus. Ein Stapel, der 5000us
 nach seiner Sendeanforderung noch ansteht, wird mit dem Rest der

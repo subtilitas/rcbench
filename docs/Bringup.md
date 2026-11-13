@@ -47,6 +47,22 @@ Peripheral Interface) connection: the module is not fitted or its wiring
 on GPIO 8 to GPIO 12 is faulty. This message does not indicate a CAN bus
 fault.
 
+The last line of every report gives the main loop's pass times since the
+report before it:
+
+    rcbench-iomcu: loop max <us> us, over 500us <passes>, can max <us> us, report max <us> us
+
+`loop max` is the longest pass and `over 500us` counts the passes longer
+than 500us, half of the DShot frame period ([DShot](DShot.md)). `can max`
+is the longest `can_service()` call with its transmit queue pump, and
+`report max` the longest pass of the report itself. A report takes its
+figures at the pass it starts, so they cover the report before it. With
+no USB host connected no report starts, and the figures run on to the next
+report that does. The report hands out one line a pass, and only when the
+USB transmit buffer has room for 256 bytes: a host that holds the port
+open and stops reading gets no line and holds no pass. A report not
+finished 3s after its start is dropped and the next one starts.
+
 ### Panel
 
 The test runs at every start-up, during the splash and before the

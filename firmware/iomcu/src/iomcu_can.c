@@ -36,11 +36,12 @@
  *
  * The waits a pass can hold, with their bounds:
  *
- * - The 3s report goes to USB (Universal Serial Bus) stdio.  A printf()
- *   waits for room in the transmit buffer for at most
- *   IOMCU_USB_STDOUT_WAIT_US (1,000us) after the host last took bytes, so a
- *   host that holds the port open and stops reading costs one wait of up
- *   to 1,000us, and later lines are dropped at once.
+ * - The 3s report to USB (Universal Serial Bus) stdio waits for nothing:
+ *   one line a pass, and only with room for it in the transmit buffer
+ *   (report_steps.h).  The boot lines and the store's lines use printf(),
+ *   which waits for room for at most IOMCU_USB_STDOUT_WAIT_US (1,000us)
+ *   after the host last took bytes; a store line comes only after a flash
+ *   window, which waits until nothing drives.
  * - can_service() waits for no transmit buffer.  A reply is queued whole
  *   (can_txq.h) and leaves three frames per pass; a bus that accepts
  *   nothing costs no wait, and a batch still requested CAN_TXQ_STUCK_US
@@ -50,7 +51,8 @@
  * - A flash window of the output store stops this core for about 19ms.
  *
  * The heartbeat is lost when a pass runs past HEARTBEAT_MAX_GAP_MS (150ms).
- * The time of a whole pass on the board is not measured.
+ * The report's loop line gives the longest pass since the report before it
+ * (pass_stats.h).
  */
 bool s_beat_level;
 

@@ -50,6 +50,24 @@ den Configuration Mode gemeldet hat. Der Fehler liegt an SPI (Serial
 Peripheral Interface; Modul nicht bestückt, Verdrahtung an GPIO 8 bis GPIO 12),
 nicht am CAN-Bus.
 
+Die letzte Zeile jedes Berichts nennt die Durchlaufzeiten der Hauptschleife
+seit dem Bericht davor:
+
+    rcbench-iomcu: loop max <us> us, over 500us <passes>, can max <us> us, report max <us> us
+
+`loop max` ist der längste Durchlauf, `over 500us` zählt die Durchläufe
+über 500us, die Hälfte der DShot-Frame-Periode ([DShot](DShot-de.md)).
+`can max` ist der längste Aufruf von `can_service()` mit dem Pumpen der
+Sendewarteschlange, `report max` der längste Durchlauf des Berichts selbst.
+Ein Bericht nimmt seine Werte in dem Durchlauf, in dem er beginnt; sie
+gelten also für den Bericht davor. Ohne verbundenen USB-Host beginnt kein
+Bericht, und die Werte laufen bis zum nächsten Bericht weiter, der beginnt.
+Der Bericht gibt eine Zeile je Durchlauf aus, und nur, wenn der
+USB-Sendepuffer Platz für 256 Bytes hat: Ein Host, der den Port offen hält
+und nichts abholt, bekommt keine Zeile und hält keinen Durchlauf auf. Ein
+Bericht, der 3s nach seinem Beginn nicht fertig ist, wird verworfen, und
+der nächste beginnt.
+
 ### Panel
 
 Der Test läuft bei jedem Start während des Startbildschirms und vor dem

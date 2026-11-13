@@ -50,12 +50,15 @@
 #endif
 
 /**
- * @brief This file's report lines.
+ * @brief This file's lines: the output store's.
  *
  * The bench console build sends them through the console's output: none lands
  * inside a console line that leaves in pieces, and none waits for the host.
  * Every other build prints them, and printf() waits for the host for up to
- * 1,000us (PICO_STDIO_USB_STDOUT_TIMEOUT_US, iomcu_report.c).
+ * 1,000us (PICO_STDIO_USB_STDOUT_TIMEOUT_US, iomcu_report.c).  Each follows
+ * a flash window, or its refusal, that waits until nothing drives
+ * (flash_busy()), so the wait never falls into a DShot run.  The 3s report waits for nothing
+ * (iomcu_report.c).
  */
 #if IOMCU_CONSOLE
 #define IOMCU_SAY console_hw_say
@@ -959,12 +962,12 @@ int main(void)
          * re-reads it.
          *
          * One clock per pass is the rule and it holds because a pass is
-         * short.  Two things in this one are not.  A flash window stops this
-         * core for about 19ms with interrupts off.  can_report() prints to a
-         * USB host, which waits for room in the transmit buffer for up to
+         * short.  One thing in this one is not: a flash window stops this
+         * core for about 19ms with interrupts off, and the store's line
+         * after it waits for room in the USB transmit buffer for up to
          * 1,000us after the host last took bytes (outside the bench console
          * build, see IOMCU_SAY).  Everything
-         * below measures elapsed time across whichever of them just ran:
+         * below measures elapsed time across it:
          * s_last_rx_ms is what the next pass's quiet-bus guard subtracts
          * from, so a frame collected after one of them and stamped with a
          * clock from before it reports a quiet bus at the moment a frame was
@@ -976,14 +979,14 @@ int main(void)
          * milliseconds against a 200ms silence timeout.
          *
          * Unconditional rather than after a window only.  A timer read costs
-         * nothing beside either of the two, and a condition here is a list of
-         * what can block that has to be kept in step with the code above it.
+         * nothing beside a window, and a condition here is a list of what
+         * can block that has to be kept in step with the code above it.
          */
         now = (uint32_t)to_ms_since_boot(get_absolute_time());
         s_now_ms = now;
 
-        /* Straight after the report: printing to a USB host can take
-         * milliseconds, and the panel's request waits for this. */
+        /* At the end of the pass as well: a request that arrived during it
+         * is answered now, and the transmit queue gets its second pump. */
         can_service(now);
     }
 }
