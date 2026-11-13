@@ -121,6 +121,17 @@ set_target_properties(rcbench-iomcu PROPERTIES OUTPUT_NAME ${iomcu_out})
 # core 1 runs on the array sense_core1.c passes.  The link fails when
 # anything else is placed in either region.
 target_compile_definitions(rcbench-iomcu PRIVATE PICO_STACK_SIZE=0x1000)
+
+# The image runs from SRAM: the SDK's start-up code copies its code and
+# read-only data out of the slot before main().  From flash, every miss of
+# the 16KiB XIP (execute in place) cache is a read over the dual-I/O BBh
+# set-up the boot ROM leaves, at 50MHz on the station's module; core 1's
+# 1,000us sense tick and the rest of the pass evict the CAN and report
+# code, and the station measured 2.79 million misses per 3s, can max 1218us
+# and report max 1404us.  From SRAM: 0 misses, can max 165us, report max
+# 94us, every pass at most 250us.  The flash itself is still read, by the
+# output store and an update's checks, through the uncached window.
+pico_set_binary_type(rcbench-iomcu copy_to_ram)
 # The DShot driver's pin table: the 8 output slots and the 4 programming
 # ports (outputs_hw.c asserts it).
 target_compile_definitions(rcbench-iomcu PRIVATE OUT_DSHOT_MAX_PINS=12u)

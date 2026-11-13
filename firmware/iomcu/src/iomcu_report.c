@@ -134,7 +134,8 @@ static char s_boot[BOOT_DIAG_TEXT_MAX];
  *
  * The image carries no XIP setup of its own (PICO_EMBED_XIP_SETUP 0), so
  * these are what the boot ROM left: the read command, its width and the
- * clock divisor every XIP cache miss runs at.
+ * clock divisor every flash read runs at.  The image runs from SRAM, so
+ * only the output store and an update's checks read the flash.
  *
  * @param s  The snapshot.
  */

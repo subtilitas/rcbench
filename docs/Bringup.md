@@ -70,7 +70,12 @@ CTR_ACC minus CTR_HIT since the report before: accesses to flash that the
 count both cores and DMA (direct memory access) alike, with no way to tell
 them apart, and an uncached access counts as a miss. The report reads and
 clears them at its start; the few dozen accesses between the read and the
-clear are lost. With
+clear are lost. The image runs from SRAM (static RAM), so `xip miss`
+counts the flash reads of the output store and of an update: 0 per 3s on
+the station with neither running. A figure in the millions means code runs
+from flash. The station's medians per 3s at SAFE on HOME: `loop max`
+204us, `can max` 165us, `report max` 94us, 80,367 passes, all at most
+250us. With
 no USB host connected no report starts, and the figures run on to the next
 report that does. The report hands out one line a pass, and only when the
 USB transmit buffer has room for 256 bytes: a host that holds the port
@@ -292,7 +297,7 @@ application prints the same line on every start it reaches, so after
 `picotool reboot -a -g 0` it shows which steps slots A and B passed.
 
 The boot line is followed by the flash's read set-up, the QMI (quad memory
-interface) registers every XIP cache miss runs with:
+interface) registers every flash read runs with:
 
     rcbench-iomcu: flash read m0 rcmd 0x0000A003 rfmt 0x00001000 timing 0x40000004, m1 at reset
 
@@ -301,11 +306,14 @@ means its three registers hold their reset values, else the line gives
 them in the same form. The image carries no XIP setup of its own
 (`PICO_EMBED_XIP_SETUP` 0), so the values are the ones the boot ROM left.
 The values above are the registers' reset values: a serial 03h read at
-CLKDIV 4.
+CLKDIV 4. The station's RP2350-CAN module prints `m0 rcmd 0x000000BB rfmt
+0x00009154 timing 0x60007203` and the same values for `m1`: a dual-I/O BBh
+read with an 8-bit mode byte at CLKDIV 3, 50MHz. The image runs from SRAM,
+so only the output store and an update's checks read the flash this way.
 
 | Register | Fields |
 | --- | --- |
-| `rcmd` | bits 7-0 the read command (03h serial read, 0Bh fast read, EBh quad I/O read); bits 15-8 the mode byte sent after the address |
+| `rcmd` | bits 7-0 the read command (03h serial read, 0Bh fast read, BBh dual I/O read, EBh quad I/O read); bits 15-8 the mode byte sent after the address |
 | `rfmt` | bits 1-0 command width, 3-2 address width, 5-4 mode-byte width, 7-6 dummy width, 9-8 data width (0 single, 1 dual, 2 quad); bit 12 command sent; bits 15-14 mode-byte length (0 none, 2 8 bits); bits 18-16 dummy length in 4-bit steps; bit 28 DTR (double transfer rate) |
 | `timing` | bits 7-0 CLKDIV: the flash clock is clk_sys / CLKDIV, 37.5MHz at 4 and 150MHz; bits 10-8 RXDELAY; bits 31-30 COOLDOWN |
 
