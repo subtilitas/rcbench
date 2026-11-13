@@ -11,9 +11,22 @@ const path = require('path');
 
 (async () => {
   const [url, mode, out, arg, first, end] = process.argv.slice(2);
+  // WebGL runs on SwiftShader, a software rasteriser, unless
+  // RCBENCH_VIDEO_GL holds Chromium flags of its own, separated by
+  // spaces: "--use-angle=vulkan --enable-features=Vulkan" for a GPU
+  // (graphics processing unit) with a Vulkan driver.
+  const gl = process.env.RCBENCH_VIDEO_GL
+    ? process.env.RCBENCH_VIDEO_GL.split(/\s+/).filter(Boolean)
+    : ['--use-angle=swiftshader', '--enable-unsafe-swiftshader'];
   const browser = await chromium.launch({args: [
-    '--use-angle=swiftshader', '--enable-unsafe-swiftshader',
-    '--ignore-gpu-blocklist', '--enable-webgl']});
+    ...gl, '--ignore-gpu-blocklist', '--enable-webgl']});
+  const page0 = await browser.newPage();
+  console.log('WebGL: ' + await page0.evaluate(() => {
+    const c = document.createElement('canvas').getContext('webgl2');
+    const e = c && c.getExtension('WEBGL_debug_renderer_info');
+    return e ? c.getParameter(e.UNMASKED_RENDERER_WEBGL) : 'none';
+  }));
+  await page0.close();
   const page = await browser.newPage(
     {viewport: {width: 1920, height: 1080}, deviceScaleFactor: 1});
   let failed = false;

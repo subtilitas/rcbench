@@ -59,6 +59,13 @@ python3 tools/video_audio.py features -o /tmp/features.wav
 python3 tools/make_video.py --check                # every storyboard
 ```
 
+The frames are drawn by SwiftShader, a software rasteriser. With
+`RCBENCH_VIDEO_GL` set to Chromium flags, such as
+`--use-angle=vulkan --enable-features=Vulkan`, they are drawn on a GPU
+(graphics processing unit); each capture job prints the renderer it got.
+A GPU render is not tested, and its pixels can differ from SwiftShader's,
+so one video takes one of the two.
+
 A render needs a C compiler, Pillow, numpy for the sound, `kokoro-onnx`
 and its model for the narration, Node.js with the `playwright` package and
 its Chromium, and ffmpeg. `--check` needs only Python; the
