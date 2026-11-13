@@ -144,9 +144,11 @@ def test_names_are_written_as_they_are_said():
     said = video_voice.spoken
     assert said("Hold <b>CONNECT</b> 2 s.") == "Hold Connect 2 seconds."
     assert said("a 2 s hold") == "a 2 second hold"
-    assert said("The IOmcu and the ESC") == "The I O M C U and the E S C"
+    assert said("The IOmcu") == "The I O M C U"
+    assert said("ESCs and an ESC") == ("electronic speed controllers and an "
+                                       "electronic speed controller")
     assert said("LIMIT RUN at 6.0 V") == "Limit Run at 6.0 volts"
-    assert said("Motor & ESC") == "Motor and E S C"
+    assert said("Motor & ESC") == "Motor and electronic speed controller"
 
 
 def test_every_step_has_a_line():

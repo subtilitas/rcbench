@@ -15,7 +15,8 @@ A storyboard with "voice" is spoken.  A step of a screen or tour scene
 says its "say", or its title and text; a chapter card its number, title
 and text.  A case scene says the cues of its "say" list at their times,
 and an end scene its "say".  A step that is shorter than its sentence is
-stretched; a cue that runs into the next one is an error.
+stretched.  A case scene whose cue runs into the next one is stretched as
+well: every time of the scene moves with the cues.
 
     python3 tools/video_voice.py features          # the lines, as spoken
 
@@ -63,8 +64,8 @@ SPELL = (
     (r"\brcbench\b", "R C bench"),
     (r"\brbmod\b", "R B mod"),
     (r"\bESCape32\b", "escape 32"),
-    (r"\bESCs\b", "E S Cs"),
-    (r"\bESC\b", "E S C"),
+    (r"\bESCs\b", "electronic speed controllers"),
+    (r"\bESC\b", "electronic speed controller"),
     (r"\bKST\b", "K S T"),
     (r"\bChaservo\b", "Cha servo"),
     (r"\bHitec\b|\bHITEC\b", "High tech"),
@@ -150,6 +151,34 @@ def script(board: dict) -> list:
     return lines
 
 
+def _stretch(scene: dict, old: list, new: list) -> None:
+    def move(t):
+        n = 0
+        while n < len(old) - 2 and t > old[n + 1]:
+            n += 1
+        return round(new[n] + (t - old[n]) * (new[n + 1] - new[n])
+                     / (old[n + 1] - old[n]), 2)
+
+    scene["dur"] = move(scene["dur"])
+    for key in scene["camera"]:
+        key[0] = move(key[0])
+    for key in scene.get("lid", []):
+        key[0] = move(key[0])
+    for keys in scene.get("parts", {}).values():
+        for key in keys:
+            key[0] = move(key[0])
+    spans = scene.get("labels", []) + scene.get("chips", [])
+    spans += [scene[name] for name in ("title", "pinout") if name in scene]
+    for span in spans:
+        span["from"], span["to"] = move(span["from"]), move(span["to"])
+    if "servo" in scene:
+        servo = scene["servo"]
+        servo["appear"] = move(servo["appear"])
+        servo["plug"] = [move(t) for t in servo["plug"]]
+    for cue in scene["say"]:
+        cue["at"] = move(cue["at"])
+
+
 def model_dir() -> pathlib.Path:
     """Find the directory of the model's files.
 
@@ -214,23 +243,33 @@ def narrate(board: dict) -> tuple:
             step["dur"] = round(max(step["dur"], need), 2)
         elif scene["type"] == "end":
             scene["dur"] = round(max(scene["dur"], need), 2)
+    # A case scene whose line runs into the next cue is stretched: the
+    # cues keep their gaps or get the room their lines need, and every
+    # other time of the scene follows them.
+    for i, scene in enumerate(board["scenes"]):
+        if scene["type"] != "case" or not scene.get("say"):
+            continue
+        mine = [(at, clip) for k, j, at, clip in spoken_lines if k == i]
+        old = [0.0] + [at for at, _ in mine] + [scene["dur"]]
+        new = [0.0, mine[0][0]]
+        for n, (at, clip) in enumerate(mine):
+            gap = old[n + 2] - at
+            new.append(round(new[-1] + max(gap, len(clip) / RATE + 0.5), 2))
+        if new != old:
+            _stretch(scene, old, new)
     clips, start = [], 0.0
     for i, scene in enumerate(board["scenes"]):
-        mine = [(j, at, clip) for k, j, at, clip in spoken_lines if k == i]
+        mine = [(j, clip) for k, j, _, clip in spoken_lines if k == i]
         if scene["type"] in ("screen", "tour"):
             t = start
-            for (_, at, clip), step in zip(mine, scene["steps"],
-                                           strict=True):
-                clips.append((t + at, clip))
+            for (_, clip), step in zip(mine, scene["steps"], strict=True):
+                clips.append((t + LEAD_S, clip))
                 t += step["dur"]
             start = t
             continue
-        ends = [at for _, at, _ in mine[1:]] + [scene["dur"]]
-        for (_, at, clip), end in zip(mine, ends, strict=True):
-            over = at + len(clip) / RATE + 0.2 - end
-            if over > 0:
-                sys.exit(f"scene {i + 1}: the line at {at}s runs {over:.1f}s "
-                         "into the next line or past the scene's end")
+        cues = ([cue["at"] for cue in scene.get("say", [])]
+                if scene["type"] == "case" else [0.6])
+        for (_, clip), at in zip(mine, cues, strict=False):
             clips.append((start + at, clip))
         start += scene["dur"]
     return board, clips

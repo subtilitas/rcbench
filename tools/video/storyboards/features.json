@@ -8,7 +8,7 @@
   "Motor & ESC",
   "Servo",
   "Supply",
-  "Receiver & battery",
+  "In development",
   "Logs & files",
   "Wi-Fi & updates",
   "Setup"
@@ -406,7 +406,7 @@
    "say": [
     {
      "at": 0.7,
-     "text": "This is R C bench: a test bench for motors, E S Cs and servos."
+     "text": "This is R C bench: a test bench for motors, ESCs and servos."
     },
     {
      "at": 7.0,
@@ -430,7 +430,7 @@
     },
     {
      "at": 41.9,
-     "text": "On the connector wall, J 2 carries the outputs for servos and E S Cs, and J 1 the four programming ports."
+     "text": "On the connector wall, J 2 carries the outputs for servos and ESCs, and J 1 the four programming ports."
     }
    ],
    "model": "cad",
@@ -895,7 +895,7 @@
       "Profiles for 74 ESC families, 462 models",
       "26 of them run from ESC STICK"
      ],
-     "say": "E S C stick programming. The bench drives the throttle through an E S C's beep menu, item by item."
+     "say": "ESC stick programming. The bench drives the throttle through an ESC's beep menu, item by item."
     },
     {
      "view": "motor-wire-am",
@@ -909,7 +909,7 @@
      ],
      "title": "ESC signal wire",
      "text": "AM32, Bluejay, BLHeli_S and ESCape32: settings are read, edited and written through the signal wire.",
-     "say": "E S C signal wire. For AM32, Bluejay, BLHeli_S and ESCape32, settings are read, edited and written through the signal wire."
+     "say": "ESC signal wire. For AM32, Bluejay, BLHeli_S and ESCape32, settings are read, edited and written through the signal wire."
     },
     {
      "dur": 3.0,
@@ -1363,20 +1363,20 @@
      "dur": 3.0,
      "n": 5,
      "card": {
-      "title": "Receiver & battery",
-      "text": "Receiver signal and battery cells."
+      "title": "In development",
+      "text": "Receiver, battery and balance."
      }
     },
     {
      "view": "overview",
      "dur": 3.8,
      "n": 5,
-     "kicker": "05 · Receiver & battery",
+     "kicker": "05 · In development",
      "path": [
       "HOME"
      ],
      "title": "Where they are",
-     "text": "The lower row: RECEIVER, BATTERY and BALANCE.",
+     "text": "The lower row: RECEIVER, BATTERY and BALANCE are in development.",
      "focus": [
       8,
       326,
@@ -1386,43 +1386,39 @@
     },
     {
      "view": "analyser",
-     "dur": 6.4,
+     "dur": 3.6,
      "n": 5,
-     "kicker": "05 · Receiver & battery",
+     "kicker": "05 · In development",
      "path": [
       "HOME",
       "RECEIVER"
      ],
      "title": "RECEIVER",
-     "text": "16 channels with history, the digital channels and the signal state.",
-     "points": [
-      "LIVE, FRAME LOST, FAILSAFE, NO SIGNAL"
-     ],
-     "say": "Receiver. Sixteen channels with history, the digital channels and the signal state."
+     "text": "In development."
     },
     {
      "view": "battery",
-     "dur": 5.0,
+     "dur": 3.6,
      "n": 5,
-     "kicker": "05 · Receiver & battery",
+     "kicker": "05 · In development",
      "path": [
       "HOME",
       "BATTERY"
      ],
      "title": "BATTERY",
-     "text": "Per-cell voltage, spread and a verdict."
+     "text": "In development."
     },
     {
      "view": "balance",
      "dur": 3.6,
      "n": 5,
-     "kicker": "05 · Receiver & battery",
+     "kicker": "05 · In development",
      "path": [
       "HOME",
       "BALANCE"
      ],
      "title": "BALANCE",
-     "text": "To be done."
+     "text": "In development."
     },
     {
      "dur": 3.0,
@@ -1907,7 +1903,7 @@
     "Motor & ESC",
     "Servo",
     "Supply",
-    "Receiver & battery",
+    "In development",
     "Logs & files",
     "Wi-Fi & updates",
     "Setup"
