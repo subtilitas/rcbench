@@ -85,6 +85,7 @@ integration). The 100.4s of `kst-rbmod` are 3012 frames. `features` is
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 694s |
+| `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
 
