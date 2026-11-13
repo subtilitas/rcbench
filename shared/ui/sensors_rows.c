@@ -90,6 +90,7 @@ sens_part_t sensors_rows_status(int a)
     return SENS_PART_OF(sr.status, (unsigned)a);
 }
 
+/** @brief Whether part @p a is fitted, by its setting. */
 static bool fitted(int a)
 {
     return a >= 0 && a < SET_INA_PARTS && settings_get_bool(SET_INA_FIT(a));

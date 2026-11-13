@@ -92,6 +92,7 @@ _Static_assert(SC_X1 + SC_W + 4 <= W - UI_MARGIN
 #define KEY_AREA gfx_rect_make(UI_MARGIN, UI_MARGIN, W - 2 * UI_MARGIN, \
                                FOOT - UI_MARGIN)
 
+/** @brief The sub-views of the main view. */
 typedef enum {
     SUB_MAIN = 0,
     SUB_SCAN,
@@ -125,13 +126,13 @@ enum {
 };
 
 static struct {
-    wifi_view_t  v;
-    unsigned     req;
-    sub_t        sub;
-    ui_textkey_t tk;
-    char         pick[WIFI_SSID_MAX + 1];
-    char         save_ssid[WIFI_SSID_MAX + 1];
-    char         save_pass[WIFI_PASS_MAX + 1];
+    wifi_view_t  v;  /**< what the application last handed the screen */
+    unsigned     req;  /**< the requests since the last take */
+    sub_t        sub;  /**< the sub-view shown */
+    ui_textkey_t tk;  /**< the keyboard */
+    char         pick[WIFI_SSID_MAX + 1];  /**< the network picked from the scan */
+    char         save_ssid[WIFI_SSID_MAX + 1];  /**< the network's name typed, kept until saved */
+    char         save_pass[WIFI_PASS_MAX + 1];  /**< its password typed, kept until saved */
     char         save_kept[WIFI_PASS_MAX + 1]; /**< what wifi_screen_kept()
                                                     hands over             */
     wifi_kept_t  kept;          /**< the value SUB_KEPT is about          */
@@ -146,6 +147,7 @@ static struct {
     unsigned     drawn_mask;    /**< the buffers drawn since a change   */
 } s;  /**< the screen's state: the view, the keyboard, the press */
 
+/** @brief Marks the whole screen to be drawn again. */
 static void touched(void) { s.drawn_mask = 0u; }
 
 gfx_rect_t wifi_screen_key_area(void)
@@ -158,6 +160,7 @@ const ui_textkey_t *wifi_screen_textkey(void)
     return &s.tk;
 }
 
+/** @brief Returns the screen to its initial state. */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
@@ -166,14 +169,17 @@ static void reset(void)
 
 /* ------------------------------------------------------------- the model */
 
+/** @brief Whether an image is staged. */
 static bool staged(void) { return s.v.up == WIFI_UP_STAGED; }
 
+/** @brief Whether the staged image may be installed now. */
 static bool install_allowed(void)
 {
     return staged() && s.v.offer != WIFI_OFFER_INSTALLED
            && s.v.gate == WIFI_GATE_OPEN;
 }
 
+/** @brief Whether the radio is on and not scanning. */
 static bool radio_on(void)
 {
     return s.v.radio != WIFI_RADIO_OFF && s.v.radio != WIFI_RADIO_SCANNING;
@@ -210,7 +216,9 @@ static bool hold_allowed(void)
                                       : install_allowed();
 }
 
-/* A press on the hold that the model took away under it ends here. */
+/**
+ * @brief A press on the hold that the model took away under it ends here.
+ */
 static void drop_hold_if_gone(void)
 {
     if (!hold_allowed() && ui_hold_left(&s.hold) && s.hit == s.hold_hit) {
@@ -339,6 +347,7 @@ static gfx_rect_t scan_cancel_rect(void)
     return gfx_rect_make(SC_BX(2), SC_BY, SC_BW, SC_BH);
 }
 
+/** @brief Whether a point lies in a rectangle. */
 static bool in(gfx_rect_t r, int x, int y) { return gfx_rect_contains(r, x, y); }
 
 /* ------------------------------------------------------------ the views */
@@ -348,6 +357,7 @@ typedef enum {
     VIEW_MAIN, VIEW_RUNNING, VIEW_SCAN, VIEW_QUESTION, VIEW_KEPT
 } view_t;
 
+/** @brief Gives the view the body shows. */
 static view_t view_of(void)
 {
     if (staged()) {
@@ -362,7 +372,9 @@ static view_t view_of(void)
     return radio_on() ? VIEW_RUNNING : VIEW_MAIN;
 }
 
-/* The hit under a press, in the view showing; HIT_NONE for none. */
+/**
+ * @brief The hit under a press, in the view showing; HIT_NONE for none.
+ */
 static int hit_at(int x, int y)
 {
     switch (view_of()) {
@@ -434,6 +446,7 @@ static int hit_at(int x, int y)
     }
 }
 
+/** @brief Gives the rectangle of a control. */
 static gfx_rect_t hit_rect(int hit)
 {
     switch (hit) {
@@ -471,6 +484,7 @@ static unsigned kept_req(void)
                                       : WIFI_REQ_KEPT_CODE;
 }
 
+/** @brief Acts on a control that was tapped. */
 static void act(int hit)
 {
     switch (hit) {
@@ -528,6 +542,7 @@ static void act(int hit)
 
 /* ------------------------------------------------------------ input */
 
+/** @brief Takes a touch event for the keyboard. */
 static void key_event(const touch_event_t *evt)
 {
     char out[WIFI_PASS_MAX + 1];
@@ -642,6 +657,7 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/** @brief Runs the screen for one frame: the holds. */
 static void tick(float dt_s)
 {
     drop_hold_if_gone();
@@ -683,8 +699,8 @@ static void enter(void)
     touched();
 }
 
-/*
- * The home tag climbs one level, as CANCEL does.  Over the question about
+/**
+ * @brief The home tag climbs one level, as CANCEL does.  Over the question about
  * a staged image it answers CANCEL, and a list or keyboard under the
  * question closes with it; a second tap while the image is still staged
  * leaves.  From a keyboard it climbs to the network list, keeping nothing
@@ -718,6 +734,7 @@ static bool back(void)
     return true;
 }
 
+/** @brief Leaves the screen. */
 static void leave(void)
 {
     /* Wi-Fi is on only while the screen is open.  An image the hold sent
@@ -790,6 +807,7 @@ int wifi_screen_jobs_lines(void)
                         CARD_P, jobs, WF_FONT_LABEL, UI_TEXT);
 }
 
+/** @brief Gives the text of why the radio went off. */
 static const char *why_text(void)
 {
     switch (s.v.off) {
@@ -1282,6 +1300,7 @@ static bool no_shot(void)
     }
 }
 
+/** @brief The screen's table. */
 static const ui_screen_t k_screen = {
     .covered = covered,
     .no_shot = no_shot,
