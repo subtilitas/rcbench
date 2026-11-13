@@ -87,7 +87,8 @@ static void note(plan_t *p, const char *s, gfx_color_t color)
 
 /**
  * @brief What stands of a write: a record of one interrupted, and a READ
- *        ALL owed before the next.  Nothing while a write runs.
+ *        ALL owed before the next.  Nothing of the record a running write
+ *        made itself.
  * @param p the plan
  */
 static void record_notes(plan_t *p)
@@ -96,10 +97,12 @@ static void record_notes(plan_t *p)
     const gfx_color_t danger = ui_theme_color(UI_C_DANGER);
     const hitec_prog_state_t st = hitec_prog_state(pr);
 
-    if (st == HITEC_PROG_RECORDING || st == HITEC_PROG_WRITING
-        || st == HITEC_PROG_BACKUP) {
+    if (pr->wr_own_rec
+        && (st == HITEC_PROG_RECORDING || st == HITEC_PROG_WRITING
+            || st == HITEC_PROG_BACKUP)) {
         /* The record on the card is the write in flight, not an
-         * interrupted one; the state line says the write's step. */
+         * interrupted one; the state line says the write's step.  A
+         * RESTORE keeps an older record, which stays named. */
         return;
     }
     if (hitec_prog_record(pr)) {
