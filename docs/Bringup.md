@@ -34,7 +34,10 @@ request to send, those of the batch not yet sent and the queued ones. The
 panel repeats its request after 50ms, and the IOmcu answers the repeat
 from the copy it keeps, which normally completes the exchange. The
 exchange times out after 1000ms only when the answer to the repeat is
-dropped as well. `txq_max` is the most frames queued at once
+dropped as well. A panel restart while a batch is on the bus leaves
+that batch without an acknowledgement: it is aborted after 5000us, and
+its frames and the queued ones count in `tx_drop`. On the station a panel
+restart added 4. `txq_max` is the most frames queued at once
 since the last report. Together, the first two
 counters indicate which end has stopped:
 

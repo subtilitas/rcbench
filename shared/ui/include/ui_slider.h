@@ -56,8 +56,7 @@ typedef struct {
     int        ticks;      /**< scale divisions on the track, 0 for none */
 
     float min,                   /**< the range's lower end */
-          max,                   /**< the range's upper end */
-          step;                  /**< not read by the slider code */
+          max;                   /**< the range's upper end */
     float value;  /**< the value, from min to max */
     gfx_color_t color;  /**< the thumb's and the fill's color */
 

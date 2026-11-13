@@ -234,8 +234,6 @@ int ui_plot_map_y(const ui_plot_t *p, int series, float value, int y0, int h)
 
 /* ----------------------------------------------------------------- drawing */
 
-#define RAIL_W     6  /**< the width of a legend rail, px; not used */
-#define RAIL_PITCH 10  /**< the pitch of a legend rail, px; not used */
 #define TICKS      8  /**< the horizontal grid lines make this many divisions */
 
 /*
