@@ -634,8 +634,9 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
         # that leaves every length as it was captures that scene alone.
         code = digest([path.read_text(encoding="utf-8") for path in sorted(
             (VIDEO / "player").iterdir()) if path.is_file()])
+        # The bed and its level are heard, not seen.
         rest = {name: value for name, value in board.items()
-                if name != "scenes"}
+                if name not in ("scenes", "music", "music_gain")}
         before = 0
         for n, (scene, (start, length)) in enumerate(
                 zip(board["scenes"], times, strict=True)):
