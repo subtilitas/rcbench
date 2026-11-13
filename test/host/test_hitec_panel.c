@@ -970,15 +970,15 @@ TEST_CASE(the_footers_write_holds_and_writes_on_hitec)
                                      .point = { .id = 3, .x = (int16_t)x,
                                                 .y = (int16_t)y,
                                                 .strength = 40 } };
-        touch_event_t up = down;
+        touch_event_t lift = down;
 
-        up.type = TOUCH_EVENT_UP;
+        lift.type = TOUCH_EVENT_UP;
         sv->event(&down);
         for (int i = 0; i < 110; ++i) {
             sv->tick(0.02f);
             prun(20u);
         }
-        sv->event(&up);
+        sv->event(&lift);
     }
     until(HITEC_PROG_HELD);
     CHECK_EQ(g_drv.dreg[0x60], 6u);

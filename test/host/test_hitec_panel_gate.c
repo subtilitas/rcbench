@@ -293,16 +293,16 @@ TEST_CASE(connect_is_drawn_pressed_under_its_hold)
     open_en();
     servo_d485();
     const gfx_rect_t c = val(HITEC_PANEL_SERVO, 0, 0);
-    gfx_color_t up;
+    gfx_color_t plain;
 
     show();
-    up = edge_px(c);
+    plain = edge_px(c);
     ev(cx(c), cy(c), TOUCH_EVENT_DOWN);
     show();
-    CHECK(edge_px(c) != up);
+    CHECK(edge_px(c) != plain);
     ev(cx(c), cy(c), TOUCH_EVENT_UP);
     show();
-    CHECK(edge_px(c) == up);
+    CHECK(edge_px(c) == plain);
 }
 
 /* With no page open the page's labels are NULL; on LEAVE's page they
