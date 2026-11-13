@@ -913,6 +913,10 @@ jobs:
   c6:
     uses: ./.github/workflows/c6.yml
 
+  # The sensor nodes' firmware (node.yml): the power node's image.
+  node:
+    uses: ./.github/workflows/node.yml
+
   iomcu:
     # The env context is not available in a job name (only github, needs,
     # strategy, matrix, vars and inputs are), so the pin is spelled out here

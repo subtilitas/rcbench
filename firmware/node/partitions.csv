@@ -1,0 +1,8 @@
+# The node's 4MB flash (ESP32-C6FH4): NVS (non-volatile storage), the OTA
+# (over-the-air update) data, two application slots of 1.5MB.
+# Name,     Type, SubType, Offset,   Size
+nvs,        data, nvs,     0x9000,   0x6000
+otadata,    data, ota,     0xf000,   0x2000
+phy_init,   data, phy,     0x11000,  0x1000
+ota_0,      app,  ota_0,   0x20000,  0x180000
+ota_1,      app,  ota_1,   0x1a0000, 0x180000

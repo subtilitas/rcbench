@@ -49,9 +49,11 @@ rcbench/
     bleuart/              BLE central for the ISSC transparent-UART service: advertising parser, scan list, connect, discovery, subscribe, writes, reconnect; no pin driver
     i2c_txq/              I2C transaction queue: earliest deadline, timeouts, line check, bus clear · rp2350: i2c_txq_block on an I2C block, no PIO program
     witmotion/            WitMotion IMU frames: parser, decoders, command encoder; no pin driver
+    rcnode/               the sensor nodes' BLE packets, control writes, advertising, 20ms windows; no pin driver
   firmware/
     panel/                ESP-IDF project (ESP32-P4)
     iomcu/                pico-sdk project (RP2350)
+    node/                 ESP-IDF project (ESP32-C6): the sensor nodes ([The sensor nodes](Nodes.md))
   test/host/              the host suite, one binary per module or screen
   hardware/               board design record; no board exists
 ```
@@ -94,7 +96,7 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` | | | yes |
+| `hc05` · `rcnode` | | | yes |
 | `bleuart` | yes | | yes |
 
 ## Toolchains

@@ -8,6 +8,26 @@ history is in git.
 
 ### Added
 
+- The sensor nodes' firmware (`firmware/node`), one ESP-IDF v6.1 project
+  for the ESP32-C6 on a Waveshare ESP32-C6-Zero, the role chosen at build
+  time. The power node reads a MATEK I2C-INA-BM's INA228 (0x45, 200µΩ, the
+  bench's 540/540/50µs set-up) on GPIO19 (SDA) and GPIO18 (SCL), sends a
+  window every 20ms (mean and highest current, mean and lowest voltage,
+  the sample count) and the raw 40-bit CHARGE and ENERGY every 500ms over
+  Bluetooth LE as `rcbench-pwr-XXXX`, reads its cell through a
+  200kΩ/200kΩ divider on GPIO3, sleeps after 120s without a link or a
+  pack and checks for a pack every 10s, and prints a console line every
+  second. The balance role is a stub. The panel does not connect to a
+  node yet. CI builds the image and a release carries
+  `rcbench-node-pwr-<version>.bin` and `rcbench-node-pwr-merged-<version>.bin`
+  ([The sensor nodes](docs/Nodes.md)).
+- Protocol module `protocols/rcnode`: the nodes' service and
+  characteristic UUIDs (STREAM, STATUS, CONTROL, INFO), the power node's
+  window, accumulator, run-extreme and status packets, the balance report
+  (1x, 2x and blade-pass magnitude and phase, rms, rpm, quality), the
+  control writes, the advertising and its match
+  ([protocols/rcnode](protocols/rcnode/README.md)).
+
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the
   longest `can_service()` call and the longest report pass
