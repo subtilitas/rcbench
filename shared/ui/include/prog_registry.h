@@ -187,8 +187,7 @@ typedef struct {
     bool     read;       /**< a servo is read                               */
     char     servo[24];  /**< its model or type; "" where none is known     */
     char     write[32];  /**< WRITE n VALUES, as the session's button reads */
-    bool     write_live; /**< a tap on it writes, or asks for ENABLE WRITE
-                              first                                        */
+    bool     write_live; /**< a 2s hold on it writes                      */
 } prog_session_t;
 
 typedef struct {

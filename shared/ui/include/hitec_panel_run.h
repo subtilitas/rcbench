@@ -57,7 +57,7 @@ hitec_prog_msg_id_t hitec_panel_run_connect(uint8_t series, bool supply,
  *  @param right The right travel.
  *  @return HITEC_PROG_MSG_NONE when the write starts. */
 hitec_prog_msg_id_t hitec_panel_run_write(uint16_t left, uint16_t right);
-/** @brief LEAVE: the write switch off, the draft dropped, the port back to
+/** @brief LEAVE: the write gate shut, the draft dropped, the port back to
  *         PWM.
  *  @return HITEC_PROG_MSG_NONE when it starts. */
 hitec_prog_msg_id_t hitec_panel_run_leave(void);
@@ -83,7 +83,7 @@ bool hitec_panel_run_values(uint16_t value[2]);
 /** @brief The file that holds the servo as the run found it.
  *  @return Its base name, kept over the run's LEAVEs; "" for none. */
 const char *hitec_panel_run_backup(void);
-/** @brief The run is over: the model's run flag and the write switch off
+/** @brief The run is over: the model's run flag off and the write gate shut
  *         (hitec_prog_run_end()), the programming voltage and current back
  *         to the operator's, the series back to SET_HITEC_SERIES. */
 void hitec_panel_run_end(void);

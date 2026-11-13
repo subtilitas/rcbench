@@ -1495,7 +1495,7 @@ enum {
 /**
  * @brief LINK_KS_W_KEY of an operation that writes to the servo.
  *
- * The panel sends it only while its switch ENABLE WRITE TO SERVO is on.
+ * The panel sends it only while its write gate is open.
  */
 #define LINK_KST_WRITE_KEY 0x57A5u
 

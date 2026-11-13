@@ -1,9 +1,10 @@
 /**
  * @file hitec_panel_page.c
  * @brief The hold pages of the Hitec programmer's overlay: LEAVE, RELEASE
- *        PORT, ENABLE WRITE TO SERVO, WRITE n VALUES, CHECK THIS CHANGE,
- *        REPAIR CHECKSUM and RESTORE, what each says before it acts, and
- *        what its hold does, also for the pages of hitec_panel_file.c.
+ *        PORT, CHECK THIS CHANGE, REPAIR CHECKSUM and RESTORE, what each
+ *        says before it acts, and what its hold does, also for the pages
+ *        of hitec_panel_file.c.  WRITE n VALUES has no page: its own 2s
+ *        hold writes.
  *
  * Hitec is a name or trademark of its owner; it is used here only to say
  * which servos this overlay works with.  The state and the seam are
@@ -36,6 +37,7 @@ void hpn_page_open(int kind, bool danger, const char *title,
     hp.page.vfirst = 0;
     hp.page.vcount = 0;
     hp.page.vtotal = 0;
+    hp.page.drop = false;
     snprintf(hp.page.title, sizeof(hp.page.title), "%s", title);
     snprintf(hp.page.apply, sizeof(hp.page.apply), "%s", apply);
     hp.page.hint = hint;
@@ -50,16 +52,51 @@ void hpn_page_add(unsigned level, const char *s)
     }
 }
 
+/**
+ * @brief The count of a draft's stored values that no value line names, a
+ *        loaded classic cell outside the settings: WRITE n VALUES counts
+ *        them, so the leave page says they are not written.
+ * @param draft the draft
+ */
+static void leave_raw(const hitec_image_t *draft)
+{
+    const unsigned raw = hitec_prog_raw_cells(&hp.prog, draft);
+
+    if (raw != 0u) {
+        char line[HITEC_PANEL_LINE];
+
+        snprintf(line, sizeof(line), TR(HP_LEAVE_RAW), raw);
+        hpn_page_add(HITEC_PROG_WARN, line);
+    }
+}
+
 void hpn_page_leave(void)
 {
-    hpn_page_open(W_LEAVE, false, TR(KP_LEAVE_TITLE),  TR(KP_HOLD_LEAVE), TX_HOLD_HINT_LEAVE);
-    if (hitec_prog_series(&hp.prog) == (uint8_t)HITEC_CLASSIC) {
+    const hitec_prog_t *p = &hp.prog;
+    const hitec_image_t *draft = hitec_prog_draft(p);
+    const bool drop = draft != NULL && hitec_prog_changes(p) != 0u;
+
+    if (drop) {
+        /* The edits listed: the hold leaves without writing them, BACK
+         * keeps them. */
+        hpn_page_open(W_LEAVE, false, TR(KP_LEAVE_TITLE),
+                      TR(KP_HOLD_LEAVE_DROP), TX_HOLD_HINT_LEAVE_DROP);
+        hp.page.drop = true;
+        hpn_page_add(HITEC_PROG_WARN, TR(KP_LEAVE_CHANGES));
+        hpn_page_values(draft, HP_PAGE_VALUES);
+        leave_raw(draft);
+    } else {
+        hpn_page_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE),
+                      TX_HOLD_HINT_LEAVE);
+    }
+    if (hitec_prog_series(p) == (uint8_t)HITEC_CLASSIC) {
         hpn_page_add(HITEC_PROG_INFO, TR(HP_LEAVE_C));
     } else {
         hpn_page_add(HITEC_PROG_INFO, TR(KP_LEAVE_1));
         hpn_page_add(HITEC_PROG_INFO, TR(HP_LEAVE_D));
     }
     hpn_page_add(HITEC_PROG_INFO, TR(KP_LEAVE_2));
+    (void)hpn_page_fit();
 }
 
 void hpn_page_release(void)
@@ -75,38 +112,7 @@ void hpn_page_release(void)
     hpn_page_add(HITEC_PROG_INFO, TR(HP_RELEASE_3));
 }
 
-/* ------------------------------------------------------------- the write */
-
-/**
- * @brief Whether the series in use is the classic one.
- * @return true for CLASSIC
- */
-static bool classic(void)
-{
-    return hitec_prog_series(&hp.prog) == (uint8_t)HITEC_CLASSIC;
-}
-
-/**
- * @brief Whether @p to moves the horn or turns it round: it changes the
- *        direction, the center or an end point.
- * @param to the image a write leaves
- * @return true when it does
- */
-static bool moves_horn(const hitec_image_t *to)
-{
-    static const uint8_t k_moves[] = {
-        HITEC_P_D_DIRECTION, HITEC_P_D_NEUTRAL, HITEC_P_D_LEFT_END,
-        HITEC_P_D_RIGHT_END, HITEC_P_C_DIRECTION, HITEC_P_C_CENTER,
-        HITEC_P_C_LEFT_END, HITEC_P_C_RIGHT_END,
-    };
-
-    for (unsigned i = 0; i < sizeof(k_moves); ++i) {
-        if (hitec_prog_differs(&hp.prog, to, k_moves[i])) {
-            return true;
-        }
-    }
-    return false;
-}
+/* ------------------------------------------------------------- the pages */
 
 void hpn_page_values(const hitec_image_t *to, int room)
 {
@@ -238,72 +244,6 @@ static void page_record(void)
     }
 }
 
-/**
- * @brief The values a write page has room for besides its @p fixed lines:
- *        HP_PAGE_VALUES at most, two lines fewer with the three lines of no
- *        backup file, two of which wrap in German.
- * @param fixed the page's other lines
- * @return the lines
- */
-static int values_room(int fixed)
-{
-    const int room = HP_PAGE_LINES - fixed - (saves_lines() == 3 ? 2 : 0);
-
-    return room < HP_PAGE_VALUES ? room : HP_PAGE_VALUES;
-}
-
-void hpn_page_write(void)
-{
-    const hitec_prog_t *p = &hp.prog;
-    const hitec_image_t *to = hitec_prog_draft(p);
-    const unsigned c = hitec_prog_changes(p);
-    /* Stored values no listed setting shows: a backup file's. */
-    const unsigned raw = to != NULL ? hitec_prog_raw_cells(p, to) : 0u;
-    const bool horn = to != NULL && (!hitec_prog_first_done(p)
-                                     || moves_horn(to));
-    const int fixed = (horn ? 2 : 0) + 2 + (raw != 0u ? 1 : 0)
-                      + (saves_lines() == 3 ? 3 : saves_lines() + 1);
-    char title[64];
-
-    if (c == 1u) {
-        snprintf(title, sizeof(title), "%s", TR(KP_WRITE_ONE));
-    } else {
-        snprintf(title, sizeof(title), TR(KP_WRITE_N), c);
-    }
-    hpn_page_open(W_WRITE, true, title,  TR(KP_HOLD_WRITE), TX_HOLD_HINT_WRITE);
-    /* The write gate has passed: a servo is read, so a draft stands. */
-    if (to != NULL) {
-        hpn_page_values(to, values_room(fixed));
-    }
-    if (raw != 0u) {
-        char line[HITEC_PANEL_LINE];
-
-        snprintf(line, sizeof(line), TR(HP_FACTORY_RAW), raw);
-        hpn_page_add(HITEC_PROG_INFO, line);
-    }
-    if (horn) {
-        hpn_page_add(HITEC_PROG_DANGER, TR(KP_HORN_FREE));
-        hpn_page_add(HITEC_PROG_WARN, TR(KP_BENCH_FIRST));
-    }
-    hpn_page_add(HITEC_PROG_INFO, classic() ? TR(HP_WRITE_C)
-                                            : TR(HP_WRITE_D));
-    hpn_page_add(HITEC_PROG_INFO, TR(KP_WRITE_2));
-    hpn_page_saves();
-    page_record();
-    (void)hpn_page_fit();
-}
-
-void hpn_page_enable(void)
-{
-    hpn_page_open(W_ENABLE, true, TR(KP_ENABLE_TITLE),  TR(KP_HOLD_ENABLE), TX_HOLD_HINT_ENABLE);
-    hpn_page_add(HITEC_PROG_DANGER, classic() ? TR(HP_ENABLE_C)
-                                              : TR(HP_ENABLE_D));
-    hpn_page_add(HITEC_PROG_INFO, TR(HP_ENABLE_2));
-    hpn_page_add(HITEC_PROG_INFO, classic() ? TR(HP_ENABLE_3C)
-                                            : TR(KP_ENABLE_3));
-    hpn_page_add(HITEC_PROG_INFO, TR(KP_ENABLE_5));
-}
-
 /** @brief The warning of each soft rule, in hitec_prog_rule_t's order. */
 static const ui_text_id_t k_rule[HITEC_RULE_COUNT] = {
     TX_KP_W_SPD_SLOW, TX_KP_W_DEAD_BAND_NARROWED, TX_HP_SOFT_OVERLOAD,
@@ -383,6 +323,7 @@ void hpn_page_apply(void)
 {
     hitec_prog_t *p = &hp.prog;
     const int kind = hp.page.kind;
+    const bool drop = hp.page.drop;
 
     /* Shut first, and not as a CANCEL: the edit CHECK THIS CHANGE asked
      * for is taken below, not dropped. */
@@ -390,22 +331,22 @@ void hpn_page_apply(void)
     hpn_close_editors();
     switch (kind) {
     case W_LEAVE:
+        /* The edits the page listed go unwritten: dropped while the
+         * session takes the LEAVE, kept while it is busy and the LEAVE
+         * says why it waits. */
+        if (drop && hitec_prog_state(p) == HITEC_PROG_HELD) {
+            hitec_prog_discard(p);
+        }
         (void)hitec_prog_leave(p);
         break;
     case W_RELEASE:
         (void)hitec_prog_release(p);
         break;
-    case W_ENABLE:
-        (void)hitec_prog_write_enable(p, true);
-        break;
-    case W_WRITE:
-        (void)hitec_prog_write(p);
-        break;
     case W_SOFT:
         (void)hitec_prog_confirm(p);
         break;
     case W_REPAIR:
-        (void)hitec_prog_repair(p);
+        (void)hpn_write_go((uint8_t)HITEC_PROG_WR_REPAIR);
         break;
     case W_LOAD:
         (void)hitec_prog_load_confirm(p);
@@ -415,20 +356,16 @@ void hpn_page_apply(void)
         hpn_page_load_at(hp.page.next);
         break;
     case W_FACTORY:
-        (void)hitec_prog_factory(p);
+        (void)hpn_write_go((uint8_t)HITEC_PROG_WR_FACTORY);
         break;
     case W_BACKUP:
-        /* The hold confirms the unit where the bench cannot tie the servo
-         * to the backup; a classic servo of the backup's serial needs no
-         * confirmation. */
-        (void)(hitec_prog_unit_told_apart(p) ? hitec_prog_restore_backup(p)
-                                             : hitec_prog_restore_backup_unit(p));
+        (void)hpn_write_go((uint8_t)HITEC_PROG_WR_BACKUP);
         break;
     case W_MOVE:
         (void)hitec_prog_move_start(p);
         break;
     default:
-        (void)hitec_prog_restore(p);
+        (void)hpn_write_go((uint8_t)HITEC_PROG_WR_RESTORE);
         break;
     }
     hpn_moved();

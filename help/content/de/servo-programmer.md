@@ -119,9 +119,8 @@ Bei ausgeschaltetem Ausgang schaltet VERBINDEN ihn ein und öffnet den Programmi
 | TYP | V6?, V8?, V6, V8 | der Servotyp, V6 oder V8, wie der Bediener ihn setzt |
 | DATEIEN | WÄHLEN | speichert die Werte des Servos auf die Karte, lädt eine Datei |
 | WEITERES | WÄHLEN | im Programmiermodus: PRÜFEN, ÄNDERUNGEN VERWERFEN und, bei KST EXPERT MODE EIN, PAIRING LÖSEN |
-| SCHREIBEN INS SERVO FREIGEBEN | AUS, EIN | der Schreibschalter |
 | ZURÜCKSPIELEN | WÄHLEN | schreibt ein Backup zurück |
-| (keine Beschriftung) | n WERTE SCHREIBEN | schreibt die geänderten Werte |
+| (keine Beschriftung) | n WERTE SCHREIBEN | schreibt die geänderten Werte nach 2s Halten |
 
 Kein Register identifiziert die Serie. Bei V8-Flächenservos kann 20k_sel wie bei V6 gesetzt sein. Nach dem Auslesen zeigt TYP daher einen Vorschlag mit Fragezeichen, etwa `V6?`, und fordert zum Prüfen des Servoetiketts auf. Tippe auf TYP, um V6 oder V8 zu bestätigen.
 
@@ -174,20 +173,16 @@ Bei AUS verschwinden DEAD BAND, BOOST und STRETCH von ABSTIMMEN, PAIRING LÖSEN 
 ![ABSTIMMEN bei KST EXPERT MODE AUS](view:servo-kst-tune-expert-off)
 ![WEITERES bei KST EXPERT MODE AUS](view:servo-kst-more-expert-off)
 
-Das Laden einer Datei und ZURÜCKSPIELEN schreiben weiter das ganze Abbild. Die Schreibseite, DIESE DATEI PRÜFEN und die Seite des Zurückspielens nennen jeden verborgenen Wert, der sich ändert, zuerst und in der Warnfarbe: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. Ein Entwurf behält beim Ausschalten eine Änderung eines verborgenen Werts, und die Schreibseite nennt sie.
+Das Laden einer Datei und ZURÜCKSPIELEN schreiben weiter das ganze Abbild. DIESE DATEI PRÜFEN, die Seite des Zurückspielens und PROGRAMMIERMODUS VERLASSEN mit ungeschriebenen Änderungen nennen jeden verborgenen Wert, der sich ändert, zuerst und in der Warnfarbe: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. Ein Entwurf behält beim Ausschalten eine Änderung eines verborgenen Werts; n WERTE SCHREIBEN zählt sie und schreibt sie mit den anderen.
 
-![Die Schreibseite nennt die verborgenen Werte](view:servo-kst-write-expert-off)
+![PROGRAMMIERMODUS VERLASSEN nennt die verborgenen Werte](view:servo-kst-leave-expert-off)
 
 ## Schreiben
 
-![Das Schreiben freigeben](view:servo-kst-enable)
+![Drei geänderte Werte](view:servo-kst-changes)
+![Das Halten zum Schreiben nach 1s](view:servo-kst-write)
 
-SCHREIBEN INS SERVO FREIGEBEN ist zunächst aus. Tippe auf AUS, um die Risiken zu lesen, und halte 2s HALTEN ZUM FREIGEBEN für 2s. Die Freigabe endet bei jedem Aufruf von SERVO, bei STOP, VERBINDEN oder VERLASSEN, bei Verbindungsverlust und bei unklarem Servozustand.
-
-![Drei geänderte Werte, der Schalter an](view:servo-kst-changes)
-![Die Seite zum Schreiben](view:servo-kst-write)
-
-n WERTE SCHREIBEN öffnet die Änderungsübersicht, etwa `DEAD BAND: 2.0 -> 1.6us`. Halte 2s HALTEN ZUM SCHREIBEN für 2s, um zu schreiben.
+n WERTE SCHREIBEN, auf dem Reiter SERVO und in der Fußzeile, schreibt die Änderungen nach 2s Halten. Die Taste geht beim Halten von Grün nach Bernstein über. Ein Tipp oder ein Loslassen vor 2s sendet nichts; ein Tipp zeigt `Halte 2s, um zu schreiben.` Ein Druck, den die Sitzung ablehnt, startet kein Halten und nennt den Grund. Keine Seite listet die Werte vorher: jeder geänderte Wert ist auf seinem Reiter markiert. Ohne Karte sagt der Reiter SERVO `Keine Karte. Es wird keine Backup-Datei gespeichert.`, solange Änderungen warten.
 
 1. Das erste Schreiben einer Sitzung speichert die Werte des Servos in eine neue Datei auf der SD-Karte (Secure Digital).
 2. Das Panel vermerkt das Schreiben in `BENCH/KST/CONF/KST.TXT`, oder ohne Karte im Speicher.
@@ -219,7 +214,7 @@ Tippe auf eine Datei, um sie in den Entwurf zu laden. Erst das Schreiben übertr
 ![Die Liste von ZURÜCKSPIELEN](view:servo-kst-restore-list)
 ![Das Zurückspielen des Backups der Sitzung](view:servo-kst-restore)
 
-ZURÜCKSPIELEN bietet das Sitzungsbackup (die zuerst nach VERBINDEN ausgelesenen Werte), den Stand vor einem unterbrochenen Schreibvorgang oder `Werte vor dem Endlagenlauf.` an. Jede Wiederherstellung erfordert Schreibfreigabe und 2s Halten.
+ZURÜCKSPIELEN bietet das Sitzungsbackup (die zuerst nach VERBINDEN ausgelesenen Werte), den Stand vor einem unterbrochenen Schreibvorgang oder `Werte vor dem Endlagenlauf.` an. Jede Wiederherstellung erfordert 2s Halten.
 
 ![WEITERES im Programmiermodus](view:servo-kst-more)
 
@@ -237,12 +232,16 @@ Bei Verbindungsverlust, Platinenneustart, ABBRECHEN, Stopp oder ausbleibendem Er
 
 ## Verlassen
 
-![PROGRAMMIERMODUS VERLASSEN](view:servo-kst-leave)
+
 ![VERLASSEN nach einem Schreiben mit PD mini](view:servo-kst-leave-cycle)
 
 VERLASSEN oder das Home-Feld im Programmiermodus öffnet PROGRAMMIERMODUS VERLASSEN. Bei Rückkehr zu Servo-PWM kann sich das Servo bewegen. Nach einem Schreibvorgang mit PD mini kündigt die Seite zuerst einen Versorgungszyklus mit 1s Aus-Zeit an. Ohne PD mini nennt sie den nötigen manuellen Versorgungszyklus. Ohne Schreibvorgang bleibt die Versorgung unverändert.
 
 Halte 2s HALTEN ZUM VERLASSEN für 2s. Der Port hält die Leitung für WARTEZEIT VOR PWM auf Low und gibt den Pin dann an den Tester zurück. Das Verlassen der Seite KST führt diesen Vorgang nicht aus: Die Sitzung behält den Port, und jede andere SERVO-Seite öffnet bis VERLASSEN wieder KST. Innerhalb der Servoprogrammierung schließt Home zuerst offene Tastenfelder, Listen, Warnungen oder Tastaturen.
+
+![VERLASSEN mit ungeschriebenen Änderungen](view:servo-kst-leave)
+
+Mit ungeschriebenen Änderungen listet die Seite sie, `BOOST: 300.0 -> 262.5us`, und `und n weitere`, wo sie nicht passen. ZURÜCK schließt die Seite und behält die Änderungen. 2s HALTEN: OHNE SCHREIBEN VERLASSEN verwirft sie und verlässt.
 
 ## Hitec-D-Empfang
 

@@ -11,8 +11,8 @@
  * nothing else.  Its start, a button held 2s, is the operator's consent:
  * inside a run (hitec_prog_run_begin() to hitec_prog_run_end()) the run's
  * own edits of an end point or of NEUTRAL take HITEC_RULE_END and
- * HITEC_RULE_CENTER as confirmed, and the run's writes switch ENABLE WRITE
- * TO SERVO on.  An edit of the operator inside a run still waits for CHECK
+ * HITEC_RULE_CENTER as confirmed, and the run's writes open the write
+ * gate.  An edit of the operator inside a run still waits for CHECK
  * THIS CHANGE, and outside a run hitec_prog_run_write() is refused.  Every
  * hard rule stays: the edit's encoding, the D series order left end <
  * neutral < right end, the write gate, the second read, the record, the
@@ -53,10 +53,10 @@ typedef struct {
                                                hitec_prog_backup_name() */
 } hitec_run_servo_t;
 /** @brief A run begins: HITEC_RULE_END and HITEC_RULE_CENTER count as
- *         confirmed, ENABLE WRITE goes on for the run's writes.
+ *         confirmed, the write gate opens for the run's writes.
  *  @param p The programmer. */
 void hitec_prog_run_begin(hitec_prog_t *p);
-/** @brief The run ends: the switch off, the rules asked again.
+/** @brief The run ends: the write gate shut, the rules asked again.
  *  @param p The programmer. */
 void hitec_prog_run_end(hitec_prog_t *p);
 /** @brief The servo read, in travel units.

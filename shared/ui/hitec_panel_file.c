@@ -354,7 +354,21 @@ const char *hpn_backup_note(void)
         return ui_card_text((card_state_t)p->f.card_state,
                             UI_CARD_AT_KP_NO_BACKUP);
     }
+    if (hpn_backup_unsaved()) {
+        /* Edits wait, and their write's hold sends them with no file. */
+        return ui_card_text((card_state_t)p->f.card_state,
+                            UI_CARD_AT_KP_NO_FILE);
+    }
     return NULL;
+}
+
+bool hpn_backup_unsaved(void)
+{
+    const hitec_prog_t *p = &hp.prog;
+
+    return p->have_bk && !p->bk_saved && !p->f.card
+        && hitec_prog_state(p) == HITEC_PROG_HELD
+        && hitec_prog_changes(p) != 0u;
 }
 
 /**

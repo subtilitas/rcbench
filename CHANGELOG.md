@@ -35,6 +35,18 @@ history is in git.
 
 - The simulated ESC sounds an 808ms tone before each pass of its item loop
   where the profile sets `loop_marker`.
+- KST and HITEC programmers: WRITE n VALUES writes after a 2s hold, on
+  the SERVO tab and in the footer; a tap shows `Hold 2s to write.` The
+  ENABLE WRITE TO SERVO row and the write page are removed. The model's
+  write gate opens for the one write, restore or pairing release a hold
+  sends and shuts at its end. With no card the SERVO tab says `No card.
+  No backup file will be saved.` while edits wait
+  ([Servo programmer](docs/ServoProgrammer.md#writing),
+  [Hitec](docs/HitecProgrammer.md#writing)).
+- KST and HITEC programmers: LEAVE PROGRAMMING with unwritten edits lists
+  them and offers HOLD 2s TO LEAVE WITHOUT WRITING, which drops them, and
+  BACK, which keeps them
+  ([Servo programmer](docs/ServoProgrammer.md#leaving)).
 
 ### Fixed
 

@@ -14,7 +14,8 @@
  * UI_HOLD_S.
  *
  * Five tabs.  SERVO: the port, read, the servo files on the card,
- * restore, the write switch and the write.  TUNE, PULSE and FAILSAFE: the editable fields.
+ * restore and the write, a 2s hold of WRITE n VALUES.  TUNE, PULSE and
+ * FAILSAFE: the editable fields.
  * LOCKED: the fields that are shown and never written by an edit.
  *
  * KST EXPERT MODE (SET_KST_EXPERT, SERVO > SETTINGS > DUT), OFF by default,
@@ -71,7 +72,7 @@ extern "C" {
 /** Start over: closed, no servo, nothing stored.  @p area is the overlay's. */
 void kst_panel_init(gfx_rect_t area);
 
-/** The SERVO screen was entered: ENABLE WRITE TO SERVO goes off. */
+/** @brief The SERVO screen was entered: the model's write gate closes. */
 void kst_panel_screen_entry(void);
 
 /**
@@ -327,12 +328,23 @@ const char *kst_panel_rule_text(unsigned rule);
 void kst_panel_session(prog_session_t *out);
 
 /**
- * @brief The footer's WRITE n VALUES: what a tap on the session's own does,
- *        from any tab -- the write page, or ENABLE WRITE's while the switch
- *        is off.  Nothing while an editor or a press is in the session.
- * @return whether the tap was taken
+ * @brief The footer's WRITE n VALUES, its 2s hold completed: what the
+ *        completed hold of the session's own does, from any tab -- the
+ *        write of the edits on the next tick, so that a touch loss
+ *        drained before it cancels the write, or the refusal said then.
+ *        Nothing while an editor or a press is in the session, or while
+ *        the session takes no write.
+ * @return whether the write was asked for
  */
-bool kst_panel_write_tap(void);
+bool kst_panel_write_go(void);
+
+/**
+ * @brief Says in the session's message why it refuses a write of the
+ *        edits now, whatever the write gate: the footer's WRITE n VALUES
+ *        starts no hold then.
+ * @return true when the write is refused
+ */
+bool kst_panel_write_refused(void);
 
 /*
  * Where things are, for a test's taps.  Rows by page, row and column, as
@@ -376,7 +388,9 @@ gfx_rect_t kst_panel_choice_rect(int i);
 /** @brief A list's CANCEL, 150 x 48px at the foot's right.
  *  @return its rectangle */
 gfx_rect_t kst_panel_choice_cancel_rect(void);
-/** @brief A warning page's hold button, 300 x 56px at the foot's left.
+/** @brief A warning page's hold button, 300 x 56px at the foot's left;
+ *         on the LEAVE page that lists unwritten edits up to 20px left of
+ *         BACK, 380px wide on a card of 620px.
  *  @return its rectangle */
 gfx_rect_t kst_panel_apply_rect(void);
 /** @brief A warning page's CANCEL, 180 x 56px at the foot's right.
@@ -402,6 +416,17 @@ const char *kst_panel_warning_line(int i);
 /** The level line @p i of the open warning page is drawn in: a
  *  kst_prog_level_t; KST_PROG_INFO past the last. */
 int kst_panel_warning_level(int i);
+/**
+ * @brief The open warning page's hold button label.
+ * @return the label; NULL with no page open
+ */
+const char *kst_panel_apply_label(void);
+/**
+ * @brief The open warning page's other button: BACK on the LEAVE page that
+ *        lists unwritten edits, CANCEL on every other page.
+ * @return the label; NULL with no page open
+ */
+const char *kst_panel_cancel_label(void);
 /** Line @p i, 0 or 1, of what stands on the SERVO tab until it is dealt
  *  with; NULL where there is none. */
 const char *kst_panel_standing_line(int i);

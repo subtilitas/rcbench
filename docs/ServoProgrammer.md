@@ -479,15 +479,14 @@ power cycle of a **LEAVE** by one of 4.30 or later.
 | TYPE | `--`, `V6?`, `V8?`, **V6**, **V8** | [the servo type](#the-servo-type) the operator sets; `V6?` is the guess from 20k_sel |
 | FILES | **CHOOSE** | [saves the servo's values to the card and loads a file](#servo-files) |
 | MORE | **CHOOSE** | in PWM [what CONNECT sets](#the-supply); in programming mode [VERIFY, DISCARD EDITS and, with KST EXPERT MODE ON, RELEASE PAIRING](#more) |
-| ENABLE WRITE TO SERVO | **OFF**, **ON** | [the write switch](#the-write-switch) |
 | RESTORE | **CHOOSE** | [writes a backup back](#restore) |
-| (no label) | **WRITE n VALUES**, **WRITE 1 VALUE** | [writes the changed values](#writing) |
+| (no label) | **WRITE n VALUES**, **WRITE 1 VALUE** | [writes the changed values after a 2s hold](#writing) |
 
 In PWM with a PD mini answering the PORT row reads `PORT  5.0V  1000mA`:
 the voltage and the current limit that **CONNECT** sets. A row whose button
 is drawn off takes no tap: **FILES** outside programming mode and while the
-servo is in doubt, **RESTORE** while an operation runs, the write switch
-where [it is refused](#the-write-switch).
+servo is in doubt, **RESTORE** while an operation runs, **WRITE n VALUES**
+without a change.
 
 Below the rows stand the port's state, the servo type or what the state
 needs, the name of the
@@ -506,7 +505,7 @@ colour.
 
 The IOmcu compares the image with the layout of the known servo, its
 fingerprint. An image that fails is shown and never written: the edit rows
-and the write switch are off and take no tap, the tab keeps `Read only. This servo type is unknown.`, and **RELEASE PAIRING** is refused. **READ ALL**, a save to a file and
+and **WRITE n VALUES** are off and take no tap, the tab keeps `Read only. This servo type is unknown.`, and **RELEASE PAIRING** is refused. **READ ALL**, a save to a file and
 **VERIFY** work. A file is not loaded.
 
 ![A servo that fails the fingerprint](img/servo-kst-readonly.png)
@@ -671,7 +670,7 @@ known:
 
 Every other row and action is the same in both modes: SOFT START, MAX.
 DUTY, SPEED LIMIT, SPEED, the PULSE and FAILSAFE tabs, VERIFY, DISCARD
-EDITS, the write switch, WRITE, RESTORE, the servo files, the
+EDITS, WRITE, RESTORE, the servo files, the
 [limit run](#the-limit-run) and RUDDER > AUTO.
 
 The pages close up. TUNE holds MAX. DUTY and SOFT START on its first line
@@ -683,40 +682,38 @@ row.
 ![TUNE with KST EXPERT MODE OFF](img/servo-kst-tune-expert-off.png)
 ![MORE with KST EXPERT MODE OFF](img/servo-kst-more-expert-off.png)
 
-A hidden value still reaches the servo where a file or a backup holds it,
-and the page that sends it names it:
+A hidden value still reaches the servo where a file or a backup holds it:
 
 - A file load takes the whole file into the draft, hidden values
-  included, and **WRITE n VALUES** counts them.
-- The write page names each hidden value the write changes, first, in the
-  warning colour: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. These lines
-  are never folded into `and n more`; the count is of the values a tab
-  shows. CHECK THIS FILE names them the same way.
+  included, and **WRITE n VALUES** counts them. Its 2s hold writes them
+  with the others; no page lists them before the write.
+- CHECK THIS FILE and [LEAVE PROGRAMMING](#leaving) with unwritten edits
+  name each hidden value the draft changes, first, in the warning colour:
+  `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. These lines are never
+  folded into `and n more`; the count is of the values a tab shows.
 - The page of [a restore](#restore) names each hidden value the restore
   changes, the pairing value as `Pairing (KST EXPERT MODE): 00 -> 5A`. A
   restore of the session's backup to a servo whose values the panel does
   not know says `Also restored (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, LOCKED, Pairing.`
 
-![The write page naming the hidden values](img/servo-kst-write-expert-off.png)
+![LEAVE PROGRAMMING naming the hidden values](img/servo-kst-leave-expert-off.png)
 
 A draft that holds an edit of a hidden value when the mode turns OFF keeps
-it: **WRITE n VALUES** counts it, the write page names it, and **DISCARD
+it: **WRITE n VALUES** counts it, LEAVE PROGRAMMING names it, and **DISCARD
 EDITS** drops it. A change of the mode closes the keypad, the list or the
 page open in the programmer; a page closed that way sends nothing.
 
 The other pictures on this page show the mode ON.
 
-## The write switch
+## The write gate
 
-**ENABLE WRITE TO SERVO** is off by default. A tap on **OFF** opens a page
-that names the risks; **HOLD 2s TO ENABLE** switches it on after 2s. A tap on
-**ON** switches it off at once. A tap on **WRITE n VALUES** with the switch
-off opens the same page: its hold switches the switch on and writes
-nothing, and the next tap on **WRITE n VALUES** opens the write page.
+The panel holds a write gate, and the IOmcu checks the gate's key on every
+write. The gate is shut by default. A 2s hold that sends a write, a
+restore or a pairing release opens it for that one operation; the end of
+the operation shuts it again. The operator sees no switch: the hold is
+the consent.
 
-![Enabling the write](img/servo-kst-enable.png)
-
-The switch goes off:
+The gate shuts:
 
 - at every entry of the SERVO screen,
 - when the link to the IOmcu goes or the IOmcu starts again,
@@ -725,22 +722,22 @@ The switch goes off:
 - when a read finds another image than the one held,
 - when a read fails the fingerprint,
 - when a write, a restore, a read or **VERIFY** ends with the servo in
-  doubt: the read that follows does not switch it on again,
+  doubt: the read that follows does not open it again,
 - when a read finds a servo that fits the record of an interrupted write.
 
-With the switch off the panel sends no write, no restore and no pairing
-release, and the IOmcu refuses one that arrives without the switch's
-key. Reading, **VERIFY**, saving to a file and loading a file work with
-the switch off.
+With the gate shut the panel sends no write, no restore and no pairing
+release, and the IOmcu refuses one that arrives without the gate's key.
+Reading, **VERIFY**, saving to a file and loading a file open no gate.
 
-The switch takes its tap with a servo read. Where it does not, **OFF** is
-drawn off: without a servo read, with a servo that fails the fingerprint,
-while an operation runs and while the panel asks whether the servo is the
-one of an interrupted write. A session the IOmcu has
-locked after an interrupted write takes it with no servo read as well, once
-the panel holds the session's backup: this is the state of a panel that
-starts under such a session. The switch then opens one write, the restore
-of the session's backup. An edit, a write of values, a pairing release and
+The gate opens with a servo read. Where it does not, a press on **WRITE n
+VALUES** starts no hold and the tab names the reason at once: without a
+servo read, with a servo that fails the fingerprint, while an operation
+runs, after a **STOP**, with the bench ARMED and while the panel asks
+whether the servo is the one of an interrupted write. A session the IOmcu
+has locked after an interrupted write opens it with no servo read as well,
+once the panel holds the session's backup: this is the state of a panel
+that starts under such a session. The gate then opens for one write, the
+restore of the session's backup. An edit, a write of values, a pairing release and
 a load of a file stay refused until a read and the end of the lock.
 **READ ALL** in that state reads the servo and shows its values; the lock
 stays, and no value is edited.
@@ -749,41 +746,30 @@ stays, and no value is edited.
 
 **WRITE n VALUES** counts the fields in which the draft differs from the
 servo; with one such field it reads **WRITE 1 VALUE**. It is off without a
-change. With the switch off its tap opens
-[the switch's page](#the-write-switch).
+change. It stands on the SERVO tab and in the footer under every tab; both
+work the same.
 
-![Three changed values, the switch on](img/servo-kst-changes.png)
+![Three changed values](img/servo-kst-changes.png)
 
-A tap opens the write page. **HOLD 2s TO WRITE** starts the write after 2s.
-The page has 12 lines.
+A 2s hold on **WRITE n VALUES** starts the write. The button fades from
+green to amber while it is held. A finger lifted or moved off the button
+before 2s sends nothing. A tap sends nothing and shows `Hold 2s to write.`
+A press the session refuses starts no hold, and the tab names the reason
+at once, for example `Tap DISARM first. The port cannot be taken over while ARMED.` No page lists the values before the write: each
+edited value is marked on its tab, and [LEAVE](#leaving) lists them.
 
-The changed values come first, in the order of the tabs, one line each:
-`DEAD BAND: 2.0 -> 1.6us` is the servo's value, the new value and the
-unit. A value at fault for [a soft limit](#a-value-that-needs-a-second-look)
-is in the warning colour. With more values than lines the last of these
-lines counts the rest: `and 4 more`. A first write with a card shows 7
-values, or 6 and the count; one without a card 6, or 5 and the count.
-With [KST EXPERT MODE](#expert-mode) OFF the values the tabs hide come
-first and are never counted in.
-
-`Keep the servo horn clear. Disconnect the linkage.` and `Test the servo on the bench before fitting it to a model.` follow on the first write after a **CONNECT** and on
-every write that changes REVERSION, NEUTRAL, PULSE LOWER, PULSE UPPER, LEFT
-ANGLE or RIGHT ANGLE. A write that the card, a stop or the link kept from
-starting is not that first write: the lines stay for the next one.
-
-![The write page](img/servo-kst-write.png)
+![The write hold at 1s](img/servo-kst-write.png)
 
 1. The first write of a session saves the servo's values to
    [a new file on the card](#the-backup-before-the-first-write). A card
    that is mounted and does not take the file ends the write. With no card
-   mounted the write page says that no file is saved, and the write goes
-   without one. While the record of an interrupted write is held no file is
+   mounted the SERVO tab says `No card. No backup file will be saved.`
+   while edits wait, and the write goes without a file. While the record of an interrupted write is held no file is
    saved: the servo may be half written, and the record holds its values as
    found.
 2. The panel records the image the servo holds, the image the write is to
    leave and the port: with a card in `BENCH/KST/CONF/KST.TXT`, without one in
-   memory.
-   The page says which. With a card that takes no file within 3s the write
+   memory. With a card that takes no file within 3s the write
    is not sent: `Could not save the file to the card. Nothing was written to the servo.`
 3. The panel sends the target image. The IOmcu checks it against the
    same limits, plans the register writes and runs them.
@@ -795,15 +781,15 @@ starting is not that first write: the lines stay for the next one.
 The write's gate is checked again when the card has taken the servo's file
 and again when it has taken the record, before a frame goes to the servo:
 the port in programming mode on the write's port with no operation
-running, no STOP, the bench not ARMED and the switch on. A tap on **ON**
-while the card writes switches the switch off; **OFF** takes no tap until
-the write ends. A refusal ends the write with nothing sent, clears its
+running, no STOP, the bench not ARMED and the gate open. An entry of the
+SERVO screen while the card writes shuts the gate. A refusal ends the
+write with nothing sent, clears its
 record, on the card too, and keeps the pending values. The line names the
 refusal:
 
 | At the card's answer | Line |
 | --- | --- |
-| the switch is off | `ENABLE WRITE TO SERVO is off.` |
+| the gate is shut | `Writing closed before the write went out. Hold the button 2s again.` |
 | the port reads PWM, or another port is held | `No servo connected. CONNECT first.` |
 | the port reports an operation running, or its status is not read yet | `Another operation is running.` |
 | the bench is ARMED | `Tap DISARM first. The port cannot be taken over while ARMED.` |
@@ -830,7 +816,7 @@ written; register 1D is written by **RELEASE PAIRING** only.
 | `Too many changes to plan at once. Nothing written.` `Split the changes. Write fewer values at a time.` | holds what it held; nothing was sent. The planner stops after 216,000 units of work without a verdict. The session goes on and the pending values stay |
 | `Write failed. No values were left partly written.` | holds what it held |
 | `Write failed. The previous value was restored.` | holds what it held |
-| `Write failed. Earlier writes remain. Tap READ ALL.` | holds the registers written before the one that failed, and the old value in the others. The second line names the register and the count of writes done. The write switch goes off, and **READ ALL** comes before the next write |
+| `Write failed. Earlier writes remain. Tap READ ALL.` | holds the registers written before the one that failed, and the old value in the others. The second line names the register and the count of writes done. **READ ALL** comes before the next write |
 | `Write failed and could not be undone.` | is in doubt: [restore](#an-interrupted-write) |
 | `A register changed without being written.` | is in doubt |
 | `Servo settings do not match the expected values.` | is in doubt |
@@ -876,7 +862,7 @@ creates the folder with the first save, each missing level of it: `BENCH`,
 files and its record in `KST`. The panel does not read that folder; move its
 files to `BENCH/KST/CONF` on a computer. **FILES** opens the list. It is
 available in programming mode after a successful servo read, provided the
-servo state is not uncertain. Otherwise, tapping it shows `Read the servo settings first. Tap READ ALL.` Saving and loading work with the write switch off: a file
+servo state is not uncertain. Otherwise, tapping it shows `Read the servo settings first. Tap READ ALL.` Saving and loading open no write gate: a file
 changes the draft on the panel, never the servo.
 
 ![The files on the card](img/servo-kst-files.png)
@@ -968,11 +954,11 @@ servo that fails the fingerprint.
 
 The first write, restore or pairing release of a session saves the servo's
 image to a new file under the next free preset name, without asking. The
-write page says `The current servo settings are saved to a new card file before writing.`
+page of a restore or a pairing release says `The current servo settings are saved to a new card file before writing.`
 The servo receives nothing before the card holds the file. A mounted card
 that is full, that fails the write or that leaves the slot between the
 request and the file ends the write with the lines of the table above, and
-nothing is written to the servo. Free space on the card, or remove it and confirm a write without a
+nothing is written to the servo. Free space on the card, or remove it and write without a
 backup file, before trying again. The SERVO tab then names the file: `Backup file of
 this session: KST003.` A save by hand before the first write of the
 session counts as that file. A save by hand after a write holds the written
@@ -986,7 +972,9 @@ without first saving a file.
 #### Without a card
 
 With no card mounted the write, the restore and the pairing release are
-not blocked. The page whose hold sends the write carries three more lines:
+not blocked. While edits wait, the SERVO tab shows `No card. No backup file will be saved.` in the warning colour, and the 2s hold on **WRITE n
+VALUES** sends the write without a file. The page whose hold sends a
+restore or a pairing release carries three more lines:
 
 ```
 No card. No backup file will be saved.
@@ -996,7 +984,7 @@ This session's backup is kept only in the bench's memory. It is lost when the se
 The page's one hold of 2s confirms them; no second hold is asked for. A
 hold released before 2s sends nothing.
 
-![The write page without a card](img/servo-kst-write-nocard.png)
+![Edited values with no card](img/servo-kst-write-nocard.png)
 
 After such a write the SERVO tab shows `No card, no backup file. Restore is available only within this session.` in place of the file's name. The only copy of the servo as
 found is the session's backup in the IOmcu: **LEAVE**, a restart of
@@ -1009,13 +997,14 @@ servo held before the write are then not recoverable from the bench.
 | --- | --- |
 | A card is mounted later in the session | the next write, restore or pairing release saves the backup file first. The file holds the session's backup, the image read before the first write. The line on the SERVO tab changes to the file's name |
 | The link goes and comes back, or the panel starts, under a session the IOmcu keeps | the writes of the session are not known to the panel. The next write, restore or pairing release saves the backup file first, and the file holds the session's backup, not the servo as last read. A save through **FILES** counts as the backup file only while the servo equals the session's backup |
-| The servo may hold written values and the panel does not hold the session's backup | the write goes without a file, and its page carries the three lines above: the servo as last read is not saved as the backup file |
+| The servo may hold written values and the panel does not hold the session's backup | the write goes without a file, and the SERVO tab and the page of a restore or a release carry the lines above: the servo as last read is not saved as the backup file |
 | The IOmcu starts again | its session and the session's backup are gone. **CONNECT** begins a session, and its first write saves the servo as that session finds it |
 | A save through **FILES** after a write without a card | saves the servo as it stands; it does not count as the backup file |
-| The card leaves the slot while a page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2s sends the write |
+| The card leaves the slot while a restore or release page that promises the file is open | the hold sends nothing and the page comes back with the three lines; its own hold of 2s sends the operation |
+| The card leaves the slot during the 2s hold on **WRITE n VALUES** | the write goes without a file |
 | The card leaves the slot after the backup file is saved | later writes of the session are sent; the record of the write is kept in memory |
 | **FILES**, save and load without a card | refused: `No card. Nothing saved or written to the servo.` |
-| A card put in, taken out or swapped after the panel started | the panel looks at the slot when the programmer opens, at each **CONNECT** and at each tap on **READ ALL**, **FILES**, **RESTORE**, **MORE**, **ENABLE WRITE TO SERVO** or the write row: a card put in or swapped is mounted, and one taken out is let go. The look at a mounted card is one SEND_STATUS (CMD13) command. A file request (list, load, save) runs on the card it was asked of; with another card mounted in its place by then, it finds no card. The record of a write goes to the card whose record the programmer read last, never to one mounted in its place before the next look reads that card's record. The tap that finds a new card still reads the card state from before; the next one has it, and an open write page changes to the page with the file |
+| A card put in, taken out or swapped after the panel started | the panel looks at the slot when the programmer opens, at each **CONNECT** and at each tap on **READ ALL**, **FILES**, **RESTORE**, **MORE** and at each press on **WRITE n VALUES**: a card put in or swapped is mounted, and one taken out is let go. The look at a mounted card is one SEND_STATUS (CMD13) command. A file request (list, load, save) runs on the card it was asked of; with another card mounted in its place by then, it finds no card. The record of a write goes to the card whose record the programmer read last, never to one mounted in its place before the next look reads that card's record. The tap that finds a new card still reads the card state from before; the next one has it, and an open restore or release page changes to the page with the file |
 
 A card that cannot be mounted is treated as absent. Writing, restoring
 and releasing pairing follow the no-card procedure above; **FILES** is
@@ -1025,8 +1014,8 @@ lines name what the panel found in place of `No card`
 
 | Where | Card is neither FAT32 nor exFAT (FAT: file allocation table; exFAT: extended FAT): NTFS (New Technology File System), a GPT (GUID partition table) or not formatted | Card that cannot be read |
 | --- | --- | --- |
-| The write page | `Card is not FAT32 or exFAT. No backup file will be saved.` | `Cannot read the card. No backup file will be saved.` |
-| The write page, backup file saved | `Card is not FAT32 or exFAT. The previous settings are kept in RAM only.` | `Cannot read the card. The previous settings are kept in RAM only.` |
+| The SERVO tab with edits, and the page of a restore or a release | `Card is not FAT32 or exFAT. No backup file will be saved.` | `Cannot read the card. No backup file will be saved.` |
+| The page of a restore or a release, backup file saved | `Card is not FAT32 or exFAT. The previous settings are kept in RAM only.` | `Cannot read the card. The previous settings are kept in RAM only.` |
 | The SERVO tab | `Card is not FAT32 or exFAT. No backup file. Restore is available only within this session.` | `Cannot read the card. No backup file. Restore is available only within this session.` |
 | **FILES** | `Card is not FAT32 or exFAT. Nothing saved or written to the servo.` | `Cannot read the card. Nothing saved or written to the servo.` |
 
@@ -1034,8 +1023,7 @@ lines name what the panel found in place of `No card`
 
 A tap on a file loads it. Its editable fields become the draft, exactly as
 edits typed on the tabs: changed values are marked, **WRITE n VALUES**
-counts them, and nothing reaches the servo before the write switch, the
-write page and its 2s hold.
+counts them, and nothing reaches the servo before its 2s hold.
 
 ![A file loaded](img/servo-kst-file-loaded.png)
 
@@ -1071,13 +1059,13 @@ values the file supplies. Omitted values remain as read from the servo.
 A file whose values pass a soft limit that the servo's own values keep
 opens CHECK THIS FILE before anything becomes the draft. The page has 12
 lines: the file's line, the line of an edited file, the values that differ
-as [the write page](#writing) lists them, 4 or 3 and `and 2 more`, and the
+as [LEAVE PROGRAMMING](#leaving) lists them, 4 or 3 and `and 2 more`, and the
 same warning lines an edit past those limits shows; with more warnings than
 lines the last line counts the rest. **HOLD 2s TO LOAD** takes the
 values into the draft. **CANCEL** leaves the draft as it was.
 
 The soft limits compare with the servo as the session found it, not as last
-written, and ENABLE WRITE TO SERVO plays no part. A servo found at Left Angle
+written, and the write gate plays no part. A servo found at Left Angle
 100 and written to 97 takes a file at 98 with no page: 98 is under what the
 session found. The next session finds 97, and the same file is a raise and
 opens the page. The page says nothing of a file's check value: a file edited
@@ -1110,7 +1098,7 @@ backup is available only until the session ends.
 ## Restore
 
 **RESTORE** opens the list of what there is to restore. Every restore needs
-the write switch and a 2s hold. With [KST EXPERT MODE](#expert-mode) OFF
+a 2s hold, which opens [the write gate](#the-write-gate) for it. With [KST EXPERT MODE](#expert-mode) OFF
 its page names each value the tabs hide that the restore changes.
 
 ![The restore list](img/servo-kst-restore-list.png)
@@ -1141,7 +1129,7 @@ session's backup is checked the same way while the servo's values are known.
 The session's backup belongs to the servo it was read from. If a read
 differs from the backup in a field that no write in the session was meant
 to change, the panel treats it as a different servo: `This is a different servo. The session backup does not belong to it.` `LEAVE and CONNECT again to start a new session with its own backup.` The write
-switch goes off, the restore list does not hold the session's backup, and
+gate shuts, the restore list does not hold the session's backup, and
 no restore of it is sent. **LEAVE** and **CONNECT** begin a session whose
 backup is this servo's. A read of the first servo brings its backup back.
 A write that the card, a stop or the IOmcu keeps from starting, or
@@ -1153,7 +1141,7 @@ The IOmcu makes the comparison again, register by register, on the
 read that precedes the first write of a restore of the session's backup.
 It holds the set of registers that the writes of the session changed. If a
 servo differs from the backup in any other register, it is treated as a
-different servo: the restore ends with `Servo settings differ from the values read earlier. Tap READ ALL.`, no register is written, the write switch goes off and the port
+different servo: the restore ends with `Servo settings differ from the values read earlier. Tap READ ALL.`, no register is written, the write gate shuts and the port
 takes **READ ALL** and nothing else until the servo is read. The restore
 therefore does not repair a register that something other than a write of
 the session changed. After a write that ended without a full read of the
@@ -1164,9 +1152,9 @@ If a read is required after an uncertain write and the session is not
 locked, the session's backup is absent from the restore list: `Read the servo settings first. Tap READ ALL.`
 
 A restore, a pairing release or a write that the card or the panel's
-control task keeps from starting leaves the pending values, the write
-switch and the record of an interrupted write as they were before the
-hold.
+control task keeps from starting leaves the pending values and the record
+of an interrupted write as they were before the hold, and shuts the write
+gate.
 Two servos equal in every field the session did not write are not told
 apart. After a link loss or a start of the panel under a session the
 session's writes are not known, and the comparison is not made.
@@ -1189,12 +1177,12 @@ TESTER is a port
 first session reads the servo, with SEARCH ONLY as well: CONNECT with its
 read, LEAVE. With SERVO PULSES at 1000-2000 that session also writes PULSE
 LOWER 1000.0µs and PULSE UPPER 2000.0µs. With SEARCH + PROGRAM each later
-write is a session: CONNECT with its read, ENABLE WRITE TO SERVO on, LEFT
-ANGLE and RIGHT ANGLE written and read back, the write switch off, LEAVE. Whatever the overlay has open closes at each step. A
+write is a session: CONNECT with its read, the write gate open, LEFT
+ANGLE and RIGHT ANGLE written and read back, the gate shut, LEAVE. Whatever the overlay has open closes at each step. A
 value under 50 passes its soft limit without the page: the run's 2s start
 hold is the consent. A hard limit refuses a value as it refuses an edit,
-and the run ends. A write refused before it is sent switches ENABLE WRITE
-TO SERVO off again, as the end of a sent write does.
+and the run ends. A write refused before it is sent shuts the gate again,
+as the end of a sent write does.
 
 The run's first write saves the backup file, as any first write does. A
 later session of the run whose servo differs from the run's first read in
@@ -1249,7 +1237,7 @@ session, is not asked to SAFE again.
   differ.
 - **DISCARD EDITS** sets the draft back to the servo's values.
 - **RELEASE PAIRING**, with [KST EXPERT MODE](#expert-mode) ON, sets
-  register 1D to 00 after the write switch and a 2s hold. What the servo does with the value is not known. A restore of
+  register 1D to 00 after a 2s hold. What the servo does with the value is not known. A restore of
   the session's backup sets it back.
 
 ![Releasing the pairing](img/servo-kst-release.png)
@@ -1266,9 +1254,8 @@ If saved on the card, it survives a power cycle of the bench.
 `Writing was interrupted. The settings may be incomplete.` stays until the
 servo is read, with the pin of the write below it: `Do not use the servo. Connect it to GPIO 13 and tap READ ALL.` A record that holds no pin names the
 port instead: `Do not use the servo. Connect it to port 1 and tap READ ALL.` Every control but **CONNECT**, **READ
-ALL**, **RESTORE**, **LEAVE** and, where the session's restore needs it,
-the write switch is off. The read compares the servo with the
-record:
+ALL**, **RESTORE** and **LEAVE** is off. The read compares the servo with
+the record:
 
 | The servo holds | Message | Then |
 | --- | --- | --- |
@@ -1284,8 +1271,8 @@ the record without a write.
 A servo that holds, register for register, the image before the write or
 the image the write was to leave is either the servo of the write or a
 second servo with the same settings. The panel cannot tell the two apart
-and asks. The two lines stay on the SERVO tab, the write switch does not go
-on, and no write, restore or pairing release is sent. If it is the servo of
+and asks. The two lines stay on the SERVO tab, the write gate does not
+open, and no write, restore or pairing release is sent. If it is the servo of
 the write, `Discard the record of the interrupted write.` in the restore
 list ends the question. If it is not, **LEAVE** keeps the record for the
 servo of the write.
@@ -1345,20 +1332,31 @@ After a write with a controllable servo supply (PD mini or the carrier's fixed 5
 `LEAVE switches the supply off for 1s, then on. The port then returns to servo PWM.`, and **HOLD 2s TO LEAVE** sends the port's REBOOT operation
 in place of LEAVE. After a write without a controllable servo supply, the page adds
 `The written values take effect after the servo supply is switched off and on.` The
-page warns before changed values are lost and before a session ends that
-could still restore a servo in doubt. When no supply cycle is required, **HOLD 2s TO LEAVE** sends the port's
+page warns before a session ends that could still restore a servo in
+doubt. When no supply cycle is required, **HOLD 2s TO LEAVE** sends the port's
 LEAVE operation, available from link version 4.15. This operation sends
 no frame to the servo and no command to its supply. The port holds its line low for
 [**WAIT BEFORE PWM**](#the-supply) and then gives the pin to the PWM
 generator.
-
-![Leaving](img/servo-kst-leave.png)
 
 If no power cycle is due, the page uses the unchanged-supply message
 even when a PD mini answers.
 
 ![LEAVE with a PD mini](img/servo-kst-leave-supply.png)
 ![LEAVE with nothing written](img/servo-kst-leave-plain.png)
+
+With unwritten edits the page starts with `Unwritten changes will be lost.`
+and lists each edit as the name, the servo's value and the draft's value:
+`BOOST: 300.0 -> 262.5us`, in the order of the tabs. A value at fault for
+a soft limit is in the warning colour. With [KST EXPERT MODE](#expert-mode)
+OFF the values the tabs hide come first. With more values than lines the
+last of these lines counts the rest: `and 4 more`. The buttons read
+**HOLD 2s TO LEAVE WITHOUT WRITING** and **BACK**. **BACK** closes the page
+and keeps the edits. The hold drops the edits, writes nothing and leaves
+as above. With a servo in doubt the page keeps `Unwritten changes will be
+lost.` without the list, and **CANCEL**.
+
+![LEAVE with three unwritten edits](img/servo-kst-leave.png)
 
 The state line reads `Leaving programming mode. PWM is still off.` and the
 tester's controls stay off until the port reports PWM. The button reads
@@ -1440,12 +1438,12 @@ BEFORE PWM** above 0 the message after it reads
 
 | Event | Effect |
 | --- | --- |
-| **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12ms; the switch goes off; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. The controllable servo supply (PD mini or carrier 5V) is switched off; the port returns to PWM 1000ms after the supply reports off |
+| **STOP**, a latched stop of the bench | the running operation ends after the frame on the wire, at most 12ms; the write gate shuts; `STOP: the operation was aborted.`; the port asks for **READ ALL** before anything else. The controllable servo supply (PD mini or carrier 5V) is switched off; the port returns to PWM 1000ms after the supply reports off |
 | **ABORT** | the same, without the latch |
-| The link goes | the switch goes off, open pages close; a write under way is [interrupted](#an-interrupted-write) |
+| The link goes | the write gate shuts, open pages close; a write under way is [interrupted](#an-interrupted-write) |
 | An error of the bench ([Safety, Errors](Safety.md#errors)), or an operation that ends in a fault of the servo or the wire: no servo, a failed read, a servo that changed, a write that failed, was rolled back or torn, a verify that differs, a driver fault | a write under way ends first, with its read-backs: the IOmcu keeps the supply on until then and 150ms after, 10,000ms at most; the full read after it is cut. Then the controllable servo supply goes off; the port detects this and keeps it off for 1000ms and is in PWM again: `The port ended the session: power off or restart.` An IOmcu older than link 4.31 keeps the supply on ([A programming port's supply](Safety.md#a-programming-ports-supply)) |
 | The IOmcu starts again | its session and backup are gone; `IOmcu restarted. CONNECT, then READ ALL.` and `Switch the servo supply off and on first.`: the port is in PWM, and the servo was not led out of programming mode |
-| The port reads PWM with a servo read, the switch on, a write done or a read asked for, and no command of the programmer put it there | the servo's values, the backup and the switch are gone on the panel; `The port ended the session: power off or restart.` and `Switch the servo supply off and on, then CONNECT.` An operation that ended in the same reading keeps its own line |
+| The port reads PWM with a servo read, a write done or a read asked for, and no command of the programmer put it there | the servo's values and the backup are gone on the panel; `The port ended the session: power off or restart.` and `Switch the servo supply off and on, then CONNECT.` An operation that ended in the same reading keeps its own line |
 | The panel's control task takes no command for 2s | nothing is sent; `No result from the IOmcu. Tap READ ALL.` The command is withdrawn: the control task drops it when it leaves the queue, however late |
 | The IOmcu refuses an exchange of an operation it has taken | the line of the refusal; the values on the panel are not edited, saved or written before a **READ ALL** that ends |
 | 3 exchanges with the IOmcu in a row stay unanswered | `No response from the IOmcu. Tap READ ALL.`; after a read or a verify the values on the panel are not edited, saved or written before a **READ ALL** that ends |
@@ -1635,9 +1633,12 @@ ranges at their ends and one step outside, the wait at 0ms, 10,000ms and
 off in the wait, a leave on link versions 4.13 and 4.14 with and without a
 PD mini, **STOP** during a leave, every limit at its edge, the 2s holds on both sides of the
 threshold, every refusal and result with its line in both languages, the
-lines of the write page for 1 value, for more values than lines and for a
-value past a soft limit, a soft limit asked again for a value further from
-the servo's, the horn lines on a later write that moves the horn, the
+write's 2s hold (a tap, a release before 2s and a hold of 2s, on the tab
+and in the footer), a refusal at the press, the lines of LEAVE PROGRAMMING
+with unwritten edits for 1 value, for more values than lines and for a
+value past a soft limit, **BACK** that keeps the edits and the hold that
+drops them, a soft limit asked again for a value further from
+the servo's, the
 state line and the tab's line of a running write, a message that goes when
 its condition ends, the rows that take no tap, the PORT row's label, no
 comma in a number of the German table, a
@@ -1688,13 +1689,13 @@ other ends. `test_kst_file` runs format 1 and format 2
 files: the type line, its absence, a format-1 line against 20k_sel.
 `test_kst_panel_nocard` runs the writes without a card: the first write, a restore and a pairing release,
 a hold released early, a card mounted between two writes and a card
-removed under the write page. A command the control task takes after
+removed under the write's hold. A command the control task takes after
 its 2s have passed reaches no wire, for every kind of operation; a
 refusal at each later exchange of each kind of operation asks for
 **READ ALL**; every result code of the session has a class, and a code
 without one fails the test; a restore that the card keeps from starting
 at each file step leaves the pending values; the gate at the answer of the
-servo's file and of the record, with the switch turned off, the port in
+servo's file and of the record, with the gate shut, the port in
 PWM, another port held, the port running an operation, a status not read,
 ARMED from the IOmcu and from the screen, STOP, and nothing changed; an
 ARMED that ends before the answer lets the write go; a record from a card

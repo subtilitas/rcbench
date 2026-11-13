@@ -405,8 +405,8 @@ The run writes in sessions of the [programmer](ServoProgrammer.md):
 1. The servo goes back to the center and is held there for 1000ms.
 2. The run switches the bench to SAFE.
 3. CONNECT takes the port and reads every register.
-4. The write: ENABLE WRITE TO SERVO on, the run's fields, the write switch
-   off again. The write is the programmer's ordinary write with every limit
+4. The write: the write gate open, the run's fields, the gate shut
+   again. The write is the programmer's ordinary write with every limit
    check, and reads the values back.
 5. LEAVE gives the port back to PWM.
 6. The run switches the bench to ARMED and searches the side the write
@@ -476,8 +476,8 @@ What differs:
   `Classic servos need a PD mini: the bench cycles the supply.`, on the
   row `NEEDS A PD MINI`.
 - The 2s hold of ARM + START is the consent CHECK THIS CHANGE asks for:
-  the run's writes show no page, and each switches ENABLE WRITE TO SERVO on
-  for itself and off at its end. A value outside the range is refused, not
+  the run's writes show no page, and each opens the write gate for itself
+  and shuts it at its end. A value outside the range is refused, not
   clamped.
 - A first CONNECT with no servo answering, or a servo whose end points do
   not edit, ends the run as FAIL with `no Hitec servo read`.

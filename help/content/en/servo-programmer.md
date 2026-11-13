@@ -119,9 +119,8 @@ If the output is off, CONNECT switches it on and enters programming. ABORT or ST
 | TYPE | V6?, V8?, V6, V8 | the servo type, V6 or V8, as the operator sets it |
 | FILES | CHOOSE | saves the servo's values to the card, loads a file |
 | MORE | CHOOSE | in programming: VERIFY, DISCARD EDITS and, with KST EXPERT MODE ON, RELEASE PAIRING |
-| ENABLE WRITE TO SERVO | OFF, ON | the write switch |
 | RESTORE | CHOOSE | writes a backup back |
-| (no label) | WRITE n VALUES | writes the changed values |
+| (no label) | WRITE n VALUES | writes the changed values after a 2s hold |
 
 No register identifies the series. V8 wing servos can have 20k_sel set as on V6. After reading, TYPE shows the type suggested by that bit with a question mark, such as `V6?`, and asks you to check the servo label. Tap TYPE to confirm V6 or V8.
 
@@ -174,20 +173,16 @@ With the mode OFF, DEAD BAND, BOOST and STRETCH leave TUNE, RELEASE PAIRING leav
 ![TUNE with KST EXPERT MODE OFF](view:servo-kst-tune-expert-off)
 ![MORE with KST EXPERT MODE OFF](view:servo-kst-more-expert-off)
 
-A file load or a RESTORE still writes the whole image. The write page, CHECK THIS FILE and the restore's page name each hidden value that changes, first and in the warning colour: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. A draft keeps an edit of a hidden value when the mode turns OFF, and the write page names it.
+A file load or a RESTORE still writes the whole image. CHECK THIS FILE, the restore's page and LEAVE PROGRAMMING with unwritten edits name each hidden value that changes, first and in the warning colour: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. A draft keeps an edit of a hidden value when the mode turns OFF; WRITE n VALUES counts it and writes it with the others.
 
-![The write page naming the hidden values](view:servo-kst-write-expert-off)
+![LEAVE PROGRAMMING naming the hidden values](view:servo-kst-leave-expert-off)
 
 ## Writing
 
-![Enabling the write](view:servo-kst-enable)
+![Three changed values](view:servo-kst-changes)
+![The write hold at 1s](view:servo-kst-write)
 
-ENABLE WRITE TO SERVO starts off. Tap OFF to read the risks, then hold HOLD 2s TO ENABLE for 2s. Write access is revoked whenever SERVO is entered, on STOP, CONNECT or LEAVE, on link loss, or when the servo's state is uncertain.
-
-![Three changed values, the switch on](view:servo-kst-changes)
-![The write page](view:servo-kst-write)
-
-WRITE n VALUES opens the write page with the changes, `DEAD BAND: 2.0 -> 1.6us`. HOLD 2s TO WRITE starts the write after 2s.
+WRITE n VALUES, on the SERVO tab and in the footer, writes the changes after a 2s hold. The button fades from green to amber while held. A tap or a release before 2s sends nothing; a tap shows `Hold 2s to write.` A press the session refuses starts no hold and names the reason. No page lists the values first: each edited value is marked on its tab. With no card the SERVO tab says `No card. No backup file will be saved.` while edits wait.
 
 1. The first write of a session saves the servo's values to a new file on the SD (Secure Digital) card.
 2. The panel records the write in `BENCH/KST/CONF/KST.TXT`, or in memory without a card.
@@ -219,7 +214,7 @@ Tap a file to load it into the draft. It reaches the servo only after writing. A
 ![The restore list](view:servo-kst-restore-list)
 ![A restore of the session's backup](view:servo-kst-restore)
 
-RESTORE offers the session backup (the first values read after CONNECT), the values before an interrupted write, or `Settings before the limit run.` Every restore requires write access and a 2s hold.
+RESTORE offers the session backup (the first values read after CONNECT), the values before an interrupted write, or `Settings before the limit run.` Every restore requires a 2s hold.
 
 ![MORE in programming mode](view:servo-kst-more)
 
@@ -237,12 +232,15 @@ A write is considered interrupted after link loss, a board restart, ABORT or sto
 
 ## Leaving
 
-![LEAVE PROGRAMMING](view:servo-kst-leave)
 ![LEAVE after a write with a PD mini](view:servo-kst-leave-cycle)
 
 LEAVE or the home tag in programming mode opens LEAVE PROGRAMMING. Returning to servo PWM may move the servo. After a write with a PD mini, the page explains that power will cycle off for 1s first. Without a PD mini, it explains that written values require a manual power cycle. If nothing was written, the supply stays unchanged.
 
 Hold HOLD 2s TO LEAVE for 2s. The port holds its line low for WAIT BEFORE PWM, then returns the pin to the tester. Leaving the KST screen does not perform LEAVE: the session retains the port, and every other SERVO screen opens KST again until LEAVE. Within the programmer, home closes an open keypad, list, warning or keyboard first.
+
+![LEAVE with unwritten edits](view:servo-kst-leave)
+
+With unwritten edits the page lists them, `BOOST: 300.0 -> 262.5us`, and `and n more` where they do not fit. BACK closes the page and keeps the edits. HOLD 2s TO LEAVE WITHOUT WRITING drops them and leaves.
 
 ## Hitec D receive
 

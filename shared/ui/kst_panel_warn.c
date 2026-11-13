@@ -3,9 +3,9 @@
  * @brief The warning pages of the programmer's overlay.
  *
  * The warning pages of the programmer's overlay for KST and Chaservo
- * servos: what a write, a restore, a soft limit, ENABLE WRITE TO SERVO, a
- * file, a release, a leave, a check and HV SERVO each say before they
- * act, and APPLY's hold that acts.  The state and the seam are
+ * servos: what a restore, a soft limit, a file, a release, a leave, a
+ * check and HV SERVO each say before they act, and APPLY's hold that
+ * acts.  WRITE n VALUES has no page: its own 2s hold writes.  The state and the seam are
  * kst_panel_int.h.
  *
  * SPDX-License-Identifier: MIT
@@ -65,40 +65,13 @@ static void warn_text(kst_prog_level_t level, const char *s)
 }
 
 /**
- * @brief A write of @p to moves the horn or turns it round: it changes the
- *        direction, the center, an end point or an angle.
+ * @brief Adds the horn warning: for every restore, and for a release that
+ *        is the session's first write.
+ * @param moves true where the write moves the horn
  */
-static bool moves_horn(const kst_image_t *to)
-{
-    static const uint8_t k_moves[] = {
-        KST_F_REVERSION, KST_F_NEUTRAL, KST_F_PULSE_LOWER, KST_F_PULSE_UPPER,
-        KST_F_LEFT_ANGLE, KST_F_RIGHT_ANGLE,
-    };
-
-    for (unsigned i = 0; i < sizeof(k_moves); ++i) {
-        const kst_field_id_t id = (kst_field_id_t)k_moves[i];
-
-        if (kst_field_get(to, id)
-            != kst_field_get(kst_prog_servo(&k.prog), id)) {
-            return true;
-        }
-    }
-    return false;
-}
-
-/**
- * @brief The two lines of the first write of a session, and of every write that
- *        @p moves the horn.
- */
-static bool horn_due(bool moves)
-{
-    return moves || kst_prog_first_write(&k.prog);
-}
-
-/** @brief Adds the horn warning, when one is due. */
 static void warn_horn(bool moves)
 {
-    if (horn_due(moves)) {
+    if (moves || kst_prog_first_write(&k.prog)) {
         warn_text(KST_PROG_DANGER, TR(KP_HORN_FREE));
         warn_text(KST_PROG_WARN, TR(KP_BENCH_FIRST));
     }
@@ -250,16 +223,6 @@ void kpn_warn_soft(const row_t *r)
                kpn_warn_room() - kpn_warn_rows());
 }
 
-void kpn_warn_enable(void)
-{
-    warn_open(W_ENABLE, true, TR(KP_ENABLE_TITLE),  TR(KP_HOLD_ENABLE), TX_HOLD_HINT_ENABLE);
-    warn_text(KST_PROG_DANGER, TR(KP_ENABLE_1));
-    warn_text(KST_PROG_INFO, TR(KP_ENABLE_2));
-    warn_text(KST_PROG_INFO, TR(KP_ENABLE_3));
-    warn_text(KST_PROG_INFO, TR(KP_ENABLE_4));
-    warn_text(KST_PROG_INFO, TR(KP_ENABLE_5));
-}
-
 /**
  * @brief A write that saves the servo to a file first, and no card to take one:
  *        it goes without, and its page says so.
@@ -282,22 +245,6 @@ static bool warn_no_file(void)
     warn_text(KST_PROG_WARN, TR(KP_NO_FILE_2));
     warn_text(KST_PROG_WARN, TR(KP_NO_FILE_3));
     return true;
-}
-
-/** @brief The rows of what warn_card() says. */
-static int card_rows(void)
-{
-    if (no_card()) {
-        return kst_panel_text_rows(kpn_card_tr(UI_CARD_AT_KP_NO_FILE))
-             + kst_panel_text_rows(TR(KP_NO_FILE_2))
-             + kst_panel_text_rows(TR(KP_NO_FILE_3));
-    }
-    if (kst_prog_save_first(&k.prog)) {
-        return kst_panel_text_rows(TR(KP_WRITE_BACKUP));
-    }
-    return kst_panel_text_rows(k.prog.f.card
-                                   ? TR(KP_WRITE_CARD)
-                                   : kpn_card_tr(UI_CARD_AT_KP_WRITE));
 }
 
 /**
@@ -367,34 +314,6 @@ void kpn_warn_file(void)
     warn_values(kst_prog_soft_image(p), FILE_VALUES, FILE_VALUES);
     warn_rules(kst_prog_soft_rules(p), WARN_LINES - k.warn.count,
                kpn_warn_room() - kpn_warn_rows());
-}
-
-void kpn_warn_write(void)
-{
-    char title[KST_PANEL_LINE];
-
-    const kst_image_t *to = kst_prog_draft(&k.prog);
-    const bool moves = moves_horn(to);
-    /* The lines under the values: the horn's two, the two of every write
-     * and the card's one; a write with no card has three for the card and
-     * leaves the first of the two out. */
-    const int fixed = (horn_due(moves) ? 2 : 0) + (no_card() ? 4 : 3);
-    const int fixed_rows =
-        (horn_due(moves) ? kst_panel_text_rows(TR(KP_HORN_FREE))
-                               + kst_panel_text_rows(TR(KP_BENCH_FIRST))
-                         : 0)
-        + (no_card() ? 0 : kst_panel_text_rows(TR(KP_WRITE_1)))
-        + kst_panel_text_rows(TR(KP_WRITE_2)) + card_rows();
-
-    kpn_write_n(title, sizeof(title), kst_prog_changes(&k.prog));
-    warn_open(W_WRITE, true, title,  TR(KP_HOLD_WRITE), TX_HOLD_HINT_WRITE);
-    warn_values(to, WARN_LINES - fixed, kpn_warn_room() - fixed_rows);
-    warn_horn(moves);
-    if (!no_card()) {
-        warn_text(KST_PROG_INFO, TR(KP_WRITE_1));
-    }
-    warn_text(KST_PROG_INFO, TR(KP_WRITE_2));
-    warn_card();
 }
 
 ui_text_id_t kpn_from_text(unsigned from)
@@ -499,25 +418,56 @@ void kpn_warn_release(void)
     (void)warn_no_file();
 }
 
-/* The way back to PWM: through a supply cycle after a write with a
- * switchable supply (PD mini or the carrier's fixed 5V), with a note of the
- * cycle the values wait for without one. */
+/* The way back to PWM: the edits it drops unwritten, then through a
+ * supply cycle after a write with a switchable supply (PD mini or the
+ * carrier's fixed 5V), with a note of the cycle the values wait for
+ * without one. */
 void kpn_warn_leave(void)
 {
-    warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE),  TR(KP_HOLD_LEAVE), TX_HOLD_HINT_LEAVE);
-    if (kst_prog_in_doubt(&k.prog)) {
+    const kst_prog_t *p = &k.prog;
+    const bool doubt = kst_prog_in_doubt(p);
+    /* A servo in doubt has no image to list edits against: its page names
+     * the doubt and the restore, with CANCEL. */
+    const bool drop = !doubt && kst_prog_have_servo(p)
+                      && kst_prog_changes(p) != 0u;
+    const bool cycles = kst_prog_leave_cycles(p);
+    const bool owed = !cycles && kst_prog_cycle_owed(p);
+    /* The lines under the edits: the cycle's one or two and the tester's
+     * signal. */
+    const int tail = (owed ? 2 : 1) + 1;
+    const int tail_rows =
+        (cycles ? kst_panel_text_rows(TR(KP_LEAVE_CYCLE))
+                : kst_panel_text_rows(TR(KP_LEAVE_1))
+                      + (owed ? kst_panel_text_rows(TR(KP_M_LEFT_NOTE)) : 0))
+        + kst_panel_text_rows(TR(KP_LEAVE_2));
+
+    if (drop) {
+        /* The edits listed: the hold leaves without writing them, BACK
+         * keeps them. */
+        warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE_DROP),
+                  TX_HOLD_HINT_LEAVE_DROP);
+        k.warn.drop = true;
+    } else {
+        warn_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE),
+                  TX_HOLD_HINT_LEAVE);
+    }
+    if (doubt) {
         warn_text(KST_PROG_DANGER, TR(KP_LEAVE_DOUBT_1));
         warn_text(KST_PROG_DANGER, TR(KP_LEAVE_DOUBT_2));
     }
-    if (kst_prog_changes(&k.prog) != 0u) {
+    if (kst_prog_changes(p) != 0u) {
         warn_text(KST_PROG_WARN, TR(KP_LEAVE_CHANGES));
     }
-    if (kst_prog_leave_cycles(&k.prog)) {
+    if (drop) {
+        warn_values(kst_prog_draft(p), WARN_LINES - k.warn.count - tail,
+                    kpn_warn_room() - kpn_warn_rows() - tail_rows);
+    }
+    if (cycles) {
         /* The written values act after this power-up. */
         warn_text(KST_PROG_INFO, TR(KP_LEAVE_CYCLE));
     } else {
         warn_text(KST_PROG_INFO, TR(KP_LEAVE_1));
-        if (kst_prog_cycle_owed(&k.prog)) {
+        if (owed) {
             warn_text(KST_PROG_WARN, TR(KP_M_LEFT_NOTE));
         }
     }
@@ -544,6 +494,7 @@ void kpn_warn_apply(void)
     const int kind = k.warn.kind;
     const kst_prog_restore_t plan = k.warn.plan;
     const uint16_t mv = k.warn.mv;
+    const bool drop = k.warn.drop;
     /* The card left the slot under a page that promised a file: the page
      * comes back with what a write without one leaves out, and nothing is
      * sent before its own hold. */
@@ -557,21 +508,11 @@ void kpn_warn_apply(void)
     case W_SOFT:
         kst_prog_soft_confirm(&k.prog);
         break;
-    case W_ENABLE:
-        (void)kst_prog_enable(&k.prog, true);
-        break;
-    case W_WRITE:
-        if (unsaid) {
-            kpn_warn_write();
-        } else {
-            (void)kst_prog_write(&k.prog);
-        }
-        break;
     case W_RESTORE:
         if (unsaid) {
             kpn_warn_restore(&plan);
         } else {
-            (void)kst_prog_restore(&k.prog, &plan);
+            kpn_gated(false, &plan);
         }
         break;
     case W_CHECK:
@@ -581,7 +522,7 @@ void kpn_warn_apply(void)
         if (unsaid) {
             kpn_warn_release();
         } else {
-            (void)kst_prog_release(&k.prog);
+            kpn_gated(true, NULL);
         }
         break;
     case W_HV:
@@ -591,6 +532,13 @@ void kpn_warn_apply(void)
         }
         break;
     default:
+        /* The edits the page listed go unwritten.  Dropped first, while
+         * the session takes the LEAVE: a session busy keeps them, and the
+         * LEAVE says why it waits. */
+        if (drop && kst_prog_state(&k.prog) == KST_PROG_PROGRAMMING
+            && !kst_prog_card_busy(&k.prog)) {
+            kst_prog_discard(&k.prog);
+        }
         (void)kst_prog_leave(&k.prog);
         break;
     }

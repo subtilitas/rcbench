@@ -78,8 +78,7 @@ enum { PG_SERVO = 0, PG_TUNE, PG_PULSE, PG_FAILSAFE, PG_LOCKED, PG_COUNT };
 enum { K_FIELD = 0, K_STEP, K_LOCKED, K_ACT };
 
 enum {
-    A_PORT = 0, A_READ, A_FILES, A_RESTORE, A_MORE, A_ENABLE,
-    A_WRITE, A_TYPE
+    A_PORT = 0, A_READ, A_FILES, A_RESTORE, A_MORE, A_WRITE, A_TYPE
 };
 
 /**
@@ -98,7 +97,7 @@ typedef struct {
 } row_t;
 
 /** @brief The rows of the five pages, in kst_panel.c, and their count. */
-#define ROW_COUNT 34
+#define ROW_COUNT 33
 /** @brief The overlay's rows, ROW_COUNT of them. */
 extern const row_t kpn_rows[ROW_COUNT];
 
@@ -110,7 +109,7 @@ extern const int16_t kpn_rule[KST_RULE_COUNT];
 enum {
     P_NONE = 0, P_TAB, P_ROW, P_MINUS, P_PLUS, P_KEYPAD, P_CHOICE,
     P_CHOICE_CANCEL, P_APPLY, P_CANCEL, P_TEXTKEY, P_NOTES, P_PORT,
-    P_CONNECT
+    P_CONNECT, P_WRITE
 };
 
 enum { C_STRETCH = 0, C_RESTORE, C_MORE, C_FILES, C_TYPE, C_PORT };
@@ -124,8 +123,7 @@ enum { MORE_VERIFY = 0, MORE_DISCARD, MORE_RELEASE, MORE_VOLTAGE,
 /** @brief List value of a restore's source list that forgets the restore. */
 #define RESTORE_FORGET ((int)KST_PROG_FROM_COUNT)
 
-enum { W_SOFT = 0, W_ENABLE, W_WRITE, W_RESTORE, W_RELEASE, W_LEAVE,
-       W_CHECK, W_HV };
+enum { W_SOFT = 0, W_RESTORE, W_RELEASE, W_LEAVE, W_CHECK, W_HV };
 
 /* The keypad edits what an ENTER asks of the supply, not a row. */
 #define KP_VOLTAGE (-1)                 /**< keypad target: the supply voltage an ENTER asks for */
@@ -210,6 +208,9 @@ typedef struct {
         char      lines[WARN_LINES][KST_PANEL_LINE];  /**< the page's lines */
         uint8_t   level[WARN_LINES];    /**< each line's level */
         bool      no_file;              /**< the page says: no card, no file */
+        /** @brief W_LEAVE with unwritten edits: the page lists them, its
+         *         hold leaves without writing them and BACK keeps them */
+        bool      drop;
         uint16_t  mv;                   /**< W_HV: the voltage the hold sets, mV */
         kst_prog_restore_t plan;        /**< the restore the page asks for */
     } warn;                             /**< the warning page */
@@ -231,6 +232,15 @@ typedef struct {
     /** @brief CONNECT's hold completed: it acts on the next tick, after
      *         that frame's drains, unless a touch loss cancels it first */
     bool conn_due;
+    /** @brief WRITE n VALUES' 2s hold: it writes the edits */
+    ui_hold_t wr;
+    /** @brief WRITE's hold completed: it writes on the next tick, as
+     *         CONNECT's connects */
+    bool wr_due;
+    /** @brief The model's write gate (kst_prog_enable()) is open for a
+     *         write, restore or release a hold started: it closes when
+     *         that operation ends (kpn_gate_follow()) */
+    bool wr_on;
 
     /* A limit run's step of the programmer (kst_panel_run_connect()). */
     struct {
@@ -505,13 +515,9 @@ int kpn_warn_room(void);
  * @param r the row
  */
 void kpn_warn_soft(const row_t *r);
-/** @brief The page of ENABLE WRITE TO SERVO. */
-void kpn_warn_enable(void);
 /** @brief The page of a file whose values pass soft limits: its
  *         warnings, and the draft takes it after the hold. */
 void kpn_warn_file(void);
-/** @brief The page of WRITE: the values, the horn and the card. */
-void kpn_warn_write(void);
 /**
  * @brief The words for where a restore's values come from.
  * @param from the source
@@ -530,8 +536,9 @@ void kpn_warn_restore(const kst_prog_restore_t *plan);
 void kpn_warn_check(const kst_prog_restore_t *plan);
 /** @brief The page of RELEASE. */
 void kpn_warn_release(void);
-/** @brief The page of the way back to PWM: the supply cycle after a write
- *         with a PD mini, the note of the one the values wait for without. */
+/** @brief The page of the way back to PWM: the edits a LEAVE drops
+ *         unwritten, the supply cycle after a write with a PD mini, the
+ *         note of the one the values wait for without. */
 void kpn_warn_leave(void);
 /** @brief The page of a programming voltage @p mv, mV, above what a
  *         standard servo is rated for.
@@ -591,10 +598,37 @@ void kpn_step(const row_t *r, bool up);
  */
 bool kpn_leave_waits(const kst_prog_t *p);
 /**
- * @brief The action of row @p r of the SERVO page.
+ * @brief The action of row @p r of the SERVO page.  WRITE n VALUES is no
+ *        tap: its 2s hold calls kpn_write_go().
  * @param r the row
  */
 void kpn_act(const row_t *r);
+/**
+ * @brief Says why the session refuses a write of the edits now, the write
+ *        gate left out: a servo not read, read-only, a record that asks, a
+ *        STOP or ARMED.  WRITE's hold does not start then.
+ * @return true when it refuses, and the message says why
+ */
+bool kpn_write_refused(void);
+/**
+ * @brief A held write: opens the model's write gate, writes the edits and
+ *        leaves the gate open until the write ends (kpn_gate_follow()).
+ *        A refusal closes the gate again and says why.
+ * @return true when the write is on its way
+ */
+bool kpn_write_go(void);
+/**
+ * @brief A hold page's write: the gate opened for @p op (a restore by
+ *        @p plan or a release), the gate closed again on a refusal.
+ * @param release true for RELEASE PAIRING, false for the restore
+ * @param plan the restore; unused for a release
+ */
+void kpn_gated(bool release, const kst_prog_restore_t *plan);
+/**
+ * @brief Closes the write gate a hold opened once its operation has ended:
+ *        nothing in flight, or the session gone.
+ */
+void kpn_gate_follow(void);
 /**
  * @brief The list's choice @p value for what the list was opened for.
  * @param value the entry's value

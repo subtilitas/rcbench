@@ -134,6 +134,19 @@ static void down(const touch_event_t *evt)
                 ui_hold_begin(&hp.conn, TX_HOLD_HINT_CONNECT);
                 return;
             }
+            if (r->kind == K_ACT && r->what == A_WRITE) {
+                /* WRITE n VALUES writes after a 2s hold; a tap shows the
+                 * hint and sends nothing.  A write the session refuses
+                 * says why at once. */
+                if (hpn_write_refused()) {
+                    hpn_moved();
+                    return;
+                }
+                take(evt, P_WRITE, i);
+                ui_hold_reset(&hp.wr);
+                ui_hold_begin(&hp.wr, TX_HOLD_HINT_WRITE);
+                return;
+            }
             take(evt, P_ROW, i);
             return;
         }
@@ -255,6 +268,21 @@ static void rest(const touch_event_t *evt)
         /* The hold has connected, or a short release shows the hint; the
          * release is no tap on what the button shows now. */
         (void)ui_hold_end(&hp.conn, evt, vr);
+        let_go();
+        return;
+    }
+    if (was == P_WRITE) {
+        const gfx_rect_t vr = hpn_value_rect(&hpn_rows[which]);
+
+        if (!up) {
+            /* A finger that leaves WRITE abandons its hold. */
+            if (!gfx_rect_contains(vr, x, y) && ui_hold_leave(&hp.wr)) {
+                let_go();
+            }
+            return;
+        }
+        /* The hold has written, or a short release shows the hint. */
+        (void)ui_hold_end(&hp.wr, evt, vr);
         let_go();
         return;
     }
@@ -419,6 +447,8 @@ void hitec_panel_cancel(void)
     ui_hold_reset(&hp.page.hold);
     ui_hold_reset(&hp.conn);
     hp.conn_due = false;
+    ui_hold_reset(&hp.wr);
+    hp.wr_due = false;
     hp.page.down = false;
     let_go();
     ++hp.rev;
@@ -489,10 +519,56 @@ static void connect_tick(float dt_s)
     }
 }
 
+/**
+ * @brief A frame of WRITE n VALUES' hold: it writes on the tick after it
+ *        completes, as CONNECT connects; the row taking no press any more,
+ *        an editor or a page ends it.
+ * @param dt_s the frame's time, s
+ */
+static void write_tick(float dt_s)
+{
+    if (hp.wr_due) {
+        const hpn_row_t *r = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
+
+        hp.wr_due = false;
+        if (r != NULL && hpn_row_live(r)) {
+            (void)hpn_write_go((uint8_t)HITEC_PROG_WR_EDITS);
+            hpn_moved();
+        }
+        ++hp.rev;
+    }
+    if (hp.have && hp.pressed == P_WRITE && !hp.wr.fired) {
+        const hpn_row_t *r = &hpn_rows[hp.row];
+
+        if (hp.page.open || hitec_panel_editor() != 0
+            || r->page != hp.tabs.selected || !hpn_row_shown(r)
+            || !hpn_row_live(r)) {
+            (void)ui_hold_left(&hp.wr);
+            let_go();
+            ++hp.rev;
+        } else {
+            if (ui_hold_tick(&hp.wr, dt_s)) {
+                hp.wr_due = true;
+                ++hp.rev;
+            }
+            ++hp.hold_rev;
+        }
+    }
+    if (ui_hold_flashing(&hp.wr)) {
+        ui_hold_flash_step(&hp.wr, dt_s);
+        ++hp.hold_rev;
+        if (!ui_hold_flashing(&hp.wr)) {
+            ++hp.rev;           /* the row under the flash, whole */
+        }
+    }
+}
+
 void hitec_panel_tick(float dt_s)
 {
     hpn_step_tick(dt_s);
     connect_tick(dt_s);
+    write_tick(dt_s);
+    hpn_gate_follow();
     if (hp.page.open && hp.page.down) {
         if (ui_hold_tick(&hp.page.hold, dt_s)) {
             hpn_page_apply();
@@ -509,15 +585,25 @@ void hitec_panel_tick(float dt_s)
     }
 }
 
-bool hitec_panel_write_tap(void)
+bool hitec_panel_write_refused(void)
 {
-    const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 4, 1);
+    const bool no = hpn_write_refused();
+
+    hpn_moved();
+    return no;
+}
+
+bool hitec_panel_write_go(void)
+{
+    const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
 
     if (!hp.open || hp.have || hitec_panel_editor() != 0 || w == NULL
         || !hpn_row_live(w)) {
         return false;
     }
-    hpn_act(w);
+    /* Sent on the next tick, as the tab's hold is: a touch loss drained
+     * before it cancels the write. */
+    hp.wr_due = true;
     ++hp.rev;
     return true;
 }

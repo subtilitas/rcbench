@@ -162,10 +162,10 @@ static const servo_state_t k_servo[] = {
       { 3, 2, 5 } },
     { "KST", SERVO_FN_KST, false, 3, 0,
       { TX_HG_KST_TITLE_CONNECT, TX_HG_KST_TITLE_WRITE, TX_HG_SV_TITLE_PRG },
-      { 5, 5, 5 } },
+      { 5, 4, 5 } },
     { "HITEC", SERVO_FN_HITEC, false, 3, 0,
       { TX_HG_HT_TITLE_CONNECT, TX_HG_HT_TITLE_WRITE, TX_HG_SV_TITLE_PRG },
-      { 5, 5, 5 } },
+      { 5, 4, 5 } },
 };
 
 /** @brief The state pose_servo() puts SERVO in. */
@@ -556,8 +556,8 @@ static int item_of(const ui_help_page_t *p, ui_text_id_t text)
 }
 
 /* The session's pages name each control as it reads now: KST's CONNECT,
- * READ ALL and TYPE, then FILES, MORE, the write switch, RESTORE and WRITE
- * n VALUES; HITEC's SERIES before CONNECT, MORE and AFTER STOP.  Each mark
+ * READ ALL and TYPE, then FILES, MORE, RESTORE and WRITE n VALUES; HITEC's
+ * SERIES before CONNECT, MORE and AFTER STOP.  Each mark
  * is the control's rect, cut at the live half's edge. */
 TEST_CASE(a_session_names_its_controls_as_they_read)
 {
@@ -580,10 +580,9 @@ TEST_CASE(a_session_names_its_controls_as_they_read)
     REQUIRE(ui_help_page(scr, false, 1, &p));
     CHECK_STR_EQ(p.item[0].label, TR(KP_FILES));
     CHECK_STR_EQ(p.item[1].label, TR(KP_MORE));
-    CHECK_STR_EQ(p.item[2].label, TR(KP_ENABLE));
-    CHECK_STR_EQ(p.item[3].label, TR(KP_RESTORE));
-    CHECK_STR_EQ(p.item[4].label, kst_panel_button(0, 4, 1));
-    CHECK_EQ(p.item[4].text, TX_HG_PRG_WRITE);
+    CHECK_STR_EQ(p.item[2].label, TR(KP_RESTORE));
+    CHECK_STR_EQ(p.item[3].label, kst_panel_button(0, 3, 1));
+    CHECK_EQ(p.item[3].text, TX_HG_PRG_WRITE);
 
     go(SERVO_FN_HITEC);
     REQUIRE(ui_help_page(scr, false, 0, &p));
@@ -597,7 +596,8 @@ TEST_CASE(a_session_names_its_controls_as_they_read)
     CHECK_EQ(p.item[0].text, TX_HG_HT_MORE);
     CHECK_STR_EQ(p.item[1].label, TR(HP_STOP_ROW));
     CHECK_EQ(p.item[1].text, TX_HG_HT_CLEAR);
-    CHECK_EQ(p.item[3].text, TX_HG_HT_RESTORE);
+    CHECK_EQ(p.item[2].text, TX_HG_HT_RESTORE);
+    CHECK_EQ(p.item[3].text, TX_HG_PRG_WRITE);
 }
 
 /* Another tab than SERVO: one page of its values, the dock on the right,

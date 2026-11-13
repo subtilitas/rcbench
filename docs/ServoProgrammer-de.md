@@ -528,16 +528,15 @@ Versorgungszyklus eines **VERLASSEN** einer ab 4.30.
 | TYP | `--`, `V6?`, `V8?`, **V6**, **V8** | [der Servotyp](#der-servotyp), den der Bediener setzt; `V6?` ist die Vermutung aus 20k_sel |
 | DATEIEN | **WÄHLEN** | [speichert die Werte des Servos auf die Karte und lädt eine Datei](#servodateien) |
 | WEITERES | **WÄHLEN** | in PWM [was VERBINDEN stellt](#die-versorgung); im Programmiermodus [PRÜFEN, ÄNDERUNGEN VERWERFEN und, bei KST EXPERT MODE EIN, PAIRING LÖSEN](#weiteres) |
-| SCHREIBEN INS SERVO FREIGEBEN | **AUS**, **EIN** | [der Schreibschalter](#der-schreibschalter) |
 | ZURÜCKSPIELEN | **WÄHLEN** | [schreibt ein Backup zurück](#zurückspielen) |
-| (keine Beschriftung) | **n WERTE SCHREIBEN**, **1 WERT SCHREIBEN** | [schreibt die geänderten Werte](#schreiben) |
+| (keine Beschriftung) | **n WERTE SCHREIBEN**, **1 WERT SCHREIBEN** | [schreibt die geänderten Werte nach 2s Halten](#schreiben) |
 
 In PWM mit einem antwortenden PD mini lautet die Zeile PORT
 `PORT  5.0V  1000mA`: die Spannung und die Stromgrenze, die **VERBINDEN**
 stellt. Eine Zeile, deren Taste abgedunkelt ist, nimmt keinen Tipp an:
 **DATEIEN** außerhalb des Programmiermodus und solange das Servo unklar
-ist, **ZURÜCKSPIELEN**, solange ein Vorgang läuft, der Schreibschalter, wo
-[er abgelehnt wird](#der-schreibschalter).
+ist, **ZURÜCKSPIELEN**, solange ein Vorgang läuft, **n WERTE SCHREIBEN**
+ohne Änderung.
 
 Die Zahlen auf dem Bildschirm haben in beiden Sprachen einen Dezimalpunkt:
 `5.0V`. Diese Seite schreibt Zahlen im Text mit Komma.
@@ -561,7 +560,7 @@ Dateien, das Ende eines Vorgangs und alle Meldungen in der Gefahrenfarbe.
 
 Der IOmcu vergleicht das Abbild mit dem Layout des bekannten Servos,
 seinem Fingerprint. Ein Abbild, das nicht passt, wird gezeigt und nie
-geschrieben: die Zeilen zum Ändern und der Schreibschalter sind aus und
+geschrieben: die Zeilen zum Ändern und **n WERTE SCHREIBEN** sind aus und
 nehmen keinen Tipp an, der Reiter behält `Nur Auslesen möglich. Dieser Servotyp ist unbekannt.`, und **PAIRING LÖSEN** wird abgelehnt. **ALLES AUSLESEN**, das Speichern in eine Datei und
 **PRÜFEN** arbeiten. Eine Datei wird nicht geladen.
 
@@ -734,7 +733,7 @@ was nicht bekannt ist:
 
 Jede andere Zeile und Aktion ist in beiden Modi gleich: SOFT START, MAX.
 DUTY, TEMPOGRENZE, TEMPO, die Reiter PULS und FAILSAFE, PRÜFEN,
-ÄNDERUNGEN VERWERFEN, der Schreibschalter, SCHREIBEN, ZURÜCKSPIELEN, die
+ÄNDERUNGEN VERWERFEN, SCHREIBEN, ZURÜCKSPIELEN, die
 Servodateien, der [Endlagenlauf](#der-endlagenlauf) und RUDER > AUTO.
 
 Die Seiten rücken zusammen. ABSTIMMEN zeigt MAX. DUTY und SOFT START in der
@@ -747,43 +746,42 @@ verborgene Zeile stand, erreicht keine verborgene Zeile.
 ![WEITERES bei KST EXPERT MODE AUS](img/de/servo-kst-more-expert-off.png)
 
 Ein verborgener Wert erreicht das Servo trotzdem, wo eine Datei oder ein
-Backup ihn hält, und die Seite, die ihn sendet, nennt ihn:
+Backup ihn hält:
 
 - Das Laden einer Datei übernimmt die ganze Datei in den Entwurf, die
   verborgenen Werte eingeschlossen, und **n WERTE SCHREIBEN** zählt sie.
-- Die Schreibseite nennt jeden verborgenen Wert, den das Schreiben ändert,
-  zuerst und in der Warnfarbe: `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`.
-  Diese Zeilen gehen nie in `und n weitere` auf; die Zahl gilt den Werten,
-  die ein Reiter zeigt. DIESE DATEI PRÜFEN nennt sie ebenso.
+  Sein 2s-Halten schreibt sie mit den anderen; keine Seite listet sie vor
+  dem Schreiben.
+- DIESE DATEI PRÜFEN und [PROGRAMMIERMODUS VERLASSEN](#verlassen) mit
+  ungeschriebenen Änderungen nennen jeden verborgenen Wert, den der Entwurf
+  ändert, zuerst und in der Warnfarbe:
+  `DEAD BAND (KST EXPERT MODE): 2.0 -> 1.6us`. Diese Zeilen gehen nie in
+  `und n weitere` auf; die Zahl gilt den Werten, die ein Reiter zeigt.
 - Die Seite [des Zurückspielens](#zurückspielen) nennt jeden verborgenen
   Wert, den das Zurückspielen ändert, den Pairing-Wert als
   `Pairing (KST EXPERT MODE): 00 -> 5A`. Das Zurückspielen des
   Sitzungsbackups auf ein Servo, dessen Werte das Panel nicht kennt, sagt
   `Auch zurückgespielt (KST EXPERT MODE): DEAD BAND, BOOST, STRETCH, GESPERRT, Pairing.`
 
-![Die Schreibseite nennt die verborgenen Werte](img/de/servo-kst-write-expert-off.png)
+![PROGRAMMIERMODUS VERLASSEN nennt die verborgenen Werte](img/de/servo-kst-leave-expert-off.png)
 
 Ein Entwurf, der beim Ausschalten des Modus eine Änderung eines
-verborgenen Werts hält, behält sie: **n WERTE SCHREIBEN** zählt sie, die
-Schreibseite nennt sie, und **ÄNDERUNGEN VERWERFEN** verwirft sie. Ein
+verborgenen Werts hält, behält sie: **n WERTE SCHREIBEN** zählt sie,
+PROGRAMMIERMODUS VERLASSEN nennt sie, und **ÄNDERUNGEN VERWERFEN** verwirft sie. Ein
 Wechsel des Modus schließt die Tastatur, die Liste oder die Seite, die im
 Programmierer offen ist; eine so geschlossene Seite sendet nichts.
 
 Die anderen Bilder dieser Seite zeigen den Modus EIN.
 
-## Der Schreibschalter
+## Die Schreibfreigabe
 
-**SCHREIBEN INS SERVO FREIGEBEN** ist standardmäßig aus. Ein Tipp auf
-**AUS** öffnet eine Seite mit den Risiken. Halte **2s HALTEN ZUM FREIGEBEN**
-2s, um das Schreiben freizugeben. Ein Tipp auf **EIN** sperrt es sofort
-wieder. Tippst du bei gesperrtem Schreiben auf **n WERTE SCHREIBEN**, öffnet
-sich dieselbe Seite. Das Halten gibt dann nur das Schreiben frei und
-schreibt noch nichts. Erst der nächste Tipp auf **n WERTE SCHREIBEN**
-öffnet die Schreibseite.
+Das Panel hält eine Schreibfreigabe, und der IOmcu prüft ihren Schlüssel
+bei jedem Schreiben. Standardmäßig ist sie zu. Ein 2s-Halten, das ein
+Schreiben, ein Zurückspielen oder ein Lösen des Pairings sendet, öffnet sie
+für genau diesen Vorgang; das Ende des Vorgangs schließt sie wieder. Einen
+Schalter dafür gibt es nicht: das Halten ist die Zustimmung.
 
-![Das Schreiben freigeben](img/de/servo-kst-enable.png)
-
-Der Schalter geht aus:
+Die Freigabe schließt:
 
 - bei jedem Aufruf des SERVO-Bildschirms,
 - wenn der Link zum IOmcu wegfällt oder der IOmcu neu startet,
@@ -792,27 +790,25 @@ Der Schalter geht aus:
 - wenn ein Lesen ein anderes Abbild findet als das gehaltene,
 - wenn ein Lesen nicht zum Fingerprint passt,
 - wenn ein Schreiben, ein Zurückspielen, ein Lesen oder **PRÜFEN** mit
-  einem unklaren Servo endet: das Lesen danach schaltet ihn nicht wieder
-  ein,
+  einem unklaren Servo endet: das Lesen danach öffnet sie nicht wieder,
 - wenn ein Lesen ein Servo findet, das zum Vermerk eines unterbrochenen
   Schreibens passt.
 
-Bei ausgeschaltetem Schalter sendet das Panel kein Schreiben, kein
+Bei geschlossener Freigabe sendet das Panel kein Schreiben, kein
 Zurückspielen und kein Lösen des Pairings, und der IOmcu lehnt eines
-ab, das ohne den Schlüssel des Schalters ankommt. Lesen, **PRÜFEN**, das
-Speichern in eine Datei und das Laden einer Datei arbeiten bei
-ausgeschaltetem Schalter.
+ab, das ohne den Schlüssel der Freigabe ankommt. Lesen, **PRÜFEN**, das
+Speichern in eine Datei und das Laden einer Datei öffnen keine Freigabe.
 
-Der Schalter lässt sich normalerweise erst nach dem Auslesen eines Servos bedienen. Wo er ihn
-nicht annimmt, ist **AUS** abgedunkelt: ohne gelesenes Servo, mit einem
-Servo, das nicht zum Fingerprint passt, solange ein Vorgang läuft und
-solange das Panel fragt, ob das Servo das eines unterbrochenen Schreibens
-ist. Eine Sitzung,
-die der IOmcu nach einem unterbrochenen Schreiben gesperrt hat, nimmt
-ihn auch ohne gelesenes Servo an, sobald das Panel das Backup der Sitzung
-hält: das ist der Zustand eines Panels, das unter einer solchen Sitzung
-startet. Der Schalter öffnet dann ein Schreiben, das Zurückspielen des
-Backups der Sitzung. Ein Ändern, ein Schreiben von Werten, ein Lösen des
+Die Freigabe öffnet sich mit einem gelesenen Servo. Wo nicht, startet ein
+Druck auf **n WERTE SCHREIBEN** kein Halten, und der Reiter nennt den
+Grund sofort: ohne gelesenes Servo, mit einem Servo, das nicht zum
+Fingerprint passt, solange ein Vorgang läuft, nach einem **STOP**, mit
+dem Prüfstand ARMED und solange das Panel fragt, ob das Servo das eines
+unterbrochenen Schreibens ist. Eine Sitzung, die der IOmcu nach einem
+unterbrochenen Schreiben gesperrt hat, öffnet sie auch ohne gelesenes
+Servo, sobald das Panel das Backup der Sitzung hält: das ist der Zustand
+eines Panels, das unter einer solchen Sitzung startet. Die Freigabe öffnet
+dann ein Schreiben, das Zurückspielen des Backups der Sitzung. Ein Ändern, ein Schreiben von Werten, ein Lösen des
 Pairings und das Laden einer Datei bleiben abgelehnt bis zu einem Lesen und
 dem Ende der Sperre. **ALLES AUSLESEN** liest in diesem Zustand das Servo und
 zeigt seine Werte; die Sperre bleibt, und kein Wert wird geändert.
@@ -821,43 +817,34 @@ zeigt seine Werte; die Sperre bleibt, und kein Wert wird geändert.
 
 **n WERTE SCHREIBEN** zählt die Felder, in denen der Entwurf vom Servo
 abweicht; bei einem solchen Feld heißt die Taste **1 WERT SCHREIBEN**. Sie
-ist aus, wenn nichts geändert ist. Bei ausgeschaltetem Schalter öffnet ihr
-Tipp [die Seite des Schalters](#der-schreibschalter).
+ist aus, wenn nichts geändert ist. Sie steht auf dem Reiter SERVO und in
+der Fußzeile unter jedem Reiter; beide arbeiten gleich.
 
-![Drei geänderte Werte, der Schalter ein](img/de/servo-kst-changes.png)
+![Drei geänderte Werte](img/de/servo-kst-changes.png)
 
-Ein Tipp öffnet die Schreibseite. **2s HALTEN ZUM SCHREIBEN** startet das
-Schreiben. Die Seite hat 12 Zeilen.
+2s Halten auf **n WERTE SCHREIBEN** startet das Schreiben. Die Taste geht
+während des Haltens von Grün nach Bernstein über. Ein Finger, der vor 2s
+loslässt oder von der Taste rutscht, sendet nichts. Ein Tipp sendet nichts
+und zeigt `Halte 2s, um zu schreiben.` Ein Druck, den die Sitzung ablehnt,
+startet kein Halten, und der Reiter nennt den Grund sofort, zum Beispiel
+`Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.`
+Keine Seite listet die Werte vor dem Schreiben: jeder geänderte Wert ist
+auf seinem Reiter markiert, und [VERLASSEN](#verlassen) listet sie.
 
-Zuerst stehen die geänderten Werte in der Reihenfolge der Reiter, je eine
-Zeile: `DEAD BAND: 2.0 -> 1.6us` ist der Wert des Servos, der neue Wert
-und die Einheit. Ein Wert, der
-[ein weiches Limit](#ein-wert-der-einen-zweiten-blick-braucht) verletzt,
-steht in der Warnfarbe. Bei mehr Werten als Zeilen zählt die letzte dieser
-Zeilen den Rest: `und 4 weitere`. Ein erstes Schreiben mit Karte zeigt 7
-Werte oder 6 und die Zahl; eines ohne Karte 6 oder 5 und die Zahl.
-Bei [KST EXPERT MODE](#expertenmodus) AUS stehen die Werte, die die Reiter
-verbergen, zuerst und werden nie mitgezählt.
-
-`Halte das Ruderhorn frei. Löse das Gestänge.` und `Teste das Servo am Prüfstand, bevor du es ins Modell einbaust.` folgen beim ersten Schreiben nach einem
-**VERBINDEN** und bei jedem Schreiben, das REVERSION, NEUTRAL, PULSE LOWER,
-PULSE UPPER, LEFT ANGLE oder RIGHT ANGLE ändert. Ein Schreiben, dessen
-Start die Karte, ein Stopp oder der Link verhindert hat, ist nicht dieses
-erste Schreiben: die Zeilen bleiben für das nächste.
-
-![Die Schreibseite](img/de/servo-kst-write.png)
+![Das Halten zum Schreiben nach 1s](img/de/servo-kst-write.png)
 
 1. Das erste Schreiben einer Sitzung speichert die Werte des Servos in
    [eine neue Datei auf der Karte](#das-backup-vor-dem-ersten-schreiben).
    Eine eingehängte Karte, die die Datei nicht annimmt, beendet das
-   Schreiben. Ohne eingehängte Karte sagt die Schreibseite, dass keine
-   Datei gespeichert wird, und das Schreiben läuft ohne eine. Solange der
+   Schreiben. Ohne eingehängte Karte sagt der Reiter SERVO
+   `Keine Karte. Es wird keine Backup-Datei gespeichert.`, solange
+   Änderungen warten, und das Schreiben läuft ohne Datei. Solange der
    Vermerk eines unterbrochenen Schreibens gehalten wird, wird keine Datei
    gespeichert: das Servo kann halb geschrieben sein, und der Vermerk hält
    seine Werte, wie sie vorgefunden wurden.
 2. Das Panel vermerkt das Abbild, das das Servo hält, das Abbild, das das
    Schreiben hinterlassen soll, und den Port: mit Karte in
-   `BENCH/KST/CONF/KST.TXT`, ohne im RAM (Arbeitsspeicher). Die Seite sagt, welches. Mit einer Karte,
+   `BENCH/KST/CONF/KST.TXT`, ohne im RAM (Arbeitsspeicher). Mit einer Karte,
    die binnen 3s keine Datei annimmt, wird das Schreiben nicht gesendet:
    `Datei nicht auf Karte gespeichert. Keine Werte ins Servo geschrieben.`
 3. Das Panel sendet das Zielabbild. Der IOmcu prüft es gegen dieselben
@@ -871,15 +858,14 @@ Die Schreibvoraussetzungen werden nach dem Speichern der Servodatei und
 noch einmal nach dem Speichern des Vermerks geprüft, bevor ein Frame zum
 Servo gesendet wird: Der richtige Port muss im Programmiermodus sein, ohne
 laufenden Vorgang; STOP darf nicht aktiv sein, der Prüfstand nicht ARMED,
-und der Schreibschalter muss eingeschaltet sein. Ein Tipp auf **EIN**, während die Karte
-schreibt, schaltet den Schalter aus; **AUS** nimmt bis zum Ende des
-Schreibens keinen Tipp an. Eine Ablehnung beendet das Schreiben, ohne
+und die Schreibfreigabe muss offen sein. Ein Aufruf des SERVO-Bildschirms,
+während die Karte schreibt, schließt die Freigabe. Eine Ablehnung beendet das Schreiben, ohne
 etwas zu senden, löscht seinen Vermerk, auch auf der Karte, und lässt die
 geänderten Werte stehen. Die Zeile nennt die Ablehnung:
 
 | Bei der Antwort der Karte | Zeile |
 | --- | --- |
-| der Schalter ist aus | `SCHREIBEN INS SERVO FREIGEBEN ist aus.` |
+| die Freigabe ist zu | `Schreiben vor dem Senden gesperrt. Halte die Taste erneut 2s.` |
 | der Port meldet PWM, oder ein anderer Port ist belegt | `Kein Servo verbunden. Zuerst VERBINDEN.` |
 | der Port meldet einen laufenden Vorgang, oder sein Status ist noch nicht gelesen | `Ein anderer Vorgang läuft.` |
 | der Prüfstand ist ARMED | `Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.` |
@@ -908,7 +894,7 @@ nie geschrieben; Register 1D schreibt nur **PAIRING LÖSEN**.
 | `Zu viele Änderungen für einen gemeinsamen Plan. Nichts geschrieben.` `Teile die Änderungen auf. Schreibe weniger Werte auf einmal.` | hält, was es hielt; nichts wurde gesendet. Der Planer hört nach 216.000 Arbeitseinheiten ohne Ergebnis auf. Die Sitzung läuft weiter, und die offenen Werte bleiben |
 | `Schreiben fehlgeschlagen. Kein Wert wurde unvollständig geschrieben.` | hält, was es hielt |
 | `Schreiben fehlgeschlagen. Der vorherige Wert wurde zurückgespielt.` | hält, was es hielt |
-| `Schreiben fehlgeschlagen. Zuvor geschriebene Werte bleiben. Tippe auf ALLES AUSLESEN.` | hält die Register, die vor dem fehlgeschlagenen geschrieben wurden, und in den übrigen den alten Wert. Die zweite Zeile nennt das Register und die Zahl der erledigten Schreibvorgänge. Der Schreibschalter geht aus, und **ALLES AUSLESEN** kommt vor dem nächsten Schreiben |
+| `Schreiben fehlgeschlagen. Zuvor geschriebene Werte bleiben. Tippe auf ALLES AUSLESEN.` | hält die Register, die vor dem fehlgeschlagenen geschrieben wurden, und in den übrigen den alten Wert. Die zweite Zeile nennt das Register und die Zahl der erledigten Schreibvorgänge. **ALLES AUSLESEN** kommt vor dem nächsten Schreiben |
 | `Schreiben fehlgeschlagen. Der Vorgang ließ sich nicht rückgängig machen.` | ist unklar: [zurückspielen](#ein-unterbrochenes-schreiben) |
 | `Ein Register hat sich ohne Schreibzugriff geändert.` | ist unklar |
 | `Das Servo enthält nicht die erwarteten Werte.` | ist unklar |
@@ -958,8 +944,7 @@ Verschiebe seine Dateien am Computer nach `BENCH/KST/CONF`. **DATEIEN**
 öffnet die Liste. Die Zeile ist im Programmiermodus verfügbar, wenn das
 Servo erfolgreich ausgelesen wurde und sein Zustand nicht unklar ist.
 Andernfalls erscheint beim Tippen `Lies zuerst das Servo aus. Tippe auf ALLES AUSLESEN.`
-Speichern und Laden sind auch bei ausgeschaltetem Schreibschalter
-möglich. Das Laden einer Datei ändert nur den Entwurf auf dem Panel;
+Speichern und Laden öffnen keine Schreibfreigabe. Das Laden einer Datei ändert nur den Entwurf auf dem Panel;
 die Werte im Servo bleiben unverändert.
 
 ![Die Dateien auf der Karte](img/de/servo-kst-files.png)
@@ -1058,13 +1043,14 @@ Felder. Das gilt auch für ein Servo, das nicht zum Fingerprint passt.
 
 Das erste Schreiben, Zurückspielen oder Lösen des Pairings einer Sitzung
 speichert das Abbild des Servos ohne Nachfrage in eine neue Datei unter dem
-nächsten freien Vorgabenamen. Die Schreibseite sagt
+nächsten freien Vorgabenamen. Die Seite eines Zurückspielens oder eines
+Lösens des Pairings sagt
 `Die bisherigen Servowerte werden vor dem Schreiben in einer neuen Kartendatei gesichert.` Das Servo empfängt
 nichts, bevor die Karte die Datei hält. Eine eingehängte Karte, die voll
 ist, beim Schreiben einen Fehler meldet oder zwischen Anfrage und Datei
 entnommen wird, beendet das Schreiben mit den Zeilen der Tabelle oben, und
-nichts wird auf das Servo geschrieben. Schaffe Platz auf der Karte oder entnimm sie und bestätige das Schreiben
-ohne Backup-Datei, bevor du es erneut versuchst. Der Reiter SERVO nennt die
+nichts wird auf das Servo geschrieben. Schaffe Platz auf der Karte oder entnimm sie und schreibe ohne
+Backup-Datei, bevor du es erneut versuchst. Der Reiter SERVO nennt die
 Datei danach: `Backup-Datei dieser Sitzung: KST003.` Ein Speichern von Hand
 vor dem ersten Schreiben der Sitzung zählt als diese Datei. Ein Speichern
 von Hand nach einem Schreiben enthält die geschriebenen Werte und lässt die
@@ -1078,8 +1064,11 @@ zurückspielen, ohne vorher eine Datei zu speichern.
 #### Ohne Karte
 
 Ohne eingehängte Karte sind das Schreiben, das Zurückspielen und das Lösen
-des Pairings nicht gesperrt. Die Seite, deren Halten das Schreiben sendet,
-trägt drei weitere Zeilen:
+des Pairings nicht gesperrt. Solange Änderungen warten, zeigt der Reiter
+SERVO `Keine Karte. Es wird keine Backup-Datei gespeichert.` in der
+Warnfarbe, und 2s Halten auf **n WERTE SCHREIBEN** sendet das Schreiben
+ohne Datei. Die Seite, deren Halten ein Zurückspielen oder ein Lösen des
+Pairings sendet, trägt drei weitere Zeilen:
 
 ```
 Keine Karte. Es wird keine Backup-Datei gespeichert.
@@ -1090,7 +1079,7 @@ Halte auf dieser Seite 2s lang gedrückt, um auch diese Hinweise zu
 bestätigen. Ein zweites Halten ist nicht nötig. Lässt du vor Ablauf der
 2s los, wird nichts gesendet.
 
-![Die Schreibseite ohne Karte](img/de/servo-kst-write-nocard.png)
+![Geänderte Werte ohne Karte](img/de/servo-kst-write-nocard.png)
 
 Nach einem solchen Schreiben zeigt der Reiter SERVO
 `Keine Karte, keine Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` anstelle des
@@ -1106,13 +1095,14 @@ wiederherstellbar.
 | --- | --- |
 | Eine Karte wird später in der Sitzung eingehängt | das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei. Die Datei hält das Backup der Sitzung, das vor dem ersten Schreiben gelesene Abbild. Die Zeile im Reiter SERVO wechselt zum Dateinamen |
 | Der Link fällt weg und kommt wieder, oder das Panel startet, unter einer Sitzung, die der IOmcu hält | die Schreiben der Sitzung sind dem Panel nicht bekannt. Das nächste Schreiben, Zurückspielen oder Lösen des Pairings speichert zuerst die Backup-Datei, und die Datei hält das Backup der Sitzung, nicht das Servo, wie es zuletzt gelesen wurde. Ein Speichern über **DATEIEN** zählt nur als Backup-Datei, solange das Servo dem Backup der Sitzung gleicht |
-| Das Servo kann geschriebene Werte halten, und das Panel hält das Backup der Sitzung nicht | das Schreiben geht ohne Datei, und seine Seite trägt die drei Zeilen oben: das Servo, wie es zuletzt gelesen wurde, wird nicht als Backup-Datei gespeichert |
+| Das Servo kann geschriebene Werte halten, und das Panel hält das Backup der Sitzung nicht | das Schreiben geht ohne Datei, und der Reiter SERVO und die Seite eines Zurückspielens oder Lösens tragen die Zeilen oben: das Servo, wie es zuletzt gelesen wurde, wird nicht als Backup-Datei gespeichert |
 | Der IOmcu startet neu | seine Sitzung und das Backup der Sitzung sind weg. **VERBINDEN** beginnt eine Sitzung, und ihr erstes Schreiben speichert das Servo, wie diese Sitzung es vorfindet |
 | Ein Speichern über **DATEIEN** nach einem Schreiben ohne Karte | speichert das Servo, wie es steht; es zählt nicht als Backup-Datei |
-| Die Karte wird entnommen, während eine Seite offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2s sendet das Schreiben |
+| Die Karte wird entnommen, während eine Seite des Zurückspielens oder Lösens offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2s sendet den Vorgang |
+| Die Karte wird während des 2s-Haltens auf **n WERTE SCHREIBEN** entnommen | das Schreiben geht ohne Datei |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
 | **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
-| Eine Karte, die nach dem Start des Panels eingesteckt, entnommen oder getauscht wird | das Panel sieht in den Steckplatz, wenn der Programmierer öffnet, bei jedem **VERBINDEN** und bei jedem Tippen auf **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES**, **SCHREIBEN INS SERVO FREIGEBEN** oder die Schreibzeile: Eine eingesteckte oder getauschte Karte wird eingebunden, eine entnommene freigegeben. Der Blick auf eine eingebundene Karte ist ein Befehl SEND_STATUS (CMD13). Eine Dateianfrage (Liste, Laden, Speichern) läuft auf der Karte, für die sie gestellt wurde; ist bis dahin eine andere an ihrer Stelle eingebunden, findet sie keine Karte. Der Vermerk eines Schreibvorgangs geht auf die Karte, deren Vermerk der Programmierer zuletzt gelesen hat, nie auf eine an ihrer Stelle eingebundene, bevor der nächste Blick deren Vermerk liest. Das Tippen, das eine neue Karte findet, liest noch den Kartenzustand von vorher; das nächste hat ihn, und eine offene Schreibseite wechselt zur Seite mit der Datei |
+| Eine Karte, die nach dem Start des Panels eingesteckt, entnommen oder getauscht wird | das Panel sieht in den Steckplatz, wenn der Programmierer öffnet, bei jedem **VERBINDEN** und bei jedem Tippen auf **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES** und bei jedem Druck auf **n WERTE SCHREIBEN**: Eine eingesteckte oder getauschte Karte wird eingebunden, eine entnommene freigegeben. Der Blick auf eine eingebundene Karte ist ein Befehl SEND_STATUS (CMD13). Eine Dateianfrage (Liste, Laden, Speichern) läuft auf der Karte, für die sie gestellt wurde; ist bis dahin eine andere an ihrer Stelle eingebunden, findet sie keine Karte. Der Vermerk eines Schreibvorgangs geht auf die Karte, deren Vermerk der Programmierer zuletzt gelesen hat, nie auf eine an ihrer Stelle eingebundene, bevor der nächste Blick deren Vermerk liest. Das Tippen, das eine neue Karte findet, liest noch den Kartenzustand von vorher; das nächste hat ihn, und eine offene Seite des Zurückspielens oder Lösens wechselt zur Seite mit der Datei |
 
 Eine Karte, die sich nicht einbinden lässt, gilt als nicht vorhanden.
 Schreiben, Zurückspielen und Lösen des Pairings folgen dem oben
@@ -1122,8 +1112,8 @@ Die Meldungen nennen statt `Keine Karte` den erkannten Zustand
 
 | Wo | Karte ist weder FAT32 noch exFAT (FAT: File Allocation Table; exFAT: extended FAT): NTFS (New Technology File System), eine GPT (GUID-Partitionstabelle) oder nicht formatiert | Karte nicht lesbar |
 | --- | --- | --- |
-| Die Schreibseite | `Karte ohne FAT32 oder exFAT. Es wird keine Backup-Datei gespeichert.` | `Karte nicht lesbar. Es wird keine Backup-Datei gespeichert.` |
-| Die Schreibseite, Backup-Datei gespeichert | `Karte ohne FAT32 oder exFAT. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` | `Karte nicht lesbar. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` |
+| Der Reiter SERVO mit Änderungen und die Seite eines Zurückspielens oder Lösens | `Karte ohne FAT32 oder exFAT. Es wird keine Backup-Datei gespeichert.` | `Karte nicht lesbar. Es wird keine Backup-Datei gespeichert.` |
+| Die Seite eines Zurückspielens oder Lösens, Backup-Datei gespeichert | `Karte ohne FAT32 oder exFAT. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` | `Karte nicht lesbar. Die bisherigen Werte bleiben nur im Arbeitsspeicher.` |
 | Der Reiter SERVO | `Karte ohne FAT32 oder exFAT. Keine Backup-Datei. Zurückspielen ist nur in dieser Sitzung möglich.` | `Karte nicht lesbar. Keine Backup-Datei. Zurückspielen ist nur in dieser Sitzung möglich.` |
 | **DATEIEN** | `Karte ohne FAT32 oder exFAT. Nichts gespeichert oder ins Servo geschrieben.` | `Karte nicht lesbar. Nichts gespeichert oder ins Servo geschrieben.` |
 
@@ -1131,9 +1121,8 @@ Die Meldungen nennen statt `Keine Karte` den erkannten Zustand
 
 Tippe auf eine Datei, um sie zu laden. Ihre änderbaren Felder werden
 wie manuelle Eingaben in den Entwurf übernommen. Abweichende Werte sind
-markiert; **n WERTE SCHREIBEN** zeigt ihre Anzahl. Erst wenn du das
-Schreiben freigibst und auf der Schreibseite 2s lang gedrückt hältst,
-werden Werte an das Servo gesendet.
+markiert; **n WERTE SCHREIBEN** zeigt ihre Anzahl. Erst 2s Halten auf
+dieser Taste sendet Werte an das Servo.
 
 ![Eine geladene Datei](img/de/servo-kst-file-loaded.png)
 
@@ -1170,7 +1159,7 @@ wie sie aus dem Servo ausgelesen wurden.
 Eine Datei, deren Werte ein weiches Limit überschreiten, das die Werte des
 Servos einhalten, öffnet DIESE DATEI PRÜFEN, bevor etwas zum Entwurf wird.
 Die Seite hat 12 Zeilen: die Zeile der Datei, die Zeile einer bearbeiteten
-Datei, die abweichenden Werte, wie [die Schreibseite](#schreiben) sie
+Datei, die abweichenden Werte, wie [PROGRAMMIERMODUS VERLASSEN](#verlassen) sie
 listet, 4 oder 3 und `und 2 weitere`, und dieselben Warnzeilen wie eine
 Änderung über diese Limits hinaus; bei mehr Warnungen als Zeilen zählt die
 letzte Zeile den Rest. **2s HALTEN ZUM
@@ -1178,7 +1167,7 @@ LADEN** für 2s übernimmt die Werte in den Entwurf. **ABBRECHEN** lässt den
 Entwurf, wie er war.
 
 Die weichen Limits vergleichen mit dem Servo, wie die Sitzung es vorfand, nicht
-wie zuletzt geschrieben, und SCHREIBEN INS SERVO FREIGEBEN spielt keine Rolle.
+wie zuletzt geschrieben, und die Schreibfreigabe spielt keine Rolle.
 Ein Servo, gefunden mit Left Angle 100 und auf 97 geschrieben, nimmt eine Datei
 mit 98 ohne Seite: 98 liegt unter dem, was die Sitzung vorfand. Die nächste
 Sitzung findet 97, und dieselbe Datei ist eine Erhöhung und öffnet die Seite.
@@ -1217,7 +1206,8 @@ verfügbar.
 ## Zurückspielen
 
 **ZURÜCKSPIELEN** öffnet die Liste dessen, was sich zurückspielen lässt.
-Jedes Zurückspielen braucht den Schreibschalter und 2s Halten. Bei
+Jedes Zurückspielen braucht 2s Halten, das [die Schreibfreigabe](#die-schreibfreigabe)
+dafür öffnet. Bei
 [KST EXPERT MODE](#expertenmodus) AUS nennt seine Seite jeden Wert, den
 die Reiter verbergen und den das Zurückspielen ändert.
 
@@ -1252,7 +1242,7 @@ der Sitzung wird genauso geprüft, solange die Werte des Servos bekannt sind.
 Das Backup der Sitzung gehört zu dem Servo, von dem es gelesen wurde. Weichen
 die ausgelesenen Werte in einem Feld vom Backup ab, das kein
 Schreibvorgang der Sitzung ändern sollte, behandelt das Panel das Servo
-als ein anderes: `Das ist ein anderes Servo. Das Backup dieser Sitzung gehört nicht dazu.` `VERLASSEN und erneut VERBINDEN. So beginnt eine neue Sitzung mit eigenem Backup.` Der Schreibschalter geht aus, die Liste zum Zurückspielen
+als ein anderes: `Das ist ein anderes Servo. Das Backup dieser Sitzung gehört nicht dazu.` `VERLASSEN und erneut VERBINDEN. So beginnt eine neue Sitzung mit eigenem Backup.` Die Schreibfreigabe schließt, die Liste zum Zurückspielen
 enthält das Backup der Sitzung nicht, und kein Zurückspielen davon wird
 gesendet. **VERLASSEN** und **VERBINDEN** beginnen eine Sitzung, deren
 Backup das dieses Servos ist. Eine Lesung des ersten Servos bringt sein
@@ -1269,7 +1259,7 @@ Sitzung. Er hält die Menge der Register, die die Schreibvorgänge der
 Sitzung geändert haben. Weicht ein Servo in einem anderen Register vom Backup
 ab, wird es als ein anderes Servo behandelt: das Zurückspielen endet mit
 `Servowerte weichen von den ausgelesenen Werten ab. Tippe auf ALLES AUSLESEN.`, kein Register wird
-geschrieben, der Schreibschalter geht aus, und der Port nimmt nur
+geschrieben, die Schreibfreigabe schließt, und der Port nimmt nur
 **ALLES AUSLESEN** an, bis das Servo gelesen ist. Das Zurückspielen repariert
 deshalb kein Register, das etwas anderes als ein Schreiben der Sitzung
 geändert hat. Nach einem Schreiben, das ohne vollständige Lesung des Servos
@@ -1282,8 +1272,8 @@ zum Zurückspielen kein Sitzungsbackup: `Lies zuerst das Servo aus. Tippe auf AL
 
 Ein Zurückspielen, ein Lösen des Pairings oder ein Schreiben, das die Karte
 oder die Control-Task des Panels nicht starten lässt, lässt die offenen
-Werte, den Schreibschalter und den Vermerk eines unterbrochenen Schreibens
-so, wie sie vor dem Halten waren.
+Werte und den Vermerk eines unterbrochenen Schreibens so, wie sie vor dem
+Halten waren, und schließt die Schreibfreigabe.
 
 Zwei Servos, die in jedem Feld gleich sind, das die Sitzung
 nicht geschrieben hat, werden nicht unterschieden. Nach einem
@@ -1312,12 +1302,11 @@ Die erste Sitzung liest das Servo auch bei NUR SUCHE aus: VERBINDEN
 mit anschließendem Auslesen, dann VERLASSEN. Mit SERVOPULSE auf 1000-2000 schreibt diese
 Sitzung zudem PULSE LOWER 1000,0µs und PULSE UPPER 2000,0µs. Mit
 SUCHEN + PROGRAMMIEREN ist jedes weitere Schreiben eine Sitzung: VERBINDEN mit seinem
-Lesen, SCHREIBEN INS SERVO FREIGEBEN an, LEFT ANGLE und RIGHT ANGLE
-geschrieben und zurückgelesen, der Schreibschalter aus, VERLASSEN. Bei jedem Schritt werden offene Dialoge der Servoprogrammierung geschlossen. Ein Wert unter 50 wird trotz weicher Grenze ohne zusätzliche Warnseite
+Lesen, die Schreibfreigabe offen, LEFT ANGLE und RIGHT ANGLE
+geschrieben und zurückgelesen, die Freigabe zu, VERLASSEN. Bei jedem Schritt werden offene Dialoge der Servoprogrammierung geschlossen. Ein Wert unter 50 wird trotz weicher Grenze ohne zusätzliche Warnseite
 übernommen: Das Halten von 2s beim Start des Laufs bestätigt dies. Eine harte Grenze lehnt einen Wert ab wie eine Änderung,
 und der Lauf endet. Ein Schreiben, das vor dem Senden abgelehnt wird,
-schaltet SCHREIBEN INS SERVO FREIGEBEN wieder aus, wie das Ende eines
-gesendeten Schreibens.
+schließt die Freigabe wieder, wie das Ende eines gesendeten Schreibens.
 
 Das erste Schreiben des Laufs sichert die Backup-Datei, wie jedes erste
 Schreiben. Eine spätere Sitzung des Laufs, deren Servo sich vom ersten Lesen
@@ -1377,7 +1366,7 @@ Prüfstand, für die Sitzung schon SAFE, wird nicht erneut auf SAFE gesetzt.
 - **ÄNDERUNGEN VERWERFEN** setzt den Entwurf auf die Werte des Servos
   zurück.
 - **PAIRING LÖSEN**, bei [KST EXPERT MODE](#expertenmodus) EIN, setzt
-  Register 1D auf 00, nach dem Schreibschalter und 2s Halten. Was das Servo mit dem Wert tut, ist nicht bekannt. Das
+  Register 1D auf 00, nach 2s Halten. Was das Servo mit dem Wert tut, ist nicht bekannt. Das
   Zurückspielen des Backups der Sitzung setzt ihn zurück.
 
 ![Das Pairing lösen](img/de/servo-kst-release.png)
@@ -1395,8 +1384,7 @@ Der vor dem Schreiben angelegte Vermerk bleibt erhalten. Auf der Karte
 `Schreiben wurde unterbrochen. Die Einstellungen können unvollständig sein.` bleibt stehen,
 bis das Servo gelesen ist, darunter der Pin des Schreibens: `Benutze das Servo nicht. Schließe es an GPIO 13 an und tippe auf ALLES AUSLESEN.` Ein Vermerk ohne Pin nennt
 stattdessen den Port: `Benutze das Servo nicht. Schließe es an Port 1 an und tippe auf ALLES AUSLESEN.` Alle Bedienelemente sind gesperrt, außer **VERBINDEN**, **ALLES AUSLESEN**,
-**ZURÜCKSPIELEN**, **VERLASSEN** und dem Schreibschalter, falls er für das
-Zurückspielen des Sitzungsbackups nötig ist. Beim Auslesen werden die
+**ZURÜCKSPIELEN** und **VERLASSEN**. Beim Auslesen werden die
 Servowerte mit dem Vermerk verglichen:
 
 | Das Servo hält | Meldung | Danach |
@@ -1414,7 +1402,7 @@ Ein Servo, das Register für Register das Abbild vor dem Schreiben oder das
 Abbild hält, das das Schreiben hinterlassen sollte, ist entweder das Servo
 des Schreibens oder ein zweites Servo mit denselben Einstellungen. Das
 Panel kann die beiden nicht unterscheiden und fragt. Die zwei Zeilen
-bleiben auf dem Tab SERVO stehen, der Schreibschalter geht nicht an, und
+bleiben auf dem Tab SERVO stehen, die Schreibfreigabe öffnet nicht, und
 kein Schreiben, kein Zurückspielen und kein Lösen des Pairings wird
 gesendet. Ist es das Servo des Schreibens, beendet `Verwirf den Vermerk zum unterbrochenen Schreibvorgang.` in der Liste die Frage. Ist es das
 nicht, behält **VERLASSEN** den Vermerk für das Servo des Schreibens.
@@ -1485,21 +1473,35 @@ Nach einem Schreiben mit schaltbarer Servoversorgung (PD mini oder feste 5V des 
 und **2s HALTEN ZUM VERLASSEN** sendet den Vorgang REBOOT des Ports statt
 LEAVE. Nach einem Schreiben ohne schaltbare Servoversorgung ergänzt die Seite
 `Die geschriebenen Werte werden erst nach Aus- und Einschalten der Servoversorgung wirksam.` Die Seite
-warnt, bevor geänderte Werte verloren gehen und bevor eine Sitzung endet,
-die ein unklares Servo noch zurückspielen könnte. Ist kein Versorgungszyklus nötig, sendet **2s HALTEN ZUM VERLASSEN**
+warnt, bevor eine Sitzung endet, die ein unklares Servo noch zurückspielen
+könnte. Ist kein Versorgungszyklus nötig, sendet **2s HALTEN ZUM VERLASSEN**
 den Vorgang LEAVE des Ports, verfügbar ab Link-Version 4.15. Dieser
 Vorgang sendet weder einen Frame an das Servo noch einen Befehl an seine
 Versorgung. Der Port
 hält seine Leitung für [**WARTEZEIT VOR PWM**](#die-versorgung) auf Low und
 gibt den Pin dann an den PWM-Generator.
 
-![Verlassen](img/de/servo-kst-leave.png)
-
 Ist kein Versorgungszyklus nötig, zeigt die Seite auch bei antwortendem
 PD mini den Hinweis auf die unveränderte Versorgung.
 
 ![VERLASSEN mit einem PD mini](img/de/servo-kst-leave-supply.png)
 ![VERLASSEN ohne Geschriebenes](img/de/servo-kst-leave-plain.png)
+
+Mit ungeschriebenen Änderungen beginnt die Seite mit
+`Noch nicht geschriebene Änderungen gehen verloren.` und listet jede
+Änderung mit Name, Wert des Servos und Wert des Entwurfs:
+`BOOST: 300.0 -> 262.5us`, in der Reihenfolge der Reiter. Ein Wert, der
+ein weiches Limit verletzt, steht in der Warnfarbe. Bei
+[KST EXPERT MODE](#expertenmodus) AUS stehen die Werte, die die Reiter
+verbergen, zuerst. Bei mehr Werten als Zeilen zählt die letzte dieser
+Zeilen den Rest: `und 4 weitere`. Die Tasten heißen
+**2s HALTEN: OHNE SCHREIBEN VERLASSEN** und **ZURÜCK**. **ZURÜCK**
+schließt die Seite und behält die Änderungen. Das Halten verwirft die
+Änderungen, schreibt nichts und verlässt wie oben. Bei einem unklaren
+Servo behält die Seite `Noch nicht geschriebene Änderungen gehen verloren.`
+ohne die Liste, und **ABBRECHEN**.
+
+![VERLASSEN mit drei ungeschriebenen Änderungen](img/de/servo-kst-leave.png)
 
 Die Zustandszeile zeigt
 `Programmiermodus wird verlassen. PWM ist noch aus.`, und die
@@ -1587,12 +1589,12 @@ Bei 0ms ist es die Meldung eines IOmcu mit 4.30.
 
 | Ereignis | Wirkung |
 | --- | --- |
-| **STOP**, ein eingerasteter Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12ms; der Schalter geht aus; `STOP: Der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES AUSLESEN** vor allem anderen. Die schaltbare Servoversorgung (PD mini oder Carrier-5V) wird ausgeschaltet; 1000ms nach der Meldung, dass sie aus ist, kehrt der Port zu PWM zurück |
+| **STOP**, ein eingerasteter Stopp des Prüfstands | der laufende Vorgang endet nach dem Frame auf der Leitung, höchstens 12ms; die Schreibfreigabe schließt; `STOP: Der Vorgang wurde abgebrochen.`; der Port verlangt **ALLES AUSLESEN** vor allem anderen. Die schaltbare Servoversorgung (PD mini oder Carrier-5V) wird ausgeschaltet; 1000ms nach der Meldung, dass sie aus ist, kehrt der Port zu PWM zurück |
 | **ABBRECHEN** | dasselbe, ohne den eingerasteten Stopp |
-| Der Link fällt weg | der Schalter geht aus, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
+| Der Link fällt weg | die Schreibfreigabe schließt, offene Seiten schließen; ein laufendes Schreiben ist [unterbrochen](#ein-unterbrochenes-schreiben) |
 | Ein Fehler des Prüfstands ([Sicherheit, Fehler](Safety-de.md#fehler)) oder ein Vorgang, der in einer Störung des Servos oder der Leitung endet: kein Servo, ein fehlgeschlagenes Auslesen, geänderte Servowerte, ein Schreibvorgang, der fehlgeschlagen, zurückgesetzt oder unvollständig geblieben ist, eine Prüfung mit Abweichung, ein Fehler des Treibers | ein laufender Schreibvorgang endet zuerst einschließlich seiner Kontrolllesungen: der IOmcu hält die Versorgung bis dahin und 150ms danach an, höchstens 10.000ms; das anschließende vollständige Auslesen wird abgebrochen. Danach wird die schaltbare Servoversorgung ausgeschaltet; der Port erkennt dies und hält sie 1000ms ausgeschaltet und ist wieder in PWM: `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` Ein IOmcu älter als Link 4.31 lässt die Versorgung an ([Die Versorgung eines Programmierports](Safety-de.md#die-versorgung-eines-programmierports)) |
 | Der IOmcu startet neu | seine Sitzung und sein Backup sind weg; `IOmcu neu gestartet. VERBINDEN, dann ALLES AUSLESEN.` und `Schalte zuerst die Servoversorgung aus und wieder ein.`: der Port ist in PWM, und das Servo wurde nicht aus dem Programmiermodus geführt |
-| Der Port liest PWM bei gelesenem Servo, eingeschaltetem Schalter, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos, das Backup und der Schalter sind auf dem Panel weg; `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` und `Schalte die Servoversorgung aus und ein, dann VERBINDEN.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
+| Der Port liest PWM bei gelesenem Servo, erfolgtem Schreiben oder verlangtem Lesen, und kein Kommando des Programmierers hat ihn dorthin gebracht | die Werte des Servos und das Backup sind auf dem Panel weg; `Der Port hat die Sitzung beendet: Versorgung aus oder Neustart.` und `Schalte die Servoversorgung aus und ein, dann VERBINDEN.` Ein Vorgang, der in derselben Ablesung endete, behält seine eigene Zeile |
 | Die Control-Task des Panels nimmt 2s kein Kommando an | nichts wird gesendet; `Kein Ergebnis vom IOmcu. Tippe auf ALLES AUSLESEN.` Das Kommando ist zurückgezogen: die Control-Task verwirft es, wenn es die Warteschlange verlässt, wie spät auch immer |
 | Der IOmcu lehnt einen Austausch eines Vorgangs ab, den er angenommen hat | die Zeile der Ablehnung; die Werte auf dem Panel werden bis zum Abschluss von **ALLES AUSLESEN** nicht geändert, gespeichert oder geschrieben |
 | 3 Austausche mit dem IOmcu in Folge bleiben unbeantwortet | `Keine Antwort vom IOmcu. Tippe auf ALLES AUSLESEN.`; nach einem Lesen oder Prüfen werden die Werte auf dem Panel bis zum Abschluss von **ALLES AUSLESEN** nicht geändert, gespeichert oder geschrieben |
@@ -1812,10 +1814,13 @@ Warten ausgeht, ein Verlassen an den Link-Versionen 4.13 und 4.14 mit und
 ohne PD mini, **STOP** während eines Verlassens, jedes Limit an seiner Kante, das Halten von 2s
 auf beiden
 Seiten der Schwelle, jede Ablehnung und jedes Ergebnis mit seiner Zeile in
-beiden Sprachen, die Zeilen der Schreibseite für 1 Wert, für mehr Werte als
-Zeilen und für einen Wert über einem weichen Limit, ein weiches Limit, das
-für einen Wert weiter vom Wert des Servos erneut gefragt wird, die Zeilen
-zum Ruderhorn bei einem späteren Schreiben, das das Horn bewegt, die
+beiden Sprachen, das 2s-Halten des Schreibens (ein Tipp, ein Loslassen vor
+2s und ein Halten von 2s, auf dem Reiter und in der Fußzeile), eine
+Ablehnung beim Druck, die Zeilen von PROGRAMMIERMODUS VERLASSEN mit
+ungeschriebenen Änderungen für 1 Wert, für mehr Werte als Zeilen und für
+einen Wert über einem weichen Limit, **ZURÜCK**, das die Änderungen behält,
+und das Halten, das sie verwirft, ein weiches Limit, das
+für einen Wert weiter vom Wert des Servos erneut gefragt wird, die
 Zustandszeile und die Zeile des Reiters bei einem laufenden Schreiben, eine
 Meldung, die geht, wenn ihre Bedingung endet, die Zeilen, die keinen Tipp
 annehmen, die Beschriftung der Zeile PORT, kein Komma in einer Zahl der
@@ -1875,15 +1880,15 @@ Enden.
 eine Zeile im Format 1 gegen 20k_sel.
 `test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,
 ein Zurückspielen und ein Lösen des Pairings, ein früh losgelassenes
-Halten, eine zwischen zwei Schreiben eingehängte Karte und eine unter der
-Schreibseite entnommene Karte. Ein Kommando, das die Control-Task nach
+Halten, eine zwischen zwei Schreiben eingehängte Karte und eine während des
+Haltens zum Schreiben entnommene Karte. Ein Kommando, das die Control-Task nach
 Ablauf seiner 2s annimmt, erreicht keine Leitung, für jede Art von
 Vorgang; eine Ablehnung bei jedem späteren Austausch jeder Art von Vorgang
 verlangt **ALLES AUSLESEN**; jeder Ergebniscode der Sitzung hat eine Klasse,
 und ein Code ohne Klasse lässt den Test fehlschlagen; ein Zurückspielen,
 das die Karte bei jedem Dateischritt nicht starten lässt, lässt die offenen
 Werte stehen; die Sperre bei der Antwort auf die Datei des Servos und auf
-den Vermerk, mit ausgeschaltetem Schalter, dem Port in PWM, einem anderen
+den Vermerk, mit geschlossener Freigabe, dem Port in PWM, einem anderen
 belegten Port, einem laufenden Vorgang am Port, einem noch nicht gelesenen
 Status, ARMED vom IOmcu und vom Bildschirm, STOP und ohne Änderung; ein
 ARMED, das vor der Antwort endet, lässt das Schreiben gehen; ein Vermerk

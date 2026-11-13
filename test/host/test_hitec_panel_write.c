@@ -1,8 +1,8 @@
 /*
  * The Hitec programmer's overlay writing (shared/ui/hitec_panel_edit.c,
  * hitec_panel_page.c): a value edited by its list and its keypad, marked
- * `*`; CHECK THIS CHANGE held and cancelled; WRITE n VALUES through the
- * switch's page and the write page; REPAIR CHECKSUM from MORE; RESTORE's
+ * `*`; CHECK THIS CHANGE held and cancelled; WRITE n VALUES by its 2s
+ * hold; REPAIR CHECKSUM from MORE; RESTORE's
  * list after an interrupted write; the keypad's refusal with its reason;
  * every new page's lines inside the page in both languages; the
  * station's #612 finding: with STOP latched no line offers CLEAR; the card
@@ -137,8 +137,8 @@ TEST_CASE(a_value_edited_by_its_list_is_marked_and_counted)
     pick("60%");
     CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_MOTION, 2, 0), "*60% (6)");
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 4, 1), "WRITE 1 VALUE");
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 1));
+    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 1), "WRITE 1 VALUE");
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 1));
     /* MORE now offers DISCARD EDITS, which takes it back. */
     CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 2, 0));
     tap(val(HITEC_PANEL_SERVO, 2, 0));
@@ -148,60 +148,200 @@ TEST_CASE(a_value_edited_by_its_list_is_marked_and_counted)
                      ui_setting_label(SET_HITEC_RX)) == NULL);
     }
     pick(TR(KP_DISCARD));
-    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 4, 1),
+    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 1),
                  "WRITE 0 VALUES");
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 1));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 1));
 }
 
-TEST_CASE(write_opens_the_switch_page_then_the_write_page_and_writes)
+/* WRITE n VALUES has no switch before it and no page after it: a tap
+ * writes nothing, a release before 2s writes nothing, 2s of contact
+ * writes, and the switch the hold turned on is off again after. */
+TEST_CASE(write_takes_a_2s_hold_and_writes_with_no_page)
 {
     open_en();
     servo_d485();
     tap_connect();
     soft_start_60();
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    /* The switch is off: its page, whose hold switches it on and writes
-     * nothing. */
-    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 0), TR(OFF));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK_EQ(hitec_panel_editor(), 3);
-    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_ENABLE_TITLE));
-    CHECK(page_has(TR(HP_ENABLE_D)));
-    hold(2.1f);
-    CHECK(hitec_prog_write_on(model()));
-    CHECK_EQ(g_drv.d_writes, 0u);
-    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 0), TR(ON));
-    /* The write page: the value, the horn on the first write, the save,
-     * no card: no backup file, the backup and the record in RAM. */
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_WRITE_ONE));
-    CHECK(page_has("SOFT START: 20% -> 60%"));
-    CHECK(page_has(TR(KP_HORN_FREE)));
-    CHECK(page_has(TR(HP_WRITE_D)));
-    CHECK(page_has(TR(KP_NO_FILE_1)));
-    CHECK(page_has(TR(KP_NO_FILE_2)));
-    CHECK(page_has(TR(KP_NO_FILE_3)));
-    CHECK(!page_has(TR(KP_WRITE_NO_CARD)));
-    /* CANCEL writes nothing. */
-    tap(hitec_panel_cancel_rect());
+    CHECK_STR_EQ(hitec_panel_label(HITEC_PANEL_SERVO, 3, 0), TR(KP_RESTORE));
+    tap(val(HITEC_PANEL_SERVO, 3, 1));
     CHECK_EQ(hitec_panel_editor(), 0);
+    prun(500u);
     CHECK_EQ(g_drv.d_writes, 0u);
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    CHECK(!hitec_prog_write_on(model()));
+    press_write(1.9f);
+    CHECK_EQ(hitec_panel_editor(), 0);
+    prun(500u);
+    CHECK_EQ(g_drv.d_writes, 0u);
+    CHECK_EQ(hitec_prog_changes(model()), 1u);
+    hold_write();
+    CHECK_EQ(hitec_panel_editor(), 0);
     until(HITEC_PROG_HELD);
     show();
     CHECK_EQ(g_drv.dreg[0x60], 6u);
     CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
-    /* A second write, no horn: soft start moves no horn. */
+    CHECK_EQ(hitec_prog_changes(model()), 0u);
+    CHECK(!hitec_prog_write_on(model()));
+    /* A second write takes the same hold. */
     tap(row_of(HITEC_PANEL_MOTION, TR(HP_SOFTSTART)));
     pick("80%");
-    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK(!page_has(TR(KP_HORN_FREE)));
-    /* The switch off by its tap. */
-    tap(hitec_panel_cancel_rect());
-    tap(val(HITEC_PANEL_SERVO, 3, 0));
+    hold_write();
+    until(HITEC_PROG_HELD);
+    show();
+    CHECK_EQ(g_drv.dreg[0x60], 8u);
     CHECK(!hitec_prog_write_on(model()));
+}
+
+/* The footer's completed hold (hitec_panel_write_go()) sends on the next
+ * tick: a cancel of the touch stream in between sends nothing and keeps
+ * the edit; with no cancel the next tick sends. */
+TEST_CASE(the_footers_write_waits_a_tick_and_a_cancel_drops_it)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    soft_start_60();
+    CHECK(hitec_panel_write_go());
+    CHECK(!hitec_prog_write_on(model()));
+    hitec_panel_cancel();
+    for (int i = 0; i < 25; ++i) {
+        hitec_panel_tick(0.02f);
+        prun(20u);
+    }
+    CHECK_EQ(g_drv.d_writes, 0u);
+    CHECK_EQ(hitec_prog_changes(model()), 1u);
+    CHECK(!hitec_prog_write_on(model()));
+    CHECK(hitec_panel_write_go());
+    CHECK(!hitec_prog_write_on(model()));
+    hitec_panel_tick(0.02f);
+    CHECK(hitec_prog_state(model()) != HITEC_PROG_HELD);
+    until(HITEC_PROG_HELD);
+    show();
+    CHECK_EQ(g_drv.dreg[0x60], 6u);
+    CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
+}
+
+/* A write the session refuses says why at the press and starts no hold. */
+TEST_CASE(a_write_the_session_refuses_says_why_at_the_press)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    soft_start_60();
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    g_stopped = true;
+    prun(20u);
+    {
+        const gfx_rect_t r = val(HITEC_PANEL_SERVO, 3, 1);
+
+        ev(cx(r), cy(r), TOUCH_EVENT_DOWN);
+        CHECK(!hitec_panel_pressed());
+        CHECK(said()[0] != '\0');
+        ev(cx(r), cy(r), TOUCH_EVENT_UP);
+    }
+    prun(500u);
+    CHECK_EQ(g_drv.d_writes, 0u);
+    CHECK(!hitec_prog_write_on(model()));
+    g_stopped = false;
+}
+
+/* The hold's fill moves hold_revision alone, and hold_rect names WRITE. */
+TEST_CASE(writes_hold_fills_through_its_own_revision)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    soft_start_60();
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    const gfx_rect_t w = val(HITEC_PANEL_SERVO, 3, 1);
+    const uint32_t hold_rev = hitec_panel_hold_revision();
+
+    ev(cx(w), cy(w), TOUCH_EVENT_DOWN);
+    const uint32_t rev = hitec_panel_revision();
+    hitec_panel_tick(0.1f);
+    hitec_panel_tick(0.1f);
+    CHECK(hitec_panel_hold_revision() != hold_rev);
+    CHECK_EQ(hitec_panel_revision(), rev);
+    const gfx_rect_t h = hitec_panel_pages.hold_rect();
+    CHECK(h.x == w.x && h.y == w.y && h.w == w.w && h.h == w.h);
+    ev(cx(w), cy(w), TOUCH_EVENT_UP);
+    prun(500u);
+    CHECK_EQ(g_drv.d_writes, 0u);
+}
+
+/* LEAVE with an unwritten edit: the page names it under the line that
+ * says it is lost, HOLD 2s TO LEAVE WITHOUT WRITING and BACK; BACK keeps
+ * the edit, and the hold leaves without writing and drops it.  On CLASSIC
+ * the hold cycles the supply as before. */
+TEST_CASE(leave_with_edits_lists_them_back_keeps_them_the_hold_drops_them)
+{
+    for (int is_classic = 0; is_classic < 2; ++is_classic) {
+        open_en();
+        if (is_classic != 0) {
+            servo_hs5645();
+            tap(val(HITEC_PANEL_SERVO, 1, 0));
+            tap(hitec_panel_choice_rect(1));
+        } else {
+            servo_d485();
+        }
+        tap_connect();
+        if (is_classic != 0) {
+            CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
+                     HITEC_PROG_EDIT_OK);
+        } else {
+            soft_start_60();
+        }
+        CHECK_EQ(hitec_prog_changes(model()), 1u);
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        press_port();
+        CHECK_EQ(hitec_panel_editor(), 3);
+        CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_LEAVE_TITLE));
+        CHECK_STR_EQ(hitec_panel_page_line(1), TR(KP_LEAVE_CHANGES));
+        if (is_classic == 0) {
+            CHECK_STR_EQ(hitec_panel_page_line(2), "SOFT START: 20% -> 60%");
+            CHECK(page_has(TR(HP_LEAVE_D)));
+        } else {
+            CHECK(strstr(hitec_panel_page_line(2), " -> ") != NULL);
+            CHECK(page_has(TR(HP_LEAVE_C)));
+        }
+        CHECK(page_has(TR(KP_LEAVE_2)));
+        CHECK_STR_EQ(hitec_panel_apply_label(), TR(KP_HOLD_LEAVE_DROP));
+        CHECK_STR_EQ(hitec_panel_cancel_label(), TR(KP_BACK));
+        /* Short of the hold nothing happens; BACK keeps the edit. */
+        hold(1.9f);
+        CHECK_EQ(hitec_panel_editor(), 3);
+        CHECK_EQ(pstate(), HITEC_PROG_HELD);
+        tap(hitec_panel_cancel_rect());
+        CHECK_EQ(hitec_panel_editor(), 0);
+        CHECK_EQ(pstate(), HITEC_PROG_HELD);
+        CHECK_EQ(hitec_prog_changes(model()), 1u);
+        /* The hold: no write, the edit dropped, the port back in PWM. */
+        hitec_panel_back();
+        CHECK_STR_EQ(hitec_panel_apply_label(), TR(KP_HOLD_LEAVE_DROP));
+        hold(2.1f);
+        CHECK_EQ(hitec_prog_changes(model()), 0u);
+        until(HITEC_PROG_PWM);
+        show();
+        CHECK_STR_EQ(said(), TR(KP_M_LEFT));
+        CHECK(!hitec_panel_holds_port());
+        CHECK_EQ(g_drv.d_writes, 0u);
+        CHECK_EQ(g_drv.c_writes, 0u);
+    }
+}
+
+/* LEAVE without edits: the page it was, HOLD 2s TO LEAVE and CANCEL. */
+TEST_CASE(leave_without_edits_is_the_page_it_was)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    press_port();
+    CHECK_EQ(hitec_panel_editor(), 3);
+    CHECK_STR_EQ(hitec_panel_page_line(1), TR(KP_LEAVE_1));
+    CHECK(!page_has(TR(KP_LEAVE_CHANGES)));
+    CHECK_STR_EQ(hitec_panel_apply_label(), TR(KP_HOLD_LEAVE));
+    CHECK_STR_EQ(hitec_panel_cancel_label(), TR(CANCEL));
+    CHECK_EQ(hitec_panel_apply_rect().w, 300);
 }
 
 TEST_CASE(check_this_change_takes_the_edit_on_its_hold_and_drops_it_on_cancel)
@@ -284,12 +424,7 @@ TEST_CASE(repair_checksum_comes_from_more_on_a_wrong_sum)
     CHECK(note_has(TR(HP_SUM_HINT)));
     tap(val(HITEC_PANEL_SERVO, 2, 0));
     pick(TR(HP_MORE_REPAIR));
-    /* The switch's page first. */
-    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_ENABLE_TITLE));
-    CHECK(page_has(TR(HP_ENABLE_3C)));
-    hold(2.1f);
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
-    pick(TR(HP_MORE_REPAIR));
+    /* Its own page, no switch's before it. */
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(HP_REPAIR));
     hold(2.1f);
     until(HITEC_PROG_HELD);
@@ -306,34 +441,32 @@ TEST_CASE(restore_offers_the_record_after_an_interrupted_write)
     g_drv.d_drop = true;
     tap_connect();
     soft_start_60();
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
-    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    hold_write();
     until(HITEC_PROG_HELD);
     show();
     CHECK_STR_EQ(said(), TR(HP_VERIFY_FAIL));
     CHECK(note_has(TR(KP_M_JOURNAL)));
     /* RESTORE: the record stands; READ ALL comes before its restore. */
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 0));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     CHECK_STR_EQ(hitec_panel_choice_label(0), TR(KP_FORGET));
     hitec_panel_back();
     tap(val(HITEC_PANEL_SERVO, 1, 1));
     until(HITEC_PROG_HELD);
     show();
     CHECK(note_has(TR(HP_RECORD_HELD)));
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     CHECK_STR_EQ(hitec_panel_choice_label(0), TR(KP_FROM_JOURNAL));
     pick(TR(KP_FROM_JOURNAL));
-    /* The switch went off with the failed write. */
-    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_ENABLE_TITLE));
+    /* RESTORE's own page: its hold writes. */
+    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_RESTORE_TITLE));
+    CHECK(!hitec_prog_write_on(model()));
     hitec_panel_back();
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     pick(TR(KP_FORGET));
     show();
     CHECK_STR_EQ(said(), TR(KP_M_FORGOTTEN));
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 0));
 }
 
 /* The station's finding on #612: with the STOP latched the foot said "Tap
@@ -372,7 +505,7 @@ TEST_CASE(a_latched_stop_offers_no_clear_anywhere)
 }
 
 /* Every page's lines inside it, above its buttons, in both languages. */
-TEST_CASE(every_write_page_fits_in_both_languages)
+TEST_CASE(every_leave_page_fits_in_both_languages)
 {
     static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
 
@@ -395,10 +528,19 @@ TEST_CASE(every_write_page_fits_in_both_languages)
         CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_ID, 3),
                  HITEC_PROG_EDIT_OK);
         CHECK(hitec_prog_changes(model()) > 6u);   /* HP_PAGE_VALUES */
-        CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+        /* LEAVE lists them: the values that fit and the count of the
+         * rest, HOLD 2s TO LEAVE WITHOUT WRITING and BACK. */
         tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        tap(val(HITEC_PANEL_SERVO, 4, 1));
+        tap(val(HITEC_PANEL_SERVO, 0, 0));
         CHECK_EQ(hitec_panel_editor(), 3);
+        CHECK_STR_EQ(hitec_panel_page_line(1), TR(KP_LEAVE_CHANGES));
+        CHECK_STR_EQ(hitec_panel_apply_label(), TR(KP_HOLD_LEAVE_DROP));
+        CHECK_STR_EQ(hitec_panel_cancel_label(), TR(KP_BACK));
+        CHECK((int)strlen(hitec_panel_apply_label()) * 10 + 20
+              <= hitec_panel_apply_rect().w);
+        CHECK_EQ(hitec_panel_apply_rect().x + hitec_panel_apply_rect().w
+                     + 20,
+                 hitec_panel_cancel_rect().x);
         /* As draw_hold() steps: each line's rows and 8px. */
         y = AREA.y + 64;   /* HP_PAGE_TOP */
         for (int i = 1; hitec_panel_page_line(i) != NULL; ++i) {
@@ -412,20 +554,16 @@ TEST_CASE(every_write_page_fits_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* The model's draft edited and the switch on, for the cases below. */
+/* The model's draft edited, for the cases below. */
 static void edit_on(uint8_t id, int32_t v)
 {
     CHECK_EQ(hitec_prog_edit(model(), id, v), HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
 }
 
-/* The write by its page, run to HELD. */
-static void write_by_page(void)
+/* The write by WRITE's hold, run to HELD. */
+static void write_by_hold(void)
 {
-    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK_EQ(hitec_panel_editor(), 3);
-    hold(2.1f);
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
 }
@@ -449,10 +587,7 @@ TEST_CASE(the_overlay_hands_the_record_to_the_card_and_says_each_phase)
     card_in();
     g_card_slow = true;   /* the rig's card half takes nothing */
     edit_on(HITEC_P_D_SOFT_START, 60);
-    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK(page_has(TR(HP_WRITE_RECORD)));
-    hold(2.1f);
+    press_write(2.1f);
     /* The second read first, said as such, with ABORT on the PORT row. */
     CHECK_EQ(pstate(), HITEC_PROG_READING);
     CHECK(hitec_prog_rereading(model()));
@@ -491,7 +626,7 @@ TEST_CASE(the_notes_name_a_read_owed_another_servo_and_a_mix)
     /* A write the servo did not take, its record discarded: READ ALL is
      * still owed. */
     edit_on(HITEC_P_D_SOFT_START, 60);
-    write_by_page();
+    write_by_hold();
     CHECK_STR_EQ(said(), TR(HP_VERIFY_FAIL));
     CHECK_EQ(hitec_prog_forget(model()), HITEC_PROG_MSG_FORGOTTEN);
     show();
@@ -500,7 +635,7 @@ TEST_CASE(the_notes_name_a_read_owed_another_servo_and_a_mix)
     CHECK(!note_has(TR(HP_MUST_READ)));
     /* Another servo: a dead band the record knows neither way. */
     edit_on(HITEC_P_D_SOFT_START, 60);
-    write_by_page();
+    write_by_hold();
     g_drv.dreg[0x4E] = 4u;
     read_all();
     CHECK(note_has(TR(KP_M_JOURNAL_OTHER)));
@@ -515,28 +650,28 @@ TEST_CASE(the_notes_name_a_read_owed_another_servo_and_a_mix)
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     edit_on(HITEC_P_D_SOFT_START, 60);
-    write_by_page();
+    write_by_hold();
     g_drv.dreg[0x54] = 10u;
     read_all();
     CHECK(note_has(TR(KP_M_INCONSISTENT)));
     CHECK_EQ(lines_saying(TR(KP_M_INCONSISTENT)), 1);
     CHECK(note_has(TR(HP_REC_MIX_2)));
-    /* With an edit standing: WRITE waits for the record, RESTORE for the
-     * edit. */
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    /* With an edit standing: WRITE waits for the record, said at the
+     * press, RESTORE for the edit. */
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 80),
              HITEC_PROG_EDIT_OK);
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
+    press_write(2.5f);
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK_STR_EQ(said(), TR(HP_RECORD_HELD));
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    CHECK(!hitec_prog_write_on(model()));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     pick(TR(KP_FROM_JOURNAL));
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK_STR_EQ(said(), TR(HP_EDITS_PENDING));
     /* Without it: the RESTORE page, its hold, the values back. */
     hitec_prog_discard(model());
     g_drv.d_drop = false;
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     pick(TR(KP_FROM_JOURNAL));
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_RESTORE_TITLE));
     CHECK(page_has(TR(KP_FROM_JOURNAL)));
@@ -549,7 +684,7 @@ TEST_CASE(the_notes_name_a_read_owed_another_servo_and_a_mix)
     CHECK(!hitec_prog_record(model()));
 }
 
-TEST_CASE(repair_waits_for_the_edits_and_enable_opens_its_page)
+TEST_CASE(repair_waits_for_the_edits)
 {
     open_en();
     servo_hs5645();
@@ -557,11 +692,6 @@ TEST_CASE(repair_waits_for_the_edits_and_enable_opens_its_page)
     tap(val(HITEC_PANEL_SERVO, 1, 0));
     tap(hitec_panel_choice_rect(1));
     tap_connect();
-    /* ENABLE WRITE TO SERVO tapped while off: its page. */
-    tap(val(HITEC_PANEL_SERVO, 3, 0));
-    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_ENABLE_TITLE));
-    hold(2.1f);
-    CHECK(hitec_prog_write_on(model()));
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     tap(val(HITEC_PANEL_SERVO, 2, 0));
@@ -571,12 +701,36 @@ TEST_CASE(repair_waits_for_the_edits_and_enable_opens_its_page)
     CHECK_EQ(g_drv.c_writes, 0u);
 }
 
-/* The hold flash walk's case for the hold pages: ENABLE WRITE's page
- * closes as its hold fires, and its button flashes where it was. */
+/* The hold flash walk's cases: WRITE flashes as its hold fires, and a hold
+ * page, LEAVE's, closes as its hold fires and its button flashes where it
+ * was. */
 static void hp_frame(float dt_s)
 {
     hitec_panel_tick(dt_s);
     prun(17u);
+}
+
+TEST_CASE(writes_hold_flashes_as_it_fires)
+{
+    open_en();
+    servo_d485();
+    tap_connect();
+    soft_start_60();
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    const gfx_rect_t b = val(HITEC_PANEL_SERVO, 3, 1);
+    const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
+                           (int16_t)(b.w - 24), 6 };
+    const hold_flash_rig_t frig = { hp_frame, show, fb, UI_PANEL_W };
+    char seen[64];
+    ev(cx(b), cy(b), TOUCH_EVENT_DOWN);
+    if (!hold_flash_walk(&frig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("WRITE's hold drew %s, no flash", seen);
+    }
+    ev(cx(b), cy(b), TOUCH_EVENT_UP);
+    until(HITEC_PROG_HELD);
+    show();
+    CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
+    CHECK_EQ(hold_flash_body(&frig, r), '.');
 }
 
 TEST_CASE(a_hold_pages_button_flashes_as_it_fires)
@@ -584,8 +738,8 @@ TEST_CASE(a_hold_pages_button_flashes_as_it_fires)
     open_en();
     servo_d485();
     tap_connect();
-    tap(val(HITEC_PANEL_SERVO, 3, 0));
-    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_ENABLE_TITLE));
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
+    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_LEAVE_TITLE));
     const gfx_rect_t b = hitec_panel_apply_rect();
     const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
                            (int16_t)(b.w - 24), 6 };
@@ -593,29 +747,12 @@ TEST_CASE(a_hold_pages_button_flashes_as_it_fires)
     char seen[64];
     ev(cx(b), cy(b), TOUCH_EVENT_DOWN);
     if (!hold_flash_walk(&frig, r, 2.6f, seen, sizeof(seen))) {
-        T_FAIL("ENABLE WRITE's hold drew %s, no flash", seen);
+        T_FAIL("LEAVE's hold drew %s, no flash", seen);
     }
     ev(cx(b), cy(b), TOUCH_EVENT_UP);
-    CHECK(hitec_prog_write_on(model()));
+    CHECK_EQ(hitec_panel_editor(), 0);
     show();
     CHECK_EQ(hold_flash_body(&frig, r), '.');
-}
-
-TEST_CASE(a_later_write_that_moves_the_horn_warns_again)
-{
-    open_en();
-    servo_d485();
-    tap_connect();
-    edit_on(HITEC_P_D_SOFT_START, 60);
-    write_by_page();
-    CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
-    CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_DIRECTION, HITEC_CCW),
-             HITEC_PROG_EDIT_CHECK);
-    CHECK_EQ(hitec_prog_confirm(model()), HITEC_PROG_EDIT_OK);
-    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK(page_has(TR(KP_HORN_FREE)));
-    CHECK(page_has(TR(KP_BENCH_FIRST)));
 }
 
 TEST_CASE(each_keypad_opens_on_its_value_or_its_range)
@@ -630,10 +767,9 @@ TEST_CASE(each_keypad_opens_on_its_value_or_its_range)
     CHECK_EQ(hitec_panel_editor(), 1);
     type("50");
     CHECK_EQ(hitec_image_reg(hitec_prog_draft(model()), 0x54), 10u);
-    /* The write page names the stored value it replaces. */
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
+    /* LEAVE's page names the stored value the edit replaces. */
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
+    tap(val(HITEC_PANEL_SERVO, 0, 0));
     CHECK(page_has("SPEED: RAW 7 -> 50%"));
     tap(hitec_panel_cancel_rect());
     /* A raw ID: the keypad opens on the range's foot. */
@@ -782,22 +918,27 @@ TEST_CASE(a_record_loaded_at_the_start_keeps_its_gpio_line)
 int main(void)
 {
     RUN(a_value_edited_by_its_list_is_marked_and_counted);
-    RUN(write_opens_the_switch_page_then_the_write_page_and_writes);
+    RUN(write_takes_a_2s_hold_and_writes_with_no_page);
+    RUN(the_footers_write_waits_a_tick_and_a_cancel_drops_it);
+    RUN(a_write_the_session_refuses_says_why_at_the_press);
+    RUN(writes_hold_fills_through_its_own_revision);
+    RUN(leave_with_edits_lists_them_back_keeps_them_the_hold_drops_them);
+    RUN(leave_without_edits_is_the_page_it_was);
     RUN(check_this_change_takes_the_edit_on_its_hold_and_drops_it_on_cancel);
     RUN(a_value_the_keypad_takes_and_the_model_refuses_keeps_the_keypad);
     RUN(the_d_failsafe_list_leads_to_its_position_keypad);
     RUN(repair_checksum_comes_from_more_on_a_wrong_sum);
     RUN(restore_offers_the_record_after_an_interrupted_write);
     RUN(a_latched_stop_offers_no_clear_anywhere);
-    RUN(every_write_page_fits_in_both_languages);
+    RUN(every_leave_page_fits_in_both_languages);
     RUN(the_overlay_hands_the_record_to_the_card_and_says_each_phase);
     RUN(the_notes_name_a_read_owed_another_servo_and_a_mix);
-    RUN(repair_waits_for_the_edits_and_enable_opens_its_page);
-    RUN(a_later_write_that_moves_the_horn_warns_again);
+    RUN(repair_waits_for_the_edits);
     RUN(each_keypad_opens_on_its_value_or_its_range);
     RUN(a_value_row_under_the_finger_is_drawn_pressed);
     RUN(every_write_message_names_its_step_and_its_servo);
     RUN(a_record_loaded_at_the_start_keeps_its_gpio_line);
+    RUN(writes_hold_flashes_as_it_fires);
     RUN(a_hold_pages_button_flashes_as_it_fires);
     free(fb);
     return test_summary("hitec_panel_write");

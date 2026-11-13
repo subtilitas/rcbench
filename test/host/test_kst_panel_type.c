@@ -226,11 +226,8 @@ static bool message_has(const char *s)
 /** @brief Three edits written through ENABLE, the page and its hold. */
 static void write_edits(void)
 {
-    enable();
     edits();
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
 }

@@ -94,9 +94,8 @@ from 1 HS-5645MG, 1 HS-7955TG and 1 HS-5955TG (2026-10-18 to 2026-10-20)
 | SERVO | The model read, `D485HW` or `HS-5645MG`; READ ALL reads the series' set again |
 | MORE | The programming voltage and current limit, each on the keypad, and [Hitec D receive](#hitec-d-receive), while the tester holds the port. While the port is held: DISCARD EDITS with an edit standing, REPAIR CHECKSUM with a classic checksum that is wrong, and FACTORY DEFAULT for a classic servo read ([FACTORY DEFAULT](#factory-default)) |
 | AFTER STOP | CLEAR after a switch to SAFE at the bench: the IOmcu clears the port's STOPPED flag and the read goes on, or the entry again where the supply went off |
-| ENABLE WRITE TO SERVO | The write switch, OFF or ON ([The write switch](#the-write-switch)) |
 | RESTORE | The session's backup back to the servo, while it differs from the servo; the unit confirmed where the bench cannot check it ([Restore of the session's backup](#restore-of-the-sessions-backup)); while a record of an interrupted write stands: the values before it back to the servo, or the record discarded ([The record of a write](#the-record-of-a-write)) |
-| WRITE n VALUES | The draft to the servo ([Writing](#writing)); `WRITE 1 VALUE` for one, off with none |
+| WRITE n VALUES | The draft to the servo after a 2s hold ([Writing](#writing)); `WRITE 1 VALUE` for one, off with none |
 
 Below the rows, the state line shows the port's current operation. The
 last message appears below the notes. Every control is at least 48px tall
@@ -275,15 +274,14 @@ message.
 
 ![MOVE SERVO on, LEFT END followed](img/servo-hitec-move-on.png)
 
-## The write switch
+## The write gate
 
-**ENABLE WRITE TO SERVO** is off by default. A tap on **OFF** opens a page
-that names the risks; **HOLD 2s TO ENABLE** switches it on. A tap on **ON**
-switches it off at once. A tap on **WRITE n VALUES**, RESTORE, REPAIR
-CHECKSUM or FACTORY DEFAULT with the switch off opens the same page: holding the button
-enables writing without sending any values.
+Every write of the model checks a write gate; it is shut by default. A 2s
+hold that sends a write (**WRITE n VALUES**, the hold page of RESTORE,
+REPAIR CHECKSUM or FACTORY DEFAULT) opens it until that operation ends,
+read-back included. The operator sees no switch: the hold is the consent.
 
-The switch goes off:
+The gate shuts:
 
 - at every entry of the SERVO screen,
 - at every CONNECT and every LEAVE,
@@ -292,24 +290,21 @@ The switch goes off:
 - when a write does not end verified,
 - when a read finds other values than the ones held.
 
-It goes on only with the port held, the servo in programming mode and read,
-the port not stopped, the bench SAFE and no STOP latched.
-
-![ENABLE WRITE TO SERVO](img/servo-hitec-enable.png)
+It opens only with the port held, the servo in programming mode and read,
+the port not stopped, the bench SAFE and no STOP latched. Where it does
+not, a press on **WRITE n VALUES** starts no hold, and the tab names the
+reason at once.
 
 ## Writing
 
 **WRITE n VALUES** counts the differences between the draft and the servo.
-Tap it to open the write page. It lists up to 6 changed values in tab order,
-such as `SOFT START: 20% -> 60%`, followed by a count of the rest.
-
-On the first write after CONNECT, and on every write that changes DIRECTION,
-NEUTRAL, CENTER or an end point, the page shows `Keep the servo horn clear. Disconnect the linkage.`
-and `Test the servo on the bench before fitting it to a model.` It also
-explains the series' write sequence, identifies the backup file or explains
-why there is none ([The backup before the first write](#the-backup-before-the-first-write)),
-and says where the values before the write are recorded.
-**HOLD 2s TO WRITE** starts writing.
+It stands on the SERVO tab and in the footer under every tab; both work the
+same. A 2s hold on it starts writing; the button fades from green to amber
+meanwhile. A release before 2s sends nothing, and a tap shows `Hold 2s to
+write.` A press the
+session refuses starts no hold, and the tab names the reason at once. No
+page lists the values before the write: each edited value is marked `*`
+on its tab, and [LEAVE](#leave) lists them.
 
 1. The second read of what the plan depends on
    ([The second read](#the-second-read)). Two reads that differ end the
@@ -332,7 +327,7 @@ and says where the values before the write are recorded.
 5. The read-back: the D series set of 21 registers, or classic cells 0x00
    to 0x23, held against the draft.
 6. `2 values written and verified.`, or `1 value written and verified.`,
-   ends it and clears the record. The switch stays on.
+   ends it, clears the record and shuts the gate.
 
 In the host model (`test_hitec_prog_reread`) a D series write of one value
 takes 3.2s at a frame of 16ms and 3.5s at one of 33ms, and a classic one
@@ -340,19 +335,19 @@ takes 3.2s at a frame of 16ms and 3.5s at one of 33ms, and a classic one
 measured.
 
 The write is refused on an ARMED bench or one asked to arm, with a STOP
-latched, on a stopped port, with no servo read, with the switch off, with
-no change, while a record of an earlier write stands, and while a request
-of the card (FILES, a save or a load) waits for its answer. The port, the
-bench, the STOP, the entry and the switch are checked again when the card
-has taken the record: a switch turned off, a STOP or a finger on ARM in the
-meantime ends the write before a step goes out, with the refusal's message,
-and clears its record, on the card too. The switch does not go on again
-while the write waits for the card.
+latched, on a stopped port, with no servo read, with no change, while a
+record of an earlier write stands, and while a request of the card (FILES,
+a save or a load) waits for its answer. The port, the bench, the STOP, the
+entry and the gate are checked again when the card has taken the record:
+a gate shut by an entry of the SERVO screen, a STOP or a finger on ARM in
+the meantime ends the write before a step goes out, with the refusal's
+message, and clears its record, on the card too. A gate shut that way
+says `Writing closed before the write went out. Hold the button 2s again.`
 
-![The write page](img/servo-hitec-write.png)
+![The write hold at 1s](img/servo-hitec-write.png)
 ![A write under way](img/servo-hitec-writing.png)
 ![A write done](img/servo-hitec-written.png)
-![The classic write page](img/servo-hitec-classic-write.png)
+![The write hold at 1s, classic](img/servo-hitec-classic-write.png)
 
 ### The second read
 
@@ -378,7 +373,7 @@ The state line reads `Second read before the write: 5 of 36.`, and
 - They differ in one address: `Two reads differ at 0x17: read again with
   READ ALL.` The first address that differs is named. Nothing is planned,
   recorded, saved or sent; the servo read stays the first read, and the
-  edits and the switch stay. **WRITE n VALUES** tried again compares a new
+  edits stay, and the gate shuts. **WRITE n VALUES** held again compares a new
   second read with the same first read. **READ ALL** takes a new first read.
 - **ABORT**, a STOP or a read that fails during the second read ends the
   write the same way, with `The operation was aborted.`, the STOP's line or
@@ -409,7 +404,7 @@ measured.
 | `Stored value 0x06 is written, its checksum in 0x1C is not. Tap READ ALL.` and the same second line | holds the new cell and the old balance: the checksum is wrong |
 | `A write was not verified. Tap READ ALL before writing again.` | a write once a step went out leaves what the servo holds unknown; READ ALL comes before the next write |
 
-A write that ends any way but verified switches the switch off.
+A write that ends any way but verified shuts the gate as well.
 
 ## The record of a write
 
@@ -431,7 +426,7 @@ record, address by address over the addresses a write changes:
 
 The classic balance 0x1C is not compared: a write cut between a cell and its
 balance leaves a third value there. RESTORE writes the values before the
-write back as a write of its own, with the switch, the hold page `RESTORE`
+write back as a write of its own, with the hold page `RESTORE`
 and its read-back; the record stays until that ends verified. `Discard the
 record of the interrupted write.` removes it without a write. While a
 record stands WRITE n VALUES and REPAIR CHECKSUM are refused: `Writing and REPAIR CHECKSUM are blocked. Under RESTORE, restore the saved values or discard the record.` The file
@@ -479,7 +474,7 @@ is a proposed name, `HITEC001` to `HITEC999`.
 **FILES** opens the list. It takes a tap with the port held, the servo in
 programming mode and read, no read owed after a write, the port not
 stopped, the bench SAFE and no STOP latched; otherwise the tap says why.
-Saving and loading work with the write switch off: a file changes the
+Saving and loading open no write gate: a file changes the
 draft on the panel, never the servo.
 
 The first entry saves. Below it stand the files sorted by name, 5 a page,
@@ -565,7 +560,7 @@ different servo is read, does not count as saving the new backup.
 
 With a card mounted, the session's first write that sends a step saves
 the backup to a new file under the next proposed name, without asking.
-This applies to WRITE n VALUES, REPAIR CHECKSUM, RESTORE and FACTORY DEFAULT. The write page says
+This applies to WRITE n VALUES, REPAIR CHECKSUM, RESTORE and FACTORY DEFAULT. The hold page of RESTORE, REPAIR CHECKSUM and FACTORY DEFAULT says
 `The current servo settings are saved to a new card file before writing.`
 and the state line `Saving the backup file on the card.` while the card
 works. The servo receives nothing before the card holds the file. A card
@@ -583,14 +578,15 @@ the session found it, before the first write, carry `backup=1`; every other
 save carries `backup=0`. A matching classic backup file can also restore stored cells that have no
 editable setting ([Loading a backup file](#loading-a-backup-file)).
 
-![The write page with the backup file](img/servo-hitec-backup-write.png)
 ![The backup file on its way](img/servo-hitec-backup-saving.png)
 ![The backup file named](img/servo-hitec-backup-file.png)
 
 #### Without a card
 
-With no card mounted the write is not blocked. The write page carries
-three more lines:
+With no card mounted the write is not blocked. While edits wait, the
+SERVO tab shows `No card. No backup file will be saved.` in the warning
+colour, and the 2s hold on **WRITE n VALUES** sends the write without a
+file. The hold pages of the other writes carry three more lines:
 
 ```
 No card. No backup file will be saved.
@@ -602,13 +598,12 @@ After the write the SERVO tab shows `No card, no backup file. Restore is
 available only within this session.` A card put in later in the session
 gets the backup with the next write: the file holds the servo as the
 session found it, not as it stands. A card that leaves the slot after the
-backup file is saved lets later writes go; the write page then says `No
+backup file is saved lets later writes go; those hold pages then say `No
 card. The previous settings are kept in RAM only.` A card in the slot that
 does not mount counts as no card, and the lines name what the panel found
 in place of `No card`, as on the KST programmer
 ([Without a card](ServoProgrammer.md#without-a-card)).
 
-![The write page without a card](img/servo-hitec-write.png)
 ![The backup in RAM only](img/servo-hitec-nofile.png)
 
 ### Loading
@@ -617,7 +612,7 @@ A tap on a file loads it. The cells or registers of every editable value
 become the draft, as stored: a value that fits no encoding comes back raw.
 A classic draft gets its balance in cell 0x1C computed. The changed values
 are marked `*`, **WRITE n VALUES** counts them, and nothing reaches the
-servo before the write switch, the write page and its 2s hold.
+servo before the 2s hold on **WRITE n VALUES**.
 
 ![A file loaded](img/servo-hitec-file-loaded.png)
 
@@ -701,8 +696,7 @@ opens first with `Stored values outside the settings loaded too: 1.`.
 **HOLD 2s TO LOAD** takes the cells into the draft, and the message shows
 the same line under `HITEC001 loaded. 5 values differ from the servo
 settings.` A cell that no value line names counts as a value of **WRITE n
-VALUES**; the write page shows `Stored values outside the settings written
-too: 1.`, and the write sends the cell. RESTORE, REPAIR CHECKSUM and
+VALUES**, and the write sends the cell. RESTORE, REPAIR CHECKSUM and
 FACTORY DEFAULT wait for it as for an edit; DISCARD EDITS drops it.
 
 ![A backup file with a cell no setting names](img/servo-hitec-classic-file-backup.png)
@@ -752,7 +746,7 @@ classic cells of no editable value it writes back, `Stored values outside
 the settings restored too: 1.`, and the backup file's lines. **HOLD 2s TO
 RESTORE** writes it as a write: the backup file first if none holds it,
 the record, the steps and the read-back. It ends with `Backup restored and
-verified.` It needs the switch and no edit standing. With a record of an
+verified.` It needs no edit standing. With a record of an
 interrupted write standing it keeps that record and needs the record's
 comparison by READ ALL first, as RESTORE of the record does.
 
@@ -772,14 +766,14 @@ the values that change, the count of cells no setting names that it
 writes, `Stored values outside the settings written too: 1.`, the horn line and the
 backup file's lines. **HOLD
 2s TO WRITE** writes it as a write and ends with `Factory values written
-and verified.` It needs the switch, no edit standing and no record. It is
+and verified.` It needs no edit standing and no record. It is
 offered while any cell of 0x00 to 0x23 that a write sends differs from its
 factory cell, one no setting names included; a servo whose cells already
 hold the factory values gets `No values differ from the servo settings.`
 
 The programmer does not offer FACTORY DEFAULT for a D series servo. The
 servo's reset command (register 0x6E = 0x0F0F, as sent by the HFP-30) leaves
-values that are not known in advance. The write page therefore cannot list
+values that are not known in advance. A hold page therefore cannot list
 them, and verification has no expected values to compare with.
 
 ![MORE of a classic servo](img/servo-hitec-classic-more-factory.png)
@@ -794,7 +788,7 @@ CHECKSUM `WRONG`, and the SERVO tab says `MORE > REPAIR CHECKSUM writes stored
 value 0x1C.` REPAIR CHECKSUM under MORE opens a page that names the cell's value
 and the balance, `Writes stored value 0x1C: 0x5F -> 0x5E. Stored values 0x00-0x1C then sum to 0.`; its hold writes the
 balance alone, with its record and the read-back of cells 0x00 to 0x23.
-It needs the switch, no edit standing (WRITE n VALUES writes the balance
+It needs no edit standing (WRITE n VALUES writes the balance
 with the edits) and no record.
 
 ![A classic checksum that is wrong](img/servo-hitec-classic-sum.png)
@@ -822,6 +816,16 @@ and the CLOSE is always taken.
 
 ![LEAVE PROGRAMMING, D series](img/servo-hitec-leave.png)
 ![LEAVE PROGRAMMING, classic](img/servo-hitec-classic-leave.png)
+
+With unwritten edits the page starts with `Unwritten changes will be lost.`
+and lists each edit as the name, the servo's value and the draft's value,
+`SOFT START: 20% -> 60%`, in tab order; with more edits than lines the
+last of these lines counts the rest. Loaded cells of no setting are counted:
+`Stored values outside the settings not written: 1.` **HOLD 2s TO LEAVE
+WITHOUT WRITING** drops the edits, writes nothing and leaves as above;
+**BACK** closes the page and keeps them.
+
+![LEAVE PROGRAMMING with two unwritten edits](img/servo-hitec-leave-edits.png)
 
 When the PD mini supplies the servo, both series normally end LEAVE with
 its output on at the session's programming voltage and current limit. If
@@ -987,13 +991,13 @@ CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
 
 - The run's start is a button held 2s. That hold is the consent CHECK
   THIS CHANGE asks for: the run's own edits of LEFT END and RIGHT END take
-  their rule as confirmed, and each write of the run switches ENABLE WRITE
-  TO SERVO on for itself and off at its end. An edit on the programmer's
+  their rule as confirmed, and each write of the run opens the write gate
+  for itself and shuts it at its end. An edit on the programmer's
   tabs during a run still opens CHECK THIS CHANGE. Outside a run the interface
-  writes nothing and says `Writing is off. Switch ENABLE WRITE TO SERVO on
-  first.`
+  writes nothing and says `Writing closed before the write went out. Hold
+  the button 2s again.`
 - A value outside the range is refused, not clamped: nothing is edited,
-  nothing is sent, and the switch stays off.
+  nothing is sent, and the gate stays shut.
 - Every write of a run is a write as WRITE n VALUES makes it: the second
   read, the record on the card, then the D series registers 20ms apart,
   the save (0x70 = 0xFFFF), 100ms, the restart (0x46 = 1), 1000ms and the
@@ -1016,7 +1020,7 @@ CW and CCW are DIRECTION as read: D series register 0x5E, classic cell
   values already include earlier writes from the run. On a D series servo
   its page asks for the unit
   ([Restore of the session's backup](#restore-of-the-sessions-backup)).
-- The run's end switches ENABLE WRITE TO SERVO off, drops the draft and
+- The run's end shuts the write gate, drops the draft and
   gives the programming voltage and current back to the settings' values.
 - Which horn position a D series end point gives on a CCW servo, and
   which classic cell limits which side on a CCW servo, are not measured;

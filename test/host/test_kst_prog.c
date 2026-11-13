@@ -4337,8 +4337,8 @@ TEST_CASE(a_release_or_a_session_restore_that_never_starts_keeps_the_prompt)
 /*
  * The session's backup goes to the servo it was read from.  Another servo
  * plugged in between differs in registers no write of the session
- * changed: the restore ends before its first write, the write switch is
- * off, and a read comes before anything else.  Read or not, no later
+ * changed: the restore ends before its first write, the write gate is
+ * shut, and a read comes before anything else.  Read or not, no later
  * restore writes to it either.
  */
 TEST_CASE(a_session_restore_does_not_reach_a_swapped_servo)

@@ -704,7 +704,7 @@ void svs_leave(void)
     ++s.ctrl_rev;
 }
 
-/* ENABLE WRITE TO SERVO goes off whenever the screen is entered, and an
+/* The programmers' write gate shuts whenever the screen is entered, and an
  * OFF owed for leaving with the port held is dropped: the supply is this
  * screen's again. */
 void svs_enter(void)

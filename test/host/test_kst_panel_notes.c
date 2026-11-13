@@ -102,7 +102,7 @@ static bool on_page(const char *s)
  * band. */
 static void standing_shown(void)
 {
-    const gfx_rect_t last = val(PG_SERVO, 4, 1);
+    const gfx_rect_t last = val(PG_SERVO, 3, 1);
     const gfx_rect_t drawn = kst_panel_notes_drawn();
 
     CHECK(kst_panel_standing_line(0) != NULL);
@@ -144,9 +144,8 @@ static int max_int(int a, int b)
 
 /* The standing lines take up to two rows each and every message up to
  * three lines.  Between the SERVO tab's last row and 4px above the alert
- * band there are 7 rows: the tallest message fits whole in them in both
- * languages, and in English the tallest pair fits beside it.  In German
- * they take 9; the pair yields to the message (kst_panel_pack_notes()). */
+ * band there are 10 rows: the tallest message fits whole in them, and the
+ * tallest pair beside it, in English (7 rows) and German (9 rows). */
 TEST_CASE(every_message_fits_whole_under_the_servo_tab)
 {
     static const unsigned args[] = { 0u, 1u, 2u, 9u, 10u, 99u, 255u, 256u,
@@ -155,7 +154,7 @@ TEST_CASE(every_message_fits_whole_under_the_servo_tab)
 
     fresh();
     for (int lang = 0; lang < 2; ++lang) {
-        const gfx_rect_t last = val(PG_SERVO, 4, 1);
+        const gfx_rect_t last = val(PG_SERVO, 3, 1);
         const int fit = (NOTES_FOOT - (last.y + last.h + 4)) / 20;
         int held = 0;
         int text = 0;
@@ -196,22 +195,20 @@ TEST_CASE(every_message_fits_whole_under_the_servo_tab)
         }
         CHECK(held > 0);
         CHECK(text > 0);
-        CHECK_EQ(fit, 7);
+        CHECK_EQ(fit, 10);
         CHECK(text <= fit);
-        if (lang == 0) {
-            CHECK(held + text <= fit);
-        }
+        CHECK(held + text <= fit);
     }
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* An area 460px tall: 6 rows of notes under the SERVO tab. */
+/* An area 460px tall: 8 rows of notes under the SERVO tab. */
 static const gfx_rect_t k_short = { UI_MARGIN, UI_MARGIN, 620, 460 };
 
-/* An area 524px tall, a left card down to the body's foot: 7 rows of notes
- * under the SERVO tab.  SERVO's KST screen hands the session 428px, the
- * card over the footer: 4 rows, where a message taller than 4 rows shows
- * its first lines (docs/Servo.md, a current limitation). */
+/* An area 524px tall, a left card down to the body's foot: 10 rows of
+ * notes under the SERVO tab.  SERVO's KST screen hands the session 428px,
+ * the card over the footer: 6 rows, where the longest message, 5 rows, is
+ * drawn whole. */
 static const gfx_rect_t k_tall = { UI_MARGIN, UI_MARGIN, 620,
                                    UI_BODY_H - 2 * UI_MARGIN };
 
@@ -221,7 +218,7 @@ static void message_whole(void)
 {
     char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
     const gfx_rect_t drawn = kst_panel_notes_drawn();
-    const gfx_rect_t last = val(PG_SERVO, 4, 1);
+    const gfx_rect_t last = val(PG_SERVO, 3, 1);
 
     CHECK_EQ(kst_panel_shown_message_lines(),
              kst_panel_message_lines(kst_prog_message(M), t));

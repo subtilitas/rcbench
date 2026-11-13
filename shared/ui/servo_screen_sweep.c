@@ -662,6 +662,7 @@ void svs_tick_body(float dt_s)
     kst_panel_set_hv(s.test_hv);
     prog_armed(bench_arming());
     prog_tick(dt_s);
+    prog_write_tick(dt_s);     /* KST's and HITEC's footer WRITE */
     /* Not while a limit run or AUTO holds the port: its box stays on the
      * left card, and the run gives the port back itself. */
     lim_leave_follow();

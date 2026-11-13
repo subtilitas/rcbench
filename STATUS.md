@@ -1894,10 +1894,10 @@ paths: no servo or no entry, a raw value's confirmation, a confirmation after a 
 request and a refused plan while the card takes the record, a RESTORE with nothing to send,
 the record loaded from the card, and the card's answer to a text of before the write that
 waits (an aborted write's record, a record's clear, a refusal, no answer within 3000ms),
-which releases and ends nothing, and the gate taken again at the card's answer (the switch
-off, a STOP, ARM pressed).
+which releases and ends nothing, and the gate taken again at the card's answer (the write
+gate shut, a STOP, ARM pressed).
 
-`test_hitec_prog` adds the write switch at CONNECT, link loss, STOP and LEAVE, every soft
+`test_hitec_prog` adds the write gate at CONNECT, link loss, STOP and LEAVE, every soft
 rule at its bound and one past it, a confirmation that holds for its value and asks one
 past, a raw value replaced and brought back by DISCARD EDITS, the edit refusals and a model
 the register model does not name. `test_hitec_card` writes and parses the record text: both
@@ -1918,7 +1918,7 @@ the first write and once a session, a card that is full, write protected, failin
 silent for 5000ms (no write goes), ABORT and STOP while it waits, the wait across the wrap
 of the millisecond clock, the backup in RAM without a card and saved when a card comes, the
 backup of another servo, saves by hand and their refusals, FILES' pages, the request id's
-wrap, a load into the draft with the switch off and on, the other series and layout, another
+wrap, a load into the draft with the write gate shut and open, the other series and layout, another
 model, a soft rule, a hand-edited file, values outside the editable ones counted, a raw
 value back by a load, the load's gates (ARMED, STOP, no read, a read owed), RESTORE of a
 D series backup with a raw value, the unit confirmed, after a write and after a lost link,
@@ -1949,13 +1949,14 @@ differ, ABORT, STOP, its time); `test_servo_restore` SERVO's question after a LE
 programmer, Tests](docs/ServoProgrammer.md#tests)). `test_hitec_panel_file` runs the
 overlay's FILES row, its pages and their turn back to the first, the keyboard of a new name
 and the names the card refuses, a load, CHECK THIS FILE, a backup file's stored values on
-the load page, in its message and on the write page, the backup file's lines on the write
-page and the SERVO tab, RESTORE and FACTORY DEFAULT from their rows, both refused with an
+the load page, in its message and on LEAVE, the backup file's lines on the SERVO tab, the SERVO tab's
+no-card line while edits wait, RESTORE and FACTORY DEFAULT from their rows, both refused with an
 edit standing, and every new page and message in both languages.
 
 `test_hitec_panel_write` runs the overlay's lists, keypad refusals, the D series FAILSAFE
-list and its keypad, CHECK THIS CHANGE, the switch page, the write page and its lines in
-English and German, REPAIR CHECKSUM under MORE, RESTORE after an interrupted write, with
+list and its keypad, CHECK THIS CHANGE, the write's 2s hold (a tap, a release before 2s, a
+hold of 2s, a refusal at the press), LEAVE PROGRAMMING with unwritten edits and without,
+BACK that keeps the edits and the hold that drops them, in English and German, REPAIR CHECKSUM under MORE, RESTORE after an interrupted write, with
 STOP latched a foot line that offers no CLEAR, the card half and the state line of each
 phase, the record notes, RESTORE's page, the refusals the pages say, the keypads on a raw
 value, a pressed row, every write message's lines, and a message line a note already says
@@ -1976,8 +1977,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 942 committed screenshots to the current render,
-471 in English and the same 471 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 938 committed screenshots to the current render,
+469 in English and the same 469 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2060,9 +2061,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
 | `shared/ui/ui_board.c` | 56 | 56 | 100.0% |
 | `shared/ui/servo_screen.c` | 374 | 363 | 97.1% |
-| `shared/ui/servo_screen_sweep.c` | 508 | 485 | 95.5% |
+| `shared/ui/servo_screen_sweep.c` | 509 | 486 | 95.5% |
 | `shared/ui/servo_screen_link.c` | 424 | 415 | 97.9% |
-| `shared/ui/servo_screen_touch.c` | 278 | 273 | 98.2% |
+| `shared/ui/servo_screen_touch.c` | 280 | 275 | 98.2% |
 | `shared/ui/servo_screen_draw.c` | 462 | 437 | 94.6% |
 | `shared/ui/servo_settings_panel.c` | 683 | 626 | 91.7% |
 | `shared/ui/servo_settings_draw.c` | 348 | 316 | 90.8% |
@@ -2079,10 +2080,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_auto_ready.c` | 287 | 282 | 98.3% |
 | `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
-| `shared/ui/servo_prog_ready.c` | 209 | 196 | 93.8% |
+| `shared/ui/servo_prog_ready.c` | 247 | 232 | 93.9% |
 | `shared/ui/servo_drive_ready.c` | 449 | 428 | 95.3% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
-| `shared/ui/servo_guide.c` | 310 | 305 | 98.4% |
+| `shared/ui/servo_guide.c` | 309 | 304 | 98.4% |
 | `shared/ui/servo_fn.c` | 83 | 82 | 98.8% |
 | `shared/ui/servo_hub.c` | 202 | 196 | 97.0% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
@@ -2090,21 +2091,21 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
 | `shared/ui/servo_run_supply.c` | 82 | 81 | 98.8% |
 | `shared/ui/servo_angle_pick.c` | 260 | 252 | 96.9% |
-| `shared/ui/kst_panel.c` | 462 | 451 | 97.6% |
+| `shared/ui/kst_panel.c` | 474 | 463 | 97.7% |
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
-| `shared/ui/kst_panel_warn.c` | 309 | 306 | 99.0% |
-| `shared/ui/kst_panel_edit.c` | 387 | 378 | 97.7% |
-| `shared/ui/kst_panel_touch.c` | 288 | 281 | 97.6% |
+| `shared/ui/kst_panel_warn.c` | 277 | 272 | 98.2% |
+| `shared/ui/kst_panel_edit.c` | 409 | 388 | 94.9% |
+| `shared/ui/kst_panel_touch.c` | 334 | 324 | 97.0% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
-| `shared/ui/kst_panel_draw.c` | 564 | 562 | 99.7% |
+| `shared/ui/kst_panel_draw.c` | 565 | 563 | 99.7% |
 | `shared/ui/esc_wire_panel.c` | 575 | 546 | 95.0% |
-| `shared/ui/hitec_panel.c` | 276 | 272 | 98.5% |
-| `shared/ui/hitec_panel_text.c` | 508 | 503 | 99.0% |
-| `shared/ui/hitec_panel_edit.c` | 401 | 398 | 99.2% |
-| `shared/ui/hitec_panel_page.c` | 235 | 235 | 100.0% |
-| `shared/ui/hitec_panel_touch.c` | 303 | 291 | 96.0% |
-| `shared/ui/hitec_panel_draw.c` | 284 | 283 | 99.7% |
-| `shared/ui/hitec_panel_file.c` | 230 | 230 | 100.0% |
+| `shared/ui/hitec_panel.c` | 284 | 282 | 99.3% |
+| `shared/ui/hitec_panel_text.c` | 505 | 500 | 99.0% |
+| `shared/ui/hitec_panel_edit.c` | 423 | 416 | 98.3% |
+| `shared/ui/hitec_panel_page.c` | 201 | 199 | 99.0% |
+| `shared/ui/hitec_panel_touch.c` | 354 | 339 | 95.8% |
+| `shared/ui/hitec_panel_draw.c` | 286 | 285 | 99.7% |
+| `shared/ui/hitec_panel_file.c` | 237 | 236 | 99.6% |
 | `shared/ui/hitec_panel_run.c` | 107 | 107 | 100.0% |
 | `shared/ui/hitec_panel_move.c` | 211 | 206 | 97.6% |
 | `shared/ui/analyser_screen.c` | 258 | 257 | 99.6% |
@@ -2400,7 +2401,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **91242** | **89425** | **98.0%** |
+| **total** | **91384** | **89540** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

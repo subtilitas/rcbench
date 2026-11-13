@@ -407,9 +407,10 @@ Values 3 and 4 are not given. A result the session knows without a plan
 given before PLAN_RULES, PLAN_R00 and PLAN_PAIRING (since 4.14): a locked
 session answers a WRITE with result 9 whatever the target is. NO_ENABLE is
 checked before every other
-reason. The panel sends the key only while its switch ENABLE WRITE TO SERVO
-is on, so a command that reaches the IOmcu without it writes nothing
-in any state of the port. The switch is on the SERVO screen's programmer.
+reason. The panel sends the key only while its write gate is open, and the
+gate opens only for an operation a 2s hold on the SERVO screen's programmer
+sends, so a command that reaches the IOmcu without it writes nothing in
+any state of the port.
 
 A programming port is bidirectional by definition: its pin is a bare GPIO
 that the wire driver turns between output and input. A servo behind an
@@ -500,7 +501,7 @@ means an IOmcu without the page; refused with any other code it counts
 as unanswered and is sent again. An IOmcu without the page keeps, for
 the caller, whether the port was out of PWM at the last read that answered.
 Each request has a number, and its outcome carries that number. It refuses WRITE, RESTORE and RELEASE without the
-caller's switch before anything is sent. `shared/bench/supply_link.c` takes
+caller's write gate before anything is sent. `shared/bench/supply_link.c` takes
 a command the port left on SUPPLY as the one asked and does not write its
 own over it (`supply_link_adopted()`). The SERVO screen's programmer is
 the caller ([Servo programmer](ServoProgrammer.md)).

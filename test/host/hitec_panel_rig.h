@@ -117,6 +117,31 @@ static inline void hold_connect(void)
     show();
 }
 
+/* WRITE n VALUES on the SERVO tab pressed for @p secs, the servo run
+ * beside, and let go: its 2s hold writes. */
+static inline void press_write(float secs)
+{
+    const int steps = (int)(secs * 50.0f + 0.5f);
+    gfx_rect_t r;
+
+    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+    r = val(HITEC_PANEL_SERVO, 3, 1);
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN);
+    for (int i = 0; i < steps; ++i) {
+        hitec_panel_tick(0.02f);
+        prun(20u);
+    }
+    ev(cx(r), cy(r), TOUCH_EVENT_UP);
+    show();
+}
+
+/* WRITE n VALUES held 2.5s: the hold, the write asked for on the tick
+ * after it, and the flash. */
+static inline void hold_write(void)
+{
+    press_write(2.5f);
+}
+
 /* The first line of the message, "" for none. */
 static inline const char *said(void)
 {

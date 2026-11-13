@@ -389,6 +389,11 @@ static int page_notes(note_t *n)
         } else if (kst_prog_no_file(p)) {
             i = note(n, i, 4, kpn_card_tr(UI_CARD_AT_KP_NO_BACKUP),
                      ui_theme_color(UI_C_WARN));
+        } else if (kst_prog_changes(p) != 0u && kst_prog_save_none(p)) {
+            /* WRITE's hold sends the edits with no page before them: the
+             * file the write goes without is named here. */
+            i = note(n, i, 4, kpn_card_tr(UI_CARD_AT_KP_NO_FILE),
+                     ui_theme_color(UI_C_WARN));
         }
         break;
     case PG_FAILSAFE:
@@ -812,9 +817,6 @@ static void act_value(const row_t *r, char *out, size_t n)
     case A_MORE:
         snprintf(out, n, "%s", TR(KP_CHOOSE));
         break;
-    case A_ENABLE:
-        snprintf(out, n, "%s", kst_prog_write_enabled(p) ? TR(ON) : TR(OFF));
-        break;
     case A_TYPE:
         /* The operator's type; the one 20k_sel suggests with its mark. */
         if (kst_prog_type(p) != 0u) {
@@ -857,7 +859,8 @@ static void draw_row(gfx_canvas_t *c, int i)
     const gfx_rect_t vr = kpn_value_rect(r);
     const bool live = kpn_row_live(r);
     const bool pressed = k.have && (k.pressed == P_ROW
-                                    || k.pressed == P_CONNECT)
+                                    || k.pressed == P_CONNECT
+                                    || k.pressed == P_WRITE)
                          && k.row == i;
     gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
     char v[KST_PANEL_LINE];
@@ -870,7 +873,7 @@ static void draw_row(gfx_canvas_t *c, int i)
         act_value(r, v, sizeof(v));
         /* The buttons that start a port action: green while a press
          * starts it, red while the port is the programmer's (ABORT,
-         * LEAVE) or the write switch is on. */
+         * LEAVE). */
         if (r->what == A_PORT) {
             const kst_prog_state_t st = kst_prog_state(p);
             const bool held = st == KST_PROG_ENTERING
@@ -885,12 +888,13 @@ static void draw_row(gfx_canvas_t *c, int i)
             ui_hold_button(c, vr, v, fill, ui_action_fill(UI_ACTION_ACTIVE),
                            &k.conn, pressed, live, KP_FONT);
             return;
-        } else if (r->what == A_ENABLE) {
-            fill = ui_action_fill(kst_prog_write_enabled(p)
-                                      ? UI_ACTION_ACTIVE
-                                      : UI_ACTION_AVAILABLE);
         } else if (r->what == A_WRITE) {
-            fill = ui_action_fill(UI_ACTION_AVAILABLE);
+            /* WRITE n VALUES is a 2s hold: green fading to the amber of
+             * the write's steps, flashing as it fires. */
+            ui_hold_button(c, vr, v, ui_action_fill(UI_ACTION_AVAILABLE),
+                           ui_action_fill(UI_ACTION_WAITING), &k.wr,
+                           pressed, live, KP_FONT);
+            return;
         }
         kp_button(c, vr, v, fill, pressed, live);
         return;
@@ -1015,7 +1019,8 @@ static void draw_warning(gfx_canvas_t *c)
         }
     }
     draw_apply(c);
-    kp_button(c, kst_panel_cancel_rect(), TR(CANCEL),
+    /* BACK on the LEAVE page that lists unwritten edits: they stay. */
+    kp_button(c, kst_panel_cancel_rect(), kst_panel_cancel_label(),
               ui_theme_color(UI_C_PANEL_SUNK),
               k.have && k.pressed == P_CANCEL, true);
 }

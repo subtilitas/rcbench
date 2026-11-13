@@ -13,7 +13,7 @@
  *  - the D series: a backup file loads its settings only;
  *  - the backup line the bench writes: the backup file and a save by hand
  *    before the first write carry backup=1, a save after a write backup=0;
- *  - the gates: CANCEL, DISCARD EDITS, the write switch, a load answered
+ *  - the gates: CANCEL, DISCARD EDITS, the write gate, a load answered
  *    after LEAVE and CONNECT.
  *
  * SPDX-License-Identifier: MIT

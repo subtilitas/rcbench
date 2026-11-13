@@ -164,8 +164,8 @@ void kst_prog_write_go(kst_prog_t *p);
 /**
  * @brief The start gate of the held write as it is now, the wait for its
  *        own files left out: the port in PROGRAMMING and idle, the port the
- *        write was held for, no STOP, the bench not ARMED and the switch
- *        on.
+ *        write was held for, no STOP, the bench not ARMED and the write
+ *        gate open.
  *
  * @param p The programmer state.
  * @return KST_PROG_MSG_NONE when the write may go, else the message why not.

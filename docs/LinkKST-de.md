@@ -442,10 +442,10 @@ Plan kennt (5, 7, 8, 9 und 10 bei einem RESTORE, dessen bereitgestelltes
 Image nicht das Backup ist), wird vor PLAN_RULES, PLAN_R00 und PLAN_PAIRING
 gegeben (seit 4.14): eine gesperrte Session beantwortet ein WRITE mit
 Ergebnis 9, gleich welches Ziel es hat. NO_ENABLE wird vor jedem anderen
-Grund geprüft. Das Panel sendet den Key nur, solange sein Schalter SCHREIBEN INS SERVO
-FREIGEBEN eingeschaltet ist. Ein Kommando, das den IOmcu ohne den Key erreicht,
-schreibt in keinem Zustand des Ports. Der Schalter befindet sich in der
-Servoprogrammierung des SERVO-Bildschirms.
+Grund geprüft. Das Panel sendet den Key nur, solange seine Schreibfreigabe
+offen ist, und sie öffnet sich nur für einen Vorgang, den ein 2s-Halten in
+der Servoprogrammierung des SERVO-Bildschirms sendet. Ein Kommando, das den
+IOmcu ohne den Key erreicht, schreibt in keinem Zustand des Ports.
 
 Ein Programmierport ist per Definition bidirektional: sein Pin ist ein
 blanker GPIO, den der Leitungstreiber zwischen Ausgang und Eingang
@@ -545,7 +545,7 @@ unbeantwortet und wird erneut gesendet. Bei einem IOmcu ohne die Page
 behält das Modul für den Aufrufer, ob der Port beim letzten beantworteten
 Lesen außerhalb von PWM war. Jede Anfrage hat eine Nummer, und ihr Ergebnis
 trägt diese Nummer.
-Es weist WRITE, RESTORE und RELEASE ohne den Schalter des Aufrufers ab,
+Es weist WRITE, RESTORE und RELEASE ohne die Schreibfreigabe des Aufrufers ab,
 bevor etwas gesendet wird. `shared/bench/supply_link.c` nimmt ein Kommando,
 das der Port auf SUPPLY hinterlassen hat, als das angeforderte und schreibt
 sein eigenes nicht darüber (`supply_link_adopted()`). Die Servoprogrammierung des

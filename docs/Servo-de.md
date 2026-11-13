@@ -448,8 +448,8 @@ Der Lauf schreibt in Sitzungen des [Programmierers](ServoProgrammer-de.md):
 1. Das Servo geht in die Mitte zurück und wird dort 1000ms gehalten.
 2. Der Lauf schaltet den Prüfstand auf SAFE.
 3. VERBINDEN nimmt den Port und liest alle Register.
-4. Das Schreiben: SCHREIBEN INS SERVO FREIGEBEN an, die Felder des Laufs,
-   der Schreibschalter wieder aus. Es ist das gewöhnliche Schreiben des
+4. Das Schreiben: die Schreibfreigabe offen, die Felder des Laufs, die
+   Freigabe wieder zu. Es ist das gewöhnliche Schreiben des
    Programmierers mit jeder Grenzprüfung, und es liest die Werte zurück.
 5. VERLASSEN gibt den Port an PWM zurück.
 6. Der Lauf schaltet den Prüfstand auf ARMED und sucht die Seite, für die
@@ -524,8 +524,8 @@ Was anders ist:
   Versorgung.`, auf der Zeile `BRAUCHT EIN PD MINI`.
 - Die 2s Halten von ARM + START sind die Zustimmung, die ÄNDERUNG
   PRÜFEN verlangt: die Schreibvorgänge des Laufs zeigen keine Seite, und
-  jeder schaltet SCHREIBEN INS SERVO FREIGEBEN für sich ein und an seinem
-  Ende aus. Ein Wert außerhalb des Bereichs wird abgelehnt, nicht
+  jeder öffnet die Schreibfreigabe für sich und schließt sie an seinem
+  Ende. Ein Wert außerhalb des Bereichs wird abgelehnt, nicht
   begrenzt.
 - Ein erstes VERBINDEN, auf das kein Servo antwortet, oder ein Servo, dessen
   Endpoints sich nicht ändern lassen, beendet den Lauf als NICHT BESTANDEN

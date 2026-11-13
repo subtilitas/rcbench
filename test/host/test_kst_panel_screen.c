@@ -305,9 +305,8 @@ TEST_CASE(no_setting_that_reaches_the_port_changes_while_it_is_held)
         CHECK_EQ(g_free_frames, 0u);
 
         /* A write. */
-        enable();
         edits();
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 3, 0));
         show();
         for (unsigned i = 0; i < 40u && kst_panel_editor() != 0; ++i) {
             hold(2.1f);
@@ -377,12 +376,10 @@ TEST_CASE(the_programmer_stays_on_the_screen_while_the_port_is_held)
     CHECK(kst_panel_is_open());
     CHECK_EQ(kst_panel_editor(), 3);
     tap(kst_panel_cancel_rect());
-    /* The switch goes off when the screen is entered again, and the
-     * overlay is there again. */
-    enable();
+    /* The overlay is there again when the screen is entered again, and
+     * the write gate stays shut. */
     scr->leave();
     CHECK(!kst_panel_is_open());
-    CHECK(kst_prog_write_enabled(M));
     scr->enter();
     CHECK(!kst_prog_write_enabled(M));
     scr->tick(0.02f);
@@ -893,7 +890,7 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
     program_open();
     press_port();
     settle();
-    tap(val(PG_SERVO, 3, 0));
+    tap(val(PG_SERVO, 0, 0));           /* LEAVE's page */
     CHECK_EQ(kst_panel_editor(), 3);
     ev(cx(apply), cy(apply), TOUCH_EVENT_DOWN, 1);
     ticks(1.0f);
@@ -901,7 +898,8 @@ TEST_CASE(a_lost_touch_stream_on_the_screen_drops_the_programmers_hold)
     scr->cancel();
     ticks(2.0f);
     ev(cx(apply), cy(apply), TOUCH_EVENT_UP, 1);
-    CHECK(!kst_prog_write_enabled(M));
+    rig_frames(50);
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
 }
 
 /* The screen guide over the session: its two pages of the SERVO tab and

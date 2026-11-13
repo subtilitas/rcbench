@@ -12,7 +12,7 @@
  * page, on LIVE, SWEEP and RUDDER the READY rows' page and the controls'
  * page under them.  On KST and HITEC, whose session fills the left card,
  * the session's pages come first, the dock on the right: on the SERVO tab
- * two, CONNECT and the read, then the files, the write switch and WRITE;
+ * two, CONNECT and the read, then the files, RESTORE and WRITE;
  * on another tab one, its values.  They are not offered while the READY
  * card's supply row switches a live output off, which their dock would
  * cover, or while an editor of the session is open.  The READY card's
@@ -531,8 +531,7 @@ static void page_prg_connect(ui_help_page_t *p)
 }
 
 /** @brief KST's or HITEC's SERVO tab, its lower rows: FILES and MORE on
- *         KST, MORE and AFTER STOP on HITEC; the write switch, RESTORE and
- *         WRITE n VALUES.
+ *         KST, MORE and AFTER STOP on HITEC; RESTORE and WRITE n VALUES.
  *  @param p The page. */
 static void page_prg_write(ui_help_page_t *p)
 {
@@ -550,11 +549,9 @@ static void page_prg_write(ui_help_page_t *p)
                     TX_HG_HT_CLEAR, 2, 1);
     }
     prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 3, 0),
-                TX_HG_PRG_ENABLE, 3, 0);
-    prg_add_row(p, PRG_PG_WRITE, prg_label(PRG_TAB_SERVO, 4, 0),
-                kst ? TX_HG_KST_RESTORE : TX_HG_HT_RESTORE, 4, 0);
-    prg_add_row(p, PRG_PG_WRITE, prg_button(PRG_TAB_SERVO, 4, 1),
-                TX_HG_PRG_WRITE, 4, 1);
+                kst ? TX_HG_KST_RESTORE : TX_HG_HT_RESTORE, 3, 0);
+    prg_add_row(p, PRG_PG_WRITE, prg_button(PRG_TAB_SERVO, 3, 1),
+                TX_HG_PRG_WRITE, 3, 1);
 }
 
 /** @brief A tab of values: the tabs, its first value shown on a row

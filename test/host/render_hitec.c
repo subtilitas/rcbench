@@ -228,6 +228,41 @@ static void hpick(const char *label)
 }
 
 /**
+ * @brief WRITE n VALUES pressed for @p ticks of 20ms, the bench running
+ *        @p run steps a tick; let go and its flash run out when @p up.
+ * @param ticks the ticks
+ * @param run   the bench's steps a tick
+ * @param up    whether the finger lifts
+ */
+static void hwrite_press(int ticks, unsigned run, bool up)
+{
+    const gfx_rect_t r = hitec_panel_value_rect(HITEC_PANEL_SERVO, 3, 1);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1,
+                                   .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y
+                                                  + r.h / 2),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < ticks; ++i) {
+        ui_router_tick(0.02f);
+        prun(run);
+    }
+    if (up) {
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+        hflash_out();
+    }
+}
+
+/** @brief WRITE n VALUES held 2.1s, the bench running, and its flash. */
+static void hwrite(void)
+{
+    hwrite_press(105, 20u, true);
+}
+
+/**
  * @brief The edit of each write view: D series SOFT START 60% and SPEED
  *        50%, classic SPEED 50%.
  */
@@ -250,9 +285,6 @@ static void hedits(void)
  */
 static bool write_view(const char *v)
 {
-    hitec_prog_t *p = hitec_panel_model();
-    const gfx_rect_t write = hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 1);
-
     if (strcmp(v, "-list") == 0 || strcmp(v, "-edit") == 0) {
         hrow(HITEC_PANEL_MOTION, TR(HP_SOFTSTART));
         if (strcmp(v, "-edit") == 0) {
@@ -270,74 +302,54 @@ static bool write_view(const char *v)
         }
         return true;
     }
-    if (strcmp(v, "-enable") == 0) {
-        hedits();
-        htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        htap(write);
-        return true;
-    }
     if (strcmp(v, "-write") == 0 || strcmp(v, "-classic-write") == 0
         || strcmp(v, "-writing") == 0 || strcmp(v, "-written") == 0
         || strcmp(v, "-verify") == 0) {
         hedits();
-        (void)hitec_prog_write_enable(p, true);
         htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        htap(write);
         if (strcmp(v, "-write") == 0 || strcmp(v, "-classic-write") == 0) {
+            /* WRITE n VALUES under the finger for 1s: half its hold. */
+            hwrite_press(50, 0u, false);
             return true;
         }
         if (strcmp(v, "-writing") == 0) {
-            const gfx_rect_t r = hitec_panel_apply_rect();
-            touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                                .point = { .id = 1,
-                                           .x = (int16_t)(r.x + r.w / 2),
-                                           .y = (int16_t)(UI_BAND_H + r.y
-                                                          + r.h / 2),
-                                           .strength = 40 } };
-
-            ui_router_event(&e);
-            for (int i = 0; i < 105; ++i) {
-                ui_router_tick(0.02f);
-                prun(1u);
-            }
-            e.type = TOUCH_EVENT_UP;
-            ui_router_event(&e);
-            hflash_out();
+            hwrite_press(105, 1u, true);
             hwait(HITEC_PROG_WRITING);
             prun(40u);
             ui_router_tick(0.02f);
             return true;
         }
-        hhold();
+        hwrite();
         hwait(HITEC_PROG_HELD);
+        return true;
+    }
+    if (strcmp(v, "-leave-edits") == 0) {
+        /* LEAVE with the two edits unwritten: the page lists them. */
+        hedits();
+        hhome();
         return true;
     }
     if (strcmp(v, "-restore") == 0) {
         hedits();
-        (void)hitec_prog_write_enable(p, true);
         htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        htap(write);
-        hhold();
+        hwrite();
         hwait(HITEC_PROG_HELD);
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 1, 1));
         hwait(HITEC_PROG_HELD);
-        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 0));
+        htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 3, 0));
         return true;
     }
     if (strcmp(v, "-classic-reread") == 0) {
         /* The station's case: the second read of cell 0x17 answers 0x04
          * where the first read 0x05. */
         hedits();
-        (void)hitec_prog_write_enable(p, true);
         htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        htap(write);
         g_drv.eeprom[0x17] = (uint8_t)(g_drv.eeprom[0x17] - 1u);
-        hhold();
+        hwrite();
         hwait(HITEC_PROG_HELD);
         return true;
     }
     if (strcmp(v, "-classic-repair") == 0) {
-        (void)hitec_prog_write_enable(p, true);
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
         hpick(TR(HP_MORE_REPAIR));
         return true;
@@ -416,14 +428,12 @@ static void htype(const char *s)
 }
 
 /**
- * @brief The edits of the write views, the switch on, and the write page.
+ * @brief The edits of the write views and the SERVO tab.
  */
-static void hwrite_page(void)
+static void hwrite_ready(void)
 {
     hedits();
-    (void)hitec_prog_write_enable(hitec_panel_model(), true);
     htap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 1));
 }
 
 /**
@@ -535,13 +545,11 @@ static bool files_view(const char *v)
         hload("WING-L");
         return true;
     }
-    if (strcmp(v, "-backup-write") == 0 || strcmp(v, "-backup-saving") == 0) {
-        hwrite_page();
-        if (strcmp(v, "-backup-saving") == 0) {
-            g_files_slow = true;
-            hhold();
-            hwait(HITEC_PROG_BACKUP);
-        }
+    if (strcmp(v, "-backup-saving") == 0) {
+        hwrite_ready();
+        g_files_slow = true;
+        hwrite();
+        hwait(HITEC_PROG_BACKUP);
         return true;
     }
     if (strcmp(v, "-backup-file") == 0 || strcmp(v, "-restore-backup") == 0
@@ -549,11 +557,11 @@ static bool files_view(const char *v)
         || strcmp(v, "-restore-unit") == 0) {
         /* -restore-page on the classic HS-5645MG, its serial read; the
          * D485HW of -restore-unit has none, and its page asks for the unit. */
-        hwrite_page();
-        hhold();
+        hwrite_ready();
+        hwrite();
         hwait(HITEC_PROG_HELD);
         if (strcmp(v, "-backup-file") != 0) {
-            htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 4, 0));
+            htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 3, 0));
         }
         if (strcmp(v, "-restore-page") == 0
             || strcmp(v, "-restore-unit") == 0) {
@@ -564,8 +572,8 @@ static bool files_view(const char *v)
     if (strcmp(v, "-other-servo") == 0) {
         /* The backup file HITEC001 saved by a write, then another D485HW
          * on the port, dead band 4, and READ ALL. */
-        hwrite_page();
-        hhold();
+        hwrite_ready();
+        hwrite();
         hwait(HITEC_PROG_HELD);
         servo_d485();
         g_drv.dreg[0x4Eu] = 4u;
@@ -580,15 +588,14 @@ static bool files_view(const char *v)
     if (strcmp(v, "-nofile") == 0) {
         g_card = false;
         prun(20u);
-        hwrite_page();
-        hhold();
+        hwrite_ready();
+        hwrite();
         hwait(HITEC_PROG_HELD);
         return true;
     }
     if (strcmp(v, "-classic-file-backup") == 0) {
         /* FACTORY DEFAULT changes cell 0x1D; the backup file HITEC001 of
          * the servo as found brings it back. */
-        (void)hitec_prog_write_enable(hitec_panel_model(), true);
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
         hpick(TR(HP_MORE_FACTORY));
         hhold();
@@ -600,9 +607,6 @@ static bool files_view(const char *v)
         || strcmp(v, "-classic-factory") == 0
         || strcmp(v, "-classic-factory-done") == 0
         || strcmp(v, "-classic-factory-cell") == 0) {
-        if (strcmp(v, "-classic-more-factory") != 0) {
-            (void)hitec_prog_write_enable(hitec_panel_model(), true);
-        }
         htap(hitec_panel_value_rect(HITEC_PANEL_SERVO, 2, 0));
         if (strcmp(v, "-classic-more-factory") != 0) {
             hpick(TR(HP_MORE_FACTORY));
