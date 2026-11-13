@@ -3,7 +3,10 @@
  * buffers with TXREQ and TXP, sent as the datasheet orders them -- the
  * requested buffer of the highest TXP first, and of equal TXP the highest
  * buffer number first -- one frame per wire step.  The model records every
- * call and every frame it puts on the wire.
+ * call and every frame it puts on the wire.  Its READ STATUS also carries
+ * what the part reports beside TXREQ: each buffer's TXnIF, latched from its
+ * first send on (the queue never clears it), and RX0IF and RX1IF at
+ * random.
  *
  * At the limits: a reply of 8 into 7 free places, 1, 4, 8 and 16 frames,
  * a controller that never sends, the stuck rule at 4999us and 5000us and
@@ -26,6 +29,8 @@ typedef struct {
     bool    txreq[3];
     unsigned status_calls, load_calls, request_calls, abort_calls;
     unsigned load_on_busy;          /* loads into a buffer with TXREQ set */
+    bool    txif[3];                /* latched by a send, never cleared   */
+    uint32_t rng;                   /* RX0IF and RX1IF at random          */
     link_can_frame_t wire[64];
     unsigned on_wire;
 } fake_t;
@@ -40,6 +45,12 @@ static uint8_t f_status(void *ctx)
     if (F.txreq[0]) { st |= MCP2515_STATUS_TX0REQ; }
     if (F.txreq[1]) { st |= MCP2515_STATUS_TX1REQ; }
     if (F.txreq[2]) { st |= MCP2515_STATUS_TX2REQ; }
+    if (F.txif[0]) { st |= MCP2515_STATUS_TX0IF; }
+    if (F.txif[1]) { st |= MCP2515_STATUS_TX1IF; }
+    if (F.txif[2]) { st |= MCP2515_STATUS_TX2IF; }
+    F.rng = F.rng * 1664525u + 1013904223u;
+    st |= (uint8_t)((F.rng >> 24)
+                    & (MCP2515_STATUS_RX0IF | MCP2515_STATUS_RX1IF));
     return st;
 }
 
@@ -99,6 +110,7 @@ static bool wire_step(void)
         F.wire[F.on_wire++] = F.buf[pick];
     }
     F.txreq[pick] = false;
+    F.txif[pick] = true;
     return true;
 }
 
@@ -111,6 +123,7 @@ static void wire_drain(void)
 static void fake_reset(void)
 {
     memset(&F, 0, sizeof(F));
+    F.rng = 12345u;
 }
 
 static link_can_frame_t frame(uint32_t n)
@@ -464,6 +477,63 @@ TEST_CASE(a_load_writes_ctrl_id_dlc_and_the_payload_padded)
     CHECK_EQ(out[0], 0xAA);
 }
 
+TEST_CASE(an_abort_counts_the_frames_still_requested_not_the_sent_ones)
+{
+    fake_reset();
+    can_txq_t q;
+    can_txq_init(&q, &OPS);
+    link_can_frame_t f[5];
+    frames(f, 0u, 5u);
+    CHECK(can_txq_put(&q, f, 5u));
+    can_txq_pump(&q, 0u);              /* 0, 1, 2 requested; 3, 4 queued */
+    (void)wire_step();                 /* TXB0 leaves */
+    (void)wire_step();                 /* TXB1 leaves; TXB2 stays */
+    can_txq_pump(&q, 5000u);
+    CHECK_EQ(F.abort_calls, 1);
+    CHECK_EQ(F.on_wire, 2);
+    CHECK_EQ(q.dropped, 3);            /* TXB2's frame and the 2 queued */
+    CHECK(!can_txq_busy(&q));
+}
+
+TEST_CASE(a_request_the_queue_did_not_make_is_timed_from_its_first_sight)
+{
+    fake_reset();
+    can_txq_t q;
+    can_txq_init(&q, &OPS);
+    F.txreq[1] = true;                 /* requested by nobody here */
+    link_can_frame_t f[2];
+    frames(f, 0u, 2u);
+    CHECK(can_txq_put(&q, f, 2u));
+    can_txq_pump(&q, 100000u);         /* first sight: the clock starts */
+    CHECK_EQ(F.abort_calls, 0);
+    CHECK_EQ(F.load_calls, 0);
+    can_txq_pump(&q, 100000u + 4999u);
+    CHECK_EQ(F.abort_calls, 0);
+    can_txq_pump(&q, 100000u + 5000u);
+    CHECK_EQ(F.abort_calls, 1);
+    CHECK_EQ(q.dropped, 2);            /* the queued two; that frame not */
+    CHECK_EQ(F.load_calls, 0);
+}
+
+TEST_CASE(a_latched_sent_flag_or_a_received_frame_holds_nothing_back)
+{
+    /* Every frame leaves although TXnIF stays set after the first batch
+     * and RX0IF and RX1IF come and go: only TXREQ holds a load back. */
+    fake_reset();
+    can_txq_t q;
+    can_txq_init(&q, &OPS);
+    link_can_frame_t f[16];
+    frames(f, 0u, 16u);
+    CHECK(can_txq_put(&q, f, 16u));
+    uint32_t now = 0u;
+    (void)run_out(&q, &now);
+    CHECK_EQ(F.on_wire, 16);
+    CHECK_EQ(F.request_calls, 6);
+    CHECK_EQ(F.abort_calls, 0);
+    CHECK_EQ(q.dropped, 0);
+    CHECK(F.txif[0] && F.txif[1] && F.txif[2]);
+}
+
 int main(void)
 {
     RUN(a_reply_goes_whole_or_not_at_all);
@@ -478,5 +548,8 @@ int main(void)
     RUN(the_peak_is_the_deepest_queue_and_resets);
     RUN(busy_holds_until_the_last_frame_left);
     RUN(a_load_writes_ctrl_id_dlc_and_the_payload_padded);
+    RUN(an_abort_counts_the_frames_still_requested_not_the_sent_ones);
+    RUN(a_request_the_queue_did_not_make_is_timed_from_its_first_sight);
+    RUN(a_latched_sent_flag_or_a_received_frame_holds_nothing_back);
     return test_summary("can_txq");
 }

@@ -72,7 +72,15 @@ void can_txq_pump(can_txq_t *q, uint32_t now_us)
             return;
         }
         q->ops->abort(q->ops->ctx);
-        q->dropped += (uint32_t)q->on_wire + q->count;
+        /* The frames of the batch whose buffer was still requested at the
+         * status read; the others have left.  None for a request this
+         * queue did not make. */
+        const unsigned held =
+            ((st & MCP2515_STATUS_TX0REQ) != 0u ? 1u : 0u)
+            + ((st & MCP2515_STATUS_TX1REQ) != 0u ? 1u : 0u)
+            + ((st & MCP2515_STATUS_TX2REQ) != 0u ? 1u : 0u);
+        q->dropped += (uint32_t)(held < q->on_wire ? held : q->on_wire)
+                      + q->count;
         q->on_wire  = 0u;
         q->count    = 0u;
         q->head     = 0u;

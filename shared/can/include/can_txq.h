@@ -19,9 +19,11 @@
  *   MCP2515 sends the requested buffer of the highest priority first, so
  *   the frames leave in the order they were put.
  * - A batch still requested CAN_TXQ_STUCK_US after its RTS is aborted: the
- *   queue empties and every aborted and queued frame adds to the dropped
- *   count.  A frame already in transmission at the abort can still
- *   complete; it is counted as dropped all the same.
+ *   queue empties, and every queued frame and every frame of the batch
+ *   whose buffer was still requested at that status read adds to the
+ *   dropped count; a frame of the batch that had left does not.  A frame
+ *   already in transmission at the abort can still complete; it is counted
+ *   as dropped all the same.
  *
  * Times are a 32-bit microsecond clock the caller passes in; every
  * comparison is a wrap-safe difference.

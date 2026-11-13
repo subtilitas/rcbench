@@ -71,8 +71,11 @@ extern "C" {
 #define MCP2515_STATUS_RX0IF   0x01u /**< receive buffer 0 holds a frame  */
 #define MCP2515_STATUS_RX1IF   0x02u /**< receive buffer 1 holds a frame  */
 #define MCP2515_STATUS_TX0REQ  0x04u /**< TXB0's TXREQ                    */
+#define MCP2515_STATUS_TX0IF   0x08u /**< TXB0 sent, latched until cleared */
 #define MCP2515_STATUS_TX1REQ  0x10u /**< TXB1's TXREQ                    */
+#define MCP2515_STATUS_TX1IF   0x20u /**< TXB1 sent, latched until cleared */
 #define MCP2515_STATUS_TX2REQ  0x40u /**< TXB2's TXREQ                    */
+#define MCP2515_STATUS_TX2IF   0x80u /**< TXB2 sent, latched until cleared */
 /** @brief The three TXREQ bits of READ STATUS. */
 #define MCP2515_STATUS_TXREQ \
     (MCP2515_STATUS_TX0REQ | MCP2515_STATUS_TX1REQ | MCP2515_STATUS_TX2REQ)
