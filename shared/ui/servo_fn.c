@@ -24,6 +24,7 @@
 #include "hitec_panel.h"
 #include "kst_panel.h"
 #include "ui_screen.h"
+#include "ui_text.h"
 
 /* Last: the layout macros of the headers it includes have short names
  * (W, H, PAD), which no header included after it may meet. */
@@ -287,10 +288,25 @@ static const ui_screen_t k_limrun = {
     .help_page  = servo_help_page,
 };
 
+/**
+ * @brief RUDDER's title in the language showing, as the hub's tile and the
+ *        footer name it: RUDER in German.
+ * @return The title.
+ */
+static const char *rudder_title(void) { return TR(SVH_RUDDER); }
+
+/**
+ * @brief RUDDER AUTO's title in the language showing: RUDER AUTO in
+ *        German.
+ * @return The title.
+ */
+static const char *rauto_title(void) { return TR(SVH_RAUTO); }
+
 /** @brief RUDDER's screen table. */
 static const ui_screen_t k_rudder = {
     .covered = fn_covered,
     .title  = "RUDDER",
+    .title_now = rudder_title,
     .reset  = svs_reset,
     .enter  = enter_rudder,
     .leave  = svs_leave,
@@ -308,6 +324,7 @@ static const ui_screen_t k_rudder = {
 static const ui_screen_t k_rauto = {
     .covered = fn_covered,
     .title  = "RUDDER AUTO",
+    .title_now = rauto_title,
     .reset  = svs_reset,
     .enter  = enter_rauto,
     .leave  = svs_leave,

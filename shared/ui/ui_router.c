@@ -247,6 +247,9 @@ static const ui_screen_t *screen_for(ui_screen_id_t id)
 const char *ui_router_title(ui_screen_id_t id)
 {
     const ui_screen_t *s_ = screen_for(id);
+    if (s_ != NULL && s_->title_now != NULL) {
+        return s_->title_now();
+    }
     return (s_ != NULL && s_->title != NULL) ? s_->title : "";
 }
 

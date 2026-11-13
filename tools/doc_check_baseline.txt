@@ -639,7 +639,6 @@ shared/ui/include/ui_screen.h: warning: Member ui_router_render(gfx_canvas_t *c,
 shared/ui/include/ui_screen.h: warning: Member ui_router_set_status(const ui_bench_status_t *status) (function) of file ui_screen.h is not documented.	void ui_router_set_status(const ui_bench_status_t *status);
 shared/ui/include/ui_screen.h: warning: Member ui_router_status(void) (function) of file ui_screen.h is not documented.	const ui_bench_status_t *ui_router_status(void);
 shared/ui/include/ui_screen.h: warning: Member ui_router_tick(float dt_s) (function) of file ui_screen.h is not documented.	void ui_router_tick(float dt_s);
-shared/ui/include/ui_screen.h: warning: Member ui_router_title(ui_screen_id_t id) (function) of file ui_screen.h is not documented.	const char *ui_router_title(ui_screen_id_t id);
 shared/ui/include/ui_screen.h: warning: Member ui_screen_id_t (enumeration) of file ui_screen.h is not documented.	typedef enum {
 shared/ui/include/ui_screen.h: warning: parameters of member ui_router_event are not documented	* One touch event, in panel coordinates, in the order the tracker emits
 shared/ui/include/ui_screen.h: warning: parameters of member ui_router_goto are not documented	/** Switch screens. Calls leave() on the old and enter() on the new. */
@@ -1533,7 +1532,6 @@ shared/ui/ui_router.c: warning: Member ui_router_render(gfx_canvas_t *c, int buf
 shared/ui/ui_router.c: warning: Member ui_router_set_status(const ui_bench_status_t *status) (function) of file ui_router.c is not documented.	void ui_router_set_status(const ui_bench_status_t *status)
 shared/ui/ui_router.c: warning: Member ui_router_status(void) (function) of file ui_router.c is not documented.	const ui_bench_status_t *ui_router_status(void) { return &s.status; }
 shared/ui/ui_router.c: warning: Member ui_router_tick(float dt_s) (function) of file ui_router.c is not documented.	void ui_router_tick(float dt_s)
-shared/ui/ui_router.c: warning: Member ui_router_title(ui_screen_id_t id) (function) of file ui_router.c is not documented.	const char *ui_router_title(ui_screen_id_t id)
 shared/ui/ui_router.c: warning: Member x (variable) of struct [struct].s.owned is not documented.	int16_t x, y;
 shared/ui/ui_router.c: warning: Member y (variable) of struct [struct].s.owned is not documented.	int16_t x, y;
 shared/ui/ui_slider.c: warning: Member SLIDER_SHADOW_DROP (macro definition) of file ui_slider.c is not documented.	#define SLIDER_SHADOW_DROP 2
