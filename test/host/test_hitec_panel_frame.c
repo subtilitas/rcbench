@@ -13,6 +13,7 @@
  * - the_card_names_the_port_and_outputs_is_red
  * - series_from_the_list_reaches_the_supply_row
  * - the_footers_write_is_grey_before_connect_and_asks_no_arm
+ * - the_session_takes_no_press_under_the_footers_write
  *
  * SPDX-License-Identifier: MIT
  */
@@ -149,11 +150,33 @@ TEST_CASE(the_footers_write_is_grey_before_connect_and_asks_no_arm)
     }
 }
 
+/* A second finger on the session while a finger is on the footer's
+ * WRITE: the session takes no press and the band says why; lifted, the
+ * same press is the session's. */
+TEST_CASE(the_session_takes_no_press_under_the_footers_write)
+{
+    on_hitec();
+    const gfx_rect_t tab = hitec_panel_tab_rect(HITEC_PANEL_TRAVEL);
+    const int x = tab.x + tab.w / 2, y = tab.y + tab.h / 2;
+
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_DOWN, 1);
+    scr->tick(0.02f);
+    ui_router_set_alert(NULL);
+    ev(x, y, TOUCH_EVENT_DOWN, 2);
+    ev(x, y, TOUCH_EVENT_UP, 2);
+    CHECK_STR_EQ(alert(), TR(FOOT_PRESS_HELD));
+    CHECK_EQ(hitec_panel_page(), HITEC_PANEL_SERVO);
+    ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
+    tap(x, y);
+    CHECK_EQ(hitec_panel_page(), HITEC_PANEL_TRAVEL);
+}
+
 int main(void)
 {
     RUN(the_session_has_no_close_and_the_home_tag_closes_it);
     RUN(the_card_names_the_port_and_outputs_is_red);
     RUN(series_from_the_list_reaches_the_supply_row);
     RUN(the_footers_write_is_grey_before_connect_and_asks_no_arm);
+    RUN(the_session_takes_no_press_under_the_footers_write);
     return test_summary("hitec_panel_frame");
 }

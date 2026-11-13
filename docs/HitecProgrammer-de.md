@@ -878,11 +878,11 @@ lehnt ein gestoppter Port ab, das CLOSE wird immer angenommen.
 
 Mit ungeschriebenen Änderungen beginnt die Seite mit `Noch nicht geschriebene
 Änderungen gehen verloren.` und listet jede Änderung mit Name, Wert des Servos
-und Wert des Entwurfs, `SOFT START: 20% -> 60%`, in der Reihenfolge der
-Reiter; bei mehr Änderungen als Zeilen zählt die letzte dieser Zeilen den
-Rest. Die Tasten heißen **2s HALTEN: OHNE SCHREIBEN VERLASSEN** und
-**ZURÜCK**. **ZURÜCK** schließt die Seite und behält die Änderungen. Das
-Halten verwirft die Änderungen, schreibt nichts und verlässt wie oben.
+und Wert des Entwurfs, `SOFT START: 20% -> 60%`, in der Reihenfolge der Reiter;
+bei mehr Änderungen als Zeilen zählt die letzte Zeile den Rest. Geladene Zellen
+ohne Einstellung zählt `Nicht geschrieben: 1 Werte außerhalb der Einstellungen.`
+**2s HALTEN: OHNE SCHREIBEN VERLASSEN** verwirft die Änderungen, schreibt nichts
+und verlässt wie oben; **ZURÜCK** schließt die Seite und behält sie.
 
 ![PROGRAMMIERMODUS VERLASSEN mit zwei ungeschriebenen Änderungen](img/de/servo-hitec-leave-edits.png)
 

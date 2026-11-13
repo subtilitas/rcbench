@@ -52,6 +52,24 @@ void hpn_page_add(unsigned level, const char *s)
     }
 }
 
+/**
+ * @brief The count of a draft's stored values that no value line names, a
+ *        loaded classic cell outside the settings: WRITE n VALUES counts
+ *        them, so the leave page says they are not written.
+ * @param draft the draft
+ */
+static void leave_raw(const hitec_image_t *draft)
+{
+    const unsigned raw = hitec_prog_raw_cells(&hp.prog, draft);
+
+    if (raw != 0u) {
+        char line[HITEC_PANEL_LINE];
+
+        snprintf(line, sizeof(line), TR(HP_LEAVE_RAW), raw);
+        hpn_page_add(HITEC_PROG_WARN, line);
+    }
+}
+
 void hpn_page_leave(void)
 {
     const hitec_prog_t *p = &hp.prog;
@@ -66,6 +84,7 @@ void hpn_page_leave(void)
         hp.page.drop = true;
         hpn_page_add(HITEC_PROG_WARN, TR(KP_LEAVE_CHANGES));
         hpn_page_values(draft, HP_PAGE_VALUES);
+        leave_raw(draft);
     } else {
         hpn_page_open(W_LEAVE, false, TR(KP_LEAVE_TITLE), TR(KP_HOLD_LEAVE),
                       TX_HOLD_HINT_LEAVE);
