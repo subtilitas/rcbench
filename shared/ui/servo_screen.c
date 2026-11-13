@@ -62,10 +62,17 @@
  * cyclic and narrow-band tail servos: 1520us center, +/-700us, up to
  * 333Hz; and 760us center, +/-350us, up to 560Hz.
  */
+/** @brief the frame rates of the STANDARD PWM, NARROW 760 and WIDE profiles, Hz */
 static const uint16_t k_std_rates[]  = { 50, 60, 100, 150, 200, 250, 300, 333 };
+/** @brief the frame rates of the HELI CYCLIC profile, Hz */
 static const uint16_t k_cyc_rates[]  = { 50, 120, 200, 333 };
+/** @brief the frame rates of the HELI TAIL 760 profile, Hz */
 static const uint16_t k_tail_rates[] = { 200, 333, 560 };
 
+/**
+ * @brief Expands to the rate table and its length, the two members a profile
+ *         starts with after its pulses.
+ */
 #define RATES(a) (a), (uint8_t)(sizeof(a) / sizeof((a)[0]))
 const servo_type_t k_types[] = {
     { "STANDARD PWM",  1000, 1500, 2000, RATES(k_std_rates),  50,  0,   false },
@@ -82,8 +89,8 @@ servo_screen_state_t s;
 
 /* ------------------------------------------------------------- conversions */
 
-/*
- * Each side of center runs to its own end: MIN, CENTER and MAX are set one
+/**
+ * @brief Each side of center runs to its own end: MIN, CENTER and MAX are set one
  * by one, so -90deg is MIN and +90deg is MAX however far each lies from
  * the center.
  */

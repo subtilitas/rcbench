@@ -57,8 +57,10 @@ int servo_screen_limit_phase(void)
 
 /* ------------------------------------------------------------ limit run */
 
-/* A PD mini answers on the servo rail: the programmer's CONNECT asks it
- * for its set point as it stands. */
+/**
+ * @brief A PD mini answers on the servo rail: the programmer's CONNECT asks it
+ * for its set point as it stands.
+ */
 static bool lim_pd_answers(void)
 {
     return s.have_sup && s.sup.online && !supply_screen_model();
@@ -230,8 +232,10 @@ static void lim_cfg(servo_limrun_cfg_t *c)
     c->text = ui_servo_table();
 }
 
-/* What the run asked for, done the way a finger does it here.  False when
- * the programmer refused a step: the run has ended and asks again. */
+/**
+ * @brief What the run asked for, done the way a finger does it here.  False when
+ * the programmer refused a step: the run has ended and asks again.
+ */
 static bool lim_apply(const servo_limrun_do_t *d)
 {
     bool again = false;
@@ -293,8 +297,10 @@ static bool lim_apply(const servo_limrun_do_t *d)
     return !again;
 }
 
-/* The run's step against the clock, and what it asks done: twice where a
- * refusal ended it in the first. */
+/**
+ * @brief The run's step against the clock, and what it asks done: twice where a
+ * refusal ended it in the first.
+ */
 static void lim_step(void)
 {
     for (int k = 0; k < 2; ++k) {
@@ -314,7 +320,9 @@ static void lim_step(void)
     }
 }
 
-/* The programmer's answer to the step under way. */
+/**
+ * @brief The programmer's answer to the step under way.
+ */
 static void lim_poll(void)
 {
     if (!servo_limrun_programming(&s.lim)) {
@@ -387,9 +395,11 @@ static void lim_seam_ended(void)
     }
 }
 
-/* A run that was running is over: the programmer's own supply values come
+/**
+ * @brief A run that was running is over: the programmer's own supply values come
  * back, the left card says how it ended, and the bench goes SAFE once the
- * run's last command is taken (lim_safe_follow()). */
+ * run's last command is taken (lim_safe_follow()).
+ */
 static void lim_ended(void)
 {
     if (!s.lim_seen || servo_limrun_running(&s.lim)) {

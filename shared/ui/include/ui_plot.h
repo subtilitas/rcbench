@@ -42,11 +42,12 @@ extern "C" {
  */
 #define UI_PLOT_LABELS_MIN_H 60
 
+/** @brief One series of a plot. */
 typedef struct {
-    const char *name;
-    const char *unit;
-    gfx_color_t color;
-    int         decimals;
+    const char *name;  /**< the series' name */
+    const char *unit;  /**< its unit */
+    gfx_color_t color;  /**< its color */
+    int         decimals;  /**< the decimals of its readout */
     /** @brief Lower bound of the autorange: a 0 to 0.4A scale on an idle bench
      *  draws noise at full height. */
     float       floor;
@@ -60,17 +61,19 @@ typedef struct {
     uint8_t     follows;
 } ui_plot_series_t;
 
+/** @brief The state of a plot: its series, the ring of samples and the scales. */
 typedef struct {
-    ui_plot_series_t series[UI_PLOT_MAX_SERIES];
-    int   count;
+    ui_plot_series_t series[UI_PLOT_MAX_SERIES];  /**< the series */
+    int   count;  /**< how many series are in use */
 
-    float ring[UI_PLOT_MAX_SERIES][UI_PLOT_HISTORY];
+    float ring[UI_PLOT_MAX_SERIES][UI_PLOT_HISTORY];  /**< the samples, a ring per series */
     int   head;      /**< where the next sample goes                       */
     int   filled;    /**< how many are valid, capped at UI_PLOT_HISTORY    */
 
-    float scale[UI_PLOT_MAX_SERIES];
+    float scale[UI_PLOT_MAX_SERIES];  /**< each series' scale: the value at the top of its trace */
+    /** @brief samples each series' scale has stood above its target */
     int   shrink_hold[UI_PLOT_MAX_SERIES];
-    bool  hidden[UI_PLOT_MAX_SERIES];
+    bool  hidden[UI_PLOT_MAX_SERIES];  /**< each series is hidden */
     int   focus;     /**< index, or -1                                     */
 
     float span_s;    /**< the width of the time base, for the axis label   */

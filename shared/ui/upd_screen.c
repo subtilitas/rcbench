@@ -107,6 +107,7 @@ typedef struct {
 /** @brief The update screens' one instance. */
 static upd_state_t u;
 
+/** @brief Marks both screens to be drawn again. */
 static void touched(void)
 {
     u.s.drawn_mask = 0u;
@@ -122,25 +123,31 @@ bool upd_busy(const upd_view_t *v)
     return v != NULL && v->phase != UPD_PH_IDLE && v->phase != UPD_PH_ENDED;
 }
 
-/* The last check found a newer release, and nothing runs. */
+/**
+ * @brief The last check found a newer release, and nothing runs.
+ */
 static bool have_newer(void)
 {
     return u.v.job == UPD_JOB_CHECK && u.v.phase == UPD_PH_ENDED
            && u.v.got == UPD_GOT_NEWER && !u.v.unavailable;
 }
 
+/** @brief Whether a download may start now. */
 static bool download_allowed(void)
 {
     return have_newer() && u.v.dl_block == UPD_WHY_NONE && u.v.have_net;
 }
 
+/** @brief Whether a check may start now. */
 static bool check_allowed(void)
 {
     return !u.v.unavailable && u.v.have_net && u.v.block == UPD_WHY_NONE
            && !upd_busy(&u.v);
 }
 
-/* A busy CHECK is cancelled from the same button. */
+/**
+ * @brief A busy CHECK is cancelled from the same button.
+ */
 static bool cancel_allowed(void)
 {
     return upd_busy(&u.v) && u.v.job == UPD_JOB_CHECK;
@@ -149,7 +156,9 @@ static bool cancel_allowed(void)
 /** @brief Whether UPDATE IOMCU's hold may run. @return true while READY */
 static bool coproc_allowed(void) { return u.cu.sec == CU_SEC_READY; }
 
-/* A press on a hold the model took away under it ends here. */
+/**
+ * @brief A press on a hold the model took away under it ends here.
+ */
 static void drop_holds_if_gone(void)
 {
     if (!coproc_allowed() && u.s.have_press && u.s.hit == HIT_COPROC) {
@@ -214,6 +223,7 @@ unsigned upd_screen_take(void)
 
 /* ------------------------------------------------------------ the texts */
 
+/** @brief Gives the text of the release problem a job found. */
 static const char *rel_text(const upd_view_t *v)
 {
     switch (v->rel) {
@@ -246,6 +256,7 @@ static const char *rel_text(const upd_view_t *v)
     }
 }
 
+/** @brief Gives the text of the join problem a job found. */
 static const char *join_text(const upd_view_t *v)
 {
     switch (v->join) {
@@ -258,7 +269,9 @@ static const char *join_text(const upd_view_t *v)
     }
 }
 
-/* Why a job did not start (BLOCKED): one line, or two for the gate. */
+/**
+ * @brief Why a job did not start (BLOCKED): one line, or two for the gate.
+ */
 static void blocked_text(upd_why_t why, char *out, size_t n, char *second,
                          size_t n2)
 {
@@ -289,7 +302,9 @@ static void blocked_text(upd_why_t why, char *out, size_t n, char *second,
     }
 }
 
-/* Why a job was ended from outside (ABORTED). */
+/**
+ * @brief Why a job was ended from outside (ABORTED).
+ */
 static const char *aborted_text(upd_why_t why)
 {
     switch (why) {
@@ -308,6 +323,7 @@ static const char *aborted_text(upd_why_t why)
     }
 }
 
+/** @brief Gives the text of a job phase. */
 static const char *phase_text(upd_phase_t ph)
 {
     switch (ph) {
@@ -430,7 +446,9 @@ void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
     }
 }
 
-/* Whether the result line is good news, bad news or neither. */
+/**
+ * @brief Whether the result line is good news, bad news or neither.
+ */
 static gfx_color_t result_colour(void)
 {
     switch (u.v.got) {
@@ -482,6 +500,7 @@ static int para(gfx_canvas_t *c, int x, int y, int w, const char *t,
                                     PITCH, t, UPD_FONT_BODY, col);
 }
 
+/** @brief Gives a hold button's fill. */
 static gfx_color_t hold_fill(const ui_hold_t *h)
 {
     return ui_hold_button_fill(UI_PANEL_HI, UI_OK, h);
@@ -549,6 +568,7 @@ static gfx_rect_t net_rect(void)
     return gfx_rect_make(x, y + 4, w, BH);
 }
 
+/** @brief Finds the control at a point. */
 static int hit_at(int x, int y)
 {
     if (net_shown() && !upd_busy(&u.v) && gfx_rect_contains(net_rect(), x, y)) {
@@ -570,6 +590,7 @@ static int hit_at(int x, int y)
     return HIT_NONE;
 }
 
+/** @brief Acts on a control that was tapped. */
 static void act(int hit)
 {
     switch (hit) {
@@ -594,6 +615,7 @@ static void act(int hit)
     }
 }
 
+/** @brief Returns the UPDATES screen to its initial state. */
 static void reset(void)
 {
     memset(&u.s, 0, sizeof(u.s));
@@ -605,6 +627,7 @@ static void reset(void)
     upd_list_reset();
 }
 
+/** @brief Takes a touch event of the UPDATES screen. */
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL) {
@@ -674,6 +697,7 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/** @brief Runs the UPDATES screen for one frame: its holds. */
 static void tick(float dt_s)
 {
     drop_holds_if_gone();
@@ -703,6 +727,7 @@ static void tick(float dt_s)
     }
 }
 
+/** @brief Drops the presses under way, as touch events were lost. */
 static void cancel(void)
 {
     upd_list_cancel();
@@ -717,6 +742,7 @@ static void cancel(void)
     touched();
 }
 
+/** @brief Enters the UPDATES screen. */
 static void enter(void)
 {
     upd_list_close();
@@ -726,6 +752,7 @@ static void enter(void)
     touched();
 }
 
+/** @brief Leaves the UPDATES screen. */
 static void leave(void)
 {
     upd_list_close();
@@ -775,6 +802,7 @@ void upd_cu_text(const upd_cu_view_t *v, const char **line,
     }
 }
 
+/** @brief Writes a version as "major.minor.patch", or says it is not known. */
 static void cu_version_text(char *out, size_t n, bool known, cu_version_t v)
 {
     if (known) {
@@ -950,6 +978,7 @@ bool upd_guide_newer(void) { return have_newer(); }
 
 bool upd_guide_cancels(void) { return cancel_allowed(); }
 
+/** @brief The UPDATES screen's table. */
 static const ui_screen_t k_screen = {
     .title  = "UPDATES",
     .covered = covered,
@@ -969,6 +998,7 @@ const ui_screen_t *upd_screen(void) { return &k_screen; }
 
 /* ========================================================= the reminder */
 
+/** @brief Finds the control of the reminder at a point. */
 static int r_hit_at(int x, int y)
 {
     if (gfx_rect_contains(R_IGNORE, x, y)) {
@@ -983,12 +1013,14 @@ static int r_hit_at(int x, int y)
     return HIT_NONE;
 }
 
+/** @brief Returns the reminder to its initial state. */
 static void r_reset(void)
 {
     memset(&u.rem, 0, sizeof(u.rem));
     ui_hold_reset(&u.rem.hold);
 }
 
+/** @brief Takes a touch event of the reminder. */
 static void r_event(const touch_event_t *evt)
 {
     if (evt == NULL || u.rem.answered) {
@@ -1045,6 +1077,7 @@ static void r_event(const touch_event_t *evt)
     }
 }
 
+/** @brief Runs the reminder for one frame: its hold. */
 static void r_tick(float dt_s)
 {
     drop_holds_if_gone();
@@ -1059,6 +1092,7 @@ static void r_tick(float dt_s)
     }
 }
 
+/** @brief Drops the presses under way, as touch events were lost. */
 static void r_cancel(void)
 {
     if (u.rem.hit == HIT_DOWNLOAD) {
@@ -1069,6 +1103,7 @@ static void r_cancel(void)
     touched();
 }
 
+/** @brief Enters the reminder. */
 static void r_enter(void)
 {
     u.rem.answered = false;
@@ -1079,7 +1114,9 @@ static void r_enter(void)
     touched();
 }
 
-/* Left any way but the driver's own: answered, as IGNORE NOW. */
+/**
+ * @brief Left any way but the driver's own: answered, as IGNORE NOW.
+ */
 static void r_leave(void)
 {
     if (!u.rem.yield) {
@@ -1142,6 +1179,7 @@ static void r_render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
+/** @brief The reminder's table. */
 static const ui_screen_t k_remind = {
     .title  = "UPDATE",
     .reset  = r_reset,

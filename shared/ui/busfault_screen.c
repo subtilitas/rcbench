@@ -51,10 +51,10 @@
  */
 /** @brief The two columns' top. */
 #define COLS_Y    (VERDICT_Y + 48)
-#define COL_X     24
+#define COL_X     24  /**< the columns' left edge, px */
 /** @brief The number column's width, px: 24 cells of BF_FONT_LABEL. */
 #define NUM_W     240
-#define NUM_X     (W - 24 - NUM_W)
+#define NUM_X     (W - 24 - NUM_W)  /**< the number column's left edge, px */
 /** @brief The left column's width, px. */
 #define COL_W     (NUM_X - 24 - COL_X)
 /** @brief The left column's cells of BF_FONT_BODY. */
@@ -84,12 +84,12 @@
  */
 /** @brief The lines the meaning takes at most. */
 #define MEANING_LINES 2
-#define HEAD_Y    (COLS_Y + MEANING_LINES * WRAP_PITCH + 8)
+#define HEAD_Y    (COLS_Y + MEANING_LINES * WRAP_PITCH + 8)  /**< the checks' heading's top */
 /** @brief The first check's top. */
 #define LIST_Y    (HEAD_Y + 28)
 /** @brief The step from one check to the next, px. */
 #define LIST_PITCH 32
-#define LIST_MAX  5
+#define LIST_MAX  5  /**< the most checks listed */
 /** @brief A check's text right of its bullet, px. */
 #define LIST_INDENT 16
 /** @brief A check's cells of BF_FONT_BODY. */
@@ -105,8 +105,8 @@
 #define ACK_H     56
 /** @brief The acknowledgement's top, 16px above the panel's edge. */
 #define ACK_Y     (H - ACK_H - 16)
-#define ACK_X     COL_X
-#define ACK_W     (W - 2 * COL_X)
+#define ACK_X     COL_X  /**< the acknowledgement's left edge, px */
+#define ACK_W     (W - 2 * COL_X)  /**< the acknowledgement's width, px */
 /** @brief The rule over the acknowledgement. */
 #define RULE_Y    (ACK_Y - 8)
 
@@ -291,8 +291,8 @@ static bool tap_leaves(void)
  * the controller's.  can_selftest_text() says what the test saw; this says
  * what it is.
  */
-/*
- * The heading, which is the phrase an operator repeats when they ask somebody:
+/**
+ * @brief The heading, which is the phrase an operator repeats when they ask somebody:
  * about it.  For a link that dropped it is the controller's own state: the
  * wire carried frames a moment ago, so what happened since is this end's
  * business and not the bench's.
@@ -309,8 +309,10 @@ static const char *bus_text(busfault_bus_t b)
     }
 }
 
-/* The same state as one word, for the column: the heading already carries
- * the sentence, and a column that repeats it says nothing twice. */
+/**
+ * @brief The same state as one word, for the column: the heading already carries
+ * the sentence, and a column that repeats it says nothing twice.
+ */
 static const char *bus_word(busfault_bus_t b)
 {
     switch (b) {
@@ -323,6 +325,7 @@ static const char *bus_word(busfault_bus_t b)
     }
 }
 
+/** @brief Gives the meaning of a bus state, for the left column. */
 static const char *bus_meaning(busfault_bus_t b)
 {
     switch (b) {
@@ -335,6 +338,7 @@ static const char *bus_meaning(busfault_bus_t b)
     }
 }
 
+/** @brief Lists what to check for a bus state, cheapest first. */
 static int bus_checks(busfault_bus_t b, const char *out[LIST_MAX])
 {
     switch (b) {
@@ -359,6 +363,7 @@ static int bus_checks(busfault_bus_t b, const char *out[LIST_MAX])
     }
 }
 
+/** @brief Gives the meaning of a self-test verdict, for the left column. */
 static const char *meaning_of(can_selftest_verdict_t v)
 {
     switch (v) {
@@ -370,8 +375,8 @@ static const char *meaning_of(can_selftest_verdict_t v)
     }
 }
 
-/*
- * What to check, cheapest first: a list that starts with the meter is a list:
+/**
+ * @brief What to check, cheapest first: a list that starts with the meter is a list:
  * nobody finishes.
  *
  * Terminators are last under SILENT and first under CORRUPT on purpose. A bus
@@ -552,8 +557,10 @@ static void tick(float dt_s)
 
 /* ---------------------------------------------------------------- drawing */
 
-/* The bytes of the next line of @p at that fit @p cells: up to the last
- * space in it, or the whole width where no space falls after its start. */
+/**
+ * @brief The bytes of the next line of @p at that fit @p cells: up to the last
+ * space in it, or the whole width where no space falls after its start.
+ */
 static size_t line_len(const char *at, int cells)
 {
     if (gfx_text_cells(at) <= cells) {
@@ -951,8 +958,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
                    tap_leaves() && s.pressed, true, BF_FONT_LABEL);
 }
 
-/*
- * Touch events were lost between two frames, or the screen was left, so this
+/**
+ * @brief Touch events were lost between two frames, or the screen was left, so this
  * screen's record of what is on the glass cannot be trusted.  A screen that
  * is not showing gets no release: the finger that acknowledged a fault and
  * lifted after the screen closed would otherwise still be pressed here, and
@@ -971,6 +978,7 @@ static void cancel(void)
     s.have_press = false;
 }
 
+/** @brief The screen's table. */
 static const ui_screen_t k_screen = {
     .title  = "CAN BUS FAULT",
     .reset  = reset,

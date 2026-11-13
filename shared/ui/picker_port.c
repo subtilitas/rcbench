@@ -16,26 +16,30 @@
 
 #include "outputs_screen_int.h"
 
-/* Why a pin clashes with a SERVO PWM port's rules. */
+/** @brief Why a pin clashes with a SERVO PWM port's rules. */
 typedef enum {
     CLASH_NONE = 0,
     CLASH_SLICE,      /* the PWM slice of a bound PWM output */
     CLASH_COMPARE,    /* the compare register of another SERVO PWM port */
 } clash_t;
 
+/** @brief Whether port @p port is under the SERVO PWM rules. */
 static bool port_pwm(uint8_t port)
 {
     return port_view_pwm(port);
 }
 
-/* Whether port @p n holds the pin its PIN register names: one the IOmcu
- * refused is shown, not held. */
+/**
+ * @brief Whether port @p n holds the pin its PIN register names: one the IOmcu
+ * refused is shown, not held.
+ */
 static bool holds(const port_view_t *v, uint8_t n)
 {
     return port_view_has(n) && v->pin[n] != PORT_VIEW_NO_PIN
            && (v->refused & (1u << n)) == 0u;
 }
 
+/** @brief Finds the SERVO PWM rule pin @p index breaks on port @p port. */
 static clash_t clash(const outbind_t *b, uint8_t index, uint8_t port,
                      uint8_t *with)
 {
@@ -65,6 +69,7 @@ static clash_t clash(const outbind_t *b, uint8_t index, uint8_t port,
     return CLASH_NONE;
 }
 
+/** @brief Copies @p what into @p holder when there is room for it. */
 static void hold(char *holder, size_t cap, const char *what)
 {
     if (holder != NULL && cap != 0u) {

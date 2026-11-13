@@ -59,7 +59,7 @@ const ov_row_t k_rows[] = {
     { PG_KST, R_KST_EXPERT, SETTING_COUNT, TX_SV_ROW_KST_EXPERT,  0, 0, false },
 
 };
-#define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
+#define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))  /**< the number of rows in k_rows */
 /** @brief The rows k_rows holds. */
 const int k_row_count = ROW_COUNT;
 
@@ -120,7 +120,9 @@ int decimals_of(setting_id_t id)
     return settings_decimals(id);   /* the step's digits: 0.05 two, 0.1 one */
 }
 
-/* The longest pulse the frame rate in force leaves room for. */
+/**
+ * @brief The longest pulse the frame rate in force leaves room for.
+ */
 static uint16_t max_pulse_for_rate(void)
 {
     const unsigned pause = type()->heli ? HELI_MIN_PAUSE_US : PWM_MIN_PAUSE_US;
@@ -359,6 +361,7 @@ void choice_add(const char *label, int value)
     }
 }
 
+/** @brief Opens the number keypad over the left column. */
 static void open_keypad(int target, const char *title, const char *unit,
                         float value, float lo, float hi, int decimals)
 {
@@ -638,6 +641,7 @@ void svs_profile_value(int kind, char *buf, size_t n)
     }
 }
 
+/** @brief Applies choice @p k of the open list and closes the list. */
 static void choose(int k)
 {
     const int v = s.ch.values[k];

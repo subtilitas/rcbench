@@ -16,6 +16,7 @@
 #include "card_state.h"
 #include "ui_text.h"
 
+/** @brief The places that say what the card is doing. */
 typedef enum {
     UI_CARD_AT_LOGS = 0,     /**< LOGS' empty list                        */
     UI_CARD_AT_SPLASH,       /**< the start-up line's SD card step         */
@@ -29,12 +30,22 @@ typedef enum {
 } ui_card_at_t;
 
 /**
- * The text ID for @p state at @p at.  CARD_STATE_MOUNTED and a state out
+ * @brief The text ID for @p state at @p at.  CARD_STATE_MOUNTED and a state out
  * of range take the place's no-card text: a caller asks when it found no
  * volume, and a mount since then changes nothing said.  A place out of
  * range takes LOGS' no-card text.
+ *
+ * @param state the card's state
+ * @param at the place
+ * @return the text's id
  */
 ui_text_id_t ui_card_text_id(card_state_t state, ui_card_at_t at);
 
-/** ui_card_text_id() in the language showing. */
+/**
+ * @brief ui_card_text_id() in the language showing.
+ *
+ * @param state the card's state
+ * @param at the place
+ * @return the text
+ */
 const char *ui_card_text(card_state_t state, ui_card_at_t at);

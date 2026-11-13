@@ -146,7 +146,9 @@ bool test_on_ina_now(void)
            && !supply_screen_model();
 }
 
-/* Why the INA3221 is not the meter, as a run's report states it. */
+/**
+ * @brief Why the INA3221 is not the meter, as a run's report states it.
+ */
 static servo_test_ina_t test_ina_why(void)
 {
     switch (s.src_why) {
@@ -238,7 +240,9 @@ void test_cfg_bench(servo_test_cfg_t *c)
     c->text = ui_servo_table();
 }
 
-/* What the run asked for, done the way a finger does it here. */
+/**
+ * @brief What the run asked for, done the way a finger does it here.
+ */
 static void test_apply(const servo_test_do_t *d)
 {
     if (d->set) {
@@ -494,7 +498,9 @@ void servo_screen_test_logger_busy(bool busy)
 
 /* ----------------------------------------------------------------- drawing */
 
-/* A file's name for the run's number: ATESTnnn.CSV. */
+/**
+ * @brief A file's name for the run's number: ATESTnnn.CSV.
+ */
 static void test_file_name(char *b, size_t n)
 {
     if (s.test_off) {

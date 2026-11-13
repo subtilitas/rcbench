@@ -31,7 +31,7 @@ extern "C" {
 #endif
 
 /**
- * Whether @p d describes @p board: every catalogue pin is a GPIO pad of the
+ * @brief Whether @p d describes @p board: every catalogue pin is a GPIO pad of the
  * drawing with the same GPIO and no other pad is one; every pad the board
  * lists that is not a pin has the same kind and rail, and the drawing has
  * no other; with a shape, the outline is the shape's and every pad sits
@@ -39,6 +39,11 @@ extern "C" {
  *
  * False for a NULL board -- one this build neither ships nor learned -- with
  * @p why (may be NULL) naming the first disagreement for a log line.
+ *
+ * @param d the drawing
+ * @param board the board
+ * @param why receives the reason it does not; may be NULL
+ * @return true when it does
  */
 bool board_drawing_agrees(const link_drawing_t *d,
                           const outbind_board_t *board, const char **why);
@@ -53,9 +58,17 @@ bool board_drawing_agrees(const link_drawing_t *d,
 int board_drawing_scale(uint32_t v, int px, uint16_t full);
 
 /**
- * Draw @p d into the box @p x, @p y, @p w by @p h: the outline in the
+ * @brief Draw @p d into the box @p x, @p y, @p w by @p h: the outline in the
  * board colour, the shapes in order, then every pad ring with its hole in
  * @p hole, the colour behind the board.
+ *
+ * @param c the canvas to draw on
+ * @param d the drawing
+ * @param x the box's left edge, px
+ * @param y its top, px
+ * @param w its width, px
+ * @param h its height, px
+ * @param hole the color behind the board
  */
 void board_drawing_render(gfx_canvas_t *c, const link_drawing_t *d, int x,
                           int y, int w, int h, gfx_color_t hole);

@@ -15,7 +15,9 @@
 
 /** @brief A colour in 8 bits a channel. */
 typedef struct {
-    uint8_t r, g, b;
+    uint8_t r,                   /**< the red channel */
+            g,                   /**< the green channel */
+            b;                   /**< the blue channel */
 } ui_rgb_t;
 
 /**
@@ -84,10 +86,10 @@ static const ui_rgb_t k_base[UI_THEME_COUNT][UI_C_COUNT] = {
 gfx_color_t g_ui_palette[UI_C_COUNT];
 
 static struct {
-    ui_theme_id_t theme;
-    int brightness;
-    int contrast;
-    bool built;
+    ui_theme_id_t theme;  /**< the theme set */
+    int brightness;  /**< the brightness set, percent */
+    int contrast;  /**< the contrast set, percent */
+    bool built;  /**< the palette is built */
 } s = { UI_THEME_DARK, 100, 100, false }; /**< the theme, brightness and
                                                contrast set, and whether
                                                the palette is built */

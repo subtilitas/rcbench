@@ -230,27 +230,27 @@ _Static_assert(RL_NOTE_Y + 20 <= CARD_FLOOR,
  * at their published rates, which leave less, so theirs is set by the
  * profile and a pause of at least 0.5ms.
  */
-#define PWM_MIN_PAUSE_US  1000u
-#define HELI_MIN_PAUSE_US 500u
-/* Above this a frame rate needs the warning: an analogue servo overheats. */
+#define PWM_MIN_PAUSE_US  1000u  /**< the shortest pause after a pulse of a standard profile, us */
+#define HELI_MIN_PAUSE_US 500u  /**< the shortest pause after a pulse of a heli profile, us */
+/** @brief Above this a frame rate needs the warning: an analogue servo overheats. */
 #define SAFE_RATE_HZ      60u
 
-/* A profile the bench drives; k_types in servo_screen.c holds them. */
+/** @brief A profile the bench drives; k_types in servo_screen.c holds them. */
 typedef struct {
-    const char     *name;
+    const char     *name;  /**< the profile's name */
     uint16_t        min_us;      /**< PULSE MIN, us                       */
     uint16_t        center_us;   /**< PULSE CENTER, us                    */
     uint16_t        max_us;      /**< PULSE MAX, us                       */
-    const uint16_t *rates;       /* the frame rates offered, Hz           */
-    uint8_t         rate_count;
-    uint16_t        default_hz;
-    uint16_t        max_hz;      /* the profile's ceiling; 0 is the pause */
-    bool            heli;        /* choosing it needs the warning          */
+    const uint16_t *rates;       /**< the frame rates offered, Hz           */
+    uint8_t         rate_count;  /**< how many rates `rates` holds */
+    uint16_t        default_hz;  /**< the rate a profile starts with, Hz */
+    uint16_t        max_hz;      /**< the profile's ceiling; 0 is the pause */
+    bool            heli;        /**< choosing it needs the warning          */
 } servo_type_t;
 
 /* The profiles, in servo_screen.c. */
-#define TYPE_COUNT 5
-extern const servo_type_t k_types[TYPE_COUNT];
+#define TYPE_COUNT 5  /**< how many profiles k_types holds */
+extern const servo_type_t k_types[TYPE_COUNT];  /**< the profiles, in tab order */
 
 /* The rows of the servo profile, which the hub's SETTINGS list edits
  * (PG_OUTPUT, no page of its own) and KST's EXPERT MODE, from the
@@ -266,13 +266,15 @@ enum { RL_NONE = 0, RL_KST = 1 };
 enum { R_TYPE = 0, R_RATE, R_MIN, R_CENTER, R_MAX, R_TRIM, R_TRAVEL,
        R_REVERSE, R_SETTING, R_TEXT, R_HV, R_ENC_CENTER, R_KST_EXPERT };
 
+/** @brief One row of the servo profile's pages. */
 typedef struct {
-    uint8_t      page;
-    uint8_t      kind;
-    setting_id_t id;          /* R_SETTING                              */
-    ui_text_id_t label;
-    uint8_t      col, row;
-    bool         wide;        /* the value takes both columns' width    */
+    uint8_t      page;  /**< the page the row is on, PG_* */
+    uint8_t      kind;  /**< what the row edits, R_* */
+    setting_id_t id;          /**< R_SETTING                              */
+    ui_text_id_t label;  /**< the row's label */
+    uint8_t      col,            /**< the row's column, 0 or 1 */
+                 row;            /**< the row, from the top */
+    bool         wide;        /**< the value takes both columns' width    */
 } ov_row_t;
 
 /* What a press is on, in the pages and the panels they open. */
@@ -297,35 +299,35 @@ enum { KT_NONE = 0, KT_MIN, KT_CENTER, KT_MAX, KT_TRAVEL, KT_RATE,
  * points). */
 enum { ASK_SET = 0, ASK_ON, ASK_TEST, ASK_RESTORE };
 
-#define CHOICE_MAX 10
+#define CHOICE_MAX 10  /**< how many choices the list holds at most */
 
-/* What a command means as a pulse and an angle: the profile's pulses, trim,
+/** @brief What a command means as a pulse and an angle: the profile's pulses, trim,
  * reverse and travel, as they were when a command was sent. */
 typedef struct {
     uint16_t min_us;     /**< PULSE MIN, us    */
     uint16_t center_us;  /**< PULSE CENTER, us */
     uint16_t max_us;     /**< PULSE MAX, us    */
-    int16_t  trim_us;
-    bool     reverse;
-    float    travel_deg;
+    int16_t  trim_us;  /**< added to PULSE CENTER, us */
+    bool     reverse;  /**< the angle runs the other way */
+    float    travel_deg;  /**< how far each way the horn is allowed, degrees */
 } servo_map_t;
 
-/* A curve the far end runs and this screen no longer does; see s.dr. */
+/** @brief A curve the far end runs and this screen no longer does; see s.dr. */
 typedef struct {
-    bool        on;
-    sweep_t     sw;
-    uint32_t    from_ms;
-    int         speed_pct;
-    servo_map_t map;
-    float       out;
+    bool        on;  /**< the curve is drawn */
+    sweep_t     sw;  /**< the curve */
+    uint32_t    from_ms;  /**< where on the curve the far end stands, ms */
+    int         speed_pct;  /**< SPEED when it was sent, percent */
+    servo_map_t map;  /**< the mapping its commands were sent under */
+    float       out;  /**< the output in that mapping's command units */
 } sweep_drain_t;
 
-/* The newest start or resume sent, as sent; see s.start_rec. */
+/** @brief The newest start or resume sent, as sent; see s.start_rec. */
 typedef struct {
-    bool        live;
-    uint16_t    seq;
-    sweep_cfg_t cfg;
-    int         speed_pct;
+    bool        live;  /**< the record holds a start not yet superseded */
+    uint16_t    seq;  /**< the command's number */
+    sweep_cfg_t cfg;  /**< the curve sent */
+    int         speed_pct;  /**< SPEED sent with it, percent */
 } start_rec_t;
 
 /**
@@ -365,53 +367,54 @@ typedef struct {
 /** @brief The outboxes servo_screen_test_peek() hands out, in its order. */
 enum { PEEK_TEST = 0, PEEK_LIM, PEEK_RAUTO };
 
+/** @brief The state of the SERVO screen and of the pages and panels on it. */
 typedef struct {
     /* The profile in force, for this session only: STANDARD PWM at 50Hz
      * at every restart. */
-    int      type;
+    int      type;  /**< the profile in force, an index of k_types */
     uint16_t min_us;     /**< PULSE MIN, us    */
     uint16_t center_us;  /**< PULSE CENTER, us */
     uint16_t max_us;     /**< PULSE MAX, us    */
-    uint16_t frame_hz;
-    bool     reverse;
+    uint16_t frame_hz;  /**< the frame rate in force, Hz */
+    bool     reverse;  /**< the angle runs the other way */
     int16_t  trim_us;      /**< added to center                        */
     float    travel_deg;   /**< how far each way the horn is allowed   */
     int      speed_pct;    /**< how fast the bench slews the command   */
 
-    float    commanded_deg;
+    float    commanded_deg;  /**< the commanded angle, degrees from center */
     float    shown_deg;    /**< what the horn is drawn at              */
     float    shown_cmd;    /**< the same, as the far end's command     */
-    float    measured_deg;
-    bool     have_feedback;
+    float    measured_deg;  /**< the angle the encoder measures, degrees from center */
+    bool     have_feedback;  /**< a measured angle is on show */
     /* The output encoder's last reading (servo_screen_encoder()). */
-    bool     enc_valid;
+    bool     enc_valid;  /**< the encoder's last reading is valid */
     bool     enc_no_magnet; /**< not valid: the sensor sees no magnet     */
-    uint16_t enc_raw;
+    uint16_t enc_raw;  /**< the encoder's last raw count */
     bool     enc_exact;    /**< enc_deg holds the IMU's degrees as read   */
     float    enc_deg;      /**< those degrees, from count 0               */
     int      shown_q_enc;  /**< the angle as drawn, in hundredths         */
 
-    bool     dragging;
-    int      drag_id;
+    bool     dragging;  /**< a finger drags the dial */
+    int      drag_id;  /**< the contact that drags it */
 
     int      shown_q_deg; /**< the position as drawn, in tenths          */
     bool     driving;     /**< the output is being held somewhere */
     float    pulse;       /**< phase of the grip's breathing      */
-    int      drawn_pulse[2];
+    int      drawn_pulse[2];  /**< what each buffer drew as the grip's pulse */
 
-    servo_cmd_t pending;
+    servo_cmd_t pending;  /**< the command waiting to be posted */
     /* The knob's position command waiting in `pending`: valid while
      * post_count is still knob_post, with what to put back if it is
      * withdrawn -- the commanded angle before the knob, and whether a
      * position was pending before it. */
-    bool     knob_live;
-    bool     knob_had_cmd;
-    bool     knob_had_driving;
-    uint32_t knob_post;
-    float    knob_prev_deg;
-    /* A finger owned the dial at some point since knob_frame(). */
+    bool     knob_live;  /**< the knob's command is waiting in `pending` */
+    bool     knob_had_cmd;  /**< a command was pending before the knob's */
+    bool     knob_had_driving;  /**< the output was being driven before the knob's command */
+    uint32_t knob_post;  /**< the post count at which the knob's command was posted */
+    float    knob_prev_deg;  /**< the commanded angle before the knob's command, degrees */
+    /** @brief A finger owned the dial at some point since knob_frame(). */
     bool     knob_finger;
-    /* The settings, a sweep or a test owned the horn at some point since
+    /** @brief The settings, a sweep or a test owned the horn at some point since
      * knob_frame(), even if it let go again before the turn is applied. */
     bool     knob_owned;
 
@@ -427,36 +430,37 @@ typedef struct {
      * collected by the panel, which arms only once the release it owes has
      * been written -- and a DISARM or STOP not yet answered.  gate.armed is
      * what the ARM button reads. */
-    ui_value_gate_t gate;
-    /* The bench is armed for any role, the motor's included: what keeps the
+    ui_value_gate_t gate;  /**< whether the commanded value follows its controls */
+    /** @brief The bench is armed for any role, the motor's included: what keeps the
      * programmer off the port while the motor is armed and this screen's
      * surfaces are not (servo_screen_set_bench_armed()). */
     bool       bench_armed;
     /** @brief The rotary knob answers (servo_screen_set_knob()): RUDDER's
      *         step keys stay hidden while its setting is on too. */
     bool       knob_answers;
-    /* The commanded value is the surface's rest and nothing has been
+    /** @brief The commanded value is the surface's rest and nothing has been
      * commanded since: it follows the rest through a change of profile. */
     bool       at_rest;
-    ui_hold_t  arm;
+    ui_hold_t  arm;  /**< ARM / DISARM's hold */
     bool       arm_down;   /**< a press is on the ARM button          */
     int        arm_id;     /**< which contact it is                   */
-    uint32_t   arm_rev;
-    uint32_t   drawn_arm[2];
+    uint32_t   arm_rev;  /**< a count of ARM's look */
+    uint32_t   drawn_arm[2];  /**< arm_rev as each buffer drew it */
 
     gfx_rect_t arm_btn;          /**< ARM / DISARM                     */
     gfx_rect_t center_btn;       /**< CENTER; empty off LIVE           */
     gfx_rect_t sweep_btn;        /**< SWEEP                            */
     gfx_rect_t release_btn;      /**< RELEASE                          */
-    bool       kst_shown;        /* a session had the left column      */
-    bool       kst_held;         /* and a port: ARM takes no press      */
-    bool       sup_held;         /* the port holds the supply: SET is dim */
-    uint32_t   drawn_kst[2], drawn_kst_hold[2];
-    ui_slider_t speed;
+    bool       kst_shown;        /**< a session had the left column      */
+    bool       kst_held;         /**< and a port: ARM takes no press      */
+    bool       sup_held;         /**< the port holds the supply: SET is dim */
+    uint32_t   drawn_kst[2],     /**< kst_panel_revision() as each buffer drew it */
+               drawn_kst_hold[2];  /**< kst_panel_hold_revision() as each buffer drew it */
+    ui_slider_t speed;  /**< SPEED's slider */
 
     /* The servo rail's live power, from its meter (rail_now()): the line
      * of readings and the plot under it. */
-    ui_plot_t      power;
+    ui_plot_t      power;  /**< the servo rail's power plot */
     /** @brief The rbmod carrier's PROG 5V, from the channel that watches
      *  it (prog5v_box_last()): the plot of LIVE, SWEEP and RUDDER while
      *  the servo is on the carrier's programming port; the PROG 5V
@@ -465,34 +469,34 @@ typedef struct {
     /** @brief What the SET row and the plot of LIVE, SWEEP and RUDDER show
      *  as one number (drive_frame()): a change repaints them. */
     uint32_t       drv_sig;
-    supply_state_t sup;
-    bool           have_sup;
-    uint32_t       power_rev;
-    uint32_t       drawn_power[2];
-    /* The supply was the panel's model when the line was drawn: the pill. */
+    supply_state_t sup;  /**< SUPPLY's state as last read */
+    bool           have_sup;  /**< sup holds a state */
+    uint32_t       power_rev;  /**< a count of the power line's look */
+    uint32_t       drawn_power[2];  /**< power_rev as each buffer drew it */
+    /** @brief The supply was the panel's model when the line was drawn: the pill. */
     bool           model_shown;
     /* The meter, as the panel last said it (servo_screen_source()), and the
      * INA3221's last CH1 window (servo_screen_window()). */
-    servo_source_id_t source;
+    servo_source_id_t source;  /**< the meter in force */
     /* The change count the meter in force was decided at
      * (servo_source_changes()): an answer from an earlier poll is not taken
      * over it. */
-    bool              have_changes;
-    uint32_t          changes;
-    sense_link_win_t  win;
-    bool              have_win;
+    bool              have_changes;  /**< the change count the meter was decided at is known */
+    uint32_t          changes;  /**< the change count the meter in force was decided at */
+    sense_link_win_t  win;  /**< the INA3221's last CH1 window */
+    bool              have_win;  /**< win holds a window */
     /* Why the INA3221 is not the meter now, and why and at which change
      * count it last stopped being it (servo_screen_source_why(),
      * servo_screen_source_dropped()). */
-    servo_source_why_t src_why;
-    bool               have_drop;
-    servo_source_why_t drop_why;
-    uint32_t           drop_at;
+    servo_source_why_t src_why;  /**< why the INA3221 is not the meter now */
+    bool               have_drop;  /**< the INA3221 stopped being the meter at some time */
+    servo_source_why_t drop_why;  /**< why it last stopped being the meter */
+    uint32_t           drop_at;  /**< the change count at which it stopped */
     /* The CURRENT row: what it shows (cur_key_of()), and its own count of
      * changes, so a changed digit repaints its value and not the card. */
-    int32_t        cur_key;
-    uint32_t       cur_rev;
-    uint32_t       drawn_cur[2];
+    int32_t        cur_key;  /**< what the CURRENT row shows, as one number */
+    uint32_t       cur_rev;  /**< a count of the CURRENT row's changes */
+    uint32_t       drawn_cur[2];  /**< cur_rev as each buffer drew it */
 
     /*
      * The supply's set points and output, SUPPLY's own: OUTPUT ON is the
@@ -500,15 +504,16 @@ typedef struct {
      * with SUPPLY every frame, so a change made there, a cap that moved or
      * the output going off shows here at once.
      */
-    gfx_rect_t out_btn;
-    ui_hold_t  out_hold;
-    bool       out_down;
-    int        out_id;
+    gfx_rect_t out_btn;  /**< the OUTPUT ON / OFF button */
+    ui_hold_t  out_hold;  /**< OUTPUT ON's 2s hold */
+    bool       out_down;  /**< a finger is on the button */
+    int        out_id;  /**< the contact on the button */
     bool       out_press_on;  /**< the press began as OUTPUT OFF       */
     bool       out_on;        /**< the output as last drawn              */
-    float      sup_v, sup_i;  /**< the set points as last seen           */
-    uint32_t   sup_rev;
-    uint32_t   drawn_sup[2];
+    float      sup_v,            /**< the voltage set point as last seen, V */
+               sup_i;            /**< the set points as last seen           */
+    uint32_t   sup_rev;  /**< a count of the set points' look */
+    uint32_t   drawn_sup[2];  /**< sup_rev as each buffer drew it */
     /** @brief The programming ports' own 5V on a board that switches it
      *  (the rbmod carrier): the PROG 5V box in the power plot's place
      *  (prog5v_box.h). */
@@ -522,20 +527,21 @@ typedef struct {
      * YES or NO, and the HV warning after a YES past that rating
      * (ASK_RESTORE). */
     struct {
-        bool      open;
-        bool      hv;
+        bool      open;  /**< the question or the HV warning is open */
+        bool      hv;  /**< the HV warning is up, not the question */
         int       purpose;   /**< ASK_SET, ASK_ON, ASK_TEST or ASK_RESTORE */
         int       target;    /**< KT_SUP_V or KT_SUP_I: what was typed */
         uint32_t  off_count; /**< supply_screen_off_count() at asking  */
         uint32_t  stops;     /**< the screen's stop count at asking     */
         uint32_t  off_asks;  /**< supply_screen_off_asks() at asking    */
-        float     v, i;
-        ui_hold_t hold;
-        bool      down;
-        uint32_t  rev;
-    } ask;
-    uint32_t drawn_ask[2];
-    /* Stops seen (servo_screen_cancel_arm()), for the question above. */
+        float     v,             /**< the voltage set point asked for, V */
+                  i;             /**< the current set point asked for, A */
+        ui_hold_t hold;  /**< the HV warning's 2s hold */
+        bool      down;  /**< a finger is on its button */
+        uint32_t  rev;  /**< a count of its look */
+    } ask;  /**< The question or the HV warning waiting for its answer. */
+    uint32_t drawn_ask[2];  /**< ask's rev as each buffer drew it */
+    /** @brief Stops seen (servo_screen_cancel_arm()), for the question above. */
     uint32_t stops;
 
     /**
@@ -548,9 +554,9 @@ typedef struct {
      * HITEC.
      */
     uint8_t      fn;
-    ui_wb_strip_t wb;
+    ui_wb_strip_t wb;  /**< the task strip under the function shown */
     uint8_t      run_list;      /**< RL_*: a page of rows open */
-    /* Whether a panel or the programmer covered the left column when the
+    /** @brief Whether a panel or the programmer covered the left column when the
      * buffer was last drawn: a change repaints it whole. */
     bool         drawn_cover[2];
     /* The footer's and the PORT button's press, and the hub's tiles':
@@ -567,43 +573,43 @@ typedef struct {
     uint32_t     drawn_sl[2];   /**< sl_rev as last drawn, per buffer */
     uint32_t     drawn_hub[2];  /**< what the hub drew last, per buffer */
     /* The panels over the left column. */
-    int          ov_pressed;
-    int          ov_row;
-    uint8_t      ov_id;
-    bool         ov_have;
-    ui_keypad_t  kp;
-    int          kp_target;
-    setting_id_t kp_setting;
-    ui_textkey_t tk;
+    int          ov_pressed;  /**< what the press on a page or a panel is on, OP_* */
+    int          ov_row;  /**< the row it is on, an index of k_rows */
+    uint8_t      ov_id;  /**< the contact pressing it */
+    bool         ov_have;  /**< a press is held */
+    ui_keypad_t  kp;  /**< the number keypad */
+    int          kp_target;  /**< what the keypad types, KT_* */
+    setting_id_t kp_setting;  /**< the setting the keypad types when kp_target is KT_SETTING */
+    ui_textkey_t tk;  /**< the keyboard for a name */
     struct {
-        bool  open;
-        int   target;
-        setting_id_t id;
-        char  title[48];
+        bool  open;  /**< the list is open */
+        int   target;  /**< what the list chooses, CH_* */
+        setting_id_t id;  /**< the setting the list chooses with CH_ENUM */
+        char  title[48];  /**< the list's title */
         char  labels[CHOICE_MAX][64]; /**< each choice's text */
-        int   values[CHOICE_MAX];
-        int   count;
-        int   pressed;
+        int   values[CHOICE_MAX];  /**< the value of each choice */
+        int   count;  /**< how many choices the list holds */
+        int   pressed;  /**< the choice pressed, -1 for none */
         /** @brief Bit k: choice k is refused, its label the reason. */
         uint16_t refused;
-    } ch;
+    } ch;  /**< The choice list open over the left column. */
     struct {
-        bool      open;
-        int       type;
-        uint16_t  hz;
-        ui_hold_t hold;
-        bool      down;
-        uint32_t  rev;
-    } warn;
-    uint32_t drawn_warn[2];
-    uint8_t  drawn_save[2];
+        bool      open;  /**< the warning is open */
+        int       type;  /**< the profile asked for, an index of k_types */
+        uint16_t  hz;  /**< the frame rate asked for, Hz */
+        ui_hold_t hold;  /**< the warning's 2s hold */
+        bool      down;  /**< a finger is on its button */
+        uint32_t  rev;  /**< a count of the warning's look */
+    } warn;  /**< The profile warning waiting for its answer. */
+    uint32_t drawn_warn[2];  /**< warn's rev as each buffer drew it */
+    uint8_t  drawn_save[2];  /**< the save state, save_state(), as each buffer drew it */
 
-    servo_rate_state_t rate_st;   /* what became of the rate rate_hz    */
+    servo_rate_state_t rate_st;   /**< what became of the rate rate_hz    */
     uint16_t           rate_hz;   /**< the rate asked for, Hz */
 
     /* The sweep: the same curve the IOmcu runs, on this screen's own
      * clock, to draw the horn by. */
-    bool        sweep_able;      /* the IOmcu speaks 4.2 or later  */
+    bool        sweep_able;      /**< the IOmcu speaks 4.2 or later  */
     /*
      * The pause whose HOLD what the screen expects of the far end rests on,
      * or 0.  Set by a PAUSE of a sweep the far end is known to run.  Kept
@@ -619,42 +625,48 @@ typedef struct {
      * pause it lets go of, and the screen takes that let-go exactly while
      * it is still set to that pause (servo_screen_released()).
      */
-    uint16_t    lineage;
-    bool        surfaces;        /* a surface is bound to sweep          */
+    uint16_t    lineage;  /**< the pause whose HOLD the screen expects of the far end, 0 for none */
+    bool        surfaces;        /**< a surface is bound to sweep          */
     /* The tap's phase of the pause in force, and for a resume asked before
      * that pause's HOLD was acknowledged, where its replay starts: the
      * output the far end held, once that acknowledgement says it. */
-    uint32_t    pause_tap_ms;
+    uint32_t    pause_tap_ms;  /**< the tap's phase of the pause in force, ms */
+    /** @brief the resume's origin is set, before its pause's HOLD is acknowledged */
     bool        resume_from_set;
-    uint16_t    resume_pause_seq;
+    uint16_t    resume_pause_seq;  /**< the pause the resume was asked for */
+    /** @brief the output the far end held, the resume's replay origin, degrees */
     float       resume_from_cmd;
-    bool        sweeping;
-    bool        paused;          /* a sweep held by PAUSE: HOLD posted   */
-    /* SPEED as the sweep ran when PAUSE was tapped: the far end slews at it
+    bool        sweeping;  /**< a sweep runs on this screen's clock */
+    bool        paused;          /**< a sweep held by PAUSE: HOLD posted   */
+    /** @brief SPEED as the sweep ran when PAUSE was tapped: the far end slews at it
      * until the HOLD reaches it, whatever the slider says meanwhile, since
      * a paused slider sends nothing. */
     int         pause_speed_pct;
     /* And where the output was drawn at the tap, which the replay of the
      * acknowledgement interval starts from. */
-    float       pause_from_cmd;
-    /* Which pause stands, so an acknowledgement is applied to its own. */
+    float       pause_from_cmd;  /**< where the output was drawn at the tap, degrees */
+    /** @brief Which pause stands, so an acknowledgement is applied to its own. */
     uint16_t    pause_seq;
-    bool        sweep_ended;     /* the next command ends it             */
-    sweep_t     sw;
-    uint32_t    clock_ms;
-    float       clock_frac_ms;
+    bool        sweep_ended;     /**< the next command ends it             */
+    sweep_t     sw;  /**< the sweep curve */
+    uint32_t    clock_ms;  /**< the screen's clock, ms */
+    float       clock_frac_ms;  /**< the fraction of a millisecond not yet in clock_ms */
     /* Without feedback: the last second and a half of where the output
      * has been drawn, to start from where the far end's output starts. */
-    struct { uint32_t t; float cmd; } trail[64];
-    uint8_t     trail_head, trail_n;
+    struct {
+        uint32_t t;    /**< the clock when the output was drawn, ms */
+        float    cmd;  /**< the output as drawn, as the far end's command */
+    } trail[64];       /**< the output as drawn lately, a ring, trail_head the next slot */
+    uint8_t     trail_head,      /**< the trail's next slot */
+                trail_n;         /**< the points the trail holds */
     /*
      * A start or a resume asked for and not yet acknowledged: the far end
      * is not known to move yet, so the curve is not drawn; the output goes
      * on as it was (servo_screen_sweep_started()).  The phase the curve
      * would begin moving from: 0 for a start, the kept one for a resume.
      */
-    bool        awaiting;
-    uint32_t    await_phase_ms;
+    bool        awaiting;  /**< a start or resume was asked for and not acknowledged */
+    uint32_t    await_phase_ms;  /**< the phase the curve begins moving from, ms */
     /*
      * The far end runs a curve this screen has stopped drawing as its own:
      * a PAUSE whose HOLD is not yet acknowledged, or a curve replaced by a
@@ -664,8 +676,8 @@ typedef struct {
      * sweep it has not heard.  out is the output in that mapping's command
      * units, chased as the far end slews it.
      */
-    sweep_drain_t dr;
-    /* The mapping the last sweep command was sent under. */
+    sweep_drain_t dr;  /**< the sweep the far end still runs */
+    /** @brief The mapping the last sweep command was sent under. */
     servo_map_t posted_map;
     /*
      * Sweep commands are numbered; the newest start or resume is kept with
@@ -674,9 +686,12 @@ typedef struct {
      * The SPEED each of the last 8 sweep commands was sent with, by
      * number, for the one acknowledged.
      */
-    uint16_t    start_seq;
-    start_rec_t start_rec;
-    struct { uint16_t seq; int16_t speed_pct; } sent_speed[8];
+    uint16_t    start_seq;  /**< the number of the newest sweep command */
+    start_rec_t start_rec;  /**< the newest start or resume as sent */
+    struct {
+        uint16_t seq;        /**< the command's number */
+        int16_t  speed_pct;  /**< the SPEED it was sent with, percent */
+    } sent_speed[8];         /**< the last 8 sweep commands' SPEED, by number */
     /*
      * The sweep button's last tap and the screen as it was before it, while
      * its command has not left: a second tap in the same pass undoes both,
@@ -684,40 +699,47 @@ typedef struct {
      * posted, so another command posted since makes the tap's command gone.
      */
     struct {
-        servo_cmd_t pending;
-        sweep_t     sw;
-        bool        sweeping, paused, awaiting, sweep_ended, driving;
-        uint32_t    await_phase_ms;
-        float       commanded_deg;
-        sweep_drain_t dr;
-        start_rec_t start_rec;
-        uint16_t    pause_seq, resume_pause_seq, lineage;
-        uint32_t    pause_tap_ms;
-        float       pause_from_cmd, resume_from_cmd;
-        int         pause_speed_pct;
-        bool        resume_from_set;
-    }           undo;
-    bool        toggle_live;
-    servo_cmd_kind_t toggle_kind;
-    uint32_t    toggle_post;
-    uint32_t    post_count;
+        servo_cmd_t pending;  /**< the sweep command the tap posted */
+        sweep_t     sw;  /**< the sweep curve before the tap */
+        bool        sweeping,    /**< sweeping before the tap */
+                    paused,      /**< paused before the tap */
+                    awaiting,    /**< awaiting before the tap */
+                    sweep_ended,  /**< sweep_ended before the tap */
+                    driving;     /**< driving before the tap */
+        uint32_t    await_phase_ms;  /**< await_phase_ms before the tap */
+        float       commanded_deg;  /**< commanded_deg before the tap */
+        sweep_drain_t dr;  /**< dr before the tap */
+        start_rec_t start_rec;  /**< start_rec before the tap */
+        uint16_t    pause_seq,   /**< pause_seq before the tap */
+                    resume_pause_seq,  /**< resume_pause_seq before the tap */
+                    lineage;     /**< lineage before the tap */
+        uint32_t    pause_tap_ms;  /**< pause_tap_ms before the tap */
+        float       pause_from_cmd,  /**< pause_from_cmd before the tap */
+                    resume_from_cmd;  /**< resume_from_cmd before the tap */
+        int         pause_speed_pct;  /**< pause_speed_pct before the tap */
+        bool        resume_from_set;  /**< resume_from_set before the tap */
+    }           undo;  /**< The sweep button's last tap and the screen as it was before it. */
+    bool        toggle_live;  /**< the sweep button's command is live */
+    servo_cmd_kind_t toggle_kind;  /**< the kind of the sweep button's command */
+    uint32_t    toggle_post;  /**< the post count at which the sweep button's command was posted */
+    uint32_t    post_count;  /**< the commands posted */
 
     /* Changes to what a command carries -- the profile, the pulses, trim,
      * travel -- and how many there had been when ARM was asked for. */
-    uint32_t profile_rev;
-    uint32_t arm_profile_rev;
+    uint32_t profile_rev;  /**< the changes to what a command carries */
+    uint32_t arm_profile_rev;  /**< profile_rev when ARM was asked for */
 
     /*
      * The automatic test: the run, START TEST's hold, HV SERVO, and what the
      * left card shows of it.  HV SERVO is for the session only and off at
      * every restart, as a profile that can destroy a servo is.
      */
-    servo_test_t test;
+    servo_test_t test;  /**< the automatic test's run */
     bool      test_hv;       /**< HV SERVO: 7.4 and 8.4V run           */
-    ui_hold_t test_hold;
-    bool      test_down;
-    uint32_t  test_rev;
-    uint32_t  drawn_test[2];
+    ui_hold_t test_hold;  /**< START TEST's hold */
+    bool      test_down;  /**< a finger is on START TEST */
+    uint32_t  test_rev;  /**< a count of the test card's look */
+    uint32_t  drawn_test[2];  /**< test_rev as each buffer drew it */
     /*
      * DUT's KST EXPERT MODE row (SET_KST_EXPERT): ON after a 2s hold, OFF
      * with a tap.  kx_down while a hold of it runs; kx_rev counts what its
@@ -728,8 +750,8 @@ typedef struct {
     uint32_t  kx_rev;        /**< counts what the row's value shows  */
     uint32_t  drawn_kx[2];   /**< kx_rev as each buffer drew it      */
     uint32_t  now_ms;        /**< the panel's clock, servo_screen_clock() */
-    bool      have_now;
-    bool      link_up;
+    bool      have_now;  /**< now_ms holds the panel's clock */
+    bool      link_up;  /**< the link to the IOmcu is up */
     bool      enc_held;      /**< IOmcu holds the encoder on (set_enc_held) */
     uint8_t   imu_axis;      /**< the IMU's AXIS, 0 X (set_imu_axis)   */
     bool      imu_neg;       /**< its SIGN negative                     */
@@ -757,11 +779,13 @@ typedef struct {
      * its OFF has gone, a sample taken after that shows the output off,
      * nothing would switch it on, and nobody has set them since it ended.
      */
-    bool      test_restore;
+    bool      test_restore;  /**< SUPPLY's set points go back to what they were before a run */
     uint8_t   restore_stage; /**< RS_* below                             */
     uint32_t  restore_ms;    /**< the clock at the stage's start         */
-    float     test_v0, test_i0;  /**< before the run                     */
-    float     test_v1, test_i1;  /**< as the run left them               */
+    float     test_v0,           /**< the voltage set point before the run, V */
+              test_i0;           /**< before the run                     */
+    float     test_v1,           /**< the voltage set point as the run left it, V */
+              test_i1;           /**< as the run left them               */
     uint32_t  test_sig;      /**< what the box last showed              */
 
     /*
@@ -771,7 +795,7 @@ typedef struct {
      * LIMIT RUN's ARM + START starts it; its left card shows it.  One of
      * the runs at a time.
      */
-    servo_limrun_t lim;
+    servo_limrun_t lim;  /**< the limit run */
     bool      lim_prog;      /**< LIMIT RUN: SEARCH+PROG, for the session */
     bool      lim_pulses;    /**< SERVO PULSES at 1000-2000, session */
     ui_hold_t lim_hold;      /**< ARM + START on LIMIT RUN              */
@@ -786,7 +810,7 @@ typedef struct {
      *  not the programmer, stays on the left card, and the programmer's
      *  run ends once the LEAVE has (lim_end_due). */
     bool      lim_leaving;
-    bool      lim_end_due;
+    bool      lim_end_due;  /**< the programmer's run ends once the LEAVE has ended */
     /** @brief It ended as FAIL: the supplies go off once the programmer's run
      *  has ended (lim_seam_ended()), after a LEAVE on its way. */
     bool      lim_off_due;
@@ -809,20 +833,20 @@ typedef struct {
     /* The outbox the logger last peeked, PEEK_*, and whose files' number
      * comes back (servo_screen_test_files()). */
     uint8_t   peek_from;     /**< the outbox last peeked, PEEK_*     */
-    servo_test_out_t peek_kind;
+    servo_test_out_t peek_kind;  /**< the kind of the outbox last peeked */
     uint8_t   files_from;    /**< the outbox of the last OPEN taken  */
-    /* The logger has an OPEN or an END of the last run not answered yet
+    /** @brief The logger has an OPEN or an END of the last run not answered yet
      * (servo_screen_test_logger_busy()). */
     bool      logger_busy;
 
-    uint32_t ctrl_rev;
-    uint8_t  drive_target; /* 0 the outputs, 1 + n programming port n */
-    uint8_t  drive_pin;    /* that port's GPIO, or SERVO_SCREEN_NO_PIN */
-    bool     drive_pwm;    /* that port renders its pulse              */
-    uint64_t pins;         /* GPIOs bound as SERVO PWM, bit n = GPIO n */
-    bool     pins_known;   /* a binding was read                       */
-    uint32_t drawn_ctrl[2];
-    unsigned drawn_mask;
+    uint32_t ctrl_rev;  /**< a count of the controls' look */
+    uint8_t  drive_target; /**< 0 the outputs, 1 + n programming port n */
+    uint8_t  drive_pin;    /**< that port's GPIO, or SERVO_SCREEN_NO_PIN */
+    bool     drive_pwm;    /**< that port renders its pulse              */
+    uint64_t pins;         /**< GPIOs bound as SERVO PWM, bit n = GPIO n */
+    bool     pins_known;   /**< a binding was read                       */
+    uint32_t drawn_ctrl[2];  /**< ctrl_rev as each buffer drew it */
+    unsigned drawn_mask;  /**< the parts drawn into each buffer, a bit a part */
     /**
      * @brief The dial's own count of changes: the horn's angle, the
      * commanded angle and the MEASURED reading, which move every frame of a
@@ -841,7 +865,7 @@ typedef struct {
     svs_ready_t rdy;         /**< READY and ARM + START (servo_ready_int.h) */
 } servo_screen_state_t;
 
-/* The state, in servo_screen.c. */
+/** @brief The state, in servo_screen.c. */
 extern servo_screen_state_t s;
 
 /* --- the screen's side, servo_screen*.c, which the other four files call */
@@ -850,7 +874,9 @@ extern servo_screen_state_t s;
  * opens the warning first where it can destroy a servo (ask_profile()). */
 void apply_profile(int t, uint16_t hz);
 void ask_profile(int t, uint16_t hz);
-/* The commanded position said again under a changed profile. */
+/**
+ * @brief The commanded position said again under a changed profile.
+ */
 void reissue(void);
 /**
  * @brief @p text in lines of at most @p cells cells of face @p f, from
@@ -872,8 +898,22 @@ int wrap_text(gfx_canvas_t *c, int x, int y, int pitch, const char *text,
 /* A pulse as an angle (us_to_deg() below), and the commands a run posts
  * as a finger's: a command (post()), RELEASE (release()), and the sweep
  * ended (stop_sweep()) or as SETUP sets it (sweep_cfg_now()). */
+/**
+ * @brief Converts a pulse to an angle in the profile in force, REVERSE
+ *         included.
+ *
+ * @param us the pulse, us
+ * @return the angle, degrees from center
+ */
 float us_to_deg_f(float us);
+/**
+ * @brief Posts a command to the output, which the next frame sends.
+ *
+ * @param kind the command
+ * @param us the pulse the command carries, us
+ */
 void post(servo_cmd_kind_t kind, uint16_t us);
+/** @brief Posts RELEASE and rests the commanded value. */
 void release(void);
 /** @brief DISARM asked of an armed bench: the value leaves LIVE now.  Also
  *         the automatic test's end on an error (servo_test_abort_error()). */
@@ -883,6 +923,7 @@ sweep_cfg_t sweep_cfg_now(void);
 
 /* Whether a run is under way, told to the panel where it changes, and a
  * supply sample as a run reads it: both runs' (servo_screen_on_testing()). */
+/** @brief Tells the panel whether a run is under way, where that changes. */
 void test_tell(void);
 servo_test_reading_t test_reading_of(const supply_state_t *st);
 
@@ -895,6 +936,10 @@ void value_edge(ui_value_edge_t edge, servo_test_abort_t why);
 /* Every panel shut: the keypad, the keyboard, the list, the warning and the
  * question (close_panels()); and, once a set point's keypad is done, the
  * page under them repainted (close_alone()). */
+/**
+ * @brief Shuts every panel: the keypad, the keyboard, the list, the warning
+ *         and the question.
+ */
 static inline void close_panels(void)
 {
     ui_keypad_close(&s.kp);
@@ -909,8 +954,10 @@ static inline void close_panels(void)
     ui_hold_reset(&s.ask.hold);
 }
 
-/* A set point's keypad, or the question after it, is done: the task's page
- * shows again under the panel that went. */
+/**
+ * @brief A set point's keypad, or the question after it, is done: the task's page
+ * shows again under the panel that went.
+ */
 static inline void close_alone(void)
 {
     close_panels();
@@ -969,7 +1016,12 @@ bool target_locked(const ov_row_t *r);
 
 /* OUTPUT ON with a set point past a standard servo's rating: the HV
  * warning.  The question or the warning answered: what it was about. */
+/**
+ * @brief Opens the HV warning for OUTPUT ON with a set point past a standard
+ *         servo's rating.
+ */
 void ask_hv_on(void);
+/** @brief Applies what the question or the HV warning was about, once it is answered. */
 void ask_apply(void);
 /**
  * @brief A set point's keypad, SET V or SET A, over the left card inside
@@ -993,6 +1045,11 @@ void svs_set_point_open(int target);
 void ask_restore_follow(void);
 /* A press on a page or a panel: its DOWN, and its moves and its release. */
 void ov_down(const touch_event_t *evt);
+/**
+ * @brief Takes the moves and the release of a press that ov_down() took.
+ *
+ * @param evt the touch event
+ */
 void ov_rest(const touch_event_t *evt);
 /**
  * @brief Row @p r's value as text.
@@ -1071,6 +1128,12 @@ enum { RS_OFF_POSTED = 0, RS_OFF_SENT, RS_SAMPLE, RS_OFF_SEEN };
  *         (servo_test_ready.c) that is not met.  @return the text; NULL
  *         when it may */
 const char *test_why(void);
+/**
+ * @brief The highest voltage a run would ask for: its top step, or the
+ *         brown-out's start.
+ *
+ * @return the voltage, V
+ */
 float test_top_v(void);
 /** @brief The steps the run's settings name, 7.4 and 8.4V only with HV
  *         SERVO on.  @param v receives their voltages; may be NULL
@@ -1112,6 +1175,12 @@ void test_cfg_bench(servo_test_cfg_t *c);
  * @return false when the engine refused it
  */
 bool test_launch(const servo_test_cfg_t *c);
+/**
+ * @brief Ends a run now and does what that asks, the output off and the servo
+ *         let go, before whatever ended it acts.
+ *
+ * @param why why the run ends
+ */
 void test_end_now(servo_test_abort_t why);
 /** @brief HV SERVOS ONLY opened for a run with a step past 6.0V, naming
  *         the highest: its 2s hold arms and starts (test_hold_fired()). */
@@ -1123,14 +1192,33 @@ void draw_test_stall(gfx_canvas_t *c, int x, int y);
 /* The run against the meter in force (test_meter_follow()); every frame
  * (test_tick()) and whichever screen is up (test_restore_service()); what
  * the box shows of it, as one number (test_signature()); and the box. */
+/**
+ * @brief Ends the run when the meter it reads changed under it.
+ *
+ * @param id the meter in force
+ * @param changes the change count it was decided at
+ */
 void test_meter_follow(servo_source_id_t id, uint32_t changes);
+/** @brief Puts SUPPLY's set points back to what they were before a run, in stages. */
 void test_restore_service(void);
+/**
+ * @brief What the box and the AUTOMATIC TEST card show of the run, as one
+ *         number.
+ *
+ * @return a number that changes with what they show
+ */
 uint32_t test_signature(void);
+/**
+ * @brief Runs the automatic test for one frame: its timers, what it asks done
+ *         and the restore.
+ */
 void test_tick(void);
 void draw_test_box(gfx_canvas_t *c);
 
-/* A run that was running is over, however it ended: its OFF is posted
- * (test_apply()), and the restore of the set points starts waiting. */
+/**
+ * @brief A run that was running is over, however it ended: its OFF is posted
+ * (test_apply()), and the restore of the set points starts waiting.
+ */
 static inline void test_ended(void)
 {
     if (!s.test_seen || servo_test_running(&s.test)) {
@@ -1149,6 +1237,11 @@ static inline void test_ended(void)
 
 /* Why the programming is not offered, why a run cannot start now, or
  * NULL; the run ended now. */
+/**
+ * @brief Why the programming is not offered, or NULL.
+ *
+ * @return the line; NULL when it is offered
+ */
 const char *lim_prog_why(void);
 /**
  * @brief Why a run on the programming port writes nothing to the servo,
@@ -1195,12 +1288,27 @@ const char *lim_meter_why(void);
  * @return true when it does
  */
 bool lim_pd_feeds(void);
+/**
+ * @brief Ends a limit run now and does what that asks, the output off and the
+ *         servo let go, before whatever ended it acts.
+ *
+ * @param why why the run ends
+ */
 void lim_end_now(servo_test_abort_t why);
 /* ARM + START's hold completed; the run every frame; the ended run's
  * LEAVE, whichever screen is up; the meter changed under the run. */
+/** @brief Begins a limit run once ARM + START's hold completed. */
 void lim_begin(void);
+/** @brief Runs the limit run for one frame. */
 void lim_tick(void);
+/** @brief Follows the LEAVE of an ended run, whichever screen is up. */
 void lim_leave_follow(void);
+/**
+ * @brief Ends the run when the meter it reads changed under it.
+ *
+ * @param id the meter in force
+ * @param changes the change count it was decided at
+ */
 void lim_meter_follow(servo_source_id_t id, uint32_t changes);
 /**
  * @brief A DOWN on LIMIT RUN's ARM + START: STOP RUN and a sequence under
@@ -1209,7 +1317,11 @@ void lim_meter_follow(servo_source_id_t id, uint32_t changes);
  * @return whether it landed on the hold
  */
 bool lim_hold_down(const touch_event_t *evt);
-/* What the left card shows of the run, as one number. */
+/**
+ * @brief What the left card shows of the run, as one number.
+ *
+ * @return the number
+ */
 uint32_t lim_signature(void);
 
 /* --- servo_limit_card.c: LIMIT RUN's left card and hold ------------------ */
@@ -1369,16 +1481,24 @@ void lim_seam_close_pages(void);
 
 /* --- helpers the four files inline --------------------------------------- */
 
+/**
+ * @brief Gives the profile in force.
+ *
+ * @return the profile
+ */
 static inline const servo_type_t *type(void) { return &k_types[s.type]; }
 
-/*
- * The range a command carries: the narrowest one centered on CENTER that
+/**
+ * @brief The range a command carries: the narrowest one centered on CENTER that
  * holds MIN and MAX.  The IOmcu knows a channel only by its two
  * endpoints and rests a surface at their midpoint -- on RELEASE, before an
  * arm, after a silence -- so MIN..MAX itself would rest a servo whose CENTER
  * is not midway between them away from its center.  Commands never leave
  * MIN..MAX: svs_deg_to_us() clamps them.  The PULSE keypads keep this
  * range inside OUT_FLOOR_US..OUT_CEILING_US.
+ *
+ * @param lo receives the low end, us
+ * @param hi receives the high end, us
  */
 static inline void cmd_range(uint16_t *lo, uint16_t *hi)
 {
@@ -1389,11 +1509,13 @@ static inline void cmd_range(uint16_t *lo, uint16_t *hi)
     *hi = (uint16_t)((unsigned)s.center_us + half);
 }
 
-/*
- * The longest pulse the far end can render: the top of the range a command
+/**
+ * @brief The longest pulse the far end can render: the top of the range a command
  * carries, which is past PULSE MAX when CENTER is off the middle.  A pulse
  * of an old span under a new range reaches it between two transactions, so
  * the frame rate's pause is kept from it rather than from PULSE MAX.
+ *
+ * @return the top, us
  */
 static inline uint16_t cmd_top(void)
 {
@@ -1402,11 +1524,23 @@ static inline uint16_t cmd_top(void)
     return hi;
 }
 
+/**
+ * @brief Converts a pulse to an angle, as us_to_deg_f().
+ *
+ * @param us the pulse, us
+ * @return the angle, degrees from center
+ */
 static inline float us_to_deg(uint16_t us)
 {
     return us_to_deg_f((float)us);
 }
 
+/**
+ * @brief Holds an angle to TRAVEL either way.
+ *
+ * @param deg the angle, degrees
+ * @return the angle held to TRAVEL, degrees
+ */
 static inline float clamp_travel(float deg)
 {
     if (deg < -s.travel_deg) { return -s.travel_deg; }
@@ -1414,20 +1548,28 @@ static inline float clamp_travel(float deg)
     return deg;
 }
 
-/*
- * Whether the commanded value follows its controls: only in UI_VALUE_LIVE.
+/**
+ * @brief Whether the commanded value follows its controls: only in UI_VALUE_LIVE.
  * The one question every input, the drawing, a run and a late callback ask:
  * not on a disarmed bench, whose pins carry no pulse, not while an ARM is
  * on its way, and not from a DISARM or a STOP until the bench reports
  * itself disarmed.
+ *
+ * @return true while it does
  */
 static inline bool value_live(void)
 {
     return ui_value_live(&s.gate);
 }
 
-/* The fastest frame rate the profile in force allows with these pulses:
- * the pause rule, under the profile's own ceiling. */
+/**
+ * @brief The fastest frame rate the profile in force allows with these pulses:
+ * the pause rule, under the profile's own ceiling.
+ *
+ * @param t the profile, an index of k_types
+ * @param max_us the longest pulse, us
+ * @return the rate, Hz
+ */
 static inline uint16_t max_rate_for(int t, uint16_t max_us)
 {
     const servo_type_t *ty = &k_types[t];
@@ -1439,12 +1581,23 @@ static inline uint16_t max_rate_for(int t, uint16_t max_us)
     return (uint16_t)hz;
 }
 
-/* A type or a rate that needs the warning before it is applied. */
+/**
+ * @brief A type or a rate that needs the warning before it is applied.
+ *
+ * @param t the profile, an index of k_types
+ * @param hz the frame rate, Hz
+ * @return true when it needs the warning
+ */
 static inline bool dangerous(int t, uint16_t hz)
 {
     return k_types[t].heli || hz > SAFE_RATE_HZ;
 }
 
+/**
+ * @brief Whether the profile and rate in force need the warning.
+ *
+ * @return true then
+ */
 static inline bool in_force_dangerous(void)
 {
     return dangerous(s.type, s.frame_hz);
@@ -1458,10 +1611,14 @@ static inline servo_angle_src_t enc_src(void)
                ? SERVO_ANGLE_IMU : SERVO_ANGLE_AS5600;
 }
 
-/* Whether the encoder's last reading is on show and may be used: one the
+/**
+ * @brief Whether the encoder's last reading is on show and may be used: one the
  * link carried, with the encoder on in SETUP; or the IMU's, which the
  * panel hands in valid only while it is on and connected.  A link that
- * goes down takes the reading with it (servo_screen_set_link()). */
+ * goes down takes the reading with it (servo_screen_set_link()).
+ *
+ * @return true then
+ */
 static inline bool enc_shown(void)
 {
     return s.enc_valid && s.link_up
@@ -1490,6 +1647,11 @@ static inline const char *enc_name(char *buf, size_t n)
     return servo_angle_name(enc_src(), s.imu_axis, s.imu_neg, buf, n);
 }
 
+/**
+ * @brief The panel's rectangle over the left column.
+ *
+ * @return the rectangle
+ */
 static inline gfx_rect_t overlay_area(void)
 {
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
@@ -1512,13 +1674,22 @@ static inline gfx_rect_t warn_apply_rect(void)
  * supply's readings share, the abort for what took the INA3221 off the
  * rail, and the box on the left card both draw in. */
 
-/* The clock the run and the supply's readings share. */
+/**
+ * @brief The clock the run and the supply's readings share.
+ *
+ * @return the clock, ms
+ */
 static inline uint32_t test_now(void)
 {
     return s.have_now ? s.now_ms : s.clock_ms;
 }
 
-/* A run's abort for the condition that took the INA3221 off the rail. */
+/**
+ * @brief A run's abort for the condition that took the INA3221 off the rail.
+ *
+ * @param why why the meter left the rail
+ * @return the abort
+ */
 static inline servo_test_abort_t test_abort_of(servo_source_why_t why)
 {
     switch (why) {
@@ -1567,15 +1738,23 @@ static inline gfx_rect_t test_btn_rect(void)
                          150, UI_TAP_MIN };
 }
 
-/* A run with a step past a standard servo's rating starts only through the
- * HV warning. */
+/**
+ * @brief A run with a step past a standard servo's rating starts only through the
+ * HV warning.
+ *
+ * @return true then
+ */
 static inline bool test_needs_hv(void)
 {
     return test_top_v() > STD_SERVO_V_MAX + 0.001f;
 }
 
-/* The run drives the programming port: a KST or Chaservo servo is read
- * first and searched within its own pulses. */
+/**
+ * @brief The run drives the programming port: a KST or Chaservo servo is read
+ * first and searched within its own pulses.
+ *
+ * @return true then
+ */
 static inline bool lim_reads(void)
 {
     return s.drive_target != 0u
@@ -1593,20 +1772,28 @@ static inline bool lim_hitec_now(void)
     return lim_family() != 0u;
 }
 
-/* Whether the voltage set point in force is past a standard servo's
+/**
+ * @brief Whether the voltage set point in force is past a standard servo's
  * rating, which OUTPUT ON on this screen applies only through the HV
- * warning. */
+ * warning.
+ *
+ * @return true then
+ */
 static inline bool hv_set_point(void)
 {
     return supply_screen_set_v() > STD_SERVO_V_MAX + 0.001f;
 }
 
-/* Whether the question about a live output still stands: the output on
+/**
+ * @brief Whether the question about a live output still stands: the output on
  * or coming, not gone off since it was asked -- an OFF and a new ON
  * between two frames start a run the question was not about -- and no
  * stop since.  A stop switches the output off, but the supply reports
  * that a sample later; an APPLY drained in the frame of the stop finds
- * the output still live and is refused by the count. */
+ * the output still live and is refused by the count.
+ *
+ * @return true then
+ */
 static inline bool ask_stands(void)
 {
     return supply_screen_output_live()
@@ -1614,6 +1801,13 @@ static inline bool ask_stands(void)
            && s.stops == s.ask.stops;
 }
 
+/**
+ * @brief Takes the press that begins on a page or a panel.
+ *
+ * @param evt the touch event
+ * @param code what the press is on, OP_*
+ * @param which the row it is on
+ */
 static inline void ov_take(const touch_event_t *evt, int code, int which)
 {
     s.ov_have    = true;
@@ -1623,6 +1817,7 @@ static inline void ov_take(const touch_event_t *evt, int code, int which)
     ++s.ctrl_rev;
 }
 
+/** @brief Lets go of the press on a page or a panel. */
 static inline void ov_let_go(void)
 {
     if (s.ov_have) {
@@ -1632,8 +1827,12 @@ static inline void ov_let_go(void)
     }
 }
 
-/* Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
- * moment, 2 refused, 3 changed on SETUP and not asked to be saved. */
+/**
+ * @brief Whether the settings reached the medium: 0 saved, 1 waiting for a quiet
+ * moment, 2 refused, 3 changed on SETUP and not asked to be saved.
+ *
+ * @return the state, 0 to 3
+ */
 static inline uint8_t save_state(void)
 {
     if (settings_save_failed()) {
@@ -1676,8 +1875,12 @@ static inline float enc_abs_now(void)
     return enc_exact() ? s.enc_deg : servo_test_enc_deg(s.enc_raw, 0u);
 }
 
-/* The encoder's angle from its center, degrees, in the direction of the
- * commanded angle: negated with REVERSE on, as us_to_deg() is. */
+/**
+ * @brief The encoder's angle from its center, degrees, in the direction of the
+ * commanded angle: negated with REVERSE on, as us_to_deg() is.
+ *
+ * @return the angle, degrees
+ */
 static inline float enc_deg_now(void)
 {
     const float d = enc_exact() ? s.enc_deg
@@ -1721,8 +1924,12 @@ static inline bool svs_hold_down(void)
            || s.ra.down;
 }
 
-/* Armed, asked to arm, or a finger on ARM, or the bench armed for the
- * motor: the programmer takes no port. */
+/**
+ * @brief Armed, asked to arm, or a finger on ARM, or the bench armed for the
+ * motor: the programmer takes no port.
+ *
+ * @return true then
+ */
 static inline bool bench_arming(void)
 {
     return s.gate.armed || s.gate.arm_asked || s.arm_down || s.bench_armed;

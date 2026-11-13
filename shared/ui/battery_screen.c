@@ -96,10 +96,10 @@ _Static_assert(NOTE_Y + NOTE_LINES * NOTE_PITCH <= TEXT_FLOOR,
 #define SPREAD_BAD_MV   60.0f /**< REPLACE from this spread, mV. */
 
 static struct {
-    battery_state_t b;
-    uint32_t rev;
-    uint32_t drawn[2];
-    unsigned drawn_mask;
+    battery_state_t b;  /**< the pack's state as last read */
+    uint32_t rev;  /**< a count of the screen's look */
+    uint32_t drawn[2];  /**< rev as each buffer drew it */
+    unsigned drawn_mask;  /**< the parts drawn into each buffer, a bit a part */
 } s; /**< The screen's state. */
 
 void battery_invalidate(void)

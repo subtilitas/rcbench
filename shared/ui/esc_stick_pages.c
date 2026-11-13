@@ -63,17 +63,21 @@ static void esc_stick_ps_init(gfx_rect_t area)
 
 /* ------------------------------------------------------------- the walk */
 
-/* What decides which control lies under a point.  A press and its release
+/**
+ * @brief What decides which control lies under a point.  A press and its release
  * with a different answer are not a tap: the control has changed under the
- * finger. */
+ * finger.
+ */
 static uint32_t showing(void)
 {
     const uint32_t h = (2166136261u ^ (uint32_t)pg.stage) * 16777619u;
     return esc_stick_panel_showing(h);
 }
 
-/* The controls under the point of @p evt (see hit()).  BACK climbs one
- * level, as the band's home tag does; the pages take the rest. */
+/**
+ * @brief The controls under the point of @p evt (see hit()).  BACK climbs one
+ * level, as the band's home tag does; the pages take the rest.
+ */
 static void press_at(const touch_event_t *evt)
 {
     if (pg.stage != STAGE_CLOSED) {
@@ -81,7 +85,10 @@ static void press_at(const touch_event_t *evt)
     }
 }
 
-/* The rest of the press that may become a tap: its moves and its release. */
+/**
+ * @brief The rest of the press that may become a tap: its moves and its
+ *   release.
+ */
 static void tap_follow(const touch_event_t *evt)
 {
     if (!pg.tap.live || evt->point.id != pg.tap.id) {
@@ -112,6 +119,7 @@ static void tap_follow(const touch_event_t *evt)
     pg.pass = PASS_PRESS;
 }
 
+/** @brief Takes a touch event of the session. */
 static void esc_stick_ps_event(const touch_event_t *evt)
 {
     if (evt == NULL || pg.stage == STAGE_CLOSED) {
@@ -153,23 +161,28 @@ static void esc_stick_ps_event(const touch_event_t *evt)
 
 /* ------------------------------------------------------------ the hooks */
 
+/** @brief Enters the session. */
 static void esc_stick_ps_entry(void)
 {
     esc_stick_panel_enter();
 }
 
+/** @brief Opens the session. */
 static void esc_stick_ps_open(void)
 {
     esc_stick_panel_open();
 }
 
+/** @brief Whether the session is open. */
 static bool esc_stick_ps_is_open(void)
 {
     return pg.stage != STAGE_CLOSED;
 }
 
-/* One level up, BACK's and the home tag's: what covers the page closes, a
- * run ends, or the session climbs; from the makers it closes. */
+/**
+ * @brief One level up, BACK's and the home tag's: what covers the page closes, a
+ * run ends, or the session climbs; from the makers it closes.
+ */
 static void esc_stick_ps_back(void)
 {
     if (pg.stage != STAGE_CLOSED) {
@@ -178,32 +191,40 @@ static void esc_stick_ps_back(void)
     }
 }
 
-/* No programming port: a run holds the bench, and leaving ends it. */
+/**
+ * @brief No programming port: a run holds the bench, and leaving ends it.
+ */
 static bool esc_stick_ps_holds(void)
 {
     return false;
 }
 
-/* The bench's arm reaches the panel from the application
- * (esc_stick_panel_bench()). */
+/**
+ * @brief The bench's arm reaches the panel from the application
+ * (esc_stick_panel_bench()).
+ */
 static void esc_stick_ps_armed(bool armed)
 {
     (void)armed;
 }
 
+/** @brief Runs the session for one frame. */
 static void esc_stick_ps_tick(float dt_s)
 {
     esc_stick_panel_tick(dt_s);
 }
 
+/** @brief Whether the session holds the press of contact @p id. */
 static bool esc_stick_ps_has_press(uint8_t id)
 {
     return (pg.tap.live && pg.tap.id == id) || esc_stick_panel_holds_press(id)
            || sp_set_holds(id);
 }
 
-/* The body under the output strip, cleared, then the page; the SETTINGS
- * list over the whole body. */
+/**
+ * @brief The body under the output strip, cleared, then the page; the SETTINGS
+ * list over the whole body.
+ */
 static void esc_stick_ps_render(gfx_canvas_t *c)
 {
     if (pg.stage != STAGE_CLOSED && sp_set_shown()) {
@@ -217,25 +238,31 @@ static void esc_stick_ps_render(gfx_canvas_t *c)
     }
 }
 
+/** @brief The count a render follows. */
 static uint32_t esc_stick_ps_revision(void)
 {
     return pg.rev;
 }
 
-/* A hold's fill moves the revision itself: the warning's HOLD TO RUN is
- * the page's. */
+/**
+ * @brief A hold's fill moves the revision itself: the warning's HOLD TO RUN is
+ * the page's.
+ */
 static uint32_t esc_stick_ps_hold_revision(void)
 {
     return 0u;
 }
 
+/** @brief The rectangle of a hold's fill; none, the session has no such hold. */
 static gfx_rect_t esc_stick_ps_hold_rect(void)
 {
     return (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
-/* The host is left: a run ends, the supply it switched on goes off, and
- * the session closes; the search keeps what was typed. */
+/**
+ * @brief The host is left: a run ends, the supply it switched on goes off, and
+ * the session closes; the search keeps what was typed.
+ */
 static void esc_stick_ps_leave(void)
 {
     esc_stick_panel_leave();
@@ -243,17 +270,21 @@ static void esc_stick_ps_leave(void)
     ++pg.rev;
 }
 
+/** @brief Cancels what the session holds. */
 static void esc_stick_ps_cancel(void)
 {
     esc_stick_panel_cancel();
 }
 
+/** @brief The GPIO of the port the session works on; none, it drives no port. */
 static uint8_t esc_stick_ps_pin(void)
 {
     return PROG_REG_NO_PIN;
 }
 
-/* A run's ABORT, which stops a motor (esc_stick_panel_safe_at()). */
+/**
+ * @brief A run's ABORT, which stops a motor (esc_stick_panel_safe_at()).
+ */
 static bool esc_stick_ps_safe_at(int x, int y)
 {
     return pg.stage != STAGE_CLOSED && esc_stick_panel_safe_at(x, y);

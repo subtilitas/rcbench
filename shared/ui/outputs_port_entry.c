@@ -124,6 +124,7 @@ void outputs_screen_set_port_watch(uint8_t port, const char *label)
     }
 }
 
+/** @brief Gives a segment row's rectangle. */
 static gfx_rect_t seg_row(int label_y)
 {
     return p.board ? gfx_rect_make(OB_COL_X, label_y + SEG_DY, OB_COL_W, SEG_H)
@@ -131,6 +132,7 @@ static gfx_rect_t seg_row(int label_y)
                                    SEG_H);
 }
 
+/** @brief Gives the PIN button's rectangle. */
 static gfx_rect_t pin_rect(void)
 {
     return gfx_rect_make(COL_X, PIN_Y, COL_W, PIN_H);
@@ -146,14 +148,17 @@ static gfx_rect_t fn_face(void)
                    : seg_row(FN_Y);
 }
 
-/* The functions the list offers: SERVO PWM and NONE, and the DShot rates
- * from an IOmcu of 4.28. */
+/**
+ * @brief The functions the list offers: SERVO PWM and NONE, and the DShot rates
+ * from an IOmcu of 4.28.
+ */
 static int fn_rows(void)
 {
     return port_view_get()->has_dshot ? (int)LINK_PG_FN_COUNT
                                       : (int)LINK_PG_FN_COUNT_V426;
 }
 
+/** @brief Gives the open FUNCTION list's rectangle. */
 static gfx_rect_t fn_list(void)
 {
     const gfx_rect_t f = fn_face();
@@ -161,6 +166,7 @@ static gfx_rect_t fn_list(void)
                          p.board ? OB_LIST_W : COL_W, fn_rows() * FN_ROW_H + 8);
 }
 
+/** @brief Gives the rectangle of row @p i of the FUNCTION list. */
 static gfx_rect_t fn_row(int i)
 {
     const gfx_rect_t l = fn_list();
@@ -170,6 +176,7 @@ static gfx_rect_t fn_row(int i)
 _Static_assert(LINK_PG_FN_COUNT <= FN_ROWS_MAX,
                "the FUNCTION list holds every function");
 
+/** @brief Shuts the FUNCTION list. */
 static void fn_close(void)
 {
     p.fn_open = false;
@@ -254,6 +261,7 @@ void outputs_port_name(uint8_t port, char *buf, size_t cap)
 
 /* ------------------------------------------------------------- the rules */
 
+/** @brief Gives the SERVO TARGET setting. */
 static int target(void) { return settings_get_int(SET_SERVO_TARGET); }
 
 /**
@@ -272,26 +280,32 @@ static bool soldered(void) { return ui_board_roles() != NULL; }
  */
 static bool carrier_tester(void) { return soldered() && prog_choice_offered(); }
 
+/** @brief Whether the entry's port is known. */
 static bool known(void) { return port_view_has((uint8_t)p.port); }
 
+/** @brief Whether a programmer holds the target or the port PWM setting. */
 static bool held(void)
 {
     return settings_held(SET_SERVO_TARGET)
            || settings_held(SET_SERVO_PORT_PWM);
 }
 
-/* The port's function is the servo pulse, or not known yet: an IOmcu
+/**
+ * @brief The port's function is the servo pulse, or not known yet: an IOmcu
  * older than 4.26 runs every port's pin as SERVO PWM, and the tester's
  * rows take their settings before the ports are read, as they did before
- * there was a function. */
+ * there was a function.
+ */
 static bool fn_pwm(void)
 {
     return port_view_pwm((uint8_t)p.port);
 }
 
-/* FUNCTION: not before the ports are read, not on an IOmcu without FUNC,
+/**
+ * @brief FUNCTION: not before the ports are read, not on an IOmcu without FUNC,
  * not while the programmer holds a port or the bench is ARMED or a test
- * or sweep runs, nor while the tester drives this port. */
+ * or sweep runs, nor while the tester drives this port.
+ */
 static bool fn_locked(void)
 {
     return soldered() || !known() || !port_view_get()->has_func || held()
@@ -299,8 +313,10 @@ static bool fn_locked(void)
            || target() == p.port + 1;
 }
 
-/* SERVO TESTER: under the SERVO screen's rules, and PORT n only on a
- * SERVO PWM port. */
+/**
+ * @brief SERVO TESTER: under the SERVO screen's rules, and PORT n only on a
+ * SERVO PWM port.
+ */
 static bool tester_locked(void)
 {
     if (carrier_tester()) {
@@ -311,13 +327,17 @@ static bool tester_locked(void)
            || (!fn_pwm() && target() != p.port + 1);
 }
 
-/* PORT PWM: the target port's, so only on that port's entry. */
+/**
+ * @brief PORT PWM: the target port's, so only on that port's entry.
+ */
 static bool pwm_locked(void)
 {
     return servo_screen_port_pwm_locked() || target() != p.port + 1;
 }
 
-/* The segments follow the view and the settings, whoever set them. */
+/**
+ * @brief The segments follow the view and the settings, whoever set them.
+ */
 static void sync_tabs(void)
 {
     snprintf(p.tester_port, sizeof(p.tester_port), TR(OUT_TESTER_PORT),
@@ -400,8 +420,10 @@ bool outputs_screen_port_reason(char *buf, size_t cap)
     return buf[0] != '\0';
 }
 
-/* What the column shows that the settings, the view or the SERVO screen
- * can change from outside: a change repaints it. */
+/**
+ * @brief What the column shows that the settings, the view or the SERVO screen
+ * can change from outside: a change repaints it.
+ */
 static uint32_t signature(void)
 {
     if (p.port < 0) {
@@ -435,8 +457,8 @@ void outputs_port_tick(void)
 
 /* ----------------------------------------------------------------- input */
 
-/*
- * A press on a segment: taken whether or not the row is locked, so nothing
+/**
+ * @brief A press on a segment: taken whether or not the row is locked, so nothing
  * under it sees it, and acted on only while it is not.  A row that locks
  * under a press under way drops it.  The index tapped, or -1 for none;
  * @p took says whether the event was the row's.
@@ -479,8 +501,8 @@ static int seg_event(ui_tabs_t *t, const touch_event_t *evt, bool locked,
     return tapped ? i : -1;
 }
 
-/*
- * FUNCTION: a tap on the face opens the list, a tap on an entry asks for
+/**
+ * @brief FUNCTION: a tap on the face opens the list, a tap on an entry asks for
  * that function and shuts it, and a press anywhere else while it is open
  * shuts it and is taken, so nothing under the list sees it.
  */
@@ -584,7 +606,10 @@ bool outputs_port_event(const touch_event_t *evt)
 
 /* --------------------------------------------------------------- drawing */
 
-/* The PIN button's label: the pin, the pin refused, none, or not known. */
+/**
+ * @brief The PIN button's label: the pin, the pin refused, none, or not
+ *   known.
+ */
 static void pin_label(char *buf, size_t cap)
 {
     const port_view_t *v = port_view_get();

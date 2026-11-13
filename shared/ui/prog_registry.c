@@ -47,6 +47,7 @@
  * A row per firmware adds nothing: identification reads which one it is.  The
  * next maker is one more row here and its page_set.
  */
+/** @brief The registry's rows. */
 static const prog_reg_row_t k_rows[] = {
     { PROG_DEV_SERVO, UI_WB_PROGRAM, TX_PL_KST, TX_PL_GRP_PROG_PORT,
       TX_SV_TARGET_PORT, PROG_REG_TESTER_PORT, LINK_CAP_SERVO_PWM,
@@ -130,6 +131,7 @@ void prog_registry_use(const prog_reg_row_t *rows, size_t count)
 
 /* ----------------------------------------------------------- the checks */
 
+/** @brief Whether every hook of page set @p p is set. */
 static bool hooks_filled(const prog_page_set_t *p)
 {
     return p != NULL && p->init != NULL && p->entry != NULL
@@ -141,11 +143,13 @@ static bool hooks_filled(const prog_page_set_t *p)
            && p->pin != NULL && p->safe_at != NULL;
 }
 
+/** @brief Whether text @p id is not empty in the language in force. */
 static bool filled(ui_text_id_t id)
 {
     return id < TX_COUNT && ui_tr(id)[0] != '\0';
 }
 
+/** @brief Whether two rows are in one list: one device and one task. */
 static bool same_list(const prog_reg_row_t *a, const prog_reg_row_t *b)
 {
     return a->device == b->device && a->task == b->task;
@@ -377,7 +381,7 @@ prog_row_state_t prog_reg_state(const prog_reg_row_t *rows, size_t n,
     return PROG_ROW_LIVE;
 }
 
-/* The link's names for link_cap_t's bits, from bit 0: field terms, the
+/** @brief The link's names for link_cap_t's bits, from bit 0: field terms, the
  * same in every language. */
 static const char *const k_cap_name[] = {
     "ESC DRIVE", "ESC TELEMETRY", "SERVO PWM", "SERVO SENSE", "PACK SENSE",
@@ -527,6 +531,7 @@ void prog_view_top(prog_view_t *v)
     }
 }
 
+/** @brief Gives the pitch of entry @p k, px. */
 static int entry_h(const prog_list_t *l, int k)
 {
     return (k >= 0 && k < l->count && l->e[k].heading) ? PROG_VIEW_HEAD_P
@@ -570,7 +575,9 @@ bool prog_view_has_bar(const prog_view_t *v, const prog_list_t *l)
     return h > room(v, false);
 }
 
-/* The entries shown from @p top: as many as fit, one at least. */
+/**
+ * @brief The entries shown from @p top: as many as fit, one at least.
+ */
 static int shown_from(const prog_view_t *v, const prog_list_t *l, int top)
 {
     const int space = room(v, prog_view_has_bar(v, l));
@@ -593,6 +600,7 @@ int prog_view_shown(const prog_view_t *v, const prog_list_t *l)
     return shown_from(v, l, v->top);
 }
 
+/** @brief Gives the top of the first entry, px. */
 static int list_y(const prog_view_t *v, const prog_list_t *l)
 {
     return v->area.y + PROG_VIEW_PAD
@@ -629,6 +637,7 @@ gfx_rect_t prog_view_search_rect(const prog_view_t *v, const prog_list_t *l)
                          PROG_VIEW_SEARCH_W, PROG_VIEW_BAR_H };
 }
 
+/** @brief Whether the bar pages the list: it is drawn and not every entry fits. */
 static bool pages(const prog_view_t *v, const prog_list_t *l)
 {
     return prog_view_has_bar(v, l) && shown_from(v, l, 0) < l->count;
@@ -656,8 +665,10 @@ gfx_rect_t prog_view_down_rect(const prog_view_t *v, const prog_list_t *l)
                          PROG_VIEW_BAR_H };
 }
 
-/* The top a page up from @p v's lands on: the first entry of the page
- * that ends just before it. */
+/**
+ * @brief The top a page up from @p v's lands on: the first entry of the page
+ * that ends just before it.
+ */
 static int page_up_top(const prog_view_t *v, const prog_list_t *l)
 {
     const int space = room(v, true);
@@ -669,7 +680,9 @@ static int page_up_top(const prog_view_t *v, const prog_list_t *l)
     return (k == v->top && k > 0) ? k - 1 : k;
 }
 
-/* What is under (@p x, @p y): an entry, a bar key, or none. */
+/**
+ * @brief What is under (@p x, @p y): an entry, a bar key, or none.
+ */
 static int hit(const prog_view_t *v, const prog_list_t *l, int x, int y)
 {
     if (gfx_rect_contains(prog_view_search_rect(v, l), x, y)) {

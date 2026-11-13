@@ -130,12 +130,13 @@ const ui_language_t ui_lang_de = {
     .servo         = k_de_servo,
 };
 
+/** @brief the language tables, English is NULL */
 static const ui_language_t *const k_langs[UI_LANG_COUNT] = {
     [UI_LANG_EN] = NULL,
     [UI_LANG_DE] = &ui_lang_de,
 };
 
-/* Written by the render task, read by it and by the control task. */
+/** @brief Written by the render task, read by it and by the control task. */
 static atomic_int s_lang = UI_LANG_EN;
 
 void ui_text_set_language(ui_lang_t lang)
@@ -154,7 +155,9 @@ const ui_language_t *ui_text_table(ui_lang_t lang)
     return ((unsigned)lang < (unsigned)UI_LANG_COUNT) ? k_langs[lang] : NULL;
 }
 
-/* @p table's entry @p i, or NULL when it has none. */
+/**
+ * @brief @p table's entry @p i, or NULL when it has none.
+ */
 static const char *entry(const char *const *table, int i)
 {
     return (table != NULL) ? table[i] : NULL;
@@ -332,7 +335,7 @@ const char *ui_servo_str(servo_str_t id)
 
 /* ------------------------------------------------- the card slot's words */
 
-/* By place, then NONE, NO_FAT, UNREADABLE. */
+/** @brief By place, then NONE, NO_FAT, UNREADABLE. */
 static const ui_text_id_t k_card_text[UI_CARD_AT_COUNT][3] = {
     [UI_CARD_AT_LOGS]   = { TX_LOG_NO_CARD, TX_LOG_CARD_NO_FAT,
                             TX_LOG_CARD_UNREADABLE },

@@ -15,11 +15,11 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
-/* Samples a scale stays above its target before it shrinks: 3s at 20Hz.
+/** @brief Samples a scale stays above its target before it shrinks: 3s at 20Hz.
  * A shorter hold makes a single spike rescale the plot twice. */
 #define SHRINK_HOLD 60
 
-/* Headroom above the peak, so the trace does not ride the top edge. */
+/** @brief Headroom above the peak, so the trace does not ride the top edge. */
 #define HEADROOM 1.12f
 
 float ui_plot_nice_ceil(float v)
@@ -44,8 +44,10 @@ float ui_plot_nice_ceil(float v)
     return 10.0f * mag;
 }
 
-/* The series whose scale @p k is drawn on: its leader's, or its own.  A
- * follower of a follower, or of nothing, keeps its own. */
+/**
+ * @brief The series whose scale @p k is drawn on: its leader's, or its own.  A
+ * follower of a follower, or of nothing, keeps its own.
+ */
 static int leader_of(const ui_plot_t *p, int k)
 {
     const int f = (int)p->series[k].follows - 1;
@@ -232,9 +234,9 @@ int ui_plot_map_y(const ui_plot_t *p, int series, float value, int y0, int h)
 
 /* ----------------------------------------------------------------- drawing */
 
-#define RAIL_W     6
-#define RAIL_PITCH 10
-#define TICKS      8
+#define RAIL_W     6  /**< the width of a legend rail, px; not used */
+#define RAIL_PITCH 10  /**< the pitch of a legend rail, px; not used */
+#define TICKS      8  /**< the horizontal grid lines make this many divisions */
 
 /*
  * The channel legend: a swatch, a name, and the full scale of that channel.

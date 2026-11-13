@@ -21,8 +21,10 @@
 /** @brief The most rows a list has: its settings and strings. */
 #define MAX_ENTRIES (MAX_ROWS + SETTING_TEXT_COUNT)
 
-/* The list of @p cat in row order, its strings after its settings; the
- * number of rows, counted past @p max. */
+/**
+ * @brief The list of @p cat in row order, its strings after its settings; the
+ * number of rows, counted past @p max.
+ */
 static int entries(setting_cat_t cat, settings_row_t *out, int max)
 {
     setting_id_t ids[MAX_ROWS];

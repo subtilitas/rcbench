@@ -27,6 +27,7 @@
 extern "C" {
 #endif
 
+/** @brief The views of LIVE. */
 typedef enum {
     MOTOR_PANE_PLOT = 0,
     MOTOR_PANE_TABLE,
@@ -42,17 +43,22 @@ typedef enum {
     MOTOR_CMD_RESET_PEAKS,
 } motor_cmd_kind_t;
 
+/** @brief A command of the screen for the application. */
 typedef struct {
-    motor_cmd_kind_t kind;
-    float            value;
+    motor_cmd_kind_t kind;  /**< the command */
+    float            value;  /**< the command's value, a percentage for MOTOR_CMD_THROTTLE */
     /** @brief MOTOR_CMD_ARM: its stamp (ui_value_new_ask()), named back by
      *        motor_screen_arm_refused() when the bench refuses it; 0 on
      *        every other command. */
     uint32_t         ask;
 } motor_cmd_t;
 
-/** Called per sample, so the plot's time base is the sample rate.  The
- *  readouts take every sample; the plot takes them only while armed. */
+/**
+ * @brief Called per sample, so the plot's time base is the sample rate.  The
+ *  readouts take every sample; the plot takes them only while armed.
+ *
+ * @param b the bench's sample
+ */
 void motor_screen_push(const bench_state_t *b);
 
 /**
@@ -75,19 +81,31 @@ void motor_screen_push(const bench_state_t *b);
  * does it for an arm that hold did not ask for; after the hold's ask it
  * leaves the slider, which only motor_screen_set_throttle() can have moved
  * since, as it is.  Reporting the same state again changes nothing.
+ *
+ * @param armed true when the bench is armed
  */
 void motor_screen_set_armed(bool armed);
 
+/** @brief The state of the plot's trace. */
 typedef enum {
     MOTOR_PLOT_EMPTY = 0,   /**< no run recorded since the screen reset */
     MOTOR_PLOT_RECORDING,   /**< the bench is armed; the trace advances */
     MOTOR_PLOT_HELD,        /**< the last run, held as it ended         */
 } motor_plot_state_t;
 
+/**
+ * @brief Gives the state of the plot's trace.
+ *
+ * @return the state
+ */
 motor_plot_state_t motor_screen_plot_state(void);
 
-/** Samples in the trace, capped at UI_PLOT_HISTORY.  The plot is narrower
- *  than that, so a longer run is drawn truncated to its newest columns. */
+/**
+ * @brief Samples in the trace, capped at UI_PLOT_HISTORY.  The plot is narrower
+ *  than that, so a longer run is drawn truncated to its newest columns.
+ *
+ * @return the samples
+ */
 int motor_screen_plot_samples(void);
 
 /**
@@ -123,17 +141,22 @@ void motor_screen_cancel_arm(void);
  */
 void motor_screen_arm_refused(uint32_t ask);
 /**
- * The kV the connected ESC reports, or 0 when it reports none.  Preferred
+ * @brief The kV the connected ESC reports, or 0 when it reports none.  Preferred
  * over the SET_MOTOR_KV setting when it is non-zero.
+ *
+ * @param kv the kV; 0 for none
  */
 void motor_screen_set_esc_kv(int kv);
 
 /**
- * The GPIOs the throttle drives now: every pin bound as MOTOR PWM or DShot,
+ * @brief The GPIOs the throttle drives now: every pin bound as MOTOR PWM or DShot,
  * bit n for GPIO n, from the binding the application last read.  @p known is
  * false while no binding was read; the mask is then taken as empty.  The
  * CONTROL card's TARGET row names them, or says there are none or that the
  * binding is not read.
+ *
+ * @param gpio_mask the pins, bit n for GPIO n
+ * @param known the binding was read
  */
 void motor_screen_set_throttle_pins(uint64_t gpio_mask, bool known);
 
@@ -141,10 +164,12 @@ void motor_screen_set_throttle_pins(uint64_t gpio_mask, bool known);
 #define MOTOR_PROTO_MIXED 0xFFu
 
 /**
- * The protocol the throttle's pins are bound as, an index into
+ * @brief The protocol the throttle's pins are bound as, an index into
  * outbind_protos() (outbind_role_proto()): 0 when none is known,
  * MOTOR_PROTO_MIXED when they are bound as several.  The TARGET row puts its
  * name before the pins.
+ *
+ * @param proto the protocol, an index into outbind_protos(); 0 for none known
  */
 void motor_screen_set_throttle_protocol(uint8_t proto);
 
@@ -174,16 +199,24 @@ void motor_screen_set_throttle_protocol(uint8_t proto);
 bool motor_throttle_target(char *out, size_t size, uint8_t proto,
                            uint64_t pins, bool known, unsigned cells);
 
-/** The programming ports the bench throttle drives, bit n for port n: FUNC
+/**
+ * @brief The programming ports the bench throttle drives, bit n for port n: FUNC
  *  DSHOT150 to DSHOT600 and a pin the IOmcu holds, as port_view.h last
- *  read them. */
+ *  read them.
+ *
+ * @return the ports, bit n for port n
+ */
 uint8_t motor_dshot_ports(void);
 
-/** The TARGET row's value box in 8-pixel cells (ui_target_row_cells()). */
+/**
+ * @brief The TARGET row's value box in 8-pixel cells (ui_target_row_cells()).
+ *
+ * @return the cells
+ */
 unsigned motor_target_cells(void);
 
 /**
- * The output strip a full-width session on PROGRAM shows in the strip row,
+ * @brief The output strip a full-width session on PROGRAM shows in the strip row,
  * in place of the tabs and the output card, as one line:
  * `TARGET protocol pins   SUPPLY v V  i A   SAFE` ("ARMED" for an armed
  * bench), the target as motor_throttle_target() puts it in 26 cells, the
@@ -191,6 +224,15 @@ unsigned motor_target_cells(void);
  * with the output on, OFF, ON without both readings, "--" while it does not
  * answer.  Into @p out of @p size bytes; @p warn (may be NULL) gets whether
  * the target is a warning.  Returns the length written.
+ *
+ * @param out receives the line
+ * @param size its size, bytes
+ * @param proto the throttle's protocol
+ * @param pins the throttle pins, bit n for GPIO n
+ * @param known the binding is read
+ * @param armed the bench is armed
+ * @param warn receives whether the target is a warning; may be NULL
+ * @return the length written
  */
 size_t motor_output_strip(char *out, size_t size, uint8_t proto,
                           uint64_t pins, bool known, bool armed, bool *warn);
@@ -202,16 +244,28 @@ size_t motor_output_strip(char *out, size_t size, uint8_t proto,
  */
 int motor_screen_task(void);
 
-/** Whether PROGRAM's session is shown, full width with the output strip
- *  over it. */
+/**
+ * @brief Whether PROGRAM's session is shown, full width with the output strip
+ *  over it.
+ *
+ * @return true while it is
+ */
 bool motor_screen_session_shown(void);
 
-/** LIVE's view shown, a motor_pane_t: PLOT or TABLE. */
+/**
+ * @brief LIVE's view shown, a motor_pane_t: PLOT or TABLE.
+ *
+ * @return PLOT or TABLE
+ */
 int motor_screen_pane(void);
 
-/** Whether the TARGET row takes no press now: the bench is not SAFE (an ARM
+/**
+ * @brief Whether the TARGET row takes no press now: the bench is not SAFE (an ARM
  *  held, asked or in force, or a DISARM not yet answered), or the servo
- *  programmer holds its port. */
+ *  programmer holds its port.
+ *
+ * @return true when it takes no press
+ */
 bool motor_screen_target_locked(void);
 
 /** @brief Whether the SETTINGS list the footer opens shows, over the body.
@@ -260,19 +314,33 @@ struct ui_setlist;
  *  @return The list. */
 const struct ui_setlist *motor_settings_list(void);
 
-/** What the alert band says for a switch to ARMED refused because the pair
+/**
+ * @brief What the alert band says for a switch to ARMED refused because the pair
  *  of Idle pulse and Full pulse is not in force at the IOmcu, by
  *  endpoints_block(); NULL for ENDPOINTS_BLOCK_NONE and for a value outside
- *  the enum. */
+ *  the enum.
+ *
+ * @param why why the switch was refused
+ * @return the line
+ */
 const char *motor_endpoints_alert(endpoints_block_t why);
 
+/**
+ * @brief Gives the slider's value.
+ *
+ * @return the value, percent
+ */
 float motor_screen_throttle(void);
-/** The application's hook: sets the slider on an armed or a disarmed bench
- *  and posts nothing.  Not a control, and not held to the armed state. */
+/**
+ * @brief The application's hook: sets the slider on an armed or a disarmed bench
+ *  and posts nothing.  Not a control, and not held to the armed state.
+ *
+ * @param pct the value, percent
+ */
 void motor_screen_set_throttle(float pct);
 
 /**
- * Move the throttle by @p span_fraction of the slider's span, from the
+ * @brief Move the throttle by @p span_fraction of the slider's span, from the
  * rotary knob (knob.h).  Relative: the value changes by how far the knob
  * turned.  Nothing happens for a zero fraction, while a finger is dragging
  * the slider, while the bench is not armed, or on a task other than LIVE,
@@ -281,6 +349,8 @@ void motor_screen_set_throttle(float pct);
  * never arms.  It posts only into an empty slot or over a throttle: any other
  * pending command (an arm, a disarm, a peak reset) stays and the knob's
  * motion is dropped.
+ *
+ * @param span_fraction the turn as a fraction of the slider's span
  */
 void motor_screen_knob(float span_fraction);
 
@@ -300,7 +370,12 @@ void motor_screen_knob_frame(void);
  */
 void motor_screen_knob_cancel(void);
 
-/** True when a command was waiting; clears it. */
+/**
+ * @brief True when a command was waiting; clears it.
+ *
+ * @param out receives the command
+ * @return true when one was waiting
+ */
 bool motor_screen_poll_cmd(motor_cmd_t *out);
 
 /*
@@ -365,7 +440,13 @@ bool motor_screen_logname_live(void);
  */
 const ui_textkey_t *motor_screen_logname_keyboard(void);
 
+/** @brief Marks the whole screen to be drawn again. */
 void motor_invalidate(void);
+/**
+ * @brief Gives the screen's table.
+ *
+ * @return the table
+ */
 const ui_screen_t *motor_screen(void);
 
 #ifdef __cplusplus

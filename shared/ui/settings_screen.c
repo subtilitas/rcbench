@@ -225,6 +225,7 @@ int settings_hub_cat_tile(setting_cat_t cat)
     return -1;
 }
 
+/** @brief Finds the hub tile at a point. */
 static int tile_at(int x, int y)
 {
     for (int i = 0; i < stg_tile_count(); ++i) {
@@ -289,8 +290,8 @@ bool settings_screen_warn_line(int i, char *line, size_t n)
 _Static_assert(SETTINGS_WARN_LINES == UI_SL_WARN_LINES,
                "SETUP's warning is the list's");
 
-/*
- * The home tag leaves for @p to: held while something is unsaved and no
+/**
+ * @brief The home tag leaves for @p to: held while something is unsaved and no
  * save is asked for.  A save asked for is the operator saying keep, and
  * holds nothing; a save refused (NOT SAVED) leaves the values dirty and
  * holds it.
@@ -696,6 +697,7 @@ static void cancel(void)
  */
 static bool covered(void) { return ui_setlist_covered(&s.sl); }
 
+/** @brief The screen's table. */
 static const ui_screen_t s_screen = {
     .covered = covered,
     .title = "SETUP",

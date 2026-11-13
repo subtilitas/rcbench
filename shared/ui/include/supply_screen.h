@@ -81,23 +81,42 @@ typedef struct {
  */
 int supply_screen_task(void);
 
-/** One sample, for the readouts and, while the output is on, the plot. */
+/**
+ * @brief One sample, for the readouts and, while the output is on, the plot.
+ *
+ * @param s the sample
+ */
 void supply_screen_push(const supply_state_t *s);
 
-/** The newest sample supply_screen_push() took, as it took it: zeroed, so
- *  not online, before the first. */
+/**
+ * @brief The newest sample supply_screen_push() took, as it took it: zeroed, so
+ *  not online, before the first.
+ *
+ * @return the sample
+ */
 const supply_state_t *supply_screen_reading(void);
 
 /**
- * Whether the supply's output is on, as the supply reports it.  That bounds
+ * @brief Whether the supply's output is on, as the supply reports it.  That bounds
  * a run: switching on clears the plot and starts it, switching off holds it.
+ *
+ * @param on true when the output is on
  */
 void supply_screen_set_output(bool on);
 
-/** What the set points may be; the sliders and steps follow it. */
+/**
+ * @brief What the set points may be; the sliders and steps follow it.
+ *
+ * @param caps the caps
+ */
 void supply_screen_set_caps(const supply_caps_t *caps);
 
-/** Whether the numbers come from the panel's model rather than a supply. */
+/**
+ * @brief Whether the numbers come from the panel's model rather than a
+ *   supply.
+ *
+ * @param model true when the numbers are the model's
+ */
 void supply_screen_set_model(bool model);
 /**
  * @brief Whether the numbers come from the panel's model.
@@ -106,9 +125,11 @@ void supply_screen_set_model(bool model);
 bool supply_screen_model(void);
 
 /**
- * The PD mini's UART (universal asynchronous receiver-transmitter) rate in
+ * @brief The PD mini's UART (universal asynchronous receiver-transmitter) rate in
  * baud, shown after ONLINE in the header ("ONLINE 38400"); 0 shows none.
  * Not shown for the model, nor while the module does not answer.
+ *
+ * @param baud the rate in baud; 0 for none
  */
 void supply_screen_set_baud(uint32_t baud);
 
@@ -199,7 +220,11 @@ int supply_screen_keypad_setting(void);
  *  @return the keypad */
 const ui_keypad_t *supply_settings_keypad(void);
 
-/** The set points as the screen holds them, snapped to the caps. */
+/**
+ * @brief The voltage set point as the screen holds it, snapped to the caps.
+ *
+ * @return the set point, V
+ */
 float supply_screen_set_v(void);
 /**
  * @brief The current limit's set point as the screen holds it, snapped to
@@ -215,7 +240,12 @@ float supply_screen_set_i(void);
  */
 void supply_screen_settings_loaded(void);
 
-/** The operator's limits as the screen last read them from the settings. */
+/**
+ * @brief The operator's limits as the screen last read them from the
+ *   settings.
+ *
+ * @return the limits
+ */
 supply_limits_t supply_screen_limits(void);
 
 /**
@@ -232,7 +262,11 @@ void supply_screen_limits_changed(void);
  * were done here.
  */
 
-/** The set points' range: the supply's caps narrowed by the operator's. */
+/**
+ * @brief The set points' range: the supply's caps narrowed by the operator's.
+ *
+ * @return the caps
+ */
 supply_caps_t supply_screen_caps(void);
 
 /**
@@ -243,13 +277,18 @@ supply_caps_t supply_screen_caps(void);
  */
 bool supply_screen_typed_asks(void);
 
-/** Both set points, typed elsewhere and confirmed where they needed it;
- *  snapped to the caps. */
+/**
+ * @brief Both set points, typed elsewhere and confirmed where they needed it;
+ *  snapped to the caps.
+ *
+ * @param v the voltage set point, V
+ * @param i the current set point, A
+ */
 void supply_screen_put(float v, float i);
 
 /** The output as the supply last reported it. */
 /**
- * Whether a servo programming port is out of PWM.  The IOmcu then
+ * @brief Whether a servo programming port is out of PWM.  The IOmcu then
  * takes an OFF from the panel and no other command (supply_page.h), and
  * this screen offers the same: OUTPUT OFF and RESET PEAKS work, OUTPUT ON,
  * the sliders, the steps and the set points' keypads take no press and are
@@ -257,6 +296,8 @@ void supply_screen_put(float v, float i);
  * and the MODE card says who holds the supply.  What was under way when
  * the port left PWM -- a hold on OUTPUT ON, a drag, a keypad of a set
  * point, a question -- ends unanswered.
+ *
+ * @param held true when a port holds the supply
  */
 void supply_screen_set_port_held(bool held);
 /**
@@ -372,13 +413,21 @@ void supply_screen_restore_taken(void);
  */
 bool supply_screen_output_on(void);
 
-/** The output on, or an ON asked for and still on its way: what a set
- *  point change is asked about. */
+/**
+ * @brief The output on, or an ON asked for and still on its way: what a set
+ *  point change is asked about.
+ *
+ * @return true while it is
+ */
 bool supply_screen_output_live(void);
 
-/** How many times the output has been reported going off.  A question
+/**
+ * @brief How many times the output has been reported going off.  A question
  *  about a live output records it and stands only while it is unchanged:
- *  an OFF and a new ON between two frames end the run it was about. */
+ *  an OFF and a new ON between two frames end the run it was about.
+ *
+ * @return the count
+ */
 uint32_t supply_screen_off_count(void);
 
 /**
@@ -390,60 +439,97 @@ uint32_t supply_screen_off_count(void);
  */
 uint32_t supply_screen_off_asks(void);
 
-/** OUTPUT ON's hold completed elsewhere, as it does here: an ON is posted
- *  unless an OFF already is, and the output is @p by's from then on. */
+/**
+ * @brief OUTPUT ON's hold completed elsewhere, as it does here: an ON is posted
+ *  unless an OFF already is, and the output is @p by's from then on.
+ *
+ * @param by the screen whose ON it is
+ */
 void supply_screen_ask_on(supply_by_t by);
 
-/** The screen whose ON the output is, or SUPPLY_BY_NONE: off, no ON on
- *  its way, or an OFF asked since. */
+/**
+ * @brief The screen whose ON the output is, or SUPPLY_BY_NONE: off, no ON on
+ *  its way, or an OFF asked since.
+ *
+ * @return the screen
+ */
 supply_by_t supply_screen_owner(void);
 
 /**
- * An output reported on that nobody here asked for becomes @p by's: the
+ * @brief An output reported on that nobody here asked for becomes @p by's: the
  * servo programmer's CONNECT, which switches a PD mini on through the
  * IOmcu and not through this screen.  An owned output keeps its
  * owner.
+ *
+ * @param by the screen it becomes
  */
 void supply_screen_claim(supply_by_t by);
 
 /**
- * Screen @p by is left.  An output it owns -- on, or an ON on its way --
+ * @brief Screen @p by is left.  An output it owns -- on, or an ON on its way --
  * is switched off.  While a servo programming port holds the supply
  * (supply_screen_set_port_held()) an OFF would end the port's session and
  * cut a write on the wire: the OFF is owed instead, and sent when the port
  * lets go, unless supply_screen_entered() came first.  An output another
  * screen owns, or none, stays as it is.
+ *
+ * @param by the screen left
  */
 void supply_screen_left(supply_by_t by);
 
-/** Screen @p by is shown again: an OFF owed for leaving it is dropped. */
+/**
+ * @brief Screen @p by is shown again: an OFF owed for leaving it is dropped.
+ *
+ * @param by the screen shown
+ */
 void supply_screen_entered(supply_by_t by);
 
-/** Whether an OFF is owed for a screen left while a port held the supply. */
+/**
+ * @brief Whether an OFF is owed for a screen left while a port held the
+ *   supply.
+ *
+ * @return true when one is
+ */
 bool supply_screen_off_owed(void);
 
 /** OUTPUT OFF tapped elsewhere: an OFF is posted, and any ON dropped. */
 void supply_screen_ask_off(void);
 
-/** Whether OUTPUT ON is being held on this screen: a press on the switch
- *  that began with the output off. */
+/**
+ * @brief Whether OUTPUT ON is being held on this screen: a press on the switch
+ *  that began with the output off.
+ *
+ * @return true while it is
+ */
 bool supply_screen_output_held(void);
 
-/** Whether an OFF is posted and not yet taken by supply_screen_poll_cmd(). */
+/**
+ * @brief Whether an OFF is posted and not yet taken by
+ *   supply_screen_poll_cmd().
+ *
+ * @return true while it is
+ */
 bool supply_screen_off_pending(void);
 
 /** A hold under way is abandoned and a pending ON dropped: STOP. */
 void supply_screen_cancel_on(void);
 
 /**
- * Whether an ON this screen asked for can still be on its way: false once
+ * @brief Whether an ON this screen asked for can still be on its way: false once
  * the application has taken every ON it sent and the output is not on, so
  * an ON it dropped -- stale, or lost to a full queue -- stops counting as
  * live.  An ON this screen holds and has not handed over still counts.
+ *
+ * @param coming true when an ON can still be on its way
  */
 void supply_screen_set_on_coming(bool coming);
 
-/** True when anything was asked; clears it. */
+/**
+ * @brief True when anything was asked; clears it.
+ *
+ * @param out receives the command
+ * @return true when a command was taken
+ */
 bool supply_screen_poll_cmd(supply_cmd_t *out);
 
 /** @brief Everything SUPPLY draws is drawn again on its next frame. */

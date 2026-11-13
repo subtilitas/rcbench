@@ -79,18 +79,18 @@ typedef enum {
  * it never answered are an outbound one.
  */
 typedef struct {
-    busfault_kind_t kind;
-    can_selftest_verdict_t verdict;
+    busfault_kind_t kind;  /**< why the screen is shown: the start-up test failed or the link was lost */
+    can_selftest_verdict_t verdict;  /**< the self-test's verdict */
 
-    uint32_t sent;
-    uint32_t echoed;
-    uint32_t corrupt;
-    uint32_t lost;
+    uint32_t sent;  /**< the frames sent */
+    uint32_t echoed;  /**< the frames the far end echoed */
+    uint32_t corrupt;  /**< the frames that came back corrupt */
+    uint32_t lost;  /**< the frames that did not come back */
 
     uint32_t tx_errors;   /**< the panel's controller */
-    uint32_t rx_errors;
-    uint32_t bus_errors;
-    bool     bus_off;
+    uint32_t rx_errors;  /**< the receive errors of the panel's controller */
+    uint32_t bus_errors;  /**< the bus errors of the panel's controller */
+    bool     bus_off;  /**< the controller is off the bus */
 
     /* --- BUSFAULT_LINK_LOST only ------------------------------------- */
     busfault_bus_t bus;        /**< what this panel's controller is doing  */
@@ -190,7 +190,11 @@ bool busfault_screen_link_back(void);
  */
 busfault_exit_t busfault_screen_take_exit(void);
 
-/** What was handed in, for the application deciding whether to show it. */
+/**
+ * @brief What was handed in, for the application deciding whether to show it.
+ *
+ * @return the report
+ */
 const busfault_report_t *busfault_screen_report(void);
 
 /**
@@ -208,8 +212,11 @@ bool busfault_screen_take_ack(void);
 void busfault_screen_invalidate(void);
 
 /**
- * The self-test's verdict as the screen heads it, in the language showing.
+ * @brief The self-test's verdict as the screen heads it, in the language showing.
  * can_selftest_text() is the console's English.
+ *
+ * @param v the verdict
+ * @return the text
  */
 const char *busfault_verdict_text(can_selftest_verdict_t v);
 

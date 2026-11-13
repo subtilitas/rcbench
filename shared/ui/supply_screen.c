@@ -40,11 +40,13 @@ const ui_plot_series_t sup_series[S_COUNT] = {
     { "ISET", "A", 0, 2, 1.0f,  1 + S_CURR },
 };
 
+/** @brief the tabs' labels, PLOT then TABLE */
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
                                               TX_MO_TAB_TABLE };
 /* The screen's state; supply_screen_int.h names it s. */
 sup_state_t sup_s;
 
+/** @brief Marks every part of the screen to be drawn again. */
 static void forget_drawn(void)
 {
     s.drawn_mask = 0;
@@ -151,8 +153,10 @@ gfx_rect_t sup_overlay_area(void)
     return (gfx_rect_t){ OV_X, OV_Y, OV_W, OV_H };
 }
 
-/* The sliders take the effective caps' ranges and steps; their values are
- * kept and snapped into them. */
+/**
+ * @brief The sliders take the effective caps' ranges and steps; their values are
+ * kept and snapped into them.
+ */
 static void apply_caps(void)
 {
     /* Held by a programming port, the set points are the port's: they are
@@ -184,6 +188,7 @@ static void apply_caps(void)
     s.i_slider.dim = s.port_held;
 }
 
+/** @brief Reads the operator's limits from the settings. */
 static supply_limits_t limits_from_settings(void)
 {
     const supply_limits_t l = {
@@ -918,8 +923,8 @@ void supply_screen_cancel_on(void)
     sup_owner_settle();
 }
 
-/*
- * Leaving switches off an output this screen switched on: a screen that is
+/**
+ * @brief Leaving switches off an output this screen switched on: a screen that is
  * not visible must not hold a supply live that no other screen names.  An
  * output another screen switched on stays as it is.  The keypads, the
  * question and a switch of task are this screen's own and are no leave.  The
@@ -959,8 +964,10 @@ static void leave(void)
     supply_invalidate();
 }
 
-/* The menu's tile opens LIVE, as on every workbench.  Back on the screen
- * whose output it is, no OFF is owed for the leave. */
+/**
+ * @brief The menu's tile opens LIVE, as on every workbench.  Back on the screen
+ * whose output it is, no OFF is owed for the leave.
+ */
 static void enter(void)
 {
     supply_invalidate();
@@ -972,8 +979,8 @@ int supply_screen_task(void)
     return sup_list_shown() ? (int)UI_WB_SETTINGS : (int)UI_WB_LIVE;
 }
 
-/*
- * Touch events were lost.  The press is dropped as sup_drop_press() drops it:
+/**
+ * @brief Touch events were lost.  The press is dropped as sup_drop_press() drops it:
  * every gesture asks for nothing, except a tap on OUTPUT OFF, which is sent,
  * and an ON not yet collected is dropped; one collected stays asked.
  */
@@ -983,8 +990,8 @@ static void cancel(void)
     sup_list_cancel();
 }
 
-/*
- * The home tag climbs one level: over the SETTINGS list what covers it,
+/**
+ * @brief The home tag climbs one level: over the SETTINGS list what covers it,
  * then the list, through the leave warning while something is unsaved;
  * on LIVE the question first, answered CANCEL, then a keypad, closed with
  * nothing typed kept; with neither open the screen is left.  Nothing here
@@ -1017,6 +1024,7 @@ static bool covered(void)
     return sup_list_shown() || s.confirm_open || s.kp.open;
 }
 
+/** @brief The screen's table. */
 static const ui_screen_t k_screen = {
     .covered = covered,
     .title  = "SUPPLY",
