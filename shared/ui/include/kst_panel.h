@@ -69,7 +69,12 @@ extern "C" {
  *         (test_kst_panel_texts). */
 #define KST_PANEL_LINE       (2 * KST_PANEL_LINE_CELLS + 1)
 
-/** Start over: closed, no servo, nothing stored.  @p area is the overlay's. */
+/**
+ * @brief Start over: closed, no servo, nothing stored.  @p area is the
+ *   overlay's.
+ *
+ * @param area the overlay's rectangle
+ */
 void kst_panel_init(gfx_rect_t area);
 
 /** @brief The SERVO screen was entered: the model's write gate closes. */
@@ -100,15 +105,29 @@ void kst_panel_close(void);
  */
 void kst_panel_back(void);
 
-/** The port is in programming, or moves: the overlay is shown. */
+/**
+ * @brief The port is in programming, or moves: the overlay is shown.
+ *
+ * @return true while the overlay is shown
+ */
 bool kst_panel_holds_port(void);
 
-/** The GPIO the port the overlay works on drives, as the feed says, or
- *  PROG_REG_NO_PIN. */
+/**
+ * @brief The GPIO the port the overlay works on drives, as the feed says, or
+ *  PROG_REG_NO_PIN.
+ *
+ * @return the GPIO number, or PROG_REG_NO_PIN
+ */
 uint8_t kst_panel_pin(void);
 
-/** None of the session's controls stops what the bench drives: it works
- *  on a SAFE bench only (prog_page_set_t's safe_at).  Always false. */
+/**
+ * @brief None of the session's controls stops what the bench drives: it works
+ *  on a SAFE bench only (prog_page_set_t's safe_at).  Always false.
+ *
+ * @param x the touch's x
+ * @param y the touch's y
+ * @return always false
+ */
 bool kst_panel_safe_at(int x, int y);
 
 /** The session's hooks for its row on SERVO > PROGRAM. */
@@ -127,7 +146,12 @@ void kst_panel_cancel(void);
  */
 void kst_panel_tick(float dt_s);
 
-/** True while a press that began in the overlay is on the glass. */
+/**
+ * @brief True while a press that began in the overlay is on the glass.
+ *
+ * @param id the touch's id
+ * @return true while that press is on the glass
+ */
 bool kst_panel_has_press(uint8_t id);
 
 /**
@@ -137,15 +161,28 @@ bool kst_panel_has_press(uint8_t id);
  */
 bool kst_panel_pressed(void);
 
-/** A press in the overlay's area, or the rest of one it owns. */
+/**
+ * @brief A press in the overlay's area, or the rest of one it owns.
+ *
+ * @param evt the touch event
+ */
 void kst_panel_event(const touch_event_t *evt);
 
 void kst_panel_render(gfx_canvas_t *c);
 
-/** Changes whenever a render would show something else. */
+/**
+ * @brief Changes whenever a render would show something else.
+ *
+ * @return a counter that changes whenever a render would show something else
+ */
 uint32_t kst_panel_revision(void);
 
-/** Changes while a warning's button fills; kst_panel_apply_rect() is where. */
+/**
+ * @brief Changes while a warning's button fills; kst_panel_apply_rect() is
+ *   where.
+ *
+ * @return a counter that changes while a warning's button fills
+ */
 uint32_t kst_panel_hold_revision(void);
 
 /* --- the control task's side ------------------------------------------------ */
@@ -156,20 +193,34 @@ uint32_t kst_panel_hold_revision(void);
  * @param f the feed
  */
 void kst_panel_feed(const kst_prog_feed_t *f);
-/** HV SERVO of the SERVO screen: off, the programming voltage stays at or
+/**
+ * @brief HV SERVO of the SERVO screen: off, the programming voltage stays at or
  *  below KST_PANEL_STD_MV, and one set above it goes back to
  *  KST_PROG_SUPPLY_MV.  On, it allows a voltage above KST_PANEL_STD_MV
  *  through the warning page and its hold; no such voltage is stored or
- *  loaded. */
+ *  loaded.
+ *
+ * @param on true allows a voltage above KST_PANEL_STD_MV, through the warning
+ *   page
+ */
 void kst_panel_set_hv(bool on);
-/** The bench is armed or asked to arm: CONNECT and every operation that
+/**
+ * @brief The bench is armed or asked to arm: CONNECT and every operation that
  *  sends frames are refused with KST_PROG_MSG_NEED_DISARM.  No screen
  *  takes an arm while kst_panel_holds_port(): ARM on the SERVO and MOTOR
- *  screens takes no press, and the ESC stick programmer starts no run. */
+ *  screens takes no press, and the ESC stick programmer starts no run.
+ *
+ * @param armed true when the bench is armed or asked to arm
+ */
 void kst_panel_bench_armed(bool armed);
-/** True once after the overlay was opened or one of its actions tapped
+/**
+ * @brief True once after the overlay was opened or one of its actions tapped
  *  with a feed: the caller, which has the card, looks at the slot, mounts
- *  a card put in or swapped and lets one taken out go. */
+ *  a card put in or swapped and lets one taken out go.
+ *
+ * @return true once, after the overlay opened or one of its actions was
+ *   tapped with a feed
+ */
 bool kst_panel_card_look(void);
 /**
  * @brief Takes the next command for the link task.
@@ -177,11 +228,20 @@ bool kst_panel_card_look(void);
  * @return true when a command was taken
  */
 bool kst_panel_take(kst_prog_cmd_t *out);
-/** The gate the task that owns the link module claims each START at
- *  (kst_prog_gate_set()).  Kept over kst_panel_init().  NULL for none. */
+/**
+ * @brief The gate the task that owns the link module claims each START at
+ *  (kst_prog_gate_set()).  Kept over kst_panel_init().  NULL for none.
+ *
+ * @param g the gate; NULL for none
+ */
 void kst_panel_gate(kst_prog_gate_t *g);
-/** The servo files: a request for the task that has the card, and what it
- *  made of it (kst_card_run()). */
+/**
+ * @brief The servo files: a request for the task that has the card, and what it
+ *  made of it (kst_card_run()).
+ *
+ * @param out receives the request
+ * @return true when a request was waiting
+ */
 bool kst_panel_card_take(kst_prog_card_req_t *out);
 /**
  * @brief Gives the model the outcome of a card operation.
@@ -208,10 +268,16 @@ void kst_panel_file_done(bool ok);
  * @return true when the model took the file
  */
 bool kst_panel_file_load(const char *text, size_t len);
-/** The same for the file of a card mounted after the start.  A record the
+/**
+ * @brief The same for the file of a card mounted after the start.  A record the
  *  model holds already stands, before and after the read that follows the
  *  interrupted write: the text is not used then, and false is returned
- *  with nothing said. */
+ *  with nothing said.
+ *
+ * @param text the file's text
+ * @param len the length of @p text, bytes
+ * @return true when the model took the file
+ */
 bool kst_panel_file_late(const char *text, size_t len);
 
 /* --- the limit run's sessions (servo_limrun.h) ------------------------------- */
@@ -227,6 +293,7 @@ bool kst_panel_file_late(const char *text, size_t len);
  * the journal, the read back of every write.
  */
 
+/** @brief The state of one step of a limit run's session. */
 typedef enum {
     KST_PANEL_RUN_NONE = 0,  /**< no step asked, or its end taken          */
     KST_PANEL_RUN_BUSY,
@@ -234,8 +301,12 @@ typedef enum {
     KST_PANEL_RUN_FAILED,    /**< once: it did not                         */
 } kst_panel_run_t;
 
-/** The programmer's port is in PWM with no operation under way: a run's
- *  CONNECT can start. */
+/**
+ * @brief The programmer's port is in PWM with no operation under way: a run's
+ *  CONNECT can start.
+ *
+ * @return true when CONNECT can start
+ */
 bool kst_panel_run_ready(void);
 /** A run begins: no write of it yet. */
 void kst_panel_run_begin(void);
@@ -248,8 +319,14 @@ void kst_panel_run_begin(void);
  *  @return KST_PROG_MSG_NONE when taken, else the refusal */
 kst_prog_msg_id_t kst_panel_run_connect(bool supply, uint16_t mv,
                                         uint16_t ma);
-/** Write LEFT ANGLE @p left and RIGHT ANGLE @p right and nothing else.
- *  The run's first write holds the servo as read (kst_prog_run_hold()). */
+/**
+ * @brief Write LEFT ANGLE @p left and RIGHT ANGLE @p right and nothing else.
+ *  The run's first write holds the servo as read (kst_prog_run_hold()).
+ *
+ * @param left LEFT ANGLE
+ * @param right RIGHT ANGLE
+ * @return KST_PROG_MSG_NONE when taken, else the refusal
+ */
 kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right);
 /**
  * @brief Write PULSE LOWER and PULSE UPPER and nothing else; as
@@ -259,7 +336,11 @@ kst_prog_msg_id_t kst_panel_run_write(uint16_t left, uint16_t right);
  * @return as kst_panel_run_write()
  */
 kst_prog_msg_id_t kst_panel_run_pulses(uint16_t lower_dus, uint16_t upper_dus);
-/** LEAVE. */
+/**
+ * @brief LEAVE.
+ *
+ * @return KST_PROG_MSG_NONE when taken, else the refusal
+ */
 kst_prog_msg_id_t kst_panel_run_leave(void);
 kst_panel_run_t kst_panel_run_poll(void);
 /**
@@ -289,7 +370,11 @@ bool kst_panel_run_no_servo(void);
 bool kst_panel_run_servo(uint16_t angle[2], uint16_t *lo, uint16_t *hi,
                          bool *reversion, unsigned *type,
                          uint16_t pulse_dus[3]);
-/** The file that holds the servo as the run found it; "" for none. */
+/**
+ * @brief The file that holds the servo as the run found it; "" for none.
+ *
+ * @return the file name; "" for none
+ */
 const char *kst_panel_run_backup(void);
 /** The run is over: the programming voltage and current go back to the
  *  operator's.  The servo as the run found it stays held for RESTORE. */
@@ -300,8 +385,12 @@ void kst_panel_run_end(void);
 kst_prog_t *kst_panel_model(void);
 
 /**
- * A message as the overlay writes it, in the language in force.  Returns
+ * @brief A message as the overlay writes it, in the language in force.  Returns
  * the lines used, 0 for no message.
+ *
+ * @param m the message
+ * @param out receives the lines
+ * @return the lines used; 0 for no message
  */
 int kst_panel_message_lines(const kst_prog_msg_t *m,
                             char out[KST_PANEL_MSG_LINES][KST_PANEL_LINE]);
@@ -316,7 +405,12 @@ int kst_panel_message_lines(const kst_prog_msg_t *m,
  */
 int kst_panel_text_rows(const char *s);
 
-/** The line a rule's refusal or warning shows. */
+/**
+ * @brief The line a rule's refusal or warning shows.
+ *
+ * @param rule the rule number
+ * @return the line; NULL for an unknown rule
+ */
 const char *kst_panel_rule_text(unsigned rule);
 
 /**
@@ -394,11 +488,25 @@ gfx_rect_t kst_panel_apply_rect(void);
 /** @brief A warning page's CANCEL, 180 x 56px at the foot's right.
  *  @return its rectangle */
 gfx_rect_t kst_panel_cancel_rect(void);
+/**
+ * @brief Gives the keypad of the overlay.
+ *
+ * @return the keypad
+ */
 ui_keypad_t *kst_panel_keypad(void);
+/**
+ * @brief Gives the keyboard of the overlay.
+ *
+ * @return the keyboard
+ */
 ui_textkey_t *kst_panel_textkey(void);
 
-/** What is open over the page: 0 none, 1 keypad, 2 choice list, 3 warning,
- *  4 the keyboard for a file's name. */
+/**
+ * @brief What is open over the page: 0 none, 1 keypad, 2 choice list, 3 warning,
+ *  4 the keyboard for a file's name.
+ *
+ * @return 0, 1, 2, 3 or 4, as above
+ */
 int kst_panel_editor(void);
 
 /**
@@ -408,11 +516,21 @@ int kst_panel_editor(void);
  */
 int kst_panel_page(void);
 
-/** Line @p i of the open warning page, entry @p i of the open list; NULL
- *  past the last and while none is open. */
+/**
+ * @brief Line @p i of the open warning page, entry @p i of the open list; NULL
+ *  past the last and while none is open.
+ *
+ * @param i the line or entry, from 0
+ * @return the text; NULL past the last or with none open
+ */
 const char *kst_panel_warning_line(int i);
-/** The level line @p i of the open warning page is drawn in: a
- *  kst_prog_level_t; KST_PROG_INFO past the last. */
+/**
+ * @brief The level line @p i of the open warning page is drawn in: a
+ *  kst_prog_level_t; KST_PROG_INFO past the last.
+ *
+ * @param i the line, from 0
+ * @return the level
+ */
 int kst_panel_warning_level(int i);
 /**
  * @brief The open warning page's hold button label.
@@ -425,20 +543,61 @@ const char *kst_panel_apply_label(void);
  * @return the label; NULL with no page open
  */
 const char *kst_panel_cancel_label(void);
-/** Line @p i, 0 or 1, of what stands on the SERVO tab until it is dealt
- *  with; NULL where there is none. */
+/**
+ * @brief Line @p i, 0 or 1, of what stands on the SERVO tab until it is dealt
+ *  with; NULL where there is none.
+ *
+ * @param i 0 or 1
+ * @return the line; NULL where there is none
+ */
 const char *kst_panel_standing_line(int i);
-/** The control of the row at @p page, @p row, @p col takes a tap now. */
+/**
+ * @brief The control of the row at @p page, @p row, @p col takes a tap now.
+ *
+ * @param page the tab
+ * @param row the row, from the top
+ * @param col the column, 0 or 1
+ * @return true when the control takes a tap
+ */
 bool kst_panel_row_live(int page, int row, int col);
-/** The SERVO tab's line @p i under its rows: 0 the port's state, 1 what
- *  explains it; NULL where the tab draws none. */
+/**
+ * @brief The SERVO tab's line @p i under its rows: 0 the port's state, 1 what
+ *  explains it; NULL where the tab draws none.
+ *
+ * @param i 0 or 1
+ * @return the line; NULL where the tab draws none
+ */
 const char *kst_panel_status_line(int i);
-/** The text on the button of the row at @p page, @p row, @p col. */
+/**
+ * @brief The text on the button of the row at @p page, @p row, @p col.
+ *
+ * @param page the tab
+ * @param row the row, from the top
+ * @param col the column, 0 or 1
+ * @return the text; NULL for no such row
+ */
 const char *kst_panel_button(int page, int row, int col);
-/** The label of the row at @p page, @p row, @p col as it is drawn now. */
+/**
+ * @brief The label of the row at @p page, @p row, @p col as it is drawn now.
+ *
+ * @param page the tab
+ * @param row the row, from the top
+ * @param col the column, 0 or 1
+ * @return the label; NULL for no such row
+ */
 const char *kst_panel_label(int page, int row, int col);
+/**
+ * @brief Gives an entry of the open list.
+ *
+ * @param i the entry, from 0
+ * @return its label; NULL past the last or with no list open
+ */
 const char *kst_panel_choice_label(int i);
-/** The open list's title; NULL while none is open. */
+/**
+ * @brief The open list's title; NULL while none is open.
+ *
+ * @return the title; NULL while none is open
+ */
 const char *kst_panel_choice_title(void);
 
 /**
@@ -461,8 +620,12 @@ const char *kst_panel_choice_title(void);
 int kst_panel_pack_notes(const int *rows, const bool *standing, int count,
                          int room, int *page);
 
-/** The pages the open tab's notes take: 1 when they fit above the message;
- *  a tap on the notes shows the next. */
+/**
+ * @brief The pages the open tab's notes take: 1 when they fit above the message;
+ *  a tap on the notes shows the next.
+ *
+ * @return the pages, at least 1
+ */
 int kst_panel_note_pages(void);
 
 /**
@@ -472,17 +635,35 @@ int kst_panel_note_pages(void);
  */
 gfx_rect_t kst_panel_notes_rect(void);
 
-/** The notes' page shown, from 0. */
+/**
+ * @brief The notes' page shown, from 0.
+ *
+ * @return the page, from 0
+ */
 int kst_panel_note_page(void);
 
-/** The @p i-th note on the page shown, from the top; NULL past the last. */
+/**
+ * @brief The @p i-th note on the page shown, from the top; NULL past the
+ *   last.
+ *
+ * @param i the note, from 0
+ * @return its text; NULL past the last
+ */
 const char *kst_panel_shown_note(int i);
 
-/** The lines of the last message drawn under the notes. */
+/**
+ * @brief The lines of the last message drawn under the notes.
+ *
+ * @return the lines, 0 for none
+ */
 int kst_panel_shown_message_lines(void);
 
-/** The rows the notes and the message of the page shown are drawn in,
- *  across the area; empty for none. */
+/**
+ * @brief The rows the notes and the message of the page shown are drawn in,
+ *  across the area; empty for none.
+ *
+ * @return the rectangle; empty for none
+ */
 gfx_rect_t kst_panel_notes_drawn(void);
 
 #ifdef __cplusplus
