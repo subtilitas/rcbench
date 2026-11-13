@@ -419,7 +419,7 @@ its stack less 1024 bytes.
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
 | `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
-| `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,416 | 3,712 |
+| `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,432 | 3,696 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
 8,192 bytes, and the TCP/IP (transmission control protocol, internet
@@ -487,8 +487,8 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   an update, the SERVO screen link's callbacks into the panel, the
   hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open,
   the card functions the run logs, the fault log and the servo files
-  are written through, and the screen guide's text watch and a screen's
-  translated band title,
+  are written through, the screen guide's text watch, a screen's
+  translated band title and the servo programmers' look at the card slot,
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,

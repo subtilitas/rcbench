@@ -223,6 +223,16 @@ void kst_panel_bench_armed(bool armed);
  */
 bool kst_panel_card_look(void);
 /**
+ * @brief The caller's look at the card slot now: true while a card is
+ *        mounted.  Called at WRITE n VALUES' press and as its 2s hold
+ *        completes, so a card pulled under the hold is found before the
+ *        write goes.  Kept over kst_panel_init().  NULL, the default, reads
+ *        the last feed's card (kst_prog_feed_t::card).
+ *
+ * @param fn the look; NULL for the feed's card
+ */
+void kst_panel_card_check(bool (*fn)(void));
+/**
  * @brief Takes the next command for the link task.
  * @param out the command
  * @return true when a command was taken

@@ -838,7 +838,14 @@ auf seinem Reiter markiert, und [VERLASSEN](#verlassen) listet sie.
    Eine eingehängte Karte, die die Datei nicht annimmt, beendet das
    Schreiben. Ohne eingehängte Karte sagt der Reiter SERVO
    `Keine Karte. Es wird keine Backup-Datei gespeichert.`, solange
-   Änderungen warten, und das Schreiben läuft ohne Datei. Solange der
+   Änderungen warten, und das Schreiben läuft ohne Datei. Beim Drücken
+   fragt das Panel eine eingehängte Karte, ob sie antwortet, mit einem
+   Kommando SEND_STATUS (CMD13), und sendet ohne eingehängte Karte nichts;
+   findet es keine, prüft es den Steckplatz einmal im nächsten Frame, wo
+   eine eingesteckte Karte eingehängt wird. Eine beim Drücken gefundene
+   Karte wird noch einmal gefragt, wenn das Halten nach 2s vollständig ist:
+   Fehlt sie dann, hält sie das Schreiben auf, und das Band sagt
+   `Karte entnommen. Halte erneut, um ohne Backup zu schreiben.` Solange der
    Vermerk eines unterbrochenen Schreibens gehalten wird, wird keine Datei
    gespeichert: das Servo kann halb geschrieben sein, und der Vermerk hält
    seine Werte, wie sie vorgefunden wurden.
@@ -1099,7 +1106,8 @@ wiederherstellbar.
 | Der IOmcu startet neu | seine Sitzung und das Backup der Sitzung sind weg. **VERBINDEN** beginnt eine Sitzung, und ihr erstes Schreiben speichert das Servo, wie diese Sitzung es vorfindet |
 | Ein Speichern über **DATEIEN** nach einem Schreiben ohne Karte | speichert das Servo, wie es steht; es zählt nicht als Backup-Datei |
 | Die Karte wird entnommen, während eine Seite des Zurückspielens oder Lösens offen ist, die die Datei zusagt | das Halten sendet nichts, und die Seite kommt mit den drei Zeilen zurück; ihr eigenes Halten von 2s sendet den Vorgang |
-| Die Karte wird während des 2s-Haltens auf **n WERTE SCHREIBEN** entnommen | das Schreiben geht ohne Datei |
+| Die Karte wird während des 2s-Haltens auf **n WERTE SCHREIBEN** entnommen, im Reiter oder in der Fußzeile | nichts wird geschrieben, die Änderungen bleiben; das Band sagt `Karte entnommen. Halte erneut, um ohne Backup zu schreiben.` Das nächste 2s-Halten, beim Drücken ohne Karte, schreibt ohne Datei |
+| Keine Karte beim Drücken von **n WERTE SCHREIBEN** | der Reiter SERVO sagt `Keine Karte. Es wird keine Backup-Datei gespeichert.`, und das 2s-Halten schreibt ohne Datei |
 | Die Karte wird entnommen, nachdem die Backup-Datei gespeichert ist | spätere Schreiben der Sitzung werden gesendet; der Vermerk des Schreibens bleibt im RAM |
 | **DATEIEN**, Speichern und Laden ohne Karte | abgelehnt: `Keine Karte. Nichts gespeichert oder ins Servo geschrieben.` |
 | Eine Karte, die nach dem Start des Panels eingesteckt, entnommen oder getauscht wird | das Panel sieht in den Steckplatz, wenn der Programmierer öffnet, bei jedem **VERBINDEN** und bei jedem Tippen auf **ALLES AUSLESEN**, **DATEIEN**, **ZURÜCKSPIELEN**, **WEITERES** und bei jedem Druck auf **n WERTE SCHREIBEN**: Eine eingesteckte oder getauschte Karte wird eingebunden, eine entnommene freigegeben. Der Blick auf eine eingebundene Karte ist ein Befehl SEND_STATUS (CMD13). Eine Dateianfrage (Liste, Laden, Speichern) läuft auf der Karte, für die sie gestellt wurde; ist bis dahin eine andere an ihrer Stelle eingebunden, findet sie keine Karte. Der Vermerk eines Schreibvorgangs geht auf die Karte, deren Vermerk der Programmierer zuletzt gelesen hat, nie auf eine an ihrer Stelle eingebundene, bevor der nächste Blick deren Vermerk liest. Das Tippen, das eine neue Karte findet, liest noch den Kartenzustand von vorher; das nächste hat ihn, und eine offene Seite des Zurückspielens oder Lösens wechselt zur Seite mit der Datei |
@@ -1622,8 +1630,9 @@ Codes.
   Vermerk bleibt vor und nach dem erneuten Auslesen des Servos erhalten.
   Ein Vermerk auf der neu eingebundenen Karte wird dann nicht geladen;
   der nächste auf die Karte geschriebene Vermerk ersetzt ihn.
-- Der Kartensteckplatz wird beim Öffnen der Servoprogrammierung oder beim
-  Antippen einer Aktion geprüft, nicht fortlaufend.
+- Der Kartensteckplatz wird beim Öffnen der Servoprogrammierung, beim
+  Antippen einer Aktion sowie beim Drücken und beim vollständigen
+  2s-Halten von **n WERTE SCHREIBEN** geprüft, nicht fortlaufend.
 - Ist der IOmcu ohne Versorgung und das Servo aus einer anderen
   Versorgung gespeist, überschreitet ein Servo, das die Signalleitung über
   3,63V treibt, den für GPIO 13 spezifizierten Wert
@@ -1881,7 +1890,9 @@ eine Zeile im Format 1 gegen 20k_sel.
 `test_kst_panel_nocard` fährt die Schreiben ohne Karte: das erste Schreiben,
 ein Zurückspielen und ein Lösen des Pairings, ein früh losgelassenes
 Halten, eine zwischen zwei Schreiben eingehängte Karte und eine während des
-Haltens zum Schreiben entnommene Karte. Ein Kommando, das die Control-Task nach
+Haltens zum Schreiben entnommene Karte, mit der erst das nächste Halten
+schreibt; `test_kst_panel_frame` fährt dieses Halten im Reiter und in der
+Fußzeile. Ein Kommando, das die Control-Task nach
 Ablauf seiner 2s annimmt, erreicht keine Leitung, für jede Art von
 Vorgang; eine Ablehnung bei jedem späteren Austausch jeder Art von Vorgang
 verlangt **ALLES AUSLESEN**; jeder Ergebniscode der Sitzung hat eine Klasse,

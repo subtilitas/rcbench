@@ -46,12 +46,15 @@ TEST_CASE(the_gate_is_true_only_with_every_fact_idle)
         { offsetof(shot_facts_t, no_card_fault), SHOT_WAIT_CARD_FAULT },
         { offsetof(shot_facts_t, no_recording), SHOT_WAIT_RECORDING },
     };
-    /* Every fact has its row, and every row one fact. */
-    CHECK_EQ(sizeof(k) / sizeof(k[0]), sizeof(shot_facts_t));
+    /* Every fact has its row, and every row one fact; no_lit_fault is
+     * Dim after's, and the gate does not read it. */
+    CHECK_EQ(sizeof(k) / sizeof(k[0]), sizeof(shot_facts_t) - 1u);
     CHECK_EQ(sizeof(k) / sizeof(k[0]), SHOT_WAIT_COUNT - 1);
     const shot_facts_t idle = all_but(sizeof(shot_facts_t));
     CHECK_EQ(shot_gate(&idle), SHOT_IDLE);
     CHECK(shot_gate_idle(&idle));
+    const shot_facts_t lit = all_but(offsetof(shot_facts_t, no_lit_fault));
+    CHECK_EQ(shot_gate(&lit), SHOT_IDLE);
     for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
         const shot_facts_t f = all_but(k[i].off);
         CHECK_EQ(shot_gate(&f), k[i].why);

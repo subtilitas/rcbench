@@ -435,10 +435,12 @@ def test_prog_calls_name_every_hook_of_every_page_set():
 
 
 def test_ui_hook_calls_name_every_text_watch_and_title_now():
-    """A text watch or a title_now that UI_HOOK_CALLS leaves out is unfollowed.
+    """A hook UI_HOOK_CALLS leaves out is unfollowed.
 
     Every function handed to gfx_text_watch() and every screen's title_now
     in shared/ is one UI_HOOK_CALLS names, and the table names no other.
+    The function the panel hands kst_panel_card_check() and
+    hitec_panel_card_check() is the one card check each names.
     """
     watches, titles = set(), set()
     for src in sorted((sc.ROOT / "shared").rglob("*.c")):
@@ -447,9 +449,19 @@ def test_ui_hook_calls_name_every_text_watch_and_title_now():
         titles |= set(re.findall(r"\.title_now\s*=\s*(\w+)", text))
     watches.discard("NULL")
     assert watches and titles
-    assert set(sc.UI_HOOK_CALLS) == {"watch_text", "ui_router_title"}
+    assert set(sc.UI_HOOK_CALLS) == {"watch_text", "ui_router_title",
+                                     "kpn_card_now", "hpn_card_now"}
     assert set(sc.UI_HOOK_CALLS["watch_text"]) == watches
     assert set(sc.UI_HOOK_CALLS["ui_router_title"]) == titles
+    main = (sc.PANEL_DIR / "main" / "main.c").read_text(encoding="utf-8")
+    for setter, caller, src in (
+            ("kst_panel_card_check", "kpn_card_now", "kst_panel_edit.c"),
+            ("hitec_panel_card_check", "hpn_card_now",
+             "hitec_panel_edit.c")):
+        given = re.findall(setter + r"\((\w+)\);", main)
+        assert set(sc.UI_HOOK_CALLS[caller]) == set(given), setter
+        edit = (sc.UI_DIR / src).read_text(encoding="utf-8")
+        assert re.search(r"noinline\)\) bool " + caller + r"\(", edit)
     gfx = (sc.ROOT / "shared/gfx/gfx_text.c").read_text(encoding="utf-8")
     assert re.search(r"noinline\)\) void\s+watch_text\(", gfx)
     router = (sc.UI_DIR / "ui_router.c").read_text(encoding="utf-8")

@@ -132,6 +132,7 @@ The list works as SETUP's: `-` and `+` step a value, `<` and `>` flip a switch, 
 - A trip of 0 is off.
 - A current trip at or above CURRENT LIMIT does not fire: the supply holds the limit in CC.
 - A cap lowered under a set point brings the set point down to it.
+- DISCARD puts the cap back and the set point to its value from before the edit. With the output on, the set point stays down until the next OFF, and the alert band says so: `Current limit stays at 1.00A until the output is off.`
 - A typed cap rounds down to the step and a typed trip above 0 is one step at least; a notice in the alert band names the value stored, such as `Current max: 1.00A stored, steps of 0.05A.`
 - The caps' keypads take the supply's range; the start values' keypads take no more than the caps.
 

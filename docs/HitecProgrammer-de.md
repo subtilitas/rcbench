@@ -323,6 +323,30 @@ kein Halten, und der Reiter nennt den Grund sofort. Keine Seite listet die
 Werte vor dem Schreiben: jeder geänderte Wert ist auf seinem Reiter mit `*`
 markiert, und [VERLASSEN](#verlassen) listet sie.
 
+Solange Änderungen warten, sagen die Hinweise unter den Zeilen des Reiters
+SERVO, was das Schreiben außer den Werten tut, in der Textfarbe eines
+Hinweises:
+
+| Serie | Hinweis |
+| --- | --- |
+| D-SERIE | `Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.` |
+| KLASSISCH | `Nach jedem gespeicherten Wert wird die Prüfsumme in 0x1C geschrieben.` |
+| Beide, mit gespeicherten Werten außerhalb der Einstellungen im Entwurf (eine geladene Datei oder ein Backup) | `Auch geschrieben: n Werte außerhalb der Einstellungen.` |
+
+Die Hinweise gehen mit den Änderungen. Sie stehen nach den übrigen
+Hinweisen des Reiters, der höchstens 6 hält; ein Hinweis, der nicht über
+die Meldung passt, wird nicht gezeichnet.
+
+Beim Drücken, im Reiter und in der Fußzeile, fragt das Panel eine
+eingehängte Karte, ob sie antwortet, mit einem Kommando SEND_STATUS
+(CMD13), und sendet ohne eingehängte Karte nichts. Eine beim Drücken
+gefundene Karte wird noch einmal gefragt, wenn das 2s-Halten vollständig
+ist. Fehlt sie dann, hält sie das Schreiben auf: nichts
+wird gesendet, die Änderungen bleiben, und das Band sagt
+`Karte entnommen. Halte erneut, um ohne Backup zu schreiben.` Das nächste
+2s-Halten, beim Drücken ohne Karte, schreibt ohne Backup-Datei und hält
+den Vermerk im RAM ([Ohne Karte](#ohne-karte)).
+
 1. Das zweite Lesen dessen, wovon der Plan abhängt
    ([Das zweite Lesen](#das-zweite-lesen)). Zwei Lesevorgänge, die
    voneinander abweichen, beenden das Schreiben hier, ohne dass etwas
@@ -628,7 +652,8 @@ Speichern trägt `backup=0`. Eine passende klassische Backup-Datei kann auch ges
 Ohne eingebundene Karte bleibt das Schreiben möglich. Solange Änderungen
 warten, zeigt der Reiter SERVO `Keine Karte. Es wird keine Backup-Datei
 gespeichert.` in der Warnfarbe, und 2s Halten auf **n WERTE SCHREIBEN** sendet
-das Schreiben ohne Datei. Die Halteseiten der anderen Schreibvorgänge
+das Schreiben ohne Datei. Eine Karte, die während dieses Haltens entnommen
+wird, hält das Schreiben einmal auf ([Schreiben](#schreiben)). Die Halteseiten der anderen Schreibvorgänge
 zeigen drei zusätzliche Zeilen:
 
 ```

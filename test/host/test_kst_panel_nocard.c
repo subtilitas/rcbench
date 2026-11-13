@@ -112,9 +112,10 @@ TEST_CASE(a_card_put_in_between_two_writes_takes_the_file_at_the_second)
     show();
 }
 
-/* The card pulled under WRITE's hold: the write goes without the file,
- * as the tab then says. */
-TEST_CASE(a_card_pulled_under_the_write_hold_sends_it_without_a_file)
+/* The card pulled under WRITE's hold, in the slot at its press: the hold
+ * writes nothing and the edits stay.  The next hold, pressed without a
+ * card, writes without the file, as the tab then says. */
+TEST_CASE(a_card_pulled_under_the_write_hold_writes_at_the_next_hold)
 {
     fresh();
     connected();
@@ -129,6 +130,14 @@ TEST_CASE(a_card_pulled_under_the_write_hold_sends_it_without_a_file)
         ticks(1.5f);
         ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
     }
+    settle();
+    CHECK(msg() != KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK_EQ(g_rig.fc.saves, 0);
+    CHECK_EQ(kst_prog_changes(M), 3);
+    CHECK(!kst_prog_write_enabled(M));
+    CHECK(noted(TR(KP_NO_FILE_1)));
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK_EQ(g_rig.fc.saves, 0);
@@ -698,7 +707,7 @@ int main(void)
 {
     RUN(a_first_write_with_no_card_is_named_on_the_tab_and_sent_by_its_hold);
     RUN(a_card_put_in_between_two_writes_takes_the_file_at_the_second);
-    RUN(a_card_pulled_under_the_write_hold_sends_it_without_a_file);
+    RUN(a_card_pulled_under_the_write_hold_writes_at_the_next_hold);
     RUN(a_card_pulled_after_the_backup_file_leaves_the_next_write_alone);
     RUN(a_restore_with_no_card_shows_its_warnings_and_the_missing_file);
     RUN(a_restore_and_a_release_whose_card_is_pulled_come_back_too);

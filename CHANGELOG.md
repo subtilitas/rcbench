@@ -65,6 +65,32 @@ history is in git.
   them and offers HOLD 2s TO LEAVE WITHOUT WRITING, which drops them, and
   BACK, which keeps them
   ([Servo programmer](docs/ServoProgrammer.md#leaving)).
+- HITEC programmer: while edits wait, the SERVO tab says what their write
+  does besides the values: `The servo saves and restarts. It ignores
+  signals for 1s.` for a D series servo, `Each stored value is followed by
+  a write of the checksum in 0x1C.` for a classic one, and `Stored values
+  outside the settings written too: n.` where the draft holds such values
+  ([Hitec](docs/HitecProgrammer.md#writing)).
+- KST and HITEC programmers: a card in the slot at WRITE n VALUES' press
+  and gone when its 2s hold completes, on the tab or in the footer, stops
+  the write. Nothing is sent, the edits stay, and the band says `Card
+  removed. Hold again to write without a backup.` The press asks a
+  mounted card one SEND_STATUS (CMD13) and sends nothing with none
+  mounted. The next hold, its press without a card, writes without the
+  backup file
+  ([Servo programmer](docs/ServoProgrammer.md#without-a-card)).
+- SUPPLY: DISCARD of a lowered VOLTAGE MAX or CURRENT MAX gives the set
+  point the cap brought down its value from before the edit, never above
+  the cap. With the output on the set point stays down until the next OFF,
+  and the band says so in one line, such as `Current limit stays at 1.00A
+  until the output is off.` A set point changed since the clamp, or a cap
+  saved at another value, gives nothing back.
+  ([Screens](docs/Screens.md#supply-settings)).
+- Dim after: FAULT 01, LINK_SILENT, alone no longer keeps the screen lit.
+  The IOmcu reports it after a restart of the panel until the next ARM, so
+  the screen never dimmed until then. Every other FAULT bit keeps the
+  screen lit, and the FAULT chip shows every bit
+  ([PANEL: Dim after](docs/Screens.md#panel-dim-after)).
 
 ### Fixed
 

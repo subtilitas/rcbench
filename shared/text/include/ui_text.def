@@ -1950,6 +1950,15 @@ UI_TEXT(SUP_LINE_CV, 0,
 UI_TEXT(SUP_HELD_REFUSED, 94,
     "Servo programming holds the supply: set points and ON are locked.",
     "Servoprogrammierung belegt das Netzteil: Sollwerte und EIN gesperrt.")
+UI_TEXT(SUP_BACK_V, 94,
+    "Voltage stays at %.2fV until the output is off.",
+    "Spannung bleibt bei %.2fV, bis der Ausgang aus ist.")
+UI_TEXT(SUP_BACK_I, 94,
+    "Current limit stays at %.2fA until the output is off.",
+    "Strombegrenzung bleibt bei %.2fA, bis der Ausgang aus ist.")
+UI_TEXT(SUP_BACK_VI, 94,
+    "Set points stay at %.2fV and %.2fA until the output is off.",
+    "Sollwerte bleiben bei %.2fV und %.2fA, bis der Ausgang aus ist.")
 UI_TEXT(SUP_LINE_PORT, 0,
     "Servo programmer.",
     "Servoprogrammierung.")
@@ -7009,6 +7018,9 @@ UI_TEXT(KP_NO_FILE_1_NO_FAT, 116,
 UI_TEXT(KP_NO_FILE_1_UNREADABLE, 116,
     "Cannot read the card. No backup file will be saved.",
     "Karte nicht lesbar. Es wird keine Backup-Datei gespeichert.")
+UI_TEXT(KP_CARD_PULLED, 94,
+    "Card removed. Hold again to write without a backup.",
+    "Karte entnommen. Halte erneut, um ohne Backup zu schreiben.")
 UI_TEXT(KP_NO_FILE_2, 116,
     "This session's backup is kept only in the bench's memory.",
     "Das Backup dieser Sitzung liegt nur im Speicher des Prüfstands.")
@@ -7869,6 +7881,12 @@ UI_TEXT(HP_RECORD_BAD, 116,
 UI_TEXT(HP_SUM_OK, 116,
     "Stored values 0x00-0x1C sum to 0: nothing to repair.",
     "Die Summe der gespeicherten Werte 0x00-0x1C ist 0. Nichts zu reparieren.")
+UI_TEXT(HP_WRITE_D, 116,
+    "The servo saves and restarts. It ignores signals for 1s.",
+    "Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.")
+UI_TEXT(HP_WRITE_C, 116,
+    "Each stored value is followed by a write of the checksum in 0x1C.",
+    "Nach jedem gespeicherten Wert wird die Prüfsumme in 0x1C geschrieben.")
 UI_TEXT(HP_WRITE_RECORD, 116,
     "The values before the write are recorded on the card in HITEC.TXT.",
     "Die Werte vor dem Schreiben werden auf der Karte in HITEC.TXT vermerkt.")

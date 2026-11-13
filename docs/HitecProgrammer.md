@@ -306,6 +306,27 @@ session refuses starts no hold, and the tab names the reason at once. No
 page lists the values before the write: each edited value is marked `*`
 on its tab, and [LEAVE](#leave) lists them.
 
+While edits wait, the notes under the SERVO tab's rows say what the write
+does besides the values, in the text colour of a note:
+
+| Series | Note |
+| --- | --- |
+| D | `The servo saves and restarts. It ignores signals for 1s.` |
+| CLASSIC | `Each stored value is followed by a write of the checksum in 0x1C.` |
+| Both, with stored values outside the settings in the draft (a loaded file or backup) | `Stored values outside the settings written too: n.` |
+
+The notes go with the edits. They come after the other notes of the tab,
+which holds at most 6; a note that does not fit above the message is not
+drawn.
+
+At the press, on the tab and in the footer, the panel asks a mounted card
+whether it answers, one SEND_STATUS (CMD13) command, and sends nothing
+with no card mounted. A card found at the press is asked again as the 2s
+hold completes. Gone then, it stops the write: nothing is sent, the edits stay, and the
+band says `Card removed. Hold again to write without a backup.` The next
+2s hold, its press without a card, writes without the backup file and
+keeps the record in RAM ([Without a card](#without-a-card)).
+
 1. The second read of what the plan depends on
    ([The second read](#the-second-read)). Two reads that differ end the
    write here, with nothing sent.
@@ -586,7 +607,8 @@ editable setting ([Loading a backup file](#loading-a-backup-file)).
 With no card mounted the write is not blocked. While edits wait, the
 SERVO tab shows `No card. No backup file will be saved.` in the warning
 colour, and the 2s hold on **WRITE n VALUES** sends the write without a
-file. The hold pages of the other writes carry three more lines:
+file. A card taken out during that hold stops the write once
+([Writing](#writing)). The hold pages of the other writes carry three more lines:
 
 ```
 No card. No backup file will be saved.

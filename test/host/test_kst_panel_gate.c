@@ -86,20 +86,43 @@ TEST_CASE(a_press_with_the_gate_already_open_still_takes_the_hold)
     (void)kst_prog_enable(M, false);
 }
 
-/* A press on WRITE asks the screen to look at the card slot, as a tap on
- * READ ALL or FILES does: the write may save a backup file first. */
+/* The card check's answer and the calls it took (kst_panel_card_check()). */
+static bool g_card_now;
+static int g_card_looks;
+
+/* The card check as the panel's: what the slot holds, counted. */
+static bool card_check(void)
+{
+    ++g_card_looks;
+    return g_card_now;
+}
+
+/* A press on WRITE looks at the card slot through the card check once.  A
+ * card found there stands for the slot's look, and the hold's end looks
+ * once more; with none found the screen is asked to look on the frame
+ * after, where a card put in is mounted, and the hold's end looks no
+ * more. */
 TEST_CASE(the_press_on_write_looks_at_the_card_slot)
 {
-    fresh();
-    connected();
-    edits();
-    const gfx_rect_t r = write_btn();
+    for (int card = 1; card >= 0; --card) {
+        fresh();
+        connected();
+        edits();
+        kst_panel_card_check(card_check);
+        g_card_now = card != 0;
+        g_card_looks = 0;
+        const gfx_rect_t r = write_btn();
 
-    (void)kst_panel_card_look();
-    CHECK(!kst_panel_card_look());
-    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
-    CHECK(kst_panel_card_look());
-    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+        (void)kst_panel_card_look();
+        CHECK(!kst_panel_card_look());
+        ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
+        CHECK_EQ(g_card_looks, 1);
+        CHECK_EQ(kst_panel_card_look(), card == 0);
+        ticks(2.5f);
+        CHECK_EQ(g_card_looks, card != 0 ? 2 : 1);
+        ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+        kst_panel_card_check(NULL);
+    }
 }
 
 /* The bench armed after the hold completed and before its send: the gate

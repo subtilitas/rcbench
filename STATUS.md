@@ -435,7 +435,9 @@ Built and tested on the host (`shared/ui/screen_dim.c`; `test_screen_dim`):
 SETUP > PANEL's Dim after drops the backlight's PWM duty from 100% to 20% after 5 to
 60min without a touch event, only while the screenshot gate finds the bench idle; a
 frame that does not finds it lit at once. A line on its way to the card's fault log, which
-the link report writes every 60s, does not count (`screen_dim_idle()`). The console
+the link report writes every 60s, does not count (`screen_dim_idle()`), nor does FAULT 01
+(LINK_SILENT) alone, the IOmcu's report after a restart of the panel until the next ARM
+(`shot_facts_t::no_lit_fault`); every other FAULT bit does. The console
 prints `dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%` every 300
 frames (`screen_dim_line()`, `backlight_line()`). The press that wakes a dim screen reaches no
 screen, except a press on STOP. `firmware/panel/main/panel_render.c` sets the duty with
@@ -652,7 +654,9 @@ Built and tested on the host; the control task drives the PD mini through the SU
 (`shared/bench/supply_link.c`) when SUPPLY's settings list enables it, and runs `supply_sim_t`
 otherwise. Set points shown beside their readings, a keypad, a settings list (caps, start
 values, current and voltage trips, the confirmation for live changes) kept in NVS, and a
-question before a set point changes a live output. Every stop, a trip, a lost ON and a
+question before a set point changes a live output. A cap lowered under a set point brings
+it down at once; DISCARD gives it back, with the output off only, and the band says so
+while the output is on (`test_supply_screen_home`). Every stop, a trip, a lost ON and a
 supply that stops answering switch the output off; the supply is stepped and logged from
 `control_pump()`, so it keeps its 50ms cadence while an exchange waits.
 
@@ -1878,7 +1882,9 @@ closed or taken under it.
 
 `test_hitec_panel` runs its overlay (`shared/ui/hitec_panel*.c`): SERIES kept in the
 settings, a change of series dropping the other series' read, the rows a read fills, the
-PORT row in every state, LEAVE and RELEASE PORT by their 2s holds, the supply's lock, and
+PORT row in every state, LEAVE and RELEASE PORT by their 2s holds, the supply's lock, a
+card pulled under WRITE's hold on the tab and in the footer, which writes nothing until
+the next hold, and
 every control, label, value, note and message inside its field in English and German;
 `test_hitec_panel_states` the state line of every state, MORE's keypad at its limits, READ
 ALL, ABORT and CLEAR by their buttons, the home tag, a hold the finger leaves, values shown
@@ -1954,7 +1960,8 @@ programmer, Tests](docs/ServoProgrammer.md#tests)). `test_hitec_panel_file` runs
 overlay's FILES row, its pages and their turn back to the first, the keyboard of a new name
 and the names the card refuses, a load, CHECK THIS FILE, a backup file's stored values on
 the load page, in its message and on LEAVE, the backup file's lines on the SERVO tab, the SERVO tab's
-no-card line while edits wait, RESTORE and FACTORY DEFAULT from their rows, both refused with an
+no-card line and the notes of what the write does (D series, classic, stored values outside
+the settings) while edits wait, RESTORE and FACTORY DEFAULT from their rows, both refused with an
 edit standing, and every new page and message in both languages.
 
 `test_hitec_panel_write` runs the overlay's lists, keypad refusals, the D series FAILSAFE
@@ -2046,10 +2053,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/motor_program_page.c` | 193 | 185 | 95.8% |
 | `shared/ui/motor_logname.c` | 191 | 185 | 96.9% |
 | `shared/ui/motor_guide.c` | 68 | 66 | 97.1% |
-| `shared/ui/supply_screen.c` | 524 | 515 | 98.3% |
-| `shared/ui/supply_events.c` | 323 | 321 | 99.4% |
+| `shared/ui/supply_screen.c` | 596 | 584 | 98.0% |
+| `shared/ui/supply_events.c` | 323 | 322 | 99.7% |
 | `shared/ui/supply_draw.c` | 413 | 394 | 95.4% |
-| `shared/ui/supply_settings.c` | 154 | 147 | 95.5% |
+| `shared/ui/supply_settings.c` | 154 | 148 | 96.1% |
 | `shared/ui/supply_guide.c` | 79 | 79 | 100.0% |
 | `shared/ui/prog5v_box.c` | 284 | 284 | 100.0% |
 | `shared/ui/prog_choice.c` | 127 | 126 | 99.2% |
@@ -2058,8 +2065,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_textkey.c` | 579 | 565 | 97.6% |
 | `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
-| `shared/ui/shot_gate.c` | 63 | 63 | 100.0% |
-| `shared/ui/screen_dim.c` | 103 | 101 | 98.1% |
+| `shared/ui/shot_gate.c` | 65 | 65 | 100.0% |
+| `shared/ui/screen_dim.c` | 104 | 102 | 98.1% |
 | `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
 | `shared/ui/stop_hold.c` | 45 | 45 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
@@ -2098,17 +2105,17 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/kst_panel.c` | 474 | 463 | 97.7% |
 | `shared/ui/kst_panel_text.c` | 196 | 196 | 100.0% |
 | `shared/ui/kst_panel_warn.c` | 277 | 272 | 98.2% |
-| `shared/ui/kst_panel_edit.c` | 409 | 396 | 96.8% |
+| `shared/ui/kst_panel_edit.c` | 418 | 405 | 96.9% |
 | `shared/ui/kst_panel_touch.c` | 334 | 332 | 99.4% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
 | `shared/ui/kst_panel_draw.c` | 565 | 563 | 99.7% |
 | `shared/ui/esc_wire_panel.c` | 575 | 546 | 95.0% |
 | `shared/ui/hitec_panel.c` | 284 | 283 | 99.7% |
 | `shared/ui/hitec_panel_text.c` | 505 | 500 | 99.0% |
-| `shared/ui/hitec_panel_edit.c` | 423 | 418 | 98.8% |
+| `shared/ui/hitec_panel_edit.c` | 432 | 427 | 98.8% |
 | `shared/ui/hitec_panel_page.c` | 201 | 199 | 99.0% |
 | `shared/ui/hitec_panel_touch.c` | 354 | 349 | 98.6% |
-| `shared/ui/hitec_panel_draw.c` | 290 | 289 | 99.7% |
+| `shared/ui/hitec_panel_draw.c` | 304 | 303 | 99.7% |
 | `shared/ui/hitec_panel_file.c` | 237 | 236 | 99.6% |
 | `shared/ui/hitec_panel_run.c` | 107 | 107 | 100.0% |
 | `shared/ui/hitec_panel_move.c` | 211 | 206 | 97.6% |
@@ -2405,7 +2412,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **91563** | **89755** | **98.0%** |
+| **total** | **91670** | **89861** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

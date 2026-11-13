@@ -3170,6 +3170,18 @@ one step and never rounds to OFF. A value stored other than as typed
 shows the alert band's notice: `Current max: 1.00A stored, steps of
 0.05A.` after 1.03 typed. A trip of 0 is disabled.
 
+DISCARD in the leave warning, or in any other list's, puts a lowered cap
+back to its stored value and gives the set point it lowered back its
+value from before the edit, never above the cap. A set point is raised
+back only while the output is off. With the output on the set point stays
+where the cap brought it until the next OFF, and the alert band says so
+in one line: `Current limit stays at 1.00A until the output is off.`, the
+same for the voltage, or both in one line. While a programming port
+holds the supply or an ON is on its way, the set point waits without a
+line, as the output is not on. A cap saved at another value, or a set
+point changed since the clamp, by the operator, a port or another screen,
+gives nothing back.
+
 Time above a trip begins at the first reading over the threshold. A
 reading below it resets the count; a missing reading leaves it unchanged.
 A trip switches the output off, sets MODE to TRIPPED until the next ON
@@ -5385,6 +5397,11 @@ bench is idle.
   log. A frame that finds any of them sets 100% at once and starts the
   minutes again. An ARMED bench or an output that is on is never behind a
   dim screen.
+- FAULT 01, LINK_SILENT, alone does not count. The IOmcu reports it after
+  a restart of the panel, and it stands until the next ARM. Every other
+  FAULT bit keeps the screen lit, with bit 01 up or not. The band's FAULT
+  chip shows bit 01 as before, and the screenshot's popup still waits for
+  it.
 - A line on its way to the card's fault log does not count. The popup
   waits for it, so the screenshot and the line do not share the card. The
   link report writes one every 60s while the link to the IOmcu is up and
