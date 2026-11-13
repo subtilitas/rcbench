@@ -33,8 +33,11 @@ export function buildBoard(data) {
   const live = document.createElementNS(NS, 'g');
   const [W, H] = data.size;
   const pads = Object.fromEntries(data.pads.map(p => [p.name, p]));
-  const look = part => LOOKS.find(([re]) => re.test(part.footprint))
-    || [null, '#23262c', 'plug'];
+  // A part of a drawn board can bring its own fill, kind and label.
+  const look = part => part.fill ? [null, part.fill, part.kind || 'plug']
+    : LOOKS.find(([re]) => re.test(part.footprint))
+      || [null, '#23262c', 'plug'];
+  const [mask0, mask1] = data.mask || ['#1b5c49', '#113c30'];
   const padSvg = p => {
     const r = p.round ? Math.min(p.w, p.h) / 2 : .18;
     return `<rect x="${p.x - p.w / 2}" y="${p.y - p.h / 2}" width="${p.w}"
@@ -44,8 +47,8 @@ export function buildBoard(data) {
   };
   const own = Object.fromEntries(data.parts.map(q => [q.ref, look(q)[2]]));
   let h = `<defs><linearGradient id="pcbmask" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#1b5c49"/><stop offset="1"
-      stop-color="#113c30"/></linearGradient>
+      <stop offset="0" stop-color="${mask0}"/><stop offset="1"
+      stop-color="${mask1}"/></linearGradient>
     <filter id="pcbshadow" x="-20%" y="-20%" width="140%" height="140%">
       <feDropShadow dx="0" dy="1.2" stdDeviation="1.6" flood-opacity=".55"/>
     </filter></defs>
@@ -117,15 +120,16 @@ export function buildBoard(data) {
       for (const p of data.pads) if (p.ref === q.ref) h += padSvg(p);
       h += `<text x="${cx}" y="${cy}" text-anchor="middle"
         dominant-baseline="middle" font-family="Inter, sans-serif"
-        font-weight="700" font-size="1.9" fill="#fff"
-        fill-opacity=".5">${q.ref}</text>`;
+        font-weight="700" font-size="${q.size || 1.9}"
+        fill="${q.ink || '#fff'}"
+        fill-opacity="${q.ink ? .85 : .5}">${q.label ?? q.ref}</text>`;
     } else if (kind !== 'axial') {
       h += `<text x="${cx}" y="${kind === 'empty' ? y0 - .5 : cy}"
         text-anchor="middle" dominant-baseline="middle"
         font-family="Inter, sans-serif" font-weight="700"
         font-size="${kind === 'empty' ? 1.0 : 1.5}"
-        fill="${fill === '#e9e4d6' ? '#333' : '#e8f1ec'}"
-        fill-opacity=".7">${q.ref}</text>`;
+        fill="${q.ink || (fill === '#e9e4d6' ? '#333' : '#e8f1ec')}"
+        fill-opacity=".7">${q.label ?? q.ref}</text>`;
     }
     const g = document.createElementNS(NS, 'g');
     g.innerHTML = h;
@@ -134,9 +138,13 @@ export function buildBoard(data) {
   }
   svg.replaceChildren(still, live);
 
-  // A point of the board: a pad's name, or [x, y] in mm.
+  // A point of the board: a pad's name, or [x, y] in mm.  A scene's plug
+  // boards add their pads, NAME.G, NAME.D+, NAME.D- and NAME.V.
+  const PLUG = ['G', 'D+', 'D-', 'V'];
+  let loose = {};
   const point = at => {
     if (Array.isArray(at)) return at;
+    if (loose[at]) return loose[at];
     const p = pads[at];
     if (!p) throw new Error('the board has no pad ' + at);
     return [p.x, p.y];
@@ -160,6 +168,37 @@ export function buildBoard(data) {
       view = [cx - w / 2, cy - hh / 2, w];
       svg.setAttribute('viewBox', `${view[0]} ${view[1]} ${w} ${hh}`);
       let g = '';
+      // A USB-C plug board beside the board: its 4 pads in a column at
+      // "at", 2mm apart, G at the top, the plug pointing left.
+      loose = {};
+      for (const p of sc.plugs || []) {
+        const [x, y] = p.at, k = ramp(lt, p.t, p.t + .7);
+        PLUG.forEach((name, i) => {
+          loose[`${p.name}.${name}`] = [x, y + (i - 1.5) * 2];
+        });
+        if (k <= 0) continue;
+        let s = `<rect x="${x - 13.6}" y="${y - 4.1}" width="7.4"
+            height="8.2" rx="1.2" fill="#c9cdd3"/>
+          <rect x="${x - 13.6}" y="${y - 4.1}" width="7.4" height="2.2"
+            rx="1.1" fill="#fff" fill-opacity=".35"/>
+          <rect x="${x - 13.0}" y="${y - 3.3}" width=".5" height="6.6"
+            fill="#6b7078"/>
+          <rect x="${x - 6.3}" y="${y - 4.4}" width="2.1" height="8.8"
+            rx=".4" fill="#15171c"/>
+          <rect x="${x - 4.3}" y="${y - 4.1}" width="6.0" height="8.2"
+            rx=".4" fill="#1f7a45"/>`;
+        PLUG.forEach((name, i) => {
+          const py = y + (i - 1.5) * 2;
+          s += `<rect x="${x - 1.0}" y="${py - .65}" width="2.2"
+              height="1.3" rx=".15" fill="${GOLD}"/>
+            <text x="${x - 2.6}" y="${py}" text-anchor="middle"
+              dominant-baseline="middle" font-family="Inter, sans-serif"
+              font-weight="700" font-size=".95" fill="#e8f1ec"
+              >${name.replace('-', '−')}</text>`;
+        });
+        g += `<g opacity="${k}"
+          transform="translate(${(1 - k) * -3.5} 0)">${s}</g>`;
+      }
       // A bare board shows a part from its mount on: the part comes
       // down onto its place.
       const when = {};
@@ -264,6 +303,15 @@ export function buildBoard(data) {
         }
         const dash = `stroke-dasharray="${len}"
           stroke-dashoffset="${len * (1 - k)}"`;
+        // A wire with "gone" is pulled out along its own way over that
+        // span; a "plain" wire is crimped, not soldered: no joints.
+        const out = w.gone ? ramp(lt, w.gone[0], w.gone[1]) : 0;
+        if (out >= 1) continue;
+        const end = pts.at(-1), near = pts.at(-2);
+        const run = Math.hypot(end[0] - near[0], end[1] - near[1]) || 1;
+        g += `<g opacity="${1 - out}" transform="translate(${
+          (end[0] - near[0]) / run * 9 * out} ${
+          (end[1] - near[1]) / run * 9 * out})">`;
         g += `<path d="${d}" fill="none" stroke="#000" stroke-opacity=".35"
           stroke-width=".8" stroke-linejoin="round" stroke-linecap="round"
           transform="translate(.25 .4)" ${dash}/>
@@ -272,7 +320,8 @@ export function buildBoard(data) {
           ${dash}/>
           <path d="${d}" fill="none" stroke="#fff" stroke-opacity=".3"
           stroke-width=".16" stroke-linejoin="round" stroke-linecap="round"
-          transform="translate(-.08 -.14)" ${dash}/>`;
+          transform="translate(-.08 -.14)" ${dash}/></g>`;
+        if (w.plain) continue;
         g += blob(pts[0], ramp(lt, w.t[0] - .3, w.t[0]) || k);
         // A loose wire leaves the board: no joint at its far end.
         if (k >= 1 && !w.loose) {

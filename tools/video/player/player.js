@@ -264,6 +264,28 @@ function section(n) {
     }
     return s;
   };
+  if (n.kind === 'extract') {
+    // A plug's housing cut open: the contact's tongue stands in the
+    // housing's window; a needle presses it down, the wire leaves to
+    // the back.
+    return `<svg viewBox="0 20 600 200">
+      <rect x="110" y="92" width="300" height="76" rx="6" fill="#e9e4d6"/>
+      <rect x="230" y="92" width="64" height="16" fill="#0e1420"/>
+      <rect x="130" y="124" width="250" height="14" fill="${PIN}"/>
+      <path d="M236 124l50 -22l4 8l-36 14z" fill="${PIN}"/>
+      <rect x="380" y="121" width="190" height="20" rx="10"
+        fill="${n.color || '#e8c81a'}"/>
+      <path d="M262 30l8 0l-2 72l-4 0z" fill="#aeb4bd"/>
+      <path d="M266 44v40m-9 -12l9 12l9 -12" fill="none" stroke="#00f58c"
+        stroke-width="4" stroke-linecap="round" stroke-linejoin="round"
+        transform="translate(-34 0)"/>
+      <path d="M450 172h84m-14 -10l14 10l-14 10" fill="none"
+        stroke="#00f58c" stroke-width="4" stroke-linecap="round"
+        stroke-linejoin="round"/>
+      ${txt(120, 58, n.good, '#00f58c')}${txt(480, 208, n.bad, '#00f58c')}
+      ${txt(170, 190, n.lower, '#c9d3e4', 14)}
+      </svg>`;
+  }
   if (n.kind === 'fill') {
     return `<svg viewBox="0 20 600 200">
       <rect x="60" y="130" width="480" height="22" rx="3" fill="${PCB}"/>

@@ -317,3 +317,37 @@ def test_the_music_gain_is_bounded():
     assert make_video.check(board) == []
     board["music_gain"] = 3
     assert any("music_gain" in e for e in make_video.check(board))
+
+
+def test_a_plug_board_adds_its_pads():
+    """A wire can end at a pad of a scene's USB-C plug board."""
+    import video_board
+
+    board = _rework()
+    scene = board["scenes"][0]
+    scene["plugs"] = [{"name": "USB", "at": [-10, 20], "t": 1}]
+    scene["wires"].append({"from": "R1.1", "to": "USB.D-", "plain": True,
+                           "gone": [8, 9], "t": [6, 7]})
+    assert make_video.check(board) == []
+    assert make_video.board_faults(scene, video_board.convert(_PCB)) == []
+    scene["wires"][-1]["to"] = "USB.CC"
+    assert make_video.board_faults(
+        scene, video_board.convert(_PCB)) == ["no pad USB.CC"]
+    scene["plugs"][0]["name"] = "U.S"
+    assert any("plug 1" in e for e in make_video.check(board))
+
+
+def test_the_drawn_boards_hold_what_the_storyboards_name():
+    """A board in the tree has every pad its scenes point at."""
+    drawn = {p.stem: json.loads(p.read_text(encoding="utf-8"))
+             for p in (make_video.VIDEO / "boards").glob("*.json")}
+    assert "p4-7b-back" in drawn
+    seen = 0
+    for path in make_video.storyboards():
+        board = json.loads(path.read_text(encoding="utf-8"))
+        for scene in board["scenes"]:
+            if scene["type"] == "board" and scene["board"] in drawn:
+                assert make_video.board_faults(
+                    scene, drawn[scene["board"]]) == [], path.name
+                seen += 1
+    assert seen

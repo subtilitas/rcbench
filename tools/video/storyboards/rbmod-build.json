@@ -12,7 +12,7 @@
   "speed": 0.94
  },
  "brand": "rbmod carrier build",
- "steps": 12,
+ "steps": 13,
  "scenes": [
   {
    "type": "case",
@@ -23,7 +23,7 @@
     "to": 5.2,
     "kicker": "rcbench · rbmod carrier",
     "heading": "Building the<br>rbmod carrier",
-    "text": "A rev 1 board, five modules and the rework.<br>12 steps with a soldering iron."
+    "text": "A rev 1 board, five modules and the rework.<br>13 steps with a soldering iron."
    },
    "camera": [
     [
@@ -79,7 +79,7 @@
    "say": [
     {
      "at": 0.6,
-     "text": "Building the R B mod carrier of the R C bench: a revision 1 board, five modules and the rework, in 12 steps."
+     "text": "Building the R B mod carrier of the R C bench: a revision 1 board, five modules and the rework, in 13 steps."
     }
    ],
    "labels": [
@@ -101,7 +101,7 @@
    "type": "board",
    "board": "rbmod-rev1",
    "bare": true,
-   "dur": 192.8,
+   "dur": 195.8,
    "camera": [
     [
      0,
@@ -314,21 +314,21 @@
     [
      175.0,
      [
-      12,
-      38
+      -2,
+      44
      ],
-     50
+     52
     ],
     [
-     187.4,
+     190.4,
      [
-      12,
-      38
+      -2,
+      44
      ],
-     50
+     52
     ],
     [
-     190.2,
+     193.2,
      [
       44.5,
       40
@@ -336,7 +336,7 @@
      172
     ],
     [
-     192.8,
+     195.8,
      [
       44.5,
       40
@@ -419,9 +419,9 @@
     },
     {
      "from": 172.8,
-     "to": 192.8,
+     "to": 195.8,
      "n": 12,
-     "text": "Wires from J6 to the PD mini"
+     "text": "J6 to a USB-C plug for the PD mini"
     }
    ],
    "labels": [
@@ -449,7 +449,7 @@
       300
      ],
      "title": "J6 takes no connector",
-     "text": "Wires to the PD mini are soldered to its pads in the last step.",
+     "text": "Its pads take wires to a USB-C plug board in the last step.",
      "size": "sm",
      "side": "r"
     },
@@ -465,7 +465,7 @@
       250
      ],
      "title": "What goes on the board",
-     "text": "5 modules on straight 2.54 mm pin strips, 2 angled 3 x 4 pin headers, 5 JST PH connectors, 1 Mini-Fit Jr, a 3 V zener and 4.7 kΩ. For the rework: a wire, 2.2 kΩ and a 5.6 V zener.",
+     "text": "5 modules on straight 2.54 mm pin strips, 2 angled 3 x 4 pin headers, 5 JST PH connectors, 1 Mini-Fit Jr, 1 USB-C plug board, a 3 V zener and 4.7 kΩ. For the rework: a wire, 2.2 kΩ and a 5.6 V zener.",
      "side": "r"
     },
     {
@@ -673,19 +673,37 @@
      "n": 11
     },
     {
-     "from": 175.2,
-     "to": 187.2,
+     "from": 175.4,
+     "to": 190.2,
      "anchor": [
-      1.5,
-      38.2
+      -3,
+      41.6
      ],
      "at": [
-      1300,
-      300
+      1260,
+      570
      ],
-     "title": "J6: wires, no connector",
-     "text": "Solder four wires directly to J6's pads. They run to the PD mini: its supply input, <b>15 V and GND</b>, and its UART, <b>TX and RX</b>.",
+     "title": "J6: four wires to a USB-C plug board",
+     "text": "No connector on J6. <b>15 V to V, GND to G.</b> The UART crosses over: the IOmcu's <b>TX, GPIO 7, to D−</b>, its <b>RX, GPIO 6, to D+</b>. The PD mini sends on D+ and listens on D−.",
+     "side": "t",
      "n": 12
+    },
+    {
+     "from": 182.6,
+     "to": 190.2,
+     "anchor": [
+      -19,
+      41
+     ],
+     "at": [
+      60,
+      620
+     ],
+     "title": "Into the PD mini only",
+     "text": "The plug carries 15 V on V. It goes into the PD mini's USB-C socket and nowhere else.",
+     "size": "sm",
+     "side": "t",
+     "style": "warn"
     }
    ],
    "tags": [
@@ -790,31 +808,31 @@
      "side": "r"
     },
     {
-     "from": 175.4,
-     "to": 187.2,
-     "at": "J6.1",
-     "text": "15 V",
-     "side": "r"
-    },
-    {
-     "from": 175.6,
-     "to": 187.2,
-     "at": "J6.2",
-     "text": "TX · GPIO 7",
-     "side": "r"
-    },
-    {
-     "from": 175.8,
-     "to": 187.2,
-     "at": "J6.3",
-     "text": "RX · GPIO 6",
-     "side": "r"
-    },
-    {
      "from": 176.0,
-     "to": 187.2,
+     "to": 190.2,
+     "at": "J6.1",
+     "text": "15 V → V",
+     "side": "r"
+    },
+    {
+     "from": 176.2,
+     "to": 190.2,
+     "at": "J6.2",
+     "text": "TX · GPIO 7 → D−",
+     "side": "r"
+    },
+    {
+     "from": 176.4,
+     "to": 190.2,
+     "at": "J6.3",
+     "text": "RX · GPIO 6 → D+",
+     "side": "r"
+    },
+    {
+     "from": 176.6,
+     "to": 190.2,
      "at": "J6.4",
-     "text": "GND",
+     "text": "GND → G",
      "side": "r"
     }
    ],
@@ -864,78 +882,38 @@
     },
     {
      "from": "J6.1",
-     "to": [
-      -12,
-      43.583
-     ],
-     "via": [
-      [
-       -2,
-       41.183
-      ]
-     ],
+     "to": "USB.V",
      "color": "#e5484d",
-     "loose": true,
      "t": [
-      177.0,
-      178.6
+      177.4,
+      178.8
      ]
     },
     {
      "from": "J6.2",
-     "to": [
-      -12,
-      39.983
-     ],
-     "via": [
-      [
-       -2,
-       39.183
-      ]
-     ],
+     "to": "USB.D-",
      "color": "#e8c81a",
-     "loose": true,
      "t": [
-      177.7,
-      179.29999999999998
+      178.20000000000002,
+      179.60000000000002
      ]
     },
     {
      "from": "J6.3",
-     "to": [
-      -12,
-      36.383
-     ],
-     "via": [
-      [
-       -2,
-       37.183
-      ]
-     ],
+     "to": "USB.D+",
      "color": "#3fa7e8",
-     "loose": true,
      "t": [
-      178.4,
-      180.0
+      179.0,
+      180.4
      ]
     },
     {
      "from": "J6.4",
-     "to": [
-      -12,
-      32.783
-     ],
-     "via": [
-      [
-       -2,
-       35.183
-      ]
-     ],
+     "to": "USB.G",
      "color": "#2b2e35",
-     "loose": true,
      "t": [
-      179.1,
-      180.7
+      179.8,
+      181.20000000000002
      ]
     }
    ],
@@ -1150,6 +1128,16 @@
      "text": "The <b>9 large holes</b> carry the supply currents. Each takes a piece of bare wire through module and carrier and is filled with solder."
     }
    ],
+   "plugs": [
+    {
+     "name": "USB",
+     "at": [
+      -10,
+      38.183
+     ],
+     "t": 175.6
+    }
+   ],
    "say": [
     {
      "at": 0.5,
@@ -1217,7 +1205,575 @@
     },
     {
      "at": 173.1,
-     "text": "Step 12. J 6 takes no connector. Solder four wires directly to its pads. They go to the P-D mini: 15 volts and ground for its supply, and the two lines of its serial port."
+     "text": "Step 12. J 6 takes no connector. Solder four wires from its pads to a U S B C plug board: 15 volts to V, ground to G, the transmit line, G-P-I-O 7, to D minus, and the receive line, G-P-I-O 6, to D plus. The plug goes into the P-D mini and nowhere else, because it carries 15 volts."
+    }
+   ]
+  },
+  {
+   "type": "board",
+   "board": "p4-7b-back",
+   "dur": 57.0,
+   "camera": [
+    [
+     0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ],
+    [
+     7.0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ],
+    [
+     9.0,
+     [
+      2,
+      62
+     ],
+     56
+    ],
+    [
+     21.6,
+     [
+      2,
+      62
+     ],
+     56
+    ],
+    [
+     24.0,
+     [
+      44,
+      84
+     ],
+     62
+    ],
+    [
+     52.0,
+     [
+      44,
+      84
+     ],
+     62
+    ],
+    [
+     55.0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ],
+    [
+     57.0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 57.0,
+     "n": 13,
+     "text": "Wire the panel"
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.6,
+     "to": 6.6,
+     "anchor": [
+      83,
+      48
+     ],
+     "at": [
+      680,
+      130
+     ],
+     "side": "b",
+     "size": "sm",
+     "title": "The panel from the back",
+     "text": "The 7 inch ESP32-P4 display board. Two cables run from here to the carrier."
+    },
+    {
+     "from": 9.2,
+     "to": 21.4,
+     "anchor": [
+      -8,
+      63.8
+     ],
+     "at": [
+      1300,
+      640
+     ],
+     "side": "t",
+     "n": 13,
+     "title": "CAN header: link and supply",
+     "text": "A 4-pin PH2.0 cable. <b>H and L</b> go to the screw terminal of the RP2350-CAN. <b>5 V and GND</b> come from J7 on the carrier. The 120 Ω termination is on at both ends."
+    },
+    {
+     "from": 24.2,
+     "to": 30.8,
+     "anchor": [
+      44.25,
+      99
+     ],
+     "at": [
+      1240,
+      250
+     ],
+     "n": 13,
+     "title": "Header P3: two of twelve wires",
+     "text": "The 12-pin PH2.0 cable carries the heartbeat. <b>IO28 and GND</b> go to J3 on the carrier. The other ten wires come out of the plug."
+    }
+   ],
+   "tags": [
+    {
+     "from": 1.0,
+     "to": 6.6,
+     "at": "CAN.H",
+     "text": "CAN header",
+     "side": "r"
+    },
+    {
+     "from": 1.3,
+     "to": 6.6,
+     "at": "P3.7",
+     "text": "12-pin header P3",
+     "side": "t"
+    },
+    {
+     "from": 9.4,
+     "to": 21.4,
+     "at": "CAN.L",
+     "text": "L → CAN L on M1",
+     "side": "r"
+    },
+    {
+     "from": 9.6,
+     "to": 21.4,
+     "at": "CAN.H",
+     "text": "H → CAN H on M1",
+     "side": "r"
+    },
+    {
+     "from": 9.8,
+     "to": 21.4,
+     "at": "CAN.GND",
+     "text": "GND → J7",
+     "side": "r"
+    },
+    {
+     "from": 10.0,
+     "to": 21.4,
+     "at": "CAN.5V",
+     "text": "5 V → J7",
+     "side": "r"
+    },
+    {
+     "from": 24.4,
+     "to": 54.0,
+     "at": "P3.2",
+     "text": "GND → J3",
+     "side": "t",
+     "d": 110
+    },
+    {
+     "from": 24.6,
+     "to": 54.0,
+     "at": "P3.7",
+     "text": "IO28 → J3 · heartbeat",
+     "side": "t",
+     "d": 60
+    }
+   ],
+   "wires": [
+    {
+     "from": "CAN.L",
+     "to": [
+      -24,
+      57.510000000000005
+     ],
+     "via": [
+      [
+       -6,
+       60.81
+      ]
+     ],
+     "color": "#3fa7e8",
+     "plain": true,
+     "t": [
+      10.2,
+      11.6
+     ]
+    },
+    {
+     "from": "CAN.H",
+     "to": [
+      -24,
+      61.71
+     ],
+     "via": [
+      [
+       -6,
+       62.81
+      ]
+     ],
+     "color": "#e8c81a",
+     "plain": true,
+     "t": [
+      10.6,
+      12.0
+     ]
+    },
+    {
+     "from": "CAN.GND",
+     "to": [
+      -24,
+      65.91
+     ],
+     "via": [
+      [
+       -6,
+       64.81
+      ]
+     ],
+     "color": "#2b2e35",
+     "plain": true,
+     "t": [
+      11.0,
+      12.4
+     ]
+    },
+    {
+     "from": "CAN.5V",
+     "to": [
+      -24,
+      70.11
+     ],
+     "via": [
+      [
+       -6,
+       66.81
+      ]
+     ],
+     "color": "#e5484d",
+     "plain": true,
+     "t": [
+      11.399999999999999,
+      12.8
+     ]
+    },
+    {
+     "from": "P3.1",
+     "to": [
+      26.1,
+      112
+     ],
+     "via": [
+      [
+       33.25,
+       100
+      ]
+     ],
+     "color": "#e5484d",
+     "plain": true,
+     "t": [
+      24.6,
+      26.0
+     ],
+     "gone": [
+      36.0,
+      37.2
+     ]
+    },
+    {
+     "from": "P3.2",
+     "to": [
+      29.4,
+      112
+     ],
+     "via": [
+      [
+       35.25,
+       100
+      ]
+     ],
+     "color": "#2b2e35",
+     "plain": true,
+     "t": [
+      24.700000000000003,
+      26.1
+     ]
+    },
+    {
+     "from": "P3.3",
+     "to": [
+      32.7,
+      112
+     ],
+     "via": [
+      [
+       37.25,
+       100
+      ]
+     ],
+     "color": "#e8c81a",
+     "plain": true,
+     "t": [
+      24.8,
+      26.2
+     ],
+     "gone": [
+      36.8,
+      38.0
+     ]
+    },
+    {
+     "from": "P3.4",
+     "to": [
+      36.0,
+      112
+     ],
+     "via": [
+      [
+       39.25,
+       100
+      ]
+     ],
+     "color": "#3fa7e8",
+     "plain": true,
+     "t": [
+      24.900000000000002,
+      26.3
+     ],
+     "gone": [
+      37.6,
+      38.800000000000004
+     ]
+    },
+    {
+     "from": "P3.5",
+     "to": [
+      39.3,
+      112
+     ],
+     "via": [
+      [
+       41.25,
+       100
+      ]
+     ],
+     "color": "#4cc26a",
+     "plain": true,
+     "t": [
+      25.0,
+      26.4
+     ],
+     "gone": [
+      38.4,
+      39.6
+     ]
+    },
+    {
+     "from": "P3.6",
+     "to": [
+      42.6,
+      112
+     ],
+     "via": [
+      [
+       43.25,
+       100
+      ]
+     ],
+     "color": "#e88a2b",
+     "plain": true,
+     "t": [
+      25.1,
+      26.5
+     ],
+     "gone": [
+      39.2,
+      40.400000000000006
+     ]
+    },
+    {
+     "from": "P3.7",
+     "to": [
+      45.9,
+      112
+     ],
+     "via": [
+      [
+       45.25,
+       100
+      ]
+     ],
+     "color": "#f2f2f2",
+     "plain": true,
+     "t": [
+      25.200000000000003,
+      26.6
+     ]
+    },
+    {
+     "from": "P3.8",
+     "to": [
+      49.2,
+      112
+     ],
+     "via": [
+      [
+       47.25,
+       100
+      ]
+     ],
+     "color": "#9b59d0",
+     "plain": true,
+     "t": [
+      25.3,
+      26.7
+     ],
+     "gone": [
+      40.0,
+      41.2
+     ]
+    },
+    {
+     "from": "P3.9",
+     "to": [
+      52.5,
+      112
+     ],
+     "via": [
+      [
+       49.25,
+       100
+      ]
+     ],
+     "color": "#8a6a4a",
+     "plain": true,
+     "t": [
+      25.400000000000002,
+      26.8
+     ],
+     "gone": [
+      40.8,
+      42.0
+     ]
+    },
+    {
+     "from": "P3.10",
+     "to": [
+      55.8,
+      112
+     ],
+     "via": [
+      [
+       51.25,
+       100
+      ]
+     ],
+     "color": "#e86aa6",
+     "plain": true,
+     "t": [
+      25.5,
+      26.9
+     ],
+     "gone": [
+      41.6,
+      42.800000000000004
+     ]
+    },
+    {
+     "from": "P3.11",
+     "to": [
+      59.1,
+      112
+     ],
+     "via": [
+      [
+       53.25,
+       100
+      ]
+     ],
+     "color": "#6ad0d0",
+     "plain": true,
+     "t": [
+      25.6,
+      27.0
+     ],
+     "gone": [
+      42.4,
+      43.6
+     ]
+    },
+    {
+     "from": "P3.12",
+     "to": [
+      62.4,
+      112
+     ],
+     "via": [
+      [
+       55.25,
+       100
+      ]
+     ],
+     "color": "#c9cdd3",
+     "plain": true,
+     "t": [
+      25.700000000000003,
+      27.1
+     ],
+     "gone": [
+      43.2,
+      44.400000000000006
+     ]
+    }
+   ],
+   "insets": [
+    {
+     "from": 31.0,
+     "to": 51.6,
+     "kind": "extract",
+     "at": [
+      1180,
+      150
+     ],
+     "title": "Take the unused wires out",
+     "good": "press the tongue down",
+     "bad": "pull the wire out",
+     "lower": "plug housing, cut open",
+     "text": "Each crimp contact is held by a small metal tongue that stands in a window of the housing. Press it down with a needle or a fine blade, and pull the wire out to the back <b>without force</b>. Bent up again, the tongue holds the contact when it is put back."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Step 13. The wiring on the back of the panel. Two cables run from here to the carrier."
+    },
+    {
+     "at": 7.4,
+     "text": "A four pin cable goes into the can header. Can high and can low run to the screw terminal of the R P 23 50 can module. 5 volts and ground come from J 7 on the carrier. The 120 ohm termination is on at both ends."
+    },
+    {
+     "at": 22.4,
+     "text": "The heartbeat uses the twelve pin header P 3. Only two of its twelve wires are needed: ground, and I-O 28. Both go to J 3 on the carrier."
+    },
+    {
+     "at": 31.4,
+     "text": "Take the ten unused wires out of the plug. Each contact is held by a small metal tongue that sits in a window of the housing. Press the tongue down with a needle, and pull the wire out to the back, without force."
     }
    ]
   },
@@ -1237,9 +1793,10 @@
     "Wire GP15 to R1's outer pad",
     "2.2 kΩ from M7's EN to GND",
     "5.6 V zener on M7's OUT+",
-    "Wires from J6 to the PD mini"
+    "J6 to a USB-C plug for the PD mini",
+    "Panel: CAN cable, heartbeat on P3"
    ],
-   "say": "The carrier is built. Next, load the I O M C U image for the R B mod carrier.",
+   "say": "The carrier is built and wired. Next, load the I O M C U image for the R B mod carrier.",
    "note": "Next: the IOmcu image rcbench-iomcu-rbmod. Reference: docs/Carrier.md."
   }
  ]

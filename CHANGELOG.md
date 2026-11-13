@@ -42,8 +42,8 @@ history is in git.
   lit up, a track cut, a wire and a part soldered across two pads;
   `tools/video_board.py` converts a KiCad board file into the board it
   draws ([Videos from storyboards](tools/video/README.md)).
-- Storyboard `rbmod-build`: building a rev 1 rbmod carrier in 12 steps
-  and 262.12s, narrated. A `board` scene mounts parts, shows solder
+- Storyboard `rbmod-build`: building a rev 1 rbmod carrier and wiring
+  the panel in 13 steps and 334.48s, narrated. A `board` scene mounts parts, shows solder
   joints and a cross-section card, and takes narration cues. Music bed
   `vivaldi-spring`; a storyboard's `music_gain` sets a bed's level
   ([Videos from storyboards](tools/video/README.md)).

@@ -67,7 +67,7 @@ PART_FRAMES = 900
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
 FITS = ("resistor", "zener")
-INSETS = ("strip", "fill")
+INSETS = ("strip", "fill", "extract")
 
 
 def _number(value) -> bool:
@@ -236,6 +236,7 @@ def _check_board(scene: dict, where: str, errors: list) -> None:
         via = wire.get("via", [])
         if not (_place(wire.get("from")) and _place(wire.get("to"))
                 and isinstance(via, list) and all(_place(v) for v in via)
+                and ("gone" not in wire or _pair(wire["gone"], dur))
                 and _pair(wire.get("t"), dur)):
             errors.append(f"{where} wire {n + 1}: needs from, to and "
                           "t [t0, t1]")
@@ -269,6 +270,13 @@ def _check_build(scene: dict, dur: float, where: str, errors: list) -> None:
                 and _pair(joint.get("t"), dur)):
             errors.append(f"{where} solder {n + 1}: needs refs or pads, a "
                           "list, and t [t0, t1]")
+    for n, plug in enumerate(scene.get("plugs", [])):
+        if not (isinstance(plug.get("name"), str) and plug["name"]
+                and "." not in plug["name"] and _place(plug.get("at"))
+                and isinstance(plug["at"], list)
+                and _number(plug.get("t")) and 0 <= plug["t"] < dur):
+            errors.append(f"{where} plug {n + 1}: needs a name, at, "
+                          "[x, y] in mm, and t")
     for n, inset in enumerate(scene.get("insets", [])):
         at = f"{where} inset {n + 1}"
         _span(inset, dur, at, errors)
@@ -292,6 +300,8 @@ def board_faults(scene: dict, plan: dict) -> list:
         One line per pad or net that the board lacks.
     """
     pads = {pad["name"] for pad in plan["pads"]}
+    pads |= {f"{plug['name']}.{pad}" for plug in scene.get("plugs", [])
+             for pad in ("G", "D+", "D-", "V")}
     nets = {track["net"] for track in plan["tracks"]}
     named = [label["anchor"] for label in scene.get("labels", [])]
     named += [tag["at"] for tag in scene.get("tags", [])]
@@ -569,7 +579,10 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
         if path.startswith("/shots/"):
             return str(self._shots / pathlib.PurePosixPath(path).name)
         if path.startswith("/cad/"):
-            return str(VIDEO / path.lstrip("/"))
+            # A board drawn by hand is in the tree; a converted one is not.
+            name = pathlib.PurePosixPath(path).name
+            drawn = VIDEO / "boards" / name
+            return str(drawn if drawn.is_file() else VIDEO / "cad" / name)
         if path.startswith("/node_modules/"):
             return str(VIDEO / path.lstrip("/"))
         return super().translate_path(path)
@@ -688,7 +701,9 @@ def main() -> int:
     for n, scene in enumerate(board["scenes"]):
         if scene["type"] != "board":
             continue
-        plan = VIDEO / "cad" / f"{scene['board']}.json"
+        plan = VIDEO / "boards" / f"{scene['board']}.json"
+        if not plan.is_file():
+            plan = VIDEO / "cad" / plan.name
         if not plan.is_file():
             sys.exit(f"tools/video/cad/{plan.name} is missing; "
                      "tools/video_board.py writes it from the board's "

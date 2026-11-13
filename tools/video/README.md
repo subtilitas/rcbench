@@ -88,11 +88,12 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `../video_cad.py` | converts the case's STEP assembly into `cad/case.glb`, the model `case_cad.js` loads |
 | `player/board.js` | a board drawn flat as SVG, and the rework on it |
 | `../video_board.py` | converts a KiCad board file into `cad/NAME.json`, the board `board.js` draws |
+| `boards/p4-7b-back.json` | the back of the 7 inch ESP32-P4 display board, drawn by hand in the format `video_board.py` writes: its connectors, modules and sockets as boxes, the pads of the 4-pin and 12-pin headers |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
-| `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 12 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to the PD mini; narrated, 262.12s, Vivaldi's Spring as its bed at half level |
+| `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with its CAN cable and the heartbeat wires of header P3; narrated, 334.48s, Vivaldi's Spring as its bed at half level |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -147,18 +148,19 @@ A `board` scene:
 | Field | Meaning |
 | --- | --- |
 | `dur` | length in s |
-| `board` | the name of a board under `cad/`, without `.json` |
+| `board` | the name of a board under `boards/` or `cad/`, without `.json` |
 | `camera` | keys `[t, [x, y], w]`: the point of the board at the frame's centre and the width of the frame in mm |
 | `title`, `chips`, `say` | as in a `case` scene; the board is dimmed to 35% under a title |
 | `labels` | as in a `case` scene; `anchor` is a pad's name or `[x, y]` in mm |
 | `tags` | optional `{from, to, at, text}` and optional `side` (`l`, `r`, `t`, `b`), `d`, the line's length in pixels, and `style`: a name beside a pad or a point |
 | `nets` | optional `{from, to, net}` and optional `style` (`warn`): the front tracks and the pads of a net lit up |
 | `cuts` | optional `{between: [a, b], t: [t0, t1]}` and optional `gap` in mm, 0.7 by default: the track is opened halfway between two points |
-| `wires` | optional `{from, to, t: [t0, t1]}` and optional `via`, a list of points, `color` and `loose`: a wire drawn from one point to the other, with a solder joint at each end, or with `loose` at its start only |
+| `wires` | optional `{from, to, t: [t0, t1]}` and optional `via`, a list of points, `color`, `loose`, `plain` and `gone`: a wire drawn from one point to the other, with a solder joint at each end, with `loose` at its start only, with `plain` at neither. `gone` is `[t0, t1]`: the wire is pulled out along its way over that span |
+| `plugs` | optional `{name, at, t}`: a USB-C plug board beside the board from `t` on, its 4 pads in a column at `at`, 2mm apart; they are named `NAME.G`, `NAME.D+`, `NAME.D-` and `NAME.V` |
 | `bare` | optional `true`: a part is hidden until its `mount`; the footprints of size 1206 always show |
 | `mount` | optional `{refs, t}`: the parts of these references come down onto their places from `t` on |
 | `solder` | optional `{refs, t: [t0, t1]}` or `{pads, t: [t0, t1]}` and optional `back`: a joint on every pad of the parts, or on the pads named, one after another over the span. With `back` the joint is on the other side of the board and shows as a ring that fades |
-| `insets` | optional `{from, to, kind, at, title}` and optional `text`, `good`, `bad`, `upper`, `lower`, `color`: a card at `at` with a cross-section. `strip` draws a module on the plastic of its pin strips, soldered on both sides, beside a module lying on the carrier; `fill` draws a wire through a large hole of both boards, soldered on both sides |
+| `insets` | optional `{from, to, kind, at, title}` and optional `text`, `good`, `bad`, `upper`, `lower`, `color`: a card at `at` with a cross-section. `strip` draws a module on the plastic of its pin strips, soldered on both sides, beside a module lying on the carrier; `fill` draws a wire through a large hole of both boards, soldered on both sides; `extract` draws a plug housing cut open, a needle on the contact's tongue and the wire leaving to the back |
 | `fit` | optional `{kind, a, b, t}`: a `resistor` or a `zener` soldered across two pads from `t` on; a zener's band is at `a`; a resistor with `text` `2.2 kΩ` carries its colour bands |
 
 A board's lengths are mm from the top left corner of its drawing. A pad's
@@ -255,8 +257,21 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   strips with the plastic between module and carrier, soldered on both
   sides, the wire through the large holes of M5 and M6, and J6 left
   without a connector, its pads wired to the PD mini, are the owner's
-  statements of 2026-11-13. Which pad of the PD mini each wire of J6
-  ends at is not shown. Which way a JST connector faces is
+  statements of 2026-11-13. The plug board's pads follow
+  [Screens](../../docs/Screens.md): the IOmcu's TX, GPIO 7, on D-, its
+  RX, GPIO 6, on D+; 15V on V and GND on G follow J6's nets. The order
+  of the pads on a plug board is its print's, not the drawing's.
+- The panel's back is drawn from the maker's photo of the board:
+  positions within about 2mm, the header labels as read from that photo,
+  those of P3's last two and P4's fourth pin not read with certainty.
+  Which of the two 12-pin headers is P3 follows from IO28 on it. In the
+  video the CAN cable's 5V and GND end at the carrier's J7 and its H and
+  L at the RP2350-CAN's terminal; the tree states the 3 link wires and
+  the 5V pin of the header, not where 5V and GND end.
+- How a wire leaves a PH2.0 plug is described from the JST PH contact's
+  form: a lance on the contact stands in a window of the housing, is
+  pressed down with a needle and the wire is pulled out to the back. It
+  is not tried on the cable the panel comes with. Which way a JST connector faces is
   not shown.
 - In `rbmod-rework` and `rbmod-build` the places of the pull-down and of the zener on M7
   follow the module's footprint, whose EN pad is placed within about

@@ -180,7 +180,9 @@ def _stretch(scene: dict, old: list, new: list) -> None:
     for name in ("cuts", "wires", "solder"):
         for item in scene.get(name, []):
             item["t"] = [move(t) for t in item["t"]]
-    for name in ("fit", "mount"):
+            if "gone" in item:
+                item["gone"] = [move(t) for t in item["gone"]]
+    for name in ("fit", "mount", "plugs"):
         for item in scene.get(name, []):
             item["t"] = move(item["t"])
     if "servo" in scene:
