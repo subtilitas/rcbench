@@ -48,7 +48,7 @@ typedef enum {
     UI_HELP_DOCK_RIGHT,     /**< x 536 to 1016; the screen to x 528       */
 } ui_help_side_t;
 
-/** @brief Where an item's badge sits (ui_help_badge_rect()). */
+/** @brief Where an item's badge tries first (ui_help_badge_rect()). */
 typedef enum {
     /** @brief Inside the top-left corner, or left of a small control. */
     UI_HELP_AT_LEFT = 0,
@@ -57,6 +57,10 @@ typedef enum {
      *         A control in the band keeps its badge under the band. */
     UI_HELP_AT_RIGHT,
 } ui_help_at_t;
+
+/** @brief The places a badge can take, tried in an order by its item's
+ *         size and corner (ui_help_badge_rect()). */
+#define UI_HELP_SPOTS 11
 
 /** @brief One control a page marks. */
 typedef struct {
@@ -195,16 +199,44 @@ gfx_rect_t ui_help_button_rect(ui_help_side_t side, ui_help_hit_t hit);
 
 /**
  * @brief The badge of item @p i of @p p, in panel coordinates: 28 x 28px,
- *        4px inside the control's top-left corner; 4px left of a control
- *        less than 56px tall or wide, centered on it, where the live half
- *        has the room; under the band below the left end of a control in
- *        the band.  An item marked UI_HELP_AT_RIGHT in the body has it
- *        4px inside the control's top-right corner instead.
+ *        at the first of the item's UI_HELP_SPOTS places that lies in the
+ *        live half, comes no nearer than 2px to the badge of an item
+ *        before it, covers no other item's control from outside its own,
+ *        and covers no string the screen drew there since
+ *        ui_help_watch_begin() last started on this page.
+ *
+ * The places, 4px from the control: inside its top-left corner, inside
+ * its top-right corner, left of it and right of it centered, inside its
+ * bottom-left and bottom-right corners, in its middle, centered on its
+ * left edge, above and under its left end, and centered on its top-left
+ * corner.  A control less than 56px tall or wide tries left of it first,
+ * then inside the top corners, right of it and on its left edge; an item
+ * marked UI_HELP_AT_RIGHT tries inside the top-right corner first, then
+ * right of it.  A control in the band has its badge under the band: below
+ * its left end, its right end, its middle, then left and right of it.
+ * With every place covering a string, the first place left by the other
+ * rules; with none left, the first place.
  * @param p The page.
  * @param i The item.
  * @return The badge's rect.
  */
 gfx_rect_t ui_help_badge_rect(const ui_help_page_t *p, int i);
+
+/**
+ * @brief Start noting where the screen draws strings, for @p p's badges:
+ *        the router calls it before the screen draws a frame under the
+ *        guide, and ui_help_watch_end() after.  The places of each badge
+ *        that a string covers are kept until a page with other items,
+ *        rects or side starts.
+ * @param root The panel's canvas, whose sub-canvases the screen draws on.
+ * @param p    The page showing.
+ * @return True when @p p starts afresh: the screen must draw all of its
+ *         strings in this frame (ui_router_invalidate()).
+ */
+bool ui_help_watch_begin(const gfx_canvas_t *root, const ui_help_page_t *p);
+
+/** @brief Stop noting strings (ui_help_watch_begin()). */
+void ui_help_watch_end(void);
 
 /**
  * @brief What the point (@p x, @p y), in panel coordinates, is on a guide
@@ -258,7 +290,7 @@ uint32_t ui_help_dock_key(const ui_help_page_t *p, int n, int count,
 
 /**
  * @brief A number for where ui_help_render_marks() draws @p p's marks: the
- *        side and each item's rect and badge corner.  The router repaints
+ *        side, each item's rect and its badge's rect.  The router repaints
  *        the screen when it moves, so a badge that moved leaves nothing
  *        behind.
  * @param p The page.

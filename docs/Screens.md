@@ -204,10 +204,24 @@ dialogs also have no "?".
 | Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
 | PREV and NEXT | 124 x 48px, 8px apart, in the band from x 8 to 264, y 6 to 54, in the home tag's place, the same on every page |
 | CLOSE | 140 x 48px, centered at the dock's bottom, y 496 to 544 |
-| Marks | a 28px badge with the item's number 4px inside the control's top-left corner, or 4px left of a control less than 56px tall or wide; 4px inside the top-right corner for a control whose own text starts at its left edge; 2px brackets at the control's corners, 3px outside it |
+| Marks | a 28px badge with the item's number: an accent disc of 24px in a 2px dark ring, so it shows on a lit accent button as well; 2px brackets at the control's corners, 3px outside it |
+
+A badge covers no string the screen draws. It takes the first of 11
+places, 4px from its control, that lies in the live half, keeps 2px from
+the badges numbered before it, covers no other marked control from
+outside its own and covers no string: inside the top-left corner, inside
+the top-right corner, left and right of the control, inside the bottom
+corners, in the middle, on the left edge, above and under the left end,
+and on the top-left corner. A control less than 56px tall or wide tries
+left of it first; a control whose own text starts at its left edge tries
+inside the top-right corner first. The strings are those the screen draws
+in the frames since the page opened; a string that shows up later under a
+badge moves it, and the screen is drawn again. With every place covering
+a string, the badge takes the first place the other rules leave.
 
 A control in the band has its badge under the band, below the control's
-left end. The dock ends 4px above the alert band, so an alert covers none
+left end, then its right end, its middle, left and right of it. The dock
+ends 4px above the alert band, so an alert covers none
 of it. A control that runs past the live half is marked up to the half's
 edge, and the screen's text there is cut at that edge.
 

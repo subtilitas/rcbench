@@ -11,8 +11,53 @@
 #include "gfx_work.h"
 
 #include <math.h>
+#include <string.h>
 
 /* -------------------------------------------------------------------- text */
+
+/** @brief The function told of every string drawn; NULL for none. */
+static gfx_text_watch_fn s_watch;
+
+void gfx_text_watch(gfx_text_watch_fn fn) { s_watch = fn; }
+
+/**
+ * @brief Tell the watch where a string shows: its cells from (@p x, @p y)
+ *        less its leading and trailing spaces, cut to @p c's clip and to
+ *        @p box.
+ * @param c     The canvas.
+ * @param x     The string's left edge.
+ * @param y     Its top.
+ * @param s     The string.
+ * @param font  Its font.
+ * @param scale Its scale.
+ * @param box   The box gfx_text_in() cuts it to, or NULL.
+ */
+static void watch_text(const gfx_canvas_t *c, int x, int y, const char *s,
+                       const gfx_font_t *font, int scale,
+                       const gfx_rect_t *box)
+{
+    const int cell = font->width * scale;
+    int lead = 0;
+    while (s[lead] == ' ') {
+        ++lead;
+    }
+    if (s[lead] == '\0') {
+        return;
+    }
+    const int cells = gfx_text_cells(s);
+    int trail = 0;
+    for (size_t i = strlen(s); i > 0u && s[i - 1u] == ' '; --i) {
+        ++trail;
+    }
+    gfx_rect_t ink = gfx_rect_make(x + lead * cell, y,
+                                   (cells - lead - trail) * cell,
+                                   gfx_text_height(font, scale));
+    if (!gfx_rect_intersect(ink, c->clip, &ink)
+        || (box != NULL && !gfx_rect_intersect(ink, *box, &ink))) {
+        return;
+    }
+    s_watch(c, ink);
+}
 
 uint32_t gfx_utf8_next(const char **s)
 {
@@ -296,6 +341,9 @@ int gfx_text(gfx_canvas_t *c, int x, int y, const char *s,
     gfx_trace_text(c, x, y, gfx_text_width(font, s, scale),
                    gfx_text_height(font, scale), s, NULL);
 #endif
+    if (s_watch != NULL && c != NULL) {
+        watch_text(c, x, y, s, font, scale, NULL);
+    }
     return text_run(c, x, y, s, font, fg, scale);
 }
 
@@ -339,6 +387,9 @@ void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
 #ifdef GFX_TEXT_TRACE
     gfx_trace_text(c, x, y, tw, th, s, &box);
 #endif
+    if (s_watch != NULL) {
+        watch_text(c, x, y, s, font, scale, &box);
+    }
     gfx_rect_t saved = c->clip;
     if (gfx_clip_intersect_inl(c, box)) {
         text_run(c, x, y, s, font, fg, scale);

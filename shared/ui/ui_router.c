@@ -1422,11 +1422,14 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
      * that moved does: the screen drew its chrome once per framebuffer,
      * and the old marks would stay where it is not drawn again. */
     const uint32_t marks = guide ? ui_help_marks_key(&page) : 0u;
-    if (s.guide_marked && (!guide || marks != s.guide_marks)) {
+    /* A page whose strings are not noted yet: the screen draws all of
+     * them in this frame, so its badges are placed clear of every one. */
+    const bool fresh = guide && ui_help_watch_begin(c, &page);
+    const bool repaint = fresh || (s.guide_marked
+                                   && (!guide || marks != s.guide_marks));
+    if (repaint) {
         ui_router_invalidate();
     }
-    s.guide_marked = guide;
-    s.guide_marks  = marks;
     if (gfx_canvas_sub(c, body, &sub)) {
         if (guide) {
             /* The screen draws the live half; the dock takes the other. */
@@ -1441,8 +1444,19 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
         }
     }
     if (guide) {
+        ui_help_watch_end();
         guide_render(c, &page, buffer_index, band_now);
     }
+    /* A string drawn for the first time under a badge moves it: the frames
+     * after this one repaint the screen, so the badge drawn where it was
+     * leaves nothing behind.  A frame that repainted all already drew
+     * every string. */
+    const uint32_t drawn = guide ? ui_help_marks_key(&page) : 0u;
+    if (guide && !repaint && drawn != marks) {
+        ui_router_invalidate();
+    }
+    s.guide_marked = guide;
+    s.guide_marks  = drawn;
 
     if (show) {
         ui_band_help_render(c, &s.status, s.help);

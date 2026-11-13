@@ -337,7 +337,10 @@ Sprachen
   Ansicht der Bildschirmhilfe (`help-...`) am Rand der freien Hälfte zum
   Hilfefeld hin, das den Rest der Seite absichtlich verdeckt,
 - über die gefüllte Form hinausläuft, auf der er steht,
-- einen anderen Text des Bildes überlappt, oder
+- einen anderen Text des Bildes überlappt,
+- in einer Ansicht der Bildschirmhilfe unter einer Nummernmarke liegt: Es
+  zählen die Zeichen, auf ihren Bereich beschnitten, ohne je 2px oben und
+  unten, außer eine vor der Marke gezeichnete Fläche verdeckt sie, oder
 - von einer später gezeichneten Fläche übermalt und nicht neu
   gezeichnet wird. Nur die Zeichen zählen: eine Fläche über den Leerzeichen,
   mit denen eine Beschriftung aufgefüllt ist, ist kein Befund. OUTPUTS mit

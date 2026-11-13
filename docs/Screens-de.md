@@ -221,10 +221,26 @@ Listen, Boxen, Warnungen und Bestätigungsdialoge zeigen kein "?".
 | Web-Zeile | `Mehr: subtilitas.github.io/rcbench/help/de/`, auf Englisch die Adresse ohne `de/` |
 | VORIGE und NÄCHSTE | 124 x 48px, 8px auseinander, im Band von x 8 bis 264, y 6 bis 54, an der Stelle des Home-Felds, auf jeder Seite dieselbe |
 | SCHLIESSEN | 140 x 48px, mittig am unteren Rand des Hilfefelds, y 496 bis 544 |
-| Marken | eine 28px-Marke mit der Nummer des Eintrags 4px innerhalb der oberen linken Ecke des Bedienelements, oder 4px links von einem Bedienelement unter 56px Höhe oder Breite; 4px innerhalb der oberen rechten Ecke bei einem Bedienelement, dessen eigener Text an seiner linken Kante beginnt; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
+| Marken | eine 28px-Marke mit der Nummer des Eintrags: eine Scheibe von 24px in Akzentfarbe in einem dunklen Ring von 2px, so dass sie auch auf einer leuchtenden Taste in Akzentfarbe sichtbar ist; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
+
+Eine Marke verdeckt keinen Text der Seite. Sie nimmt den ersten von 11
+Plätzen, 4px vom Bedienelement entfernt, der in der freien Hälfte liegt,
+2px Abstand zu den Marken mit kleinerer Nummer hält, kein anderes
+markiertes Bedienelement von außen verdeckt und keinen Text verdeckt:
+innerhalb der oberen linken Ecke, innerhalb der oberen rechten Ecke, links
+und rechts vom Bedienelement, innerhalb der unteren Ecken, in der Mitte,
+auf der linken Kante, über und unter dem linken Ende und auf der oberen
+linken Ecke. Ein Bedienelement unter 56px Höhe oder Breite versucht zuerst
+den Platz links davon; eines, dessen eigener Text an seiner linken Kante
+beginnt, zuerst die obere rechte Ecke. Gezählt wird der Text, den die
+Seite seit dem Öffnen der Hilfeseite zeichnet; erscheint später Text unter
+einer Marke, wandert sie, und die Seite wird neu gezeichnet. Verdeckt jeder
+Platz Text, nimmt die Marke den ersten Platz, den die übrigen Regeln
+lassen.
 
 Bei einem Bedienelement im Statusband steht die Nummernmarke darunter,
-unter seiner linken Kante. Das Hilfefeld endet 4px über dem Alarmband,
+unter seiner linken Kante, sonst unter seiner rechten Kante, seiner Mitte,
+links oder rechts davon. Das Hilfefeld endet 4px über dem Alarmband,
 sodass ein Alarm nichts davon verdeckt. Ein Bedienelement, das über die
 freie Hälfte hinausreicht, wird bis zu ihrem Rand markiert; Text der Seite
 endet dort an diesem Rand.

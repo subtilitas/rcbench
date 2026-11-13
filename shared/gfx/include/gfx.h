@@ -803,6 +803,25 @@ void gfx_text_in(gfx_canvas_t *c, gfx_rect_t box, const char *s,
                  const gfx_font_t *font, gfx_color_t fg, int scale,
                  gfx_align_t align);
 
+/**
+ * @brief A function told where each string gfx_text() and gfx_text_in()
+ *        draw shows: the cells of its characters, its leading and trailing
+ *        spaces left out, cut to the canvas's clip and to the box of
+ *        gfx_text_in().  Coordinates are the canvas's own.  Nothing is told
+ *        for a string that shows nothing.
+ * @param c   The canvas drawn on.
+ * @param ink Where the string's characters show.
+ */
+typedef void (*gfx_text_watch_fn)(const gfx_canvas_t *c, gfx_rect_t ink);
+
+/**
+ * @brief Set the function told of every string drawn, or NULL for none.
+ *        One at a time: the screen guide places its badges clear of the
+ *        strings a screen draws (ui_help.h).
+ * @param fn The function, or NULL.
+ */
+void gfx_text_watch(gfx_text_watch_fn fn);
+
 #ifdef GFX_TEXT_TRACE
 /*
  * The fit check's view of a frame, compiled in only when GFX_TEXT_TRACE is

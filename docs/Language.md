@@ -323,7 +323,10 @@ in German, and fails when a string in either language
   screen guide (`help-...`) at the edge of the live half that faces the
   dock, which covers the rest of the screen by design,
 - runs past the filled shape it is printed on,
-- overlaps another string the frame shows, or
+- overlaps another string the frame shows,
+- lies under a numbered badge of the screen guide, in a guide view: the
+  characters cut to their area count, less 2px at top and bottom, unless a
+  fill drawn before the badge hides them, or
 - is painted over by a fill drawn after it and not drawn again.
   Only the characters count: a fill over the trailing spaces of a padded
   label is not a finding. OUTPUTS with its protocol list open

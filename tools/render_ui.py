@@ -17,8 +17,8 @@ Every screen is rendered in English into docs/img/ and in German into
 docs/img/de/.  --fit builds the renderer with GFX_TEXT_TRACE, draws every
 view and every FIT_ONLY view in both languages and fails when a string is
 wider than its box, is cut at the edge of the area it is drawn in, runs past
-the shape it is printed on, overlaps another string, or is painted over by a
-fill drawn after it.
+the shape it is printed on, overlaps another string, is painted over by a
+fill drawn after it, or lies under a badge of the screen guide.
 The English overflows in KNOWN_OVERFLOWS are listed and do not fail; one of
 them that no longer overflows fails until it is taken off the list.
 
@@ -1380,6 +1380,51 @@ def guide_live(items):
     return None
 
 
+def guide_badges(items):
+    """The badges a guide's marks draw on the live half, as item indices.
+
+    A badge is a digit 1 to 5 centered in a 28 x 28px box, drawn after the
+    dock's web line (the marks come last) and inside the live half.
+    """
+    live = guide_live(items)
+    web = next((i for i, it in enumerate(items) if it[0] == "T"
+                and it[4].startswith(("More: ", "Mehr: "))), None)
+    if live is None or web is None:
+        return []
+    return [i for i, it in enumerate(items) if i > web and it[0] == "T"
+            and it[3] is not None and it[3].w == 28 and it[3].h == 28
+            and it[4] in ("1", "2", "3", "4", "5") and live.covers(it[3])]
+
+
+def badge_problems(items):
+    """The screen's strings a guide's badge covers, as (string, problem).
+
+    A string counts where its characters show (ink(), cut to its clip, less
+    SLACK_Y at top and bottom) and no fill drawn after it hides them.
+    """
+    problems = []
+    for j in guide_badges(items):
+        b, num = items[j][3], items[j][4]
+        for i in range(j):
+            it = items[i]
+            if it[0] != "T":
+                continue
+            k = ink(it[1], it[4])
+            k = k.inter(it[2]) if k is not None else None
+            if k is None or k.h <= 2 * SLACK_Y:
+                continue
+            core = Rect(k.x, k.y + SLACK_Y, k.w, k.h - 2 * SLACK_Y)
+            hit = core.inter(b)
+            if hit is None:
+                continue
+            hidden = any(items[m][0] == "B" and items[m][1].covers(hit)
+                         for m in range(i + 1, j))
+            if not hidden:
+                problems.append((it[4], "is under badge %s at x=%d y=%d"
+                                 % (num, b.x, b.y)))
+    return problems
+
+
 def fit_problems(items, overlay=False, guide=False):
     """What overflows, as (string, problem) pairs.
 
@@ -1487,8 +1532,11 @@ def fit(views, langs) -> int:
                 render_one(exe, tmp, name, screen, theme, lang, trace)
                 items, used = read_trace(trace)
                 seen[lang] |= used
-                for s, why in fit_problems(items, name in OVERLAY_VIEWS,
-                                         name in GUIDE_VIEWS):
+                found = fit_problems(items, name in OVERLAY_VIEWS,
+                                     name in GUIDE_VIEWS)
+                if name.startswith("help-"):
+                    found += badge_problems(items)
+                for s, why in found:
                     findings.append((lang, name, s, why))
         judged, stale = judge(findings, KNOWN_OVERFLOWS, set(views))
         for tag, lang, name, s, why in judged:

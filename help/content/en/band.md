@@ -116,7 +116,7 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 
 ![The menu's guide at page 1](view:help-overview)
 
-"?", 8px left of STOP, opens the guide for the current screen. The menu, MOTOR & ESC with ESC STICK, SUPPLY, SERVO with KST and HITEC, OUTPUTS, SETUP, LOGS, FILES, IMU, WI-FI and UPDATES have guides; the other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
+"?", 8px left of STOP, opens the guide for the current screen. The menu, MOTOR & ESC with ESC STICK, SUPPLY, SERVO with KST and HITEC, OUTPUTS, SETUP, LOGS, FILES, IMU, WI-FI and UPDATES have guides; the other screens have no "?" control. Each guide page marks up to 5 controls with numbered badges and corner brackets. A badge sits beside or on its control where it covers none of the screen's text. A 480 x 488px dock on one half of the screen lists their names and functions, using at most 3 rows per control. The other half continues running. The dock's last row gives the address of this help.
 
 - PREV and NEXT turn the guide pages. They replace the home tag in the band and stay in the same position on every page. Repeated taps at the same position keep turning pages. CLOSE at the bottom of the dock, or "?", closes the guide.
 - Tapping elsewhere closes the guide without acting on the screen below.
