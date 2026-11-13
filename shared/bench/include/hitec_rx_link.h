@@ -38,7 +38,7 @@ extern "C" {
  *        (LINK_NACK_*), or no answer.
  */
 #define HITEC_RX_LINK_ACK       0
-#define HITEC_RX_LINK_NO_ANSWER (-1)
+#define HITEC_RX_LINK_NO_ANSWER (-1)  /**< no answer came */
 
 /** @brief A write nobody answered goes again this much later. */
 #define HITEC_RX_LINK_RETRY_MS 500u

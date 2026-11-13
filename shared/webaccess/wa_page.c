@@ -124,6 +124,7 @@ void wa_page_code(wa_out_t *o, const wa_page_info_t *pi, bool wrong)
     wa_out_str(o, "</button></form></body></html>");
 }
 
+/** @brief The firmware upload section of the page. */
 static void firmware(wa_out_t *o, const wa_page_info_t *pi)
 {
     wa_out_str(o, "<h2>");

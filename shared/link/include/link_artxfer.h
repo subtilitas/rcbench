@@ -33,7 +33,7 @@ extern "C" {
 
 /** @brief What the IOmcu says its drawing is, off the ARTWORK page. */
 typedef struct {
-    uint16_t blocks;
+    uint16_t blocks;  /**< blocks of LINK_AD_BYTES the payload takes; 0 when there is none */
     uint16_t width;    /**< outline, 0.01mm                                */
     uint16_t height;   /**< outline, 0.01mm                                */
     uint16_t format;   /**< a link_art_format_t                            */
@@ -46,7 +46,7 @@ typedef struct {
  * @brief State of one board drawing transfer.
  */
 typedef struct {
-    link_art_meta_t meta;
+    link_art_meta_t meta;  /**< what the IOmcu says its drawing is */
     uint8_t  *buf;     /**< where the payload lands                        */
     uint32_t  cap;                      /**< capacity of buf, bytes */
     uint32_t  at;      /**< bytes assembled so far                         */

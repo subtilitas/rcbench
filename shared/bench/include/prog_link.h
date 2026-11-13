@@ -148,8 +148,8 @@ typedef struct {
 
 /** @brief One register to write. */
 typedef struct {
-    uint8_t  off;
-    uint16_t value;
+    uint8_t  off;  /**< register offset in the page */
+    uint16_t value;  /**< the value to write */
 } prog_link_write_t;
 
 /**

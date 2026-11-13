@@ -582,14 +582,18 @@ static void written(sense_link_t *s, sense_link_op_kind_t w, int result,
     }
 }
 
+/** @brief Per part, the online bit of the status registers. */
 static const uint16_t k_online[2] = { LINK_SN_I228_ONLINE,
                                       LINK_SN_I3221_ONLINE };
+/** @brief Per part, the ID-wrong bit of the status registers. */
 static const uint16_t k_wrong[2]  = { LINK_SN_I228_ID_WRONG,
                                       LINK_SN_I3221_ID_WRONG };
 const uint16_t sense_link_en_bit[2] = { LINK_SN_EN_I228,
                                         LINK_SN_EN_I3221 };
+/** @brief Per part, the event raised when it stays silent. */
 static const uint32_t k_silent[2] = { SENSE_LINK_EV_I228_SILENT,
                                       SENSE_LINK_EV_I3221_SILENT };
+/** @brief Per part, the event raised when it answers with the wrong ID. */
 static const uint32_t k_wrong_ev[2] = { SENSE_LINK_EV_I228_WRONG,
                                         SENSE_LINK_EV_I3221_WRONG };
 

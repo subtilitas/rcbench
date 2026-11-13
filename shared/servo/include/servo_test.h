@@ -229,8 +229,8 @@ extern "C" {
  *
  * A supply whose lowest set point is higher stops it there. */
 #define SERVO_TEST_BROWNOUT_START_V  5.0f
-#define SERVO_TEST_BROWNOUT_STEP_V   0.2f
-#define SERVO_TEST_BROWNOUT_FLOOR_V  3.0f
+#define SERVO_TEST_BROWNOUT_STEP_V   0.2f  /**< the default of how far each step goes down, V */
+#define SERVO_TEST_BROWNOUT_FLOOR_V  3.0f  /**< the default of the lowest voltage the walk asks for, V */
 /** @brief STEP's lowest value, V: the settings' (SET_SERVO_BO_STEP). */
 #define SERVO_TEST_BROWNOUT_STEP_MIN_V  0.1f
 /** @brief STEP's highest value, V. */
@@ -255,11 +255,12 @@ extern "C" {
  * the move not yet there.  The move rules are servo_move.h's; these are its
  * constants. */
 #define SERVO_TEST_MOVE_MIN_A        SERVO_MOVE_MIN_A
-#define SERVO_TEST_NOISE_K           SERVO_MOVE_NOISE_K
+#define SERVO_TEST_NOISE_K           SERVO_MOVE_NOISE_K  /**< the idle noise's multiple in the threshold */
 /** @brief Back within this of the holding level, and not above it by the
  *         threshold, is the move arrived. */
 #define SERVO_TEST_BAND_A            SERVO_MOVE_BAND_A
 
+/** @brief The idle readings of a step last this long, ms. */
 #define SERVO_TEST_IDLE_MS           1000u
 /** @brief The shortest hold measured at an end, whatever DWELL says: at 10
  *         readings a second, six readings. */
@@ -269,7 +270,7 @@ extern "C" {
 #define SERVO_TEST_TRAVEL_TIMEOUT_MS SERVO_MOVE_TIMEOUT_MS
 /** @brief A set point counts as taken once read back within this. */
 #define SERVO_TEST_SET_TOL_V         0.05f
-#define SERVO_TEST_SET_TIMEOUT_MS    3000u
+#define SERVO_TEST_SET_TIMEOUT_MS    3000u  /**< a set point not taken in this long ends the run, ms */
 /** @brief No new reading for this long ends the run: SUPPLY_LINK_STALE_MS. */
 #define SERVO_TEST_STALE_MS          1500u
 /** @brief Above STALL AT for this long ends the run. */
@@ -292,7 +293,7 @@ extern "C" {
 /** @brief The most moves a step makes, LENGTH BY TIME included. */
 #define SERVO_TEST_MOVES_MAX         1000u
 
-/* The output encoder's constants.  The tolerance is the IOmcu's
+/** @brief The output encoder's constants.  The tolerance is the IOmcu's
  * SENSE_ENC_STILL_TOL, test_as5600 holds the two equal. */
 #define SERVO_TEST_ENC_TOL_COUNTS    12u
 /** @brief The same in degrees: 12 counts of 360 / 4096. */
@@ -401,9 +402,9 @@ bool servo_test_over_a(float a, float limit_a);
  */
 typedef struct {
     /* What runs. */
-    float    steps_v[SERVO_TEST_STEPS_MAX];
-    uint8_t  step_count;
-    bool     brownout;
+    float    steps_v[SERVO_TEST_STEPS_MAX];  /**< the supply voltage of each step, V */
+    uint8_t  step_count;  /**< steps in steps_v */
+    bool     brownout;  /**< a brown-out walk follows the steps */
     /** @brief The brown-out walk's LOWEST VOLTAGE, V; held to its range,
      *         0 for the default. */
     float    bo_floor_v;
@@ -417,10 +418,11 @@ typedef struct {
     uint16_t end_hi_us;     /**< the high end of the moves, us          */
 
     /* The TEST page. */
-    uint16_t settle_ms, dwell_ms;
+    uint16_t settle_ms,   /**< wait after a set point is taken, ms */
+             dwell_ms;    /**< the hold at each end, ms; at least SERVO_TEST_HOLD_MIN_MS counts */
     bool     by_moves;      /**< LENGTH BY MOVES; TIME otherwise        */
-    uint16_t moves;
-    uint16_t time_s;
+    uint16_t moves;  /**< moves a step makes with by_moves */
+    uint16_t time_s;  /**< seconds a step lasts without by_moves */
 
     /**
      * @brief The pass/fail limits; 0 is not checked, and STALL AT always is.
@@ -435,7 +437,7 @@ typedef struct {
 
     /* The output encoder: off leaves the run, the CSV and the report as
      * they are without one. */
-    bool     enc_on;
+    bool     enc_on;  /**< an angle source is in use */
     uint16_t enc_center;    /**< the count at the servo's neutral       */
     float    enc_cmd_deg[2];/**< the commanded angle of the low and the
                                  high end, the screen's degrees          */
@@ -449,21 +451,24 @@ typedef struct {
     bool     enc_imu;
 
     /* For the report only: the settings in force. */
-    char     dut[24];
-    char     type[20];
+    char     dut[24];  /**< the servo's name, for the report */
+    char     type[20];  /**< the servo's type, for the report */
     char     danger[40];    /**< the red tag, or empty                  */
     bool     hv;            /**< HV SERVO                               */
-    uint16_t min_us, max_us, frame_hz;
-    int16_t  trim_us;
-    bool     reverse;
-    uint8_t  travel_deg, range_pct;
+    uint16_t min_us,     /**< PULSE MIN, us */
+             max_us,     /**< PULSE MAX, us */
+             frame_hz;   /**< the frame rate of the pulses, Hz */
+    int16_t  trim_us;  /**< the trim, us */
+    bool     reverse;  /**< the output is reversed */
+    uint8_t  travel_deg,   /**< the horn's travel, degrees */
+             range_pct;    /**< the range, percent */
     bool     model;         /**< the supply is the panel's model        */
-    servo_test_meter_t meter;
+    servo_test_meter_t meter;  /**< the meter of the run */
     uint32_t meter_changes; /**< the meter's change count at the start
                                  (servo_test_meter_now())               */
     uint8_t  ina_why;       /**< servo_test_ina_t: why the INA3221 that is
                                  on in SETUP is not this run's meter    */
-    char     firmware[16];
+    char     firmware[16];  /**< the servo's firmware, for the report */
     /**
      * @brief The report's language: a table of SERVO_STR_COUNT entries, each
      *        NULL for the English, or NULL for English throughout.  The CSV is
@@ -484,12 +489,14 @@ static inline const char *servo_test_enc_source(const servo_test_cfg_t *c)
 
 /* ------------------------------------------------------ what it reports */
 
+/** @brief Whether a run is idle, running or done. */
 typedef enum {
     SERVO_TEST_IDLE = 0,    /**< never started                          */
     SERVO_TEST_RUNNING,
     SERVO_TEST_DONE,        /**< finished or aborted                    */
 } servo_test_state_t;
 
+/** @brief The phase of a running test. */
 typedef enum {
     SERVO_TEST_PH_NONE = 0,
     SERVO_TEST_PH_SET,
@@ -499,6 +506,7 @@ typedef enum {
     SERVO_TEST_PH_HOLD,
 } servo_test_phase_t;
 
+/** @brief Why a run was aborted. */
 typedef enum {
     SERVO_TEST_AB_NONE = 0,
     SERVO_TEST_AB_STOP,
@@ -541,6 +549,7 @@ typedef enum {
     SERVO_TEST_AB_COUNT
 } servo_test_abort_t;
 
+/** @brief How a run ended. */
 typedef enum {
     SERVO_TEST_PASS = 0,
     SERVO_TEST_FAIL,
@@ -562,14 +571,14 @@ typedef enum {
 
 /** @brief A mean, kept as a sum. */
 typedef struct {
-    float    sum;
-    uint32_t n;
+    float    sum;  /**< sum of the values */
+    uint32_t n;  /**< values summed */
 } servo_test_mean_t;
 
 /** @brief One voltage step's results. */
 typedef struct {
-    float    set_v;
-    bool     brownout;
+    float    set_v;  /**< the supply voltage of the step, V */
+    bool     brownout;  /**< the step is a brown-out step */
     bool     begun;         /**< its set point was asked                */
     bool     done;          /**< ran to its end                         */
     servo_test_mean_t v;    /**< the voltage after SETTLE               */
@@ -600,14 +609,16 @@ typedef struct {
     uint16_t enc_travels;   /**< ... that settled                        */
     uint16_t enc_unmoved;   /**< ... whose angle never moved             */
     uint16_t enc_late;      /**< ... that moved and did not settle       */
-    uint32_t enc_travel_sum_ms, enc_travel_max_ms;
+    uint32_t enc_travel_sum_ms,   /**< the sum of the settle times, ms */
+             enc_travel_max_ms;   /**< the longest settle time, ms */
     /* The settled end angles at the low and the high end: the count of
      * the first, and every one's offset from it in degrees, the shortest
      * way round.  servo_test_enc_end() gives the mean. */
-    uint16_t enc_end_ref[2];
-    servo_test_mean_t enc_end_off[2];
+    uint16_t enc_end_ref[2];  /**< the count of the first settled end angle, per end */
+    servo_test_mean_t enc_end_off[2];  /**< each settled end angle's offset from it, degrees, per end */
 } servo_test_step_t;
 
+/** @brief Step results the run keeps: the voltage steps and the brown-out steps. */
 #define SERVO_TEST_STEP_SLOTS (SERVO_TEST_STEPS_MAX + SERVO_TEST_BROWNOUT_MAX)
 
 /* --------------------------------------------------------- the outbox */
@@ -617,35 +628,37 @@ typedef struct {
  * A row is a reading, 10 to 20 a second. */
 #define SERVO_TEST_OUTBOX   16u
 
+/** @brief The state of a run. */
 typedef struct {
-    servo_test_cfg_t   cfg;
-    servo_test_state_t state;
-    servo_test_phase_t phase;
-    servo_test_abort_t why;
-    uint32_t start_ms, end_ms;
+    servo_test_cfg_t   cfg;  /**< the settings */
+    servo_test_state_t state;  /**< idle, running or done */
+    servo_test_phase_t phase;  /**< the phase of the running step */
+    servo_test_abort_t why;  /**< why it was aborted */
+    uint32_t start_ms,   /**< when the run started, ms */
+             end_ms;     /**< when it ended, ms */
     uint32_t phase_ms;      /**< when the phase began                    */
     float    v_max;         /**< the cap as last told                    */
     float    floor_v;       /**< where the brown-out walk stops           */
     float    bo_start_v;                /**< the brown-out walk's start voltage, V */
     float    bo_step_v;     /**< its step, V                             */
 
-    servo_test_step_t steps[SERVO_TEST_STEP_SLOTS];
+    servo_test_step_t steps[SERVO_TEST_STEP_SLOTS];  /**< the results of each step */
     uint8_t  step;          /**< the step running                        */
     uint8_t  step_count;    /**< steps[] in use                           */
     bool     on_seen;       /**< the output has read on                  */
 
     /* The servo. */
-    uint16_t cmd_us;
+    uint16_t cmd_us;  /**< the pulse last commanded, us */
     uint8_t  end;           /**< 0 low, 1 high: where the move goes      */
-    uint32_t cmd_ms;
+    uint32_t cmd_ms;  /**< when it was commanded, ms */
     bool     counted;       /**< the move counts                          */
     servo_move_t move;      /**< the move under way, judged by servo_move */
-    float    hold_ref[2];
-    bool     hold_known[2];
-    uint32_t hold_from_ms;
-    servo_test_mean_t hold_now;
-    uint32_t moves_from_ms;
-    uint16_t moves_done;
+    float    hold_ref[2];  /**< the holding current at each end, A */
+    bool     hold_known[2];  /**< hold_ref holds a value for the end */
+    uint32_t hold_from_ms;  /**< when the hold began, ms */
+    servo_test_mean_t hold_now;  /**< the readings of the hold under way */
+    uint32_t moves_from_ms;  /**< when the counted moves began, ms */
+    uint16_t moves_done;  /**< moves counted in the step */
     uint8_t  placed;        /**< uncounted moves to the ends, this step   */
     uint32_t travel_now_ms; /**< the arrival to log, 0 for none          */
 
@@ -653,21 +666,23 @@ typedef struct {
     /* The last SERVO_TEST_ENC_HIST readings, oldest overwritten, each with
      * the time it was taken: a log row takes the newest not later than
      * itself (servo_test_enc_at()). */
-    servo_test_enc_sample_t enc_hist[SERVO_TEST_ENC_HIST];
-    uint8_t  enc_hist_n, enc_hist_next;
+    servo_test_enc_sample_t enc_hist[SERVO_TEST_ENC_HIST];  /**< the last readings of the angle, a ring */
+    uint8_t  enc_hist_n,      /**< readings held in enc_hist */
+             enc_hist_next;   /**< the slot of enc_hist the next reading takes */
     uint32_t enc_reads;     /**< readings that reached the run           */
     uint32_t enc_no_magnet; /**< times the part reported no magnet       */
     uint32_t enc_weak;      /**< readings with the field too weak        */
     uint32_t enc_strong;    /**< ... and too strong                      */
     bool     enc_open;      /**< a move is being judged                  */
-    bool     enc_counted;
+    bool     enc_counted;  /**< the move being judged counts */
     bool     enc_ok;        /**< it has a start angle                    */
-    uint8_t  enc_end;
-    uint32_t enc_cmd_ms;
+    uint8_t  enc_end;  /**< the end the move goes to, 0 low, 1 high */
+    uint32_t enc_cmd_ms;  /**< when the move was commanded, ms */
     uint16_t enc_start_raw; /**< the count read before the command       */
     uint16_t enc_last_raw;  /**< the last since                          */
-    bool     enc_moved, enc_settled;
-    uint32_t enc_travel_ms;
+    bool     enc_moved,      /**< the angle has moved since the command */
+             enc_settled;    /**< the angle has settled since the command */
+    uint32_t enc_travel_ms;  /**< the move's travel time, ms */
     uint32_t enc_travel_now_ms;     /**< the settle to log, 0 for none   */
     uint32_t enc_travel_at_ms;      /**< the reading that found it       */
     servo_gap_t enc_gap;    /**< the part not answering (servo_gap.h)    */
@@ -675,18 +690,19 @@ typedef struct {
     uint32_t enc_gap_at_ms;         /**< the reading that ended it       */
 
     /* The meter's readings: the supply's, or the INA3221's windows. */
-    bool     have_reading;
-    uint16_t samples;
-    uint32_t first_ms, last_ms;   /**< taken_ms of the first and last    */
+    bool     have_reading;  /**< a reading of the meter has arrived */
+    uint16_t samples;  /**< readings taken */
+    uint32_t first_ms,   /**< taken_ms of the first reading */
+             last_ms;    /**< taken_ms of the last reading */
     uint32_t readings;      /**< new readings during the run              */
-    uint32_t module_samples;
+    uint32_t module_samples;  /**< the module's own sample count at the last reading */
     uint32_t skipped;       /**< readings the meter took that never
                                  reached the test: its count stepped by
                                  more than one between two samples       */
     uint32_t clipped;       /**< windows with a sample at an end of the
                                  INA3221's range                         */
-    bool     stalling;
-    uint32_t stall_since_ms;
+    bool     stalling;  /**< the current is above STALL AT */
+    uint32_t stall_since_ms;  /**< since when, ms */
     bool     stalled;       /**< a characterisation reading over STALL AT */
     float    stall_peak_a;  /**< the characterisation reading of the
                                  largest magnitude                       */
@@ -695,24 +711,26 @@ typedef struct {
 
     /* The supply's state, on either meter. */
     bool     sup_have;      /**< a reading of it arrived                 */
-    uint16_t sup_samples;
+    uint16_t sup_samples;  /**< supply readings taken */
     uint32_t sup_ms;        /**< taken_ms of its last new reading        */
     uint8_t  sup_mode;      /**< its mode at that reading                */
     bool     cc_on;         /**< its last new reading was constant current */
-    uint32_t cc_since_ms;
+    uint32_t cc_since_ms;  /**< since when the supply has been in constant current, ms */
     uint32_t cc_readings;   /**< new readings in constant current        */
     uint32_t cc_longest_ms; /**< the longest stretch of them             */
 
     /* The outbox. */
-    char     box[SERVO_TEST_OUTBOX][SERVO_TEST_LINE_MAX];
-    uint8_t  box_kind[SERVO_TEST_OUTBOX];
-    uint8_t  box_head, box_n;
-    uint32_t rows, rows_lost;
-    unsigned report_line;
+    char     box[SERVO_TEST_OUTBOX][SERVO_TEST_LINE_MAX];  /**< the log rows and report lines waiting for the card */
+    uint8_t  box_kind[SERVO_TEST_OUTBOX];  /**< the kind of each entry, servo_test_out_t */
+    uint8_t  box_head,   /**< the oldest entry of box */
+             box_n;      /**< entries in box */
+    uint32_t rows,      /**< log rows made */
+             rows_lost;  /**< log rows dropped because the outbox was full */
+    unsigned report_line;  /**< the next line of the report */
     bool     ended;         /**< END handed over                          */
-    char     scratch[SERVO_TEST_LINE_MAX];
+    char     scratch[SERVO_TEST_LINE_MAX];  /**< the line being handed out */
 
-    servo_test_do_t pend;
+    servo_test_do_t pend;  /**< the calls owed to the caller */
 } servo_test_t;
 
 /**
@@ -790,7 +808,7 @@ typedef struct {
      *         change count that step left; SERVO_TEST_AB_NONE while it never
      *         did. */
     servo_test_abort_t dropped;
-    uint32_t dropped_at;
+    uint32_t dropped_at;  /**< the change count that step left */
 } servo_test_meter_now_t;
 
 /**

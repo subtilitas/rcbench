@@ -74,14 +74,14 @@ typedef struct {
     bool (*buy)(void *ctx);
     /** @brief Restart into the slot written, as a flash update boot. */
     void (*restart)(void *ctx);
-    void *ctx;
+    void *ctx;  /**< passed to each function */
 } link_update_io_t;
 
 /**
  * @brief The state of the IOmcu's side of one update session.
  */
 typedef struct {
-    const link_update_io_t *io;
+    const link_update_io_t *io;  /**< the callbacks */
     const uint8_t *running;     /**< the running slot's bytes               */
     const uint8_t *target;      /**< the other slot's bytes                 */
     uint32_t       slot_bytes;  /**< bytes in one slot; 0 when there are none */
@@ -94,16 +94,16 @@ typedef struct {
     uint16_t next;              /**< the block COMMIT takes next             */
     uint16_t blocks;            /**< blocks in the session's image           */
 
-    uint16_t data[LINK_UPD_DATA_COUNT];
+    uint16_t data[LINK_UPD_DATA_COUNT];  /**< the registers of the block COMMIT takes next */
 
     uint8_t  digest_of;         /**< a link_upd_digest_t                     */
     uint8_t  digest[LINK_SHA256_BYTES];  /**< the digest the image hashes to */
     uint8_t  expect[LINK_SHA256_BYTES];  /**< the digest the host expects */
     link_image_hash_t hash;             /**< the hash of the image so far */
 
-    bool     restart_due;
-    bool     restart_timed;
-    uint32_t restart_at_ms;
+    bool     restart_due;  /**< a restart is owed */
+    bool     restart_timed;  /**< restart_at_ms is set */
+    uint32_t restart_at_ms;  /**< when the restart delay began, ms */
 
     bool     heard;             /**< an update page took a request since the
                                  *   last poll                              */

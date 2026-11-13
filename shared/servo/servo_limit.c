@@ -11,8 +11,8 @@
 
 #include "mstime.h"
 
-/*
- * How many positions feed the free-running baseline before the knee test is
+/**
+ * @brief How many positions feed the free-running baseline before the knee test is
  * allowed to fire.
  *
  * Three, more than one: the first position is the center, where a surface

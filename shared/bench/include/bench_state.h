@@ -38,13 +38,13 @@ extern "C" {
  * Mean and highest current in mA, signed; lowest bus voltage in mV.
  */
 typedef struct {
-    uint16_t window;
-    uint16_t ok;
-    uint16_t no_current;
-    uint16_t no_voltage;
-    int16_t  mean_ma[BENCH_CHW_CHANNELS];
-    int16_t  max_ma[BENCH_CHW_CHANNELS];
-    uint16_t min_mv[BENCH_CHW_CHANNELS];
+    uint16_t window;  /**< window number */
+    uint16_t ok;  /**< bit c: channel c holds readings under window */
+    uint16_t no_current;  /**< bit c: channel c has no current sample */
+    uint16_t no_voltage;  /**< bit c: channel c has no bus voltage sample */
+    int16_t  mean_ma[BENCH_CHW_CHANNELS];  /**< mean current of each channel, mA, signed */
+    int16_t  max_ma[BENCH_CHW_CHANNELS];  /**< highest current of each channel, mA, signed */
+    uint16_t min_mv[BENCH_CHW_CHANNELS];  /**< lowest bus voltage of each channel, mV */
 } bench_chw_t;
 
 /**
@@ -62,10 +62,10 @@ typedef struct {
     float energy_wh;                    /**< energy drawn, Wh */
 
     /* Peaks and sag, tracked by the end that has the fast samples. */
-    float voltage_min;
-    float current_max;
-    float power_max;
-    float rpm_max;
+    float voltage_min;  /**< lowest voltage, V */
+    float current_max;  /**< highest current, A */
+    float power_max;  /**< highest power, W */
+    float rpm_max;  /**< highest speed, rpm */
 
     uint16_t flags;     /**< link_bench_flag_t                            */
     /**
@@ -97,7 +97,7 @@ typedef struct {
      */
     float    esc_voltage;   /**< V */
     float    esc_current;   /**< A */
-    uint8_t  esc_ok;
+    uint8_t  esc_ok;  /**< bit 0 esc_voltage valid, bit 1 esc_current valid */
     /**
      * @brief The INA228 read its current at the end of its range in the last
      *        window or since the arm (SENSE FLAGS bit 3): current and power, or
@@ -118,14 +118,14 @@ typedef struct {
      * SERVO_WIN says which for CH1; SERVO_SENSE's flags do not, and both
      * stay 0 for a channel read from it.  Not on the BENCH page.
      */
-    bool     servo_new;
-    uint8_t  servo_ok;
-    uint8_t  servo_no_current;
-    uint8_t  servo_no_voltage;
-    uint16_t servo_window;
-    int16_t  servo_mean_ma[3];
-    int16_t  servo_max_ma[3];
-    uint16_t servo_min_mv[3];
+    bool     servo_new;  /**< a window not yet written to a log row */
+    uint8_t  servo_ok;  /**< bit n-1: CHn's window holds readings */
+    uint8_t  servo_no_current;  /**< bit n-1: CHn holds no current sample */
+    uint8_t  servo_no_voltage;  /**< bit n-1: CHn holds no bus voltage sample */
+    uint16_t servo_window;  /**< the window number */
+    int16_t  servo_mean_ma[3];  /**< mean current of CH1 to CH3, mA, signed */
+    int16_t  servo_max_ma[3];  /**< highest current of CH1 to CH3, mA, signed */
+    uint16_t servo_min_mv[3];  /**< lowest bus voltage of CH1 to CH3, mV */
     /**
      * @brief The same window of every channel the map reads, ok 0 for none: on
      *        the row of servo_window, as SERVO_SENSE's CH2 and CH3 are.
@@ -344,7 +344,7 @@ bool bench_state_ina_current(const bench_state_t *b, float *out);
  *        between the two reads adds at full current.
  */
 #define BENCH_FINE_MAH_TOL 2.0f
-#define BENCH_FINE_WH_TOL  0.2f
+#define BENCH_FINE_WH_TOL  0.2f  /**< the same for the energy, Wh */
 
 /**
  * @brief The most BENCH's charge (1mAh) and energy (0.1Wh) registers carry: a
@@ -352,7 +352,7 @@ bool bench_state_ina_current(const bench_state_t *b, float *out);
  *        go on.
  */
 #define BENCH_CHARGE_MAH_MAX 65535.0f
-#define BENCH_ENERGY_WH_MAX   6553.5f
+#define BENCH_ENERGY_WH_MAX   6553.5f  /**< the energy ceiling, Wh */
 
 /**
  * @brief With LINK_BN_TOTALS_OK, the INA228's totals in the SENSE page's finer
@@ -406,8 +406,8 @@ void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
  * floating -- is counted as faithfully as one that measures it.
  */
 typedef struct {
-    float   mah;
-    float   wh;
+    float   mah;  /**< charge, mAh */
+    float   wh;  /**< energy, Wh */
     uint8_t counted;   /**< BENCH_COUNTED_* */
     float   run_s;     /**< driving time counted since the reset */
 } bench_totals_t;
@@ -477,6 +477,7 @@ void bench_state_track_peaks(bench_state_t *b);
  * never did bidirectional DShot.  A held-over speed on a stopped motor is
  * exactly the plausible wrong number this bench exists to avoid.
  */
+/** @brief A speed reading older than this, in ms, is dropped. */
 #define BENCH_RPM_STALE_MS  200u
 
 /*
@@ -488,6 +489,7 @@ void bench_state_track_peaks(bench_state_t *b);
  * window would blank fields that are arriving exactly as the protocol sends
  * them.
  */
+/** @brief An extended-telemetry reading older than this, in ms, is dropped. */
 #define BENCH_EDT_STALE_MS  2000u
 
 /** @brief One extended-telemetry reading as the DShot driver holds it. */

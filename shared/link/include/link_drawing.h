@@ -51,10 +51,10 @@ typedef struct {
 
 /** @brief A drawing that passed link_drawing_parse(). */
 typedef struct {
-    const uint8_t *data;
-    uint32_t bytes;
-    uint8_t  pads;
-    uint16_t shapes;
+    const uint8_t *data;  /**< the payload */
+    uint32_t bytes;  /**< its length, bytes */
+    uint8_t  pads;  /**< pads in it */
+    uint16_t shapes;  /**< shapes in it */
     uint16_t width;    /**< outline, 0.01mm                                 */
     uint16_t height;   /**< outline, 0.01mm                                 */
     uint16_t colour;   /**< the board, RGB565                               */

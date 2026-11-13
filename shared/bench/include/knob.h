@@ -92,6 +92,7 @@ _Static_assert(!PANEL_I2C_RESERVED(KNOB_I2C_ADDR),
  * The angle is taken only when the first and the last agree.
  */
 #define KNOB_POLL_READS      3
+/** @brief The register of each read of one poll. */
 extern const uint8_t knob_poll_regs[KNOB_POLL_READS];
 
 /** @brief Steps in one turn: 14 bits. */
@@ -99,7 +100,7 @@ extern const uint8_t knob_poll_regs[KNOB_POLL_READS];
 
 /** @brief Poll period while the sensor answers, and while it does not. */
 #define KNOB_POLL_MS         10
-#define KNOB_POLL_IDLE_MS    100
+#define KNOB_POLL_IDLE_MS    100  /**< the poll period, ms, while the sensor does not answer */
 
 /**
  * @brief The largest step between two readings taken as motion: a quarter turn,
@@ -115,8 +116,8 @@ extern const uint8_t knob_poll_regs[KNOB_POLL_READS];
  * @brief Degrees of knob per full slider span; the setting's default and range.
  */
 #define KNOB_SCALE_DEG_DEFAULT 270
-#define KNOB_SCALE_DEG_MIN     90
-#define KNOB_SCALE_DEG_MAX     720
+#define KNOB_SCALE_DEG_MIN     90  /**< the smallest span, degrees */
+#define KNOB_SCALE_DEG_MAX     720  /**< the largest span, degrees */
 
 /**
  * @brief The datasheet's angle, 0..16383, rising counter-clockwise seen from

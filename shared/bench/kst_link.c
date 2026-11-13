@@ -27,11 +27,11 @@ enum {
     X_IMAGE,         /* read 16 to 31 */
 };
 
-/* The staged registers go out in windows of 4: 5 whole ones and
+/** @brief The staged registers go out in windows of 4: 5 whole ones and
  * START_CRC. */
 #define STAGE_WINDOWS 6u
-#define RESULTS_N ((unsigned)LINK_KS_IMAGE - (unsigned)LINK_KS_FAIL)
-#define RES(reg) ((unsigned)(reg) - (unsigned)LINK_KS_FAIL)
+#define RESULTS_N ((unsigned)LINK_KS_IMAGE - (unsigned)LINK_KS_FAIL)  /**< registers of the results block */
+#define RES(reg) ((unsigned)(reg) - (unsigned)LINK_KS_FAIL)  /**< the index of register reg in the results block */
 
 _Static_assert((STAGE_WINDOWS - 1u) * 4u + 1u == LINK_KS_W_STAGED,
                "stage windows");

@@ -51,10 +51,10 @@ extern "C" {
  */
 typedef struct {
     bool     (*exchange)(void *ctx, link_host_t *h, const link_msg_t *req,
-                         link_msg_t *reply);
-    uint32_t (*now_ms)(void *ctx);
-    void      *ctx;
-    void     (*between)(void *ctx);
+                         link_msg_t *reply);  /**< carries one request; true with the answer in reply, false when unanswered */
+    uint32_t (*now_ms)(void *ctx);  /**< the millisecond clock */
+    void      *ctx;  /**< passed to each function */
+    void     (*between)(void *ctx);  /**< called after each acknowledged frame of a write that has another frame */
 } link_port_t;
 
 /**

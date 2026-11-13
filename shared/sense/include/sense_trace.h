@@ -187,7 +187,7 @@
 extern "C" {
 #endif
 
-#define SENSE_TRACE_FORMAT       3u
+#define SENSE_TRACE_FORMAT       3u  /**< the version of the trace lines, sent in $T v= */
 /**
  * @brief The longest line, its CR LF included: the USB console's transmit
  * buffer holds 64 bytes.
@@ -336,7 +336,7 @@ typedef enum {
 
 /** @brief Core 0's own. */
 typedef struct {
-    sense_trace_stage_t stage;
+    sense_trace_stage_t stage;  /**< where the header stands */
     uint16_t id;          /**< traces started, modulo 65536                */
     uint8_t  trig;        /**< what started this one                       */
     uint32_t t0,                            /**< start of the trace, 0.1ms                   */
@@ -368,20 +368,20 @@ typedef struct {
             q_head;                         /**< index of the oldest trigger in q            */
     /* Triggers at or past the end of a trace still being written, and
      * behind a slewed command among them its last change or its end. */
-    sense_trace_mark_t wait[SENSE_TRACE_MARKS];
-    uint8_t  wait_n;
+    sense_trace_mark_t wait[SENSE_TRACE_MARKS];  /**< triggers at or past the end of the trace */
+    uint8_t  wait_n;  /**< entries of wait in use */
     uint32_t wait_lost;   /**< of them, those that found no place          */
     uint32_t wait_lost_t[2]; /**< their first and last time                */
     uint32_t abandoned;   /**< traces dropped with no console              */
     uint32_t scanned;     /**< idle: records looked at for a set-up record */
-    sense_trace_watch_t watch[SENSE_TRACE_SLOTS];
+    sense_trace_watch_t watch[SENSE_TRACE_SLOTS];  /**< the watched slots */
 } sense_trace_out_t;
 
 /**
  * @brief A trace of the FAST channel's samples, shared between the two cores.
  */
 typedef struct {
-    sense_trace_rec_t *buf;
+    sense_trace_rec_t *buf;  /**< the records */
     uint32_t          mask;       /**< the size less 1                     */
     atomic_uint_fast32_t head;    /**< records written; core 1 moves it    */
     atomic_uint_fast32_t tail;    /**< records read; core 0 moves it       */

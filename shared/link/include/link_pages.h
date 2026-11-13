@@ -415,14 +415,14 @@ typedef enum {
  * carries.  A ninth slot needs a minor version and a second page.
  */
 
-#define LINK_OUT_SLOTS     8u
-#define LINK_OUT_CHANNELS  8u
+#define LINK_OUT_SLOTS     8u  /**< slots of the OUTPUTS page */
+#define LINK_OUT_CHANNELS  8u  /**< channels of the CHANNELS page */
 
 /** @brief A command runs 0..LINK_CH_SPAN across the channel's own travel. */
 #define LINK_CH_SPAN    1000u
 
 /* --- what each output is asked for */
-#define LINK_CH_COUNT   LINK_OUT_CHANNELS
+#define LINK_CH_COUNT   LINK_OUT_CHANNELS  /**< registers of the CHANNELS page: one a channel */
 
 /* --- what a channel is.  Four registers each, and a channel must be written
  *     whole: min and max are a pair, and a range half-applied is a range
@@ -434,7 +434,7 @@ enum {
     LINK_CC_MAX_US  = 3, /**< and of LINK_CH_SPAN                       */
     LINK_CC_STRIDE  = 4,
 };
-#define LINK_CC_COUNT  (LINK_OUT_CHANNELS * LINK_CC_STRIDE)
+#define LINK_CC_COUNT  (LINK_OUT_CHANNELS * LINK_CC_STRIDE)  /**< registers of the CHAN_CFG page: LINK_CC_STRIDE a channel */
 
 /**
  * @brief The fastest slew a write may name, in thousandths of the span a
@@ -444,8 +444,8 @@ enum {
  */
 #define LINK_CC_SLEW_MAX 3000u
 
-#define LINK_CC_ROLE_THROTTLE 0u
-#define LINK_CC_ROLE_SURFACE  1u
+#define LINK_CC_ROLE_THROTTLE 0u  /**< ROLE 0 */
+#define LINK_CC_ROLE_SURFACE  1u  /**< ROLE 1 */
 
 /**
  * @brief A channel's range before anything is written, and the widest range the
@@ -464,9 +464,9 @@ enum {
  * longer one is refused with BAD_VALUE (outputs_pulse_check()).
  */
 #define LINK_CC_DEFAULT_MIN 1000u
-#define LINK_CC_DEFAULT_MAX 2000u
-#define LINK_CC_FLOOR_US     400u
-#define LINK_CC_CEILING_US  2500u
+#define LINK_CC_DEFAULT_MAX 2000u  /**< the MAX_US of a channel before anything is written, us */
+#define LINK_CC_FLOOR_US     400u  /**< the lowest pulse a write may name, us */
+#define LINK_CC_CEILING_US  2500u  /**< the highest pulse a write may name, us */
 
 /**
  * @brief The least distance, in microseconds, between a throttle's Idle pulse
@@ -494,7 +494,7 @@ enum {
     LINK_OS_RATE_HZ = 3, /**< frames a second, or kbit/s for DShot       */
     LINK_OS_STRIDE  = 4,
 };
-#define LINK_OS_COUNT  (LINK_OUT_SLOTS * LINK_OS_STRIDE)
+#define LINK_OS_COUNT  (LINK_OUT_SLOTS * LINK_OS_STRIDE)  /**< registers of the OUTPUTS page: LINK_OS_STRIDE a slot */
 
 /* --- the SERVO screen's page: the target's frame rate (protocol 4.1) and
  *     the sweep that drives it through a curve (4.2).
@@ -639,13 +639,13 @@ enum {
     LINK_SP_RESET     = 17,   /**< protocol 4.4: write 1 to restart the module */
     LINK_SP_COUNT     = 18,
 };
-#define LINK_SP_ONLINE  0x01u
-#define LINK_SP_ON      0x02u
-#define LINK_SP_MODE(f) (((f) >> 2) & 3u)
-#define LINK_SP_STUCK   0x10u
-#define LINK_SP_SET_STUCK 0x20u
-#define LINK_SP_LIVE      0x40u
-#define LINK_SP_TRIPPED   0x80u
+#define LINK_SP_ONLINE  0x01u  /**< FLAGS bit 0: the module answers */
+#define LINK_SP_ON      0x02u  /**< FLAGS bit 1: the output is on */
+#define LINK_SP_MODE(f) (((f) >> 2) & 3u)  /**< FLAGS bits 3..2: 0 normal, 1 constant current, 2 overcurrent */
+#define LINK_SP_STUCK   0x10u  /**< FLAGS bit 4: an output that would not switch */
+#define LINK_SP_SET_STUCK 0x20u  /**< FLAGS bit 5: set points that would not take */
+#define LINK_SP_LIVE      0x40u  /**< FLAGS bit 6: the output is on or may be */
+#define LINK_SP_TRIPPED   0x80u  /**< FLAGS bit 7: the module switched the output off by itself */
 #define LINK_SP_WIRE_WAIT    0x100u  /**< protocol 4.5 */
 #define LINK_SP_WIRE_REFUSED 0x200u  /**< protocol 4.5 */
 #define LINK_SP_SAGGED       0x400u  /**< protocol 4.5 */
@@ -808,13 +808,13 @@ enum {
 
 /** @brief The ranges a write is held to. */
 #define LINK_TN_F_MIN_LO       50u
-#define LINK_TN_F_MIN_HI     2000u
-#define LINK_TN_F_MAX_HI     6900u
-#define LINK_TN_SPLIT_MAX      50u
-#define LINK_TN_GAP_MS_MIN      1u
-#define LINK_TN_GAP_MS_MAX    100u
-#define LINK_TN_PERIODS_MIN     1u
-#define LINK_TN_PERIODS_MAX    64u
+#define LINK_TN_F_MIN_HI     2000u  /**< F_MIN_HZ at most, Hz */
+#define LINK_TN_F_MAX_HI     6900u  /**< F_MAX_HZ at most, Hz */
+#define LINK_TN_SPLIT_MAX      50u  /**< SPLIT_PCT at most, percent */
+#define LINK_TN_GAP_MS_MIN      1u  /**< GAP_MS at least, ms */
+#define LINK_TN_GAP_MS_MAX    100u  /**< GAP_MS at most, ms */
+#define LINK_TN_PERIODS_MIN     1u  /**< MIN_PERIODS at least */
+#define LINK_TN_PERIODS_MAX    64u  /**< MIN_PERIODS at most */
 /** @brief Beeps the IOmcu keeps. */
 #define LINK_TN_RING           64u
 
@@ -823,11 +823,11 @@ enum {
  * 400 to 6500Hz, 8% split, 3ms gap, 3 periods a beep.
  */
 #define LINK_TN_DEFAULT_PIN        22u
-#define LINK_TN_DEFAULT_F_MIN     400u
-#define LINK_TN_DEFAULT_F_MAX    6500u
-#define LINK_TN_DEFAULT_SPLIT       8u
-#define LINK_TN_DEFAULT_GAP_MS      3u
-#define LINK_TN_DEFAULT_PERIODS     3u
+#define LINK_TN_DEFAULT_F_MIN     400u  /**< F_MIN_HZ, Hz */
+#define LINK_TN_DEFAULT_F_MAX    6500u  /**< F_MAX_HZ, Hz */
+#define LINK_TN_DEFAULT_SPLIT       8u  /**< SPLIT_PCT, percent */
+#define LINK_TN_DEFAULT_GAP_MS      3u  /**< GAP_MS, ms */
+#define LINK_TN_DEFAULT_PERIODS     3u  /**< MIN_PERIODS */
 
 /** @brief What the IOmcu says about the tap. */
 typedef enum {
@@ -854,12 +854,13 @@ typedef enum {
 
 /** @brief EVT_FLAGS' bits, tone_beep_flag_t's. */
 #define LINK_TN_EVT_AFTER_CHANGE  0x01u
-#define LINK_TN_EVT_BEFORE_CHANGE 0x02u
+#define LINK_TN_EVT_BEFORE_CHANGE 0x02u  /**< EVT_FLAGS bit 1 */
 
+/** @brief The RANGE register of a slot: @p first channel in bits 15..8, @p count in bits 7..0. */
 #define LINK_OS_RANGE_OF(first, count) \
     ((uint16_t)((((unsigned)(first) & 0xFFu) << 8) | ((unsigned)(count) & 0xFFu)))
-#define LINK_OS_FIRST(range) ((uint8_t)((range) >> 8))
-#define LINK_OS_CHANNELS(range) ((uint8_t)((range) & 0xFFu))
+#define LINK_OS_FIRST(range) ((uint8_t)((range) >> 8))  /**< the first channel of a RANGE register: bits 15..8 */
+#define LINK_OS_CHANNELS(range) ((uint8_t)((range) & 0xFFu))  /**< the channel count of a RANGE register: bits 7..0 */
 
 /**
  * @brief The drivers, numbered on the wire.
@@ -1106,16 +1107,16 @@ typedef enum {
  * which is the panel's cue to use the catalogue compiled into it.
  */
 #define LINK_CAT_PINS  32u
-#define LINK_CAT_COUNT LINK_CAT_PINS
+#define LINK_CAT_COUNT LINK_CAT_PINS  /**< registers of the catalogue page: one a pin */
 
 /** @brief gpio in 6 bits, pad in 6, and what holds it in 4. */
 #define LINK_CAT_OF(gpio, pad, hold) \
     ((uint16_t)((((unsigned)(gpio) & 0x3Fu) << 10) \
                 | (((unsigned)(pad) & 0x3Fu) << 4) \
                 | ((unsigned)(hold) & 0x0Fu)))
-#define LINK_CAT_GPIO(r) ((uint8_t)(((r) >> 10) & 0x3Fu))
-#define LINK_CAT_PAD(r)  ((uint8_t)(((r) >> 4) & 0x3Fu))
-#define LINK_CAT_HOLD(r) ((uint8_t)((r) & 0x0Fu))
+#define LINK_CAT_GPIO(r) ((uint8_t)(((r) >> 10) & 0x3Fu))  /**< the GPIO of a catalogue register: bits 15..10 */
+#define LINK_CAT_PAD(r)  ((uint8_t)(((r) >> 4) & 0x3Fu))  /**< the pad number: bits 9..4 */
+#define LINK_CAT_HOLD(r) ((uint8_t)((r) & 0x0Fu))  /**< what holds the pin: bits 3..0 */
 
 /**
  * @brief What holds a pin the bench may not drive.
@@ -1172,11 +1173,12 @@ enum {
     LINK_SH_COUNT      = 5,
 };
 
+/** @brief The LAYOUT register: @p corner in bits 15..8, @p per_side pads in bits 7..0. */
 #define LINK_SH_LAYOUT_OF(corner, per_side) \
     ((uint16_t)((((unsigned)(corner) & 0xFFu) << 8) \
                 | ((unsigned)(per_side) & 0xFFu)))
-#define LINK_SH_CORNER(r)   ((uint8_t)(((r) >> 8) & 0xFFu))
-#define LINK_SH_PER_SIDE(r) ((uint8_t)((r) & 0xFFu))
+#define LINK_SH_CORNER(r)   ((uint8_t)(((r) >> 8) & 0xFFu))  /**< the corner of a LAYOUT register: bits 15..8 */
+#define LINK_SH_PER_SIDE(r) ((uint8_t)((r) & 0xFFu))  /**< the pads in one row: bits 7..0 */
 
 /**
  * @brief Which corner of the outline pad 1 sits at, seen with the board as
@@ -1294,11 +1296,12 @@ typedef enum {
  * The length is exactly the header, the pads and the shapes.
  */
 #define LINK_DRAW_VERSION      1u
-#define LINK_DRAW_HEAD_BYTES   16u
-#define LINK_DRAW_PAD_BYTES    8u
-#define LINK_DRAW_SHAPE_BYTES  12u
-#define LINK_DRAW_MAX_PADS     64u
-#define LINK_DRAW_MAX_SHAPES   400u
+#define LINK_DRAW_HEAD_BYTES   16u  /**< bytes of the header */
+#define LINK_DRAW_PAD_BYTES    8u  /**< bytes of a pad record */
+#define LINK_DRAW_SHAPE_BYTES  12u  /**< bytes of a shape record */
+#define LINK_DRAW_MAX_PADS     64u  /**< pads at most */
+#define LINK_DRAW_MAX_SHAPES   400u  /**< shapes at most */
+/** @brief The longest drawing, bytes: the header, the most pads and the most shapes. */
 #define LINK_DRAW_MAX_BYTES    (LINK_DRAW_HEAD_BYTES \
                                 + LINK_DRAW_MAX_PADS * LINK_DRAW_PAD_BYTES \
                                 + LINK_DRAW_MAX_SHAPES * LINK_DRAW_SHAPE_BYTES)
@@ -1335,8 +1338,8 @@ enum {
     LINK_AD_DATA  = 1,            /**< the payload starts here             */
     LINK_AD_COUNT = LINK_MAX_REGS,
 };
-#define LINK_AD_WORDS ((unsigned)(LINK_AD_COUNT - LINK_AD_DATA))
-#define LINK_AD_BYTES (LINK_AD_WORDS * 2u)
+#define LINK_AD_WORDS ((unsigned)(LINK_AD_COUNT - LINK_AD_DATA))  /**< registers of payload in a block */
+#define LINK_AD_BYTES (LINK_AD_WORDS * 2u)  /**< bytes of payload in a block */
 
 /* -------------------------------------------------------------------- pads */
 
@@ -1358,7 +1361,7 @@ enum {
  * reading the board instead of the screen, not a bench that does not work.
  */
 #define LINK_PAD_SLOTS 32u
-#define LINK_PAD_COUNT LINK_PAD_SLOTS
+#define LINK_PAD_COUNT LINK_PAD_SLOTS  /**< registers of the pads page: one a pad */
 
 /**
  * @brief pad in 6 bits, what it is in 2, and its rail in 8 tenths of a volt.
@@ -1367,9 +1370,9 @@ enum {
     ((uint16_t)((((unsigned)(pad) & 0x3Fu) << 10) \
                 | (((unsigned)(kind) & 0x03u) << 8) \
                 | ((unsigned)(dv) & 0xFFu)))
-#define LINK_PAD_NUM(r)  ((uint8_t)(((r) >> 10) & 0x3Fu))
-#define LINK_PAD_KIND(r) ((uint8_t)(((r) >> 8) & 0x03u))
-#define LINK_PAD_DV(r)   ((uint8_t)((r) & 0xFFu))
+#define LINK_PAD_NUM(r)  ((uint8_t)(((r) >> 10) & 0x3Fu))  /**< the pad number of a pad register: bits 15..10 */
+#define LINK_PAD_KIND(r) ((uint8_t)(((r) >> 8) & 0x03u))  /**< what the pad is: bits 9..8 */
+#define LINK_PAD_DV(r)   ((uint8_t)((r) & 0xFFu))  /**< the rail in tenths of a volt: bits 7..0 */
 
 /**
  * @brief What a pad that is not a pin is.
@@ -1496,11 +1499,11 @@ enum {
  */
 #define LINK_KST_WRITE_KEY 0x57A5u
 
-#define LINK_KS_STATE_OF(r)   ((uint8_t)((r) & 0x7u))
-#define LINK_KS_PORT_OF(r)    ((uint8_t)(((r) >> 12) & 0xFu))
-#define LINK_KS_OP_OF(r)      ((uint8_t)(((r) >> 12) & 0xFu))
-#define LINK_KS_FRAMES_OF(r)  ((uint16_t)((r) & 0xFFFu))
-#define LINK_KS_W_CMD_CONFIRM 0x0080u
+#define LINK_KS_STATE_OF(r)   ((uint8_t)((r) & 0x7u))  /**< the state of a STATE register: bits 2..0 */
+#define LINK_KS_PORT_OF(r)    ((uint8_t)(((r) >> 12) & 0xFu))  /**< the port of a STATE register: bits 15..12 */
+#define LINK_KS_OP_OF(r)      ((uint8_t)(((r) >> 12) & 0xFu))  /**< the operation of an OP register: bits 15..12 */
+#define LINK_KS_FRAMES_OF(r)  ((uint16_t)((r) & 0xFFFu))  /**< the frames of an OP register: bits 11..0 */
+#define LINK_KS_W_CMD_CONFIRM 0x0080u  /**< CMD bit 7: the confirmation of an unchecked restore */
 /**
  * @brief Bits 8-11 of the command name a programming port (4.13).
  *
@@ -1519,6 +1522,7 @@ enum {
  * LINK_KST_REF_LEAVE_MS.
  */
 #define LINK_KS_W_CMD_LEAVE   0x0020u
+/** @brief The CMD register of @p op on programming port @p port: the op in bits 3..0, LINK_KS_W_CMD_PORT, the port in bits 11..8. */
 #define LINK_KS_W_CMD_OF(op, port) \
     ((uint16_t)((unsigned)(op) | LINK_KS_W_CMD_PORT \
                 | (((unsigned)(port) & 0xFu) << 8)))
@@ -1770,13 +1774,14 @@ typedef enum {
      : (unsigned)(fn) == (unsigned)LINK_PG_FN_DSHOT600 ? 600u : 0u)
 /** @brief Ports the page has room for. */
 #define LINK_PG_PORTS_MAX 4u
-#define LINK_PG_PIN_NONE  0xFFFFu
+#define LINK_PG_PIN_NONE  0xFFFFu  /**< a port with no pin */
+/** @brief The register @p r of port @p port's block. */
 #define LINK_PG_REG(port, r) \
     ((uint8_t)(LINK_PG_PORT0 + (unsigned)(port) * LINK_PG_STRIDE + (r)))
-#define LINK_PG_FUNC(port) ((uint8_t)(LINK_PG_FUNC0 + (unsigned)(port)))
-#define LINK_PG_F_BOUND(port)   ((uint16_t)(1u << (unsigned)(port)))
-#define LINK_PG_F_PARKED(port)  ((uint16_t)(0x10u << (unsigned)(port)))
-#define LINK_PG_F_REFUSED(port) ((uint16_t)(0x100u << (unsigned)(port)))
+#define LINK_PG_FUNC(port) ((uint8_t)(LINK_PG_FUNC0 + (unsigned)(port)))  /**< the register that holds port @p port's function */
+#define LINK_PG_F_BOUND(port)   ((uint16_t)(1u << (unsigned)(port)))  /**< the FLAGS bit of port @p port: its pin is bound to the PWM generator */
+#define LINK_PG_F_PARKED(port)  ((uint16_t)(0x10u << (unsigned)(port)))  /**< the FLAGS bit of port @p port: its pin is parked (4 + n) */
+#define LINK_PG_F_REFUSED(port) ((uint16_t)(0x100u << (unsigned)(port)))  /**< the FLAGS bit of port @p port: its pin is refused (8 + n) */
 /** @brief From 4.28: port n's DShot driver holds its pin. */
 #define LINK_PG_F_DSHOT(port)   ((uint16_t)(0x1000u << (unsigned)(port)))
 
@@ -1947,15 +1952,17 @@ typedef enum {
  * model, 4800 to 6000mV.
  */
 #define LINK_HITEC_SUPPLY_MIN_MV 4800u
-#define LINK_HITEC_SUPPLY_MAX_MV 6000u
+#define LINK_HITEC_SUPPLY_MAX_MV 6000u  /**< the highest voltage a POWER takes, mV */
 /** @brief The longest off time of a POWER, ms. */
 #define LINK_HITEC_OFF_MS_MAX 10000u
 
-#define LINK_HT_STATE_OF(r) ((uint8_t)((r) & 0x7u))
-#define LINK_HT_PORT_OF(r)  ((uint8_t)(((r) >> 12) & 0xFu))
-#define LINK_HT_OP_OF(r)    ((uint8_t)(((r) >> 12) & 0xFu))
+#define LINK_HT_STATE_OF(r) ((uint8_t)((r) & 0x7u))  /**< the state of a STATE register: bits 2..0 */
+#define LINK_HT_PORT_OF(r)  ((uint8_t)(((r) >> 12) & 0xFu))  /**< the port of a STATE register: bits 15..12 */
+#define LINK_HT_OP_OF(r)    ((uint8_t)(((r) >> 12) & 0xFu))  /**< the operation of an OP register: bits 15..12 */
+/** @brief The CMD register of @p op on programming port @p port: the op in bits 3..0, the port in bits 11..8. */
 #define LINK_HT_W_CMD_OF(op, port) \
     ((uint16_t)((unsigned)(op) | (((unsigned)(port) & 0xFu) << 8)))
+/** @brief The LINE register: bit 0 the @p family, bit 4 the @p drive. */
 #define LINK_HT_LINE_OF(family, drive) \
     ((uint16_t)(((unsigned)(family) & 1u) | (((unsigned)(drive) & 1u) << 4)))
 
@@ -2120,7 +2127,7 @@ enum {
  * unknown.
  */
 #define LINK_POLES_MIN  2u
-#define LINK_POLES_MAX 42u
+#define LINK_POLES_MAX 42u  /**< the highest pole count */
 
 /**
  * @brief Leaving failsafe takes this value written to LINK_CT_CLEAR, not any
@@ -2233,7 +2240,7 @@ enum {
 
 /** @brief Bytes in a block, and registers in UPDATE_DATA. */
 #define LINK_UPD_BLOCK_BYTES 64u
-#define LINK_UPD_DATA_COUNT  32u
+#define LINK_UPD_DATA_COUNT  32u  /**< registers in UPDATE_DATA */
 /** @brief Bytes in a flash sector, the unit of an erase. */
 #define LINK_UPD_SECTOR_BYTES 4096u
 /** @brief UPDATE_DATA registers FINISH takes the expected SHA-256 from. */
@@ -2241,12 +2248,12 @@ enum {
 
 /** @brief LINK_UPD_SLOT: the running slot in bits 0 to 3, and two flags. */
 #define LINK_UPD_SLOT_A      0x0000u
-#define LINK_UPD_SLOT_B      0x0001u
+#define LINK_UPD_SLOT_B      0x0001u  /**< the running slot is B */
 /**
  * @brief No slot to write: no partition table, or not the one this build has.
  */
 #define LINK_UPD_SLOT_NONE   0x000Fu
-#define LINK_UPD_SLOT_MASK   0x000Fu
+#define LINK_UPD_SLOT_MASK   0x000Fu  /**< the mask of the running slot's bits */
 /** @brief The running image is on trial and waits for BUY. */
 #define LINK_UPD_SLOT_TRIAL  0x0100u
 /** @brief The other slot's first sector still waits for its erase. */

@@ -103,7 +103,7 @@ extern "C" {
 
 /** @brief What came of an exchange: ACK or DATA, a NACK's reason, or none. */
 #define KST_LINK_NO_ANSWER (-1)
-#define KST_LINK_ACK       0
+#define KST_LINK_ACK       0  /**< an ACK or a DATA frame came */
 
 /** @brief Where the module is. */
 typedef enum {
@@ -181,8 +181,8 @@ typedef enum {
  * @brief The outcome of an operation that ended, as the link module reports it.
  */
 typedef struct {
-    kst_link_outcome_kind_t kind;
-    link_kst_op_t      op;
+    kst_link_outcome_kind_t kind;  /**< how the operation ended */
+    link_kst_op_t      op;  /**< the operation that ended */
     uint32_t id;                  /**< kst_link_request_t.id of the
                                        operation that ended               */
     link_kst_refusal_t refusal;   /**< KST_LINK_OUT_REFUSED               */
@@ -209,7 +209,7 @@ typedef struct {
  *        renderer reads.
  */
 typedef struct {
-    kst_link_phase_t phase;
+    kst_link_phase_t phase;  /**< the module's phase */
     bool     known;            /**< the fields below were read            */
     bool     was_held;         /**< the status last read on this link had
                                     the port out of PWM: what stands while
@@ -243,8 +243,8 @@ typedef struct {
  * @brief The state of the KST link module.
  */
 typedef struct {
-    bool     up;
-    bool     page;
+    bool     up;  /**< an IOmcu answers */
+    bool     page;  /**< the IOmcu has the KST page */
     uint16_t minor;            /**< the IOmcu's protocol minor      */
     bool     known;            /**< status was read since the link came up */
     uint8_t  phase;            /**< kst_link_phase_t, never
@@ -255,7 +255,7 @@ typedef struct {
     bool     was_held;         /**< the status last read had the port out
                                     of PWM                                */
 
-    uint16_t status[LINK_KS_W_CMD_FRAME];
+    uint16_t status[LINK_KS_W_CMD_FRAME];  /**< the page's status registers as last read */
     bool     polled;           /**< status_ms is meaningful               */
     bool     poll_now;         /**< a status read is owed at once         */
     uint32_t status_ms;        /**< when status was last asked            */
@@ -269,7 +269,7 @@ typedef struct {
     uint8_t  op;               /**< link_kst_op_t                         */
     uint32_t id;               /**< kst_link_request_t.id                 */
     uint8_t  stage_at;         /**< staged windows written, to STAGE_WINDOWS */
-    uint16_t staged[LINK_KS_W_STAGED];
+    uint16_t staged[LINK_KS_W_STAGED];  /**< the registers of the staged windows */
     bool     supply_due;       /**< an ENTER's supply registers are owed  */
     uint16_t supply[2];        /**< SUPPLY_MV, SUPPLY_MA                  */
     bool     leave_due;        /**< the wait register of a LEAVE or of a
@@ -278,28 +278,28 @@ typedef struct {
     uint16_t cmd_proto[LINK_KS_W_CMD_FRAME];  /**< the command less its SEQ */
 
     /* The command on its way, the operation's or an abort. */
-    bool     cmd_live;
-    bool     cmd_abort;
+    bool     cmd_live;  /**< a command is in flight */
+    bool     cmd_abort;  /**< the command in flight is an abort */
     bool     cmd_doubt;        /**< the operation's command went without an
                                     answer and an abort came: it is not
                                     sent again, and the next status read
                                     says whether the page took it        */
-    uint16_t cmd[LINK_KS_W_CMD_FRAME];
-    bool     abort_wanted;
+    uint16_t cmd[LINK_KS_W_CMD_FRAME];  /**< the registers of the command in flight */
+    bool     abort_wanted;  /**< an abort is owed */
 
     /* What was fetched. */
     uint8_t  fetch;            /**< the step of the fetch                 */
     uint16_t end_status[LINK_KS_W_CMD_FRAME]; /**< status as the operation
                                                    ended                  */
-    bool     have_results;
-    uint16_t results[LINK_KS_IMAGE - LINK_KS_FAIL];
-    bool     have_image;
-    uint16_t image_regs[LINK_KS_IMAGE_REGS];
-    bool     have_backup;
-    uint16_t backup_regs[LINK_KS_IMAGE_REGS];
+    bool     have_results;  /**< results holds the page's results registers */
+    uint16_t results[LINK_KS_IMAGE - LINK_KS_FAIL];  /**< the results registers, LINK_KS_FAIL up to LINK_KS_IMAGE */
+    bool     have_image;  /**< image_regs holds the image */
+    uint16_t image_regs[LINK_KS_IMAGE_REGS];  /**< the image registers */
+    bool     have_backup;  /**< backup_regs holds the backup */
+    uint16_t backup_regs[LINK_KS_IMAGE_REGS];  /**< the backup registers */
 
-    bool     outcome_new;
-    kst_link_outcome_t outcome;
+    bool     outcome_new;  /**< outcome is not yet taken */
+    kst_link_outcome_t outcome;  /**< the last outcome */
     uint32_t faults;           /**< outcomes taken that are faults
                                     (kst_link_outcome_fault()), modulo
                                     2^32; kept across a lost link         */

@@ -13,7 +13,7 @@
 
 /** @brief Ends of a 20-bit two's complement register. */
 #define CODE20_MAX   524287
-#define CODE20_MIN (-524288)
+#define CODE20_MIN (-524288)  /**< lowest 20-bit code */
 
 /** @brief Full-scale shunt voltages as max mA × µΩ, which is nV (Table 8-1). */
 #define FS_NARROW_NV  40960000u    /**< ±40.96mV, ADCRANGE 1  */

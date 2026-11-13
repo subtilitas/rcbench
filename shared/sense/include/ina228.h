@@ -106,9 +106,9 @@ enum {
 
 /** @brief CONFIG bits, Table 7-5. */
 #define INA228_CONFIG_RST      0x8000u
-#define INA228_CONFIG_RSTACC   0x4000u
-#define INA228_CONFIG_TEMPCOMP 0x0020u
-#define INA228_CONFIG_ADCRANGE 0x0010u
+#define INA228_CONFIG_RSTACC   0x4000u  /**< CONFIG bit 14: clears the CHARGE and ENERGY accumulators */
+#define INA228_CONFIG_TEMPCOMP 0x0020u  /**< CONFIG bit 5: temperature compensation of the shunt */
+#define INA228_CONFIG_ADCRANGE 0x0010u  /**< CONFIG bit 4: 0 selects ±163.84mV, 1 selects ±40.96mV */
 
 /** @brief DIAG_ALRT bits, Table 7-16. */
 #define INA228_DIAG_ALATCH    0x8000u   /**< alert latch enable */
@@ -200,6 +200,7 @@ bool ina228_identity_ok(uint16_t maker, uint16_t device);
 
 /* ------------------------------------------------------- calibration */
 
+/** @brief The result of ina228_calibrate() and ina228_init(): OK or the reason a set-up is refused. */
 typedef enum {
     INA228_SETUP_OK = 0,
     INA228_SETUP_BAD_ADDR,     /**< outside 0x40 to 0x4F                  */
@@ -313,9 +314,10 @@ int64_t ina228_charge_uc(const ina228_cal_t *cal, uint64_t raw40);
 
 /* -------------------------------------------------------------- driver */
 
+/** @brief A driver for one INA228: its part record, calibration and registers as written. */
 typedef struct {
-    sense_part_t part;
-    ina228_cal_t cal;
+    sense_part_t part;  /**< the part on the bus */
+    ina228_cal_t cal;  /**< the calibration the shunt and the maximum current give */
     uint16_t     config;       /**< CONFIG as written, RSTACC clear      */
     uint16_t     adc_config;   /**< ADC_CONFIG as written                */
 } ina228_t;

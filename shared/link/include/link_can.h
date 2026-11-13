@@ -59,19 +59,19 @@ extern "C" {
  * older than 4.37 refuses as a window past the end of a page.
  */
 #define LINK_CAN_PRIO_SHIFT   26
-#define LINK_CAN_OP_SHIFT     22
-#define LINK_CAN_PAGE_SHIFT   14
-#define LINK_CAN_OFFSET_SHIFT 6
-#define LINK_CAN_COUNT_SHIFT  0
+#define LINK_CAN_OP_SHIFT     22  /**< the op field's lowest bit */
+#define LINK_CAN_PAGE_SHIFT   14  /**< the page field's lowest bit */
+#define LINK_CAN_OFFSET_SHIFT 6  /**< the offset field's lowest bit */
+#define LINK_CAN_COUNT_SHIFT  0  /**< the count field's lowest bit */
 
 /**
  * @brief Masks of the fields of the 29-bit CAN identifier, after shifting.
  */
 #define LINK_CAN_PRIO_MASK    0x7u
-#define LINK_CAN_OP_MASK      0xFu
-#define LINK_CAN_PAGE_MASK    0xFFu
-#define LINK_CAN_OFFSET_MASK  0xFFu
-#define LINK_CAN_COUNT_MASK   0x3Fu
+#define LINK_CAN_OP_MASK      0xFu  /**< the op field's mask: 4 bits */
+#define LINK_CAN_PAGE_MASK    0xFFu  /**< the page field's mask: 8 bits */
+#define LINK_CAN_OFFSET_MASK  0xFFu  /**< the offset field's mask: 8 bits */
+#define LINK_CAN_COUNT_MASK   0x3Fu  /**< the count field's mask: 6 bits */
 
 /** @brief The exchange number's place inside the offset field. */
 #define LINK_CAN_SEQ_SHIFT    5

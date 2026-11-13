@@ -32,12 +32,12 @@ static const char *const k_throttle = "throttle (%);";
 static const char *const k_head_rest =
     "esc (C);motor (C);charge (mAh);energy (Wh);"
     "ina voltage (V);ina current (A);esc current (A);window;";
-/* SERVO_SENSE's three channels, without SENSE_MAP. */
+/** @brief SERVO_SENSE's three channels, without SENSE_MAP. */
 static const char *const k_ch123 =
     "ch1 current (A);ch1 max (A);ch1 voltage (V);"
     "ch2 current (A);ch2 max (A);ch2 voltage (V);"
     "ch3 current (A);ch3 max (A);ch3 voltage (V);";
-static const char *const k_tail = "source\n";
+static const char *const k_tail = "source\n";  /**< the last column */
 
 /** @brief The supply figures of a SERVO run's row, by column (log_rail_t). */
 enum {
@@ -60,7 +60,7 @@ static const char *source_word(bool modelled)
     return modelled ? LOG_WRITER_SRC_MODEL : LOG_WRITER_SRC_MEASURED;
 }
 
-/* A supply run's file: what was asked beside what was delivered, and which
+/** @brief A supply run's file: what was asked beside what was delivered, and which
  * of the two the supply was holding. */
 static const char *const k_supply_header =
     "time (s);set (V);voltage (V);limit (A);current (A);power (W);mode;"

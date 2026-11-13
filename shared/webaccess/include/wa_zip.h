@@ -63,38 +63,136 @@
 extern "C" {
 #endif
 
+/** @brief The 32-bit field's mark for "see ZIP64"; a value this large or larger needs ZIP64. */
 #define WA_ZIP_MAX32 0xFFFFFFFFu
-#define WA_ZIP_MAX16 0xFFFFu
+#define WA_ZIP_MAX16 0xFFFFu  /**< the same for a 16-bit field */
 
-/** CRC-32 as ZIP takes it, continued from @p crc (0 to start). */
+/**
+ * @brief CRC-32 as ZIP takes it, continued from @p crc (0 to start).
+ *
+ * @param crc The CRC so far, 0 to start.
+ * @param data The bytes.
+ * @param n The count.
+ * @return The CRC after the bytes.
+ */
 uint32_t wa_crc32(uint32_t crc, const void *data, size_t n);
 
-/** @p t seconds since 1970 as DOS time and date; before 1980 is 1980-01-01
- *  00:00:00, after 2107 is 2107-12-31 23:59:58. */
+/**
+ * @brief @p t seconds since 1970 as DOS time and date; before 1980 is
+ *        1980-01-01 00:00:00, after 2107 is 2107-12-31 23:59:58.
+ *
+ * @param t Seconds since 1970-01-01 00:00:00.
+ * @param time Receives the DOS time.
+ * @param date Receives the DOS date.
+ */
 void wa_dos_time(int64_t t, uint16_t *time, uint16_t *date);
 
 /* -------------------------------------------------- the pieces, by size */
 
-/** Whether an entry of @p size bytes needs ZIP64 in its own headers. */
+/**
+ * @brief Whether an entry of @p size bytes needs ZIP64 in its own headers.
+ *
+ * @param size The entry's size, in bytes.
+ * @return true when it does.
+ */
 bool wa_zip_entry64(uint64_t size);
-/** Whether the end of an archive needs the ZIP64 records. */
+/**
+ * @brief Whether the end of an archive needs the ZIP64 records.
+ *
+ * @param entries The entries.
+ * @param cd_bytes The central directory's size, in bytes.
+ * @param cd_offset The central directory's offset, in bytes.
+ * @return true when it does.
+ */
 bool wa_zip_end64(uint64_t entries, uint64_t cd_bytes, uint64_t cd_offset);
 
+/**
+ * @brief The bytes of a local header.
+ *
+ * @param name_len The entry's name length, in bytes (a folder's with its "/").
+ * @param size The entry's size, in bytes.
+ * @return The size, in bytes.
+ */
 uint32_t wa_zip_local_bytes(size_t name_len, uint64_t size);
+/**
+ * @brief The bytes of a data descriptor.
+ *
+ * @param size The entry's size, in bytes.
+ * @return The size, in bytes.
+ */
 uint32_t wa_zip_desc_bytes(uint64_t size);
+/**
+ * @brief The bytes of a central directory header.
+ *
+ * @param name_len The entry's name length, in bytes (a folder's with its "/").
+ * @param size The entry's size, in bytes.
+ * @param offset The offset of the entry's local header, in bytes.
+ * @return The size, in bytes.
+ */
 uint32_t wa_zip_central_bytes(size_t name_len, uint64_t size,
                               uint64_t offset);
+/**
+ * @brief The bytes of the end records.
+ *
+ * @param entries The entries.
+ * @param cd_bytes The central directory's size, in bytes.
+ * @param cd_offset The central directory's offset, in bytes.
+ * @return The size, in bytes.
+ */
 uint32_t wa_zip_end_bytes(uint64_t entries, uint64_t cd_bytes,
                           uint64_t cd_offset);
 
-/* Each writes the piece into @p out, which holds the size above, and
- * returns that size. */
+/**
+ * @brief Write a local header into @p out, which holds the size
+ *        wa_zip_local_bytes() gives.
+ *
+ * @param out Receives the header.
+ * @param name The entry's name.
+ * @param name_len The name's length, in bytes (a folder's with its "/").
+ * @param size The entry's size, in bytes.
+ * @param mtime The entry's time, seconds since 1970.
+ * @param dir The entry is a folder.
+ * @return The bytes written.
+ */
 size_t wa_zip_local(uint8_t *out, const char *name, size_t name_len,
                     uint64_t size, int64_t mtime, bool dir);
+/**
+ * @brief Write a data descriptor into @p out, which holds the size
+ *        wa_zip_desc_bytes() gives.
+ *
+ * @param out Receives the descriptor.
+ * @param crc The CRC-32 of the entry's bytes.
+ * @param size The entry's size, in bytes.
+ * @return The bytes written.
+ */
 size_t wa_zip_desc(uint8_t *out, uint32_t crc, uint64_t size);
+/**
+ * @brief Write a central directory header into @p out, which holds the size
+ *        wa_zip_central_bytes() gives.
+ *
+ * @param out Receives the header.
+ * @param name The entry's name.
+ * @param name_len The name's length, in bytes (a folder's with its "/").
+ * @param size The entry's size, in bytes.
+ * @param crc The CRC-32 of the entry's bytes.
+ * @param offset The offset of the entry's local header, in bytes.
+ * @param mtime The entry's time, seconds since 1970.
+ * @param dir The entry is a folder.
+ * @return The bytes written.
+ */
 size_t wa_zip_central(uint8_t *out, const char *name, size_t name_len,
                       uint64_t size, uint32_t crc, uint64_t offset,
                       int64_t mtime, bool dir);
+/**
+ * @brief Write the end records into @p out, which holds the size
+ *        wa_zip_end_bytes() gives.
+ *
+ * @param out Receives the records.
+ * @param entries The entries.
+ * @param cd_bytes The central directory's size, in bytes.
+ * @param cd_offset The central directory's offset, in bytes.
+ * @return The bytes written.
+ */
 size_t wa_zip_end(uint8_t *out, uint64_t entries, uint64_t cd_bytes,
                   uint64_t cd_offset);
 
@@ -105,19 +203,36 @@ size_t wa_zip_end(uint8_t *out, uint64_t entries, uint64_t cd_bytes,
 
 /** An archive's length, an entry at a time. */
 typedef struct {
-    uint64_t entries;
+    uint64_t entries;   /**< entries added */
     uint64_t at;        /**< where the next local header goes */
     uint64_t cd;        /**< bytes of central directory       */
 } wa_zip_len_t;
 
+/**
+ * @brief An archive length with no entry.
+ *
+ * @param l The length.
+ */
 void wa_zip_len_init(wa_zip_len_t *l);
-/** One entry, its name @p name_len bytes (a folder's with its "/"). */
+/**
+ * @brief One entry, its name @p name_len bytes (a folder's with its "/").
+ *
+ * @param l The length.
+ * @param name_len The name's length, in bytes.
+ * @param size The entry's size, in bytes.
+ */
 void wa_zip_len_add(wa_zip_len_t *l, size_t name_len, uint64_t size);
-/** The archive's length with what was added. */
+/**
+ * @brief The archive's length with what was added.
+ *
+ * @param l The length.
+ * @return The length, in bytes.
+ */
 uint64_t wa_zip_len_total(const wa_zip_len_t *l);
 
 /* -------------------------------------------------------- the archive */
 
+/** @brief How an archive failed. */
 typedef enum {
     WA_ZIP_OK = 0,
     WA_ZIP_NO_CARD,
@@ -125,9 +240,10 @@ typedef enum {
     WA_ZIP_MEMORY,     /**< too few slots for the entries                */
 } wa_zip_err_t;
 
+/** @brief What a walk of the card finds: the page's counts. */
 typedef struct {
     uint64_t      entries;     /**< files and folders               */
-    uint64_t      files;
+    uint64_t      files;       /**< files                           */
     uint64_t      file_bytes;  /**< the files' sizes added up        */
     uint64_t      bytes;       /**< the archive's length             */
     uint64_t      cd_offset;   /**< where the central directory goes */
@@ -235,7 +351,11 @@ const char *wa_zip_err_name(wa_zip_err_t e);
  */
 int32_t wa_zip_next(wa_zip_t *z, uint8_t *buf, uint32_t cap);
 
-/** Close what is open; for an archive given up part way. */
+/**
+ * @brief Close what is open; for an archive given up part way.
+ *
+ * @param z The archive.
+ */
 void wa_zip_end_early(wa_zip_t *z);
 
 #ifdef __cplusplus

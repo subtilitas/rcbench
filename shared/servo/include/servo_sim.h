@@ -20,6 +20,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
+/** @brief The settings of the single-servo model. */
 typedef struct {
     /** @brief Where the linkage binds, as a pulse width.
      *
@@ -27,7 +28,7 @@ typedef struct {
      * once a horn and a pushrod are involved, which is why the limit is
      * measured per installation. */
     uint16_t stop_lo_us;
-    uint16_t stop_hi_us;
+    uint16_t stop_hi_us;  /**< where the linkage binds at the long end, as a pulse width, us */
 
     float    free_a;        /**< holding a free surface */
     float    stall_a;       /**< hard against the stop */
@@ -57,8 +58,8 @@ typedef struct {
      * of the real one.
      */
     uint16_t stiff_lo_us;
-    uint16_t stiff_hi_us;
-    float    stiff_a;
+    uint16_t stiff_hi_us;  /**< the end of the stiff patch, us */
+    float    stiff_a;  /**< the extra current a stiff patch costs, A */
 
     float    slew_us_per_ms; /**< how fast the horn actually moves */
     float    noise_a;        /**< peak-to-peak sensor noise */
@@ -70,11 +71,12 @@ typedef struct {
      *        (KST's LEFT and RIGHT ANGLE) are such limits.  0 is none.
      */
     uint16_t limit_lo_us;
-    uint16_t limit_hi_us;
+    uint16_t limit_hi_us;  /**< the servo's own upper travel limit, us; 0 is none */
 } servo_sim_cfg_t;
 
+/** @brief The state of the single-servo model. */
 typedef struct {
-    servo_sim_cfg_t cfg;
+    servo_sim_cfg_t cfg;  /**< the settings */
     float    position_us;   /**< where the horn is, not where it was told */
     uint32_t last_ms;                   /**< bench time of the last step, ms */
     uint32_t seed;                      /**< seed of the noise */
@@ -134,17 +136,18 @@ typedef struct {
      *
      * As with the single servo, a reading taken too early sees this. */
     float    travel_a;
-    float    slew_us_per_ms;
-    float    noise_a;
+    float    slew_us_per_ms;  /**< how fast the horn actually moves, us per ms */
+    float    noise_a;  /**< peak-to-peak sensor noise, A */
 } servo_pair_cfg_t;
 
+/** @brief The state of the pair model. */
 typedef struct {
-    servo_pair_cfg_t cfg;
-    float    pos_a_us;
-    float    pos_b_us;
-    uint32_t last_ms;
-    bool     started;
-    uint32_t seed;
+    servo_pair_cfg_t cfg;  /**< the settings */
+    float    pos_a_us;  /**< servo A's position, us */
+    float    pos_b_us;  /**< servo B's position, us */
+    uint32_t last_ms;  /**< bench time of the last step, ms */
+    bool     started;  /**< the first step ran */
+    uint32_t seed;  /**< the seed of the noise */
 } servo_pair_t;
 
 /**

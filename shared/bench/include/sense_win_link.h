@@ -42,13 +42,13 @@ extern "C" {
  */
 #define SENSE_WIN_LINK_READ_MS 40u
 
-#define SENSE_WIN_LINK_ACK       0
-#define SENSE_WIN_LINK_NO_ANSWER (-1)
+#define SENSE_WIN_LINK_ACK       0  /**< an ACK or a DATA frame came */
+#define SENSE_WIN_LINK_NO_ANSWER (-1)  /**< no answer came */
 
 /** @brief One read the caller makes: registers 0 to n - 1 of @p page. */
 typedef struct {
-    uint8_t page;
-    uint8_t n;
+    uint8_t page;  /**< link_page_id_t */
+    uint8_t n;  /**< registers read */
 } sense_win_link_op_t;
 
 /**

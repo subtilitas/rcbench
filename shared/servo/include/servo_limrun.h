@@ -188,7 +188,7 @@ extern "C" {
 #define SERVO_LIMRUN_OVERSET_PCT  3u
 /** @brief The pulses SERVO PULSES at 1000-2000 writes, 0.1us. */
 #define SERVO_LIMRUN_STD_LOWER_DUS 10000u
-#define SERVO_LIMRUN_STD_UPPER_DUS 20000u
+#define SERVO_LIMRUN_STD_UPPER_DUS 20000u  /**< SERVO PULSES at 1000-2000: the upper pulse, 0.1us */
 /** @brief An endpoint that moves this far out moved; one within it stayed. */
 #define SERVO_LIMRUN_MOVED_US     20u
 /** @brief One search of one side at most: 1000us of travel, PULSE MIN 500us
@@ -209,8 +209,8 @@ extern "C" {
 #define SERVO_LIMRUN_BENCH_MS     3000u
 /** @brief The protections: a 1ms sample, and the window means for a time. */
 #define SERVO_LIMRUN_HARD_MA      3000
-#define SERVO_LIMRUN_STALL_MA     1000
-#define SERVO_LIMRUN_STALL_MS     400u
+#define SERVO_LIMRUN_STALL_MA     1000  /**< a window mean above this, mA, for SERVO_LIMRUN_STALL_MS ends the run */
+#define SERVO_LIMRUN_STALL_MS     400u  /**< how long, ms */
 /** @brief No window for this long ends the run: the automatic test's figure. */
 #define SERVO_LIMRUN_WIN_STALE_MS SERVO_TEST_WIN_STALE_MS
 /** @brief The rail voltage, a window's mean, this far from the first window's
@@ -266,6 +266,7 @@ typedef enum {
  *         CCW, which swaps the classic cells. */
 #define SERVO_LIMRUN_REG_CCW 0x02u
 
+/** @brief The settings of a limit run. */
 typedef struct {
     uint16_t center_us;                   /**< PULSE CENTER, us         */
     uint16_t min_us;                      /**< PULSE MIN, us            */
@@ -281,9 +282,9 @@ typedef struct {
     uint8_t  family;      /**< servo_limrun_family_t; set_pulses is KST only */
 
     /* For the report only. */
-    char     dut[24];
-    char     type[20];
-    uint16_t frame_hz;
+    char     dut[24];  /**< the servo's name, for the report */
+    char     type[20];  /**< the servo's type, for the report */
+    uint16_t frame_hz;  /**< the frame rate of the pulses, Hz, for the report */
     char     output[28];  /**< what it drives: "PROG PORT 1 GPIO 13" */
     uint16_t shunt_dmohm; /**< the INA3221's shunt, 0.1mOhm            */
     char     meter[20];   /**< its channel: "INA3221 0x41 CH2"; "" names
@@ -294,7 +295,7 @@ typedef struct {
     bool     enc_imu;     /**< the source is the IMU: its silence and gaps
                                end the run as SERVO_TEST_AB_IMU_SILENT and
                                _IMU_GAPS; false names the AS5600        */
-    char     firmware[16];
+    char     firmware[16];  /**< the servo's firmware, for the report */
     /** @brief The report's language: SERVO_STR_COUNT entries, NULL for
      *         English. */
     const char *const *text;
@@ -346,12 +347,14 @@ typedef struct {
 
 /* ------------------------------------------------------ what it reports */
 
+/** @brief Whether a limit run is idle, running or done. */
 typedef enum {
     SERVO_LIMRUN_IDLE = 0,
     SERVO_LIMRUN_RUNNING,
     SERVO_LIMRUN_DONE,
 } servo_limrun_state_t;
 
+/** @brief The step a limit run is at. */
 typedef enum {
     SERVO_LIMRUN_PH_NONE = 0,
     SERVO_LIMRUN_PH_SEARCH,     /**< the first search of a side          */
@@ -367,6 +370,7 @@ typedef enum {
     SERVO_LIMRUN_PH_CHECK,      /**< both sides searched at the end      */
 } servo_limrun_phase_t;
 
+/** @brief How a limit run ended. */
 typedef enum {
     SERVO_LIMRUN_FOUND = 0,     /**< search only: the ends as found      */
     SERVO_LIMRUN_FREE,          /**< neither end binds: nothing written  */
@@ -409,7 +413,7 @@ typedef enum {
 
 /** @brief What one search of one side found. */
 typedef struct {
-    bool     done;
+    bool     done;  /**< the search ran to its end */
     bool     bound;         /**< FOUND: the side binds                     */
     uint16_t limit_us;      /**< the endpoint; the end of the travel if free */
     uint16_t bind_us;       /**< the first bound position                  */
@@ -421,29 +425,33 @@ typedef struct {
     float    enc_deg;
 } servo_limrun_side_t;
 
+/** @brief The entries of a run's outbox. */
 #define SERVO_LIMRUN_OUTBOX 2u
 
+/** @brief The state of a limit run. */
 typedef struct {
-    servo_limrun_cfg_t   cfg;
-    servo_limrun_state_t state;
-    servo_limrun_phase_t phase;
-    servo_limrun_verdict_t verdict;
-    servo_limrun_why_t   why;
-    servo_test_abort_t   test_why;
-    uint32_t start_ms, end_ms, phase_ms;
+    servo_limrun_cfg_t   cfg;  /**< the settings */
+    servo_limrun_state_t state;  /**< idle, running or done */
+    servo_limrun_phase_t phase;  /**< the step the run is at */
+    servo_limrun_verdict_t verdict;  /**< how it ended, once done */
+    servo_limrun_why_t   why;  /**< why it failed or was aborted */
+    servo_test_abort_t   test_why;  /**< the servo_test_abort_t when why is SERVO_LIMRUN_WHY_TEST */
+    uint32_t start_ms,   /**< when the run started, ms */
+             end_ms,     /**< when it ended, ms */
+             phase_ms;   /**< when the current phase began, ms */
     bool     safe_asked;    /**< PH_SAFE: SAFE asked, after the return    */
 
     /* The search under way: from ctr_us out to end_us of its side. */
-    uint16_t ctr_us;
-    uint16_t end_us[2];
-    servo_limit_t lf;
+    uint16_t ctr_us;  /**< the center of the search, us */
+    uint16_t end_us[2];  /**< the end of each side's search, us */
+    servo_limit_t lf;  /**< the search of the side under way */
     uint8_t  side;          /**< the side it searches                    */
     uint32_t search_ms;     /**< the search's start; it walks from
                                  SERVO_LIMRUN_RETURN_MS after it          */
     uint16_t cmd_us;        /**< the command last asked                   */
-    bool     cmd_due;
-    bool     enc_valid;
-    float    enc_deg;
+    bool     cmd_due;  /**< a command to the servo is owed to the caller */
+    bool     enc_valid;  /**< enc_deg holds a reading */
+    float    enc_deg;  /**< the horn angle as last read, degrees */
     servo_gap_t enc_gap;    /**< the AS5600 not answering, with cfg.enc_on
                                  (servo_gap.h)                           */
 
@@ -452,7 +460,7 @@ typedef struct {
     servo_limrun_side_t probe;      /**< the last probe                 */
 
     /* The programming. */
-    bool     read_once;
+    bool     read_once;  /**< the servo was read in the first session */
     bool     dry;           /**< the read-only first session is under way */
     servo_limrun_servo_t servo;     /**< as the first session read it  */
     uint16_t cur[2];        /**< what the servo holds, register by register */
@@ -462,7 +470,7 @@ typedef struct {
     uint16_t want[2];       /**< the write under way                     */
     int8_t   reg_side[2];   /**< the side each register limits, -1 not known */
     bool     need[2];       /**< the side bound in the first search       */
-    bool     mapped;
+    bool     mapped;  /**< the end that LEFT ANGLE moves is found */
     uint8_t  map_side;      /**< the side whose first write finds it      */
     uint8_t  map_reg;       /**< the register that write goes to          */
     uint8_t  map_tries;     /**< registers tried for it                   */
@@ -477,7 +485,7 @@ typedef struct {
     int8_t   probe_side;    /**< the side the next search looks at, -1 both */
     unsigned writes;        /**< register values written                  */
     unsigned write_ops;     /**< writes sent, one that failed included    */
-    unsigned sessions;
+    unsigned sessions;  /**< programmer sessions run */
     bool     pulses_landed; /**< the pulses read back as 1000 and 2000us */
     bool     in_flight;     /**< a write or the pulse write handed out, its
                                  *   answer not in: an end now may leave it
@@ -486,27 +494,30 @@ typedef struct {
                                  *   a write failed once sent              */
 
     /* The meter. */
-    bool     have_win;
-    uint32_t last_win_ms;
-    uint32_t windows;
-    bool     have_rail;
-    uint16_t rail_mv;
-    bool     elevated;
-    uint32_t elevated_ms;
+    bool     have_win;  /**< a meter window has arrived */
+    uint32_t last_win_ms;  /**< when the last window arrived, ms */
+    uint32_t windows;  /**< windows that arrived */
+    bool     have_rail;  /**< rail_mv holds the first window's rail voltage */
+    uint16_t rail_mv;  /**< the rail voltage of the first window, mV */
+    bool     elevated;  /**< the window mean is above SERVO_LIMRUN_STALL_MA */
+    uint32_t elevated_ms;  /**< since when, ms */
 
     /* The supply as at its first reading, when one answered. */
-    bool     sup_watch;
+    bool     sup_watch;  /**< the supply's set points were taken at its first reading */
     bool     sup_online;    /**< it answered                             */
     bool     sup_out;       /**< its output was on                       */
 
-    float    sup_v, sup_i;
+    float    sup_v,         /**< its voltage set point then, V */
+             sup_i;         /**< its current limit set point then, A */
 
     /* The outbox: OPEN_TXT, the report's lines, END. */
     unsigned out_line;      /**< the next line of the report              */
-    bool     out_open, out_end, out_done;
-    char     scratch[SERVO_TEST_LINE_MAX];
+    bool     out_open,      /**< the opening line is handed out */
+             out_end,       /**< the report's lines are handed out */
+             out_done;      /**< the closing line is handed out */
+    char     scratch[SERVO_TEST_LINE_MAX];  /**< the line being handed out */
 
-    servo_limrun_do_t pend;
+    servo_limrun_do_t pend;  /**< the calls owed to the caller */
 } servo_limrun_t;
 
 /**

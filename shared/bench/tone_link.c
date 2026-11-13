@@ -14,22 +14,22 @@
 
 #include "link_msg.h"
 
-/* The two frames of the set-up, each four registers from its first; the
+/** @brief The two frames of the set-up, each four registers from its first; the
  * second carries three set-up registers and register 7, which is 0. */
 #define FRAME_N   4u
-#define FRAME0_AT ((uint8_t)LINK_TN_ENABLE)
-#define FRAME1_AT ((uint8_t)LINK_TN_SPLIT_PCT)
-#define FRAME1_CFG (LINK_TN_CONFIG_COUNT - (unsigned)LINK_TN_SPLIT_PCT)
+#define FRAME0_AT ((uint8_t)LINK_TN_ENABLE)  /**< the first register of frame 0 */
+#define FRAME1_AT ((uint8_t)LINK_TN_SPLIT_PCT)  /**< the first register of frame 1 */
+#define FRAME1_CFG (LINK_TN_CONFIG_COUNT - (unsigned)LINK_TN_SPLIT_PCT)  /**< the set-up registers frame 1 carries */
 
-/* The beep numbers run 1 to 65535 and then 1 again.  A number's place in
+/** @brief The beep numbers run 1 to 65535 and then 1 again.  A number's place in
  * the cycle is the number modulo 65535, so 65535 and "none yet" (0) are
  * the same place: the one before 1. */
 #define CYCLE 65535u
 
-/* A status register by its page number. */
+/** @brief A status register by its page number. */
 #define ST(reg) ((unsigned)(reg) - (unsigned)LINK_TN_FLAGS)
 
-/* The panel is behind the newest beep by more than this many when it takes
+/** @brief The panel is behind the newest beep by more than this many when it takes
  * the numbering for restarted -- the page was disabled and enabled by
  * someone else, or reset -- and not for beeps it missed.  The panel
  * resynchronises at every link-up, so a count this far behind with the link

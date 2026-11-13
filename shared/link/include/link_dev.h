@@ -62,7 +62,7 @@ typedef struct {
  * and asking to write one is answered rather than ignored.
  */
 typedef struct {
-    uint8_t page;
+    uint8_t page;  /**< the page's number, a link_page_id_t */
     uint8_t count;    /**< registers in this page, 1..LINK_MAX_REGS */
     /** @brief Reads count registers of the page from offset into out */
     void  (*read)(void *ctx, uint8_t offset, uint8_t count, uint16_t *out);
@@ -75,11 +75,11 @@ typedef struct {
  * @brief The IOmcu's end of the link: pages, the silence watchdog and the arm latch.
  */
 typedef struct {
-    const link_page_t *pages;
-    uint8_t            page_count;
-    void              *ctx;
+    const link_page_t *pages;  /**< the pages */
+    uint8_t            page_count;  /**< entries of pages */
+    void              *ctx;  /**< passed to each page's read and write */
 
-    uint32_t last_request_ms;
+    uint32_t last_request_ms;  /**< when the last request arrived, ms */
     /**
      * @brief Whether a request has ever arrived.
      *
@@ -104,7 +104,7 @@ typedef struct {
      * the event, so neither may arm on it.
      */
     bool     arm_latched;
-    uint32_t requests;
+    uint32_t requests;  /**< requests accepted */
 
     /**
      * @brief The rest of the last read of LINK_READ_REGS_MAX registers, for

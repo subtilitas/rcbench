@@ -107,11 +107,11 @@ typedef enum {
  * @brief The panel's state for one update run.
  */
 typedef struct {
-    const uint8_t *img;
-    uint32_t       len;
+    const uint8_t *img;  /**< the image */
+    uint32_t       len;  /**< its length, bytes */
     int32_t        flag_at;   /**< the TBYB flag's byte, or -1            */
 
-    link_uph_phase_t phase;
+    link_uph_phase_t phase;  /**< the phase the run is in */
     uint8_t  result;          /**< a link_uph_result_t                    */
     uint8_t  error;           /**< the IOmcu's link_upd_err_t       */
     bool     missing;         /**< the last exchange went unanswered      */
@@ -134,7 +134,7 @@ typedef struct {
     uint32_t since_ms;        /**< when the phase's wait began            */
     uint32_t missing_ms;      /**< when the exchanges stopped being answered */
 
-    bool     have_ident;
+    bool     have_ident;  /**< ident holds an identity read */
     uint16_t ident[LINK_ID_COUNT]; /**< identity read after the restart    */
 } link_uph_t;
 
