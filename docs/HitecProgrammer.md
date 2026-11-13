@@ -414,7 +414,7 @@ it is discarded. With a card it is read again
 at the panel's next start: a panel that restarts during a write keeps it.
 Then the message band says `Writing was interrupted. The settings may be
 incomplete.` and `Do not use the servo. Connect it to GPIO 13 and tap READ
-ALL.`, and the SERVO tab keeps the first line until a servo is read. The next full read compares the servo with the
+ALL.`, and the SERVO tab keeps the first line until a servo is read. While the write runs, the tab shows the write's step instead. The next full read compares the servo with the
 record, address by address over the addresses a write changes:
 
 | The servo holds | Message | RESTORE offers |

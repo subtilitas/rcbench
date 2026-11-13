@@ -605,6 +605,8 @@ TEST_CASE(the_overlay_hands_the_record_to_the_card_and_says_each_phase)
     CHECK_EQ(pstate(), HITEC_PROG_WRITING);
     show();
     CHECK(strncmp(hitec_panel_note(0), "Writing 1 of ", 13) == 0);
+    /* The record on the card is this write's: no interrupted write. */
+    CHECK(!note_has(TR(KP_M_JOURNAL)));
     until(HITEC_PROG_HELD);
     show();
     CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));

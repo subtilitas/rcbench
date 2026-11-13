@@ -68,6 +68,9 @@ history is in git.
 
 ### Fixed
 
+- HITEC programmer: while a write runs, the SERVO tab no longer shows
+  `Writing was interrupted. The settings may be incomplete.` for the record
+  of that same write; the state line shows the write's step.
 - German guide texts of the IMU's ZERO and UNZERO: "löscht er den
   Nullpunkt" and "löscht es den RUDER-Nullpunkt".
 - Dim after dims the backlight. The link report's line to the card's
