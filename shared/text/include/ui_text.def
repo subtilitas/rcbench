@@ -2242,10 +2242,10 @@ UI_TEXT(HG_IM_SCAN, 0,
     "Listet 10s lang Sensoren in Reichweite; Tippen bindet einen. Schaltet die IMU dafür ein.")
 UI_TEXT(HG_IM_ZERO, 0,
     "Takes the angles now as zero. With ANGLE SOURCE IMU it clears RUDDER's zero and MAX.",
-    "Nimmt die Winkel jetzt als Nullpunkt. Mit WINKELQUELLE IMU löscht er Nullpunkt und MAX von RUDER.")
+    "Nimmt die Winkel jetzt als Nullpunkt. Mit WINKELQUELLE IMU löscht er den Nullpunkt und MAX von RUDER.")
 UI_TEXT(HG_IM_UNZERO, 0,
     "Angles from the sensor's own zero again. With ANGLE SOURCE IMU it clears RUDDER's zero and MAX.",
-    "Winkel wieder vom Sensor-Nullpunkt. Mit WINKELQUELLE IMU löscht das Nullpunkt und MAX von RUDER.")
+    "Winkel wieder vom Sensor-Nullpunkt. Mit WINKELQUELLE IMU löscht das den RUDER-Nullpunkt und MAX.")
 UI_TEXT(HG_IM_CARD, 0,
     "The bound sensor and its address, the C6's firmware and the link's state.",
     "Der gebundene Sensor mit Adresse, die Firmware des C6 und der Zustand der Verbindung.")
