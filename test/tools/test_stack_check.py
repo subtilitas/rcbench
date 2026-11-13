@@ -434,6 +434,28 @@ def test_prog_calls_name_every_hook_of_every_page_set():
         assert set(sc.PROG_CALLS[caller]) == want, caller
 
 
+def test_ui_hook_calls_name_every_text_watch_and_title_now():
+    """A text watch or a title_now that UI_HOOK_CALLS leaves out is unfollowed.
+
+    Every function handed to gfx_text_watch() and every screen's title_now
+    in shared/ is one UI_HOOK_CALLS names, and the table names no other.
+    """
+    watches, titles = set(), set()
+    for src in sorted((sc.ROOT / "shared").rglob("*.c")):
+        text = src.read_text(encoding="utf-8")
+        watches |= set(re.findall(r"\bgfx_text_watch\((\w+)\)", text))
+        titles |= set(re.findall(r"\.title_now\s*=\s*(\w+)", text))
+    watches.discard("NULL")
+    assert watches and titles
+    assert set(sc.UI_HOOK_CALLS) == {"watch_text", "ui_router_title"}
+    assert set(sc.UI_HOOK_CALLS["watch_text"]) == watches
+    assert set(sc.UI_HOOK_CALLS["ui_router_title"]) == titles
+    gfx = (sc.ROOT / "shared/gfx/gfx_text.c").read_text(encoding="utf-8")
+    assert re.search(r"noinline\)\) void watch_text\(", gfx)
+    router = (sc.UI_DIR / "ui_router.c").read_text(encoding="utf-8")
+    assert re.search(r"noinline\)\) const char \*ui_router_title\(", router)
+
+
 LOGFILE = sc.ROOT / "shared" / "logfile"
 PANEL_MAIN = sc.PANEL_DIR / "main"
 # Fields of a struct a panel source may leave out: NULL, and never called.
