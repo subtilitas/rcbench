@@ -107,7 +107,7 @@ A `case` scene:
 | `model` | optional: `mockup`, the default, or `cad`, the assembly converted by `tools/video_cad.py` |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
-| `parts` | optional, `cad` model only: keys `[t, k]` per component, `k` from 1, out of sight along the component's way in, to 0, seated. A value held between two keys freezes the component in the air while the camera moves on. Components: `case`, `bank`, `estop`, `xt60`, `usbc`, `pdmini`, `rbmod`, `mcu`, `ina`, `buck`, `trigger`, `lid` |
+| `parts` | optional, `cad` model only: keys `[t, k]` per component, `k` from 1, out of sight along the component's way in, to 0, seated. A value held between two keys freezes the component in the air while the camera moves on. Components: `case`, `estop`, `xt60`, `usbc`, `pdmini`, `rbmod`, `mcu`, `ina`, `buck`, `trigger`, `lid` |
 | `display` | optional `{view}`: the renderer view on the model's display |
 | `title` | optional `{from, to, kicker, heading, text}` |
 | `chips` | optional `{from, to, n, text}`: the chip at the top right; a numeric `n` also sets the step marks |
@@ -118,7 +118,7 @@ A `case` scene:
 
 `anchor` is `[x, y, z]` in mm or a name: `display`, `rbmod`, `pdmini`,
 `J1`, `J2`, `xt60`, `usbc`, `estop`, `side`, `plug`, and on the `cad`
-model also `panel`, `powerbank`, `case`, `mcu`, `ina`, `buck` and
+model also `panel`, `case`, `mcu`, `ina`, `buck` and
 `trigger`. An anchor follows its component while it moves. A label's
 optional `glow` names a component that is lit while the label shows. `at` is the bubble's
 top left corner on the frame in pixels. The model's origin is the centre
@@ -179,8 +179,8 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 
 ## Limits
 
-- The `cad` model is the case's STEP assembly, 172 x 129 x 55mm with the
-  power bank under it. The file has no colours: `case_cad.js` sets them
+- The `cad` model is the case's STEP assembly, 172 x 109 x 37mm; the assembly's
+  power bank is left out. The file has no colours: `case_cad.js` sets them
   by part name, and a part without a name is dark grey, or green where
   it is a plate. The STEP file (65MB) and the converted model (35MB)
   are not in the tree:

@@ -54,9 +54,9 @@ VIDEO = REPO / "tools" / "video"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
 ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
-           "estop", "side", "plug", "panel", "powerbank", "case", "mcu",
+           "estop", "side", "plug", "panel", "case", "mcu",
            "ina", "buck", "trigger")
-UNITS = ("lid", "bank", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
+UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
          "buck", "trigger", "rbmod", "case")
 CONNECTORS = {"J1": 4, "J2": 4}
 BEDS = ("pads", "bach-prelude", "pachelbel-canon")

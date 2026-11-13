@@ -1,7 +1,7 @@
 // The bench from its CAD (computer-aided design) assembly: the model
 // tools/video_cad.py writes from the case's STEP file.  Units are mm.  The
 // assembly is laid so that the display faces up, x runs along the 172mm
-// side, z towards the connector wall and y = 0 is the power bank's
+// side, z towards the connector wall and y = 0 is the case's
 // underside.
 //
 // The STEP file carries no colours: each part gets its colour from the
@@ -21,12 +21,11 @@ import {GLTFLoader} from 'three/addons/loaders/GLTFLoader.js';
 import {mergeGeometries} from 'three/addons/utils/BufferGeometryUtils.js';
 
 // The assembly's origin in mm: its x and y centre and its lowest face.
-const CX = 82, CY = 47, CZ = 46;
-const TOP = 55;        // the display's glass above the ground
+const CX = 82, CY = 47, CZ = 28;
+const TOP = 37;        // the display's glass above the ground
 
 // [pattern on "parent/child/..." names, colour, roughness, metalness].
 const PARTS = [
-  [/powerbank/, 0x2b3038, .45, .55],
   [/case_front/, 0x1b1e24, .85, 0],
   [/XT60EF_base/, 0xf2b21d, .55, 0],
   [/XT60EF_female/, 0xd9a93f, .3, .9],
@@ -47,7 +46,6 @@ const PARTS = [
 // what is left.
 const UNITS = [
   ['lid', /ESP32-P4-WIFI6/, [0, 300, 0], [.25, 0, 0]],
-  ['bank', /powerbank/, [-40, 0, 260], [0, .7, 0]],
   ['estop', /estop_m16/, [0, 30, -230], [0, 0, 1.2]],
   ['xt60', /XT60EF/, [-60, 20, 250], [0, .6, 0]],
   ['usbc', /usbc-Female/, [20, 40, 250], [0, -.5, 0]],
@@ -111,6 +109,8 @@ export function buildCadCase(displayImage, gltf) {
     if (!o.isMesh) return;
     let path = '';
     for (let p = o; p; p = p.parent) path = (p.name || '') + '/' + path;
+    // The power bank of the assembly is not part of the bench shown.
+    if (/powerbank/.test(path)) return;
     const g = o.geometry.clone();
     for (const name of Object.keys(g.attributes)) {
       if (name !== 'position' && name !== 'normal') g.deleteAttribute(name);
@@ -197,7 +197,6 @@ export function buildCadCase(displayImage, gltf) {
     buck: at('buck'),
     trigger: at('trigger'),
     pdmini: at('pdmini'),
-    powerbank: at('bank', 0, 0, 1),
     J1: at('rbmod', 0, 0, 1, 'J1'),
     J2: at('rbmod', 0, 0, 1, 'J2'),
     xt60: at('xt60', 0, 0, 1),
