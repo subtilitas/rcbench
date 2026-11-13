@@ -11,6 +11,7 @@
  * - it_dims_at_the_minutes_and_not_a_millisecond_before
  * - a_busy_bench_never_dims_and_wakes_at_once
  * - the_link_reports_card_line_never_keeps_it_lit
+ * - fault_01_alone_lets_it_dim
  * - a_press_while_a_card_line_is_written_only_wakes_it
  * - an_armed_bench_or_an_output_on_keeps_it_lit
  * - a_touch_wakes_it_and_starts_the_minutes_again
@@ -35,6 +36,7 @@
 #include "greatest.h"
 
 #include "gfx.h"
+#include "link_pages.h"
 #include "overview_screen.h"
 #include "screen_dim.h"
 #include "settings.h"
@@ -176,12 +178,17 @@ TEST_CASE(it_dims_at_the_minutes_and_not_a_millisecond_before)
 TEST_CASE(a_busy_bench_never_dims_and_wakes_at_once)
 {
     for (size_t off = 0u; off < sizeof(shot_facts_t); ++off) {
-        if (off == offsetof(shot_facts_t, no_card_fault)) {
-            continue;   /* the_link_reports_card_line_never_keeps_it_lit */
+        if (off == offsetof(shot_facts_t, no_card_fault)
+            || off == offsetof(shot_facts_t, no_lit_fault)) {
+            continue;   /* the_link_reports_card_line_never_keeps_it_lit,
+                           fault_01_alone_lets_it_dim */
         }
         screen_dim_t d;
         shot_facts_t busy = idle_facts();
         *((bool *)&busy + off) = false;
+        /* A FAULT bit other than 01. */
+        busy.no_lit_fault = busy.no_lit_fault
+                            && off != offsetof(shot_facts_t, no_fault);
         const shot_facts_t idle = idle_facts();
 
         screen_dim_init(&d, 0u);
@@ -243,6 +250,48 @@ TEST_CASE(the_link_reports_card_line_never_keeps_it_lit)
     /* A line out on a dim screen leaves it dim. */
     CHECK_EQ(screen_dim_step(&d, 6u * MIN_MS, 5, &note), SCREEN_DIM_PCT);
     CHECK(screen_dim_is_dim(&d));
+}
+
+/*
+ * FAULT 01, LINK_FAULT_LINK_SILENT, alone: the IOmcu reports it after a
+ * restart of the panel until the next ARM.  The screen dims at the minutes
+ * as on a bench without a FAULT bit; the screenshot's gate still waits for
+ * it and the band's FAULT chip still shows.  Bit 01 with any other bit,
+ * and every other bit alone, keep the screen lit.
+ */
+TEST_CASE(fault_01_alone_lets_it_dim)
+{
+    shot_bench_t b = { .read = true, .link_up = true,
+                       .faults = (uint16_t)LINK_FAULT_LINK_SILENT };
+    shot_facts_t f;
+    screen_dim_t d;
+
+    shot_facts_read(&b, &f);
+    CHECK_EQ(shot_gate(&f), SHOT_WAIT_FAULT);
+    CHECK(screen_dim_idle(&f));
+    screen_dim_init(&d, 0u);
+    CHECK_EQ(screen_dim_step(&d, 5u * MIN_MS - 1u, 5, &f), SCREEN_FULL_PCT);
+    CHECK_EQ(screen_dim_step(&d, 5u * MIN_MS, 5, &f), SCREEN_DIM_PCT);
+    {
+        const ui_bench_status_t st = { .link_up = true,
+                                       .faults = b.faults };
+
+        CHECK(ui_band_chip_rect(&st, UI_BAND_CHIP_FAULT, NULL));
+    }
+    for (unsigned bit = 1u; bit < 16u; ++bit) {
+        for (int with01 = 0; with01 < 2; ++with01) {
+            b.faults = (uint16_t)((1u << bit)
+                                  | (with01 != 0 ? 1u : 0u));
+            shot_facts_read(&b, &f);
+            CHECK_EQ(screen_dim_wait(&f), SHOT_WAIT_FAULT);
+            dimmed(&d);
+            CHECK_EQ(screen_dim_step(&d, 6u * MIN_MS, 5, &f),
+                     SCREEN_FULL_PCT);
+            screen_dim_init(&d, 0u);
+            CHECK_EQ(screen_dim_step(&d, 10u * MIN_MS, 5, &f),
+                     SCREEN_FULL_PCT);
+        }
+    }
 }
 
 /* A press on a dim screen while the line is written is a press on an idle
@@ -376,8 +425,10 @@ TEST_CASE(a_busy_frame_never_swallows_a_press)
     const int y = UI_BAND_H + tile.y + tile.h / 2;
     const uint32_t t = 6u * MIN_MS;
     for (size_t off = 0u; off <= sizeof(shot_facts_t); ++off) {
-        if (off == offsetof(shot_facts_t, no_card_fault)) {
-            continue;   /* a_press_while_a_card_line_is_written_only_wakes_it */
+        if (off == offsetof(shot_facts_t, no_card_fault)
+            || off == offsetof(shot_facts_t, no_lit_fault)) {
+            continue;   /* a_press_while_a_card_line_is_written_only_wakes_it,
+                           fault_01_alone_lets_it_dim */
         }
         router_on_menu();
         screen_dim_t d;
@@ -386,6 +437,9 @@ TEST_CASE(a_busy_frame_never_swallows_a_press)
         const shot_facts_t *fp = &busy;
         if (off < sizeof(shot_facts_t)) {
             *((bool *)&busy + off) = false;
+            /* A FAULT bit other than 01. */
+            busy.no_lit_fault = busy.no_lit_fault
+                                && off != offsetof(shot_facts_t, no_fault);
         } else {
             fp = NULL;
         }
@@ -594,6 +648,7 @@ int main(void)
     RUN(it_dims_at_the_minutes_and_not_a_millisecond_before);
     RUN(a_busy_bench_never_dims_and_wakes_at_once);
     RUN(the_link_reports_card_line_never_keeps_it_lit);
+    RUN(fault_01_alone_lets_it_dim);
     RUN(a_press_while_a_card_line_is_written_only_wakes_it);
     RUN(an_armed_bench_or_an_output_on_keeps_it_lit);
     RUN(a_touch_wakes_it_and_starts_the_minutes_again);

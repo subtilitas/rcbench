@@ -40,6 +40,11 @@ typedef struct {
     bool no_update;      /**< no panel or IOmcu update, install or
                               download                                    */
     bool no_fault;       /**< no FAULT bit is up                          */
+    bool no_lit_fault;   /**< no FAULT bit is up but LINK_FAULT_LINK_SILENT,
+                              which the IOmcu reports after a restart of
+                              the panel until the next ARM: Dim after's
+                              fact (screen_dim.h); shot_gate() does not
+                              read it                                     */
     bool no_card_fault;  /**< no fault log write is out                   */
     bool no_recording;   /**< no run log, test file or capture is open    */
 } shot_facts_t;

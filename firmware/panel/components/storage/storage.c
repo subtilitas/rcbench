@@ -533,7 +533,14 @@ esp_err_t storage_init(void)
     return err;
 }
 
-card_state_t storage_check(void)
+/**
+ * @brief storage_check() and storage_confirm(): the mounted volume asked
+ *        whether its card answers, let go where it does not, and with
+ *        @p mount an empty slot mounted.
+ * @param mount true to mount a slot with no volume
+ * @return storage_card_state() after the look
+ */
+static card_state_t look(bool mount)
 {
     if (!lock_ready()) {
         return CARD_STATE_NONE;
@@ -551,11 +558,25 @@ card_state_t storage_check(void)
     if (s.mounted && s.lost && s.holds == 0u) {
         unmount_locked();
     }
-    if (!s.mounted) {
+    if (mount && !s.mounted) {
         (void)mount_locked();
     }
     unlock();
     return storage_card_state();
+}
+
+card_state_t storage_check(void)
+{
+    return look(true);
+}
+
+card_state_t storage_confirm(void)
+{
+    /* No volume usable: nothing to ask, and no lock to wait for. */
+    if (!atomic_load(&s.usable)) {
+        return storage_card_state();
+    }
+    return look(false);
 }
 
 bool storage_hold(void)

@@ -132,6 +132,7 @@ Die Liste funktioniert wie die von SETUP: `-` und `+` verstellen einen Wert, `<`
 - Eine Schwelle von 0 deaktiviert die Abschaltung.
 - Eine Überstromschwelle auf oder über der STROMBEGRENZUNG löst nicht aus, weil das Netzteil den Strom in CC begrenzt.
 - Wird eine Obergrenze unter den Sollwert gesenkt, sinkt der Sollwert mit.
+- VERWERFEN setzt die Obergrenze zurück und den Sollwert auf seinen Wert vor der Änderung. Bei eingeschaltetem Ausgang bleibt der Sollwert bis zum nächsten AUS unten, und das Alarmband sagt es: `Strombegrenzung bleibt bei 1.00A, bis der Ausgang aus ist.`
 - Eine getippte Obergrenze rundet auf den Schritt ab, eine getippte Schwelle über 0 ist mindestens ein Schritt; ein Hinweis im Alarmband nennt den gespeicherten Wert, etwa `Strom max: 1.00A gespeichert, Schritte von 0.05A.`
 - Die Tastenfelder der Obergrenzen nehmen den Bereich des Netzteils an, die der Startwerte höchstens die Obergrenzen.
 

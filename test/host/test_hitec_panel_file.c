@@ -8,7 +8,8 @@
  * of no setting it writes back, FACTORY DEFAULT from MORE, a backup file
  * that brings a cell of no setting back, the load page counting it and
  * WRITE's hold sending it, both refused with an edit standing, the backup
- * file's line on the SERVO tab,
+ * file's line on the SERVO tab, the notes of what the write of waiting
+ * edits does,
  * the state line while the backup file is saved, a list the card does not
  * give in 5000ms, FILES without a card, and every new page and message in
  * both languages inside the card.  The rig is hitec_panel_rig.h.
@@ -643,6 +644,71 @@ TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back_and_leave_counts_
 }
 
 /*
+ * Edits that wait: the SERVO tab says what their write does besides the
+ * values.  A D series servo saves and restarts; a classic one writes its
+ * checksum after each stored value, and a draft with a stored value of no
+ * setting counts it.  The notes go with the edits.
+ */
+TEST_CASE(the_servo_tab_says_what_the_write_of_waiting_edits_does)
+{
+    static const ui_lang_t langs[] = { UI_LANG_EN, UI_LANG_DE };
+
+    for (size_t k = 0; k < sizeof(langs) / sizeof(langs[0]); ++k) {
+        char want[HITEC_PANEL_LINE];
+
+        d_open(langs[k]);
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        CHECK(!note_has(TR(HP_WRITE_D)));
+        CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
+                 HITEC_PROG_EDIT_OK);
+        show();
+        CHECK(note_has(TR(HP_WRITE_D)));
+        CHECK(!note_has(TR(HP_WRITE_C)));
+        hold_write();
+        until(HITEC_PROG_HELD);
+        show();
+        CHECK_EQ(hitec_prog_changes(model()), 0u);
+        CHECK(!note_has(TR(HP_WRITE_D)));
+
+        /* A classic servo and a file that brings back cell 0x1D, which no
+         * setting shows. */
+        open_at(SUPPLY_ON, langs[k]);
+        servo_hs5645();
+        for (unsigned c = 0; c < 0x24u; ++c) {
+            g_drv.eeprom[0x30u + c] = g_drv.eeprom[c];
+        }
+        g_drv.eeprom[0x30u + 0x1Du] ^= 0x01u;
+        tap(val(HITEC_PANEL_SERVO, 1, 0));
+        tap(hitec_panel_choice_rect(1));
+        tap_connect();
+        card_in();
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        CHECK(!note_has(TR(HP_WRITE_C)));
+        tap(val(HITEC_PANEL_SERVO, 2, 0));
+        pick(TR(HP_MORE_FACTORY));
+        hold(2.1f);
+        until(HITEC_PROG_HELD);
+        files();
+        tap(hitec_panel_choice_rect(file_choice("PRE")));
+        settle();
+        hold(2.1f);
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        CHECK_EQ(hitec_prog_changes(model()), 1u);
+        CHECK(note_has(TR(HP_WRITE_C)));
+        CHECK(!note_has(TR(HP_WRITE_D)));
+        snprintf(want, sizeof(want), TR(HP_FACTORY_RAW), 1u);
+        CHECK(note_has(want));
+        press_write(2.1f);
+        until(HITEC_PROG_HELD);
+        show();
+        CHECK_EQ(hitec_prog_changes(model()), 0u);
+        CHECK(!note_has(TR(HP_WRITE_C)));
+        CHECK(!note_has(want));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+/*
  * The count of stored values of no setting stays on the same row as its
  * sentence. Each fits a row of the page and of the message band at the
  * widest count a file holds, 255.
@@ -966,6 +1032,7 @@ int main(void)
     RUN(restore_after_factory_default_counts_the_cells_of_no_setting);
     RUN(factory_default_counts_the_cells_of_no_setting_it_writes);
     RUN(a_backup_file_names_the_stored_values_it_brings_back_and_leave_counts_them);
+    RUN(the_servo_tab_says_what_the_write_of_waiting_edits_does);
     RUN(a_count_of_stored_values_stays_on_its_sentences_row);
     RUN(restore_writes_the_session_backup_back_from_its_page);
     RUN(factory_default_comes_from_more_for_a_classic_servo);

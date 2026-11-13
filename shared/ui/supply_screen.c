@@ -18,11 +18,13 @@
 
 #include <math.h>
 #include <stdint.h>
+#include <stdio.h>
 #include <string.h>
 
 #include "settings.h"
 #include "ui_keypad.h"
 #include "ui_plot.h"
+#include "ui_screen.h"
 #include "ui_slider.h"
 #include "ui_tabs.h"
 #include "ui_text.h"
@@ -201,9 +203,195 @@ static supply_limits_t limits_from_settings(void)
     return l;
 }
 
-/* The limits as the settings hold them now, applied to the sliders. */
+/**
+ * @brief Whether two set points are one: less than half a step apart.  A
+ *        set point snapped again under other caps moves by less.
+ * @param a    one set point
+ * @param b    the other
+ * @param step the step, V or A
+ * @return true when they are one
+ */
+static bool same_point(float a, float b, float step)
+{
+    return fabsf(a - b) < step * 0.5f;
+}
+
+/**
+ * @brief Whether a cap's value @p have is @p v: less than half the cap's
+ *        step from it.  A value put back by settings_set() is rounded onto
+ *        the step.
+ * @param cap  the cap's setting
+ * @param have the cap's value, in force or stored
+ * @param v    the value
+ * @return true when @p have is @p v
+ */
+static bool cap_at(setting_id_t cap, float have, float v)
+{
+    const setting_def_t *d = settings_def(cap);
+    const float half = (d != NULL && d->step > 0.0f) ? d->step * 0.5f
+                                                     : 1e-4f;
+
+    return fabsf(have - v) < half;
+}
+
+/**
+ * @brief Keeps a set point a lowered cap has just brought down, the first
+ *        clamp of an edit of that cap that is not saved, with the value the
+ *        clamp left and the cap's stored value.  A kept set point that the
+ *        caps move again, lower or snapped anew, keeps its first value and
+ *        notes where the caps left it.
+ * @param b    the kept set point
+ * @param was  the set point before the caps were applied
+ * @param now  the set point after them
+ * @param cap  the cap's setting
+ * @param step the set point's step, V or A
+ */
+static void back_keep(sup_back_t *b, float was, float now, setting_id_t cap,
+                      float step)
+{
+    if (s.port_held) {
+        return;
+    }
+    if (b->on && same_point(was, b->clamp, step)) {
+        b->clamp = now;
+    } else if (!b->on && now < was && settings_differs(cap)) {
+        b->on = true;
+        b->back = was;
+        b->clamp = now;
+        b->cap = settings_stored(cap);
+    }
+}
+
+/**
+ * @brief Lets a kept set point go when the live one is written to another
+ *        value: an operator's change, a port's, a restore or another
+ *        screen's stands, and nothing is given back over it.
+ * @param b    the kept set point
+ * @param was  the set point before the write
+ * @param now  the set point after it
+ * @param step the set point's step, V or A
+ */
+static void back_seen(sup_back_t *b, float was, float now, float step)
+{
+    if (!same_point(was, now, step)) {
+        b->on = false;
+    }
+}
+
+/**
+ * @brief Writes both live set points, and lets a kept one go where its
+ *        value changes (back_seen()).
+ * @param v the voltage set point, V
+ * @param i the current limit, A
+ */
+static void backs_seen_to(float v, float i)
+{
+    back_seen(&s.back_v, s.cv, v, s.eff.v_step);
+    back_seen(&s.back_i, s.ci, i, s.eff.i_step);
+    s.cv = v;
+    s.ci = i;
+}
+
+/** @brief How a kept set point stands at a look (back_give()). */
+typedef enum {
+    BACK_NONE = 0,  /**< nothing kept, or given back now               */
+    BACK_ON,        /**< kept for the next OFF of the output that is on */
+    BACK_WAIT,      /**< kept while an ON is on its way or a port holds
+                         the supply                                    */
+} back_t;
+
+/**
+ * @brief Gives a kept set point back once its cap is at the stored value
+ *        it had at the clamp (DISCARD): never above the cap, and only with
+ *        the output off.  A set point written since, or a cap saved at
+ *        another value, lets it go.
+ * @param b    the kept set point; let go once given or overtaken
+ * @param sp   the live set point
+ * @param cap  the cap's setting
+ * @param lo   the set point's bottom, as the caps allow it
+ * @param hi   its top
+ * @param step its step
+ * @return back_t
+ */
+static back_t back_give(sup_back_t *b, float *sp, setting_id_t cap,
+                        float lo, float hi, float step)
+{
+    if (!b->on) {
+        return BACK_NONE;
+    }
+    if (!same_point(*sp, b->clamp, step)
+        || !cap_at(cap, settings_stored(cap), b->cap)) {
+        b->on = false;
+        return BACK_NONE;
+    }
+    if (!cap_at(cap, settings_get(cap), b->cap)) {
+        return BACK_NONE;          /* the cap's edit stands */
+    }
+    const float to = supply_snap(b->back, lo, hi, step);
+    if (!(to > *sp)) {
+        b->on = false;
+        return BACK_NONE;
+    }
+    if (s.on) {
+        return BACK_ON;
+    }
+    if (s.on_asked || s.pending.on || s.port_held) {
+        return BACK_WAIT;
+    }
+    *sp = to;
+    b->on = false;
+    return BACK_NONE;
+}
+
+/**
+ * @brief The set points a lowered cap brought down, given back where their
+ *        caps are at the stored values again (sup_refresh_limits()).
+ * @param say true to say in the band which set point waits for the
+ *            output that is on to go off.  An ON on its way or a port's
+ *            hold says nothing: the output is not on, and a port's set
+ *            point is not the operator's.
+ */
+static void back_follow(bool say)
+{
+    const float was_v = s.cv;
+    const float was_i = s.ci;
+    const bool on_v = back_give(&s.back_v, &s.cv, SET_SUPPLY_V_MAX,
+                                s.eff.v_min, s.eff.v_max,
+                                s.eff.v_step) == BACK_ON;
+    const bool on_i = back_give(&s.back_i, &s.ci, SET_SUPPLY_I_MAX,
+                                s.eff.i_min, s.eff.i_max,
+                                s.eff.i_step) == BACK_ON;
+    char line[96];
+
+    if (s.cv != was_v) {
+        ui_slider_set(&s.v_slider, s.cv);
+    }
+    if (s.ci != was_i) {
+        ui_slider_set(&s.i_slider, s.ci);
+    }
+    if (!say || (!on_v && !on_i)) {
+        return;
+    }
+    if (on_v && on_i) {
+        snprintf(line, sizeof(line), TR(SUP_BACK_VI), (double)s.cv,
+                 (double)s.ci);
+    } else if (on_v) {
+        snprintf(line, sizeof(line), TR(SUP_BACK_V), (double)s.cv);
+    } else {
+        snprintf(line, sizeof(line), TR(SUP_BACK_I), (double)s.ci);
+    }
+    ui_router_set_notice(line);
+}
+
+/* The limits as the settings hold them now, applied to the sliders.  A set
+ * point a lowered cap brings down is kept, and given back when the cap is
+ * at its stored value again: at once with the output off, at the next OFF
+ * while it is on, and the band says so. */
 void sup_refresh_limits(bool persist)
 {
+    const float was_v = s.cv;
+    const float was_i = s.ci;
+
     s.lim = limits_from_settings();
     s.eff = supply_caps_limited(&s.caps, &s.lim);
     /* A start value over a cap that was lowered under it comes down with
@@ -224,6 +412,9 @@ void sup_refresh_limits(bool persist)
         settings_request_save();
     }
     apply_caps();
+    back_keep(&s.back_v, was_v, s.cv, SET_SUPPLY_V_MAX, s.eff.v_step);
+    back_keep(&s.back_i, was_i, s.ci, SET_SUPPLY_I_MAX, s.eff.i_step);
+    back_follow(true);
     ++s.set_rev;
     ++s.ctrl_rev;
     ++s.ov_rev;
@@ -402,6 +593,12 @@ void supply_screen_set_output(bool on)
         ++s.out_rev;
         ++s.ctrl_rev;
     }
+    if (!on && (s.back_v.on || s.back_i.on)) {
+        /* A set point a cap's DISCARD gives back waited for this OFF. */
+        back_follow(false);
+        ++s.set_rev;
+        ++s.ctrl_rev;
+    }
     sup_owner_settle();
 }
 
@@ -470,10 +667,10 @@ float supply_screen_set_i(void) { return s.ci; }
 void supply_screen_settings_loaded(void)
 {
     sup_refresh_limits(true);
-    s.cv = supply_snap(settings_get(SET_SUPPLY_V_START), s.eff.v_min,
-                       s.eff.v_max, s.eff.v_step);
-    s.ci = supply_snap(settings_get(SET_SUPPLY_I_START), s.eff.i_min,
-                       s.eff.i_max, s.eff.i_step);
+    backs_seen_to(supply_snap(settings_get(SET_SUPPLY_V_START), s.eff.v_min,
+                              s.eff.v_max, s.eff.v_step),
+                  supply_snap(settings_get(SET_SUPPLY_I_START), s.eff.i_min,
+                              s.eff.i_max, s.eff.i_step));
     ui_slider_set(&s.v_slider, s.cv);
     ui_slider_set(&s.i_slider, s.ci);
     ++s.set_rev;
@@ -530,8 +727,7 @@ void sup_propose(int from)
         supply_invalidate();
         return;
     }
-    s.cv = v;
-    s.ci = i;
+    backs_seen_to(v, i);
     ++s.set_rev;
 }
 
@@ -551,8 +747,7 @@ bool sup_confirm_stands(void)
 void sup_confirm_close(bool apply)
 {
     if (apply && !s.port_held) {
-        s.cv = s.pend_v;
-        s.ci = s.pend_i;
+        backs_seen_to(s.pend_v, s.pend_i);
         ui_slider_set(&s.v_slider, s.cv);
         ui_slider_set(&s.i_slider, s.ci);
     }
@@ -753,8 +948,8 @@ void supply_screen_adopt(float v, float i)
         s.own_i = s.ci;
         s.lent  = true;
     }
-    s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
-    s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    backs_seen_to(supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step),
+                  supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step));
     s.lent_v = s.cv;
     s.lent_i = s.ci;
     ui_slider_set(&s.v_slider, s.cv);
@@ -776,7 +971,13 @@ void supply_screen_port_done(bool free_off)
     if (s.cv != s.lent_v || s.ci != s.lent_i) {
         return;
     }
-    own_snapped(&s.cv, &s.ci);
+    {
+        float v = s.cv;
+        float i = s.ci;
+
+        own_snapped(&v, &i);
+        backs_seen_to(v, i);
+    }
     ui_slider_set(&s.v_slider, s.cv);
     ui_slider_set(&s.i_slider, s.ci);
     ++s.set_rev;
@@ -806,8 +1007,8 @@ void supply_screen_put(float v, float i)
     if (s.port_held) {
         return;
     }
-    s.cv = supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step);
-    s.ci = supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step);
+    backs_seen_to(supply_snap(v, s.eff.v_min, s.eff.v_max, s.eff.v_step),
+                  supply_snap(i, s.eff.i_min, s.eff.i_max, s.eff.i_step));
     /* The sliders show the set points.  This screen's own question is
      * closed whenever it is left, so none is open while another types. */
     ui_slider_set(&s.v_slider, s.cv);

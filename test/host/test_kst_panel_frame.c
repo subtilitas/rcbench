@@ -15,6 +15,7 @@
  * - a_tap_on_port_opens_the_list_until_the_session_holds_it
  * - a_tap_on_a_row_not_met_names_it_in_the_band
  * - the_footers_write_is_the_sessions_from_any_tab
+ * - a_card_pulled_under_a_write_hold_writes_at_the_next_hold
  * - the_session_takes_no_press_under_the_footers_write_hold
  * - a_touch_loss_after_the_footers_hold_completes_sends_nothing
  * - a_second_finger_on_the_footers_write_keeps_the_first_hold
@@ -231,6 +232,48 @@ TEST_CASE(the_footers_write_is_the_sessions_from_any_tab)
     CHECK_STR_EQ(alert(), TR(PRR_W_PAGE));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK_EQ(kst_prog_changes(M), 1);
+}
+
+/* WRITE's hold, on the footer and on the tab, with a card in the slot at
+ * its press and none when it completes: nothing is written, the edits
+ * stay and the band says so.  The next hold, its press without a card,
+ * writes without the backup file. */
+TEST_CASE(a_card_pulled_under_a_write_hold_writes_at_the_next_hold)
+{
+    for (int on_tab = 0; on_tab < 2; ++on_tab) {
+        const gfx_rect_t t = val(PG_SERVO, 3, 1);
+
+        kst_on();
+        connected();
+        card_in();
+        edits();
+        ui_router_set_alert(NULL);
+        if (on_tab != 0) {
+            tap(kst_panel_tab_rect(PG_SERVO));
+            ev(cx(t), cy(t), TOUCH_EVENT_DOWN, 1);
+        } else {
+            ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+        }
+        ticks(1.0f);
+        card_out();
+        ticks(1.5f);
+        ev(on_tab != 0 ? cx(t) : ARM_X, on_tab != 0 ? cy(t) : ARM_Y,
+           TOUCH_EVENT_UP, 1);
+        settle();
+        CHECK_STR_EQ(alert(), TR(KP_CARD_PULLED));
+        CHECK_EQ(g_rig.sim.n_writes, 0);
+        CHECK_EQ(kst_prog_changes(M), 3);
+        CHECK(!kst_prog_write_enabled(M));
+        if (on_tab != 0) {
+            hold_write();
+        } else {
+            press_footer_write(2.5f);
+        }
+        settle();
+        CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+        CHECK_EQ(g_rig.fc.saves, 0);
+        CHECK(kst_prog_no_file(M));
+    }
 }
 
 /* A second finger on the session while the footer's WRITE is held: the
@@ -577,6 +620,7 @@ int main(void)
     RUN(a_tap_on_port_opens_the_list_until_the_session_holds_it);
     RUN(a_tap_on_a_row_not_met_names_it_in_the_band);
     RUN(the_footers_write_is_the_sessions_from_any_tab);
+    RUN(a_card_pulled_under_a_write_hold_writes_at_the_next_hold);
     RUN(the_session_takes_no_press_under_the_footers_write_hold);
     RUN(a_touch_loss_after_the_footers_hold_completes_sends_nothing);
     RUN(a_second_finger_on_the_footers_write_keeps_the_first_hold);

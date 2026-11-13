@@ -6,8 +6,12 @@
  * The backlight drops to SCREEN_DIM_PCT after SETUP > PANEL's Dim after
  * (SET_DIM_AFTER, minutes) without a touch event, and only while the bench
  * is idle as the screenshot popup's gate decides it (shot_gate.h): SAFE, no
- * output on, no session, run, update, FAULT bit or recording.  One fact of
- * the gate does not count here: a line on its way to the card's fault log
+ * output on, no session, run, update, FAULT bit or recording.  FAULT 01,
+ * LINK_FAULT_LINK_SILENT, does not count here (shot_facts_t::no_lit_fault):
+ * the IOmcu reports it after a restart of the panel, and it stands until
+ * the next ARM.  Every other FAULT bit keeps the screen lit, and the band's
+ * FAULT chip shows every bit.  One fact of the gate does not count here
+ * either: a line on its way to the card's fault log
  * (shot_facts_t::no_card_fault).  The panel's link report writes one every
  * 60s while the link is up and every 5s while it is down, and the gate
  * waits for it only so that the screenshot and the line do not share the

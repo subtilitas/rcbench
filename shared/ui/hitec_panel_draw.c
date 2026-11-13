@@ -127,6 +127,34 @@ static void record_notes(plan_t *p)
 }
 
 /**
+ * @brief What the write of the edits that wait does besides the values:
+ *        the D series' save and restart, or the classic checksum after each
+ *        stored value, and the stored values outside the settings it writes
+ *        too.  Only while edits wait; last, so a note above keeps its place.
+ * @param p the plan
+ */
+static void write_notes(plan_t *p)
+{
+    const hitec_prog_t *pr = &hp.prog;
+    const hitec_image_t *to = hitec_prog_draft(pr);
+    const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
+    unsigned raw;
+
+    if (hitec_prog_state(pr) != HITEC_PROG_HELD || to == NULL
+        || hitec_prog_changes(pr) == 0u) {
+        return;
+    }
+    note(p, hitec_prog_series(pr) == (uint8_t)HITEC_D ? TR(HP_WRITE_D)
+                                                       : TR(HP_WRITE_C),
+         faint);
+    raw = hitec_prog_raw_cells(pr, to);
+    if (raw != 0u) {
+        snprintf(p->buf[2], sizeof(p->buf[2]), TR(HP_FACTORY_RAW), raw);
+        note(p, p->buf[2], faint);
+    }
+}
+
+/**
  * @brief The SERVO tab's notes: the state, what it needs, what stands.
  * @param p the plan
  */
@@ -171,6 +199,7 @@ static void servo_notes(plan_t *p)
                                        || hpn_backup_unsaved()
                                    ? ui_theme_color(UI_C_WARN)
                                    : faint);
+    write_notes(p);
 }
 
 /**

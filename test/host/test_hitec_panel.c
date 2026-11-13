@@ -16,7 +16,9 @@
  * The SERVO screen's guide names SERIES or FILES as the row shows it, a
  * CONNECT on its way included, and gives the port's button the text of
  * what it reads: CONNECT, ABORT, LEAVE, WAIT or RELEASE PORT, in English
- * and German.  The footer's WRITE n VALUES writes through its 2s hold.
+ * and German.  The footer's WRITE n VALUES writes through its 2s hold; a
+ * card pulled under WRITE's hold, on the footer or the tab, stops that
+ * write and the next hold writes.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -26,6 +28,7 @@
 #include "prog_choice.h"
 #include "servo_screen.h"
 #include "servo_spots.h"
+#include "splash_screen.h"
 #include "ui_board.h"
 #include "ui_help.h"
 
@@ -986,9 +989,91 @@ TEST_CASE(the_footers_write_holds_and_writes_on_hitec)
     CHECK(!hitec_prog_write_on(model()));
 }
 
+/* The router on a screen with the band, where a refused press puts its
+ * reason (ui_action_refused()). */
+static void band_on(void)
+{
+    ui_router_init();
+    for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
+        splash_screen_set((splash_step_t)i, SPLASH_OK, "");
+    }
+    ui_router_tick(2.0f);
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_goto(SCREEN_MOTOR);
+    ui_router_set_alert(NULL);
+}
+
+/* The band's text, "" for none. */
+static const char *band(void)
+{
+    const char *a = ui_router_alert();
+
+    return a != NULL ? a : "";
+}
+
+/* WRITE's hold on HITEC, on the footer and on the tab, with a card in the
+ * slot at its press and none when it completes: nothing is written, the
+ * edit stays and the band says so.  The next hold, its press without a
+ * card, writes. */
+TEST_CASE(a_card_pulled_under_a_hitec_write_hold_writes_at_the_next_hold)
+{
+    const ui_screen_t *sv = servo_fn_screen(SERVO_FN_HITEC);
+
+    for (int on_tab = 0; on_tab < 2; ++on_tab) {
+        const gfx_rect_t t = val(HITEC_PANEL_SERVO, 3, 1);
+        const int x = on_tab != 0 ? cx(t) : SV_ARM_X;
+        const int y = on_tab != 0 ? cy(t) : SV_ARM_Y + SV_ARM_H / 2;
+        touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                            .point = { .id = 3, .x = (int16_t)x,
+                                       .y = (int16_t)y, .strength = 40 } };
+
+        band_on();
+        sv->reset();
+        open_at(SUPPLY_NONE, UI_LANG_EN);
+        servo_d485();
+        servo_screen_show_fn(SERVO_FN_HITEC);
+        tap(val(HITEC_PANEL_SERVO, 0, 0));
+        settled();
+        g_card = true;
+        prun(20u);
+        CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
+                 HITEC_PROG_EDIT_OK);
+        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
+        ui_router_set_alert(NULL);
+        sv->event(&e);
+        for (int i = 0; i < 110; ++i) {
+            if (i == 50) {
+                g_card = false;
+            }
+            sv->tick(0.02f);
+            prun(20u);
+        }
+        e.type = TOUCH_EVENT_UP;
+        sv->event(&e);
+        prun(200u);
+        CHECK_STR_EQ(band(), TR(KP_CARD_PULLED));
+        CHECK_EQ(pstate(), HITEC_PROG_HELD);
+        CHECK_EQ(g_drv.d_writes, 0u);
+        CHECK_EQ(hitec_prog_changes(model()), 1u);
+        CHECK(!hitec_prog_write_on(model()));
+        e.type = TOUCH_EVENT_DOWN;
+        sv->event(&e);
+        for (int i = 0; i < 110; ++i) {
+            sv->tick(0.02f);
+            prun(20u);
+        }
+        e.type = TOUCH_EVENT_UP;
+        sv->event(&e);
+        until(HITEC_PROG_HELD);
+        CHECK_EQ(g_drv.dreg[0x60], 6u);
+        CHECK_EQ(hitec_prog_changes(model()), 0u);
+    }
+}
+
 int main(void)
 {
     RUN(the_footers_write_holds_and_writes_on_hitec);
+    RUN(a_card_pulled_under_a_hitec_write_hold_writes_at_the_next_hold);
     RUN(the_gate_outlives_a_start_of_the_screens);
     RUN(the_screenshot_gate_reads_the_hold_of_the_port);
     RUN(a_held_ports_reading_moves_the_page_as_its_state_line_shows_it);

@@ -96,6 +96,22 @@ esp_err_t storage_init(void);
 card_state_t storage_check(void);
 
 /**
+ * @brief Whether the mounted card still answers, with no mount:
+ *        storage_check() without its mount of an empty slot.
+ *
+ * With no volume usable it returns at once, takes no lock and sends
+ * nothing.  A usable volume is asked once,
+ * as storage_check() asks it: one SEND_STATUS (CMD13) command through
+ * FatFs.  A card that does not answer is taken out or swapped and is let
+ * go as storage_check() lets it go; the slot is not mounted again.  The
+ * servo programmers call it at WRITE n VALUES' press and as its 2s hold
+ * completes, on the render task.
+ *
+ * @return storage_card_state() after the look.
+ */
+card_state_t storage_confirm(void);
+
+/**
  * Keep the mounted volume from being let go: around every path call
  * (fopen(), stat(), mkdir(), unlink(), rename(), opendir()) and for as long
  * as a file or folder stays open.  Counted; every true is matched by one
