@@ -132,6 +132,7 @@ Die Liste funktioniert wie die von SETUP: `-` und `+` verstellen einen Wert, `<`
 - Eine Schwelle von 0 deaktiviert die Abschaltung.
 - Eine Überstromschwelle auf oder über der STROMBEGRENZUNG löst nicht aus, weil das Netzteil den Strom in CC begrenzt.
 - Wird eine Obergrenze unter den Sollwert gesenkt, sinkt der Sollwert mit.
+- Eine getippte Obergrenze rundet auf den Schritt ab, eine getippte Schwelle über 0 ist mindestens ein Schritt; ein Hinweis im Alarmband nennt den gespeicherten Wert, etwa `Strom max: 1.00A gespeichert, Schritte von 0.05A.`
 - Die Tastenfelder der Obergrenzen nehmen den Bereich des Netzteils an, die der Startwerte höchstens die Obergrenzen.
 
 Eine Änderung gilt sofort. SPEICHERN fordert das Schreiben in den NVS (nichtflüchtiger Speicher) an, im nächsten Frame bei SAFE und ausgeschaltetem Ausgang. SPEICHERN zeigt `GESPEICHERT` ohne Ungeschriebenes, `SPEICHERN` mit einer Änderung, `BEI STILLSTAND`, solange das Schreiben wartet, und `NICHT GESPEICHERT` nach abgelehntem Schreiben. SUPPLY ZURÜCKSETZEN setzt die Einstellungen der Liste auf ihre Vorgaben, die des PD mini nur, solange sie sich ändern lassen.

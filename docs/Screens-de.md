@@ -221,10 +221,29 @@ Listen, Boxen, Warnungen und Bestätigungsdialoge zeigen kein "?".
 | Web-Zeile | `Mehr: subtilitas.github.io/rcbench/help/de/`, auf Englisch die Adresse ohne `de/` |
 | VORIGE und NÄCHSTE | 124 x 48px, 8px auseinander, im Band von x 8 bis 264, y 6 bis 54, an der Stelle des Home-Felds, auf jeder Seite dieselbe |
 | SCHLIESSEN | 140 x 48px, mittig am unteren Rand des Hilfefelds, y 496 bis 544 |
-| Marken | eine 28px-Marke mit der Nummer des Eintrags 4px innerhalb der oberen linken Ecke des Bedienelements, oder 4px links von einem Bedienelement unter 56px Höhe oder Breite; 4px innerhalb der oberen rechten Ecke bei einem Bedienelement, dessen eigener Text an seiner linken Kante beginnt; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
+| Marken | eine 28px-Marke mit der Nummer des Eintrags: eine Scheibe von 24px in Akzentfarbe in einem dunklen Ring von 2px, so dass sie auch auf einer leuchtenden Taste in Akzentfarbe sichtbar ist; Winkel von 2px an den Ecken des Bedienelements, 3px außerhalb |
+
+Eine Marke verdeckt keinen Text der Seite. Sie nimmt den ersten von 11
+Plätzen, 4px vom Bedienelement entfernt, der in der freien Hälfte liegt,
+2px Abstand zu den Marken mit kleinerer Nummer hält, kein anderes
+markiertes Bedienelement von außen verdeckt und keinen Text verdeckt:
+innerhalb der oberen linken Ecke, innerhalb der oberen rechten Ecke, links
+und rechts vom Bedienelement, innerhalb der unteren Ecken, in der Mitte,
+auf der linken Kante, über und unter dem linken Ende und auf der oberen
+linken Ecke. Ein Bedienelement unter 56px Höhe oder Breite versucht zuerst
+den Platz links davon; eines, dessen eigener Text an seiner linken Kante
+beginnt, zuerst die obere rechte Ecke. Gezählt wird der Text, den die
+Seite seit dem Öffnen der Hilfeseite zeichnet; erscheint später Text unter
+einer Marke, wandert sie, und die Seite wird neu gezeichnet. Verdeckt jeder
+Platz Text, nimmt die Marke den ersten Platz, den die übrigen Regeln
+lassen; lassen sie keinen, den ersten Platz in der freien Hälfte. Ein
+Platz auf der Kante oder Ecke des Bedienelements zählt als außerhalb. Die
+Hilfe vergisst den Text beim Öffnen, beim Schließen und beim Wechsel der
+Seite.
 
 Bei einem Bedienelement im Statusband steht die Nummernmarke darunter,
-unter seiner linken Kante. Das Hilfefeld endet 4px über dem Alarmband,
+unter seiner linken Kante, sonst unter seiner rechten Kante, seiner Mitte,
+links oder rechts davon. Das Hilfefeld endet 4px über dem Alarmband,
 sodass ein Alarm nichts davon verdeckt. Ein Bedienelement, das über die
 freie Hälfte hinausreicht, wird bis zu ihrem Rand markiert; Text der Seite
 endet dort an diesem Rand.
@@ -1060,7 +1079,9 @@ Aufzeichnung steht `TELEMETRIE LIVE` über der Grafik, beim angehaltenen
 Lauf `LETZTE TELEMETRIE`. Vor dem ersten ARM steht dort
 `TELEMETRIE INAKTIV` und in der Grafik `Noch kein Lauf aufgezeichnet.`
 Die rechte Achsenbeschriftung zeigt während der Aufzeichnung `JETZT`,
-am Ende eines angehaltenen Laufs `ENDE`. Messwertanzeigen, TABELLE,
+am Ende eines angehaltenen Laufs `ENDE`. Beide Zeitbeschriftungen, `JETZT`
+oder `ENDE` und die Spanne links, liegen auf dem Hintergrund der Grafik,
+2px um ihre Zeichen: Eine Kurve am unteren Rand läuft unter ihnen. Messwertanzeigen, TABELLE,
 Summen und Temperaturleiste werden in ARMED und SAFE laufend aktualisiert.
 
 Die Grafik ist 600 x 184px groß. Bei 20 Abtastungen pro Sekunde decken ihre
@@ -1778,7 +1799,8 @@ lautet `[ESC STICK] [ESC STICK ZURÜCKSETZEN] [SPEICHERN]`. Ein Tippen auf
 den Wert einer Zahl öffnet das Tastenfeld, 1004 x 482px. Es zeigt Name,
 Bereich und Einheit. Die Zahl der Nachkommastellen folgt der Schrittweite:
 eine bei 0,1V für Spannung, zwei bei 0,05A für Strombegrenzung. OK rundet
-auf den nächsten Schritt, wie die Tasten: 1,23A wird 1,25A. Eine Änderung
+auf den nächsten Schritt, wie die Tasten: 1,23A wird 1,25A, und ein
+Hinweis im Alarmband nennt den gespeicherten Wert und den Schritt. Eine Änderung
 gilt sofort; SPEICHERN behält sie. ESC STICK ZURÜCKSETZEN setzt die 14
 Einstellungen auf ihre Vorgaben und keine anderen. Spannung 0,0V nimmt die
 Spannung aus der Zellenzahl des Profils. Profilpunkte verwenden Listen mit
@@ -3422,8 +3444,10 @@ Druck annehmen.
 Sinkt eine Grenze unter einen Sollwert, werden dieser und sein Startwert
 sofort gesenkt. Eingaben werden in der sichereren Richtung gerundet:
 Grenzen nach unten, sodass 12,01V nur 12,00V erlauben; eine positive
-Abschaltschwelle auf mindestens einen Schritt, nie auf AUS. Eine Schwelle
-von 0 ist ausgeschaltet.
+Abschaltschwelle auf mindestens einen Schritt, nie auf AUS. Ein anders
+als getippt gespeicherter Wert zeigt den Hinweis im Alarmband:
+`Strom max: 1.00A gespeichert, Schritte von 0.05A.` nach 1.03. Eine
+Schwelle von 0 ist ausgeschaltet.
 
 Die Zeit über einer Schwelle beginnt beim ersten Messwert darüber. Ein
 Messwert darunter setzt den Zähler zurück; ein fehlender Messwert lässt
@@ -5562,6 +5586,8 @@ ZURÜCKSETZEN oder SPEICHERN. Das gilt für die Kacheln und die Listen.
 
 ![PANEL](img/de/setup-application.png)
 
+![Dimmen nach: 7 getippt, 5min gespeichert, der Hinweis im Alarmband](img/de/setup-dim-stored.png)
+
 Das Home-Feld führt eine Ebene nach der anderen zurück:
 
 | Von | Das Home-Feld führt zu |
@@ -5632,9 +5658,11 @@ Auswahl springt vom letzten Wert auf den ersten.
   nach dem Punkt, wie der Schritt hat: eine für die 0,1mΩ eines Shunts,
   keine für einen Pin. OK setzt den Wert, wie ein Schritt ihn setzt: Er gilt
   sofort, SPEICHERN behält ihn. Ein Wert zwischen zwei Schritten wird auf
-  den näheren Schritt gesetzt: 73% Helligkeit sind 75%. Ein Wert außerhalb
-  des Bereichs lässt das Tastenfeld offen und nennt den Bereich in der
-  Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es
+  den näheren Schritt gesetzt: 73% Helligkeit sind 75%. Ein Hinweis im
+  Alarmband nennt für 4s den gespeicherten Wert und den Schritt:
+  `Dimmen nach: 5min gespeichert, Schritte von 5min.` nach 7 für Dimmen
+  nach. Ein Wert außerhalb des Bereichs lässt das Tastenfeld offen und
+  nennt den Bereich in der Warnfarbe. Ein Wert im Bereich, den die Tasten nie erreichen, lässt es
   ebenfalls offen und nennt statt des Bereichs den Grund in der Warnfarbe:
   `0 oder 5.0 bis 1000.0mΩ` für einen Shunt zwischen 0 und 5,0mΩ,
   `0 oder 10 bis 32767mA` für eine Stromgrenze zwischen 0 und 10mA,

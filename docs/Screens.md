@@ -204,10 +204,27 @@ dialogs also have no "?".
 | Web line | `More: subtilitas.github.io/rcbench/help/`, German `Mehr: subtilitas.github.io/rcbench/help/de/` |
 | PREV and NEXT | 124 x 48px, 8px apart, in the band from x 8 to 264, y 6 to 54, in the home tag's place, the same on every page |
 | CLOSE | 140 x 48px, centered at the dock's bottom, y 496 to 544 |
-| Marks | a 28px badge with the item's number 4px inside the control's top-left corner, or 4px left of a control less than 56px tall or wide; 4px inside the top-right corner for a control whose own text starts at its left edge; 2px brackets at the control's corners, 3px outside it |
+| Marks | a 28px badge with the item's number: an accent disc of 24px in a 2px dark ring, so it shows on a lit accent button as well; 2px brackets at the control's corners, 3px outside it |
+
+A badge covers no string the screen draws. It takes the first of 11
+places, 4px from its control, that lies in the live half, keeps 2px from
+the badges numbered before it, covers no other marked control from
+outside its own and covers no string: inside the top-left corner, inside
+the top-right corner, left and right of the control, inside the bottom
+corners, in the middle, on the left edge, above and under the left end,
+and on the top-left corner. A control less than 56px tall or wide tries
+left of it first; a control whose own text starts at its left edge tries
+inside the top-right corner first. The strings are those the screen draws
+in the frames since the page opened; a string that shows up later under a
+badge moves it, and the screen is drawn again. With every place covering
+a string, the badge takes the first place the other rules leave; with
+none left, the first place in the live half. A place on the control's
+edge or corner counts as outside it. The guide forgets the strings when
+it opens, when it closes and when the screen changes.
 
 A control in the band has its badge under the band, below the control's
-left end. The dock ends 4px above the alert band, so an alert covers none
+left end, then its right end, its middle, left and right of it. The dock
+ends 4px above the alert band, so an alert covers none
 of it. A control that runs past the live half is marked up to the half's
 edge, and the screen's text there is cut at that edge.
 
@@ -984,7 +1001,9 @@ clears it, and switching to SAFE freezes it. Its tag reads `LIVE TELEMETRY`
 while recording, `LAST TELEMETRY` while holding a completed run, and
 `TELEMETRY IDLE` before the first ARM, when the plot shows
 `No run recorded yet.` The right-hand axis reads `NOW` while recording and
-`END` at the end of a held run. The readouts, TABLE pane, totals and
+`END` at the end of a held run. Both time labels, `NOW` or `END` and the
+span on the left, sit on the plot's background 2px round their characters:
+a trace along the bottom runs under them. The readouts, TABLE pane, totals and
 temperature strip update continuously, whether ARMED or SAFE.
 
 The plot is 600 x 184px. The window is 600 columns at 20 samples per second,
@@ -1651,7 +1670,8 @@ The list covers the whole body, the output strip included; its strip reads
 keypad, 1004 x 482px. It shows the setting's name, range and unit. Decimal
 places follow the step size: one for Voltage's 0.1V, two for Current
 limit's 0.05A. OK rounds to the nearest step, as the keys do: 1.23A
-becomes 1.25A. A change applies at once; SAVE keeps it. RESET ESC STICK
+becomes 1.25A, and a notice in the alert band names the value stored and
+the step. A change applies at once; SAVE keeps it. RESET ESC STICK
 sets the 14 settings to their defaults and no other. Voltage 0.0V takes
 the voltage from the profile's cell count. Profile items use lists of the
 ESC's own values and do not open a keypad.
@@ -3146,7 +3166,9 @@ settings, and the PD mini's 4 while their rows take a press.
 Lowering a cap below a set point immediately lowers that set point and
 its startup value. Entered values are rounded in the safer direction:
 caps round down, so 12.01V permits 12.00V; a positive trip is at least
-one step and never rounds to OFF. A trip of 0 is disabled.
+one step and never rounds to OFF. A value stored other than as typed
+shows the alert band's notice: `Current max: 1.00A stored, steps of
+0.05A.` after 1.03 typed. A trip of 0 is disabled.
 
 Time above a trip begins at the first reading over the threshold. A
 reading below it resets the count; a missing reading leaves it unchanged.
@@ -5102,6 +5124,8 @@ RESET CATEGORY or SAVE, on the tiles or on a list.
 
 ![PANEL](img/setup-application.png)
 
+![Dim after: 7 typed, 5min stored, the notice in the alert band](img/setup-dim-stored.png)
+
 The home tag climbs one level at a time:
 
 | From | The home tag leads to |
@@ -5164,7 +5188,9 @@ and `+` keys: 0x40 to 0x4F. A shunt on SENSORS takes 0 (OFF) or 5.0 to
   takes as many digits after the point as the step has: one for a shunt's
   0.1mΩ, none for a pin. OK sets the value as a step sets it: in force at
   once, kept by SAVE. A value between two steps is set to the nearer step:
-  73% brightness is 75%. A value outside the range keeps the keypad open
+  73% brightness is 75%. A notice in the alert band names the value stored
+  and the step for 4s: `Dim after: 5min stored, steps of 5min.` after 7
+  typed for Dim after. A value outside the range keeps the keypad open
   and names the range in the warning colour. A value inside the range that
   the keys never reach keeps it open too and names the reason in place of
   the range, in the warning colour: `0 or 5.0 to 1000.0mΩ` for a shunt

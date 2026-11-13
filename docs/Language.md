@@ -315,7 +315,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 690 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 691 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -323,7 +323,10 @@ in German, and fails when a string in either language
   screen guide (`help-...`) at the edge of the live half that faces the
   dock, which covers the rest of the screen by design,
 - runs past the filled shape it is printed on,
-- overlaps another string the frame shows, or
+- overlaps another string the frame shows,
+- lies under a numbered badge of the screen guide, in a guide view: the
+  characters cut to their area count, less 2px at top and bottom, unless a
+  fill drawn before the badge hides them, or
 - is painted over by a fill drawn after it and not drawn again.
   Only the characters count: a fill over the trailing spaces of a padded
   label is not a finding. OUTPUTS with its protocol list open
@@ -363,7 +366,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,621 entries
+A language is one more column in every entry of the table: 3,622 entries
 with an ID and 105 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

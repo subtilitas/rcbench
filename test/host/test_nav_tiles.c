@@ -6,7 +6,7 @@
  *
  * Cases:
  * - the_setup_tiles_open_the_outputs_and_updates
- * - the_band_titles_match_the_tiles
+ * - the_band_titles_match_the_tiles: RUDDER's in the language showing
  * - wifi_returns_to_setup_over_stop_and_link_loss
  * - the_home_tag_climbs_one_level_from_every_screen
  * - the_home_tag_climbs_the_stick_session_one_level_at_a_time
@@ -124,13 +124,23 @@ TEST_CASE(the_setup_tiles_open_the_outputs_and_updates)
     CHECK(!settings_screen_opens(SCREEN_LOGS));
 }
 
-/* The band names each screen by its tile: SETUP, LOGS, WI-FI. */
+/* The band names each screen by its tile: SETUP, LOGS, WI-FI; RUDDER and
+ * RUDDER AUTO in the language showing, RUDER in German as the hub's tile
+ * and the footer. */
 TEST_CASE(the_band_titles_match_the_tiles)
 {
     fresh();
     CHECK_STR_EQ(ui_router_title(SCREEN_SETUP), "SETUP");
     CHECK_STR_EQ(ui_router_title(SCREEN_LOGS), "LOGS");
     CHECK_STR_EQ(ui_router_title(SCREEN_WIFI), "WI-FI");
+    CHECK_STR_EQ(ui_router_title(SCREEN_SERVO_RUDDER), "RUDDER");
+    CHECK_STR_EQ(ui_router_title(SCREEN_SERVO_RAUTO), "RUDDER AUTO");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(ui_router_title(SCREEN_SERVO_RUDDER), TR(SVH_RUDDER));
+    CHECK_STR_EQ(ui_router_title(SCREEN_SERVO_RUDDER), "RUDER");
+    CHECK_STR_EQ(ui_router_title(SCREEN_SERVO_RUDDER), TR(WB_RUDDER));
+    CHECK_STR_EQ(ui_router_title(SCREEN_SERVO_RAUTO), "RUDER AUTO");
+    ui_text_set_language(UI_LANG_EN);
     /* No screen is PROGRAMMER any more: programming is a task of MOTOR &
      * ESC and of SERVO. */
     for (int id = 0; id < SCREEN_COUNT; ++id) {

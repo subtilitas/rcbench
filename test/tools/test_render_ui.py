@@ -116,3 +116,43 @@ def test_a_guide_view_leaves_the_live_half_to_the_view_it_opens_over():
     found = ui.fit_problems([text(1000, 60, 544, 480), dock_line(552)],
                             guide=True)
     assert len(found) == 1 and "is cut at the edge" in found[0][1]
+
+
+def badge(x, y, num="1"):
+    """A guide's badge with @p num at (@p x, @p y), as the marks draw it."""
+    return ("T", ui.Rect(x + 9, y + 4, 10, 20), ui.Rect(0, 0, 1024, 600),
+            ui.Rect(x, y, 28, 28), num)
+
+
+def test_a_badge_over_a_string_of_the_screen_fails():
+    """A badge over a string the screen drew is a finding."""
+    found = ui.badge_problems([text(600, 60, 496, 528, "VOLT"),
+                               dock_line(24), badge(604, 96)])
+    assert found == [("VOLT", "is under badge 1 at x=604 y=96")]
+
+
+def test_a_badge_beside_a_string_passes():
+    """A badge clear of the string, or over its padding spaces, passes."""
+    assert ui.badge_problems([text(600, 60, 496, 528, "VOLT"),
+                              dock_line(24), badge(664, 96)]) == []
+    assert ui.badge_problems([text(600, 100, 496, 528, "VOLT      "),
+                              dock_line(24), badge(664, 96)]) == []
+
+
+def test_only_badges_after_the_web_line_on_the_live_half_count():
+    """The dock's own badges and a screen's 28px digit are not marks."""
+    # The dock's list badge, on the dock's half.
+    assert ui.badge_problems([text(30, 60, 0, 528, "LIVE"),
+                              dock_line(24), badge(24, 96)]) == []
+    # A digit the screen draws before the dock is not a badge.
+    assert ui.badge_problems([badge(604, 96), text(600, 60, 496, 528),
+                              dock_line(24)]) == []
+    # No guide: nothing to check.
+    assert ui.badge_problems([text(600, 60, 496, 528), badge(604, 96)]) == []
+
+
+def test_a_string_hidden_by_a_later_fill_is_not_under_the_badge():
+    """A string a fill covered before the marks shows nothing to cover."""
+    fill = ("B", ui.Rect(590, 90, 100, 40), ui.Rect(0, 0, 1024, 600))
+    assert ui.badge_problems([text(600, 60, 496, 528, "VOLT"), fill,
+                              dock_line(24), badge(604, 96)]) == []

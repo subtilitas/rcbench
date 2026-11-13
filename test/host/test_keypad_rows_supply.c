@@ -4,7 +4,8 @@
  *        set points on LIVE and every number row of the SETTINGS list.  A tap opens
  *        the keypad with the row's title, unit, range and digits; a value
  *        past the range is refused and the row keeps its value; CANCEL
- *        keeps it; OK sets the value typed.
+ *        keeps it; OK sets the value typed, and a cap or trip the row's
+ *        rule moves onto another step shows what was stored.
  *
  * The supply reports caps of 4.00 to 20.00V in 0.02V steps and 1.00 to
  * 4.50A in 0.05A steps, inside the schema's 3.3 to 21.0V and 0.5 to 5.0A,
@@ -168,10 +169,44 @@ TEST_CASE(a_cap_under_the_start_value_waits_for_save)
     CHECK(!settings_save_asked());
 }
 
+/*
+ * A cap rounds down and a trip above 0 stays a trip (row_typed()): what
+ * was stored differs from what was typed, and the alert band's notice
+ * names it.  A value on a step shows none.
+ */
+TEST_CASE(a_rounded_cap_or_trip_names_what_was_stored)
+{
+    fresh();
+    supply_screen_set_caps(&k_caps);
+    open_row(3);                               /* Current max */
+    kpr_type(&k_supply, "1.03");
+    kkey(UI_KEY_OK);
+    CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 1.0f, 1e-4f);
+    CHECK(ui_router_alert_is_notice());
+    CHECK_STR_EQ(ui_router_alert(),
+                 "Current max: 1.00A stored, steps of 0.05A.");
+    ui_router_set_alert(NULL);
+
+    open_row(6);                               /* Current trip */
+    kpr_type(&k_supply, "0.02");
+    kkey(UI_KEY_OK);
+    CHECK_NEAR(settings_get(SET_SUPPLY_TRIP_I), 0.05f, 1e-4f);
+    CHECK_STR_EQ(ui_router_alert(),
+                 "Current trip: 0.05A stored, steps of 0.05A.");
+    ui_router_set_alert(NULL);
+
+    open_row(3);
+    kpr_type(&k_supply, "1.5");
+    kkey(UI_KEY_OK);
+    CHECK_NEAR(settings_get(SET_SUPPLY_I_MAX), 1.5f, 1e-4f);
+    CHECK(ui_router_alert() == NULL || ui_router_alert()[0] == '\0');
+}
+
 int main(void)
 {
     RUN(every_supply_keypad_takes_ok_and_refuses_and_cancels);
     RUN(every_supply_number_has_a_keypad_row);
     RUN(a_cap_under_the_start_value_waits_for_save);
+    RUN(a_rounded_cap_or_trip_names_what_was_stored);
     return test_summary("keypad_rows_supply");
 }

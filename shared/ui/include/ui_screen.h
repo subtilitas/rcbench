@@ -87,6 +87,12 @@ struct ui_help_page;
 typedef struct {
     const char *title;   /**< shown in the band                            */
     /**
+     * @brief The title in the language showing, for a screen whose name is
+     *        translated; NULL shows title as it is.  ui_router_title()
+     *        returns it.
+     */
+    const char *(*title_now)(void);
+    /**
      * Return the screen to its initial state.  ui_router_init() calls this on
      * every screen, because selection and scroll position are static state.
      */
@@ -242,11 +248,12 @@ uint32_t ui_router_navigations(void);
  * @return the count
  */
 uint32_t ui_router_dispatched(void);
+
 /**
- * @brief Gives a screen's title.
- *
- * @param id the screen
- * @return its title; "" for none
+ * @brief The band's title of screen @p id: its title_now() in the language
+ *        showing where it has one, its title otherwise.
+ * @param id The screen.
+ * @return The title; "" for a screen without one.
  */
 const char *ui_router_title(ui_screen_id_t id);
 

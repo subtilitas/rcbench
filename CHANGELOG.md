@@ -33,6 +33,24 @@ history is in git.
 
 ### Changed
 
+- A screen guide's badge takes the first of 11 places beside or on its
+  control that covers no string the screen draws, in either language: the
+  places run from inside the top-left corner through the other corners,
+  both sides, the middle and the left edge to above and under the control
+  ([Screens](docs/Screens.md#the-screen-guide)).
+- A screen guide's badge is a 24px accent disc in a 2px dark ring, and
+  shows on a lit accent button such as WI-FI's ACCESS POINT.
+- A number typed on a setting's keypad between two steps shows a notice in
+  the alert band with the value stored and the step:
+  `Dim after: 5min stored, steps of 5min.` after 7 for Dim after, and
+  `Current max: 1.00A stored, steps of 0.05A.` after 1.03 for SUPPLY's
+  cap, which rounds down.
+- The time labels of a plot, `NOW` or `END` and the span, sit on the plot's
+  background: a trace along the bottom runs under them.
+- The band names RUDDER and RUDDER AUTO as their tiles and footers do:
+  RUDER and RUDER AUTO in German.
+- `tools/render_ui.py --fit` fails on a string of the screen under a badge
+  of the screen guide, in either language.
 - The simulated ESC sounds an 808ms tone before each pass of its item loop
   where the profile sets `loop_marker`.
 - KST and HITEC programmers: WRITE n VALUES writes after a 2s hold, on
@@ -50,6 +68,8 @@ history is in git.
 
 ### Fixed
 
+- German guide texts of the IMU's ZERO and UNZERO: "löscht er den
+  Nullpunkt" and "löscht es den RUDER-Nullpunkt".
 - Dim after dims the backlight. The link report's line to the card's
   fault log, every 60s while the IOmcu is linked, counted as a busy bench
   and started the minutes again, so no setting from 5 to 60min was ever

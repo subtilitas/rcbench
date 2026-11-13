@@ -294,6 +294,19 @@ PROG_CALLS = {
                         "ewp_safe_at"),
 }
 
+# The UI's hooks of one function each, on the main task: gfx's text watch,
+# which the screen guide sets to note_text() while a screen draws under it
+# (shared/gfx/gfx_text.c, shared/ui/ui_help.c), and a screen's title_now(),
+# its band title in the language showing (ui_router.c, servo_fn.c).
+# watch_text() and ui_router_title() are not inlined, so each is one
+# function in the ELF.  The same checks as PORT_CALLS;
+# test/tools/test_stack_check.py holds the table to every gfx_text_watch()
+# and title_now in shared/.
+UI_HOOK_CALLS = {
+    "watch_text": ("note_text",),
+    "ui_router_title": ("rudder_title", "rauto_title"),
+}
+
 # The card callbacks of shared/logfile, on the runlog task: the files of a
 # run, of the fault log and of the servo programmer are opened through
 # them, so each chain into FatFs (mkdir, stat, the directory walk, fopen,
@@ -854,6 +867,8 @@ def main() -> int:
                                ("SERVO_CALLS", "shared/outputs",
                                 SERVO_CALLS),
                                ("PROG_CALLS", "shared/ui", PROG_CALLS),
+                               ("UI_HOOK_CALLS", "shared/ui and shared/gfx",
+                                UI_HOOK_CALLS),
                                ("TAKE_CALLS", "shared/logfile",
                                 TAKE_CALLS),
                                ("CARD_CALLS", "shared/logfile",

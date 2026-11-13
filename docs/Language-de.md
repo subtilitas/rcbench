@@ -328,7 +328,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 690 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 691 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -337,7 +337,10 @@ Sprachen
   Ansicht der Bildschirmhilfe (`help-...`) am Rand der freien Hälfte zum
   Hilfefeld hin, das den Rest der Seite absichtlich verdeckt,
 - über die gefüllte Form hinausläuft, auf der er steht,
-- einen anderen Text des Bildes überlappt, oder
+- einen anderen Text des Bildes überlappt,
+- in einer Ansicht der Bildschirmhilfe unter einer Nummernmarke liegt: Es
+  zählen die Zeichen, auf ihren Bereich beschnitten, ohne je 2px oben und
+  unten, außer eine vor der Marke gezeichnete Fläche verdeckt sie, oder
 - von einer später gezeichneten Fläche übermalt und nicht neu
   gezeichnet wird. Nur die Zeichen zählen: eine Fläche über den Leerzeichen,
   mit denen eine Beschriftung aufgefüllt ist, ist kein Befund. OUTPUTS mit
@@ -381,7 +384,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.621
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.622
 Einträge mit ID und 105 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

@@ -18,6 +18,7 @@
 
 #include "ui_help.h"
 
+#include <stddef.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -47,6 +48,8 @@
 #define BADGE      28
 /** @brief A badge's distance to its control's corner: 4px. */
 #define BADGE_IN   4
+/** @brief The dark ring round a badge's accent disc: 2px. */
+#define BADGE_RING 2
 /** @brief The item text's start right of the badge: 36px from the pad. */
 #define TEXT_DX    (BADGE + 8)
 /** @brief The cells of an item's row: 41. */
@@ -261,28 +264,308 @@ gfx_rect_t ui_help_button_rect(ui_help_side_t side, ui_help_hit_t hit)
     return gfx_rect_make(NAV_X + k * (NAV_W + NAV_GAP), NAV_Y, NAV_W, BTN_H);
 }
 
-gfx_rect_t ui_help_badge_rect(const ui_help_page_t *p, int i)
+/** @brief A badge's place (ui_help_badge_rect()). */
+typedef enum {
+    SPOT_IN_TL = 0,  /**< inside the top-left corner                    */
+    SPOT_IN_TR,      /**< inside the top-right corner                   */
+    SPOT_OUT_L,      /**< left of the control, centered                 */
+    SPOT_OUT_R,      /**< right of the control, centered                */
+    SPOT_IN_BL,      /**< inside the bottom-left corner                 */
+    SPOT_IN_BR,      /**< inside the bottom-right corner                */
+    SPOT_IN_C,       /**< in the control's middle                       */
+    SPOT_ON_L,       /**< centered on the left edge                     */
+    SPOT_OUT_T,      /**< above the control's left end                  */
+    SPOT_OUT_B,      /**< under the control's left end                  */
+    SPOT_ON_TL,      /**< centered on the top-left corner               */
+} spot_t;
+
+_Static_assert(SPOT_ON_TL + 1 == UI_HELP_SPOTS, "one spot a place");
+
+/** @brief The places of a control 56px or more each way, in order. */
+static const uint8_t k_order_big[UI_HELP_SPOTS] = {
+    SPOT_IN_TL, SPOT_IN_TR, SPOT_OUT_L, SPOT_OUT_R, SPOT_IN_BL, SPOT_IN_BR,
+    SPOT_IN_C, SPOT_ON_L, SPOT_OUT_T, SPOT_OUT_B, SPOT_ON_TL,
+};
+/** @brief The places of a smaller control, in order. */
+static const uint8_t k_order_small[UI_HELP_SPOTS] = {
+    SPOT_OUT_L, SPOT_IN_TL, SPOT_IN_TR, SPOT_OUT_R, SPOT_ON_L, SPOT_IN_C,
+    SPOT_OUT_T, SPOT_OUT_B, SPOT_IN_BL, SPOT_IN_BR, SPOT_ON_TL,
+};
+/** @brief The places of an item marked UI_HELP_AT_RIGHT, in order. */
+static const uint8_t k_order_right[UI_HELP_SPOTS] = {
+    SPOT_IN_TR, SPOT_OUT_R, SPOT_IN_BR, SPOT_OUT_L, SPOT_IN_TL, SPOT_IN_BL,
+    SPOT_IN_C, SPOT_ON_L, SPOT_OUT_T, SPOT_OUT_B, SPOT_ON_TL,
+};
+
+/** @brief The places of a control in the band, under the band: below its
+ *         left end, its right end, its middle, left and right of it.  The
+ *         rest repeat the first. */
+#define BAND_SPOTS 5
+
+/**
+ * @brief Place @p k of item @p i's badge, in panel coordinates.
+ * @param p The page.
+ * @param i The item.
+ * @param k The place, 0 to UI_HELP_SPOTS - 1, in the item's order.
+ * @return The badge's rect there.
+ */
+static gfx_rect_t spot_rect(const ui_help_page_t *p, int i, int k)
 {
     const gfx_rect_t r = p->item[i].rect;
     if (r.y < 0) {
-        /* In the band: under it, below the control's left end. */
-        return gfx_rect_make(r.x, UI_BAND_H + BADGE_IN, BADGE, BADGE);
+        /* In the band: under it. */
+        static const int8_t k_band[BAND_SPOTS] = { 0, 1, 2, 3, 4 };
+        const int b = (k < BAND_SPOTS) ? k_band[k] : 0;
+        const int x = (b == 1) ? r.x + r.w - BADGE
+                      : (b == 2) ? r.x + (r.w - BADGE) / 2
+                      : (b == 3) ? r.x - BADGE_IN - BADGE
+                      : (b == 4) ? r.x + r.w + BADGE_IN
+                                 : r.x;
+        return gfx_rect_make(x, UI_BAND_H + BADGE_IN, BADGE, BADGE);
     }
+    const uint8_t *order = (p->item[i].at == UI_HELP_AT_RIGHT) ? k_order_right
+                           : (r.h < 2 * BADGE || r.w < 2 * BADGE)
+                               ? k_order_small
+                               : k_order_big;
     const int y = UI_BAND_H + r.y;
-    if (p->item[i].at == UI_HELP_AT_RIGHT) {
-        /* Clear of a label that starts at the control's left edge. */
-        return gfx_rect_make(r.x + r.w - BADGE_IN - BADGE, y + BADGE_IN,
-                             BADGE, BADGE);
+    const int left = r.x + BADGE_IN;
+    const int right = r.x + r.w - BADGE_IN - BADGE;
+    const int top = y + BADGE_IN;
+    const int bottom = y + r.h - BADGE_IN - BADGE;
+    const int mid = y + (r.h - BADGE) / 2;
+    switch ((spot_t)order[k]) {
+    case SPOT_IN_TR: return gfx_rect_make(right, top, BADGE, BADGE);
+    case SPOT_OUT_L:
+        return gfx_rect_make(r.x - BADGE_IN - BADGE, mid, BADGE, BADGE);
+    case SPOT_OUT_R:
+        return gfx_rect_make(r.x + r.w + BADGE_IN, mid, BADGE, BADGE);
+    case SPOT_IN_BL: return gfx_rect_make(left, bottom, BADGE, BADGE);
+    case SPOT_IN_BR: return gfx_rect_make(right, bottom, BADGE, BADGE);
+    case SPOT_OUT_T:
+        return gfx_rect_make(left, y - BADGE_IN - BADGE, BADGE, BADGE);
+    case SPOT_OUT_B:
+        return gfx_rect_make(left, y + r.h + BADGE_IN, BADGE, BADGE);
+    case SPOT_IN_C:
+        return gfx_rect_make(r.x + (r.w - BADGE) / 2, mid, BADGE, BADGE);
+    case SPOT_ON_L:
+        return gfx_rect_make(r.x - BADGE / 2, mid, BADGE, BADGE);
+    case SPOT_ON_TL:
+        return gfx_rect_make(r.x - BADGE / 2, y - BADGE / 2, BADGE, BADGE);
+    case SPOT_IN_TL:
+    default:
+        return gfx_rect_make(left, top, BADGE, BADGE);
     }
-    if (r.h < 2 * BADGE || r.w < 2 * BADGE) {
-        /* Too small to carry one inside: left of it, centered, where the
-         * live half has the room. */
-        const int x = r.x - BADGE_IN - BADGE;
-        if (x >= ui_help_live_rect(p->side).x) {
-            return gfx_rect_make(x, y + (r.h - BADGE) / 2, BADGE, BADGE);
+}
+
+/** @brief What the guide noted of the strings a screen drew under a page:
+ *         for each item, the places a string covers. */
+typedef struct {
+    ui_help_page_t page;   /**< the page noted, its items' rects and side */
+    uint32_t key;          /**< marks_rects_key() of the page             */
+    bool     valid;        /**< a page is noted                           */
+    bool     on;           /**< strings are noted now                     */
+    const gfx_color_t *root; /**< the panel canvas's first pixel          */
+    int32_t  stride;       /**< its row, in pixels                        */
+    /** @brief Bit k set: place k of the item covers a string. */
+    uint16_t covered[UI_HELP_ITEMS];
+} watch_t;
+
+/** @brief The strings noted; one guide shows at a time. */
+static watch_t s_watch;
+
+_Static_assert(UI_HELP_SPOTS <= 16, "the places fit the covered bits");
+
+/** @brief A string's cell carries empty rows above and below its ink: 2px
+ *         at each edge are not counted as covered. */
+#define INK_SLACK 2
+
+/**
+ * @brief Whether rects @p a and @p b come closer than @p gap px.
+ * @param a   A rect.
+ * @param b   Another.
+ * @param gap The distance; 0 for an overlap.
+ * @return True when they do.
+ */
+static bool rects_near(gfx_rect_t a, gfx_rect_t b, int gap)
+{
+    return a.x < b.x + b.w + gap && b.x < a.x + a.w + gap
+           && a.y < b.y + b.h + gap && b.y < a.y + a.h + gap;
+}
+
+/**
+ * @brief Whether @p b lies wholly in the live half of @p p's side.
+ * @param p The page.
+ * @param b The rect.
+ * @return True when it does.
+ */
+static bool in_live(const ui_help_page_t *p, gfx_rect_t b)
+{
+    const gfx_rect_t live = ui_help_live_rect(p->side);
+    return b.x >= live.x && b.y >= live.y && b.x + b.w <= live.x + live.w
+           && b.y + b.h <= live.y + live.h;
+}
+
+/**
+ * @brief Whether place @p k of item @p i's badge keeps the rules that need
+ *        no strings: in the live half, 2px or more from the badges of the
+ *        items before it in @p chosen, and over no other item's control
+ *        unless it lies wholly on its own.  A place on its control's edge
+ *        or corner is held to the other controls as one outside it is.
+ * @param p      The page.
+ * @param i      The item.
+ * @param b      The place's rect.
+ * @param chosen The badges of items 0 to @p i - 1.
+ * @return True when it does.
+ */
+static bool spot_fits(const ui_help_page_t *p, int i, gfx_rect_t b,
+                      const gfx_rect_t *chosen)
+{
+    if (!in_live(p, b)) {
+        return false;
+    }
+    for (int k = 0; k < i; ++k) {
+        if (rects_near(b, chosen[k], 2)) {
+            return false;
         }
     }
-    return gfx_rect_make(r.x + BADGE_IN, y + BADGE_IN, BADGE, BADGE);
+    gfx_rect_t own = p->item[i].rect;
+    own.y = (int16_t)(own.y + UI_BAND_H);
+    if (p->item[i].rect.y >= 0 && b.x >= own.x && b.y >= own.y
+        && b.x + b.w <= own.x + own.w && b.y + b.h <= own.y + own.h) {
+        return true;
+    }
+    for (int k = 0; k < p->count && k < UI_HELP_ITEMS; ++k) {
+        gfx_rect_t o = p->item[k].rect;
+        o.y = (int16_t)(o.y + UI_BAND_H);
+        if (k != i && p->item[k].rect.y >= 0 && rects_near(b, o, 0)) {
+            return false;
+        }
+    }
+    return true;
+}
+
+/**
+ * @brief Item @p i's badge inside its control's top-left corner, or under
+ *        the band below the left end of a control in the band.
+ * @param p The page.
+ * @param i The item.
+ * @return The badge's rect.
+ */
+static gfx_rect_t top_left(const ui_help_page_t *p, int i)
+{
+    const gfx_rect_t r = p->item[i].rect;
+    return gfx_rect_make(r.x + ((r.y < 0) ? 0 : BADGE_IN),
+                         UI_BAND_H + ((r.y < 0) ? 0 : r.y) + BADGE_IN, BADGE,
+                         BADGE);
+}
+
+/**
+ * @brief A number for @p p's side and items' rects and corners: what the
+ *        places of its badges are made from.
+ * @param p The page.
+ * @return A 32-bit FNV-1a hash.
+ */
+static uint32_t marks_rects_key(const ui_help_page_t *p);
+
+/**
+ * @brief The places of item @p i's badge that strings cover, as noted for
+ *        @p p.
+ * @param p The page.
+ * @param i The item.
+ * @return Bit k for place k; 0 when another page is noted.
+ */
+static uint16_t covered_bits(const ui_help_page_t *p, int i)
+{
+    if (!s_watch.valid || s_watch.key != marks_rects_key(p)) {
+        return 0u;
+    }
+    return s_watch.covered[i];
+}
+
+gfx_rect_t ui_help_badge_rect(const ui_help_page_t *p, int i)
+{
+    gfx_rect_t chosen[UI_HELP_ITEMS] = { { 0, 0, 0, 0 } };
+    const int n = (i < 0) ? 0 : (i < UI_HELP_ITEMS) ? i : UI_HELP_ITEMS - 1;
+    for (int j = 0; j <= n; ++j) {
+        const uint16_t covered = covered_bits(p, j);
+        int pick = -1;
+        int fit = -1;
+        for (int k = 0; k < UI_HELP_SPOTS && pick < 0; ++k) {
+            if (!spot_fits(p, j, spot_rect(p, j, k), chosen)) {
+                continue;
+            }
+            if (fit < 0) {
+                fit = k;
+            }
+            if ((covered & (1u << k)) == 0u) {
+                pick = k;
+            }
+        }
+        /* With none left by the other rules: the first place in the live
+         * half, else inside the control's top-left corner. */
+        for (int k = 0; k < UI_HELP_SPOTS && pick < 0 && fit < 0; ++k) {
+            fit = in_live(p, spot_rect(p, j, k)) ? k : -1;
+        }
+        chosen[j] = (pick >= 0) ? spot_rect(p, j, pick)
+                    : (fit >= 0) ? spot_rect(p, j, fit)
+                                 : top_left(p, j);
+    }
+    return chosen[n];
+}
+
+/**
+ * @brief The watch's function (gfx_text_watch()): marks the places of each
+ *        item's badge that the string at @p ink covers.
+ * @param c   The canvas the string was drawn on.
+ * @param ink Where it shows, in @p c's coordinates.
+ */
+static void note_text(const gfx_canvas_t *c, gfx_rect_t ink)
+{
+    if (!s_watch.on || ink.h <= 2 * INK_SLACK) {
+        return;
+    }
+    /* A sub-canvas shares the panel's pixels: its offset is where its
+     * first pixel sits among them. */
+    const ptrdiff_t off = c->pixels - s_watch.root;
+    const int x = ink.x + (int)(off % s_watch.stride);
+    const int y = ink.y + (int)(off / s_watch.stride) + INK_SLACK;
+    const gfx_rect_t t = gfx_rect_make(x, y, ink.w, ink.h - 2 * INK_SLACK);
+    const ui_help_page_t *p = &s_watch.page;
+    for (int i = 0; i < p->count && i < UI_HELP_ITEMS; ++i) {
+        for (int k = 0; k < UI_HELP_SPOTS; ++k) {
+            if (rects_near(spot_rect(p, i, k), t, 0)) {
+                s_watch.covered[i] |= (uint16_t)(1u << k);
+            }
+        }
+    }
+}
+
+bool ui_help_watch_begin(const gfx_canvas_t *root, const ui_help_page_t *p)
+{
+    if (root == NULL || p == NULL) {
+        return false;
+    }
+    const uint32_t key = marks_rects_key(p);
+    const bool fresh = !s_watch.valid || s_watch.key != key;
+    if (fresh) {
+        memset(&s_watch, 0, sizeof(s_watch));
+        s_watch.page  = *p;
+        s_watch.key   = key;
+        s_watch.valid = true;
+    }
+    s_watch.root   = root->pixels;
+    s_watch.stride = (root->stride > 0) ? root->stride : 1;
+    s_watch.on     = true;
+    gfx_text_watch(note_text);
+    return fresh;
+}
+
+void ui_help_watch_reset(void) { s_watch.valid = false; }
+
+void ui_help_watch_end(void)
+{
+    s_watch.on = false;
+    gfx_text_watch(NULL);
 }
 
 ui_help_hit_t ui_help_hit(const ui_help_page_t *p, int x, int y)
@@ -484,7 +767,7 @@ uint32_t ui_help_dock_key(const ui_help_page_t *p, int n, int count,
     return h;
 }
 
-uint32_t ui_help_marks_key(const ui_help_page_t *p)
+static uint32_t marks_rects_key(const ui_help_page_t *p)
 {
     uint32_t h = 2166136261u;
     if (p == NULL) {
@@ -501,9 +784,21 @@ uint32_t ui_help_marks_key(const ui_help_page_t *p)
     return h;
 }
 
+uint32_t ui_help_marks_key(const ui_help_page_t *p)
+{
+    uint32_t h = marks_rects_key(p);
+    for (int i = 0; p != NULL && i < p->count && i < UI_HELP_ITEMS; ++i) {
+        const gfx_rect_t b = ui_help_badge_rect(p, i);
+        h = fnv_int(fnv_int(h, b.x), b.y);
+    }
+    return h;
+}
+
 /**
- * @brief A badge: a 28px accent disc with @p num in the dark text of the
- *        bright fills.
+ * @brief A badge: a 28px disc in the dark text colour of the bright fills
+ *        with a 24px accent disc inside and @p num in the dark text.  The
+ *        dark ring parts it from an accent fill under it, such as a lit
+ *        button, and the accent disc from a dark one.
  * @param c   The canvas.
  * @param r   The badge's rect.
  * @param num The number, 1 to UI_HELP_ITEMS.
@@ -512,7 +807,9 @@ static void badge(gfx_canvas_t *c, gfx_rect_t r, int num)
 {
     const char d[2] = { (char)('0' + num), '\0' };
     gfx_fill_circle(c, r.x + BADGE / 2, r.y + BADGE / 2, BADGE / 2,
-                    UI_ACCENT);
+                    UI_TEXT_ON_LIGHT);
+    gfx_fill_circle(c, r.x + BADGE / 2, r.y + BADGE / 2,
+                    BADGE / 2 - BADGE_RING, UI_ACCENT);
     gfx_text_in(c, r, d, UI_FONT_BAND, UI_TEXT_ON_LIGHT, 1,
                 GFX_ALIGN_CENTER);
 }

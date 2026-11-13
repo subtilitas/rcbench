@@ -485,12 +485,14 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   which the tool reads out of every screen's table, and the link port's
   callbacks, the drawing store's flash callbacks, the start check's after
   an update, the SERVO screen link's callbacks into the panel, the
-  hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open
-  and the card functions the run logs, the fault log and the servo files
-  are written through,
+  hooks of the sessions SERVO > PROGRAM and MOTOR & ESC > PROGRAM open,
+  the card functions the run logs, the fault log and the servo files
+  are written through, and the screen guide's text watch and a screen's
+  translated band title,
   which it follows by name
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
-  `PROG_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`, `SERVO_STORE_CALLS`):
+  `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
+  `SERVO_STORE_CALLS`):
   378 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;

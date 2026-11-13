@@ -132,6 +132,7 @@ The list works as SETUP's: `-` and `+` step a value, `<` and `>` flip a switch, 
 - A trip of 0 is off.
 - A current trip at or above CURRENT LIMIT does not fire: the supply holds the limit in CC.
 - A cap lowered under a set point brings the set point down to it.
+- A typed cap rounds down to the step and a typed trip above 0 is one step at least; a notice in the alert band names the value stored, such as `Current max: 1.00A stored, steps of 0.05A.`
 - The caps' keypads take the supply's range; the start values' keypads take no more than the caps.
 
 A change takes effect at once. SAVE asks for the write to NVS (non-volatile storage), made on the next frame with the bench SAFE and the output off. SAVE reads `SAVED` with nothing to write, `SAVE` with a change, `WHEN IDLE` while the write waits, and `NOT SAVED` after a refused write. RESET SUPPLY sets the list's settings to their defaults; the PD mini's only while they can change.

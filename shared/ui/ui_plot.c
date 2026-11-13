@@ -284,6 +284,22 @@ void ui_plot_render_legend(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
     }
 }
 
+/**
+ * @brief A label of the time axis at (@p x, @p y) in the faint text colour,
+ *        on a box of the plot's background 2px larger each way.
+ * @param c The canvas.
+ * @param x The label's left edge.
+ * @param y Its top.
+ * @param s The label.
+ */
+static void axis_label(gfx_canvas_t *c, int x, int y, const char *s)
+{
+    const int w = gfx_text_width(&gfx_font_8x16, s, 1);
+    gfx_fill_rect(c, x - 2, y - 2, w + 4, gfx_text_height(&gfx_font_8x16, 1)
+                  + 4, ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_text(c, x, y, s, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1);
+}
+
 void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
 {
     if (p == NULL || c == NULL || r.w <= 2 || r.h <= 2) {
@@ -374,18 +390,18 @@ void ui_plot_render(const ui_plot_t *p, gfx_canvas_t *c, gfx_rect_t r)
                  p->series[p->focus].color, 1);
     }
 
+    /* The time axis's two labels sit on the plot's own background, 2px
+     * round each: a trace through the bottom row runs under them, not over
+     * them. */
     char axis[24];
     snprintf(axis, sizeof(axis), "-%.0fs", (double)p->span_s);
-    gfx_text(c, r.x + 4, r.y + r.h - 19, axis, &gfx_font_8x16,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    axis_label(c, r.x + 4, r.y + r.h - 19, axis);
     /* NOW while the trace advances, END where a held one stopped.  Nothing at
      * all on a plot with no samples: there is no edge to name. */
     const char *right = p->running ? TR(PLOT_NOW)
                                    : (p->filled > 0 ? TR(PLOT_END) : NULL);
     if (right != NULL) {
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(r.x + r.w - 60),
-                                     (int16_t)(r.y + r.h - 19), 56, 16 },
-                    right, &gfx_font_8x16, ui_theme_color(UI_C_TEXT_FAINT), 1,
-                    GFX_ALIGN_RIGHT);
+        axis_label(c, r.x + r.w - 4 - gfx_text_width(&gfx_font_8x16, right, 1),
+                   r.y + r.h - 19, right);
     }
 }

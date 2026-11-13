@@ -64,7 +64,7 @@ OPTIONEN öffnet die Liste mit den Netzteileinstellungen und den Pieptonzeiten. 
 
 Die Vorgaben sind nicht gemessen. Nennt ein Profil seine Pieptonlängen, nimmt der Lauf PIEPTON MIN, LANG und LANG MAX daraus statt aus diesen Einstellungen, und PAUSE MIN, wo der halbe kurze Piepton kleiner ist. Spannung 0,0V nimmt die Spannung aus der Zellenzahl des Profils. Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, und ESC STICK ZURÜCKSETZEN setzt die 14 Einstellungen auf ihre Vorgaben.
 
-Ändere eine Einstellung mit `-` und `+` oder tippe auf ihren Wert, um das Tastenfeld zu öffnen. Es zeigt Name, Bereich und Einheit; die Zahl der Nachkommastellen entspricht der Schrittweite. OK rundet auf den nächsten Schritt: Aus 1,23A werden 1,25A. Bei Werten außerhalb des Bereichs bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor. ABBRECHEN oder das Home-Feld verwirft die Eingabe; die Liste bleibt offen. Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.
+Ändere eine Einstellung mit `-` und `+` oder tippe auf ihren Wert, um das Tastenfeld zu öffnen. Es zeigt Name, Bereich und Einheit; die Zahl der Nachkommastellen entspricht der Schrittweite. OK rundet auf den nächsten Schritt: Aus 1,23A werden 1,25A, und ein Hinweis im Alarmband nennt den gespeicherten Wert und den Schritt. Bei Werten außerhalb des Bereichs bleibt das Tastenfeld offen und hebt den Bereich in der Warnfarbe hervor. ABBRECHEN oder das Home-Feld verwirft die Eingabe; die Liste bleibt offen. Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.
 
 ![Das Tastenfeld von Piepton min, 250 getippt](view:motor-stick-timing-keypad)
 
