@@ -33,7 +33,7 @@ a new session needs beyond it.
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
 | `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 347.32s, narrated in the voice of `features`, bed `vivaldi-spring` at half level |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 25 cases; the storyboard check, the script, the freezes |
+| `test/tools/test_make_video.py` | 26 cases; the storyboard check, the script, the freezes |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -147,6 +147,11 @@ How the modules are mounted (owner, 2026-11-13):
   5V and GND pins of the panel's RS485 header. The CAN cable carries H and
   L only; its GND and 5V wires are taken out. Ground reaches the panel
   through J7 and no other wire.
+- The owner found the modules too plain as rectangles. They carry the
+  parts and prints of the module specs under `hardware/kicad/modules/`;
+  the panel's headers are labelled in its drawing.
+- The narrator read "I N A 3221" as a number of thousands; it is
+  written `I-N-A 32 21`, as `A-M 32` is.
 - The narrator said "G P I O" with pauses; abbreviations are written
   with hyphens, `G-P-I-O`, `G-P 15`, `J-S-T`, `P-D`.
 - Music of `rbmod-build`: Vivaldi's Spring, at the owner's wish. Its

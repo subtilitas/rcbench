@@ -245,7 +245,11 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   ```
 
   The drawing holds the front copper's tracks, the pads and each part's
-  courtyard as a plain box. An axial part is drawn between its pads: a
+  courtyard as a plain box. A footprint named as a module under
+  `hardware/kicad/modules/` takes that module's board outline, the parts
+  of its model (sockets, chips, buttons, terminals) and the texts of its
+  drawing (`USB-C`, `CAN`, `EN`), all at the accuracy the module's spec
+  states. An axial part is drawn between its pads: a
   diode with its band at pad 1, a resistor of value `4k7` with its colour
   bands. Zones, the inner and back copper, the
   silkscreen and the parts on a module are not drawn. The case scene that
