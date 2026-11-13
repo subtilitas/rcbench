@@ -916,6 +916,9 @@ jobs:
   # The sensor nodes' firmware (node.yml): the power node's image.
   node:
     uses: ./.github/workflows/node.yml
+  # The M5Stack Dial's firmware, the wireless knob (dial.yml).
+  dial:
+    uses: ./.github/workflows/dial.yml
 
   iomcu:
     # The env context is not available in a job name (only github, needs,

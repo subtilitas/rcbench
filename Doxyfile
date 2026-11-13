@@ -16,7 +16,7 @@ PROJECT_BRIEF          = "Servo and ESC test bench: panel, IOmcu and shared C"
 OUTPUT_DIRECTORY       = build/doxygen
 
 # --- Input -----------------------------------------------------------------
-# The panel and IOmcu firmware, the shared core, the protocol modules (their
+# The panel, IOmcu and Dial firmware, the shared core, the protocol modules (their
 # include/ headers, core C files and rp2350/ pin drivers) and the touch
 # injector's core.  Generated tables (fonts, the ESC profile tables, the
 # board drawings) are the generators' and are left out, as are build trees,
@@ -25,6 +25,7 @@ INPUT                  = shared \
                          protocols \
                          firmware/panel \
                          firmware/iomcu \
+                         firmware/dial \
                          testbench/touch-injector/core
 FILE_PATTERNS          = *.c *.h
 RECURSIVE              = YES

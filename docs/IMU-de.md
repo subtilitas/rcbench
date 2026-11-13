@@ -33,14 +33,16 @@ enthält den Hinweis des Projekts.
 
 | Teil | Wo |
 | --- | --- |
-| die BLE-Central: Suchliste, Verbinden, GATT-Erkundung (Generic Attribute Profile), Abonnieren, Schreiben, Wiederholungen | `protocols/bleuart`, kein Funkcode |
+| die BLE-Central: Suchliste, Verbinden, GATT-Erkundung (Generic Attribute Profile), Abonnieren, Schreiben, Wiederholungen; die Verbindung der IMU nutzt ihr ISSC-Profil | `protocols/bleuart`, kein Funkcode |
+| der Hub: die BLE-Clients des Panels an einem Host, Events an den jeweiligen Client, ein Scan oder Verbindungsaufbau zur Zeit | `protocols/bleuart/bleuart_hub.c` |
 | Frames und Befehle des Sensors | `protocols/witmotion`, kein Pin-Treiber |
 | der Messwert: Winkel, der Tiefpass, Nullpunkt, Ruhezeit, Rate, Akku, Alter | `shared/bench/imu.c` |
 | die Seite des Sensors: der Messwert, seine Befehle, die Kalibrierung, die Lücken, die Übergabe an SERVO; ohne Funk | `shared/ui/imu_sensor.c` |
 | die BLE-Verbindung: die Central für die IMU, ihre Geräte, Fehler und die Version des C6 in den Typen der Ansicht | `shared/ui/imu_ble.c` |
 | die Steuerung: verbindet die Verbindung mit der Seite des Sensors, der Verbindungszustand, die Ansicht | `shared/ui/imu_ctl.c` |
 | die Seite IMU und ihr Eintrag unter SETUP | `shared/ui/imu_screen.c`, `shared/ui/sensors_pane.c` |
-| der IMU-Task: Events hinein, Aktionen hinaus, alle 5ms | `firmware/panel/main/panel_imu.c` |
+| der Task `blec`: Events hinein und Aktionen hinaus für jeden Client über den Hub, alle 5ms | `firmware/panel/main/panel_blec.c` |
+| die Seite der IMU in diesem Task und die Anbindung an den Frame-Task | `firmware/panel/main/panel_imu.c` |
 | der Start von NimBLE, seine Aufrufe und seine Callbacks | `firmware/panel/main/panel_ble.c` |
 
 ## Start
@@ -50,8 +52,8 @@ IMU-Seite oder IMU SUCHEN in der Liste WINKELQUELLE von SERVO bei
 ausgeschalteter IMU, und beim Einschalten mit gespeichertem IMU EIN)
 startet Bluetooth LE: die Verbindung zum C6, den
 Host-Task `nimble_host` und das Warten von 3 000ms auf seinen Sync
-([Bauen, Bluetooth LE über den
-ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)). Bluetooth LE
+([Der Funk über den ESP32-C6, Bluetooth LE über den
+ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)). Bluetooth LE
 bleibt bis zum Neustart des Panels; IMU AUS beendet nur die Suche und die
 Verbindung. Die Verbindung zum C6 dauert bei einem C6, der nicht antwortet,
 bis zu etwa 25s. Eine gescheiterte Verbindung hält den C6 bis zum Neustart
@@ -133,6 +135,26 @@ Verbindung (Grund in der Konsolenzeile) verbindet sich das Panel nach
 1 000ms neu. Eine Änderung der Verbindungsparameter, die der Sensor
 verlangt, wird angenommen und protokolliert. Die Characteristics ACA3 und
 6DAA werden nie beschrieben.
+
+Die Verbindung der IMU ist eine von bis zu 5 am BLE-Host des Panels: Host
+und C6-Image halten je 5 Verbindungen (`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`,
+`CONFIG_BT_LE_MAX_CONNECTIONS`), für die IMU, den Dial, 2 Sensorknoten und
+1 Reserve. Die IMU ist der einzige Client dieses Releases. Ihre Tokens
+tragen Owner 0. Der Hub lässt über alle Clients einen Scan oder einen
+Verbindungsaufbau zur Zeit laufen:
+
+| Die IMU will | während ein anderer Client | Der Hub |
+| --- | --- | --- |
+| einen Scan | sich verbindet | bricht dessen Verbindungsaufbau ab und startet den Scan, sobald dessen Event kam, spätestens nach 2 000ms |
+| einen Scan | sucht | beendet den Scan der IMU sofort mit Status 0xFFFD (belegt): `DIE SUCHE STARTETE NICHT: CODE 65533` |
+| eine Verbindung | sucht oder sich verbindet | antwortet belegt; die IMU versucht es nach 1 000ms erneut, ihr Fehler bleibt |
+
+Mit der IMU allein läuft jede Aktion und jedes Event wie mit einer
+Verbindung. Ein C6-Image mit 3 Verbindungen lehnt eine vierte ab; die
+Konsolenzeile nennt das (unten). Ein solches Image meldet esp_hosted 2.13.0
+wie das Image des Panels mit 5 Verbindungen, deshalb bietet die Zeile C6
+RADIO auf SETUP > UPDATES dafür
+`2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` an.
 
 Die Verbindungswerte sind so gewählt, wie eine Handy-Central sie
 erfragt, nicht gegen andere gemessen; sie stehen zusammen in
@@ -348,9 +370,12 @@ I (…) imu: command FF AA 69 88 B5
 I (…) ble: disconnect: reason 0x<r>, handle <h>, token <k>
 I (…) ble: disconnect: record: handle <h>, peer …
 I (…) ble: connect: failed to be established, reason 0x<r>
+W (…) ble: connect refused by the C6 radio, HCI 0x<c>: it holds no further link; a C6 image with 3 links takes no fourth: install this panel's C6 image with the C6 RADIO hold in SETUP > UPDATES
 ```
 
-Grund 0x23E ist HCI 0x3E, Verbindung nicht aufgebaut, wie NimBLE ihn
+Die letzte Zeile kommt bei HCI 0x09 (Connection Limit Exceeded) und 0x07
+(Memory Capacity Exceeded). Welchen der beiden der Controller des C6
+liefert, ist nicht gemessen. Grund 0x23E ist HCI 0x3E, Verbindung nicht aufgebaut, wie NimBLE ihn
 meldet (0x200 + HCI-Code). `ble controller` im Konsolen-Build schickt die
 Controller-Init- und Enable-Anfragen des C6 erneut
 ([BenchConsole-de.md](BenchConsole-de.md)).
@@ -370,5 +395,6 @@ Controller-Init- und Enable-Anfragen des C6 erneut
 | der Winkel eines Laufs | der automatische Test urteilt in AS5600-Zählerständen: 360 / 4096 = 0,088° je Zähler; RUDER, AUTO, der LIMIT RUN und GEMESSEN nehmen die Grad, wie sie kommen, angezeigt auf 0,01° |
 | ein Verbindungsabbruch | ob das Funkmodul des Sensors Bytes, die es nicht senden kann, puffert oder verwirft, ist nicht bekannt; das Panel verbindet sich bei IMU EIN nach 1 000ms neu |
 | WLAN neben BLE | der C6 teilt seinen Funk zeitlich; die Wirkung auf beide ist nicht gemessen |
+| Verbindungen am Host | 5 (IMU, Dial, 2 Sensorknoten, 1 Reserve); ein C6-Image, gebaut vor `CONFIG_BT_LE_MAX_CONNECTIONS=5`, hält 3; die IMU neben anderen Verbindungen ist nicht gemessen |
 | Schreiben | ob ein Schreiben auf 8841 den Sensor erreicht, ist nicht gemessen |
 | das Alter des Messwerts | veraltet nach 300ms |

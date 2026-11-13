@@ -45,9 +45,9 @@ protocols/hitec/README.md: marketing: a byte pushed just before the restart
 
 # The ESP32-C6 on the panel runs Espressif's esp_hosted "co-processor"
 # firmware, named so by its maker.  It is not the IOmcu.
-docs/Building.md: stale-coprocessor: esp_hosted co-processor firmware
-docs/Building.md: stale-coprocessor: than its co-processor runs
-docs/Building.md: stale-coprocessor: When the co-processor reports a chip
+docs/C6.md: stale-coprocessor: esp_hosted co-processor firmware
+docs/C6.md: stale-coprocessor: than its co-processor runs
+docs/C6.md: stale-coprocessor: When the co-processor reports a chip
 
 # The FreeRTOS stack check counts the coprocessor (floating-point) context
 # that a task saves on its stack.  It is not the IOmcu.

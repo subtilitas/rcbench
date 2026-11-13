@@ -16,6 +16,13 @@
  * answered before its limit ends the update with nothing more sent, and the
  * C6 keeps the firmware it runs.
  *
+ * A C6 that reports the carried version is offered a reinstall: images
+ * built from one esp_hosted version with other settings, such as the
+ * number of Bluetooth LE connections, report the same version, and
+ * esp_hosted's default build names no more of the image (its application
+ * descriptor answer holds no ELF SHA-256).  A reinstall is an update like
+ * any other.
+ *
  * The driver here issues one step at a time and is told each step's
  * answer; the panel runs each step on a task of its own
  * (firmware/panel/main/panel_c6.c) and times it here.  An answer that
@@ -86,12 +93,13 @@ fw_err_t fw_c6_image_check(const uint8_t *img, uint32_t bytes,
 
 /** @brief What the C6 RADIO row shows. */
 typedef enum {
-    FW_C6_ROW_READY = 0,   /**< the hold is live                          */
+    FW_C6_ROW_READY = 0,   /**< the hold is live: an update               */
     FW_C6_ROW_NO_IMAGE,    /**< this build carries no C6 image            */
     FW_C6_ROW_BAD_IMAGE,   /**< the carried image fails fw_c6_image_check() */
     FW_C6_ROW_UPDATING,    /**< an update runs                            */
     FW_C6_ROW_LINK_FAILED, /**< the link to the C6 failed since start-up  */
-    FW_C6_ROW_SAME,        /**< the C6 reports the carried version        */
+    FW_C6_ROW_REINSTALL,   /**< the hold is live: the C6 reports the
+                                carried version, the hold sends it again */
     FW_C6_ROW_BLOCKED,     /**< the bench does not allow it now: see why  */
 } fw_c6_row_t;
 
@@ -131,8 +139,9 @@ typedef struct {
 
 /**
  * @brief The row's state, in this order: no image, a bad image, an update
- *        running, a failed link, the carried version reported, then the
- *        bench's reasons in fw_c6_why_t's order; else READY.
+ *        running, a failed link, then the bench's reasons in fw_c6_why_t's
+ *        order; else REINSTALL when the C6 reports the carried version,
+ *        else READY.
  *
  * A C6 that reported no version is offered the update: the shipped
  * firmware does not answer the version request.
@@ -184,7 +193,6 @@ typedef enum {
 typedef enum {
     FW_C6_RES_NONE = 0,
     FW_C6_RES_UPDATED,   /**< the C6 took the image; the panel restarts   */
-    FW_C6_RES_SAME,      /**< the C6 reports the carried version: nothing sent */
     FW_C6_RES_NO_LINK,   /**< the C6 did not answer at link-up            */
     FW_C6_RES_REFUSED,   /**< the begin call failed: no OTA over SDIO      */
     FW_C6_RES_NO_ANSWER, /**< a step passed its limit                      */

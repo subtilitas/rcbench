@@ -1,0 +1,10 @@
+# The panel's settings of the C6 radio's image, on top of esp_hosted's
+# slave defaults: tools/c6_image.py prepare appends this file to the
+# copied project's sdkconfig.defaults.esp32c6, and check fails an image
+# whose sdkconfig lacks a line of it.
+#
+# 5 BLE (Bluetooth Low Energy) connections, the panel's host's count
+# (firmware/panel/sdkconfig.defaults): the IMU, the Dial, 2 sensor nodes
+# and 1 spare.  esp_hosted's default is 3; each connection takes about
+# 1kB of the C6's DRAM (ESP-IDF's Kconfig help).
+CONFIG_BT_LE_MAX_CONNECTIONS=5

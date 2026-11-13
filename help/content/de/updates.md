@@ -17,6 +17,7 @@ UPDATES sucht auf GitHub nach neuerer Panel-Firmware und bietet deren Installati
 | OPTIONEN | Rechts in der Fußleiste; öffnet die Liste mit Erinnerung beim Start und Releases, siehe [Optionen](#optionen). Grau, solange eine Suche oder ein Download läuft. |
 | 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage. |
 | 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
+| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN | Dasselbe, solange der C6 die mitgelieferte Version meldet. |
 
 ## Optionen
 
@@ -148,19 +149,18 @@ Bei verfügbarer Haltetaste steht `Ausgänge bleiben aus. ARMED ist bis zum Ende
 
 Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE sendet das mitgelieferte Image über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
 
-Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft, das WLAN aus ist und der C6 nicht die mitgelieferte Version hat. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
+Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft und das WLAN aus ist. Bei einem C6, der die mitgelieferte Version meldet, heißt es 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
 
 Während das Update läuft, wird ARM abgelehnt, und das WLAN bleibt aus. Es endet mit einem Alarm:
 
 | Alarm | Bedeutung |
 |---|---|
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | fertig; das Panel startet 3s später neu |
-| `Der C6-Funk nutzt bereits 2.13.0. Nichts gesendet.` | nichts zu senden |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | die Firmware des C6 hat das Update abgelehnt; die alte Firmware läuft |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | die Verbindung zum C6 ist ausgefallen |
 | `C6-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | ein Schritt blieb ohne Antwort; `Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen` und `Aktivierung fehlgeschlagen` lauten ebenso |
 
-Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und das WLAN arbeitet wie zuvor (nach einer ausgefallenen Verbindung erst nach einem Neustart des Panels). Das Flashen über Header H4 mit einem USB-UART-Adapter steht in [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de#wiederherstellung-über-header-h4).
+Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und das WLAN arbeitet wie zuvor (nach einer ausgefallenen Verbindung erst nach einem Neustart des Panels). Das Flashen über Header H4 mit einem USB-UART-Adapter steht in [Der Funk über den ESP32-C6](https://github.com/subtilitas/rcbench/wiki/C6-de#wiederherstellung-über-header-h4).
 
 ## Aktuelle Einschränkungen
 

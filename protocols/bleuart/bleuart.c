@@ -2,7 +2,7 @@
  * @file
  * @brief The BLE central's machine: scan, connect, discovery, subscribe,
  *        the write slot and the retries, run by bleu_event() and
- *        bleu_step().
+ *        bleu_step(), for the service its profile names.
  *
  * Every action that the host stack answers carries a token, and only the
  * event with the token of the step under way moves the machine: a late
@@ -12,6 +12,9 @@
  * for settle before the next connect or scan starts: the host stack runs
  * one GAP (generic access profile) procedure at a time.  The settle ends
  * on its event or after BLEU_SETTLE_MS.
+ *
+ * A token is the machine's owner in its top 3 bits and a count of 1 to
+ * BLEU_TOKEN_SEQ in the rest, so tokens of different owners never meet.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -37,6 +40,28 @@ _Static_assert(BLEU_SCAN_MS <= 0xFFFFu && BLEU_CONNECT_MS <= 0xFFFFu,
                "bleu_act_t.ms holds the scan and connect durations");
 _Static_assert(BLEU_WRITE_MAX + 3u <= 23u,
                "a command write fits the smallest MTU");
+_Static_assert(BLEU_WRITE_MAX >= 16u,
+               "a DISC_SVC action carries a 128-bit UUID in its data");
+
+/** @brief The ISSC Transparent UART profile (bleuart.h). */
+const bleu_profile_t bleu_profile_issc = {
+    .svc = bleu_uuid_svc,
+    .chr = {
+        { .uuid = bleu_uuid_tx,    .role = BLEU_ROLE_STREAM, .flags = 0u },
+        { .uuid = bleu_uuid_rx,    .role = BLEU_ROLE_CMD,    .flags = 0u },
+        { .uuid = bleu_uuid_air,   .role = BLEU_ROLE_NONE,   .flags = 0u },
+        { .uuid = bleu_uuid_param, .role = BLEU_ROLE_PARAM,  .flags = 0u },
+    },
+    .chr_n = 4u,
+    .conn = {
+        .itvl_min = BLEU_ITVL_MIN,
+        .itvl_max = BLEU_ITVL_MAX,
+        .latency = BLEU_LATENCY,
+        .supervision = BLEU_SUPERVISION,
+        .scan_itvl = BLEU_CONN_SCAN_ITVL,
+        .scan_window = BLEU_CONN_SCAN_WINDOW,
+    },
+};
 
 /** @brief bleu_t.settle. @{ */
 #define SETTLE_NONE   0u /**< nothing to settle */
@@ -45,16 +70,28 @@ _Static_assert(BLEU_WRITE_MAX + 3u <= 23u,
 /** @} */
 
 /**
- * @brief Hand out the next token; 0 is never one.
+ * @brief The machine's profile.
+ * @param b The machine.
+ * @return Its profile; bleu_profile_issc when none is set.
+ */
+static const bleu_profile_t *prof_of(const bleu_t *b)
+{
+    return b->prof != NULL ? b->prof : &bleu_profile_issc;
+}
+
+/**
+ * @brief Hand out the next token: the owner in the top 3 bits, a count of
+ *        1 to BLEU_TOKEN_SEQ in the rest; 0 is never one.
  * @param b The machine.
  * @return The token.
  */
 static uint16_t next_token(bleu_t *b)
 {
-    ++b->token;
-    if (b->token == 0u) {
-        b->token = 1u;
+    uint16_t seq = (uint16_t)((b->token & BLEU_TOKEN_SEQ) + 1u);
+    if (seq > BLEU_TOKEN_SEQ) {
+        seq = 1u;
     }
+    b->token = (uint16_t)(((unsigned)b->owner << BLEU_OWNER_SHIFT) | seq);
     return b->token;
 }
 
@@ -161,7 +198,7 @@ static void tear_down(bleu_t *b, uint32_t now_ms)
 
 /**
  * @brief End the link on a failure: tear it down, keep @p err, and retry
- *        after BLEU_RETRY_MS, or never for BLEU_ERR_NOT_WIT.
+ *        after BLEU_RETRY_MS, or never for BLEU_ERR_NOT_PEER.
  * @param b      The machine.
  * @param err    Why.
  * @param status The status that ended it, 0 for a timeout.
@@ -173,8 +210,8 @@ static void fail(bleu_t *b, bleu_err_t err, uint16_t status, uint32_t now_ms)
     b->err = err;
     b->err_status = status;
     unlinked(b, true, BLEU_RETRY_MS, now_ms);
-    if (err == BLEU_ERR_NOT_WIT) {
-        b->st = BLEU_ST_NOT_WIT;
+    if (err == BLEU_ERR_NOT_PEER) {
+        b->st = BLEU_ST_NOT_PEER;
     }
 }
 
@@ -190,7 +227,58 @@ void bleu_init(bleu_t *b)
 {
     if (b != NULL) {
         memset(b, 0, sizeof *b);
+        b->prof = &bleu_profile_issc;
     }
+}
+
+/**
+ * @brief Whether connection parameters lie inside the ranges
+ *        bleu_conn_params_t names, the ones the BLEU_ITVL_* set is held to
+ *        at compile time.
+ * @param c The parameters.
+ * @return true when they do.
+ */
+static bool conn_params_valid(const bleu_conn_params_t *c)
+{
+    return c->itvl_min >= 6u && c->itvl_max <= 3200u
+           && c->itvl_min <= c->itvl_max
+           && c->supervision >= 10u && c->supervision <= 3200u
+           && (uint32_t)c->supervision * 10u * 4u
+              > (1u + (uint32_t)c->latency) * c->itvl_max * 5u * 2u
+           && c->scan_itvl >= 4u && c->scan_itvl <= 0x4000u
+           && c->scan_window >= 4u && c->scan_window <= c->scan_itvl;
+}
+
+bool bleu_profile_valid(const bleu_profile_t *p)
+{
+    if (p == NULL || p->svc == NULL || p->chr_n == 0u
+        || p->chr_n > BLEU_CHR_MAX || !conn_params_valid(&p->conn)) {
+        return false;
+    }
+    unsigned n[BLEU_ROLE_PARAM + 1u] = { 0u };
+    for (uint8_t i = 0; i < p->chr_n; ++i) {
+        if (p->chr[i].uuid == NULL || p->chr[i].role > BLEU_ROLE_PARAM) {
+            return false;
+        }
+        ++n[p->chr[i].role];
+    }
+    return n[BLEU_ROLE_STREAM] == 1u && n[BLEU_ROLE_CMD] <= 1u
+           && n[BLEU_ROLE_PARAM] <= 1u;
+}
+
+bool bleu_setup(bleu_t *b, const bleu_profile_t *p, uint8_t owner)
+{
+    if (b == NULL || !bleu_profile_valid(p) || owner >= BLEU_OWNER_MAX) {
+        return false;
+    }
+    b->prof = p;
+    b->owner = owner;
+    return true;
+}
+
+uint8_t bleu_token_owner(uint16_t token)
+{
+    return (uint8_t)(token >> BLEU_OWNER_SHIFT);
 }
 
 void bleu_scan_stop(bleu_t *b, uint32_t now_ms)
@@ -260,8 +348,8 @@ bool bleu_link_up(const bleu_t *b)
 
 bool bleu_can_send(const bleu_t *b)
 {
-    return bleu_link_up(b) && b->wr != BLEU_WR_BUSY && !b->rd_busy
-           && !b->param_due;
+    return bleu_link_up(b) && b->rx_val != 0u && b->wr != BLEU_WR_BUSY
+           && !b->rd_busy && !b->param_due;
 }
 
 bool bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms)
@@ -309,9 +397,10 @@ static bool uuid128_is(const bleu_evt_t *e, const uint8_t *u)
 }
 
 /**
- * @brief Take one characteristic of the service.  The declarations come
- *        in ascending handle order (ATT Read By Type), so the first one
- *        after 1E4D ends 1E4D's descriptors.
+ * @brief Take one characteristic of the service by its role in the
+ *        profile.  The declarations come in ascending handle order (ATT
+ *        Read By Type), so the first one after the STREAM ends the
+ *        STREAM's descriptors.
  * @param b The machine.
  * @param e The CHR event.
  */
@@ -320,17 +409,60 @@ static void take_chr(bleu_t *b, const bleu_evt_t *e)
     if (b->tx_val != 0u && b->tx_end == b->svc_end && e->h1 > b->tx_val) {
         b->tx_end = (uint16_t)(e->h1 - 1u);
     }
-    if (uuid128_is(e, bleu_uuid_tx)) {
+    const bleu_profile_t *p = prof_of(b);
+    uint8_t i = 0;
+    while (i < p->chr_n && !uuid128_is(e, p->chr[i].uuid)) {
+        ++i;
+    }
+    if (i == p->chr_n) {
+        return;
+    }
+    switch (p->chr[i].role) {
+    case BLEU_ROLE_STREAM:
         b->tx_val = e->h2;
         b->tx_props = e->props;
         b->tx_end = b->svc_end;
-    } else if (uuid128_is(e, bleu_uuid_rx)) {
+        break;
+    case BLEU_ROLE_CMD:
         b->rx_val = e->h2;
         b->rx_props = e->props;
-    } else if (uuid128_is(e, bleu_uuid_param)
-               && (e->props & BLEU_PROP_READ) != 0u) {
-        b->param_val = e->h2;
+        break;
+    case BLEU_ROLE_PARAM:
+        if ((e->props & BLEU_PROP_READ) != 0u) {
+            b->param_val = e->h2;
+        }
+        break;
+    default:
+        break;
     }
+}
+
+/**
+ * @brief Whether the characteristics found make the peer: the STREAM with
+ *        NOTIFY, and the CMD with WRITE or WRITE NO RESPONSE unless the
+ *        profile has none or marks it optional.  An optional CMD that
+ *        cannot be written is dropped, so bleu_send() refuses.
+ * @param b The machine, after its CHR_DONE.
+ * @return true when the link goes on.
+ */
+static bool chrs_ok(bleu_t *b)
+{
+    if (b->tx_val == 0u || (b->tx_props & BLEU_PROP_NOTIFY) == 0u) {
+        return false;
+    }
+    const bleu_profile_t *p = prof_of(b);
+    const bleu_chr_spec_t *cmd = NULL;
+    for (uint8_t i = 0; i < p->chr_n; ++i) {
+        if (p->chr[i].role == BLEU_ROLE_CMD) {
+            cmd = &p->chr[i];
+        }
+    }
+    if (b->rx_val != 0u
+        && (b->rx_props & (BLEU_PROP_WRITE | BLEU_PROP_WRITE_NR)) != 0u) {
+        return true;
+    }
+    b->rx_val = 0u;
+    return cmd == NULL || (cmd->flags & BLEU_CHR_OPTIONAL) != 0u;
 }
 
 /**
@@ -349,7 +481,7 @@ static bool step_done(bleu_t *b, const bleu_evt_t *e, bool ok,
         return false;
     }
     if (!ok) {
-        fail(b, BLEU_ERR_NOT_WIT, 0, now_ms);
+        fail(b, BLEU_ERR_NOT_PEER, 0, now_ms);
         return false;
     }
     return true;
@@ -384,13 +516,7 @@ static void link_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
         break;
     case BLEU_EV_CHR_DONE:
         if (b->st == BLEU_ST_DISC_CHR
-            && step_done(b, e,
-                         b->tx_val != 0u
-                         && (b->tx_props & BLEU_PROP_NOTIFY) != 0u
-                         && b->rx_val != 0u
-                         && (b->rx_props & (BLEU_PROP_WRITE
-                                            | BLEU_PROP_WRITE_NR)) != 0u,
-                         now_ms)) {
+            && step_done(b, e, e->status != 0u || chrs_ok(b), now_ms)) {
             (void)step_to(b, BLEU_ST_DISC_DSC, BLEU_ACT_DISC_DSCS,
                           b->tx_val, b->tx_end, now_ms);
         }
@@ -481,6 +607,11 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
         }
         return;
     }
+    if (e->status == BLEU_STATUS_BUSY) {
+        /* Another machine holds the host stack's one connect or scan. */
+        unlinked(b, true, BLEU_RETRY_MS, now_ms);
+        return;
+    }
     if (e->status != 0u) {
         b->err = BLEU_ERR_CONNECT;
         b->err_status = e->status;
@@ -501,7 +632,12 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     b->param_len = 0;
     b->param_status = 0;
     b->wr = BLEU_WR_IDLE;
-    (void)step_to(b, BLEU_ST_DISC_SVC, BLEU_ACT_DISC_SVC, 0, 0, now_ms);
+    bleu_act_t *a = step_to(b, BLEU_ST_DISC_SVC, BLEU_ACT_DISC_SVC, 0, 0,
+                            now_ms);
+    if (a != NULL) {
+        memcpy(a->data, prof_of(b)->svc, 16u);
+        a->len = 16u;
+    }
 }
 
 /**
@@ -675,6 +811,7 @@ static void run_timers(bleu_t *b, uint32_t now_ms)
                                 now_ms);
         if (a != NULL) {
             a->addr = b->addr;
+            a->cp = prof_of(b)->conn;
             a->ms = (uint16_t)BLEU_CONNECT_MS;
         }
     }

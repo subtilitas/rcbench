@@ -14,6 +14,9 @@ dependencies.lock
 # And the C6 radio's (tools/c6_image.py); its project is a copy made at
 # build time.
 !firmware/c6/dependencies.lock
+# And the M5Stack Dial's: the GC9A01 display driver
+# (firmware/dial/main/idf_component.yml).
+!firmware/dial/dependencies.lock
 firmware/c6/slave/
 
 # Host suite and coverage -------------------------------------------------

@@ -63,13 +63,13 @@ static atomic_int s_state = PANEL_BLE_OFF;
 static atomic_flag s_started = ATOMIC_FLAG_INIT;
 /** @brief Events dropped on a full queue. */
 static atomic_uint s_dropped;
-/** @brief A DISCONNECT the full queue dropped, handed out once the queue
- *         is empty (panel_ble_get()). */
-static bleu_evt_t s_pend;
-/** @brief s_pend holds one. */
-static bool s_pend_set;
-/** @brief Guards s_pend and s_pend_set: written on nimble_host, read on
- *         the IMU's task. */
+/** @brief DISCONNECTs the full queue dropped, handed out in order once the
+ *         queue is empty (panel_ble_get()). */
+static bleu_evt_t s_pend[PANEL_BLE_PEND_MAX];
+/** @brief How many s_pend holds. */
+static unsigned s_pend_n;
+/** @brief Guards s_pend and s_pend_n: written on nimble_host, read on the
+ *         `blec` task. */
 static portMUX_TYPE s_pend_lock = portMUX_INITIALIZER_UNLOCKED;
 /** @brief The address type the host uses, set at each sync. */
 static atomic_uint s_own_type;
@@ -78,11 +78,11 @@ static atomic_uint s_host_t0;
 /** @brief The host's syncs since start-up. */
 static atomic_uint s_syncs;
 
-/** @brief The queue to the IMU's link. */
+/** @brief The queue to the clients' links. */
 static QueueHandle_t s_queue;
 /** @brief The queue's control block: no heap allocation that can fail. */
 static StaticQueue_t s_queue_mem;
-/** @brief The queue's elements, 32 x 64 = 2,048 bytes of internal RAM. */
+/** @brief The queue's elements, 64 x 64 = 4,096 bytes of internal RAM. */
 static uint8_t s_queue_buf[PANEL_BLE_QUEUE_LEN * sizeof(bleu_evt_t)];
 /** @brief The console scan's report function; NULL when none runs. */
 static panel_ble_report_fn s_report;
@@ -91,9 +91,14 @@ static SemaphoreHandle_t s_synced;
 /** @brief s_synced's memory. */
 static StaticSemaphore_t s_synced_mem;
 
-/** @brief A connection was reported up and is not down yet: a DISCONNECT
- *  before it ends a connect that failed to be established. */
-static atomic_bool s_conn_up;
+/** @brief Connections reported up and not down yet, by handle: a
+ *         DISCONNECT of a handle not among them ends a connect that failed
+ *         to be established.  The host task's own. */
+#define UP_MAX CONFIG_BT_NIMBLE_MAX_CONNECTIONS
+/** @brief The handles of s_up. */
+static uint16_t s_up[UP_MAX];
+/** @brief How many s_up holds. */
+static unsigned s_up_n;
 
 /** @brief Advertisers whose last report a connect's log line names. */
 #define HEARD_MAX 8u
@@ -110,7 +115,7 @@ typedef struct {
 static heard_t s_heard[HEARD_MAX];
 /** @brief The next slot of s_heard to replace. */
 static unsigned s_heard_next;
-/** @brief Guards s_heard: written on nimble_host, read on the IMU's task. */
+/** @brief Guards s_heard: written on nimble_host, read on the `blec` task. */
 static portMUX_TYPE s_heard_lock = portMUX_INITIALIZER_UNLOCKED;
 
 /**
@@ -140,10 +145,41 @@ static void post(const bleu_evt_t *e)
     atomic_fetch_add(&s_dropped, 1u);
     if (e->kind == BLEU_EV_DISCONNECT) {
         portENTER_CRITICAL(&s_pend_lock);
-        s_pend = *e;
-        s_pend_set = true;
+        if (s_pend_n < PANEL_BLE_PEND_MAX) {
+            s_pend[s_pend_n++] = *e;
+        }
         portEXIT_CRITICAL(&s_pend_lock);
     }
+}
+
+/**
+ * @brief Note @p conn as up.  Runs on nimble_host.  A full set, which
+ *        takes a DISCONNECT lost inside NimBLE, gives up its first handle,
+ *        which then logs as failed to be established at its DISCONNECT.
+ * @param conn The handle.
+ */
+static void up_add(uint16_t conn)
+{
+    if (s_up_n == UP_MAX) {
+        s_up[0] = s_up[--s_up_n];
+    }
+    s_up[s_up_n++] = conn;
+}
+
+/**
+ * @brief Take @p conn out of the handles up.  Runs on nimble_host.
+ * @param conn The handle.
+ * @return Whether it was up.
+ */
+static bool up_take(uint16_t conn)
+{
+    for (unsigned i = 0; i < s_up_n; ++i) {
+        if (s_up[i] == conn) {
+            s_up[i] = s_up[--s_up_n];
+            return true;
+        }
+    }
+    return false;
 }
 
 /**
@@ -334,7 +370,7 @@ static void adv_event(const struct ble_gap_disc_desc *d, bleu_evt_t *e)
 }
 
 /**
- * @brief The IMU's scan: its reports and its end into the queue.  Runs on
+ * @brief A client's scan: its reports and its end into the queue.  Runs on
  *        nimble_host.
  * @param ev  NimBLE's event.
  * @param arg The scan's token.
@@ -401,9 +437,10 @@ static void put_params(uint16_t conn, bleu_evt_t *e)
 /**
  * @brief A notification, flattened and cut into events of BLEU_EVT_DATA
  *        bytes, in order.
- * @param ev NimBLE's notification event.
+ * @param ev    NimBLE's notification event.
+ * @param token The connection's connect token.
  */
-static void notify_events(const struct ble_gap_event *ev)
+static void notify_events(const struct ble_gap_event *ev, uint16_t token)
 {
     static uint8_t flat[BLE_NOTIFY_MAX];  /* the host task's own */
     uint16_t len = 0u;
@@ -415,6 +452,7 @@ static void notify_events(const struct ble_gap_event *ev)
         bleu_evt_t e;
         memset(&e, 0, sizeof(e));
         e.kind = BLEU_EV_NOTIFY;
+        e.token = token;
         e.conn = ev->notify_rx.conn_handle;
         e.h1 = ev->notify_rx.attr_handle;
         e.len = (uint8_t)((len - at) < BLEU_EVT_DATA ? (len - at)
@@ -446,7 +484,29 @@ static void log_desc(const char *what, const struct ble_gap_conn_desc *d)
 }
 
 /**
- * @brief A connection's events into the queue.  Runs on nimble_host.
+ * @brief Name a connect the C6's controller refused for want of a link:
+ *        HCI 0x09 (connection limit exceeded) or 0x07 (memory capacity
+ *        exceeded).  A C6 image built without CONFIG_BT_LE_MAX_CONNECTIONS=5
+ *        holds 3 links, the esp_hosted default, and reports the same
+ *        esp_hosted version as the panel's image: the C6 RADIO row offers
+ *        the reinstall then.
+ * @param status NimBLE's status of the connect.
+ */
+static void log_link_limit(int status)
+{
+    if (status == BLE_HS_HCI_ERR(BLE_ERR_CONN_LIMIT)
+        || status == BLE_HS_HCI_ERR(BLE_ERR_MEM_CAPACITY)) {
+        ESP_LOGW(TAG, "connect refused by the C6 radio, HCI 0x%02X: it holds "
+                      "no further link; a C6 image with 3 links takes no "
+                      "fourth: install this panel's C6 image with the C6 "
+                      "RADIO hold in SETUP > UPDATES",
+                 (unsigned)(status - BLE_HS_ERR_HCI_BASE));
+    }
+}
+
+/**
+ * @brief A connection's events into the queue, each with the connect's
+ *        token.  Runs on nimble_host.
  * @param ev  NimBLE's event.
  * @param arg The connect's token.
  * @return 0: a parameter update the sensor asks for is accepted.
@@ -465,8 +525,10 @@ static int conn_event(struct ble_gap_event *ev, void *arg)
                  (unsigned)ev->connect.status, (unsigned)e.conn,
                  (unsigned)e.token);
         if (ev->connect.status == 0) {
-            atomic_store(&s_conn_up, true);
+            up_add(e.conn);
             put_params(e.conn, &e);
+        } else {
+            log_link_limit(ev->connect.status);
         }
         {
             struct ble_gap_conn_desc d;
@@ -490,7 +552,7 @@ static int conn_event(struct ble_gap_event *ev, void *arg)
                  (unsigned)ev->disconnect.reason, (unsigned)e.conn,
                  (unsigned)e.token);
         log_desc("disconnect: record", &ev->disconnect.conn);
-        if (!atomic_exchange(&s_conn_up, false)) {
+        if (!up_take(e.conn)) {
             ESP_LOGI(TAG, "connect: failed to be established, reason 0x%X",
                      (unsigned)ev->disconnect.reason);
         }
@@ -498,6 +560,7 @@ static int conn_event(struct ble_gap_event *ev, void *arg)
         break;
     case BLE_GAP_EVENT_CONN_UPDATE:
         e.kind = BLEU_EV_CONN_UPDATE;
+        e.token = token_of(arg);
         e.status = (uint16_t)ev->conn_update.status;
         e.conn = ev->conn_update.conn_handle;
         put_params(e.conn, &e);
@@ -515,7 +578,7 @@ static int conn_event(struct ble_gap_event *ev, void *arg)
                  (unsigned)ev->conn_update_req.peer_params->supervision_timeout);
         break;
     case BLE_GAP_EVENT_NOTIFY_RX:
-        notify_events(ev);
+        notify_events(ev, token_of(arg));
         break;
     case BLE_GAP_EVENT_MTU:
         ESP_LOGI(TAG, "MTU %u", (unsigned)ev->mtu.value);
@@ -835,9 +898,10 @@ bool panel_ble_get(bleu_evt_t *out)
     }
     bool got = false;
     portENTER_CRITICAL(&s_pend_lock);
-    if (s_pend_set) {
-        *out = s_pend;
-        s_pend_set = false;
+    if (s_pend_n > 0u) {
+        *out = s_pend[0];
+        --s_pend_n;
+        memmove(&s_pend[0], &s_pend[1], s_pend_n * sizeof(s_pend[0]));
         got = true;
     }
     portEXIT_CRITICAL(&s_pend_lock);
@@ -877,8 +941,8 @@ esp_err_t panel_ble_scan(uint32_t ms, panel_ble_report_fn report)
 }
 
 /**
- * @brief A connect to @p a with bleuart's parameters and the own address
- *        type the sync inferred.  Every value goes to the log.
+ * @brief A connect to @p a with the parameters its profile gave it and the
+ *        own address type the sync inferred.  Every value goes to the log.
  * @param a The action.
  * @return NimBLE's status.
  */
@@ -888,12 +952,12 @@ static int do_connect(const bleu_act_t *a)
     peer.type = a->addr.type;
     memcpy(peer.val, a->addr.val, sizeof(peer.val));
     const struct ble_gap_conn_params cp = {
-        .scan_itvl = BLEU_CONN_SCAN_ITVL,
-        .scan_window = BLEU_CONN_SCAN_WINDOW,
-        .itvl_min = BLEU_ITVL_MIN,
-        .itvl_max = BLEU_ITVL_MAX,
-        .latency = BLEU_LATENCY,
-        .supervision_timeout = BLEU_SUPERVISION,
+        .scan_itvl = a->cp.scan_itvl,
+        .scan_window = a->cp.scan_window,
+        .itvl_min = a->cp.itvl_min,
+        .itvl_max = a->cp.itvl_max,
+        .latency = a->cp.latency,
+        .supervision_timeout = a->cp.supervision,
         .min_ce_len = 0,
         .max_ce_len = 0,
     };
@@ -914,7 +978,6 @@ static int do_connect(const bleu_act_t *a)
     } else {
         ESP_LOGI(TAG, "connect: no report heard since the start");
     }
-    atomic_store(&s_conn_up, false);
     return ble_gap_connect(own, &peer, (int32_t)a->ms, &cp, conn_event,
                            arg_of(a->token));
 }
@@ -935,7 +998,7 @@ void panel_ble_do(const bleu_act_t *a)
         return;
     }
     ble_uuid128_t svc = { .u = { .type = BLE_UUID_TYPE_128 } };
-    memcpy(svc.value, bleu_uuid_svc, sizeof(svc.value));
+    memcpy(svc.value, a->data, sizeof(svc.value));
     const struct ble_gap_disc_params dp = {
         .passive = 0,
         .filter_duplicates = 1,
@@ -954,6 +1017,7 @@ void panel_ble_do(const bleu_act_t *a)
         break;
     case BLEU_ACT_CONNECT:
         rc = do_connect(a);
+        log_link_limit(rc);
         answer = BLEU_EV_CONNECT;
         break;
     case BLEU_ACT_CANCEL:
@@ -963,8 +1027,11 @@ void panel_ble_do(const bleu_act_t *a)
         (void)ble_gap_terminate(a->conn, BLE_ERR_REM_USER_CONN_TERM);
         break;
     case BLEU_ACT_DISC_SVC:
-        rc = ble_gattc_disc_svc_by_uuid(a->conn, &svc.u, svc_cb,
-                                        arg_of(a->token));
+        /* The service's UUID is the action's: 16 bytes, or nothing. */
+        rc = a->len == sizeof(svc.value)
+                 ? ble_gattc_disc_svc_by_uuid(a->conn, &svc.u, svc_cb,
+                                              arg_of(a->token))
+                 : BLE_HS_EINVAL;
         answer = BLEU_EV_SVC_DONE;
         break;
     case BLEU_ACT_DISC_CHRS:

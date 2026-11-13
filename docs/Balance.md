@@ -48,6 +48,10 @@ blade tip inside a duct is not accessible:
   at a spinner from the front looks across the disc and counts blades.
 - The mark is a pen line, not reflective tape. Anything attached to the bell is
   mass on the part being balanced.
+- Draw the mark in line with blade 1. The screen counts blades and angles
+  from the mark.
+- Angles count from the mark in the order points pass the index sensor, which
+  is against the direction of rotation.
 - The vibration sensor goes on a rigid part as close to the bearing as
   possible. A compliant mount is a low-pass filter.
 

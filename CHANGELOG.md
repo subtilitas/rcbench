@@ -29,6 +29,38 @@ history is in git.
   writes, the advertising and its match, and the panel's rule for a
   restart of the accumulators
   ([protocols/rcnode](protocols/rcnode/README.md)).
+- Protocol module `protocols/dialknob` for the M5Stack Dial v1.1 as a
+  wireless knob over BLE: the packets in both directions (EVENT, STATUS,
+  INFO; SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO, STATE),
+  20 bytes or less, every field bounded; the panel's turn tracker (the
+  first packet after a connect, a packet more than 300ms late and a jump
+  over 16 detents move nothing, a repeated seq is dropped); the link's
+  DEGRADED at 500ms and LOST at the disconnect or at 1,000ms, counted from
+  the first EVENT of a connection, a loss while ARMED being an error; the
+  Dial's model of its face and its encoder detent with 3 counts of
+  hysteresis; host suites
+  `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`.
+- Firmware for the M5Stack Dial v1.1 (`firmware/dial`, ESP-IDF v6.1,
+  ESP32-S3): the power latch on GPIO46, the encoder on PCNT, the buttons,
+  the FT3267 touch glass, a 3ms click per detent (default ON), the GC9A01
+  display with a placeholder face, a NimBLE peripheral serving the
+  dialknob service that binds the first panel to subscribe and then
+  accepts that panel only (a 10s button hold forgets it) and ends the link
+  1,000ms after the panel's last packet, and a USB console
+  (`dial>`) whose test build injects turns, presses, holds, taps and a
+  battery reading and marks each injected detent on GPIO1. The battery's
+  reading pin is unknown, and STATUS reports the battery as unknown. The
+  panel's side is not built yet ([The M5Stack Dial](docs/Dial.md)).
+- CI builds the Dial's image and its test build (`.github/workflows/dial.yml`,
+  artifact `dial`); a release carries `rcbench-dial-<version>.bin` and
+  `rcbench-dial-merged-<version>.bin`. `tools/image_slot.py` takes the
+  image's file name as a second argument.
+- Module `shared/vibe`, host-tested and in no image yet: the balance
+  node's index comparator and its demodulator of the 1x, 2x and blade-pass
+  against the index (integer only, for the ESP32-C6), a no-index mode at an
+  rpm the panel gives, and the two-run and four-run balance corrections for
+  the panel. Angles count from the index mark in the order points pass the
+  index sensor ([vibe](shared/vibe/README.md)).
 
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the
@@ -62,8 +94,40 @@ history is in git.
   started them (a touch event with its type, track id and source, the
   screenshot gate's first busy fact, or 0 minutes) and the backlight's
   duty ([Performance](docs/Performance.md#on-the-board)).
+- `protocols/bleuart` takes a profile (`bleu_profile_t`): the service
+  UUID, up to 4 characteristics by role and the connection parameters.
+  The ISSC Transparent UART profile is the default. A hub
+  (`bleuart_hub.h`) runs up to 5 central machines on one host stack:
+  events go to their machine by the owner in the token's top 3 bits or by
+  the connection handle, and one scan or connect runs at a time, a second
+  answered busy ([bleuart](protocols/bleuart/README.md#the-hub)).
+- A console line `ble: connect refused by the C6 radio, HCI 0x09: ...`
+  when the C6's controller refuses a connect for want of a link
+  ([The Bluetooth IMU](docs/IMU.md#console-lines)).
 
 ### Changed
+
+- The panel's Bluetooth LE host and the C6 radio's image hold 5
+  connections, up from 1 and 3: the IMU, the Dial, 2 sensor nodes and 1
+  spare. The C6 image sets `CONFIG_BT_LE_MAX_CONNECTIONS=5` from
+  `firmware/c6/sdkconfig.rcbench`, and `tools/c6_image.py check` fails an
+  image without it ([The ESP32-C6 radio](docs/C6.md#the-image-the-panel-carries)).
+- The IMU's link runs on the `blec` task, the one task of every Bluetooth
+  LE client, through the hub, in place of the `imu` task. The event queue
+  holds 64 events (4,096 bytes of internal RAM), up from 32, and keeps up
+  to 8 dropped DISCONNECTs, up from 1. The IMU's scan, bind, connect
+  parameters and console texts are unchanged
+  ([The Bluetooth IMU](docs/IMU.md#the-link)).
+- The panel's host runs up to 10 GATT client procedures at once, up from
+  4: 2 for each of the 5 links. The pool takes 600 bytes of PSRAM, up
+  from 240 ([Performance](docs/Performance.md#on-the-board)).
+- On a C6 that reports the carried version, the C6 RADIO row on UPDATES
+  offers `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` and the hold sends
+  the image; an update no longer ends at the link-up with the C6 on that
+  version. An image of the same esp_hosted version can carry other
+  settings, such as 3 Bluetooth LE connections in place of 5
+  ([Screens](docs/Screens.md#the-c6-radio)).
+- `tools/c6_image.py` reads `# CONFIG_X is not set` as `CONFIG_X=n`.
 
 - The IOmcu queues each CAN reply whole, up to 16 frames, and sends it
   through the controller's 3 transmit buffers, up to 3 frames per pump and
