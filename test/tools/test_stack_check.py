@@ -451,7 +451,7 @@ def test_ui_hook_calls_name_every_text_watch_and_title_now():
     assert set(sc.UI_HOOK_CALLS["watch_text"]) == watches
     assert set(sc.UI_HOOK_CALLS["ui_router_title"]) == titles
     gfx = (sc.ROOT / "shared/gfx/gfx_text.c").read_text(encoding="utf-8")
-    assert re.search(r"noinline\)\) void watch_text\(", gfx)
+    assert re.search(r"noinline\)\) void\s+watch_text\(", gfx)
     router = (sc.UI_DIR / "ui_router.c").read_text(encoding="utf-8")
     assert re.search(r"noinline\)\) const char \*ui_router_title\(", router)
 
