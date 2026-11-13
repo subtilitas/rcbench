@@ -35,9 +35,9 @@ void gfx_text_watch(gfx_text_watch_fn fn) { s_watch = fn; }
  * Not inlined: tools/stack_check.py follows its call through s_watch by
  * name.
  */
-static __attribute__((noinline)) void watch_text(const gfx_canvas_t *c, int x, int y, const char *s,
-                       const gfx_font_t *font, int scale,
-                       const gfx_rect_t *box)
+static __attribute__((noinline)) void
+watch_text(const gfx_canvas_t *c, int x, int y, const char *s,
+           const gfx_font_t *font, int scale, const gfx_rect_t *box)
 {
     const int cell = font->width * scale;
     int lead = 0;
