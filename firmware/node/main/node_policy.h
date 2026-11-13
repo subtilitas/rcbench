@@ -10,8 +10,11 @@
  * clock) timer, reads the bus voltage once and goes back to sleep unless a
  * pack is present.  A cell under RCNODE_BAT_OFF_MV for NODE_OFF_READS
  * readings in a row switches the node off: no timer, only the RESET key or
- * a power cycle starts it again.  A divider reading under NODE_BAT_NONE_MV
- * is no cell (the board on USB alone) and switches nothing off.
+ * a power cycle starts it again.  The count runs on across timer wakes (the
+ * caller keeps node_policy_t's low_reads in RTC memory), so a single low
+ * reading at a wake switches nothing off.  A divider reading under
+ * NODE_BAT_NONE_MV is no cell (the board on USB alone) and switches nothing
+ * off.  A failed read (NODE_BAT_ERR) neither counts nor clears the count.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -36,6 +39,9 @@ extern "C" {
 #define NODE_DIV_BOT_KOHM 200u  /**< the pin to GND */
 /** @} */
 
+/** @brief node_bat_read()'s value for a failed read; a reading is at most
+ *  one below it. */
+#define NODE_BAT_ERR 0xFFFFu
 /** @brief A cell reading under this, mV, is no cell. */
 #define NODE_BAT_NONE_MV 1000u
 /** @brief Readings in a row under RCNODE_BAT_OFF_MV before the node switches off. */
@@ -54,22 +60,25 @@ typedef struct {
     bool     link;    /**< a central is connected */
     bool     pack;    /**< a pack is on the XT60 (the power role's bus voltage is 5.0V or more) */
     bool     stay;    /**< the console holds the node awake */
-    uint16_t bat_mv;  /**< the cell, mV, from node_bat_mv() */
+    uint16_t bat_mv;  /**< the cell, mV, from node_bat_mv(), or NODE_BAT_ERR */
 } node_inputs_t;
 
 /** @brief The policy's memory. */
 typedef struct {
     uint32_t busy_ms;    /**< the last time a link, a pack or the console held the node */
-    uint8_t  low_reads;  /**< readings in a row under RCNODE_BAT_OFF_MV */
+    uint8_t  low_reads;  /**< readings in a row under RCNODE_BAT_OFF_MV, across timer wakes */
 } node_policy_t;
 
 /**
- * @brief A policy that counts the idle time from @p now_ms.
+ * @brief A policy that counts the idle time from @p now_ms, with the low
+ *        readings counted before.
  *
  * @param p The policy.
  * @param now_ms The node's ms clock.
+ * @param low_reads Low readings in a row before this start (from RTC
+ *        memory), 0 after a power-on.
  */
-void node_policy_init(node_policy_t *p, uint32_t now_ms);
+void node_policy_init(node_policy_t *p, uint32_t now_ms, uint8_t low_reads);
 
 /**
  * @brief One step, once a second.
@@ -83,21 +92,24 @@ void node_policy_init(node_policy_t *p, uint32_t now_ms);
 node_act_t node_policy_step(node_policy_t *p, const node_inputs_t *in);
 
 /**
- * @brief The decision at a timer wake.
+ * @brief The decision at a timer wake.  The battery reading counts as in
+ *        node_policy_step().
  *
+ * @param p The policy, with low_reads as kept through the sleep.
  * @param answered The INA228 answered the bus voltage read.
  * @param vbus_uv The bus voltage it read, µV.
- * @param bat_mv The cell, mV.
- * @return NODE_OFF for a cell between NODE_BAT_NONE_MV and
- *         RCNODE_BAT_OFF_MV, NODE_RUN for a pack present, NODE_SLEEP otherwise.
+ * @param bat_mv The cell, mV, or NODE_BAT_ERR.
+ * @return NODE_OFF at the NODE_OFF_READS-th low reading in a row, NODE_RUN
+ *         for a pack present, NODE_SLEEP otherwise.
  */
-node_act_t node_policy_wake(bool answered, int32_t vbus_uv, uint16_t bat_mv);
+node_act_t node_policy_wake(node_policy_t *p, bool answered, int32_t vbus_uv,
+                            uint16_t bat_mv);
 
 /**
  * @brief The cell's voltage from the ADC pin's.
  *
  * @param pin_mv The pin's voltage, mV, as the ADC's calibration gives it.
- * @return The cell, mV, clamped to 65535.
+ * @return The cell, mV, clamped to NODE_BAT_ERR - 1.
  */
 uint16_t node_bat_mv(uint32_t pin_mv);
 
@@ -105,8 +117,9 @@ uint16_t node_bat_mv(uint32_t pin_mv);
  * @brief The battery's RCNODE_ST_* flags.
  *
  * @param bat_mv The cell, mV.
- * @return RCNODE_ST_BAT_NONE under NODE_BAT_NONE_MV, RCNODE_ST_BAT_LOW under
- *         RCNODE_BAT_LOW_MV, 0 otherwise.
+ * @return RCNODE_ST_BAT_ERR for NODE_BAT_ERR, RCNODE_ST_BAT_NONE under
+ *         NODE_BAT_NONE_MV, RCNODE_ST_BAT_LOW under RCNODE_BAT_LOW_MV, 0
+ *         otherwise.
  */
 uint16_t node_bat_flags(uint16_t bat_mv);
 

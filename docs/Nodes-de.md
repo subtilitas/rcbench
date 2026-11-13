@@ -36,7 +36,7 @@ enthält den Hinweis des Projekts.
 
 | Teil | Zweck |
 | --- | --- |
-| Waveshare ESP32-C6-Zero | ESP32-C6FH4 mit 4MB Flash im Gehäuse, USB-C (USB Serial/JTAG), LDO (Low-Dropout-Regler) ME6217C33M5G vom 5V-Pin auf 3,3V, RGB-LED WS2812 an GPIO8, Taste BOOT an GPIO9, Taste RESET |
+| Waveshare ESP32-C6-Zero | ESP32-C6FH4 mit 4MB Flash im Gehäuse, USB-C (USB Serial/JTAG), LDO (Low-Dropout-Regler) vom 5V-Pin auf 3,3V: ME6217C33M5G laut Schaltplan von Waveshare, ME6217C33M6G laut Angebot des Händlers; welches Teil auf den gelieferten Boards sitzt, ist nicht bestätigt, RGB-LED WS2812 an GPIO8, Taste BOOT an GPIO9, Taste RESET |
 | Lade- und Boost-Modul GERUI CD42 | lädt die Zelle über VIN (4,5V bis 5V) und erzeugt aus ihr 5V an OUT |
 | eine 1S-LiPo-Zelle | an BAT des Moduls |
 | MATEK I2C-INA-BM | INA228, Shunt 200µΩ, Adresse 0x45, XT60 ein und aus |
@@ -138,21 +138,29 @@ auf die Messwerte.
 
 | Bedingung | Was der Knoten tut |
 | --- | --- |
-| 120s ohne Verbindung, ohne Pack am XT60 und ohne `stay on` | Deep Sleep mit einem 10s-Timer |
+| 120s ohne Verbindung, ohne Pack am XT60 und ohne `stay on` | Deep Sleep mit einem 10s-Timer; der Auswuchtknoten ohne Timer |
 | SLEEP auf CONTROL geschrieben oder `sleep` auf der Konsole | dasselbe, sofort |
 | ein Timer-Wecken | der INA228 wandelt die Busspannung einmal (540µs), der Knoten liest sie und schaltet das Bauteil ab; 5,0V oder mehr startet den Knoten vollständig, weniger schläft weiter |
-| eine Zelle zwischen 1,0V und 3,3V, 3 Messungen in Folge oder bei einem Timer-Wecken | aus: Deep Sleep ohne Timer |
+| eine Zelle zwischen 1,0V und 3,3V, 3 Messungen in Folge, über Timer-Wecken hinweg gezählt | aus: Deep Sleep ohne Timer |
 | OFF auf CONTROL geschrieben oder `off` auf der Konsole | aus, sofort |
 | die Taste RESET, ein Aus- und Einschalten, ein Flashen | ein vollständiger Start |
 
+Die Zahl der niedrigen Messungen bleibt im RTC-Speicher (Real-Time Clock)
+über den Deep Sleep erhalten, also schaltet eine einzelne niedrige Messung
+bei einem Timer-Wecken nichts ab; eine gute Messung setzt die Zahl zurück.
 Ein Teilerwert unter 1,0V ist keine Zelle, das Board nur an USB, und
-schaltet nichts ab. Unter 3,5V meldet STATUS den Akku als schwach. Vor dem
+schaltet nichts ab. Unter 3,5V meldet STATUS den Akku als schwach. Eine
+fehlgeschlagene Akkumessung (der ADC oder seine Kalibrierung schlägt fehl)
+setzt in STATUS das Flag 0x0040 mit der Zellspannung 0, schreibt `bat
+error` auf die Konsole und zählt weder zur Abschaltung noch setzt sie die
+Zahl zurück. Vor dem
 Schlafen beendet der Knoten die Verbindung, wartet 200ms und schreibt
 ADC_CONFIG des INA228 auf Shutdown.
 
 Die Taste BOOT ist GPIO9, und GPIO9 kann den ESP32-C6 nicht aus dem Deep
 Sleep wecken (nur GPIO0 bis GPIO7 können das). Die Taste RESET ist die
-Wecktaste.
+Wecktaste. Der Auswuchtknoten hat keinen Sensor, der ihm das Aufwachen
+sagt: Er schläft bis zur Taste RESET.
 
 Ein Timer-Wecken lädt das Image ohne erneute Prüfung
 (`CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP`). Wie lange ein
@@ -178,8 +186,26 @@ Ein Fenster hält 17 oder 18 Samples. Ein Stromsample an einem Ende des
 20-Bit-Bereichs ist ein Clip: gezählt und markiert, nie ein Wert. Der
 Knoten löscht die Akkumulatoren nie. Das Bauteil löscht sie bei seinem
 eigenen Reset und bei jeder Einstellung, und epoch im Akkumulatorpaket
-zählt die Einstellungen. Die Pakete stehen in
+zählt die Einstellungen. Nach CHARGE und ENERGY liest der Knoten
+ADC_CONFIG noch einmal zurück. Stimmt es nicht, hat sich das Bauteil vor
+oder zwischen den Lesevorgängen zurückgesetzt: Beide Werte werden
+verworfen, ihre Flags im Paket sind gelöscht, und das Bauteil wird neu
+eingestellt. Das Panel wertet ein Fallen von ENERGY bei gleicher epoch
+ebenfalls als Neustart (`rcnode_acc_restarted()`). Die Pakete stehen in
 [protocols/rcnode](../protocols/rcnode/README.md).
+
+**Was eine neue Einstellung verliert.** Jede Einstellung schreibt RSTACC,
+also sind CHARGE und ENERGY seit dem letzten Akkumulatorpaket, das das
+Panel übernommen hat, verloren:
+
+| Ursache | Verlorene Ladung und Energie |
+| --- | --- |
+| das Bauteil hat sich selbst zurückgesetzt | vom letzten guten Akkumulatorpaket bis zur Einstellung: bis zu 500ms bis zum nächsten Lesen, 40ms bis zum Rücklesen, das den Reset bemerkt, und 1000ms bis zur Einstellung, höchstens 1,54s |
+| 3 fehlgeschlagene Lesevorgänge in Folge ohne Reset (der Bus, nicht das Bauteil) | vom letzten guten Akkumulatorpaket bis zur Einstellung: bis zu 500ms, die Zeit der fehlschlagenden Lesevorgänge und 1000ms |
+| das Bauteil antwortet nicht auf die Einstellung | die Einstellung wird alle 1000ms wiederholt, und jeder Versuch fügt 1000ms hinzu |
+
+Die Fensterpakete tragen Strom und Spannung durch eine solche Lücke; das
+Panel kann die Lücke aus ihnen zählen.
 
 ## Bluetooth LE
 
@@ -194,15 +220,19 @@ von 247 an und keine eigenen Verbindungsparameter.
 | --- | --- | --- |
 | STREAM | NOTIFY | Fenster alle 20ms, Akkumulatoren und Extremwerte alle 500ms |
 | STATUS | READ, NOTIFY | Akku, Flags, Firmwareversion, Zähler, alle 1000ms |
-| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN mit einem Tag, SLEEP, OFF; BLADES und RPM am Auswuchtknoten |
+| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN mit einem Tag von 1 bis 255, SLEEP, OFF; BLADES (1 bis 12) und RPM am Auswuchtknoten |
 | INFO | READ | Protokoll, Rolle, Board, Adresse, die Einstellung des INA228 |
 
 Ein Write, den die Rolle nicht annimmt oder der eine andere Länge hat,
 wird mit dem ATT-Fehler 0x13 oder 0x0D abgelehnt.
 
 STREAM-Pakete warten in einer Warteschlange für 32 Pakete auf den Sender.
-Eine volle Warteschlange oder ein Stack ohne Puffer verwirft das Paket und
-zählt es in `dropped` von STATUS.
+Eine volle Warteschlange, ein Stack ohne Puffer oder ein Paket, das länger
+ist als die MTU der Verbindung weniger 3 Bytes, verwirft das Paket und
+zählt es in `dropped` von STATUS. Der Stack würde eine längere
+Notification ohne Fehler kürzen; die Pakete des Leistungsknotens haben 20
+Bytes und passen in die kleinste MTU von 23, der Auswuchtbericht hat 24
+Bytes und braucht 27.
 
 ## Bauen und Flashen
 
@@ -256,14 +286,14 @@ I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online, epoch 1; link up
 | `epoch` | Einstellungen des INA228 seit dem Start |
 | `link` | none ohne Verbindung, sonst up und der RSSI (Received Signal Strength Indication) |
 | `sub` | 1, wenn STREAM abonniert ist |
-| `bat` | die Zelle; unter 1.00V ohne Zelle |
+| `bat` | die Zelle; unter 1.00V ohne Zelle; `error`, wenn die Messung fehlschlug |
 | `errors`, `resets`, `dropped` | die Zähler von STATUS |
 
 | Befehl | Wirkung |
 | --- | --- |
 | `status` | Name, Firmware, Rolle und der letzte Status vollständig |
 | `stay on`, `stay off` | hält den Knoten wach oder lässt ihn wieder schlafen; bis zu einem Neustart |
-| `sleep` | Deep Sleep mit der 10s-Prüfung, in der nächsten Sekunde |
+| `sleep` | Deep Sleep in der nächsten Sekunde, am Leistungsknoten mit der 10s-Prüfung |
 | `off` | aus, in der nächsten Sekunde |
 
 Der Start schreibt `rcbench node <version>, role pwr, <n> timer wakes before
@@ -279,7 +309,8 @@ this start`.
   sind nicht gemessen.
 - Die Abschaltschwelle des CD42 bei geringer Last ist nicht bekannt (oben).
 - Die Rolle Auswuchten ist ein Stub: Sie sendet ihr Advertising als
-  `rcbench-bal-XXXX`, nimmt BLADES und RPM an und sendet keinen Bericht.
+  `rcbench-bal-XXXX`, nimmt BLADES und RPM an, sendet keinen Bericht und
+  schläft bis zur Taste RESET.
 - Die WS2812 wird nicht angesteuert. Ihr Ruhestrom ist nicht gemessen.
 - Die Firmware wird nur über USB aktualisiert.
 - Fenster ohne Sample zwischen zwei Fenstern werden nicht gesendet: Ein

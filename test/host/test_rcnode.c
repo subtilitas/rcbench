@@ -164,44 +164,84 @@ TEST_CASE(a_balance_report_takes_phase_3599_and_quality_100_and_refuses_past)
     rcnode_bal_report_t r;
     memset(&r, 0, sizeof r);
     r.hdr.seq = 1u;
-    r.flags = 0x7Fu;
+    r.flags = 0x8FFFu;                 /* every vibe flag and COUNTS */
     r.quality = 100u;
+    r.revs = 255u;
     r.rpm = 65535u;
-    r.h1.mag = 412u;
-    r.h1.phase = 3599u;
-    r.h2.mag = 65535u;
-    r.h2.phase = 0u;
-    r.blade.mag = 120u;
-    r.blade.phase = 1800u;
+    r.spread_pm = 0x1234u;
+    r.mag_1x = 412u;
+    r.phase_1x = 3599u;
+    r.mag_2x = 65535u;
+    r.mag_blade = 120u;
     r.rms = 530u;
     static const uint8_t want[24] = {
-        0x20, 0x01, 0x00, 0x00, 0x00, 0x00, 0x7F, 100,
-        0xFF, 0xFF, 0x9C, 0x01, 0x0F, 0x0E, 0xFF, 0xFF,
-        0x00, 0x00, 0x78, 0x00, 0x08, 0x07, 0x12, 0x02,
+        0x20, 0x01, 0x00, 0x00, 0x00, 0x00, 0xFF, 0x8F,
+        100,  255,  0xFF, 0xFF, 0x34, 0x12, 0x9C, 0x01,
+        0x0F, 0x0E, 0xFF, 0xFF, 0x78, 0x00, 0x12, 0x02,
     };
     uint8_t b[24];
     CHECK_EQ(rcnode_enc_bal_report(&r, b, sizeof b), 24);
     CHECK(same_bytes(b, want, 24));
     rcnode_pkt_t p;
     CHECK_EQ(rcnode_decode(b, 24, &p), RCNODE_OK);
-    CHECK_EQ(p.u.bal.h1.phase, 3599);
-    CHECK_EQ(p.u.bal.h2.mag, 65535);
-    CHECK_EQ(p.u.bal.blade.phase, 1800);
+    CHECK_EQ(p.u.bal.flags, 0x8FFF);
+    CHECK_EQ(p.u.bal.revs, 255);
+    CHECK_EQ(p.u.bal.spread_pm, 0x1234);
+    CHECK_EQ(p.u.bal.phase_1x, 3599);
+    CHECK_EQ(p.u.bal.mag_2x, 65535);
+    CHECK_EQ(p.u.bal.mag_blade, 120);
     CHECK_EQ(p.u.bal.rms, 530);
     CHECK_EQ(p.u.bal.rpm, 65535);
 
     uint8_t bad[24];
     memcpy(bad, b, 24);
-    bad[12] = 0x10;                    /* h1 phase 3600 */
+    bad[16] = 0x10;                    /* phase 3600 */
     CHECK_EQ(rcnode_decode(bad, 24, &p), RCNODE_ERR_RANGE);
     memcpy(bad, b, 24);
-    bad[20] = 0x10;                    /* blade phase 3600 */
-    bad[21] = 0x0E;
-    CHECK_EQ(rcnode_decode(bad, 24, &p), RCNODE_ERR_RANGE);
-    memcpy(bad, b, 24);
-    bad[7] = 101u;
+    bad[8] = 101u;
     CHECK_EQ(rcnode_decode(bad, 24, &p), RCNODE_ERR_RANGE);
     CHECK_EQ(rcnode_enc_bal_report(&r, b, 23), 0);
+}
+
+TEST_CASE(the_encoder_wraps_the_phase_and_refuses_a_quality_over_100)
+{
+    rcnode_bal_report_t r;
+    memset(&r, 0, sizeof r);
+    r.quality = 100u;
+    r.phase_1x = 3600u;                /* 360.0° is 0 */
+    uint8_t b[24];
+    rcnode_pkt_t p;
+    CHECK_EQ(rcnode_enc_bal_report(&r, b, sizeof b), 24);
+    CHECK_EQ(rcnode_decode(b, 24, &p), RCNODE_OK);
+    CHECK_EQ(p.u.bal.phase_1x, 0);
+    r.phase_1x = 65535u;               /* 65535 mod 3600 = 735 */
+    CHECK_EQ(rcnode_enc_bal_report(&r, b, sizeof b), 24);
+    CHECK_EQ(rcnode_decode(b, 24, &p), RCNODE_OK);
+    CHECK_EQ(p.u.bal.phase_1x, 735);
+    r.quality = 101u;
+    memset(b, 0xEE, sizeof b);
+    CHECK_EQ(rcnode_enc_bal_report(&r, b, sizeof b), 0);
+    CHECK_EQ(b[0], 0xEE);              /* nothing written */
+}
+
+TEST_CASE(the_balance_flags_are_shared_vibes_bit_for_bit)
+{
+    /* vibe_demod.h at bench/vibe 295611b15, VIBE_F_VALID to
+     * VIBE_F_RESTARTED. */
+    CHECK_EQ(RCNODE_BF_VALID,        0x0001);
+    CHECK_EQ(RCNODE_BF_INDEX_SEEN,   0x0002);
+    CHECK_EQ(RCNODE_BF_INDEX_STEADY, 0x0004);
+    CHECK_EQ(RCNODE_BF_INDEX_LOST,   0x0008);
+    CHECK_EQ(RCNODE_BF_NO_INDEX,     0x0010);
+    CHECK_EQ(RCNODE_BF_CLIPPED,      0x0020);
+    CHECK_EQ(RCNODE_BF_DC_OK,        0x0040);
+    CHECK_EQ(RCNODE_BF_BLADE_OK,     0x0080);
+    CHECK_EQ(RCNODE_BF_QUALITY,      0x0100);
+    CHECK_EQ(RCNODE_BF_EDGE_DROPPED, 0x0200);
+    CHECK_EQ(RCNODE_BF_RPM_RANGE,    0x0400);
+    CHECK_EQ(RCNODE_BF_RESTARTED,    0x0800);
+    CHECK_EQ(RCNODE_BF_COUNTS,       0x8000);
+    CHECK_EQ(RCNODE_BLADES_MAX, 12);   /* VIBE_BLADES_MAX */
 }
 
 TEST_CASE(a_status_at_its_limits_and_a_sensor_state_past_the_last)
@@ -306,7 +346,7 @@ TEST_CASE(a_refused_packet_leaves_the_output_as_it_was)
     uint8_t b[24];
     memset(b, 0, sizeof b);
     b[0] = RCNODE_T_BAL_REPORT;
-    b[7] = 200u;                       /* quality 200 */
+    b[8] = 200u;                       /* quality 200 */
     CHECK_EQ(rcnode_decode(b, 24, &p), RCNODE_ERR_RANGE);
     CHECK(memcmp(&p, &before, sizeof p) == 0);
     CHECK_EQ(rcnode_decode(b, 23, &p), RCNODE_ERR_LEN);
@@ -324,6 +364,8 @@ TEST_CASE(every_control_write_has_its_bytes_and_its_limits)
     CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 2);
     CHECK_EQ(b[0], 0x01);
     CHECK_EQ(b[1], 0xFF);
+    c.tag = 0u;                        /* 0 is "no RUN yet" */
+    CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 0);
     c.op = RCNODE_OP_SLEEP;
     CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 1);
     CHECK_EQ(b[0], 0x02);
@@ -331,10 +373,10 @@ TEST_CASE(every_control_write_has_its_bytes_and_its_limits)
     CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 1);
     CHECK_EQ(b[0], 0x03);
     c.op = RCNODE_OP_BLADES;
-    c.blades = 32u;
+    c.blades = 12u;
     CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 2);
-    CHECK_EQ(b[1], 32);
-    c.blades = 33u;
+    CHECK_EQ(b[1], 12);
+    c.blades = 13u;
     CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 0);
     c.blades = 0u;
     CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 0);
@@ -351,15 +393,17 @@ TEST_CASE(every_control_write_has_its_bytes_and_its_limits)
     CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 0);
 
     rcnode_ctl_t d;
-    static const uint8_t run[2] = { 0x01, 0x00 };
+    static const uint8_t run[2] = { 0x01, 0x01 };
+    static const uint8_t run_0[2] = { 0x01, 0x00 };
     CHECK_EQ(rcnode_dec_ctl(run, 2, &d), RCNODE_OK);
     CHECK_EQ(d.op, RCNODE_OP_RUN);
-    CHECK_EQ(d.tag, 0);
+    CHECK_EQ(d.tag, 1);
+    CHECK_EQ(rcnode_dec_ctl(run_0, 2, &d), RCNODE_ERR_RANGE);
     CHECK_EQ(rcnode_dec_ctl(run, 1, &d), RCNODE_ERR_LEN);
     CHECK_EQ(rcnode_dec_ctl(run, 3, &d), RCNODE_ERR_LEN);
     static const uint8_t blades_1[2] = { 0x04, 1 };
     static const uint8_t blades_0[2] = { 0x04, 0 };
-    static const uint8_t blades_33[2] = { 0x04, 33 };
+    static const uint8_t blades_33[2] = { 0x04, 13 };
     CHECK_EQ(rcnode_dec_ctl(blades_1, 2, &d), RCNODE_OK);
     CHECK_EQ(d.blades, 1);
     CHECK_EQ(rcnode_dec_ctl(blades_0, 2, &d), RCNODE_ERR_RANGE);
@@ -611,6 +655,76 @@ TEST_CASE(the_run_extremes_restart_at_the_marker_and_keep_every_peak)
     CHECK_EQ(r.windows, UINT32_MAX);   /* holds at the top */
 }
 
+TEST_CASE(a_window_closed_with_the_marker_stays_out_of_the_new_run)
+{
+    rcnode_run_t r;
+    rcnode_run_mark(&r, 1u);
+    rcnode_pwr_win_t w;
+    memset(&w, 0, sizeof w);
+    w.n = 18u;
+    w.i_max = 90000000;                /* 90A before the marker */
+    w.v_min = 9000u;
+    rcnode_run_step(&r, &w, 2);        /* closed in the step that took RUN 2 */
+    CHECK_EQ(r.tag, 2);
+    CHECK_EQ(r.windows, 0);
+    CHECK_EQ(r.i_max, RCNODE_I_NONE);
+    CHECK_EQ(r.v_min, RCNODE_V_NONE);
+    w.i_max = 5000000;
+    w.v_min = 11000u;
+    rcnode_run_step(&r, &w, -1);       /* the next window is the run's */
+    CHECK_EQ(r.windows, 1);
+    CHECK_EQ(r.i_max, 5000000);
+    CHECK_EQ(r.v_min, 11000);
+    rcnode_run_step(&r, NULL, 0);      /* nothing closed, no marker */
+    CHECK_EQ(r.windows, 1);
+    CHECK_EQ(r.tag, 2);
+    rcnode_run_step(NULL, &w, 3);
+}
+
+/** An accumulator packet of @p epoch and @p energy, both registers read. */
+static rcnode_pwr_acc_t acc(uint8_t epoch, uint64_t energy, uint64_t charge)
+{
+    rcnode_pwr_acc_t a;
+    memset(&a, 0, sizeof a);
+    a.flags = RCNODE_AF_CHARGE_OK | RCNODE_AF_ENERGY_OK | RCNODE_AF_ONLINE;
+    a.epoch = epoch;
+    a.energy = energy;
+    a.charge = charge;
+    return a;
+}
+
+TEST_CASE(a_fall_in_energy_under_the_same_epoch_is_a_restart_not_22gj)
+{
+    /* A part reset the node had not caught: 0 under the old epoch.  Taken
+     * as a difference it would be 2^40 - 10^6 steps of 20mJ, about 22GJ. */
+    rcnode_pwr_acc_t prev = acc(3u, 1000000u, 500000u);
+    rcnode_pwr_acc_t now = acc(3u, 0u, 0u);
+    CHECK_EQ(rcnode_energy_delta(prev.energy, now.energy), 1099510627776ll);
+    CHECK(rcnode_acc_restarted(&prev, &now));
+
+    now = acc(3u, 1000001u, 499000u);  /* charge falls: current back into the pack */
+    CHECK(!rcnode_acc_restarted(&prev, &now));
+    now = acc(3u, 1000000u, 500000u);  /* no change */
+    CHECK(!rcnode_acc_restarted(&prev, &now));
+    now = acc(4u, 2000000u, 600000u);  /* a set-up the node saw */
+    CHECK(rcnode_acc_restarted(&prev, &now));
+    now = acc(3u, 0u, 0u);
+    now.flags = RCNODE_AF_ONLINE;      /* ENERGY not read: nothing to judge */
+    CHECK(!rcnode_acc_restarted(&prev, &now));
+    CHECK(!rcnode_acc_restarted(NULL, &now));
+}
+
+TEST_CASE(a_notification_fits_the_mtu_less_3_bytes)
+{
+    CHECK(rcnode_fits_mtu(23u, 20u));
+    CHECK(!rcnode_fits_mtu(23u, RCNODE_BAL_REPORT_LEN));
+    CHECK(rcnode_fits_mtu(27u, RCNODE_BAL_REPORT_LEN));
+    CHECK(!rcnode_fits_mtu(26u, RCNODE_BAL_REPORT_LEN));
+    CHECK(!rcnode_fits_mtu(0u, 1u));   /* no link */
+    CHECK(!rcnode_fits_mtu(2u, 0u));
+    CHECK(rcnode_fits_mtu(3u, 0u));
+}
+
 TEST_CASE(the_name_takes_the_two_address_bytes_printed_last)
 {
     static const uint8_t addr[6] = { 0x56, 0x34, 0x12, 0xA1, 0xDF, 0x7C };
@@ -750,6 +864,8 @@ int main(void)
     RUN(the_accumulators_travel_as_40_bits_at_their_ends);
     RUN(the_run_extremes_keep_their_no_value_marks);
     RUN(a_balance_report_takes_phase_3599_and_quality_100_and_refuses_past);
+    RUN(the_encoder_wraps_the_phase_and_refuses_a_quality_over_100);
+    RUN(the_balance_flags_are_shared_vibes_bit_for_bit);
     RUN(a_status_at_its_limits_and_a_sensor_state_past_the_last);
     RUN(the_info_names_the_address_lsb_first_and_refuses_role_0);
     RUN(every_type_refuses_another_length_and_an_unknown_type_is_refused);
@@ -767,6 +883,9 @@ int main(void)
     RUN(windows_without_a_sample_between_two_are_not_sent);
     RUN(the_window_that_ends_past_2_32us_carries_the_wrapped_t_node);
     RUN(the_run_extremes_restart_at_the_marker_and_keep_every_peak);
+    RUN(a_window_closed_with_the_marker_stays_out_of_the_new_run);
+    RUN(a_fall_in_energy_under_the_same_epoch_is_a_restart_not_22gj);
+    RUN(a_notification_fits_the_mtu_less_3_bytes);
     RUN(the_name_takes_the_two_address_bytes_printed_last);
     RUN(the_advertising_has_its_bytes_and_matches_its_role);
     RUN(a_name_alone_matches_and_other_devices_do_not);

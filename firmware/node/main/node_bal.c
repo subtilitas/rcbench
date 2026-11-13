@@ -2,7 +2,8 @@
  * @file node_bal.c
  * @brief The balance role, a stub: it advertises as `rcbench-bal-XXXX`,
  *        serves STATUS and INFO, takes BLADES and RPM, and sends no
- *        report.  The balance slice fills it: the ADC (analogue-to-digital
+ *        report.  It has no timer wake: asleep, it sleeps until the RESET
+ *        key.  The balance slice fills it: the ADC (analogue-to-digital
  *        converter) stream of the vibration sensor and the index sensor,
  *        and the demodulation of shared/vibe into RCNODE_T_BAL_REPORT
  *        every RCNODE_BAL_MS.
@@ -13,7 +14,6 @@
 
 #include <stdio.h>
 
-#include "node_policy.h"
 
 /** @brief The blade count and the rpm the panel wrote. @{ */
 static uint8_t  s_blades = 2u;
@@ -84,21 +84,21 @@ static void bal_sleep(void)
 }
 
 /**
- * @brief A balance node asleep stays asleep until the RESET key; only the
- *        cell switches it off.
+ * @brief Not called: a balance node has no timer wake.
  *
- * @param bat_mv The cell, mV.
- * @return NODE_OFF for an empty cell, NODE_SLEEP otherwise.
+ * @param vbus_uv Receives 0.
+ * @return false.
  */
-static int bal_wake(uint16_t bat_mv)
+static bool bal_wake(int32_t *vbus_uv)
 {
-    return node_policy_wake(false, 0, bat_mv) == NODE_OFF ? (int)NODE_OFF
-                                                          : (int)NODE_SLEEP;
+    *vbus_uv = 0;
+    return false;
 }
 
 const node_role_t node_role = {
     .role    = RCNODE_ROLE_BALANCE,
     .word    = "bal",
+    .timer_wake = false,
     .start   = bal_start,
     .control = bal_control,
     .status  = bal_status,

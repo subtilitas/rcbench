@@ -160,3 +160,16 @@ void rcnode_run_take(rcnode_run_t *r, const rcnode_pwr_win_t *w)
         r->v_min = w->v_min;
     }
 }
+
+void rcnode_run_step(rcnode_run_t *r, const rcnode_pwr_win_t *closed, int tag)
+{
+    if (r == NULL) {
+        return;
+    }
+    if (closed != NULL) {
+        rcnode_run_take(r, closed);
+    }
+    if (tag > 0 && tag <= (int)UINT8_MAX) {
+        rcnode_run_mark(r, (uint8_t)tag);
+    }
+}

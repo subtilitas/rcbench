@@ -221,48 +221,60 @@ typedef struct {
 
 /* -------------------------------------------------------- balance node */
 
-/** @brief RCNODE_T_BAL_REPORT flags. @{ */
-#define RCNODE_BF_INDEX      0x01u  /**< an index pulse was seen in the report */
-#define RCNODE_BF_STEADY     0x02u  /**< the index period is steady */
-#define RCNODE_BF_DC_OK      0x04u  /**< the vibration sensor's DC level is in range */
-#define RCNODE_BF_CLIPPED    0x08u  /**< an ADC (analogue-to-digital converter) sample at an end of its range */
-#define RCNODE_BF_NO_INDEX   0x10u  /**< no-index mode: rpm from CONTROL, phases 0 */
-#define RCNODE_BF_COUNTS     0x20u  /**< magnitudes in ADC counts, not mg (a piezo) */
-#define RCNODE_BF_FEW_REVS   0x40u  /**< fewer than 2 revolutions in the report */
+/**
+ * @brief RCNODE_T_BAL_REPORT flags.  Bits 0 to 11 are shared/vibe's
+ * VIBE_F_* bit for bit (vibe_demod.h), so the node copies the demodulator's
+ * flags unchanged; bit 15 is the node's own.  @{ */
+#define RCNODE_BF_VALID        0x0001u  /**< a revolution counted: the magnitudes hold */
+#define RCNODE_BF_INDEX_SEEN   0x0002u  /**< an index edge arrived in the report */
+#define RCNODE_BF_INDEX_STEADY 0x0004u  /**< revolutions counted and none refused or lost */
+#define RCNODE_BF_INDEX_LOST   0x0008u  /**< the longest revolution passed without an edge */
+#define RCNODE_BF_NO_INDEX     0x0010u  /**< no-index mode: rpm from CONTROL, phase 0 */
+#define RCNODE_BF_CLIPPED      0x0020u  /**< an ADC (analogue-to-digital converter) sample at an end of its range */
+#define RCNODE_BF_DC_OK        0x0040u  /**< the vibration sensor's DC level is in range */
+#define RCNODE_BF_BLADE_OK     0x0080u  /**< the blade-pass is below half the sample rate: mag_blade holds */
+#define RCNODE_BF_QUALITY      0x0100u  /**< quality holds: 2 revolutions or more behind it */
+#define RCNODE_BF_EDGE_DROPPED 0x0200u  /**< an index edge out of order or past a full queue */
+#define RCNODE_BF_RPM_RANGE    0x0400u  /**< no-index mode: the rpm written gives a revolution out of range */
+#define RCNODE_BF_RESTARTED    0x0800u  /**< the mode or the blade count changed in the report */
+#define RCNODE_BF_COUNTS       0x8000u  /**< magnitudes in ADC counts, not mg (a piezo) */
 /** @} */
-
-/** @brief One harmonic: a magnitude and its phase. */
-typedef struct {
-    uint16_t mag;    /**< mg, or ADC counts with RCNODE_BF_COUNTS */
-    uint16_t phase;  /**< 0.1° steps from the index edge, in the direction of rotation, 0 to 3599 */
-} rcnode_harm_t;
 
 /**
  * @brief One balance report, RCNODE_T_BAL_REPORT, 24 bytes, every 250ms.
  *
- * | Byte  | Field          |
- * |-------|----------------|
- * | 0-5   | header         |
- * | 6     | flags          |
- * | 7     | quality        |
- * | 8-9   | rpm            |
- * | 10-13 | h1 (mag, phase)    |
- * | 14-17 | h2 (mag, phase)    |
- * | 18-21 | blade (mag, phase) |
- * | 22-23 | rms            |
+ * | Byte  | Field     |
+ * |-------|-----------|
+ * | 0-5   | header    |
+ * | 6-7   | flags     |
+ * | 8     | quality   |
+ * | 9     | revs      |
+ * | 10-11 | rpm       |
+ * | 12-13 | spread_pm |
+ * | 14-15 | mag_1x    |
+ * | 16-17 | phase_1x  |
+ * | 18-19 | mag_2x    |
+ * | 20-21 | mag_blade |
+ * | 22-23 | rms       |
  *
- * The vectors are the means over the report's revolutions.  Quality is the
- * coherence |mean vector| / mean |vector| of the 1x component.
+ * The magnitudes are the means over the report's revolutions.  Quality is
+ * the coherence |mean vector| / mean |vector| of the 1x component.  Only the
+ * 1x component carries a phase: the balance methods use the 1x phase alone,
+ * and the 2x and blade-pass phases would take the packet to 28 bytes.  The
+ * sensor's DC level travels as RCNODE_BF_DC_OK only.
  */
 typedef struct {
-    rcnode_hdr_t  hdr;      /**< t_node is the report's end */
-    uint8_t       flags;    /**< RCNODE_BF_* */
-    uint8_t       quality;  /**< %, 0 to 100 */
-    uint16_t      rpm;      /**< 1rpm steps */
-    rcnode_harm_t h1;       /**< the 1x component: the imbalance */
-    rcnode_harm_t h2;       /**< the 2x component: misalignment */
-    rcnode_harm_t blade;    /**< the blade-pass component */
-    uint16_t      rms;      /**< mg, the broadband rms (root mean square) after the DC is removed */
+    rcnode_hdr_t hdr;        /**< t_node is the report's end */
+    uint16_t     flags;      /**< RCNODE_BF_* */
+    uint8_t      quality;    /**< %, 0 to 100; holds with RCNODE_BF_QUALITY */
+    uint8_t      revs;       /**< revolutions (no-index mode: units) counted, saturates at 255 */
+    uint16_t     rpm;        /**< 1rpm steps */
+    uint16_t     spread_pm;  /**< (longest - shortest period) / mean period, 0.1% steps */
+    uint16_t     mag_1x;     /**< the 1x component, the imbalance: mg, or ADC counts with RCNODE_BF_COUNTS */
+    uint16_t     phase_1x;   /**< 0.1° steps from the index edge, in the direction of rotation, 0 to 3599 */
+    uint16_t     mag_2x;     /**< the 2x component, misalignment: as mag_1x */
+    uint16_t     mag_blade;  /**< the blade-pass component: as mag_1x */
+    uint16_t     rms;        /**< mg, the broadband rms (root mean square) after the DC is removed */
 } rcnode_bal_report_t;
 
 /* --------------------------------------------------- status and info */
@@ -274,6 +286,7 @@ typedef struct {
 #define RCNODE_ST_PACK      0x0008u  /**< power: a pack is on the XT60 */
 #define RCNODE_ST_STAY      0x0010u  /**< the console holds the node awake */
 #define RCNODE_ST_SUBSCRIBED 0x0020u /**< STREAM notifications are on */
+#define RCNODE_ST_BAT_ERR   0x0040u  /**< the battery read failed: vbat 0, the low-battery switch-off holds its count */
 /** @} */
 
 /** @brief The sensor's state in RCNODE_T_STATUS. */
@@ -363,7 +376,7 @@ typedef struct {
 /* ------------------------------------------------------------- control */
 
 /** @brief Control operations, byte 0 of a CONTROL write. @{ */
-#define RCNODE_OP_RUN    0x01u  /**< 2 bytes: op, tag; the run extremes restart */
+#define RCNODE_OP_RUN    0x01u  /**< 2 bytes: op, tag 1 to 255; the run extremes restart */
 #define RCNODE_OP_SLEEP  0x02u  /**< 1 byte: sleep now, wake on the 10s timer */
 #define RCNODE_OP_OFF    0x03u  /**< 1 byte: off until the RESET key or a power cycle */
 #define RCNODE_OP_BLADES 0x04u  /**< 2 bytes: op, count; balance only */
@@ -372,7 +385,7 @@ typedef struct {
 
 /** @brief Limits of the control values. @{ */
 #define RCNODE_BLADES_MIN  1u  /**< the fewest blades */
-#define RCNODE_BLADES_MAX 32u  /**< the most blades */
+#define RCNODE_BLADES_MAX 12u  /**< the most blades: shared/vibe's VIBE_BLADES_MAX */
 #define RCNODE_RPM_MAX  60000u  /**< the highest rpm; the ADXL335 at 4.7nF passes 1,060Hz, 63,600rpm */
 /** @} */
 
@@ -382,7 +395,7 @@ typedef struct {
 /** @brief A control write. */
 typedef struct {
     uint8_t  op;      /**< RCNODE_OP_* */
-    uint8_t  tag;     /**< RCNODE_OP_RUN: the tag */
+    uint8_t  tag;     /**< RCNODE_OP_RUN: the tag, 1 to 255; 0 means no RUN yet and is refused */
     uint8_t  blades;  /**< RCNODE_OP_BLADES: the count */
     uint16_t rpm;     /**< RCNODE_OP_RPM: the rotation rate, 0 for index mode */
 } rcnode_ctl_t;
@@ -437,12 +450,14 @@ size_t rcnode_enc_pwr_acc(const rcnode_pwr_acc_t *p, uint8_t *out, size_t cap);
 size_t rcnode_enc_pwr_run(const rcnode_pwr_run_t *p, uint8_t *out, size_t cap);
 
 /**
- * @brief Encode a balance report.
+ * @brief Encode a balance report.  The phase is written modulo
+ * RCNODE_PHASE_STEPS, so 3600 goes out as 0.
  *
  * @param p The report.
  * @param out The buffer.
  * @param cap The buffer's size.
- * @return RCNODE_BAL_REPORT_LEN, or 0 when @p cap is smaller or an argument NULL.
+ * @return RCNODE_BAL_REPORT_LEN, or 0 when @p cap is smaller, an argument
+ * NULL or the quality over 100.
  */
 size_t rcnode_enc_bal_report(const rcnode_bal_report_t *p, uint8_t *out,
                              size_t cap);
@@ -501,7 +516,8 @@ size_t rcnode_enc_ctl(const rcnode_ctl_t *c, uint8_t *out, size_t cap);
  * @param out Receives the write; on an error it is left as it was.
  * @return RCNODE_OK; RCNODE_ERR_TYPE for an unknown operation,
  * RCNODE_ERR_LEN for another length than the operation's,
- * RCNODE_ERR_RANGE for a blade count or rpm out of range.
+ * RCNODE_ERR_RANGE for a RUN tag of 0 (the tag before any RUN), a blade
+ * count or an rpm out of range.
  */
 rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out);
 
@@ -561,6 +577,37 @@ uint64_t rcnode_energy_delta(uint64_t prev, uint64_t now);
  * @return The signed steps, -2^39 to 2^39 - 1.
  */
 int64_t rcnode_charge_delta(uint64_t prev, uint64_t now);
+
+/**
+ * @brief Whether the accumulators restarted from @p prev to @p now: the
+ * panel's rule before it takes a difference.
+ *
+ * A restart is a change of epoch, or a fall in ENERGY under the same epoch.
+ * ENERGY only rises while the part counts (it integrates the magnitude of
+ * the power), and 2^40 steps of 20mJ, 22GJ, are no wrap a bench reaches, so
+ * a fall is a reset the node had not seen when it read the registers.
+ * CHARGE is not used: it falls whenever the current flows back into the
+ * pack.  Without RCNODE_AF_ENERGY_OK in both packets there is nothing to
+ * compare and the answer is false.
+ *
+ * @param prev The earlier accumulator packet.
+ * @param now The later one.
+ * @return true when the counts restarted: the panel takes @p now as a new
+ * start, not as a difference.
+ */
+bool rcnode_acc_restarted(const rcnode_pwr_acc_t *prev,
+                          const rcnode_pwr_acc_t *now);
+
+/**
+ * @brief Whether a notification of @p len bytes fits a link's ATT
+ * (attribute protocol) MTU (maximum transmission unit): the MTU less the
+ * 3-byte header.  A longer one is cut by the stack without an error.
+ *
+ * @param mtu The link's ATT MTU; 0 for no link.
+ * @param len The packet's length.
+ * @return true when it fits.
+ */
+bool rcnode_fits_mtu(uint16_t mtu, size_t len);
 
 /**
  * @brief A bus voltage in 2mV steps, rounded, clamped to 0 and 65535.
@@ -640,6 +687,17 @@ void rcnode_run_mark(rcnode_run_t *r, uint8_t tag);
  * @param w The window.
  */
 void rcnode_run_take(rcnode_run_t *r, const rcnode_pwr_win_t *w);
+
+/**
+ * @brief One sampler step's part of the extremes: the window that closed in
+ * the step first, then a RUN marker taken in the step.  A window closed
+ * with the marker is a window from before it and never enters the new run.
+ *
+ * @param r The extremes.
+ * @param closed The window that closed in the step, NULL for none.
+ * @param tag The RUN tag taken in the step, 1 to 255; 0 or less for none.
+ */
+void rcnode_run_step(rcnode_run_t *r, const rcnode_pwr_win_t *closed, int tag);
 
 /* ------------------------------------------------------- advertising */
 

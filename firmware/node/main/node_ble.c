@@ -314,10 +314,16 @@ static void tx_task(void *arg)
         if (!atomic_load(&s_linked) || !atomic_load(&s_stream_sub)) {
             continue;
         }
+        /* A notification past the MTU is cut by the stack without an
+         * error: one that does not fit is dropped and counted. */
+        const uint16_t conn = (uint16_t)atomic_load(&s_conn);
+        if (!rcnode_fits_mtu(ble_att_mtu(conn), it.n)) {
+            atomic_fetch_add(&s_dropped, 1u);
+            continue;
+        }
         struct os_mbuf *om = ble_hs_mbuf_from_flat(it.b, (uint16_t)it.n);
         if (om == NULL
-            || ble_gatts_notify_custom((uint16_t)atomic_load(&s_conn),
-                                       s_h_stream, om) != 0) {
+            || ble_gatts_notify_custom(conn, s_h_stream, om) != 0) {
             atomic_fetch_add(&s_dropped, 1u);
         }
     }

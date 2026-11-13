@@ -74,18 +74,34 @@ struct.
   `epoch` counts those set-ups (wraps at 256). The panel takes the
   difference from the first packet of a run with `rcnode_charge_delta()`
   and `rcnode_energy_delta()`, both across the 40-bit wrap, and converts
-  the steps with the calibration INFO names.
+  the steps with the calibration INFO names. Before each difference it asks
+  `rcnode_acc_restarted()`: a change of epoch, or a fall in ENERGY under the
+  same epoch, is a restart, and the newer packet becomes the new start. A
+  part reset the node has not caught yet reads 0 under the old epoch;
+  taken as a difference, ENERGY from 1,000,000 to 0 would be 2^40 - 10^6
+  steps, about 22GJ. ENERGY only rises while the part counts, and 2^40
+  steps of 20mJ are no wrap a bench reaches. CHARGE is not used for the
+  rule: it falls whenever the current flows back into the pack.
 - **Run extremes.** The tag of the last RUN write, the highest current and
   the lowest voltage of every window since, and the number of windows. A
-  radio gap loses no peak.
-- **Balance report.** Flags, quality (%, 0 to 100), rpm (1rpm steps), the
-  1x, 2x and blade-pass components as a magnitude (mg, or ADC counts with
-  `RCNODE_BF_COUNTS`) and a phase (0.1° steps from the index edge in the
-  direction of rotation, 0 to 3599), and the broadband rms (root mean
-  square) in mg. The decoder refuses a phase of 3600 or more and a quality
-  over 100. No node sends it yet: the balance role is a stub.
-- **Status.** Flags (battery low under 3.5V, no battery, sensor online,
-  pack present, held awake by the console, STREAM subscribed), the cell
+  radio gap loses no peak. Tag 0 is the tag before any RUN write.
+- **Balance report.** What shared/vibe's demodulator reports for one
+  window (`vibe_report_t`): 16 bits of flags, quality (%, 0 to 100),
+  revolutions counted (saturating at 255), rpm (1rpm steps), the period
+  spread (0.1% steps), the 1x, 2x and blade-pass magnitudes (mg, or ADC
+  counts with `RCNODE_BF_COUNTS`), the 1x phase (0.1° steps from the index
+  edge in the direction of rotation, 0 to 3599), and the broadband rms
+  (root mean square) in mg. Flag bits 0 to 11 are vibe's `VIBE_F_*` bit for
+  bit, `VIBE_F_RESTARTED` (0x0800) included; bit 15 is `RCNODE_BF_COUNTS`.
+  The 2x and blade-pass phases stay out (they would take the packet to 28
+  bytes, and the balance methods use the 1x phase alone), and the sensor's
+  DC level travels as `RCNODE_BF_DC_OK` only. The encoder writes the phase
+  modulo 3600 and refuses a quality over 100; the decoder refuses a phase
+  of 3600 or more and a quality over 100. No node sends it yet: the balance
+  role is a stub.
+- **Status.** Flags (battery low under 3.5V, no battery, battery read
+  failed, sensor online, pack present, held awake by the console, STREAM
+  subscribed), the cell
   voltage in mV, the firmware version as 3 bytes, the sensor's state
   (`rcnode_sensor_t`), and three 16-bit counters that wrap: failed bus
   transactions, sensor set-ups after a reset or a loss, and STREAM packets
@@ -98,14 +114,14 @@ struct.
 
 | Byte 0 | Operation | Bytes | Value | Roles |
 |---|---|---|---|---|
-| 0x01 | RUN | 2 | a tag, 0 to 255; the run extremes restart | both |
+| 0x01 | RUN | 2 | a tag, 1 to 255; the run extremes restart | both |
 | 0x02 | SLEEP | 1 | | both |
 | 0x03 | OFF | 1 | | both |
-| 0x04 | BLADES | 2 | 1 to 32 | balance |
+| 0x04 | BLADES | 2 | 1 to 12, shared/vibe's `VIBE_BLADES_MAX` | balance |
 | 0x05 | RPM | 3 | 16 bits, 0 to 60000; 0 is the index mode | balance |
 
 The decoder refuses an unknown operation, another length than the
-operation's, and a value out of range. `rcnode_ctl_for_role()` says which
+operation's, a RUN tag of 0, and a value out of range. `rcnode_ctl_for_role()` says which
 role takes which operation.
 
 ### Advertising
@@ -129,7 +145,13 @@ clock and closes a 20ms window when a sample of a later window arrives.
 Windows are aligned to the node's clock: window k runs from k × 20000µs to
 (k + 1) × 20000µs, and the closed window's `t_node` is its end cut to 32
 bits. Windows without a sample between two are not sent. `rcnode_run_take()`
-folds each closed window into the run extremes.
+folds each closed window into the run extremes. `rcnode_run_step()` is one
+sampler step: the window that closed in it first, then a RUN marker taken
+in it, so a window from before the marker never enters the new run.
+
+`rcnode_fits_mtu()` says whether a packet fits a link's ATT MTU less its
+3-byte header. A notification past it is cut by the stack without an
+error, so the node drops such a packet and counts it.
 
 - No function allocates, blocks or keeps a global.
 
@@ -155,12 +177,15 @@ int32_t      rcnode_t_diff(uint32_t later, uint32_t earlier);
 int64_t      rcnode_sext40(uint64_t raw);
 uint64_t     rcnode_energy_delta(uint64_t prev, uint64_t now);
 int64_t      rcnode_charge_delta(uint64_t prev, uint64_t now);
+bool         rcnode_acc_restarted(const rcnode_pwr_acc_t *prev, const rcnode_pwr_acc_t *now);
+bool         rcnode_fits_mtu(uint16_t mtu, size_t len);
 uint16_t     rcnode_v_field(int32_t uv);
 void         rcnode_win_init(rcnode_win_t *w);
 bool         rcnode_win_add(rcnode_win_t *w, uint64_t t_us, const rcnode_sample_t *s,
                             uint8_t keep_flags, rcnode_pwr_win_t *out);
 void         rcnode_run_mark(rcnode_run_t *r, uint8_t tag);
 void         rcnode_run_take(rcnode_run_t *r, const rcnode_pwr_win_t *w);
+void         rcnode_run_step(rcnode_run_t *r, const rcnode_pwr_win_t *closed, int tag);
 bool         rcnode_name(uint8_t role, const uint8_t addr[6], char out[RCNODE_NAME_MAX]);
 size_t       rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out, size_t cap);
 size_t       rcnode_rsp_build(uint8_t *out, size_t cap);

@@ -24,8 +24,10 @@ history is in git.
 - Protocol module `protocols/rcnode`: the nodes' service and
   characteristic UUIDs (STREAM, STATUS, CONTROL, INFO), the power node's
   window, accumulator, run-extreme and status packets, the balance report
-  (1x, 2x and blade-pass magnitude and phase, rms, rpm, quality), the
-  control writes, the advertising and its match
+  (shared/vibe's flags bit for bit, quality, revolutions, rpm, period
+  spread, 1x, 2x and blade-pass magnitudes, 1x phase, rms), the control
+  writes, the advertising and its match, and the panel's rule for a
+  restart of the accumulators
   ([protocols/rcnode](protocols/rcnode/README.md)).
 
 - The IOmcu's 3s console report ends with the main loop's pass times since

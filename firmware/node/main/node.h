@@ -62,11 +62,14 @@ typedef struct {
     bool (*busy)(void);
     /** @brief Put the sensor in its lowest-current state before sleep. */
     void (*sleep)(void);
-    /** @brief At a timer wake, before anything else is started: whether
-     *  the node stays up.
-     *  @param bat_mv The cell, mV.
-     *  @return NODE_RUN, NODE_SLEEP or NODE_OFF (node_act_t). */
-    int (*wake)(uint16_t bat_mv);
+    /** @brief Whether the node's sleep wakes on the NODE_WAKE_S timer to
+     *  check for its work; false: it sleeps until the RESET key. */
+    bool timer_wake;
+    /** @brief At a timer wake, before anything else is started: the
+     *  check for a pack (node_policy_wake() decides).
+     *  @param vbus_uv Receives the bus voltage, µV.
+     *  @return true when the sensor answered. */
+    bool (*wake)(int32_t *vbus_uv);
 } node_role_t;
 
 /** @brief The role built into this image. */
@@ -141,7 +144,8 @@ void node_bat_init(void);
 /**
  * @brief Read the cell: 16 samples averaged.
  *
- * @return mV; 0 when the ADC fails.
+ * @return mV; NODE_BAT_ERR (node_policy.h) when the ADC or its calibration
+ *         fails.
  */
 uint16_t node_bat_read(void);
 

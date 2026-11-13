@@ -13,9 +13,11 @@
  * reads, into the window (protocols/rcnode, rcnode_win_add()).  Every 40ms
  * ADC_CONFIG is read back (ina228_verify()); a part found reset is set up
  * again 1000ms on and counted.  Every 500ms DIAG_ALRT, then CHARGE and
- * ENERGY raw, then DIETEMP are read, and the accumulators and the run
- * extremes go out.  The node never clears the accumulators; the part's own reset and
- * each set-up do, and epoch counts the set-ups.
+ * ENERGY raw, then ADC_CONFIG again, then DIETEMP are read, and the
+ * accumulators and the run extremes go out; CHARGE and ENERGY go out only
+ * when the read-back after them matches.  The node never clears the
+ * accumulators; the part's own reset and each set-up do, and epoch counts
+ * the set-ups.
  *
  * Pins: SDA GPIO19, SCL GPIO18, 400kHz, the pads' own pull-ups off, 2.2kΩ
  * pull-ups to 3.3V on the node.
@@ -36,7 +38,6 @@
 #include "freertos/task.h"
 
 #include "ina228.h"
-#include "node_policy.h"
 #include "sense_bus.h"
 
 /** @brief The bus and the part. @{ */
@@ -68,7 +69,7 @@ static rcnode_pwr_acc_t s_acc;          /**< the last accumulators */
 static uint8_t  s_wflags;               /**< RCNODE_WF_ONLINE and RCNODE_WF_RUN */
 static uint8_t  s_diag_of;              /**< RCNODE_AF_*_OF since the last packet */
 
-static atomic_int  s_run_tag = -1;      /**< a RUN tag to take, -1 none */
+static atomic_int  s_run_tag = -1;      /**< a RUN tag to take, 1 to 255; -1 none */
 static atomic_bool s_online;            /**< the part is online */
 static atomic_bool s_pack;              /**< the last window's mean is 5.0V or more */
 static atomic_uint s_resets;            /**< set-ups after the first */
@@ -207,14 +208,28 @@ static void slow_step(uint64_t t_us)
                 s_diag_of |= RCNODE_AF_ENERGY_OF;
             }
         }
-        uint64_t v = 0u;
-        if (read_raw40(INA228_CHARGE, &v)) {
-            s_acc.charge = v;
-            s_acc.flags |= RCNODE_AF_CHARGE_OK;
-        }
-        if (read_raw40(INA228_ENERGY, &v)) {
-            s_acc.energy = v;
-            s_acc.flags |= RCNODE_AF_ENERGY_OK;
+        uint64_t charge = 0u;
+        uint64_t energy = 0u;
+        const bool charge_ok = read_raw40(INA228_CHARGE, &charge);
+        const bool energy_ok = read_raw40(INA228_ENERGY, &energy);
+        /* ADC_CONFIG read back after the two: a part that reset before or
+         * between the reads answers with its reset value, and its zeros are
+         * not sent under the old epoch.  A read back that fails confirms
+         * nothing either.  Both values are dropped then. */
+        bool lost = false;
+        if (ina228_verify(&s_ina, &lost) != SENSE_OK || lost) {
+            if (lost) {
+                atomic_store(&s_online, false);
+            }
+        } else {
+            if (charge_ok) {
+                s_acc.charge = charge;
+                s_acc.flags |= RCNODE_AF_CHARGE_OK;
+            }
+            if (energy_ok) {
+                s_acc.energy = energy;
+                s_acc.flags |= RCNODE_AF_ENERGY_OK;
+            }
         }
         int32_t mdegc = 0;
         if (ina228_read_dietemp(&s_ina, &mdegc) == SENSE_OK) {
@@ -304,18 +319,20 @@ static void pwr_task(void *arg)
         const uint32_t now_ms = (uint32_t)(t / 1000u);
 
         const int tag = atomic_exchange(&s_run_tag, -1);
-        if (tag >= 0) {
-            rcnode_run_mark(&s_run, (uint8_t)tag);
-            s_wflags |= RCNODE_WF_RUN;
-        }
 
         rcnode_sample_t s;
         sample_step(now_ms, &s);
         s_wflags = (uint8_t)((s_wflags & RCNODE_WF_RUN)
                              | (atomic_load(&s_online) ? RCNODE_WF_ONLINE : 0u));
         rcnode_pwr_win_t w;
-        if (rcnode_win_add(&s_win, t, &s, s_wflags, &w)) {
-            rcnode_run_take(&s_run, &w);
+        const bool closed = rcnode_win_add(&s_win, t, &s, s_wflags, &w);
+        /* The closed window first, then the marker: the window is from
+         * before the RUN write. */
+        rcnode_run_step(&s_run, closed ? &w : NULL, tag);
+        if (tag > 0) {
+            s_wflags |= RCNODE_WF_RUN;
+        }
+        if (closed) {
             atomic_store(&s_pack, (w.flags & RCNODE_WF_PACK) != 0u);
             atomic_store(&s_last_i, w.i_mean);
             atomic_store(&s_last_v, w.v_mean);
@@ -485,13 +502,13 @@ static void pwr_sleep(void)
  * @brief The timer wake's check: one triggered bus voltage conversion
  *        (mode 1h, 540µs), the read, the part back to shutdown.
  *
- * @param bat_mv The cell, mV.
- * @return NODE_RUN, NODE_SLEEP or NODE_OFF.
+ * @param vbus_uv Receives the bus voltage, µV.
+ * @return true when the INA228 answered.
  */
-static int pwr_wake(uint16_t bat_mv)
+static bool pwr_wake(int32_t *vbus_uv)
 {
     bool answered = false;
-    int32_t uv = 0;
+    *vbus_uv = 0;
     if (bus_up()) {
         const uint16_t trig = ina228_adc_config(0x1u, 4, 4, 0, 0);
         uint8_t b[3];
@@ -499,17 +516,18 @@ static int pwr_wake(uint16_t bat_mv)
             esp_rom_delay_us(1500);
             if (sense_bus_read(&s_sbus, PWR_ADDR, INA228_VBUS, b, sizeof b) == SENSE_OK) {
                 answered = true;
-                uv = ina228_vbus_uv(ina228_code20(sense_be24(b)));
+                *vbus_uv = ina228_vbus_uv(ina228_code20(sense_be24(b)));
             }
         }
         pwr_sleep();
     }
-    return (int)node_policy_wake(answered, uv, bat_mv);
+    return answered;
 }
 
 const node_role_t node_role = {
     .role    = RCNODE_ROLE_POWER,
     .word    = "pwr",
+    .timer_wake = true,
     .start   = pwr_start,
     .control = pwr_control,
     .status  = pwr_status,

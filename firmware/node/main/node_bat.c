@@ -57,7 +57,7 @@ void node_bat_init(void)
 uint16_t node_bat_read(void)
 {
     if (s_unit == NULL || s_cali == NULL) {
-        return 0u;
+        return NODE_BAT_ERR;
     }
     uint32_t sum = 0u;
     for (unsigned k = 0; k < BAT_SAMPLES; ++k) {
@@ -65,7 +65,7 @@ uint16_t node_bat_read(void)
         int mv = 0;
         if (adc_oneshot_read(s_unit, s_chan, &raw) != ESP_OK
             || adc_cali_raw_to_voltage(s_cali, raw, &mv) != ESP_OK) {
-            return 0u;
+            return NODE_BAT_ERR;
         }
         sum += (uint32_t)(mv < 0 ? 0 : mv);
     }

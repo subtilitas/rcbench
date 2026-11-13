@@ -40,6 +40,9 @@
 /** @brief Timer wakes since the last full start; kept in RTC (real-time
  *  clock) memory through deep sleep. */
 RTC_DATA_ATTR static uint32_t s_wakes;
+/** @brief Low battery readings in a row (node_policy_t's low_reads), kept
+ *  in RTC memory through deep sleep so the count runs on across wakes. */
+RTC_DATA_ATTR static uint8_t s_low_reads;
 
 static QueueHandle_t s_ctlq;           /**< rcnode_ctl_t */
 static atomic_bool   s_stay;           /**< the console's hold */
@@ -90,8 +93,9 @@ void node_control_post(const rcnode_ctl_t *c)
  * @brief Deep sleep, with or without the NODE_WAKE_S timer.  Does not
  *        return.
  *
- * @param timer true for the timer, false for off: only the RESET key or a
- *              power cycle starts the node again.
+ * @param timer true for the timer; false for off and for a role without a
+ *              timer wake: only the RESET key or a power cycle starts the
+ *              node again.
  */
 static void deep_sleep(bool timer)
 {
@@ -106,17 +110,22 @@ static void deep_sleep(bool timer)
  *        sleep.  Does not return.
  *
  * @param act NODE_SLEEP or NODE_OFF.
+ * @param low_reads The policy's low battery readings in a row, kept for the
+ *        next wake.
  */
-static void go_down(node_act_t act)
+static void go_down(node_act_t act, uint8_t low_reads)
 {
+    const bool timer = act == NODE_SLEEP && node_role.timer_wake;
     ESP_LOGI(NODE_TAG, "%s", act == NODE_OFF
              ? "off: the RESET key starts the node again"
-             : "sleep: a check every 10s, the RESET key starts the node");
+             : timer ? "sleep: a check every 10s, the RESET key starts the node"
+                     : "sleep: the RESET key starts the node");
     node_ble_stop();
     vTaskDelay(pdMS_TO_TICKS(STOP_MS));
     node_role.sleep();
     s_wakes = 0u;
-    deep_sleep(act == NODE_SLEEP);
+    s_low_reads = low_reads;
+    deep_sleep(timer);
 }
 
 /**
@@ -129,7 +138,8 @@ static void publish_status(uint16_t bat_mv)
     rcnode_status_t s;
     memset(&s, 0, sizeof s);
     s.flags = node_bat_flags(bat_mv);
-    s.vbat  = (s.flags & RCNODE_ST_BAT_NONE) != 0u ? 0u : bat_mv;
+    s.vbat  = (s.flags & (RCNODE_ST_BAT_NONE | RCNODE_ST_BAT_ERR)) != 0u
+              ? 0u : bat_mv;
     s.fw[0] = RCBENCH_VERSION_MAJOR;
     s.fw[1] = RCBENCH_VERSION_MINOR;
     s.fw[2] = RCBENCH_VERSION_PATCH;
@@ -150,7 +160,7 @@ static void publish_status(uint16_t bat_mv)
 /**
  * @brief The console's line, once a second.
  *
- * @param bat_mv The cell, mV.
+ * @param bat_mv The cell, mV, or NODE_BAT_ERR.
  */
 static void print_line(uint16_t bat_mv)
 {
@@ -167,11 +177,15 @@ static void print_line(uint16_t bat_mv)
             snprintf(link, sizeof link, "up");
         }
     }
-    ESP_LOGI(NODE_TAG, "%s %s; link %s, sub %d, bat %u.%02uV, errors %u, "
+    char bat[16] = "error";
+    if (bat_mv != NODE_BAT_ERR) {
+        snprintf(bat, sizeof bat, "%u.%02uV", bat_mv / 1000u,
+                 (bat_mv % 1000u) / 10u);
+    }
+    ESP_LOGI(NODE_TAG, "%s %s; link %s, sub %d, bat %s, errors %u, "
              "resets %u, dropped %u", node_role.word, role, link,
-             node_ble_subscribed() ? 1 : 0, bat_mv / 1000u,
-             (bat_mv % 1000u) / 10u, (unsigned)s.errors, (unsigned)s.resets,
-             (unsigned)s.dropped);
+             node_ble_subscribed() ? 1 : 0, bat, (unsigned)s.errors,
+             (unsigned)s.resets, (unsigned)s.dropped);
 }
 
 /**
@@ -180,7 +194,7 @@ static void print_line(uint16_t bat_mv)
 static void node_loop(void)
 {
     node_policy_t pol;
-    node_policy_init(&pol, (uint32_t)(node_us() / 1000u));
+    node_policy_init(&pol, (uint32_t)(node_us() / 1000u), s_low_reads);
     TickType_t next = xTaskGetTickCount() + pdMS_TO_TICKS(STEP_MS);
     for (;;) {
         const TickType_t now = xTaskGetTickCount();
@@ -189,9 +203,9 @@ static void node_loop(void)
         rcnode_ctl_t c;
         if (xQueueReceive(s_ctlq, &c, wait) == pdTRUE) {
             if (c.op == RCNODE_OP_SLEEP) {
-                go_down(NODE_SLEEP);
+                go_down(NODE_SLEEP, pol.low_reads);
             } else if (c.op == RCNODE_OP_OFF) {
-                go_down(NODE_OFF);
+                go_down(NODE_OFF, pol.low_reads);
             } else {
                 node_role.control(&c);
             }
@@ -199,7 +213,7 @@ static void node_loop(void)
         }
         const int ask = atomic_exchange(&s_ask, NODE_RUN);
         if (ask != NODE_RUN) {
-            go_down((node_act_t)ask);
+            go_down((node_act_t)ask, pol.low_reads);
         }
         next += pdMS_TO_TICKS(STEP_MS);
 
@@ -214,8 +228,9 @@ static void node_loop(void)
             .bat_mv = bat,
         };
         const node_act_t act = node_policy_step(&pol, &in);
+        s_low_reads = pol.low_reads;
         if (act != NODE_RUN) {
-            go_down(act);
+            go_down(act, pol.low_reads);
         }
     }
 }
@@ -224,9 +239,15 @@ void app_main(void)
 {
     node_bat_init();
     const uint32_t causes = esp_sleep_get_wakeup_causes();
-    if ((causes & BIT(ESP_SLEEP_WAKEUP_TIMER)) != 0u) {
+    if ((causes & BIT(ESP_SLEEP_WAKEUP_TIMER)) != 0u && node_role.timer_wake) {
         ++s_wakes;
-        const int act = node_role.wake(node_bat_read());
+        node_policy_t p;
+        node_policy_init(&p, 0u, s_low_reads);
+        const uint16_t bat = node_bat_read();
+        int32_t uv = 0;
+        const bool answered = node_role.wake(&uv);
+        const node_act_t act = node_policy_wake(&p, answered, uv, bat);
+        s_low_reads = p.low_reads;
         if (act != NODE_RUN) {
             deep_sleep(act == NODE_SLEEP);
         }

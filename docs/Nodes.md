@@ -34,7 +34,7 @@ the project's notice.
 
 | Part | Use |
 | --- | --- |
-| Waveshare ESP32-C6-Zero | ESP32-C6FH4 with 4MB flash in the package, USB-C (USB Serial/JTAG), ME6217C33M5G LDO (low-dropout regulator) from the 5V pin to 3.3V, WS2812 RGB LED on GPIO8, BOOT key on GPIO9, RESET key |
+| Waveshare ESP32-C6-Zero | ESP32-C6FH4 with 4MB flash in the package, USB-C (USB Serial/JTAG), LDO (low-dropout regulator) from the 5V pin to 3.3V: ME6217C33M5G on Waveshare's schematic, ME6217C33M6G on the seller's listing; the part on the delivered boards is not confirmed, WS2812 RGB LED on GPIO8, BOOT key on GPIO9, RESET key |
 | GERUI CD42 charge and boost module | charges the cell from VIN (4.5V to 5V) and boosts it to 5V on OUT |
 | a 1S LiPo cell | on the module's BAT |
 | MATEK I2C-INA-BM | INA228, 200µΩ shunt, address 0x45, XT60 in and out |
@@ -134,20 +134,27 @@ figures.
 
 | Condition | What the node does |
 | --- | --- |
-| no link, no pack on the XT60 and no `stay on` for 120s | deep sleep with a 10s timer |
+| no link, no pack on the XT60 and no `stay on` for 120s | deep sleep with a 10s timer; the balance node without a timer |
 | SLEEP written to CONTROL, or `sleep` on the console | the same, at once |
 | a timer wake | the INA228 converts the bus voltage once (540µs), the node reads it and shuts the part down; 5.0V or more starts the node in full, less sleeps again |
-| a cell between 1.0V and 3.3V, 3 readings in a row, or at a timer wake | off: deep sleep without a timer |
+| a cell between 1.0V and 3.3V, 3 readings in a row, counted across timer wakes | off: deep sleep without a timer |
 | OFF written to CONTROL, or `off` on the console | off, at once |
 | the RESET key, a power cycle, a flash | a full start |
 
-A divider reading under 1.0V is no cell, the board on USB alone, and
-switches nothing off. Under 3.5V STATUS reports the battery low. Before a
+The count of low readings is kept in RTC (real-time clock) memory through
+deep sleep, so one low reading at a timer wake switches nothing off; a
+good reading clears the count. A divider reading under 1.0V is no cell,
+the board on USB alone, and switches nothing off. Under 3.5V STATUS
+reports the battery low. A failed battery read (the ADC or its
+calibration fails) sets STATUS flag 0x0040 with a cell voltage of 0, prints
+`bat error` on the console, and neither counts towards the switch-off nor
+clears the count. Before a
 sleep the node ends the link, waits 200ms, and writes the INA228's
 ADC_CONFIG to shutdown.
 
 The BOOT key is GPIO9, which cannot wake the ESP32-C6 from deep sleep (only
-GPIO0 to GPIO7 can). The RESET key is the wake button.
+GPIO0 to GPIO7 can). The RESET key is the wake button. The balance node has
+no sensor that tells it to wake: asleep, it sleeps until the RESET key.
 
 A timer wake loads the image without checking it again
 (`CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP`). The time a timer wake
@@ -171,8 +178,25 @@ The driver is the IOmcu's.
 A window holds 17 or 18 samples. A current sample at either end of the
 20-bit range is a clip: counted and flagged, never a value. The node never
 clears the accumulators. The part clears them at its own reset and at
-every set-up, and the accumulator packet's epoch counts the set-ups. The
-packets are in [protocols/rcnode](../protocols/rcnode/README.md).
+every set-up, and the accumulator packet's epoch counts the set-ups. After
+CHARGE and ENERGY the node reads ADC_CONFIG back once more. When it does
+not match, the part reset before or between the reads: both values are
+dropped, their flags in the packet are clear, and the part is set up again.
+The panel treats a fall in ENERGY under the same epoch as a restart too
+(`rcnode_acc_restarted()`). The packets are in
+[protocols/rcnode](../protocols/rcnode/README.md).
+
+**What a set-up again loses.** Every set-up writes RSTACC, so CHARGE and
+ENERGY counted since the last accumulator packet the panel took are gone:
+
+| Cause | Lost charge and energy |
+| --- | --- |
+| the part reset itself | from the last good accumulator packet to the set-up: up to 500ms to the next read, 40ms to the read-back that catches the reset, and 1000ms to the set-up, 1.54s at most |
+| 3 failed reads in a row with no reset (the bus, not the part) | from the last good accumulator packet to the set-up: up to 500ms, the time the reads fail, and 1000ms |
+| the part does not answer the set-up | the set-up is tried again every 1000ms, and each try adds 1000ms |
+
+The window packets carry current and voltage through such a gap; the
+panel can count the gap from them.
 
 ## Bluetooth LE
 
@@ -187,14 +211,18 @@ its own.
 | --- | --- | --- |
 | STREAM | NOTIFY | windows every 20ms, accumulators and run extremes every 500ms |
 | STATUS | READ, NOTIFY | battery, flags, firmware version, counters, every 1000ms |
-| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN with a tag, SLEEP, OFF; BLADES and RPM on the balance node |
+| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN with a tag of 1 to 255, SLEEP, OFF; BLADES (1 to 12) and RPM on the balance node |
 | INFO | READ | protocol, role, board, address, the INA228's set-up |
 
 A write the role does not take, or of another length, is refused with ATT
 error 0x13 or 0x0D.
 
-STREAM packets wait in a queue of 32 for the sender. A full queue or a stack
-without a buffer drops the packet and counts it in STATUS's `dropped`.
+STREAM packets wait in a queue of 32 for the sender. A full queue, a stack
+without a buffer, or a packet longer than the link's MTU less 3 bytes
+drops the packet and counts it in STATUS's `dropped`. The stack would cut
+a longer notification without an error; the power node's packets are 20
+bytes, which fit the smallest MTU of 23, and the balance report is 24
+bytes, which needs 27.
 
 ## Building and flashing
 
@@ -248,14 +276,14 @@ I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online, epoch 1; link up
 | `epoch` | set-ups of the INA228 since the start |
 | `link` | `none`, `up` and the RSSI (received signal strength indication) |
 | `sub` | 1 when STREAM is subscribed |
-| `bat` | the cell; under 1.00V without a cell |
+| `bat` | the cell; under 1.00V without a cell; `error` when the read failed |
 | `errors`, `resets`, `dropped` | STATUS's counters |
 
 | Command | Does |
 | --- | --- |
 | `status` | the name, the firmware, the role and the last status in full |
 | `stay on`, `stay off` | holds the node awake, or lets it sleep again; until a restart |
-| `sleep` | deep sleep with the 10s check, at the next second |
+| `sleep` | deep sleep at the next second, with the 10s check on the power node |
 | `off` | off, at the next second |
 
 The start prints `rcbench node <version>, role pwr, <n> timer wakes before
@@ -269,7 +297,7 @@ this start`.
   pins, the wake, the currents and the CD42's behaviour are not measured.
 - The CD42's light-load auto-shutdown threshold is not known (above).
 - The balance role is a stub: it advertises as `rcbench-bal-XXXX`, takes
-  BLADES and RPM, and sends no report.
+  BLADES and RPM, sends no report, and sleeps until the RESET key.
 - The WS2812 is not driven. Its current at idle is not measured.
 - The firmware is updated over USB only.
 - Windows without a sample between two windows are not sent: a stalled

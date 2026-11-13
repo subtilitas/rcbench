@@ -105,7 +105,7 @@ void node_console_start(void)
           .func = cmd_status },
         { .command = "stay", .help = "Hold the node awake: stay on | stay off",
           .func = cmd_stay },
-        { .command = "sleep", .help = "Sleep now; a check every 10s",
+        { .command = "sleep", .help = "Sleep now; the power node checks every 10s",
           .func = cmd_sleep },
         { .command = "off", .help = "Off now; the RESET key starts the node",
           .func = cmd_off },

@@ -8,10 +8,10 @@
 
 #include "rcnode.h"
 
-void node_policy_init(node_policy_t *p, uint32_t now_ms)
+void node_policy_init(node_policy_t *p, uint32_t now_ms, uint8_t low_reads)
 {
     p->busy_ms   = now_ms;
-    p->low_reads = 0u;
+    p->low_reads = low_reads;
 }
 
 /**
@@ -26,16 +26,30 @@ static bool cell_empty(uint16_t bat_mv)
     return bat_mv >= NODE_BAT_NONE_MV && bat_mv < RCNODE_BAT_OFF_MV;
 }
 
-node_act_t node_policy_step(node_policy_t *p, const node_inputs_t *in)
+/**
+ * @brief Count one battery reading.
+ *
+ * @param p The policy.
+ * @param bat_mv The cell, mV, or NODE_BAT_ERR.
+ * @return true at NODE_OFF_READS low readings in a row.
+ */
+static bool count_low(node_policy_t *p, uint16_t bat_mv)
 {
-    if (cell_empty(in->bat_mv)) {
+    if (bat_mv == NODE_BAT_ERR) {
+        /* No reading: the count stands. */
+    } else if (cell_empty(bat_mv)) {
         if (p->low_reads < NODE_OFF_READS) {
             ++p->low_reads;
         }
     } else {
         p->low_reads = 0u;
     }
-    if (p->low_reads >= NODE_OFF_READS) {
+    return p->low_reads >= NODE_OFF_READS;
+}
+
+node_act_t node_policy_step(node_policy_t *p, const node_inputs_t *in)
+{
+    if (count_low(p, in->bat_mv)) {
         return NODE_OFF;
     }
     if (in->link || in->pack || in->stay) {
@@ -46,9 +60,10 @@ node_act_t node_policy_step(node_policy_t *p, const node_inputs_t *in)
                                                                : NODE_RUN;
 }
 
-node_act_t node_policy_wake(bool answered, int32_t vbus_uv, uint16_t bat_mv)
+node_act_t node_policy_wake(node_policy_t *p, bool answered, int32_t vbus_uv,
+                            uint16_t bat_mv)
 {
-    if (cell_empty(bat_mv)) {
+    if (count_low(p, bat_mv)) {
         return NODE_OFF;
     }
     if (answered && vbus_uv >= RCNODE_PACK_UV) {
@@ -61,11 +76,14 @@ uint16_t node_bat_mv(uint32_t pin_mv)
 {
     const uint64_t mv = (uint64_t)pin_mv * (NODE_DIV_TOP_KOHM + NODE_DIV_BOT_KOHM)
                         / NODE_DIV_BOT_KOHM;
-    return mv > UINT16_MAX ? (uint16_t)UINT16_MAX : (uint16_t)mv;
+    return mv >= NODE_BAT_ERR ? (uint16_t)(NODE_BAT_ERR - 1u) : (uint16_t)mv;
 }
 
 uint16_t node_bat_flags(uint16_t bat_mv)
 {
+    if (bat_mv == NODE_BAT_ERR) {
+        return RCNODE_ST_BAT_ERR;
+    }
     if (bat_mv < NODE_BAT_NONE_MV) {
         return RCNODE_ST_BAT_NONE;
     }

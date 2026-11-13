@@ -227,31 +227,23 @@ size_t rcnode_enc_pwr_run(const rcnode_pwr_run_t *p, uint8_t *out, size_t cap)
     return RCNODE_PWR_RUN_LEN;
 }
 
-/**
- * @brief Write one harmonic.
- *
- * @param b The destination, 4 bytes.
- * @param h The harmonic.
- */
-static void put_harm(uint8_t *b, const rcnode_harm_t *h)
-{
-    put16(b, h->mag);
-    put16(b + 2, h->phase);
-}
-
 size_t rcnode_enc_bal_report(const rcnode_bal_report_t *p, uint8_t *out,
                              size_t cap)
 {
-    if (p == NULL || out == NULL || cap < RCNODE_BAL_REPORT_LEN) {
+    if (p == NULL || out == NULL || cap < RCNODE_BAL_REPORT_LEN
+        || p->quality > 100u) {
         return 0u;
     }
     put_hdr(out, RCNODE_T_BAL_REPORT, &p->hdr);
-    out[6] = p->flags;
-    out[7] = p->quality;
-    put16(out + 8, p->rpm);
-    put_harm(out + 10, &p->h1);
-    put_harm(out + 14, &p->h2);
-    put_harm(out + 18, &p->blade);
+    put16(out + 6, p->flags);
+    out[8] = p->quality;
+    out[9] = p->revs;
+    put16(out + 10, p->rpm);
+    put16(out + 12, p->spread_pm);
+    put16(out + 14, p->mag_1x);
+    put16(out + 16, (uint16_t)(p->phase_1x % RCNODE_PHASE_STEPS));
+    put16(out + 18, p->mag_2x);
+    put16(out + 20, p->mag_blade);
     put16(out + 22, p->rms);
     return RCNODE_BAL_REPORT_LEN;
 }
@@ -292,20 +284,6 @@ size_t rcnode_enc_info(const rcnode_info_t *p, uint8_t *out, size_t cap)
 }
 
 /* ----------------------------------------------------------- decode */
-
-/**
- * @brief Read one harmonic.
- *
- * @param b The source, 4 bytes.
- * @param h Receives the harmonic.
- * @return false for a phase of RCNODE_PHASE_STEPS or more.
- */
-static bool get_harm(const uint8_t *b, rcnode_harm_t *h)
-{
-    h->mag   = get16(b);
-    h->phase = get16(b + 2);
-    return h->phase < RCNODE_PHASE_STEPS;
-}
 
 /**
  * @brief Decode the body of a packet whose type and length are checked.
@@ -351,13 +329,18 @@ static rcnode_err_t decode_body(const uint8_t *b, rcnode_pkt_t *p)
     case RCNODE_T_BAL_REPORT: {
         rcnode_bal_report_t *r = &p->u.bal;
         get_hdr(b, &r->hdr);
-        r->flags   = b[6];
-        r->quality = b[7];
-        r->rpm     = get16(b + 8);
-        const bool ok = get_harm(b + 10, &r->h1) & get_harm(b + 14, &r->h2)
-                      & get_harm(b + 18, &r->blade);
-        r->rms     = get16(b + 22);
-        return (ok && r->quality <= 100u) ? RCNODE_OK : RCNODE_ERR_RANGE;
+        r->flags     = get16(b + 6);
+        r->quality   = b[8];
+        r->revs      = b[9];
+        r->rpm       = get16(b + 10);
+        r->spread_pm = get16(b + 12);
+        r->mag_1x    = get16(b + 14);
+        r->phase_1x  = get16(b + 16);
+        r->mag_2x    = get16(b + 18);
+        r->mag_blade = get16(b + 20);
+        r->rms       = get16(b + 22);
+        return (r->phase_1x < RCNODE_PHASE_STEPS && r->quality <= 100u)
+               ? RCNODE_OK : RCNODE_ERR_RANGE;
     }
     case RCNODE_T_STATUS: {
         rcnode_status_t *s = &p->u.status;
@@ -444,6 +427,9 @@ static size_t ctl_len(uint8_t op)
  */
 static bool ctl_in_range(const rcnode_ctl_t *c)
 {
+    if (c->op == RCNODE_OP_RUN) {
+        return c->tag != 0u;
+    }
     if (c->op == RCNODE_OP_BLADES) {
         return c->blades >= RCNODE_BLADES_MIN && c->blades <= RCNODE_BLADES_MAX;
     }
@@ -553,6 +539,26 @@ uint64_t rcnode_energy_delta(uint64_t prev, uint64_t now)
 int64_t rcnode_charge_delta(uint64_t prev, uint64_t now)
 {
     return rcnode_sext40(now - prev);
+}
+
+bool rcnode_acc_restarted(const rcnode_pwr_acc_t *prev,
+                          const rcnode_pwr_acc_t *now)
+{
+    if (prev == NULL || now == NULL) {
+        return false;
+    }
+    if (prev->epoch != now->epoch) {
+        return true;
+    }
+    if ((prev->flags & now->flags & RCNODE_AF_ENERGY_OK) == 0u) {
+        return false;
+    }
+    return (now->energy & RCNODE_ACC_MASK) < (prev->energy & RCNODE_ACC_MASK);
+}
+
+bool rcnode_fits_mtu(uint16_t mtu, size_t len)
+{
+    return mtu >= 3u && len <= (size_t)mtu - 3u;
 }
 
 uint16_t rcnode_v_field(int32_t uv)
