@@ -488,20 +488,17 @@ bool kpn_write_refused(void)
     kst_prog_t *p = &k.prog;
     const kst_prog_msg_id_t m = kst_prog_write_check(p);
 
-    /* A card put in, taken out or swapped is found at the press. */
-    k.card_look = k.card_look || p->fed;
-    if (m == KST_PROG_MSG_NONE) {
+    /* A card put in, taken out or swapped is found at the press; the
+     * session's frames hold the card state. */
+    k.card_look = true;
+    /* NEED_ENABLE comes after every other check of the write, which
+     * covers every check of the gate (kst_prog_enable_check()): the hold
+     * opens the gate as it completes.  NONE: the gate is open already. */
+    if (m == KST_PROG_MSG_NONE || m == KST_PROG_MSG_NEED_ENABLE) {
         return false;
     }
-    if (m != KST_PROG_MSG_NEED_ENABLE) {
-        (void)kst_prog_write(p);        /* says why not */
-        return true;
-    }
-    if (kst_prog_enable_check(p) != KST_PROG_MSG_NONE) {
-        (void)kst_prog_enable(p, true); /* says why not */
-        return true;
-    }
-    return false;
+    (void)kst_prog_write(p);            /* says why not */
+    return true;
 }
 
 /* The model's write gate opened for one operation a hold asked for: a
@@ -654,9 +651,9 @@ void kpn_choice_done(int value)
     } else if (value == MORE_FIXED) {
         /* The carrier's 5V: a line to read, nothing to set. */
     } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE
-               || (kst_prog_release_check(p) == KST_PROG_MSG_NEED_ENABLE
-                   && kst_prog_enable_check(p) == KST_PROG_MSG_NONE)) {
-        /* The write gate is what the hold of the page opens. */
+               || kst_prog_release_check(p) == KST_PROG_MSG_NEED_ENABLE) {
+        /* The write gate is what the hold of the page opens: NEED_ENABLE
+         * comes after every check the gate makes (kpn_write_refused()). */
         kpn_warn_release();
     } else {
         (void)kst_prog_release(p);      /* says why not */

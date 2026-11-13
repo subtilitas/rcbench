@@ -485,8 +485,9 @@ static void write_tick(float dt_s)
     if (k.have && k.pressed == P_WRITE && !k.wr.fired) {
         const row_t *r = &kpn_rows[k.row];
 
-        if (k.warn.open || kst_panel_editor() != 0 || r->page != kpn_page()
-            || !kpn_row_live(r)) {
+        /* The press owns the overlay: its tab stays, and an editor opens
+         * only from the home tag (kst_panel_back()). */
+        if (kst_panel_editor() != 0 || !kpn_row_live(r)) {
             (void)ui_hold_left(&k.wr);
             let_go();
             ++k.rev;

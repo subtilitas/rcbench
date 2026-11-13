@@ -540,9 +540,9 @@ static void write_tick(float dt_s)
     if (hp.have && hp.pressed == P_WRITE && !hp.wr.fired) {
         const hpn_row_t *r = &hpn_rows[hp.row];
 
-        if (hp.page.open || hitec_panel_editor() != 0
-            || r->page != hp.tabs.selected || !hpn_row_shown(r)
-            || !hpn_row_live(r)) {
+        /* The press owns the overlay: its tab stays, and a page opens
+         * only from the home tag (hitec_panel_back()). */
+        if (hitec_panel_editor() != 0 || !hpn_row_live(r)) {
             (void)ui_hold_left(&hp.wr);
             let_go();
             ++hp.rev;

@@ -74,7 +74,8 @@ void hpn_page_leave(void)
 {
     const hitec_prog_t *p = &hp.prog;
     const hitec_image_t *draft = hitec_prog_draft(p);
-    const bool drop = draft != NULL && hitec_prog_changes(p) != 0u;
+    /* No servo read, no draft: hitec_prog_changes() is 0. */
+    const bool drop = hitec_prog_changes(p) != 0u;
 
     if (drop) {
         /* The edits listed: the hold leaves without writing them, BACK
@@ -331,10 +332,10 @@ void hpn_page_apply(void)
     hpn_close_editors();
     switch (kind) {
     case W_LEAVE:
-        /* The edits the page listed go unwritten: dropped while the
-         * session takes the LEAVE, kept while it is busy and the LEAVE
-         * says why it waits. */
-        if (drop && hitec_prog_state(p) == HITEC_PROG_HELD) {
+        /* The edits the page listed go unwritten.  The page is open only
+         * while HELD (hpn_moved() closes it on a change), where the
+         * session takes the LEAVE. */
+        if (drop) {
             hitec_prog_discard(p);
         }
         (void)hitec_prog_leave(p);
