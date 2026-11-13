@@ -73,19 +73,25 @@ const ui_screen_t *outputs_screen(void);
 /** Repaint the cached chrome in every framebuffer. */
 void outputs_screen_invalidate(void);
 
-/** The binding shown: the last one read, plus edits not yet read back. */
+/**
+ * @brief The binding shown: the last one read, plus edits not yet read back.
+ *
+ * @return the binding
+ */
 const outbind_t *outputs_screen_binding(void);
 
 /**
- * A binding read from the IOmcu, or one the screen is posed with.
+ * @brief A binding read from the IOmcu, or one the screen is posed with.
  * The screen then holds a confirmed binding and takes edits.  A binding for
  * another board than the one shown selects OFF, whatever was selected,
  * unless @p b names a protocol its pins do not.
+ *
+ * @param b the binding
  */
 void outputs_screen_set_binding(const outbind_t *b);
 
 /**
- * What a read of the two output pages gave (bind_link_read()).
+ * @brief What a read of the two output pages gave (bind_link_read()).
  *
  * BIND_READ_OK is outputs_screen_set_binding() of the binding read.
  * BIND_READ_NONE and BIND_READ_ODD leave the screen on the last binding a
@@ -94,14 +100,24 @@ void outputs_screen_set_binding(const outbind_t *b);
  * read is BIND_READ_OK again.  A reading for another board than the one
  * shown has no last binding to keep, shows that board with nothing bound,
  * and selects OFF.  BIND_READ_NO_BOARD shows no pins and selects OFF.
+ *
+ * @param r the reading
  */
 void outputs_screen_set_reading(const bind_reading_t *r);
 
-/** The state of the last reading; BIND_READ_OK after a set_binding(). */
+/**
+ * @brief The state of the last reading; BIND_READ_OK after a set_binding().
+ *
+ * @return the state
+ */
 bind_read_t outputs_screen_read_state(void);
 
-/** Whether a tap on a pin can change the binding: the last reading was
- *  BIND_READ_OK. */
+/**
+ * @brief Whether a tap on a pin can change the binding: the last reading was
+ *  BIND_READ_OK.
+ *
+ * @return true when it can
+ */
 bool outputs_screen_editable(void);
 
 /**
@@ -115,6 +131,11 @@ bool outputs_screen_editable(void);
  * sees a refusal on the screen that caused it.
  */
 typedef void (*outputs_apply_fn)(const outbind_t *b);
+/**
+ * @brief Sets the function that writes the binding.
+ *
+ * @param fn the function; NULL for none
+ */
 void outputs_screen_set_apply(outputs_apply_fn fn);
 
 /** What became of the last write: the text is shown under the protocol. */
@@ -125,6 +146,11 @@ typedef enum {
     OUTPUTS_REFUSED,    /**< it answered and would not have it            */
 } outputs_result_t;
 
+/**
+ * @brief Tells the screen what became of the last write.
+ *
+ * @param r the result
+ */
 void outputs_screen_set_result(outputs_result_t r);
 
 /** What a pin's cell shows. */
@@ -139,8 +165,13 @@ typedef enum {
 } outputs_cell_t;
 
 /**
- * The state of the cell of catalogue entry @p index and the line printed
+ * @brief The state of the cell of catalogue entry @p index and the line printed
  * under its GPIO name, as the screen draws them.  @p label may be NULL.
+ *
+ * @param index the catalogue entry
+ * @param label receives the line; may be NULL
+ * @param cap its size, bytes
+ * @return the cell's state
  */
 outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap);
 
@@ -148,11 +179,13 @@ outputs_cell_t outputs_screen_cell(uint8_t index, char *label, size_t cap);
 #define OUTPUTS_NO_PIN 0xFFu
 
 /**
- * The GPIO the IOmcu's programming port is bound to, as its page reads
+ * @brief The GPIO the IOmcu's programming port is bound to, as its page reads
  * it, or OUTPUTS_NO_PIN (the start value).  While no protocol holds that pin
  * its cell reads OUTPUTS_CELL_RESERVED with the port's name and takes no
  * tick, and a PWM protocol is not offered the other pin of its slice.  It
  * stays across a reset of the screen.
+ *
+ * @param gpio the GPIO, or OUTPUTS_NO_PIN
  */
 void outputs_screen_set_prog_pin(uint8_t gpio);
 
@@ -161,7 +194,7 @@ void outputs_screen_set_prog_pin(uint8_t gpio);
 #define OUTPUTS_PORTS_UNKNOWN 0xFFu
 
 /**
- * The programming ports the IOmcu reports, @p count (OUTPUTS_PORTS_UNKNOWN
+ * @brief The programming ports the IOmcu reports, @p count (OUTPUTS_PORTS_UNKNOWN
  * while not known, the start value; 0 for an IOmcu without the PROG page),
  * and their pins, @p pins[0] to @p pins[count - 1] (OUTPUTS_NO_PIN for a
  * port without one); @p pins[0] is outputs_screen_set_prog_pin()'s, and
@@ -170,24 +203,42 @@ void outputs_screen_set_prog_pin(uint8_t gpio);
  * one for port 1 while the count is not known, so the tester's target can
  * be set before the IOmcu answers.  An entry shown that the count drops
  * goes back to the overview.  It stays across a reset of the screen.
+ *
+ * @param count the ports reported, OUTPUTS_PORTS_UNKNOWN while not known
+ * @param pins their pins
  */
 void outputs_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
 
-/** The PROG PORT entries the list shows: 0 to LINK_PG_PORTS_MAX. */
+/**
+ * @brief The PROG PORT entries the list shows: 0 to LINK_PG_PORTS_MAX.
+ *
+ * @return the entries
+ */
 uint8_t outputs_screen_port_entries(void);
 
-/** Port @p port's pin as the screen holds it, or OUTPUTS_NO_PIN. */
+/**
+ * @brief Port @p port's pin as the screen holds it, or OUTPUTS_NO_PIN.
+ *
+ * @param port the port, from 0
+ * @return the pin
+ */
 uint8_t outputs_screen_port_pin(uint8_t port);
 
 /**
- * Select the PROG PORT entry of port @p port (0 for port 1), as a pick in
+ * @brief Select the PROG PORT entry of port @p port (0 for port 1), as a pick in
  * the list does: the overview's pins with the port's lit, none taking a
  * tick.  A port past outputs_screen_port_entries() is ignored.
  * outputs_screen_select() leaves it.
+ *
+ * @param port the port, from 0
  */
 void outputs_screen_select_port(uint8_t port);
 
-/** The PROG PORT entry shown, 0 for port 1, or -1 for a protocol. */
+/**
+ * @brief The PROG PORT entry shown, 0 for port 1, or -1 for a protocol.
+ *
+ * @return the entry, from 0 for port 1; -1 for a protocol
+ */
 int outputs_screen_port_shown(void);
 
 /**
@@ -212,7 +263,7 @@ void outputs_screen_open_on(uint8_t proto);
 void outputs_screen_open_on_port(uint8_t port);
 
 /**
- * The amber line of the PROG PORT entry shown, as the screen draws it
+ * @brief The amber line of the PROG PORT entry shown, as the screen draws it
  * under the segments, or an empty string and false with none or no entry
  * shown.  In this order: the servo programmer holds the port; the last
  * ask for this port's PIN or FUNCTION waits, was refused or was lost
@@ -221,22 +272,33 @@ void outputs_screen_open_on_port(uint8_t port);
  * function is not SERVO PWM; the IOmcu is older than 4.26; the tester
  * drives this port; PORT PWM without this port as the tester's target.
  * outputs_screen_reason() returns the same while an entry is shown.
+ *
+ * @param buf receives the line
+ * @param cap its size, bytes
+ * @return true when there is a line
  */
 bool outputs_screen_port_reason(char *buf, size_t cap);
 
 /**
- * What watches port @p port's current, as its entry names it: an INA3221
+ * @brief What watches port @p port's current, as its entry names it: an INA3221
  * channel ("INA3221 0x40 CH1", at most 23 characters), or NULL or "" for
  * none.  The sensor map sets it; until then every entry says no channel
  * watches it.
+ *
+ * @param port the port, from 0
+ * @param label what watches it; NULL or "" for none
  */
 void outputs_screen_set_port_watch(uint8_t port, const char *label);
 
 /**
- * The line under the protocol that says why no pin can be ticked, or why the
+ * @brief The line under the protocol that says why no pin can be ticked, or why the
  * PWM pin last tapped cannot be (outputs_clash_reason()), until another pick
  * or tick, as the screen draws it in the language in force; an empty string
  * when there is none.  Returns whether there is one.
+ *
+ * @param buf receives the line
+ * @param cap its size, bytes
+ * @return true when there is a line
  */
 bool outputs_screen_reason(char *buf, size_t cap);
 
@@ -341,23 +403,38 @@ typedef enum {
 } outputs_iface_t;
 
 /**
- * What the IOmcu's page for function @p which holds by its last read:
+ * @brief What the IOmcu's page for function @p which holds by its last read:
  * @p known false while that is not known (no link, no read yet), and
  * the function then holds its pins as the settings stand; else the pins
  * @p pin_a and @p pin_b, -1 for none (SDA and SCL, TX and RX, the tap
  * pin and -1).  A pin past GP63 holds nothing.  OUTPUTS_IFACE_NONE and
  * past the last are ignored.  Safe to call from another task than the
  * one that draws.
+ *
+ * @param which the function
+ * @param known false while the pages are not known
+ * @param pin_a its first pin; -1 for none
+ * @param pin_b its second pin; -1 for none
  */
 void outputs_screen_set_iface_held(outputs_iface_t which, bool known,
                                    int pin_a, int pin_b);
 
-/** The pins function @p which holds now, bit n GPIO n; 0 for none or
- *  OUTPUTS_IFACE_NONE. */
+/**
+ * @brief The pins function @p which holds now, bit n GPIO n; 0 for none or
+ *  OUTPUTS_IFACE_NONE.
+ *
+ * @param which the function
+ * @return the pins, bit n for GPIO n
+ */
 uint64_t outputs_iface_pins(outputs_iface_t which);
 
-/** The function that holds GPIO @p gpio now, or OUTPUTS_IFACE_NONE.  Two
- *  set to one pin: the first in the order of outputs_iface_t. */
+/**
+ * @brief The function that holds GPIO @p gpio now, or OUTPUTS_IFACE_NONE.  Two
+ *  set to one pin: the first in the order of outputs_iface_t.
+ *
+ * @param gpio the GPIO
+ * @return the function; OUTPUTS_IFACE_NONE for none
+ */
 outputs_iface_t outputs_iface_at(uint8_t gpio);
 
 /**

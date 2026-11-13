@@ -40,6 +40,7 @@ extern "C" {
 /** A function not known. */
 #define PORT_VIEW_FN_UNKNOWN 0xFFu
 
+/** @brief What the screens know of the IOmcu's programming ports. */
 typedef struct {
     uint8_t count;                      /**< ports the IOmcu has, 0 for no
                                              page, PORT_VIEW_UNKNOWN      */
@@ -50,11 +51,19 @@ typedef struct {
     uint8_t refused;                    /**< bit n: the pin is refused     */
 } port_view_t;
 
-/** Nothing known: what the screens start with and show with no link. */
+/**
+ * @brief Nothing known: what the screens start with and show with no link.
+ *
+ * @param v receives the view
+ */
 void port_view_unknown(port_view_t *v);
 
-/** The view as the control task last read it; a change bumps
- *  port_view_revision(). */
+/**
+ * @brief The view as the control task last read it; a change bumps
+ *  port_view_revision().
+ *
+ * @param v the view
+ */
 void port_view_set(const port_view_t *v);
 /**
  * @brief The view as last set.
@@ -69,22 +78,47 @@ const port_view_t *port_view_get(void);
  */
 uint32_t port_view_revision(void);
 
-/** Whether port @p port is one the IOmcu has, as last read. */
+/**
+ * @brief Whether port @p port is one the IOmcu has, as last read.
+ *
+ * @param port the port
+ * @return true when it is
+ */
 bool port_view_has(uint8_t port);
 
-/** Port @p port's function, PORT_VIEW_FN_UNKNOWN while not known. */
+/**
+ * @brief Port @p port's function, PORT_VIEW_FN_UNKNOWN while not known.
+ *
+ * @param port the port
+ * @return the function
+ */
 uint8_t port_view_func(uint8_t port);
 
-/** Whether port @p port is under the SERVO PWM rules: its function is
- *  SERVO PWM, or not known yet (the stricter rule). */
+/**
+ * @brief Whether port @p port is under the SERVO PWM rules: its function is
+ *  SERVO PWM, or not known yet (the stricter rule).
+ *
+ * @param port the port
+ * @return true when it is
+ */
 bool port_view_pwm(uint8_t port);
 
-/** Whether port @p port's function is DSHOT150, DSHOT300 or DSHOT600. */
+/**
+ * @brief Whether port @p port's function is DSHOT150, DSHOT300 or DSHOT600.
+ *
+ * @param port the port
+ * @return true when it is
+ */
 bool port_view_dshot(uint8_t port);
 
-/** Function @p fn's name as the screens write it: SERVO PWM and NONE in
+/**
+ * @brief Function @p fn's name as the screens write it: SERVO PWM and NONE in
  *  the panel's language, the DShot rates by their catalogue names, the
- *  same in every language; "?" for a value no IOmcu sends. */
+ *  same in every language; "?" for a value no IOmcu sends.
+ *
+ * @param fn the function
+ * @return the name
+ */
 const char *port_view_fn_name(uint8_t fn);
 
 /** Where an ask goes: true when the control task took it. */
@@ -98,15 +132,25 @@ typedef bool (*port_view_ask_fn)(uint8_t seq, uint8_t port,
 void port_view_set_ask(port_view_ask_fn fn);
 
 /**
- * Ask for port @p port's PIN (a GPIO, or LINK_PG_PIN_NONE) or FUNC.
+ * @brief Ask for port @p port's PIN (a GPIO, or LINK_PG_PIN_NONE) or FUNC.
  * False with no hook, a port the view does not have, a FUNC the IOmcu
  * does not take, or the hook refusing it.  Taken, the ask waits
  * (PROG_LINK_ASK_WAITING) until port_view_set_ask_state() reports it.
+ *
+ * @param port the port
+ * @param kind the register asked for
+ * @param value the GPIO, LINK_PG_PIN_NONE or the function
+ * @return true when the ask was taken
  */
 bool port_view_ask(uint8_t port, prog_link_ask_kind_t kind, uint16_t value);
 
-/** The control task's word on the ask numbered @p seq; a word about an
- *  older ask is ignored. */
+/**
+ * @brief The control task's word on the ask numbered @p seq; a word about an
+ *  older ask is ignored.
+ *
+ * @param seq the ask's number
+ * @param st the state
+ */
 void port_view_set_ask_state(uint8_t seq, prog_link_ask_state_t st);
 
 /**
@@ -116,10 +160,20 @@ void port_view_set_ask_state(uint8_t seq, prog_link_ask_state_t st);
  */
 void port_view_set_ask_wait(prog_link_wait_t wait);
 
-/** The last ask: where it stands, and its port and kind (may be NULL). */
+/**
+ * @brief The last ask: where it stands, and its port and kind (may be NULL).
+ *
+ * @param port receives the ask's port; may be NULL
+ * @param kind receives its kind; may be NULL
+ * @return the state
+ */
 prog_link_ask_state_t port_view_ask_state(uint8_t *port, uint8_t *kind);
 
-/** The number the last ask carried. */
+/**
+ * @brief The number the last ask carried.
+ *
+ * @return the number
+ */
 uint8_t port_view_ask_seq(void);
 
 /**

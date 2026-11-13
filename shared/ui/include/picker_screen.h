@@ -61,16 +61,24 @@ const ui_screen_t *picker_screen(void);
 /** Repaint the cached chrome in every framebuffer. */
 void picker_screen_invalidate(void);
 
-/** The current choice, for anything that has to write it. */
+/**
+ * @brief The current choice, for anything that has to write it.
+ *
+ * @return the binding
+ */
 const outbind_t *picker_screen_binding(void);
 
-/** Set the choice: this screen and the outputs screen are two views of one.
+/**
+ * @brief Set the choice: this screen and the outputs screen are two views of one.
  *  A binding that names another board asks the drawing source
- *  (picker_screen_set_drawing_source()) for that board's drawing. */
+ *  (picker_screen_set_drawing_source()) for that board's drawing.
+ *
+ * @param b the binding
+ */
 void picker_screen_set_binding(const outbind_t *b);
 
 /**
- * Follow the outputs screen: the protocol selected there is the group a tap
+ * @brief Follow the outputs screen: the protocol selected there is the group a tap
  * here joins, and a binding that is not confirmed there
  * (outputs_screen_editable() false) is not edited here either.  Called
  * every frame; it repaints only on a change.
@@ -78,6 +86,9 @@ void picker_screen_set_binding(const outbind_t *b);
  * While @p editable is false every button is drawn as not offered, NOT READ
  * stands under the protocol list, and a tap changes nothing and calls
  * nothing.
+ *
+ * @param proto the protocol selected on the outputs screen
+ * @param editable the binding is confirmed there
  */
 void picker_screen_follow(uint8_t proto, bool editable);
 
@@ -96,22 +107,27 @@ void picker_screen_set_select(picker_select_fn fn);
 #define PICKER_NO_PIN 0xFFu
 
 /**
- * The GPIO the IOmcu's programming port is bound to, as its page reads
+ * @brief The GPIO the IOmcu's programming port is bound to, as its page reads
  * it, or PICKER_NO_PIN (the start value): picker_screen_set_prog_ports()
  * with that one port.  While no protocol holds that pin its button is
  * drawn held, a tap on it does nothing, and IN USE lists it first under
  * PROG PORT.  A pin a slot holds is that slot's: the IOmcu gives the port
  * no pin then.  It stays across a reset of the screen.
+ *
+ * @param gpio the GPIO, or PICKER_NO_PIN
  */
 void picker_screen_set_prog_pin(uint8_t gpio);
 
 /**
- * Every programming port's pin: @p count of them (at most
+ * @brief Every programming port's pin: @p count of them (at most
  * LINK_PG_PORTS_MAX are kept) from @p pins, PICKER_NO_PIN for a port
  * without one; NULL or 0 for none.  Each pin is held as
  * picker_screen_set_prog_pin() holds one, IN USE lists them all under the
  * one PROG PORT name, and a PWM pin is refused beside any of them
  * (outbind_pwm_clash_ports()).  It stays across a reset of the screen.
+ *
+ * @param count how many ports
+ * @param pins their pins, PICKER_NO_PIN for a port without one; NULL for none
  */
 void picker_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
 
@@ -125,10 +141,18 @@ void picker_screen_set_prog_ports(uint8_t count, const uint8_t *pins);
  * amber line says how it stands.
  */
 
-/** The port picked, 0 for port 1, or -1 for a protocol. */
+/**
+ * @brief The port picked, 0 for port 1, or -1 for a protocol.
+ *
+ * @return the port, from 0 for port 1; -1 for a protocol
+ */
 int picker_screen_port_shown(void);
 
-/** The first GPIO IN USE lists under PROG PORT, or PICKER_NO_PIN. */
+/**
+ * @brief The first GPIO IN USE lists under PROG PORT, or PICKER_NO_PIN.
+ *
+ * @return the GPIO
+ */
 uint8_t picker_screen_prog_listed(void);
 
 /** What a pin's button shows and does. */
@@ -162,26 +186,43 @@ typedef enum {
  */
 picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap);
 
-/** The rectangle of the button of catalogue entry @p index; false for a pin
- *  with none. */
+/**
+ * @brief The rectangle of the button of catalogue entry @p index; false for a pin
+ *  with none.
+ *
+ * @param index the catalogue entry
+ * @param out receives the rectangle
+ * @return true when the entry has a button
+ */
 bool picker_screen_button_rect(uint8_t index, gfx_rect_t *out);
 
 /**
- * The round marker of entry @p entry of the board's pad list
+ * @brief The round marker of entry @p entry of the board's pad list
  * (outbind_pads()), with its dark ring: a G for a ground, the voltage for a
  * rail.  False for a pad with no marker.
+ *
+ * @param entry the pad list entry
+ * @param out receives the rectangle
+ * @return true when the pad has a marker
  */
 bool picker_screen_marker_rect(uint8_t entry, gfx_rect_t *out);
 
 /** One line of the PINS table: a pin of the protocol selected. */
 typedef struct {
     uint8_t index;    /**< catalogue entry                                  */
-    uint8_t gpio;
+    uint8_t gpio;  /**< the pin's GPIO */
     int8_t  channel;  /**< the channel the OUTPUTS page gives it, -1 none   */
     uint8_t pad;      /**< the pad number printed on the board              */
 } picker_row_t;
 
-/** Line @p k of the PINS table, in catalogue order; false past the last. */
+/**
+ * @brief Line @p k of the PINS table, in catalogue order; false past the
+ *   last.
+ *
+ * @param k the line, from 0
+ * @param out receives the line
+ * @return true when there is one
+ */
 bool picker_screen_row(uint8_t k, picker_row_t *out);
 
 /**
@@ -228,8 +269,9 @@ typedef enum {
     (1u + LINK_PG_PORTS_MAX + (OUTPUTS_IFACE_COUNT - 1u)                 \
      + PICKER_USE_IFACE_PINS + (OUTBIND_PROTOS - 1u) + LINK_OUT_SLOTS)
 
+/** @brief One line of the IN USE table. */
 typedef struct {
-    picker_use_kind_t kind;
+    picker_use_kind_t kind;  /**< the kind of line */
     uint8_t    proto;    /**< the group: a protocol, PICKER_USE_PROG or
                               PICKER_USE_IFACE()                          */
     uint8_t    gpio;     /**< PICKER_USE_PIN: the pin's GPIO                */
@@ -238,7 +280,13 @@ typedef struct {
     gfx_rect_t rect;     /**< the line's box, inside PICKER_AREA_IN_USE     */
 } picker_use_t;
 
-/** Line @p k of the IN USE table; false past the last. */
+/**
+ * @brief Line @p k of the IN USE table; false past the last.
+ *
+ * @param k the line, from 0
+ * @param out receives the line
+ * @return true when there is one
+ */
 bool picker_screen_in_use(uint8_t k, picker_use_t *out);
 
 /**
@@ -250,11 +298,15 @@ bool picker_screen_in_use(uint8_t k, picker_use_t *out);
 void picker_screen_count(char *buf, size_t cap);
 
 /**
- * The amber line under the count: NOT READ while the binding is not
+ * @brief The amber line under the count: NOT READ while the binding is not
  * confirmed, else the reason the protocol selected can take no more pins
  * (outputs_reason_of()), else why the PWM generator cannot take the pin
  * last tapped (outputs_clash_reason()), until another pick or tick.
  * False and an empty string when there is none.
+ *
+ * @param buf receives the line
+ * @param cap its size, bytes
+ * @return true when there is a line
  */
 bool picker_screen_reason(char *buf, size_t cap);
 
@@ -266,7 +318,12 @@ typedef enum {
 } picker_area_t;
 gfx_rect_t picker_screen_area(picker_area_t area);
 
-/** The protocol list: its face, and the row of @p proto when it is open. */
+/**
+ * @brief The protocol list: its face, and the row of @p proto when it is
+ *   open.
+ *
+ * @return the rectangle
+ */
 gfx_rect_t picker_screen_list_face(void);
 gfx_rect_t picker_screen_list_row(uint8_t proto);
 bool picker_screen_list_open(void);
@@ -277,7 +334,11 @@ bool picker_screen_list_open(void);
  */
 gfx_rect_t picker_screen_last_rect(void);
 
-/** Whether a tap on a button can change the binding. */
+/**
+ * @brief Whether a tap on a button can change the binding.
+ *
+ * @return true when it can
+ */
 bool picker_screen_editable(void);
 
 /** Called after any change the operator makes, as on the outputs screen. */
@@ -285,13 +346,18 @@ typedef void (*picker_apply_fn)(const outbind_t *b);
 void picker_screen_set_apply(picker_apply_fn fn);
 
 /**
- * The IOmcu's drawing of the board the binding names (LINK_ART_DRAWING
+ * @brief The IOmcu's drawing of the board the binding names (LINK_ART_DRAWING
  * bytes, link_drawing.h), or NULL to draw its outline instead.
  *
  * Parsed and checked against the board's catalogue, pads and shape here;
  * a drawing that fails either is not shown, and @p why (may be NULL) names
  * the first thing found. The bytes are not copied and must stay unchanged
  * until the next call. Returns whether the drawing is shown.
+ *
+ * @param data the drawing; NULL for none
+ * @param bytes its size
+ * @param why receives the reason it was refused; may be NULL
+ * @return true when it was taken
  */
 bool picker_screen_set_drawing(const uint8_t *data, uint32_t bytes,
                                const char **why);
@@ -329,11 +395,19 @@ void picker_board_fit(uint16_t ow, uint16_t oh, int *w, int *h);
  */
 bool picker_screen_cat(gfx_rect_t *box, int *pose);
 
-/** Whether the board is drawn from the IOmcu's drawing. */
+/**
+ * @brief Whether the board is drawn from the IOmcu's drawing.
+ *
+ * @return true when it is
+ */
 bool picker_screen_has_drawing(void);
 
-/** Whether this board can be drawn at all: it has a catalogue, and a
- *  drawing or a shape. */
+/**
+ * @brief Whether this board can be drawn at all: it has a catalogue, and a
+ *  drawing or a shape.
+ *
+ * @return true when it can
+ */
 bool picker_screen_can_draw(void);
 
 #ifdef __cplusplus

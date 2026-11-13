@@ -210,35 +210,66 @@ gfx_color_t outputs_result_color(void);
  * no entry shown. */
 void outputs_port_reset(void);
 
-/* No entry shown: a protocol was picked.  A segment's press goes too. */
+/**
+ * @brief No entry shown: a protocol was picked.  A segment's press goes too.
+ */
 void outputs_port_hide(void);
 
-/* A segment's press under way is dropped: touch events went missing, or
- * the screen is left. */
+/**
+ * @brief A segment's press under way is dropped: touch events went missing, or
+ * the screen is left.
+ */
 void outputs_port_cancel(void);
 
-/* A touch event while the protocol list is shut: whether a segment of
- * the entry shown took it. */
+/**
+ * @brief A touch event while the protocol list is shut: whether a segment of
+ * the entry shown took it.
+ *
+ * @param evt the touch event
+ * @return true when a segment took it
+ */
 bool outputs_port_event(const touch_event_t *evt);
 
-/* Once a frame: what the settings and the SERVO screen's locks show is
- * compared with what was drawn. */
+/**
+ * @brief Once a frame: what the settings and the SERVO screen's locks show is
+ * compared with what was drawn.
+ */
 void outputs_port_tick(void);
 
-/* Whether the entry's FUNCTION list is open. */
+/**
+ * @brief Whether the entry's FUNCTION list is open.
+ *
+ * @return true while it is
+ */
 bool outputs_port_fn_open(void);
 
-/* The home tag: an open FUNCTION list shuts and the tag is taken (true);
- * with none open the screen is left (false). */
+/**
+ * @brief The home tag: an open FUNCTION list shuts and the tag is taken (true);
+ * with none open the screen is left (false).
+ *
+ * @return true when the tag was taken
+ */
 bool outputs_port_back(void);
 
-/* Bumped by every change of what the entry draws; the screen repaints on
- * a change of it as on one of its own.  outputs_port_touched() bumps it. */
+/**
+ * @brief Bumped by every change of what the entry draws; the screen repaints on
+ * a change of it as on one of its own.  outputs_port_touched() bumps it.
+ *
+ * @return the count
+ */
 uint32_t outputs_port_revision(void);
+/** @brief Marks the entry's picture changed. */
 void outputs_port_touched(void);
 
-/* The entry's left column, under the dropdown @p dd drawn @p pressed and
- * @p open. */
+/**
+ * @brief The entry's left column, under the dropdown @p dd drawn @p pressed and
+ * @p open.
+ *
+ * @param c the canvas to draw on
+ * @param dd the dropdown's face
+ * @param pressed a press is on it
+ * @param open its list is open
+ */
 void outputs_port_draw(gfx_canvas_t *c, gfx_rect_t dd, bool pressed,
                        bool open);
 
@@ -265,32 +296,62 @@ void outputs_port_draw_board(gfx_canvas_t *c, const char *why);
  */
 void outputs_port_draw_list(gfx_canvas_t *c);
 
-/* Entry @p port's name in the list and on the dropdown: PROG PORT, or
- * PROG PORT n where the list holds several. */
+/**
+ * @brief Entry @p port's name in the list and on the dropdown: PROG PORT, or
+ * PROG PORT n where the list holds several.
+ *
+ * @param port the port, from 0
+ * @param buf receives the name
+ * @param cap its size, bytes
+ */
 void outputs_port_name(uint8_t port, char *buf, size_t cap);
 
-/* Each function's pins now (outputs_iface_pins()), for the screens'
+/**
+ * @brief Each function's pins now (outputs_iface_pins()), for the screens'
  * repaint: a row stepped on SETUP, or a page read, moves a pin or its
- * owner without a touch on the screen. */
+ * owner without a touch on the screen.
+ *
+ * @param pins receives each function's pins, bit n for GPIO n
+ */
 void outputs_iface_read(uint64_t pins[OUTPUTS_IFACE_COUNT]);
 
-/* Whether a programming port the list shows holds GPIO @p gpio. */
+/**
+ * @brief Whether a programming port the list shows holds GPIO @p gpio.
+ *
+ * @param gpio the GPIO
+ * @return true when it does
+ */
 bool outputs_port_holds(uint8_t gpio);
 
-/* The entry the screen opens on: what outputs_screen_open_on() asked for,
- * once, or the overview; selected. */
+/**
+ * @brief The entry the screen opens on: what outputs_screen_open_on() asked for,
+ * once, or the overview; selected.
+ */
 void outputs_port_open(void);
 
-/* What outputs_screen_open_on() asked for is dropped, as at a reset. */
+/**
+ * @brief What outputs_screen_open_on() asked for is dropped, as at a reset.
+ */
 void outputs_port_forget_open(void);
 
 /* Every programming port's pin, LINK_PG_PORTS_MAX of them, OUTPUTS_NO_PIN
  * past the entries: what outbind_pwm_clash_ports() checks a pin beside. */
-/* The ports' pins that hold a PWM slice, for the slice and compare
+/**
+ * @brief The ports' pins that hold a PWM slice, for the slice and compare
  * rules: @p pins (LINK_PG_PORTS_MAX of them) with a NONE port's pin taken
  * out, as the IOmcu's prog_port_slots_check() does.  A NONE port's pin
  * stays taken as a pin.  None on a board with soldered pins, whose ports
  * give way to the binding (prog_port_yield()).  One static copy, UI task
- * only. */
+ * only.
+ *
+ * @param pins every port's pin
+ * @return the pins
+ */
 const uint8_t *outputs_pwm_pins(const uint8_t *pins);
+/**
+ * @brief Gives every programming port's pin, with a NONE port's pin taken out
+ *         as outputs_pwm_pins() does.
+ *
+ * @return the pins, LINK_PG_PORTS_MAX of them
+ */
 const uint8_t *outputs_port_pins(void);
