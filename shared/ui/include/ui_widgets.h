@@ -22,11 +22,27 @@
 extern "C" {
 #endif
 
-/** Panel with a chamfered top-left / bottom-right, 1px edge, optional title. */
+/**
+ * @brief Panel with a chamfered top-left / bottom-right, 1px edge, optional
+ *   title.
+ *
+ * @param c the canvas to draw on
+ * @param r the panel's rectangle
+ * @param title the title; NULL for none
+ * @param accent the edge's and the title's color
+ */
 void ui_panel(gfx_canvas_t *c, gfx_rect_t r, const char *title,
               gfx_color_t accent);
 
-/** The title strip a panel draws for itself; exposed for custom headers. */
+/**
+ * @brief The title strip a panel draws for itself; exposed for custom
+ *   headers.
+ *
+ * @param c the canvas to draw on
+ * @param r the strip's rectangle
+ * @param title the title
+ * @param accent the strip's color
+ */
 void ui_panel_header(gfx_canvas_t *c, gfx_rect_t r, const char *title,
                      gfx_color_t accent);
 
@@ -84,7 +100,12 @@ void ui_button_font(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                     gfx_color_t fill, bool pressed, bool enabled,
                     const gfx_font_t *f);
 
-/** True when @p c is bright enough to need dark text on it. */
+/**
+ * @brief True when @p c is bright enough to need dark text on it.
+ *
+ * @param c the color
+ * @return true when it needs dark text
+ */
 bool ui_is_light(gfx_color_t c);
 
 /**
@@ -128,15 +149,29 @@ const gfx_font_t *ui_button_face(const char *label, int w, int h, int pad,
  */
 #define UI_KEYS_FOOT (UI_ALERT_Y - UI_BAND_H - 4)
 
-/** A raised surface with a hairline edge: the base of every panel. */
+/**
+ * @brief A raised surface with a hairline edge: the base of every panel.
+ *
+ * @param c the canvas to draw on
+ * @param r the card's rectangle
+ * @param fill its color
+ */
 void ui_card(gfx_canvas_t *c, gfx_rect_t r, gfx_color_t fill);
 
 /**
- * @p t broken at spaces into lines as wide as @p first, each drawn left
+ * @brief @p t broken at spaces into lines as wide as @p first, each drawn left
  * aligned in a box of @p first's size, @p pitch px under the one before.
  * A word wider than a line is cut where the line ends.  Draws when @p c is
  * not NULL and returns the number of lines either way, 0 for an empty
  * @p t, so a caller measures with the code that draws.
+ *
+ * @param c the canvas to draw on
+ * @param first the first line's box, which every line takes the size of
+ * @param pitch from line to line, px
+ * @param t the text
+ * @param f the face
+ * @param col the text's color
+ * @return the lines
  */
 int ui_text_wrap(gfx_canvas_t *c, gfx_rect_t first, int pitch, const char *t,
                  const gfx_font_t *f, gfx_color_t col);
@@ -230,22 +265,50 @@ void ui_pill_ink(gfx_canvas_t *c, gfx_rect_t r, const char *label,
                  gfx_color_t dot, gfx_color_t fill, gfx_color_t ink,
                  int inset, const gfx_font_t *f);
 
-/** Horizontal proportional bar, @p frac in 0..1, with an optional peak tick. */
+/**
+ * @brief Horizontal proportional bar, @p frac in 0..1, with an optional peak
+ *   tick.
+ *
+ * @param c the canvas to draw on
+ * @param r the bar's rectangle
+ * @param frac the filled share, 0 to 1
+ * @param peak_frac the peak tick's place, 0 to 1
+ * @param color the fill's color
+ */
 void ui_bar(gfx_canvas_t *c, gfx_rect_t r, float frac, float peak_frac,
             gfx_color_t color);
 
-/** Right-aligned numeric readout in the hero face, with a unit suffix. */
+/**
+ * @brief Right-aligned numeric readout in the hero face, with a unit suffix.
+ *
+ * @param c the canvas to draw on
+ * @param box the readout's box
+ * @param number the number
+ * @param unit the unit
+ * @param color the number's color
+ */
 void ui_value(gfx_canvas_t *c, gfx_rect_t box, const char *number,
               const char *unit, gfx_color_t color);
 
-/** Format @p value with @p decimals decimal places (0 to 3); a non-finite
- *  value prints as "--". */
+/**
+ * @brief Format @p value with @p decimals decimal places (0 to 3); a non-finite
+ *  value prints as "--".
+ *
+ * @param out receives the text
+ * @param n its size, bytes
+ * @param value the value
+ * @param decimals the decimal places, 0 to 3
+ */
 void ui_fmt(char *out, size_t n, float value, int decimals);
 
 /**
- * Run clock as H:MM:SS, or MM:SS below an hour.
+ * @brief Run clock as H:MM:SS, or MM:SS below an hour.
  *
  * Shared so every screen prints the same number the same way.
+ *
+ * @param out receives the text
+ * @param n its size, bytes
+ * @param seconds the time, s
  */
 void ui_clock(char *out, size_t n, uint32_t seconds);
 
@@ -288,7 +351,15 @@ void ui_home_tag(gfx_canvas_t *c, const char *title, bool pressed);
  */
 void ui_wordmark(gfx_canvas_t *c, const char *text, gfx_color_t fill);
 
-/** Left-pointing solid triangle, apex at (x, cy). */
+/**
+ * @brief Left-pointing solid triangle, apex at (x, cy).
+ *
+ * @param c the canvas to draw on
+ * @param x the apex's x
+ * @param cy its y
+ * @param size the triangle's height, px
+ * @param color its color
+ */
 void ui_chevron_left(gfx_canvas_t *c, int x, int cy, int size, gfx_color_t color);
 
 /**
@@ -341,11 +412,26 @@ const gfx_font_t *ui_choice_font(int h);
  */
 const gfx_font_t *ui_choice_text_font(int h, int w, const char *text);
 
+/**
+ * @brief Draws a choice's face: its text and a chevron.
+ *
+ * @param c the canvas to draw on
+ * @param r the face's rectangle
+ * @param text the text
+ * @param pressed a press is on it
+ * @param open its list is open
+ */
 void ui_choice_face(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                     bool pressed, bool open);
 
-/** The face of a choice that takes no press now, as ui_tabs_render_locked()
- *  draws a segment row: sunk, its text and chevron dim, no accent. */
+/**
+ * @brief The face of a choice that takes no press now, as ui_tabs_render_locked()
+ *  draws a segment row: sunk, its text and chevron dim, no accent.
+ *
+ * @param c the canvas to draw on
+ * @param r the face's rectangle
+ * @param text the text
+ */
 void ui_choice_face_locked(gfx_canvas_t *c, gfx_rect_t r, const char *text);
 
 /**
@@ -356,14 +442,23 @@ void ui_choice_face_locked(gfx_canvas_t *c, gfx_rect_t r, const char *text);
  */
 void ui_choice_list(gfx_canvas_t *c, gfx_rect_t r);
 
-/** One row of the open list: @p chosen is the choice in force, accented. */
+/**
+ * @brief One row of the open list: @p chosen is the choice in force,
+ *   accented.
+ *
+ * @param c the canvas to draw on
+ * @param r the row's rectangle
+ * @param text its text
+ * @param chosen it is the choice in force
+ * @param pressed a press is on it
+ */
 void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
                    bool chosen, bool pressed);
 
 /* ------------------------------------------------------- hold-to-confirm */
 
-/*
- * A button that is held rather than pressed, and what it looks like while it
+/**
+ * @brief A button that is held rather than pressed, and what it looks like while it
  * is held.
  *
  * Two seconds of contact, the fill fading from where it starts to where it
@@ -378,8 +473,8 @@ void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
  */
 #define UI_HOLD_S 2.0f
 
-/*
- * The most one frame can add to a hold.  A frame's duration is measured at
+/**
+ * @brief The most one frame can add to a hold.  A frame's duration is measured at
  * its top and applied at its end, so without a cap a single late frame
  * completes a hold that began inside that same frame.  0.25s puts at least
  * eight frames with the press standing between a press and an arm.
@@ -402,9 +497,14 @@ void ui_choice_row(gfx_canvas_t *c, gfx_rect_t r, const char *text,
     (UI_HOLD_FLASH_PHASE_MS * UI_HOLD_FLASH_CYCLE * UI_HOLD_FLASH_TIMES)
 
 /**
- * The fill for a button held @p held_s of UI_HOLD_S, fading @p base to
+ * @brief The fill for a button held @p held_s of UI_HOLD_S, fading @p base to
  * @p target. @p held_s of 0 is @p base; the fade previews the colour the
  * button is about to hold.
+ *
+ * @param base the color at 0s
+ * @param target the color the hold ends on
+ * @param held_s how long the button has been held, s
+ * @return the color
  */
 gfx_color_t ui_hold_fill(gfx_color_t base, gfx_color_t target, float held_s);
 
@@ -450,7 +550,11 @@ typedef struct {
                             before UI_HOLD_S                              */
 } ui_hold_t;
 
-/** Nothing held, nothing fired, nothing flashing. */
+/**
+ * @brief Nothing held, nothing fired, nothing flashing.
+ *
+ * @param h the hold
+ */
 void ui_hold_reset(ui_hold_t *h);
 
 /**
@@ -463,10 +567,13 @@ void ui_hold_reset(ui_hold_t *h);
 void ui_hold_begin(ui_hold_t *h, int hint);
 
 /**
- * The press left the control, so the gesture is over: contact with the
+ * @brief The press left the control, so the gesture is over: contact with the
  * control is the gesture, not contact with the panel. Sliding back on does
  * not resume it. Returns whether a hold was actually abandoned, which is
  * what tells the screen to drop its own record of the press.
+ *
+ * @param h the hold
+ * @return true when a hold was abandoned
  */
 bool ui_hold_leave(ui_hold_t *h);
 
@@ -491,10 +598,13 @@ bool ui_hold_leave(ui_hold_t *h);
 bool ui_hold_end(ui_hold_t *h, const touch_event_t *up, gfx_rect_t rect);
 
 /**
- * What one frame is worth to a hold: @p dt_s, capped at
+ * @brief What one frame is worth to a hold: @p dt_s, capped at
  * UI_HOLD_MAX_CREDIT_S and floored at zero. Used by ui_hold_tick() and by
  * any screen that keeps its own hold timer, so a late frame cannot complete
  * a gesture that began inside it.
+ *
+ * @param dt_s the frame's duration, s
+ * @return the time, s
  */
 float ui_hold_credit(float dt_s);
 
@@ -567,7 +677,7 @@ void ui_hold_reached(ui_hold_t *h);
 void ui_hold_spend(ui_hold_t *h);
 
 /**
- * What the hold asked for has gone away -- a stop, a failsafe, or the far
+ * @brief What the hold asked for has gone away -- a stop, a failsafe, or the far
  * end -- possibly under a finger that is still down.
  *
  * Both halves of the gesture end here. A press left standing would start a
@@ -576,6 +686,9 @@ void ui_hold_spend(ui_hold_t *h);
  * ended, so the screen can drop its own record of it; clearing the press
  * without `fired` would strand it, because the release consumes `fired` and
  * a release of a press that is no longer held does nothing.
+ *
+ * @param h the hold
+ * @return true when a press was ended
  */
 bool ui_hold_left(ui_hold_t *h);
 

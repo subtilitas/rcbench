@@ -81,7 +81,18 @@ typedef struct {
     uint32_t   revision;
 } ui_keypad_t;
 
-/** Open over @p area for a value of @p min .. @p max, showing @p value. */
+/**
+ * @brief Open over @p area for a value of @p min .. @p max, showing @p value.
+ *
+ * @param k the keypad
+ * @param area where it is drawn and hit
+ * @param title its title
+ * @param unit the value's unit
+ * @param value the value as it is, shown faint
+ * @param min the range's lower end
+ * @param max its upper end
+ * @param decimals the digits it takes after the point
+ */
 void ui_keypad_open(ui_keypad_t *k, gfx_rect_t area, const char *title,
                     const char *unit, float value, float min, float max,
                     int decimals);
@@ -102,16 +113,30 @@ void ui_keypad_open_signed(ui_keypad_t *k, gfx_rect_t area, const char *title,
                            const char *unit, float value, float min,
                            float max, int decimals);
 
+/**
+ * @brief Closes the keypad and drops its press.
+ *
+ * @param k the keypad
+ */
 void ui_keypad_close(ui_keypad_t *k);
 
-/** A press under way is dropped: the touch stream lost an event.  The
- *  keypad stays open and what was typed stays typed. */
+/**
+ * @brief A press under way is dropped: the touch stream lost an event.  The
+ *  keypad stays open and what was typed stays typed.
+ *
+ * @param k the keypad
+ */
 void ui_keypad_cancel_press(ui_keypad_t *k);
 
 /**
- * One touch event.  A key acts on the release of the contact that pressed
+ * @brief One touch event.  A key acts on the release of the contact that pressed
  * it, over the same key; a second contact is ignored while one is down.
  * UI_KEYPAD_OK writes the value to @p out.
+ *
+ * @param k the keypad
+ * @param evt the touch event
+ * @param out receives the value on UI_KEYPAD_OK
+ * @return what the event did
  */
 ui_keypad_result_t ui_keypad_event(ui_keypad_t *k, const touch_event_t *evt,
                                    float *out);

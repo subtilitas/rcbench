@@ -28,6 +28,7 @@
 extern "C" {
 #endif
 
+/** @brief The roles a color has in a palette. */
 typedef enum {
     UI_C_BG = 0,
     UI_C_PANEL,
@@ -58,6 +59,7 @@ typedef enum {
     UI_C_COUNT
 } ui_color_id_t;
 
+/** @brief The themes a palette comes in. */
 typedef enum {
     UI_THEME_DARK = 0,
     UI_THEME_LIGHT,
@@ -67,12 +69,22 @@ typedef enum {
 /** The live palette.  Indexed by ui_color_id_t; recomputed by the setters. */
 extern gfx_color_t g_ui_palette[UI_C_COUNT];
 
+/**
+ * @brief Gives a role's color in the live palette.
+ *
+ * @param id the role
+ * @return the color
+ */
 static inline gfx_color_t ui_theme_color(ui_color_id_t id)
 {
     return (id >= 0 && id < UI_C_COUNT) ? g_ui_palette[id] : 0;
 }
 
-/** Recompute the palette.  Call ui_router_invalidate() after. */
+/**
+ * @brief Recompute the palette.  Call ui_router_invalidate() after.
+ *
+ * @param theme the theme
+ */
 void ui_theme_set(ui_theme_id_t theme);
 /**
  * @brief Scales the whole palette.
@@ -103,37 +115,37 @@ uint32_t ui_theme_rgb24(ui_theme_id_t theme, ui_color_id_t id);
 
 /* ---------------------------------------------------------------- surfaces */
 
-#define UI_BG            ui_theme_color(UI_C_BG)
-#define UI_PANEL         ui_theme_color(UI_C_PANEL)
-#define UI_PANEL_HI      ui_theme_color(UI_C_PANEL_HI)
-#define UI_PANEL_SUNK    ui_theme_color(UI_C_PANEL_SUNK)
-#define UI_EDGE          ui_theme_color(UI_C_EDGE)
-#define UI_EDGE_HI       ui_theme_color(UI_C_EDGE_HI)
-#define UI_GRID          ui_theme_color(UI_C_GRID)
-#define UI_GRID_STRONG   ui_theme_color(UI_C_GRID_STRONG)
+#define UI_BG            ui_theme_color(UI_C_BG)  /**< the page's background */
+#define UI_PANEL         ui_theme_color(UI_C_PANEL)  /**< a card's and a panel's surface */
+#define UI_PANEL_HI      ui_theme_color(UI_C_PANEL_HI)  /**< a raised surface */
+#define UI_PANEL_SUNK    ui_theme_color(UI_C_PANEL_SUNK)  /**< a sunk surface */
+#define UI_EDGE          ui_theme_color(UI_C_EDGE)  /**< an edge */
+#define UI_EDGE_HI       ui_theme_color(UI_C_EDGE_HI)  /**< a raised edge */
+#define UI_GRID          ui_theme_color(UI_C_GRID)  /**< a grid line */
+#define UI_GRID_STRONG   ui_theme_color(UI_C_GRID_STRONG)  /**< a major grid line */
 
 /* -------------------------------------------------------------------- text */
 
-#define UI_TEXT          ui_theme_color(UI_C_TEXT)
-#define UI_TEXT_DIM      ui_theme_color(UI_C_TEXT_DIM)
-#define UI_TEXT_FAINT    ui_theme_color(UI_C_TEXT_FAINT)
-#define UI_TEXT_ON_LIGHT ui_theme_color(UI_C_TEXT_ON_LIGHT)
+#define UI_TEXT          ui_theme_color(UI_C_TEXT)  /**< the text */
+#define UI_TEXT_DIM      ui_theme_color(UI_C_TEXT_DIM)  /**< dimmed text */
+#define UI_TEXT_FAINT    ui_theme_color(UI_C_TEXT_FAINT)  /**< faint text */
+#define UI_TEXT_ON_LIGHT ui_theme_color(UI_C_TEXT_ON_LIGHT)  /**< text on a light fill */
 
 /* ------------------------------------------------------------------ accent */
 
-#define UI_ACCENT        ui_theme_color(UI_C_ACCENT)
-#define UI_OK            ui_theme_color(UI_C_OK)
-#define UI_WARN          ui_theme_color(UI_C_WARN)
-#define UI_DANGER        ui_theme_color(UI_C_DANGER)
+#define UI_ACCENT        ui_theme_color(UI_C_ACCENT)  /**< the accent */
+#define UI_OK            ui_theme_color(UI_C_OK)  /**< the OK state */
+#define UI_WARN          ui_theme_color(UI_C_WARN)  /**< the warning state */
+#define UI_DANGER        ui_theme_color(UI_C_DANGER)  /**< the danger state */
 
 /* ------------------------------------------------------- telemetry series */
 
-#define UI_VOLT          ui_theme_color(UI_C_VOLT)
-#define UI_CURR          ui_theme_color(UI_C_CURR)
-#define UI_POWER         ui_theme_color(UI_C_POWER)
-#define UI_RPM           ui_theme_color(UI_C_RPM)
-#define UI_LILAC         ui_theme_color(UI_C_LILAC)
-#define UI_TEAL          ui_theme_color(UI_C_TEAL)
+#define UI_VOLT          ui_theme_color(UI_C_VOLT)  /**< the voltage series */
+#define UI_CURR          ui_theme_color(UI_C_CURR)  /**< the current series */
+#define UI_POWER         ui_theme_color(UI_C_POWER)  /**< the power series */
+#define UI_RPM           ui_theme_color(UI_C_RPM)  /**< the speed series */
+#define UI_LILAC         ui_theme_color(UI_C_LILAC)  /**< the fifth series color */
+#define UI_TEAL          ui_theme_color(UI_C_TEAL)  /**< the sixth series color */
 
 /* ----------------------------------------------------------------- metrics */
 
@@ -148,11 +160,13 @@ uint32_t ui_theme_rgb24(ui_theme_id_t theme, ui_color_id_t id);
  * material.  UI_CHAMFER is the 45-degree cut ui_panel and the home tag use.
  */
 
-/*
- * The bench's numeral style, in one place: the four readings and the throttle
+/**
+ * @brief The bench's numeral style, in one place: the four readings and the throttle
  * share it.  Thickness is an eighth of the height; a fatter segment makes the
  * horizontals, which only span the gap between the two verticals, shorter
  * than they are thick.  The slant of 3px is the lean of a panel meter.
+ *
+ * @return the style
  */
 static inline gfx_seg_style_t ui_seg_hero(void)
 {
@@ -162,9 +176,9 @@ static inline gfx_seg_style_t ui_seg_hero(void)
 }
 
 /* Fonts by role rather than by size, so a face can be swapped in one place. */
-#define UI_FONT_LABEL    (&gfx_font_8x16)
-#define UI_FONT_HEAD     (&gfx_font_16x28)
-#define UI_FONT_NUM      (&gfx_font_num_24x30)
+#define UI_FONT_LABEL    (&gfx_font_8x16)  /**< the face of labels, buttons and rows: 8 x 16 */
+#define UI_FONT_HEAD     (&gfx_font_16x28)  /**< the face of headings: 16 x 28 */
+#define UI_FONT_NUM      (&gfx_font_num_24x30)  /**< the face of numbers: 24 x 30 */
 
 /*
  * Roles of the faces of the 1024 x 600 type scale.  LABEL, HEAD and NUM

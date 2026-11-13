@@ -109,7 +109,9 @@ ui_text_id_t ui_band_arm_refused(uint16_t faults, bool hw_stop)
     return (faults != 0u) ? TX_ALERT_ARM_REFUSED_FAULT : TX_ALERT_ARM_REFUSED;
 }
 
-/* The chip's label for @p st, in @p buf where it is formatted. */
+/**
+ * @brief The chip's label for @p st, in @p buf where it is formatted.
+ */
 static const char *chip_label(const ui_bench_status_t *st,
                               ui_band_chip_t chip, char *buf, size_t n)
 {
@@ -152,6 +154,7 @@ static const char *chip_label(const ui_bench_status_t *st,
     }
 }
 
+/** @brief Whether the band draws @p chip for @p st. */
 static bool chip_shown(const ui_bench_status_t *st, ui_band_chip_t chip)
 {
     switch (chip) {
@@ -210,6 +213,7 @@ static const ui_band_chip_t k_order[] = {
     UI_BAND_CHIP_FAULT, UI_BAND_CHIP_MODE, UI_BAND_CHIP_LINK,
 };
 
+/** @brief The chips the band shows and their places. */
 typedef struct {
     bool       on[UI_BAND_CHIP_COUNT];  /**< the chips the band shows   */
     gfx_rect_t r[UI_BAND_CHIP_COUNT];   /**< each one's place, panel px */
@@ -352,10 +356,10 @@ static bubble_buf_t s_bubble;
  * IOmcu, from safety_gate_status() and the flash store, which set
  * LINK_SILENT, HEARTBEAT and STORE_OFF and nothing else. */
 static const struct {
-    uint16_t     bit;
-    const char  *name;
-    ui_text_id_t text;
-    bool         never;
+    uint16_t     bit;  /**< the fault bit */
+    const char  *name;  /**< the bit's name */
+    ui_text_id_t text;  /**< the text that says what it means */
+    bool         never;  /**< no firmware of this release sets the bit */
 } k_bits[] = {
     { LINK_FAULT_LINK_SILENT, "LINK_SILENT", TX_BH_F_LINK_SILENT, false },
     { LINK_FAULT_OVERCURRENT, "OVERCURRENT", TX_BH_F_OVERCURRENT, true  },
@@ -364,10 +368,10 @@ static const struct {
     { LINK_FAULT_HEARTBEAT,   "HEARTBEAT",   TX_BH_F_HEARTBEAT,   false },
     { LINK_FAULT_VERSION,     "VERSION",     TX_BH_F_VERSION,     true  },
     { LINK_FAULT_STORE_OFF,   "STORE_OFF",   TX_BH_F_STORE_OFF,   false },
-};
+};  /**< the link_fault_t bits by name, in bit order */
 
-/*
- * Paragraph @p i of the FAULT bubble into s_bubble.para: one per bit that is set,
+/**
+ * @brief Paragraph @p i of the FAULT bubble into s_bubble.para: one per bit that is set,
  * in bit order, then the bits this panel has no name for, then the advice
  * when a bit no firmware of this release sets is among them.
  */
@@ -406,7 +410,10 @@ static bool fault_para(uint16_t faults, int i)
     return false;
 }
 
-/* Paragraph @p i of @p chip's bubble into s_bubble.para, or false past the last. */
+/**
+ * @brief Paragraph @p i of @p chip's bubble into s_bubble.para, or false past
+ *   the last.
+ */
 static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
                       int i)
 {
@@ -489,8 +496,10 @@ static bool help_para(const ui_bench_status_t *st, ui_band_chip_t chip,
     return true;
 }
 
-/* The bytes of the line that starts @p s, at most @p cells: broken at the
- * last space that falls in it, or inside a word where none does. */
+/**
+ * @brief The bytes of the line that starts @p s, at most @p cells: broken at the
+ * last space that falls in it, or inside a word where none does.
+ */
 static size_t line_len(const char *s, int cells)
 {
     if (gfx_text_cells(s) <= cells) {

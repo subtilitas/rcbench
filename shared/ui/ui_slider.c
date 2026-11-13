@@ -12,6 +12,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 
+/** @brief Holds a value to a range. */
 static float clampf(float v, float lo, float hi)
 {
     if (v < lo) { return lo; }
@@ -124,6 +125,7 @@ void ui_slider_release_contact(ui_slider_t *s, uint8_t id)
  * next 1ms pass renders it.  A press moves nothing; only a drag does, and
  * it moves by the distance dragged.
  */
+/** @brief The value the drag started from, moved by as far as the finger has moved. */
 static bool by_delta(ui_slider_t *s, int x)
 {
     if (s->track.w <= 1) {
@@ -228,7 +230,7 @@ bool ui_slider_event(ui_slider_t *s, const touch_event_t *evt)
     return false;
 }
 
-/* The shadow sits 2px below the thumb, so the bottom reaches further than
+/** @brief The shadow sits 2px below the thumb, so the bottom reaches further than
  * the top.  Kept beside the drawing it describes. */
 #define SLIDER_SHADOW_DROP 2
 
