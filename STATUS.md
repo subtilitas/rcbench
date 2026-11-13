@@ -700,6 +700,14 @@ protocol is transmitted. ESCs with BLHeli_32 firmware are not supported:
 The screen and the placement guides are built; the accelerometer and the index sensor are
 not fitted, so nothing is measured.
 
+Built and host-tested (`shared/vibe/`, `test_vibe`, `test_vibe_solve`): the balance node's
+signal processing and the panel's solvers, in no image yet. The index comparator, the
+demodulator of the 1x, 2x and blade-pass against the index, the no-index mode at an rpm
+the panel gives, and the two-run and four-run corrections. On synthetic signals at 10kHz a
+167Hz sine of 400mg at 265° reads within 0.1% and 0.1°; the figures for each case are
+in [shared/vibe/README.md](shared/vibe/README.md). The ESP32-C6's ADC (analogue-to-digital
+converter), the ADXL335 and the TCRT5000 are not measured.
+
 ### Link codec, page map, dispatcher, both watchdogs, CAN framing
 
 Built and tested on the host.
@@ -1345,7 +1353,7 @@ rcbench/
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     artwork/ gfx/ touch/ ui/ settings/ logfile/ link/ bench/ outputs/
     safety/ servo/ can/ esc/ sense/ fwupdate/ webaccess/ text/ files/
-    clock/
+    clock/ vibe/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
@@ -1368,7 +1376,7 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` | | | yes |
+| `hc05` · `vibe` | | | yes |
 | `bleuart` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -1402,7 +1410,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 547 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 549 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1519,7 +1527,8 @@ The host suite is 547 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
-`test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`.
+`test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
+`test_vibe` and `test_vibe_solve`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
