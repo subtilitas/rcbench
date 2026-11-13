@@ -532,11 +532,11 @@ void kpn_warn_apply(void)
         }
         break;
     default:
-        /* The edits the page listed go unwritten.  The page is open only
-         * in PROGRAMMING (model_moved() closes it on a change), where the
-         * LEAVE is taken unless a card request runs: then the edits stay,
-         * and the LEAVE says why it waits. */
-        if (drop && !kst_prog_card_busy(&k.prog)) {
+        /* The edits the page listed go unwritten.  Dropped first, while
+         * the session takes the LEAVE: a session busy keeps them, and the
+         * LEAVE says why it waits. */
+        if (drop && kst_prog_state(&k.prog) == KST_PROG_PROGRAMMING
+            && !kst_prog_card_busy(&k.prog)) {
             kst_prog_discard(&k.prog);
         }
         (void)kst_prog_leave(&k.prog);

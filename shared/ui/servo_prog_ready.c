@@ -451,7 +451,7 @@ void prog_write_tick(float dt_s)
 {
     write_press_t *w = &s_pr.write;
 
-    if (w->held && !w->hold.fired) {   /* held: a finger is on it */
+    if (w->held && w->down && !w->hold.fired) {
         prog_session_t ps;
         session_now(&ps);
         if (!prog_ready_shown() || write_why(&ps) != NULL) {
@@ -459,10 +459,11 @@ void prog_write_tick(float dt_s)
             (void)ui_hold_left(&w->hold);
             w->held = false;
         } else if (ui_hold_tick(&w->hold, dt_s)) {
-            /* write_why() has just held every condition the session's
-             * write_go() asks: no editor, the write live, no press. */
-            (void)((s.fn == SERVO_FN_KST) ? kst_panel_write_go()
-                                          : hitec_panel_write_go());
+            const bool took = (s.fn == SERVO_FN_KST) ? kst_panel_write_go()
+                                                     : hitec_panel_write_go();
+            if (!took) {
+                ui_action_refused(TR(PRR_W_PAGE));
+            }
             ++s.ctrl_rev;
             servo_invalidate();
         }
