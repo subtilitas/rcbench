@@ -333,10 +333,6 @@ void ui_router_shot_set_idle(bool idle);
 
 /* ------------------------------------------------------------ bench state */
 
-/**
- * What the band shows.  The application fills it in from the link and hands
- * it over; the router computes none of it.
- */
 /** What an arm covers, for the band's chip: the motor's outputs, the
  *  servos' and the programming ports'. */
 #define UI_ARMED_MOTOR 0x01u

@@ -345,6 +345,8 @@ void log_viewer_size_text(char *out, size_t n, uint64_t bytes);
  */
 const char *log_viewer_message(void);
 
+#define LOG_RANGE_CELLS 17u   /**< the 140px range box in 8px glyphs */
+
 /**
  * @brief The range of a numeric column as the import view writes it into @p
  *        out (@p n bytes): "lo..hiunit".  One decimal while both ends are
@@ -354,12 +356,6 @@ const char *log_viewer_message(void);
  *        "-999.9..-999.9mOhm" reads "-1000..-1000mOhm".  A text still wider,
  *        such as two 7-digit negative ends, is cut at the box's edge.  No unit
  *        with an empty @p unit.
- */
-#define LOG_RANGE_CELLS 17u   /**< the 140px range box in 8px glyphs */
-
-/**
- * @brief Writes the range of a numeric column as "lo..hiunit", as the import
- *         view shows it; the width is LOG_RANGE_CELLS.
  *
  * @param out receives the text
  * @param n its size, bytes

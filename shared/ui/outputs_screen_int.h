@@ -334,8 +334,6 @@ void outputs_port_open(void);
  */
 void outputs_port_forget_open(void);
 
-/* Every programming port's pin, LINK_PG_PORTS_MAX of them, OUTPUTS_NO_PIN
- * past the entries: what outbind_pwm_clash_ports() checks a pin beside. */
 /**
  * @brief The ports' pins that hold a PWM slice, for the slice and compare
  * rules: @p pins (LINK_PG_PORTS_MAX of them) with a NONE port's pin taken
@@ -350,7 +348,8 @@ void outputs_port_forget_open(void);
 const uint8_t *outputs_pwm_pins(const uint8_t *pins);
 /**
  * @brief Gives every programming port's pin, with a NONE port's pin taken out
- *         as outputs_pwm_pins() does.
+ *         as outputs_pwm_pins() does: what outbind_pwm_clash_ports() checks a
+ *         pin beside.
  *
  * @return the pins, LINK_PG_PORTS_MAX of them
  */
