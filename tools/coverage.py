@@ -364,6 +364,7 @@ TRACKED = [
     "shared/can/can_timing.c",
     "shared/can/can_selftest.c",
     "shared/can/mcp2515.c",
+    "shared/can/can_txq.c",
     "shared/link/link_bringup.c",
     "shared/link/link_can.c",
     "shared/link/link_crc.c",

@@ -34,6 +34,11 @@ extern "C" {
 #define MCP2515_CMD_WRITE       0x02u /**< write registers */
 /** @brief Request to send for transmit buffer 0. */
 #define MCP2515_CMD_RTS_TXB0    0x81u
+/**
+ * @brief Request to send, with the buffers in bits 0 to 2: 0x81 TXB0, 0x82
+ *        TXB1, 0x84 TXB2, 0x87 all three in one command.
+ */
+#define MCP2515_CMD_RTS         0x80u
 #define MCP2515_CMD_READ_STATUS 0xA0u /**< read status */
 #define MCP2515_CMD_RX_STATUS   0xB0u /**< RX status */
 #define MCP2515_CMD_BIT_MODIFY  0x05u /**< bit modify */
@@ -50,6 +55,27 @@ extern "C" {
 
 #define MCP2515_TXB0CTRL  0x30u /**< TXB0 control */
 #define MCP2515_TXB0SIDH  0x31u   /**< then SIDL, EID8, EID0, DLC, D0..D7 */
+#define MCP2515_TXB1CTRL  0x40u /**< TXB1 control, then its SIDH to D7 */
+#define MCP2515_TXB2CTRL  0x50u /**< TXB2 control, then its SIDH to D7 */
+/** @brief Transmit buffers of the controller: TXB0, TXB1 and TXB2. */
+#define MCP2515_TX_BUFFERS 3u
+/** @brief Bytes from TXBnCTRL to D7: CTRL, SIDH, SIDL, EID8, EID0, DLC and
+ *         8 data bytes. */
+#define MCP2515_TXB_LOAD_BYTES 14u
+
+/* TXBnCTRL bits. */
+#define MCP2515_TXB_TXREQ    0x08u /**< transmission requested, not yet sent */
+#define MCP2515_TXB_TXP_MASK 0x03u /**< the buffer's priority, 3 highest     */
+
+/* The byte READ STATUS (0xA0) answers. */
+#define MCP2515_STATUS_RX0IF   0x01u /**< receive buffer 0 holds a frame  */
+#define MCP2515_STATUS_RX1IF   0x02u /**< receive buffer 1 holds a frame  */
+#define MCP2515_STATUS_TX0REQ  0x04u /**< TXB0's TXREQ                    */
+#define MCP2515_STATUS_TX1REQ  0x10u /**< TXB1's TXREQ                    */
+#define MCP2515_STATUS_TX2REQ  0x40u /**< TXB2's TXREQ                    */
+/** @brief The three TXREQ bits of READ STATUS. */
+#define MCP2515_STATUS_TXREQ \
+    (MCP2515_STATUS_TX0REQ | MCP2515_STATUS_TX1REQ | MCP2515_STATUS_TX2REQ)
 #define MCP2515_RXB0CTRL  0x60u /**< RXB0 control */
 /** @brief RXB0 SIDH, then SIDL, EID8, EID0, DLC, D0..D7. */
 #define MCP2515_RXB0SIDH  0x61u
@@ -114,6 +140,20 @@ bool mcp2515_pack_id(uint32_t id, uint8_t out[4]);
  *         otherwise.
  */
 bool mcp2515_unpack_id(const uint8_t in[4], uint32_t *id);
+
+/**
+ * @brief The bytes one WRITE puts into a transmit buffer, from TXBnCTRL on:
+ *        CTRL with TXREQ clear and the priority, the identifier's four
+ *        registers, DLC and the payload, padded with zeros to 8 bytes.
+ *
+ * @param f    The frame. A DLC above 8 is refused.
+ * @param txp  The buffer's priority, 0 to 3; masked to 2 bits.
+ * @param out  Receives MCP2515_TXB_LOAD_BYTES bytes.
+ * @return false when @p f or @p out is NULL, the DLC is above 8 or the
+ *         identifier does not fit 29 bits; @p out is then unwritten.
+ */
+bool mcp2515_tx_load(const link_can_frame_t *f, uint8_t txp,
+                     uint8_t out[MCP2515_TXB_LOAD_BYTES]);
 
 /** Receive buffers of the controller: RXB0 and RXB1. */
 #define MCP2515_RX_BUFFERS 2u

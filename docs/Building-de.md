@@ -27,7 +27,7 @@ rcbench/
     outputs/              Kanäle · Treibertabelle · Arming, Slew und Staleness
     safety/               Heartbeat-Generator (Panel) und -Monitor (IOmcu) · Reset-Ursache des IOmcu
     servo/                Endlagen- und Abgleichsuche · Servomodell
-    can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest
+    can/                  Bit Timing für beide Controller · MCP2515-Register · Echo-Selbsttest · Sendewarteschlange
     esc/                  ESC-Programmierprofile, ihr JSON-Leser und die Registry
     sense/                Treiber für die Strommonitore INA228 und INA3221
     fwupdate/             Prüfung des Panel-Firmware-Images · Upload-Puffer · Installer · Update-Slots und BUY des IOmcu
