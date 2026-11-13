@@ -2,8 +2,9 @@
 """Render a storyboard under tools/video/storyboards/ into an MP4 video.
 
 A storyboard is a JSON file: a list of scenes that show the bench's case as
-a 3D model, the panel's screens with pointer bubbles or with a caption and
-a spotlight, and a recap.  The
+a 3D model, a circuit board seen flat with rework drawn on it, the panel's
+screens with pointer bubbles or with a caption and a spotlight, and a
+recap.  The
 screens are not recordings: each step names a view of the host renderer
 (tools/render_ui.py), so a video shows what the display shows.
 
@@ -32,6 +33,7 @@ Attributes:
     PART_FRAMES: The frames of one part that --keep keeps.
     ANCHORS: The named points of the case model a label can point at.
     CONNECTORS: The headers of the case model and their position count.
+    FITS: The parts a board scene solders across two pads.
 
 SPDX-License-Identifier: MIT
 """
@@ -63,6 +65,7 @@ BEDS = ("pads", "bach-prelude", "pachelbel-canon")
 PART_FRAMES = 900
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
+FITS = ("resistor", "zener")
 
 
 def _number(value) -> bool:
@@ -151,6 +154,118 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
                 and isinstance(plug, list) and len(plug) == 2
                 and plug[0] < plug[1] <= dur):
             errors.append(f"{where} servo: needs appear and plug [t0, t1]")
+
+
+def _place(value) -> bool:
+    # A point of a board: a pad's name, or [x, y] in mm.
+    return (isinstance(value, str) and "." in value) or (
+        isinstance(value, list) and len(value) == 2
+        and all(_number(v) for v in value))
+
+
+def _pair(value, dur: float) -> bool:
+    return (isinstance(value, list) and len(value) == 2
+            and all(_number(v) for v in value)
+            and 0 <= value[0] < value[1] <= dur)
+
+
+def _check_board(scene: dict, where: str, errors: list) -> None:
+    dur = scene.get("dur")
+    if not (_number(dur) and dur > 0):
+        errors.append(f"{where}: dur must be a positive number")
+        return
+    name = scene.get("board")
+    if not (isinstance(name, str) and name
+            and all(c.isalnum() or c in "-_" for c in name)):
+        errors.append(f"{where}: board names a file under tools/video/cad/, "
+                      "without its suffix")
+    keys = scene.get("camera")
+    _keys(keys, 3, f"{where} camera", errors)
+    for key in keys if isinstance(keys, list) else []:
+        if not (isinstance(key, list) and len(key) == 3 and _place(key[1])
+                and isinstance(key[1], list) and _number(key[2])
+                and key[2] > 0):
+            errors.append(f"{where} camera: a key is [t, [x, y], w] with "
+                          "the width w in mm above 0")
+            break
+    if "title" in scene:
+        _span(scene["title"], dur, f"{where} title", errors)
+        if not isinstance(scene["title"].get("heading"), str):
+            errors.append(f"{where} title: heading is missing")
+    for n, chip in enumerate(scene.get("chips", [])):
+        _span(chip, dur, f"{where} chip {n + 1}", errors)
+    for n, label in enumerate(scene.get("labels", [])):
+        at = f"{where} label {n + 1}"
+        _span(label, dur, at, errors)
+        if not _place(label.get("anchor")):
+            errors.append(f"{at}: anchor must be a pad's name or [x, y] "
+                          "in mm")
+        pos = label.get("at")
+        if not (isinstance(pos, list) and len(pos) == 2
+                and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
+            errors.append(f"{at}: at must be [x, y] inside the frame")
+        if not isinstance(label.get("title"), str):
+            errors.append(f"{at}: title is missing")
+        if label.get("style", "ok") not in STYLES:
+            errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
+    for n, tag in enumerate(scene.get("tags", [])):
+        at = f"{where} tag {n + 1}"
+        _span(tag, dur, at, errors)
+        if not (_place(tag.get("at")) and isinstance(tag.get("text"), str)
+                and tag.get("side", "r") in ("l", "r", "t", "b")):
+            errors.append(f"{at}: needs text and at, a pad's name or "
+                          "[x, y] in mm")
+    for n, net in enumerate(scene.get("nets", [])):
+        _span(net, dur, f"{where} net {n + 1}", errors)
+        if not isinstance(net.get("net"), str):
+            errors.append(f"{where} net {n + 1}: net is missing")
+    for n, cut in enumerate(scene.get("cuts", [])):
+        ends = cut.get("between")
+        if not (isinstance(ends, list) and len(ends) == 2
+                and all(_place(e) for e in ends)
+                and _pair(cut.get("t"), dur)):
+            errors.append(f"{where} cut {n + 1}: needs between, two points, "
+                          "and t [t0, t1]")
+    for n, wire in enumerate(scene.get("wires", [])):
+        via = wire.get("via", [])
+        if not (_place(wire.get("from")) and _place(wire.get("to"))
+                and isinstance(via, list) and all(_place(v) for v in via)
+                and _pair(wire.get("t"), dur)):
+            errors.append(f"{where} wire {n + 1}: needs from, to and "
+                          "t [t0, t1]")
+    for n, fit in enumerate(scene.get("fit", [])):
+        if not (fit.get("kind") in FITS and _place(fit.get("a"))
+                and _place(fit.get("b")) and _number(fit.get("t"))
+                and 0 <= fit["t"] < dur):
+            errors.append(f"{where} fit {n + 1}: needs kind, one of "
+                          f"{', '.join(FITS)}, the pads a and b, and t")
+
+
+def board_faults(scene: dict, plan: dict) -> list:
+    """Find what a board scene names and its board does not have.
+
+    Args:
+        scene: A board scene that passed check().
+        plan: The board as tools/video_board.py wrote it.
+
+    Returns:
+        One line per pad or net that the board lacks.
+    """
+    pads = {pad["name"] for pad in plan["pads"]}
+    nets = {track["net"] for track in plan["tracks"]}
+    named = [label["anchor"] for label in scene.get("labels", [])]
+    named += [tag["at"] for tag in scene.get("tags", [])]
+    for cut in scene.get("cuts", []):
+        named += cut["between"]
+    for wire in scene.get("wires", []):
+        named += [wire["from"], wire["to"], *wire.get("via", [])]
+    for fit in scene.get("fit", []):
+        named += [fit["a"], fit["b"]]
+    faults = [f"no pad {name}" for name in named
+              if isinstance(name, str) and name not in pads]
+    faults += [f"no track of net {net['net']}"
+               for net in scene.get("nets", []) if net["net"] not in nets]
+    return faults
 
 
 def _check_screen(scene: dict, steps: int, where: str, errors: list) -> None:
@@ -276,6 +391,8 @@ def check(board: dict) -> list:
         kind = scene.get("type") if isinstance(scene, dict) else None
         if kind == "case":
             _check_case(scene, where, errors)
+        elif kind == "board":
+            _check_board(scene, where, errors)
         elif kind == "screen":
             _check_screen(scene, steps, where, errors)
         elif kind == "tour":
@@ -285,8 +402,8 @@ def check(board: dict) -> list:
                     and isinstance(scene.get("heading"), str)):
                 errors.append(f"{where}: needs dur and heading")
         else:
-            errors.append(f"{where}: type must be case, screen, tour "
-                          "or end")
+            errors.append(f"{where}: type must be case, board, screen, "
+                          "tour or end")
     return errors
 
 
@@ -519,6 +636,19 @@ def main() -> int:
             and not (VIDEO / "cad" / "case.glb").is_file():
         sys.exit("tools/video/cad/case.glb is missing; tools/video_cad.py "
                  "writes it from the case's STEP file")
+    for n, scene in enumerate(board["scenes"]):
+        if scene["type"] != "board":
+            continue
+        plan = VIDEO / "cad" / f"{scene['board']}.json"
+        if not plan.is_file():
+            sys.exit(f"tools/video/cad/{plan.name} is missing; "
+                     "tools/video_board.py writes it from the board's "
+                     "KiCad file")
+        faults = board_faults(scene, json.loads(
+            plan.read_text(encoding="utf-8")))
+        if faults:
+            sys.exit("\n".join(f"{path.name}: scene {n + 1}: {plan.name} "
+                               f"has {line}" for line in faults))
     if not (VIDEO / "node_modules" / "three").is_dir():
         sys.exit("run `npm install` in tools/video/ first")
     for tool in ("node",) + (() if args.stills else ("ffmpeg",)):

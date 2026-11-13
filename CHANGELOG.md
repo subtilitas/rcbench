@@ -37,6 +37,11 @@ history is in git.
   machine. `tools/video_cad.py` converts the case's STEP assembly into
   the model the opening of `features` shows
   ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `rbmod-rework`: the rework of a rev 1 rbmod carrier in 4
+  steps and 83s. A `board` scene draws a circuit board flat, with a net
+  lit up, a track cut, a wire and a part soldered across two pads;
+  `tools/video_board.py` converts a KiCad board file into the board it
+  draws ([Videos from storyboards](tools/video/README.md)).
 - Profile field `scheme.announce.loop_marker`: `true` where the ESC sounds
   one sound that is no item between the highest item and the lowest of each
   pass of its item loop. Absent, null or `false`: none

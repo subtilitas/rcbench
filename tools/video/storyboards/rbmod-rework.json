@@ -1,0 +1,145 @@
+{
+ "name": "rbmod-rework",
+ "lang": "en",
+ "brand": "rbmod rev 1 rework",
+ "steps": 4,
+ "scenes": [
+  {
+   "type": "case",
+   "model": "cad",
+   "dur": 9.0,
+   "title": {
+    "from": 0.3,
+    "to": 5.2,
+    "kicker": "rcbench · rbmod carrier",
+    "heading": "Rev 1 rework",
+    "text": "One cut, one wire, one resistor, one zener.<br>4 steps on the module side of the board."
+   },
+   "camera": [
+    [0, [-330, 250, 470], [-70, 10, 0]],
+    [5.0, [-250, 300, 420], [-40, 20, 0]],
+    [9.0, [-90, 400, 300], [10, 30, 0]]
+   ],
+   "lid": [[4.6, 0], [6.6, 62]],
+   "labels": [
+    {
+     "from": 6.2,
+     "to": 8.7,
+     "anchor": "rbmod",
+     "at": [1330, 610],
+     "size": "sm",
+     "title": "rbmod carrier",
+     "text": "Under the display. The rework is done on the side the modules sit on."
+    }
+   ]
+  },
+  {
+   "type": "board",
+   "board": "rbmod-rev1",
+   "dur": 67.0,
+   "camera": [
+    [0, [44.5, 40], 172],
+    [6.0, [44.5, 40], 172],
+    [8.5, [66, 48.5], 100],
+    [14.6, [66, 48.5], 100],
+    [17.0, [78, 63], 22],
+    [22.8, [78, 63], 22],
+    [25.5, [68, 56.5], 44],
+    [37.0, [68, 56.5], 44],
+    [40.0, [41, 35], 40],
+    [50.0, [41, 35], 40],
+    [52.0, [43, 34], 36],
+    [62.6, [43, 34], 36],
+    [65.4, [44.5, 40], 172],
+    [67.0, [44.5, 40], 172]
+   ],
+   "chips": [
+    {"from": 0, "to": 6.0, "n": "i", "text": "The carrier, module side"},
+    {"from": 6.0, "to": 23.0, "n": 1, "text": "Open the track to GPIO 26"},
+    {"from": 23.0, "to": 37.2, "n": 2, "text": "Wire GPIO 15 to the outer pad"},
+    {"from": 37.2, "to": 50.0, "n": 3, "text": "Pull-down on M7's EN"},
+    {"from": 50.0, "to": 67.0, "n": 4, "text": "Zener on the 5 V output"}
+   ],
+   "labels": [
+    {
+     "from": 0.6, "to": 5.6, "anchor": [70, 22], "at": [1400, 250],
+     "size": "sm", "title": "M1 · RP2350-CAN",
+     "text": "The IOmcu module, on pin headers."
+    },
+    {
+     "from": 0.9, "to": 5.6, "anchor": [43, 33.5], "at": [60, 420],
+     "size": "sm", "side": "r", "title": "M7 · buck module",
+     "text": "Makes the 5 V of the programming ports."
+    },
+    {
+     "from": 1.2, "to": 5.6, "anchor": [66, 63], "at": [1400, 640],
+     "size": "sm", "title": "Eight 120 Ω footprints",
+     "text": "Not fitted. A track joins the two pads of each."
+    },
+    {
+     "from": 8.8, "to": 14.4, "anchor": [80.88, 58], "at": [70, 330],
+     "side": "r", "style": "warn", "n": 1,
+     "title": "PROGP03 runs to GPIO 26",
+     "text": "GPIO 26 is an ADC pin and <b>not 5 V tolerant</b>. A Hitec or KST servo pulls the programming line up to its supply."
+    },
+    {
+     "from": 17.3, "to": 22.6, "anchor": [80.88, 63], "at": [70, 300],
+     "side": "r", "n": 1, "title": "Scratch the track open at R1",
+     "text": "Between the two pads of <b>R1</b>, the end footprint of the row, next to J1 pin 1. Afterwards the two pads must not conduct to each other."
+    },
+    {
+     "from": 25.8, "to": 36.8, "anchor": [69, 61.4], "at": [70, 560],
+     "side": "r", "n": 2, "title": "Wire GPIO 15 to the outer pad",
+     "text": "From the module's pad 20, <b>GP15</b>, to the pad that leads on to J1. GPIO 26 ends at the inner pad and stays unused."
+    },
+    {
+     "from": 40.4, "to": 49.6, "anchor": [33.8, 41.1], "at": [1370, 250],
+     "n": 3, "title": "2.2 kΩ from EN to GND",
+     "text": "On top of the module, from <b>EN</b> to the <b>GND</b> pad beside it. An open EN reads as on: the pull-down keeps the ports' 5 V off while the IOmcu is in reset, in BOOTSEL or unpowered."
+    },
+    {
+     "from": 52.2, "to": 62.4, "anchor": [56.06, 33.6], "at": [70, 250],
+     "side": "r", "n": 4, "title": "5.6 V zener from OUT+ to GND",
+     "text": "A 2 W or 5 W part, its <b>banded end, the cathode, on OUT+</b>. A braking servo feeds energy back into the 5 V, and M7 latches off above about 6.0 V. The zener takes that energy."
+    }
+   ],
+   "nets": [
+    {"from": 8.6, "to": 16.6, "net": "GPIO26_PROGP03", "style": "warn"}
+   ],
+   "tags": [
+    {"from": 9.0, "to": 14.4, "at": "M1.31", "text": "GPIO 26", "side": "t", "style": "warn"},
+    {"from": 9.3, "to": 14.4, "at": "J1.9", "text": "J1 · PROGP03", "side": "r", "style": "warn"},
+    {"from": 17.5, "to": 22.6, "at": "R1.1", "text": "R1 inner pad · from GPIO 26", "side": "r"},
+    {"from": 17.8, "to": 22.6, "at": "R1.2", "text": "R1 outer pad · to J1", "side": "r"},
+    {"from": 25.8, "to": 36.8, "at": "M1.20", "text": "GP15 · pad 20", "side": "l"},
+    {"from": 26.1, "to": 36.8, "at": "R1.2", "text": "outer pad", "side": "r"},
+    {"from": 40.4, "to": 49.6, "at": "M7.3", "text": "EN", "side": "b"},
+    {"from": 40.7, "to": 49.6, "at": "M7.2b", "text": "GND", "side": "l"},
+    {"from": 52.2, "to": 62.4, "at": "M7.4b", "text": "OUT+ · 5 V", "side": "r"},
+    {"from": 52.5, "to": 62.4, "at": "M7.5a", "text": "GND", "side": "r"}
+   ],
+   "cuts": [
+    {"between": ["R1.1", "R1.2"], "gap": 1.0, "t": [18.4, 19.8]}
+   ],
+   "wires": [
+    {"from": "M1.20", "to": "R1.2", "via": [[62.2, 54.0], [73.5, 66.2], [79.4, 66.2]], "t": [27.6, 30.6]}
+   ],
+   "fit": [
+    {"kind": "resistor", "a": "M7.3", "b": "M7.2b", "t": 43.4, "text": "2.2 kΩ"},
+    {"kind": "zener", "a": "M7.4b", "b": "M7.5a", "t": 55.2}
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 7,
+   "heading": "Rev 1 rework",
+   "items": [
+    "Scratch the track open between the pads of R1",
+    "Wire GP15, pad 20, to R1's outer pad",
+    "2.2 kΩ from M7's EN to GND",
+    "5.6 V zener from M7's OUT+ to GND, cathode on OUT+"
+   ],
+   "note": "The carrier firmware relies on steps 1 to 3. Reference: docs/Carrier.md, Rev 1 rework."
+  }
+ ]
+}

@@ -182,6 +182,22 @@ def events(board: dict) -> list:
             if "servo" in scene:
                 found.append((start + scene["servo"]["plug"][1] - 0.15,
                               "tap", 0))
+        elif kind == "board":
+            if "title" in scene:
+                found.append((start + scene["title"]["from"], "chime", 0))
+            for label in scene.get("labels", []):
+                found.append((start + label["from"] + 0.1, "pop", 0))
+            for n, tag in enumerate(scene.get("tags", [])):
+                found.append((start + tag["from"] + 0.05, "tick", n % 5))
+            for net in scene.get("nets", []):
+                found.append((start + net["from"], "swell", 0))
+            # A cut is a low sound; a wire and a part end with a tap.
+            for cut in scene.get("cuts", []):
+                found.append((start + cut["t"][0], "low", 0))
+            for wire in scene.get("wires", []):
+                found.append((start + wire["t"][1], "tap", 0))
+            for fit in scene.get("fit", []):
+                found.append((start + fit["t"] + 0.6, "tap", 0))
         elif kind == "end":
             found.append((start + 0.3, "final", 0))
         at = start

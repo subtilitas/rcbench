@@ -179,3 +179,82 @@ def test_a_held_component_freezes_the_music():
                    "lid": [[12, 1], [13, .5], [15, .5], [16, 0]]}}]}
     assert make_video.check(board) == []
     assert video_audio.freezes(board) == [(14, 19), (23, 25)]
+
+
+_PCB = """(kicad_pcb (version 20260206)
+ (gr_rect (start 10 20) (end 50 40) (layer "Edge.Cuts"))
+ (segment (start 12 22) (end 14 22) (width 0.3) (layer "F.Cu") (net "A"))
+ (segment (start 12 30) (end 14 30) (width 0.3) (layer "B.Cu") (net "B"))
+ (footprint "lib:R_1206" (layer "F.Cu") (at 13 22)
+  (property "Reference" "R1") (property "Value" "120R")
+  (pad "1" smd roundrect (at -1 0) (size 1.2 1.8) (net "A"))
+  (pad "2" smd roundrect (at 1 0) (size 1.2 1.8) (net "A")))
+ (footprint "lib:Buck" (layer "F.Cu") (at 30 30 90)
+  (property "Reference" "M7") (property "Value" "Buck")
+  (fp_rect (start -2 -2) (end 6 4) (layer "F.CrtYd"))
+  (pad "2" thru_hole circle (at 0 0 90) (size 1.7 1.7) (drill 1) (net "GND"))
+  (pad "2" thru_hole circle (at 0 2.54 90) (size 1.7 1.7) (drill 1)
+   (net 3 "GND"))))
+"""
+
+
+def _rework():
+    return {"lang": "en", "steps": 1, "scenes": [{
+        "type": "board", "board": "x", "dur": 10,
+        "camera": [[0, [20, 10], 40], [5, [3, 37], 10]],
+        "labels": [{"from": 1, "to": 4, "anchor": "R1.2", "at": [60, 300],
+                    "title": "x"}],
+        "tags": [{"from": 1, "to": 4, "at": "M7.2b", "text": "GND"}],
+        "nets": [{"from": 1, "to": 4, "net": "A"}],
+        "cuts": [{"between": ["R1.1", "R1.2"], "t": [5, 6]}],
+        "wires": [{"from": "M7.2a", "to": "R1.2", "via": [[5, 30]],
+                   "t": [6, 8]}],
+        "fit": [{"kind": "zener", "a": "M7.2a", "b": "M7.2b", "t": 8.5}]}]}
+
+
+def test_a_board_is_laid_out_with_its_high_x_at_the_bottom():
+    """The converter turns the board and names every pad."""
+    import video_board
+
+    plan = video_board.convert(_PCB)
+    assert plan["size"] == [20.0, 40.0]
+    # The back copper's track is left out.
+    assert [t["net"] for t in plan["tracks"]] == ["A"]
+    pads = {p["name"]: p for p in plan["pads"]}
+    assert sorted(pads) == ["M7.2a", "M7.2b", "R1.1", "R1.2"]
+    # (12, 22) of the file lies 18mm from the left and 2mm from the top.
+    assert (pads["R1.1"]["x"], pads["R1.1"]["y"]) == (18.0, 2.0)
+    assert (pads["R1.1"]["w"], pads["R1.1"]["h"]) == (1.8, 1.2)
+    # The footprint's quarter turn carries its second pad along x.
+    assert (pads["M7.2b"]["x"], pads["M7.2b"]["y"]) == (10.0, 22.54)
+    assert pads["M7.2b"]["net"] == "GND"
+    assert video_board.convert(_PCB, 0)["size"] == [40.0, 20.0]
+
+
+def test_a_board_scene_passes_and_names_its_faults():
+    """A board scene is checked by itself and against its board."""
+    import video_board
+
+    board = _rework()
+    assert make_video.check(board) == []
+    plan = video_board.convert(_PCB)
+    assert make_video.board_faults(board["scenes"][0], plan) == []
+    board["scenes"][0]["wires"][0]["to"] = "R9.1"
+    board["scenes"][0]["nets"][0]["net"] = "B"
+    assert make_video.board_faults(board["scenes"][0], plan) == [
+        "no pad R9.1", "no track of net B"]
+    del board["scenes"][0]["cuts"][0]["t"]
+    board["scenes"][0]["fit"][0]["kind"] = "coil"
+    board["scenes"][0]["camera"][1][2] = 0
+    errors = make_video.check(board)
+    assert any("cut 1" in e for e in errors)
+    assert any("fit 1" in e for e in errors)
+    assert any("camera" in e for e in errors)
+
+
+def test_a_board_scene_has_its_sounds():
+    """A cut, a wire's end and a part's seat each sound once."""
+    kinds = [kind for _, kind, _ in video_audio.events(_rework())]
+    assert kinds.count("low") == 1
+    assert kinds.count("tap") == 2
+    assert video_audio.scene_times(_rework()) == [(0.0, 10)]

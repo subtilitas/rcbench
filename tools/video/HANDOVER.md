@@ -1,17 +1,16 @@
 # Video tooling: handover
 
-State of the video work on branch `ccr-4bc6238f-kl3k21` as of 2026-11-13.
+State of the video work on branch `claude/new-session-7wgr7m` as of
+2026-11-13. The branch holds `ccr-4bc6238f-kl3k21` merged into `main`.
 [README.md](README.md) is the reference for the tool; this page holds what
 a new session needs beyond it.
 
 ## Start here
 
 1. Read this page, then [README.md](README.md).
-2. The work is stopped at the owner's word (2026-11-13). Nothing is
-   running and nothing is half done: the tree is clean and pushed.
-3. The one open request is the rbmod rework video
-   ([below](#open-build-video-for-the-rbmod-rework)); it waits for a
-   reference from the owner.
+2. `rbmod-rework` is rendered once and waits for the owner's review
+   ([below](#the-rbmod-rework-video)).
+3. No pull request is open.
 4. `rcbench-video-handover.zip`, sent to the owner on 2026-11-13, holds
    this page, the sources of the tool as plain files, a git bundle of
    the branch, `kst-rbmod.mp4`, the Bach version of the feature tour,
@@ -30,8 +29,10 @@ a new session needs beyond it.
 | `tools/video_cad.py`, `player/case_cad.js` | the case from its STEP assembly, 12 movable components |
 | `storyboards/kst-rbmod.json` | programming a KST servo, 100.4s, mockup case, no narration |
 | `storyboards/features.json` | feature tour, 755.92s, approved by the owner on 2026-11-13 |
+| `tools/video_board.py`, `player/board.js` | a KiCad board drawn flat, with a net lit up, a cut, a wire and a part across two pads |
+| `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 16 cases; the storyboard check, the script, the freezes |
+| `test/tools/test_make_video.py` | 19 cases; the storyboard check, the script, the freezes |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -41,6 +42,8 @@ No pull request is open. CI has not been looked at for this branch.
 | --- | --- | --- | --- |
 | `rcbench_case.stp` | 65MB | the owner's CAD export | any path; input of `tools/video_cad.py` |
 | `case.glb` | 35MB | `python3 tools/video_cad.py rcbench_case.stp`, 54s | `tools/video/cad/` |
+| `rbmod.kicad_pcb` of rev 1 | 251kB | repository `subtilitas/kicad`, `projects/rcbench/rcbench_modular/rbmod/rbmod-backups/rbmod-2026-10-25_215831.zip` | any path; input of `tools/video_board.py` |
+| `rbmod-rev1.json` | 40kB | `python3 tools/video_board.py rbmod.kicad_pcb -o tools/video/cad/rbmod-rev1.json` | `tools/video/cad/` |
 | `kokoro-v1.0.onnx`, `voices-v1.0.bin` | 354MB | github.com/thewh1teagle/kokoro-onnx, release `model-files-v1.0` | `tools/video/tts/` |
 | `node_modules/` | | `npm install` in `tools/video/` | `tools/video/` |
 
@@ -90,49 +93,44 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
   Chatterbox Multilingual were tried and rejected by ear; Chatterbox
   also misread "XT60" and "74".
 
-## Open: build video for the rbmod rework
+## The rbmod rework video
 
-Requested on 2026-11-13, stopped by the owner before any storyboard was
-written. The request: show which trace to open (the one below the
-resistor), where the 5.6V clamp zener goes, where the 2.2kΩ pull-down
-on M7's enable goes, and the remaining steps.
+`storyboards/rbmod-rework.json`: a case scene of 9s, a board scene of 67s
+and a recap of 7s. Rendered on the cloud container with 3 jobs.
 
-Known:
+Which board is rev 1:
 
-- `docs/Carrier.md`, "Rev 1 rework", lists three changes: cut the trace
-  under R4 and run a wire from R4 to GPIO 15; a pull-down of 2kΩ to 5kΩ
-  from M7's EN to GND; a 5.6V zener from VCC_PROGPORT_DCDC to GND,
-  cathode at the rail.
-- The tree has no board file for rbmod. The STEP assembly holds the
-  board's copper (`rbmod_copper`, 26 solids), 8 resistors of size 1206,
-  one axial resistor and one DO-34 diode.
-- Seen from the display side with the headers at the bottom, the 8
-  resistors sit in two groups of 4 over the two headers. R4 is the
-  rightmost resistor of the right group (owner, 2026-11-13).
-- The axial resistor and the DO-34 diode of the assembly are not the
-  rework parts (owner, 2026-11-13). Their function is not known here.
+- The rev 1 order is `production/jlcpcb1.0.zip` of the KiCad project,
+  gerbers of 2026-10-25 22:01, 4 copper layers (owner, 2026-11-13).
+- The backup `rbmod-2026-10-25_215831.zip` holds the board file of that
+  order: each end of its 143 track segments is a coordinate of the
+  gerber of its layer.
+- `rbmod.kicad_pcb` at the project's first commit (`08a8d74`,
+  2026-10-26) and the STEP assembly of the case hold a later layout, with
+  PROGP03 on GPIO 15.
 
-Not known, and needed before a storyboard is written:
+What rev 1 holds, and what the owner did (2026-11-13):
 
-- where on the trace under R4 the cut is, and on which side of the board;
-- which pad of R4 the wire starts at, and which pad of the RP2350-CAN
-  module is GPIO 15;
-- where the pull-down's two ends are soldered;
-- where the zener's two ends are soldered, and which zener is fitted;
-- whether the video shows further steps.
+- None of the eight 120Ω resistors R1 to R8 is fitted. A front track of
+  0.3mm joins the two pads of each footprint and carries the signal.
+- PROGP03 runs from module pad 31 (GPIO 26) to R1's inner pad, between
+  R1's pads, and from R1's outer pad to J1. R1 is the end footprint of
+  the row, next to J1 pin 1. `docs/Carrier.md` names this resistor R4 and
+  states a 120Ω series resistor on every signal; neither holds for a
+  rev 1 board as built.
+- Step 1: the track between R1's pads is scratched open. Step 2: a wire
+  runs from module pad 20 (GP15) to R1's outer pad.
+- Step 3: 2.2kΩ from M7's EN pad to the GND pad beside it. Step 4: a
+  5.6V zener from M7's OUT+ to GND, cathode on OUT+. Both are soldered on
+  top of the module.
+- D1 (3V zener) and R9 (4.7kΩ) are the input of TAP on GPIO 22 and J9.
 
-A reference settles these: photos of a reworked board from both sides,
-or the board's KiCad files. The owner has named neither yet.
+Not known:
 
-What the player lacks for this video:
-
-- a view of the bare board: the components `lid`, `mcu`, `ina`, `buck`,
-  `trigger` and `pdmini` hide at `parts` value 1, but the case stays;
-- copper that stands out from the board: `rbmod_copper` is 0x2c6a58 on
-  0x1f5446 in `case_cad.js`; 0xd08a3c reads well and was not committed,
-  because it changes the look of `features`;
-- marks drawn on the model: a cut line, a wire between two points, a
-  part that is not in the assembly.
+- the zener's type and package on the owner's board; the video draws an
+  axial part and names 2W or 5W as `docs/Carrier.md` does;
+- whether the seven other bridged footprints stay as they are in a
+  later revision.
 
 ## Limits that still hold
 

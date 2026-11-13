@@ -140,7 +140,7 @@ def script(board: dict) -> list:
     """
     lines = []
     for i, scene in enumerate(board["scenes"]):
-        if scene["type"] == "case":
+        if scene["type"] in ("case", "board"):
             for cue in scene.get("say", []):
                 lines.append((i, None, cue["at"], spoken(cue["text"])))
         elif scene["type"] == "end":

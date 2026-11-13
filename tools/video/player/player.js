@@ -1,6 +1,7 @@
 // Draws one frame of a storyboard.  window.renderAt(t) sets every element
 // from t alone, so frames can be captured in any order and at any rate.
 // A storyboard is a list of scenes: "case" (the 3D model with labels),
+// "board" (a circuit board seen flat, with rework drawn on it),
 // "screen" (panel screenshots with pointer bubbles), "tour" (panel
 // screenshots with a caption and a spotlight) and "end" (a recap).
 // tools/video/README.md describes the fields.
@@ -9,6 +10,7 @@
 import * as THREE from 'three';
 import {buildCase, CONNECTORS, WIRE_COLORS} from './case3d.js';
 import {buildCadCase, loadCad} from './case_cad.js';
+import {buildBoard} from './board.js';
 
 const $ = s => document.querySelector(s);
 const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -83,6 +85,9 @@ renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
 for (const sc of sb.scenes) {
+  if (sc.type === 'board') {
+    sc.plan = await (await fetch(`/cad/${sc.board}.json`)).json();
+  }
   if (sc.type !== 'case') continue;
   const shown = sc.display ? imgs[sc.display.view] : null;
   // "cad" is the assembly tools/video_cad.py converts; any other scene
@@ -194,6 +199,22 @@ function drawCase(sc, lt, a, pulse, ui) {
     const q = new THREE.Vector3(...p).project(m.cam);
     return [(q.x + 1) * 960, (1 - q.y) * 540];
   };
+  drawNotes(sc, lt, a, pulse, ui, p => proj(
+    typeof p === 'string' ? m.anchors[p]() : p));
+  if (sc.pinout) {
+    const p = sc.pinout, pa = win(lt, p.from, p.to) * a, e = $('#pin');
+    if (pa > 0 && e.dataset.for !== sc.t + p.connector) {
+      e.innerHTML = pinout(p);
+      e.dataset.for = sc.t + p.connector;
+    }
+    e.style.opacity = pa;
+    e.style.transform = `translateX(${(1 - pa) * -30}px)`;
+  }
+}
+
+// The title, the chips and the labels a case and a board scene share.
+// proj maps a label's anchor to its frame pixel.
+function drawNotes(sc, lt, a, pulse, ui, proj) {
   if (sc.title) {
     const t = sc.title, e = $('#title');
     e.style.opacity = win(lt, t.from, t.to, .5) * a;
@@ -205,22 +226,62 @@ function drawCase(sc, lt, a, pulse, ui) {
   for (const l of sc.labels || []) {
     const la = win(lt, l.from, l.to) * a;
     if (la <= 0) continue;
-    const p = proj(typeof l.anchor === 'string' ? m.anchors[l.anchor]()
-                                                : l.anchor);
+    const p = proj(l.anchor);
     bubble({...l, x: l.at[0], y: l.at[1], a: la, pulse, tx: p[0], ty: p[1]});
-  }
-  if (sc.pinout) {
-    const p = sc.pinout, pa = win(lt, p.from, p.to) * a, e = $('#pin');
-    if (pa > 0 && e.dataset.for !== sc.t + p.connector) {
-      e.innerHTML = pinout(p);
-      e.dataset.for = sc.t + p.connector;
-    }
-    e.style.opacity = pa;
-    e.style.transform = `translateX(${(1 - pa) * -30}px)`;
   }
   for (const c of sc.chips || []) {
     if (lt >= c.from && lt < c.to) { ui.cn = c.n; ui.ct = c.text; }
     if (lt >= c.from && typeof c.n === 'number') ui.step = c.n;
+  }
+}
+
+// A board seen flat: the view moves over it by the camera keys
+// [t, [x, y], w], the point at the frame's centre and the mm across.
+function drawBoard(sc, lt, a, pulse, ui) {
+  const e = $('#pcb');
+  // One board is drawn into the element at a time.
+  if (e.dataset.for !== String(sc.t)) {
+    sc.rig = buildBoard(sc.plan);
+    e.dataset.for = String(sc.t);
+  }
+  e.style.display = 'block';
+  e.style.opacity = a * (sc.title ? .35 + .65 * ramp(lt, sc.title.to - .6,
+                                                     sc.title.to) : 1);
+  const k = sc.camera;
+  let i = 0;
+  while (i < k.length - 2 && lt > k[i + 1][0]) i++;
+  const j = Math.min(i + 1, k.length - 1);
+  const f = k.length > 1 ? ss((lt - k[i][0]) / (k[j][0] - k[i][0])) : 0;
+  const mix = (p, q) => p + (q - p) * f;
+  // The width is eased on a log scale, so that a zoom keeps its pace.
+  sc.rig.draw(sc, lt, [[mix(k[i][1][0], k[j][1][0]),
+                        mix(k[i][1][1], k[j][1][1])],
+                       Math.exp(mix(Math.log(k[i][2]), Math.log(k[j][2])))]);
+  drawNotes(sc, lt, a, pulse, ui, sc.rig.project);
+  // Tags: a pad's name beside it, on a short line.
+  for (const m of sc.tags || []) {
+    const o = win(lt, m.from, m.to, .3) * a;
+    if (o <= 0) continue;
+    const [x, y] = sc.rig.project(m.at), d = m.d || 46;
+    const side = m.side || 'r';
+    const [ex, ey] = side === 'b' ? [x, y + d] : side === 't' ? [x, y - d]
+      : side === 'l' ? [x - d, y] : [x + d, y];
+    const col = COL[m.style || ''];
+    const el = document.createElement('div');
+    el.className = 'pill';
+    el.textContent = m.text;
+    el.style.opacity = o;
+    el.style.background = col;
+    bubs.appendChild(el);
+    const r = el.getBoundingClientRect();
+    el.style.left = (side === 'l' ? ex - r.width : side === 'r' ? ex
+      : ex - r.width / 2) + 'px';
+    el.style.top = (side === 't' ? ey - r.height : side === 'b' ? ey
+      : ey - r.height / 2) + 'px';
+    ov.insertAdjacentHTML('beforeend',
+      `<g opacity="${o}"><line x1="${x}" y1="${y}" x2="${ex}" y2="${ey}"
+         stroke="${col}" stroke-width="2.5"/>
+       <circle cx="${x}" cy="${y}" r="6" fill="${col}"/></g>`);
   }
 }
 
@@ -457,7 +518,7 @@ window.TOTAL = TOTAL;
 window.renderAt = t => {
   bubs.innerHTML = '';
   ov.innerHTML = '';
-  for (const id of ['#gl', '#dev', '#end', '#cap', '#card']) {
+  for (const id of ['#gl', '#pcb', '#dev', '#end', '#cap', '#card']) {
     $(id).style.display = 'none';
   }
   $('#title').style.opacity = 0;
@@ -478,6 +539,7 @@ window.renderAt = t => {
   }
   const pulse = (t * .9) % 1;
   if (sc.type === 'case') drawCase(sc, lt, a, pulse, ui);
+  else if (sc.type === 'board') drawBoard(sc, lt, a, pulse, ui);
   else if (sc.type === 'screen') drawScreen(sc, lt, a, pulse, ui);
   else if (sc.type === 'tour') drawTour(sc, lt, a, ui);
   else drawEnd(sc, a, ui);
@@ -493,7 +555,8 @@ window.renderAt = t => {
       : i + 1 === ui.step ? cl(ui.frac) * 100 : 0) + '%';
   });
   nav.style.opacity = sc.type === 'tour' || sc.type === 'end' ? a : 0;
-  const titled = sc.type === 'case' && sc.title && lt < sc.title.to;
+  const titled = (sc.type === 'case' || sc.type === 'board') && sc.title
+    && lt < sc.title.to;
   $('#brand').style.opacity = titled ? 0 : 1;
   dots.style.opacity = titled || sb.chapters ? 0 : 1;
 };

@@ -7,6 +7,7 @@ under `storyboards/`. It lists scenes; each scene has a type:
 | Type | Shows |
 | --- | --- |
 | `case` | the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in |
+| `board` | a circuit board seen flat from its front, with a view that moves over it, labels and tags on pads, a net lit up, a track cut, a wire and a part soldered across two pads |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
 | `tour` | the panel's screens with an animated caption, a path to the screen, marks that name parts of the display, a spotlight, and chapter cards |
 | `end` | a heading, a numbered recap and a note |
@@ -45,6 +46,7 @@ screen is recorded or drawn by hand.
 cd tools/video && npm install && cd ../..          # once: three.js 0.170.0
 python3 tools/make_video.py kst-rbmod              # build/video/kst-rbmod.mp4
 python3 tools/make_video.py features               # build/video/features.mp4
+python3 tools/make_video.py rbmod-rework           # build/video/rbmod-rework.mp4
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
 python3 tools/make_video.py features --jobs 3 --keep build/video/parts
@@ -83,9 +85,12 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `player/case3d.js` | the case as a mockup of boxes, its connectors and its named points |
 | `player/case_cad.js` | the case from its CAD (computer-aided design) assembly: colours by part name, merged meshes, the same named points |
 | `../video_cad.py` | converts the case's STEP assembly into `cad/case.glb`, the model `case_cad.js` loads |
+| `player/board.js` | a board drawn flat as SVG, and the rework on it |
+| `../video_board.py` | converts a KiCad board file into `cad/NAME.json`, the board `board.js` draws |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
+| `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -133,6 +138,27 @@ optional `glow` names a component that is lit while the label shows. `at` is the
 top left corner on the frame in pixels. The model's origin is the centre
 of the case floor; x runs along the 190mm side, y up, z towards the
 connector wall.
+
+A `board` scene:
+
+| Field | Meaning |
+| --- | --- |
+| `dur` | length in s |
+| `board` | the name of a board under `cad/`, without `.json` |
+| `camera` | keys `[t, [x, y], w]`: the point of the board at the frame's centre and the width of the frame in mm |
+| `title`, `chips` | as in a `case` scene; the board is dimmed to 35% under a title |
+| `labels` | as in a `case` scene; `anchor` is a pad's name or `[x, y]` in mm |
+| `tags` | optional `{from, to, at, text}` and optional `side` (`l`, `r`, `t`, `b`), `d`, the line's length in pixels, and `style`: a name beside a pad or a point |
+| `nets` | optional `{from, to, net}` and optional `style` (`warn`): the front tracks and the pads of a net lit up |
+| `cuts` | optional `{between: [a, b], t: [t0, t1]}` and optional `gap` in mm, 0.7 by default: the track is opened halfway between two points |
+| `wires` | optional `{from, to, t: [t0, t1]}` and optional `via`, a list of points, and `color`: a wire drawn from one point to the other, with a solder joint at each end |
+| `fit` | optional `{kind, a, b, t}`: a `resistor` or a `zener` soldered across two pads from `t` on; a zener's band is at `a`; a resistor with `text` `2.2 kΩ` carries its colour bands |
+
+A board's lengths are mm from the top left corner of its drawing. A pad's
+name is its reference and number, `M1.20`; where a footprint has several
+pads of one number they take a letter in the order of the board file,
+`M7.2a` and `M7.2b`. A render stops on a pad or a net that the board does
+not have; `--check` does not read the board.
 
 A view in the tables of `tools/render_ui.py` brings its screen and its
 theme. Any other view is a pose of `test/host/render_screen.c` that no
@@ -201,6 +227,23 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 
   The `cad` model has no servo and no pin table: `servo` and `pinout`
   need the mockup.
+- A board is not in the tree. `rbmod-rework` draws `cad/rbmod-rev1.json`,
+  converted from the board file that matches the gerbers of 2026-10-25,
+  the rev 1 order:
+
+  ```sh
+  python3 tools/video_board.py rbmod.kicad_pcb -o tools/video/cad/rbmod-rev1.json
+  ```
+
+  The drawing holds the front copper's tracks, the pads and each part's
+  courtyard as a plain box. Zones, the inner and back copper, the
+  silkscreen and the parts on a module are not drawn. The case scene that
+  opens `rbmod-rework` shows the assembly's carrier, which has a later
+  layout.
+- In `rbmod-rework` the places of the pull-down and of the zener on M7
+  follow the module's footprint, whose EN pad is placed within about
+  0.5mm. The parts are drawn as axial parts; the zener's package on a
+  reworked board is not stated in the tree.
 - The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x
   129mm of the assembly. The order of the connectors on the wall and
   J1's pin order follow the case. J2's row order is assumed to match
