@@ -351,3 +351,25 @@ def test_the_drawn_boards_hold_what_the_storyboards_name():
                     scene, drawn[scene["board"]]) == [], path.name
                 seen += 1
     assert seen
+
+
+def test_a_module_brings_its_board_and_its_parts():
+    """A footprint named as a module spec takes the spec's model."""
+    import video_board
+
+    specs = {"Buck": ((8.0, 6.0), (2.0, 2.0),
+                      [("box", 3.0, 1.0, 6.0, 4.0, 4.5, "chip"),
+                       ("cyl", 7.0, 5.0, 0.5, 1.0, "black", 1.0)],
+                      [("CAN", 4.0, 2.0, 0.8)])}
+    plan = video_board.convert(_PCB, 0, specs)
+    part = next(p for p in plan["parts"] if p["ref"] == "M7")
+    # The footprint at (30, 30), a quarter turned, on a board from (10, 20).
+    assert part["box"] == [18.0, 4.0, 24.0, 12.0]
+    assert part["details"] == [
+        {"box": [19.0, 6.0, 22.0, 9.0], "color": "chip"},
+        {"at": [23.0, 5.0], "r": 0.5, "color": "black"},
+        {"text": "CAN", "at": [20.0, 8.0], "size": 0.8}]
+    assert next(p for p in plan["parts"]
+                if p["ref"] == "R1")["details"] == []
+    texts = [said for said, *_ in video_board.modules()["RP2350-CAN"][3]]
+    assert "USB-C" in texts and "CAN" in texts

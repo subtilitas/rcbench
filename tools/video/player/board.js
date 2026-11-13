@@ -22,6 +22,12 @@ const LOOKS = [
   [/R_Axial|D_DO/, '#b9a27a', 'axial'],
   [/R_1206/, 'none', 'empty'],
 ];
+// The colours of a module's parts, by the names of its model.
+const PAINT = {metal: '#c9cdd3', chip: '#1b1d22', black: '#15171c',
+               white: '#e9edf2', red: '#a0201a', termgreen: '#2a8c45',
+               termblue: '#2a66bf', plastic: '#1a1a1a', beige: '#e6dbbd',
+               yellow: '#f2bf1a', gold: '#d4ad38', ceramic: '#a88c66',
+               glass: '#1a1f2e', green: '#1f8540', blue: '#0d388c'};
 const MASK = '#17503f', TRACK = '#2c8f70', GOLD = '#d9b04a', HOLE = '#0b1512';
 // The colour bands of an axial resistor by its text or its value.
 const BANDS = {'2.2 kΩ': ['#d0122a', '#d0122a', '#d0122a', '#c9a227'],
@@ -113,6 +119,34 @@ export function buildBoard(data) {
       h += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"
         rx=".8" fill="${fill}" fill-opacity="${kind === 'module' ? .93 : .96}"
         stroke="#000" stroke-opacity=".35" stroke-width=".15"/>`;
+    }
+    // The larger parts of a module: its sockets, chips and terminals.
+    for (const d of q.back ? [] : q.details || []) {
+      if (d.text) {
+        // A print of the module: dark on a light part, else white.
+        const on = q.details.find(b => b.box && d.at[0] > b.box[0]
+          && d.at[0] < b.box[2] && d.at[1] > b.box[1] && d.at[1] < b.box[3]);
+        const dark = on && (on.color === 'metal' || on.color === 'white');
+        h += `<text x="${d.at[0]}" y="${d.at[1]}" text-anchor="middle"
+          dominant-baseline="middle" font-family="Inter, sans-serif"
+          font-weight="700" font-size="${Math.max(.75, d.size)}"
+          fill="${dark ? '#10141c' : '#fff'}"
+          fill-opacity=".9">${d.text}</text>`;
+        continue;
+      }
+      const paint = PAINT[d.color] || '#23262c';
+      const light = d.color === 'metal' || d.color === 'white';
+      h += d.box
+        ? `<rect x="${d.box[0]}" y="${d.box[1]}"
+            width="${d.box[2] - d.box[0]}" height="${d.box[3] - d.box[1]}"
+            rx=".3" fill="${paint}" stroke="#000" stroke-opacity=".3"
+            stroke-width=".08"/>
+           <rect x="${d.box[0]}" y="${d.box[1]}"
+            width="${d.box[2] - d.box[0]}"
+            height="${(d.box[3] - d.box[1]) * .28}" rx=".3" fill="#fff"
+            fill-opacity="${light ? .35 : .07}"/>`
+        : `<circle cx="${d.at[0]}" cy="${d.at[1]}" r="${d.r}"
+            fill="${paint}"/>`;
     }
     if (q.back) {
       // Drawn above.

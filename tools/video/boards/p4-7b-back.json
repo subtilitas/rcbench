@@ -556,7 +556,8 @@
    "kind": "plug",
    "label": "display cable",
    "ink": "#9fb4e6",
-   "size": 2.2
+   "size": 2.2,
+   "details": []
   },
   {
    "ref": "CORE",
@@ -573,7 +574,8 @@
    "kind": "plug",
    "label": "ESP32-P4",
    "ink": "#222",
-   "size": 2.4
+   "size": 2.4,
+   "details": []
   },
   {
    "ref": "C6",
@@ -590,7 +592,8 @@
    "kind": "plug",
    "label": "ESP32-C6",
    "ink": "#222",
-   "size": 1.5
+   "size": 1.5,
+   "details": []
   },
   {
    "ref": "RTC",
@@ -607,7 +610,8 @@
    "kind": "plug",
    "label": "RTC",
    "ink": "#aab",
-   "size": 1.8
+   "size": 1.8,
+   "details": []
   },
   {
    "ref": "TF",
@@ -624,7 +628,8 @@
    "kind": "plug",
    "label": "TF card",
    "ink": "#222",
-   "size": 1.6
+   "size": 1.6,
+   "details": []
   },
   {
    "ref": "OTG",
@@ -641,7 +646,8 @@
    "kind": "plug",
    "label": "USB",
    "ink": "#222",
-   "size": 1.3
+   "size": 1.3,
+   "details": []
   },
   {
    "ref": "USB",
@@ -658,7 +664,8 @@
    "kind": "plug",
    "label": "USB-C",
    "ink": "#222",
-   "size": 1.2
+   "size": 1.2,
+   "details": []
   },
   {
    "ref": "UART0",
@@ -675,7 +682,8 @@
    "kind": "plug",
    "label": "USB-C",
    "ink": "#222",
-   "size": 1.2
+   "size": 1.2,
+   "details": []
   },
   {
    "ref": "SW",
@@ -690,7 +698,8 @@
    ],
    "fill": "#15171c",
    "kind": "plug",
-   "label": ""
+   "label": "",
+   "details": []
   },
   {
    "ref": "CAM",
@@ -705,7 +714,8 @@
    ],
    "fill": "#e9e4d6",
    "kind": "plug",
-   "label": ""
+   "label": "",
+   "details": []
   },
   {
    "ref": "DSI",
@@ -720,7 +730,8 @@
    ],
    "fill": "#15171c",
    "kind": "plug",
-   "label": ""
+   "label": "",
+   "details": []
   },
   {
    "ref": "SPK",
@@ -735,7 +746,8 @@
    ],
    "fill": "#e9e4d6",
    "kind": "plug",
-   "label": ""
+   "label": "",
+   "details": []
   },
   {
    "ref": "BAT",
@@ -750,7 +762,8 @@
    ],
    "fill": "#e9e4d6",
    "kind": "plug",
-   "label": ""
+   "label": "",
+   "details": []
   },
   {
    "ref": "I2C",
@@ -765,7 +778,17 @@
    ],
    "fill": "#e9e4d6",
    "kind": "module",
-   "label": ""
+   "label": "",
+   "details": [
+    {
+     "text": "I2C",
+     "at": [
+      5.19,
+      27.13
+     ],
+     "size": 1.5
+    }
+   ]
   },
   {
    "ref": "UART",
@@ -780,7 +803,17 @@
    ],
    "fill": "#e9e4d6",
    "kind": "module",
-   "label": ""
+   "label": "",
+   "details": [
+    {
+     "text": "UART",
+     "at": [
+      5.19,
+      42.18
+     ],
+     "size": 1.5
+    }
+   ]
   },
   {
    "ref": "CAN",
@@ -795,7 +828,17 @@
    ],
    "fill": "#e9e4d6",
    "kind": "module",
-   "label": ""
+   "label": "",
+   "details": [
+    {
+     "text": "CAN",
+     "at": [
+      5.19,
+      56.97
+     ],
+     "size": 1.5
+    }
+   ]
   },
   {
    "ref": "RS485",
@@ -810,7 +853,17 @@
    ],
    "fill": "#e9e4d6",
    "kind": "module",
-   "label": ""
+   "label": "",
+   "details": [
+    {
+     "text": "RS485",
+     "at": [
+      5.19,
+      71.75
+     ],
+     "size": 1.5
+    }
+   ]
   },
   {
    "ref": "P3",
@@ -825,7 +878,17 @@
    ],
    "fill": "#e9e4d6",
    "kind": "module",
-   "label": ""
+   "label": "",
+   "details": [
+    {
+     "text": "P3",
+     "at": [
+      28.68,
+      92.34
+     ],
+     "size": 1.6
+    }
+   ]
   },
   {
    "ref": "P4",
@@ -840,7 +903,8 @@
    ],
    "fill": "#e9e4d6",
    "kind": "module",
-   "label": ""
+   "label": "",
+   "details": []
   }
  ]
 }

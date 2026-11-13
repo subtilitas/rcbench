@@ -455,7 +455,7 @@ without narration: the track cut between the pads of R1, the wire from GP15 to R
 the 2.2kΩ pull-down on M7's EN and the 5.6V zener on M7's output. It draws the board flat
 (`tools/video/player/board.js`) from a file that `tools/video_board.py` converts from the
 rev 1 KiCad board, which is not in the tree. `rbmod-build` shows the build of a rev 1 carrier
-in 13 steps and 347.41s on the same board, narrated, with Vivaldi's Spring as its bed: the parts take
+in 13 steps and 347.32s on the same board, narrated, with Vivaldi's Spring as its bed: the parts take
 their places, the modules sit on the plastic of straight pin strips and are soldered on both
 sides, the large holes of M5 and M6 take a wire and solder, J6 takes no connector but 4 wires
 to a USB-C plug board for the PD mini, and a drawing of the panel's back

@@ -13,12 +13,18 @@ The drawing is the board seen from its front, turned a quarter clockwise
 by default, so that the edge at the board file's highest x lies at the
 bottom.  All lengths are mm from the drawing's top left corner.
 
+A footprint whose name is that of a module under hardware/kicad/modules/
+takes the module's board outline as its box and, as details, the parts
+of the module's model, each a box or a circle with the colour name of the
+model, and the texts of the module's drawing, such as USB-C and CAN.
+
 A pad's name is REF.NUMBER, as in M1.20.  Where a footprint has more than
 one pad of a number, they take a letter in the order of the board file:
 M7.2a, M7.2b.
 
 Attributes:
     LAYER: The copper layer whose tracks are drawn.
+    MODULES: The directory of the module specs.
 
 SPDX-License-Identifier: MIT
 """
@@ -33,6 +39,8 @@ import re
 import sys
 
 LAYER = "F.Cu"
+MODULES = (pathlib.Path(__file__).resolve().parent.parent / "hardware"
+           / "kicad" / "modules")
 _TOKEN = re.compile(r'\(|\)|"(?:[^"\\]|\\.)*"|[^\s()]+')
 
 
@@ -79,12 +87,42 @@ def _xy(node: list) -> tuple:
     return float(node[1]), float(node[2])
 
 
-def convert(text: str, turn: int = 90) -> dict:
+def modules(where: pathlib.Path = MODULES) -> dict:
+    """Read the module specs.
+
+    Args:
+        where: The directory of the specs, one Python file a module.
+
+    Returns:
+        Per footprint name the module's board size, the footprint's origin
+        on it, the bodies of its model and the texts of its drawing as
+        (text, x, y, height in mm).
+    """
+    import importlib.util
+
+    found = {}
+    for path in sorted(where.glob("*.py")):
+        spec = importlib.util.spec_from_file_location(path.stem, path)
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        fp = getattr(mod, "FOOTPRINT", None)
+        if fp:
+            texts = []
+            for item in fp.get("fab", []) + fp.get("silk", []):
+                if item[0] == "text" and item[1:] not in texts:
+                    texts.append(item[1:])
+            found[fp["name"]] = (fp["board"], fp["origin"], getattr(
+                mod, "MODEL", {}).get("bodies", []), texts)
+    return found
+
+
+def convert(text: str, turn: int = 90, specs: dict | None = None) -> dict:
     """Lay a board file out as the player draws it.
 
     Args:
         text: The content of a .kicad_pcb file.
         turn: Degrees the drawing is turned clockwise: 0, 90, 180 or 270.
+        specs: The modules as modules() returns them; None for none.
 
     Returns:
         The board: size, tracks, pads and parts.
@@ -164,8 +202,38 @@ def convert(text: str, turn: int = 90) -> dict:
         if not pts:
             pts = [(p["x"] + sx * p["w"] / 2, p["y"] + sy * p["h"] / 2)
                    for p in mine for sx in (-1, 1) for sy in (-1, 1)]
+        details = []
+        name = fp[1].split(":")[-1]
+        if specs and name in specs:
+            # The module's own board, and the parts on it, laid out from
+            # the footprint's origin.
+            (bw, bh), (ox, oy), bodies, texts = specs[name]
+
+            def spot(x, y, world=world, ox=ox, oy=oy):
+                return world(x - ox, y - oy)
+
+            pts = [spot(x, y) for x in (0, bw) for y in (0, bh)]
+            for body in bodies:
+                if body[0] == "box":
+                    c = [spot(x, y) for x in (body[1], body[3])
+                         for y in (body[2], body[4])]
+                    details.append({
+                        "box": [r3(min(p[0] for p in c)),
+                                r3(min(p[1] for p in c)),
+                                r3(max(p[0] for p in c)),
+                                r3(max(p[1] for p in c))],
+                        "color": body[6]})
+                elif body[0] == "cyl":
+                    cx, cy = spot(body[1], body[2])
+                    details.append({"at": [r3(cx), r3(cy)], "r": body[3],
+                                    "color": body[5]})
+            for said, x, y, size in texts:
+                cx, cy = spot(x, y)
+                details.append({"text": said, "at": [r3(cx), r3(cy)],
+                                "size": size})
         if pts:
             parts.append({"ref": ref, "value": props.get("Value", ""),
+                          "details": details,
                           "back": _one(fp, "layer")[1].startswith("B."),
                           "footprint": fp[1].split(":")[-1],
                           "box": [r3(min(p[0] for p in pts)),
@@ -194,7 +262,7 @@ def main() -> int:
         text = args.board.read_text(encoding="utf-8")
     except OSError as err:
         sys.exit(f"{args.board}: {err}")
-    out = convert(text, args.turn)
+    out = convert(text, args.turn, modules())
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(out), encoding="utf-8")
     print(f"{args.output}: {out['size'][0]} x {out['size'][1]}mm, "
