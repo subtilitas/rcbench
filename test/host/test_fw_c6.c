@@ -1,6 +1,7 @@
 /*
  * The C6 radio's update (fw_c6.c): the carried image's check, the C6 RADIO
- * row's state and the order of its reasons, and the update's steps: every
+ * row's state and the order of its reasons, the reinstall offered to a C6
+ * that runs the carried version and sent in full, and the update's steps: every
  * answer of every step, a late answer and another update's answer
  * ignored, each step's limit at one millisecond under it and at it, the
  * same across the 32-bit millisecond wrap, the activate call only from
@@ -118,7 +119,8 @@ TEST_CASE(a_c6_that_reports_no_version_is_offered_the_update)
     f.running = k_old;
     CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_READY);
     f.running = k_carried;
-    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_SAME);
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_REINSTALL);
+    CHECK_EQ(why, FW_C6_WHY_NONE);
     /* A newer C6 than carried is offered the carried one: the host side
      * matches the carried image. */
     f.running.minor = 14u;
@@ -148,13 +150,15 @@ TEST_CASE(the_row_names_the_first_reason_in_order)
     CHECK_EQ(fw_c6_row(&f, NULL), FW_C6_ROW_READY);
 }
 
-TEST_CASE(image_update_link_and_same_come_before_the_bench)
+TEST_CASE(image_update_and_link_come_before_the_bench_the_reinstall_after)
 {
     fw_c6_feed_t f = ready_feed();
     f.armed = true;
     f.known = true;
     f.running = k_carried;
-    CHECK_EQ(fw_c6_row(&f, NULL), FW_C6_ROW_SAME);
+    fw_c6_why_t w = FW_C6_WHY_NONE;
+    CHECK_EQ(fw_c6_row(&f, &w), FW_C6_ROW_BLOCKED);
+    CHECK_EQ(w, FW_C6_WHY_ARMED);
     f.link_failed = true;
     CHECK_EQ(fw_c6_row(&f, NULL), FW_C6_ROW_LINK_FAILED);
     f.updating = true;
@@ -271,13 +275,33 @@ TEST_CASE(a_c6_from_2_6_0_is_activated_after_its_check)
     CHECK(fw_c6_has_activate(true, k_carried));
 }
 
-TEST_CASE(a_c6_that_runs_the_carried_version_is_sent_nothing)
+/* A C6 on rcbench's 3-link 2.13.0 image and a panel that carries the
+ * 5-link 2.13.0 image: both report 2.13.0.  The row offers the reinstall,
+ * and the hold sends the whole image. */
+TEST_CASE(a_c6_that_runs_the_carried_version_is_offered_and_sent_it_again)
 {
+    fw_c6_feed_t f = ready_feed();
+    f.known = true;
+    f.running = k_carried;
+    f.radio_up = true;
+    fw_c6_why_t why = FW_C6_WHY_NONE;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);
+    CHECK_EQ(why, FW_C6_WHY_RADIO);
+    f.radio_up = false;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_REINSTALL);
     start(T0);
-    (void)next(T0);
+    CHECK_EQ(next(T0).act, FW_C6_ACT_LINK);
     CHECK(fw_c6_ota_answer(&g_o, g_o.gen, 0, true, k_carried));
-    CHECK_EQ(g_o.result, FW_C6_RES_SAME);
-    CHECK(!fw_c6_ota_active(&g_o));
+    CHECK(fw_c6_ota_active(&g_o));
+    CHECK_EQ(next(T0).act, FW_C6_ACT_BEGIN);
+    CHECK(ok());
+    write_all(T0);
+    CHECK_EQ(g_o.done, g_o.total);
+    CHECK_EQ(next(T0).act, FW_C6_ACT_END);
+    CHECK(ok());
+    CHECK_EQ(next(T0).act, FW_C6_ACT_ACTIVATE);
+    CHECK(ok());
+    CHECK_EQ(g_o.result, FW_C6_RES_UPDATED);
 }
 
 TEST_CASE(each_failing_call_ends_the_update_with_its_reason)
@@ -511,11 +535,6 @@ TEST_CASE(a_step_carries_its_update_and_a_success_names_no_failed_phase)
     CHECK(ok());
     CHECK_EQ(g_o.result, FW_C6_RES_UPDATED);
     CHECK_EQ(g_o.failed_in, FW_C6_PH_IDLE);
-    start(T0);
-    (void)next(T0);
-    CHECK(fw_c6_ota_answer(&g_o, g_o.gen, 0, true, k_carried));
-    CHECK_EQ(g_o.result, FW_C6_RES_SAME);
-    CHECK_EQ(g_o.failed_in, FW_C6_PH_IDLE);
 }
 
 TEST_CASE(an_image_one_byte_short_of_a_run_is_one_short_write)
@@ -553,10 +572,10 @@ int main(void)
     RUN(the_c6_slot_is_the_limit_to_the_byte);
     RUN(a_c6_that_reports_no_version_is_offered_the_update);
     RUN(the_row_names_the_first_reason_in_order);
-    RUN(image_update_link_and_same_come_before_the_bench);
+    RUN(image_update_and_link_come_before_the_bench_the_reinstall_after);
     RUN(an_old_c6_is_updated_without_the_activate_call);
     RUN(a_c6_from_2_6_0_is_activated_after_its_check);
-    RUN(a_c6_that_runs_the_carried_version_is_sent_nothing);
+    RUN(a_c6_that_runs_the_carried_version_is_offered_and_sent_it_again);
     RUN(each_failing_call_ends_the_update_with_its_reason);
     RUN(a_failed_write_is_closed_and_never_activated);
     RUN(every_step_ends_at_its_limit_and_not_a_millisecond_before);

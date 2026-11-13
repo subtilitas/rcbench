@@ -67,6 +67,13 @@ history is in git.
 - The panel's host runs up to 10 GATT client procedures at once, up from
   4: 2 for each of the 5 links. The pool takes 600 bytes of PSRAM, up
   from 240 ([Performance](docs/Performance.md#on-the-board)).
+- On a C6 that reports the carried version, the C6 RADIO row on UPDATES
+  offers `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` and the hold sends
+  the image; an update no longer ends at the link-up with the C6 on that
+  version. An image of the same esp_hosted version can carry other
+  settings, such as 3 Bluetooth LE connections in place of 5
+  ([Screens](docs/Screens.md#the-c6-radio)).
+- `tools/c6_image.py` reads `# CONFIG_X is not set` as `CONFIG_X=n`.
 
 - The IOmcu queues each CAN reply whole, up to 16 frames, and sends it
   through the controller's 3 transmit buffers, up to 3 frames per pump and

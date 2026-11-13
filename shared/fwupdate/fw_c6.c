@@ -72,9 +72,6 @@ fw_c6_row_t fw_c6_row(const fw_c6_feed_t *f, fw_c6_why_t *why)
     if (f->link_failed) {
         return FW_C6_ROW_LINK_FAILED;
     }
-    if (f->known && fw_version_cmp(f->running, f->carried) == 0) {
-        return FW_C6_ROW_SAME;
-    }
     const fw_c6_why_t w = bench_why(f);
     if (w != FW_C6_WHY_NONE) {
         if (why != NULL) {
@@ -82,7 +79,8 @@ fw_c6_row_t fw_c6_row(const fw_c6_feed_t *f, fw_c6_why_t *why)
         }
         return FW_C6_ROW_BLOCKED;
     }
-    return FW_C6_ROW_READY;
+    return (f->known && fw_version_cmp(f->running, f->carried) == 0)
+               ? FW_C6_ROW_REINSTALL : FW_C6_ROW_READY;
 }
 
 void fw_c6_ota_init(fw_c6_ota_t *o)
@@ -171,7 +169,7 @@ bool fw_c6_ota_next(fw_c6_ota_t *o, uint32_t now_ms, fw_c6_step_t *step)
  */
 static void end_with(fw_c6_ota_t *o, fw_c6_res_t res)
 {
-    if (res == FW_C6_RES_UPDATED || res == FW_C6_RES_SAME) {
+    if (res == FW_C6_RES_UPDATED) {
         o->failed_in = FW_C6_PH_IDLE;
     } else {
         o->failed_in = o->phase;
@@ -222,13 +220,11 @@ bool fw_c6_ota_answer(fw_c6_ota_t *o, uint32_t gen, int32_t err, bool known,
             end_with(o, FW_C6_RES_NO_LINK);
             break;
         }
+        /* The carried version reported is no reason to stop: an image of
+         * the same version can carry other settings. */
         o->known = known;
         o->running = running;
-        if (known && fw_version_cmp(running, o->carried) == 0) {
-            end_with(o, FW_C6_RES_SAME);
-        } else {
-            go(o, FW_C6_PH_BEGIN);
-        }
+        go(o, FW_C6_PH_BEGIN);
         break;
     case FW_C6_PH_BEGIN:
         if (err != 0) {

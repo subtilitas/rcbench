@@ -6020,9 +6020,6 @@ UI_TEXT(CU_WHY_NOT_STARTED, 36,
 UI_TEXT(ALERT_C6_DONE, 94,
     "C6 radio updated to %s. The panel restarts.",
     "C6-Funk auf %s aktualisiert. Das Panel startet neu.")
-UI_TEXT(ALERT_C6_SAME, 94,
-    "The C6 radio runs %s already. Nothing was sent.",
-    "Der C6-Funk nutzt bereits %s. Nichts gesendet.")
 UI_TEXT(ALERT_C6_NO_OTA, 94,
     "The C6 radio takes no update over SDIO. Flash it over header H4.",
     "Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.")
@@ -6119,6 +6116,9 @@ UI_TEXT(HOLD_HINT_IOMCU_UPDATE, 94,
 UI_TEXT(HOLD_HINT_C6_UPDATE, 94,
     "Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.",
     "Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.")
+UI_TEXT(HOLD_HINT_C6_REINSTALL, 94,
+    "Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.",
+    "Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.")
 UI_TEXT(HOLD_HINT_UNBIND, 94,
     "Hold 2s to clear all pin assignments.",
     "Halte 2s, um alle Pin-Zuordnungen zu löschen.")
@@ -8454,6 +8454,9 @@ UI_TEXT(UPD_C6_NONE, 0,
 UI_TEXT(UPD_C6_HOLD, 0,
     "HOLD 2s TO UPDATE THE C6 RADIO",
     "2s HALTEN ZUM C6-FUNK-UPDATE")
+UI_TEXT(UPD_C6_REINSTALL, 0,
+    "HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE",
+    "2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN")
 UI_TEXT(UPD_C6_PROGRESS, 0,
     "C6 UPDATE %u%%",
     "C6-UPDATE %u%%")
@@ -8471,9 +8474,6 @@ UI_TEXT(C6_WHY_UPDATING, 94,
 UI_TEXT(C6_WHY_LINK, 94,
     "The C6 radio did not answer. Restart the panel.",
     "Der C6-Funk hat nicht geantwortet. Starte das Panel neu.")
-UI_TEXT(C6_WHY_SAME, 94,
-    "The C6 radio runs the firmware included on this panel.",
-    "Der C6-Funk nutzt die im Panel enthaltene Firmware.")
 UI_TEXT(C6_WHY_ARMED, 94,
     "The C6 update requires SAFE.",
     "Das C6-Update erfordert SAFE.")

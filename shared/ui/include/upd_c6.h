@@ -2,12 +2,13 @@
  * @file upd_c6.h
  * @brief SETUP > UPDATES' C6 RADIO row: the version the board's ESP32-C6
  *        reports, the version of the image this panel carries, and
- *        HOLD 2s TO UPDATE THE C6 RADIO.
+ *        HOLD 2s TO UPDATE THE C6 RADIO, or HOLD 2s TO REINSTALL THIS
+ *        PANEL'S C6 FIRMWARE while the C6 reports the carried version.
  *
  * The row sits in UPDATES' right column under the card: one line with both
  * versions ("not reported" while the C6 has named none), and the hold
  * under it, 532 x 56px at body y 428.  The hold is live only while the
- * application's view reads FW_C6_ROW_READY.  A release before 2s on a live
+ * application's view reads FW_C6_ROW_READY or FW_C6_ROW_REINSTALL.  A release before 2s on a live
  * hold shows the hold's hint on the alert band; a tap on a grey hold shows
  * why it is grey there (upd_c6_reason()).  While an update runs the button
  * reads C6 UPDATE and the share sent.

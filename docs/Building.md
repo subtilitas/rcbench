@@ -640,9 +640,14 @@ cd firmware/panel && idf.py -D RCBENCH_C6_BIN=../../c6-dist/rcbench-c6-2.13.0.bi
 
 SETUP > UPDATES' C6 RADIO row shows the version the C6 reported at the
 first Wi-Fi start, or `not reported`, and the carried version, and
-`HOLD 2s TO UPDATE THE C6 RADIO`. The hold is live when the build carries
-an image that passed its check, the C6 does not report the carried
-version, the link to the C6 has not failed, the bench is SAFE with no arm
+`HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL THIS PANEL'S C6
+FIRMWARE` while the C6 reports the carried version. Images of one esp_hosted
+version with other settings report the same version (`CONFIG_BT_LE_MAX_CONNECTIONS`
+3 or 5); esp_hosted's application descriptor answer names the ELF SHA-256
+only with `CONFIG_ESP_HOSTED_ALLOW_FULL_APP_DESC`, which no image sets, so
+the panel cannot tell them apart and offers the reinstall. The hold is live
+when the build carries an image that passed its check, the link to the C6
+has not failed, the bench is SAFE with no arm
 waiting, the supply output is off, no log run is open, no board drawing is
 being fetched, neither the IOmcu's update nor the panel's own download or
 install runs, Wi-Fi is off and Bluetooth LE's start task `blestart` does
@@ -652,7 +657,7 @@ the alert band. The update runs on the task `c6upd` (core 0, priority 2,
 
 | Step | Call | Limit | Ends as |
 | --- | --- | ---: | --- |
-| link | `c6_link_up()`, then the C6's version | 30,000ms | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.`; a C6 that reports 2.13.0 gets nothing: `The C6 radio runs 2.13.0 already. Nothing was sent.` |
+| link | `c6_link_up()`, then the C6's version | 30,000ms | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.`; a C6 that reports the carried version gets the image all the same |
 | begin | `esp_hosted_slave_ota_begin()`: the C6 erases the slot it does not run from | 20,000ms | an error: `The C6 radio takes no update over SDIO. Flash it over header H4.` |
 | write | `esp_hosted_slave_ota_write()`, 1,400 bytes a call, 4 calls a step | 10,000ms a step | an error: the end call once more to release the C6's OTA handle, then `C6 update stopped: a write failed. Previous firmware is running.` |
 | end | `esp_hosted_slave_ota_end()`: the C6 checks the image's SHA-256 | 10,000ms | `... the C6's image check failed ...` |

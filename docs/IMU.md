@@ -138,7 +138,9 @@ C6 image hold 5 connections each (`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`,
 
 With the IMU alone every action and event passes as it did with one link.
 A C6 image with 3 links refuses a fourth connect; the console line names
-it (below).
+it (below). Such an image reports esp_hosted 2.13.0, as the panel's 5-link
+image does, so SETUP > UPDATES' C6 RADIO row offers
+`HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` for it.
 
 The connect values are chosen as a phone's central asks them, not
 measured against others; they sit together in
@@ -334,7 +336,7 @@ I (…) imu: command FF AA 69 88 B5
 I (…) ble: disconnect: reason 0x<r>, handle <h>, token <k>
 I (…) ble: disconnect: record: handle <h>, peer …
 I (…) ble: connect: failed to be established, reason 0x<r>
-W (…) ble: connect refused by the C6 radio, HCI 0x<c>: it holds no further link; a C6 image with 3 links takes no fourth: update the C6 radio in SETUP > UPDATES
+W (…) ble: connect refused by the C6 radio, HCI 0x<c>: it holds no further link; a C6 image with 3 links takes no fourth: install this panel's C6 image with the C6 RADIO hold in SETUP > UPDATES
 ```
 
 The last line comes for HCI 0x09 (connection limit exceeded) and 0x07

@@ -614,6 +614,7 @@ replaces a visible hint.
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
 | HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -6435,6 +6436,7 @@ slot is empty until a check finds a newer release.
 | `OPTIONS` | Opens the list of Reminder at start and Releases. Grey while a check or a download runs or a finger holds the download; a tap then puts `OPTIONS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
+| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
 
 ![UPDATES' OPTIONS list](img/updates-settings.png)
 
@@ -6664,7 +6666,8 @@ Under the card, UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
 Bluetooth: `C6 radio: 2.13.0. Included: 2.13.0.`, the version the C6
 reported at the first Wi-Fi start since the panel started, or
 `not reported`, and the version of the image this panel carries, or
-`none`. Under it `HOLD 2s TO UPDATE THE C6 RADIO`. While the update runs the
+`none`. Under it `HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL
+THIS PANEL'S C6 FIRMWARE` while the C6 reports the carried version. While the update runs the
 button reads `C6 UPDATE 37%`, the share of the image the C6 took. The
 steps, their limits and how each ends are in
 [Building: The C6's firmware](Building.md#the-c6s-firmware).
@@ -6680,7 +6683,6 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The included C6 radio firmware failed its check.` | The carried image is no ESP32-C6 build of esp_hosted, or its SHA-256 differs. |
 | `The C6 radio update is running.` | An update runs. |
 | `The C6 radio did not answer. Restart the panel.` | The link to the C6 failed since the panel started; the C6 is held in reset. |
-| `The C6 radio runs the firmware included on this panel.` | The C6 reported the carried version. |
 | `The C6 update requires SAFE.` | ARMED, or an arm waiting. |
 | `The C6 update requires the supply output off.` | The supply output is on or switching on. |
 | `The C6 update waits: a recording session is open.` | A log run is open. |
@@ -6692,12 +6694,15 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
 
 A C6 that reports no version, as the shipped one does, is offered the
-update. The alert band says how an update ended:
+update. A C6 that reports the carried version is offered the reinstall:
+images of one esp_hosted version with other settings report the same
+version, such as one with 3 Bluetooth LE connections and one with 5
+([Building: The image the panel carries](Building.md#the-image-the-panel-carries)).
+The alert band says how an update ended:
 
 | Alert | Meaning |
 | --- | --- |
 | `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later. |
-| `The C6 radio runs 2.13.0 already. Nothing was sent.` | The C6 reported the carried version at the update's link-up. |
 | `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([Building: Recovery over header H4](Building.md#recovery-over-header-h4)). |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | The link to the C6 failed. |
 | `C6 update stopped: <reason>. Previous firmware is running.` | A write, the C6's image check or the activate call failed (`a write failed`, `the C6's image check failed`, `activation failed`), or a step went unanswered past its limit (`no response`). |
