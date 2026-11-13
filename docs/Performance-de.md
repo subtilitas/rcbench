@@ -616,7 +616,7 @@ eine Marge von 256 Bytes den Stack eines Kerns überschreiten.
 
 | Kern | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Ein Interrupt (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| Kern 0 | `main` | 4 096 | 1 528 | 528 | 1 784 |
+| Kern 0 | `main` | 4 096 | 1 516 | 528 | 1 796 |
 | Kern 1 | `core1_main` | 4 096 | 644 | 528 | 2 668 |
 
 Gemessen am Image, das CI baut, pico-sdk 2.3.0 mit arm-none-eabi-gcc 14.2.1
@@ -661,20 +661,22 @@ Durchläufe und 397 bis 647ms Planerzeit. Alle Zeiten gelten für 150MHz,
 sind in einem Emulator aus den ausgeführten Instruktionen mit ARM GNU 14.2
 bei -O3 berechnet und nicht auf Hardware gemessen. Die Zeit eines
 Durchlaufs mit Link, Heartbeat und Ausgängen ist nicht gemessen. Die
-Heartbeat-Lücke, die alle Ausgänge abschaltet, beträgt 150ms. Zwei
-Wartezeiten eines Durchlaufs sind zeitlich begrenzt. Ein `printf()` an die
+Heartbeat-Lücke, die alle Ausgänge abschaltet, beträgt 150ms. Eine
+Wartezeit eines Durchlaufs ist zeitlich begrenzt. Ein `printf()` an die
 USB-Konsole wartet höchstens 1000us auf Platz im Sendepuffer von 2 048 Bytes,
 gezählt ab dem Zeitpunkt, an dem der Host zuletzt Bytes abgeholt hat, und
 verwirft dann den Rest der Zeile; ein Host, der den Port offen hält und
-nichts abholt, kostet diese Wartezeit einmal. Ein Antwortframe auf dem
-CAN wartet höchstens 1000us auf den Sendepuffer des Controllers; danach
-wird der Rest der Antwort aufgegeben und als `tx_drop` gezählt.
+nichts abholt, kostet diese Wartezeit einmal. Eine Antwort auf dem CAN
+wartet auf keinen Sendepuffer: Sie kommt ganz in eine Warteschlange von 16
+Frames und geht mit 3 Frames je Durchlauf hinaus. Ein Stapel, der 5000us
+nach seiner Sendeanforderung noch ansteht, wird mit dem Rest der
+Warteschlange abgebrochen und als `tx_drop` gezählt.
 
 Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 251 solche Aufrufe sind von `main` aus erreichbar, im Image,
+  Links liest: 255 solche Aufrufe sind von `main` aus erreichbar, im Image,
   das CI baut (arm-none-eabi-gcc 14.2.1);
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und

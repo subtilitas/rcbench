@@ -26,14 +26,17 @@ der Page Map nicht belegt ist.
 Boot-Ausgabe auf der USB-Konsole (Universal Serial Bus) des IOmcu,
 alle 3s wiederholt:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0 txq_max 0
 
 `requests served` zählt Link-Page-Anfragen, die das Panel gesendet und der
 IOmcu beantwortet hat. `self-test echoes` zählt Testframes und steht auf
 0, solange der CAN-Selbsttest des Panels nicht läuft. `tx_drop` zählt
-Antwortframes, die nicht gesendet wurden, weil der Sendepuffer 1000us lang
-voll blieb, zusammen mit dem Rest ihrer Antwort. Das Panel wartet dann bis
-zum Timeout seines Austauschs. Die ersten beiden Zähler zeigen zusammen, welche
+Antwortframes, die nicht gesendet wurden: eine Antwort, für die die
+Sendewarteschlange von 16 Frames keinen Platz hatte, und jeden Frame der
+Warteschlange, wenn ein Stapel 5000us nach seiner Sendeanforderung noch
+anstand. Das Panel wiederholt dann seine Anfrage nach 50ms und wartet bis
+zum Timeout seines Austauschs. `txq_max` ist die größte Zahl gleichzeitig
+wartender Frames seit dem letzten Bericht. Die ersten beiden Zähler zeigen zusammen, welche
 Seite ausfällt:
 
 | Requests | Panel zeigt | Lesart |

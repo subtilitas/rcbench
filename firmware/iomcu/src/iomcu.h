@@ -33,6 +33,7 @@
 
 #include "hardware/gpio.h"
 
+#include "can_txq.h"
 #include "heartbeat.h"
 #include "hitec_line.h"
 #include "hitec_port.h"
@@ -281,9 +282,11 @@ extern bool     s_can_up;
 extern uint32_t s_can_echoes; /**< echo frames answered since power-up */
 /** @brief Receive overruns the controller reported since power-up. */
 extern uint32_t s_can_overflows;
-/** @brief Reply frames not sent because the transmit buffer stayed full
- * for IOMCU_CAN_TX_WAIT_US (iomcu_can.c), and the rest of their reply. */
-extern uint32_t s_can_tx_dropped;
+/**
+ * @brief Every frame this end sends; see iomcu_can.c.  Its dropped count is
+ * the report's tx_drop, its peak the report's txq_max.
+ */
+extern can_txq_t s_can_txq;
 
 /**
  * @brief When a frame was last taken out of the controller; see iomcu_can.c.
@@ -1056,6 +1059,14 @@ void can_start(void);
  *             passed to the link dispatcher.
  */
 void can_service(uint32_t now);
+/**
+ * @brief Sends every queued frame before a restart: pumps the transmit
+ * queue until it is empty and its last batch has left, or the stuck rule
+ * (CAN_TXQ_STUCK_US) has emptied it.
+ *
+ * Waits, and is called only on the way to a restart (update_hw_init()).
+ */
+void can_drain(void);
 
 /* iomcu_report.c: every 3s at most, from the main loop */
 /**

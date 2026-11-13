@@ -160,30 +160,49 @@ bool xl2515_init(uint32_t bitrate)
            == MCP2515_MODE_NORMAL;
 }
 
-bool xl2515_send(const link_can_frame_t *f)
+uint8_t xl2515_status(void *ctx)
 {
-    if (f == NULL || f->dlc > 8) {
-        return false;
-    }
-    /* TXREQ still set means the previous frame has not won arbitration.
-     * Overwriting it would drop it. */
-    if ((read_reg(MCP2515_TXB0CTRL) & 0x08u) != 0u) {
-        return false;
-    }
+    (void)ctx;
+    const uint8_t cmd = MCP2515_CMD_READ_STATUS;
+    uint8_t st = 0;
+    cs_low();
+    spi_write_blocking(IOMCU_CAN_SPI, &cmd, 1);
+    spi_read_blocking(IOMCU_CAN_SPI, 0x00, &st, 1);
+    cs_high();
+    return st;
+}
 
-    uint8_t buf[13];
-    if (!mcp2515_pack_id(f->id, buf)) {
-        return false;
+void xl2515_load(void *ctx, uint8_t buf, uint8_t txp,
+                 const link_can_frame_t *f)
+{
+    (void)ctx;
+    static const uint8_t ctrl[MCP2515_TX_BUFFERS] = {
+        MCP2515_TXB0CTRL, MCP2515_TXB1CTRL, MCP2515_TXB2CTRL,
+    };
+    uint8_t bytes[MCP2515_TXB_LOAD_BYTES];
+    /* can_txq_put() refuses the frames mcp2515_tx_load() refuses, so a
+     * queued frame always packs. */
+    if (buf >= MCP2515_TX_BUFFERS || !mcp2515_tx_load(f, txp, bytes)) {
+        return;
     }
-    buf[4] = f->dlc;
-    memcpy(buf + 5, f->data, f->dlc);
-    write_regs(MCP2515_TXB0SIDH, buf, 5u + f->dlc);
+    write_regs(ctrl[buf], bytes, sizeof(bytes));
+}
 
-    const uint8_t rts = MCP2515_CMD_RTS_TXB0;
+void xl2515_request(void *ctx, uint8_t mask)
+{
+    (void)ctx;
+    const uint8_t rts = (uint8_t)(MCP2515_CMD_RTS | (mask & 0x07u));
     cs_low();
     spi_write_blocking(IOMCU_CAN_SPI, &rts, 1);
     cs_high();
-    return true;
+}
+
+void xl2515_abort(void *ctx)
+{
+    (void)ctx;
+    bit_modify(MCP2515_TXB0CTRL, MCP2515_TXB_TXREQ, 0);
+    bit_modify(MCP2515_TXB1CTRL, MCP2515_TXB_TXREQ, 0);
+    bit_modify(MCP2515_TXB2CTRL, MCP2515_TXB_TXREQ, 0);
 }
 
 /**

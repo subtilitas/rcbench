@@ -25,11 +25,14 @@
  * build has.
  *
  * @p busy says whether flash may not be written now: the bank driving, the
- * supply on, a servo programming session.
+ * supply on, a servo programming session.  @p drain sends what the CAN
+ * transmit queue holds, so the ACK of the ACTIVATE that asks for the
+ * restart leaves before it.
  *
- * @param busy  Returns true while flash may not be written now.
+ * @param busy   Returns true while flash may not be written now.
+ * @param drain  Called right before the restart; NULL for none.
  */
-void update_hw_init(bool (*busy)(void));
+void update_hw_init(bool (*busy)(void), void (*drain)(void));
 
 /**
  * @brief The two pages' handlers, for the link_page_t table.

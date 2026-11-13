@@ -575,7 +575,7 @@ core's chain, one interrupt and a margin of 256 bytes exceed its stack.
 
 | Core | Entry | Stack (bytes) | Deepest chain (bytes) | One interrupt (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: | ---: |
-| core 0 | `main` | 4,096 | 1,528 | 528 | 1,784 |
+| core 0 | `main` | 4,096 | 1,516 | 528 | 1,796 |
 | core 1 | `core1_main` | 4,096 | 644 | 528 | 2,668 |
 
 Measured on the image CI builds, pico-sdk 2.3.0 with arm-none-eabi-gcc
@@ -620,17 +620,19 @@ of planner time. All times are for 150MHz, computed in an emulator from
 the instructions executed with ARM GNU 14.2 at -O3, and not measured on
 hardware. The time of a pass with the link, the heartbeat and the outputs
 in it is not measured. The heartbeat gap that switches every output off is
-150ms. Two waits of a pass are bounded in time. A `printf()` to the USB
+150ms. One wait of a pass is bounded in time. A `printf()` to the USB
 console waits at most 1,000us for room in the 2,048-byte transmit buffer
 after the host last took bytes, then drops the rest of the line; a host
 that holds the port open and stops reading costs that wait once. A reply
-frame on CAN waits at most 1,000us for the controller's transmit buffer;
-after that the rest of the reply is abandoned and counted as `tx_drop`.
+on CAN waits for no transmit buffer: it is queued whole in a queue of 16
+frames and leaves 3 frames per pass. A batch still requested 5000us after
+its request to send is aborted with the rest of the queue and counted as
+`tx_drop`.
 
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 251 such calls
+  handler, which the tool reads out of the link's page table: 255 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
   14.2.1);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.

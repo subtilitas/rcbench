@@ -606,7 +606,7 @@ int main(void)
     capabilities_update();
     /* Which slot runs and whether it waits for BUY, before the first
      * request can ask. */
-    update_hw_init(flash_busy);
+    update_hw_init(flash_busy, can_drain);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 #if IOMCU_CONSOLE
     /* The bench console on the same pages, through link_dev_apply(): it

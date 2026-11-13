@@ -23,14 +23,16 @@ addressed to a page that the page map does not use.
 Boot output on the IOmcu's USB (Universal Serial Bus) console, repeated
 every 3s:
 
-    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0
+    rcbench-iomcu: CAN up, 1000000 bit/s, 0 requests served, 0 self-test echoes, tx_err 0 rx_err 0 eflg 0x00 tx_drop 0 txq_max 0
 
 `requests served` counts link page requests sent by the panel and
 answered by the IOmcu. `self-test echoes` counts probe frames and is 0
 unless the panel's CAN self-test is running. `tx_drop` counts reply
-frames not sent because the transmit buffer stayed full for 1,000us,
-together with the rest of their reply; the panel then waits for its
-exchange to time out. Together, the first two
+frames not sent: a reply that did not fit the 16-frame transmit queue, and
+every frame queued when a batch was still requested 5000us after its
+request to send. The panel then repeats its request after 50ms and waits
+for its exchange to time out. `txq_max` is the most frames queued at once
+since the last report. Together, the first two
 counters indicate which end has stopped:
 
 | Requests | Panel says | Reading |
