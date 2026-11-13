@@ -2,7 +2,7 @@
  * @file test_kst_panel_expert.c
  * @brief KST EXPERT MODE: what the KST and Chaservo programmer hides with
  * the mode OFF, the SERVO > SETTINGS > DUT row that switches it, and the
- * pages that name a hidden value a write or a restore changes.
+ * pages that name a hidden value an unwritten edit or a restore changes.
  *
  * Cases:
  * - a_fresh_panel_starts_with_the_mode_off_and_the_expert_rows_absent
@@ -15,7 +15,7 @@
  * - the_settings_row_turns_on_after_a_2s_hold_and_off_with_a_tap
  * - a_short_press_on_the_row_gives_the_band_hint_and_changes_nothing
  * - a_hold_that_leaves_the_row_or_loses_its_press_changes_nothing
- * - a_draft_keeps_an_expert_edit_and_the_write_page_names_it
+ * - a_draft_keeps_an_expert_edit_and_the_leave_page_names_it
  * - a_change_of_the_mode_closes_the_editor_open
  * - a_file_load_with_the_mode_off_names_each_hidden_value_it_changes
  * - a_file_check_page_names_the_hidden_values_first
@@ -23,7 +23,7 @@
  * - a_restore_of_an_unknown_servo_names_the_hidden_values_on_one_line
  * - a_step_key_held_as_the_mode_turns_off_stops_its_repeat
  * - the_fullest_pages_with_the_mode_off_end_above_their_buttons
- * - the_active_output_and_the_write_switch_are_the_same_in_both_modes
+ * - the_active_output_is_the_same_in_both_modes
  *
  * SPDX-License-Identifier: MIT
  */
@@ -463,35 +463,35 @@ TEST_CASE(a_hold_that_leaves_the_row_or_loses_its_press_changes_nothing)
 
 /* ------------------------------------------- hidden values on the pages */
 
-TEST_CASE(a_draft_keeps_an_expert_edit_and_the_write_page_names_it)
+TEST_CASE(a_draft_keeps_an_expert_edit_and_the_leave_page_names_it)
 {
     fresh();
     connected();
-    enable();
     edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
     edit(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 2u));
     mode(false);
     /* The rule: the draft keeps the edit. */
     CHECK_EQ(draft(KST_F_DEAD_BAND), servo(KST_F_DEAD_BAND) + 2u);
     CHECK_EQ(kst_prog_changes(M), 2);
-    tap(val(PG_SERVO, 4, 1));
+    tap(val(PG_SERVO, 0, 0));           /* LEAVE */
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns_from(hidden_line("DEAD BAND")));
     CHECK(warns_from("MAX. DUTY: "));
-    /* The hidden one first, in the warning colour. */
-    CHECK(strncmp(kst_panel_warning_line(0), hidden_line("DEAD BAND"),
+    /* The hidden one first under the lost line, in the warning colour. */
+    CHECK(strncmp(kst_panel_warning_line(1), hidden_line("DEAD BAND"),
                   strlen(hidden_line("DEAD BAND"))) == 0);
-    CHECK_EQ(kst_panel_warning_level(0), (int)KST_PROG_WARN);
-    hold(2.1f);
+    CHECK_EQ(kst_panel_warning_level(1), (int)KST_PROG_WARN);
+    /* BACK, and WRITE's hold writes both. */
+    tap(kst_panel_cancel_rect());
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK_EQ(servo(KST_F_DEAD_BAND), draft(KST_F_DEAD_BAND));
-    /* With the mode ON the same write names it as any value. */
+    /* With the mode ON the page names it as any value. */
     fresh();
     connected();
-    enable();
     edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
-    tap(val(PG_SERVO, 4, 1));
+    tap(val(PG_SERVO, 0, 0));
     CHECK(warns_from("DEAD BAND: "));
     CHECK(!warns_from(hidden_line("DEAD BAND")));
 }
@@ -508,7 +508,6 @@ TEST_CASE(a_change_of_the_mode_closes_the_editor_open)
     CHECK_EQ(kst_prog_changes(M), 0);
     /* RELEASE PAIRING's page, open as the mode goes OFF, sends nothing. */
     mode(true);
-    enable();
     tap(val(PG_SERVO, 2, 1));
     tap(kst_panel_choice_rect(choice(TR(KP_RELEASE_TITLE))));
     CHECK_EQ(kst_panel_editor(), 3);
@@ -561,15 +560,16 @@ TEST_CASE(a_file_load_with_the_mode_off_names_each_hidden_value_it_changes)
     }
     load("EXP");
     CHECK_EQ(msg(), KST_PROG_MSG_LOADED);
-    /* The whole image: the hidden values too. */
+    /* The whole image: the hidden values too, each named on LEAVE's
+     * page. */
     CHECK_EQ(kst_prog_changes(M), 3);
-    enable();
-    tap(val(PG_SERVO, 4, 1));
+    tap(val(PG_SERVO, 0, 0));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns_from(hidden_line("DEAD BAND")));
     CHECK(warns_from(hidden_line("BOOST")));
     CHECK(warns_from("MAX. DUTY: "));
-    hold(2.1f);
+    tap(kst_panel_cancel_rect());
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK_EQ(servo(KST_F_BOOST), draft(KST_F_BOOST));
@@ -620,7 +620,7 @@ TEST_CASE(a_file_check_page_names_the_hidden_values_first)
 static void restore_session(void)
 {
     tap(kst_panel_tab_rect(PG_SERVO));
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 3, 0));
     CHECK_EQ(kst_panel_editor(), 2);
     CHECK(choice(TR(KP_FROM_SESSION)) >= 0);
     tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
@@ -639,11 +639,9 @@ TEST_CASE(a_restore_with_the_mode_off_names_each_hidden_value_it_changes)
     g_rig.sim.reg[0x1D] = 0x5Au;
     connected();
     boost0 = servo(KST_F_BOOST);
-    enable();
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
     edit(KST_F_STRETCH, (uint16_t)(servo(KST_F_STRETCH) != 0u ? 0u : 1u));
-    tap(val(PG_SERVO, 4, 1));
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     /* RELEASE PAIRING: register 1D to 00. */
@@ -699,10 +697,7 @@ TEST_CASE(a_restore_of_an_unknown_servo_names_the_hidden_values_on_one_line)
     for (int on = 1; on >= 0; --on) {
         restart_locked();
         mode(on != 0);
-        tap(val(PG_SERVO, 3, 0));           /* the write switch */
-        hold(2.1f);
-        CHECK(kst_prog_write_enabled(M));
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 3, 0));
         CHECK_EQ(kst_panel_editor(), 2);
         CHECK(choice(TR(KP_FROM_SESSION)) >= 0);
         tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
@@ -762,11 +757,10 @@ static bool page_fits(void)
 TEST_CASE(the_fullest_pages_with_the_mode_off_end_above_their_buttons)
 {
     for (int lang = 0; lang < 2; ++lang) {
-        /* Ten values on the write page, three of them hidden. */
+        /* Ten unwritten values on LEAVE's page, three of them hidden. */
         fresh_off();
         ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
         connected();
-        enable();
         edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
         edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
         edit(KST_F_STRETCH,
@@ -778,7 +772,7 @@ TEST_CASE(the_fullest_pages_with_the_mode_off_end_above_their_buttons)
         edit(KST_F_PULSE_UPPER, (uint16_t)(servo(KST_F_PULSE_UPPER) - 10u));
         edit(KST_F_LEFT_ANGLE, (uint16_t)(servo(KST_F_LEFT_ANGLE) - 1u));
         edit(KST_F_REVERSION, (uint16_t)(1u - servo(KST_F_REVERSION)));
-        tap(val(PG_SERVO, 4, 1));
+        tap(val(PG_SERVO, 0, 0));
         CHECK_EQ(kst_panel_editor(), 3);
         CHECK(warns_from(hidden_line("DEAD BAND")));
         CHECK(warns_from(hidden_line("BOOST")));
@@ -791,8 +785,6 @@ TEST_CASE(the_fullest_pages_with_the_mode_off_end_above_their_buttons)
         card_out();
         tick(0.02f);
         tap(val(PG_SERVO, 3, 0));
-        hold(2.1f);
-        tap(val(PG_SERVO, 4, 0));
         tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
         CHECK_EQ(kst_panel_editor(), 3);
         CHECK(warns(TR(KP_HIDDEN_UNKNOWN)));
@@ -801,10 +793,9 @@ TEST_CASE(the_fullest_pages_with_the_mode_off_end_above_their_buttons)
     ui_text_set_language(UI_LANG_EN);
 }
 
-TEST_CASE(the_active_output_and_the_write_switch_are_the_same_in_both_modes)
+TEST_CASE(the_active_output_is_the_same_in_both_modes)
 {
     char port[2][64];
-    char enable_label[2][64];
 
     for (int on = 1; on >= 0; --on) {
         fresh();
@@ -813,15 +804,9 @@ TEST_CASE(the_active_output_and_the_write_switch_are_the_same_in_both_modes)
         snprintf(port[on], sizeof(port[on]), "%s",
                  kst_panel_label(PG_SERVO, 0, 0));
         connected();
-        snprintf(enable_label[on], sizeof(enable_label[on]), "%s",
-                 kst_panel_button(PG_SERVO, 3, 0));
-        CHECK(!kst_prog_write_enabled(M));
-        enable();
-        CHECK(kst_prog_write_enabled(M));
         CHECK_EQ(kst_panel_pin(), RIG_PIN);
     }
     CHECK_STR_EQ(port[0], port[1]);
-    CHECK_STR_EQ(enable_label[0], enable_label[1]);
 }
 
 /* A finger on a KST control and a second on SETTINGS: the page does not
@@ -860,7 +845,7 @@ int main(void)
     RUN(the_settings_row_turns_on_after_a_2s_hold_and_off_with_a_tap);
     RUN(a_short_press_on_the_row_gives_the_band_hint_and_changes_nothing);
     RUN(a_hold_that_leaves_the_row_or_loses_its_press_changes_nothing);
-    RUN(a_draft_keeps_an_expert_edit_and_the_write_page_names_it);
+    RUN(a_draft_keeps_an_expert_edit_and_the_leave_page_names_it);
     RUN(a_change_of_the_mode_closes_the_editor_open);
     RUN(a_file_load_with_the_mode_off_names_each_hidden_value_it_changes);
     RUN(a_file_check_page_names_the_hidden_values_first);
@@ -868,7 +853,7 @@ int main(void)
     RUN(a_restore_of_an_unknown_servo_names_the_hidden_values_on_one_line);
     RUN(a_step_key_held_as_the_mode_turns_off_stops_its_repeat);
     RUN(the_fullest_pages_with_the_mode_off_end_above_their_buttons);
-    RUN(the_active_output_and_the_write_switch_are_the_same_in_both_modes);
+    RUN(the_active_output_is_the_same_in_both_modes);
     RUN(settings_waits_for_a_press_on_the_session);
     return test_summary("kst_panel_expert");
 }

@@ -81,7 +81,7 @@ void hpg_pump(hitec_prog_t *p);
 /* --- hitec_prog_write.c --------------------------------------------------- */
 
 /**
- * @brief A CONNECT starts: the switch off, the edits and the
+ * @brief A CONNECT starts: the write gate shut, the edits and the
  *        confirmations gone; the record stays.
  *
  * @param p The programmer.
@@ -89,15 +89,15 @@ void hpg_pump(hitec_prog_t *p);
 void hpw_connect(hitec_prog_t *p);
 
 /**
- * @brief The write switch goes off: a LEAVE, a lost link, a stop.
+ * @brief The write gate shuts: a LEAVE, a lost link, a stop.
  *
  * @param p The programmer.
  */
 void hpw_off(hitec_prog_t *p);
 
 /**
- * @brief A full read ended well: the draft is the servo again, the switch
- *        goes off when the servo changed, and a record stands against it.
+ * @brief A full read ended well: the draft is the servo again, the write
+ *        gate shuts when the servo changed, and a record stands against it.
  *
  * @param p    The programmer.
  * @param had  A servo was read before.
@@ -116,7 +116,7 @@ bool hpw_read_done(hitec_prog_t *p, bool had, const hitec_image_t *was);
 void hpw_write_done(hitec_prog_t *p, hitec_ses_t r);
 
 /**
- * @brief Every feed: a stop switches the switch off, and a write that
+ * @brief Every feed: a stop shuts the write gate, and a write that
  *        waits for the card gives up after HITEC_PROG_CARD_MS.
  *
  * @param p The programmer.

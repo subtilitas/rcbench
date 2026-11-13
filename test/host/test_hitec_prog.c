@@ -401,7 +401,7 @@ TEST_CASE(a_session_runs_across_the_clocks_wrap)
     until(HITEC_PROG_PWM);
 }
 
-/* ------------------------------------------------------- the write switch */
+/* --------------------------------------------------------- the write gate */
 
 TEST_CASE(the_write_switch_goes_off_at_connect_link_loss_stop_and_leave)
 {

@@ -842,11 +842,31 @@ static void kedits(void)
           (uint16_t)(1u - kst_field_get(sv, KST_F_SOFT_START)));
 }
 
-/* ENABLE WRITE TO SERVO, through its page. */
-static void kenable(void)
+/* WRITE n VALUES pressed for @p ticks of 20ms; let go and its flash run
+ * out when @p up. */
+static void kwrite_press(int ticks, bool up)
 {
-    ktap(kst_panel_value_rect(0, 3, 0));
-    khold();
+    const gfx_rect_t r = kst_panel_value_rect(0, 3, 1);
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)(r.x + r.w / 2),
+                                   .y = (int16_t)(UI_BAND_H + r.y + r.h / 2),
+                                   .strength = 40 } };
+
+    ui_router_event(&e);
+    for (int i = 0; i < ticks; ++i) {
+        ui_router_tick(0.02f);
+    }
+    if (up) {
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+        flash_out();
+    }
+}
+
+/* WRITE n VALUES held 2.1s, its write asked for, and its flash. */
+static void kwrite(void)
+{
+    kwrite_press(105, true);
 }
 
 /* The entry of the open list whose label starts with @p name. */
@@ -1237,10 +1257,6 @@ static void kst_view_steps(const char *view)
         ktap(kst_panel_tab_rect(3));
         return;
     }
-    if (strcmp(v, "-enable") == 0) {
-        ktap(kst_panel_value_rect(0, 3, 0));
-        return;
-    }
     if (strcmp(v, "-leave") == 0) {
         kedits();
         ktap(kst_panel_value_rect(0, 0, 0));
@@ -1252,9 +1268,6 @@ static void kst_view_steps(const char *view)
         return;
     }
     if (strcmp(v, "-more") == 0 || strcmp(v, "-release") == 0) {
-        if (strcmp(v, "-release") == 0) {
-            kenable();
-        }
         ktap(kst_panel_value_rect(0, 2, 1));
         if (strcmp(v, "-release") == 0) {
             ktap(kst_panel_choice_rect(2));
@@ -1305,13 +1318,11 @@ static void kst_view_steps(const char *view)
          * which holds them higher, chosen in RESTORE. */
         const kst_image_t first = *kst_prog_servo(kst_panel_model());
 
-        kenable();
         kedit(KST_F_DUTY, (uint16_t)(kst_field_get(&first, KST_F_DUTY) - 2u));
         kedit(KST_F_BOOST, (uint16_t)(kst_field_get(&first, KST_F_BOOST) - 4u));
-        ktap(kst_panel_value_rect(0, 4, 1));
-        khold();
+        kwrite();
         ksettle();
-        ktap(kst_panel_value_rect(0, 4, 0));        /* RESTORE */
+        ktap(kst_panel_value_rect(0, 3, 0));        /* RESTORE */
         kpick(ui_tr(TX_KP_FROM_SESSION));
         return;
     }
@@ -1321,17 +1332,17 @@ static void kst_view_steps(const char *view)
         g_rig.card = false;
         rig_frame();
     }
-    kenable();
     kedits();
-    if (strcmp(v, "-changes") == 0) {
+    if (strcmp(v, "-changes") == 0 || strcmp(v, "-write-nocard") == 0) {
         ui_router_tick(0.02f);
         return;
     }
-    ktap(kst_panel_value_rect(0, 4, 1));            /* WRITE n VALUES */
-    if (strcmp(v, "-write") == 0 || strcmp(v, "-write-nocard") == 0) {
+    if (strcmp(v, "-write") == 0) {
+        /* WRITE n VALUES under the finger for 1s: half its hold. */
+        kwrite_press(50, false);
         return;
     }
-    khold();
+    kwrite();                                       /* WRITE n VALUES */
     if (strcmp(v, "-writing") == 0) {
         /* Under way: the first register is written, the rest is not. */
         for (unsigned i = 0; i < 30000u && g_rig.sim.n_writes == 0u; ++i) {
@@ -1380,8 +1391,7 @@ static void kst_view_steps(const char *view)
     if (strcmp(v, "-journal") == 0 || strcmp(v, "-other") == 0) {
         return;
     }
-    kenable();
-    ktap(kst_panel_value_rect(0, 4, 0));            /* RESTORE */
+    ktap(kst_panel_value_rect(0, 3, 0));            /* RESTORE */
     if (strcmp(v, "-restore") == 0) {
         ktap(kst_panel_choice_rect(0));
     }
@@ -1859,7 +1869,7 @@ static void limrun_view(const char *view)
     }
     if (strcmp(v, "-restore") == 0) {
         /* STOP in the session after the first write; STOP let go, READ
-         * ALL, ENABLE WRITE and RESTORE's list. */
+         * ALL and RESTORE's list. */
         unsigned sessions = 0u;
         bool held = false;
         for (int i = 0; i < 400000 && sessions < 3u; ++i) {
@@ -1877,8 +1887,7 @@ static void limrun_view(const char *view)
         limrun_ms(100u);
         ktap(kst_panel_value_rect(0, 1, 0));        /* READ ALL */
         ksettle();
-        kenable();
-        ktap(kst_panel_value_rect(0, 4, 0));        /* RESTORE */
+        ktap(kst_panel_value_rect(0, 3, 0));        /* RESTORE */
         ui_router_tick(0.02f);
         return;
     }

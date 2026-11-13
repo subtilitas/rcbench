@@ -6,9 +6,9 @@
  * refuses, a load into the draft, CHECK THIS FILE for a soft rule and for
  * another model, RESTORE of the session's backup with the count of cells
  * of no setting it writes back, FACTORY DEFAULT from MORE, a backup file
- * that brings a cell of no setting back, the load page and the write page
- * counting it, both refused
- * with an edit standing, the backup file's lines on the write page and on the SERVO tab,
+ * that brings a cell of no setting back, the load page counting it and
+ * WRITE's hold sending it, both refused with an edit standing, the backup
+ * file's line on the SERVO tab,
  * the state line while the backup file is saved, a list the card does not
  * give in 5000ms, FILES without a card, and every new page and message in
  * both languages inside the card.  The rig is hitec_panel_rig.h.
@@ -348,7 +348,7 @@ TEST_CASE(a_file_loads_into_the_draft_and_marks_its_values)
     CHECK_EQ(hitec_panel_message_lines(hitec_prog_message(model()), t), 2);
     CHECK_STR_EQ(t[1], TR(HP_LOAD_SKIPPED_ONE));
     CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_MOTION, 2, 0), "*60% (6)");
-    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 4, 1), "WRITE 1 VALUE");
+    CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 1), "WRITE 1 VALUE");
     CHECK_EQ(g_drv.d_writes, 0u);
 }
 
@@ -431,19 +431,13 @@ TEST_CASE(each_refusal_of_a_load_says_why)
 
 /* ---------------------------------------------------------------- backups */
 
-TEST_CASE(the_write_page_and_the_servo_tab_name_the_backup_file)
+TEST_CASE(the_servo_tab_names_the_backup_file_of_the_write)
 {
     d_open(UI_LANG_EN);
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
-    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK_EQ(hitec_panel_editor(), 3);
-    CHECK(page_has(TR(KP_WRITE_BACKUP)));
-    CHECK(!page_has(TR(KP_NO_FILE_2)));
     g_files_slow = true;
-    hold(2.1f);
+    press_write(2.1f);
     reread();
     CHECK_EQ(pstate(), HITEC_PROG_BACKUP);
     show();
@@ -456,26 +450,25 @@ TEST_CASE(the_write_page_and_the_servo_tab_name_the_backup_file)
     CHECK(note_has(fmt_s(TX_KP_BACKUP_FILE, "HITEC001")));
 }
 
-TEST_CASE(a_write_without_a_card_leaves_the_backup_in_ram)
+TEST_CASE(a_write_without_a_card_is_named_first_and_leaves_the_backup_in_ram)
 {
     d_open(UI_LANG_EN);
     g_card = false;
     prun(20u);
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK(page_has(TR(KP_NO_FILE_1)));
-    CHECK(page_has(TR(KP_NO_FILE_2)));
-    CHECK(page_has(TR(KP_NO_FILE_3)));
-    hold(2.1f);
+    show();
+    /* The edits wait: the tab says the write saves no file. */
+    CHECK(note_has(ui_card_text(CARD_STATE_NONE, UI_CARD_AT_KP_NO_FILE)));
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
     CHECK(note_has(ui_card_text(CARD_STATE_NONE, UI_CARD_AT_KP_NO_BACKUP)));
+    CHECK(!note_has(ui_card_text(CARD_STATE_NONE, UI_CARD_AT_KP_NO_FILE)));
 }
 
-TEST_CASE(a_card_taken_out_after_the_backup_file_leaves_the_record_in_ram)
+TEST_CASE(a_card_taken_out_after_the_backup_file_still_writes)
 {
     d_open(UI_LANG_EN);
     card_in();
@@ -483,13 +476,10 @@ TEST_CASE(a_card_taken_out_after_the_backup_file_leaves_the_record_in_ram)
     prun(20u);
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
-    tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    CHECK(page_has(TR(KP_WRITE_NO_CARD)));
-    CHECK(!page_has(TR(KP_NO_FILE_2)));
-    CHECK(!page_has(TR(KP_WRITE_BACKUP)));
-    tap(hitec_panel_cancel_rect());
+    press_write(2.1f);
+    until(HITEC_PROG_HELD);
+    show();
+    CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
 }
 
 TEST_CASE(restore_and_factory_default_with_an_edit_standing_say_why)
@@ -498,7 +488,6 @@ TEST_CASE(restore_and_factory_default_with_an_edit_standing_say_why)
 
     c_open();
     card_in();
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
              HITEC_PROG_EDIT_OK);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
@@ -507,13 +496,12 @@ TEST_CASE(restore_and_factory_default_with_an_edit_standing_say_why)
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK_EQ(msg(), HITEC_PROG_MSG_EDITS_PENDING);
     /* A write of the edit, then RESTORE with another edit standing. */
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 30),
              HITEC_PROG_EDIT_OK);
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     pick(TR(KP_FROM_SESSION));
     CHECK_EQ(hitec_panel_editor(), 0);
     CHECK_EQ(msg(), HITEC_PROG_MSG_EDITS_PENDING);
@@ -535,7 +523,6 @@ TEST_CASE(restore_after_factory_default_counts_the_cells_of_no_setting)
     g_card = true;
     prun(20u);
     card_in();
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
     tap(val(HITEC_PANEL_SERVO, 2, 0));
     pick(TR(HP_MORE_FACTORY));
@@ -544,7 +531,7 @@ TEST_CASE(restore_after_factory_default_counts_the_cells_of_no_setting)
     show();
     CHECK_STR_EQ(said(), TR(HP_FACTORY_DONE));
     CHECK_EQ(g_drv.eeprom[0x00], g_drv.eeprom[0x30]);
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     pick(TR(KP_FROM_SESSION));
     snprintf(want, sizeof(want), TR(HP_RESTORE_RAW), 1u);
     CHECK(page_has(want));
@@ -573,7 +560,6 @@ TEST_CASE(factory_default_counts_the_cells_of_no_setting_it_writes)
     g_card = true;
     prun(20u);
     card_in();
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
     tap(val(HITEC_PANEL_SERVO, 2, 0));
     pick(TR(HP_MORE_FACTORY));
@@ -610,7 +596,6 @@ TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back)
         prun(20u);
         /* PRE, saved by hand before the first write: a backup file. */
         card_in();
-        CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
         tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
         tap(val(HITEC_PANEL_SERVO, 2, 0));
         pick(TR(HP_MORE_FACTORY));
@@ -635,16 +620,11 @@ TEST_CASE(a_backup_file_names_the_stored_values_it_brings_back)
         CHECK_STR_EQ(t[1], want);
         snprintf(want, sizeof(want), TR(KP_M_LOADED_ONE), "PRE");
         CHECK_STR_EQ(t[0], want);
-        /* The write page names it too, and WRITE 1 VALUE sends it. */
-        CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 1));
-        CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 4, 1),
+        /* WRITE 1 VALUE's hold sends it. */
+        CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 1));
+        CHECK_STR_EQ(hitec_panel_value(HITEC_PANEL_SERVO, 3, 1),
                      TR(KP_WRITE_ONE));
-        tap(val(HITEC_PANEL_SERVO, 4, 1));
-        CHECK_EQ(hitec_panel_editor(), 3);
-        snprintf(want, sizeof(want), TR(HP_FACTORY_RAW), 1u);
-        CHECK(page_has(want));
-        CHECK(page_fits());
-        hold(2.1f);
+        press_write(2.1f);
         until(HITEC_PROG_HELD);
         show();
         CHECK_EQ(g_drv.eeprom[0x1D], fix_hs5645()[0x1D]);
@@ -685,17 +665,15 @@ TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
     card_in();
     /* Nothing written: RESTORE has nothing to offer. */
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 0));
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
     CHECK(g_drv.eeprom[0x06] != fix_hs5645()[0x06]);
-    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    CHECK(hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 0));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     CHECK_EQ(choices(), 1);
     CHECK_STR_EQ(hitec_panel_choice_label(0), TR(KP_FROM_SESSION));
     pick(TR(KP_FROM_SESSION));
@@ -711,7 +689,7 @@ TEST_CASE(restore_writes_the_session_backup_back_from_its_page)
     show();
     CHECK_STR_EQ(said(), TR(KP_M_RESTORED));
     CHECK_EQ(g_drv.eeprom[0x06], fix_hs5645()[0x06]);
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 0));
 }
 
 TEST_CASE(factory_default_comes_from_more_for_a_classic_servo)
@@ -721,11 +699,7 @@ TEST_CASE(factory_default_comes_from_more_for_a_classic_servo)
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
     tap(val(HITEC_PANEL_SERVO, 2, 0));
     pick(TR(HP_MORE_FACTORY));
-    /* The switch's page first. */
-    CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_ENABLE_TITLE));
-    hold(2.1f);
-    tap(val(HITEC_PANEL_SERVO, 2, 0));
-    pick(TR(HP_MORE_FACTORY));
+    /* Its own page, no switch's before it. */
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(HP_FACTORY));
     CHECK(page_has(TR(HP_FACTORY_1)));
     CHECK(page_has(TR(HP_FACTORY_2)));
@@ -837,17 +811,6 @@ TEST_CASE(every_new_page_fits_in_both_languages)
         CHECK_EQ(hitec_panel_editor(), 3);
         CHECK(page_fits());
         tap(hitec_panel_cancel_rect());
-        /* The write page without a card, its three lines. */
-        g_card = false;
-        prun(20u);
-        CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
-                 HITEC_PROG_EDIT_OK);
-        CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
-        tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-        tap(val(HITEC_PANEL_SERVO, 4, 1));
-        CHECK(page_has(TR(KP_NO_FILE_2)));
-        CHECK(page_fits());
-        tap(hitec_panel_cancel_rect());
         /* RESTORE of the backup and FACTORY DEFAULT of a classic servo. */
         open_at(SUPPLY_ON, langs[k]);
         servo_hs5645();
@@ -857,7 +820,6 @@ TEST_CASE(every_new_page_fits_in_both_languages)
         g_card = true;
         prun(20u);
         card_in();
-        CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
         tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
         tap(val(HITEC_PANEL_SERVO, 2, 0));
         pick(TR(HP_MORE_FACTORY));
@@ -866,7 +828,7 @@ TEST_CASE(every_new_page_fits_in_both_languages)
         hold(2.1f);
         until(HITEC_PROG_HELD);
         show();
-        tap(val(HITEC_PANEL_SERVO, 4, 0));
+        tap(val(HITEC_PANEL_SERVO, 3, 0));
         pick(TR(KP_FROM_SESSION));
         CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_RESTORE_TITLE));
         CHECK(page_fits());
@@ -987,9 +949,9 @@ int main(void)
     RUN(a_file_loads_into_the_draft_and_marks_its_values);
     RUN(check_this_file_holds_a_soft_rule_and_another_model);
     RUN(each_refusal_of_a_load_says_why);
-    RUN(the_write_page_and_the_servo_tab_name_the_backup_file);
-    RUN(a_write_without_a_card_leaves_the_backup_in_ram);
-    RUN(a_card_taken_out_after_the_backup_file_leaves_the_record_in_ram);
+    RUN(the_servo_tab_names_the_backup_file_of_the_write);
+    RUN(a_write_without_a_card_is_named_first_and_leaves_the_backup_in_ram);
+    RUN(a_card_taken_out_after_the_backup_file_still_writes);
     RUN(restore_and_factory_default_with_an_edit_standing_say_why);
     RUN(restore_after_factory_default_counts_the_cells_of_no_setting);
     RUN(factory_default_counts_the_cells_of_no_setting_it_writes);

@@ -266,14 +266,25 @@ static inline void connected(void)
     CHECK_EQ(kst_prog_type_set(M, kst_prog_type_guess(M)), KST_PROG_MSG_NONE);
 }
 
-/* ENABLE WRITE TO SERVO through its page. */
-static inline void enable(void)
+/* WRITE n VALUES on the SERVO tab, pressed for @p secs and let go: its
+ * 2s hold writes. */
+static inline void press_write(float secs)
 {
     tap(kst_panel_tab_rect(PG_SERVO));
-    tap(val(PG_SERVO, 3, 0));
-    CHECK_EQ(kst_panel_editor(), 3);
-    hold(2.1f);
-    CHECK(kst_prog_write_enabled(M));
+    const gfx_rect_t r = val(PG_SERVO, 3, 1);
+
+    ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
+    ticks(secs);
+    show();
+    ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
+    show();
+}
+
+/* WRITE n VALUES held 2.5s: the hold, the write asked for on the tick
+ * after it, and the flash. */
+static inline void hold_write(void)
+{
+    press_write(2.5f);
 }
 
 /* A value as a confirmed edit leaves it. */
@@ -330,10 +341,8 @@ static inline int choice(const char *s)
 static inline void cut_write(void)
 {
     connected();
-    enable();
     edits();
-    tap(val(PG_SERVO, 4, 1));
-    hold(2.1f);
+    hold_write();
     for (unsigned i = 0; i < 30000u && g_rig.sim.n_writes == 0u; ++i) {
         rig_frame();
     }

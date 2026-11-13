@@ -52,8 +52,8 @@
  * REBOOT without it, whose cycle ends in PWM.
  *
  * A write to the servo is sent only with write_enabled set in the request:
- * the state of the switch ENABLE WRITE TO SERVO.  Without it the request
- * is refused here and nothing is sent.  The IOmcu refuses a write
+ * the state of the panel's write gate, open for one held write.  Without
+ * it the request is refused here and nothing is sent.  The IOmcu refuses a write
  * without the key on its own.
  *
  * kst_link_abort() is for STOP and for the operator's cancel: a request
@@ -151,7 +151,7 @@ typedef struct {
     bool     then_leave;       /**< REBOOT (4.30): the cycle ends in
                                     LEAVING for leave_ms; any other
                                     operation with it is KST_LINK_START_ARG */
-    bool     write_enabled;    /**< ENABLE WRITE TO SERVO is on           */
+    bool     write_enabled;    /**< the write gate is open                */
     bool     confirm;          /**< RESTORE: the operator confirmed a
                                     restore whose result cannot be checked */
     kst_image_t image;         /**< WRITE: the target.  RESTORE: the

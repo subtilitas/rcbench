@@ -185,7 +185,7 @@ TEST_CASE(a_d_series_limit_run_programs_0xb2_and_0xb0_through_the_seam)
     CHECK_EQ(g_files_saves, 1u);
     CHECK(strstr(hl.report, "Backup:         HITEC001") != NULL);
     /* The bench back to ARMED after every session, SAFE after the run's
-     * end; the run's end gave the write switch back. */
+     * end; the run's end shut the write gate. */
     CHECK(!hl.armed);
     CHECK(hl.arms >= 2u);
     CHECK(!hitec_prog_write_on(model()));

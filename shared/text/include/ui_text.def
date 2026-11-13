@@ -6054,9 +6054,6 @@ UI_TEXT(HOLD_HINT_TEST, 94,
 UI_TEXT(HOLD_HINT_LIMIT_RUN, 94,
     "Hold 2s to switch the port and its supply on, ARM and start the limit run.",
     "Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.")
-UI_TEXT(HOLD_HINT_ENABLE, 94,
-    "Hold 2s to enable.",
-    "Halte 2s, um freizugeben.")
 UI_TEXT(HOLD_HINT_WRITE, 94,
     "Hold 2s to write.",
     "Halte 2s, um zu schreiben.")
@@ -6078,6 +6075,9 @@ UI_TEXT(HOLD_HINT_STOP_RESET, 94,
 UI_TEXT(HOLD_HINT_LEAVE, 94,
     "Hold 2s to leave.",
     "Halte 2s, um die Sitzung zu verlassen.")
+UI_TEXT(HOLD_HINT_LEAVE_DROP, 94,
+    "Hold 2s to leave without writing the edits.",
+    "Halte 2s, um ohne Schreiben der Änderungen zu verlassen.")
 UI_TEXT(HOLD_HINT_LOAD, 94,
     "Hold 2s to load.",
     "Halte 2s, um zu laden.")
@@ -6250,9 +6250,6 @@ UI_TEXT(KP_RESTORE, 15,
 UI_TEXT(KP_MORE, 15,
     "MORE",
     "WEITERES")
-UI_TEXT(KP_ENABLE, 32,
-    "ENABLE WRITE TO SERVO",
-    "SCHREIBEN INS SERVO FREIGEBEN")
 UI_TEXT(KP_SPEED_LIMIT, 15,
     "SPEED LIMIT",
     "TEMPOGRENZE")
@@ -6271,6 +6268,9 @@ UI_TEXT(KP_CONNECT, 11,
 UI_TEXT(KP_LEAVE, 11,
     "LEAVE",
     "VERLASSEN")
+UI_TEXT(KP_BACK, 18,
+    "BACK",
+    "ZURÜCK")
 UI_TEXT(KP_ABORT, 11,
     "ABORT",
     "ABBRECHEN")
@@ -6319,9 +6319,6 @@ UI_TEXT(KP_SOFT_TITLE, 27,
 UI_TEXT(KP_CHECK_TITLE, 27,
     "CHECK THIS BACKUP",
     "BACKUP PRÜFEN")
-UI_TEXT(KP_ENABLE_TITLE, 27,
-    "ENABLE WRITE TO SERVO",
-    "SCHREIBEN FREIGEBEN")
 UI_TEXT(KP_RESTORE_TITLE, 27,
     "RESTORE",
     "ZURÜCKSPIELEN")
@@ -6340,9 +6337,6 @@ UI_TEXT(KP_PWM_WAIT_TITLE, 27,
 UI_TEXT(KP_LEAVE_TITLE, 27,
     "LEAVE PROGRAMMING",
     "PROGRAMMIERMODUS VERLASSEN")
-UI_TEXT(KP_HOLD_ENABLE, 30,
-    "HOLD 2s TO ENABLE",
-    "2s HALTEN ZUM FREIGEBEN")
 UI_TEXT(KP_HOLD_WRITE, 30,
     "HOLD 2s TO WRITE",
     "2s HALTEN ZUM SCHREIBEN")
@@ -6355,30 +6349,15 @@ UI_TEXT(KP_HOLD_NEXT, 30,
 UI_TEXT(KP_HOLD_LEAVE, 30,
     "HOLD 2s TO LEAVE",
     "2s HALTEN ZUM VERLASSEN")
+UI_TEXT(KP_HOLD_LEAVE_DROP, 38,
+    "HOLD 2s TO LEAVE WITHOUT WRITING",
+    "2s HALTEN: OHNE SCHREIBEN VERLASSEN")
 UI_TEXT(KP_HORN_FREE, 116,
     "Keep the servo horn clear. Disconnect the linkage.",
     "Halte das Ruderhorn frei. Löse das Gestänge.")
 UI_TEXT(KP_BENCH_FIRST, 116,
     "Test the servo on the bench before fitting it to a model.",
     "Teste das Servo am Prüfstand, bevor du es ins Modell einbaust.")
-UI_TEXT(KP_ENABLE_1, 116,
-    "These limits are based on 1 servo of an unknown model.",
-    "Diese Grenzen beruhen auf 1 Servo unbekannten Typs.")
-UI_TEXT(KP_ENABLE_2, 116,
-    "Wrong settings can overheat or stall the servo.",
-    "Falsche Werte können das Servo überhitzen oder blockieren.")
-UI_TEXT(KP_ENABLE_3, 116,
-    "An interrupted write can make the servo unusable.",
-    "Ein unterbrochener Schreibvorgang kann das Servo unbrauchbar machen.")
-UI_TEXT(KP_ENABLE_4, 116,
-    "The first write backs up the servo's settings to the card.",
-    "Beim ersten Schreiben werden die Servowerte auf der Karte gesichert.")
-UI_TEXT(KP_ENABLE_5, 116,
-    "Writing is disabled for each new servo and whenever this screen opens.",
-    "Schreiben wird bei jedem neuen Servo und jedem Aufruf dieser Seite gesperrt.")
-UI_TEXT(KP_WRITE_1, 116,
-    "Only changed values are written. Each value is checked afterwards.",
-    "Nur geänderte Werte werden geschrieben und danach einzeln geprüft.")
 UI_TEXT(KP_WRITE_2, 116,
     "Do not disconnect the servo or the bench while writing.",
     "Trenne beim Schreiben weder das Servo noch den Prüfstand.")
@@ -6606,8 +6585,8 @@ UI_TEXT(HG_SV_PRG_WRITE_NAME, 0,
     "WRITE",
     "SCHREIBEN")
 UI_TEXT(HG_SV_PRG_WRITE, 0,
-    "The session's WRITE n VALUES from any tab. Its page asks for ENABLE WRITE and a 2s hold.",
-    "WERTE SCHREIBEN der Sitzung von jedem Reiter. Seine Seite fragt nach der Freigabe und 2s Halten.")
+    "The session's WRITE n VALUES from any tab: a 2s hold writes the edits.",
+    "WERTE SCHREIBEN der Sitzung von jedem Reiter: 2s Halten schreibt die Änderungen.")
 UI_TEXT(HG_PRG_TABS_NAME, 0,
     "TABS",
     "REITER")
@@ -6626,12 +6605,9 @@ UI_TEXT(HG_PRG_READ, 0,
 UI_TEXT(HG_PRG_NOTES, 0,
     "The port's state, what it needs, the last message. A tap on paged notes shows the next page.",
     "Zustand des Ports, was fehlt, die letzte Meldung. Ein Tippen auf geteilte Hinweise blättert weiter.")
-UI_TEXT(HG_PRG_ENABLE, 0,
-    "OFF sends no write. A tap on OFF opens its page; its 2s hold switches it ON.",
-    "AUS sendet nichts. Tippen auf AUS öffnet die Seite; 2s Halten schaltet EIN.")
 UI_TEXT(HG_PRG_WRITE, 0,
-    "Writes the edited values to the servo. Its page lists them and takes a 2s hold.",
-    "Schreibt die geänderten Werte ins Servo. Seine Seite nennt sie und braucht 2s Halten.")
+    "Writes the edited values to the servo after a 2s hold. A tap shows the hint.",
+    "Schreibt die geänderten Werte nach 2s Halten ins Servo. Tippen zeigt den Hinweis.")
 UI_TEXT(HG_PRG_VALUE, 0,
     "The servo's value, or the edit WRITE n VALUES sends. A tap on a live value edits it.",
     "Wert des Servos oder die Änderung für SCHREIBEN. Tippen ändert einen aktiven Wert.")
@@ -7143,8 +7119,8 @@ UI_TEXT(KP_M_NO_CHANGES, 116,
     "No settings changed.",
     "Keine Werte geändert.")
 UI_TEXT(KP_M_NEED_ENABLE, 116,
-    "ENABLE WRITE TO SERVO is off.",
-    "SCHREIBEN INS SERVO FREIGEBEN ist aus.")
+    "Writing closed before the write went out. Hold the button 2s again.",
+    "Schreiben vor dem Senden gesperrt. Halte die Taste erneut 2s.")
 UI_TEXT(KP_M_NEED_READ, 116,
     "Read the servo settings first. Tap READ ALL.",
     "Lies zuerst das Servo aus. Tippe auf ALLES AUSLESEN.")
@@ -7820,8 +7796,8 @@ UI_TEXT(HP_RESTORED, 116,
     "Values before the interrupted write restored and verified.",
     "Werte vor dem unterbrochenen Schreibvorgang zurückgespielt und geprüft.")
 UI_TEXT(HP_WRITE_OFF, 116,
-    "Writing is off. Switch ENABLE WRITE TO SERVO on first.",
-    "Schreiben ist gesperrt. Aktiviere zuerst SCHREIBEN INS SERVO FREIGEBEN.")
+    "Writing closed before the write went out. Hold the button 2s again.",
+    "Schreiben vor dem Senden gesperrt. Halte die Taste erneut 2s.")
 UI_TEXT(HP_M_NOT_READ, 116,
     "No servo read. Tap READ ALL.",
     "Kein Servo ausgelesen. Tippe auf ALLES AUSLESEN.")
@@ -7888,24 +7864,6 @@ UI_TEXT(HP_RECORD_BAD, 116,
 UI_TEXT(HP_SUM_OK, 116,
     "Stored values 0x00-0x1C sum to 0: nothing to repair.",
     "Die Summe der gespeicherten Werte 0x00-0x1C ist 0. Nichts zu reparieren.")
-UI_TEXT(HP_ENABLE_D, 116,
-    "The encodings come from 1 D series servo, a D485HW.",
-    "Die Codierungen stammen von 1 Servo der D-Serie, einem D485HW.")
-UI_TEXT(HP_ENABLE_C, 116,
-    "The encodings come from 2 classic servos, an HS-5645MG and an HS-7955TG.",
-    "Die Codierungen stammen von 2 klassischen Servos, einem HS-5645MG und einem HS-7955TG.")
-UI_TEXT(HP_ENABLE_2, 116,
-    "Wrong end points can drive the servo into its stops.",
-    "Falsche Endpunkte können das Servo gegen seine Anschläge fahren.")
-UI_TEXT(HP_ENABLE_3C, 116,
-    "An interrupted write leaves a wrong checksum: the servo may ignore PWM and draw current up to the supply limit.",
-    "Unterbrochenes Schreiben: Prüfsumme falsch. Servo kann PWM ignorieren und Strom bis zur Strombegrenzung ziehen.")
-UI_TEXT(HP_WRITE_D, 116,
-    "The servo saves and restarts. It ignores signals for 1s.",
-    "Das Servo speichert und startet neu. Es ignoriert Signale 1s lang.")
-UI_TEXT(HP_WRITE_C, 116,
-    "Each stored value is followed by a write of the checksum in 0x1C.",
-    "Nach jedem gespeicherten Wert wird die Prüfsumme in 0x1C geschrieben.")
 UI_TEXT(HP_WRITE_RECORD, 116,
     "The values before the write are recorded on the card in HITEC.TXT.",
     "Die Werte vor dem Schreiben werden auf der Karte in HITEC.TXT vermerkt.")

@@ -443,10 +443,7 @@ TEST_CASE(a_limit_run_programs_the_servo_on_the_programming_port)
         settle();
         CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
         CHECK(kst_prog_restore_offered(M, KST_PROG_FROM_RUN));
-        if (!kst_prog_write_enabled(M)) {
-            enable();
-        }
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 3, 0));
         tap(kst_panel_choice_rect(choice(TR(KP_FROM_RUN))));
         CHECK_EQ(kst_panel_editor(), 3);
         for (int k = 0; k < 4 && kst_panel_editor() == 3; ++k) {
@@ -1068,12 +1065,8 @@ TEST_CASE(a_session_after_a_limit_run_saves_its_own_backup)
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
     CHECK(kst_prog_restore_offered(M, KST_PROG_FROM_RUN));
     CHECK(kst_prog_save_first(M));
-    enable();
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns(TR(KP_WRITE_BACKUP)));
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK_EQ(g_rig.fc.saves, 2u);

@@ -43,11 +43,11 @@ const hpn_row_t hpn_rows[] = {
     { HITEC_PANEL_SERVO, 2, 0, 0, K_ACT, A_MORE, S_ANY, TX_KP_MORE, NULL },
     { HITEC_PANEL_SERVO, 2, 1, 0, K_ACT, A_CLEAR, S_ANY, TX_HP_STOP_ROW,
       NULL },
-    { HITEC_PANEL_SERVO, 3, 0, 1, K_ACT, A_ENABLE, S_ANY, TX_KP_ENABLE, NULL },
-    { HITEC_PANEL_SERVO, 4, 0, 0, K_ACT, A_RESTORE, S_ANY, TX_KP_RESTORE,
+    { HITEC_PANEL_SERVO, 3, 0, 0, K_ACT, A_RESTORE, S_ANY, TX_KP_RESTORE,
       NULL },
-    /* WRITE n VALUES says what it writes: no label beside it. */
-    { HITEC_PANEL_SERVO, 4, 1, 0, K_ACT, A_WRITE, S_ANY, -1, "" },
+    /* WRITE n VALUES says what it writes: no label beside it.  A 2s
+     * hold. */
+    { HITEC_PANEL_SERVO, 3, 1, 0, K_ACT, A_WRITE, S_ANY, -1, "" },
 
     { HITEC_PANEL_MOTION, 0, 0, 1, K_SHOW, HITEC_P_D_SPEED, S_D,
       TX_HP_SPEED, NULL },
@@ -331,8 +331,12 @@ gfx_rect_t hitec_panel_choice_cancel_rect(void)
 
 gfx_rect_t hitec_panel_apply_rect(void)
 {
+    /* HOLD 2s TO LEAVE WITHOUT WRITING takes the width up to 20px left
+     * of BACK: 380px on a card of 620px. */
+    const int w = hp.page.open && hp.page.drop ? hp.area.w - 240 : 300;
+
     return (gfx_rect_t){ (int16_t)(hp.area.x + 20),
-                         (int16_t)(hpn_foot() - UI_BTN_H_TALL), 300,
+                         (int16_t)(hpn_foot() - UI_BTN_H_TALL), (int16_t)w,
                          UI_BTN_H_TALL };
 }
 
@@ -418,6 +422,11 @@ const char *hitec_panel_choice_label(int i)
 const char *hitec_panel_apply_label(void)
 {
     return hp.page.open ? hp.page.apply : NULL;
+}
+
+const char *hitec_panel_cancel_label(void)
+{
+    return !hp.page.open ? NULL : hp.page.drop ? TR(KP_BACK) : TR(CANCEL);
 }
 
 const char *hitec_panel_choice_title(void)
@@ -588,14 +597,17 @@ void hpn_moved(void)
     if (st != hp.state_seen) {
         /* An editor asks for something of the state it was opened in. */
         hpn_close_editors();
-        /* CONNECT's press keeps its hold, for its release to end. */
-        if (hp.pressed != P_TAB && hp.pressed != P_CONNECT) {
+        /* CONNECT's and WRITE's presses keep their holds, for the
+         * release to end. */
+        if (hp.pressed != P_TAB && hp.pressed != P_CONNECT
+            && hp.pressed != P_WRITE) {
             hp.pressed = P_NONE;
         }
         hp.state_seen = st;
     }
     hpn_move_follow();
     hpn_supply_sync();
+    hpn_gate_follow();
     sig = signature();
     if (sig != hp.sig) {
         hp.sig = sig;
@@ -670,14 +682,19 @@ bool hitec_panel_file_load(const char *text, size_t len)
 }
 
 /**
- * @brief Where hold_revision shows: CONNECT while its hold runs or
- *        flashes, else the page's hold button.
+ * @brief Where hold_revision shows: CONNECT or WRITE n VALUES while its
+ *        hold runs or flashes, else the page's hold button.
  * @return the rectangle, body pixels
  */
 static gfx_rect_t hitec_panel_hold_rect(void)
 {
+    const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
+
     if (hp.conn.down || ui_hold_flashing(&hp.conn)) {
         return hpn_value_rect(&hpn_rows[0]);
+    }
+    if (w != NULL && (hp.wr.down || ui_hold_flashing(&hp.wr))) {
+        return hpn_value_rect(w);
     }
     return hitec_panel_apply_rect();
 }

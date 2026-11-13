@@ -295,7 +295,7 @@ Hitec hat keine Pulsregister; SERVOPULSE ist gesperrt. Der Lauf verwendet ein ni
 
 - Bei D-Serie speichert der Schreibvorgang die Werte und startet das Servo innerhalb der Sitzung neu; ein PD mini ist nicht nötig.
 - Classic-Servos benötigen bei jeder Sitzung, auch zum Auslesen, einen PD mini oder PROG 5V auf dem rbmod-Carrier: `Klassische Servos brauchen ein PD mini: Der Prüfstand schaltet die Versorgung.`
-- Das Halten von 2s auf ARM + START bestätigt die in ÄNDERUNG PRÜFEN genannten Risiken. Jeder Schreibvorgang aktiviert SCHREIBEN INS SERVO FREIGEBEN für sich und deaktiviert es danach.
+- Das Halten von 2s auf ARM + START bestätigt die in ÄNDERUNG PRÜFEN genannten Risiken. Jeder Schreibvorgang öffnet die Schreibfreigabe für sich und schließt sie danach.
 - Antwortet beim ersten VERBINDEN kein Servo, endet der Lauf mit `kein Hitec-Servo ausgelesen`.
 - Vor dem ersten Schreiben entsteht die Sicherungsdatei HITEC001 bis HITEC999. Lade und schreibe sie zum Wiederherstellen unter DATEIEN der Hitec-Servoprogrammierung. Die linke Karte fordert dazu mit `HITEC001 IN DATEIEN LADEN` auf.
 

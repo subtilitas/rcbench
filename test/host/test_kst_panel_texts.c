@@ -201,30 +201,22 @@ TEST_CASE(every_state_is_drawn_in_both_languages)
         show();
         rig_stop(false);
         rig_frames(5);
-        tap(val(PG_SERVO, 4, 0));
+        tap(val(PG_SERVO, 3, 0));
         show();
         tap(kst_panel_choice_cancel_rect());
     }
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* What the last message says goes when it no longer holds: with the switch
- * that it said was off, with an edit after a write, with DISCARD EDITS. */
+/* What the last message says goes when it no longer holds: with an edit
+ * after a write, with DISCARD EDITS. */
 TEST_CASE(a_message_goes_when_what_it_says_no_longer_holds)
 {
     fresh();
     connected();
-    /* RELEASE PAIRING with the switch off says so; the switch on ends it. */
-    tap(val(PG_SERVO, 2, 1));
-    tap(kst_panel_choice_rect(choice(TR(KP_RELEASE_TITLE))));
-    CHECK_EQ(kst_panel_editor(), 0);
-    CHECK_STR_EQ(said(), TR(KP_M_NEED_ENABLE));
-    enable();
-    CHECK_STR_EQ(said(), "");
     /* "written and verified" does not stand beside a new edit. */
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-    tap(val(PG_SERVO, 4, 1));
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_STR_EQ(said(), TR(KP_M_WRITTEN_ONE));
     tap(kst_panel_tab_rect(PG_TUNE));
@@ -300,7 +292,7 @@ TEST_CASE(no_german_text_writes_a_number_with_a_comma)
 static const ui_text_id_t k_routed[] = {
     TX_CANCEL,          TX_HOLD_HINT_APPLY,   TX_HOLD_HINT_CONNECT,
     TX_HOLD_HINT_CONTINUE,
-    TX_HOLD_HINT_ENABLE, TX_HOLD_HINT_LEAVE,  TX_HOLD_HINT_LOAD,
+    TX_HOLD_HINT_LEAVE, TX_HOLD_HINT_LEAVE_DROP, TX_HOLD_HINT_LOAD,
     TX_HOLD_HINT_RESTORE, TX_HOLD_HINT_WRITE, TX_HP_PORT_NONE,
     TX_OFF,             TX_ON,                TX_SV_HOLD_TO_APPLY, TX_SV_HV_1,          TX_SV_HV_2,
     TX_SV_HV_3,         TX_SV_HV_4,           TX_SV_HV_5,

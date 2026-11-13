@@ -45,10 +45,10 @@ const row_t kpn_rows[] = {
     { PG_SERVO, 1, 1, 0, K_ACT, A_TYPE, TX_KP_TYPE, NULL },
     { PG_SERVO, 2, 0, 0, K_ACT, A_FILES, TX_KP_FILES, NULL },
     { PG_SERVO, 2, 1, 0, K_ACT, A_MORE, TX_KP_MORE, NULL },
-    { PG_SERVO, 3, 0, 1, K_ACT, A_ENABLE, TX_KP_ENABLE, NULL },
-    { PG_SERVO, 4, 0, 0, K_ACT, A_RESTORE, TX_KP_RESTORE, NULL },
-    /* WRITE n VALUES says what it writes: no label beside it. */
-    { PG_SERVO, 4, 1, 0, K_ACT, A_WRITE, -1, "" },
+    { PG_SERVO, 3, 0, 0, K_ACT, A_RESTORE, TX_KP_RESTORE, NULL },
+    /* WRITE n VALUES says what it writes: no label beside it.  A 2s
+     * hold. */
+    { PG_SERVO, 3, 1, 0, K_ACT, A_WRITE, -1, "" },
 
     { PG_TUNE, 0, 0, 1, K_STEP, KST_F_DEAD_BAND, -1, "DEAD BAND" },
     { PG_TUNE, 1, 0, 0, K_FIELD, KST_F_DUTY, -1, "MAX. DUTY" },
@@ -560,8 +560,12 @@ gfx_rect_t kst_panel_choice_cancel_rect(void)
 
 gfx_rect_t kst_panel_apply_rect(void)
 {
+    /* HOLD 2s TO LEAVE WITHOUT WRITING takes the width up to 20px left
+     * of BACK: 380px on a card of 620px. */
+    const int w = k.warn.open && k.warn.drop ? k.area.w - 240 : 300;
+
     return (gfx_rect_t){ (int16_t)(k.area.x + 20),
-                         (int16_t)(kpn_foot() - UI_BTN_H_TALL), 300,
+                         (int16_t)(kpn_foot() - UI_BTN_H_TALL), (int16_t)w,
                          UI_BTN_H_TALL };
 }
 
@@ -598,6 +602,16 @@ ui_textkey_t *kst_panel_textkey(void)
 const char *kst_panel_warning_line(int i)
 {
     return k.warn.open && i >= 0 && i < k.warn.count ? k.warn.lines[i] : NULL;
+}
+
+const char *kst_panel_apply_label(void)
+{
+    return k.warn.open ? k.warn.apply : NULL;
+}
+
+const char *kst_panel_cancel_label(void)
+{
+    return !k.warn.open ? NULL : k.warn.drop ? TR(KP_BACK) : TR(CANCEL);
 }
 
 int kst_panel_warning_level(int i)
@@ -713,6 +727,8 @@ void kpn_mode_sync(void)
         k.pressed = P_NONE;
         ui_hold_reset(&k.conn);
         k.conn_due = false;
+        ui_hold_reset(&k.wr);
+        k.wr_due = false;
     }
     k.expert = on;
     for (int p = 0; p < PG_COUNT; ++p) {
@@ -887,8 +903,10 @@ static void model_moved(void)
         /* An editor asks for something of the state it was opened in. */
         if (st != KST_PROG_PROGRAMMING) {
             kpn_close_editors();
-            /* CONNECT's press keeps its hold, for its release to end. */
-            if (k.pressed != P_TAB && k.pressed != P_CONNECT) {
+            /* CONNECT's and WRITE's presses keep their holds, for the
+             * release to end. */
+            if (k.pressed != P_TAB && k.pressed != P_CONNECT
+                && k.pressed != P_WRITE) {
                 k.pressed = P_NONE;
             }
         }
@@ -896,6 +914,7 @@ static void model_moved(void)
     }
     kpn_card_moved();
     kpn_supply_sync();
+    kpn_gate_follow();
     sig = signature();
     if (sig != k.sig) {
         k.sig = sig;
@@ -991,16 +1010,20 @@ bool kst_panel_file_late(const char *text, size_t len)
 }
 
 /**
- * @brief Where hold_revision shows: CONNECT while its hold runs or
- *        flashes, else the warning page's hold button.
+ * @brief Where hold_revision shows: CONNECT or WRITE n VALUES while its
+ *        hold runs or flashes, else the warning page's hold button.
  * @return the rectangle, body pixels
  */
 static gfx_rect_t kst_panel_hold_rect(void)
 {
     const row_t *r = kpn_row_at(PG_SERVO, 0, 0);
+    const row_t *w = kpn_row_at(PG_SERVO, 3, 1);
 
     if (r != NULL && (k.conn.down || ui_hold_flashing(&k.conn))) {
         return kpn_value_rect(r);
+    }
+    if (w != NULL && (k.wr.down || ui_hold_flashing(&k.wr))) {
+        return kpn_value_rect(w);
     }
     return kst_panel_apply_rect();
 }

@@ -18,9 +18,9 @@
  * decoded value shows its stored value beside it, and a stored value that
  * fits no encoding shows raw.  A writable value takes a tap: its list or
  * the keypad edits the draft, and an edit is marked `*`.  The SERVO tab's
- * ENABLE WRITE TO SERVO, WRITE n VALUES and RESTORE and MORE's REPAIR
- * CHECKSUM and FACTORY DEFAULT write to the servo, each from a page held
- * UI_HOLD_S (hitec_prog.h).  FILES lists the servo files of the card, saves
+ * WRITE n VALUES writes the edits to the servo after its own hold of
+ * UI_HOLD_S; RESTORE and MORE's REPAIR CHECKSUM and FACTORY DEFAULT write
+ * from a page held UI_HOLD_S (hitec_prog.h).  FILES lists the servo files of the card, saves
  * the servo under a name typed on the keyboard and loads a file into the
  * draft.
  *
@@ -71,7 +71,7 @@ typedef enum {
  */
 void hitec_panel_init(gfx_rect_t area);
 /** @brief The SERVO screen was entered: the options are read from the
- *         settings, and ENABLE WRITE TO SERVO goes off. */
+ *         settings, and the model's write gate shuts. */
 void hitec_panel_screen_entry(void);
 /** @brief Opens the overlay. */
 void hitec_panel_open(void);
@@ -211,8 +211,8 @@ bool hitec_panel_card_take(hitec_card_req_t *out);
 void hitec_panel_card_done(const hitec_card_done_t *d);
 /**
  * @brief Whether a tap asked the panel to look at the card slot since the
- *        last call: CONNECT, FILES, RESTORE, MORE, ENABLE WRITE TO SERVO
- *        and the write row.  The ask is cleared.
+ *        last call: CONNECT, FILES, RESTORE, MORE and the write row.  The
+ *        ask is cleared.
  * @return true once per ask
  */
 bool hitec_panel_card_look(void);
@@ -249,12 +249,20 @@ void hitec_panel_settings_changed(void);
 void hitec_panel_session(prog_session_t *out);
 
 /**
- * @brief The footer's WRITE n VALUES: what a tap on the session's own does,
- *        from any tab.  Nothing while an editor or a press is in the
- *        session.
- * @return whether the tap was taken
+ * @brief The footer's WRITE n VALUES, its 2s hold completed: what the
+ *        completed hold of the session's own does, from any tab -- the
+ *        write of the edits, or the refusal said.  Nothing while an editor
+ *        or a press is in the session, or while the session takes no write.
+ * @return whether the write was asked for
  */
-bool hitec_panel_write_tap(void);
+bool hitec_panel_write_go(void);
+/**
+ * @brief Says in the session's message why it refuses a write of the
+ *        edits now, the write gate left out: the footer's WRITE n VALUES
+ *        starts no hold then.
+ * @return true when the write is refused
+ */
+bool hitec_panel_write_refused(void);
 /**
  * @brief A tab, one fifth of the row, 48px tall.
  * @param page hitec_panel_page_t
@@ -381,7 +389,9 @@ const char *hitec_panel_choice_title(void);
  */
 gfx_rect_t hitec_panel_choice_cancel_rect(void);
 /**
- * @brief A hold page's button, 300 x 56px at the foot's left.
+ * @brief A hold page's button, 300 x 56px at the foot's left; on the LEAVE
+ *        page that lists unwritten edits up to 20px left of BACK, 380px
+ *        wide on a card of 620px.
  * @return its rectangle
  */
 gfx_rect_t hitec_panel_apply_rect(void);
@@ -401,6 +411,12 @@ const char *hitec_panel_page_line(int i);
  * @return the label; NULL with no page open
  */
 const char *hitec_panel_apply_label(void);
+/**
+ * @brief The open hold page's other button: BACK on the LEAVE page that
+ *        lists unwritten edits, CANCEL on every other page.
+ * @return the label; NULL with no page open
+ */
+const char *hitec_panel_cancel_label(void);
 /**
  * @brief The keypad.
  * @return the overlay's keypad

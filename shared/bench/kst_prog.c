@@ -135,7 +135,7 @@ kst_prog_msg_id_t kst_prog_say(kst_prog_t *p, unsigned id, unsigned arg)
 
 /**
  * @brief The last message no longer describes what is shown: an edit was taken,
- *        the switch went on, the pending values went.
+ *        the write gate opened, the pending values went.
  *
  * A message of the danger level stays until the next one.
  *
@@ -727,7 +727,7 @@ static kst_prog_msg_id_t idle_safe(const kst_prog_t *p)
 
 /* The gate of the held write again, at the answer of the servo's file or
  * the journal's: the card took its time, and the port, the bench, STOP
- * or the switch may have changed meanwhile. */
+ * or the write gate may have changed meanwhile. */
 kst_prog_msg_id_t kst_prog_held_gate(const kst_prog_t *p)
 {
     kst_prog_msg_id_t m = state_gate(port_state(p));
@@ -751,8 +751,8 @@ kst_prog_msg_id_t kst_prog_held_gate(const kst_prog_t *p)
 
 /**
  * @brief What the servo holds is not known until a read ends: nothing is
- *        written to it, and the switch a write needs is off with what it was
- *        held for.
+ *        written to it, and the write gate a write needs is shut with what
+ *        it was held for.
  *
  * @param p The programmer state.
  */
@@ -2293,7 +2293,7 @@ kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on)
 }
 
 /**
- * @brief What a write of the draft needs, the switch left out.
+ * @brief What a write of the draft needs, the write gate left out.
  *
  * @param p   The programmer state.
  * @param arg Receives the argument of the message.

@@ -1,14 +1,17 @@
 /**
  * @file test_kst_panel_write.c
- * @brief The programmer overlay's write: ENABLE WRITE, the card, the working line,
- * an abort, a lost link and the record of an interrupted write.
+ * @brief The programmer overlay's write: WRITE n VALUES' 2s hold, the card,
+ * the working line, an abort, a lost link, the record of an interrupted
+ * write and LEAVE with unwritten edits.
  *
  * Cases:
- * - enable_write_is_off_until_its_page_is_held
- * - a_write_needs_changes_the_switch_and_a_hold
+ * - a_write_takes_a_2s_hold_and_a_tap_shows_the_hint
+ * - a_write_the_session_refuses_says_why_at_the_press
+ * - writes_hold_fills_through_its_own_revision
+ * - writes_hold_flashes_as_it_fires
  * - with_a_card_the_values_before_the_write_go_to_it_first
  * - a_card_that_takes_no_file_stops_the_write
- * - the_switch_turned_off_while_the_journal_is_written_stops_the_write
+ * - the_gate_shut_while_the_journal_is_written_stops_the_write
  * - a_write_the_servo_does_not_take_names_the_register
  * - the_working_line_says_planning_while_the_port_plans
  * - the_working_line_counts_the_frames
@@ -20,114 +23,93 @@
  * - a_coprocessor_that_restarts_ends_the_session_and_says_so
  * - an_open_page_goes_when_the_link_goes
  * - a_servo_that_fails_the_fingerprint_is_shown_and_never_written
- * - leave_with_changes_names_them_and_gives_the_port_back
+ * - leave_with_edits_lists_them_and_back_keeps_them
+ * - leave_with_edits_held_drops_them_unwritten
+ * - leave_without_edits_is_the_page_it_was
  * - one_press_at_a_time_and_a_lost_touch_stream_drops_it
  * - leaving_the_screen_closes_the_pages_and_keeps_the_port
  * - the_revision_moves_with_what_is_shown_and_rests_with_it
+ * - a_warning_pages_hold_flashes_as_it_fires
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "kst_panel_screen_rig.h"
 #include "hold_flash.h"
+#include "splash_screen.h"
 
-/* ------------------------------------------------------- the switch, a write */
+/* ------------------------------------------------------------ the write */
 
-TEST_CASE(enable_write_is_off_until_its_page_is_held)
+/* The band live, so a hold's hint shows (ui_hold_end()). */
+static void band_live(void)
 {
-    fresh();
-    connected();
-    tap(val(PG_SERVO, 3, 0));
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns(TR(KP_ENABLE_1)));
-    CHECK(!kst_prog_write_enabled(M));
-    hold(1.9f);
-    CHECK(!kst_prog_write_enabled(M));
-    tap(kst_panel_cancel_rect());
-    CHECK(!kst_prog_write_enabled(M));
-    enable();
-    /* Off again is one tap. */
-    tap(val(PG_SERVO, 3, 0));
-    CHECK_EQ(kst_panel_editor(), 0);
-    CHECK(!kst_prog_write_enabled(M));
-    /* And it goes off at each entry of the screen. */
-    enable();
-    kst_panel_screen_entry();
-    CHECK(!kst_prog_write_enabled(M));
-    /* And when the link goes. */
-    enable();
-    rig_link_lost();
-    CHECK(!kst_prog_write_enabled(M));
-}
-
-/* The hold flash walk's case for the warning pages: ENABLE WRITE's page
- * closes as its hold fires, and its button flashes where it was. */
-static void kp_frame(float dt_s) { tick(dt_s); }
-
-TEST_CASE(a_warning_pages_hold_flashes_as_it_fires)
-{
-    fresh();
-    connected();
-    tap(val(PG_SERVO, 3, 0));
-    CHECK_EQ(kst_panel_editor(), 3);
-    const gfx_rect_t b = kst_panel_apply_rect();
-    const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
-                           (int16_t)(b.w - 24), 6 };
-    const hold_flash_rig_t rig = { kp_frame, show, fb, W };
-    char seen[64];
-    ev(cx(b), cy(b), TOUCH_EVENT_DOWN, 1);
-    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
-        T_FAIL("ENABLE WRITE's hold drew %s, no flash", seen);
+    ui_router_init();
+    for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
+        splash_screen_set((splash_step_t)i, SPLASH_OK, "");
     }
-    ev(cx(b), cy(b), TOUCH_EVENT_UP, 1);
-    CHECK(kst_prog_write_enabled(M));
-    /* Over, the page under it drawn whole: no white left there. */
-    show();
-    CHECK_EQ(hold_flash_body(&rig, r), '.');
+    ui_router_tick(2.0f);
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_goto(SCREEN_SUPPLY);
+    ui_router_set_alert(NULL);
 }
 
-TEST_CASE(a_write_needs_changes_the_switch_and_a_hold)
+/* The text the band shows, "" for none. */
+static const char *band(void)
 {
+    return ui_router_alert() != NULL ? ui_router_alert() : "";
+}
+
+/* WRITE n VALUES has no switch before it and no page after it: a tap
+ * shows the hold's hint and writes nothing, a release before 2s writes
+ * nothing, and 2s of contact writes. */
+TEST_CASE(a_write_takes_a_2s_hold_and_a_tap_shows_the_hint)
+{
+    band_live();
     fresh();
     connected();
-    /* No changes: the button takes no tap. */
-    tap(val(PG_SERVO, 4, 1));
+    /* No changes: the button takes no press. */
+    CHECK(!kst_panel_row_live(PG_SERVO, 3, 1));
+    hold_write();
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK_EQ(msg(), KST_PROG_MSG_READ);
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
     edits();
-    /* The switch is off: the tap opens the switch's page, not the
-     * write's, and the switch stays off short of its hold. */
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns(TR(KP_ENABLE_1)));
-    CHECK(!warns(TR(KP_WRITE_2)));
-    CHECK(!kst_prog_write_enabled(M));
-    hold(1.9f);
-    CHECK(!kst_prog_write_enabled(M));
+    CHECK(kst_panel_row_live(PG_SERVO, 3, 1));
+    CHECK_STR_EQ(kst_panel_label(PG_SERVO, 3, 0), TR(KP_RESTORE));
+    /* A tap: the hint, no page, no write, the gate shut. */
+    tap(val(PG_SERVO, 3, 1));
+    ticks(0.1f);
+    CHECK_EQ(kst_panel_editor(), 0);
+    CHECK_STR_EQ(band(), TR(HOLD_HINT_WRITE));
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
-    tap(kst_panel_cancel_rect());
-    CHECK_EQ(kst_panel_editor(), 0);
     CHECK(!kst_prog_write_enabled(M));
-    /* Held, it is the switch that goes on: nothing is written. */
-    tap(val(PG_SERVO, 4, 1));
-    hold(2.1f);
-    CHECK(kst_prog_write_enabled(M));
+    /* 1.9s and let go: the same. */
+    ui_router_set_alert(NULL);
+    press_write(1.9f);
     CHECK_EQ(kst_panel_editor(), 0);
-    rig_frames(50);
-    CHECK_EQ(g_rig.sim.n_writes, 0);
-    CHECK_EQ(kst_prog_changes(M), 3);
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    /* The first write of a session asks for a free horn. */
-    CHECK(warns(TR(KP_HORN_FREE)));
-    CHECK(warns(TR(KP_BENCH_FIRST)));
-    CHECK(warns(TR(KP_WRITE_BACKUP)));
-    hold(1.9f);
+    CHECK_STR_EQ(band(), TR(HOLD_HINT_WRITE));
     rig_frames(50);
     CHECK_EQ(g_rig.starts, 2);
     CHECK_EQ(g_rig.sim.n_writes, 0);
-    hold(2.1f);
+    CHECK_EQ(kst_prog_changes(M), 3);
+    /* 1s, then the finger slides off: nothing, and no hint. */
+    ui_router_set_alert(NULL);
+    {
+        const gfx_rect_t r = val(PG_SERVO, 3, 1);
+
+        ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
+        ticks(1.0f);
+        ev(r.x - 20, cy(r), TOUCH_EVENT_MOVE, 1);
+        ticks(1.5f);
+        ev(r.x - 20, cy(r), TOUCH_EVENT_UP, 1);
+    }
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK_STR_EQ(band(), "");
+    /* 2s: the write, with no page between. */
+    hold_write();
     CHECK_EQ(kst_panel_editor(), 0);
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
@@ -137,17 +119,110 @@ TEST_CASE(a_write_needs_changes_the_switch_and_a_hold)
     CHECK_EQ(servo(KST_F_BOOST), draft(KST_F_BOOST));
     CHECK_EQ(servo(KST_F_SOFT_START), draft(KST_F_SOFT_START));
     CHECK_EQ(g_rig.sim.n_bad_writes, 0);
-    /* The second write of the session does not ask again. */
+    /* The gate the hold opened shuts as the write ends. */
+    CHECK(!kst_prog_write_enabled(M));
+    /* The second write of the session takes the same hold. */
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-    if (!kst_prog_write_enabled(M)) {
-        enable();
+    hold_write();
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(kst_prog_changes(M), 0);
+    CHECK(!kst_prog_write_enabled(M));
+}
+
+/* A servo the session does not write to: the press says why and starts no
+ * hold. */
+TEST_CASE(a_write_the_session_refuses_says_why_at_the_press)
+{
+    fresh();
+    connected();
+    edits();
+    rig_stop(true);
+    settle();
+    {
+        const gfx_rect_t r = val(PG_SERVO, 3, 1);
+
+        ev(cx(r), cy(r), TOUCH_EVENT_DOWN, 1);
+        CHECK(!kst_panel_pressed());
+        CHECK_EQ(msg(), KST_PROG_MSG_STOPPED);
+        ticks(2.5f);
+        ev(cx(r), cy(r), TOUCH_EVENT_UP, 1);
     }
-    tap(val(PG_SERVO, 4, 1));
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK(!kst_prog_write_enabled(M));
+    rig_stop(false);
+    settle();
+}
+
+/* The hold's fill moves hold_revision alone, and hold_rect names WRITE. */
+TEST_CASE(writes_hold_fills_through_its_own_revision)
+{
+    fresh();
+    connected();
+    edits();
+    const gfx_rect_t w = val(PG_SERVO, 3, 1);
+    const uint32_t hold_rev = kst_panel_hold_revision();
+
+    ev(cx(w), cy(w), TOUCH_EVENT_DOWN, 1);
+    const uint32_t rev = kst_panel_revision();
+    tick(0.1f);
+    tick(0.1f);
+    CHECK(kst_panel_hold_revision() != hold_rev);
+    CHECK_EQ(kst_panel_revision(), rev);
+    const gfx_rect_t h = kst_panel_pages.hold_rect();
+    CHECK(h.x == w.x && h.y == w.y && h.w == w.w && h.h == w.h);
+    ev(cx(w), cy(w), TOUCH_EVENT_UP, 1);
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+}
+
+/* The hold flash walk's cases: WRITE flashes as its hold fires, and a
+ * warning page, LEAVE's, closes as its hold fires and its button flashes
+ * where it was. */
+static void kp_frame(float dt_s) { tick(dt_s); }
+
+TEST_CASE(writes_hold_flashes_as_it_fires)
+{
+    fresh();
+    connected();
+    edits();
+    const gfx_rect_t b = val(PG_SERVO, 3, 1);
+    const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
+                           (int16_t)(b.w - 24), 6 };
+    const hold_flash_rig_t rig = { kp_frame, show, fb, W };
+    char seen[64];
+    ev(cx(b), cy(b), TOUCH_EVENT_DOWN, 1);
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("WRITE's hold drew %s, no flash", seen);
+    }
+    ev(cx(b), cy(b), TOUCH_EVENT_UP, 1);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    show();
+    CHECK_EQ(hold_flash_body(&rig, r), '.');
+}
+
+TEST_CASE(a_warning_pages_hold_flashes_as_it_fires)
+{
+    fresh();
+    connected();
+    tap(val(PG_SERVO, 0, 0));
     CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(!warns(TR(KP_HORN_FREE)));
-    CHECK(warns(TR(KP_WRITE_1)));
-    tap(kst_panel_cancel_rect());
-    CHECK_EQ(kst_prog_changes(M), 1);
+    const gfx_rect_t b = kst_panel_apply_rect();
+    const gfx_rect_t r = { (int16_t)(b.x + 12), (int16_t)(b.y + 4),
+                           (int16_t)(b.w - 24), 6 };
+    const hold_flash_rig_t rig = { kp_frame, show, fb, W };
+    char seen[64];
+    ev(cx(b), cy(b), TOUCH_EVENT_DOWN, 1);
+    if (!hold_flash_walk(&rig, r, 2.6f, seen, sizeof(seen))) {
+        T_FAIL("LEAVE's hold drew %s, no flash", seen);
+    }
+    ev(cx(b), cy(b), TOUCH_EVENT_UP, 1);
+    CHECK_EQ(kst_panel_editor(), 0);
+    /* Over, the page under it drawn whole: no white left there. */
+    show();
+    CHECK_EQ(hold_flash_body(&rig, r), '.');
 }
 
 TEST_CASE(with_a_card_the_values_before_the_write_go_to_it_first)
@@ -155,11 +230,8 @@ TEST_CASE(with_a_card_the_values_before_the_write_go_to_it_first)
     fresh();
     g_rig.card = true;
     connected();
-    enable();
     edits();
-    tap(val(PG_SERVO, 4, 1));
-    CHECK(warns(TR(KP_WRITE_BACKUP)));
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK(g_rig.file_writes >= 1u);
@@ -171,10 +243,8 @@ TEST_CASE(a_card_that_takes_no_file_stops_the_write)
     g_rig.card = true;
     g_rig.card_fails = true;
     connected();
-    enable();
     edits();
-    tap(val(PG_SERVO, 4, 1));
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_STORE_FAILED);
     CHECK_STR_EQ(said(), TR(KP_M_STORE_FAILED));
@@ -182,29 +252,26 @@ TEST_CASE(a_card_that_takes_no_file_stops_the_write)
     CHECK_EQ(kst_prog_changes(M), 3);
 }
 
-TEST_CASE(the_switch_turned_off_while_the_journal_is_written_stops_the_write)
+TEST_CASE(the_gate_shut_while_the_journal_is_written_stops_the_write)
 {
     fresh();
     g_rig.card = true;
     connected();
-    enable();
     edits();
     const unsigned starts = g_rig.starts;
 
-    tap(val(PG_SERVO, 4, 1));
     g_rig.card_silent = true;
-    hold(2.1f);
+    hold_write();
     for (unsigned i = 0; i < 2000u && strstr(g_rig.file, "journal=") == NULL;
          ++i) {
         rig_frame();
     }
     CHECK(strstr(g_rig.file, "journal=") != NULL);
     CHECK_EQ(kst_prog_state(M), KST_PROG_WORKING);
-    /* The switch takes a tap while the journal is written, and goes off
-     * with no page. */
-    CHECK(kst_panel_row_live(PG_SERVO, 3, 0));
-    tap(val(PG_SERVO, 3, 0));
-    CHECK_EQ(kst_panel_editor(), 0);
+    /* The hold opened the write gate; an entry of the screen shuts it
+     * while the journal is written. */
+    CHECK(kst_prog_write_enabled(M));
+    kst_panel_screen_entry();
     CHECK(!kst_prog_write_enabled(M));
     /* The card's answer then sends nothing. */
     g_rig.card_silent = false;
@@ -226,11 +293,9 @@ TEST_CASE(a_write_the_servo_does_not_take_names_the_register)
 
     fresh();
     connected();
-    enable();
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
     sim_add_fault(&g_rig.sim, SIM_WRITE, 0x03, 0, 100, SIM_F_WRITE_IGNORE, 0);
-    tap(val(PG_SERVO, 4, 1));
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_SES + KST_SES_ERR_WRITE_FAILED);
     n = kst_panel_message_lines(kst_prog_message(M), t);
@@ -357,10 +422,8 @@ TEST_CASE(stop_aborts_a_write_and_the_servo_must_be_read)
 {
     fresh();
     connected();
-    enable();
     edits();
-    tap(val(PG_SERVO, 4, 1));
-    hold(2.1f);
+    hold_write();
     for (unsigned i = 0; i < 30000u && g_rig.sim.n_writes == 0u; ++i) {
         rig_frame();
     }
@@ -370,8 +433,14 @@ TEST_CASE(stop_aborts_a_write_and_the_servo_must_be_read)
     CHECK(kst_prog_in_doubt(M) || kst_prog_state(M) != KST_PROG_PROGRAMMING);
     CHECK(said()[0] != '\0');
     /* While STOP is latched a write is not offered. */
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 0);
+    {
+        const unsigned writes = g_rig.sim.n_writes;
+
+        press_write(2.5f);
+        CHECK_EQ(kst_panel_editor(), 0);
+        rig_frames(50);
+        CHECK_EQ(g_rig.sim.n_writes, writes);
+    }
     rig_stop(false);
     settle();
     CHECK_EQ(g_rig.sim.n_bad_writes, 0);
@@ -406,8 +475,8 @@ TEST_CASE(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use)
     tap(val(PG_TUNE, 1, 0));
     CHECK_EQ(kst_panel_editor(), 0);
     tap(kst_panel_tab_rect(PG_SERVO));
-    /* FILES takes no tap, and the tab says what stands.  The switch does:
-     * the restore that mends the servo needs it. */
+    /* FILES takes no tap, and the tab says what stands.  RESTORE does:
+     * it mends the servo. */
     CHECK(!kst_panel_row_live(PG_SERVO, 2, 0));
     CHECK(kst_panel_row_live(PG_SERVO, 3, 0));
     CHECK(kst_panel_row_live(PG_SERVO, 1, 0));
@@ -430,18 +499,13 @@ TEST_CASE(a_link_lost_in_a_write_leaves_a_servo_nobody_should_use)
     now = rig_servo();
     CHECK(memcmp(now.r, before.r, sizeof(now.r)) != 0);
 
-    /* RESTORE needs the switch, and says so. */
-    tap(val(PG_SERVO, 4, 0));
+    /* RESTORE: its page, and the page's hold. */
+    tap(val(PG_SERVO, 3, 0));
     CHECK_EQ(kst_panel_editor(), 2);
     at = choice(TR(KP_FROM_SESSION));
     CHECK(at >= 0);
     CHECK(choice(TR(KP_FORGET)) >= 0);
     tap(kst_panel_choice_rect(at));
-    CHECK_EQ(kst_panel_editor(), 0);
-    CHECK_EQ(msg(), KST_PROG_MSG_NEED_ENABLE);
-    enable();
-    tap(val(PG_SERVO, 4, 0));
-    tap(kst_panel_choice_rect(choice(TR(KP_FROM_SESSION))));
     CHECK_EQ(kst_panel_editor(), 3);
     CHECK(warns(TR(KP_FROM_SESSION)));
     hold(2.1f);
@@ -464,11 +528,11 @@ TEST_CASE(the_record_of_an_interrupted_write_is_discarded_only_by_its_entry)
     tap(val(PG_SERVO, 1, 0));
     settle();
     CHECK(M->journal);
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 3, 0));
     CHECK_EQ(kst_panel_editor(), 2);
     tap(kst_panel_choice_cancel_rect());
     CHECK(M->journal);
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 3, 0));
     at = choice(TR(KP_FORGET));
     CHECK(at >= 0);
     tap(kst_panel_choice_rect(at));
@@ -497,11 +561,10 @@ TEST_CASE(a_restore_from_the_record_that_is_cancelled_leaves_no_value_pending)
     press_port();                       /* CONNECT */
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
-    enable();
     CHECK_EQ(kst_prog_changes(M), 0);
     sent = (int)g_rig.sim.n_writes;
 
-    tap(val(PG_SERVO, 4, 0));
+    tap(val(PG_SERVO, 3, 0));
     at = choice(TR(KP_FROM_JOURNAL));
     CHECK(at >= 0);
     tap(kst_panel_choice_rect(at));
@@ -522,7 +585,6 @@ TEST_CASE(a_coprocessor_that_restarts_ends_the_session_and_says_so)
 {
     fresh();
     connected();
-    enable();
     tap(kst_panel_tab_rect(PG_TUNE));
     tap(val(PG_TUNE, 1, 0));
     CHECK_EQ(kst_panel_editor(), 1);
@@ -544,9 +606,8 @@ TEST_CASE(an_open_page_goes_when_the_link_goes)
 {
     fresh();
     connected();
-    enable();
     edits();
-    tap(val(PG_SERVO, 4, 1));
+    tap(val(PG_SERVO, 0, 0));           /* LEAVE's page */
     CHECK_EQ(kst_panel_editor(), 3);
     rig_link_lost();
     CHECK_EQ(kst_panel_editor(), 0);
@@ -576,10 +637,10 @@ TEST_CASE(a_servo_that_fails_the_fingerprint_is_shown_and_never_written)
     CHECK(!kst_prog_editable(M));
     CHECK_EQ(msg(), KST_PROG_MSG_READ_ONLY);
     CHECK_STR_EQ(said(), TR(KP_M_READ_ONLY));
-    /* The switch stays off: it takes no tap, and the tab says why. */
-    CHECK(!kst_panel_row_live(PG_SERVO, 3, 0));
+    /* WRITE takes no press, and the tab says why. */
+    CHECK(!kst_panel_row_live(PG_SERVO, 3, 1));
     CHECK_STR_EQ(kst_panel_standing_line(0), TR(KP_M_READ_ONLY));
-    tap(val(PG_SERVO, 3, 0));
+    press_write(2.5f);
     CHECK_EQ(kst_panel_editor(), 0);
     CHECK(!kst_prog_write_enabled(M));
     /* No field takes a tap. */
@@ -604,19 +665,77 @@ TEST_CASE(a_servo_that_fails_the_fingerprint_is_shown_and_never_written)
 
 /* -------------------------------------------------------------------- leave */
 
-TEST_CASE(leave_with_changes_names_them_and_gives_the_port_back)
+/* The line of the open warning page that begins with @p head, -1 for
+ * none. */
+static int warn_at(const char *head)
+{
+    for (int i = 0; kst_panel_warning_line(i) != NULL; ++i) {
+        if (strncmp(kst_panel_warning_line(i), head, strlen(head)) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/* LEAVE with unwritten edits: the page names each, the servo's value to
+ * the edit's, under the line that says they are lost; its hold leaves
+ * without writing, and BACK goes back to the session with every edit. */
+TEST_CASE(leave_with_edits_lists_them_and_back_keeps_them)
+{
+    for (int lang = 0; lang < (int)UI_LANG_COUNT; ++lang) {
+        fresh();
+        ui_text_set_language((ui_lang_t)lang);
+        connected();
+        edits();
+        press_port();
+        CHECK_EQ(kst_panel_editor(), 3);
+        CHECK_STR_EQ(kst_panel_warning_line(0), TR(KP_LEAVE_CHANGES));
+        CHECK_EQ(kst_panel_warning_level(0), KST_PROG_WARN);
+        /* The three edits in the order of the tabs. */
+        CHECK_EQ(warn_at("DEAD BAND: "), 1);
+        CHECK_EQ(warn_at("BOOST: "), 2);
+        CHECK_EQ(warn_at("SOFT START: "), 3);
+        /* The servo's value to the edit's, as the rows show them. */
+        CHECK_STR_EQ(kst_panel_warning_line(2), "BOOST: 300.0 -> 262.5us");
+        CHECK(warns(TR(KP_LEAVE_1)));
+        CHECK(warns(TR(KP_LEAVE_2)));
+        CHECK_STR_EQ(kst_panel_apply_label(), TR(KP_HOLD_LEAVE_DROP));
+        CHECK_STR_EQ(kst_panel_cancel_label(), TR(KP_BACK));
+        /* The hold button reaches 20px left of BACK; both fit. */
+        CHECK_EQ(kst_panel_apply_rect().x + kst_panel_apply_rect().w + 20,
+                 kst_panel_cancel_rect().x);
+        /* Short of the hold nothing happens. */
+        hold(1.9f);
+        CHECK_EQ(kst_panel_editor(), 3);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        /* BACK: the session with every edit, nothing sent. */
+        tap(kst_panel_cancel_rect());
+        CHECK_EQ(kst_panel_editor(), 0);
+        rig_frames(50);
+        CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+        CHECK_EQ(kst_prog_changes(M), 3);
+        CHECK(draft(KST_F_BOOST) != servo(KST_F_BOOST));
+        CHECK_EQ(g_rig.sim.n_writes, 0);
+        /* The home tag asks the same. */
+        kst_panel_back();
+        CHECK_EQ(kst_panel_editor(), 3);
+        CHECK_STR_EQ(kst_panel_cancel_label(), TR(KP_BACK));
+        tap(kst_panel_cancel_rect());
+        CHECK_EQ(kst_prog_changes(M), 3);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
+TEST_CASE(leave_with_edits_held_drops_them_unwritten)
 {
     fresh();
     connected();
     edits();
     press_port();
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns(TR(KP_LEAVE_CHANGES)));
-    CHECK(warns(TR(KP_LEAVE_1)));
-    CHECK(warns(TR(KP_LEAVE_2)));
-    hold(1.9f);
-    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    CHECK_STR_EQ(kst_panel_apply_label(), TR(KP_HOLD_LEAVE_DROP));
     hold(2.1f);
+    /* Dropped as the hold fires, the LEAVE on its way. */
+    CHECK_EQ(kst_prog_changes(M), 0);
     settle();
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_EQ(msg(), KST_PROG_MSG_LEFT);
@@ -624,9 +743,33 @@ TEST_CASE(leave_with_changes_names_them_and_gives_the_port_back)
     CHECK(!kst_panel_holds_port());
     CHECK(!kst_prog_have_servo(M));
     CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK(!kst_prog_write_enabled(M));
     kst_panel_back();
     show();
     CHECK(!kst_panel_is_open());
+}
+
+/* Without edits LEAVE's page is the one it was: no list, HOLD 2s TO
+ * LEAVE, CANCEL, the button 300px wide. */
+TEST_CASE(leave_without_edits_is_the_page_it_was)
+{
+    fresh();
+    connected();
+    press_port();
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK(!warns(TR(KP_LEAVE_CHANGES)));
+    CHECK_STR_EQ(kst_panel_warning_line(0), TR(KP_LEAVE_1));
+    CHECK(warns(TR(KP_LEAVE_2)));
+    CHECK_STR_EQ(kst_panel_apply_label(), TR(KP_HOLD_LEAVE));
+    CHECK_STR_EQ(kst_panel_cancel_label(), TR(CANCEL));
+    CHECK_EQ(kst_panel_apply_rect().w, 300);
+    tap(kst_panel_cancel_rect());
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
+    press_port();
+    hold(2.1f);
+    settle();
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
 }
 
 /* ----------------------------------------------------------------- presses */
@@ -673,7 +816,7 @@ TEST_CASE(leaving_the_screen_closes_the_pages_and_keeps_the_port)
 {
     fresh();
     connected();
-    tap(val(PG_SERVO, 3, 0));
+    tap(val(PG_SERVO, 0, 0));           /* LEAVE's page */
     CHECK_EQ(kst_panel_editor(), 3);
     kst_panel_leave();
     CHECK_EQ(kst_panel_editor(), 0);
@@ -718,11 +861,13 @@ TEST_CASE(the_revision_moves_with_what_is_shown_and_rests_with_it)
 
 int main(void)
 {
-    RUN(enable_write_is_off_until_its_page_is_held);
-    RUN(a_write_needs_changes_the_switch_and_a_hold);
+    RUN(a_write_takes_a_2s_hold_and_a_tap_shows_the_hint);
+    RUN(a_write_the_session_refuses_says_why_at_the_press);
+    RUN(writes_hold_fills_through_its_own_revision);
+    RUN(writes_hold_flashes_as_it_fires);
     RUN(with_a_card_the_values_before_the_write_go_to_it_first);
     RUN(a_card_that_takes_no_file_stops_the_write);
-    RUN(the_switch_turned_off_while_the_journal_is_written_stops_the_write);
+    RUN(the_gate_shut_while_the_journal_is_written_stops_the_write);
     RUN(a_write_the_servo_does_not_take_names_the_register);
     RUN(the_working_line_says_planning_while_the_port_plans);
     RUN(the_working_line_counts_the_frames);
@@ -734,7 +879,9 @@ int main(void)
     RUN(a_coprocessor_that_restarts_ends_the_session_and_says_so);
     RUN(an_open_page_goes_when_the_link_goes);
     RUN(a_servo_that_fails_the_fingerprint_is_shown_and_never_written);
-    RUN(leave_with_changes_names_them_and_gives_the_port_back);
+    RUN(leave_with_edits_lists_them_and_back_keeps_them);
+    RUN(leave_with_edits_held_drops_them_unwritten);
+    RUN(leave_without_edits_is_the_page_it_was);
     RUN(one_press_at_a_time_and_a_lost_touch_stream_drops_it);
     RUN(leaving_the_screen_closes_the_pages_and_keeps_the_port);
     RUN(the_revision_moves_with_what_is_shown_and_rests_with_it);

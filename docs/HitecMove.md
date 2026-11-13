@@ -83,11 +83,10 @@ held against the start. The row reads WAIT
 meanwhile; the end takes 2.6s at a frame of 16ms in the host model.
 Equal says `MOVE SERVO is OFF. The stored values read back unchanged.`
 A difference says `Servo values changed during MOVE SERVO. Tap READ ALL.`,
-switches ENABLE WRITE TO SERVO off and refuses a write until READ ALL.
+shuts the write gate and refuses a write until READ ALL.
 The home tag leaves the programmer only after the end: tap it again.
 
-A hard end has no end sequence. It switches ENABLE WRITE TO SERVO off,
-and SERVO says
+A hard end has no end sequence. It shuts the write gate, and SERVO says
 `After MOVE SERVO the servo's values are not known. Tap READ ALL before writing.`
 until READ ALL. Every hard end but an ABORT during the end is an error:
 every output goes off, the servo's supply with its RAM included

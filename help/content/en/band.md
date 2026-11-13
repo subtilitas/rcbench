@@ -128,7 +128,7 @@ The save popup waits until the bench is idle: SAFE, supply output and PROG 5V of
 ![SERVO's guide at page 1 on LIVE](view:help-servo)
 ![SUPPLY's guide at page 1 on LIVE](view:help-supply)
 
-On KST and HITEC the session's pages come first, with the dock on the right: on the SERVO tab CONNECT and the read, then the files, the write switch and WRITE n VALUES; on another tab its values. The READY card's page follows, with the dock on the left. The session's pages are left out while the READY card's supply row reads ON and while a list, keypad, page or keyboard of the session is open. On HITEC no page is offered while MOVE SERVO drives the horn: either dock covers part of its ON.
+On KST and HITEC the session's pages come first, with the dock on the right: on the SERVO tab CONNECT and the read, then the files, RESTORE and WRITE n VALUES; on another tab its values. The READY card's page follows, with the dock on the left. The session's pages are left out while the READY card's supply row reads ON and while a list, keypad, page or keyboard of the session is open. On HITEC no page is offered while MOVE SERVO drives the horn: either dock covers part of its ON.
 
 ![KST's guide at page 1](view:help-servo-kst)
 
@@ -176,8 +176,8 @@ The fill of a button says what a press does to an output.
 | Fill | Means | Buttons |
 |---|---|---|
 | green | a press switches an output on, arms, starts a run or writes a servo | ARM, OUTPUT ON, PROG 5V ON, `HOLD 2s: ARM + START` on TEST, RUDDER AUTO and LIMIT RUN, CENTER and SWEEP, the rudder's 1000us, CENTER, 2000us and ZERO, CONNECT, WRITE n VALUES; SAVE on SETUP while something is unsaved |
-| red | an output is on, the bench is ARMED or a write runs; a press stops it | DISARM, OUTPUT OFF, STOP RUN, PAUSE while a sweep runs, LEAVE, ABORT, a write switch ON; STOP always |
-| amber | under way or waiting, nothing live yet | PAUSED, WAIT, `WHEN IDLE` |
+| red | an output is on, the bench is ARMED or a write runs; a press stops it | DISARM, OUTPUT OFF, STOP RUN, PAUSE while a sweep runs, LEAVE, ABORT; STOP always |
+| amber | under way or waiting, nothing live yet | PAUSED, WAIT, `WHEN IDLE`; WRITE n VALUES fades from green to amber over its 2s hold |
 | grey, faint label | takes no press in this state | a tap on a grey `HOLD 2s: ARM + START` puts the reason in the alert band for 4s |
 | neutral | edits a value or opens a screen | `-` `+`, value boxes, RESET CATEGORY, DISCARD, RESET MAX, tiles, OPEN, CLOSE; a selected tab is cyan |
 

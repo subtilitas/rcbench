@@ -81,9 +81,7 @@ static void d_written_card(ui_lang_t lang, bool card)
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
     CHECK_EQ(g_drv.dreg[0x60], 6u);
@@ -98,7 +96,7 @@ static void d_written(ui_lang_t lang)
 /* RESTORE, then the session's backup: its page. */
 static void restore_page(void)
 {
-    tap(val(HITEC_PANEL_SERVO, 4, 0));
+    tap(val(HITEC_PANEL_SERVO, 3, 0));
     pick(TR(KP_FROM_SESSION));
     CHECK_EQ(hitec_panel_editor(), 3);
     CHECK_STR_EQ(hitec_panel_page_line(0), TR(KP_RESTORE_TITLE));
@@ -157,7 +155,7 @@ TEST_CASE(a_d_series_restore_asks_for_the_unit_and_its_hold_writes)
     show();
     CHECK_STR_EQ(said(), TR(KP_M_RESTORED));
     CHECK_EQ(g_drv.dreg[0x60], fix_d485()[0x60 / 2]);
-    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 4, 0));
+    CHECK(!hitec_panel_row_live(HITEC_PANEL_SERVO, 3, 0));
     CHECK(!model()->bk_unit_ok);
 }
 
@@ -174,10 +172,8 @@ TEST_CASE(the_page_names_the_id_the_servo_holds)
     card_in();
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
     restore_page();
@@ -202,10 +198,8 @@ TEST_CASE(a_classic_servo_without_a_serial_is_asked_for_too)
     card_in();
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
     restore_page();
@@ -234,10 +228,8 @@ TEST_CASE(a_model_the_table_does_not_know_is_named_as_read)
     card_in();
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_D_SOFT_START, 60),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
     restore_page();
@@ -258,10 +250,8 @@ TEST_CASE(a_model_the_table_does_not_know_is_named_as_read)
     card_in();
     CHECK_EQ(hitec_prog_edit(model(), HITEC_P_C_SPEED, 50),
              HITEC_PROG_EDIT_OK);
-    CHECK_EQ(hitec_prog_write_enable(model(), true), HITEC_PROG_MSG_NONE);
     tap(hitec_panel_tab_rect(HITEC_PANEL_SERVO));
-    tap(val(HITEC_PANEL_SERVO, 4, 1));
-    hold(2.1f);
+    press_write(2.1f);
     until(HITEC_PROG_HELD);
     show();
     restore_page();

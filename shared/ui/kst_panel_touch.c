@@ -121,6 +121,18 @@ static void down(const touch_event_t *evt)
                 ui_hold_begin(&k.conn, TX_HOLD_HINT_CONNECT);
                 return;
             }
+            if (r->kind == K_ACT && r->what == A_WRITE) {
+                /* WRITE n VALUES writes after a 2s hold; a tap shows the
+                 * hint and sends nothing.  A write the session refuses
+                 * says why at once. */
+                if (kpn_write_refused()) {
+                    return;
+                }
+                take(evt, P_WRITE, i);
+                ui_hold_reset(&k.wr);
+                ui_hold_begin(&k.wr, TX_HOLD_HINT_WRITE);
+                return;
+            }
             take(evt, P_ROW, i);
             return;
         }
@@ -257,6 +269,19 @@ static void rest(const touch_event_t *evt)
         (void)ui_hold_end(&k.conn, evt, kpn_value_rect(&kpn_rows[which]));
         let_go();
         return;
+    case P_WRITE:
+        if (!up) {
+            /* A finger that leaves WRITE abandons its hold. */
+            if (!gfx_rect_contains(kpn_value_rect(&kpn_rows[which]), x, y)
+                && ui_hold_leave(&k.wr)) {
+                let_go();
+            }
+            return;
+        }
+        /* The hold has written, or a short release shows the hint. */
+        (void)ui_hold_end(&k.wr, evt, kpn_value_rect(&kpn_rows[which]));
+        let_go();
+        return;
     case P_PLUS:
     case P_MINUS:
         /* A finger that leaves the key ends the repeat. */
@@ -370,6 +395,8 @@ void kst_panel_cancel(void)
     ui_hold_reset(&k.warn.hold);
     ui_hold_reset(&k.conn);
     k.conn_due = false;
+    ui_hold_reset(&k.wr);
+    k.wr_due = false;
     k.warn.down = false;
     let_go();
     ++k.rev;
@@ -438,11 +465,55 @@ static void connect_tick(float dt_s)
     }
 }
 
+/**
+ * @brief A frame of WRITE n VALUES' hold: it writes on the tick after it
+ *        completes, as CONNECT connects; the row taking no press any more,
+ *        an editor or a page ends it.
+ * @param dt_s the frame's time, s
+ */
+static void write_tick(float dt_s)
+{
+    if (k.wr_due) {
+        const row_t *r = kpn_row_at(PG_SERVO, 3, 1);
+
+        k.wr_due = false;
+        if (r != NULL && kpn_row_live(r)) {
+            (void)kpn_write_go();
+        }
+        ++k.rev;
+    }
+    if (k.have && k.pressed == P_WRITE && !k.wr.fired) {
+        const row_t *r = &kpn_rows[k.row];
+
+        if (k.warn.open || kst_panel_editor() != 0 || r->page != kpn_page()
+            || !kpn_row_live(r)) {
+            (void)ui_hold_left(&k.wr);
+            let_go();
+            ++k.rev;
+        } else {
+            if (ui_hold_tick(&k.wr, dt_s)) {
+                k.wr_due = true;
+                ++k.rev;
+            }
+            ++k.hold_rev;
+        }
+    }
+    if (ui_hold_flashing(&k.wr)) {
+        ui_hold_flash_step(&k.wr, dt_s);
+        ++k.hold_rev;
+        if (!ui_hold_flashing(&k.wr)) {
+            ++k.rev;            /* the row under the flash, whole */
+        }
+    }
+}
+
 void kst_panel_tick(float dt_s)
 {
     /* SERVO > SETTINGS may have turned KST EXPERT MODE on or off. */
     kpn_mode_sync();
     connect_tick(dt_s);
+    write_tick(dt_s);
+    kpn_gate_follow();
     if (k.warn.open && k.warn.down) {
         if (ui_hold_tick(&k.warn.hold, dt_s)) {
             kpn_warn_apply();
@@ -472,15 +543,20 @@ void kst_panel_tick(float dt_s)
     }
 }
 
-bool kst_panel_write_tap(void)
+bool kst_panel_write_refused(void)
 {
-    const row_t *w = kpn_row_at(PG_SERVO, 4, 1);
+    return kpn_write_refused();
+}
+
+bool kst_panel_write_go(void)
+{
+    const row_t *w = kpn_row_at(PG_SERVO, 3, 1);
 
     if (!k.open || k.have || kst_panel_editor() != 0 || w == NULL
         || !kpn_row_live(w)) {
         return false;
     }
-    kpn_act(w);
+    (void)kpn_write_go();
     ++k.rev;
     return true;
 }

@@ -333,7 +333,7 @@ Die Aufgabe auf der linken Karte bestimmt die ersten Hilfeseiten:
 | SERVO RUDER | LÄNGE, die Fahrtasten, NULLPUNKT, MAX LÖSCHEN und ohne antwortenden Drehknopf -10us und +10us (4 oder 5); AUSSCHLAG, HINTERKANTE und die Statuszeilen (3) |
 | SERVO RUDER AUTO | die Sollwerte, RESERVE und TOLERANZ, NULLPUNKT (3); AUSSCHLAG und HINTERKANTE (2); PORT, BEREIT, die Schienenzeile, ARM + START und OPTIONEN (5) |
 | SERVO LIVE, SWEEP und RUDER, SAFE | PORT, BEREIT, die Schienenzeile, ARM und OPTIONEN (5); SET V, die Grafik, TEMPO, Typ und die Tasten auf LIVE und SWEEP (5), SET V, die Grafik, Typ und Seitenansicht auf RUDER (4); SET V nicht am Programmierport des rbmod-Carriers |
-| SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN und TYP auf KST, SERIE (DATEIEN bei gehaltenem Port) und ALLES AUSLESEN auf HITEC, die Hinweise (5); DATEIEN und WEITERES auf KST, WEITERES und NACH STOP auf HITEC, SCHREIBEN INS SERVO FREIGEBEN, ZURÜCKSPIELEN, n WERTE SCHREIBEN (5); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
+| SERVO KST und HITEC, Reiter SERVO | die Reiter, VERBINDEN, ALLES AUSLESEN und TYP auf KST, SERIE (DATEIEN bei gehaltenem Port) und ALLES AUSLESEN auf HITEC, die Hinweise (5); DATEIEN und WEITERES auf KST, WEITERES und NACH STOP auf HITEC, ZURÜCKSPIELEN, n WERTE SCHREIBEN (4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | SERVO KST und HITEC, ein anderer Reiter | die Reiter, der erste Wert des Reiters, sein `-` und `+` in einer KST-Zeile mit Schritten, SERVO BEWEGEN auf TRAVEL der D-Serie von HITEC, die Hinweise (2 bis 4); PORT, BEREIT, die Schienenzeile, SCHREIBEN und OPTIONEN (5) |
 | die Listen von SERVO (Hub, SWEEP, RUDER, RUDER AUTO, HITEC) | wie eine Optionsliste |
 | SUPPLY LIVE | GRAFIK und TABELLE, SPANNUNG und STROMBEGRENZUNG (3) |
@@ -626,11 +626,11 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | ÜBERNEHMEN in den Warnungen zu HV, Pulsrate und weichen Grenzen von SERVO, KST und Chaservo und auf den Hitec-Seiten | `Halte 2s, um zu übernehmen.` |
 | 2s HALTEN: ARM + START auf TEST | `Halte 2s, um auf ARMED zu schalten und den Test zu starten.` |
 | 2s HALTEN: ARM + START auf ENDLAGENLAUF | `Halte 2s, um Port und Versorgung einzuschalten, ARM und den Endlagenlauf zu starten.` |
-| 2s HALTEN ZUM FREIGEBEN, außer auf PORT FREIGEBEN | `Halte 2s, um freizugeben.` |
-| 2s HALTEN ZUM SCHREIBEN | `Halte 2s, um zu schreiben.` |
+| 2s HALTEN ZUM SCHREIBEN, und n WERTE SCHREIBEN in den Programmierern für KST und HITEC | `Halte 2s, um zu schreiben.` |
 | 2s HALTEN ZUM ZURÜCKSPIELEN | `Halte 2s, um zurückzuspielen.` |
 | 2s HALTEN ZUM FORTFAHREN | `Halte 2s, um fortzufahren.` |
 | 2s HALTEN ZUM VERLASSEN | `Halte 2s, um die Sitzung zu verlassen.` |
+| 2s HALTEN: OHNE SCHREIBEN VERLASSEN in den Programmierern für KST und HITEC | `Halte 2s, um ohne Schreiben der Änderungen zu verlassen.` |
 | 2s HALTEN ZUM BEWEGEN auf der Seite SERVO BEWEGEN der Hitec-Programmierung | `Halte 2s, um das Servo zu bewegen.` |
 | 2s HALTEN ZUM LADEN | `Halte 2s, um zu laden.` |
 | 2s HALTEN ZUM FREIGEBEN auf PORT FREIGEBEN | `Halte 2s, um den Port freizugeben.` |
@@ -679,7 +679,7 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 
 | Klasse | Tasten | Verfügbar | Aktiv | Wartend | Abgelehnt |
 | --- | --- | --- | --- | --- | --- |
-| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us, -10us, +10us und NULLPUNKT auf RUDER, VERBINDEN, SCHREIBEN INS SERVO FREIGEBEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER | grau (`ui_button_off_fill()`), blasse Beschriftung |
+| Ausgangsaktion: schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf, schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, 2s HALTEN: ARM + START auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN auf LIVE, SWEEP auf SWEEP, 1000us, ZENTRIEREN, 2000us, -10us, +10us und NULLPUNKT auf RUDER, VERBINDEN, n WERTE SCHREIBEN und SERVO BEWEGEN der Programmierungen | grün (`UI_C_OK`) | rot (`UI_C_DANGER`): ein Ausgang ist ein, ARMED, ein Schreiben läuft, das Servo wird angesteuert; die Beschriftung sagt, was ein Druck anhält (DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE, VERLASSEN, ABBRECHEN, EIN) | bernstein (`UI_C_WARN`): PAUSIERT, WARTEN, der Schritt von ARM + START und von ARM auf LIVE, SWEEP und RUDER und von n WERTE SCHREIBEN der Programmierungen | grau (`ui_button_off_fill()`), blasse Beschriftung |
 | Notfall | STOP | rot | rot, blitzt beim Druck | - | nie |
 | Bearbeiten | `-` `+`, Wertfelder, MAX LÖSCHEN, KATEGORIE ZURÜCKSETZEN auf SETUP, VERWERFEN, NEU LESEN | neutral (`UI_C_PANEL_HI`) | - | - | grau |
 | SPEICHERN auf SETUP | SPEICHERN, GESPEICHERT, BEI STILLSTAND, NICHT GESPEICHERT | grün, solange etwas ungespeichert ist (SPEICHERN) | - | bernstein (BEI STILLSTAND) | neutral mit roter Beschriftung (NICHT GESPEICHERT); GESPEICHERT ist neutral |
@@ -2658,7 +2658,7 @@ Der Rahmen von KST und HITEC um die Sitzung:
 | BEREIT, Versorgung | PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus; ein roter Punkt und `EIN`, solange an, dann schaltet ein Tippen sie aus wie AUSGANG AUS (PROG 5V nicht, solange ein Port sie hält). KST ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`. Hitec D-Serie ohne: `UNVERÄNDERT` |
 | BEREIT, SERVO | grau `NICHT VERBUNDEN` vor VERBINDEN, gelb `LÄUFT`, solange ein Schritt läuft, gelb `NICHT GELESEN` bei gehaltenem Port ohne gelesenes Servo, nach dem Lesen das Modell (Hitec) oder der Typ (KST, `V6?` für die Vermutung aus 20k_sel) |
 | Schienenzeile | Volt und Ampere des Messgeräts, unter den Zeilen |
-| Fußleiste, Mitte | WERTE SCHREIBEN der Sitzung, von jeder Registerkarte aus: dasselbe Tippen wie auf die Taste der Sitzung, die bei ausgeschaltetem Schalter zuerst die Seite der Freigabe öffnet. Grau, ein Tippen nennt den Grund: vor VERBINDEN und Lesen, ohne geänderten Wert, solange ein Schritt läuft und solange eine Seite der Sitzung oder von SERVO offen ist |
+| Fußleiste, Mitte | WERTE SCHREIBEN der Sitzung, von jeder Registerkarte aus: dasselbe 2s-Halten wie auf der Taste der Sitzung, von Grün nach Bernstein; ein Tippen zeigt `Halte 2s, um zu schreiben.` und sendet nichts. Grau, ein Tippen nennt den Grund: vor VERBINDEN und Lesen, ohne geänderten Wert, solange ein Schritt läuft und solange eine Seite der Sitzung oder von SERVO offen ist |
 | Fußleiste, rechts | OPTIONEN: die Seite KST EXPERT MODE, bei HITEC Hitec-Serie und Hitec-D-Empfang; grau, solange die Sitzung den Port hält |
 
 Ein Tippen auf eine nicht erfüllte Zeile von BEREIT nennt sie im
@@ -2715,9 +2715,9 @@ Bedienelemente sind mindestens 48px hoch und enden 8px über dem Feldboden:
 | Registerkarten | eine Zeile oben, 48px hoch: fünf Registerkarten von 120px, vier von 151px auf KST mit KST EXPERT MODE AUS |
 | Zeilen | 48px hoch im Abstand von 56px, bis zu 5 je Registerkarte, in zwei Spalten von 295px; eine breite Zeile nimmt beide |
 | Werte | 150px (15 Zeichen der Schrift 10 x 20); bei einer breiten Zeile 260px, darin ihre Tasten `-` und `+` von 56px |
-| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile, bis 6px über dem Feldboden: 4 Zeilen unter der Registerkarte SERVO |
+| Hinweise und Meldungen | unter der letzten Zeile, Schrift 10 x 20, 60 Zeichen je Zeile, 20px je Zeile, bis 6px über dem Feldboden: 6 Zeilen unter der Registerkarte SERVO |
 | Listen (DATEIEN, ZURÜCKSPIELEN, WEITERES, ein Faktor) | ein Titel, dann bis zu 7 Einträge, 48px hoch im Abstand von 56px, ABBRECHEN 150 x 48px am Fuß |
-| Warnseiten | der Titel in der Schrift 20 x 36, bis zu 16 Zeilen in der Schrift 10 x 20 (in einem niedrigeren Bereich weniger: die Zeilen, die 8px über den Tasten Platz haben), die Halte-Taste 300 x 56px und ABBRECHEN 180 x 56px am Fuß |
+| Warnseiten | der Titel in der Schrift 20 x 36, bis zu 16 Zeilen in der Schrift 10 x 20 (in einem niedrigeren Bereich weniger: die Zeilen, die 8px über den Tasten Platz haben), die Halte-Taste 300 x 56px, 380 x 56px auf PROGRAMMIERMODUS VERLASSEN mit ungeschriebenen Änderungen, und ABBRECHEN oder ZURÜCK 180 x 56px am Fuß |
 
 Passen alle Beschriftungen in ihre 95px breiten Registerkarten, verwenden
 sie 10 x 20, wie im Englischen. Sonst verwenden sie 8 x 16, etwa für
@@ -2734,12 +2734,12 @@ auf das Ende der Meldung. Lässt die Meldung keine Zeile für einen
 Hinweis, warten alle Hinweise auf ihr Ende. Weder Hinweis noch Meldung
 reichen über die letzte Zeile der Registerkarte SERVO.
 
-Bekannte Einschränkung: eine Meldung, die höher als die 4 Zeilen unter
-der Registerkarte SERVO ist, zeigt nur ihre ersten Zeilen. Die längsten
-Meldungen belegen 5 Zeilen. Auf Deutsch gilt das für die Meldungen 137
-und 143, für 44 und 45 mit einer fünfstelligen Zahl; jede verliert ihre
-letzte Zeile. Ein langer Dateiname in einer Meldung kann eine Zeile
-hinzufügen; dieser Fall ist nicht gemessen.
+Eine Meldung belegt bis zu 5 Zeilen und steht ganz in den 6 Zeilen unter
+der Registerkarte SERVO: auf Deutsch die Meldungen 137 und 143, und 44
+und 45 mit einer fünfstelligen Zahl. Bekannte Einschränkung: eine
+Meldung, die höher als 6 Zeilen ist, zeigt nur ihre ersten Zeilen. Ein
+langer Dateiname in einer Meldung kann eine Zeile hinzufügen; dieser Fall
+ist nicht gemessen.
 
 [Servoprogrammierung für KST- und Chaservo-Servos](ServoProgrammer-de.md)
 beschreibt das Verfahren.
@@ -2752,12 +2752,13 @@ SCHUTZ, INFO) von 120px, die Karte BEREIT und WERTE SCHREIBEN in der
 Fußleiste, 48px hohe Zeilen mit 56px Abstand, Wertefelder von 150px oder
 260px Breite sowie Hinweise in 10 x 20 bis 4px über dem Alarmband.
 Bestätigungsseiten haben eine 300 x 56px große Halte-Taste und
-ABBRECHEN mit 180 x 56px.
+ABBRECHEN mit 180 x 56px, PROGRAMMIERMODUS VERLASSEN mit ungeschriebenen
+Änderungen eine 380 x 56px große Halte-Taste und ZURÜCK.
 
 Sie liest das Servo aus und schreibt bearbeitete Werte zurück. Tippe auf
 einen schreibbaren Wert, um eine Liste mit bis zu 6 Einträgen oder das
-Tastenfeld zu öffnen. SCHREIBEN INS SERVO FREIGEBEN erlaubt das Schreiben;
-n WERTE SCHREIBEN, 220px breit, öffnet die Schreibseite. Wähle SERIE vor
+Tastenfeld zu öffnen. n WERTE SCHREIBEN, 220px breit, schreibt nach 2s
+Halten. Wähle SERIE vor
 VERBINDEN als D-SERIE oder KLASSISCH. PORT zeigt Port, GPIO, Serie,
 Empfangsart und die von VERBINDEN eingestellte Versorgung.
 
@@ -2804,7 +2805,7 @@ Ein gefundener Anschlag setzt diese Endlage im Entwurf:
 ![Die Hitec-Programmierung, der Tester hält den Port](img/de/servo-hitec.png)
 ![Ein D485HW gelesen](img/de/servo-hitec-read.png)
 ![Ein Port, den eine andere Sitzung hält](img/de/servo-hitec-other.png)
-![Die Schreibseite](img/de/servo-hitec-write.png)
+![Das Halten zum Schreiben nach 1s](img/de/servo-hitec-write.png)
 ![Die Hitec-Dateien auf der Karte](img/de/servo-hitec-files.png)
 ![ZURÜCKSPIELEN des Backups der Sitzung](img/de/servo-hitec-restore-page.png)
 ![Die Seite SERVO BEWEGEN](img/de/servo-hitec-move.png)

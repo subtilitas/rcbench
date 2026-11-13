@@ -189,7 +189,7 @@ TEST_CASE(the_hold_button_fills_through_its_own_revision)
     uint32_t rev, hold_rev;
 
     connected();
-    tap(val(PG_SERVO, 3, 0));
+    tap(val(PG_SERVO, 0, 0));           /* LEAVE's page */
     CHECK_EQ(kst_panel_editor(), 3);
     hold_rev = kst_panel_hold_revision();
     tick(0.1f);
@@ -201,7 +201,7 @@ TEST_CASE(the_hold_button_fills_through_its_own_revision)
     CHECK(kst_panel_hold_revision() != hold_rev);
     CHECK_EQ(kst_panel_revision(), rev);
     ev(cx(apply), cy(apply), TOUCH_EVENT_UP, 1);
-    CHECK(!kst_prog_write_enabled(M));
+    CHECK_EQ(kst_prog_state(M), KST_PROG_PROGRAMMING);
 }
 
 /* With a PD mini CONNECT switches the servo's supply on: a 2s hold whose

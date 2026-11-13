@@ -101,9 +101,8 @@ und von je 1 HS-5645MG, HS-7955TG und HS-5955TG (18.10. bis 20.10.2026)
 | SERVO | Das ausgelesene Modell, `D485HW` oder `HS-5645MG`; ALLES AUSLESEN liest die Werte der Serie erneut aus |
 | WEITERES | Programmierspannung und Strombegrenzung, jede auf dem Tastenfeld, solange der Tester den Port hat. Solange der Port gehalten ist: ÄNDERUNGEN VERWERFEN, wenn eine Änderung besteht, PRÜFSUMME REPARIEREN bei einer falschen klassischen Prüfsumme und WERKSEINSTELLUNG für ein gelesenes klassisches Servo ([WERKSEINSTELLUNG](#werkseinstellung)) |
 | NACH STOP | AUFHEBEN nach dem Schalten auf SAFE am Prüfstand: Der IOmcu löscht das Flag STOPPED des Ports. Das Auslesen geht weiter; war die Versorgung ausgeschaltet, beginnt der Einstieg erneut |
-| SCHREIBEN INS SERVO FREIGEBEN | Der Schreibschalter, AUS oder EIN ([Der Schreibschalter](#der-schreibschalter)) |
 | ZURÜCKSPIELEN | Das Backup der Sitzung zurück ins Servo, solange es vom Servo abweicht; das Exemplar bestätigt, wo der Prüfstand es nicht prüfen kann ([Zurückspielen des Backups der Sitzung](#zurückspielen-des-backups-der-sitzung)); solange ein Vermerk zu einem unterbrochenen Schreibvorgang besteht: die Werte davor zurück ins Servo, oder der Vermerk verworfen ([Der Vermerk eines Schreibvorgangs](#der-vermerk-eines-schreibvorgangs)) |
-| n WERTE SCHREIBEN | Der Entwurf ins Servo ([Schreiben](#schreiben)); `1 WERT SCHREIBEN` für einen, aus ohne |
+| n WERTE SCHREIBEN | Der Entwurf ins Servo nach 2s Halten ([Schreiben](#schreiben)); `1 WERT SCHREIBEN` für einen, aus ohne |
 
 Unter den Zeilen zeigt die Statuszeile den aktuellen Vorgang des Ports.
 Die letzte Meldung steht unter den Hinweisen. Jedes Bedienelement ist
@@ -291,17 +290,15 @@ jede Ablehnung und Meldung.
 
 ![SERVO BEWEGEN an, ENDE LINKS verfolgt](img/de/servo-hitec-move-on.png)
 
-## Der Schreibschalter
+## Die Schreibfreigabe
 
-**SCHREIBEN INS SERVO FREIGEBEN** steht zu Beginn auf AUS. Ein Tipp auf
-**AUS** öffnet eine Seite, die die Risiken nennt; **2s HALTEN ZUM
-FREIGEBEN** schaltet ihn ein. Ein Tipp auf **EIN** schaltet ihn sofort aus.
-Ein Tipp auf **n WERTE SCHREIBEN**, ZURÜCKSPIELEN, PRÜFSUMME REPARIEREN
-oder WERKSEINSTELLUNG bei ausgeschaltetem Schalter öffnet dieselbe Seite:
-Halte dort die Taste, um das Schreiben freizugeben. Dabei wird noch nichts
-ins Servo geschrieben.
+Jedes Schreiben des Modells prüft eine Schreibfreigabe; standardmäßig ist
+sie zu. Ein 2s-Halten, das ein Schreiben sendet (**n WERTE SCHREIBEN**, die
+Halteseite von ZURÜCKSPIELEN, PRÜFSUMME REPARIEREN oder WERKSEINSTELLUNG),
+öffnet sie bis zum Ende dieses Vorgangs samt Zurücklesen. Einen Schalter
+dafür gibt es nicht: das Halten ist die Zustimmung.
 
-Der Schalter geht aus:
+Die Freigabe schließt:
 
 - bei jedem Aufruf der Seite SERVO,
 - bei jedem VERBINDEN und jedem VERLASSEN,
@@ -310,28 +307,21 @@ Der Schalter geht aus:
 - wenn ein Schreibvorgang ohne erfolgreiche Prüfung endet,
 - wenn beim Auslesen andere Werte gefunden werden als die gespeicherten.
 
-Er lässt sich nur einschalten, wenn der Port gehalten und nicht gestoppt
-ist, das Servo im Programmiermodus ausgelesen wurde, der Prüfstand SAFE
-ist und kein STOP gesetzt ist.
-
-![SCHREIBEN INS SERVO FREIGEBEN](img/de/servo-hitec-enable.png)
+Sie öffnet sich nur, wenn der Port gehalten und nicht gestoppt ist, das Servo
+im Programmiermodus ausgelesen wurde, der Prüfstand SAFE ist und kein STOP
+gesetzt ist. Wo nicht, startet ein Druck auf **n WERTE SCHREIBEN** kein
+Halten, und der Reiter nennt den Grund sofort.
 
 ## Schreiben
 
-**n WERTE SCHREIBEN** zählt die Unterschiede zwischen Entwurf und Servo.
-Tippe darauf, um die Schreibseite zu öffnen. Sie zeigt höchstens 6 geänderte
-Werte in der Reihenfolge der Reiter, etwa `SOFT START: 20% -> 60%`, und
-anschließend die Anzahl der übrigen.
-
-Beim ersten Schreiben nach VERBINDEN und bei jedem Schreiben, das
-DREHRICHTUNG, NEUTRAL, MITTE oder einen Endpunkt ändert, erscheinen
-`Halte das Ruderhorn frei. Löse das Gestänge.` und
-`Teste das Servo am Prüfstand, bevor du es ins Modell einbaust.` Die Seite
-erklärt außerdem den Schreibablauf der Serie, nennt die Backup-Datei oder
-erklärt, warum keine vorhanden ist ([Das Backup vor dem ersten
-Schreiben](#das-backup-vor-dem-ersten-schreiben)), und zeigt, wo die Werte
-vor dem Schreiben vermerkt werden. **2s HALTEN ZUM SCHREIBEN** startet den
-Schreibvorgang.
+**n WERTE SCHREIBEN** zählt die Unterschiede zwischen Entwurf und Servo. Sie
+steht auf dem Reiter SERVO und in der Fußzeile unter jedem Reiter; beide
+arbeiten gleich. 2s Halten darauf startet den Schreibvorgang; die Taste geht
+dabei von Grün nach Bernstein über. Loslassen vor 2s sendet nichts, ein Tipp
+zeigt `Halte 2s, um zu schreiben.` Ein Druck, den die Sitzung ablehnt, startet
+kein Halten, und der Reiter nennt den Grund sofort. Keine Seite listet die
+Werte vor dem Schreiben: jeder geänderte Wert ist auf seinem Reiter mit `*`
+markiert, und [VERLASSEN](#verlassen) listet sie.
 
 1. Das zweite Lesen dessen, wovon der Plan abhängt
    ([Das zweite Lesen](#das-zweite-lesen)). Zwei Lesevorgänge, die
@@ -358,7 +348,7 @@ Schreibvorgang.
 5. Zur Prüfung werden die 21 Register der D-Serie oder die klassischen
    Zellen 0x00 bis 0x23 erneut ausgelesen und mit dem Entwurf verglichen.
 6. `2 Werte geschrieben und geprüft.` oder `1 Wert geschrieben und
-   geprüft.` beendet es und löscht den Vermerk. Der Schalter bleibt ein.
+   geprüft.` beendet es, löscht den Vermerk und schließt die Freigabe.
 
 Im Host-Modell (`test_hitec_prog_reread`) dauert ein Schreiben eines Werts
 bei der D-Serie 3,2s bei 16ms je Frame und 3,5s bei 33ms, bei einem
@@ -367,19 +357,19 @@ Prüfstand sind diese Zeiten nicht gemessen.
 
 Das Schreiben wird abgelehnt bei ARMED oder einem angeforderten Schalten
 auf ARMED, mit gesetztem STOP, an einem gestoppten Port, ohne gelesenes
-Servo, mit ausgeschaltetem Schalter, ohne Änderung, solange ein Vermerk
+Servo, ohne Änderung, solange ein Vermerk
 eines früheren Schreibens besteht und solange eine Anfrage an die Karte
 (DATEIEN, Speichern oder Laden) auf ihre Antwort wartet. Port, Prüfstand, STOP, Einstieg und
-Schalter werden erneut geprüft, wenn die Karte den Vermerk angenommen hat:
-ein inzwischen ausgeschalteter Schalter, ein STOP oder ein Finger auf ARM
-beendet das Schreiben, bevor ein Schritt hinausgeht, mit der Meldung der
-Ablehnung, und löscht seinen Vermerk, auch auf der Karte. Solange das
-Schreiben auf die Karte wartet, geht der Schalter nicht wieder ein.
+Freigabe werden erneut geprüft, wenn die Karte den Vermerk angenommen hat:
+eine inzwischen durch einen Aufruf der Seite SERVO geschlossene Freigabe,
+ein STOP oder ein Finger auf ARM beendet das Schreiben, bevor ein Schritt
+hinausgeht, mit der Meldung der Ablehnung, und löscht seinen Vermerk, auch
+auf der Karte. Eine so geschlossene Freigabe sagt `Schreiben vor dem Senden gesperrt. Halte die Taste erneut 2s.`
 
-![Die Schreibseite](img/de/servo-hitec-write.png)
+![Das Halten zum Schreiben nach 1s](img/de/servo-hitec-write.png)
 ![Ein laufendes Schreiben](img/de/servo-hitec-writing.png)
 ![Ein Schreiben fertig](img/de/servo-hitec-written.png)
-![Die klassische Schreibseite](img/de/servo-hitec-classic-write.png)
+![Das Halten zum Schreiben nach 1s, klassisch](img/de/servo-hitec-classic-write.png)
 
 ### Das zweite Lesen
 
@@ -404,8 +394,8 @@ zweimal gelesen. Die Statuszeile lautet `Zweites Auslesen vor dem Schreiben: 5 v
   weiter mit der Backup-Datei, dem Vermerk und dem Plan.
 - Sie weichen in einer Adresse ab: `Zwei Auslesevorgänge weichen bei 0x17 ab. Lies mit ALLES AUSLESEN erneut aus.` Die erste abweichende Adresse wird
   genannt. Nichts wird geplant, vermerkt, gespeichert oder gesendet; das
-  erste Ausleseergebnis bleibt die Grundlage. Änderungen und Schreibfreigabe
-  bleiben erhalten. Ein erneutes **n WERTE SCHREIBEN** vergleicht ein neues
+  erste Ausleseergebnis bleibt die Grundlage. Die Änderungen bleiben
+  erhalten, die Schreibfreigabe schließt. Ein erneutes Halten auf **n WERTE SCHREIBEN** vergleicht ein neues
   zweites Ausleseergebnis mit demselben ersten. **ALLES AUSLESEN** ersetzt
   die Grundlage durch ein neues vollständiges Ausleseergebnis.
 - **ABBRECHEN**, ein STOP oder ein fehlgeschlagenes Lesen während des
@@ -437,7 +427,7 @@ Zeiten nicht gemessen.
 | `Gespeicherter Wert 0x06 ist geschrieben, seine Prüfsumme in 0x1C nicht. Tippe auf ALLES AUSLESEN.` und dieselbe zweite Zeile | hält die neue Zelle und den alten Ausgleich: die Prüfsumme ist falsch |
 | `Ein Schreibvorgang ist ungeprüft. Tippe vor dem nächsten Schreiben auf ALLES AUSLESEN.` | ein Schreiben, bei dem ein Schritt hinausging, lässt offen, was das Servo hält; ALLES AUSLESEN kommt vor dem nächsten Schreiben |
 
-Ein Schreiben, das anders als geprüft endet, schaltet den Schalter aus.
+Ein Schreiben, das anders als geprüft endet, schließt die Freigabe ebenso.
 
 ## Der Vermerk eines Schreibvorgangs
 
@@ -461,7 +451,7 @@ Adressen, die ein Schreiben ändert:
 Der klassische Ausgleich 0x1C wird nicht verglichen: ein Schreiben, das
 zwischen einer Zelle und ihrem Ausgleich abbricht, hinterlässt dort einen
 dritten Wert. ZURÜCKSPIELEN schreibt die Werte vor dem Schreiben als
-eigenes Schreiben zurück, mit dem Schalter, der Halteseite `ZURÜCKSPIELEN`
+eigenes Schreiben zurück, mit der Halteseite `ZURÜCKSPIELEN`
 und ihrem Zurücklesen; der Vermerk bleibt, bis das geprüft endet.
 `Verwirf den Vermerk zum unterbrochenen Schreibvorgang.` entfernt ihn ohne
 Schreiben. Solange ein Vermerk besteht, werden n WERTE SCHREIBEN und
@@ -513,7 +503,7 @@ Name ein vorgeschlagener Name ist, `HITEC001` bis `HITEC999`.
 gehalten, das Servo im Programmiermodus und gelesen ist, kein Lesen nach
 einem Schreiben aussteht, der Port nicht gestoppt, der Prüfstand SAFE und
 kein STOP gesetzt ist; sonst sagt der Tipp, warum nicht. Speichern und
-Laden gehen auch mit ausgeschaltetem Schreibschalter: eine Datei ändert den
+Laden öffnen keine Schreibfreigabe: eine Datei ändert den
 Entwurf im Panel, nie das Servo.
 
 Der erste Eintrag speichert. Darunter stehen die Dateien nach Namen
@@ -609,7 +599,7 @@ Speicherung des neuen Backups.
 Ist eine Karte eingebunden, speichert der erste Schreibvorgang einer
 Sitzung, der einen Schritt sendet, zuerst das Backup ohne Nachfrage in
 einer neuen Datei unter dem nächsten vorgeschlagenen Namen. Das gilt für
-n WERTE SCHREIBEN, PRÜFSUMME REPARIEREN, ZURÜCKSPIELEN und WERKSEINSTELLUNG. Die Schreibseite sagt `Die bisherigen
+n WERTE SCHREIBEN, PRÜFSUMME REPARIEREN, ZURÜCKSPIELEN und WERKSEINSTELLUNG. Die Halteseite von ZURÜCKSPIELEN, PRÜFSUMME REPARIEREN und WERKSEINSTELLUNG sagt `Die bisherigen
 Servowerte werden vor dem Schreiben in einer neuen Kartendatei gesichert.`
 und die Zustandszeile `Backup-Datei wird auf der Karte gespeichert.`,
 solange die Karte arbeitet. Das Servo erhält nichts, bevor die Karte die
@@ -630,14 +620,16 @@ Speichern trägt `backup=0`. Eine passende klassische Backup-Datei kann auch ges
 änderbare Einstellung zurückspielen
 ([Laden einer Backup-Datei](#laden-einer-backup-datei)).
 
-![Die Schreibseite mit der Backup-Datei](img/de/servo-hitec-backup-write.png)
 ![Die Backup-Datei unterwegs](img/de/servo-hitec-backup-saving.png)
 ![Die Backup-Datei genannt](img/de/servo-hitec-backup-file.png)
 
 #### Ohne Karte
 
-Ohne eingebundene Karte bleibt das Schreiben möglich. Die Schreibseite
-zeigt drei zusätzliche Zeilen:
+Ohne eingebundene Karte bleibt das Schreiben möglich. Solange Änderungen
+warten, zeigt der Reiter SERVO `Keine Karte. Es wird keine Backup-Datei
+gespeichert.` in der Warnfarbe, und 2s Halten auf **n WERTE SCHREIBEN** sendet
+das Schreiben ohne Datei. Die Halteseiten der anderen Schreibvorgänge
+zeigen drei zusätzliche Zeilen:
 
 ```
 Keine Karte. Es wird keine Backup-Datei gespeichert.
@@ -650,14 +642,13 @@ Backup-Datei. Zurückspielen nur innerhalb dieser Sitzung möglich.` Eine
 später in der Sitzung eingelegte Karte erhält das Backup mit dem nächsten
 Schreiben. Die Datei enthält die Werte vom Beginn der Sitzung. Wird die
 Karte nach dem Speichern der Backup-Datei entfernt, bleiben weitere
-Schreibvorgänge möglich. Die Schreibseite zeigt dann `Keine Karte. Die bisherigen Werte bleiben nur im
+Schreibvorgänge möglich. Diese Halteseiten zeigen dann `Keine Karte. Die bisherigen Werte bleiben nur im
 Arbeitsspeicher.` Eine eingelegte Karte, die sich nicht einbinden lässt,
 gilt als nicht vorhanden. Anstelle von `Keine
 Karte` nennt die Meldung die erkannte Ursache, wie bei der
 KST-Servoprogrammierung ([Ohne
 Karte](ServoProgrammer-de.md#ohne-karte)).
 
-![Die Schreibseite ohne Karte](img/de/servo-hitec-write.png)
 ![Das Backup nur im Arbeitsspeicher](img/de/servo-hitec-nofile.png)
 
 ### Laden
@@ -666,8 +657,8 @@ Tippe auf eine Datei, um sie zu laden. Die Zellen oder Register jedes
 änderbaren Werts werden unverändert in den Entwurf übernommen; unbekannte
 Codierungen bleiben Rohwerte. Bei einem klassischen Entwurf wird der
 Ausgleich in Zelle 0x1C neu berechnet. Geänderte Werte sind mit `*` markiert,
-und **n WERTE SCHREIBEN** zählt sie. Das Servo erhält erst Werte, nachdem
-du das Schreiben freigegeben und auf der Schreibseite 2s gehalten hast.
+und **n WERTE SCHREIBEN** zählt sie. Das Servo erhält erst Werte nach 2s
+Halten auf dieser Taste.
 
 ![Eine geladene Datei](img/de/servo-hitec-file-loaded.png)
 
@@ -755,8 +746,7 @@ Weicht eine klassische Zelle außerhalb der änderbaren Werte ab, öffnet
 sich zuerst DIESE DATEI PRÜFEN mit `Auch geladen: 1 Werte außerhalb der Einstellungen.`. **2s HALTEN ZUM LADEN** übernimmt die
 Zellen in den Entwurf, und die Meldung zeigt dieselbe Zeile unter
 `HITEC001 geladen. 5 Werte weichen von den Servowerten ab.` Eine Zelle, die
-keine Wertzeile nennt, zählt als Wert von **n WERTE SCHREIBEN**; die
-Schreibseite zeigt `Auch geschrieben: 1 Werte außerhalb der Einstellungen.`, und das Schreiben sendet die Zelle. ZURÜCKSPIELEN,
+keine Wertzeile nennt, zählt als Wert von **n WERTE SCHREIBEN**, und das Schreiben sendet die Zelle. ZURÜCKSPIELEN,
 PRÜFSUMME REPARIEREN und WERKSEINSTELLUNG warten darauf wie auf eine
 Änderung; ÄNDERUNGEN VERWERFEN verwirft sie.
 
@@ -813,7 +803,7 @@ ohne änderbaren Wert, die es zurückschreibt, `Auch zurückgespielt: 1 Werte au
 Backup-Datei. **2s HALTEN ZUM ZURÜCKSPIELEN** schreibt es als Schreiben:
 zuerst die Backup-Datei, wenn keine es hält, der Vermerk, die Schritte und
 das Zurücklesen. Es endet mit `Backup zurückgespielt und geprüft.` Es
-braucht den Schalter und keine offene Änderung. Besteht ein Vermerk eines
+braucht keine offene Änderung. Besteht ein Vermerk eines
 unterbrochenen Schreibens, behält es diesen und braucht zuerst dessen
 Vergleich durch ALLES AUSLESEN, wie ZURÜCKSPIELEN des Vermerks.
 
@@ -831,14 +821,14 @@ den eigenen Werkszellen des Servos, wie gelesen, mit berechnetem
 Ausgleich, und öffnet eine Seite mit `Alle Einstellungen werden auf die Werkswerte zurückgesetzt.`, `Quelle sind die im Servo gespeicherten Werkswerte 0x30-0x53.`, den Werten, die sich ändern, der Zahl der Zellen ohne
 Einstellung, die sie schreibt, `Auch geschrieben: 1 Werte außerhalb der Einstellungen.`, der Zeile zum Ruderhorn und den Zeilen der Backup-Datei. **2s HALTEN ZUM SCHREIBEN** schreibt sie als
 Schreiben und endet mit `Werkswerte geschrieben und geprüft.` Sie braucht
-den Schalter, keine offene Änderung und keinen Vermerk. Sie wird
+keine offene Änderung und keinen Vermerk. Sie wird
 angeboten, solange eine Zelle von 0x00 bis 0x23, die ein Schreiben sendet,
 von ihrer Werkszelle abweicht, auch eine, die keine Einstellung nennt; ein
 Servo, dessen Zellen die Werkswerte schon halten, erhält `Keine Werte weichen von den Servowerten ab.`
 
 Die Servoprogrammierung bietet WERKSEINSTELLUNG für die D-Serie nicht an.
 Der Rücksetzbefehl des Servos (Register 0x6E = 0x0F0F, wie vom HFP-30
-gesendet) hinterlässt Werte, die vorher nicht bekannt sind. Die Schreibseite
+gesendet) hinterlässt Werte, die vorher nicht bekannt sind. Eine Halteseite
 kann sie deshalb nicht auflisten, und für die Prüfung fehlen erwartete
 Vergleichswerte.
 
@@ -855,7 +845,7 @@ ergeben, zeigt PRÜFSUMME `FALSCH`, und der Reiter SERVO sagt
 REPARIEREN unter WEITERES öffnet eine Seite, die den Wert der Zelle und den
 Ausgleich nennt, `Schreibt Wert 0x1C: 0x5F -> 0x5E. Die Summe der Werte 0x00-0x1C ist danach 0.`; ihr Halten schreibt
 den Ausgleich allein, mit seinem Vermerk und dem Zurücklesen der Zellen
-0x00 bis 0x23. Es braucht den Schalter, keine bestehende Änderung (n WERTE
+0x00 bis 0x23. Es braucht keine bestehende Änderung (n WERTE
 SCHREIBEN schreibt den Ausgleich mit den Änderungen) und keinen Vermerk.
 
 ![Eine falsche klassische Prüfsumme](img/de/servo-hitec-classic-sum.png)
@@ -885,6 +875,16 @@ lehnt ein gestoppter Port ab, das CLOSE wird immer angenommen.
 
 ![PROGRAMMIERMODUS VERLASSEN, D-Serie](img/de/servo-hitec-leave.png)
 ![PROGRAMMIERMODUS VERLASSEN, klassisch](img/de/servo-hitec-classic-leave.png)
+
+Mit ungeschriebenen Änderungen beginnt die Seite mit `Noch nicht geschriebene
+Änderungen gehen verloren.` und listet jede Änderung mit Name, Wert des Servos
+und Wert des Entwurfs, `SOFT START: 20% -> 60%`, in der Reihenfolge der
+Reiter; bei mehr Änderungen als Zeilen zählt die letzte dieser Zeilen den
+Rest. Die Tasten heißen **2s HALTEN: OHNE SCHREIBEN VERLASSEN** und
+**ZURÜCK**. **ZURÜCK** schließt die Seite und behält die Änderungen. Das
+Halten verwirft die Änderungen, schreibt nichts und verlässt wie oben.
+
+![PROGRAMMIERMODUS VERLASSEN mit zwei ungeschriebenen Änderungen](img/de/servo-hitec-leave-edits.png)
 
 Wenn der PD mini das Servo versorgt, endet VERLASSEN bei beiden Serien
 normalerweise mit eingeschaltetem Ausgang bei Programmierspannung und
@@ -1066,12 +1066,12 @@ Richtungen gleich.
 
 - Halte die Starttaste 2s, um einen Lauf zu starten. Damit bestätigst du
   auch die Warnregel von ÄNDERUNG PRÜFEN für die Änderungen des Laufs an
-  ENDE LINKS und ENDE RECHTS. Jeder Schreibvorgang des Laufs schaltet
-  SCHREIBEN INS SERVO FREIGEBEN für sich ein und am Ende wieder aus. Eine Änderung auf den Reitern der
+  ENDE LINKS und ENDE RECHTS. Jeder Schreibvorgang des Laufs öffnet die
+  Schreibfreigabe für sich und schließt sie am Ende wieder. Eine Änderung auf den Reitern der
   Programmierung öffnet auch während eines Laufs ÄNDERUNG PRÜFEN. Außerhalb
-  eines Laufs schreibt die Schnittstelle nichts und sagt `Schreiben ist gesperrt. Aktiviere zuerst SCHREIBEN INS SERVO FREIGEBEN.`
+  eines Laufs schreibt die Schnittstelle nichts und sagt `Schreiben vor dem Senden gesperrt. Halte die Taste erneut 2s.`
 - Ein Wert außerhalb des Bereichs wird abgelehnt, nicht begrenzt: nichts
-  wird geändert, nichts gesendet, und der Schalter bleibt aus.
+  wird geändert, nichts gesendet, und die Freigabe bleibt zu.
 - Jeder Schreibvorgang eines Laufs ist ein Schreiben wie n WERTE SCHREIBEN:
   das zweite Lesen, der Vermerk auf der Karte, dann die Register der
   D-Serie im Abstand von 20ms, das Speichern (0x70 = 0xFFFF), 100ms, der
@@ -1097,7 +1097,7 @@ Richtungen gleich.
   Änderungen des Laufs. An einem Servo der D-Serie fragt seine Seite nach
   dem Exemplar ([Zurückspielen des Backups der
   Sitzung](#zurückspielen-des-backups-der-sitzung)).
-- Das Ende des Laufs schaltet SCHREIBEN INS SERVO FREIGEBEN aus, verwirft
+- Das Ende des Laufs schließt die Schreibfreigabe, verwirft
   den Entwurf und setzt Programmierspannung und -strom auf die Werte der
   Einstellungen zurück.
 - Welche Hornstellung ein Ende der D-Serie an einem CCW-Servo ergibt und

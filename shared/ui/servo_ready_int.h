@@ -625,10 +625,16 @@ bool prog_write_pressed(void);
 /** @brief A DOWN on the footer's middle slot on KST or HITEC.
  *  @param evt the DOWN  @return whether it landed there */
 bool prog_write_down(const touch_event_t *evt);
-/** @brief The rest of the press prog_write_down() took; its tap UP writes
- *         as the session's own WRITE n VALUES does.
+/** @brief The rest of the press prog_write_down() took: a release before
+ *         the 2s hold completes shows the hold's hint; a tap on WRITE
+ *         while the session takes no write names why.
  *  @param evt the event  @return whether it was that press's */
 bool prog_write_rest(const touch_event_t *evt);
+/** @brief A frame of the footer's WRITE: its 2s hold writes as it
+ *         completes, as the session's own WRITE n VALUES does, and its
+ *         flash runs.
+ *  @param dt_s the frame's time, s */
+void prog_write_tick(float dt_s);
 /** @brief A press on WRITE dropped. */
 void prog_ready_reset(void);
 

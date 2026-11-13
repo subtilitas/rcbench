@@ -129,7 +129,7 @@ Das Speicher-Popup wartet, bis der Prüfstand ruht: SAFE, Netzteilausgang und PR
 ![Die Hilfe von SERVO auf Seite 1 in LIVE](view:help-servo)
 ![Die Hilfe von SUPPLY auf Seite 1 in LIVE](view:help-supply)
 
-Auf KST und HITEC kommen zuerst die Hilfeseiten der Sitzung, mit dem Hilfefeld rechts: auf dem Reiter SERVO VERBINDEN und das Auslesen, dann die Dateien, die Schreibfreigabe und n WERTE SCHREIBEN; auf einem anderen Reiter seine Werte. Danach folgt die Hilfeseite zur Karte BEREIT, mit dem Hilfefeld links. Die Hilfeseiten der Sitzung fehlen, solange die Zeile der Versorgung in der Karte BEREIT EIN zeigt und solange eine Liste, ein Tastenfeld, eine Seite oder eine Tastatur der Sitzung offen ist. Auf HITEC gibt es keine Hilfeseite, solange SERVO BEWEGEN das Ruderhorn fährt: Jedes Hilfefeld verdeckt einen Teil seines EIN.
+Auf KST und HITEC kommen zuerst die Hilfeseiten der Sitzung, mit dem Hilfefeld rechts: auf dem Reiter SERVO VERBINDEN und das Auslesen, dann die Dateien, ZURÜCKSPIELEN und n WERTE SCHREIBEN; auf einem anderen Reiter seine Werte. Danach folgt die Hilfeseite zur Karte BEREIT, mit dem Hilfefeld links. Die Hilfeseiten der Sitzung fehlen, solange die Zeile der Versorgung in der Karte BEREIT EIN zeigt und solange eine Liste, ein Tastenfeld, eine Seite oder eine Tastatur der Sitzung offen ist. Auf HITEC gibt es keine Hilfeseite, solange SERVO BEWEGEN das Ruderhorn fährt: Jedes Hilfefeld verdeckt einen Teil seines EIN.
 
 ![Die Hilfe von KST auf Seite 1](view:help-servo-kst)
 
@@ -177,8 +177,8 @@ Die Füllung einer Taste sagt, was ein Druck mit einem Ausgang macht.
 | Füllung | Bedeutet | Tasten |
 |---|---|---|
 | grün | ein Druck schaltet einen Ausgang ein, schaltet auf ARMED, startet einen Lauf oder schreibt ein Servo | ARM, AUSGANG EIN, PROG 5V EIN, `2s HALTEN: ARM + START` auf TEST, RUDER AUTO und ENDLAGENLAUF, ZENTRIEREN und SWEEP, 1000us, ZENTRIEREN, 2000us und NULLPUNKT des Ruders, VERBINDEN, n WERTE SCHREIBEN; SPEICHERN auf SETUP, solange etwas ungespeichert ist |
-| rot | ein Ausgang ist ein, der Prüfstand ist ARMED oder ein Schreiben läuft; ein Druck hält es an | DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE während eines Sweeps, VERLASSEN, ABBRECHEN, ein Schreibschalter auf EIN; STOP immer |
-| bernstein | läuft oder wartet, noch nichts aktiv | PAUSIERT, WARTEN, `BEI STILLSTAND` |
+| rot | ein Ausgang ist ein, der Prüfstand ist ARMED oder ein Schreiben läuft; ein Druck hält es an | DISARM, AUSGANG AUS, LAUF BEENDEN, PAUSE während eines Sweeps, VERLASSEN, ABBRECHEN; STOP immer |
+| bernstein | läuft oder wartet, noch nichts aktiv | PAUSIERT, WARTEN, `BEI STILLSTAND`; n WERTE SCHREIBEN geht über sein 2s-Halten von Grün nach Bernstein über |
 | grau, blasse Beschriftung | nimmt gerade keinen Druck an | ein Tipp auf ein graues `2s HALTEN: ARM + START` zeigt den Grund 4s im Alarmband |
 | neutral | ändert einen Wert oder öffnet eine Seite | `-` `+`, Wertfelder, KATEGORIE ZURÜCKSETZEN, VERWERFEN, MAX LÖSCHEN, Kacheln, ÖFFNEN, SCHLIESSEN; ein gewählter Reiter ist cyan |
 

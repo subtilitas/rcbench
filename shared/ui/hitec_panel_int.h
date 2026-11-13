@@ -79,8 +79,8 @@
 enum { K_ACT = 0, K_SHOW };
 
 /** @brief The actions of the SERVO tab's rows. */
-enum { A_PORT = 0, A_SERIES, A_READ, A_MORE, A_CLEAR, A_ENABLE, A_RESTORE,
-       A_WRITE, A_FILES, A_MOVE, A_FIND };
+enum { A_PORT = 0, A_SERIES, A_READ, A_MORE, A_CLEAR, A_RESTORE, A_WRITE,
+       A_FILES, A_MOVE, A_FIND };
 
 /** @brief The series a row is for. */
 enum { S_D = 1, S_C = 2, S_ANY = 3 };
@@ -99,7 +99,7 @@ typedef struct {
 } hpn_row_t;
 
 /** @brief The rows' count. */
-#define HP_ROW_COUNT 46
+#define HP_ROW_COUNT 45
 /** @brief The rows, in hitec_panel.c. */
 extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 
@@ -108,7 +108,8 @@ extern const hpn_row_t hpn_rows[HP_ROW_COUNT];
 /** @brief What a press is on. */
 enum {
     P_NONE = 0, P_TAB, P_ROW, P_KEYPAD, P_CHOICE, P_CHOICE_CANCEL,
-    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS, P_CONNECT
+    P_APPLY, P_CANCEL, P_TEXTKEY, P_PORT, P_PLUS, P_MINUS, P_CONNECT,
+    P_WRITE
 };
 
 /** @brief A position's -/+ keys while MOVE SERVO is on, KST's 56px. */
@@ -130,8 +131,8 @@ enum { FL_SAVE = -2, FL_NEXT = -3 };
 /** @brief A D series FAILSAFE list's POSITION: its keypad follows. */
 #define HP_FS_POSITION (-1)
 /** @brief The hold pages. */
-enum { W_LEAVE = 0, W_RELEASE, W_ENABLE, W_WRITE, W_SOFT, W_REPAIR,
-       W_RESTORE, W_LOAD, W_FACTORY, W_BACKUP, W_LOAD_MORE, W_MOVE };
+enum { W_LEAVE = 0, W_RELEASE, W_SOFT, W_REPAIR, W_RESTORE, W_LOAD,
+       W_FACTORY, W_BACKUP, W_LOAD_MORE, W_MOVE };
 /** @brief What the keypad edits. */
 enum { KP_NONE = 0, KP_VOLTAGE, KP_CURRENT, KP_VALUE };
 
@@ -181,6 +182,9 @@ typedef struct {
         int       vtotal;       /**< the changed values in all             */
         int       next;         /**< W_LOAD_MORE: the first line of the
                                      next part                            */
+        bool      drop;         /**< W_LEAVE with unwritten edits: they
+                                     are listed, the hold leaves without
+                                     writing them and BACK keeps them     */
     } page;                     /**< the hold page                        */
 
     ui_textkey_t tk;            /**< the keyboard of a new file's name    */
@@ -208,6 +212,15 @@ typedef struct {
                                      the next tick, after that frame's
                                      drains, unless a touch loss cancels
                                      it first                            */
+    ui_hold_t wr;               /**< WRITE n VALUES' 2s hold: it writes
+                                     the edits                           */
+    bool     wr_due;            /**< WRITE's hold completed: it writes on
+                                     the next tick, as CONNECT connects  */
+    bool     wr_on;             /**< the model's write gate
+                                     (hitec_prog_write_enable()) is open
+                                     for a write a hold started: it shuts
+                                     when that write ends
+                                     (hpn_gate_follow())                 */
 } hpn_state_t;
 
 /**
@@ -424,10 +437,26 @@ bool hpn_row_live(const hpn_row_t *r);
 void hpn_page_leave(void);
 /** @brief The page of RELEASE PORT. */
 void hpn_page_release(void);
-/** @brief The page of ENABLE WRITE TO SERVO. */
-void hpn_page_enable(void);
-/** @brief The page of WRITE n VALUES. */
-void hpn_page_write(void);
+/**
+ * @brief Says why the session refuses a write of the edits now, the write
+ *        switch left out.  WRITE's hold does not start then.
+ * @return true when it refuses, and the message says why
+ */
+bool hpn_write_refused(void);
+/**
+ * @brief A held write of @p kind (hitec_prog_wr_t): the model's write
+ *        switch on, the write asked for, the switch on until the write
+ *        ends (hpn_gate_follow()).  A refusal turns it off again and says
+ *        why.
+ * @param kind hitec_prog_wr_t
+ * @return true when the write is on its way
+ */
+bool hpn_write_go(uint8_t kind);
+/**
+ * @brief Shuts the write gate a hold opened once its write has
+ *        ended: nothing in flight, or the session gone.
+ */
+void hpn_gate_follow(void);
 /** @brief CHECK THIS CHANGE for the edit that waits. */
 void hpn_page_soft(void);
 /** @brief The page of REPAIR CHECKSUM. */
@@ -529,11 +558,17 @@ void hpn_page_saves(void);
 int hpn_file_lines(const hitec_prog_msg_t *m,
                    char out[HITEC_PANEL_MSG_LINES][HITEC_PANEL_LINE]);
 /**
- * @brief The SERVO tab's note on the session's backup: its file, or that
- *        it is in RAM only.
+ * @brief The SERVO tab's note on the session's backup: its file, that it
+ *        is in RAM only, or that the next write saves no file.
  * @return the note; NULL for none
  */
 const char *hpn_backup_note(void);
+/**
+ * @brief Edits wait, no card is mounted and the session's backup has no
+ *        file yet: the write's hold sends them with the backup in RAM only.
+ * @return true while the SERVO tab says no file will be saved
+ */
+bool hpn_backup_unsaved(void);
 
 /* hitec_panel_page.c, for hitec_panel_file.c */
 

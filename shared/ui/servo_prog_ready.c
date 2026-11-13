@@ -30,10 +30,9 @@
  * is not met names it in the alert band.
  *
  * The footer's middle slot is the session's WRITE n VALUES: the same label
- * and the same tap as the session's own button, from any of its tabs.  Its
- * page asks for ENABLE WRITE first while the switch is off, and the page's
- * 2s hold confirms every write.  Grey while the session takes no write; a
- * tap names why in the alert band.  Neither screen has ARM: programming
+ * and the same 2s hold as the session's own button, from any of its tabs.
+ * The hold writes the edits; a shorter press shows the hold's hint.  Grey
+ * while the session takes no write; a tap names why in the alert band.  Neither screen has ARM: programming
  * and an armed bench are exclusive.
  *
  * SPDX-License-Identifier: MIT
@@ -60,8 +59,10 @@
 
 /** @brief The footer's WRITE as a press holds it. */
 typedef struct {
-    bool    down;  /**< a contact is on it */
-    uint8_t id;    /**< its track id       */
+    bool      down;  /**< a contact is on it                         */
+    uint8_t   id;    /**< its track id                               */
+    bool      held;  /**< the press started the 2s hold              */
+    ui_hold_t hold;  /**< the hold: it writes as it completes        */
 } write_press_t;
 
 /** @brief What the footer and the rows keep between calls. */
@@ -343,9 +344,12 @@ void prog_draw_write(gfx_canvas_t *c)
     prog_session_t ps;
     session_now(&ps);
     const bool live = write_why(&ps) == NULL;
-    ui_button_font(c, s.arm_btn, ps.write[0] != '\0' ? ps.write : "--",
+    /* A 2s hold: green fading to the amber of the write's steps, flashing
+     * as it fires. */
+    ui_hold_button(c, s.arm_btn, ps.write[0] != '\0' ? ps.write : "--",
                    ui_action_fill(live ? UI_ACTION_AVAILABLE
                                        : UI_ACTION_REFUSED),
+                   ui_action_fill(UI_ACTION_WAITING), &s_pr.write.hold,
                    s_pr.write.down, live, SV_FONT_LABEL);
 }
 
@@ -374,10 +378,30 @@ bool prog_write_down(const touch_event_t *evt)
         return false;
     }
     /* One contact owns the button, from its DOWN to its UP. */
-    if (!s_pr.write.down) {
-        s_pr.write.down = true;
-        s_pr.write.id = evt->point.id;
-        ++s.fp_rev;
+    if (s_pr.write.down) {
+        return true;
+    }
+    /* Another finger on the glass, before this press counts as one. */
+    const bool other = svs_press_held();
+    s_pr.write.down = true;
+    s_pr.write.id = evt->point.id;
+    s_pr.write.held = false;
+    ++s.fp_rev;
+    prog_session_t ps;
+    session_now(&ps);
+    /* The hold starts where the session takes the write and nothing else
+     * holds the glass; every other press names why on its release.  A
+     * write the session refuses says why at once. */
+    if (write_why(&ps) != NULL || other) {
+        return true;
+    }
+    const bool refused = (s.fn == SERVO_FN_KST) ? kst_panel_write_refused()
+                                                : hitec_panel_write_refused();
+    if (!refused) {
+        s_pr.write.held = true;
+        ui_hold_reset(&s_pr.write.hold);
+        ui_hold_begin(&s_pr.write.hold, TX_HOLD_HINT_WRITE);
+        ++s.arm_rev;
     }
     return true;
 }
@@ -388,15 +412,28 @@ bool prog_write_rest(const touch_event_t *evt)
         return false;
     }
     if (evt->type != TOUCH_EVENT_UP) {
+        /* A finger that leaves WRITE abandons its hold. */
+        if (s_pr.write.held
+            && !gfx_rect_contains(s.arm_btn, evt->point.x, evt->point.y)
+            && ui_hold_leave(&s_pr.write.hold)) {
+            s_pr.write.held = false;
+            ++s.arm_rev;
+        }
         return true;
     }
     s_pr.write.down = false;
     ++s.fp_rev;
+    ++s.arm_rev;
+    if (s_pr.write.held) {
+        /* The hold has written, or a short release shows its hint. */
+        s_pr.write.held = false;
+        (void)ui_hold_end(&s_pr.write.hold, evt, s.arm_btn);
+        return true;
+    }
     if (!touch_event_is_tap_up(evt) || !prog_ready_shown()
         || !gfx_rect_contains(s.arm_btn, evt->point.x, evt->point.y)) {
         return true;
     }
-    /* The write page is an overlay: none opens under another finger. */
     if (svs_press_held()) {
         ui_action_refused(TR(FOOT_PRESS_HELD));
         return true;
@@ -406,16 +443,36 @@ bool prog_write_rest(const touch_event_t *evt)
     const char *why = write_why(&ps);
     if (why != NULL) {
         ui_action_refused(why);
-        return true;
     }
-    const bool took = (s.fn == SERVO_FN_KST) ? kst_panel_write_tap()
-                                             : hitec_panel_write_tap();
-    if (!took) {
-        ui_action_refused(TR(PRR_W_PAGE));
-    }
-    ++s.ctrl_rev;
-    servo_invalidate();
     return true;
+}
+
+void prog_write_tick(float dt_s)
+{
+    write_press_t *w = &s_pr.write;
+
+    if (w->held && w->down && !w->hold.fired) {
+        prog_session_t ps;
+        session_now(&ps);
+        if (!prog_ready_shown() || write_why(&ps) != NULL) {
+            /* The session took the write away under the finger. */
+            (void)ui_hold_left(&w->hold);
+            w->held = false;
+        } else if (ui_hold_tick(&w->hold, dt_s)) {
+            const bool took = (s.fn == SERVO_FN_KST) ? kst_panel_write_go()
+                                                     : hitec_panel_write_go();
+            if (!took) {
+                ui_action_refused(TR(PRR_W_PAGE));
+            }
+            ++s.ctrl_rev;
+            servo_invalidate();
+        }
+        ++s.arm_rev;
+    }
+    if (ui_hold_flashing(&s_pr.write.hold)) {
+        ui_hold_flash_step(&s_pr.write.hold, dt_s);
+        ++s.arm_rev;
+    }
 }
 
 void prog_ready_reset(void)
@@ -424,4 +481,6 @@ void prog_ready_reset(void)
         s_pr.write.down = false;
         ++s.fp_rev;
     }
+    s_pr.write.held = false;
+    ui_hold_reset(&s_pr.write.hold);
 }

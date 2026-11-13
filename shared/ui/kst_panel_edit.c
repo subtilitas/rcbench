@@ -474,28 +474,76 @@ void kpn_act(const row_t *r)
         k.type_file[0] = '\0';
         type_open(TR(KP_TYPE_TITLE));
         break;
-    case A_ENABLE:
-        if (kst_prog_write_enabled(p)) {
-            (void)kst_prog_enable(p, false);
-        } else if (kst_prog_enable_check(p) == KST_PROG_MSG_NONE) {
-            /* It can be: off until the hold says so. */
-            kpn_warn_enable();
-        } else {
-            (void)kst_prog_enable(p, true);     /* says why not */
-        }
-        break;
     default:
-        if (kst_prog_write_check(p) == KST_PROG_MSG_NONE) {
-            kpn_warn_write();
-        } else if (kst_prog_write_check(p) == KST_PROG_MSG_NEED_ENABLE
-                   && kst_prog_enable_check(p) == KST_PROG_MSG_NONE) {
-            /* The switch is all the write waits for: its page, and off
-             * until the hold. */
-            kpn_warn_enable();
-        } else {
-            (void)kst_prog_write(p);    /* says why not */
-        }
+        /* WRITE n VALUES takes no tap: its 2s hold writes
+         * (kpn_write_go()). */
         break;
+    }
+}
+
+/* A write the session refuses whatever the gate: said at the press, and
+ * no hold starts. */
+bool kpn_write_refused(void)
+{
+    kst_prog_t *p = &k.prog;
+    const kst_prog_msg_id_t m = kst_prog_write_check(p);
+
+    /* A card put in, taken out or swapped is found at the press. */
+    k.card_look = k.card_look || p->fed;
+    if (m == KST_PROG_MSG_NONE) {
+        return false;
+    }
+    if (m != KST_PROG_MSG_NEED_ENABLE) {
+        (void)kst_prog_write(p);        /* says why not */
+        return true;
+    }
+    if (kst_prog_enable_check(p) != KST_PROG_MSG_NONE) {
+        (void)kst_prog_enable(p, true); /* says why not */
+        return true;
+    }
+    return false;
+}
+
+/* The model's write gate opened for one operation a hold asked for: a
+ * refusal of the gate or of the operation says why and closes it again. */
+bool kpn_write_go(void)
+{
+    kst_prog_t *p = &k.prog;
+
+    if (kst_prog_enable(p, true) != KST_PROG_MSG_NONE) {
+        return false;                   /* said why not */
+    }
+    if (kst_prog_write(p) != KST_PROG_MSG_NONE) {
+        (void)kst_prog_enable(p, false);
+        return false;
+    }
+    k.wr_on = true;
+    return true;
+}
+
+void kpn_gated(bool release, const kst_prog_restore_t *plan)
+{
+    kst_prog_t *p = &k.prog;
+    kst_prog_msg_id_t m;
+
+    if (kst_prog_enable(p, true) != KST_PROG_MSG_NONE) {
+        return;                         /* said why not */
+    }
+    m = release ? kst_prog_release(p) : kst_prog_restore(p, plan);
+    if (m != KST_PROG_MSG_NONE) {
+        (void)kst_prog_enable(p, false);
+        return;
+    }
+    k.wr_on = true;
+}
+
+void kpn_gate_follow(void)
+{
+    /* A write, restore or release is in flight while the state is
+     * WORKING: its card save, its commands and its read-back. */
+    if (k.wr_on && kst_prog_state(&k.prog) != KST_PROG_WORKING) {
+        (void)kst_prog_enable(&k.prog, false);
+        k.wr_on = false;
     }
 }
 
@@ -551,14 +599,13 @@ void kpn_choice_done(int value)
             kst_prog_forget(p);
         } else if (kst_prog_restore_plan(p, (kst_prog_from_t)value, &plan)
                    == KST_PROG_MSG_NONE) {
-            if (kst_prog_write_enabled(p)) {
-                if (plan.soft != 0u) {
-                    kpn_warn_check(&plan);
-                } else {
-                    kpn_warn_restore(&plan);
-                }
+            /* The page's hold opens the write gate (kpn_gated()). */
+            if (kst_prog_enable_check(p) != KST_PROG_MSG_NONE) {
+                (void)kst_prog_enable(p, true);     /* says why not */
+            } else if (plan.soft != 0u) {
+                kpn_warn_check(&plan);
             } else {
-                (void)kst_prog_restore(p, &plan);   /* says why not */
+                kpn_warn_restore(&plan);
             }
         }
     } else if (kind == C_FILES) {
@@ -606,7 +653,10 @@ void kpn_choice_done(int value)
         kst_prog_discard(p);
     } else if (value == MORE_FIXED) {
         /* The carrier's 5V: a line to read, nothing to set. */
-    } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE) {
+    } else if (kst_prog_release_check(p) == KST_PROG_MSG_NONE
+               || (kst_prog_release_check(p) == KST_PROG_MSG_NEED_ENABLE
+                   && kst_prog_enable_check(p) == KST_PROG_MSG_NONE)) {
+        /* The write gate is what the hold of the page opens. */
         kpn_warn_release();
     } else {
         (void)kst_prog_release(p);      /* says why not */
@@ -653,10 +703,6 @@ bool kpn_row_live(const row_t *r)
     case A_TYPE:
         /* The type of a servo read; never written to it. */
         return st == KST_PROG_PROGRAMMING && kst_prog_have_servo(p);
-    case A_ENABLE:
-        /* Off at any time; on where the model takes it. */
-        return kst_prog_write_enabled(p)
-            || kst_prog_enable_check(p) == KST_PROG_MSG_NONE;
     default:
         return st == KST_PROG_PROGRAMMING && kst_prog_changes(p) != 0u;
     }

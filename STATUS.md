@@ -1894,10 +1894,10 @@ paths: no servo or no entry, a raw value's confirmation, a confirmation after a 
 request and a refused plan while the card takes the record, a RESTORE with nothing to send,
 the record loaded from the card, and the card's answer to a text of before the write that
 waits (an aborted write's record, a record's clear, a refusal, no answer within 3000ms),
-which releases and ends nothing, and the gate taken again at the card's answer (the switch
-off, a STOP, ARM pressed).
+which releases and ends nothing, and the gate taken again at the card's answer (the write
+gate shut, a STOP, ARM pressed).
 
-`test_hitec_prog` adds the write switch at CONNECT, link loss, STOP and LEAVE, every soft
+`test_hitec_prog` adds the write gate at CONNECT, link loss, STOP and LEAVE, every soft
 rule at its bound and one past it, a confirmation that holds for its value and asks one
 past, a raw value replaced and brought back by DISCARD EDITS, the edit refusals and a model
 the register model does not name. `test_hitec_card` writes and parses the record text: both
@@ -1918,7 +1918,7 @@ the first write and once a session, a card that is full, write protected, failin
 silent for 5000ms (no write goes), ABORT and STOP while it waits, the wait across the wrap
 of the millisecond clock, the backup in RAM without a card and saved when a card comes, the
 backup of another servo, saves by hand and their refusals, FILES' pages, the request id's
-wrap, a load into the draft with the switch off and on, the other series and layout, another
+wrap, a load into the draft with the write gate shut and open, the other series and layout, another
 model, a soft rule, a hand-edited file, values outside the editable ones counted, a raw
 value back by a load, the load's gates (ARMED, STOP, no read, a read owed), RESTORE of a
 D series backup with a raw value, the unit confirmed, after a write and after a lost link,
@@ -1949,13 +1949,14 @@ differ, ABORT, STOP, its time); `test_servo_restore` SERVO's question after a LE
 programmer, Tests](docs/ServoProgrammer.md#tests)). `test_hitec_panel_file` runs the
 overlay's FILES row, its pages and their turn back to the first, the keyboard of a new name
 and the names the card refuses, a load, CHECK THIS FILE, a backup file's stored values on
-the load page, in its message and on the write page, the backup file's lines on the write
-page and the SERVO tab, RESTORE and FACTORY DEFAULT from their rows, both refused with an
+the load page and in its message, the backup file's lines on the SERVO tab, the SERVO tab's
+no-card line while edits wait, RESTORE and FACTORY DEFAULT from their rows, both refused with an
 edit standing, and every new page and message in both languages.
 
 `test_hitec_panel_write` runs the overlay's lists, keypad refusals, the D series FAILSAFE
-list and its keypad, CHECK THIS CHANGE, the switch page, the write page and its lines in
-English and German, REPAIR CHECKSUM under MORE, RESTORE after an interrupted write, with
+list and its keypad, CHECK THIS CHANGE, the write's 2s hold (a tap, a release before 2s, a
+hold of 2s, a refusal at the press), LEAVE PROGRAMMING with unwritten edits and without,
+BACK that keeps the edits and the hold that drops them, in English and German, REPAIR CHECKSUM under MORE, RESTORE after an interrupted write, with
 STOP latched a foot line that offers no CLEAR, the card half and the state line of each
 phase, the record notes, RESTORE's page, the refusals the pages say, the keypads on a raw
 value, a pressed row, every write message's lines, and a message line a note already says
@@ -1976,8 +1977,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 942 committed screenshots to the current render,
-471 in English and the same 471 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 938 committed screenshots to the current render,
+469 in English and the same 469 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

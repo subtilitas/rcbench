@@ -314,10 +314,6 @@ bool hpn_row_live(const hpn_row_t *r)
     case A_READ:
         return st == HITEC_PROG_HELD && hitec_prog_in_mode(p)
                && !hitec_prog_stopped(p);
-    case A_ENABLE:
-        /* Off is always taken; on wants an editable, SAFE port. */
-        return hitec_prog_write_on(p)
-               || (hitec_prog_can_edit(p) && !p->f.stopped);
     case A_RESTORE:
         return st == HITEC_PROG_HELD
                && (hitec_prog_record(p) || hitec_prog_backup_differs(p));
@@ -343,26 +339,97 @@ bool hpn_row_live(const hpn_row_t *r)
 }
 
 /**
- * @brief A write of @p kind asked for: the switch's page while it is off,
- *        the write's own page where the write is taken, else the write's
- *        refusal, said.
+ * @brief The write gate of @p kind as a hold takes it: the model's write
+ *        switch left out, which the hold turns on (hpn_write_go()).
+ * @param kind hitec_prog_wr_t
+ * @return the gate's message; HITEC_PROG_MSG_NONE where the write may go
+ */
+static hitec_prog_msg_id_t gate_held(uint8_t kind)
+{
+    const hitec_prog_msg_id_t m = hitec_prog_write_gate(&hp.prog, kind);
+
+    return m == HITEC_PROG_MSG_WRITE_OFF ? HITEC_PROG_MSG_NONE : m;
+}
+
+bool hpn_write_refused(void)
+{
+    if (gate_held((uint8_t)HITEC_PROG_WR_EDITS) == HITEC_PROG_MSG_NONE) {
+        return false;
+    }
+    (void)hitec_prog_write(&hp.prog);   /* says why not */
+    return true;
+}
+
+/**
+ * @brief The model's call for a write of @p kind.
+ * @param p    the programmer
+ * @param kind hitec_prog_wr_t
+ * @return its message
+ */
+static hitec_prog_msg_id_t write_call(hitec_prog_t *p, uint8_t kind)
+{
+    switch (kind) {
+    case HITEC_PROG_WR_EDITS:
+        return hitec_prog_write(p);
+    case HITEC_PROG_WR_REPAIR:
+        return hitec_prog_repair(p);
+    case HITEC_PROG_WR_FACTORY:
+        return hitec_prog_factory(p);
+    case HITEC_PROG_WR_BACKUP:
+        /* The hold confirms the unit where the bench cannot tie the servo
+         * to the backup; a classic servo of the backup's serial needs no
+         * confirmation. */
+        return hitec_prog_unit_told_apart(p) ? hitec_prog_restore_backup(p)
+                                             : hitec_prog_restore_backup_unit(p);
+    default:
+        return hitec_prog_restore(p);
+    }
+}
+
+bool hpn_write_go(uint8_t kind)
+{
+    hitec_prog_t *p = &hp.prog;
+
+    /* The write saves a backup file and a record first: the card slot is
+     * looked at, as for a tap on the write row. */
+    hp.card_look = true;
+    if (hitec_prog_write_enable(p, true) != HITEC_PROG_MSG_NONE) {
+        return false;                   /* said why not */
+    }
+    if (write_call(p, kind) != HITEC_PROG_MSG_NONE) {
+        (void)hitec_prog_write_enable(p, false);
+        return false;
+    }
+    hp.wr_on = true;
+    return true;
+}
+
+void hpn_gate_follow(void)
+{
+    const hitec_prog_state_t st = hitec_prog_state(&hp.prog);
+
+    /* A write is in flight through its check read, its backup file, its
+     * record, its steps and its read-back. */
+    if (hp.wr_on && st != HITEC_PROG_READING && st != HITEC_PROG_BACKUP
+        && st != HITEC_PROG_RECORDING && st != HITEC_PROG_WRITING) {
+        (void)hitec_prog_write_enable(&hp.prog, false);
+        hp.wr_on = false;
+    }
+}
+
+/**
+ * @brief A write of @p kind asked for from a list: its own page where the
+ *        write is taken, else the write's refusal, said.  The page's hold
+ *        opens the write gate for it (hpn_write_go()).
  * @param kind hitec_prog_wr_t
  */
 static void ask_write(uint8_t kind)
 {
     hitec_prog_t *p = &hp.prog;
-    const hitec_prog_msg_id_t m = hitec_prog_write_gate(p, kind);
+    const hitec_prog_msg_id_t m = gate_held(kind);
     const bool go = m == HITEC_PROG_MSG_NONE;
 
-    if (m == HITEC_PROG_MSG_WRITE_OFF) {
-        hpn_page_enable();
-    } else if (kind == (uint8_t)HITEC_PROG_WR_EDITS) {
-        if (go) {
-            hpn_page_write();
-        } else {
-            (void)hitec_prog_write(p);
-        }
-    } else if (kind == (uint8_t)HITEC_PROG_WR_REPAIR) {
+    if (kind == (uint8_t)HITEC_PROG_WR_REPAIR) {
         if (go) {
             hpn_page_repair();
         } else {
@@ -510,8 +577,7 @@ void hpn_act(const hpn_row_t *r)
     }
     /* The taps that look at the card slot, as KST's do. */
     hp.card_look = hp.card_look || r->what == A_PORT || r->what == A_FILES
-                   || r->what == A_RESTORE || r->what == A_MORE
-                   || r->what == A_ENABLE || r->what == A_WRITE;
+                   || r->what == A_RESTORE || r->what == A_MORE;
     switch (r->what) {
     case A_PORT:
         port_act(p);
@@ -529,13 +595,6 @@ void hpn_act(const hpn_row_t *r)
         break;
     case A_MORE:
         more_open(p);
-        break;
-    case A_ENABLE:
-        if (hitec_prog_write_on(p)) {
-            (void)hitec_prog_write_enable(p, false);
-        } else {
-            hpn_page_enable();
-        }
         break;
     case A_RESTORE: {
         const hitec_prog_msg_id_t m =
@@ -558,7 +617,7 @@ void hpn_act(const hpn_row_t *r)
         hpn_files_ask();
         break;
     case A_WRITE:
-        ask_write((uint8_t)HITEC_PROG_WR_EDITS);
+        /* No tap: its 2s hold writes (hpn_write_go()). */
         break;
     case A_MOVE:
         hpn_move_act();

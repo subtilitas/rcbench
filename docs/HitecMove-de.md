@@ -96,12 +96,12 @@ Gleich meldet
 `SERVO BEWEGEN steht auf AUS. Die gespeicherten Werte sind unverändert zurückgelesen.`
 Eine Abweichung meldet
 `Servowerte haben sich bei SERVO BEWEGEN geändert. Tippe auf ALLES AUSLESEN.`,
-schaltet SCHREIBEN INS SERVO FREIGEBEN aus und lehnt ein Schreiben bis
+schließt die Schreibfreigabe und lehnt ein Schreiben bis
 ALLES AUSLESEN ab. Das Home-Feld verlässt die Programmierung erst nach
 dem Ende: tippe es erneut.
 
-Ein hartes Ende hat keine Endfolge. Es schaltet SCHREIBEN INS SERVO
-FREIGEBEN aus, und SERVO zeigt
+Ein hartes Ende hat keine Endfolge. Es schließt die Schreibfreigabe, und
+SERVO zeigt
 `Nach SERVO BEWEGEN sind die Servowerte nicht bekannt. Tippe vor dem Schreiben auf ALLES AUSLESEN.`
 bis ALLES AUSLESEN. Jedes harte Ende außer einem ABBRECHEN während des
 Endes ist ein Fehler: alle Ausgänge gehen aus, die Versorgung des Servos

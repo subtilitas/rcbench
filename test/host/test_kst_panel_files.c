@@ -367,19 +367,13 @@ TEST_CASE(a_file_becomes_the_pending_values_and_the_ordinary_write_sends_them)
     CHECK_EQ(kst_prog_changed(M), KST_FIELD_BIT(KST_F_DUTY));
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
-    /* The values are written as edits are: the switch, the page, the
-     * hold. */
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns(TR(KP_ENABLE_1)));
-    tap(kst_panel_cancel_rect());
+    /* The values are written as edits are: WRITE's hold, which a tap
+     * does not stand for. */
+    tap(val(PG_SERVO, 3, 1));
+    CHECK_EQ(kst_panel_editor(), 0);
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
-    enable();
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns(TR(KP_HORN_FREE)));
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK_EQ(servo(KST_F_DUTY), draft(KST_F_DUTY));
@@ -655,12 +649,12 @@ TEST_CASE(a_file_past_a_soft_limit_waits_for_a_2_s_hold)
     CHECK_EQ(msg(), KST_PROG_MSG_LOADED_EDITED);
     CHECK_EQ(draft(KST_F_DUTY),
              as_typed(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) + 5u)));
-    /* Pending, not written: the write still needs its switch. */
+    /* Pending, not written: the write still needs its hold. */
     rig_frames(50);
     CHECK_EQ(g_rig.sim.n_writes, 0);
-    tap(val(PG_SERVO, 4, 1));
-    CHECK(warns(TR(KP_ENABLE_1)));
-    tap(kst_panel_cancel_rect());
+    tap(val(PG_SERVO, 3, 1));
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
     CHECK(!kst_prog_write_enabled(M));
 
     /* The page goes with the link, and the file with it. */
@@ -835,12 +829,8 @@ TEST_CASE(the_first_write_saves_the_servo_to_a_file_without_asking)
 
     fresh();
     connected();
-    enable();
     edits();
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(warns(TR(KP_WRITE_BACKUP)));
-    hold(2.1f);
+    hold_write();
     /* No name is asked for. */
     CHECK_EQ(kst_panel_editor(), 0);
     settle();
@@ -853,14 +843,7 @@ TEST_CASE(the_first_write_saves_the_servo_to_a_file_without_asking)
     show();
     /* The second write of the session takes no file. */
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
-    if (!kst_prog_write_enabled(M)) {
-        enable();
-    }
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    CHECK(!warns(TR(KP_WRITE_BACKUP)));
-    CHECK(warns(TR(KP_WRITE_CARD)));
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK_EQ(g_rig.fc.saves, 1);
@@ -884,16 +867,10 @@ TEST_CASE(a_first_write_whose_file_fails_is_not_sent)
 
     fresh();
     connected();
-    enable();
     edits();
     for (unsigned i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         g_rig.fc.fails = k[i].result;
-        if (!kst_prog_write_enabled(M)) {
-            enable();
-        }
-        tap(val(PG_SERVO, 4, 1));
-        CHECK_EQ(kst_panel_editor(), 3);
-        hold(2.1f);
+        hold_write();
         settle();
         CHECK_EQ(msg(), k[i].msg);
         CHECK_STR_EQ(said(), ui_tr(k[i].text));
@@ -904,12 +881,7 @@ TEST_CASE(a_first_write_whose_file_fails_is_not_sent)
     }
     /* The card takes the file: the same write goes. */
     g_rig.fc.fails = KST_PROG_CARD_OK;
-    if (!kst_prog_write_enabled(M)) {
-        enable();
-    }
-    tap(val(PG_SERVO, 4, 1));
-    CHECK_EQ(kst_panel_editor(), 3);
-    hold(2.1f);
+    hold_write();
     settle();
     CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
     CHECK_EQ(g_rig.fc.n, 1);

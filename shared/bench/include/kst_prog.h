@@ -17,9 +17,10 @@
  *     soft rules compare with the servo as the session found it
  *     (kst_prog_soft_base()), and a rule confirmed for a value is asked
  *     again for a value further from that image.
- *   - A write is sent with the switch ENABLE WRITE TO SERVO on only.  The
- *     switch goes off at every entry of the screen, when the link goes, when
- *     the IOmcu starts again, at STOP, and with every servo
+ *   - A write is sent with the write gate open only.  The panel opens it
+ *     for the one write, restore or release a 2s hold sends, and shuts it
+ *     when that ends.  The gate shuts at every entry of the screen, when the
+ *     link goes, when the IOmcu starts again, at STOP, and with every servo
  *     connected.
  *   - Every answer of kst_link_start(), every outcome kind, every refusal
  *     of the port and every result of the session becomes one message
@@ -195,7 +196,7 @@ enum {
     KST_PROG_MSG_EDIT_HARD,       /**< arg: the kst_rule_t that refuses     */
     KST_PROG_MSG_EDIT_LOCKED,     /**< the field is not editable            */
     KST_PROG_MSG_NO_CHANGES,
-    KST_PROG_MSG_NEED_ENABLE,     /**< ENABLE WRITE TO SERVO is off         */
+    KST_PROG_MSG_NEED_ENABLE,     /**< the write gate is shut               */
     KST_PROG_MSG_NEED_READ,       /**< read the servo first                 */
     KST_PROG_MSG_NEED_PORT,       /**< no servo is connected                */
     KST_PROG_MSG_NO_RESTORE,      /**< the servo holds that image already   */
@@ -754,7 +755,7 @@ void kst_prog_feed(kst_prog_t *p, const kst_prog_feed_t *f);
 bool kst_prog_take(kst_prog_t *p, kst_prog_cmd_t *out);
 
 /**
- * @brief The screen was entered: ENABLE WRITE TO SERVO goes off.
+ * @brief The screen was entered: the write gate shuts.
  *
  * @param p The programmer state.
  */
@@ -841,10 +842,10 @@ const kst_image_t *kst_prog_servo(const kst_prog_t *p);
  */
 const kst_image_t *kst_prog_draft(const kst_prog_t *p);
 /**
- * @brief Whether the write switch is on.
+ * @brief Whether the write gate is open.
  *
  * @param p The programmer state.
- * @return true when ENABLE WRITE TO SERVO is on.
+ * @return true when the write gate is open.
  */
 bool kst_prog_write_enabled(const kst_prog_t *p);
 /**
@@ -1290,27 +1291,27 @@ kst_prog_msg_id_t kst_prog_verify(kst_prog_t *p);
  *  fingerprint, and by a locked session that holds its backup.
  *
  * @param p  The programmer state.
- * @param on true to switch the write switch on.
- * @return The message for the switch.
+ * @param on true to open the write gate, false to shut it.
+ * @return The message for the gate.
  */
 kst_prog_msg_id_t kst_prog_enable(kst_prog_t *p, bool on);
 /**
- * @brief What kst_prog_enable() would refuse the switch for, and nothing said;
- *        KST_PROG_MSG_NONE where it goes on.
+ * @brief What kst_prog_enable() would refuse the gate for, and nothing said;
+ *        KST_PROG_MSG_NONE where it opens.
  *
  * @param p The programmer state.
- * @return What enable would refuse the switch for, or KST_PROG_MSG_NONE.
+ * @return What enable would refuse the gate for, or KST_PROG_MSG_NONE.
  */
 kst_prog_msg_id_t kst_prog_enable_check(const kst_prog_t *p);
 /**
- * @brief The session is locked and its backup is held: the switch is taken with
+ * @brief The session is locked and its backup is held: the gate opens with
  *        no servo read, and the restore of that backup is the one write that
  *        goes.
  *
  * Every other write waits for a read and for the lock to end.
  *
  * @param p The programmer state.
- * @return true when the switch is taken with no servo read and only the restore
+ * @return true when the gate opens with no servo read and only the restore
  *         goes.
  */
 bool kst_prog_restore_only(const kst_prog_t *p);
@@ -1730,7 +1731,7 @@ size_t kst_prog_file_take(kst_prog_t *p, char *out, size_t n);
  * The answer to a write's journal releases that write when the card
  * completed the file and the write's start gate holds as it is now: the
  * port in PROGRAMMING on the write's port, no STOP, the bench not ARMED and
- * ENABLE WRITE TO SERVO on.  Otherwise the write ends as one that did not
+ * the write gate open.  Otherwise the write ends as one that did not
  * start: nothing goes to the servo, its record is cleared, and the message
  * names the gate that refused it, or KST_PROG_MSG_STORE_FAILED.
  *

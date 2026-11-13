@@ -552,7 +552,7 @@ static void rec_clear(hitec_prog_t *p)
 
 /**
  * @brief A write that ended before a step reached the servo: the record
- *        goes with it, a RESTORE's excepted, and the switch goes off.
+ *        goes with it, a RESTORE's excepted, and the write gate shuts.
  *
  * @param p The programmer.
  * @param r The session's result.
@@ -584,7 +584,7 @@ static void go(hitec_prog_t *p)
 
     p->st = ST_IDLE;
     /* The gate again, as it is now: the card took its time, and the port,
-     * the bench, the stop, the entry or the switch may have changed. */
+     * the bench, the stop, the entry or the write gate may have changed. */
     m = hpg_held_idle(p, true);
     if (m == HITEC_PROG_MSG_NONE && !hitec_prog_in_mode(p)) {
         m = HITEC_PROG_MSG_NOT_IN_MODE;

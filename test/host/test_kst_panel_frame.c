@@ -167,9 +167,21 @@ TEST_CASE(a_tap_on_a_row_not_met_names_it_in_the_band)
     CHECK_STR_EQ(alert(), want);
 }
 
+/* The footer's WRITE n VALUES pressed for @p secs and let go. */
+static void press_footer_write(float secs)
+{
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ticks(secs);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+    scr->tick(0.02f);
+    scr->render(&cv, 0);
+}
+
 /* WRITE n VALUES in the footer: grey and naming why with no servo and with
- * no change; with changes, from the TUNE tab, ENABLE WRITE's page first,
- * then the write page.  Over an open page it opens nothing. */
+ * no change; with changes, from the TUNE tab, a tap shows the hold's hint
+ * and writes nothing, a release before 2s writes nothing, and 2s of
+ * contact writes with no page between.  Over an open page it starts no
+ * hold and says why. */
 TEST_CASE(the_footers_write_is_the_sessions_from_any_tab)
 {
     kst_on();
@@ -184,19 +196,33 @@ TEST_CASE(the_footers_write_is_the_sessions_from_any_tab)
     edits();
     tap(kst_panel_tab_rect(PG_TUNE));
     CHECK_EQ(kst_panel_page(), PG_TUNE);
-    tap_write();
-    CHECK_EQ(kst_panel_editor(), 3);    /* ENABLE WRITE's page */
-    CHECK(!kst_prog_write_enabled(M));
-    /* A second tap over the page opens nothing and says why. */
     ui_router_set_alert(NULL);
     tap_write();
-    CHECK_STR_EQ(alert(), TR(PRR_W_PAGE));
-    hold(2.1f);
-    CHECK(kst_prog_write_enabled(M));
+    CHECK_STR_EQ(alert(), TR(HOLD_HINT_WRITE));
     CHECK_EQ(kst_panel_editor(), 0);
-    tap_write();
-    CHECK_EQ(kst_panel_editor(), 3);    /* the write page */
-    CHECK(kst_panel_warning_line(0) != NULL);
+    ui_router_set_alert(NULL);
+    press_footer_write(1.9f);
+    CHECK_STR_EQ(alert(), TR(HOLD_HINT_WRITE));
+    rig_frames(50);
+    CHECK_EQ(g_rig.sim.n_writes, 0);
+    CHECK_EQ(kst_prog_changes(M), 3);
+    CHECK(!kst_prog_write_enabled(M));
+    press_footer_write(2.5f);
+    CHECK_EQ(kst_panel_editor(), 0);
+    settle();
+    CHECK_EQ(msg(), KST_PROG_MSG_WRITTEN);
+    CHECK_EQ(kst_prog_changes(M), 0);
+    CHECK(!kst_prog_write_enabled(M));
+    CHECK_EQ(kst_panel_page(), PG_TUNE);
+    /* Over an open page: no hold, and the band says why. */
+    edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 1u));
+    kst_panel_back();
+    CHECK_EQ(kst_panel_editor(), 3);    /* LEAVE's page */
+    ui_router_set_alert(NULL);
+    press_footer_write(2.5f);
+    CHECK_STR_EQ(alert(), TR(PRR_W_PAGE));
+    CHECK_EQ(kst_panel_editor(), 3);
+    CHECK_EQ(kst_prog_changes(M), 1);
 }
 
 /* No ARM on KST: a finger on the footer's middle for 2.5s asks none.  The

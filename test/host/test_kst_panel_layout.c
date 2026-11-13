@@ -8,7 +8,7 @@
  * - no_two_controls_of_a_page_overlap
  * - the_fullest_list_ends_above_cancel
  * - the_stretch_list_holds_every_factor_above_cancel
- * - the_fullest_write_page_ends_above_its_buttons_in_both_languages
+ * - the_fullest_leave_page_ends_above_its_buttons_in_both_languages
  * - a_short_area_keeps_its_buttons_inside_it
  * - no_note_or_message_lies_under_the_alert_band
  *
@@ -196,13 +196,12 @@ static int page_rows(void)
     return rows;
 }
 
-/* Ten values changed, a first write with a card, in the current language:
- * the write page open. */
-static void fullest_write_page(void)
+/* Ten values changed and unwritten, in the current language: LEAVE's page
+ * open, the edits listed. */
+static void fullest_leave_page(void)
 {
     g_rig.card = true;
     connected();
-    enable();
     edit(KST_F_DEAD_BAND, (uint16_t)(servo(KST_F_DEAD_BAND) + 2u));
     edit(KST_F_DUTY, (uint16_t)(servo(KST_F_DUTY) - 2u));
     edit(KST_F_BOOST, (uint16_t)(servo(KST_F_BOOST) - 3u));
@@ -214,19 +213,20 @@ static void fullest_write_page(void)
     edit(KST_F_RIGHT_ANGLE, (uint16_t)(servo(KST_F_RIGHT_ANGLE) - 1u));
     edit(KST_F_REVERSION, (uint16_t)(1u - servo(KST_F_REVERSION)));
     tap(kst_panel_tab_rect(PG_SERVO));
-    tap(val(PG_SERVO, 4, 1));
+    tap(val(PG_SERVO, 0, 0));
     CHECK_EQ(kst_panel_editor(), 3);
 }
 
-/* Ten values changed, a first write with a card: the page with the most
- * lines.  Its rows end 8px above the buttons in English and German, and
- * both buttons are tap targets above the alert band. */
-TEST_CASE(the_fullest_write_page_ends_above_its_buttons_in_both_languages)
+/* Ten values changed and unwritten: LEAVE's page with the most lines.  Its
+ * rows end 8px above the buttons in English and German, and both buttons,
+ * HOLD 2s TO LEAVE WITHOUT WRITING and BACK, are tap targets above the
+ * alert band with their labels inside them. */
+TEST_CASE(the_fullest_leave_page_ends_above_its_buttons_in_both_languages)
 {
     for (int lang = 0; lang < 2; ++lang) {
         fresh();
         ui_text_set_language(lang != 0 ? UI_LANG_DE : UI_LANG_EN);
-        fullest_write_page();
+        fullest_leave_page();
         {
             const gfx_rect_t apply = kst_panel_apply_rect();
             const gfx_rect_t cancel = kst_panel_cancel_rect();
@@ -234,6 +234,9 @@ TEST_CASE(the_fullest_write_page_ends_above_its_buttons_in_both_languages)
             target(apply);
             target(cancel);
             CHECK(!overlap(apply, cancel));
+            CHECK((int)strlen(kst_panel_apply_label()) * 10 + 20 <= apply.w);
+            CHECK((int)strlen(kst_panel_cancel_label()) * 10 + 20
+                  <= cancel.w);
             CHECK_EQ(apply.y + apply.h, FOOT);
             CHECK(AREA.y + WARN_TOP_PX + page_rows() * ROW_PX + 8
                   <= apply.y);
@@ -244,7 +247,7 @@ TEST_CASE(the_fullest_write_page_ends_above_its_buttons_in_both_languages)
 }
 
 /* An area that ends above the alert band: its buttons end 8px above its
- * foot, the band does not move them, and the fullest write page keeps its
+ * foot, the band does not move them, and the fullest LEAVE page keeps its
  * lines to the 14 rows above them in English and German. */
 TEST_CASE(a_short_area_keeps_its_buttons_inside_it)
 {
@@ -259,7 +262,7 @@ TEST_CASE(a_short_area_keeps_its_buttons_inside_it)
                      + kst_panel_choice_cancel_rect().h,
                  k_short.y + k_short.h - 8);
         CHECK(k_short.y + k_short.h - 8 < FOOT);
-        fullest_write_page();
+        fullest_leave_page();
         CHECK_EQ(kst_panel_apply_rect().y + kst_panel_apply_rect().h,
                  k_short.y + k_short.h - 8);
         CHECK_EQ(kst_panel_cancel_rect().y + kst_panel_cancel_rect().h,
@@ -311,7 +314,7 @@ TEST_CASE(no_note_or_message_lies_under_the_alert_band)
                 }
                 for (unsigned id = 1u; id < 256u; ++id) {
                     for (size_t a = 0; a < n_args; ++a) {
-                        const gfx_rect_t last = val(PG_SERVO, 4, 1);
+                        const gfx_rect_t last = val(PG_SERVO, 3, 1);
                         char t[KST_PANEL_MSG_LINES][KST_PANEL_LINE];
                         gfx_rect_t drawn;
                         bool repeat;
@@ -354,7 +357,7 @@ int main(void)
     RUN(no_two_controls_of_a_page_overlap);
     RUN(the_fullest_list_ends_above_cancel);
     RUN(the_stretch_list_holds_every_factor_above_cancel);
-    RUN(the_fullest_write_page_ends_above_its_buttons_in_both_languages);
+    RUN(the_fullest_leave_page_ends_above_its_buttons_in_both_languages);
     RUN(a_short_area_keeps_its_buttons_inside_it);
     RUN(no_note_or_message_lies_under_the_alert_band);
     return test_summary("kst_panel_layout");

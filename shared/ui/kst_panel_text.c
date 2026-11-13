@@ -531,7 +531,7 @@ void kst_panel_session(prog_session_t *out)
 {
     const kst_prog_t *p = &k.prog;
     const kst_prog_state_t st = kst_prog_state(p);
-    const row_t *w = kpn_row_at(PG_SERVO, 4, 1);
+    const row_t *w = kpn_row_at(PG_SERVO, 3, 1);
 
     memset(out, 0, sizeof(*out));
     /* The supply the state line names before CONNECT (kst_panel_draw.c). */
@@ -560,7 +560,7 @@ void kst_panel_session(prog_session_t *out)
     }
     if (w != NULL) {
         snprintf(out->write, sizeof(out->write), "%s",
-                 kst_panel_button(PG_SERVO, 4, 1));
+                 kst_panel_button(PG_SERVO, 3, 1));
         out->write_live = kpn_row_live(w);
     }
 }

@@ -312,7 +312,7 @@ on the left card decides the first pages:
 | SERVO RUDDER | LENGTH, the drive buttons, ZERO, RESET MAX and, without a knob that answers, -10us and +10us (4 or 5); DEFLECTION, TRAILING EDGE and the state lines (3) |
 | SERVO RUDDER AUTO | the targets, MARGIN and TOLERANCE, ZERO (3); DEFLECTION and TRAILING EDGE (2); PORT, READY, the rail line, ARM + START and OPTIONS (5) |
 | SERVO LIVE, SWEEP and RUDDER, SAFE | PORT, READY, the rail line, ARM and OPTIONS (5); SET V, the plot, SPEED, the type and the buttons on LIVE and SWEEP (5), SET V, the plot, the type and the side view on RUDDER (4); SET V not on the rbmod carrier's programming port |
-| SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL and TYPE on KST, SERIES (FILES while the port is held) and READ ALL on HITEC, the notes (5); FILES and MORE on KST, MORE and AFTER STOP on HITEC, ENABLE WRITE TO SERVO, RESTORE, WRITE n VALUES (5); PORT, READY, the rail line, WRITE and OPTIONS (5) |
+| SERVO KST and HITEC, SERVO tab | the tabs, CONNECT, READ ALL and TYPE on KST, SERIES (FILES while the port is held) and READ ALL on HITEC, the notes (5); FILES and MORE on KST, MORE and AFTER STOP on HITEC, RESTORE, WRITE n VALUES (4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO KST and HITEC, another tab | the tabs, the tab's first value, its `-` and `+` on a stepped KST row, MOVE SERVO on HITEC's D series TRAVEL, the notes (2 to 4); PORT, READY, the rail line, WRITE and OPTIONS (5) |
 | SERVO's lists (the hub, SWEEP, RUDDER, RUDDER AUTO, HITEC) | as a settings list |
 | SUPPLY LIVE | PLOT and TABLE, VOLTAGE and CURRENT LIMIT (3) |
@@ -582,11 +582,11 @@ replaces a visible hint.
 | APPLY on the HV, frame rate and soft limit warnings of SERVO, KST and Chaservo, and on Hitec pages | `Hold 2s to apply.` |
 | HOLD 2s: ARM + START on TEST | `Hold 2s to arm and start the test.` |
 | HOLD 2s: ARM + START on LIMIT RUN | `Hold 2s to switch the port and its supply on, ARM and start the limit run.` |
-| HOLD 2s TO ENABLE | `Hold 2s to enable.` |
-| HOLD 2s TO WRITE | `Hold 2s to write.` |
+| HOLD 2s TO WRITE, and WRITE n VALUES on the KST and HITEC programmers | `Hold 2s to write.` |
 | HOLD 2s TO RESTORE | `Hold 2s to restore.` |
 | HOLD 2s TO CONTINUE | `Hold 2s to continue.` |
 | HOLD 2s TO LEAVE | `Hold 2s to leave.` |
+| HOLD 2s TO LEAVE WITHOUT WRITING on the KST and HITEC programmers | `Hold 2s to leave without writing the edits.` |
 | HOLD 2s TO MOVE on the Hitec programmer's MOVE SERVO page | `Hold 2s to move the servo.` |
 | HOLD 2s TO LOAD | `Hold 2s to load.` |
 | HOLD 2s TO RELEASE | `Hold 2s to release the port.` |
@@ -631,7 +631,7 @@ The fill of a button says what a press does to an output.
 
 | Class | Buttons | Available | Active | Waiting | Refused |
 | --- | --- | --- | --- | --- | --- |
-| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN, CENTER on LIVE, SWEEP on SWEEP, 1000us, CENTER, 2000us, -10us, +10us and ZERO on RUDDER, the programmers' CONNECT, ENABLE WRITE TO SERVO, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START and of ARM on LIVE, SWEEP and RUDDER | grey (`ui_button_off_fill()`), faint label |
+| Output action: switches an output on, arms, starts a run, writes a servo | ARM, OUTPUT ON, PROG 5V ON, HOLD 2s: ARM + START on TEST, RUDDER AUTO and LIMIT RUN, CENTER on LIVE, SWEEP on SWEEP, 1000us, CENTER, 2000us, -10us, +10us and ZERO on RUDDER, the programmers' CONNECT, WRITE n VALUES and MOVE SERVO | green (`UI_C_OK`) | red (`UI_C_DANGER`): an output is on, ARMED, a write runs, the servo is driven; the label says what a press stops (DISARM, OUTPUT OFF, STOP RUN, PAUSE, LEAVE, ABORT, ON) | amber (`UI_C_WARN`): PAUSED, WAIT, the step of ARM + START and of ARM on LIVE, SWEEP and RUDDER, and of the programmers' WRITE n VALUES | grey (`ui_button_off_fill()`), faint label |
 | Emergency | STOP | red | red, flashes on the press | - | never |
 | Edit | `-` `+`, value boxes, RESET MAX, RESET CATEGORY on SETUP, DISCARD, READ AGAIN | neutral (`UI_C_PANEL_HI`) | - | - | grey |
 | SAVE on SETUP | SAVE, SAVED, WHEN IDLE, NOT SAVED | green while something is unsaved (SAVE) | - | amber (WHEN IDLE) | neutral with the label in red (NOT SAVED); SAVED is neutral |
@@ -2460,7 +2460,7 @@ KST's and HITEC's frame around the session:
 | READY card, supply | PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off; a red dot and `ON` while on, and then a tap switches it off as OUTPUT OFF does (PROG 5V not while a port holds it). KST with no supply the bench switches: amber `OFF, ON BY HAND`. Hitec D series with none: `UNCHANGED` |
 | READY card, SERVO | grey `NOT CONNECTED` before CONNECT, amber `IN PROGRESS` while a step runs, amber `NOT READ` with the port held and no servo read, the servo's model (Hitec) or type (KST, `V6?` for 20k_sel's guess) once read |
 | rail line | the meter's volts and amps, under the rows |
-| footer, middle | the session's WRITE n VALUES, from any tab: the same tap as the session's own button, which opens ENABLE WRITE's page first while the switch is off. Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
+| footer, middle | the session's WRITE n VALUES, from any tab: the same 2s hold as the session's own button, fading from green to amber; a tap shows `Hold 2s to write.` and sends nothing. Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
 | footer, right | OPTIONS: KST's KST EXPERT MODE page, HITEC's Hitec series and Hitec D receive; grey while the session holds the port |
 
 A tap on a READY row that is not met names it in the alert band, for
@@ -2515,9 +2515,9 @@ tall or more and ending 8px above the card floor:
 | tabs | one row at the top, 48px tall: five tabs of 120px, four of 151px on KST with KST EXPERT MODE OFF |
 | rows | 48px tall at a 56px pitch, up to 5 a tab, in two columns of 295px; a wide row spans both |
 | values | 150px (15 cells of the 10 x 20 face); a wide row's 260px, with its `-` and `+` keys of 56px inside it |
-| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 6px above the card floor: 4 rows under the SERVO tab |
+| notes and messages | under the last row, 10 x 20 face, 60 cells a row, 20px a row, to 6px above the card floor: 6 rows under the SERVO tab |
 | lists (FILES, RESTORE, MORE, a factor) | a title, then up to 7 entries 48px tall at a 56px pitch, CANCEL 150 x 48px at the foot |
-| warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face (fewer in a shorter area: the rows that fit 8px above the buttons), the hold button 300 x 56px and CANCEL 180 x 56px at the foot |
+| warning pages | the title in the 20 x 36 face, up to 16 rows of lines in the 10 x 20 face (fewer in a shorter area: the rows that fit 8px above the buttons), the hold button 300 x 56px, 380 x 56px on LEAVE PROGRAMMING with unwritten edits, and CANCEL or BACK 180 x 56px at the foot |
 
 The tabs' labels are in the 10 x 20 face when every label fits its 95px
 tab, as in English, and in the 8 x 16 face when one does not, as German
@@ -2531,11 +2531,11 @@ a line taller than a page waits for the message to go. Where the message
 leaves no row for a note, every note waits for it to go. Neither a note
 nor the message rises over the SERVO tab's last row.
 
-Current limitation: a message taller than the 4 rows under the SERVO tab
-shows its first lines only. The longest messages take 5 rows. In German
-messages 137 and 143 do, and 44 and 45 with a 5-digit count; each loses
-its last line. A long file name in a message can add a row; that case is
-not measured.
+A message takes up to 5 rows and is drawn whole in the 6 rows under the
+SERVO tab: in German messages 137 and 143 do, and 44 and 45 with a
+5-digit count. Current limitation: a message taller than 6 rows shows its
+first lines only. A long file name in a message can add a row; that case
+is not measured.
 
 [Servo programmer for KST and Chaservo servos](ServoProgrammer.md)
 describes it.
@@ -2547,11 +2547,12 @@ the same frame: five tabs (SERVO, MOTION, TRAVEL, PROTECT, INFO) of
 120px, the READY card and WRITE n VALUES in the footer; 48px rows at
 56px pitch; 150px values and 260px wide values; notes in 10 x 20 ending
 4px above the alert band; and hold pages with a 300 x 56px hold button
-and 180 x 56px CANCEL.
+and 180 x 56px CANCEL, on LEAVE PROGRAMMING with unwritten edits a
+380 x 56px hold button and BACK.
 
 It reads the servo and writes edited values back. Tap a writable value to
-open a list of up to 6 entries or the keypad. ENABLE WRITE TO SERVO enables
-writes; WRITE n VALUES, 220px wide, opens the write page. Set SERIES to
+open a list of up to 6 entries or the keypad. WRITE n VALUES, 220px wide,
+writes after a 2s hold. Set SERIES to
 D SERIES or CLASSIC before CONNECT. PORT shows the port, GPIO, series,
 receive mode and the supply CONNECT will set.
 
@@ -2592,7 +2593,7 @@ A stop found sets that end in the draft:
 ![The Hitec programmer, the tester holding the port](img/servo-hitec.png)
 ![A D485HW read](img/servo-hitec-read.png)
 ![A port another session holds](img/servo-hitec-other.png)
-![The write page](img/servo-hitec-write.png)
+![The write hold at 1s](img/servo-hitec-write.png)
 ![The Hitec files on the card](img/servo-hitec-files.png)
 ![RESTORE of the session's backup](img/servo-hitec-restore-page.png)
 ![MOVE SERVO's page](img/servo-hitec-move.png)

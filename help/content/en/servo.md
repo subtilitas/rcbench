@@ -295,7 +295,7 @@ Hitec has no pulse registers, so SERVO PULSES is locked. The run uses an unmeasu
 
 - A D series write saves and restarts the servo inside its session: no PD mini is needed.
 - A classic servo needs a PD mini, or PROG 5V on the rbmod carrier, for every session, the read included: `Classic servos need a PD mini: the bench cycles the supply.`
-- The 2s ARM + START hold is the consent CHECK THIS CHANGE asks for; each write switches ENABLE WRITE TO SERVO on for itself and off at its end.
+- The 2s ARM + START hold is the consent CHECK THIS CHANGE asks for; each write opens the write gate for itself and shuts it at its end.
 - No servo answering the first CONNECT ends the run with `no Hitec servo read`.
 - The backup file HITEC001 to HITEC999 is saved before the first write. To restore, load it on FILES of the Hitec programmer and write it: the left card says `LOAD HITEC001 IN FILES`.
 

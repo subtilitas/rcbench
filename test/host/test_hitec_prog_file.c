@@ -15,7 +15,7 @@
  *    list given up after 5000ms and its late answer, the request id's wrap,
  *    a write held back while a request is out, the gates of a stopped
  *    port and of a STOP;
- *  - a load: the draft only, with the write switch off as on; the other
+ *  - a load: the draft only, with the write gate shut as open; the other
  *    series, another layout, another model, a soft rule, a file with the
  *    servo's values, values outside the editable ones counted, a raw value,
  *    a hand-edited file (a wrong check, a cut text, an extra line), a file

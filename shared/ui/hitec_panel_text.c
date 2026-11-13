@@ -298,9 +298,6 @@ static void act_value(const hpn_row_t *r, char *out, size_t n)
     case A_FILES:
         snprintf(out, n, "%s", TR(KP_CHOOSE));
         break;
-    case A_ENABLE:
-        snprintf(out, n, "%s", hitec_prog_write_on(p) ? TR(ON) : TR(OFF));
-        break;
     case A_FIND:
         /* Two keys, each with its own label (hpn_find_draw()). */
         snprintf(out, n, "%s", TR(HP_FIND));
@@ -939,7 +936,7 @@ void hitec_panel_session(prog_session_t *out)
 {
     const hitec_prog_t *p = &hp.prog;
     const hitec_prog_state_t st = hitec_prog_state(p);
-    const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 4, 1);
+    const hpn_row_t *w = hpn_row_at(HITEC_PANEL_SERVO, 3, 1);
 
     memset(out, 0, sizeof(*out));
     /* The supply the state line names before CONNECT (pwm_line()). */

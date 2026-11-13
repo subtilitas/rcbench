@@ -45,15 +45,16 @@
  *     for a confirmation.  A rule confirmed for a value is asked again for
  *     a value further from the servo's, or on its other side.  A write, a
  *     read and DISCARD EDITS end every confirmation.
- *   - The switch ENABLE WRITE TO SERVO is off at every CONNECT and LEAVE,
- *     when the link goes, at a stop, after a write that did not end
- *     verified, and when a read finds other values than the ones held.
- *     The caller switches it off at every entry of the screen.
+ *   - The write gate is shut at every CONNECT and LEAVE, when the link
+ *     goes, at a stop, after a write that did not end verified, and when a
+ *     read finds other values than the ones held.  The caller opens it for
+ *     the one write a 2s hold sends, shuts it when that write ends and at
+ *     every entry of the screen.
  *   - WRITE n VALUES runs hitec_session_write(): D series writes 20ms
  *     apart, the save, 100ms, the reboot, 1000ms, the read-back; classic
  *     per cell the value, then the balance 0x1C, then the read-back of
  *     cells 0x00 to 0x23.  It is refused on an ARMED bench, with STOP
- *     latched, on a STOPPED port, with no servo read, with the switch off
+ *     latched, on a STOPPED port, with no servo read, with the gate shut
  *     and while a record of an earlier write stands.
  *   - REPAIR writes the classic balance 0x1C alone when the cells 0x00 to
  *     0x1C of the servo read do not sum to 0.
@@ -267,7 +268,7 @@ typedef enum {
     HITEC_PROG_MSG_WRITTEN,       /**< a write verified; arg the values    */
     HITEC_PROG_MSG_REPAIRED,      /**< the classic balance written          */
     HITEC_PROG_MSG_RESTORED,      /**< the record's values written back     */
-    HITEC_PROG_MSG_WRITE_OFF,     /**< the write switch is off             */
+    HITEC_PROG_MSG_WRITE_OFF,     /**< the write gate is shut              */
     HITEC_PROG_MSG_NOT_READ,      /**< no servo read                       */
     HITEC_PROG_MSG_MUST_READ,     /**< a write failed: READ ALL first      */
     HITEC_PROG_MSG_NO_CHANGES,    /**< the draft is the servo's            */
@@ -640,7 +641,7 @@ typedef struct {
     hitec_image_t wr_target;  /**< what the running write is to leave     */
     hitec_image_t rr_first;   /**< the read the write's plan is made from,
                                    kept while the second read runs        */
-    bool     write_on;        /**< ENABLE WRITE TO SERVO                  */
+    bool     write_on;        /**< the write gate is open                 */
     bool     must_read;       /**< a write failed: READ ALL comes first   */
     bool     wrote;           /**< a write of this CONNECT went out       */
     bool     run;             /**< a run holds the programmer
@@ -1176,27 +1177,27 @@ unsigned hitec_prog_changes(const hitec_prog_t *p);
 void hitec_prog_discard(hitec_prog_t *p);
 
 /**
- * @brief ENABLE WRITE TO SERVO.
+ * @brief Opens or shuts the write gate.
  *
- * Off is always taken.  On needs the state hitec_prog_can_edit() needs, a
+ * Shut is always taken.  On needs the state hitec_prog_can_edit() needs, a
  * SAFE bench and no STOP latched.
  *
  * @param p  The programmer.
- * @param on The switch.
+ * @param on true to open the gate, false to shut it.
  * @return HITEC_PROG_MSG_NONE when taken, else the message said.
  */
 hitec_prog_msg_id_t hitec_prog_write_enable(hitec_prog_t *p, bool on);
 
 /**
- * @brief Whether ENABLE WRITE TO SERVO is on.
+ * @brief Whether the write gate is open.
  *
  * @param p The programmer.
- * @return true when on.
+ * @return true when open.
  */
 bool hitec_prog_write_on(const hitec_prog_t *p);
 
 /**
- * @brief Why a write of @p kind is not taken now, the switch included.
+ * @brief Why a write of @p kind is not taken now, the gate included.
  *
  * @param p    The programmer.
  * @param kind hitec_prog_wr_t.

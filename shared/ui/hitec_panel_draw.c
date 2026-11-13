@@ -158,6 +158,7 @@ static void servo_notes(plan_t *p)
     }
     record_notes(p);
     note(p, hpn_backup_note(), hitec_prog_backup_ram_only(pr)
+                                       || hpn_backup_unsaved()
                                    ? ui_theme_color(UI_C_WARN)
                                    : faint);
 }
@@ -402,7 +403,8 @@ static void draw_row(gfx_canvas_t *c, int i)
     const gfx_rect_t vr = hpn_value_rect(r);
     const bool live = hpn_row_live(r);
     const bool pressed = hp.have && (hp.pressed == P_ROW
-                                     || hp.pressed == P_CONNECT)
+                                     || hp.pressed == P_CONNECT
+                                     || hp.pressed == P_WRITE)
                          && hp.row == i;
     char v[HITEC_PANEL_LINE];
     bool warn = false;
@@ -428,8 +430,8 @@ static void draw_row(gfx_canvas_t *c, int i)
         gfx_color_t fill = ui_theme_color(UI_C_PANEL_SUNK);
 
         /* The buttons that start a port action: green while a press
-         * starts it, red while it drives the port (ABORT, LEAVE, the write
-         * switch or MOVE SERVO on), amber while the port is let go. */
+         * starts it, red while it drives the port (ABORT, LEAVE or MOVE
+         * SERVO on), amber while the port is let go. */
         if (r->what == A_PORT) {
             /* CONNECT is a 2s hold: green fading to the red of a held
              * port, flashing as it connects. */
@@ -437,17 +439,18 @@ static void draw_row(gfx_canvas_t *c, int i)
                            ui_action_fill(UI_ACTION_ACTIVE), &hp.conn,
                            pressed, live, HP_FONT);
             return;
-        } else if (r->what == A_ENABLE) {
-            fill = ui_action_fill(hitec_prog_write_on(&hp.prog)
-                                      ? UI_ACTION_ACTIVE
-                                      : UI_ACTION_AVAILABLE);
         } else if (r->what == A_MOVE) {
             fill = ui_action_fill(
                 hitec_prog_move_on(&hp.prog) ? UI_ACTION_ACTIVE
                 : hitec_prog_state(&hp.prog) == HITEC_PROG_MOVING
                     ? UI_ACTION_WAITING : UI_ACTION_AVAILABLE);
         } else if (r->what == A_WRITE) {
-            fill = ui_action_fill(UI_ACTION_AVAILABLE);
+            /* WRITE n VALUES is a 2s hold: green fading to the amber of
+             * the write's steps, flashing as it fires. */
+            ui_hold_button(c, vr, v, ui_action_fill(UI_ACTION_AVAILABLE),
+                           ui_action_fill(UI_ACTION_WAITING), &hp.wr,
+                           pressed, live, HP_FONT);
+            return;
         } else if (r->what == A_CLEAR && live) {
             fill = ui_theme_color(UI_C_WARN);
         }
@@ -549,7 +552,8 @@ static void draw_hold(gfx_canvas_t *c)
             + gap;
     }
     draw_apply(c);
-    button(c, hitec_panel_cancel_rect(), TR(CANCEL),
+    /* BACK on the LEAVE page that lists unwritten edits: they stay. */
+    button(c, hitec_panel_cancel_rect(), hitec_panel_cancel_label(),
            ui_theme_color(UI_C_PANEL_SUNK), hp.have && hp.pressed == P_CANCEL,
            true);
 }

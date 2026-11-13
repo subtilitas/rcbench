@@ -51,7 +51,7 @@
  *      register a plan writes (hitec_writable()) is held against the start:
  *      equal says HITEC_PROG_MSG_MOVE_DONE (where no bind spoke), a
  *      difference or a register not read says HITEC_PROG_MSG_MOVE_CHANGED,
- *      switches ENABLE WRITE TO SERVO off and owes READ ALL.
+ *      shuts the write gate and owes READ ALL.
  *
  * MOVE OFF (hitec_prog_move_stop()) during START ends the loop at the
  * start's end, with nothing moved; during RUN the pass that runs ends
@@ -67,7 +67,7 @@
  * IOmcu stopped (a switch to SAFE at the bench), the supply's output read
  * off or not read, an AS5600 reading that was there at the start and is
  * gone, a session fault, a cut or lost step, an ABORT during the end.  It
- * switches ENABLE WRITE TO SERVO off and owes READ ALL (must_read, with
+ * shuts the write gate and owes READ ALL (must_read, with
  * hitec_move_t.owed saying the loop asks for it): what the servo's RAM
  * holds is not known.  Every hard end but an ABORT is an error: the
  * programmer counts a session fault at the gate (hitec_prog_gate_faults()),
