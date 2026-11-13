@@ -71,7 +71,8 @@ and its model for the narration, Node.js with the `playwright` package and
 its Chromium, and ffmpeg. `--check` needs only Python; the
 pytest case `test/tools/test_make_video.py` runs it in CI (continuous
 integration). The 100.4s of `kst-rbmod` are 3012 frames. `features` is
-694s with its narration, 20814 frames; the render time on a software rasteriser is not measured.
+755.92s with its narration, 22678 frames. On a software rasteriser its render
+takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 
 ## Files
 
@@ -84,7 +85,7 @@ integration). The 100.4s of `kst-rbmod` are 3012 frames. `features` is
 | `../video_cad.py` | converts the case's STEP assembly into `cad/case.glb`, the model `case_cad.js` loads |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
-| `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 694s |
+| `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -210,6 +211,6 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 - The XT60 socket's function is not stated in the tree; the video names
   the socket and its place only.
 - The sound and the narrator's voice have not been judged by ear.
-- BALANCE is shown as to be done; RECEIVER and BATTERY are shown without
+- RECEIVER, BATTERY and BALANCE are shown as in development, without
   their state of work, which the README's feature table holds.
 - The player draws 1920 x 1080 only.

@@ -13,7 +13,7 @@ history is in git.
   host renderer with pointer bubbles, and a recap. Storyboard `kst-rbmod`
   shows programming a KST servo on the rbmod carrier in 8 steps and 100.4s;
   storyboard `features` shows every screen of the bench in 8 chapters and
-  694s. `tools/video_audio.py` computes the sound track: synthesizer
+  755.92s. `tools/video_audio.py` computes the sound track: synthesizer
   pads and one sound per event, no percussion. `tools/video_voice.py`
   narrates a storyboard with the Kokoro text-to-speech model on the
   machine. `tools/video_cad.py` converts the case's STEP assembly into

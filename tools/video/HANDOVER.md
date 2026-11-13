@@ -4,6 +4,19 @@ State of the video work on branch `ccr-4bc6238f-kl3k21` as of 2026-11-13.
 [README.md](README.md) is the reference for the tool; this page holds what
 a new session needs beyond it.
 
+## Start here
+
+1. Read this page, then [README.md](README.md).
+2. The work is stopped at the owner's word (2026-11-13). Nothing is
+   running and nothing is half done: the tree is clean and pushed.
+3. The one open request is the rbmod rework video
+   ([below](#open-build-video-for-the-rbmod-rework)); it waits for a
+   reference from the owner.
+4. `rcbench-video-handover.zip`, sent to the owner on 2026-11-13, holds
+   this page, the sources of the tool as plain files, the three videos,
+   the thumbnail, the owner's STEP archive and the converted model. It
+   does not hold the speech model or `node_modules/`.
+
 ## What exists
 
 | Item | State |
