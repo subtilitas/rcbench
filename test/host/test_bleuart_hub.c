@@ -12,7 +12,9 @@
  * error; a second scan answered busy; a DISCONNECT that was lost, the
  * handle given to another client, the old link ended; a DISCONNECT held
  * back past that, reaching its own client; another client's CANCEL,
- * SCAN_STOP and actions on a held handle dropped or refused, each GATT
+ * SCAN_STOP and actions on a held handle dropped or refused; a client
+ * that holds the slot taking it again; a stale DISCONNECT of a client's
+ * old handle keeping its new link; each GATT
  * step answered lost; the slot ended by its SCAN_END and by a connection
  * that failed to be established; the slot's time limits at their limit
  * and 1ms before; strays and NULL.
@@ -849,6 +851,112 @@ TEST_CASE(each_gatt_step_on_another_clients_handle_is_answered_lost)
     CHECK_EQ(h.refused, sizeof k / sizeof k[0]);
 }
 
+/* A client that holds the slot asks again: after its own settle ran out
+ * it scans while its connect is still the slot's, connects while its own
+ * scan is, or scans again.  Each goes to the host stack at once, with no
+ * cancel and no busy answer. */
+TEST_CASE(a_client_that_holds_the_slot_takes_it_again)
+{
+    bleu_hub_t h;
+    bleu_hub_init(&h);
+    CHECK(bleu_hub_add(&h, 0));
+    CHECK(bleu_hub_add(&h, 1));
+    bleu_act_t a, out;
+    memset(&a, 0, sizeof a);
+    a.kind = BLEU_ACT_CONNECT;
+    a.token = 1u;
+    a.ms = BLEU_CONNECT_MS;
+    bleu_hub_action(&h, 0, &a, 0);
+    CHECK(bleu_hub_next_action(&h, &out));
+    a.kind = BLEU_ACT_SCAN;
+    a.token = 2u;
+    a.ms = BLEU_SCAN_MS;
+    bleu_hub_action(&h, 0, &a, 2000);
+    CHECK(bleu_hub_next_action(&h, &out));
+    CHECK_EQ(out.kind, BLEU_ACT_SCAN);
+    CHECK_EQ(out.token, 2);
+    CHECK(!bleu_hub_next_action(&h, &out));
+    CHECK(!h.held);
+    CHECK_EQ(h.gap, BLEU_HUB_GAP_SCAN);
+    CHECK_EQ(h.gap_token, 2);
+    /* Its scan again, then a connect while its scan holds the slot. */
+    a.token = 3u;
+    bleu_hub_action(&h, 0, &a, 2001);
+    CHECK(bleu_hub_next_action(&h, &out));
+    CHECK_EQ(out.token, 3);
+    a.kind = BLEU_ACT_CONNECT;
+    a.token = 4u;
+    a.ms = BLEU_CONNECT_MS;
+    bleu_hub_action(&h, 0, &a, 2002);
+    CHECK(bleu_hub_next_action(&h, &out));
+    CHECK_EQ(out.kind, BLEU_ACT_CONNECT);
+    CHECK_EQ(h.gap, BLEU_HUB_GAP_CONNECT);
+    CHECK_EQ(h.gap_token, 4);
+    /* Its connect again while its connect holds the slot. */
+    a.token = 5u;
+    bleu_hub_action(&h, 0, &a, 2003);
+    CHECK(bleu_hub_next_action(&h, &out));
+    CHECK_EQ(out.token, 5);
+    uint8_t o;
+    bleu_evt_t e;
+    CHECK(!bleu_hub_next_event(&h, &o, &e));
+    CHECK_EQ(h.c[0].busy, 0);
+    /* Client 1 is still kept out. */
+    a.token = (uint16_t)((1u << BLEU_OWNER_SHIFT) | 1u);
+    bleu_hub_action(&h, 1, &a, 2004);
+    CHECK(!bleu_hub_next_action(&h, &out));
+    CHECK(bleu_hub_next_event(&h, &o, &e));
+    CHECK_EQ(o, 1);
+    CHECK_EQ(e.status, BLEU_STATUS_BUSY);
+}
+
+/* Client 0 is linked on handle 5 by its second connect; the DISCONNECT of
+ * its first link, on handle 3, comes late with that connect's token.  It
+ * reaches client 0 and leaves the link on handle 5 its own. */
+TEST_CASE(a_stale_disconnect_of_an_old_handle_keeps_the_new_link)
+{
+    bleu_hub_t h;
+    bleu_hub_init(&h);
+    CHECK(bleu_hub_add(&h, 0));
+    CHECK(bleu_hub_add(&h, 1));
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_CONNECT;
+    e.token = 7u;
+    e.conn = 5;
+    bleu_hub_event(&h, &e, 0);
+    uint8_t o;
+    bleu_evt_t got;
+    CHECK(bleu_hub_next_event(&h, &o, &got));
+    CHECK(h.c[0].linked);
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_DISCONNECT;
+    e.token = 6u;
+    e.conn = 3;
+    e.status = 0x08u;
+    bleu_hub_event(&h, &e, 1);
+    CHECK(bleu_hub_next_event(&h, &o, &got));
+    CHECK_EQ(o, 0);
+    CHECK_EQ(got.conn, 3);
+    CHECK(h.c[0].linked);
+    CHECK_EQ(h.c[0].conn, 5);
+    /* Handle 5's notifications are still client 0's. */
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_NOTIFY;
+    e.conn = 5;
+    bleu_hub_event(&h, &e, 2);
+    CHECK(bleu_hub_next_event(&h, &o, &got));
+    CHECK_EQ(o, 0);
+    /* Its own DISCONNECT of handle 5 ends it. */
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_DISCONNECT;
+    e.token = 7u;
+    e.conn = 5;
+    bleu_hub_event(&h, &e, 3);
+    CHECK(bleu_hub_next_event(&h, &o, &got));
+    CHECK(!h.c[0].linked);
+}
+
 TEST_CASE(strays_full_queues_and_null)
 {
     bleu_hub_t h;
@@ -926,6 +1034,8 @@ int main(void)
     RUN(a_cancel_without_its_event_lets_the_scan_go_after_2000ms);
     RUN(the_slot_ends_on_scan_end_and_on_a_failed_establishment);
     RUN(each_gatt_step_on_another_clients_handle_is_answered_lost);
+    RUN(a_client_that_holds_the_slot_takes_it_again);
+    RUN(a_stale_disconnect_of_an_old_handle_keeps_the_new_link);
     RUN(strays_full_queues_and_null);
     return test_summary("bleuart_hub");
 }
