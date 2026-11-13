@@ -90,7 +90,7 @@ history is in git.
   connections, up from 1 and 3: the IMU, the Dial, 2 sensor nodes and 1
   spare. The C6 image sets `CONFIG_BT_LE_MAX_CONNECTIONS=5` from
   `firmware/c6/sdkconfig.rcbench`, and `tools/c6_image.py check` fails an
-  image without it ([Building](docs/Building.md#the-image-the-panel-carries)).
+  image without it ([The ESP32-C6 radio](docs/C6.md#the-image-the-panel-carries)).
 - The IMU's link runs on the `blec` task, the one task of every Bluetooth
   LE client, through the hub, in place of the `imu` task. The event queue
   holds 64 events (4,096 bytes of internal RAM), up from 32, and keeps up

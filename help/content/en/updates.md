@@ -160,7 +160,7 @@ While the update runs, ARM is refused and Wi-Fi stays off. It ends with one aler
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | the link to the C6 failed |
 | `C6 update stopped: no response. Previous firmware is running.` | a step went unanswered; `a write failed`, `the C6's image check failed` and `activation failed` read the same way |
 
-After every end but the first, the C6 keeps the firmware it ran and Wi-Fi works as before (after a failed link only once the panel restarts). The flash over header H4 with a USB-UART adapter is in [Building](https://github.com/subtilitas/rcbench/wiki/Building#recovery-over-header-h4).
+After every end but the first, the C6 keeps the firmware it ran and Wi-Fi works as before (after a failed link only once the panel restarts). The flash over header H4 with a USB-UART adapter is in [The ESP32-C6 radio](https://github.com/subtilitas/rcbench/wiki/C6#recovery-over-header-h4).
 
 ## Current limitations
 

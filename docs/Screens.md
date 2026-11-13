@@ -6670,7 +6670,7 @@ reported at the first Wi-Fi start since the panel started, or
 THIS PANEL'S C6 FIRMWARE` while the C6 reports the carried version. While the update runs the
 button reads `C6 UPDATE 37%`, the share of the image the C6 took. The
 steps, their limits and how each ends are in
-[Building: The C6's firmware](Building.md#the-c6s-firmware).
+[The ESP32-C6 radio: The C6's firmware](C6.md#the-c6s-firmware).
 
 ![The C6 RADIO row with the C6 as shipped](img/updates-c6.png)
 
@@ -6697,13 +6697,13 @@ A C6 that reports no version, as the shipped one does, is offered the
 update. A C6 that reports the carried version is offered the reinstall:
 images of one esp_hosted version with other settings report the same
 version, such as one with 3 Bluetooth LE connections and one with 5
-([Building: The image the panel carries](Building.md#the-image-the-panel-carries)).
+([The ESP32-C6 radio: The image the panel carries](C6.md#the-image-the-panel-carries)).
 The alert band says how an update ended:
 
 | Alert | Meaning |
 | --- | --- |
 | `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later. |
-| `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([Building: Recovery over header H4](Building.md#recovery-over-header-h4)). |
+| `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([The ESP32-C6 radio: Recovery over header H4](C6.md#recovery-over-header-h4)). |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | The link to the C6 failed. |
 | `C6 update stopped: <reason>. Previous firmware is running.` | A write, the C6's image check or the activate call failed (`a write failed`, `the C6's image check failed`, `activation failed`), or a step went unanswered past its limit (`no response`). |
 

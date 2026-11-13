@@ -7243,7 +7243,7 @@ C6-FIRMWARE DES PANELS NEU INSTALLIEREN`, solange der C6 die mitgebrachte
 Version meldet. Während das Update
 läuft, zeigt die Taste `C6-UPDATE 37%`, den Anteil des Images, den der C6
 angenommen hat. Die Schritte, ihre Grenzen und wie jeder endet, stehen in
-[Bauen: Die Firmware des C6](Building-de.md#die-firmware-des-c6).
+[Der Funk über den ESP32-C6: Die Firmware des C6](C6-de.md#die-firmware-des-c6).
 
 ![Die Zeile C6 RADIO mit dem C6 im Auslieferungszustand](img/de/updates-c6.png)
 
@@ -7270,14 +7270,14 @@ Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
 angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
 Neuinstallation angeboten: Images einer esp_hosted-Version mit anderen
 Einstellungen melden dieselbe Version, etwa eines mit 3
-Bluetooth-LE-Verbindungen und eines mit 5 ([Bauen: Das Image, das das Panel
-mitbringt](Building-de.md#das-image-das-das-panel-mitbringt)). Das
+Bluetooth-LE-Verbindungen und eines mit 5 ([Der Funk über den ESP32-C6: Das Image, das das Panel
+mitbringt](C6-de.md#das-image-das-das-panel-mitbringt)). Das
 Alarmband sagt, wie ein Update endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu. |
-| `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Bauen: Wiederherstellung über Header H4](Building-de.md#wiederherstellung-über-header-h4)). |
+| `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Der Funk über den ESP32-C6: Wiederherstellung über Header H4](C6-de.md#wiederherstellung-über-header-h4)). |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
 | `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |
 

@@ -444,7 +444,7 @@ jobs:
           cp artifacts/panel/rcbench-panel.bin "dist/rcbench-panel-p4-$TAG.bin"
           # The C6 radio's firmware, named for its esp_hosted version: the
           # application the panel carries, and the merged image for 0x0 over
-          # header H4 (docs/Building.md, the C6's firmware).
+          # header H4 (docs/C6.md, the C6's firmware).
           cp artifacts/c6/rcbench-c6-*.bin dist/
           # The M5Stack Dial's firmware: the application, and the merged
           # image for 0x0 over its USB-C socket (docs/Dial.md).  The test

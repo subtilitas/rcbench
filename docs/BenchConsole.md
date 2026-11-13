@@ -382,8 +382,8 @@ protocol minor version for this page. An IOmcu without it answers
 
 A line that starts with the word `ble` stays on the panel and does not go
 to the IOmcu. The panel holds each typed line until its end for this.
-`ble scan` starts Bluetooth LE when it has not started ([Building,
-Bluetooth LE through the ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)),
+`ble scan` starts Bluetooth LE when it has not started ([The ESP32-C6 radio,
+Bluetooth LE through the ESP32-C6](C6.md#bluetooth-le-through-the-esp32-c6)),
 waits for the host's sync, and runs one active scan of 10,000ms with the
 controller's duplicate filter on: a device that advertises every 256ms
 appears once in the scan. Another `ble` line prints the commands.
@@ -403,8 +403,8 @@ appears once in the scan. Another `ble` line prints the commands.
 `ble controller` sends the C6's controller init and enable requests again,
 on the console's task. Each is answered or ended by esp_hosted after
 5,000ms, so the console waits up to 10,000ms. The `ble` lines of the
-requests follow ([Building, Bluetooth LE through the
-ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)).
+requests follow ([The ESP32-C6 radio, Bluetooth LE through the
+ESP32-C6](C6.md#bluetooth-le-through-the-esp32-c6)).
 
 | Line | Means |
 | --- | --- |

@@ -6,6 +6,7 @@ Using the bench
 
 - [What this is for](Manifest.md)
 - [Building](Building.md)
+- [The ESP32-C6 radio](C6.md)
 - [Bringing up the link](Bringup.md)
 - [First run on hardware](FirstRun.md)
 - [Screens](Screens.md)
@@ -44,6 +45,7 @@ Den Prüfstand benutzen
 
 - [Worum es geht](Manifest-de.md)
 - [Bauen](Building-de.md)
+- [Der Funk über den ESP32-C6](C6-de.md)
 - [Den Link in Betrieb nehmen](Bringup-de.md)
 - [Erster Lauf auf der Hardware](FirstRun-de.md)
 - [Bildschirme](Screens-de.md)

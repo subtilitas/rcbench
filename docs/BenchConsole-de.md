@@ -401,8 +401,8 @@ unterstützten Page.
 
 Eine Zeile, die mit dem Wort `ble` beginnt, bleibt im Panel und geht nicht
 zum IOmcu. Dafür hält das Panel jede getippte Zeile bis zu ihrem Ende
-zurück. `ble scan` startet Bluetooth LE, wenn es noch nicht läuft ([Bauen,
-Bluetooth LE über den ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)),
+zurück. `ble scan` startet Bluetooth LE, wenn es noch nicht läuft ([Der Funk über den ESP32-C6,
+Bluetooth LE über den ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)),
 wartet auf den Sync des Hosts und macht einen aktiven Scan von 10 000ms mit
 dem Duplikatfilter des Controllers: ein Gerät, das alle 256ms sendet,
 erscheint einmal im Scan. Eine andere Zeile mit `ble` nennt die
@@ -423,8 +423,8 @@ Befehle.
 `ble controller` schickt die Controller-Init- und Enable-Anfragen des C6
 erneut, auf dem Task der Konsole. esp_hosted beantwortet jede oder beendet
 sie nach 5 000ms, die Konsole wartet also bis zu 10 000ms. Die `ble`-Zeilen
-der Anfragen folgen ([Bauen, Bluetooth LE über den
-ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)).
+der Anfragen folgen ([Der Funk über den ESP32-C6, Bluetooth LE über den
+ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)).
 
 | Zeile | Bedeutung |
 | --- | --- |

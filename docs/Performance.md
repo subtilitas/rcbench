@@ -706,8 +706,8 @@ I (…) rcbench: internal RAM: <n> B free at the lowest, <n> B free now, largest
 PSRAM free at start-up: not measured.
 
 Bluetooth LE (Low Energy) runs on the C6 as well; the P4 runs its host,
-NimBLE ([Building, Bluetooth LE through the
-ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)). The host starts
+NimBLE ([The ESP32-C6 radio, Bluetooth LE through the
+ESP32-C6](C6.md#bluetooth-le-through-the-esp32-c6)). The host starts
 at `panel_ble_start()`, which the IMU's side of the `blec` task calls at the first IMU ON and
 the console build's `ble scan` calls, and stays until the panel restarts. The start logs the free memory before and
 after it:

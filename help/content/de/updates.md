@@ -160,7 +160,7 @@ Während das Update läuft, wird ARM abgelehnt, und das WLAN bleibt aus. Es ende
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | die Verbindung zum C6 ist ausgefallen |
 | `C6-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | ein Schritt blieb ohne Antwort; `Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen` und `Aktivierung fehlgeschlagen` lauten ebenso |
 
-Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und das WLAN arbeitet wie zuvor (nach einer ausgefallenen Verbindung erst nach einem Neustart des Panels). Das Flashen über Header H4 mit einem USB-UART-Adapter steht in [Bauen](https://github.com/subtilitas/rcbench/wiki/Building-de#wiederherstellung-über-header-h4).
+Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und das WLAN arbeitet wie zuvor (nach einer ausgefallenen Verbindung erst nach einem Neustart des Panels). Das Flashen über Header H4 mit einem USB-UART-Adapter steht in [Der Funk über den ESP32-C6](https://github.com/subtilitas/rcbench/wiki/C6-de#wiederherstellung-über-header-h4).
 
 ## Aktuelle Einschränkungen
 

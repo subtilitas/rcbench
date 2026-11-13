@@ -47,8 +47,8 @@ the project's notice.
 The first IMU ON (SETUP > SENSORS > IMU, SCAN FOR SENSORS on the IMU
 screen or SEARCH FOR IMU in SERVO's ANGLE SOURCE list with the IMU off, and
 at power-up with IMU stored ON) starts Bluetooth LE: the C6's link, the host task `nimble_host` and the
-wait of 3,000ms for its sync ([Building, Bluetooth LE through the
-ESP32-C6](Building.md#bluetooth-le-through-the-esp32-c6)). It stays until
+wait of 3,000ms for its sync ([The ESP32-C6 radio, Bluetooth LE through the
+ESP32-C6](C6.md#bluetooth-le-through-the-esp32-c6)). It stays until
 the panel restarts; IMU OFF ends the scan and the link only. The C6's link
 takes up to about 25s on a C6 that does not answer. A failed link holds the
 C6 in reset until the panel restarts: Wi-Fi and Bluetooth are off.

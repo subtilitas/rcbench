@@ -52,8 +52,8 @@ IMU-Seite oder IMU SUCHEN in der Liste WINKELQUELLE von SERVO bei
 ausgeschalteter IMU, und beim Einschalten mit gespeichertem IMU EIN)
 startet Bluetooth LE: die Verbindung zum C6, den
 Host-Task `nimble_host` und das Warten von 3 000ms auf seinen Sync
-([Bauen, Bluetooth LE über den
-ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)). Bluetooth LE
+([Der Funk über den ESP32-C6, Bluetooth LE über den
+ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)). Bluetooth LE
 bleibt bis zum Neustart des Panels; IMU AUS beendet nur die Suche und die
 Verbindung. Die Verbindung zum C6 dauert bei einem C6, der nicht antwortet,
 bis zu etwa 25s. Eine gescheiterte Verbindung hält den C6 bis zum Neustart
