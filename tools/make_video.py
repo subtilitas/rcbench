@@ -34,6 +34,7 @@ Attributes:
     ANCHORS: The named points of the case model a label can point at.
     CONNECTORS: The headers of the case model and their position count.
     FITS: The parts a board scene solders across two pads.
+    INSETS: The cross-sections a board scene shows in a card.
 
 SPDX-License-Identifier: MIT
 """
@@ -61,11 +62,12 @@ ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
 UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
          "buck", "trigger", "rbmod", "case")
 CONNECTORS = {"J1": 4, "J2": 4}
-BEDS = ("pads", "bach-prelude", "pachelbel-canon")
+BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
 PART_FRAMES = 900
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
 FITS = ("resistor", "zener")
+INSETS = ("strip", "fill")
 
 
 def _number(value) -> bool:
@@ -233,12 +235,45 @@ def _check_board(scene: dict, where: str, errors: list) -> None:
                 and _pair(wire.get("t"), dur)):
             errors.append(f"{where} wire {n + 1}: needs from, to and "
                           "t [t0, t1]")
+    _check_build(scene, dur, where, errors)
     for n, fit in enumerate(scene.get("fit", [])):
         if not (fit.get("kind") in FITS and _place(fit.get("a"))
                 and _place(fit.get("b")) and _number(fit.get("t"))
                 and 0 <= fit["t"] < dur):
             errors.append(f"{where} fit {n + 1}: needs kind, one of "
                           f"{', '.join(FITS)}, the pads a and b, and t")
+
+
+def _names(value) -> bool:
+    return (isinstance(value, list) and bool(value)
+            and all(isinstance(v, str) for v in value))
+
+
+def _check_build(scene: dict, dur: float, where: str, errors: list) -> None:
+    # What a board scene needs to show a board being assembled.
+    if not isinstance(scene.get("bare", False), bool):
+        errors.append(f"{where}: bare is true or false")
+    for n, mount in enumerate(scene.get("mount", [])):
+        if not (_names(mount.get("refs")) and _number(mount.get("t"))
+                and 0 <= mount["t"] < dur):
+            errors.append(f"{where} mount {n + 1}: needs refs, a list of "
+                          "parts, and t")
+    for n, joint in enumerate(scene.get("solder", [])):
+        if not ((_names(joint.get("refs")) or _names(joint.get("pads")))
+                and isinstance(joint.get("back", False), bool)
+                and _pair(joint.get("t"), dur)):
+            errors.append(f"{where} solder {n + 1}: needs refs or pads, a "
+                          "list, and t [t0, t1]")
+    for n, inset in enumerate(scene.get("insets", [])):
+        at = f"{where} inset {n + 1}"
+        _span(inset, dur, at, errors)
+        pos = inset.get("at")
+        if not (inset.get("kind") in INSETS
+                and isinstance(inset.get("title"), str)
+                and isinstance(pos, list) and len(pos) == 2
+                and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):
+            errors.append(f"{at}: needs kind, one of {', '.join(INSETS)}, "
+                          "a title and at, [x, y] inside the frame")
 
 
 def board_faults(scene: dict, plan: dict) -> list:
@@ -261,8 +296,14 @@ def board_faults(scene: dict, plan: dict) -> list:
         named += [wire["from"], wire["to"], *wire.get("via", [])]
     for fit in scene.get("fit", []):
         named += [fit["a"], fit["b"]]
+    for joint in scene.get("solder", []):
+        named += joint.get("pads", [])
     faults = [f"no pad {name}" for name in named
               if isinstance(name, str) and name not in pads]
+    refs = {part["ref"] for part in plan["parts"]}
+    faults += [f"no part {ref}"
+               for item in scene.get("mount", []) + scene.get("solder", [])
+               for ref in item.get("refs", []) if ref not in refs]
     faults += [f"no track of net {net['net']}"
                for net in scene.get("nets", []) if net["net"] not in nets]
     return faults

@@ -42,6 +42,10 @@ history is in git.
   lit up, a track cut, a wire and a part soldered across two pads;
   `tools/video_board.py` converts a KiCad board file into the board it
   draws ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `rbmod-build`: building a rev 1 rbmod carrier in 11 steps
+  and 195s. A `board` scene mounts parts, shows solder joints and a
+  cross-section card. Music bed `vivaldi-spring`
+  ([Videos from storyboards](tools/video/README.md)).
 - Profile field `scheme.announce.loop_marker`: `true` where the ESC sounds
   one sound that is no item between the highest item and the lowest of each
   pass of its item loop. Absent, null or `false`: none

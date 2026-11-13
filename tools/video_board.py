@@ -166,6 +166,7 @@ def convert(text: str, turn: int = 90) -> dict:
                    for p in mine for sx in (-1, 1) for sy in (-1, 1)]
         if pts:
             parts.append({"ref": ref, "value": props.get("Value", ""),
+                          "back": _one(fp, "layer")[1].startswith("B."),
                           "footprint": fp[1].split(":")[-1],
                           "box": [r3(min(p[0] for p in pts)),
                                   r3(min(p[1] for p in pts)),

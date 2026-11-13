@@ -85,3 +85,5 @@ svg#ov{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
 #nav .on{color:#fff}
 #nav .on b{color:var(--cy)}
 #pcb{position:absolute;left:0;top:0;width:1920px;height:1080px;display:none}
+.bub.inset{width:640px}
+.bub.inset svg{display:block;width:100%;margin-top:10px}

@@ -22,6 +22,13 @@ bars in place of Bach's two free bars, so that the piece loops.
 of the violin's variations, which enter one after another.  It is in the
 public domain as well, and set down here in the same way.
 
+"vivaldi-spring" is the opening of "Spring", the concerto RV 269 of
+Antonio Vivaldi (1678 to 1741), first movement: its two themes in E
+major on a bowed voice with the third below, over a bass plucked on
+every eighth, 0.3s an eighth.  It is in the public domain.  The notes are
+set down from memory of the violin part and are not checked against a
+score.
+
 While a case scene holds a component in the air, the music stops as a
 record does under a hand: its speed falls to SLOW over BRAKE_S, pitch
 and all, and comes back over SPIN_S when the component moves on.
@@ -42,6 +49,14 @@ Attributes:
         chord.
     CANON_LINES: Three variations of the canon: 8 notes, 8 notes and 32.
     CANON_NOTE_S: Seconds one note of the ground lasts.
+    SPRING: The opening of "Spring" from Vivaldi's Four Seasons, RV 269,
+        first movement, in E major: per bar the melody as (MIDI note,
+        length in eighths) and the bass note of each half bar.  Bars 0
+        to 2 are the first theme, bars 3 to 8 the second with its two
+        endings.  Set down from memory of the violin part, not checked
+        against a score.
+    SPRING_ORDER: The bars in the order they are played, as one round.
+    SPRING_EIGHTH_S: Seconds one eighth note of it lasts.
     BEDS: The names a storyboard's "music" takes.
     SLOW: The music's speed during a freeze, as a part of full speed.
     BRAKE_S: Seconds the music takes to fall to SLOW.
@@ -89,7 +104,24 @@ CANON_LINES = (
      66, 62, 64, 73, 74, 78, 81, 69, 71, 67, 69, 66, 62, 74, 74, 73),
 )
 CANON_NOTE_S = 2.0
-BEDS = ("pads", "bach-prelude", "pachelbel-canon")
+_A = ((68, 1), (68, 1), (68, 1), (66, .5), (64, .5), (71, 3), (71, .5),
+      (69, .5))
+_B = ((71, 1), (69, .5), (68, .5), (69, 1), (71, 1), (73, 2), (71, 1),
+      (64, 1))
+SPRING = (
+    (_A, (40, 40)), (_A, (40, 40)),
+    (((68, 1), (69, .5), (71, .5), (69, 1), (68, 1), (66, 1), (63, 1),
+      (59, 1), (64, 1)), (40, 47)),
+    (_B, (40, 45)), (_B, (40, 45)),
+    (((73, 1), (71, 1), (69, 1), (68, 1), (66, 1.5), (64, .5), (66, 2)),
+     (45, 47)),
+    (_B, (40, 45)), (_B, (40, 45)),
+    (((73, 1), (71, 1), (69, 1), (68, 1), (66, 1), (63, 1), (64, 1),
+      (64, 1)), (45, 47)),
+)
+SPRING_ORDER = (0, 1, 2, 0, 1, 2, 3, 4, 5, 6, 7, 8)
+SPRING_EIGHTH_S = 0.3
+BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
 SLOW = 0.05
 BRAKE_S = 1.1
 SPIN_S = 0.7
@@ -198,6 +230,14 @@ def events(board: dict) -> list:
                 found.append((start + wire["t"][1], "tap", 0))
             for fit in scene.get("fit", []):
                 found.append((start + fit["t"] + 0.6, "tap", 0))
+            # A part takes its place with a tap; a row of joints is
+            # one rising sound, an inset a pop.
+            for mount in scene.get("mount", []):
+                found.append((start + mount["t"] + 0.55, "tap", 0))
+            for joint in scene.get("solder", []):
+                found.append((start + joint["t"][0], "swell", 0))
+            for inset in scene.get("insets", []):
+                found.append((start + inset["from"] + 0.1, "pop", 0))
         elif kind == "end":
             found.append((start + 0.3, "final", 0))
         at = start
@@ -361,6 +401,56 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
             pan = -0.5 + (note - 36) / 45.0
             put(music, t0 + k * step, sig, pan, 0.085)
             put(music, t0 + k * step + 0.375, sig, -pan, 0.02)
+    # Spring: the melody on a bowed voice with the third below it, the
+    # bass plucked on every eighth and its chord as a quiet pad.  The
+    # first bar holds only the upbeat; the last 3s are a held E major.
+    spring = bed == "vivaldi-spring"
+    bar_s = 8 * SPRING_EIGHTH_S
+    bow = ((1, 1.0), (2, 0.45), (3, 0.22), (4, 0.1), (5, 0.05))
+    scale = (64, 66, 68, 69, 71, 73, 75)
+
+    def third_below(note):
+        k = scale.index(64 + (note - 64) % 12) - 2
+        return note - (note - 64) % 12 + scale[k % 7] - 64 - (12 if k < 0
+                                                              else 0)
+
+    def bowed(note, length, at, pan, gain):
+        sig, tt = tone(hz(note), length + 0.12, bow)
+        sig *= np.minimum(1.0, tt / 0.03) * np.clip(
+            (length + 0.12 - tt) / 0.12, 0.0, 1.0)
+        sig *= 1.0 + 0.04 * np.sin(2 * np.pi * 5.5 * tt)
+        put(music, at, sig, pan, gain)
+
+    count_s = int((span - 3.0) / bar_s) - 1 if spring else 0
+    if spring:
+        bowed(64, SPRING_EIGHTH_S * 0.9, bar_s - SPRING_EIGHTH_S, -0.2, 0.05)
+        for note in (40, 52, 64, 68, 71, 76):
+            sig, _ = tone(hz(note), 3.6, soft)
+            put(music, (count_s + 1) * bar_s, sig * swell(3.6, 0.05, 2.6),
+                0.0, 0.03)
+    for bar in range(count_s):
+        t0 = (bar + 1) * bar_s
+        line, basses = SPRING[SPRING_ORDER[bar % len(SPRING_ORDER)]]
+        at = t0
+        for note, eighths in line:
+            length = eighths * SPRING_EIGHTH_S
+            # The last upbeat is left out: the held chord follows.
+            if bar < count_s - 1 or at + length < t0 + bar_s - 0.01:
+                bowed(note, length * 0.92, at, -0.2, 0.05)
+                bowed(third_below(note), length * 0.92, at, 0.3, 0.022)
+            at += length
+        for half, bass in enumerate(basses):
+            h0 = t0 + half * bar_s / 2
+            # E, A and B major: the root, its third and its fifth.
+            for note in (bass + 12, bass + 16, bass + 19):
+                sig, _ = tone(hz(note + 12), bar_s / 2 + 0.3, soft)
+                put(music, h0, sig * swell(bar_s / 2 + 0.3, 0.1, 0.3), 0.0,
+                    0.012)
+            for k in range(4):
+                sig, tt = tone(hz(bass), 0.5, pluck)
+                sig *= np.exp(-tt / 0.16) * np.minimum(1.0, tt / 0.008)
+                put(music, h0 + k * SPRING_EIGHTH_S, sig, 0.0,
+                    0.07 if k == 0 else 0.045)
     for bar in range(bars):
         t0 = bar * BAR_S
         bass, notes = CHORDS[bar % len(CHORDS)]
@@ -404,6 +494,8 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
 
     def chord_at(t):
         t = float(place[min(n - 1, max(0, int(t * RATE)))])
+        if spring:
+            return (64, 68, 71, 76)
         if canon:
             notes = CANON[int(max(t, 0.0) / CANON_NOTE_S) % len(CANON)][1]
             return notes + (notes[0] + 12,)

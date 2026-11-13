@@ -2,8 +2,8 @@
 // file tools/video_board.py writes: the tracks of the front copper, the
 // pads and the outline of every part.  Units are mm from the drawing's
 // top left corner.  A storyboard's board scene moves the view over it and
-// draws rework on it: a net lit up, a track cut, a wire, a part soldered
-// across two pads.
+// draws work on it: a part taking its place, solder joints, a net lit up,
+// a track cut, a wire, a part soldered across two pads.
 //
 // SPDX-License-Identifier: MIT
 
@@ -54,13 +54,25 @@ export function buildBoard(data) {
     h += `<line x1="${t.a[0]}" y1="${t.a[1]}" x2="${t.b[0]}" y2="${t.b[1]}"
       stroke="${TRACK}" stroke-width="${t.w}" stroke-linecap="round"/>`;
   }
-  // The carrier's own pads lie under the modules; a module's pads are
-  // drawn on it.
-  for (const p of data.pads) if (own[p.ref] !== 'module') h += padSvg(p);
+  // Every pad is the carrier's; a module covers its own and carries a
+  // pad of its own over each.
+  for (const p of data.pads) h += padSvg(p);
+  still.innerHTML = h;
+  const groups = {};
   for (const q of data.parts) {
     const [, fill, kind] = look(q), [x0, y0, x1, y1] = q.box;
     const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
-    if (kind === 'empty') {
+    h = '';
+    if (q.back) {
+      // A part on the back: its outline, dashed.
+      h += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"
+        rx=".8" fill="#e9e4d6" fill-opacity=".12" stroke="#e9e4d6"
+        stroke-width=".18" stroke-dasharray=".7 .5"/>
+        <text x="${cx}" y="${cy}" text-anchor="middle"
+        dominant-baseline="middle" font-family="Inter, sans-serif"
+        font-weight="700" font-size="1.3" fill="#e8f1ec"
+        fill-opacity=".8">${q.ref}</text>`;
+    } else if (kind === 'empty') {
       h += `<rect x="${x0 + .25}" y="${y0 + .25}" width="${x1 - x0 - .5}"
         height="${y1 - y0 - .5}" rx=".3" fill="none" stroke="#e8f1ec"
         stroke-opacity=".45" stroke-width=".12"/>`;
@@ -81,7 +93,9 @@ export function buildBoard(data) {
         rx=".8" fill="${fill}" fill-opacity="${kind === 'module' ? .93 : .96}"
         stroke="#000" stroke-opacity=".35" stroke-width=".15"/>`;
     }
-    if (kind === 'module') {
+    if (q.back) {
+      // Drawn above.
+    } else if (kind === 'module') {
       for (const p of data.pads) if (p.ref === q.ref) h += padSvg(p);
       h += `<text x="${cx}" y="${cy}" text-anchor="middle"
         dominant-baseline="middle" font-family="Inter, sans-serif"
@@ -95,8 +109,11 @@ export function buildBoard(data) {
         fill="${fill === '#e9e4d6' ? '#333' : '#e8f1ec'}"
         fill-opacity=".7">${q.ref}</text>`;
     }
+    const g = document.createElementNS(NS, 'g');
+    g.innerHTML = h;
+    still.appendChild(g);
+    groups[q.ref] = {g, fixed: kind === 'empty'};
   }
-  still.innerHTML = h;
   svg.replaceChildren(still, live);
 
   // A point of the board: a pad's name, or [x, y] in mm.
@@ -107,9 +124,9 @@ export function buildBoard(data) {
     return [p.x, p.y];
   };
   let view = [0, 0, W];
-  const blob = ([x, y], k) => `<circle cx="${x}" cy="${y}" r="${.95 * k}"
-    fill="#cfd4da"/><circle cx="${x - .22}" cy="${y - .25}" r="${.3 * k}"
-    fill="#fff" fill-opacity=".75"/>`;
+  const blob = ([x, y], k, r = .95) => `<circle cx="${x}" cy="${y}"
+    r="${r * k}" fill="#cfd4da"/><circle cx="${x - r * .23}"
+    cy="${y - r * .26}" r="${r * .32 * k}" fill="#fff" fill-opacity=".75"/>`;
 
   return {
     data, point,
@@ -125,6 +142,42 @@ export function buildBoard(data) {
       view = [cx - w / 2, cy - hh / 2, w];
       svg.setAttribute('viewBox', `${view[0]} ${view[1]} ${w} ${hh}`);
       let g = '';
+      // A bare board shows a part from its mount on: the part comes
+      // down onto its place.
+      const when = {};
+      for (const m of sc.mount || []) {
+        for (const ref of m.refs) when[ref] = m.t;
+      }
+      for (const [ref, part] of Object.entries(groups)) {
+        const k = part.fixed || !sc.bare ? 1
+          : ref in when ? ramp(lt, when[ref], when[ref] + .7) : 0;
+        part.g.setAttribute('opacity', k);
+        part.g.setAttribute('transform',
+                            `translate(0 ${(1 - k) * -3.5})`);
+      }
+      // Solder joints, one pad after another over the span.
+      for (const s of sc.solder || []) {
+        const list = s.pads || data.pads.filter(p => s.refs.includes(p.ref))
+          .map(p => p.name);
+        list.forEach((name, i) => {
+          const p = pads[name];
+          if (!p) throw new Error('the board has no pad ' + name);
+          const t0 = s.t[0] + (s.t[1] - s.t[0]) * i / list.length;
+          const k = ramp(lt, t0, t0 + .25);
+          const r = Math.max(.8, Math.min(p.w, p.h) * .47);
+          if (s.back) {
+            // A joint on the back of the board: a ring that fades.
+            const o = k * (1 - ramp(lt, t0 + .5, t0 + 1.6));
+            if (o > 0) {
+              g += `<circle cx="${p.x}" cy="${p.y}" r="${r * (.7 + .6 * k)}"
+                fill="#cfd4da" fill-opacity="${.25 * o}" stroke="#e9edf2"
+                stroke-opacity="${o}" stroke-width=".2"/>`;
+            }
+          } else if (k > 0) {
+            g += blob([p.x, p.y], k, r);
+          }
+        });
+      }
       for (const n of sc.nets || []) {
         const o = Math.min(ramp(lt, n.from, n.from + .5),
                            1 - ramp(lt, n.to - .5, n.to));

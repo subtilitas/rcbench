@@ -31,8 +31,9 @@ a new session needs beyond it.
 | `storyboards/features.json` | feature tour, 755.92s, approved by the owner on 2026-11-13 |
 | `tools/video_board.py`, `player/board.js` | a KiCad board drawn flat, with a net lit up, a cut, a wire and a part across two pads |
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
+| `storyboards/rbmod-build.json` | the build of a rev 1 carrier in 11 steps, 195s, no narration, bed `vivaldi-spring` |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 19 cases; the storyboard check, the script, the freezes |
+| `test/tools/test_make_video.py` | 21 cases; the storyboard check, the script, the freezes |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -125,8 +126,21 @@ What rev 1 holds, and what the owner did (2026-11-13):
   top of the module.
 - D1 (3V zener) and R9 (4.7kΩ) are the input of TAP on GPIO 22 and J9.
 
+How the modules are mounted (owner, 2026-11-13):
+
+- On straight 2.54mm pin strips with the plastic between module and
+  carrier; without it the through-hole parts can short out. The pins are
+  soldered on both sides. The modules sit level because the display
+  leaves little headroom.
+- The large holes of the PD trigger (M6, 2) and of the INA3221 (M5, 9)
+  take a wire through both boards and solder.
+- Music of `rbmod-build`: Vivaldi's Spring, at the owner's wish. Its
+  notes are from memory and have not been judged by ear.
+
 Not known:
 
+- the order of the build steps on the owner's bench; the video's order
+  is by part height, with the cut at R1 first;
 - the zener's type and package on the owner's board; the video draws an
   axial part and names 2W or 5W as `docs/Carrier.md` does;
 - whether the seven other bridged footprints stay as they are in a

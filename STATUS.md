@@ -439,7 +439,7 @@ a spotlight, and a recap. `tools/video_audio.py` computes the sound track from t
 storyboard: synthesizer pads and one quiet sound per event, no percussion, the loudest sample
 at -3dBFS (decibels relative to full scale); its balance has not been judged by ear. `--check` reads every
 storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
-runs it. Three storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
+runs it. Four storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
 100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
 it does on the rbmod carrier, narrated, 755.92s, with Bach's Prelude in C major or Pachelbel's
 Canon in D major as its bed. `tools/video_voice.py` speaks a storyboard with Kokoro, a
@@ -454,7 +454,10 @@ label names each. `rbmod-rework` shows the rework of a rev 1 rbmod carrier in 4 
 without narration: the track cut between the pads of R1, the wire from GP15 to R1's outer pad,
 the 2.2kΩ pull-down on M7's EN and the 5.6V zener on M7's output. It draws the board flat
 (`tools/video/player/board.js`) from a file that `tools/video_board.py` converts from the
-rev 1 KiCad board, which is not in the tree. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+rev 1 KiCad board, which is not in the tree. `rbmod-build` shows the build of a rev 1 carrier
+in 11 steps and 195s on the same board, with Vivaldi's Spring as its bed: the parts take
+their places, the modules sit on the plastic of straight pin strips and are soldered on both
+sides, and the large holes of M5 and M6 take a wire and solder. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
 there is not confirmed. A render is not run in CI.
 
 [Videos from storyboards](tools/video/README.md).

@@ -258,3 +258,34 @@ def test_a_board_scene_has_its_sounds():
     assert kinds.count("low") == 1
     assert kinds.count("tap") == 2
     assert video_audio.scene_times(_rework()) == [(0.0, 10)]
+
+
+def test_a_board_scene_can_be_built_up():
+    """Parts mount, joints are soldered and an inset shows a section."""
+    import video_board
+
+    board = _rework()
+    scene = board["scenes"][0]
+    scene.update(bare=True, mount=[{"refs": ["M7"], "t": 1}],
+                 solder=[{"refs": ["M7"], "t": [2, 3]},
+                         {"pads": ["R1.1"], "back": True, "t": [3, 4]}],
+                 insets=[{"from": 1, "to": 4, "kind": "strip",
+                          "at": [60, 250], "title": "x"}])
+    assert make_video.check(board) == []
+    plan = video_board.convert(_PCB)
+    assert make_video.board_faults(scene, plan) == []
+    scene["mount"][0]["refs"] = ["M9"]
+    assert make_video.board_faults(scene, plan) == ["no part M9"]
+    scene["insets"][0]["kind"] = "flat"
+    scene["solder"][0]["t"] = [3, 2]
+    errors = make_video.check(board)
+    assert any("inset 1" in e for e in errors)
+    assert any("solder 1" in e for e in errors)
+
+
+def test_spring_is_whole_bars():
+    """Each bar of the Spring bed is 8 eighths and has two bass notes."""
+    for line, basses in video_audio.SPRING:
+        assert sum(length for _, length in line) == 8
+        assert len(basses) == 2
+    assert max(video_audio.SPRING_ORDER) == len(video_audio.SPRING) - 1

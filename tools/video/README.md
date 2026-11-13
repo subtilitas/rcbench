@@ -7,7 +7,7 @@ under `storyboards/`. It lists scenes; each scene has a type:
 | Type | Shows |
 | --- | --- |
 | `case` | the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in |
-| `board` | a circuit board seen flat from its front, with a view that moves over it, labels and tags on pads, a net lit up, a track cut, a wire and a part soldered across two pads |
+| `board` | a circuit board seen flat from its front, with a view that moves over it, labels and tags on pads, parts taking their place, solder joints, a cross-section in a card, a net lit up, a track cut, a wire and a part soldered across two pads |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
 | `tour` | the panel's screens with an animated caption, a path to the screen, marks that name parts of the display, a spotlight, and chapter cards |
 | `end` | a heading, a numbered recap and a note |
@@ -47,6 +47,7 @@ cd tools/video && npm install && cd ../..          # once: three.js 0.170.0
 python3 tools/make_video.py kst-rbmod              # build/video/kst-rbmod.mp4
 python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py rbmod-rework           # build/video/rbmod-rework.mp4
+python3 tools/make_video.py rbmod-build            # build/video/rbmod-build.mp4
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
 python3 tools/make_video.py features --jobs 3 --keep build/video/parts
@@ -91,6 +92,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
+| `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 11 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder; 195s, no narration, Vivaldi's Spring as its bed |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -107,7 +109,7 @@ Top level:
 | `lang` | `en` or `de`: the language the renderer draws the screens in |
 | `brand` | the line beside `rcbench` at the top left |
 | `steps` | the count of step marks at the bottom left |
-| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. Both compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
+| `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.3s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part and are not checked against a score. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
 | `voice` | optional `{name, lang, speed}`: the narrator, a voice of Kokoro such as `af_heart` with `en-us`, or `bm_george` with `en-gb`. `blend` in place of `name` mixes voices by weight: `{"af_heart": 0.6, "af_nicole": 0.4}` |
 | `chapters` | optional: one name per step; the names replace the step marks, each with a bar that fills while its chapter runs |
 | `words` | optional: `tap`, `hold`, `pos`, `gpio`, the player's own words, for another language |
@@ -152,6 +154,10 @@ A `board` scene:
 | `nets` | optional `{from, to, net}` and optional `style` (`warn`): the front tracks and the pads of a net lit up |
 | `cuts` | optional `{between: [a, b], t: [t0, t1]}` and optional `gap` in mm, 0.7 by default: the track is opened halfway between two points |
 | `wires` | optional `{from, to, t: [t0, t1]}` and optional `via`, a list of points, and `color`: a wire drawn from one point to the other, with a solder joint at each end |
+| `bare` | optional `true`: a part is hidden until its `mount`; the footprints of size 1206 always show |
+| `mount` | optional `{refs, t}`: the parts of these references come down onto their places from `t` on |
+| `solder` | optional `{refs, t: [t0, t1]}` or `{pads, t: [t0, t1]}` and optional `back`: a joint on every pad of the parts, or on the pads named, one after another over the span. With `back` the joint is on the other side of the board and shows as a ring that fades |
+| `insets` | optional `{from, to, kind, at, title}` and optional `text`, `good`, `bad`, `upper`, `lower`, `color`: a card at `at` with a cross-section. `strip` draws a module on the plastic of its pin strips, soldered on both sides, beside a module lying on the carrier; `fill` draws a wire through a large hole of both boards, soldered on both sides |
 | `fit` | optional `{kind, a, b, t}`: a `resistor` or a `zener` soldered across two pads from `t` on; a zener's band is at `a`; a resistor with `text` `2.2 kΩ` carries its colour bands |
 
 A board's lengths are mm from the top left corner of its drawing. A pad's
@@ -240,7 +246,14 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   silkscreen and the parts on a module are not drawn. The case scene that
   opens `rbmod-rework` shows the assembly's carrier, which has a later
   layout.
-- In `rbmod-rework` the places of the pull-down and of the zener on M7
+- `rbmod-build` states the order of the steps and that the connectors,
+  the headers, D1 and R9 are soldered on the back; neither is stated
+  elsewhere in the tree. The mounting of the modules on straight pin
+  strips with the plastic between module and carrier, soldered on both
+  sides, and the wire through the large holes of M5 and M6 are the
+  owner's statements of 2026-11-13. Which way a JST connector faces is
+  not shown.
+- In `rbmod-rework` and `rbmod-build` the places of the pull-down and of the zener on M7
   follow the module's footprint, whose EN pad is placed within about
   0.5mm. The parts are drawn as axial parts; the zener's package on a
   reworked board is not stated in the tree.

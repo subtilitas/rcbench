@@ -235,6 +235,59 @@ function drawNotes(sc, lt, a, pulse, ui, proj) {
   }
 }
 
+// A cross-section through two boards, drawn from the side.  "strip" shows
+// a module on the plastic of its pin strips, the pins soldered on both
+// sides, beside the same module lying on the carrier; "fill" shows a wire
+// through a large hole of both boards, soldered on both sides.
+function section(n) {
+  const PIN = '#c8ccd2', TIN = '#cfd4da', PCB = '#1f6a54';
+  const top = n.color || '#1d4fa8';
+  const txt = (x, y, s, col = '#c9d3e4', size = 17) => `<text x="${x}"
+    y="${y}" text-anchor="middle" font-family="Inter, sans-serif"
+    font-weight="650" font-size="${size}" fill="${col}">${s || ''}</text>`;
+  // One stack: the carrier at y 150, the module gap above it, pins.
+  const stack = (x0, gap) => {
+    const my = 132 - gap;
+    let s = `<rect x="${x0}" y="150" width="250" height="20" rx="3"
+      fill="${PCB}"/><rect x="${x0 + 22}" y="${my}" width="206" height="18"
+      rx="3" fill="${top}"/>`;
+    for (let i = 0; i < 5; i++) {
+      const x = x0 + 45 + i * 40;
+      if (gap) {
+        s += `<rect x="${x - 11}" y="${150 - gap}" width="22"
+          height="${gap}" fill="#0c0d10" stroke="#3a3f4a"/>`;
+      }
+      s += `<rect x="${x - 3}" y="${my - 20}" width="6"
+          height="${190 - my + 18}" fill="${PIN}"/>
+        <ellipse cx="${x}" cy="${my}" rx="12" ry="7" fill="${TIN}"/>
+        <ellipse cx="${x}" cy="170" rx="12" ry="7" fill="${TIN}"/>`;
+    }
+    return s;
+  };
+  if (n.kind === 'fill') {
+    return `<svg viewBox="0 20 600 200">
+      <rect x="60" y="130" width="480" height="22" rx="3" fill="${PCB}"/>
+      <rect x="100" y="84" width="400" height="20" rx="3" fill="${top}"/>
+      <rect x="282" y="84" width="36" height="20" fill="${TIN}"/>
+      <rect x="282" y="130" width="36" height="22" fill="${TIN}"/>
+      <ellipse cx="300" cy="84" rx="40" ry="13" fill="${TIN}"/>
+      <ellipse cx="300" cy="152" rx="40" ry="13" fill="${TIN}"/>
+      <rect x="292" y="56" width="16" height="124" rx="3" fill="#c77b3b"/>
+      <rect x="294" y="56" width="4" height="124" fill="#fff"
+        fill-opacity=".25"/>
+      ${txt(300, 42, n.good, '#00f58c')}${txt(300, 208, n.bad)}
+      ${txt(150, 99, n.upper, '#fff', 14)}${txt(110, 147, n.lower, '#fff', 14)}
+      </svg>`;
+  }
+  return `<svg viewBox="0 30 600 200">${stack(20, 26)}${stack(330, 0)}
+    ${txt(145, 62, n.good, '#00f58c')}${txt(455, 62, n.bad, '#ff5b6e')}
+    <path d="M360 210L550 96M360 96L550 210" stroke="#ff5b6e"
+      stroke-width="5" stroke-linecap="round" opacity=".8"/>
+    <path d="M118 200l18 18l36 -40" fill="none" stroke="#00f58c"
+      stroke-width="7" stroke-linecap="round" stroke-linejoin="round"/>
+    </svg>`;
+}
+
 // A board seen flat: the view moves over it by the camera keys
 // [t, [x, y], w], the point at the frame's centre and the mm across.
 function drawBoard(sc, lt, a, pulse, ui) {
@@ -258,6 +311,20 @@ function drawBoard(sc, lt, a, pulse, ui) {
                         mix(k[i][1][1], k[j][1][1])],
                        Math.exp(mix(Math.log(k[i][2]), Math.log(k[j][2])))]);
   drawNotes(sc, lt, a, pulse, ui, sc.rig.project);
+  // Insets: a cross-section of a solder joint, in a card.
+  for (const n of sc.insets || []) {
+    const o = win(lt, n.from, n.to) * a;
+    if (o <= 0) continue;
+    const e = document.createElement('div');
+    e.className = 'bub inset';
+    e.style.left = n.at[0] + 'px';
+    e.style.top = n.at[1] + 'px';
+    e.style.opacity = o;
+    e.style.transform = `translateY(${(1 - o) * 14}px)`;
+    e.innerHTML = `<div class="h"><span>${n.title}</span></div>`
+      + section(n) + (n.text ? `<p>${n.text}</p>` : '');
+    bubs.appendChild(e);
+  }
   // Tags: a pad's name beside it, on a short line.
   for (const m of sc.tags || []) {
     const o = win(lt, m.from, m.to, .3) * a;
