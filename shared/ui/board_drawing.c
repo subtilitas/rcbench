@@ -12,6 +12,7 @@
 
 #include <stddef.h>
 
+/** @brief Stores the reason a drawing is refused and says so. */
 static bool say(const char **why, const char *reason)
 {
     if (why != NULL) {
@@ -96,6 +97,24 @@ int board_drawing_scale(uint32_t v, int px, uint16_t full)
     return (int)((v * (uint32_t)px + (uint32_t)full / 2u) / full);
 }
 
+/**
+ * @def SX(v)
+ * @brief A drawing's x as a canvas x, px: the box's left edge plus @p v
+ *        scaled from the drawing's width to the box's.  Defined inside
+ *        board_drawing_render().
+ */
+/**
+ * @def SY(v)
+ * @brief A drawing's y as a canvas y, px: the box's top edge plus @p v
+ *        scaled from the drawing's height to the box's.  Defined inside
+ *        board_drawing_render().
+ */
+/**
+ * @def SL(v)
+ * @brief A drawing's length as a canvas length, px: @p v scaled from the
+ *        drawing's width to the box's.  Defined inside
+ *        board_drawing_render().
+ */
 void board_drawing_render(gfx_canvas_t *c, const link_drawing_t *d, int x,
                           int y, int w, int h, gfx_color_t hole)
 {

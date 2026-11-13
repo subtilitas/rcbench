@@ -137,32 +137,32 @@ static const ui_text_id_t k_tab_labels[] = { TX_AN_TAB_CHANNELS,
                                               TX_AN_TAB_RAW };
 
 static struct {
-    ui_tabs_t tabs;
+    ui_tabs_t tabs;  /**< the pane tabs */
 
-    sbus_frame_t   frame;
-    sbus_decoder_t dec;
-    uint8_t        raw[SBUS_FRAME_BYTES];
-    unsigned       raw_len;
-    bool           have;
-    bool           silent;
+    sbus_frame_t   frame;  /**< the newest frame */
+    sbus_decoder_t dec;  /**< the frame decoder */
+    uint8_t        raw[SBUS_FRAME_BYTES];  /**< the newest frame's bytes */
+    unsigned       raw_len;  /**< how many bytes raw holds */
+    bool           have;  /**< a frame was decoded */
+    bool           silent;  /**< the receiver is silent */
 
     /* Frames per second, measured rather than assumed: a receiver that has
      * quietly dropped to half rate is still sending valid frames. */
-    /* A ring of recent positions per channel, in tenths of a percent of
+    /** @brief A ring of recent positions per channel, in tenths of a percent of
      * travel -- enough for a lane sixteen pixels tall, and half the memory
      * of keeping microseconds. */
     int16_t  hist[SBUS_CHANNELS][HIST];
-    unsigned head;
-    unsigned filled;
+    unsigned head;  /**< where the next position goes */
+    unsigned filled;  /**< how many positions are valid */
 
-    uint32_t last_ms;
-    uint32_t window_ms;
-    unsigned window_frames;
-    unsigned rate_hz;
+    uint32_t last_ms;  /**< when the newest frame came, ms */
+    uint32_t window_ms;  /**< when the rate window began, ms */
+    unsigned window_frames;  /**< the frames in the rate window */
+    unsigned rate_hz;  /**< the frames a second, Hz */
 
-    uint32_t rev;
-    uint32_t drawn[2];
-    unsigned drawn_mask;
+    uint32_t rev;  /**< a count of the screen's look */
+    uint32_t drawn[2];  /**< rev as each buffer drew it */
+    unsigned drawn_mask;  /**< the parts drawn into each buffer, a bit a part */
 } s; /**< The screen's state. */
 
 void analyser_invalidate(void)

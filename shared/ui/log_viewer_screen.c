@@ -195,7 +195,9 @@ unsigned lv_mounts_now(void)
     return (s.io.mounts != NULL) ? s.io.mounts(s.io.ctx) : 0u;
 }
 
-/* Whether the volume is another than the one the page was read from. */
+/**
+ * @brief Whether the volume is another than the one the page was read from.
+ */
 static bool volume_changed(void)
 {
     return strcmp(s.volume, lv_volume_now()) != 0 || s.mounts != lv_mounts_now();
@@ -217,8 +219,8 @@ const char *lv_page_edge(int sign)
     return (best >= 0) ? s.files[best].name : "";
 }
 
-/*
- * One walk of the directory for the page @p dir and @p key name, of at most
+/**
+ * @brief One walk of the directory for the page @p dir and @p key name, of at most
  * @p cap entries.
  */
 static int list_once(log_page_dir_t dir, const char *key, int cap)
@@ -489,12 +491,14 @@ const log_viewer_tab_t lv_tab_at[LOG_TAB_COUNT] = {
     LOG_TAB_ROOT, LOG_TAB_USER, LOG_TAB_BENCH,
 };
 
-/* The tabs' labels, in that order. */
+/** @brief The tabs' labels, in that order. */
 static const ui_text_id_t k_tab_text[LOG_TAB_COUNT] = {
     TX_LOG_TAB_ROOT, TX_LOG_TAB_USER, TX_LOG_TAB_BENCH,
 };
 
-/* The position in the header row of the tab with id @p tab. */
+/**
+ * @brief The position in the header row of the tab with id @p tab.
+ */
 static int tab_pos(log_viewer_tab_t tab)
 {
     for (int i = 0; i < (int)LOG_TAB_COUNT; ++i) {
@@ -727,6 +731,7 @@ static bool back(void)
  */
 static bool covered(void) { return s.doomed[0] != '\0'; }
 
+/** @brief The screen's table. */
 static const ui_screen_t s_screen = {
     .covered = covered,
     .title = "LOGS",

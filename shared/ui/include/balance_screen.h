@@ -10,6 +10,7 @@
 #include "ui_keypad.h"
 #include "ui_screen.h"
 
+/** @brief The panes of the BALANCE screen. */
 typedef enum {
     BALANCE_PANE_MEASURE = 0,
     BALANCE_PANE_RIG,
@@ -17,16 +18,30 @@ typedef enum {
     BALANCE_PANE_COUNT,
 } balance_pane_t;
 
+/** @brief The kinds of rotor the screen balances. */
 typedef enum { ROTOR_PROP = 0, ROTOR_EDF, ROTOR_COUNT } balance_rotor_t;
 
 /** Drop the cached chrome, so the next frame repaints it. */
 void balance_invalidate(void);
 
+/**
+ * @brief Gives the screen's table.
+ *
+ * @return the table
+ */
 const ui_screen_t *balance_screen(void);
 
-/** How many blades the rotor has, 2 to 6. */
+/**
+ * @brief How many blades the rotor has, 2 to 6.
+ *
+ * @return the blades
+ */
 int  balance_screen_blades(void);
-/** Propeller or ducted fan. */
+/**
+ * @brief Propeller or ducted fan.
+ *
+ * @return the rotor
+ */
 int  balance_screen_rotor(void);
 
 /**
@@ -43,16 +58,29 @@ const ui_keypad_t *balance_screen_keypad(void);
  */
 gfx_rect_t balance_screen_blades_rect(void);
 
-/** The MODELLED mark the BALANCE pane shows beside its readings, or NULL on
- *  the other panes: the angle and both masses are fixed values. */
+/**
+ * @brief The MODELLED mark the BALANCE pane shows beside its readings, or NULL on
+ *  the other panes: the angle and both masses are fixed values.
+ *
+ * @return the mark; NULL on the other panes
+ */
 const char *balance_screen_model_mark(void);
-/** The words beside the mark ("Not measured."), or NULL where it is not
- *  shown. */
+/**
+ * @brief The words beside the mark ("Not measured."), or NULL where it is not
+ *  shown.
+ *
+ * @return the words; NULL where they are not shown
+ */
 const char *balance_screen_model_note(void);
 
 /**
- * The two blades a correction at @p angle (degrees from the index mark) falls
+ * @brief The two blades a correction at @p angle (degrees from the index mark) falls
  * between, on a rotor of @p blades blades.  Both are 1..blades and wrap, so a
  * correction past the last blade reads "between N and 1".
+ *
+ * @param angle the correction's angle, degrees from the index mark
+ * @param blades the rotor's blade count
+ * @param lo receives the lower blade
+ * @param hi receives the upper blade
  */
 void balance_nearest_blades(float angle, int blades, int *lo, int *hi);

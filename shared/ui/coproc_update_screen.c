@@ -74,13 +74,13 @@ _Static_assert(288 + 56 + 4 <= UI_ALERT_Y - UI_BAND_H,
                "the question's buttons end above the alert band");
 
 static struct {
-    cu_view_t    view;
-    cu_version_t running;
-    cu_version_t carried;
+    cu_view_t    view;  /**< the view shown */
+    cu_version_t running;  /**< the version the IOmcu runs */
+    cu_version_t carried;  /**< the version this panel carries */
 
-    cu_step_t step;
-    uint16_t  block;
-    uint16_t  blocks;
+    cu_step_t step;  /**< the step under way */
+    uint16_t  block;  /**< the blocks committed */
+    uint16_t  blocks;  /**< the blocks the update has */
 
     ui_hold_t hold;          /**< START                                    */
     int       press_btn;     /**< 0 CANCEL, 1 START, -1 none               */
@@ -106,6 +106,7 @@ bool coproc_update_older(cu_version_t running, cu_version_t carried)
     return carried.patch < running.patch;
 }
 
+/** @brief Whether the IOmcu runs the version this panel carries. */
 static bool same_version(void)
 {
     return s.running.major == s.carried.major
@@ -121,6 +122,7 @@ static void drop_press(const touch_event_t *up)
     (void)ui_hold_end(&s.hold, up, Q_START);
 }
 
+/** @brief Returns the screen to its initial state. */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
@@ -173,6 +175,7 @@ bool coproc_update_screen_take_cancel(void)
 
 /* ------------------------------------------------------------------ input */
 
+/** @brief Finds the button at a point. */
 static int button_at(int16_t x, int16_t y)
 {
     if (gfx_rect_contains(Q_CANCEL, x, y)) {
@@ -184,6 +187,7 @@ static int button_at(int16_t x, int16_t y)
     return -1;
 }
 
+/** @brief Takes a touch event of the question. */
 static void event(const touch_event_t *evt)
 {
     if (evt == NULL || s.view != CU_VIEW_QUESTION) {
@@ -228,6 +232,7 @@ static void event(const touch_event_t *evt)
     }
 }
 
+/** @brief Runs the screen for one frame: the START hold. */
 static void tick(float dt_s)
 {
     /* START's flash runs on over the progress the hold opened, and the
@@ -275,11 +280,13 @@ static void leave(void)
     drop_press(NULL);
 }
 
+/** @brief Enters the screen. */
 static void enter(void)
 {
     s.drawn_mask = 0;
 }
 
+/** @brief Drops the press under way, as touch events were lost. */
 static void cancel(void)
 {
     drop_press(NULL);
@@ -287,6 +294,7 @@ static void cancel(void)
 
 /* ---------------------------------------------------------------- drawing */
 
+/** @brief Writes a version as "major.minor.patch". */
 static void fmt_version(char *out, size_t n, cu_version_t v)
 {
     snprintf(out, n, "%u.%u.%u", (unsigned)v.major, (unsigned)v.minor,
@@ -338,6 +346,7 @@ static void render_question(gfx_canvas_t *c, unsigned bit)
                    false, true, CU_FONT_LABEL);
 }
 
+/** @brief Gives the progress view's text for a step. */
 static const char *step_text(cu_step_t step)
 {
     switch (step) {
@@ -407,6 +416,7 @@ static void render_progress(gfx_canvas_t *c, unsigned bit)
     }
 }
 
+/** @brief Draws the screen. */
 static void render(gfx_canvas_t *c, int buffer_index)
 {
     /* A framebuffer index the mask has no bit for is redrawn whole. */
@@ -458,8 +468,10 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
     return CU_SEC_READY;
 }
 
-/* UPDATES' hold, completed: the progress, and the START it hands over.
- * The same as the question's START, from another screen. */
+/**
+ * @brief UPDATES' hold, completed: the progress, and the START it hands over.
+ * The same as the question's START, from another screen.
+ */
 static void start_from_updates(const cu_feed_t *f)
 {
     s.running = f->running;
@@ -476,10 +488,12 @@ static void start_from_updates(const cu_feed_t *f)
     ui_router_goto(SCREEN_COPROC_UPDATE);
 }
 
-/* Where a progress that has ended goes.  The origin stays until another
+/**
+ * @brief Where a progress that has ended goes.  The origin stays until another
  * start sets it: a snapshot that shows the START taken a moment before it
  * shows the update active lands here, and the progress the next frame
- * opens again still returns to UPDATES. */
+ * opens again still returns to UPDATES.
+ */
 static void progress_done(const cu_driver_t *d)
 {
     ui_router_goto(d->from_updates ? SCREEN_UPDATES : SCREEN_OVERVIEW);
@@ -619,6 +633,7 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
     }
 }
 
+/** @brief The screen's table. */
 static const ui_screen_t k_screen = {
     .title  = "UPDATE",
     .reset  = reset,
