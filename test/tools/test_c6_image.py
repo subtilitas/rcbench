@@ -127,8 +127,21 @@ def test_the_committed_settings_are_held_by_needed():
         c6.rcbench_defaults("CONFIG_BT_LE_MAX_CONNECTIONS=4\n")
     with pytest.raises(c6.C6Error, match="CONFIG_X"):
         c6.rcbench_defaults("CONFIG_X=y\n")
-    assert c6.settings_of("# CONFIG_A is not set\nCONFIG_B=1\nCONFIG_B=2\n"
+    assert c6.settings_of("# a comment\nCONFIG_B=1\nCONFIG_B=2\n"
                           ) == {"CONFIG_B": "2"}
+
+
+def test_a_setting_that_is_not_set_reads_as_n():
+    """Kconfig's "# CONFIG_X is not set" is CONFIG_X=n, also to the guard."""
+    assert c6.settings_of("# CONFIG_A is not set\nCONFIG_B=y\n") == {
+        "CONFIG_A": "n", "CONFIG_B": "y"}
+    assert c6.settings_of("CONFIG_A=y\n# CONFIG_A is not set\n") == {
+        "CONFIG_A": "n"}
+    with pytest.raises(c6.C6Error, match="CONFIG_BT_ENABLED=n"):
+        c6.rcbench_defaults("# CONFIG_BT_ENABLED is not set\n")
+    sdk = GOOD_SDK.replace("CONFIG_BT_ENABLED=y",
+                           "# CONFIG_BT_ENABLED is not set")
+    assert c6.sdkconfig_missing(sdk) == ["CONFIG_BT_ENABLED=y"]
 
 
 def test_the_image_must_be_the_pinned_c6_build_inside_the_slot():

@@ -69,6 +69,8 @@ NEEDED = {
 
 
 IDF_MARK = "${IDF_PATH}/"
+# Kconfig's line for a bool that is off.
+NOT_SET = re.compile(r"#\s*(CONFIG_\w+) is not set")
 
 
 class C6Error(Exception):
@@ -207,17 +209,22 @@ def slot_bytes(csv: str) -> int:
 
 
 def settings_of(text: str) -> dict[str, str]:
-    """The NAME=value lines of an sdkconfig or a defaults file.
+    """The settings of an sdkconfig or a defaults file.
 
     Args:
-        text: the file; lines starting with ``#`` are comments.
+        text: the file; a ``NAME=value`` line sets a value, and
+            ``# NAME is not set``, Kconfig's form of a bool that is off,
+            sets ``n``; every other line starting with ``#`` is a comment.
 
     Returns:
         {NAME: value}, the last line of a name winning.
     """
     have = {}
     for line in text.splitlines():
-        if "=" in line and not line.startswith("#"):
+        off = NOT_SET.fullmatch(line.strip())
+        if off:
+            have[off.group(1)] = "n"
+        elif "=" in line and not line.startswith("#"):
             k, v = line.split("=", 1)
             have[k.strip()] = v.strip()
     return have

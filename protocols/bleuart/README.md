@@ -189,7 +189,9 @@ bool   bleu_addr_eq(const bleu_addr_t *a, const bleu_addr_t *b);
 Every action with a token is answered by events with that token: the
 caller passes it to the host stack as the callback's argument. A token is
 the machine's owner in its top 3 bits (`BLEU_OWNER_SHIFT` 13) and a count
-of 1 to 0x1FFF (`BLEU_TOKEN_SEQ`) in the rest; 0 is never one. An event
+of 1 to 0x1FFF (`BLEU_TOKEN_SEQ`) in the rest; 0 is never one. Every
+owner's count wraps after 8,191 tokens, owner 0's too: its tokens run 1
+to 8,191 and start at 1 again. An event
 whose token is not the step's under way is counted in `stray` and changes
 nothing, so a late answer after a timeout, an abort or a drop reaches no
 later step. Status 0 is success; a nonzero status is the host stack's own

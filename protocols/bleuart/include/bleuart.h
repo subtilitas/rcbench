@@ -93,7 +93,8 @@ extern "C" {
  *         error of the last attempt stays. */
 #define BLEU_STATUS_BUSY    0xFFFDu
 
-/** @brief Tokens: the owner in the top 3 bits, a count in the rest. @{ */
+/** @brief Tokens: the owner in the top 3 bits, a count in the rest.  Each
+ *         owner's count, owner 0's too, wraps from 8,191 to 1. @{ */
 #define BLEU_OWNER_SHIFT 13u     /**< the owner's first bit */
 #define BLEU_OWNER_MAX   8u      /**< owners 0 to 7 */
 #define BLEU_TOKEN_SEQ   0x1FFFu /**< the count's bits; a count is never 0 */
