@@ -47,6 +47,9 @@ python3 tools/make_video.py kst-rbmod              # build/video/kst-rbmod.mp4
 python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
+python3 tools/make_video.py features --jobs 3 --keep build/video/parts
+                                                   # parts of 900 frames are kept; a
+                                                   # run cut off continues from them
 python3 tools/make_video.py features --music bach-prelude,pachelbel-canon
                                                    # one video per bed
 python3 tools/make_video.py features --no-voice    # no narrator, lengths as written

@@ -29,6 +29,7 @@ Attributes:
     FRAME: The video frame in pixels, the range of a label's position.
     BEDS: The music beds of tools/video_audio.py.
     UNITS: The components of the cad model that a scene can move.
+    PART_FRAMES: The frames of one part that --keep keeps.
     ANCHORS: The named points of the case model a label can point at.
     CONNECTORS: The headers of the case model and their position count.
 
@@ -59,6 +60,7 @@ UNITS = ("lid", "bank", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
          "buck", "trigger", "rbmod", "case")
 CONNECTORS = {"J1": 4, "J2": 4}
 BEDS = ("pads", "bach-prelude", "pachelbel-canon")
+PART_FRAMES = 900
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
 
@@ -416,24 +418,43 @@ class _Handler(http.server.SimpleHTTPRequestHandler):
 
 
 def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
-             jobs: int) -> int:
+             jobs: int, keep: pathlib.Path | None) -> int:
+    import concurrent.futures
+    import hashlib
+
     import video_audio
 
     total = sum(length for _, length in video_audio.scene_times(board))
     frames = round(total * fps)
-    edges = [frames * k // jobs for k in range(jobs + 1)]
-    parts = [out.with_name(f"part{k}.mp4") for k in range(jobs)]
-    running = [subprocess.Popen(cmd + ["video", str(part), str(fps),
-                                       str(a), str(b)])
-               for part, a, b in zip(parts, edges, edges[1:], strict=False)]
-    if any(proc.wait() for proc in running):
-        return 1
-    if jobs == 1:
-        parts[0].replace(out)
-        return 0
+    # With a directory to keep them in, parts of PART_FRAMES frames: a
+    # part that is there from an earlier run of the same storyboard is
+    # not captured again.
+    count = jobs if keep is None else -(-frames // PART_FRAMES)
+    edges = [frames * k // count for k in range(count + 1)]
+    mark = hashlib.sha256(json.dumps(board, sort_keys=True).encode()
+                          ).hexdigest()[:12]
+    where = out.parent if keep is None else keep
+    where.mkdir(parents=True, exist_ok=True)
+    parts = [where / f"{mark}-{fps}-{a}-{b}.mp4"
+             for a, b in zip(edges, edges[1:], strict=False)]
+
+    def one(k):
+        if keep is not None and parts[k].is_file():
+            return 0
+        part = parts[k].with_suffix(".part.mp4")
+        code = subprocess.run(cmd + ["video", str(part), str(fps),
+                                     str(edges[k]),
+                                     str(edges[k + 1])]).returncode
+        if code == 0:
+            part.replace(parts[k])
+        return code
+
+    with concurrent.futures.ThreadPoolExecutor(jobs) as pool:
+        if any(pool.map(one, range(count))):
+            return 1
     listing = out.with_name("parts.txt")
-    listing.write_text("".join(f"file '{part}'\n" for part in parts),
-                       encoding="utf-8")
+    listing.write_text("".join(f"file '{part.resolve()}'\n"
+                               for part in parts), encoding="utf-8")
     return subprocess.run(["ffmpeg", "-v", "error", "-y", "-f", "concat",
                            "-safe", "0", "-i", str(listing), "-c", "copy",
                            str(out)]).returncode
@@ -462,6 +483,9 @@ def main() -> int:
                     help="leave the narration out")
     ap.add_argument("--jobs", type=int, default=1,
                     help="capture the frames in this many parts at once")
+    ap.add_argument("--keep", type=pathlib.Path, metavar="DIR",
+                    help="keep the captured parts here; a run that was "
+                         "cut off continues with the parts it lacks")
     ap.add_argument("--no-sound", action="store_true",
                     help="write the video without its sound track")
     ap.add_argument("--check", action="store_true",
@@ -533,7 +557,7 @@ def main() -> int:
                     cmd + ["stills", str(out), args.stills]).returncode
             else:
                 status = _capture(cmd, board, silent, args.fps,
-                                  max(1, args.jobs))
+                                  max(1, args.jobs), args.keep)
             server.shutdown()
         beds = args.music.split(",") if args.music else [None]
         outs = [out if len(beds) == 1 else
