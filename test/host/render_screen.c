@@ -59,6 +59,10 @@
 #include "instruments_spots.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
+#include "dial_panel.h"
+#include "dial_stream.h"
+#include "dialknob.h"
+#include "ui_focus.h"
 #include "servo_sim.h"
 #include "overview_screen.h"
 #include "log_writer.h"
@@ -2802,6 +2806,13 @@ static void band_view(const char *view, ui_bench_status_t *st)
 
 /** @brief motor-live poses an ARMED bench. */
 static bool s_live_armed;
+/** @brief motor-live's readings at the moment drawn, for the Dial's model. */
+static bench_state_t s_live_bench;
+/** @brief motor-live's run clock, s. */
+static uint16_t s_live_run_s;
+/** @brief servo-live: servo-armed with the horn driven as
+ *         RCBENCH_VIDEO_SERVO gives it, for tools/video. */
+static bool s_servo_live;
 
 /**
  * @brief MOTOR & ESC at one moment of a run whose throttle is given, for
@@ -2811,14 +2822,11 @@ static bool s_live_armed;
  * RCBENCH_VIDEO_RUN holds `1:` or `0:`, ARMED or SAFE, and the throttle in
  * percent of each 50ms sample since the ARM, separated by commas; the last
  * one is the moment drawn.  A SAFE bench takes one sample at 0%, for its
- * voltage.  RCBENCH_VIDEO_OUT names a file that takes the moment's
- * readings in the Dial's units: throttle 0.01%, rpm, mV, 10mA, 0.1W, the
- * ESC's degrees C and the run's seconds.
+ * voltage.
  */
 static void pose_motor_live(void)
 {
     const char *run = getenv("RCBENCH_VIDEO_RUN");
-    const char *out = getenv("RCBENCH_VIDEO_OUT");
     telemetry_sim_t tsim;
     bench_state_t bench;
     bench_totals_t totals;
@@ -2854,18 +2862,8 @@ static void pose_motor_live(void)
     motor_screen_set_throttle_pins(((uint64_t)1u << 0) | ((uint64_t)1u << 1),
                                    true);
     motor_screen_set_throttle_protocol(4u);
-    if (out != NULL) {
-        FILE *f = fopen(out, "w");
-        if (f != NULL) {
-            fprintf(f, "%d %d %d %d %d %d %d\n",
-                    (int)(th * 100.0f + 0.5f), (int)(bench.rpm + 0.5f),
-                    (int)(bench.voltage * 1000.0f + 0.5f),
-                    (int)(bench.current * 100.0f + 0.5f),
-                    (int)(bench.power * 10.0f + 0.5f),
-                    (int)(bench.temp_esc + 0.5f), samples / 20);
-            fclose(f);
-        }
-    }
+    s_live_bench = bench;
+    s_live_run_s = (uint16_t)(samples / 20);
 }
 
 /**
@@ -4235,12 +4233,31 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
          * and disarmed again with the horn where it was driven, which is
          * what the disarmed views show. */
         servo_screen_set_armed(true);
-        servo_screen_set_commanded(38.0f);
+        servo_screen_set_commanded(s_servo_live ? 0.0f : 38.0f);
         for (int i = 0; i < 200; ++i) {
             const float a = servo_sim_step(&ss, servo_screen_commanded(),
                                            (uint32_t)(i * 10));
             servo_screen_feedback((uint16_t)ss.position_us, a, true);
             ui_router_tick(0.01f);
+        }
+        /* servo-live: the commanded angle in degrees of each 100ms since,
+         * separated by commas; the servo model follows it. */
+        const char *live = s_servo_live ? getenv("RCBENCH_VIDEO_SERVO")
+                                        : NULL;
+        for (int i = 200; live != NULL && *live != '\0';) {
+            char *end = NULL;
+            const float deg = strtof(live, &end);
+            if (end == live) {
+                break;
+            }
+            servo_screen_set_commanded(deg);
+            for (int k = 0; k < 10; ++k, ++i) {
+                const float a = servo_sim_step(&ss, servo_screen_commanded(),
+                                               (uint32_t)(i * 10));
+                servo_screen_feedback((uint16_t)ss.position_us, a, true);
+                ui_router_tick(0.01f);
+            }
+            live = (*end == ',') ? end + 1 : end;
         }
         /* servo-armed: the bench left ARMED, the horn where it was driven. */
         if (strcmp(view, "servo-armed") != 0) {
@@ -4261,6 +4278,14 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
         for (int i = 0; i < 300 && !prog; ++i) {
             supply_sim_step(&sm, 0.05f, &sst);
             servo_screen_supply(&sst);
+        }
+        if (s_servo_live) {
+            /* The rail as an INA3221 channel on it would read it, for the
+             * Dial's model. */
+            s_live_bench.valid = true;
+            s_live_bench.servo_ok = 1u;
+            s_live_bench.servo_min_mv[0] = (uint16_t)(sst.v * 1000.0f + 0.5f);
+            s_live_bench.servo_mean_ma[0] = (int16_t)(sst.i * 1000.0f + 0.5f);
         }
         /* LIVE on a SAFE bench, and the HV view: the PD mini answers with
          * its output off, so the SUPPLY row reads what ARM does with it. */
@@ -4696,6 +4721,124 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
     }
 }
 
+/** @brief The Dial's model builder between the frames of one render. */
+static dial_builder_t s_video_builder;
+
+/**
+ * @brief Build the model the panel would send the Dial now.
+ * @param m     Receives it.
+ * @param armed The bench is ARMED.
+ */
+static void video_model(dial_model_t *m, bool armed)
+{
+    dial_model_in_t in;
+    memset(&in, 0, sizeof(in));
+    in.route = ui_router_current();
+    in.title = ui_router_title(in.route);
+    in.lang = (s_lang == UI_LANG_DE) ? DK_LANG_DE : DK_LANG_EN;
+    in.armed = armed;
+    in.motor_armed = armed && in.route == SCREEN_MOTOR;
+    in.servo_armed = armed && servo_screen_owns(in.route);
+    in.run_s = s_live_run_s;
+    in.bench = s_live_bench.valid ? &s_live_bench : NULL;
+    in.thr_tenths = 10u;
+    in.srv_tenths = 10u;
+    dial_model_build(&s_video_builder, &in, m);
+    (void)dial_model_clamp(m);
+}
+
+/**
+ * @brief For tools/video: the Dial's gestures on the screen as posed.
+ *
+ * RCBENCH_VIDEO_KNOB holds detents turned on MOTOR & ESC or SERVO LIVE
+ * while ARMED, through the knob's path.  RCBENCH_VIDEO_NAV holds gestures
+ * of a linked Dial on a SAFE bench, separated by commas: `t` and a count
+ * of detents, `p` a PRESS, `h` a HOLD.  A frame is drawn before each
+ * gesture and after it, as the panel draws between them.
+ *
+ * @param c     The frame's canvas.
+ * @param id    The screen posed.
+ * @param armed The bench is ARMED.
+ */
+static void video_gestures(gfx_canvas_t *c, ui_screen_id_t id, bool armed)
+{
+    const char *knob = getenv("RCBENCH_VIDEO_KNOB");
+    const char *ops = getenv("RCBENCH_VIDEO_NAV");
+    dial_model_t m;
+    if (knob != NULL && servo_screen_owns(id)) {
+        servo_screen_knob(dial_span(id, (int32_t)strtol(knob, NULL, 10),
+                                    10u, 10u));
+        servo_screen_knob_frame();
+        ui_router_tick(0.05f);
+    }
+    if (ops == NULL) {
+        return;
+    }
+    for (const char *p = ops; *p != '\0';) {
+        ui_focus_set_link(true, armed);
+        ui_router_render(c, 0);
+        video_model(&m, armed);
+        if (*p == 't') {
+            char *end = NULL;
+            const long n = strtol(p + 1, &end, 10);
+            if (ui_focus_shown()) {
+                (void)ui_focus_turn((int)n);
+            }
+            p = end;
+        } else if (*p == 'p') {
+            if (ui_focus_shown()) {
+                (void)ui_focus_press();
+            }
+            ++p;
+        } else {
+            if (*p == 'h' && ui_focus_shown()) {
+                (void)ui_focus_hold();
+            }
+            ++p;
+        }
+        if (*p == ',') {
+            ++p;
+        }
+        ui_router_tick(0.05f);
+    }
+    ui_focus_set_link(true, armed);
+}
+
+/**
+ * @brief For tools/video: write the packets the panel would send a Dial
+ *        that has just connected, one a line in hex, into the file
+ *        RCBENCH_VIDEO_DIAL names.  tools/render_dial.py's renderer draws
+ *        the Dial's face from them.
+ * @param armed The bench is ARMED.
+ */
+static void video_dial(bool armed)
+{
+    const char *path = getenv("RCBENCH_VIDEO_DIAL");
+    dial_model_t m;
+    dial_stream_t st;
+    uint8_t pkt[DK_PKT_MAX];
+    if (path == NULL) {
+        return;
+    }
+    FILE *f = fopen(path, "w");
+    if (f == NULL) {
+        return;
+    }
+    video_model(&m, armed);
+    dial_stream_init(&st);
+    /* 400ms of the stream: the whole model once, and a LIVE and a STATE. */
+    for (uint32_t now = 0u; now < 400u; now += 5u) {
+        const size_t n = dial_stream_next(&st, &m, now, false, pkt);
+        for (size_t i = 0u; i < n; ++i) {
+            fprintf(f, "%02x", pkt[i]);
+        }
+        if (n != 0u) {
+            fputc('\n', f);
+        }
+    }
+    fclose(f);
+}
+
 /**
  * @brief Wi-Fi, the update screens and LOGS once they show.
  * @param id   The screen of the shot.
@@ -4795,6 +4938,10 @@ int main(int argc, char **argv)
      * view is posed as the view it opens over (render_help_base()). */
     const char *const shot_view = (argc > 4) ? argv[4] : argv[2];
     const char *view = render_help_base(shot_view);
+    if (strcmp(view, "servo-live") == 0) {
+        s_servo_live = true;
+        view = "servo-armed";
+    }
     const bool sim   = (argc > 3 && strcmp(argv[3], "sim") == 0);
     /* SERVO's views name their screen: the hub or a function's. */
     if (id == SCREEN_SERVO) {
@@ -4952,6 +5099,7 @@ int main(int argc, char **argv)
     if (render_shot_view(view)) {
         render_shot_pose(&c, view);
     }
+    video_gestures(&c, id, st.armed);
 #ifdef GFX_TEXT_TRACE
     /* The frame starts here: what was drawn before it is gone. */
     if (s_trace != NULL) {
@@ -4987,6 +5135,7 @@ int main(int argc, char **argv)
         }
     }
 
+    video_dial(st.armed);
     write_ppm(argv[1], fb);
     return 0;
 }

@@ -99,7 +99,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
-| `storyboards/dial.json` | bringing the M5Stack Dial into use in 5 steps: flashing over USB, the bind on SETUP > WIRELESS > DIAL, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; narrated, 166.61s, Pachelbel's Canon at half level. The battery is taken as fitted |
+| `storyboards/dial.json` | bringing the M5Stack Dial into use in 6 steps: flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 166.61s, Pachelbel's Canon at half level. The battery is taken as fitted |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -131,7 +131,7 @@ A `case` scene:
 | `model` | optional: `mockup`, the default, `cad`, the assembly converted by `tools/video_cad.py`, `dial`, the M5Stack Dial converted by `tools/video_cad.py --solids`, or `duo`, the case of `cad` with the Dial 128mm right of its middle |
 | `faces` | optional, `dial` and `duo` models: keys `[t, name]`, a face of `tools/render_dial.py` on the Dial's display from `t` on, cross-faded over 0.5s |
 | `panel` | optional, `dial` and `duo` models: keys `[t, view]` or `[t, view, screen]`, the panel's screen from `t` on: on the case's display with `duo`, as a flat shot left of the Dial with `dial` |
-| `run` | optional, `dial` and `duo` models: `{from, arm, to, throttle}`, a run on MOTOR & ESC. `throttle` holds keys `[t, percent]`, joined by lines, and `[t, percent, "press"]`, a value set at once. From `from` to `to`, 10 times a second, the panel's screen and the Dial's face are drawn from one simulated run, SAFE before `arm`; the keys go into `panel` and `faces`, and `turn` follows the throttle, a detent a percent |
+| `run` | optional, `dial` and `duo` models: the panel and the Dial following each other from `from` to `to`. The panel's renderer applies the Dial's gestures and writes the packets the panel sends a Dial; the Dial's renderer draws its face from them. The shots go into `panel` and `faces`, and `turn` follows the run. `kind` is `motor`, the default: `arm` and `throttle`, keys `[t, percent]` joined by lines and `[t, percent, "press"]` for a value set at once; drawn 10 times a second from one simulated run, SAFE before `arm`, a detent a percent. `servo`: `angle`, keys `[t, degrees]` as `throttle`'s, on SERVO LIVE while ARMED, a detent a degree. `nav`: `view`, an optional `screen` and `ops`, keys `[t, op]` with `t` and a count of detents, `p` a PRESS or `h` a HOLD, on a SAFE bench; drawn at each gesture |
 | `turn` | optional, `dial` and `duo` models: keys `[t, degrees]`, the knob ring's angle, clockwise seen from the front; the sound track clicks once per 22.5°, a detent |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
@@ -306,9 +306,12 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   The Dial stands on its rear parts, without its ring nut and without a
   panel. Its faces are the fixed models of `tools/render_dial.py`, so the
   readings do not follow the knob outside a `run`. A run's numbers are
-  those of the panel's telemetry model (`telemetry_sim`), read by the
-  panel's renderer (`motor-live`) and handed to the Dial's (`live-motor`);
-  no hardware is measured. SERVO LIVE has no run: its face is fixed. The Stamp button, the cell and the
+  the panel's models' (`telemetry_sim`, `servo_sim`, `supply_sim`), posed
+  by the panel's renderer (`motor-live`, `servo-live`) and sent to the
+  Dial's as the panel's own packets (`RCBENCH_VIDEO_DIAL`, `packets`); no
+  hardware is measured. On SERVO LIVE the Dial's measured angle reads
+  `--`: no angle source is posed. The rail's readings there are the
+  supply model's, given as an INA3221 channel's. The Stamp button, the cell and the
   MX1.25 socket are not in the model; `dial` names them without showing
   them.
 - The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x

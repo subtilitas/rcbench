@@ -170,9 +170,11 @@ def _stretch(scene: dict, old: list, new: list) -> None:
     if "run" in scene:
         run = scene["run"]
         for name in ("from", "arm", "to"):
-            run[name] = move(run[name])
-        for key in run["throttle"]:
-            key[0] = move(key[0])
+            if name in run:
+                run[name] = move(run[name])
+        for name in ("throttle", "angle", "ops"):
+            for key in run.get(name, []):
+                key[0] = move(key[0])
     for keys in scene.get("parts", {}).values():
         for key in keys:
             key[0] = move(key[0])

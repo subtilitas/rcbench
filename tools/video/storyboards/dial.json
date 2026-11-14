@@ -2,7 +2,7 @@
  "name": "dial",
  "lang": "en",
  "brand": "M5Stack Dial",
- "steps": 5,
+ "steps": 6,
  "music": "pachelbel-canon",
  "music_gain": 0.5,
  "voice": {
@@ -23,7 +23,7 @@
     "to": 5.2,
     "kicker": "rcbench · M5Stack Dial",
     "heading": "The Dial:<br>a wireless knob",
-    "text": "Flash it, bind it, turn it.<br>5 steps. A battery is already inside."
+    "text": "Flash it, bind it, turn it.<br>6 steps. A battery is already inside."
    },
    "chips": [
     {
@@ -419,12 +419,259 @@
   {
    "type": "case",
    "model": "duo",
+   "dur": 29.0,
+   "chips": [
+    {
+     "from": 0,
+     "to": 29.0,
+     "n": 3,
+     "text": "Menus and values"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -130,
+      235,
+      345
+     ],
+     [
+      30,
+      12,
+      8
+     ]
+    ],
+    [
+     2.4,
+     [
+      -60,
+      300,
+      250
+     ],
+     [
+      25,
+      18,
+      5
+     ]
+    ],
+    [
+     14.0,
+     [
+      120,
+      285,
+      255
+     ],
+     [
+      50,
+      18,
+      8
+     ]
+    ],
+    [
+     22.0,
+     [
+      150,
+      250,
+      270
+     ],
+     [
+      70,
+      18,
+      10
+     ]
+    ],
+    [
+     29.0,
+     [
+      250,
+      205,
+      330
+     ],
+     [
+      45,
+      14,
+      8
+     ]
+    ]
+   ],
+   "faces": [
+    [
+     0,
+     "waiting"
+    ]
+   ],
+   "run": {
+    "kind": "nav",
+    "view": "overview",
+    "screen": "overview",
+    "from": 1.0,
+    "to": 28.6,
+    "ops": [
+     [
+      3.0,
+      "t1"
+     ],
+     [
+      3.45,
+      "t1"
+     ],
+     [
+      3.9,
+      "t1"
+     ],
+     [
+      4.35,
+      "t1"
+     ],
+     [
+      4.8,
+      "t1"
+     ],
+     [
+      5.25,
+      "t1"
+     ],
+     [
+      5.7,
+      "t1"
+     ],
+     [
+      7.4,
+      "p"
+     ],
+     [
+      9.6,
+      "p"
+     ],
+     [
+      11.4,
+      "t1"
+     ],
+     [
+      11.82,
+      "t1"
+     ],
+     [
+      12.24,
+      "t1"
+     ],
+     [
+      12.66,
+      "t1"
+     ],
+     [
+      13.08,
+      "t1"
+     ],
+     [
+      13.5,
+      "t1"
+     ],
+     [
+      15.2,
+      "p"
+     ],
+     [
+      17.0,
+      "t1"
+     ],
+     [
+      17.5,
+      "t1"
+     ],
+     [
+      18.0,
+      "t1"
+     ],
+     [
+      18.5,
+      "t1"
+     ],
+     [
+      19.0,
+      "t1"
+     ],
+     [
+      21.0,
+      "p"
+     ],
+     [
+      23.4,
+      "h"
+     ],
+     [
+      25.6,
+      "h"
+     ]
+    ]
+   },
+   "labels": [
+    {
+     "from": 2.6,
+     "to": 9.2,
+     "anchor": "dial",
+     "at": [
+      1330,
+      600
+     ],
+     "title": "The turn moves the focus",
+     "text": "On the panel a ring marks the focused item; the Dial names it with its neighbours and its place. <b>PRESS</b> opens it.",
+     "n": 3,
+     "side": "t"
+    },
+    {
+     "from": 11.0,
+     "to": 20.6,
+     "anchor": "dial",
+     "at": [
+      70,
+      780
+     ],
+     "title": "PRESS a value to set it",
+     "text": "The keypad opens and the turn moves the value by its step, inside its range. <b>PRESS</b> keeps it, <b>HOLD</b> cancels.",
+     "n": 3,
+     "side": "r"
+    },
+    {
+     "from": 22.8,
+     "to": 28.6,
+     "anchor": "dial",
+     "at": [
+      70,
+      780
+     ],
+     "title": "HOLD goes back",
+     "text": "One level a hold. The Dial navigates only while the bench is SAFE, and no hold of the panel completes from it.",
+     "n": 3,
+     "side": "r",
+     "style": "muted"
+    }
+   ],
+   "say": [
+    {
+     "at": 0.4,
+     "text": "Step 3. The dial navigates the panel. Each detent moves the focus by one item. The panel marks it with a ring, the dial shows its name. A press opens it."
+    },
+    {
+     "at": 10.4,
+     "text": "In a list, a press on a value opens it for setting. Now the turn changes the value, by its step, inside its range. A press keeps it. A hold cancels."
+    },
+    {
+     "at": 22.6,
+     "text": "Outside a value, a hold goes back one level. All of this works only while the bench is safe."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "duo",
    "dur": 30.0,
    "chips": [
     {
      "from": 0,
      "to": 30.0,
-     "n": 3,
+     "n": 4,
      "text": "MOTOR & ESC"
     }
    ],
@@ -559,7 +806,7 @@
      ],
      "title": "The same readings on both",
      "text": "Six readings, a ring for each. While the bench is SAFE a turn moves nothing: <b>ARM on the panel</b>, with its 2 s hold.",
-     "n": 3,
+     "n": 4,
      "side": "t"
     },
     {
@@ -568,11 +815,11 @@
      "anchor": "knob",
      "at": [
       70,
-      250
+      780
      ],
      "title": "A detent is 1 % of throttle",
      "text": "The panel and the Dial show the same run: throttle, speed, voltage, current and power.",
-     "n": 3,
+     "n": 4,
      "style": "ok",
      "side": "r"
     },
@@ -582,18 +829,18 @@
      "anchor": "dial",
      "at": [
       70,
-      250
+      780
      ],
      "title": "PRESS: throttle 0 %",
      "text": "A press on the Dial's screen sets the throttle to 0 %. A <b>HOLD</b> of 1 s disarms.",
-     "n": 3,
+     "n": 4,
      "side": "r"
     }
    ],
    "say": [
     {
      "at": 0.4,
-     "text": "Step 3. Open motor and E-S-C on the panel. The dial shows the same six readings, each with a ring. While the bench is safe, a turn moves nothing. Arm on the panel, with its 2 second hold."
+     "text": "Step 4. Open motor and E-S-C on the panel. The dial shows the same six readings, each with a ring. While the bench is safe, a turn moves nothing. Arm on the panel, with its 2 second hold."
     },
     {
      "at": 10.2,
@@ -607,13 +854,13 @@
   },
   {
    "type": "case",
-   "model": "dial",
-   "dur": 14.0,
+   "model": "duo",
+   "dur": 17.0,
    "chips": [
     {
      "from": 0,
-     "to": 14.0,
-     "n": 4,
+     "to": 17.0,
+     "n": 5,
      "text": "SERVO LIVE"
     }
    ],
@@ -621,116 +868,130 @@
     [
      0,
      [
-      -50,
-      128,
-      110
+      250,
+      205,
+      330
      ],
      [
-      0,
-      26,
-      0
+      45,
+      14,
+      8
      ]
     ],
     [
      2.0,
      [
-      0,
-      142,
-      40
+      120,
+      285,
+      255
      ],
      [
-      0,
-      30,
-      -2
+      50,
+      18,
+      8
      ]
     ],
     [
-     8.0,
+     9.0,
      [
-      0,
-      142,
-      40
+      40,
+      290,
+      250
      ],
      [
-      0,
-      30,
-      -2
+      35,
+      18,
+      6
      ]
     ],
     [
-     10.0,
+     17.0,
      [
-      60,
-      122,
-      110
+      190,
+      170,
+      215
      ],
      [
-      0,
-      26,
-      0
-     ]
-    ],
-    [
-     14.0,
-     [
-      70,
-      118,
-      110
-     ],
-     [
-      0,
-      26,
-      0
+      100,
+      20,
+      18
      ]
     ]
    ],
    "faces": [
     [
      0,
-     "servo-live"
+     "waiting"
     ]
    ],
-   "turn": [
-    [
-     0,
-     67.5
-    ],
-    [
-     8.6,
-     67.5
-    ],
-    [
-     10.6,
-     157.5
-    ],
-    [
-     11.6,
-     157.5
-    ],
-    [
-     13.0,
-     22.5
+   "run": {
+    "kind": "servo",
+    "from": 0.6,
+    "to": 16.6,
+    "angle": [
+     [
+      2.6,
+      0
+     ],
+     [
+      5.6,
+      25
+     ],
+     [
+      6.8,
+      25
+     ],
+     [
+      10.0,
+      -20
+     ],
+     [
+      11.6,
+      -20
+     ],
+     [
+      11.8,
+      0,
+      "press"
+     ]
     ]
-   ],
+   },
    "labels": [
     {
      "from": 1.0,
-     "to": 13.6,
-     "anchor": "display",
+     "to": 10.6,
+     "anchor": "knob",
      "at": [
-      90,
-      250
+      70,
+      780
      ],
      "title": "SERVO LIVE: a detent is 1°",
-     "text": "The commanded and the measured angle, the pulse and the rail.<br><b>PRESS</b>: CENTER. <b>HOLD</b> 1 s: DISARM.",
-     "n": 4,
+     "text": "The horn on the panel and the commanded angle and pulse on the Dial move together.",
+     "n": 5,
+     "side": "r"
+    },
+    {
+     "from": 11.4,
+     "to": 16.6,
+     "anchor": "dial",
+     "at": [
+      70,
+      780
+     ],
+     "title": "PRESS: CENTER",
+     "text": "A press centres the servo. A <b>HOLD</b> of 1 s disarms.",
+     "n": 5,
      "side": "r"
     }
    ],
    "say": [
     {
      "at": 0.4,
-     "text": "Step 4. On servo live, each detent moves the horn by 1 degree. A press centres the servo. A hold of 1 second disarms."
+     "text": "Step 5. On servo live, each detent moves the horn by 1 degree. The panel and the dial show the same angle and pulse."
+    },
+    {
+     "at": 11.2,
+     "text": "A press centres the servo. A hold of 1 second disarms."
     }
    ]
   },
@@ -742,7 +1003,7 @@
     {
      "from": 0,
      "to": 26.0,
-     "n": 5,
+     "n": 6,
      "text": "What the Dial cannot do"
     }
    ],
@@ -750,9 +1011,9 @@
     [
      0,
      [
-      70,
-      118,
-      110
+      -60,
+      128,
+      120
      ],
      [
       0,
@@ -842,7 +1103,7 @@
      ],
      "title": "Not a safety device",
      "text": "STOP is on the panel only. ARM, SUPPLY ON, PROG 5V and WRITE stay the panel's 2 s holds: no turn or press switches power on.",
-     "n": 5,
+     "n": 6,
      "style": "warn"
     },
     {
@@ -855,7 +1116,7 @@
      ],
      "title": "Link lost while ARMED",
      "text": "500 ms without a packet: LINK LOST, no turn is sent. After 1,000 ms the panel switches the bench <b>SAFE, all outputs off</b>.",
-     "n": 5,
+     "n": 6,
      "style": "warn"
     },
     {
@@ -868,13 +1129,13 @@
      ],
      "title": "Forget the panel",
      "text": "A <b>10 s hold</b> of the screen button forgets the bound panel. Protocol version 1 has no pairing and no encryption.",
-     "n": 5
+     "n": 6
     }
    ],
    "say": [
     {
      "at": 0.4,
-     "text": "Step 5. What the dial cannot do. It is not a safety device. Stop is on the panel only, and no turn or press ever switches power on."
+     "text": "Step 6. What the dial cannot do. It is not a safety device. Stop is on the panel only, and no turn or press ever switches power on."
     },
     {
      "at": 8.0,
@@ -894,11 +1155,12 @@
     "Flash over USB",
     "SETUP › WIRELESS › DIAL: ON",
     "Scan, tap your Dial, SAVE",
-    "ARM on the panel, then turn",
+    "SAFE: turn, PRESS, HOLD navigate",
+    "ARMED: a detent is 1 % or 1°",
     "PRESS: 0 % or CENTER · HOLD: DISARM"
    ],
-   "note": "Not built yet: navigating the panel's lists from the Dial. Reference: docs/Dial.md.",
-   "say": "The dial is bound and in use. Navigating the panel's lists from the dial is not built yet."
+   "note": "Reference: docs/Dial.md.",
+   "say": "The dial is bound and in use."
   }
  ]
 }

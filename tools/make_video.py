@@ -102,6 +102,45 @@ def _check_say(scene: dict, dur: float, where: str, errors: list) -> None:
         last = cue["at"]
 
 
+def _check_run(scene: dict, dur: float, where: str, errors: list) -> None:
+    run = scene["run"]
+    kind = run.get("kind", "motor") if isinstance(run, dict) else None
+    if kind not in RUNS or scene.get("model") not in ("dial", "duo"):
+        errors.append(f"{where} run: needs the dial or duo model and a "
+                      f"kind, one of {', '.join(RUNS)}")
+        return
+    if not (_number(run.get("from")) and _number(run.get("to"))
+            and 0 <= run["from"] < run["to"] <= dur):
+        errors.append(f"{where} run: from and to lie in the scene, in order")
+        return
+    keys = run.get({"motor": "throttle", "servo": "angle",
+                    "nav": "ops"}[kind])
+    rising = (isinstance(keys, list) and keys
+              and all(isinstance(k, list) and len(k) >= 2
+                      and _number(k[0]) for k in keys)
+              and all(a[0] < b[0] for a, b in zip(keys, keys[1:],
+                                                  strict=False)))
+    if not rising:
+        errors.append(f"{where} run: its keys are [t, ...] with rising t")
+    elif kind == "nav":
+        if not (isinstance(run.get("view"), str)
+                and all(len(k) == 2 and isinstance(k[1], str)
+                        and (k[1] in ("p", "h")
+                             or (k[1][:1] == "t"
+                                 and k[1][1:].lstrip("-").isdigit()))
+                        for k in keys)):
+            errors.append(f"{where} run: nav needs a view and ops [t, op], "
+                          "an op being p, h or t and a count of detents")
+    elif not all(len(k) in (2, 3) and _number(k[1]) for k in keys):
+        errors.append(f"{where} run: a key is [t, value]")
+    elif kind == "motor" and not (
+            _number(run.get("arm"))
+            and run["from"] <= run["arm"] < run["to"]
+            and all(0 <= k[1] <= 100 for k in keys)):
+        errors.append(f"{where} run: motor needs arm between from and to "
+                      "and a throttle of 0 to 100")
+
+
 def _check_case(scene: dict, where: str, errors: list) -> None:
     dur = scene.get("dur")
     if not (_number(dur) and dur > 0):
@@ -127,22 +166,8 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
                           "[t, view, screen] with rising t")
             break
         last = key[0]
-    run = scene.get("run")
-    if run is not None:
-        keys = run.get("throttle") if isinstance(run, dict) else None
-        good = (isinstance(keys, list) and keys
-                and all(isinstance(k, list) and len(k) in (2, 3)
-                        and _number(k[0]) and _number(k[1])
-                        and 0 <= k[1] <= 100 for k in keys)
-                and all(a[0] < b[0] for a, b in zip(keys, keys[1:],
-                                                    strict=False)))
-        if not (good and scene.get("model") in ("dial", "duo")
-                and _number(run.get("from")) and _number(run.get("arm"))
-                and _number(run.get("to"))
-                and 0 <= run["from"] <= run["arm"] < run["to"] <= dur):
-            errors.append(f"{where} run: needs the dial model, from, arm "
-                          "and to in order inside the scene, and throttle "
-                          "keys [t, percent] with rising t")
+    if "run" in scene:
+        _check_run(scene, dur, where, errors)
     if "lid" in scene:
         _keys(scene["lid"], 2, f"{where} lid", errors)
     if "display" in scene and not isinstance(
@@ -551,23 +576,26 @@ def faces(board: dict) -> list:
 
 RUN_HZ = 10
 DETENT_DEG = 22.5
+RUNS = ("motor", "servo", "nav")
 
 
-def run_throttle(run: dict, t: float) -> float:
-    """Read a run's throttle at a time.
+def run_value(run: dict, t: float) -> float:
+    """Read a motor run's throttle or a servo run's angle at a time.
 
     Args:
-        run: A scene's "run".
+        run: A scene's "run" of kind motor or servo.
         t: Seconds from the scene's start.
 
     Returns:
-        The throttle in whole percent: 0 before the first key, the last
-        key's after it, on the line between two keys, and at a key with a
-        third entry, a press, that key's from its time on.
+        The value in whole percent or degrees: 0 before the first key, the
+        last key's after it, on the line between two keys, and at a key
+        with a third entry, a press, that key's from its time on.
     """
-    keys = run["throttle"]
+    keys = run["throttle" if run.get("kind", "motor") == "motor"
+               else "angle"]
+    start = run.get("arm", run["from"])
     value = 0.0
-    for a, b in zip([[run["arm"], 0]] + keys, keys, strict=False):
+    for a, b in zip([[start, 0]] + keys, keys, strict=False):
         if t >= b[0]:
             value = b[1]
         elif t > a[0] and len(b) == 2:
@@ -579,18 +607,30 @@ def run_throttle(run: dict, t: float) -> float:
 
 
 def run_turn(run: dict) -> list:
-    """Derive the knob's angle from a run's throttle.
+    """Derive the knob's angle from a run.
 
     Args:
         run: A scene's "run".
 
     Returns:
-        Keys [t, degrees]: a detent of 22.5 degrees a percent of throttle,
-        and no turn into a key that a press set.
+        Keys [t, degrees], a detent 22.5 degrees: a detent a percent of
+        throttle or a degree of horn angle, none into a key that a press
+        set; on a nav run the detents of each turn, over the 0.25s before
+        its time.
     """
-    angle, keys = 0.0, [[run["arm"], 0.0]]
-    last = [run["arm"], 0]
-    for key in run["throttle"]:
+    kind = run.get("kind", "motor")
+    if kind == "nav":
+        angle, keys = 0.0, [[run["from"], 0.0]]
+        for at, op in run["ops"]:
+            if op[:1] == "t" and int(op[1:]) != 0:
+                keys.append([max(keys[-1][0] + 0.01, at - 0.25), angle])
+                angle += int(op[1:]) * DETENT_DEG
+                keys.append([at, angle])
+        return keys
+    start = run.get("arm", run["from"])
+    angle, keys = 0.0, [[start, 0.0]]
+    last = [start, 0]
+    for key in run["throttle" if kind == "motor" else "angle"]:
         if len(key) == 2:
             if key[1] != last[1] and keys[-1][0] < last[0]:
                 keys.append([last[0], angle])
@@ -600,13 +640,55 @@ def run_turn(run: dict) -> list:
     return keys
 
 
+def run_frames(run: dict) -> list:
+    """List the moments of a run that are drawn.
+
+    Args:
+        run: A scene's "run".
+
+    Returns:
+        (t, view, screen, the renderer's variables) per moment: a motor or
+        servo run RUN_HZ times a second, a nav run at its start and at
+        each gesture.
+    """
+    kind = run.get("kind", "motor")
+    frames = []
+    if kind == "nav":
+        done = ["t0"]
+        for at, op in [[run["from"], None]] + run["ops"]:
+            if op is not None:
+                done.append(op)
+            frames.append((at, run["view"], run.get("screen"),
+                           {"RCBENCH_VIDEO_NAV": ",".join(done)}))
+        return frames
+    samples = []
+    count = int(round((run["to"] - run["from"]) * RUN_HZ))
+    for k in range(count + 1):
+        t = run["from"] + k / RUN_HZ
+        if kind == "servo":
+            samples.append(run_value(run, t))
+            frames.append((t, "servo-live", "servo", {
+                "RCBENCH_VIDEO_SERVO": ",".join(f"{v:g}" for v in samples)}))
+            continue
+        armed = t >= run["arm"]
+        if armed:
+            # The panel polls at 20Hz: two samples a frame.
+            for half in (0.5, 1.0):
+                samples.append(run_value(run, t - (1.0 - half) / RUN_HZ))
+        frames.append((t, "motor-live", "motor", {
+            "RCBENCH_VIDEO_RUN": f"{int(armed)}:"
+            + ",".join(f"{v:g}" for v in samples)}))
+    return frames
+
+
 def runs(board: dict, shots: pathlib.Path, tmp: pathlib.Path, panel,
          dial) -> None:
     """Draw each run and give its scene the shots, faces and turn.
 
-    A run is MOTOR & ESC with the Dial beside it: RUN_HZ times a second
-    the panel's screen and the Dial's face of the same moment of one
-    simulated run.
+    A run is the panel with the Dial beside it: at each of its moments
+    the panel's screen, drawn by the panel's renderer with the Dial's
+    gestures applied, and the Dial's face, drawn from the packets that
+    renderer writes for it.
 
     Args:
         board: The storyboard; its scenes with a run gain "panel", "faces"
@@ -618,49 +700,40 @@ def runs(board: dict, shots: pathlib.Path, tmp: pathlib.Path, panel,
     """
     import os
 
-    import render_dial
     import render_ui
+    from PIL import Image
 
+    names = ("RCBENCH_VIDEO_RUN", "RCBENCH_VIDEO_SERVO",
+             "RCBENCH_VIDEO_NAV", "RCBENCH_VIDEO_DIAL")
+    packets, ppm = tmp / "dial.txt", tmp / "dial.ppm"
+    known = {**render_ui.SCREENS, **render_ui.FIT_ONLY}
     for n, scene in enumerate(board["scenes"]):
         run = scene.get("run") if scene["type"] == "case" else None
         if run is None:
             continue
-        out = tmp / "run.txt"
-        samples, peak = [], 0
         scene.setdefault("panel", [])
         scene.setdefault("faces", [])
-        count = int(round((run["to"] - run["from"]) * RUN_HZ))
-        for k in range(count + 1):
-            t = run["from"] + k / RUN_HZ
-            armed = t >= run["arm"]
-            if armed:
-                # The panel polls at 20Hz: two samples a frame.
-                for half in (0.5, 1.0):
-                    samples.append(run_throttle(
-                        run, t - (1.0 - half) / RUN_HZ))
-            os.environ["RCBENCH_VIDEO_RUN"] = (
-                f"{int(armed)}:" + ",".join(f"{v:g}" for v in samples))
-            os.environ["RCBENCH_VIDEO_OUT"] = str(out)
+        for k, (t, view, screen, given) in enumerate(run_frames(run)):
+            for name in names:
+                os.environ.pop(name, None)
+            os.environ.update(given)
+            os.environ["RCBENCH_VIDEO_DIAL"] = str(packets)
+            theme = "dark"
+            if view in known:
+                _, screen, theme = known[view]
             name = f"live-{n}-{k}"
-            render_ui.render_one(panel, tmp, "motor-live", "motor", "dark",
+            render_ui.render_one(panel, tmp, view, screen, theme,
                                  board["lang"]).save(shots / f"{name}.png")
-            nums = out.read_text(encoding="utf-8").split()
-            peak = max(peak, int(nums[1]))
-            ppm = tmp / "run.ppm"
-            subprocess.run([str(dial), str(ppm), "live-motor",
-                            board["lang"],
-                            ",".join([str(int(armed)), *nums, str(peak)])],
-                           check=True)
-            from PIL import Image
+            subprocess.run([str(dial), str(ppm), "packets", board["lang"],
+                            str(packets)], check=True)
             Image.open(ppm).convert("RGB").save(shots / f"dial-{name}.png")
             scene["panel"].append([round(t, 3), name])
             scene["faces"].append([round(t, 3), name])
-        for name in ("RCBENCH_VIDEO_RUN", "RCBENCH_VIDEO_OUT"):
+        for name in names:
             os.environ.pop(name, None)
         scene["panel"].sort(key=lambda key: key[0])
         scene["faces"].sort(key=lambda key: key[0])
         scene["turn"] = run_turn(run)
-        del render_dial
 
 
 def storyboards() -> list:

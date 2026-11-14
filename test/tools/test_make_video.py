@@ -422,13 +422,13 @@ def test_a_run_gives_throttle_and_the_knob_its_turn():
     board = {"lang": "en", "steps": 1, "scenes": [scene]}
     assert make_video.check(board) == []
     run = scene["run"]
-    assert make_video.run_throttle(run, 6) == 0
-    assert make_video.run_throttle(run, 10) == 20
-    assert make_video.run_throttle(run, 13) == 40
+    assert make_video.run_value(run, 6) == 0
+    assert make_video.run_value(run, 10) == 20
+    assert make_video.run_value(run, 13) == 40
     # A press sets its value at once: no line towards it.
-    assert make_video.run_throttle(run, 14.1) == 40
-    assert make_video.run_throttle(run, 14.3) == 0
-    assert make_video.run_throttle(run, 19) == 10
+    assert make_video.run_value(run, 14.1) == 40
+    assert make_video.run_value(run, 14.3) == 0
+    assert make_video.run_value(run, 19) == 10
     # 40 detents up, none for the press, 10 more from 0.
     assert make_video.run_turn(run) == [
         [5, 0.0], [8, 0.0], [12, 900.0], [14, 900.0], [16, 900.0],
@@ -446,3 +446,37 @@ def test_a_run_moves_with_its_narration():
     assert scene["run"]["arm"] == 9
     assert scene["run"]["throttle"][0][0] == 15
     assert scene["panel"][0][0] == 0
+
+
+def test_a_nav_run_draws_at_its_gestures_and_turns_the_knob():
+    """A nav run's moments are its gestures; a turn takes 0.25s."""
+    scene = _run_scene()
+    scene["run"] = {"kind": "nav", "view": "overview", "from": 1, "to": 9,
+                    "ops": [[3, "t2"], [4, "p"], [6, "t-1"], [8, "h"]]}
+    board = {"lang": "en", "steps": 1, "scenes": [scene]}
+    assert make_video.check(board) == []
+    frames = make_video.run_frames(scene["run"])
+    assert [t for t, *_ in frames] == [1, 3, 4, 6, 8]
+    assert frames[0][3] == {"RCBENCH_VIDEO_NAV": "t0"}
+    assert frames[-1][3] == {"RCBENCH_VIDEO_NAV": "t0,t2,p,t-1,h"}
+    assert make_video.run_turn(scene["run"]) == [
+        [1, 0.0], [2.75, 0.0], [3, 45.0], [5.75, 45.0], [6, 22.5]]
+    kinds = [kind for _, kind, _ in video_audio.events(board)]
+    assert kinds.count("tap") == 1 and kinds.count("low") == 1
+    scene["run"]["ops"][0][1] = "x3"
+    assert any("run" in e for e in make_video.check(board))
+
+
+def test_a_servo_run_follows_its_angle():
+    """A servo run is drawn 10 times a second with the angle so far."""
+    run = {"kind": "servo", "from": 1, "to": 2,
+           "angle": [[1.5, 0], [2, 10]]}
+    scene = _run_scene()
+    scene["run"] = run
+    assert make_video.check({"lang": "en", "steps": 1,
+                             "scenes": [scene]}) == []
+    frames = make_video.run_frames(run)
+    assert len(frames) == 11
+    assert frames[-1][1:3] == ("servo-live", "servo")
+    assert frames[-1][3]["RCBENCH_VIDEO_SERVO"].endswith(",6,8,10")
+    assert make_video.run_turn(run) == [[1, 0.0], [1.5, 0.0], [2, 225.0]]

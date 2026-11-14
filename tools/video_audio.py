@@ -217,7 +217,13 @@ def events(board: dict) -> list:
                     found.append((start + a[0] + (k + 0.5) / clicks
                                   * (b[0] - a[0]), "tick", 3))
             for key in scene.get("faces", [])[1:]:
-                found.append((start + key[0], "pop", 0))
+                if not key[1].startswith("live-"):
+                    found.append((start + key[0], "pop", 0))
+            # A nav run's PRESS is a tap, its HOLD a low sound.
+            for at, op in scene.get("run", {}).get("ops", []):
+                if op in ("p", "h"):
+                    found.append((start + at, "tap" if op == "p" else "low",
+                                  0))
             if "pinout" in scene:
                 found.append((start + scene["pinout"]["from"], "pop", 0))
             if "servo" in scene:
