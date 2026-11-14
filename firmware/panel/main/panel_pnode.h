@@ -94,10 +94,20 @@ void panel_pnode_bench(bench_state_t *b);
 
 /**
  * @brief The control task's turn: whether the bench is ARMED or a switch to
- *        ARMED waits, for the run, the dropout rule and the scan's refusal.
- * @param live ARMED, or an arm waiting.
+ *        ARMED waits, for the run, the dropout rule and the scan's refusal,
+ *        and whether the run reads BENCH, for the rule.
+ * @param live      ARMED, or an arm waiting.
+ * @param bench_run The arm is the throttle's: MOTOR & ESC or ESC STICK.
  */
-void panel_pnode_set_live(bool live);
+void panel_pnode_set_live(bool live, bool bench_run);
+
+/**
+ * @brief The control task's check before a switch to ARMED that reads
+ *        BENCH: INA228 SOURCE NODE with POWER NODE OFF or no reading within
+ *        100ms refuses it (pnode_arm_refused()).
+ * @return true when the arm is refused.
+ */
+bool panel_pnode_arm_refused(void);
 
 /**
  * @brief Dropouts that ended a run since start-up, each an error the

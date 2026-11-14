@@ -104,7 +104,9 @@ Mit INA228-Quelle auf NODE:
 
 - Spannung, Strom, Leistung, Spitzen, Ladung und Energie von MOTOR & ESC sind die des Knotens, solange die IOmcu-Verbindung steht. Die eigene Telemetrie des ESC bleibt daneben. Die Spalte `source` des Logs zeigt `node`.
 - Ein Messwert, der älter als 300ms ist, gilt als keiner.
-- Eine Lücke ohne Messwert bis 300ms wird überbrückt, einmal in 10s. Eine längere Lücke oder eine zweite innerhalb von 10s schaltet den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. Ein ARM ohne verbundenen Knoten endet aus demselben Grund 301ms später.
+- Ein ARM von MOTOR & ESC oder ESC STICK wird abgelehnt, solange Leistungsknoten AUS ist oder in den letzten 100ms kein Messwert kam, mit `ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten verbinden.` im Band. SERVO und OUTPUTS schalten unabhängig vom Knoten scharf.
+- In einem Lauf von MOTOR & ESC oder ESC STICK wird eine Lücke ohne Messwert bis 300ms überbrückt, einmal in 10s. Eine längere Lücke oder eine zweite innerhalb von 10s schaltet den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. Ein SERVO- oder OUTPUTS-Lauf endet nicht am Knoten.
+- INA228-Quelle ändert sich bei ARMED nicht.
 - Die Messwerte des Knotens speisen keine Schutzfunktion: Stromgrenzen und Abschaltungen lesen ihre eigenen Sensoren.
 
 | Zustand | Wann |

@@ -145,6 +145,41 @@ static void follow_link(pnode_ctl_t *c, uint32_t now_ms)
 }
 
 /**
+ * @brief The role a scan's reports named for @p a.
+ * @param c The controller.  @param a The address.
+ * @return RCNODE_ROLE_*, 0 for none named.
+ */
+static uint8_t role_seen(const pnode_ctl_t *c, const bleu_addr_t *a)
+{
+    for (uint8_t i = 0; i < c->roles_n; ++i) {
+        if (bleu_addr_eq(&c->role_addr[i], a)) {
+            return c->role_of[i];
+        }
+    }
+    return 0u;
+}
+
+/**
+ * @brief One advertising report while a scan runs: the role it names,
+ *        kept for its address.  The first report that names a role decides,
+ *        and the advertising, whose manufacturer data names it, comes
+ *        before the scan response's name.
+ * @param c The controller.  @param e The report.
+ */
+static void take_report(pnode_ctl_t *c, const bleu_evt_t *e)
+{
+    uint8_t role = 0u;
+    if (!c->scan_open || !rcnode_adv_match(e->data, e->len, &role)
+        || role == 0u || role_seen(c, &e->addr) != 0u
+        || c->roles_n >= PNODE_ROLES_MAX) {
+        return;
+    }
+    c->role_addr[c->roles_n] = e->addr;
+    c->role_of[c->roles_n] = role;
+    ++c->roles_n;
+}
+
+/**
  * @brief A scan's end, read once: its nodes of the power role or of no
  *        name yet, the rest counted as hidden.
  * @param c The controller.
@@ -160,10 +195,10 @@ static void take_scan(pnode_ctl_t *c)
     memset(c->found, 0, sizeof(c->found));
     c->found_n = 0u;
     c->hidden = l->hidden;
-    for (uint8_t i = 0; i < l->found_n && i < BLEU_FOUND_MAX; ++i) {
+    for (uint8_t i = 0; i < l->found_n; ++i) {
         const char *name = l->found[i].name;
-        if (name[0] != '\0' && rcnode_name_role(name) != RCNODE_ROLE_POWER) {
-            ++c->hidden;    /* a balance node, or another name */
+        if (role_seen(c, &l->found[i].addr) != RCNODE_ROLE_POWER) {
+            ++c->hidden;    /* a balance node, or no role named */
             continue;
         }
         pnode_dev_t *o = &c->found[c->found_n++];
@@ -244,6 +279,7 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
     c->hidden = 0u;
     c->scan_done = false;
     c->scan_cut = false;
+    c->roles_n = 0u;
     c->scan_open = bleu_scan(&c->b, now_ms);
     return c->scan_open ? PNODE_SCAN_STARTED : PNODE_SCAN_NOT_READY;
 }
@@ -270,6 +306,9 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
 {
     if (c == NULL || e == NULL) {
         return;
+    }
+    if (e->kind == BLEU_EV_ADV) {
+        take_report(c, e);
     }
     const bool stream = bleu_event(&c->b, e, now_ms);
     take_scan(c);
@@ -314,13 +353,19 @@ static bool send_run(pnode_ctl_t *c, uint32_t now_ms)
 }
 
 bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
-                    bleu_act_t *out)
+                    bool bench_run, bleu_act_t *out)
 {
     if (c == NULL || out == NULL) {
         return false;
     }
     follow_link(c, now_ms);
-    if (pnode_meter_step(&c->m, now_ms, armed, c->cfg.src_node)) {
+    if (pnode_meter_step(&c->m, now_ms, armed, c->cfg.src_node,
+                         bench_run)) {
+        c->run_owed = true;
+    }
+    if (c->m.tag_wrong) {
+        /* The node started again since the run's RUN write. */
+        c->m.tag_wrong = false;
         c->run_owed = true;
     }
     if (!armed) {

@@ -52,7 +52,7 @@ typedef struct {
 
 /** @brief The frame task's values and commands; NULL before the start. */
 static QueueHandle_t   s_q;
-/** @brief Guards s_view, s_bind_seq and s_reading. */
+/** @brief Guards s_view, s_bind_seq, s_reading, s_pub_src and s_pub_on. */
 static portMUX_TYPE    s_mux = portMUX_INITIALIZER_UNLOCKED;
 /** @brief Written by the `blec` task under s_mux, read by the frame. */
 static pnode_view_t    s_view;
@@ -60,6 +60,12 @@ static pnode_view_t    s_view;
 static uint32_t        s_bind_seq;
 /** @brief Written by the `blec` task under s_mux, read by control. */
 static pnode_reading_t s_reading;
+/** @brief INA228 SOURCE NODE as the controller holds it, with s_reading:
+ *         the control task's readings and refusal follow the same value
+ *         the dropout rule does. */
+static bool            s_pub_src;
+/** @brief POWER NODE ON as the controller holds it, with s_reading. */
+static bool            s_pub_on;
 /** @brief The controller, the `blec` task's own. */
 static pnode_ctl_t     s_ctl;
 /** @brief The `blec` task's view before it is published. */
@@ -78,8 +84,9 @@ static pnode_reading_t s_taken;
 static bool            s_taken_ok;
 /** @brief ARMED or an arm waiting, from the control task. */
 static atomic_bool     s_live;
-/** @brief INA228 SOURCE is NODE, from the settings' observer. */
-static atomic_bool     s_src_node;
+/** @brief The run reads BENCH (the throttle armed), from the control
+ *         task. */
+static atomic_bool     s_bench_run;
 /** @brief Dropouts that ended a run, from the `blec` task. */
 static atomic_uint     s_errors;
 
@@ -106,7 +113,6 @@ static void post_cfg(void)
     }
     pnode_msg_t m = { .is_cfg = true };
     cfg_from_settings(&m.cfg);
-    atomic_store(&s_src_node, m.cfg.src_node);
     if (xQueueSend(s_q, &m, 0) != pdTRUE) {
         ESP_LOGW(TAG, "queue full: settings not handed over");
     }
@@ -184,7 +190,7 @@ bool panel_pnode_blec_step(uint32_t now, bleu_act_t *out)
     }
     const uint32_t errors = s_ctl.m.errors;
     const bool acted = pnode_ctl_step(&s_ctl, now, atomic_load(&s_live),
-                                      out);
+                                      atomic_load(&s_bench_run), out);
     if (s_ctl.m.errors != errors) {
         ESP_LOGE(TAG, "readings lost while ARMED on NODE: an error, the "
                       "bench to SAFE (gap %ums, %u gaps, %u)",
@@ -243,6 +249,8 @@ void panel_pnode_blec_publish(uint32_t now)
     s_view = s_view_next;
     s_bind_seq = s_ctl.bind_seq;
     pnode_meter_reading(&s_ctl.m, &s_reading);
+    s_pub_src = s_ctl.cfg.src_node;
+    s_pub_on = s_ctl.cfg.en;
     taskEXIT_CRITICAL(&s_mux);
 }
 
@@ -343,24 +351,45 @@ void panel_pnode_bench(bench_state_t *b)
     if (b == NULL) {
         return;
     }
-    if (s_q == NULL || !atomic_load(&s_src_node)) {
+    pnode_reading_t now;
+    bool src = false;
+    if (s_q != NULL) {
+        taskENTER_CRITICAL(&s_mux);
+        now = s_reading;
+        src = s_pub_src;
+        taskEXIT_CRITICAL(&s_mux);
+    }
+    if (!src) {
         b->from_node = false;
         s_taken_ok = false;
         return;
     }
-    pnode_reading_t now;
-    taskENTER_CRITICAL(&s_mux);
-    now = s_reading;
-    taskEXIT_CRITICAL(&s_mux);
     (void)pnode_reading_bench(s_taken_ok ? &s_taken : NULL, &now, now_ms(),
                               b);
     s_taken = now;
     s_taken_ok = true;
 }
 
-void panel_pnode_set_live(bool live)
+void panel_pnode_set_live(bool live, bool bench_run)
 {
+    atomic_store(&s_bench_run, bench_run);
     atomic_store(&s_live, live);
+}
+
+bool panel_pnode_arm_refused(void)
+{
+    if (s_q == NULL) {
+        return false;
+    }
+    pnode_reading_t r;
+    bool src;
+    bool on;
+    taskENTER_CRITICAL(&s_mux);
+    r = s_reading;
+    src = s_pub_src;
+    on = s_pub_on;
+    taskEXIT_CRITICAL(&s_mux);
+    return pnode_arm_refused(src, on, &r, now_ms());
 }
 
 uint32_t panel_pnode_errors(void)

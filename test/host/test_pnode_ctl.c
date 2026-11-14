@@ -41,6 +41,7 @@ typedef struct {
     pnode_ctl_t c;        /**< the controller under test */
     uint32_t    now;      /**< the clock, ms */
     bool        armed;    /**< the bench is ARMED */
+    bool        servo_run; /**< the run is SERVO's: it reads no BENCH */
     rcnode_info_t info;   /**< what INFO reads */
     unsigned    fail_info; /**< the next INFO reads that fail */
     uint16_t    tok_conn; /**< the last connect's token */
@@ -161,7 +162,7 @@ static void act(rig_t *r, const bleu_act_t *a)
 static void step(rig_t *r)
 {
     bleu_act_t a;
-    for (int i = 0; i < 64 && pnode_ctl_step(&r->c, r->now, r->armed, &a);
+    for (int i = 0; i < 64 && pnode_ctl_step(&r->c, r->now, r->armed, !r->servo_run, &a);
          ++i) {
         act(r, &a);
     }
@@ -199,7 +200,8 @@ static void window(rig_t *r, uint8_t flags)
     w.v_mean = 11100u;
     w.v_min = 11000u;
     uint8_t b[RCNODE_PKT_MAX];
-    notify(r, b, rcnode_enc_pwr_win(&w, b, sizeof b));
+    const size_t n = rcnode_enc_pwr_win(&w, b, sizeof b);
+    notify(r, b, n);
 }
 
 /** @brief One STATUS on STREAM: the cell at @p mv. */
@@ -210,7 +212,8 @@ static void status(rig_t *r, uint16_t mv, uint16_t flags)
     s.vbat = mv;
     s.flags = flags;
     uint8_t b[RCNODE_PKT_MAX];
-    notify(r, b, rcnode_enc_status(&s, b, sizeof b));
+    const size_t n = rcnode_enc_status(&s, b, sizeof b);
+    notify(r, b, n);
 }
 
 /** @brief POWER NODE ON with @p src_node, bound to ADDR, Bluetooth synced,
@@ -418,6 +421,9 @@ TEST_CASE(the_scan_lists_power_nodes_and_binds_one)
     report(&r, 0x01u, true, -50, RCNODE_ROLE_POWER);
     report(&r, 0x02u, true, -40, RCNODE_ROLE_BALANCE);
     report(&r, 0x03u, false, -70, RCNODE_ROLE_POWER);
+    /* A balance node whose name never came: its manufacturer data says
+     * balance, and it is not listed. */
+    report(&r, 0x04u, false, -30, RCNODE_ROLE_BALANCE);
     run(&r, BLEU_SCAN_MS + 100u);
     pnode_view_t v;
     pnode_ctl_view(&r.c, r.now, &v);
@@ -426,7 +432,8 @@ TEST_CASE(the_scan_lists_power_nodes_and_binds_one)
     CHECK_STR_EQ(v.found[0].name, "rcbench-pwr-3401");
     CHECK_EQ(v.found[0].rssi, -50);
     CHECK_STR_EQ(v.found[1].name, "");
-    CHECK(v.hidden >= 1u);
+    CHECK_STR_EQ(v.found[1].addr, "7C:DF:A1:12:34:03 P");
+    CHECK(v.hidden >= 2u);
     CHECK(!pnode_ctl_bind(&r.c, 2u, r.now));
     CHECK(pnode_ctl_bind(&r.c, 0u, r.now));
     CHECK_EQ(r.c.bind_seq, 1u);
@@ -509,8 +516,53 @@ TEST_CASE(power_node_off_ends_the_link_and_is_no_loss)
     pnode_ctl_radio(NULL, IMU_RADIO_READY, 0u);
     pnode_ctl_event(NULL, NULL, 0u);
     bleu_act_t a;
-    CHECK(!pnode_ctl_step(NULL, 0u, false, &a));
+    CHECK(!pnode_ctl_step(NULL, 0u, false, true, &a));
     CHECK(!pnode_ctl_bind(NULL, 0u, 0u));
+}
+
+TEST_CASE(a_node_that_started_again_gets_run_again_and_a_servo_run_no_gap)
+{
+    rig_t r;
+    up(&r, true);
+    window(&r, RCNODE_WF_ONLINE);
+    r.armed = true;
+    run(&r, 2u);
+    CHECK_EQ(r.writes, 1u);
+    const uint8_t tag = r.wr[1];
+    window(&r, RCNODE_WF_ONLINE);
+    /* The link drops and comes back to a node that started again: its RUN
+     * packets carry tag 0, and the panel writes RUN again. */
+    bleu_evt_t e = ev(BLEU_EV_DISCONNECT, r.tok_conn);
+    e.status = 0x213u;
+    pnode_ctl_event(&r.c, &e, r.now);
+    run(&r, BLEU_RETRY_MS + 100u);
+    CHECK(r.c.linked);
+    CHECK_EQ(r.writes, 1u);
+    rcnode_pwr_run_t x;
+    memset(&x, 0, sizeof x);
+    x.i_max = RCNODE_I_NONE;
+    x.v_min = RCNODE_V_NONE;
+    uint8_t b[RCNODE_PKT_MAX];
+    size_t n = rcnode_enc_pwr_run(&x, b, sizeof b);
+    notify(&r, b, n);
+    run(&r, 2u);
+    CHECK_EQ(r.writes, 2u);
+    CHECK_EQ(r.wr[0], RCNODE_OP_RUN);
+    CHECK_EQ(r.wr[1], tag);
+    /* Its next RUN packet carries the tag: nothing more. */
+    x.tag = tag;
+    n = rcnode_enc_pwr_run(&x, b, sizeof b);
+    notify(&r, b, n);
+    run(&r, 5u);
+    CHECK_EQ(r.writes, 2u);
+
+    /* A SERVO run on NODE does not end on the node's silence. */
+    rig_t s;
+    up(&s, true);
+    s.servo_run = true;
+    s.armed = true;
+    run(&s, 2000u);
+    CHECK_EQ(s.c.m.errors, 0u);
 }
 
 int main(void)
@@ -523,5 +575,6 @@ int main(void)
     RUN(the_scan_lists_power_nodes_and_binds_one);
     RUN(the_run_marker_goes_at_the_arm_and_after_a_drop_within_the_run);
     RUN(power_node_off_ends_the_link_and_is_no_loss);
+    RUN(a_node_that_started_again_gets_run_again_and_a_servo_run_no_gap);
     return test_summary("pnode_ctl");
 }

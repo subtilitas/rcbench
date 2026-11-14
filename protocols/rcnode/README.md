@@ -60,7 +60,9 @@ The byte tables of each packet are in `include/rcnode.h`, beside its
 struct.
 
 The STATUS packet goes on STREAM as well, so a central that subscribes to
-STREAM alone, as protocols/bleuart's does, receives it. Its `seq` counts
+STREAM alone, as protocols/bleuart's does, receives it. The panel reads
+STATUS from STREAM; the STATUS characteristic stays, read and notified,
+for a phone's BLE scanner. Its `seq` counts
 STATUS packets; a gap in STREAM's own `seq` is counted over the other
 types only.
 

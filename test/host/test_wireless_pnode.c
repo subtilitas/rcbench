@@ -236,6 +236,38 @@ TEST_CASE(reset_keeps_the_bound_node)
     CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_ADDR), "7C:DF:A1:12:34:02 P");
 }
 
+/** @brief The bench's ARMED state as the settings ask it. */
+static bool s_pn_armed;
+/** @brief The settings' ARMED source. @return s_pn_armed. */
+static bool pn_armed(void)
+{
+    return s_pn_armed;
+}
+
+TEST_CASE(the_source_does_not_change_while_armed)
+{
+    fresh_hub();
+    settings_set_armed(pn_armed);
+    settings_set(SET_PNODE_EN, 1.0f);
+    s_pn_armed = true;
+    CHECK(settings_safe_only(SET_I228_SRC));
+    CHECK(settings_held(SET_I228_SRC));
+    settings_set(SET_I228_SRC, 1.0f);
+    settings_adjust(SET_I228_SRC, 1);
+    CHECK_EQ(settings_get_int(SET_I228_SRC), 0);
+    s_pn_armed = false;
+    settings_set(SET_I228_SRC, 1.0f);
+    CHECK_EQ(settings_get_int(SET_I228_SRC), 1);
+    s_pn_armed = true;
+    wireless_pane_reset(WL_ENTRY_PNODE);
+    settings_set(SET_I228_SRC, 0.0f);
+    CHECK_EQ(settings_get_int(SET_I228_SRC), 1);
+    /* POWER NODE itself is not held: OFF while ARMED is the operator's. */
+    CHECK(!settings_held(SET_PNODE_EN));
+    s_pn_armed = false;
+    settings_set_armed(NULL);
+}
+
 int main(void)
 {
     RUN(the_entry_shows_on_and_source_off_and_its_rows_on);
@@ -244,5 +276,6 @@ int main(void)
     RUN(the_battery_row_says_what_the_status_says);
     RUN(every_node_state_word_fits_25_cells_in_its_colour);
     RUN(reset_keeps_the_bound_node);
+    RUN(the_source_does_not_change_while_armed);
     return test_summary("wireless_pnode");
 }

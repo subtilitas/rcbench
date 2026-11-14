@@ -5838,6 +5838,9 @@ UI_TEXT(ALERT_ARM_PROG, 94,
 UI_TEXT(ALERT_ARM_C6, 94,
     "Cannot switch to ARMED: the C6 radio update is running.",
     "ARMED gesperrt: Das C6-Funk-Update läuft.")
+UI_TEXT(ALERT_ARM_PNODE, 94,
+    "Cannot switch to ARMED: no power node readings. Set INA228 source WIRED or connect the node.",
+    "ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten verbinden.")
 UI_TEXT(ALERT_ARM_NO_PIN, 94,
     "Cannot switch to ARMED: no motor pin. Tap TARGET to choose one.",
     "ARMED gesperrt: kein Motor-Pin. Tippe auf ZIEL und wähle einen.")

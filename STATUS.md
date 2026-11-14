@@ -1196,19 +1196,23 @@ panel's Bluetooth LE hub, owner 2 (`shared/ui/pnode_ctl.c`,
 `test_pnode_ctl` against a scripted host stack and node: the profile's
 UUIDs, INFO's protocol, role and INA228 set-up, UP, STALE after 300ms and
 LOST, the scan refused while ARMED and stopped at the switch to ARMED,
-power nodes listed and balance nodes not, the bind, the RUN marker at the
-switch to ARMED and after a drop within the run). The readings
+power nodes listed by the role in the manufacturer data and nameless
+balance nodes not, the bind, the RUN marker at the switch to ARMED, after a
+drop within the run and after a node restart under another tag). The readings
 (`shared/ui/pnode_meter.c`, `test_pnode_meter`: the mean of the windows
 since the last read, stale after 300ms, a clipped window at the full scale
 of INFO's range and shunt, the run's peaks with the node's RUN extremes
 under its tag, the totals as differences of the 40-bit accumulators with
 the restart rule, the scaling against `ina228_calibrate()`, and the
 dropout rule of `servo_gap.h` at 299ms, 300ms and 301ms and a second gap
-9.9s and 10.1s after the first). SETUP > WIRELESS > POWER NODE with
-INA228 SOURCE (`shared/ui/wireless_pnode.c`, `test_wireless_pnode`), the
+9.9s and 10.1s after the first, for a motor run and not for a servo run,
+the totals baseline at 500ms and 501ms, and the ARM refusal with the node
+OFF or without a reading in the last 100ms). SETUP > WIRELESS > POWER NODE with
+INA228 SOURCE, which keeps its value while ARMED
+(`shared/ui/wireless_pnode.c`, `test_wireless_pnode`), the
 log's `node` source (`test_logwriter`), and the `blec` task's and the
 control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
-`panel_supply.c`). The latency from a window to the panel's read is not
+`panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
 measured.
 
 ### Phase tap (ESC tones)

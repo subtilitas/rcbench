@@ -439,8 +439,10 @@ erste Leistungsknoten EIN startet Bluetooth LE bis zum Neustart des
 Panels.
 
 - **Suchen und binden.** KNOTEN SUCHEN sucht 10s lang und listet die Geräte,
-  deren Advertising den Knotendienst nennt, ohne die, deren Name die Rolle
-  Auswuchten nennt. Tippen bindet einen über seine Adresse, in SETUP
+  deren Advertising den Knotendienst und in den Herstellerdaten die Rolle
+  Leistung nennt (`rcnode_adv_match()`, der Name nur, wo keine
+  Herstellerdaten kamen). Ein Auswuchtknoten wird nicht gelistet, mit oder
+  ohne Namen. Tippen bindet einen über seine Adresse, in SETUP
   gehalten (`pnode_ble`, `pnode_name`). Ein gebundener Knoten wird nach
   jedem Abbruch ohne Suche wieder verbunden, 1000ms nach dem Abbruch und
   nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Eine
@@ -456,9 +458,15 @@ Panels.
 - **Der RUN-Marker.** Bei jedem Schalten auf ARMED schreibt das Panel RUN
   mit dem Tag des Laufs, 1 bis 255, auf CONTROL. Eine Verbindung, die dann
   nicht steht, bekommt den Write, wenn sie innerhalb des Laufs wiederkommt.
+  Eine Verbindung, die innerhalb des Laufs zu einem Knoten wiederkommt,
+  dessen erstes RUN-Paket ein anderes Tag trägt, ein neu gestarteter
+  Knoten, bekommt den Write noch einmal.
 
 INA228-QUELLE (WIRED, NODE; Vorgabe WIRED) legt fest, wessen INA228 MOTOR &
-ESC speist. Mit NODE nach jedem Lesen der BENCH-Page des IOmcu:
+ESC speist. Sie ändert sich nur bei SAFE: bei ARMED hat ihre Zeile keine
+Tasten, und `settings_set()` und Zurücksetzen lassen sie stehen
+(`settings_safe_only()`). Mit NODE nach jedem Lesen der BENCH-Page des
+IOmcu:
 
 | Wert | Vom Knoten |
 | --- | --- |
@@ -468,22 +476,36 @@ ESC speist. Mit NODE nach jedem Lesen der BENCH-Page des IOmcu:
 | Ladung, Energie | Differenzen der 40-Bit-Akkumulatoren mit CHARGE_OK und ENERGY_OK, ab dem letzten Paket vor dem Schalten auf ARMED, bis zu 500ms davor; ein Wechsel der Epoche oder ein Fallen von ENERGY addiert die neuen Zählwerte ab 0 (`rcnode_acc_restarted()`); die Schritte werden mit `ina228_charge_uc()` und `ina228_energy_mj()` zu µC und mJ |
 | die Telemetrie des ESC | Spannung und Strom der BENCH-Page selbst, die die des ESC sind, solange der INA228 des IOmcu nicht die Quelle ist, werden zu den Werten des ESC |
 
-Ein Lauf ohne Akkumulatorpaket in den 1500ms vor dem Schalten auf ARMED hat
+Ein Lauf ohne Akkumulatorpaket in den 500ms vor dem Schalten auf ARMED hat
 keine Summen vom Knoten: das Panel zählt Ladung und Energie aus den
 Messwerten. Summen, die älter als 1500ms sind, verlieren ihre Markierung,
 und das Panel zählt aus den Messwerten, solange sie fehlen.
 
-**Aussetzer.** Bei ARMED mit NODE öffnet ein Messwert, der mehr als 100ms ausbleibt,
-einen Aussetzer, datiert ab dem letzten Messwert; der nächste Messwert
-schließt ihn. Die Regel ist die jedes Messsensors (`servo_gap.h`): ein
-Aussetzer bis 300ms wird überbrückt, einmal in 10s; ein längerer oder ein
-zweiter, der innerhalb von 10s nach dem Beginn des ersten beginnt, ist ein
-Fehler: SAFE und alle Ausgänge aus, mit
+**Das Schalten auf ARMED.** Mit NODE wird ein ARM von MOTOR & ESC oder ESC
+STICK, deren Läufe BENCH lesen, abgelehnt, solange Leistungsknoten AUS ist
+oder in den letzten 100ms kein Messwert kam. Das Band zeigt `ARMED
+gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten
+verbinden.` Die Ablehnung steht bei den anderen Arm-Ablehnungen des Panels
+(`drain_commands()`), jeder Weg, der das Gas scharf schaltet, trifft auf
+sie. Die ARMs von SERVO und OUTPUTS lesen keinen INA228 und werden für den
+Knoten nicht abgelehnt.
+
+**Aussetzer.** Ein Lauf zählt auf den Knoten, wenn er BENCH liest, MOTOR &
+ESC oder ESC STICK, mit NODE. Ein SERVO- oder OUTPUTS-Lauf zählt keinen. In
+einem solchen Lauf öffnet ein Messwert, der mehr als 100ms ausbleibt, einen
+Aussetzer, datiert ab dem letzten Messwert, nicht vor dem Beginn des
+Laufs; der nächste Messwert schließt ihn. Die Regel ist die jedes
+Messsensors (`servo_gap.h`): ein Aussetzer bis 300ms wird überbrückt,
+einmal in 10s; ein längerer oder ein zweiter, der innerhalb von 10s nach
+dem Beginn des ersten beginnt, ist ein Fehler: SAFE und alle Ausgänge aus,
+mit
 `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`
-im Band. Ein Schalten auf ARMED ohne Messwert in den letzten 100ms öffnet
-sofort einen Aussetzer. Ein ausgeschalteter, zu weit entfernter oder nicht
-gebundener Knoten beendet einen Lauf also nach 301ms. Bei WIRED beendet die
-Verbindung des Knotens nichts.
+im Band. Bei WIRED beendet die Verbindung des Knotens nichts.
+
+Die Zeiten der Aussetzer sind die Verarbeitungszeiten der Task `blec`: ein
+Fenster zählt, wenn die Task seine Notification nimmt, alle 5ms, nicht wenn
+der Knoten es geschlossen hat. Die Verzögerung vom Fenster des Knotens bis
+zur Task ist nicht gemessen.
 
 Die Konsole des Panels gibt die Wechsel der Verbindung aus und, solange sie
 steht, einmal je Sekunde eine Zeile mit dem Tag `node`:
@@ -595,9 +617,6 @@ this start`.
 - Das Panel verbindet sich nur mit dem Leistungsknoten. Der Auswuchtknoten
   hat noch keine Seite im Panel; ein BLE-Scanner auf einem Telefon zeigt
   seinen Dienst und seinen Stream.
-- Mit INA228-QUELLE NODE wird das Schalten auf ARMED nicht abgelehnt, wenn
-  kein Knoten verbunden ist: der Lauf endet nach 301ms, wie die
-  Aussetzerregel sagt.
 - Das Panel zeigt keine Signalstärke eines verbundenen Knotens. STATUS
   trägt keine; die Trefferliste zeigt die dBm der Suche.
 - Die Messwerte des Knotens erreichen MOTOR & ESC nur, solange die

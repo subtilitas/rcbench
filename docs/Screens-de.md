@@ -6615,14 +6615,18 @@ Mit INA228-Quelle auf NODE:
   daneben.
 - Ein Messwert, der älter als 300ms ist, gilt als keiner: Spannung, Strom
   und Leistung erscheinen als nicht gemessen.
-- Ein Lauf zählt auf den Knoten. Eine Lücke ohne Messwert von bis zu 300ms
-  wird überbrückt, einmal in 10s. Eine längere Lücke oder eine zweite
-  innerhalb von 10s nach dem Beginn der ersten ist ein Fehler: SAFE, alle
-  Ausgänge aus, und das Band zeigt
+- Ein ARM von MOTOR & ESC oder ESC STICK wird abgelehnt, solange
+  Leistungsknoten AUS ist oder in den letzten 100ms kein Messwert kam; das
+  Band zeigt `ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle
+  WIRED oder Knoten verbinden.` Die ARMs von SERVO und OUTPUTS lesen
+  keinen INA228 und werden nicht abgelehnt.
+- Ein Lauf von MOTOR & ESC oder ESC STICK zählt auf den Knoten. Eine Lücke
+  ohne Messwert von bis zu 300ms wird überbrückt, einmal in 10s. Eine
+  längere Lücke oder eine zweite innerhalb von 10s nach dem Beginn der
+  ersten ist ein Fehler: SAFE, alle Ausgänge aus, und das Band zeigt
   `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`.
-  Ein Schalten auf ARMED ohne Messwert in den letzten 100ms beginnt sofort
-  eine Lücke, ein ausgeschalteter oder zu weit entfernter Knoten beendet
-  den Lauf also nach 301ms.
+  Ein SERVO- oder OUTPUTS-Lauf endet nicht am Knoten.
+- INA228-Quelle ändert sich bei ARMED nicht: ihre Zeile hat keine Tasten.
 - Die Messwerte des Knotens speisen keine Schutzfunktion: das Stromlimit
   des IOmcu und die Abschaltungen des Panels lesen ihre eigenen Sensoren.
 

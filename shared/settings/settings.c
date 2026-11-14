@@ -203,7 +203,8 @@ void settings_set_armed(settings_armed_fn fn)
 bool settings_safe_only(setting_id_t id)
 {
     return id == SET_SCREEN_ROT || id == SET_PDMINI_EN || id == SET_PDMINI_TX
-           || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD;
+           || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD
+           || id == SET_I228_SRC;
 }
 
 bool settings_held(setting_id_t id)

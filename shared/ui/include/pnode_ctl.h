@@ -10,9 +10,10 @@
  * The rules it holds (docs/Nodes.md, "The panel"):
  *
  * - A scan lists a device whose advertising names the rcnode service in a
- *   128-bit UUID list, as the node sends it (rcnode_adv_build()).  A
- *   device whose name names the balance role is not listed; one whose
- *   name has not come yet is.
+ *   128-bit UUID list, as the node sends it (rcnode_adv_build()), and the
+ *   power role, in its manufacturer data or else its name
+ *   (rcnode_adv_match()).  A device whose reports name no role, or
+ *   another, is not listed.
  * - A scan while the bench is ARMED is refused (PNODE_SCAN_ARMED), and a
  *   scan that runs is stopped at the switch to ARMED.
  * - One node is bound by its address, as the Dial; a bound node is
@@ -24,7 +25,9 @@
  *   STREAM as well, as the central subscribes to STREAM alone.
  * - At each switch to ARMED the RUN marker goes to CONTROL with the run's
  *   tag, so the node's extremes are the run's; a link that is down then
- *   gets it when it comes back within the run.
+ *   gets it when it comes back within the run, and a link that comes back
+ *   within the run to a node whose RUN packets carry another tag (it
+ *   started again) gets it again.
  *
  * Every function of one controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -56,6 +59,9 @@ extern const bleu_profile_t pnode_profile;
  *         IMU is owner 0, the Dial 1. */
 #define PNODE_BLE_OWNER 2u
 
+/** @brief Devices a scan keeps the role of (rcnode_adv_match()). */
+#define PNODE_ROLES_MAX 16u
+
 /** @brief The controller.  Its members are private but for the tests. */
 typedef struct {
     pnode_cfg_t   cfg;         /**< SETUP's values, the bind's after one */
@@ -76,6 +82,9 @@ typedef struct {
     bool          scan_done;   /**< a scan ended since POWER NODE ON */
     bool          scan_cut;    /**< the bench ARMED stopped that scan */
     pnode_dev_t   found[PNODE_FOUND_MAX]; /**< the last scan's nodes */
+    bleu_addr_t   role_addr[PNODE_ROLES_MAX]; /**< the scan's rcnode devices */
+    uint8_t       role_of[PNODE_ROLES_MAX];   /**< ...and each one's role */
+    uint8_t       roles_n;     /**< their count */
     uint8_t       found_n;     /**< their count */
     uint16_t      hidden;      /**< other devices the last scan heard */
     uint32_t      bind_seq;    /**< binds, counted */
@@ -143,14 +152,15 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms);
  *        scan stopped while @p armed, then the central's next action, else
  *        the RUN write owed.  Call until it returns false, at least every
  *        10ms.
- * @param c      The controller.
- * @param now_ms The clock.
- * @param armed  The bench is ARMED, or a switch to ARMED waits.
- * @param out    Receives the action.
+ * @param c         The controller.
+ * @param now_ms    The clock.
+ * @param armed     The bench is ARMED, or a switch to ARMED waits.
+ * @param bench_run The run reads BENCH's readings (pnode_meter_step()).
+ * @param out       Receives the action.
  * @return true when @p out holds one.
  */
 bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
-                    bleu_act_t *out);
+                    bool bench_run, bleu_act_t *out);
 
 /**
  * @brief Where the node stands.

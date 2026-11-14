@@ -414,8 +414,9 @@ SETUP > WIRELESS > POWER NODE holds its rows
 starts Bluetooth LE until the panel restarts.
 
 - **Scan and bind.** SCAN FOR NODE scans 10s and lists the devices whose
-  advertising names the node service, less those whose name names the
-  balance role. A tap binds one by its address, kept in SETUP
+  advertising names the node service and the power role in its
+  manufacturer data (`rcnode_adv_match()`, the name only where no
+  manufacturer data came). A balance node is not listed, named or not. A tap binds one by its address, kept in SETUP
   (`pnode_ble`, `pnode_name`). A bound node is connected again after each
   drop without a scan, 1000ms after the drop and on the hub's backoff
   after a failed connect. A scan while ARMED is refused, and a scan that
@@ -428,10 +429,14 @@ starts Bluetooth LE until the panel restarts.
   its STATUS packet on STREAM as well; the battery row reads it.
 - **The RUN marker.** At each switch to ARMED the panel writes RUN with the
   run's tag, 1 to 255, to CONTROL. A link that is down then gets the write
-  when it comes back within the run.
+  when it comes back within the run. A link that comes back within the run
+  to a node whose first RUN packet carries another tag, a node that started
+  again, gets the write again.
 
 INA228 SOURCE (WIRED, NODE; WIRED by default) says whose INA228 feeds MOTOR
-& ESC. With NODE, after each read of the IOmcu's BENCH page:
+& ESC. It changes only while SAFE: while ARMED its row has no keys and
+`settings_set()` and RESET leave it (`settings_safe_only()`). With NODE,
+after each read of the IOmcu's BENCH page:
 
 | Figure | From the node |
 | --- | --- |
@@ -441,20 +446,32 @@ INA228 SOURCE (WIRED, NODE; WIRED by default) says whose INA228 feeds MOTOR
 | charge, energy | differences of the 40-bit accumulators with CHARGE_OK and ENERGY_OK, from the last packet before the switch to ARMED, up to 500ms before it; an epoch change or a fall in ENERGY adds the new counts from 0 (`rcnode_acc_restarted()`); the steps become µC and mJ with `ina228_charge_uc()` and `ina228_energy_mj()` |
 | the ESC's telemetry | BENCH's own voltage and current, which are the ESC's while the IOmcu's INA228 is not the source, move to the ESC's figures |
 
-A run without an accumulator packet in the 1500ms before the switch to
+A run without an accumulator packet in the 500ms before the switch to
 ARMED has no node totals: the panel counts charge and energy from the
 readings. Totals older than 1500ms lose their mark, and the panel counts
 from the readings while they are absent.
 
-**Dropouts.** While ARMED with NODE, no reading for more than 100ms opens a dropout
-dated from the last reading, and the next reading closes it. The rule is
+**The switch to ARMED.** With NODE, an ARM of MOTOR & ESC or ESC STICK,
+whose runs read BENCH, is refused while POWER NODE is OFF or no reading
+came in the last 100ms. The band reads `Cannot switch to ARMED: no power
+node readings. Set INA228 source WIRED or connect the node.` The refusal
+sits with the panel's other arm refusals (`drain_commands()`), so every
+path that arms the throttle meets it. SERVO's and OUTPUTS' arms read no
+INA228 and are not refused for the node.
+
+**Dropouts.** A run counts on the node when it reads BENCH, MOTOR & ESC or
+ESC STICK, with NODE. A SERVO or OUTPUTS run counts none. In such a run, no
+reading for more than 100ms opens a dropout dated from the last reading,
+not before the run's start, and the next reading closes it. The rule is
 the one of every measurement sensor (`servo_gap.h`): a dropout of up to
 300ms rides, once in 10s; a longer one, or a second one that starts within
 10s of the first's start, is an error: SAFE and every output off, with
 `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`
-in the band. A switch to ARMED with no reading in the last 100ms opens a
-dropout at once. A node that is off, out of range or not bound therefore
-ends a run 301ms in. While WIRED the node's link ends nothing.
+in the band. While WIRED the node's link ends nothing.
+
+The dropout times are the `blec` task's processing times: a window counts
+when the task takes its notification, every 5ms, not when the node closed
+it. The delay from the node's window to the task is not measured.
 
 The panel's console prints the link's changes and, once a second while
 linked, a line tagged `node`:
@@ -563,8 +580,6 @@ this start`.
 
 - The panel connects to the power node only. The balance node has no panel
   side yet; a phone's BLE scanner shows its service and stream.
-- With INA228 SOURCE NODE the switch to ARMED is not refused when no node
-  is linked: the run ends 301ms in, as the dropout rule says.
 - The panel shows no signal strength of a linked node. STATUS carries
   none; the found list shows the scan's dBm.
 - The node's readings reach MOTOR & ESC only while the IOmcu link is up:

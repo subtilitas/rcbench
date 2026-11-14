@@ -104,7 +104,9 @@ With INA228 source on NODE:
 
 - MOTOR & ESC's voltage, current, power, peaks, charge and energy are the node's while the IOmcu link is up. The ESC's own telemetry stays beside them. The log's `source` column reads `node`.
 - A reading older than 300ms is none.
-- A gap without a reading of up to 300ms rides, once in 10s. A longer gap, or a second one within 10s, switches the bench to SAFE with all outputs off, and the band shows `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`. An ARM with no node linked ends 301ms later for the same reason.
+- An ARM of MOTOR & ESC or ESC STICK is refused while Power node is OFF or no reading came in the last 100ms, with `Cannot switch to ARMED: no power node readings. Set INA228 source WIRED or connect the node.` in the band. SERVO and OUTPUTS arm whatever the node does.
+- In a MOTOR & ESC or ESC STICK run, a gap without a reading of up to 300ms rides, once in 10s. A longer gap, or a second one within 10s, switches the bench to SAFE with all outputs off, and the band shows `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`. A SERVO or OUTPUTS run does not end on the node.
+- INA228 source does not change while ARMED.
 - The node's readings feed no protection: the current limits and trips read their own sensors.
 
 | State | When |

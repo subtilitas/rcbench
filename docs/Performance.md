@@ -745,8 +745,8 @@ The console row is measured without the Dial's client (`panel_dial.c`,
 it, not measured. The Dial's client adds 4,376 bytes of DIRAM, 4,368 of them
 .bss, and 23,536 bytes of image to the default build. The power node's
 client, its objects alone (`panel_pnode.c`, `pnode_ctl.c`, `pnode_meter.c`,
-`wireless_pnode.c` and `protocols/rcnode`), adds 3,731 bytes of DIRAM,
-3,723 of them .bss, and 10,560 bytes of image (`esp_idf_size --files`);
+`wireless_pnode.c` and `protocols/rcnode`), adds 3,869 bytes of DIRAM,
+3,861 of them .bss, and 11,748 bytes of image (`esp_idf_size --files`);
 its texts and its calls in other files are not counted.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes

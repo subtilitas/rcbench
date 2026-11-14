@@ -374,7 +374,8 @@ static __attribute__((noinline)) void dial_faults_follow(void)
 static error_watch_t s_pnode_watch;
 
 /**
- * @brief Whether the bench is ARMED, to the power node's controller, and
+ * @brief Whether the bench is ARMED and whether the throttle's arm makes
+ *        the run one that reads BENCH, to the power node's controller, and
  *        each run its readings left as an error: SAFE and every output
  *        off, the band's alert and its console line (pnode_meter.h).
  *        Control task only.
@@ -382,7 +383,8 @@ static error_watch_t s_pnode_watch;
 static __attribute__((noinline)) void pnode_faults_follow(void)
 {
     const error_bench_t b = error_bench();
-    panel_pnode_set_live(b.live);
+    panel_pnode_set_live(b.live, (arming_roles(&s_arm)
+                                  & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u);
     const uint32_t count = panel_pnode_errors();
     if (count == s_pnode_watch.seen) {
         return;

@@ -32,6 +32,9 @@ void pnode_meter_link(pnode_meter_t *m)
     if (m != NULL) {
         m->have_seq = false;
         m->cal_ok = false;
+        /* Within a run the node may have started again since the RUN
+         * write: its next RUN packet says. */
+        m->tag_check = m->live && m->r.run && m->tag != 0u;
     }
 }
 
@@ -196,6 +199,10 @@ static void take_acc(pnode_meter_t *m, const rcnode_pwr_acc_t *a,
 static void take_run(pnode_meter_t *m, const rcnode_pwr_run_t *x)
 {
     pnode_reading_t *r = &m->r;
+    if (m->tag_check) {
+        m->tag_check = false;
+        m->tag_wrong = m->live && r->run && x->tag != m->tag;
+    }
     if (!r->run || m->tag == 0u || x->tag != m->tag) {
         return;
     }
@@ -277,12 +284,12 @@ static void run_start(pnode_meter_t *m, uint32_t now_ms)
     /* From the last accumulators before the arm, when they are recent, or
      * none this run. */
     r->totals_ok = m->have_acc
-                   && now_ms - r->acc_ms <= PNODE_ACC_STALE_MS;
+                   && now_ms - r->acc_ms <= PNODE_ACC_BASE_MS;
     m->tag = (uint8_t)((m->tag % 255u) + 1u);
 }
 
 bool pnode_meter_step(pnode_meter_t *m, uint32_t now_ms, bool live,
-                      bool rule)
+                      bool src_node, bool bench_run)
 {
     if (m == NULL) {
         return false;
@@ -291,6 +298,12 @@ bool pnode_meter_step(pnode_meter_t *m, uint32_t now_ms, bool live,
     if (started) {
         run_start(m, now_ms);
     }
+    if (!live) {
+        m->tag_check = false;
+        m->tag_wrong = false;
+    }
+    /* Only a run that reads BENCH counts on the node. */
+    const bool rule = src_node && bench_run;
     const bool counting = live && rule;
     if (counting && !(m->live && m->rule)) {
         /* The rule starts with the run, or with NODE chosen inside one. */
@@ -318,6 +331,18 @@ bool pnode_meter_step(pnode_meter_t *m, uint32_t now_ms, bool live,
         }
     }
     return started;
+}
+
+bool pnode_arm_refused(bool src_node, bool node_on, const pnode_reading_t *r,
+                       uint32_t now_ms)
+{
+    if (!src_node) {
+        return false;
+    }
+    const bool streams = r != NULL && r->have_win
+                         && (int32_t)(now_ms - r->win_ms)
+                                <= (int32_t)PNODE_GAP_OPEN_MS;
+    return !node_on || !streams;
 }
 
 void pnode_meter_reading(const pnode_meter_t *m, pnode_reading_t *out)

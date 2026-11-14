@@ -54,6 +54,40 @@ const pnode_view_t *wireless_pane_pnode(void)
     return &s_node;
 }
 
+/** @brief Two found nodes alike, field by field.
+ *  @param a One. @param b The other.
+ *  @return true when the address, the name and the RSSI match. */
+static bool dev_same(const pnode_dev_t *a, const pnode_dev_t *b)
+{
+    return strncmp(a->addr, b->addr, sizeof a->addr) == 0
+        && strncmp(a->name, b->name, sizeof a->name) == 0
+        && a->rssi == b->rssi;
+}
+
+/** @brief Two views alike, field by field: the struct has padding, so a
+ *         byte compare could see a change where none is.
+ *  @param a One. @param b The other.
+ *  @return true when every field matches. */
+static bool view_same(const pnode_view_t *a, const pnode_view_t *b)
+{
+    if (a->link != b->link || a->scan_done != b->scan_done
+        || a->scan_cut != b->scan_cut || a->found_n != b->found_n
+        || a->hidden != b->hidden || a->proto != b->proto
+        || a->have_status != b->have_status || a->bat_low != b->bat_low
+        || a->bat_none != b->bat_none || a->bat_err != b->bat_err
+        || a->vbat_mv != b->vbat_mv
+        || strncmp(a->bound_addr, b->bound_addr, sizeof a->bound_addr) != 0
+        || strncmp(a->bound_name, b->bound_name, sizeof a->bound_name) != 0) {
+        return false;
+    }
+    for (size_t i = 0u; i < PNODE_FOUND_MAX; i++) {
+        if (!dev_same(&a->found[i], &b->found[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void wireless_pane_set_pnode(const pnode_view_t *v)
 {
     pnode_view_t next;
@@ -62,7 +96,7 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
     } else {
         memset(&next, 0, sizeof(next));
     }
-    if (memcmp(&next, &s_node, sizeof(next)) != 0) {
+    if (!view_same(&next, &s_node)) {
         s_node = next;
         settings_screen_invalidate();
     }
@@ -242,7 +276,8 @@ const char *wireless_pane_pnode_word(const pnode_view_t *v, char *buf,
     const uint8_t link = v != NULL ? v->link : (uint8_t)PNODE_LINK_OFF;
     const char *w = word_of(link, &col);
     if (w == NULL) {
-        snprintf(buf, n, TR(DIAL_ST_PROTO), (unsigned)v->proto);
+        /* Only a view's PNODE_LINK_PROTO gets here; v is not NULL. */
+        snprintf(buf, n, TR(DIAL_ST_PROTO), v != NULL ? (unsigned)v->proto : 0u);
     } else {
         snprintf(buf, n, "%s", w);
     }

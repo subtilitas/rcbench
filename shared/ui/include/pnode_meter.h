@@ -21,9 +21,9 @@
  *   with both CHARGE_OK and ENERGY_OK, summed since the run's start.  An
  *   epoch change or a fall in ENERGY (rcnode_acc_restarted()) adds the new
  *   counts from 0.  The run starts at the last such packet before the
- *   switch to ARMED, up to RCNODE_ACC_MS (500ms) before it; without one in
- *   the last PNODE_ACC_STALE_MS the run has no node totals, and the panel
- *   counts from the readings.
+ *   switch to ARMED, up to PNODE_ACC_BASE_MS (500ms, RCNODE_ACC_MS) before
+ *   it; without one the run has no node totals, and the panel counts from
+ *   the readings.
  *   The register steps become µC and mJ with ina228_charge_uc() and
  *   ina228_energy_mj() on the calibration INFO names, which must be the
  *   one ina228_calibrate() gives for that shunt at that range's full
@@ -31,11 +31,17 @@
  * - The peaks since the switch to ARMED: the windows' highest current, lowest
  *   voltage and highest mean power, and the node's own RCNODE_T_PWR_RUN
  *   extremes under the run's RUN tag, which hold the peaks of windows the
- *   radio lost.
+ *   radio lost.  The first RUN packet after a link comes up within a run
+ *   that carries another tag (the node started again) asks for the RUN
+ *   write again (tag_wrong).
+ * - The switch to ARMED of a run that reads BENCH (MOTOR & ESC, ESC STICK)
+ *   with INA228 SOURCE NODE is refused unless POWER NODE is ON and a
+ *   reading came within PNODE_GAP_OPEN_MS (pnode_arm_refused()).
  * - A dropout while the run counts on the node (ARMED with INA228 SOURCE
- *   NODE): no reading for more than PNODE_GAP_OPEN_MS (100ms) opens one,
- *   dated from
- *   the last reading, and the next reading closes it.  servo_gap.h decides:
+ *   NODE, a run that reads BENCH; a SERVO or OUTPUTS run reads no INA228
+ *   and counts none): no reading for more than PNODE_GAP_OPEN_MS (100ms)
+ *   opens one, dated from the last reading, and the next reading closes
+ *   it.  servo_gap.h decides:
  *   a dropout of up to SERVO_GAP_MAX_MS (300ms) rides, once per
  *   SERVO_GAP_EVERY_MS (10s); a longer one, or a second one that starts
  *   sooner, counts in errors once, which the panel takes as an error: SAFE
@@ -66,6 +72,8 @@ extern "C" {
 #define PNODE_GAP_OPEN_MS  100u  /**< no reading for longer opens a dropout */
 #define PNODE_ACC_STALE_MS 1500u /**< totals older lose LINK_BN_TOTALS_OK:
                                       three RCNODE_ACC_MS periods */
+#define PNODE_ACC_BASE_MS  RCNODE_ACC_MS /**< the oldest accumulator packet
+                                      a run's totals start from */
 /** @} */
 
 /** @brief What the control task takes of the meter, published by the
@@ -120,6 +128,10 @@ typedef struct {
     bool             have_status; /**< status holds a STATUS packet */
     rcnode_status_t  status;   /**< the last STATUS */
     uint8_t          tag;      /**< the run's RUN tag, 1 to 255; 0 none */
+    bool             tag_check; /**< the next RUN packet is the first since
+                                     the link came up within a run */
+    bool             tag_wrong; /**< it carried another tag: the RUN write
+                                     is owed again */
     bool             live;     /**< ARMED at the last step */
     bool             rule;     /**< the run counts on the node */
     uint32_t         run_ms;   /**< the run's start */
@@ -160,17 +172,33 @@ uint8_t pnode_meter_packet(pnode_meter_t *m, const uint8_t *b, size_t n,
 
 /**
  * @brief Advance to @p now_ms: a switch to ARMED starts a run (peaks,
- *        totals, the dropout rule and the next RUN tag); while @p live and
- *        @p rule, the dropout rule.
- * @param m      The meter.
- * @param now_ms The clock.
- * @param live   ARMED, or a switch to ARMED waits.
- * @param rule   INA228 SOURCE is NODE: the run counts on the node.
+ *        totals, the dropout rule and the next RUN tag); while @p live,
+ *        @p src_node and @p bench_run, the dropout rule.
+ * @param m         The meter.
+ * @param now_ms    The clock.
+ * @param live      ARMED, or a switch to ARMED waits.
+ * @param src_node  INA228 SOURCE is NODE.
+ * @param bench_run The run reads BENCH's readings: MOTOR & ESC or ESC
+ *                  STICK armed the throttle.  A SERVO or OUTPUTS run reads
+ *                  no INA228 and does not count on the node.
  * @return true at the step a run starts: the RUN write with m->tag is
  *         owed.
  */
 bool pnode_meter_step(pnode_meter_t *m, uint32_t now_ms, bool live,
-                      bool rule);
+                      bool src_node, bool bench_run);
+
+/**
+ * @brief Whether a switch to ARMED of a run that reads BENCH is refused for
+ *        the node: INA228 SOURCE NODE, and POWER NODE OFF or no reading
+ *        within PNODE_GAP_OPEN_MS.
+ * @param src_node INA228 SOURCE is NODE.
+ * @param node_on  POWER NODE is ON.
+ * @param r        The meter's copy; NULL has no reading.
+ * @param now_ms   The clock.
+ * @return true when the arm is refused.
+ */
+bool pnode_arm_refused(bool src_node, bool node_on, const pnode_reading_t *r,
+                       uint32_t now_ms);
 
 /**
  * @brief The copy the control task takes.

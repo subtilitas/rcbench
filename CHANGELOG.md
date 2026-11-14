@@ -15,9 +15,12 @@ history is in git.
   With NODE the node's windows feed MOTOR & ESC's voltage, current, power
   and peaks, and its 40-bit accumulators the run's charge and energy, as
   differences from the last packet before the arm with the restart rule.
-  The node's readings feed no protection; a gap of up to 300ms rides once
-  in 10s, a longer one or a second one within 10s ends the run as an
-  error. The bench log's `source` column reads `node` on such rows. At
+  The node's readings feed no protection. With NODE an ARM of MOTOR & ESC
+  or ESC STICK is refused while the node is OFF or sent no reading in the
+  last 100ms, and in such a run a gap of up to 300ms rides once in 10s,
+  a longer one or a second one within 10s ends the run as an error; SERVO
+  and OUTPUTS runs do not count on the node. INA228 SOURCE does not change
+  while ARMED. The bench log's `source` column reads `node` on such rows. At
   each switch to ARMED the panel writes RUN with the run's tag
   ([The sensor nodes](docs/Nodes.md#the-panel)).
 

@@ -157,7 +157,7 @@ TEST_CASE(every_sample_clipped_reads_the_range_end_marked_clipped)
     meter(&m);
     /* 40.96mV over 200µΩ: 204.8A at ADCRANGE 1. */
     CHECK_EQ(m.fs_ua, 204800000);
-    (void)pnode_meter_step(&m, 900u, true, false);
+    (void)pnode_meter_step(&m, 900u, true, false, true);
     win(&m, 1000u, RCNODE_WF_ONLINE | RCNODE_WF_CLIP_HIGH, 0, RCNODE_I_NONE,
         11000u, 10800u);
     bench_state_t b = bench_of(NULL, &m, 1001u);
@@ -234,9 +234,9 @@ TEST_CASE(the_peaks_are_the_runs_and_the_nodes_extremes_under_its_tag)
     pnode_meter_t m;
     meter(&m);
     good(&m, 900u);
-    CHECK(pnode_meter_step(&m, 1000u, true, true));
+    CHECK(pnode_meter_step(&m, 1000u, true, true, true));
     CHECK_EQ(m.tag, 1u);
-    CHECK(!pnode_meter_step(&m, 1001u, true, true));
+    CHECK(!pnode_meter_step(&m, 1001u, true, true, true));
     win(&m, 1010u, RCNODE_WF_ONLINE, 30000000, 40000000, 10000u, 9500u);
     good(&m, 1030u);
     bench_state_t b = bench_of(NULL, &m, 1031u);
@@ -265,8 +265,8 @@ TEST_CASE(the_peaks_are_the_runs_and_the_nodes_extremes_under_its_tag)
     b = bench_of(NULL, &m, 1051u);
     CHECK_NEAR(b.current_max, 55.0f, 1e-3f);
     /* The next run starts the peaks again under tag 2. */
-    (void)pnode_meter_step(&m, 1100u, false, true);
-    CHECK(pnode_meter_step(&m, 1200u, true, true));
+    (void)pnode_meter_step(&m, 1100u, false, true, true);
+    CHECK(pnode_meter_step(&m, 1200u, true, true, true));
     CHECK_EQ(m.tag, 2u);
     good(&m, 1210u);
     b = bench_of(NULL, &m, 1211u);
@@ -275,8 +275,8 @@ TEST_CASE(the_peaks_are_the_runs_and_the_nodes_extremes_under_its_tag)
     CHECK_NEAR(b.power_max, 222.0f, 0.01f);  /* 22.2V x 10A */
     /* The tag runs 1 to 255 and never 0. */
     m.tag = 255u;
-    (void)pnode_meter_step(&m, 1300u, false, true);
-    (void)pnode_meter_step(&m, 1310u, true, true);
+    (void)pnode_meter_step(&m, 1300u, false, true, true);
+    (void)pnode_meter_step(&m, 1310u, true, true, true);
     CHECK_EQ(m.tag, 1u);
 }
 
@@ -289,7 +289,7 @@ TEST_CASE(the_totals_are_differences_of_the_accumulators_since_the_arm)
      * a restart (rcnode_acc_restarted()). */
     acc(&m, 900u, 1u, RCNODE_ACC_MASK - 9u, 1000u, BOTH);
     good(&m, 950u);
-    (void)pnode_meter_step(&m, 1000u, true, false);
+    (void)pnode_meter_step(&m, 1000u, true, false, true);
     bench_state_t b = bench_of(NULL, &m, 1001u);
     CHECK((b.flags & LINK_BN_TOTALS_OK) != 0u);
     CHECK_EQ(b.charge_mah, 0.0f);
@@ -323,7 +323,7 @@ TEST_CASE(a_restart_adds_the_new_counts_from_zero)
     pnode_meter_t m;
     meter(&m);
     acc(&m, 900u, 1u, 1000u, 50000u, BOTH);
-    (void)pnode_meter_step(&m, 1000u, true, false);
+    (void)pnode_meter_step(&m, 1000u, true, false, true);
     acc(&m, 1400u, 1u, 10216u, 230000u, BOTH);
     CHECK_EQ(m.q_steps, 9216);
     /* A new epoch: the part was set up again and counts from 0. */
@@ -342,18 +342,20 @@ TEST_CASE(a_run_without_a_recent_packet_has_no_node_totals)
 {
     pnode_meter_t m;
     meter(&m);
-    (void)pnode_meter_step(&m, 1000u, true, false);
+    (void)pnode_meter_step(&m, 1000u, true, false, true);
     acc(&m, 1400u, 1u, 100u, 100u, BOTH);
     acc(&m, 1900u, 1u, 200u, 200u, BOTH);
     bench_state_t b = bench_of(NULL, &m, 1901u);
     CHECK_EQ(b.flags & LINK_BN_TOTALS_OK, 0u);
-    /* A packet 1501ms before the arm is too old to start from. */
-    (void)pnode_meter_step(&m, 2000u, false, false);
-    (void)pnode_meter_step(&m, 1900u + PNODE_ACC_STALE_MS + 1u, true, false);
+    /* A packet 501ms before the arm is too old to start from; one 500ms
+     * before starts the run. */
+    CHECK_EQ(PNODE_ACC_BASE_MS, 500u);
+    (void)pnode_meter_step(&m, 2000u, false, false, true);
+    (void)pnode_meter_step(&m, 1900u + 501u, true, false, true);
     CHECK(!m.r.totals_ok);
-    (void)pnode_meter_step(&m, 4000u, false, false);
+    (void)pnode_meter_step(&m, 4000u, false, false, true);
     acc(&m, 4100u, 1u, 300u, 300u, BOTH);
-    (void)pnode_meter_step(&m, 4100u + PNODE_ACC_STALE_MS, true, false);
+    (void)pnode_meter_step(&m, 4100u + 500u, true, false, true);
     CHECK(m.r.totals_ok);
 }
 
@@ -364,7 +366,7 @@ static void windows(pnode_meter_t *m, uint32_t from, uint32_t to)
         if ((t - from) % 20u == 0u) {
             good(m, t);
         }
-        (void)pnode_meter_step(m, t, true, true);
+        (void)pnode_meter_step(m, t, true, true, true);
     }
 }
 
@@ -372,7 +374,7 @@ static void windows(pnode_meter_t *m, uint32_t from, uint32_t to)
 static void silence(pnode_meter_t *m, uint32_t from, uint32_t to)
 {
     for (uint32_t t = from; t <= to; ++t) {
-        (void)pnode_meter_step(m, t, true, true);
+        (void)pnode_meter_step(m, t, true, true, true);
     }
 }
 
@@ -389,7 +391,7 @@ TEST_CASE(a_gap_of_299ms_and_300ms_rides_and_301ms_ends_the_run)
         CHECK(m.gap.open);
         CHECK_EQ(m.gap.from_ms, 2000u);
         good(&m, 2000u + lens[k]);
-        (void)pnode_meter_step(&m, 2000u + lens[k], true, true);
+        (void)pnode_meter_step(&m, 2000u + lens[k], true, true, true);
         CHECK_EQ(m.errors, (lens[k] > SERVO_GAP_MAX_MS) ? 1u : 0u);
         CHECK(!m.gap.open);
     }
@@ -420,7 +422,7 @@ TEST_CASE(a_second_gap_9_9s_after_the_first_ends_the_run_and_10_1s_rides)
         CHECK_EQ(m.errors, 0u);
         silence(&m, 2001u + apart[k], 2000u + apart[k] + 150u);
         good(&m, 2000u + apart[k] + 151u);
-        (void)pnode_meter_step(&m, 2000u + apart[k] + 151u, true, true);
+        (void)pnode_meter_step(&m, 2000u + apart[k] + 151u, true, true, true);
         CHECK_EQ(m.errors, (k == 0u) ? 1u : 0u);
         CHECK_EQ(m.gap.count, 2u);
     }
@@ -436,26 +438,26 @@ TEST_CASE(a_run_without_a_reading_ends_301ms_in_and_wired_keeps_no_rule)
     silence(&m, 1301u, 1301u);
     CHECK_EQ(m.errors, 1u);
     /* The next run counts again. */
-    (void)pnode_meter_step(&m, 2000u, false, true);
+    (void)pnode_meter_step(&m, 2000u, false, true, true);
     silence(&m, 3000u, 3301u);
     CHECK_EQ(m.errors, 2u);
     /* WIRED: the node's silence ends nothing. */
     pnode_meter_t w;
     meter(&w);
     for (uint32_t t = 1000u; t < 5000u; ++t) {
-        (void)pnode_meter_step(&w, t, true, false);
+        (void)pnode_meter_step(&w, t, true, false, true);
     }
     CHECK_EQ(w.errors, 0u);
     /* SAFE: neither. */
     for (uint32_t t = 1000u; t < 5000u; ++t) {
-        (void)pnode_meter_step(&w, t, false, true);
+        (void)pnode_meter_step(&w, t, false, true, true);
     }
     CHECK_EQ(w.errors, 0u);
     /* NODE chosen inside a run: the rule starts then, not at the arm. */
     pnode_meter_t n;
     meter(&n);
     good(&n, 990u);
-    (void)pnode_meter_step(&n, 1000u, true, false);
+    (void)pnode_meter_step(&n, 1000u, true, false, true);
     silence(&n, 5000u, 5000u);
     CHECK_EQ(n.gap.from_ms, 5000u);
     silence(&n, 5001u, 5300u);
@@ -538,7 +540,7 @@ TEST_CASE(benchs_own_figures_move_to_the_escs)
     CHECK(!pnode_reading_bench(NULL, &r, 0u, NULL));
     pnode_meter_reading(NULL, &r);
     CHECK(!r.have_win);
-    CHECK(!pnode_meter_step(NULL, 0u, true, true));
+    CHECK(!pnode_meter_step(NULL, 0u, true, true, true));
     CHECK_EQ(pnode_meter_packet(NULL, NULL, 0u, 0u), 0u);
 }
 
@@ -573,6 +575,103 @@ TEST_CASE(a_gap_is_dated_from_the_last_reading_and_not_before_the_run)
     CHECK_EQ(n.errors, 1u);
 }
 
+TEST_CASE(a_servo_run_does_not_end_on_a_node_gap_and_a_motor_run_does)
+{
+    /* SERVO or OUTPUTS armed: ARMED and NODE, no reading for 1s, no
+     * error; the throttle's run on the same silence ends at 301ms. */
+    pnode_meter_t s;
+    meter(&s);
+    good(&s, 990u);
+    for (uint32_t t = 1000u; t <= 2000u; ++t) {
+        (void)pnode_meter_step(&s, t, true, true, false);
+    }
+    CHECK_EQ(s.errors, 0u);
+    CHECK(!s.gap.open);
+    pnode_meter_t m;
+    meter(&m);
+    good(&m, 990u);
+    for (uint32_t t = 1000u; t <= 1290u; ++t) {
+        (void)pnode_meter_step(&m, t, true, true, true);
+    }
+    CHECK_EQ(m.errors, 0u);
+    for (uint32_t t = 1291u; t <= 1400u; ++t) {
+        (void)pnode_meter_step(&m, t, true, true, true);
+    }
+    CHECK_EQ(m.errors, 1u);
+}
+
+TEST_CASE(an_arm_on_node_needs_the_node_on_and_a_reading_within_100ms)
+{
+    pnode_meter_t m;
+    meter(&m);
+    pnode_reading_t r;
+    pnode_meter_reading(&m, &r);
+    /* WIRED: never refused for the node. */
+    CHECK(!pnode_arm_refused(false, false, NULL, 1000u));
+    CHECK(!pnode_arm_refused(false, true, &r, 1000u));
+    /* NODE, nothing streaming: refused, ON or OFF. */
+    CHECK(pnode_arm_refused(true, true, &r, 1000u));
+    CHECK(pnode_arm_refused(true, false, &r, 1000u));
+    CHECK(pnode_arm_refused(true, true, NULL, 1000u));
+    /* The node streams: released within 100ms of a reading. */
+    good(&m, 1000u);
+    pnode_meter_reading(&m, &r);
+    CHECK(!pnode_arm_refused(true, true, &r, 1000u));
+    CHECK(!pnode_arm_refused(true, true, &r, 1100u));
+    CHECK(pnode_arm_refused(true, true, &r, 1101u));
+    /* POWER NODE OFF refuses whatever the copy says. */
+    CHECK(pnode_arm_refused(true, false, &r, 1000u));
+    /* A window without the INA228 online is no reading. */
+    pnode_meter_t n;
+    meter(&n);
+    win(&n, 1000u, 0u, 0, RCNODE_I_NONE, 0u, RCNODE_V_NONE);
+    pnode_meter_reading(&n, &r);
+    CHECK(pnode_arm_refused(true, true, &r, 1000u));
+}
+
+/** @brief One RUN packet under @p tag. */
+static void run_pkt(pnode_meter_t *m, uint32_t now, uint8_t tag)
+{
+    rcnode_pwr_run_t x;
+    memset(&x, 0, sizeof x);
+    x.hdr.seq = s_seq++;
+    x.tag = tag;
+    x.i_max = RCNODE_I_NONE;
+    x.v_min = RCNODE_V_NONE;
+    uint8_t b[RCNODE_PKT_MAX];
+    const size_t n = rcnode_enc_pwr_run(&x, b, sizeof b);
+    CHECK_EQ(pnode_meter_packet(m, b, n, now), RCNODE_T_PWR_RUN);
+}
+
+TEST_CASE(a_node_that_started_again_inside_a_run_asks_for_run_again)
+{
+    pnode_meter_t m;
+    meter(&m);
+    good(&m, 990u);
+    CHECK(pnode_meter_step(&m, 1000u, true, true, true));
+    run_pkt(&m, 1100u, m.tag);
+    CHECK(!m.tag_wrong);
+    /* The link comes back to a node that kept the tag: nothing owed. */
+    pnode_meter_link(&m);
+    const rcnode_info_t i = matek();
+    CHECK(pnode_meter_info(&m, &i));
+    run_pkt(&m, 1200u, m.tag);
+    CHECK(!m.tag_wrong);
+    /* It comes back to one that started again (tag 0): owed. */
+    pnode_meter_link(&m);
+    CHECK(pnode_meter_info(&m, &i));
+    run_pkt(&m, 1300u, 0u);
+    CHECK(m.tag_wrong);
+    /* Only the first RUN after the link-up decides. */
+    m.tag_wrong = false;
+    run_pkt(&m, 1400u, 0u);
+    CHECK(!m.tag_wrong);
+    /* SAFE: nothing owed, and a link-up outside a run checks nothing. */
+    (void)pnode_meter_step(&m, 1500u, false, true, true);
+    pnode_meter_link(&m);
+    CHECK(!m.tag_check);
+}
+
 int main(void)
 {
     RUN(windows_become_the_mean_of_the_windows_since_the_last_take);
@@ -588,6 +687,9 @@ int main(void)
     RUN(a_run_without_a_reading_ends_301ms_in_and_wired_keeps_no_rule);
     RUN(a_gap_is_dated_from_the_last_reading_and_not_before_the_run);
     RUN(seq_losses_count_over_win_acc_and_run_and_not_status);
+    RUN(a_servo_run_does_not_end_on_a_node_gap_and_a_motor_run_does);
+    RUN(an_arm_on_node_needs_the_node_on_and_a_reading_within_100ms);
+    RUN(a_node_that_started_again_inside_a_run_asks_for_run_again);
     RUN(benchs_own_figures_move_to_the_escs);
     return test_summary("pnode_meter");
 }

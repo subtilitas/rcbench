@@ -798,8 +798,8 @@ Die Zeile der Konsole ist ohne den Client des Dials gemessen (`panel_dial.c`,
 ihm nicht gemessen. Der Client des Dials fügt dem Standard-Build 4 376 Bytes
 DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image. Der Client
 des Leistungsknotens, nur seine Objekte (`panel_pnode.c`, `pnode_ctl.c`,
-`pnode_meter.c`, `wireless_pnode.c` und `protocols/rcnode`), fügt 3 731
-Bytes DIRAM hinzu, davon 3 723 Bytes .bss, und 10 560 Bytes Image
+`pnode_meter.c`, `wireless_pnode.c` und `protocols/rcnode`), fügt 3 869
+Bytes DIRAM hinzu, davon 3 861 Bytes .bss, und 11 748 Bytes Image
 (`esp_idf_size --files`); seine Texte und seine Aufrufe in anderen Dateien
 sind nicht gezählt.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
