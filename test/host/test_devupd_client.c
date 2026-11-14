@@ -50,6 +50,7 @@ typedef struct {
     unsigned        qn;        /**< their count */
     uint32_t        now;       /**< the clock */
     bool            no_data;   /**< the device lacks DATA */
+    bool            drop_end;  /**< the link drops before END's answer */
     bool            linked;    /**< a connection stands */
     unsigned        connects;  /**< CONNECTs seen */
     unsigned        disconnects; /**< DISCONNECTs asked */
@@ -152,6 +153,13 @@ static void act(host_t *h, const bleu_act_t *a)
         CHECK_EQ(a->h1, H_CTRL);
         ++h->ctrl_writes;
         bleota_dev_ctrl(&h->d, a->data, a->len, h->now);
+        if (h->drop_end && a->data[0] == BLEOTA_OP_END) {
+            /* The device took END; its answer is lost with the link. */
+            h->linked = false;
+            e = ev(h, BLEU_EV_DISCONNECT, 0u);
+            e->status = 0x08u;
+            break;
+        }
         (void)ev(h, BLEU_EV_WRITE_DONE, a->token);
         break;
     case BLEU_ACT_DISCONNECT:
@@ -350,10 +358,25 @@ TEST_CASE(an_abort_ends_the_link_and_owners_out_of_range_are_refused)
     CHECK(!devupd_client_init(NULL, 0u));
 }
 
+TEST_CASE(a_link_lost_before_ends_answer_leaves_the_install_unknown)
+{
+    static host_t h;
+    start(&h, false);
+    h.drop_end = true;
+    for (int i = 0; i < 20000 && devupd_busy(&h.c.e); ++i) {
+        poll(&h);
+    }
+    CHECK_EQ(h.ctrl_writes, 4u);   /* BEGIN, two HASH halves, END */
+    CHECK_EQ(h.c.e.phase, DEVUPD_FAILED);
+    CHECK_EQ(h.c.e.err, DEVUPD_E_UNSURE);
+    CHECK_EQ(h.flash_n, IMG);
+}
+
 int main(void)
 {
     RUN(an_update_connects_finds_data_sends_and_switches_off);
     RUN(a_device_without_data_never_starts_the_transfer);
     RUN(an_abort_ends_the_link_and_owners_out_of_range_are_refused);
+    RUN(a_link_lost_before_ends_answer_leaves_the_install_unknown);
     return test_summary("devupd_client");
 }

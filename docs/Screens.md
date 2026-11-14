@@ -6974,7 +6974,10 @@ another version as stopped, `connection lost`.
 | `error 6` | another of the Dial's codes, such as 6 for a write out of order ([protocols/bleota](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)) |
 
 While the update runs, ARM is refused with `Cannot switch to ARMED: a
-wireless device update is running.`, and the C6's update waits. The knob
+wireless device update is running.`, and the C6's update waits. The
+panel's own download and install wait as well, with `Waiting for the
+wireless device update to finish.`: their restart would cut the transfer,
+and the device drops a partial image. The knob
 does not drive the panel from the hold until its link connects again; that
 gap is no loss error. The transfer time is not measured.
 

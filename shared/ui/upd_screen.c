@@ -288,9 +288,11 @@ static void blocked_text(upd_why_t why, char *out, size_t n, char *second,
         snprintf(second, n2, "%s", TR(WF_NEEDS_2));
         break;
     case UPD_WHY_COPROC:
-        /* The gate holds for the IOmcu's update and the C6's alike. */
+        /* The gate holds for the IOmcu's update, the C6's and a wireless
+         * device's alike. */
         snprintf(out, n, "%s",
                  upd_c6_view()->row == FW_C6_ROW_UPDATING ? TR(UPD_WAIT_C6)
+                 : upd_dev_running()                      ? TR(UPD_WAIT_DEVICE)
                                                           : TR(UPD_WAIT_COPROC));
         break;
     case UPD_WHY_DRAWING: snprintf(out, n, "%s", TR(UPD_WAIT_DRAWING)); break;

@@ -766,6 +766,38 @@ TEST_CASE(a_link_lost_after_end_leaves_the_install_to_the_version)
              DEVUPD_SETTLE_DONE);
 }
 
+/* END's write answer never comes, as when the response is lost after the
+ * device took END: the install is unknown, not refused. */
+TEST_CASE(an_unanswered_end_write_leaves_the_install_to_the_version)
+{
+    static sim_t s;
+    sim_init(&s);
+    sim_start(&s);
+    devupd_out_t o;
+    while (devupd_step(&s.e, s.now, true, &o)) {
+        devupd_written(&s.e, 0u, s.now);
+    }
+    s.e.phase = DEVUPD_SEND;
+    s.e.next = s.e.im.size;
+    s.e.t_credit = s.now;
+    (void)devupd_step(&s.e, s.now, true, &o);
+    CHECK_EQ(o.ctrl[0], BLEOTA_OP_END);
+    CHECK(s.e.ctrl_busy);
+    const uint32_t t0 = s.now;
+    (void)devupd_step(&s.e, t0 + DEVUPD_ANSWER_MS - 1u, true, &o);
+    CHECK_EQ(s.e.phase, DEVUPD_END);
+    (void)devupd_step(&s.e, t0 + DEVUPD_ANSWER_MS, true, &o);
+    CHECK_EQ(s.e.phase, DEVUPD_FAILED);
+    CHECK_EQ(s.e.err, DEVUPD_E_UNSURE);
+    /* A refusal the device answers is still a refused write. */
+    devupd_t e;
+    devupd_init(&e);
+    e.phase = DEVUPD_END;
+    e.ctrl_busy = true;
+    devupd_written(&e, 0x80u, 0u);
+    CHECK_EQ(e.err, DEVUPD_E_WRITE);
+}
+
 /* The busy flag that refuses ARM is the request or the run.  At every
  * point between the frame's ask and the `blec` task's end it reads busy,
  * and a start the `blec` task takes while ARMED is refused there. */
@@ -1021,6 +1053,7 @@ int main(void)
     RUN(a_whole_image_goes_in_order_and_installs);
     RUN(a_lossless_link_with_latency_sends_every_byte_once);
     RUN(a_link_lost_after_end_leaves_the_install_to_the_version);
+    RUN(an_unanswered_end_write_leaves_the_install_to_the_version);
     RUN(the_gate_reads_busy_from_the_ask_to_the_end_and_refuses_armed);
     RUN(a_lost_chunk_is_sent_again_from_the_devices_offset);
     RUN(a_lost_last_chunk_is_found_by_poll);

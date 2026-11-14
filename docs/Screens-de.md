@@ -7564,7 +7564,10 @@ verloren`.
 | `Fehler 6` | ein anderer Code des Dial, etwa 6 für ein Schreiben außer der Reihe ([protocols/bleota](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)) |
 
 Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines
-Funkgeräts läuft.` abgelehnt, und das Update des C6 wartet. Der Knopf
+Funkgeräts läuft.` abgelehnt, und das Update des C6 wartet. Download und
+Installation der Panel-Firmware warten ebenfalls, mit `Wartet auf das Ende
+des Funkgeräte-Updates.`: Ihr Neustart würde die Übertragung abbrechen, und
+das Gerät verwirft ein halbes Image. Der Knopf
 steuert das Panel vom Halten an nicht, bis sich sein Link wieder verbindet;
 diese Lücke ist kein Verlustfehler. Die Dauer der Übertragung ist nicht
 gemessen.

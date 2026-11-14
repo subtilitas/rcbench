@@ -82,6 +82,16 @@ void devupd_client_abort(devupd_client_t *c, uint32_t now)
  */
 static void follow(devupd_client_t *c, uint32_t now)
 {
+    const bool up = bleu_link_up(&c->b)
+                    && c->b.chr_val[DEVUPD_CHR_DATA] != 0u;
+    /* A loss goes first: the write it failed is the loss, and END's lost
+     * answer leaves the install unknown (DEVUPD_E_UNSURE), not refused. */
+    if (!up && c->up) {
+        c->up = false;
+        c->have_pend = false;
+        c->wr_wait = false;
+        devupd_link(&c->e, false, c->b.mtu, now);
+    }
     if (c->wr_wait && c->b.wr != BLEU_WR_BUSY) {
         c->wr_wait = false;
         const uint16_t st = c->b.wr == BLEU_WR_OK ? 0u
@@ -89,15 +99,9 @@ static void follow(devupd_client_t *c, uint32_t now)
                                                     : BLEU_STATUS_TIMEOUT);
         devupd_written(&c->e, st, now);
     }
-    const bool up = bleu_link_up(&c->b)
-                    && c->b.chr_val[DEVUPD_CHR_DATA] != 0u;
-    if (up != c->up) {
-        c->up = up;
-        devupd_link(&c->e, up, c->b.mtu, now);
-        if (!up) {
-            c->have_pend = false;
-            c->wr_wait = false;
-        }
+    if (up && !c->up) {
+        c->up = true;
+        devupd_link(&c->e, true, c->b.mtu, now);
     }
     if (c->on && !devupd_busy(&c->e)) {
         bleu_enable(&c->b, false, now);

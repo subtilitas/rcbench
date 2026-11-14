@@ -238,7 +238,9 @@ static void times(devupd_t *e, uint32_t now)
 {
     const uint32_t age = now - e->t;
     if (e->ctrl_busy && now - e->t_ctrl >= DEVUPD_ANSWER_MS) {
-        fail(e, DEVUPD_E_WRITE, 0u, now);
+        /* END's answer may be lost after the device took it. */
+        fail(e, e->phase == DEVUPD_END ? DEVUPD_E_UNSURE : DEVUPD_E_WRITE, 0u,
+             now);
         return;
     }
     switch (e->phase) {
