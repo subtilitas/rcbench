@@ -5,8 +5,9 @@ For each rcbench_modules.3dshapes/*.step: the file reads without error,
 holds as many solids as its spec builds, every solid passes the B-rep
 (boundary representation) check and is closed with a positive volume,
 every solid carries a colour, and the bounding box matches the spec's
-within 0.01mm. The models of hardware/mechanical/models/ are checked the
-same way, bar the bounding box.
+within 0.01mm. The models of hardware/mechanical/models/ and the library
+models a mechanical spec draws ("detail") are checked the same way, bar
+the bounding box.
 
 Usage:
     python3 hardware/kicad/tools/step_check.py [--png DIR]
@@ -87,6 +88,8 @@ def check(spec):
     """
     fp = spec.FOOTPRINT
     path = HERE.parent / f"{gen_all.LIB}.3dshapes" / f"{fp['name']}.step"
+    if spec.MODEL.get("detail"):
+        return check_file(path, len(gen_all.detail(spec.MODEL)))
     want = step_gen.solids(fp, spec.MODEL)
     errs = []
     shape, found = read(path)
