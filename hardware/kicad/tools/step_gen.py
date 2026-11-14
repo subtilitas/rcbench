@@ -4,6 +4,9 @@ The output is ISO 10303-21 text, schema AP214 (automotive design), one
 product with one solid per part and a colour on each solid. Every solid is
 a prism: a closed polygon, optionally with holes, extruded along z. Faces
 are planar; circles are polygons of 16 to 32 sides. Units are millimetres.
+``write`` also takes a profile turned about z and a solid with faces on
+planes, cylinders, cones, tori and B-spline surfaces; the specs of
+hardware/mechanical use them.
 
 Model frame: the footprint origin (pad 1) at x = y = 0, x right, y up
 (the footprint's y down, mirrored), z up from the carrier PCB's top side.
@@ -313,6 +316,117 @@ def _revolve(st, profile, n):
     return st.add(f"MANIFOLD_SOLID_BREP('',{shell})")
 
 
+def _perp(axis):
+    """A unit vector at right angles to the unit vector ``axis``."""
+    ref = (1.0, 0.0, 0.0) if abs(axis[0]) < 0.9 else (0.0, 1.0, 0.0)
+    dot = sum(ref[k] * axis[k] for k in range(3))
+    return _unit([ref[k] - dot * axis[k] for k in range(3)])
+
+
+def _reals(values):
+    return "(" + ",".join(_r(v) for v in values) + ")"
+
+
+def _brep_curve(st, curve, pa):
+    """The curve entity of an edge that starts at the point ``pa``."""
+    kind = curve[0]
+    if kind == "circle":
+        _kind, centre, axis, radius = curve
+        out = [pa[k] - centre[k] for k in range(3)]
+        dot = sum(out[k] * axis[k] for k in range(3))
+        out = [out[k] - dot * axis[k] for k in range(3)]
+        ref = _unit(out) if sum(c * c for c in out) > 1e-18 else _perp(axis)
+        return st.add(f"CIRCLE('',{st.placement(centre, axis, ref)},"
+                      f"{_r(radius)})")
+    if kind == "bspline":
+        _kind, degree, points, knots, mults = curve
+        refs = ",".join(st.point(q) for q in points)
+        return st.add(
+            f"B_SPLINE_CURVE_WITH_KNOTS('',{degree},({refs}),.UNSPECIFIED.,"
+            ".F.,.F.,(" + ",".join(str(m) for m in mults) + "),"
+            + _reals(knots) + ",.UNSPECIFIED.)")
+    raise ValueError(f"unknown curve {kind}")
+
+
+def _brep_surface(st, surface):
+    """The surface entity of a face."""
+    kind = surface[0]
+    if kind == "plane":
+        _kind, origin, normal = surface
+        return st.add("PLANE('',{})".format(
+            st.placement(origin, normal, _perp(normal))))
+    if kind == "cylinder":
+        _kind, origin, axis, radius = surface
+        return st.add("CYLINDRICAL_SURFACE('',{},{})".format(
+            st.placement(origin, axis, _perp(axis)), _r(radius)))
+    if kind == "cone":
+        _kind, origin, axis, radius, angle = surface
+        return st.add("CONICAL_SURFACE('',{},{},{})".format(
+            st.placement(origin, axis, _perp(axis)), _r(radius), _r(angle)))
+    if kind == "torus":
+        _kind, origin, axis, major, minor = surface
+        return st.add("TOROIDAL_SURFACE('',{},{},{})".format(
+            st.placement(origin, axis, _perp(axis)), _r(major), _r(minor)))
+    if kind == "sphere":
+        _kind, origin, radius = surface
+        return st.add("SPHERICAL_SURFACE('',{},{})".format(
+            st.placement(origin, (0.0, 0.0, 1.0), (1.0, 0.0, 0.0)),
+            _r(radius)))
+    if kind == "bspline":
+        _kind, udeg, vdeg, net, uknots, umults, vknots, vmults = surface
+        rows = ",".join("(" + ",".join(st.point(q) for q in row) + ")"
+                        for row in net)
+        return st.add(
+            f"B_SPLINE_SURFACE_WITH_KNOTS('',{udeg},{vdeg},({rows}),"
+            ".UNSPECIFIED.,.F.,.F.,.F.,("
+            + ",".join(str(m) for m in umults) + "),("
+            + ",".join(str(m) for m in vmults) + "),"
+            + _reals(uknots) + "," + _reals(vknots) + ",.UNSPECIFIED.)")
+    raise ValueError(f"unknown surface {kind}")
+
+
+def _brep(st, points, edges, faces):
+    """A closed shell of faces on planes and curved surfaces.
+
+    ``points`` are the vertices. An edge is (start, end, curve): indices
+    into ``points`` and ("line",), ("circle", centre, axis, radius), which
+    runs counter-clockwise about ``axis`` from start to end, or
+    ("bspline", degree, control points, knots, multiplicities). A closed
+    edge has start equal to end. A face is (surface, same_sense, loops):
+    ``same_sense`` is True when the surface's own normal points out of
+    the solid; each loop is a list of (edge index, forward), the outer
+    loop first, counter-clockwise seen from outside, holes clockwise.
+    Surfaces: ("plane", origin, normal), ("cylinder", origin, axis,
+    radius), ("cone", origin, axis, radius, semi-angle in radians) with
+    the radius at the origin and growing along the axis, ("torus",
+    origin, axis, major radius, minor radius), ("sphere", origin,
+    radius) and ("bspline", u degree, v degree, rows of control points,
+    u knots, u multiplicities, v knots, v multiplicities). Every edge is
+    used once forward and once reversed.
+    """
+    v = [st.vertex(p) for p in points]
+    refs = []
+    for a, b, curve in edges:
+        if curve[0] == "line":
+            refs.append(st.edge(v[a], v[b], points[a], points[b]))
+        else:
+            geom = _brep_curve(st, curve, points[a])
+            refs.append(st.add(f"EDGE_CURVE('',{v[a]},{v[b]},{geom},.T.)"))
+    out = []
+    for surface, same_sense, loops in faces:
+        bounds = []
+        for k, loop in enumerate(loops):
+            oes = [st.oriented(refs[e], fwd) for e, fwd in loop]
+            ref = st.add("EDGE_LOOP('',(" + ",".join(oes) + "))")
+            kind = "FACE_OUTER_BOUND" if k == 0 else "FACE_BOUND"
+            bounds.append(st.add(f"{kind}('',{ref},.T.)"))
+        geom = _brep_surface(st, surface)
+        out.append(st.add("ADVANCED_FACE('',(" + ",".join(bounds) + "),"
+                          + geom + (",.T.)" if same_sense else ",.F.)")))
+    shell = st.add("CLOSED_SHELL('',(" + ",".join(out) + "))")
+    return st.add(f"MANIFOLD_SOLID_BREP('',{shell})")
+
+
 def _style(st, solid, rgb, ctx_items):
     col = st.add("COLOUR_RGB(''," + ",".join(_r(c) for c in rgb) + ")")
     fsc = st.add(f"FILL_AREA_STYLE_COLOUR('',{col})")
@@ -448,7 +562,10 @@ def write(name, items, what="model"):
         items: Solids, each ("prism", outer, holes, z0, z1, rgb): a
             polygon with polygon holes extruded from z0 to z1; or
             ("revolve", profile, n, rgb): the (r, z) profile turned about
-            the z axis, the circle an n-gon. Points in mm.
+            the z axis, the circle an n-gon; or ("brep", points, edges,
+            faces, rgb): a closed shell of faces on planes, cylinders,
+            cones, tori, spheres and B-spline surfaces, as ``_brep``
+            describes them. Points in mm.
         what: Text after the name in FILE_DESCRIPTION.
 
     Returns:
@@ -488,6 +605,9 @@ def write(name, items, what="model"):
         elif item[0] == "revolve":
             _kind, profile, n, rgb = item
             brep = _revolve(st, profile, n)
+        elif item[0] == "brep":
+            _kind, points, edges, faces, rgb = item
+            brep = _brep(st, points, edges, faces)
         else:
             raise ValueError(f"unknown solid {item[0]}")
         reps.append(brep)
