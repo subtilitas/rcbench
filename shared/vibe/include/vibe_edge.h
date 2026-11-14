@@ -67,6 +67,56 @@ void vibe_edge_init(vibe_edge_t *e, int16_t lo, int16_t hi, bool rising);
 size_t vibe_edge_scan(vibe_edge_t *e, const int16_t *x, size_t n,
                       uint32_t *out, size_t max);
 
+/** @brief Samples over which vibe_index_scan() weighs the two levels. */
+#define VIBE_INDEX_SPAN 2500u
+
+/**
+ * @brief The index with its polarity found: two comparators, one for a
+ *        mark at the high level and one for a mark at the low level, and
+ *        the mark taken as the level the channel spends less time at.
+ *
+ * A dark pen line on a bright bell and a bright line on a dark bell give
+ * marks of opposite levels at a reflective sensor's comparator.  The mark
+ * is the shorter level: a 3mm line on a 30mm bell is 3% of a turn.  Over
+ * each VIBE_INDEX_SPAN samples the scan counts the samples at or above
+ * the midpoint of the thresholds; more than half of them high makes the
+ * low level the mark from the next block on, half or fewer the high level.
+ * The edges are always the starts of the mark, the edge of the line that
+ * passes the sensor first.
+ */
+typedef struct {
+    vibe_edge_t rise;    /**< the high level as the mark */
+    vibe_edge_t fall;    /**< the low level as the mark */
+    int32_t     mid;     /**< midpoint of the thresholds, counts */
+    uint32_t    high;    /**< samples at or above mid in the open span */
+    uint32_t    total;   /**< samples in the open span */
+    bool        low_mark; /**< the low level is the mark */
+} vibe_index_t;
+
+/**
+ * @brief Starts both comparators at position 0, with the high level as
+ *        the mark.
+ *
+ * @param x   The state.
+ * @param lo  Lower threshold, counts.
+ * @param hi  Upper threshold, counts.
+ */
+void vibe_index_init(vibe_index_t *x, int16_t lo, int16_t hi);
+
+/**
+ * @brief Finds the marks' starts in a block, by the polarity chosen
+ *        before the block, then weighs the levels.
+ *
+ * @param x    The state.
+ * @param s    The samples.
+ * @param n    How many.
+ * @param out  The edges' stamps, Q8 samples.
+ * @param max  Room in @p out; edges past it are lost.
+ * @return     Edges written.
+ */
+size_t vibe_index_scan(vibe_index_t *x, const int16_t *s, size_t n,
+                       uint32_t *out, size_t max);
+
 #ifdef __cplusplus
 }
 #endif

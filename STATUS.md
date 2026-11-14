@@ -697,16 +697,20 @@ protocol is transmitted. ESCs with BLHeli_32 firmware are not supported:
 
 ### Balancing measurement
 
-The screen and the placement guides are built; the accelerometer and the index sensor are
-not fitted, so nothing is measured.
+The screen and the placement guides are built. The balance node's firmware is built
+(`firmware/node`, `node_bal.c`); no node has run on hardware, and the panel does not take
+its reports, so the screen still runs from the model.
 
-Built and host-tested (`shared/vibe/`, `test_vibe`, `test_vibe_solve`): the balance node's
-signal processing and the panel's solvers, in no image yet. The index comparator, the
-demodulator of the 1x, 2x and blade-pass against the index, the no-index mode at an rpm
-the panel gives, and the two-run and four-run corrections. On synthetic signals at 10kHz a
-167Hz sine of 400mg at 265° reads within 0.1% and 0.1°; the figures for each case are
-in [shared/vibe/README.md](shared/vibe/README.md). The ESP32-C6's ADC (analogue-to-digital
-converter), the ADXL335 and the TCRT5000 are not measured.
+Built and host-tested (`shared/vibe/`, `test_vibe`, `test_vibe_frame`, `test_vibe_solve`):
+the balance node's signal processing and the panel's solvers. The node's ADC
+(analogue-to-digital converter) frames split into channels and scaled from the chip's
+calibration, the index comparator with the mark's polarity found, the demodulator of the
+1x, 2x and blade-pass against the index, the no-index mode at an rpm the panel gives, and
+the two-run and four-run corrections. On synthetic signals at 10kHz a 167Hz sine of 400mg
+at 265° reads within 0.1% and 0.1°; the figures for each case are in
+[shared/vibe/README.md](shared/vibe/README.md). The balance node's image links the first
+three and sends a report every 250ms ([docs/Nodes.md](docs/Nodes.md), "The balance
+node"). The ESP32-C6's ADC, the ADXL335 and the TCRT5000 are not measured.
 
 ### Link codec, page map, dispatcher, both watchdogs, CAN framing
 
@@ -1429,7 +1433,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 556 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 557 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1549,7 +1553,7 @@ The host suite is 556 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_solve`, `test_rcnode` and `test_node_policy`.
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode` and `test_node_policy`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through

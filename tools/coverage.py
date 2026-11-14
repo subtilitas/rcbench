@@ -435,6 +435,7 @@ TRACKED = [
     "shared/bench/pass_stats.c",
     "shared/vibe/vibe_demod.c",
     "shared/vibe/vibe_edge.c",
+    "shared/vibe/vibe_frame.c",
     "shared/vibe/vibe_solve.c",
     "shared/bench/report_lines.c",
     "shared/bench/report_steps.c",

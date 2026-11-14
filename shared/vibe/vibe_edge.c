@@ -64,3 +64,45 @@ size_t vibe_edge_scan(vibe_edge_t *e, const int16_t *x, size_t n,
     }
     return (got > max) ? max : got;
 }
+
+void vibe_index_init(vibe_index_t *x, int16_t lo, int16_t hi)
+{
+    if (x == NULL) {
+        return;
+    }
+    vibe_edge_init(&x->rise, lo, hi, true);
+    vibe_edge_init(&x->fall, lo, hi, false);
+    x->mid = ((int32_t)lo + (int32_t)hi) / 2;
+    x->high = 0u;
+    x->total = 0u;
+    x->low_mark = false;
+}
+
+size_t vibe_index_scan(vibe_index_t *x, const int16_t *s, size_t n,
+                       uint32_t *out, size_t max)
+{
+    if (x == NULL || s == NULL) {
+        return 0u;
+    }
+    /* Both comparators see every sample, so either one's edges hold the
+     * moment the polarity changes. */
+    size_t got;
+    if (x->low_mark) {
+        got = vibe_edge_scan(&x->fall, s, n, out, max);
+        (void)vibe_edge_scan(&x->rise, s, n, NULL, 0u);
+    } else {
+        got = vibe_edge_scan(&x->rise, s, n, out, max);
+        (void)vibe_edge_scan(&x->fall, s, n, NULL, 0u);
+    }
+    for (size_t i = 0; i < n; ++i) {
+        if ((int32_t)s[i] >= x->mid) {
+            ++x->high;
+        }
+        if (++x->total >= VIBE_INDEX_SPAN) {
+            x->low_mark = 2u * x->high > x->total;
+            x->high = 0u;
+            x->total = 0u;
+        }
+    }
+    return got;
+}
