@@ -843,15 +843,18 @@ SCREENS = {
                                 "dark"),
     # The IMU tile's screen: the HC-05 answering with no sensor bound; the
     # found list after SCAN; bound and connected at 50Hz with ZERO taken.
-    # SETUP > SENSORS on the IMU entry, connected.
+    # SETUP > WIRELESS on the IMU entry, connected.
     "imu": ("imu.png", "imu", "dark"),
     "imu-scan": ("imu-scan.png", "imu", "dark"),
     "imu-connected": ("imu-connected.png", "imu", "dark"),
-    "setup-sensors-imu": ("setup-sensors-imu.png", "setup", "dark"),
-    # The IMU off in SETUP: the IMU screen with SCAN offered, and SENSORS
+    "setup-wireless-imu": ("setup-wireless-imu.png", "setup", "dark"),
+    # The IMU off in SETUP: the IMU screen with SCAN offered, and WIRELESS
     # on the IMU entry with ANGLE SOURCE under IMU.
     "imu-off": ("imu-off.png", "imu", "dark"),
-    "setup-sensors-imu-off": ("setup-sensors-imu-off.png", "setup", "dark"),
+    "setup-wireless-imu-off": ("setup-wireless-imu-off.png", "setup", "dark"),
+    # SETUP > WIRELESS on the DIAL entry: the Dial linked, two found by a
+    # scan, the first bound.
+    "setup-wireless-dial": ("setup-wireless-dial.png", "setup", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back
@@ -930,9 +933,10 @@ FIT_ONLY = {
     "help-overview-4": (None, "overview", "dark"),
     "help-band-worst": (None, "motor", "dark"),
     # The other pages of SETUP's, OUTPUTS', LOGS' and FILES' guides, in
-    # each state that has its own: a list, SENSORS on its first entry and on
-    # the IMU, the carrier's tiles, a PROG PORT entry, the grid view, the
-    # carrier, a paged list, the import view and the plot
+    # each state that has its own: a list, SENSORS on its first entry,
+    # WIRELESS on the IMU and on the Dial, the carrier's tiles, a PROG
+    # PORT entry, the grid view, the carrier, a paged list, the import view
+    # and the plot
     # (render_help_base() names the view each opens over).
     "help-setup-2": (None, "setup", "dark"),
     "help-setup-rbmod-2": (None, "setup", "dark"),
@@ -940,7 +944,8 @@ FIT_ONLY = {
     "help-setup-list-2": (None, "setup", "dark"),
     "help-setup-sensors": (None, "setup", "dark"),
     "help-setup-sensors-2": (None, "setup", "dark"),
-    "help-setup-sensors-imu": (None, "setup", "dark"),
+    "help-setup-wireless-imu": (None, "setup", "dark"),
+    "help-setup-wireless-dial": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),
     "help-outputs-port": (None, "outputs", "dark"),
     "help-outputs-port-2": (None, "outputs", "dark"),

@@ -371,6 +371,39 @@ void motor_screen_knob_frame(void);
 void motor_screen_knob_cancel(void);
 
 /**
+ * @brief The Dial's button pressed and let go (dial_ctl.h): the throttle
+ *        to 0% on LIVE of an ARMED bench, as the "-" key's command, a drag
+ *        of the slider ended.  Nothing on a SAFE bench, off LIVE, under a
+ *        pending command other than a throttle, or at 0% already.
+ * @return Whether a throttle of 0% was posted.
+ */
+bool motor_screen_dial_press(void);
+
+/**
+ * @brief The Dial's button held 1s: DISARM while the bench is ARMED, as
+ *        DISARM's press.  Nothing on a SAFE bench.  It never arms.
+ * @return Whether a DISARM was posted.
+ */
+bool motor_screen_dial_hold(void);
+
+/**
+ * @brief Whether the rotary knob and the Dial act on the throttle now:
+ *        LIVE, no settings panel and no log name keyboard over it.
+ * @return true then.
+ */
+bool motor_screen_knob_shown(void);
+
+/**
+ * @brief The plot's full scales, the values at the top of the VOLT, CURR
+ *        and RPM traces, for the Dial's rings.  They autorange with the
+ *        run and stand at their floors before one.
+ * @param volt Receives the voltage's, V; may be NULL.
+ * @param curr Receives the current's, A; may be NULL.
+ * @param rpm  Receives the speed's, rpm; may be NULL.
+ */
+void motor_screen_plot_scales(float *volt, float *curr, float *rpm);
+
+/**
  * @brief True when a command was waiting; clears it.
  *
  * @param out receives the command

@@ -44,7 +44,7 @@ the project's notice.
 
 ## Start
 
-The first IMU ON (SETUP > SENSORS > IMU, SCAN FOR SENSORS on the IMU
+The first IMU ON (SETUP > WIRELESS > IMU, SCAN FOR SENSORS on the IMU
 screen or SEARCH FOR IMU in SERVO's ANGLE SOURCE list with the IMU off, and
 at power-up with IMU stored ON) starts Bluetooth LE: the C6's link, the host task `nimble_host` and the
 wait of 3,000ms for its sync ([The ESP32-C6 radio, Bluetooth LE through the
@@ -179,7 +179,7 @@ YAW REFUSED: HINGE ON X OR Y` in red and ARM + START is refused. A tap
 on the row opens the IMU YAW list, titled `TURN THE IMU 90° SO THE HINGE
 IS X OR Y`, with the two axes that work and no other: `USE IMU AXIS X
 (ROLL)`, `USE IMU AXIS Y (PITCH)`. A pick writes IMU axis and saves it,
-as SETUP > SENSORS does. SETUP > SENSORS still offers AXIS Z, which TEST
+as SETUP > WIRELESS does. SETUP > WIRELESS still offers AXIS Z, which TEST
 and LIMIT RUN read for their angle columns. Another IMU algorithm drops RUDDER's zero and MAX, as another
 AXIS or SIGN does.
 
@@ -222,7 +222,7 @@ RATE goes to the sensor only when it changes, not at each connect: each
 RATE comes with a SAVE to the sensor's flash, and the rate takes effect
 only after a power cycle. SETUP's RATE is what the panel asks for, 50Hz
 by default. The sensor runs the rate it last saved, 10Hz as shipped. The
-IMU screen and SETUP > SENSORS > IMU show the rate the angle frames
+IMU screen and SETUP > WIRELESS > IMU show the rate the angle frames
 arrive at, as measured on the panel. Which RATE values fit the BLE link
 depends on the frames a sample (RSW, below).
 
@@ -265,7 +265,7 @@ sensor, and a restart forgets it.
 
 ## The filter
 
-IMU filter (SETUP > SENSORS > IMU, key `imu_filter`) is a low-pass on the
+IMU filter (SETUP > WIRELESS > IMU, key `imu_filter`) is a low-pass on the
 angle, on the panel. It runs once per angle frame and per axis:
 
 ```text

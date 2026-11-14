@@ -1,13 +1,13 @@
 /*
- * SETUP > SENSORS > IMU (sensors_pane.h, sensors_rows.h): the entry's rows,
+ * SETUP > WIRELESS > IMU (wireless_pane.h, sensors_rows.h): the entry's rows,
  * its state column, and what a RATE or an ALGORITHM change does.
  *
  * The failures this is about: an IMU entry that shows its sensor's rows
  * while off or hides ANGLE SOURCE then,
  * a state word in a colour that says connected when it is not, a RATE
  * changed in SETUP that never reaches the sensor or reaches it without the
- * operator learning it needs a power cycle, and a SENSORS row past the
- * list's cap that its keys never reach.
+ * operator learning it needs a power cycle, and a WIRELESS row its keys
+ * never reach.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,15 +19,15 @@
 TEST_CASE(the_imu_entry_shows_its_rows_under_on)
 {
     fresh_hub();
-    CHECK_EQ(SENS_ENTRY_IMU, SENS_ENTRY_TAP + 1);
+    CHECK_EQ(WL_ENTRY_IMU, 0);
     char name[16];
-    CHECK_STR_EQ(sensors_pane_name(SENS_ENTRY_IMU, name, sizeof name), "IMU");
-    setting_id_t rows[SENS_ENTRY_ROWS_MAX];
+    CHECK_STR_EQ(wireless_pane_name(WL_ENTRY_IMU, name, sizeof name), "IMU");
+    wl_row_t rows[WL_ENTRY_ROWS_MAX];
     /* OFF: IMU and ANGLE SOURCE, so the source goes back to the AS5600
      * with the IMU off. */
-    CHECK_EQ(sensors_pane_rows(SENS_ENTRY_IMU, rows, SENS_ENTRY_ROWS_MAX), 2);
-    CHECK_EQ(rows[0], SET_IMU_EN);
-    CHECK_EQ(rows[1], SET_ANGLE_SOURCE);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_IMU, rows, WL_ENTRY_ROWS_MAX), 2);
+    CHECK_EQ(rows[0].id, SET_IMU_EN);
+    CHECK_EQ(rows[1].id, SET_ANGLE_SOURCE);
     settings_set(SET_IMU_EN, 1.0f);
     /* ON: ANGLE SOURCE second, AXIS, SIGN, RATE, ALGORITHM and FILTER
      * under it. */
@@ -35,11 +35,13 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
                                          SET_IMU_AXIS, SET_IMU_SIGN,
                                          SET_IMU_RATE, SET_IMU_ALGO,
                                          SET_IMU_FILTER };
-    CHECK_EQ(sensors_pane_rows(SENS_ENTRY_IMU, rows, SENS_ENTRY_ROWS_MAX), 7);
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_IMU, rows, WL_ENTRY_ROWS_MAX), 7);
     for (int i = 0; i < 7; ++i) {
-        CHECK_EQ(rows[i], want[i]);
-        CHECK_EQ(sensors_pane_entry_of(want[i]), SENS_ENTRY_IMU);
-        CHECK_EQ(settings_def(want[i])->cat, SET_CAT_SENSORS);
+        CHECK_EQ(rows[i].id, want[i]);
+        CHECK(rows[i].custom == NULL);
+        CHECK_EQ(wireless_pane_entry_of(want[i]), WL_ENTRY_IMU);
+        CHECK_EQ(sensors_pane_entry_of(want[i]), -1);
+        CHECK_EQ(settings_def(want[i])->cat, SET_CAT_WIRELESS);
     }
     /* The defaults: OFF, X, +, 50Hz, 6-AXIS, FILTER 1. */
     fresh_hub();
@@ -57,19 +59,21 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
     CHECK_EQ(settings_def(SET_IMU_RATE)->option_count, 5u);
     CHECK_EQ(settings_def(SET_IMU_AXIS)->option_count, 3u);
     /* The entry and each of its rows on the glass: ON's ">" brings them. */
-    open_sensor(SET_IMU_EN);
-    CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_IMU);
-    CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 7);
+    open_wireless(SET_IMU_EN);
+    CHECK_EQ(settings_screen_category(), SET_CAT_WIRELESS);
+    CHECK_EQ(wireless_pane_selected(), WL_ENTRY_IMU);
+    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 7);
     setting_id_t ids[96];
-    const int n = settings_in_category(SET_CAT_SENSORS, ids, 96);
+    const int n = settings_in_category(SET_CAT_WIRELESS, ids, 96);
     for (int i = 0; i < n; ++i) {
-        if (sensors_pane_entry_of(ids[i]) == SENS_ENTRY_IMU) {
-            CHECK(settings_screen_row_of(SET_CAT_SENSORS, i) >= 0);
+        if (wireless_pane_entry_of(ids[i]) == WL_ENTRY_IMU) {
+            CHECK(settings_screen_row_of(SET_CAT_WIRELESS, i) >= 0);
         }
     }
-    /* A SENSORS row past the old cap of 58 is still a row. */
-    CHECK(n > 58);
-    CHECK_EQ(n, 65);
+    /* The IMU's 7 and the Dial's 3. */
+    CHECK_EQ(n, 10);
+    /* SENSORS holds no IMU row: 65 less the IMU's 7. */
+    CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 96), 58);
 }
 
 TEST_CASE(the_state_column_reads_every_link_state_in_its_colour)
@@ -93,7 +97,7 @@ TEST_CASE(the_state_column_reads_every_link_state_in_its_colour)
     gfx_color_t ink = 0;
     /* IMU OFF: OFF, dim, whatever the link said. */
     sensors_rows_set_imu(IMU_LINK_CONNECTED, 500u);
-    CHECK_STR_EQ(sensors_pane_state(SENS_ENTRY_IMU, buf, sizeof buf, &ink),
+    CHECK_STR_EQ(wireless_pane_state(WL_ENTRY_IMU, buf, sizeof buf, &ink),
                  "OFF");
     CHECK_EQ(ink, UI_TEXT_DIM);
     settings_set(SET_IMU_EN, 1.0f);
@@ -103,21 +107,21 @@ TEST_CASE(the_state_column_reads_every_link_state_in_its_colour)
         const gfx_color_t want = (k[i].ink == 0) ? UI_WARN
                                  : (k[i].ink == 1) ? UI_TEXT_DIM : UI_OK;
         ui_text_set_language(UI_LANG_EN);
-        CHECK_STR_EQ(sensors_pane_state(SENS_ENTRY_IMU, buf, sizeof buf, &ink),
+        CHECK_STR_EQ(wireless_pane_state(WL_ENTRY_IMU, buf, sizeof buf, &ink),
                      k[i].en);
         CHECK_EQ(ink, want);
         ui_text_set_language(UI_LANG_DE);
-        CHECK_STR_EQ(sensors_pane_state(SENS_ENTRY_IMU, buf, sizeof buf, &ink),
+        CHECK_STR_EQ(wireless_pane_state(WL_ENTRY_IMU, buf, sizeof buf, &ink),
                      k[i].de);
         CHECK(gfx_text_width(&gfx_font_8x16, buf, 1) <= 25 * 8);
     }
     ui_text_set_language(UI_LANG_EN);
     /* The rate in whole Hz: 200Hz, 0Hz; a state out of range reads OFF. */
     sensors_rows_set_imu(IMU_LINK_CONNECTED, 1995u);
-    CHECK_STR_EQ(sensors_pane_state(SENS_ENTRY_IMU, buf, sizeof buf, &ink),
+    CHECK_STR_EQ(wireless_pane_state(WL_ENTRY_IMU, buf, sizeof buf, &ink),
                  "CONNECTED 200Hz");
     sensors_rows_set_imu(IMU_LINK_CONNECTED, 4u);
-    CHECK_STR_EQ(sensors_pane_state(SENS_ENTRY_IMU, buf, sizeof buf, &ink),
+    CHECK_STR_EQ(wireless_pane_state(WL_ENTRY_IMU, buf, sizeof buf, &ink),
                  "CONNECTED 0Hz");
     CHECK_STR_EQ(sensors_rows_imu_word((imu_link_t)99, 0u, buf, sizeof buf),
                  "OFF");

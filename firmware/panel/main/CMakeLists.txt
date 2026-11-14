@@ -18,11 +18,11 @@ idf_component_register(
          "panel_render.c" "panel_art.c" "panel_update.c" "selftest.c"
          "knob_task.c" "kst_files.c" "hitec_record.c" "hitec_files.c" "panel_boot.c" "panel_settings.c"
          "panel_control.c" "panel_frame.c" "panel_files.c" "panel_shot.c" "panel_trial.c"
-         "panel_imu.c" "panel_ble.c" "panel_blec.c" "panel_c6.c"
+         "panel_imu.c" "panel_dial.c" "panel_ble.c" "panel_blec.c" "panel_c6.c"
          ${rcbench_perf_src} ${rcbench_console_src}
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram files
-             fwupdate webaccess fw_ota wifi_access c6_link clock witmotion bleuart
+             fwupdate webaccess fw_ota wifi_access c6_link clock witmotion bleuart dialknob
              bt espressif__esp_hosted
              esp_driver_gpio esp_driver_i2c esp_driver_tsens esp_driver_uart esp_timer
     LDFRAGMENTS "psram_bss.lf"

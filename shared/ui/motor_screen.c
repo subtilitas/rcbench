@@ -557,6 +557,54 @@ void motor_screen_knob(float span_fraction)
     }
 }
 
+bool motor_screen_knob_shown(void)
+{
+    return mwb_task() == UI_WB_LIVE && !msp_shown() && !mln_shown();
+}
+
+void motor_screen_plot_scales(float *volt, float *curr, float *rpm)
+{
+    if (volt != NULL) {
+        *volt = s.plot.scale[S_VOLT];
+    }
+    if (curr != NULL) {
+        *curr = s.plot.scale[S_CURR];
+    }
+    if (rpm != NULL) {
+        *rpm = s.plot.scale[S_RPM];
+    }
+}
+
+bool motor_screen_dial_press(void)
+{
+    /* 0% is the throttle a stop would leave: taken over a drag, which
+     * ends, and over a pending throttle; never over an arm, a disarm or a
+     * peak reset. */
+    if (!motor_screen_knob_shown() || !mo_value_live()
+        || (s.pending.kind != MOTOR_CMD_NONE
+            && s.pending.kind != MOTOR_CMD_THROTTLE)
+        || (s.slider.value == 0.0f && s.pending.kind == MOTOR_CMD_NONE)) {
+        return false;
+    }
+    mo_end_drag();
+    motor_screen_set_throttle(0.0f);
+    mo_post(MOTOR_CMD_THROTTLE, 0.0f);
+    ++s.thr_rev;
+    ++s.ctrl_rev;
+    return true;
+}
+
+bool motor_screen_dial_hold(void)
+{
+    if (!s.gate.armed) {
+        return false;
+    }
+    mo_post(MOTOR_CMD_DISARM, 0.0f);
+    ++s.arm_rev;
+    ++s.ctrl_rev;
+    return true;
+}
+
 /**
  * @brief Leaving disarms.  Navigating away from an armed bench must not leave a
  * propeller spinning behind a screen that is not visible, and the command

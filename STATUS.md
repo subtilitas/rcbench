@@ -1134,7 +1134,7 @@ write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` a
 gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 (`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
 `test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
-SETUP > SENSORS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
+SETUP > WIRELESS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
 (`firmware/panel/main/panel_imu.c`, `panel_blec.c`), which runs it through the hub of
 `protocols/bleuart` (`test_bleuart_hub`). The angle's low-pass, IMU filter, its seed, its wrap
 at ±180° and the still time that waits for it, kept per axis (`test_imu`, `test_imu_filter`),
@@ -1156,7 +1156,19 @@ ESP32-S3; CI's `dial.yml`) with the power latch, the encoder on PCNT, the
 buttons, the FT3267 touch glass, the click per detent, the GC9A01 display
 with a placeholder face, the NimBLE peripheral with its bound panel, and
 the USB console with the test build's hooks ([The M5Stack Dial](docs/Dial.md)).
-Not built: the panel's side, so no panel connects to a Dial. The battery's
+Built and host-tested, not run with a Dial: the panel's side. The controller
+on the panel's Bluetooth LE hub (`shared/ui/dial_ctl.c`, `test_dial_ctl`
+against a scripted host stack and Dial: the link, INFO's protocol, the loss
+at 999ms and 1,000ms, no loss without an EVENT or while SAFE, the scan
+refused while ARMED, the bind, a reconnect that moves nothing, held buttons
+that hand on nothing), the stream of the screen model with its rates and
+SCALE (`shared/ui/dial_stream.c`, `test_dial_stream`), the frame's paths
+into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
+`test_dial_servo`: a 10s Dial press on ARM's place arms nothing, turns while
+SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
+X
+and the control task's side (`firmware/panel/main/panel_dial.c`,
+`panel_supply.c`). Navigation from the Dial is not built. The battery's
 reading pin is unknown; the encoder's direction is not measured.
 
 ### Phase tap (ESC tones)
@@ -1394,8 +1406,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dialknob` · `vibe` · `rcnode` | | | yes |
-| `bleuart` | yes | | yes |
+| `hc05` · `vibe` · `rcnode` | | | yes |
+| `bleuart` · `dialknob` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1429,7 +1441,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 556 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 562 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1542,6 +1554,8 @@ The host suite is 556 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
 `test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
+`test_settings_panes`,
 `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
@@ -2031,8 +2045,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 940 committed screenshots to the current render,
-470 in English and the same 470 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` holds 942 committed screenshots to the current render,
+471 in English and the same 471 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

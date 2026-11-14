@@ -1,8 +1,8 @@
 /**
  * @file settings_rows_int.h
  * @brief SETUP's list rows: what settings_rows.c, settings_screen.c and
- *        settings_draw.c share and nobody else sees.  A row is a setting or
- *        a string.
+ *        settings_draw.c share and nobody else sees.  A row is a setting,
+ *        a string, or on WIRELESS a custom row (wireless_pane.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -12,12 +12,15 @@
 #include <stdint.h>
 
 #include "settings.h"
+#include "ui_setlist.h"
 #include "ui_text.h"
 
-/** @brief One row of a list: a setting or a string. */
+/** @brief One row of a list: a setting, a string or a custom row. */
 typedef struct {
     setting_id_t id;                     /**< the setting; 0 for a string */
     int8_t       text;       /**< a setting_text_id_t, or -1              */
+    const ui_setlist_custom_t *custom; /**< a row that is neither, NULL for
+                                            a setting or a string        */
 } settings_row_t;
 
 /**

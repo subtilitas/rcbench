@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL, SENSORS und SD CARD. ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Öffne SETUP im [Menü](overview.md), um das Raster aus 3 mal 3 Kacheln zu sehen. Jede Kategorie öffnet ihre Einstellungsliste über die volle Seitenbreite.
+SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL, SENSORS, WIRELESS und SD CARD. ESC-Einstellungen (Electronic Speed Controller) stehen unter [MOTOR & ESC, OPTIONEN](motor-settings.md). Öffne SETUP im [Menü](overview.md), um das Raster aus 3 mal 3 Kacheln zu sehen. Jede Kategorie öffnet ihre Einstellungsliste über die volle Seitenbreite.
 
 ## Die Kacheln
 
@@ -15,15 +15,16 @@ SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL,
 | Kachel | Zweite Zeile | Ziel |
 |---|---|---|
 | PANEL | `DESIGN, SPRACHE, DREHKNOPF` | Einstellungen des Panels. |
-| SENSORS | `STROM, WINKEL, PHASENABGRIFF` | [Sensoren](setup-sensors.md): Sensorbus, Strommonitore INA228 und INA3221, AS5600, Phasenabgriff und Bluetooth-IMU. Links stehen 9 Einträge, rechts die Einstellungen der Auswahl. |
+| SENSORS | `STROM, WINKEL, PHASENABGRIFF` | [Sensoren](setup-sensors.md): Sensorbus, Strommonitore INA228 und INA3221, AS5600 und Phasenabgriff. Links stehen 8 Einträge, rechts die Einstellungen der Auswahl. |
 | OUTPUTS | `PROTOKOLLE, PINS, PLATINE` | [Ausgänge](outputs.md): Funktion der IOmcu-Pins auf einer Platinenzeichnung. |
 | SD CARD | `LOGS, BROWSER-SCHREIBEN` | Aufzeichnungsarten, Speicherordner und Voraussetzungen für Browser-Schreibzugriffe. |
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): Funkverbindung für Kartendateien und Firmware-Images im Browser. |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): Suche nach neuerer Panel-Firmware und Update-Erinnerung. |
 | IMU | `BLUETOOTH-WINKELSENSOR` | [IMU](imu.md): WitMotion BWT901CL über Bluetooth LE, Sensorsuche und Binden, Kalibrierung und aktuelle Winkel. |
+| WIRELESS | `IMU, DIAL` | [Wireless](setup-wireless.md): die Einstellungen der IMU und das M5Stack Dial, seine Suche, seine Bindung und seine Schritte. |
 | LAYOUT | `STECKER UND PINS` | [Layout](layout.md): nur auf dem rbmod-Carrier mit fest verlöteten Pins. |
 
-2 Plätze bleiben frei; auf dem Carrier belegt LAYOUT einen davon. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:
+1 Platz bleibt frei; auf dem Carrier belegt ihn LAYOUT. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:
 
 ![Die Kacheln mit einem ungespeicherten Wert](view:setup-hub-dirty)
 
@@ -190,12 +191,17 @@ Bei einem unzulässigen Ordner bleibt die Tastatur offen und die Einstellung unv
 
 ## SENSORS
 
-SENSORS listet Sensorbus, INA228, vier INA3221, AS5600 und Phasenabgriff des IOmcu sowie die Bluetooth-IMU des Panels. Jedes hat einen Eintrag in der linken Liste. Siehe [Sensoren](setup-sensors.md).
+SENSORS listet Sensorbus, INA228, vier INA3221, AS5600 und Phasenabgriff des IOmcu. Jedes hat einen Eintrag in der linken Liste. Siehe [Sensoren](setup-sensors.md).
+
+## WIRELESS
+
+WIRELESS listet die Bluetooth-LE-Geräte des Panels, die IMU und das M5Stack Dial. Jedes hat einen Eintrag in der linken Liste. Siehe [Wireless](setup-wireless.md).
 
 ## Verwandte Seiten
 
 - [Netzteil](supply.md): die Verdrahtung des PD mini, in der Optionsliste von SUPPLY.
 - [Sensoren](setup-sensors.md)
+- [Wireless](setup-wireless.md)
 - [Ausgänge](outputs.md)
 - [Updates](updates.md)
 - [Netzteil](supply.md), [Servo-Optionen](servo-settings.md) und [Motor-Optionen](motor-settings.md): die Einstellungen, die auf ihren eigenen Bildschirmen stehen.

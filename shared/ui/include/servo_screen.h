@@ -159,6 +159,45 @@ const char *servo_hub_tile_line(int i, char *buf, size_t n);
 void servo_screen_knob(float span_fraction);
 
 /**
+ * @brief Whether the rotary knob and the Dial move the horn now: LIVE,
+ *        SWEEP, RUDDER or RUDDER AUTO in sight, no panel over the dial, no
+ *        sweep, test, limit run or AUTO run owning the horn.
+ * @return true then.
+ */
+bool servo_screen_knob_shown(void);
+
+/** @brief How far each way the horn may go, deg. @return The travel. */
+float servo_screen_travel_deg(void);
+
+/**
+ * @brief The profile's pulse ends, PULSE MIN and PULSE MAX.
+ * @param min_us Receives PULSE MIN, us; may be NULL.
+ * @param max_us Receives PULSE MAX, us; may be NULL.
+ */
+void servo_screen_pulse_ends(uint16_t *min_us, uint16_t *max_us);
+
+/** @brief The commanded angle, deg from center. @return The angle. */
+float servo_screen_commanded_deg(void);
+
+/**
+ * @brief The Dial's button pressed and let go (dial_ctl.h): CENTER on an
+ *        ARMED bench where the knob moves the horn, as the CENTER button's
+ *        press; a sweep stops.  Nothing on a SAFE bench, under a pending
+ *        command other than a position, or while a test, a limit run or an
+ *        AUTO run owns the horn.
+ * @return Whether CENTER was posted.
+ */
+bool servo_screen_dial_press(void);
+
+/**
+ * @brief The Dial's button held 1s: on an ARMED bench DISARM and every
+ *        output off, as DISARM's press; a start sequence under way ends.
+ *        Nothing on a SAFE bench.  It never arms.
+ * @return Whether it disarmed or ended a sequence.
+ */
+bool servo_screen_dial_hold(void);
+
+/**
  * Start of a frame, before its touch events: forget that a finger owned the
  * dial or that the dial was out of sight, a sweep or a test owned the horn.
  * The knob moves nothing in a frame in which a finger owned the dial at any

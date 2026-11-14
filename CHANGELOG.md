@@ -31,7 +31,8 @@ history is in git.
   ([protocols/rcnode](protocols/rcnode/README.md)).
 - Protocol module `protocols/dialknob` for the M5Stack Dial v1.1 as a
   wireless knob over BLE: the packets in both directions (EVENT, STATUS,
-  INFO; SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO, STATE),
+  INFO; SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO, STATE,
+  SCALE),
   20 bytes or less, every field bounded; the panel's turn tracker (the
   first packet after a connect, a packet more than 300ms late and a jump
   over 16 detents move nothing, a repeated seq is dropped); the link's
@@ -49,8 +50,8 @@ history is in git.
   1,000ms after the panel's last packet, and a USB console
   (`dial>`) whose test build injects turns, presses, holds, taps and a
   battery reading and marks each injected detent on GPIO1. The battery's
-  reading pin is unknown, and STATUS reports the battery as unknown. The
-  panel's side is not built yet ([The M5Stack Dial](docs/Dial.md)).
+  reading pin is unknown, and STATUS reports the battery as unknown
+  ([The M5Stack Dial](docs/Dial.md)).
 - CI builds the Dial's image and its test build (`.github/workflows/dial.yml`,
   artifact `dial`); a release carries `rcbench-dial-<version>.bin` and
   `rcbench-dial-merged-<version>.bin`. `tools/image_slot.py` takes the
@@ -104,9 +105,34 @@ history is in git.
 - A console line `ble: connect refused by the C6 radio, HCI 0x09: ...`
   when the C6's controller refuses a connect for want of a link
   ([The Bluetooth IMU](docs/IMU.md#console-lines)).
+- The panel's side of the M5Stack Dial. SETUP > WIRELESS > DIAL: Dial ON
+  or OFF (OFF by default), a 10s scan for Dials (refused while ARMED, with
+  a band text), the bound Dial by address (`dial_ble`, `dial_name`),
+  reconnected without a scan, and the steps of a detent, 0.5% to 5% of
+  throttle and 0.5° to 5° of horn angle (1% and 1° by default). A Dial's
+  detent moves the throttle on MOTOR & ESC and the horn on SERVO LIVE
+  through the rotary knob's path and rules; nothing moves while SAFE. Its
+  PRESS sets 0% or CENTER while ARMED, its HOLD DISARMs, and no Dial event
+  switches anything on. A Dial lost while ARMED, 1,000ms without an EVENT
+  or the disconnect, is an error: SAFE, all outputs off, band text
+  `DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`; 500ms is a
+  notice. The panel streams its screen to the Dial: SCREEN, VALUE_META,
+  VALUE, SCALE, LIVE_MOTOR and LIVE_SERVO at 20Hz, STATE, the whole model
+  again at each connect. Console lines under the tag `dial`. Navigation
+  from the Dial is a later slice
+  ([The M5Stack Dial](docs/Dial.md#the-panel)).
+- `bleu_profile_t` names the service a scan lists (`adv_svc`,
+  `adv_uuid16`), so each Bluetooth LE client lists its own devices; a
+  PARAM characteristic's value is kept to 20 bytes, up from 8
+  ([protocols/bleuart](protocols/bleuart/README.md#scan)).
 
 ### Changed
 
+- SETUP has a WIRELESS tile, `IMU, DIAL`, for the panel's Bluetooth LE
+  devices. The IMU's 7 rows move from SENSORS to its IMU entry, unchanged
+  in key and behaviour; SENSORS has 8 entries. The IMU screen's OPTIONS
+  opens WIRELESS on the IMU entry. The SETUP page's 9 slots are full on
+  the rbmod carrier ([Screens](docs/Screens.md#wireless-the-imu-and-the-dial)).
 - The panel's Bluetooth LE host and the C6 radio's image hold 5
   connections, up from 1 and 3: the IMU, the Dial, 2 sensor nodes and 1
   spare. The C6 image sets `CONFIG_BT_LE_MAX_CONNECTIONS=5` from

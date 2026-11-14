@@ -6,13 +6,13 @@ order: 62
 
 # Sensoren
 
-SENSORS auf [SETUP](setup.md) konfiguriert den Sensorbus des IOmcu, den INA228, bis zu vier Dreikanal-Strommonitore TI INA3221 an 0x40 bis 0x43, den AS5600-Winkelsensor und den Phasenabgriff. Hinzu kommt die Bluetooth-IMU (Inertial Measurement Unit) des Panels. Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
+SENSORS auf [SETUP](setup.md) konfiguriert den Sensorbus des IOmcu, den INA228, bis zu vier Dreikanal-Strommonitore TI INA3221 an 0x40 bis 0x43, den AS5600-Winkelsensor und den Phasenabgriff. Die Bluetooth-IMU (Inertial Measurement Unit) des Panels steht unter [Wireless](setup-wireless.md). Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
 
 ## Die linke Liste
 
 ![Zwei Bausteine bestückt, 0x40 online](view:setup-sensors)
 
-Die linke, 220px breite Liste hat 9 Einträge: SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF und IMU. Jeder zeigt Sensorname und Status. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen.
+Die linke, 220px breite Liste hat 8 Einträge: SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600 und PHASENABGRIFF. Jeder zeigt Sensorname und Status. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen.
 
 - Ausgeschaltete Einträge zeigen nur die Einschaltzeile und den Status `AUS`. EIN blendet die übrigen Einstellungen ein.
 - Die Auswahl erfolgt beim Loslassen innerhalb des Eintrags und höchstens 8px vom Druckpunkt entfernt. Längeres Ziehen wählt und scrollt nichts.
@@ -26,7 +26,6 @@ Die linke, 220px breite Liste hat 9 Einträge: SENSORBUS, INA228, INA3221 0x40 b
 | SENSORBUS | `GPIO 16 / 17`; `KEINE PINS GESETZT`; `VOM IOMCU ABGELEHNT`; auf dem Carrier `GPIO 16 / 17 VERLÖTET` |
 | INA228, INA3221 0x40 bis 0x43 | [Was ein Baustein tut](#was-ein-baustein-tut) |
 | AS5600, PHASENABGRIFF | `EIN`; `VOM IOMCU ABGELEHNT` |
-| IMU | [Die IMU](#die-imu) |
 
 ## SENSORBUS und INA228
 
@@ -190,44 +189,10 @@ Der IOmcu lehnt ADC-Pins (Analog-Digital-Umsetzer), zugeordnete Ausgangspins sow
 
 Vibration und Optischer Tacho besitzen gespeicherte Schlüssel, aber keinen Eintrag. In diesem Release verwendet weder eine Seite noch der IOmcu diese Werte.
 
-## Die IMU
-
-![SENSORS auf dem IMU-Eintrag, verbunden](view:setup-sensors-imu)
-
-![Die IMU aus: IMU und Winkelquelle](view:setup-sensors-imu-off)
-
-Der Winkelsensor WitMotion BWT901CL wird über Bluetooth LE durch den ESP32-C6 des Boards verbunden. Suche, Zuordnung und Kalibrierung erfolgen über die Kachel [IMU](imu.md) in SETUP. Dieser Eintrag enthält seine Einstellungen.
-
-| Einstellung | Bereich | Vorgabe | Was sie tut |
-|---|---|---|---|
-| IMU | EIN, AUS | AUS | Bluetooth LE, die Verbindung zum gebundenen Sensor und sein Messwert; das erste EIN startet Bluetooth LE bis zum Neustart des Panels |
-| Winkelquelle | AS5600, IMU | AS5600 | woher die Servoläufe ihren Winkel nehmen ([Servo-Optionen](servo-settings.md)); auch bei ausgeschalteter IMU gezeigt, damit die Quelle ohne Einschalten der IMU auf den AS5600 zurückgeht |
-| IMU-Achse | X, Y, Z | X | der Winkel, den die Servoläufe und RUDER lesen; `Z: 1° MIT MAGNETOMETER` |
-| IMU-Vorzeichen | +, - | + | `-` dreht diesen Winkel um |
-| IMU-Rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | die Frames des Sensors je Sekunde; nur bei einer Änderung gesendet, sie gilt, nachdem der Sensor aus- und wieder eingeschaltet wurde; ab Werk läuft der Sensor mit 10Hz, und `VERBUNDEN` zeigt die Rate, mit der er läuft |
-| IMU-Algorithmus | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS nimmt das Magnetometer für Z |
-| IMU-Filter | 1 bis 50 | 1 | der Tiefpass des Panels auf dem Winkel; 1 ist aus |
-
-IMU-Filter glättet den Winkel auf dem Panel, je Frame und Achse: der Winkel rückt um 1/k der Differenz zum neuen Frame vor, mit k dem eingestellten Wert. 63% eines Sprungs erreicht er nach etwa k Frames, bei 10Hz also mit IMU-Filter 10 nach etwa 1s. Die Frames je Sekunde sind die Rate, mit der der Sensor läuft und die `VERBUNDEN` zeigt, nicht die erfragte IMU-Rate. Der IMU-Bildschirm, RUDER, AUTO und die Servoläufe lesen den gefilterten Winkel. Der erste Frame nach einem Verbinden setzt den Filter auf seinen eigenen Wert, und ein Übergang über 180° nimmt den kurzen Weg. AUTO wartet, bis der gefilterte Winkel eingeschwungen ist, bis zu 3000ms plus die Zeit, die der Wert brauchen kann ([Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de#der-filter)).
-
-Änderungen an RATE und ALGORITHMUS werden mit dem SAVE-Befehl des Sensors (`FF AA 00 00 00`) gesendet. Bei verbundenem Sensor lautet die Ratenmeldung `RATE GESPEICHERT: SCHALTE DEN SENSOR AUS UND EIN`. Ohne Verbindung erscheint `RATE WIRD BEIM VERBINDEN GESENDET. SCHALTE DEN SENSOR DANACH AUS UND EIN`; das Panel wartet auf Frames. Während der Kalibrierung steht `RATE WIRD NACH DER KALIBRIERUNG GESENDET. SCHALTE DEN SENSOR DANACH AUS UND EIN`. Dann folgt die Änderung erst nach CALSW 0 und SAVE der Kalibrierung.
-
-| Zustand | Wann |
-|---|---|
-| `AUS` | IMU AUS |
-| `BLUETOOTH STARTET` | Bluetooth LE startet: die Verbindung zum C6, der Host, sein Sync |
-| `KEIN BLUETOOTH AM C6` | der Host hat keinen Sync mit dem C6; er versucht es weiter |
-| `C6 AUSGEFALLEN: NEUSTART` | die Verbindung zum C6 schlug fehl; WLAN und Bluetooth sind bis zum Neustart des Panels aus |
-| `KEIN SENSOR GEBUNDEN` | Bluetooth läuft; kein Sensor ist gebunden |
-| `SUCHE LÄUFT` | eine Suche läuft |
-| `VERBINDE` | das Panel verbindet sich mit dem gebundenen Sensor und richtet seinen Dienst ein |
-| `GEBUNDEN` | abonniert, noch kein Winkel-Frame; oder das gebundene Gerät ist kein WitMotion-Sensor |
-| `VERBUNDEN 50Hz` | Winkel-Frames in den letzten 300ms, mit dieser Rate |
-| `KEINE FRAMES` | abonniert, Frames kamen, keiner in den letzten 300ms |
-
 ## Verwandte Seiten
 
 - [Setup](setup.md)
 - [Netzteil](supply.md): die Verdrahtung des PD mini, in der Optionsliste von SUPPLY.
 - [Servo](servo.md)
 - [IMU](imu.md)
+- [Wireless](setup-wireless.md): die Einstellungen der IMU

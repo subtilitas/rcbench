@@ -11,10 +11,13 @@ zwischen ihm und dem Panel (`protocols/dialknob`).
 Was es gibt: das Protokollmodul mit seinen Host-Tests und die Firmware des
 Dial: die Selbsthaltung, den Encoder, die Tasten, das Touch-Glas, den Klick
 pro Rastung, das Display mit einem Platzhalter-Face, das BLE-Peripheral mit
-seinem gebundenen Panel und die USB-Konsole. Was es noch nicht gibt: die
-Seite des Panels. Kein Panel-Build verbindet sich mit einem Dial, ein Dial
-bewegt also nichts am Prüfstand. Die endgültigen Faces, das BLE-Update und
-das Pairing folgen in späteren Schritten.
+seinem gebundenen Panel und die USB-Konsole; und die Seite des Panels:
+SETUP > WIRELESS > DIAL, Suche und Bindung, der Link mit seiner
+Verlustregel, die Drehung auf MOTOR & ESC und SERVO LIVE, die
+Bildschirmtaste und der Strom des Panel-Bildschirms zum Dial
+([Das Panel](#das-panel)). Die Navigation der Listen des Panels vom Dial
+aus, die endgültigen Faces, das BLE-Update und das Pairing folgen in
+späteren Schritten.
 
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
 Bluetooth ist eine Marke ihres Inhabers. rcbench ist unabhängig: Es ist
@@ -44,8 +47,8 @@ bestätigt.
 
 ## Sicherheit
 
-Das Dial ist kein Sicherheitsgerät. Diese Regeln gehören dem Panel; die
-Seite des Panels, die sie anwendet, folgt in einem späteren Schritt:
+Das Dial ist kein Sicherheitsgerät. Diese Regeln gehören dem Panel, und
+das Panel wendet sie an ([Das Panel](#das-panel)):
 
 - Ein Ereignis des Dial schaltet nie Spannung oder Leistung ein. ARM,
   SUPPLY ON, PROG 5V und WRITE bleiben die 2s-Holds des Panels. STOP gibt es
@@ -64,6 +67,8 @@ Seite des Panels, die sie anwendet, folgt in einem späteren Schritt:
   dann den Disconnect, und ein Prüfstand im Zustand ARMED geht auf SAFE.
 - Die Bildschirmtaste im Zustand ARMED: Ein Tippen setzt das Gas auf MOTOR
   auf 0% und auf SERVO auf CENTER; ein Halten von 1s macht DISARM.
+- Kein BLE-Scan im Zustand ARMED: Die Funkzeit eines Scans würde dem Link
+  fehlen, der den Knopf trägt.
 
 Die Regeln des Links und ihre Zeiten stehen im Protokollmodul, jede mit
 einem Host-Test
@@ -131,6 +136,128 @@ Protokollversion 1 hat kein Pairing und keine Verschlüsselung: Ein Gerät in
 Reichweite, das sich zuerst verbindet oder die gebundene Adresse fälscht,
 wird angenommen.
 
+## Das Panel
+
+SETUP > WIRELESS > DIAL enthält die Zeilen des Dial
+([Bildschirme](Screens-de.md#wireless-die-imu-und-das-dial)): Dial EIN oder AUS
+(ab Werk AUS), DIAL SUCHEN, GEBUNDENES DIAL und die Schritte einer Rastung,
+0.5%, 1%, 2% oder 5% Gas (ab Werk 1%) und 0.5°, 1°, 2° oder 5° Hornwinkel (ab
+Werk 1°). Das erste Dial EIN startet Bluetooth LE auf dem ESP32-C6 des
+Boards, wie das erste IMU EIN; es läuft bis zum Neustart des Panels. Das
+Dial und die IMU sind zwei Clients der Bluetooth-LE-Central des Panels, mit
+einem Connect oder Scan zur Zeit zwischen ihnen.
+
+### Suchen und Binden
+
+DIAL SUCHEN sucht 10.000ms und listet bis zu 8 Geräte, die den
+dialknob-Dienst senden, das stärkste zuerst, mit Namen und RSSI. Ist der
+Prüfstand ARMED oder wartet ein Arm, wird die Suche abgelehnt, und das Band
+zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
+läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Ein Tippen auf ein
+gefundenes Dial bindet es: Das Panel behält Adresse und Namen in SETUP
+(`dial_ble`, `dial_name`) und fragt nach dem Speichern. Es ist immer ein
+Dial gebunden oder keins. Das Panel verbindet sich über die Adresse mit ihm,
+ohne Suche, bei Dial EIN, beim Start und nach jedem Verlust.
+
+### Der Link
+
+Der Connect fragt nach einem Intervall von 30 bis 50ms, Latenz 0 und einem
+Supervision Timeout von 4.000ms, den Werten der IMU. Nach dem Connect sucht
+das Panel den Dienst, abonniert EVENT und liest INFO. Ein gebundenes Gerät
+ohne den Dienst zeigt `GEBUNDEN: KEIN DIAL` und wird nicht genommen. Ein
+Dial, dessen INFO eine andere Protokollversion als 1 nennt, zeigt
+`ANDERES PROTOKOLL n`; seine EVENTs werden gezählt und verworfen. Bis INFO
+gelesen ist, werden EVENTs ebenfalls verworfen.
+
+Die Verlustregel läuft auf der eigenen Uhr des Panels, nicht auf dem
+Supervision Timeout:
+
+| Zeit ohne EVENT | Zustand | Bei SAFE | Bei ARMED oder wartendem Arm |
+| --- | --- | --- | --- |
+| 0 bis 499ms | `VERBUNDEN` | | |
+| 500 bis 999ms | `GESTÖRT` | Band: `DIAL: 500ms KEIN EREIGNIS` | Band: `DIAL: 500ms KEIN EREIGNIS` |
+| 1.000ms, oder der Disconnect | `DIAL VERLOREN` | Band: `DIAL VERLOREN` | ein Fehler: SAFE, alle Ausgänge aus, Band: `DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS` |
+
+Die Uhr startet mit dem ersten EVENT einer Verbindung; eine Verbindung,
+die noch keins gesendet hat, während das Panel den Dienst sucht, ist also
+kein Verlust. Jeder Verlust ist ein Fehler. Dial AUS in SETUP beendet den
+Link ohne Fehler.
+
+### Der Knopf und die Taste
+
+Eine Rastung am Dial nimmt den Weg des eigenen Knopfs des Panels, mit
+denselben Regeln: relativ, durch denselben Drehungs-Tracker, nichts bewegt
+sich, solange der Prüfstand SAFE ist, und Drehungen bei SAFE werden nicht
+für das ARM aufgehoben. Auf MOTOR & ESC verstellt eine Rastung das Gas um
+den Gas-Schritt, auf SERVO LIVE das Horn um den Servo-Schritt. Andere
+Bildschirme nehmen keine Drehung an.
+
+| Geste | MOTOR & ESC, ARMED | SERVO LIVE, ARMED | SAFE, oder ein anderer Bildschirm |
+| --- | --- | --- | --- |
+| PRESS: Bildschirmtaste vor 1.000ms losgelassen | Gas 0% | CENTER | nichts |
+| HOLD: Bildschirmtaste 1.000ms gedrückt | DISARM | DISARM; eine laufende Folge ARM + START endet mit allen Ausgängen aus, auch vor ARMED | nichts |
+
+Ein PRESS zählt nur in einem Frame, dessen Drehung das Panel nimmt; ein HOLD
+immer. Die gehaltenen Zustände von Taste und Touch im EVENT werden nie als
+Druck oder Berührung gelesen, eine am Dial gehaltene Taste ist also kein
+Halten am Panel: ARM und jedes andere 2s-Halten bleiben beim Panel.
+
+### Der Strom
+
+Das Panel schreibt seinen Bildschirm in Panel-Paketen zum Dial, eines zur
+Zeit:
+
+| Paket | Wann |
+| --- | --- |
+| SCREEN | Face, Titel, Sprache oder Flags geändert, oder 5.000ms nach dem letzten |
+| VALUE_META, VALUE | auf MOTOR & ESC und SERVO LIVE, wenn sich Bereich, Schritt oder Wert ändern |
+| SCALE | auf MOTOR & ESC und SERVO LIVE: beim Betreten und bei jedem Connect, dann wenn sich ein Vollausschlag ändert, höchstens alle 200ms |
+| LIVE_MOTOR, LIVE_SERVO | auf MOTOR & ESC und SERVO LIVE, alle 50ms (20Hz) |
+| STATE | ARMED, DEGRADED oder ein Schritt geändert, oder 200ms ohne Paket |
+
+Jeder Connect sendet das ganze Modell erneut, SCREEN zuerst. Die Faces sind
+MOTOR, SERVO und HOME (das Menü); jeder andere Bildschirm sendet seinen
+Titel und den Zustand des Prüfstands. LIVE_MOTOR trägt das Gas und die
+Messwerte, die der Prüfstand meldet: Spannung, Strom, Leistung, Drehzahl,
+die Temperatur von ESC und Motor. LIVE_SERVO trägt den Puls, den
+befohlenen Winkel, den gemessenen Winkel, wenn die Winkelquelle einen
+meldet, und Spannung und Strom der Servoschiene aus dem Kanal des Servos.
+
+SCALE gibt den Ringen des Dial ihre Vollausschläge; 0 ist unbekannt, und
+dieser Ring zeigt nur seine Spur:
+
+| Vollausschlag | Quelle |
+| --- | --- |
+| Drehzahl | die Spitze des Laufs; vor der ersten Spitze der RPM-Vollausschlag des MOTOR-Plots |
+| Spannung | Spannung max von SUPPLY, solange der Ausgang von SUPPLY an ist; sonst der VOLT-Vollausschlag des MOTOR-Plots |
+| Strom | Überstrom von SUPPLY, solange der Ausgang von SUPPLY an ist und die Auslösung gesetzt ist; sonst der CURR-Vollausschlag des MOTOR-Plots |
+| Servoweg, Pulsenden | WEG, PULS MIN und PULS MAX des Servoprofils |
+| Spannung, Strom der Servoschiene | Spannung max und Überstrom von SUPPLY, solange der Ausgang von SUPPLY an ist; sonst 0 |
+
+### Die Konsole
+
+Das Log des Panels nennt das Dial mit dem Tag `dial`:
+
+```text
+I (…) dial: Dial ON: starting Bluetooth LE
+I (…) dial: scan for 10000ms
+W (…) dial: scan refused: the bench is ARMED (1 refused)
+I (…) dial: bound A0:B1:C2:7F:3A:10 R DIAL-3A10
+I (…) dial: link 6 -> 10, error 0 code 0x0, protocol 1
+I (…) dial: 50 events in 1000ms, 12 detents, rtt 41ms, repeats 0 skipped 0 stale 0 glitches 0, refused 0 unread 0, 20 writes, 0 events dropped
+E (…) dial: Dial lost while ARMED: an error, the bench to SAFE (1)
+```
+
+Die Link-Zeile nennt die Zustände als Zahl: 0 AUS, 1 STARTET, 2 KEIN
+BLUETOOTH, 3 C6 AUSGEFALLEN, 4 KEIN DIAL GEBUNDEN, 5 SUCHE, 6 VERBINDE,
+7 KEIN DIAL, 8 WARTET, 9 ANDERES PROTOKOLL, 10 VERBUNDEN, 11 GESTÖRT,
+12 VERLOREN. Die Zählerzeile kommt einmal pro Sekunde, solange der Link
+steht: EVENTs und Rastungen der Sekunde, die Umlaufzeit aus dem Echo von
+STATE, die wiederholten, übersprungenen, veralteten und gesprungenen
+Pakete des Drehungs-Trackers, EVENTs, die wegen ihrer Form abgelehnt und
+vor INFO verworfen wurden, geschriebene Panel-Pakete und Ereignisse, die
+die Bluetooth-LE-Queue verworfen hat.
+
 ## Das Face
 
 Das Face dieser Firmware ist ein Platzhalter: ein schlichter Ring, der Titel
@@ -178,8 +305,20 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 
 ## Grenzen
 
-- Noch kein Panel-Build verbindet sich mit einem Dial: Die Seite des Panels
-  folgt in einem späteren Schritt.
+- Das Dial navigiert noch keine Liste am Panel: Kein Bildschirm füllt NAV.
+  Das ist der nächste Schritt.
+- Das ARMED-Flag des Panels für die Verlustregel und die Ablehnung der Suche
+  gehört dem Control-Task und wird vom Bluetooth-Task gelesen; es kann einen
+  Control-Durchlauf, etwa 5ms, alt sein.
+- LIVE_SERVO trägt keinen Messwert der Position oder des Stroms eines
+  Feedback-Servos.
+- Eine Servoschiene, die PROG 5V speist, hat in SCALE keinen Vollausschlag:
+  0, ihre Ringe zeigen nur ihre Spur.
+- Eine IMU-Suche (SETUP > IMU oder IMU SUCHEN auf SERVO) wird bei ARMED nicht
+  abgelehnt. Ihre Wirkung auf die Pakete eines verbundenen Dial ist nicht
+  gemessen.
+- Das Panel hat keinen Konsolenbefehl, der eine Drehung oder einen Druck des
+  Dial einspeist; das macht der Test-Build des Dial von seiner Seite aus.
 - Die Spannung des Akkus ist unbekannt: Keine Quelle nennt den Pin, den sie
   erreicht. STATUS trägt 0 und das Flag "Akku unbekannt". Der Zustand des
   Laders ist ebenfalls unbekannt.
@@ -203,9 +342,10 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   deutschen Buchstaben erscheinen als `?`.
 - Das Senden eines ganzen Frames dauert bei 40MHz etwa 23ms (gerechnet,
   nicht gemessen).
-- Nichts in dieser Firmware ist auf dem Gerät gelaufen: Das Dial ist
-  bestellt, nicht geliefert. Die Station misst die Latenz von der Drehung
-  zum Ausgang mit dem Test-Build, sobald das Dial an ihrem USB hängt.
+- Nichts in dieser Firmware oder in der Seite des Panels ist mit einem Dial
+  gelaufen: Das Dial ist bestellt, nicht geliefert. Die Latenz von der
+  Drehung zum Ausgang über Funk ist nicht gemessen; die Station misst sie
+  mit dem Test-Build, sobald das Dial an ihrem USB hängt.
 - Noch kein Schlaf, keine Stufen des Hintergrundlichts und keine
   Abschaltung: Das Dial bleibt an, bis RST gedrückt wird oder die Zelle leer
   ist. Die Laufzeit mit einer Zelle ist nicht gemessen.
