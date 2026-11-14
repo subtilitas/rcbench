@@ -25,7 +25,7 @@
 /* ui_text.h before ui_theme.h: ui_text.def ends by undefining UI_TEXT. */
 #include "ui_text.h"
 #include "imu_screen_int.h"
-#include "sensors_pane.h"
+#include "wireless_pane.h"
 #include "sensors_rows.h"
 #include "settings.h"
 #include "settings_screen.h"
@@ -534,7 +534,7 @@ static void act(int hit)
     case IMS_ROW_SETTINGS:
         /* SETUP's home tag comes back here (ui_router_parent()). */
         ui_router_goto(SCREEN_SETUP);
-        settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_IMU);
+        settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
         break;
     default:
         break;

@@ -8,6 +8,165 @@ history is in git.
 
 ### Added
 
+- The power node on the panel: a third Bluetooth LE client on the panel's
+  hub, SETUP > WIRELESS > POWER NODE with Power node ON or OFF, INA228
+  SOURCE (WIRED or NODE, WIRED by default), SCAN FOR NODE (refused while
+  ARMED, stopped at the switch to ARMED), BOUND NODE and NODE BATTERY.
+  With NODE the node's windows feed MOTOR & ESC's voltage, current, power
+  and peaks, and its 40-bit accumulators the run's charge and energy, as
+  differences from the last packet before the arm with the restart rule.
+  The node's readings feed no protection. With NODE an ARM of MOTOR & ESC
+  or ESC STICK is refused while the node is OFF or sent no reading in the
+  last 100ms, and in such a run a gap of up to 300ms rides once in 10s,
+  a longer one or a second one within 10s ends the run as an error; SERVO
+  and OUTPUTS runs do not count on the node. INA228 SOURCE does not change
+  while ARMED. The bench log's `source` column reads `node` on such rows. At
+  each switch to ARMED the panel writes RUN with the run's tag
+  ([The sensor nodes](docs/Nodes.md#the-panel)).
+
+- The sensor nodes' firmware (`firmware/node`), one ESP-IDF v6.1 project
+  for the ESP32-C6 on a Waveshare ESP32-C6-Zero, the role chosen at build
+  time. The power node reads a MATEK I2C-INA-BM's INA228 (0x45, 200µΩ, the
+  bench's 540/540/50µs set-up) on GPIO19 (SDA) and GPIO18 (SCL), sends a
+  window every 20ms (mean and highest current, mean and lowest voltage,
+  the sample count) and the raw 40-bit CHARGE and ENERGY every 500ms over
+  Bluetooth LE as `rcbench-pwr-XXXX`, reads its cell through a
+  200kΩ/200kΩ divider on GPIO3, sleeps after 120s without a link or a
+  pack and checks for a pack every 10s, and prints a console line every
+  second. CI builds the image and a release carries
+  `rcbench-node-pwr-<version>.bin` and `rcbench-node-pwr-merged-<version>.bin`
+  ([The sensor nodes](docs/Nodes.md)).
+- Protocol module `protocols/rcnode`: the nodes' service and
+  characteristic UUIDs (STREAM, STATUS, CONTROL, INFO), the power node's
+  window, accumulator, run-extreme and status packets, the balance report
+  (shared/vibe's flags bit for bit, quality, revolutions, rpm, period
+  spread, 1x, 2x and blade-pass magnitudes, 1x phase, rms), the control
+  writes, the advertising and its match, and the panel's rule for a
+  restart of the accumulators
+  ([protocols/rcnode](protocols/rcnode/README.md)).
+- Protocol module `protocols/dialknob` for the M5Stack Dial v1.1 as a
+  wireless knob over BLE: the packets in both directions (EVENT, STATUS,
+  INFO; SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO, STATE and
+  SCALE, the readings' full scales for the face's rings),
+  20 bytes or less, every field bounded; the panel's turn tracker (the
+  first packet after a connect, a packet more than 300ms late and a jump
+  over 16 detents move nothing, a repeated seq is dropped); the link's
+  DEGRADED at 500ms and LOST at the disconnect or at 1,000ms, counted from
+  the first EVENT of a connection, a loss while ARMED being an error; the
+  Dial's rule that it sends no EVENT and no keepalive while no panel packet
+  came for 500ms or none since the connection (`dk_link_lost()`); the
+  Dial's model of its face, in which another face or title empties the
+  rows, the value and the full scales, and its encoder detent with 3 counts
+  of hysteresis; host suites
+  `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`. Protocol 1
+  is not final until the first release that carries the Dial.
+- Firmware for the M5Stack Dial v1.1 (`firmware/dial`, ESP-IDF v6.1,
+  ESP32-S3): the power latch on GPIO46, the encoder on PCNT, the buttons,
+  the FT3267 touch glass, a 3ms click per detent (default ON), the GC9A01
+  display with the faces below, a NimBLE peripheral serving the
+  dialknob service that binds the first panel to subscribe and then
+  accepts that panel only (a 10s button hold forgets it), sends no EVENT
+  from 500ms after the panel's last packet and ends the link at 1,000ms,
+  the internal heap free and its lowest in the log at start and in
+  `status`, and a USB console
+  (`dial>`) whose test build injects turns, presses, holds, taps and a
+  battery reading and marks each injected detent on GPIO1. The battery's
+  reading pin is unknown, and STATUS reports the battery as unknown
+  ([The M5Stack Dial](docs/Dial.md)).
+- The M5Stack Dial's faces (`shared/dial`), drawn with the panel's
+  rasteriser, fonts and dark palette from the panel's packets: a list with
+  rim ticks, a value with its range, its step and one ring, MOTOR & ESC and
+  SERVO with six readings in a grid of equal cells inside radius 100 and
+  six antialiased 1px rings from radius 118 inward at 3px, each from 12
+  o'clock clockwise to its reading's share of the full scale, LINK LOST
+  (`NO TURN IS SENT` while connected, `THE BENCH IS SAFE` after the link
+  ended), waiting, not bound, and a screen the knob does nothing on; a line
+  too wide drops a whole part, never a number's digits; the title
+  tag, the SAFE or ARMED pill with the run clock, the link bars, the
+  battery and two press hints on every face; `--` for a reading without
+  its valid bit; the words in English and German (`UI_DIAL_TEXT` in
+  `ui_text.def`), the language from the SCREEN packet. Only what changed is
+  drawn: a cell, a row, and of a ring the pixels between its old and new
+  end; the Dial sends only the rectangles written (a 300rpm change sends
+  3,920 of 57,600 pixels). The six ring tables, 25,032 bytes, are const
+  data in flash, generated by `tools/gen_dial_rings.py` (CI runs
+  `--check`). Host suites `test_dial_face` and
+  `test_dial_fit`; `tools/render_dial.py` writes the 20 images in
+  `docs/img` and CI's `--check` holds them
+  ([The M5Stack Dial](docs/Dial.md#the-faces)).
+- `gfx_ring_aa()` in `shared/gfx`: a 1px ring antialiased by each pixel's
+  coverage clamp(1 - |d - r|, 0, 1), from a table of the pixels the ring
+  touches sorted by angle, 3 bytes each; `gfx_ring_move()` repaints only
+  the pixels between an arc's old and new end (`test_gfx_ring`, against a
+  reference from the same formula).
+- CI builds the Dial's image and its test build (`.github/workflows/dial.yml`,
+  artifact `dial`); a release carries `rcbench-dial-<version>.bin` and
+  `rcbench-dial-merged-<version>.bin`. `tools/image_slot.py` takes the
+  image's file name as a second argument.
+- Module `shared/vibe`, host-tested: the balance
+  node's index comparator and its demodulator of the 1x, 2x and blade-pass
+  against the index (integer only, for the ESP32-C6), a no-index mode at an
+  rpm the panel gives, and the two-run and four-run balance corrections for
+  the panel. Angles count from the index mark in the order points pass the
+  index sensor ([vibe](shared/vibe/README.md)).
+- The balance node's firmware (`firmware/node`, role `bal`): an ADXL335 or
+  ADXL337 axis on GPIO0, the TCRT5000 module's D0 on GPIO1 and the battery
+  divider on GPIO3 in one ADC1 stream (continuous mode, 30,120 conversions
+  a second, 10,040Hz a channel), the index found in the stream with the
+  mark's polarity taken from the shorter level, shared/vibe's demodulator,
+  and a balance report every 250ms on STREAM (`RCNODE_T_BAL_REPORT`).
+  BLADES sets the blade count, RPM the no-index mode. The scale comes from
+  the chip's ADC calibration and 330mV/g. The TCRT5000 module runs from
+  GPIO20, switched off before a sleep; the node sleeps after 120s without
+  a link until the RESET key. CI builds the image and a release carries
+  `rcbench-node-bal-<version>.bin` and
+  `rcbench-node-bal-merged-<version>.bin`
+  ([The sensor nodes](docs/Nodes.md#the-balance-node)).
+- `shared/vibe`: the node's ADC frames split into channels with a lost
+  conversion found (`vibe_frame_split()`), a read checked against the
+  driver's overflow count (`vibe_frame_whole()`), a conversion dated from
+  the newest frame done (`vibe_frame_time()`), the scale and the DC window from
+  two points of the ADC's calibration curve (`vibe_cfg_scale()`), and the
+  index with its polarity found (`vibe_index_scan()`); host suite
+  `test_vibe_frame`.
+- The panel's side of the balance node. SETUP > WIRELESS has a BALANCE
+  NODE entry: ON/OFF, a 10s scan for nodes whose manufacturer data names
+  the balance role (`rcnode_adv_maker_role()`), the name taken from the advertising or the scan
+  response (refused while ARMED, stopped at the switch to ARMED), the bound
+  node kept over a restart, the node's cell from the STATUS packets it
+  sends on STREAM, and the trial mass (0.01g to 20.00g, 0.50g by default).
+  The panel reads INFO and takes reports only from a balance node of
+  protocol 1, writes the blade count and, after 2 reports without an index
+  edge, the bench's rpm, at most one CONTROL write every 250ms. BALANCE
+  shows the node's 1x magnitude, angle, rpm and a quality word from the
+  report's flags; `--` for a report older than 1000ms, for a report
+  without a counted revolution (the magnitude) and while the link of a
+  bound node is down; SIMULATED only while BALANCE NODE is OFF or no node
+  is bound. A new report repaints the four readings' values alone, on the
+  BALANCE pane only (`balance-node` in `tools/frame_cost.py`, held at
+  1,000 fills by CI). MOTOR & ESC gets a BALANCE tab beside PLOT and
+  TABLE: a TAKE key for each run of the two-run and four-run methods (8
+  reports, 2s, each; a report with the sensor's DC level out, a clipped
+  sample, an rpm out of range, a lost or refused index edge or a changed
+  mode fails the run at once with its own word, and a trial whose mean rpm
+  lies more than 5% from the baseline's fails as `NOT BASELINE RPM`;
+  the runs clear with CLEAR, the method, BLADES, PROPELLER or EDF,
+  Balance node OFF or ON, another node bound and a node restart, which
+  INFO's clock shows at the link-up, and a reconnect of the same node
+  keeps them), the correction through
+  shared/vibe as ADD and WHERE,
+  solved again when the trial mass changes, and a row in
+  `BENCH/BALANCE/BALANCE.CSV` for each solution; the hint under ADD says
+  whether the row was written. A file whose last row was cut gets a line
+  end before the next row
+  ([Balancing](docs/Balance.md#measuring-with-the-balance-node)).
+- `protocols/bleuart`: a connect that goes unanswered doubles the gap
+  before the next, from 1,000ms (7,000ms after a failure the host stack
+  reports) up to 30,000ms (`BLEU_BACKOFF_MAX_MS`); a scan, a bind or a
+  link that comes up starts it over. A bound peripheral that is away so
+  holds the host stack's one connect less often, and the other clients'
+  connects wait less.
+
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the
   longest `can_service()` call and the longest report pass
@@ -63,8 +222,88 @@ history is in git.
   started them (a touch event with its type, track id and source, the
   screenshot gate's first busy fact, or 0 minutes) and the backlight's
   duty ([Performance](docs/Performance.md#on-the-board)).
+- `protocols/bleuart` takes a profile (`bleu_profile_t`): the service
+  UUID, up to 4 characteristics by role and the connection parameters.
+  The ISSC Transparent UART profile is the default. A hub
+  (`bleuart_hub.h`) runs up to 5 central machines on one host stack:
+  events go to their machine by the owner in the token's top 3 bits or by
+  the connection handle, and one scan or connect runs at a time, a second
+  answered busy ([bleuart](protocols/bleuart/README.md#the-hub)).
+- A console line `ble: connect refused by the C6 radio, HCI 0x09: ...`
+  when the C6's controller refuses a connect for want of a link
+  ([The Bluetooth IMU](docs/IMU.md#console-lines)).
+- The panel's side of the M5Stack Dial. SETUP > WIRELESS > DIAL: Dial ON
+  or OFF (OFF by default), a 10s scan for Dials (refused while ARMED, with
+  a band text), the bound Dial by address (`dial_ble`, `dial_name`),
+  reconnected without a scan, and the steps of a detent, 0.5% to 5% of
+  throttle and 0.5° to 5° of horn angle (1% and 1° by default). A Dial's
+  detent moves the throttle on MOTOR & ESC and the horn on SERVO LIVE
+  through the rotary knob's path and rules; nothing moves while SAFE. Its
+  PRESS sets 0% or CENTER while ARMED, its HOLD DISARMs, and no Dial event
+  switches anything on. A Dial lost while ARMED, 1,000ms without an EVENT
+  or the disconnect, is an error: SAFE, all outputs off, band text
+  `DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`; 500ms is a
+  notice. The panel streams its screen to the Dial: SCREEN, VALUE_META,
+  VALUE, SCALE, LIVE_MOTOR and LIVE_SERVO at 20Hz, STATE, the whole model
+  again at each connect. Console lines under the tag `dial`. Navigation
+  from the Dial is a later slice
+  ([The M5Stack Dial](docs/Dial.md#the-panel)).
+- `bleu_profile_t` names the service a scan lists (`adv_svc`,
+  `adv_uuid16`), so each Bluetooth LE client lists its own devices; a
+  PARAM characteristic's value is kept to 20 bytes, up from 8
+  ([protocols/bleuart](protocols/bleuart/README.md#scan)). A write without
+  response is answered at once with the host call's status
+  (`bleu_hub_written()`), never through the event queue; a client ends an
+  unusable link as a failed GATT step with `bleu_fail_link()`.
+
+- `hardware/mechanical/`: STEP models of the M5Stack Dial (SKU K130) and
+  its ring nut, generated from `m5dial.py`. The 9 plastic parts come from
+  M5Stack's mesh, copied to `vendor/m5stack_dial/Dial.stl` under its MIT
+  licence: `_refit.py` fits its 29240 triangles with 3929 faces on planes,
+  cylinders, cones, tori and, for the thread of 2.6mm pitch, B-spline
+  surfaces along the helix, within 0.124mm of the mesh.
+  `check_refit.py` holds the written solids against the mesh in CI. The
+  power terminal, PORT.A, PORT.B and the USB-C receptacle are added from
+  their makers' drawings and M5Stack's Stamp-S3 model; the display lens
+  and module, the main board and the 2 M2 screw heads from the mesh's
+  pockets and estimates. `step_gen.py` writes solids with faces on
+  curved surfaces (`"brep"`) besides prisms and turned profiles
+  ([Mechanical parts](hardware/mechanical/README.md#m5stack-dial)).
 
 ### Changed
+
+- The nodes advertise the service's 128-bit UUID and the manufacturer
+  data, and send the name in the scan response, so a central that filters
+  duplicates lists a node from its first report. `rcnode_rsp_build()` takes
+  the role and the address. The nodes send their STATUS packet on STREAM
+  as well, for a central that subscribes to STREAM alone
+  ([protocols/rcnode](protocols/rcnode/README.md)).
+- SETUP has a WIRELESS tile, `IMU, DIAL`, for the panel's Bluetooth LE
+  devices. The IMU's 7 rows move from SENSORS to its IMU entry, unchanged
+  in key and behaviour; SENSORS has 8 entries. The IMU screen's OPTIONS
+  opens WIRELESS on the IMU entry. The SETUP page's 9 slots are full on
+  the rbmod carrier ([Screens](docs/Screens.md#wireless-the-imu-and-the-dial)).
+- The panel's Bluetooth LE host and the C6 radio's image hold 5
+  connections, up from 1 and 3: the IMU, the Dial, 2 sensor nodes and 1
+  spare. The C6 image sets `CONFIG_BT_LE_MAX_CONNECTIONS=5` from
+  `firmware/c6/sdkconfig.rcbench`, and `tools/c6_image.py check` fails an
+  image without it ([The ESP32-C6 radio](docs/C6.md#the-image-the-panel-carries)).
+- The IMU's link runs on the `blec` task, the one task of every Bluetooth
+  LE client, through the hub, in place of the `imu` task. The event queue
+  holds 64 events (4,096 bytes of internal RAM), up from 32, and keeps up
+  to 8 dropped DISCONNECTs, up from 1. The IMU's scan, bind, connect
+  parameters and console texts are unchanged
+  ([The Bluetooth IMU](docs/IMU.md#the-link)).
+- The panel's host runs up to 10 GATT client procedures at once, up from
+  4: 2 for each of the 5 links. The pool takes 600 bytes of PSRAM, up
+  from 240 ([Performance](docs/Performance.md#on-the-board)).
+- On a C6 that reports the carried version, the C6 RADIO row on UPDATES
+  offers `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` and the hold sends
+  the image; an update no longer ends at the link-up with the C6 on that
+  version. An image of the same esp_hosted version can carry other
+  settings, such as 3 Bluetooth LE connections in place of 5
+  ([Screens](docs/Screens.md#the-c6-radio)).
+- `tools/c6_image.py` reads `# CONFIG_X is not set` as `CONFIG_X=n`.
 
 - The IOmcu queues each CAN reply whole, up to 16 frames, and sends it
   through the controller's 3 transmit buffers, up to 3 frames per pump and

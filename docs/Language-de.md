@@ -113,6 +113,7 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |
+| press, hold (die Bildschirmtaste des Dial) | DRÜCKEN, HALTEN (`DRÜCKEN: ÖFFNEN`, `HALTEN: ZURÜCK`) |
 | refused | abgelehnt |
 | screen (eine Seite der Oberfläche) | Seite |
 | screen (das Display) | Anzeige |
@@ -328,7 +329,7 @@ Konfliktmarkierungen stehen.
 python3 tools/render_ui.py --fit
 ```
 
-baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 691 Ansichten auf
+baut den Renderer mit `GFX_TEXT_TRACE`, zeichnet alle 700 Ansichten auf
 Englisch und auf Deutsch und schlägt fehl, wenn ein Text in einer der beiden
 Sprachen
 
@@ -384,15 +385,15 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.628
-Einträge mit ID und 105 Optionen, 10 davon mit leerem Englisch.
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.798
+Einträge mit ID und 115 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`
-   und den Parameter in jedem Makro, das eine Spalte liest: 7
-   leere Vorgaben am Kopf der Tabelle und 20 Zeilen `#define` in 7 Dateien
+   und den Parameter in jedem Makro, das eine Spalte liest: 8
+   leere Vorgaben am Kopf der Tabelle und 24 Zeilen `#define` in 9 Dateien
    (`ui_text.h`, `ui_text.c`, `settings.c`, `settings_text.c`,
-   `settings_opts.h`, `servo_str.c`, `wa_page.c`). `NULL` zeigt das
-   Englische.
+   `settings_opts.h`, `servo_str.c`, `wa_page.c`, `dial_text.h`,
+   `dial_text.c`). `NULL` zeigt das Englische.
 2. Trage `UI_LANG_xx` in `ui_lang_t` in `shared/ui/include/ui_text.h` ein
    und den Eigennamen der Sprache an derselben Stelle in die Optionsliste
    `language`.
@@ -414,7 +415,9 @@ Einträge mit ID und 105 Optionen, 10 davon mit leerem Englisch.
 Zwei Leser nehmen die deutsche Spalte nach ihrer Position: `TABLE_ENTRY` in
 `tools/check_docs.py` und die Prüfung der Servo-Bedienelemente in
 `configurator/core/test/help.test.ts`. Die WLAN-Seite wählt ihre Sprache
-über einen Schalter, `wifi_access_set_german()`, und ein ESC-Profil trägt
+über einen Schalter, `wifi_access_set_german()`, ein ESC-Profil trägt
 seine Familie und seine manuellen Schritte auf Englisch und auf Deutsch
-(`family`, `family_de`, `action`, `action_de`); keines von beiden nimmt eine
-dritte Sprache ohne eigene Änderung.
+(`family`, `family_de`, `action`, `action_de`), und das M5Stack Dial nimmt
+seine Sprache aus dem Sprachfeld des SCREEN-Pakets, 0 Englisch oder 1
+Deutsch (`DK_LANG_EN`, `DK_LANG_DE` in `protocols/dialknob`); keines davon
+nimmt eine dritte Sprache ohne eigene Änderung.

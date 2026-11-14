@@ -93,5 +93,6 @@ void telemetry_sim_step(telemetry_sim_t *s, float throttle_pct, float dt_s,
     out->flags = LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK
                | LINK_BN_RPM_OK | LINK_BN_TEMP_OK | LINK_BN_TEMP_MOT_OK
                | LINK_BN_SIMULATED;
+    out->from_node = false;
     out->valid = true;
 }

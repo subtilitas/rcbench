@@ -302,9 +302,9 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 
 | Seite, Zustand | Hilfeseiten | Markiert |
 | --- | --- | --- |
-| SETUP, Kacheln | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, LAYOUT auf dem Träger, SPEICHERN |
+| SETUP, Kacheln | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, WIRELESS, LAYOUT auf dem Träger, SPEICHERN |
 | SETUP, eine Liste | 2 | die erste ganze Zeile, der Name der Liste, ZURÜCKSETZEN; von den ganz sichtbaren Zeilen die erste, deren Wert das Ziffernfeld öffnet, sonst die erste mit Tasten: ihr `-` oder `<`, der Wert, `+` oder `>`; SPEICHERN |
-| SETUP, SENSORS | 2 | wie eine Liste, zuerst der gewählte Eintrag |
+| SETUP, SENSORS und WIRELESS | 2 | wie eine Liste, zuerst der gewählte Eintrag |
 | OUTPUTS, Platinenansicht | 2 | die Fläche der Protokollliste, LETZTER SCHREIBVORGANG, PINS, die linke Taste; BELEGT, die Haltetaste zum Löschen aller Pin-Zuordnungen, wenn angeboten, die rechte Taste |
 | OUTPUTS, Eintrag PROG PORT | 2 | die Fläche des Eintrags, PIN, FUNKTION, SERVO-TESTER, PORT-PWM; dann BELEGT und eine Taste, in der Platinenansicht |
 | OUTPUTS, Rasteransicht | 1 | die Fläche der Protokollliste, das erste Feld, LETZTER SCHREIBVORGANG; bei einem Eintrag PROG PORT seine Fläche und Zeilen |
@@ -660,6 +660,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
@@ -868,7 +869,7 @@ Bedienelemente über y 436 des Inhalts.
 | MOTOR & ESC | ARM / DISARM | die Liste der 8 Einstellungen für Motor, Akku und Gasausgang |
 | SUPPLY | AUSGANG EIN / AUS | die Liste der Grenzen des Netzteils und der Anschlüsse des PD mini |
 | ESC STICK, auf der Seite eines Profils, seinem Lauf und seinem Ergebnis | START n / ABBRECHEN / OK | die Liste des Netzteils und der 12 Timing-Einstellungen |
-| IMU | 2s HALTEN: KALIBRIEREN | die Liste SENSORS von SETUP beim Eintrag IMU |
+| IMU | 2s HALTEN: KALIBRIEREN | die Liste WIRELESS von SETUP beim Eintrag IMU |
 | UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung und Versionen |
 | LOGS, auf der Dateiliste | leer | die Liste SD CARD von SETUP |
 | FILES, auf den Bereichen | leer | die Liste SD CARD von SETUP |
@@ -1099,8 +1100,8 @@ bis zum nächsten ARM erhalten. Jeder Wechsel auf ARMED beginnt eine
 CSV-Datei, die LOGS darstellen kann.
 
 
-Auf LIVE stehen unter dem Titel des Telemetriefelds GRAFIK und TABELLE,
-zwei Registerkarten von 200 x 40px. Daneben erscheinen Abfragerate und
+Auf LIVE stehen unter dem Titel des Telemetriefelds GRAFIK, TABELLE und
+WUCHTEN, drei Registerkarten in 254 x 40px. Daneben erscheinen Abfragerate und
 Fehlerzahl der Verbindung: CRC-Fehler und Resynchronisationen zusammen
 (CRC: Cyclic Redundancy Check). Hat der IOmcu seit dem Einschalten
 Verbindungsframes abgelehnt, zeigt die Zeile darunter bei bestehender
@@ -1354,14 +1355,16 @@ zusätzliche Spalten:
 - Die übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei, ohne
   `throttle`.
 
-`source` ist `measured` bei Zeilen mit Werten eines Messgeräts und `model`
+`source` ist `measured` bei Zeilen mit Werten eines Messgeräts, `node` bei
+Zeilen, deren INA228-Werte vom Leistungsknoten kommen (INA228-Quelle NODE,
+[WIRELESS: der Leistungsknoten](#wireless-der-leistungsknoten)), und `model`
 bei Zeilen aus dem Panelmodell (Markierung SIMULIERT). Netzteildateien
-haben dieselbe letzte Spalte. Dateien ohne diese Spalte enden bei
+haben dieselbe letzte Spalte, ohne `node`. Dateien ohne diese Spalte enden bei
 `ch3 voltage` oder `energy`. LOGS und die Werkzeuge lesen beide Formen;
 `source` ist eine Textspalte und wird nicht als Kurve dargestellt.
 
-`ina voltage` und `ina current` stammen vom INA228 und sind leer, wenn er
-nicht die Quelle ist. `esc current` ist der Telemetriestrom des ESC: aus
+`ina voltage` und `ina current` stammen vom INA228, dem des IOmcu oder dem
+des Leistungsknotens, und sind leer, wenn er nicht die Quelle ist. `esc current` ist der Telemetriestrom des ESC: aus
 der SENSE-Page, wenn der INA228 die Quelle ist, sonst aus der BENCH-Page.
 Die Zelle bleibt leer, wenn der ESC keinen Strom meldet oder das Panel den
 Prüfstand simuliert. Jede nicht gemessene Größe bleibt leer.
@@ -1431,6 +1434,49 @@ einer aus SENSE abgeleiteten Zuordnung behält die Datei `ch1` bis `ch3`.
 Solange die Ausgangsgruppe angesteuert wird, lässt sich die Zuordnung
 nicht schreiben; die Spalten bleiben daher über den gesamten Lauf gleich.
 LOGS gruppiert `out`, `port` und `supply` unter INA3221.
+
+### WUCHTEN, die Läufe des Auswuchtknotens
+
+![WUCHTEN mit beiden Läufen der Zwei-Lauf-Methode](img/de/motor-balance.png)
+
+WUCHTEN nimmt die Läufe einer Auswuchtung mit dem Auswuchtknoten auf
+([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)). Das Feld
+unter den Registerkarten misst 600 x 150px:
+
+- Die Live-Zeile: Betrag und Winkel der 1x-Komponente, Drehzahl und
+  Gütewort des Knotens, rechts die Testmasse (Testmasse, SETUP > WIRELESS).
+  Bei Auswuchtknoten AUS oder ohne gebundenen Knoten steht dort
+  `KEIN AUSWUCHTKNOTEN: IN WIRELESS BINDEN`; ein Bericht, der älter als
+  1000ms ist, oder ein gebundener Knoten ohne Verbindung zeigt `--`.
+- Für jeden Lauf eine fingerhohe Taste: REFERENZ und TEST 0° bei 2 LÄUFE,
+  REFERENZ, TEST 0°, TEST 120° und TEST 240° bei 4 LÄUFE. Ein Druck nimmt
+  die nächsten 8 Berichte auf, 2s, während die anderen Tasten warten. Unter
+  jeder Taste ihr Lauf: `LÄUFT n/8`, der Mittelwert (`0.42g 265°` bei zwei
+  Läufen, der Betrag bei vier) oder der Grund des Abbruchs: `KEIN BERICHT`
+  (1000ms ohne Bericht), `SENSORFEHLER`, `ÜBERSTEUERT`,
+  `DREHZAHLBEREICH`, `INDEXFEHLER`, `MODUS GEÄNDERT` (ein Bericht, den der
+  Knoten als unbrauchbar kennzeichnet,
+  [Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)),
+  `KEINE UMDREHUNG`, `KEIN INDEX` (zwei Läufe
+  brauchen den Index), `DREHZAHL GEÄNDERT` (mehr als 5% vom ersten
+  Bericht des Laufs) oder, unter einem Testlauf, `ANDERE DREHZAHL` (seine
+  mittlere Drehzahl mehr als 5% von der der Referenz).
+- 2 LÄUFE, 4 LÄUFE und LÖSCHEN. Ein Wechsel der Methode löscht die Läufe,
+  ebenso BLÄTTER, PROPELLER oder EDF, Auswuchtknoten AUS oder EIN, ein
+  anderer gebundener Knoten und ein Neustart des Knotens
+  ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)).
+- Sind alle Läufe aufgenommen: `HINZU 0.35g  WO zwischen 1 und 2` (beim
+  EDF `Nabe, 265°`), neu gelöst, wenn sich die Testmasse ändert, darunter,
+  was aus der CSV-Zeile wurde (`Zeile wartet auf die Karte`,
+  `Geschrieben: BENCH/BALANCE/BALANCE.CSV`,
+  `NICHT geschrieben: keine Karte/Fehler`), oder das Wort des Lösers:
+  `SCHWACH` mit der Wirkung der Testmasse in % und dem Verbleib der Zeile
+  (`SCHWACH 12% Wirkung: geschrieben`), `OHNE WIRKUNG`, `WIDERSPRÜCHLICH`,
+  `KEIN ERGEBNIS`.
+
+Die Tasten wirken beim Drücken und steuern keinen Ausgang, daher gehen sie
+auch bei ARMED. Ohne frischen Bericht nimmt eine Lauftaste nichts auf, und
+das Band zeigt `KEIN FRISCHER BERICHT VOM AUSWUCHTKNOTEN: NICHTS GEMESSEN`.
 
 ### LOG UMBENENNEN
 
@@ -5561,10 +5607,10 @@ Zeile in der Schrift 10 x 20px.
 
 ![Setup](img/de/setup.png)
 
-- PANEL, SENSORS und SD CARD enthalten die Einstellungen für den gesamten
-  Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer Liste;
-  SENSORS nennt stattdessen die verfügbaren Gruppen,
-  `STROM, WINKEL, PHASENABGRIFF`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+- PANEL, SENSORS, WIRELESS und SD CARD enthalten die Einstellungen für den
+  gesamten Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer
+  Liste; SENSORS nennt stattdessen die verfügbaren Gruppen,
+  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, LEISTUNG, AUSWUCHTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
@@ -5573,8 +5619,8 @@ Zeile in der Schrift 10 x 20px.
   seine Kachel, und das Band dieser Seite zeigt SETUP. [Files](#files) ist ein
   Tab der Kachel [LOGS](#logs).
 - LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
-  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 2 Plätze
-  frei, auf diesem 1. Die Seite bietet 9 Plätze; ein zehnter
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board ist 1 Platz
+  frei, auf diesem keiner. Die Seite bietet 9 Plätze; ein zehnter
   Eintrag lässt den Build fehlschlagen.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -6008,15 +6054,17 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 
 ### SENSORS: die geteilte Ansicht
 
-SENSORS fasst die vom IOmcu ausgelesenen Geräte und die Bluetooth-IMU des
-Panels in einer geteilten Ansicht zusammen. Links stehen 9 Einträge;
-rechts erscheinen die Einstellungen des gewählten Eintrags.
+SENSORS fasst die vom IOmcu ausgelesenen Geräte in einer geteilten Ansicht
+zusammen. Links stehen 8 Einträge; rechts erscheinen die Einstellungen des
+gewählten Eintrags. Die Bluetooth-IMU des Panels steht unter WIRELESS
+([WIRELESS: die IMU und das Dial](#wireless-die-imu-und-das-dial)), in einer
+geteilten Ansicht derselben Art.
 
 ![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
 
-Die linke Liste reicht von Body-y 8 bis 440, 4px über dem Streifen: 9 Einträge
-von 220 x 48px im Abstand von 48px, von oben nach unten SENSORBUS, INA228,
-INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF und IMU. Ein Eintrag nimmt
+Die linke Liste hat von Body-y 8 bis 440, 4px über dem Streifen, Platz für 9
+Einträge von 220 x 48px im Abstand von 48px. SENSORS belegt 8, von oben nach
+unten SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600 und PHASENABGRIFF. Ein Eintrag nimmt
 Berührungen über seine 48px an und zeichnet seine Karte 1px innerhalb seiner
 Ober- und Unterkante, 2px zwischen zwei Karten. Jeder Eintrag zeigt seinen Namen in der Schrift 12 x 24px und darunter
 seinen Zustand in 8 x 16px. Der gewählte Eintrag hat die helle Füllung und
@@ -6032,7 +6080,6 @@ Schrift 10 x 20px.
 | INA3221 0x40 bis 0x43 | ein Zustand der Tabelle unter [SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine) | 10 |
 | AS5600 | `EIN`, `VOM IOMCU ABGELEHNT` | 2 |
 | PHASENABGRIFF | `EIN`, `VOM IOMCU ABGELEHNT` | 7 |
-| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 6 |
 
 - Bei einem ausgeschalteten Eintrag mit Einschaltzeile erscheint nur diese
   Zeile; sein Zustand lautet `AUS`. EIN blendet die übrigen Zeilen ein.
@@ -6527,13 +6574,13 @@ Die IMU-Kachel unter SETUP öffnet den Bildschirm für den Winkelsensor
 WitMotion BWT901CL. Er ist über Bluetooth LE durch den ESP32-C6 des Boards
 mit dem Panel verbunden ([Die Bluetooth-IMU](IMU-de.md)); das erste IMU EIN
 startet Bluetooth LE. Seine Einstellungen
-stehen im IMU-Eintrag unter SENSORS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
+stehen im IMU-Eintrag unter WIRELESS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
 50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
 WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
 Body-y 16: SENSOREN SUCHEN, dann NULLPUNKT und NULLPUNKT LÖSCHEN
 nebeneinander. Die Fußleiste
 ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
-lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet SENSORS
+lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet WIRELESS
 auf dem IMU-Eintrag, dessen Home-Feld führt zurück. Die Karte rechts, x 484
 bis 1016, Body-y 16 bis 436, nennt den gebundenen Sensor
 und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
@@ -6548,7 +6595,108 @@ Laufs ([Servoverfahren](Servo-de.md)).
 
 ![Die Liste nach SENSOREN SUCHEN](img/de/imu-scan.png)
 
-![SENSORS auf dem IMU-Eintrag](img/de/setup-sensors-imu.png)
+![WIRELESS auf dem IMU-Eintrag](img/de/setup-wireless-imu.png)
+
+### WIRELESS: die IMU und das Dial
+
+WIRELESS enthält die Bluetooth-LE-Geräte des Panels in einer geteilten
+Ansicht wie SENSORS: links 4 Einträge, IMU, DIAL, AUSWUCHTKNOTEN und
+LEISTUNGSKNOTEN, jeder mit Namen und Zustand, rechts die Zeilen des
+gewählten Eintrags. Das erste IMU EIN, Dial EIN, Leistungsknoten EIN oder
+Auswuchtknoten EIN startet Bluetooth LE bis zum
+Neustart des Panels.
+
+| Eintrag | Zustand im Betrieb | Zeilen |
+| --- | --- | --- |
+| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 7 bei EIN |
+| DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 5 bei EIN |
+| AUSWUCHTKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN KNOTEN`, `VERBUNDEN, LIEST INFO`, `ROLLE r, PROTOKOLL p`, `VERBUNDEN, KEIN BERICHT`, `BERICHTET` | 1 bei AUS; 5 bei EIN |
+| LEISTUNGSKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `KEIN LEISTUNGSKNOTEN`, `VERBUNDEN, KEIN MESSWERT`, `ANDERES PROTOKOLL n`, `INA228-SETUP ABGELEHNT`, `KEIN INA228 AM KNOTEN`, `VERBUNDEN`, `300ms KEIN MESSWERT`, `KNOTEN VERLOREN` ([WIRELESS: der Leistungsknoten](#wireless-der-leistungsknoten)) | 2 bei AUS: Leistungsknoten und INA228-QUELLE; 5 bei EIN |
+
+![WIRELESS auf dem DIAL-Eintrag](img/de/setup-wireless-dial.png)
+
+Die Zeilen des DIAL-Eintrags ([Das M5Stack Dial](Dial-de.md#das-panel)):
+
+| Zeile | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Dial | EIN, AUS | AUS | die Verbindung zum gebundenen Dial; AUS beendet sie ohne Fehler |
+| Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen sucht 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE` |
+| Gebundenes Dial | der Name des gebundenen Dials, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Dials der letzten Suche, `DIAL-3A10  -52dBm`, das gebundene markiert; Tippen auf eines bindet es und fragt nach dem Speichern |
+| Dial-Schritt, Gas | 0.5%, 1%, 2%, 5% | 1% | das Gas, das eine Raste auf MOTOR & ESC verstellt |
+| Dial-Schritt, Servo | 0.5°, 1°, 2°, 5° | 1° | der Hornwinkel, den eine Raste auf SERVO verstellt |
+
+DIAL ZURÜCKSETZEN setzt Dial auf AUS und die Schritte auf 1% und 1° zurück;
+das gebundene Dial bleibt. Das Band zeigt `DIAL: 500ms KEIN EREIGNIS`, wenn
+ein verbundenes Dial verstummt, `DIAL VERLOREN`, wenn es bei SAFE verloren
+geht, und `DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`
+für den Fehler bei ARMED.
+
+### WIRELESS: der Leistungsknoten
+
+![WIRELESS auf dem LEISTUNGSKNOTEN-Eintrag](img/de/setup-wireless-pnode.png)
+
+Der LEISTUNGSKNOTEN-Eintrag verbindet den INA228-Leistungsknoten
+([Sensorknoten](Nodes-de.md#das-panel)) und legt fest, wessen INA228
+Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
+
+| Zeile | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Leistungsknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie ohne Fehler |
+| INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen sucht 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE` |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Leistungsknoten der letzten Suche, `rcbench-pwr-3456  -58dBm`, der gebundene markiert; Tippen auf einen bindet ihn und fragt nach dem Speichern. Ein Auswuchtknoten wird nicht gelistet |
+| Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
+
+LEISTUNGSKNOTEN ZURÜCKSETZEN setzt Leistungsknoten auf AUS und
+INA228-Quelle auf WIRED zurück; der gebundene Knoten bleibt. Die
+Signalstärke eines verbundenen Knotens wird nicht angezeigt: sein STATUS
+trägt keine, und die dBm der Trefferliste stammen aus der Suche.
+
+Mit INA228-Quelle auf NODE:
+
+- Die Messwerte des Knotens ersetzen die INA228-Werte, solange die
+  IOmcu-Verbindung steht: `ina voltage`, `ina current` und die Spalte
+  `source` des Logs zeigen `node`. Die eigene Telemetrie des ESC bleibt
+  daneben.
+- Ein Messwert, der älter als 300ms ist, gilt als keiner: Spannung, Strom
+  und Leistung erscheinen als nicht gemessen.
+- Ein ARM von MOTOR & ESC oder ESC STICK wird abgelehnt, solange
+  Leistungsknoten AUS ist oder in den letzten 100ms kein Messwert kam; das
+  Band zeigt `ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle
+  WIRED oder Knoten verbinden.` Die ARMs von SERVO und OUTPUTS lesen
+  keinen INA228 und werden nicht abgelehnt.
+- Ein Lauf von MOTOR & ESC oder ESC STICK zählt auf den Knoten. Eine Lücke
+  ohne Messwert von bis zu 300ms wird überbrückt, einmal in 10s. Eine
+  längere Lücke oder eine zweite innerhalb von 10s nach dem Beginn der
+  ersten ist ein Fehler: SAFE, alle Ausgänge aus, und das Band zeigt
+  `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`.
+  Ein SERVO- oder OUTPUTS-Lauf endet nicht am Knoten.
+- INA228-Quelle ändert sich bei ARMED nicht: ihre Zeile hat keine Tasten.
+- Die Messwerte des Knotens speisen keine Schutzfunktion: das Stromlimit
+  des IOmcu und die Abschaltungen des Panels lesen ihre eigenen Sensoren.
+
+Das Band zeigt `LEISTUNGSKNOTEN: 300ms KEIN MESSWERT`, wenn ein verbundener
+Knoten keine Messwerte mehr sendet, und `LEISTUNGSKNOTEN VERLOREN`, wenn die
+Verbindung bei SAFE abbricht.
+
+### WIRELESS: der Auswuchtknoten
+
+![WIRELESS auf dem AUSWUCHTKNOTEN-Eintrag](img/de/setup-wireless-bal.png)
+
+Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)):
+
+| Zeile | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Auswuchtknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie, und sein Verlust ist kein Fehler: der Knoten misst und steuert nichts |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen sucht 10s lang nach Knoten, die die Rolle Auswuchten anzeigen, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE` |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Knoten der letzten Suche, `rcbench-bal-3456  -58dBm`, den gebundenen markiert; Tippen auf einen bindet ihn und fragt nach dem Speichern |
+| Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus dem STATUS, den er auf STREAM neben seinen Berichten sendet; `--` vor dem ersten auf einer Verbindung |
+| Testmasse | 0.01g bis 20.00g in Schritten von 0.01g | 0.50g | die Masse, die für die Testläufe von MOTOR & ESC > WUCHTEN aufgeklebt wird |
+
+AUSWUCHTKNOTEN ZURÜCKSETZEN setzt Auswuchtknoten auf AUS und Testmasse auf
+0.50g zurück; der gebundene Knoten bleibt. Ein Knoten, dessen INFO eine
+andere Rolle oder ein anderes Protokoll nennt, zeigt `ROLLE r, PROTOKOLL p`,
+und seine Berichte werden nicht übernommen.
 
 ### SD CARD: welche Logs geschrieben werden, und wohin
 
@@ -7005,6 +7153,7 @@ mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
 | `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start und Releases. Grau, solange eine Suche oder ein Download läuft oder ein Finger den Download hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche oder Download.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 | `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
+| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
 
 ![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
 
@@ -7236,10 +7385,12 @@ Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und
 Bluetooth trägt: `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`, die Version,
 die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start gemeldet hat, oder
 `nicht gemeldet`, und die Version des Images, das dieses Panel mitbringt,
-oder `keine`. Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`. Während das Update
+oder `keine`. Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`, oder `2s HALTEN:
+C6-FIRMWARE DES PANELS NEU INSTALLIEREN`, solange der C6 die mitgebrachte
+Version meldet. Während das Update
 läuft, zeigt die Taste `C6-UPDATE 37%`, den Anteil des Images, den der C6
 angenommen hat. Die Schritte, ihre Grenzen und wie jeder endet, stehen in
-[Bauen: Die Firmware des C6](Building-de.md#die-firmware-des-c6).
+[Der Funk über den ESP32-C6: Die Firmware des C6](C6-de.md#die-firmware-des-c6).
 
 ![Die Zeile C6 RADIO mit dem C6 im Auslieferungszustand](img/de/updates-c6.png)
 
@@ -7252,7 +7403,6 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Die enthaltene C6-Funk-Firmware hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist kein ESP32-C6-Build von esp_hosted, oder sein SHA-256 weicht ab. |
 | `Das C6-Funk-Update läuft.` | Ein Update läuft. |
 | `Der C6-Funk hat nicht geantwortet. Starte das Panel neu.` | Die Verbindung zum C6 ist seit dem Panel-Start ausgefallen; der C6 wird im Reset gehalten. |
-| `Der C6-Funk nutzt die im Panel enthaltene Firmware.` | Der C6 hat die mitgebrachte Version gemeldet. |
 | `Das C6-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
 | `Das C6-Update erfordert einen ausgeschalteten Netzteilausgang.` | Der Netzteilausgang ist an oder schaltet ein. |
 | `Das C6-Update wartet: Ein Aufzeichnungslauf ist offen.` | Ein Log-Lauf ist offen. |
@@ -7264,13 +7414,17 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
-angeboten. Das Alarmband sagt, wie ein Update endete:
+angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
+Neuinstallation angeboten: Images einer esp_hosted-Version mit anderen
+Einstellungen melden dieselbe Version, etwa eines mit 3
+Bluetooth-LE-Verbindungen und eines mit 5 ([Der Funk über den ESP32-C6: Das Image, das das Panel
+mitbringt](C6-de.md#das-image-das-das-panel-mitbringt)). Das
+Alarmband sagt, wie ein Update endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu. |
-| `Der C6-Funk nutzt bereits 2.13.0. Nichts gesendet.` | Der C6 hat beim Verbindungsaufbau des Updates die mitgebrachte Version gemeldet. |
-| `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Bauen: Wiederherstellung über Header H4](Building-de.md#wiederherstellung-über-header-h4)). |
+| `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Der Funk über den ESP32-C6: Wiederherstellung über Header H4](C6-de.md#wiederherstellung-über-header-h4)). |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
 | `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |
 

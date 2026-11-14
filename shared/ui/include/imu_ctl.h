@@ -4,8 +4,9 @@
  *        (imu_ble.h) and the sensor side (imu_sensor.h), takes SETUP's
  *        values, the panel's Bluetooth state and the screen's commands, and
  *        gives the view the IMU screen and SETUP > SENSORS show.  Pure C:
- *        the panel's IMU task (firmware/panel/main/panel_imu.c) hands in the
- *        host stack's events and performs the actions.
+ *        the panel's `blec` task (firmware/panel/main/panel_imu.c and
+ *        panel_blec.c) hands in the host stack's events and performs the
+ *        actions.
  *
  * The sensor's stream flows while IMU is ON, a sensor is bound and the
  * link is subscribed to its notifications.  A bind is a tap on a scanned

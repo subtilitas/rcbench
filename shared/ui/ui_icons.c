@@ -281,6 +281,22 @@ void ui_icon_wifi(gfx_canvas_t *c, int x, int y, int size,
     }
 }
 
+void ui_icon_dial(gfx_canvas_t *c, int x, int y, int size,
+                  gfx_color_t color)
+{
+    /* The knob low in the box, its pointer at 12 o'clock, and two arcs of
+     * a radio's waves on each side of its top. */
+    const int thick = (size >= 30) ? 3 : 2;
+    const int r = size * 3 / 10;
+    const int cy = y + size / 8;
+    gfx_arc(c, x, cy, r, thick, 0.0f, 360.0f, color);
+    gfx_fill_rect(c, x - thick / 2, cy - r + thick, thick, r * 2 / 3, color);
+    for (int i = 1; i <= 2; ++i) {
+        gfx_arc(c, x, cy, r + size * i / 8, thick, 25.0f, 65.0f, color);
+        gfx_arc(c, x, cy, r + size * i / 8, thick, 115.0f, 155.0f, color);
+    }
+}
+
 /*
  * A folder: a tab on the back's top left, the body under it.
  */

@@ -267,12 +267,6 @@ static void report_end(uint32_t now_ms)
         s_restart = true;
         s_restart_at = now_ms + C6_RESTART_MS;
         break;
-    case FW_C6_RES_SAME:
-        ESP_LOGI(TAG, "C6: runs esp_hosted %s already; nothing sent",
-                 s_info.version_text);
-        snprintf(line, sizeof(line), TR(ALERT_C6_SAME), s_info.version_text);
-        control_alert(line);
-        break;
     case FW_C6_RES_NO_LINK:
         ESP_LOGE(TAG, "C6 update: the C6 did not answer");
         control_alert(TR(ALERT_C6_NO_LINK));
@@ -347,7 +341,7 @@ static void start_update(bool armed, uint32_t now)
     const fw_c6_row_t row = fw_c6_row(&f, &why);
     uint32_t len = 0u;
     (void)carried(&len);
-    if (row != FW_C6_ROW_READY || !task_once()
+    if ((row != FW_C6_ROW_READY && row != FW_C6_ROW_REINSTALL) || !task_once()
         || !fw_c6_ota_start(&s_ota, len, s_info.version, now)) {
         const upd_c6_view_t v = { .row = row, .why = why };
         ESP_LOGW(TAG, "C6 update refused: row %u, reason %u", (unsigned)row,
@@ -358,8 +352,10 @@ static void start_update(bool armed, uint32_t now)
         return;
     }
     s_seen_end = false;
-    ESP_LOGI(TAG, "C6 update: esp_hosted %s, %lu bytes", s_info.version_text,
-             (unsigned long)len);
+    ESP_LOGI(TAG, "C6 update%s: esp_hosted %s, %lu bytes",
+             row == FW_C6_ROW_REINSTALL ? " (reinstall: the C6 reports this "
+                                          "version)" : "",
+             s_info.version_text, (unsigned long)len);
 }
 
 void c6_service(bool armed)

@@ -99,6 +99,43 @@ Apache License 2.0. esp_wifi_remote's dummy_src.c is an empty file without a
 licence line.
 
 
+Components the M5Stack Dial build fetches
+-----------------------------------------
+
+The Dial's firmware for the ESP32-S3 drives its display with a component
+from the Espressif component registry. It is not in this repository:
+firmware/dial/dependencies.lock names it with its hash, and a build
+downloads it into firmware/dial/managed_components/. A Dial image contains
+its compiled code.
+
+  espressif/esp_lcd_gc9a01 2.0.4         Apache License 2.0
+  espressif/cmake_utilities 0.5.3        Apache License 2.0 (build scripts,
+                                         not linked)
+
+  Copyright Espressif Systems (Shanghai) CO LTD.  The Apache License 2.0 is
+  published at https://www.apache.org/licenses/LICENSE-2.0 and is shipped in
+  each component's license.txt file.
+
+
+M5Stack Dial housing mesh
+-------------------------
+
+    hardware/mechanical/vendor/m5stack_dial/Dial.stl
+
+is an unchanged copy of Products/K130_Dial/Structures/Dial.stl from
+https://github.com/m5stack/M5_Hardware (commit
+f66b64a1ee5502887d28921f654b24b3b36e9721), under the MIT License,
+Copyright (c) 2021 M5Stack. The licence text is
+hardware/mechanical/vendor/m5stack_dial/LICENSE. The STEP models
+
+    hardware/mechanical/models/m5dial.step
+    hardware/mechanical/models/m5dial_nut.step
+
+are generated from that mesh by hardware/mechanical/m5dial.py, which fits
+surfaces to its triangles. They hold M5Stack's geometry of the 9 plastic
+parts and are under the same licence.
+
+
 Design and protocol references
 ------------------------------
 

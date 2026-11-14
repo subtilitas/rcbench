@@ -20,6 +20,7 @@
 #include "help_check.h"
 #include "out_bind.h"
 #include "sensors_pane.h"
+#include "wireless_pane.h"
 #include "ui_board.h"
 #include "ui_help.h"
 
@@ -76,11 +77,21 @@ static void pose_sensors(void)
     open_cat(SET_CAT_SENSORS);
 }
 
-/** @brief SENSORS on top, the IMU selected. */
+/** @brief WIRELESS on top, the IMU selected. */
 static void pose_sensors_imu(void)
 {
-    pose_sensors();
-    sensors_pane_select(SENS_ENTRY_IMU);
+    pose_hub();
+    open_cat(SET_CAT_WIRELESS);
+    wireless_pane_select(WL_ENTRY_IMU);
+}
+
+/** @brief WIRELESS on top, the Dial selected and on. */
+static void pose_wireless_dial(void)
+{
+    pose_hub();
+    settings_set(SET_DIAL_EN, 1.0f);
+    open_cat(SET_CAT_WIRELESS);
+    wireless_pane_select(WL_ENTRY_DIAL);
 }
 
 TEST_CASE(every_page_of_setup_fits)
@@ -95,7 +106,10 @@ TEST_CASE(every_page_of_setup_fits)
         CHECK_EQ(check_every_state(settings_screen(), pose_sensors,
                                    "sensors"), 2);
         CHECK_EQ(check_every_state(settings_screen(), pose_sensors_imu,
-                                   "sensors imu"), 2);
+                                   "wireless imu"), 2);
+        CHECK_EQ(check_every_state(settings_screen(), pose_wireless_dial,
+                                   "wireless dial"), 2);
+        settings_set(SET_DIAL_EN, 0.0f);
     }
     s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
     ui_board_set(s_board);
@@ -136,7 +150,7 @@ TEST_CASE(the_tiles_pages_mark_every_tile_once)
         CHECK_EQ(p.item[0].text, TX_HG_SET_PANEL);
         /* The hub holds no tile past its last: page 2 ends on SAVE. */
         REQUIRE(ui_help_page(settings_screen(), false, 1, &p));
-        CHECK_EQ(p.count, (settings_hub_tiles() > 7) ? 4 : 3);
+        CHECK_EQ(p.count, (settings_hub_tiles() > 8) ? 5 : 4);
         CHECK(!ui_help_page(settings_screen(), false, 2, &p));
     }
     s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
@@ -184,9 +198,9 @@ TEST_CASE(a_list_marks_the_keys_of_a_row_whose_value_opens_the_keypad)
     CHECK_EQ(p.item[0].text, TX_HG_SET_ENTRY);
 }
 
-/* The IMU is the panel's, over Bluetooth LE through the ESP32-C6: its entry's
- * mark says so and not that the IOmcu reads it, every other entry's says
- * the IOmcu reads it. */
+/* The IMU and the Dial are the panel's, over Bluetooth LE through the
+ * ESP32-C6: their entries' marks say so and not that the IOmcu reads them,
+ * every SENSORS entry's says the IOmcu reads it. */
 TEST_CASE(the_imu_entry_says_the_panel_reads_it)
 {
     s_board = (uint16_t)OUTBIND_BOARD_UNKNOWN;
@@ -195,8 +209,20 @@ TEST_CASE(the_imu_entry_says_the_panel_reads_it)
         sensors_pane_select(e);
         ui_help_page_t p;
         REQUIRE(ui_help_page(settings_screen(), false, 0, &p));
-        CHECK_EQ(p.item[0].text, (e == SENS_ENTRY_IMU) ? TX_HG_SET_ENTRY_IMU
-                                                       : TX_HG_SET_ENTRY);
+        CHECK_EQ(p.item[0].text, TX_HG_SET_ENTRY);
+    }
+    for (int e = 0; e < WL_ENTRY_COUNT; ++e) {
+        pose_hub();
+        open_cat(SET_CAT_WIRELESS);
+        wireless_pane_select(e);
+        ui_help_page_t p;
+        REQUIRE(ui_help_page(settings_screen(), false, 0, &p));
+        CHECK_EQ(p.title, TX_HG_SET_TITLE_WIRELESS);
+        const ui_text_id_t want = (e == WL_ENTRY_IMU)     ? TX_HG_SET_ENTRY_IMU
+                                  : (e == WL_ENTRY_DIAL)  ? TX_HG_SET_ENTRY_DIAL
+                                  : (e == WL_ENTRY_PNODE) ? TX_HG_SET_ENTRY_PNODE
+                                                          : TX_HG_SET_ENTRY_BAL;
+        CHECK_EQ(p.item[0].text, want);
     }
     for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
         const char *s = ui_tr_in((ui_lang_t)l, TX_HG_SET_ENTRY_IMU);

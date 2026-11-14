@@ -89,7 +89,7 @@ settings-sim                 3,374     422 KiB
 battery-sim                  3,300     412 KiB
 analyser-chrome             53,472    6684 KiB
 logs-chrome                 28,260    3532 KiB
-settings-chrome             33,886    4236 KiB
+settings-chrome             35,719    4465 KiB
 settings-list-chrome        37,319    4665 KiB
 battery-chrome              54,643    6830 KiB
 balance-chrome              57,992    7249 KiB
@@ -103,6 +103,7 @@ wifi-keys                   36,944    4618 KiB
 wifi-idle                        0       0 KiB
 imu                            137      17 KiB
 imu-hold                       626      78 KiB
+balance-node                   683      85 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
 hlines                         180      22 KiB
@@ -136,6 +137,7 @@ est. ms and est. fps: not measured
 | `wifi-idle` | WI-FI mit laufendem WLAN-Hotspot, die Leerlaufzeit in jedem Frame 1s kürzer: die Seite zeigt sie in ganzen Minuten, also wird nichts neu gezeichnet |
 | `imu` | der IMU-Bildschirm mit einem Winkelframe in jedem Frame, X 0.1° vom vorigen entfernt: die Zeile X neu gezeichnet, auf sich selbst beschnitten |
 | `imu-hold` | der IMU-Bildschirm, ein Finger auf 2s HALTEN: KALIBRIEREN in der Fußleiste: der Knopf und das ALTER in der Zeile RATE neu gezeichnet, jedes auf sich selbst beschnitten |
+| `balance-node` | BALANCE mit verbundenem Auswuchtknoten und einem Bericht in jedem Frame, dessen Betrag, Winkel, Drehzahl und Qualität vom vorigen abweichen: die vier Werte VIBRATION, WINKEL, DREHZAHL und SIGNAL in ihren Boxen neu gezeichnet |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
 | `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
 | `clear` | ein Löschen des ganzen Bildschirms |
@@ -269,7 +271,7 @@ im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpas
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | `servo-rudder` | 4 600 | ein neuer Winkel auf RUDER, der mehr als die Anzeige, die Zustandszeilen und die beiden Boxen des Ruders neu zeichnet |
 | `servo-test` | 1 000 | einen bewegten Arm oder einen neuen Messwert, der die TEST-Seite neu zeichnet |
-| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet, eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet, oder einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold`, `balance-node` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet, eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet, einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen, oder einen Bericht des Auswuchtknotens, der BALANCE ganz neu zeichnet |
 | `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 713 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
@@ -433,11 +435,11 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 512 | 2 640 |
-| `control` | `control_task` | 6 144 | 3 664 | 1 440 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 720 | 2 432 |
+| `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `imu` | `imu_task`, die Verbindung der Bluetooth-IMU: die Werte aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_imu.c`) | 4 096 | 1 888 | 1 168 |
+| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und des Leistungsknotens aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -469,7 +471,7 @@ NimBLE und dem Callback des IMU-Scans über ihre Namen (`NIMBLE_CALLS`); den
 übrigen Aufrufen des Hosts über einen Zeiger, darunter die Callbacks der
 Verbindung und von GATT, folgt sie nicht, die Ausgabe des Werkzeugs zählt
 sie. `blestart` endet, sobald das Warten auf den Sync des Hosts vorbei ist.
-Die Tiefe des Tasks `imu` endet an den NimBLE-Aufrufen von
+Die Tiefe des Tasks `blec` endet an den NimBLE-Aufrufen von
 `panel_ble_do()`, die über einen Zeiger gehen.
 
 Der Konsolen-Build (`RCBENCH_PANEL_CONSOLE`, [Die
@@ -528,7 +530,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  378
+  377
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -589,7 +591,7 @@ zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 | `control` | 6 144 | nicht gemessen |
 | `runlog` | 6 656 | nicht gemessen |
 | `knob` | 3 072 | nicht gemessen |
-| `imu` | 4 096 | nicht gemessen |
+| `blec` | 4 096 | nicht gemessen |
 | `touch` | 4 096 | nicht gemessen |
 | `wifi_ctl` | 6 912 | nicht gemessen |
 | `mdns` | 4 096 | nicht gemessen |
@@ -757,9 +759,9 @@ I (…) rcbench: internal RAM: <n> B free at the lowest, <n> B free now, largest
 Freier PSRAM beim Start: nicht gemessen.
 
 Auch Bluetooth LE (Low Energy) läuft auf dem C6; der P4 betreibt seinen Host,
-NimBLE ([Bauen, Bluetooth LE über den
-ESP32-C6](Building-de.md#bluetooth-le-über-den-esp32-c6)). Der Host startet
-mit `panel_ble_start()`, das der IMU-Task beim ersten IMU EIN und `ble scan`
+NimBLE ([Der Funk über den ESP32-C6, Bluetooth LE über den
+ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)). Der Host startet
+mit `panel_ble_start()`, das die Seiten der IMU, des Dials und des Leistungsknotens im Task `blec` beim ersten IMU EIN, Dial EIN oder Leistungsknoten EIN und `ble scan`
 des Konsolen-Builds aufrufen, und bleibt bis zum Neustart des Panels. Der Start protokolliert den freien
 Speicher davor und danach:
 
@@ -768,29 +770,49 @@ I (…) ble: host started; internal RAM <n>B free before, <n>B after; PSRAM <n>B
 ```
 
 Sein interner RAM: der Stack von `nimble_host` mit 4 096 Bytes auf Dauer,
-der Stack von `blestart` mit 4 096 Bytes, bis der Start vorbei ist, und die
-Event-Queue mit 32 x 64 = 2 048 Bytes in .bss. esp_hosted belegt je
-HCI-Paket einen Puffer; diese sind nicht gezählt. Die Pools und Puffer von
-NimBLE liegen im PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`). Auf
-einem Panel (Station, 2026-11-05, Konsolen-Build) belegte der Start 5 152
-Bytes internen RAM, 264 307 frei davor und 259 155 danach, und 25 176 Bytes
-PSRAM; mit dem Hotspot danach waren 251 103 Bytes interner RAM frei.
+der Stack von `blestart` mit 4 096 Bytes, bis der Start vorbei ist, und in
+.bss die Event-Queue mit 64 x 64 = 4 096 Bytes, die 8 aufgehobenen
+DISCONNECTs mit 512 Bytes und der Hub der Clients (`bleu_hub_t`) mit 1 112
+Bytes. esp_hosted belegt je HCI-Paket einen Puffer; diese sind nicht
+gezählt. Die Pools und Puffer von NimBLE liegen im PSRAM
+(`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); sie wachsen mit
+`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`, 5, um einen nicht gemessenen Betrag;
+die Nachrichten- (MSYS) und ACL-Puffer für 5 Verbindungen sind nicht
+gemessen. Der Pool der GATT-Client-Prozeduren fasst 10 zu je 60 Bytes, 600
+Bytes gegen 240 Bytes beim NimBLE-Standard von 4
+(`CONFIG_BT_NIMBLE_GATT_MAX_PROCS`).
+Auf einem Panel (Station, 2026-11-05, Konsolen-Build, 1 Verbindung) belegte
+der Start 5 152 Bytes internen RAM, 264 307 frei davor und 259 155 danach,
+und 25 176 Bytes PSRAM; mit dem Hotspot danach waren 251 103 Bytes interner
+RAM frei. Mit 5 Verbindungen sind diese Werte nicht gemessen.
 
 Der Bluetooth-LE-Teil des Images, aus der Linker-Map (`esp_idf_size`),
 ESP-IDF v6.1, gebaut ohne die IOmcu-Images. Beide Builds enthalten den Host,
-weil die IMU ihn startet:
+weil die IMU und das Dial ihn starten:
 
 | Build | Anwendungs-Image (Bytes) | Davon NimBLE, `libbt.a`, Flash (Bytes) | Davon die Central, `libbleuart.a`, Flash (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon NimBLE (Bytes) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Standard | 3 094 450 | 62 038 | 8 821 | 179 338 | 693 |
-| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 118 804 | 62 078 | 8 821 | 189 176 | 693 |
+| Standard | 3 325 088 | 62 062 | 13 249 | 192 426 | 693 |
+| Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 325 872 | 62 102 | 12 419 | 197 880 | 693 |
 
-Die 2 048 Bytes der Ereignis-Warteschlange stecken in der DIRAM-Zahl,
-außerhalb von `libbt.a`. esp_hosted (157 292 Bytes Flash, 1 571 Bytes DIRAM)
-trägt WLAN und Bluetooth LE zusammen; sein Bluetooth-LE-Anteil ist nicht
-gemessen.
+Die Zeile der Konsole ist ohne den Client des Dials gemessen (`panel_dial.c`,
+`dial_ctl.c`, `dial_stream.c`, `dial_panel.c` und `protocols/dialknob`); mit
+ihm nicht gemessen. Der Client des Dials fügt dem Standard-Build 4 376 Bytes
+DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image. Der Client
+des Leistungsknotens, nur seine Objekte (`panel_pnode.c`, `pnode_ctl.c`,
+`pnode_meter.c`, `wireless_pnode.c` und `protocols/rcnode`), fügt 3 869
+Bytes DIRAM hinzu, davon 3 861 Bytes .bss, und 11 748 Bytes Image
+(`esp_idf_size --files`); seine Texte und seine Aufrufe in anderen Dateien
+sind nicht gezählt.
+Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
+und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
+Verbindungen fügen dem Standard-Build mit einer Verbindung 3 704 Bytes
+DIRAM und 3 570 Bytes in `libbleuart.a` hinzu; die Zahlen von `libbt.a`
+sind mit 1 und mit 5 Verbindungen gleich. esp_hosted (157 827 Bytes Flash,
+1 571 Bytes DIRAM) trägt WLAN und Bluetooth LE zusammen; sein
+Bluetooth-LE-Anteil ist nicht gemessen.
 
-Die .bss im PSRAM ist in beiden Builds 2 587 632 Bytes, mit und ohne
+Die .bss im PSRAM ist in beiden Builds 2 647 872 Bytes, mit und ohne
 Bluetooth LE.
 
 Ein WLAN-Start, der fehlschlägt, protokolliert den Schritt, den Namen des

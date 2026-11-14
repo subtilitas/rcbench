@@ -167,6 +167,14 @@ def test_the_current_names_are_no_hits(text):
     assert rules(text) == []
 
 
+def test_esp32s3_said_of_the_dial_is_no_hit():
+    """The Dial's module is an ESP32-S3: near the word Dial it passes."""
+    assert rules("The M5Stack Dial runs an ESP32-S3.\n") == []
+    assert rules("The Dial's firmware, for the\nESP32-S3.\n") == []
+    assert rules("A Dial.\n" + "x" * 301 + " ESP32-S3.\n") == ["stale-esp32s3"]
+    assert rules("The dialog, ESP32-S3.\n") == ["stale-esp32s3"]
+
+
 def test_code_links_and_urls_are_skipped():
     """Fenced and indented code, spans, link targets, URLs and tags."""
     text = ("`we` and ``just `x` easy``\n"

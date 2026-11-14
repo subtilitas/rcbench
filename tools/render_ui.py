@@ -150,6 +150,9 @@ SCREENS = {
     # The TABLE pane with an INA228 as BENCH's source, the ESC's own
     # telemetry beside it.
     "motor-table": ("motor-table.png", "motor", "dark"),
+    # The BALANCE pane with a balance node linked, both runs of the
+    # two-run method taken and the correction solved.
+    "motor-balance": ("motor-balance.png", "motor", "dark"),
     # An IOmcu that has refused link frames: the count after the
     # error count in the header strip, with the link up.
     "motor-refused": ("motor-refused.png", "motor", "dark"),
@@ -755,6 +758,9 @@ SCREENS = {
     "balance-rig": ("balance-rig.png", "balance", "dark"),
     "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "balance-edf": ("balance-edf.png", "balance", "dark"),
+    # A balance node linked: its readings, and ADD and WHERE from the runs
+    # taken on MOTOR & ESC.
+    "balance-node": ("balance-node.png", "balance", "dark"),
     # The blade count's keypad, 5 typed.
     "balance-keypad": ("balance-keypad.png", "balance", "dark"),
     # WI-FI from LOGS: the radio off with nothing kept; a home
@@ -843,15 +849,24 @@ SCREENS = {
                                 "dark"),
     # The IMU tile's screen: the HC-05 answering with no sensor bound; the
     # found list after SCAN; bound and connected at 50Hz with ZERO taken.
-    # SETUP > SENSORS on the IMU entry, connected.
+    # SETUP > WIRELESS on the IMU entry, connected.
     "imu": ("imu.png", "imu", "dark"),
     "imu-scan": ("imu-scan.png", "imu", "dark"),
     "imu-connected": ("imu-connected.png", "imu", "dark"),
-    "setup-sensors-imu": ("setup-sensors-imu.png", "setup", "dark"),
-    # The IMU off in SETUP: the IMU screen with SCAN offered, and SENSORS
+    "setup-wireless-imu": ("setup-wireless-imu.png", "setup", "dark"),
+    # The IMU off in SETUP: the IMU screen with SCAN offered, and WIRELESS
     # on the IMU entry with ANGLE SOURCE under IMU.
     "imu-off": ("imu-off.png", "imu", "dark"),
-    "setup-sensors-imu-off": ("setup-sensors-imu-off.png", "setup", "dark"),
+    "setup-wireless-imu-off": ("setup-wireless-imu-off.png", "setup", "dark"),
+    # SETUP > WIRELESS on the DIAL entry: the Dial linked, two found by a
+    # scan, the first bound.
+    "setup-wireless-dial": ("setup-wireless-dial.png", "setup", "dark"),
+    # SETUP > WIRELESS on the POWER NODE entry: the node connected, INA228
+    # SOURCE NODE, one node found and bound, its cell at 3.92V.
+    "setup-wireless-pnode": ("setup-wireless-pnode.png", "setup", "dark"),
+    # SETUP > WIRELESS on the BALANCE NODE entry: the node reporting, two
+    # found by a scan, the first bound, its cell at 3.91V.
+    "setup-wireless-bal": ("setup-wireless-bal.png", "setup", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back
@@ -930,9 +945,10 @@ FIT_ONLY = {
     "help-overview-4": (None, "overview", "dark"),
     "help-band-worst": (None, "motor", "dark"),
     # The other pages of SETUP's, OUTPUTS', LOGS' and FILES' guides, in
-    # each state that has its own: a list, SENSORS on its first entry and on
-    # the IMU, the carrier's tiles, a PROG PORT entry, the grid view, the
-    # carrier, a paged list, the import view and the plot
+    # each state that has its own: a list, SENSORS on its first entry,
+    # WIRELESS on the IMU and on the Dial, the carrier's tiles, a PROG
+    # PORT entry, the grid view, the carrier, a paged list, the import view
+    # and the plot
     # (render_help_base() names the view each opens over).
     "help-setup-2": (None, "setup", "dark"),
     "help-setup-rbmod-2": (None, "setup", "dark"),
@@ -940,7 +956,10 @@ FIT_ONLY = {
     "help-setup-list-2": (None, "setup", "dark"),
     "help-setup-sensors": (None, "setup", "dark"),
     "help-setup-sensors-2": (None, "setup", "dark"),
-    "help-setup-sensors-imu": (None, "setup", "dark"),
+    "help-setup-wireless-imu": (None, "setup", "dark"),
+    "help-setup-wireless-dial": (None, "setup", "dark"),
+    "help-setup-wireless-pnode": (None, "setup", "dark"),
+    "help-setup-wireless-bal": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),
     "help-outputs-port": (None, "outputs", "dark"),
     "help-outputs-port-2": (None, "outputs", "dark"),
@@ -1083,6 +1102,7 @@ FIT_ONLY = {
     "updates-cu-install":  (None, "updates", "dark"),
     # The C6 RADIO row's update running, no image carried, a failed link.
     "updates-c6-progress": (None, "updates", "dark"),
+    "updates-c6-reinstall": (None, "updates", "dark"),
     "updates-c6-noimage":  (None, "updates", "dark"),
     "updates-c6-failed":   (None, "updates", "dark"),
     "upd-remind-blocked": (None, "upd-remind", "dark"),

@@ -139,6 +139,8 @@ wenn einer der beiden ausfällt.
 | Ein Schritt der Startfolge von SERVO scheitert auf LIVE, SWEEP, RUDER oder RUDER AUTO: PORT-PWM, PROG 5V oder der PD mini ohne Rückmeldung in 1000ms, nicht ARMED in 500ms, ein Tippen auf das Halten, ein STOP ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)) | SAFE | keine offen: ARM ist gesperrt, solange eine Sitzung einen Port hält | aus; PROG 5V ebenfalls aus | der SERVO-Bildschirm (`svs_all_off()`) |
 | Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus, wo er sich schalten lässt: der Schutz des Moduls und ein absinkender Eingang sofort, auch während eines Schreibens; der Rest nach dem Schreiben eines Ports, höchstens 10000ms | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
 | Ein KST- oder Hitec-Vorgang endet in einer Störung des Servos oder der Leitung (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), oder die ESC_WIRE-Page meldet `FAULT` oder erreicht `NOT_BACK` (`esc_link_faults()`) | schon SAFE: eine Sitzung läuft auf einem Prüfstand in SAFE | die Versorgung des Ports aus; der Vorgang ist zu Ende | aus | das Panel (`prog_faults_follow()`) |
+| Das M5Stack Dial geht bei ARMED oder wartendem Arm verloren: 1000ms ohne EVENT nach seinem ersten, oder der Disconnect ([Das M5Stack Dial](Dial-de.md#der-link)); jeder Verlust ein Fehler | SAFE | keine offen: eine Sitzung läuft auf einem Prüfstand in SAFE | aus | der Control-Task des Panels (`dial_faults_follow()`), aus dem Zähler, den der Bluetooth-Task führt |
+| Die Messwerte des Leistungsknotens gehen in einem Lauf, der BENCH liest, dem von MOTOR & ESC oder ESC STICK, bei ARMED oder wartendem Arm mit INA228-QUELLE NODE verloren: mehr als 300ms kein Messwert, oder eine zweite Lücke weniger als 10s nach dem Beginn der letzten, die Regel der Messsensoren; ein SERVO- oder OUTPUTS-Lauf liest keinen INA228 und endet nicht am Knoten; ein solcher ARM wird abgelehnt, solange der Knoten AUS ist oder in den letzten 100ms keinen Messwert sendete ([Die Sensorknoten](Nodes-de.md#das-panel)); die Messwerte speisen keine Schutzfunktion | SAFE | keine offen: eine Sitzung läuft auf einem Prüfstand in SAFE | aus | der Control-Task des Panels (`pnode_faults_follow()`), aus dem Zähler, den der Bluetooth-Task führt |
 
 SAFE heißt: das Panel fordert DISARM an. Solange die Anforderung steht, hält
 es den Heartbeat zurück, sodass der IOmcu binnen 150ms sicher abschaltet,
@@ -1064,6 +1066,11 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   (`shared/bench/include/panel_i2c.h`). Dass auf dem Bus des Knopfs nichts
   auf seiner Adresse 0x06 antwortet, beruht darauf, dass der Bus allein dem
   Knopf gehört; was auf der Platine antwortet, ist nicht gemessen.
+- Das M5Stack Dial ist ein zweiter Drehknopf über Bluetooth LE auf dem Weg
+  und mit den Regeln des Drehknopfs. Kein Ereignis des Dial schaltet etwas
+  ein; ein Dial, das bei ARMED verloren geht, ist ein Fehler
+  ([Fehler](#fehler)); bei ARMED läuft keine Suche nach dem Dial. Seine
+  Regeln und ihre Grenzen: [Das M5Stack Dial](Dial-de.md#sicherheit).
 - Antwortet der Touch-Controller 500ms lang nicht, schaltet der Prüfstand auf SAFE
   und verweigert das Schalten auf ARMED. Das Panel ist der einzige Ort mit einem
   STOP-Knopf.

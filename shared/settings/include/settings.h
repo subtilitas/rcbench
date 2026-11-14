@@ -35,6 +35,8 @@ typedef enum {
                               INA228, the INA3221 parts (settings_sensors.h),
                               the AS5600, the phase tap; vibration and the
                               optical tacho hold keys and show no row   */
+    SET_CAT_WIRELESS,    /**< the panel's Bluetooth LE devices: the IMU
+                              with the angle source, and the Dial      */
     SET_CAT_ESC,         /**< pack, motor, telemetry, throttle output */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_PDMINI,      /**< the PD mini's wiring, on SUPPLY's PD MINI
@@ -216,7 +218,7 @@ typedef enum {
     SET_ANGLE_SOURCE,
     /* --- the SERVO workbench's RUDDER task -------------------------------- */
     SET_RUDDER_LEN_MM,
-    /* --- the Bluetooth IMU (SETUP > SENSORS > IMU, imu_ctl.h) ------------ */
+    /* --- the Bluetooth IMU (SETUP > WIRELESS > IMU, imu_ctl.h) ----------- */
     SET_IMU_EN,
     SET_IMU_AXIS,
     SET_IMU_SIGN,
@@ -231,6 +233,16 @@ typedef enum {
     /* --- RUDDER's saved zero --------------------------------------------- */
     SET_RUDDER_ZERO_DEG,
     SET_RUDDER_ZERO_KEY,
+    /* --- the M5Stack Dial (SETUP > WIRELESS > DIAL, dial_ctl.h) ---------- */
+    SET_DIAL_EN,
+    SET_DIAL_THR,
+    SET_DIAL_SRV,
+    /* --- the power node (SETUP > WIRELESS > POWER NODE, pnode_ctl.h) ---- */
+    SET_PNODE_EN,
+    SET_I228_SRC,
+    /* --- the balance node (SETUP > WIRELESS > BALANCE NODE, bal_ctl.h) -- */
+    SET_BNODE_EN,
+    SET_BAL_TRIAL,
 
     SETTING_COUNT
 } setting_id_t;
@@ -273,6 +285,16 @@ typedef enum {
                                   type, "00:0C:BF:08:19:29 P"; key
                                   imu_ble                                 */
     SET_TEXT_IMU_NAME,       /**< its name from the scan, 23 characters */
+    SET_TEXT_DIAL_ADDR,      /**< the bound Dial's BLE address and its
+                                  type; key dial_ble                      */
+    SET_TEXT_DIAL_NAME,      /**< its name from the scan, "DIAL-3A10"    */
+    SET_TEXT_PNODE_ADDR,     /**< the bound power node's BLE address and
+                                  its type; key pnode_ble                 */
+    SET_TEXT_PNODE_NAME,     /**< its name from the scan,
+                                  "rcbench-pwr-3456"                      */
+    SET_TEXT_BNODE_ADDR,     /**< the bound balance node's BLE address and
+                                  its type; key bnode_ble                 */
+    SET_TEXT_BNODE_NAME,     /**< its name, "rcbench-bal-3A10"          */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 
@@ -369,12 +391,13 @@ void settings_set_armed(settings_armed_fn fn);
  * @brief Whether @p id changes on a SAFE bench only: held while the
  *        source settings_set_armed() installed says ARMED, as the throttle
  *        endpoints on MOTOR & ESC > SETTINGS are locked while ARMED.
- *        Screen rotation, which moves every control under the finger, and
- *        the PD mini's wiring, whose change switches off the supply an
- *        ARMED servo may run from.
+ *        Screen rotation, which moves every control under the finger, the
+ *        PD mini's wiring, whose change switches off the supply an ARMED
+ *        servo may run from, and INA228 SOURCE, whose change would swap
+ *        a run's readings and its dropout rule under it.
  * @param id The setting.
- * @return True for SET_SCREEN_ROT, SET_PDMINI_EN, SET_PDMINI_TX, SET_PDMINI_RX
- *         and SET_PDMINI_BAUD.
+ * @return True for SET_SCREEN_ROT, SET_PDMINI_EN, SET_PDMINI_TX, SET_PDMINI_RX,
+ *         SET_PDMINI_BAUD and SET_I228_SRC.
  */
 bool settings_safe_only(setting_id_t id);
 

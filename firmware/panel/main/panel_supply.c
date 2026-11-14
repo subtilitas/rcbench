@@ -21,6 +21,9 @@
 #include "link_host.h"
 #include "link_pages.h"
 #include "outputs.h"
+#include "panel_bal.h"
+#include "panel_dial.h"
+#include "panel_pnode.h"
 #include "panel.h"
 #include "servo_source.h"
 #include "supply.h"
@@ -342,6 +345,54 @@ __attribute__((noinline)) void prog_faults_follow(void)
 {
     const error_bench_t b = error_bench();
     error_act(error_sites_follow(&s_prog_watch, prog_faults(), &b));
+}
+
+/** @brief The M5Stack Dial's losses while ARMED (panel_dial_errors()),
+ *         each taken as an error once; control task only. */
+static error_watch_t s_dial_watch;
+
+/**
+ * @brief Whether the bench is ARMED, to the Dial's controller, and each of
+ *        its losses while ARMED as an error: SAFE and every output off, the
+ *        band's alert and its console line (dial_ctl.h).  Control task
+ *        only.
+ */
+static __attribute__((noinline)) void dial_faults_follow(void)
+{
+    const error_bench_t b = error_bench();
+    panel_dial_set_live(b.live);
+    panel_bal_set_live(b.live);
+    const uint32_t count = panel_dial_errors();
+    if (count == s_dial_watch.seen) {
+        return;
+    }
+    error_act(error_sites_follow(&s_dial_watch, count, &b));
+    control_alert(TR(ALERT_DIAL_LOST));
+}
+
+/** @brief The power node's dropouts that ended a run on NODE
+ *         (panel_pnode_errors()), each taken as an error once; control
+ *         task only. */
+static error_watch_t s_pnode_watch;
+
+/**
+ * @brief Whether the bench is ARMED and whether the throttle's arm makes
+ *        the run one that reads BENCH, to the power node's controller, and
+ *        each run its readings left as an error: SAFE and every output
+ *        off, the band's alert and its console line (pnode_meter.h).
+ *        Control task only.
+ */
+static __attribute__((noinline)) void pnode_faults_follow(void)
+{
+    const error_bench_t b = error_bench();
+    panel_pnode_set_live(b.live, (arming_roles(&s_arm)
+                                  & OUT_ROLE_BIT(OUT_ROLE_THROTTLE)) != 0u);
+    const uint32_t count = panel_pnode_errors();
+    if (count == s_pnode_watch.seen) {
+        return;
+    }
+    error_act(error_sites_follow(&s_pnode_watch, count, &b));
+    control_alert(TR(ALERT_PNODE_LOST));
 }
 
 /** @brief The operator's limits as the render side last stored them. */
@@ -737,6 +788,8 @@ void supply_pump(void)
     prog_supply_watch_service();
     card_faults_follow();
     prog_faults_follow();
+    dial_faults_follow();
+    pnode_faults_follow();
     supply_service();
 
     const uint32_t since = (uint32_t)(now_ms() - s_supply_step_ms);

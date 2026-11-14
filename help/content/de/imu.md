@@ -6,7 +6,7 @@ order: 66
 
 # IMU
 
-Die Seite IMU steuert eine Bluetooth-IMU (Inertial Measurement Unit): einen WitMotion-BWT901CL-Winkelsensor auf einem Ruder. Er erreicht das Panel über Bluetooth LE (Low Energy) durch den ESP32-C6 des Boards; ohne Kabel, ohne Pairing, ohne PIN. Öffne die Seite über die Kachel IMU auf [SETUP](setup.md); das Home-Feld führt dorthin zurück. Die Seite steuert keine Ausgänge an. Ihre Einstellungen findest du im IMU-Eintrag unter [Sensoren](setup-sensors.md#die-imu). Die Wiki-Seite [Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de) beschreibt die Verbindung und die Befehle des Sensors.
+Die Seite IMU steuert eine Bluetooth-IMU (Inertial Measurement Unit): einen WitMotion-BWT901CL-Winkelsensor auf einem Ruder. Er erreicht das Panel über Bluetooth LE (Low Energy) durch den ESP32-C6 des Boards; ohne Kabel, ohne Pairing, ohne PIN. Öffne die Seite über die Kachel IMU auf [SETUP](setup.md); das Home-Feld führt dorthin zurück. Die Seite steuert keine Ausgänge an. Ihre Einstellungen findest du im IMU-Eintrag unter [Wireless](setup-wireless.md#die-imu). Die Wiki-Seite [Die Bluetooth-IMU](https://github.com/subtilitas/rcbench/wiki/IMU-de) beschreibt die Verbindung und die Befehle des Sensors.
 
 ![IMU, Bluetooth LE läuft, kein Sensor gebunden](view:imu)
 
@@ -18,7 +18,7 @@ Die Seite IMU steuert eine Bluetooth-IMU (Inertial Measurement Unit): einen WitM
 | 2s HALTEN: KALIBRIEREN | in der Mitte der Fußleiste; startet bei bestehender Verbindung die Kalibrierung des Beschleunigungssensors; halte ihn während des Countdowns von 3s still und waagerecht |
 | NULLPUNKT | übernimmt die aktuellen Winkel als Nullpunkt, wenn ein Messwert vorliegt; mit WINKELQUELLE IMU werden dabei der Nullpunkt und MAX auf RUDER gelöscht |
 | NULLPUNKT LÖSCHEN | zeigt die Winkel wieder relativ zum eigenen Nullpunkt des Sensors |
-| OPTIONEN | rechts in der Fußleiste; öffnet den IMU-Eintrag unter [Sensoren](setup-sensors.md#die-imu); dessen Home-Feld führt hierher zurück |
+| OPTIONEN | rechts in der Fußleiste; öffnet den IMU-Eintrag unter [Wireless](setup-wireless.md#die-imu); dessen Home-Feld führt hierher zurück |
 
 Ein Druck von weniger als 2s startet keine Kalibrierung. Das Band zeigt `Halte 2s, um den Beschleunigungssensor zu kalibrieren.`.
 

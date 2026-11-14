@@ -494,7 +494,7 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
      */
     [SET_ANGLE_SOURCE] = {
         "angle_source", "",
-        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(angle_source) },
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(angle_source) },
     /*
      * RUDDER's LENGTH: the control surface from its hinge line to its
      * trailing edge, which turns a deflection into mm (servo_rudder.h).
@@ -517,22 +517,22 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
      */
     [SET_IMU_EN] = {
         "imu_en", "",
-        SET_CAT_SENSORS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+        SET_CAT_WIRELESS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
     [SET_IMU_AXIS] = {
         "imu_axis", "",
-        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_axis) },
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_axis) },
     [SET_IMU_SIGN] = {
         "imu_sign", "",
-        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_sign) },
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_sign) },
     [SET_IMU_RATE] = {
         "imu_rate", "",
-        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 2, ENUM_OPTS(imu_rate) },
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 2, ENUM_OPTS(imu_rate) },
     [SET_IMU_ALGO] = {
         "imu_algo", "",
-        SET_CAT_SENSORS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_algo) },
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(imu_algo) },
     [SET_IMU_FILTER] = {
         "imu_filter", "",
-        SET_CAT_SENSORS, SET_TYPE_INT, 1, 50, 1, 1, NULL, 0 },
+        SET_CAT_WIRELESS, SET_TYPE_INT, 1, 50, 1, 1, NULL, 0 },
     /*
      * AUTO on RUDDER (servo_rudder_auto.h): the deflection each end pulse
      * is to reach, 1000us and 2000us, as a magnitude; the margin it is
@@ -564,4 +564,45 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_RUDDER_ZERO_KEY] = {
         "rud_zero_key", "",
         SET_CAT_SERVO, SET_TYPE_INT, 0, 15, 1, 0, NULL, 0 },
+    /*
+     * The M5Stack Dial as a wireless knob (dial_ctl.h, docs/Dial.md): ON
+     * starts Bluetooth LE and connects the bound Dial.  STEP, THROTTLE and
+     * STEP, SERVO are what one detent moves on MOTOR & ESC and on SERVO
+     * (dial_step_tenths()); a detent moves nothing while SAFE.
+     */
+    [SET_DIAL_EN] = {
+        "dial_en", "",
+        SET_CAT_WIRELESS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_DIAL_THR] = {
+        "dial_thr", "",
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(dial_thr) },
+    [SET_DIAL_SRV] = {
+        "dial_srv", "",
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(dial_srv) },
+    /*
+     * The power node (pnode_ctl.h, docs/Nodes.md): ON starts Bluetooth LE
+     * and connects the bound node.  INA228 SOURCE says whose INA228 feeds
+     * MOTOR & ESC's voltage, current and totals: WIRED the IOmcu's part,
+     * NODE the power node's readings over Bluetooth LE.  NODE feeds no
+     * protection; a run then ends on the node's dropouts as servo_gap.h
+     * says (pnode_meter.h).
+     */
+    [SET_PNODE_EN] = {
+        "pnode_en", "",
+        SET_CAT_WIRELESS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_I228_SRC] = {
+        "i228_src", "",
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(i228_src) },
+    /*
+     * The balance node (bal_ctl.h, docs/Balance.md): ON starts Bluetooth LE
+     * and connects the bound node.  TRIAL MASS is the mass the trial runs
+     * of the two-run and four-run methods put on the rotor, in g; the
+     * correction comes out in the same unit.
+     */
+    [SET_BNODE_EN] = {
+        "bnode_en", "",
+        SET_CAT_WIRELESS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_BAL_TRIAL] = {
+        "bal_trial_g", "g",
+        SET_CAT_WIRELESS, SET_TYPE_FLOAT, 0.01f, 20.0f, 0.01f, 0.5f, NULL, 0 },
 };

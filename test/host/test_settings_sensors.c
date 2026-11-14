@@ -97,10 +97,10 @@ TEST_CASE(every_row_names_its_part_and_has_its_own_key)
     CHECK_STR_EQ(settings_def(SET_INA3221_MOHM)->key, "ina3221_mohm");
     CHECK(settings_sensors_def(SET_HITEC_RX) == NULL);
     setting_id_t ids[96];
-    /* The 40 INA3221 rows, and the 25 of the other sensors, the angle
-     * source and the IMU. */
+    /* The 40 INA3221 rows and the 18 of the other sensors; the angle
+     * source and the IMU are WIRELESS'. */
     CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 96),
-             SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 25);
+             SET_INA_PARTS + SET_INA_CHANNELS * SET_INA_CH_ROWS + 18);
 }
 
 TEST_CASE(every_watch_option_is_the_page_code)

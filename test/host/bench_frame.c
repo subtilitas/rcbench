@@ -53,6 +53,9 @@
  *   imu       the IMU screen with an angle frame in every frame, X 0.1°
  *             from the one before
  *   imu-hold  the IMU screen, a finger on CALIBRATE ACCELEROMETER's hold
+ *   balance-node  BALANCE with a balance node linked and a report in every
+ *             frame whose magnitude, angle and rpm differ from the one
+ *             before
  *   wifi-idle WI-FI with the access point up, the idle time 1s shorter in
  *             every frame: the page shows it in minutes
  *   <screen>-chrome  the same, repainted in full every frame
@@ -80,6 +83,7 @@
 #include "hitec_panel.h"
 #include "imu_screen.h"
 #include "kst_panel.h"
+#include "node_balance.h"
 #include "out_bind.h"
 #include "overview_screen.h"
 #include "picker_screen.h"
@@ -358,6 +362,29 @@ static void imu_frame(int i, bool move)
 }
 
 /**
+ * @brief The balance node's report @p i, fed as a fresh one: the
+ *        magnitude 0.01g, the angle 1° and the rpm 10rpm from the one
+ *        before, so each value shown changes.
+ * @param i the report
+ */
+static void node_frame(int i)
+{
+    rcnode_bal_report_t r;
+
+    memset(&r, 0, sizeof(r));
+    r.hdr.type = RCNODE_T_BAL_REPORT;
+    r.hdr.seq = (uint8_t)i;
+    r.hdr.t_node = 250000u * (uint32_t)(i + 1);
+    r.flags = RCNODE_BF_VALID | RCNODE_BF_INDEX_SEEN | RCNODE_BF_DC_OK
+              | RCNODE_BF_QUALITY;
+    r.quality = (uint8_t)(90 + i % 10);
+    r.rpm = (uint16_t)(8000 + 10 * (i % 20));
+    r.mag_1x = (uint16_t)(420 + 10 * (i % 20));
+    r.phase_1x = (uint16_t)(2650 + 10 * (i % 20));
+    node_balance_feed(true, &r, 10u);
+}
+
+/**
  * @brief A finger down on CALIBRATE ACCELEROMETER's hold.
  */
 static void imu_hold(void)
@@ -466,6 +493,7 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         { "settings",   SCREEN_SETUP },
         { "settings-list", SCREEN_SETUP },
         { "battery",    SCREEN_BATTERY },
+        { "balance-node", SCREEN_BALANCE },
         { "balance",    SCREEN_BALANCE },
         { "motor-stick", SCREEN_MOTOR },
         { "motor-wire-hold", SCREEN_MOTOR },
@@ -516,6 +544,11 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
         picker_screen_set_binding(&b);
         (void)picker_screen_set_drawing(board_drawing_rp2350_can,
                                         board_drawing_rp2350_can_bytes, NULL);
+    }
+    /* The node linked before BALANCE opens, as on the panel. */
+    const bool bnode = strcmp(mode, "balance-node") == 0;
+    if (bnode) {
+        node_frame(0);
     }
     ui_router_goto(start);
 
@@ -702,6 +735,9 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
             }
             if (strcmp(mode, "wifi-idle") == 0) {
                 wifi_idle(i);
+            }
+            if (bnode) {
+                node_frame(i + 1);
             }
             ui_router_tick(0.026f);
             ui_router_render(&c, i & 1);

@@ -22,7 +22,7 @@
 
 /** @brief SETUP's lists: the categories its tiles open. */
 static const setting_cat_t k_cats[] = {
-    SET_CAT_APP, SET_CAT_CARD, SET_CAT_SENSORS,
+    SET_CAT_APP, SET_CAT_CARD, SET_CAT_SENSORS, SET_CAT_WIRELESS,
 };
 #define CAT_COUNT ((int)(sizeof(k_cats) / sizeof(k_cats[0])))
 
@@ -60,6 +60,8 @@ static int show(setting_id_t id)
     const setting_cat_t cat = settings_def(id)->cat;
     if (cat == SET_CAT_SENSORS) {
         open_sensor(id);
+    } else if (cat == SET_CAT_WIRELESS) {
+        open_wireless(id);
     }
     setting_id_t ids[96];
     const int n = settings_in_category(cat, ids, 96);
@@ -130,7 +132,7 @@ static void open_row(int row)
 static const kpr_screen_t k_setup = { kp, kkey, open_row };
 
 /*
- * Every number row of SETUP's four lists the keypad is offered on: its
+ * Every number row of SETUP's lists the keypad is offered on: its
  * keypad opens with the row's label, unit and range and the digits of its
  * step, refuses a value past the range, keeps the row on CANCEL and sets
  * the value OK hands it.
@@ -167,8 +169,9 @@ TEST_CASE(every_number_row_on_setup_takes_ok_and_refuses_and_cancels)
             ++rows;
         }
     }
-    /* PANEL 4, SENSORS 35: every number row an entry shows. */
-    CHECK_EQ(rows, 39);
+    /* PANEL 4, SENSORS 34, WIRELESS 2 (IMU FILTER, TRIAL MASS): every
+     * number row an entry shows. */
+    CHECK_EQ(rows, 40);
 }
 
 /*

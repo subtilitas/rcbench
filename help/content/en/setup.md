@@ -6,7 +6,7 @@ order: 60
 
 # Setup
 
-SETUP contains bench-wide panel settings under PANEL, SENSORS and SD CARD. ESC (electronic speed controller) settings are under [MOTOR & ESC, OPTIONS](motor-settings.md). Open SETUP from the [menu](overview.md) to see its 3-by-3 tile grid. Each category opens a full-width settings list.
+SETUP contains bench-wide panel settings under PANEL, SENSORS, WIRELESS and SD CARD. ESC (electronic speed controller) settings are under [MOTOR & ESC, OPTIONS](motor-settings.md). Open SETUP from the [menu](overview.md) to see its 3-by-3 tile grid. Each category opens a full-width settings list.
 
 ## The tiles
 
@@ -15,15 +15,16 @@ SETUP contains bench-wide panel settings under PANEL, SENSORS and SD CARD. ESC (
 | Tile | Second line | What it opens |
 |---|---|---|
 | PANEL | `THEME, LANGUAGE, KNOB` | the list of PANEL |
-| SENSORS | `CURRENT, ANGLE, PHASE TAP` | [Sensors](setup-sensors.md): the sensor bus, the INA228 and INA3221 current monitors, the AS5600, the phase tap and the Bluetooth IMU, a left list of 9 beside the selected one's rows |
+| SENSORS | `CURRENT, ANGLE, PHASE TAP` | [Sensors](setup-sensors.md): the sensor bus, the INA228 and INA3221 current monitors, the AS5600 and the phase tap, a left list of 8 beside the selected one's rows |
 | OUTPUTS | `PROTOCOLS, PINS, BOARD` | [Outputs](outputs.md): the role of each IOmcu pin, on a drawing of the board |
 | SD CARD | `LOGS, BROWSER WRITES` | the list of SD CARD: which logs the panel writes, and where, and what a browser needs to write |
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the panel's radio, for the card's files and a firmware image in a browser |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 | IMU | `BLUETOOTH ANGLE SENSOR` | [IMU](imu.md): the WitMotion BWT901CL over Bluetooth LE, the scan and the bind, the calibration and the live angles |
+| WIRELESS | `IMU, DIAL, POWER, BALANCE NODES` | [Wireless](setup-wireless.md): the IMU's settings, the M5Stack Dial, its scan, its bind and its steps, the power node with INA228 source, and the balance node with its trial mass |
 | LAYOUT | `CONNECTORS AND PINS` | [Layout](layout.md), on the rbmod carrier only, whose pins are soldered |
 
-2 slots are free, and the carrier's LAYOUT takes one. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
+1 slot is free, and the carrier's LAYOUT takes it. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:
 
 ![The tiles with a value unsaved](view:setup-hub-dirty)
 
@@ -190,12 +191,17 @@ An invalid folder leaves the keyboard open and the setting unchanged. The line b
 
 ## SENSORS
 
-SENSORS lists the IOmcu's sensor bus, INA228, four INA3221 monitors, AS5600 and phase tap, plus the panel's Bluetooth IMU. Each has an entry in the left list. See [Sensors](setup-sensors.md).
+SENSORS lists the IOmcu's sensor bus, INA228, four INA3221 monitors, AS5600 and phase tap. Each has an entry in the left list. See [Sensors](setup-sensors.md).
+
+## WIRELESS
+
+WIRELESS lists the panel's Bluetooth LE devices, the IMU and the M5Stack Dial. Each has an entry in the left list. See [Wireless](setup-wireless.md).
 
 ## Related pages
 
 - [Supply](supply.md): the PD mini's wiring, in SUPPLY's settings list.
 - [Sensors](setup-sensors.md)
+- [Wireless](setup-wireless.md)
 - [Outputs](outputs.md)
 - [Updates](updates.md)
 - [Supply](supply.md), [Servo settings](servo-settings.md) and [Motor settings](motor-settings.md): the settings kept on their own screens.

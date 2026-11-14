@@ -16,7 +16,10 @@ The rules, each a name in the output and in tools/check_prose_allow.txt:
                   label of the panel and is left out of both.
 - exclamation     "!" in prose.
 - emoji           an emoji, a pictograph or a check mark symbol in prose.
-- stale-esp32s3   ESP32-S3: the panel is an ESP32-P4.
+- stale-esp32s3   ESP32-S3: the panel is an ESP32-P4.  The M5Stack Dial's
+                  module is an ESP32-S3, so the name passes where the word
+                  "Dial" stands on its line or in the 300 characters before
+                  it.
 - stale-simulation  SIMULATION: the mark on a tile and a pill read
                   SIMULATED (SIMULIERT).  The watermark across a simulated
                   bench reads SIMULATION and stands in the allowlist.
@@ -263,6 +266,18 @@ def skip_narrator_en(view: str, m: re.Match) -> bool:
                      before) is not None
 
 
+def skip_esp32s3_dial(view: str, m: re.Match) -> bool:
+    """True for ESP32-S3 said of the M5Stack Dial, whose module is one.
+
+    "Dial" stands on the line of the match or in the 300 characters
+    before it.
+    """
+    start = min(view.rfind("\n", 0, m.start()) + 1, max(0, m.start() - 300))
+    end = view.find("\n", m.end())
+    near = view[start:end if end >= 0 else len(view)]
+    return re.search(r"\bDial\b", near) is not None
+
+
 def skip_exclamation(view: str, m: re.Match) -> bool:
     """True for "!" in an image, an alert marker, a comment or "!="."""
     before = view[m.start() - 1:m.start()]
@@ -288,7 +303,7 @@ RULES = (
      skip_history_de),
     ("exclamation", None, re.compile("!"), skip_exclamation),
     ("emoji", None, EMOJI, None),
-    ("stale-esp32s3", None, re.compile(r"ESP32-?S3"), None),
+    ("stale-esp32s3", None, re.compile(r"ESP32-?S3"), skip_esp32s3_dial),
     ("stale-simulation", None, re.compile(word("SIMULATION")), None),
     ("stale-coprocessor", None,
      re.compile(r"(?<!\w)(?:co-?processor|koprozessor)\w*", re.I), None),

@@ -1,0 +1,16 @@
+menu "rcbench node"
+
+    choice RCNODE_ROLE
+        prompt "Role"
+        default RCNODE_ROLE_POWER
+        help
+            The sensor this image drives.  A board is wired for one role, so
+            the role is a property of the image, not a stored setting.
+
+        config RCNODE_ROLE_POWER
+            bool "Power: the INA228 on the ESC's XT60 power path"
+        config RCNODE_ROLE_BALANCE
+            bool "Balance: an accelerometer axis and an index sensor"
+    endchoice
+
+endmenu

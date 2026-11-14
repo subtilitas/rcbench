@@ -239,8 +239,8 @@ gemeldet`).
 
 Ein C6, der das Update ablehnt, hinterlässt `Der C6-Funk nimmt kein Update
 über SDIO an. Flashe ihn über Header H4.`; er behält seine Firmware, und
-Wi-Fi arbeitet wie zuvor. Das Flashen über Header H4 steht in [Bauen:
-Wiederherstellung über Header H4](Building-de.md#wiederherstellung-über-header-h4).
+Wi-Fi arbeitet wie zuvor. Das Flashen über Header H4 steht in [Der Funk über den ESP32-C6:
+Wiederherstellung über Header H4](C6-de.md#wiederherstellung-über-header-h4).
 Ob der ausgelieferte C6 das Update über SDIO annimmt und wie lange es
 dauert, ist nicht gemessen.
 

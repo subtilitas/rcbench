@@ -379,6 +379,36 @@ ASSERTED = {
             "BLEU_FOUND_MAX <= IMU_FOUND_MAX",
             "WIT_CMD_LEN <= BLEU_WRITE_MAX",
         ),
+        "shared/ui/dial_ctl.c": (
+            "DIAL_BLE_OWNER < BLEU_OWNER_MAX",
+            "DK_LEN_INFO <= BLEU_PARAM_MAX",
+            "DK_PKT_MAX <= BLEU_WRITE_MAX",
+        ),
+        "shared/ui/pnode_ctl.c": (
+            "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
+            "RCNODE_PKT_MAX <= BLEU_EVT_DATA",
+            "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
+            "PNODE_BLE_OWNER < BLEU_OWNER_MAX",
+            "PNODE_ADDR_MAX == BLEU_ADDR_TEXT_MAX",
+            "PNODE_NAME_MAX == BLEU_NAME_MAX",
+            "PNODE_FOUND_MAX == BLEU_FOUND_MAX",
+        ),
+        "shared/ui/bal_ctl.c": (
+            "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
+            "RCNODE_STATUS_LEN <= BLEU_EVT_DATA",
+            "RCNODE_BAL_REPORT_LEN <= BLEU_EVT_DATA",
+            "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
+            "BAL_BLE_OWNER < BLEU_OWNER_MAX",
+        ),
+    },
+    "dialknob": {
+        "shared/ui/dial_ctl.c": (
+            "DK_LEN_INFO <= BLEU_PARAM_MAX",
+            "DK_PKT_MAX <= BLEU_WRITE_MAX",
+        ),
+        "shared/ui/dial_stream.c": (
+            "DK_K_SCALE - DK_K_SCREEN + 1u == 8u",
+        ),
     },
     "dshot": {
         "firmware/iomcu/src/outputs_hw.c": (
@@ -453,6 +483,40 @@ ASSERTED = {
             "PPM_MAX_CHANNELS == OUT_RENDER_PPM_MAX",
             "PPM_CHANNEL_MIN_US == OUT_FLOOR_US "
             "&& PPM_CHANNEL_MAX_US == OUT_CEILING_US",
+        ),
+    },
+    "rcnode": {
+        # The panel's central keeps INFO whole, takes a packet in one event
+        # and writes a control in one write.
+        "shared/ui/pnode_ctl.c": (
+            "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
+            "RCNODE_PKT_MAX <= BLEU_EVT_DATA",
+            "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
+        ),
+        # The panel's client keeps INFO and STATUS whole, takes a report in
+        # one event and a CONTROL write in one write.
+        "shared/ui/bal_ctl.c": (
+            "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
+            "RCNODE_STATUS_LEN <= BLEU_EVT_DATA",
+            "RCNODE_BAL_REPORT_LEN <= BLEU_EVT_DATA",
+            "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
+        ),
+        # The balance report's flags are shared/vibe's, bit for bit.
+        "firmware/node/main/node_bal.c": (
+            "RCNODE_BF_VALID == VIBE_F_VALID",
+            "RCNODE_BF_INDEX_SEEN == VIBE_F_INDEX_SEEN",
+            "RCNODE_BF_INDEX_STEADY == VIBE_F_INDEX_STEADY",
+            "RCNODE_BF_INDEX_LOST == VIBE_F_INDEX_LOST",
+            "RCNODE_BF_NO_INDEX == VIBE_F_NO_INDEX",
+            "RCNODE_BF_CLIPPED == VIBE_F_CLIPPED",
+            "RCNODE_BF_DC_OK == VIBE_F_DC_OK",
+            "RCNODE_BF_BLADE_OK == VIBE_F_BLADE_OK",
+            "RCNODE_BF_QUALITY == VIBE_F_QUALITY",
+            "RCNODE_BF_EDGE_DROPPED == VIBE_F_EDGE_DROPPED",
+            "RCNODE_BF_RPM_RANGE == VIBE_F_RPM_RANGE",
+            "RCNODE_BF_RESTARTED == VIBE_F_RESTARTED",
+            "RCNODE_BLADES_MAX == VIBE_BLADES_MAX",
+            "(BAL_VIBE_FLAGS & RCNODE_BF_COUNTS) == 0u",
         ),
     },
     "witmotion": {

@@ -639,14 +639,15 @@ TEST_CASE(the_hub_has_nine_slots_and_no_tenth)
 }
 
 /*
- * Seven tiles: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES and IMU.  SD CARD's list
+ * Eight tiles: PANEL, SENSORS, OUTPUTS, SD CARD, WI-FI, UPDATES, IMU and
+ * WIRELESS.  SD CARD's list
  * is AUTO LOGS and USER LOGS, two toggles, named in both languages, Browser
  * writes, and the two log folders under them (test_settings_folders).
  */
-TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_fourth)
+TEST_CASE(the_hub_holds_eight_tiles_and_sd_card_is_the_fourth)
 {
     fresh_hub();
-    CHECK_EQ(settings_hub_tiles(), 7);
+    CHECK_EQ(settings_hub_tiles(), 8);
     CHECK_EQ(settings_hub_cat_tile(SET_CAT_APP), 0);
     CHECK_EQ(settings_hub_cat_tile(SET_CAT_SENSORS), 1);
     CHECK_EQ(settings_hub_tile_screen(2), SCREEN_OUTPUTS);
@@ -654,6 +655,7 @@ TEST_CASE(the_hub_holds_seven_tiles_and_sd_card_is_the_fourth)
     CHECK_EQ(settings_hub_tile_screen(4), SCREEN_WIFI);
     CHECK_EQ(settings_hub_tile_screen(5), SCREEN_UPDATES);
     CHECK_EQ(settings_hub_tile_screen(6), SCREEN_IMU);
+    CHECK_EQ(settings_hub_cat_tile(SET_CAT_WIRELESS), 7);
     CHECK_EQ(settings_hub_cat_tile(SET_CAT_ESC), -1);   /* no tile */
     tap(tile_x(3), tile_y(3));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
@@ -873,7 +875,7 @@ TEST_CASE(every_tile_icon_is_centered_over_its_name)
         icon_over_name(r, &k_menu, menu[i].name, menu[i].name);
     }
     /* SETUP's, as the screen draws them: PANEL, SENSORS, OUTPUTS,
-     * SD CARD, WI-FI, UPDATES and IMU.  The 36px icon's box starts 14px
+     * SD CARD, WI-FI, UPDATES, IMU and WIRELESS.  The 36px icon's box starts 14px
      * down, the name in the body face at 60 (settings_screen_int.h). */
     static const ui_tile_look_t k_hub = {
         .icon_dy = 14, .icon = 36, .name_dy = 60, .line_dy = 94,
@@ -965,7 +967,7 @@ int main(void)
     RUN(pd_mini_tx_and_rx_step_over_the_pin_the_other_holds);
     RUN(a_stored_pd_mini_on_one_pin_loads_and_is_named);
     RUN(the_hub_has_nine_slots_and_no_tenth);
-    RUN(the_hub_holds_seven_tiles_and_sd_card_is_the_fourth);
+    RUN(the_hub_holds_eight_tiles_and_sd_card_is_the_fourth);
     RUN(each_category_tile_opens_its_list_and_the_home_tag_returns);
     RUN(a_free_slot_opens_nothing);
     RUN(entering_setup_shows_the_tiles_and_the_list_keeps_its_place);

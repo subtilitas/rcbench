@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "esc_stick_panel.h"
 #include "ui_pinlist.h"
 #include "ui_plot.h"
 #include "link_pages.h"
@@ -42,6 +43,7 @@
 /* Last but one: motor_screen_int.h's layout macros have short names, which
  * no header included after it may meet. */
 #include "motor_screen_int.h"
+#include "motor_balance.h"
 #include "motor_live_int.h"
 
 const ui_plot_series_t mo_series[S_COUNT] = {
@@ -63,9 +65,12 @@ const uint16_t mo_ok[S_COUNT] = {
 const ui_text_id_t mo_names[S_COUNT] = { TX_MO_VOLT, TX_MO_CURR,
                                          TX_MO_PWR, TX_MO_RPM };
 
-/** @brief the tabs' labels, PLOT then TABLE */
+/** @brief the tabs' labels, PLOT, TABLE, BALANCE */
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
-                                              TX_MO_TAB_TABLE };
+                                              TX_MO_TAB_TABLE,
+                                              TX_MO_TAB_BAL };
+_Static_assert(sizeof(k_tab_labels) / sizeof(k_tab_labels[0])
+                   == MOTOR_PANE_COUNT, "a label per pane");
 
 /* The screen's state; motor_live_int.h names it s. */
 mo_state_t mo_s;
@@ -99,6 +104,7 @@ void motor_invalidate(void)
      * the router invalidates after it drew over the body, a help bubble
      * over the open keyboard among them. */
     mln_invalidate();
+    mbal_forget();
 }
 
 /* The palette is not a compile-time constant -- it changes with the theme --
@@ -555,6 +561,59 @@ void motor_screen_knob(float span_fraction)
         }
         s.knob_pending = true;
     }
+}
+
+bool motor_screen_knob_shown(void)
+{
+    return mwb_task() == UI_WB_LIVE && !msp_shown() && !mln_shown();
+}
+
+void motor_screen_plot_scales(float *volt, float *curr, float *rpm)
+{
+    if (volt != NULL) {
+        *volt = s.plot.scale[S_VOLT];
+    }
+    if (curr != NULL) {
+        *curr = s.plot.scale[S_CURR];
+    }
+    if (rpm != NULL) {
+        *rpm = s.plot.scale[S_RPM];
+    }
+}
+
+bool motor_screen_dial_press(void)
+{
+    /* 0% is the throttle a stop would leave: taken over a drag, which
+     * ends, and over a pending throttle; never over an arm, a disarm or a
+     * peak reset. */
+    if (!motor_screen_knob_shown() || !mo_value_live()
+        || (s.pending.kind != MOTOR_CMD_NONE
+            && s.pending.kind != MOTOR_CMD_THROTTLE)
+        || (s.slider.value == 0.0f && s.pending.kind == MOTOR_CMD_NONE)) {
+        return false;
+    }
+    mo_end_drag();
+    motor_screen_set_throttle(0.0f);
+    mo_post(MOTOR_CMD_THROTTLE, 0.0f);
+    ++s.thr_rev;
+    ++s.ctrl_rev;
+    return true;
+}
+
+bool motor_screen_dial_hold(void)
+{
+    /* An ESC STICK run ends as ABORT ends it, in ARMING too; an ARM asked
+     * and not yet confirmed, collected or not, gives way to the DISARM. */
+    const bool run = esc_stick_panel_dial_hold();
+    const bool arming = s.pending.kind == MOTOR_CMD_ARM
+                        || ui_value_state(&s.gate) == UI_VALUE_ARMING;
+    if (!s.gate.armed && !arming) {
+        return run;
+    }
+    mo_post(MOTOR_CMD_DISARM, 0.0f);
+    ++s.arm_rev;
+    ++s.ctrl_rev;
+    return true;
 }
 
 /**

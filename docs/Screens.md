@@ -279,9 +279,9 @@ ARMED.
 
 | Screen, state | Pages | Marked |
 | --- | --- | --- |
-| SETUP, tiles | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, LAYOUT on the carrier, SAVE |
+| SETUP, tiles | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, WIRELESS, LAYOUT on the carrier, SAVE |
 | SETUP, a list | 2 | the first whole row, the list's name, RESET; of the rows whole in view the first whose value opens the keypad, else the first with keys: its `-` or `<`, the value, `+` or `>`; SAVE |
-| SETUP, SENSORS | 2 | as a list, with the selected entry first |
+| SETUP, SENSORS and WIRELESS | 2 | as a list, with the selected entry first |
 | OUTPUTS, board view | 2 | the protocol list's face, LAST WRITE, PINS, the leftmost key; IN USE, UNBIND ALL PINS when offered, the rightmost key |
 | OUTPUTS, PROG PORT entry | 2 | the entry's face, PIN, FUNCTION, SERVO TESTER, PORT PWM; then IN USE and a key, in the board view |
 | OUTPUTS, grid view | 1 | the protocol list's face, the first cell, LAST WRITE; on a PROG PORT entry its face and rows |
@@ -614,6 +614,7 @@ replaces a visible hint.
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
 | HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -805,7 +806,7 @@ y 436.
 | MOTOR & ESC | ARM / DISARM | the list of the 8 motor, pack and throttle-output settings |
 | SUPPLY | OUTPUT ON / OFF | the list of the supply's limits and the PD mini's wiring |
 | ESC STICK, on a profile's page, its run and its result | RUN n / ABORT / OK | the list of the supply and the 12 timing settings |
-| IMU | HOLD 2s: CALIBRATE | SETUP's SENSORS list at the IMU entry |
+| IMU | HOLD 2s: CALIBRATE | SETUP's WIRELESS list at the IMU entry |
 | UPDATES | HOLD 2s TO DOWNLOAD & INSTALL, with a newer release found | the list of the reminder and the releases |
 | LOGS, on the file list | empty | SETUP's SD CARD list |
 | FILES, on the panes | empty | SETUP's SD CARD list |
@@ -1019,8 +1020,8 @@ Switching to ARMED clears the plot. Resetting a latched STOP leaves the
 bench SAFE, so the stopped run's trace remains until the next ARM. Each
 switch to ARMED starts one CSV file, which LOGS can plot.
 
-On LIVE the telemetry card carries PLOT and TABLE under its title, two tabs
-in 200 x 40px, and beside them the poll rate and the link's error count
+On LIVE the telemetry card carries PLOT, TABLE and BALANCE under its title,
+three tabs in 254 x 40px, and beside them the poll rate and the link's error count
 (cyclic redundancy check failures and resyncs added together). While the
 link is up and the IOmcu has refused link frames since its power-up, the
 line under them shows how many, in 8 x 16: `Rejected link frames: 37`. An
@@ -1252,13 +1253,15 @@ the switch arms no motor. It has two more columns before `source`:
 - The other columns of a SERVO file are a MOTOR file's, without
   `throttle`.
 
-`source` is `measured` for rows produced by a meter and `model` for rows
+`source` is `measured` for rows produced by a meter, `node` for rows whose
+INA228 figures come from the power node (INA228 source NODE,
+[WIRELESS: the power node](#wireless-the-power-node)), and `model` for rows
 produced by the panel's model (the SIMULATED mark). Supply files use the
-same final column. Files without it end at `ch3 voltage` or `energy`;
+same final column, without `node`. Files without it end at `ch3 voltage` or `energy`;
 LOGS and the tools read both forms. `source` is text and is never plotted.
 
-`ina voltage` and `ina current` come from the INA228 and are empty when it
-is not the source. `esc current` is the ESC's telemetry current, read from
+`ina voltage` and `ina current` come from the INA228, the IOmcu's or the
+power node's, and are empty when it is not the source. `esc current` is the ESC's telemetry current, read from
 the SENSE page when the INA228 is the source and the BENCH page otherwise.
 It is empty if the ESC reports no current or the panel models the bench.
 Any unmeasured quantity leaves an empty cell.
@@ -1321,6 +1324,45 @@ The map takes effect once the IOmcu confirms it is in force. With a map
 derived from SENSE, the file retains `ch1` through `ch3`. The map cannot
 be written while the output bank drives, so columns remain fixed for the
 whole run. LOGS groups `out`, `port` and `supply` columns under INA3221.
+
+### BALANCE, the balance node's runs
+
+![BALANCE with both runs of the two-run method taken](img/motor-balance.png)
+
+BALANCE takes the runs of a balance with the balance node
+([Balancing](Balance.md#measuring-with-the-balance-node)). The pane under
+the tabs is 600 x 150px:
+
+- The live line: the node's 1x magnitude, angle, rpm and quality word, and
+  the trial mass at the right (Trial mass, SETUP > WIRELESS). With
+  Balance node OFF or no node bound it reads `NO BALANCE NODE: BIND ONE IN
+  WIRELESS`; a report older than 1000ms, or a bound node whose link is
+  down, reads `--`.
+- A TAKE key a finger tall for each run: BASELINE and TRIAL 0° with 2 RUNS,
+  BASELINE, TRIAL 0°, TRIAL 120° and TRIAL 240° with 4 RUNS. A press takes
+  the next 8 reports, 2s, while the other keys wait. Under each key its
+  run: `TAKING n/8`, the mean (`0.42g 265°` with two runs, the magnitude
+  with four), or why it failed: `NO REPORT` (1000ms without one),
+  `SENSOR FAULT`, `CLIPPED`, `RPM RANGE`, `INDEX FAULT`, `MODE CHANGED`
+  (a report the node marks unusable, [Balancing](Balance.md#measuring-with-the-balance-node)),
+  `NO REVOLUTION`, `NO INDEX` (two runs need the index), `RPM MOVED`
+  (more than 5% from the run's first report) or, under a trial,
+  `NOT BASELINE RPM` (its mean rpm more than 5% from the baseline's).
+- 2 RUNS, 4 RUNS and CLEAR. A method change clears the runs, and so do
+  BLADES, PROPELLER or EDF, Balance node OFF or ON, another node bound and
+  a node restart ([Balancing](Balance.md#measuring-with-the-balance-node)).
+- Once every run is taken: `ADD 0.35g  WHERE between 1 and 2` (on an EDF,
+  `hub, 265°`), solved again when the trial mass changes, and under it
+  what became of the CSV row (`Row waiting for the card`,
+  `Row written: BENCH/BALANCE/BALANCE.CSV`,
+  `Row NOT written: no card or write failed`), or the solver's word:
+  `WEAK` with the trial's effect in % and the row's fate
+  (`WEAK 12% effect: row written`), `NO EFFECT`, `INCONSISTENT`,
+  `NO RESULT`.
+
+The keys act on the press and drive no output, so they work while ARMED.
+TAKE without a fresh report takes nothing and the band reads
+`NO FRESH REPORT FROM THE BALANCE NODE: NOTHING TAKEN`.
 
 ### RENAME LOG
 
@@ -5099,10 +5141,10 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 ![Setup](img/setup.png)
 
-- Three categories: PANEL, SENSORS and SD CARD, the bench-wide
+- Four categories: PANEL, SENSORS, WIRELESS and SD CARD, the bench-wide
   settings. A tile names the number of settings its list shows; SENSORS'
-  says what it holds, `CURRENT, ANGLE, PHASE TAP`. A tap opens the category's
-  list.
+  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL, POWER, BALANCE NODES`.
+  A tap opens the category's list.
   The pack, motor and throttle-output settings are on
   MOTOR & ESC > OPTIONS
   ([MOTOR & ESC settings](#motor--esc-settings)).
@@ -5112,7 +5154,7 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
   as its tile does, and the band of this page reads SETUP. [Files](#files) is a
   tab of the [LOGS](#logs) tile.
 - LAYOUT ([Layout](#layout)) as the last tile on a board with soldered pins,
-  the [rbmod carrier](Carrier.md). 2 slots are free on any other board and 1
+  the [rbmod carrier](Carrier.md). 1 slot is free on any other board and none
   on that one. The page holds 9, and the build fails at a tenth entry.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -5510,15 +5552,16 @@ across a third of its travel from -travel to +travel.
 
 ### SENSORS: the split pane
 
-SENSORS groups the devices read by the IOmcu and the panel's Bluetooth IMU.
-The split view has 9 entries on the left and the selected entry's settings
-on the right.
+SENSORS groups the devices read by the IOmcu. The split view has 8 entries
+on the left and the selected entry's settings on the right. The panel's
+Bluetooth IMU is on WIRELESS ([WIRELESS: the IMU and the
+Dial](#wireless-the-imu-and-the-dial)), in a split view of the same kind.
 
 ![SENSORS, two parts fitted](img/setup-sensors.png)
 
-The left list runs from body y 8 to 440, 4px above the strip: 9 entries of
-220 x 48px at a 48px pitch, top to bottom SENSOR BUS, INA228, INA3221 0x40 to
-0x43, AS5600, PHASE TAP and IMU. An entry takes touches over its 48px and
+The left list has room from body y 8 to 440, 4px above the strip, for 9
+entries of 220 x 48px at a 48px pitch. SENSORS fills 8, top to bottom SENSOR
+BUS, INA228, INA3221 0x40 to 0x43, AS5600 and PHASE TAP. An entry takes touches over its 48px and
 draws its card 1px in from its top and bottom, 2px between two cards. An
 entry shows its name in the 12 x 24px face and its state under it in the
 8 x 16px face. The selected entry has the lit fill and the accent
@@ -5534,7 +5577,6 @@ of the 10 x 20px face.
 | INA3221 0x40 to 0x43 | a state of the table in [SENSORS: the INA3221 parts](#sensors-the-ina3221-parts) | 10 |
 | AS5600 | `ON`, `NOT ACCEPTED BY THE IOMCU` | 2 |
 | PHASE TAP | `ON`, `NOT ACCEPTED BY THE IOMCU` | 7 |
-| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 6 |
 
 - An entry with an enable row shows that row alone and reads `OFF` while it is
   off. ON adds the entry's other rows under it.
@@ -6001,13 +6043,13 @@ at least one period of the lowest tone, 2.5ms at 400Hz
 
 SETUP's IMU tile opens the screen for a WitMotion BWT901CL angle sensor,
 connected to the panel over Bluetooth LE through the board's ESP32-C6
-([The Bluetooth IMU](IMU.md)); the first IMU ON starts Bluetooth LE. SENSORS' IMU entry holds its rows: IMU ON or
+([The Bluetooth IMU](IMU.md)); the first IMU ON starts Bluetooth LE. WIRELESS' IMU entry holds its rows: IMU ON or
 OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
 default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
 controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
 then ZERO and CLEAR ZERO side by side. The footer
 ([The footer and the settings list](#the-footer-and-the-settings-list))
-reads `[IMU] [HOLD 2s: CALIBRATE] [OPTIONS]`; OPTIONS opens SENSORS on
+reads `[IMU] [HOLD 2s: CALIBRATE] [OPTIONS]`; OPTIONS opens WIRELESS on
 the IMU entry, and its home tag comes back. The card on the right, x 484 to
 1016, body y 16 to 436, names the bound sensor and
 its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
@@ -6021,7 +6063,103 @@ a run ([Servo procedures](Servo.md)).
 
 ![The found list after SCAN](img/imu-scan.png)
 
-![SENSORS on the IMU entry](img/setup-sensors-imu.png)
+![WIRELESS on the IMU entry](img/setup-wireless-imu.png)
+
+### WIRELESS: the IMU and the Dial
+
+WIRELESS holds the panel's Bluetooth LE devices in a split view of
+SENSORS' kind: 4 entries on the left, IMU, DIAL, BALANCE NODE and POWER
+NODE, each with its name and its state, and the selected entry's rows on
+the right. The first IMU ON, Dial ON, Power node ON or Balance node ON
+starts Bluetooth LE until the panel
+restarts.
+
+| Entry | State while on | Rows |
+| --- | --- | --- |
+| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 7 while on |
+| DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
+| BALANCE NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A NODE`, `CONNECTED, READING INFO`, `ROLE r, PROTOCOL p`, `CONNECTED, NO REPORT`, `REPORTING` | 1 while off; 5 while on |
+| POWER NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `NOT A POWER NODE`, `CONNECTED, NO READING`, `OTHER PROTOCOL n`, `INA228 SET-UP REFUSED`, `NO INA228 ON THE NODE`, `CONNECTED`, `NO READING FOR 300ms`, `NODE LOST` ([WIRELESS: the power node](#wireless-the-power-node)) | 2 while off: Power node and INA228 SOURCE; 5 while on |
+
+![WIRELESS on the DIAL entry](img/setup-wireless-dial.png)
+
+The DIAL entry's rows ([The M5Stack Dial](Dial.md#the-panel)):
+
+| Row | Values | Default | What it does |
+| --- | --- | --- | --- |
+| Dial | ON, OFF | OFF | the link to the bound Dial; OFF ends it without an error |
+| Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN` |
+| Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap lists the Dials the last scan found, `DIAL-3A10  -52dBm`, the bound one marked; a tap on one binds it and asks for a save |
+| Dial step, throttle | 0.5%, 1%, 2%, 5% | 1% | the throttle a detent moves on MOTOR & ESC |
+| Dial step, servo | 0.5°, 1°, 2°, 5° | 1° | the horn angle a detent moves on SERVO |
+
+RESET DIAL sets Dial back to OFF and the steps to 1% and 1°; the bound Dial
+stays. The band shows `DIAL: NO EVENT FOR 500ms` when a linked Dial
+goes quiet, `DIAL LOST` when it is lost while SAFE, and
+`DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF` for the error
+while ARMED.
+
+### WIRELESS: the power node
+
+![WIRELESS on the POWER NODE entry](img/setup-wireless-pnode.png)
+
+The POWER NODE entry connects the INA228 power node
+([Sensor nodes](Nodes.md#the-panel)) and says whose INA228 feeds MOTOR &
+ESC's voltage, current, power and totals.
+
+| Row | Values | Default | What it does |
+| --- | --- | --- | --- |
+| Power node | ON, OFF | OFF | the link to the bound node; OFF ends it without an error |
+| INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, the bound one marked; a tap on one binds it and asks for a save. A balance node is not listed |
+| Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
+
+RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
+the bound node stays. The signal strength of a linked node is not shown:
+its STATUS carries none, and the found list's dBm are the scan's.
+
+With INA228 source on NODE:
+
+- The node's readings replace the INA228 figures while the IOmcu link is
+  up: `ina voltage`, `ina current` and the log's `source` column read
+  `node`. The ESC's own telemetry stays beside them.
+- A reading older than 300ms is none: voltage, current and power show as
+  not measured.
+- An ARM of MOTOR & ESC or ESC STICK is refused while Power node is OFF
+  or no reading came in the last 100ms; the band reads `Cannot switch to
+  ARMED: no power node readings. Set INA228 source WIRED or connect the
+  node.` SERVO's and OUTPUTS' arms read no INA228 and are not refused.
+- A MOTOR & ESC or ESC STICK run counts on the node. A gap without a
+  reading of up to 300ms rides, once in 10s. A longer gap, or a second one
+  within 10s of the first's start, is an error: SAFE, every output off, and
+  the band reads
+  `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`.
+  A SERVO or OUTPUTS run does not end on the node.
+- INA228 source does not change while ARMED: its row has no keys.
+- The node's readings feed no protection: the IOmcu's current limit and the
+  panel's trips read their own sensors.
+
+The band shows `POWER NODE: NO READING FOR 300ms` when a linked node stops
+sending readings, and `POWER NODE LOST` when the link drops while SAFE.
+
+### WIRELESS: the balance node
+
+![WIRELESS on the BALANCE NODE entry](img/setup-wireless-bal.png)
+
+The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance-node)):
+
+| Row | Values | Default | What it does |
+| --- | --- | --- | --- |
+| Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, the bound one marked; a tap on one binds it and asks for a save |
+| Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from the STATUS it sends on STREAM beside its reports; `--` before the first on a link |
+| Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
+
+RESET BALANCE NODE sets Balance node back to OFF and Trial mass to 0.50g;
+the bound node stays. A node whose INFO names another role or protocol
+reads `ROLE r, PROTOCOL p` and its reports are not taken.
 
 ### SD CARD: which logs are written, and where
 
@@ -6435,6 +6573,7 @@ slot is empty until a check finds a newer release.
 | `OPTIONS` | Opens the list of Reminder at start and Releases. Grey while a check or a download runs or a finger holds the download; a tap then puts `OPTIONS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
+| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
 
 ![UPDATES' OPTIONS list](img/updates-settings.png)
 
@@ -6664,10 +6803,11 @@ Under the card, UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
 Bluetooth: `C6 radio: 2.13.0. Included: 2.13.0.`, the version the C6
 reported at the first Wi-Fi start since the panel started, or
 `not reported`, and the version of the image this panel carries, or
-`none`. Under it `HOLD 2s TO UPDATE THE C6 RADIO`. While the update runs the
+`none`. Under it `HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL
+THIS PANEL'S C6 FIRMWARE` while the C6 reports the carried version. While the update runs the
 button reads `C6 UPDATE 37%`, the share of the image the C6 took. The
 steps, their limits and how each ends are in
-[Building: The C6's firmware](Building.md#the-c6s-firmware).
+[The ESP32-C6 radio: The C6's firmware](C6.md#the-c6s-firmware).
 
 ![The C6 RADIO row with the C6 as shipped](img/updates-c6.png)
 
@@ -6680,7 +6820,6 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The included C6 radio firmware failed its check.` | The carried image is no ESP32-C6 build of esp_hosted, or its SHA-256 differs. |
 | `The C6 radio update is running.` | An update runs. |
 | `The C6 radio did not answer. Restart the panel.` | The link to the C6 failed since the panel started; the C6 is held in reset. |
-| `The C6 radio runs the firmware included on this panel.` | The C6 reported the carried version. |
 | `The C6 update requires SAFE.` | ARMED, or an arm waiting. |
 | `The C6 update requires the supply output off.` | The supply output is on or switching on. |
 | `The C6 update waits: a recording session is open.` | A log run is open. |
@@ -6692,13 +6831,16 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
 
 A C6 that reports no version, as the shipped one does, is offered the
-update. The alert band says how an update ended:
+update. A C6 that reports the carried version is offered the reinstall:
+images of one esp_hosted version with other settings report the same
+version, such as one with 3 Bluetooth LE connections and one with 5
+([The ESP32-C6 radio: The image the panel carries](C6.md#the-image-the-panel-carries)).
+The alert band says how an update ended:
 
 | Alert | Meaning |
 | --- | --- |
 | `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later. |
-| `The C6 radio runs 2.13.0 already. Nothing was sent.` | The C6 reported the carried version at the update's link-up. |
-| `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([Building: Recovery over header H4](Building.md#recovery-over-header-h4)). |
+| `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([The ESP32-C6 radio: Recovery over header H4](C6.md#recovery-over-header-h4)). |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | The link to the C6 failed. |
 | `C6 update stopped: <reason>. Previous firmware is running.` | A write, the C6's image check or the activate call failed (`a write failed`, `the C6's image check failed`, `activation failed`), or a step went unanswered past its limit (`no response`). |
 

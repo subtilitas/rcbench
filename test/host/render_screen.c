@@ -53,6 +53,7 @@
 #include "hitec_panel.h"
 #include "hitec_rx_link.h"
 #include "balance_screen.h"
+#include "node_balance.h"
 #include "battery_screen.h"
 #include "analyser_screen.h"
 #include "instruments_spots.h"
@@ -2667,14 +2668,20 @@ static void pose_upd(const char *view)
     }
     upd_screen_set_coproc(&cu);
 
-    /* The C6 RADIO row: a C6 on the carried 2.13.0; updates-c6 the shipped
+    /* The C6 RADIO row: a C6 on the carried 2.13.0 with Wi-Fi on, the hold
+     * grey; updates-c6-reinstall the same C6 with Wi-Fi off, the reinstall
+     * offered; updates-c6 the shipped
      * C6, which reports no version, the hold live; updates-c6-* the other
      * states the fit check measures. */
     upd_c6_view_t c6 = {
-        .row = FW_C6_ROW_SAME, .known = true, .have_image = true,
+        .row = FW_C6_ROW_BLOCKED, .why = FW_C6_WHY_RADIO, .known = true,
+        .have_image = true,
         .running = { 2u, 13u, 0u }, .carried = { 2u, 13u, 0u },
     };
-    if (strcmp(view, "updates-c6") == 0) {
+    if (strcmp(view, "updates-c6-reinstall") == 0) {
+        c6.row = FW_C6_ROW_REINSTALL;
+        c6.why = FW_C6_WHY_NONE;
+    } else if (strcmp(view, "updates-c6") == 0) {
         c6.row = FW_C6_ROW_READY;
         c6.known = false;
     } else if (strcmp(view, "updates-c6-progress") == 0) {
@@ -3617,12 +3624,52 @@ static void pose_bench_views(ui_screen_id_t id, const char *view)
 }
 
 /**
+ * @brief A balance node linked and both runs of the two-run method taken:
+ *        0.42g at 265° with no mass, 0.30g at 196° with 0.50g at blade 1,
+ *        at 8000rpm, quality 94%.  The solver's answer is a correction
+ *        between blades 1 and 2 on a two-blade propeller; its CSV row is
+ *        written.
+ */
+static void pose_node_balance(void)
+{
+    node_balance_reset();
+    rcnode_bal_report_t r;
+    memset(&r, 0, sizeof r);
+    r.hdr.type = RCNODE_T_BAL_REPORT;
+    r.flags = RCNODE_BF_VALID | RCNODE_BF_INDEX_SEEN | RCNODE_BF_INDEX_STEADY
+              | RCNODE_BF_DC_OK | RCNODE_BF_BLADE_OK | RCNODE_BF_QUALITY;
+    r.quality = 94u;
+    r.revs = 33u;
+    r.rpm = 8000u;
+    static const uint16_t mag[2] = { 420u, 300u };
+    static const uint16_t phase[2] = { 2650u, 1960u };
+    for (uint8_t run = 0; run < 2u; ++run) {
+        r.mag_1x = mag[run];
+        r.phase_1x = phase[run];
+        node_balance_feed(true, &r, 10u);
+        (void)nb_take(node_balance_session(), run, true);
+        for (unsigned k = 0; k < NB_CAP_REPORTS; ++k) {
+            ++r.hdr.seq;
+            r.hdr.t_node += 250000u;
+            node_balance_feed(true, &r, 10u);
+        }
+    }
+    char row[NB_CSV_MAX];
+    if (node_balance_take_csv(2, row, sizeof row) > 0u) {
+        node_balance_csv_done(node_balance_csv_seq(), true);
+    }
+}
+
+/**
  * @brief BALANCE and the ANALYSER: the cells and the received frames.
  * @param id   The screen of the shot.
  * @param view The golden's name.
  */
 static void pose_analyser_views(ui_screen_id_t id, const char *view)
 {
+    if (id == SCREEN_BALANCE && strcmp(view, "balance-node") == 0) {
+        pose_node_balance();
+    }
     if (id == SCREEN_BALANCE && strcmp(view, "balance") != 0) {
         ui_router_goto(SCREEN_BALANCE);
         if (strcmp(view, "balance-rig") == 0) {
@@ -4379,6 +4426,10 @@ static void pose_shown_views(const char *view)
     if (strcmp(view, "motor-table") == 0) {
         tap(18 + 150, UI_BAND_H + 82 + 20);             /* TABLE */
     }
+    if (strcmp(view, "motor-balance") == 0) {
+        pose_node_balance();
+        tap(MO_BAL_TAB_X, UI_BAND_H + MO_PANE_Y);       /* BALANCE */
+    }
     /* MOTOR & ESC's SETTINGS list: the footer's SETTINGS; the keypad of
      * Capacity, the second setting; scrolled to its end with a change not
      * saved; the leave warning over it. */
@@ -4520,8 +4571,7 @@ static void pose_shown_setup(ui_screen_id_t id, const char *view)
      * the carrier (setup-sensors-rbmod) 0x40 is the board's.
      */
     if (strncmp(view, "setup-sensors", 13) == 0
-        && strcmp(view, "setup-sensors-ina228") != 0
-        && strncmp(view, "setup-sensors-imu", 17) != 0) {
+        && strcmp(view, "setup-sensors-ina228") != 0) {
         settings_set(SET_INA_FIT(1), 1.0f);
         settings_set(SET_INA_W(4), (float)SENS_W_PORT_1);
         settings_set(SET_INA_LIM(4), 800.0f);

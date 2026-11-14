@@ -1,0 +1,7 @@
+# The GC9A01 display driver from the Espressif component registry, the one
+# the board support package for this device uses; Apache-2.0.  It is the
+# only managed component of the Dial; firmware/dial/dependencies.lock
+# records its hash.
+dependencies:
+  espressif/esp_lcd_gc9a01:
+    version: "==2.0.4"

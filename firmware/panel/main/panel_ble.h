@@ -3,7 +3,7 @@
  * @brief Bluetooth LE (Low Energy) on the panel: the NimBLE host on the P4,
  *        the controller on the board's ESP32-C6, HCI (host controller
  *        interface) over the SDIO link (c6_link.h), and the queue of events
- *        the host hands the IMU's link.
+ *        the host hands the Bluetooth LE clients (panel_blec.h).
  *
  * panel_ble_start() starts it once and it stays until the panel restarts:
  * the host is never stopped.  The start runs on a task of its own,
@@ -22,20 +22,22 @@
  *    Without it the state is PANEL_BLE_NO_SYNC and the host keeps trying;
  *    a sync later makes it PANEL_BLE_READY.
  *
- * The IMU's link (protocols/bleuart) runs on the IMU task: panel_ble_do()
- * turns each of its actions into a NimBLE call, and the host task's
- * callbacks turn NimBLE's answers into bleuart's events, each with the
- * token of the action it answers.  A call NimBLE refuses is answered at
- * once with its status.  The events go through a FreeRTOS queue of
- * PANEL_BLE_QUEUE_LEN elements of 64 bytes (bleu_evt_t); a notification
- * longer than BLEU_EVT_DATA bytes comes as several, in order.  A
- * notification or an advertising report takes a slot only while more than
- * BLEU_EVQ_RESERVE (8) are free, so the events a link's state hangs on
- * find room (bleu_evt_admit()).  A full queue drops the event and counts
- * it (panel_ble_dropped()); a dropped notification breaks a frame, which
- * the WitMotion parser counts as bad and resyncs.  A dropped DISCONNECT is
- * kept and handed out once the queue is empty, so the link still ends and
- * reconnects.  One task reads the queue (panel_ble_get()).
+ * The clients' links (protocols/bleuart) run on the `blec` task through
+ * the hub (bleuart_hub.h): panel_ble_do() turns each action into a NimBLE
+ * call, and the host task's callbacks turn NimBLE's answers into
+ * bleuart's events, each with the token of the action it answers.  Every
+ * event of a connection carries the token of its connect.  A call NimBLE
+ * refuses is answered at once with its status.  The events go through a
+ * FreeRTOS queue of PANEL_BLE_QUEUE_LEN elements of 64 bytes (bleu_evt_t);
+ * a notification longer than BLEU_EVT_DATA bytes comes as several, in
+ * order.  A notification or an advertising report takes a slot only while
+ * more than BLEU_EVQ_RESERVE (8) are free, so the events a link's state
+ * hangs on find room (bleu_evt_admit()).  A full queue drops the event and
+ * counts it (panel_ble_dropped()); a dropped notification breaks a frame,
+ * which the WitMotion parser counts as bad and resyncs.  Up to
+ * PANEL_BLE_PEND_MAX dropped DISCONNECTs are kept and handed out once the
+ * queue is empty, so each link still ends and reconnects.  One task reads
+ * the queue (panel_ble_get()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -51,8 +53,11 @@
  *         starts, ms. */
 #define PANEL_BLE_SYNC_MS 3000u
 
-/** @brief Events the queue holds. */
-#define PANEL_BLE_QUEUE_LEN 32u
+/** @brief Events the queue holds: 64 x 64 = 4,096 bytes of internal RAM. */
+#define PANEL_BLE_QUEUE_LEN 64u
+/** @brief DISCONNECTs a full queue keeps: more than the host's 5
+ *         connections and a connect that failed to be established. */
+#define PANEL_BLE_PEND_MAX 8u
 
 /** @brief Where the start is. */
 typedef enum {
@@ -90,14 +95,18 @@ panel_ble_state_t panel_ble_state(void);
 bool panel_ble_get(bleu_evt_t *out);
 
 /**
- * @brief Perform one action of the IMU's link (bleuart.h): a scan, a
- *        connect, a GATT step, a write.  Its answer comes as an event with
- *        its token; a call NimBLE refuses is answered at once with the
- *        refusal's status.  BLEU_ACT_CANCEL, BLEU_ACT_DISCONNECT and
+ * @brief Perform one action of a client's link (bleuart.h), as the hub
+ *        passes it: a scan, a connect, a GATT step, a write.  Its answer
+ *        comes as an event with its token; a call NimBLE refuses is
+ *        answered at once with the refusal's status.  BLEU_ACT_CANCEL, BLEU_ACT_DISCONNECT and
  *        BLEU_ACT_SCAN_STOP are answered by NimBLE's events or not at all.
- * @param a The action; NULL does nothing.
+ *        A BLEU_ACT_WRITE_NR gets no event: its status is returned, for
+ *        bleu_hub_written().
+ * @param a       The action; NULL does nothing.
+ * @param written Receives a WRITE_NR's host status, 0 for taken.
+ * @return true for a WRITE_NR, whose answer is the caller's to give.
  */
-void panel_ble_do(const bleu_act_t *a);
+bool panel_ble_do(const bleu_act_t *a, int *written);
 
 /**
  * @brief Events dropped on a full queue since start-up.

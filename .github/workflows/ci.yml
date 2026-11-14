@@ -179,6 +179,9 @@ jobs:
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
 
+      - name: The checked-in Dial ring tables match their generator
+        run: python3 tools/gen_dial_rings.py --check
+
       # The board drawings the IOmcu serves are generated from the
       # configurator's panel drawing and checked in, so the firmware build
       # needs no Python and no Node.js.
@@ -280,6 +283,12 @@ jobs:
       - name: The committed screenshots match the current render
         run: python3 tools/render_ui.py --check
 
+      # The Dial's faces are drawn by the code the Dial runs (shared/dial)
+      # from the fixed models of test/host/dial_models.h; every string's
+      # fit is test_dial_fit's, in the host suite.
+      - name: The committed Dial faces match the current render
+        run: python3 tools/render_dial.py --check
+
       # A string longer than its field is cut or runs into its neighbour;
       # this draws every view in both languages and measures.  The English
       # overflows the layout has are listed by name in the tool and printed;
@@ -334,7 +343,8 @@ jobs:
 
       # A reading costs at most 700 fills; 1,000 catches a whole page (16,000+).
       - name: A reading repaints only what the page shows of it
-        run: python3 tools/frame_cost.py servo-kst servo-hitec wifi-idle imu imu-hold --max-lines 1000
+        run: python3 tools/frame_cost.py servo-kst servo-hitec wifi-idle imu imu-hold
+             balance-node --max-lines 1000
 
       # The screen guide caches its dock and draws its badges and corner
       # brackets every frame, about 370 fills on the menu; 1,000 catches
@@ -422,11 +432,11 @@ jobs:
       # protocol cores and the host tests.  A module's rp2350/ folder is not
       # in the host build; cppcheck reads it with the firmware.
       # render_screen.c, render_files.c, render_hitec.c, render_esc_wire.c,
-      # render_help.c, render_shot.c, render_rudder.c, render_imu.c and
-      # bench_frame.c are built by tools/render_ui.py and
-      # tools/frame_cost.py, not by CMake, so they have no compile command
-      # here; render_ui.py builds the first eight with -Werror, cppcheck
-      # reads all nine.
+      # render_help.c, render_shot.c, render_rudder.c, render_imu.c,
+      # render_dial.c and bench_frame.c are built by tools/render_ui.py,
+      # tools/render_dial.py and tools/frame_cost.py, not by CMake, so they
+      # have no compile command here; the two render tools build the first
+      # nine with -Werror, cppcheck reads all ten.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
       # run; no result is kept between runs.
@@ -443,6 +453,7 @@ jobs:
                         -e 'test/host/render_shot.c' \
                         -e 'test/host/render_rudder.c' \
                         -e 'test/host/render_imu.c' \
+                        -e 'test/host/render_dial.c' \
                         -e 'test/host/bench_frame.c' \
               | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 
@@ -648,6 +659,14 @@ jobs:
         run: |
           python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
           python3 hardware/kicad/tools/step_check.py
+
+      # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
+      # OpenCASCADE meshes each solid again; the two meshes are within
+      # 0.15mm of each other both ways and 1% in volume.
+      - name: The M5Stack Dial's solids follow M5Stack's mesh
+        run: |
+          python3 -m pip install --quiet numpy==2.5.3
+          python3 hardware/mechanical/check_refit.py
 
   # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
   # Fails on a warning tools/doc_check_baseline.txt does not hold, on a
@@ -912,6 +931,13 @@ jobs:
 
   c6:
     uses: ./.github/workflows/c6.yml
+
+  # The sensor nodes' firmware (node.yml): the power and balance nodes' images.
+  node:
+    uses: ./.github/workflows/node.yml
+  # The M5Stack Dial's firmware, the wireless knob (dial.yml).
+  dial:
+    uses: ./.github/workflows/dial.yml
 
   iomcu:
     # The env context is not available in a job name (only github, needs,

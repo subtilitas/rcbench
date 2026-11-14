@@ -1,0 +1,3 @@
+# The balance node: appended to sdkconfig.defaults with
+#   idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.balance" build
+CONFIG_RCNODE_ROLE_BALANCE=y
