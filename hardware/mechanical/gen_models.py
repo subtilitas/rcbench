@@ -1,7 +1,8 @@
 #!/usr/bin/env python3
 """Write the STEP models of the mechanical parts from their specs.
 
-The specs are hardware/mechanical/*.py other than this file; each defines
+The specs are hardware/mechanical/*.py other than this file, the checks
+(check_*.py) and the helpers (_*.py); each defines
 ``parts(colors)``, a dict of file stem to solids as
 hardware/kicad/tools/step_gen.py's ``write`` takes them. The models go
 to hardware/mechanical/models/<stem>.step.
@@ -31,7 +32,8 @@ def load_specs():
     """
     specs = []
     for path in sorted(HERE.glob("*.py")):
-        if path.name == Path(__file__).name or path.name.startswith("_"):
+        if path.name == Path(__file__).name or path.name.startswith(
+                ("_", "check_")):
             continue
         spec = importlib.util.spec_from_file_location(path.stem, path)
         mod = importlib.util.module_from_spec(spec)

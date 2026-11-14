@@ -32,6 +32,13 @@ heights come from models, datasheets or estimates for the part class, as listed 
 [Mechanical parts](mechanical/README.md) holds STEP models of the M16
 emergency stop button, its nut and anti-rotation shim; dimensions not on the seller's
 drawing are estimated.
+It also holds STEP models of the M5Stack Dial and its ring nut. Their 9
+plastic parts are M5Stack's mesh (MIT licence) fitted again with planes,
+cylinders, cones, tori and the thread's helical surfaces; the models are
+within 0.124mm of the mesh and agree with M5Stack's drawing within 0.2mm.
+The connectors follow their makers' drawings, the display, the main board
+and the screw heads are estimated, the encoder and springs are absent, and
+no dimension is verified on a part.
 
 ## Decided
 

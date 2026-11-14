@@ -11,3 +11,4 @@
 *.png binary
 *.uf2 binary
 *.bin binary
+*.stl binary

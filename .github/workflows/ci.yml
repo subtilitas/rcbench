@@ -659,6 +659,14 @@ jobs:
           python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
           python3 hardware/kicad/tools/step_check.py
 
+      # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
+      # OpenCASCADE meshes each solid again; the two meshes are within
+      # 0.15mm of each other both ways and 1% in volume.
+      - name: The M5Stack Dial's solids follow M5Stack's mesh
+        run: |
+          python3 -m pip install --quiet numpy==2.5.3
+          python3 hardware/mechanical/check_refit.py
+
   # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
   # Fails on a warning tools/doc_check_baseline.txt does not hold, on a
   # baseline line that no longer occurs, and in a pull request on any
