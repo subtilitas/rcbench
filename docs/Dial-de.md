@@ -270,8 +270,9 @@ Host-Modell wartet der erste Connect des Dial nach der Wahl bis zu
 zwei solchen Clients, und er startet im selben Durchlauf wie das BIND,
 wenn kein Versuch läuft; auf dem Panel sind diese Wartezeiten nicht
 gemessen. Ein Connect nach einem Verlust, bei Dial EIN oder beim Start
-nimmt keinen Zug und kann hinter den Versuchen solcher Clients länger
-warten.
+wartet in der Warteschlange des Hubs, wer zuerst kommt, zuerst: Er folgt
+nach höchstens einem Versuch jedes anderen Clients, im Host-Modell
+höchstens 10.046ms neben zwei solchen Clients und 20.092ms neben vier.
 
 ### Der Link
 

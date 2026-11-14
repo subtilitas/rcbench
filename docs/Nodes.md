@@ -425,7 +425,10 @@ fourth client, owner 3
   the hub's next turn after an attempt under way. BOUND NODE with no list
   says why on the band. A bound node is connected again after each
   drop without a scan, 1000ms after the drop and on the hub's backoff
-  after a failed connect. A scan while ARMED is refused, and a scan that
+  after a failed connect. While another client's connect holds the hub,
+  the node's connect waits in the hub's queue and goes after at most one
+  attempt of each other client, 5000ms each. A scan while ARMED is
+  refused, and a scan that
   runs is stopped at the switch to ARMED.
 - **Refusals.** A tap on SCAN FOR NODE while a scan runs reads
   `A SCAN IS RUNNING: IT ENDS WITHIN 10s` and asks for none. The frame

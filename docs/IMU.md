@@ -134,7 +134,7 @@ C6 image hold 5 connections each (`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`,
 | --- | --- | --- |
 | a scan | connects | cancels that connect and starts the scan once its event came, at most 2,000ms later |
 | a scan | scans | ends the IMU's scan at once with status 0xFFFD (busy): `THE SCAN DID NOT START: CODE 65533` |
-| a connect | scans or connects | answers it busy; the IMU tries again after 1,000ms with its error unchanged |
+| a connect | scans or connects | puts the IMU in the hub's queue, first come first, and answers it busy, or with its turn (0xFFFC) once the next turn is the IMU's; the IMU tries again after 1,000ms, or 20ms with its turn, with its error unchanged, and connects after at most one attempt of each other client |
 
 With the IMU alone every action and event passes as it did with one link.
 A C6 image with 3 links refuses a fourth connect; the console line names

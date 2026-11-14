@@ -1586,7 +1586,7 @@
 				)
 			)
 		)
-		(property "Description" "INA228 current and voltage monitor with 2 XT90 plugs, board print BIFRC V1.1, 80 x 48mm, 4 screw holes 70.4 x 38.6mm apart. Shunt (print 0m50) in the minus line between BAT- and ESC-; the plus bar runs straight through. Header print L A V G 5: 1 L = SCL, 2 A = SDA, 3 V = 3.3V chip supply, 4 G = GND, 5 = hole without pin. Pads 6 + bar, 7 BAT-, 8 ESC-, 9 GND, 10 5V test pads. The screw holes carry circuitry (board print). Drawn from an owner photo; outline within about 0.6mm, plugs within about 1.5mm."
+		(property "Description" "INA228 current and voltage monitor with 2 XT90PW, board print BIFRC V1.1, 80.1 x 48.6mm, 4 screw holes 70.15 x 38.8mm apart. Shunt (print 0m50) in the minus line between BAT- and ESC-; the plus bar runs straight through. Header print L A V G 5: 1 L = SCL, 2 A = SDA, 3 V = 3.3V chip supply, 4 G = GND, 5 = hole without pin. Pads 6 + bar, 7 BAT-, 8 ESC-, 9 GND, 10 5V test pads. The screw holes carry circuitry (board print). Drawn from owner photos on squared paper; positions within about 0.3mm, connectors within about 0.5mm."
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)

@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: STEP models of the INA228 current sensor module
+  with its two XT90PW connectors (`ina228_xt90.step`, 225 solids,
+  83.95mm x 48.6mm x 12.6mm) and of its printed case with 4 screws
+  (`ina228_xt90_case.step`), generated from `ina228_xt90.py`. The board is
+  measured from three photos on 5mm squared paper with `_photo_grid.py`,
+  which fits the paper's grid and corrects a size for its height over the
+  paper; the connectors follow a dimension drawing of XT90PW; the shunt is
+  1.2mm high at its ends and 1.8mm in the middle.
+  `_trace_ina228_print.py` traces the printed legends from the top photo.
+  `_solid.py` writes round rods along a path of lines and arcs as cylinders
+  and pieces of tori, used for the connectors' bent tails.
+  `check_overlap.py` checks the module together with its case
+  ([Mechanical parts](hardware/mechanical/README.md#ina228-module-with-xt90-connectors)).
 - `hardware/mechanical/`: a STEP model of the panel board, the Waveshare
   ESP32-P4-WIFI6-Touch-LCD-7B, generated from `panel_7b.py`: 164.28mm x
   99.18mm of glass, 15.1mm thick, 1497 solids. `_measure_step.py` measures
@@ -316,6 +329,11 @@ history is in git.
 
 ### Changed
 
+- KiCad module `INA228_BIFRC_XT90_80x48mm`: board 80.1mm x 48.6mm (was
+  79.9mm x 48.3mm), screw holes 70.15mm x 38.8mm apart (was 70.42mm x
+  38.58mm), header, bars, shunt, slots and connector outlines moved by up
+  to 1.2mm to their places in three photos on squared paper; 16 slots under
+  the connectors added to the fabrication drawing.
 - SETUP > WIRELESS: SCAN FOR DIAL and SCAN FOR NODE, on POWER NODE and
   BALANCE NODE, open the found list while they read `FOUND n`; in their
   other states a tap scans as before. The found list, from these rows and
@@ -453,6 +471,22 @@ history is in git.
 
 ### Fixed
 
+- The panel's Bluetooth LE hub gives every connect that waits a turn. A
+  connect after a link loss, at Dial, node or IMU ON or at start-up took
+  no turn: on 1,000ms retries that fell right behind other clients'
+  attempts it was answered busy every time, and in the host model a
+  client beside two devices out of range got no slot in 40,000ms. Each
+  connect answered busy or with the turn waits in a queue, first come
+  first, a hurried one ahead of the others. The next turn is kept for the
+  queue's first client, which is answered `BLEU_STATUS_TURN` and tries
+  again every 20ms, so it takes the slot when the attempt under way ends;
+  an unhurried one is answered busy while a scan holds the slot. A
+  connect a scan cut waits in front. A waiting client takes the slot after
+  at most one attempt of each other client: at most 10,046ms beside two
+  devices out of range and 20,092ms beside four in the host model, the
+  device update's connect too. A client that does not come back leaves
+  the queue 200ms after the slot is free and its retry was due
+  ([bleuart: the hub](protocols/bleuart/README.md#the-hub)).
 - SETUP > WIRELESS > DIAL: a tap on BOUND DIAL with no list, before a scan,
   after one that found none or while a scan runs, says why on the band
   instead of nothing. A pick the controller refuses, because a scan started

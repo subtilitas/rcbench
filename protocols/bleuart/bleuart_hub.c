@@ -118,6 +118,120 @@ static uint8_t owner_of_conn(const bleu_hub_t *h, uint16_t conn)
 }
 
 /**
+ * @brief Where @p owner waits in the queue.
+ * @param h     The hub.
+ * @param owner The client.
+ * @return Its place, or qn when it does not wait.
+ */
+static uint8_t q_find(const bleu_hub_t *h, uint8_t owner)
+{
+    for (uint8_t i = 0; i < h->qn; ++i) {
+        if (h->q[i] == owner) {
+            return i;
+        }
+    }
+    return h->qn;
+}
+
+/**
+ * @brief Take the place at @p at out of the queue.
+ * @param h  The hub.
+ * @param at The place, below qn.
+ */
+static void q_drop_at(bleu_hub_t *h, uint8_t at)
+{
+    for (uint8_t i = at; i + 1u < h->qn; ++i) {
+        h->q[i] = h->q[i + 1u];
+    }
+    --h->qn;
+}
+
+/**
+ * @brief Take @p owner out of the queue; one that does not wait is left
+ *        alone.
+ * @param h     The hub.
+ * @param owner The client.
+ */
+static void q_drop(bleu_hub_t *h, uint8_t owner)
+{
+    const uint8_t at = q_find(h, owner);
+    if (at < h->qn) {
+        q_drop_at(h, at);
+    }
+}
+
+/**
+ * @brief Queue @p owner for a turn.  A hurried client, and one placed in
+ *        front, goes behind the hurried clients that wait and ahead of
+ *        every other; any other goes last.  A client that already waits
+ *        keeps its place unless it comes hurried for the first time or is
+ *        placed in front.
+ * @param h     The hub.
+ * @param owner The client.
+ * @param hurry Its CONNECT carries BLEU_ACT_F_HURRY.
+ * @param front Place it ahead of the unhurried clients that wait.
+ */
+static void enqueue(bleu_hub_t *h, uint8_t owner, bool hurry, bool front)
+{
+    const uint8_t was = q_find(h, owner);
+    if (was < h->qn) {
+        if (!front && (!hurry || h->c[owner].hurry)) {
+            return;
+        }
+        q_drop_at(h, was);
+        hurry = hurry || h->c[owner].hurry;
+    }
+    if (h->qn >= BLEU_HUB_CLIENTS) {
+        return;
+    }
+    uint8_t at = 0;
+    while (at < h->qn && h->c[h->q[at]].hurry) {
+        ++at;
+    }
+    if (!hurry && !front) {
+        at = h->qn;
+    }
+    for (uint8_t i = h->qn; i > at; --i) {
+        h->q[i] = h->q[i - 1u];
+    }
+    h->q[at] = owner;
+    ++h->qn;
+    h->c[owner].hurry = hurry;
+}
+
+/**
+ * @brief Keep the next turn for the client first in the queue, unless a
+ *        turn is kept already or nobody waits.
+ * @param h The hub.
+ */
+static void designate(bleu_hub_t *h)
+{
+    if (h->turn_set || h->qn == 0u) {
+        return;
+    }
+    h->turn_set = true;
+    h->turn_owner = h->q[0];
+    h->turn_hurry = h->c[h->q[0]].hurry;
+    q_drop_at(h, 0);
+}
+
+/**
+ * @brief Whether @p owner, waiting for a turn, has not come back: the slot
+ *        free for BLEU_HUB_TURN_MS and its CONNECT that BLEU_HUB_TURN_MS
+ *        past its due time.
+ * @param h      The hub.
+ * @param owner  The client.
+ * @param now_ms The clock.
+ * @return true when it is gone.
+ */
+static bool gone(const bleu_hub_t *h, uint8_t owner, uint32_t now_ms)
+{
+    return (uint32_t)(now_ms - h->turn_t) >= BLEU_HUB_TURN_MS
+           && (int32_t)(now_ms - h->c[owner].due)
+                  >= (int32_t)BLEU_HUB_TURN_MS;
+}
+
+/**
  * @brief Give the slot to @p owner's SCAN or CONNECT.
  * @param h      The hub.
  * @param gap    BLEU_HUB_GAP_SCAN or BLEU_HUB_GAP_CONNECT.
@@ -190,8 +304,11 @@ static void on_connect(bleu_hub_t *h, const bleu_evt_t *e, uint32_t now_ms)
     const uint8_t owner = bleu_token_owner(e->token);
     if (h->gap == BLEU_HUB_GAP_CONNECT && e->token == h->gap_token) {
         if (h->yield && e->status != 0u && client_ok(h, owner)) {
+            /* The scan cut this connect: its client waits in front. */
             out.status = BLEU_STATUS_BUSY;
             ++h->c[owner].busy;
+            enqueue(h, owner, false, true);
+            h->c[owner].due = now_ms + BLEU_RETRY_MS;
         }
         free_gap(h, now_ms);
     }
@@ -361,10 +478,13 @@ static void act_scan(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
 }
 
 /**
- * @brief A client's CONNECT: to the host stack while the slot is free and
- *        no other client's turn is kept, or the slot is its own; else a
- *        hurried one keeps the next turn and is answered BLEU_STATUS_TURN,
- *        any other is answered busy.
+ * @brief A client's CONNECT: to the host stack while the slot is its own,
+ *        or free with no other client's turn kept; else its client waits
+ *        in the queue, and the hub answers BLEU_STATUS_TURN when the next
+ *        turn is the client's, unless an unhurried client's while a scan
+ *        holds the slot, and busy otherwise.  A hurried CONNECT takes
+ *        a turn kept for an unhurried client, which goes back to the
+ *        queue's front.
  * @param h      The hub.
  * @param owner  The client.
  * @param a      The action.
@@ -374,25 +494,42 @@ static void act_scan(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
 static void act_connect(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
                         bool mine, uint32_t now_ms)
 {
-    const bool kept_other = h->turn_set && h->turn_owner != owner;
-    if ((h->gap == BLEU_HUB_GAP_FREE && !kept_other) || (mine && !h->held)) {
-        if (h->turn_set && h->turn_owner == owner) {
+    const bool hurry = (a->flags & BLEU_ACT_F_HURRY) != 0u;
+    designate(h);
+    if (hurry && h->turn_set && h->turn_owner != owner && !h->turn_hurry) {
+        h->turn_set = false;
+        enqueue(h, h->turn_owner, false, true);
+        q_drop(h, owner);
+        h->c[owner].hurry = true;
+        h->turn_set = true;
+        h->turn_owner = owner;
+        h->turn_hurry = true;
+    }
+    const bool my_turn = h->turn_set && h->turn_owner == owner;
+    if ((h->gap == BLEU_HUB_GAP_FREE && (!h->turn_set || my_turn))
+        || (mine && !h->held)) {
+        if (my_turn) {
             h->turn_set = false;
         }
+        q_drop(h, owner);
         take_gap(h, BLEU_HUB_GAP_CONNECT, owner, a, now_ms);
         pass(h, a);
         return;
     }
     ++h->c[owner].busy;
-    if ((a->flags & BLEU_ACT_F_HURRY) != 0u && !kept_other) {
-        if (!h->turn_set) {
-            h->turn_t = now_ms;
-        }
-        h->turn_set = true;
-        h->turn_owner = owner;
+    if (!my_turn) {
+        enqueue(h, owner, hurry, false);
+        designate(h);
+    }
+    /* A scan holds the slot for up to BLEU_SCAN_MS: an unhurried client
+     * whose turn is kept comes back on its BLEU_RETRY_MS retry. */
+    if (h->turn_set && h->turn_owner == owner
+        && (h->gap != BLEU_HUB_GAP_SCAN || h->turn_hurry)) {
+        h->c[owner].due = now_ms + BLEU_RETRY_TURN_MS;
         answer(h, owner, BLEU_EV_CONNECT, a->token, 0u, BLEU_STATUS_TURN);
         return;
     }
+    h->c[owner].due = now_ms + BLEU_RETRY_MS;
     answer(h, owner, BLEU_EV_CONNECT, a->token, 0u, BLEU_STATUS_BUSY);
 }
 
@@ -455,11 +592,18 @@ void bleu_hub_tick(bleu_hub_t *h, uint32_t now_ms)
         && (uint32_t)(now_ms - h->gap_t) >= h->gap_ms) {
         free_gap(h, now_ms);
     }
-    /* A kept turn whose client did not come back to the free slot: it was
-     * switched off, unbound or answered. */
-    if (h->turn_set && h->gap == BLEU_HUB_GAP_FREE
-        && (uint32_t)(now_ms - h->turn_t) >= BLEU_HUB_TURN_MS) {
+    if (h->gap != BLEU_HUB_GAP_FREE) {
+        return;
+    }
+    /* A client that did not come back to the free slot when its retry was
+     * due: it was switched off, unbound or answered. */
+    if (h->turn_set && gone(h, h->turn_owner, now_ms)) {
         h->turn_set = false;
+    }
+    for (uint8_t i = h->qn; i > 0u; --i) {
+        if (gone(h, h->q[i - 1u], now_ms)) {
+            q_drop_at(h, (uint8_t)(i - 1u));
+        }
     }
 }
 
