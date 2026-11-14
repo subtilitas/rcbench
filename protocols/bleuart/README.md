@@ -59,6 +59,7 @@ and the connect's parameters (`bleu_conn_params_t`):
 | `BLEU_ROLE_STREAM`, exactly one | NOTIFY and a CCCD (client characteristic configuration descriptor) | subscribed; every notification is stream bytes |
 | `BLEU_ROLE_CMD`, at most one | WRITE or WRITE NO RESPONSE; with `BLEU_CHR_OPTIONAL` it may be missing, and `bleu_send()` then refuses | `bleu_send()` |
 | `BLEU_ROLE_PARAM`, at most one | nothing: without READ it is not read | read once after each subscribe; its first 20 bytes (`BLEU_PARAM_MAX`) kept |
+| `BLEU_ROLE_AUX`, at most one | nothing: without READ `bleu_read_aux()` refuses | read on request, `bleu_read_aux()`, after the PARAM read and while no write waits; its first 20 bytes kept in `aux` with `aux_status`, `aux_reads` counting the reads that ended; a read that takes 5000ms ends the link as `BLEU_ERR_GATT` |
 | `BLEU_ROLE_NONE`, any | nothing | never written, read or subscribed |
 
 `bleu_profile_valid()` holds a profile to these counts and the parameters

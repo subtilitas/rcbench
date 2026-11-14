@@ -142,8 +142,9 @@ TEST_CASE(every_stepped_value_typed_is_the_stepped_value)
     printf("      %ld values, %d mismatches\n", checked, bad);
     /* 12 SENSORS LIMIT rows of 3,278 values each (0 to 32760mA in 10mA
      * steps and 32767) are 39,336 of them.  Tap pin steps over 17 pins
-     * (settings_tap_pin_valid()), not 48.  IMU filter's 1 to 50 are 50. */
-    CHECK_EQ(checked, 188910);
+     * (settings_tap_pin_valid()), not 48.  IMU filter's 1 to 50 are 50.
+     * The trial mass's 0.01 to 20.00g in 0.01g steps are 2,000. */
+    CHECK_EQ(checked, 190910);
     CHECK_EQ(bad, 0);
 }
 

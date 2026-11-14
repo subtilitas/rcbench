@@ -518,9 +518,10 @@ this start`.
 
 ## Aktuelle Einschränkungen
 
-- Das Panel verbindet sich mit keinem Knoten. Der BLE-Hub und die Seite des
-  Panels sind spätere Schritte; ein BLE-Scanner auf einem Telefon zeigt den
-  Dienst und den Stream.
+- Das Panel verbindet sich mit dem Auswuchtknoten (SETUP > WIRELESS,
+  [Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)). Mit dem
+  Leistungsknoten verbindet es sich nicht; ein BLE-Scanner auf einem
+  Telefon zeigt dessen Dienst und Stream.
 - Kein Knoten ist auf Hardware gelaufen: Die Boards sind bestellt, nicht
   geliefert. Die Pins, das Aufwachen, die Ströme und das Verhalten des CD42
   sind nicht gemessen.

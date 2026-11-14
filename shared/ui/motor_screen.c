@@ -43,6 +43,7 @@
 /* Last but one: motor_screen_int.h's layout macros have short names, which
  * no header included after it may meet. */
 #include "motor_screen_int.h"
+#include "motor_balance.h"
 #include "motor_live_int.h"
 
 const ui_plot_series_t mo_series[S_COUNT] = {
@@ -64,9 +65,12 @@ const uint16_t mo_ok[S_COUNT] = {
 const ui_text_id_t mo_names[S_COUNT] = { TX_MO_VOLT, TX_MO_CURR,
                                          TX_MO_PWR, TX_MO_RPM };
 
-/** @brief the tabs' labels, PLOT then TABLE */
+/** @brief the tabs' labels, PLOT, TABLE, BALANCE */
 static const ui_text_id_t k_tab_labels[] = { TX_MO_TAB_PLOT,
-                                              TX_MO_TAB_TABLE };
+                                              TX_MO_TAB_TABLE,
+                                              TX_MO_TAB_BAL };
+_Static_assert(sizeof(k_tab_labels) / sizeof(k_tab_labels[0])
+                   == MOTOR_PANE_COUNT, "a label per pane");
 
 /* The screen's state; motor_live_int.h names it s. */
 mo_state_t mo_s;
@@ -100,6 +104,7 @@ void motor_invalidate(void)
      * the router invalidates after it drew over the body, a help bubble
      * over the open keyboard among them. */
     mln_invalidate();
+    mbal_forget();
 }
 
 /* The palette is not a compile-time constant -- it changes with the theme --

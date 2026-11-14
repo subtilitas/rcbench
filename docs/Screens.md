@@ -1020,8 +1020,8 @@ Switching to ARMED clears the plot. Resetting a latched STOP leaves the
 bench SAFE, so the stopped run's trace remains until the next ARM. Each
 switch to ARMED starts one CSV file, which LOGS can plot.
 
-On LIVE the telemetry card carries PLOT and TABLE under its title, two tabs
-in 200 x 40px, and beside them the poll rate and the link's error count
+On LIVE the telemetry card carries PLOT, TABLE and BALANCE under its title,
+three tabs in 254 x 40px, and beside them the poll rate and the link's error count
 (cyclic redundancy check failures and resyncs added together). While the
 link is up and the IOmcu has refused link frames since its power-up, the
 line under them shows how many, in 8 x 16: `Rejected link frames: 37`. An
@@ -1322,6 +1322,35 @@ The map takes effect once the IOmcu confirms it is in force. With a map
 derived from SENSE, the file retains `ch1` through `ch3`. The map cannot
 be written while the output bank drives, so columns remain fixed for the
 whole run. LOGS groups `out`, `port` and `supply` columns under INA3221.
+
+### BALANCE, the balance node's runs
+
+![BALANCE with both runs of the two-run method taken](img/motor-balance.png)
+
+BALANCE takes the runs of a balance with the balance node
+([Balancing](Balance.md#measuring-with-the-balance-node)). The pane under
+the tabs is 600 x 150px:
+
+- The live line: the node's 1x magnitude, angle, rpm and quality word, and
+  the trial mass at the right (Trial mass, SETUP > WIRELESS). Without a
+  linked node it reads `NO BALANCE NODE: BIND ONE IN WIRELESS`; a report
+  older than 1000ms reads `--`.
+- A TAKE key a finger tall for each run: BASELINE and TRIAL 0° with 2 RUNS,
+  BASELINE, TRIAL 0°, TRIAL 120° and TRIAL 240° with 4 RUNS. A press takes
+  the next 8 reports, 2s, while the other keys wait. Under each key its
+  run: `TAKING n/8`, the mean (`0.42g 265°` with two runs, the magnitude
+  with four), or why it failed: `NO REPORT` (1000ms without one),
+  `NO REVOLUTION`, `NO INDEX` (two runs need the index) or `RPM MOVED`
+  (more than 5% from the run's first report).
+- 2 RUNS, 4 RUNS and CLEAR. A method change clears the runs.
+- Once every run is taken: `ADD 0.35g  WHERE between 1 and 2` (on an EDF,
+  `hub, 265°`), and under it the CSV file the row goes to, or the solver's
+  word: `WEAK` with the trial's effect in %, `NO EFFECT`, `INCONSISTENT`,
+  `NO RESULT`.
+
+The keys act on the press and drive no output, so they work while ARMED.
+TAKE without a fresh report takes nothing and the band reads
+`NO FRESH REPORT FROM THE BALANCE NODE: NOTHING TAKEN`.
 
 ### RENAME LOG
 
@@ -6027,14 +6056,16 @@ a run ([Servo procedures](Servo.md)).
 ### WIRELESS: the IMU and the Dial
 
 WIRELESS holds the panel's Bluetooth LE devices in a split view of
-SENSORS' kind: 2 entries on the left, IMU and DIAL, each with its name and
-its state, and the selected entry's rows on the right. The first IMU ON or
-Dial ON starts Bluetooth LE until the panel restarts.
+SENSORS' kind: 3 entries on the left, IMU, DIAL and BALANCE NODE, each with
+its name and its state, and the selected entry's rows on the right. The
+first IMU ON, Dial ON or Balance node ON starts Bluetooth LE until the panel
+restarts.
 
 | Entry | State while on | Rows |
 | --- | --- | --- |
 | IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 7 while on |
 | DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
+| BALANCE NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A NODE`, `CONNECTED, READING INFO`, `ROLE r, PROTOCOL p`, `CONNECTED, NO REPORT`, `REPORTING` | 1 while off; 5 while on |
 
 ![WIRELESS on the DIAL entry](img/setup-wireless-dial.png)
 
@@ -6053,6 +6084,22 @@ stays. The band shows `DIAL: NO EVENT FOR 500ms` when a linked Dial
 goes quiet, `DIAL LOST` when it is lost while SAFE, and
 `DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF` for the error
 while ARMED.
+
+![WIRELESS on the BALANCE NODE entry](img/setup-wireless-bal.png)
+
+The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance-node)):
+
+| Row | Values | Default | What it does |
+| --- | --- | --- | --- |
+| Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, the bound one marked; a tap on one binds it and asks for a save |
+| Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from its STATUS, read every 5s while linked; `--` before the first read on a link |
+| Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
+
+RESET BALANCE NODE sets Balance node back to OFF and Trial mass to 0.50g;
+the bound node stays. A node whose INFO names another role or protocol
+reads `ROLE r, PROTOCOL p` and its reports are not taken.
 
 ### SD CARD: which logs are written, and where
 

@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "sensors_rows.h"
+#include "wireless_bal.h"
 #include "settings_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -194,6 +195,9 @@ int wireless_pane_entry_of(setting_id_t id)
             return WL_ENTRY_DIAL;
         }
     }
+    if (wireless_bal_owns(id)) {
+        return WL_ENTRY_BAL;
+    }
     return -1;
 }
 
@@ -246,6 +250,8 @@ int wireless_pane_rows(int entry, wl_row_t *out, int max)
             n = add_id(out, max, n, SET_DIAL_THR);
             n = add_id(out, max, n, SET_DIAL_SRV);
         }
+    } else if (entry == WL_ENTRY_BAL) {
+        n = wireless_bal_rows(out, max);
     }
     return n;
 }
@@ -260,6 +266,8 @@ const char *wireless_pane_name(int entry, char *buf, size_t n)
         snprintf(buf, n, "IMU");
     } else if (entry == WL_ENTRY_DIAL) {
         snprintf(buf, n, "%s", TR(DIAL_ENTRY));
+    } else if (entry == WL_ENTRY_BAL) {
+        snprintf(buf, n, "%s", TR(BNODE_ENTRY));
     }
     return buf;
 }
@@ -347,6 +355,8 @@ const char *wireless_pane_state(int entry, char *buf, size_t n,
         } else {
             (void)wireless_pane_dial_word(&s_dial, buf, n, ink);
         }
+    } else if (entry == WL_ENTRY_BAL) {
+        (void)wireless_bal_state(buf, n, ink);
     }
     return buf;
 }
@@ -358,6 +368,8 @@ void wireless_pane_reset(int entry)
     } else if (entry == WL_ENTRY_DIAL) {
         settings_reset_rows(k_dial,
                             (int)(sizeof(k_dial) / sizeof(k_dial[0])));
+    } else if (entry == WL_ENTRY_BAL) {
+        wireless_bal_reset();
     }
 }
 

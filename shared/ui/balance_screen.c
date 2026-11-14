@@ -13,6 +13,12 @@
  * press, or from the keypad a tap on the count opens over both cards.  A
  * tab tapped while the keypad is open closes it, the count as it was.
  *
+ * With a balance node linked (node_balance.h) the readings are the node's:
+ * the 1x magnitude and angle, the rpm and the quality word, "--" for a
+ * report older than BAL_STALE_MS, and ADD and WHERE from the runs taken on
+ * MOTOR & ESC > BALANCE.  Without a node the readings stay the model's,
+ * marked SIMULATED.
+ *
  * SPDX-License-Identifier: MIT
  */
 
@@ -22,6 +28,7 @@
 #include <stdio.h>
 #include <string.h>
 
+#include "node_balance.h"
 #include "ui_keypad.h"
 #include "ui_footer.h"
 #include "ui_tabs.h"
@@ -85,6 +92,10 @@
 /** @brief The SIMULATED pill under the readings, 20px high. */
 #define MARK_Y    (READ_Y + 4 * READ_H + 8)  /**< y 338. */
 #define NOTE_Y    (MARK_Y + 32)   /**< The note's first line: y 370. */
+/** @brief With a node: six readings to y 386, the line under them. */
+#define NODE_NOTE_Y (READ_Y + 6 * READ_H + 14)  /**< y 400. */
+_Static_assert(NODE_NOTE_Y + 16 <= TEXT_FLOOR,
+               "the node's line ends above the cards' foot");
 _Static_assert(NOTE_Y + 42 + 16 <= TEXT_FLOOR,
                "the note's last line ends above the cards' foot");
 _Static_assert(ROTOR_H >= UI_TAP_MIN && STEP_H >= UI_TAP_MIN
@@ -166,6 +177,7 @@ static struct {
     uint32_t  kp_rev;            /**< the keypad's revision last
                                       seen                         */
     uint32_t  rev;               /**< bumped on every change      */
+    uint32_t  node_rev;          /**< node_balance_rev() last seen */
     uint32_t  drawn[2];          /**< each buffer's revision      */
     unsigned  drawn_mask;        /**< the buffers cleared         */
 } s; /**< The screen's state. */
@@ -274,23 +286,74 @@ static void leave(void)
     kp_close();
 }
 
+/** @brief Whether a balance node is linked: the readings are its own. */
+static bool node_live(void)
+{
+    return node_balance_live()->live != NB_LIVE_SIMULATED;
+}
+
 /**
- * @brief Where the correction goes, modelled until a sensor is fitted.
- *
- * 265 degrees lies between two blades at every count from 2 to 6, so the
- * between-blades wording is exercised.
+ * @brief The correction the node's runs solved.
+ * @param out Receives it.
+ * @return false while there is none with a mass and an angle.
  */
-static float balance_screen_angle(void) { return 265.0f; }
+static bool node_correction(vibe_solution_t *out)
+{
+    return node_balance_result(out, NULL)
+           && (out->status == VIBE_SOLVE_OK
+               || out->status == VIBE_SOLVE_WEAK);
+}
+
+/**
+ * @brief Where the correction goes: the node's solution, or the model's
+ *        without a node.
+ *
+ * The model's 265 degrees lies between two blades at every count from 2
+ * to 6, so the between-blades wording is exercised.
+ *
+ * @param ang Receives the angle, degrees from the index mark.
+ * @return false when a node is linked and has no correction: nothing is
+ *         drawn there.
+ */
+static bool balance_screen_angle(float *ang)
+{
+    vibe_solution_t sol;
+    if (!node_live()) {
+        *ang = 265.0f;
+        return true;
+    }
+    if (node_correction(&sol)) {
+        *ang = sol.deg;
+        return true;
+    }
+    return false;
+}
 
 const char *balance_screen_model_mark(void)
 {
-    return (s.tabs.selected == BALANCE_PANE_MEASURE) ? TR(BAL_MODELLED) : NULL;
+    return (s.tabs.selected == BALANCE_PANE_MEASURE && !node_live())
+               ? TR(BAL_MODELLED) : NULL;
 }
 
 const char *balance_screen_model_note(void)
 {
-    return (s.tabs.selected == BALANCE_PANE_MEASURE) ? TR(BAL_MODEL_NOTE)
-                                                     : NULL;
+    return (s.tabs.selected == BALANCE_PANE_MEASURE && !node_live())
+               ? TR(BAL_MODEL_NOTE) : NULL;
+}
+
+/**
+ * @brief Each frame: the node's readings or runs moved, the screen draws
+ *        again.
+ * @param dt Unused.
+ */
+static void tick(float dt)
+{
+    (void)dt;
+    const uint32_t r = node_balance_rev();
+    if (r != s.node_rev) {
+        s.node_rev = r;
+        ++s.rev;
+    }
 }
 
 /**
@@ -681,8 +744,11 @@ static void draw_measure(gfx_canvas_t *c)
     gfx_fill_round_rect(c, mx - 6, my - 5, 12, 10, 2, ui_theme_color(UI_C_BG));
     gfx_draw_round_rect(c, mx - 6, my - 5, 12, 10, 2, warn);
 
-    /* And where the mass goes. */
-    const float ang = balance_screen_angle();
+    /* And where the mass goes: nothing while a node has no answer yet. */
+    float ang;
+    if (!balance_screen_angle(&ang)) {
+        return;
+    }
     int ax, ay, bx, by;
     disc_at(ang, HUB_R + 6, &ax, &ay);
     disc_at(ang, DISC_R - 16, &bx, &by);
@@ -739,8 +805,134 @@ void balance_nearest_blades(float angle, int blades, int *lo, int *hi)
 }
 
 /**
- * @brief The BALANCE pane's right column: ROTOR, BLADES, the four
- *        readings, the SIMULATED pill and the note.
+ * @brief WHERE's text: the hub angle on a ducted fan, else the two blades
+ *        the angle falls between.
+ * @param ang The angle, degrees from the index mark.
+ * @param out The text.  @param n Its size.
+ */
+static void where_text(float ang, char *out, size_t n)
+{
+    if (s.rotor == ROTOR_EDF) {
+        /* A blade tip inside a duct is not reachable, so the answer is an
+         * angle on the hub rather than a blade to tape. */
+        snprintf(out, n, TR(BAL_HUB), (int)(ang + 0.5f) % 360 & 0x1FF);
+    } else {
+        int lo, hi;
+        balance_nearest_blades(ang, s.blades, &lo, &hi);
+        /* Bounded so the compiler can see it: both are 1..6, but the
+         * format is not told so. */
+        snprintf(out, n, TR(BAL_BETWEEN), lo & 0xFF, hi & 0xFF);
+    }
+}
+
+/**
+ * @brief The readings' rows from READ_Y, READ_H each: the name dim at the
+ *        left, the value at the right, accent from row @p accent_from.
+ * @param c The canvas.  @param k The names.  @param v The values.
+ * @param n The rows.  @param accent_from The first row in accent.
+ */
+static void draw_rows(gfx_canvas_t *c, const char *const *k,
+                      const char *const *v, int n, int accent_from)
+{
+    for (int i = 0; i < n; ++i) {
+        const int y = READ_Y + i * READ_H + (READ_H - 20) / 2;
+        gfx_text(c, RC_X, y, k[i], BL_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+        gfx_text_in(c, (gfx_rect_t){ (int16_t)(RC_X + 110), (int16_t)y,
+                                     (int16_t)(RC_W - 110), 20 },
+                    v[i], BL_FONT_LABEL,
+                    (i >= accent_from) ? ui_theme_color(UI_C_ACCENT)
+                                       : ui_theme_color(UI_C_TEXT), 1,
+                    GFX_ALIGN_RIGHT);
+    }
+}
+
+/**
+ * @brief Without a node: the model's four readings, the SIMULATED pill and
+ *        the note.
+ * @param c The canvas.
+ */
+static void draw_model_rows(gfx_canvas_t *c)
+{
+    const int x = RC_X;
+    const int w = RC_W;
+    float ang = 0.0f;
+    (void)balance_screen_angle(&ang);
+    char v_amp[32], v_ang[32], v_mass[32], v_where[32];
+    snprintf(v_amp,  sizeof(v_amp),  "0.42g");
+    snprintf(v_ang,  sizeof(v_ang),  "%ddeg", (int)ang);
+    snprintf(v_mass, sizeof(v_mass), "0.35g");
+    where_text(ang, v_where, sizeof(v_where));
+    const char *const k[] = { TR(BAL_VIBRATION), TR(BAL_ANGLE), TR(BAL_ADD),
+                              TR(BAL_WHERE) };
+    const char *const v[] = { v_amp, v_ang, v_mass, v_where };
+    draw_rows(c, k, v, 4, 2);
+
+    /*
+     * The angle and both masses are fixed values, not a measurement: the
+     * overview's pill, 88px or as wide as a longer word, 20px high, and
+     * the words beside it.
+     */
+    int mw = 24 + gfx_text_width(UI_FONT_LABEL, TR(BAL_MODELLED), 1);
+    mw = (mw < 88) ? 88 : mw;
+    ui_pill(c, (gfx_rect_t){ (int16_t)x, MARK_Y, (int16_t)mw, 20 },
+            TR(BAL_MODELLED), ui_theme_color(UI_C_WARN),
+            ui_theme_color(UI_C_PANEL_SUNK));
+    gfx_text(c, x + mw + 8, MARK_Y, TR(BAL_MODEL_NOTE),
+             BL_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
+
+    gfx_hline(c, x, NOTE_Y - 10, w, ui_theme_color(UI_C_EDGE));
+    gfx_text(c, x, NOTE_Y, TR(BAL_NOTE_1), BL_FONT_FINE,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    gfx_text(c, x, NOTE_Y + 18, TR(BAL_NOTE_2), BL_FONT_FINE,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+    gfx_text(c, x, NOTE_Y + 42, TR(BAL_NOTE_3), BL_FONT_FINE,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+}
+
+/**
+ * @brief With a node: its magnitude, angle, rpm and quality word, "--"
+ *        while its report is stale, then ADD and WHERE from the runs, and
+ *        the line that names where the runs are taken.
+ * @param c The canvas.
+ */
+static void draw_node_rows(gfx_canvas_t *c)
+{
+    const nb_reading_t *r = node_balance_live();
+    char v_amp[32], v_ang[16], v_rpm[16], v_q[32], v_mass[24], v_where[32];
+    (void)nb_fmt_mag(r, v_amp, sizeof(v_amp));
+    (void)nb_fmt_deg(r, v_ang, sizeof(v_ang));
+    (void)nb_fmt_rpm(r, v_rpm, sizeof(v_rpm));
+    const nb_quality_t q = (nb_quality_t)r->word;
+    if (r->live == NB_LIVE_FRESH && q >= NB_Q_GOOD && q <= NB_Q_POOR) {
+        snprintf(v_q, sizeof(v_q), "%s %u%%", nb_quality_text(q),
+                 (unsigned)r->quality);
+    } else {
+        snprintf(v_q, sizeof(v_q), "%s", r->live == NB_LIVE_FRESH
+                                             ? nb_quality_text(q) : "--");
+    }
+    vibe_solution_t sol;
+    if (node_correction(&sol)) {
+        snprintf(v_mass, sizeof(v_mass), "%.2fg", (double)sol.mass);
+        where_text(sol.deg, v_where, sizeof(v_where));
+    } else {
+        snprintf(v_mass, sizeof(v_mass), "--");
+        snprintf(v_where, sizeof(v_where), "--");
+    }
+    const char *const k[] = { TR(BAL_VIBRATION), TR(BAL_ANGLE),
+                              TR(BAL_SPEED), TR(BAL_SIGNAL), TR(BAL_ADD),
+                              TR(BAL_WHERE) };
+    const char *const v[] = { v_amp, v_ang, v_rpm, v_q, v_mass, v_where };
+    draw_rows(c, k, v, 6, 4);
+    gfx_hline(c, RC_X, NODE_NOTE_Y - 10, RC_W, ui_theme_color(UI_C_EDGE));
+    gfx_text(c, RC_X, NODE_NOTE_Y, TR(BAL_LIVE_NOTE), BL_FONT_FINE,
+             ui_theme_color(UI_C_TEXT_FAINT), 1);
+}
+
+/**
+ * @brief The BALANCE pane's right column: ROTOR, BLADES, then the node's
+ *        six readings, or the model's four with the SIMULATED pill and the
+ *        note.
  * @param c The canvas.
  */
 static void draw_readings(gfx_canvas_t *c)
@@ -774,63 +966,11 @@ static void draw_readings(gfx_canvas_t *c)
 
     gfx_hline(c, x, READ_Y - 8, w, ui_theme_color(UI_C_EDGE));
 
-    const float ang = balance_screen_angle();
-    char v_amp[32], v_ang[32], v_mass[32], v_where[32];
-    snprintf(v_amp,  sizeof(v_amp),  "0.42g");
-    snprintf(v_ang,  sizeof(v_ang),  "%ddeg", (int)ang);
-    snprintf(v_mass, sizeof(v_mass), "0.35g");
-    int lo, hi;
-    balance_nearest_blades(ang, s.blades, &lo, &hi);
-    if (s.rotor == ROTOR_EDF) {
-        /* A blade tip inside a duct is not reachable, so the answer is an
-         * angle on the hub rather than a blade to tape. */
-        snprintf(v_where, sizeof(v_where), TR(BAL_HUB),
-                 (int)ang & 0x1FF);
+    if (node_live()) {
+        draw_node_rows(c);
     } else {
-            /* Bounded so the compiler can see it: both are 1..6, but the
-         * format is not told so, and the render tool inlines this far
-         * enough to notice. */
-        snprintf(v_where, sizeof(v_where), TR(BAL_BETWEEN),
-                 lo & 0xFF, hi & 0xFF);
+        draw_model_rows(c);
     }
-    const struct { const char *k; const char *v; } rows[] = {
-        { TR(BAL_VIBRATION), v_amp },
-        { TR(BAL_ANGLE),     v_ang },
-        { TR(BAL_ADD),       v_mass },
-        { TR(BAL_WHERE),     v_where },
-    };
-    for (int i = 0; i < 4; ++i) {
-        const int y = READ_Y + i * READ_H + (READ_H - 20) / 2;
-        gfx_text(c, x, y, rows[i].k, BL_FONT_LABEL,
-                 ui_theme_color(UI_C_TEXT_DIM), 1);
-        gfx_text_in(c, (gfx_rect_t){ (int16_t)(x + 110), (int16_t)y,
-                                     (int16_t)(w - 110), 20 },
-                    rows[i].v, BL_FONT_LABEL,
-                    (i >= 2) ? ui_theme_color(UI_C_ACCENT)
-                             : ui_theme_color(UI_C_TEXT), 1,
-                    GFX_ALIGN_RIGHT);
-    }
-
-    /*
-     * The angle and both masses are fixed values, not a measurement: the
-     * overview's pill, 88px or as wide as a longer word, 20px high, and
-     * the words beside it.
-     */
-    int mw = 24 + gfx_text_width(UI_FONT_LABEL, TR(BAL_MODELLED), 1);
-    mw = (mw < 88) ? 88 : mw;
-    ui_pill(c, (gfx_rect_t){ (int16_t)x, MARK_Y, (int16_t)mw, 20 },
-            TR(BAL_MODELLED), ui_theme_color(UI_C_WARN),
-            ui_theme_color(UI_C_PANEL_SUNK));
-    gfx_text(c, x + mw + 8, MARK_Y, TR(BAL_MODEL_NOTE),
-             BL_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1);
-
-    gfx_hline(c, x, NOTE_Y - 10, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, NOTE_Y, TR(BAL_NOTE_1), BL_FONT_FINE,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, NOTE_Y + 18, TR(BAL_NOTE_2), BL_FONT_FINE,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
-    gfx_text(c, x, NOTE_Y + 42, TR(BAL_NOTE_3), BL_FONT_FINE,
-             ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
 /**
@@ -957,7 +1097,7 @@ static const ui_screen_t k_screen = {
     .reset  = reset,
     .enter  = NULL,
     .leave  = leave,
-    .tick   = NULL,
+    .tick   = tick,
     .event  = event,
     .cancel = cancel,
     .render = render,

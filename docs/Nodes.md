@@ -492,8 +492,10 @@ this start`.
 
 ## Current limitations
 
-- The panel does not connect to a node. The BLE hub and the panel side are
-  later slices; a phone's BLE scanner shows the service and the stream.
+- The panel connects to the balance node (SETUP > WIRELESS,
+  [Balancing](Balance.md#measuring-with-the-balance-node)). It does not
+  connect to the power node; a phone's BLE scanner shows its service and
+  its stream.
 - No node has run on hardware: the boards are ordered, not delivered. The
   pins, the wake, the currents and the CD42's behaviour are not measured.
 - The CD42's light-load auto-shutdown threshold is not known (above).

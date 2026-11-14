@@ -156,7 +156,9 @@ static void unlinked(bleu_t *b, bool on, uint32_t gap, uint32_t now_ms)
     b->tok_link = 0;
     b->conn = 0;
     b->param_due = false;
+    b->aux_due = false;
     b->rd_busy = false;
+    b->rd_aux = false;
     if (b->wr == BLEU_WR_BUSY) {
         b->wr = BLEU_WR_FAILED;
         b->wr_status = BLEU_STATUS_LOST;
@@ -257,15 +259,15 @@ bool bleu_profile_valid(const bleu_profile_t *p)
         || p->chr_n > BLEU_CHR_MAX || !conn_params_valid(&p->conn)) {
         return false;
     }
-    unsigned n[BLEU_ROLE_PARAM + 1u] = { 0u };
+    unsigned n[BLEU_ROLE_AUX + 1u] = { 0u };
     for (uint8_t i = 0; i < p->chr_n; ++i) {
-        if (p->chr[i].uuid == NULL || p->chr[i].role > BLEU_ROLE_PARAM) {
+        if (p->chr[i].uuid == NULL || p->chr[i].role > BLEU_ROLE_AUX) {
             return false;
         }
         ++n[p->chr[i].role];
     }
     return n[BLEU_ROLE_STREAM] == 1u && n[BLEU_ROLE_CMD] <= 1u
-           && n[BLEU_ROLE_PARAM] <= 1u;
+           && n[BLEU_ROLE_PARAM] <= 1u && n[BLEU_ROLE_AUX] <= 1u;
 }
 
 bool bleu_setup(bleu_t *b, const bleu_profile_t *p, uint8_t owner)
@@ -359,7 +361,17 @@ bool bleu_link_up(const bleu_t *b)
 bool bleu_can_send(const bleu_t *b)
 {
     return bleu_link_up(b) && b->rx_val != 0u && b->wr != BLEU_WR_BUSY
-           && !b->rd_busy && !b->param_due;
+           && !b->rd_busy && !b->param_due && !b->aux_due;
+}
+
+bool bleu_read_aux(bleu_t *b)
+{
+    if (!bleu_link_up(b) || b->aux_val == 0u || b->aux_due || b->rd_busy
+        || b->param_due) {
+        return false;
+    }
+    b->aux_due = true;
+    return true;
 }
 
 bool bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms)
@@ -440,6 +452,11 @@ static void take_chr(bleu_t *b, const bleu_evt_t *e)
     case BLEU_ROLE_PARAM:
         if ((e->props & BLEU_PROP_READ) != 0u) {
             b->param_val = e->h2;
+        }
+        break;
+    case BLEU_ROLE_AUX:
+        if ((e->props & BLEU_PROP_READ) != 0u) {
+            b->aux_val = e->h2;
         }
         break;
     default:
@@ -566,7 +583,20 @@ static void link_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
         }
         break;
     case BLEU_EV_READ:
-        if (b->rd_busy) {
+        if (b->rd_busy && b->rd_aux) {
+            b->rd_busy = false;
+            b->rd_aux = false;
+            b->tok_link = 0;
+            b->aux_status = e->status;
+            b->aux_len = 0;
+            if (e->status == 0u) {
+                const size_t n = e->len < BLEU_PARAM_MAX ? e->len
+                                                         : BLEU_PARAM_MAX;
+                memcpy(b->aux, e->data, n);
+                b->aux_len = (uint8_t)n;
+            }
+            ++b->aux_reads;
+        } else if (b->rd_busy) {
             b->rd_busy = false;
             b->tok_link = 0;
             b->param_status = e->status;
@@ -637,6 +667,8 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     b->supervision = e->h3;
     b->svc_start = b->svc_end = 0;
     b->tx_val = b->tx_end = b->cccd = b->rx_val = b->param_val = 0;
+    b->aux_val = 0;
+    b->aux_len = 0;
     b->tx_props = b->rx_props = 0;
     b->mtu = 0;
     b->param_len = 0;
@@ -801,6 +833,18 @@ static void run_timers(bleu_t *b, uint32_t now_ms)
         if (a != NULL) {
             a->token = b->tok_link;
             a->h1 = b->param_val;
+        }
+    } else if (b->st == BLEU_ST_UP && b->aux_due && !b->rd_busy
+               && b->wr != BLEU_WR_BUSY) {
+        b->aux_due = false;
+        b->rd_busy = true;
+        b->rd_aux = true;
+        b->t_link = now_ms;
+        b->tok_link = next_token(b);
+        bleu_act_t *a = push(b, BLEU_ACT_READ);
+        if (a != NULL) {
+            a->token = b->tok_link;
+            a->h1 = b->aux_val;
         }
     }
     if (b->settle != SETTLE_NONE) {

@@ -34,6 +34,8 @@ enum {
     WL_ENTRY_IMU = 0, /**< enable, angle source, axis, sign, rate,
                            algorithm, filter */
     WL_ENTRY_DIAL,    /**< enable, scan, bind, two steps */
+    WL_ENTRY_BAL,     /**< enable, scan, bind, battery, trial mass
+                           (wireless_bal.h) */
     WL_ENTRY_COUNT
 };
 

@@ -237,6 +237,9 @@ typedef enum {
     SET_DIAL_EN,
     SET_DIAL_THR,
     SET_DIAL_SRV,
+    /* --- the balance node (SETUP > WIRELESS > BALANCE NODE, bal_ctl.h) -- */
+    SET_BNODE_EN,
+    SET_BAL_TRIAL,
 
     SETTING_COUNT
 } setting_id_t;
@@ -282,6 +285,9 @@ typedef enum {
     SET_TEXT_DIAL_ADDR,      /**< the bound Dial's BLE address and its
                                   type; key dial_ble                      */
     SET_TEXT_DIAL_NAME,      /**< its name from the scan, "DIAL-3A10"    */
+    SET_TEXT_BNODE_ADDR,     /**< the bound balance node's BLE address and
+                                  its type; key bnode_ble                 */
+    SET_TEXT_BNODE_NAME,     /**< its name, "rcbench-bal-3A10"          */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 

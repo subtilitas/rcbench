@@ -28,10 +28,12 @@ nothing typed, the home tag and a tab close it and change nothing.
 
 ![The blade count's keypad](img/balance-keypad.png)
 
-The readings (vibration 0.42g, angle 265°, mass to add 0.35g) are fixed
-values and not a measurement. A SIMULATED mark and the words "Not measured."
-stand under them, in the same pill the menu uses. Only the BALANCE pane carries
-the mark.
+Without a linked balance node the readings (vibration 0.42g, angle 265°,
+mass to add 0.35g) are fixed values and not a measurement. A SIMULATED mark
+and the words "Not measured." stand under them, in the same pill the menu
+uses. Only the BALANCE pane carries the mark. With a node linked the pane
+shows its readings instead ([Measuring with the balance
+node](#measuring-with-the-balance-node)).
 
 For a ducted fan the correction is given as an angle on the hub, because a
 blade tip inside a duct is not accessible:
@@ -98,6 +100,82 @@ magnitude in mg and its phase from the index, the 2x and blade-pass
 magnitudes, the rms, a quality figure and flags. Without an index the node
 takes the rpm over its CONTROL characteristic and reports the magnitude only.
 
-The panel does not connect to the node yet, so the screen runs from the model
-and carries the SIMULATED mark. The setup, the blade arithmetic and both
-placement guides work without the node.
+## Measuring with the balance node
+
+The balance node is a measurement. It drives no output, its loss while
+ARMED is no error, and its keys work while ARMED.
+
+1. SETUP > WIRELESS > BALANCE NODE: Balance node ON, then Scan for node
+   (10s, SAFE only: a scan while ARMED is refused, and a switch to ARMED
+   stops a running one). Bound node lists the nodes found, `rcbench-bal-XXXX`;
+   a tap binds one and keeps it over a restart. Node battery shows the cell,
+   read every 5s.
+2. Set the blade count and the rotor type on BALANCE. The panel writes the
+   blade count to the node (BLADES).
+3. Set Trial mass (0.01g to 20.00g, 0.50g by default) to the mass you tape
+   on for the trial runs.
+4. On MOTOR & ESC > BALANCE choose 2 RUNS (needs the index mark) or 4 RUNS.
+   Run the motor at one throttle. Press BASELINE: the panel averages the
+   next 8 reports, 2s. Stop, tape the trial mass in line with blade 1, run
+   at the same throttle and press TRIAL 0°. With 4 RUNS, move the mass to
+   120° and 240° from blade 1, against the direction of rotation, for the
+   last two runs.
+5. The pane shows `ADD 0.35g  WHERE between 1 and 2` and writes a row to
+   `BENCH/BALANCE/BALANCE.CSV`. BALANCE shows the same ADD and WHERE and
+   marks the place on the rotor.
+
+![BALANCE with a balance node linked](img/balance-node.png)
+
+The BALANCE pane with a node linked:
+
+| Row | Shows |
+| --- | --- |
+| VIBRATION | the 1x magnitude, g (the report's mg / 1000); ADC counts with a piezo |
+| ANGLE | the 1x phase from the index mark, against the rotation; `--` without the index |
+| SPEED | the rpm of the report; `--` without a counted revolution |
+| SIGNAL | the quality word, below |
+| ADD, WHERE | the correction of the runs, `--` before every run is taken |
+
+A report older than 1000ms (4 report periods) shows `--` in every reading,
+never an old value. The node gone shows the model and SIMULATED again.
+
+The quality word is the first that holds, top down:
+
+| Word | When |
+| --- | --- |
+| `SENSOR LEVEL` | the accelerometer's DC level is out of its window (`RCNODE_BF_DC_OK` clear): no sensor, or a wiring fault |
+| `CLIPPED` | an ADC sample at an end of its range |
+| `RPM RANGE` | no-index mode: the rpm written gives a revolution out of range |
+| `INDEX LOST` | the longest revolution passed without an index edge |
+| `NO INDEX` | no-index mode without a counted revolution |
+| `NO REVOLUTION` | no revolution counted |
+| `SETTLING` | fewer than 2 revolutions behind the quality |
+| `NO ANGLE` | no-index mode: the magnitude holds, the angle does not |
+| `GOOD n%` | quality 90% or more |
+| `FAIR n%` | 70% to 89% |
+| `POOR n%` | under 70% |
+
+**Without an index.** After 2 reports in a row without an index edge, the
+panel writes the bench's rpm to the node every 250ms at most (RPM), from the
+ESC's telemetry or the phase tap, and 0 again with the first report that has
+an edge. A simulated bench gives no rpm. The four-run method needs only the
+magnitudes and works in this mode; the two-run method refuses a report
+without the index.
+
+**A run fails** on 1000ms without a report, a report without a counted
+revolution, a report without the index (two runs) or an rpm more than 5%
+away from the run's first report. Its key shows why; press it again.
+
+**The CSV row.** `BENCH/BALANCE/BALANCE.CSV` gets a header in a new file and
+one row each time the runs are solved: the method, the trial mass, the unit
+(`g` or `counts`), each run's magnitude, angle (two runs) and rpm, the
+solver's status (`OK`, `WEAK`, `NO_EFFECT`, `INCONSISTENT`, `BAD_INPUT`), the
+mass to add, its angle, the blade count and the two blades it falls between.
+A row without a card is dropped with a console line.
+
+**The link.** The panel reads INFO after the link comes up and takes reports
+only from a node whose INFO names the balance role and protocol 1. It reads
+STATUS every 5s for the cell. CONTROL writes (BLADES, RPM) go 250ms apart at
+the least, so the link leaves room for a Dial on the same radio. The
+setup, the blade arithmetic and both placement guides work without the
+node.

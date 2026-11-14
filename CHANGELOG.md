@@ -113,6 +113,24 @@ history is in git.
   two points of the ADC's calibration curve (`vibe_cfg_scale()`), and the
   index with its polarity found (`vibe_index_scan()`); host suite
   `test_vibe_frame`.
+- The panel's side of the balance node. SETUP > WIRELESS has a BALANCE
+  NODE entry: ON/OFF, a 10s scan for nodes that advertise the balance role
+  (refused while ARMED, stopped at the switch to ARMED), the bound node
+  kept over a restart, the node's cell read from STATUS every 5s, and the
+  trial mass (0.01g to 20.00g, 0.50g by default). The panel reads INFO and
+  takes reports only from a balance node of protocol 1, writes the blade
+  count and, after 2 reports without an index edge, the bench's rpm, at
+  most one CONTROL write every 250ms. BALANCE shows the node's 1x
+  magnitude, angle, rpm and a quality word from the report's flags, `--`
+  for a report older than 1000ms, and SIMULATED only without a node.
+  MOTOR & ESC gets a BALANCE tab beside PLOT and TABLE: a TAKE key for each
+  run of the two-run and four-run methods (8 reports, 2s, each), the
+  correction through shared/vibe as ADD and WHERE, and a row in
+  `BENCH/BALANCE/BALANCE.CSV` for each solution
+  ([Balancing](docs/Balance.md#measuring-with-the-balance-node)).
+- `protocols/bleuart`: `BLEU_ROLE_AUX`, a second characteristic read on
+  request (`bleu_read_aux()`) beside the PARAM read once after the
+  subscribe.
 
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the
