@@ -250,6 +250,10 @@ jobs:
     with:
       ref: ${{ needs.version.outputs.sha }}
 
+  # The power node's image from the pinned commit (node.yml).
+  node:
+    needs: [version]
+    uses: ./.github/workflows/node.yml
   # The M5Stack Dial's image from the pinned commit (dial.yml).
   dial:
     needs: [version]
@@ -377,7 +381,7 @@ jobs:
 
   publish:
     name: Package and publish
-    needs: [version, panel, iomcu, c6, dial]
+    needs: [version, panel, iomcu, c6, node, dial]
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     # One publish at a time across every tag, so the latest mark is decided
@@ -446,6 +450,9 @@ jobs:
           # application the panel carries, and the merged image for 0x0 over
           # header H4 (docs/C6.md, the C6's firmware).
           cp artifacts/c6/rcbench-c6-*.bin dist/
+          # The power node's firmware: the application, and the merged image
+          # for 0x0 over USB (docs/Nodes.md, "Flashing").
+          cp artifacts/node/rcbench-node-pwr-*.bin dist/
           # The M5Stack Dial's firmware: the application, and the merged
           # image for 0x0 over its USB-C socket (docs/Dial.md).  The test
           # build with the console's hooks stays a CI artifact.
