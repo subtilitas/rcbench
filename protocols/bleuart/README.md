@@ -155,10 +155,16 @@ timed out is disconnected.
 no write is in flight and the 6DAA read is done (`bleu_can_send()`). With
 WRITE in 8841's properties it writes with response (`BLEU_ACT_WRITE`),
 with WRITE NO RESPONSE only without (`BLEU_ACT_WRITE_NR`); the caller then
-answers with `BLEU_EV_WRITE_DONE` and its call's own status. `wr` ends
+answers with `BLEU_EV_WRITE_DONE` and its call's own status, at once and
+not through an event queue (`bleu_hub_written()` through the hub), since
+nothing answers it on the air and a lost answer holds the next write for
+`BLEU_WRITE_MS`. `wr` ends
 `BLEU_WR_OK` or `BLEU_WR_FAILED` with `wr_status`: the host stack's
 status, `BLEU_STATUS_TIMEOUT` after 1000ms (`BLEU_WRITE_MS`) or
 `BLEU_STATUS_LOST` for a drop. A write that times out leaves the link up.
+`bleu_fail_link()` ends a link whose peer answered with something the
+client cannot use, as a failed GATT step (`BLEU_ERR_GATT`): disconnect,
+and connect again after 1000ms (`BLEU_RETRY_MS`).
 No flow control exists on this service.
 
 ## Interface
@@ -174,6 +180,7 @@ void   bleu_enable(bleu_t *b, bool on, uint32_t now_ms);
 void   bleu_bind(bleu_t *b, const bleu_addr_t *addr, uint32_t now_ms);
 bool   bleu_scan(bleu_t *b, uint32_t now_ms);
 void   bleu_scan_stop(bleu_t *b, uint32_t now_ms);
+void   bleu_fail_link(bleu_t *b, uint16_t status, uint32_t now_ms);
 bool   bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms);
 bool   bleu_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms);
 bool   bleu_step(bleu_t *b, uint32_t now_ms, bleu_act_t *out);
@@ -273,8 +280,10 @@ hub a client of that owner with `bleu_hub_add()`. The caller hands each
 event of the host stack to `bleu_hub_event()`, then each event
 `bleu_hub_next_event()` gives to that owner's machine. It hands each
 action of a machine to `bleu_hub_action()` with the owner, then performs
-each action `bleu_hub_next_action()` gives, in order. `bleu_hub_tick()`
-runs the hub's timers; call it at least every 10ms.
+each action `bleu_hub_next_action()` gives, in order, and answers a
+`BLEU_ACT_WRITE_NR` at once with the host call's status through
+`bleu_hub_written()`. `bleu_hub_tick()` runs the hub's timers; call it at
+least every 10ms.
 
 | Event | Goes to |
 |---|---|

@@ -25,6 +25,7 @@
 #include <stdint.h>
 #include <string.h>
 
+#include "esc_stick_panel.h"
 #include "ui_pinlist.h"
 #include "ui_plot.h"
 #include "link_pages.h"
@@ -596,8 +597,13 @@ bool motor_screen_dial_press(void)
 
 bool motor_screen_dial_hold(void)
 {
-    if (!s.gate.armed) {
-        return false;
+    /* An ESC STICK run ends as ABORT ends it, in ARMING too; an ARM asked
+     * and not yet confirmed, collected or not, gives way to the DISARM. */
+    const bool run = esc_stick_panel_dial_hold();
+    const bool arming = s.pending.kind == MOTOR_CMD_ARM
+                        || ui_value_state(&s.gate) == UI_VALUE_ARMING;
+    if (!s.gate.armed && !arming) {
+        return run;
     }
     mo_post(MOTOR_CMD_DISARM, 0.0f);
     ++s.arm_rev;

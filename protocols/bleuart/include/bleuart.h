@@ -500,6 +500,16 @@ bool bleu_scan(bleu_t *b, uint32_t now_ms);
 void bleu_scan_stop(bleu_t *b, uint32_t now_ms);
 
 /**
+ * @brief End the link as a failed GATT step (BLEU_ERR_GATT): the client
+ *        found the peer's answer unusable, a PARAM it needs that would not
+ *        read for one.  Disconnect, and connect again after BLEU_RETRY_MS.
+ * @param b      The machine; NULL, or no link under way, does nothing.
+ * @param status The status kept in err_status.
+ * @param now_ms The clock.
+ */
+void bleu_fail_link(bleu_t *b, uint16_t status, uint32_t now_ms);
+
+/**
  * @brief Send @p len bytes to the peer on the CMD characteristic (8841):
  *        with response when it has WRITE, without when it has WRITE NO
  *        RESPONSE only.

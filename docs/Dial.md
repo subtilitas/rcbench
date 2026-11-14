@@ -149,7 +149,9 @@ SCAN FOR DIAL scans 10,000ms and lists up to 8 devices that advertise the
 dialknob service, strongest first, with name and RSSI. While the bench is
 ARMED, or an arm waits, the scan is refused and the band reads
 `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs it
-reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. A tap on a found Dial binds it:
+reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. A scan started while SAFE
+stops at the switch to ARMED, and SCAN FOR DIAL reads `STOPPED BY ARM`. A
+tap on a found Dial binds it:
 the panel keeps its address and name in SETUP (`dial_ble`, `dial_name`) and
 asks for a save. One Dial is bound at a time. The panel connects to it by
 its address, without a scan, at Dial ON, at start-up and after each loss.
@@ -161,7 +163,11 @@ timeout of 4,000ms, the IMU's figures. After the connect the panel finds
 the service, subscribes to EVENT and reads INFO. A bound device without the
 service reads `BOUND: NOT A DIAL` and is not taken. A Dial whose INFO names
 another protocol version than 1 reads `OTHER PROTOCOL n`; its EVENTs are
-counted and dropped. Until INFO is read, EVENTs are dropped too.
+counted and dropped. Until INFO is read, EVENTs are dropped too. An INFO
+that does not read or decode is a failed GATT step: the link ends and the
+panel connects again after 1,000ms. Detents and PRESSes reach the screen
+only while the link is `CONNECTED` or `DEGRADED`; a HOLD, which only
+disarms, in any state.
 
 The loss rule runs on the panel's own clock, not on the supervision timeout:
 
@@ -188,7 +194,11 @@ it moves the horn by the servo step. Other screens take no turn.
 | PRESS: the screen button released before 1,000ms | throttle 0% | CENTER | nothing |
 | HOLD: the screen button down for 1,000ms | DISARM | DISARM; an ARM + START sequence under way ends with every output off, also before ARMED | nothing |
 
-A PRESS counts only in a frame whose turn the panel takes; a HOLD always.
+On MOTOR & ESC a HOLD also DISARMs while an ARM is on its way, asked and
+not yet confirmed, and ends an ESC STICK run as ABORT does, in ARMING too:
+the bench never arms after a HOLD. A PRESS counts only in a frame with a
+turn or a press that the panel takes; a HOLD always. A frame without input
+leaves an open help bubble open.
 The EVENT's held button and touch states are never read as a press or a
 touch, so a button held down on the Dial is no hold on the panel: ARM and
 every other 2s hold stay the panel's own.
@@ -203,7 +213,7 @@ The panel writes its screen to the Dial in panel packets, one at a time:
 | VALUE_META, VALUE | on MOTOR & ESC and SERVO LIVE, when the range, the step or the value changed |
 | SCALE | on MOTOR & ESC and SERVO LIVE: on entry and at each connect, then when a full scale changed, at most every 200ms |
 | LIVE_MOTOR, LIVE_SERVO | on MOTOR & ESC and SERVO LIVE, every 50ms (20Hz) |
-| STATE | ARMED, DEGRADED or a step changed, or 200ms without any packet |
+| STATE | ARMED, DEGRADED or a step changed, 200ms without any packet, or 1,000ms after the last STATE |
 
 Each connect sends the whole model again, SCREEN first. The faces are MOTOR,
 SERVO and HOME (the menu); every other screen sends its title and the
@@ -242,7 +252,8 @@ The link line gives the states by number: 0 OFF, 1 STARTING, 2 NO BLUETOOTH,
 3 C6 FAILED, 4 NO DIAL BOUND, 5 SCANNING, 6 CONNECTING, 7 NOT A DIAL, 8
 WAITING, 9 OTHER PROTOCOL, 10 CONNECTED, 11 DEGRADED, 12 LOST. The counters
 line comes once a second while linked: EVENTs and detents in the second,
-the round trip from STATE's echo, the turn tracker's repeated, skipped,
+the round trip from a STATE to the first EVENT that echoes it (the link's,
+plus up to 200ms until the Dial's next EVENT), the turn tracker's repeated, skipped,
 stale and glitch packets, EVENTs refused for their form and dropped before
 INFO, panel packets written, and events the Bluetooth LE queue dropped.
 

@@ -75,19 +75,30 @@ static bool client_step(uint8_t owner, uint32_t now, bleu_act_t *out)
 }
 
 /**
- * @brief The hub's events to their clients and its actions to NimBLE.
+ * @brief The hub's events to their clients and its actions to NimBLE; a
+ *        write without response is answered at once (bleu_hub_written()).
  * @param now The clock.
  */
 static void hand_out(uint32_t now)
 {
     uint8_t owner;
     bleu_evt_t e;
-    while (bleu_hub_next_event(&s_hub, &owner, &e)) {
-        client_event(owner, &e, now);
-    }
     bleu_act_t a;
-    while (bleu_hub_next_action(&s_hub, &a)) {
-        panel_ble_do(&a);
+    bool more = true;
+    while (more) {
+        more = false;
+        while (bleu_hub_next_event(&s_hub, &owner, &e)) {
+            client_event(owner, &e, now);
+        }
+        while (bleu_hub_next_action(&s_hub, &a)) {
+            int written = 0;
+            if (panel_ble_do(&a, &written)) {
+                /* A write without response is answered here, at once:
+                 * its WRITE_DONE goes to the client before the next. */
+                bleu_hub_written(&s_hub, &a, written, now);
+                more = true;
+            }
+        }
     }
 }
 

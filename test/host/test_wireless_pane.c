@@ -124,6 +124,12 @@ TEST_CASE(a_found_dial_binds_by_its_row)
     char want[48];
     snprintf(want, sizeof want, TR(DIAL_SCAN_FOUND), 2u);
     CHECK_STR_EQ(val, want);
+    /* A scan the switch to ARMED stopped says so. */
+    dial_view_t cut = two_found();
+    cut.scan_cut = true;
+    wireless_pane_set_dial(&cut);
+    wireless_pane_scan_row.value_text(val, sizeof val);
+    CHECK_STR_EQ(val, TR(DIAL_SCAN_CUT));
     /* No scan yet: no rows, and NONE bound. */
     wireless_pane_set_dial(NULL);
     CHECK_EQ(b->choices(), 0);

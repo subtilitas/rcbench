@@ -63,6 +63,9 @@ extern const bleu_profile_t dial_profile;
 #define DIAL_ADDR_MAX  BLEU_ADDR_TEXT_MAX /**< "A0:B1:C2:7F:3A:10 R" + NUL */
 #define DIAL_NAME_MAX  BLEU_NAME_MAX      /**< a name from a scan + NUL */
 #define DIAL_FOUND_MAX BLEU_FOUND_MAX     /**< Dials a scan lists */
+/** @brief Sends of one panel packet the host refused (a full buffer)
+ *         before it is dropped. */
+#define DIAL_SEND_TRIES 3u
 /** @} */
 
 /** @brief What SETUP sets: SET_DIAL_EN, the bound Dial, the two steps. */
@@ -120,6 +123,7 @@ typedef struct {
 typedef struct {
     uint8_t    link;       /**< dial_link_t */
     bool       scan_done;  /**< a scan ended since Dial ON: found is its */
+    bool       scan_cut;   /**< that scan was stopped by a switch to ARMED */
     uint8_t    found_n;    /**< the Dials it found */
     dial_dev_t found[DIAL_FOUND_MAX]; /**< strongest first */
     uint16_t   hidden;     /**< other devices it heard */
@@ -158,6 +162,7 @@ typedef struct {
     uint8_t       info_proto;  /**< the protocol INFO named, 0 unread */
     bool          scan_open;   /**< a scan started, its end unread */
     bool          scan_done;   /**< a scan ended since Dial ON */
+    bool          scan_cut;    /**< the bench ARMED stopped that scan */
     dial_dev_t    found[DIAL_FOUND_MAX]; /**< the last scan's Dials */
     uint8_t       found_n;     /**< their count */
     uint16_t      hidden;      /**< other devices the last scan heard */
@@ -171,8 +176,17 @@ typedef struct {
     uint32_t      refused;     /**< scans refused while ARMED */
     uint32_t      errors;      /**< losses while ARMED: each one an error */
     uint32_t      writes;      /**< panel packets handed to the central */
-    uint16_t      rtt_ms;      /**< the last round trip, STATE to echo */
+    uint8_t       pend[DK_PKT_MAX]; /**< the last packet sent */
+    uint8_t       pend_len;    /**< its length, 0 none */
+    uint8_t       pend_tries;  /**< its sends so far */
+    uint32_t      resent;      /**< packets sent again after a refusal */
+    uint32_t      info_failed; /**< INFO reads that failed, each a reconnect */
+    uint16_t      rtt_ms;      /**< the last round trip: a STATE's send to
+                                    the first EVENT that echoes it, so the
+                                    link's plus up to DK_KEEPALIVE_MS until
+                                    the Dial's next EVENT */
     bool          rtt_valid;   /**< rtt_ms is a measurement */
+    uint16_t      echo_seen;   /**< the echo the last EVENT carried */
 } dial_ctl_t;
 
 /** @brief Clear: Dial OFF, nothing bound.  @param c NULL does nothing. */
@@ -246,7 +260,8 @@ bool dial_ctl_step(dial_ctl_t *c, uint32_t now_ms, bool armed,
 
 /**
  * @brief The input since the last take, then cleared.  Nothing comes
- *        while Dial is OFF or the link is not UP or DEGRADED.
+ *        while Dial is OFF; no detent and no PRESS while the link is not UP
+ *        or DEGRADED.  A HOLD, which only disarms, comes in any link state.
  * @param c   The controller.
  * @param out Receives it.
  */

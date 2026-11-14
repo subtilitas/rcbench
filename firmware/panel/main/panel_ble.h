@@ -100,9 +100,13 @@ bool panel_ble_get(bleu_evt_t *out);
  *        its token; a call NimBLE refuses is answered at once with the
  *        refusal's status.  BLEU_ACT_CANCEL, BLEU_ACT_DISCONNECT and
  *        BLEU_ACT_SCAN_STOP are answered by NimBLE's events or not at all.
- * @param a The action; NULL does nothing.
+ *        A BLEU_ACT_WRITE_NR gets no event: its status is returned, for
+ *        bleu_hub_written().
+ * @param a       The action; NULL does nothing.
+ * @param written Receives a WRITE_NR's host status, 0 for taken.
+ * @return true for a WRITE_NR, whose answer is the caller's to give.
  */
-void panel_ble_do(const bleu_act_t *a);
+bool panel_ble_do(const bleu_act_t *a, int *written);
 
 /**
  * @brief Events dropped on a full queue since start-up.

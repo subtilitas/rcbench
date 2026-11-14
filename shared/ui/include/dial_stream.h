@@ -15,7 +15,7 @@
  * | SCALE | on a bench face: the first since the face was entered or the reset, or a full scale changed and DK_STREAM_MS (200ms) passed since the last |
  * | NAV | a list is shown and a row of the three changed, one row a packet |
  * | LIVE_MOTOR, LIVE_SERVO | on a bench face, DIAL_LIVE_MS (50ms, 20Hz) after the last |
- * | STATE | ARMED, DEGRADED or a step changed, or DK_STREAM_MS (200ms) without any packet |
+ * | STATE | ARMED, DEGRADED or a step changed, DK_STREAM_MS (200ms) without any packet, or DIAL_STATE_MS (1,000ms) after the last STATE |
  *
  * dial_stream_reset() at each connect sends the whole model again: every
  * row counts as changed.  A field out of its packet's range is clamped
@@ -37,6 +37,9 @@ extern "C" {
 
 /** @brief The LIVE packets' period, ms: 20Hz. */
 #define DIAL_LIVE_MS 50u
+/** @brief STATE's longest period, ms, LIVE or not: the Dial's echo of its
+ *         clock times the round trip (dial_ctl.h, rtt_ms). */
+#define DIAL_STATE_MS 1000u
 
 /** @brief What the Dial shows, as the frame task last saw the panel. */
 typedef struct {

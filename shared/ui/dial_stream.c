@@ -419,7 +419,8 @@ static size_t next_live(dial_stream_t *st, const dial_model_t *m,
 }
 
 /**
- * @brief STATE, on a change or DK_STREAM_MS without any packet.
+ * @brief STATE, on a change, DK_STREAM_MS without any packet, or
+ *        DIAL_STATE_MS after the last STATE.
  * @param st The scheduler.  @param m The model.  @param now_ms The clock.
  * @param degraded The link is DEGRADED.  @param out The packet.
  * @return Its length, 0 when not due.
@@ -435,7 +436,8 @@ static size_t next_state(dial_stream_t *st, const dial_model_t *m,
                         | (degraded ? DK_STA_DEGRADED : 0u));
     if (st->state_ok && s.thr_step == st->state.thr_step
         && s.srv_step == st->state.srv_step && s.flags == st->state.flags
-        && st->any && now_ms - st->t_any < DK_STREAM_MS) {
+        && st->any && now_ms - st->t_any < DK_STREAM_MS
+        && now_ms - st->state_ms < DIAL_STATE_MS) {
         return 0u;
     }
     st->state = s;

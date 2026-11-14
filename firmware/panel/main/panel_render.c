@@ -428,10 +428,12 @@ static void knob_withdraw(void)
 
 void knob_apply(const knob_turn_t *turn, bool frame_lost)
 {
+    /* Only a frame with a turn or a press asks the router, so an idle
+     * frame leaves a help bubble open; a HOLD acts in any case. */
     const bool taken = !frame_lost
                        && ui_router_navigations() == turn->navigations
                        && ui_router_current() == turn->route
-                       && ui_router_take_knob();
+                       && dial_knob_take(turn->steps, &turn->dial);
     float span = 0.0f;
     if (taken && turn->steps != 0) {
         span = knob_span_fraction(turn->steps,

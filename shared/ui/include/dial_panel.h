@@ -46,6 +46,17 @@ float dial_span(ui_screen_id_t route, int32_t detents, uint8_t thr_tenths,
                 uint8_t srv_tenths);
 
 /**
+ * @brief Whether this frame's knob input reaches the screen: only a frame
+ *        with input asks the router (ui_router_take_knob()), so a frame
+ *        without one leaves an open help bubble open.  A HOLD is no input
+ *        here: it acts whatever this returns (dial_gestures()).
+ * @param knob_steps The wired knob's detents this frame.
+ * @param in         The Dial's input this frame; NULL is none.
+ * @return true when there was input and the router hands it on.
+ */
+bool dial_knob_take(int32_t knob_steps, const dial_input_t *in);
+
+/**
  * @brief A frame's gestures on @p route: each HOLD a DISARM, each PRESS a
  *        throttle 0% or a CENTER when @p press_ok.  A HOLD acts whatever
  *        the frame lost or the router did: a DISARM is never refused.

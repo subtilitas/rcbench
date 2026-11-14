@@ -56,7 +56,7 @@ Das M5Stack Dial stellt das Gas auf [MOTOR & ESC](motor.md) und das Horn auf [SE
 | Einstellung | Bereich | Vorgabe | Wirkung |
 |---|---|---|---|
 | Dial | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Dial; AUS beendet die Verbindung, und ein ausgeschaltetes Dial ist kein Verlust |
-| Dial suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Dials in Reichweite; bei ARMED abgelehnt, mit `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
+| Dial suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Dials in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
 | Gebundenes Dial | `KEINS` oder der Name des Dials | `KEINS` | Tippen listet die Dials der letzten Suche mit ihrem Signal in dBm; Tippen auf eines bindet es und fragt nach dem Speichern. Die Rücksetztaste behält das gebundene Dial |
 | Dial-Schritt, Gas | 0.5%, 1%, 2%, 5% | 1% | das Gas, das eine Raste verstellt |
 | Dial-Schritt, Servo | 0.5°, 1°, 2°, 5° | 1° | der Hornwinkel, den eine Raste verstellt |
@@ -66,7 +66,7 @@ Das Panel verbindet sich über die Adresse mit dem gebundenen Dial, ohne Suche, 
 Auf den Prüfstandsbildschirmen:
 
 - Eine Drehung bewegt nichts, solange der Prüfstand SAFE ist, und Drehungen bei SAFE werden nicht für das ARM aufgehoben. Das erste EVENT nach dem Verbinden, ein EVENT mehr als 300ms nach dem letzten und ein Sprung um mehr als 16 Rasten bewegen nichts.
-- Ein Druck auf die Bildschirmtaste des Dials bei ARMED setzt das Gas auf MOTOR & ESC auf 0% und das Horn auf SERVO auf CENTER. 1s Halten schaltet DISARM.
+- Ein Druck auf die Bildschirmtaste des Dials bei ARMED setzt das Gas auf MOTOR & ESC auf 0% und das Horn auf SERVO auf CENTER. 1s Halten schaltet DISARM, auch solange ein ARM unterwegs ist, und beendet einen ESC-STICK-Lauf wie ABORT.
 - Ein Dial, das bei ARMED verloren geht, ist ein Fehler: 1000ms ohne EVENT oder die Trennung schalten den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. 500ms ohne EVENT zeigen `DIAL: 500ms KEIN EREIGNIS`. Die Uhr läuft ab dem ersten EVENT einer Verbindung, ein Verbinden ohne EVENT ist also kein Verlust.
 - Andere Bildschirme nehmen keine Drehung des Dials an. Das Dial zeigt ihren Titel und den Zustand des Prüfstands.
 

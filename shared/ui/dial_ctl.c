@@ -98,6 +98,7 @@ static void follow_link(dial_ctl_t *c, uint32_t now_ms)
         dk_link_connect(&c->link, now_ms);
         dk_track_reset(&c->track);
         dial_stream_reset(&c->stream);
+        c->pend_len = 0u;
         c->info_read = false;
         c->info_ok = false;
         c->info_proto = 0u;
@@ -117,6 +118,13 @@ static void follow_link(dial_ctl_t *c, uint32_t now_ms)
             c->info = i;
             c->info_proto = i.proto;
             c->info_ok = i.proto == DK_PROTOCOL;
+        } else {
+            /* INFO that would not read or decode: a failed GATT step.
+             * The link ends and comes back after the backoff, rather than
+             * standing connected and silent. */
+            ++c->info_failed;
+            bleu_fail_link(&c->b, c->b.param_status, now_ms);
+            follow_link(c, now_ms);
         }
     }
 }
@@ -182,6 +190,7 @@ void dial_ctl_config(dial_ctl_t *c, const dial_cfg_t *cfg, uint32_t now_ms)
             c->linked = false;
             c->scan_open = false;
             c->scan_done = false;
+            c->scan_cut = false;
             c->found_n = 0u;
             c->hidden = 0u;
             memset(&c->in, 0, sizeof(c->in));
@@ -219,6 +228,7 @@ dial_scan_t dial_ctl_scan(dial_ctl_t *c, bool armed, uint32_t now_ms)
     c->found_n = 0u;
     c->hidden = 0u;
     c->scan_done = false;
+    c->scan_cut = false;
     c->scan_open = bleu_scan(&c->b, now_ms);
     return c->scan_open ? DIAL_SCAN_STARTED : DIAL_SCAN_NOT_READY;
 }
@@ -274,10 +284,13 @@ static void take_event(dial_ctl_t *c, const uint8_t *data, size_t len,
     case DK_G_TAP:   ++c->taps;       break;
     default:                          break;
     }
-    if (c->stream.state_sent) {
+    /* Only the first EVENT that echoes a STATE times it: a later one
+     * carries the same echo and would time the STATE's age. */
+    if (c->stream.state_sent && ev.echo != c->echo_seen) {
         c->rtt_ms = (uint16_t)((uint16_t)now_ms - ev.echo);
         c->rtt_valid = true;
     }
+    c->echo_seen = ev.echo;
 }
 
 void dial_ctl_event(dial_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
@@ -311,6 +324,11 @@ bool dial_ctl_step(dial_ctl_t *c, uint32_t now_ms, bool armed,
     if (dk_link_loss_error(&c->link, armed)) {
         ++c->errors;
     }
+    /* No scan while ARMED: one started while SAFE ends at the switch. */
+    if (armed && c->b.scanning) {
+        bleu_scan_stop(&c->b, now_ms);
+        c->scan_cut = true;
+    }
     if (bleu_step(&c->b, now_ms, out)) {
         take_scan(c);
         follow_link(c, now_ms);
@@ -321,10 +339,28 @@ bool dial_ctl_step(dial_ctl_t *c, uint32_t now_ms, bool armed,
         return false;
     }
     uint8_t pkt[DK_PKT_MAX];
-    const size_t n = dial_stream_next(&c->stream, &c->model, now_ms,
-                                      c->link.state == DK_LINK_DEGRADED, pkt);
+    size_t n;
+    const bool again = c->b.wr == BLEU_WR_FAILED && c->pend_len != 0u
+                       && c->pend_tries < DIAL_SEND_TRIES;
+    if (again) {
+        /* The host refused the last one (a full buffer): it goes again
+         * before the stream moves on, so no change is lost. */
+        n = c->pend_len;
+        memcpy(pkt, c->pend, n);
+    } else {
+        n = dial_stream_next(&c->stream, &c->model, now_ms,
+                             c->link.state == DK_LINK_DEGRADED, pkt);
+    }
     if (n == 0u || !bleu_send(&c->b, pkt, n, now_ms)) {
         return false;
+    }
+    if (again) {
+        ++c->pend_tries;
+        ++c->resent;
+    } else {
+        memcpy(c->pend, pkt, n);
+        c->pend_len = (uint8_t)n;
+        c->pend_tries = 1u;
     }
     ++c->writes;
     return bleu_step(&c->b, now_ms, out);
@@ -339,8 +375,13 @@ void dial_ctl_take(dial_ctl_t *c, dial_input_t *out)
     if (c == NULL) {
         return;
     }
-    if (c->cfg.en) {
+    const bool up = c->link.state == DK_LINK_UP
+                    || c->link.state == DK_LINK_DEGRADED;
+    if (c->cfg.en && up) {
         *out = c->in;
+    } else if (c->cfg.en) {
+        /* A HOLD only disarms: it goes through whatever the link. */
+        out->holds = c->in.holds;
     }
     memset(&c->in, 0, sizeof(c->in));
 }
@@ -398,6 +439,7 @@ void dial_ctl_view(const dial_ctl_t *c, dial_view_t *out)
     }
     out->link = (uint8_t)dial_ctl_link(c);
     out->scan_done = c->scan_done;
+    out->scan_cut = c->scan_cut;
     out->found_n = c->found_n;
     memcpy(out->found, c->found, sizeof(out->found));
     out->hidden = c->hidden;

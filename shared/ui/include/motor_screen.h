@@ -380,9 +380,11 @@ void motor_screen_knob_cancel(void);
 bool motor_screen_dial_press(void);
 
 /**
- * @brief The Dial's button held 1s: DISARM while the bench is ARMED, as
- *        DISARM's press.  Nothing on a SAFE bench.  It never arms.
- * @return Whether a DISARM was posted.
+ * @brief The Dial's button held 1s: DISARM while the bench is ARMED or an
+ *        ARM is on its way (posted, or collected and not yet confirmed),
+ *        so the bench never arms after the HOLD; an ESC STICK run ends as
+ *        ABORT ends it.  Nothing else on a SAFE bench.  It never arms.
+ * @return Whether a DISARM was posted or a run ended.
  */
 bool motor_screen_dial_hold(void);
 

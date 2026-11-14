@@ -6571,7 +6571,7 @@ Die Zeilen des DIAL-Eintrags ([Das M5Stack Dial](Dial-de.md#das-panel)):
 | Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
 | Dial | EIN, AUS | AUS | die Verbindung zum gebundenen Dial; AUS beendet sie ohne Fehler |
-| Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN` | | Tippen sucht 10s lang; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE` |
+| Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen sucht 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE` |
 | Gebundenes Dial | der Name des gebundenen Dials, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Dials der letzten Suche, `DIAL-3A10  -52dBm`, das gebundene markiert; Tippen auf eines bindet es und fragt nach dem Speichern |
 | Dial-Schritt, Gas | 0.5%, 1%, 2%, 5% | 1% | das Gas, das eine Raste auf MOTOR & ESC verstellt |
 | Dial-Schritt, Servo | 0.5°, 1°, 2°, 5° | 1° | der Hornwinkel, den eine Raste auf SERVO verstellt |

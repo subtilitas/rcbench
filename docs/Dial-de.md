@@ -157,8 +157,9 @@ DIAL SUCHEN sucht 10.000ms und listet bis zu 8 Geräte, die den
 dialknob-Dienst senden, das stärkste zuerst, mit Namen und RSSI. Ist der
 Prüfstand ARMED oder wartet ein Arm, wird die Suche abgelehnt, und das Band
 zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
-läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Ein Tippen auf ein
-gefundenes Dial bindet es: Das Panel behält Adresse und Namen in SETUP
+läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Eine bei SAFE
+gestartete Suche endet beim Schalten auf ARMED, und DIAL SUCHEN zeigt
+`DURCH ARM BEENDET`. Ein Tippen auf ein gefundenes Dial bindet es: Das Panel behält Adresse und Namen in SETUP
 (`dial_ble`, `dial_name`) und fragt nach dem Speichern. Es ist immer ein
 Dial gebunden oder keins. Das Panel verbindet sich über die Adresse mit ihm,
 ohne Suche, bei Dial EIN, beim Start und nach jedem Verlust.
@@ -171,7 +172,11 @@ das Panel den Dienst, abonniert EVENT und liest INFO. Ein gebundenes Gerät
 ohne den Dienst zeigt `GEBUNDEN: KEIN DIAL` und wird nicht genommen. Ein
 Dial, dessen INFO eine andere Protokollversion als 1 nennt, zeigt
 `ANDERES PROTOKOLL n`; seine EVENTs werden gezählt und verworfen. Bis INFO
-gelesen ist, werden EVENTs ebenfalls verworfen.
+gelesen ist, werden EVENTs ebenfalls verworfen. Ein INFO, das sich nicht
+lesen oder dekodieren lässt, ist ein fehlgeschlagener GATT-Schritt: Der
+Link endet, und das Panel verbindet sich nach 1.000ms erneut. Rastungen und
+PRESS erreichen den Bildschirm nur, solange der Link `VERBUNDEN` oder
+`GESTÖRT` ist; ein HOLD, der nur entschärft, in jedem Zustand.
 
 Die Verlustregel läuft auf der eigenen Uhr des Panels, nicht auf dem
 Supervision Timeout:
@@ -201,8 +206,12 @@ Bildschirme nehmen keine Drehung an.
 | PRESS: Bildschirmtaste vor 1.000ms losgelassen | Gas 0% | CENTER | nichts |
 | HOLD: Bildschirmtaste 1.000ms gedrückt | DISARM | DISARM; eine laufende Folge ARM + START endet mit allen Ausgängen aus, auch vor ARMED | nichts |
 
-Ein PRESS zählt nur in einem Frame, dessen Drehung das Panel nimmt; ein HOLD
-immer. Die gehaltenen Zustände von Taste und Touch im EVENT werden nie als
+Auf MOTOR & ESC schaltet ein HOLD auch DISARM, solange ein ARM unterwegs
+ist, angefragt und noch nicht bestätigt, und beendet einen ESC-STICK-Lauf
+wie ABORT, auch in ARMING: Nach einem HOLD wird der Prüfstand nie scharf.
+Ein PRESS zählt nur in einem Frame mit einer Drehung oder einem Druck, den
+das Panel nimmt; ein HOLD immer. Ein Frame ohne Eingabe lässt eine offene
+Hilfeblase offen. Die gehaltenen Zustände von Taste und Touch im EVENT werden nie als
 Druck oder Berührung gelesen, eine am Dial gehaltene Taste ist also kein
 Halten am Panel: ARM und jedes andere 2s-Halten bleiben beim Panel.
 
@@ -217,7 +226,7 @@ Zeit:
 | VALUE_META, VALUE | auf MOTOR & ESC und SERVO LIVE, wenn sich Bereich, Schritt oder Wert ändern |
 | SCALE | auf MOTOR & ESC und SERVO LIVE: beim Betreten und bei jedem Connect, dann wenn sich ein Vollausschlag ändert, höchstens alle 200ms |
 | LIVE_MOTOR, LIVE_SERVO | auf MOTOR & ESC und SERVO LIVE, alle 50ms (20Hz) |
-| STATE | ARMED, DEGRADED oder ein Schritt geändert, oder 200ms ohne Paket |
+| STATE | ARMED, DEGRADED oder ein Schritt geändert, 200ms ohne Paket, oder 1.000ms nach dem letzten STATE |
 
 Jeder Connect sendet das ganze Modell erneut, SCREEN zuerst. Die Faces sind
 MOTOR, SERVO und HOME (das Menü); jeder andere Bildschirm sendet seinen
@@ -256,8 +265,9 @@ Die Link-Zeile nennt die Zustände als Zahl: 0 AUS, 1 STARTET, 2 KEIN
 BLUETOOTH, 3 C6 AUSGEFALLEN, 4 KEIN DIAL GEBUNDEN, 5 SUCHE, 6 VERBINDE,
 7 KEIN DIAL, 8 WARTET, 9 ANDERES PROTOKOLL, 10 VERBUNDEN, 11 GESTÖRT,
 12 VERLOREN. Die Zählerzeile kommt einmal pro Sekunde, solange der Link
-steht: EVENTs und Rastungen der Sekunde, die Umlaufzeit aus dem Echo von
-STATE, die wiederholten, übersprungenen, veralteten und gesprungenen
+steht: EVENTs und Rastungen der Sekunde, die Umlaufzeit von einem STATE
+bis zum ersten EVENT, das es zurückgibt (die des Links, plus bis zu 200ms
+bis zum nächsten EVENT des Dial), die wiederholten, übersprungenen, veralteten und gesprungenen
 Pakete des Drehungs-Trackers, EVENTs, die wegen ihrer Form abgelehnt und
 vor INFO verworfen wurden, geschriebene Panel-Pakete und Ereignisse, die
 die Bluetooth-LE-Queue verworfen hat.

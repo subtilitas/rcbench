@@ -57,6 +57,9 @@ typedef struct {
     uint8_t    seq;         /**< the Dial's EVENT seq */
     unsigned   connects;    /**< CONNECT actions */
     unsigned   scans;       /**< SCAN actions */
+    unsigned   stops;       /**< SCAN_STOP actions */
+    unsigned   refuse_writes; /**< the next writes the host refuses, ENOMEM */
+    unsigned   fail_info;   /**< the next INFO reads that fail */
     unsigned   npkt;        /**< panel packets kept */
     uint8_t    pkt[DRIG_PKTS][DK_PKT_MAX]; /**< their bytes */
     uint8_t    len[DRIG_PKTS]; /**< their lengths */
@@ -95,6 +98,9 @@ static inline void drig_act(drig_t *r, const bleu_act_t *a)
     switch (a->kind) {
     case BLEU_ACT_SCAN:
         ++r->scans;
+        break;
+    case BLEU_ACT_SCAN_STOP:
+        ++r->stops;
         break;
     case BLEU_ACT_CONNECT:
         ++r->connects;
@@ -152,10 +158,24 @@ static inline void drig_act(drig_t *r, const bleu_act_t *a)
         memcpy(i.name, "DIAL-3A10", 10u);
         e = drig_ev(BLEU_EV_READ, a->token);
         e.len = (uint8_t)dk_info_encode(&i, e.data);
+        if (r->fail_info > 0u) {
+            --r->fail_info;
+            e.len = 0u;
+            e.status = 0x10Eu;      /* an ATT error */
+        }
         dial_ctl_event(&r->c, &e, r->now);
         break;
     }
     case BLEU_ACT_WRITE_NR:
+        if (r->refuse_writes > 0u) {
+            /* The host call's own status, as panel_ble_do() hands it back
+             * for bleu_hub_written(): BLE_HS_ENOMEM. */
+            --r->refuse_writes;
+            e = drig_ev(BLEU_EV_WRITE_DONE, a->token);
+            e.status = 6u;
+            dial_ctl_event(&r->c, &e, r->now);
+            break;
+        }
         if (r->npkt < DRIG_PKTS) {
             memcpy(r->pkt[r->npkt], a->data, a->len);
             r->len[r->npkt] = a->len;

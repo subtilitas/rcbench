@@ -156,7 +156,10 @@ history is in git.
 - `bleu_profile_t` names the service a scan lists (`adv_svc`,
   `adv_uuid16`), so each Bluetooth LE client lists its own devices; a
   PARAM characteristic's value is kept to 20 bytes, up from 8
-  ([protocols/bleuart](protocols/bleuart/README.md#scan)).
+  ([protocols/bleuart](protocols/bleuart/README.md#scan)). A write without
+  response is answered at once with the host call's status
+  (`bleu_hub_written()`), never through the event queue; a client ends an
+  unusable link as a failed GATT step with `bleu_fail_link()`.
 
 ### Changed
 

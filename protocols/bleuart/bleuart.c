@@ -283,6 +283,14 @@ uint8_t bleu_token_owner(uint16_t token)
     return (uint8_t)(token >> BLEU_OWNER_SHIFT);
 }
 
+void bleu_fail_link(bleu_t *b, uint16_t status, uint32_t now_ms)
+{
+    if (b == NULL || !connected(b->st)) {
+        return;
+    }
+    fail(b, BLEU_ERR_GATT, status, now_ms);
+}
+
 void bleu_scan_stop(bleu_t *b, uint32_t now_ms)
 {
     (void)now_ms;

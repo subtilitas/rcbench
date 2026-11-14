@@ -75,6 +75,8 @@ static void scan_value(char *out, size_t n)
         snprintf(out, n, "%s", TR(DIAL_SCAN_RUNS));
     } else if (!s_dial.scan_done) {
         snprintf(out, n, "%s", TR(DIAL_SCAN_GO));
+    } else if (s_dial.scan_cut) {
+        snprintf(out, n, "%s", TR(DIAL_SCAN_CUT));
     } else if (s_dial.found_n == 0u) {
         snprintf(out, n, "%s", TR(DIAL_SCAN_NONE));
     } else {

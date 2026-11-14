@@ -331,6 +331,224 @@ TEST_CASE(a_c6_that_fails_while_armed_is_an_error)
     CHECK_EQ(dial_ctl_link(&r.c), DIAL_LINK_C6_FAILED);
 }
 
+TEST_CASE(a_scan_ends_when_the_bench_arms)
+{
+    drig_t r;
+    drig_up(&r);
+    CHECK_EQ(dial_ctl_scan(&r.c, false, r.now), DIAL_SCAN_STARTED);
+    drig_run(&r, 10u);
+    CHECK(r.c.b.scanning);
+    /* ARMED 4s later, inside the scan's 10s: it stops in that step. */
+    r.armed = true;
+    drig_run(&r, 1u);
+    CHECK(!r.c.b.scanning);
+    CHECK_EQ(r.stops, 1u);
+    drig_run(&r, 4000u);
+    CHECK_EQ(r.stops, 1u);
+    dial_view_t v;
+    dial_ctl_view(&r.c, &v);
+    CHECK(v.scan_done);
+    CHECK(v.scan_cut);
+    CHECK(v.link != DIAL_LINK_SCANNING);
+    /* A new scan while SAFE runs whole and is no cut one. */
+    r.armed = false;
+    CHECK_EQ(dial_ctl_scan(&r.c, false, r.now), DIAL_SCAN_STARTED);
+    drig_run(&r, BLEU_SCAN_MS + 10u);
+    dial_ctl_view(&r.c, &v);
+    CHECK(v.scan_done);
+    CHECK(!v.scan_cut);
+}
+
+TEST_CASE(a_write_the_host_refuses_goes_again_and_the_stream_goes_on)
+{
+    drig_t r;
+    drig_up(&r);
+    dial_model_t m;
+    memset(&m, 0, sizeof m);
+    m.face = DK_FACE_OTHER;
+    m.thr_tenths = m.srv_tenths = 10u;
+    (void)dk_text_copy(m.title, sizeof m.title, "SETUP");
+    /* The first packet, SCREEN, refused twice: the third send takes it,
+     * in the same few ms, and nothing waits BLEU_WRITE_MS. */
+    r.refuse_writes = 2u;
+    dial_ctl_model(&r.c, &m);
+    drig_run(&r, 5u);
+    CHECK(r.npkt >= 2u);
+    CHECK_EQ(r.pkt[0][0], DK_K_SCREEN);
+    CHECK_EQ(r.pkt[1][0], DK_K_STATE);
+    CHECK_EQ(r.c.resent, 2u);
+    /* Refused DIAL_SEND_TRIES times: dropped, and the stream goes on. */
+    const unsigned had = r.npkt;
+    (void)dk_text_copy(m.title, sizeof m.title, "LOGS");
+    dial_ctl_model(&r.c, &m);
+    r.refuse_writes = DIAL_SEND_TRIES;
+    drig_run(&r, 300u);
+    CHECK(r.npkt > had);
+    CHECK_EQ(r.pkt[had][0], DK_K_STATE);   /* the SCREEN was dropped */
+    CHECK_EQ(r.c.resent, 2u + DIAL_SEND_TRIES - 1u);
+    CHECK_EQ(r.c.errors, 0u);
+}
+
+/** @brief The panel ms of the newest STATE the rig kept, 0 for none. */
+static uint32_t newest_state(const drig_t *r, unsigned *at)
+{
+    uint32_t ms = 0u;
+    for (unsigned i = 0; i < r->npkt; ++i) {
+        dk_state_t s;
+        if (dk_state_decode(r->pkt[i], r->len[i], &s)) {
+            ms = s.panel_ms;
+            if (at != NULL) {
+                *at = i;
+            }
+        }
+    }
+    return ms;
+}
+
+TEST_CASE(state_goes_every_1000ms_under_live_and_times_the_link)
+{
+    drig_t r;
+    drig_up(&r);
+    dial_model_t m;
+    memset(&m, 0, sizeof m);
+    m.face = DK_FACE_MOTOR;
+    m.has_motor = true;
+    (void)dk_text_copy(m.title, sizeof m.title, "MOTOR & ESC");
+    m.thr_tenths = m.srv_tenths = 10u;
+    dial_ctl_model(&r.c, &m);
+    drig_run(&r, 20u);
+    unsigned at = 0u;
+    uint32_t last = newest_state(&r, &at);
+    CHECK(last != 0u);
+    /* LIVE every 50ms; STATE still at least every 1000ms. */
+    unsigned states = 0u;
+    for (uint32_t t = 0; t < 5000u; ++t) {
+        drig_run(&r, 1u);
+        const uint32_t ms = newest_state(&r, NULL);
+        if (ms != last) {
+            if (ms - last > DIAL_STATE_MS) {
+                T_FAIL("STATE %ums after the last", (unsigned)(ms - last));
+            }
+            last = ms;
+            ++states;
+        }
+        if (r.npkt > DRIG_PKTS - 8u) {
+            r.npkt = 0u;
+        }
+    }
+    CHECK(states >= 5u);
+    /* The Dial echoes a new STATE 20ms after it went: rtt 20ms. */
+    r.npkt = 0u;
+    for (unsigned k = 0; k < DIAL_STATE_MS + 10u
+                         && newest_state(&r, NULL) == 0u; ++k) {
+        drig_run(&r, 1u);
+    }
+    last = newest_state(&r, NULL);
+    CHECK(last != 0u);
+    drig_run(&r, 20u);
+    dk_evt_t ev;
+    memset(&ev, 0, sizeof ev);
+    ev.seq = r.seq++;
+    ev.echo = (uint16_t)last;
+    bleu_evt_t e = drig_ev(BLEU_EV_NOTIFY, 0u);
+    e.h1 = DRIG_EVENT_VAL;
+    e.len = (uint8_t)dk_evt_encode(&ev, e.data);
+    dial_ctl_event(&r.c, &e, r.now);
+    CHECK(r.c.rtt_valid);
+    CHECK_EQ(r.c.rtt_ms, 20u);
+    /* A keepalive 900ms later with the same echo times nothing. */
+    drig_run(&r, 900u);
+    ev.seq = r.seq++;
+    e.len = (uint8_t)dk_evt_encode(&ev, e.data);
+    dial_ctl_event(&r.c, &e, r.now);
+    CHECK_EQ(r.c.rtt_ms, 20u);
+}
+
+TEST_CASE(an_info_that_fails_ends_the_link_and_it_comes_back)
+{
+    drig_t r;
+    drig_init(&r);
+    r.fail_info = 1u;
+    r.armed = true;
+    drig_run(&r, 50u);
+    /* The read failed: no silent link, a GATT failure instead. */
+    CHECK_EQ(r.c.info_failed, 1u);
+    CHECK(!r.c.linked);
+    CHECK_EQ(r.c.b.err, BLEU_ERR_GATT);
+    CHECK_EQ(r.connects, 1u);
+    CHECK_EQ(r.c.errors, 0u);       /* no EVENT yet: no loss */
+    /* Not before the backoff; then the link and INFO come back. */
+    drig_run(&r, BLEU_RETRY_MS - 60u);
+    CHECK_EQ(r.connects, 1u);
+    drig_run(&r, 200u);
+    CHECK_EQ(r.connects, 2u);
+    CHECK(r.c.linked);
+    CHECK(r.c.info_ok);
+    CHECK_EQ(r.c.errors, 0u);
+}
+
+TEST_CASE(input_is_taken_only_while_the_link_is_up_or_degraded)
+{
+    drig_t r;
+    drig_up(&r);
+    drig_event(&r, 0, 0u, DK_G_NONE);
+    drig_event(&r, 3, 0u, DK_G_NONE);
+    CHECK_EQ(dial_ctl_link(&r.c), DIAL_LINK_UP);
+    dial_input_t in = drig_take(&r);
+    CHECK_EQ(in.detents, 3);
+    /* Detents counted, then the link LOST before the take: none handed
+     * on, and none kept for later. */
+    drig_event(&r, 5, 0u, DK_G_PRESS);
+    drig_event(&r, 5, 0u, DK_G_HOLD);
+    drig_run(&r, DK_LOST_MS + 5u);
+    CHECK_EQ(dial_ctl_link(&r.c), DIAL_LINK_LOST);
+    in = drig_take(&r);
+    CHECK_EQ(in.detents, 0);
+    CHECK_EQ(in.presses, 0u);
+    CHECK_EQ(in.holds, 1u);         /* a HOLD only disarms: it goes */
+    drig_event(&r, 6, 0u, DK_G_NONE);   /* a reference after the gap */
+    in = drig_take(&r);
+    CHECK_EQ(in.detents, 0);
+    CHECK_EQ(in.presses, 0u);
+}
+
+TEST_CASE(the_panel_streams_before_an_event_and_never_pauses_500ms)
+{
+    for (int face = 0; face < 2; ++face) {
+        drig_t r;
+        drig_init(&r);
+        r.armed = face == 1;
+        dial_model_t m;
+        memset(&m, 0, sizeof m);
+        m.face = face ? DK_FACE_MOTOR : DK_FACE_OTHER;
+        m.has_motor = face == 1;
+        m.armed = r.armed;
+        (void)dk_text_copy(m.title, sizeof m.title,
+                           face ? "MOTOR & ESC" : "SETUP");
+        m.thr_tenths = m.srv_tenths = 10u;
+        dial_ctl_model(&r.c, &m);
+        uint32_t last = r.now, gap = 0u;
+        unsigned seen = 0u;
+        for (uint32_t k = 0; k < 5000u; ++k) {
+            drig_run(&r, 1u);
+            if (r.npkt != seen) {
+                if (seen != 0u && r.now - last > gap) {
+                    gap = r.now - last;
+                }
+                last = r.now;
+                seen = r.npkt;
+            }
+            if (r.npkt > DRIG_PKTS - 8u) {
+                r.npkt = 0u;
+                seen = 0u;
+            }
+        }
+        CHECK(seen > 0u);
+        CHECK(gap < DK_DIAL_LOST_MS);
+        CHECK_EQ(r.c.errors, 0u);
+    }
+}
+
 int main(void)
 {
     RUN(the_link_comes_up_and_the_model_streams);
@@ -346,5 +564,11 @@ int main(void)
     RUN(another_protocol_moves_nothing);
     RUN(dial_off_ends_the_link_without_a_loss);
     RUN(a_c6_that_fails_while_armed_is_an_error);
+    RUN(a_scan_ends_when_the_bench_arms);
+    RUN(a_write_the_host_refuses_goes_again_and_the_stream_goes_on);
+    RUN(state_goes_every_1000ms_under_live_and_times_the_link);
+    RUN(an_info_that_fails_ends_the_link_and_it_comes_back);
+    RUN(input_is_taken_only_while_the_link_is_up_or_degraded);
+    RUN(the_panel_streams_before_an_event_and_never_pauses_500ms);
     return test_summary("dial_ctl");
 }

@@ -36,6 +36,13 @@ float dial_span(ui_screen_id_t route, int32_t detents, uint8_t thr_tenths,
     return 0.0f;
 }
 
+bool dial_knob_take(int32_t knob_steps, const dial_input_t *in)
+{
+    const bool input = knob_steps != 0
+                       || (in != NULL && (in->detents != 0 || in->presses != 0u));
+    return input && ui_router_take_knob();
+}
+
 void dial_gestures(ui_screen_id_t route, const dial_input_t *in,
                    bool press_ok)
 {

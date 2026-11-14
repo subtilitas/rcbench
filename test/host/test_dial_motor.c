@@ -259,6 +259,32 @@ TEST_CASE(live_motor_carries_each_reading_with_its_flag_only)
     CHECK_EQ(dial_span(SCREEN_MOTOR, 0, 10u, 10u), 0.0f);
 }
 
+TEST_CASE(a_hold_while_an_arm_is_on_its_way_disarms)
+{
+    /* The ARM posted, not yet collected: the HOLD's DISARM replaces it. */
+    fresh();
+    hold_arm();
+    motor_cmd_t c;
+    CHECK(motor_screen_dial_hold());
+    c = last_cmd();
+    CHECK_EQ(c.kind, MOTOR_CMD_DISARM);
+    /* The ARM collected, the bench not yet ARMED: a DISARM follows it. */
+    fresh();
+    hold_arm();
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
+    CHECK(motor_screen_dial_hold());
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_DISARM);
+    /* The bench then reports ARMED from the old ARM: SAFE stays asked. */
+    motor_screen_set_armed(true);
+    motor_screen_set_armed(false);
+    tick_for(4);
+    CHECK(last_cmd().kind != MOTOR_CMD_ARM);
+    /* Nothing on its way, SAFE: nothing. */
+    fresh();
+    CHECK(!motor_screen_dial_hold());
+    CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
+}
+
 int main(void)
 {
     RUN(a_10s_dial_press_on_arm_leaves_the_bench_safe);
@@ -267,5 +293,6 @@ int main(void)
     RUN(press_and_hold_while_safe_do_nothing);
     RUN(scale_takes_the_peak_the_supply_and_else_the_plot);
     RUN(live_motor_carries_each_reading_with_its_flag_only);
+    RUN(a_hold_while_an_arm_is_on_its_way_disarms);
     return test_summary("dial_motor");
 }

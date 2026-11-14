@@ -56,7 +56,7 @@ The M5Stack Dial turns the throttle on [MOTOR & ESC](motor.md) and the horn on [
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Dial | ON, OFF | OFF | Bluetooth LE and the link to the bound Dial; OFF ends the link, and a Dial switched off is no loss |
-| Scan for Dial | `SCAN` | | a tap scans 10s and lists the Dials in range; refused while ARMED, with `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
+| Scan for Dial | `SCAN` | | a tap scans 10s and lists the Dials in range; a switch to ARMED stops it, `STOPPED BY ARM`; refused while ARMED, with `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
 | Bound Dial | `NONE` or the Dial's name | `NONE` | a tap lists the Dials the last scan found, with their signal in dBm; a tap on one binds it and asks for a save. RESET keeps the bound Dial |
 | Dial step, throttle | 0.5%, 1%, 2%, 5% | 1% | the throttle one detent moves |
 | Dial step, servo | 0.5°, 1°, 2°, 5° | 1° | the horn angle one detent moves |
@@ -66,7 +66,7 @@ The panel connects to the bound Dial by its address, without a scan, and again a
 On the bench screens:
 
 - A turn moves nothing while the bench is SAFE, and turns made while SAFE are not kept for the ARM. The first EVENT after a connect, an EVENT more than 300ms after the last and a jump of more than 16 detents move nothing.
-- A press of the Dial's screen button while ARMED sets the throttle to 0% on MOTOR & ESC and the horn to CENTER on SERVO. A 1s hold DISARMs.
+- A press of the Dial's screen button while ARMED sets the throttle to 0% on MOTOR & ESC and the horn to CENTER on SERVO. A 1s hold DISARMs, also while an ARM is on its way, and ends an ESC STICK run as ABORT does.
 - A Dial lost while ARMED is an error: 1000ms without an EVENT, or the disconnect, switches the bench to SAFE with all outputs off, and the band shows `DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`. 500ms without an EVENT shows `DIAL: NO EVENT FOR 500ms`. The clock starts at the first EVENT of a connection, so a connect that has sent none is no loss.
 - Other screens take no turn from the Dial. The Dial shows their title and the bench's state.
 

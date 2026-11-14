@@ -567,6 +567,36 @@ TEST_CASE(a_profile_at_the_supplys_cap_opens_from_the_list)
     CHECK(esc_stick_panel_page() == NULL);
 }
 
+/* The M5Stack Dial's HOLD while a run waits for the bench to arm: the run
+ * ends as ABORT ends it, and no ARM reaches the bench after the HOLD. */
+TEST_CASE(a_dial_hold_in_arming_ends_the_run_and_nothing_arms)
+{
+    fresh();
+    descend_to_hobbywing();
+    pick_cutoff();
+    tap(WRITE_X, BTN_CY);
+    hold_for(2.25f);
+    static rig_t r;
+    rig_start(&r);
+    r.no_arm = true;            /* the bench does not confirm the arm */
+    for (int i = 0; i < 2000 && esc_stick_panel_stick()->phase
+                                    != ESC_STICK_ARMING; ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(esc_stick_panel_stick()->phase, ESC_STICK_ARMING);
+    CHECK(motor_screen_dial_hold());
+    CHECK(!esc_stick_running(esc_stick_panel_stick()));
+    CHECK_EQ(esc_stick_panel_stick()->reason, ESC_STICK_R_USER);
+    const int arms = r.arms;
+    r.no_arm = false;
+    for (int i = 0; i < 3000; ++i) {
+        rig_step(&r);
+    }
+    CHECK_EQ(r.arms, arms);
+    CHECK(!r.armed);
+    CHECK(!motor_screen_dial_hold());
+}
+
 int main(void)
 {
     RUN(a_profile_the_engine_cannot_run_goes_no_further);
@@ -576,6 +606,7 @@ int main(void)
     RUN(a_bench_that_loses_its_throttle_closes_the_warning);
     RUN(a_run_needs_a_change_and_the_warning_held_two_seconds);
     RUN(a_hold_that_is_interrupted_starts_nothing);
+    RUN(a_dial_hold_in_arming_ends_the_run_and_nothing_arms);
     RUN(a_whole_run_on_the_modelled_bench_stores_and_lets_go);
     RUN(leaving_abort_and_stop_end_a_run_and_let_go);
     RUN(leaving_switches_off_a_supply_the_screen_switched_on_after_its_run);
