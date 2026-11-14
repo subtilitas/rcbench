@@ -144,6 +144,7 @@ void publish_throttle_ramp(void)
 #include "fw_release.h"
 #include "fw_trial.h"
 #include "panel_blec.h"
+#include "panel_bal.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
 #include "panel_imu.h"
@@ -1013,12 +1014,13 @@ void app_main(void)
                     ? ESP_OK : ESP_ERR_NO_MEM);
 
     knob_task_start();
-    /* The Bluetooth IMU's, the Dial's and the power node's controllers,
+    /* The Bluetooth IMU's, the Dial's and both nodes' controllers,
      * with the settings loaded, then the task of every Bluetooth LE
      * client. */
     panel_imu_start();
     panel_dial_start();
     panel_pnode_start();
+    panel_bal_start();
     panel_blec_start();
 
     /* What internal RAM holds with every task of the panel running and the

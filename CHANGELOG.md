@@ -129,6 +129,43 @@ history is in git.
   two points of the ADC's calibration curve (`vibe_cfg_scale()`), and the
   index with its polarity found (`vibe_index_scan()`); host suite
   `test_vibe_frame`.
+- The panel's side of the balance node. SETUP > WIRELESS has a BALANCE
+  NODE entry: ON/OFF, a 10s scan for nodes whose manufacturer data names
+  the balance role (`rcnode_adv_maker_role()`), the name taken from the advertising or the scan
+  response (refused while ARMED, stopped at the switch to ARMED), the bound
+  node kept over a restart, the node's cell from the STATUS packets it
+  sends on STREAM, and the trial mass (0.01g to 20.00g, 0.50g by default).
+  The panel reads INFO and takes reports only from a balance node of
+  protocol 1, writes the blade count and, after 2 reports without an index
+  edge, the bench's rpm, at most one CONTROL write every 250ms. BALANCE
+  shows the node's 1x magnitude, angle, rpm and a quality word from the
+  report's flags; `--` for a report older than 1000ms, for a report
+  without a counted revolution (the magnitude) and while the link of a
+  bound node is down; SIMULATED only while BALANCE NODE is OFF or no node
+  is bound. A new report repaints the four readings' values alone, on the
+  BALANCE pane only (`balance-node` in `tools/frame_cost.py`, held at
+  1,000 fills by CI). MOTOR & ESC gets a BALANCE tab beside PLOT and
+  TABLE: a TAKE key for each run of the two-run and four-run methods (8
+  reports, 2s, each; a report with the sensor's DC level out, a clipped
+  sample, an rpm out of range, a lost or refused index edge or a changed
+  mode fails the run at once with its own word, and a trial whose mean rpm
+  lies more than 5% from the baseline's fails as `NOT BASELINE RPM`;
+  the runs clear with CLEAR, the method, BLADES, PROPELLER or EDF,
+  Balance node OFF or ON, another node bound and a node restart, which
+  INFO's clock shows at the link-up, and a reconnect of the same node
+  keeps them), the correction through
+  shared/vibe as ADD and WHERE,
+  solved again when the trial mass changes, and a row in
+  `BENCH/BALANCE/BALANCE.CSV` for each solution; the hint under ADD says
+  whether the row was written. A file whose last row was cut gets a line
+  end before the next row
+  ([Balancing](docs/Balance.md#measuring-with-the-balance-node)).
+- `protocols/bleuart`: a connect that goes unanswered doubles the gap
+  before the next, from 1,000ms (7,000ms after a failure the host stack
+  reports) up to 30,000ms (`BLEU_BACKOFF_MAX_MS`); a scan, a bind or a
+  link that comes up starts it over. A bound peripheral that is away so
+  holds the host stack's one connect less often, and the other clients'
+  connects wait less.
 
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the

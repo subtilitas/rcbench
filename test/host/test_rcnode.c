@@ -815,6 +815,18 @@ TEST_CASE(a_name_alone_matches_and_other_devices_do_not)
         0x07, 0xFF, 0xFF, 0xFF, 'r', 'c', 0x01, 0x09,
     };
     CHECK(!rcnode_adv_match(bad_role, sizeof bad_role, &role));
+    /* the manufacturer data alone names a role for a scan's list; a name
+     * or the service alone names none */
+    CHECK_EQ(rcnode_adv_maker_role(name_only, sizeof name_only), 0u);
+    CHECK_EQ(rcnode_adv_maker_role(bad_role, sizeof bad_role), 0u);
+    CHECK_EQ(rcnode_adv_maker_role(other_maker, sizeof other_maker), 0u);
+    static const uint8_t bal_maker[] = {
+        0x07, 0xFF, 0xFF, 0xFF, 'r', 'c', 0x01, 0x02,
+    };
+    CHECK_EQ(rcnode_adv_maker_role(bal_maker, sizeof bal_maker),
+             RCNODE_ROLE_BALANCE);
+    CHECK_EQ(rcnode_adv_maker_role(bal_maker, sizeof bal_maker - 1u), 0u);
+    CHECK_EQ(rcnode_adv_maker_role(NULL, 0u), 0u);
 
     /* the manufacturer data wins over a name of the other role */
     static const uint8_t both[] = {

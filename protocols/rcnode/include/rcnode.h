@@ -777,6 +777,19 @@ uint8_t rcnode_name_role(const char *name);
  */
 bool rcnode_adv_match(const uint8_t *ad, size_t len, uint8_t *role);
 
+/**
+ * @brief The role a report's manufacturer data names, without the name's
+ * or the service UUID's fallback of rcnode_adv_match(): a scan lists a node
+ * by it, never by a name alone.
+ *
+ * @param ad The AD (advertising data) bytes.
+ * @param len Their count.
+ * @return RCNODE_ROLE_POWER or RCNODE_ROLE_BALANCE; 0 without the rcnode
+ * manufacturer data, for a structure whose length runs past the end, or
+ * for NULL.
+ */
+uint8_t rcnode_adv_maker_role(const uint8_t *ad, size_t len);
+
 #ifdef __cplusplus
 }
 #endif

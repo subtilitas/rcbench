@@ -436,7 +436,8 @@ seines Bluetooth-LE-Hubs, neben der IMU und dem Dial (Owner 2 des Hubs von
 `protocols/bleuart`). SETUP > WIRELESS > LEISTUNGSKNOTEN enthält seine
 Zeilen ([Bildschirme](Screens-de.md#wireless-der-leistungsknoten)). Das
 erste Leistungsknoten EIN startet Bluetooth LE bis zum Neustart des
-Panels.
+Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
+([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)).
 
 - **Suchen und binden.** KNOTEN SUCHEN sucht 10s lang und listet die Geräte,
   deren Advertising den Knotendienst und in den Herstellerdaten die Rolle
@@ -614,9 +615,9 @@ this start`.
 
 ## Aktuelle Einschränkungen
 
-- Das Panel verbindet sich nur mit dem Leistungsknoten. Der Auswuchtknoten
-  hat noch keine Seite im Panel; ein BLE-Scanner auf einem Telefon zeigt
-  seinen Dienst und seinen Stream.
+- Das Panel verbindet sich mit dem Leistungsknoten und mit dem
+  Auswuchtknoten (SETUP > WIRELESS,
+  [Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)).
 - Das Panel zeigt keine Signalstärke eines verbundenen Knotens. STATUS
   trägt keine; die Trefferliste zeigt die dBm der Suche.
 - Die Messwerte des Knotens erreichen MOTOR & ESC nur, solange die

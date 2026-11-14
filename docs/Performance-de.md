@@ -103,6 +103,7 @@ wifi-keys                   36,944    4618 KiB
 wifi-idle                        0       0 KiB
 imu                            137      17 KiB
 imu-hold                       626      78 KiB
+balance-node                   683      85 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
 hlines                         180      22 KiB
@@ -136,6 +137,7 @@ est. ms and est. fps: not measured
 | `wifi-idle` | WI-FI mit laufendem WLAN-Hotspot, die Leerlaufzeit in jedem Frame 1s kürzer: die Seite zeigt sie in ganzen Minuten, also wird nichts neu gezeichnet |
 | `imu` | der IMU-Bildschirm mit einem Winkelframe in jedem Frame, X 0.1° vom vorigen entfernt: die Zeile X neu gezeichnet, auf sich selbst beschnitten |
 | `imu-hold` | der IMU-Bildschirm, ein Finger auf 2s HALTEN: KALIBRIEREN in der Fußleiste: der Knopf und das ALTER in der Zeile RATE neu gezeichnet, jedes auf sich selbst beschnitten |
+| `balance-node` | BALANCE mit verbundenem Auswuchtknoten und einem Bericht in jedem Frame, dessen Betrag, Winkel, Drehzahl und Qualität vom vorigen abweichen: die vier Werte VIBRATION, WINKEL, DREHZAHL und SIGNAL in ihren Boxen neu gezeichnet |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
 | `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
 | `clear` | ein Löschen des ganzen Bildschirms |
@@ -269,7 +271,7 @@ im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpas
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | `servo-rudder` | 4 600 | ein neuer Winkel auf RUDER, der mehr als die Anzeige, die Zustandszeilen und die beiden Boxen des Ruders neu zeichnet |
 | `servo-test` | 1 000 | einen bewegten Arm oder einen neuen Messwert, der die TEST-Seite neu zeichnet |
-| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet, eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet, oder einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold`, `balance-node` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet, eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet, einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen, oder einen Bericht des Auswuchtknotens, der BALANCE ganz neu zeichnet |
 | `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 713 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
@@ -433,7 +435,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 704 | 2 448 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 720 | 2 432 |
 | `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |

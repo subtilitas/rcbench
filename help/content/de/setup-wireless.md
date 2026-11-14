@@ -6,11 +6,11 @@ order: 62
 
 # Wireless
 
-WIRELESS auf [SETUP](setup.md) enthält die Bluetooth-LE-Geräte (Low Energy) des Panels: die IMU (Inertial Measurement Unit) WitMotion BWT901CL, das M5Stack Dial, einen Drehknopf ohne Kabel, und den Leistungsknoten, einen INA228 am XT60 des ESC. Alle erreichen das Panel über den ESP32-C6 des Boards. Das erste IMU EIN, Dial EIN oder Leistungsknoten EIN startet Bluetooth LE bis zum Neustart des Panels. Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
+WIRELESS auf [SETUP](setup.md) enthält die Bluetooth-LE-Geräte (Low Energy) des Panels: die IMU (Inertial Measurement Unit) WitMotion BWT901CL, das M5Stack Dial, einen Drehknopf ohne Kabel, den Leistungsknoten, einen INA228 am XT60 des ESC, und den Auswuchtknoten. Alle erreichen das Panel über den ESP32-C6 des Boards. Das erste IMU EIN, Dial EIN, Leistungsknoten EIN oder Auswuchtknoten EIN startet Bluetooth LE bis zum Neustart des Panels. Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
 
 ## Die linke Liste
 
-Die linke, 220px breite Liste hat 3 Einträge: IMU, DIAL und LEISTUNGSKNOTEN. Jeder zeigt seinen Namen und seinen Zustand. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen. Die Liste funktioniert wie unter [Sensoren](setup-sensors.md#die-linke-liste): ein ausgeschalteter Eintrag zeigt nur seine Einschaltzeile und den Zustand `AUS`, jeder Eintrag behält seine Scrollposition, und die Rücksetztaste nennt den Eintrag, `DIAL ZURÜCKSETZEN`.
+Die linke, 220px breite Liste hat 4 Einträge: IMU, DIAL, AUSWUCHTKNOTEN und LEISTUNGSKNOTEN. Jeder zeigt seinen Namen und seinen Zustand. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen. Die Liste funktioniert wie unter [Sensoren](setup-sensors.md#die-linke-liste): ein ausgeschalteter Eintrag zeigt nur seine Einschaltzeile und den Zustand `AUS`, jeder Eintrag behält seine Scrollposition, und die Rücksetztaste nennt den Eintrag, `DIAL ZURÜCKSETZEN`.
 
 ## Die IMU
 
@@ -127,11 +127,37 @@ Mit INA228-Quelle auf NODE:
 | `300ms KEIN MESSWERT` | verbunden, 300ms kein Messwert |
 | `KNOTEN VERLOREN` | die Verbindung brach nach einem Messwert ab |
 
+## Der Auswuchtknoten
+
+![WIRELESS auf dem AUSWUCHTKNOTEN-Eintrag, berichtet](view:setup-wireless-bal)
+
+Der Auswuchtknoten misst Vibration und Index eines Rotors für [Balance](balance.md#der-auswuchtknoten). Er steuert nichts, daher ist sein Verlust kein Fehler.
+
+| Einstellung | Bereich | Vorgabe | Wirkung |
+|---|---|---|---|
+| Auswuchtknoten | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Knoten; AUS beendet die Verbindung |
+| Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Auswuchtknoten in Reichweite, `rcbench-bal-XXXX`; das Schalten auf ARMED beendet die Suche; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
+| Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen listet die Knoten der letzten Suche; Tippen auf einen bindet ihn und fragt nach dem Speichern. Zurücksetzen behält den gebundenen Knoten |
+| Knotenakku | `3.91V`, `3.40V NIEDRIG`, `KEIN WERT`, `--` | | die Zelle des Knotens, aus dem STATUS, den der Knoten neben seinen Berichten sendet; NIEDRIG unter 3.50V |
+| Testmasse | 0.01g bis 20.00g | 0.50g | die Masse, die für die Testläufe auf [MOTOR & ESC](motor.md#wuchten) aufgeklebt wird |
+
+| Zustand | Wann |
+|---|---|
+| `KEIN KNOTEN GEBUNDEN` | Bluetooth läuft; kein Knoten ist gebunden |
+| `GEBUNDEN: KEIN KNOTEN` | das gebundene Gerät bietet keinen Knotendienst |
+| `VERBUNDEN, LIEST INFO` | die Verbindung steht; INFO wird gelesen |
+| `ROLLE 1, PROTOKOLL 1` | der Knoten ist kein Auswuchtknoten oder spricht ein anderes Protokoll; nichts, was er sendet, wird übernommen |
+| `VERBUNDEN, KEIN BERICHT` | seit 1000ms kein Bericht |
+| `BERICHTET` | ein Bericht in den letzten 1000ms |
+
+`AUS`, `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `SUCHE LÄUFT` und `VERBINDE` lesen sich wie beim Dial.
+
 ## Verwandte Seiten
 
 - [Setup](setup.md)
 - [IMU](imu.md)
 - [Sensoren](setup-sensors.md)
 - [Motor und ESC](motor.md)
+- [Balance](balance.md)
 - [Servo](servo.md)
 - [Sensorknoten](https://github.com/subtilitas/rcbench/wiki/Nodes-de#das-panel)

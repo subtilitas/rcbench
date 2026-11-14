@@ -101,8 +101,8 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ja | ja | ja |
 | `escwire` | ja | ja | ja |
 | `witmotion` | ja | | ja |
-| `hc05` · `vibe` · `dial` | | | ja |
-| `bleuart` · `dialknob` · `rcnode` | ja | | ja |
+| `hc05` · `dial` | | | ja |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` | ja | | ja |
 
 ## Toolchains
 

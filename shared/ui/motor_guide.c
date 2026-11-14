@@ -60,8 +60,9 @@ static gfx_rect_t log_rect(void)
 
 /** @brief LIVE: the tabs, PLOT | TABLE, the throttle and RENAME LOG.
  *
- *  PLOT | TABLE is marked 8px wider than its two tabs, so the badge at its
- *  right end sits past TABLE's label and left of the poll rate at x 232.
+ *  PLOT | TABLE | BALANCE is marked 27px wider than its three tabs, so the
+ *  28px badge at its right end, x 267 to 295, sits past BALANCE's label
+ *  (to x 266) and left of the poll rate at x 296.
  *  The throttle's mark is its row of keys and track, the badge at the
  *  live half's edge over the track's empty end, clear of the card's tag
  *  and of the readout above it.
@@ -71,7 +72,7 @@ static void page_live(ui_help_page_t *p)
     column_page(p, TX_HG_MO_TITLE_LIVE);
     gfx_rect_t tabs = s.tabs.rect[0];
     const gfx_rect_t last = s.tabs.rect[s.tabs.count - 1];
-    tabs.w = (int16_t)(last.x + last.w + 8 - tabs.x);
+    tabs.w = (int16_t)(last.x + last.w + 27 - tabs.x);
     (void)ui_help_add_at(p, TR(MO_TAB_PLOT), TX_HG_MO_PLOT, tabs,
                          UI_HELP_AT_RIGHT);
     (void)ui_help_add_at(p, TR(MO_THROTTLE), TX_HG_MO_THROTTLE,

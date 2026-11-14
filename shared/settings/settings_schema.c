@@ -593,4 +593,16 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_I228_SRC] = {
         "i228_src", "",
         SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(i228_src) },
+    /*
+     * The balance node (bal_ctl.h, docs/Balance.md): ON starts Bluetooth LE
+     * and connects the bound node.  TRIAL MASS is the mass the trial runs
+     * of the two-run and four-run methods put on the rotor, in g; the
+     * correction comes out in the same unit.
+     */
+    [SET_BNODE_EN] = {
+        "bnode_en", "",
+        SET_CAT_WIRELESS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_BAL_TRIAL] = {
+        "bal_trial_g", "g",
+        SET_CAT_WIRELESS, SET_TYPE_FLOAT, 0.01f, 20.0f, 0.01f, 0.5f, NULL, 0 },
 };

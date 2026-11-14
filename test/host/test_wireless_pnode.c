@@ -46,7 +46,7 @@ TEST_CASE(the_entry_shows_on_and_source_off_and_its_rows_on)
 {
     fresh_hub();
     wireless_pane_set_pnode(NULL);
-    CHECK_EQ(WL_ENTRY_PNODE, 2);
+    CHECK_EQ(WL_ENTRY_PNODE, 3);    /* last, under BALANCE NODE */
     char buf[32];
     CHECK_STR_EQ(wireless_pane_name(WL_ENTRY_PNODE, buf, sizeof buf),
                  TR(PNODE_ENTRY));

@@ -21,6 +21,7 @@
 #include "link_host.h"
 #include "link_pages.h"
 #include "outputs.h"
+#include "panel_bal.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
 #include "panel.h"
@@ -360,6 +361,7 @@ static __attribute__((noinline)) void dial_faults_follow(void)
 {
     const error_bench_t b = error_bench();
     panel_dial_set_live(b.live);
+    panel_bal_set_live(b.live);
     const uint32_t count = panel_dial_errors();
     if (count == s_dial_watch.seen) {
         return;

@@ -175,7 +175,43 @@ node to sleep (SLEEP) or switches it off until its RESET key (OFF),
 restarts its run extremes (RUN), or on the balance node changes the blade
 count (BLADES) or the rpm of the no-index mode (RPM), which changes its
 readings. The node drives no output and its
-readings feed no protection. The panel does not connect to a node yet.
+readings feed no protection.
+
+Current limitation, the panel's Bluetooth clients: the panel binds the
+M5Stack Dial, the power node and the balance node by their stored address
+alone, with no pairing and no bonding. The trigger is a BLE device in
+range that wins the connection to a stored address, by advertising it
+while the real device is off or out of range, and serves that device's
+service and an INFO that names the expected protocol (and for a node, its
+role). The panel then takes that device's packets as the real one's:
+
+- M5Stack Dial: its EVENTs. While the bench is ARMED, on MOTOR & ESC a
+  detent moves the throttle by the throttle step (0.5%, 1%, 2% or 5%), and
+  on the SERVO screens that take the knob it moves the horn by the servo
+  step. Each EVENT moves at most 16 detents, and the panel does not limit
+  how often EVENTs come, so a run of EVENTs can take the throttle from 0%
+  to 100% within 7 EVENTs at the 1% step. A PRESS sets the throttle to 0%
+  or the horn to CENTER, and a HOLD disarms or ends an ESC STICK run. The
+  device also receives the screen model the panel streams to the Dial: the
+  live readings and the run's state. It cannot ARM the bench and cannot
+  switch SUPPLY ON, PROG 5V or WRITE: those are the panel's 2s holds.
+  Turns while SAFE move nothing and are not kept for the ARM. What limits
+  it: STOP on the panel and the hardware stop act as always, every limit
+  and trip of the run applies as to the panel's own knob, and a loss of
+  the link while
+  ARMED (1,000ms without an EVENT, or the disconnect) switches the bench
+  SAFE.
+- Power node: its readings. While INA228 SOURCE is NODE they show on
+  MOTOR & ESC and the Dial as the bench's voltage, current, power, peaks
+  and totals, and go into the run's log, so a false figure reads as the
+  real one. They feed no limit or trip. A device that stops sending ends
+  the run under the dropout rule, as the real node's dropouts do.
+- Balance node: its reports. A capture takes them, so a false report
+  produces an ADD and WHERE correction and a CSV row. A CONTROL write the
+  panel sends (BLADES, RPM) reaches whichever device holds the link.
+
+The planned remedy is pairing with bonding (LE Secure Connections), a
+planned slice that is not built.
 
 Two classes of report apply.
 
@@ -211,7 +247,7 @@ The following modules parse input from outside their own trusted state:
 | `shared/outputs` | link page writes from the panel (offset, count and values for the OUTPUTS, CHAN_CFG, CHANNELS, SERVO, SERVO_SENSE, SUPPLY, SENSE, TONE, KST, HITEC, programming-port, BIND_CFG and BIND_OUT pages, and the BIND commit, which applies the staged pages only when its CRC-16 matches them; a HITEC command runs only when its CRC-16 matches the staged registers, and a SEND only with the write key), in a build with `IOMCU_CONSOLE` the bench console's command lines from the IOmcu's USB serial port (`page_console_key()`: lines of at most 160 characters, numbers checked against their register's range, every request through the link's page handlers), the output set-up read back from flash, and, on the panel, the OUTPUTS and CHAN_CFG pages and the board number from the IDENTITY page read back from the IOmcu; a binding is read from them only when every slot names a known driver, rate and header pin and the OUTPUTS page renders back unchanged; from CHAN_CFG only the role of each slot's first channel is read |
 | `shared/sense` | INA228, INA3221 and AS5600 register bytes (fixed length per register) and the SENSE set-up from the link |
 | `shared/vibe` | the balance node's ADC frames (`vibe_frame_split()`): only whole 4-byte words are read, a word of another channel than the one due stops the split and the caller restarts the demodulator; its ADC samples and index edges (`vibe_demod_feed()`): a sample at 0 or at `adc_max` is flagged clipped; an edge out of order or past the 16-edge queue is dropped and flagged; a revolution counts only at 10 to 4,096 samples and within 1/8 of the locked period |
-| `shared/ui` | SD card directory listings, CSV column names and cells, any file of the card up to 1MiB as text in the text viewer (`text_view.c` over `shared/files/text_buf.c` and `text_hl.c`: a NUL byte in the first 4KiB refuses the file, over 65,536 line ends refuse it, a byte that starts no UTF-8 sequence, a control character and a later NUL draw as one `?` cell each, a line is classed in at most 128 spans; the editor writes a file only through a SAVE job to `<name>.NEW` while the bench is SAFE with no run logged, and takes a changed KST file's checksum line out, so a hand-edited file never passes the servo programmer as a servo's own image), and ESC profile names and manual text as drawn, cut and wrapped by character cells; touch coordinates turned into row and key indexes; the M5Stack Dial's notifications (`dial_ctl.c`): an EVENT taken only after the Dial's INFO named protocol 1 and only from its EVENT handle, decoded by `protocols/dialknob`, a repeated seq dropped, the held button and touch states never taken as a press, a scan's report listed only when it advertises the Dial's service |
+| `shared/ui` | SD card directory listings, CSV column names and cells, any file of the card up to 1MiB as text in the text viewer (`text_view.c` over `shared/files/text_buf.c` and `text_hl.c`: a NUL byte in the first 4KiB refuses the file, over 65,536 line ends refuse it, a byte that starts no UTF-8 sequence, a control character and a later NUL draw as one `?` cell each, a line is classed in at most 128 spans; the editor writes a file only through a SAVE job to `<name>.NEW` while the bench is SAFE with no run logged, and takes a changed KST file's checksum line out, so a hand-edited file never passes the servo programmer as a servo's own image), and ESC profile names and manual text as drawn, cut and wrapped by character cells; touch coordinates turned into row and key indexes; the M5Stack Dial's notifications (`dial_ctl.c`): an EVENT taken only after the Dial's INFO named protocol 1 and only from its EVENT handle, decoded by `protocols/dialknob`, a repeated seq dropped, the held button and touch states never taken as a press, a scan's report listed only when it advertises the Dial's service; the balance node's notifications (`bal_ctl.c`): a report taken only after the node's INFO named protocol 1 and the balance role, decoded by `protocols/rcnode`, a STATUS on STREAM taken only when it decodes as one and counted as no report, a scan's report listed only when its manufacturer data names the balance role (a name alone never lists), a later report of a listed address only refreshing its RSSI and giving a name to one without; a report shown only for 1000ms after it came (`node_balance.c`); a CSV row appended only after a line end, one written first when the file's last byte is none |
 | `shared/artwork` | board drawing blocks fetched over the link and drawing records read back from flash (payload checked against a 16-bit CRC and a 32-bit FNV-1a hash before use) |
 | `shared/safety` | CONTROL page writes from the link (offset, count and values), which arm and clear the output stage |
 | `shared/settings` | setting values and texts loaded from NVS at start-up. Each value is brought to its schema: a switch to 0 or 1, an option out of range and a Sensor SDA (serial data) pin the bus cannot use to the default, a number snapped to its step, where it has one, and clamped to its range. Sensor SCL (serial clock) is derived from Sensor SDA, not read. The text (the device-under-test name) is cut to 23 characters and terminated. Not checked here: the characters of the text (`shared/gfx` decodes them for drawing), and whether a stored value inside today's range is the one that was saved |

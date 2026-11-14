@@ -150,6 +150,9 @@ SCREENS = {
     # The TABLE pane with an INA228 as BENCH's source, the ESC's own
     # telemetry beside it.
     "motor-table": ("motor-table.png", "motor", "dark"),
+    # The BALANCE pane with a balance node linked, both runs of the
+    # two-run method taken and the correction solved.
+    "motor-balance": ("motor-balance.png", "motor", "dark"),
     # An IOmcu that has refused link frames: the count after the
     # error count in the header strip, with the link up.
     "motor-refused": ("motor-refused.png", "motor", "dark"),
@@ -755,6 +758,9 @@ SCREENS = {
     "balance-rig": ("balance-rig.png", "balance", "dark"),
     "balance-aircraft": ("balance-aircraft.png", "balance", "dark"),
     "balance-edf": ("balance-edf.png", "balance", "dark"),
+    # A balance node linked: its readings, and ADD and WHERE from the runs
+    # taken on MOTOR & ESC.
+    "balance-node": ("balance-node.png", "balance", "dark"),
     # The blade count's keypad, 5 typed.
     "balance-keypad": ("balance-keypad.png", "balance", "dark"),
     # WI-FI from LOGS: the radio off with nothing kept; a home
@@ -858,6 +864,9 @@ SCREENS = {
     # SETUP > WIRELESS on the POWER NODE entry: the node connected, INA228
     # SOURCE NODE, one node found and bound, its cell at 3.92V.
     "setup-wireless-pnode": ("setup-wireless-pnode.png", "setup", "dark"),
+    # SETUP > WIRELESS on the BALANCE NODE entry: the node reporting, two
+    # found by a scan, the first bound, its cell at 3.91V.
+    "setup-wireless-bal": ("setup-wireless-bal.png", "setup", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back
@@ -950,6 +959,7 @@ FIT_ONLY = {
     "help-setup-wireless-imu": (None, "setup", "dark"),
     "help-setup-wireless-dial": (None, "setup", "dark"),
     "help-setup-wireless-pnode": (None, "setup", "dark"),
+    "help-setup-wireless-bal": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),
     "help-outputs-port": (None, "outputs", "dark"),
     "help-outputs-port-2": (None, "outputs", "dark"),

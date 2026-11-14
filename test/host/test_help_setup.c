@@ -218,9 +218,10 @@ TEST_CASE(the_imu_entry_says_the_panel_reads_it)
         ui_help_page_t p;
         REQUIRE(ui_help_page(settings_screen(), false, 0, &p));
         CHECK_EQ(p.title, TX_HG_SET_TITLE_WIRELESS);
-        const ui_text_id_t want = (e == WL_ENTRY_IMU)    ? TX_HG_SET_ENTRY_IMU
-                                  : (e == WL_ENTRY_DIAL) ? TX_HG_SET_ENTRY_DIAL
-                                                         : TX_HG_SET_ENTRY_PNODE;
+        const ui_text_id_t want = (e == WL_ENTRY_IMU)     ? TX_HG_SET_ENTRY_IMU
+                                  : (e == WL_ENTRY_DIAL)  ? TX_HG_SET_ENTRY_DIAL
+                                  : (e == WL_ENTRY_PNODE) ? TX_HG_SET_ENTRY_PNODE
+                                                          : TX_HG_SET_ENTRY_BAL;
         CHECK_EQ(p.item[0].text, want);
     }
     for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {

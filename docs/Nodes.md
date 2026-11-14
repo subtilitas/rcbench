@@ -411,7 +411,9 @@ The panel connects to one power node as the third client of its Bluetooth
 LE hub, beside the IMU and the Dial (owner 2 of `protocols/bleuart`'s hub).
 SETUP > WIRELESS > POWER NODE holds its rows
 ([Screens](Screens.md#wireless-the-power-node)). The first Power node ON
-starts Bluetooth LE until the panel restarts.
+starts Bluetooth LE until the panel restarts. The balance node is the
+fourth client, owner 3
+([Balancing](Balance.md#measuring-with-the-balance-node)).
 
 - **Scan and bind.** SCAN FOR NODE scans 10s and lists the devices whose
   advertising names the node service and the power role in its
@@ -578,8 +580,8 @@ this start`.
 
 ## Current limitations
 
-- The panel connects to the power node only. The balance node has no panel
-  side yet; a phone's BLE scanner shows its service and stream.
+- The panel connects to the power node and to the balance node (SETUP >
+  WIRELESS, [Balancing](Balance.md#measuring-with-the-balance-node)).
 - The panel shows no signal strength of a linked node. STATUS carries
   none; the found list shows the scan's dBm.
 - The node's readings reach MOTOR & ESC only while the IOmcu link is up:

@@ -1100,8 +1100,8 @@ bis zum nächsten ARM erhalten. Jeder Wechsel auf ARMED beginnt eine
 CSV-Datei, die LOGS darstellen kann.
 
 
-Auf LIVE stehen unter dem Titel des Telemetriefelds GRAFIK und TABELLE,
-zwei Registerkarten von 200 x 40px. Daneben erscheinen Abfragerate und
+Auf LIVE stehen unter dem Titel des Telemetriefelds GRAFIK, TABELLE und
+WUCHTEN, drei Registerkarten in 254 x 40px. Daneben erscheinen Abfragerate und
 Fehlerzahl der Verbindung: CRC-Fehler und Resynchronisationen zusammen
 (CRC: Cyclic Redundancy Check). Hat der IOmcu seit dem Einschalten
 Verbindungsframes abgelehnt, zeigt die Zeile darunter bei bestehender
@@ -1434,6 +1434,49 @@ einer aus SENSE abgeleiteten Zuordnung behält die Datei `ch1` bis `ch3`.
 Solange die Ausgangsgruppe angesteuert wird, lässt sich die Zuordnung
 nicht schreiben; die Spalten bleiben daher über den gesamten Lauf gleich.
 LOGS gruppiert `out`, `port` und `supply` unter INA3221.
+
+### WUCHTEN, die Läufe des Auswuchtknotens
+
+![WUCHTEN mit beiden Läufen der Zwei-Lauf-Methode](img/de/motor-balance.png)
+
+WUCHTEN nimmt die Läufe einer Auswuchtung mit dem Auswuchtknoten auf
+([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)). Das Feld
+unter den Registerkarten misst 600 x 150px:
+
+- Die Live-Zeile: Betrag und Winkel der 1x-Komponente, Drehzahl und
+  Gütewort des Knotens, rechts die Testmasse (Testmasse, SETUP > WIRELESS).
+  Bei Auswuchtknoten AUS oder ohne gebundenen Knoten steht dort
+  `KEIN AUSWUCHTKNOTEN: IN WIRELESS BINDEN`; ein Bericht, der älter als
+  1000ms ist, oder ein gebundener Knoten ohne Verbindung zeigt `--`.
+- Für jeden Lauf eine fingerhohe Taste: REFERENZ und TEST 0° bei 2 LÄUFE,
+  REFERENZ, TEST 0°, TEST 120° und TEST 240° bei 4 LÄUFE. Ein Druck nimmt
+  die nächsten 8 Berichte auf, 2s, während die anderen Tasten warten. Unter
+  jeder Taste ihr Lauf: `LÄUFT n/8`, der Mittelwert (`0.42g 265°` bei zwei
+  Läufen, der Betrag bei vier) oder der Grund des Abbruchs: `KEIN BERICHT`
+  (1000ms ohne Bericht), `SENSORFEHLER`, `ÜBERSTEUERT`,
+  `DREHZAHLBEREICH`, `INDEXFEHLER`, `MODUS GEÄNDERT` (ein Bericht, den der
+  Knoten als unbrauchbar kennzeichnet,
+  [Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)),
+  `KEINE UMDREHUNG`, `KEIN INDEX` (zwei Läufe
+  brauchen den Index), `DREHZAHL GEÄNDERT` (mehr als 5% vom ersten
+  Bericht des Laufs) oder, unter einem Testlauf, `ANDERE DREHZAHL` (seine
+  mittlere Drehzahl mehr als 5% von der der Referenz).
+- 2 LÄUFE, 4 LÄUFE und LÖSCHEN. Ein Wechsel der Methode löscht die Läufe,
+  ebenso BLÄTTER, PROPELLER oder EDF, Auswuchtknoten AUS oder EIN, ein
+  anderer gebundener Knoten und ein Neustart des Knotens
+  ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)).
+- Sind alle Läufe aufgenommen: `HINZU 0.35g  WO zwischen 1 und 2` (beim
+  EDF `Nabe, 265°`), neu gelöst, wenn sich die Testmasse ändert, darunter,
+  was aus der CSV-Zeile wurde (`Zeile wartet auf die Karte`,
+  `Geschrieben: BENCH/BALANCE/BALANCE.CSV`,
+  `NICHT geschrieben: keine Karte/Fehler`), oder das Wort des Lösers:
+  `SCHWACH` mit der Wirkung der Testmasse in % und dem Verbleib der Zeile
+  (`SCHWACH 12% Wirkung: geschrieben`), `OHNE WIRKUNG`, `WIDERSPRÜCHLICH`,
+  `KEIN ERGEBNIS`.
+
+Die Tasten wirken beim Drücken und steuern keinen Ausgang, daher gehen sie
+auch bei ARMED. Ohne frischen Bericht nimmt eine Lauftaste nichts auf, und
+das Band zeigt `KEIN FRISCHER BERICHT VOM AUSWUCHTKNOTEN: NICHTS GEMESSEN`.
 
 ### LOG UMBENENNEN
 
@@ -5567,7 +5610,7 @@ Zeile in der Schrift 10 x 20px.
 - PANEL, SENSORS, WIRELESS und SD CARD enthalten die Einstellungen für den
   gesamten Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer
   Liste; SENSORS nennt stattdessen die verfügbaren Gruppen,
-  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, LEISTUNGSKNOTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, LEISTUNG, AUSWUCHTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
@@ -6557,15 +6600,17 @@ Laufs ([Servoverfahren](Servo-de.md)).
 ### WIRELESS: die IMU und das Dial
 
 WIRELESS enthält die Bluetooth-LE-Geräte des Panels in einer geteilten
-Ansicht wie SENSORS: links 3 Einträge, IMU, DIAL und LEISTUNGSKNOTEN, jeder
-mit Namen und Zustand, rechts die Zeilen des gewählten Eintrags. Das erste
-IMU EIN, Dial EIN oder Leistungsknoten EIN startet Bluetooth LE bis zum
+Ansicht wie SENSORS: links 4 Einträge, IMU, DIAL, AUSWUCHTKNOTEN und
+LEISTUNGSKNOTEN, jeder mit Namen und Zustand, rechts die Zeilen des
+gewählten Eintrags. Das erste IMU EIN, Dial EIN, Leistungsknoten EIN oder
+Auswuchtknoten EIN startet Bluetooth LE bis zum
 Neustart des Panels.
 
 | Eintrag | Zustand im Betrieb | Zeilen |
 | --- | --- | --- |
 | IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 7 bei EIN |
 | DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 5 bei EIN |
+| AUSWUCHTKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN KNOTEN`, `VERBUNDEN, LIEST INFO`, `ROLLE r, PROTOKOLL p`, `VERBUNDEN, KEIN BERICHT`, `BERICHTET` | 1 bei AUS; 5 bei EIN |
 | LEISTUNGSKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `KEIN LEISTUNGSKNOTEN`, `VERBUNDEN, KEIN MESSWERT`, `ANDERES PROTOKOLL n`, `INA228-SETUP ABGELEHNT`, `KEIN INA228 AM KNOTEN`, `VERBUNDEN`, `300ms KEIN MESSWERT`, `KNOTEN VERLOREN` ([WIRELESS: der Leistungsknoten](#wireless-der-leistungsknoten)) | 2 bei AUS: Leistungsknoten und INA228-QUELLE; 5 bei EIN |
 
 ![WIRELESS auf dem DIAL-Eintrag](img/de/setup-wireless-dial.png)
@@ -6633,6 +6678,25 @@ Mit INA228-Quelle auf NODE:
 Das Band zeigt `LEISTUNGSKNOTEN: 300ms KEIN MESSWERT`, wenn ein verbundener
 Knoten keine Messwerte mehr sendet, und `LEISTUNGSKNOTEN VERLOREN`, wenn die
 Verbindung bei SAFE abbricht.
+
+### WIRELESS: der Auswuchtknoten
+
+![WIRELESS auf dem AUSWUCHTKNOTEN-Eintrag](img/de/setup-wireless-bal.png)
+
+Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)):
+
+| Zeile | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Auswuchtknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie, und sein Verlust ist kein Fehler: der Knoten misst und steuert nichts |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen sucht 10s lang nach Knoten, die die Rolle Auswuchten anzeigen, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE` |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Knoten der letzten Suche, `rcbench-bal-3456  -58dBm`, den gebundenen markiert; Tippen auf einen bindet ihn und fragt nach dem Speichern |
+| Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus dem STATUS, den er auf STREAM neben seinen Berichten sendet; `--` vor dem ersten auf einer Verbindung |
+| Testmasse | 0.01g bis 20.00g in Schritten von 0.01g | 0.50g | die Masse, die für die Testläufe von MOTOR & ESC > WUCHTEN aufgeklebt wird |
+
+AUSWUCHTKNOTEN ZURÜCKSETZEN setzt Auswuchtknoten auf AUS und Testmasse auf
+0.50g zurück; der gebundene Knoten bleibt. Ein Knoten, dessen INFO eine
+andere Rolle oder ein anderes Protokoll nennt, zeigt `ROLLE r, PROTOKOLL p`,
+und seine Berichte werden nicht übernommen.
 
 ### SD CARD: welche Logs geschrieben werden, und wohin
 

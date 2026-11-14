@@ -11,6 +11,7 @@
 #include <string.h>
 
 #include "sensors_rows.h"
+#include "wireless_bal.h"
 #include "settings_screen.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -202,6 +203,9 @@ int wireless_pane_entry_of(setting_id_t id)
             return WL_ENTRY_PNODE;
         }
     }
+    if (wireless_bal_owns(id)) {
+        return WL_ENTRY_BAL;
+    }
     return -1;
 }
 
@@ -263,6 +267,8 @@ int wireless_pane_rows(int entry, wl_row_t *out, int max)
             n = add_custom(out, max, n, &wireless_pane_pnode_bind_row);
             n = add_custom(out, max, n, &wireless_pane_pnode_bat_row);
         }
+    } else if (entry == WL_ENTRY_BAL) {
+        n = wireless_bal_rows(out, max);
     }
     return n;
 }
@@ -279,6 +285,8 @@ const char *wireless_pane_name(int entry, char *buf, size_t n)
         snprintf(buf, n, "%s", TR(DIAL_ENTRY));
     } else if (entry == WL_ENTRY_PNODE) {
         snprintf(buf, n, "%s", TR(PNODE_ENTRY));
+    } else if (entry == WL_ENTRY_BAL) {
+        snprintf(buf, n, "%s", TR(BNODE_ENTRY));
     }
     return buf;
 }
@@ -373,6 +381,8 @@ const char *wireless_pane_state(int entry, char *buf, size_t n,
             (void)wireless_pane_pnode_word(wireless_pane_pnode(), buf, n,
                                            ink);
         }
+    } else if (entry == WL_ENTRY_BAL) {
+        (void)wireless_bal_state(buf, n, ink);
     }
     return buf;
 }
@@ -387,6 +397,8 @@ void wireless_pane_reset(int entry)
     } else if (entry == WL_ENTRY_PNODE) {
         settings_reset_rows(k_pnode,
                             (int)(sizeof(k_pnode) / sizeof(k_pnode[0])));
+    } else if (entry == WL_ENTRY_BAL) {
+        wireless_bal_reset();
     }
 }
 

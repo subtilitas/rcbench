@@ -32,21 +32,37 @@
 #include "motor_screen_int.h"
 
 /*
- * Inside the telemetry card: the title line, PLOT | TABLE with the poll
+ * Inside the telemetry card: the title line, PLOT | TABLE | BALANCE with the poll
  * rate beside them, the legend, then the plot.  The table takes the
  * legend's and the plot's place.
  */
-#define SUB_Y     (UP_Y + TITLE_H + 6)    /**< PLOT | TABLE, px. */
+#define SUB_Y     (UP_Y + TITLE_H + 6)    /**< PLOT | TABLE | BALANCE, px. */
 #define SUB_H     40                      /**< Their height, px. */
-#define SUB_W     200                     /**< Their row: two of 98px. */
+/** @brief Their row: three of 82px, a label of 7 cells and its 6px pads. */
+#define SUB_W     254
 #define LEG_Y     (SUB_Y + SUB_H + 4)     /**< The legend, px. */
 #define LEG_H     20                      /**< Its height, px. */
 #define PLOT_X    (LEFT_X + INNER)        /**< The plot's left edge, px. */
 #define PLOT_W    (LEFT_W - 2 * INNER)    /**< Its width: 600px. */
 #define PLOT_Y    (LEG_Y + LEG_H + 4)     /**< Its top, px. */
 #define PLOT_H    (UP_Y + UP_H - INNER - PLOT_Y) /**< Its height: 184px. */
-/** @brief The poll rate and the link's errors, right of PLOT | TABLE. */
-#define RATE_X    (PLOT_X + SUB_W + 14)
+/**
+ * @brief BALANCE's pane: from the legend's line to the card's padding,
+ *        600 x 150px (motor_balance.h).
+ * @return Its rectangle.
+ */
+static inline gfx_rect_t mo_bal_area(void)
+{
+    return (gfx_rect_t){ PLOT_X, LEG_Y, PLOT_W,
+                         (int16_t)(UP_Y + UP_H - INNER - LEG_Y) };
+}
+/**
+ * @brief The poll rate and the link's errors, right of the tabs: 24px on,
+ *        room for the screen guide's 28px badge between BALANCE's label
+ *        and the rate; 322px wide, a German refusal of a 10-digit count
+ *        is 320.
+ */
+#define RATE_X    (PLOT_X + SUB_W + 24)
 
 /*
  * Inside the THROTTLE card: the readout on the title line's right, then
@@ -119,7 +135,7 @@ enum { S_VOLT = 0, S_CURR, S_POWER, S_RPM, S_COUNT };
 typedef struct {
     ui_plot_t     plot;                 /**< plot of volts, amps, power and RPM */
     ui_slider_t   slider;               /**< throttle slider */
-    ui_tabs_t     tabs;                 /**< PLOT | TABLE tabs */
+    ui_tabs_t     tabs;                 /**< PLOT | TABLE | BALANCE tabs */
     bench_state_t bench;                /**< the bench's report */
     /* Whether the throttle follows its controls (ui_value_gate.h): the
      * bench's report, an ARM the hold has asked for and a DISARM or STOP not

@@ -240,6 +240,9 @@ typedef enum {
     /* --- the power node (SETUP > WIRELESS > POWER NODE, pnode_ctl.h) ---- */
     SET_PNODE_EN,
     SET_I228_SRC,
+    /* --- the balance node (SETUP > WIRELESS > BALANCE NODE, bal_ctl.h) -- */
+    SET_BNODE_EN,
+    SET_BAL_TRIAL,
 
     SETTING_COUNT
 } setting_id_t;
@@ -289,6 +292,9 @@ typedef enum {
                                   its type; key pnode_ble                 */
     SET_TEXT_PNODE_NAME,     /**< its name from the scan,
                                   "rcbench-pwr-3456"                      */
+    SET_TEXT_BNODE_ADDR,     /**< the bound balance node's BLE address and
+                                  its type; key bnode_ble                 */
+    SET_TEXT_BNODE_NAME,     /**< its name, "rcbench-bal-3A10"          */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 

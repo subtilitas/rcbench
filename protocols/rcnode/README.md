@@ -146,6 +146,9 @@ role takes which operation.
   manufacturer data names the role first, then the name. The service UUID
   alone matches with role 0. A structure whose length runs past the end
   refuses the report.
+- `rcnode_adv_maker_role()` gives the role of the manufacturer data alone,
+  0 without it: the balance node's scan lists a node by it, never by a
+  name.
 - `rcnode_name_role()` takes a name a scan kept and gives the role its
   prefix names, 0 for another name.
 
@@ -201,6 +204,7 @@ bool         rcnode_name(uint8_t role, const uint8_t addr[6], char out[RCNODE_NA
 size_t       rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out, size_t cap);
 size_t       rcnode_rsp_build(uint8_t role, const uint8_t addr[6], uint8_t *out, size_t cap);
 bool         rcnode_adv_match(const uint8_t *ad, size_t len, uint8_t *role);
+uint8_t      rcnode_adv_maker_role(const uint8_t *ad, size_t len);
 uint8_t      rcnode_name_role(const char *name);
 ```
 

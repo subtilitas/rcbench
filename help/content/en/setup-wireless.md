@@ -6,11 +6,11 @@ order: 62
 
 # Wireless
 
-WIRELESS on [SETUP](setup.md) holds the panel's Bluetooth LE (Low Energy) devices: the WitMotion BWT901CL IMU (inertial measurement unit), the M5Stack Dial, a wireless knob, and the power node, an INA228 on the ESC's XT60. All reach the panel through the board's ESP32-C6. The first IMU ON, Dial ON or Power node ON starts Bluetooth LE until the panel restarts. Settings are retained and saved like other SETUP values.
+WIRELESS on [SETUP](setup.md) holds the panel's Bluetooth LE (Low Energy) devices: the WitMotion BWT901CL IMU (inertial measurement unit), the M5Stack Dial, a wireless knob, the power node, an INA228 on the ESC's XT60, and the balance node. All reach the panel through the board's ESP32-C6. The first IMU ON, Dial ON, Power node ON or Balance node ON starts Bluetooth LE until the panel restarts. Settings are retained and saved like other SETUP values.
 
 ## The left list
 
-The 220px left list has 3 entries: IMU, DIAL and POWER NODE. Each shows its name and its state. Tap an entry to display its settings in the 754px right pane. The list works as on [Sensors](setup-sensors.md#the-left-list): an entry that is off shows its enable row alone and the state `OFF`, each entry keeps its scroll position, and RESET names the entry, `RESET DIAL`.
+The 220px left list has 4 entries: IMU, DIAL, BALANCE NODE and POWER NODE. Each shows its name and its state. Tap an entry to display its settings in the 754px right pane. The list works as on [Sensors](setup-sensors.md#the-left-list): an entry that is off shows its enable row alone and the state `OFF`, each entry keeps its scroll position, and RESET names the entry, `RESET DIAL`.
 
 ## The IMU
 
@@ -127,11 +127,37 @@ With INA228 source on NODE:
 | `NO READING FOR 300ms` | linked, no reading for 300ms |
 | `NODE LOST` | the link dropped after a reading |
 
+## The balance node
+
+![WIRELESS on the BALANCE NODE entry, reporting](view:setup-wireless-bal)
+
+The balance node measures the vibration and the index of a rotor for [Balance](balance.md#the-balance-node). It drives nothing, so its loss is no error.
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| Balance node | ON, OFF | OFF | Bluetooth LE and the link to the bound node; OFF ends the link |
+| Scan for node | `SCAN` | | a tap scans 10s and lists the balance nodes in range, `rcbench-bal-XXXX`; a switch to ARMED stops it; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
+| Bound node | `NONE` or the node's name | `NONE` | a tap lists the nodes the last scan found; a tap on one binds it and asks for a save. RESET keeps the bound node |
+| Node battery | `3.91V`, `3.40V LOW`, `NO READING`, `--` | | the node's cell, from the STATUS the node sends beside its reports; LOW under 3.50V |
+| Trial mass | 0.01g to 20.00g | 0.50g | the mass taped on for the trial runs on [MOTOR & ESC](motor.md#balance) |
+
+| State | When |
+|---|---|
+| `NO NODE BOUND` | Bluetooth runs; no node is bound |
+| `BOUND: NOT A NODE` | the bound device serves no node service |
+| `CONNECTED, READING INFO` | the link stands; INFO is read |
+| `ROLE 1, PROTOCOL 1` | the node is no balance node, or speaks another protocol; nothing it sends is taken |
+| `CONNECTED, NO REPORT` | no report for 1000ms |
+| `REPORTING` | a report within the last 1000ms |
+
+`OFF`, `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `SCANNING` and `CONNECTING` read as for the Dial.
+
 ## Related pages
 
 - [Setup](setup.md)
 - [IMU](imu.md)
 - [Sensors](setup-sensors.md)
 - [Motor and ESC](motor.md)
+- [Balance](balance.md)
 - [Servo](servo.md)
 - [Sensor nodes](https://github.com/subtilitas/rcbench/wiki/Nodes#the-panel)
