@@ -1,0 +1,21 @@
+# The power node on the LCDWIKI ES3C28P, the 2.8" ESP32-S3 display board
+# (ESP32-S3R8 with 8MB octal PSRAM in the package, 16MB QSPI flash).
+# Appended to sdkconfig.defaults:
+#   idf.py -D IDF_TARGET=esp32s3 \
+#     -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p" build
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
+CONFIG_RCNODE_ROLE_POWER=y
+CONFIG_RCNODE_BOARD_ES3C28P=y
+# The console on the board's USB-C socket, the chip's own USB Serial/JTAG
+# (specification 4.1, "TYPE-C interface").
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# The PSRAM (pseudo-static RAM) holds the display's frame of 153,600 bytes
+# and nothing else: only an allocation that asks for it goes there
+# (node_disp.c), so Bluetooth LE keeps the internal RAM.  A board without
+# PSRAM starts; it then has no display.
+CONFIG_SPIRAM=y
+CONFIG_SPIRAM_MODE_OCT=y
+CONFIG_SPIRAM_USE_CAPS_ALLOC=y
+CONFIG_SPIRAM_IGNORE_NOTFOUND=y

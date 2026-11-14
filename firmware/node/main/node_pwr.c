@@ -19,8 +19,11 @@
  * accumulators; the part's own reset and each set-up do, and epoch counts
  * the set-ups.
  *
- * Pins: SDA GPIO19, SCL GPIO18, 400kHz, the pads' own pull-ups off, 2.2kΩ
- * pull-ups to 3.3V on the node.
+ * Pins: the board's (node_board.h), 400kHz, the pads' own pull-ups off.
+ * The C6-Zero: SDA GPIO19, SCL GPIO18, 2.2kΩ pull-ups to 3.3V on the node.
+ * The ES3C28P: SDA IO16, SCL IO15, the board's 4.7kΩ pull-ups; the touch
+ * controller shares the bus (node_disp.c), and each closed window also
+ * goes to the screen (node_disp_window()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -41,8 +44,8 @@
 #include "sense_bus.h"
 
 /** @brief The bus and the part. @{ */
-#define PWR_SDA        19  /**< GPIO19, SDA */
-#define PWR_SCL        18  /**< GPIO18, SCL */
+#define PWR_SDA  NODE_PIN_SDA  /**< SDA */
+#define PWR_SCL  NODE_PIN_SCL  /**< SCL */
 #define PWR_HZ     400000u  /**< the bus clock */
 #define PWR_ADDR     0x45u  /**< the MATEK as shipped */
 #define PWR_SHUNT_UOHM 200u  /**< the MATEK's shunt, µΩ */
@@ -342,6 +345,9 @@ static void pwr_task(void *arg)
             w.hdr.seq = node_ble_stream_seq();
             const size_t n = rcnode_enc_pwr_win(&w, b, sizeof b);
             node_ble_stream(b, n);
+#if NODE_BOARD_DISPLAY
+            node_disp_window(&w);
+#endif
         }
         if (atomic_load(&s_online) && t >= next_verify) {
             next_verify = t + PWR_VERIFY_US;
@@ -395,8 +401,17 @@ static void pwr_start(void)
     }
 }
 
+#if NODE_BOARD_DISPLAY
+i2c_master_bus_handle_t node_pwr_bus(void)
+{
+    return s_dev != NULL ? s_bus : NULL;
+}
+#endif
+
 /**
- * @brief RUN: the tag goes to `pwr`, which restarts the extremes.
+ * @brief RUN: the tag goes to `pwr`, which restarts the extremes.  LANG:
+ *        the screen's language on a board with a display; ignored on one
+ *        without.
  *
  * @param c The write.
  */
@@ -405,6 +420,11 @@ static void pwr_control(const rcnode_ctl_t *c)
     if (c->op == RCNODE_OP_RUN) {
         atomic_store(&s_run_tag, (int)c->tag);
     }
+#if NODE_BOARD_DISPLAY
+    if (c->op == RCNODE_OP_LANG) {
+        node_disp_lang(c->lang);
+    }
+#endif
 }
 
 /**

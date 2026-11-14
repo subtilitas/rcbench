@@ -23,14 +23,18 @@ idf_component.yml) and the release builds the C6's firmware from the
         check a wireless device's image the panel carries as well
         (firmware/panel/main/panel_devupd.c): ROLE is dial, node-pwr or
         node-bal, IMAGE the application image the release names
-        rcbench-dial-<version>.bin or rcbench-node-<role>-<version>.bin
+        rcbench-dial-<version>.bin or rcbench-node-<role>-<version>.bin;
+        or ROLE node-display, the display node's image
+        rcbench-node-display-<version>.bin, which the panel does not carry
 
 ``device`` fails when the image is not an application of the role's chip
-and project (ESP32-S3 and rcbench-dial, ESP32-C6 and rcbench-node), when
-its version is not the tree's (shared/link/include/rcbench_version.h), when
-its SHA-256 is not appended, when it is larger than ota_0 of the role's
-partitions.csv, and when a node image's role is the other one: the balance
-role's start-up text ``bal: ADC `` is in the balance image only.  It prints
+and project (ESP32-S3 and rcbench-dial, ESP32-C6 and rcbench-node, ESP32-S3
+and rcbench-node for node-display), when its version is not the tree's
+(shared/link/include/rcbench_version.h), when its SHA-256 is not appended,
+when it is larger than ota_0 of the role's partitions.csv, and when a node
+image's role is another one: the role's BLEOTA_KIND_* differs, or the
+balance role's start-up text ``bal: ADC `` is in a power image or missing
+from a balance image.  It prints
 the image's version, size and SHA-256.
 
 ``check`` fails when the image is not an ESP32-C6 application of project
@@ -76,6 +80,8 @@ DEVICES = {
                  ROOT / "firmware" / "node" / "partitions.csv", False, 2),
     "node-bal": (CHIP_ESP32C6, "rcbench-node",
                  ROOT / "firmware" / "node" / "partitions.csv", True, 3),
+    "node-display": (CHIP_ESP32S3, "rcbench-node",
+                    ROOT / "firmware" / "node" / "partitions.csv", False, 4),
 }
 # The role an image is built for, right after esp_app_desc_t
 # (BLEOTA_HEAD_ROLE, BLEOTA_ROLE_MAGIC, BLEOTA_PROTO in bleota.h).

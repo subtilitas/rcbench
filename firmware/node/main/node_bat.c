@@ -3,7 +3,8 @@
  * @brief The cell's voltage: the CD42 module's BAT through a 200kΩ/200kΩ
  *        divider (node_policy.h) to GPIO3, ADC1 channel 3, at 12dB
  *        attenuation, 16 samples averaged, through the curve-fitting
- *        calibration.
+ *        calibration.  On the ES3C28P the board's own divider of 2 from
+ *        its battery socket to IO9 (node_board.h).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -17,7 +18,7 @@
 #include "node_policy.h"
 
 /** @brief The divider's pin. */
-#define BAT_GPIO 3
+#define BAT_GPIO NODE_PIN_BAT
 /** @brief Samples averaged per reading. */
 #define BAT_SAMPLES 16u
 

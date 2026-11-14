@@ -10,6 +10,11 @@
  * is present.  Any other start (the RESET key, power on, a flash) starts
  * the node in full.
  *
+ * A board that is always on (NODE_BOARD_ALWAYS_ON, the display node) runs
+ * no sleep policy: it neither sleeps when idle nor switches itself off on
+ * its cell, and it refuses SLEEP from CONTROL and the console.  OFF is
+ * taken.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include "node.h"
@@ -208,6 +213,8 @@ static void node_loop(void)
                 /* A firmware update's transfer or install runs. */
                 ESP_LOGW(NODE_TAG, "%s refused: a firmware update runs",
                          c.op == RCNODE_OP_OFF ? "OFF" : "SLEEP");
+            } else if (c.op == RCNODE_OP_SLEEP && NODE_BOARD_ALWAYS_ON) {
+                ESP_LOGW(NODE_TAG, "SLEEP refused: the display node stays on");
             } else if (c.op == RCNODE_OP_SLEEP) {
                 go_down(NODE_SLEEP, pol.low_reads);
             } else if (c.op == RCNODE_OP_OFF) {
@@ -221,6 +228,8 @@ static void node_loop(void)
         if (ask != NODE_RUN && devota_active()) {
             ESP_LOGW(NODE_TAG, "%s refused: a firmware update runs",
                      ask == NODE_OFF ? "off" : "sleep");
+        } else if (ask == NODE_SLEEP && NODE_BOARD_ALWAYS_ON) {
+            ESP_LOGW(NODE_TAG, "sleep refused: the display node stays on");
         } else if (ask != NODE_RUN) {
             go_down((node_act_t)ask, pol.low_reads);
         }
@@ -229,6 +238,7 @@ static void node_loop(void)
         const uint16_t bat = node_bat_read();
         publish_status(bat);
         print_line(bat);
+#if !NODE_BOARD_ALWAYS_ON
         const node_inputs_t in = {
             .now_ms = (uint32_t)(node_us() / 1000u),
             .link   = node_ble_linked(),
@@ -242,6 +252,7 @@ static void node_loop(void)
         if (act != NODE_RUN) {
             go_down(act, pol.low_reads);
         }
+#endif
     }
 }
 
@@ -276,6 +287,9 @@ void app_main(void)
     }
     s_ctlq = xQueueCreate(CTL_QUEUE_LEN, sizeof(rcnode_ctl_t));
     node_role.start();
+#if NODE_BOARD_DISPLAY
+    node_disp_start();
+#endif
     node_ble_start(node_role.role);
     node_console_start();
     node_loop();
