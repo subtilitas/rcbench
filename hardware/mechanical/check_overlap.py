@@ -3,10 +3,11 @@
 
 Each named model of hardware/mechanical/models/ is read back with
 OpenCASCADE. Every pair of solids whose boxes overlap is intersected;
-the check fails on a pair that shares more than SHARED.
+the check fails on a pair that shares more than SHARED. Stems joined
+by "+" are checked as one model: the parts as they sit together.
 
 Usage:
-    python3 hardware/mechanical/check_overlap.py [STEM ...]
+    python3 hardware/mechanical/check_overlap.py [STEM[+STEM ...] ...]
 
 Without a stem it checks MODELS, the models drawn part by part. Exit
 status 1 when a pair fails. Needs OCP (pip install
@@ -26,21 +27,22 @@ HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE.parent / "kicad" / "tools"))
 import step_check  # noqa: E402
 
-MODELS = ("panel_7b",)
+MODELS = ("panel_7b", "ina228_xt90+ina228_xt90_case")
 SHARED = 1e-6           # mm3
 
 
-def shared(path):
+def shared(*paths):
     """Find the pairs of solids of one model that share volume.
 
     Args:
-        path: The STEP file.
+        *paths: The model's STEP files.
 
     Returns:
         (pairs, count): a list of (index, index, shared volume in mm3),
         and the number of solids.
     """
-    solids = [solid for solid, _rgb in step_check.read(path)[1]]
+    solids = [solid for path in paths
+              for solid, _rgb in step_check.read(path)[1]]
     boxes = []
     for solid in solids:
         box = Bnd_Box()
@@ -73,8 +75,9 @@ def main(argv):
     """
     bad = 0
     for stem in argv or MODELS:
-        pairs, count = shared(HERE / "models" / f"{stem}.step")
-        print(f"{'FAIL' if pairs else 'ok  '} {stem}.step: {count} solids, "
+        pairs, count = shared(*(HERE / "models" / f"{one}.step"
+                                for one in stem.split("+")))
+        print(f"{'FAIL' if pairs else 'ok  '} {stem}: {count} solids, "
               f"{len(pairs)} pairs share volume")
         for j, i, volume in pairs:
             print(f"     solids {j} and {i} share {volume:.4f}mm3")

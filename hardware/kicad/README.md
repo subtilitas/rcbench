@@ -57,7 +57,7 @@ repository; each spec names them.
 | `RP2350-CAN` | Waveshare RP2350-CAN, 21.00 x 51.00mm | 40, Pico order, 2.54mm | maker drawing | pad grid exact; parts about 0.3mm |
 | `INA3221_Module` | INA3221 board, 3 channels, 38.0 x 31.8mm | 15 (header 1-8, channels 9-14, VPU 15; GND holes on 2) | owner photos, front and back | about 0.3mm |
 | `INA228_Matek_I2C-INA-BM_27x20mm` | MATEK I2C-INA-BM | 10 (2 x JST-GH, BAT+, ESC+) | maker 3D model and product image | 0.05mm to the model; pads about 0.3mm |
-| `INA228_BIFRC_XT90_80x48mm` | INA228 board with 2 XT90, print "BIFRC V1.1" | 10 (header L A V G 5, solder bars, test pads) | owner photo, rectified | header 0.2mm; outline 0.6mm; XT90 1.5mm |
+| `INA228_BIFRC_XT90_80x48mm` | INA228 board with 2 XT90PW, print "BIFRC V1.1", 80.1mm x 48.6mm | 10 (header L A V G 5, solder bars, test pads) | owner photos on 5mm squared paper | positions 0.2mm; outline and holes 0.3mm; XT90PW 0.5mm |
 | `AS5600_Encoder_22.5x22.5mm` | AS5600 angle encoder board | 7 (VCC OUT GND, DIR SCL SDA GPO) | owner photo, rectified | about 0.3mm |
 | `PD_Buck_WeAct_PDPowerMiniV1_61x40mm` | WeAct PD Power Mini V1 Buck | 12 (terminal 1-4, header 5-12) | maker vector drawing | outline and pads 0.02mm; parts 0.2mm |
 | `USBC_T-plug_17x30mm` | USB-C tap board with plug board | 4 (G D+ D- V) | owner photo, scaled by USB-C sizes | about 0.5mm |
