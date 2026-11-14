@@ -59,7 +59,7 @@ FRAME = (1920, 1080)
 ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
            "estop", "side", "plug", "panel", "case", "mcu",
            "ina", "buck", "trigger", "knob", "bezel", "usb", "power",
-           "portA", "portB", "body")
+           "portA", "portB", "body", "dial")
 UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
          "buck", "trigger", "rbmod", "case")
 CONNECTORS = {"J1": 4, "J2": 4}
@@ -108,8 +108,8 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         errors.append(f"{where}: dur must be a positive number")
         return
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
-    if scene.get("model", "mockup") not in ("mockup", "cad", "dial"):
-        errors.append(f"{where}: model must be mockup, cad or dial")
+    if scene.get("model", "mockup") not in ("mockup", "cad", "dial", "duo"):
+        errors.append(f"{where}: model must be mockup, cad, dial or duo")
     for name in ("faces", "turn"):
         if name in scene:
             _keys(scene[name], 2, f"{where} {name}", errors)
@@ -118,6 +118,31 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
                 and isinstance(key[1], str)):
             errors.append(f"{where} faces: a key is [t, the face's name]")
             break
+    last = -1.0
+    for key in scene.get("panel", []):
+        if not (isinstance(key, list) and len(key) in (2, 3)
+                and _number(key[0]) and key[0] > last
+                and all(isinstance(v, str) for v in key[1:])):
+            errors.append(f"{where} panel: a key is [t, view] or "
+                          "[t, view, screen] with rising t")
+            break
+        last = key[0]
+    run = scene.get("run")
+    if run is not None:
+        keys = run.get("throttle") if isinstance(run, dict) else None
+        good = (isinstance(keys, list) and keys
+                and all(isinstance(k, list) and len(k) in (2, 3)
+                        and _number(k[0]) and _number(k[1])
+                        and 0 <= k[1] <= 100 for k in keys)
+                and all(a[0] < b[0] for a, b in zip(keys, keys[1:],
+                                                    strict=False)))
+        if not (good and scene.get("model") in ("dial", "duo")
+                and _number(run.get("from")) and _number(run.get("arm"))
+                and _number(run.get("to"))
+                and 0 <= run["from"] <= run["arm"] < run["to"] <= dur):
+            errors.append(f"{where} run: needs the dial model, from, arm "
+                          "and to in order inside the scene, and throttle "
+                          "keys [t, percent] with rising t")
     if "lid" in scene:
         _keys(scene["lid"], 2, f"{where} lid", errors)
     if "display" in scene and not isinstance(
@@ -492,6 +517,11 @@ def views(board: dict) -> dict:
             shot = scene["display"]
             found[shot["view"]] = (shot["view"], shot.get("screen"),
                                    board["lang"])
+        for key in scene.get("panel", []) if scene["type"] == "case" else []:
+            # A run's shots are drawn by runs(), not from a view's name.
+            if not key[1].startswith("live-"):
+                found[key[1]] = (key[1], key[2] if len(key) > 2 else None,
+                                 board["lang"])
         if scene["type"] in ("screen", "tour"):
             for step in scene["steps"]:
                 if "card" in step:
@@ -515,7 +545,122 @@ def faces(board: dict) -> list:
     """
     return sorted({key[1] for scene in board["scenes"]
                    if scene["type"] == "case"
-                   for key in scene.get("faces", [])})
+                   for key in scene.get("faces", [])
+                   if not key[1].startswith("live-")})
+
+
+RUN_HZ = 10
+DETENT_DEG = 22.5
+
+
+def run_throttle(run: dict, t: float) -> float:
+    """Read a run's throttle at a time.
+
+    Args:
+        run: A scene's "run".
+        t: Seconds from the scene's start.
+
+    Returns:
+        The throttle in whole percent: 0 before the first key, the last
+        key's after it, on the line between two keys, and at a key with a
+        third entry, a press, that key's from its time on.
+    """
+    keys = run["throttle"]
+    value = 0.0
+    for a, b in zip([[run["arm"], 0]] + keys, keys, strict=False):
+        if t >= b[0]:
+            value = b[1]
+        elif t > a[0] and len(b) == 2:
+            value = a[1] + (b[1] - a[1]) * (t - a[0]) / (b[0] - a[0])
+            break
+        else:
+            break
+    return float(round(value))
+
+
+def run_turn(run: dict) -> list:
+    """Derive the knob's angle from a run's throttle.
+
+    Args:
+        run: A scene's "run".
+
+    Returns:
+        Keys [t, degrees]: a detent of 22.5 degrees a percent of throttle,
+        and no turn into a key that a press set.
+    """
+    angle, keys = 0.0, [[run["arm"], 0.0]]
+    last = [run["arm"], 0]
+    for key in run["throttle"]:
+        if len(key) == 2:
+            if key[1] != last[1] and keys[-1][0] < last[0]:
+                keys.append([last[0], angle])
+            angle += (key[1] - last[1]) * DETENT_DEG
+            keys.append([key[0], angle])
+        last = key
+    return keys
+
+
+def runs(board: dict, shots: pathlib.Path, tmp: pathlib.Path, panel,
+         dial) -> None:
+    """Draw each run and give its scene the shots, faces and turn.
+
+    A run is MOTOR & ESC with the Dial beside it: RUN_HZ times a second
+    the panel's screen and the Dial's face of the same moment of one
+    simulated run.
+
+    Args:
+        board: The storyboard; its scenes with a run gain "panel", "faces"
+            and "turn" keys.
+        shots: The directory that takes the shots.
+        tmp: A folder for the renderers' files.
+        panel: The panel's renderer, from render_ui.build().
+        dial: The Dial's renderer, from render_dial.build().
+    """
+    import os
+
+    import render_dial
+    import render_ui
+
+    for n, scene in enumerate(board["scenes"]):
+        run = scene.get("run") if scene["type"] == "case" else None
+        if run is None:
+            continue
+        out = tmp / "run.txt"
+        samples, peak = [], 0
+        scene.setdefault("panel", [])
+        scene.setdefault("faces", [])
+        count = int(round((run["to"] - run["from"]) * RUN_HZ))
+        for k in range(count + 1):
+            t = run["from"] + k / RUN_HZ
+            armed = t >= run["arm"]
+            if armed:
+                # The panel polls at 20Hz: two samples a frame.
+                for half in (0.5, 1.0):
+                    samples.append(run_throttle(
+                        run, t - (1.0 - half) / RUN_HZ))
+            os.environ["RCBENCH_VIDEO_RUN"] = (
+                f"{int(armed)}:" + ",".join(f"{v:g}" for v in samples))
+            os.environ["RCBENCH_VIDEO_OUT"] = str(out)
+            name = f"live-{n}-{k}"
+            render_ui.render_one(panel, tmp, "motor-live", "motor", "dark",
+                                 board["lang"]).save(shots / f"{name}.png")
+            nums = out.read_text(encoding="utf-8").split()
+            peak = max(peak, int(nums[1]))
+            ppm = tmp / "run.ppm"
+            subprocess.run([str(dial), str(ppm), "live-motor",
+                            board["lang"],
+                            ",".join([str(int(armed)), *nums, str(peak)])],
+                           check=True)
+            from PIL import Image
+            Image.open(ppm).convert("RGB").save(shots / f"dial-{name}.png")
+            scene["panel"].append([round(t, 3), name])
+            scene["faces"].append([round(t, 3), name])
+        for name in ("RCBENCH_VIDEO_RUN", "RCBENCH_VIDEO_OUT"):
+            os.environ.pop(name, None)
+        scene["panel"].sort(key=lambda key: key[0])
+        scene["faces"].sort(key=lambda key: key[0])
+        scene["turn"] = run_turn(run)
+        del render_dial
 
 
 def storyboards() -> list:
@@ -578,7 +723,8 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
                          f"screen {screen!r}")
             image.save(shots / f"{name}.png")
         wanted = faces(board)
-        if wanted:
+        live = any("run" in scene for scene in board["scenes"])
+        if wanted or live:
             # The Dial's faces come from its own renderer.
             import render_dial
 
@@ -590,6 +736,7 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
             for name in wanted:
                 render_dial.render(dial, tmp, name, board["lang"]).save(
                     shots / f"dial-{name}.png")
+            runs(board, shots, tmp, exe, dial)
 
 
 class _Handler(http.server.SimpleHTTPRequestHandler):
@@ -771,11 +918,13 @@ def main() -> int:
     if not path.suffix:
         path = VIDEO / "storyboards" / f"{args.storyboard}.json"
     board = load(path)
-    if any(scene.get("model") == "cad" for scene in board["scenes"]) \
+    if any(scene.get("model") in ("cad", "duo")
+           for scene in board["scenes"]) \
             and not (VIDEO / "cad" / "case.glb").is_file():
         sys.exit("tools/video/cad/case.glb is missing; tools/video_cad.py "
                  "writes it from the case's STEP file")
-    if any(scene.get("model") == "dial" for scene in board["scenes"]) \
+    if any(scene.get("model") in ("dial", "duo")
+           for scene in board["scenes"]) \
             and not (VIDEO / "cad" / "m5dial.glb").is_file():
         sys.exit("tools/video/cad/m5dial.glb is missing; tools/video_cad.py "
                  "--solids writes it from "
@@ -814,9 +963,11 @@ def main() -> int:
             import video_voice
 
             board, clips = video_voice.narrate(board)
+        # A run's shots add keys to its scene: drawn before the player's
+        # copy of the storyboard is written.
+        render_views(board, shots)
         played = shots / "storyboard.json"
         played.write_text(json.dumps(board), encoding="utf-8")
-        render_views(board, shots)
         handler = functools.partial(_Handler, board=played, shots=shots)
         with http.server.ThreadingHTTPServer(("127.0.0.1", 0),
                                              handler) as server:

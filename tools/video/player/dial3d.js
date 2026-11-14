@@ -14,6 +14,89 @@ const KNOB = 'solid-0';     // the ring with the 20 grooves
 const GLASS = 13.8;         // the top of the glass above the panel seat
 const SCREEN = 16.2;        // the radius of the lit display, 1.28in across
 
+// The Dial alone: a group that stands on y = 0, with what moves on it.
+export function makeDial(gltf) {
+  const root = new THREE.Group();
+  // The writer turns mm into m; a quarter turn about x stands z up.
+  const src = gltf.scene;
+  src.updateMatrixWorld(true);
+  const lay = new THREE.Matrix4().makeRotationX(-Math.PI / 2)
+    .multiply(new THREE.Matrix4().makeScale(1000, 1000, 1000));
+  const body = new THREE.Group(), knob = new THREE.Group();
+  const box = new THREE.Box3();
+  src.traverse(o => {
+    if (!o.isMesh) return;
+    const g = o.geometry.clone();
+    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(lay, o.matrixWorld));
+    g.computeVertexNormals();
+    g.computeBoundingBox();
+    box.union(g.boundingBox);
+    const c = o.material.color;
+    // A black part of the model would swallow the light: lifted a little.
+    const dark = c.r + c.g + c.b < .12;
+    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
+      color: dark ? new THREE.Color(.05, .055, .07) : c.clone(),
+      roughness: dark ? .45 : .6, metalness: dark ? .25 : .1}));
+    mesh.castShadow = mesh.receiveShadow = true;
+    (o.name === KNOB ? knob : body).add(mesh);
+  });
+  const rest = -box.min.y;        // the rear parts stand on the ground
+  body.position.y = knob.position.y = rest;
+  root.add(body, knob);
+
+  // Two faces on the glass, the second over the first.
+  const faces = [0, 1].map(k => {
+    const m = new THREE.MeshBasicMaterial(
+      {toneMapped: false, transparent: true, opacity: k ? 0 : 1});
+    const disc = new THREE.Mesh(new THREE.CircleGeometry(SCREEN, 96), m);
+    disc.rotation.x = -Math.PI / 2;
+    disc.position.y = rest + GLASS + .06 + k * .02;
+    disc.visible = false;
+    root.add(disc);
+    return {m, disc, image: null};
+  });
+  const show = (f, image, opacity) => {
+    if (image && f.image !== image) {
+      const tex = new THREE.Texture(image);
+      tex.colorSpace = THREE.SRGBColorSpace;
+      tex.anisotropy = 8;
+      tex.needsUpdate = true;
+      f.m.map = tex;
+      f.m.needsUpdate = true;
+      f.image = image;
+    }
+    f.disc.visible = !!image && opacity > 0;
+    f.m.opacity = opacity;
+  };
+
+  // A point of the Dial in the scene, wherever the group stands.
+  const at = (x, y, z) => () => root.localToWorld(
+    new THREE.Vector3(x, rest + y, z)).toArray();
+  return {
+    root,
+    // Named points: x right, y up from the ground, z towards the USB-C
+    // socket.
+    anchors: {
+      display: at(0, GLASS, 0),
+      knob: at(23.5, 8, 8),
+      bezel: at(-15, 14.6, -14),
+      usb: at(0, -12, 18.5),
+      power: at(0, -9, -18.7),
+      portA: at(-17, -9, 0),
+      portB: at(17, -9, 0),
+      body: at(-21, -6, 10),
+    },
+    // The face images a and b and how far b has come in over a, 0 to 1.
+    setFace: (a, b, mix) => {
+      show(faces[0], a, 1);
+      show(faces[1], mix > 0 ? b : null, mix);
+    },
+    // The knob's angle in degrees, clockwise seen from the front.
+    setTurn: deg => { knob.rotation.y = -deg * Math.PI / 180; },
+  };
+}
+
+// The Dial in a scene of its own.
 export function buildDial(gltf) {
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(30, 16 / 9, 2, 2000);
@@ -40,82 +123,12 @@ export function buildDial(gltf) {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  // The writer turns mm into m; a quarter turn about x stands z up.
-  const src = gltf.scene;
-  src.updateMatrixWorld(true);
-  const lay = new THREE.Matrix4().makeRotationX(-Math.PI / 2)
-    .multiply(new THREE.Matrix4().makeScale(1000, 1000, 1000));
-  const body = new THREE.Group(), knob = new THREE.Group();
-  const box = new THREE.Box3();
-  src.traverse(o => {
-    if (!o.isMesh) return;
-    const g = o.geometry.clone();
-    g.applyMatrix4(new THREE.Matrix4().multiplyMatrices(lay, o.matrixWorld));
-    g.computeVertexNormals();
-    g.computeBoundingBox();
-    box.union(g.boundingBox);
-    const c = o.material.color;
-    // A black part of the model would swallow the light: lifted a little.
-    const dark = c.r + c.g + c.b < .12;
-    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
-      color: dark ? new THREE.Color(.05, .055, .07) : c.clone(),
-      roughness: dark ? .45 : .6, metalness: dark ? .25 : .1}));
-    mesh.castShadow = mesh.receiveShadow = true;
-    (o.name === KNOB ? knob : body).add(mesh);
-  });
-  const rest = -box.min.y;        // the rear parts stand on the ground
-  body.position.y = knob.position.y = rest;
-  scene.add(body, knob);
-
-  // Two faces on the glass, the second over the first.
-  const faces = [0, 1].map(k => {
-    const m = new THREE.MeshBasicMaterial(
-      {toneMapped: false, transparent: true, opacity: k ? 0 : 1});
-    const disc = new THREE.Mesh(new THREE.CircleGeometry(SCREEN, 96), m);
-    disc.rotation.x = -Math.PI / 2;
-    disc.position.y = rest + GLASS + .06 + k * .02;
-    disc.visible = false;
-    scene.add(disc);
-    return {m, disc, image: null};
-  });
-  const show = (f, image, opacity) => {
-    if (image && f.image !== image) {
-      const tex = new THREE.Texture(image);
-      tex.colorSpace = THREE.SRGBColorSpace;
-      tex.anisotropy = 8;
-      tex.needsUpdate = true;
-      f.m.map = tex;
-      f.m.needsUpdate = true;
-      f.image = image;
-    }
-    f.disc.visible = !!image && opacity > 0;
-    f.m.opacity = opacity;
-  };
-
-  const at = (x, y, z) => () => [x, rest + y, z];
+  const dial = makeDial(gltf);
+  scene.add(dial.root);
   return {
-    scene, cam,
-    // Named points, in the scene's mm: x right, y up from the ground,
-    // z towards the USB-C socket.
-    anchors: {
-      display: at(0, GLASS, 0),
-      knob: at(23.5, 8, 8),
-      bezel: at(-15, 14.6, -14),
-      usb: at(0, -12, 18.5),
-      power: at(0, -9, -18.7),
-      portA: at(-17, -9, 0),
-      portB: at(17, -9, 0),
-      body: at(-21, -6, 10),
-    },
+    scene, cam, ...dial,
     setLid: () => {},
     setServoPort: () => {},
     setServo: () => {},
-    // The face images a and b and how far b has come in over a, 0 to 1.
-    setFace: (a, b, mix) => {
-      show(faces[0], a, 1);
-      show(faces[1], mix > 0 ? b : null, mix);
-    },
-    // The knob's angle in degrees, clockwise seen from the front.
-    setTurn: deg => { knob.rotation.y = -deg * Math.PI / 180; },
   };
 }

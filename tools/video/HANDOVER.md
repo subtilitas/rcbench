@@ -34,7 +34,7 @@ a new session needs beyond it.
 | `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 347.32s, narrated in the voice of `features`, bed `pachelbel-canon` at half level |
 | `storyboards/dial.json` | the M5Stack Dial coming into use in 5 steps, 166.61s, narrated, bed `pachelbel-canon` at half level |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 27 cases; the storyboard check, the script, the freezes |
+| `test/tools/test_make_video.py` | 29 cases; the storyboard check, the script, the freezes |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -188,6 +188,17 @@ follows `docs/Dial.md`: flashing, the bind, the knob on MOTOR & ESC and
 on SERVO LIVE, the loss rule and the 10s hold that forgets the panel.
 Mounting the Dial in a panel with its ring nut is not in the video; the
 owner has not asked for it.
+
+Owner, 2026-11-14:
+
+- The values and rings are animated and shown in step with the bench:
+  the bench and the Dial stand in one 3D scene, seen from the side with
+  a moving camera, both displays following one run (`run`, model `duo`).
+- Open: the menu and the SET of a value, shown on bench and Dial
+  together. The panel's side of it is on the branch `dial/nav`, which is
+  not in `main`; no scene is written for it yet.
+- When the owner accepts the Dial video, the video branches are squashed
+  and a pull request is opened. Not before.
 
 ## Limits that still hold
 

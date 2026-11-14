@@ -162,19 +162,30 @@ export function buildCadCase(displayImage, gltf) {
       u.group.add(mesh);
     }
   }
-  if (displayImage) {
-    const tex = new THREE.Texture(displayImage);
+  // The display's picture: a shot of the panel's screen, which a scene
+  // can change while it runs.
+  let shown = null;
+  const setScreen = image => {
+    if (!image || image === shown) return;
+    if (!units.lid.screen) {
+      const m = new THREE.MeshBasicMaterial(
+        {toneMapped: false, transparent: true});
+      const scr = new THREE.Mesh(new THREE.PlaneGeometry(154.2, 90.4), m);
+      scr.rotation.x = -Math.PI / 2;
+      scr.position.set(0, TOP + .08, .5).sub(units.lid.home);
+      units.lid.group.add(scr);
+      units.lid.screen = m;
+    }
+    const tex = new THREE.Texture(image);
     tex.colorSpace = THREE.SRGBColorSpace;
     tex.anisotropy = 8;
     tex.needsUpdate = true;
-    const m = new THREE.MeshBasicMaterial(
-      {map: tex, toneMapped: false, transparent: true});
-    const scr = new THREE.Mesh(new THREE.PlaneGeometry(154.2, 90.4), m);
-    scr.rotation.x = -Math.PI / 2;
-    scr.position.set(0, TOP + .08, .5).sub(units.lid.home);
-    units.lid.group.add(scr);
-    units.lid.screen = m;
-  }
+    if (units.lid.screen.map) units.lid.screen.map.dispose();
+    units.lid.screen.map = tex;
+    units.lid.screen.needsUpdate = true;
+    shown = image;
+  };
+  setScreen(displayImage);
 
   // A point of a component, in the scene: its box's centre, moved to one
   // face of the box where f says so (1 the high face, -1 the low one).
@@ -234,7 +245,7 @@ export function buildCadCase(displayImage, gltf) {
     }
   };
   return {
-    scene, cam, anchors,
+    scene, cam, anchors, setScreen,
     setServoPort: () => {},
     setServo: () => {},
     // The storyboard's "lid" in mm: the display and its board rise out of

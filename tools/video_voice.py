@@ -164,8 +164,14 @@ def _stretch(scene: dict, old: list, new: list) -> None:
     scene["dur"] = move(scene["dur"])
     for key in scene["camera"]:
         key[0] = move(key[0])
-    for name in ("lid", "faces", "turn"):
+    for name in ("lid", "faces", "turn", "panel"):
         for key in scene.get(name, []):
+            key[0] = move(key[0])
+    if "run" in scene:
+        run = scene["run"]
+        for name in ("from", "arm", "to"):
+            run[name] = move(run[name])
+        for key in run["throttle"]:
             key[0] = move(key[0])
     for keys in scene.get("parts", {}).values():
         for key in keys:

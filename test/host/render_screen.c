@@ -2800,6 +2800,74 @@ static void band_view(const char *view, ui_bench_status_t *st)
     }
 }
 
+/** @brief motor-live poses an ARMED bench. */
+static bool s_live_armed;
+
+/**
+ * @brief MOTOR & ESC at one moment of a run whose throttle is given, for
+ *        tools/video: the panel's frame beside a Dial that shows the same
+ *        numbers.
+ *
+ * RCBENCH_VIDEO_RUN holds `1:` or `0:`, ARMED or SAFE, and the throttle in
+ * percent of each 50ms sample since the ARM, separated by commas; the last
+ * one is the moment drawn.  A SAFE bench takes one sample at 0%, for its
+ * voltage.  RCBENCH_VIDEO_OUT names a file that takes the moment's
+ * readings in the Dial's units: throttle 0.01%, rpm, mV, 10mA, 0.1W, the
+ * ESC's degrees C and the run's seconds.
+ */
+static void pose_motor_live(void)
+{
+    const char *run = getenv("RCBENCH_VIDEO_RUN");
+    const char *out = getenv("RCBENCH_VIDEO_OUT");
+    telemetry_sim_t tsim;
+    bench_state_t bench;
+    bench_totals_t totals;
+    float th = 0.0f;
+    int samples = 0;
+    memset(&bench, 0, sizeof(bench));
+    telemetry_sim_init(&tsim, NULL);
+    bench_totals_reset(&totals);
+    s_live_armed = run != NULL && run[0] == '1';
+    motor_screen_set_armed(s_live_armed);
+    const char *p = (run != NULL && run[0] != '\0' && run[1] == ':')
+                    ? run + 2 : "";
+    do {
+        char *end = NULL;
+        const float given = strtof(p, &end);
+        if (s_live_armed && end != p) {
+            th = given;
+        }
+        telemetry_sim_step(&tsim, th, 0.05f, &bench);
+        /* An IOmcu reading an INA228, as motor-plot poses it. */
+        bench.flags = (uint16_t)((bench.flags
+                                  & (uint16_t)~LINK_BN_SIMULATED)
+                                 | LINK_BN_SENSED);
+        bench_state_set_esc(&bench, true, bench.voltage + 0.18f,
+                            true, bench.current * 1.12f, false);
+        bench_totals_count(&totals, &bench, 0.05f, s_live_armed);
+        bench_totals_show(&totals, &bench);
+        motor_screen_push(&bench);
+        samples++;
+        p = (end != NULL && *end == ',') ? end + 1 : "";
+    } while (s_live_armed && *p != '\0');
+    motor_screen_set_throttle(th);
+    motor_screen_set_throttle_pins(((uint64_t)1u << 0) | ((uint64_t)1u << 1),
+                                   true);
+    motor_screen_set_throttle_protocol(4u);
+    if (out != NULL) {
+        FILE *f = fopen(out, "w");
+        if (f != NULL) {
+            fprintf(f, "%d %d %d %d %d %d %d\n",
+                    (int)(th * 100.0f + 0.5f), (int)(bench.rpm + 0.5f),
+                    (int)(bench.voltage * 1000.0f + 0.5f),
+                    (int)(bench.current * 100.0f + 0.5f),
+                    (int)(bench.power * 10.0f + 0.5f),
+                    (int)(bench.temp_esc + 0.5f), samples / 20);
+            fclose(f);
+        }
+    }
+}
+
 /**
  * @brief MOTOR's run and SUPPLY's offline views: the samples, the bindings and
  *        the PD mini.
@@ -2838,6 +2906,8 @@ static void pose_motor_supply(ui_screen_id_t id, const char *view,
         motor_screen_set_armed(false);
         motor_screen_set_throttle_pins(1u, true);
         motor_screen_set_throttle_protocol(proto_named("DSHOT300"));
+    } else if (id == SCREEN_MOTOR && strcmp(view, "motor-live") == 0) {
+        pose_motor_live();
     } else if (id == SCREEN_MOTOR) {
         telemetry_sim_t tsim;
         bench_state_t bench;
@@ -4788,6 +4858,7 @@ int main(int argc, char **argv)
     }
     st.capabilities = s_caps;
     st.simulated = sim || (id == SCREEN_MOTOR
+                           && strcmp(view, "motor-live") != 0
                            && strcmp(view, "motor-table") != 0
                            && strcmp(view, "motor-plot") != 0
                            && strcmp(view, "motor-refused") != 0
@@ -4805,6 +4876,7 @@ int main(int argc, char **argv)
     st.link_up   = !st.simulated;
     st.mode      = ui_band_mode(st.link_up);
     st.armed     = (id == SCREEN_MOTOR
+                    && (strcmp(view, "motor-live") != 0 || s_live_armed)
                     && strcmp(view, "motor-held") != 0
                     && strcmp(view, "motor-logname") != 0
                     && strcmp(view, "motor-idle") != 0

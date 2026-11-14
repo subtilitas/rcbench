@@ -12,6 +12,7 @@ import {buildCase, CONNECTORS, WIRE_COLORS} from './case3d.js';
 import {buildCadCase, loadCad} from './case_cad.js';
 import {buildBoard} from './board.js';
 import {buildDial} from './dial3d.js';
+import {buildDuo} from './duo3d.js';
 
 const $ = s => document.querySelector(s);
 const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -36,6 +37,7 @@ const loadImage = src => new Promise((ok, bad) => {
 });
 
 const SX = 67, SY = 187, SC = 1.25;   // the screenshot on the frame
+const SPLIT = 470;    // a model beside the panel's screen: its shift
 const FADE = .45;
 const COL = {'': '#00e5ff', warn: '#ffb400', ok: '#00f58c',
              muted: '#93a1b8'};
@@ -74,6 +76,10 @@ for (const sc of sb.scenes) {
   for (const [, face] of (sc.type === 'case' && sc.faces) || []) {
     need.add('dial-' + face);
   }
+  // And the panel's screen beside the Dial: shots by their view's name.
+  for (const [, view] of (sc.type === 'case' && sc.panel) || []) {
+    need.add(view);
+  }
   acc += sc.dur;
 }
 const TOTAL = acc;
@@ -100,6 +106,8 @@ for (const sc of sb.scenes) {
   sc.rig = sc.model === 'cad'
     ? buildCadCase(shown, await loadCad('/cad/case.glb'))
     : sc.model === 'dial' ? buildDial(await loadCad('/cad/m5dial.glb'))
+    : sc.model === 'duo' ? buildDuo(await loadCad('/cad/case.glb'),
+                                    await loadCad('/cad/m5dial.glb'))
     : buildCase(shown);
   if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
@@ -189,11 +197,18 @@ function drawCase(sc, lt, a, pulse, ui) {
     let n = 0;
     while (n < sc.faces.length - 1 && lt >= sc.faces[n + 1][0]) n++;
     const [t0, name] = sc.faces[n], before = sc.faces[Math.max(0, n - 1)];
-    const mix = n ? ramp(lt, t0, t0 + .5) : 1;
+    // A face of a run follows the one before it at once.
+    const mix = !n || name.startsWith('live-') ? 1 : ramp(lt, t0, t0 + .5);
     m.setFace(imgs['dial-' + before[1]], imgs['dial-' + name],
               lt < sc.faces[0][0] ? 0 : mix);
   }
   if (sc.turn && m.setTurn) m.setTurn(track(sc.turn, lt));
+  if (sc.panel && m.setScreen) {
+    // The case's display shows the panel's screen of this time.
+    let n = 0;
+    while (n < sc.panel.length - 1 && lt >= sc.panel[n + 1][0]) n++;
+    m.setScreen(imgs[sc.panel[n][1]]);
+  }
   if (sc.parts && m.setParts) {
     // How far out each component stands at this time: a key track each.
     m.setParts(Object.fromEntries(Object.entries(sc.parts).map(
@@ -211,9 +226,24 @@ function drawCase(sc, lt, a, pulse, ui) {
                46 * (1 - ramp(lt, s.plug[0], s.plug[1])));
   }
   renderer.render(m.scene, m.cam);
+  // With the panel's screen in the frame, the model stands to the right
+  // of it: the picture and every point of it move by SPLIT pixels.
+  const shift = sc.panel && !m.setScreen ? SPLIT : 0;
+  gl.style.transform = shift ? `translateX(${shift}px)` : '';
+  if (sc.panel && !m.setScreen) {
+    let n = 0;
+    while (n < sc.panel.length - 1 && lt >= sc.panel[n + 1][0]) n++;
+    const dev = $('#dev');
+    dev.style.display = 'block';
+    dev.style.opacity = a * ramp(lt, sc.panel[0][0], sc.panel[0][0] + .5);
+    dev.style.transformOrigin = '0 50%';
+    dev.style.transform = 'translateX(-16px) scale(.72)';
+    $('#s0').src = $('#s1').src = imgs[sc.panel[n][1]].src;
+    $('#s1').style.opacity = 1;
+  }
   const proj = p => {
     const q = new THREE.Vector3(...p).project(m.cam);
-    return [(q.x + 1) * 960, (1 - q.y) * 540];
+    return [(q.x + 1) * 960 + shift, (1 - q.y) * 540];
   };
   drawNotes(sc, lt, a, pulse, ui, p => proj(
     typeof p === 'string' ? m.anchors[p]() : p));
@@ -646,6 +676,8 @@ window.renderAt = t => {
   for (const id of ['#gl', '#pcb', '#dev', '#end', '#cap', '#card']) {
     $(id).style.display = 'none';
   }
+  $('#dev').style.transformOrigin = '';
+  $('#gl').style.transform = '';
   $('#title').style.opacity = 0;
   $('#pin').style.opacity = 0;
   $('#bar').style.width = (t / TOTAL * 1920) + 'px';

@@ -405,3 +405,44 @@ def test_a_dial_scene_shows_faces_and_turns_its_knob():
     for path in make_video.storyboards():
         made = json.loads(path.read_text(encoding="utf-8"))
         assert set(make_video.faces(made)) <= set(render_dial.FACES)
+
+
+def _run_scene():
+    return {"type": "case", "model": "duo", "dur": 20,
+            "camera": [[0, [0, 100, 100], [0, 20, 0]]],
+            "panel": [[0, "motor-idle", "motor"]],
+            "run": {"from": 2, "arm": 5, "to": 18,
+                    "throttle": [[8, 0], [12, 40], [14, 40],
+                                 [14.2, 0, "press"], [16, 0], [17, 10]]}}
+
+
+def test_a_run_gives_throttle_and_the_knob_its_turn():
+    """A run's throttle is whole percent; the knob turns a detent each."""
+    scene = _run_scene()
+    board = {"lang": "en", "steps": 1, "scenes": [scene]}
+    assert make_video.check(board) == []
+    run = scene["run"]
+    assert make_video.run_throttle(run, 6) == 0
+    assert make_video.run_throttle(run, 10) == 20
+    assert make_video.run_throttle(run, 13) == 40
+    # A press sets its value at once: no line towards it.
+    assert make_video.run_throttle(run, 14.1) == 40
+    assert make_video.run_throttle(run, 14.3) == 0
+    assert make_video.run_throttle(run, 19) == 10
+    # 40 detents up, none for the press, 10 more from 0.
+    assert make_video.run_turn(run) == [
+        [5, 0.0], [8, 0.0], [12, 900.0], [14, 900.0], [16, 900.0],
+        [17, 1125.0]]
+    assert "motor-idle" in make_video.views(board)
+    run["arm"] = 1
+    assert any("run" in e for e in make_video.check(board))
+
+
+def test_a_run_moves_with_its_narration():
+    """A stretched scene stretches its run."""
+    scene = _run_scene()
+    scene["say"] = [{"at": 1, "text": "x"}]
+    video_voice._stretch(scene, [0.0, 1, 20], [0.0, 1, 39])
+    assert scene["run"]["arm"] == 9
+    assert scene["run"]["throttle"][0][0] == 15
+    assert scene["panel"][0][0] == 0

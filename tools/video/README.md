@@ -6,7 +6,7 @@ under `storyboards/`. It lists scenes; each scene has a type:
 
 | Type | Shows |
 | --- | --- |
-| `case` | the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in; or the M5Stack Dial as a 3D model, its display showing its faces and its knob turning |
+| `case` | the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in; or the M5Stack Dial as a 3D model, its display showing its faces and its knob turning, alone or beside the bench with both displays following one simulated run |
 | `board` | a circuit board seen flat from its front, with a view that moves over it, labels and tags on pads, parts taking their place, solder joints, a cross-section in a card, a net lit up, a track cut, a wire and a part soldered across two pads |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
 | `tour` | the panel's screens with an animated caption, a path to the screen, marks that name parts of the display, a spotlight, and chapter cards |
@@ -90,6 +90,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `player/case_cad.js` | the case from its CAD (computer-aided design) assembly: colours by part name, merged meshes, the same named points |
 | `../video_cad.py` | converts the case's STEP assembly into `cad/case.glb`, the model `case_cad.js` loads |
 | `player/dial3d.js` | the M5Stack Dial from its STEP model: one mesh a solid, the knob ring turning, two faces cross-fading on the glass |
+| `player/duo3d.js` | the case and the Dial in one scene: the case's display takes shots of the panel's screen, the Dial's display its faces |
 | `player/board.js` | a board drawn flat as SVG, and the rework on it |
 | `../video_board.py` | converts a KiCad board file into `cad/NAME.json`, the board `board.js` draws |
 | `boards/p4-7b-back.json` | the back of the 7 inch ESP32-P4 display board, drawn by hand in the format `video_board.py` writes: its connectors, modules and sockets as boxes, the pads of the 4-pin and 12-pin headers |
@@ -127,9 +128,11 @@ A `case` scene:
 | Field | Meaning |
 | --- | --- |
 | `dur` | length in s |
-| `model` | optional: `mockup`, the default, `cad`, the assembly converted by `tools/video_cad.py`, or `dial`, the M5Stack Dial converted by `tools/video_cad.py --solids` |
-| `faces` | optional, `dial` model only: keys `[t, name]`, a face of `tools/render_dial.py` on the Dial's display from `t` on, cross-faded over 0.5s |
-| `turn` | optional, `dial` model only: keys `[t, degrees]`, the knob ring's angle, clockwise seen from the front; the sound track clicks once per 22.5°, a detent |
+| `model` | optional: `mockup`, the default, `cad`, the assembly converted by `tools/video_cad.py`, `dial`, the M5Stack Dial converted by `tools/video_cad.py --solids`, or `duo`, the case of `cad` with the Dial 128mm right of its middle |
+| `faces` | optional, `dial` and `duo` models: keys `[t, name]`, a face of `tools/render_dial.py` on the Dial's display from `t` on, cross-faded over 0.5s |
+| `panel` | optional, `dial` and `duo` models: keys `[t, view]` or `[t, view, screen]`, the panel's screen from `t` on: on the case's display with `duo`, as a flat shot left of the Dial with `dial` |
+| `run` | optional, `dial` and `duo` models: `{from, arm, to, throttle}`, a run on MOTOR & ESC. `throttle` holds keys `[t, percent]`, joined by lines, and `[t, percent, "press"]`, a value set at once. From `from` to `to`, 10 times a second, the panel's screen and the Dial's face are drawn from one simulated run, SAFE before `arm`; the keys go into `panel` and `faces`, and `turn` follows the throttle, a detent a percent |
+| `turn` | optional, `dial` and `duo` models: keys `[t, degrees]`, the knob ring's angle, clockwise seen from the front; the sound track clicks once per 22.5°, a detent |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
 | `parts` | optional, `cad` model only: keys `[t, k]` per component, `k` from 1, out of sight along the component's way in, to 0, seated. A value held between two keys freezes the component in the air while the camera moves on. Components: `case`, `estop`, `xt60`, `usbc`, `pdmini`, `rbmod`, `mcu`, `ina`, `buck`, `trigger`, `lid` |
@@ -144,7 +147,7 @@ A `case` scene:
 `anchor` is `[x, y, z]` in mm or a name: `display`, `rbmod`, `pdmini`,
 `J1`, `J2`, `xt60`, `usbc`, `estop`, `side`, `plug`, and on the `cad`
 model also `panel`, `case`, `mcu`, `ina`, `buck` and
-`trigger`, and on the `dial` model `display`, `knob`, `bezel`, `usb`, `power`, `portA`, `portB` and `body`. An anchor follows its component while it moves. A label's
+`trigger`, and on the `dial` model `display`, `knob`, `bezel`, `usb`, `power`, `portA`, `portB` and `body`, on the `duo` model the case's and `dial`, `knob` and `bezel`. An anchor follows its component while it moves. A label's
 optional `glow` names a component that is lit while the label shows. `at` is the bubble's
 top left corner on the frame in pixels. The model's origin is the centre
 of the case floor; x runs along the 190mm side, y up, z towards the
@@ -302,7 +305,10 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 
   The Dial stands on its rear parts, without its ring nut and without a
   panel. Its faces are the fixed models of `tools/render_dial.py`, so the
-  readings do not follow the knob. The Stamp button, the cell and the
+  readings do not follow the knob outside a `run`. A run's numbers are
+  those of the panel's telemetry model (`telemetry_sim`), read by the
+  panel's renderer (`motor-live`) and handed to the Dial's (`live-motor`);
+  no hardware is measured. SERVO LIVE has no run: its face is fixed. The Stamp button, the cell and the
   MX1.25 socket are not in the model; `dial` names them without showing
   them.
 - The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x
