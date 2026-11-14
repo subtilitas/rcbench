@@ -8,6 +8,24 @@ history is in git.
 
 ### Added
 
+- The display node: the power node on the LCDWIKI ES3C28P 2.8" ESP32-S3
+  display board (ILI9341V 240 x 320 over SPI, FT6336G touch), powered with
+  5V from the pack. It shows voltage, current and power in 32x44 digits, 5
+  frames a second, each the mean of the INA228's 20ms windows since the
+  last frame, with the highest and lowest single window beside each; a tap
+  on a row's highest and lowest resets them, a 2s hold resets all six. It
+  runs with or without the panel and serves the panel as the C6 power node
+  does. Built with `sdkconfig.s3_es3c28p` (board choice in
+  `firmware/node/main/Kconfig.projbuild`, pins in `node_board.h`); the
+  release carries `rcbench-node-display-merged-<version>.bin` for 0x0 over
+  USB. The panel does not carry its image. Screen logic in `node_view.c`
+  under `test_node_view`, screenshots under `tools/render_node.py --check`
+  ([Sensor nodes](docs/Nodes.md#the-display-node)).
+- `protocols/rcnode`: the control write LANG (0x06, 0 English, 1 German),
+  which the panel sends a linked power node after INFO and at each change
+  of its language; INFO's board 2 is the ES3C28P. `protocols/bleota`: kind
+  4, the display node, which neither power node's image passes for the
+  other.
 - `hardware/mechanical/`: STEP models of the INA228 current sensor module
   with its two XT90PW connectors (`ina228_xt90.step`, 225 solids,
   83.95mm x 48.6mm x 12.6mm) and of its printed case with 4 screws

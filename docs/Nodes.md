@@ -7,7 +7,9 @@ readings over Bluetooth LE (Low Energy, BLE). It has no wire to the bench.
 The power node reads the INA228 of a MATEK I2C-INA-BM on the ESC's
 (electronic speed controller's) XT60 power path. The balance node reads an
 accelerometer axis and an index sensor and sends a balance report every
-250ms.
+250ms. The display node is the power node on a 2.8" ESP32-S3 touch display
+board, powered from the pack, which also shows its readings on its own
+screen ([The display node](#the-display-node)).
 
 The power node is a measurement, not a protection. No limit or trip of the
 bench reads it, as none reads the wired INA228. With INA228 SOURCE NODE a
@@ -33,6 +35,9 @@ the project's notice.
 | the balance role: the ADC stream, the index, the report, the battery | `firmware/node/main/node_bal.c` |
 | the ADC frames, the scale, the index and the demodulator, under the host suite | `shared/vibe` |
 | the power node's battery reading | `firmware/node/main/node_bat.c` |
+| each board's pins, INFO board byte and update kind | `firmware/node/main/node_board.h` |
+| the display node's screen: values, highest and lowest, touch, formats, drawing, under the host suite | `firmware/node/main/node_view.c` |
+| the display node's display and touch | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | the console | `firmware/node/main/node_console.c` |
 | the panel's central for the power node: scan, bind, INFO's check, the RUN marker, under the host suite | `shared/ui/pnode_ctl.c` |
 | the panel's readings, totals, peaks and dropout rule, under the host suite | `shared/ui/pnode_meter.c` |
@@ -378,6 +383,156 @@ ADXL's sensitivity is ±10% and follows its supply. The absolute g value
 carries these; the two-run and four-run corrections use ratios and do not.
 A shaker or a known imbalance on the owner's rig measures the scale.
 
+## The display node
+
+The display node is the power node on the LCDWIKI ES3C28P, a 2.8" ESP32-S3
+display board that Hosyond sells. It reads the INA228 as the power node
+does and shows voltage, current and power, each with its highest and
+lowest, on its own screen. The screen runs with and without the panel.
+With the panel linked, the node serves it as the power node on the
+ESP32-C6 does: the same service, the same packets at the same rates, the
+same INA228 set-up in INFO. INFO's board byte reads 2.
+
+The build follows LCDWIKI's documents for the ES3C28P: the specification
+(`ES3C28P_ES2N28P_Specification_V1.0.pdf`, section 4.2), the user manual,
+the schematic and the display set-up `ILI9341V_Init.txt`, all at
+`https://www.lcdwiki.com/res/ES3C28P/`. The seller's listing could not be
+read. A board with an ESP32-WROOM-32 or a resistive touch screen is
+another design: this image does not run on it.
+
+| Part | Use |
+| --- | --- |
+| LCDWIKI ES3C28P | ESP32-S3R8: 8MB octal PSRAM in the package, 16MB QSPI flash; 2.8" IPS 240 × 320, ILI9341V over 4-wire SPI; FT6336G capacitive touch at I2C address 0x38; ES8311 audio codec at 0x18, not used; USB-C (the chip's USB Serial/JTAG); 1.25mm sockets for I2C, UART, 4 GPIO, a 3.7V cell and a speaker; BOOT key on IO0; RESET key |
+| MATEK I2C-INA-BM | INA228, 200µΩ shunt, address 0x45, XT60 in and out |
+| a 5V buck converter | fed from the pack at its connector, before the shunt; its current is not measured |
+
+### Pins
+
+| Signal | ES3C28P pin | Source |
+| --- | --- | --- |
+| LCD CS, low active | IO10 | specification 4.2 |
+| LCD DC, high data | IO46 | specification 4.2 |
+| LCD SCLK | IO12 | specification 4.2 |
+| LCD MOSI | IO11 | specification 4.2 |
+| LCD MISO, not read | IO13 | specification 4.2 |
+| LCD reset | CHIP_PU, shared with the chip's reset | specification 4.2; the firmware resets the panel by command 0x01 |
+| backlight, high on | IO45 | specification 4.2, user manual "LCD backlight control circuit" |
+| touch SDA = I2C socket SDA | IO16 | specification 4.2 |
+| touch SCL = I2C socket SCL | IO15 | specification 4.2 |
+| touch reset, low active | IO18 | specification 4.2 |
+| touch interrupt, low on a touch; not used | IO17 | specification 4.2 |
+| BOOT key, the update's confirming key | IO0 | specification 4.2 |
+| battery, through a divider of 2 | IO9 | specification 4.2, user manual "Battery level detection circuit" |
+
+Touch, the I2C socket and the audio codec share one I2C bus (specification
+4.2). The board pulls SDA and SCL to 3.3V with 4.7kΩ (R29, R30, schematic).
+The I2C socket's pin order comes from the schematic's text and is
+unconfirmed on a delivered board: pin 1 VCC3V3, pin 2 GND, pin 3 IIC_SCL,
+pin 4 IIC_SDA.
+
+### Wiring
+
+| From | To | Note |
+| --- | --- | --- |
+| buck 5V | ES3C28P USB-C VBUS | through a USB-C pigtail; the board's LDO (low-dropout regulator) makes 3.3V |
+| buck GND | ES3C28P USB-C GND | the pack's negative |
+| buck 5V | MATEK 5V | the INA228's supply |
+| ES3C28P I2C socket pin 2 (GND) | MATEK G | |
+| ES3C28P I2C socket pin 4 (IIC_SDA, IO16) | MATEK SDA | no pull-up of its own: the board's 4.7kΩ |
+| ES3C28P I2C socket pin 3 (IIC_SCL, IO15) | MATEK SCL | |
+
+**Before the first connect.** Measure 3.3V between pins 1 and 2 of the I2C
+socket: that confirms the pin order above. Check the MATEK's pull-up rail
+as for the power node ([Wiring](#wiring)): SDA and SCL read 3.3V or less
+against G with the MATEK alone on 5V.
+
+[The ground rule](#the-ground-rule) holds: the node's GND is the pack's
+negative, so no USB cable to a computer while a pack is on the XT60. The
+UART socket also carries 5V (through Q5, schematic); its pin order is
+unconfirmed, so the 5V goes into the USB-C socket. A cell on the battery
+socket is not needed; the node does not watch it, and STATUS reports what
+IO9 reads.
+
+### The screen
+
+![The display node without a link](img/node-values.png)
+
+The screen is 320 × 240, landscape. The band at the top names the link:
+`STANDALONE` without one, `CONNECTED` once a central is connected and
+subscribed. Under it are three rows: voltage, current and power. Each
+row shows its live value in 32x44 digits and, right of the line, its
+highest (red triangle) and lowest (blue triangle).
+
+| Value | Shown | Range |
+| --- | --- | --- |
+| voltage | 2 decimals | 0.00V to 99.99V |
+| current | 1 decimal | -999.9A to 999.9A |
+| power | 1 decimal under 100W, else whole watts | -99999W to 99999W |
+
+Each value is rounded half away from zero and clamped to its range; units
+follow without a space (`12.60V`, `35.2A`, `443W`). The live values are the
+mean of the INA228's 20ms windows since the last frame, 5 frames a second
+(`NV_FRAME_MS`, 200ms): about 10 windows a frame. A window's power is its
+mean voltage times its mean current. The highest and lowest are those of
+single windows since the start or the last reset; they live in RAM and a
+restart clears them. A window without a sample, or whose current samples
+all clipped, counts for nothing. Without a window since the last frame the
+values read `--` and the band reads `NO SENSOR`.
+
+![No window from the INA228](img/node-no-sensor.png)
+
+Only what changed is drawn and sent to the display: a frame with one new
+value sends that value's part of its row, not the frame of 153,600 bytes.
+
+### Touch
+
+| Touch | Does |
+| --- | --- |
+| a tap on a row's highest and lowest (x 220 to 319) | resets that row's two |
+| a hold of 2s anywhere | resets all six, once, while still held |
+
+Nothing else is a touch function. A tap is a press that ends before 2s;
+the press ends 60ms after the last touch read, and the touch is read every
+20ms. From 300ms of a press on, a bar at the band's foot fills toward the
+2s and the band reads `RESET ALL`.
+
+![A hold of 1.2s](img/node-hold.png)
+
+The FT6336G reports the panel's portrait frame; the firmware turns it for
+the landscape screen. That the turn matches the board is unconfirmed: each
+tap prints its point on the console (`disp: tap at 260,60: highest and
+lowest reset`). `NODE_LCD_TURN` 1 in `node_board.h` turns screen and touch
+by 180°.
+
+### Language
+
+The texts are English. While a panel is linked, they follow the panel's
+language: the panel writes LANG to CONTROL after INFO on each link and at
+each change of its language ([protocols/rcnode](../protocols/rcnode/README.md)).
+German shows `VERBUNDEN`, `KEIN SENSOR` and `ALLE ZURÜCKSETZEN`. Without a
+link the texts are English again.
+
+### Power and sleep
+
+The display node never sleeps and does not switch itself off on its cell:
+its 5V comes from the pack. It refuses SLEEP from CONTROL and the console
+(`SLEEP refused: the display node stays on`); OFF switches it off until
+RESET or a power cycle. The panel sends neither.
+
+### Update and flashing
+
+The display node is flashed over USB, with the pack off the XT60:
+
+```sh
+esptool.py --chip esp32s3 write_flash 0x0 rcbench-node-display-merged-<version>.bin
+```
+
+It keeps the update service over Bluetooth LE: kind 4
+(`BLEOTA_KIND_NODE_POWER_S3`), the ESP32-S3's chip ID in the image head,
+BOOT (IO0) held 1s to confirm. It refuses an image of the C6 power node,
+and the C6 power node refuses its image, at BEGIN and again at the head.
+The panel does not carry its image (below).
+
 ## Bluetooth LE
 
 The node advertises as `rcbench-pwr-XXXX` or `rcbench-bal-XXXX`, the last two bytes of its address
@@ -392,7 +547,7 @@ its own.
 | --- | --- | --- |
 | STREAM | NOTIFY | power: windows every 20ms, accumulators and run extremes every 500ms; balance: a report every 250ms; both: the STATUS packet every 1000ms |
 | STATUS | READ, NOTIFY | battery, flags, firmware version, counters, every 1000ms |
-| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN with a tag of 1 to 255, SLEEP, OFF; BLADES (1 to 12) and RPM on the balance node |
+| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN with a tag of 1 to 255, SLEEP, OFF; LANG (0 English, 1 German) on the power node; BLADES (1 to 12) and RPM on the balance node |
 | INFO | READ | protocol, role, board, address, the INA228's set-up (0 on the balance node) |
 
 A write the role does not take, or of another length, is refused with ATT
@@ -607,6 +762,19 @@ python -m esptool --chip esp32c6 -p /dev/ttyACM0 -b 460800 \
 The balance node takes `rcbench-node-bal-merged-<version>.bin` the same
 way.
 
+The display node (ESP32-S3, [The display node](#the-display-node)):
+
+```sh
+idf.py -B build-display -D SDKCONFIG=build-display/sdkconfig \
+  -D IDF_TARGET=esp32s3 \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p" build
+idf.py -B build-display merge-bin -o rcbench-node-display-merged.bin
+esptool.py --chip esp32s3 write_flash 0x0 \
+  build-display/rcbench-node-display-merged.bin
+```
+
+A release carries `rcbench-node-display-merged-<version>.bin` for it.
+
 A node asleep does not answer on USB. Press RESET to start it, or hold BOOT
 and press RESET for the ROM's download mode.
 
@@ -693,3 +861,17 @@ this start`.
   included, and a 1s hold of BOOT installs it.
 - Windows without a sample between two windows are not sent: a stalled
   sampler shows as a jump in `t_node` with no jump in `seq`.
+- The panel does not carry the display node's image, and UPDATES offers no
+  update for it: the panel's application slot of 8,126,464 bytes has about
+  9% (about 750KB) free with the images it carries, and the display node's
+  image is 654,576 bytes. The display node is flashed over USB. A display
+  node bound as the panel's power node shows POWER NODE FIRMWARE with the
+  C6 image; a transfer ends at BEGIN with code 1 (`E_KIND`, the image is
+  for another device), before the node asks for BOOT.
+- The display node has not run on a board. The ILI9341V set-up is the
+  vendor's, not measured; the SPI clock of 20MHz, the touch's orientation,
+  the I2C socket's pin order and the internal RAM left for Bluetooth LE at
+  run time are not measured. A board without PSRAM runs without a display.
+- The display node's touch read shares the bus with the INA228: a read of
+  5 bytes at 400kHz, about 170µs, can delay one sample by as long. Its
+  effect on the window's sample count is not measured.
