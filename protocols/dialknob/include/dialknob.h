@@ -9,8 +9,9 @@
  * Dial to panel: EVENT (the absolute detent counter, buttons, gesture,
  * touch, the Dial's ms clock, the ping echo), STATUS (battery, firmware,
  * link) and INFO (protocol and firmware version, name).  Panel to Dial: the
- * screen model, SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO and
- * STATE.  Every packet is 20 bytes or less, little-endian, byte 0 its kind.
+ * screen model, SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO,
+ * STATE and SCALE.  Every packet is 20 bytes or less, little-endian, byte
+ * 0 its kind.
  * Every field is bounded on both ends: a decoder refuses a packet of a wrong
  * length, an unknown kind, a field out of its range or a reserved bit set,
  * and an encoder refuses to write one.
@@ -53,6 +54,7 @@ extern "C" {
 #define DK_K_LIVE_MOTOR 0x14u /**< panel to Dial: MOTOR readings */
 #define DK_K_LIVE_SERVO 0x15u /**< panel to Dial: SERVO readings */
 #define DK_K_STATE      0x16u /**< panel to Dial: clock, steps, ARMED */
+#define DK_K_SCALE      0x17u /**< panel to Dial: the readings' full scales */
 /** @} */
 
 /** @brief Packet lengths in bytes; a packet of another length is refused.
@@ -67,6 +69,7 @@ extern "C" {
 #define DK_LEN_LIVE_MOTOR 18u /**< LIVE_MOTOR */
 #define DK_LEN_LIVE_SERVO 19u /**< LIVE_SERVO */
 #define DK_LEN_STATE       9u /**< STATE */
+#define DK_LEN_SCALE      18u /**< SCALE */
 /** @} */
 
 /** @brief The rules' times, in ms. @{ */
@@ -357,9 +360,27 @@ typedef struct {
     uint8_t  flags;    /**< DK_STA_* */
 } dk_state_t;
 
+/** @brief Panel to Dial: SCALE, the full scales the face's rings take, on
+ *         entry to MOTOR & ESC or SERVO and when one of them changes.  A
+ *         full scale of 0 is not known: its ring shows the track only. */
+typedef struct {
+    uint8_t  seq;     /**< as SCREEN */
+    uint16_t rpm;     /**< MOTOR speed, rpm: the run's peak, else the
+                           plot's full scale */
+    uint16_t mv;      /**< MOTOR voltage, mV */
+    uint16_t ca;      /**< MOTOR current, 10mA */
+    uint16_t travel;  /**< SERVO travel either side of the center, 0.1°,
+                           0 to DK_DDEG_MAX */
+    uint16_t us_min;  /**< SERVO pulse at one end: 0 with us_max 0, or
+                           DK_US_MIN to DK_US_MAX */
+    uint16_t us_max;  /**< SERVO pulse at the other end, above us_min */
+    uint16_t rail_mv; /**< SERVO rail voltage, mV */
+    uint16_t rail_ca; /**< SERVO rail current, 10mA */
+} dk_scale_t;
+
 /** @brief Any panel packet, decoded. */
 typedef struct {
-    uint8_t kind; /**< DK_K_SCREEN to DK_K_STATE */
+    uint8_t kind; /**< DK_K_SCREEN to DK_K_SCALE */
     union {
         dk_screen_t     screen; /**< DK_K_SCREEN */
         dk_nav_t        nav;    /**< DK_K_NAV */
@@ -368,6 +389,7 @@ typedef struct {
         dk_live_motor_t motor;  /**< DK_K_LIVE_MOTOR */
         dk_live_servo_t servo;  /**< DK_K_LIVE_SERVO */
         dk_state_t      state;  /**< DK_K_STATE */
+        dk_scale_t      scale;  /**< DK_K_SCALE */
     } u; /**< by kind */
 } dk_panel_pkt_t;
 
@@ -462,6 +484,15 @@ size_t dk_state_encode(const dk_state_t *s, uint8_t *out);
 /** @brief Decode a STATE. @param buf the bytes @param len their count
  *         @param out the state; unchanged on false @return true when valid */
 bool dk_state_decode(const uint8_t *buf, size_t len, dk_state_t *out);
+
+/** @brief Encode a SCALE. @param s the full scales
+ *         @param out DK_LEN_SCALE bytes
+ *         @return DK_LEN_SCALE, or 0 when a field is out of range */
+size_t dk_scale_encode(const dk_scale_t *s, uint8_t *out);
+/** @brief Decode a SCALE. @param buf the bytes @param len their count
+ *         @param out the full scales; unchanged on false
+ *         @return true when valid */
+bool dk_scale_decode(const uint8_t *buf, size_t len, dk_scale_t *out);
 
 /**
  * @brief Decode any panel packet by its kind byte.
@@ -627,6 +658,7 @@ bool dk_link_loss_error(dk_link_t *l, bool armed);
 #define DK_CH_MOTOR  0x10u /**< motor */
 #define DK_CH_SERVO  0x20u /**< servo */
 #define DK_CH_STATE  0x40u /**< state */
+#define DK_CH_SCALE  0x80u /**< scale */
 /** @} */
 
 /** @brief The Dial's model of the panel's screen, built from its packets.
@@ -639,6 +671,7 @@ typedef struct {
     dk_live_motor_t motor;       /**< the last LIVE_MOTOR */
     dk_live_servo_t servo;       /**< the last LIVE_SERVO */
     dk_state_t      state;       /**< the last STATE */
+    dk_scale_t      scale;       /**< the last SCALE */
     bool     have_screen;        /**< screen is valid */
     uint8_t  have_nav;           /**< bit per slot: nav[slot] valid */
     bool     have_meta;          /**< meta is valid */
@@ -646,6 +679,7 @@ typedef struct {
     bool     have_motor;         /**< motor is valid */
     bool     have_servo;         /**< servo is valid */
     bool     have_state;         /**< state is valid */
+    bool     have_scale;         /**< scale is valid */
     bool     any;                /**< a packet came since the reset */
     uint8_t  seq;                /**< the last packet's seq */
     uint8_t  changed;            /**< DK_CH_*, the caller clears them */
