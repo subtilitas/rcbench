@@ -330,6 +330,7 @@ void bleu_enable(bleu_t *b, bool on, uint32_t now_ms)
     if (!on) {
         bleu_scan_stop(b, now_ms);
         tear_down(b, now_ms);
+        b->hurry = false;
     }
     b->err = BLEU_ERR_NONE;
     b->backoff_ms = 0;
@@ -350,9 +351,17 @@ void bleu_bind(bleu_t *b, const bleu_addr_t *addr, uint32_t now_ms)
     if (addr != NULL) {
         b->addr = *addr;
     }
+    b->hurry = false;
     b->err = BLEU_ERR_NONE;
     b->backoff_ms = 0;
     unlinked(b, b->st != BLEU_ST_OFF, 0, now_ms);
+}
+
+void bleu_hurry(bleu_t *b)
+{
+    if (b != NULL && b->bound) {
+        b->hurry = true;
+    }
 }
 
 bool bleu_scan(bleu_t *b, uint32_t now_ms)
@@ -644,6 +653,12 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
         unlinked(b, true, BLEU_RETRY_MS, now_ms);
         return;
     }
+    if (e->status == BLEU_STATUS_TURN) {
+        /* ...and the hub keeps the next turn for this one. */
+        unlinked(b, true, BLEU_RETRY_TURN_MS, now_ms);
+        return;
+    }
+    b->hurry = false;
     if (e->status != 0u) {
         b->err = BLEU_ERR_CONNECT;
         b->err_status = e->status;
@@ -686,6 +701,7 @@ static void on_disconnect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
 {
     if (b->st == BLEU_ST_CONNECTING && e->token != 0u
         && e->token == b->tok_link) {
+        b->hurry = false;
         b->reason = e->status;
         b->err = BLEU_ERR_CONNECT;
         b->err_status = e->status;
@@ -810,6 +826,7 @@ static void run_timers(bleu_t *b, uint32_t now_ms)
         && elapsed(now_ms, b->t_link, BLEU_CONNECT_MS)) {
         b->err = BLEU_ERR_CONNECT;
         b->err_status = 0;
+        b->hurry = false;
         tear_down(b, now_ms);
         unanswered(b, BLEU_RETRY_MS, now_ms);
     } else if (b->tok_link != 0u && b->st != BLEU_ST_CONNECTING
@@ -846,6 +863,7 @@ static void run_timers(bleu_t *b, uint32_t now_ms)
                                 now_ms);
         if (a != NULL) {
             a->addr = b->addr;
+            a->flags = b->hurry ? BLEU_ACT_F_HURRY : 0u;
             a->cp = prof_of(b)->conn;
             a->ms = (uint16_t)BLEU_CONNECT_MS;
         }

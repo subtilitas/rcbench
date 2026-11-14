@@ -164,8 +164,10 @@ Prüfstand ARMED oder wartet ein Arm, wird die Suche abgelehnt, und das Band
 zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
 läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Eine bei SAFE
 gestartete Suche endet beim Schalten auf ARMED, und DIAL SUCHEN zeigt
-`DURCH ARM BEENDET`. Ein Tippen auf GEBUNDENES DIAL listet die Dials der
-letzten Suche, und ein Tippen auf eins bindet es: Das Panel behält Adresse
+`DURCH ARM BEENDET`. Ein Tippen auf GEBUNDENES DIAL, oder auf DIAL SUCHEN,
+solange es `n GEFUNDEN` zeigt, listet die Dials der letzten Suche, bis zu
+6, und zuletzt `ERNEUT SUCHEN`, das eine neue Suche mit denselben
+Ablehnungen startet. Ein Tippen auf ein Dial bindet es: Das Panel behält Adresse
 und Namen in SETUP (`dial_ble`, `dial_name`) und fragt nach dem Speichern.
 Es ist immer ein Dial gebunden oder keins. Das Panel verbindet sich über
 die Adresse mit ihm, ohne Suche, bei Dial EIN, beim Start und nach jedem
@@ -183,11 +185,18 @@ schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
 
 Der Connect nach dem Binden startet sofort, wenn die Central frei ist. Eine
 IMU oder ein Knoten, EIN und an ein Gerät außer Reichweite gebunden, hält
-den einen Connect 5.000ms pro Versuch, und der Connect des Dial wird als
-belegt beantwortet und 1.000ms später wiederholt. Im Host-Modell wartet der
-erste Connect des Dial nach der Wahl bis zu 5.101ms bei einem solchen
-Client und bis zu 10.101ms bei zweien; auf dem Panel sind diese Wartezeiten
-nicht gemessen.
+den einen Connect 5.000ms pro Versuch. Der Connect nach dem Binden nimmt
+den nächsten Zug des Hubs
+([bleuart: der Hub](../protocols/bleuart/README.md#the-hub)): Ein
+laufender Versuch eines anderen Clients läuft zu Ende, und der Connect des
+Dial folgt innerhalb von 20ms, vor den Wiederholungen der anderen. Im
+Host-Modell wartet der erste Connect des Dial nach der Wahl bis zu
+5.061ms, das Tippen von 80ms und ein Frame eingerechnet, bei einem oder
+zwei solchen Clients, und er startet im selben Durchlauf wie das BIND,
+wenn kein Versuch läuft; auf dem Panel sind diese Wartezeiten nicht
+gemessen. Ein Connect nach einem Verlust, bei Dial EIN oder beim Start
+nimmt keinen Zug und kann hinter den Versuchen solcher Clients länger
+warten.
 
 ### Der Link
 

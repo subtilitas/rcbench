@@ -13,11 +13,12 @@
  *
  * Cases:
  * - a_pick_in_the_frame_found_shows_binds_and_connects
+ * - the_scan_row_reading_found_opens_the_list_and_binds
  * - a_bound_dial_tap_with_no_list_says_why
  * - a_pick_while_a_second_scan_runs_says_so
  * - a_bind_the_controller_refuses_says_so
  * - a_settings_post_between_bind_and_write_back_keeps_the_bind
- * - other_clients_connects_delay_the_dials_by_one_attempt_each
+ * - a_pick_waits_for_one_running_attempt_at_most
  * - a_bind_drops_the_backoff_of_an_old_dial
  * - the_popup_choice_lands_on_index_0_at_1024x600
  *
@@ -94,6 +95,10 @@ static struct {
     uint32_t   t_connect;     /* the Dial's first CONNECT after it */
     unsigned   dial_connects; /* the Dial's CONNECT actions */
     unsigned   busy_answers;  /* connects of the Dial the hub refused */
+    unsigned   turn_answers;  /* ...with the next turn kept for it */
+    uint8_t    gap_at_bind;   /* the hub's slot when the BIND ran */
+    uint8_t    gap_owner_at_bind; /* its holder */
+    uint32_t   gap_t_at_bind; /* when that holder took it */
     uint8_t    evt_seq;
     uint32_t   next_evt;
 } g;
@@ -185,6 +190,10 @@ static void hand_out(void)
                 && e.status == BLEU_STATUS_BUSY) {
                 ++g.busy_answers;
             }
+            if (o == OWN_DIAL && e.kind == BLEU_EV_CONNECT
+                && e.status == BLEU_STATUS_TURN) {
+                ++g.turn_answers;
+            }
             client_event(o, &e);
         }
         bleu_act_t a;
@@ -241,6 +250,9 @@ static void run_command(const dial_cmd_t *cmd)
     } else if (cmd->kind == DIAL_CMD_BIND) {
         g.t_bind = g.now;
         g.t_connect = 0u;
+        g.gap_at_bind = g.hub.gap;
+        g.gap_owner_at_bind = g.hub.gap_owner;
+        g.gap_t_at_bind = g.hub.gap_t;
         if (dial_ctl_bind(&g.c, cmd->arg, g.now)) {
             ++g.bound_lines;
         } else {
@@ -659,6 +671,40 @@ TEST_CASE(a_pick_in_the_frame_found_shows_binds_and_connects)
     CHECK_EQ(g.dial_connects, 1u);
 }
 
+/* SCAN FOR DIAL reading FOUND 1, the row the owner took for the add
+ * button: a tap opens the found list, the Dial and SCAN AGAIN, and a pick
+ * binds and connects.  SCAN AGAIN from the same row then scans beside the
+ * link, which stays up, and the row reads FOUND 1 again. */
+TEST_CASE(the_scan_row_reading_found_opens_the_list_and_binds)
+{
+    start("", 0u, false);
+    (void)scan();
+    tap_row(&wireless_pane_scan_row);
+    CHECK_EQ(g.scan_lines, 1u);
+    gfx_rect_t r;
+    CHECK(choice_rect(1, &r));
+    CHECK(!choice_rect(2, &r));
+    const uint32_t t_pick = g.now;
+    pick(0);
+    CHECK(until_up(2000u) < 2000u);
+    CHECK_EQ(g.bound_lines, 1u);
+    CHECK_EQ(g.scan_lines, 1u);
+    T_LOG("SCAN row pick to UP %ums", (unsigned)(g.now - t_pick));
+    CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_ADDR), DIAL_TEXT);
+    tap_row(&wireless_pane_scan_row);
+    pick(1);
+    run(100u);
+    CHECK_EQ(g.scan_lines, 2u);
+    CHECK_STR_EQ(value_of(&wireless_pane_scan_row), TR(DIAL_SCAN_RUNS));
+    run(10500u);
+    char want[32];
+    snprintf(want, sizeof want, TR(DIAL_SCAN_FOUND), 1u);
+    CHECK_STR_EQ(value_of(&wireless_pane_scan_row), want);
+    CHECK_EQ(g.bound_lines, 1u);
+    CHECK_EQ(g.refused_lines, 0u);
+    CHECK_EQ(dial_ctl_link(&g.c), DIAL_LINK_UP);
+}
+
 /* BOUND DIAL tapped with no list to pick from: before any scan, and after
  * one that found none.  The band says why; nothing is queued. */
 TEST_CASE(a_bound_dial_tap_with_no_list_says_why)
@@ -684,13 +730,14 @@ TEST_CASE(a_bound_dial_tap_with_no_list_says_why)
     CHECK_EQ(g.bound_lines + g.refused_lines, 0u);
 }
 
-/* (b) SCAN FOR DIAL tapped while FOUND 1 shows starts a second scan; BOUND
+/* (b) SCAN AGAIN, the found list's last row, starts a second scan; BOUND
  * DIAL tapped during it says the scan runs, and binds once it ended. */
 TEST_CASE(a_pick_while_a_second_scan_runs_says_so)
 {
     start("", 0u, false);
     (void)scan();
     tap_row(&wireless_pane_scan_row);
+    pick(1);
     run(100u);
     CHECK_STR_EQ(value_of(&wireless_pane_scan_row), TR(DIAL_SCAN_RUNS));
     CHECK_EQ(g.scan_lines, 2u);
@@ -779,18 +826,31 @@ TEST_CASE(a_settings_post_between_bind_and_write_back_keeps_the_bind)
     CHECK_STR_EQ(value_of(&wireless_pane_bind_row), "DIAL-3A10");
 }
 
+/** @brief The waits of a sweep of picks (worst_wait()). */
+typedef struct {
+    uint32_t connect;  /* the longest pick to the Dial's CONNECT */
+    uint32_t up;       /* the longest pick to UP */
+    uint32_t free_go;  /* the longest BIND to CONNECT, the slot free at it */
+    uint32_t turn;     /* the longest end of a running attempt to CONNECT */
+    unsigned free_n;   /* picks with the slot free at the BIND */
+    unsigned held_n;   /* picks with another client's connect running */
+    unsigned busy;     /* the most busy answers to the Dial in one pick */
+    unsigned turns;    /* the most turn answers to the Dial in one pick */
+} waits_t;
+
 /**
- * @brief The longest wait from a pick to the Dial's CONNECT, with the
- *        clients of @p others bound to peers that never answer, the pick
- *        at every 250ms of a 40s window of their cycle.
- * @param others    WITH_IMU, WITH_PNODE.
- * @param up_ms_out Takes the longest wait from the pick to UP.
- * @return The ms.
+ * @brief The waits from a pick to the Dial's CONNECT, with the clients of
+ *        @p others bound to peers that never answer, the pick at every
+ *        250ms of a 40s window of their cycle.  Another client's connect
+ *        that runs at the BIND ends 5,000ms after it took the slot, and its
+ *        cancel's event 2ms on.
+ * @param others WITH_IMU, WITH_PNODE.
+ * @return The waits.
  */
-static uint32_t worst_wait(unsigned others, uint32_t *up_ms_out)
+static waits_t worst_wait(unsigned others)
 {
-    uint32_t worst_connect = 0u, worst_up = 0u;
-    unsigned worst_busy = 0u;
+    waits_t w;
+    memset(&w, 0, sizeof w);
     for (uint32_t lead = 0u; lead < 40000u; lead += 250u) {
         start("", others, false);
         run(lead);
@@ -803,34 +863,51 @@ static uint32_t worst_wait(unsigned others, uint32_t *up_ms_out)
         CHECK_EQ(g.bound_lines, 1u);
         const uint32_t to_connect = g.t_connect - t_pick;
         const uint32_t to_up = g.now - t_pick;
-        worst_connect = to_connect > worst_connect ? to_connect : worst_connect;
-        worst_up = to_up > worst_up ? to_up : worst_up;
-        worst_busy = g.busy_answers > worst_busy ? g.busy_answers : worst_busy;
+        w.connect = to_connect > w.connect ? to_connect : w.connect;
+        w.up = to_up > w.up ? to_up : w.up;
+        if (g.gap_at_bind == BLEU_HUB_GAP_FREE) {
+            const uint32_t go = g.t_connect - g.t_bind;
+            w.free_go = go > w.free_go ? go : w.free_go;
+            ++w.free_n;
+        } else if (g.gap_at_bind == BLEU_HUB_GAP_CONNECT
+                   && g.gap_owner_at_bind != OWN_DIAL) {
+            const uint32_t end_at = g.gap_t_at_bind + BLEU_CONNECT_MS + 2u;
+            const uint32_t turn = g.t_connect - end_at;
+            w.turn = turn > w.turn ? turn : w.turn;
+            ++w.held_n;
+        }
+        w.busy = g.busy_answers > w.busy ? g.busy_answers : w.busy;
+        w.turns = g.turn_answers > w.turns ? g.turn_answers : w.turns;
     }
-    T_LOG("others 0x%X: up to %u of the Dial's connects answered busy",
-          others, worst_busy);
-    *up_ms_out = worst_up;
-    return worst_connect;
+    T_LOG("others 0x%X: pick to CONNECT at most %ums, to UP %ums; slot free "
+          "at %u BINDs, CONNECT at most %ums after; another's connect "
+          "running at %u, CONNECT at most %ums after its end; at most %u "
+          "busy and %u turn answers", others, (unsigned)w.connect,
+          (unsigned)w.up, w.free_n, (unsigned)w.free_go, w.held_n,
+          (unsigned)w.turn, w.busy, w.turns);
+    return w;
 }
 
 /* (d) The IMU and the power node ON, bound to peers that never answer:
- * their connects share the hub's one connect with the Dial's.  The hub
- * answers the Dial's busy and it tries again 1,000ms on; each of theirs
- * holds the connect for 5,000ms.  The Dial waits for one attempt of each
- * other client at most, its retry, the tap and a frame. */
-TEST_CASE(other_clients_connects_delay_the_dials_by_one_attempt_each)
+ * their connects share the hub's one connect with the Dial's.  The pick's
+ * connect is a hurried one: an attempt of theirs that runs goes to its
+ * end, and the Dial's connect takes the next turn, within its
+ * BLEU_RETRY_TURN_MS retry and a poll.  With none running it goes at once,
+ * as without them. */
+TEST_CASE(a_pick_waits_for_one_running_attempt_at_most)
 {
-    uint32_t up_ms = 0u;
-    const uint32_t one = worst_wait(WITH_IMU, &up_ms);
-    T_LOG("IMU absent: pick to the Dial's CONNECT at most %ums, to UP %ums",
-          (unsigned)one, (unsigned)up_ms);
-    CHECK(one <= BLEU_CONNECT_MS + BLEU_RETRY_MS + TAP_MS + 2u * FRAME_MS);
-    const uint32_t two = worst_wait(WITH_IMU | WITH_PNODE, &up_ms);
-    T_LOG("IMU and power node absent: pick to CONNECT at most %ums, to UP "
-          "%ums", (unsigned)two, (unsigned)up_ms);
-    CHECK(two <= 2u * BLEU_CONNECT_MS + BLEU_RETRY_MS + TAP_MS
-                     + 2u * FRAME_MS);
-    CHECK(two > one);
+    const uint32_t ui = TAP_MS + 2u * FRAME_MS;
+    const uint32_t turn = BLEU_RETRY_TURN_MS + 2u * BLEC_MS;
+    const unsigned set[2] = { WITH_IMU, WITH_IMU | WITH_PNODE };
+    for (unsigned k = 0; k < 2u; ++k) {
+        const waits_t w = worst_wait(set[k]);
+        CHECK(w.connect <= BLEU_CONNECT_MS + 2u + turn + ui);
+        CHECK(w.free_n > 0u);
+        CHECK(w.held_n > 0u);
+        CHECK(w.free_go <= BLEC_MS);
+        CHECK(w.turn <= turn);
+        CHECK(w.up <= w.connect + 400u);
+    }
 }
 
 /* (d) The Dial bound to an absent one first: its connects grow the
@@ -867,10 +944,13 @@ TEST_CASE(the_popup_choice_lands_on_index_0_at_1024x600)
         start("", 0u, false);
         (void)scan();
         tap_row(&wireless_pane_bind_row);
-        gfx_rect_t r;
+        gfx_rect_t r, again;
+        CHECK(choice_rect(1, &again));
+        CHECK(!choice_rect(2, &r));
         CHECK(choice_rect(0, &r));
-        CHECK(!choice_rect(1, &r) || r.w == 0);
-        CHECK(choice_rect(0, &r));
+        /* SCAN AGAIN right under the Dial, not over it. */
+        CHECK_EQ(again.x, r.x);
+        CHECK_EQ(again.y, r.y + r.h);
         const gfx_rect_t row = settings_screen_row_rect(
             custom_row(&wireless_pane_bind_row));
         const int row_top = UI_BAND_H + row.y;
@@ -897,11 +977,12 @@ TEST_CASE(the_popup_choice_lands_on_index_0_at_1024x600)
 int main(void)
 {
     RUN(a_pick_in_the_frame_found_shows_binds_and_connects);
+    RUN(the_scan_row_reading_found_opens_the_list_and_binds);
     RUN(a_bound_dial_tap_with_no_list_says_why);
     RUN(a_pick_while_a_second_scan_runs_says_so);
     RUN(a_bind_the_controller_refuses_says_so);
     RUN(a_settings_post_between_bind_and_write_back_keeps_the_bind);
-    RUN(other_clients_connects_delay_the_dials_by_one_attempt_each);
+    RUN(a_pick_waits_for_one_running_attempt_at_most);
     RUN(a_bind_drops_the_backoff_of_an_old_dial);
     RUN(the_popup_choice_lands_on_index_0_at_1024x600);
     return test_summary("dial_bind");

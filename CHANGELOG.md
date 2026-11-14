@@ -262,6 +262,27 @@ history is in git.
 
 ### Changed
 
+- SETUP > WIRELESS: SCAN FOR DIAL and SCAN FOR NODE, on POWER NODE and
+  BALANCE NODE, open the found list while they read `FOUND n`; in their
+  other states a tap scans as before. The found list, from these rows and
+  from the BOUND rows, shows up to 6 devices and `SCAN AGAIN` last, which
+  starts a new 10s scan with the same refusals while ARMED and before
+  Bluetooth LE runs. A tap on BOUND NODE with no list says why on the
+  band, `NO NODE LISTED: TAP SCAN FOR NODE FIRST` or
+  `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`
+  ([Screens](docs/Screens.md#wireless-the-imu-and-the-dial)).
+- A bind from SETUP goes first on the panel's Bluetooth LE hub. The first
+  connect after a bind of the Dial, a node or the IMU carries
+  `BLEU_ACT_F_HURRY` (`bleu_hurry()`); while another client's connect
+  runs, the hub keeps the next turn for it and answers
+  `BLEU_STATUS_TURN`, the machine tries again every 20ms, and other
+  clients' connects are answered busy until it takes the slot. The
+  attempt under way is not cut. A kept turn lapses 200ms after the slot
+  became free without its client. Beside an IMU and a power node bound
+  to devices out of range, the Dial's first connect after the pick comes
+  at most 5,061ms after the tap in the host model, where it came up to
+  10,101ms
+  ([bleuart: the hub](protocols/bleuart/README.md#the-hub)).
 - The nodes advertise the service's 128-bit UUID and the manufacturer
   data, and send the name in the scan response, so a central that filters
   duplicates lists a node from its first report. `rcnode_rsp_build()` takes

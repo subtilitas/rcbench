@@ -443,8 +443,12 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   deren Advertising den Knotendienst und in den Herstellerdaten die Rolle
   Leistung nennt (`rcnode_adv_match()`, der Name nur, wo keine
   Herstellerdaten kamen). Ein Auswuchtknoten wird nicht gelistet, mit oder
-  ohne Namen. Tippen bindet einen über seine Adresse, in SETUP
-  gehalten (`pnode_ble`, `pnode_name`). Ein gebundener Knoten wird nach
+  ohne Namen. GEBUNDENER KNOTEN, oder KNOTEN SUCHEN, solange es
+  `n GEFUNDEN` zeigt, öffnet die Liste, bis zu 6 Knoten und zuletzt
+  `ERNEUT SUCHEN`. Tippen bindet einen über seine Adresse, in SETUP
+  gehalten (`pnode_ble`, `pnode_name`), und sein erster Connect nimmt den
+  nächsten Zug des Hubs nach einem laufenden Versuch. GEBUNDENER KNOTEN
+  ohne Liste sagt auf dem Band, warum. Ein gebundener Knoten wird nach
   jedem Abbruch ohne Suche wieder verbunden, 1000ms nach dem Abbruch und
   nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Eine
   Suche bei ARMED wird abgelehnt, und eine laufende Suche endet beim

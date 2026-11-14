@@ -12,7 +12,7 @@
  * - a_number_row_is_set_on_its_keypad_and_kept
  * - a_number_set_is_cancelled_by_a_hold
  * - an_on_off_row_steps_and_cancels
- * - a_choice_list_takes_the_focus_and_a_pick
+ * - a_choice_list_takes_the_focus_and_a_pick (SCAN AGAIN its last item)
  * - the_servo_hub_moves_and_opens_a_tile
  * - nothing_shows_while_the_dial_is_off
  * - armed_moves_no_focus
@@ -293,10 +293,21 @@ TEST_CASE(a_choice_list_takes_the_focus_and_a_pick)
     CHECK(ui_focus_shown());
     CHECK(focus_on(ui_tr(TX_DIAL_ROW_BIND)));
     CHECK(ui_focus_press());
-    /* The list's three rows, the focus on the first. */
-    CHECK_EQ(ui_focus_count(), 3);
+    /* The list's three Dials and SCAN AGAIN, the focus on the first. */
+    CHECK_EQ(ui_focus_count(), 4);
     CHECK_EQ(ui_focus_index(), 0);
+    CHECK_STR_EQ(ui_focus_label(3), ui_tr(TX_WL_SCAN_AGAIN));
     CHECK(ui_focus_turn(-1));
+    CHECK_EQ(ui_focus_index(), 3);
+    CHECK(ui_focus_press());
+    CHECK(wireless_pane_take_dial(&cmd));
+    CHECK_EQ(cmd.kind, DIAL_CMD_SCAN);
+    CHECK(!wireless_pane_take_dial(&cmd));
+    /* SCAN FOR DIAL reads FOUND 3: its press opens the same list. */
+    CHECK(focus_on(ui_tr(TX_DIAL_ROW_SCAN)));
+    CHECK(ui_focus_press());
+    CHECK_EQ(ui_focus_count(), 4);
+    CHECK(ui_focus_turn(2));
     CHECK_EQ(ui_focus_index(), 2);
     CHECK(ui_focus_press());
     CHECK(wireless_pane_take_dial(&cmd));
@@ -305,7 +316,7 @@ TEST_CASE(a_choice_list_takes_the_focus_and_a_pick)
     /* Open again: HOLD closes the list and picks nothing. */
     CHECK(focus_on(ui_tr(TX_DIAL_ROW_BIND)));
     CHECK(ui_focus_press());
-    CHECK_EQ(ui_focus_count(), 3);
+    CHECK_EQ(ui_focus_count(), 4);
     CHECK(ui_focus_hold());
     CHECK(!wireless_pane_take_dial(&cmd));
     CHECK_EQ(settings_screen_category(), (int)SET_CAT_WIRELESS);
@@ -684,7 +695,7 @@ TEST_CASE(a_press_lands_on_the_focused_item_everywhere)
     open_wireless(SET_DIAL_EN);
     CHECK(focus_on(ui_tr(TX_DIAL_ROW_BIND)));
     CHECK(ui_focus_press());
-    CHECK_EQ(ui_focus_count(), 2);
+    CHECK_EQ(ui_focus_count(), 3);
     every_target_lands("choice list");
     /* The leave warning. */
     on(SCREEN_SETUP);

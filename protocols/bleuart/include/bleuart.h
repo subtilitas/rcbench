@@ -46,6 +46,8 @@ extern "C" {
 #define BLEU_SCAN_MS     10000u /**< one active scan */
 #define BLEU_CONNECT_MS  5000u  /**< one connect attempt */
 #define BLEU_RETRY_MS    1000u  /**< a timed-out try or a drop to the next */
+#define BLEU_RETRY_TURN_MS 20u  /**< a connect the hub answered with
+                                     BLEU_STATUS_TURN to its next try */
 #define BLEU_RETRY_CONNECT_MS 7000u /**< a connect the host stack ends with a
                                          failure, among them HCI 0x3E (failed
                                          to be established), to the next */
@@ -96,6 +98,15 @@ extern "C" {
  *         connect answered so is tried again after BLEU_RETRY_MS, and the
  *         error of the last attempt stays. */
 #define BLEU_STATUS_BUSY    0xFFFDu
+/** @brief The status a hurried connect gets while another machine holds
+ *         the host stack's one scan or connect and the hub keeps the next
+ *         turn for it (bleuart_hub.h): tried again after
+ *         BLEU_RETRY_TURN_MS, the error of the last attempt kept. */
+#define BLEU_STATUS_TURN    0xFFFCu
+
+/** @brief bleu_act_t's flags: a CONNECT of a machine bleu_hurry() was
+ *         called on, which takes the hub's next turn. */
+#define BLEU_ACT_F_HURRY 0x01u
 
 /** @brief Tokens: the owner in the top 3 bits, a count in the rest.  Each
  *         owner's count, owner 0's too, wraps from 8,191 to 1. @{ */
@@ -311,6 +322,7 @@ typedef struct {
     uint16_t    h2;      /**< a handle, by kind */
     uint16_t    ms;      /**< SCAN, CONNECT: the duration */
     bleu_addr_t addr;    /**< CONNECT: the address */
+    uint8_t     flags;   /**< CONNECT: BLEU_ACT_F_HURRY or 0 */
     bleu_conn_params_t cp; /**< CONNECT: the profile's parameters */
     uint8_t     data[BLEU_WRITE_MAX]; /**< SUBSCRIBE, WRITE, WRITE_NR; the
                                            service's UUID for DISC_SVC */
@@ -399,6 +411,8 @@ typedef struct {
     uint32_t     stray;     /**< events ignored: late, stale or another
                                  handle */
     uint32_t     attempts;  /**< connects started */
+    bool         hurry;     /**< its connects carry BLEU_ACT_F_HURRY until
+                                 one is answered (bleu_hurry()) */
     uint32_t     act_drops; /**< actions the full queue dropped */
     uint16_t     token;     /**< private: the last token handed out */
     uint16_t     tok_link;  /**< private: the link step's token */
@@ -490,6 +504,16 @@ void bleu_enable(bleu_t *b, bool on, uint32_t now_ms);
  * @param now_ms The clock.
  */
 void bleu_bind(bleu_t *b, const bleu_addr_t *addr, uint32_t now_ms);
+
+/**
+ * @brief Mark the bound address's next connects as asked for now, by the
+ *        operator's bind: they carry BLEU_ACT_F_HURRY, so a hub keeps its
+ *        next turn for them ahead of other machines' retries, until one is
+ *        answered by the host stack, times out, or the machine is bound
+ *        again or switched off.  Call it after bleu_bind().
+ * @param b The machine; NULL or one with nothing bound does nothing.
+ */
+void bleu_hurry(bleu_t *b);
 
 /**
  * @brief Start a scan of BLEU_SCAN_MS.  The list is cleared.  A pending

@@ -11,6 +11,8 @@
 _Static_assert(BLEU_HUB_CLIENTS <= BLEU_OWNER_MAX,
                "every client's owner fits a token's top 3 bits");
 _Static_assert(BLEU_HUB_OUT <= 255u, "the out queues count in a byte");
+_Static_assert(BLEU_HUB_TURN_MS >= 10u * BLEU_RETRY_TURN_MS,
+               "a kept turn outlasts its client's retries");
 
 void bleu_hub_init(bleu_hub_t *h)
 {
@@ -147,6 +149,7 @@ static void free_gap(bleu_hub_t *h, uint32_t now_ms)
 {
     h->gap = BLEU_HUB_GAP_FREE;
     h->yield = false;
+    h->turn_t = now_ms;
     if (h->held) {
         h->held = false;
         take_gap(h, BLEU_HUB_GAP_SCAN, h->held_owner, &h->held_act, now_ms);
@@ -357,6 +360,42 @@ static void act_scan(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
     }
 }
 
+/**
+ * @brief A client's CONNECT: to the host stack while the slot is free and
+ *        no other client's turn is kept, or the slot is its own; else a
+ *        hurried one keeps the next turn and is answered BLEU_STATUS_TURN,
+ *        any other is answered busy.
+ * @param h      The hub.
+ * @param owner  The client.
+ * @param a      The action.
+ * @param mine   The client holds the slot.
+ * @param now_ms The clock.
+ */
+static void act_connect(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
+                        bool mine, uint32_t now_ms)
+{
+    const bool kept_other = h->turn_set && h->turn_owner != owner;
+    if ((h->gap == BLEU_HUB_GAP_FREE && !kept_other) || (mine && !h->held)) {
+        if (h->turn_set && h->turn_owner == owner) {
+            h->turn_set = false;
+        }
+        take_gap(h, BLEU_HUB_GAP_CONNECT, owner, a, now_ms);
+        pass(h, a);
+        return;
+    }
+    ++h->c[owner].busy;
+    if ((a->flags & BLEU_ACT_F_HURRY) != 0u && !kept_other) {
+        if (!h->turn_set) {
+            h->turn_t = now_ms;
+        }
+        h->turn_set = true;
+        h->turn_owner = owner;
+        answer(h, owner, BLEU_EV_CONNECT, a->token, 0u, BLEU_STATUS_TURN);
+        return;
+    }
+    answer(h, owner, BLEU_EV_CONNECT, a->token, 0u, BLEU_STATUS_BUSY);
+}
+
 void bleu_hub_action(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
                      uint32_t now_ms)
 {
@@ -385,14 +424,7 @@ void bleu_hub_action(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
         }
         return;
     case BLEU_ACT_CONNECT:
-        if (h->gap == BLEU_HUB_GAP_FREE || (mine && !h->held)) {
-            take_gap(h, BLEU_HUB_GAP_CONNECT, owner, a, now_ms);
-            pass(h, a);
-        } else {
-            ++h->c[owner].busy;
-            answer(h, owner, BLEU_EV_CONNECT, a->token, 0u,
-                   BLEU_STATUS_BUSY);
-        }
+        act_connect(h, owner, a, mine, now_ms);
         return;
     case BLEU_ACT_CANCEL:
         if (h->gap == BLEU_HUB_GAP_FREE || mine) {
@@ -416,9 +448,18 @@ void bleu_hub_action(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
 
 void bleu_hub_tick(bleu_hub_t *h, uint32_t now_ms)
 {
-    if (h != NULL && h->gap != BLEU_HUB_GAP_FREE
+    if (h == NULL) {
+        return;
+    }
+    if (h->gap != BLEU_HUB_GAP_FREE
         && (uint32_t)(now_ms - h->gap_t) >= h->gap_ms) {
         free_gap(h, now_ms);
+    }
+    /* A kept turn whose client did not come back to the free slot: it was
+     * switched off, unbound or answered. */
+    if (h->turn_set && h->gap == BLEU_HUB_GAP_FREE
+        && (uint32_t)(now_ms - h->turn_t) >= BLEU_HUB_TURN_MS) {
+        h->turn_set = false;
     }
 }
 

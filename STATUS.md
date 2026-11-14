@@ -1198,9 +1198,11 @@ into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
 `test_dial_servo`: a 10s Dial press on ARM's place arms nothing, turns while
 SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
 (`shared/ui/wireless_pane.c`, `test_wireless_pane`; `test_dial_bind` from
-the tap on SCAN FOR DIAL and BOUND DIAL through a model of the frame and
-`blec` glue, the controller and the hub to the link UP, with an IMU and a
-power node bound to absent peers), and the `blec` task's
+the tap on SCAN FOR DIAL and BOUND DIAL, the found list with SCAN AGAIN,
+through a model of the frame and `blec` glue, the controller and the hub
+to the link UP, with an IMU and a power node bound to absent peers: the
+pick's connect at most 5061ms after the tap; `test_wireless_pnode`,
+`test_wireless_bal` the nodes' rows alike), and the `blec` task's
 and the control task's side (`firmware/panel/main/panel_dial.c`,
 `panel_supply.c`). Built and host-tested, not run with a Dial: navigation
 and SET (`shared/ui/ui_focus.c`, `ui_focus_list.c`, `ui_focus_screens.c`,
@@ -1814,8 +1816,12 @@ lost DISCONNECT whose handle another client gets, a held-back DISCONNECT, anothe
 cancel, stop and handle refused with each GATT step answered lost, the slot ended by its
 SCAN_END and by a connection that failed to be established, a client that holds the slot
 scanning or connecting again with no cancel and no busy answer, a stale DISCONNECT of a
-client's old handle keeping its new link, and the slot's limits of 7000ms and 12000ms and the cancel's
-2000ms at their limit and 1ms before. `test_bleuart_backoff` runs the connect backoff on the
+client's old handle keeping its new link, the slot's limits of 7000ms and 12000ms and the cancel's
+2000ms at their limit and 1ms before, and a bind's hurried connect (`bleu_hurry()`) keeping the
+next turn behind the attempt under way, other clients answered busy on the free slot, a scan
+not held back, the turn lapsing 200ms after the slot freed and not 199ms, and a hurried bind
+beside two absent peers connecting within 20ms of that attempt's end where an unhurried one gets
+no slot in 40000ms. `test_bleuart_backoff` runs the connect backoff on the
 same rig: an absent peer's gaps doubling from 1000ms to 30000ms, 7 connects in 100s, a Dial
 dropped while that peer waits up again after its 1000ms retry, a scan and a bind starting the
 gaps over, and failed connects doubling from 7000ms.

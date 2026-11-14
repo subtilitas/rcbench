@@ -12,7 +12,10 @@
  * band's DIAL_SCAN_ARMED), BOUND DIAL (a tap lists the Dials the last scan
  * found, a tap on one binds it; with no list, or a scan running, the tap
  * and a bind the controller refused say why on the band:
- * DIAL_BIND_EMPTY, DIAL_BIND_SCANNING, DIAL_BIND_GONE) and the two steps;
+ * DIAL_BIND_EMPTY, DIAL_BIND_SCANNING, DIAL_BIND_GONE) and the two steps.
+ * SCAN FOR DIAL reading FOUND n opens the same list as BOUND DIAL; the
+ * list's last row, SCAN AGAIN, scans.  The nodes' SCAN FOR NODE and BOUND
+ * NODE rows do the same, with NODE_BIND_EMPTY and NODE_BIND_SCANNING;
  * its state is the panel's (wireless_pane_set_dial()).  POWER NODE: Power node and INA228
  * SOURCE while it is off, so the source can go back to WIRED without
  * switching the node on; on, SCAN FOR NODE (refused while ARMED with the
@@ -138,6 +141,24 @@ const char *wireless_pane_dial_word(const dial_view_t *v, char *buf,
  * @return false when none waits.
  */
 bool wireless_pane_take_dial(dial_cmd_t *out);
+
+/**
+ * @brief The devices a found list shows ahead of its SCAN AGAIN row: the
+ *        scan's count, at most UI_SL_CHOICES_MAX - 1.
+ * @param found_n The devices the scan found.
+ * @return The count; a pick below it names that device.
+ */
+int wireless_list_devices(unsigned found_n);
+
+/**
+ * @brief The rows of a found list: its devices and SCAN AGAIN last, the
+ *        row at wireless_list_devices(); none while it is not listed or
+ *        found nothing.
+ * @param listed  A scan ended and none runs.
+ * @param found_n The devices it found.
+ * @return The count, 0 for no list.
+ */
+int wireless_list_rows(bool listed, unsigned found_n);
 
 /**
  * @brief The power node as the panel last read it.  A change repaints

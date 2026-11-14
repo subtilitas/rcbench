@@ -418,8 +418,12 @@ fourth client, owner 3
 - **Scan and bind.** SCAN FOR NODE scans 10s and lists the devices whose
   advertising names the node service and the power role in its
   manufacturer data (`rcnode_adv_match()`, the name only where no
-  manufacturer data came). A balance node is not listed, named or not. A tap binds one by its address, kept in SETUP
-  (`pnode_ble`, `pnode_name`). A bound node is connected again after each
+  manufacturer data came). A balance node is not listed, named or not.
+  BOUND NODE, or SCAN FOR NODE while it reads `FOUND n`, opens the list,
+  up to 6 nodes and `SCAN AGAIN` last. A tap binds one by its address,
+  kept in SETUP (`pnode_ble`, `pnode_name`), and its first connect takes
+  the hub's next turn after an attempt under way. BOUND NODE with no list
+  says why on the band. A bound node is connected again after each
   drop without a scan, 1000ms after the drop and on the hub's backoff
   after a failed connect. A scan while ARMED is refused, and a scan that
   runs is stopped at the switch to ARMED.

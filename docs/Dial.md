@@ -155,8 +155,9 @@ ARMED, or an arm waits, the scan is refused and the band reads
 `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs it
 reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. A scan started while SAFE
 stops at the switch to ARMED, and SCAN FOR DIAL reads `STOPPED BY ARM`. A
-tap on BOUND DIAL lists the Dials the last scan found, and a tap on one
-binds it: the panel keeps its address and name in SETUP (`dial_ble`,
+tap on BOUND DIAL, or on SCAN FOR DIAL while it reads `FOUND n`, lists the
+Dials the last scan found, up to 6, and `SCAN AGAIN` last, which starts a
+new scan with the same refusals. A tap on a Dial binds it: the panel keeps its address and name in SETUP (`dial_ble`,
 `dial_name`) and asks for a save. One Dial is bound at a time. The panel
 connects to it by its address, without a scan, at Dial ON, at start-up and
 after each loss.
@@ -172,10 +173,16 @@ changed under it, reads `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` or
 
 The connect after a bind starts at once while the central is free. An IMU
 or a node that is ON and bound to a device out of range holds the one
-connect for 5,000ms an attempt, and the Dial's connect is answered busy and
-tried again 1,000ms on. In the host model the Dial's first connect waits
-up to 5,101ms after the pick with one such client and up to 10,101ms with
-two; on the panel these waits are not measured.
+connect for 5,000ms an attempt. The bind's connect takes the hub's next
+turn ([bleuart: the hub](../protocols/bleuart/README.md#the-hub)): an
+attempt of another client under way runs to its end, and the Dial's
+connect goes within 20ms of it, ahead of the others' retries. In the host
+model the Dial's first connect waits up to 5,061ms after the pick, the
+tap of 80ms and a frame included, with one or two such clients, and goes
+in the same poll as the BIND when no attempt is under way; on the panel
+these waits are not measured. A connect after a loss, at Dial ON or at
+start-up takes no turn and can wait behind such clients' attempts for
+longer.
 
 ### The link
 

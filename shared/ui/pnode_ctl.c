@@ -296,6 +296,7 @@ bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms)
     snprintf(c->cfg.addr, sizeof(c->cfg.addr), "%s", c->found[i].addr);
     snprintf(c->cfg.name, sizeof(c->cfg.name), "%s", c->found[i].name);
     bleu_bind(&c->b, &a, now_ms);
+    bleu_hurry(&c->b);
     c->lost = false;
     ++c->bind_seq;
     follow_link(c, now_ms);
