@@ -604,8 +604,8 @@ und Zahlen kommen aus der Konsole eines Musters, und keine ist aufgezeichnet.
 ### Das Dial und die Sensorknoten
 
 Das M5Stack Dial und beide Knotenrollen führen die Geräteseite des
-Firmware-Updates im Task `ota` aus (`firmware/devota`): 4 096 Bytes Stack aus
-dem Heap beim Start, Priorität 3, ein Schritt alle 10ms. `esp_ota_end()`
+Firmware-Updates im Task `ota` aus (`firmware/devota`): 8 192 Bytes Stack aus
+dem Heap beim Start, der Größe der OTA-Beispiele von ESP-IDF, Priorität 3, ein Schritt alle 10ms. `esp_ota_end()`
 liest das geschriebene Image zurück und prüft es auf diesem Stack. Seine
 Tiefe ist nicht gemessen: Kein Werkzeug liest dafür das Xtensa-Image des
 Dial oder das Image des Knotens, und keine High-Water-Mark ist aufgezeichnet.
@@ -807,12 +807,12 @@ Die Zeile der Konsole ist ohne den Client des Dials gemessen (`panel_dial.c`,
 ihm nicht gemessen. Der Client des Dials fügt dem Standard-Build 4 376 Bytes
 DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image.
 Das Update der Funkgeräte, aus der Linker-Map des Standard-Builds:
-`panel_devupd.c` hält 1 805 Bytes DIRAM (1 377 .bss, 428 .data) und 3 670
-Bytes Code; `upd_dev.c` 112 Bytes .bss und 1 582 Bytes Code;
-`shared/devupd` 2 914 Bytes Code und `protocols/bleota` 344. Die drei
+`panel_devupd.c` hält 1 810 Bytes DIRAM (1 382 .bss, 428 .data) und 4 030
+Bytes Code; `upd_dev.c` 112 Bytes .bss und 1 598 Bytes Code;
+`shared/devupd` 3 224 Bytes Code und `protocols/bleota` 446. Die drei
 mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
-2 128 048 Bytes Image hinzu: 840 960, 645 328 und 641 760. Mit ihnen hat
-das Anwendungs-Image 7 311 360 Bytes, 815 104 (10,0%) unter dem Slot von
+2 130 080 Bytes Image hinzu: 841 424, 646 112 und 642 544. Mit ihnen hat
+das Anwendungs-Image 7 314 912 Bytes, 811 552 (10,0%) unter dem Slot von
 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5

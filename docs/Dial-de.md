@@ -116,7 +116,7 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 Die Partitionstabelle (`firmware/dial/partitions.csv`) enthält den NVS, zwei
 Anwendungsslots von 3.072kB und ihre otadata. Das veröffentlichte Image hat
-840.960 Bytes, 26,7% eines Slots; die sieben Fonts der Faces sind 243.194
+841.424 Bytes, 26,7% eines Slots; die sieben Fonts der Faces sind 243.194
 Bytes davon und die Ring-Tabellen 25.032. Sein statischer RAM: 216.534 von
 341.760 Bytes internem DRAM und IRAM, darunter der Frame von 115.200 Bytes.
 Den Heap, den NimBLE zur Laufzeit nimmt, hat niemand gemessen; das Log beim
@@ -149,7 +149,7 @@ Das Protokoll ist `protocols/bleota`
 die Seite des Panels ist SETUP > UPDATES > DIAL-FIRMWARE
 ([Bildschirme, Das Dial](Screens-de.md#das-dial)).
 
-1. Das Dial ist gebunden und verbunden, die Bank ist SAFE. UPDATES zeigt
+1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. UPDATES zeigt
    `Dial: 0.23.11. Im Panel: 0.23.12.` und `2s HALTEN ZUM DIAL-UPDATE`.
 2. Das Halten von 2s beendet den Knopf-Link des Dial. Das Panel verbindet
    sich mit dem Update-Dienst des Dial und sendet BEGIN: Art DIAL, Größe,
@@ -161,8 +161,12 @@ die Seite des Panels ist SETUP > UPDATES > DIAL-FIRMWARE
    - Ein Druck der Bildschirmtaste, innerhalb von 1s losgelassen, nimmt an.
    - Ein Halten von 1s lehnt ab.
    - Kein Druck in 30s lehnt ab.
-4. Angenommen: Das Dial löscht und schreibt den Slot, aus dem es nicht
-   läuft, und zeigt den Fortschritt als Ring mit `DIAL AN LASSEN`.
+4. Angenommen: Das Dial nimmt die ersten 296 Bytes des Images und prüft,
+   dass sie den ESP32-S3 und die Rolle des Dial nennen (`DEVOTA_ROLE`,
+   hinter dem Anwendungsdeskriptor von ESP-IDF). Das Image eines anderen
+   Geräts wird abgelehnt, bevor etwas geschrieben ist. Dann löscht und
+   schreibt das Dial den Slot, aus dem es nicht läuft, und zeigt den
+   Fortschritt als Ring mit `DIAL AN LASSEN`.
 
 ![Die Frage des Updates am Dial](img/de/dial-update-ask.png)
 ![Der Fortschritt des Updates am Dial](img/de/dial-update-send.png)
@@ -177,13 +181,25 @@ die Seite des Panels ist SETUP > UPDATES > DIAL-FIRMWARE
 Eine Ablehnung, ein verlorener Link, 10s ohne Schreiben oder ein
 abweichender SHA-256 beenden die Übertragung: Das Dial schließt den Slot
 und läuft mit seinem Image weiter. Eine neue Übertragung beginnt bei Byte
-0. Ein neues Image, das vor seiner ersten Verbindung neu startet, auch
-durch einen Stromausfall, startet wieder das Image davor
-(`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`).
+0. Die Ausnahme ist die Installation nach END: Der Boot-Slot kann schon
+gesetzt sein, wenn der Link abbricht oder das ABORT des Panels kommt. Das
+Dial beendet die Installation dann und startet in das neue Image, wenn es
+die Prüfung von ESP-IDF bestanden hat, ohne Link, um es dem Panel zu
+sagen. Das Panel liest die Version des Dial, sobald es zurück ist, bis zu
+60s lang, und meldet, was es findet
+([Bildschirme, Das Dial](Screens-de.md#das-dial)).
+
+Ein neues Image, das vor seiner ersten Verbindung neu startet, auch durch
+einen Stromausfall, startet wieder das Image davor
+(`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`). Probe und Rollback gehören dem
+Bootloader: Ein Dial, das über USB mit einem Image vor dieser
+Update-Firmware geflasht wurde, hat einen Bootloader ohne beides. Es nimmt
+Updates über Funk an, aber ohne Probe und ohne Rollback, bis es einmal über
+USB mit einem Release geflasht wird, das das Update trägt.
 
 Das Update braucht kein USB und kein Werkzeug. Der Knopf steuert das Panel
 vom Halten an nicht, bis sich der Link wieder verbindet; diese Lücke ist
-kein Verlustfehler, denn die Bank ist SAFE, und ARM wird abgelehnt,
+kein Verlustfehler, denn der Prüfstand ist SAFE, und ARM wird abgelehnt,
 solange das Update läuft. Das Dial hält seinen Link, solange eine
 Übertragung läuft: Das Trennen nach 500ms ohne Paket des Panels wartet.
 
@@ -193,7 +209,8 @@ Reichweite kann BEGIN senden; der Druck am Dial nimmt es an
 ([SECURITY.md](../SECURITY.md)).
 
 Die Geräteseite läuft im Task `ota`, Priorität 3, alle 10ms, mit einem
-Stack von 4.096 Bytes aus dem Heap beim Start. Ihr statischer RAM sind
+Stack von 8.192 Bytes aus dem Heap beim Start, der Größe der OTA-Beispiele
+von ESP-IDF; seine Tiefe ist nicht gemessen. Ihr statischer RAM sind
 3.487 Bytes: der Ring des Fensters von 2.048 Bytes, ein Schreibpuffer von
 1.024 Bytes und der Zustand.
 

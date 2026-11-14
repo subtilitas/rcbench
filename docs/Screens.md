@@ -6777,7 +6777,8 @@ reason on the alert band:
 | --- | --- |
 | `The device update is running.` | An update runs or was asked for. |
 | `This panel includes no firmware for this device.` | The panel was built without the Dial's image. |
-| `The included firmware for this device failed its check.` | The carried image is no ESP32-S3 application of the project `rcbench-dial`, is larger than the Dial's slot of 3,145,728 bytes, or its appended SHA-256 differs. |
+| `The included firmware for this device is being checked.` | The carried image's check has not run since the start. |
+| `The included firmware for this device failed its check.` | The carried image is no ESP32-S3 application of the project `rcbench-dial` with the Dial's role, is larger than the Dial's slot of 3,145,728 bytes, or its appended SHA-256 differs. |
 | `The device update requires SAFE.` | ARMED, or an arm waiting. |
 | `The device update waits for the other update to finish.` | The C6's or the IOmcu's update, or the panel's download or install, runs. |
 | `Connect the device on WIRELESS first.` | No Dial is linked, or its INFO has not come. |
@@ -6788,6 +6789,11 @@ The alert band says how an update ended:
 | --- | --- |
 | `Dial updated to 0.22.0. It connects again by itself.` | The Dial took, checked and installed the image and restarts; its knob link connects again from SETUP's values. |
 | `Dial update stopped: <reason>. Previous firmware is running.` | The update ended without an install. |
+| `Dial did not report after its update. Check its version on UPDATES.` | The link dropped after END, or DONE did not come in 15s, and no Dial reported its version within 60s. |
+
+When the link drops after END, the Dial may be installing: the panel waits
+up to 60s for the Dial's version. The image's version is reported as done;
+another version as stopped, `connection lost`.
 
 | Reason | Cause |
 | --- | --- |
@@ -6795,6 +6801,7 @@ The alert band says how an update ended:
 | `connection lost` | the link ended during the transfer |
 | `no answer` | the Dial did not answer a step within its limit or 3 polls in a row, or the Dial saw no write for 10s |
 | `a write was refused` | the host stack refused a write |
+| `the bench is not SAFE` | ARMED, or an arm waiting, when the update was to start |
 | `image for another device` | the Dial refused the kind |
 | `image too large` | the Dial refused the size |
 | `it runs this version` | the Dial runs the version, and the hold was no reinstall |

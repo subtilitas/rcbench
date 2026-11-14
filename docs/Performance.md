@@ -564,8 +564,8 @@ figures come from the console of a sample, and none is recorded.
 ### The Dial and the sensor nodes
 
 The M5Stack Dial and both node roles run the firmware update's device side
-on the task `ota` (`firmware/devota`): 4,096 bytes of stack from the heap at
-start, priority 3, a step every 10ms. `esp_ota_end()` reads the written
+on the task `ota` (`firmware/devota`): 8,192 bytes of stack from the heap at
+start, the size of ESP-IDF's OTA examples, priority 3, a step every 10ms. `esp_ota_end()` reads the written
 image back and checks it on this stack. Its depth is not measured: no tool
 reads the Dial's Xtensa image or the node's image for it, and no
 high-water mark is recorded.
@@ -754,12 +754,12 @@ The console row is measured without the Dial's client (`panel_dial.c`,
 it, not measured. The Dial's client adds 4,376 bytes of DIRAM, 4,368 of them
 .bss, and 23,536 bytes of image to the default build.
 The wireless devices' update, from the linker map of the default build:
-`panel_devupd.c` holds 1,805 bytes of DIRAM (1,377 .bss, 428 .data) and
-3,670 bytes of code; `upd_dev.c` 112 bytes of .bss and 1,582 of code;
-`shared/devupd` 2,914 bytes of code and `protocols/bleota` 344. The three
-carried images, the Dial's and both nodes', add 2,128,048 bytes of image at
-0.23.12: 840,960, 645,328 and 641,760. With them the application image is
-7,311,360 bytes, 815,104 (10.0%) under the slot of 8,126,464.
+`panel_devupd.c` holds 1,810 bytes of DIRAM (1,382 .bss, 428 .data) and
+4,030 bytes of code; `upd_dev.c` 112 bytes of .bss and 1,598 of code;
+`shared/devupd` 3,224 bytes of code and `protocols/bleota` 446. The three
+carried images, the Dial's and both nodes', add 2,130,080 bytes of image at
+0.23.12: 841,424, 646,112 and 642,544. With them the application image is
+7,314,912 bytes, 811,552 (10.0%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one

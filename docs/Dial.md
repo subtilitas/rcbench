@@ -111,7 +111,7 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The released image is
-840,960 bytes, 26.7% of a slot; the seven fonts of the faces are 243,194
+841,424 bytes, 26.7% of a slot; the seven fonts of the faces are 243,194
 bytes of it and the ring tables 25,032. Its static RAM: 216,534 of 341,760
 bytes of internal DRAM and IRAM, the frame of 115,200 bytes among them. The
 heap that NimBLE takes at run time is not measured; the log at start and
@@ -154,8 +154,12 @@ the panel's side is SETUP > UPDATES > DIAL FIRMWARE
    - A press of the screen button released within 1s accepts.
    - A hold of 1s refuses.
    - No press in 30s refuses.
-4. Accepted: the Dial erases and writes the slot it does not run from and
-   shows its progress as a ring with `KEEP THE DIAL ON`.
+4. Accepted: the Dial takes the image's first 296 bytes and checks that
+   they name the ESP32-S3 and the Dial's role (`DEVOTA_ROLE`, after
+   ESP-IDF's application descriptor). Another device's image is refused
+   before anything is written. The Dial then erases and writes the slot it
+   does not run from and shows its progress as a ring with `KEEP THE DIAL
+   ON`.
 
 ![The update's question on the Dial](img/dial-update-ask.png)
 ![The update's progress on the Dial](img/dial-update-send.png)
@@ -169,9 +173,20 @@ the panel's side is SETUP > UPDATES > DIAL FIRMWARE
 
 A refusal, a lost link, 10s without a write or a SHA-256 that differs ends
 the transfer: the Dial closes the slot and keeps running its image. A new
-transfer starts from byte 0. A new image that restarts before its first
-connection, a power cut included, starts the image before it again
-(`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`).
+transfer starts from byte 0. The exception is the install after END: the
+boot slot may already be set when the link drops or the panel's ABORT
+comes. The Dial then finishes the install and restarts into the new image
+if it passed ESP-IDF's check, without a link to tell the panel. The panel
+reads the Dial's version once it is back, up to 60s, and reports what it
+finds ([Screens, The Dial](Screens.md#the-dial)).
+
+A new image that restarts before its first connection, a power cut
+included, starts the image before it again
+(`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`). The trial and the rollback are
+the bootloader's: a Dial flashed over USB with an image older than this
+update firmware has a bootloader without them. It takes updates over the
+air, but with no trial and no rollback, until it is flashed once over USB
+with a release that carries the update.
 
 The update needs no USB and no tool. The knob does not drive the panel
 from the hold until the link connects again; that gap is no loss error,
@@ -184,7 +199,8 @@ the SHA-256 in BEGIN. Any central in range can send BEGIN; the press on the
 Dial is what accepts it ([SECURITY.md](../SECURITY.md)).
 
 The device side runs on the task `ota`, priority 3, every 10ms, with a
-stack of 4,096 bytes from the heap at start. Its static RAM is 3,487 bytes:
+stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA
+examples; its depth is not measured. Its static RAM is 3,487 bytes:
 the window's ring of 2,048 bytes, a write buffer of 1,024 bytes and the
 state.
 

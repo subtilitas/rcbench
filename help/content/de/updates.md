@@ -168,16 +168,16 @@ Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und
 
 ![Das Dial fragt nach seinem Druck](view:updates-dial)
 
-Die Zeile DIAL-FIRMWARE zeigt die Version des verbundenen Dial und die Version des mitgelieferten Dial-Images: `Dial: 0.21.0. Im Panel: 0.22.0.` Das Halten braucht die Bank in SAFE, ein verbundenes Dial und kein anderes laufendes Update. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Verbinde das Gerät zuerst auf WIRELESS.`
+Die Zeile DIAL-FIRMWARE zeigt die Version des verbundenen Dial und die Version des mitgelieferten Dial-Images: `Dial: 0.21.0. Im Panel: 0.22.0.` Das Halten braucht den Prüfstand in SAFE, ein verbundenes Dial und kein anderes laufendes Update. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Verbinde das Gerät zuerst auf WIRELESS.`
 
 1. Das Halten beendet den Knopf-Link des Dial; die Taste zeigt `DIAL-UPDATE: VERBINDET`.
 2. Das Dial zeigt die Versionen des Updates und fragt 30s lang nach einem Druck seiner Bildschirmtaste; die Taste zeigt `AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s`. Ein Druck nimmt an, ein Halten von 1s am Dial lehnt ab, kein Druck lehnt ab. Vor der Antwort wird nichts gelöscht.
 3. Das Dial schreibt das Image; die Taste zeigt `DIAL-UPDATE 37%`.
 4. Das Dial prüft den SHA-256 (Secure Hash Algorithm, 256 Bit) des Images, installiert es und startet neu. Der Alarm lautet `Dial auf 0.22.0 aktualisiert. Es verbindet sich von selbst neu.`
 
-Jedes andere Ende lautet `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.`, zum Beispiel `nicht innerhalb von 30s angenommen` oder `Image beschädigt angekommen`; das Dial behält die Firmware, mit der es lief. Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines Funkgeräts läuft.` abgelehnt, und das Update des C6-Funks wartet. Der Knopf steuert das Panel nicht, bis sich sein Link wieder verbindet; diese Lücke ist kein Verlustfehler.
+Jedes andere Ende lautet `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.`, zum Beispiel `nicht innerhalb von 30s angenommen` oder `Image beschädigt angekommen`; das Dial behält die Firmware, mit der es lief. Bricht der Link nach dem letzten Byte ab, kann das Dial gerade installieren: Das Panel wartet bis zu 60s auf seine Version und meldet, was es findet, oder `Dial hat sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines Funkgeräts läuft.` abgelehnt, und das Update des C6-Funks wartet. Der Knopf steuert das Panel nicht, bis sich sein Link wieder verbindet; diese Lücke ist kein Verlustfehler.
 
-Das Image trägt keine Signatur: Das Dial nimmt jedes Dial-Image an, das ein Gerät in der Nähe sendet, sobald seine Bildschirmtaste gedrückt wird. Ein neues Image, das vor seiner ersten Verbindung neu startet, geht zum Image davor zurück.
+Das Image trägt keine Signatur: Das Dial nimmt jedes Dial-Image an, das ein Gerät in der Nähe sendet, sobald seine Bildschirmtaste gedrückt wird. Das Image eines anderen Geräts lehnt es ab, bevor es etwas schreibt. Ein neues Image, das vor seiner ersten Verbindung neu startet, geht zum Image davor zurück; ein Dial, das zuletzt vor dieser Firmware über USB geflasht wurde, hat diesen Rollback erst nach einem USB-Flash.
 
 ## Aktuelle Einschränkungen
 

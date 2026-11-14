@@ -7353,7 +7353,8 @@ den ersten Grund im Alarmband:
 | --- | --- |
 | `Das Geräte-Update läuft.` | Ein Update läuft oder wurde angefordert. |
 | `Dieses Panel enthält keine Firmware für dieses Gerät.` | Das Panel wurde ohne das Image des Dial gebaut. |
-| `Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist keine ESP32-S3-Anwendung des Projekts `rcbench-dial`, ist größer als der Slot des Dial von 3.145.728 Bytes, oder sein angehängter SHA-256 weicht ab. |
+| `Die enthaltene Firmware für dieses Gerät wird geprüft.` | Die Prüfung des mitgebrachten Images ist seit dem Start noch nicht gelaufen. |
+| `Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist keine ESP32-S3-Anwendung des Projekts `rcbench-dial` mit der Rolle des Dial, ist größer als der Slot des Dial von 3.145.728 Bytes, oder sein angehängter SHA-256 weicht ab. |
 | `Das Geräte-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
 | `Das Geräte-Update wartet auf das Ende des anderen Updates.` | Das Update des C6 oder des IOmcu, oder Download oder Installation des Panels laufen. |
 | `Verbinde das Gerät zuerst auf WIRELESS.` | Kein Dial ist verbunden, oder seine INFO ist noch nicht gekommen. |
@@ -7364,6 +7365,12 @@ Das Alarmband sagt, wie ein Update endete:
 | --- | --- |
 | `Dial auf 0.22.0 aktualisiert. Es verbindet sich von selbst neu.` | Das Dial hat das Image angenommen, geprüft und installiert und startet neu; sein Knopf-Link verbindet sich wieder aus den Werten von SETUP. |
 | `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Das Update endete ohne Installation. |
+| `Dial hat sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` | Der Link brach nach END ab, oder DONE kam nicht in 15s, und kein Dial hat innerhalb von 60s seine Version gemeldet. |
+
+Bricht der Link nach END ab, kann das Dial gerade installieren: Das Panel
+wartet bis zu 60s auf die Version des Dial. Die Version des Images wird als
+erledigt gemeldet, eine andere Version als abgebrochen, `Verbindung
+verloren`.
 
 | Grund | Ursache |
 | --- | --- |
@@ -7371,6 +7378,7 @@ Das Alarmband sagt, wie ein Update endete:
 | `Verbindung verloren` | der Link endete während der Übertragung |
 | `keine Antwort` | das Dial hat einen Schritt nicht innerhalb seiner Grenze oder 3 Abfragen in Folge nicht beantwortet, oder das Dial sah 10s kein Schreiben |
 | `Schreiben abgelehnt` | der Host-Stack hat ein Schreiben abgelehnt |
+| `der Prüfstand ist nicht SAFE` | ARMED, oder ein ARM wartete, als das Update starten sollte |
 | `Image für ein anderes Gerät` | das Dial hat die Art abgelehnt |
 | `Image zu groß` | das Dial hat die Größe abgelehnt |
 | `es läuft schon diese Version` | das Dial läuft mit der Version, und das Halten war keine Neuinstallation |

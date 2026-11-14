@@ -415,14 +415,27 @@ rows that send them come with the panel's node clients.
    nothing; the WS2812 is not driven, and the central tells the user to
    press BOOT. No hold in 30s refuses. A key already down when the window
    opens counts only after it is released.
-4. Held: the node erases and writes the slot it does not run from.
+4. Held: the node takes the image's first 296 bytes and checks that they
+   name the ESP32-C6 and the node's own role (`DEVOTA_ROLE`, after
+   ESP-IDF's application descriptor). An image of the other role or
+   another device is refused before anything is written. The node then
+   erases and writes the slot it does not run from.
 5. END: the node compares the SHA-256 of every byte it wrote with BEGIN's,
    lets ESP-IDF check the image, sets the boot slot and restarts 500ms
    later.
 
 A refusal, a lost link, 10s without a write or a SHA-256 that differs ends
 the transfer: the node closes the slot and keeps running its image. A new
-transfer starts from byte 0.
+transfer starts from byte 0. The exception is the install after END: the
+boot slot may already be set when the link drops or an ABORT comes. The
+node then finishes the install and restarts into the new image if it
+passed ESP-IDF's check.
+
+While a transfer or an install runs, the node does not sleep, refuses
+SLEEP and OFF from CONTROL and the console, and switches itself off only
+for a cell under 3.0V (`NODE_UPD_OFF_MV`), 3 readings in a row, in place of
+3.3V. A cell that empty ends the update with the node; the image it ran
+stays.
 
 The new image starts on trial (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`) and
 marks itself valid at its first connection, which it takes only with its
@@ -439,15 +452,22 @@ across its 10s wakes, and a full start then goes back to the old image.
 The balance node sleeps without a timer and wakes only on RESET, a full
 start.
 
+The trial and the rollback are the bootloader's: a node flashed over USB
+with an image older than this update firmware has a bootloader without
+them. It takes updates over the air, but with no trial and no rollback,
+until it is flashed once over USB with a release that carries the
+update.
+
 Security: no pairing, no encryption and no signature. Integrity rests on
 the SHA-256 in BEGIN. Any central in range can send BEGIN; the held BOOT
 key is what accepts it ([SECURITY.md](../SECURITY.md)).
 
 The device side runs on the task `ota`, priority 3, every 10ms, with a
-stack of 4,096 bytes from the heap at start. Its static RAM is 3,623 bytes:
+stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA
+examples; its depth is not measured. Its static RAM is 3,623 bytes:
 the window's ring of 2,048 bytes, a write buffer of 1,024 bytes and the
-state. The power node's image is 645,328 bytes, 41.0% of a slot; the
-balance node's 641,760 bytes, 40.8%.
+state. The power node's image is 646,112 bytes, 41.1% of a slot; the
+balance node's 642,544 bytes, 40.9%.
 
 ## Building and flashing
 

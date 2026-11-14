@@ -30,7 +30,10 @@ differences of a free-running 32-bit ms clock.
 - An image is 1 byte to the device's slot. The slot is 3,145,728 bytes
   (0x300000) on the Dial and 1,572,864 bytes (0x180000) on a node.
 - The device takes the chunks in order. A chunk past its next offset is
-  dropped and answered once with a CREDIT that names the next offset.
+  dropped and answered once with a CREDIT that names the next offset and
+  carries the gap mark.
+- Nothing is written before the image's first 296 bytes (`BLEOTA_HEAD_LEN`)
+  name the device's chip and role ([The image head](#the-image-head)).
 - The device takes an older version than its own, with the confirmation.
   It refuses its own version unless BEGIN sets `BLEOTA_F_REINSTALL`.
 
@@ -72,13 +75,15 @@ u16.
 | Event | Name | Fields used |
 |---|---|---|
 | 0x81 | WAIT | seconds left of the confirmation window |
-| 0x82 | CREDIT | the next offset the device takes, the limit to send below |
+| 0x82 | CREDIT | the next offset the device takes, the limit to send below; code 0 routine, 1 the gap mark (`BLEOTA_CREDIT_GAP`) |
 | 0x83 | DONE | none: the device restarts into the new image |
 | 0x84 | FAIL | code |
 
+FAIL's codes:
+
 | Code | Name | Meaning |
 |---:|---|---|
-| 1 | `E_KIND` | the image is for another device |
+| 1 | `E_KIND` | the image is for another device: BEGIN's kind, or the head's chip or role |
 | 2 | `E_SIZE` | 0 bytes, or larger than the slot |
 | 3 | `E_SAME` | the version the device runs, without the reinstall flag |
 | 4 | `E_PROTO` | another protocol version, or a flag not defined |
@@ -91,7 +96,7 @@ u16.
 | 11 | `E_FLASH` | the slot did not open, take a write or become the boot slot |
 | 12 | `E_SHORT` | END before the last byte |
 | 13 | `E_ABORTED` | the central's ABORT |
-| 14 | `E_IMAGE` | the device's own image check refused it |
+| 14 | `E_IMAGE` | the head is no application with a role, or the device's own image check refused the image |
 
 ## A transfer
 
@@ -104,11 +109,12 @@ u16.
    - `BLEOTA_CONFIRM_HOLD` (a node's BOOT key): a hold of 1s accepts.
    - A key already down when the window opens counts only after it is
      released. No confirmation is a refusal, `E_NO_CONFIRM`.
-3. Accepted: the caller opens the slot, the first erase, and the device
+3. Accepted: the caller opens the slot without erasing it, and the device
    notifies CREDIT with offset 0 and its limit.
 4. The central writes chunks below the limit. The device puts them in its
-   ring, the caller writes them to flash and adds them to the SHA-256, and
-   the device notifies CREDIT as the limit moves.
+   ring. Once 296 bytes are in, it checks the head; then the caller writes
+   them to flash and adds them to the SHA-256, and the device notifies
+   CREDIT as the limit moves.
 5. The central writes END after the last byte. The device compares the
    SHA-256, the caller checks the image and sets the boot slot, the device
    notifies DONE, and the caller restarts.
@@ -116,6 +122,35 @@ u16.
 A refusal, a timeout, a lost link or an ABORT closes the open slot. The
 device keeps running the image it started with. A new transfer starts with
 BEGIN at offset 0; no transfer resumes.
+
+The install is the exception. Once the SHA-256 matched, the caller runs
+ESP-IDF's image check and sets the boot slot outside the device's lock, so
+the slot may be switched when the link drops or an ABORT comes. In
+`BLEOTA_DEV_INSTALL` the device takes neither: the install's result
+decides, and an installed image restarts without a link to report DONE.
+The central reads such an end as unknown (`DEVUPD_E_UNSURE`) and settles it
+by the version the device reports once it is back.
+
+## The image head
+
+The device reads the image's first 296 bytes before its first flash write:
+
+| Offset | Bytes | Field | Check |
+|---:|---:|---|---|
+| 0 | 1 | image magic | 0xE9 |
+| 1 | 1 | segment count | 1 or more |
+| 12 | 2 | chip ID | the device's (`CONFIG_IDF_FIRMWARE_CHIP_ID`), else `E_KIND` |
+| 32 | 4 | `esp_app_desc_t`'s magic | 0xABCD5432 |
+| 288 | 4 | the role's magic | `BLEOTA_ROLE_MAGIC`, "rcbR" |
+| 292 | 1 | the role's kind | the device's, else `E_KIND` |
+| 293 | 1 | the role's protocol | 1 |
+
+The role (`bleota_role_t`) sits in ESP-IDF's `.rodata_custom_desc`
+section, which the linker places right after the 256-byte
+`esp_app_desc_t` at offset 32. `firmware/devota` defines it with
+`DEVOTA_ROLE(kind)`. The two node roles share chip and project name, so
+the role is what tells them apart. Any other field failing is `E_IMAGE`.
+An image without the role, such as one built before it, is refused.
 
 ## Credit window
 
@@ -126,6 +161,16 @@ moved 512 bytes (`BLEOTA_CREDIT_STEP`) since the last one, when the limit
 reaches the size, and when the last byte is taken. A POLL asks for a
 CREDIT at once.
 
+A routine CREDIT's next offset lies behind the chunks still in flight, so
+the central does not go back to it. The device marks bytes as lost with
+code 1 (`BLEOTA_CREDIT_GAP`) in two cases: a chunk past its next offset
+came, or a POLL found its next offset under the last limit it gave. The
+central polls only after 1,000ms without a CREDIT, so by then bytes
+under the limit that have not come are lost. The central goes back to
+the next offset on the mark, or when the same next offset and limit come
+twice. On a lossless link every byte goes out once, at any latency (the
+host suite runs 0ms, 20ms and 40ms).
+
 2,048 bytes are 8 chunks of 240. The panel's NimBLE host has 36 message
 buffers (12 of 256 bytes and 24 of 320); 8 chunks in flight hold at most 8
 of them, so the IMU's and the Dial's links keep the rest. The device's
@@ -135,7 +180,8 @@ of its first write).
 
 Not measured: the transfer rate over the panel's ESP32-C6 link, the round
 trip from a chunk to its CREDIT, and the erase and write times on the Dial
-and the nodes. The planned rate is about 6kB/s, an image of 840kB in about
+and the nodes. The window caps the rate at 2,048 bytes per round trip:
+25.6kB/s at 80ms. The planned rate is about 6kB/s, an image of 840kB in about
 140s; a measurement replaces this figure.
 
 ## Security
@@ -145,10 +191,13 @@ and the nodes. The planned rate is about 6kB/s, an image of 840kB in about
 - Any central in range can write BEGIN. The physical confirmation on the
   device is what keeps another central from installing an image: nothing
   is erased before it.
-- The device checks the image's format after the SHA-256 (ESP-IDF's
+- Before its first write the device checks the head: its chip and its
+  role. After the SHA-256 it checks the image's format (ESP-IDF's
   `esp_ota_end()`: chip, segments, the image's own appended SHA-256).
 - The rollback keeps a new image on trial until it takes a connection with
-  its Bluetooth LE stack running (`firmware/devota`).
+  its Bluetooth LE stack running (`firmware/devota`). The trial is the
+  bootloader's: a device whose bootloader was flashed before rollback was
+  enabled has none until it is flashed once over USB.
 
 ## Interface
 
@@ -163,6 +212,7 @@ bool        bleota_ctrl_decode(const uint8_t *b, size_t n, bleota_ctrl_t *out);
 size_t      bleota_status_encode(const bleota_status_t *s, uint8_t *out);
 bool        bleota_status_decode(const uint8_t *b, size_t n, bleota_status_t *out);
 uint16_t    bleota_chunk_bytes(uint16_t mtu);
+uint8_t     bleota_head_check(const uint8_t *b, size_t n, uint16_t chip, uint8_t kind);
 void        bleota_chunk_header(uint32_t off, uint8_t out[BLEOTA_CHUNK_HDR]);
 bool        bleota_chunk_decode(const uint8_t *b, size_t n, uint32_t *off,
                                 const uint8_t **data, uint16_t *len);
@@ -222,10 +272,12 @@ size at MTU 23, 247 and above, and 200,000 random writes, each in a heap
 block of its own length so that a read past it fails under
 AddressSanitizer: every decoded one encodes to its own bytes, and the same
 writes go to a device side as CTRL and DATA.
+`test_bleota.c` also checks the head field by field.
 `test_bleota_dev.c` runs the device side: each refusal code, the
 confirmation window in both modes at its limits, the HASH timeout, the idle
-timeout, a lost chunk, a chunk past the limit, the SHA-256 compare, a lost
-link and a new BEGIN after it.
+timeout, a lost chunk, a chunk past the limit, the gap mark, the head
+checked before the first write, the SHA-256 compare, an ABORT and a lost
+link during the install, a lost link and a new BEGIN after it.
 
 ```sh
 cmake -S test/host -B test/host/build

@@ -13,14 +13,21 @@ history is in git.
   (write with response, notify) and DATA (write without response); BEGIN
   with kind, size, version and the image's SHA-256; chunks with their
   offset, up to 240 bytes at an MTU of 247; a credit window of 2,048 bytes
-  notified in steps of 512; END with the SHA-256 compare; refusal codes for
-  another device's kind, a size over the slot and the running version
+  notified in steps of 512, with a gap mark for lost bytes so a lossless
+  link sends every byte once; END with the SHA-256 compare; refusal codes
+  for another device's kind, a size over the slot and the running version;
+  the image's head (chip and role, `DEVOTA_ROLE` after the application
+  descriptor) checked before the first flash write
   ([protocols/bleota](protocols/bleota/README.md)). The device side
   (`firmware/devota`) erases nothing before a physical confirmation within
   30s: a press of the Dial's screen button (a 1s hold refuses), or a node's
   BOOT key (GPIO9) held 1s. A new image starts on trial
   (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE` on the Dial and the node) and
-  marks itself valid at its first connection. The panel carries the Dial's
+  marks itself valid at its first connection; a device flashed before this
+  firmware has no trial or rollback until one USB flash. A lost link or an
+  ABORT during the install lets the install finish; the panel settles the
+  result by the device's version. The node does not sleep while an update
+  runs and switches off for an empty cell only under 3.0V. The panel carries the Dial's
   and both nodes' images, checked by `tools/c6_image.py device` in CI and
   again at start; SETUP > UPDATES gets the DIAL FIRMWARE row with a 2s
   hold, the Dial's confirmation countdown and the progress

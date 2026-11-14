@@ -175,9 +175,9 @@ The DIAL FIRMWARE row shows the linked Dial's version and the version of the Dia
 3. The Dial writes the image; the button reads `DIAL UPDATE 37%`.
 4. The Dial checks the image's SHA-256 (Secure Hash Algorithm, 256 bits), installs it and restarts. The alert reads `Dial updated to 0.22.0. It connects again by itself.`
 
-Any other end reads `Dial update stopped: <reason>. Previous firmware is running.`, for example `not accepted within 30s` or `image arrived damaged`; the Dial keeps the firmware it ran. While the update runs, ARM is refused with `Cannot switch to ARMED: a wireless device update is running.` and the C6 radio's update waits. The knob does not drive the panel until its link connects again; that gap is no loss error.
+Any other end reads `Dial update stopped: <reason>. Previous firmware is running.`, for example `not accepted within 30s` or `image arrived damaged`; the Dial keeps the firmware it ran. When the link drops after the last byte, the Dial may be installing: the panel waits up to 60s for its version and reports what it finds, or `Dial did not report after its update. Check its version on UPDATES.` While the update runs, ARM is refused with `Cannot switch to ARMED: a wireless device update is running.` and the C6 radio's update waits. The knob does not drive the panel until its link connects again; that gap is no loss error.
 
-The image carries no signature: the Dial accepts any Dial image a nearby device sends once its screen button is pressed. A new image that restarts before its first connection goes back to the one before it.
+The image carries no signature: the Dial accepts any Dial image a nearby device sends once its screen button is pressed. It refuses another device's image before writing anything. A new image that restarts before its first connection goes back to the one before it; a Dial last flashed over USB before this firmware has no such rollback until it is flashed once over USB.
 
 ## Current limitations
 

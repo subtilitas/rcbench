@@ -1195,14 +1195,20 @@ control write and notification at its limits and 200,000 random writes
 through the decoders and a device side (`test_bleota`); the device side's
 refusals by code, the confirmation window in both modes at 30,000ms and the
 1,000ms hold at their limits, a key already down, the HASH and idle
-timeouts, a skipped chunk answered once, the 512-byte credit step, the
-SHA-256 compare and a lost link (`test_bleota_dev`). The panel's engine
-(`shared/devupd`, `test_devupd`) against that device side: an image sent
-whole, a lost chunk and a lost tail found by POLL, a credit stall that ends
+timeouts, a skipped chunk answered once with the gap mark, the 512-byte
+credit step, the image head checked before the first write, the SHA-256
+compare, an ABORT and a lost link during the install, and a lost link
+(`test_bleota_dev`). The panel's engine (`shared/devupd`, `test_devupd`)
+against that device side: an image sent whole, a lossless link with 0ms,
+20ms and 40ms of latency sent once with no rewind, a lost chunk and a lost
+tail found by POLL, a credit stall that ends
 after 3 polls, each refusal code, a SHA-256 that differs, no confirmation,
-and a disconnect mid-transfer followed by a new transfer from byte 0; its
+a disconnect mid-transfer followed by a new transfer from byte 0, and a
+link lost after END left unknown and settled by the device's version; its
 client on the Bluetooth LE hub (`test_devupd_client`) against a scripted
-host stack; the busy flag that refuses ARM; and UPDATES' DIAL FIRMWARE row
+host stack; the start's gate and the busy flag that refuses ARM, read busy
+at every point from the ask to the end; the node's sleep policy during an
+update (`test_node_policy`); and UPDATES' DIAL FIRMWARE row
 with its reasons, its hold and its progress (`shared/ui/upd_dev.c`,
 `test_upd_dev`). Built, not run on a device: the device side on NimBLE with
 ESP-IDF's OTA (over-the-air) calls and the rollback mark
