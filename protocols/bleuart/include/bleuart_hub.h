@@ -49,6 +49,7 @@
  * - a hurried CONNECT (BLEU_ACT_F_HURRY, bleu_hurry()) goes behind the
  *   hurried clients that wait and ahead of every other, and takes a turn
  *   kept for an unhurried client, which goes back to the queue's front;
+ *   a turn kept for the client itself becomes a hurried one;
  * - a client that waits and does not come back BLEU_HUB_TURN_MS after the
  *   slot became free and its retry was due leaves the queue, and so does
  *   a kept turn's client.  One turn is kept at a time.  A SCAN is not held

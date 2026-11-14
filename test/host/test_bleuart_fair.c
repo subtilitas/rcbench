@@ -315,6 +315,32 @@ TEST_CASE(a_second_hurried_client_goes_behind_the_first)
     CHECK_EQ(h.q[1], 3u);
 }
 
+/* Client 1's turn is kept unhurried, then it comes hurried (a bind from
+ * SETUP): the turn becomes a hurried one, so a hurried client 2 that asks
+ * later waits behind it and does not take it; during a scan client 1 is
+ * answered with the turn, not busy. */
+TEST_CASE(a_kept_turn_becomes_hurried_when_its_client_comes_hurried)
+{
+    bleu_hub_t h;
+    bleu_hub_init(&h);
+    for (uint8_t o = 0; o < BLEU_HUB_CLIENTS; ++o) {
+        CHECK(bleu_hub_add(&h, o));
+    }
+    CHECK_EQ(ask(&h, 0, 1, false, 0), 0u);
+    CHECK_EQ(ask(&h, 1, 1, false, 10), BLEU_STATUS_TURN);
+    CHECK(!h.turn_hurry);
+    CHECK_EQ(ask(&h, 1, 2, true, 20), BLEU_STATUS_TURN);
+    CHECK(h.turn_hurry);
+    CHECK_EQ(h.turn_owner, 1u);
+    CHECK_EQ(ask(&h, 2, 1, true, 30), BLEU_STATUS_BUSY);
+    CHECK_EQ(h.turn_owner, 1u);
+    CHECK_EQ(h.q[0], 2u);
+    end_connect(&h, tok(0, 1), 5002);
+    CHECK_EQ(ask(&h, 2, 2, true, 5003), BLEU_STATUS_BUSY);
+    CHECK_EQ(ask(&h, 1, 3, true, 5010), 0u);
+    CHECK_EQ(h.gap_owner, 1u);
+}
+
 /* A scan cuts client 0's connect: its client waits in front of client 1,
  * which asked before.  While the scan holds the slot client 0's kept turn
  * is answered busy, not with the turn; it takes the slot after the scan. */
@@ -409,6 +435,7 @@ int main(void)
     RUN(every_client_gets_the_slot_within_one_attempt_of_each_other);
     RUN(the_queue_is_first_come_first_with_hurried_clients_ahead);
     RUN(a_second_hurried_client_goes_behind_the_first);
+    RUN(a_kept_turn_becomes_hurried_when_its_client_comes_hurried);
     RUN(a_connect_a_scan_cut_waits_in_front);
     RUN(a_client_that_does_not_come_back_leaves_the_queue);
     return test_summary("bleuart_fair");
