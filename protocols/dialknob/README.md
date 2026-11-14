@@ -125,6 +125,7 @@ without response: SCREEN on every screen change and every 5,000ms
 | 0x14 LIVE_MOTOR | 18 | at 20Hz on MOTOR & ESC |
 | 0x15 LIVE_SERVO | 19 | at 20Hz on SERVO |
 | 0x16 STATE | 9 | when nothing else went for 200ms |
+| 0x17 SCALE | 18 | on entry to MOTOR & ESC or SERVO and when a full scale changes |
 
 SCREEN, after kind and seq:
 
@@ -195,6 +196,20 @@ STATE:
 | 6 | Dial step, throttle | 0.1%, 1 to 100 |
 | 7 | Dial step, servo | 0.1°, 1 to 100 |
 | 8 | flags | bit0 ARMED, bit1 the panel marks the link DEGRADED |
+
+SCALE: the full scales of the readings, which the Dial's rings take; 0 is
+not known, and its ring shows the track only:
+
+| Byte | Field | Unit and range |
+|---|---|---|
+| 2 to 3 | MOTOR speed | rpm: the run's peak, else the plot's full scale |
+| 4 to 5 | MOTOR voltage | mV |
+| 6 to 7 | MOTOR current | 10mA |
+| 8 to 9 | SERVO travel | 0.1°, either side of the center, 0 to 1,800 |
+| 10 to 11 | SERVO pulse, one end | 0 with the other end 0, or 400 to 2,500us |
+| 12 to 13 | SERVO pulse, other end | above the first |
+| 14 to 15 | SERVO rail voltage | mV |
+| 16 to 17 | SERVO rail current | 10mA |
 
 A reading without its valid bit or flag is 0 on the wire, so each packet
 has one form. Values in VALUE_META and VALUE are integers scaled by
@@ -267,7 +282,7 @@ moves by as many detents in one call.
 
 `dk_face_feed()` decodes each panel packet into `dk_face_t`: the last
 SCREEN, the three NAV rows by slot, VALUE_META, VALUE, LIVE_MOTOR,
-LIVE_SERVO and STATE, each with a `have_` flag, and `changed` bits for the
+LIVE_SERVO, STATE and SCALE, each with a `have_` flag, and `changed` bits for the
 caller's redraw. A SCREEN with another face or title empties the NAV rows,
 VALUE_META and VALUE. A NAV row with another index or count empties the
 other slots. A refused packet counts in `bad`, a repeated seq in
@@ -292,7 +307,7 @@ the model at a connect and learns the seq again.
 size_t  dk_evt_encode(const dk_evt_t *e, uint8_t *out);
 bool    dk_evt_decode(const uint8_t *buf, size_t len, dk_evt_t *out);
 /* and the same pair for status, info, screen, nav, value_meta, value,
- * live_motor, live_servo and state */
+ * live_motor, live_servo, state and scale */
 bool    dk_panel_decode(const uint8_t *buf, size_t len, dk_panel_pkt_t *out);
 bool    dk_adv_has_service(const uint8_t *ad, size_t len);
 size_t  dk_text_copy(char *dst, size_t cap, const char *src);

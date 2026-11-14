@@ -20,6 +20,7 @@ static void empty(dk_face_t *f)
     f->have_motor = false;
     f->have_servo = false;
     f->have_state = false;
+    f->have_scale = false;
 }
 
 void dk_face_init(dk_face_t *f)
@@ -128,6 +129,11 @@ bool dk_face_feed(dk_face_t *f, const uint8_t *buf, size_t len,
         f->servo = p.u.servo;
         f->have_servo = true;
         f->changed |= DK_CH_SERVO;
+        break;
+    case DK_K_SCALE:
+        f->scale = p.u.scale;
+        f->have_scale = true;
+        f->changed |= DK_CH_SCALE;
         break;
     default: /* DK_K_STATE: dk_panel_decode() takes no other kind */
         f->state = p.u.state;
