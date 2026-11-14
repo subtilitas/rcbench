@@ -1,7 +1,7 @@
 /*
  * Several bleuart machines on one host stack through the hub of
  * protocols/bleuart (bleuart_hub.c), each against its own scripted peer of
- * test/host/ble_sim.h: the hub, up to 3 clients with their own addresses
+ * test/host/ble_sim.h: the hub, up to 5 clients with their own addresses
  * and stream bytes, the actions each peer took, and one ms of the panel's
  * task (rig_tick()).
  *
@@ -10,6 +10,7 @@
  * Used by:
  * - test_bleuart_hub.c
  * - test_bleuart_backoff.c
+ * - test_bleuart_fair.c
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,8 +25,8 @@
 #include "bleuart.h"
 #include "bleuart_hub.h"
 
-/* Clients the rig holds at most. */
-#define NCL 3u
+/* Clients the rig holds at most: every owner of the hub. */
+#define NCL BLEU_HUB_CLIENTS
 /* Actions the rig logs as the peers take them. */
 #define DONE_MAX 512u
 
@@ -34,6 +35,8 @@ static const bleu_addr_t k_addr[NCL] = {
     { { 0x29, 0x19, 0x08, 0xBF, 0x0C, 0x00 }, BLEU_ADDR_PUBLIC },
     { { 0x10, 0x3A, 0x7F, 0xC2, 0xB1, 0xA0 }, BLEU_ADDR_RANDOM },
     { { 0x56, 0x34, 0x12, 0xA1, 0xDF, 0x7C }, BLEU_ADDR_PUBLIC },
+    { { 0x44, 0x07, 0x5E, 0x91, 0x2B, 0xC8 }, BLEU_ADDR_RANDOM },
+    { { 0x83, 0x6F, 0x21, 0x0D, 0xE4, 0x3C }, BLEU_ADDR_PUBLIC },
 };
 
 /* Each peer's stream bytes: its own, so a misrouted one shows. */
@@ -41,6 +44,8 @@ static const uint8_t k_bytes[NCL][4] = {
     { 0xA0, 0xA1, 0xA2, 0xA3 },
     { 0xB0, 0xB1, 0xB2, 0xB3 },
     { 0xC0, 0xC1, 0xC2, 0xC3 },
+    { 0xD0, 0xD1, 0xD2, 0xD3 },
+    { 0xE0, 0xE1, 0xE2, 0xE3 },
 };
 static const uint8_t k_cut[] = { 4 };
 

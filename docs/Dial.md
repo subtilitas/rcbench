@@ -253,8 +253,9 @@ model the Dial's first connect waits up to 5,061ms after the pick, the
 tap of 80ms and a frame included, with one or two such clients, and goes
 in the same poll as the BIND when no attempt is under way; on the panel
 these waits are not measured. A connect after a loss, at Dial ON or at
-start-up takes no turn and can wait behind such clients' attempts for
-longer.
+start-up waits in the hub's queue, first come first: it goes after at
+most one attempt of each other client, at most 10,046ms beside two such
+clients and 20,092ms beside four in the host model.
 
 ### The link
 
