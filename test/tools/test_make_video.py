@@ -376,3 +376,32 @@ def test_a_module_brings_its_board_and_its_parts():
                 if p["ref"] == "R1")["details"] == []
     texts = [said for said, *_ in video_board.modules()["RP2350-CAN"][3]]
     assert "USB-C" in texts and "CAN" in texts
+
+
+def test_a_dial_scene_shows_faces_and_turns_its_knob():
+    """A case scene of the dial model lists its faces and clicks."""
+    import render_dial
+
+    board = {"lang": "en", "steps": 1, "scenes": [{
+        "type": "case", "model": "dial", "dur": 10,
+        "camera": [[0, [0, 100, 100], [0, 20, 0]]],
+        "faces": [[0, "bind"], [4, "motor-armed"]],
+        "turn": [[0, 0], [5, 0], [7, 67.5]],
+        "say": [{"at": 1, "text": "x"}],
+        "labels": [{"from": 1, "to": 4, "anchor": "knob", "at": [60, 300],
+                    "title": "x"}]}]}
+    assert make_video.check(board) == []
+    assert make_video.faces(board) == ["bind", "motor-armed"]
+    assert set(make_video.faces(board)) <= set(render_dial.FACES)
+    # 67.5 degrees are 3 detents of 22.5: 3 clicks.
+    kinds = [kind for _, kind, _ in video_audio.events(board)]
+    assert kinds.count("tick") == 3
+    scene = board["scenes"][0]
+    video_voice._stretch(scene, [0.0, 1, 10], [0.0, 1, 19])
+    assert scene["faces"][1][0] == 7
+    assert scene["turn"][2][0] == 13
+    scene["faces"][1] = [0, "x"]
+    assert any("faces" in e for e in make_video.check(board))
+    for path in make_video.storyboards():
+        made = json.loads(path.read_text(encoding="utf-8"))
+        assert set(make_video.faces(made)) <= set(render_dial.FACES)

@@ -58,7 +58,8 @@ PANEL = (1024, 600)
 FRAME = (1920, 1080)
 ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
            "estop", "side", "plug", "panel", "case", "mcu",
-           "ina", "buck", "trigger")
+           "ina", "buck", "trigger", "knob", "bezel", "usb", "power",
+           "portA", "portB", "body")
 UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
          "buck", "trigger", "rbmod", "case")
 CONNECTORS = {"J1": 4, "J2": 4}
@@ -107,8 +108,16 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         errors.append(f"{where}: dur must be a positive number")
         return
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
-    if scene.get("model", "mockup") not in ("mockup", "cad"):
-        errors.append(f"{where}: model must be mockup or cad")
+    if scene.get("model", "mockup") not in ("mockup", "cad", "dial"):
+        errors.append(f"{where}: model must be mockup, cad or dial")
+    for name in ("faces", "turn"):
+        if name in scene:
+            _keys(scene[name], 2, f"{where} {name}", errors)
+    for key in scene.get("faces", []):
+        if not (isinstance(key, list) and len(key) == 2
+                and isinstance(key[1], str)):
+            errors.append(f"{where} faces: a key is [t, the face's name]")
+            break
     if "lid" in scene:
         _keys(scene["lid"], 2, f"{where} lid", errors)
     if "display" in scene and not isinstance(
@@ -495,6 +504,20 @@ def views(board: dict) -> dict:
     return found
 
 
+def faces(board: dict) -> list:
+    """List the faces of the Dial a storyboard shows.
+
+    Args:
+        board: A storyboard that passed check().
+
+    Returns:
+        The names of tools/render_dial.py's faces, sorted.
+    """
+    return sorted({key[1] for scene in board["scenes"]
+                   if scene["type"] == "case"
+                   for key in scene.get("faces", [])})
+
+
 def storyboards() -> list:
     """List the committed storyboards.
 
@@ -554,6 +577,19 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
                 sys.exit(f"the renderer does not draw view {view!r} of "
                          f"screen {screen!r}")
             image.save(shots / f"{name}.png")
+        wanted = faces(board)
+        if wanted:
+            # The Dial's faces come from its own renderer.
+            import render_dial
+
+            unknown = [name for name in wanted
+                       if name not in render_dial.FACES]
+            if unknown:
+                sys.exit(f"render_dial.py draws no face {unknown[0]!r}")
+            dial = render_dial.build(tmp)
+            for name in wanted:
+                render_dial.render(dial, tmp, name, board["lang"]).save(
+                    shots / f"dial-{name}.png")
 
 
 class _Handler(http.server.SimpleHTTPRequestHandler):
@@ -739,6 +775,11 @@ def main() -> int:
             and not (VIDEO / "cad" / "case.glb").is_file():
         sys.exit("tools/video/cad/case.glb is missing; tools/video_cad.py "
                  "writes it from the case's STEP file")
+    if any(scene.get("model") == "dial" for scene in board["scenes"]) \
+            and not (VIDEO / "cad" / "m5dial.glb").is_file():
+        sys.exit("tools/video/cad/m5dial.glb is missing; tools/video_cad.py "
+                 "--solids writes it from "
+                 "hardware/mechanical/models/m5dial.step")
     for n, scene in enumerate(board["scenes"]):
         if scene["type"] != "board":
             continue

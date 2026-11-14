@@ -209,6 +209,15 @@ def events(board: dict) -> list:
             for keys in scene.get("parts", {}).values():
                 if keys and keys[-1][1] == 0:
                     found.append((start + keys[-1][0] - 0.08, "tap", 0))
+            # The Dial's knob clicks once a detent, 16 a turn.
+            turn = scene.get("turn", [])
+            for a, b in zip(turn, turn[1:], strict=False):
+                clicks = min(32, round(abs(b[1] - a[1]) / 22.5))
+                for k in range(clicks):
+                    found.append((start + a[0] + (k + 0.5) / clicks
+                                  * (b[0] - a[0]), "tick", 3))
+            for key in scene.get("faces", [])[1:]:
+                found.append((start + key[0], "pop", 0))
             if "pinout" in scene:
                 found.append((start + scene["pinout"]["from"], "pop", 0))
             if "servo" in scene:

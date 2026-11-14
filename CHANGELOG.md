@@ -203,6 +203,11 @@ history is in git.
   draws, each module with the parts, prints and pin names of its spec
   under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
   scene, so that a changed scene is captured alone ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `dial`: bringing the M5Stack Dial into use in 5 steps and
+  166.61s, narrated. A `case` scene with the model `dial` draws the
+  Dial from its STEP model, shows its faces on the display and turns its
+  knob; `tools/video_cad.py --solids` converts a STEP part with one mesh
+  a solid ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `rbmod-build`: building a rev 1 rbmod carrier and wiring
   the panel in 13 steps and 347.32s, narrated. A `board` scene mounts parts, shows solder
   joints and a cross-section card, and takes narration cues. Music bed

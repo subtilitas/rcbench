@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import {buildCase, CONNECTORS, WIRE_COLORS} from './case3d.js';
 import {buildCadCase, loadCad} from './case_cad.js';
 import {buildBoard} from './board.js';
+import {buildDial} from './dial3d.js';
 
 const $ = s => document.querySelector(s);
 const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
@@ -69,6 +70,10 @@ for (const sc of sb.scenes) {
     }
   }
   if (sc.type === 'case' && sc.display) need.add(sc.display.view);
+  // A dial scene shows faces of the Dial: the shots dial-NAME.
+  for (const [, face] of (sc.type === 'case' && sc.faces) || []) {
+    need.add('dial-' + face);
+  }
   acc += sc.dur;
 }
 const TOTAL = acc;
@@ -94,6 +99,7 @@ for (const sc of sb.scenes) {
   // draws the mockup.
   sc.rig = sc.model === 'cad'
     ? buildCadCase(shown, await loadCad('/cad/case.glb'))
+    : sc.model === 'dial' ? buildDial(await loadCad('/cad/m5dial.glb'))
     : buildCase(shown);
   if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
@@ -178,6 +184,16 @@ function drawCase(sc, lt, a, pulse, ui) {
   m.cam.position.copy(v(1));
   m.cam.lookAt(v(2));
   m.setLid(track(sc.lid, lt));
+  if (sc.faces && m.setFace) {
+    // The face of this time, and the next one coming in over 0.5s.
+    let n = 0;
+    while (n < sc.faces.length - 1 && lt >= sc.faces[n + 1][0]) n++;
+    const [t0, name] = sc.faces[n], before = sc.faces[Math.max(0, n - 1)];
+    const mix = n ? ramp(lt, t0, t0 + .5) : 1;
+    m.setFace(imgs['dial-' + before[1]], imgs['dial-' + name],
+              lt < sc.faces[0][0] ? 0 : mix);
+  }
+  if (sc.turn && m.setTurn) m.setTurn(track(sc.turn, lt));
   if (sc.parts && m.setParts) {
     // How far out each component stands at this time: a key track each.
     m.setParts(Object.fromEntries(Object.entries(sc.parts).map(

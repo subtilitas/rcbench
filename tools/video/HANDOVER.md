@@ -32,8 +32,9 @@ a new session needs beyond it.
 | `tools/video_board.py`, `player/board.js` | a KiCad board drawn flat, with a net lit up, a cut, a wire and a part across two pads |
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
 | `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 347.32s, narrated in the voice of `features`, bed `pachelbel-canon` at half level |
+| `storyboards/dial.json` | the M5Stack Dial coming into use in 5 steps, 166.61s, narrated, bed `pachelbel-canon` at half level |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 26 cases; the storyboard check, the script, the freezes |
+| `test/tools/test_make_video.py` | 27 cases; the storyboard check, the script, the freezes |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -45,6 +46,7 @@ No pull request is open. CI has not been looked at for this branch.
 | `case.glb` | 35MB | `python3 tools/video_cad.py rcbench_case.stp`, 54s | `tools/video/cad/` |
 | `rbmod.kicad_pcb` of rev 1 | 251kB | repository `subtilitas/kicad`, `projects/rcbench/rcbench_modular/rbmod/rbmod-backups/rbmod-2026-10-25_215831.zip` | any path; input of `tools/video_board.py` |
 | `rbmod-rev1.json` | 40kB | `python3 tools/video_board.py rbmod.kicad_pcb -o tools/video/cad/rbmod-rev1.json` | `tools/video/cad/` |
+| `m5dial.glb` | 0.9MB | `python3 tools/video_cad.py --solids hardware/mechanical/models/m5dial.step -o tools/video/cad/m5dial.glb`, 10s | `tools/video/cad/` |
 | `kokoro-v1.0.onnx`, `voices-v1.0.bin` | 354MB | github.com/thewh1teagle/kokoro-onnx, release `model-files-v1.0` | `tools/video/tts/` |
 | `node_modules/` | | `npm install` in `tools/video/` | `tools/video/` |
 
@@ -177,6 +179,15 @@ Not known:
   axial part and names 2W or 5W as `docs/Carrier.md` does;
 - whether the seven other bridged footprints stay as they are in a
   later revision.
+
+## The Dial video
+
+Requested on 2026-11-14: a video of the M5Stack Dial's integration, with
+the 3D model only and a battery taken as fitted. `storyboards/dial.json`
+follows `docs/Dial.md`: flashing, the bind, the knob on MOTOR & ESC and
+on SERVO LIVE, the loss rule and the 10s hold that forgets the panel.
+Mounting the Dial in a panel with its ring nut is not in the video; the
+owner has not asked for it.
 
 ## Limits that still hold
 

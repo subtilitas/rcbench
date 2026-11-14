@@ -6,7 +6,7 @@ under `storyboards/`. It lists scenes; each scene has a type:
 
 | Type | Shows |
 | --- | --- |
-| `case` | the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in |
+| `case` | the bench in its case as a 3D model, with a camera path, the lid lifting, labels on named parts, a pin table and a servo being plugged in; or the M5Stack Dial as a 3D model, its display showing its faces and its knob turning |
 | `board` | a circuit board seen flat from its front, with a view that moves over it, labels and tags on pads, parts taking their place, solder joints, a cross-section in a card, a net lit up, a track cut, a wire and a part soldered across two pads |
 | `screen` | the panel's screens, one step after another, each with a bubble, a pointer and a tap or hold mark |
 | `tour` | the panel's screens with an animated caption, a path to the screen, marks that name parts of the display, a spotlight, and chapter cards |
@@ -48,6 +48,7 @@ python3 tools/make_video.py kst-rbmod              # build/video/kst-rbmod.mp4
 python3 tools/make_video.py features               # build/video/features.mp4
 python3 tools/make_video.py rbmod-rework           # build/video/rbmod-rework.mp4
 python3 tools/make_video.py rbmod-build            # build/video/rbmod-build.mp4
+python3 tools/make_video.py dial                   # build/video/dial.mp4
 python3 tools/make_video.py kst-rbmod --stills 2.5,40 -o /tmp/stills
 python3 tools/make_video.py features --jobs 3      # frames in 3 parts at once
 python3 tools/make_video.py features --jobs 3 --keep build/video/parts
@@ -88,6 +89,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `player/case3d.js` | the case as a mockup of boxes, its connectors and its named points |
 | `player/case_cad.js` | the case from its CAD (computer-aided design) assembly: colours by part name, merged meshes, the same named points |
 | `../video_cad.py` | converts the case's STEP assembly into `cad/case.glb`, the model `case_cad.js` loads |
+| `player/dial3d.js` | the M5Stack Dial from its STEP model: one mesh a solid, the knob ring turning, two faces cross-fading on the glass |
 | `player/board.js` | a board drawn flat as SVG, and the rework on it |
 | `../video_board.py` | converts a KiCad board file into `cad/NAME.json`, the board `board.js` draws |
 | `boards/p4-7b-back.json` | the back of the 7 inch ESP32-P4 display board, drawn by hand in the format `video_board.py` writes: its connectors, modules and sockets as boxes, the pads of the 4-pin and 12-pin headers |
@@ -96,6 +98,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
+| `storyboards/dial.json` | bringing the M5Stack Dial into use in 5 steps: flashing over USB, the bind on SETUP > WIRELESS > DIAL, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; narrated, 166.61s, Pachelbel's Canon at half level. The battery is taken as fitted |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -124,7 +127,9 @@ A `case` scene:
 | Field | Meaning |
 | --- | --- |
 | `dur` | length in s |
-| `model` | optional: `mockup`, the default, or `cad`, the assembly converted by `tools/video_cad.py` |
+| `model` | optional: `mockup`, the default, `cad`, the assembly converted by `tools/video_cad.py`, or `dial`, the M5Stack Dial converted by `tools/video_cad.py --solids` |
+| `faces` | optional, `dial` model only: keys `[t, name]`, a face of `tools/render_dial.py` on the Dial's display from `t` on, cross-faded over 0.5s |
+| `turn` | optional, `dial` model only: keys `[t, degrees]`, the knob ring's angle, clockwise seen from the front; the sound track clicks once per 22.5°, a detent |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
 | `parts` | optional, `cad` model only: keys `[t, k]` per component, `k` from 1, out of sight along the component's way in, to 0, seated. A value held between two keys freezes the component in the air while the camera moves on. Components: `case`, `estop`, `xt60`, `usbc`, `pdmini`, `rbmod`, `mcu`, `ina`, `buck`, `trigger`, `lid` |
@@ -139,7 +144,7 @@ A `case` scene:
 `anchor` is `[x, y, z]` in mm or a name: `display`, `rbmod`, `pdmini`,
 `J1`, `J2`, `xt60`, `usbc`, `estop`, `side`, `plug`, and on the `cad`
 model also `panel`, `case`, `mcu`, `ina`, `buck` and
-`trigger`. An anchor follows its component while it moves. A label's
+`trigger`, and on the `dial` model `display`, `knob`, `bezel`, `usb`, `power`, `portA`, `portB` and `body`. An anchor follows its component while it moves. A label's
 optional `glow` names a component that is lit while the label shows. `at` is the bubble's
 top left corner on the frame in pixels. The model's origin is the centre
 of the case floor; x runs along the 190mm side, y up, z towards the
@@ -287,6 +292,19 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   follow the module's footprint, whose EN pad is placed within about
   0.5mm. The parts are drawn as axial parts; the zener's package on a
   reworked board is not stated in the tree.
+- The `dial` model is `hardware/mechanical/models/m5dial.step`, which is in
+  the tree; the converted model (0.9MB) is not:
+
+  ```sh
+  python3 tools/video_cad.py --solids hardware/mechanical/models/m5dial.step \
+      -o tools/video/cad/m5dial.glb
+  ```
+
+  The Dial stands on its rear parts, without its ring nut and without a
+  panel. Its faces are the fixed models of `tools/render_dial.py`, so the
+  readings do not follow the knob. The Stamp button, the cell and the
+  MX1.25 socket are not in the model; `dial` names them without showing
+  them.
 - The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x
   129mm of the assembly. The order of the connectors on the wall and
   J1's pin order follow the case. J2's row order is assumed to match

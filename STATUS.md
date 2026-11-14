@@ -439,7 +439,7 @@ a spotlight, and a recap. `tools/video_audio.py` computes the sound track from t
 storyboard: synthesizer pads and one quiet sound per event, no percussion, the loudest sample
 at -3dBFS (decibels relative to full scale); its balance has not been judged by ear. `--check` reads every
 storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
-runs it. Four storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
+runs it. Five storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
 100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
 it does on the rbmod carrier, narrated, 755.92s, with Bach's Prelude in C major or Pachelbel's
 Canon in D major as its bed. `tools/video_voice.py` speaks a storyboard with Kokoro, a
@@ -460,7 +460,10 @@ their places, the modules sit on the plastic of straight pin strips and are sold
 sides, the large holes of M5 and M6 take a wire and solder, J6 takes no connector but 4 wires
 to a USB-C plug board for the PD mini, and a drawing of the panel's back
 (`tools/video/boards/p4-7b-back.json`) shows the 2 wires of header P3 that stay in its 12-pin plug, the CAN cable's H and L, and the
-supply and ground from J7 on the RS485 header's 5V and GND pins. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+supply and ground from J7 on the RS485 header's 5V and GND pins. `dial` shows the M5Stack Dial coming
+into use in 5 steps and 166.61s, narrated: its STEP model with the faces of
+`tools/render_dial.py` on its display and its knob turning (`tools/video/player/dial3d.js`),
+and SETUP > WIRELESS > DIAL as the host renderer draws it. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
 there is not confirmed. A render is not run in CI.
 
 [Videos from storyboards](tools/video/README.md).
