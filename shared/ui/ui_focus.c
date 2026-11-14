@@ -377,7 +377,8 @@ static float unit_of(int d)
  */
 static void kp_turn(ui_keypad_t *k, int detents)
 {
-    const float step = (s_cur.step > 0.0f) ? s_cur.step : unit_of(k->decimals);
+    const float unit = unit_of(k->decimals);
+    const float step = (s_cur.step > 0.0f) ? s_cur.step : unit;
     const float gap = s_cur.off_below;
     const int dir = (detents > 0) ? 1 : -1;
     int n = abs(detents);
@@ -391,7 +392,13 @@ static void kp_turn(ui_keypad_t *k, int detents)
      * the next ones step from there, and back down the same way. */
     for (int i = 0; i < n; ++i) {
         v += (float)dir * step;
-        if (gap > 0.0f && v > 0.0f && v < gap) {
+        /* To the keypad's digits before the gap test, as a frame of one
+         * detent is through ui_keypad_set(): 39 steps of 0.1 from 8.9 sum
+         * to 4.9999995, which is not inside a gap that starts at 5.0.  The
+         * test keeps half a digit at each end, as a float digit such as
+         * 0.01 is a little short and its multiples can be too. */
+        v = roundf(v / unit) * unit;
+        if (gap > 0.0f && v > 0.5f * unit && v < gap - 0.5f * unit) {
             v = (dir > 0) ? gap : 0.0f;
         }
         if (v < k->min) {

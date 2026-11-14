@@ -789,6 +789,13 @@ TEST_CASE(an_off_gap_takes_detents_alike_in_any_batch)
         CHECK_NEAR(turned(k, 5.3f, -4, b), 0.0f, 0.001f);
         CHECK_NEAR(turned(k, 5.3f, -7, b), 0.0f, 0.001f);
     }
+    /* A long turn down in one frame: 39 steps of 0.1mΩ from 8.9mΩ end on
+     * 5.0mΩ, not one detent early on OFF from the sum's rounding error. */
+    for (int b = 1; b <= 39; b += 19) {
+        CHECK_NEAR(turned(k, 8.9f, -39, b), 5.0f, 0.001f);
+        CHECK_NEAR(turned(k, 8.9f, -40, b), 0.0f, 0.001f);
+    }
+    CHECK_NEAR(turned(k, 0.0f, 40, 40), 8.9f, 0.001f);
     CHECK(ui_focus_hold());
     CHECK(!k->open);
 }
