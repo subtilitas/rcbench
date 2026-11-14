@@ -163,9 +163,9 @@ after each loss.
 
 A tap on BOUND DIAL with no list says why on the band:
 `NO DIAL LISTED: TAP SCAN FOR DIAL FIRST` before a scan and after one that
-found none, `THE SCAN RUNS: PICK THE DIAL WHEN IT ENDS` while a scan runs.
+found none, `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` while a scan runs.
 A pick the controller refuses, because a scan started first or the list
-changed under it, reads `THE SCAN RUNS: PICK THE DIAL WHEN IT ENDS` or
+changed under it, reads `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` or
 `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the console logs
 `dial: bind of n refused`. A bound Dial logs `dial: bound <address>
 <name>`.

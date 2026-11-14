@@ -172,11 +172,11 @@ die Adresse mit ihm, ohne Suche, bei Dial EIN, beim Start und nach jedem
 Verlust.
 
 Ein Tippen auf GEBUNDENES DIAL ohne Liste sagt auf dem Band, warum:
-`KEIN DIAL GELISTET: ERST DIAL SUCHEN TIPPEN` vor einer Suche und nach
-einer, die keins fand, `SUCHE LÄUFT: DAS DIAL NACH IHREM ENDE WÄHLEN`,
+`KEIN DIAL GELISTET: ERST AUF DIAL SUCHEN TIPPEN` vor einer Suche und nach
+einer, die keins fand, `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`,
 solange eine Suche läuft. Eine Wahl, die der Controller ablehnt, weil zuerst
 eine Suche startete oder sich die Liste darunter änderte, zeigt
-`SUCHE LÄUFT: DAS DIAL NACH IHREM ENDE WÄHLEN` oder
+`SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN` oder
 `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
 schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
 `dial: bound <Adresse> <Name>`.
