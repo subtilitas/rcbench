@@ -90,7 +90,20 @@ typedef struct {
     int8_t      rssi;    /**< the link's RSSI, dBm; DK_RSSI_NONE */
     uint16_t    batt_mv; /**< the cell's voltage, mV; 0 unknown */
     bool        usb;     /**< a USB host reads the Dial's port */
+    uint8_t     upd;     /**< a firmware update over Bluetooth LE:
+                              DIAL_UPD_*, DIAL_UPD_NONE for none */
+    uint16_t    upd_secs; /**< DIAL_UPD_ASK: seconds left to accept */
+    uint8_t     upd_pct; /**< DIAL_UPD_SEND: the share taken, 0 to 100 */
+    uint16_t    upd_from[3]; /**< the version the Dial runs */
+    uint16_t    upd_to[3];   /**< the version offered */
 } dial_face_view_t;
+
+/** @brief Where a firmware update stands on the Dial. @{ */
+#define DIAL_UPD_NONE 0u /**< none: the panel's faces */
+#define DIAL_UPD_ASK  1u /**< offered: a press accepts, a hold refuses */
+#define DIAL_UPD_SEND 2u /**< accepted: the image comes in */
+#define DIAL_UPD_DONE 3u /**< installed: the Dial restarts */
+/** @} */
 
 /** @brief The faces. */
 typedef enum {
@@ -101,6 +114,7 @@ typedef enum {
     DIAL_FACE_VALUE,       /**< a value being set */
     DIAL_FACE_READING,     /**< MOTOR & ESC or SERVO: six readings */
     DIAL_FACE_OTHER,       /**< a screen the knob does nothing on, HOME */
+    DIAL_FACE_UPDATE,      /**< a firmware update over Bluetooth LE */
 } dial_face_id_t;
 
 /** @brief Kinds of body block. @{ */

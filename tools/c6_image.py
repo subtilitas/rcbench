@@ -19,6 +19,20 @@ idf_component.yml) and the release builds the C6's firmware from the
         check the build of PROJECT in BUILD and copy its image to
         DEST/rcbench-c6-<version>.bin and DEST/rcbench-c6-merged-<version>.bin
 
+    tools/c6_image.py device ROLE IMAGE
+        check a wireless device's image the panel carries as well
+        (firmware/panel/main/panel_devupd.c): ROLE is dial, node-pwr or
+        node-bal, IMAGE the application image the release names
+        rcbench-dial-<version>.bin or rcbench-node-<role>-<version>.bin
+
+``device`` fails when the image is not an application of the role's chip
+and project (ESP32-S3 and rcbench-dial, ESP32-C6 and rcbench-node), when
+its version is not the tree's (shared/link/include/rcbench_version.h), when
+its SHA-256 is not appended, when it is larger than ota_0 of the role's
+partitions.csv, and when a node image's role is the other one: the balance
+role's start-up text ``bal: ADC `` is in the balance image only.  It prints
+the image's version, size and SHA-256.
+
 ``check`` fails when the image is not an ESP32-C6 application of project
 network_adapter whose version is the pinned one, when its SHA-256 is not
 appended, when it is larger than the C6's ota_0 slot of
@@ -49,6 +63,19 @@ IMAGE = "network_adapter.bin"
 MERGED = "rcbench-c6-merged.bin"
 PROJECT = "network_adapter"
 CHIP_ESP32C6 = 0x000D
+CHIP_ESP32S3 = 0x0009
+VERSION_H = ROOT / "shared" / "link" / "include" / "rcbench_version.h"
+# The wireless devices' images: chip, project, partition table, and
+# whether the balance role's text must be in it (None: not checked).
+BAL_MARK = b"bal: ADC "
+DEVICES = {
+    "dial": (CHIP_ESP32S3, "rcbench-dial",
+             ROOT / "firmware" / "dial" / "partitions.csv", None),
+    "node-pwr": (CHIP_ESP32C6, "rcbench-node",
+                 ROOT / "firmware" / "node" / "partitions.csv", False),
+    "node-bal": (CHIP_ESP32C6, "rcbench-node",
+                 ROOT / "firmware" / "node" / "partitions.csv", True),
+}
 IMAGE_MAGIC = 0xE9
 DESC_MAGIC = 0xABCD5432
 
@@ -311,6 +338,83 @@ def check_image(data: bytes, want: str, slot: int) -> None:
         raise C6Error(f"{len(data)} bytes, the slot holds {slot}")
 
 
+def tree_version(text: str) -> str:
+    """The release number rcbench_version.h names.
+
+    Args:
+        text: the header.
+
+    Returns:
+        MAJOR.MINOR.PATCH.
+
+    Raises:
+        C6Error: a part is missing.
+    """
+    parts = []
+    for name in ("MAJOR", "MINOR", "PATCH"):
+        m = re.search(rf"#define RCBENCH_VERSION_{name} (\d+)", text)
+        if not m:
+            raise C6Error(f"rcbench_version.h: no RCBENCH_VERSION_{name}")
+        parts.append(m.group(1))
+    return ".".join(parts)
+
+
+def check_device(role: str, data: bytes, want: str, slot: int) -> str:
+    """Hold a wireless device's image to its role.
+
+    Args:
+        role: a key of DEVICES.
+        data: the image.
+        want: the version it must carry.
+        slot: its slot's bytes.
+
+    Returns:
+        The report's line.
+
+    Raises:
+        C6Error: the first check that failed.
+    """
+    if role not in DEVICES:
+        raise C6Error(f"no device role {role!r}: {', '.join(DEVICES)}")
+    chip_want, project_want, _, balance = DEVICES[role]
+    chip, version, project, hashed = image_info(data)
+    if chip != chip_want:
+        raise C6Error(f"built for chip 0x{chip:04X}, not 0x{chip_want:04X}")
+    if project != project_want:
+        raise C6Error(f"project {project!r}, not {project_want!r}")
+    if version != want:
+        raise C6Error(f"version {version!r}, the tree is {want!r}")
+    if not hashed:
+        raise C6Error("built without the appended SHA-256")
+    if len(data) > slot:
+        raise C6Error(f"{len(data)} bytes, the slot holds {slot}")
+    if balance is not None and (BAL_MARK in data) != balance:
+        raise C6Error("the image carries the other node role")
+    return (f"{role} {version}: {len(data)} bytes of a {slot}-byte slot, "
+            f"{100 * len(data) / slot:.1f}%, "
+            f"sha256 {hashlib.sha256(data).hexdigest()}")
+
+
+def device(role: str, image: Path) -> str:
+    """Check a device image file against the tree.
+
+    Args:
+        role: a key of DEVICES.
+        image: the application image.
+
+    Returns:
+        The report's line.
+
+    Raises:
+        C6Error: the first check that failed.
+    """
+    if role not in DEVICES:
+        raise C6Error(f"no device role {role!r}: {', '.join(DEVICES)}")
+    want = tree_version(VERSION_H.read_text())
+    slot = slot_bytes(DEVICES[role][2].read_text())
+    return check_device(role, image.read_bytes(), want, slot)
+
+
 def prepare(component: Path, out: Path) -> str:
     """Copy the slave project with the committed lock file and settings.
 
@@ -387,7 +491,7 @@ def check(project: Path, build: Path, dest: Path) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    """Run ``prepare`` or ``check``.
+    """Run ``prepare``, ``check`` or ``device``.
 
     Args:
         argv: the arguments after the program's name.
@@ -399,6 +503,9 @@ def main(argv: list[str]) -> int:
         if len(argv) == 3 and argv[0] == "prepare":
             v = prepare(Path(argv[1]), Path(argv[2]))
             print(f"c6_image: esp_hosted {v} slave project in {argv[2]}")
+            return 0
+        if len(argv) == 3 and argv[0] == "device":
+            print("c6_image: " + device(argv[1], Path(argv[2])))
             return 0
         if len(argv) == 4 and argv[0] == "check":
             for line in check(Path(argv[1]), Path(argv[2]), Path(argv[3])):

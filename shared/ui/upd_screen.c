@@ -16,6 +16,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "upd_c6.h"
+#include "upd_dev.h"
 #include "upd_screen_int.h"
 #include "upd_settings_int.h"
 
@@ -622,6 +623,7 @@ static void reset(void)
     ui_hold_reset(&u.s.hold);
     ui_hold_reset(&u.s.cu_hold);
     upd_c6_drop();
+    upd_dev_drop();
     memset(&u.cu, 0, sizeof(u.cu));
     u.cu_req = false;
     upd_list_reset();
@@ -640,12 +642,15 @@ static void event(const touch_event_t *evt)
         }
         return;
     }
-    if (upd_c6_event(evt, u.s.have_press)) {
+    if (upd_c6_event(evt, u.s.have_press || upd_dev_pressed())) {
         return;                    /* the C6 RADIO row's press */
+    }
+    if (upd_dev_event(evt, u.s.have_press || upd_c6_pressed())) {
+        return;                    /* a device row's press */
     }
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
-        if (u.s.have_press || upd_c6_pressed()) {
+        if (u.s.have_press || upd_c6_pressed() || upd_dev_pressed()) {
             return;                /* one press at a time */
         }
         u.s.hit = hit_at(x, y);
@@ -709,6 +714,9 @@ static void tick(float dt_s)
     if (upd_c6_tick(dt_s)) {
         touched();             /* the C6 row's fill follows its hold */
     }
+    if (upd_dev_tick(dt_s)) {
+        touched();             /* a device row's fill follows its hold */
+    }
     if (u.s.hold.down || u.s.hold.flash_ms > 0 || u.s.cu_hold.down
         || u.s.cu_hold.flash_ms > 0) {
         touched();             /* the fill follows the hold */
@@ -732,6 +740,7 @@ static void cancel(void)
 {
     upd_list_cancel();
     upd_c6_drop();
+    upd_dev_drop();
     if (u.s.hit == HIT_DOWNLOAD) {
         (void)ui_hold_left(&u.s.hold);
     } else if (u.s.hit == HIT_COPROC) {
@@ -747,6 +756,7 @@ static void enter(void)
 {
     upd_list_close();
     upd_c6_drop();
+    upd_dev_drop();
     ui_hold_reset(&u.s.hold);
     ui_hold_reset(&u.s.cu_hold);
     touched();
@@ -757,6 +767,7 @@ static void leave(void)
 {
     upd_list_close();
     upd_c6_drop();
+    upd_dev_drop();
     u.s.hit = HIT_NONE;
     u.s.have_press = false;
     ui_hold_reset(&u.s.hold);
@@ -880,6 +891,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
                        upd_settings_free());
     render_coproc(c);
     upd_c6_render(c);
+    upd_dev_render(c);
 
     /* What is kept, what runs, what last happened. */
     ui_card(c, gfx_rect_make(RX, RY, RW, RH), UI_PANEL);
@@ -952,7 +964,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, ui_tr(about[i]), lit ? UI_TEXT : UI_TEXT_DIM);
     }
 
-    if (u.s.hold.flash_ms > 0 || u.s.cu_hold.flash_ms > 0 || upd_c6_flashing()) {
+    if (u.s.hold.flash_ms > 0 || u.s.cu_hold.flash_ms > 0 || upd_c6_flashing()
+        || upd_dev_flashing()) {
         u.s.drawn_mask = 0u;
     } else {
         u.s.drawn_mask |= bit;

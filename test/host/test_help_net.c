@@ -19,6 +19,7 @@
 #include "upd_rig.h"
 
 #include "help_check.h"
+#include "upd_dev.h"
 #include "ui_help.h"
 #include "wifi_spots.h"
 
@@ -220,9 +221,9 @@ TEST_CASE(every_updates_page_fits)
         int items[2];
     } k_states[] = {
         { "UPDATES", { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD },
-          { 3, 3 } },
+          { 4, 3 } },
         { "UPDATES newer", { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD },
-          { 3, 4 } },
+          { 4, 4 } },
         { "UPDATES OPTIONS", { TX_HG_SL_TITLE_ROWS, TX_HG_SL_TITLE_VALUES },
           { 3, 3 } },
     };
@@ -249,6 +250,15 @@ TEST_CASE(the_updates_pages_follow_the_check_and_the_c6)
     REQUIRE(ui_help_page(upd(), false, 0, &p));
     CHECK_STR_EQ(p.item[0].label, TR(UPD_CHECK));
     CHECK(gfx_rect_contains(p.item[0].rect, UP_BTN_X, UP_CHECK_Y));
+    /* The IOmcu section ends above the DIAL FIRMWARE row, which is an
+     * item of its own around its heading, line and hold. */
+    CHECK_EQ(p.item[1].text, TX_HG_UPD_CU);
+    CHECK(p.item[1].rect.y + p.item[1].rect.h < UPD_DEV_HEAD_Y);
+    CHECK_EQ(p.item[3].text, TX_HG_UPD_DIAL);
+    CHECK(gfx_rect_contains(p.item[3].rect, UPD_DEV_X + UPD_DEV_W / 2,
+                            UPD_DEV_HEAD_Y));
+    CHECK(gfx_rect_contains(p.item[3].rect, UPD_DEV_X + UPD_DEV_W / 2,
+                            UPD_DEV_BTN_Y + UPD_DEV_BTN_H - 1));
     REQUIRE(ui_help_page(upd(), false, 1, &p));
     char c6[32];
     upd_c6_label(upd_c6_view(), c6, sizeof(c6));

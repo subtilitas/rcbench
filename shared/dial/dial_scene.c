@@ -433,6 +433,52 @@ static void value(dial_scene_t *s, const dk_face_t *f)
     }
 }
 
+/**
+ * @brief A firmware update over Bluetooth LE: the two versions, then the
+ *        press that accepts and the hold that refuses with the seconds
+ *        left, or the share taken on the progress ring.  The panel's
+ *        faces wait: its own link is held off for the update.
+ * @param s the scene
+ * @param f the model
+ * @param v the view
+ */
+static void update(dial_scene_t *s, const dk_face_t *f,
+                   const dial_face_view_t *v)
+{
+    const uint8_t l = s->lang;
+    char line[DIAL_TXT];
+    s->face = DIAL_FACE_UPDATE;
+    s->deco = DIAL_DECO_WAIT;
+    s->has_title = true;
+    dk_text_copy(s->title, sizeof s->title, DF(DIAL_UPD_TITLE));
+    furniture(s, f, v, true);
+    snprintf(line, sizeof line, DF(DIAL_UPD_FROM_TO), (unsigned)v->upd_from[0],
+             (unsigned)v->upd_from[1], (unsigned)v->upd_from[2],
+             (unsigned)v->upd_to[0], (unsigned)v->upd_to[1],
+             (unsigned)v->upd_to[2]);
+    block(s, 0, line, 92, DIAL_FONT_SMALL, UI_C_TEXT_DIM, 1, DIAL_B_TEXT);
+    if (v->upd == DIAL_UPD_ASK) {
+        block(s, 1, DF(DIAL_UPD_PRESS), 128, DIAL_FONT_MID, UI_C_ACCENT, 2,
+              DIAL_B_TEXT);
+        snprintf(line, sizeof line, DF(DIAL_UPD_SECS),
+                 (unsigned)v->upd_secs);
+        block(s, 2, line, 162, DIAL_FONT_SMALL, UI_C_TEXT, 1, DIAL_B_TEXT);
+        hints(s, DF(DIAL_UPD_HOLD), NULL, UI_C_WARN);
+        return;
+    }
+    const unsigned pct = v->upd == DIAL_UPD_DONE ? 100u
+                         : v->upd_pct > 100u ? 100u : v->upd_pct;
+    snprintf(line, sizeof line, "%u", pct);
+    block(s, 1, line, 124, DIAL_FONT_NUM, UI_C_TEXT, 1, DIAL_B_NUMBER);
+    dk_text_copy(s->block[1].unit, sizeof s->block[1].unit, "%");
+    block(s, 2, v->upd == DIAL_UPD_DONE ? DF(DIAL_UPD_RESTART)
+                                        : DF(DIAL_UPD_KEEP_ON),
+          162, DIAL_FONT_SMALL, UI_C_TEXT, 1, DIAL_B_TEXT);
+    s->ring[0].used = true;
+    s->ring[0].color = UI_C_ACCENT;
+    s->ring[0].end = end_of((int64_t)pct, 100);
+}
+
 void dial_scene_build(dial_scene_t *s, const dk_face_t *f,
                       const dial_face_view_t *v, uint8_t lang_last)
 {
@@ -444,6 +490,11 @@ void dial_scene_build(dial_scene_t *s, const dk_face_t *f,
     name = v->name != NULL ? v->name : "";
     s->lang = f->have_screen ? f->screen.lang : lang_last;
     const uint8_t l = s->lang;
+
+    if (v->upd != DIAL_UPD_NONE) {
+        update(s, f, v);
+        return;
+    }
 
     if (!v->bound && !v->ready) {
         s->face = DIAL_FACE_BIND;

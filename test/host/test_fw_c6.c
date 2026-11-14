@@ -132,15 +132,15 @@ TEST_CASE(the_row_names_the_first_reason_in_order)
     CHECK_EQ(fw_c6_row(NULL, NULL), FW_C6_ROW_NO_IMAGE);
     fw_c6_feed_t f = ready_feed();
     f.armed = f.supply = f.run = f.drawing = f.iomcu = f.installing = true;
-    f.radio_up = f.ble_starting = f.ending = true;
+    f.radio_up = f.ble_starting = f.device = f.ending = true;
     static const fw_c6_why_t order[] = {
         FW_C6_WHY_ARMED, FW_C6_WHY_SUPPLY, FW_C6_WHY_RUN, FW_C6_WHY_DRAWING,
         FW_C6_WHY_IOMCU, FW_C6_WHY_INSTALL, FW_C6_WHY_RADIO, FW_C6_WHY_BLE,
-        FW_C6_WHY_ENDING,
+        FW_C6_WHY_DEVICE, FW_C6_WHY_ENDING,
     };
     bool *flags[] = { &f.armed, &f.supply, &f.run, &f.drawing, &f.iomcu,
                       &f.installing, &f.radio_up, &f.ble_starting,
-                      &f.ending };
+                      &f.device, &f.ending };
     for (size_t i = 0; i < sizeof(order) / sizeof(order[0]); ++i) {
         fw_c6_why_t why = FW_C6_WHY_NONE;
         CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);

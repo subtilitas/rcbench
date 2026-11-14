@@ -5835,6 +5835,9 @@ UI_TEXT(ALERT_ARM_PROG, 94,
 UI_TEXT(ALERT_ARM_C6, 94,
     "Cannot switch to ARMED: the C6 radio update is running.",
     "ARMED gesperrt: Das C6-Funk-Update läuft.")
+UI_TEXT(ALERT_ARM_DEVUPD, 94,
+    "Cannot switch to ARMED: a wireless device update is running.",
+    "ARMED gesperrt: Ein Update eines Funkgeräts läuft.")
 UI_TEXT(ALERT_ARM_NO_PIN, 94,
     "Cannot switch to ARMED: no motor pin. Tap TARGET to choose one.",
     "ARMED gesperrt: kein Motor-Pin. Tippe auf ZIEL und wähle einen.")
@@ -6043,6 +6046,56 @@ UI_TEXT(ALERT_C6_NO_LINK, 94,
 UI_TEXT(ALERT_C6_FAILED, 94,
     "C6 update stopped: %s. Previous firmware is running.",
     "C6-Update abgebrochen: %s. Vorherige Firmware läuft.")
+/* How a device update ended (panel_devupd.c): the band's alert, and its
+ * reason in %s. */
+UI_TEXT(ALERT_DEV_DONE, 94,
+    "%s updated to %s. It connects again by itself.",
+    "%s auf %s aktualisiert. Es verbindet sich von selbst neu.")
+UI_TEXT(ALERT_DEV_FAILED, 94,
+    "%s update stopped: %s. Previous firmware is running.",
+    "%s-Update abgebrochen: %s. Vorherige Firmware läuft.")
+UI_TEXT(ALERT_DIAL_ASK, 94,
+    "Press the Dial's screen button within 30s to accept the update.",
+    "Drücke innerhalb von 30s die Taste am Dial, um das Update anzunehmen.")
+UI_TEXT(DEV_FAIL_LINK, 36,
+    "no connection",
+    "keine Verbindung")
+UI_TEXT(DEV_FAIL_LOST, 36,
+    "connection lost",
+    "Verbindung verloren")
+UI_TEXT(DEV_FAIL_TIMEOUT, 36,
+    "no answer",
+    "keine Antwort")
+UI_TEXT(DEV_FAIL_WRITE, 36,
+    "a write was refused",
+    "Schreiben abgelehnt")
+UI_TEXT(DEV_FAIL_KIND, 36,
+    "image for another device",
+    "Image für ein anderes Gerät")
+UI_TEXT(DEV_FAIL_SIZE, 36,
+    "image too large",
+    "Image zu groß")
+UI_TEXT(DEV_FAIL_SAME, 36,
+    "it runs this version",
+    "es läuft schon diese Version")
+UI_TEXT(DEV_FAIL_CONFIRM, 36,
+    "not accepted within 30s",
+    "nicht innerhalb von 30s angenommen")
+UI_TEXT(DEV_FAIL_REFUSED, 36,
+    "refused on the device",
+    "am Gerät abgelehnt")
+UI_TEXT(DEV_FAIL_SHA, 36,
+    "image arrived damaged",
+    "Image beschädigt angekommen")
+UI_TEXT(DEV_FAIL_FLASH, 36,
+    "the device's flash failed",
+    "Flash des Geräts fehlgeschlagen")
+UI_TEXT(DEV_FAIL_IMAGE, 36,
+    "the device refused the image",
+    "Gerät hat das Image abgelehnt")
+UI_TEXT(DEV_FAIL_OTHER, 36,
+    "error %u",
+    "Fehler %u")
 UI_TEXT(C6_FAIL_WRITE, 36,
     "a write failed",
     "Schreiben fehlgeschlagen")
@@ -6133,6 +6186,12 @@ UI_TEXT(HOLD_HINT_C6_UPDATE, 94,
 UI_TEXT(HOLD_HINT_C6_REINSTALL, 94,
     "Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.",
     "Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.")
+UI_TEXT(HOLD_HINT_DIAL_UPDATE, 94,
+    "Hold 2s to update the Dial. Its knob stops until it connects again.",
+    "Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.")
+UI_TEXT(HOLD_HINT_DIAL_REINSTALL, 94,
+    "Hold 2s to reinstall the Dial firmware this panel carries.",
+    "Halte 2s, um die Dial-Firmware des Panels neu zu installieren.")
 UI_TEXT(HOLD_HINT_UNBIND, 94,
     "Hold 2s to clear all pin assignments.",
     "Halte 2s, um alle Pin-Zuordnungen zu löschen.")
@@ -6766,8 +6825,8 @@ UI_TEXT(HG_WF_WRITES, 0,
     "The browser may change the card until the radio goes off. A tap on OFF ends it.",
     "Der Browser darf die Karte ändern, bis das WLAN ausgeht. Tippen auf AUS beendet es.")
 UI_TEXT(HG_UPD_TITLE_CHECK, 0,
-    "UPDATES: CHECK AND IOMCU",
-    "UPDATES: SUCHE UND IOMCU")
+    "UPDATES: CHECK, IOMCU, DIAL",
+    "UPDATES: SUCHE, IOMCU, DIAL")
 UI_TEXT(HG_UPD_TITLE_CARD, 0,
     "UPDATES: PANEL AND C6",
     "UPDATES: PANEL UND C6")
@@ -6783,6 +6842,9 @@ UI_TEXT(HG_UPD_CU, 0,
 UI_TEXT(HG_UPD_CU_HOLD, 0,
     "Sends the included build to the IOmcu. Outputs stay off until it ends.",
     "Sendet den enthaltenen Build an den IOmcu. Ausgänge bleiben aus, bis es endet.")
+UI_TEXT(HG_UPD_DIAL, 0,
+    "The Dial's version and the included one. The hold sends it; the Dial asks for a press.",
+    "Version des Dial und die enthaltene. Das Halten sendet sie; das Dial fragt nach einem Druck.")
 UI_TEXT(HG_UPD_CARD, 0,
     "The running version, the home network and the last check's result. Without a network a button opens WI-FI.",
     "Laufende Version, Heimnetz und Ergebnis der letzten Suche. Ohne Netz öffnet eine Taste WI-FI.")
@@ -8512,9 +8574,58 @@ UI_TEXT(C6_WHY_RADIO, 94,
 UI_TEXT(C6_WHY_BLE, 94,
     "The C6 update waits: Bluetooth is starting.",
     "Das C6-Update wartet: Bluetooth startet.")
+UI_TEXT(C6_WHY_DEVICE, 94,
+    "The C6 update waits for the wireless device update to finish.",
+    "Das C6-Update wartet auf das Ende des Funkgeräte-Updates.")
 UI_TEXT(C6_WHY_ENDING, 94,
     "The C6 update waits for the C6 radio's last answer.",
     "Das C6-Update wartet auf die letzte Antwort des C6-Funks.")
+/* SETUP > UPDATES' DIAL FIRMWARE row (upd_dev.h): the M5Stack Dial's
+ * version, the image this panel carries, and the 2s hold that sends it over
+ * Bluetooth LE (devupd.h). */
+UI_TEXT(UPD_DIAL_HEAD, 0,
+    "DIAL FIRMWARE",
+    "DIAL-FIRMWARE")
+UI_TEXT(UPD_DIAL_LINE, 0,
+    "Dial: %s. Included: %s.",
+    "Dial: %s. Im Panel: %s.")
+UI_TEXT(UPD_DEV_NOT_LINKED, 0,
+    "not connected",
+    "nicht verbunden")
+UI_TEXT(UPD_DIAL_HOLD, 0,
+    "HOLD 2s TO UPDATE THE DIAL",
+    "2s HALTEN ZUM DIAL-UPDATE")
+UI_TEXT(UPD_DIAL_REINSTALL, 0,
+    "HOLD 2s TO REINSTALL THE DIAL FIRMWARE",
+    "2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN")
+UI_TEXT(UPD_DIAL_CONNECTING, 0,
+    "DIAL UPDATE: CONNECTING",
+    "DIAL-UPDATE: VERBINDET")
+UI_TEXT(UPD_DIAL_PRESS, 0,
+    "PRESS THE DIAL TO ACCEPT: %us",
+    "AM DIAL DRÜCKEN ZUM ANNEHMEN: %us")
+UI_TEXT(UPD_DIAL_PROGRESS, 0,
+    "DIAL UPDATE %u%%",
+    "DIAL-UPDATE %u%%")
+/* The band's line for a tap on a device row's grey hold (upd_dev_reason()). */
+UI_TEXT(DEV_WHY_NO_IMAGE, 94,
+    "This panel includes no firmware for this device.",
+    "Dieses Panel enthält keine Firmware für dieses Gerät.")
+UI_TEXT(DEV_WHY_BAD_IMAGE, 94,
+    "The included firmware for this device failed its check.",
+    "Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.")
+UI_TEXT(DEV_WHY_NOT_LINKED, 94,
+    "Connect the device on WIRELESS first.",
+    "Verbinde das Gerät zuerst auf WIRELESS.")
+UI_TEXT(DEV_WHY_ARMED, 94,
+    "The device update requires SAFE.",
+    "Das Geräte-Update erfordert SAFE.")
+UI_TEXT(DEV_WHY_BUSY, 94,
+    "The device update waits for the other update to finish.",
+    "Das Geräte-Update wartet auf das Ende des anderen Updates.")
+UI_TEXT(DEV_WHY_UPDATING, 94,
+    "The device update is running.",
+    "Das Geräte-Update läuft.")
 UI_TEXT(UPD_ABOUT_1, 0,
     "With reminders on, the panel checks GitHub at startup.",
     "Mit Erinnerung prüft das Panel beim Start GitHub auf Updates.")
@@ -12125,6 +12236,27 @@ UI_DIAL_TEXT(DIAL_SCAN_TAP,
 UI_DIAL_TEXT(DIAL_ADVERTISING,
     "ADVERTISING",
     "BEREIT ZUM SCAN")
+UI_DIAL_TEXT(DIAL_UPD_TITLE,
+    "UPDATE",
+    "UPDATE")
+UI_DIAL_TEXT(DIAL_UPD_FROM_TO,
+    "v%u.%u.%u TO v%u.%u.%u",
+    "v%u.%u.%u AUF v%u.%u.%u")
+UI_DIAL_TEXT(DIAL_UPD_PRESS,
+    "PRESS TO ACCEPT",
+    "DRÜCKEN: ANNEHMEN")
+UI_DIAL_TEXT(DIAL_UPD_SECS,
+    "%us LEFT",
+    "NOCH %us")
+UI_DIAL_TEXT(DIAL_UPD_HOLD,
+    "HOLD TO REFUSE",
+    "HALTEN: ABLEHNEN")
+UI_DIAL_TEXT(DIAL_UPD_KEEP_ON,
+    "KEEP THE DIAL ON",
+    "DIAL AN LASSEN")
+UI_DIAL_TEXT(DIAL_UPD_RESTART,
+    "RESTARTING",
+    "STARTET NEU")
 UI_DIAL_TEXT(DIAL_WAITING,
     "WAITING FOR THE PANEL",
     "WARTE AUF DAS PANEL")

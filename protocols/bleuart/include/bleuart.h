@@ -161,7 +161,9 @@ typedef struct {
     uint16_t scan_window; /**< 4 to scan_itvl */
 } bleu_conn_params_t;
 
-/** @brief A peer's service as the central finds and uses it. */
+/** @brief A peer's service as the central finds and uses it.  Two
+ *         entries may name one UUID: that characteristic takes both
+ *         roles, such as a STREAM that is also the CMD. */
 typedef struct {
     const uint8_t     *svc;  /**< the service's 128-bit UUID, least
                                   significant byte first */
@@ -384,6 +386,9 @@ typedef struct {
     uint8_t      tx_props;  /**< the STREAM's properties */
     uint16_t     param_val; /**< the PARAM's (6DAA's) value handle, 0
                                  without READ */
+    uint16_t     chr_val[BLEU_CHR_MAX]; /**< each profile entry's value
+                                 handle, 0 not found: a NONE entry's too */
+    uint8_t      chr_props[BLEU_CHR_MAX]; /**< each entry's properties */
     uint8_t      param[BLEU_PARAM_MAX]; /**< its value as read */
     uint8_t      param_len; /**< its length; 0 before the read */
     uint16_t     param_status; /**< the read's status */

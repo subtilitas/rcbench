@@ -3,8 +3,8 @@
  * @brief UPDATES' screen guide (upd_screen_int.h): two pages, or the
  *        OPTIONS list's while it is open.
  *
- * CHECK FOR UPDATES (CANCEL while a check runs), the IOmcu section and its
- * hold with the dock on the right; the card, the C6 radio's hold, the
+ * CHECK FOR UPDATES (CANCEL while a check runs), the IOmcu section, its
+ * hold and the DIAL FIRMWARE row with the dock on the right; the card, the C6 radio's hold, the
  * download's hold while a check found a newer release, and OPTIONS with
  * the dock on the left.  UPDATES drives no output, so every page shows
  * while ARMED as well.
@@ -19,6 +19,7 @@
 #include "ui_setlist.h"
 #include "ui_text.h"
 #include "upd_c6.h"
+#include "upd_dev.h"
 #include "upd_screen.h"
 
 #include "upd_screen_int.h"
@@ -40,8 +41,8 @@ int upd_help_count(void)
 }
 
 /**
- * @brief Page 1: CHECK, the IOmcu section and its hold, the dock on the
- *        right.
+ * @brief Page 1: CHECK, the IOmcu section and its hold, the DIAL FIRMWARE
+ *        row, the dock on the right.
  * @param p The page, zeroed.
  */
 static void check_page(ui_help_page_t *p)
@@ -52,9 +53,14 @@ static void check_page(ui_help_page_t *p)
                       TX_HG_UPD_CHECK, gfx_rect_make(BX, RY, BW, BH));
     (void)ui_help_add_at(p, TR(UPD_CU_HEAD), TX_HG_UPD_CU,
                          gfx_rect_make(BX, CU_HEAD_Y, BW,
-                                       CU_BTN_Y - 8 - CU_HEAD_Y),
+                                       UPD_DEV_HEAD_Y - 8 - CU_HEAD_Y),
                          UI_HELP_AT_RIGHT);
     (void)ui_help_add(p, TR(UPD_CU_HOLD), TX_HG_UPD_CU_HOLD, CU_BTN);
+    (void)ui_help_add_at(p, TR(UPD_DIAL_HEAD), TX_HG_UPD_DIAL,
+                         gfx_rect_make(UPD_DEV_X, UPD_DEV_HEAD_Y, UPD_DEV_W,
+                                       UPD_DEV_BTN_Y + UPD_DEV_BTN_H
+                                           - UPD_DEV_HEAD_Y),
+                         UI_HELP_AT_RIGHT);
 }
 
 /**

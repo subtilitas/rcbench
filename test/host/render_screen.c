@@ -31,6 +31,7 @@
 #include "busfault_screen.h"
 #include "ui_textkey.h"
 #include "upd_c6.h"
+#include "upd_dev.h"
 #include "upd_screen.h"
 #include "wifi_screen.h"
 #include "wifi_spots.h"
@@ -2662,6 +2663,34 @@ static void pose_upd(const char *view)
         c6.known = false;
     }
     upd_c6_set(&c6);
+
+    /* The DIAL FIRMWARE row: no Dial connected, the hold grey;
+     * updates-dial a Dial on 0.21.0 asked to accept 0.22.0, 27s left;
+     * updates-dial-* the other labels the fit check measures. */
+    upd_dev_view_t dial = {
+        .row = DEVUPD_ROW_NOT_LINKED, .have_image = true,
+        .carried = { 0u, 22u, 0u },
+    };
+    if (strncmp(view, "updates-dial", 12) == 0) {
+        dial.known = true;
+        dial.running = (fw_version_t){ 0u, 21u, 0u };
+        dial.row = DEVUPD_ROW_UPDATING;
+    }
+    if (strcmp(view, "updates-dial") == 0) {
+        dial.phase = DEVUPD_CONFIRM;
+        dial.secs = 27u;
+    } else if (strcmp(view, "updates-dial-ready") == 0) {
+        dial.row = DEVUPD_ROW_READY;
+    } else if (strcmp(view, "updates-dial-reinstall") == 0) {
+        dial.row = DEVUPD_ROW_REINSTALL;
+        dial.running = dial.carried;
+    } else if (strcmp(view, "updates-dial-connecting") == 0) {
+        dial.phase = DEVUPD_LINK;
+    } else if (strcmp(view, "updates-dial-progress") == 0) {
+        dial.phase = DEVUPD_SEND;
+        dial.percent = 42u;
+    }
+    upd_dev_set(UPD_DEV_DIAL, &dial);
     if (strcmp(view, "updates-settings") == 0) {
         /* The footer's SETTINGS: the list of the reminder and RELEASES. */
         const gfx_rect_t r = ui_footer_rect(UI_FOOTER_SETTINGS);

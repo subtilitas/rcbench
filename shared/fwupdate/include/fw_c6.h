@@ -114,6 +114,7 @@ typedef enum {
     FW_C6_WHY_INSTALL,     /**< the panel's own download or install runs  */
     FW_C6_WHY_RADIO,       /**< Wi-Fi is on, or a session asks for it     */
     FW_C6_WHY_BLE,         /**< Bluetooth LE's start (blestart) runs      */
+    FW_C6_WHY_DEVICE,      /**< a wireless device's update runs on the C6 */
     FW_C6_WHY_ENDING,      /**< a step of an ended update is still in a call */
 } fw_c6_why_t;
 
@@ -135,6 +136,7 @@ typedef struct {
     bool         installing;  /**< the panel's download or install        */
     bool         radio_up;    /**< !wifi_access_down()                    */
     bool         ble_starting; /**< panel_ble_state() is STARTING         */
+    bool         device;      /**< a wireless device's update runs        */
 } fw_c6_feed_t;
 
 /**
