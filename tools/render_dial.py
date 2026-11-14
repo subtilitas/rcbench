@@ -72,6 +72,8 @@ FACES = {
     "waiting": "connected, no panel packet yet",
     "bind": "no bound panel",
     "other": "a screen the knob does nothing on",
+    "update-ask": "a firmware update offered: a press accepts it",
+    "update-send": "a firmware update coming in, 42% taken",
 }
 
 LANGS = {"en": ".", "de": "de"}

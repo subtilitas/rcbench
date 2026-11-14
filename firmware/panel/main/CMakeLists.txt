@@ -18,12 +18,12 @@ idf_component_register(
          "panel_render.c" "panel_art.c" "panel_update.c" "selftest.c"
          "knob_task.c" "kst_files.c" "hitec_record.c" "hitec_files.c" "panel_boot.c" "panel_settings.c"
          "panel_control.c" "panel_frame.c" "panel_files.c" "panel_shot.c" "panel_trial.c"
-         "panel_imu.c" "panel_dial.c" "panel_bal.c" "panel_pnode.c" "panel_ble.c" "panel_blec.c" "panel_c6.c"
+         "panel_imu.c" "panel_dial.c" "panel_bal.c" "panel_pnode.c" "panel_ble.c" "panel_blec.c" "panel_c6.c" "panel_devupd.c"
          ${rcbench_perf_src} ${rcbench_console_src}
     REQUIRES board display gt911 storage link can can_twai bench outputs safety servo ui gfx touch artwork esc
              settings settings_nvs art_flash esp_psram files
              fwupdate webaccess fw_ota wifi_access c6_link clock witmotion bleuart dialknob
-             bt espressif__esp_hosted
+             bleota devupd bt espressif__esp_hosted
              esp_driver_gpio esp_driver_i2c esp_driver_tsens esp_driver_uart esp_timer
     LDFRAGMENTS "psram_bss.lf"
 )
@@ -91,3 +91,26 @@ if(RCBENCH_C6_BIN)
                            RENAME_TO rcbench_c6_bin)
     target_compile_definitions(${COMPONENT_LIB} PRIVATE RCBENCH_C6_IMAGE=1)
 endif()
+# The wireless devices' images of the same release, carried so SETUP >
+# UPDATES sends them over Bluetooth LE (main/panel_devupd.c): the M5Stack
+# Dial's, the power node's and the balance node's application images
+# (firmware/dial, firmware/node), each checked by tools/c6_image.py device:
+#   idf.py -D RCBENCH_DIAL_BIN=<path>/rcbench-dial-<version>.bin
+#          -D RCBENCH_NODE_PWR_BIN=<path>/rcbench-node-pwr-<version>.bin
+#          -D RCBENCH_NODE_BAL_BIN=<path>/rcbench-node-bal-<version>.bin build
+# A relative path is taken from firmware/panel.  A build without one carries
+# none of that device and offers no update for it.
+foreach(dev DIAL NODE_PWR NODE_BAL)
+    if(RCBENCH_${dev}_BIN)
+        get_filename_component(rcbench_dev_bin "${RCBENCH_${dev}_BIN}"
+                               ABSOLUTE BASE_DIR "${CMAKE_SOURCE_DIR}")
+        if(NOT EXISTS "${rcbench_dev_bin}")
+            message(FATAL_ERROR "RCBENCH_${dev}_BIN: ${rcbench_dev_bin} not found")
+        endif()
+        string(TOLOWER "${dev}" dev_lower)
+        target_add_binary_data(${COMPONENT_LIB} "${rcbench_dev_bin}" BINARY
+                               RENAME_TO rcbench_${dev_lower}_bin)
+        target_compile_definitions(${COMPONENT_LIB} PRIVATE
+                                   RCBENCH_${dev}_IMAGE=1)
+    endif()
+endforeach()

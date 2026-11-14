@@ -86,6 +86,10 @@ static dial_link_t   s_frame_was = DIAL_LINK_OFF;
 static atomic_bool   s_live;
 /** @brief Losses while ARMED, from the `blec` task. */
 static atomic_uint   s_errors;
+/** @brief SETUP's last values, the `blec` task's own. */
+static dial_cfg_t    s_cfg_in;
+/** @brief The device update holds the link ended, the `blec` task's own. */
+static bool          s_held;
 
 /**
  * @brief SETUP's values as the controller takes them.
@@ -166,6 +170,10 @@ void panel_dial_blec_poll(uint32_t now)
                 ESP_LOGI(TAG, "Dial ON: starting Bluetooth LE");
                 panel_ble_start();
             }
+            s_cfg_in = m.cfg;
+            if (s_held) {
+                m.cfg.en = false;
+            }
             dial_ctl_config(&s_ctl, &m.cfg, now);
         } else {
             run_command(&m.cmd, now);
@@ -176,6 +184,34 @@ void panel_dial_blec_poll(uint32_t now)
     s_model_blec = s_model;
     taskEXIT_CRITICAL(&s_mux);
     dial_ctl_model(&s_ctl, &s_model_blec);
+}
+
+void panel_dial_blec_hold(bool on, uint32_t now)
+{
+    if (s_q == NULL || on == s_held) {
+        return;
+    }
+    s_held = on;
+    dial_cfg_t c = s_cfg_in;
+    if (on) {
+        c.en = false;
+    }
+    ESP_LOGI(TAG, "%s", on ? "link held off for the Dial's update"
+                           : "link back to SETUP's values");
+    dial_ctl_config(&s_ctl, &c, now);
+}
+
+bool panel_dial_blec_target(bleu_addr_t *addr, bool *linked,
+                            uint8_t version[3], bool *down)
+{
+    if (s_q == NULL || !bleu_addr_parse(s_ctl.cfg.addr, addr)) {
+        return false;
+    }
+    *linked = s_ctl.linked && s_ctl.info_ok;
+    memcpy(version, s_ctl.info.fw, 3u);
+    *down = !s_ctl.linked && s_ctl.b.settle == 0u
+            && (s_ctl.b.st == BLEU_ST_OFF || s_ctl.b.st == BLEU_ST_IDLE);
+    return true;
 }
 
 void panel_dial_blec_event(const bleu_evt_t *e, uint32_t now)
@@ -384,6 +420,11 @@ void panel_dial_frame(const dial_model_in_t *in)
 void panel_dial_set_live(bool live)
 {
     atomic_store(&s_live, live);
+}
+
+bool panel_dial_live(void)
+{
+    return atomic_load(&s_live);
 }
 
 uint32_t panel_dial_errors(void)

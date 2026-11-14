@@ -79,13 +79,23 @@ void pnode_ctl_init(pnode_ctl_t *c)
 }
 
 /**
+ * @brief POWER NODE ON and no update holding the link (pnode_ctl_hold()).
+ * @param c The controller.
+ * @return Whether the controller runs the link.
+ */
+static bool is_on(const pnode_ctl_t *c)
+{
+    return c->cfg.en && !c->held;
+}
+
+/**
  * @brief Run the central while POWER NODE is ON and the radio is synced.
  * @param c      The controller.
  * @param now_ms The clock.
  */
 static void apply(pnode_ctl_t *c, uint32_t now_ms)
 {
-    bleu_enable(&c->b, c->cfg.en && c->radio == IMU_RADIO_READY, now_ms);
+    bleu_enable(&c->b, is_on(c) && c->radio == IMU_RADIO_READY, now_ms);
 }
 
 /**
@@ -261,6 +271,36 @@ void pnode_ctl_radio(pnode_ctl_t *c, imu_radio_t radio, uint32_t now_ms)
     }
 }
 
+void pnode_ctl_hold(pnode_ctl_t *c, bool on, uint32_t now_ms)
+{
+    if (c == NULL || on == c->held) {
+        return;
+    }
+    c->held = on;
+    /* The link ends for the update and comes back to a node that
+     * restarted: neither is a loss, as POWER NODE OFF is none. */
+    c->lost = false;
+    c->scan_open = false;
+    c->scan_cut = false;
+    apply(c, now_ms);
+    follow_link(c, now_ms);
+}
+
+bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
+                      uint8_t version[3], bool *down)
+{
+    if (c == NULL || addr == NULL || linked == NULL || version == NULL
+        || down == NULL || !c->b.bound
+        || !bleu_addr_parse(c->cfg.addr, addr)) {
+        return false;
+    }
+    *linked = c->linked && c->info_ok && c->m.have_status;
+    memcpy(version, c->m.status.fw, 3u);
+    *down = !c->linked && c->b.settle == 0u
+            && (c->b.st == BLEU_ST_OFF || c->b.st == BLEU_ST_IDLE);
+    return true;
+}
+
 pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
 {
     if (c == NULL) {
@@ -272,7 +312,7 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
         ++c->refused;
         return PNODE_SCAN_ARMED;
     }
-    if (!c->cfg.en || c->radio != IMU_RADIO_READY || c->b.scanning) {
+    if (!is_on(c) || c->radio != IMU_RADIO_READY || c->b.scanning) {
         return PNODE_SCAN_NOT_READY;
     }
     c->found_n = 0u;
@@ -313,7 +353,7 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
     const bool stream = bleu_event(&c->b, e, now_ms);
     take_scan(c);
     follow_link(c, now_ms);
-    if (!stream || !c->cfg.en) {
+    if (!stream || !is_on(c)) {
         return;
     }
     if (!c->info_ok) {
@@ -390,7 +430,7 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
 
 pnode_link_t pnode_ctl_link(const pnode_ctl_t *c, uint32_t now_ms)
 {
-    if (c == NULL || !c->cfg.en) {
+    if (c == NULL || !is_on(c)) {
         return PNODE_LINK_OFF;
     }
     switch (c->radio) {

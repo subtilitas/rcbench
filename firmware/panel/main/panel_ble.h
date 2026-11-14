@@ -109,6 +109,22 @@ bool panel_ble_get(bleu_evt_t *out);
 bool panel_ble_do(const bleu_act_t *a, int *written);
 
 /**
+ * @brief Write one chunk of a device update without response: @p hdr_n
+ *        bytes of header, then @p n bytes of the image, in one write.
+ *        NimBLE takes the buffers whether it sends or not.
+ * @param conn   The connection.
+ * @param handle The value handle.
+ * @param hdr    The header.
+ * @param hdr_n  Its bytes.
+ * @param data   The image's bytes.
+ * @param n      Their count.
+ * @return 0 when NimBLE took it; BLE_HS_ENOMEM when its buffers are full,
+ *         and the chunk goes again later; another NimBLE code otherwise.
+ */
+int panel_ble_write_chunk(uint16_t conn, uint16_t handle, const uint8_t *hdr,
+                          uint16_t hdr_n, const uint8_t *data, uint16_t n);
+
+/**
  * @brief Events dropped on a full queue since start-up.
  * @return The count.
  */

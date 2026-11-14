@@ -219,8 +219,12 @@ Auswuchtknoten AUS oder EIN, ein Knoten mit anderer Adresse gebunden und
 ein Neustart des Knotens. Einen Neustart des Knotens erkennt das Panel bei
 jedem Verbindungsaufbau: die Uhr des Knotens in INFO liegt mehr als 2s
 neben dem Stand, den die Uhr des letzten Berichts und die seither
-vergangene Zeit des Panels ergeben. Ein Neustart des Panels beginnt ohne
-Läufe. Eine abgerissene Verbindung und ein erneutes Verbinden desselben
+vergangene Zeit des Panels ergeben. Ein Update des Knotens auf UPDATES,
+das installiert, startet ihn mit seinem neuen Image neu, und die
+Verbindung, die zurückkommt, erkennt diesen Neustart, seine Läufe leeren
+sich also; ein Update, das ohne Installation endet, startet nichts neu und
+behält sie, da das Halten des Updates Auswuchtknoten EIN lässt. Ein
+Neustart des Panels beginnt ohne Läufe. Eine abgerissene Verbindung und ein erneutes Verbinden desselben
 Knotens behalten die Läufe, und ein Entbinden behält sie, bis ein anderer
 Knoten gebunden wird. Der Reiter BALANCE folgt keinem Motor- oder
 ESC-Profil, und ein Profilwechsel behält die Läufe.

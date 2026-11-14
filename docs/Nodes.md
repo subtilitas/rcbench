@@ -486,6 +486,86 @@ The bench log names the source: `source` reads `node` on a row whose INA228
 figures are the node's, and `ina voltage` and `ina current` hold them
 ([Screens](Screens.md#table-and-what-the-esc-says)).
 
+## Update over Bluetooth LE
+
+A node takes a new application image over BLE from a central, through the
+update service of `protocols/bleota`
+([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
+The panel carries both roles' images, checks them at start and sends them
+from UPDATES' wireless devices' page: POWER NODE FIRMWARE and BALANCE NODE
+FIRMWARE ([Screens: The sensor nodes](Screens.md#the-sensor-nodes)). The
+row's 2s hold ends the node's own link (`pnode_ctl_hold()`,
+`bal_ctl_hold()`); that end and the link's return count as no loss, so the
+band shows no `POWER NODE LOST`. After the update the node's client
+connects again from SETUP's values, and the row reads the node's version
+from its first STATUS packet on the new link. A balance node that
+installed is a restart for the balance runs: INFO's clock finds it and
+the runs clear ([Balancing](Balance.md#measuring-with-the-balance-node));
+an update without an install keeps them.
+
+1. The central connects and sends BEGIN: the kind (power node or balance
+   node), the size, the version and the image's SHA-256.
+2. The node checks the kind against its role, the size against its slot of
+   1,572,864 bytes (0x180000) and the version. A power node refuses a
+   balance image and the reverse. Nothing is erased yet.
+3. The node waits 30s for its BOOT key (GPIO9) held 1s. The node shows
+   nothing; the WS2812 is not driven, and the central tells the user to
+   press BOOT. No hold in 30s refuses. A key already down when the window
+   opens counts only after it is released.
+4. Held: the node takes the image's first 296 bytes and checks that they
+   name the ESP32-C6 and the node's own role (`DEVOTA_ROLE`, after
+   ESP-IDF's application descriptor). An image of the other role or
+   another device is refused before anything is written. The node then
+   erases and writes the slot it does not run from.
+5. END: the node compares the SHA-256 of every byte it wrote with BEGIN's,
+   lets ESP-IDF check the image, sets the boot slot and restarts 500ms
+   later.
+
+A refusal, a lost link, 10s without a write or a SHA-256 that differs ends
+the transfer: the node closes the slot and keeps running its image. A new
+transfer starts from byte 0. The exception is the install after END: the
+boot slot may already be set when the link drops or an ABORT comes. The
+node then finishes the install and restarts into the new image if it
+passed ESP-IDF's check.
+
+While a transfer or an install runs, the node does not sleep, refuses
+SLEEP and OFF from CONTROL and the console, and switches itself off only
+for a cell under 3.0V (`NODE_UPD_OFF_MV`), 3 readings in a row, in place of
+3.3V. A cell that empty ends the update with the node; the image it ran
+stays.
+
+The new image starts on trial (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`) and
+marks itself valid at its first connection, which it takes only with its
+BLE stack running.
+
+| Start of an image on trial | Result |
+| --- | --- |
+| a connection | kept |
+| a timer wake from deep sleep | the same image, still on trial: the wake loads the image the start before it chose and does not read the trial state (`CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP`) |
+| the RESET key, a power cycle, a panic, before a connection | the image before it |
+
+So a power node that sleeps before its first connection stays on trial
+across its 10s wakes, and a full start then goes back to the old image.
+The balance node sleeps without a timer and wakes only on RESET, a full
+start.
+
+The trial and the rollback are the bootloader's: a node flashed over USB
+with an image older than this update firmware has a bootloader without
+them. It takes updates over the air, but with no trial and no rollback,
+until it is flashed once over USB with a release that carries the
+update.
+
+Security: no pairing, no encryption and no signature. Integrity rests on
+the SHA-256 in BEGIN. Any central in range can send BEGIN; the held BOOT
+key is what accepts it ([SECURITY.md](../SECURITY.md)).
+
+The device side runs on the task `ota`, priority 3, every 10ms, with a
+stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA
+examples; its depth is not measured. Its static RAM is 3,623 bytes:
+the window's ring of 2,048 bytes, a write buffer of 1,024 bytes and the
+state. The power node's image is 646,240 bytes, 41.1% of a slot; the
+balance node's 642,672 bytes, 40.9%.
+
 ## Building and flashing
 
 The role is chosen at build time (`main/Kconfig.projbuild`). A board is
@@ -601,6 +681,11 @@ this start`.
   it and at least 80ms of samples (`errors`, `resets` in STATUS).
 - The balance node holds its ADXL on 3V3 while it sleeps: 350µA.
 - The WS2812 is not driven. Its current at idle is not measured.
-- The firmware is updated over USB only.
+- The panel does not yet send a node its image: the node's side of the
+  update over BLE exists, the panel's rows come with its node clients. The
+  update has not run on a node; its rate and a rollback are not measured.
+- A node checks an image's kind, chip and segments, not its origin: a
+  central in range can offer any image of the node's role, older ones
+  included, and a 1s hold of BOOT installs it.
 - Windows without a sample between two windows are not sent: a stalled
   sampler shows as a jump in `t_node` with no jump in `seq`.

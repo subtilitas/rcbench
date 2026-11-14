@@ -14,7 +14,10 @@
  * nodes whose manufacturer data names the balance role, never a name
  * alone, a scan response naming or refreshing a listed one, a bind; seq
  * gaps counted; OFF ending it all; a node restart found from INFO's
- * clock, a reconnect of the same node none.
+ * clock, a reconnect of the same node none; the update's hold handing the
+ * link to the update client and taking it back, with the version read
+ * back from the STATUS after the reconnect and the node's restart on its
+ * new image counted as one.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -545,6 +548,113 @@ TEST_CASE(off_ends_the_link_and_hands_on_nothing)
     CHECK(!v.scan_done);
 }
 
+/* The update's hand-over: the hold ends the link and keeps it ended
+ * whatever SETUP sends, drops the old image's report and takes no packet;
+ * the take-back connects again, and the version comes from the first
+ * STATUS on the new link. */
+TEST_CASE(the_update_hold_hands_the_link_over_and_takes_it_back)
+{
+    brig_t r;
+    brig_up(&r);
+    r.fw[0] = 0u;
+    r.fw[1] = 23u;
+    r.fw[2] = 11u;
+    const rcnode_bal_report_t p = brig_steady(420u, 2650u, 8000u);
+    brig_report(&r, &p);
+    bleu_addr_t a;
+    bool linked = true, down = true;
+    uint8_t ver[3] = { 9u, 9u, 9u };
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);                       /* no STATUS yet: no version */
+    CHECK(!down);
+    brig_status(&r, 1u);
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(linked);
+    CHECK(!down);
+    CHECK_EQ(ver[1], 23u);
+    CHECK_EQ(ver[2], 11u);
+    bleu_addr_t want;
+    CHECK(bleu_addr_parse(BRIG_ADDR, &want));
+    CHECK(bleu_addr_eq(&a, &want));
+
+    bal_view_t v;
+    bal_ctl_view(&r.c, r.now, &v);
+    CHECK(!v.held);
+    bal_ctl_hold(&r.c, true, r.now);
+    bal_ctl_hold(&r.c, true, r.now);      /* twice is once */
+    brig_run(&r, 100u);
+    CHECK(!r.c.linked);
+    CHECK_EQ(bal_ctl_link(&r.c, r.now), BAL_LINK_OFF);
+    bal_ctl_view(&r.c, r.now, &v);
+    CHECK(v.held);                        /* OFF by the hold, not by SETUP */
+    rcnode_bal_report_t got;
+    uint32_t age;
+    CHECK(!bal_ctl_report(&r.c, r.now, &got, &age));
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);
+    CHECK(down);
+    /* SETUP's values while held keep the link ended; no scan. */
+    const unsigned connects = r.connects;
+    bal_cfg_t cfg = r.c.cfg;
+    bal_ctl_config(&r.c, &cfg, r.now);
+    bal_ctl_radio(&r.c, IMU_RADIO_READY, r.now);
+    CHECK_EQ(bal_ctl_scan(&r.c, false, r.now), BAL_SCAN_NOT_READY);
+    const unsigned nw = r.nw;
+    bal_ctl_drive(&r.c, 4u, 0u);
+    brig_run(&r, 30000u);
+    CHECK_EQ(r.connects, connects);
+    CHECK_EQ(r.nw, nw);
+    CHECK(r.c.cfg.en);                    /* SETUP's value kept */
+
+    /* The take-back: the node, restarted on its new image, is back.  Its
+     * INFO clock finds the restart: one boot, the old report gone, so
+     * the balance runs clear their captures. */
+    r.fw[2] = 12u;
+    r.boot_ms = r.now - 3000u;
+    bal_ctl_hold(&r.c, false, r.now);
+    brig_run(&r, 100u);
+    CHECK_EQ(r.connects, connects + 1u);
+    CHECK(r.c.linked);
+    CHECK(r.c.info_ok);
+    CHECK_EQ(r.c.boots, 1u);
+    bal_ctl_view(&r.c, r.now, &v);
+    CHECK(!v.held);
+    CHECK_EQ(v.boots, 1u);
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);                       /* the old link's STATUS is gone */
+    CHECK(!bal_ctl_report(&r.c, r.now, &got, &age)); /* and its report */
+    brig_status(&r, 2u);
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(linked);
+    CHECK_EQ(ver[2], 12u);
+    CHECK_EQ(r.nw > nw, true);            /* BLADES 4 written on the link */
+
+    /* An update that ended without an install restarts nothing: no boot,
+     * and the last report stands after the take-back. */
+    brig_report(&r, &p);
+    const uint32_t boots = r.c.boots;
+    bal_ctl_hold(&r.c, true, r.now);
+    brig_run(&r, 100u);
+    CHECK(!bal_ctl_report(&r.c, r.now, &got, &age));   /* hidden */
+    brig_run(&r, 20000u);
+    bal_ctl_hold(&r.c, false, r.now);
+    brig_run(&r, 100u);
+    CHECK(r.c.linked);
+    CHECK_EQ(r.c.boots, boots);
+    CHECK(bal_ctl_report(&r.c, r.now, &got, &age));
+
+    /* No node bound, or a missing argument: no target. */
+    CHECK(!bal_ctl_target(&r.c, NULL, &linked, ver, &down));
+    CHECK(!bal_ctl_target(NULL, &a, &linked, ver, &down));
+    brig_t n;
+    brig_init(&n);
+    bal_cfg_t none = n.c.cfg;
+    none.addr[0] = '\0';
+    bal_ctl_config(&n.c, &none, n.now);
+    CHECK(!bal_ctl_target(&n.c, &a, &linked, ver, &down));
+    bal_ctl_hold(NULL, true, 0u);
+}
+
 /* A reconnect of the same node, after 10s or after 80min (past the node
  * clock's 71.6min wrap), finds no restart; a node that restarted while
  * the link was down is found at INFO, the last report dropped; INFO's
@@ -632,5 +742,6 @@ int main(void)
     RUN(off_ends_the_link_and_hands_on_nothing);
     RUN(info_finds_a_node_restart_and_a_reconnect_is_none);
     RUN(the_radio_states_read_through);
+    RUN(the_update_hold_hands_the_link_over_and_takes_it_back);
     return test_summary("bal_ctl");
 }

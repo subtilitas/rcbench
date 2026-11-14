@@ -16,7 +16,7 @@
 /** Inputs at @p now_ms with nothing holding the node and a full cell. */
 static node_inputs_t idle_at(uint32_t now_ms)
 {
-    node_inputs_t in = { now_ms, false, false, false, 4000u };
+    node_inputs_t in = { now_ms, false, false, false, 4000u, false };
     return in;
 }
 
@@ -172,6 +172,45 @@ TEST_CASE(the_battery_words_change_at_1v_and_3_5v)
     CHECK_EQ(node_bat_flags(4200u), 0);
 }
 
+/* A firmware update holds the node awake without a link (its install goes
+ * on after a lost link), and moves the switch-off from 3.3V down to 3.0V:
+ * an empty cell still switches the node off. */
+TEST_CASE(an_update_holds_the_node_and_only_an_empty_cell_switches_it_off)
+{
+    node_policy_t p;
+    node_policy_init(&p, 0u, 0u);
+    node_inputs_t in = idle_at(NODE_IDLE_MS * 3u);
+    in.update = true;
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    in.bat_mv = RCNODE_BAT_OFF_MV - 1u;
+    for (unsigned i = 0; i < NODE_OFF_READS + 2u; ++i) {
+        CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    }
+    in.bat_mv = NODE_UPD_OFF_MV;                  /* 3.000V is not under */
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    in.bat_mv = NODE_UPD_OFF_MV - 1u;
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    CHECK_EQ(node_policy_step(&p, &in), NODE_OFF);
+    /* The update over: the 3.3V threshold again, counted from its end. */
+    node_policy_init(&p, 0u, 0u);
+    in.bat_mv = RCNODE_BAT_OFF_MV - 1u;
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    in.update = false;
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    CHECK_EQ(node_policy_step(&p, &in), NODE_OFF);
+    /* Idle after the update: the idle count starts at its end. */
+    node_policy_init(&p, 0u, 0u);
+    in = idle_at(5000u);
+    in.update = true;
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    in = idle_at(5000u + NODE_IDLE_MS - 1u);
+    CHECK_EQ(node_policy_step(&p, &in), NODE_RUN);
+    in.now_ms = 5000u + NODE_IDLE_MS;
+    CHECK_EQ(node_policy_step(&p, &in), NODE_SLEEP);
+}
+
 int main(void)
 {
     RUN(an_idle_node_sleeps_after_120s_and_not_a_ms_before);
@@ -179,6 +218,7 @@ int main(void)
     RUN(the_idle_count_holds_across_the_ms_clock_wrap);
     RUN(three_low_readings_in_a_row_switch_off_and_a_good_one_restarts_the_count);
     RUN(no_cell_on_usb_alone_switches_nothing_off);
+    RUN(an_update_holds_the_node_and_only_an_empty_cell_switches_it_off);
     RUN(a_timer_wake_stays_up_for_a_pack_of_5v_and_sleeps_below);
     RUN(one_low_reading_at_a_wake_switches_nothing_off_the_third_in_a_row_does);
     RUN(a_failed_battery_read_neither_counts_nor_clears_and_says_so);

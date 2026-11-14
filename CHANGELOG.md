@@ -8,6 +8,49 @@ history is in git.
 
 ### Added
 
+- Firmware update over Bluetooth LE for the M5Stack Dial and both sensor
+  node roles. Protocol module `protocols/bleota`: a GATT service with CTRL
+  (write with response, notify) and DATA (write without response); BEGIN
+  with kind, size, version and the image's SHA-256; chunks with their
+  offset, up to 240 bytes at an MTU of 247; a credit window of 2,048 bytes
+  notified in steps of 512, with a gap mark for lost bytes so a lossless
+  link sends every byte once; END with the SHA-256 compare; refusal codes
+  for another device's kind, a size over the slot and the running version;
+  the image's head (chip and role, `DEVOTA_ROLE` after the application
+  descriptor) checked before the first flash write
+  ([protocols/bleota](protocols/bleota/README.md)). The device side
+  (`firmware/devota`) erases nothing before a physical confirmation within
+  30s: a press of the Dial's screen button (a 1s hold refuses), or a node's
+  BOOT key (GPIO9) held 1s. A new image starts on trial
+  (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE` on the Dial and the node) and
+  marks itself valid at its first connection; a device flashed before this
+  firmware has no trial or rollback until one USB flash. A lost link or an
+  ABORT during the install lets the install finish; the panel settles the
+  result by the device's version. The node does not sleep while an update
+  runs and switches off for an empty cell only under 3.0V. The panel carries the Dial's
+  and both nodes' images, checked by `tools/c6_image.py device` in CI and
+  again at start. SETUP > UPDATES gets the WIRELESS DEVICES entry, which
+  counts the connected devices and those with another version and opens a
+  page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
+  FIRMWARE rows: each with the device's and the carried version, a 2s
+  hold, the device's confirmation countdown (PRESS THE DIAL TO ACCEPT,
+  HOLD BOOT 1s ON THE NODE) and the progress
+  ([Screens: The wireless devices](docs/Screens.md#the-wireless-devices)).
+  One update runs at a time; CANCEL UPDATE, a plain tap, ends it before
+  END, and from END on the result is waited for. A transfer whose device
+  answers without moving on ends after 30s with no progress. An unknown
+  install is settled by its own device's version and reported before
+  another device's update starts. A row's hold is live only after its
+  image's check. The device's own client gives the link up for the update and
+  takes it back after it (`pnode_ctl_hold()`, `bal_ctl_hold()`, the Dial's
+  hold); a node's update reads as no loss on the band, and the row reads
+  the node's version from its first STATUS packet after the reconnect.
+  ARM is refused while a device update runs, and the C6 radio's update
+  waits for it. No pairing and no signature: integrity rests on the
+  SHA-256 alone ([SECURITY.md](SECURITY.md)).
+- `protocols/bleuart`: a profile entry may share a UUID with another, and
+  every matching entry takes the characteristic; the found value handles
+  and properties are recorded.
 - The power node on the panel: a third Bluetooth LE client on the panel's
   hub, SETUP > WIRELESS > POWER NODE with Power node ON or OFF, INA228
   SOURCE (WIRED or NODE, WIRED by default), SCAN FOR NODE (refused while
