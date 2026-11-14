@@ -149,7 +149,11 @@ history is in git.
   reports, 2s, each; a report with the sensor's DC level out, a clipped
   sample, an rpm out of range, a lost or refused index edge or a changed
   mode fails the run at once with its own word, and a trial whose mean rpm
-  lies more than 5% from the baseline's fails as `NOT BASELINE RPM`), the correction through
+  lies more than 5% from the baseline's fails as `NOT BASELINE RPM`;
+  the runs clear with CLEAR, the method, BLADES, PROPELLER or EDF,
+  Balance node OFF or ON, another node bound and a node restart, which
+  INFO's clock shows at the link-up, and a reconnect of the same node
+  keeps them), the correction through
   shared/vibe as ADD and WHERE,
   solved again when the trial mass changes, and a row in
   `BENCH/BALANCE/BALANCE.CSV` for each solution; the hint under ADD says

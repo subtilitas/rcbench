@@ -73,7 +73,8 @@ void panel_bal_text_changed(setting_text_id_t id);
 /**
  * @brief Frame task, each frame: the view to SETUP, a bind kept, SETUP's
  *        commands to the controller (a scan refused while ARMED), the
- *        report to node_balance_feed(), the blade count and the rpm to the
+ *        captures' context to node_balance_context(), the report to
+ *        node_balance_feed(), the blade count and the rpm to the
  *        controller, a solution's CSV row to the logger.
  * @param armed  The bench is ARMED or an arm waits.
  * @param blades The BALANCE screen's blade count.

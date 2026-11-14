@@ -13,7 +13,8 @@
  * packet; a scan refused while ARMED and stopped at ARM; the scan listing
  * nodes whose manufacturer data names the balance role, never a name
  * alone, a scan response naming or refreshing a listed one, a bind; seq
- * gaps counted; OFF ending it all.
+ * gaps counted; OFF ending it all; a node restart found from INFO's
+ * clock, a reconnect of the same node none.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -544,6 +545,56 @@ TEST_CASE(off_ends_the_link_and_hands_on_nothing)
     CHECK(!v.scan_done);
 }
 
+/* A reconnect of the same node, after 10s or after 80min (past the node
+ * clock's 71.6min wrap), finds no restart; a node that restarted while
+ * the link was down is found at INFO, the last report dropped; INFO's
+ * clock 2s either side of the expected one is no restart, 2.001s is. */
+TEST_CASE(info_finds_a_node_restart_and_a_reconnect_is_none)
+{
+    brig_t r;
+    brig_up(&r);
+    const rcnode_bal_report_t p = brig_steady(420u, 2650u, 8000u);
+    brig_report(&r, &p);
+    brig_drop(&r);
+    brig_run(&r, 10000u);
+    CHECK(r.c.linked);
+    CHECK_EQ(r.info_reads, 2u);
+    CHECK_EQ(r.c.boots, 0u);
+    CHECK(r.c.have_rep);
+    brig_report(&r, &p);
+    brig_drop(&r);
+    r.now += 80u * 60u * 1000u;
+    brig_run(&r, 10000u);
+    CHECK_EQ(r.info_reads, 3u);
+    CHECK_EQ(r.c.boots, 0u);
+    /* The node restarts while the link is down. */
+    brig_report(&r, &p);
+    brig_drop(&r);
+    r.boot_ms = r.now;
+    brig_run(&r, 10000u);
+    CHECK_EQ(r.info_reads, 4u);
+    CHECK_EQ(r.c.boots, 1u);
+    CHECK(!r.c.have_rep);
+    bal_view_t v;
+    bal_ctl_view(&r.c, r.now, &v);
+    CHECK_EQ(v.boots, 1u);
+    /* The slack: the node's clock 2,000ms off is no restart, 2,001 is. */
+    const uint32_t off_ms[4] = { 2000u, 0u - 2000u, 2001u, 0u - 2001u };
+    const uint32_t boots[4] = { 1u, 1u, 2u, 3u };
+    for (int k = 0; k < 4; ++k) {
+        brig_report(&r, &p);
+        brig_drop(&r);
+        r.boot_ms -= off_ms[k];
+        brig_run(&r, 10000u);
+        CHECK_EQ(r.c.boots, boots[k]);
+        r.boot_ms += off_ms[k];
+        brig_report(&r, &p);
+        brig_drop(&r);
+        brig_run(&r, 10000u);
+        CHECK_EQ(r.c.boots, boots[k]);
+    }
+}
+
 /* The radio's states read through to the link word. */
 TEST_CASE(the_radio_states_read_through)
 {
@@ -579,6 +630,7 @@ int main(void)
     RUN(a_config_text_is_cut_to_its_field);
     RUN(seq_gaps_and_foreign_packets_are_counted);
     RUN(off_ends_the_link_and_hands_on_nothing);
+    RUN(info_finds_a_node_restart_and_a_reconnect_is_none);
     RUN(the_radio_states_read_through);
     return test_summary("bal_ctl");
 }

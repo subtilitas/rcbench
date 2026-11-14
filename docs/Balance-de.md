@@ -212,6 +212,19 @@ sie fertig ist, und eine neu aufgenommene Referenz lässt jeden Testlauf
 abbrechen, der mehr als 5% von ihrer Drehzahl abweicht. Seine Taste zeigt den Grund;
 erneut drücken.
 
+**Die Läufe gehören zu einem Knoten und einem Rotor.** LÖSCHEN leert alle
+Läufe, und ebenso jede dieser Änderungen, mit HINZUFÜGEN und WO: die
+andere Methode (2 LÄUFE oder 4 LÄUFE), BLÄTTER, PROPELLER oder EDF,
+Auswuchtknoten AUS oder EIN, ein Knoten mit anderer Adresse gebunden und
+ein Neustart des Knotens. Einen Neustart des Knotens erkennt das Panel bei
+jedem Verbindungsaufbau: die Uhr des Knotens in INFO liegt mehr als 2s
+neben dem Stand, den die Uhr des letzten Berichts und die seither
+vergangene Zeit des Panels ergeben. Ein Neustart des Panels beginnt ohne
+Läufe. Eine abgerissene Verbindung und ein erneutes Verbinden desselben
+Knotens behalten die Läufe, und ein Entbinden behält sie, bis ein anderer
+Knoten gebunden wird. Der Reiter BALANCE folgt keinem Motor- oder
+ESC-Profil, und ein Profilwechsel behält die Läufe.
+
 **Die CSV-Zeile.** `BENCH/BALANCE/BALANCE.CSV` erhält in einer neuen Datei
 eine Kopfzeile und je Lösung eine Zeile: Methode, Testmasse, Einheit (g
 oder counts für ADC-Zählwerte), Betrag, Winkel (zwei Läufe) und Drehzahl jedes Laufs, den

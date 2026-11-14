@@ -175,7 +175,43 @@ node to sleep (SLEEP) or switches it off until its RESET key (OFF),
 restarts its run extremes (RUN), or on the balance node changes the blade
 count (BLADES) or the rpm of the no-index mode (RPM), which changes its
 readings. The node drives no output and its
-readings feed no protection. The panel does not connect to a node yet.
+readings feed no protection.
+
+Current limitation, the panel's Bluetooth clients: the panel binds the
+M5Stack Dial, the power node and the balance node by their stored address
+alone, with no pairing and no bonding. The trigger is a BLE device in
+range that wins the connection to a stored address, by advertising it
+while the real device is off or out of range, and serves that device's
+service and an INFO that names the expected protocol (and for a node, its
+role). The panel then takes that device's packets as the real one's:
+
+- M5Stack Dial: its EVENTs. While the bench is ARMED, on MOTOR & ESC a
+  detent moves the throttle by the throttle step (0.5%, 1%, 2% or 5%), and
+  on the SERVO screens that take the knob it moves the horn by the servo
+  step. Each EVENT moves at most 16 detents, and the panel does not limit
+  how often EVENTs come, so a run of EVENTs can take the throttle from 0%
+  to 100% within 7 EVENTs at the 1% step. A PRESS sets the throttle to 0%
+  or the horn to CENTER, and a HOLD disarms or ends an ESC STICK run. The
+  device also receives the screen model the panel streams to the Dial: the
+  live readings and the run's state. It cannot ARM the bench and cannot
+  switch SUPPLY ON, PROG 5V or WRITE: those are the panel's 2s holds.
+  Turns while SAFE move nothing and are not kept for the ARM. What limits
+  it: STOP on the panel and the hardware stop act as always, every limit
+  and trip of the run applies as to the panel's own knob, and a loss of
+  the link while
+  ARMED (1,000ms without an EVENT, or the disconnect) switches the bench
+  SAFE.
+- Power node: its readings. While INA228 SOURCE is NODE they show on
+  MOTOR & ESC and the Dial as the bench's voltage, current, power, peaks
+  and totals, and go into the run's log, so a false figure reads as the
+  real one. They feed no limit or trip. A device that stops sending ends
+  the run under the dropout rule, as the real node's dropouts do.
+- Balance node: its reports. A capture takes them, so a false report
+  produces an ADD and WHERE correction and a CSV row. A CONTROL write the
+  panel sends (BLADES, RPM) reaches whichever device holds the link.
+
+The planned remedy is pairing with bonding (LE Secure Connections), a
+planned slice that is not built.
 
 Two classes of report apply.
 

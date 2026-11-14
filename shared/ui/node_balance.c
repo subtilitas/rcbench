@@ -473,6 +473,12 @@ static struct {
     bool            csv_due;    /**< its CSV row is not taken yet */
     uint8_t         csv;        /**< nb_csv_t of the last row taken */
     uint32_t        csv_seq;    /**< that row's number */
+    bool            ctx_init;   /**< the context below is recorded */
+    bool            on;         /**< BALANCE NODE ON, as last seen */
+    char            addr[BAL_ADDR_MAX]; /**< the last bound node, "" none */
+    uint32_t        boots;      /**< its restarts, as last seen */
+    int             blades;     /**< BLADES, as last seen */
+    int             rotor;      /**< the rotor, as last seen */
 } s_nb; /**< the panel's instance: UI task only */
 
 /** @brief Set up on first use. */
@@ -526,6 +532,33 @@ static void refresh(void)
         s_nb.csv = NB_CSV_NONE;
         ++s_nb.res_rev;
     }
+}
+
+void node_balance_context(const nb_context_t *c)
+{
+    if (c == NULL) {
+        return;
+    }
+    nb_once();
+    const char *addr = c->addr != NULL ? c->addr : "";
+    /* Unbound keeps the last node: only another node's bind clears. */
+    const bool other = addr[0] != '\0' && s_nb.addr[0] != '\0'
+                       && strncmp(addr, s_nb.addr, sizeof(s_nb.addr)) != 0;
+    const bool changed = c->on != s_nb.on || other || c->boots != s_nb.boots
+                         || c->blades != s_nb.blades
+                         || c->rotor != s_nb.rotor;
+    if (s_nb.ctx_init && changed) {
+        nb_clear(&s_nb.ses);
+    }
+    s_nb.ctx_init = true;
+    s_nb.on = c->on;
+    if (addr[0] != '\0') {
+        snprintf(s_nb.addr, sizeof(s_nb.addr), "%s", addr);
+    }
+    s_nb.boots = c->boots;
+    s_nb.blades = c->blades;
+    s_nb.rotor = c->rotor;
+    refresh();
 }
 
 void node_balance_feed(bool present, const rcnode_bal_report_t *r,

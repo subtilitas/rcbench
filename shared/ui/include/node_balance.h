@@ -303,6 +303,28 @@ size_t nb_csv_row(const nb_session_t *s, float trial_g,
 
 /* ------------------------------------------- the panel's one instance */
 
+/** @brief What the captures belong to: a change in any member but a
+ *         reconnect of the same node clears them. */
+typedef struct {
+    bool        on;     /**< BALANCE NODE ON */
+    const char *addr;   /**< the bound node's address, "" or NULL none */
+    uint32_t    boots;  /**< the node's restarts found (bal_view_t) */
+    int         blades; /**< the rotor's blades */
+    int         rotor;  /**< propeller or ducted fan */
+} nb_context_t;
+
+/**
+ * @brief The captures' context, each frame before node_balance_feed():
+ *        the captures, and with them the solution and its CSV row, clear
+ *        when the node is switched OFF or ON, another node is bound, the
+ *        node restarted, or BLADES or the rotor change.  An unbind keeps
+ *        them until a node other than the last one is bound; a dropped
+ *        link and a reconnect of the same node keep them.  The first call
+ *        after node_balance_reset() only records.
+ * @param c The context; NULL is ignored.
+ */
+void node_balance_context(const nb_context_t *c);
+
 /**
  * @brief The node's state for the screens, each frame from the panel.
  * @param present Whether the node is on and bound: false shows the model.

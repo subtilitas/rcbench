@@ -14,6 +14,9 @@
  * - the_balance_screen_shows_dashes_for_a_stale_report
  * - the_balance_screen_repaints_only_the_live_values
  * - the_hint_says_whether_the_row_was_written
+ * - each_solver_status_draws_its_own_hint
+ * - each_run_state_draws_its_own_word
+ * - the_live_line_shows_a_word_without_a_figure
  *
  * SPDX-License-Identifier: MIT
  */
@@ -448,6 +451,131 @@ TEST_CASE(the_hint_says_whether_the_row_was_written)
     node_balance_reset();
 }
 
+/** @brief Every run of @p method done at 8000rpm with the given vectors,
+ *         straight into the panel's captures. */
+static void set_runs(uint8_t method, const float *mag, const float *deg,
+                     bool counts)
+{
+    nb_session_t *s = node_balance_session();
+    s->method = method;
+    s->taking = -1;
+    for (uint8_t i = 0; i < nb_slots(method); ++i) {
+        nb_cap_t *c = &s->cap[i];
+        memset(c, 0, sizeof *c);
+        c->state = NB_CAP_DONE;
+        c->counts = counts;
+        c->vec = (vibe_polar_t){ mag[i], deg[i] };
+        c->mag = mag[i];
+        c->rpm = 8000.0f;
+        c->rpm0 = 8000u;
+    }
+    ++s->rev;
+}
+
+/* Each solver status draws its own line and hint: OK, WEAK, NO EFFECT,
+ * INCONSISTENT and NO RESULT for a bad input. */
+TEST_CASE(each_solver_status_draws_its_own_hint)
+{
+    static const struct {
+        uint8_t method;
+        float   mag[4];
+        float   deg[4];
+        int     want;
+    } k_case[] = {
+        { NB_TWO_RUNS,  { 0.42f, 0.30f }, { 265.0f, 196.0f }, VIBE_SOLVE_OK },
+        { NB_TWO_RUNS,  { 0.42f, 0.40f }, { 265.0f, 265.0f }, VIBE_SOLVE_WEAK },
+        { NB_TWO_RUNS,  { 0.42f, 0.42f }, { 265.0f, 265.0f },
+          VIBE_SOLVE_NO_EFFECT },
+        { NB_FOUR_RUNS, { 1.0f, 0.1f, 3.0f, 0.1f }, { 0 },
+          VIBE_SOLVE_INCONSISTENT },
+        { NB_TWO_RUNS,  { NAN, 0.30f }, { 265.0f, 196.0f },
+          VIBE_SOLVE_BAD_INPUT },
+    };
+    enum { N = (int)(sizeof k_case / sizeof k_case[0]) };
+    gfx_color_t *shot[N];
+    for (int k = 0; k < N; ++k) {
+        fresh_tab();
+        set_runs(k_case[k].method, k_case[k].mag, k_case[k].deg, false);
+        vibe_solution_t sol;
+        CHECK(node_balance_result(&sol, NULL));
+        CHECK_EQ((int)sol.status, k_case[k].want);
+        scr->render(&cv, 0);
+        shot[k] = snap();
+    }
+    for (int a = 0; a < N; ++a) {
+        for (int b = a + 1; b < N; ++b) {
+            if (pane_diff(shot[a], shot[b]) <= 50) {
+                T_FAIL("statuses %d and %d draw alike", a, b);
+            }
+        }
+    }
+    for (int k = 0; k < N; ++k) {
+        free(shot[k]);
+    }
+    node_balance_reset();
+}
+
+/* A run under its key: TAKING n/8, a magnitude in ADC counts, and each
+ * failure word, one unlike the next. */
+TEST_CASE(each_run_state_draws_its_own_word)
+{
+    fresh_tab();
+    rcnode_bal_report_t r = rep(420u, 2650u);
+    node_balance_feed(true, &r, 10u);
+    scr->render(&cv, 0);
+    gfx_color_t *empty = snap();
+    tap_key(MBAL_KEY_TAKE0);
+    feed(&r, 3u);
+    nb_session_t *s = node_balance_session();
+    CHECK_EQ(s->cap[0].state, NB_CAP_TAKING);
+    scr->render(&cv, 0);
+    CHECK(pane_diff(fb, empty) > 50);
+    gfx_color_t *prev = snap();
+    s->taking = -1;
+    for (int f = NB_FAIL_NONE; f <= NB_FAIL_COUNT; ++f) {
+        s->cap[0].state = NB_CAP_FAILED;
+        s->cap[0].fail = (uint8_t)f;
+        ++s->rev;
+        scr->render(&cv, 0);
+        /* NONE and the out-of-range index read as RPM MOVED, which
+         * neither neighbour does. */
+        if (pane_diff(fb, prev) <= 20) {
+            T_FAIL("failure %d draws as the state before", f);
+        }
+        memcpy(prev, fb, (size_t)W * H * sizeof(gfx_color_t));
+    }
+    const float mag[2] = { 1234.0f, 900.0f };
+    const float deg[2] = { 265.0f, 196.0f };
+    set_runs(NB_TWO_RUNS, mag, deg, true);
+    s->cap[1].state = NB_CAP_EMPTY;
+    scr->render(&cv, 0);
+    CHECK(pane_diff(fb, prev) > 20);
+    free(empty);
+    free(prev);
+    node_balance_reset();
+}
+
+/* A reading whose word is no GOOD, FAIR or POOR draws without a quality
+ * figure: NO REVOLUTION instead of GOOD 94%. */
+TEST_CASE(the_live_line_shows_a_word_without_a_figure)
+{
+    fresh_tab();
+    rcnode_bal_report_t r = rep(420u, 2650u);
+    node_balance_feed(true, &r, 10u);
+    scr->render(&cv, 0);
+    gfx_color_t *good = snap();
+    r.flags = RCNODE_BF_DC_OK;
+    ++r.hdr.seq;
+    r.hdr.t_node += 250000u;
+    node_balance_feed(true, &r, 10u);
+    CHECK(node_balance_live()->word < NB_Q_GOOD
+          || node_balance_live()->word > NB_Q_POOR);
+    scr->render(&cv, 0);
+    CHECK(pane_diff(fb, good) > 20);
+    free(good);
+    node_balance_reset();
+}
+
 int main(void)
 {
     RUN(the_balance_tab_draws_its_pane_without_a_node);
@@ -460,5 +588,8 @@ int main(void)
     RUN(the_balance_screen_shows_dashes_for_a_stale_report);
     RUN(the_balance_screen_repaints_only_the_live_values);
     RUN(the_hint_says_whether_the_row_was_written);
+    RUN(each_solver_status_draws_its_own_hint);
+    RUN(each_run_state_draws_its_own_word);
+    RUN(the_live_line_shows_a_word_without_a_figure);
     return test_summary("motor_balance");
 }

@@ -19,7 +19,9 @@
  * known imbalances; the CSV row's fields under its header; the instance's
  * one row per solution, solved again with a new row for a new trial mass,
  * the row's written / not written state; a dropped link stale, not the
- * model.
+ * model; the captures kept for the same node's reconnect and cleared by
+ * another node's bind, OFF, ON, a node restart, BLADES, the rotor, the
+ * method and a panel restart.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -797,6 +799,83 @@ TEST_CASE(a_dropped_link_is_stale_not_the_model)
     node_balance_reset();
 }
 
+/** @brief Another node's address. */
+#define OTHER_ADDR "A0:B1:C2:7F:3A:11 R"
+
+/** @brief The captures' context, each member as named. */
+static void ctx(bool on, const char *addr, uint32_t boots, int blades,
+                int rotor)
+{
+    const nb_context_t c = { on, addr, boots, blades, rotor };
+    node_balance_context(&c);
+}
+
+/** @brief Whether the captures, the solution and its row are all gone. */
+static bool all_clear(void)
+{
+    char row[NB_CSV_MAX];
+    return !nb_ready(node_balance_session())
+           && !node_balance_result(NULL, NULL)
+           && node_balance_take_csv(2, row, sizeof row) == 0u;
+}
+
+/* The same node keeps the captures: a dropped link, an unbind and the
+ * same node bound again, and the first context after a restart.  Another
+ * node's bind clears them, directly or after an unbind. */
+TEST_CASE(the_captures_keep_for_the_same_node_and_clear_for_another)
+{
+    for (int k = 0; k < 2; ++k) {
+        node_balance_reset();
+        settings_reset_all();
+        take_both();
+        ctx(true, BRIG_ADDR, 0u, 2, 0);     /* the first: recorded only */
+        CHECK(node_balance_result(NULL, NULL));
+        node_balance_feed(true, NULL, 0u);
+        ctx(true, BRIG_ADDR, 0u, 2, 0);
+        ctx(true, "", 0u, 2, 0);
+        ctx(true, NULL, 0u, 2, 0);
+        ctx(true, BRIG_ADDR, 0u, 2, 0);
+        CHECK(node_balance_result(NULL, NULL));
+        char row[NB_CSV_MAX];
+        CHECK(node_balance_take_csv(2, row, sizeof row) > 0u);
+        if (k == 1) {
+            ctx(true, "", 0u, 2, 0);
+        }
+        const uint32_t rr = node_balance_result_rev();
+        ctx(true, OTHER_ADDR, 0u, 2, 0);
+        CHECK(node_balance_result_rev() != rr);
+        CHECK(all_clear());
+        CHECK_EQ(node_balance_csv_state(), NB_CSV_NONE);
+    }
+    node_balance_reset();
+}
+
+/* Every other change of the session clears the captures: OFF, ON, a node
+ * restart, BLADES, the rotor, the method, and a panel restart. */
+TEST_CASE(each_session_change_clears_the_captures)
+{
+    for (int k = 0; k < 7; ++k) {
+        node_balance_reset();
+        settings_reset_all();
+        const bool on = k != 1;
+        ctx(on, BRIG_ADDR, 0u, 2, 0);
+        take_both();
+        ctx(on, BRIG_ADDR, 0u, 2, 0);
+        CHECK(node_balance_result(NULL, NULL));
+        switch (k) {
+        case 0:  ctx(false, BRIG_ADDR, 0u, 2, 0); break;
+        case 1:  ctx(true, BRIG_ADDR, 0u, 2, 0); break;
+        case 2:  ctx(true, BRIG_ADDR, 1u, 2, 0); break;
+        case 3:  ctx(true, BRIG_ADDR, 0u, 3, 0); break;
+        case 4:  ctx(true, BRIG_ADDR, 0u, 2, 1); break;
+        case 5:  nb_set_method(node_balance_session(), NB_FOUR_RUNS); break;
+        default: node_balance_reset(); break;
+        }
+        CHECK(all_clear());
+    }
+    node_balance_reset();
+}
+
 int main(void)
 {
     RUN(a_report_reads_in_g_and_degrees);
@@ -816,5 +895,7 @@ int main(void)
     RUN(the_instance_hands_out_one_row_per_solution);
     RUN(a_new_trial_mass_solves_again_with_a_new_row);
     RUN(a_dropped_link_is_stale_not_the_model);
+    RUN(the_captures_keep_for_the_same_node_and_clear_for_another);
+    RUN(each_session_change_clears_the_captures);
     return test_summary("node_balance");
 }

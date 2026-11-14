@@ -104,6 +104,31 @@ static void link_reset(bal_ctl_t *c)
 }
 
 /**
+ * @brief A node restart, found from INFO's clock: the node's microseconds
+ *        since the last report differ from the panel's time since it by
+ *        more than BAL_BOOT_SLACK_US.  Both differences wrap at 2^32µs
+ *        alike, so an outage of any length reads right; a restart counts
+ *        in boots and the last report goes.
+ * @param c      The controller.
+ * @param t_node INFO's clock, µs.
+ * @param now_ms The clock.
+ */
+static void follow_boot(bal_ctl_t *c, uint32_t t_node, uint32_t now_ms)
+{
+    if (!c->have_rep) {
+        return;
+    }
+    const uint32_t node_us = t_node - c->rep.hdr.t_node;
+    const uint32_t panel_us = (now_ms - c->rep_ms) * 1000u;
+    const uint32_t d = node_us - panel_us;
+    const uint32_t off = d < 0x80000000u ? d : 0u - d;
+    if (off > BAL_BOOT_SLACK_US) {
+        ++c->boots;
+        c->have_rep = false;
+    }
+}
+
+/**
  * @brief The link's own view after the central moved: a subscribe starts a
  *        link, INFO is taken once its read ended.
  * @param c      The controller.
@@ -129,6 +154,7 @@ static void follow_link(bal_ctl_t *c, uint32_t now_ms)
             c->info_proto = p.u.info.proto;
             c->info_ok = p.u.info.proto == RCNODE_PROTO
                          && p.u.info.role == RCNODE_ROLE_BALANCE;
+            follow_boot(c, p.u.info.hdr.t_node, now_ms);
         } else {
             /* INFO that would not read or decode: a failed GATT step.  The
              * link ends and comes back after the backoff. */
@@ -586,6 +612,7 @@ void bal_ctl_view(const bal_ctl_t *c, uint32_t now_ms, bal_view_t *out)
     out->bat_known = c->bat_known && c->linked;
     out->bat_mv = c->bat_mv;
     out->bat_flags = c->bat_flags;
+    out->boots = c->boots;
 }
 
 bool bal_ctl_report(const bal_ctl_t *c, uint32_t now_ms,

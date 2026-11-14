@@ -194,6 +194,17 @@ solver takes runs of one rpm only. A trial taken before the baseline is
 held to it once the baseline is done, and a baseline taken again fails
 each trial more than 5% from its rpm. Its key shows why; press it again.
 
+**The runs belong to one node and one rotor.** CLEAR empties every run,
+and so does each of these changes, with ADD and WHERE: the other method
+(2 RUNS or 4 RUNS), BLADES, PROPELLER or EDF, Balance node OFF or ON, a
+node bound with another address, and a restart of the node. The panel
+finds a node restart at each link-up: the node's clock in INFO lies more
+than 2s from where the last report's clock and the panel's time since then
+put it. A panel restart starts with no runs. A dropped link and a
+reconnect of the same node keep the runs, and an unbind keeps them until
+another node is bound. The BALANCE tab follows no motor or ESC profile,
+and a profile change keeps the runs.
+
 **The CSV row.** `BENCH/BALANCE/BALANCE.CSV` gets a header in a new file and
 one row each time the runs are solved: the method, the trial mass, the unit
 (`g` or `counts`), each run's magnitude, angle (two runs) and rpm, the
