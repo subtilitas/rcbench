@@ -1706,6 +1706,9 @@ UI_TEXT(HG_SET_TITLE_WIRELESS, 0,
 UI_TEXT(HG_SET_ENTRY_DIAL, 0,
     "The M5Stack Dial, a knob over Bluetooth LE. A tap shows its rows on the right.",
     "Das M5Stack Dial, ein Drehknopf über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
+UI_TEXT(HG_SET_ENTRY_PNODE, 0,
+    "The power node, an INA228 on the ESC's XT60 over Bluetooth LE. A tap shows its rows on the right.",
+    "Der Leistungsknoten, ein INA228 am XT60 des ESC über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
 UI_TEXT(HG_SET_OUTPUTS, 0,
     "Binds the IOmcu's pins to protocols and sets each programming port's pin and function.",
     "Ordnet die Pins des IOmcu Protokollen zu und stellt Pin und Funktion jedes Programmierports ein.")
@@ -1748,6 +1751,9 @@ UI_TEXT(HG_SET_VALUE, 0,
 UI_TEXT(HG_SET_ENTRY, 0,
     "One sensor. Its line says how the IOmcu reads it now. A tap shows its rows on the right.",
     "Ein Sensor. Seine Zeile sagt, wie der IOmcu ihn gerade liest. Tippen zeigt rechts seine Zeilen.")
+UI_TEXT(HG_SET_ENTRY_BAL, 0,
+    "The balance node, a vibration and index sensor over Bluetooth LE. A tap shows its rows on the right.",
+    "Der Auswuchtknoten, Vibrations- und Indexsensor über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
 UI_TEXT(HG_SET_ENTRY_IMU, 0,
     "The panel reads it over Bluetooth LE through the ESP32-C6. A tap shows its rows on the right.",
     "Das Panel liest sie per Bluetooth LE über den ESP32-C6. Tippen zeigt rechts ihre Zeilen.")
@@ -2173,8 +2179,8 @@ UI_TEXT(HG_MO_TABS, 0,
     "LIVE drives the motor, PROGRAM sets up an ESC. The rail, ARM and OPTIONS stay on both.",
     "LIVE treibt den Motor, PROGRAMMIEREN stellt einen ESC ein. Rechte Spalte, ARM und OPTIONEN bleiben.")
 UI_TEXT(HG_MO_PLOT, 0,
-    "Volts, amps, watts and RPM of the last 30s. TABLE lists what the ESC reports.",
-    "Volt, Ampere, Watt und Drehzahl der letzten 30s. TABELLE listet, was der ESC meldet.")
+    "Volts, amps, watts and RPM of 30s. TABLE: the ESC's report. BALANCE: the balance node's runs.",
+    "Volt, Ampere, Watt, Drehzahl über 30s. TABELLE: Meldung des ESC. WUCHTEN: Läufe des Auswuchtknotens.")
 UI_TEXT(HG_MO_THROTTLE, 0,
     "Moves while ARMED only and starts at zero after each ARM. Drag the bar; -1 and +1 step one point.",
     "Wirkt nur bei ARMED und beginnt nach jedem ARM bei null. Ziehe den Balken; -1 und +1 stufen um einen Punkt.")
@@ -5838,6 +5844,9 @@ UI_TEXT(ALERT_ARM_C6, 94,
 UI_TEXT(ALERT_ARM_DEVUPD, 94,
     "Cannot switch to ARMED: a wireless device update is running.",
     "ARMED gesperrt: Ein Update eines Funkgeräts läuft.")
+UI_TEXT(ALERT_ARM_PNODE, 94,
+    "Cannot switch to ARMED: no power node readings. Set INA228 source WIRED or connect the node.",
+    "ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle WIRED oder Knoten verbinden.")
 UI_TEXT(ALERT_ARM_NO_PIN, 94,
     "Cannot switch to ARMED: no motor pin. Tap TARGET to choose one.",
     "ARMED gesperrt: kein Motor-Pin. Tippe auf ZIEL und wähle einen.")
@@ -12025,8 +12034,8 @@ UI_TEXT(IMU_ERR_SCAN, 53,
 /* SETUP > WIRELESS: the tile's line, the DIAL entry's rows and options,
  * its state words (25 cells of 8 x 16), the scan's and the bind's rows. */
 UI_TEXT(SET_HUB_WIRELESS, 0,
-    "IMU, DIAL",
-    "IMU, DIAL")
+    "IMU, DIAL, POWER, BALANCE NODES",
+    "IMU, DIAL, LEISTUNG, AUSWUCHTEN")
 UI_SETTING_LABEL(SET_DIAL_EN,
     "Dial",
     "Dial")
@@ -12131,6 +12140,305 @@ UI_TEXT(DIAL_LOST_SAFE, 94,
 UI_TEXT(ALERT_DIAL_LOST, 94,
     "DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF",
     "DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS")
+
+/* --- the power node (pnode_ctl.c, wireless_pnode.c, panel_pnode.c) ----- */
+/* SETUP > WIRELESS: the POWER NODE entry's rows and options, its state
+ * words (25 cells of 8 x 16), the scan's, the bind's and the battery's
+ * rows.  The scan's and the bind's values are the Dial's words. */
+UI_SETTING_LABEL(SET_PNODE_EN,
+    "Power node",
+    "Leistungsknoten")
+UI_SETTING_HELP(SET_PNODE_EN,
+    "INA228 power node over Bluetooth LE",
+    "INA228-Leistungsknoten über Bluetooth LE")
+UI_SETTING_LABEL(SET_I228_SRC,
+    "INA228 source",
+    "INA228-Quelle")
+UI_SETTING_HELP(SET_I228_SRC,
+    "Whose INA228 feeds MOTOR & ESC's readings",
+    "Wessen INA228 MOTOR & ESC speist")
+UI_OPTIONS(i228_src)
+UI_OPTION("WIRED", NULL)
+UI_OPTION("NODE", NULL)
+UI_OPTIONS_END(i228_src)
+UI_TEXT(PNODE_ENTRY, 16,
+    "POWER NODE",
+    "LEISTUNGSKNOTEN")
+UI_TEXT(PNODE_ST_NONE, 25,
+    "NO NODE BOUND",
+    "KEIN KNOTEN GEBUNDEN")
+UI_TEXT(PNODE_ST_NOT_NODE, 25,
+    "NOT A POWER NODE",
+    "KEIN LEISTUNGSKNOTEN")
+UI_TEXT(PNODE_ST_WAITING, 25,
+    "CONNECTED, NO READING",
+    "VERBUNDEN, KEIN MESSWERT")
+UI_TEXT(PNODE_ST_SETUP, 25,
+    "INA228 SET-UP REFUSED",
+    "INA228-SETUP ABGELEHNT")
+UI_TEXT(PNODE_ST_NO_SENSOR, 25,
+    "NO INA228 ON THE NODE",
+    "KEIN INA228 AM KNOTEN")
+UI_TEXT(PNODE_ST_STALE, 25,
+    "NO READING FOR 300ms",
+    "300ms KEIN MESSWERT")
+UI_TEXT(PNODE_ST_LOST, 25,
+    "NODE LOST",
+    "KNOTEN VERLOREN")
+UI_TEXT(PNODE_ROW_SCAN, 43,
+    "Scan for node",
+    "Knoten suchen")
+UI_TEXT(PNODE_ROW_SCAN_HELP, 43,
+    "Lists the power nodes in range for 10s",
+    "Listet 10s lang Knoten in Reichweite")
+UI_TEXT(PNODE_ROW_BIND, 43,
+    "Bound node",
+    "Gebundener Knoten")
+UI_TEXT(PNODE_ROW_BIND_HELP, 43,
+    "A tap lists the nodes the last scan found",
+    "Tippen listet die Knoten der letzten Suche")
+UI_TEXT(PNODE_ROW_BAT, 43,
+    "Node battery",
+    "Knotenakku")
+UI_TEXT(PNODE_ROW_BAT_HELP, 43,
+    "The cell voltage the node reports every 1s",
+    "Zellspannung, die der Knoten jede 1s meldet")
+UI_TEXT(PNODE_BAT_V, 18,
+    "%u.%02uV",
+    "%u.%02uV")
+UI_TEXT(PNODE_BAT_LOW, 18,
+    "LOW %u.%02uV",
+    "SCHWACH %u.%02uV")
+UI_TEXT(PNODE_BAT_NONE, 18,
+    "NO CELL",
+    "KEINE ZELLE")
+UI_TEXT(PNODE_BAT_ERR, 18,
+    "READ FAILED",
+    "LESEFEHLER")
+UI_TEXT(PNODE_BAT_UNKNOWN, 18,
+    "NOT LINKED",
+    "NICHT VERBUNDEN")
+/* The band's texts: the scan refused while ARMED, the link's notices, and
+ * the error of the node's readings lost while ARMED with INA228 SOURCE
+ * NODE. */
+UI_TEXT(PNODE_SCAN_ARMED, 94,
+    "NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST",
+    "KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN")
+UI_TEXT(PNODE_SCAN_OFF, 94,
+    "BLUETOOTH IS NOT READY: NO NODE SCAN",
+    "BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE")
+UI_TEXT(PNODE_STALE, 94,
+    "POWER NODE: NO READING FOR 300ms",
+    "LEISTUNGSKNOTEN: 300ms KEIN MESSWERT")
+UI_TEXT(PNODE_LOST_SAFE, 94,
+    "POWER NODE LOST",
+    "LEISTUNGSKNOTEN VERLOREN")
+UI_TEXT(ALERT_PNODE_LOST, 94,
+    "POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF",
+    "MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS")
+/* --- the balance node (bal_ctl.c, wireless_bal.c, node_balance.c,
+ * motor_balance.c, balance_screen.c, panel_bal.c) ------------------------ */
+/* SETUP > WIRELESS: the BALANCE NODE entry's settings, its state words (25
+ * cells of 8 x 16), the scan's, the bind's and the battery's rows. */
+UI_SETTING_LABEL(SET_BNODE_EN,
+    "Balance node",
+    "Auswuchtknoten")
+UI_SETTING_HELP(SET_BNODE_EN,
+    "Vibration and index sensor, Bluetooth LE",
+    "Vibrations-/Indexsensor über Bluetooth LE")
+UI_SETTING_LABEL(SET_BAL_TRIAL,
+    "Trial mass",
+    "Testmasse")
+UI_SETTING_HELP(SET_BAL_TRIAL,
+    "The mass taped on for the trial runs, g",
+    "Die für die Testläufe aufgeklebte Masse, g")
+UI_TEXT(BNODE_ENTRY, 16,
+    "BALANCE NODE",
+    "AUSWUCHTKNOTEN")
+UI_TEXT(BNODE_ST_NONE, 25,
+    "NO NODE BOUND",
+    "KEIN KNOTEN GEBUNDEN")
+UI_TEXT(BNODE_ST_NOT_NODE, 25,
+    "BOUND: NOT A NODE",
+    "GEBUNDEN: KEIN KNOTEN")
+UI_TEXT(BNODE_ST_WAITING, 25,
+    "CONNECTED, READING INFO",
+    "VERBUNDEN, LIEST INFO")
+UI_TEXT(BNODE_ST_WRONG, 25,
+    "ROLE %u, PROTOCOL %u",
+    "ROLLE %u, PROTOKOLL %u")
+UI_TEXT(BNODE_ST_QUIET, 25,
+    "CONNECTED, NO REPORT",
+    "VERBUNDEN, KEIN BERICHT")
+UI_TEXT(BNODE_ST_UP, 25,
+    "REPORTING",
+    "BERICHTET")
+UI_TEXT(BNODE_ROW_SCAN, 43,
+    "Scan for node",
+    "Knoten suchen")
+UI_TEXT(BNODE_ROW_SCAN_HELP, 43,
+    "Lists the balance nodes in range for 10s",
+    "Listet 10s lang Knoten in Reichweite")
+UI_TEXT(BNODE_ROW_BIND, 43,
+    "Bound node",
+    "Gebundener Knoten")
+UI_TEXT(BNODE_ROW_BIND_HELP, 43,
+    "A tap lists the nodes the last scan found",
+    "Tippen listet die Knoten der letzten Suche")
+UI_TEXT(BNODE_ROW_BAT, 43,
+    "Node battery",
+    "Knotenakku")
+UI_TEXT(BNODE_ROW_BAT_HELP, 43,
+    "The node's cell, read every 5s while linked",
+    "Die Zelle des Knotens, alle 5s gelesen")
+UI_TEXT(BNODE_BAT_V, 18,
+    "%u.%02uV",
+    "%u.%02uV")
+UI_TEXT(BNODE_BAT_LOW, 18,
+    "%u.%02uV LOW",
+    "%u.%02uV NIEDRIG")
+UI_TEXT(BNODE_BAT_NONE, 18,
+    "NO READING",
+    "KEIN WERT")
+/* The band's texts: the scan refused while ARMED or without Bluetooth. */
+UI_TEXT(BNODE_SCAN_ARMED, 94,
+    "NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST",
+    "KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN")
+UI_TEXT(BNODE_SCAN_OFF, 94,
+    "BLUETOOTH IS NOT READY: NO NODE SCAN",
+    "BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE")
+/* The quality words of a report (node_balance.h), 16 cells of 10 x 20. */
+UI_TEXT(NB_Q_SENSOR, 16,
+    "SENSOR LEVEL",
+    "SENSORPEGEL")
+UI_TEXT(NB_Q_CLIPPED, 16,
+    "CLIPPED",
+    "ÜBERSTEUERT")
+UI_TEXT(NB_Q_RPM_RANGE, 16,
+    "RPM RANGE",
+    "DREHZAHLBEREICH")
+UI_TEXT(NB_Q_INDEX_LOST, 16,
+    "INDEX LOST",
+    "INDEX VERLOREN")
+UI_TEXT(NB_Q_NO_INDEX, 16,
+    "NO INDEX",
+    "KEIN INDEX")
+UI_TEXT(NB_Q_NO_REV, 16,
+    "NO REVOLUTION",
+    "KEINE UMDREHUNG")
+UI_TEXT(NB_Q_SETTLING, 16,
+    "SETTLING",
+    "EINSCHWINGEN")
+UI_TEXT(NB_Q_NO_PHASE, 16,
+    "NO ANGLE",
+    "KEIN WINKEL")
+UI_TEXT(NB_Q_GOOD, 16,
+    "GOOD",
+    "GUT")
+UI_TEXT(NB_Q_FAIR, 16,
+    "FAIR",
+    "MITTEL")
+UI_TEXT(NB_Q_POOR, 16,
+    "POOR",
+    "SCHLECHT")
+UI_TEXT(NB_COUNTS, 16,
+    "%u counts",
+    "%u Zählwerte")
+/* BALANCE: the two rows a linked node adds, and the line under them. */
+UI_TEXT(BAL_SPEED, 0,
+    "SPEED",
+    "DREHZAHL")
+UI_TEXT(BAL_SIGNAL, 0,
+    "SIGNAL",
+    "SIGNAL")
+UI_TEXT(BAL_LIVE_NOTE, 0,
+    "Runs: BALANCE tab of MOTOR & ESC.",
+    "Läufe: Reiter WUCHTEN in MOTOR & ESC.")
+/* MOTOR & ESC > BALANCE (motor_balance.c). */
+UI_TEXT(MO_TAB_BAL, 0,
+    "BALANCE",
+    "WUCHTEN")
+UI_TEXT(MB_TWO, 0,
+    "2 RUNS",
+    "2 LÄUFE")
+UI_TEXT(MB_FOUR, 0,
+    "4 RUNS",
+    "4 LÄUFE")
+UI_TEXT(MB_CLEAR, 0,
+    "CLEAR",
+    "LÖSCHEN")
+UI_TEXT(MB_SLOT_BASE, 14,
+    "BASELINE",
+    "REFERENZ")
+UI_TEXT(MB_SLOT_TRIAL, 14,
+    "TRIAL %d°",
+    "TEST %d°")
+UI_TEXT(MB_NO_NODE, 47,
+    "NO BALANCE NODE: BIND ONE IN WIRELESS",
+    "KEIN AUSWUCHTKNOTEN: IN WIRELESS BINDEN")
+UI_TEXT(MB_TRIAL, 0,
+    "TRIAL %u.%02ug",
+    "TEST %u.%02ug")
+UI_TEXT(MB_TAKING, 18,
+    "TAKING %u/%u",
+    "LÄUFT %u/%u")
+UI_TEXT(MB_FAIL_STALE, 18,
+    "NO REPORT",
+    "KEIN BERICHT")
+UI_TEXT(MB_FAIL_NO_REV, 18,
+    "NO REVOLUTION",
+    "KEINE UMDREHUNG")
+UI_TEXT(MB_FAIL_NO_PHASE, 18,
+    "NO INDEX",
+    "KEIN INDEX")
+UI_TEXT(MB_FAIL_RPM, 18,
+    "RPM MOVED",
+    "DREHZAHL GEÄNDERT")
+UI_TEXT(MB_RESULT, 33,
+    "ADD %u.%02ug  WHERE %s",
+    "HINZU %u.%02ug  WO %s")
+UI_TEXT(MB_RESULT_NONE, 33,
+    "ADD --",
+    "HINZU --")
+UI_TEXT(MB_HINT_TWO, 41,
+    "Trial on blade 1. Same throttle per run.",
+    "Test auf Blatt 1. Gleiches Gas je Lauf.")
+UI_TEXT(MB_HINT_FOUR, 41,
+    "Trial at 0°, 120°, 240° from blade 1.",
+    "Test bei 0°, 120°, 240° ab Blatt 1.")
+UI_TEXT(MB_ST_WEAK, 41,
+    "WEAK %u%% effect: %s",
+    "SCHWACH %u%% Wirkung: %s")
+UI_TEXT(MB_ST_NO_EFFECT, 41,
+    "NO EFFECT: trials read as baseline.",
+    "OHNE WIRKUNG: Tests wie Referenz.")
+UI_TEXT(MB_ST_INCONSISTENT, 41,
+    "INCONSISTENT: runs fit no rotor.",
+    "WIDERSPRÜCHLICH: passt zu keinem Rotor.")
+UI_TEXT(MB_ST_BAD, 41,
+    "NO RESULT: a run or the trial is 0.",
+    "KEIN ERGEBNIS: Lauf oder Test ist 0.")
+UI_TEXT(MB_SAVED, 41,
+    "Row written: BENCH/BALANCE/BALANCE.CSV",
+    "Geschrieben: BENCH/BALANCE/BALANCE.CSV")
+UI_TEXT(MB_NOT_SAVED, 41,
+    "Row NOT written: no card or write failed",
+    "NICHT geschrieben: keine Karte/Fehler")
+UI_TEXT(MB_SAVING, 41,
+    "Row waiting for the card",
+    "Zeile wartet auf die Karte")
+UI_TEXT(MB_ROW_OK, 17,
+    "row written",
+    "geschrieben")
+UI_TEXT(MB_ROW_FAIL, 17,
+    "row NOT written",
+    "NICHT geschrieben")
+UI_TEXT(MB_ROW_WAIT, 17,
+    "row waiting",
+    "wartet")
+UI_TEXT(MB_NO_DATA, 94,
+    "NO FRESH REPORT FROM THE BALANCE NODE: NOTHING TAKEN",
+    "KEIN FRISCHER BERICHT VOM AUSWUCHTKNOTEN: NICHTS GEMESSEN")
 /* Slice 8: the LIMIT RUN settings' SERVO row and the limit run's lines for a
  * Hitec servo (servo_limit_seam.c). */
 UI_TEXT(SV_ROW_LIM_SERVO, 0,

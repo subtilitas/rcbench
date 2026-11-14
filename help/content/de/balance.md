@@ -6,7 +6,7 @@ order: 80
 
 # Wuchten
 
-BALANCE zeigt Menge und Position der Ausgleichsmasse für einen Propeller oder Impeller sowie die Anordnung der Sensoren. In diesem Release zeigt die Seite feste Beispielwerte; es ist kein Sensor angeschlossen. Öffne sie über die Kachel BALANCE im [Menü](overview.md). Sie hat drei Reiter: WUCHTEN, PRÜFGESTELL und FLUGMODELL.
+BALANCE zeigt Menge und Position der Ausgleichsmasse für einen Propeller oder Impeller sowie die Anordnung der Sensoren. Bei Auswuchtknoten AUS oder ohne gebundenen Knoten zeigt die Seite feste Beispielwerte. Öffne sie über die Kachel BALANCE im [Menü](overview.md). Sie hat drei Reiter: WUCHTEN, PRÜFGESTELL und FLUGMODELL.
 
 ## Der Reiter WUCHTEN
 
@@ -23,7 +23,7 @@ Ein Wuchtergebnis besteht aus einem Betrag und einem Winkel. Auf der rechten Kar
 | HINZUFÜGEN | die hinzuzufügende Masse, in g |
 | WO | die Position der Masse: zwischen zwei Blättern oder an einem Winkel auf der Nabe |
 
-VIBRATION, WINKEL und HINZUFÜGEN zeigen feste Werte von 0,42g, 265° und 0,35g. Das sind keine Messungen. Darunter stehen die Markierung SIMULIERT und `Nicht gemessen.`. WO berechnet aus dem Winkel und der eingestellten Blattzahl die Position relativ zu den Blättern.
+Bei Auswuchtknoten AUS oder ohne gebundenen Knoten zeigen VIBRATION, WINKEL und HINZUFÜGEN feste Werte von 0,42g, 265° und 0,35g. Das sind keine Messungen. Darunter stehen die Markierung SIMULIERT und `Nicht gemessen.`. WO berechnet aus dem Winkel und der eingestellten Blattzahl die Position relativ zu den Blättern.
 
 ![Ein Impeller mit fünf Blättern](view:balance-edf)
 
@@ -34,6 +34,22 @@ Bei einem Impeller ist die Korrektur ein Winkel auf der Nabe, `Nabe, 265°`, wei
 Das Tastenfeld bedeckt beide Karten. OK übernimmt eine Blattzahl von 2 bis 6. Bei anderen Werten bleibt das Tastenfeld offen und zeigt den erlaubten Bereich in der Warnfarbe. ABBRECHEN, das Home-Feld oder ein Reiter schließt es, ohne die Blattzahl zu ändern.
 
 Ohne Indexpuls benötigt das Wuchten vier Läufe: eine Referenzmessung und je einen Lauf mit einer Testmasse bei 0, 120 und 240°. Ein Indexpuls reduziert die Zahl der Läufe auf zwei.
+
+## Der Auswuchtknoten
+
+![BALANCE mit verbundenem Auswuchtknoten](view:balance-node)
+
+Mit eingeschaltetem und gebundenem Auswuchtknoten ([Wireless](setup-wireless.md#der-auswuchtknoten)) stammen die Werte vom Knoten, und SIMULIERT entfällt:
+
+| Zeile | Zeigt |
+|---|---|
+| VIBRATION | die 1x-Vibration in g; `--` ohne gezählte Umdrehung |
+| WINKEL | ihren Winkel ab der Indexmarke, gegen die Drehrichtung; `--` ohne Index |
+| DREHZAHL | die Drehzahl des Berichts |
+| SIGNAL | `GUT`, `MITTEL` oder `SCHLECHT` mit der Güte in %, oder warum keine vorliegt: `SENSORPEGEL`, `ÜBERSTEUERT`, `DREHZAHLBEREICH`, `INDEX VERLOREN`, `KEIN INDEX`, `KEINE UMDREHUNG`, `EINSCHWINGEN`, `KEIN WINKEL` |
+| HINZUFÜGEN, WO | die Korrektur der Läufe auf [MOTOR & ESC](motor.md#wuchten), vorher `--` |
+
+Ein Bericht, der älter als 1000ms ist, zeigt in jeder Zeile `--`, nie einen alten Wert. Eine abgerissene Verbindung zeigt ebenfalls `--` und behält HINZUFÜGEN und WO. Das Panel sendet die Blattzahl an den Knoten. Ohne Index sendet es die Drehzahl des Prüfstands, aus der ESC-Telemetrie oder vom Phasenabgriff.
 
 ## Der Reiter PRÜFGESTELL
 
@@ -53,5 +69,7 @@ Ohne Indexpuls benötigt das Wuchten vier Läufe: eine Referenzmessung und je ei
 
 ## Verwandte Seiten
 
+- [Wireless](setup-wireless.md#der-auswuchtknoten): den Auswuchtknoten binden.
+- [Motor und ESC](motor.md#wuchten): die Läufe aufnehmen.
 - [Sensoren](setup-sensors.md): Die Schlüssel Vibration und Optischer Tacho werden in diesem Release gespeichert, aber nicht ausgewertet. Sie haben keine Einstellungszeile.
 - [Wuchten](https://github.com/subtilitas/rcbench/blob/main/docs/Balance-de.md): Sensorwahl und Platzierung im Detail.

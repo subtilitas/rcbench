@@ -102,6 +102,12 @@ extern "C" {
 #define CARD_ESCW_CONF   "BENCH/ESCW/CONF"
 
 /**
+ * @brief The balance node's solutions, BALANCE.CSV: a row each time the
+ *        runs of MOTOR & ESC > BALANCE are solved.
+ */
+#define CARD_BALANCE     "BENCH/BALANCE"
+
+/**
  * @brief The fault log: a line every 5s while the link to the IOmcu is down.
  */
 #define CARD_FAULT_LOG   "BENCH/RCBENCH.LOG"

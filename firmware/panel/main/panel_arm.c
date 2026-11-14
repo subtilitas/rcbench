@@ -30,6 +30,7 @@
 #include "outputs_screen.h"
 #include "panel.h"
 #include "panel_devupd.h"
+#include "panel_pnode.h"
 #include "prog_link.h"
 #include "sense_link.h"
 #include "servo_link.h"
@@ -809,6 +810,13 @@ void drain_commands(bool link_up, bench_state_t *bench)
         if (arms && panel_c6_busy()) {
             /* The C6 radio's update ends in a restart of the panel. */
             control_alert(TR(ALERT_ARM_C6));
+            arming_refuse_ask(&s_arm, ask);
+            continue;
+        }
+        if (arms && pc.kind == PANEL_CMD_MOTOR && panel_pnode_arm_refused()) {
+            /* MOTOR & ESC's and ESC STICK's runs read BENCH: with INA228
+             * SOURCE NODE they need the node streaming. */
+            control_alert(TR(ALERT_ARM_PNODE));
             arming_refuse_ask(&s_arm, ask);
             continue;
         }

@@ -103,6 +103,7 @@ wifi-keys                   36,944    4618 KiB
 wifi-idle                        0       0 KiB
 imu                            137      17 KiB
 imu-hold                       626      78 KiB
+balance-node                   683      85 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
 hlines                         180      22 KiB
@@ -136,6 +137,7 @@ est. ms and est. fps: not measured
 | `wifi-idle` | WI-FI mit laufendem WLAN-Hotspot, die Leerlaufzeit in jedem Frame 1s kürzer: die Seite zeigt sie in ganzen Minuten, also wird nichts neu gezeichnet |
 | `imu` | der IMU-Bildschirm mit einem Winkelframe in jedem Frame, X 0.1° vom vorigen entfernt: die Zeile X neu gezeichnet, auf sich selbst beschnitten |
 | `imu-hold` | der IMU-Bildschirm, ein Finger auf 2s HALTEN: KALIBRIEREN in der Fußleiste: der Knopf und das ALTER in der Zeile RATE neu gezeichnet, jedes auf sich selbst beschnitten |
+| `balance-node` | BALANCE mit verbundenem Auswuchtknoten und einem Bericht in jedem Frame, dessen Betrag, Winkel, Drehzahl und Qualität vom vorigen abweichen: die vier Werte VIBRATION, WINKEL, DREHZAHL und SIGNAL in ihren Boxen neu gezeichnet |
 | `<screen>-sim` | derselbe Bildschirm mit dem SIMULATION-Watermark |
 | `<screen>-chrome` | derselbe Bildschirm, auf jedem Frame invalidiert |
 | `clear` | ein Löschen des ganzen Bildschirms |
@@ -269,7 +271,7 @@ im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpas
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
 | `servo-rudder` | 4 600 | ein neuer Winkel auf RUDER, der mehr als die Anzeige, die Zustandszeilen und die beiden Boxen des Ruders neu zeichnet |
 | `servo-test` | 1 000 | einen bewegten Arm oder einen neuen Messwert, der die TEST-Seite neu zeichnet |
-| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet, eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet, oder einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold`, `balance-node` | 1 000 | einen Messwert des PD mini, den die Zustandszeile nicht zeigt und der die Sitzung neu zeichnet, eine Sekunde Leerlauf innerhalb der gezeigten Minute, die WI-FI neu zeichnet, einen Messwert oder die Füllung des Holds, die den IMU-Bildschirm ganz neu zeichnen, oder einen Bericht des Auswuchtknotens, der BALANCE ganz neu zeichnet |
 | `motor-stick` | 2 000 | ein Wachsen des ruhigen Frames von ESC STICK, 1 713 Fills in der Tabelle oben |
 | die drei `-sim`-Modi | 3 600 | ein Watermark, das über die volle Canvas hinauswächst |
 | die elf `-chrome`-Modi | 72 000 | ein wachsendes vollständiges Neuzeichnen |
@@ -433,11 +435,11 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 704 | 2 448 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 720 | 2 432 |
 | `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU und des Dial aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
+| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und des Leistungsknotens aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -768,7 +770,7 @@ Freier PSRAM beim Start: nicht gemessen.
 Auch Bluetooth LE (Low Energy) läuft auf dem C6; der P4 betreibt seinen Host,
 NimBLE ([Der Funk über den ESP32-C6, Bluetooth LE über den
 ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)). Der Host startet
-mit `panel_ble_start()`, das die Seiten der IMU und des Dials im Task `blec` beim ersten IMU EIN oder Dial EIN und `ble scan`
+mit `panel_ble_start()`, das die Seiten der IMU, des Dials und des Leistungsknotens im Task `blec` beim ersten IMU EIN, Dial EIN oder Leistungsknoten EIN und `ble scan`
 des Konsolen-Builds aufrufen, und bleibt bis zum Neustart des Panels. Der Start protokolliert den freien
 Speicher davor und danach:
 
@@ -805,7 +807,12 @@ weil die IMU und das Dial ihn starten:
 Die Zeile der Konsole ist ohne den Client des Dials gemessen (`panel_dial.c`,
 `dial_ctl.c`, `dial_stream.c`, `dial_panel.c` und `protocols/dialknob`); mit
 ihm nicht gemessen. Der Client des Dials fügt dem Standard-Build 4 376 Bytes
-DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image.
+DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image. Der Client
+des Leistungsknotens, nur seine Objekte (`panel_pnode.c`, `pnode_ctl.c`,
+`pnode_meter.c`, `wireless_pnode.c` und `protocols/rcnode`), fügt 3 869
+Bytes DIRAM hinzu, davon 3 861 Bytes .bss, und 11 748 Bytes Image
+(`esp_idf_size --files`); seine Texte und seine Aufrufe in anderen Dateien
+sind nicht gezählt.
 Das Update der Funkgeräte, aus der Linker-Map des Standard-Builds:
 `panel_devupd.c` hält 1 810 Bytes DIRAM (1 382 .bss, 428 .data) und 4 030
 Bytes Code; `upd_dev.c` 112 Bytes .bss und 1 598 Bytes Code;

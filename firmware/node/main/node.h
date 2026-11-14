@@ -108,7 +108,11 @@ uint8_t node_ble_stream_seq(void);
 
 /**
  * @brief Publish a status: kept for reads, notified when STATUS is
- *        subscribed.
+ *        subscribed, and queued on STREAM while STREAM is subscribed.
+ *
+ * The panel's central (protocols/bleuart) subscribes to one characteristic,
+ * STREAM, so the status travels there as well; its seq is STATUS's own, not
+ * node_ble_stream_seq()'s.
  *
  * @param s The status; its seq and t_node are written here.
  */

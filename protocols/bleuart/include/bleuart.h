@@ -49,6 +49,9 @@ extern "C" {
 #define BLEU_RETRY_CONNECT_MS 7000u /**< a connect the host stack ends with a
                                          failure, among them HCI 0x3E (failed
                                          to be established), to the next */
+#define BLEU_BACKOFF_MAX_MS 30000u /**< the longest gap after connects
+                                         that went unanswered: each one
+                                         doubles the next gap up to it */
 #define BLEU_GATT_MS     5000u  /**< one discovery, MTU, CCCD or read step */
 #define BLEU_WRITE_MS    1000u  /**< one command write's answer */
 #define BLEU_SETTLE_MS   2000u  /**< a cancel or a disconnect to its event */
@@ -417,6 +420,8 @@ typedef struct {
     uint32_t     t_gap;     /**< private: when the retry gap began */
     uint32_t     t_conn_at; /**< private: when the connect event came */
     uint32_t     gap_ms;    /**< private: its length */
+    uint32_t     backoff_ms;/**< private: the gap after the next connect
+                                 that goes unanswered, 0 for BLEU_RETRY_MS */
     bleu_act_t   q[BLEU_ACT_QUEUE]; /**< private: actions due */
     uint8_t      q_head;    /**< private */
     uint8_t      q_n;       /**< private */

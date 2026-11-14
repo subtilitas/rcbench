@@ -9,8 +9,9 @@
  *
  *   - the strip: LIVE, PROGRAM from x 9, 150px each, 4px apart, y 8 to
  *     48; RENAME LOG x 449 to 629 in the same row;
- *   - LIVE's telemetry card from y 56: PLOT | TABLE from x 18, 200px for
- *     the two, y 82 to 122;
+ *   - LIVE's telemetry card from y 56: PLOT | TABLE | BALANCE from x 18,
+ *     82px each, 4px apart, y 82 to 122; BALANCE's pane under them from
+ *     y 126, 600 x 150px;
  *   - the THROTTLE card from y 294: the step keys 72 x 48px at x 18 and
  *     528, y 348 to 396, the track x 98 to 520, y 348 to 396, the hint's
  *     line y 404 to 424;
@@ -36,9 +37,14 @@
 #define MO_LOGBTN_L       449           /**< Its left edge. */
 #define MO_LOGBTN_R       628           /**< Its right column. */
 
-#define MO_PANE_Y         102           /**< PLOT | TABLE. */
-#define MO_PLOT_TAB_X     68            /**< PLOT. */
-#define MO_TABLE_TAB_X    168           /**< TABLE. */
+#define MO_PANE_Y         102           /**< PLOT | TABLE | BALANCE. */
+#define MO_PLOT_TAB_X     59            /**< PLOT. */
+#define MO_TABLE_TAB_X    145           /**< TABLE. */
+#define MO_BAL_TAB_X      231           /**< BALANCE. */
+#define MO_BAL_X          18            /**< BALANCE's pane, its left. */
+#define MO_BAL_Y          126           /**< Its top. */
+#define MO_BAL_W          600           /**< Its width, px. */
+#define MO_BAL_H          150           /**< Its height, px. */
 
 #define MO_TRACK_X        98            /**< The track's left end. */
 #define MO_TRACK_W        422           /**< Its length, px. */

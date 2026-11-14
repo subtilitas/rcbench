@@ -10,7 +10,7 @@ MOTOR & ESC drives an ESC (electronic speed controller) and records a run: volta
 
 ## The layout
 
-The top strip has two tasks: LIVE and PROGRAM. Tap a task to switch to it. LIVE retains its selected view, PLOT or TABLE, when you return. RENAME LOG on the right of the strip gives the last MOTOR log a label ([The log of a run](#the-log-of-a-run)).
+The top strip has two tasks: LIVE and PROGRAM. Tap a task to switch to it. LIVE retains its selected view, PLOT, TABLE or BALANCE, when you return. RENAME LOG on the right of the strip gives the last MOTOR log a label ([The log of a run](#the-log-of-a-run)).
 
 | Task | The left column |
 |---|---|
@@ -101,7 +101,7 @@ While ARMED the panel tag reads `LIVE TELEMETRY` and the plot's right edge reads
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
 | ARM | switches to ARMED after a 2s hold | DISARM: switches to SAFE on a tap |
 | RESET PEAKS | clears the peak markers | clears the peak markers |
-| PLOT, TABLE | switch the view of LIVE | switch the view of LIVE |
+| PLOT, TABLE, BALANCE | switch the view of LIVE | switch the view of LIVE |
 
 Leaving the screen, including through TARGET, switches the bench to SAFE and returns the throttle to 0%. A lost link or an unresponsive touch controller has the same effect.
 
@@ -117,7 +117,7 @@ The readouts, the TABLE pane, the totals and the temperature strip stay live at 
 
 ## The rate line and the temperatures
 
-On LIVE, the telemetry card shows PLOT and TABLE below its title, alongside the poll rate and link error count. If the IOmcu has rejected link frames since power-up, their count appears on the line below. Every task shows three temperatures above the right column: ESC and MOT from the IOmcu's bench page, and MCU from the panel's ESP32-P4 die.
+On LIVE, the telemetry card shows PLOT, TABLE and BALANCE below its title, alongside the poll rate and link error count. If the IOmcu has rejected link frames since power-up, their count appears on the line below. Every task shows three temperatures above the right column: ESC and MOT from the IOmcu's bench page, and MCU from the panel's ESP32-P4 die.
 
 ![37 refused link frames on the line](view:motor-refused)
 
@@ -132,6 +132,18 @@ TABLE lists voltage, current, power and rpm, each with its peak. A channel witho
 - `ESC SAYS` lists voltage and current from the ESC's own telemetry. `diff` is the ESC value minus the INA228 value.
 - Without the INA228, the channels use ESC telemetry and `ESC SAYS` is hidden.
 - rpm comes from bidirectional DShot telemetry. Unmeasured quantities remain empty; they are not modelled.
+
+## BALANCE
+
+![BALANCE with both runs of the two-run method taken](view:motor-balance)
+
+BALANCE takes the runs of a balance with the balance node ([Balance](balance.md#the-balance-node)). The keys act on the press and drive no output, so they also work while ARMED.
+
+- The top line shows the node's vibration, angle, rpm and signal, and the trial mass on the right. With the balance node OFF or none bound it reads `NO BALANCE NODE: BIND ONE IN WIRELESS`. A report older than 1000ms, or a dropped link, shows `--`.
+- 2 RUNS: BASELINE without the trial mass, then TRIAL 0° with the trial mass in line with blade 1. Needs the index mark. 4 RUNS: BASELINE, then the trial mass at 0°, 120° and 240° from blade 1, against the direction of rotation.
+- Each key takes the next 8 reports, 2s, at one throttle. Below the key: `TAKING n/8`, the result, or `NO REPORT`, `NO REVOLUTION`, `NO INDEX`, `RPM MOVED` (more than 5%). Press it again to retake.
+- CLEAR empties every run. Switching the method clears them too.
+- When every run is taken: `ADD 0.35g  WHERE between 1 and 2`, and a row in `BENCH/BALANCE/BALANCE.CSV`. The line under it says `Row written` or `Row NOT written`. A new trial mass solves the runs again and writes a new row. `WEAK`, `NO EFFECT`, `INCONSISTENT` or `NO RESULT` say why the result is doubtful or missing.
 
 ## kV, rpm/V and EFF
 

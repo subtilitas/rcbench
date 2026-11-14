@@ -698,8 +698,19 @@ protocol is transmitted. ESCs with BLHeli_32 firmware are not supported:
 ### Balancing measurement
 
 The screen and the placement guides are built. The balance node's firmware is built
-(`firmware/node`, `node_bal.c`); no node has run on hardware, and the panel does not take
-its reports, so the screen still runs from the model.
+(`firmware/node`, `node_bal.c`); no node has run on hardware.
+
+Built and host-tested: the panel's side of the balance node. Its client on the Bluetooth
+LE hub (`shared/ui/bal_ctl.c`, `test_bal_ctl`, against a scripted host stack and node):
+the scan by the balance role in the manufacturer data, INFO checked, the battery from the
+STATUS on STREAM, a scan refused while ARMED and stopped at ARM, the no-index rpm after 2 reports without an edge, CONTROL writes
+250ms apart at the least. Its readings, runs and solution (`shared/ui/node_balance.c`,
+`test_node_balance`): the stale rule at 999ms and 1000ms, the quality word's order, a run
+of 8 reports and its failures, and both methods end to end through the report's decode
+against known imbalances (within 0.01g and 1°). SETUP > WIRELESS's BALANCE NODE entry
+(`test_wireless_bal`), BALANCE's readings and MOTOR & ESC's BALANCE tab
+(`test_motor_balance`). The panel firmware runs it in the `blec` task (`panel_bal.c`); not
+run on hardware.
 
 Built and host-tested (`shared/vibe/`, `test_vibe`, `test_vibe_frame`, `test_vibe_solve`):
 the balance node's signal processing and the panel's solvers. The node's ADC
@@ -1188,6 +1199,33 @@ and the control task's side (`firmware/panel/main/panel_dial.c`,
 `panel_supply.c`). Navigation from the Dial is not built. The battery's
 reading pin is unknown; the encoder's direction is not measured.
 
+### The power node on the panel
+
+Built and host-tested, not run with a node: the panel's side of the power
+node ([docs/Nodes.md](docs/Nodes.md), "The panel"). The controller on the
+panel's Bluetooth LE hub, owner 2 (`shared/ui/pnode_ctl.c`,
+`test_pnode_ctl` against a scripted host stack and node: the profile's
+UUIDs, INFO's protocol, role and INA228 set-up, UP, STALE after 300ms and
+LOST, the scan refused while ARMED and stopped at the switch to ARMED,
+power nodes listed by the role in the manufacturer data and nameless
+balance nodes not, the bind, the RUN marker at the switch to ARMED, after a
+drop within the run and after a node restart under another tag). The readings
+(`shared/ui/pnode_meter.c`, `test_pnode_meter`: the mean of the windows
+since the last read, stale after 300ms, a clipped window at the full scale
+of INFO's range and shunt, the run's peaks with the node's RUN extremes
+under its tag, the totals as differences of the 40-bit accumulators with
+the restart rule, the scaling against `ina228_calibrate()`, and the
+dropout rule of `servo_gap.h` at 299ms, 300ms and 301ms and a second gap
+9.9s and 10.1s after the first, for a motor run and not for a servo run,
+the totals baseline at 500ms and 501ms, and the ARM refusal with the node
+OFF or without a reading in the last 100ms). SETUP > WIRELESS > POWER NODE with
+INA228 SOURCE, which keeps its value while ARMED
+(`shared/ui/wireless_pnode.c`, `test_wireless_pnode`), the
+log's `node` source (`test_logwriter`), and the `blec` task's and the
+control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
+`panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
+measured.
+
 ### Firmware update over Bluetooth LE
 
 Built and host-tested: the update protocol (`protocols/bleota`): every
@@ -1452,8 +1490,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `vibe` · `rcnode` · `dial` | | | yes |
-| `bleuart` · `dialknob` · `bleota` · `devupd` | yes | | yes |
+| `hc05` · `dial` | | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1487,7 +1525,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 571 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 579 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1600,9 +1638,11 @@ The host suite is 571 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
-`test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_bleuart_hub`, `test_bleuart_backoff`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
-`test_settings_panes`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`,
+`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`,
+`test_motor_balance`,
 `test_dial_face`, `test_dial_fit`,
 `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
@@ -1788,7 +1828,10 @@ cancel, stop and handle refused with each GATT step answered lost, the slot ende
 SCAN_END and by a connection that failed to be established, a client that holds the slot
 scanning or connecting again with no cancel and no busy answer, a stale DISCONNECT of a
 client's old handle keeping its new link, and the slot's limits of 7000ms and 12000ms and the cancel's
-2000ms at their limit and 1ms before.
+2000ms at their limit and 1ms before. `test_bleuart_backoff` runs the connect backoff on the
+same rig: an absent peer's gaps doubling from 1000ms to 30000ms, 7 connects in 100s, a Dial
+dropped while that peer waits up again after its 1000ms retry, a scan and a bind starting the
+gaps over, and failed connects doubling from 7000ms.
 
 `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both wire
 families, the transactions and every refusal of the reply decoders, with frames and reply
@@ -2095,7 +2138,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-968 committed screenshots to the current render, 484 in English and the same 484 in German, and `render_ui.py --fit` fails on a string that
+976 committed screenshots to the current render, 488 in English and the same 488 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

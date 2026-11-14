@@ -64,18 +64,18 @@ bool rcnode_name(uint8_t role, const uint8_t addr[6], char out[RCNODE_NAME_MAX])
 size_t rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
                         size_t cap)
 {
-    char name[RCNODE_NAME_MAX];
-    if (out == NULL || cap < RCNODE_ADV_LEN || !rcnode_name(role, addr, name)) {
+    if (out == NULL || cap < RCNODE_ADV_LEN || role_word(role) == NULL
+        || addr == NULL) {
         return 0u;
     }
     size_t i = 0u;
     out[i++] = 2u;
     out[i++] = AD_FLAGS;
     out[i++] = 0x06u;                    /* LE general discoverable, no BR/EDR */
-    out[i++] = (uint8_t)(1u + RCNODE_NAME_MAX - 1u);
-    out[i++] = AD_NAME_FULL;
-    memcpy(out + i, name, RCNODE_NAME_MAX - 1u);
-    i += RCNODE_NAME_MAX - 1u;
+    out[i++] = 17u;
+    out[i++] = AD_UUID128_LIST;
+    rcnode_uuid(RCNODE_ID_SERVICE, out + i);
+    i += 16u;
     out[i++] = (uint8_t)(1u + MAKER_LEN);
     out[i++] = AD_MAKER;
     out[i++] = (uint8_t)(RCNODE_COMPANY & 0xFFu);
@@ -87,14 +87,16 @@ size_t rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
     return i;
 }
 
-size_t rcnode_rsp_build(uint8_t *out, size_t cap)
+size_t rcnode_rsp_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
+                        size_t cap)
 {
-    if (out == NULL || cap < RCNODE_RSP_LEN) {
+    char name[RCNODE_NAME_MAX];
+    if (out == NULL || cap < RCNODE_RSP_LEN || !rcnode_name(role, addr, name)) {
         return 0u;
     }
-    out[0] = 17u;
-    out[1] = AD_UUID128_LIST;
-    rcnode_uuid(RCNODE_ID_SERVICE, out + 2);
+    out[0] = (uint8_t)(1u + RCNODE_NAME_MAX - 1u);
+    out[1] = AD_NAME_FULL;
+    memcpy(out + 2, name, RCNODE_NAME_MAX - 1u);
     return RCNODE_RSP_LEN;
 }
 
@@ -121,6 +123,11 @@ static uint8_t name_role(const uint8_t *s, size_t n)
     return 0u;
 }
 
+uint8_t rcnode_name_role(const char *name)
+{
+    return (name == NULL) ? 0u : name_role((const uint8_t *)name, strlen(name));
+}
+
 /**
  * @brief Whether a list of 128-bit UUIDs holds the node service.
  *
@@ -140,15 +147,24 @@ static bool has_service(const uint8_t *s, size_t n)
     return false;
 }
 
-bool rcnode_adv_match(const uint8_t *ad, size_t len, uint8_t *role)
+/** @brief What one report's AD structures name. */
+typedef struct {
+    uint8_t maker;  /**< the role the manufacturer data names, 0 none */
+    uint8_t name;   /**< the role the name names, 0 none */
+    bool    svc;    /**< the service UUID is listed */
+} adv_seen_t;
+
+/**
+ * @brief Walk a report's AD structures.
+ * @param ad  The bytes.
+ * @param len Their count.
+ * @param out Receives what they name.
+ * @return false for a structure whose length runs past the end.
+ */
+static bool adv_walk(const uint8_t *ad, size_t len, adv_seen_t *out)
 {
-    if (ad == NULL || role == NULL) {
-        return false;
-    }
-    uint8_t by_maker = 0u;
-    uint8_t by_name  = 0u;
-    bool    by_svc   = false;
-    size_t  i = 0u;
+    memset(out, 0, sizeof(*out));
+    size_t i = 0u;
     while (i < len) {
         const size_t l = ad[i];
         if (l == 0u) {
@@ -164,25 +180,43 @@ bool rcnode_adv_match(const uint8_t *ad, size_t len, uint8_t *role)
             && d[0] == (RCNODE_COMPANY & 0xFFu) && d[1] == (RCNODE_COMPANY >> 8)
             && d[2] == 'r' && d[3] == 'c'
             && (d[5] == RCNODE_ROLE_POWER || d[5] == RCNODE_ROLE_BALANCE)) {
-            by_maker = d[5];
+            out->maker = d[5];
         } else if (t == AD_NAME_FULL || t == AD_NAME_SHORT) {
-            by_name = name_role(d, n);
+            out->name = name_role(d, n);
         } else if (t == AD_UUID128_LIST || t == AD_UUID128_SOME) {
-            by_svc = by_svc || has_service(d, n);
+            out->svc = out->svc || has_service(d, n);
         }
         i += 1u + l;
     }
-    if (by_maker != 0u) {
-        *role = by_maker;
+    return true;
+}
+
+bool rcnode_adv_match(const uint8_t *ad, size_t len, uint8_t *role)
+{
+    adv_seen_t seen;
+    if (ad == NULL || role == NULL || !adv_walk(ad, len, &seen)) {
+        return false;
+    }
+    if (seen.maker != 0u) {
+        *role = seen.maker;
         return true;
     }
-    if (by_name != 0u) {
-        *role = by_name;
+    if (seen.name != 0u) {
+        *role = seen.name;
         return true;
     }
-    if (by_svc) {
+    if (seen.svc) {
         *role = 0u;
         return true;
     }
     return false;
+}
+
+uint8_t rcnode_adv_maker_role(const uint8_t *ad, size_t len)
+{
+    adv_seen_t seen;
+    if (ad == NULL || !adv_walk(ad, len, &seen)) {
+        return 0u;
+    }
+    return seen.maker;
 }

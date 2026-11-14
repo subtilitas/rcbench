@@ -168,6 +168,25 @@ static void unlinked(bleu_t *b, bool on, uint32_t gap, uint32_t now_ms)
 }
 
 /**
+ * @brief A connect that went unanswered, timed out or failed to be
+ *        established: retried after the backoff, at least @p floor, and
+ *        the backoff doubled up to BLEU_BACKOFF_MAX_MS.  A peer that is
+ *        away so holds the host stack's one connect less and less often.
+ * @param b      The machine.
+ * @param floor  The least gap: BLEU_RETRY_MS or BLEU_RETRY_CONNECT_MS.
+ * @param now_ms The clock.
+ */
+static void unanswered(bleu_t *b, uint32_t floor, uint32_t now_ms)
+{
+    uint32_t gap = b->backoff_ms == 0u ? BLEU_RETRY_MS : b->backoff_ms;
+    gap = gap < floor ? floor : gap;
+    gap = gap > BLEU_BACKOFF_MAX_MS ? BLEU_BACKOFF_MAX_MS : gap;
+    b->backoff_ms = gap >= BLEU_BACKOFF_MAX_MS / 2u ? BLEU_BACKOFF_MAX_MS
+                                                    : 2u * gap;
+    unlinked(b, true, gap, now_ms);
+}
+
+/**
  * @brief Whether the link holds a connection.
  * @param st The state.
  * @return true from DISC_SVC to UP.
@@ -313,6 +332,7 @@ void bleu_enable(bleu_t *b, bool on, uint32_t now_ms)
         tear_down(b, now_ms);
     }
     b->err = BLEU_ERR_NONE;
+    b->backoff_ms = 0;
     unlinked(b, on, 0, now_ms);
 }
 
@@ -331,6 +351,7 @@ void bleu_bind(bleu_t *b, const bleu_addr_t *addr, uint32_t now_ms)
         b->addr = *addr;
     }
     b->err = BLEU_ERR_NONE;
+    b->backoff_ms = 0;
     unlinked(b, b->st != BLEU_ST_OFF, 0, now_ms);
 }
 
@@ -343,6 +364,7 @@ bool bleu_scan(bleu_t *b, uint32_t now_ms)
         tear_down(b, now_ms);
         unlinked(b, true, 0, now_ms);
     }
+    b->backoff_ms = 0;
     bleu_list_clear(&b->list);
     b->scanning = true;
     b->scan_status = 0;
@@ -627,9 +649,10 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     if (e->status != 0u) {
         b->err = BLEU_ERR_CONNECT;
         b->err_status = e->status;
-        unlinked(b, true, BLEU_RETRY_CONNECT_MS, now_ms);
+        unanswered(b, BLEU_RETRY_CONNECT_MS, now_ms);
         return;
     }
+    b->backoff_ms = 0;
     b->t_connect = now_ms - b->t_link;
     b->t_conn_at = now_ms;
     b->t_setup = 0;
@@ -657,7 +680,8 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
 /**
  * @brief Take a DISCONNECT event.  One with the token of the connect in
  *        flight ends that connect as failed (HCI 0x3E, failed to be
- *        established): retried after BLEU_RETRY_CONNECT_MS.
+ *        established): retried after BLEU_RETRY_CONNECT_MS or the longer
+ *        backoff.
  * @param b      The machine.
  * @param e      The event.
  * @param now_ms The clock.
@@ -669,7 +693,7 @@ static void on_disconnect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
         b->reason = e->status;
         b->err = BLEU_ERR_CONNECT;
         b->err_status = e->status;
-        unlinked(b, true, BLEU_RETRY_CONNECT_MS, now_ms);
+        unanswered(b, BLEU_RETRY_CONNECT_MS, now_ms);
         return;
     }
     if (b->settle == SETTLE_CLOSE && e->conn == b->close_conn) {
@@ -791,7 +815,7 @@ static void run_timers(bleu_t *b, uint32_t now_ms)
         b->err = BLEU_ERR_CONNECT;
         b->err_status = 0;
         tear_down(b, now_ms);
-        unlinked(b, true, BLEU_RETRY_MS, now_ms);
+        unanswered(b, BLEU_RETRY_MS, now_ms);
     } else if (b->tok_link != 0u && b->st != BLEU_ST_CONNECTING
                && elapsed(now_ms, b->t_link, BLEU_GATT_MS)) {
         fail(b, BLEU_ERR_GATT, 0, now_ms);

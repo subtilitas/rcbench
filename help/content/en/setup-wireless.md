@@ -6,11 +6,11 @@ order: 62
 
 # Wireless
 
-WIRELESS on [SETUP](setup.md) holds the panel's Bluetooth LE (Low Energy) devices: the WitMotion BWT901CL IMU (inertial measurement unit) and the M5Stack Dial, a wireless knob. Both reach the panel through the board's ESP32-C6. The first IMU ON or Dial ON starts Bluetooth LE until the panel restarts. Settings are retained and saved like other SETUP values.
+WIRELESS on [SETUP](setup.md) holds the panel's Bluetooth LE (Low Energy) devices: the WitMotion BWT901CL IMU (inertial measurement unit), the M5Stack Dial, a wireless knob, the power node, an INA228 on the ESC's XT60, and the balance node. All reach the panel through the board's ESP32-C6. The first IMU ON, Dial ON, Power node ON or Balance node ON starts Bluetooth LE until the panel restarts. Settings are retained and saved like other SETUP values.
 
 ## The left list
 
-The 220px left list has 2 entries: IMU and DIAL. Each shows its name and its state. Tap an entry to display its settings in the 754px right pane. The list works as on [Sensors](setup-sensors.md#the-left-list): an entry that is off shows its enable row alone and the state `OFF`, each entry keeps its scroll position, and RESET names the entry, `RESET DIAL`.
+The 220px left list has 4 entries: IMU, DIAL, BALANCE NODE and POWER NODE. Each shows its name and its state. Tap an entry to display its settings in the 754px right pane. The list works as on [Sensors](setup-sensors.md#the-left-list): an entry that is off shows its enable row alone and the state `OFF`, each entry keeps its scroll position, and RESET names the entry, `RESET DIAL`.
 
 ## The IMU
 
@@ -86,10 +86,78 @@ On the bench screens:
 | `DEGRADED` | no EVENT for 500ms |
 | `DIAL LOST` | no EVENT for 1000ms, or the disconnect |
 
+## The power node
+
+![WIRELESS on the POWER NODE entry, connected](view:setup-wireless-pnode)
+
+The power node is an ESP32-C6 with its own cell that reads an INA228 on the ESC's (electronic speed controller's) XT60 and sends its readings over Bluetooth LE. INA228 source decides whose INA228 MOTOR & ESC shows: the IOmcu's, wired, or the node's.
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| Power node | ON, OFF | OFF | Bluetooth LE and the link to the bound node; OFF ends the link without an error |
+| INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 ([Sensors](setup-sensors.md)); NODE: the power node's readings. Shown with the node off too, so the source can go back to WIRED |
+| Scan for node | `SCAN` | | a tap scans 10s and lists the power nodes in range; a switch to ARMED stops it, `STOPPED BY ARM`; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
+| Bound node | `NONE` or the node's name | `NONE` | a tap lists the nodes the last scan found, with their signal in dBm; a tap on one binds it and asks for a save. RESET keeps the bound node |
+| Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the node's cell, from its status every 1s; `LOW` under 3.5V |
+
+With INA228 source on NODE:
+
+- MOTOR & ESC's voltage, current, power, peaks, charge and energy are the node's while the IOmcu link is up. The ESC's own telemetry stays beside them. The log's `source` column reads `node`.
+- A reading older than 300ms is none.
+- An ARM of MOTOR & ESC or ESC STICK is refused while Power node is OFF or no reading came in the last 100ms, with `Cannot switch to ARMED: no power node readings. Set INA228 source WIRED or connect the node.` in the band. SERVO and OUTPUTS arm whatever the node does.
+- In a MOTOR & ESC or ESC STICK run, a gap without a reading of up to 300ms rides, once in 10s. A longer gap, or a second one within 10s, switches the bench to SAFE with all outputs off, and the band shows `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`. A SERVO or OUTPUTS run does not end on the node.
+- INA228 source does not change while ARMED.
+- The node's readings feed no protection: the current limits and trips read their own sensors.
+
+| State | When |
+|---|---|
+| `OFF` | Power node OFF |
+| `STARTING BLUETOOTH` | Bluetooth LE starts |
+| `NO BLUETOOTH ON C6` | the host has no sync with the C6; it keeps trying |
+| `C6 FAILED: RESTART` | the C6's link failed until the panel restarts |
+| `NO NODE BOUND` | Bluetooth runs; no node is bound |
+| `SCANNING` | a scan runs |
+| `CONNECTING` | the panel connects to the bound node and sets up its service |
+| `NOT A POWER NODE` | the bound device serves no node service, or is a balance node |
+| `CONNECTED, NO READING` | the link stands; no reading yet |
+| `OTHER PROTOCOL 2` | the node's firmware speaks another protocol version; nothing it sends is taken |
+| `INA228 SET-UP REFUSED` | the node names a shunt and range the panel cannot scale; nothing it sends is taken |
+| `NO INA228 ON THE NODE` | the node sends, but its INA228 is not online |
+| `CONNECTED` | a reading within the last 300ms |
+| `NO READING FOR 300ms` | linked, no reading for 300ms |
+| `NODE LOST` | the link dropped after a reading |
+
+## The balance node
+
+![WIRELESS on the BALANCE NODE entry, reporting](view:setup-wireless-bal)
+
+The balance node measures the vibration and the index of a rotor for [Balance](balance.md#the-balance-node). It drives nothing, so its loss is no error.
+
+| Setting | Range | Default | What it does |
+|---|---|---|---|
+| Balance node | ON, OFF | OFF | Bluetooth LE and the link to the bound node; OFF ends the link |
+| Scan for node | `SCAN` | | a tap scans 10s and lists the balance nodes in range, `rcbench-bal-XXXX`; a switch to ARMED stops it; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
+| Bound node | `NONE` or the node's name | `NONE` | a tap lists the nodes the last scan found; a tap on one binds it and asks for a save. RESET keeps the bound node |
+| Node battery | `3.91V`, `3.40V LOW`, `NO READING`, `--` | | the node's cell, from the STATUS the node sends beside its reports; LOW under 3.50V |
+| Trial mass | 0.01g to 20.00g | 0.50g | the mass taped on for the trial runs on [MOTOR & ESC](motor.md#balance) |
+
+| State | When |
+|---|---|
+| `NO NODE BOUND` | Bluetooth runs; no node is bound |
+| `BOUND: NOT A NODE` | the bound device serves no node service |
+| `CONNECTED, READING INFO` | the link stands; INFO is read |
+| `ROLE 1, PROTOCOL 1` | the node is no balance node, or speaks another protocol; nothing it sends is taken |
+| `CONNECTED, NO REPORT` | no report for 1000ms |
+| `REPORTING` | a report within the last 1000ms |
+
+`OFF`, `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `SCANNING` and `CONNECTING` read as for the Dial.
+
 ## Related pages
 
 - [Setup](setup.md)
 - [IMU](imu.md)
 - [Sensors](setup-sensors.md)
 - [Motor and ESC](motor.md)
+- [Balance](balance.md)
 - [Servo](servo.md)
+- [Sensor nodes](https://github.com/subtilitas/rcbench/wiki/Nodes#the-panel)

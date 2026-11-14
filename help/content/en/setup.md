@@ -21,7 +21,7 @@ SETUP contains bench-wide panel settings under PANEL, SENSORS, WIRELESS and SD C
 | WI-FI | `NETWORK, FILES, UPLOAD` | [Wi-Fi](wifi.md): the panel's radio, for the card's files and a firmware image in a browser |
 | UPDATES | `RELEASES ON GITHUB` | [Updates](updates.md): the check for a newer panel firmware release and the reminder switch |
 | IMU | `BLUETOOTH ANGLE SENSOR` | [IMU](imu.md): the WitMotion BWT901CL over Bluetooth LE, the scan and the bind, the calibration and the live angles |
-| WIRELESS | `IMU, DIAL` | [Wireless](setup-wireless.md): the IMU's settings and the M5Stack Dial, its scan, its bind and its steps |
+| WIRELESS | `IMU, DIAL, POWER, BALANCE NODES` | [Wireless](setup-wireless.md): the IMU's settings, the M5Stack Dial, its scan, its bind and its steps, the power node with INA228 source, and the balance node with its trial mass |
 | LAYOUT | `CONNECTORS AND PINS` | [Layout](layout.md), on the rbmod carrier only, whose pins are soldered |
 
 1 slot is free, and the carrier's LAYOUT takes it. The save button sits at the bottom right, as on every list. A change left unsaved in any category shows on it:

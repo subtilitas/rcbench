@@ -10,7 +10,7 @@ MOTOR & ESC steuert einen ESC (Electronic Speed Controller) und zeichnet Spannun
 
 ## Der Aufbau
 
-Die obere Leiste bietet zwei Aufgaben: LIVE und PROGRAMMIEREN. Tippe auf eine Aufgabe, um zu wechseln. LIVE behält dabei die gewählte Ansicht, GRAFIK oder TABELLE. LOG UMBENENNEN rechts in der Leiste gibt dem letzten MOTOR-Log ein Label ([Das Log eines Laufs](#das-log-eines-laufs)).
+Die obere Leiste bietet zwei Aufgaben: LIVE und PROGRAMMIEREN. Tippe auf eine Aufgabe, um zu wechseln. LIVE behält dabei die gewählte Ansicht, GRAFIK, TABELLE oder WUCHTEN. LOG UMBENENNEN rechts in der Leiste gibt dem letzten MOTOR-Log ein Label ([Das Log eines Laufs](#das-log-eines-laufs)).
 
 | Aufgabe | Linke Spalte |
 |---|---|
@@ -101,7 +101,7 @@ Bei ARMED lautet die Beschriftung der Grafik `TELEMETRIE LIVE`; am rechten Rand 
 | Drehknopf | gesperrt; Drehungen werden verworfen | ändert Gas ausgehend vom aktuellen Wert |
 | ARM | schaltet nach 2s Halten auf ARMED | DISARM: schaltet bei einem Tipp auf SAFE |
 | SPITZENWERTE ZURÜCKSETZEN | löscht die Spitzenmarken | löscht die Spitzenmarken |
-| GRAFIK, TABELLE | wechseln die Ansicht von LIVE | wechseln die Ansicht von LIVE |
+| GRAFIK, TABELLE, WUCHTEN | wechseln die Ansicht von LIVE | wechseln die Ansicht von LIVE |
 
 Beim Verlassen der Seite, auch über ZIEL, schaltet der Prüfstand auf SAFE und setzt Gas auf 0%. Dasselbe geschieht bei Verbindungsverlust oder ausbleibender Antwort des Touch-Controllers.
 
@@ -117,7 +117,7 @@ Die Anzeigen, die Ansicht TABELLE, die Summen und der Temperaturstreifen bleiben
 
 ## Die Abfragerate und die Temperaturen
 
-Auf LIVE stehen GRAFIK und TABELLE unter dem Titel der Telemetriekarte, daneben die Abfragerate und die Fehlerzahl der Verbindung. Hat der IOmcu seit dem Einschalten Link-Frames abgelehnt, erscheint deren Anzahl in der Zeile darunter. Über der rechten Spalte stehen bei jeder Aufgabe drei Temperaturen: ESC und MOT aus der Prüfstands-Page des IOmcu, MCU vom ESP32-P4-Chip im Panel.
+Auf LIVE stehen GRAFIK, TABELLE und WUCHTEN unter dem Titel der Telemetriekarte, daneben die Abfragerate und die Fehlerzahl der Verbindung. Hat der IOmcu seit dem Einschalten Link-Frames abgelehnt, erscheint deren Anzahl in der Zeile darunter. Über der rechten Spalte stehen bei jeder Aufgabe drei Temperaturen: ESC und MOT aus der Prüfstands-Page des IOmcu, MCU vom ESP32-P4-Chip im Panel.
 
 ![37 abgelehnte Link-Frames in der Zeile](view:motor-refused)
 
@@ -132,6 +132,18 @@ TABELLE zeigt Spannung, Strom, Leistung und Drehzahl mit ihren Spitzenwerten. Oh
 - `ESC MELDET` zeigt Spannung und Strom aus der ESC-Telemetrie. `Abw.` ist der ESC-Wert minus dem INA228-Wert.
 - Ohne INA228 stammen die Werte aus der ESC-Telemetrie; `ESC MELDET` entfällt.
 - Die Drehzahl stammt aus der bidirektionalen DShot-Telemetrie. Nicht gemessene Größen bleiben leer und werden nicht simuliert.
+
+## WUCHTEN
+
+![WUCHTEN mit beiden Läufen der Zwei-Lauf-Methode](view:motor-balance)
+
+WUCHTEN nimmt die Läufe einer Auswuchtung mit dem Auswuchtknoten auf ([Balance](balance.md#der-auswuchtknoten)). Die Tasten wirken beim Drücken und steuern keinen Ausgang, daher gehen sie auch bei ARMED.
+
+- Die obere Zeile zeigt Vibration, Winkel, Drehzahl und Signal des Knotens, rechts die Testmasse. Bei Auswuchtknoten AUS oder ohne gebundenen Knoten steht dort `KEIN AUSWUCHTKNOTEN: IN WIRELESS BINDEN`. Ein Bericht, der älter als 1000ms ist, oder eine abgerissene Verbindung zeigt `--`.
+- 2 LÄUFE: REFERENZ ohne Testmasse, dann TEST 0° mit der Testmasse auf Linie mit Blatt 1. Braucht die Indexmarke. 4 LÄUFE: REFERENZ, dann die Testmasse bei 0°, 120° und 240° ab Blatt 1, gegen die Drehrichtung.
+- Jede Taste nimmt die nächsten 8 Berichte auf, 2s, bei gleichem Gas. Unter der Taste: `LÄUFT n/8`, das Ergebnis oder `KEIN BERICHT`, `KEINE UMDREHUNG`, `KEIN INDEX`, `DREHZAHL GEÄNDERT` (mehr als 5%). Erneut drücken nimmt den Lauf neu auf.
+- LÖSCHEN leert alle Läufe. Ein Wechsel der Methode leert sie ebenfalls.
+- Sind alle Läufe aufgenommen: `HINZU 0.35g  WO zwischen 1 und 2` und eine Zeile in `BENCH/BALANCE/BALANCE.CSV`. Die Zeile darunter sagt `Geschrieben` oder `NICHT geschrieben`. Eine neue Testmasse löst die Läufe neu und schreibt eine neue Zeile. `SCHWACH`, `OHNE WIRKUNG`, `WIDERSPRÜCHLICH` oder `KEIN ERGEBNIS` nennen, warum das Ergebnis zweifelhaft ist oder fehlt.
 
 ## kV, rpm/V und WIRK.
 

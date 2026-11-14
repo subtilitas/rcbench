@@ -29,10 +29,12 @@ Eingabe, das Home-Feld und ein Reiter schließen es ohne Änderung.
 
 ![Das Tastenfeld der Blattzahl](img/de/balance-keypad.png)
 
-Die Anzeigewerte (Vibration 0,42g, Winkel 265°, zuzufügende Masse 0,35g) sind
-feste Werte und keine Messung. Die Kennzeichnung SIMULIERT und der Text „Nicht
-gemessen.“ stehen darunter im selben Statusfeld wie im Menü. Nur der
-Reiter WUCHTEN trägt diese Kennzeichnung.
+Ohne verbundenen Auswuchtknoten sind die Anzeigewerte (Vibration 0,42g,
+Winkel 265°, zuzufügende Masse 0,35g) feste Werte und keine Messung. Die
+Kennzeichnung SIMULIERT und der Text „Nicht gemessen.“ stehen darunter im
+selben Statusfeld wie im Menü. Nur der Reiter WUCHTEN trägt diese
+Kennzeichnung. Mit verbundenem Knoten zeigt der Reiter dessen Messwerte
+([Messen mit dem Auswuchtknoten](#messen-mit-dem-auswuchtknoten)).
 
 Bei einem Impeller wird die Korrektur als Winkel auf der Nabe angegeben, weil
 eine Blattspitze im Kanal nicht erreichbar ist:
@@ -107,7 +109,117 @@ Blattfrequenz, den Effektivwert, eine Güte und Flags. Ohne Index nimmt der
 Knoten die Drehzahl über seine Characteristic CONTROL und meldet nur die
 Amplitude.
 
-Das Panel verbindet sich noch nicht mit dem Knoten. Die Seite zeigt deshalb
-simulierte Werte und trägt die Kennzeichnung SIMULIERT. Einrichtung,
+## Messen mit dem Auswuchtknoten
+
+Der Auswuchtknoten misst nur. Er steuert keinen Ausgang, sein Verlust bei
+ARMED ist kein Fehler, und seine Tasten gehen auch bei ARMED.
+
+1. SETUP > WIRELESS > AUSWUCHTKNOTEN: Auswuchtknoten EIN, dann Knoten
+   suchen (10s, nur bei SAFE: eine Suche bei ARMED wird abgelehnt, und das
+   Schalten auf ARMED beendet eine laufende). Gebundener Knoten listet die
+   gefundenen Knoten, `rcbench-bal-XXXX`; Tippen bindet einen und behält
+   ihn über einen Neustart. Knotenakku zeigt die Zelle aus den
+   STATUS-Paketen, die der Knoten neben seinen Berichten sendet.
+2. Blattzahl und Rotorart auf BALANCE einstellen. Das Panel schreibt die
+   Blattzahl an den Knoten (BLADES).
+3. Testmasse (0.01g bis 20.00g, Vorgabe 0.50g) auf die Masse setzen, die
+   für die Testläufe aufgeklebt wird. Eine nach den Läufen geänderte
+   Testmasse löst die Läufe mit der neuen Masse neu und schreibt eine neue
+   CSV-Zeile.
+4. Auf MOTOR & ESC > WUCHTEN 2 LÄUFE (braucht die Indexmarke) oder 4 LÄUFE
+   wählen. Den Motor mit festem Gas laufen lassen. REFERENZ drücken: das
+   Panel mittelt die nächsten 8 Berichte, 2s. Anhalten, die Testmasse auf
+   Linie mit Blatt 1 aufkleben, mit gleichem Gas laufen lassen und TEST 0°
+   drücken. Bei 4 LÄUFE für die letzten zwei Läufe die Masse auf 120° und
+   240° ab Blatt 1 setzen, gegen die Drehrichtung.
+5. Das Feld zeigt `HINZU 0.35g  WO zwischen 1 und 2` und schreibt eine
+   Zeile in `BENCH/BALANCE/BALANCE.CSV`. Die Zeile darunter sagt, was aus
+   der Zeile wurde: `Zeile wartet auf die Karte`, `Geschrieben:
+   BENCH/BALANCE/BALANCE.CSV` oder `NICHT geschrieben: keine Karte/Fehler`;
+   `SCHWACH 12% Wirkung: geschrieben` trägt dasselbe bei einem schwachen
+   Ergebnis. BALANCE zeigt dasselbe HINZUFÜGEN und WO und markiert die
+   Stelle am Rotor.
+
+![BALANCE mit verbundenem Auswuchtknoten](img/de/balance-node.png)
+
+Der Reiter WUCHTEN mit verbundenem Knoten:
+
+| Zeile | Zeigt |
+| --- | --- |
+| VIBRATION | den Betrag der 1x-Komponente in g (mg des Berichts / 1000); ADC-Zählwerte bei einem Piezo; `--` ohne gezählte Umdrehung |
+| WINKEL | die Phase der 1x-Komponente ab der Indexmarke, gegen die Drehrichtung; `--` ohne Index |
+| DREHZAHL | die Drehzahl des Berichts; `--` ohne gezählte Umdrehung |
+| SIGNAL | das Gütewort, unten |
+| HINZUFÜGEN, WO | die Korrektur der Läufe, `--` bevor alle Läufe aufgenommen sind |
+
+Ein Bericht, der älter als 1000ms ist (4 Berichtsperioden), zeigt in jedem
+Messwert `--`, nie einen alten Wert. Eine abgerissene Verbindung bei
+Auswuchtknoten EIN und gebundenem Knoten zeigt dasselbe `--` und behält
+HINZUFÜGEN und WO der aufgenommenen Läufe, auf BALANCE und auf
+MOTOR & ESC > WUCHTEN. Das Modell und SIMULIERT erscheinen nur bei
+Auswuchtknoten AUS oder ohne gebundenen Knoten.
+
+Ein neuer Bericht zeichnet auf dem Reiter WUCHTEN die vier Werte der
+Messzeilen neu und sonst nichts; eine neue Korrektur oder ein Knoten, der
+kommt oder geht, zeichnet den Bildschirm neu. Die Reiter PRÜFGESTELL und
+FLUGMODELL übernehmen nichts vom Knoten.
+
+Das Gütewort ist das erste zutreffende, von oben nach unten:
+
+| Wort | Wann |
+| --- | --- |
+| `SENSORPEGEL` | der Gleichanteil des Beschleunigungssensors liegt außerhalb seines Fensters (`RCNODE_BF_DC_OK` gelöscht): kein Sensor oder ein Verdrahtungsfehler |
+| `ÜBERSTEUERT` | ein ADC-Wert am Ende seines Bereichs |
+| `DREHZAHLBEREICH` | No-Index-Modus: die geschriebene Drehzahl ergibt eine Umdrehung außerhalb des Bereichs |
+| `INDEX VERLOREN` | die längste Umdrehung verging ohne Indexflanke |
+| `KEIN INDEX` | No-Index-Modus ohne gezählte Umdrehung |
+| `KEINE UMDREHUNG` | keine Umdrehung gezählt |
+| `EINSCHWINGEN` | weniger als 2 Umdrehungen hinter der Güte |
+| `KEIN WINKEL` | No-Index-Modus: der Betrag gilt, der Winkel nicht |
+| `GUT n%` | Güte 90% oder mehr |
+| `MITTEL n%` | 70% bis 89% |
+| `SCHLECHT n%` | unter 70% |
+
+**Ohne Index.** Nach 2 Berichten in Folge ohne Indexflanke schreibt das
+Panel höchstens alle 250ms die Drehzahl des Prüfstands an den Knoten (RPM),
+aus der Telemetrie des ESC oder vom Phasenabgriff, und wieder 0 mit dem
+ersten Bericht mit Flanke. Ein simulierter Prüfstand liefert keine
+Drehzahl. Die Vier-Lauf-Methode braucht nur die Beträge und geht in diesem
+Modus; die Zwei-Lauf-Methode lehnt einen Bericht ohne Index ab.
+
+**Ein Lauf bricht ab** bei 1000ms ohne Bericht, einem Bericht ohne gezählte
+Umdrehung, einem Bericht ohne Index (zwei Läufe) oder einer Drehzahl mehr
+als 5% neben dem ersten Bericht des Laufs. Seine Taste zeigt den Grund;
+erneut drücken.
+
+**Die CSV-Zeile.** `BENCH/BALANCE/BALANCE.CSV` erhält in einer neuen Datei
+eine Kopfzeile und je Lösung eine Zeile: Methode, Testmasse, Einheit (g
+oder counts für ADC-Zählwerte), Betrag, Winkel (zwei Läufe) und Drehzahl jedes Laufs, den
+Status des Lösers (`OK`, `WEAK`, `NO_EFFECT`, `INCONSISTENT`, `BAD_INPUT`),
+die zuzufügende Masse, ihren Winkel, die Blattzahl und die zwei Blätter,
+zwischen denen sie liegt. Ohne Karte entfällt die Zeile mit einer
+Konsolenzeile, und die Zeile unter HINZU sagt `NICHT geschrieben`. Eine
+Datei, deren letztes Byte kein Zeilenende ist, eine durch Stromausfall
+oder gezogene Karte abgeschnittene Zeile, erhält vor der nächsten Zeile
+ein Zeilenende, so beginnt die nächste Zeile eine eigene.
+
+**Die Verbindung.** Das Panel liest INFO, sobald die Verbindung steht, und
+übernimmt Berichte nur von einem Knoten, dessen INFO die Rolle Auswuchten
+und Protokoll 1 nennt. Eine Suche listet einen Knoten nach der Rolle in
+seinen Herstellerdaten, nie nach dem Namen allein; der Name kommt aus dem
+Advertising oder der Scan Response. Die Zelle kommt aus den
+STATUS-Paketen, die der Knoten auf STREAM sendet; die Characteristic
+STATUS bleibt für ein Telefon, das Panel liest sie nicht.
+CONTROL-Schreibzugriffe (BLADES, RPM) liegen mindestens 250ms auseinander,
+so bleibt auf demselben Funk Platz für ein Dial. Einrichtung,
 Blattumrechnung und beide Platzierungsanleitungen funktionieren ohne den
 Knoten.
+
+**Aktuelle Einschränkungen.**
+
+- FILES sieht `BALANCE.CSV` nicht als belegt, während eine Zeile angehängt
+  wird. Die Dateiregeln (`shared/files/fm_rules.c`) markieren nur das
+  gerade geschriebene Log und das Fehlerprotokoll als belegt. Ein Löschen
+  oder Verschieben der Datei in den wenigen ms eines Anhängens kann diese
+  Zeile verlieren; die Zeile unter HINZU sagt dann nur `NICHT geschrieben`,
+  wenn das Schreiben selbst fehlschlägt.

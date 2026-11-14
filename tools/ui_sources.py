@@ -220,9 +220,20 @@ SOURCES = [
     "shared/ui/dial_panel.c",
     "shared/ui/wireless_pane.c",
     "shared/ui/settings_panes.c",
+    # The power node's entry on WIRELESS.
+    "shared/ui/wireless_pnode.c",
     "protocols/dialknob/dialknob.c",
     "protocols/dialknob/dk_track.c",
     "protocols/bleuart/bleuart_adv.c",
+    # The balance node: its controller, its readings and runs, its WIRELESS
+    # entry, MOTOR & ESC's BALANCE pane, and the packets and the solver.
+    "shared/ui/bal_ctl.c",
+    "shared/ui/node_balance.c",
+    "shared/ui/wireless_bal.c",
+    "shared/ui/motor_balance.c",
+    "protocols/rcnode/rcnode.c",
+    "protocols/rcnode/rcnode_adv.c",
+    "shared/vibe/vibe_solve.c",
     # FILES, and the file manager's core it starts its jobs and keeps its
     # panes with (shared/files), the logger's open-file rule with it.
     "shared/ui/files_screen.c",
@@ -355,6 +366,8 @@ INCLUDES = [
     "protocols/bleuart/include",
     "protocols/witmotion/include",
     "protocols/dialknob/include",
+    "protocols/rcnode/include",
+    "shared/vibe/include",
 ]
 
 # The files of shared/ui/CMakeLists.txt that SOURCES leaves out, and why.
@@ -365,4 +378,8 @@ EXCLUDED = {
         "the control task fills it; the screens read port_view.c",
     "shared/ui/screen_dim.c":
         "the render loop's backlight and touch filter; no screen calls it",
+    "shared/ui/pnode_ctl.c":
+        "the power node's central, the blec task's; WIRELESS reads its view",
+    "shared/ui/pnode_meter.c":
+        "the power node's readings, the blec and control tasks'; no screen",
 }

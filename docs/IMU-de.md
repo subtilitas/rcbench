@@ -119,7 +119,7 @@ Bluetooth LE läuft ([Servoverfahren, Winkelquelle](Servo-de.md#winkelquelle)).
 
 | Schritt | Zeitgrenze | Scheitert als |
 | --- | ---: | --- |
-| Verbinden mit der gebundenen Adresse, Intervall 30 bis 50ms, Latenz 0, Supervision Timeout 4 000ms, Connect-Scan 30ms je 60ms | 5 000ms | KEINE VERBINDUNG, erneut nach 7 000ms bei einem Fehler, den der Host meldet (darunter HCI 0x3E), nach 1 000ms bei der Zeitgrenze |
+| Verbinden mit der gebundenen Adresse, Intervall 30 bis 50ms, Latenz 0, Supervision Timeout 4 000ms, Connect-Scan 30ms je 60ms | 5 000ms | KEINE VERBINDUNG, erneut nach 7 000ms bei einem Fehler, den der Host meldet (darunter HCI 0x3E), nach 1 000ms bei der Zeitgrenze; jeder weitere Connect ohne Antwort wartet doppelt so lange wie der vorige, bis 30 000ms, bis ein Scan, ein Binden oder eine Verbindung neu beginnen lässt |
 | den ISSC-Dienst 49535343-FE7D-4AE5-8FA9-9FAFD205E455 finden | 5 000ms | KEIN WITMOTION-SENSOR, kein neuer Versuch bis zum nächsten Binden oder IMU AUS und EIN |
 | seine Characteristics: 1E4D mit NOTIFY, 8841 mit WRITE oder WRITE NO RESPONSE | 5 000ms | KEIN WITMOTION-SENSOR |
 | der CCCD von 1E4D (Client Characteristic Configuration Descriptor) | 5 000ms | KEIN WITMOTION-SENSOR |

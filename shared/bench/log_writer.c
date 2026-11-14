@@ -60,6 +60,25 @@ static const char *source_word(bool modelled)
     return modelled ? LOG_WRITER_SRC_MODEL : LOG_WRITER_SRC_MEASURED;
 }
 
+/**
+ * @brief The last column of a bench row: the model's, the power node's, or
+ *        a meter's.
+ *
+ * @param b The row.
+ * @return LOG_WRITER_SRC_MODEL, LOG_WRITER_SRC_NODE or
+ *         LOG_WRITER_SRC_MEASURED.
+ */
+static const char *bench_source_word(const bench_state_t *b)
+{
+    if (bench_state_simulated(b)) {
+        return LOG_WRITER_SRC_MODEL;
+    }
+    if (b->from_node && (b->flags & (uint16_t)LINK_BN_SENSED) != 0u) {
+        return LOG_WRITER_SRC_NODE;
+    }
+    return LOG_WRITER_SRC_MEASURED;
+}
+
 /** @brief A supply run's file: what was asked beside what was delivered, and which
  * of the two the supply was holding. */
 static const char *const k_supply_header =
@@ -585,8 +604,7 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
                && cell(line, cap, &n, sv != NULL && sv->angle_ok,
                        (sv != NULL) ? sv->angle_deg : 0.0f, 1);
     }
-    fits = fits && text_cell(line, cap, &n,
-                             source_word(bench_state_simulated(b)));
+    fits = fits && text_cell(line, cap, &n, bench_source_word(b));
     if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;
         return false;
