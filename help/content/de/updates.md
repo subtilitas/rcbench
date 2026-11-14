@@ -18,6 +18,8 @@ UPDATES sucht auf GitHub nach neuerer Panel-Firmware und bietet deren Installati
 | 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage. |
 | 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
 | 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN | Dasselbe, solange der C6 die mitgelieferte Version meldet. |
+| 2s HALTEN ZUM DIAL-UPDATE | Sendet das mitgelieferte Image des M5Stack Dial über Bluetooth LE an das verbundene Dial, siehe [Das Dial](#das-dial). |
+| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN | Dasselbe, solange das Dial die mitgelieferte Version meldet. |
 
 ## Optionen
 
@@ -162,10 +164,26 @@ Während das Update läuft, wird ARM abgelehnt, und das WLAN bleibt aus. Es ende
 
 Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und das WLAN arbeitet wie zuvor (nach einer ausgefallenen Verbindung erst nach einem Neustart des Panels). Das Flashen über Header H4 mit einem USB-UART-Adapter steht in [Der Funk über den ESP32-C6](https://github.com/subtilitas/rcbench/wiki/C6-de#wiederherstellung-über-header-h4).
 
+## Das Dial
+
+![Das Dial fragt nach seinem Druck](view:updates-dial)
+
+Die Zeile DIAL-FIRMWARE zeigt die Version des verbundenen Dial und die Version des mitgelieferten Dial-Images: `Dial: 0.21.0. Im Panel: 0.22.0.` Das Halten braucht die Bank in SAFE, ein verbundenes Dial und kein anderes laufendes Update. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Verbinde das Gerät zuerst auf WIRELESS.`
+
+1. Das Halten beendet den Knopf-Link des Dial; die Taste zeigt `DIAL-UPDATE: VERBINDET`.
+2. Das Dial zeigt die Versionen des Updates und fragt 30s lang nach einem Druck seiner Bildschirmtaste; die Taste zeigt `AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s`. Ein Druck nimmt an, ein Halten von 1s am Dial lehnt ab, kein Druck lehnt ab. Vor der Antwort wird nichts gelöscht.
+3. Das Dial schreibt das Image; die Taste zeigt `DIAL-UPDATE 37%`.
+4. Das Dial prüft den SHA-256 (Secure Hash Algorithm, 256 Bit) des Images, installiert es und startet neu. Der Alarm lautet `Dial auf 0.22.0 aktualisiert. Es verbindet sich von selbst neu.`
+
+Jedes andere Ende lautet `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.`, zum Beispiel `nicht innerhalb von 30s angenommen` oder `Image beschädigt angekommen`; das Dial behält die Firmware, mit der es lief. Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines Funkgeräts läuft.` abgelehnt, und das Update des C6-Funks wartet. Der Knopf steuert das Panel nicht, bis sich sein Link wieder verbindet; diese Lücke ist kein Verlustfehler.
+
+Das Image trägt keine Signatur: Das Dial nimmt jedes Dial-Image an, das ein Gerät in der Nähe sendet, sobald seine Bildschirmtaste gedrückt wird. Ein neues Image, das vor seiner ersten Verbindung neu startet, geht zum Image davor zurück.
+
 ## Aktuelle Einschränkungen
 
 - Die Dauer von Suche und Download in einem echten Netz wurde nicht gemessen.
 - Die Dauer des C6-Funk-Updates ist nicht gemessen, und ob der ausgelieferte C6 es über SDIO annimmt, ist nicht bekannt.
+- Die Dauer des Dial-Updates ist nicht gemessen; es ist mit keinem Dial gelaufen.
 - Ein nicht antwortender erster DNS-Server (Domain Name System) verzögert nach dem Verbinden jede Namensauflösung um etwa 7s innerhalb der Suchfrist von 30s. lwIP fragt diesen Server 4-mal für insgesamt bis zu 7s ab, bevor es den nächsten versucht.
 - Unter TESTING erlaubt GitHub ohne Konto 60 API-Anfragen pro Stunde und öffentlicher Adresse, gemeinsam für alle Geräte dahinter. Das Panel wiederholt keine Anfrage.
 - TESTING liest die 10 nach Datum neuesten Releases. Ältere Veröffentlichungen werden unabhängig von ihrer Versionsnummer nicht erfasst.

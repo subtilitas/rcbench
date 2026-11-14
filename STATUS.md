@@ -1165,7 +1165,7 @@ number shown in part), and the antialiased ring from a coverage table
 (`test_gfx_ring`, against a reference from the same formula; the Dial's
 six tables generated as const data by `tools/gen_dial_rings.py`, held to
 `gfx_ring_build()` by `test_dial_face`); `tools/render_dial.py --check`
-holds the 20 committed images. The Dial sends no EVENT while it shows LINK
+holds the 24 committed images. The Dial sends no EVENT while it shows LINK
 LOST (`dk_link_lost()`, `test_dialknob_face`). Built, not run on the
 device: the Dial's
 firmware (`firmware/dial`, ESP-IDF v6.1 for the ESP32-S3; CI's `dial.yml`)
@@ -1187,6 +1187,29 @@ SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
 and the control task's side (`firmware/panel/main/panel_dial.c`,
 `panel_supply.c`). Navigation from the Dial is not built. The battery's
 reading pin is unknown; the encoder's direction is not measured.
+
+### Firmware update over Bluetooth LE
+
+Built and host-tested: the update protocol (`protocols/bleota`): every
+control write and notification at its limits and 200,000 random writes
+through the decoders and a device side (`test_bleota`); the device side's
+refusals by code, the confirmation window in both modes at 30,000ms and the
+1,000ms hold at their limits, a key already down, the HASH and idle
+timeouts, a skipped chunk answered once, the 512-byte credit step, the
+SHA-256 compare and a lost link (`test_bleota_dev`). The panel's engine
+(`shared/devupd`, `test_devupd`) against that device side: an image sent
+whole, a lost chunk and a lost tail found by POLL, a credit stall that ends
+after 3 polls, each refusal code, a SHA-256 that differs, no confirmation,
+and a disconnect mid-transfer followed by a new transfer from byte 0; its
+client on the Bluetooth LE hub (`test_devupd_client`) against a scripted
+host stack; the busy flag that refuses ARM; and UPDATES' DIAL FIRMWARE row
+with its reasons, its hold and its progress (`shared/ui/upd_dev.c`,
+`test_upd_dev`). Built, not run on a device: the device side on NimBLE with
+ESP-IDF's OTA (over-the-air) calls and the rollback mark
+(`firmware/devota`) in the Dial's image and both node roles', and the
+panel's side (`firmware/panel/main/panel_devupd.c`) with the three images
+embedded. The rate and a rollback are not measured; the panel's rows for
+the nodes are not built.
 
 ### Phase tap (ESC tones)
 
@@ -1424,7 +1447,7 @@ rcbench/
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
 | `hc05` · `vibe` · `rcnode` · `dial` | | | yes |
-| `bleuart` · `dialknob` | yes | | yes |
+| `bleuart` · `dialknob` · `bleota` · `devupd` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1458,7 +1481,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 566 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 571 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1582,7 +1605,8 @@ The host suite is 566 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode` and `test_node_policy`.
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`,
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client` and `test_upd_dev`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -2065,7 +2089,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-962 committed screenshots to the current render, 481 in English and the same 481 in German, and `render_ui.py --fit` fails on a string that
+968 committed screenshots to the current render, 484 in English and the same 484 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

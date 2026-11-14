@@ -661,6 +661,8 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN ZUM DIAL-UPDATE auf UPDATES | `Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.` |
+| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Dial-Firmware des Panels neu zu installieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
@@ -7023,7 +7025,9 @@ Zeilen von 41 Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein
 Ergebnis bis in die letzten drei Zeilen der Karte, entfallen diese Zeilen.
 Unter NACH UPDATES SUCHEN stehen die Zeilen des IOmcu-Abschnitts in der
 Schrift 10 x 20px, und sein Halten ist eine Taste derselben Größe, ab y 380
-im Körper. Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
+im Körper. Dazwischen die Zeile DIAL-FIRMWARE: ihre Überschrift bei y 236
+im Körper, ihre Zeile bei y 260 und ihr Halten, 460 x 56px, bei y 316
+([Das Dial](#das-dial)). Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
 im Körper und ihr Halten, 532 x 56px, neben dem des IOmcu
 ([Der C6-Funk](#der-c6-funk)). Die Fußleiste
 ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
@@ -7038,6 +7042,8 @@ mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 | `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
 | `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
+| `2s HALTEN ZUM DIAL-UPDATE` | Sendet das Image des M5Stack Dial, das dieses Panel mitbringt, über Bluetooth LE an das verbundene Dial ([Das Dial](#das-dial)). |
+| `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN` | Dasselbe, solange das Dial die mitgebrachte Version meldet ([Das Dial](#das-dial)). |
 
 ![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
 
@@ -7295,6 +7301,7 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet: Die Installation der Panel-Firmware läuft.` | Download oder Installation des Panels laufen. |
 | `Das C6-Update wartet, bis das WLAN des Panels aus ist.` | Eine Prüfung, ein Download oder WI-FI hat den Funk an. |
 | `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
+| `Das C6-Update wartet auf das Ende des Funkgeräte-Updates.` | Das Update eines Dial läuft oder wurde angefordert ([Das Dial](#das-dial)). |
 | `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
@@ -7315,6 +7322,70 @@ Alarmband sagt, wie ein Update endete:
 Während das Update läuft, wird ARM mit `ARMED gesperrt: Das C6-Funk-Update
 läuft.` abgelehnt, das WLAN startet nicht, und Installation des Panels,
 GitHub-Prüfung und IOmcu-Update warten.
+
+### Das Dial
+
+Die Zeile DIAL-FIRMWARE zeigt die Firmware des M5Stack Dial:
+`Dial: 0.21.0. Im Panel: 0.22.0.`, die Version, die INFO des verbundenen
+Dial genannt hat, oder `nicht verbunden`, und die Version des Dial-Images,
+das dieses Panel mitbringt, oder `keine`. Darunter `2s HALTEN ZUM
+DIAL-UPDATE`, oder `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN`, solange
+das Dial die mitgebrachte Version meldet. Das Dial und sein Update stehen
+in [Das M5Stack Dial: Update über Bluetooth
+LE](Dial-de.md#update-über-bluetooth-le).
+
+![Die Zeile DIAL-FIRMWARE, während das Dial nach seinem Druck fragt](img/de/updates-dial.png)
+
+Während das Update läuft, zeigt die Taste nacheinander:
+
+| Taste | Schritt |
+| --- | --- |
+| `DIAL-UPDATE: VERBINDET` | Der Knopf-Link des Dial endet, und das Update verbindet sich mit dem gebundenen Dial |
+| `AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s` | Das Dial hat BEGIN angenommen und fragt nach einem Druck seiner Bildschirmtaste; die Sekunden sind die des Dial |
+| `DIAL-UPDATE 37%` | der Anteil des Images, den das Dial angenommen hat |
+
+Das Band sagt `Drücke innerhalb von 30s die Taste am Dial, um das Update
+anzunehmen.`, wenn das Dial fragt. Das Halten ist nur aktiv, wenn keiner
+der Gründe unten zutrifft. Sonst ist es grau, und ein Tippen darauf zeigt
+den ersten Grund im Alarmband:
+
+| Band | Bedingung |
+| --- | --- |
+| `Das Geräte-Update läuft.` | Ein Update läuft oder wurde angefordert. |
+| `Dieses Panel enthält keine Firmware für dieses Gerät.` | Das Panel wurde ohne das Image des Dial gebaut. |
+| `Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist keine ESP32-S3-Anwendung des Projekts `rcbench-dial`, ist größer als der Slot des Dial von 3.145.728 Bytes, oder sein angehängter SHA-256 weicht ab. |
+| `Das Geräte-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
+| `Das Geräte-Update wartet auf das Ende des anderen Updates.` | Das Update des C6 oder des IOmcu, oder Download oder Installation des Panels laufen. |
+| `Verbinde das Gerät zuerst auf WIRELESS.` | Kein Dial ist verbunden, oder seine INFO ist noch nicht gekommen. |
+
+Das Alarmband sagt, wie ein Update endete:
+
+| Alarm | Bedeutung |
+| --- | --- |
+| `Dial auf 0.22.0 aktualisiert. Es verbindet sich von selbst neu.` | Das Dial hat das Image angenommen, geprüft und installiert und startet neu; sein Knopf-Link verbindet sich wieder aus den Werten von SETUP. |
+| `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Das Update endete ohne Installation. |
+
+| Grund | Ursache |
+| --- | --- |
+| `keine Verbindung` | keine Verbindung zum Dial innerhalb von 30s |
+| `Verbindung verloren` | der Link endete während der Übertragung |
+| `keine Antwort` | das Dial hat einen Schritt nicht innerhalb seiner Grenze oder 3 Abfragen in Folge nicht beantwortet, oder das Dial sah 10s kein Schreiben |
+| `Schreiben abgelehnt` | der Host-Stack hat ein Schreiben abgelehnt |
+| `Image für ein anderes Gerät` | das Dial hat die Art abgelehnt |
+| `Image zu groß` | das Dial hat die Größe abgelehnt |
+| `es läuft schon diese Version` | das Dial läuft mit der Version, und das Halten war keine Neuinstallation |
+| `nicht innerhalb von 30s angenommen` | kein Druck am Dial |
+| `am Gerät abgelehnt` | das Halten von 1s am Dial |
+| `Image beschädigt angekommen` | der SHA-256 dessen, was das Dial geschrieben hat, weicht ab |
+| `Flash des Geräts fehlgeschlagen` | der Slot des Dial ließ sich nicht öffnen, nicht beschreiben oder nicht zum Boot-Slot machen |
+| `Gerät hat das Image abgelehnt` | die Image-Prüfung von ESP-IDF auf dem Dial hat es abgelehnt |
+| `Fehler 6` | ein anderer Code des Dial, etwa 6 für ein Schreiben außer der Reihe ([protocols/bleota](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)) |
+
+Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines
+Funkgeräts läuft.` abgelehnt, und das Update des C6 wartet. Der Knopf
+steuert das Panel vom Halten an nicht, bis sich sein Link wieder verbindet;
+diese Lücke ist kein Verlustfehler. Die Dauer der Übertragung ist nicht
+gemessen.
 
 ### Die Erinnerung
 

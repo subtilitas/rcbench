@@ -398,6 +398,57 @@ a longer notification without an error; the power node's packets are 20
 bytes, which fit the smallest MTU of 23, and the balance report is 24
 bytes, which needs 27.
 
+## Update over Bluetooth LE
+
+A node takes a new application image over BLE from a central, through the
+update service of `protocols/bleota`
+([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
+The panel carries both roles' images and checks them at start; the panel's
+rows that send them come with the panel's node clients.
+
+1. The central connects and sends BEGIN: the kind (power node or balance
+   node), the size, the version and the image's SHA-256.
+2. The node checks the kind against its role, the size against its slot of
+   1,572,864 bytes (0x180000) and the version. A power node refuses a
+   balance image and the reverse. Nothing is erased yet.
+3. The node waits 30s for its BOOT key (GPIO9) held 1s. The node shows
+   nothing; the WS2812 is not driven, and the central tells the user to
+   press BOOT. No hold in 30s refuses. A key already down when the window
+   opens counts only after it is released.
+4. Held: the node erases and writes the slot it does not run from.
+5. END: the node compares the SHA-256 of every byte it wrote with BEGIN's,
+   lets ESP-IDF check the image, sets the boot slot and restarts 500ms
+   later.
+
+A refusal, a lost link, 10s without a write or a SHA-256 that differs ends
+the transfer: the node closes the slot and keeps running its image. A new
+transfer starts from byte 0.
+
+The new image starts on trial (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`) and
+marks itself valid at its first connection, which it takes only with its
+BLE stack running.
+
+| Start of an image on trial | Result |
+| --- | --- |
+| a connection | kept |
+| a timer wake from deep sleep | the same image, still on trial: the wake loads the image the start before it chose and does not read the trial state (`CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP`) |
+| the RESET key, a power cycle, a panic, before a connection | the image before it |
+
+So a power node that sleeps before its first connection stays on trial
+across its 10s wakes, and a full start then goes back to the old image.
+The balance node sleeps without a timer and wakes only on RESET, a full
+start.
+
+Security: no pairing, no encryption and no signature. Integrity rests on
+the SHA-256 in BEGIN. Any central in range can send BEGIN; the held BOOT
+key is what accepts it ([SECURITY.md](../SECURITY.md)).
+
+The device side runs on the task `ota`, priority 3, every 10ms, with a
+stack of 4,096 bytes from the heap at start. Its static RAM is 3,623 bytes:
+the window's ring of 2,048 bytes, a write buffer of 1,024 bytes and the
+state. The power node's image is 645,328 bytes, 41.0% of a slot; the
+balance node's 641,760 bytes, 40.8%.
+
 ## Building and flashing
 
 The role is chosen at build time (`main/Kconfig.projbuild`). A board is
@@ -508,6 +559,11 @@ this start`.
   it and at least 80ms of samples (`errors`, `resets` in STATUS).
 - The balance node holds its ADXL on 3V3 while it sleeps: 350µA.
 - The WS2812 is not driven. Its current at idle is not measured.
-- The firmware is updated over USB only.
+- The panel does not yet send a node its image: the node's side of the
+  update over BLE exists, the panel's rows come with its node clients. The
+  update has not run on a node; its rate and a rollback are not measured.
+- A node checks an image's kind, chip and segments, not its origin: a
+  central in range can offer any image of the node's role, older ones
+  included, and a 1s hold of BOOT installs it.
 - Windows without a sample between two windows are not sent: a stalled
   sampler shows as a jump in `t_node` with no jump in `seq`.

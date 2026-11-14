@@ -437,7 +437,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU und des Dial aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`) | 4 096 | 1 808 | 1 248 |
+| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU und des Dial aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -445,7 +445,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
-| `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 216 | 1 840 |
+| `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
 | `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 432 | 3 696 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
@@ -600,6 +600,15 @@ zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 
 Die Tasks von ESP-IDF und esp_hosted stehen nicht in der Tabelle: ihre Namen
 und Zahlen kommen aus der Konsole eines Musters, und keine ist aufgezeichnet.
+
+### Das Dial und die Sensorknoten
+
+Das M5Stack Dial und beide Knotenrollen führen die Geräteseite des
+Firmware-Updates im Task `ota` aus (`firmware/devota`): 4 096 Bytes Stack aus
+dem Heap beim Start, Priorität 3, ein Schritt alle 10ms. `esp_ota_end()`
+liest das geschriebene Image zurück und prüft es auf diesem Stack. Seine
+Tiefe ist nicht gemessen: Kein Werkzeug liest dafür das Xtensa-Image des
+Dial oder das Image des Knotens, und keine High-Water-Mark ist aufgezeichnet.
 
 ### Der IOmcu
 
@@ -797,6 +806,14 @@ Die Zeile der Konsole ist ohne den Client des Dials gemessen (`panel_dial.c`,
 `dial_ctl.c`, `dial_stream.c`, `dial_panel.c` und `protocols/dialknob`); mit
 ihm nicht gemessen. Der Client des Dials fügt dem Standard-Build 4 376 Bytes
 DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image.
+Das Update der Funkgeräte, aus der Linker-Map des Standard-Builds:
+`panel_devupd.c` hält 1 805 Bytes DIRAM (1 377 .bss, 428 .data) und 3 670
+Bytes Code; `upd_dev.c` 112 Bytes .bss und 1 582 Bytes Code;
+`shared/devupd` 2 914 Bytes Code und `protocols/bleota` 344. Die drei
+mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
+2 128 048 Bytes Image hinzu: 840 960, 645 328 und 641 760. Mit ihnen hat
+das Anwendungs-Image 7 311 360 Bytes, 815 104 (10,0%) unter dem Slot von
+8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
 Verbindungen fügen dem Standard-Build mit einer Verbindung 3 704 Bytes

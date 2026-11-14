@@ -14,8 +14,10 @@ click per detent, the faces on the display, the BLE peripheral with its
 bound panel, and the USB console; and the panel's side: SETUP > WIRELESS >
 DIAL, the scan and the bind, the link with its loss rule, the turn on
 MOTOR & ESC and SERVO LIVE, the screen button, and the stream of the
-panel's screen to the Dial ([The panel](#the-panel)). Navigation of the
-panel's lists from the Dial, the BLE update and pairing are later slices.
+panel's screen to the Dial ([The panel](#the-panel)); and the firmware
+update over BLE from SETUP > UPDATES ([Update over Bluetooth
+LE](#update-over-bluetooth-le)). Navigation of the panel's lists from the
+Dial and pairing are later slices.
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products, and
 Bluetooth is a trademark of its owner. rcbench is independent: it is not
@@ -109,8 +111,8 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The released image is
-817,280 bytes, 26.0% of a slot; the seven fonts of the faces are 243,194
-bytes of it and the ring tables 25,032. Its static RAM: 212,822 of 341,760
+840,960 bytes, 26.7% of a slot; the seven fonts of the faces are 243,194
+bytes of it and the ring tables 25,032. Its static RAM: 216,534 of 341,760
 bytes of internal DRAM and IRAM, the frame of 115,200 bytes among them. The
 heap that NimBLE takes at run time is not measured; the log at start and
 `status` give the internal heap free and its lowest since the start.
@@ -131,6 +133,60 @@ The 1s HOLD gesture goes to the panel on the way.
 
 There is no pairing and no encryption in protocol version 1: a device in
 range that connects first, or that spoofs the bound address, is taken.
+
+## Update over Bluetooth LE
+
+The panel carries the Dial's application image and sends it over BLE. The
+protocol is `protocols/bleota`
+([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
+the panel's side is SETUP > UPDATES > DIAL FIRMWARE
+([Screens, The Dial](Screens.md#the-dial)).
+
+1. The Dial is bound and linked, and the bench is SAFE. UPDATES shows
+   `Dial: 0.23.11. Included: 0.23.12.` and `HOLD 2s TO UPDATE THE DIAL`.
+2. The 2s hold ends the Dial's knob link. The panel connects to the Dial's
+   update service and sends BEGIN: kind DIAL, size, version and the
+   image's SHA-256.
+3. The Dial checks the kind, the size against its slot of 3,145,728 bytes
+   and the version. It then shows `UPDATE`, `v0.23.11 TO v0.23.12`, `PRESS
+   TO ACCEPT`, the seconds left and `HOLD TO REFUSE` for 30s. Nothing is
+   erased before the answer.
+   - A press of the screen button released within 1s accepts.
+   - A hold of 1s refuses.
+   - No press in 30s refuses.
+4. Accepted: the Dial erases and writes the slot it does not run from and
+   shows its progress as a ring with `KEEP THE DIAL ON`.
+
+![The update's question on the Dial](img/dial-update-ask.png)
+![The update's progress on the Dial](img/dial-update-send.png)
+
+5. The panel sends END. The Dial compares the SHA-256 of every byte it
+   wrote with BEGIN's, lets ESP-IDF check the image, sets the boot slot,
+   shows `RESTARTING` and restarts 500ms later.
+6. The new image starts on trial. It marks itself valid at its first
+   connection, which it takes only with its BLE stack running. The panel's
+   knob link connects again from SETUP's values.
+
+A refusal, a lost link, 10s without a write or a SHA-256 that differs ends
+the transfer: the Dial closes the slot and keeps running its image. A new
+transfer starts from byte 0. A new image that restarts before its first
+connection, a power cut included, starts the image before it again
+(`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`).
+
+The update needs no USB and no tool. The knob does not drive the panel
+from the hold until the link connects again; that gap is no loss error,
+since the bench is SAFE and ARM is refused while the update runs. The Dial
+holds its link while a transfer runs: the drop after 500ms without a panel
+packet waits.
+
+Security: no pairing, no encryption and no signature. Integrity rests on
+the SHA-256 in BEGIN. Any central in range can send BEGIN; the press on the
+Dial is what accepts it ([SECURITY.md](../SECURITY.md)).
+
+The device side runs on the task `ota`, priority 3, every 10ms, with a
+stack of 4,096 bytes from the heap at start. Its static RAM is 3,487 bytes:
+the window's ring of 2,048 bytes, a write buffer of 1,024 bytes and the
+state.
 
 ## The panel
 
@@ -487,5 +543,11 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
   Dial is ordered, not delivered. The turn-to-output latency over the air is
   not measured; the station measures it with the test build once the Dial
   is on its USB.
+- The update over BLE has not run with a Dial. Its rate over the panel's
+  ESP32-C6 link, the time of an 840kB transfer and a rollback on the Dial
+  are not measured.
+- The Dial checks the image's kind, chip and segments, not its origin: a
+  central in range can offer any Dial image, older ones included, and a
+  press installs it.
 - No sleep, no backlight steps and no auto-off yet: the Dial stays on until
   RST is pressed or the cell is empty. Runtime on a cell is not measured.

@@ -615,6 +615,8 @@ replaces a visible hint.
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
 | HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO UPDATE THE DIAL on UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
+| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -6452,7 +6454,9 @@ right is 532px wide, from body y 16 to 336; its text runs in lines of 41
 characters of the 12 x 24px face, 28px apart. When a result runs down to
 the card's last three lines, those lines are left out. Under CHECK the
 IOmcu section's lines are in the 10 x 20px face, and its hold is a button
-of the same size, from body y 380. Under the card the C6 RADIO row: one
+of the same size, from body y 380. Between them the DIAL FIRMWARE row: its
+heading at body y 236, its line at y 260 and its hold, 460 x 56px, at
+y 316 ([The Dial](#the-dial)). Under the card the C6 RADIO row: one
 line at body y 348 and its hold, 532 x 56px, beside the IOmcu's
 ([The C6 radio](#the-c6-radio)). The footer
 ([The footer and the settings list](#the-footer-and-the-settings-list))
@@ -6467,6 +6471,8 @@ slot is empty until a check finds a newer release.
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
 | `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
+| `HOLD 2s TO UPDATE THE DIAL` | Sends the M5Stack Dial's image this panel carries to the linked Dial over Bluetooth LE ([The Dial](#the-dial)). |
+| `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the carried version ([The Dial](#the-dial)). |
 
 ![UPDATES' OPTIONS list](img/updates-settings.png)
 
@@ -6721,6 +6727,7 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits: panel firmware installation is running.` | The panel's download or install runs. |
 | `The C6 update waits for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on. |
 | `The C6 update waits: Bluetooth is starting.` | Bluetooth LE's start task `blestart` runs. |
+| `The C6 update waits for the wireless device update to finish.` | A Dial's update runs or was asked for ([The Dial](#the-dial)). |
 | `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
 
 A C6 that reports no version, as the shipped one does, is offered the
@@ -6740,6 +6747,68 @@ The alert band says how an update ended:
 While the update runs, ARM is refused with `Cannot switch to ARMED: the C6
 radio update is running.`, Wi-Fi does not start, and the panel's install,
 the GitHub check and the IOmcu's update wait.
+
+### The Dial
+
+The DIAL FIRMWARE row shows the M5Stack Dial's firmware:
+`Dial: 0.21.0. Included: 0.22.0.`, the version the linked Dial's INFO
+named, or `not connected`, and the version of the Dial image this panel
+carries, or `none`. Under it `HOLD 2s TO UPDATE THE DIAL`, or `HOLD 2s TO
+REINSTALL THE DIAL FIRMWARE` while the Dial reports the carried version.
+The Dial and its update are in [The M5Stack Dial: Update over Bluetooth
+LE](Dial.md#update-over-bluetooth-le).
+
+![The DIAL FIRMWARE row while the Dial asks for its press](img/updates-dial.png)
+
+While the update runs the button reads, one after the other:
+
+| Button | Step |
+| --- | --- |
+| `DIAL UPDATE: CONNECTING` | the Dial's knob link ends, and the update connects to the bound Dial |
+| `PRESS THE DIAL TO ACCEPT: 27s` | the Dial took BEGIN and asks for a press of its screen button; the seconds are the Dial's |
+| `DIAL UPDATE 37%` | the share of the image the Dial took |
+
+The band says `Press the Dial's screen button within 30s to accept the
+update.` when the Dial asks. The hold is live only when none of the
+reasons below holds. Otherwise it is grey, and a tap on it shows the first
+reason on the alert band:
+
+| Band | Condition |
+| --- | --- |
+| `The device update is running.` | An update runs or was asked for. |
+| `This panel includes no firmware for this device.` | The panel was built without the Dial's image. |
+| `The included firmware for this device failed its check.` | The carried image is no ESP32-S3 application of the project `rcbench-dial`, is larger than the Dial's slot of 3,145,728 bytes, or its appended SHA-256 differs. |
+| `The device update requires SAFE.` | ARMED, or an arm waiting. |
+| `The device update waits for the other update to finish.` | The C6's or the IOmcu's update, or the panel's download or install, runs. |
+| `Connect the device on WIRELESS first.` | No Dial is linked, or its INFO has not come. |
+
+The alert band says how an update ended:
+
+| Alert | Meaning |
+| --- | --- |
+| `Dial updated to 0.22.0. It connects again by itself.` | The Dial took, checked and installed the image and restarts; its knob link connects again from SETUP's values. |
+| `Dial update stopped: <reason>. Previous firmware is running.` | The update ended without an install. |
+
+| Reason | Cause |
+| --- | --- |
+| `no connection` | no connection to the Dial within 30s |
+| `connection lost` | the link ended during the transfer |
+| `no answer` | the Dial did not answer a step within its limit or 3 polls in a row, or the Dial saw no write for 10s |
+| `a write was refused` | the host stack refused a write |
+| `image for another device` | the Dial refused the kind |
+| `image too large` | the Dial refused the size |
+| `it runs this version` | the Dial runs the version, and the hold was no reinstall |
+| `not accepted within 30s` | no press on the Dial |
+| `refused on the device` | the 1s hold on the Dial |
+| `image arrived damaged` | the SHA-256 of what the Dial wrote differs |
+| `the device's flash failed` | the Dial's slot did not open, take a write or become the boot slot |
+| `the device refused the image` | ESP-IDF's image check on the Dial refused it |
+| `error 6` | another of the Dial's codes, such as 6 for a write out of order ([protocols/bleota](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)) |
+
+While the update runs, ARM is refused with `Cannot switch to ARMED: a
+wireless device update is running.`, and the C6's update waits. The knob
+does not drive the panel from the hold until its link connects again; that
+gap is no loss error. The transfer time is not measured.
 
 ### The reminder
 

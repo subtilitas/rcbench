@@ -410,7 +410,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,680 | 1,424 |
 | `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's and the Dial's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`) | 4,096 | 1,808 | 1,248 |
+| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's and the Dial's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the wireless devices' update in `panel_devupd.c`) | 4,096 | 1,808 | 1,248 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -418,7 +418,7 @@ its stack less 1024 bytes.
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
-| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,216 | 1,840 |
+| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
 | `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,432 | 3,696 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
@@ -560,6 +560,15 @@ tool does not follow.
 
 The tasks of ESP-IDF and esp_hosted are not in the table: their names and
 figures come from the console of a sample, and none is recorded.
+
+### The Dial and the sensor nodes
+
+The M5Stack Dial and both node roles run the firmware update's device side
+on the task `ota` (`firmware/devota`): 4,096 bytes of stack from the heap at
+start, priority 3, a step every 10ms. `esp_ota_end()` reads the written
+image back and checks it on this stack. Its depth is not measured: no tool
+reads the Dial's Xtensa image or the node's image for it, and no
+high-water mark is recorded.
 
 ### The IOmcu
 
@@ -744,6 +753,13 @@ The console row is measured without the Dial's client (`panel_dial.c`,
 `dial_ctl.c`, `dial_stream.c`, `dial_panel.c` and `protocols/dialknob`); with
 it, not measured. The Dial's client adds 4,376 bytes of DIRAM, 4,368 of them
 .bss, and 23,536 bytes of image to the default build.
+The wireless devices' update, from the linker map of the default build:
+`panel_devupd.c` holds 1,805 bytes of DIRAM (1,377 .bss, 428 .data) and
+3,670 bytes of code; `upd_dev.c` 112 bytes of .bss and 1,582 of code;
+`shared/devupd` 2,914 bytes of code and `protocols/bleota` 344. The three
+carried images, the Dial's and both nodes', add 2,128,048 bytes of image at
+0.23.12: 840,960, 645,328 and 641,760. With them the application image is
+7,311,360 bytes, 815,104 (10.0%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one

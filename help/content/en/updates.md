@@ -18,6 +18,8 @@ UPDATES checks GitHub for newer panel firmware and offers to install it. Open it
 | HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 | HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
 | HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE | the same, while the C6 reports the carried version |
+| HOLD 2s TO UPDATE THE DIAL | sends the M5Stack Dial's image this panel carries to the linked Dial over Bluetooth LE, see [The Dial](#the-dial) |
+| HOLD 2s TO REINSTALL THE DIAL FIRMWARE | the same, while the Dial reports the carried version |
 
 ## Settings
 
@@ -162,10 +164,26 @@ While the update runs, ARM is refused and Wi-Fi stays off. It ends with one aler
 
 After every end but the first, the C6 keeps the firmware it ran and Wi-Fi works as before (after a failed link only once the panel restarts). The flash over header H4 with a USB-UART adapter is in [The ESP32-C6 radio](https://github.com/subtilitas/rcbench/wiki/C6#recovery-over-header-h4).
 
+## The Dial
+
+![The Dial asks for its press](view:updates-dial)
+
+The DIAL FIRMWARE row shows the linked Dial's version and the version of the Dial image this panel carries: `Dial: 0.21.0. Included: 0.22.0.` The hold needs the bench SAFE, a linked Dial and no other update running. A tap on the grey hold shows the reason on the alert band, for example `Connect the device on WIRELESS first.`
+
+1. The hold ends the Dial's knob link; the button reads `DIAL UPDATE: CONNECTING`.
+2. The Dial shows the update's versions and asks for a press of its screen button for 30s; the button reads `PRESS THE DIAL TO ACCEPT: 27s`. A press accepts, a 1s hold on the Dial refuses, no press refuses. Nothing is erased before the answer.
+3. The Dial writes the image; the button reads `DIAL UPDATE 37%`.
+4. The Dial checks the image's SHA-256 (Secure Hash Algorithm, 256 bits), installs it and restarts. The alert reads `Dial updated to 0.22.0. It connects again by itself.`
+
+Any other end reads `Dial update stopped: <reason>. Previous firmware is running.`, for example `not accepted within 30s` or `image arrived damaged`; the Dial keeps the firmware it ran. While the update runs, ARM is refused with `Cannot switch to ARMED: a wireless device update is running.` and the C6 radio's update waits. The knob does not drive the panel until its link connects again; that gap is no loss error.
+
+The image carries no signature: the Dial accepts any Dial image a nearby device sends once its screen button is pressed. A new image that restarts before its first connection goes back to the one before it.
+
 ## Current limitations
 
 - How long the check and the download take on a real network is not measured.
 - How long the C6 radio's update takes is not measured, and whether the shipped C6 takes it over SDIO is not known.
+- How long the Dial's update takes is not measured; it has not run with a Dial.
 - A first DNS (Domain Name System) server of the home network that does not answer delays each name lookup by about 7s after a join, out of the check's 30s: lwIP asks that server 4 times, up to 7s, before the next.
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
 - TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.
