@@ -97,7 +97,7 @@ The balance node measures the vibration and the index of a rotor for [Balance](b
 | Balance node | ON, OFF | OFF | Bluetooth LE and the link to the bound node; OFF ends the link |
 | Scan for node | `SCAN` | | a tap scans 10s and lists the balance nodes in range, `rcbench-bal-XXXX`; a switch to ARMED stops it; refused while ARMED, with `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST` in the band |
 | Bound node | `NONE` or the node's name | `NONE` | a tap lists the nodes the last scan found; a tap on one binds it and asks for a save. RESET keeps the bound node |
-| Node battery | `3.91V`, `3.40V LOW`, `NO READING`, `--` | | the node's cell, read every 5s; LOW under 3.50V |
+| Node battery | `3.91V`, `3.40V LOW`, `NO READING`, `--` | | the node's cell, from the STATUS the node sends beside its reports; LOW under 3.50V |
 | Trial mass | 0.01g to 20.00g | 0.50g | the mass taped on for the trial runs on [MOTOR & ESC](motor.md#balance) |
 
 | State | When |

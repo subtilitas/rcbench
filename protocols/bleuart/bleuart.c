@@ -156,9 +156,7 @@ static void unlinked(bleu_t *b, bool on, uint32_t gap, uint32_t now_ms)
     b->tok_link = 0;
     b->conn = 0;
     b->param_due = false;
-    b->aux_due = false;
     b->rd_busy = false;
-    b->rd_aux = false;
     if (b->wr == BLEU_WR_BUSY) {
         b->wr = BLEU_WR_FAILED;
         b->wr_status = BLEU_STATUS_LOST;
@@ -167,6 +165,25 @@ static void unlinked(bleu_t *b, bool on, uint32_t gap, uint32_t now_ms)
     b->st = !on ? BLEU_ST_OFF : b->bound ? BLEU_ST_WAIT : BLEU_ST_IDLE;
     b->t_gap = now_ms;
     b->gap_ms = gap;
+}
+
+/**
+ * @brief A connect that went unanswered, timed out or failed to be
+ *        established: retried after the backoff, at least @p floor, and
+ *        the backoff doubled up to BLEU_BACKOFF_MAX_MS.  A peer that is
+ *        away so holds the host stack's one connect less and less often.
+ * @param b      The machine.
+ * @param floor  The least gap: BLEU_RETRY_MS or BLEU_RETRY_CONNECT_MS.
+ * @param now_ms The clock.
+ */
+static void unanswered(bleu_t *b, uint32_t floor, uint32_t now_ms)
+{
+    uint32_t gap = b->backoff_ms == 0u ? BLEU_RETRY_MS : b->backoff_ms;
+    gap = gap < floor ? floor : gap;
+    gap = gap > BLEU_BACKOFF_MAX_MS ? BLEU_BACKOFF_MAX_MS : gap;
+    b->backoff_ms = gap >= BLEU_BACKOFF_MAX_MS / 2u ? BLEU_BACKOFF_MAX_MS
+                                                    : 2u * gap;
+    unlinked(b, true, gap, now_ms);
 }
 
 /**
@@ -259,15 +276,15 @@ bool bleu_profile_valid(const bleu_profile_t *p)
         || p->chr_n > BLEU_CHR_MAX || !conn_params_valid(&p->conn)) {
         return false;
     }
-    unsigned n[BLEU_ROLE_AUX + 1u] = { 0u };
+    unsigned n[BLEU_ROLE_PARAM + 1u] = { 0u };
     for (uint8_t i = 0; i < p->chr_n; ++i) {
-        if (p->chr[i].uuid == NULL || p->chr[i].role > BLEU_ROLE_AUX) {
+        if (p->chr[i].uuid == NULL || p->chr[i].role > BLEU_ROLE_PARAM) {
             return false;
         }
         ++n[p->chr[i].role];
     }
     return n[BLEU_ROLE_STREAM] == 1u && n[BLEU_ROLE_CMD] <= 1u
-           && n[BLEU_ROLE_PARAM] <= 1u && n[BLEU_ROLE_AUX] <= 1u;
+           && n[BLEU_ROLE_PARAM] <= 1u;
 }
 
 bool bleu_setup(bleu_t *b, const bleu_profile_t *p, uint8_t owner)
@@ -315,6 +332,7 @@ void bleu_enable(bleu_t *b, bool on, uint32_t now_ms)
         tear_down(b, now_ms);
     }
     b->err = BLEU_ERR_NONE;
+    b->backoff_ms = 0;
     unlinked(b, on, 0, now_ms);
 }
 
@@ -333,6 +351,7 @@ void bleu_bind(bleu_t *b, const bleu_addr_t *addr, uint32_t now_ms)
         b->addr = *addr;
     }
     b->err = BLEU_ERR_NONE;
+    b->backoff_ms = 0;
     unlinked(b, b->st != BLEU_ST_OFF, 0, now_ms);
 }
 
@@ -345,6 +364,7 @@ bool bleu_scan(bleu_t *b, uint32_t now_ms)
         tear_down(b, now_ms);
         unlinked(b, true, 0, now_ms);
     }
+    b->backoff_ms = 0;
     bleu_list_clear(&b->list);
     b->scanning = true;
     b->scan_status = 0;
@@ -361,17 +381,7 @@ bool bleu_link_up(const bleu_t *b)
 bool bleu_can_send(const bleu_t *b)
 {
     return bleu_link_up(b) && b->rx_val != 0u && b->wr != BLEU_WR_BUSY
-           && !b->rd_busy && !b->param_due && !b->aux_due;
-}
-
-bool bleu_read_aux(bleu_t *b)
-{
-    if (!bleu_link_up(b) || b->aux_val == 0u || b->aux_due || b->rd_busy
-        || b->param_due) {
-        return false;
-    }
-    b->aux_due = true;
-    return true;
+           && !b->rd_busy && !b->param_due;
 }
 
 bool bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms)
@@ -452,11 +462,6 @@ static void take_chr(bleu_t *b, const bleu_evt_t *e)
     case BLEU_ROLE_PARAM:
         if ((e->props & BLEU_PROP_READ) != 0u) {
             b->param_val = e->h2;
-        }
-        break;
-    case BLEU_ROLE_AUX:
-        if ((e->props & BLEU_PROP_READ) != 0u) {
-            b->aux_val = e->h2;
         }
         break;
     default:
@@ -583,20 +588,7 @@ static void link_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
         }
         break;
     case BLEU_EV_READ:
-        if (b->rd_busy && b->rd_aux) {
-            b->rd_busy = false;
-            b->rd_aux = false;
-            b->tok_link = 0;
-            b->aux_status = e->status;
-            b->aux_len = 0;
-            if (e->status == 0u) {
-                const size_t n = e->len < BLEU_PARAM_MAX ? e->len
-                                                         : BLEU_PARAM_MAX;
-                memcpy(b->aux, e->data, n);
-                b->aux_len = (uint8_t)n;
-            }
-            ++b->aux_reads;
-        } else if (b->rd_busy) {
+        if (b->rd_busy) {
             b->rd_busy = false;
             b->tok_link = 0;
             b->param_status = e->status;
@@ -655,9 +647,10 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     if (e->status != 0u) {
         b->err = BLEU_ERR_CONNECT;
         b->err_status = e->status;
-        unlinked(b, true, BLEU_RETRY_CONNECT_MS, now_ms);
+        unanswered(b, BLEU_RETRY_CONNECT_MS, now_ms);
         return;
     }
+    b->backoff_ms = 0;
     b->t_connect = now_ms - b->t_link;
     b->t_conn_at = now_ms;
     b->t_setup = 0;
@@ -667,8 +660,6 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     b->supervision = e->h3;
     b->svc_start = b->svc_end = 0;
     b->tx_val = b->tx_end = b->cccd = b->rx_val = b->param_val = 0;
-    b->aux_val = 0;
-    b->aux_len = 0;
     b->tx_props = b->rx_props = 0;
     b->mtu = 0;
     b->param_len = 0;
@@ -685,7 +676,8 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
 /**
  * @brief Take a DISCONNECT event.  One with the token of the connect in
  *        flight ends that connect as failed (HCI 0x3E, failed to be
- *        established): retried after BLEU_RETRY_CONNECT_MS.
+ *        established): retried after BLEU_RETRY_CONNECT_MS or the longer
+ *        backoff.
  * @param b      The machine.
  * @param e      The event.
  * @param now_ms The clock.
@@ -697,7 +689,7 @@ static void on_disconnect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
         b->reason = e->status;
         b->err = BLEU_ERR_CONNECT;
         b->err_status = e->status;
-        unlinked(b, true, BLEU_RETRY_CONNECT_MS, now_ms);
+        unanswered(b, BLEU_RETRY_CONNECT_MS, now_ms);
         return;
     }
     if (b->settle == SETTLE_CLOSE && e->conn == b->close_conn) {
@@ -819,7 +811,7 @@ static void run_timers(bleu_t *b, uint32_t now_ms)
         b->err = BLEU_ERR_CONNECT;
         b->err_status = 0;
         tear_down(b, now_ms);
-        unlinked(b, true, BLEU_RETRY_MS, now_ms);
+        unanswered(b, BLEU_RETRY_MS, now_ms);
     } else if (b->tok_link != 0u && b->st != BLEU_ST_CONNECTING
                && elapsed(now_ms, b->t_link, BLEU_GATT_MS)) {
         fail(b, BLEU_ERR_GATT, 0, now_ms);
@@ -833,18 +825,6 @@ static void run_timers(bleu_t *b, uint32_t now_ms)
         if (a != NULL) {
             a->token = b->tok_link;
             a->h1 = b->param_val;
-        }
-    } else if (b->st == BLEU_ST_UP && b->aux_due && !b->rd_busy
-               && b->wr != BLEU_WR_BUSY) {
-        b->aux_due = false;
-        b->rd_busy = true;
-        b->rd_aux = true;
-        b->t_link = now_ms;
-        b->tok_link = next_token(b);
-        bleu_act_t *a = push(b, BLEU_ACT_READ);
-        if (a != NULL) {
-            a->token = b->tok_link;
-            a->h1 = b->aux_val;
         }
     }
     if (b->settle != SETTLE_NONE) {

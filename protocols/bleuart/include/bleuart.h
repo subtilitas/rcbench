@@ -49,6 +49,9 @@ extern "C" {
 #define BLEU_RETRY_CONNECT_MS 7000u /**< a connect the host stack ends with a
                                          failure, among them HCI 0x3E (failed
                                          to be established), to the next */
+#define BLEU_BACKOFF_MAX_MS 30000u /**< the longest gap after connects
+                                         that went unanswered: each one
+                                         doubles the next gap up to it */
 #define BLEU_GATT_MS     5000u  /**< one discovery, MTU, CCCD or read step */
 #define BLEU_WRITE_MS    1000u  /**< one command write's answer */
 #define BLEU_SETTLE_MS   2000u  /**< a cancel or a disconnect to its event */
@@ -131,8 +134,6 @@ typedef enum {
                              stream bytes; every profile has one */
     BLEU_ROLE_CMD,      /**< WRITE or WRITE NO RESPONSE: bleu_send() */
     BLEU_ROLE_PARAM,    /**< read once after each subscribe when it has
-                             READ; a peer without it is taken */
-    BLEU_ROLE_AUX,      /**< read on request, bleu_read_aux(), when it has
                              READ; a peer without it is taken */
 } bleu_role_t;
 
@@ -390,13 +391,6 @@ typedef struct {
     uint8_t      param_len; /**< its length; 0 before the read */
     uint16_t     param_status; /**< the read's status */
     bool         param_due; /**< private: the read waits for the slot */
-    uint16_t     aux_val;   /**< the AUX's value handle, 0 without READ */
-    uint8_t      aux[BLEU_PARAM_MAX]; /**< its value as last read */
-    uint8_t      aux_len;   /**< its length; 0 before a read */
-    uint16_t     aux_status; /**< the last read's status */
-    uint32_t     aux_reads; /**< reads of it ended, counted */
-    bool         aux_due;   /**< private: a read waits for the slot */
-    bool         rd_aux;    /**< private: the read in flight is the AUX's */
     bleu_wr_t    wr;        /**< the last command write */
     uint16_t     wr_status; /**< its status */
     uint32_t     t_connect; /**< ms from CONNECT to the connect event */
@@ -421,6 +415,8 @@ typedef struct {
     uint32_t     t_gap;     /**< private: when the retry gap began */
     uint32_t     t_conn_at; /**< private: when the connect event came */
     uint32_t     gap_ms;    /**< private: its length */
+    uint32_t     backoff_ms;/**< private: the gap after the next connect
+                                 that goes unanswered, 0 for BLEU_RETRY_MS */
     bleu_act_t   q[BLEU_ACT_QUEUE]; /**< private: actions due */
     uint8_t      q_head;    /**< private */
     uint8_t      q_n;       /**< private */
@@ -554,16 +550,6 @@ bool bleu_step(bleu_t *b, uint32_t now_ms, bleu_act_t *out);
 /** @brief Whether the stream flows. @param b The machine. @return true in
  *         BLEU_ST_UP; false for NULL. */
 bool bleu_link_up(const bleu_t *b);
-/**
- * @brief Ask for a read of the profile's AUX characteristic: it goes when
- *        the slot is free, and its end counts in aux_reads with the value
- *        in aux and the status in aux_status.  A read that times out ends
- *        the link as a failed GATT step, as the PARAM's does.
- * @param b The machine.
- * @return false, and nothing changes, unless the link is up, the peer's
- *         AUX has READ and no read waits or runs.
- */
-bool bleu_read_aux(bleu_t *b);
 /** @brief Whether bleu_send() takes a command now. @param b The machine.
  *  @return true when up, no write in flight and the 6DAA read done. */
 bool bleu_can_send(const bleu_t *b);

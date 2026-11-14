@@ -12,6 +12,8 @@
  * - the_pane_repaints_on_a_new_reading_in_each_buffer
  * - the_balance_screen_shows_the_node_and_drops_simulated
  * - the_balance_screen_shows_dashes_for_a_stale_report
+ * - the_balance_screen_repaints_only_the_live_values
+ * - the_hint_says_whether_the_row_was_written
  *
  * SPDX-License-Identifier: MIT
  */
@@ -19,6 +21,7 @@
 #include "motor_rig.h"
 
 #include "balance_screen.h"
+#include "instruments_spots.h"
 #include "motor_balance.h"
 #include "node_balance.h"
 
@@ -318,6 +321,133 @@ TEST_CASE(the_balance_screen_shows_dashes_for_a_stale_report)
     node_balance_reset();
 }
 
+/** @brief A tap on the BALANCE screen at (@p x, @p y). */
+static void btap(int x, int y)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x,
+                                   .y = (int16_t)y, .strength = 40 } };
+    balance_screen()->event(&e);
+    e.type = TOUCH_EVENT_UP;
+    balance_screen()->event(&e);
+}
+
+/** @brief Pixels that differ between @p a and the frame, inside and
+ *         outside the four live values' boxes. */
+static void live_diff(const gfx_color_t *a, int *in, int *out)
+{
+    *in = 0;
+    *out = 0;
+    for (int y = 0; y < H; ++y) {
+        for (int x = 0; x < W; ++x) {
+            const bool d = a[(size_t)y * W + x] != fb[(size_t)y * W + x];
+            const bool box = x >= BL_VALUE_X && x < BL_RC_X + BL_RC_W
+                             && y >= BL_READ_Y && y < BL_READ_Y + 4 * BL_READ_H;
+            *in += d && box;
+            *out += d && !box;
+        }
+    }
+}
+
+/* On BALANCE with a node, a new reading repaints the four live values in
+ * each buffer and nothing else; a new result draws the screen again; on
+ * TEST RIG a reading repaints nothing. */
+TEST_CASE(the_balance_screen_repaints_only_the_live_values)
+{
+    settings_reset_all();
+    fresh();
+    node_balance_reset();
+    balance_screen()->reset();
+    rcnode_bal_report_t r = rep(420u, 2650u);
+    node_balance_feed(true, &r, 10u);
+    draw_balance(0);
+    draw_balance(1);
+    gfx_color_t *before = snap();
+    /* Paint over the left card: only a full repaint covers it. */
+    gfx_fill_rect(&cv, 100, 300, 8, 8, 0x1234u);
+    r = rep(510u, 1200u);
+    r.rpm = 7400u;
+    feed(&r, 1u);
+    draw_balance(0);
+    CHECK_EQ(fb[(size_t)302 * W + 102], 0x1234u);
+    gfx_fill_rect(&cv, 100, 300, 8, 8, before[(size_t)300 * W + 100]);
+    int in = 0, out = 0;
+    live_diff(before, &in, &out);
+    CHECK(in > 100);
+    CHECK_EQ(out, 0);
+    /* Buffer 1 takes the same on its frame; buffer 0 nothing more. */
+    gfx_color_t *after = snap();
+    memcpy(fb, before, (size_t)W * H * sizeof(gfx_color_t));
+    draw_balance(1);
+    CHECK_EQ(memcmp(fb, after, (size_t)W * H * sizeof(gfx_color_t)), 0);
+    gfx_fill_rect(&cv, BL_VALUE_X, BL_READ_Y, 8, 8, 0x1234u);
+    draw_balance(0);
+    CHECK_EQ(fb[(size_t)(BL_READ_Y + 2) * W + BL_VALUE_X + 2], 0x1234u);
+    /* The runs solved: the screen is drawn again, the left card too. */
+    gfx_fill_rect(&cv, 100, 300, 8, 8, 0x1234u);
+    nb_session_t *s = node_balance_session();
+    CHECK_EQ(nb_take(s, 0u, true), NB_TAKE_STARTED);
+    feed(&r, NB_CAP_REPORTS);
+    r = rep(300u, 1960u);
+    CHECK_EQ(nb_take(s, 1u, true), NB_TAKE_STARTED);
+    feed(&r, NB_CAP_REPORTS);
+    draw_balance(0);
+    CHECK(fb[(size_t)302 * W + 102] != 0x1234u);
+    /* TEST RIG: a new reading repaints nothing. */
+    btap(240, 32);
+    draw_balance(0);
+    draw_balance(1);
+    gfx_fill_rect(&cv, BL_VALUE_X, BL_READ_Y, 8, 8, 0x1234u);
+    r = rep(610u, 900u);
+    feed(&r, 1u);
+    draw_balance(0);
+    draw_balance(1);
+    CHECK_EQ(fb[(size_t)(BL_READ_Y + 2) * W + BL_VALUE_X + 2], 0x1234u);
+    free(before);
+    free(after);
+    node_balance_reset();
+}
+
+/* The result's hint names the CSV row's fate: waiting, written, or not
+ * written; WEAK carries it too. */
+TEST_CASE(the_hint_says_whether_the_row_was_written)
+{
+    fresh_tab();
+    rcnode_bal_report_t r = rep(420u, 2650u);
+    node_balance_feed(true, &r, 10u);
+    tap_key(MBAL_KEY_TAKE0);
+    feed(&r, NB_CAP_REPORTS);
+    r = rep(300u, 1960u);
+    tap_key(MBAL_KEY_TAKE1);
+    feed(&r, NB_CAP_REPORTS);
+    char row[NB_CSV_MAX];
+    CHECK(node_balance_take_csv(2, row, sizeof row) > 0u);
+    scr->render(&cv, 0);
+    gfx_color_t *waiting = snap();
+    node_balance_csv_done(node_balance_csv_seq(), true);
+    scr->render(&cv, 0);
+    gfx_color_t *written = snap();
+    CHECK(pane_diff(fb, waiting) > 50);
+    /* The same solution, its row not written: another hint again. */
+    node_balance_reset();
+    fresh_tab();
+    r = rep(420u, 2650u);
+    node_balance_feed(true, &r, 10u);
+    tap_key(MBAL_KEY_TAKE0);
+    feed(&r, NB_CAP_REPORTS);
+    r = rep(300u, 1960u);
+    tap_key(MBAL_KEY_TAKE1);
+    feed(&r, NB_CAP_REPORTS);
+    CHECK(node_balance_take_csv(2, row, sizeof row) > 0u);
+    node_balance_csv_done(node_balance_csv_seq(), false);
+    scr->render(&cv, 0);
+    CHECK(pane_diff(fb, written) > 50);
+    CHECK(pane_diff(fb, waiting) > 50);
+    free(waiting);
+    free(written);
+    node_balance_reset();
+}
+
 int main(void)
 {
     RUN(the_balance_tab_draws_its_pane_without_a_node);
@@ -328,5 +458,7 @@ int main(void)
     RUN(the_pane_repaints_on_a_new_reading_in_each_buffer);
     RUN(the_balance_screen_shows_the_node_and_drops_simulated);
     RUN(the_balance_screen_shows_dashes_for_a_stale_report);
+    RUN(the_balance_screen_repaints_only_the_live_values);
+    RUN(the_hint_says_whether_the_row_was_written);
     return test_summary("motor_balance");
 }

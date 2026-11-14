@@ -139,11 +139,11 @@ TABLE lists voltage, current, power and rpm, each with its peak. A channel witho
 
 BALANCE takes the runs of a balance with the balance node ([Balance](balance.md#the-balance-node)). The keys act on the press and drive no output, so they also work while ARMED.
 
-- The top line shows the node's vibration, angle, rpm and signal, and the trial mass on the right. Without a linked node it reads `NO BALANCE NODE: BIND ONE IN WIRELESS`. A report older than 1000ms shows `--`.
+- The top line shows the node's vibration, angle, rpm and signal, and the trial mass on the right. With the balance node OFF or none bound it reads `NO BALANCE NODE: BIND ONE IN WIRELESS`. A report older than 1000ms, or a dropped link, shows `--`.
 - 2 RUNS: BASELINE without the trial mass, then TRIAL 0° with the trial mass in line with blade 1. Needs the index mark. 4 RUNS: BASELINE, then the trial mass at 0°, 120° and 240° from blade 1, against the direction of rotation.
 - Each key takes the next 8 reports, 2s, at one throttle. Below the key: `TAKING n/8`, the result, or `NO REPORT`, `NO REVOLUTION`, `NO INDEX`, `RPM MOVED` (more than 5%). Press it again to retake.
 - CLEAR empties every run. Switching the method clears them too.
-- When every run is taken: `ADD 0.35g  WHERE between 1 and 2`, and a row in `BENCH/BALANCE/BALANCE.CSV`. `WEAK`, `NO EFFECT`, `INCONSISTENT` or `NO RESULT` say why the result is doubtful or missing.
+- When every run is taken: `ADD 0.35g  WHERE between 1 and 2`, and a row in `BENCH/BALANCE/BALANCE.CSV`. The line under it says `Row written` or `Row NOT written`. A new trial mass solves the runs again and writes a new row. `WEAK`, `NO EFFECT`, `INCONSISTENT` or `NO RESULT` say why the result is doubtful or missing.
 
 ## kV, rpm/V and EFF
 

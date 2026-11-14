@@ -274,13 +274,7 @@ TEST_CASE(profile_rules_hold_at_their_limits)
     p.chr[2].uuid = NULL;
     CHECK(!bleu_profile_valid(&p));
     p = k_node;
-    p.chr[2].role = BLEU_ROLE_AUX + 1u;
-    CHECK(!bleu_profile_valid(&p));
-    /* One AUX at most. */
-    p = k_node;
-    p.chr[2].role = BLEU_ROLE_AUX;
-    CHECK(bleu_profile_valid(&p));
-    p.chr[1].role = BLEU_ROLE_AUX;
+    p.chr[2].role = BLEU_ROLE_PARAM + 1u;
     CHECK(!bleu_profile_valid(&p));
 
     p = k_node;

@@ -74,28 +74,28 @@ const char *nb_quality_text(nb_quality_t q)
 
 /**
  * @brief Whether a report is fresh: within BAL_STALE_MS of its arrival.
- * @param linked Whether a node is linked.
- * @param r      The report, NULL none.
- * @param age_ms Its age.
+ * @param present Whether a node is on and bound.
+ * @param r       The report, NULL none.
+ * @param age_ms  Its age.
  * @return true when it may be shown.
  */
-static bool fresh(bool linked, const rcnode_bal_report_t *r, uint32_t age_ms)
+static bool fresh(bool present, const rcnode_bal_report_t *r, uint32_t age_ms)
 {
-    return linked && r != NULL && age_ms < BAL_STALE_MS;
+    return present && r != NULL && age_ms < BAL_STALE_MS;
 }
 
-void nb_read(bool linked, const rcnode_bal_report_t *r, uint32_t age_ms,
+void nb_read(bool present, const rcnode_bal_report_t *r, uint32_t age_ms,
              nb_reading_t *out)
 {
     if (out == NULL) {
         return;
     }
     memset(out, 0, sizeof(*out));
-    if (!linked) {
+    if (!present) {
         out->live = NB_LIVE_SIMULATED;
         return;
     }
-    if (!fresh(linked, r, age_ms)) {
+    if (!fresh(present, r, age_ms)) {
         out->live = NB_LIVE_STALE;
         return;
     }
@@ -103,6 +103,7 @@ void nb_read(bool linked, const rcnode_bal_report_t *r, uint32_t age_ms,
     out->word = (uint8_t)nb_quality(r->flags, r->quality);
     out->counts = (r->flags & RCNODE_BF_COUNTS) != 0u;
     const bool valid = (r->flags & RCNODE_BF_VALID) != 0u;
+    out->valid = valid;
     out->phase = valid && (r->flags & RCNODE_BF_NO_INDEX) == 0u;
     out->mag = out->counts ? (float)r->mag_1x : (float)r->mag_1x / 1000.0f;
     out->deg = (float)(r->phase_1x % RCNODE_PHASE_STEPS) / 10.0f;
@@ -115,7 +116,7 @@ const char *nb_fmt_mag(const nb_reading_t *r, char *out, size_t n)
     if (out == NULL || n == 0u) {
         return "";
     }
-    if (r == NULL || r->live != NB_LIVE_FRESH) {
+    if (r == NULL || r->live != NB_LIVE_FRESH || !r->valid) {
         snprintf(out, n, "--");
     } else if (r->counts) {
         snprintf(out, n, TR(NB_COUNTS), (unsigned)r->mag);
@@ -273,13 +274,13 @@ static void take_report(nb_session_t *s, const rcnode_bal_report_t *r)
     }
 }
 
-void nb_feed(nb_session_t *s, bool linked, const rcnode_bal_report_t *r,
+void nb_feed(nb_session_t *s, bool present, const rcnode_bal_report_t *r,
              uint32_t age_ms)
 {
     if (s == NULL) {
         return;
     }
-    const bool ok = fresh(linked, r, age_ms);
+    const bool ok = fresh(present, r, age_ms);
     bool is_new = false;
     if (r != NULL) {
         is_new = !s->have_last || r->hdr.seq != s->last_seq
@@ -397,10 +398,13 @@ static struct {
     nb_session_t    ses;        /**< the captures */
     bool            init;       /**< ses was set up */
     uint32_t        rev;        /**< the reading's own revision */
+    uint32_t        res_rev;    /**< the solution's and the row's revision */
     bool            solved;     /**< sol holds the ready captures' solution */
     vibe_solution_t sol;        /**< that solution */
     float           trial_g;    /**< its trial mass */
     bool            csv_due;    /**< its CSV row is not taken yet */
+    uint8_t         csv;        /**< nb_csv_t of the last row taken */
+    uint32_t        csv_seq;    /**< that row's number */
 } s_nb; /**< the panel's instance: UI task only */
 
 /** @brief Set up on first use. */
@@ -426,32 +430,48 @@ void node_balance_reset(void)
 static bool same_reading(const nb_reading_t *a, const nb_reading_t *b)
 {
     return a->live == b->live && a->word == b->word && a->counts == b->counts
-           && a->phase == b->phase && a->mag == b->mag && a->deg == b->deg
-           && a->rpm == b->rpm && a->quality == b->quality;
+           && a->valid == b->valid && a->phase == b->phase
+           && a->mag == b->mag && a->deg == b->deg && a->rpm == b->rpm
+           && a->quality == b->quality;
 }
 
-void node_balance_feed(bool linked, const rcnode_bal_report_t *r,
+/**
+ * @brief The solution kept in step with the captures and the trial mass:
+ *        solved again, with a new CSV row due, when the captures became
+ *        ready or SET_BAL_TRIAL differs from the solution's trial mass;
+ *        dropped when the captures are no longer ready.
+ */
+static void refresh(void)
+{
+    nb_once();
+    const bool ready = nb_ready(&s_nb.ses);
+    const float trial = settings_get(SET_BAL_TRIAL);
+    if (ready && (!s_nb.solved || trial != s_nb.trial_g)) {
+        s_nb.trial_g = trial;
+        s_nb.solved = nb_solve(&s_nb.ses, trial, &s_nb.sol);
+        s_nb.csv_due = s_nb.solved;
+        s_nb.csv = NB_CSV_NONE;
+        ++s_nb.res_rev;
+    } else if (!ready && s_nb.solved) {
+        s_nb.solved = false;
+        s_nb.csv_due = false;
+        s_nb.csv = NB_CSV_NONE;
+        ++s_nb.res_rev;
+    }
+}
+
+void node_balance_feed(bool present, const rcnode_bal_report_t *r,
                        uint32_t age_ms)
 {
     nb_once();
     nb_reading_t next;
-    nb_read(linked, r, age_ms, &next);
+    nb_read(present, r, age_ms, &next);
     if (!same_reading(&next, &s_nb.live)) {
         s_nb.live = next;
         ++s_nb.rev;
     }
-    nb_feed(&s_nb.ses, linked, r, age_ms);
-    const bool ready = nb_ready(&s_nb.ses);
-    if (ready && !s_nb.solved) {
-        s_nb.trial_g = settings_get(SET_BAL_TRIAL);
-        s_nb.solved = nb_solve(&s_nb.ses, s_nb.trial_g, &s_nb.sol);
-        s_nb.csv_due = s_nb.solved;
-        ++s_nb.rev;
-    } else if (!ready && s_nb.solved) {
-        s_nb.solved = false;
-        s_nb.csv_due = false;
-        ++s_nb.rev;
-    }
+    nb_feed(&s_nb.ses, present, r, age_ms);
+    refresh();
 }
 
 const nb_reading_t *node_balance_live(void)
@@ -467,13 +487,19 @@ nb_session_t *node_balance_session(void)
 
 uint32_t node_balance_rev(void)
 {
-    return s_nb.rev + s_nb.ses.rev;
+    return s_nb.rev + s_nb.ses.rev + s_nb.res_rev;
+}
+
+uint32_t node_balance_result_rev(void)
+{
+    return s_nb.ses.rev + s_nb.res_rev;
 }
 
 bool node_balance_result(vibe_solution_t *out, float *trial_g)
 {
-    /* A run taken again or CLEAR since the last frame: no solution. */
-    if (!s_nb.solved || !nb_ready(&s_nb.ses)) {
+    /* A run taken again, CLEAR or a new trial mass since the last frame. */
+    refresh();
+    if (!s_nb.solved) {
         return false;
     }
     if (out != NULL) {
@@ -487,13 +513,36 @@ bool node_balance_result(vibe_solution_t *out, float *trial_g)
 
 size_t node_balance_take_csv(int blades, char *out, size_t n)
 {
-    if (!s_nb.csv_due || !nb_ready(&s_nb.ses)) {
+    refresh();
+    if (!s_nb.csv_due) {
         return 0u;
     }
     const size_t len = nb_csv_row(&s_nb.ses, s_nb.trial_g, &s_nb.sol,
                                   blades, out, n);
     if (len > 0u) {
         s_nb.csv_due = false;
+        s_nb.csv = NB_CSV_WAITING;
+        ++s_nb.csv_seq;
+        ++s_nb.res_rev;
     }
     return len;
+}
+
+uint32_t node_balance_csv_seq(void)
+{
+    return s_nb.csv_seq;
+}
+
+void node_balance_csv_done(uint32_t seq, bool ok)
+{
+    if (seq != s_nb.csv_seq || s_nb.csv != NB_CSV_WAITING) {
+        return;
+    }
+    s_nb.csv = ok ? NB_CSV_WRITTEN : NB_CSV_FAILED;
+    ++s_nb.res_rev;
+}
+
+nb_csv_t node_balance_csv_state(void)
+{
+    return (nb_csv_t)s_nb.csv;
 }

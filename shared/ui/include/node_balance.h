@@ -52,8 +52,8 @@ extern "C" {
 
 /** @brief What the readings show. */
 typedef enum {
-    NB_LIVE_SIMULATED = 0, /**< no node linked: the screen's model */
-    NB_LIVE_STALE,         /**< linked, no report in BAL_STALE_MS: "--" */
+    NB_LIVE_SIMULATED = 0, /**< node OFF or none bound: the screen's model */
+    NB_LIVE_STALE,         /**< on and bound, no fresh report: "--" */
     NB_LIVE_FRESH,         /**< a report within BAL_STALE_MS */
 } nb_live_t;
 
@@ -79,6 +79,7 @@ typedef struct {
     uint8_t  live;     /**< nb_live_t */
     uint8_t  word;     /**< nb_quality_t */
     bool     counts;   /**< magnitudes in ADC counts, not g (RCNODE_BF_COUNTS) */
+    bool     valid;    /**< mag holds: a revolution counted (RCNODE_BF_VALID) */
     bool     phase;    /**< deg holds: a counted revolution against the index */
     float    mag;      /**< the 1x magnitude, g, or counts with counts */
     float    deg;      /**< the 1x phase, 0 to below 360° */
@@ -146,14 +147,23 @@ typedef struct {
     uint32_t rev;             /**< counts every change */
 } nb_session_t;
 
+/** @brief Where the last CSV row of a solution is. */
+typedef enum {
+    NB_CSV_NONE = 0, /**< no row taken for the solution shown */
+    NB_CSV_WAITING,  /**< taken, the card task has not answered */
+    NB_CSV_WRITTEN,  /**< written and synced to the card */
+    NB_CSV_FAILED,   /**< not written: no card, a full queue or an error */
+} nb_csv_t;
+
 /**
  * @brief A report as the screen shows it.
- * @param linked Whether a node is linked (BAL_LINK_WAITING or later).
- * @param r      The last report, NULL for none.
- * @param age_ms Its age.
- * @param out    Receives the reading.
+ * @param present Whether the node is on and bound: false shows the
+ *                screen's model (NB_LIVE_SIMULATED).
+ * @param r       The last report while the link is up, NULL otherwise.
+ * @param age_ms  Its age.
+ * @param out     Receives the reading.
  */
-void nb_read(bool linked, const rcnode_bal_report_t *r, uint32_t age_ms,
+void nb_read(bool present, const rcnode_bal_report_t *r, uint32_t age_ms,
              nb_reading_t *out);
 
 /**
@@ -172,7 +182,8 @@ nb_quality_t nb_quality(uint16_t flags, uint8_t quality);
 const char *nb_quality_text(nb_quality_t q);
 
 /**
- * @brief The magnitude as shown: "0.42g", "412 counts", "--" when stale.
+ * @brief The magnitude as shown: "0.42g", "412 counts", "--" when stale or
+ *        without a counted revolution.
  * @param r The reading.  @param out The text.  @param n Its size.
  * @return out.
  */
@@ -227,12 +238,12 @@ void nb_clear(nb_session_t *s);
 /**
  * @brief The node's state, each frame: a running capture takes each new
  *        report (a seq or a t_node not seen) and fails on a stale one.
- * @param s      The session.
- * @param linked Whether a node is linked.
- * @param r      The last report, NULL for none.
- * @param age_ms Its age.
+ * @param s       The session.
+ * @param present Whether the node is on and bound.
+ * @param r       The last report while the link is up, NULL otherwise.
+ * @param age_ms  Its age.
  */
-void nb_feed(nb_session_t *s, bool linked, const rcnode_bal_report_t *r,
+void nb_feed(nb_session_t *s, bool present, const rcnode_bal_report_t *r,
              uint32_t age_ms);
 
 /**
@@ -278,11 +289,12 @@ size_t nb_csv_row(const nb_session_t *s, float trial_g,
 
 /**
  * @brief The node's state for the screens, each frame from the panel.
- * @param linked Whether a node is linked.
- * @param r      The last report, NULL for none.
- * @param age_ms Its age.
+ * @param present Whether the node is on and bound: false shows the model.
+ * @param r       The last report while the link is up, NULL otherwise: a
+ *                dropped link shows "--" (NB_LIVE_STALE).
+ * @param age_ms  Its age.
  */
-void node_balance_feed(bool linked, const rcnode_bal_report_t *r,
+void node_balance_feed(bool present, const rcnode_bal_report_t *r,
                        uint32_t age_ms);
 
 /** @brief The reading the screens show. @return Never NULL. */
@@ -299,8 +311,17 @@ nb_session_t *node_balance_session(void);
 uint32_t node_balance_rev(void);
 
 /**
- * @brief The solution of the captures, kept from the frame they became
- *        ready, and its trial mass.
+ * @brief Moves when the solution, its trial mass or its CSV row's state
+ *        change, or a capture does: the result's part of a screen
+ *        repaints on it.
+ * @return The revision.
+ */
+uint32_t node_balance_result_rev(void);
+
+/**
+ * @brief The solution of the captures and its trial mass, solved again
+ *        when SET_BAL_TRIAL differs from the trial mass it was solved
+ *        with: a result never pairs with an older trial mass.
  * @param out     Receives the solution, may be NULL.
  * @param trial_g Receives its trial mass, may be NULL.
  * @return false while the captures are not ready.
@@ -308,13 +329,30 @@ uint32_t node_balance_rev(void);
 bool node_balance_result(vibe_solution_t *out, float *trial_g);
 
 /**
- * @brief The CSV row of a solution not yet taken, once.
+ * @brief The CSV row of a solution not yet taken, once; a solution solved
+ *        again for a new trial mass gives a new row.  A row taken waits
+ *        (NB_CSV_WAITING) under node_balance_csv_seq() for
+ *        node_balance_csv_done().
  * @param blades The rotor's blades.
  * @param out    The row.
  * @param n      Its size.
  * @return The length, 0 for none.
  */
 size_t node_balance_take_csv(int blades, char *out, size_t n);
+
+/** @brief The number of the last row taken. @return It, 0 before any. */
+uint32_t node_balance_csv_seq(void);
+
+/**
+ * @brief The card's answer for a row: written or not.  An answer for a
+ *        row older than the last taken is ignored.
+ * @param seq The row's node_balance_csv_seq().
+ * @param ok  Whether it was written and synced.
+ */
+void node_balance_csv_done(uint32_t seq, bool ok);
+
+/** @brief Where the shown solution's row is. @return The state. */
+nb_csv_t node_balance_csv_state(void);
 
 /** @brief Back to power-up: no node, two runs, nothing taken. */
 void node_balance_reset(void);

@@ -178,6 +178,11 @@ static struct {
                                       seen                         */
     uint32_t  rev;               /**< bumped on every change      */
     uint32_t  node_rev;          /**< node_balance_rev() last seen */
+    uint32_t  res_rev;           /**< node_balance_result_rev() last
+                                      seen                         */
+    bool      node_was;          /**< node_live() last seen        */
+    uint32_t  read_rev;          /**< bumped on a new reading     */
+    uint32_t  read_drawn[2];     /**< each buffer's read_rev      */
     uint32_t  drawn[2];          /**< each buffer's revision      */
     unsigned  drawn_mask;        /**< the buffers cleared         */
 } s; /**< The screen's state. */
@@ -187,6 +192,24 @@ void balance_invalidate(void)
     s.drawn_mask = 0;
     s.drawn[0] = UINT32_MAX;
     s.drawn[1] = UINT32_MAX;
+}
+
+/** @brief Whether a balance node is on and bound: the readings are its own. */
+static bool node_live(void)
+{
+    return node_balance_live()->live != NB_LIVE_SIMULATED;
+}
+
+/**
+ * @brief The screen on top: the node taken as it is, drawn whole on the
+ *        next frame, so the first tick finds nothing new.
+ */
+static void enter(void)
+{
+    s.node_rev = node_balance_rev();
+    s.res_rev = node_balance_result_rev();
+    s.node_was = node_live();
+    ++s.rev;
 }
 
 /**
@@ -286,12 +309,6 @@ static void leave(void)
     kp_close();
 }
 
-/** @brief Whether a balance node is linked: the readings are its own. */
-static bool node_live(void)
-{
-    return node_balance_live()->live != NB_LIVE_SIMULATED;
-}
-
 /**
  * @brief The correction the node's runs solved.
  * @param out Receives it.
@@ -342,18 +359,28 @@ const char *balance_screen_model_note(void)
 }
 
 /**
- * @brief Each frame: the node's readings or runs moved, the screen draws
- *        again.
+ * @brief Each frame, on the BALANCE pane with the keypad closed: a new
+ *        solution or the node coming or going draws the screen again (the
+ *        disc marks the correction); a new reading repaints the readings'
+ *        values alone.  Other panes show nothing of the node: the
+ *        revisions are only followed there.
  * @param dt Unused.
  */
 static void tick(float dt)
 {
     (void)dt;
     const uint32_t r = node_balance_rev();
-    if (r != s.node_rev) {
-        s.node_rev = r;
+    const uint32_t res = node_balance_result_rev();
+    const bool live = node_live();
+    const bool shown = s.tabs.selected == BALANCE_PANE_MEASURE && !s.kp.open;
+    if (shown && (res != s.res_rev || live != s.node_was)) {
         ++s.rev;
+    } else if (shown && r != s.node_rev) {
+        ++s.read_rev;
     }
+    s.node_rev = r;
+    s.res_rev = res;
+    s.node_was = live;
 }
 
 /**
@@ -890,6 +917,54 @@ static void draw_model_rows(gfx_canvas_t *c)
              ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
 
+/** @brief The node's live rows: VIBRATION, ANGLE, SPEED and SIGNAL. */
+#define NODE_LIVE_ROWS 4
+
+/** @brief The text of one live row's value. */
+typedef char live_text_t[32];
+
+/**
+ * @brief The node's live values: magnitude, angle, rpm and quality word,
+ *        "--" while its report is stale.
+ * @param v Receives the four values.
+ */
+static void live_values(live_text_t v[NODE_LIVE_ROWS])
+{
+    const nb_reading_t *r = node_balance_live();
+    (void)nb_fmt_mag(r, v[0], sizeof(v[0]));
+    (void)nb_fmt_deg(r, v[1], sizeof(v[1]));
+    (void)nb_fmt_rpm(r, v[2], sizeof(v[2]));
+    const nb_quality_t q = (nb_quality_t)r->word;
+    if (r->live == NB_LIVE_FRESH && q >= NB_Q_GOOD && q <= NB_Q_POOR) {
+        snprintf(v[3], sizeof(v[3]), "%s %u%%", nb_quality_text(q),
+                 (unsigned)r->quality);
+    } else {
+        snprintf(v[3], sizeof(v[3]), "%s", r->live == NB_LIVE_FRESH
+                                               ? nb_quality_text(q) : "--");
+    }
+}
+
+/**
+ * @brief A new reading: the four live values repainted in their boxes on
+ *        the card, nothing else.
+ * @param c The canvas.
+ */
+static void draw_node_live(gfx_canvas_t *c)
+{
+    live_text_t v[NODE_LIVE_ROWS];
+    live_values(v);
+    for (int i = 0; i < NODE_LIVE_ROWS; ++i) {
+        const gfx_rect_t box = { (int16_t)(RC_X + 110),
+                                 (int16_t)(READ_Y + i * READ_H
+                                           + (READ_H - 20) / 2),
+                                 (int16_t)(RC_W - 110), 20 };
+        gfx_fill_rect(c, box.x, box.y, box.w, box.h,
+                      ui_theme_color(UI_C_PANEL));
+        gfx_text_in(c, box, v[i], BL_FONT_LABEL, ui_theme_color(UI_C_TEXT),
+                    1, GFX_ALIGN_RIGHT);
+    }
+}
+
 /**
  * @brief With a node: its magnitude, angle, rpm and quality word, "--"
  *        while its report is stale, then ADD and WHERE from the runs, and
@@ -898,19 +973,9 @@ static void draw_model_rows(gfx_canvas_t *c)
  */
 static void draw_node_rows(gfx_canvas_t *c)
 {
-    const nb_reading_t *r = node_balance_live();
-    char v_amp[32], v_ang[16], v_rpm[16], v_q[32], v_mass[24], v_where[32];
-    (void)nb_fmt_mag(r, v_amp, sizeof(v_amp));
-    (void)nb_fmt_deg(r, v_ang, sizeof(v_ang));
-    (void)nb_fmt_rpm(r, v_rpm, sizeof(v_rpm));
-    const nb_quality_t q = (nb_quality_t)r->word;
-    if (r->live == NB_LIVE_FRESH && q >= NB_Q_GOOD && q <= NB_Q_POOR) {
-        snprintf(v_q, sizeof(v_q), "%s %u%%", nb_quality_text(q),
-                 (unsigned)r->quality);
-    } else {
-        snprintf(v_q, sizeof(v_q), "%s", r->live == NB_LIVE_FRESH
-                                             ? nb_quality_text(q) : "--");
-    }
+    live_text_t live[NODE_LIVE_ROWS];
+    live_values(live);
+    char v_mass[24], v_where[32];
     vibe_solution_t sol;
     if (node_correction(&sol)) {
         snprintf(v_mass, sizeof(v_mass), "%.2fg", (double)sol.mass);
@@ -922,8 +987,9 @@ static void draw_node_rows(gfx_canvas_t *c)
     const char *const k[] = { TR(BAL_VIBRATION), TR(BAL_ANGLE),
                               TR(BAL_SPEED), TR(BAL_SIGNAL), TR(BAL_ADD),
                               TR(BAL_WHERE) };
-    const char *const v[] = { v_amp, v_ang, v_rpm, v_q, v_mass, v_where };
-    draw_rows(c, k, v, 6, 4);
+    const char *const v[] = { live[0], live[1], live[2], live[3], v_mass,
+                              v_where };
+    draw_rows(c, k, v, 6, NODE_LIVE_ROWS);
     gfx_hline(c, RC_X, NODE_NOTE_Y - 10, RC_W, ui_theme_color(UI_C_EDGE));
     gfx_text(c, RC_X, NODE_NOTE_Y, TR(BAL_LIVE_NOTE), BL_FONT_FINE,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
@@ -1022,9 +1088,17 @@ static void render(gfx_canvas_t *c, int buffer_index)
         s.drawn_mask |= bit;
     }
     if (s.drawn[buf] == s.rev) {
+        if (s.read_drawn[buf] != s.read_rev) {
+            s.read_drawn[buf] = s.read_rev;
+            if (s.tabs.selected == BALANCE_PANE_MEASURE && !s.kp.open
+                && node_live()) {
+                draw_node_live(c);
+            }
+        }
         return;
     }
     s.drawn[buf] = s.rev;
+    s.read_drawn[buf] = s.read_rev;
     gfx_clear(c, ui_theme_color(UI_C_BG));
 
     ui_tabs_render(&s.tabs, c);
@@ -1095,7 +1169,7 @@ static const ui_screen_t k_screen = {
     .covered = covered,
     .title  = "BALANCE",
     .reset  = reset,
-    .enter  = NULL,
+    .enter  = enter,
     .leave  = leave,
     .tick   = tick,
     .event  = event,

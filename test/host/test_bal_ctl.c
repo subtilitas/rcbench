@@ -8,11 +8,12 @@
  * fails (the link ends and comes back); the no-index mode after 2 reports
  * without an index edge and not after 1, the bench rpm written then and 0
  * again at the first edge; CONTROL writes never closer than 250ms however
- * often the rpm moves; a refused write going again; STATUS read every 5s
- * (not at 4999ms) into the battery, one never answered ending the link as
- * a failed GATT step; a scan refused while ARMED and stopped
- * at ARM; the scan listing balance nodes only, a scan response refreshing
- * a listed one, a bind; seq gaps counted; OFF ending it all.
+ * often the rpm moves; a refused write going again; the battery from the
+ * STATUS on STREAM, no read of the STATUS characteristic and no bad
+ * packet; a scan refused while ARMED and stopped at ARM; the scan listing
+ * nodes whose manufacturer data names the balance role, never a name
+ * alone, a scan response naming or refreshing a listed one, a bind; seq
+ * gaps counted; OFF ending it all.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -207,32 +208,35 @@ TEST_CASE(a_refused_write_goes_again)
     CHECK_EQ(r.w[0].op, RCNODE_OP_BLADES);
 }
 
-/* STATUS is read every 5000ms while linked, not at 4999ms, and its cell
- * lands in the view; BAT_NONE and BAT_LOW go with it. */
-TEST_CASE(status_is_read_every_5s_into_the_battery)
+/* The battery comes from the STATUS the node sends on STREAM: no read of
+ * the STATUS characteristic ever, no bad packet, no report lost over its
+ * own seq, and its cell lands in the view; BAT_LOW goes with it. */
+TEST_CASE(status_on_stream_is_the_battery)
 {
     brig_t r;
-    brig_init(&r);
-    brig_run(&r, 50u);
-    CHECK_EQ(r.st_reads, 0u);
+    brig_up(&r);
     bal_view_t v;
     bal_ctl_view(&r.c, r.now, &v);
     CHECK(!v.bat_known);
-    const uint32_t t_link = r.c.t_status;
-    brig_run(&r, t_link + BAL_STATUS_MS - 1u - r.now);
-    CHECK_EQ(r.st_reads, 0u);
-    brig_run(&r, 1u);
-    CHECK_EQ(r.st_reads, 1u);
+    const rcnode_bal_report_t p = brig_steady(420u, 2650u, 8000u);
+    brig_report(&r, &p);
+    brig_status(&r, 77u);
+    brig_report(&r, &p);
+    CHECK_EQ(r.c.bad, 0u);
+    CHECK_EQ(r.c.lost, 0u);
+    CHECK_EQ(r.c.reports, 2u);
     bal_ctl_view(&r.c, r.now, &v);
     CHECK(v.bat_known);
     CHECK_EQ(v.bat_mv, 3912u);
     r.vbat = 3410u;
     r.st_flags = RCNODE_ST_BAT_LOW;
-    brig_run(&r, BAL_STATUS_MS);
-    CHECK_EQ(r.st_reads, 2u);
+    brig_status(&r, 78u);
     bal_ctl_view(&r.c, r.now, &v);
     CHECK_EQ(v.bat_mv, 3410u);
     CHECK_EQ(v.bat_flags, RCNODE_ST_BAT_LOW);
+    brig_run(&r, 20000u);
+    CHECK_EQ(r.st_reads, 0u);
+    CHECK(r.c.linked);
     /* The link gone: the battery reads as unknown, INFO as unread. */
     brig_drop(&r);
     bal_ctl_view(&r.c, r.now, &v);
@@ -241,36 +245,25 @@ TEST_CASE(status_is_read_every_5s_into_the_battery)
     CHECK(!r.c.info_read);
 }
 
-/* A STATUS read that is never answered ends the link as a failed GATT
- * step after BLEU_GATT_MS; the link comes back and reads again. */
-TEST_CASE(a_status_read_without_an_answer_ends_the_link)
+/* A packet of another type on STREAM, here an INFO, counts as bad and
+ * sets no battery. */
+TEST_CASE(another_packet_on_stream_is_bad)
 {
     brig_t r;
-    brig_init(&r);
-    r.mute_status = true;
-    brig_run(&r, 50u);
-    brig_run(&r, BAL_STATUS_MS);
-    CHECK_EQ(r.st_reads, 1u);
-    CHECK(r.c.b.rd_busy);
-    CHECK(r.c.b.rd_aux);
-    /* No CONTROL write while the read waits. */
-    CHECK(!bleu_can_send(&r.c.b));
-    brig_run(&r, BLEU_GATT_MS + 1u);
-    CHECK_EQ(r.c.b.err, BLEU_ERR_GATT);
-    r.mute_status = false;
-    brig_run(&r, 10000u);
-    CHECK(r.c.linked);
-    CHECK(r.st_reads >= 2u);
+    brig_up(&r);
     bal_view_t v;
+    rcnode_info_t in;
+    memset(&in, 0, sizeof in);
+    in.hdr.type = RCNODE_T_INFO;
+    in.proto = RCNODE_PROTO;
+    in.role = RCNODE_ROLE_BALANCE;
+    bleu_evt_t e = brig_ev(BLEU_EV_NOTIFY, 0u);
+    e.h1 = BRIG_STREAM_VAL;
+    e.len = (uint8_t)rcnode_enc_info(&in, e.data, sizeof e.data);
+    bal_ctl_event(&r.c, &e, r.now);
+    CHECK_EQ(r.c.bad, 1u);
     bal_ctl_view(&r.c, r.now, &v);
-    CHECK(v.bat_known);
-    /* bleu_read_aux() refuses without a link, and a second time while the
-     * first waits. */
-    bleu_t b;
-    bleu_init(&b);
-    CHECK(!bleu_read_aux(&b));
-    CHECK(bleu_read_aux(&r.c.b));
-    CHECK(!bleu_read_aux(&r.c.b));
+    CHECK(!v.bat_known);
 }
 
 /* A scan while ARMED is refused and asks the host stack for nothing; on a
@@ -321,6 +314,42 @@ static void adv(brig_t *r, uint8_t last, int8_t rssi, const uint8_t *ad,
     bal_ctl_event(&r->c, &e, r->now);
 }
 
+/* A scan response of the service UUID alone, as a node with its name in
+ * the advertising sends one.  Returns its length. */
+static size_t rsp_uuid(uint8_t *out)
+{
+    out[0] = 17u;
+    out[1] = 0x07u;
+    rcnode_uuid(RCNODE_ID_SERVICE, out + 2);
+    return 18u;
+}
+
+/* A scan response of the name alone, as a node with its manufacturer data
+ * in the advertising sends one.  Returns its length. */
+static size_t rsp_name(uint8_t *out, const char *name)
+{
+    const size_t n = strlen(name);
+    out[0] = (uint8_t)(n + 1u);
+    out[1] = 0x09u;
+    memcpy(out + 2, name, n);
+    return n + 2u;
+}
+
+/* An advertising report without a name: flags, the service and the
+ * manufacturer data naming @p role.  Returns its length. */
+static size_t adv_noname(uint8_t *out, uint8_t role)
+{
+    size_t i = 0u;
+    out[i++] = 2u;
+    out[i++] = 0x01u;
+    out[i++] = 0x06u;
+    i += rsp_uuid(out + i);
+    const uint8_t maker[] = { 7u, 0xFFu, 0xFFu, 0xFFu, 'r', 'c',
+                              RCNODE_PROTO, role };
+    memcpy(out + i, maker, sizeof maker);
+    return i + sizeof maker;
+}
+
 /* The scan lists the advertising of balance nodes, not of a power node or
  * another device; a scan response refreshes a listed node's RSSI and lists
  * none; the strongest is first; a bind takes one. */
@@ -335,22 +364,22 @@ TEST_CASE(the_scan_lists_balance_nodes_and_a_bind_takes_one)
     CHECK_EQ(bal_ctl_scan(&r.c, false, r.now), BAL_SCAN_STARTED);
     brig_run(&r, 1u);
     const uint8_t a1[6] = { 0x10u, 0x3Au, 0x7Fu, 0xC2u, 0xB1u, 0xA0u };
-    uint8_t bal[RCNODE_ADV_LEN], pwr[RCNODE_ADV_LEN], rsp[RCNODE_RSP_LEN];
+    uint8_t bal[RCNODE_ADV_LEN], pwr[RCNODE_ADV_LEN], rsp[32];
     CHECK_EQ(rcnode_adv_build(RCNODE_ROLE_BALANCE, a1, bal, sizeof bal),
              RCNODE_ADV_LEN);
     CHECK_EQ(rcnode_adv_build(RCNODE_ROLE_POWER, a1, pwr, sizeof pwr),
              RCNODE_ADV_LEN);
-    CHECK_EQ(rcnode_rsp_build(rsp, sizeof rsp), RCNODE_RSP_LEN);
+    CHECK_EQ(rsp_uuid(rsp), 18u);
     const uint8_t other[] = { 2u, 0x01u, 0x06u, 4u, 0x09u, 'F', 'O', 'O' };
     adv(&r, 1u, -70, pwr, sizeof pwr);
     adv(&r, 2u, -60, bal, sizeof bal);
     adv(&r, 3u, -80, other, sizeof other);
-    adv(&r, 4u, -55, rsp, sizeof rsp);     /* a response, no listing */
+    adv(&r, 4u, -55, rsp, 18u);            /* a response, no listing */
     adv(&r, 5u, -75, bal, sizeof bal);
-    adv(&r, 5u, -40, rsp, sizeof rsp);     /* refreshes 5: now first */
+    adv(&r, 5u, -40, rsp, 18u);            /* refreshes 5: now first */
     adv(&r, 1u, -70, pwr, sizeof pwr);     /* counted once */
-    adv(&r, 5u, 127, rsp, sizeof rsp);     /* no RSSI: 5 keeps -40 */
-    adv(&r, 6u, -66, rsp, sizeof rsp);     /* a response alone: nothing */
+    adv(&r, 5u, 127, rsp, 18u);            /* no RSSI: 5 keeps -40 */
+    adv(&r, 6u, -66, rsp, 18u);            /* a response alone: nothing */
     CHECK_EQ(r.c.found_n, 2u);
     CHECK_STR_EQ(r.c.found[0].addr, "00:00:00:00:00:05 R");
     CHECK_EQ(r.c.found[0].rssi, -40);
@@ -372,6 +401,54 @@ TEST_CASE(the_scan_lists_balance_nodes_and_a_bind_takes_one)
     CHECK(r.c.linked);
     bal_ctl_view(&r.c, r.now, &v);
     CHECK_STR_EQ(v.bound_name, "rcbench-bal-3A10");
+}
+
+/* A node with its name in the scan response: the advertising without a
+ * name lists it by its manufacturer data, the response names it.  A name
+ * alone, or the power role's manufacturer data with a balance name, lists
+ * nothing; a name-only response of a stranger counts nothing. */
+TEST_CASE(the_name_comes_from_the_scan_response)
+{
+    brig_t r;
+    brig_init(&r);
+    bal_cfg_t cfg = r.c.cfg;
+    cfg.addr[0] = '\0';
+    bal_ctl_config(&r.c, &cfg, r.now);
+    CHECK_EQ(bal_ctl_scan(&r.c, false, r.now), BAL_SCAN_STARTED);
+    brig_run(&r, 1u);
+    uint8_t ad[32] = { 0 }, rs[32] = { 0 }, pw[32] = { 0 };
+    const size_t na = adv_noname(ad, RCNODE_ROLE_BALANCE);
+    const size_t np = adv_noname(pw, RCNODE_ROLE_POWER);
+    size_t n = 0u;
+    adv(&r, 7u, -50, ad, na);
+    CHECK_EQ(r.c.found_n, 1u);
+    CHECK_STR_EQ(r.c.found[0].name, "");
+    n = rsp_name(rs, "rcbench-bal-5A5A");
+    adv(&r, 7u, -50, rs, n);
+    CHECK_STR_EQ(r.c.found[0].name, "rcbench-bal-5A5A");
+    /* A later name does not rename it. */
+    n = rsp_name(rs, "rcbench-bal-0000");
+    adv(&r, 7u, -50, rs, n);
+    CHECK_STR_EQ(r.c.found[0].name, "rcbench-bal-5A5A");
+    /* A balance name without manufacturer data lists nothing and, being a
+     * node's response, counts nothing. */
+    n = rsp_name(rs, "rcbench-bal-1111");
+    adv(&r, 8u, -40, rs, n);
+    CHECK_EQ(r.c.found_n, 1u);
+    CHECK_EQ(r.c.hidden, 0u);
+    /* A power node is counted hidden, its name-only response nothing. */
+    adv(&r, 9u, -45, pw, np);
+    n = rsp_name(rs, "rcbench-pwr-2222");
+    adv(&r, 9u, -45, rs, n);
+    CHECK_EQ(r.c.found_n, 1u);
+    CHECK_EQ(r.c.hidden, 1u);
+    /* Manufacturer data of the power role beside a balance name: hidden. */
+    uint8_t mix[32] = { 7u, 0xFFu, 0xFFu, 0xFFu, 'r', 'c', RCNODE_PROTO,
+                        RCNODE_ROLE_POWER };
+    const size_t nm = 8u + rsp_name(mix + 8, "rcbench-bal-3333");
+    adv(&r, 10u, -45, mix, nm);
+    CHECK_EQ(r.c.found_n, 1u);
+    CHECK_EQ(r.c.hidden, 2u);
 }
 
 /* 40 other devices fill the 32 remembered addresses and are counted
@@ -407,8 +484,8 @@ TEST_CASE(a_config_text_is_cut_to_its_field)
     CHECK(!r.c.b.bound);
 }
 
-/* A seq gap counts the reports missing; another packet type on STREAM is
- * counted bad and taken as no report. */
+/* A seq gap counts the reports missing; bytes that do not decode on
+ * STREAM are counted bad and taken as no report. */
 TEST_CASE(seq_gaps_and_foreign_packets_are_counted)
 {
     brig_t r;
@@ -421,10 +498,9 @@ TEST_CASE(seq_gaps_and_foreign_packets_are_counted)
     CHECK_EQ(r.c.lost, 3u);
     bleu_evt_t e = brig_ev(BLEU_EV_NOTIFY, 0u);
     e.h1 = BRIG_STREAM_VAL;
-    rcnode_status_t st;
-    memset(&st, 0, sizeof st);
-    st.hdr.type = RCNODE_T_STATUS;
-    e.len = (uint8_t)rcnode_enc_status(&st, e.data, sizeof e.data);
+    e.data[0] = 0xEEu;
+    e.data[1] = 0x01u;
+    e.len = 2u;
     bal_ctl_event(&r.c, &e, r.now);
     CHECK_EQ(r.c.bad, 1u);
     CHECK_EQ(r.c.reports, 2u);
@@ -489,10 +565,11 @@ int main(void)
     RUN(two_reports_without_an_index_write_the_bench_rpm);
     RUN(control_writes_are_never_closer_than_250ms);
     RUN(a_refused_write_goes_again);
-    RUN(status_is_read_every_5s_into_the_battery);
-    RUN(a_status_read_without_an_answer_ends_the_link);
+    RUN(status_on_stream_is_the_battery);
+    RUN(another_packet_on_stream_is_bad);
     RUN(a_scan_is_refused_while_armed_and_stopped_at_arm);
     RUN(the_scan_lists_balance_nodes_and_a_bind_takes_one);
+    RUN(the_name_comes_from_the_scan_response);
     RUN(a_crowded_scan_counts_others_without_overrun);
     RUN(a_config_text_is_cut_to_its_field);
     RUN(seq_gaps_and_foreign_packets_are_counted);

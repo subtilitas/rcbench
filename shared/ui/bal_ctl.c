@@ -11,7 +11,8 @@
 #include <string.h>
 
 _Static_assert(RCNODE_INFO_LEN <= BLEU_PARAM_MAX, "INFO is kept whole");
-_Static_assert(RCNODE_STATUS_LEN <= BLEU_PARAM_MAX, "STATUS is kept whole");
+_Static_assert(RCNODE_STATUS_LEN <= BLEU_EVT_DATA,
+               "a STATUS comes in one event");
 _Static_assert(RCNODE_BAL_REPORT_LEN <= BLEU_EVT_DATA,
                "a report comes in one event");
 _Static_assert(RCNODE_CTL_MAX <= BLEU_WRITE_MAX, "a CONTROL write is one write");
@@ -27,7 +28,8 @@ _Static_assert(BAL_BLE_OWNER < BLEU_OWNER_MAX, "the owner fits a token");
 static const uint8_t k_svc[16] = { BAL_UUID_LE(RCNODE_ID_SERVICE) };
 /** @brief STREAM: the reports, NOTIFY. */
 static const uint8_t k_stream[16] = { BAL_UUID_LE(RCNODE_ID_STREAM) };
-/** @brief STATUS: the battery, READ. */
+/** @brief STATUS: the battery, READ and NOTIFY for a phone; the panel
+ *         takes the same packet from STREAM. */
 static const uint8_t k_status[16] = { BAL_UUID_LE(RCNODE_ID_STATUS) };
 /** @brief CONTROL: BLADES and RPM. */
 static const uint8_t k_control[16] = { BAL_UUID_LE(RCNODE_ID_CONTROL) };
@@ -40,7 +42,7 @@ const bleu_profile_t bal_profile = {
         { .uuid = k_stream,  .role = BLEU_ROLE_STREAM, .flags = 0u },
         { .uuid = k_control, .role = BLEU_ROLE_CMD,    .flags = 0u },
         { .uuid = k_info,    .role = BLEU_ROLE_PARAM,  .flags = 0u },
-        { .uuid = k_status,  .role = BLEU_ROLE_AUX,    .flags = 0u },
+        { .uuid = k_status,  .role = BLEU_ROLE_NONE,   .flags = 0u },
     },
     .chr_n = 4u,
     /* The IMU's set, as the Dial's. */
@@ -97,14 +99,13 @@ static void link_reset(bal_ctl_t *c)
     c->wr_op = 0u;
     c->wr_any = false;
     c->bat_known = false;
-    c->aux_seen = c->b.aux_reads;
     c->noidx_n = 0u;
     c->noidx = false;
 }
 
 /**
  * @brief The link's own view after the central moved: a subscribe starts a
- *        link, INFO is taken once its read ended, a STATUS read taken.
+ *        link, INFO is taken once its read ended.
  * @param c      The controller.
  * @param now_ms The clock.
  */
@@ -113,7 +114,6 @@ static void follow_link(bal_ctl_t *c, uint32_t now_ms)
     const bool up = bleu_link_up(&c->b);
     if (up != c->linked) {
         link_reset(c);
-        c->t_status = now_ms;
     }
     c->linked = up;
     if (!up) {
@@ -137,17 +137,6 @@ static void follow_link(bal_ctl_t *c, uint32_t now_ms)
             c->linked = false;
             link_reset(c);
             return;
-        }
-    }
-    if (c->b.aux_reads != c->aux_seen) {
-        c->aux_seen = c->b.aux_reads;
-        rcnode_pkt_t p;
-        if (c->b.aux_status == 0u
-            && rcnode_decode(c->b.aux, c->b.aux_len, &p) == RCNODE_OK
-            && p.hdr.type == RCNODE_T_STATUS) {
-            c->bat_known = true;
-            c->bat_mv = p.u.status.vbat;
-            c->bat_flags = p.u.status.flags;
         }
     }
 }
@@ -208,7 +197,8 @@ static int rssi_key(int8_t r)
  */
 static void resort(bal_ctl_t *c, uint8_t i)
 {
-    while (i > 0u && rssi_key(c->found[i].rssi) > rssi_key(c->found[i - 1u].rssi)) {
+    while (i > 0u && i < BAL_FOUND_MAX
+           && rssi_key(c->found[i].rssi) > rssi_key(c->found[i - 1u].rssi)) {
         const bal_dev_t d = c->found[i];
         const bleu_addr_t a = c->found_addr[i];
         c->found[i] = c->found[i - 1u];
@@ -219,30 +209,71 @@ static void resort(bal_ctl_t *c, uint8_t i)
     }
 }
 
+/** @brief AD type of manufacturer specific data. */
+#define AD_MAKER 0xFFu
+/** @brief Its length after the type: company, 'r', 'c', protocol, role. */
+#define AD_MAKER_LEN 6u
+
 /**
- * @brief One advertising report during a scan.  A report that names the
- *        balance role lists its device; a scan response that names only the
- *        service refreshes a listed one; anything else is counted hidden.
+ * @brief The role an advertising report's manufacturer data names.
+ * @param ad  The AD structures.
+ * @param len Their bytes.
+ * @return The role byte of the rcnode manufacturer data (company
+ *         RCNODE_COMPANY, 'r', 'c'); 0 without it or for a length past the
+ *         end.
+ */
+static uint8_t maker_role(const uint8_t *ad, size_t len)
+{
+    size_t i = 0u;
+    while (i < len && ad[i] != 0u) {
+        const size_t l = ad[i];
+        if (i + 1u + l > len) {
+            return 0u;
+        }
+        const uint8_t *d = ad + i + 2u;
+        if (ad[i + 1u] == AD_MAKER && l - 1u == AD_MAKER_LEN
+            && d[0] == (RCNODE_COMPANY & 0xFFu) && d[1] == (RCNODE_COMPANY >> 8)
+            && d[2] == (uint8_t)'r' && d[3] == (uint8_t)'c') {
+            return d[5];
+        }
+        i += 1u + l;
+    }
+    return 0u;
+}
+
+/**
+ * @brief One advertising report during a scan.  A report whose
+ *        manufacturer data names the balance role lists its device; a
+ *        report of a listed device refreshes its RSSI and gives it a name
+ *        while it has none (the node's name may come in the scan
+ *        response); a scan response of a node, a name or the service
+ *        without manufacturer data, lists nothing and counts nothing;
+ *        anything else is counted hidden.  A name alone never lists.
  * @param c The controller.
  * @param e The ADV event.
  */
 static void take_adv(bal_ctl_t *c, const bleu_evt_t *e)
 {
-    uint8_t role = 0u;
-    const bool match = rcnode_adv_match(e->data, e->len, &role);
     uint8_t i = 0u;
     while (i < c->found_n && !bleu_addr_eq(&c->found_addr[i], &e->addr)) {
         ++i;
     }
+    bleu_adv_t adv;
+    (void)bleu_adv_parse(e->data, e->len, &adv);
     if (i < c->found_n) {
+        if (c->found[i].name[0] == '\0') {
+            memcpy(c->found[i].name, adv.name, sizeof(c->found[i].name) - 1u);
+        }
         if (e->rssi != RSSI_NONE) {
             c->found[i].rssi = e->rssi;
             resort(c, i);
         }
         return;
     }
-    if (!match || role != RCNODE_ROLE_BALANCE) {
-        if (!match || role != 0u) {
+    const uint8_t role = maker_role(e->data, e->len);
+    if (role != RCNODE_ROLE_BALANCE) {
+        uint8_t any = 0u;
+        if (role != 0u || !rcnode_adv_match(e->data, e->len, &any)) {
             count_other(c, &e->addr);
         }
         return;
@@ -254,8 +285,6 @@ static void take_adv(bal_ctl_t *c, const bleu_evt_t *e)
     bal_dev_t *d = &c->found[c->found_n];
     memset(d, 0, sizeof(*d));
     (void)bleu_addr_format(&e->addr, true, d->addr, sizeof(d->addr));
-    bleu_adv_t adv;
-    (void)bleu_adv_parse(e->data, e->len, &adv);
     memcpy(d->name, adv.name, sizeof(d->name) - 1u);
     d->rssi = e->rssi;
     c->found_addr[c->found_n] = e->addr;
@@ -389,8 +418,18 @@ static void take_stream(bal_ctl_t *c, const uint8_t *data, size_t len,
         return;
     }
     rcnode_pkt_t p;
-    if (rcnode_decode(data, len, &p) != RCNODE_OK
-        || p.hdr.type != RCNODE_T_BAL_REPORT) {
+    if (rcnode_decode(data, len, &p) != RCNODE_OK) {
+        ++c->bad;
+        return;
+    }
+    if (p.hdr.type == RCNODE_T_STATUS) {
+        /* The node's battery, on STREAM with its own seq: no report. */
+        c->bat_known = true;
+        c->bat_mv = p.u.status.vbat;
+        c->bat_flags = p.u.status.flags;
+        return;
+    }
+    if (p.hdr.type != RCNODE_T_BAL_REPORT) {
         ++c->bad;
         return;
     }
@@ -512,11 +551,6 @@ bool bal_ctl_step(bal_ctl_t *c, uint32_t now_ms, bool armed, bleu_act_t *out)
         return true;
     }
     take_scan(c);
-    if (c->info_ok && (uint32_t)(now_ms - c->t_status) >= BAL_STATUS_MS
-        && bleu_read_aux(&c->b)) {
-        c->t_status = now_ms;
-        return bleu_step(&c->b, now_ms, out);
-    }
     if (write_due(c, now_ms)) {
         return bleu_step(&c->b, now_ms, out);
     }

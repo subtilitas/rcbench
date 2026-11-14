@@ -1332,9 +1332,10 @@ BALANCE takes the runs of a balance with the balance node
 the tabs is 600 x 150px:
 
 - The live line: the node's 1x magnitude, angle, rpm and quality word, and
-  the trial mass at the right (Trial mass, SETUP > WIRELESS). Without a
-  linked node it reads `NO BALANCE NODE: BIND ONE IN WIRELESS`; a report
-  older than 1000ms reads `--`.
+  the trial mass at the right (Trial mass, SETUP > WIRELESS). With
+  Balance node OFF or no node bound it reads `NO BALANCE NODE: BIND ONE IN
+  WIRELESS`; a report older than 1000ms, or a bound node whose link is
+  down, reads `--`.
 - A TAKE key a finger tall for each run: BASELINE and TRIAL 0° with 2 RUNS,
   BASELINE, TRIAL 0°, TRIAL 120° and TRIAL 240° with 4 RUNS. A press takes
   the next 8 reports, 2s, while the other keys wait. Under each key its
@@ -1344,8 +1345,12 @@ the tabs is 600 x 150px:
   (more than 5% from the run's first report).
 - 2 RUNS, 4 RUNS and CLEAR. A method change clears the runs.
 - Once every run is taken: `ADD 0.35g  WHERE between 1 and 2` (on an EDF,
-  `hub, 265°`), and under it the CSV file the row goes to, or the solver's
-  word: `WEAK` with the trial's effect in %, `NO EFFECT`, `INCONSISTENT`,
+  `hub, 265°`), solved again when the trial mass changes, and under it
+  what became of the CSV row (`Row waiting for the card`,
+  `Row written: BENCH/BALANCE/BALANCE.CSV`,
+  `Row NOT written: no card or write failed`), or the solver's word:
+  `WEAK` with the trial's effect in % and the row's fate
+  (`WEAK 12% effect: row written`), `NO EFFECT`, `INCONSISTENT`,
   `NO RESULT`.
 
 The keys act on the press and drive no output, so they work while ARMED.

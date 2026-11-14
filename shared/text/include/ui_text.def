@@ -12186,8 +12186,8 @@ UI_TEXT(MB_HINT_FOUR, 41,
     "Trial at 0°, 120°, 240° from blade 1.",
     "Test bei 0°, 120°, 240° ab Blatt 1.")
 UI_TEXT(MB_ST_WEAK, 41,
-    "WEAK: trial changed vibration %u%%.",
-    "SCHWACH: Test änderte Vibration %u%%.")
+    "WEAK %u%% effect: %s",
+    "SCHWACH %u%% Wirkung: %s")
 UI_TEXT(MB_ST_NO_EFFECT, 41,
     "NO EFFECT: trials read as baseline.",
     "OHNE WIRKUNG: Tests wie Referenz.")
@@ -12198,8 +12198,23 @@ UI_TEXT(MB_ST_BAD, 41,
     "NO RESULT: a run or the trial is 0.",
     "KEIN ERGEBNIS: Lauf oder Test ist 0.")
 UI_TEXT(MB_SAVED, 41,
-    "CSV: BENCH/BALANCE/BALANCE.CSV",
-    "CSV: BENCH/BALANCE/BALANCE.CSV")
+    "Row written: BENCH/BALANCE/BALANCE.CSV",
+    "Geschrieben: BENCH/BALANCE/BALANCE.CSV")
+UI_TEXT(MB_NOT_SAVED, 41,
+    "Row NOT written: no card or write failed",
+    "NICHT geschrieben: keine Karte/Fehler")
+UI_TEXT(MB_SAVING, 41,
+    "Row waiting for the card",
+    "Zeile wartet auf die Karte")
+UI_TEXT(MB_ROW_OK, 17,
+    "row written",
+    "geschrieben")
+UI_TEXT(MB_ROW_FAIL, 17,
+    "row NOT written",
+    "NICHT geschrieben")
+UI_TEXT(MB_ROW_WAIT, 17,
+    "row waiting",
+    "wartet")
 UI_TEXT(MB_NO_DATA, 94,
     "NO FRESH REPORT FROM THE BALANCE NODE: NOTHING TAKEN",
     "KEIN FRISCHER BERICHT VOM AUSWUCHTKNOTEN: NICHTS GEMESSEN")

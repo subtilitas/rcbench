@@ -7,7 +7,8 @@
  * STREAM (NOTIFY) at 0x0012 with its CCCD at 0x0013, STATUS (READ, NOTIFY)
  * at 0x0015, CONTROL (WRITE, WRITE NO RESPONSE) at 0x0017, INFO (READ) at
  * 0x0019.  INFO names RCNODE_PROTO and RCNODE_ROLE_BALANCE unless the case
- * sets others; STATUS names the rig's cell voltage and flags.  Every
+ * sets others; STATUS, read or sent on STREAM by brig_status(), names the
+ * rig's cell voltage and flags.  Every
  * CONTROL write is kept with its time.  The clock is the rig's; brig_run()
  * steps the controller 1ms at a time.
  *
@@ -59,10 +60,9 @@ typedef struct {
     unsigned     scans;      /**< SCAN actions */
     unsigned     stops;      /**< SCAN_STOP actions */
     unsigned     info_reads; /**< READs of INFO */
-    unsigned     st_reads;   /**< READs of STATUS */
+    unsigned     st_reads;   /**< READs of STATUS: the panel makes none */
     unsigned     fail_info;  /**< the next INFO reads that fail */
     unsigned     fail_writes;/**< the next CONTROL writes the node refuses */
-    bool         mute_status;/**< STATUS reads get no answer */
     uint8_t      seq;        /**< the node's STREAM seq */
     unsigned     nw;         /**< CONTROL writes kept */
     rcnode_ctl_t w[BRIG_WRITES];    /**< their decoded contents */
@@ -166,9 +166,6 @@ static inline void brig_act(brig_t *r, const bleu_act_t *a)
                 e.len = 0u;
                 e.status = 0x10Eu;      /* an ATT error */
             }
-        } else if (r->mute_status) {
-            ++r->st_reads;
-            break;
         } else {
             rcnode_status_t st;
             memset(&st, 0, sizeof st);
@@ -258,6 +255,23 @@ static inline void brig_report(brig_t *r, const rcnode_bal_report_t *in)
     bleu_evt_t e = brig_ev(BLEU_EV_NOTIFY, 0u);
     e.h1 = BRIG_STREAM_VAL;
     e.len = (uint8_t)rcnode_enc_bal_report(&p, e.data, sizeof e.data);
+    bal_ctl_event(&r->c, &e, r->now);
+}
+
+/** @brief A STATUS on STREAM, as the node sends it beside its reports:
+ *         the rig's cell and flags, its own seq @p seq. */
+static inline void brig_status(brig_t *r, uint8_t seq)
+{
+    rcnode_status_t st;
+    memset(&st, 0, sizeof st);
+    st.hdr.type = RCNODE_T_STATUS;
+    st.hdr.seq = seq;
+    st.hdr.t_node = r->now * 1000u;
+    st.vbat = r->vbat;
+    st.flags = r->st_flags;
+    bleu_evt_t e = brig_ev(BLEU_EV_NOTIFY, 0u);
+    e.h1 = BRIG_STREAM_VAL;
+    e.len = (uint8_t)rcnode_enc_status(&st, e.data, sizeof e.data);
     bal_ctl_event(&r->c, &e, r->now);
 }
 

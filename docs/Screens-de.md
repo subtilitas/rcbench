@@ -1443,8 +1443,9 @@ unter den Registerkarten misst 600 x 150px:
 
 - Die Live-Zeile: Betrag und Winkel der 1x-Komponente, Drehzahl und
   Gütewort des Knotens, rechts die Testmasse (Testmasse, SETUP > WIRELESS).
-  Ohne verbundenen Knoten steht dort `KEIN AUSWUCHTKNOTEN: IN WIRELESS
-  BINDEN`; ein Bericht, der älter als 1000ms ist, zeigt `--`.
+  Bei Auswuchtknoten AUS oder ohne gebundenen Knoten steht dort
+  `KEIN AUSWUCHTKNOTEN: IN WIRELESS BINDEN`; ein Bericht, der älter als
+  1000ms ist, oder ein gebundener Knoten ohne Verbindung zeigt `--`.
 - Für jeden Lauf eine fingerhohe Taste: REFERENZ und TEST 0° bei 2 LÄUFE,
   REFERENZ, TEST 0°, TEST 120° und TEST 240° bei 4 LÄUFE. Ein Druck nimmt
   die nächsten 8 Berichte auf, 2s, während die anderen Tasten warten. Unter
@@ -1455,9 +1456,13 @@ unter den Registerkarten misst 600 x 150px:
   Bericht des Laufs).
 - 2 LÄUFE, 4 LÄUFE und LÖSCHEN. Ein Wechsel der Methode löscht die Läufe.
 - Sind alle Läufe aufgenommen: `HINZU 0.35g  WO zwischen 1 und 2` (beim
-  EDF `Nabe, 265°`), darunter die CSV-Datei, in die die Zeile geht, oder
-  das Wort des Lösers: `SCHWACH` mit der Wirkung der Testmasse in %,
-  `OHNE WIRKUNG`, `WIDERSPRÜCHLICH`, `KEIN ERGEBNIS`.
+  EDF `Nabe, 265°`), neu gelöst, wenn sich die Testmasse ändert, darunter,
+  was aus der CSV-Zeile wurde (`Zeile wartet auf die Karte`,
+  `Geschrieben: BENCH/BALANCE/BALANCE.CSV`,
+  `NICHT geschrieben: keine Karte/Fehler`), oder das Wort des Lösers:
+  `SCHWACH` mit der Wirkung der Testmasse in % und dem Verbleib der Zeile
+  (`SCHWACH 12% Wirkung: geschrieben`), `OHNE WIRKUNG`, `WIDERSPRÜCHLICH`,
+  `KEIN ERGEBNIS`.
 
 Die Tasten wirken beim Drücken und steuern keinen Ausgang, daher gehen sie
 auch bei ARMED. Ohne frischen Bericht nimmt eine Lauftaste nichts auf, und

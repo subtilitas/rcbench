@@ -100,6 +100,7 @@ wifi-keys                   36,944    4618 KiB
 wifi-idle                        0       0 KiB
 imu                            137      17 KiB
 imu-hold                       626      78 KiB
+balance-node                   683      85 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
 hlines                         180      22 KiB
@@ -133,6 +134,7 @@ est. ms and est. fps: not measured
 | `wifi-idle` | WI-FI with the access point up, the idle time 1s shorter in every frame: the page shows it in whole minutes, so nothing is repainted |
 | `imu` | the IMU screen with an angle frame in every frame, X 0.1° from the one before: the X line repainted, clipped to itself |
 | `imu-hold` | the IMU screen, a finger on HOLD 2s: CALIBRATE in the footer: the button and the age on the RATE line repainted, each clipped to itself |
+| `balance-node` | BALANCE with a balance node linked and a report in every frame whose magnitude, angle, rpm and quality differ from the one before: the four values VIBRATION, ANGLE, SPEED and SIGNAL repainted in their boxes |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
 | `clear` | a full-screen clear |
@@ -252,7 +254,7 @@ increased drawing work in the model; it does not detect a missed display deadlin
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
 | `servo-rudder` | 4,600 | a new angle on RUDDER that repaints more than the readout, the state lines and the flap's two boxes |
 | `servo-test` | 1,000 | a moving arm or a new reading that repaints the TEST page |
-| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1,000 | a PD mini reading the state line does not show that repaints the session, an idle second inside the minute shown that repaints WI-FI, or a reading or the hold's fill that repaints the IMU screen whole |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold`, `balance-node` | 1,000 | a PD mini reading the state line does not show that repaints the session, an idle second inside the minute shown that repaints WI-FI, a reading or the hold's fill that repaints the IMU screen whole, or a balance node's report that repaints BALANCE whole |
 | `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,713 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the eleven `-chrome` modes | 72,000 | a growing full repaint |

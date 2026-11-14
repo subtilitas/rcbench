@@ -3591,7 +3591,8 @@ static void pose_bench_views(ui_screen_id_t id, const char *view)
  * @brief A balance node linked and both runs of the two-run method taken:
  *        0.42g at 265° with no mass, 0.30g at 196° with 0.50g at blade 1,
  *        at 8000rpm, quality 94%.  The solver's answer is a correction
- *        between blades 1 and 2 on a two-blade propeller.
+ *        between blades 1 and 2 on a two-blade propeller; its CSV row is
+ *        written.
  */
 static void pose_node_balance(void)
 {
@@ -3616,6 +3617,10 @@ static void pose_node_balance(void)
             r.hdr.t_node += 250000u;
             node_balance_feed(true, &r, 10u);
         }
+    }
+    char row[NB_CSV_MAX];
+    if (node_balance_take_csv(2, row, sizeof row) > 0u) {
+        node_balance_csv_done(node_balance_csv_seq(), true);
     }
 }
 

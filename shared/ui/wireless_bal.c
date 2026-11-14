@@ -151,7 +151,7 @@ const ui_setlist_custom_t wireless_bal_bind_row = {
 };
 
 /** @brief NODE BATTERY's value: the cell's voltage, LOW under 3.50V, NO
- *         READING, or "--" before a STATUS was read on this link.
+ *         READING, or "--" before a STATUS came on this link.
  *  @param out The text. @param n Its size. */
 static void bat_value(char *out, size_t n)
 {

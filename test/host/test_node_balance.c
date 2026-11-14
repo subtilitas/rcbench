@@ -4,8 +4,9 @@
  * vectors encoded as reports, carried by bal_rig.h's node through the
  * controller's decode, captured and solved.
  *
- * Under test: a report to the reading (mg to g, 0.1° to degrees, no angle
- * without a counted revolution or in no-index mode); the stale rule at
+ * Under test: a report to the reading (mg to g, 0.1° to degrees, no
+ * magnitude and no angle without a counted revolution, no angle in
+ * no-index mode); the stale rule at
  * 999ms and 1000ms; the quality word's order and its 90% and 70% edges;
  * TAKE refused without a fresh report, while another runs and for a run
  * the method does not have; a capture of 8 new reports (a report seen
@@ -13,7 +14,9 @@
  * report without a revolution, without the index in two runs, and on an
  * rpm 5% off (not at 5%); the two-run and four-run corrections against
  * known imbalances; the CSV row's fields under its header; the instance's
- * one row per solution.
+ * one row per solution, solved again with a new row for a new trial mass,
+ * the row's written / not written state; a dropped link stale, not the
+ * model.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -57,13 +60,19 @@ TEST_CASE(a_report_reads_in_g_and_degrees)
     CHECK(!r.phase);
     CHECK_STR_EQ(nb_fmt_deg(&r, b, sizeof b), "--");
     CHECK_EQ(r.word, NB_Q_NO_PHASE);
-    /* No revolution: no rpm, no angle. */
+    /* No revolution: no magnitude, no rpm, no angle. */
     p = steady(420u, 2650u, 8000u);
     p.flags &= (uint16_t)~RCNODE_BF_VALID;
     nb_read(true, &p, 10u, &r);
+    CHECK(!r.valid);
     CHECK(!r.phase);
     CHECK_EQ(r.rpm, 0u);
+    CHECK_STR_EQ(nb_fmt_mag(&r, b, sizeof b), "--");
     CHECK_STR_EQ(nb_fmt_rpm(&r, b, sizeof b), "--");
+    p = steady(0u, 0u, 0u);
+    p.flags &= (uint16_t)~RCNODE_BF_VALID;
+    nb_read(true, &p, 10u, &r);
+    CHECK_STR_EQ(nb_fmt_mag(&r, b, sizeof b), "--");
     /* ADC counts (a piezo). */
     p = steady(412u, 2650u, 8000u);
     p.flags |= RCNODE_BF_COUNTS;
@@ -509,6 +518,93 @@ TEST_CASE(the_instance_hands_out_one_row_per_solution)
     node_balance_reset();
 }
 
+/* Both runs of the two-run method through the instance. */
+static void take_both(void)
+{
+    nb_session_t *s = node_balance_session();
+    for (uint8_t run = 0; run < 2u; ++run) {
+        rcnode_bal_report_t p = steady(run == 0u ? 420u : 300u,
+                                       run == 0u ? 2650u : 1960u, 8000u);
+        p.hdr.seq = (uint8_t)(run * 100u);
+        p.hdr.t_node = run * 10000000u;
+        node_balance_feed(true, &p, 10u);
+        CHECK_EQ(nb_take(s, run, true), NB_TAKE_STARTED);
+        for (unsigned k = 0; k < NB_CAP_REPORTS; ++k) {
+            ++p.hdr.seq;
+            p.hdr.t_node += 250000u;
+            node_balance_feed(true, &p, 10u);
+        }
+    }
+}
+
+/* A trial mass changed after the runs: the result is solved again with
+ * it, ADD scales with it, and a new CSV row names it.  The row's state
+ * follows the card's answers for the last row only. */
+TEST_CASE(a_new_trial_mass_solves_again_with_a_new_row)
+{
+    node_balance_reset();
+    settings_reset_all();
+    settings_set(SET_BAL_TRIAL, 0.5f);
+    take_both();
+    vibe_solution_t a, b;
+    float ta = 0.0f, tb = 0.0f;
+    CHECK(node_balance_result(&a, &ta));
+    CHECK_NEAR(ta, 0.5, 1e-6);
+    CHECK_EQ(node_balance_csv_state(), NB_CSV_NONE);
+    char row[NB_CSV_MAX];
+    CHECK(node_balance_take_csv(2, row, sizeof row) > 0u);
+    CHECK(strncmp(row, "two,0.50,", 9) == 0);
+    const uint32_t seq1 = node_balance_csv_seq();
+    CHECK_EQ(node_balance_csv_state(), NB_CSV_WAITING);
+    uint32_t rr = node_balance_result_rev();
+    node_balance_csv_done(seq1, true);
+    CHECK_EQ(node_balance_csv_state(), NB_CSV_WRITTEN);
+    CHECK(node_balance_result_rev() != rr);
+    /* A second answer for the same row changes nothing. */
+    node_balance_csv_done(seq1, false);
+    CHECK_EQ(node_balance_csv_state(), NB_CSV_WRITTEN);
+    /* 1.00g was taped on, not 0.50g. */
+    settings_set(SET_BAL_TRIAL, 1.0f);
+    rr = node_balance_result_rev();
+    CHECK(node_balance_result(&b, &tb));
+    CHECK_NEAR(tb, 1.0, 1e-6);
+    CHECK_NEAR(b.mass, 2.0f * a.mass, 1e-4);
+    CHECK_NEAR(b.deg, a.deg, 1e-3);
+    CHECK(node_balance_result_rev() != rr);
+    CHECK_EQ(node_balance_csv_state(), NB_CSV_NONE);
+    CHECK(node_balance_take_csv(2, row, sizeof row) > 0u);
+    CHECK(strncmp(row, "two,1.00,", 9) == 0);
+    const uint32_t seq2 = node_balance_csv_seq();
+    CHECK_EQ(seq2, seq1 + 1u);
+    node_balance_csv_done(seq1, true);      /* the old row's: ignored */
+    CHECK_EQ(node_balance_csv_state(), NB_CSV_WAITING);
+    node_balance_csv_done(seq2, false);
+    CHECK_EQ(node_balance_csv_state(), NB_CSV_FAILED);
+    /* The same mass again solves nothing new and takes no row. */
+    node_balance_feed(true, NULL, 0u);
+    CHECK_EQ(node_balance_take_csv(2, row, sizeof row), 0u);
+    CHECK_EQ(node_balance_csv_state(), NB_CSV_FAILED);
+    node_balance_reset();
+}
+
+/* A node on and bound whose link dropped shows "--" and keeps the result;
+ * only OFF or unbound shows the model. */
+TEST_CASE(a_dropped_link_is_stale_not_the_model)
+{
+    node_balance_reset();
+    settings_reset_all();
+    take_both();
+    CHECK(node_balance_result(NULL, NULL));
+    node_balance_feed(true, NULL, 0u);
+    CHECK_EQ(node_balance_live()->live, NB_LIVE_STALE);
+    char b[16];
+    CHECK_STR_EQ(nb_fmt_mag(node_balance_live(), b, sizeof b), "--");
+    CHECK(node_balance_result(NULL, NULL));
+    node_balance_feed(false, NULL, 0u);
+    CHECK_EQ(node_balance_live()->live, NB_LIVE_SIMULATED);
+    node_balance_reset();
+}
+
 int main(void)
 {
     RUN(a_report_reads_in_g_and_degrees);
@@ -522,5 +618,7 @@ int main(void)
     RUN(four_runs_end_to_end_find_the_known_imbalance);
     RUN(the_csv_row_matches_its_header);
     RUN(the_instance_hands_out_one_row_per_solution);
+    RUN(a_new_trial_mass_solves_again_with_a_new_row);
+    RUN(a_dropped_link_is_stale_not_the_model);
     return test_summary("node_balance");
 }

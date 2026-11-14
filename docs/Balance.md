@@ -108,12 +108,13 @@ ARMED is no error, and its keys work while ARMED.
 1. SETUP > WIRELESS > BALANCE NODE: Balance node ON, then Scan for node
    (10s, SAFE only: a scan while ARMED is refused, and a switch to ARMED
    stops a running one). Bound node lists the nodes found, `rcbench-bal-XXXX`;
-   a tap binds one and keeps it over a restart. Node battery shows the cell,
-   read every 5s.
+   a tap binds one and keeps it over a restart. Node battery shows the cell
+   from the STATUS packets the node sends beside its reports.
 2. Set the blade count and the rotor type on BALANCE. The panel writes the
    blade count to the node (BLADES).
 3. Set Trial mass (0.01g to 20.00g, 0.50g by default) to the mass you tape
-   on for the trial runs.
+   on for the trial runs. A trial mass changed after the runs solves them
+   again with the new mass and writes a new CSV row.
 4. On MOTOR & ESC > BALANCE choose 2 RUNS (needs the index mark) or 4 RUNS.
    Run the motor at one throttle. Press BASELINE: the panel averages the
    next 8 reports, 2s. Stop, tape the trial mass in line with blade 1, run
@@ -121,8 +122,11 @@ ARMED is no error, and its keys work while ARMED.
    120° and 240° from blade 1, against the direction of rotation, for the
    last two runs.
 5. The pane shows `ADD 0.35g  WHERE between 1 and 2` and writes a row to
-   `BENCH/BALANCE/BALANCE.CSV`. BALANCE shows the same ADD and WHERE and
-   marks the place on the rotor.
+   `BENCH/BALANCE/BALANCE.CSV`. The line under it says what became of the
+   row: `Row waiting for the card`, `Row written: BENCH/BALANCE/BALANCE.CSV`
+   or `Row NOT written: no card or write failed`; `WEAK 12% effect: row
+   written` carries the same with a weak result. BALANCE shows the same ADD
+   and WHERE and marks the place on the rotor.
 
 ![BALANCE with a balance node linked](img/balance-node.png)
 
@@ -130,14 +134,21 @@ The BALANCE pane with a node linked:
 
 | Row | Shows |
 | --- | --- |
-| VIBRATION | the 1x magnitude, g (the report's mg / 1000); ADC counts with a piezo |
+| VIBRATION | the 1x magnitude, g (the report's mg / 1000); ADC counts with a piezo; `--` without a counted revolution |
 | ANGLE | the 1x phase from the index mark, against the rotation; `--` without the index |
 | SPEED | the rpm of the report; `--` without a counted revolution |
 | SIGNAL | the quality word, below |
 | ADD, WHERE | the correction of the runs, `--` before every run is taken |
 
 A report older than 1000ms (4 report periods) shows `--` in every reading,
-never an old value. The node gone shows the model and SIMULATED again.
+never an old value. A dropped link, with Balance node ON and a node bound,
+shows the same `--` and keeps ADD and WHERE of the runs taken, on BALANCE
+and on MOTOR & ESC > BALANCE. The model and SIMULATED show only while
+Balance node is OFF or no node is bound.
+
+A new report repaints the four readings' values on the BALANCE pane and
+nothing else; a new correction or the node coming or going repaints the
+screen. The TEST RIG and AIRCRAFT panes take nothing from the node.
 
 The quality word is the first that holds, top down:
 
@@ -171,11 +182,27 @@ one row each time the runs are solved: the method, the trial mass, the unit
 (`g` or `counts`), each run's magnitude, angle (two runs) and rpm, the
 solver's status (`OK`, `WEAK`, `NO_EFFECT`, `INCONSISTENT`, `BAD_INPUT`), the
 mass to add, its angle, the blade count and the two blades it falls between.
-A row without a card is dropped with a console line.
+A row without a card is dropped with a console line, and the line under
+ADD says `Row NOT written`. A file whose last byte is no line end, a row
+cut by a power loss or a pulled card, gets a line end before the next
+row, so the next row starts a line of its own.
 
 **The link.** The panel reads INFO after the link comes up and takes reports
-only from a node whose INFO names the balance role and protocol 1. It reads
-STATUS every 5s for the cell. CONTROL writes (BLADES, RPM) go 250ms apart at
-the least, so the link leaves room for a Dial on the same radio. The
-setup, the blade arithmetic and both placement guides work without the
-node.
+only from a node whose INFO names the balance role and protocol 1. A scan
+lists a node by the role in its manufacturer data, never by its name
+alone; the name comes from the advertising or the scan response. The cell
+comes from the STATUS packets the node sends on STREAM; the STATUS
+characteristic stays for a phone, and the panel does not read it. CONTROL
+writes (BLADES, RPM) go 250ms apart at the least, so the link leaves room
+for a Dial on the same radio. The setup, the blade arithmetic and both
+placement guides work without the node.
+
+**Current limitations.**
+
+- FILES does not see `BALANCE.CSV` as busy while a row is appended. The
+  file rules (`shared/files/fm_rules.c`) mark only the log being written
+  and the fault log busy. A delete or a move of the file in the few ms of
+  an append can lose that row; the line under ADD then says
+  `Row NOT written` only when the write itself fails.
+- The balance node firmware sends STATUS on its own characteristic only,
+  not on STREAM: Node battery shows `--` with it.

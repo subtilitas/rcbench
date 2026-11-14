@@ -97,7 +97,7 @@ Der Auswuchtknoten misst Vibration und Index eines Rotors für [Balance](balance
 | Auswuchtknoten | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Knoten; AUS beendet die Verbindung |
 | Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Auswuchtknoten in Reichweite, `rcbench-bal-XXXX`; das Schalten auf ARMED beendet die Suche; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
 | Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen listet die Knoten der letzten Suche; Tippen auf einen bindet ihn und fragt nach dem Speichern. Zurücksetzen behält den gebundenen Knoten |
-| Knotenakku | `3.91V`, `3.40V NIEDRIG`, `KEIN WERT`, `--` | | die Zelle des Knotens, alle 5s gelesen; NIEDRIG unter 3.50V |
+| Knotenakku | `3.91V`, `3.40V NIEDRIG`, `KEIN WERT`, `--` | | die Zelle des Knotens, aus dem STATUS, den der Knoten neben seinen Berichten sendet; NIEDRIG unter 3.50V |
 | Testmasse | 0.01g bis 20.00g | 0.50g | die Masse, die für die Testläufe auf [MOTOR & ESC](motor.md#wuchten) aufgeklebt wird |
 
 | Zustand | Wann |

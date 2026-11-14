@@ -55,9 +55,16 @@ typedef struct {
     bal_cmd_t cmd;    /**< SETUP's command */
 } bal_msg_t;
 
+/** @brief A CSV row and its number, for the logger. */
+typedef struct {
+    uint32_t seq;              /**< node_balance_csv_seq() of the row */
+    char     row[NB_CSV_MAX];  /**< the row, with its newline */
+} bal_row_t;
+
 /** @brief What the `blec` task publishes for the frame task. */
 typedef struct {
     bal_view_t          v;        /**< SETUP's view */
+    bool                present;  /**< ON and a node bound */
     bool                linked;   /**< INFO read on a link that stands */
     bool                have;     /**< rep holds a report */
     rcnode_bal_report_t rep;      /**< the last report */
@@ -93,6 +100,11 @@ static bal_link_t    s_was = BAL_LINK_OFF;
 static uint32_t      s_kept_seq;
 /** @brief ARMED or an arm waiting, from the control task. */
 static atomic_bool   s_live;
+/** @brief The logger's last answer: the row's number shifted left by one,
+ *         bit 0 set when it was written; 0 none.  Read by the frame. */
+static atomic_uint   s_csv_done;
+/** @brief The answer the frame task took last. */
+static uint32_t      s_csv_seen;
 
 /**
  * @brief SETUP's values as the controller takes them.
@@ -240,6 +252,7 @@ void panel_bal_blec_publish(uint32_t now)
     }
     log_counters(now);
     uint32_t age = 0u;
+    s_pub_next.present = link != BAL_LINK_OFF && s_pub_next.v.bound_addr[0];
     s_pub_next.linked = link >= BAL_LINK_WAITING && link != BAL_LINK_WRONG;
     s_pub_next.have = bal_ctl_report(&s_ctl, now, &s_pub_next.rep, &age);
     s_pub_next.rep_ms = now - age;
@@ -253,7 +266,7 @@ void panel_bal_start(void)
 {
     bal_ctl_init(&s_ctl);
     node_balance_reset();
-    s_csv_q = xQueueCreate(BAL_CSV_Q_LEN, NB_CSV_MAX);
+    s_csv_q = xQueueCreate(BAL_CSV_Q_LEN, sizeof(bal_row_t));
     s_q = xQueueCreate(BAL_Q_LEN, sizeof(bal_msg_t));
     if (s_q == NULL || s_csv_q == NULL) {
         ESP_LOGE(TAG, "queue not created; balance node off");
@@ -321,12 +334,23 @@ void panel_bal_frame(bool armed, int blades, uint32_t rpm)
             ESP_LOGW(TAG, "queue full: command %d dropped", (int)m.cmd.kind);
         }
     }
+    /* ON and bound with the link down: "--" and the kept result, never
+     * the model; the model only while OFF or unbound. */
     const uint32_t age = now_ms() - s_seen.rep_ms;
-    node_balance_feed(s_seen.linked, s_seen.have ? &s_seen.rep : NULL, age);
-    static char row[NB_CSV_MAX];
-    if (node_balance_take_csv(blades, row, sizeof(row)) > 0u
-        && xQueueSend(s_csv_q, row, 0) != pdTRUE) {
-        ESP_LOGW(TAG, "CSV queue full: a solution's row dropped");
+    node_balance_feed(s_seen.present,
+                      s_seen.linked && s_seen.have ? &s_seen.rep : NULL, age);
+    const uint32_t done = atomic_load(&s_csv_done);
+    if (done != s_csv_seen) {
+        s_csv_seen = done;
+        node_balance_csv_done(done >> 1, (done & 1u) != 0u);
+    }
+    static bal_row_t row;
+    if (node_balance_take_csv(blades, row.row, sizeof(row.row)) > 0u) {
+        row.seq = node_balance_csv_seq();
+        if (xQueueSend(s_csv_q, &row, 0) != pdTRUE) {
+            ESP_LOGW(TAG, "CSV queue full: a solution's row dropped");
+            node_balance_csv_done(row.seq, false);
+        }
     }
 }
 
@@ -337,6 +361,8 @@ void panel_bal_set_live(bool live)
 
 /**
  * @brief One row appended to the CSV file, its header first in a new file.
+ *        A file that does not end in a newline, a row torn by a power cut
+ *        or a card pulled, gets one first, so the new row starts a line.
  * @param row The row, with its newline.
  * @return true when it was written and synced.
  */
@@ -350,13 +376,23 @@ static bool append_row(const char *row)
     }
     snprintf(path, sizeof(path), "%s/%s/%s", STORAGE_MOUNT_POINT,
              CARD_BALANCE, PANEL_BAL_CSV);
-    FILE *f = fopen(path, "a");
+    FILE *f = fopen(path, "a+");
     if (f == NULL) {
         return false;
     }
-    bool ok = true;
-    if (ftell(f) == 0L) {
-        ok = fputs(nb_csv_header(), f) >= 0;
+    bool ok = fseek(f, 0L, SEEK_END) == 0;
+    const long size = ok ? ftell(f) : -1L;
+    bool torn = false;
+    if (size > 0L && fseek(f, -1L, SEEK_END) == 0) {
+        torn = fgetc(f) != '\n';
+    }
+    /* A read is followed by a seek before the writes; "a+" appends at the
+     * end whatever the position. */
+    ok = (fseek(f, 0L, SEEK_END) == 0) && ok;
+    if (size == 0L) {
+        ok = (fputs(nb_csv_header(), f) >= 0) && ok;
+    } else if (torn) {
+        ok = (fputc('\n', f) != EOF) && ok;
     }
     ok = (fputs(row, f) >= 0) && ok;
     ok = (fflush(f) == 0) && ok;
@@ -367,16 +403,17 @@ static bool append_row(const char *row)
 
 void panel_bal_card_serve(void)
 {
-    static char row[NB_CSV_MAX];
+    static bal_row_t row;
     if (s_csv_q == NULL) {
         return;
     }
-    while (xQueueReceive(s_csv_q, row, 0) == pdTRUE) {
+    while (xQueueReceive(s_csv_q, &row, 0) == pdTRUE) {
         const bool held = storage_hold();
-        const bool ok = held && append_row(row);
+        const bool ok = held && append_row(row.row);
         if (held) {
             storage_release();
         }
+        atomic_store(&s_csv_done, (row.seq << 1) | (ok ? 1u : 0u));
         if (ok) {
             ESP_LOGI(TAG, "row written to %s/%s", CARD_BALANCE,
                      PANEL_BAL_CSV);

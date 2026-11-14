@@ -702,8 +702,8 @@ The screen and the placement guides are built. The balance node's firmware is bu
 
 Built and host-tested: the panel's side of the balance node. Its client on the Bluetooth
 LE hub (`shared/ui/bal_ctl.c`, `test_bal_ctl`, against a scripted host stack and node):
-the scan by the balance role, INFO checked, STATUS read every 5s, a scan refused while
-ARMED and stopped at ARM, the no-index rpm after 2 reports without an edge, CONTROL writes
+the scan by the balance role in the manufacturer data, INFO checked, the battery from the
+STATUS on STREAM, a scan refused while ARMED and stopped at ARM, the no-index rpm after 2 reports without an edge, CONTROL writes
 250ms apart at the least. Its readings, runs and solution (`shared/ui/node_balance.c`,
 `test_node_balance`): the stale rule at 999ms and 1000ms, the quality word's order, a run
 of 8 reports and its failures, and both methods end to end through the report's decode
@@ -1469,7 +1469,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 570 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 571 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1582,7 +1582,7 @@ The host suite is 570 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
-`test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_bleuart_hub`, `test_bleuart_backoff`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
 `test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`,
 `test_motor_balance`,
@@ -1770,7 +1770,10 @@ cancel, stop and handle refused with each GATT step answered lost, the slot ende
 SCAN_END and by a connection that failed to be established, a client that holds the slot
 scanning or connecting again with no cancel and no busy answer, a stale DISCONNECT of a
 client's old handle keeping its new link, and the slot's limits of 7000ms and 12000ms and the cancel's
-2000ms at their limit and 1ms before.
+2000ms at their limit and 1ms before. `test_bleuart_backoff` runs the connect backoff on the
+same rig: an absent peer's gaps doubling from 1000ms to 30000ms, 7 connects in 100s, a Dial
+dropped while that peer waits up again after its 1000ms retry, a scan and a bind starting the
+gaps over, and failed connects doubling from 7000ms.
 
 `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both wire
 families, the transactions and every refusal of the reply decoders, with frames and reply

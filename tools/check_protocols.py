@@ -386,7 +386,7 @@ ASSERTED = {
         ),
         "shared/ui/bal_ctl.c": (
             "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
-            "RCNODE_STATUS_LEN <= BLEU_PARAM_MAX",
+            "RCNODE_STATUS_LEN <= BLEU_EVT_DATA",
             "RCNODE_BAL_REPORT_LEN <= BLEU_EVT_DATA",
             "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
             "BAL_BLE_OWNER < BLEU_OWNER_MAX",
@@ -481,7 +481,7 @@ ASSERTED = {
         # one event and a CONTROL write in one write.
         "shared/ui/bal_ctl.c": (
             "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
-            "RCNODE_STATUS_LEN <= BLEU_PARAM_MAX",
+            "RCNODE_STATUS_LEN <= BLEU_EVT_DATA",
             "RCNODE_BAL_REPORT_LEN <= BLEU_EVT_DATA",
             "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
         ),

@@ -215,13 +215,20 @@ static void draw_result(gfx_canvas_t *c, gfx_rect_t a, bool two)
         } else {
             snprintf(line, sizeof(line), "%s", TR(MB_RESULT_NONE));
         }
+        const nb_csv_t csv = node_balance_csv_state();
         switch (sol.status) {
         case VIBE_SOLVE_OK:
-            snprintf(hint, sizeof(hint), "%s", TR(MB_SAVED));
+            snprintf(hint, sizeof(hint), "%s",
+                     csv == NB_CSV_WRITTEN  ? TR(MB_SAVED)
+                     : csv == NB_CSV_FAILED ? TR(MB_NOT_SAVED)
+                                            : TR(MB_SAVING));
             break;
         case VIBE_SOLVE_WEAK:
             snprintf(hint, sizeof(hint), TR(MB_ST_WEAK),
-                     (unsigned)(sol.effect * 100.0f + 0.5f));
+                     (unsigned)(sol.effect * 100.0f + 0.5f),
+                     csv == NB_CSV_WRITTEN  ? TR(MB_ROW_OK)
+                     : csv == NB_CSV_FAILED ? TR(MB_ROW_FAIL)
+                                            : TR(MB_ROW_WAIT));
             break;
         case VIBE_SOLVE_NO_EFFECT:
             snprintf(hint, sizeof(hint), "%s", TR(MB_ST_NO_EFFECT));

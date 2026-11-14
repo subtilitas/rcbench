@@ -4,7 +4,8 @@
  *        central of protocols/bleuart with the rcnode service's profile
  *        (bal_profile), the scan for balance nodes, the bind by address,
  *        the INFO check, the 24-byte reports of protocols/rcnode taken from
- *        STREAM, STATUS read for the battery, and the CONTROL writes.  Pure
+ *        STREAM with the node's STATUS among them, and the CONTROL
+ *        writes.  Pure
  *        C: the panel's `blec` task (firmware/panel/main/panel_bal.c) hands
  *        in the host stack's events and performs the actions.
  *
@@ -15,15 +16,16 @@
  *   happens.
  * - A scan while the bench is ARMED is refused (BAL_SCAN_ARMED); one that
  *   runs at the switch to ARMED is stopped.
- * - A scan lists a device whose advertising names the balance role
- *   (rcnode_adv_match()): the power node and other devices are counted as
- *   hidden.
+ * - A scan lists a device whose manufacturer data names the balance role;
+ *   its name may come in the scan response.  A name alone lists nothing.
+ *   The power node and other devices are counted as hidden.
  * - One node is bound by its address; a bound node is connected again after
  *   each drop without a scan, after the central's backoff.
  * - Reports count only from a node whose INFO, read once after each
  *   subscribe, names RCNODE_PROTO and the balance role.  An INFO that does
  *   not read or decode ends the link, which comes back after the backoff.
- * - STATUS is read every BAL_STATUS_MS for the node's battery.
+ * - The node's battery comes from the STATUS packets it sends on STREAM
+ *   beside its reports.  The STATUS characteristic is left to a phone.
  * - CONTROL: BLADES whenever the blade count differs from the one the node
  *   took; RPM with the bench's rpm once BAL_NOIDX_REPORTS reports in a row
  *   came without an index edge, and 0 (the index mode) once one comes with
@@ -51,8 +53,7 @@ extern "C" {
 
 /** @brief The node's profile: the rcnode service, STREAM the STREAM,
  *         CONTROL the CMD, INFO the PARAM read once after each subscribe,
- *         STATUS the AUX read every BAL_STATUS_MS; the IMU's connection
- *         parameters. */
+ *         STATUS not used; the IMU's connection parameters. */
 extern const bleu_profile_t bal_profile;
 
 /** @brief The balance node's owner on the panel's hub (bleuart_hub.h):
@@ -66,7 +67,6 @@ extern const bleu_profile_t bal_profile;
 #define BAL_FOUND_MAX BLEU_FOUND_MAX     /**< nodes a scan lists */
 #define BAL_SEEN_MAX  32u                /**< other addresses a scan counts */
 #define BAL_CTL_MS    250u   /**< the least time between two CONTROL writes */
-#define BAL_STATUS_MS 5000u  /**< STATUS read this often while linked */
 #define BAL_STALE_MS  1000u  /**< a report older than this is stale: 4 periods */
 #define BAL_NOIDX_REPORTS 2u /**< reports in a row without an index before
                                   the RPM write */
@@ -123,7 +123,7 @@ typedef struct {
     char      bound_name[BAL_NAME_MAX]; /**< its name, "" none */
     uint8_t   info_role;  /**< the role its INFO named, 0 unread */
     uint8_t   info_proto; /**< the protocol its INFO named, 0 unread */
-    bool      bat_known;  /**< a STATUS was read on this link */
+    bool      bat_known;  /**< a STATUS came on this link */
     uint16_t  bat_mv;     /**< its cell, mV; 0 with RCNODE_ST_BAT_NONE */
     uint16_t  bat_flags;  /**< its RCNODE_ST_* flags */
 } bal_view_t;
@@ -184,9 +184,7 @@ typedef struct {
     uint32_t    t_wr;         /**< when it went */
     uint32_t    writes;       /**< CONTROL writes handed to the central */
     uint32_t    wr_failed;    /**< writes refused or timed out */
-    uint32_t    aux_seen;     /**< b.aux_reads taken */
-    uint32_t    t_status;     /**< when the last STATUS read was asked */
-    bool        bat_known;    /**< a STATUS was read on this link */
+    bool        bat_known;    /**< a STATUS came on this link */
     uint16_t    bat_mv;       /**< its cell, mV */
     uint16_t    bat_flags;    /**< its RCNODE_ST_* flags */
 } bal_ctl_t;
@@ -234,7 +232,7 @@ bool bal_ctl_bind(bal_ctl_t *c, uint8_t i, uint32_t now_ms);
 /**
  * @brief One event of the host stack: an advertising report to the scan's
  *        list, the rest to the central; a notification of STREAM decoded
- *        and a report taken; INFO's and STATUS's reads taken.
+ *        and a report or the battery taken; INFO's read taken.
  * @param c      The controller.
  * @param e      The event; NULL does nothing.
  * @param now_ms The clock.
@@ -253,7 +251,7 @@ void bal_ctl_drive(bal_ctl_t *c, uint8_t blades, uint32_t rpm);
 
 /**
  * @brief Advance to @p now_ms: a scan stopped at ARMED, the central's next
- *        action, else a STATUS read or a CONTROL write when one is due.
+ *        action, else a CONTROL write when one is due.
  *        Call until it returns false, at least every 10ms.
  * @param c      The controller.
  * @param now_ms The clock.
