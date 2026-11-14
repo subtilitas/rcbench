@@ -99,6 +99,21 @@ static void grams(float g, unsigned *whole, unsigned *cg)
     *cg = c % 100u;
 }
 
+/** @brief A failed run's word, by nb_fail_t. */
+static const ui_text_id_t k_fail[NB_FAIL_COUNT] = {
+    [NB_FAIL_NONE]      = TX_MB_FAIL_RPM,
+    [NB_FAIL_STALE]     = TX_MB_FAIL_STALE,
+    [NB_FAIL_NO_REV]    = TX_MB_FAIL_NO_REV,
+    [NB_FAIL_NO_PHASE]  = TX_MB_FAIL_NO_PHASE,
+    [NB_FAIL_RPM]       = TX_MB_FAIL_RPM,
+    [NB_FAIL_RPM_BASE]  = TX_MB_FAIL_RPM_BASE,
+    [NB_FAIL_SENSOR]    = TX_MB_FAIL_SENSOR,
+    [NB_FAIL_CLIPPED]   = TX_MB_FAIL_CLIPPED,
+    [NB_FAIL_RPM_RANGE] = TX_MB_FAIL_RPM_RANGE,
+    [NB_FAIL_INDEX]     = TX_MB_FAIL_INDEX,
+    [NB_FAIL_RESTART]   = TX_MB_FAIL_RESTART,
+};
+
 /**
  * @brief A run's state under its key.
  * @param c The capture.  @param two Whether the method is two runs.
@@ -125,13 +140,9 @@ static void cap_text(const nb_cap_t *c, bool two, char *out, size_t n)
         break;
     }
     case NB_CAP_FAILED:
-        switch (c->fail) {
-        case NB_FAIL_STALE:    snprintf(out, n, "%s", TR(MB_FAIL_STALE)); break;
-        case NB_FAIL_NO_REV:   snprintf(out, n, "%s", TR(MB_FAIL_NO_REV)); break;
-        case NB_FAIL_NO_PHASE: snprintf(out, n, "%s", TR(MB_FAIL_NO_PHASE)); break;
-        case NB_FAIL_RPM_BASE: snprintf(out, n, "%s", TR(MB_FAIL_RPM_BASE)); break;
-        default:               snprintf(out, n, "%s", TR(MB_FAIL_RPM)); break;
-        }
+        snprintf(out, n, "%s",
+                 ui_tr(c->fail < NB_FAIL_COUNT ? k_fail[c->fail]
+                                               : TX_MB_FAIL_RPM));
         break;
     case NB_CAP_EMPTY:
     default:

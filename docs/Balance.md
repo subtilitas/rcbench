@@ -173,9 +173,22 @@ an edge. A simulated bench gives no rpm. The four-run method needs only the
 magnitudes and works in this mode; the two-run method refuses a report
 without the index.
 
-**A run fails** on 1000ms without a report, a report without a counted
-revolution, a report without the index (two runs) or an rpm more than 5%
-away from the run's first report. A trial run also fails when its mean rpm
+**A run fails** at once on 1000ms without a report, on a report the node
+marks unusable, on a report without the index (two runs) or on an rpm
+more than 5% away from the run's first report. The unusable reports, in
+the order the word is chosen:
+
+| Word | The report |
+| --- | --- |
+| `SENSOR FAULT` | the accelerometer's DC level out of its window: no sensor, or a wiring fault |
+| `CLIPPED` | an ADC sample at an end of its range |
+| `RPM RANGE` | no-index mode: the rpm written gives a revolution out of range |
+| `INDEX FAULT` | the longest revolution passed without an index edge, or an edge was refused |
+| `MODE CHANGED` | the index mode or the blade count changed in the report |
+| `NO REVOLUTION` | no revolution counted |
+
+A report whose quality has not settled, or whose blade-pass does not
+hold, still counts: the 1x magnitude and phase stand. A trial run also fails when its mean rpm
 lies more than 5% from the baseline run's (`NOT BASELINE RPM`): the
 solver takes runs of one rpm only. A trial taken before the baseline is
 held to it once the baseline is done, and a baseline taken again fails

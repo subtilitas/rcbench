@@ -146,8 +146,10 @@ history is in git.
   BALANCE pane only (`balance-node` in `tools/frame_cost.py`, held at
   1,000 fills by CI). MOTOR & ESC gets a BALANCE tab beside PLOT and
   TABLE: a TAKE key for each run of the two-run and four-run methods (8
-  reports, 2s, each; a trial whose mean rpm lies more than 5% from the
-  baseline's fails as `NOT BASELINE RPM`), the correction through
+  reports, 2s, each; a report with the sensor's DC level out, a clipped
+  sample, an rpm out of range, a lost or refused index edge or a changed
+  mode fails the run at once with its own word, and a trial whose mean rpm
+  lies more than 5% from the baseline's fails as `NOT BASELINE RPM`), the correction through
   shared/vibe as ADD and WHERE,
   solved again when the trial mass changes, and a row in
   `BENCH/BALANCE/BALANCE.CSV` for each solution; the hint under ADD says

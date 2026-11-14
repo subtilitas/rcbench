@@ -1343,6 +1343,8 @@ the tabs is 600 x 150px:
   the next 8 reports, 2s, while the other keys wait. Under each key its
   run: `TAKING n/8`, the mean (`0.42g 265°` with two runs, the magnitude
   with four), or why it failed: `NO REPORT` (1000ms without one),
+  `SENSOR FAULT`, `CLIPPED`, `RPM RANGE`, `INDEX FAULT`, `MODE CHANGED`
+  (a report the node marks unusable, [Balancing](Balance.md#measuring-with-the-balance-node)),
   `NO REVOLUTION`, `NO INDEX` (two runs need the index), `RPM MOVED`
   (more than 5% from the run's first report) or, under a trial,
   `NOT BASELINE RPM` (its mean rpm more than 5% from the baseline's).

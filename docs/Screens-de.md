@@ -1453,7 +1453,11 @@ unter den Registerkarten misst 600 x 150px:
   die nächsten 8 Berichte auf, 2s, während die anderen Tasten warten. Unter
   jeder Taste ihr Lauf: `LÄUFT n/8`, der Mittelwert (`0.42g 265°` bei zwei
   Läufen, der Betrag bei vier) oder der Grund des Abbruchs: `KEIN BERICHT`
-  (1000ms ohne Bericht), `KEINE UMDREHUNG`, `KEIN INDEX` (zwei Läufe
+  (1000ms ohne Bericht), `SENSORFEHLER`, `ÜBERSTEUERT`,
+  `DREHZAHLBEREICH`, `INDEXFEHLER`, `MODUS GEÄNDERT` (ein Bericht, den der
+  Knoten als unbrauchbar kennzeichnet,
+  [Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)),
+  `KEINE UMDREHUNG`, `KEIN INDEX` (zwei Läufe
   brauchen den Index), `DREHZAHL GEÄNDERT` (mehr als 5% vom ersten
   Bericht des Laufs) oder, unter einem Testlauf, `ANDERE DREHZAHL` (seine
   mittlere Drehzahl mehr als 5% von der der Referenz).

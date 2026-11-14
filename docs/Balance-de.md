@@ -187,9 +187,24 @@ ersten Bericht mit Flanke. Ein simulierter Prüfstand liefert keine
 Drehzahl. Die Vier-Lauf-Methode braucht nur die Beträge und geht in diesem
 Modus; die Zwei-Lauf-Methode lehnt einen Bericht ohne Index ab.
 
-**Ein Lauf bricht ab** bei 1000ms ohne Bericht, einem Bericht ohne gezählte
-Umdrehung, einem Bericht ohne Index (zwei Läufe) oder einer Drehzahl mehr
-als 5% neben dem ersten Bericht des Laufs. Ein Testlauf bricht auch ab,
+**Ein Lauf bricht sofort ab** bei 1000ms ohne Bericht, einem Bericht, den
+der Knoten als unbrauchbar kennzeichnet, einem Bericht ohne Index (zwei
+Läufe) oder einer Drehzahl mehr als 5% neben dem ersten Bericht des Laufs.
+Die unbrauchbaren Berichte, in der Reihenfolge, in der das Wort gewählt
+wird:
+
+| Wort | Der Bericht |
+| --- | --- |
+| `SENSORFEHLER` | der Gleichanteil des Beschleunigungssensors außerhalb seines Fensters: kein Sensor oder ein Verdrahtungsfehler |
+| `ÜBERSTEUERT` | ein ADC-Wert am Ende seines Bereichs |
+| `DREHZAHLBEREICH` | No-Index-Modus: die geschriebene Drehzahl ergibt eine Umdrehung außerhalb des Bereichs |
+| `INDEXFEHLER` | die längste Umdrehung verging ohne Indexflanke, oder eine Flanke wurde verworfen |
+| `MODUS GEÄNDERT` | der Indexmodus oder die Blattzahl änderte sich im Bericht |
+| `KEINE UMDREHUNG` | keine Umdrehung gezählt |
+
+Ein Bericht, dessen Güte noch nicht eingeschwungen ist oder dessen
+Blattfrequenz nicht gilt, zählt weiter: Betrag und Phase der
+1x-Komponente gelten. Ein Testlauf bricht auch ab,
 wenn seine mittlere Drehzahl mehr als 5% von der des Referenzlaufs
 abweicht (`ANDERE DREHZAHL`): der Löser nimmt nur Läufe einer Drehzahl.
 Ein vor der Referenz aufgenommener Testlauf wird an ihr gemessen, sobald

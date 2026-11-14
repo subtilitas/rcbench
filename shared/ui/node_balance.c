@@ -267,6 +267,38 @@ static void finish(nb_session_t *s, nb_fail_t why)
 }
 
 /**
+ * @brief Why a report's flags make it no part of a capture, in the order
+ *        of nb_quality(): the DC level, a clipped sample, the rpm's
+ *        range, the index, a restart, no counted revolution.  The quality
+ *        flag and the blade-pass flag leave the 1x magnitude and phase
+ *        standing.
+ * @param flags RCNODE_BF_*.
+ * @return NB_FAIL_NONE when the report counts.
+ */
+static nb_fail_t unusable(uint16_t flags)
+{
+    if ((flags & RCNODE_BF_DC_OK) == 0u) {
+        return NB_FAIL_SENSOR;
+    }
+    if ((flags & RCNODE_BF_CLIPPED) != 0u) {
+        return NB_FAIL_CLIPPED;
+    }
+    if ((flags & RCNODE_BF_RPM_RANGE) != 0u) {
+        return NB_FAIL_RPM_RANGE;
+    }
+    if ((flags & (RCNODE_BF_INDEX_LOST | RCNODE_BF_EDGE_DROPPED)) != 0u) {
+        return NB_FAIL_INDEX;
+    }
+    if ((flags & RCNODE_BF_RESTARTED) != 0u) {
+        return NB_FAIL_RESTART;
+    }
+    if ((flags & RCNODE_BF_VALID) == 0u) {
+        return NB_FAIL_NO_REV;
+    }
+    return NB_FAIL_NONE;
+}
+
+/**
  * @brief One new report into the running capture.
  * @param s The session.
  * @param r The report.
@@ -274,8 +306,9 @@ static void finish(nb_session_t *s, nb_fail_t why)
 static void take_report(nb_session_t *s, const rcnode_bal_report_t *r)
 {
     nb_cap_t *c = &s->cap[s->taking];
-    if ((r->flags & RCNODE_BF_VALID) == 0u) {
-        finish(s, NB_FAIL_NO_REV);
+    const nb_fail_t bad = unusable(r->flags);
+    if (bad != NB_FAIL_NONE) {
+        finish(s, bad);
         return;
     }
     if (s->method == NB_TWO_RUNS && (r->flags & RCNODE_BF_NO_INDEX) != 0u) {

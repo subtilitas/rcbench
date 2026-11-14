@@ -16,9 +16,11 @@
  * A capture averages the next NB_CAP_REPORTS fresh reports after TAKE,
  * 2s at 250ms, as a vector (the two-run method needs the phase) and as a
  * magnitude (the four-run method needs only it).  It fails on a gap of
- * BAL_STALE_MS, a report without a counted revolution, a report without
- * the index in the two-run method, or an rpm more than NB_RPM_DRIFT_PCT
- * from the capture's first report.  A trial whose mean rpm lies more than
+ * BAL_STALE_MS, on a report the demodulator marks unusable (the sensor's
+ * DC level out, a clipped sample, an rpm out of range, a lost or refused
+ * index edge, a mode or blade count changed, no counted revolution), a
+ * report without the index in the two-run method, or an rpm more than
+ * NB_RPM_DRIFT_PCT from the capture's first report.  A trial whose mean rpm lies more than
  * NB_RPM_DRIFT_PCT from the baseline's fails too, when it ends or when the
  * baseline is taken again: shared/vibe solves runs of one rpm only.  The two-run method takes the baseline
  * and the trial mass in line with blade 1 (0°); the four-run method the
@@ -113,6 +115,15 @@ typedef enum {
     NB_FAIL_RPM,      /**< the rpm moved more than NB_RPM_DRIFT_PCT */
     NB_FAIL_RPM_BASE, /**< a trial's mean rpm more than NB_RPM_DRIFT_PCT
                            from the baseline's */
+    NB_FAIL_SENSOR,   /**< RCNODE_BF_DC_OK clear: the sensor's DC level is
+                           out, a sensor missing or a wiring fault */
+    NB_FAIL_CLIPPED,  /**< RCNODE_BF_CLIPPED: an ADC sample at an end */
+    NB_FAIL_RPM_RANGE,/**< RCNODE_BF_RPM_RANGE: the rpm written gives a
+                           revolution out of range */
+    NB_FAIL_INDEX,    /**< RCNODE_BF_INDEX_LOST or RCNODE_BF_EDGE_DROPPED:
+                           revolutions without or with a refused edge */
+    NB_FAIL_RESTART,  /**< RCNODE_BF_RESTARTED: the mode or the blade
+                           count changed in the report */
     NB_FAIL_COUNT     /**< the number of reasons */
 } nb_fail_t;
 

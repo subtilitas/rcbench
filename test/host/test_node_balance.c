@@ -13,7 +13,9 @@
  * again counts once), failing on a gap of 1000ms and not 999ms, on a
  * report without a revolution, without the index in two runs, and on an
  * rpm 5% off (not at 5%); a trial whose mean rpm is 5.1% from the
- * baseline's refused in both methods, 4.9% taken, and no row from it; the two-run and four-run corrections against
+ * baseline's refused in both methods, 4.9% taken, and no row from it;
+ * each flag that marks a report unusable failing a run at once in both
+ * methods, the others leaving it counting, and no row from such a run; the two-run and four-run corrections against
  * known imbalances; the CSV row's fields under its header; the instance's
  * one row per solution, solved again with a new row for a new trial mass,
  * the row's written / not written state; a dropped link stale, not the
@@ -377,6 +379,115 @@ TEST_CASE(no_row_from_runs_at_different_rpm)
     node_balance_reset();
 }
 
+/* One flag change on a report and what it does to a capture. */
+typedef struct {
+    uint16_t set;    /* flags set */
+    uint16_t clear;  /* flags cleared */
+    uint8_t  fail;   /* nb_fail_t, NB_FAIL_NONE: the report counts */
+} flag_case_t;
+
+/* Every RCNODE_BF_* flag that marks a report unusable ends a capture at
+ * once, in both methods, with its own reason; QUALITY clear, BLADE_OK
+ * clear and the index flags that tell only of edges leave it counting.
+ * No solution comes from such a run. */
+TEST_CASE(an_unusable_report_fails_the_run_at_once)
+{
+    static const flag_case_t k[] = {
+        { 0u, RCNODE_BF_DC_OK, NB_FAIL_SENSOR },
+        { RCNODE_BF_CLIPPED, 0u, NB_FAIL_CLIPPED },
+        { RCNODE_BF_RPM_RANGE, 0u, NB_FAIL_RPM_RANGE },
+        { RCNODE_BF_INDEX_LOST, 0u, NB_FAIL_INDEX },
+        { RCNODE_BF_EDGE_DROPPED, 0u, NB_FAIL_INDEX },
+        { RCNODE_BF_RESTARTED, 0u, NB_FAIL_RESTART },
+        { 0u, RCNODE_BF_VALID, NB_FAIL_NO_REV },
+        { 0u, RCNODE_BF_QUALITY, NB_FAIL_NONE },
+        { 0u, RCNODE_BF_BLADE_OK, NB_FAIL_NONE },
+        { 0u, RCNODE_BF_INDEX_SEEN | RCNODE_BF_INDEX_STEADY, NB_FAIL_NONE },
+        /* A clipped report without a revolution names the clipping. */
+        { RCNODE_BF_CLIPPED, RCNODE_BF_VALID, NB_FAIL_CLIPPED },
+    };
+    for (int mi = 0; mi < (int)NB_METHOD_COUNT; ++mi) {
+        const uint8_t m = (uint8_t)mi;
+        for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
+            nb_session_t s;
+            vibe_solution_t sol;
+            nb_init(&s);
+            nb_set_method(&s, m);
+            for (uint8_t slot = 0u; slot < nb_slots(m) - 1u; ++slot) {
+                take_at(&s, slot, 8000u);
+            }
+            const uint8_t last = (uint8_t)(nb_slots(m) - 1u);
+            rcnode_bal_report_t p = steady(300u, 1800u, 8000u);
+            CHECK_EQ(nb_take(&s, last, true), NB_TAKE_STARTED);
+            feed(&s, &p, 3u);
+            p.flags = (uint16_t)((p.flags | k[i].set) & ~k[i].clear);
+            feed(&s, &p, 1u);
+            const nb_cap_t *c = &s.cap[last];
+            if (k[i].fail == NB_FAIL_NONE) {
+                CHECK_EQ(c->state, NB_CAP_TAKING);
+                CHECK_EQ(c->n, 4u);
+                p = steady(300u, 1800u, 8000u);
+                feed(&s, &p, NB_CAP_REPORTS - 4u);
+                CHECK(nb_ready(&s));
+            } else {
+                if (c->state != NB_CAP_FAILED || c->fail != k[i].fail) {
+                    T_FAIL("method %u case %u: state %u fail %u, want "
+                           "fail %u", (unsigned)m, (unsigned)i,
+                           (unsigned)c->state, (unsigned)c->fail,
+                           (unsigned)k[i].fail);
+                }
+                CHECK(!nb_ready(&s));
+                CHECK(!nb_solve(&s, 0.5f, &sol));
+            }
+        }
+    }
+    /* Two runs need the index; four runs take a no-index report. */
+    nb_session_t s;
+    nb_init(&s);
+    rcnode_bal_report_t p = steady(300u, 0u, 8000u);
+    p.flags |= RCNODE_BF_NO_INDEX;
+    CHECK_EQ(nb_take(&s, 0u, true), NB_TAKE_STARTED);
+    feed(&s, &p, 1u);
+    CHECK_EQ(s.cap[0].fail, NB_FAIL_NO_PHASE);
+    nb_set_method(&s, NB_FOUR_RUNS);
+    CHECK_EQ(nb_take(&s, 0u, true), NB_TAKE_STARTED);
+    feed(&s, &p, NB_CAP_REPORTS);
+    CHECK_EQ(s.cap[0].state, NB_CAP_DONE);
+}
+
+/* A run on a clipped or sensorless node gives no result and no CSV row,
+ * on the panel's instance, while the live reading says why. */
+TEST_CASE(no_row_from_a_sensor_fault_or_clipping)
+{
+    static const uint16_t bad_set[] = { RCNODE_BF_CLIPPED, 0u };
+    static const uint16_t bad_clear[] = { 0u, RCNODE_BF_DC_OK };
+    for (size_t i = 0; i < 2u; ++i) {
+        node_balance_reset();
+        settings_reset_all();
+        nb_session_t *s = node_balance_session();
+        rcnode_bal_report_t p = steady(420u, 2650u, 8000u);
+        node_balance_feed(true, &p, 10u);
+        CHECK_EQ(nb_take(s, 0u, true), NB_TAKE_STARTED);
+        for (unsigned k = 0; k < NB_CAP_REPORTS; ++k) {
+            p.hdr.seq = (uint8_t)(p.hdr.seq + 1u);
+            p.hdr.t_node += 250000u;
+            if (k == 2u) {
+                p.flags = (uint16_t)((p.flags | bad_set[i]) & ~bad_clear[i]);
+            }
+            node_balance_feed(true, &p, 10u);
+        }
+        CHECK_EQ(s->cap[0].state, NB_CAP_FAILED);
+        CHECK_EQ(s->cap[0].fail, i == 0u ? NB_FAIL_CLIPPED : NB_FAIL_SENSOR);
+        CHECK_EQ(node_balance_live()->word,
+                 i == 0u ? NB_Q_CLIPPED : NB_Q_SENSOR);
+        take_at(s, 1u, 8000u);
+        char row[NB_CSV_MAX];
+        CHECK(!node_balance_result(NULL, NULL));
+        CHECK_EQ(node_balance_take_csv(2, row, sizeof row), 0u);
+    }
+    node_balance_reset();
+}
+
 /** A complex number of polar parts in degrees. */
 typedef struct {
     double re, im;
@@ -697,6 +808,8 @@ int main(void)
     RUN(a_capture_fails_on_no_revolution_no_index_and_rpm_drift);
     RUN(a_trial_at_another_rpm_than_the_baseline_fails);
     RUN(no_row_from_runs_at_different_rpm);
+    RUN(an_unusable_report_fails_the_run_at_once);
+    RUN(no_row_from_a_sensor_fault_or_clipping);
     RUN(two_runs_end_to_end_find_the_known_imbalance);
     RUN(four_runs_end_to_end_find_the_known_imbalance);
     RUN(the_csv_row_matches_its_header);
