@@ -311,6 +311,42 @@ static ui_keypad_result_t press(ui_keypad_t *k, ui_key_t key, float *out)
     }
 }
 
+float ui_keypad_value(const ui_keypad_t *k)
+{
+    if (k == NULL) {
+        return 0.0f;
+    }
+    return typed(k) ? parse(k->entry) : k->value;
+}
+
+void ui_keypad_set(ui_keypad_t *k, float v)
+{
+    if (k == NULL || !k->open) {
+        return;
+    }
+    int d = (k->decimals < 0) ? 0 : (k->decimals > 6) ? 6 : k->decimals;
+    char buf[32];
+    for (;; --d) {
+        float half = 0.5f;
+        for (int i = 0; i < d; ++i) {
+            half *= 0.1f;
+        }
+        /* A value that rounds to 0 is written "0", never "-0". */
+        const float w = (v > -half && v < half) ? 0.0f : v;
+        const int n = snprintf(buf, sizeof(buf), "%.*f", d, (double)w);
+        if ((n > 0 && n <= UI_KEYPAD_ENTRY_MAX) || d == 0) {
+            break;
+        }
+    }
+    buf[UI_KEYPAD_ENTRY_MAX] = '\0';
+    memcpy(k->entry, buf, sizeof(k->entry));
+    k->entry[UI_KEYPAD_ENTRY_MAX] = '\0';
+    k->len = (int)strlen(k->entry);
+    k->refused = false;
+    k->reason[0] = '\0';
+    ++k->revision;
+}
+
 ui_keypad_result_t ui_keypad_event(ui_keypad_t *k, const touch_event_t *evt,
                                    float *out)
 {

@@ -11,6 +11,9 @@
  *   frame     steady state: the band redrawn, screen chrome cached
  *   chrome    everything repainted every frame, i.e. the cost of not caching
  *   overview  the menu, whose tiles are chrome and are never in a frame
+ *   overview-focus  the menu with the M5Stack Dial linked and its focus
+ *             moved one tile in every frame: the ring put back and drawn
+ *             again, the tiles never repainted
  *   servo     the servo card, whose arm and grip are drawn from coverage
  *   servo-grip  the same, repainting only the breathing grip
  *   servo-rudder  SERVO's RUDDER screen with an AS5600 reading every frame
@@ -82,6 +85,7 @@
 #include "kst_panel.h"
 #include "out_bind.h"
 #include "overview_screen.h"
+#include "ui_focus.h"
 #include "picker_screen.h"
 #include "prog_registry.h"
 #include "settings_screen.h"
@@ -483,6 +487,11 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
     };
     bool plain = false;
     bool plain_chrome = false;
+    const bool focus = (strcmp(mode, "overview-focus") == 0);
+    if (focus) {
+        start = SCREEN_OVERVIEW;
+        plain = true;
+    }
     for (size_t k = 0; k < sizeof(k_plain) / sizeof(k_plain[0]); ++k) {
         const char *n = k_plain[k].name;
         const size_t len = strlen(n);
@@ -518,6 +527,9 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
                                         board_drawing_rp2350_can_bytes, NULL);
     }
     ui_router_goto(start);
+    if (focus) {
+        ui_focus_set_link(true, false);
+    }
 
     if (guide) {
         /* A tap on the band's "?". */
@@ -702,6 +714,9 @@ static __attribute__((noinline)) int bench(int frames, const char *mode)
             }
             if (strcmp(mode, "wifi-idle") == 0) {
                 wifi_idle(i);
+            }
+            if (focus) {
+                (void)ui_focus_turn(1);
             }
             ui_router_tick(0.026f);
             ui_router_render(&c, i & 1);

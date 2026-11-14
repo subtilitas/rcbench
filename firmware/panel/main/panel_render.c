@@ -398,8 +398,9 @@ void test_lines_service(void)
  * each SETUP's Dial step, add to the wired knob's span in the same frame
  * under the same rules.  Its button's PRESS is a throttle of 0% or a CENTER
  * under the turn's rules; its HOLD is a DISARM, which no frame refuses.
- * Neither arms, and nothing the Dial sends is a touch, so no hold on the
- * panel completes from it.
+ * Neither arms.  On a screen the Dial navigates (dial_navigate(), never
+ * while ARMED) the turn moves the focus, PRESS is a synthetic tap of one
+ * call and HOLD is BACK, so no hold on the panel completes from it.
  */
 knob_turn_t knob_take(void)
 {
@@ -430,16 +431,19 @@ void knob_apply(const knob_turn_t *turn, bool frame_lost)
 {
     /* Only a frame with a turn or a press asks the router, so an idle
      * frame leaves a help bubble open; a HOLD acts in any case. */
-    const bool taken = !frame_lost
-                       && ui_router_navigations() == turn->navigations
-                       && ui_router_current() == turn->route
-                       && dial_knob_take(turn->steps, &turn->dial);
+    const bool steady = !frame_lost
+                        && ui_router_navigations() == turn->navigations
+                        && ui_router_current() == turn->route;
+    const bool taken = steady && dial_knob_take(turn->steps, &turn->dial);
+    /* Where the Dial navigates (SAFE, a list on top) its input is the
+     * focus layer's and moves no output. */
+    const bool nav = dial_navigate(turn->route, &turn->dial, steady, taken);
     float span = 0.0f;
     if (taken && turn->steps != 0) {
         span = knob_span_fraction(turn->steps,
                                   settings_get_int(SET_KNOB_SCALE));
     }
-    if (taken) {
+    if (taken && !nav) {
         span += dial_span(turn->route, turn->dial.detents,
                           dial_step_tenths(settings_get_int(SET_DIAL_THR)),
                           dial_step_tenths(settings_get_int(SET_DIAL_SRV)));
@@ -455,7 +459,9 @@ void knob_apply(const knob_turn_t *turn, bool frame_lost)
     }
     /* After the turn: a PRESS's 0% or CENTER wins over it, a HOLD's DISARM
      * over both. */
-    dial_gestures(ui_router_current(), &turn->dial, taken);
+    if (!nav) {
+        (void)dial_gestures(ui_router_current(), &turn->dial, taken);
+    }
 }
 
 /*

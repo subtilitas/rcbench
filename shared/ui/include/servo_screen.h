@@ -29,6 +29,7 @@
 #include "servo_source.h"
 #include "servo_test_io.h"
 #include "supply.h"
+#include "ui_focus.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
 
@@ -136,6 +137,16 @@ bool servo_hub_tile_refused(int i, char *why, size_t n);
  * @return The line, at most 31 cells; "" past the last tile.
  */
 const char *servo_hub_tile_line(int i, char *buf, size_t n);
+
+/**
+ * @brief The Dial's items on the SERVO hub (ui_focus.h): the eight tiles
+ *        and SETTINGS, or the open SETTINGS list (ui_focus_add_setlist()).
+ *        A grey tile takes the SELECT as it takes a tap: the reason goes
+ *        to the alert band.
+ * @param out Receives them.
+ * @return false while a profile editor is open, and off the hub.
+ */
+bool servo_hub_focus(ui_focus_list_t *out);
 
 /**
  * @brief Move the horn by @p span_fraction of its travel (-travel to +travel),

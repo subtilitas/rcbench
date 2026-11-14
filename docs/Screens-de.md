@@ -6007,6 +6007,20 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.
 
+### PANEL: der Fokus des M5Stack Dial
+
+Ein verbundenes M5Stack Dial navigiert das Menü, SETUP, die Kacheln von
+SERVO und seine SETTINGS-Liste, die Platinenansicht von OUTPUTS, die
+Auswahllisten und die Warnung beim Verlassen, solange der Prüfstand SAFE
+ist ([Navigation und SET](Dial-de.md#navigation-und-set)). Ein 2px-Rahmen
+in der Akzentfarbe markiert den Eintrag im Fokus; eine Rastung bewegt ihn
+einen Eintrag weiter und läuft an beiden Enden um. PRESS tippt den Eintrag,
+HOLD tut, was das Home-Tag tut. Eine Zahl, die das Ziffernfeld nimmt, wird
+auf ihrem Ziffernfeld durch Drehen eingestellt: PRESS ist OK, HOLD ist
+CANCEL. Kein Rahmen erscheint, solange das Dial OFF oder nicht verbunden
+ist, bei ARMED, bei offener Hilfe, offenem Screenshot-Popup oder offener
+Tastatur und auf jedem anderen Bildschirm.
+
 ### SENSORS: die geteilte Ansicht
 
 SENSORS fasst die vom IOmcu ausgelesenen Geräte in einer geteilten Ansicht

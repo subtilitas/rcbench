@@ -5509,6 +5509,18 @@ across a third of its travel from -travel to +travel.
 - The knob's direction, noise and behaviour without a magnet have not been
   measured on hardware.
 
+### PANEL: the M5Stack Dial's focus
+
+A linked M5Stack Dial navigates the menu, SETUP, SERVO's tiles and its
+SETTINGS list, OUTPUTS' board view, the choice lists and the leave warning
+while the bench is SAFE ([Navigation and SET](Dial.md#navigation-and-set)).
+A 2px ring in the accent colour marks the focused item; a detent moves it
+one item and wraps at either end. PRESS taps the item, HOLD does what the
+home tag does. A number the keypad takes is set by turning on its keypad:
+PRESS is OK, HOLD is CANCEL. No ring shows while the Dial is OFF or not
+linked, while ARMED, with the guide, the screenshot popup or a keyboard
+open, and on every other screen.
+
 ### SENSORS: the split pane
 
 SENSORS groups the devices read by the IOmcu. The split view has 8 entries

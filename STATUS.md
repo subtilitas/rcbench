@@ -1185,8 +1185,17 @@ into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
 SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
 (`shared/ui/wireless_pane.c`, `test_wireless_pane`), and the `blec` task's
 and the control task's side (`firmware/panel/main/panel_dial.c`,
-`panel_supply.c`). Navigation from the Dial is not built. The battery's
-reading pin is unknown; the encoder's direction is not measured.
+`panel_supply.c`). Built and host-tested, not run with a Dial: navigation
+and SET (`shared/ui/ui_focus.c`, `ui_focus_list.c`, `ui_focus_screens.c`,
+`test_dial_nav`, `test_dial_nav_hold`: the focus moves and wraps on the
+menu, SETUP, SERVO's tiles and OUTPUTS' board view; a SELECT opens what a
+tap opens; a SELECT on CLEAR ALL completes no hold; a number kept and
+cancelled on its keypad, an on/off stepped and restored; a choice list
+picked and closed; no focus while the Dial is off or the bench ARMED; a
+ring move writes two rings and leaves the screen as drawn), with the
+`overview-focus` frame-cost mode. The programmers' screens take no focus
+yet. The battery's reading pin is unknown; the encoder's direction is not
+measured.
 
 ### Phase tap (ESC tones)
 
@@ -1458,7 +1467,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 566 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 568 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1572,7 +1581,8 @@ The host suite is 566 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
 `test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
-`test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
+`test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
+`test_dial_nav_hold`, `test_wireless_pane`,
 `test_settings_panes`,
 `test_dial_face`, `test_dial_fit`,
 `test_imu`, `test_imu_filter`,

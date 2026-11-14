@@ -27,6 +27,7 @@ set(SRCS
     ui_pinlist.c
     ui_board.c
     ui_router.c
+    ui_router_alert.c
     ui_help.c
     help_outputs.c
     help_setup.c
@@ -168,6 +169,9 @@ set(SRCS
     dial_ctl.c
     dial_stream.c
     dial_panel.c
+    ui_focus.c
+    ui_focus_list.c
+    ui_focus_screens.c
     files_draw.c
     files_events.c
     files_text.c

@@ -351,6 +351,12 @@ jobs:
       - name: The screen guide's marks stay cheap
         run: python3 tools/frame_cost.py overview-guide --max-lines 1000
 
+      # The M5Stack Dial's focus ring keeps the pixels under it: a move
+      # puts back one 2px ring and draws another, about 1,060 fills on the
+      # menu; a move that repaints a tile costs several thousand.
+      - name: A focus move costs its ring, not a repaint
+        run: python3 tools/frame_cost.py overview-focus --max-lines 1300
+
       - name: The SIMULATION watermark has not grown
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
              --max-lines 3600
