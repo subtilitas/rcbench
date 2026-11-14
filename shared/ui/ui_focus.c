@@ -431,7 +431,7 @@ bool ui_focus_press(void)
     if (!refresh()) {
         return false;
     }
-    ui_keypad_t *k = kp_open();
+    const ui_keypad_t *k = kp_open();
     if (k != NULL) {
         tap_rect(ui_keypad_key_rect(k, UI_KEY_OK));
         return true;
@@ -461,7 +461,7 @@ bool ui_focus_hold(void)
     if (!refresh()) {
         return false;
     }
-    ui_keypad_t *k = kp_open();
+    const ui_keypad_t *k = kp_open();
     if (k != NULL) {
         tap_rect(ui_keypad_key_rect(k, UI_KEY_CANCEL));
         return true;
@@ -493,7 +493,7 @@ typedef enum {
  * @param op    What to do.
  * @return The pixels written.
  */
-static uint32_t ring_pass(gfx_canvas_t *c, const ring_t *g,
+static uint32_t ring_pass(const gfx_canvas_t *c, const ring_t *g,
                           gfx_color_t *under, ring_op_t op)
 {
     const gfx_rect_t r = g->r;
@@ -521,20 +521,15 @@ static uint32_t ring_pass(gfx_canvas_t *c, const ring_t *g,
                     return written;
                 }
                 gfx_color_t *p = &row[x];
-                if (op == RING_DRAW) {
+                const bool ring = *p == g->color;
+                /* DRAW keeps every pixel, REFRESH those painted over. */
+                if (op == RING_DRAW || (op == RING_REFRESH && !ring)) {
                     under[k] = *p;
                     *p = g->color;
                     ++written;
                     any = true;
-                } else if (op == RING_RESTORE) {
-                    if (*p == g->color) {
-                        *p = under[k];
-                        ++written;
-                        any = true;
-                    }
-                } else if (*p != g->color) {
-                    under[k] = *p;
-                    *p = g->color;
+                } else if (op == RING_RESTORE && ring) {
+                    *p = under[k];
                     ++written;
                     any = true;
                 }
@@ -595,7 +590,7 @@ void ui_focus_render_begin(const gfx_canvas_t *body)
  *        with what the screen painted.
  * @param body The body canvas.
  */
-static void watch_end(gfx_canvas_t *body)
+static void watch_end(const gfx_canvas_t *body)
 {
     f.watched = f.watching;
     if (!f.watching) {
@@ -660,7 +655,7 @@ static bool same_ring(const ring_t *a, const ring_t *b)
            && a->color == b->color;
 }
 
-void ui_focus_render_end(gfx_canvas_t *body, int buffer_index)
+void ui_focus_render_end(const gfx_canvas_t *body, int buffer_index)
 {
     if (body == NULL) {
         return;

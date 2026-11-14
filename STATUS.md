@@ -440,7 +440,10 @@ the link report writes every 60s, does not count (`screen_dim_idle()`), nor does
 (`shot_facts_t::no_lit_fault`); every other FAULT bit does. The console
 prints `dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%` every 300
 frames (`screen_dim_line()`, `backlight_line()`). The press that wakes a dim screen reaches no
-screen, except a press on STOP. `firmware/panel/main/panel_render.c` sets the duty with
+screen, except a press on STOP. The M5Stack Dial's input wakes it too
+(`screen_dim_wake()`); on an idle bench the waking input does nothing else, while a HOLD on
+a bench screen and every input on a busy bench act (`dial_dim_filter()`, `test_dial_nav`).
+`firmware/panel/main/panel_render.c` sets the duty with
 `board_backlight_percent()`; not host-tested. Not run on a panel: the dim, the wake,
 the light 20% duty gives. [PANEL: Dim after](docs/Screens.md#panel-dim-after).
 
@@ -1192,7 +1195,8 @@ menu, SETUP, SERVO's tiles and OUTPUTS' board view; a SELECT opens what a
 tap opens; a SELECT on CLEAR ALL completes no hold; a number kept and
 cancelled on its keypad, an on/off stepped and restored; a choice list
 picked and closed; no focus while the Dial is off or the bench ARMED; a
-ring move writes two rings and leaves the screen as drawn), with the
+ring move writes two rings and leaves the screen as drawn; a list of 70
+rows keeps RESET and SAVE; a dimmed panel woken by the Dial), with the
 `overview-focus` frame-cost mode. The programmers' screens take no focus
 yet. The battery's reading pin is unknown; the encoder's direction is not
 measured.

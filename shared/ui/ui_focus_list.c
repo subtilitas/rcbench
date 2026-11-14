@@ -13,7 +13,9 @@
  * | a custom row | taps the row's name: its action or its choice list |
  * | a row that takes no press | taps the value: the panel's answer to a tap there |
  *
- * The strip adds RESET and, while a save is offered, SAVE.
+ * The strip adds RESET and, while a save is offered, SAVE.  Their slots
+ * are kept first: of a list longer than UI_FOCUS_MAX items, the last rows
+ * take no focus.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -72,7 +74,7 @@ static const char *row_label(const ui_setlist_row_t *r)
  * @param out The list.
  * @param sl  The setting list.
  */
-static void add_choices(ui_focus_list_t *out, ui_setlist_t *sl)
+static void add_choices(ui_focus_list_t *out, const ui_setlist_t *sl)
 {
     const ui_setlist_row_t r = sl_row(sl, sl->choice_row);
     out->list = out->list * 31u + MODE_CHOICE + (uint32_t)sl->choice_row;
@@ -110,7 +112,7 @@ static void add_warning(ui_focus_list_t *out)
  * @param sl  The setting list.
  * @param i   The row.
  */
-static void add_row(ui_focus_list_t *out, ui_setlist_t *sl, int i)
+static void add_row(ui_focus_list_t *out, const ui_setlist_t *sl, int i)
 {
     const ui_setlist_row_t r = sl_row(sl, i);
     if (r.kind == UI_SL_HEADING || r.kind == UI_SL_NONE) {
@@ -170,7 +172,11 @@ bool ui_focus_add_setlist(ui_focus_list_t *out, ui_setlist_t *sl)
     out->sl = sl;
     const int first = out->count;
     const int n = ui_setlist_count(sl);
-    for (int i = 0; i < n; ++i) {
+    /* The strip's slots are kept: a list longer than the items hold loses
+     * its last rows, never RESET or SAVE. */
+    const bool save = ui_setlist_save_offered();
+    const int room = UI_FOCUS_MAX - 1 - (save ? 1 : 0);
+    for (int i = 0; i < n && out->count < room; ++i) {
         add_row(out, sl, i);
     }
     if (out->count == first) {
@@ -184,7 +190,7 @@ bool ui_focus_add_setlist(ui_focus_list_t *out, ui_setlist_t *sl)
         snprintf(reset, sizeof(reset), TR(SET_RESET_ONE), name);
     }
     (void)ui_focus_add(out, ui_setlist_strip_rect(1), reset);
-    if (ui_setlist_save_offered()) {
+    if (save) {
         (void)ui_focus_add(out, ui_setlist_strip_rect(2), TR(SET_SAVE));
     }
     return true;

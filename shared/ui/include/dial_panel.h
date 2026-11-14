@@ -31,6 +31,7 @@
 #include "bench_state.h"
 #include "dial_ctl.h"
 #include "dial_stream.h"
+#include "screen_dim.h"
 #include "ui_screen.h"
 
 #ifdef __cplusplus
@@ -92,6 +93,25 @@ bool dial_gestures(ui_screen_id_t route, const dial_input_t *in,
  */
 bool dial_navigate(ui_screen_id_t route, const dial_input_t *in,
                    bool steady, bool taken);
+
+/**
+ * @brief Dim after's rule for the Dial's input (screen_dim.h): any turn,
+ *        PRESS or HOLD wakes the backlight.  On a dim panel and an idle
+ *        bench (screen_dim_idle()) the input that woke it is dropped, as a
+ *        touch that wakes it is.  It acts on a bench that is not idle, so a
+ *        PRESS for 0% or CENTER and the turn on an ARMED bench are never
+ *        swallowed, and a HOLD on MOTOR & ESC or a SERVO screen always
+ *        acts: its DISARM or the end of a sequence is never refused.
+ * @param d      Dim after's state.
+ * @param in     The frame's Dial input; NULL is none.
+ * @param route  The screen on top.
+ * @param facts  The frame's facts of the bench.
+ * @param now_ms The clock.
+ * @return The input that acts: @p in, or none.
+ */
+dial_input_t dial_dim_filter(screen_dim_t *d, const dial_input_t *in,
+                             ui_screen_id_t route, const shot_facts_t *facts,
+                             uint32_t now_ms);
 
 /** @brief What the model is built from, besides the screens' getters. */
 typedef struct {

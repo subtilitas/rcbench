@@ -87,7 +87,9 @@ history is in git.
   or option row is stepped by its keys, PRESS keeps, HOLD restores. The
   Dial shows NAV and VALUE. The ring keeps the pixels under it: a move
   costs about 1,060 cache-line fills on the menu, held under 1,300 by the
-  `overview-focus` frame-cost mode. No 2s hold completes from the Dial
+  `overview-focus` frame-cost mode. No 2s hold completes from the Dial.
+  The Dial's input wakes a dimmed panel; on an idle bench the waking input
+  does nothing else, as a waking touch
   ([Navigation and SET](docs/Dial.md#navigation-and-set)).
 - `gfx_ring_aa()` in `shared/gfx`: a 1px ring antialiased by each pixel's
   coverage clamp(1 - |d - r|, 0, 1), from a table of the pixels the ring

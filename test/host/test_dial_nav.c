@@ -18,6 +18,11 @@
  * - armed_moves_no_focus
  * - the_dial_shows_nav_and_value
  * - a_ring_move_costs_its_pixels_and_restores_the_screen
+ * - a_select_on_a_dim_panel_wakes_it_and_opens_nothing
+ * - a_turn_on_a_dim_panel_wakes_it_and_moves_nothing
+ * - a_hold_on_a_dim_armed_bench_disarms
+ * - an_awake_panel_takes_the_dial_as_before
+ * - a_long_list_keeps_its_strip
  *
  * SPDX-License-Identifier: MIT
  */
@@ -25,6 +30,9 @@
 #include "settings_rig.h"
 
 #include "dial_panel.h"
+#include "motor_screen.h"
+#include "screen_dim.h"
+#include "ui_setlist.h"
 #include "overview_screen.h"
 #include "servo_screen.h"
 #include "ui_focus.h"
@@ -444,6 +452,184 @@ TEST_CASE(a_ring_move_costs_its_pixels_and_restores_the_screen)
                  sizeof(gfx_color_t) * (size_t)(W * UI_BODY_H)) == 0);
 }
 
+/** @brief Facts of a bench at rest: every one idle. */
+static shot_facts_t idle_facts(void)
+{
+    shot_facts_t f;
+    memset(&f, 0, sizeof(f));
+    bool *b = (bool *)&f;
+    for (size_t i = 0; i < sizeof(f) / sizeof(bool); ++i) {
+        b[i] = true;
+    }
+    return f;
+}
+
+/** @brief Dim after's state, dimmed at 0ms. */
+static screen_dim_t dimmed(void)
+{
+    screen_dim_t d;
+    screen_dim_init(&d, 0u);
+    d.dimmed = true;
+    return d;
+}
+
+/**
+ * @brief One frame of the Dial's input through Dim after and the focus
+ *        layer, as knob_apply() takes it.
+ * @param d  Dim after's state.
+ * @param in The input.
+ * @param f  The bench's facts.
+ * @return Whether the focus layer took it.
+ */
+static bool dial_frame(screen_dim_t *d, dial_input_t in,
+                       const shot_facts_t *f)
+{
+    const dial_input_t act = dial_dim_filter(d, &in, ui_router_current(), f,
+                                             60000u);
+    return dial_navigate(ui_router_current(), &act, true, true);
+}
+
+TEST_CASE(a_select_on_a_dim_panel_wakes_it_and_opens_nothing)
+{
+    on(SCREEN_SETUP);
+    CHECK(focus_on(ui_setting_category(SET_CAT_APP)));
+    screen_dim_t d = dimmed();
+    const shot_facts_t f = idle_facts();
+    CHECK(screen_dim_idle(&f));
+    dial_input_t in = { .presses = 1 };
+    (void)dial_frame(&d, in, &f);
+    CHECK(!screen_dim_is_dim(&d));
+    CHECK_EQ(settings_screen_category(), -1);
+    /* Awake: the next press opens. */
+    CHECK(dial_frame(&d, in, &f));
+    CHECK_EQ(settings_screen_category(), (int)SET_CAT_APP);
+}
+
+TEST_CASE(a_turn_on_a_dim_panel_wakes_it_and_moves_nothing)
+{
+    on(SCREEN_OVERVIEW);
+    CHECK_EQ(ui_focus_index(), 0);
+    screen_dim_t d = dimmed();
+    const shot_facts_t f = idle_facts();
+    dial_input_t in = { .detents = 3 };
+    (void)dial_frame(&d, in, &f);
+    CHECK(!screen_dim_is_dim(&d));
+    CHECK_EQ(ui_focus_index(), 0);
+    /* A HOLD on a dim panel goes back nowhere either. */
+    on(SCREEN_SETUP);
+    d = dimmed();
+    in = (dial_input_t){ .holds = 1 };
+    (void)dial_frame(&d, in, &f);
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
+    CHECK(!screen_dim_is_dim(&d));
+}
+
+TEST_CASE(a_hold_on_a_dim_armed_bench_disarms)
+{
+    on(SCREEN_MOTOR);
+    motor_screen_set_armed(true);
+    motor_cmd_t c;
+    while (motor_screen_poll_cmd(&c)) {
+    }
+    screen_dim_t d;
+    /* The facts of an ARMED bench, and once more facts that call it idle:
+     * a HOLD on a bench screen acts either way. */
+    shot_facts_t armed = idle_facts();
+    armed.safe = false;
+    const shot_facts_t rest = idle_facts();
+    const shot_facts_t *k_facts[2] = { &armed, &rest };
+    for (int k = 0; k < 2; ++k) {
+        d = dimmed();
+        dial_input_t in = { .holds = 1 };
+        const dial_input_t act = dial_dim_filter(&d, &in, SCREEN_MOTOR,
+                                                 k_facts[k], 60000u);
+        CHECK(!screen_dim_is_dim(&d));
+        CHECK_EQ(act.holds, 1u);
+        CHECK(dial_gestures(SCREEN_MOTOR, &act, true));
+        CHECK(motor_screen_poll_cmd(&c));
+        CHECK_EQ(c.kind, MOTOR_CMD_DISARM);
+    }
+    /* A PRESS on the ARMED bench acts too: throttle 0%. */
+    d = dimmed();
+    dial_input_t in = { .presses = 1, .detents = 2 };
+    const dial_input_t act = dial_dim_filter(&d, &in, SCREEN_MOTOR, &armed,
+                                             60000u);
+    CHECK_EQ(act.presses, 1u);
+    CHECK_EQ(act.detents, 2);
+}
+
+TEST_CASE(an_awake_panel_takes_the_dial_as_before)
+{
+    on(SCREEN_OVERVIEW);
+    screen_dim_t d;
+    screen_dim_init(&d, 0u);
+    const shot_facts_t f = idle_facts();
+    dial_input_t in = { .detents = 1 };
+    CHECK(dial_frame(&d, in, &f));
+    CHECK_EQ(ui_focus_index(), 1);
+    /* The minutes start again from the Dial's input. */
+    CHECK_EQ(d.last_ms, 60000u);
+    in = (dial_input_t){ .presses = 1 };
+    CHECK(dial_frame(&d, in, &f));
+    CHECK_EQ(ui_router_current(), overview_screen_tile(1));
+    /* No input: nothing woken, nothing dropped. */
+    d = dimmed();
+    const dial_input_t none = { 0 };
+    const dial_input_t act = dial_dim_filter(&d, &none, SCREEN_SETUP, &f,
+                                             1000u);
+    CHECK(screen_dim_is_dim(&d));
+    CHECK_EQ(act.presses, 0u);
+}
+
+/** @brief The long list's row: a custom row that does nothing. */
+static const ui_setlist_custom_t k_long_row = { .label = TX_DIAL_ROW_BIND };
+
+/** @brief 70 rows. @return the count */
+static int long_count(void) { return 70; }
+
+/** @brief Row @p i. @param i The row. @return it */
+static ui_setlist_row_t long_row(int i)
+{
+    return (i >= 0 && i < 70) ? (ui_setlist_row_t)UI_SL_ROW_CUSTOM(&k_long_row)
+                              : ui_setlist_table_row(NULL, 0, 0);
+}
+
+/** @brief The long list's name. @return it */
+static const char *long_name(void) { return "LONG"; }
+
+TEST_CASE(a_long_list_keeps_its_strip)
+{
+    static const ui_setlist_host_t host = {
+        .count = long_count, .row = long_row, .name = long_name,
+    };
+    on(SCREEN_SETUP);
+    static ui_setlist_t sl;
+    ui_setlist_init(&sl, &host);
+    ui_setlist_open(&sl);
+    static ui_focus_list_t out;
+    char reset[48];
+    snprintf(reset, sizeof(reset), TR(SET_RESET_ONE), "LONG");
+    for (int dirty = 0; dirty < 2; ++dirty) {
+        if (dirty) {
+            settings_set(SET_DIM_AFTER, 15.0f);
+        }
+        const bool save = ui_setlist_save_offered();
+        CHECK_EQ(save, dirty != 0);
+        memset(&out, 0, sizeof(out));
+        CHECK(ui_focus_add_setlist(&out, &sl));
+        CHECK_EQ(out.count, UI_FOCUS_MAX);
+        const int last = UI_FOCUS_MAX - 1;
+        if (save) {
+            CHECK_STR_EQ(out.item[last].label, TR(SET_SAVE));
+            CHECK_STR_EQ(out.item[last - 1].label, reset);
+            CHECK_EQ(out.item[last - 2].row, UI_FOCUS_MAX - 3);
+        } else {
+            CHECK_STR_EQ(out.item[last].label, reset);
+            CHECK_EQ(out.item[last - 1].row, UI_FOCUS_MAX - 2);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(the_focus_moves_and_wraps_on_the_overview);
@@ -458,5 +644,10 @@ int main(void)
     RUN(armed_moves_no_focus);
     RUN(the_dial_shows_nav_and_value);
     RUN(a_ring_move_costs_its_pixels_and_restores_the_screen);
+    RUN(a_select_on_a_dim_panel_wakes_it_and_opens_nothing);
+    RUN(a_turn_on_a_dim_panel_wakes_it_and_moves_nothing);
+    RUN(a_hold_on_a_dim_armed_bench_disarms);
+    RUN(an_awake_panel_takes_the_dial_as_before);
+    RUN(a_long_list_keeps_its_strip);
     return test_summary("dial_nav");
 }

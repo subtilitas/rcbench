@@ -272,6 +272,14 @@ SET:
   Wert; HOLD tippt die andere Taste so oft, wie ein Tippen den Wert geändert
   hat.
 
+Dimmen nach: Eine Drehung, ein PRESS oder ein HOLD des Dial weckt ein
+gedimmtes Panel und startet seine Minuten neu, wie eine Berührung. Auf
+einem gedimmten Panel mit ruhendem Prüfstand tut die Eingabe, die es
+geweckt hat, sonst nichts: Sie öffnet, bewegt und stellt nichts ein. Auf
+einem Prüfstand, der nicht ruht, wirkt sie sofort; ein PRESS für 0% oder
+CENTER auf einem ARMED-Prüfstand wird also nie verschluckt, und ein HOLD
+auf MOTOR & ESC oder einem SERVO-Bildschirm wirkt immer.
+
 Das Dial zeigt das NAV-Face, solange es den Fokus bewegt, mit dem Namen des
 Bildschirms, dem Eintrag im Fokus zwischen den Einträgen davor und danach
 und seiner Stelle in der Liste. In SET zeigt es das VALUE-Face mit dem
@@ -543,10 +551,8 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   UPDATES, IMU, der Rasteransicht von OUTPUTS, den Programmern (KST, Hitec,
   ESC) und den eigenen Listen und Reitern der Prüfstandsbildschirme bewegt
   es keinen Fokus; ein HOLD tut dort auf einem SAFE-Prüfstand nichts.
-- Eine Liste nimmt den Fokus für ihre ersten 64 Einträge; Zeilen dahinter
-  erreicht das Dial nicht.
-- Ein SELECT wirkt auch, wenn das Panel gedimmt ist, und weckt es nicht:
-  Die Eingabe des Dial ist für Dim after keine Berührung.
+- Eine Liste nimmt den Fokus für 64 Einträge, RESET und SAVE darunter; die
+  letzten Zeilen einer längeren Liste erreicht das Dial nicht.
 - Ein Pixel, das der Bildschirm unter dem Rahmen genau in der Farbe des
   Rahmens malt (der Akzent mit gekipptem untersten Bit), gilt als Rahmen
   und wird zurückgesetzt, wenn der Rahmen weiterzieht.

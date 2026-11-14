@@ -5913,6 +5913,11 @@ Panel berührt und der Prüfstand ruht.
   Sein nächstes MOVE oder UP weckt das Bild und erreicht die Seite, auf der
   er gedrückt hat.
 - Eine Drehung des Drehknopfs weckt das Bild nicht.
+- Eine Drehung, ein PRESS oder ein HOLD des M5Stack Dial weckt es und
+  startet die Minuten neu. Auf einem ruhenden Prüfstand tut die Eingabe,
+  die es geweckt hat, sonst nichts; auf einem Prüfstand, der nicht ruht,
+  und bei einem HOLD auf MOTOR & ESC oder einem SERVO-Bildschirm wirkt sie
+  auch ([Navigation und SET](Dial-de.md#navigation-und-set)).
 - Die Regel ist `shared/ui/screen_dim.c`, gehalten von `test_screen_dim`;
   die Render-Schleife setzt das Tastverhältnis mit
   `board_backlight_percent()`, wenn es sich ändert.

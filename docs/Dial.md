@@ -255,6 +255,13 @@ SET:
   wrap as their keys do. PRESS keeps the value; HOLD taps the other key as
   often as a tap changed the value.
 
+Dim after: a turn, PRESS or HOLD of the Dial wakes a dimmed panel and
+starts its minutes again, as a touch does. On a dimmed panel with the bench
+idle the input that woke it does nothing else: it opens, moves and sets
+nothing. On a bench that is not idle it acts at once, so a PRESS for 0% or
+CENTER on an ARMED bench is never swallowed, and a HOLD on MOTOR & ESC or a
+SERVO screen always acts.
+
 The Dial shows the NAV face while it moves the focus, with the screen's name,
 the focused item between the items before and after it, and its place in
 the list. In SET it shows the VALUE face with the setting's name as the
@@ -513,10 +520,8 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
   only. On LOGS, FILES, WI-FI, UPDATES, IMU, OUTPUTS' grid view, the
   programmers (KST, Hitec, ESC) and the bench screens' own lists and tabs it
   moves no focus; a HOLD there does nothing on a SAFE bench.
-- A list takes focus for its first 64 items; rows past that are not
-  reached from the Dial.
-- A SELECT acts while the panel is dimmed and does not wake it: the Dial's
-  input is no touch for Dim after.
+- A list takes focus for 64 items, RESET and SAVE among them; the last rows
+  of a longer list are not reached from the Dial.
 - A pixel the screen paints in exactly the ring's colour (the accent with
   its lowest bit flipped) under the ring is taken for the ring and put back
   when the ring moves.

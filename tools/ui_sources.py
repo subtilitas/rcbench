@@ -218,6 +218,7 @@ SOURCES = [
     "shared/ui/dial_ctl.c",
     "shared/ui/dial_stream.c",
     "shared/ui/dial_panel.c",
+    "shared/ui/screen_dim.c",
     "shared/ui/ui_focus.c",
     "shared/ui/ui_focus_list.c",
     "shared/ui/ui_focus_screens.c",
@@ -364,6 +365,4 @@ EXCLUDED = {
         "the control task posts to it; no screen calls it",
     "shared/ui/port_mail.c":
         "the control task fills it; the screens read port_view.c",
-    "shared/ui/screen_dim.c":
-        "the render loop's backlight and touch filter; no screen calls it",
 }

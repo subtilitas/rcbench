@@ -203,7 +203,7 @@ void ui_focus_render_begin(const gfx_canvas_t *body);
  * @param body         The body canvas.
  * @param buffer_index The frame buffer.
  */
-void ui_focus_render_end(gfx_canvas_t *body, int buffer_index);
+void ui_focus_render_end(const gfx_canvas_t *body, int buffer_index);
 
 /**
  * @brief The pixels the ring wrote in the last ui_focus_render_end(), for

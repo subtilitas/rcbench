@@ -104,6 +104,26 @@ bool dial_navigate(ui_screen_id_t route, const dial_input_t *in,
     return true;
 }
 
+dial_input_t dial_dim_filter(screen_dim_t *d, const dial_input_t *in,
+                             ui_screen_id_t route, const shot_facts_t *facts,
+                             uint32_t now_ms)
+{
+    const dial_input_t none = { 0 };
+    if (in == NULL) {
+        return none;
+    }
+    if (in->detents == 0 && in->presses == 0u && in->holds == 0u) {
+        return *in;
+    }
+    const bool was_dim = screen_dim_wake(d, now_ms);
+    const bool stops = in->holds != 0u
+                       && (route == SCREEN_MOTOR || servo_screen_owns(route));
+    if (was_dim && !stops && screen_dim_idle(facts)) {
+        return none;
+    }
+    return *in;
+}
+
 /**
  * @brief @p v rounded into @p lo to @p hi.
  * @param v The value.  @param lo The lowest.  @param hi The highest.

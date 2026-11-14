@@ -5421,6 +5421,10 @@ bench is idle.
   owner: its next MOVE or UP wakes the screen and reaches the screen it
   pressed.
 - A turn of the rotary knob does not wake the screen.
+- A turn, PRESS or HOLD of the M5Stack Dial wakes it and starts the minutes
+  again. On an idle bench the input that woke it does nothing else; on a
+  bench that is not idle, and for a HOLD on MOTOR & ESC or a SERVO screen,
+  it acts as well ([Navigation and SET](Dial.md#navigation-and-set)).
 - The rule is `shared/ui/screen_dim.c`, held by `test_screen_dim`; the
   render loop sets the duty with `board_backlight_percent()` when it
   changes.
