@@ -6,10 +6,12 @@
  * imu-scan: SCAN tapped, two sensors listed, the nearer first, and four
  * other devices hidden.
  * imu-connected: bound to it, 50Hz, ZERO taken, the surface at +12.3° on
- * X, the battery at 3.95V and the calibration done.  setup-sensors-imu:
- * SENSORS on the IMU entry, the IMU on and connected at 50Hz.  imu-off:
- * the IMU off in SETUP since the start, SCAN offered.  setup-sensors-imu-off: SENSORS on
- * the IMU entry with the IMU off, ANGLE SOURCE under it.
+ * X, the battery at 3.95V and the calibration done.  setup-wireless-imu:
+ * WIRELESS on the IMU entry, the IMU on and connected at 50Hz.  imu-off:
+ * the IMU off in SETUP since the start, SCAN offered.
+ * setup-wireless-imu-off: WIRELESS on the IMU entry with the IMU off,
+ * ANGLE SOURCE under it.  setup-wireless-dial: WIRELESS on the DIAL entry,
+ * the Dial on and linked, a scan that found two Dials, the second bound.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -20,17 +22,17 @@
 #include <string.h>
 
 #include "imu_screen.h"
-#include "sensors_pane.h"
 #include "sensors_rows.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "ui_layout.h"
 #include "ui_screen.h"
+#include "wireless_pane.h"
 
 bool render_imu_view(const char *view)
 {
     return strcmp(view, "imu") == 0 || strncmp(view, "imu-", 4) == 0
-           || strncmp(view, "setup-sensors-imu", 17) == 0;
+           || strncmp(view, "setup-wireless", 14) == 0;
 }
 
 /**
@@ -90,9 +92,38 @@ static void connected(imu_view_t *v)
     v->cal = IMU_CAL_DONE;
 }
 
+/**
+ * @brief WIRELESS on the DIAL entry: the Dial on and linked, two Dials
+ *        found, the second bound.
+ */
+static void pose_dial(void)
+{
+    dial_view_t d;
+    memset(&d, 0, sizeof(d));
+    d.link = DIAL_LINK_UP;
+    d.scan_done = true;
+    d.found_n = 2u;
+    snprintf(d.found[0].addr, sizeof(d.found[0].addr), "A0:B1:C2:7F:3A:10 R");
+    snprintf(d.found[0].name, sizeof(d.found[0].name), "DIAL-3A10");
+    d.found[0].rssi = -52;
+    snprintf(d.found[1].addr, sizeof(d.found[1].addr), "A0:B1:C2:41:0C:22 R");
+    snprintf(d.found[1].name, sizeof(d.found[1].name), "DIAL-0C22");
+    d.found[1].rssi = -67;
+    snprintf(d.bound_addr, sizeof(d.bound_addr), "%s", d.found[0].addr);
+    snprintf(d.bound_name, sizeof(d.bound_name), "%s", d.found[0].name);
+    d.proto = 1u;
+    settings_set(SET_DIAL_EN, 1.0f);
+    wireless_pane_set_dial(&d);
+    settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_DIAL);
+}
+
 void render_imu_pose(const char *view)
 {
     if (!render_imu_view(view)) {
+        return;
+    }
+    if (strcmp(view, "setup-wireless-dial") == 0) {
+        pose_dial();
         return;
     }
     imu_view_t v;
@@ -102,20 +133,20 @@ void render_imu_pose(const char *view)
     v.r.battery_v = NAN;
     v.r.temp_c = NAN;
     if (strcmp(view, "imu-off") == 0
-        || strcmp(view, "setup-sensors-imu-off") == 0) {
+        || strcmp(view, "setup-wireless-imu-off") == 0) {
         v.link = IMU_LINK_OFF;
         v.version[0] = '\0';     /* Bluetooth LE not started since boot */
-        if (strcmp(view, "setup-sensors-imu-off") == 0) {
-            settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_IMU);
+        if (strcmp(view, "setup-wireless-imu-off") == 0) {
+            settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
             return;
         }
         imu_screen_set(&v);
         return;
     }
     settings_set(SET_IMU_EN, 1.0f);
-    if (strcmp(view, "setup-sensors-imu") == 0) {
+    if (strcmp(view, "setup-wireless-imu") == 0) {
         sensors_rows_set_imu(IMU_LINK_CONNECTED, 500u);
-        settings_screen_open_on(SET_CAT_SENSORS, SENS_ENTRY_IMU);
+        settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_IMU);
         return;
     }
     if (strcmp(view, "imu-connected") == 0) {

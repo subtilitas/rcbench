@@ -379,6 +379,20 @@ ASSERTED = {
             "BLEU_FOUND_MAX <= IMU_FOUND_MAX",
             "WIT_CMD_LEN <= BLEU_WRITE_MAX",
         ),
+        "shared/ui/dial_ctl.c": (
+            "DIAL_BLE_OWNER < BLEU_OWNER_MAX",
+            "DK_LEN_INFO <= BLEU_PARAM_MAX",
+            "DK_PKT_MAX <= BLEU_WRITE_MAX",
+        ),
+    },
+    "dialknob": {
+        "shared/ui/dial_ctl.c": (
+            "DK_LEN_INFO <= BLEU_PARAM_MAX",
+            "DK_PKT_MAX <= BLEU_WRITE_MAX",
+        ),
+        "shared/ui/dial_stream.c": (
+            "DK_K_SCALE - DK_K_SCREEN + 1u == 8u",
+        ),
     },
     "dshot": {
         "firmware/iomcu/src/outputs_hw.c": (

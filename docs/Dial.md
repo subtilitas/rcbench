@@ -8,12 +8,14 @@ BLE). Its display shows what the knob acts on. This page covers its
 firmware (`firmware/dial`) and the protocol between it and the panel
 (`protocols/dialknob`).
 
-What exists: the protocol module with its host tests, and the Dial's
+What exists: the protocol module with its host tests; the Dial's
 firmware: the power latch, the encoder, the buttons, the touch glass, the
 click per detent, the faces on the display, the BLE peripheral with its
-bound panel, and the USB console. What does not exist yet: the panel's
-side. No panel build connects to a Dial, so a Dial moves nothing on the
-bench. The BLE update and pairing are later slices.
+bound panel, and the USB console; and the panel's side: SETUP > WIRELESS >
+DIAL, the scan and the bind, the link with its loss rule, the turn on
+MOTOR & ESC and SERVO LIVE, the screen button, and the stream of the
+panel's screen to the Dial ([The panel](#the-panel)). Navigation of the
+panel's lists from the Dial, the BLE update and pairing are later slices.
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products, and
 Bluetooth is a trademark of its owner. rcbench is independent: it is not
@@ -44,7 +46,7 @@ confirmed.
 ## Safety
 
 The Dial is not a safety device. These rules are the panel's, and the
-panel's side that applies them is a later slice:
+panel applies them ([The panel](#the-panel)):
 
 - A Dial event never enables voltage or power. ARM, SUPPLY ON, PROG 5V and
   WRITE stay the panel's 2s holds. STOP is on the panel only.
@@ -62,6 +64,8 @@ panel's side that applies them is a later slice:
   is connected again and the panel's first packet came.
 - The screen button while ARMED: a tap sets the throttle to 0% on MOTOR and
   CENTER on SERVO; a 1s hold DISARMs.
+- No BLE scan while ARMED: a scan's radio time would starve the link that
+  carries the knob.
 
 The link rules and their timing are in the protocol module, with a host test
 each ([protocols/dialknob](https://github.com/subtilitas/rcbench/blob/main/protocols/dialknob/README.md)).
@@ -127,6 +131,131 @@ The 1s HOLD gesture goes to the panel on the way.
 
 There is no pairing and no encryption in protocol version 1: a device in
 range that connects first, or that spoofs the bound address, is taken.
+
+## The panel
+
+SETUP > WIRELESS > DIAL holds the Dial's rows
+([Screens](Screens.md#wireless-the-imu-and-the-dial)): Dial ON or OFF (OFF by
+default), SCAN FOR DIAL, BOUND DIAL, and the steps of a detent, 0.5%, 1%, 2%
+or 5% of throttle (1% by default) and 0.5°, 1°, 2° or 5° of horn angle (1° by
+default). The first Dial ON starts Bluetooth LE on the board's ESP32-C6,
+as the first IMU ON does; it runs until the panel restarts. The Dial and the
+IMU are two clients of the panel's Bluetooth LE central, one connect or scan
+at a time between them.
+
+### Scan and bind
+
+SCAN FOR DIAL scans 10,000ms and lists up to 8 devices that advertise the
+dialknob service, strongest first, with name and RSSI. While the bench is
+ARMED, or an arm waits, the scan is refused and the band reads
+`NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs it
+reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. A scan started while SAFE
+stops at the switch to ARMED, and SCAN FOR DIAL reads `STOPPED BY ARM`. A
+tap on a found Dial binds it:
+the panel keeps its address and name in SETUP (`dial_ble`, `dial_name`) and
+asks for a save. One Dial is bound at a time. The panel connects to it by
+its address, without a scan, at Dial ON, at start-up and after each loss.
+
+### The link
+
+The connect asks for an interval of 30 to 50ms, latency 0 and a supervision
+timeout of 4,000ms, the IMU's figures. After the connect the panel finds
+the service, subscribes to EVENT and reads INFO. A bound device without the
+service reads `BOUND: NOT A DIAL` and is not taken. A Dial whose INFO names
+another protocol version than 1 reads `OTHER PROTOCOL n`; its EVENTs are
+counted and dropped. Until INFO is read, EVENTs are dropped too. An INFO
+that does not read or decode is a failed GATT step: the link ends and the
+panel connects again after 1,000ms. Detents and PRESSes reach the screen
+only while the link is `CONNECTED` or `DEGRADED`; a HOLD, which only
+disarms, in any state.
+
+The loss rule runs on the panel's own clock, not on the supervision timeout:
+
+| Time without an EVENT | State | While SAFE | While ARMED or an arm waits |
+| --- | --- | --- | --- |
+| 0 to 499ms | `CONNECTED` | | |
+| 500 to 999ms | `DEGRADED` | band: `DIAL: NO EVENT FOR 500ms` | band: `DIAL: NO EVENT FOR 500ms` |
+| 1,000ms, or the disconnect | `DIAL LOST` | band: `DIAL LOST` | an error: SAFE, all outputs off, band: `DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF` |
+
+The clock starts at the first EVENT of a connection, so a connection that
+has sent none, while the panel discovers the service, is no loss. Each loss
+is one error. Dial OFF in SETUP ends the link without an error.
+
+### The knob and the button
+
+A detent turned on the Dial goes the path of the panel's own knob, with the
+same rules: relative, through the same turn tracker, nothing moves while
+the bench is SAFE, and turns made while SAFE are not kept for the ARM. On
+MOTOR & ESC a detent moves the throttle by the throttle step. On SERVO LIVE
+it moves the horn by the servo step. Other screens take no turn.
+
+| Gesture | MOTOR & ESC, ARMED | SERVO LIVE, ARMED | SAFE, or another screen |
+| --- | --- | --- | --- |
+| PRESS: the screen button released before 1,000ms | throttle 0% | CENTER | nothing |
+| HOLD: the screen button down for 1,000ms | DISARM | DISARM; an ARM + START sequence under way ends with every output off, also before ARMED | nothing |
+
+On MOTOR & ESC a HOLD also DISARMs while an ARM is on its way, asked and
+not yet confirmed, and ends an ESC STICK run as ABORT does, in ARMING too:
+the bench never arms after a HOLD. A PRESS counts only in a frame with a
+turn or a press that the panel takes; a HOLD always. A frame without input
+leaves an open help bubble open.
+The EVENT's held button and touch states are never read as a press or a
+touch, so a button held down on the Dial is no hold on the panel: ARM and
+every other 2s hold stay the panel's own.
+
+### The stream
+
+The panel writes its screen to the Dial in panel packets, one at a time:
+
+| Packet | When |
+| --- | --- |
+| SCREEN | the face, the title, the language or the flags changed, or 5,000ms after the last |
+| VALUE_META, VALUE | on MOTOR & ESC and SERVO LIVE, when the range, the step or the value changed |
+| SCALE | on MOTOR & ESC and SERVO LIVE: on entry and at each connect, then when a full scale changed, at most every 200ms |
+| LIVE_MOTOR, LIVE_SERVO | on MOTOR & ESC and SERVO LIVE, every 50ms (20Hz) |
+| STATE | ARMED, DEGRADED or a step changed, 200ms without any packet, or 1,000ms after the last STATE |
+
+Each connect sends the whole model again, SCREEN first. The faces are MOTOR,
+SERVO and HOME (the menu); every other screen sends its title and the
+bench's state. LIVE_MOTOR carries the throttle and the readings the bench
+reports: voltage, current, power, RPM, the ESC's and the motor's
+temperature. LIVE_SERVO carries the pulse, the commanded angle, the
+measured angle when the angle source reports one, and the servo rail's
+voltage and current from the servo's channel.
+
+SCALE gives the Dial's rings their full scales; 0 is not known, and that
+ring shows its track only:
+
+| Full scale | Source |
+| --- | --- |
+| speed | the run's peak; before the first peak, the MOTOR plot's RPM full scale |
+| voltage | SUPPLY's Voltage max while SUPPLY's output is on; else the MOTOR plot's VOLT full scale |
+| current | SUPPLY's Current trip while SUPPLY's output is on and the trip is set; else the MOTOR plot's CURR full scale |
+| servo travel, pulse ends | the servo profile's TRAVEL, PULSE MIN and PULSE MAX |
+| servo rail voltage, current | SUPPLY's Voltage max and Current trip while SUPPLY's output is on; else 0 |
+
+### The console
+
+The panel's log names the Dial with the tag `dial`:
+
+```text
+I (…) dial: Dial ON: starting Bluetooth LE
+I (…) dial: scan for 10000ms
+W (…) dial: scan refused: the bench is ARMED (1 refused)
+I (…) dial: bound A0:B1:C2:7F:3A:10 R DIAL-3A10
+I (…) dial: link 6 -> 10, error 0 code 0x0, protocol 1
+I (…) dial: 50 events in 1000ms, 12 detents, rtt 41ms, repeats 0 skipped 0 stale 0 glitches 0, refused 0 unread 0, 20 writes, 0 events dropped
+E (…) dial: Dial lost while ARMED: an error, the bench to SAFE (1)
+```
+
+The link line gives the states by number: 0 OFF, 1 STARTING, 2 NO BLUETOOTH,
+3 C6 FAILED, 4 NO DIAL BOUND, 5 SCANNING, 6 CONNECTING, 7 NOT A DIAL, 8
+WAITING, 9 OTHER PROTOCOL, 10 CONNECTED, 11 DEGRADED, 12 LOST. The counters
+line comes once a second while linked: EVENTs and detents in the second,
+the round trip from a STATE to the first EVENT that echoes it (the link's,
+plus up to 200ms until the Dial's next EVENT), the turn tracker's repeated, skipped,
+stale and glitch packets, EVENTs refused for their form and dropped before
+INFO, panel packets written, and events the Bluetooth LE queue dropped.
 
 ## The faces
 
@@ -321,7 +450,18 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 
 ## Limits
 
-- No panel build connects to a Dial yet: the panel's side is a later slice.
+- The Dial navigates no list on the panel yet: no screen fills NAV. That is
+  the next slice.
+- The panel's ARMED flag for the loss rule and the scan's refusal is the
+  control task's, read by the Bluetooth task; it can be one control pass,
+  about 5ms, old.
+- LIVE_SERVO carries no reading of a feedback servo's position or current.
+- A servo rail fed by PROG 5V has no full scale in SCALE: 0, its rings show
+  their track only.
+- An IMU scan (SETUP > IMU, or SEARCH FOR IMU on SERVO) is not refused while
+  ARMED. Its effect on a linked Dial's packets is not measured.
+- The panel has no console command that injects a Dial turn or press; the
+  Dial's test build does that from the Dial's side.
 - The battery's voltage is unknown: no source names the pin it reaches.
   STATUS carries 0 and its "battery unknown" flag. The charger's state is
   unknown as well.
@@ -342,11 +482,10 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
   `?`.
 - The flush of a whole frame takes about 23ms at 40MHz (arithmetic, not
   measured). A ring's repaint is not measured on the device.
-- SCALE is the panel's to send, a later slice. Without it every ring but
-  the throttle's and the ESC temperature's shows its track only.
 - The value face shows no category: no packet carries one.
-- Nothing in this firmware has run on the device: the Dial is ordered, not
-  delivered. The station measures the turn-to-output latency with the test
-  build once the Dial is on its USB.
+- Nothing in this firmware or in the panel's side has run with a Dial: the
+  Dial is ordered, not delivered. The turn-to-output latency over the air is
+  not measured; the station measures it with the test build once the Dial
+  is on its USB.
 - No sleep, no backlight steps and no auto-off yet: the Dial stays on until
   RST is pressed or the cell is empty. Runtime on a cell is not measured.

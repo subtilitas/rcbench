@@ -1695,8 +1695,17 @@ UI_TEXT(HG_SET_PANEL, 0,
     "This panel: theme, brightness, rotation, language, time zone, dimming and the knob.",
     "Dieses Panel: Design, Helligkeit, Drehung, Sprache, Zeitzone, Dimmen und Drehknopf.")
 UI_TEXT(HG_SET_SENSORS, 0,
-    "The IOmcu's sensor bus, INA228, INA3221, AS5600 and phase tap, and the panel's Bluetooth IMU.",
-    "Sensorbus, INA228, INA3221, AS5600 und Phasenabgriff des IOmcu sowie die Bluetooth-IMU des Panels.")
+    "The IOmcu's sensor bus, INA228, INA3221, AS5600 and phase tap.",
+    "Sensorbus, INA228, INA3221, AS5600 und Phasenabgriff des IOmcu.")
+UI_TEXT(HG_SET_WIRELESS, 0,
+    "The panel's Bluetooth LE devices: the IMU's rows and the Dial, its scan and its bind.",
+    "Die Bluetooth-LE-Geräte des Panels: die Zeilen der IMU und das Dial, seine Suche und Bindung.")
+UI_TEXT(HG_SET_TITLE_WIRELESS, 0,
+    "SETUP: WIRELESS",
+    "SETUP: WIRELESS")
+UI_TEXT(HG_SET_ENTRY_DIAL, 0,
+    "The M5Stack Dial, a knob over Bluetooth LE. A tap shows its rows on the right.",
+    "Das M5Stack Dial, ein Drehknopf über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
 UI_TEXT(HG_SET_OUTPUTS, 0,
     "Binds the IOmcu's pins to protocols and sets each programming port's pin and function.",
     "Ordnet die Pins des IOmcu Protokollen zu und stellt Pin und Funktion jedes Programmierports ein.")
@@ -9619,6 +9628,9 @@ UI_SETTING_CATEGORY(SET_CAT_CARD,
 UI_SETTING_CATEGORY(SET_CAT_SENSORS,
     "SENSORS",
     "SENSORS")
+UI_SETTING_CATEGORY(SET_CAT_WIRELESS,
+    "WIRELESS",
+    "WIRELESS")
 UI_SETTING_CATEGORY(SET_CAT_ESC,
     "ESC / BENCH",
     "ESC / BENCH")
@@ -11889,6 +11901,116 @@ UI_TEXT(IMU_ERR_SCAN, 53,
     "THE SCAN DID NOT START: CODE %u",
     "DIE SUCHE STARTETE NICHT: CODE %u")
 
+/* --- the M5Stack Dial (dial_ctl.c, wireless_pane.c, panel_dial.c) ------ */
+/* SETUP > WIRELESS: the tile's line, the DIAL entry's rows and options,
+ * its state words (25 cells of 8 x 16), the scan's and the bind's rows. */
+UI_TEXT(SET_HUB_WIRELESS, 0,
+    "IMU, DIAL",
+    "IMU, DIAL")
+UI_SETTING_LABEL(SET_DIAL_EN,
+    "Dial",
+    "Dial")
+UI_SETTING_HELP(SET_DIAL_EN,
+    "M5Stack Dial as a knob over Bluetooth LE",
+    "M5Stack Dial: Drehknopf über Bluetooth LE")
+UI_SETTING_LABEL(SET_DIAL_THR,
+    "Dial step, throttle",
+    "Dial-Schritt, Gas")
+UI_SETTING_HELP(SET_DIAL_THR,
+    "Throttle a detent moves on MOTOR & ESC",
+    "Gas je Raste auf MOTOR & ESC")
+UI_SETTING_LABEL(SET_DIAL_SRV,
+    "Dial step, servo",
+    "Dial-Schritt, Servo")
+UI_SETTING_HELP(SET_DIAL_SRV,
+    "Horn angle a detent moves on SERVO",
+    "Hornwinkel je Raste auf SERVO")
+UI_OPTIONS(dial_thr)
+UI_OPTION("0.5%", NULL)
+UI_OPTION("1%", NULL)
+UI_OPTION("2%", NULL)
+UI_OPTION("5%", NULL)
+UI_OPTIONS_END(dial_thr)
+UI_OPTIONS(dial_srv)
+UI_OPTION("0.5°", NULL)
+UI_OPTION("1°", NULL)
+UI_OPTION("2°", NULL)
+UI_OPTION("5°", NULL)
+UI_OPTIONS_END(dial_srv)
+UI_TEXT(DIAL_ENTRY, 16,
+    "DIAL",
+    "DIAL")
+UI_TEXT(DIAL_ST_NONE, 25,
+    "NO DIAL BOUND",
+    "KEIN DIAL GEBUNDEN")
+UI_TEXT(DIAL_ST_NOT_DIAL, 25,
+    "BOUND: NOT A DIAL",
+    "GEBUNDEN: KEIN DIAL")
+UI_TEXT(DIAL_ST_WAITING, 25,
+    "CONNECTED, NO EVENT",
+    "VERBUNDEN, KEIN EREIGNIS")
+UI_TEXT(DIAL_ST_UP, 25,
+    "CONNECTED",
+    "VERBUNDEN")
+UI_TEXT(DIAL_ST_DEGRADED, 25,
+    "DEGRADED",
+    "GESTÖRT")
+UI_TEXT(DIAL_ST_LOST, 25,
+    "DIAL LOST",
+    "DIAL VERLOREN")
+UI_TEXT(DIAL_ST_PROTO, 25,
+    "OTHER PROTOCOL %u",
+    "ANDERES PROTOKOLL %u")
+UI_TEXT(DIAL_ROW_SCAN, 43,
+    "Scan for Dial",
+    "Dial suchen")
+UI_TEXT(DIAL_ROW_SCAN_HELP, 43,
+    "Lists the Dials in range for 10s",
+    "Listet 10s lang Dials in Reichweite")
+UI_TEXT(DIAL_ROW_BIND, 43,
+    "Bound Dial",
+    "Gebundenes Dial")
+UI_TEXT(DIAL_ROW_BIND_HELP, 43,
+    "A tap lists the Dials the last scan found",
+    "Tippen listet die Dials der letzten Suche")
+UI_TEXT(DIAL_SCAN_GO, 18,
+    "SCAN",
+    "SUCHEN")
+UI_TEXT(DIAL_SCAN_RUNS, 18,
+    "SCANNING",
+    "SUCHE LÄUFT")
+UI_TEXT(DIAL_SCAN_FOUND, 18,
+    "FOUND %u",
+    "%u GEFUNDEN")
+UI_TEXT(DIAL_SCAN_NONE, 18,
+    "NONE FOUND",
+    "KEINS GEFUNDEN")
+UI_TEXT(DIAL_SCAN_CUT, 18,
+    "STOPPED BY ARM",
+    "DURCH ARM BEENDET")
+UI_TEXT(DIAL_BIND_NONE, 18,
+    "NONE",
+    "KEINS")
+UI_TEXT(DIAL_FOUND_ROW, 40,
+    "%s  %ddBm",
+    "%s  %ddBm")
+/* The band's texts: the scan refused while ARMED, the link's notices, and
+ * the error of a Dial lost while ARMED. */
+UI_TEXT(DIAL_SCAN_ARMED, 94,
+    "NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST",
+    "KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN")
+UI_TEXT(DIAL_SCAN_OFF, 94,
+    "BLUETOOTH IS NOT READY: NO DIAL SCAN",
+    "BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE")
+UI_TEXT(DIAL_DEGRADED, 94,
+    "DIAL: NO EVENT FOR 500ms",
+    "DIAL: 500ms KEIN EREIGNIS")
+UI_TEXT(DIAL_LOST_SAFE, 94,
+    "DIAL LOST",
+    "DIAL VERLOREN")
+UI_TEXT(ALERT_DIAL_LOST, 94,
+    "DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF",
+    "DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS")
 /* Slice 8: the LIMIT RUN settings' SERVO row and the limit run's lines for a
  * Hitec servo (servo_limit_seam.c). */
 UI_TEXT(SV_ROW_LIM_SERVO, 0,

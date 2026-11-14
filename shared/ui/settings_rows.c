@@ -2,8 +2,9 @@
  * @file settings_rows.c
  * @brief SETUP's list rows: a category's settings in schema order and the
  * category's strings after its settings.
- * SENSORS lists the rows of the left list's selected entry and nothing else
- * (sensors_pane.h).
+ * SENSORS and WIRELESS list the rows of the left list's selected entry and
+ * nothing else (sensors_pane.h, wireless_pane.h); a WIRELESS row may be a
+ * custom one.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -13,6 +14,7 @@
 #include "sensors_pane.h"
 #include "settings_screen.h"
 #include "settings_sensors.h"
+#include "wireless_pane.h"
 
 /** @brief The settings a category holds, at most: SENSORS' 65, the 40 of
  *         the INA3221 parts and 25 others (test_imu_pane holds it). */
@@ -27,6 +29,19 @@
  */
 static int entries(setting_cat_t cat, settings_row_t *out, int max)
 {
+    if (cat == SET_CAT_WIRELESS) {
+        wl_row_t wl[WL_ENTRY_ROWS_MAX];
+        const int n = wireless_pane_rows(wireless_pane_selected(), wl,
+                                         WL_ENTRY_ROWS_MAX);
+        int rows = 0;
+        for (int i = 0; i < n && i < WL_ENTRY_ROWS_MAX; ++i) {
+            if (out != NULL && rows < max) {
+                out[rows] = (settings_row_t){ wl[i].id, -1, wl[i].custom };
+            }
+            ++rows;
+        }
+        return rows;
+    }
     setting_id_t ids[MAX_ROWS];
     const int n = (cat == SET_CAT_SENSORS)
                       ? sensors_pane_rows(sensors_pane_selected(), ids, MAX_ROWS)
@@ -34,7 +49,7 @@ static int entries(setting_cat_t cat, settings_row_t *out, int max)
     int rows = 0;
     for (int i = 0; i < n && i < MAX_ROWS; ++i) {
         if (out != NULL && rows < max) {
-            out[rows] = (settings_row_t){ ids[i], -1 };
+            out[rows] = (settings_row_t){ ids[i], -1, NULL };
         }
         ++rows;
     }
@@ -42,7 +57,8 @@ static int entries(setting_cat_t cat, settings_row_t *out, int max)
     const int nt = settings_texts_in_category(cat, texts, SETTING_TEXT_COUNT);
     for (int i = 0; i < nt && i < SETTING_TEXT_COUNT; ++i) {
         if (out != NULL && rows < max) {
-            out[rows] = (settings_row_t){ (setting_id_t)0, (int8_t)texts[i] };
+            out[rows] = (settings_row_t){ (setting_id_t)0, (int8_t)texts[i],
+                                          NULL };
         }
         ++rows;
     }
@@ -59,7 +75,7 @@ int settings_screen_row_of(setting_cat_t cat, int index)
     settings_row_t e[MAX_ENTRIES];
     const int n = entries(cat, e, MAX_ENTRIES);
     for (int r = 0; r < n && r < MAX_ENTRIES; ++r) {
-        if (e[r].text < 0 && e[r].id == ids[index]) {
+        if (e[r].text < 0 && e[r].custom == NULL && e[r].id == ids[index]) {
             return r;
         }
     }
@@ -88,7 +104,7 @@ settings_row_t settings_rows_entry(setting_cat_t cat, int index)
     settings_row_t e[MAX_ENTRIES];
     const int n = entries(cat, e, MAX_ENTRIES);
     if (index < 0 || index >= n || index >= MAX_ENTRIES) {
-        return (settings_row_t){ (setting_id_t)0, -1 };
+        return (settings_row_t){ (setting_id_t)0, -1, NULL };
     }
     return e[index];
 }

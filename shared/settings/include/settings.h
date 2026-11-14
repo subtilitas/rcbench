@@ -35,6 +35,8 @@ typedef enum {
                               INA228, the INA3221 parts (settings_sensors.h),
                               the AS5600, the phase tap; vibration and the
                               optical tacho hold keys and show no row   */
+    SET_CAT_WIRELESS,    /**< the panel's Bluetooth LE devices: the IMU
+                              with the angle source, and the Dial      */
     SET_CAT_ESC,         /**< pack, motor, telemetry, throttle output */
     SET_CAT_SUPPLY,      /**< the SUPPLY screen's limits and start    */
     SET_CAT_PDMINI,      /**< the PD mini's wiring, on SUPPLY's PD MINI
@@ -216,7 +218,7 @@ typedef enum {
     SET_ANGLE_SOURCE,
     /* --- the SERVO workbench's RUDDER task -------------------------------- */
     SET_RUDDER_LEN_MM,
-    /* --- the Bluetooth IMU (SETUP > SENSORS > IMU, imu_ctl.h) ------------ */
+    /* --- the Bluetooth IMU (SETUP > WIRELESS > IMU, imu_ctl.h) ----------- */
     SET_IMU_EN,
     SET_IMU_AXIS,
     SET_IMU_SIGN,
@@ -231,6 +233,10 @@ typedef enum {
     /* --- RUDDER's saved zero --------------------------------------------- */
     SET_RUDDER_ZERO_DEG,
     SET_RUDDER_ZERO_KEY,
+    /* --- the M5Stack Dial (SETUP > WIRELESS > DIAL, dial_ctl.h) ---------- */
+    SET_DIAL_EN,
+    SET_DIAL_THR,
+    SET_DIAL_SRV,
 
     SETTING_COUNT
 } setting_id_t;
@@ -273,6 +279,9 @@ typedef enum {
                                   type, "00:0C:BF:08:19:29 P"; key
                                   imu_ble                                 */
     SET_TEXT_IMU_NAME,       /**< its name from the scan, 23 characters */
+    SET_TEXT_DIAL_ADDR,      /**< the bound Dial's BLE address and its
+                                  type; key dial_ble                      */
+    SET_TEXT_DIAL_NAME,      /**< its name from the scan, "DIAL-3A10"    */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 

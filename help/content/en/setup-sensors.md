@@ -6,13 +6,13 @@ order: 62
 
 # Sensors
 
-SENSORS on [SETUP](setup.md) configures the IOmcu's sensor bus, INA228, up to four TI INA3221 three-channel current monitors at 0x40 to 0x43, AS5600 output encoder and phase tap. It also configures the panel's Bluetooth IMU (inertial measurement unit). Settings are retained and saved like other SETUP values.
+SENSORS on [SETUP](setup.md) configures the IOmcu's sensor bus, INA228, up to four TI INA3221 three-channel current monitors at 0x40 to 0x43, AS5600 output encoder and phase tap. The panel's Bluetooth IMU (inertial measurement unit) is on [Wireless](setup-wireless.md). Settings are retained and saved like other SETUP values.
 
 ## The left list
 
 ![Two parts fitted, 0x40 online](view:setup-sensors)
 
-The 220px left list has 9 entries: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600, PHASE TAP and IMU. Each shows a sensor name and status. Tap an entry to display its settings in the 754px right pane.
+The 220px left list has 8 entries: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5600 and PHASE TAP. Each shows a sensor name and status. Tap an entry to display its settings in the 754px right pane.
 
 - Disabled entries show only their enable row and the status `OFF`. Switching ON reveals the remaining settings.
 - Selection occurs on release within the entry and within 8px of the press. A longer slide neither selects nor scrolls.
@@ -26,7 +26,6 @@ The 220px left list has 9 entries: SENSOR BUS, INA228, INA3221 0x40 to 0x43, AS5
 | SENSOR BUS | `GPIO 16 / 17`; `NO PINS SET`; `NOT ACCEPTED BY THE IOMCU`; on the carrier `GPIO 16 / 17 SOLDERED` |
 | INA228, INA3221 0x40 to 0x43 | [What a part is doing](#what-a-part-is-doing) |
 | AS5600, PHASE TAP | `ON`; `NOT ACCEPTED BY THE IOMCU` |
-| IMU | [The IMU](#the-imu) |
 
 ## SENSOR BUS and INA228
 
@@ -190,44 +189,10 @@ The IOmcu rejects ADC (analog-to-digital converter) pins, output-bound pins, and
 
 Vibration and Optical tacho have stored keys and no entry: no screen or IOmcu reads them in this release.
 
-## The IMU
-
-![SENSORS on the IMU entry, connected](view:setup-sensors-imu)
-
-![The IMU off: IMU and Angle source](view:setup-sensors-imu-off)
-
-The WitMotion BWT901CL connects over Bluetooth LE through the board's ESP32-C6. Use the [IMU](imu.md) tile on SETUP to scan, bind and calibrate it. This entry contains its settings.
-
-| Setting | Range | Default | What it does |
-|---|---|---|---|
-| IMU | ON, OFF | OFF | Bluetooth LE, the link to the bound sensor and its reading; the first ON starts Bluetooth LE until the panel restarts |
-| Angle source | AS5600, IMU | AS5600 | where the servo runs take their angle from ([Servo settings](servo-settings.md)); shown with the IMU off too, so the source can go back to the AS5600 without switching the IMU on |
-| IMU axis | X, Y, Z | X | the angle the servo runs and RUDDER read; `Z: 1° WITH THE MAGNETOMETER` |
-| IMU sign | +, - | + | `-` turns that angle round |
-| IMU rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | the sensor's frames a second; sent only when changed, it takes effect after the sensor is switched off and on; the sensor ships at 10Hz, and `CONNECTED` shows the rate it runs |
-| IMU algorithm | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS takes the magnetometer for Z |
-| IMU filter | 1 to 50 | 1 | the panel's low-pass on the angle; 1 is off |
-
-IMU filter smooths the angle on the panel, per frame and axis: the angle moves by 1/k of the difference to the new frame, with k the setting. It covers 63% of a step in about k frames, so at 10Hz an IMU filter of 10 takes about 1s. The frames per second are the rate the sensor runs, which `CONNECTED` shows, not the IMU rate asked. The IMU screen, RUDDER, AUTO and the servo runs read the filtered angle. The first frame after a connect starts the filter at its own value, and a crossing of 180° takes the short way. AUTO waits until the filtered angle has settled, up to 3000ms plus the time the setting can take ([The Bluetooth IMU](https://github.com/subtilitas/rcbench/wiki/IMU#the-filter)).
-
-RATE and ALGORITHM changes are sent with the sensor's SAVE command (`FF AA 00 00 00`). For a connected sensor, the rate message is `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. If disconnected, the panel shows `RATE IS SENT WHEN THE SENSOR CONNECTS; THEN SWITCH IT OFF AND ON` and waits for frames. During IMU calibration it shows `RATE IS SENT AFTER CALIBRATION; THEN SWITCH THE SENSOR OFF AND ON` and defers the change until after CALSW 0 and SAVE.
-
-| State | When |
-|---|---|
-| `OFF` | IMU OFF |
-| `STARTING BLUETOOTH` | Bluetooth LE starts: the C6's link, the host, its sync |
-| `NO BLUETOOTH ON C6` | the host has no sync with the C6; it keeps trying |
-| `C6 FAILED: RESTART` | the C6's link failed; Wi-Fi and Bluetooth are off until the panel restarts |
-| `NO SENSOR BOUND` | Bluetooth runs; no sensor is bound |
-| `SCANNING` | a scan runs |
-| `CONNECTING` | the panel connects to the bound sensor and sets up its service |
-| `BOUND` | subscribed, no angle frame yet; or the bound device is not a WitMotion sensor |
-| `CONNECTED 50Hz` | angle frames within the last 300ms, at that rate |
-| `NO FRAMES` | subscribed, frames came, none in the last 300ms |
-
 ## Related pages
 
 - [Setup](setup.md)
 - [Supply](supply.md): the PD mini's wiring, in SUPPLY's settings list.
 - [Servo](servo.md)
 - [IMU](imu.md)
+- [Wireless](setup-wireless.md): the IMU's settings

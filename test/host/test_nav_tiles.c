@@ -69,7 +69,8 @@ TEST_CASE(the_setup_tiles_open_the_outputs_and_updates)
     const int n = (int)(sizeof(k_tools) / sizeof(k_tools[0]));
     fresh();
     CHECK_EQ(settings_hub_tiles(), SET_CAT_SETUP_COUNT + n);
-    CHECK_EQ(SET_CAT_SETUP_COUNT, 3);   /* PANEL, SD CARD, SENSORS */
+    /* PANEL, SD CARD, SENSORS, WIRELESS */
+    CHECK_EQ(SET_CAT_SETUP_COUNT, 4);
     for (int cat = 0; cat < SET_CAT_SETUP_COUNT; ++cat) {
         ui_router_goto(SCREEN_SETUP);
         tap_tile(settings_hub_cat_tile((setting_cat_t)cat));

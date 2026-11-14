@@ -155,6 +155,21 @@ void bleu_hub_action(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
                      uint32_t now_ms);
 
 /**
+ * @brief Answer a BLEU_ACT_WRITE_NR at once with the host call's own
+ *        status: nothing on the air answers a write without response, so
+ *        its WRITE_DONE goes to the client here, in the caller's context,
+ *        and never through the host stack's event queue, where a full
+ *        queue could drop it and hold the machine's next write for
+ *        BLEU_WRITE_MS.
+ * @param h      The hub.
+ * @param a      The action that was performed; any other kind is ignored.
+ * @param status The host call's return code, 0 for taken.
+ * @param now_ms The clock.
+ */
+void bleu_hub_written(bleu_hub_t *h, const bleu_act_t *a, int status,
+                      uint32_t now_ms);
+
+/**
  * @brief End a slot whose answer did not come within its time.  Call at
  *        least every 10ms.
  * @param h      The hub.

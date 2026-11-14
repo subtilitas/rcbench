@@ -289,6 +289,21 @@ void bleu_hub_event(bleu_hub_t *h, const bleu_evt_t *e, uint32_t now_ms)
     deliver(h, bleu_token_owner(e->token), e);
 }
 
+void bleu_hub_written(bleu_hub_t *h, const bleu_act_t *a, int status,
+                      uint32_t now_ms)
+{
+    if (h == NULL || a == NULL || a->kind != BLEU_ACT_WRITE_NR) {
+        return;
+    }
+    bleu_evt_t e;
+    memset(&e, 0, sizeof(e));
+    e.kind = BLEU_EV_WRITE_DONE;
+    e.token = a->token;
+    e.conn = a->conn;
+    e.status = (uint16_t)status;
+    bleu_hub_event(h, &e, now_ms);
+}
+
 /**
  * @brief The answer kind of an action on a connection.
  * @param kind The bleu_act_kind_t.

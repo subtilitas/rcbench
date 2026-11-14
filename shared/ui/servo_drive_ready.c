@@ -625,6 +625,21 @@ bool drive_arm_press(const touch_event_t *evt)
     return true;
 }
 
+bool servo_screen_dial_hold(void)
+{
+    if (svs_seq_busy()) {
+        svs_seq_end(SERVO_TEST_AB_OPERATOR);
+        ++s.arm_rev;
+        return true;
+    }
+    if (!s.gate.armed) {
+        return false;
+    }
+    svs_all_off();
+    ++s.arm_rev;
+    return true;
+}
+
 bool drive_arm_fired(void)
 {
     if (!drive_shown()) {

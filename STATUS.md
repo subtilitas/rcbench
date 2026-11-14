@@ -1134,7 +1134,7 @@ write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` a
 gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 (`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
 `test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
-SETUP > SENSORS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
+SETUP > WIRELESS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
 (`firmware/panel/main/panel_imu.c`, `panel_blec.c`), which runs it through the hub of
 `protocols/bleuart` (`test_bleuart_hub`). The angle's low-pass, IMU filter, its seed, its wrap
 at ±180° and the still time that waits for it, kept per axis (`test_imu`, `test_imu_filter`),
@@ -1169,7 +1169,19 @@ with the power latch, the encoder on PCNT, the buttons, the FT3267 touch
 glass, the click per detent, the GC9A01 display with the faces and its
 dirty-rectangle flush, the NimBLE peripheral with its bound panel, and the
 USB console with the test build's hooks ([The M5Stack Dial](docs/Dial.md)).
-Not built: the panel's side, so no panel connects to a Dial. The battery's
+Built and host-tested, not run with a Dial: the panel's side. The controller
+on the panel's Bluetooth LE hub (`shared/ui/dial_ctl.c`, `test_dial_ctl`
+against a scripted host stack and Dial: the link, INFO's protocol, the loss
+at 999ms and 1,000ms, no loss without an EVENT or while SAFE, the scan
+refused while ARMED, the bind, a reconnect that moves nothing, held buttons
+that hand on nothing), the stream of the screen model with its rates and
+SCALE (`shared/ui/dial_stream.c`, `test_dial_stream`), the frame's paths
+into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
+`test_dial_servo`: a 10s Dial press on ARM's place arms nothing, turns while
+SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
+(`shared/ui/wireless_pane.c`, `test_wireless_pane`), and the `blec` task's
+and the control task's side (`firmware/panel/main/panel_dial.c`,
+`panel_supply.c`). Navigation from the Dial is not built. The battery's
 reading pin is unknown; the encoder's direction is not measured.
 
 ### Phase tap (ESC tones)
@@ -1407,8 +1419,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dialknob` · `vibe` · `rcnode` · `dial` | | | yes |
-| `bleuart` | yes | | yes |
+| `hc05` · `vibe` · `rcnode` · `dial` | | | yes |
+| `bleuart` · `dialknob` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1442,7 +1454,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 559 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 565 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1556,6 +1568,8 @@ The host suite is 559 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
 `test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
+`test_settings_panes`,
 `test_dial_face`, `test_dial_fit`,
 `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
@@ -2047,7 +2061,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-960 committed screenshots to the current render, 480 in English and the same 480 in German, and `render_ui.py --fit` fails on a string that
+962 committed screenshots to the current render, 481 in English and the same 481 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2082,11 +2096,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
 | `shared/ui/ui_widgets.c` | 422 | 414 | 98.1% |
-| `shared/ui/ui_icons.c` | 189 | 189 | 100.0% |
+| `shared/ui/ui_icons.c` | 199 | 199 | 100.0% |
 | `shared/ui/ui_band.c` | 385 | 372 | 96.6% |
 | `shared/ui/ui_help.c` | 384 | 372 | 96.9% |
 | `shared/ui/help_outputs.c` | 74 | 72 | 97.3% |
-| `shared/ui/help_setup.c` | 85 | 81 | 95.3% |
+| `shared/ui/help_setup.c` | 91 | 87 | 95.6% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
 | `shared/ui/help_upd.c` | 34 | 33 | 97.1% |
@@ -2104,7 +2118,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 149 | 144 | 96.6% |
-| `shared/ui/motor_screen.c` | 289 | 282 | 97.6% |
+| `shared/ui/motor_screen.c` | 321 | 313 | 97.5% |
 | `shared/ui/motor_events.c` | 217 | 213 | 98.2% |
 | `shared/ui/motor_draw.c` | 382 | 370 | 96.9% |
 | `shared/ui/motor_workbench.c` | 172 | 166 | 96.5% |
@@ -2133,7 +2147,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_screen.c` | 374 | 363 | 97.1% |
 | `shared/ui/servo_screen_sweep.c` | 509 | 486 | 95.5% |
 | `shared/ui/servo_screen_link.c` | 424 | 415 | 97.9% |
-| `shared/ui/servo_screen_touch.c` | 280 | 275 | 98.2% |
+| `shared/ui/servo_screen_touch.c` | 307 | 301 | 98.0% |
 | `shared/ui/servo_screen_draw.c` | 462 | 437 | 94.6% |
 | `shared/ui/servo_settings_panel.c` | 683 | 626 | 91.7% |
 | `shared/ui/servo_settings_draw.c` | 348 | 316 | 90.8% |
@@ -2151,7 +2165,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
 | `shared/ui/servo_prog_ready.c` | 247 | 242 | 98.0% |
-| `shared/ui/servo_drive_ready.c` | 449 | 428 | 95.3% |
+| `shared/ui/servo_drive_ready.c` | 459 | 435 | 94.8% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 309 | 304 | 98.4% |
 | `shared/ui/servo_fn.c` | 85 | 84 | 98.8% |
@@ -2182,7 +2196,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/balance_screen.c` | 383 | 383 | 100.0% |
 | `shared/ui/battery_screen.c` | 223 | 218 | 97.8% |
 | `shared/ui/esc_stick_pages.c` | 117 | 112 | 95.7% |
-| `shared/ui/esc_stick_panel.c` | 595 | 575 | 96.6% |
+| `shared/ui/esc_stick_panel.c` | 601 | 581 | 96.7% |
 | `shared/ui/esc_stick_list.c` | 299 | 286 | 95.7% |
 | `shared/ui/esc_stick_touch.c` | 301 | 297 | 98.7% |
 | `shared/ui/esc_stick_settings.c` | 71 | 69 | 97.2% |
@@ -2203,13 +2217,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
-| `shared/ui/settings_screen.c` | 285 | 277 | 97.2% |
-| `shared/ui/settings_draw.c` | 66 | 66 | 100.0% |
-| `shared/ui/settings_rows.c` | 36 | 35 | 97.2% |
+| `shared/ui/settings_screen.c` | 295 | 285 | 96.6% |
+| `shared/ui/settings_draw.c` | 67 | 67 | 100.0% |
+| `shared/ui/settings_rows.c` | 44 | 43 | 97.7% |
 | `shared/ui/ui_setlist.c` | 626 | 611 | 97.6% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
-| `shared/ui/sensors_pane.c` | 109 | 109 | 100.0% |
+| `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
 | `shared/ui/outputs_screen.c` | 560 | 555 | 99.1% |
 | `shared/ui/outputs_view.c` | 58 | 58 | 100.0% |
@@ -2239,6 +2253,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/imu_screen.c` | 354 | 346 | 97.7% |
 | `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
 | `shared/ui/imu_guide.c` | 33 | 32 | 97.0% |
+| `shared/ui/dial_ctl.c` | 245 | 228 | 93.1% |
+| `shared/ui/dial_stream.c` | 242 | 234 | 96.7% |
+| `shared/ui/dial_panel.c` | 163 | 158 | 96.9% |
+| `shared/ui/wireless_pane.c` | 200 | 192 | 96.0% |
+| `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
 | `shared/settings/settings.c` | 423 | 416 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
@@ -2335,9 +2354,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
-| `protocols/bleuart/bleuart.c` | 456 | 456 | 100.0% |
-| `protocols/bleuart/bleuart_adv.c` | 166 | 166 | 100.0% |
-| `protocols/bleuart/bleuart_hub.c` | 223 | 223 | 100.0% |
+| `protocols/bleuart/bleuart.c` | 461 | 460 | 99.8% |
+| `protocols/bleuart/bleuart_adv.c` | 175 | 175 | 100.0% |
+| `protocols/bleuart/bleuart_hub.c` | 232 | 232 | 100.0% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
 | `protocols/rcnode/rcnode.c` | 303 | 303 | 100.0% |
@@ -2488,7 +2507,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **95105** | **93211** | **98.0%** |
+| **total** | **96125** | **94185** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

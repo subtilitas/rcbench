@@ -279,9 +279,9 @@ ARMED.
 
 | Screen, state | Pages | Marked |
 | --- | --- | --- |
-| SETUP, tiles | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, LAYOUT on the carrier, SAVE |
+| SETUP, tiles | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, WIRELESS, LAYOUT on the carrier, SAVE |
 | SETUP, a list | 2 | the first whole row, the list's name, RESET; of the rows whole in view the first whose value opens the keypad, else the first with keys: its `-` or `<`, the value, `+` or `>`; SAVE |
-| SETUP, SENSORS | 2 | as a list, with the selected entry first |
+| SETUP, SENSORS and WIRELESS | 2 | as a list, with the selected entry first |
 | OUTPUTS, board view | 2 | the protocol list's face, LAST WRITE, PINS, the leftmost key; IN USE, UNBIND ALL PINS when offered, the rightmost key |
 | OUTPUTS, PROG PORT entry | 2 | the entry's face, PIN, FUNCTION, SERVO TESTER, PORT PWM; then IN USE and a key, in the board view |
 | OUTPUTS, grid view | 1 | the protocol list's face, the first cell, LAST WRITE; on a PROG PORT entry its face and rows |
@@ -806,7 +806,7 @@ y 436.
 | MOTOR & ESC | ARM / DISARM | the list of the 8 motor, pack and throttle-output settings |
 | SUPPLY | OUTPUT ON / OFF | the list of the supply's limits and the PD mini's wiring |
 | ESC STICK, on a profile's page, its run and its result | RUN n / ABORT / OK | the list of the supply and the 12 timing settings |
-| IMU | HOLD 2s: CALIBRATE | SETUP's SENSORS list at the IMU entry |
+| IMU | HOLD 2s: CALIBRATE | SETUP's WIRELESS list at the IMU entry |
 | UPDATES | HOLD 2s TO DOWNLOAD & INSTALL, with a newer release found | the list of the reminder and the releases |
 | LOGS, on the file list | empty | SETUP's SD CARD list |
 | FILES, on the panes | empty | SETUP's SD CARD list |
@@ -5100,10 +5100,10 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 ![Setup](img/setup.png)
 
-- Three categories: PANEL, SENSORS and SD CARD, the bench-wide
+- Four categories: PANEL, SENSORS, WIRELESS and SD CARD, the bench-wide
   settings. A tile names the number of settings its list shows; SENSORS'
-  says what it holds, `CURRENT, ANGLE, PHASE TAP`. A tap opens the category's
-  list.
+  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL`.
+  A tap opens the category's list.
   The pack, motor and throttle-output settings are on
   MOTOR & ESC > OPTIONS
   ([MOTOR & ESC settings](#motor--esc-settings)).
@@ -5113,7 +5113,7 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
   as its tile does, and the band of this page reads SETUP. [Files](#files) is a
   tab of the [LOGS](#logs) tile.
 - LAYOUT ([Layout](#layout)) as the last tile on a board with soldered pins,
-  the [rbmod carrier](Carrier.md). 2 slots are free on any other board and 1
+  the [rbmod carrier](Carrier.md). 1 slot is free on any other board and none
   on that one. The page holds 9, and the build fails at a tenth entry.
 - SAVE, bottom right, is the same button the lists show
   ([Keeping the values](#keeping-the-values)). A change left unsaved in any
@@ -5511,15 +5511,16 @@ across a third of its travel from -travel to +travel.
 
 ### SENSORS: the split pane
 
-SENSORS groups the devices read by the IOmcu and the panel's Bluetooth IMU.
-The split view has 9 entries on the left and the selected entry's settings
-on the right.
+SENSORS groups the devices read by the IOmcu. The split view has 8 entries
+on the left and the selected entry's settings on the right. The panel's
+Bluetooth IMU is on WIRELESS ([WIRELESS: the IMU and the
+Dial](#wireless-the-imu-and-the-dial)), in a split view of the same kind.
 
 ![SENSORS, two parts fitted](img/setup-sensors.png)
 
-The left list runs from body y 8 to 440, 4px above the strip: 9 entries of
-220 x 48px at a 48px pitch, top to bottom SENSOR BUS, INA228, INA3221 0x40 to
-0x43, AS5600, PHASE TAP and IMU. An entry takes touches over its 48px and
+The left list has room from body y 8 to 440, 4px above the strip, for 9
+entries of 220 x 48px at a 48px pitch. SENSORS fills 8, top to bottom SENSOR
+BUS, INA228, INA3221 0x40 to 0x43, AS5600 and PHASE TAP. An entry takes touches over its 48px and
 draws its card 1px in from its top and bottom, 2px between two cards. An
 entry shows its name in the 12 x 24px face and its state under it in the
 8 x 16px face. The selected entry has the lit fill and the accent
@@ -5535,7 +5536,6 @@ of the 10 x 20px face.
 | INA3221 0x40 to 0x43 | a state of the table in [SENSORS: the INA3221 parts](#sensors-the-ina3221-parts) | 10 |
 | AS5600 | `ON`, `NOT ACCEPTED BY THE IOMCU` | 2 |
 | PHASE TAP | `ON`, `NOT ACCEPTED BY THE IOMCU` | 7 |
-| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 6 |
 
 - An entry with an enable row shows that row alone and reads `OFF` while it is
   off. ON adds the entry's other rows under it.
@@ -6002,13 +6002,13 @@ at least one period of the lowest tone, 2.5ms at 400Hz
 
 SETUP's IMU tile opens the screen for a WitMotion BWT901CL angle sensor,
 connected to the panel over Bluetooth LE through the board's ESP32-C6
-([The Bluetooth IMU](IMU.md)); the first IMU ON starts Bluetooth LE. SENSORS' IMU entry holds its rows: IMU ON or
+([The Bluetooth IMU](IMU.md)); the first IMU ON starts Bluetooth LE. WIRELESS' IMU entry holds its rows: IMU ON or
 OFF, AXIS (X, Y, Z), SIGN (+, -), RATE (10, 20, 50, 100 or 200Hz, 50Hz by
 default), ALGORITHM (6-AXIS or 9-AXIS) and ANGLE SOURCE. The screen's
 controls, left, 460 x 56px at a 64px pitch from body y 16: SCAN FOR SENSORS,
 then ZERO and CLEAR ZERO side by side. The footer
 ([The footer and the settings list](#the-footer-and-the-settings-list))
-reads `[IMU] [HOLD 2s: CALIBRATE] [OPTIONS]`; OPTIONS opens SENSORS on
+reads `[IMU] [HOLD 2s: CALIBRATE] [OPTIONS]`; OPTIONS opens WIRELESS on
 the IMU entry, and its home tag comes back. The card on the right, x 484 to
 1016, body y 16 to 436, names the bound sensor and
 its address with its type, the C6's firmware, the state, the angles X, Y and Z from the
@@ -6022,7 +6022,37 @@ a run ([Servo procedures](Servo.md)).
 
 ![The found list after SCAN](img/imu-scan.png)
 
-![SENSORS on the IMU entry](img/setup-sensors-imu.png)
+![WIRELESS on the IMU entry](img/setup-wireless-imu.png)
+
+### WIRELESS: the IMU and the Dial
+
+WIRELESS holds the panel's Bluetooth LE devices in a split view of
+SENSORS' kind: 2 entries on the left, IMU and DIAL, each with its name and
+its state, and the selected entry's rows on the right. The first IMU ON or
+Dial ON starts Bluetooth LE until the panel restarts.
+
+| Entry | State while on | Rows |
+| --- | --- | --- |
+| IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 7 while on |
+| DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
+
+![WIRELESS on the DIAL entry](img/setup-wireless-dial.png)
+
+The DIAL entry's rows ([The M5Stack Dial](Dial.md#the-panel)):
+
+| Row | Values | Default | What it does |
+| --- | --- | --- | --- |
+| Dial | ON, OFF | OFF | the link to the bound Dial; OFF ends it without an error |
+| Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN` |
+| Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap lists the Dials the last scan found, `DIAL-3A10  -52dBm`, the bound one marked; a tap on one binds it and asks for a save |
+| Dial step, throttle | 0.5%, 1%, 2%, 5% | 1% | the throttle a detent moves on MOTOR & ESC |
+| Dial step, servo | 0.5°, 1°, 2°, 5° | 1° | the horn angle a detent moves on SERVO |
+
+RESET DIAL sets Dial back to OFF and the steps to 1% and 1°; the bound Dial
+stays. The band shows `DIAL: NO EVENT FOR 500ms` when a linked Dial
+goes quiet, `DIAL LOST` when it is lost while SAFE, and
+`DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF` for the error
+while ARMED.
 
 ### SD CARD: which logs are written, and where
 

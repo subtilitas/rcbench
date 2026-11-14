@@ -19,6 +19,7 @@
 
 #include "gfx.h"
 #include "sensors_pane.h"
+#include "wireless_pane.h"
 #include "settings.h"
 #include "settings_rows_int.h"
 #include "settings_screen.h"
@@ -83,8 +84,9 @@ _Static_assert(STRIP_Y == UI_FOOTER_Y && STRIP_H == UI_FOOTER_H,
 #define LIST_Y UI_SL_LIST_Y
 
 /**
- * @brief SENSORS' left list: 9 entries of 220 x 48px at a 48px pitch, from
- *        the list's top to 4px above the strip, 432px.  Each entry takes
+ * @brief The split panes' left list, SENSORS' and WIRELESS': up to 9
+ *        entries of 220 x 48px at a 48px pitch, from the list's top to 4px
+ *        above the strip, 432px.  Each entry takes
  *        touches over its 48px and draws its card 1px in from its top and
  *        bottom, 2px between two cards.  The name in the body face at 3px,
  *        the state in the 8 x 16 face at 28px: 25 cells end short of the
@@ -99,12 +101,23 @@ _Static_assert(STRIP_Y == UI_FOOTER_Y && STRIP_H == UI_FOOTER_H,
 #define PANE_X (HUB_M + ENTRY_W + HUB_M) /**< the pane's left edge, px: 240 */
 
 /** @brief A press that moves further than DRAG_SLOP px, 8px, is a scroll and
- *         no tap: an entry of SENSORS' left list is given up. */
+ *         no tap: an entry of a split pane's left list is given up. */
 #define DRAG_SLOP 8
 
 /** @brief SETUP's own presses, past the list's (ui_setlist.h). */
 enum { HIT_TILE = UI_SL_HIT_HOST, /**< a hub tile                       */
-       HIT_ENTRY };               /**< an entry of SENSORS' left list   */
+       HIT_ENTRY };               /**< an entry of a split pane's list  */
+
+/** @brief The split panes: SENSORS' and WIRELESS'. @{ */
+#define STG_PANES 2
+#define STG_PANE_SENSORS  0 /**< SET_CAT_SENSORS */
+#define STG_PANE_WIRELESS 1 /**< SET_CAT_WIRELESS */
+/** @brief The most entries a pane's left list has. */
+#define STG_PANE_ENTRIES 9
+/** @} */
+_Static_assert(SENS_ENTRY_COUNT <= STG_PANE_ENTRIES
+               && WL_ENTRY_COUNT <= STG_PANE_ENTRIES,
+               "each pane's entries fit its list");
 
 /*
  * The hub's tiles, in their order on the grid, row by row.  A category's
@@ -150,6 +163,7 @@ static const hub_tile_t k_tiles[] = {
     HUB_SCREEN(SCREEN_WIFI, TX_SET_HUB_WIFI, ui_icon_wifi),
     HUB_SCREEN(SCREEN_UPDATES, TX_SET_HUB_UPDATES, ui_icon_record),
     HUB_SCREEN(SCREEN_IMU, TX_SET_HUB_IMU, ui_icon_chip),
+    HUB_CATEGORY_LINE(SET_CAT_WIRELESS, TX_SET_HUB_WIRELESS, ui_icon_dial),
 };
 
 /** @brief Tiles of every board; a board that solders its pins adds LAYOUT. */
@@ -161,8 +175,8 @@ _Static_assert(SETTINGS_HUB_SLOTS == HUB_COLS * HUB_ROWS,
                "the hub's slots are its grid");
 _Static_assert(HUB_M + HUB_ROWS * (HUB_TH + HUB_M) <= STRIP_Y,
                "the grid ends above the strip");
-_Static_assert(LIST_Y + SENS_ENTRY_COUNT * ENTRY_PITCH <= STRIP_Y - 4,
-               "SENSORS' left list ends 4px above the strip");
+_Static_assert(LIST_Y + STG_PANE_ENTRIES * ENTRY_PITCH <= STRIP_Y - 4,
+               "a split pane's left list ends 4px above the strip");
 _Static_assert(ENTRY_STATE_DY + 16 <= ENTRY_H - ENTRY_INSET,
                "an entry's state ends inside its card");
 _Static_assert(ENTRY_H >= UI_TAP_MIN, "an entry is a tap target");
@@ -182,8 +196,8 @@ typedef struct {
     /** @brief The list; its open is false while the hub shows */
     ui_setlist_t  sl;
     setting_cat_t cat;                  /**< the category the list shows */
-    /** @brief The scroll each SENSORS entry had when last left, px */
-    int      entry_scroll[SENS_ENTRY_COUNT];
+    /** @brief The scroll each split pane's entry had when last left, px */
+    int      entry_scroll[STG_PANES][STG_PANE_ENTRIES];
     bool     opened;   /**< another screen opened the list: no tiles above it */
     ui_screen_id_t warn_to;             /**< screen the warning's way out leads to */
 
@@ -203,6 +217,53 @@ typedef struct {
 extern stg_state_t stg_s;
 /** @brief Short name for stg_s inside the SETUP files. */
 #define s stg_s
+
+/* --- settings_panes.c: the split panes, SENSORS' and WIRELESS' ------------ */
+
+/**
+ * @brief The split pane of @p cat.
+ * @param cat The category.
+ * @return STG_PANE_SENSORS, STG_PANE_WIRELESS, or -1 for a plain list.
+ */
+int stg_pane(setting_cat_t cat);
+/**
+ * @brief The entries of pane @p pane's left list.
+ * @param pane The pane, from stg_pane().
+ * @return The count; 0 for -1.
+ */
+int stg_pane_count(int pane);
+/**
+ * @brief The entry pane @p pane shows.
+ * @param pane The pane.
+ * @return The entry; 0 for -1.
+ */
+int stg_pane_selected(int pane);
+/**
+ * @brief Select entry @p entry of pane @p pane.
+ * @param pane The pane.  @param entry The entry.
+ */
+void stg_pane_select(int pane, int entry);
+/**
+ * @brief An entry's name.
+ * @param pane The pane.  @param entry The entry.
+ * @param buf Takes the name.  @param n Its size.
+ * @return @p buf.
+ */
+const char *stg_pane_name(int pane, int entry, char *buf, size_t n);
+/**
+ * @brief An entry's state line.
+ * @param pane The pane.  @param entry The entry.
+ * @param buf Takes the words.  @param n Its size.
+ * @param ink Takes their colour.
+ * @return @p buf.
+ */
+const char *stg_pane_state(int pane, int entry, char *buf, size_t n,
+                           gfx_color_t *ink);
+/**
+ * @brief RESET of an entry: its rows back to their defaults.
+ * @param pane The pane.  @param entry The entry.
+ */
+void stg_pane_reset(int pane, int entry);
 
 /* --- settings_screen.c: the geometry and the rows settings_draw.c reads -- */
 

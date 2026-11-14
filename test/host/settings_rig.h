@@ -25,6 +25,7 @@
 #include "sense_link.h"
 #include "sense_page.h"
 #include "sensors_pane.h"
+#include "wireless_pane.h"
 #include "settings.h"
 #include "settings_screen.h"
 #include "settings_sensors.h"
@@ -296,6 +297,17 @@ static inline void open_sensor(setting_id_t id)
         settings_set(rows[0], 1.0f);
     }
     open_category(SET_CAT_SENSORS);
+    tap(entry_x(e), entry_y(e));
+}
+
+/* WIRELESS on the entry that holds @p id, the entry switched on first. */
+static inline void open_wireless(setting_id_t id)
+{
+    const int e = wireless_pane_entry_of(id);
+    wl_row_t rows[WL_ENTRY_ROWS_MAX];
+    (void)wireless_pane_rows(e, rows, WL_ENTRY_ROWS_MAX);
+    settings_set(rows[0].id, 1.0f);
+    open_category(SET_CAT_WIRELESS);
     tap(entry_x(e), entry_y(e));
 }
 

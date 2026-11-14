@@ -129,6 +129,7 @@ either goes.
 | A step of SERVO's start sequence fails on LIVE, SWEEP, RUDDER or RUDDER AUTO: PORT PWM, PROG 5V or the PD mini not read back within 1000ms, not ARMED within 500ms, a tap on the hold, a STOP ([Servo: AUTO end points](Servo.md#auto-end-points)) | SAFE | none open: ARM is refused while a session holds a port | off; PROG 5V off as well | the SERVO screen (`svs_all_off()`) |
 | The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | the port's supply off, after a write that runs | off where it can be switched: the module's protection and a sagging input at once, a write included; the rest after a port's write, 10000ms at most | the IOmcu's driver for the output, the panel for SAFE |
 | A KST or Hitec operation ends in a fault of the servo or the wire (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), or the ESC_WIRE page reports `FAULT` or reaches `NOT_BACK` (`esc_link_faults()`) | SAFE already: a session runs on a SAFE bench | the port's supply off; the operation has ended | off | the panel (`prog_faults_follow()`) |
+| The M5Stack Dial lost while ARMED or while an arm waits: 1000ms without an EVENT after its first one, or the disconnect ([The M5Stack Dial](Dial.md#the-link)); each loss one error | SAFE | none open: a session runs on a SAFE bench | off | the panel's control task (`dial_faults_follow()`), from the count the Bluetooth task keeps |
 
 SAFE means the panel asks DISARM. The request withholds the heartbeat while
 it stands, so the IOmcu fails safe within 150ms even when the panel's
@@ -173,19 +174,17 @@ while the reads go unanswered. From 4.31 the hold changes nothing: the
 panel writes the OFF either way, and the IOmcu holds it for a write that
 runs.
 
-The carrier's programming-port 5V has no such exemption. Its page,
-PROG_SUPPLY, exists from 4.32, and every IOmcu that serves it holds the
-OFF for a write; its own port bit (`LINK_PS_PORT`) does not enter the rule.
-On the carrier a KST or Hitec session leaves the SUPPLY page's bit clear,
-since the ports run from the 5V and not from the PD mini
-(`ports_tell_supply()`). Such a session does not keep the operator off the
-PD mini either: SUPPLY takes OUTPUT ON and set
-points through it (`supply_link_session_blocks()`), and the IOmcu takes them.
-An ESC session sets the bit on every board, the carrier too, since SWITCHED
-powers the ESC from the PD mini. SUPPLY then refuses set points and ON
-and says the ESC programmer holds them (`SUP_HELD_REFUSED_ESC`). On any other
-board a session with a port keeps both off the PD mini, and only OUTPUT
-OFF works.
+The carrier's programming-port 5V has no such exemption. Its page, PROG_SUPPLY,
+exists from 4.32, and every IOmcu that serves it holds the OFF for a write; its
+own port bit (`LINK_PS_PORT`) does not enter the rule. On the carrier a KST or
+Hitec session leaves the SUPPLY page's bit clear, since the ports run from the
+5V and not from the PD mini (`ports_tell_supply()`). Such a session does not
+keep the operator off the PD mini either: SUPPLY takes OUTPUT ON and set points
+through it (`supply_link_session_blocks()`), and the IOmcu takes them. An ESC
+session sets the bit on every board, the carrier too, since SWITCHED powers the
+ESC from the PD mini. SUPPLY then refuses set points and ON and says the ESC
+programmer holds them (`SUP_HELD_REFUSED_ESC`). On any other board a session
+with a port keeps both off the PD mini, and only OUTPUT OFF works.
 
 A port holds the PD mini's output only. The panel's model has no port on
 it, and an error switches it off. A supply that stops answering or gives
@@ -776,42 +775,40 @@ reads the state and shows the alert, is not in the coverage figure.
   alert band, with a chip's help box open or with the screen guide open it
   is the screen's, and the band, the box or the guide closes. ARM is never
   named, so a press on ARM under any of them starts no hold.
-- The screen guide never changes SAFE or ARMED and sends no command. A
-  press on STOP with the guide open closes it and stops at the press, on
-  every page and with an alert showing. Opening the guide releases the
-  contacts the screen owns as a press on the band does, so a hold on ARM is
-  abandoned and a throttle drag ends. While the guide is open a knob turn
-  moves nothing (`ui_router_take_knob()`). While ARMED the guide offers only
-  pages whose dock covers no control the screen names in `safe_at` and no
-  rect it must keep in view, such as the TARGET row; `test_help_pages`
-  sweeps each such page's dock on an 8px grid. SUPPLY and SERVO also leave
-  out, SAFE or ARMED, every page whose dock would cover OUTPUT OFF while the
-  supply's output is on or PROG 5V OFF while the ports' 5V reads ON, and
-  SERVO every page whose dock covers the left
-  card while a test, a limit run or AUTO runs. SERVO offers no page while
-  ARMED: either dock covers part of DISARM in the footer; `test_help_guides` sweeps every offered
-  page. A contact that was down when the screen changed or when touch
-  events were lost is nobody's until it lifts and comes down again. A contact
-  the screen owns that reaches the status band is released for the screen at
-  the last point the screen was handed, and is the router's from there: a
-  slider's or the dial's drag ends with the value from that point, a hold is
-  abandoned, and the distance travelled on the band is not applied. Without
-  that release the drag stays latched to its track id, and a later contact
-  with the same id that crosses from the band into the body moves the value
-  by its own distance from the first drag's origin. The release carries a
+- The screen guide never changes SAFE or ARMED and sends no command. A press on
+  STOP with the guide open closes it and stops at the press, on every page and
+  with an alert showing. Opening the guide releases the contacts the screen owns
+  as a press on the band does, so a hold on ARM is abandoned and a throttle drag
+  ends. While the guide is open a knob turn moves nothing
+  (`ui_router_take_knob()`). While ARMED the guide offers only pages whose dock
+  covers no control the screen names in `safe_at` and no rect it must keep in
+  view, such as the TARGET row; `test_help_pages` sweeps each such page's dock
+  on an 8px grid. SUPPLY and SERVO also leave out, SAFE or ARMED, every page
+  whose dock would cover OUTPUT OFF while the supply's output is on or PROG 5V
+  OFF while the ports' 5V reads ON, and SERVO every page whose dock covers the
+  left card while a test, a limit run or AUTO runs. SERVO offers no page while
+  ARMED: either dock covers part of DISARM in the footer; `test_help_guides`
+  sweeps every offered page. A contact that was down when the screen changed or
+  when touch events were lost is nobody's until it lifts and comes down again. A
+  contact the screen owns that reaches the status band is released for the
+  screen at the last point the screen was handed, and is the router's from
+  there: a slider's or the dial's drag ends with the value from that point, a
+  hold is abandoned, and the distance travelled on the band is not applied.
+  Without that release the drag stays latched to its track id, and a later
+  contact with the same id that crosses from the band into the body moves the
+  value by its own distance from the first drag's origin. The release carries a
   mark (`TOUCH_FLAG_NO_TAP`), and so does the release the tracker makes for a
-  contact that is more than 120px from where the previous report had it.
-  A marked release ends a press or a drag and activates no control: the
-  finger did not lift there. One control takes it all the same, because
-  it stops something: OUTPUT OFF. STOP, DISARM on MOTOR & ESC and on SERVO,
-  and STOP TEST in TEST's footer have acted on the press already, and
-  their release does nothing. STOP and the home tag
-  answer to a press that lands on them: a contact that slides onto STOP from
-  the body presses nothing. A press the router keeps from the screen (on
-  the band, STOP, the home tag, a chip or the alert band) releases the
-  contacts the screen owns in the same way, at their last point in the body,
-  marked: a dial or slider drag under way ends at that press, and nothing
-  it drove is commanded after it. The table holds 5 contacts, the number the GT911
+  contact that is more than 120px from where the previous report had it. A
+  marked release ends a press or a drag and activates no control: the finger did
+  not lift there. One control takes it all the same, because it stops something:
+  OUTPUT OFF. STOP, DISARM on MOTOR & ESC and on SERVO, and STOP TEST in TEST's
+  footer have acted on the press already, and their release does nothing. STOP
+  and the home tag answer to a press that lands on them: a contact that slides
+  onto STOP from the body presses nothing. A press the router keeps from the
+  screen (on the band, STOP, the home tag, a chip or the alert band) releases
+  the contacts the screen owns in the same way, at their last point in the body,
+  marked: a dial or slider drag under way ends at that press, and nothing it
+  drove is commanded after it. The table holds 5 contacts, the number the GT911
   reports; a sixth is handed to no screen.
 - A control that changes a setting acts on a tap, not on the press. On SETUP
   a `-` or `+` key steps when the finger that pressed it lifts inside it, no
@@ -915,42 +912,42 @@ reads the state and shows the alert, is not in the coverage figure.
   of the automatic test does the same.
 - Leaving a bench screen switches the bench to SAFE.
 - The rotary knob (an MT6701 angle sensor at 0x06; SETUP, PANEL, Rotary knob,
-  OFF by default) moves the throttle on MOTOR & ESC and the horn on SERVO by
-  how far it turns, as the slider does, and the same rules hold. It never
-  switches to ARMED: the only way is the ARM hold. On both screens a turn while the bench
-  is SAFE moves nothing and is not kept; after a switch to ARMED the knob goes on
-  from 0% on MOTOR & ESC and from the rest on SERVO. Leaving the screen
-  switches the bench to SAFE. The first
-  reading after power-up, a reading that does not arrive (a NACK or a
-  5ms timeout), and a step over
-  90deg between two readings each set the reference again and move nothing,
-  so a knob that stops answering stops contributing and no last value is held
-  as a command. A finger on the track or dial owns the value against the
-  knob for the whole frame in which it touched the control, and on SERVO a
-  sweep, a test run and the settings panel own the horn. A frame that lost
-  touch events, or in which the router navigated at all, drops the knob's
-  motion. The knob's command goes out with the next frame; if that frame
-  finds lost touch events first, the command is withdrawn and the value
-  returns to what it was before the knob. The knob never replaces a command other than a throttle or
-  a horn position that is waiting for the frame: a completed ARM, a DISARM, a
-  release and a peak reset stay, and its motion is dropped. The knob is read by
-  a task of its own on the core the renderer uses, never by the control task,
-  with a 5ms bus timeout on each transaction of a poll: a probe while it
-  has no reference, then three reads. A failed transaction also costs the
-  driver's recovery, a controller reset and a bus clear that waits up to
-  50ms more while SDA is held low. The knob sits on an I2C controller of its
-  own (I2C_NUM_1, IO30 and IO31 of header P3) and nothing else is on that
-  bus, so a sensor that holds SDA low delays the knob task only. The touch
-  controller is on the other controller (I2C_NUM_0, GPIO7 and GPIO8), and
-  a touch controller silent for 500ms switches the bench to SAFE
-  (`ARMING_TOUCH_DEAD_MS`). The touch read is not on the heartbeat's path: the control task
-  generates the heartbeat and does not use either I2C bus. The touch bus
-  holds the GT911 at 0x5D, and the touch injector of a build with it at
-  0x14. The panel refuses to put the knob, or any other device of the
-  builder's, at those two addresses or at the ones the I2C specification
+  OFF by default) moves the throttle on MOTOR & ESC and the horn on SERVO by how
+  far it turns, under the slider's rules. It never switches to ARMED: only the
+  ARM hold does. On both screens a turn while the bench is SAFE moves nothing
+  and is not kept; after a switch to ARMED the knob goes on from 0% on MOTOR &
+  ESC and from the rest on SERVO. Leaving the screen switches the bench to SAFE.
+  The first reading after power-up, a reading that does not arrive (a NACK or a
+  5ms timeout) and a step over 90deg between two readings each set the reference
+  again and move nothing, so a knob that stops answering stops contributing and
+  holds no last value as a command. A finger on the track or dial owns the value
+  for the whole frame in which it touched the control; on SERVO a sweep, a test
+  run and the settings panel own the horn. A frame that lost touch events, or in
+  which the router navigated at all, drops the knob's motion. The knob's command
+  goes out with the next frame; if that frame finds lost touch events first, the
+  command is withdrawn and the value returns to what it was before the knob. The
+  knob replaces only a throttle or a horn position waiting for the frame: a
+  completed ARM, a DISARM, a release and a peak reset stay, and its motion is
+  dropped. A task of its own reads the knob, on the renderer's core, never the
+  control task, with a 5ms bus timeout on each transaction of a poll: a probe
+  while it has no reference, then three reads. A failed transaction also costs
+  the driver's recovery: a controller reset and a bus clear that waits up to
+  50ms more while SDA is held low. The knob has an I2C controller of its own
+  (I2C_NUM_1, IO30 and IO31 of header P3) with nothing else on that bus, so a
+  sensor that holds SDA low delays the knob task only. The touch controller is
+  on the other one (I2C_NUM_0, GPIO7 and GPIO8); silent for 500ms, it switches
+  the bench to SAFE (`ARMING_TOUCH_DEAD_MS`). The touch read is not on the
+  heartbeat's path: the control task generates the heartbeat and uses neither
+  I2C bus. The touch bus holds the GT911 at 0x5D and, in a build with it, the
+  touch injector at 0x14. The panel refuses to put the knob, or any other device
+  of the builder's, at those two addresses or at the ones the I2C specification
   reserves, 0x00 to 0x03 and 0x78 to 0x7F (`shared/bench/include/panel_i2c.h`).
-  That nothing answers at the knob's 0x06 on the knob's bus rests on the
-  bus being the knob's alone; what answers on the board is not measured.
+  That nothing answers at 0x06 on the knob's bus rests on the bus being the
+  knob's alone; what answers on the board is not measured.
+- The M5Stack Dial, a second knob over Bluetooth LE, takes the rotary knob's
+  path and rules; no Dial event switches anything on, a Dial lost while ARMED
+  is an error ([Errors](#errors)), and no Dial scan runs while ARMED ([The
+  M5Stack Dial](Dial.md#safety)).
 - If the touch controller stops answering for 500ms, the bench switches to SAFE and
   refuses to switch to ARMED. The panel is the only place a STOP button exists.
 - After a link failsafe the IOmcu does not switch back to ARMED when traffic returns.

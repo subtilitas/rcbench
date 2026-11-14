@@ -850,6 +850,16 @@ void esc_stick_panel_bench(uint32_t now_ms, bool armed, uint32_t stops,
     t->link_up = link_up;
 }
 
+bool esc_stick_panel_dial_hold(void)
+{
+    if (!esc_stick_running(&s.st.run)) {
+        return false;
+    }
+    sp_end_hold();
+    sp_end_run(ESC_STICK_R_USER);
+    return true;
+}
+
 void esc_stick_panel_stop_released(void)
 {
     sp_end_hold();

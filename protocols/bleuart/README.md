@@ -33,10 +33,10 @@ unique identifier) 0x18F0. The stream bytes go to `protocols/witmotion`.
 - The core includes `<stdbool.h>`, `<stddef.h>`, `<stdint.h>` and
   `<string.h>` and no file outside this folder.
 - No heap, no floating point, no mutable global or static state, no clock
-  read and no I/O (input/output). A machine (`bleu_t`) is 1000 bytes on
+  read and no I/O (input/output). A machine (`bleu_t`) is 1008 bytes on
   x86-64, an event (`bleu_evt_t`) 64 bytes, an action (`bleu_act_t`) 52
-  bytes, a profile (`bleu_profile_t`) 88 bytes, a hub (`bleu_hub_t`) 1112
-  bytes. `bleuart.c`, `bleuart_adv.c` and `bleuart_hub.c` are 5243, 2420
+  bytes, a profile (`bleu_profile_t`) 104 bytes, a hub (`bleu_hub_t`) 1112
+  bytes. `bleuart.c`, `bleuart_adv.c` and `bleuart_hub.c` are 5274, 2569
   and 2634 bytes of code and constant data with gcc 13 `-Os` there.
 - Times are unsigned differences of a free-running 32-bit millisecond
   clock the caller passes in, so a wait holds across the clock's wrap at
@@ -58,7 +58,7 @@ and the connect's parameters (`bleu_conn_params_t`):
 |---|---|---|
 | `BLEU_ROLE_STREAM`, exactly one | NOTIFY and a CCCD (client characteristic configuration descriptor) | subscribed; every notification is stream bytes |
 | `BLEU_ROLE_CMD`, at most one | WRITE or WRITE NO RESPONSE; with `BLEU_CHR_OPTIONAL` it may be missing, and `bleu_send()` then refuses | `bleu_send()` |
-| `BLEU_ROLE_PARAM`, at most one | nothing: without READ it is not read | read once after each subscribe |
+| `BLEU_ROLE_PARAM`, at most one | nothing: without READ it is not read | read once after each subscribe; its first 20 bytes (`BLEU_PARAM_MAX`) kept |
 | `BLEU_ROLE_NONE`, any | nothing | never written, read or subscribed |
 
 `bleu_profile_valid()` holds a profile to these counts and the parameters
@@ -86,11 +86,14 @@ of 6DAA is kept in `param[0..param_len-1]`; its layout is not known.
 
 `bleu_scan()` starts an active scan of 10000ms (`BLEU_SCAN_MS`) with
 duplicates filtered, and clears the list. A report is listed when it
-carries 0x18F0 in a 16-bit UUID list (AD types 0x02 and 0x03) or the ISSC
-service UUID in a 128-bit list (0x06 and 0x07), whatever the machine's
-profile: the list's filter is the ISSC one. The listing is a hint:
-0x18F0 is no Bluetooth SIG assignment and other modules may use it. The
-connect checks the service.
+carries the machine's profile's advertised service: its 16-bit UUID
+(`adv_uuid16`, 0 for none) in a 16-bit UUID list (AD types 0x02 and 0x03)
+or its 128-bit UUID (`adv_svc`, NULL for the service UUID `svc`) in a
+128-bit list (0x06 and 0x07). The ISSC profile advertises 0x18F0 and the
+ISSC service UUID. The listing is a hint: 0x18F0 is no Bluetooth SIG
+assignment and other modules may use it. The connect checks the service.
+`bleu_adv_parse_for()` and `bleu_list_report_for()` take the profile;
+`bleu_adv_parse()` and `bleu_list_report()` are the ISSC profile's.
 
 | Item | Rule |
 |---|---|
@@ -152,10 +155,16 @@ timed out is disconnected.
 no write is in flight and the 6DAA read is done (`bleu_can_send()`). With
 WRITE in 8841's properties it writes with response (`BLEU_ACT_WRITE`),
 with WRITE NO RESPONSE only without (`BLEU_ACT_WRITE_NR`); the caller then
-answers with `BLEU_EV_WRITE_DONE` and its call's own status. `wr` ends
+answers with `BLEU_EV_WRITE_DONE` and its call's own status, at once and
+not through an event queue (`bleu_hub_written()` through the hub), since
+nothing answers it on the air and a lost answer holds the next write for
+`BLEU_WRITE_MS`. `wr` ends
 `BLEU_WR_OK` or `BLEU_WR_FAILED` with `wr_status`: the host stack's
 status, `BLEU_STATUS_TIMEOUT` after 1000ms (`BLEU_WRITE_MS`) or
 `BLEU_STATUS_LOST` for a drop. A write that times out leaves the link up.
+`bleu_fail_link()` ends a link whose peer answered with something the
+client cannot use, as a failed GATT step (`BLEU_ERR_GATT`): disconnect,
+and connect again after 1000ms (`BLEU_RETRY_MS`).
 No flow control exists on this service.
 
 ## Interface
@@ -171,6 +180,7 @@ void   bleu_enable(bleu_t *b, bool on, uint32_t now_ms);
 void   bleu_bind(bleu_t *b, const bleu_addr_t *addr, uint32_t now_ms);
 bool   bleu_scan(bleu_t *b, uint32_t now_ms);
 void   bleu_scan_stop(bleu_t *b, uint32_t now_ms);
+void   bleu_fail_link(bleu_t *b, uint16_t status, uint32_t now_ms);
 bool   bleu_send(bleu_t *b, const uint8_t *data, size_t len, uint32_t now_ms);
 bool   bleu_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms);
 bool   bleu_step(bleu_t *b, uint32_t now_ms, bleu_act_t *out);
@@ -270,8 +280,10 @@ hub a client of that owner with `bleu_hub_add()`. The caller hands each
 event of the host stack to `bleu_hub_event()`, then each event
 `bleu_hub_next_event()` gives to that owner's machine. It hands each
 action of a machine to `bleu_hub_action()` with the owner, then performs
-each action `bleu_hub_next_action()` gives, in order. `bleu_hub_tick()`
-runs the hub's timers; call it at least every 10ms.
+each action `bleu_hub_next_action()` gives, in order, and answers a
+`BLEU_ACT_WRITE_NR` at once with the host call's status through
+`bleu_hub_written()`. `bleu_hub_tick()` runs the hub's timers; call it at
+least every 10ms.
 
 | Event | Goes to |
 |---|---|

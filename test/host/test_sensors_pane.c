@@ -2,7 +2,7 @@
  * SETUP > SENSORS' split pane (sensors_pane.h, settings_screen.c,
  * settings_draw.c).
  *
- * Under test: the 9 entries and the rows each shows, on and off; vibration
+ * Under test: the 8 entries and the rows each shows, on and off; vibration
  * and the optical tacho on no entry with their keys kept; every state word;
  * RESET of the selected entry alone, hidden rows included; the left list's
  * press and release: a tap, a slide off, a jump, a second finger, a lost
@@ -45,18 +45,18 @@ static const char *state_of(int e, gfx_color_t *ink)
 
 /* ------------------------------------------------------------ the entries */
 
-TEST_CASE(the_list_names_9_entries_in_order)
+TEST_CASE(the_list_names_8_entries_in_order)
 {
     fresh_hub();
     static const char *const en[SENS_ENTRY_COUNT] = {
         "SENSOR BUS", "INA228", "INA3221 0x40", "INA3221 0x41",
-        "INA3221 0x42", "INA3221 0x43", "AS5600", "PHASE TAP", "IMU",
+        "INA3221 0x42", "INA3221 0x43", "AS5600", "PHASE TAP",
     };
     static const char *const de[SENS_ENTRY_COUNT] = {
         "SENSORBUS", "INA228", "INA3221 0x40", "INA3221 0x41",
-        "INA3221 0x42", "INA3221 0x43", "AS5600", "PHASENABGRIFF", "IMU",
+        "INA3221 0x42", "INA3221 0x43", "AS5600", "PHASENABGRIFF",
     };
-    CHECK_EQ(SENS_ENTRY_COUNT, 9);
+    CHECK_EQ(SENS_ENTRY_COUNT, 8);
     char buf[24];
     for (int e = 0; e < SENS_ENTRY_COUNT; ++e) {
         ui_text_set_language(UI_LANG_EN);
@@ -78,7 +78,7 @@ TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
     fresh_hub();
     setting_id_t ids[96];
     const int n = settings_in_category(SET_CAT_SENSORS, ids, 96);
-    CHECK_EQ(n, 65);
+    CHECK_EQ(n, 58);
     int on_entry = 0;
     for (int i = 0; i < n; ++i) {
         const int e = sensors_pane_entry_of(ids[i]);
@@ -89,7 +89,7 @@ TEST_CASE(every_sensor_row_has_one_entry_and_balance_has_none)
             ++on_entry;
         }
     }
-    CHECK_EQ(on_entry, 62);
+    CHECK_EQ(on_entry, 55);
     CHECK_EQ(sensors_pane_entry_of(SET_HITEC_RX), -1);
     CHECK_STR_EQ(settings_def(SET_VIBE_EN)->key, "vibe_en");
     CHECK_STR_EQ(settings_def(SET_OPTICAL_EN)->key, "optical_en");
@@ -120,8 +120,8 @@ TEST_CASE(a_moved_row_keeps_its_key)
     }
 }
 
-/* The enable row alone while off, the IMU's with ANGLE SOURCE, the
- * sensor's rows under it while on; the bus has no enable row. */
+/* The enable row alone while off, the sensor's rows under it while on;
+ * the bus has no enable row. */
 TEST_CASE(rows_appear_when_a_sensor_is_enabled)
 {
     static const struct { int e; setting_id_t en; int on; int off; } k[] = {
@@ -130,7 +130,6 @@ TEST_CASE(rows_appear_when_a_sensor_is_enabled)
         { SENS_ENTRY_INA3221_0 + 3, (setting_id_t)(SET_INA_FIT_0 + 3), 10, 1 },
         { SENS_ENTRY_AS5600, SET_ENC_EN, 2, 1 },
         { SENS_ENTRY_TAP, SET_TONE_EN, 7, 1 },
-        { SENS_ENTRY_IMU, SET_IMU_EN, 7, 2 },   /* ANGLE SOURCE stays */
     };
     pane();
     CHECK_EQ(settings_screen_rows(SET_CAT_SENSORS), 2);
@@ -151,7 +150,7 @@ TEST_CASE(rows_appear_when_a_sensor_is_enabled)
     /* Out of range selects nothing. */
     sensors_pane_select(-1);
     sensors_pane_select(SENS_ENTRY_COUNT);
-    CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_IMU);
+    CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_TAP);
 }
 
 /* The pane's rows lie right of the left list, the keys where they are on
@@ -164,9 +163,10 @@ TEST_CASE(the_pane_stands_beside_the_list_and_the_keys_stay)
     CHECK_EQ(settings_screen_row_rect(0).x, PANE_X);
     CHECK_EQ(settings_screen_row_part(0, SETTINGS_ROW_PLUS).x, PLUS_X);
     CHECK_EQ(settings_screen_row_part(0, SETTINGS_ROW_MINUS).x, MINUS_X);
-    gfx_rect_t last = settings_screen_entry_rect(SENS_ENTRY_COUNT - 1);
+    /* The ninth slot, which no pane fills yet, ends 4px above the strip. */
+    gfx_rect_t last = settings_screen_entry_rect(8);
     CHECK(last.x + last.w < PANE_X);
-    CHECK_EQ(last.y + last.h, 8 + 432);   /* 4px above the strip */
+    CHECK_EQ(last.y + last.h, 8 + 432);
     open_category(SET_CAT_APP);
     CHECK_EQ(settings_screen_list_rect().x, 10);
     CHECK_EQ(settings_screen_list_rect().w, 984);
@@ -739,7 +739,7 @@ TEST_CASE(the_carrier_holds_its_soldered_rows_on_the_pane)
 
 int main(void)
 {
-    RUN(the_list_names_9_entries_in_order);
+    RUN(the_list_names_8_entries_in_order);
     RUN(every_sensor_row_has_one_entry_and_balance_has_none);
     RUN(a_moved_row_keeps_its_key);
     RUN(rows_appear_when_a_sensor_is_enabled);
