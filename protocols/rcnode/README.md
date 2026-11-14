@@ -90,15 +90,17 @@ struct.
   revolutions counted (saturating at 255), rpm (1rpm steps), the period
   spread (0.1% steps), the 1x, 2x and blade-pass magnitudes (mg, or ADC
   counts with `RCNODE_BF_COUNTS`), the 1x phase (0.1° steps from the index
-  edge in the direction of rotation, 0 to 3599), and the broadband rms
+  edge, counted in the order points pass the index sensor, which is
+  against the direction of rotation, as shared/vibe counts it; 0 to 3599),
+  and the broadband rms
   (root mean square) in mg. Flag bits 0 to 11 are vibe's `VIBE_F_*` bit for
   bit, `VIBE_F_RESTARTED` (0x0800) included; bit 15 is `RCNODE_BF_COUNTS`.
   The 2x and blade-pass phases stay out (they would take the packet to 28
   bytes, and the balance methods use the 1x phase alone), and the sensor's
   DC level travels as `RCNODE_BF_DC_OK` only. The encoder writes the phase
   modulo 3600 and refuses a quality over 100; the decoder refuses a phase
-  of 3600 or more and a quality over 100. No node sends it yet: the balance
-  role is a stub.
+  of 3600 or more and a quality over 100. The balance node
+  (`firmware/node/main/node_bal.c`) sends it.
 - **Status.** Flags (battery low under 3.5V, no battery, battery read
   failed, sensor online, pack present, held awake by the console, STREAM
   subscribed), the cell

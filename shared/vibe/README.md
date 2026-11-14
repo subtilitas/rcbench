@@ -2,33 +2,41 @@
 
 Pure C, no SDK (software development kit). Two halves:
 
-- The balance node's signal processing, for an ESP32-C6: the index pulse
-  found in its ADC (analogue-to-digital converter) channel (`vibe_edge`),
-  and the vibration channel demodulated against it (`vibe_demod`). Integer
-  only.
+- The balance node's signal processing, for an ESP32-C6: its ADC
+  (analogue-to-digital converter) frames split into channels and the scale
+  from the ADC's calibration (`vibe_frame`), the index pulse found in its
+  channel with the mark's polarity (`vibe_edge`), and the vibration channel
+  demodulated against it (`vibe_demod`). Integer only.
 - The panel's corrections from measured runs (`vibe_solve`): two runs with
   an index, four runs without one. Single-precision float.
 
-No image compiles the module yet. The host suite holds it: `test_vibe` (28
-cases) and `test_vibe_solve` (10 cases), on synthetic signals from
-`test/host/vibe_synth.h`. The report is a plain C struct
-(`vibe_report_t`); the radio packet that carries it is not part of this
-module.
+The balance node's image (`firmware/node`, `node_bal.c`) compiles
+`vibe_frame`, `vibe_edge` and `vibe_demod`. The host suite holds the module:
+`test_vibe` (28 cases), `test_vibe_frame` (18 cases) and `test_vibe_solve`
+(10 cases), on synthetic signals from `test/host/vibe_synth.h`. The report
+is a plain C struct (`vibe_report_t`); the radio packet that carries it is
+`RCNODE_T_BAL_REPORT` in `protocols/rcnode`.
 
 ## Signal path
 
 | Stage | Part | Figure |
 | --- | --- | --- |
 | Vibration | ADXL335 or ADXL337 breakout, X and Y filter capacitors changed from 0.1µF to 4.7nF | bandwidth 1,060Hz; 330mV/g at 3.3V; mid-rail 1.65V |
-| Index | TCRT5000 module with LM393 comparator, analogue output into the ADC | one mark per revolution on the motor bell |
-| ADC | ESP32-C6 ADC1, continuous mode, 2 channels | 10kHz a channel, 20,000 conversions a second; the driver's limit is 611 to 83,333 a second (`SOC_ADC_SAMPLE_FREQ_THRES_LOW/HIGH`, ESP-IDF v6.1) |
-| Scale | 12-bit, 12dB attenuation, 0 to 3.1V | 1g = 436 counts, 2,294µg a count (`vibe_cfg_default()`) |
+| Index | TCRT5000 module with LM393 comparator, its digital output D0 into the ADC | one mark per revolution on the motor bell |
+| ADC | ESP32-C6 ADC1, continuous mode, 3 channels: vibration, index, battery | 10,040Hz a channel, 30,120 conversions a second; the driver's limit is 611 to 83,333 a second (`SOC_ADC_SAMPLE_FREQ_THRES_LOW/HIGH`, ESP-IDF v6.1) |
+| Scale | 12-bit, 12dB attenuation, 0 to 3.3V (ESP32-C6 datasheet v1.6, table 5-6) | the chip's calibration curve at counts 1000 and 3000 (`vibe_cfg_scale()`); nominally 1g = 410 counts, 2,441µg a count |
 
-The two channels share one ADC and one clock, so the index lands at a known
-sample of the vibration channel. The index channel is converted half a
-sample (50µs) after the vibration channel; `edge_shift_q8 = 128` puts its
-edges on the vibration channel's clock. Left out, the phase reads
-0.5 / (samples a revolution) of a turn late: 3° at 10,000rpm.
+`vibe_cfg_default()` keeps 10kHz, a 0 to 3.1V range (1g = 436 counts) and
+a DC window of 1.0V to 2.3V; the host tests run on it. The node sets its
+rate, window and scale over it.
+
+The channels share one ADC and one clock, so the index lands at a known
+sample of the vibration channel. With two channels the index channel is
+converted half a sample after the vibration channel, and
+`edge_shift_q8 = 128` puts its edges on the vibration channel's clock. The
+balance node converts three, and its index is a third of a sample later:
+`edge_shift_q8 = 85`. Left out, the phase reads (shift) / (samples a
+revolution) of a turn late: 2° at 10,000rpm for a third of a sample.
 
 ## Angles
 
@@ -112,6 +120,52 @@ figure falls to 25%, which is how a wrong rpm shows. Switching between the
 modes drops the open revolution, the lock and the quality history. The
 window of the switch reports the new mode's revolutions, rpm and magnitudes
 only and carries `VIBE_F_RESTARTED`; its rms and DC cover the whole window.
+
+## The node's stream
+
+`vibe_frame.h`:
+
+```c
+static const uint8_t chans[3] = { 0, 1, 3 };   /* vibration, index, battery */
+vibe_frame_init(&f, chans, 3);
+vibe_split_t r = vibe_frame_split(&f, frame, len, out, 100);
+/* r.rows rows in out[0..2]; r.broke: conversions were lost */
+```
+
+- A frame is the driver's bytes: 4 bytes a conversion, little-endian, the
+  raw count in bits 0 to 11 and the channel in bits 13 to 16 (ESP-IDF v6.1,
+  `adc_digi_output_data_t` type2 for the ESP32-C6). The node checks this
+  layout against the driver's own struct at start.
+- A row is one round of the pattern. A round cut by the end of a frame
+  finishes in the next one.
+- Words before the pattern's first channel are skipped. A word of another
+  channel than the one due is a break: the split stops in front of it with
+  the rows before it, the open round is dropped, and the next call skips to
+  the pattern's first channel. The caller restarts the demodulator there,
+  because the sample clock has a gap.
+- A full driver pool drops whole frames, whole rounds the order cannot
+  show. `vibe_frame_whole()` takes the driver's overflow count before and
+  after a read and the count when the stream started: a read is whole when
+  the three are equal. The node restarts the stream on any other read.
+- `vibe_frame_time()` dates a conversion from the newest frame the driver
+  finished: its time less the conversions after the one asked for, so a
+  backlog in the pool does not make a report late.
+- `vibe_cfg_scale()` takes two points of the ADC's calibration curve
+  (`vibe_adc_cal_t`), the sensor's sensitivity in µV/g and the DC window in
+  mV, and sets `ug_per_count_q16`, `dc_min` and `dc_max`.
+  `vibe_cal_counts()` turns a threshold in mV into counts, `vibe_cal_mv()`
+  the report's DC back into mV. `vibe_adc_cal_nominal()` is the curve of a
+  chip without calibration: 0 to 3300mV over 4096 counts.
+
+### The index's polarity
+
+A dark line on a bright bell and a bright line on a dark bell give marks of
+opposite levels at a reflective sensor's comparator. `vibe_index_scan()`
+runs a comparator for each polarity on every sample and takes the edges of
+the one whose mark is the shorter level, weighed over each 2,500 samples
+(`VIBE_INDEX_SPAN`). A 3mm line on a 30mm bell is 3% of a turn. The edge is
+always the start of the line, the side that passes the sensor first. A
+change of polarity takes effect from the next block.
 
 ## Solvers
 
@@ -197,7 +251,10 @@ measured.
 
 ## Not measured
 
-- The C6 ADC's effective bits and noise at 10kHz a channel.
+- The C6 ADC's rate as the node gets it: 10,040Hz a channel is ESP-IDF
+  v6.1's formula (`adc_hal.c`); the node's console line counts it.
+- The C6 ADC's effective bits and noise at 10kHz a channel, with the radio
+  on and off.
 - The phase repeatability of the in-stream index on a real rotor; the
   station can check the index timing with a pulse from the Pi on the index
   pin and the LA2016, not a signal on the vibration input.

@@ -923,7 +923,7 @@ jobs:
   c6:
     uses: ./.github/workflows/c6.yml
 
-  # The sensor nodes' firmware (node.yml): the power node's image.
+  # The sensor nodes' firmware (node.yml): the power and balance nodes' images.
   node:
     uses: ./.github/workflows/node.yml
   # The M5Stack Dial's firmware, the wireless knob (dial.yml).

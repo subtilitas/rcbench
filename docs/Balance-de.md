@@ -49,7 +49,9 @@ eine Blattspitze im Kanal nicht erreichbar ist:
   kreuzt. Ein Sensor, der von vorn auf einen Spinner zielt, blickt durch die
   Propellerebene und zählt Blätter.
 - Die Marke ist ein Stiftstrich, kein Reflexband. Alles, was auf die Glocke
-  geklebt wird, ist Masse auf dem Teil, das ausgewuchtet wird.
+  geklebt wird, ist Masse auf dem Teil, das ausgewuchtet wird. Ein dunkler
+  Strich auf heller Glocke und ein heller Strich (ein Lackstift) auf
+  dunkler Glocke funktionieren beide mit dem Auswuchtknoten.
 - Den Strich in Linie mit Blatt 1 ziehen. Der Bildschirm zählt Blätter und
   Winkel ab der Marke.
 - Winkel zählen ab der Marke in der Reihenfolge, in der die Punkte den
@@ -80,19 +82,32 @@ Vier-Lauf-Methode: ein Grundlauf, danach eine Probemasse bei 0°, 120° und
 sich also nicht aus. Sie braucht Bandbreite: bei 10 000rpm (revolutions per
 minute, Umdrehungen pro Minute) liegt die Grundfrequenz bei 167Hz, die eine
 IMU (Inertial Measurement Unit, Trägheitssensor), die fusionierte Lagedaten
-mit 100Hz liefert, nicht auflösen kann. Schließe einen analogen Sensor (Piezo oder
-analoger Beschleunigungssensor) an den ADC (Analog-Digital-Wandler) des
-IOmcu an.
+mit 100Hz liefert, nicht auflösen kann. Nimm einen analogen Sensor (Piezo oder
+analoger Beschleunigungssensor), den ein ADC (Analog-Digital-Wandler)
+abtastet. Der Auswuchtknoten trägt einen Beschleunigungssensor ADXL335 oder
+ADXL337 und tastet ihn mit seinem eigenen ADC ab.
 
 Mit Indeximpuls halbiert sich die Zahl der Läufe, und nur die Schwankung der
 Sensorverzögerung zählt; ein konstanter Anteil kürzt sich heraus, weil der
 Probelauf die ganze Kette mitmisst. Ein analoger Sensor hat etwa 15µs
-Verzögerung, unter 1° bei 10 000rpm. Eine fusionierte IMU hat etwa 5ms
+Verzögerung, unter 1° bei 10 000rpm. Der ADXL des Auswuchtknotens mit seinen
+4,7nF-Filterkondensatoren hat etwa 150µs, 9° bei 10 000rpm, bei einer
+Drehzahl konstant. Eine fusionierte IMU hat etwa 5ms
 Verzögerung, weder konstant noch spezifiziert, das sind 300° bei 10 000rpm.
 
 ## Was die Messung braucht
 
 Die Messung benötigt einen Beschleunigungssensor und optional einen
-Indexsensor am IOmcu. Keiner von beiden ist bestückt. Die Seite zeigt
-deshalb simulierte Werte und trägt die Kennzeichnung SIMULIERT. Einrichtung, Blattumrechnung und beide
-Platzierungsanleitungen funktionieren ohne die Sensoren.
+Indexsensor. Der Auswuchtknoten trägt beide ([Die Sensorknoten](Nodes-de.md),
+"Der Auswuchtknoten"): eine Achse eines ADXL335 oder ADXL337 und ein Modul
+TCRT5000 an einem ESP32-C6, an eigener Zelle, mit einem Bericht über
+Bluetooth LE alle 250ms. Ein Bericht enthält die Drehzahl, die Amplitude von
+1x in mg und ihre Phase ab dem Index, die Amplituden von 2x und der
+Blattfrequenz, den Effektivwert, eine Güte und Flags. Ohne Index nimmt der
+Knoten die Drehzahl über seine Characteristic CONTROL und meldet nur die
+Amplitude.
+
+Das Panel verbindet sich noch nicht mit dem Knoten. Die Seite zeigt deshalb
+simulierte Werte und trägt die Kennzeichnung SIMULIERT. Einrichtung,
+Blattumrechnung und beide Platzierungsanleitungen funktionieren ohne den
+Knoten.

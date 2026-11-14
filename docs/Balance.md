@@ -47,7 +47,8 @@ blade tip inside a duct is not accessible:
   from below where nothing crosses the sensor's line of sight. A sensor aimed
   at a spinner from the front looks across the disc and counts blades.
 - The mark is a pen line, not reflective tape. Anything attached to the bell is
-  mass on the part being balanced.
+  mass on the part being balanced. A dark line on a bright bell and a bright
+  line (a paint pen) on a dark bell both work with the balance node.
 - Draw the mark in line with blade 1. The screen counts blades and angles
   from the mark.
 - Angles count from the mark in the order points pass the index sensor, which
@@ -77,16 +78,26 @@ method does not measure phase, so a constant sensor delay does not affect it.
 It needs bandwidth: at 10,000rpm (revolutions per minute) the fundamental is
 167Hz, which an IMU (inertial measurement unit) streaming fused orientation at
 100Hz cannot resolve. Use an analogue sensor (piezo or analogue accelerometer)
-into the IOmcu's ADC (analogue-to-digital converter).
+sampled by an ADC (analogue-to-digital converter). The balance node carries an
+ADXL335 or ADXL337 accelerometer and samples it with its own ADC.
 
 With an index pulse the number of runs halves, and only the variation of the
 sensor delay matters; a constant delay cancels because the trial run measures
 the whole chain. An analogue sensor has a delay of about 15µs, under 1° at
-10,000rpm. A fused IMU has about 5ms of delay, neither constant nor
+10,000rpm. The balance node's ADXL with its 4.7nF filter capacitors has about
+150µs, 9° at 10,000rpm, constant at one rpm. A fused IMU has about 5ms of delay, neither constant nor
 specified, which is 300° at 10,000rpm.
 
 ## What the measurement needs
 
-An accelerometer and, optionally, an index sensor on the IOmcu. Neither
-is fitted, so the screen runs from the model and carries the SIMULATED mark. The
-setup, the blade arithmetic and both placement guides work without them.
+An accelerometer and, optionally, an index sensor. The balance node carries
+both ([The sensor nodes](Nodes.md), "The balance node"): an ADXL335 or
+ADXL337 axis and a TCRT5000 module on an ESP32-C6, on its own cell, sending a
+report over Bluetooth LE every 250ms. A report holds the rpm, the 1x
+magnitude in mg and its phase from the index, the 2x and blade-pass
+magnitudes, the rms, a quality figure and flags. Without an index the node
+takes the rpm over its CONTROL characteristic and reports the magnitude only.
+
+The panel does not connect to the node yet, so the screen runs from the model
+and carries the SIMULATED mark. The setup, the blade arithmetic and both
+placement guides work without the node.

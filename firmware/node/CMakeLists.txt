@@ -4,12 +4,14 @@
 # main/Kconfig.projbuild:
 #   idf.py build                                   the power node
 #   idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.balance" build
-#                                                  the balance node (a stub)
+#                                                  the balance node
 cmake_minimum_required(VERSION 3.16)
 
-# The packets (protocols/rcnode) and the INA228 driver of shared/sense
-# (components/ina228 compiles its two files).
-set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../protocols/rcnode")
+# The packets (protocols/rcnode), the balance measurement (shared/vibe) and
+# the INA228 driver of shared/sense (components/ina228 compiles its two
+# files).
+set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../protocols/rcnode"
+                         "${CMAKE_CURRENT_LIST_DIR}/../../shared/vibe")
 
 # The application's version, as the panel's: MAJOR.MINOR.PATCH from the one
 # header every build reads.

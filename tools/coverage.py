@@ -441,6 +441,7 @@ TRACKED = [
     "shared/bench/pass_stats.c",
     "shared/vibe/vibe_demod.c",
     "shared/vibe/vibe_edge.c",
+    "shared/vibe/vibe_frame.c",
     "shared/vibe/vibe_solve.c",
     "shared/dial/dial_scene.c",
     "shared/dial/dial_draw.c",

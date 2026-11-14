@@ -469,6 +469,25 @@ ASSERTED = {
             "&& PPM_CHANNEL_MAX_US == OUT_CEILING_US",
         ),
     },
+    "rcnode": {
+        # The balance report's flags are shared/vibe's, bit for bit.
+        "firmware/node/main/node_bal.c": (
+            "RCNODE_BF_VALID == VIBE_F_VALID",
+            "RCNODE_BF_INDEX_SEEN == VIBE_F_INDEX_SEEN",
+            "RCNODE_BF_INDEX_STEADY == VIBE_F_INDEX_STEADY",
+            "RCNODE_BF_INDEX_LOST == VIBE_F_INDEX_LOST",
+            "RCNODE_BF_NO_INDEX == VIBE_F_NO_INDEX",
+            "RCNODE_BF_CLIPPED == VIBE_F_CLIPPED",
+            "RCNODE_BF_DC_OK == VIBE_F_DC_OK",
+            "RCNODE_BF_BLADE_OK == VIBE_F_BLADE_OK",
+            "RCNODE_BF_QUALITY == VIBE_F_QUALITY",
+            "RCNODE_BF_EDGE_DROPPED == VIBE_F_EDGE_DROPPED",
+            "RCNODE_BF_RPM_RANGE == VIBE_F_RPM_RANGE",
+            "RCNODE_BF_RESTARTED == VIBE_F_RESTARTED",
+            "RCNODE_BLADES_MAX == VIBE_BLADES_MAX",
+            "(BAL_VIBE_FLAGS & RCNODE_BF_COUNTS) == 0u",
+        ),
+    },
     "witmotion": {
         "shared/ui/imu_ble.c": (
             "WIT_CMD_LEN <= BLEU_WRITE_MAX",
