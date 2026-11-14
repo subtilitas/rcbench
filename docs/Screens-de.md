@@ -1459,10 +1459,18 @@ unter den Registerkarten misst 600 x 150px:
   die nächsten 8 Berichte auf, 2s, während die anderen Tasten warten. Unter
   jeder Taste ihr Lauf: `LÄUFT n/8`, der Mittelwert (`0.42g 265°` bei zwei
   Läufen, der Betrag bei vier) oder der Grund des Abbruchs: `KEIN BERICHT`
-  (1000ms ohne Bericht), `KEINE UMDREHUNG`, `KEIN INDEX` (zwei Läufe
-  brauchen den Index) oder `DREHZAHL GEÄNDERT` (mehr als 5% vom ersten
-  Bericht des Laufs).
-- 2 LÄUFE, 4 LÄUFE und LÖSCHEN. Ein Wechsel der Methode löscht die Läufe.
+  (1000ms ohne Bericht), `SENSORFEHLER`, `ÜBERSTEUERT`,
+  `DREHZAHLBEREICH`, `INDEXFEHLER`, `MODUS GEÄNDERT` (ein Bericht, den der
+  Knoten als unbrauchbar kennzeichnet,
+  [Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)),
+  `KEINE UMDREHUNG`, `KEIN INDEX` (zwei Läufe
+  brauchen den Index), `DREHZAHL GEÄNDERT` (mehr als 5% vom ersten
+  Bericht des Laufs) oder, unter einem Testlauf, `ANDERE DREHZAHL` (seine
+  mittlere Drehzahl mehr als 5% von der der Referenz).
+- 2 LÄUFE, 4 LÄUFE und LÖSCHEN. Ein Wechsel der Methode löscht die Läufe,
+  ebenso BLÄTTER, PROPELLER oder EDF, Auswuchtknoten AUS oder EIN, ein
+  anderer gebundener Knoten und ein Neustart des Knotens
+  ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)).
 - Sind alle Läufe aufgenommen: `HINZU 0.35g  WO zwischen 1 und 2` (beim
   EDF `Nabe, 265°`), neu gelöst, wenn sich die Testmasse ändert, darunter,
   was aus der CSV-Zeile wurde (`Zeile wartet auf die Karte`,

@@ -50,6 +50,7 @@
 typedef struct {
     bal_ctl_t    c;          /**< the controller under test */
     uint32_t     now;        /**< the clock, ms */
+    uint32_t     boot_ms;    /**< the node's last start on that clock */
     bool         armed;      /**< the bench is ARMED */
     uint8_t      proto;      /**< the protocol INFO names */
     uint8_t      role;       /**< the role INFO names */
@@ -160,6 +161,7 @@ static inline void brig_act(brig_t *r, const bleu_act_t *a)
             i.proto = r->proto;
             i.role = r->role;
             i.board = RCNODE_BOARD_C6_ZERO;
+            i.hdr.t_node = (r->now - r->boot_ms) * 1000u;
             ++r->info_reads;
             e.len = (uint8_t)rcnode_enc_info(&i, e.data, sizeof e.data);
             if (r->fail_info > 0u) {
@@ -252,7 +254,7 @@ static inline void brig_report(brig_t *r, const rcnode_bal_report_t *in)
     rcnode_bal_report_t p = *in;
     p.hdr.type = RCNODE_T_BAL_REPORT;
     p.hdr.seq = r->seq++;
-    p.hdr.t_node = r->now * 1000u;
+    p.hdr.t_node = (r->now - r->boot_ms) * 1000u;
     bleu_evt_t e = brig_ev(BLEU_EV_NOTIFY, 0u);
     e.h1 = BRIG_STREAM_VAL;
     e.len = (uint8_t)rcnode_enc_bal_report(&p, e.data, sizeof e.data);
@@ -267,7 +269,7 @@ static inline void brig_status(brig_t *r, uint8_t seq)
     memset(&st, 0, sizeof st);
     st.hdr.type = RCNODE_T_STATUS;
     st.hdr.seq = seq;
-    st.hdr.t_node = r->now * 1000u;
+    st.hdr.t_node = (r->now - r->boot_ms) * 1000u;
     st.vbat = r->vbat;
     st.flags = r->st_flags;
     memcpy(st.fw, r->fw, sizeof st.fw);

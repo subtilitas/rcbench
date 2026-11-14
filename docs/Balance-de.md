@@ -187,10 +187,47 @@ ersten Bericht mit Flanke. Ein simulierter Prüfstand liefert keine
 Drehzahl. Die Vier-Lauf-Methode braucht nur die Beträge und geht in diesem
 Modus; die Zwei-Lauf-Methode lehnt einen Bericht ohne Index ab.
 
-**Ein Lauf bricht ab** bei 1000ms ohne Bericht, einem Bericht ohne gezählte
-Umdrehung, einem Bericht ohne Index (zwei Läufe) oder einer Drehzahl mehr
-als 5% neben dem ersten Bericht des Laufs. Seine Taste zeigt den Grund;
+**Ein Lauf bricht sofort ab** bei 1000ms ohne Bericht, einem Bericht, den
+der Knoten als unbrauchbar kennzeichnet, einem Bericht ohne Index (zwei
+Läufe) oder einer Drehzahl mehr als 5% neben dem ersten Bericht des Laufs.
+Die unbrauchbaren Berichte, in der Reihenfolge, in der das Wort gewählt
+wird:
+
+| Wort | Der Bericht |
+| --- | --- |
+| `SENSORFEHLER` | der Gleichanteil des Beschleunigungssensors außerhalb seines Fensters: kein Sensor oder ein Verdrahtungsfehler |
+| `ÜBERSTEUERT` | ein ADC-Wert am Ende seines Bereichs |
+| `DREHZAHLBEREICH` | No-Index-Modus: die geschriebene Drehzahl ergibt eine Umdrehung außerhalb des Bereichs |
+| `INDEXFEHLER` | die längste Umdrehung verging ohne Indexflanke, oder eine Flanke wurde verworfen |
+| `MODUS GEÄNDERT` | der Indexmodus oder die Blattzahl änderte sich im Bericht |
+| `KEINE UMDREHUNG` | keine Umdrehung gezählt |
+
+Ein Bericht, dessen Güte noch nicht eingeschwungen ist oder dessen
+Blattfrequenz nicht gilt, zählt weiter: Betrag und Phase der
+1x-Komponente gelten. Ein Testlauf bricht auch ab,
+wenn seine mittlere Drehzahl mehr als 5% von der des Referenzlaufs
+abweicht (`ANDERE DREHZAHL`): der Löser nimmt nur Läufe einer Drehzahl.
+Ein vor der Referenz aufgenommener Testlauf wird an ihr gemessen, sobald
+sie fertig ist, und eine neu aufgenommene Referenz lässt jeden Testlauf
+abbrechen, der mehr als 5% von ihrer Drehzahl abweicht. Seine Taste zeigt den Grund;
 erneut drücken.
+
+**Die Läufe gehören zu einem Knoten und einem Rotor.** LÖSCHEN leert alle
+Läufe, und ebenso jede dieser Änderungen, mit HINZUFÜGEN und WO: die
+andere Methode (2 LÄUFE oder 4 LÄUFE), BLÄTTER, PROPELLER oder EDF,
+Auswuchtknoten AUS oder EIN, ein Knoten mit anderer Adresse gebunden und
+ein Neustart des Knotens. Einen Neustart des Knotens erkennt das Panel bei
+jedem Verbindungsaufbau: die Uhr des Knotens in INFO liegt mehr als 2s
+neben dem Stand, den die Uhr des letzten Berichts und die seither
+vergangene Zeit des Panels ergeben. Ein Update des Knotens auf UPDATES,
+das installiert, startet ihn mit seinem neuen Image neu, und die
+Verbindung, die zurückkommt, erkennt diesen Neustart, seine Läufe leeren
+sich also; ein Update, das ohne Installation endet, startet nichts neu und
+behält sie, da das Halten des Updates Auswuchtknoten EIN lässt. Ein
+Neustart des Panels beginnt ohne Läufe. Eine abgerissene Verbindung und ein erneutes Verbinden desselben
+Knotens behalten die Läufe, und ein Entbinden behält sie, bis ein anderer
+Knoten gebunden wird. Der Reiter BALANCE folgt keinem Motor- oder
+ESC-Profil, und ein Profilwechsel behält die Läufe.
 
 **Die CSV-Zeile.** `BENCH/BALANCE/BALANCE.CSV` erhält in einer neuen Datei
 eine Kopfzeile und je Lösung eine Zeile: Methode, Testmasse, Einheit (g

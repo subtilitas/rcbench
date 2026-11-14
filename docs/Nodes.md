@@ -498,7 +498,10 @@ row's 2s hold ends the node's own link (`pnode_ctl_hold()`,
 `bal_ctl_hold()`); that end and the link's return count as no loss, so the
 band shows no `POWER NODE LOST`. After the update the node's client
 connects again from SETUP's values, and the row reads the node's version
-from its first STATUS packet on the new link.
+from its first STATUS packet on the new link. A balance node that
+installed is a restart for the balance runs: INFO's clock finds it and
+the runs clear ([Balancing](Balance.md#measuring-with-the-balance-node));
+an update without an install keeps them.
 
 1. The central connects and sends BEGIN: the kind (power node or balance
    node), the size, the version and the image's SHA-256.

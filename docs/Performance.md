@@ -86,7 +86,7 @@ settings-sim                 3,374     422 KiB
 battery-sim                  3,300     412 KiB
 analyser-chrome             53,472    6684 KiB
 logs-chrome                 28,260    3532 KiB
-settings-chrome             33,886    4236 KiB
+settings-chrome             35,719    4465 KiB
 settings-list-chrome        37,319    4665 KiB
 battery-chrome              54,643    6830 KiB
 balance-chrome              57,992    7249 KiB
@@ -765,7 +765,7 @@ The wireless devices' update, from the linker map of the default build:
 `shared/devupd` 3,540 bytes of code and `protocols/bleota` 446. The three
 carried images, the Dial's and both nodes', add 2,130,208 bytes of image at
 0.23.12: 841,424, 646,176 and 642,608. With them the application image is
-7,364,656 bytes, 761,808 (9.4%) under the slot of 8,126,464.
+7,365,648 bytes, 760,816 (9.4%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one

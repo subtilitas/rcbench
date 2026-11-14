@@ -1349,9 +1349,14 @@ the tabs is 600 x 150px:
   the next 8 reports, 2s, while the other keys wait. Under each key its
   run: `TAKING n/8`, the mean (`0.42g 265°` with two runs, the magnitude
   with four), or why it failed: `NO REPORT` (1000ms without one),
-  `NO REVOLUTION`, `NO INDEX` (two runs need the index) or `RPM MOVED`
-  (more than 5% from the run's first report).
-- 2 RUNS, 4 RUNS and CLEAR. A method change clears the runs.
+  `SENSOR FAULT`, `CLIPPED`, `RPM RANGE`, `INDEX FAULT`, `MODE CHANGED`
+  (a report the node marks unusable, [Balancing](Balance.md#measuring-with-the-balance-node)),
+  `NO REVOLUTION`, `NO INDEX` (two runs need the index), `RPM MOVED`
+  (more than 5% from the run's first report) or, under a trial,
+  `NOT BASELINE RPM` (its mean rpm more than 5% from the baseline's).
+- 2 RUNS, 4 RUNS and CLEAR. A method change clears the runs, and so do
+  BLADES, PROPELLER or EDF, Balance node OFF or ON, another node bound and
+  a node restart ([Balancing](Balance.md#measuring-with-the-balance-node)).
 - Once every run is taken: `ADD 0.35g  WHERE between 1 and 2` (on an EDF,
   `hub, 265°`), solved again when the trial mass changes, and under it
   what became of the CSV row (`Row waiting for the card`,

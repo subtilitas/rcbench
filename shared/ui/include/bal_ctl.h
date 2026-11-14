@@ -24,6 +24,9 @@
  * - Reports count only from a node whose INFO, read once after each
  *   subscribe, names RCNODE_PROTO and the balance role.  An INFO that does
  *   not read or decode ends the link, which comes back after the backoff.
+ * - INFO's clock finds a node restart: more than BAL_BOOT_SLACK_US (2s)
+ *   from the last report's clock plus the panel's time since, it counts in
+ *   boots, and node_balance.h clears the captures on it.
  * - The node's battery comes from the STATUS packets it sends on STREAM
  *   beside its reports.  The STATUS characteristic is left to a phone.
  * - CONTROL: BLADES whenever the blade count differs from the one the node
@@ -68,6 +71,9 @@ extern const bleu_profile_t bal_profile;
 #define BAL_SEEN_MAX  32u                /**< other addresses a scan counts */
 #define BAL_CTL_MS    250u   /**< the least time between two CONTROL writes */
 #define BAL_STALE_MS  1000u  /**< a report older than this is stale: 4 periods */
+#define BAL_BOOT_SLACK_US 2000000u /**< INFO's clock this far from the last
+                                        report's plus the panel's time
+                                        between: the node restarted */
 #define BAL_NOIDX_REPORTS 2u /**< reports in a row without an index before
                                   the RPM write */
 #define BAL_RPM_UNSENT 0xFFFFFFFFu /**< no RPM written on this link yet */
@@ -126,6 +132,9 @@ typedef struct {
     bool      bat_known;  /**< a STATUS came on this link */
     uint16_t  bat_mv;     /**< its cell, mV; 0 with RCNODE_ST_BAT_NONE */
     uint16_t  bat_flags;  /**< its RCNODE_ST_* flags */
+    uint32_t  boots;      /**< node restarts found since power-up */
+    bool      held;       /**< an update holds the link off: link reads
+                               OFF while BALANCE NODE stays ON */
 } bal_view_t;
 
 /** @brief A command of SETUP > WIRELESS for the controller. */
@@ -172,6 +181,8 @@ typedef struct {
     uint32_t    unread;       /**< reports dropped before INFO matched */
     uint32_t    refused;      /**< scans refused while ARMED */
     uint32_t    info_failed;  /**< INFO reads that failed, each a reconnect */
+    uint32_t    boots;        /**< node restarts found: INFO's clock not
+                                   where the last report's left it */
     uint8_t     blades;       /**< the blade count the frame wants, 1 to 12 */
     uint16_t    bench_rpm;    /**< the bench's rpm, 0 not known */
     uint8_t     noidx_n;      /**< reports in a row without an index */
@@ -217,9 +228,11 @@ void bal_ctl_radio(bal_ctl_t *c, imu_radio_t radio, uint32_t now_ms);
 /**
  * @brief The node's update holds the link (panel_devupd.c): ON ends the
  *        link and keeps it ended, as BALANCE NODE OFF does, with SETUP's
- *        values kept and SETUP's later values taken, and drops the report
- *        of the image before the update; OFF gives the link back to
- *        SETUP's values.
+ *        values kept and SETUP's later values taken, and hides the last
+ *        report; OFF gives the link back to SETUP's values.  A node that
+ *        installed restarts on its new image: INFO after the take-back
+ *        finds the restart from its clock, counts it in boots and drops
+ *        the report, as at any restart.
  * @param c      The controller; NULL does nothing.
  * @param on     The hold.
  * @param now_ms The clock.

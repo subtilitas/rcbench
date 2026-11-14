@@ -12,11 +12,16 @@
  * the method does not have; a capture of 8 new reports (a report seen
  * again counts once), failing on a gap of 1000ms and not 999ms, on a
  * report without a revolution, without the index in two runs, and on an
- * rpm 5% off (not at 5%); the two-run and four-run corrections against
+ * rpm 5% off (not at 5%); a trial whose mean rpm is 5.1% from the
+ * baseline's refused in both methods, 4.9% taken, and no row from it;
+ * each flag that marks a report unusable failing a run at once in both
+ * methods, the others leaving it counting, and no row from such a run; the two-run and four-run corrections against
  * known imbalances; the CSV row's fields under its header; the instance's
  * one row per solution, solved again with a new row for a new trial mass,
  * the row's written / not written state; a dropped link stale, not the
- * model.
+ * model; the captures kept for the same node's reconnect and cleared by
+ * another node's bind, OFF, ON, a node restart, BLADES, the rotor, the
+ * method and a panel restart.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -294,6 +299,195 @@ TEST_CASE(a_capture_fails_on_no_revolution_no_index_and_rpm_drift)
     p.rpm = 7599u;
     feed(&s, &p, 1u);
     CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM);
+}
+
+/* One capture of slot @p slot at a steady @p rpm. */
+static void take_at(nb_session_t *s, uint8_t slot, uint16_t rpm)
+{
+    rcnode_bal_report_t p = steady((uint16_t)(300u + 40u * slot),
+                                   (uint16_t)(900u * slot), rpm);
+    CHECK_EQ(nb_take(s, slot, true), NB_TAKE_STARTED);
+    feed(s, &p, NB_CAP_REPORTS);
+}
+
+/* A trial's mean rpm 4.9% from the baseline's is taken, one 5.1% away
+ * fails as NB_FAIL_RPM_BASE and leaves nothing to solve, both above and
+ * below, in both methods; a baseline taken again at another rpm fails the
+ * trials taken before it. */
+TEST_CASE(a_trial_at_another_rpm_than_the_baseline_fails)
+{
+    nb_session_t s;
+    vibe_solution_t sol;
+    nb_init(&s);
+    take_at(&s, 0u, 8000u);
+    take_at(&s, 1u, 8392u);          /* +4.9%: taken */
+    CHECK_EQ(s.cap[1].state, NB_CAP_DONE);
+    CHECK(nb_ready(&s));
+    CHECK(nb_solve(&s, 0.5f, &sol));
+    take_at(&s, 1u, 8408u);          /* +5.1% */
+    CHECK_EQ(s.cap[1].state, NB_CAP_FAILED);
+    CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM_BASE);
+    CHECK(!nb_ready(&s));
+    CHECK(!nb_solve(&s, 0.5f, &sol));
+    take_at(&s, 1u, 7608u);          /* -4.9%: taken */
+    CHECK(nb_ready(&s));
+    take_at(&s, 1u, 7592u);          /* -5.1% */
+    CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM_BASE);
+    /* A trial taken before the baseline is held to it once it is done. */
+    nb_clear(&s);
+    take_at(&s, 1u, 8000u);
+    CHECK_EQ(s.cap[1].state, NB_CAP_DONE);
+    take_at(&s, 0u, 8500u);          /* the trial 5.9% below it */
+    CHECK_EQ(s.cap[1].state, NB_CAP_FAILED);
+    CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM_BASE);
+
+    nb_set_method(&s, NB_FOUR_RUNS);
+    take_at(&s, 0u, 8000u);
+    take_at(&s, 1u, 8000u);
+    take_at(&s, 2u, 8392u);          /* +4.9% */
+    take_at(&s, 3u, 7608u);          /* -4.9% */
+    CHECK(nb_ready(&s));
+    CHECK(nb_solve(&s, 0.5f, &sol));
+    take_at(&s, 3u, 7592u);          /* -5.1% */
+    CHECK_EQ(s.cap[3].fail, NB_FAIL_RPM_BASE);
+    CHECK(!nb_ready(&s));
+    take_at(&s, 3u, 8000u);
+    take_at(&s, 2u, 8408u);          /* +5.1% */
+    CHECK_EQ(s.cap[2].fail, NB_FAIL_RPM_BASE);
+    CHECK_EQ(s.cap[3].state, NB_CAP_DONE);
+    CHECK(!nb_ready(&s));
+    /* The baseline taken again at 8500rpm: 8000rpm is 5.9% off. */
+    take_at(&s, 0u, 8500u);
+    take_at(&s, 2u, 8500u);
+    CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM_BASE);
+    CHECK_EQ(s.cap[2].state, NB_CAP_DONE);
+    CHECK_EQ(s.cap[3].fail, NB_FAIL_RPM_BASE);
+}
+
+/* The CSV row: a row never comes from runs at different rpm. */
+TEST_CASE(no_row_from_runs_at_different_rpm)
+{
+    node_balance_reset();
+    settings_reset_all();
+    nb_session_t *s = node_balance_session();
+    take_at(s, 0u, 8000u);
+    take_at(s, 1u, 8408u);
+    char row[NB_CSV_MAX];
+    CHECK(!node_balance_result(NULL, NULL));
+    CHECK_EQ(node_balance_take_csv(2, row, sizeof row), 0u);
+    take_at(s, 1u, 8392u);
+    CHECK(node_balance_result(NULL, NULL));
+    CHECK(node_balance_take_csv(2, row, sizeof row) > 0u);
+    node_balance_reset();
+}
+
+/* One flag change on a report and what it does to a capture. */
+typedef struct {
+    uint16_t set;    /* flags set */
+    uint16_t clear;  /* flags cleared */
+    uint8_t  fail;   /* nb_fail_t, NB_FAIL_NONE: the report counts */
+} flag_case_t;
+
+/* Every RCNODE_BF_* flag that marks a report unusable ends a capture at
+ * once, in both methods, with its own reason; QUALITY clear, BLADE_OK
+ * clear and the index flags that tell only of edges leave it counting.
+ * No solution comes from such a run. */
+TEST_CASE(an_unusable_report_fails_the_run_at_once)
+{
+    static const flag_case_t k[] = {
+        { 0u, RCNODE_BF_DC_OK, NB_FAIL_SENSOR },
+        { RCNODE_BF_CLIPPED, 0u, NB_FAIL_CLIPPED },
+        { RCNODE_BF_RPM_RANGE, 0u, NB_FAIL_RPM_RANGE },
+        { RCNODE_BF_INDEX_LOST, 0u, NB_FAIL_INDEX },
+        { RCNODE_BF_EDGE_DROPPED, 0u, NB_FAIL_INDEX },
+        { RCNODE_BF_RESTARTED, 0u, NB_FAIL_RESTART },
+        { 0u, RCNODE_BF_VALID, NB_FAIL_NO_REV },
+        { 0u, RCNODE_BF_QUALITY, NB_FAIL_NONE },
+        { 0u, RCNODE_BF_BLADE_OK, NB_FAIL_NONE },
+        { 0u, RCNODE_BF_INDEX_SEEN | RCNODE_BF_INDEX_STEADY, NB_FAIL_NONE },
+        /* A clipped report without a revolution names the clipping. */
+        { RCNODE_BF_CLIPPED, RCNODE_BF_VALID, NB_FAIL_CLIPPED },
+    };
+    for (int mi = 0; mi < (int)NB_METHOD_COUNT; ++mi) {
+        const uint8_t m = (uint8_t)mi;
+        for (size_t i = 0; i < sizeof k / sizeof k[0]; ++i) {
+            nb_session_t s;
+            vibe_solution_t sol;
+            nb_init(&s);
+            nb_set_method(&s, m);
+            for (uint8_t slot = 0u; slot < nb_slots(m) - 1u; ++slot) {
+                take_at(&s, slot, 8000u);
+            }
+            const uint8_t last = (uint8_t)(nb_slots(m) - 1u);
+            rcnode_bal_report_t p = steady(300u, 1800u, 8000u);
+            CHECK_EQ(nb_take(&s, last, true), NB_TAKE_STARTED);
+            feed(&s, &p, 3u);
+            p.flags = (uint16_t)((p.flags | k[i].set) & ~k[i].clear);
+            feed(&s, &p, 1u);
+            const nb_cap_t *c = &s.cap[last];
+            if (k[i].fail == NB_FAIL_NONE) {
+                CHECK_EQ(c->state, NB_CAP_TAKING);
+                CHECK_EQ(c->n, 4u);
+                p = steady(300u, 1800u, 8000u);
+                feed(&s, &p, NB_CAP_REPORTS - 4u);
+                CHECK(nb_ready(&s));
+            } else {
+                if (c->state != NB_CAP_FAILED || c->fail != k[i].fail) {
+                    T_FAIL("method %u case %u: state %u fail %u, want "
+                           "fail %u", (unsigned)m, (unsigned)i,
+                           (unsigned)c->state, (unsigned)c->fail,
+                           (unsigned)k[i].fail);
+                }
+                CHECK(!nb_ready(&s));
+                CHECK(!nb_solve(&s, 0.5f, &sol));
+            }
+        }
+    }
+    /* Two runs need the index; four runs take a no-index report. */
+    nb_session_t s;
+    nb_init(&s);
+    rcnode_bal_report_t p = steady(300u, 0u, 8000u);
+    p.flags |= RCNODE_BF_NO_INDEX;
+    CHECK_EQ(nb_take(&s, 0u, true), NB_TAKE_STARTED);
+    feed(&s, &p, 1u);
+    CHECK_EQ(s.cap[0].fail, NB_FAIL_NO_PHASE);
+    nb_set_method(&s, NB_FOUR_RUNS);
+    CHECK_EQ(nb_take(&s, 0u, true), NB_TAKE_STARTED);
+    feed(&s, &p, NB_CAP_REPORTS);
+    CHECK_EQ(s.cap[0].state, NB_CAP_DONE);
+}
+
+/* A run on a clipped or sensorless node gives no result and no CSV row,
+ * on the panel's instance, while the live reading says why. */
+TEST_CASE(no_row_from_a_sensor_fault_or_clipping)
+{
+    static const uint16_t bad_set[] = { RCNODE_BF_CLIPPED, 0u };
+    static const uint16_t bad_clear[] = { 0u, RCNODE_BF_DC_OK };
+    for (size_t i = 0; i < 2u; ++i) {
+        node_balance_reset();
+        settings_reset_all();
+        nb_session_t *s = node_balance_session();
+        rcnode_bal_report_t p = steady(420u, 2650u, 8000u);
+        node_balance_feed(true, &p, 10u);
+        CHECK_EQ(nb_take(s, 0u, true), NB_TAKE_STARTED);
+        for (unsigned k = 0; k < NB_CAP_REPORTS; ++k) {
+            p.hdr.seq = (uint8_t)(p.hdr.seq + 1u);
+            p.hdr.t_node += 250000u;
+            if (k == 2u) {
+                p.flags = (uint16_t)((p.flags | bad_set[i]) & ~bad_clear[i]);
+            }
+            node_balance_feed(true, &p, 10u);
+        }
+        CHECK_EQ(s->cap[0].state, NB_CAP_FAILED);
+        CHECK_EQ(s->cap[0].fail, i == 0u ? NB_FAIL_CLIPPED : NB_FAIL_SENSOR);
+        CHECK_EQ(node_balance_live()->word,
+                 i == 0u ? NB_Q_CLIPPED : NB_Q_SENSOR);
+        take_at(s, 1u, 8000u);
+        char row[NB_CSV_MAX];
+        CHECK(!node_balance_result(NULL, NULL));
+        CHECK_EQ(node_balance_take_csv(2, row, sizeof row), 0u);
+    }
+    node_balance_reset();
 }
 
 /** A complex number of polar parts in degrees. */
@@ -605,6 +799,83 @@ TEST_CASE(a_dropped_link_is_stale_not_the_model)
     node_balance_reset();
 }
 
+/** @brief Another node's address. */
+#define OTHER_ADDR "A0:B1:C2:7F:3A:11 R"
+
+/** @brief The captures' context, each member as named. */
+static void ctx(bool on, const char *addr, uint32_t boots, int blades,
+                int rotor)
+{
+    const nb_context_t c = { on, addr, boots, blades, rotor };
+    node_balance_context(&c);
+}
+
+/** @brief Whether the captures, the solution and its row are all gone. */
+static bool all_clear(void)
+{
+    char row[NB_CSV_MAX];
+    return !nb_ready(node_balance_session())
+           && !node_balance_result(NULL, NULL)
+           && node_balance_take_csv(2, row, sizeof row) == 0u;
+}
+
+/* The same node keeps the captures: a dropped link, an unbind and the
+ * same node bound again, and the first context after a restart.  Another
+ * node's bind clears them, directly or after an unbind. */
+TEST_CASE(the_captures_keep_for_the_same_node_and_clear_for_another)
+{
+    for (int k = 0; k < 2; ++k) {
+        node_balance_reset();
+        settings_reset_all();
+        take_both();
+        ctx(true, BRIG_ADDR, 0u, 2, 0);     /* the first: recorded only */
+        CHECK(node_balance_result(NULL, NULL));
+        node_balance_feed(true, NULL, 0u);
+        ctx(true, BRIG_ADDR, 0u, 2, 0);
+        ctx(true, "", 0u, 2, 0);
+        ctx(true, NULL, 0u, 2, 0);
+        ctx(true, BRIG_ADDR, 0u, 2, 0);
+        CHECK(node_balance_result(NULL, NULL));
+        char row[NB_CSV_MAX];
+        CHECK(node_balance_take_csv(2, row, sizeof row) > 0u);
+        if (k == 1) {
+            ctx(true, "", 0u, 2, 0);
+        }
+        const uint32_t rr = node_balance_result_rev();
+        ctx(true, OTHER_ADDR, 0u, 2, 0);
+        CHECK(node_balance_result_rev() != rr);
+        CHECK(all_clear());
+        CHECK_EQ(node_balance_csv_state(), NB_CSV_NONE);
+    }
+    node_balance_reset();
+}
+
+/* Every other change of the session clears the captures: OFF, ON, a node
+ * restart, BLADES, the rotor, the method, and a panel restart. */
+TEST_CASE(each_session_change_clears_the_captures)
+{
+    for (int k = 0; k < 7; ++k) {
+        node_balance_reset();
+        settings_reset_all();
+        const bool on = k != 1;
+        ctx(on, BRIG_ADDR, 0u, 2, 0);
+        take_both();
+        ctx(on, BRIG_ADDR, 0u, 2, 0);
+        CHECK(node_balance_result(NULL, NULL));
+        switch (k) {
+        case 0:  ctx(false, BRIG_ADDR, 0u, 2, 0); break;
+        case 1:  ctx(true, BRIG_ADDR, 0u, 2, 0); break;
+        case 2:  ctx(true, BRIG_ADDR, 1u, 2, 0); break;
+        case 3:  ctx(true, BRIG_ADDR, 0u, 3, 0); break;
+        case 4:  ctx(true, BRIG_ADDR, 0u, 2, 1); break;
+        case 5:  nb_set_method(node_balance_session(), NB_FOUR_RUNS); break;
+        default: node_balance_reset(); break;
+        }
+        CHECK(all_clear());
+    }
+    node_balance_reset();
+}
+
 int main(void)
 {
     RUN(a_report_reads_in_g_and_degrees);
@@ -614,11 +885,17 @@ int main(void)
     RUN(a_capture_averages_8_new_reports);
     RUN(a_capture_fails_on_a_stale_gap_at_1000ms);
     RUN(a_capture_fails_on_no_revolution_no_index_and_rpm_drift);
+    RUN(a_trial_at_another_rpm_than_the_baseline_fails);
+    RUN(no_row_from_runs_at_different_rpm);
+    RUN(an_unusable_report_fails_the_run_at_once);
+    RUN(no_row_from_a_sensor_fault_or_clipping);
     RUN(two_runs_end_to_end_find_the_known_imbalance);
     RUN(four_runs_end_to_end_find_the_known_imbalance);
     RUN(the_csv_row_matches_its_header);
     RUN(the_instance_hands_out_one_row_per_solution);
     RUN(a_new_trial_mass_solves_again_with_a_new_row);
     RUN(a_dropped_link_is_stale_not_the_model);
+    RUN(the_captures_keep_for_the_same_node_and_clear_for_another);
+    RUN(each_session_change_clears_the_captures);
     return test_summary("node_balance");
 }

@@ -534,7 +534,11 @@ Halten von 2s auf der Zeile beendet den eigenen Link des Knotens
 Links zählen als kein Verlust, das Band zeigt also kein
 `LEISTUNGSKNOTEN VERLOREN`. Nach dem Update verbindet sich der Client des
 Knotens wieder aus den Werten von SETUP, und die Zeile liest die Version
-des Knotens aus seinem ersten STATUS-Paket auf der neuen Verbindung.
+des Knotens aus seinem ersten STATUS-Paket auf der neuen Verbindung. Ein
+Auswuchtknoten, der installiert hat, gilt für die Auswucht-Läufe als
+Neustart: Die Uhr in INFO erkennt ihn, und die Läufe leeren sich
+([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)); ein Update
+ohne Installation behält sie.
 
 1. Das Central verbindet sich und sendet BEGIN: die Art (Leistungsknoten
    oder Auswuchtknoten), die Größe, die Version und den SHA-256 des Images.

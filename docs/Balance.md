@@ -173,9 +173,41 @@ an edge. A simulated bench gives no rpm. The four-run method needs only the
 magnitudes and works in this mode; the two-run method refuses a report
 without the index.
 
-**A run fails** on 1000ms without a report, a report without a counted
-revolution, a report without the index (two runs) or an rpm more than 5%
-away from the run's first report. Its key shows why; press it again.
+**A run fails** at once on 1000ms without a report, on a report the node
+marks unusable, on a report without the index (two runs) or on an rpm
+more than 5% away from the run's first report. The unusable reports, in
+the order the word is chosen:
+
+| Word | The report |
+| --- | --- |
+| `SENSOR FAULT` | the accelerometer's DC level out of its window: no sensor, or a wiring fault |
+| `CLIPPED` | an ADC sample at an end of its range |
+| `RPM RANGE` | no-index mode: the rpm written gives a revolution out of range |
+| `INDEX FAULT` | the longest revolution passed without an index edge, or an edge was refused |
+| `MODE CHANGED` | the index mode or the blade count changed in the report |
+| `NO REVOLUTION` | no revolution counted |
+
+A report whose quality has not settled, or whose blade-pass does not
+hold, still counts: the 1x magnitude and phase stand. A trial run also fails when its mean rpm
+lies more than 5% from the baseline run's (`NOT BASELINE RPM`): the
+solver takes runs of one rpm only. A trial taken before the baseline is
+held to it once the baseline is done, and a baseline taken again fails
+each trial more than 5% from its rpm. Its key shows why; press it again.
+
+**The runs belong to one node and one rotor.** CLEAR empties every run,
+and so does each of these changes, with ADD and WHERE: the other method
+(2 RUNS or 4 RUNS), BLADES, PROPELLER or EDF, Balance node OFF or ON, a
+node bound with another address, and a restart of the node. The panel
+finds a node restart at each link-up: the node's clock in INFO lies more
+than 2s from where the last report's clock and the panel's time since then
+put it. An update of the node on UPDATES that installs restarts it on its
+new image, and the link that comes back finds that restart, so its runs
+clear; an update that ends without an install restarts nothing and keeps
+them, as the update's hold leaves Balance node ON. A panel restart starts
+with no runs. A dropped link and a
+reconnect of the same node keep the runs, and an unbind keeps them until
+another node is bound. The BALANCE tab follows no motor or ESC profile,
+and a profile change keeps the runs.
 
 **The CSV row.** `BENCH/BALANCE/BALANCE.CSV` gets a header in a new file and
 one row each time the runs are solved: the method, the trial mass, the unit

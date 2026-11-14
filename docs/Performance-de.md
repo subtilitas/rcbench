@@ -89,7 +89,7 @@ settings-sim                 3,374     422 KiB
 battery-sim                  3,300     412 KiB
 analyser-chrome             53,472    6684 KiB
 logs-chrome                 28,260    3532 KiB
-settings-chrome             33,886    4236 KiB
+settings-chrome             35,719    4465 KiB
 settings-list-chrome        37,319    4665 KiB
 battery-chrome              54,643    6830 KiB
 balance-chrome              57,992    7249 KiB
@@ -819,7 +819,7 @@ Bytes Code; `upd_dev.c` 566 Bytes .bss und 3 926 Bytes Code;
 `shared/devupd` 3 540 Bytes Code und `protocols/bleota` 446. Die drei
 mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
 2 130 208 Bytes Image hinzu: 841 424, 646 176 und 642 608. Mit ihnen hat
-das Anwendungs-Image 7 364 656 Bytes, 761 808 (9,4%) unter dem Slot von
+das Anwendungs-Image 7 365 648 Bytes, 760 816 (9,4%) unter dem Slot von
 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5

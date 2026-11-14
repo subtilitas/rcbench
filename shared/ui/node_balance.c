@@ -210,6 +210,39 @@ nb_take_t nb_take(nb_session_t *s, uint8_t slot, bool is_fresh)
 }
 
 /**
+ * @brief Whether a capture's mean rpm lies more than NB_RPM_DRIFT_PCT from
+ *        the baseline's: vibe_solve.h takes runs of one rpm only.
+ * @param c    The capture, DONE.
+ * @param base The baseline, DONE.
+ * @return true when the two are too far apart.
+ */
+static bool rpm_apart(const nb_cap_t *c, const nb_cap_t *base)
+{
+    return fabsf(c->rpm - base->rpm) * 100.0f
+           > base->rpm * (float)NB_RPM_DRIFT_PCT;
+}
+
+/**
+ * @brief The trials held to the baseline's rpm: a DONE trial too far from
+ *        a DONE baseline fails with NB_FAIL_RPM_BASE.
+ * @param s The session.
+ */
+static void check_rpm(nb_session_t *s)
+{
+    const nb_cap_t *base = &s->cap[0];
+    if (base->state != NB_CAP_DONE) {
+        return;
+    }
+    for (uint8_t i = 1u; i < NB_SLOTS; ++i) {
+        nb_cap_t *c = &s->cap[i];
+        if (c->state == NB_CAP_DONE && rpm_apart(c, base)) {
+            c->state = NB_CAP_FAILED;
+            c->fail = NB_FAIL_RPM_BASE;
+        }
+    }
+}
+
+/**
  * @brief End the running capture.
  * @param s    The session.
  * @param why  NB_FAIL_NONE for DONE, else the reason.
@@ -229,7 +262,40 @@ static void finish(nb_session_t *s, nb_fail_t why)
         c->state = NB_CAP_DONE;
     }
     s->taking = -1;
+    check_rpm(s);
     ++s->rev;
+}
+
+/**
+ * @brief Why a report's flags make it no part of a capture, in the order
+ *        of nb_quality(): the DC level, a clipped sample, the rpm's
+ *        range, the index, a restart, no counted revolution.  The quality
+ *        flag and the blade-pass flag leave the 1x magnitude and phase
+ *        standing.
+ * @param flags RCNODE_BF_*.
+ * @return NB_FAIL_NONE when the report counts.
+ */
+static nb_fail_t unusable(uint16_t flags)
+{
+    if ((flags & RCNODE_BF_DC_OK) == 0u) {
+        return NB_FAIL_SENSOR;
+    }
+    if ((flags & RCNODE_BF_CLIPPED) != 0u) {
+        return NB_FAIL_CLIPPED;
+    }
+    if ((flags & RCNODE_BF_RPM_RANGE) != 0u) {
+        return NB_FAIL_RPM_RANGE;
+    }
+    if ((flags & (RCNODE_BF_INDEX_LOST | RCNODE_BF_EDGE_DROPPED)) != 0u) {
+        return NB_FAIL_INDEX;
+    }
+    if ((flags & RCNODE_BF_RESTARTED) != 0u) {
+        return NB_FAIL_RESTART;
+    }
+    if ((flags & RCNODE_BF_VALID) == 0u) {
+        return NB_FAIL_NO_REV;
+    }
+    return NB_FAIL_NONE;
 }
 
 /**
@@ -240,8 +306,9 @@ static void finish(nb_session_t *s, nb_fail_t why)
 static void take_report(nb_session_t *s, const rcnode_bal_report_t *r)
 {
     nb_cap_t *c = &s->cap[s->taking];
-    if ((r->flags & RCNODE_BF_VALID) == 0u) {
-        finish(s, NB_FAIL_NO_REV);
+    const nb_fail_t bad = unusable(r->flags);
+    if (bad != NB_FAIL_NONE) {
+        finish(s, bad);
         return;
     }
     if (s->method == NB_TWO_RUNS && (r->flags & RCNODE_BF_NO_INDEX) != 0u) {
@@ -306,7 +373,8 @@ bool nb_ready(const nb_session_t *s)
     }
     const uint8_t n = nb_slots(s->method);
     for (uint8_t i = 0; i < n; ++i) {
-        if (s->cap[i].state != NB_CAP_DONE) {
+        if (s->cap[i].state != NB_CAP_DONE
+            || (i > 0u && rpm_apart(&s->cap[i], &s->cap[0]))) {
             return false;
         }
     }
@@ -405,6 +473,12 @@ static struct {
     bool            csv_due;    /**< its CSV row is not taken yet */
     uint8_t         csv;        /**< nb_csv_t of the last row taken */
     uint32_t        csv_seq;    /**< that row's number */
+    bool            ctx_init;   /**< the context below is recorded */
+    bool            on;         /**< BALANCE NODE ON, as last seen */
+    char            addr[BAL_ADDR_MAX]; /**< the last bound node, "" none */
+    uint32_t        boots;      /**< its restarts, as last seen */
+    int             blades;     /**< BLADES, as last seen */
+    int             rotor;      /**< the rotor, as last seen */
 } s_nb; /**< the panel's instance: UI task only */
 
 /** @brief Set up on first use. */
@@ -458,6 +532,33 @@ static void refresh(void)
         s_nb.csv = NB_CSV_NONE;
         ++s_nb.res_rev;
     }
+}
+
+void node_balance_context(const nb_context_t *c)
+{
+    if (c == NULL) {
+        return;
+    }
+    nb_once();
+    const char *addr = c->addr != NULL ? c->addr : "";
+    /* Unbound keeps the last node: only another node's bind clears. */
+    const bool other = addr[0] != '\0' && s_nb.addr[0] != '\0'
+                       && strncmp(addr, s_nb.addr, sizeof(s_nb.addr)) != 0;
+    const bool changed = c->on != s_nb.on || other || c->boots != s_nb.boots
+                         || c->blades != s_nb.blades
+                         || c->rotor != s_nb.rotor;
+    if (s_nb.ctx_init && changed) {
+        nb_clear(&s_nb.ses);
+    }
+    s_nb.ctx_init = true;
+    s_nb.on = c->on;
+    if (addr[0] != '\0') {
+        snprintf(s_nb.addr, sizeof(s_nb.addr), "%s", addr);
+    }
+    s_nb.boots = c->boots;
+    s_nb.blades = c->blades;
+    s_nb.rotor = c->rotor;
+    refresh();
 }
 
 void node_balance_feed(bool present, const rcnode_bal_report_t *r,

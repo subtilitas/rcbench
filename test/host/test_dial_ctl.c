@@ -14,7 +14,6 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdlib.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -195,22 +194,33 @@ TEST_CASE(the_scan_lists_dials_only_and_a_bind_takes_one)
     CHECK_STR_EQ(v.bound_name, "DIAL-3A10");
 }
 
+/** One xorshift32 step: a fixed, portable noise source. */
+static uint32_t noise(uint32_t *s)
+{
+    uint32_t x = *s;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *s = x;
+    return x;
+}
+
 /* The profile's advertising match is dk_adv_has_service(), report for
  * report, over random advertising data with the UUID planted at random. */
 TEST_CASE(the_scan_filter_is_the_protocols_own)
 {
-    srand(7);
+    uint32_t seed = 7u;
     static const uint8_t svc[16] = { DK_UUID_LE(DK_UUID_SVC) };
     for (int k = 0; k < 20000; ++k) {
-        uint8_t ad[31];
-        const size_t len = (size_t)(rand() % 32);
+        uint8_t ad[31] = { 0 };
+        const size_t len = (size_t)(noise(&seed) % 32u);
         for (size_t i = 0; i < len; ++i) {
-            ad[i] = (uint8_t)rand();
+            ad[i] = (uint8_t)noise(&seed);
         }
-        if (len >= 18u && (rand() & 1) != 0) {
-            const size_t at = (size_t)rand() % (len - 17u);
+        if (len >= 18u && (noise(&seed) & 1u) != 0u) {
+            const size_t at = (size_t)(noise(&seed) % (len - 17u));
             ad[at] = 17u;
-            ad[at + 1u] = (uint8_t)(0x06 + (rand() & 1));
+            ad[at + 1u] = (uint8_t)(0x06u + (noise(&seed) & 1u));
             memcpy(&ad[at + 2u], svc, 16u);
         }
         bleu_adv_t a;

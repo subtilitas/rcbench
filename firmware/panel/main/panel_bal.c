@@ -25,6 +25,7 @@
 #include "freertos/task.h"
 
 #include "bal_ctl.h"
+#include "balance_screen.h"
 #include "card_tree.h"
 #include "node_balance.h"
 #include "panel.h"
@@ -353,6 +354,17 @@ void panel_bal_frame(bool armed, int blades, uint32_t rpm)
     /* ON and bound with the link down: "--" and the kept result, never
      * the model; the model only while OFF or unbound. */
     const uint32_t age = now_ms() - s_seen.rep_ms;
+    /* The node's own update holds the link off with BALANCE NODE ON: no
+     * change of ON, so a failed update keeps the runs; an installed one
+     * restarts the node, and boots clears them. */
+    const nb_context_t ctx = {
+        .on = s_seen.v.link != BAL_LINK_OFF || s_seen.v.held,
+        .addr = s_seen.v.bound_addr,
+        .boots = s_seen.v.boots,
+        .blades = blades,
+        .rotor = balance_screen_rotor(),
+    };
+    node_balance_context(&ctx);
     node_balance_feed(s_seen.present,
                       s_seen.linked && s_seen.have ? &s_seen.rep : NULL, age);
     const uint32_t done = atomic_load(&s_csv_done);
