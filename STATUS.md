@@ -1150,12 +1150,20 @@ Built and host-tested: the knob protocol of the M5Stack Dial v1.1 over BLE
 (`protocols/dialknob`): every packet in both directions with its bounds
 (`test_dialknob`, with 1,000,000 random packets), the panel's turn tracker
 and the link's DEGRADED and LOST timing (`test_dialknob_track`), and the
-Dial's model of its face (`test_dialknob_face`). Built, not run on the
-device: the Dial's firmware (`firmware/dial`, ESP-IDF v6.1 for the
-ESP32-S3; CI's `dial.yml`) with the power latch, the encoder on PCNT, the
-buttons, the FT3267 touch glass, the click per detent, the GC9A01 display
-with a placeholder face, the NimBLE peripheral with its bound panel, and
-the USB console with the test build's hooks ([The M5Stack Dial](docs/Dial.md)).
+Dial's model of its face (`test_dialknob_face`). Built and host-tested:
+the Dial's faces (`shared/dial`): the list, the value, MOTOR & ESC and
+SERVO with their six readings and rings, LINK LOST, waiting, bind and the
+screens the knob does nothing on, in English and German
+(`test_dial_face`, with a draw of what changed held to a full draw pixel
+for pixel; `test_dial_fit`, every string inside radius 100 and inside its
+cell), and the antialiased ring from a coverage table (`test_gfx_ring`,
+against a reference from the same formula); `tools/render_dial.py --check`
+holds the 18 committed images. Built, not run on the device: the Dial's
+firmware (`firmware/dial`, ESP-IDF v6.1 for the ESP32-S3; CI's `dial.yml`)
+with the power latch, the encoder on PCNT, the buttons, the FT3267 touch
+glass, the click per detent, the GC9A01 display with the faces and its
+dirty-rectangle flush, the NimBLE peripheral with its bound panel, and the
+USB console with the test build's hooks ([The M5Stack Dial](docs/Dial.md)).
 Not built: the panel's side, so no panel connects to a Dial. The battery's
 reading pin is unknown; the encoder's direction is not measured.
 
@@ -1369,7 +1377,7 @@ rcbench/
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
     artwork/ gfx/ touch/ ui/ settings/ logfile/ link/ bench/ outputs/
     safety/ servo/ can/ esc/ sense/ fwupdate/ webaccess/ text/ files/
-    clock/ vibe/
+    clock/ vibe/ dial/
 
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
@@ -1394,7 +1402,7 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dialknob` · `vibe` · `rcnode` | | | yes |
+| `hc05` · `dialknob` · `vibe` · `rcnode` · `dial` | | | yes |
 | `bleuart` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -1429,8 +1437,9 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 556 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 559 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
+`test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
 `test_nav_tiles`, `test_menu_openers`, `test_nav_alert`, `test_nav_mark`,
@@ -1542,6 +1551,7 @@ The host suite is 556 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
 `test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_dial_face`, `test_dial_fit`,
 `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
@@ -2031,8 +2041,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` holds 940 committed screenshots to the current render,
-470 in English and the same 470 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check` and `render_dial.py --check` hold
+958 committed screenshots to the current render, 479 in English and the same 479 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

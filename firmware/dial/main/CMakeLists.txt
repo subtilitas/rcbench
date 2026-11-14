@@ -6,7 +6,7 @@ idf_component_register(
          "dial_touch.c" "dial_input.c" "dial_ble.c" "dial_console.c"
          "dial_screen.c"
     INCLUDE_DIRS "."
-    REQUIRES dialknob gfx bt nvs_flash console esp_app_format esp_timer
+    REQUIRES dial dialknob gfx bt nvs_flash console esp_app_format esp_timer
              esp_lcd esp_driver_gpio esp_driver_pcnt esp_driver_ledc
              esp_driver_spi esp_driver_i2c esp_driver_usb_serial_jtag
 )

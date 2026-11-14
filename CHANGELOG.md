@@ -31,7 +31,8 @@ history is in git.
   ([protocols/rcnode](protocols/rcnode/README.md)).
 - Protocol module `protocols/dialknob` for the M5Stack Dial v1.1 as a
   wireless knob over BLE: the packets in both directions (EVENT, STATUS,
-  INFO; SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO, STATE),
+  INFO; SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO, STATE and
+  SCALE, the readings' full scales for the face's rings),
   20 bytes or less, every field bounded; the panel's turn tracker (the
   first packet after a connect, a packet more than 300ms late and a jump
   over 16 detents move nothing, a repeated seq is dropped); the link's
@@ -43,7 +44,7 @@ history is in git.
 - Firmware for the M5Stack Dial v1.1 (`firmware/dial`, ESP-IDF v6.1,
   ESP32-S3): the power latch on GPIO46, the encoder on PCNT, the buttons,
   the FT3267 touch glass, a 3ms click per detent (default ON), the GC9A01
-  display with a placeholder face, a NimBLE peripheral serving the
+  display with the faces below, a NimBLE peripheral serving the
   dialknob service that binds the first panel to subscribe and then
   accepts that panel only (a 10s button hold forgets it) and ends the link
   1,000ms after the panel's last packet, and a USB console
@@ -51,6 +52,28 @@ history is in git.
   battery reading and marks each injected detent on GPIO1. The battery's
   reading pin is unknown, and STATUS reports the battery as unknown. The
   panel's side is not built yet ([The M5Stack Dial](docs/Dial.md)).
+- The M5Stack Dial's faces (`shared/dial`), drawn with the panel's
+  rasteriser, fonts and dark palette from the panel's packets: a list with
+  rim ticks, a value with its range and one ring, MOTOR & ESC and SERVO
+  with six readings in a grid of equal cells inside radius 100 and six
+  antialiased 1px rings from radius 118 inward at 3px, each from 12
+  o'clock clockwise to its reading's share of the full scale, LINK LOST,
+  waiting, not bound, and a screen the knob does nothing on; the title
+  tag, the SAFE or ARMED pill with the run clock, the link bars, the
+  battery and two press hints on every face; `--` for a reading without
+  its valid bit; the words in English and German (`UI_DIAL_TEXT` in
+  `ui_text.def`), the language from the SCREEN packet. Only what changed is
+  drawn: a cell, a row, and of a ring the pixels between its old and new
+  end; the Dial sends only the rectangles written (a 300rpm change sends
+  3,920 of 57,600 pixels). Host suites `test_dial_face` and
+  `test_dial_fit`; `tools/render_dial.py` writes the 18 images in
+  `docs/img` and CI's `--check` holds them
+  ([The M5Stack Dial](docs/Dial.md#the-faces)).
+- `gfx_ring_aa()` in `shared/gfx`: a 1px ring antialiased by each pixel's
+  coverage clamp(1 - |d - r|, 0, 1), from a table of the pixels the ring
+  touches sorted by angle, 3 bytes each; `gfx_ring_move()` repaints only
+  the pixels between an arc's old and new end (`test_gfx_ring`, against a
+  reference from the same formula).
 - CI builds the Dial's image and its test build (`.github/workflows/dial.yml`,
   artifact `dial`); a release carries `rcbench-dial-<version>.bin` and
   `rcbench-dial-merged-<version>.bin`. `tools/image_slot.py` takes the

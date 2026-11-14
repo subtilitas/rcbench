@@ -8,8 +8,9 @@ limit run's report -- so the compiler's -Wformat never sees it.
 to the call site.
 
 It compiles every C file of `shared/` once more with the lookups replaced by
-the English literals, generated here from the screens' and the servo
-test's entries of `shared/text/include/ui_text.def`, under -Wformat=2
+the English literals, generated here from the screens', the servo test's
+and the Dial faces' entries of `shared/text/include/ui_text.def`, under
+-Wformat=2
 -Wformat-nonliteral, and fails on any warning.  A format that is still not
 a literal after that is a warning too, so a new lookup that bypasses the
 tables cannot slip past.
@@ -46,6 +47,9 @@ UI_TEXT_H = SHARED / "ui" / "include" / "ui_text.h"
 LOOKUPS = ((SHARED / "servo" / "servo_report.c", "S"),
            (SHARED / "servo" / "servo_limrun_report.c", "LS"),
            (SHARED / "servo" / "servo_rudder_auto_report.c", "LS"))
+# The Dial's faces look their formats up with DF(ID) (UI_DIAL_TEXT).
+DIAL_LOOKUP = SHARED / "dial" / "dial_scene.c"
+DIAL_MACRO = "#define DF(id) dial_text(l, (id))"
 
 FLAGS = ["-std=c11", "-fsyntax-only", "-Wformat=2", "-Wformat-nonliteral",
          "-Wformat-signedness"]
@@ -98,6 +102,19 @@ def literals_from_report() -> str:
     return "\n".join(out) + "\n"
 
 
+def literals_from_dial() -> str:
+    """Writes the Dial faces' words as macros of their English.
+
+    Returns:
+        `#define DFS_<ID> <English>` for every UI_DIAL_TEXT entry.
+    """
+    out = ["#define DFS_%s %s" % (ident, en)
+           for ident, en in english("UI_DIAL_TEXT", "")]
+    if not out:
+        sys.exit("no UI_DIAL_TEXT entries in %s" % DEF)
+    return "\n".join(out) + "\n"
+
+
 def main() -> int:
     """Compile shared/ with literal texts; return the exit status."""
     cc = shutil.which("cc") or shutil.which("gcc")
@@ -132,6 +149,15 @@ def main() -> int:
             copy.write_text(body.replace(
                 macro, svs + "#define %s(id) (SVS_##id)" % name),
                 encoding="utf-8")
+
+        copy = tree / DIAL_LOOKUP.relative_to(SHARED)
+        body = copy.read_text(encoding="utf-8")
+        if DIAL_MACRO not in body:
+            sys.exit("DF() is not defined as %r in %s"
+                     % (DIAL_MACRO, DIAL_LOOKUP))
+        copy.write_text(body.replace(
+            DIAL_MACRO, literals_from_dial() + "#define DF(id) (DFS_##id)"),
+            encoding="utf-8")
 
         includes = []
         for d in sorted(tree.glob("*/include")):

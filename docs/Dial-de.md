@@ -10,11 +10,11 @@ zwischen ihm und dem Panel (`protocols/dialknob`).
 
 Was es gibt: das Protokollmodul mit seinen Host-Tests und die Firmware des
 Dial: die Selbsthaltung, den Encoder, die Tasten, das Touch-Glas, den Klick
-pro Rastung, das Display mit einem Platzhalter-Face, das BLE-Peripheral mit
-seinem gebundenen Panel und die USB-Konsole. Was es noch nicht gibt: die
-Seite des Panels. Kein Panel-Build verbindet sich mit einem Dial, ein Dial
-bewegt also nichts am Prüfstand. Die endgültigen Faces, das BLE-Update und
-das Pairing folgen in späteren Schritten.
+pro Rastung, die Faces auf dem Display, das BLE-Peripheral mit seinem
+gebundenen Panel und die USB-Konsole. Was es noch nicht gibt: die Seite des
+Panels. Kein Panel-Build verbindet sich mit einem Dial, ein Dial bewegt also
+nichts am Prüfstand. Das BLE-Update und das Pairing folgen in späteren
+Schritten.
 
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
 Bluetooth ist eine Marke ihres Inhabers. rcbench ist unabhängig: Es ist
@@ -109,9 +109,11 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 Die Partitionstabelle (`firmware/dial/partitions.csv`) enthält den NVS, zwei
 Anwendungsslots von 3.072kB und ihre otadata. Das veröffentlichte Image hat
-601.824 Bytes, 19,1% eines Slots. Sein statischer RAM: 211.478 von 341.760
-Bytes internem DRAM und IRAM, darunter der Frame von 115.200 Bytes; den
-Heap, den NimBLE zur Laufzeit nimmt, hat niemand gemessen.
+792.400 Bytes, 25,2% eines Slots; die sieben Fonts der Faces sind 243.194
+Bytes davon. Sein statischer RAM: 238.950 von 341.760 Bytes internem DRAM
+und IRAM, darunter der Frame von 115.200 Bytes und die Ring-Tabellen von
+26.145 Bytes; den Heap, den NimBLE zur Laufzeit nimmt, hat niemand
+gemessen.
 
 ## Binden
 
@@ -131,21 +133,153 @@ Protokollversion 1 hat kein Pairing und keine Verschlüsselung: Ein Gerät in
 Reichweite, das sich zuerst verbindet oder die gebundene Adresse fälscht,
 wird angenommen.
 
-## Das Face
+## Die Faces
 
-Das Face dieser Firmware ist ein Platzhalter: ein schlichter Ring, der Titel
-des Panel-Bildschirms und der Wert, auf den der Knopf wirkt, als Text (der
-Wert einer Einstellung mit Einheit, das Gas in %, der Puls des Servos in us,
-die fokussierte Listenzeile), dazu SAFE oder ARMED. Ohne gebundenes Panel
-zeigt es `NICHT GEBUNDEN`, seinen Namen und `AM PANEL BINDEN`. 500ms ohne
-Paket vom Panel zeigt es `LINK VERLOREN`, `DER PRÜFSTAND IST SAFE`,
-`ALLE AUSGÄNGE AUS` und `ARM AM PANEL`: Das Dial beendet den Link 500ms
-später, und dann ist der Prüfstand SAFE, entweder weil er es schon war oder
-weil das Panel ihn beim Verlust auf SAFE schaltet. Dazwischen, bis zu 500ms
-lang, erreicht eine Drehung noch ein Panel, dessen eigener Strom stockt.
-Verbunden ohne Paket vom Panel oder nicht verbunden zeigt es
-`WARTE AUF DAS PANEL` und `DREHEN BEWEGT NICHTS`. Seine eigenen Worte folgen
-der Sprache des Panels, Englisch oder Deutsch.
+Das Display zeigt, worauf der Knopf wirkt. `shared/dial` zeichnet jedes Face
+aus den Paketen des Panels (SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR,
+LIVE_SERVO, STATE und SCALE) und aus dem eigenen Zustand des Dial: gebunden
+oder nicht, der Link, sein RSSI und seine Versorgung. Es zeichnet mit dem
+Rasterizer des Panels (`shared/gfx`), den Fonts des Panels und der dunklen
+Palette aus `shared/ui/ui_theme.c` in einen RGB565-Frame von 240 x 240
+Pixeln. Die Bilder auf dieser Seite sind das Rendering dieses Codes auf
+einem Rechner, aus den festen Modellen in `test/host/dial_models.h`;
+`tools/render_dial.py --check` hält sie in der CI beim aktuellen Rendering.
+
+Jedes Face hat dieselbe Ausstattung:
+
+| Element | Wo | Was |
+| --- | --- | --- |
+| Titel-Tag | mittlere Zeile 42, 20px hoch | der Name des Panel-Bildschirms im Font 8x16 auf dem Akzent; gedimmt, solange der Link verloren ist; ein Titel, der über Radius 101 hinausreicht, wird gekürzt |
+| Zustandspille | mittlere Zeile 66, 19px hoch | `SAFE`, oder `ARMED` mit der Laufuhr (`0:42`, ab 1h `1h05`) auf MOTOR & ESC; im Font 10x20, im Font 8x16, wenn die Symbole daneben Radius 101 verlassen würden |
+| Link-Balken | 6px links der Pille | 4 Balken, 3px breit: 4 ab -60dBm, 3 ab -70dBm, 2 ab -80dBm, darunter 1; gelb, solange das Panel den Link als DEGRADED markiert; keine ohne Verbindung |
+| Akku | 6px rechts der Pille | 18 x 9px, gefüllt von 3.300 bis 4.200mV; ein Strich, solange der Messwert unbekannt ist; `USB` an seiner Stelle, solange der Messwert unbekannt ist und ein USB-Host den Port liest, wo die Zeile Platz hat |
+| Hinweise | mittlere Zeilen 181 und 195 | was Drücken und Halten hier tun, im Font 8x16 |
+
+Eine Zeile steht im größten Font ihrer Kette, in dem ihre Tinte auf ihrer
+Höhe innerhalb von Radius 100 um die Mitte des Displays liegt, umbrochen auf
+die Zeilen, die ihr Block erlaubt. `test_dial_fit` hält jeden String jedes
+Face, auf Englisch und auf Deutsch und mit jedem Feld an seinen Enden,
+innerhalb von Radius 100, innerhalb seiner Zelle und abseits jedes anderen
+Strings.
+
+### Die Messwerte: MOTOR & ESC und SERVO
+
+![MOTOR & ESC, ARMED](img/de/dial-motor-armed.png)
+![MOTOR & ESC, SAFE](img/de/dial-motor-safe.png)
+![SERVO, ARMED](img/de/dial-servo-live.png)
+
+Sechs Messwerte in drei Reihen von zwei gleichen Zellen von 78 x 31px, die
+Spalten bei x 76 und 164, die Reihen bei y 100, 133 und 166, jede Zelle
+innerhalb von Radius 100. Eine Zelle enthält den Namen des Messwerts im Font
+8x16, gedimmt, darunter den Wert im Font 10x20 mit seiner Einheit im Font
+8x16, beide in der Farbe des Messwerts. Ein Messwert ohne sein Gültig-Bit
+zeigt `--`. Solange der Prüfstand SAFE ist, stehen die Werte in halber
+Stärke, und die erste Hinweiszeile lautet `ARM AM PANEL` in Gelb.
+
+| Face | Messwerte, in Reihenfolge | Hinweise bei ARMED |
+| --- | --- | --- |
+| MOTOR & ESC | Gas, Drehzahl, Spannung, Strom, Leistung, ESC-Temperatur | `DRÜCKEN: 0%`, `HALTEN: DISARM` |
+| SERVO | Soll-Winkel, gemessener Winkel, Puls, Spannung, Strom und Leistung der Schiene | `DRÜCKEN: ZENTRIEREN`, `HALTEN: DISARM` |
+
+Um die Zellen läuft je Messwert ein Ring, in der Reihenfolge des Rasters,
+der erste außen: Radius 118 nach innen im Abstand von 3px bis 103, 3px
+außerhalb des Kreises der Zellen. Ein Ring ist 1px breit und
+kantengeglättet: Das Pixel, dessen Mitte im Abstand d von der Mitte des
+Displays liegt, nimmt die Farbe des Rings mit der Deckung
+clamp(1 - |d - r|, 0, 1). Der Bogen läuft von 12 Uhr im Uhrzeigersinn über
+den Anteil des Messwerts an seinem Endwert; der Rest des Kreises ist die
+Spur, die Farbe des Messwerts zu 22% auf den Hintergrund gemischt. Die
+Endwerte kommen aus dem SCALE-Paket des Panels:
+
+| Messwert | Farbe | Endwert |
+| --- | --- | --- |
+| Gas | ACCENT | 100% |
+| Drehzahl | RPM | SCALE `rpm`: die Spitze des Laufs, sonst der Endwert des Plots |
+| Spannung | VOLT | SCALE `mv` |
+| Strom | CURR | SCALE `ca`, nach Betrag |
+| Leistung | POWER | SCALE `mv` x `ca` |
+| ESC-Temperatur | LILAC | 120°C |
+| Soll-Winkel | ACCENT | -`travel` bis +`travel`: die Mitte ist ein halber Ring |
+| gemessener Winkel | TEAL | -`travel` bis +`travel` |
+| Puls | LILAC | `us_min` bis `us_max` |
+| Spannung, Strom, Leistung der Schiene | VOLT, CURR, POWER | SCALE `rail_mv`, `rail_ca`, ihr Produkt |
+
+Ein Endwert von 0 oder kein SCALE seit dem Verbinden lässt seinen Ring bei
+der Spur; ebenso ein Messwert ohne sein Gültig-Bit.
+
+### Eine Liste und ein Wert
+
+![Eine Liste unter SETUP](img/de/dial-navigation.png)
+![Ein Wert wird eingestellt](img/de/dial-value-set.png)
+
+Eine Liste (NAV) zeigt die Zeile vor der fokussierten, die fokussierte Zeile
+im Font 20x36 zwischen den Eckklammern des Akzents, die Zeile danach und
+`4 / 9`. Bis zu 24 Zeilen erscheinen als Striche am Rand über 270°, der
+fokussierte im Akzent; eine längere Liste zeigt ihre Stelle als Ring bei
+Radius 112. Hinweise: `DRÜCKEN: ÖFFNEN`, `HALTEN: ZURÜCK`.
+
+Ein Wert (VALUE_META, VALUE) zeigt die Zahl im Ziffern-Font 32x44 mit ihrer
+Einheit, `0 BIS 60  SCHRITT 1`, den Wert beim Eintritt (`VORHER 5`) und
+einen Ring bei Radius 118 vom Minimum zum Maximum. Zahl und Bereich werden
+gelb, wenn das Panel die letzte Drehung an einer Grenze abgelehnt hat.
+Hinweise im SET-Modus: `DRÜCKEN: BEHALTEN`, `HALTEN: ZURÜCK`; davor:
+`DRÜCKEN: EINSTELLEN`, `HALTEN: ZURÜCK`.
+
+### Der Link und das Binden
+
+![LINK VERLOREN](img/de/dial-link-lost.png)
+![Warten auf das Panel](img/de/dial-waiting.png)
+![Ohne Panel](img/de/dial-bind.png)
+![Ein Bildschirm, auf dem der Knopf nichts tut](img/de/dial-other.png)
+
+500ms ohne Paket vom Panel, nachdem auf dieser Verbindung eines kam, zeigt
+das Face `LINK VERLOREN`, `DER PRÜFSTAND IST SAFE`, `ALLE AUSGÄNGE AUS` und
+`ARM AM PANEL` in einem gestrichelten roten Rand, der Titel gedimmt. Das
+Dial beendet den Link 500ms später, und dann ist der Prüfstand SAFE,
+entweder weil er es schon war oder weil das Panel ihn beim Verlust auf SAFE
+schaltet. Dazwischen, bis zu 500ms lang, erreicht eine Drehung noch ein
+Panel, dessen eigener Strom stockt. Verbunden ohne Paket vom Panel oder
+gebunden und nicht verbunden zeigt es `WARTE AUF DAS PANEL` und
+`DREHEN BEWEGT NICHTS`, mit dem Namen des Dial auf dem gedimmten Titel-Tag.
+Ohne gebundenes Panel zeigt es `OHNE PANEL`, seinen Namen und seine Adresse,
+wo es am Panel gebunden wird (`AM PANEL`, `SETUP > WIRELESS`,
+`SCAN, DIAL WÄHLEN`) und `BEREIT ZUM SCAN`. Auf einem Bildschirm, auf dem
+der Knopf nichts tut, und auf HOME ohne Listenzeilen zeigt es den Titel,
+SAFE oder ARMED und `DREHEN BEWEGT HIER NICHTS`.
+
+Die eigenen Worte der Faces folgen der Sprache des Panels, Englisch oder
+Deutsch, aus dem SCREEN-Paket; vor dem ersten SCREEN die letzte Sprache, die
+das Panel gab, nach einem Start Englisch. Es sind die Einträge
+`UI_DIAL_TEXT` in `shared/text/include/ui_text.def`.
+
+### Was eine Änderung kostet
+
+Die Face-Task zeichnet alle 50ms, was sich seit dem Frame davor geändert
+hat: eine Zelle, die Zeile der Pille, den Rumpf einer Liste oder eines
+Werts, die Hinweise, und von einem Ring nur die Pixel zwischen seinem alten
+und seinem neuen Ende. Jedes Neuzeichnen löscht nur innerhalb von Radius
+102, berührt also nie einen Ring, einen Strich oder den Rand; Ringe und
+Striche werden auf die Hintergrundfarbe gemalt, ein Neuzeichnen gleicht also
+dem ersten. `test_dial_face` hält das Zeichnen der Änderungen über Folgen
+jedes Face Pixel für Pixel gleich dem vollen Zeichnen desselben Modells. Ein
+Damage-Record sammelt die geschriebenen Rechtecke, höchstens 8, und nur sie
+gehen über SPI. Der ganze Frame geht bei einem Wechsel des Face und alle
+10.000ms.
+
+| Änderung | Gesendete Pixel | Bei 40MHz (gerechnet, nicht gemessen) |
+| --- | ---: | ---: |
+| Drehzahl um 300rpm: ihre Zelle und der Bogen ihres Rings | 3.920 | 1,6ms |
+| Gas um 1% | 3.968 | 1,6ms |
+| Laufuhr um 1s: die Zeile der Pille | 5.696 | 2,3ms |
+| fünf Messwerte auf einmal | 19.040 | 7,6ms |
+| der Fokus einer Liste um eine Zeile | 25.072 | 10,0ms |
+| der ganze Frame | 57.600 | 23,0ms |
+
+Die Ring-Tabellen enthalten jedes Pixel, das ein Ring berührt, nach Winkel
+sortiert: 8.344 Pixel für die sechs Ringe, je 3 Bytes, in 26.145 Bytes
+statischem RAM, beim Start aufgebaut. Ein volles Neuzeichnen eines Rings
+mischt etwa 1.490 Pixel, eine Bewegung um 1% einer Umdrehung bei Radius 118
+etwa 15. Beides ist auf dem Gerät nicht gemessen.
 
 ## Die Konsole
 
@@ -199,10 +333,15 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   Das Panel kennt die Adresse des Dial noch, verbindet sich wieder und
   abonniert, und das Dial bindet es erneut. Um ein anderes Panel zu binden,
   zuerst das Dial am alten Panel lösen.
-- Das Face ist ein Platzhalter; Zeichen außerhalb von ASCII und der
-  deutschen Buchstaben erscheinen als `?`.
+- Zeichen außerhalb von ASCII, des Gradzeichens und der deutschen
+  Buchstaben erscheinen als `?`.
 - Das Senden eines ganzen Frames dauert bei 40MHz etwa 23ms (gerechnet,
-  nicht gemessen).
+  nicht gemessen). Wie lange der Aufbau der Ring-Tabellen beim Start und das
+  Neuzeichnen eines Rings dauern, ist auf dem Gerät nicht gemessen.
+- SCALE zu senden ist Sache des Panels, ein späterer Schritt. Ohne SCALE
+  zeigt jeder Ring außer dem des Gases und dem der ESC-Temperatur nur seine
+  Spur.
+- Das Face eines Werts zeigt keine Kategorie: Kein Paket trägt eine.
 - Nichts in dieser Firmware ist auf dem Gerät gelaufen: Das Dial ist
   bestellt, nicht geliefert. Die Station misst die Latenz von der Drehung
   zum Ausgang mit dem Test-Build, sobald das Dial an ihrem USB hängt.

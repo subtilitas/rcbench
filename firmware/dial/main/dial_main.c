@@ -5,8 +5,10 @@
  *        console; then every 50ms the panel's packets, the face and STATUS.
  *
  * The face is drawn into one RGB565 frame of 240 x 240 pixels, 115,200
- * bytes in internal SRAM (the ESP32-S3FN8 has no PSRAM), and sent whole
- * when it changed, at most every 50ms (DIAL_FACE_MS), and once a second.
+ * bytes in internal SRAM (the ESP32-S3FN8 has no PSRAM), every 50ms
+ * (DIAL_FACE_MS): shared/dial draws what changed, and only the rectangles
+ * it wrote are sent.  The whole frame is drawn and sent again every
+ * 10,000ms, so a display that lost its contents shows the face again.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -25,8 +27,8 @@
 /** @brief How long the touch controller needs after the shared reset, ms;
  *         the FT5x06 family's start-up time, not measured on this part. */
 #define TOUCH_START_MS 300u
-/** @brief The face is sent at least this often, ms. */
-#define FACE_REFRESH_MS 1000u
+/** @brief The whole frame is drawn and sent at least this often, ms. */
+#define FACE_REFRESH_MS 10000u
 
 /** @brief The log's tag. */
 static const char *TAG = "dial";
@@ -34,6 +36,28 @@ static const char *TAG = "dial";
 static gfx_color_t s_fb[DIAL_LCD_SIZE * DIAL_LCD_SIZE];
 /** @brief The panel's model. */
 static dk_face_t s_face;
+
+/**
+ * @brief What the face shows besides the panel's model.
+ * @param v    the view to fill
+ * @param addr 20 bytes for the Dial's address
+ * @param now  the time
+ */
+static void view_read(dial_face_view_t *v, char *addr, uint32_t now)
+{
+    dial_supply_t sup;
+    char panel[20];
+    dial_supply_read(&sup);
+    dial_ble_addresses(addr, panel);
+    v->ready = dial_ble_ready();
+    v->bound = dial_ble_bound();
+    v->lost = dk_face_lost(&s_face, now);
+    v->name = dial_ble_name();
+    v->addr = addr;
+    v->rssi = dial_ble_rssi();
+    v->batt_mv = sup.known ? sup.mv : 0u;
+    v->usb = sup.usb;
+}
 
 /** @brief The ms clock, low 32 bits. @return ms since start */
 static uint32_t now_ms(void)
@@ -108,14 +132,15 @@ static void take_packets(uint32_t now)
 /** @brief The start, then the face task's loop; never returns. */
 void app_main(void)
 {
-    gfx_canvas_t canvas;
-    dial_view_t view;
-    dial_view_t shown;
+    dial_face_view_t view;
+    char addr[20];
     uint32_t links = 0;
     uint32_t drawn_ms = 0;
     uint32_t status_ms = 0;
     uint8_t status_seq = 0;
     bool status_lost = true;
+    bool was_lost = true;
+    bool was_ready = false;
     bool first = true;
     TickType_t wake;
 
@@ -124,11 +149,9 @@ void app_main(void)
 
     nvs_start();
     dial_buzz_init();
-    gfx_canvas_init(&canvas, s_fb, DIAL_LCD_SIZE, DIAL_LCD_SIZE, 0);
     dk_face_init(&s_face);
+    (void)dial_screen_init(s_fb);
     if (dial_lcd_init()) {
-        gfx_clear(&canvas, GFX_BLACK);
-        dial_lcd_flush(s_fb, 0, DIAL_LCD_SIZE);
         dial_lcd_backlight(100);
     }
     vTaskDelay(pdMS_TO_TICKS(TOUCH_START_MS));
@@ -139,7 +162,6 @@ void app_main(void)
     dial_input_start();
     dial_console_start();
 
-    memset(&shown, 0, sizeof shown);
     wake = xTaskGetTickCount();
     for (;;) {
         const uint32_t now = now_ms();
@@ -149,9 +171,7 @@ void app_main(void)
             dk_face_link_reset(&s_face);
         }
         take_packets(now);
-        view.ready = dial_ble_ready();
-        view.bound = dial_ble_bound();
-        view.lost = dk_face_lost(&s_face, now);
+        view_read(&view, addr, now);
         if (view.ready && dk_face_drop(&s_face, now)) {
             /* LINK LOST has held for 500ms: end the link, so the panel's
              * side is lost too and an ARMED bench goes SAFE.  No EVENT
@@ -161,17 +181,15 @@ void app_main(void)
             dial_ble_drop();
             view.ready = false;
         }
-        view.name = dial_ble_name();
-        if (view.lost && !shown.lost && shown.ready && !first) {
+        if (view.lost && !was_lost && was_ready && !first) {
             dial_buzz_tone(800, 80);    /* LINK LOST */
         }
-        if (first || s_face.changed != 0u || view.lost != shown.lost
-            || view.ready != shown.ready || view.bound != shown.bound
-            || now - drawn_ms >= FACE_REFRESH_MS) {
-            dial_screen_draw(&canvas, &s_face, &view);
-            dial_lcd_flush(s_fb, 0, DIAL_LCD_SIZE);
-            s_face.changed = 0;
-            shown = view;
+        const bool all = first || now - drawn_ms >= FACE_REFRESH_MS;
+        (void)dial_screen_show(&s_face, &view, all);
+        s_face.changed = 0;
+        was_lost = view.lost;
+        was_ready = view.ready;
+        if (all) {
             drawn_ms = now;
             first = false;
         }
