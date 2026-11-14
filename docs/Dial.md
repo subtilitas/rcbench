@@ -10,10 +10,10 @@ firmware (`firmware/dial`) and the protocol between it and the panel
 
 What exists: the protocol module with its host tests, and the Dial's
 firmware: the power latch, the encoder, the buttons, the touch glass, the
-click per detent, the display with a placeholder face, the BLE peripheral
-with its bound panel, and the USB console. What does not exist yet: the
-panel's side. No panel build connects to a Dial, so a Dial moves nothing on
-the bench. The final faces, the BLE update and pairing are later slices.
+click per detent, the faces on the display, the BLE peripheral with its
+bound panel, and the USB console. What does not exist yet: the panel's
+side. No panel build connects to a Dial, so a Dial moves nothing on the
+bench. The BLE update and pairing are later slices.
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products, and
 Bluetooth is a trademark of its owner. rcbench is independent: it is not
@@ -56,9 +56,10 @@ panel's side that applies them is a later slice:
   packet is DEGRADED, a notice. A connection that has sent no EVENT yet,
   while the panel discovers the service, is no loss.
 - The loss is the same in both directions. When the panel's packets stop,
-  the Dial shows LINK LOST after 500ms, and after 500ms more it ends the
-  link and sends nothing until it is connected again. The panel then sees
-  the disconnect, and an ARMED bench goes SAFE.
+  the Dial shows LINK LOST after 500ms and from then sends no EVENT, so the
+  panel sees LOST 1,000ms after the last EVENT and an ARMED bench goes
+  SAFE. After 500ms more the Dial ends the link and sends nothing until it
+  is connected again and the panel's first packet came.
 - The screen button while ARMED: a tap sets the throttle to 0% on MOTOR and
   CENTER on SERVO; a 1s hold DISARMs.
 
@@ -104,9 +105,11 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The released image is
-601,824 bytes, 19.1% of a slot. Its static RAM: 211,478 of 341,760 bytes of
-internal DRAM and IRAM, the frame of 115,200 bytes among them; the heap that
-NimBLE takes at run time is not measured.
+817,280 bytes, 26.0% of a slot; the seven fonts of the faces are 243,194
+bytes of it and the ring tables 25,032. Its static RAM: 212,822 of 341,760
+bytes of internal DRAM and IRAM, the frame of 115,200 bytes among them. The
+heap that NimBLE takes at run time is not measured; the log at start and
+`status` give the internal heap free and its lowest since the start.
 
 ## Bind
 
@@ -125,20 +128,167 @@ The 1s HOLD gesture goes to the panel on the way.
 There is no pairing and no encryption in protocol version 1: a device in
 range that connects first, or that spoofs the bound address, is taken.
 
-## The face
+## The faces
 
-The face in this firmware is a placeholder: a plain ring, the panel
-screen's title and the value the knob acts on as text (a setting's value
-with its unit, the throttle in %, the servo's pulse in us, the focused list
-row), and SAFE or ARMED. Without a bound panel it shows `NOT BOUND`, its
-name and `BIND ON THE PANEL`. 500ms without a packet from the panel it shows
-`LINK LOST`, `THE BENCH IS SAFE`, `ALL OUTPUTS OFF` and `ARM ON THE PANEL`:
-the Dial ends the link 500ms later, and the bench is SAFE then, either
-because it was SAFE already or because the panel switches it SAFE at the
-loss. Between the two, for up to 500ms, a turn still reaches a panel whose
-own stream stalled. Connected with no packet from the panel yet, or not
-connected, it shows `WAITING FOR THE PANEL` and `THE TURN MOVES NOTHING`.
-Its own words follow the panel's language, English or German.
+The display shows what the knob acts on. `shared/dial` draws each face from
+the panel's packets (SCREEN, NAV, VALUE_META, VALUE, LIVE_MOTOR, LIVE_SERVO,
+STATE and SCALE) and from the Dial's own state: bound or not, the link, its
+RSSI and its supply. It draws with the panel's rasteriser (`shared/gfx`),
+the panel's fonts and the dark palette of `shared/ui/ui_theme.c`, into one
+RGB565 frame of 240 x 240 pixels. The images on this page are that code's
+render on a computer, from the fixed models in `test/host/dial_models.h`;
+`tools/render_dial.py --check` holds them to the current render in CI.
+
+Every face has the same furniture:
+
+| Element | Where | What |
+| --- | --- | --- |
+| title tag | middle row 42, 20px tall | the panel screen's name in the 8x16 face on the accent; dimmed while the link is lost; a title wider than radius 101 allows is cut |
+| state pill | middle row 66, 19px tall | `SAFE`, or `ARMED` with the run clock (`0:42`, from 1h `1h05`) on MOTOR & ESC; in the 10x20 face, in the 8x16 face when the icons beside it would leave radius 101 |
+| link bars | 6px left of the pill | 4 bars, 3px wide: 4 at -60dBm or more, 3 at -70dBm, 2 at -80dBm, 1 below; amber while the panel marks the link DEGRADED; none while not connected |
+| battery | 6px right of the pill | 18 x 9px, filled from 3,300 to 4,200mV; a dash while the reading is unknown; `USB` in its place while the reading is unknown and a USB host reads the port, where the row has room |
+| press hints | middle rows 183 and 197, from row 176 down, below the bottom cells | what a press and a hold do here, in the 8x16 face |
+
+A line is drawn in the largest font of its chain in which its ink lies
+inside radius 100 of the display's center at its height, wrapped onto the
+lines its block allows. A line that fits in no font drops its last part,
+parts being two spaces apart, until the rest fits; a part with a digit is
+dropped whole, so no number is ever shown in part. `test_dial_fit` holds
+every string of every face, in English and in German and with every field
+at its ends, inside radius 100, inside its cell, inside the rows a repaint
+clears for it, out of every cell's clear rectangle but its own, and off
+every other string.
+
+### The readings: MOTOR & ESC and SERVO
+
+![MOTOR & ESC, ARMED](img/dial-motor-armed.png)
+![MOTOR & ESC, SAFE](img/dial-motor-safe.png)
+![SERVO, ARMED](img/dial-servo-live.png)
+
+Six readings in three rows of two equal cells of 78 x 31px, the columns at
+x 76 and 164, the rows at y 100, 133 and 166, every cell inside radius 100.
+A cell holds the reading's name in the 8x16 face, dimmed, and below it the
+value in the 10x20 face with its unit in the 8x16 face, both in the
+reading's colour. A reading without its valid bit shows `--`. While the
+bench is SAFE the values are drawn at half strength and the first hint line
+reads `ARM ON THE PANEL` in amber.
+
+| Face | Readings, in order | Hints while ARMED |
+| --- | --- | --- |
+| MOTOR & ESC | throttle, speed, voltage, current, power, ESC temperature | `PRESS: 0%`, `HOLD: DISARM` |
+| SERVO | commanded angle, measured angle, pulse, the rail's voltage, current and power | `PRESS: CENTER`, `HOLD: DISARM` |
+
+Around the cells runs one ring per reading, in the grid's order, the first
+outermost: radius 118 inward at a pitch of 3px to 103, 3px outside the
+cells' circle. A ring is 1px wide and antialiased: the pixel whose center
+lies at distance d from the display's center takes the ring's colour with
+coverage clamp(1 - |d - r|, 0, 1). The arc runs from 12 o'clock clockwise
+over the reading's share of its full scale; the rest of the circle is the
+track, the reading's colour mixed 22% onto the background. The full scales
+come from the panel's SCALE packet:
+
+| Reading | Colour | Full scale |
+| --- | --- | --- |
+| throttle | ACCENT | 100% |
+| speed | RPM | SCALE `rpm`: the run's peak, else the plot's full scale |
+| voltage | VOLT | SCALE `mv` |
+| current | CURR | SCALE `ca`, by magnitude |
+| power | POWER | SCALE `mv` x `ca` |
+| ESC temperature | LILAC | 120°C |
+| commanded angle | ACCENT | -`travel` to +`travel`: the center is half a ring |
+| measured angle | TEAL | -`travel` to +`travel` |
+| pulse | LILAC | `us_min` to `us_max` |
+| rail voltage, current, power | VOLT, CURR, POWER | SCALE `rail_mv`, `rail_ca`, their product |
+
+A full scale of 0, or no SCALE since the connect, leaves its ring at the
+track; so does a reading without its valid bit.
+
+### A list and a value
+
+![A list on SETUP](img/dial-navigation.png)
+![A value being set](img/dial-value-set.png)
+
+A list (NAV) shows the row before the focused one, the focused row in the
+20x36 face between the accent's corner brackets, the row after it, and
+`4 / 9`. Up to 24 rows show as ticks on the rim over 270°, the focused one
+in the accent; a longer list shows its place as a ring at radius 112.
+Hints: `PRESS: OPEN`, `HOLD: BACK`.
+
+A value (VALUE_META, VALUE) shows the number in the 32x44 numeral face with
+its unit, the range (`0 TO 60`), the step and the value on entry
+(`STEP 1  WAS 5`) and one ring at radius 118 from the minimum to the
+maximum. A range too wide for its line is left out; a step line too wide
+drops `WAS` first. The number and the range turn
+amber when the panel refused the last turn at a limit. Hints in SET mode:
+`PRESS: KEEP`, `HOLD: CANCEL`; before it: `PRESS: SET`, `HOLD: BACK`.
+
+### The link and the bind
+
+![LINK LOST, connected](img/dial-link-lost.png)
+![LINK LOST, the link ended](img/dial-link-ended.png)
+![Waiting for the panel](img/dial-waiting.png)
+![Not bound](img/dial-bind.png)
+![A screen the knob does nothing on](img/dial-other.png)
+
+500ms without a packet from the panel, after one came on this connection,
+the Dial sends no EVENT and no keepalive; the panel's clock counts from the
+last EVENT, so the panel sees DEGRADED 500ms and LOST 1,000ms after the
+last EVENT, and switches an ARMED bench SAFE at LOST. From that 500ms
+the face shows `LINK LOST`, `NO TURN IS SENT`, `THE BENCH GOES SAFE` and
+`ARM ON THE PANEL` inside a dashed red rim, the title dimmed. The Dial ends
+the link 500ms later; the face then shows `LINK LOST`,
+`THE BENCH IS SAFE`, `ALL OUTPUTS OFF` and `ARM ON THE PANEL`. Connected
+with no packet from the panel yet, or bound and not connected, it shows
+`WAITING FOR THE PANEL` and `THE TURN MOVES NOTHING`, with the Dial's name
+on the dimmed title tag; no EVENT goes until the panel's first packet.
+Packets without a SCREEN yet show `WAITING FOR THE PANEL` alone, with the
+pill from STATE when STATE came. Without a bound panel it
+shows `NOT BOUND`, its name and address, where to bind it on the panel
+(`ON THE PANEL`, `SETUP > WIRELESS`, `SCAN, TAP THE DIAL`) and
+`ADVERTISING`. On a screen the knob does nothing on, and on HOME without
+list rows, it shows the title, SAFE or ARMED and
+`THE TURN MOVES NOTHING HERE`.
+
+The faces' own words follow the panel's language, English or German, from
+the SCREEN packet; before the first SCREEN the last language the panel
+gave, English after a start. They are the `UI_DIAL_TEXT` entries of
+`shared/text/include/ui_text.def`.
+
+### What a change costs
+
+The face task draws every 50ms what changed since the frame before: a
+cell, the pill's row, the list or value body, the hints, and of a ring only
+the pixels between its old and its new end. Every repaint clears only
+inside radius 102, so it never touches a ring, a tick or the rim; the
+rings and the ticks are painted onto the background colour, so a repaint
+equals the first paint. `test_dial_face` holds a draw of what changed to a
+full draw of the same model, pixel for pixel, over sequences of every face.
+A damage record collects the rectangles written, at most 8, and only those
+go over SPI. The whole frame goes at a face change and every 10,000ms.
+
+| Change | Pixels sent | At 40MHz (arithmetic, not measured) |
+| --- | ---: | ---: |
+| speed by 300rpm: its cell and its ring's arc | 3,920 | 1.6ms |
+| throttle by 1% | 3,968 | 1.6ms |
+| the run clock by 1s: the pill's row | 5,696 | 2.3ms |
+| five readings at once | 19,040 | 7.6ms |
+| a list's focus by one row | 23,152 | 9.3ms |
+| the whole frame | 57,600 | 23.0ms |
+
+The ring tables hold every pixel a ring touches, sorted by angle: 8,344
+pixels for the six rings, 3 bytes each, 25,032 bytes of const data in
+flash. `tools/gen_dial_rings.py` computes them with the arithmetic of
+`gfx_ring_build()` and writes `shared/dial/dial_rings.c`; CI runs it with
+`--check`, and `test_dial_face` holds the file to `gfx_ring_build()`'s
+output pixel by pixel. A full repaint of one ring blends about 1,490
+pixels; a move by 1% of a turn at radius 118 about 15. Neither is measured
+on the device.
+
+The images come from the computer's math library. The ring tables and the
+fonts are the same bytes on the device, but a ring's end angle and the
+dashed rim are computed at run time with the device's math library, whose
+rounding can differ: the device's antialiasing may differ from the images
+by one coverage step.
 
 ## The console
 
@@ -147,7 +297,7 @@ prompt `dial>` and the log on the same port.
 
 | Command | What it does |
 | --- | --- |
-| `status` | name, address, firmware and protocol version, the bound panel, the link and its RSSI (received signal strength indication), the EVENT counts, the click setting, the battery reading |
+| `status` | name, address, firmware and protocol version, the bound panel, the link and its RSSI (received signal strength indication), the EVENT counts, the click setting, the battery reading, the internal heap free and its lowest since the start |
 | `sound on` / `sound off` | the click per detent; the panel's SCREEN packet sets it as well, default ON |
 | `forget` | forget the bound panel, as the 10s hold |
 | `help` | the commands |
@@ -188,10 +338,13 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
   holds the Dial's address, connects again and subscribes, and the Dial
   binds it again. To bind another panel, unbind the Dial on the old one
   first.
-- The face is a placeholder; characters outside ASCII and the German
-  letters draw as `?`.
+- Characters outside ASCII, the degree sign and the German letters draw as
+  `?`.
 - The flush of a whole frame takes about 23ms at 40MHz (arithmetic, not
-  measured).
+  measured). A ring's repaint is not measured on the device.
+- SCALE is the panel's to send, a later slice. Without it every ring but
+  the throttle's and the ESC temperature's shows its track only.
+- The value face shows no category: no packet carries one.
 - Nothing in this firmware has run on the device: the Dial is ordered, not
   delivered. The station measures the turn-to-output latency with the test
   build once the Dial is on its USB.

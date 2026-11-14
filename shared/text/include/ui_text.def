@@ -13,6 +13,7 @@
  *                                          UI_OPTION(en, de) each, in order
  *   UI_SERVO_TEXT(SERVO_STR_..., en, de)   the servo test's words and report
  *   UI_WEB_TEXT(P_..., en, de)             the panel's Wi-Fi page
+ *   UI_DIAL_TEXT(DIAL_..., en, de)         the M5Stack Dial's faces
  *
  * The English column comes first, then the German, each on a line of its
  * own.  NULL in a language's column shows the English.
@@ -21,7 +22,8 @@
  * this file defines the others as empty and undefines all of them at its
  * end.  ui_text.h makes the TX_ IDs, ui_text.c the lookup and every
  * language's tables, settings.c the settings' English, servo_str.c the
- * servo test's and wa_page.c the Wi-Fi page's.  docs/Language.md says how
+ * servo test's, wa_page.c the Wi-Fi page's and shared/dial's dial_text.c
+ * the Dial's.  docs/Language.md says how
  * to add a text and a language.
  *
  * cells is the width of the field a UI_TEXT string is drawn into, in cells
@@ -80,6 +82,9 @@
 #endif
 #ifndef UI_WEB_TEXT
 #define UI_WEB_TEXT(id, en, de)
+#endif
+#ifndef UI_DIAL_TEXT
+#define UI_DIAL_TEXT(id, en, de)
 #endif
 
 /* ================================================================ screens */
@@ -11976,6 +11981,116 @@ UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM_NONE_HITEC,
     "ENDE LINKS und ENDE RECHTS "
     "programmieren (keine Suche ausgeführt)")
 
+/* ================================================================== Dial
+ * The M5Stack Dial's faces (shared/dial).  A face draws a line in the
+ * largest of its fonts in which it fits inside radius 100 of the round
+ * display at the line's height, down to the 8x16 face; test_dial_fit holds
+ * every entry, in every language, inside that circle where it is drawn.
+ * The press hints are two lines at y 183 and 197, below the bottom row
+ * of cells: the first holds about 17 cells of the 8x16 face, the second
+ * 14.  SAFE, ARMED, DISARM, the screen
+ * names (SETUP > WIRELESS) and the units stay English and are written
+ * where they are drawn. */
+UI_DIAL_TEXT(DIAL_NOT_BOUND,
+    "NOT BOUND",
+    "OHNE PANEL")
+UI_DIAL_TEXT(DIAL_ON_THE_PANEL,
+    "ON THE PANEL",
+    "AM PANEL")
+UI_DIAL_TEXT(DIAL_SCAN_TAP,
+    "SCAN, TAP THE DIAL",
+    "SCAN, DIAL WÄHLEN")
+UI_DIAL_TEXT(DIAL_ADVERTISING,
+    "ADVERTISING",
+    "BEREIT ZUM SCAN")
+UI_DIAL_TEXT(DIAL_WAITING,
+    "WAITING FOR THE PANEL",
+    "WARTE AUF DAS PANEL")
+UI_DIAL_TEXT(DIAL_MOVES_NOTHING,
+    "THE TURN MOVES NOTHING",
+    "DREHEN BEWEGT NICHTS")
+UI_DIAL_TEXT(DIAL_LINK_LOST,
+    "LINK LOST",
+    "LINK VERLOREN")
+UI_DIAL_TEXT(DIAL_BENCH_SAFE,
+    "THE BENCH IS SAFE",
+    "DER PRÜFSTAND IST SAFE")
+UI_DIAL_TEXT(DIAL_NO_TURN_SENT,
+    "NO TURN IS SENT",
+    "KEINE DREHUNG GESENDET")
+UI_DIAL_TEXT(DIAL_BENCH_GOES_SAFE,
+    "THE BENCH GOES SAFE",
+    "PRÜFSTAND WIRD SAFE")
+UI_DIAL_TEXT(DIAL_OUTPUTS_OFF,
+    "ALL OUTPUTS OFF",
+    "ALLE AUSGÄNGE AUS")
+UI_DIAL_TEXT(DIAL_ARM_PANEL,
+    "ARM ON THE PANEL",
+    "ARM AM PANEL")
+UI_DIAL_TEXT(DIAL_NOTHING_HERE,
+    "THE TURN MOVES NOTHING HERE",
+    "DREHEN BEWEGT HIER NICHTS")
+UI_DIAL_TEXT(DIAL_EMPTY,
+    "EMPTY",
+    "LEER")
+UI_DIAL_TEXT(DIAL_PRESS_OPEN,
+    "PRESS: OPEN",
+    "DRÜCKEN: ÖFFNEN")
+UI_DIAL_TEXT(DIAL_HOLD_BACK,
+    "HOLD: BACK",
+    "HALTEN: ZURÜCK")
+UI_DIAL_TEXT(DIAL_PRESS_SET,
+    "PRESS: SET",
+    "DRÜCKEN: ÄNDERN")
+UI_DIAL_TEXT(DIAL_PRESS_KEEP,
+    "PRESS: KEEP",
+    "DRÜCKEN: BEHALTEN")
+UI_DIAL_TEXT(DIAL_HOLD_CANCEL,
+    "HOLD: CANCEL",
+    "HALTEN: ZURÜCK")
+UI_DIAL_TEXT(DIAL_PRESS_ZERO,
+    "PRESS: 0%",
+    "DRÜCKEN: 0%")
+UI_DIAL_TEXT(DIAL_PRESS_CENTER,
+    "PRESS: CENTER",
+    "DRÜCKEN: MITTE")
+UI_DIAL_TEXT(DIAL_HOLD_DISARM,
+    "HOLD: DISARM",
+    "HALTEN: DISARM")
+UI_DIAL_TEXT(DIAL_RANGE,
+    "%s TO %s",
+    "%s BIS %s")
+UI_DIAL_TEXT(DIAL_STEP_WAS,
+    "STEP %s  WAS %s",
+    "SCHRITT %s  VORHER %s")
+UI_DIAL_TEXT(DIAL_L_THROTTLE,
+    "THROTTLE",
+    "GAS")
+UI_DIAL_TEXT(DIAL_L_RPM,
+    "RPM",
+    "RPM")
+UI_DIAL_TEXT(DIAL_L_VOLT,
+    "VOLT",
+    "SPANN.")
+UI_DIAL_TEXT(DIAL_L_CURR,
+    "CURR",
+    "STROM")
+UI_DIAL_TEXT(DIAL_L_PWR,
+    "PWR",
+    "LEIST.")
+UI_DIAL_TEXT(DIAL_L_ESC,
+    "ESC",
+    "ESC")
+UI_DIAL_TEXT(DIAL_L_COMMANDED,
+    "COMMANDED",
+    "SOLL")
+UI_DIAL_TEXT(DIAL_L_MEASURED,
+    "MEASURED",
+    "GEMESSEN")
+UI_DIAL_TEXT(DIAL_L_PULSE,
+    "PULSE",
+    "PULS")
+
 #undef UI_TEXT
 #undef UI_SETTING_LABEL
 #undef UI_SETTING_HELP
@@ -11985,3 +12100,4 @@ UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM_NONE_HITEC,
 #undef UI_OPTIONS_END
 #undef UI_SERVO_TEXT
 #undef UI_WEB_TEXT
+#undef UI_DIAL_TEXT

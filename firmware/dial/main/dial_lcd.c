@@ -8,8 +8,10 @@
  * inversion on, the X axis mirrored.  The frame is RGB565 in the CPU's
  * byte order; the panel takes the high byte first, so each strip is copied
  * with its bytes swapped into a DMA-capable (direct memory access) bounce
- * buffer of 20 rows before it is sent.  A full frame is 115,200 bytes:
- * about 23ms on the wire at 40MHz (arithmetic, not measured).
+ * buffer of 4,800 pixels (20 full rows) before it is sent.  A full frame is
+ * 115,200 bytes: about 23ms on the wire at 40MHz (arithmetic, not
+ * measured).  A rectangle goes as its own window (CASET and RASET), as
+ * many of its rows a strip as the buffer holds.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -153,16 +155,27 @@ bool dial_lcd_init(void)
     return true;
 }
 
-void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
+void dial_lcd_flush_rect(const uint16_t *fb, int x, int y, int w, int h)
 {
     if (s_panel == NULL || fb == NULL) {
         return;
     }
-    if (y0 < 0) {
-        y0 = 0;
+    if (x < 0) {
+        w += x;
+        x = 0;
     }
-    if (y1 > DIAL_LCD_SIZE) {
-        y1 = DIAL_LCD_SIZE;
+    if (y < 0) {
+        h += y;
+        y = 0;
+    }
+    if (x + w > DIAL_LCD_SIZE) {
+        w = DIAL_LCD_SIZE - x;
+    }
+    if (y + h > DIAL_LCD_SIZE) {
+        h = DIAL_LCD_SIZE - y;
+    }
+    if (w <= 0 || h <= 0) {
+        return;
     }
     /* A strip of the flush before that timed out may still be on the
      * wire: s_strip is not written before its end is taken.  A late end
@@ -174,24 +187,33 @@ void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
         }
         s_busy = false;
     }
-    for (int y = y0; y < y1; y += LCD_STRIP) {
-        const int rows = (y1 - y < LCD_STRIP) ? y1 - y : LCD_STRIP;
-        const uint16_t *src = fb + (size_t)y * DIAL_LCD_SIZE;
-        const size_t n = (size_t)rows * DIAL_LCD_SIZE;
-        for (size_t i = 0; i < n; ++i) {
-            s_strip[i] = (uint16_t)((src[i] >> 8) | (src[i] << 8));
+    /* As many of the rectangle's rows as the bounce buffer holds. */
+    const int per = (DIAL_LCD_SIZE * LCD_STRIP) / w;
+    for (int row = y; row < y + h; row += per) {
+        const int rows = (y + h - row < per) ? y + h - row : per;
+        uint16_t *dst = s_strip;
+        for (int r = 0; r < rows; ++r) {
+            const uint16_t *src = fb + (size_t)(row + r) * DIAL_LCD_SIZE + x;
+            for (int i = 0; i < w; ++i) {
+                *dst++ = (uint16_t)((src[i] >> 8) | (src[i] << 8));
+            }
         }
-        if (esp_lcd_panel_draw_bitmap(s_panel, 0, y, DIAL_LCD_SIZE, y + rows,
+        if (esp_lcd_panel_draw_bitmap(s_panel, x, row, x + w, row + rows,
                                       s_strip) != ESP_OK) {
-            ESP_LOGW(TAG, "a strip at row %d was refused", y);
+            ESP_LOGW(TAG, "a strip at row %d was refused", row);
             return;
         }
         s_busy = true;
         if (xSemaphoreTake(s_done, pdMS_TO_TICKS(LCD_STRIP_TIMEOUT_MS))
             != pdTRUE) {
-            ESP_LOGW(TAG, "a strip at row %d did not go", y);
+            ESP_LOGW(TAG, "a strip at row %d did not go", row);
             return;     /* s_busy stays: the next flush waits for it */
         }
         s_busy = false;
     }
+}
+
+void dial_lcd_flush(const uint16_t *fb, int y0, int y1)
+{
+    dial_lcd_flush_rect(fb, 0, y0, DIAL_LCD_SIZE, y1 - y0);
 }
