@@ -20,8 +20,6 @@
 static gfx_color_t s_fb[DIAL_FACE_SIZE * DIAL_FACE_SIZE];
 /** @brief The renderer. */
 static dial_render_t s_r;
-/** @brief The ring tables' sort scratch. */
-static uint32_t s_keys[DIAL_RING_KEYS];
 
 /**
  * @brief Write the frame as a binary PPM.
@@ -69,8 +67,8 @@ int main(int argc, char **argv)
         fprintf(stderr, "render_dial: unknown face or language\n");
         return 1;
     }
-    if (!dial_render_init(&s_r, s_keys)) {
-        fprintf(stderr, "render_dial: the ring tables did not build\n");
+    if (!dial_render_init(&s_r)) {
+        fprintf(stderr, "render_dial: the renderer did not start\n");
         return 1;
     }
     s_r.lang = de ? DK_LANG_DE : DK_LANG_EN;

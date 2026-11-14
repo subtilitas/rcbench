@@ -11,17 +11,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include <stdlib.h>
 
 #include "dial.h"
 #include "gfx_damage.h"
 
-#include "esp_log.h"
-
-/** @brief The log's tag. */
-static const char *TAG = "face";
-/** @brief The renderer: the ring tables, 26,145 bytes, and the scene the
- *         frame holds. */
+/** @brief The renderer: the rings over their const tables and the scene
+ *         the frame holds. */
 static dial_render_t s_render;
 /** @brief The canvas over the frame. */
 static gfx_canvas_t s_canvas;
@@ -32,19 +27,10 @@ static gfx_color_t *s_fb;
 
 bool dial_screen_init(gfx_color_t *fb)
 {
-    uint32_t *keys = malloc(sizeof(uint32_t) * DIAL_RING_KEYS);
-    bool ok = false;
     s_fb = fb;
     gfx_canvas_init(&s_canvas, fb, DIAL_LCD_SIZE, DIAL_LCD_SIZE, 0);
     gfx_damage_init(&s_damage, &s_canvas);
-    if (keys != NULL) {
-        ok = dial_render_init(&s_render, keys);
-        free(keys);
-    }
-    if (!ok) {
-        ESP_LOGE(TAG, "the ring tables did not build");
-    }
-    return ok;
+    return dial_render_init(&s_render);
 }
 
 bool dial_screen_show(const dk_face_t *f, const dial_face_view_t *v,

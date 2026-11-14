@@ -23,6 +23,7 @@ typedef enum {
     DM_MOTOR_ARMED,
     DM_MOTOR_SAFE,
     DM_LINK_LOST,
+    DM_LINK_ENDED,
     DM_WAITING,
     DM_BIND,
     DM_OTHER,
@@ -32,7 +33,7 @@ typedef enum {
 /** @brief The models' names: the image files are dial-<name>.png. */
 static const char *const k_dial_model_name[DM_COUNT] = {
     "navigation", "value-set", "servo-live", "motor-armed", "motor-safe",
-    "link-lost", "waiting", "bind", "other",
+    "link-lost", "link-ended", "waiting", "bind", "other",
 };
 
 /** @brief A model and the view beside it. */
@@ -230,6 +231,13 @@ static inline void dial_model(dial_model_t *m, int id, uint8_t lang)
         dm_screen(m, DK_FACE_MOTOR, lang, "MOTOR & ESC");
         dm_state(m, DK_STA_ARMED);
         m->view.lost = true;
+        break;
+    case DM_LINK_ENDED:
+        /* LINK LOST held for 500ms: the Dial ended the link. */
+        dm_screen(m, DK_FACE_MOTOR, lang, "MOTOR & ESC");
+        dm_state(m, DK_STA_ARMED);
+        m->view.lost = true;
+        m->view.ready = false;
         break;
     case DM_WAITING:
         /* No panel packet yet: the language is the renderer's last. */

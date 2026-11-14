@@ -11986,8 +11986,9 @@ UI_SERVO_TEXT(SERVO_STR_L_R_MODE_PROGRAM_NONE_HITEC,
  * largest of its fonts in which it fits inside radius 100 of the round
  * display at the line's height, down to the 8x16 face; test_dial_fit holds
  * every entry, in every language, inside that circle where it is drawn.
- * The press hints are two lines at y 181 and 195: the first holds about
- * 19 cells of the 8x16 face, the second 14.  SAFE, ARMED, DISARM, the screen
+ * The press hints are two lines at y 183 and 197, below the bottom row
+ * of cells: the first holds about 17 cells of the 8x16 face, the second
+ * 14.  SAFE, ARMED, DISARM, the screen
  * names (SETUP > WIRELESS) and the units stay English and are written
  * where they are drawn. */
 UI_DIAL_TEXT(DIAL_NOT_BOUND,
@@ -12014,6 +12015,12 @@ UI_DIAL_TEXT(DIAL_LINK_LOST,
 UI_DIAL_TEXT(DIAL_BENCH_SAFE,
     "THE BENCH IS SAFE",
     "DER PRÜFSTAND IST SAFE")
+UI_DIAL_TEXT(DIAL_NO_TURN_SENT,
+    "NO TURN IS SENT",
+    "KEINE DREHUNG GESENDET")
+UI_DIAL_TEXT(DIAL_BENCH_GOES_SAFE,
+    "THE BENCH GOES SAFE",
+    "PRÜFSTAND WIRD SAFE")
 UI_DIAL_TEXT(DIAL_OUTPUTS_OFF,
     "ALL OUTPUTS OFF",
     "ALLE AUSGÄNGE AUS")
@@ -12034,7 +12041,7 @@ UI_DIAL_TEXT(DIAL_HOLD_BACK,
     "HALTEN: ZURÜCK")
 UI_DIAL_TEXT(DIAL_PRESS_SET,
     "PRESS: SET",
-    "DRÜCKEN: EINSTELLEN")
+    "DRÜCKEN: ÄNDERN")
 UI_DIAL_TEXT(DIAL_PRESS_KEEP,
     "PRESS: KEEP",
     "DRÜCKEN: BEHALTEN")
@@ -12046,16 +12053,16 @@ UI_DIAL_TEXT(DIAL_PRESS_ZERO,
     "DRÜCKEN: 0%")
 UI_DIAL_TEXT(DIAL_PRESS_CENTER,
     "PRESS: CENTER",
-    "DRÜCKEN: ZENTRIEREN")
+    "DRÜCKEN: MITTE")
 UI_DIAL_TEXT(DIAL_HOLD_DISARM,
     "HOLD: DISARM",
     "HALTEN: DISARM")
 UI_DIAL_TEXT(DIAL_RANGE,
-    "%s TO %s  STEP %s",
-    "%s BIS %s  SCHRITT %s")
-UI_DIAL_TEXT(DIAL_WAS,
-    "WAS %s",
-    "VORHER %s")
+    "%s TO %s",
+    "%s BIS %s")
+UI_DIAL_TEXT(DIAL_STEP_WAS,
+    "STEP %s  WAS %s",
+    "SCHRITT %s  VORHER %s")
 UI_DIAL_TEXT(DIAL_L_THROTTLE,
     "THROTTLE",
     "GAS")

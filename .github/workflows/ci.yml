@@ -179,6 +179,9 @@ jobs:
       - name: The checked-in fonts match their generator
         run: python3 tools/gen_font.py --check
 
+      - name: The checked-in Dial ring tables match their generator
+        run: python3 tools/gen_dial_rings.py --check
+
       # The board drawings the IOmcu serves are generated from the
       # configurator's panel drawing and checked in, so the firmware build
       # needs no Python and no Node.js.

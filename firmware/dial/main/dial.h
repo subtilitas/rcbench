@@ -169,6 +169,13 @@ bool dial_input_inject(uint8_t kind, int32_t arg, uint8_t x, uint8_t y);
 void dial_input_sound(bool on);
 /** @brief Whether the Dial clicks per detent. @return ON */
 bool dial_input_sound_on(void);
+/**
+ * @brief Tell the input task of the panel's packets: while
+ *        dk_link_lost() of them holds, it sends no EVENT and no keepalive.
+ * @param any     a panel packet came on this connection
+ * @param last_ms the last one's arrival, ms
+ */
+void dial_input_link(bool any, uint32_t last_ms);
 
 /** @brief What the input task last sent, for the console. */
 typedef struct {
@@ -249,10 +256,10 @@ void dial_console_start(void);
 /* --- dial_screen.c --------------------------------------------------- */
 
 /**
- * @brief Build the face renderer's ring tables and bind it to the frame.
+ * @brief Start the face renderer over its const ring tables and bind it to
+ *        the frame.
  * @param fb the frame, DIAL_LCD_SIZE x DIAL_LCD_SIZE RGB565 pixels
- * @return true when the tables were built; without them the faces still
- *         draw, the rings without their arcs
+ * @return true when the renderer started
  */
 bool dial_screen_init(gfx_color_t *fb);
 

@@ -17,6 +17,9 @@
  * pixels between a and b.
  *
  * The table's coordinates are bytes: a ring lies inside a 256 x 256 canvas.
+ * A pixel's distance is sqrt(dx * dx + dy * dy) with dx and dy in half
+ * pixels' steps, whose squares are exact, so a table built here equals one
+ * a generator computes with the same formula in IEEE doubles.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -49,7 +52,9 @@ typedef struct {
 
 /** @brief A ring's coverage table. */
 typedef struct {
-    gfx_ring_px_t *px; /**< the pixels, by angle, the caller's storage */
+    const gfx_ring_px_t *px; /**< the pixels, by angle: the caller's
+                                  storage, or a table generated as const
+                                  data (tools/gen_dial_rings.py) */
     uint16_t n;        /**< pixels in the table */
     int16_t  cx2;      /**< the center's column in half pixels: 239 is the
                             point between columns 119 and 120 */

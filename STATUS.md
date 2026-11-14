@@ -1152,13 +1152,18 @@ Built and host-tested: the knob protocol of the M5Stack Dial v1.1 over BLE
 and the link's DEGRADED and LOST timing (`test_dialknob_track`), and the
 Dial's model of its face (`test_dialknob_face`). Built and host-tested:
 the Dial's faces (`shared/dial`): the list, the value, MOTOR & ESC and
-SERVO with their six readings and rings, LINK LOST, waiting, bind and the
-screens the knob does nothing on, in English and German
-(`test_dial_face`, with a draw of what changed held to a full draw pixel
-for pixel; `test_dial_fit`, every string inside radius 100 and inside its
-cell), and the antialiased ring from a coverage table (`test_gfx_ring`,
-against a reference from the same formula); `tools/render_dial.py --check`
-holds the 18 committed images. Built, not run on the device: the Dial's
+SERVO with their six readings and rings, LINK LOST connected and after
+the link ended, waiting, bind and the screens the knob does nothing on, in
+English and German (`test_dial_face`, with a draw of what changed held to
+a full draw pixel for pixel; `test_dial_fit`, every string inside radius
+100, inside its cell and inside the rows a repaint clears for it, and no
+number shown in part), and the antialiased ring from a coverage table
+(`test_gfx_ring`, against a reference from the same formula; the Dial's
+six tables generated as const data by `tools/gen_dial_rings.py`, held to
+`gfx_ring_build()` by `test_dial_face`); `tools/render_dial.py --check`
+holds the 20 committed images. The Dial sends no EVENT while it shows LINK
+LOST (`dk_link_lost()`, `test_dialknob_face`). Built, not run on the
+device: the Dial's
 firmware (`firmware/dial`, ESP-IDF v6.1 for the ESP32-S3; CI's `dial.yml`)
 with the power latch, the encoder on PCNT, the buttons, the FT3267 touch
 glass, the click per detent, the GC9A01 display with the faces and its
@@ -2042,7 +2047,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-958 committed screenshots to the current render, 479 in English and the same 479 in German, and `render_ui.py --fit` fails on a string that
+960 committed screenshots to the current render, 480 in English and the same 480 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

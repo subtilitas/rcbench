@@ -52,7 +52,8 @@ static void take_screen(dk_face_t *f, const dk_screen_t *s)
         f->have_nav = 0u;
         f->have_meta = false;
         f->have_value = false;
-        f->changed |= DK_CH_NAV | DK_CH_META | DK_CH_VALUE;
+        f->have_scale = false;
+        f->changed |= DK_CH_NAV | DK_CH_META | DK_CH_VALUE | DK_CH_SCALE;
     }
     f->screen = *s;
     f->have_screen = true;
@@ -144,9 +145,14 @@ bool dk_face_feed(dk_face_t *f, const uint8_t *buf, size_t len,
     return true;
 }
 
+bool dk_link_lost(bool any, uint32_t last_ms, uint32_t now_ms)
+{
+    return !any || now_ms - last_ms >= DK_DIAL_LOST_MS;
+}
+
 bool dk_face_lost(const dk_face_t *f, uint32_t now_ms)
 {
-    return f == NULL || !f->any || now_ms - f->last_ms >= DK_DIAL_LOST_MS;
+    return f == NULL || dk_link_lost(f->any, f->last_ms, now_ms);
 }
 
 bool dk_face_drop(const dk_face_t *f, uint32_t now_ms)

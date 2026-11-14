@@ -56,9 +56,10 @@ panel's side that applies them is a later slice:
   packet is DEGRADED, a notice. A connection that has sent no EVENT yet,
   while the panel discovers the service, is no loss.
 - The loss is the same in both directions. When the panel's packets stop,
-  the Dial shows LINK LOST after 500ms, and after 500ms more it ends the
-  link and sends nothing until it is connected again. The panel then sees
-  the disconnect, and an ARMED bench goes SAFE.
+  the Dial shows LINK LOST after 500ms and from then sends no EVENT, so the
+  panel sees LOST 1,000ms after the last EVENT and an ARMED bench goes
+  SAFE. After 500ms more the Dial ends the link and sends nothing until it
+  is connected again and the panel's first packet came.
 - The screen button while ARMED: a tap sets the throttle to 0% on MOTOR and
   CENTER on SERVO; a 1s hold DISARMs.
 
@@ -104,10 +105,11 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The released image is
-792,400 bytes, 25.2% of a slot; the seven fonts of the faces are 243,194
-bytes of it. Its static RAM: 238,950 of 341,760 bytes of internal DRAM and
-IRAM, the frame of 115,200 bytes and the ring tables of 26,145 bytes among
-them; the heap that NimBLE takes at run time is not measured.
+817,280 bytes, 26.0% of a slot; the seven fonts of the faces are 243,194
+bytes of it and the ring tables 25,032. Its static RAM: 212,822 of 341,760
+bytes of internal DRAM and IRAM, the frame of 115,200 bytes among them. The
+heap that NimBLE takes at run time is not measured; the log at start and
+`status` give the internal heap free and its lowest since the start.
 
 ## Bind
 
@@ -145,13 +147,17 @@ Every face has the same furniture:
 | state pill | middle row 66, 19px tall | `SAFE`, or `ARMED` with the run clock (`0:42`, from 1h `1h05`) on MOTOR & ESC; in the 10x20 face, in the 8x16 face when the icons beside it would leave radius 101 |
 | link bars | 6px left of the pill | 4 bars, 3px wide: 4 at -60dBm or more, 3 at -70dBm, 2 at -80dBm, 1 below; amber while the panel marks the link DEGRADED; none while not connected |
 | battery | 6px right of the pill | 18 x 9px, filled from 3,300 to 4,200mV; a dash while the reading is unknown; `USB` in its place while the reading is unknown and a USB host reads the port, where the row has room |
-| press hints | middle rows 181 and 195 | what a press and a hold do here, in the 8x16 face |
+| press hints | middle rows 183 and 197, from row 176 down, below the bottom cells | what a press and a hold do here, in the 8x16 face |
 
 A line is drawn in the largest font of its chain in which its ink lies
 inside radius 100 of the display's center at its height, wrapped onto the
-lines its block allows. `test_dial_fit` holds every string of every face,
-in English and in German and with every field at its ends, inside radius
-100, inside its cell, and off every other string.
+lines its block allows. A line that fits in no font drops its last part,
+parts being two spaces apart, until the rest fits; a part with a digit is
+dropped whole, so no number is ever shown in part. `test_dial_fit` holds
+every string of every face, in English and in German and with every field
+at its ends, inside radius 100, inside its cell, inside the rows a repaint
+clears for it, out of every cell's clear rectangle but its own, and off
+every other string.
 
 ### The readings: MOTOR & ESC and SERVO
 
@@ -209,27 +215,34 @@ in the accent; a longer list shows its place as a ring at radius 112.
 Hints: `PRESS: OPEN`, `HOLD: BACK`.
 
 A value (VALUE_META, VALUE) shows the number in the 32x44 numeral face with
-its unit, `0 TO 60  STEP 1`, the value on entry (`WAS 5`) and one ring at
-radius 118 from the minimum to the maximum. The number and the range turn
+its unit, the range (`0 TO 60`), the step and the value on entry
+(`STEP 1  WAS 5`) and one ring at radius 118 from the minimum to the
+maximum. A range too wide for its line is left out; a step line too wide
+drops `WAS` first. The number and the range turn
 amber when the panel refused the last turn at a limit. Hints in SET mode:
 `PRESS: KEEP`, `HOLD: CANCEL`; before it: `PRESS: SET`, `HOLD: BACK`.
 
 ### The link and the bind
 
-![LINK LOST](img/dial-link-lost.png)
+![LINK LOST, connected](img/dial-link-lost.png)
+![LINK LOST, the link ended](img/dial-link-ended.png)
 ![Waiting for the panel](img/dial-waiting.png)
 ![Not bound](img/dial-bind.png)
 ![A screen the knob does nothing on](img/dial-other.png)
 
 500ms without a packet from the panel, after one came on this connection,
-the face shows `LINK LOST`, `THE BENCH IS SAFE`, `ALL OUTPUTS OFF` and
+the Dial sends no EVENT and no keepalive; the panel's clock counts from the
+last EVENT, so the panel sees DEGRADED 500ms and LOST 1,000ms after the
+last EVENT, and switches an ARMED bench SAFE at LOST. From that 500ms
+the face shows `LINK LOST`, `NO TURN IS SENT`, `THE BENCH GOES SAFE` and
 `ARM ON THE PANEL` inside a dashed red rim, the title dimmed. The Dial ends
-the link 500ms later, and the bench is SAFE then, either because it was
-SAFE already or because the panel switches it SAFE at the loss. Between the
-two, for up to 500ms, a turn still reaches a panel whose own stream
-stalled. Connected with no packet from the panel yet, or bound and not
-connected, it shows `WAITING FOR THE PANEL` and `THE TURN MOVES NOTHING`,
-with the Dial's name on the dimmed title tag. Without a bound panel it
+the link 500ms later; the face then shows `LINK LOST`,
+`THE BENCH IS SAFE`, `ALL OUTPUTS OFF` and `ARM ON THE PANEL`. Connected
+with no packet from the panel yet, or bound and not connected, it shows
+`WAITING FOR THE PANEL` and `THE TURN MOVES NOTHING`, with the Dial's name
+on the dimmed title tag; no EVENT goes until the panel's first packet.
+Packets without a SCREEN yet show `WAITING FOR THE PANEL` alone, with the
+pill from STATE when STATE came. Without a bound panel it
 shows `NOT BOUND`, its name and address, where to bind it on the panel
 (`ON THE PANEL`, `SETUP > WIRELESS`, `SCAN, TAP THE DIAL`) and
 `ADVERTISING`. On a screen the knob does nothing on, and on HOME without
@@ -259,14 +272,23 @@ go over SPI. The whole frame goes at a face change and every 10,000ms.
 | throttle by 1% | 3,968 | 1.6ms |
 | the run clock by 1s: the pill's row | 5,696 | 2.3ms |
 | five readings at once | 19,040 | 7.6ms |
-| a list's focus by one row | 25,072 | 10.0ms |
+| a list's focus by one row | 23,152 | 9.3ms |
 | the whole frame | 57,600 | 23.0ms |
 
 The ring tables hold every pixel a ring touches, sorted by angle: 8,344
-pixels for the six rings, 3 bytes each, in 26,145 bytes of static RAM,
-built at start. A full repaint of one ring blends about 1,490 pixels; a
-move by 1% of a turn at radius 118 about 15. Neither is measured on the
-device.
+pixels for the six rings, 3 bytes each, 25,032 bytes of const data in
+flash. `tools/gen_dial_rings.py` computes them with the arithmetic of
+`gfx_ring_build()` and writes `shared/dial/dial_rings.c`; CI runs it with
+`--check`, and `test_dial_face` holds the file to `gfx_ring_build()`'s
+output pixel by pixel. A full repaint of one ring blends about 1,490
+pixels; a move by 1% of a turn at radius 118 about 15. Neither is measured
+on the device.
+
+The images come from the computer's math library. The ring tables and the
+fonts are the same bytes on the device, but a ring's end angle and the
+dashed rim are computed at run time with the device's math library, whose
+rounding can differ: the device's antialiasing may differ from the images
+by one coverage step.
 
 ## The console
 
@@ -275,7 +297,7 @@ prompt `dial>` and the log on the same port.
 
 | Command | What it does |
 | --- | --- |
-| `status` | name, address, firmware and protocol version, the bound panel, the link and its RSSI (received signal strength indication), the EVENT counts, the click setting, the battery reading |
+| `status` | name, address, firmware and protocol version, the bound panel, the link and its RSSI (received signal strength indication), the EVENT counts, the click setting, the battery reading, the internal heap free and its lowest since the start |
 | `sound on` / `sound off` | the click per detent; the panel's SCREEN packet sets it as well, default ON |
 | `forget` | forget the bound panel, as the 10s hold |
 | `help` | the commands |
@@ -319,8 +341,7 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - Characters outside ASCII, the degree sign and the German letters draw as
   `?`.
 - The flush of a whole frame takes about 23ms at 40MHz (arithmetic, not
-  measured). How long the ring tables take to build at start, and a ring's
-  repaint, are not measured on the device.
+  measured). A ring's repaint is not measured on the device.
 - SCALE is the panel's to send, a later slice. Without it every ring but
   the throttle's and the ESC temperature's shows its track only.
 - The value face shows no category: no packet carries one.

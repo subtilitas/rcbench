@@ -499,6 +499,8 @@ DATA_ONLY = {
     "shared/gfx/gfx_font12x24.c",
     "shared/gfx/gfx_font20x36.c",
     "shared/gfx/gfx_font_num32x44.c",
+    # The Dial's ring tables written by tools/gen_dial_rings.py.
+    "shared/dial/dial_rings.c",
     # The cats' drawings written by tools/gen_cats.py.
     "shared/ui/ui_cats_art.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.

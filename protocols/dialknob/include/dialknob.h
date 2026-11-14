@@ -37,7 +37,8 @@ extern "C" {
 #endif
 
 /** @brief The protocol's version, carried in INFO.  A change of any packet
- *         layout or rule raises it. */
+ *         layout or rule raises it.  Protocol 1 is not final until the
+ *         first release that carries the Dial. */
 #define DK_PROTOCOL 1u
 /** @brief The longest packet in either direction, in bytes: one ATT
  *         (attribute protocol) payload at the default MTU of 23. */
@@ -698,7 +699,8 @@ void dk_face_link_reset(dk_face_t *f);
 /**
  * @brief Take one panel packet.
  *
- * A SCREEN whose face or title differs empties nav, meta and value.  A
+ * A SCREEN whose face or title differs empties nav, meta, value and
+ * scale, so a ring waits for the new screen's SCALE.  A
  * NAV whose index or count differs from the focused row empties the other
  * slots.
  *
@@ -711,7 +713,20 @@ void dk_face_link_reset(dk_face_t *f);
 bool dk_face_feed(dk_face_t *f, const uint8_t *buf, size_t len,
                   uint32_t now_ms);
 /**
- * @brief Whether the Dial shows LINK LOST.
+ * @brief Whether the Dial's side of the link is lost: no panel packet
+ *        since the connection, or none for DK_DIAL_LOST_MS.  While it is
+ *        lost the Dial shows LINK LOST and sends no EVENT, keepalives
+ *        included, so the panel's clock, which counts from the last EVENT,
+ *        runs out too.
+ * @param any     a panel packet came on this connection
+ * @param last_ms the last one's arrival time
+ * @param now_ms  the time
+ * @return true when lost
+ */
+bool dk_link_lost(bool any, uint32_t last_ms, uint32_t now_ms);
+/**
+ * @brief Whether the Dial shows LINK LOST: dk_link_lost() of the model's
+ *        last packet.
  * @param f      the model
  * @param now_ms the time
  * @return true when no packet came since the reset or none for

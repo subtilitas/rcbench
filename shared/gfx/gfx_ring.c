@@ -70,7 +70,9 @@ int gfx_ring_build(gfx_ring_t *ring, int cx2, int cy2, int r,
     const int y1 = (int)ceil(cy + (double)r + 1.0);
     for (int y = y0; y <= y1; ++y) {
         for (int x = x0; x <= x1; ++x) {
-            const double d = hypot((double)x - cx, (double)y - cy);
+            const double dx = (double)x - cx;
+            const double dy = (double)y - cy;
+            const double d = sqrt(dx * dx + dy * dy);
             const double cov = 1.0 - fabs(d - (double)r);
             if (cov <= 0.0) {
                 continue;

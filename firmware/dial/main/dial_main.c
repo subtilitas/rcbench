@@ -18,6 +18,7 @@
 #include "dial.h"
 
 #include "esp_app_desc.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 #include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
@@ -161,6 +162,9 @@ void app_main(void)
     dial_ble_start();
     dial_input_start();
     dial_console_start();
+    ESP_LOGI(TAG, "internal heap: %u bytes free, %u at the lowest",
+             (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+             (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL));
 
     wake = xTaskGetTickCount();
     for (;;) {
@@ -171,11 +175,13 @@ void app_main(void)
             dk_face_link_reset(&s_face);
         }
         take_packets(now);
+        dial_input_link(s_face.any, s_face.last_ms);
         view_read(&view, addr, now);
         if (view.ready && dk_face_drop(&s_face, now)) {
-            /* LINK LOST has held for 500ms: end the link, so the panel's
-             * side is lost too and an ARMED bench goes SAFE.  No EVENT
-             * goes until the next connect. */
+            /* LINK LOST has held for 500ms: end the link, so the panel
+             * sees the disconnect.  No EVENT has gone since LINK LOST
+             * (dial_input_link()), and none goes until the panel's first
+             * packet on the next connection. */
             ESP_LOGW(TAG, "no panel packet for %ums: the link ends",
                      (unsigned)DK_DIAL_DROP_MS);
             dial_ble_drop();

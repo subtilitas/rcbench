@@ -28,7 +28,6 @@ static gfx_color_t s_a[N];
 static gfx_color_t s_b[N];
 static dial_render_t s_ra;
 static dial_render_t s_rb;
-static uint32_t s_keys[DIAL_RING_KEYS];
 
 static gfx_color_t rgb(ui_color_id_t id)
 {
@@ -38,7 +37,7 @@ static gfx_color_t rgb(ui_color_id_t id)
 
 static void init(dial_render_t *r)
 {
-    CHECK(dial_render_init(r, s_keys));
+    CHECK(dial_render_init(r));
 }
 
 /** Render a model on a fresh renderer into s_b, in full. */
@@ -80,12 +79,45 @@ static void same(const dial_model_t *m, const char *what)
     }
 }
 
+/** The tables gfx_ring_build() makes, to hold the generated ones to. */
+static gfx_ring_px_t s_tab[GFX_RING_CAP(DIAL_RING_R0)];
+static uint32_t s_keys[GFX_RING_CAP(DIAL_RING_R0)];
+
+TEST_CASE(the_generated_ring_tables_are_what_gfx_ring_build_makes)
+{
+    int at = 0;
+    init(&s_ra);
+    for (int i = 0; i < DIAL_RINGS; ++i) {
+        gfx_ring_t g;
+        const int rad = dial_ring_radius(i);
+        const int n = gfx_ring_build(&g, DIAL_FACE_C2, DIAL_FACE_C2, rad,
+                                     s_tab, s_keys, GFX_RING_CAP(rad));
+        CHECK(n > 0);
+        CHECK_EQ(dial_ring_n[i], n);
+        CHECK_EQ(s_ra.ring[i].n, n);
+        CHECK_EQ(s_ra.ring[i].r, rad);
+        CHECK_EQ(s_ra.ring[i].cx2, DIAL_FACE_C2);
+        CHECK(s_ra.ring[i].px == &dial_ring_px[at]);
+        for (int k = 0; k < n; ++k) {
+            const gfx_ring_px_t *a = &dial_ring_px[at + k];
+            if (a->x != s_tab[k].x || a->y != s_tab[k].y
+                || a->cov != s_tab[k].cov) {
+                T_FAIL("ring %d entry %d: %u,%u,%u, built %u,%u,%u", i, k,
+                       a->x, a->y, a->cov, s_tab[k].x, s_tab[k].y,
+                       s_tab[k].cov);
+                return;
+            }
+        }
+        at += n;
+    }
+}
+
 TEST_CASE(every_fixed_model_shows_its_face)
 {
     static const uint8_t want[DM_COUNT] = {
         DIAL_FACE_NAV, DIAL_FACE_VALUE, DIAL_FACE_READING, DIAL_FACE_READING,
-        DIAL_FACE_READING, DIAL_FACE_LOST, DIAL_FACE_WAITING, DIAL_FACE_BIND,
-        DIAL_FACE_OTHER,
+        DIAL_FACE_READING, DIAL_FACE_LOST, DIAL_FACE_LOST, DIAL_FACE_WAITING,
+        DIAL_FACE_BIND, DIAL_FACE_OTHER,
     };
     dial_model_t m;
     dial_scene_t s;
@@ -113,16 +145,36 @@ TEST_CASE(the_link_decides_the_face_before_the_screen)
     dial_model_t m;
     dial_scene_t s;
     dial_model(&m, DM_MOTOR_ARMED, DK_LANG_EN);
-    /* Bound and connected, no packet for 500ms after one: LINK LOST. */
+    /* Bound and connected, no packet for 500ms after one: LINK LOST, and
+     * the Dial sends no EVENT, so the bench is on its way to SAFE. */
     m.view.lost = true;
     dial_scene_build(&s, &m.face, &m.view, DK_LANG_EN);
     CHECK_EQ(s.face, DIAL_FACE_LOST);
     CHECK(s.title_dim);
     CHECK_STR_EQ(s.title, "MOTOR & ESC");
     CHECK_STR_EQ(s.block[0].text, "LINK LOST");
+    CHECK_STR_EQ(s.block[1].text, "NO TURN IS SENT");
+    CHECK_STR_EQ(s.block[2].text, "THE BENCH GOES SAFE");
+    CHECK_STR_EQ(s.hint[0].text, "ARM ON THE PANEL");
+    dial_model(&m, DM_LINK_LOST, DK_LANG_DE);
+    dial_scene_build(&s, &m.face, &m.view, DK_LANG_DE);
+    CHECK_STR_EQ(s.block[0].text, "LINK VERLOREN");
+    CHECK_STR_EQ(s.block[1].text, "KEINE DREHUNG GESENDET");
+    CHECK_STR_EQ(s.block[2].text, "PRÜFSTAND WIRD SAFE");
+    CHECK_STR_EQ(s.hint[0].text, "ARM AM PANEL");
+    /* 500ms later the Dial ended the link: the panel has seen LOST. */
+    dial_model(&m, DM_LINK_ENDED, DK_LANG_EN);
+    dial_scene_build(&s, &m.face, &m.view, DK_LANG_EN);
+    CHECK_EQ(s.face, DIAL_FACE_LOST);
+    CHECK_STR_EQ(s.block[0].text, "LINK LOST");
     CHECK_STR_EQ(s.block[1].text, "THE BENCH IS SAFE");
     CHECK_STR_EQ(s.block[2].text, "ALL OUTPUTS OFF");
     CHECK_STR_EQ(s.hint[0].text, "ARM ON THE PANEL");
+    dial_model(&m, DM_LINK_ENDED, DK_LANG_DE);
+    dial_scene_build(&s, &m.face, &m.view, DK_LANG_DE);
+    CHECK_STR_EQ(s.block[1].text, "DER PRÜFSTAND IST SAFE");
+    CHECK_STR_EQ(s.block[2].text, "ALLE AUSGÄNGE AUS");
+    m.view.ready = true;
     /* No packet since the connect: waiting, and the turn moves nothing. */
     dk_face_link_reset(&m.face);
     dial_scene_build(&s, &m.face, &m.view, DK_LANG_DE);
@@ -130,6 +182,21 @@ TEST_CASE(the_link_decides_the_face_before_the_screen)
     CHECK_EQ(s.lang, DK_LANG_DE);
     CHECK_STR_EQ(s.block[0].text, "WARTE AUF DAS PANEL");
     CHECK_STR_EQ(s.block[1].text, "DREHEN BEWEGT NICHTS");
+    CHECK_EQ(s.pill, DIAL_PILL_NONE);
+    /* STATE came, no SCREEN yet: EVENTs go, so the turn's claim goes;
+     * the pill says what STATE says. */
+    m.view.lost = false;
+    CHECK(dm_state(&m, DK_STA_ARMED));
+    dial_scene_build(&s, &m.face, &m.view, DK_LANG_EN);
+    CHECK_EQ(s.face, DIAL_FACE_WAITING);
+    CHECK_STR_EQ(s.block[0].text, "WAITING FOR THE PANEL");
+    CHECK_STR_EQ(s.block[1].text, "");
+    CHECK_EQ(s.pill, DIAL_PILL_ARMED);
+    CHECK_STR_EQ(s.pill_text, "ARMED");
+    CHECK(dm_state(&m, 0));
+    dial_scene_build(&s, &m.face, &m.view, DK_LANG_EN);
+    CHECK_EQ(s.pill, DIAL_PILL_SAFE);
+    m.view.lost = true;
     /* Not bound and not connected: bind, whatever the model holds. */
     dial_model(&m, DM_MOTOR_ARMED, DK_LANG_EN);
     m.view.bound = false;
@@ -383,14 +450,14 @@ TEST_CASE(a_full_scale_not_known_leaves_the_ring_at_its_track)
     CHECK_STR_EQ(s.cell[5].value, "-20");
 }
 
-TEST_CASE(a_draw_of_what_changed_equals_a_full_draw)
+/** Walk every face's fields in one language, each step against a full
+ *  draw. */
+static void walk(uint8_t lang)
 {
     dial_model_t m;
-    init(&s_ra);
-    init(&s_rb);
     /* MOTOR: every reading moves, the clock ticks, the bench goes SAFE
      * and ARMED again, a reading loses its valid bit. */
-    dial_model(&m, DM_MOTOR_ARMED, DK_LANG_EN);
+    dial_model(&m, DM_MOTOR_ARMED, lang);
     same(&m, "motor first");
     for (int k = 0; k < 40; ++k) {
         const bool few = k % 7 == 3;
@@ -406,7 +473,7 @@ TEST_CASE(a_draw_of_what_changed_equals_a_full_draw)
         same(&m, "motor step");
     }
     /* SERVO on the same renderer: a new face. */
-    dial_model(&m, DM_SERVO_LIVE, DK_LANG_EN);
+    dial_model(&m, DM_SERVO_LIVE, lang);
     same(&m, "servo first");
     for (int k = 0; k < 30; ++k) {
         const bool meas = k % 5 != 0;
@@ -420,7 +487,7 @@ TEST_CASE(a_draw_of_what_changed_equals_a_full_draw)
         same(&m, "servo step");
     }
     /* A list: the focus walks, the count grows past the ticks' limit. */
-    dial_model(&m, DM_NAVIGATION, DK_LANG_EN);
+    dial_model(&m, DM_NAVIGATION, lang);
     same(&m, "nav first");
     for (int k = 0; k < 9; ++k) {
         dm_nav(&m, (uint8_t)k, 9, DK_SLOT_FOCUS, k % 2 ? "MOTOR" : "SERVO");
@@ -432,7 +499,7 @@ TEST_CASE(a_draw_of_what_changed_equals_a_full_draw)
         same(&m, "long list step");
     }
     /* A value: set, to its limit, and out of SET. */
-    dial_model(&m, DM_VALUE_SET, DK_LANG_EN);
+    dial_model(&m, DM_VALUE_SET, lang);
     same(&m, "value first");
     for (int k = 0; k <= 60; k += 7) {
         dk_value_t v = { m.seq++, k, 5, (uint8_t)(DK_VAL_SET
@@ -443,13 +510,42 @@ TEST_CASE(a_draw_of_what_changed_equals_a_full_draw)
         CHECK(dm_feed(&m, b, n));
         same(&m, "value step");
     }
+    /* A value whose range and step lines meet their widest numbers. */
+    CHECK(dm_value(&m, "\xC2\xB0", 1, -1000, 1000, 5, 125, 0, DK_VAL_SET));
+    same(&m, "value trim");
+    CHECK(dm_value(&m, "ms", 3, INT32_MIN, INT32_MAX, 1, -1, INT32_MIN, 0));
+    same(&m, "value int32 ends");
+}
+
+TEST_CASE(a_draw_of_what_changed_equals_a_full_draw)
+{
+    dial_model_t m;
+    init(&s_ra);
+    init(&s_rb);
+    walk(DK_LANG_EN);
+    walk(DK_LANG_DE);
+    /* German MOTOR & ESC, ARMED: only the power reading changes.  The
+     * cell's clear must leave the dots of DRÜCKEN on the hint below. */
+    dial_model(&m, DM_MOTOR_ARMED, DK_LANG_DE);
+    same(&m, "German motor");
+    dk_live_motor_t lm = m.face.motor;
+    lm.dw = (uint16_t)(lm.dw + 17u);
+    CHECK(dm_motor(&m, lm));
+    same(&m, "German power change");
     /* The language, the link, the bind. */
     dial_model(&m, DM_VALUE_SET, DK_LANG_DE);
     same(&m, "value German");
     m.view.lost = true;
     same(&m, "lost");
+    m.view.ready = false;
+    same(&m, "link ended");
+    m.view.ready = true;
     dk_face_link_reset(&m.face);
     same(&m, "waiting");
+    m.view.lost = false;
+    CHECK(dm_state(&m, DK_STA_ARMED));
+    same(&m, "waiting, STATE ARMED");
+    m.view.lost = true;
     m.view.bound = false;
     m.view.ready = false;
     same(&m, "bind");
@@ -568,6 +664,7 @@ TEST_CASE(the_dials_words_exist_in_both_languages_with_their_glyphs)
 
 int main(void)
 {
+    RUN(the_generated_ring_tables_are_what_gfx_ring_build_makes);
     RUN(every_fixed_model_shows_its_face);
     RUN(the_link_decides_the_face_before_the_screen);
     RUN(a_reading_without_its_valid_bit_shows_two_dashes_and_no_arc);

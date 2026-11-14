@@ -27,8 +27,9 @@
 #define BAND_PILL_Y0 56
 #define BAND_PILL_Y1 77  /**< the pill's row, last */
 #define BAND_BODY_Y0 78  /**< the body, first */
-#define BAND_BODY_Y1 176 /**< the body, last */
-#define BAND_HINT_Y0 177 /**< the hints, first */
+#define BAND_BODY_Y1 175 /**< the body, last: the bottom cells' last row */
+#define BAND_HINT_Y0 176 /**< the hints, first: an umlaut's dots on the
+                              first hint, at y 183, start here */
 #define BAND_HINT_Y1 206 /**< the hints, last */
 /** @} */
 /** @brief The title tag: middle row, height, padding and corner cut. @{ */
@@ -326,37 +327,75 @@ static bool wrap(laid_t *out, const gfx_font_t *f, const char *text, int y,
 }
 
 /**
- * @brief Lay a text block out: the largest font of its chain, then the
- *        fewest lines, in which every line fits; else the smallest font on
- *        one line, cut until it fits.
- * @param out the lines
- * @param b   the block
+ * @brief Lay a text out in a block's place: the largest font of its
+ *        chain, then the fewest lines, in which every line fits.
+ * @param out  the lines
+ * @param b    the block: its font, lines and row
+ * @param text the text
+ * @return true when it fits
  */
-static void lay(laid_t *out, const dial_block_t *b)
+static bool fit(laid_t *out, const dial_block_t *b, const char *text)
 {
     const int top = b->font > DIAL_FONT_BIG ? DIAL_FONT_BIG : b->font;
     const int most = b->lines < 1 ? 1 : b->lines > 3 ? 3 : b->lines;
     for (int f = top; f >= 0; --f) {
-        if (!holds(k_text[f], b->text)) {
+        if (!holds(k_text[f], text)) {
             continue;
         }
         for (int n = 1; n <= most; ++n) {
-            if (wrap(out, k_text[f], b->text, b->y, n)) {
-                return;
+            if (wrap(out, k_text[f], text, b->y, n)) {
+                return true;
             }
         }
     }
-    line_t *l = &out->line[0];
-    out->n = 1;
-    l->font = k_text[0];
-    dk_text_copy(l->text, sizeof l->text, b->text);
-    for (int cells = gfx_text_cells(b->text); cells > 0; --cells) {
-        l->text[gfx_text_prefix(b->text, cells)] = '\0';
-        if (place(l, b->y)) {
-            return;
+    return false;
+}
+
+/**
+ * @brief Lay a block out: its text whole if it fits (fit()); else without
+ *        its last parts, two spaces apart, one by one; else, when the one
+ *        part left holds no digit, cut by characters in the 8x16 face.  A
+ *        number is never shown in part: a part with a digit that does not
+ *        fit is dropped whole.
+ * @param out the lines; none when nothing fits
+ * @param b   the block
+ * @return true when the lines hold the whole text
+ */
+static bool lay(laid_t *out, const dial_block_t *b)
+{
+    char text[DIAL_TXT];
+    dk_text_copy(text, sizeof text, b->text);
+    if (fit(out, b, text)) {
+        return true;
+    }
+    for (;;) {
+        char *gap = NULL;
+        for (char *p = strstr(text, "  "); p != NULL; p = strstr(p + 1, "  ")) {
+            gap = p;
+        }
+        if (gap == NULL) {
+            break;
+        }
+        *gap = '\0';
+        if (fit(out, b, text)) {
+            return false;
         }
     }
-    l->text[0] = '\0';
+    line_t *l = &out->line[0];
+    out->n = 0;
+    if (strpbrk(text, "0123456789") != NULL) {
+        return false;
+    }
+    l->font = k_text[0];
+    dk_text_copy(l->text, sizeof l->text, text);
+    for (int cells = gfx_text_cells(text); cells > 0; --cells) {
+        l->text[gfx_text_prefix(text, cells)] = '\0';
+        if (place(l, b->y)) {
+            out->n = 1;
+            return false;
+        }
+    }
+    return false;
 }
 
 /**
@@ -366,16 +405,17 @@ static void lay(laid_t *out, const dial_block_t *b)
  * @param l    the line
  * @param fg   its colour
  * @param cell the grid cell, or -1
+ * @param band the band a partial draw clears for it
  */
 static void draw_line(dial_render_t *r, gfx_canvas_t *c, const line_t *l,
-                      gfx_color_t fg, int cell)
+                      gfx_color_t fg, int cell, dial_band_t band)
 {
     if (l->text[0] == '\0') {
         return;
     }
     gfx_text(c, l->x, l->y, l->text, l->font, fg, 1);
     if (r->seen != NULL) {
-        const dial_seen_t t = { l->text, l->font, l->x, l->y, cell };
+        const dial_seen_t t = { l->text, l->font, l->x, l->y, cell, band };
         r->seen(r->seen_ctx, &t);
     }
 }
@@ -550,13 +590,17 @@ static void draw_title(dial_render_t *r, gfx_canvas_t *c,
             break;
         }
     }
+    if (strcmp(l.text, s->title) != 0) {
+        ++r->shortened;
+    }
     w = gfx_text_width(l.font, l.text, 1) + TAG_PAD;
     gfx_fill_chamfer_rect_ex(c, MID - w / 2, TAG_Y - TAG_H / 2, w, TAG_H, 0,
                              TAG_CUT, 0, TAG_CUT,
                              col(s->title_dim ? UI_C_PANEL_HI : UI_C_ACCENT));
     (void)place(&l, TAG_Y + 1);
     draw_line(r, c, &l, col(s->title_dim ? UI_C_TEXT_DIM
-                                         : UI_C_TEXT_ON_LIGHT), -1);
+                                         : UI_C_TEXT_ON_LIGHT), -1,
+              DIAL_BAND_TITLE);
 }
 
 /** @brief Where the pill's row lies: the pill's columns and its font. */
@@ -625,7 +669,8 @@ static void draw_pill_row(dial_render_t *r, gfx_canvas_t *c,
         l.font = p.font;
         dk_text_copy(l.text, sizeof l.text, s->pill_text);
         (void)place(&l, PILL_Y);
-        draw_line(r, c, &l, col(armed ? UI_C_TEXT_ON_LIGHT : UI_C_TEXT), -1);
+        draw_line(r, c, &l, col(armed ? UI_C_TEXT_ON_LIGHT : UI_C_TEXT), -1,
+                  DIAL_BAND_PILL);
     }
     /* Four bars, 3px wide, 4, 7, 10 and 13px tall, ending 6px left of the
      * pill. */
@@ -644,7 +689,7 @@ static void draw_pill_row(dial_render_t *r, gfx_canvas_t *c,
         dk_text_copy(l.text, sizeof l.text, "USB");
         l.x = x;
         l.y = PILL_Y - metric(l.font)->mid;
-        draw_line(r, c, &l, col(icon), -1);
+        draw_line(r, c, &l, col(icon), -1, DIAL_BAND_PILL);
         return;
     }
     gfx_draw_round_rect(c, x, BATT_Y, BATT_W - 2, BATT_H, 2, col(icon));
@@ -669,6 +714,22 @@ gfx_rect_t dial_cell_rect(int i)
     }
     return gfx_rect_make(k_col[i % 2] - DIAL_CELL_W / 2, k_row[i / 2] - 21,
                          DIAL_CELL_W, DIAL_CELL_H);
+}
+
+bool dial_band_rows(dial_band_t band, int *y0, int *y1)
+{
+    static const int16_t rows[][2] = {
+        { 0, BAND_PILL_Y0 - 1 },
+        { BAND_PILL_Y0, BAND_PILL_Y1 },
+        { BAND_BODY_Y0, BAND_BODY_Y1 },
+        { BAND_HINT_Y0, BAND_HINT_Y1 },
+    };
+    if (y0 == NULL || y1 == NULL || (unsigned)band >= 4u) {
+        return false;
+    }
+    *y0 = rows[band][0];
+    *y1 = rows[band][1];
+    return true;
 }
 
 int dial_ring_radius(int i)
@@ -704,7 +765,7 @@ static void draw_cell(dial_render_t *r, gfx_canvas_t *c,
     dk_text_copy(l.text, sizeof l.text, e->label);
     l.x = cx - gfx_text_width(l.font, l.text, 1) / 2;
     l.y = cy - 17 - metric(l.font)->mid;
-    draw_line(r, c, &l, col(UI_C_TEXT_FAINT), i);
+    draw_line(r, c, &l, col(UI_C_TEXT_FAINT), i, DIAL_BAND_CELL);
 
     u.font = &gfx_font_8x16;
     dk_text_copy(u.text, sizeof u.text, e->unit);
@@ -720,8 +781,8 @@ static void draw_cell(dial_render_t *r, gfx_canvas_t *c,
     v.y = cy + 7 - metric(v.font)->base;
     u.x = v.x + gfx_text_width(v.font, v.text, 1) + 1;
     u.y = cy + 7 - metric(u.font)->base;
-    draw_line(r, c, &v, fg, i);
-    draw_line(r, c, &u, fg, i);
+    draw_line(r, c, &v, fg, i, DIAL_BAND_CELL);
+    draw_line(r, c, &u, fg, i, DIAL_BAND_CELL);
 }
 
 /**
@@ -730,9 +791,10 @@ static void draw_cell(dial_render_t *r, gfx_canvas_t *c,
  * @param r the renderer
  * @param c the canvas
  * @param b the block
+ * @param band its band
  */
 static void draw_number(dial_render_t *r, gfx_canvas_t *c,
-                        const dial_block_t *b)
+                        const dial_block_t *b, dial_band_t band)
 {
     static const gfx_font_t *const nums[] = {
         &gfx_font_num_32x44, &gfx_font_num_24x30, &gfx_font_16x28,
@@ -766,8 +828,8 @@ static void draw_number(dial_render_t *r, gfx_canvas_t *c,
         const bool fit_u = !dial_ink(u.font, u.text, u.x, u.y, &e)
                            || dial_box_inside(e, DIAL_R_TEXT);
         if (fit_n && fit_u) {
-            draw_line(r, c, &n, col(b->color), -1);
-            draw_line(r, c, &u, col(UI_C_TEXT_DIM), -1);
+            draw_line(r, c, &n, col(b->color), -1, band);
+            draw_line(r, c, &u, col(UI_C_TEXT_DIM), -1, band);
             return;
         }
     }
@@ -778,21 +840,24 @@ static void draw_number(dial_render_t *r, gfx_canvas_t *c,
  * @param r the renderer
  * @param c the canvas
  * @param b the block
+ * @param band DIAL_BAND_BODY or DIAL_BAND_HINT
  */
 static void draw_block(dial_render_t *r, gfx_canvas_t *c,
-                       const dial_block_t *b)
+                       const dial_block_t *b, dial_band_t band)
 {
     laid_t laid;
     if (b->text[0] == '\0') {
         return;
     }
     if (b->kind == DIAL_B_NUMBER) {
-        draw_number(r, c, b);
+        draw_number(r, c, b, band);
         return;
     }
-    lay(&laid, b);
+    if (!lay(&laid, b)) {
+        ++r->shortened;
+    }
     for (int i = 0; i < laid.n; ++i) {
-        draw_line(r, c, &laid.line[i], col(b->color), -1);
+        draw_line(r, c, &laid.line[i], col(b->color), -1, band);
     }
     if (b->kind == DIAL_B_FOCUS && laid.n > 0) {
         /* Corner brackets 12px clear of the text, 20 rows above and below
@@ -833,7 +898,7 @@ static void draw_body(dial_render_t *r, gfx_canvas_t *c,
         return;
     }
     for (int i = 0; i < DIAL_BLOCKS; ++i) {
-        draw_block(r, c, &s->block[i]);
+        draw_block(r, c, &s->block[i], DIAL_BAND_BODY);
     }
 }
 
@@ -857,8 +922,8 @@ static void draw_full(dial_render_t *r, gfx_canvas_t *c,
     draw_title(r, c, s);
     draw_pill_row(r, c, s);
     draw_body(r, c, s);
-    draw_block(r, c, &s->hint[0]);
-    draw_block(r, c, &s->hint[1]);
+    draw_block(r, c, &s->hint[0], DIAL_BAND_HINT);
+    draw_block(r, c, &s->hint[1], DIAL_BAND_HINT);
 }
 
 /** @brief Whether two scenes differ in what only a full draw redraws.
@@ -880,24 +945,24 @@ static bool pill_differs(const dial_scene_t *a, const dial_scene_t *b)
            || a->batt_pct != b->batt_pct || a->usb != b->usb;
 }
 
-bool dial_render_init(dial_render_t *r, uint32_t *keys)
+bool dial_render_init(dial_render_t *r)
 {
-    bool ok = true;
     int at = 0;
-    if (r == NULL || keys == NULL) {
+    if (r == NULL) {
         return false;
     }
     memset(r, 0, sizeof *r);
     for (int i = 0; i < DIAL_RINGS; ++i) {
-        const int rad = dial_ring_radius(i);
-        const int cap = GFX_RING_CAP(rad);
-        const int n = gfx_ring_build(&r->ring[i], DIAL_FACE_C2, DIAL_FACE_C2,
-                                     rad, &r->px[at], keys, cap);
-        ok = ok && n > 0;
-        at += cap;
+        gfx_ring_t *g = &r->ring[i];
+        g->px = &dial_ring_px[at];
+        g->n = dial_ring_n[i];
+        g->cx2 = DIAL_FACE_C2;
+        g->cy2 = DIAL_FACE_C2;
+        g->r = (int16_t)dial_ring_radius(i);
+        at += dial_ring_n[i];
     }
     r->lang = DK_LANG_EN;
-    return ok;
+    return true;
 }
 
 void dial_render_invalidate(dial_render_t *r)
@@ -947,8 +1012,8 @@ bool dial_render(dial_render_t *r, gfx_canvas_t *c, const dk_face_t *f,
     }
     if (memcmp(s.hint, o->hint, sizeof s.hint) != 0) {
         clear_disc(c, 0, BAND_HINT_Y0, DIAL_FACE_SIZE - 1, BAND_HINT_Y1);
-        draw_block(r, c, &s.hint[0]);
-        draw_block(r, c, &s.hint[1]);
+        draw_block(r, c, &s.hint[0], DIAL_BAND_HINT);
+        draw_block(r, c, &s.hint[1], DIAL_BAND_HINT);
         drew = true;
     }
     for (int i = 0; i < DIAL_RINGS; ++i) {

@@ -59,9 +59,11 @@ Seite des Panels, die sie anwendet, folgt in einem späteren Schritt:
   kein EVENT gesendet hat, während das Panel den Dienst sucht, ist kein
   Verlust.
 - Der Verlust gilt in beide Richtungen. Bleiben die Pakete des Panels aus,
-  zeigt das Dial nach 500ms LINK VERLOREN, beendet nach weiteren 500ms den
-  Link und sendet nichts mehr, bis es wieder verbunden ist. Das Panel sieht
-  dann den Disconnect, und ein Prüfstand im Zustand ARMED geht auf SAFE.
+  zeigt das Dial nach 500ms LINK VERLOREN und sendet ab dann kein EVENT
+  mehr. Das Panel sieht LOST 1.000ms nach dem letzten EVENT, und ein
+  Prüfstand im Zustand ARMED geht auf SAFE. Nach weiteren 500ms beendet das
+  Dial den Link und sendet nichts mehr, bis es wieder verbunden ist und das
+  erste Paket des Panels kam.
 - Die Bildschirmtaste im Zustand ARMED: Ein Tippen setzt das Gas auf MOTOR
   auf 0% und auf SERVO auf CENTER; ein Halten von 1s macht DISARM.
 
@@ -109,11 +111,12 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 Die Partitionstabelle (`firmware/dial/partitions.csv`) enthält den NVS, zwei
 Anwendungsslots von 3.072kB und ihre otadata. Das veröffentlichte Image hat
-792.400 Bytes, 25,2% eines Slots; die sieben Fonts der Faces sind 243.194
-Bytes davon. Sein statischer RAM: 238.950 von 341.760 Bytes internem DRAM
-und IRAM, darunter der Frame von 115.200 Bytes und die Ring-Tabellen von
-26.145 Bytes; den Heap, den NimBLE zur Laufzeit nimmt, hat niemand
-gemessen.
+817.280 Bytes, 26,0% eines Slots; die sieben Fonts der Faces sind 243.194
+Bytes davon und die Ring-Tabellen 25.032. Sein statischer RAM: 212.822 von
+341.760 Bytes internem DRAM und IRAM, darunter der Frame von 115.200 Bytes.
+Den Heap, den NimBLE zur Laufzeit nimmt, hat niemand gemessen; das Log beim
+Start und `status` nennen den freien internen Heap und seinen Tiefstwert
+seit dem Start.
 
 ## Binden
 
@@ -153,14 +156,18 @@ Jedes Face hat dieselbe Ausstattung:
 | Zustandspille | mittlere Zeile 66, 19px hoch | `SAFE`, oder `ARMED` mit der Laufuhr (`0:42`, ab 1h `1h05`) auf MOTOR & ESC; im Font 10x20, im Font 8x16, wenn die Symbole daneben Radius 101 verlassen würden |
 | Link-Balken | 6px links der Pille | 4 Balken, 3px breit: 4 ab -60dBm, 3 ab -70dBm, 2 ab -80dBm, darunter 1; gelb, solange das Panel den Link als DEGRADED markiert; keine ohne Verbindung |
 | Akku | 6px rechts der Pille | 18 x 9px, gefüllt von 3.300 bis 4.200mV; ein Strich, solange der Messwert unbekannt ist; `USB` an seiner Stelle, solange der Messwert unbekannt ist und ein USB-Host den Port liest, wo die Zeile Platz hat |
-| Hinweise | mittlere Zeilen 181 und 195 | was Drücken und Halten hier tun, im Font 8x16 |
+| Hinweise | mittlere Zeilen 183 und 197, ab Zeile 176, unter den unteren Zellen | was Drücken und Halten hier tun, im Font 8x16 |
 
 Eine Zeile steht im größten Font ihrer Kette, in dem ihre Tinte auf ihrer
 Höhe innerhalb von Radius 100 um die Mitte des Displays liegt, umbrochen auf
-die Zeilen, die ihr Block erlaubt. `test_dial_fit` hält jeden String jedes
-Face, auf Englisch und auf Deutsch und mit jedem Feld an seinen Enden,
-innerhalb von Radius 100, innerhalb seiner Zelle und abseits jedes anderen
-Strings.
+die Zeilen, die ihr Block erlaubt. Eine Zeile, die in keinen Font passt,
+verliert ihren letzten Teil, Teile stehen zwei Leerzeichen auseinander, bis
+der Rest passt; ein Teil mit einer Ziffer fällt ganz weg, so erscheint nie
+eine Zahl zum Teil. `test_dial_fit` hält jeden String jedes Face, auf
+Englisch und auf Deutsch und mit jedem Feld an seinen Enden, innerhalb von
+Radius 100, innerhalb seiner Zelle, innerhalb der Zeilen, die ein
+Neuzeichnen für ihn löscht, außerhalb des Löschrechtecks jeder fremden
+Zelle und abseits jedes anderen Strings.
 
 ### Die Messwerte: MOTOR & ESC und SERVO
 
@@ -179,7 +186,7 @@ Stärke, und die erste Hinweiszeile lautet `ARM AM PANEL` in Gelb.
 | Face | Messwerte, in Reihenfolge | Hinweise bei ARMED |
 | --- | --- | --- |
 | MOTOR & ESC | Gas, Drehzahl, Spannung, Strom, Leistung, ESC-Temperatur | `DRÜCKEN: 0%`, `HALTEN: DISARM` |
-| SERVO | Soll-Winkel, gemessener Winkel, Puls, Spannung, Strom und Leistung der Schiene | `DRÜCKEN: ZENTRIEREN`, `HALTEN: DISARM` |
+| SERVO | Soll-Winkel, gemessener Winkel, Puls, Spannung, Strom und Leistung der Schiene | `DRÜCKEN: MITTE`, `HALTEN: DISARM` |
 
 Um die Zellen läuft je Messwert ein Ring, in der Reihenfolge des Rasters,
 der erste außen: Radius 118 nach innen im Abstand von 3px bis 103, 3px
@@ -219,28 +226,36 @@ fokussierte im Akzent; eine längere Liste zeigt ihre Stelle als Ring bei
 Radius 112. Hinweise: `DRÜCKEN: ÖFFNEN`, `HALTEN: ZURÜCK`.
 
 Ein Wert (VALUE_META, VALUE) zeigt die Zahl im Ziffern-Font 32x44 mit ihrer
-Einheit, `0 BIS 60  SCHRITT 1`, den Wert beim Eintritt (`VORHER 5`) und
-einen Ring bei Radius 118 vom Minimum zum Maximum. Zahl und Bereich werden
+Einheit, den Bereich (`0 BIS 60`), den Schritt und den Wert beim Eintritt
+(`SCHRITT 1  VORHER 5`) und einen Ring bei Radius 118 vom Minimum zum
+Maximum. Ein Bereich, der zu breit für seine Zeile ist, fällt weg; eine zu
+breite Schrittzeile verliert zuerst `VORHER`. Zahl und Bereich werden
 gelb, wenn das Panel die letzte Drehung an einer Grenze abgelehnt hat.
 Hinweise im SET-Modus: `DRÜCKEN: BEHALTEN`, `HALTEN: ZURÜCK`; davor:
-`DRÜCKEN: EINSTELLEN`, `HALTEN: ZURÜCK`.
+`DRÜCKEN: ÄNDERN`, `HALTEN: ZURÜCK`.
 
 ### Der Link und das Binden
 
-![LINK VERLOREN](img/de/dial-link-lost.png)
+![LINK VERLOREN, verbunden](img/de/dial-link-lost.png)
+![LINK VERLOREN, der Link ist beendet](img/de/dial-link-ended.png)
 ![Warten auf das Panel](img/de/dial-waiting.png)
 ![Ohne Panel](img/de/dial-bind.png)
 ![Ein Bildschirm, auf dem der Knopf nichts tut](img/de/dial-other.png)
 
-500ms ohne Paket vom Panel, nachdem auf dieser Verbindung eines kam, zeigt
-das Face `LINK VERLOREN`, `DER PRÜFSTAND IST SAFE`, `ALLE AUSGÄNGE AUS` und
-`ARM AM PANEL` in einem gestrichelten roten Rand, der Titel gedimmt. Das
-Dial beendet den Link 500ms später, und dann ist der Prüfstand SAFE,
-entweder weil er es schon war oder weil das Panel ihn beim Verlust auf SAFE
-schaltet. Dazwischen, bis zu 500ms lang, erreicht eine Drehung noch ein
-Panel, dessen eigener Strom stockt. Verbunden ohne Paket vom Panel oder
-gebunden und nicht verbunden zeigt es `WARTE AUF DAS PANEL` und
-`DREHEN BEWEGT NICHTS`, mit dem Namen des Dial auf dem gedimmten Titel-Tag.
+500ms ohne Paket vom Panel, nachdem auf dieser Verbindung eines kam, sendet
+das Dial kein EVENT und kein Keepalive mehr. Die Uhr des Panels zählt ab dem
+letzten EVENT: Das Panel sieht DEGRADED 500ms und LOST 1.000ms nach dem
+letzten EVENT und schaltet einen Prüfstand im Zustand ARMED bei LOST auf
+SAFE. Ab diesen 500ms zeigt das Face `LINK VERLOREN`,
+`KEINE DREHUNG GESENDET`, `PRÜFSTAND WIRD SAFE` und `ARM AM PANEL` in
+einem gestrichelten roten Rand, der Titel gedimmt. Das Dial beendet den
+Link 500ms später; dann zeigt das Face `LINK VERLOREN`,
+`DER PRÜFSTAND IST SAFE`, `ALLE AUSGÄNGE AUS` und `ARM AM PANEL`. Verbunden
+ohne Paket vom Panel oder gebunden und nicht verbunden zeigt es
+`WARTE AUF DAS PANEL` und `DREHEN BEWEGT NICHTS`, mit dem Namen des Dial auf
+dem gedimmten Titel-Tag; bis zum ersten Paket des Panels geht kein EVENT.
+Pakete ohne SCREEN zeigen `WARTE AUF DAS PANEL` allein, mit der Pille aus
+STATE, wenn STATE kam.
 Ohne gebundenes Panel zeigt es `OHNE PANEL`, seinen Namen und seine Adresse,
 wo es am Panel gebunden wird (`AM PANEL`, `SETUP > WIRELESS`,
 `SCAN, DIAL WÄHLEN`) und `BEREIT ZUM SCAN`. Auf einem Bildschirm, auf dem
@@ -272,14 +287,23 @@ gehen über SPI. Der ganze Frame geht bei einem Wechsel des Face und alle
 | Gas um 1% | 3.968 | 1,6ms |
 | Laufuhr um 1s: die Zeile der Pille | 5.696 | 2,3ms |
 | fünf Messwerte auf einmal | 19.040 | 7,6ms |
-| der Fokus einer Liste um eine Zeile | 25.072 | 10,0ms |
+| der Fokus einer Liste um eine Zeile | 23.152 | 9,3ms |
 | der ganze Frame | 57.600 | 23,0ms |
 
 Die Ring-Tabellen enthalten jedes Pixel, das ein Ring berührt, nach Winkel
-sortiert: 8.344 Pixel für die sechs Ringe, je 3 Bytes, in 26.145 Bytes
-statischem RAM, beim Start aufgebaut. Ein volles Neuzeichnen eines Rings
-mischt etwa 1.490 Pixel, eine Bewegung um 1% einer Umdrehung bei Radius 118
-etwa 15. Beides ist auf dem Gerät nicht gemessen.
+sortiert: 8.344 Pixel für die sechs Ringe, je 3 Bytes, 25.032 Bytes
+konstante Daten im Flash. `tools/gen_dial_rings.py` rechnet sie mit der
+Arithmetik von `gfx_ring_build()` und schreibt `shared/dial/dial_rings.c`;
+CI ruft es mit `--check` auf, und `test_dial_face` hält die Datei Pixel für
+Pixel gleich der Ausgabe von `gfx_ring_build()`. Ein volles Neuzeichnen
+eines Rings mischt etwa 1.490 Pixel, eine Bewegung um 1% einer Umdrehung bei
+Radius 118 etwa 15. Beides ist auf dem Gerät nicht gemessen.
+
+Die Bilder stammen aus der Mathematik-Bibliothek des Rechners. Ring-Tabellen
+und Fonts sind auf dem Gerät dieselben Bytes, aber den Endwinkel eines Rings
+und den gestrichelten Rand rechnet das Gerät zur Laufzeit mit seiner eigenen
+Mathematik-Bibliothek, die anders runden kann: Das Antialiasing auf dem
+Gerät kann von den Bildern um eine Deckungsstufe abweichen.
 
 ## Die Konsole
 
@@ -288,7 +312,7 @@ Die Konsole ist der USB-Serial/JTAG-Port der USB-C-Buchse, mit dem Prompt
 
 | Befehl | Was er tut |
 | --- | --- |
-| `status` | Name, Adresse, Firmware- und Protokollversion, das gebundene Panel, der Link und sein RSSI (Received Signal Strength Indication), die EVENT-Zähler, die Klick-Einstellung, der Akkuwert |
+| `status` | Name, Adresse, Firmware- und Protokollversion, das gebundene Panel, der Link und sein RSSI (Received Signal Strength Indication), die EVENT-Zähler, die Klick-Einstellung, der Akkuwert, der freie interne Heap und sein Tiefstwert seit dem Start |
 | `sound on` / `sound off` | der Klick pro Rastung; das SCREEN-Paket des Panels setzt ihn ebenfalls, Standard ON |
 | `forget` | das gebundene Panel vergessen, wie das Halten von 10s |
 | `help` | die Befehle |
@@ -336,8 +360,8 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 - Zeichen außerhalb von ASCII, des Gradzeichens und der deutschen
   Buchstaben erscheinen als `?`.
 - Das Senden eines ganzen Frames dauert bei 40MHz etwa 23ms (gerechnet,
-  nicht gemessen). Wie lange der Aufbau der Ring-Tabellen beim Start und das
-  Neuzeichnen eines Rings dauern, ist auf dem Gerät nicht gemessen.
+  nicht gemessen). Das Neuzeichnen eines Rings ist auf dem Gerät nicht
+  gemessen.
 - SCALE zu senden ist Sache des Panels, ein späterer Schritt. Ohne SCALE
   zeigt jeder Ring außer dem des Gases und dem der ESC-Temperatur nur seine
   Spur.
