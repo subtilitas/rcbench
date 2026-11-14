@@ -89,7 +89,7 @@ settings-sim                 3,374     422 KiB
 battery-sim                  3,300     412 KiB
 analyser-chrome             53,472    6684 KiB
 logs-chrome                 28,260    3532 KiB
-settings-chrome             33,886    4236 KiB
+settings-chrome             35,719    4465 KiB
 settings-list-chrome        37,319    4665 KiB
 battery-chrome              54,643    6830 KiB
 balance-chrome              57,992    7249 KiB
@@ -447,7 +447,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `mdns` | `mdns_task`, der mDNS-Responder (Multicast Domain Name System), solange das Panel mit einem Heimnetz verbunden ist | 4 096 | 1 440 | 1 616 |
 | `wifi_get` | `fetch_task`, eine Release-Suche oder ein Download von GitHub (`components/wifi_access`) | 8 192 | 1 568 | 5 584 |
 | `cardjob` | `files_task`, die Kartenoperationen von FILES (`panel_files.c`) | 6 656 | 2 064 | 3 552 |
-| `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 216 | 1 840 |
+| `c6upd` | `c6_task`, das Update des C6-Funks, ein Schritt nach dem anderen (`panel_c6.c`) | 4 096 | 1 248 | 1 808 |
 | `shot` | `shot_task`, ein Screenshot-Auftrag, dann weg (`panel_shot.c`) | 7 168 | 2 432 | 3 696 |
 
 Der HTTP-Server (Hypertext Transfer Protocol) der Seite läuft in einem Task
