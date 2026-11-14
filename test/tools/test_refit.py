@@ -21,6 +21,7 @@ sys.path.insert(0, str(ROOT / "hardware" / "mechanical"))
 sys.path.insert(0, str(ROOT / "hardware" / "kicad" / "tools"))
 import _refit  # noqa: E402
 import _stl  # noqa: E402
+import _surface  # noqa: E402
 import m5dial  # noqa: E402
 import step_gen  # noqa: E402
 
@@ -208,8 +209,8 @@ def test_prism_with_eight_sides_stays_flat():
 
 def test_helix_pieces_follow_the_helix():
     """Cubic pieces of 15 degrees stay within 0.02um of the helix."""
-    frame = _refit.Frame((0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0),
-                         False)
+    frame = _surface.Frame((0.0, 0.0, 0.0), (0.0, 0.0, 1.0),
+                           (1.0, 0.0, 0.0), False)
     points, pieces = _refit._helix_points(frame, 22.0, 1.0, 2.6, 0.3,
                                           0.3 + math.radians(40))
     assert pieces == 3 and len(points) == 10
@@ -254,5 +255,5 @@ def test_dial_parts_have_their_surfaces():
         assert ("helicoid" in report) == (name in ("body", "nut")), name
     assert fitted["seat_ring"][3].keys() == {"cylinder", "plane"}
     assert len(fitted["seat_ring"][2]) == 4
-    assert _refit._pitches(_refit._Part(*parts["body"]), _refit.Frame(
+    assert _surface._pitches(_surface._Part(*parts["body"]), _surface.Frame(
         (0.0, 0.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0), False)) == [2.6]

@@ -12,6 +12,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
 | `_refit.py` | fits planes, cylinders, cones, tori and a thread's surfaces to a mesh part |
+| `_surface.py`, `_segment.py` | the surfaces and their fits, and the faces grown on them, for `_refit.py` |
 | `check_refit.py` | holds the dial's solids, read back with OpenCASCADE, against the mesh |
 | `models/` | the generated STEP files |
 | `renders/` | OpenCASCADE renders of the models and the contact sheet `all.png` |
