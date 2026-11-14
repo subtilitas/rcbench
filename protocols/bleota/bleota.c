@@ -9,6 +9,9 @@
 
 #include <string.h>
 
+_Static_assert(sizeof(bleota_role_t) == BLEOTA_ROLE_LEN,
+               "bleota_role_t is the role's 8 bytes on flash");
+
 /** @brief The service's UUID, least significant byte first. */
 const uint8_t bleota_uuid_svc[16]  = { BLEOTA_UUID_LE(BLEOTA_UUID_SVC) };
 /** @brief CTRL's UUID, least significant byte first. */
@@ -161,6 +164,9 @@ bool bleota_status_decode(const uint8_t *b, size_t n, bleota_status_t *out)
     if (out->ev == BLEOTA_EV_FAIL && out->code > BLEOTA_E_MAX) {
         return false;
     }
+    if (out->ev == BLEOTA_EV_CREDIT && out->code > BLEOTA_CREDIT_GAP) {
+        return false;
+    }
     return out->ev != BLEOTA_EV_CREDIT || out->limit >= out->next;
 }
 
@@ -189,4 +195,21 @@ bool bleota_chunk_decode(const uint8_t *b, size_t n, uint32_t *off,
     *data = b + BLEOTA_CHUNK_HDR;
     *len = (uint16_t)(n - BLEOTA_CHUNK_HDR);
     return true;
+}
+
+uint8_t bleota_head_check(const uint8_t *b, size_t n, uint16_t chip,
+                          uint8_t kind)
+{
+    if (b == NULL || n < BLEOTA_HEAD_LEN || b[0] != BLEOTA_IMG_MAGIC
+        || b[1] == 0u || get32(b + BLEOTA_HEAD_DESC) != BLEOTA_DESC_MAGIC) {
+        return BLEOTA_E_IMAGE;
+    }
+    if (get16(b + BLEOTA_HEAD_CHIP) != chip) {
+        return BLEOTA_E_KIND;
+    }
+    const uint8_t *r = b + BLEOTA_HEAD_ROLE;
+    if (get32(r) != BLEOTA_ROLE_MAGIC || r[5] != BLEOTA_PROTO) {
+        return BLEOTA_E_IMAGE;
+    }
+    return r[4] == kind ? (uint8_t)BLEOTA_OK : (uint8_t)BLEOTA_E_KIND;
 }

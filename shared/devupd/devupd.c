@@ -135,7 +135,10 @@ void devupd_link(devupd_t *e, bool up, uint16_t mtu, uint32_t now)
     e->ctrl_busy = false;
     if (e->phase == DEVUPD_RESTART) {
         go(e, DEVUPD_DONE, now);
-    } else if (e->phase >= DEVUPD_BEGIN && e->phase <= DEVUPD_END) {
+    } else if (e->phase == DEVUPD_END) {
+        /* The device may be installing: the result is not known. */
+        fail(e, DEVUPD_E_UNSURE, 0u, now);
+    } else if (e->phase >= DEVUPD_BEGIN && e->phase <= DEVUPD_SEND) {
         fail(e, DEVUPD_E_LOST, 0u, now);
     }
 }
@@ -152,8 +155,12 @@ void devupd_written(devupd_t *e, uint16_t status, uint32_t now)
 }
 
 /**
- * @brief A CREDIT: the device's next offset and limit.  A next behind what
- *        was sent rewinds to it.
+ * @brief A CREDIT: the device's next offset and limit.
+ *
+ * A routine CREDIT's next lies behind what was sent by whatever is in
+ * flight, so it moves nothing back.  The sending goes back to next only
+ * when the device marks bytes as lost (BLEOTA_CREDIT_GAP), or when the
+ * same next and limit come twice: the device took nothing in between.
  * @param e   the transfer
  * @param s   the CREDIT
  * @param now the clock
@@ -166,11 +173,17 @@ static void credit(devupd_t *e, const bleota_status_t *s, uint32_t now)
     if (e->phase == DEVUPD_BEGIN || e->phase == DEVUPD_CONFIRM) {
         go(e, DEVUPD_SEND, now);
         e->sent = s->next;
+        e->next = s->next;
+        e->limit = s->limit;
+        e->t_credit = now;
+        e->polls = 0u;
+        return;
     }
     if (e->phase != DEVUPD_SEND) {
         return;
     }
-    if (s->next < e->sent) {
+    const bool stuck = s->next == e->next && s->limit == e->limit;
+    if (s->next < e->sent && (s->code == BLEOTA_CREDIT_GAP || stuck)) {
         ++e->rewinds;
         e->sent = s->next;
     }
@@ -255,7 +268,7 @@ static void times(devupd_t *e, uint32_t now)
         break;
     case DEVUPD_END:
         if (age >= DEVUPD_END_MS) {
-            fail(e, DEVUPD_E_TIMEOUT, 0u, now);
+            fail(e, DEVUPD_E_UNSURE, 0u, now);
         }
         break;
     case DEVUPD_RESTART:
@@ -345,6 +358,9 @@ devupd_row_t devupd_row(const devupd_row_in_t *in)
     if (!in->have_image) {
         return DEVUPD_ROW_NO_IMAGE;
     }
+    if (in->image_due) {
+        return DEVUPD_ROW_CHECKING;
+    }
     if (!in->image_ok) {
         return DEVUPD_ROW_BAD_IMAGE;
     }
@@ -359,4 +375,50 @@ devupd_row_t devupd_row(const devupd_row_in_t *in)
     }
     return fw_version_cmp(in->running, in->carried) == 0
                ? DEVUPD_ROW_REINSTALL : DEVUPD_ROW_READY;
+}
+
+devupd_settle_t devupd_settle(bool known, fw_version_t running,
+                              fw_version_t want, uint32_t age)
+{
+    if (known) {
+        return fw_version_cmp(running, want) == 0 ? DEVUPD_SETTLE_DONE
+                                                  : DEVUPD_SETTLE_FAILED;
+    }
+    return age >= DEVUPD_SETTLE_MS ? DEVUPD_SETTLE_UNKNOWN
+                                   : DEVUPD_SETTLE_WAIT;
+}
+
+void devupd_gate_ask(devupd_gate_t *g)
+{
+    if (g != NULL) {
+        atomic_store(&g->req, true);
+    }
+}
+
+devupd_take_t devupd_gate_take(devupd_gate_t *g, bool armed)
+{
+    if (g == NULL || !atomic_load(&g->req)) {
+        return DEVUPD_TAKE_NONE;
+    }
+    atomic_store(&g->run, true);
+    atomic_store(&g->req, false);
+    if (armed) {
+        atomic_store(&g->run, false);
+        return DEVUPD_TAKE_ARMED;
+    }
+    return DEVUPD_TAKE_START;
+}
+
+void devupd_gate_end(devupd_gate_t *g)
+{
+    if (g != NULL) {
+        atomic_store(&g->run, false);
+    }
+}
+
+bool devupd_gate_busy(devupd_gate_t *g)
+{
+    /* The request first: the running task stores the run before it clears
+     * the request, so a reader that misses the request sees the run. */
+    return g != NULL && (atomic_load(&g->req) || atomic_load(&g->run));
 }

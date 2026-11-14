@@ -131,6 +131,7 @@ const char *upd_dev_reason(const upd_dev_view_t *v)
     switch (v->row) {
     case DEVUPD_ROW_NO_IMAGE:   return TR(DEV_WHY_NO_IMAGE);
     case DEVUPD_ROW_BAD_IMAGE:  return TR(DEV_WHY_BAD_IMAGE);
+    case DEVUPD_ROW_CHECKING:   return TR(DEV_WHY_CHECKING);
     case DEVUPD_ROW_NOT_LINKED: return TR(DEV_WHY_NOT_LINKED);
     case DEVUPD_ROW_ARMED:      return TR(DEV_WHY_ARMED);
     case DEVUPD_ROW_BUSY:       return TR(DEV_WHY_BUSY);

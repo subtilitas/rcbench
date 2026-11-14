@@ -6,8 +6,10 @@
  *        confirmation of both kinds at 999ms and 1,000ms with a stuck key
  *        and the 30s window, the buffer's order with a skipped chunk
  *        answered once, a repeat, an overlap and a chunk past the limit,
- *        the credit steps, END early, the SHA-256 compare, the install
- *        and the restart, the idle timeout, a failed open or write and a
+ *        the credit steps and their gap mark, the image head checked
+ *        before the first write, END early, the SHA-256 compare, the
+ *        install and the restart (also after an ABORT or a lost link
+ *        while it runs), the idle timeout, a failed open or write and a
  *        lost link.
  *
  * SPDX-License-Identifier: MIT
@@ -16,6 +18,7 @@
 
 #include "greatest.h"
 #include "bleota.h"
+#include "bleota_head.h"
 
 /** @brief The slot of the tests' device, bytes. */
 #define SLOT 4096u
@@ -31,6 +34,24 @@ typedef struct {
 /** @brief The tests' version. */
 static const uint16_t k_ver[3] = { 0u, 24u, 0u };
 
+/** @brief The head of the tests' images: a power node's on the ESP32-C6. */
+static uint8_t s_head[BLEOTA_HEAD_LEN];
+
+/**
+ * @brief A byte of the tests' image of pattern @p v: the head, then the
+ *        pattern.
+ * @param v   the pattern's start
+ * @param off the offset
+ * @return the byte
+ */
+static uint8_t img_at(uint8_t v, uint32_t off)
+{
+    if (s_head[0] != BLEOTA_IMG_MAGIC) {
+        test_head_write(s_head, TEST_CHIP_C6, BLEOTA_KIND_NODE_POWER);
+    }
+    return off < BLEOTA_HEAD_LEN ? s_head[off] : (uint8_t)(v + off);
+}
+
 /**
  * @brief Set up a power node of SLOT bytes running k_ver.
  * @param t       the device
@@ -41,7 +62,8 @@ static void dev_init(devsim_t *t, uint8_t confirm)
     memset(t, 0, sizeof *t);
     const bleota_dev_cfg_t cfg = { .kind = BLEOTA_KIND_NODE_POWER,
                                    .confirm = confirm, .slot = SLOT,
-                                   .ver = { 0u, 24u, 0u } };
+                                   .ver = { 0u, 24u, 0u },
+                                   .chip = TEST_CHIP_C6 };
     CHECK(bleota_dev_init(&t->d, &cfg, t->ring, sizeof t->ring));
 }
 
@@ -116,7 +138,7 @@ static void send_chunk(devsim_t *t, uint32_t off, uint16_t n, uint8_t v,
     uint8_t b[BLEOTA_CHUNK_HDR + BLEOTA_CHUNK_MAX];
     bleota_chunk_header(off, b);
     for (uint16_t i = 0; i < n; ++i) {
-        b[BLEOTA_CHUNK_HDR + i] = (uint8_t)(v + off + i);
+        b[BLEOTA_CHUNK_HDR + i] = img_at(v, off + i);
     }
     bleota_dev_data(&t->d, b, BLEOTA_CHUNK_HDR + n, now);
 }
@@ -383,7 +405,7 @@ TEST_CASE(chunks_go_in_order_and_a_skipped_one_is_answered_once)
     drain(&t, 1108u);
     CHECK_EQ(t.flash_n, 1000u);
     for (uint32_t i = 0; i < 1000u; ++i) {
-        CHECK_EQ(t.flash[i], (uint8_t)(7u + i));
+        CHECK_EQ(t.flash[i], img_at(7u, i));
     }
     CHECK_EQ(bleota_dev_percent(&t.d), 100u);
 }
@@ -507,8 +529,10 @@ TEST_CASE(a_silent_central_a_failed_write_and_a_lost_link_end_it)
     CHECK_EQ(s.code, BLEOTA_E_TIMEOUT);
 
     to_recv(&t, 1000u, sha);
-    send_chunk(&t, 0u, 100u, 0u, 1100u);
+    send_chunk(&t, 0u, 240u, 0u, 1100u);
+    send_chunk(&t, 240u, 60u, 0u, 1100u);
     uint8_t buf[100];
+    CHECK_EQ(bleota_dev_poll(&t.d, 1100u), BLEOTA_DO_WRITE);
     CHECK_EQ(bleota_dev_take(&t.d, buf, sizeof buf), 100u);
     bleota_dev_written(&t.d, false, 1100u);
     while (next_status(&t, &s) && s.ev != BLEOTA_EV_FAIL) {
@@ -564,7 +588,7 @@ TEST_CASE(the_buffer_wraps_over_a_whole_slot)
     }
     CHECK_EQ(t.flash_n, SLOT);
     for (uint32_t i = 0; i < SLOT; ++i) {
-        CHECK_EQ(t.flash[i], (uint8_t)(3u + i));
+        CHECK_EQ(t.flash[i], img_at(3u, i));
     }
 }
 
@@ -594,6 +618,155 @@ TEST_CASE(a_full_notification_queue_drops_the_oldest_and_nulls_are_safe)
     CHECK_EQ(bleota_dev_secs(NULL, 0u), 0u);
 }
 
+/* The gap mark tells a lost chunk from a CREDIT that a chunk in flight
+ * outruns: only the answer to a skipped chunk and a POLL that finds bytes
+ * missing under the last limit carry it. */
+TEST_CASE(only_a_skipped_chunk_and_a_poll_with_bytes_missing_mark_a_gap)
+{
+    devsim_t t;
+    bleota_status_t s = { 0 };
+    uint8_t sha[32] = { 0 };
+    to_recv(&t, SLOT, sha);                  /* the first CREDIT: routine */
+    for (uint32_t off = 0; off < 960u; off += 240u) {
+        send_chunk(&t, off, 240u, 1u, 1100u);
+    }
+    drain(&t, 1100u);                        /* 960 written: 512 step */
+    CHECK(next_status(&t, &s));
+    CHECK_EQ(s.ev, BLEOTA_EV_CREDIT);
+    CHECK_EQ(s.code, BLEOTA_CREDIT_ROUTINE);
+    CHECK_EQ(s.next, 960u);
+    /* POLL while bytes under the limit are missing: a gap. */
+    send_op(&t, BLEOTA_OP_POLL, 1200u);
+    CHECK(next_status(&t, &s));
+    CHECK_EQ(s.code, BLEOTA_CREDIT_GAP);
+    CHECK_EQ(s.next, 960u);
+    /* A chunk past next: a gap, answered once. */
+    send_chunk(&t, 1200u, 240u, 1u, 1201u);
+    CHECK(next_status(&t, &s));
+    CHECK_EQ(s.code, BLEOTA_CREDIT_GAP);
+    CHECK(!next_status(&t, &s));
+    /* Every byte up to the limit taken: a POLL finds none missing. */
+    uint32_t off = 960u;
+    while (off < t.d.told) {
+        const uint16_t n = (uint16_t)(t.d.told - off < 240u ? t.d.told - off
+                                                            : 240u);
+        send_chunk(&t, off, n, 1u, 1300u);
+        off += n;
+    }
+    while (next_status(&t, &s)) {
+    }
+    send_op(&t, BLEOTA_OP_POLL, 1301u);
+    CHECK(next_status(&t, &s));
+    CHECK_EQ(s.code, BLEOTA_CREDIT_ROUTINE);
+    CHECK_EQ(s.next, t.d.told);
+}
+
+/* Nothing is written before the image's head names this device: the head
+ * waits for BLEOTA_HEAD_LEN bytes, and another role, another chip or no
+ * head at all is refused with nothing in flash. */
+TEST_CASE(the_head_is_checked_before_the_first_write)
+{
+    devsim_t t;
+    bleota_status_t s = { 0 };
+    uint8_t sha[32] = { 0 };
+    to_recv(&t, 1000u, sha);
+    send_chunk(&t, 0u, 240u, 0u, 1100u);
+    send_chunk(&t, 240u, (uint16_t)(BLEOTA_HEAD_LEN - 1u - 240u), 0u, 1100u);
+    CHECK_EQ(bleota_dev_poll(&t.d, 1100u), BLEOTA_DO_NONE);
+    uint8_t buf[64];
+    CHECK_EQ(bleota_dev_take(&t.d, buf, sizeof buf), 0u);
+    send_chunk(&t, BLEOTA_HEAD_LEN - 1u, 1u, 0u, 1101u);
+    CHECK_EQ(bleota_dev_poll(&t.d, 1101u), BLEOTA_DO_WRITE);
+    CHECK(t.d.head_ok);
+
+    /* Another role, another chip, a missing role: refused, unwritten. */
+    static const struct {
+        uint16_t chip;
+        uint8_t  kind;
+        bool     role;
+        uint8_t  code;
+    } k_bad[] = {
+        { TEST_CHIP_C6, BLEOTA_KIND_NODE_BAL, true, BLEOTA_E_KIND },
+        { TEST_CHIP_S3, BLEOTA_KIND_NODE_POWER, true, BLEOTA_E_KIND },
+        { TEST_CHIP_C6, BLEOTA_KIND_NODE_POWER, false, BLEOTA_E_IMAGE },
+    };
+    for (size_t k = 0; k < sizeof k_bad / sizeof k_bad[0]; ++k) {
+        to_recv(&t, 1000u, sha);
+        while (next_status(&t, &s)) {
+        }
+        uint8_t head[BLEOTA_HEAD_LEN];
+        test_head_write(head, k_bad[k].chip, k_bad[k].kind);
+        if (!k_bad[k].role) {
+            memset(head + BLEOTA_HEAD_ROLE, 0, BLEOTA_ROLE_LEN);
+        }
+        uint8_t b[BLEOTA_CHUNK_HDR + BLEOTA_CHUNK_MAX];
+        for (uint32_t off = 0; off < BLEOTA_HEAD_LEN; off += 148u) {
+            bleota_chunk_header(off, b);
+            memcpy(b + BLEOTA_CHUNK_HDR, head + off, 148u);
+            bleota_dev_data(&t.d, b, BLEOTA_CHUNK_HDR + 148u, 1100u);
+        }
+        CHECK_EQ(bleota_dev_poll(&t.d, 1100u), BLEOTA_DO_CLOSE);
+        CHECK(next_status(&t, &s));
+        CHECK_EQ(s.ev, BLEOTA_EV_FAIL);
+        CHECK_EQ(s.code, k_bad[k].code);
+        CHECK_EQ(t.flash_n, 0u);
+        CHECK_EQ(t.d.wr, 0u);
+    }
+
+    /* An image shorter than the head is no application. */
+    to_recv(&t, 100u, sha);
+    while (next_status(&t, &s)) {
+    }
+    send_chunk(&t, 0u, 100u, 0u, 1100u);
+    CHECK_EQ(bleota_dev_poll(&t.d, 1100u), BLEOTA_DO_CLOSE);
+    while (next_status(&t, &s) && s.ev != BLEOTA_EV_FAIL) {
+    }
+    CHECK_EQ(s.ev, BLEOTA_EV_FAIL);
+    CHECK_EQ(s.code, BLEOTA_E_IMAGE);
+    CHECK_EQ(t.flash_n, 0u);
+}
+
+/* The boot slot may be set while the install runs outside the device's
+ * lock: an ABORT or a lost link then leaves its result to decide, and an
+ * installed image still restarts. */
+TEST_CASE(an_abort_or_a_lost_link_during_the_install_waits_for_its_result)
+{
+    for (int k = 0; k < 3; ++k) {
+        devsim_t t;
+        bleota_status_t s = { 0 };
+        uint8_t sha[32];
+        memset(sha, 0x22, sizeof sha);
+        to_recv(&t, 300u, sha);
+        send_chunk(&t, 0u, 240u, 0u, 1100u);
+        send_chunk(&t, 240u, 60u, 0u, 1100u);
+        send_op(&t, BLEOTA_OP_END, 1101u);
+        drain(&t, 1102u);
+        while (next_status(&t, &s)) {
+        }
+        CHECK_EQ(bleota_dev_poll(&t.d, 1102u), BLEOTA_DO_VERIFY);
+        CHECK(bleota_dev_verify(&t.d, sha, 1103u));
+        if (k == 0) {
+            send_op(&t, BLEOTA_OP_ABORT, 1104u);
+        } else {
+            bleota_dev_lost(&t.d);
+        }
+        CHECK_EQ(t.d.st, BLEOTA_DEV_INSTALL);
+        CHECK(!next_status(&t, &s));
+        CHECK_EQ(bleota_dev_poll(&t.d, 1104u), BLEOTA_DO_INSTALL);
+        if (k < 2) {
+            bleota_dev_installed(&t.d, true, BLEOTA_OK, 1105u);
+            CHECK_EQ(t.d.st, BLEOTA_DEV_DONE);
+            CHECK_EQ(bleota_dev_poll(&t.d, 1105u), BLEOTA_DO_RESTART);
+        } else {
+            /* The device's own check refused it: the running image stays. */
+            bleota_dev_installed(&t.d, false, BLEOTA_E_IMAGE, 1105u);
+            CHECK_EQ(t.d.st, BLEOTA_DEV_IDLE);
+            CHECK_EQ(t.d.code, BLEOTA_E_IMAGE);
+            CHECK_EQ(bleota_dev_poll(&t.d, 1105u), BLEOTA_DO_NONE);
+        }
+    }
+}
+
 int main(void)
 {
     RUN(init_refuses_a_small_or_uneven_buffer_and_a_kind_out_of_range);
@@ -607,6 +780,9 @@ int main(void)
     RUN(end_compares_the_sha_and_installs_only_on_a_match);
     RUN(a_silent_central_a_failed_write_and_a_lost_link_end_it);
     RUN(the_buffer_wraps_over_a_whole_slot);
+    RUN(only_a_skipped_chunk_and_a_poll_with_bytes_missing_mark_a_gap);
+    RUN(the_head_is_checked_before_the_first_write);
+    RUN(an_abort_or_a_lost_link_during_the_install_waits_for_its_result);
     RUN(a_full_notification_queue_drops_the_oldest_and_nulls_are_safe);
     return test_summary("bleota_dev");
 }

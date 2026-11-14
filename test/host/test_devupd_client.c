@@ -15,6 +15,7 @@
 
 #include "greatest.h"
 #include "bleota.h"
+#include "bleota_head.h"
 #include "bleuart.h"
 #include "devupd_client.h"
 #include "fw_sha256.h"
@@ -267,11 +268,13 @@ static void start(host_t *h, bool no_data)
     for (uint32_t i = 0; i < IMG; ++i) {
         s_img[i] = (uint8_t)(i * 7u + 3u);
     }
+    test_head_write(s_img, TEST_CHIP_S3, BLEOTA_KIND_DIAL);
     h->no_data = no_data;
     h->now = 100u;
     const bleota_dev_cfg_t cfg = { .kind = BLEOTA_KIND_DIAL,
                                    .confirm = BLEOTA_CONFIRM_PRESS,
-                                   .slot = SLOT, .ver = { 0u, 24u, 0u } };
+                                   .slot = SLOT, .ver = { 0u, 24u, 0u },
+                                   .chip = TEST_CHIP_S3 };
     CHECK(bleota_dev_init(&h->d, &cfg, h->ring, sizeof h->ring));
     CHECK(devupd_client_init(&h->c, 4u));
     devupd_image_t im = { .img = s_img, .size = IMG,

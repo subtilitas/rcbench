@@ -65,17 +65,23 @@ PROJECT = "network_adapter"
 CHIP_ESP32C6 = 0x000D
 CHIP_ESP32S3 = 0x0009
 VERSION_H = ROOT / "shared" / "link" / "include" / "rcbench_version.h"
-# The wireless devices' images: chip, project, partition table, and
-# whether the balance role's text must be in it (None: not checked).
+# The wireless devices' images: chip, project, partition table, whether
+# the balance role's text must be in it (None: not checked), and the
+# BLEOTA_KIND_* its role names (protocols/bleota, bleota_role_t).
 BAL_MARK = b"bal: ADC "
 DEVICES = {
     "dial": (CHIP_ESP32S3, "rcbench-dial",
-             ROOT / "firmware" / "dial" / "partitions.csv", None),
+             ROOT / "firmware" / "dial" / "partitions.csv", None, 1),
     "node-pwr": (CHIP_ESP32C6, "rcbench-node",
-                 ROOT / "firmware" / "node" / "partitions.csv", False),
+                 ROOT / "firmware" / "node" / "partitions.csv", False, 2),
     "node-bal": (CHIP_ESP32C6, "rcbench-node",
-                 ROOT / "firmware" / "node" / "partitions.csv", True),
+                 ROOT / "firmware" / "node" / "partitions.csv", True, 3),
 }
+# The role an image is built for, right after esp_app_desc_t
+# (BLEOTA_HEAD_ROLE, BLEOTA_ROLE_MAGIC, BLEOTA_PROTO in bleota.h).
+ROLE_OFFSET = 288
+ROLE_MAGIC = 0x52626372
+ROLE_PROTO = 1
 IMAGE_MAGIC = 0xE9
 DESC_MAGIC = 0xABCD5432
 
@@ -376,7 +382,7 @@ def check_device(role: str, data: bytes, want: str, slot: int) -> str:
     """
     if role not in DEVICES:
         raise C6Error(f"no device role {role!r}: {', '.join(DEVICES)}")
-    chip_want, project_want, _, balance = DEVICES[role]
+    chip_want, project_want, _, balance, kind = DEVICES[role]
     chip, version, project, hashed = image_info(data)
     if chip != chip_want:
         raise C6Error(f"built for chip 0x{chip:04X}, not 0x{chip_want:04X}")
@@ -390,6 +396,14 @@ def check_device(role: str, data: bytes, want: str, slot: int) -> str:
         raise C6Error(f"{len(data)} bytes, the slot holds {slot}")
     if balance is not None and (BAL_MARK in data) != balance:
         raise C6Error("the image carries the other node role")
+    if len(data) < ROLE_OFFSET + 8:
+        raise C6Error("too short for its role")
+    magic, got, proto = struct.unpack_from("<IBB", data, ROLE_OFFSET)
+    if magic != ROLE_MAGIC or proto != ROLE_PROTO:
+        raise C6Error("no role after the application descriptor "
+                      "(DEVOTA_ROLE)")
+    if got != kind:
+        raise C6Error(f"its role is kind {got}, not {kind}")
     return (f"{role} {version}: {len(data)} bytes of a {slot}-byte slot, "
             f"{100 * len(data) / slot:.1f}%, "
             f"sha256 {hashlib.sha256(data).hexdigest()}")

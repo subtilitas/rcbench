@@ -153,6 +153,7 @@ TEST_CASE(a_tap_on_the_grey_hold_says_why_on_the_band)
     } k[] = {
         { DEVUPD_ROW_NO_IMAGE,   TX_DEV_WHY_NO_IMAGE },
         { DEVUPD_ROW_BAD_IMAGE,  TX_DEV_WHY_BAD_IMAGE },
+        { DEVUPD_ROW_CHECKING,   TX_DEV_WHY_CHECKING },
         { DEVUPD_ROW_NOT_LINKED, TX_DEV_WHY_NOT_LINKED },
         { DEVUPD_ROW_ARMED,      TX_DEV_WHY_ARMED },
         { DEVUPD_ROW_BUSY,       TX_DEV_WHY_BUSY },
@@ -266,7 +267,7 @@ TEST_CASE(the_line_and_the_label_fit_in_both_languages)
 {
     for (int lang = 0; lang < 2; ++lang) {
         ui_text_set_language(lang ? UI_LANG_DE : UI_LANG_EN);
-        for (int row = DEVUPD_ROW_NO_IMAGE; row <= DEVUPD_ROW_UPDATING;
+        for (int row = DEVUPD_ROW_NO_IMAGE; row <= DEVUPD_ROW_CHECKING;
              ++row) {
             for (int ph = DEVUPD_LINK; ph <= DEVUPD_RESTART; ++ph) {
                 upd_dev_view_t v = view_of((devupd_row_t)row);

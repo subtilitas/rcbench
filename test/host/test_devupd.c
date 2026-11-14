@@ -2,8 +2,11 @@
  * @file test_devupd.c
  * @brief The device update's engine (devupd_t) against a simulated device,
  *        the device side of protocols/bleota over a modelled flash: a
- *        whole image in order, a lost chunk, a lost last chunk found by
- *        POLL, a credit stall ended after three polls, each refusal code,
+ *        whole image in order, a lossless link with 0ms, 20ms and 40ms of
+ *        latency sent once with no rewind, a lost chunk, a lost last chunk
+ *        found by POLL, a credit stall ended after three polls, each
+ *        refusal code, a link lost during the install left unknown and
+ *        settled by the device's version, the start's gate,
  *        a wrong SHA-256, no confirmation, a disconnect mid-transfer and a
  *        retry from the first byte, the link and answer timeouts, a failed
  *        control write, the chunk size at each MTU, devupd_busy() over every
@@ -15,6 +18,7 @@
 
 #include "greatest.h"
 #include "bleota.h"
+#include "bleota_head.h"
 #include "devupd.h"
 #include "fw_sha256.h"
 
@@ -24,6 +28,23 @@
 #define SLOT 0x20000u
 /** @brief The simulation's step, ms: the panel's `blec` poll. */
 #define STEP 5u
+/** @brief Chunks or notifications in flight at most. */
+#define AIR_MAX 512u
+
+/** @brief A chunk or a notification in flight. */
+typedef struct {
+    uint32_t at;                    /**< the step it arrives at */
+    uint32_t off;                   /**< a chunk's offset */
+    uint16_t n;                     /**< a chunk's bytes */
+    uint8_t  b[BLEOTA_LEN_STATUS];  /**< a notification's bytes */
+} flight_t;
+
+/** @brief A queue of things in flight. */
+typedef struct {
+    flight_t q[AIR_MAX]; /**< the ring */
+    unsigned head;       /**< the oldest */
+    unsigned n;          /**< the count */
+} air_t;
 
 /** @brief The image the panel sends. */
 static uint8_t s_img[IMG];
@@ -56,6 +77,15 @@ typedef struct {
     uint32_t       ctrl_fail;  /**< the n-th control write is refused, 0 none */
     uint32_t       ctrl_n;     /**< control writes seen */
     uint8_t        last_op;    /**< the last control write's op */
+    uint32_t       lat;        /**< steps from a write or a notification to
+                                    its arrival; 0 at once */
+    unsigned       rate;       /**< chunks the air carries a step, 0 all */
+    bool           slow;       /**< the device writes one 512-byte piece a
+                                    step, 1,024 bytes in 10ms */
+    uint32_t       step;       /**< steps run */
+    uint64_t       sent;       /**< image bytes the engine gave out */
+    air_t          air;        /**< chunks in flight */
+    air_t          back;       /**< notifications in flight */
 } sim_t;
 
 /** @brief Fill the image with a pattern no shift repeats. */
@@ -66,6 +96,7 @@ static void make_image(void)
         x = x * 1664525u + 1013904223u;
         s_img[i] = (uint8_t)(x >> 24);
     }
+    test_head_write(s_img, TEST_CHIP_S3, BLEOTA_KIND_DIAL);
 }
 
 /**
@@ -85,7 +116,8 @@ static void sim_init(sim_t *s)
     fw_sha256(s_img, IMG, s->im.sha);
     const bleota_dev_cfg_t cfg = { .kind = BLEOTA_KIND_DIAL,
                                    .confirm = BLEOTA_CONFIRM_PRESS,
-                                   .slot = SLOT, .ver = { 0u, 24u, 0u } };
+                                   .slot = SLOT, .ver = { 0u, 24u, 0u },
+                                   .chip = TEST_CHIP_S3 };
     CHECK(bleota_dev_init(&s->d, &cfg, s->ring, sizeof s->ring));
     s->mtu = BLEOTA_MTU;
     s->press = true;
@@ -110,6 +142,8 @@ static void link_up(sim_t *s)
 static void link_down(sim_t *s)
 {
     s->up = false;
+    s->air.n = 0u;
+    s->back.n = 0u;
     bleota_dev_lost(&s->d);
     devupd_link(&s->e, false, 0u, s->now);
 }
@@ -138,6 +172,7 @@ static void panel_writes(sim_t *s)
         }
         CHECK(o.n >= 1u && o.n <= bleota_chunk_bytes(s->mtu));
         CHECK(o.off + o.n <= IMG);
+        s->sent += o.n;
         if (!s->first_seen) {
             s->first_seen = true;
             s->first_off = o.off;
@@ -150,10 +185,37 @@ static void panel_writes(sim_t *s)
             s->drop_tail = false;
             continue;
         }
+        if (s->lat > 0u) {
+            CHECK(s->air.n < AIR_MAX);
+            flight_t *f = &s->air.q[(s->air.head + s->air.n++) % AIR_MAX];
+            f->at = s->step + s->lat;
+            f->off = o.off;
+            f->n = o.n;
+            continue;
+        }
         uint8_t b[BLEOTA_CHUNK_HDR + BLEOTA_CHUNK_MAX];
         bleota_chunk_header(o.off, b);
         memcpy(b + BLEOTA_CHUNK_HDR, s_img + o.off, o.n);
         bleota_dev_data(&s->d, b, BLEOTA_CHUNK_HDR + o.n, s->now);
+    }
+}
+
+/**
+ * @brief The chunks in flight that arrive this step, at most rate of them.
+ * @param s the simulation
+ */
+static void air_arrives(sim_t *s)
+{
+    for (unsigned k = 0; s->air.n > 0u
+         && s->air.q[s->air.head].at <= s->step
+         && (s->rate == 0u || k < s->rate); ++k) {
+        const flight_t *f = &s->air.q[s->air.head];
+        s->air.head = (s->air.head + 1u) % AIR_MAX;
+        --s->air.n;
+        uint8_t b[BLEOTA_CHUNK_HDR + BLEOTA_CHUNK_MAX];
+        bleota_chunk_header(f->off, b);
+        memcpy(b + BLEOTA_CHUNK_HDR, s_img + f->off, f->n);
+        bleota_dev_data(&s->d, b, BLEOTA_CHUNK_HDR + f->n, s->now);
     }
 }
 
@@ -194,6 +256,9 @@ static void device_work(sim_t *s)
             s->flash_n += n;
             fw_sha256_add(&s->sha, buf, n);
             bleota_dev_written(&s->d, true, s->now);
+            if (s->slow) {
+                return;
+            }
             break;
         }
         case BLEOTA_DO_VERIFY:
@@ -207,7 +272,7 @@ static void device_work(sim_t *s)
             bleota_dev_closed(&s->d);
             break;
         case BLEOTA_DO_RESTART:
-            if (!s->restarted && s->d.out_n == 0u) {
+            if (!s->restarted && s->d.out_n == 0u && s->back.n == 0u) {
                 s->restarted = true;
                 link_down(s);
             }
@@ -230,9 +295,20 @@ static void device_notifies(sim_t *s)
         if (s->mute && s->d.rx >= s->mute_from) {
             continue;
         }
-        if (s->up) {
+        if (s->up && s->lat > 0u) {
+            CHECK(s->back.n < AIR_MAX);
+            flight_t *f = &s->back.q[(s->back.head + s->back.n++) % AIR_MAX];
+            f->at = s->step + s->lat;
+            memcpy(f->b, b, sizeof b);
+        } else if (s->up) {
             devupd_notify(&s->e, b, sizeof b, s->now);
         }
+    }
+    while (s->back.n > 0u && s->back.q[s->back.head].at <= s->step) {
+        devupd_notify(&s->e, s->back.q[s->back.head].b, BLEOTA_LEN_STATUS,
+                      s->now);
+        s->back.head = (s->back.head + 1u) % AIR_MAX;
+        --s->back.n;
     }
 }
 
@@ -243,6 +319,7 @@ static void device_notifies(sim_t *s)
 static void sim_step(sim_t *s)
 {
     panel_writes(s);
+    air_arrives(s);
     device_key(s);
     device_work(s);
     if (s->cut && s->up && s->d.rx >= s->cut_at) {
@@ -251,6 +328,7 @@ static void sim_step(sim_t *s)
     }
     device_notifies(s);
     s->now += STEP;
+    ++s->step;
 }
 
 /**
@@ -578,6 +656,17 @@ TEST_CASE(the_row_offers_the_hold_only_when_nothing_stands_in_the_way)
     CHECK_EQ(devupd_row(&in), DEVUPD_ROW_ARMED);
     in.image_ok = false;
     CHECK_EQ(devupd_row(&in), DEVUPD_ROW_BAD_IMAGE);
+    /* Not checked yet: no hold, whatever the check will say. */
+    in.image_due = true;
+    CHECK_EQ(devupd_row(&in), DEVUPD_ROW_CHECKING);
+    in.image_ok = true;
+    in.armed = false;
+    in.other = false;
+    in.linked = true;
+    CHECK_EQ(devupd_row(&in), DEVUPD_ROW_CHECKING);
+    in.image_due = false;
+    CHECK_EQ(devupd_row(&in), DEVUPD_ROW_READY);
+    in.image_ok = false;
     in.have_image = false;
     CHECK_EQ(devupd_row(&in), DEVUPD_ROW_NO_IMAGE);
     in.busy = true;
@@ -585,9 +674,136 @@ TEST_CASE(the_row_offers_the_hold_only_when_nothing_stands_in_the_way)
     CHECK_EQ(devupd_row(NULL), DEVUPD_ROW_NO_IMAGE);
 }
 
+/* A routine CREDIT's next lies behind the chunks in flight; only a marked
+ * gap or a repeated CREDIT moves the sending back.  A lossless link sends
+ * every byte once, whatever its latency. */
+TEST_CASE(a_lossless_link_with_latency_sends_every_byte_once)
+{
+    static sim_t s;
+    static const uint32_t k_lat_ms[] = { 0u, 20u, 40u };
+    for (size_t k = 0; k < sizeof k_lat_ms / sizeof k_lat_ms[0]; ++k) {
+        sim_init(&s);
+        s.lat = k_lat_ms[k] / STEP;
+        s.rate = 3u;
+        s.slow = true;
+        sim_start(&s);
+        CHECK_EQ(sim_run(&s, 300000u), DEVUPD_DONE);
+        CHECK_EQ(s.e.rewinds, 0u);
+        CHECK_EQ(s.d.gaps, 0u);
+        CHECK_EQ(s.d.dups, 0u);
+        CHECK_EQ(s.sent, (uint64_t)IMG);
+        CHECK(memcmp(s_flash, s_img, IMG) == 0);
+    }
+    /* With 40ms and a lost chunk: sent again once, from the device's
+     * offset, and no more than the window twice over. */
+    sim_init(&s);
+    s.lat = 8u;
+    s.rate = 3u;
+    s.slow = true;
+    s.drop_off = 30u * BLEOTA_CHUNK_MAX;
+    sim_start(&s);
+    CHECK_EQ(sim_run(&s, 300000u), DEVUPD_DONE);
+    CHECK_EQ(s.e.rewinds, 1u);
+    CHECK(s.sent <= (uint64_t)IMG + 2u * BLEOTA_WINDOW);
+    CHECK(memcmp(s_flash, s_img, IMG) == 0);
+}
+
+/* After END the device may set its boot slot before the panel hears DONE:
+ * a lost link or no DONE leaves the result unknown, and the device's
+ * version once it is back settles it. */
+TEST_CASE(a_link_lost_after_end_leaves_the_install_to_the_version)
+{
+    static sim_t s;
+    sim_init(&s);
+    sim_start(&s);
+    /* Every byte credited: END goes out, and the device is installing
+     * when the link drops. */
+    devupd_out_t o;
+    while (devupd_step(&s.e, s.now, true, &o)) {
+        devupd_written(&s.e, 0u, s.now);
+    }
+    s.e.phase = DEVUPD_SEND;
+    s.e.next = s.e.im.size;
+    s.e.t_credit = s.now;
+    (void)devupd_step(&s.e, s.now, true, &o);
+    CHECK_EQ(o.kind, DEVUPD_OUT_CTRL);
+    CHECK_EQ(o.ctrl[0], BLEOTA_OP_END);
+    CHECK_EQ(s.e.phase, DEVUPD_END);
+    devupd_link(&s.e, false, 0u, s.now);
+    CHECK_EQ(s.e.phase, DEVUPD_FAILED);
+    CHECK_EQ(s.e.err, DEVUPD_E_UNSURE);
+    CHECK(!devupd_busy(&s.e));
+    /* END with no DONE in time: the same. */
+    devupd_t e;
+    devupd_init(&e);
+    e.phase = DEVUPD_END;
+    e.t = 0u;
+    (void)devupd_step(&e, DEVUPD_END_MS - 1u, true, &o);
+    CHECK_EQ(e.phase, DEVUPD_END);
+    (void)devupd_step(&e, DEVUPD_END_MS, true, &o);
+    CHECK_EQ(e.err, DEVUPD_E_UNSURE);
+    /* Before END a lost link is a plain loss. */
+    devupd_init(&e);
+    e.phase = DEVUPD_SEND;
+    devupd_link(&e, false, 0u, 0u);
+    CHECK_EQ(e.err, DEVUPD_E_LOST);
+
+    const fw_version_t want = { 0u, 25u, 0u };
+    const fw_version_t old = { 0u, 24u, 0u };
+    CHECK_EQ(devupd_settle(false, old, want, 0u), DEVUPD_SETTLE_WAIT);
+    CHECK_EQ(devupd_settle(false, old, want, DEVUPD_SETTLE_MS - 1u),
+             DEVUPD_SETTLE_WAIT);
+    CHECK_EQ(devupd_settle(false, old, want, DEVUPD_SETTLE_MS),
+             DEVUPD_SETTLE_UNKNOWN);
+    CHECK_EQ(devupd_settle(true, want, want, 10u), DEVUPD_SETTLE_DONE);
+    CHECK_EQ(devupd_settle(true, old, want, 10u), DEVUPD_SETTLE_FAILED);
+    CHECK_EQ(devupd_settle(true, want, want, DEVUPD_SETTLE_MS + 1u),
+             DEVUPD_SETTLE_DONE);
+}
+
+/* The busy flag that refuses ARM is the request or the run.  At every
+ * point between the frame's ask and the `blec` task's end it reads busy,
+ * and a start the `blec` task takes while ARMED is refused there. */
+TEST_CASE(the_gate_reads_busy_from_the_ask_to_the_end_and_refuses_armed)
+{
+    devupd_gate_t g;
+    atomic_init(&g.req, false);
+    atomic_init(&g.run, false);
+    CHECK(!devupd_gate_busy(&g));
+    CHECK_EQ(devupd_gate_take(&g, false), DEVUPD_TAKE_NONE);
+    devupd_gate_ask(&g);
+    CHECK(devupd_gate_busy(&g));
+    /* The take's two stores, each seen on its own: busy throughout. */
+    atomic_store(&g.run, true);
+    CHECK(devupd_gate_busy(&g));
+    atomic_store(&g.req, false);
+    CHECK(devupd_gate_busy(&g));
+    atomic_store(&g.run, false);
+    CHECK(!devupd_gate_busy(&g));
+    /* The real take. */
+    devupd_gate_ask(&g);
+    CHECK_EQ(devupd_gate_take(&g, false), DEVUPD_TAKE_START);
+    CHECK(devupd_gate_busy(&g));
+    CHECK(!atomic_load(&g.req));
+    devupd_gate_ask(&g);                 /* a second ask while it runs */
+    CHECK(devupd_gate_busy(&g));
+    devupd_gate_end(&g);
+    CHECK(devupd_gate_busy(&g));         /* the second ask still stands */
+    CHECK_EQ(devupd_gate_take(&g, true), DEVUPD_TAKE_ARMED);
+    CHECK(!devupd_gate_busy(&g));
+    CHECK_EQ(devupd_gate_take(&g, false), DEVUPD_TAKE_NONE);
+    CHECK(!devupd_gate_busy(NULL));
+    CHECK_EQ(devupd_gate_take(NULL, false), DEVUPD_TAKE_NONE);
+    devupd_gate_ask(NULL);
+    devupd_gate_end(NULL);
+}
+
 int main(void)
 {
     RUN(a_whole_image_goes_in_order_and_installs);
+    RUN(a_lossless_link_with_latency_sends_every_byte_once);
+    RUN(a_link_lost_after_end_leaves_the_install_to_the_version);
+    RUN(the_gate_reads_busy_from_the_ask_to_the_end_and_refuses_armed);
     RUN(a_lost_chunk_is_sent_again_from_the_devices_offset);
     RUN(a_lost_last_chunk_is_found_by_poll);
     RUN(a_credit_stall_polls_three_times_then_ends_it);

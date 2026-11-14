@@ -9,13 +9,17 @@
  * each notification; devupd_step() gives the next control write or chunk.
  * A chunk names an offset and a length of the image, so the caller writes
  * the image's own bytes with no copy.  The engine keeps no more than the
- * device's credit window (BLEOTA_WINDOW) in flight, rewinds to the
- * device's next offset when a CREDIT names one behind what was sent (a
- * chunk was lost), asks for a CREDIT with POLL after DEVUPD_POLL_MS
- * without one, and ends the transfer after DEVUPD_POLLS polls in a row go
- * unanswered.  A refusal, a failed control write, a lost link or a step
- * that runs past its time ends the transfer; the device keeps the image
- * it runs.  A new devupd_start() runs from the first byte.
+ * device's credit window (BLEOTA_WINDOW) in flight, goes back to the
+ * device's next offset when a CREDIT marks the bytes from there as lost
+ * (BLEOTA_CREDIT_GAP) or the same CREDIT comes twice, asks for a CREDIT
+ * with POLL after DEVUPD_POLL_MS without one, and ends the transfer after
+ * DEVUPD_POLLS polls in a row go unanswered.  A refusal, a failed control
+ * write, a lost link or a step that runs past its time ends the transfer;
+ * the device keeps the image it runs.  A link that ends after END, or an
+ * END without DONE in time, leaves the install's result unknown
+ * (DEVUPD_E_UNSURE): the device may have set its boot slot, and its
+ * version after it reconnects says (devupd_settle()).  A new
+ * devupd_start() runs from the first byte.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development
  * Framework).  Times are differences of a free-running 32-bit ms clock.
@@ -25,6 +29,7 @@
 #ifndef RCBENCH_DEVUPD_H
 #define RCBENCH_DEVUPD_H
 
+#include <stdatomic.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
@@ -99,6 +104,10 @@ typedef enum {
     DEVUPD_E_DEVICE,   /**< the device refused or ended it: dev_code */
     DEVUPD_E_ABORTED,  /**< devupd_abort() */
     DEVUPD_E_IMAGE,    /**< devupd_start() was given no image */
+    DEVUPD_E_UNSURE,   /**< the link ended or DONE did not come after END:
+                            the install's result is not known */
+    DEVUPD_E_ARMED,    /**< the bench was ARMED, or an arm waited, at the
+                            start: the panel's refusal */
 } devupd_err_t;
 
 /** @brief What devupd_step() gives. */
@@ -141,7 +150,8 @@ typedef struct {
     uint8_t  q_head;          /**< the first of them */
     uint8_t  q_n;             /**< their count */
     uint32_t chunks;          /**< chunks handed out */
-    uint32_t rewinds;         /**< CREDITs that named an offset behind */
+    uint32_t rewinds;         /**< times the sending went back to the
+                                   device's next offset */
     uint32_t polls_sent;      /**< POLLs sent */
 } devupd_t;
 
@@ -236,11 +246,13 @@ typedef enum {
     DEVUPD_ROW_READY,        /**< the hold is live: another version */
     DEVUPD_ROW_REINSTALL,    /**< the hold is live: the carried version */
     DEVUPD_ROW_UPDATING,     /**< the transfer runs */
+    DEVUPD_ROW_CHECKING,     /**< the carried image's check has not run */
 } devupd_row_t;
 
 /** @brief What the row is decided from. */
 typedef struct {
     bool         have_image; /**< an image is carried */
+    bool         image_due;  /**< its check has not run yet */
     bool         image_ok;   /**< it passed its check */
     bool         linked;     /**< the device is connected */
     bool         known;      /**< it reported its version */
@@ -252,13 +264,94 @@ typedef struct {
 } devupd_row_in_t;
 
 /**
- * @brief What the row offers, the first of: updating, no image, a failed
- *        image, ARMED, another update, not connected or no version, then
- *        REINSTALL for the carried version and READY for another.
+ * @brief What the row offers, the first of: updating, no image, an image
+ *        not checked yet, a failed image, ARMED, another update, not
+ *        connected or no version, then REINSTALL for the carried version
+ *        and READY for another.
  * @param in what the row is decided from
  * @return the row
  */
 devupd_row_t devupd_row(const devupd_row_in_t *in);
+
+/* ------------------------------------------------- an unknown install */
+
+/** @brief The wait for a device whose install's result is not known, ms:
+ *         its restart, its link back and its INFO. */
+#define DEVUPD_SETTLE_MS 60000u
+
+/** @brief What an unknown install turned out as. */
+typedef enum {
+    DEVUPD_SETTLE_WAIT = 0, /**< not known yet */
+    DEVUPD_SETTLE_DONE,     /**< the device runs the image's version */
+    DEVUPD_SETTLE_FAILED,   /**< it runs another version */
+    DEVUPD_SETTLE_UNKNOWN,  /**< it did not report within DEVUPD_SETTLE_MS */
+} devupd_settle_t;
+
+/**
+ * @brief Settle a DEVUPD_E_UNSURE end by the version the device reports
+ *        once it is back.
+ * @param known   the device is connected and reported its version
+ * @param running that version
+ * @param want    the image's version
+ * @param age     ms since the transfer ended
+ * @return the outcome
+ */
+devupd_settle_t devupd_settle(bool known, fw_version_t running,
+                              fw_version_t want, uint32_t age);
+
+/* ------------------------------------------------- the start and busy */
+
+/**
+ * @brief The start of an update between the task that asks (the frame)
+ *        and the task that runs it (`blec`), and the busy flag that
+ *        refuses ARM.  The flag is the request or the run: the asking task
+ *        stores the request, the running task stores the run before it
+ *        clears the request, and a reader reads the request first, so no
+ *        reader sees neither between the two.
+ */
+typedef struct {
+    atomic_bool req; /**< a start was asked and not taken yet */
+    atomic_bool run; /**< the running task holds an update */
+} devupd_gate_t;
+
+/** @brief What devupd_gate_take() found. */
+typedef enum {
+    DEVUPD_TAKE_NONE = 0, /**< no start was asked */
+    DEVUPD_TAKE_START,    /**< a start is taken: the run is held */
+    DEVUPD_TAKE_ARMED,    /**< a start was asked and refused: ARMED */
+} devupd_take_t;
+
+/**
+ * @brief Ask for a start; the asking task.
+ * @param g the gate
+ */
+void devupd_gate_ask(devupd_gate_t *g);
+
+/**
+ * @brief Take a start that was asked; the running task.  The run is
+ *        stored before the request is cleared.  ARMED, or an arm waiting,
+ *        refuses it here as well, after the run is stored, so that an arm
+ *        checked against devupd_gate_busy() and a start checked against
+ *        ARMED cannot both pass unseen by the other once the arm is
+ *        published.
+ * @param g     the gate
+ * @param armed the bench is ARMED or an arm waits
+ * @return what was found
+ */
+devupd_take_t devupd_gate_take(devupd_gate_t *g, bool armed);
+
+/**
+ * @brief The update ended; the running task.
+ * @param g the gate
+ */
+void devupd_gate_end(devupd_gate_t *g);
+
+/**
+ * @brief Whether an update was asked for or runs; any task.
+ * @param g the gate
+ * @return true from the ask to the end
+ */
+bool devupd_gate_busy(devupd_gate_t *g);
 
 #ifdef __cplusplus
 }

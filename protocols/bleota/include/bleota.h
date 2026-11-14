@@ -106,6 +106,14 @@ extern const uint8_t bleota_uuid_data[16];
 /** @brief A notification's length. */
 #define BLEOTA_LEN_STATUS 12u
 
+/** @brief CREDIT's code. @{ */
+#define BLEOTA_CREDIT_ROUTINE 0u /**< the limit moved, or every byte came */
+#define BLEOTA_CREDIT_GAP     1u /**< bytes from next on did not arrive: a
+                                      chunk past next came, or a POLL found
+                                      next under the last limit; the
+                                      central sends again from next */
+/** @} */
+
 /** @brief Why a transfer is refused or ended: FAIL's code. @{ */
 #define BLEOTA_OK          0u  /**< none */
 #define BLEOTA_E_KIND      1u  /**< the image is for another device */
@@ -257,6 +265,43 @@ void bleota_chunk_header(uint32_t off, uint8_t out[BLEOTA_CHUNK_HDR]);
 bool bleota_chunk_decode(const uint8_t *b, size_t n, uint32_t *off,
                          const uint8_t **data, uint16_t *len);
 
+/* ------------------------------------------------------- the image head */
+
+/** @brief The head of an ESP-IDF application image as the device reads it
+ *         before its first flash write: the image header, the first
+ *         segment's header, esp_app_desc_t, then the rcbench role
+ *         (bleota_role_t), which ESP-IDF's `.rodata_custom_desc` places
+ *         right after esp_app_desc_t. @{ */
+#define BLEOTA_IMG_MAGIC  0xE9u       /**< byte 0 of the image */
+#define BLEOTA_HEAD_CHIP  12u         /**< the chip ID, 16 bits */
+#define BLEOTA_HEAD_DESC  32u         /**< esp_app_desc_t */
+#define BLEOTA_DESC_MAGIC 0xABCD5432u /**< its first word */
+#define BLEOTA_HEAD_ROLE  288u        /**< bleota_role_t: 32 + 256 */
+#define BLEOTA_ROLE_MAGIC 0x52626372u /**< "rcbR", least significant first */
+#define BLEOTA_ROLE_LEN   8u          /**< bleota_role_t's bytes */
+#define BLEOTA_HEAD_LEN   (BLEOTA_HEAD_ROLE + BLEOTA_ROLE_LEN) /**< 296 */
+/** @} */
+
+/** @brief The role an image is built for, in its `.rodata_custom_desc`. */
+typedef struct {
+    uint32_t magic;       /**< BLEOTA_ROLE_MAGIC */
+    uint8_t  kind;        /**< BLEOTA_KIND_* */
+    uint8_t  proto;       /**< BLEOTA_PROTO */
+    uint8_t  reserved[2]; /**< 0 */
+} bleota_role_t;
+
+/**
+ * @brief Check an image's head against the device that would take it.
+ * @param b    the image's first bytes
+ * @param n    their count; under BLEOTA_HEAD_LEN refuses
+ * @param chip the device's ESP chip ID
+ * @param kind the device's BLEOTA_KIND_*
+ * @return BLEOTA_OK; BLEOTA_E_KIND for another chip or another role;
+ *         BLEOTA_E_IMAGE for a head that is no application with a role
+ */
+uint8_t bleota_head_check(const uint8_t *b, size_t n, uint16_t chip,
+                          uint8_t kind);
+
 /* ---------------------------------------------------------- the device */
 
 /** @brief How a device takes its confirmation. @{ */
@@ -272,6 +317,7 @@ typedef struct {
     uint8_t  confirm; /**< BLEOTA_CONFIRM_* */
     uint32_t slot;    /**< the slot an image goes into, bytes */
     uint16_t ver[3];  /**< the version it runs */
+    uint16_t chip;    /**< its ESP chip ID, for bleota_head_check() */
 } bleota_dev_cfg_t;
 
 /** @brief Where a device's transfer stands. */
@@ -289,10 +335,12 @@ typedef enum {
 /** @brief What the device's caller does next (bleota_dev_poll()). */
 typedef enum {
     BLEOTA_DO_NONE = 0, /**< nothing */
-    BLEOTA_DO_OPEN,     /**< open the slot (the first erase), then
+    BLEOTA_DO_OPEN,     /**< open the slot without erasing it, then
                              bleota_dev_opened() */
     BLEOTA_DO_WRITE,    /**< bleota_dev_take() bytes, write them, add
-                             them to the SHA-256, bleota_dev_written() */
+                             them to the SHA-256, bleota_dev_written();
+                             only once the image's head passed
+                             bleota_head_check() */
     BLEOTA_DO_VERIFY,   /**< finish the SHA-256, bleota_dev_verify() */
     BLEOTA_DO_INSTALL,  /**< check the image, set the boot slot,
                              bleota_dev_installed() */
@@ -318,6 +366,7 @@ typedef struct {
     bool     open;          /**< the slot is open: a CLOSE is due on a fail */
     bool     close_due;     /**< DO_CLOSE is due */
     bool     end_asked;     /**< END came */
+    bool     head_ok;       /**< the image's head passed: writes may go */
     bool     key_down;      /**< the confirming key is down */
     bool     key_armed;     /**< the key was up since the window opened */
     uint32_t key_t;         /**< when it went down */
@@ -386,7 +435,9 @@ void bleota_dev_key(bleota_dev_t *d, bool down, uint32_t now);
 
 /**
  * @brief The link to the central ended: an open slot is dropped with no
- *        notification, an installed image still restarts.
+ *        notification.  An install under way (BLEOTA_DEV_INSTALL) goes on:
+ *        the boot slot may already be set, so its result decides, and an
+ *        installed image restarts.
  * @param d   the device
  */
 void bleota_dev_lost(bleota_dev_t *d);

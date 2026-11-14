@@ -123,6 +123,13 @@ void panel_dial_frame(const dial_model_in_t *in);
 void panel_dial_set_live(bool live);
 
 /**
+ * @brief Whether the bench is ARMED or a switch to ARMED waits, as the
+ *        control task last told (panel_dial_set_live()); any task.
+ * @return ARMED, or an arm waiting
+ */
+bool panel_dial_live(void);
+
+/**
  * @brief Losses while ARMED since start-up, each an error the control task
  *        takes once (dial_faults_follow()).
  * @return The count.

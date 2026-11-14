@@ -18,7 +18,11 @@
  * transfer; the Dial asks for a press of its screen button before it erases
  * anything.  At the end, installed or not, the client lets go of the Dial
  * and the Dial's link connects again from SETUP's values.  ARM is refused
- * from the hold to the end (panel_devupd_busy()).
+ * from the hold to the end (panel_devupd_busy(), a devupd_gate_t), and the
+ * `blec` task refuses the start when the bench is ARMED or an arm waits,
+ * at the take and again before the update client connects.  A link that
+ * ends after END leaves the install's result to the version the Dial
+ * reports once it is back (devupd_settle()).
  *
  * SPDX-License-Identifier: MIT
  */

@@ -4,7 +4,8 @@
  *        notification round-trips, every wrong length and unknown kind is
  *        refused, a CREDIT whose limit lies before its next offset and a
  *        FAIL code past the last are refused, and a chunk's length and the
- *        MTU's chunk size hold at both ends; random writes decode only
+ *        MTU's chunk size hold at both ends; the image head is checked
+ *        field by field; random writes decode only
  *        to their own bytes, and the device side takes them without a read
  *        or write outside its buffers.
  *
@@ -15,6 +16,7 @@
 
 #include "greatest.h"
 #include "bleota.h"
+#include "bleota_head.h"
 
 TEST_CASE(the_uuids_share_the_base_and_differ_in_their_first_byte)
 {
@@ -114,6 +116,15 @@ TEST_CASE(a_notification_round_trips_and_its_limits_hold)
     s.limit = s.next;
     (void)bleota_status_encode(&s, b);
     CHECK(bleota_status_decode(b, sizeof b, &r));
+    CHECK_EQ(r.code, BLEOTA_CREDIT_ROUTINE);
+    /* CREDIT's code: routine or the gap mark, nothing past it. */
+    s.code = BLEOTA_CREDIT_GAP;
+    (void)bleota_status_encode(&s, b);
+    CHECK(bleota_status_decode(b, sizeof b, &r));
+    CHECK_EQ(r.code, BLEOTA_CREDIT_GAP);
+    s.code = BLEOTA_CREDIT_GAP + 1u;
+    (void)bleota_status_encode(&s, b);
+    CHECK(!bleota_status_decode(b, sizeof b, &r));
     /* FAIL's code up to the last defined one. */
     s.ev = BLEOTA_EV_FAIL;
     s.code = BLEOTA_E_MAX;
@@ -210,7 +221,7 @@ TEST_CASE(random_writes_decode_only_to_their_own_bytes)
      * CTRL and as DATA, with its key toggled at random. */
     static uint8_t ring[BLEOTA_WINDOW];
     const bleota_dev_cfg_t cfg = { BLEOTA_KIND_DIAL, BLEOTA_CONFIRM_HOLD,
-                                   4096u, { 0u, 23u, 12u } };
+                                   4096u, { 0u, 23u, 12u }, 9u };
     bleota_dev_t d;
     CHECK(bleota_dev_init(&d, &cfg, ring, sizeof ring));
     uint32_t seed = 0x6D2B79F5u;
@@ -308,6 +319,49 @@ TEST_CASE(random_writes_decode_only_to_their_own_bytes)
     CHECK(ctrl > 10000u);
 }
 
+TEST_CASE(the_head_check_takes_only_this_chip_and_this_role)
+{
+    uint8_t h[BLEOTA_HEAD_LEN + 1u];
+    test_head_write(h, TEST_CHIP_C6, BLEOTA_KIND_NODE_BAL);
+    CHECK_EQ(bleota_head_check(h, BLEOTA_HEAD_LEN, TEST_CHIP_C6,
+                               BLEOTA_KIND_NODE_BAL), BLEOTA_OK);
+    CHECK_EQ(bleota_head_check(h, BLEOTA_HEAD_LEN + 1u, TEST_CHIP_C6,
+                               BLEOTA_KIND_NODE_BAL), BLEOTA_OK);
+    CHECK_EQ(bleota_head_check(h, BLEOTA_HEAD_LEN - 1u, TEST_CHIP_C6,
+                               BLEOTA_KIND_NODE_BAL), BLEOTA_E_IMAGE);
+    CHECK_EQ(bleota_head_check(h, BLEOTA_HEAD_LEN, TEST_CHIP_C6,
+                               BLEOTA_KIND_NODE_POWER), BLEOTA_E_KIND);
+    CHECK_EQ(bleota_head_check(h, BLEOTA_HEAD_LEN, TEST_CHIP_S3,
+                               BLEOTA_KIND_NODE_BAL), BLEOTA_E_KIND);
+    CHECK_EQ(bleota_head_check(NULL, BLEOTA_HEAD_LEN, TEST_CHIP_C6,
+                               BLEOTA_KIND_NODE_BAL), BLEOTA_E_IMAGE);
+    /* Each field broken alone. */
+    static const struct {
+        size_t  at;
+        uint8_t code;
+    } k_bytes[] = {
+        { 0u, BLEOTA_E_IMAGE },                       /* image magic */
+        { 1u, BLEOTA_E_IMAGE },                       /* segment count 0 */
+        { BLEOTA_HEAD_CHIP + 1u, BLEOTA_E_KIND },     /* chip's high byte */
+        { BLEOTA_HEAD_DESC + 3u, BLEOTA_E_IMAGE },    /* app desc magic */
+        { BLEOTA_HEAD_ROLE, BLEOTA_E_IMAGE },         /* role magic */
+        { BLEOTA_HEAD_ROLE + 3u, BLEOTA_E_IMAGE },
+        { BLEOTA_HEAD_ROLE + 5u, BLEOTA_E_IMAGE },    /* role's protocol */
+    };
+    for (size_t k = 0; k < sizeof k_bytes / sizeof k_bytes[0]; ++k) {
+        test_head_write(h, TEST_CHIP_C6, BLEOTA_KIND_NODE_BAL);
+        h[k_bytes[k].at] = k_bytes[k].at == 1u
+                               ? 0u : (uint8_t)(h[k_bytes[k].at] ^ 0x01u);
+        CHECK_EQ(bleota_head_check(h, BLEOTA_HEAD_LEN, TEST_CHIP_C6,
+                                   BLEOTA_KIND_NODE_BAL), k_bytes[k].code);
+    }
+    /* The role's reserved bytes are not read. */
+    test_head_write(h, TEST_CHIP_S3, BLEOTA_KIND_DIAL);
+    h[BLEOTA_HEAD_ROLE + 6u] = 0xFFu;
+    CHECK_EQ(bleota_head_check(h, BLEOTA_HEAD_LEN, TEST_CHIP_S3,
+                               BLEOTA_KIND_DIAL), BLEOTA_OK);
+}
+
 int main(void)
 {
     RUN(the_uuids_share_the_base_and_differ_in_their_first_byte);
@@ -318,5 +372,6 @@ int main(void)
     RUN(a_chunk_holds_one_to_240_image_bytes);
     RUN(the_chunk_fills_the_mtu_up_to_240_bytes);
     RUN(random_writes_decode_only_to_their_own_bytes);
+    RUN(the_head_check_takes_only_this_chip_and_this_role);
     return test_summary("bleota");
 }

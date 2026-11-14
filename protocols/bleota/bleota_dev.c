@@ -43,13 +43,16 @@ static uint32_t limit_of(const bleota_dev_t *d)
 
 /**
  * @brief Notify CREDIT with the next offset and the limit.
- * @param d the device
+ * @param d   the device
+ * @param gap BLEOTA_CREDIT_GAP: bytes from next on did not arrive, and the
+ *            central sends again from next; BLEOTA_CREDIT_ROUTINE otherwise
  */
-static void credit(bleota_dev_t *d)
+static void credit(bleota_dev_t *d, uint8_t gap)
 {
     bleota_status_t s;
     memset(&s, 0, sizeof s);
     s.ev = BLEOTA_EV_CREDIT;
+    s.code = gap;
     s.next = d->rx;
     s.limit = limit_of(d);
     d->told = s.limit;
@@ -143,6 +146,7 @@ static void begin(bleota_dev_t *d, const bleota_ctrl_t *c, uint32_t now)
     d->rx = d->wr = d->taken = d->told = 0u;
     d->nak_at = NAK_NONE;
     d->end_asked = false;
+    d->head_ok = false;
     d->code = BLEOTA_OK;
     d->st = BLEOTA_DEV_HASH;
     d->t = now;
@@ -210,13 +214,19 @@ void bleota_dev_ctrl(bleota_dev_t *d, const uint8_t *b, size_t n,
         d->t = now;
         break;
     case BLEOTA_OP_ABORT:
-        if (d->st != BLEOTA_DEV_IDLE && d->st != BLEOTA_DEV_DONE) {
+        /* An install under way may have set the boot slot already: its
+         * result decides, not the ABORT. */
+        if (d->st != BLEOTA_DEV_IDLE && d->st != BLEOTA_DEV_DONE
+            && d->st != BLEOTA_DEV_INSTALL) {
             fail(d, BLEOTA_E_ABORTED);
         }
         break;
     case BLEOTA_OP_POLL:
+        /* The central polls after a second without a CREDIT: bytes it was
+         * allowed to send and that have not come by then are lost. */
         if (d->st == BLEOTA_DEV_RECV) {
-            credit(d);
+            credit(d, d->rx < d->told ? BLEOTA_CREDIT_GAP
+                                      : BLEOTA_CREDIT_ROUTINE);
             d->t = now;
         }
         break;
@@ -240,7 +250,7 @@ void bleota_dev_data(bleota_dev_t *d, const uint8_t *b, size_t n,
         ++d->gaps;
         if (d->nak_at != d->rx) {
             d->nak_at = d->rx;
-            credit(d);
+            credit(d, BLEOTA_CREDIT_GAP);
         }
         return;
     }
@@ -262,7 +272,7 @@ void bleota_dev_data(bleota_dev_t *d, const uint8_t *b, size_t n,
     ++d->chunks;
     d->t = now;
     if (d->rx == d->size) {
-        credit(d);  /* every byte taken: the central sends END */
+        credit(d, BLEOTA_CREDIT_ROUTINE); /* every byte taken: END is due */
     }
 }
 
@@ -303,7 +313,13 @@ void bleota_dev_key(bleota_dev_t *d, bool down, uint32_t now)
 
 void bleota_dev_lost(bleota_dev_t *d)
 {
-    if (d == NULL || d->st == BLEOTA_DEV_DONE) {
+    if (d == NULL) {
+        return;
+    }
+    if (d->st == BLEOTA_DEV_DONE || d->st == BLEOTA_DEV_INSTALL) {
+        /* Installed, or the install under way decides: nobody is left
+         * to tell. */
+        d->out_n = 0u;
         return;
     }
     if (d->st != BLEOTA_DEV_IDLE) {
@@ -337,7 +353,17 @@ bleota_do_t bleota_dev_poll(bleota_dev_t *d, uint32_t now)
     case BLEOTA_DEV_OPEN:
         return BLEOTA_DO_OPEN;
     case BLEOTA_DEV_RECV:
-        if (d->rx != d->wr) {
+        if (!d->head_ok && (d->rx >= BLEOTA_HEAD_LEN || d->rx == d->size)) {
+            /* Nothing is written before the head names this device. */
+            const uint8_t why = bleota_head_check(d->ring, d->rx,
+                                                  d->cfg.chip, d->cfg.kind);
+            if (why != BLEOTA_OK) {
+                fail(d, why);
+                return d->close_due ? BLEOTA_DO_CLOSE : BLEOTA_DO_NONE;
+            }
+            d->head_ok = true;
+        }
+        if (d->head_ok && d->rx != d->wr) {
             return BLEOTA_DO_WRITE;
         }
         if (d->end_asked && d->wr == d->size) {
@@ -373,12 +399,12 @@ void bleota_dev_opened(bleota_dev_t *d, bool ok, uint32_t now)
     d->open = true;
     d->st = BLEOTA_DEV_RECV;
     d->t = now;
-    credit(d);
+    credit(d, BLEOTA_CREDIT_ROUTINE);
 }
 
 uint32_t bleota_dev_take(bleota_dev_t *d, uint8_t *out, uint32_t max)
 {
-    if (d == NULL || out == NULL || d->st != BLEOTA_DEV_RECV) {
+    if (d == NULL || out == NULL || d->st != BLEOTA_DEV_RECV || !d->head_ok) {
         return 0u;
     }
     uint32_t n = d->rx - d->wr;
@@ -408,7 +434,7 @@ void bleota_dev_written(bleota_dev_t *d, bool ok, uint32_t now)
     const uint32_t l = limit_of(d);
     if (l - d->told >= BLEOTA_CREDIT_STEP
         || (l == d->size && d->told != d->size)) {
-        credit(d);
+        credit(d, BLEOTA_CREDIT_ROUTINE);
     }
 }
 

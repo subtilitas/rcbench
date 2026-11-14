@@ -27,6 +27,7 @@
 #include "freertos/task.h"
 #include "nvs_flash.h"
 
+#include "devota.h"
 #include "node_policy.h"
 #include "rcbench_version.h"
 
@@ -202,7 +203,12 @@ static void node_loop(void)
                                 ? 0 : (TickType_t)(next - now);
         rcnode_ctl_t c;
         if (xQueueReceive(s_ctlq, &c, wait) == pdTRUE) {
-            if (c.op == RCNODE_OP_SLEEP) {
+            const bool down = c.op == RCNODE_OP_SLEEP || c.op == RCNODE_OP_OFF;
+            if (down && devota_active()) {
+                /* A firmware update's transfer or install runs. */
+                ESP_LOGW(NODE_TAG, "%s refused: a firmware update runs",
+                         c.op == RCNODE_OP_OFF ? "OFF" : "SLEEP");
+            } else if (c.op == RCNODE_OP_SLEEP) {
                 go_down(NODE_SLEEP, pol.low_reads);
             } else if (c.op == RCNODE_OP_OFF) {
                 go_down(NODE_OFF, pol.low_reads);
@@ -212,7 +218,10 @@ static void node_loop(void)
             continue;
         }
         const int ask = atomic_exchange(&s_ask, NODE_RUN);
-        if (ask != NODE_RUN) {
+        if (ask != NODE_RUN && devota_active()) {
+            ESP_LOGW(NODE_TAG, "%s refused: a firmware update runs",
+                     ask == NODE_OFF ? "off" : "sleep");
+        } else if (ask != NODE_RUN) {
             go_down((node_act_t)ask, pol.low_reads);
         }
         next += pdMS_TO_TICKS(STEP_MS);
@@ -226,6 +235,7 @@ static void node_loop(void)
             .pack   = node_role.busy(),
             .stay   = atomic_load(&s_stay),
             .bat_mv = bat,
+            .update = devota_active(),
         };
         const node_act_t act = node_policy_step(&pol, &in);
         s_low_reads = pol.low_reads;

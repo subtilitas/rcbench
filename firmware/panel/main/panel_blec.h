@@ -18,7 +18,7 @@
  * | --- | --- | --- |
  * | 0 | the Bluetooth IMU | panel_imu.c |
  * | 1 | the M5Stack Dial | panel_dial.c |
-| 4 | a wireless device's update | panel_devupd.c |
+ * | 4 | a wireless device's update | panel_devupd.c |
  *
  * SPDX-License-Identifier: MIT
  */

@@ -45,6 +45,9 @@
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 
+/** @brief The image's role, which an update over Bluetooth LE checks. */
+DEVOTA_ROLE(BLEOTA_KIND_DIAL);
+
 /** @brief The panel's packets waiting for the face task. */
 #define PANEL_QUEUE 32u
 /** @brief NVS namespace and key of the bound panel. @{ */

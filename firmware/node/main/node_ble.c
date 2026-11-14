@@ -29,6 +29,13 @@
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
 
+/** @brief The image's role, which an update over Bluetooth LE checks. */
+#if CONFIG_RCNODE_ROLE_BALANCE
+DEVOTA_ROLE(BLEOTA_KIND_NODE_BAL);
+#else
+DEVOTA_ROLE(BLEOTA_KIND_NODE_POWER);
+#endif
+
 /** @brief STREAM packets waiting for `ble_tx`: 32 is 640ms of windows. */
 #define TX_QUEUE_LEN 32u
 /** @brief The advertising interval, ms. */

@@ -411,6 +411,11 @@ void panel_dial_set_live(bool live)
     atomic_store(&s_live, live);
 }
 
+bool panel_dial_live(void)
+{
+    return atomic_load(&s_live);
+}
+
 uint32_t panel_dial_errors(void)
 {
     return atomic_load(&s_errors);

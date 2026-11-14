@@ -12,8 +12,11 @@
  * step (open the slot, write what was taken, finish the SHA-256, install,
  * restart), and the notifications, which go to the central while it is
  * subscribed to CTRL.  The slot opens only after the confirmation, with
- * esp_ota_begin()'s sequential erase, so nothing is erased before it.
- * END compares the SHA-256 of every byte written with BEGIN's; then
+ * esp_ota_begin()'s sequential erase, so nothing is erased before it; the
+ * first write waits for the image's head, which must name this chip and
+ * this role (bleota_head_check()): an image without the role's
+ * `.rodata_custom_desc` (DEVOTA_ROLE()) or of another role is refused
+ * before anything is written.  END compares the SHA-256 of every byte written with BEGIN's; then
  * esp_ota_end() checks the image itself (chip, segments, its appended
  * SHA-256 read back from flash) and esp_ota_set_boot_partition() makes it
  * the next start.
@@ -23,7 +26,10 @@
  * valid at its first connection, which the image takes only with its
  * Bluetooth LE stack running.  A start before that, other than a wake from
  * deep sleep with CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP, goes back
- * to the image before it.
+ * to the image before it.  The trial is the bootloader's: a device whose
+ * bootloader was flashed before rollback was enabled takes updates over
+ * the air with no trial and no rollback, until a USB flash brings the new
+ * bootloader.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,7 +39,6 @@
 #include <stdint.h>
 
 #include "bleota.h"
-#include "host/ble_gatt.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -42,11 +47,28 @@ extern "C" {
 /** @brief The `ota` task's period, ms. */
 #define DEVOTA_POLL_MS 10u
 /** @brief The `ota` task's stack, bytes: esp_ota_end() reads the image back
- *         and checks it on this stack. */
-#define DEVOTA_STACK 4096u
+ *         and checks it on this stack; ESP-IDF's OTA examples give 8,192.
+ *         Its depth is not measured. */
+#define DEVOTA_STACK 8192u
 /** @brief From DONE's notification to the restart, ms: time for it to go
  *         out. */
 #define DEVOTA_RESTART_MS 500u
+
+/**
+ * @brief The role this image is built for, in the `.rodata_custom_desc`
+ *        section that ESP-IDF places right after esp_app_desc_t, where
+ *        bleota_head_check() reads it.  One firmware file names it once:
+ *        `DEVOTA_ROLE(BLEOTA_KIND_DIAL);`.  devota_start() refuses a kind
+ *        other than this one.
+ * @param k BLEOTA_KIND_*
+ */
+#define DEVOTA_ROLE(k)                                                     \
+    __attribute__((section(".rodata_custom_desc"), used))                  \
+    const bleota_role_t devota_role = { BLEOTA_ROLE_MAGIC, (k),             \
+                                        BLEOTA_PROTO, { 0u, 0u } }
+
+/** @brief The role DEVOTA_ROLE() defines. */
+extern const bleota_role_t devota_role;
 
 /**
  * @brief Whether the confirming key is down; called from the `ota` task.
@@ -72,8 +94,8 @@ typedef struct {
  * @param kind    BLEOTA_KIND_* of this image
  * @param confirm BLEOTA_CONFIRM_*
  * @param key     the confirming key's reader
- * @return false when the slot, the task or the service is not there; the
- *         device then takes no update
+ * @return false when the slot, the task or the service is not there, or
+ *         @p kind is not devota_role's; the device then takes no update
  */
 bool devota_start(uint8_t kind, uint8_t confirm, devota_key_fn key);
 

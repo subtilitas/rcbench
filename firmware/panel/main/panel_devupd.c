@@ -114,6 +114,7 @@ typedef struct {
     unsigned     secs;      /**< DEVUPD_CONFIRM: seconds given */
     uint32_t     end_seq;   /**< updates ended, counted */
     bool         ok;        /**< the last one installed */
+    bool         unknown;   /**< its install's result is not known */
     uint8_t      err;       /**< otherwise devupd_err_t */
     uint8_t      code;      /**< and the device's BLEOTA_E_* */
 } pub_t;
@@ -140,10 +141,13 @@ static pub_t           s_next;
 static portMUX_TYPE    s_mux = portMUX_INITIALIZER_UNLOCKED;
 /** @brief Published by `blec`, read by the frame. */
 static pub_t           s_pub;
-/** @brief The frame asked for a start. */
-static atomic_bool     s_start_req;
-/** @brief panel_devupd_busy(). */
-static atomic_bool     s_busy;
+/** @brief The start between the frame and `blec`, and panel_devupd_busy(). */
+static devupd_gate_t   s_gate;
+/** @brief An install whose result is not known waits for the Dial's
+ *         version, the `blec` task's own. @{ */
+static bool            s_settle;
+static uint32_t        s_settle_t;  /**< when the transfer ended */
+/** @} */
 /** @brief The frame task's last end_seq. */
 static uint32_t        s_seen_end;
 /** @brief The frame task's last phase, for the band's ask. */
@@ -151,7 +155,7 @@ static uint8_t         s_seen_phase;
 
 bool panel_devupd_busy(void)
 {
-    return atomic_load(&s_busy);
+    return devupd_gate_busy(&s_gate);
 }
 
 void panel_devupd_start(void)
@@ -196,6 +200,12 @@ static void check_next(void)
         }
         c->err = fw_image_check_as(c->p, c->n, c->slot, c->chip, c->project,
                                    &c->info);
+        if (c->err == FW_OK
+            && bleota_head_check(c->p, c->n, c->chip, c->kind) != BLEOTA_OK) {
+            /* The role in its .rodata_custom_desc names another device:
+             * the two node roles share chip and project. */
+            c->err = FW_ERR_PROJECT;
+        }
         if (c->err != FW_OK) {
             c->st = IMG_BAD;
             ESP_LOGE(TAG, "the carried %s image fails its check: %s",
@@ -224,6 +234,19 @@ static void check_next(void)
 static void finish(bool ok, uint8_t err, uint8_t code, uint32_t now)
 {
     const uint32_t ms = now - s_t0;
+    s_stage = STAGE_IDLE;
+    panel_dial_blec_hold(false, now);
+    devupd_gate_end(&s_gate);
+    if (!ok && err == DEVUPD_E_UNSURE) {
+        ESP_LOGW(TAG, "Dial update: the link ended after END, or DONE did "
+                      "not come; the Dial's version after its restart says "
+                      "whether %u.%u.%u is installed",
+                 (unsigned)s_im.version.major, (unsigned)s_im.version.minor,
+                 (unsigned)s_im.version.patch);
+        s_settle = true;
+        s_settle_t = now;
+        return;
+    }
     if (ok) {
         ESP_LOGI(TAG, "Dial update done: %u.%u.%u installed, %lu bytes in "
                       "%lums, %lu bytes/s, %lu rewinds, %lu polls; the Dial "
@@ -242,11 +265,37 @@ static void finish(bool ok, uint8_t err, uint8_t code, uint32_t now)
                  (unsigned long)ms);
     }
     s_next.ok = ok;
+    s_next.unknown = false;
     s_next.err = err;
     s_next.code = code;
     ++s_next.end_seq;
-    s_stage = STAGE_IDLE;
-    panel_dial_blec_hold(false, now);
+}
+
+/**
+ * @brief Settle an install whose result is not known by the version the
+ *        Dial reports once it is back (devupd_settle()).
+ * @param linked the Dial is connected and its INFO taken
+ * @param ver    the version INFO named
+ * @param now    the clock
+ */
+static void settle(bool linked, const uint8_t ver[3], uint32_t now)
+{
+    const fw_version_t run = { ver[0], ver[1], ver[2] };
+    const devupd_settle_t r = devupd_settle(linked, run, s_im.version,
+                                            now - s_settle_t);
+    if (r == DEVUPD_SETTLE_WAIT) {
+        return;
+    }
+    s_settle = false;
+    ESP_LOGI(TAG, "Dial update settled: %s, the Dial runs %u.%u.%u",
+             r == DEVUPD_SETTLE_DONE ? "installed"
+             : r == DEVUPD_SETTLE_FAILED ? "not installed" : "not known",
+             (unsigned)ver[0], (unsigned)ver[1], (unsigned)ver[2]);
+    s_next.ok = r == DEVUPD_SETTLE_DONE;
+    s_next.unknown = r == DEVUPD_SETTLE_UNKNOWN;
+    s_next.err = DEVUPD_E_LOST;
+    s_next.code = 0u;
+    ++s_next.end_seq;
 }
 
 /**
@@ -326,8 +375,19 @@ void panel_devupd_blec_poll(uint32_t now)
     bool linked = false, down = false;
     uint8_t ver[3] = { 0u, 0u, 0u };
     const bool bound = panel_dial_blec_target(&addr, &linked, ver, &down);
-    if (atomic_exchange(&s_start_req, false)) {
+    const devupd_take_t take = devupd_gate_take(&s_gate, panel_dial_live());
+    if (take == DEVUPD_TAKE_START) {
+        s_settle = false;
         begin(bound, linked, ver, now);
+    } else if (take == DEVUPD_TAKE_ARMED) {
+        ESP_LOGW(TAG, "Dial update refused: the bench is ARMED");
+        s_t0 = now;
+        s_stage = STAGE_HOLD;
+        finish(false, DEVUPD_E_ARMED, 0u, now);
+    }
+    if (s_stage == STAGE_HOLD && panel_dial_live()) {
+        ESP_LOGW(TAG, "Dial update ended before its start: ARMED");
+        finish(false, DEVUPD_E_ARMED, 0u, now);
     }
     if (s_stage == STAGE_HOLD) {
         if (bound && down) {
@@ -345,6 +405,9 @@ void panel_devupd_blec_poll(uint32_t now)
             finish(s_cli.e.phase == DEVUPD_DONE, s_cli.e.err,
                    s_cli.e.dev_code, now);
         }
+    }
+    if (s_settle && s_stage == STAGE_IDLE) {
+        settle(bound && linked, ver, now);
     }
     const carried_t *c = &s_img[0];
     s_next.img_due = c->st == IMG_DUE;
@@ -400,8 +463,6 @@ void panel_devupd_blec_publish(uint32_t now)
     taskENTER_CRITICAL(&s_mux);
     s_pub = s_next;
     taskEXIT_CRITICAL(&s_mux);
-    atomic_store(&s_busy, s_stage != STAGE_IDLE
-                              || atomic_load(&s_start_req));
 }
 
 /**
@@ -419,6 +480,7 @@ static const char *fail_text(const pub_t *p, char *buf, size_t n)
         case DEVUPD_E_LOST:    return TR(DEV_FAIL_LOST);
         case DEVUPD_E_TIMEOUT: return TR(DEV_FAIL_TIMEOUT);
         case DEVUPD_E_WRITE:   return TR(DEV_FAIL_WRITE);
+        case DEVUPD_E_ARMED:   return TR(DEV_FAIL_ARMED);
         default:
             snprintf(buf, n, TR(DEV_FAIL_OTHER), (unsigned)p->err);
             return buf;
@@ -446,9 +508,10 @@ void devupd_service(bool armed)
     taskENTER_CRITICAL(&s_mux);
     p = s_pub;
     taskEXIT_CRITICAL(&s_mux);
-    const bool busy = atomic_load(&s_busy);
+    const bool busy = devupd_gate_busy(&s_gate);
     const devupd_row_in_t in = {
-        .have_image = p.have_img, .image_ok = p.img_ok || p.img_due,
+        .have_image = p.have_img, .image_due = p.img_due,
+        .image_ok = p.img_ok,
         .linked = p.linked, .known = p.linked, .running = p.running,
         .carried = p.carried, .armed = armed,
         .other = panel_c6_busy() || panel_cu_busy() || panel_fw_busy(),
@@ -462,8 +525,7 @@ void devupd_service(bool armed)
     upd_dev_set(UPD_DEV_DIAL, &v);
     if (upd_dev_take(UPD_DEV_DIAL)) {
         if (v.row == DEVUPD_ROW_READY || v.row == DEVUPD_ROW_REINSTALL) {
-            atomic_store(&s_busy, true);
-            atomic_store(&s_start_req, true);
+            devupd_gate_ask(&s_gate);
         } else {
             ui_router_set_notice(upd_dev_reason(&v));
         }
@@ -480,6 +542,8 @@ void devupd_service(bool armed)
                  (unsigned)p.carried.minor, (unsigned)p.carried.patch);
         if (p.ok) {
             snprintf(line, sizeof(line), TR(ALERT_DEV_DONE), "Dial", ver);
+        } else if (p.unknown) {
+            snprintf(line, sizeof(line), TR(ALERT_DEV_UNKNOWN), "Dial");
         } else {
             snprintf(line, sizeof(line), TR(ALERT_DEV_FAILED), "Dial",
                      fail_text(&p, other, sizeof(other)));

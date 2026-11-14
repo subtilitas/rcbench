@@ -319,7 +319,14 @@ bool devota_start(uint8_t kind, uint8_t confirm, devota_key_fn key)
         .kind = kind, .confirm = confirm,
         .slot = next != NULL ? next->size : 0u,
         .ver = { (uint16_t)v[0], (uint16_t)v[1], (uint16_t)v[2] },
+        .chip = (uint16_t)CONFIG_IDF_FIRMWARE_CHIP_ID,
     };
+    if (devota_role.magic != BLEOTA_ROLE_MAGIC || devota_role.kind != kind) {
+        ESP_LOGE(TAG, "this image's role is kind %u, not %u: updates over "
+                      "Bluetooth LE are off", (unsigned)devota_role.kind,
+                 (unsigned)kind);
+        return false;
+    }
     s_lock = xSemaphoreCreateMutex();
     s_key = key;
     if (next == NULL || s_lock == NULL || psa_crypto_init() != PSA_SUCCESS

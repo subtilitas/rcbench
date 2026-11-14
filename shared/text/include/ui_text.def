@@ -6054,6 +6054,9 @@ UI_TEXT(ALERT_DEV_DONE, 94,
 UI_TEXT(ALERT_DEV_FAILED, 94,
     "%s update stopped: %s. Previous firmware is running.",
     "%s-Update abgebrochen: %s. Vorherige Firmware läuft.")
+UI_TEXT(ALERT_DEV_UNKNOWN, 94,
+    "%s did not report after its update. Check its version on UPDATES.",
+    "%s hat sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.")
 UI_TEXT(ALERT_DIAL_ASK, 94,
     "Press the Dial's screen button within 30s to accept the update.",
     "Drücke innerhalb von 30s die Taste am Dial, um das Update anzunehmen.")
@@ -6093,6 +6096,9 @@ UI_TEXT(DEV_FAIL_FLASH, 36,
 UI_TEXT(DEV_FAIL_IMAGE, 36,
     "the device refused the image",
     "Gerät hat das Image abgelehnt")
+UI_TEXT(DEV_FAIL_ARMED, 36,
+    "the bench is not SAFE",
+    "der Prüfstand ist nicht SAFE")
 UI_TEXT(DEV_FAIL_OTHER, 36,
     "error %u",
     "Fehler %u")
@@ -8614,6 +8620,9 @@ UI_TEXT(DEV_WHY_NO_IMAGE, 94,
 UI_TEXT(DEV_WHY_BAD_IMAGE, 94,
     "The included firmware for this device failed its check.",
     "Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.")
+UI_TEXT(DEV_WHY_CHECKING, 94,
+    "The included firmware for this device is being checked.",
+    "Die enthaltene Firmware für dieses Gerät wird geprüft.")
 UI_TEXT(DEV_WHY_NOT_LINKED, 94,
     "Connect the device on WIRELESS first.",
     "Verbinde das Gerät zuerst auf WIRELESS.")
