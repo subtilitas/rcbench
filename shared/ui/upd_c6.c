@@ -103,6 +103,7 @@ const char *upd_c6_reason(const upd_c6_view_t *v)
         case FW_C6_WHY_INSTALL: return TR(C6_WHY_INSTALL);
         case FW_C6_WHY_RADIO:   return TR(C6_WHY_RADIO);
         case FW_C6_WHY_BLE:     return TR(C6_WHY_BLE);
+        case FW_C6_WHY_DEVICE:  return TR(C6_WHY_DEVICE);
         case FW_C6_WHY_ENDING:
         case FW_C6_WHY_NONE:
         default:                return TR(C6_WHY_ENDING);

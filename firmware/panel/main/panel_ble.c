@@ -1076,3 +1076,22 @@ bool panel_ble_do(const bleu_act_t *a, int *written)
     }
     return false;
 }
+
+int panel_ble_write_chunk(uint16_t conn, uint16_t handle, const uint8_t *hdr,
+                          uint16_t hdr_n, const uint8_t *data, uint16_t n)
+{
+    if (hdr == NULL || data == NULL) {
+        return BLE_HS_EINVAL;
+    }
+    /* The header and the image's own bytes in one buffer chain: the image
+     * stays where it is mapped, nothing is copied into a chunk first. */
+    struct os_mbuf *om = ble_hs_mbuf_from_flat(hdr, hdr_n);
+    if (om == NULL) {
+        return BLE_HS_ENOMEM;
+    }
+    if (os_mbuf_append(om, data, n) != 0) {
+        os_mbuf_free_chain(om);
+        return BLE_HS_ENOMEM;
+    }
+    return ble_gattc_write_no_rsp(conn, handle, om);
+}

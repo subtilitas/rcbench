@@ -15,6 +15,10 @@
  * reading at a wake switches nothing off.  A divider reading under
  * NODE_BAT_NONE_MV is no cell (the board on USB alone) and switches nothing
  * off.  A failed read (NODE_BAT_ERR) neither counts nor clears the count.
+ * While a firmware update's transfer or install runs (node_inputs_t's
+ * update), the node does not sleep and switches off only for a cell under
+ * NODE_UPD_OFF_MV, NODE_OFF_READS readings in a row: the cell's protection
+ * stands, the 3.3V switch-off waits for the update's end.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -46,6 +50,10 @@ extern "C" {
 #define NODE_BAT_NONE_MV 1000u
 /** @brief Readings in a row under RCNODE_BAT_OFF_MV before the node switches off. */
 #define NODE_OFF_READS 3u
+/** @brief While an update runs, the switch-off threshold, mV: a cell this
+ *  low is empty; the update ends with the node and the image it ran
+ *  stays. */
+#define NODE_UPD_OFF_MV 3000u
 
 /** @brief What the node does next. */
 typedef enum {
@@ -61,6 +69,7 @@ typedef struct {
     bool     pack;    /**< a pack is on the XT60 (the power role's bus voltage is 5.0V or more) */
     bool     stay;    /**< the console holds the node awake */
     uint16_t bat_mv;  /**< the cell, mV, from node_bat_mv(), or NODE_BAT_ERR */
+    bool     update;  /**< a firmware update's transfer or install runs */
 } node_inputs_t;
 
 /** @brief The policy's memory. */
@@ -85,9 +94,10 @@ void node_policy_init(node_policy_t *p, uint32_t now_ms, uint8_t low_reads);
  *
  * @param p The policy.
  * @param in What the node sees.
- * @return NODE_OFF after NODE_OFF_READS low readings in a row, NODE_SLEEP
- *         after NODE_IDLE_MS without a link, a pack or the console's hold,
- *         NODE_RUN otherwise.
+ * @return NODE_OFF after NODE_OFF_READS low readings in a row (under
+ *         NODE_UPD_OFF_MV while an update runs), NODE_SLEEP after
+ *         NODE_IDLE_MS without a link, a pack, the console's hold or an
+ *         update, NODE_RUN otherwise.
  */
 node_act_t node_policy_step(node_policy_t *p, const node_inputs_t *in);
 

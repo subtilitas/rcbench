@@ -199,7 +199,9 @@ role). The panel then takes that device's packets as the real one's:
   bench is SAFE the Dial's focus reaches the overview, SETUP, the SERVO
   hub and the OUTPUTS board view, so the device can open those screens,
   set any setting a row offers, tap RESET, SAVE and DISCARD, and pick a
-  pin's protocol on the OUTPUTS board. That includes the protection
+  pin's protocol on the OUTPUTS board. It does not reach UPDATES, so it
+  cannot open WIRELESS DEVICES, start a device update or tap CANCEL
+  UPDATE. That includes the protection
   settings: RESET on SENSORS sets an INA3221 channel's LIMIT to its
   default, and LIMIT 0 turns that channel's overcurrent trip off for the
   runs after it. No 2s hold completes from the Dial, so CLEAR ALL and the
@@ -217,9 +219,39 @@ role). The panel then takes that device's packets as the real one's:
 - Balance node: its reports. A capture takes them, so a false report
   produces an ADD and WHERE correction and a CSV row. A CONTROL write the
   panel sends (BLADES, RPM) reaches whichever device holds the link.
+- The device update on UPDATES: the panel's update client connects to the
+  same stored address, sends the image this panel carries to whichever
+  device holds it, and takes that device's answers and its version as the
+  real one's. A false device can show an install that did not happen, or
+  a refusal, on the band and in the row; it receives only an image built
+  from this repository. The device side of the update is the next
+  paragraph.
 
 The planned remedy is pairing with bonding (LE Secure Connections), a
 planned slice that is not built.
+
+Current limitation, the wireless devices' firmware update: the update
+service on the M5Stack Dial and the sensor nodes (`protocols/bleota`) has
+no pairing, no encryption and no signature. An image is tied to its
+transfer by the SHA-256 the central sends in BEGIN, nothing more. The
+trigger is any BLE central in range that connects while no other central
+holds the device and writes BEGIN with an image of the device's kind: the
+device then asks for the physical confirmation, and a person who presses
+the Dial's screen button, or holds a node's BOOT key for 1s, within 30s
+installs that central's image. Nothing is erased before the confirmation,
+and no confirmation is a refusal. What limits it: the confirmation names
+the running and the offered version on the Dial; nothing is written before
+the image's head names the device's chip and role; ESP-IDF checks the
+image's chip, segments and appended SHA-256 before it becomes the boot
+slot; and the rollback starts the image before it again when the new one
+does not take a connection with its Bluetooth LE stack running. An image
+that runs Bluetooth LE and takes a connection stays. The rollback needs the
+bootloader built with it: a device flashed over USB before this firmware
+takes updates over the air with no trial and no rollback until it is
+flashed once over USB. A link that drops, or an ABORT that comes, while the
+device installs does not stop the install: the boot slot may already be
+switched, so the device restarts into the image when it passed ESP-IDF's
+check, and the panel learns the result from the device's version.
 
 Two classes of report apply.
 
@@ -264,7 +296,8 @@ The following modules parse input from outside their own trusted state:
 | `shared/webaccess` | requests to the Wi-Fi page: the `Host`, `Origin`, `Referer` and `X-Rcbench-Upload` headers (`wa_guard()`: a host part of at most 63 bytes, the panel's names in any letter case, its dotted address, port 80 or none, no IPv6 literal, `http://` only), the `Cookie` header up to the server's 1024-byte header limit, the URI (uniform resource identifier) path of a card file (percent decoding; `..`, an absolute path, a backslash, an encoded `.` or `/` that forms a traversal, NUL, a name over 255 characters and a path over 384 bytes are refused, and the path stays under the card's mount point), the access code from the form and the cookie (8 characters, compared in full), the upload's declared length, and mDNS (multicast domain name system) queries: at most 512 bytes, every label and compression pointer checked against the packet's end, at most 16 pointer hops |
 | `protocols/hc05` | answer lines of an HC-05 Bluetooth module on its UART (universal asynchronous receiver-transmitter): a line held to 95 bytes, the rest dropped; `OK`, `FAIL`, `ERROR:(hh)` with 1 or 2 hex digits; `+INQ:` lines (an address of 1 to 4, 1 to 2 and 1 to 6 hex digits, a class of 1 to 6 and an RSSI of 1 to 4, any other form dropped, at most 8 devices kept); the remote device names of `+RNAME:`, cut to 31 bytes with each byte outside printable ASCII shown as `?`; the version text, cut to 23 bytes the same way |
 | `protocols/rcnode` | packets from a sensor node over BLE, and on the node the CONTROL writes from any central: every packet's length fixed by its type byte, an unknown type refused, a balance phase of 3600 or more and a quality over 100 refused (and never encoded), a status's sensor state past the last refused, an info's protocol or role of 0 refused; a control write's length fixed by its operation, a RUN tag of 0, a blade count outside 1 to 12 and an rpm over 60000 refused, an operation the node's role does not take refused; advertising reports: each AD (advertising data) structure held to the report, a length past the end refusing the report |
-| `protocols/bleuart` | advertising reports and GATT (generic attribute profile) answers from any BLE (Bluetooth Low Energy) device in range, passed in by the host stack: each AD (advertising data) structure held to the report (a length 0 ends it, a length past the end drops the rest), a 16-bit UUID (universally unique identifier) list read in pairs and a 128-bit list in 16-byte steps, names ended at their first NUL and cut to 23 bytes with each other byte outside printable ASCII shown as `?`, a report listed only when it advertises the machine's profile's service; at most 8 devices listed and 32 other addresses remembered; an event of more than 40 data bytes taken as at most 40, a notification longer than that and one on another handle or connection not passed on; a GATT answer whose token is not the step's under way dropped; only the STREAM characteristic's CCCD and the CMD characteristic's value are ever written (the ISSC profile's 1E4D and 8841, the Dial's EVENT and SCREEN); a PARAM value kept to its first 20 bytes; the stored address text read only in the form `00:0C:BF:08:19:29 P` |
+| `protocols/bleuart` | advertising reports and GATT (generic attribute profile) answers from any BLE (Bluetooth Low Energy) device in range, passed in by the host stack: each AD (advertising data) structure held to the report (a length 0 ends it, a length past the end drops the rest), a 16-bit UUID (universally unique identifier) list read in pairs and a 128-bit list in 16-byte steps, names ended at their first NUL and cut to 23 bytes with each other byte outside printable ASCII shown as `?`, a report listed only when it advertises the machine's profile's service; at most 8 devices listed and 32 other addresses remembered; an event of more than 40 data bytes taken as at most 40, a notification longer than that and one on another handle or connection not passed on; a GATT answer whose token is not the step's under way dropped; only the STREAM characteristic's CCCD and the CMD characteristic's value are ever written (the ISSC profile's 1E4D and 8841, the Dial's EVENT and SCREEN, the update service's CTRL for both); the update service's DATA chunks are written by the panel's own code beside the machine; a PARAM value kept to its first 20 bytes; the stored address text read only in the form `00:0C:BF:08:19:29 P` |
+| `protocols/bleota` | on a device (the M5Stack Dial, a sensor node), the CTRL and DATA writes of any central in range: a control write's length fixed by its op (BEGIN 14 bytes, HASH 18, END, ABORT and POLL 1), an unknown op refused, a HASH part over 1 refused; BEGIN refused with a code before anything is erased for another protocol version or a flag not defined, another device's kind, a size of 0 or over the slot (3,145,728 bytes on the Dial, 1,572,864 on a node), and the running version without the reinstall flag; a BEGIN while a transfer stands refused; nothing erased before a press on the device within 30s; a chunk of 5 to 244 bytes, taken only at the next offset and below the credit limit, the rest dropped and counted; nothing written before the image's first 296 bytes name the device's chip ID and its role (`bleota_head_check()`: the image magic, a segment count of 1 or more, the application descriptor's magic, the role's magic, kind and protocol after it), another chip or role refused as `E_KIND` and anything else as `E_IMAGE`; the SHA-256 of every byte written compared with BEGIN's before the boot slot is set, and ESP-IDF's own image check after it; 10s without a write, a lost link or an ABORT closes the slot and keeps the running image, except during the install, whose result decides (200,000 random writes in `test_bleota`). On the panel, the device's notifications: 12 bytes exactly, an event other than 0x81 to 0x84 refused, a FAIL code past 14 refused, a CREDIT code past 1 (the gap mark) refused, a CREDIT whose limit lies before its next offset refused |
 | `protocols/dialknob` | packets between the panel and an M5Stack Dial over BLE (Bluetooth Low Energy), in both directions: each of the eleven kinds held to its exact length, 20 bytes at most; every field to its range (touch 0 to 239, battery 2,000 to 5,000mV or 0 with its flag, throttle 0 to 10,000, temperatures -40 to 125°C, pulses 0 or 400 to 2,500us, angles, steps 1 to 100, a VALUE_META's min at most its max and its step at least 1, a SCALE's travel 0 to 1,800 and its two pulse ends both 0 or 400 to 2,500us in order); reserved bits and bytes 0; a reading without its valid bit 0; text fields UTF-8 without an overlong form, a surrogate, a code point above U+10FFFF or a control character, and NUL after their first NUL; a decoded packet encodes to the same bytes (1,000,000 random packets in `test_dialknob`); the panel's turn tracker drops a repeated seq and takes a counter difference of more than 16 detents, a packet more than 300ms after the last and the first after a connect as a reference that moves nothing |
 
 The table combines modules detected from public-header function names

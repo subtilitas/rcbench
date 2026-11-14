@@ -18,6 +18,7 @@ UPDATES checks GitHub for newer panel firmware and offers to install it. Open it
 | HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 | HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
 | HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE | the same, while the C6 reports the carried version |
+| WIRELESS DEVICE FIRMWARE | opens the page of the Dial's and the sensor nodes' firmware rows, see [Wireless devices](#wireless-devices); while an update runs it reads that row's label |
 
 ## Settings
 
@@ -162,10 +163,59 @@ While the update runs, ARM is refused and Wi-Fi stays off. It ends with one aler
 
 After every end but the first, the C6 keeps the firmware it ran and Wi-Fi works as before (after a failed link only once the panel restarts). The flash over header H4 with a USB-UART adapter is in [The ESP32-C6 radio](https://github.com/subtilitas/rcbench/wiki/C6#recovery-over-header-h4).
 
+## Wireless devices
+
+![The WIRELESS DEVICES entry while the Dial asks for its press](view:updates-dial)
+
+The WIRELESS DEVICES entry counts the devices that reported a version and those offered another version: `Connected: 1 of 3. Another version: 0.` WIRELESS DEVICE FIRMWARE opens the page. BACK and the home tag close it.
+
+![The wireless devices' page](view:updates-devices)
+
+| Control | What it does |
+|---|---|
+| HOLD 2s TO UPDATE THE DIAL | sends the M5Stack Dial's image this panel carries to the linked Dial over Bluetooth LE, see [The Dial](#the-dial) |
+| HOLD 2s TO REINSTALL THE DIAL FIRMWARE | the same, while the Dial reports the carried version |
+| HOLD 2s TO UPDATE THE POWER NODE | sends the power node's image to the bound power node, see [The sensor nodes](#the-sensor-nodes) |
+| HOLD 2s TO REINSTALL THE POWER NODE | the same, while the node reports the carried version |
+| HOLD 2s TO UPDATE THE BALANCE NODE | sends the balance node's image to the bound balance node |
+| HOLD 2s TO REINSTALL THE BALANCE NODE | the same, while the node reports the carried version |
+| CANCEL UPDATE | in the footer's middle while an update runs, a plain tap: ends the update before its last byte, and the device keeps its firmware; from then on the device installs and the key is grey |
+| BACK | closes the page |
+
+One update runs at a time; while one runs, the other holds are grey.
+
+## The Dial
+
+The DIAL FIRMWARE row shows the linked Dial's version and the version of the Dial image this panel carries: `Dial: 0.21.0. Included: 0.22.0.` The hold needs the bench SAFE, a linked Dial and no other update running. A tap on the grey hold shows the reason on the alert band, for example `Connect the device on WIRELESS first.`
+
+1. The hold ends the Dial's knob link; the button reads `DIAL UPDATE: CONNECTING`.
+2. The Dial shows the update's versions and asks for a press of its screen button for 30s; the button reads `PRESS THE DIAL TO ACCEPT: 27s`. A press accepts, a 1s hold on the Dial refuses, no press refuses. Nothing is erased before the answer.
+3. The Dial writes the image; the button reads `DIAL UPDATE 37%`.
+4. The Dial checks the image's SHA-256 (Secure Hash Algorithm, 256 bits), installs it and restarts. The alert reads `Dial updated to 0.22.0. It connects again by itself.`
+
+Any other end reads `Dial update stopped: <reason>. Previous firmware is running.`, for example `not accepted within 30s` or `image arrived damaged`; the Dial keeps the firmware it ran. When the link drops after the last byte, the Dial may be installing: the panel waits up to 60s for its version and reports what it finds, or `Dial did not report after its update. Check its version on UPDATES.` While the update runs, ARM is refused with `Cannot switch to ARMED: a wireless device update is running.` and the C6 radio's update waits. The knob does not drive the panel until its link connects again; that gap is no loss error.
+
+The image carries no signature: the Dial accepts any Dial image a nearby device sends once its screen button is pressed. It refuses another device's image before writing anything. A new image that restarts before its first connection goes back to the one before it; a Dial last flashed over USB before this firmware has no such rollback until it is flashed once over USB.
+
+## The sensor nodes
+
+![The power node asks for its BOOT key](view:updates-node)
+
+The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, from its STATUS packet on the current link, and the version of that role's image this panel carries: `Node: 0.23.11. Included: 0.23.12.` The hold needs the bench SAFE, the node bound and linked with its version read, and no other update running.
+
+1. The hold ends the node's own link; WIRELESS shows the node OFF until the update ends. The button reads `POWER NODE UPDATE: CONNECTING`.
+2. The node waits 30s for its BOOT key held 1s; the button reads `HOLD BOOT 1s ON THE NODE: 27s` and the band `Hold the node's BOOT key 1s within 30s to accept the update.` No hold refuses. Nothing is erased before the hold.
+3. The node writes the image; the button reads `POWER NODE UPDATE 37%`.
+4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.12. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
+
+A power node's readings and a balance node's reports stop from the hold until the node is back. That gap is no loss: the band shows no `POWER NODE LOST`. Any other end reads `Balance node update stopped: <reason>. Previous firmware is running.` with the Dial's reasons, and the node keeps the firmware it ran. A node refuses the other role's image before writing anything.
+
 ## Current limitations
 
 - How long the check and the download take on a real network is not measured.
 - How long the C6 radio's update takes is not measured, and whether the shipped C6 takes it over SDIO is not known.
+- How long the Dial's update takes is not measured; it has not run with a Dial.
+- How long a node's update takes is not measured; it has not run with a node.
 - A first DNS (Domain Name System) server of the home network that does not answer delays each name lookup by about 7s after a join, out of the check's 30s: lwIP asks that server 4 times, up to 7s, before the next.
 - TESTING: GitHub answers 60 API requests an hour for each public address without an account, shared by every device behind it. The panel sends no retry.
 - TESTING reads the 10 newest releases by date. A release older by date than those is not seen, however high its version.

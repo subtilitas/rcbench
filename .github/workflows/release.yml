@@ -140,10 +140,12 @@ jobs:
 
   # Carries the IOmcu images the iomcu job built from the same commit, the
   # module's and the rbmod carrier's, and offers each IOmcu the image of
-  # the board it reports when it runs another build; and the C6 radio's
-  # image the c6 job built, offered on SETUP > UPDATES.
+  # the board it reports when it runs another build; the C6 radio's image
+  # the c6 job built, offered on SETUP > UPDATES; and the Dial's and the
+  # nodes' images the dial and node jobs built, sent over Bluetooth LE from
+  # SETUP > UPDATES.
   panel:
-    needs: [version, iomcu, c6]
+    needs: [version, iomcu, c6, dial, node]
     name: Panel image
     runs-on: ubuntu-26.04
     timeout-minutes: 45
@@ -169,6 +171,26 @@ jobs:
         with:
           name: c6
           path: firmware/panel/c6
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: dial
+          path: firmware/panel/dial
+
+      - uses: actions/download-artifact@v7
+        with:
+          name: node
+          path: firmware/panel/node
+
+      # Each device image is its role's application of this release.
+      - name: The Dial and node images are their roles' builds
+        run: |
+          python3 tools/c6_image.py device dial \
+            "$(ls firmware/panel/dial/rcbench-dial-[0-9]*.bin)"
+          python3 tools/c6_image.py device node-pwr \
+            "$(ls firmware/panel/node/rcbench-node-pwr-[0-9]*.bin)"
+          python3 tools/c6_image.py device node-bal \
+            "$(ls firmware/panel/node/rcbench-node-bal-[0-9]*.bin)"
 
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
@@ -196,6 +218,9 @@ jobs:
             idf.py -D RCBENCH_IOMCU_BIN=iomcu-image/rcbench-iomcu.bin
             -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin
             -D RCBENCH_C6_BIN=$(ls c6/rcbench-c6-[0-9]*.bin)
+            -D RCBENCH_DIAL_BIN=$(ls dial/rcbench-dial-[0-9]*.bin)
+            -D RCBENCH_NODE_PWR_BIN=$(ls node/rcbench-node-pwr-[0-9]*.bin)
+            -D RCBENCH_NODE_BAL_BIN=$(ls node/rcbench-node-bal-[0-9]*.bin)
             -D RCBENCH_PERF_LOG=OFF build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
@@ -254,6 +279,9 @@ jobs:
   node:
     needs: [version]
     uses: ./.github/workflows/node.yml
+    with:
+      ref: ${{ needs.version.outputs.sha }}
+
   # The M5Stack Dial's image from the pinned commit (dial.yml).
   dial:
     needs: [version]

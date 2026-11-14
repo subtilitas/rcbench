@@ -415,7 +415,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,680 | 1,424 |
 | `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and the power node's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`) | 4,096 | 1,808 | 1,248 |
+| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`) | 4,096 | 1,808 | 1,248 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -565,6 +565,15 @@ tool does not follow.
 
 The tasks of ESP-IDF and esp_hosted are not in the table: their names and
 figures come from the console of a sample, and none is recorded.
+
+### The Dial and the sensor nodes
+
+The M5Stack Dial and both node roles run the firmware update's device side
+on the task `ota` (`firmware/devota`): 8,192 bytes of stack from the heap at
+start, the size of ESP-IDF's OTA examples, priority 3, a step every 10ms. `esp_ota_end()` reads the written
+image back and checks it on this stack. Its depth is not measured: no tool
+reads the Dial's Xtensa image or the node's image for it, and no
+high-water mark is recorded.
 
 ### The IOmcu
 
@@ -753,6 +762,13 @@ client, its objects alone (`panel_pnode.c`, `pnode_ctl.c`, `pnode_meter.c`,
 `wireless_pnode.c` and `protocols/rcnode`), adds 3,869 bytes of DIRAM,
 3,861 of them .bss, and 11,748 bytes of image (`esp_idf_size --files`);
 its texts and its calls in other files are not counted.
+The wireless devices' update, from the linker map of the default build:
+`panel_devupd.c` holds 2,008 bytes of DIRAM (1,580 .bss, 428 .data) and
+5,050 bytes of code; `upd_dev.c` 566 bytes of .bss and 3,926 of code;
+`shared/devupd` 3,540 bytes of code and `protocols/bleota` 446. The three
+carried images, the Dial's and both nodes', add 2,130,416 bytes of image at
+0.23.12: 841,504, 646,240 and 642,672. With them the application image is
+7,375,296 bytes, 751,168 (9.2%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one
@@ -760,8 +776,8 @@ connection; `libbt.a`'s figures are the same with 1 connection and 5.
 esp_hosted (157,827 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and
 Bluetooth LE together; its Bluetooth LE share is not measured.
 
-The .bss in PSRAM is 2,647,872 bytes in both builds, with and without
-Bluetooth LE.
+The .bss in PSRAM is 2,648,207 bytes in the default build. The build
+without Bluetooth LE is not measured at this state.
 
 A radio start that fails logs the step, the error's name and the internal
 heap at that moment:

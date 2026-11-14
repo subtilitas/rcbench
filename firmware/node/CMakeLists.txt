@@ -7,11 +7,14 @@
 #                                                  the balance node
 cmake_minimum_required(VERSION 3.16)
 
-# The packets (protocols/rcnode), the balance measurement (shared/vibe) and
+# The packets (protocols/rcnode), the balance measurement (shared/vibe),
 # the INA228 driver of shared/sense (components/ina228 compiles its two
-# files).
+# files), and the firmware update over Bluetooth LE (protocols/bleota and
+# its device end, firmware/devota).
 set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../protocols/rcnode"
-                         "${CMAKE_CURRENT_LIST_DIR}/../../shared/vibe")
+                         "${CMAKE_CURRENT_LIST_DIR}/../../shared/vibe"
+                         "${CMAKE_CURRENT_LIST_DIR}/../../protocols/bleota"
+                         "${CMAKE_CURRENT_LIST_DIR}/../devota")
 
 # The application's version, as the panel's: MAJOR.MINOR.PATCH from the one
 # header every build reads.

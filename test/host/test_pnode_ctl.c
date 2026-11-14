@@ -11,7 +11,10 @@
  * not balance nodes; the bind; the RUN marker written with the run's tag
  * at the switch to ARMED, and once the link comes back within the run; an
  * INFO read that fails ending the link; the dropout error of a run on NODE
- * reaching the controller's count; POWER NODE OFF ending everything.
+ * reaching the controller's count; POWER NODE OFF ending everything; the
+ * update's hold handing the link to the update client and taking it back
+ * with no STALE or LOST on the way, and the version read back from the
+ * first STATUS after the reconnect.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -211,6 +214,19 @@ static void status(rig_t *r, uint16_t mv, uint16_t flags)
     memset(&s, 0, sizeof s);
     s.vbat = mv;
     s.flags = flags;
+    uint8_t b[RCNODE_PKT_MAX];
+    const size_t n = rcnode_enc_status(&s, b, sizeof b);
+    notify(r, b, n);
+}
+
+/** @brief One STATUS on STREAM naming firmware @p minor.@p patch. */
+static void status_fw(rig_t *r, uint8_t minor, uint8_t patch)
+{
+    rcnode_status_t s;
+    memset(&s, 0, sizeof s);
+    s.vbat = 3900u;
+    s.fw[1] = minor;
+    s.fw[2] = patch;
     uint8_t b[RCNODE_PKT_MAX];
     const size_t n = rcnode_enc_status(&s, b, sizeof b);
     notify(r, b, n);
@@ -565,6 +581,100 @@ TEST_CASE(a_node_that_started_again_gets_run_again_and_a_servo_run_no_gap)
     CHECK_EQ(s.c.m.errors, 0u);
 }
 
+/** @brief Run @p ms of the clock and say whether the link read STALE or
+ *         LOST at any ms of it. */
+static bool run_saw_loss(rig_t *r, uint32_t ms)
+{
+    bool saw = false;
+    for (uint32_t k = 0; k < ms; ++k) {
+        ++r->now;
+        step(r);
+        const pnode_link_t l = pnode_ctl_link(&r->c, r->now);
+        saw = saw || l == PNODE_LINK_STALE || l == PNODE_LINK_LOST;
+    }
+    return saw;
+}
+
+/* The update's hand-over: the hold ends the link of a node that sent
+ * readings and keeps it ended whatever SETUP sends; nothing on the way
+ * reads STALE or LOST, so the band shows no loss.  The take-back connects
+ * again, and the version comes from the first STATUS on the new link. */
+TEST_CASE(the_update_hold_hands_the_link_over_and_takes_it_back)
+{
+    rig_t r;
+    up(&r, true);
+    window(&r, RCNODE_WF_ONLINE);
+    CHECK_EQ(pnode_ctl_link(&r.c, r.now), PNODE_LINK_UP);
+    bleu_addr_t a;
+    bool linked = true, down = true;
+    uint8_t ver[3] = { 9u, 9u, 9u };
+    CHECK(pnode_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);                       /* no STATUS yet: no version */
+    CHECK(!down);
+    status_fw(&r, 23u, 11u);
+    CHECK(pnode_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(linked);
+    CHECK(!down);
+    CHECK_EQ(ver[1], 23u);
+    CHECK_EQ(ver[2], 11u);
+    bleu_addr_t want;
+    CHECK(bleu_addr_parse(ADDR, &want));
+    CHECK(bleu_addr_eq(&a, &want));
+
+    pnode_ctl_hold(&r.c, true, r.now);
+    pnode_ctl_hold(&r.c, true, r.now);    /* twice is once */
+    CHECK(!run_saw_loss(&r, 100u));
+    CHECK(!r.c.linked);
+    CHECK_EQ(pnode_ctl_link(&r.c, r.now), PNODE_LINK_OFF);
+    CHECK(pnode_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);
+    CHECK(down);
+    /* SETUP's values while held keep the link ended; no scan, no
+     * packet taken. */
+    const unsigned connects = r.connects;
+    pnode_cfg_t cfg = r.c.cfg;
+    cfg.src_node = false;
+    pnode_ctl_config(&r.c, &cfg, r.now);
+    pnode_ctl_radio(&r.c, IMU_RADIO_READY, r.now);
+    CHECK_EQ(pnode_ctl_scan(&r.c, false, r.now), PNODE_SCAN_NOT_READY);
+    const uint32_t packets = r.c.packets;
+    window(&r, RCNODE_WF_ONLINE);
+    CHECK_EQ(r.c.packets, packets);
+    CHECK(!run_saw_loss(&r, 30000u));
+    CHECK_EQ(r.connects, connects);
+    CHECK(r.c.cfg.en);                    /* SETUP's values kept */
+    CHECK(!r.c.cfg.src_node);
+
+    /* The take-back: the node, restarted on its new image, is back with
+     * no loss read on the way. */
+    pnode_ctl_hold(&r.c, false, r.now);
+    /* Before the node answers: connecting, not lost. */
+    CHECK_EQ(pnode_ctl_link(&r.c, r.now), PNODE_LINK_CONNECTING);
+    CHECK(!run_saw_loss(&r, 100u));
+    CHECK_EQ(r.connects, connects + 1u);
+    CHECK_EQ(pnode_ctl_link(&r.c, r.now), PNODE_LINK_WAITING);
+    CHECK(pnode_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);                       /* the old link's STATUS is gone */
+    status_fw(&r, 23u, 12u);
+    window(&r, RCNODE_WF_ONLINE);
+    CHECK(pnode_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(linked);
+    CHECK_EQ(ver[2], 12u);
+    CHECK_EQ(pnode_ctl_link(&r.c, r.now), PNODE_LINK_UP);
+    CHECK_EQ(r.c.m.errors, 0u);
+
+    /* No node bound, or a missing argument: no target. */
+    CHECK(!pnode_ctl_target(&r.c, &a, NULL, ver, &down));
+    CHECK(!pnode_ctl_target(NULL, &a, &linked, ver, &down));
+    rig_t n;
+    init(&n, false);
+    pnode_cfg_t none = n.c.cfg;
+    none.addr[0] = '\0';
+    pnode_ctl_config(&n.c, &none, n.now);
+    CHECK(!pnode_ctl_target(&n.c, &a, &linked, ver, &down));
+    pnode_ctl_hold(NULL, true, 0u);
+}
+
 int main(void)
 {
     RUN(the_profile_names_rcnodes_uuids);
@@ -576,5 +686,6 @@ int main(void)
     RUN(the_run_marker_goes_at_the_arm_and_after_a_drop_within_the_run);
     RUN(power_node_off_ends_the_link_and_is_no_loss);
     RUN(a_node_that_started_again_gets_run_again_and_a_servo_run_no_gap);
+    RUN(the_update_hold_hands_the_link_over_and_takes_it_back);
     return test_summary("pnode_ctl");
 }

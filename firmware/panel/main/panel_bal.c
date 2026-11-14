@@ -195,6 +195,22 @@ void panel_bal_blec_poll(uint32_t now)
     bal_ctl_drive(&s_ctl, d.blades, d.rpm);
 }
 
+void panel_bal_blec_hold(bool on, uint32_t now)
+{
+    if (s_q == NULL || on == s_ctl.held) {
+        return;
+    }
+    ESP_LOGI(TAG, "%s", on ? "link held off for the node's update"
+                           : "link back to SETUP's values");
+    bal_ctl_hold(&s_ctl, on, now);
+}
+
+bool panel_bal_blec_target(bleu_addr_t *addr, bool *linked,
+                          uint8_t version[3], bool *down)
+{
+    return s_q != NULL && bal_ctl_target(&s_ctl, addr, linked, version, down);
+}
+
 void panel_bal_blec_event(const bleu_evt_t *e, uint32_t now)
 {
     if (s_q != NULL) {
@@ -338,8 +354,11 @@ void panel_bal_frame(bool armed, int blades, uint32_t rpm)
     /* ON and bound with the link down: "--" and the kept result, never
      * the model; the model only while OFF or unbound. */
     const uint32_t age = now_ms() - s_seen.rep_ms;
+    /* The node's own update holds the link off with BALANCE NODE ON: no
+     * change of ON, so a failed update keeps the runs; an installed one
+     * restarts the node, and boots clears them. */
     const nb_context_t ctx = {
-        .on = s_seen.v.link != BAL_LINK_OFF,
+        .on = s_seen.v.link != BAL_LINK_OFF || s_seen.v.held,
         .addr = s_seen.v.bound_addr,
         .boots = s_seen.v.boots,
         .blades = blades,

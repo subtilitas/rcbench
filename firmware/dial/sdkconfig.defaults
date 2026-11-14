@@ -36,3 +36,8 @@ CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y
 
 # app_main() runs the face task: the drawing and the flush.
 CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144
+
+# A new image from an update over Bluetooth LE starts once on trial and
+# marks itself kept at its first connection (firmware/devota); a start
+# before that goes back to the image before it.
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y

@@ -97,6 +97,8 @@ static const struct {
     { "help-updates", "updates" },
     { "help-updates-newer", "updates-newer" },
     { "help-updates-settings", "updates-settings" },
+    { "help-updates-devices", "updates-devices" },
+    { "help-updates-node", "updates-node" },
     { "help-motor", "motor-held" },
     { "help-motor-program", "motor-program" },
     { "help-motor-settings", "motor-settings" },

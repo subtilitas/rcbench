@@ -1179,7 +1179,7 @@ number shown in part), and the antialiased ring from a coverage table
 (`test_gfx_ring`, against a reference from the same formula; the Dial's
 six tables generated as const data by `tools/gen_dial_rings.py`, held to
 `gfx_ring_build()` by `test_dial_face`); `tools/render_dial.py --check`
-holds the 20 committed images. The Dial sends no EVENT while it shows LINK
+holds the 24 committed images. The Dial sends no EVENT while it shows LINK
 LOST (`dk_link_lost()`, `test_dialknob_face`). Built, not run on the
 device: the Dial's
 firmware (`firmware/dial`, ESP-IDF v6.1 for the ESP32-S3; CI's `dial.yml`)
@@ -1243,6 +1243,51 @@ log's `node` source (`test_logwriter`), and the `blec` task's and the
 control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
 `panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
 measured.
+
+### Firmware update over Bluetooth LE
+
+Built and host-tested: the update protocol (`protocols/bleota`): every
+control write and notification at its limits and 200,000 random writes
+through the decoders and a device side (`test_bleota`); the device side's
+refusals by code, the confirmation window in both modes at 30,000ms and the
+1,000ms hold at their limits, a key already down, the HASH and idle
+timeouts, a skipped chunk answered once with the gap mark, the 512-byte
+credit step, the image head checked before the first write, the SHA-256
+compare, an ABORT and a lost link during the install, and a lost link
+(`test_bleota_dev`). The panel's engine (`shared/devupd`, `test_devupd`)
+against that device side: an image sent whole, a lossless link with 0ms,
+20ms and 40ms of latency sent once with no rewind, a lost chunk and a lost
+tail found by POLL, a credit stall that ends
+after 3 polls, each refusal code, a SHA-256 that differs, no confirmation,
+a disconnect mid-transfer followed by a new transfer from byte 0, and a
+link lost after END left unknown and settled by the device's version; its
+client on the Bluetooth LE hub (`test_devupd_client`) against a scripted
+host stack; the start's gate and the busy flag that refuses ARM, read busy
+at every point from the ask to the end; the node's sleep policy during an
+update (`test_node_policy`); UPDATES' WIRELESS DEVICES entry and its
+page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE FIRMWARE
+rows: the entry opening the page, BACK and the home tag closing it, each
+row's hold at 1,999ms and 2,000ms, its reasons, its hints and its
+progress, the node rows' HOLD BOOT 1s ON THE NODE, one press at a time
+(`shared/ui/upd_dev.c`, `test_upd_dev`, the page's guide in
+`test_help_net`); the gate naming the device it started
+(`test_devupd`), the 30s progress limit at 29.9s and 30.1s against a
+device that answers the gap mark at one offset, an abort in every phase
+that waits through the install from END on, and the settle of an unknown
+install read from its own device and reported before a second device's
+start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
+END on (`test_upd_dev`); and each node client's hand-over and take-back: the
+update's hold ends the link with no STALE or LOST at any ms, keeps it
+ended through SETUP's values for 30s, takes no packet, and the take-back
+reconnects and reads the node's version from its first STATUS
+(`pnode_ctl_hold()`, `pnode_ctl_target()`, `test_pnode_ctl`;
+`bal_ctl_hold()`, `bal_ctl_target()`, `test_bal_ctl`). Built, not run on
+a device: the device side on NimBLE with ESP-IDF's OTA (over-the-air)
+calls and the rollback mark (`firmware/devota`) in the Dial's image and
+both node roles', and the panel's side
+(`firmware/panel/main/panel_devupd.c`, the hooks in `panel_dial.c`,
+`panel_pnode.c` and `panel_bal.c`) with the three images embedded. The
+rate and a rollback are not measured.
 
 ### Phase tap (ESC tones)
 
@@ -1480,7 +1525,7 @@ rcbench/
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
 | `hc05` · `dial` | | | yes |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` | yes | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1514,7 +1559,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 577 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 582 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1641,7 +1686,8 @@ The host suite is 577 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode` and `test_node_policy`.
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`,
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client` and `test_upd_dev`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -2131,7 +2177,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-970 committed screenshots to the current render, 485 in English and the same 485 in German, and `render_ui.py --fit` fails on a string that
+980 committed screenshots to the current render, 490 in English and the same 490 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2173,7 +2219,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/help_setup.c` | 95 | 91 | 95.8% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
-| `shared/ui/help_upd.c` | 34 | 33 | 97.1% |
+| `shared/ui/help_upd.c` | 49 | 48 | 98.0% |
 | `shared/ui/help_wifi.c` | 59 | 59 | 100.0% |
 | `shared/ui/ui_watermark.c` | 44 | 42 | 95.5% |
 | `shared/ui/ui_plot.c` | 200 | 191 | 95.5% |
@@ -2314,10 +2360,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
-| `shared/ui/coproc_update_screen.c` | 302 | 302 | 100.0% |
-| `shared/ui/upd_screen.c` | 663 | 637 | 96.1% |
+| `shared/ui/coproc_update_screen.c` | 331 | 331 | 100.0% |
+| `shared/ui/upd_screen.c` | 657 | 626 | 95.3% |
 | `shared/ui/upd_settings.c` | 43 | 39 | 90.7% |
-| `shared/ui/upd_c6.c` | 117 | 115 | 98.3% |
+| `shared/ui/upd_c6.c` | 118 | 116 | 98.3% |
+| `shared/ui/upd_dev.c` | 290 | 259 | 89.3% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
 | `shared/ui/imu_sensor.c` | 210 | 210 | 100.0% |
@@ -2332,10 +2379,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_focus_screens.c` | 21 | 20 | 95.2% |
 | `shared/ui/wireless_pane.c` | 228 | 220 | 96.5% |
 | `shared/ui/wireless_pnode.c` | 124 | 119 | 96.0% |
-| `shared/ui/pnode_ctl.c` | 237 | 229 | 96.6% |
+| `shared/ui/pnode_ctl.c` | 258 | 250 | 96.9% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
 | `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
-| `shared/ui/bal_ctl.c` | 322 | 308 | 95.7% |
+| `shared/ui/bal_ctl.c` | 345 | 331 | 95.9% |
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
 | `shared/ui/wireless_bal.c` | 163 | 152 | 93.2% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
@@ -2435,7 +2482,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
-| `protocols/bleuart/bleuart.c` | 473 | 472 | 99.8% |
+| `protocols/bleuart/bleuart.c` | 476 | 475 | 99.8% |
 | `protocols/bleuart/bleuart_adv.c` | 175 | 175 | 100.0% |
 | `protocols/bleuart/bleuart_hub.c` | 232 | 232 | 100.0% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
@@ -2443,6 +2490,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/rcnode/rcnode.c` | 303 | 303 | 100.0% |
 | `protocols/rcnode/rcnode_win.c` | 97 | 96 | 99.0% |
 | `protocols/rcnode/rcnode_adv.c` | 104 | 102 | 98.1% |
+| `protocols/bleota/bleota.c` | 115 | 115 | 100.0% |
+| `protocols/bleota/bleota_dev.c` | 313 | 309 | 98.7% |
 | `protocols/dialknob/dialknob.c` | 530 | 520 | 98.1% |
 | `protocols/dialknob/dk_track.c` | 92 | 92 | 100.0% |
 | `protocols/dialknob/dk_face.c` | 111 | 111 | 100.0% |
@@ -2547,7 +2596,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/vibe/vibe_edge.c` | 67 | 63 | 94.0% |
 | `shared/vibe/vibe_frame.c` | 93 | 90 | 96.8% |
 | `shared/vibe/vibe_solve.c` | 183 | 168 | 91.8% |
-| `shared/dial/dial_scene.c` | 284 | 279 | 98.2% |
+| `shared/dial/dial_scene.c` | 316 | 310 | 98.1% |
 | `shared/dial/dial_draw.c` | 509 | 481 | 94.5% |
 | `shared/dial/dial_text.c` | 10 | 9 | 90.0% |
 | `shared/bench/report_lines.c` | 104 | 102 | 98.1% |
@@ -2574,8 +2623,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_install.c` | 68 | 68 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
-| `shared/fwupdate/fw_c6.c` | 156 | 156 | 100.0% |
+| `shared/fwupdate/fw_c6.c` | 158 | 158 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
+| `shared/devupd/devupd.c` | 279 | 267 | 95.7% |
+| `shared/devupd/devupd_client.c` | 88 | 79 | 89.8% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
 | `shared/webaccess/wa_fetch.c` | 427 | 415 | 97.2% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
@@ -2589,7 +2640,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **98755** | **96683** | **97.9%** |
+| **total** | **99960** | **97826** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

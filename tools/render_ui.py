@@ -822,6 +822,13 @@ SCREENS = {
     # Its C6 RADIO row with the C6 as shipped: no version reported, the
     # hold that updates it to the carried image.
     "updates-c6": ("updates-c6.png", "updates", "dark"),
+    # The WIRELESS DEVICES entry while the Dial asks for its press.
+    "updates-dial": ("updates-dial.png", "updates", "dark"),
+    # The wireless devices' page: the Dial offered a newer version, the
+    # power node its reinstall, the balance node not connected.
+    "updates-devices": ("updates-devices.png", "updates", "dark"),
+    # The page while the power node asks for its BOOT key.
+    "updates-node": ("updates-node.png", "updates", "dark"),
     # Its SETTINGS list: the reminder at start and RELEASES.
     "updates-settings": ("updates-settings.png", "updates", "dark"),
     "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
@@ -1103,6 +1110,13 @@ FIT_ONLY = {
     # The C6 RADIO row's update running, no image carried, a failed link.
     "updates-c6-progress": (None, "updates", "dark"),
     "updates-c6-reinstall": (None, "updates", "dark"),
+    "updates-dial-ready":  (None, "updates", "dark"),
+    "updates-dial-reinstall": (None, "updates", "dark"),
+    "updates-dial-connecting": (None, "updates", "dark"),
+    "updates-dial-progress": (None, "updates", "dark"),
+    "updates-node-ready":  (None, "updates", "dark"),
+    "updates-node-connecting": (None, "updates", "dark"),
+    "updates-node-progress": (None, "updates", "dark"),
     "updates-c6-noimage":  (None, "updates", "dark"),
     "updates-c6-failed":   (None, "updates", "dark"),
     "upd-remind-blocked": (None, "upd-remind", "dark"),
@@ -1174,6 +1188,8 @@ FIT_ONLY = {
     "help-updates-newer-2": (None, "updates", "dark"),
     "help-updates-settings":   (None, "updates", "dark"),
     "help-updates-settings-2": (None, "updates", "dark"),
+    "help-updates-devices": (None, "updates", "dark"),
+    "help-updates-node": (None, "updates", "dark"),
     # TEST's guide at its READY page, and TEST's list at LENGTH AND TIMING
     # and at its end.
     "help-servo-test-2": (None, "servo", "dark"),
