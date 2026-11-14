@@ -23,6 +23,10 @@
  * - a_hold_on_a_dim_armed_bench_disarms
  * - an_awake_panel_takes_the_dial_as_before
  * - a_long_list_keeps_its_strip
+ * - a_press_lands_on_the_focused_item_everywhere
+ * - a_press_after_a_finger_scrolled_opens_the_focused_row
+ * - an_option_list_shows_its_options_range
+ * - an_off_gap_takes_detents_alike_in_any_batch
  *
  * SPDX-License-Identifier: MIT
  */
@@ -32,6 +36,7 @@
 #include "dial_panel.h"
 #include "motor_screen.h"
 #include "screen_dim.h"
+#include "settings_sensors.h"
 #include "ui_setlist.h"
 #include "overview_screen.h"
 #include "servo_screen.h"
@@ -630,6 +635,164 @@ TEST_CASE(a_long_list_keeps_its_strip)
     }
 }
 
+/**
+ * @brief Every item of the list on top, one by one: the point a SELECT
+ *        taps lies on the focused item and where it can be seen, inside
+ *        the body.
+ * @param what The screen's name, for a failure.
+ */
+static void every_target_lands(const char *what)
+{
+    const int n = ui_focus_count();
+    CHECK(n > 0);
+    for (int i = 0; i < n; ++i) {
+        ui_focus_target_t t;
+        if (!ui_focus_target(&t)) {
+            T_FAIL("%s: item %d has no target", what, i);
+            return;
+        }
+        CHECK(gfx_rect_contains(t.rect, t.x, t.y));
+        CHECK(gfx_rect_contains(t.seen, t.x, t.y));
+        CHECK(t.seen.x >= 0 && t.seen.y >= 0
+              && t.seen.x + t.seen.w <= UI_PANEL_W
+              && t.seen.y + t.seen.h <= UI_BODY_H);
+        CHECK(ui_focus_turn(1));
+    }
+}
+
+TEST_CASE(a_press_lands_on_the_focused_item_everywhere)
+{
+    on(SCREEN_OVERVIEW);
+    every_target_lands("overview");
+    on(SCREEN_SETUP);
+    settings_set(SET_DIM_AFTER, 5.0f);      /* SAVE offered */
+    every_target_lands("SETUP tiles");
+    open_category(SET_CAT_APP);
+    every_target_lands("PANEL");
+    open_sensor(SET_INA_SH(0));
+    every_target_lands("SENSORS");
+    on(SCREEN_SERVO);
+    every_target_lands("SERVO");
+    /* A choice list. */
+    on(SCREEN_SETUP);
+    dial_view_t dv;
+    memset(&dv, 0, sizeof(dv));
+    dv.link = DIAL_LINK_NONE;
+    dv.scan_done = true;
+    dv.found_n = 2;
+    wireless_pane_set_dial(&dv);
+    open_wireless(SET_DIAL_EN);
+    CHECK(focus_on(ui_tr(TX_DIAL_ROW_BIND)));
+    CHECK(ui_focus_press());
+    CHECK_EQ(ui_focus_count(), 2);
+    every_target_lands("choice list");
+    /* The leave warning. */
+    on(SCREEN_SETUP);
+    open_category(SET_CAT_APP);
+    settings_set(SET_DIM_AFTER, 10.0f);
+    CHECK(ui_focus_hold());                 /* the tiles */
+    CHECK(ui_focus_hold());                 /* leaving SETUP: the warning */
+    CHECK_EQ(ui_focus_count(), 3);
+    every_target_lands("leave warning");
+}
+
+TEST_CASE(a_press_after_a_finger_scrolled_opens_the_focused_row)
+{
+    on_dim_after();
+    settings_set(SET_BRIGHTNESS, 80.0f);    /* dirty: SAVE in the strip */
+    CHECK(ui_setlist_save_offered());
+    CHECK(settings_screen_scroll(NULL) > 0);
+    /* A finger drags the list back to its top, 300px a drag. */
+    for (int drag = 0; drag < 4 && settings_screen_scroll(NULL) > 0; ++drag) {
+        touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                            .point = { .id = 1, .x = 300,
+                                       .y = LIST_Y + 20 } };
+        ui_router_event(&e);
+        e.type = TOUCH_EVENT_MOVE;
+        for (int k = 1; k <= 15; ++k) {
+            e.point.y = (int16_t)(LIST_Y + 20 + 20 * k);
+            ui_router_event(&e);
+        }
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+    }
+    CHECK_EQ(settings_screen_scroll(NULL), 0);
+    CHECK(!settings_save_asked());
+    /* The press opens DIM AFTER's keypad, never SAVE. */
+    CHECK(ui_focus_press());
+    CHECK(!settings_save_asked());
+    CHECK(settings_screen_keypad()->open);
+    CHECK_EQ(settings_screen_keypad_setting(), (int)SET_DIM_AFTER);
+}
+
+TEST_CASE(an_option_list_shows_its_options_range)
+{
+    on(SCREEN_SETUP);
+    open_category(SET_CAT_APP);
+    CHECK(focus_on(ui_setting_label(SET_TIME_ZONE)));
+    const setting_def_t *d = settings_def(SET_TIME_ZONE);
+    CHECK(d != NULL && d->option_count > 3);
+    CHECK_EQ(settings_get_int(SET_TIME_ZONE), 2);
+    CHECK(ui_focus_press());
+    dial_model_t m = model();
+    CHECK_EQ(m.face, DK_FACE_VALUE);
+    CHECK_EQ(m.meta.min, 0);
+    CHECK_EQ(m.meta.max, (int32_t)d->option_count - 1);
+    CHECK_EQ(m.value.value, 2);
+    CHECK_EQ(m.value.was, 2);
+    CHECK(ui_focus_turn(1));
+    m = model();
+    CHECK_EQ(settings_get_int(SET_TIME_ZONE), 3);
+    CHECK_EQ(m.value.value, 3);
+    CHECK_EQ(m.value.was, 2);
+    CHECK_EQ(m.meta.max, (int32_t)d->option_count - 1);
+}
+
+/**
+ * @brief The shunt keypad's value after @p total detents in frames of
+ *        @p batch, from @p from.
+ * @param k     The keypad, open.
+ * @param from  The value it starts on.
+ * @param total The detents, signed.
+ * @param batch Detents a frame.
+ * @return The value.
+ */
+static float turned(ui_keypad_t *k, float from, int total, int batch)
+{
+    ui_keypad_set(k, from);
+    const int dir = (total > 0) ? 1 : -1;
+    int left = abs(total);
+    while (left > 0) {
+        const int n = (left < batch) ? left : batch;
+        CHECK(ui_focus_turn(dir * n));
+        left -= n;
+    }
+    return ui_keypad_value(k);
+}
+
+TEST_CASE(an_off_gap_takes_detents_alike_in_any_batch)
+{
+    on(SCREEN_SETUP);
+    open_sensor(SET_INA_SH(0));
+    CHECK(focus_on(ui_setting_label(SET_INA_SH(0))));
+    CHECK(ui_focus_press());
+    ui_keypad_t *k = (ui_keypad_t *)settings_screen_keypad();
+    CHECK(k->open);
+    /* Up from OFF: one detent to 5.0mΩ, then 0.1mΩ each. */
+    CHECK_NEAR(turned(k, 0.0f, 1, 1), 5.0f, 0.001f);
+    CHECK_NEAR(turned(k, 0.0f, 2, 1), 5.1f, 0.001f);
+    for (int b = 1; b <= 5; ++b) {
+        CHECK_NEAR(turned(k, 0.0f, 2, b), 5.1f, 0.001f);
+        CHECK_NEAR(turned(k, 0.0f, 7, b), 5.6f, 0.001f);
+        /* Down: to 5.0mΩ, one detent to OFF, then held at OFF. */
+        CHECK_NEAR(turned(k, 5.3f, -3, b), 5.0f, 0.001f);
+        CHECK_NEAR(turned(k, 5.3f, -4, b), 0.0f, 0.001f);
+        CHECK_NEAR(turned(k, 5.3f, -7, b), 0.0f, 0.001f);
+    }
+    CHECK(ui_focus_hold());
+    CHECK(!k->open);
+}
+
 int main(void)
 {
     RUN(the_focus_moves_and_wraps_on_the_overview);
@@ -649,5 +812,9 @@ int main(void)
     RUN(a_hold_on_a_dim_armed_bench_disarms);
     RUN(an_awake_panel_takes_the_dial_as_before);
     RUN(a_long_list_keeps_its_strip);
+    RUN(a_press_lands_on_the_focused_item_everywhere);
+    RUN(a_press_after_a_finger_scrolled_opens_the_focused_row);
+    RUN(an_option_list_shows_its_options_range);
+    RUN(an_off_gap_takes_detents_alike_in_any_batch);
     return test_summary("dial_nav");
 }

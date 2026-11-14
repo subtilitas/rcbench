@@ -10,7 +10,9 @@
  *
  * Every SELECT is a synthetic tap: a DOWN and an UP of touch id
  * UI_FOCUS_TOUCH_ID at the item's tap point, handed to ui_router_event() in
- * one call.  No tick runs between the two, so no 2s hold on the panel
+ * one call, after the focused row is scrolled into view and its geometry
+ * collected again; a tap point outside the item or out of sight is never
+ * tapped.  No tick runs between the two, so no 2s hold on the panel
  * completes from the Dial: a hold button answers it with the hint it shows
  * for any tap.  A HOLD on the Dial is BACK: what a tap on the home tag does
  * (ui_router_home()).
@@ -19,7 +21,9 @@
  *
  * - A SELECT on its row taps the value, which opens the row's keypad.  While
  *   a keypad is open the turn moves the value by the setting's step within
- *   its range and writes it into the entry; PRESS taps OK, HOLD taps CANCEL.
+ *   its range and writes it into the entry, one detent at a time: from OFF
+ *   one detent reaches the lowest value on (off_below).  PRESS taps OK,
+ *   HOLD taps CANCEL.
  *   The keypad's OK takes the value as typed, refusal and all.
  * - A setting row without a keypad (an on/off or a list of options) enters
  *   step SET on SELECT: each detent taps its "-" or "+" key, PRESS keeps,
@@ -75,6 +79,9 @@ extern "C" {
 /** @brief The most detents one turn applies in step SET: a turn of the
  *         Dial is 16 detents. */
 #define UI_FOCUS_STEPS_MAX 16
+
+/** @brief The most detents one turn moves a keypad's value, one by one. */
+#define UI_FOCUS_KP_DETENTS_MAX 256
 
 /** @brief What a SELECT on an item does. */
 typedef enum {
@@ -183,6 +190,26 @@ int ui_focus_count(void);
  * @return The label; "" past either end.
  */
 const char *ui_focus_label(int i);
+
+/** @brief Where a SELECT taps, in the screen's coordinates. */
+typedef struct {
+    int16_t    x;    /**< the tap point's x */
+    int16_t    y;    /**< its y */
+    gfx_rect_t rect; /**< the focused item's rectangle */
+    gfx_rect_t seen; /**< where the item can be seen: its pane, in the body */
+} ui_focus_target_t;
+
+/**
+ * @brief The focused item's tap point, the item brought into view first as
+ *        a SELECT brings it: a list's row scrolled to and the items
+ *        collected again.  A SELECT taps only a point inside the item's
+ *        rectangle and inside where it can be seen; where the row cannot
+ *        be brought into view it taps nothing.
+ * @param out Receives it.
+ * @return false while nothing would be tapped: no focus, SET, or the item
+ *         out of sight.
+ */
+bool ui_focus_target(ui_focus_target_t *out);
 
 /**
  * @brief The value SET moves, while a keypad is open or step SET runs.

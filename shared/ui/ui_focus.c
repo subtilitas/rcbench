@@ -258,6 +258,101 @@ static void tap_rect(gfx_rect_t r)
     }
 }
 
+/**
+ * @brief Where item @p it can be seen: its clip, a list's pane, inside the
+ *        body.
+ * @param it The item.
+ * @return The area; empty when none of it shows.
+ */
+static gfx_rect_t seen_area(const ui_focus_item_t *it)
+{
+    gfx_rect_t a = gfx_rect_make(0, 0, UI_PANEL_W, UI_BODY_H);
+    if (it->clip.w > 0 && it->clip.h > 0
+        && !gfx_rect_intersect(a, it->clip, &a)) {
+        return gfx_rect_make(0, 0, 0, 0);
+    }
+    return a;
+}
+
+/**
+ * @brief Whether the middle of @p r lies inside @p it's rectangle and
+ *        where it can be seen.
+ * @param it The item.
+ * @param r  A rectangle of it: a key, or the item's own.
+ * @return true when a tap there lands on the item.
+ */
+static bool lands(const ui_focus_item_t *it, gfx_rect_t r)
+{
+    const int x = r.x + r.w / 2;
+    const int y = r.y + r.h / 2;
+    return r.w > 0 && r.h > 0 && gfx_rect_contains(it->rect, x, y)
+           && gfx_rect_contains(seen_area(it), x, y);
+}
+
+/**
+ * @brief The focused item brought into view: a list's row scrolled to, as
+ *        a turn scrolls it, and the items collected again, since a finger
+ *        may have scrolled the list since.  A Dial tap goes nowhere else.
+ * @return The item with its tap point on it and in sight; NULL when the
+ *         row cannot be brought into view.
+ */
+static const ui_focus_item_t *in_view(void)
+{
+    if (f.index < 0 || f.index >= s_cur.count) {
+        return NULL;
+    }
+    const ui_focus_item_t *it = &s_cur.item[f.index];
+    if (s_cur.sl != NULL && it->row >= 0) {
+        ui_setlist_scroll_to(s_cur.sl, it->row);
+        if (!refresh() || f.index >= s_cur.count) {
+            return NULL;
+        }
+        it = &s_cur.item[f.index];
+    }
+    const gfx_rect_t seen = seen_area(it);
+    if (!gfx_rect_contains(it->rect, it->tap_x, it->tap_y)
+        || !gfx_rect_contains(seen, it->tap_x, it->tap_y)) {
+        return NULL;
+    }
+    return it;
+}
+
+bool ui_focus_target(ui_focus_target_t *out)
+{
+    if (out == NULL || !refresh() || kp_open() != NULL || f.stepping) {
+        return false;
+    }
+    const ui_focus_item_t *it = in_view();
+    if (it == NULL) {
+        return false;
+    }
+    out->x = it->tap_x;
+    out->y = it->tap_y;
+    out->rect = it->rect;
+    out->seen = seen_area(it);
+    return true;
+}
+
+/**
+ * @brief Step SET's "-" or "+" key, its row in view.
+ * @param dir +1 for "+", -1 for "-".
+ * @return The key; empty when the row is gone or out of sight.
+ */
+static gfx_rect_t step_key(int dir)
+{
+    const int at = step_item();
+    if (at < 0) {
+        return gfx_rect_make(0, 0, 0, 0);
+    }
+    f.index = at;
+    const ui_focus_item_t *it = in_view();
+    if (it == NULL || it->kind != UI_FOCUS_STEP || it->id != f.step_id) {
+        return gfx_rect_make(0, 0, 0, 0);
+    }
+    const gfx_rect_t key = (dir > 0) ? it->plus : it->minus;
+    return lands(it, key) ? key : gfx_rect_make(0, 0, 0, 0);
+}
+
 /* ------------------------------------------------------------------ SET */
 
 /**
@@ -283,20 +378,30 @@ static float unit_of(int d)
 static void kp_turn(ui_keypad_t *k, int detents)
 {
     const float step = (s_cur.step > 0.0f) ? s_cur.step : unit_of(k->decimals);
-    float v = ui_keypad_value(k) + (float)detents * step;
     const float gap = s_cur.off_below;
-    if (gap > 0.0f && v > 0.0f && v < gap) {
-        /* Between off and the lowest value on: one detent crosses it. */
-        v = (detents > 0) ? gap : 0.0f;
+    const int dir = (detents > 0) ? 1 : -1;
+    int n = abs(detents);
+    if (n > UI_FOCUS_KP_DETENTS_MAX) {
+        n = UI_FOCUS_KP_DETENTS_MAX;
     }
+    float v = ui_keypad_value(k);
     f.limit = false;
-    if (v < k->min) {
-        v = k->min;
-        f.limit = true;
-    }
-    if (v > k->max) {
-        v = k->max;
-        f.limit = true;
+    /* One detent at a time, so a frame of several gives what as many
+     * frames of one give: a detent from OFF reaches the lowest value on,
+     * the next ones step from there, and back down the same way. */
+    for (int i = 0; i < n; ++i) {
+        v += (float)dir * step;
+        if (gap > 0.0f && v > 0.0f && v < gap) {
+            v = (dir > 0) ? gap : 0.0f;
+        }
+        if (v < k->min) {
+            v = k->min;
+            f.limit = true;
+        }
+        if (v > k->max) {
+            v = k->max;
+            f.limit = true;
+        }
     }
     ui_keypad_set(k, v);
 }
@@ -316,13 +421,13 @@ static void step_turn(int detents)
     }
     f.limit = false;
     for (int i = 0; i < n; ++i) {
-        const int at = step_item();
-        if (at < 0) {
+        const gfx_rect_t key = step_key(dir);
+        if (key.w <= 0) {
             f.stepping = false;
             return;
         }
         const float before = settings_get(f.step_id);
-        tap_rect(dir > 0 ? s_cur.item[at].plus : s_cur.item[at].minus);
+        tap_rect(key);
         if (settings_get(f.step_id) == before) {
             f.limit = true;
             return;
@@ -340,13 +445,13 @@ static void step_turn(int detents)
 static void step_cancel(void)
 {
     while (f.stepping && f.step_net != 0) {
-        const int at = step_item();
-        if (at < 0) {
+        const int dir = (f.step_net > 0) ? -1 : 1;
+        const gfx_rect_t key = step_key(dir);
+        if (key.w <= 0) {
             break;
         }
-        const int dir = (f.step_net > 0) ? -1 : 1;
         const float before = settings_get(f.step_id);
-        tap_rect(dir > 0 ? s_cur.item[at].plus : s_cur.item[at].minus);
+        tap_rect(key);
         if (settings_get(f.step_id) == before) {
             break;
         }
@@ -388,6 +493,11 @@ bool ui_focus_value(ui_focus_value_t *out)
     out->decimals = settings_decimals(f.step_id);
     out->min = d->min;
     out->max = d->max;
+    if (d->type == SET_TYPE_ENUM) {
+        /* An option list's range is its options, not min and max. */
+        out->min = 0.0f;
+        out->max = (float)((d->option_count > 0) ? d->option_count - 1 : 0);
+    }
     out->step = (d->step > 0.0f) ? d->step : unit_of(out->decimals);
     out->value = settings_get(f.step_id);
     out->was = f.step_was;
@@ -443,7 +553,11 @@ bool ui_focus_press(void)
     if (s_cur.count <= 0) {
         return true;
     }
-    const ui_focus_item_t *it = &s_cur.item[f.index];
+    /* The row in view first: a press never lands on another control. */
+    const ui_focus_item_t *it = in_view();
+    if (it == NULL) {
+        return true;
+    }
     if (it->kind == UI_FOCUS_STEP) {
         f.stepping = true;
         f.step_id = it->id;

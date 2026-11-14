@@ -251,7 +251,9 @@ Prüfstand ARMED ist, die Bildschirmhilfe oder das Screenshot-Popup offen
 ist oder die Texttastatur offen ist.
 
 Ein SELECT ist ein Tippen: ein DOWN und ein UP in der Mitte des Eintrags im
-selben Frame. Ein 2s-Halten am Panel braucht den Kontakt 2s lang über
+selben Frame. Die Zeile im Fokus rollt zuerst ins Bild, auch wenn ein Finger
+die Liste seitdem gerollt hat; ein Punkt neben dem Eintrag oder außer Sicht
+wird nie getippt, und der Druck tut dann nichts. Ein 2s-Halten am Panel braucht den Kontakt 2s lang über
 Frames, also wird vom Dial aus kein Halten vollendet: ARM, Spannung EIN,
 WRITE n VALUES und das Löschen bleiben beim Panel. Ein SELECT auf eine
 Halte-Taste wie CLEAR ALL auf OUTPUTS zeigt den Hinweis, den das Panel bei
@@ -264,11 +266,15 @@ SET:
 - eine Zahl, die das Ziffernfeld nimmt: SELECT tippt ihren Wert, und das
   Ziffernfeld öffnet sich. Die Drehung schreibt den Wert in die Eingabe, um
   den Schritt der Einstellung und innerhalb ihres Bereichs; eine Drehung an
-  einem Ende bleibt dort stehen. PRESS ist das OK des Ziffernfelds, mit
+  einem Ende bleibt dort stehen. Eine Einstellung mit einer AUS-Lücke (etwa
+  ein INA3221-Shunt, AUS oder 5.0 bis 1000.0mΩ) nimmt eine Rastung von AUS
+  zu ihrem kleinsten Wert und eine zurück, wie viele Rastungen ein Frame
+  auch bringt. PRESS ist das OK des Ziffernfelds, mit
   seinen Prüfungen; HOLD ist CANCEL.
 - ein Ein/Aus oder eine Liste von Optionen: SELECT startet SET auf der
   Zeile. Jede Rastung tippt ihre Taste `-` oder `+`, höchstens 16 je Frame;
-  Ein/Aus und Optionslisten laufen um wie ihre Tasten. PRESS behält den
+  Ein/Aus und Optionslisten laufen um wie ihre Tasten; das VALUE-Face zeigt
+  die Stelle einer Optionsliste von 0 bis zu ihrer letzten Option. PRESS behält den
   Wert; HOLD tippt die andere Taste so oft, wie ein Tippen den Wert geändert
   hat.
 

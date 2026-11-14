@@ -237,7 +237,9 @@ while the bench is ARMED, while the screen guide or the screenshot popup is
 open, or with the text keyboard open.
 
 A SELECT is one tap: a DOWN and an UP at the middle of the item in the same
-frame. A 2s hold on the panel needs the contact down for 2s of frames, so no
+frame. The focused row is scrolled into view first, also when a finger
+scrolled the list since; a tap point off the item or out of sight is never
+tapped, and the press then does nothing. A 2s hold on the panel needs the contact down for 2s of frames, so no
 hold completes from the Dial: ARM, voltage ON, WRITE n VALUES and the deletes
 stay the panel's. A SELECT on a hold button, such as CLEAR ALL on OUTPUTS,
 shows the hint the panel shows for any tap. On SERVO's tiles a HOLD first
@@ -248,11 +250,14 @@ SET:
 
 - a number the keypad takes: SELECT taps its value, and the keypad opens.
   The turn writes the value into the entry, by the setting's step and inside
-  its range; a turn at an end stops there. PRESS is the keypad's OK, with
+  its range; a turn at an end stops there. A setting with an OFF gap (such
+  as an INA3221 shunt, OFF or 5.0 to 1000.0mΩ) takes one detent from OFF to
+  its lowest value and one back, however many detents a frame brings. PRESS is the keypad's OK, with
   its checks; HOLD is CANCEL.
 - an on/off or a list of options: SELECT starts SET on the row. Each detent
   taps its `-` or `+` key, at most 16 a frame; an on/off and an option list
-  wrap as their keys do. PRESS keeps the value; HOLD taps the other key as
+  wrap as their keys do; the VALUE face shows an option list's place from 0
+  to its last option. PRESS keeps the value; HOLD taps the other key as
   often as a tap changed the value.
 
 Dim after: a turn, PRESS or HOLD of the Dial wakes a dimmed panel and

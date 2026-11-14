@@ -8,6 +8,7 @@
  * Cases:
  * - the_board_view_moves_wraps_and_picks
  * - a_select_on_a_hold_button_completes_nothing
+ * - a_press_lands_on_the_focused_item
  *
  * SPDX-License-Identifier: MIT
  */
@@ -134,9 +135,34 @@ TEST_CASE(a_select_on_a_hold_button_completes_nothing)
     CHECK_EQ(s_applied, 1);
 }
 
+/** @brief Every item of the list on top: its tap point on it, in sight. */
+static void every_target_lands(void)
+{
+    const int n = ui_focus_count();
+    CHECK(n > 0);
+    for (int i = 0; i < n; ++i) {
+        ui_focus_target_t t;
+        CHECK(ui_focus_target(&t));
+        CHECK(gfx_rect_contains(t.rect, t.x, t.y));
+        CHECK(gfx_rect_contains(t.seen, t.x, t.y));
+        CHECK(ui_focus_turn(1));
+    }
+}
+
+TEST_CASE(a_press_lands_on_the_focused_item)
+{
+    visit();
+    every_target_lands();
+    CHECK_EQ(ui_focus_index(), 0);
+    CHECK(ui_focus_press());
+    CHECK(picker_screen_list_open());
+    every_target_lands();
+}
+
 int main(void)
 {
     RUN(the_board_view_moves_wraps_and_picks);
     RUN(a_select_on_a_hold_button_completes_nothing);
+    RUN(a_press_lands_on_the_focused_item);
     return test_summary("dial_nav_hold");
 }
