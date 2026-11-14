@@ -1,13 +1,15 @@
 /**
  * @file panel_imu.h
- * @brief The Bluetooth IMU on the panel: the task that runs the controller
- *        (imu_ctl.h) over Bluetooth LE (panel_ble.h), and the frame task's
- *        side of it: the IMU screen's view and commands, SETUP's values,
- *        the bind kept in SETUP, and the angle source of the servo runs.
+ * @brief The Bluetooth IMU on the panel: the client of the `blec` task
+ *        (panel_blec.h) that runs the controller (imu_ctl.h) over Bluetooth
+ *        LE (panel_ble.h), and the frame task's side of it: the IMU
+ *        screen's view and commands, SETUP's values, the bind kept in
+ *        SETUP, and the angle source of the servo runs.
  *
- * The task owns the controller.  The frame task posts SETUP's values and
- * the screen's commands to it through a queue, and reads what it publishes
- * under a spinlock.  The IMU's reading is no safety reading: it is stale
+ * The `blec` task owns the controller, through the panel_imu_blec_*()
+ * functions.  The frame task posts SETUP's values and the screen's
+ * commands to it through a queue, and reads what it publishes under a
+ * spinlock.  The IMU's reading is no safety reading: it is stale
  * after IMU_STALE_MS, and a run rides through its gaps as through the
  * AS5600's (servo_gap.h).
  *
@@ -16,16 +18,52 @@
 #pragma once
 
 #include <stdbool.h>
+#include <stdint.h>
 
+#include "bleuart.h"
 #include "servo_test_io.h"
 #include "settings.h"
 
 /**
- * @brief Set up the queue and the task, and hand it SETUP's values.  Once,
- *        at start-up, after the settings are loaded.  Bluetooth starts at
- *        the first IMU ON.
+ * @brief Set up the controller and its queue, and hand it SETUP's values.
+ *        Once, at start-up, after the settings are loaded and before
+ *        panel_blec_start().  Bluetooth starts at the first IMU ON.
  */
 void panel_imu_start(void);
+
+/**
+ * @brief The `blec` task's turn, first: SETUP's values and the screen's
+ *        commands to the controller, a first IMU ON starting Bluetooth,
+ *        then the panel's Bluetooth state.  Nothing before
+ *        panel_imu_start().
+ * @param now The clock, ms.
+ */
+void panel_imu_blec_poll(uint32_t now);
+
+/**
+ * @brief An event of the host stack the hub routes to the IMU, on the
+ *        `blec` task.
+ * @param e   The event.
+ * @param now The clock, ms.
+ */
+void panel_imu_blec_event(const bleu_evt_t *e, uint32_t now);
+
+/**
+ * @brief The controller's next action, on the `blec` task; a sensor command
+ *        written on 8841 is logged.
+ * @param now The clock, ms.
+ * @param out Receives the action.
+ * @return true when @p out holds one.
+ */
+bool panel_imu_blec_step(uint32_t now, bleu_act_t *out);
+
+/**
+ * @brief The `blec` task's turn, last: the view published for the frame
+ *        task, a change of the link's state and once a second the reading
+ *        logged.
+ * @param now The clock, ms.
+ */
+void panel_imu_blec_publish(uint32_t now);
 
 /**
  * @brief A value changed: SET_IMU_* go to the task; RATE and ALGORITHM give

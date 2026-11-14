@@ -327,6 +327,7 @@ TRACKED = [
     "protocols/hc05/hc05_line.c",
     "protocols/bleuart/bleuart.c",
     "protocols/bleuart/bleuart_adv.c",
+    "protocols/bleuart/bleuart_hub.c",
     "protocols/i2c_txq/i2c_txq.c",
     "protocols/witmotion/witmotion.c",
     "shared/logfile/servo_store.c",

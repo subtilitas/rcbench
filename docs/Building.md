@@ -597,21 +597,23 @@ the update over SDIO is not known.
 #### The image the panel carries
 
 CI and the release build the C6's firmware from the `slave/` folder of the
-esp_hosted component the panel pins, 2.13.0, on ESP-IDF v6.1 for the
-ESP32-C6, with the component's own configuration: Wi-Fi, and the BT
-controller alone with its HCI over the SDIO link in RAM (VHCI), which the
-panel's NimBLE host over VHCI needs. The workflow is `.github/workflows/c6.yml`;
-`tools/c6_image.py` copies the project with `firmware/c6/dependencies.lock`
-(the slave's 5 registry components at fixed versions and hashes) and fails
-when the image is not an ESP32-C6 application `network_adapter` of the
-pinned version with its SHA-256 appended, when it does not fit the C6's
-application slot (`ota_0` and `ota_1` of `slave/partitions.esp32c6.csv`,
-1,966,080 bytes each), when the sdkconfig lacks one of those settings, or
-when the build moved a pin of the lock file.
+esp_hosted component the panel pins, 2.13.0, on ESP-IDF v6.1 for the ESP32-C6,
+with the component's own configuration: Wi-Fi, and the BT controller alone with
+its HCI over the SDIO link in RAM (VHCI), which the panel's NimBLE host over
+VHCI needs. On top of it goes `CONFIG_BT_LE_MAX_CONNECTIONS=5` from
+`firmware/c6/sdkconfig.rcbench` (esp_hosted's default is 3). The workflow is
+`.github/workflows/c6.yml`; `tools/c6_image.py` copies the project with
+`firmware/c6/dependencies.lock` (the slave's 5 registry components at fixed
+versions and hashes), appends `sdkconfig.rcbench` to its
+`sdkconfig.defaults.esp32c6`, and fails when the image is not an ESP32-C6
+application `network_adapter` of the pinned version with its SHA-256 appended,
+when it does not fit the C6's application slot (`ota_0` and `ota_1` of
+`slave/partitions.esp32c6.csv`, 1,966,080 bytes each), when the sdkconfig lacks
+one of those settings, or when the build moved a pin of the lock file.
 
 | Item | Value |
 | --- | --- |
-| `rcbench-c6-2.13.0.bin` (sent over SDIO) | 1,283,616 bytes, 65.3% of the C6's slot |
+| `rcbench-c6-2.13.0.bin` (sent over SDIO) | 1,283,616 bytes, 65.3% of the C6's slot, the same with 3 and 5 connections; each connection takes about 1kB of the C6's DRAM at the controller's start (Kconfig help), the free heap is not measured |
 | `rcbench-c6-merged-2.13.0.bin` (flashed at 0x0 over H4) | 1,349,152 bytes: bootloader, partition table, otadata and the application |
 | Panel image growth with it carried | 1,284,272 bytes of flash; 1,408 bytes of internal RAM (one 1,400-byte chunk buffer) |
 | Panel image with it, NimBLE and one IOmcu image | 4,419,968 of 8,126,464 bytes in the update slot, 45.6% free; the release image with both IOmcu images is not measured |
@@ -639,9 +641,14 @@ cd firmware/panel && idf.py -D RCBENCH_C6_BIN=../../c6-dist/rcbench-c6-2.13.0.bi
 
 SETUP > UPDATES' C6 RADIO row shows the version the C6 reported at the
 first Wi-Fi start, or `not reported`, and the carried version, and
-`HOLD 2s TO UPDATE THE C6 RADIO`. The hold is live when the build carries
-an image that passed its check, the C6 does not report the carried
-version, the link to the C6 has not failed, the bench is SAFE with no arm
+`HOLD 2s TO UPDATE THE C6 RADIO`, or `HOLD 2s TO REINSTALL THIS PANEL'S C6
+FIRMWARE` while the C6 reports the carried version. Images of one esp_hosted
+version with other settings report the same version (`CONFIG_BT_LE_MAX_CONNECTIONS`
+3 or 5); esp_hosted's application descriptor answer names the ELF SHA-256
+only with `CONFIG_ESP_HOSTED_ALLOW_FULL_APP_DESC`, which no image sets, so
+the panel cannot tell them apart and offers the reinstall. The hold is live
+when the build carries an image that passed its check, the link to the C6
+has not failed, the bench is SAFE with no arm
 waiting, the supply output is off, no log run is open, no board drawing is
 being fetched, neither the IOmcu's update nor the panel's own download or
 install runs, Wi-Fi is off and Bluetooth LE's start task `blestart` does
@@ -651,7 +658,7 @@ the alert band. The update runs on the task `c6upd` (core 0, priority 2,
 
 | Step | Call | Limit | Ends as |
 | --- | --- | ---: | --- |
-| link | `c6_link_up()`, then the C6's version | 30,000ms | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.`; a C6 that reports 2.13.0 gets nothing: `The C6 radio runs 2.13.0 already. Nothing was sent.` |
+| link | `c6_link_up()`, then the C6's version | 30,000ms | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.`; a C6 that reports the carried version gets the image all the same |
 | begin | `esp_hosted_slave_ota_begin()`: the C6 erases the slot it does not run from | 20,000ms | an error: `The C6 radio takes no update over SDIO. Flash it over header H4.` |
 | write | `esp_hosted_slave_ota_write()`, 1,400 bytes a call, 4 calls a step | 10,000ms a step | an error: the end call once more to release the C6's OTA handle, then `C6 update stopped: a write failed. Previous firmware is running.` |
 | end | `esp_hosted_slave_ota_end()`: the C6 checks the image's SHA-256 | 10,000ms | `... the C6's image check failed ...` |
@@ -865,12 +872,12 @@ host, NimBLE. esp_hosted carries the HCI (host controller interface) packets
 between them as VHCI (virtual HCI) on the SDIO link Wi-Fi uses, interface
 `ESP_HCI_IF`: no extra pins. `firmware/panel/sdkconfig.defaults` holds the
 configuration under "Bluetooth LE through the ESP32-C6": a central and
-observer, one connection, no security manager, no Bluetooth 5.0 features,
+observer, 5 connections, no security manager, no Bluetooth 5.0 features,
 NimBLE's memory in PSRAM, its host task on core 0.
 
 `firmware/panel/main/panel_ble.c` starts the host once, at
 `panel_ble_start()`, on a task of its own, `blestart`, and the host stays
-until the panel restarts. The IMU task calls it at the first IMU ON
+until the panel restarts. The `blec` task calls it at the first IMU ON
 ([The Bluetooth IMU](IMU.md)), the console build's `ble scan` ([The bench
 console](BenchConsole.md#over-the-link-with-no-usb-on-the-iomcu)) too. The steps and their console lines:
 
@@ -914,7 +921,7 @@ console](BenchConsole.md#over-the-link-with-no-usb-on-the-iomcu)) too. The steps
 
 A host reset later, for an HCI error or a C6 that went silent, logs `ble:
 host reset, reason <n>`; NimBLE syncs again on its own and logs `ble: synced
-again`. The events of the host's callbacks go to a FreeRTOS queue of 32
+again`. The events of the host's callbacks go to a FreeRTOS queue of 64
 elements of 64 bytes (`panel_ble.h`); a full queue drops the event and
 counts it.
 

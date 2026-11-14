@@ -1,8 +1,9 @@
 """c6_image.py: what it holds the C6 radio's image to.
 
-The pinned version, the slot, the sdkconfig's needs, the image's own
-checks, the lock file's paths and pins, and prepare and check end to end
-on a fake component and build.
+The pinned version, the slot, the sdkconfig's needs, the panel's settings
+of firmware/c6/sdkconfig.rcbench, the image's own checks, the lock file's
+paths and pins, and prepare and check end to end on a fake component and
+build.
 
 SPDX-License-Identifier: MIT
 """
@@ -108,6 +109,39 @@ def test_the_sdkconfig_names_what_it_lacks():
     assert c6.sdkconfig_missing(sdk) == [
         "CONFIG_BT_LE_HCI_INTERFACE_USE_RAM=y"]
     assert len(c6.sdkconfig_missing("")) == len(c6.NEEDED)
+    three = GOOD_SDK.replace("CONFIG_BT_LE_MAX_CONNECTIONS=5",
+                             "CONFIG_BT_LE_MAX_CONNECTIONS=3")
+    assert c6.sdkconfig_missing(three) == ["CONFIG_BT_LE_MAX_CONNECTIONS=5"]
+
+
+def test_the_committed_settings_are_held_by_needed():
+    """Every line of firmware/c6/sdkconfig.rcbench is a NEEDED setting."""
+    have = c6.settings_of(c6.RCBENCH.read_text())
+    assert have == {"CONFIG_BT_LE_MAX_CONNECTIONS": "5"}
+    for k, v in have.items():
+        assert c6.NEEDED[k] == v
+    block = c6.rcbench_defaults(c6.RCBENCH.read_text())
+    assert block.startswith("\n# tools/c6_image.py: firmware/c6/"
+                            "sdkconfig.rcbench\n")
+    with pytest.raises(c6.C6Error, match="CONFIG_BT_LE_MAX_CONNECTIONS=4"):
+        c6.rcbench_defaults("CONFIG_BT_LE_MAX_CONNECTIONS=4\n")
+    with pytest.raises(c6.C6Error, match="CONFIG_X"):
+        c6.rcbench_defaults("CONFIG_X=y\n")
+    assert c6.settings_of("# a comment\nCONFIG_B=1\nCONFIG_B=2\n"
+                          ) == {"CONFIG_B": "2"}
+
+
+def test_a_setting_that_is_not_set_reads_as_n():
+    """Kconfig's "# CONFIG_X is not set" is CONFIG_X=n, also to the guard."""
+    assert c6.settings_of("# CONFIG_A is not set\nCONFIG_B=y\n") == {
+        "CONFIG_A": "n", "CONFIG_B": "y"}
+    assert c6.settings_of("CONFIG_A=y\n# CONFIG_A is not set\n") == {
+        "CONFIG_A": "n"}
+    with pytest.raises(c6.C6Error, match="CONFIG_BT_ENABLED=n"):
+        c6.rcbench_defaults("# CONFIG_BT_ENABLED is not set\n")
+    sdk = GOOD_SDK.replace("CONFIG_BT_ENABLED=y",
+                           "# CONFIG_BT_ENABLED is not set")
+    assert c6.sdkconfig_missing(sdk) == ["CONFIG_BT_ENABLED=y"]
 
 
 def test_the_image_must_be_the_pinned_c6_build_inside_the_slot():
@@ -171,6 +205,11 @@ def tree(tmp_path, monkeypatch):
         "project(network_adapter)\n")
     (comp / "slave" / "partitions.esp32c6.csv").write_text(
         "ota_0, app, ota_0, 0x10000, 1920K,\n")
+    (comp / "slave" / c6.TARGET_DEFAULTS).write_text(
+        "CONFIG_BT_ENABLED=y\n")
+    rcbench = tmp_path / "sdkconfig.rcbench"
+    rcbench.write_text("# the panel's\nCONFIG_BT_LE_MAX_CONNECTIONS=5\n")
+    monkeypatch.setattr(c6, "RCBENCH", rcbench)
     pin = tmp_path / "idf_component.yml"
     pin.write_text(PIN_YML)
     lock = tmp_path / "dependencies.lock"
@@ -186,6 +225,11 @@ def test_prepare_and_check_name_the_images(tree):
     comp, proj, build, dist = tree
     assert c6.main(["prepare", str(comp), str(proj)]) == 0
     assert (proj / "CMakeLists.txt").is_file()
+    defaults = c6.settings_of((proj / c6.TARGET_DEFAULTS).read_text())
+    assert defaults == {"CONFIG_BT_ENABLED": "y",
+                        "CONFIG_BT_LE_MAX_CONNECTIONS": "5"}
+    assert (comp / "slave" / c6.TARGET_DEFAULTS).read_text() == \
+        "CONFIG_BT_ENABLED=y\n"
     (proj / "sdkconfig").write_text(GOOD_SDK)
     build.mkdir()
     (build / c6.IMAGE).write_bytes(image())
@@ -207,6 +251,23 @@ def test_prepare_refuses_another_version_or_no_slave(tree):
     (comp / "slave" / "CMakeLists.txt").unlink()
     with pytest.raises(c6.C6Error):
         c6.prepare(comp, proj)
+
+
+def test_prepare_writes_the_settings_without_target_defaults(tree):
+    """A slave without target defaults gets them from the settings."""
+    comp, proj, _, _ = tree
+    (comp / "slave" / c6.TARGET_DEFAULTS).unlink()
+    c6.prepare(comp, proj)
+    assert c6.settings_of((proj / c6.TARGET_DEFAULTS).read_text()) == {
+        "CONFIG_BT_LE_MAX_CONNECTIONS": "5"}
+
+
+def test_prepare_refuses_a_setting_needed_does_not_hold(tree):
+    """Prepare refuses a setting that check would not hold."""
+    comp, proj, _, _ = tree
+    c6.RCBENCH.write_text("CONFIG_BT_LE_MAX_CONNECTIONS=9\n")
+    assert c6.main(["prepare", str(comp), str(proj)]) == 1
+    assert not proj.exists()
 
 
 def test_check_fails_on_a_moved_pin_a_missing_setting_or_no_image(tree):

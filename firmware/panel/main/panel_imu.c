@@ -1,14 +1,15 @@
 /**
  * @file panel_imu.c
- * @brief The Bluetooth IMU on the panel (panel_imu.h): the task that runs
- *        imu_ctl.h over Bluetooth LE (panel_ble.h), and the frame task's
- *        glue.
+ * @brief The Bluetooth IMU on the panel (panel_imu.h): the client of the
+ *        `blec` task (panel_blec.h) that runs imu_ctl.h over Bluetooth LE
+ *        (panel_ble.h), and the frame task's glue.
  *
- * The task runs every IMU_POLL_MS: the queue's values and commands go to
- * the controller, then the Bluetooth state, then the host stack's events
- * (panel_ble_get()), then every action the controller hands out
- * (panel_ble_do()), then the view is published.  The first IMU ON starts
- * Bluetooth (panel_ble_start()); it stays until the panel restarts.
+ * The `blec` task runs it every 5ms: the queue's values and commands go to
+ * the controller, then the Bluetooth state (panel_imu_blec_poll()), then
+ * the host stack's events the hub routes to it (panel_imu_blec_event()),
+ * then every action the controller hands out (panel_imu_blec_step()), then
+ * the view is published (panel_imu_blec_publish()).  The first IMU ON
+ * starts Bluetooth (panel_ble_start()); it stays until the panel restarts.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -27,6 +28,7 @@
 #include "imu_screen.h"
 #include "panel.h"
 #include "panel_ble.h"
+#include "panel_blec.h"
 #include "sensors_rows.h"
 #include "servo_angle.h"
 #include "servo_screen.h"
@@ -35,19 +37,13 @@
 /** @brief The console lines' tag. */
 static const char *TAG = "imu";
 
-/** @brief The task's poll, ms: the controller is stepped at least this often. */
-#define IMU_POLL_MS   5
 /** @brief Values and commands the queue holds. */
 #define IMU_Q_LEN     8
-/** @brief Host stack events taken in one poll at most: the whole queue. */
-#define IMU_EVTS_MAX  PANEL_BLE_QUEUE_LEN
-/** @brief Actions taken in one poll at most. */
-#define IMU_ACTS_MAX  16
 /** @brief The console's reading line while connected, every this many ms. */
 #define IMU_LOG_MS    1000u
 
-_Static_assert(pdMS_TO_TICKS(IMU_POLL_MS) >= 1,
-               "the poll blocks for a tick at least: the task never spins");
+_Static_assert(PANEL_BLEC_IMU == 0u,
+               "bleu_init() gives the IMU's machine owner 0");
 
 /** @brief What the frame task posts: SETUP's values or a screen command. */
 typedef struct {
@@ -69,12 +65,15 @@ typedef struct {
 static QueueHandle_t s_q;
 /** @brief Guards s_pub. */
 static portMUX_TYPE  s_mux = portMUX_INITIALIZER_UNLOCKED;
-/** @brief Written by the task under s_mux, read by the frame task. */
+/** @brief Written by the `blec` task under s_mux, read by the frame task. */
 static imu_pub_t     s_pub;
-/** @brief The task's own. */
+/** @brief The `blec` task's own. */
 static imu_ctl_t     s_ctl;
-/** @brief The task's copy before it is published: too big for its stack. */
+/** @brief The `blec` task's copy before it is published: too big for its
+ *         stack. */
 static imu_pub_t     s_next;
+/** @brief The link's state as last logged, the `blec` task's own. */
+static imu_link_t    s_was = IMU_LINK_OFF;
 /** @brief The frame task's copy of s_pub. */
 static imu_pub_t     s_seen;
 /** @brief The binds the frame task kept in SETUP. */
@@ -134,11 +133,10 @@ static imu_radio_t radio_now(char *ver, size_t n)
 }
 
 /**
- * @brief One action of the controller, to NimBLE; a sensor command written
- *        on 8841 is logged.
+ * @brief Log a sensor command the controller writes on 8841.
  * @param a The action.
  */
-static void perform(const bleu_act_t *a)
+static void log_command(const bleu_act_t *a)
 {
     if ((a->kind == BLEU_ACT_WRITE || a->kind == BLEU_ACT_WRITE_NR)
         && a->len == WIT_CMD_LEN) {
@@ -146,7 +144,6 @@ static void perform(const bleu_act_t *a)
                  a->data[1], a->data[2], a->data[3], a->data[4],
                  a->kind == BLEU_ACT_WRITE ? "" : " (no response)");
     }
-    panel_ble_do(a);
 }
 
 /**
@@ -174,58 +171,64 @@ static void log_reading(uint32_t now)
     frames = r->frames;
 }
 
-/**
- * @brief The task: messages, the Bluetooth state, events, actions, the
- *        view, every IMU_POLL_MS.
- * @param arg Unused.
- */
-static void imu_task(void *arg)
+void panel_imu_blec_poll(uint32_t now)
 {
-    (void)arg;
-    imu_link_t was = IMU_LINK_OFF;
-    for (;;) {
-        vTaskDelay(pdMS_TO_TICKS(IMU_POLL_MS));
-        const uint32_t now = now_ms();
-        imu_msg_t m;
-        while (xQueueReceive(s_q, &m, 0) == pdTRUE) {
-            if (m.is_cfg) {
-                if (m.cfg.en && panel_ble_state() == PANEL_BLE_OFF) {
-                    ESP_LOGI(TAG, "IMU ON: starting Bluetooth LE");
-                    panel_ble_start();
-                }
-                imu_ctl_config(&s_ctl, &m.cfg, now);
-            } else {
-                (void)imu_ctl_command(&s_ctl, &m.cmd, now);
-            }
-        }
-        char ver[IMU_VERSION_MAX];
-        const imu_radio_t radio = radio_now(ver, sizeof(ver));
-        imu_ctl_radio(&s_ctl, radio, ver, now);
-        bleu_evt_t e;
-        for (unsigned i = 0; i < IMU_EVTS_MAX && panel_ble_get(&e); ++i) {
-            imu_ctl_event(&s_ctl, &e, now);
-        }
-        bleu_act_t act;
-        for (int i = 0; i < IMU_ACTS_MAX && imu_ctl_step(&s_ctl, now, &act);
-             ++i) {
-            perform(&act);
-        }
-        imu_ctl_view(&s_ctl, &s_next.v);
-        s_next.bind_seq = s_ctl.bind_seq;
-        s_next.gaps = s_ctl.sensor.gaps;
-        s_next.gap_at_ms = s_ctl.sensor.gap_at_ms;
-        s_next.zero_gen = s_ctl.sensor.zero_gen;
-        if (s_next.v.link != was) {
-            ESP_LOGI(TAG, "link %d -> %d, error %d code 0x%X", (int)was,
-                     (int)s_next.v.link, (int)s_next.v.err,
-                     (unsigned)s_next.v.err_code);
-            was = s_next.v.link;
-        }
-        log_reading(now);
-        taskENTER_CRITICAL(&s_mux);
-        s_pub = s_next;
-        taskEXIT_CRITICAL(&s_mux);
+    if (s_q == NULL) {
+        return;
     }
+    imu_msg_t m;
+    while (xQueueReceive(s_q, &m, 0) == pdTRUE) {
+        if (m.is_cfg) {
+            if (m.cfg.en && panel_ble_state() == PANEL_BLE_OFF) {
+                ESP_LOGI(TAG, "IMU ON: starting Bluetooth LE");
+                panel_ble_start();
+            }
+            imu_ctl_config(&s_ctl, &m.cfg, now);
+        } else {
+            (void)imu_ctl_command(&s_ctl, &m.cmd, now);
+        }
+    }
+    char ver[IMU_VERSION_MAX];
+    const imu_radio_t radio = radio_now(ver, sizeof(ver));
+    imu_ctl_radio(&s_ctl, radio, ver, now);
+}
+
+void panel_imu_blec_event(const bleu_evt_t *e, uint32_t now)
+{
+    if (s_q != NULL) {
+        imu_ctl_event(&s_ctl, e, now);
+    }
+}
+
+bool panel_imu_blec_step(uint32_t now, bleu_act_t *out)
+{
+    if (s_q == NULL || !imu_ctl_step(&s_ctl, now, out)) {
+        return false;
+    }
+    log_command(out);
+    return true;
+}
+
+void panel_imu_blec_publish(uint32_t now)
+{
+    if (s_q == NULL) {
+        return;
+    }
+    imu_ctl_view(&s_ctl, &s_next.v);
+    s_next.bind_seq = s_ctl.bind_seq;
+    s_next.gaps = s_ctl.sensor.gaps;
+    s_next.gap_at_ms = s_ctl.sensor.gap_at_ms;
+    s_next.zero_gen = s_ctl.sensor.zero_gen;
+    if (s_next.v.link != s_was) {
+        ESP_LOGI(TAG, "link %d -> %d, error %d code 0x%X", (int)s_was,
+                 (int)s_next.v.link, (int)s_next.v.err,
+                 (unsigned)s_next.v.err_code);
+        s_was = s_next.v.link;
+    }
+    log_reading(now);
+    taskENTER_CRITICAL(&s_mux);
+    s_pub = s_next;
+    taskEXIT_CRITICAL(&s_mux);
 }
 
 void panel_imu_start(void)
@@ -239,18 +242,6 @@ void panel_imu_start(void)
     post_cfg();
     servo_screen_set_imu_axis((uint8_t)settings_get_int(SET_IMU_AXIS),
                               settings_get_int(SET_IMU_SIGN) == 1);
-    /*
-     * Core 0 beside the renderer, at the knob's priority 2: polls of 5ms,
-     * nothing with a deadline.  Stack 4096 bytes: the controller is
-     * static; the deepest chain is a NimBLE call of panel_ble_do() or the
-     * reading's console line, tools/stack_check.py holds it.
-     */
-    if (xTaskCreatePinnedToCore(imu_task, "imu", 4096, NULL, 2, NULL, 0)
-        != pdPASS) {
-        ESP_LOGE(TAG, "task not created; IMU off");
-        vQueueDelete(s_q);
-        s_q = NULL;
-    }
 }
 
 void panel_imu_settings_changed(setting_id_t id)

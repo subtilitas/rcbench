@@ -2634,14 +2634,20 @@ static void pose_upd(const char *view)
     }
     upd_screen_set_coproc(&cu);
 
-    /* The C6 RADIO row: a C6 on the carried 2.13.0; updates-c6 the shipped
+    /* The C6 RADIO row: a C6 on the carried 2.13.0 with Wi-Fi on, the hold
+     * grey; updates-c6-reinstall the same C6 with Wi-Fi off, the reinstall
+     * offered; updates-c6 the shipped
      * C6, which reports no version, the hold live; updates-c6-* the other
      * states the fit check measures. */
     upd_c6_view_t c6 = {
-        .row = FW_C6_ROW_SAME, .known = true, .have_image = true,
+        .row = FW_C6_ROW_BLOCKED, .why = FW_C6_WHY_RADIO, .known = true,
+        .have_image = true,
         .running = { 2u, 13u, 0u }, .carried = { 2u, 13u, 0u },
     };
-    if (strcmp(view, "updates-c6") == 0) {
+    if (strcmp(view, "updates-c6-reinstall") == 0) {
+        c6.row = FW_C6_ROW_REINSTALL;
+        c6.why = FW_C6_WHY_NONE;
+    } else if (strcmp(view, "updates-c6") == 0) {
         c6.row = FW_C6_ROW_READY;
         c6.known = false;
     } else if (strcmp(view, "updates-c6-progress") == 0) {

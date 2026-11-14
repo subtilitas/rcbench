@@ -1083,6 +1083,7 @@ FIT_ONLY = {
     "updates-cu-install":  (None, "updates", "dark"),
     # The C6 RADIO row's update running, no image carried, a failed link.
     "updates-c6-progress": (None, "updates", "dark"),
+    "updates-c6-reinstall": (None, "updates", "dark"),
     "updates-c6-noimage":  (None, "updates", "dark"),
     "updates-c6-failed":   (None, "updates", "dark"),
     "upd-remind-blocked": (None, "upd-remind", "dark"),

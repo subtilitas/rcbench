@@ -4,7 +4,7 @@
 # events in and actions out.  The sources include the C standard headers and
 # each other, nothing else, so the folder builds in any project.  No pin
 # driver and no radio code: the caller runs the host stack.
-set(SRCS bleuart.c bleuart_adv.c)
+set(SRCS bleuart.c bleuart_adv.c bleuart_hub.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include)

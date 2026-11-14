@@ -47,8 +47,12 @@ typedef struct {
 /** @brief The row's one instance. */
 static c6_state_t c6;
 
-/** @brief Whether the hold may run now. @return true while READY */
-static bool live(void) { return c6.v.row == FW_C6_ROW_READY; }
+/** @brief Whether the hold may run now.
+ *  @return true while READY or REINSTALL */
+static bool live(void)
+{
+    return c6.v.row == FW_C6_ROW_READY || c6.v.row == FW_C6_ROW_REINSTALL;
+}
 
 gfx_rect_t upd_c6_rect(void)
 {
@@ -89,7 +93,6 @@ const char *upd_c6_reason(const upd_c6_view_t *v)
     case FW_C6_ROW_BAD_IMAGE:   return TR(C6_WHY_BAD_IMAGE);
     case FW_C6_ROW_UPDATING:    return TR(C6_WHY_UPDATING);
     case FW_C6_ROW_LINK_FAILED: return TR(C6_WHY_LINK);
-    case FW_C6_ROW_SAME:        return TR(C6_WHY_SAME);
     case FW_C6_ROW_BLOCKED:
         switch (v->why) {
         case FW_C6_WHY_ARMED:   return TR(C6_WHY_ARMED);
@@ -105,6 +108,7 @@ const char *upd_c6_reason(const upd_c6_view_t *v)
         default:                return TR(C6_WHY_ENDING);
         }
     case FW_C6_ROW_READY:
+    case FW_C6_ROW_REINSTALL:
     default:
         return NULL;
     }
@@ -143,6 +147,8 @@ void upd_c6_label(const upd_c6_view_t *v, char *out, size_t n)
     if (v->row == FW_C6_ROW_UPDATING) {
         snprintf(out, n, TR(UPD_C6_PROGRESS),
                  v->percent > 100u ? 100u : v->percent);
+    } else if (v->row == FW_C6_ROW_REINSTALL) {
+        snprintf(out, n, "%s", TR(UPD_C6_REINSTALL));
     } else {
         snprintf(out, n, "%s", TR(UPD_C6_HOLD));
     }
@@ -165,7 +171,9 @@ bool upd_c6_event(const touch_event_t *evt, bool other)
         c6.p.id = evt->point.id;
         c6.p.live = live();
         if (c6.p.live) {
-            ui_hold_begin(&c6.p.hold, TX_HOLD_HINT_C6_UPDATE);
+            ui_hold_begin(&c6.p.hold, c6.v.row == FW_C6_ROW_REINSTALL
+                                          ? TX_HOLD_HINT_C6_REINSTALL
+                                          : TX_HOLD_HINT_C6_UPDATE);
         }
         upd_screen_invalidate();
         return true;

@@ -1134,8 +1134,9 @@ write path, the retries and every timeout (`test_bleuart`, `test_bleuart_link` a
 gaps (`shared/ui/imu_sensor.c`, `test_imu_sensor` without a radio), the BLE link
 (`shared/ui/imu_ble.c`), the controller that joins the two (`shared/ui/imu_ctl.c`,
 `test_imu_ctl` against `ble_sim.h`), the IMU screen on SETUP's IMU tile (`test_imu_screen`),
-SETUP > SENSORS > IMU (`test_imu_pane`) and the panel's IMU task
-(`firmware/panel/main/panel_imu.c`). The angle's low-pass, IMU filter, its seed, its wrap
+SETUP > SENSORS > IMU (`test_imu_pane`) and the IMU's side of the panel's `blec` task
+(`firmware/panel/main/panel_imu.c`, `panel_blec.c`), which runs it through the hub of
+`protocols/bleuart` (`test_bleuart_hub`). The angle's low-pass, IMU filter, its seed, its wrap
 at ±180° and the still time that waits for it, kept per axis (`test_imu`, `test_imu_filter`),
 and AUTO on the filtered angle with the settle allowance and on yaw while pitch creeps
 (`test_servo_rauto_filter`, `test_servo_rauto_kst`). With
@@ -1410,7 +1411,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 549 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 551 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1521,7 +1522,8 @@ The host suite is 549 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_angle`, `test_servo_source_angle`, `test_hitec_prog_run` and
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
-`test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_imu`, `test_imu_filter`,
+`test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
+`test_bleuart_hub`, `test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
@@ -1691,7 +1693,20 @@ and the settle's 2000ms at their limit and 1ms before it, at tick 0 and started 
 the wrap. `test_bleuart_link` runs the writes with and without response, the tables it
 refuses, a disconnect in every state, scans beside a connect, OFF in every state and late
 answers; `test_bleuart_adv` the AD (advertising data) structures at their limits, 9 matching
-devices and the hidden count.
+devices and the hidden count. `test_bleuart_profile` runs the owner in the tokens' top 3 bits
+and its count's wrap from 0x1FFF to 1, a profile with other UUIDs found by role, a command
+characteristic marked optional and missing, the connect's parameters from the profile, every
+rule of `bleu_profile_valid()` at its limit, and a connect answered busy tried again after
+1000ms, not 999ms. `test_bleuart_hub` runs the hub (`bleuart_hub.c`) with each client against
+its own scripted peer: one client action for action as without the hub, three clients coming
+up one connect at a time with each peer's bytes reaching only its own machine, routing by
+token and by handle, a scan during another client's connect, a second scan answered busy, a
+lost DISCONNECT whose handle another client gets, a held-back DISCONNECT, another client's
+cancel, stop and handle refused with each GATT step answered lost, the slot ended by its
+SCAN_END and by a connection that failed to be established, a client that holds the slot
+scanning or connecting again with no cancel and no busy answer, a stale DISCONNECT of a
+client's old handle keeping its new link, and the slot's limits of 7000ms and 12000ms and the cancel's
+2000ms at their limit and 1ms before.
 
 `test_hitec_wire` runs the core of `protocols/hitec/`: the frames of both wire
 families, the transactions and every refusal of the reply decoders, with frames and reply
@@ -2182,7 +2197,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/coproc_update_screen.c` | 302 | 302 | 100.0% |
 | `shared/ui/upd_screen.c` | 663 | 637 | 96.1% |
 | `shared/ui/upd_settings.c` | 43 | 39 | 90.7% |
-| `shared/ui/upd_c6.c` | 115 | 113 | 98.3% |
+| `shared/ui/upd_c6.c` | 117 | 115 | 98.3% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
 | `shared/ui/imu_sensor.c` | 210 | 210 | 100.0% |
@@ -2285,8 +2300,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
-| `protocols/bleuart/bleuart.c` | 399 | 399 | 100.0% |
+| `protocols/bleuart/bleuart.c` | 456 | 456 | 100.0% |
 | `protocols/bleuart/bleuart_adv.c` | 166 | 166 | 100.0% |
+| `protocols/bleuart/bleuart_hub.c` | 223 | 223 | 100.0% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
 | `shared/logfile/servo_store.c` | 267 | 265 | 99.2% |
@@ -2413,7 +2429,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_install.c` | 68 | 68 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
-| `shared/fwupdate/fw_c6.c` | 159 | 159 | 100.0% |
+| `shared/fwupdate/fw_c6.c` | 156 | 156 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
 | `shared/webaccess/wa_fetch.c` | 427 | 415 | 97.2% |
@@ -2428,7 +2444,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **92677** | **90833** | **98.0%** |
+| **total** | **92956** | **91112** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

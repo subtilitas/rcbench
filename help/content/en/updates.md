@@ -17,6 +17,7 @@ UPDATES checks GitHub for newer panel firmware and offers to install it. Open it
 | OPTIONS | in the footer's right; opens the list of Reminder at start and Releases, see [Settings](#settings); grey while a check or a download runs |
 | HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
 | HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
+| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE | the same, while the C6 reports the carried version |
 
 ## Settings
 
@@ -148,14 +149,13 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 
 Under the card, UPDATES shows the board's ESP32-C6, which carries Wi-Fi and Bluetooth: `C6 radio: not reported. Included: 2.13.0.` The first version is the one the C6 named at the first Wi-Fi start since the panel started; the shipped C6 names none. HOLD 2s TO UPDATE THE C6 RADIO sends the carried image over the board's SDIO (Secure Digital input/output) link; the button then reads `C6 UPDATE 37%`.
 
-The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, Wi-Fi off, and the C6 not on the carried version. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
+The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, and Wi-Fi off. On a C6 that reports the carried version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
 
 While the update runs, ARM is refused and Wi-Fi stays off. It ends with one alert:
 
 | Alert | Meaning |
 |---|---|
 | `C6 radio updated to 2.13.0. The panel restarts.` | done; the panel restarts 3s later |
-| `The C6 radio runs 2.13.0 already. Nothing was sent.` | nothing to send |
 | `The C6 radio takes no update over SDIO. Flash it over header H4.` | the C6's firmware refused the update; the old firmware runs |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | the link to the C6 failed |
 | `C6 update stopped: no response. Previous firmware is running.` | a step went unanswered; `a write failed`, `the C6's image check failed` and `activation failed` read the same way |

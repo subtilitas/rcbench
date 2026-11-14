@@ -660,6 +660,7 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
@@ -7005,6 +7006,7 @@ mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
 | `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start und Releases. Grau, solange eine Suche oder ein Download läuft oder ein Finger den Download hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche oder Download.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 | `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
+| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
 
 ![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
 
@@ -7236,7 +7238,9 @@ Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und
 Bluetooth trägt: `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`, die Version,
 die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start gemeldet hat, oder
 `nicht gemeldet`, und die Version des Images, das dieses Panel mitbringt,
-oder `keine`. Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`. Während das Update
+oder `keine`. Darunter `2s HALTEN ZUM C6-FUNK-UPDATE`, oder `2s HALTEN:
+C6-FIRMWARE DES PANELS NEU INSTALLIEREN`, solange der C6 die mitgebrachte
+Version meldet. Während das Update
 läuft, zeigt die Taste `C6-UPDATE 37%`, den Anteil des Images, den der C6
 angenommen hat. Die Schritte, ihre Grenzen und wie jeder endet, stehen in
 [Bauen: Die Firmware des C6](Building-de.md#die-firmware-des-c6).
@@ -7252,7 +7256,6 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Die enthaltene C6-Funk-Firmware hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist kein ESP32-C6-Build von esp_hosted, oder sein SHA-256 weicht ab. |
 | `Das C6-Funk-Update läuft.` | Ein Update läuft. |
 | `Der C6-Funk hat nicht geantwortet. Starte das Panel neu.` | Die Verbindung zum C6 ist seit dem Panel-Start ausgefallen; der C6 wird im Reset gehalten. |
-| `Der C6-Funk nutzt die im Panel enthaltene Firmware.` | Der C6 hat die mitgebrachte Version gemeldet. |
 | `Das C6-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
 | `Das C6-Update erfordert einen ausgeschalteten Netzteilausgang.` | Der Netzteilausgang ist an oder schaltet ein. |
 | `Das C6-Update wartet: Ein Aufzeichnungslauf ist offen.` | Ein Log-Lauf ist offen. |
@@ -7264,12 +7267,16 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
-angeboten. Das Alarmband sagt, wie ein Update endete:
+angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
+Neuinstallation angeboten: Images einer esp_hosted-Version mit anderen
+Einstellungen melden dieselbe Version, etwa eines mit 3
+Bluetooth-LE-Verbindungen und eines mit 5 ([Bauen: Das Image, das das Panel
+mitbringt](Building-de.md#das-image-das-das-panel-mitbringt)). Das
+Alarmband sagt, wie ein Update endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu. |
-| `Der C6-Funk nutzt bereits 2.13.0. Nichts gesendet.` | Der C6 hat beim Verbindungsaufbau des Updates die mitgebrachte Version gemeldet. |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Bauen: Wiederherstellung über Header H4](Building-de.md#wiederherstellung-über-header-h4)). |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
 | `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |
