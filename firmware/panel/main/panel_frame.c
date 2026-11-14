@@ -35,6 +35,7 @@
 #include "panel.h"
 #include "balance_screen.h"
 #include "panel_bal.h"
+#include "panel_devupd.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
 #include "panel_imu.h"
@@ -834,6 +835,7 @@ void panel_frame_loop(void)
                         || supplies_live_or_coming(),
                     stops_now, &cu);
         c6_service(arm_wanted_now || armed_now);
+        devupd_service(arm_wanted_now || armed_now);
 
         /*
          * The arm this frame began with, acknowledged -- only by a frame that

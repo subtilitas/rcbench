@@ -27,6 +27,11 @@ extern "C" {
 /** @brief The console's log tag. */
 #define NODE_TAG "node"
 
+/** @brief The Waveshare ESP32-C6-Zero's BOOT key: GPIO9, the strapping pin
+ *         the key pulls low; once the node runs, the confirming key of a
+ *         firmware update over Bluetooth LE (firmware/devota). */
+#define NODE_PIN_BOOT 9
+
 /* ------------------------------------------------------------- the role */
 
 /** @brief What a role does; node_pwr.c or node_bal.c defines node_role. */

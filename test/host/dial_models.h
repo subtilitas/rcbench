@@ -27,13 +27,16 @@ typedef enum {
     DM_WAITING,
     DM_BIND,
     DM_OTHER,
+    DM_UPDATE_ASK,
+    DM_UPDATE_SEND,
     DM_COUNT
 } dial_model_id_t;
 
 /** @brief The models' names: the image files are dial-<name>.png. */
 static const char *const k_dial_model_name[DM_COUNT] = {
     "navigation", "value-set", "servo-live", "motor-armed", "motor-safe",
-    "link-lost", "link-ended", "waiting", "bind", "other",
+    "link-lost", "link-ended", "waiting", "bind", "other", "update-ask",
+    "update-send",
 };
 
 /** @brief A model and the view beside it. */
@@ -242,6 +245,17 @@ static inline void dial_model(dial_model_t *m, int id, uint8_t lang)
     case DM_WAITING:
         /* No panel packet yet: the language is the renderer's last. */
         m->view.lost = true;
+        break;
+    case DM_UPDATE_ASK:
+    case DM_UPDATE_SEND:
+        /* The update client's link: no panel packet, the Dial asks for
+         * its press, or takes the image at 42%. */
+        m->view.ready = false;
+        m->view.upd = id == DM_UPDATE_ASK ? DIAL_UPD_ASK : DIAL_UPD_SEND;
+        m->view.upd_secs = 27u;
+        m->view.upd_pct = 42u;
+        m->view.upd_from[1] = 24u;
+        m->view.upd_to[1] = 25u;
         break;
     case DM_BIND:
         m->view.ready = false;

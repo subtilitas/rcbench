@@ -1179,7 +1179,7 @@ number shown in part), and the antialiased ring from a coverage table
 (`test_gfx_ring`, against a reference from the same formula; the Dial's
 six tables generated as const data by `tools/gen_dial_rings.py`, held to
 `gfx_ring_build()` by `test_dial_face`); `tools/render_dial.py --check`
-holds the 20 committed images. The Dial sends no EVENT while it shows LINK
+holds the 24 committed images. The Dial sends no EVENT while it shows LINK
 LOST (`dk_link_lost()`, `test_dialknob_face`). Built, not run on the
 device: the Dial's
 firmware (`firmware/dial`, ESP-IDF v6.1 for the ESP32-S3; CI's `dial.yml`)
@@ -1238,6 +1238,51 @@ log's `node` source (`test_logwriter`), and the `blec` task's and the
 control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
 `panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
 measured.
+
+### Firmware update over Bluetooth LE
+
+Built and host-tested: the update protocol (`protocols/bleota`): every
+control write and notification at its limits and 200,000 random writes
+through the decoders and a device side (`test_bleota`); the device side's
+refusals by code, the confirmation window in both modes at 30,000ms and the
+1,000ms hold at their limits, a key already down, the HASH and idle
+timeouts, a skipped chunk answered once with the gap mark, the 512-byte
+credit step, the image head checked before the first write, the SHA-256
+compare, an ABORT and a lost link during the install, and a lost link
+(`test_bleota_dev`). The panel's engine (`shared/devupd`, `test_devupd`)
+against that device side: an image sent whole, a lossless link with 0ms,
+20ms and 40ms of latency sent once with no rewind, a lost chunk and a lost
+tail found by POLL, a credit stall that ends
+after 3 polls, each refusal code, a SHA-256 that differs, no confirmation,
+a disconnect mid-transfer followed by a new transfer from byte 0, and a
+link lost after END left unknown and settled by the device's version; its
+client on the Bluetooth LE hub (`test_devupd_client`) against a scripted
+host stack; the start's gate and the busy flag that refuses ARM, read busy
+at every point from the ask to the end; the node's sleep policy during an
+update (`test_node_policy`); UPDATES' WIRELESS DEVICES entry and its
+page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE FIRMWARE
+rows: the entry opening the page, BACK and the home tag closing it, each
+row's hold at 1,999ms and 2,000ms, its reasons, its hints and its
+progress, the node rows' HOLD BOOT 1s ON THE NODE, one press at a time
+(`shared/ui/upd_dev.c`, `test_upd_dev`, the page's guide in
+`test_help_net`); the gate naming the device it started
+(`test_devupd`), the 30s progress limit at 29.9s and 30.1s against a
+device that answers the gap mark at one offset, an abort in every phase
+that waits through the install from END on, and the settle of an unknown
+install read from its own device and reported before a second device's
+start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
+END on (`test_upd_dev`); and each node client's hand-over and take-back: the
+update's hold ends the link with no STALE or LOST at any ms, keeps it
+ended through SETUP's values for 30s, takes no packet, and the take-back
+reconnects and reads the node's version from its first STATUS
+(`pnode_ctl_hold()`, `pnode_ctl_target()`, `test_pnode_ctl`;
+`bal_ctl_hold()`, `bal_ctl_target()`, `test_bal_ctl`). Built, not run on
+a device: the device side on NimBLE with ESP-IDF's OTA (over-the-air)
+calls and the rollback mark (`firmware/devota`) in the Dial's image and
+both node roles', and the panel's side
+(`firmware/panel/main/panel_devupd.c`, the hooks in `panel_dial.c`,
+`panel_pnode.c` and `panel_bal.c`) with the three images embedded. The
+rate and a rollback are not measured.
 
 ### Phase tap (ESC tones)
 
@@ -1475,7 +1520,7 @@ rcbench/
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
 | `hc05` · `dial` | | | yes |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` | yes | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1509,7 +1554,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 576 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 581 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1636,7 +1681,8 @@ The host suite is 576 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode` and `test_node_policy`.
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`,
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client` and `test_upd_dev`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -2122,7 +2168,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-970 committed screenshots to the current render, 485 in English and the same 485 in German, and `render_ui.py --fit` fails on a string that
+980 committed screenshots to the current render, 490 in English and the same 490 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

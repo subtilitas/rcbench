@@ -54,7 +54,7 @@ version: 3.0.0
 
 
 def image(chip=c6.CHIP_ESP32C6, version="2.13.0", project="network_adapter",
-          hashed=1, size=4096):
+          hashed=1, size=4096, kind=None):
     """An app image's head: header, one segment header, the descriptor.
 
     Args:
@@ -63,6 +63,7 @@ def image(chip=c6.CHIP_ESP32C6, version="2.13.0", project="network_adapter",
         project: Descriptor project name.
         hashed: Hash-appended flag.
         size: Total bytes.
+        kind: The role's BLEOTA_KIND_* after the descriptor; None for none.
 
     Returns:
         The image's bytes.
@@ -75,6 +76,9 @@ def image(chip=c6.CHIP_ESP32C6, version="2.13.0", project="network_adapter",
     struct.pack_into("<I", b, 32, c6.DESC_MAGIC)
     b[48:48 + len(version)] = version.encode()
     b[80:80 + len(project)] = project.encode()
+    if kind is not None:
+        struct.pack_into("<IBB", b, c6.ROLE_OFFSET, c6.ROLE_MAGIC, kind,
+                         c6.ROLE_PROTO)
     return bytes(b)
 
 
@@ -290,6 +294,71 @@ def test_check_fails_on_a_moved_pin_a_missing_setting_or_no_image(tree):
     (proj / "sdkconfig").write_text(GOOD_SDK)
     (build / c6.IMAGE).unlink()
     assert c6.main(["check", str(proj), str(build), str(dist)]) == 1
+
+
+def test_a_device_image_must_be_its_roles_build_inside_its_slot():
+    """A device image is held to its role's chip, project and slot."""
+    dial = image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+                 project="rcbench-dial", kind=1)
+    assert "dial 0.23.12: 4096 bytes" in c6.check_device(
+        "dial", dial, "0.23.12", 4096)
+    for bad in (image(chip=c6.CHIP_ESP32C6, version="0.23.12",
+                      project="rcbench-dial"),
+                image(chip=c6.CHIP_ESP32S3, version="0.23.11",
+                      project="rcbench-dial"),
+                image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+                      project="rcbench-node"),
+                image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+                      project="rcbench-dial", hashed=0, kind=1),
+                image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+                      project="rcbench-dial"),
+                image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+                      project="rcbench-dial", kind=2),
+                image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+                      project="rcbench-dial", kind=1)[:290]):
+        with pytest.raises(c6.C6Error):
+            c6.check_device("dial", bad, "0.23.12", 4096)
+    with pytest.raises(c6.C6Error):
+        c6.check_device("dial", dial, "0.23.12", 4095)
+    with pytest.raises(c6.C6Error):
+        c6.check_device("knob", dial, "0.23.12", 4096)
+
+
+def test_a_node_image_must_carry_its_own_role():
+    """The role and the balance text name the image's own node role."""
+    pwr = image(version="0.23.12", project="rcbench-node", kind=2)
+    bal = bytearray(image(version="0.23.12", project="rcbench-node",
+                          kind=3))
+    bal[1000:1000 + len(c6.BAL_MARK)] = c6.BAL_MARK
+    bal = bytes(bal)
+    c6.check_device("node-pwr", pwr, "0.23.12", 4096)
+    c6.check_device("node-bal", bal, "0.23.12", 4096)
+    with pytest.raises(c6.C6Error):
+        c6.check_device("node-pwr", bal, "0.23.12", 4096)
+    with pytest.raises(c6.C6Error):
+        c6.check_device("node-bal", pwr, "0.23.12", 4096)
+    # The balance text with the power node's role: refused by the role.
+    mixed = bytearray(pwr)
+    mixed[1000:1000 + len(c6.BAL_MARK)] = c6.BAL_MARK
+    with pytest.raises(c6.C6Error, match="role is kind 2"):
+        c6.check_device("node-bal", bytes(mixed), "0.23.12", 4096)
+
+
+def test_the_tree_version_and_the_device_call(tmp_path, capsys):
+    """The version comes from rcbench_version.h; device checks a file."""
+    assert c6.tree_version("#define RCBENCH_VERSION_MAJOR 1\n"
+                           "#define RCBENCH_VERSION_MINOR 22\n"
+                           "#define RCBENCH_VERSION_PATCH 3\n") == "1.22.3"
+    with pytest.raises(c6.C6Error):
+        c6.tree_version("#define RCBENCH_VERSION_MAJOR 1\n")
+    want = c6.tree_version(c6.VERSION_H.read_text())
+    f = tmp_path / "rcbench-dial.bin"
+    f.write_bytes(image(chip=c6.CHIP_ESP32S3, version=want,
+                        project="rcbench-dial", kind=1))
+    assert c6.main(["device", "dial", str(f)]) == 0
+    assert "dial " + want in capsys.readouterr().out
+    assert c6.main(["device", "dial", str(tmp_path / "none.bin")]) == 1
+    assert c6.main(["device", "knob", str(f)]) == 1
 
 
 def test_a_wrong_call_prints_the_usage():

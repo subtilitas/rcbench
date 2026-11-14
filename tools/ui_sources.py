@@ -204,6 +204,7 @@ SOURCES = [
     "shared/ui/upd_screen.c",
     "shared/ui/upd_settings.c",
     "shared/ui/upd_c6.c",
+    "shared/ui/upd_dev.c",
     # IMU, its controller and the protocol cores they read.
     "shared/ui/imu_ctl.c",
     "shared/ui/imu_ble.c",
@@ -359,6 +360,8 @@ INCLUDES = [
     "shared/servo/include",
     "shared/esc/include",
     "shared/fwupdate/include",
+    "shared/devupd/include",
+    "protocols/bleota/include",
     "protocols/sbus/include",
     "protocols/pdmini/include",
     "protocols/kst/include",

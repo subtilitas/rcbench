@@ -32,4 +32,11 @@ CONFIG_ESP_WIFI_ENABLED=n
 CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP=y
 CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
 
+# A new image from an update over Bluetooth LE starts once on trial and
+# marks itself kept at its first connection (firmware/devota); a start
+# before that goes back to the image before it.  A timer wake from deep
+# sleep, with the option above, starts the image the start before it
+# chose, so a node on trial stays on trial across its 10s wakes.
+CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
+
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y

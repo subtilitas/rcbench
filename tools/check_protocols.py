@@ -369,9 +369,29 @@ LIBRARY_RE = re.compile(r"\brcbench_\w+")
 # protocols/ with an assertion that names a macro or enumerator of the
 # module's public headers.  Paths are relative to the repository root.
 ASSERTED = {
+    "bleota": {
+        "firmware/panel/main/panel_devupd.c": (
+            "UPD_DEV_COUNT == BLEOTA_KIND_MAX"
+            " && UPD_DEV_DIAL == BLEOTA_KIND_DIAL - 1"
+            " && UPD_DEV_PNODE == BLEOTA_KIND_NODE_POWER - 1"
+            " && UPD_DEV_BAL == BLEOTA_KIND_NODE_BAL - 1",
+        ),
+        "shared/devupd/devupd_client.c": (
+            "BLEOTA_CTRL_MAX <= BLEU_WRITE_MAX",
+            "BLEOTA_LEN_STATUS <= BLEU_EVT_DATA",
+        ),
+    },
     "bleuart": {
         "firmware/panel/main/panel_ble.c": (
             "BLEU_EVT_DATA >= BLE_HS_ADV_MAX_SZ",
+        ),
+        "firmware/panel/main/panel_devupd.c": (
+            "PANEL_BLEC_UPD < BLEU_OWNER_MAX",
+        ),
+        "shared/devupd/devupd_client.c": (
+            "BLEOTA_CTRL_MAX <= BLEU_WRITE_MAX",
+            "BLEOTA_LEN_STATUS <= BLEU_EVT_DATA",
+            "DEVUPD_CHR_DATA < BLEU_CHR_MAX",
         ),
         "shared/ui/imu_ble.c": (
             "BLEU_ADDR_TEXT_MAX <= IMU_ADDR_MAX",

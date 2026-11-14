@@ -661,6 +661,12 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
 | 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
 | 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN ZUM DIAL-UPDATE auf UPDATES | `Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.` |
+| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Dial-Firmware des Panels neu zu installieren.` |
+| 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE auf UPDATES | `Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.` |
+| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.` |
+| 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE auf UPDATES | `Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.` |
+| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
@@ -7158,7 +7164,9 @@ Zeilen von 41 Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein
 Ergebnis bis in die letzten drei Zeilen der Karte, entfallen diese Zeilen.
 Unter NACH UPDATES SUCHEN stehen die Zeilen des IOmcu-Abschnitts in der
 Schrift 10 x 20px, und sein Halten ist eine Taste derselben Größe, ab y 380
-im Körper. Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
+im Körper. Dazwischen der Eintrag FUNKGERÄTE: seine Überschrift bei y 236
+im Körper, seine Zeile bei y 260 und seine Taste, 460 x 56px, bei y 316
+([Die Funkgeräte](#die-funkgeräte)). Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
 im Körper und ihr Halten, 532 x 56px, neben dem des IOmcu
 ([Der C6-Funk](#der-c6-funk)). Die Fußleiste
 ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
@@ -7173,6 +7181,7 @@ mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
 | `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
 | `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
 | `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
+| `FIRMWARE DER FUNKGERÄTE` | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten ([Die Funkgeräte](#die-funkgeräte)). Während ein Update läuft, zeigt die Taste die Beschriftung dieser Zeile. |
 
 ![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
 
@@ -7430,6 +7439,7 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet: Die Installation der Panel-Firmware läuft.` | Download oder Installation des Panels laufen. |
 | `Das C6-Update wartet, bis das WLAN des Panels aus ist.` | Eine Prüfung, ein Download oder WI-FI hat den Funk an. |
 | `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
+| `Das C6-Update wartet auf das Ende des Funkgeräte-Updates.` | Das Update eines Dial läuft oder wurde angefordert ([Das Dial](#das-dial)). |
 | `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
@@ -7450,6 +7460,170 @@ Alarmband sagt, wie ein Update endete:
 Während das Update läuft, wird ARM mit `ARMED gesperrt: Das C6-Funk-Update
 läuft.` abgelehnt, das WLAN startet nicht, und Installation des Panels,
 GitHub-Prüfung und IOmcu-Update warten.
+
+### Die Funkgeräte
+
+Der Eintrag FUNKGERÄTE auf UPDATES zählt die Geräte:
+`Verbunden: 1 von 3. Andere Version: 0.` nennt die Geräte, die eine
+Version gemeldet haben, und die, deren Zeile eine andere als die
+mitgebrachte Version anbietet. Ein Tippen auf `FIRMWARE DER FUNKGERÄTE`
+öffnet die Seite; während ein Update läuft, zeigt die Taste die
+Beschriftung dieser Zeile.
+
+![Der Eintrag FUNKGERÄTE, während das Dial nach seinem Druck fragt](img/de/updates-dial.png)
+
+Die Seite bedeckt den Körper von UPDATES. Sie hat eine Zeile je Gerät, bei
+y 24, 128 und 232 im Körper: DIAL-FIRMWARE, LEISTUNGSKNOTEN-FIRMWARE und
+AUSWUCHTKNOTEN-FIRMWARE. Überschrift und Zeile nehmen 496px ab x 16 ein,
+das Halten 480 x 56px ab x 528. Ein Hinweis unter den Zeilen sagt, wie
+ein Gerät ein Update annimmt. `ZURÜCK` im rechten Platz der Fußleiste und
+das Home-Tag schließen die Seite; das Verlassen von UPDATES schließt sie
+ebenfalls. Es läuft ein Update zur Zeit: Solange eines läuft, ist das
+Halten der anderen Zeilen grau.
+
+![Die Seite der Funkgeräte](img/de/updates-devices.png)
+
+| Bedienelement | Wirkung |
+| --- | --- |
+| `2s HALTEN ZUM DIAL-UPDATE` | Sendet das Image des M5Stack Dial, das dieses Panel mitbringt, über Bluetooth LE an das verbundene Dial ([Das Dial](#das-dial)). |
+| `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN` | Dasselbe, solange das Dial die mitgebrachte Version meldet. |
+| `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` | Sendet das Image des Leistungsknotens, das dieses Panel mitbringt, an den gebundenen Leistungsknoten ([Die Sensorknoten](#die-sensorknoten)). |
+| `2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
+| `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Sendet das Image des Auswuchtknotens, das dieses Panel mitbringt, an den gebundenen Auswuchtknoten. |
+| `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
+| `UPDATE ABBRECHEN` | Im mittleren Platz der Fußleiste, solange ein Update läuft; ein einfaches Tippen. Vor END beendet es das Update: Das Gerät verwirft, was es angenommen hat, und behält seine Firmware, und das Band zeigt `<Gerät>-Update abgebrochen: auf UPDATES abgebrochen. Vorherige Firmware läuft.` Ab END installiert das Gerät, was kommt: Die Taste ist grau, ein Tippen zeigt `Das Gerät installiert das Update und hält jetzt nicht an. Das Ergebnis folgt.` im Band, und das Ergebnis folgt wie ohne das Tippen. |
+| `ZURÜCK` | Schließt die Seite. |
+
+### Das Dial
+
+Die Zeile DIAL-FIRMWARE zeigt die Firmware des M5Stack Dial:
+`Dial: 0.21.0. Im Panel: 0.22.0.`, die Version, die INFO des verbundenen
+Dial genannt hat, oder `nicht verbunden`, und die Version des Dial-Images,
+das dieses Panel mitbringt, oder `keine`. Daneben `2s HALTEN ZUM
+DIAL-UPDATE`, oder `2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN`, solange
+das Dial die mitgebrachte Version meldet. Das Dial und sein Update stehen
+in [Das M5Stack Dial: Update über Bluetooth
+LE](Dial-de.md#update-über-bluetooth-le).
+
+Während das Update läuft, zeigt die Taste nacheinander:
+
+| Taste | Schritt |
+| --- | --- |
+| `DIAL-UPDATE: VERBINDET` | Der Knopf-Link des Dial endet, und das Update verbindet sich mit dem gebundenen Dial |
+| `AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s` | Das Dial hat BEGIN angenommen und fragt nach einem Druck seiner Bildschirmtaste; die Sekunden sind die des Dial |
+| `DIAL-UPDATE 37%` | der Anteil des Images, den das Dial angenommen hat |
+
+Das Band sagt `Drücke innerhalb von 30s die Taste am Dial, um das Update
+anzunehmen.`, wenn das Dial fragt. Das Halten ist nur aktiv, wenn keiner
+der Gründe unten zutrifft. Sonst ist es grau, und ein Tippen darauf zeigt
+den ersten Grund im Alarmband:
+
+| Band | Bedingung |
+| --- | --- |
+| `Das Geräte-Update läuft.` | Ein Update läuft oder wurde angefordert. |
+| `Dieses Panel enthält keine Firmware für dieses Gerät.` | Das Panel wurde ohne das Image des Dial gebaut. |
+| `Die enthaltene Firmware für dieses Gerät wird geprüft.` | Die Prüfung des mitgebrachten Images ist seit dem Start noch nicht gelaufen. |
+| `Die enthaltene Firmware für dieses Gerät hat die Prüfung nicht bestanden.` | Das mitgebrachte Image ist keine ESP32-S3-Anwendung des Projekts `rcbench-dial` mit der Rolle des Dial, ist größer als der Slot des Dial von 3.145.728 Bytes, oder sein angehängter SHA-256 weicht ab. |
+| `Das Geräte-Update erfordert SAFE.` | ARMED, oder ein ARM wartet. |
+| `Das Geräte-Update wartet auf das Ende des anderen Updates.` | Das Update des C6 oder des IOmcu, oder Download oder Installation des Panels laufen. |
+| `Verbinde das Gerät zuerst auf WIRELESS.` | Kein Dial ist verbunden, oder seine INFO ist noch nicht gekommen. |
+
+Das Alarmband sagt, wie ein Update endete:
+
+| Alarm | Bedeutung |
+| --- | --- |
+| `Dial auf 0.22.0 aktualisiert. Verbindet sich von selbst neu.` | Das Dial hat das Image angenommen, geprüft und installiert und startet neu; sein Knopf-Link verbindet sich wieder aus den Werten von SETUP. |
+| `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Das Update endete ohne Installation. |
+| `Dial hat sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` | Der Link brach nach END ab, oder DONE kam nicht in 15s, und kein Dial hat innerhalb von 60s seine Version gemeldet. |
+
+Bricht der Link nach END ab, kann das Dial gerade installieren: Das Panel
+wartet bis zu 60s auf die Version des Dial, nur vom Dial gelesen. Startet
+in diesen 60s das Update eines anderen Geräts, meldet es zuerst das
+Warten: die Version des Dial, wenn es sie gemeldet hat, sonst `Dial hat
+sich nach dem Update nicht gemeldet.` Die Version des Images wird als
+erledigt gemeldet, eine andere Version als abgebrochen, `Verbindung
+verloren`.
+
+| Grund | Ursache |
+| --- | --- |
+| `keine Verbindung` | keine Verbindung zum Dial innerhalb von 30s |
+| `Verbindung verloren` | der Link endete während der Übertragung |
+| `keine Antwort` | das Dial hat einen Schritt nicht innerhalb seiner Grenze oder 3 Abfragen in Folge nicht beantwortet, oder das Dial sah 10s kein Schreiben |
+| `Schreiben abgelehnt` | der Host-Stack hat ein Schreiben abgelehnt |
+| `30s ohne Fortschritt` | das Dial hat geantwortet, aber sein nächster Offset hat sich 30s nicht bewegt |
+| `auf UPDATES abgebrochen` | `UPDATE ABBRECHEN` vor END |
+| `der Prüfstand ist nicht SAFE` | ARMED, oder ein ARM wartete, als das Update starten sollte |
+| `Image für ein anderes Gerät` | das Dial hat die Art abgelehnt |
+| `Image zu groß` | das Dial hat die Größe abgelehnt |
+| `es läuft schon diese Version` | das Dial läuft mit der Version, und das Halten war keine Neuinstallation |
+| `nicht innerhalb von 30s angenommen` | kein Druck am Dial |
+| `am Gerät abgelehnt` | das Halten von 1s am Dial |
+| `Image beschädigt angekommen` | der SHA-256 dessen, was das Dial geschrieben hat, weicht ab |
+| `Flash des Geräts fehlgeschlagen` | der Slot des Dial ließ sich nicht öffnen, nicht beschreiben oder nicht zum Boot-Slot machen |
+| `Gerät hat das Image abgelehnt` | die Image-Prüfung von ESP-IDF auf dem Dial hat es abgelehnt |
+| `Fehler 6` | ein anderer Code des Dial, etwa 6 für ein Schreiben außer der Reihe ([protocols/bleota](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)) |
+
+Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines
+Funkgeräts läuft.` abgelehnt, und das Update des C6 wartet. Download und
+Installation der Panel-Firmware warten ebenfalls, mit `Wartet auf das Ende
+des Funkgeräte-Updates.`: Ihr Neustart würde die Übertragung abbrechen, und
+das Gerät verwirft ein halbes Image. Der Knopf
+steuert das Panel vom Halten an nicht, bis sich sein Link wieder verbindet;
+diese Lücke ist kein Verlustfehler. Die Dauer der Übertragung ist nicht
+gemessen.
+
+### Die Sensorknoten
+
+Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die
+Firmware eines Knotens: `Knoten: 0.23.11. Im Panel: 0.23.12.`, die
+Version, die das STATUS-Paket des Knotens auf der laufenden Verbindung
+genannt hat, oder `nicht verbunden`, und die Version des Knoten-Images,
+das dieses Panel mitbringt, oder `keine`. Die Images der beiden Rollen
+unterscheiden sich: Die Zeile des Leistungsknotens sendet das
+Leistungs-Image, die des Auswuchtknotens das Auswucht-Image, und ein
+Knoten lehnt das Image der anderen Rolle ab. Die Knoten und ihr Update
+stehen in [Die Sensorknoten: Update über Bluetooth
+LE](Nodes-de.md#update-über-bluetooth-le).
+
+![Die Seite, während der Leistungsknoten nach seiner BOOT-Taste fragt](img/de/updates-node.png)
+
+Während das Update eines Knotens läuft, zeigt sein Halten nacheinander:
+
+| Taste | Schritt |
+| --- | --- |
+| `LEISTUNGSKNOTEN-UPDATE: VERBINDET` | Der eigene Link des Knotens endet, und das Update verbindet sich mit dem gebundenen Knoten |
+| `BOOT AM KNOTEN 1s HALTEN: 27s` | Der Knoten hat BEGIN angenommen und wartet auf seine BOOT-Taste (GPIO9), 1s gehalten; die Sekunden sind die des Knotens |
+| `LEISTUNGSKNOTEN-UPDATE 37%` | der Anteil des Images, den der Knoten angenommen hat |
+
+Die Zeile des Auswuchtknotens zeigt `AUSWUCHTKNOTEN-UPDATE: VERBINDET` und
+`AUSWUCHTKNOTEN-UPDATE 37%`. Das Band sagt `Halte innerhalb von 30s die
+BOOT-Taste am Knoten 1s, um das Update anzunehmen.`, wenn der Knoten
+fragt. Die Gründe des grauen Haltens sind die des Dial
+([Das Dial](#das-dial)); `Verbinde das Gerät zuerst auf WIRELESS.` steht,
+bis der Knoten verbunden ist, seine INFO angenommen ist und sein erstes
+STATUS-Paket auf der Verbindung seine Version genannt hat. Ein
+Knoten-Image, das seine Prüfung nicht besteht, ist keine
+ESP32-C6-Anwendung des Projekts `rcbench-node` mit der Rolle dieses
+Knotens, ist größer als der Slot des Knotens von 1.572.864 Bytes, oder
+sein angehängter SHA-256 weicht ab.
+
+Vom Halten bis zum Ende hält der eigene Client des Knotens seinen Link
+beendet, wie es AUS beim Knoten tut; SETUP > WIRELESS zeigt den Knoten
+währenddessen AUS. Dieses Ende zählt als kein Verlust: Das Band zeigt
+kein `LEISTUNGSKNOTEN VERLOREN`, und die Verbindung, die nach dem Update
+zurückkommt, zeigt ebenfalls keinen Verlust. Die Messwerte eines
+Leistungsknotens und die Messungen eines Auswuchtknotens ruhen vom Halten
+an, bis der Knoten zurück ist. Endet das Update, verbindet sich der Client
+des Knotens wieder aus den Werten von SETUP, und die Version der Zeile
+kommt aus dem ersten STATUS-Paket auf der neuen Verbindung.
+
+Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.12
+aktualisiert. Verbindet sich von selbst neu.`, `Auswuchtknoten-Update
+abgebrochen: <Grund>. Vorherige Firmware läuft.`, `Leistungsknoten hat
+sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Die
+Gründe sind die des Dial; `nicht innerhalb von 30s angenommen` heißt, BOOT
+wurde am Knoten nicht 1s gehalten, und `am Gerät abgelehnt` kommt nicht
+vor, da ein Knoten keine Ablehnungstaste hat.
 
 ### Die Erinnerung
 

@@ -200,7 +200,11 @@ and so does each of these changes, with ADD and WHERE: the other method
 node bound with another address, and a restart of the node. The panel
 finds a node restart at each link-up: the node's clock in INFO lies more
 than 2s from where the last report's clock and the panel's time since then
-put it. A panel restart starts with no runs. A dropped link and a
+put it. An update of the node on UPDATES that installs restarts it on its
+new image, and the link that comes back finds that restart, so its runs
+clear; an update that ends without an install restarts nothing and keeps
+them, as the update's hold leaves Balance node ON. A panel restart starts
+with no runs. A dropped link and a
 reconnect of the same node keep the runs, and an unbind keeps them until
 another node is bound. The BALANCE tab follows no motor or ESC profile,
 and a profile change keeps the runs.

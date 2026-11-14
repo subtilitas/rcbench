@@ -520,6 +520,93 @@ Zeile, deren INA228-Werte die des Knotens sind, und `ina voltage` und
 `ina current` enthalten sie
 ([Bildschirme](Screens-de.md#tabelle-und-was-der-esc-meldet)).
 
+## Update über Bluetooth LE
+
+Ein Knoten nimmt ein neues Anwendungs-Image über BLE von einem Central an,
+über den Update-Dienst von `protocols/bleota`
+([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
+Das Panel bringt die Images beider Rollen mit, prüft sie beim Start und
+sendet sie von der Seite der Funkgeräte auf UPDATES:
+LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE
+([Bildschirme: Die Sensorknoten](Screens-de.md#die-sensorknoten)). Das
+Halten von 2s auf der Zeile beendet den eigenen Link des Knotens
+(`pnode_ctl_hold()`, `bal_ctl_hold()`); dieses Ende und die Rückkehr des
+Links zählen als kein Verlust, das Band zeigt also kein
+`LEISTUNGSKNOTEN VERLOREN`. Nach dem Update verbindet sich der Client des
+Knotens wieder aus den Werten von SETUP, und die Zeile liest die Version
+des Knotens aus seinem ersten STATUS-Paket auf der neuen Verbindung. Ein
+Auswuchtknoten, der installiert hat, gilt für die Auswucht-Läufe als
+Neustart: Die Uhr in INFO erkennt ihn, und die Läufe leeren sich
+([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)); ein Update
+ohne Installation behält sie.
+
+1. Das Central verbindet sich und sendet BEGIN: die Art (Leistungsknoten
+   oder Auswuchtknoten), die Größe, die Version und den SHA-256 des Images.
+2. Der Knoten prüft die Art gegen seine Rolle, die Größe gegen seinen Slot
+   von 1.572.864 Bytes (0x180000) und die Version. Ein Leistungsknoten lehnt
+   ein Auswucht-Image ab und umgekehrt. Noch wird nichts gelöscht.
+3. Der Knoten wartet 30s auf seine BOOT-Taste (GPIO9), 1s gehalten. Der
+   Knoten zeigt nichts; die WS2812 wird nicht angesteuert, und das Central
+   sagt dem Benutzer, BOOT zu drücken. Kein Halten in 30s lehnt ab. Eine
+   Taste, die beim Öffnen des Fensters schon gedrückt ist, zählt erst nach
+   dem Loslassen.
+4. Gehalten: Der Knoten nimmt die ersten 296 Bytes des Images und prüft,
+   dass sie den ESP32-C6 und die eigene Rolle des Knotens nennen
+   (`DEVOTA_ROLE`, hinter dem Anwendungsdeskriptor von ESP-IDF). Ein Image
+   der anderen Rolle oder eines anderen Geräts wird abgelehnt, bevor etwas
+   geschrieben ist. Dann löscht und schreibt der Knoten den Slot, aus dem
+   er nicht läuft.
+5. END: Der Knoten vergleicht den SHA-256 jedes geschriebenen Bytes mit dem
+   aus BEGIN, lässt ESP-IDF das Image prüfen, setzt den Boot-Slot und
+   startet 500ms später neu.
+
+Eine Ablehnung, ein verlorener Link, 10s ohne Schreiben oder ein
+abweichender SHA-256 beenden die Übertragung: Der Knoten schließt den Slot
+und läuft mit seinem Image weiter. Eine neue Übertragung beginnt bei Byte
+0. Die Ausnahme ist die Installation nach END: Der Boot-Slot kann schon
+gesetzt sein, wenn der Link abbricht oder ein ABORT kommt. Der Knoten
+beendet die Installation dann und startet in das neue Image, wenn es die
+Prüfung von ESP-IDF bestanden hat.
+
+Solange eine Übertragung oder eine Installation läuft, schläft der Knoten
+nicht, lehnt SLEEP und OFF von CONTROL und der Konsole ab und schaltet sich
+nur bei einer Zelle unter 3,0V (`NODE_UPD_OFF_MV`) ab, 3 Messungen in Folge,
+statt unter 3,3V. Eine so leere Zelle beendet das Update mit dem Knoten; das
+Image, mit dem er lief, bleibt.
+
+Das neue Image startet auf Probe (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`)
+und markiert sich bei seiner ersten Verbindung als gültig, die es nur mit
+laufendem BLE-Stack annimmt.
+
+| Start eines Images auf Probe | Ergebnis |
+| --- | --- |
+| eine Verbindung | behalten |
+| ein Timer-Aufwachen aus dem Tiefschlaf | dasselbe Image, weiter auf Probe: Das Aufwachen lädt das Image, das der Start davor gewählt hat, und liest den Probezustand nicht (`CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP`) |
+| die RESET-Taste, ein Aus- und Einschalten, ein Panic, vor einer Verbindung | das Image davor |
+
+Ein Leistungsknoten, der vor seiner ersten Verbindung schläft, bleibt also
+über seine Aufwachvorgänge alle 10s auf Probe, und ein voller Start geht
+dann zum alten Image zurück. Der Auswuchtknoten schläft ohne Timer und
+wacht nur mit RESET auf, einem vollen Start.
+
+Probe und Rollback gehören dem Bootloader: Ein Knoten, der über USB mit
+einem Image vor dieser Update-Firmware geflasht wurde, hat einen Bootloader
+ohne beides. Er nimmt Updates über Funk an, aber ohne Probe und ohne
+Rollback, bis er einmal über USB mit einem Release geflasht wird, das das
+Update trägt.
+
+Sicherheit: kein Pairing, keine Verschlüsselung und keine Signatur. Die
+Unversehrtheit stützt sich auf den SHA-256 in BEGIN. Jedes Central in
+Reichweite kann BEGIN senden; die gehaltene BOOT-Taste nimmt es an
+([SECURITY.md](../SECURITY.md)).
+
+Die Geräteseite läuft im Task `ota`, Priorität 3, alle 10ms, mit einem
+Stack von 8.192 Bytes aus dem Heap beim Start, der Größe der OTA-Beispiele
+von ESP-IDF; seine Tiefe ist nicht gemessen. Ihr statischer RAM sind
+3.623 Bytes: der Ring des Fensters von 2.048 Bytes, ein Schreibpuffer von
+1.024 Bytes und der Zustand. Das Image des Leistungsknotens hat 646.240
+Bytes, 41,1% eines Slots; das des Auswuchtknotens 642.672 Bytes, 40,9%.
+
 ## Bauen und Flashen
 
 Die Rolle wird beim Bauen gewählt (`main/Kconfig.projbuild`). Ein Board ist
@@ -641,6 +728,12 @@ this start`.
   (`errors`, `resets` in STATUS).
 - Der Auswuchtknoten versorgt seinen ADXL im Schlaf weiter aus 3V3: 350µA.
 - Die WS2812 wird nicht angesteuert. Ihr Ruhestrom ist nicht gemessen.
-- Die Firmware wird nur über USB aktualisiert.
+- Das Panel sendet einem Knoten sein Image noch nicht: Die Seite des Knotens
+  für das Update über BLE gibt es, die Zeilen des Panels kommen mit seinen
+  Knoten-Clients. Das Update ist auf keinem Knoten gelaufen; seine Rate und
+  ein Rollback sind nicht gemessen.
+- Ein Knoten prüft Art, Chip und Segmente eines Images, nicht seine
+  Herkunft: Ein Central in Reichweite kann jedes Image der Rolle des Knotens
+  anbieten, auch ältere, und ein Halten von BOOT für 1s installiert es.
 - Fenster ohne Sample zwischen zwei Fenstern werden nicht gesendet: Ein
   stehender Sampler zeigt sich als Sprung in `t_node` ohne Sprung in `seq`.

@@ -4,7 +4,7 @@ set(SRCS node_main.c node_ble.c node_console.c node_policy.c)
 # The requirements are the same for both roles: ESP-IDF expands them before
 # it reads the sdkconfig, so a CONFIG_ test cannot choose them.  The image
 # links only what its role's files call.
-set(REQS rcnode vibe ina228 bt nvs_flash esp_adc esp_timer console
+set(REQS rcnode vibe ina228 devota bt nvs_flash esp_adc esp_timer console
          esp_driver_i2c esp_driver_gpio)
 if(CONFIG_RCNODE_ROLE_BALANCE)
     # The battery is part of the balance role's ADC stream (node_bal.c).

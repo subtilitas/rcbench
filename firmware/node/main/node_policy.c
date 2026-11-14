@@ -18,12 +18,12 @@ void node_policy_init(node_policy_t *p, uint32_t now_ms, uint8_t low_reads)
  * @brief Whether a reading is a cell under the switch-off threshold.
  *
  * @param bat_mv The cell, mV.
- * @return true for NODE_BAT_NONE_MV up to RCNODE_BAT_OFF_MV, the latter
- *         excluded.
+ * @param off_mv The threshold, mV.
+ * @return true for NODE_BAT_NONE_MV up to @p off_mv, the latter excluded.
  */
-static bool cell_empty(uint16_t bat_mv)
+static bool cell_empty(uint16_t bat_mv, uint16_t off_mv)
 {
-    return bat_mv >= NODE_BAT_NONE_MV && bat_mv < RCNODE_BAT_OFF_MV;
+    return bat_mv >= NODE_BAT_NONE_MV && bat_mv < off_mv;
 }
 
 /**
@@ -31,13 +31,14 @@ static bool cell_empty(uint16_t bat_mv)
  *
  * @param p The policy.
  * @param bat_mv The cell, mV, or NODE_BAT_ERR.
+ * @param off_mv The threshold, mV.
  * @return true at NODE_OFF_READS low readings in a row.
  */
-static bool count_low(node_policy_t *p, uint16_t bat_mv)
+static bool count_low(node_policy_t *p, uint16_t bat_mv, uint16_t off_mv)
 {
     if (bat_mv == NODE_BAT_ERR) {
         /* No reading: the count stands. */
-    } else if (cell_empty(bat_mv)) {
+    } else if (cell_empty(bat_mv, off_mv)) {
         if (p->low_reads < NODE_OFF_READS) {
             ++p->low_reads;
         }
@@ -49,10 +50,11 @@ static bool count_low(node_policy_t *p, uint16_t bat_mv)
 
 node_act_t node_policy_step(node_policy_t *p, const node_inputs_t *in)
 {
-    if (count_low(p, in->bat_mv)) {
+    if (count_low(p, in->bat_mv,
+                  in->update ? NODE_UPD_OFF_MV : RCNODE_BAT_OFF_MV)) {
         return NODE_OFF;
     }
-    if (in->link || in->pack || in->stay) {
+    if (in->link || in->pack || in->stay || in->update) {
         p->busy_ms = in->now_ms;
         return NODE_RUN;
     }
@@ -63,7 +65,7 @@ node_act_t node_policy_step(node_policy_t *p, const node_inputs_t *in)
 node_act_t node_policy_wake(node_policy_t *p, bool answered, int32_t vbus_uv,
                             uint16_t bat_mv)
 {
-    if (count_low(p, bat_mv)) {
+    if (count_low(p, bat_mv, RCNODE_BAT_OFF_MV)) {
         return NODE_OFF;
     }
     if (answered && vbus_uv >= RCNODE_PACK_UV) {

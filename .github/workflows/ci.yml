@@ -747,9 +747,9 @@ jobs:
     # stays "ESP-IDF v5.5.5" until the ruleset's required check is renamed
     # to the same text as this name (tools/check_docs.py, PANEL_CHECK_NAME).
     name: Panel (ESP-IDF v6.1, ESP32-P4)
-    # The build carries the IOmcu and C6 images of this commit, as the
-    # release does.
-    needs: [iomcu, c6]
+    # The build carries the IOmcu and C6 images of this commit, and the
+    # Dial's and the nodes' images, as the release does.
+    needs: [iomcu, c6, dial, node]
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
@@ -757,12 +757,24 @@ jobs:
 
       # Inside firmware/panel, the directory the build runs in, so the
       # container sees it under the same relative path: each artifact in a
-      # folder of its name (iomcu, iomcu-console, iomcu-rbmod, c6).
-      - name: Fetch the IOmcu and C6 images
+      # folder of its name (iomcu, iomcu-console, iomcu-rbmod, c6, dial,
+      # node).
+      - name: Fetch the IOmcu, C6, Dial and node images
         uses: actions/download-artifact@v7
         with:
-          pattern: '{iomcu,iomcu-console,iomcu-rbmod,c6}'
+          pattern: '{iomcu,iomcu-console,iomcu-rbmod,c6,dial,node}'
           path: firmware/panel
+
+      # Each device image the panel carries is its role's application of
+      # this tree's version, inside its slot (tools/c6_image.py device).
+      - name: The Dial and node images are their roles' builds
+        run: |
+          python3 tools/c6_image.py device dial \
+            "$(ls firmware/panel/dial/rcbench-dial-[0-9]*.bin)"
+          python3 tools/c6_image.py device node-pwr \
+            "$(ls firmware/panel/node/rcbench-node-pwr-[0-9]*.bin)"
+          python3 tools/c6_image.py device node-bal \
+            "$(ls firmware/panel/node/rcbench-node-bal-[0-9]*.bin)"
 
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
@@ -794,7 +806,11 @@ jobs:
           command: >-
             idf.py -D RCBENCH_IOMCU_BIN=iomcu/rcbench-iomcu.bin
             -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin
-            -D RCBENCH_C6_BIN=$(ls c6/rcbench-c6-[0-9]*.bin) build
+            -D RCBENCH_C6_BIN=$(ls c6/rcbench-c6-[0-9]*.bin)
+            -D RCBENCH_DIAL_BIN=$(ls dial/rcbench-dial-[0-9]*.bin)
+            -D RCBENCH_NODE_PWR_BIN=$(ls node/rcbench-node-pwr-[0-9]*.bin)
+            -D RCBENCH_NODE_BAL_BIN=$(ls node/rcbench-node-bal-[0-9]*.bin)
+            build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
       # The sdkconfig the build generated holds every setting of
@@ -835,10 +851,11 @@ jobs:
         run: python3 tools/stack_check.py firmware/panel/build --check-doc
 
       # The symbols target_add_binary_data() names the embedded images by:
-      # the module's, the rbmod carrier's and the C6 radio's.
-      - name: Both IOmcu images and the C6 image are carried
+      # the module's, the rbmod carrier's, the C6 radio's, the Dial's and
+      # the two nodes'.
+      - name: Both IOmcu images, the C6, Dial and node images are carried
         run: |
-          for s in iomcu iomcu_rbmod c6; do
+          for s in iomcu iomcu_rbmod c6 dial node_pwr node_bal; do
             grep -aq "_binary_rcbench_${s}_bin_start" \
               firmware/panel/build/rcbench-panel.elf
           done

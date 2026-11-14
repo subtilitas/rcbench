@@ -117,7 +117,7 @@ TEST_CASE(every_fixed_model_shows_its_face)
     static const uint8_t want[DM_COUNT] = {
         DIAL_FACE_NAV, DIAL_FACE_VALUE, DIAL_FACE_READING, DIAL_FACE_READING,
         DIAL_FACE_READING, DIAL_FACE_LOST, DIAL_FACE_LOST, DIAL_FACE_WAITING,
-        DIAL_FACE_BIND, DIAL_FACE_OTHER,
+        DIAL_FACE_BIND, DIAL_FACE_OTHER, DIAL_FACE_UPDATE, DIAL_FACE_UPDATE,
     };
     dial_model_t m;
     dial_scene_t s;

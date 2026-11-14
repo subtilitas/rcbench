@@ -146,8 +146,9 @@ der Build ein Image mitbringt, das seine Prüfung bestanden hat, die Verbindung
 zum C6 nicht ausgefallen ist, die Bench SAFE ist und kein ARM wartet, der
 Netzteilausgang aus ist, kein Aufzeichnungslauf offen ist, keine
 Platinenzeichnung geladen wird, weder das IOmcu-Update noch Download oder
-Installation des Panels laufen, das WLAN aus ist und die Start-Task `blestart`
-von Bluetooth LE nicht läuft. Ein Tippen auf das graue Halten zeigt den Grund
+Installation des Panels laufen, das WLAN aus ist, die Start-Task `blestart`
+von Bluetooth LE nicht läuft und kein Update eines Funkgeräts läuft
+([Bildschirme: Die Funkgeräte](Screens-de.md#die-funkgeräte)). Ein Tippen auf das graue Halten zeigt den Grund
 im Alarmband. Das Update läuft auf der Task `c6upd` (Kern 0, Priorität 2, Stack
 4 096 Bytes, beim ersten Update angelegt), ein Schritt nach dem anderen:
 

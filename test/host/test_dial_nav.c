@@ -27,6 +27,7 @@
  * - a_press_after_a_finger_scrolled_opens_the_focused_row
  * - an_option_list_shows_its_options_range
  * - an_off_gap_takes_detents_alike_in_any_batch
+ * - updates_offers_no_focus_and_no_device_hold_or_cancel
  *
  * SPDX-License-Identifier: MIT
  */
@@ -42,6 +43,7 @@
 #include "servo_screen.h"
 #include "ui_focus.h"
 #include "ui_keypad.h"
+#include "upd_dev.h"
 
 /** @brief The ring's colour as ui_focus.c draws it. */
 static gfx_color_t ring_color(void)
@@ -800,6 +802,48 @@ TEST_CASE(an_off_gap_takes_detents_alike_in_any_batch)
     CHECK(!k->open);
 }
 
+/* UPDATES offers no focus, also with the wireless devices' page open: the
+ * Dial's turn, press and hold reach none of its 2s holds, not CANCEL
+ * UPDATE and not BACK: the page stays as the panel's finger left it. */
+TEST_CASE(updates_offers_no_focus_and_no_device_hold_or_cancel)
+{
+    on(SCREEN_UPDATES);
+    upd_dev_view_t v;
+    memset(&v, 0, sizeof(v));
+    v.row = DEVUPD_ROW_READY;
+    v.known = true;
+    v.have_image = true;
+    v.carried = (fw_version_t){ 0u, 23u, 12u };
+    upd_dev_set(UPD_DEV_DIAL, &v);
+    upd_dev_set(UPD_DEV_PNODE, &v);
+    v.row = DEVUPD_ROW_UPDATING;
+    v.phase = DEVUPD_SEND;
+    upd_dev_set(UPD_DEV_BAL, &v);
+    CHECK(!ui_focus_shown());
+    tap(UPD_DEV_X + UPD_DEV_W / 2,
+        UI_BAND_H + UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);
+    if (!upd_dev_shown()) {
+        T_FAIL("the page did not open");
+        return;
+    }
+    CHECK(!ui_focus_shown());
+    for (int i = 0; i < 8; ++i) {
+        CHECK(!ui_focus_turn(1));
+        CHECK(!ui_focus_press());
+    }
+    for (int k = 0; k < 300; ++k) {
+        ui_router_tick(0.01f);
+    }
+    for (int i = 0; i < UPD_DEV_COUNT; ++i) {
+        CHECK(!upd_dev_take((upd_dev_id_t)i));
+    }
+    CHECK(!upd_dev_take_cancel());
+    CHECK(!ui_focus_hold());
+    CHECK(upd_dev_shown());
+    CHECK(!upd_dev_take_cancel());
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+}
+
 int main(void)
 {
     RUN(the_focus_moves_and_wraps_on_the_overview);
@@ -823,5 +867,6 @@ int main(void)
     RUN(a_press_after_a_finger_scrolled_opens_the_focused_row);
     RUN(an_option_list_shows_its_options_range);
     RUN(an_off_gap_takes_detents_alike_in_any_batch);
+    RUN(updates_offers_no_focus_and_no_device_hold_or_cancel);
     return test_summary("dial_nav");
 }

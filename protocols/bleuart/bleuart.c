@@ -429,10 +429,12 @@ static bool uuid128_is(const bleu_evt_t *e, const uint8_t *u)
 }
 
 /**
- * @brief Take one characteristic of the service by its role in the
- *        profile.  The declarations come in ascending handle order (ATT
- *        Read By Type), so the first one after the STREAM ends the
- *        STREAM's descriptors.
+ * @brief Take one characteristic of the service by its roles in the
+ *        profile: every entry with its UUID takes it, so one
+ *        characteristic can be the STREAM and the CMD, and each entry's
+ *        value handle is kept in chr_val[].  The declarations come in
+ *        ascending handle order (ATT Read By Type), so the first one after
+ *        the STREAM ends the STREAM's descriptors.
  * @param b The machine.
  * @param e The CHR event.
  */
@@ -442,30 +444,30 @@ static void take_chr(bleu_t *b, const bleu_evt_t *e)
         b->tx_end = (uint16_t)(e->h1 - 1u);
     }
     const bleu_profile_t *p = prof_of(b);
-    uint8_t i = 0;
-    while (i < p->chr_n && !uuid128_is(e, p->chr[i].uuid)) {
-        ++i;
-    }
-    if (i == p->chr_n) {
-        return;
-    }
-    switch (p->chr[i].role) {
-    case BLEU_ROLE_STREAM:
-        b->tx_val = e->h2;
-        b->tx_props = e->props;
-        b->tx_end = b->svc_end;
-        break;
-    case BLEU_ROLE_CMD:
-        b->rx_val = e->h2;
-        b->rx_props = e->props;
-        break;
-    case BLEU_ROLE_PARAM:
-        if ((e->props & BLEU_PROP_READ) != 0u) {
-            b->param_val = e->h2;
+    for (uint8_t i = 0; i < p->chr_n; ++i) {
+        if (!uuid128_is(e, p->chr[i].uuid)) {
+            continue;
         }
-        break;
-    default:
-        break;
+        b->chr_val[i] = e->h2;
+        b->chr_props[i] = e->props;
+        switch (p->chr[i].role) {
+        case BLEU_ROLE_STREAM:
+            b->tx_val = e->h2;
+            b->tx_props = e->props;
+            b->tx_end = b->svc_end;
+            break;
+        case BLEU_ROLE_CMD:
+            b->rx_val = e->h2;
+            b->rx_props = e->props;
+            break;
+        case BLEU_ROLE_PARAM:
+            if ((e->props & BLEU_PROP_READ) != 0u) {
+                b->param_val = e->h2;
+            }
+            break;
+        default:
+            break;
+        }
     }
 }
 
@@ -661,6 +663,8 @@ static void on_connect(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     b->svc_start = b->svc_end = 0;
     b->tx_val = b->tx_end = b->cccd = b->rx_val = b->param_val = 0;
     b->tx_props = b->rx_props = 0;
+    memset(b->chr_val, 0, sizeof(b->chr_val));
+    memset(b->chr_props, 0, sizeof(b->chr_props));
     b->mtu = 0;
     b->param_len = 0;
     b->param_status = 0;

@@ -17,6 +17,8 @@
 #include <string.h>
 
 #include "esp_log.h"
+#include "devota.h"
+#include "driver/gpio.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -26,6 +28,13 @@
 #include "nimble/nimble_port_freertos.h"
 #include "services/gap/ble_svc_gap.h"
 #include "services/gatt/ble_svc_gatt.h"
+
+/** @brief The image's role, which an update over Bluetooth LE checks. */
+#if CONFIG_RCNODE_ROLE_BALANCE
+DEVOTA_ROLE(BLEOTA_KIND_NODE_BAL);
+#else
+DEVOTA_ROLE(BLEOTA_KIND_NODE_POWER);
+#endif
 
 /** @brief STREAM packets waiting for `ble_tx`: 32 is 640ms of windows. */
 #define TX_QUEUE_LEN 32u
@@ -226,6 +235,7 @@ static int gap_event(struct ble_gap_event *event, void *arg)
             atomic_store(&s_linked, true);
             ESP_LOGI(NODE_TAG, "ble: connected, handle %u",
                      event->connect.conn_handle);
+            devota_connected(event->connect.conn_handle);
         } else {
             advertise();
         }
@@ -233,6 +243,7 @@ static int gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_DISCONNECT:
         atomic_store(&s_linked, false);
         atomic_store(&s_stream_sub, false);
+        devota_disconnected();
         ESP_LOGI(NODE_TAG, "ble: disconnected, reason 0x%03X",
                  event->disconnect.reason);
         advertise();
@@ -243,6 +254,9 @@ static int gap_event(struct ble_gap_event *event, void *arg)
     case BLE_GAP_EVENT_SUBSCRIBE:
         if (event->subscribe.attr_handle == s_h_stream) {
             atomic_store(&s_stream_sub, event->subscribe.cur_notify != 0u);
+        } else {
+            devota_subscribe(event->subscribe.attr_handle,
+                             event->subscribe.cur_notify != 0u);
         }
         break;
     case BLE_GAP_EVENT_MTU:
@@ -329,6 +343,17 @@ static void tx_task(void *arg)
     }
 }
 
+/**
+ * @brief The BOOT key, the update's confirming key: a hold of 1,000ms
+ *        accepts (protocols/bleota).  The board's pull-up holds GPIO9 high;
+ *        the key pulls it low.
+ * @return true while it is pressed
+ */
+static bool update_key(void)
+{
+    return gpio_get_level(NODE_PIN_BOOT) == 0;
+}
+
 void node_ble_start(uint8_t role)
 {
     s_role = role;
@@ -356,6 +381,15 @@ void node_ble_start(uint8_t role)
         ESP_LOGE(NODE_TAG, "ble: service not added, rc %d", rc);
         return;
     }
+    const gpio_config_t key = {
+        .pin_bit_mask = 1ull << NODE_PIN_BOOT,
+        .mode = GPIO_MODE_INPUT,
+        .pull_up_en = GPIO_PULLUP_ENABLE,
+    };
+    (void)gpio_config(&key);
+    (void)devota_start(role == RCNODE_ROLE_BALANCE ? BLEOTA_KIND_NODE_BAL
+                                               : BLEOTA_KIND_NODE_POWER,
+                       BLEOTA_CONFIRM_HOLD, update_key);
     xTaskCreate(tx_task, "ble_tx", 3072, NULL, 6, NULL);
     nimble_port_freertos_init(host_task);
 }
