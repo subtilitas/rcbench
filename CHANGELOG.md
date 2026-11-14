@@ -94,6 +94,19 @@ history is in git.
   `test_dial_fit`; `tools/render_dial.py` writes the 20 images in
   `docs/img` and CI's `--check` holds them
   ([The M5Stack Dial](docs/Dial.md#the-faces)).
+- The M5Stack Dial navigates the panel while it is linked and the bench is
+  SAFE: the menu, SETUP's tiles and lists, SERVO's tiles and SETTINGS
+  list, OUTPUTS' board view, the choice lists and the leave warning. A 2px
+  ring in the accent colour marks the focused item; a detent moves it and
+  wraps, PRESS taps it in one frame, HOLD does what the home tag does. A
+  number is set on its keypad by turning, PRESS OK, HOLD CANCEL; an on/off
+  or option row is stepped by its keys, PRESS keeps, HOLD restores. The
+  Dial shows NAV and VALUE. The ring keeps the pixels under it: a move
+  costs about 1,060 cache-line fills on the menu, held under 1,300 by the
+  `overview-focus` frame-cost mode. No 2s hold completes from the Dial.
+  The Dial's input wakes a dimmed panel; on an idle bench the waking input
+  does nothing else, as a waking touch
+  ([Navigation and SET](docs/Dial.md#navigation-and-set)).
 - `gfx_ring_aa()` in `shared/gfx`: a 1px ring antialiased by each pixel's
   coverage clamp(1 - |d - r|, 0, 1), from a table of the pixels the ring
   touches sorted by angle, 3 bytes each; `gfx_ring_move()` repaints only

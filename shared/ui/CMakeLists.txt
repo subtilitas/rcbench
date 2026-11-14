@@ -27,6 +27,7 @@ set(SRCS
     ui_pinlist.c
     ui_board.c
     ui_router.c
+    ui_router_alert.c
     ui_help.c
     help_outputs.c
     help_setup.c
@@ -171,6 +172,9 @@ set(SRCS
     pnode_meter.c
     dial_stream.c
     dial_panel.c
+    ui_focus.c
+    ui_focus_list.c
+    ui_focus_screens.c
     bal_ctl.c
     node_balance.c
     wireless_bal.c

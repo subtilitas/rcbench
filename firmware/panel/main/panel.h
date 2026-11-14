@@ -2065,8 +2065,11 @@ knob_turn_t knob_take(void);
  *        screen on top; end of the frame.
  * @param turn what knob_take() returned
  * @param frame_lost whether the frame lost touch events
+ * @param facts the frame's facts of the bench, for Dim after's rule on the
+ *        Dial's input
  */
-void knob_apply(const knob_turn_t *turn, bool frame_lost);
+void knob_apply(const knob_turn_t *turn, bool frame_lost,
+                const shot_facts_t *facts);
 /**
  * @brief Hand the screens' queued commands to the control task; once a frame.
  * @param stops_now the stop count the commands carry

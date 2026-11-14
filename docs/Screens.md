@@ -5462,6 +5462,10 @@ bench is idle.
   owner: its next MOVE or UP wakes the screen and reaches the screen it
   pressed.
 - A turn of the rotary knob does not wake the screen.
+- A turn, PRESS or HOLD of the M5Stack Dial wakes it and starts the minutes
+  again. On an idle bench the input that woke it does nothing else; on a
+  bench that is not idle, and for a HOLD on MOTOR & ESC or a SERVO screen,
+  it acts as well ([Navigation and SET](Dial.md#navigation-and-set)).
 - The rule is `shared/ui/screen_dim.c`, held by `test_screen_dim`; the
   render loop sets the duty with `board_backlight_percent()` when it
   changes.
@@ -5549,6 +5553,18 @@ across a third of its travel from -travel to +travel.
   status: the keys stay hidden until Rotary knob is OFF.
 - The knob's direction, noise and behaviour without a magnet have not been
   measured on hardware.
+
+### PANEL: the M5Stack Dial's focus
+
+A linked M5Stack Dial navigates the menu, SETUP, SERVO's tiles and its
+SETTINGS list, OUTPUTS' board view, the choice lists and the leave warning
+while the bench is SAFE ([Navigation and SET](Dial.md#navigation-and-set)).
+A 2px ring in the accent colour marks the focused item; a detent moves it
+one item and wraps at either end. PRESS taps the item, HOLD does what the
+home tag does. A number the keypad takes is set by turning on its keypad:
+PRESS is OK, HOLD is CANCEL. No ring shows while the Dial is OFF or not
+linked, while ARMED, with the guide, the screenshot popup or a keyboard
+open, and on every other screen.
 
 ### SENSORS: the split pane
 

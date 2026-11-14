@@ -26,6 +26,7 @@
  * - null_is_refused
  * - the_line_names_what_started_the_minutes
  * - the_line_fits_its_buffer
+ * - the_dials_input_wakes_it_and_starts_the_minutes_again
  *
  * SPDX-License-Identifier: MIT
  */
@@ -642,6 +643,28 @@ TEST_CASE(the_line_fits_its_buffer)
                  "dim: after 5min awake, 0s since touch ? id 0xff injector");
 }
 
+/* The M5Stack Dial's turn, PRESS or HOLD: no touch, but it wakes the
+ * backlight and starts the minutes again; the line names it. */
+TEST_CASE(the_dials_input_wakes_it_and_starts_the_minutes_again)
+{
+    screen_dim_t d;
+    screen_dim_init(&d, 0u);
+    const shot_facts_t f = idle_facts();
+    CHECK_EQ(screen_dim_step(&d, 5u * MIN_MS, 5, &f), SCREEN_DIM_PCT);
+    CHECK(screen_dim_is_dim(&d));
+    CHECK(screen_dim_wake(&d, 5u * MIN_MS + 10u));
+    CHECK(!screen_dim_is_dim(&d));
+    CHECK_EQ(screen_dim_step(&d, 5u * MIN_MS + 20u, 5, &f), SCREEN_FULL_PCT);
+    char line[SCREEN_DIM_LINE_MAX];
+    (void)screen_dim_line(&d, 5u * MIN_MS + 20u, 5, line, sizeof(line));
+    CHECK(strstr(line, "since dial") != NULL);
+    /* Awake: it reports no wake, and the minutes start from it. */
+    CHECK(!screen_dim_wake(&d, 9u * MIN_MS));
+    CHECK_EQ(screen_dim_step(&d, 14u * MIN_MS - 1u, 5, &f), SCREEN_FULL_PCT);
+    CHECK_EQ(screen_dim_step(&d, 14u * MIN_MS, 5, &f), SCREEN_DIM_PCT);
+    CHECK(!screen_dim_wake(NULL, 0u));
+}
+
 int main(void)
 {
     RUN(zero_minutes_never_dims);
@@ -663,5 +686,6 @@ int main(void)
     RUN(null_is_refused);
     RUN(the_line_names_what_started_the_minutes);
     RUN(the_line_fits_its_buffer);
+    RUN(the_dials_input_wakes_it_and_starts_the_minutes_again);
     return test_summary("screen_dim");
 }

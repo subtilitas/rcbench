@@ -51,6 +51,7 @@
 #include "out_bind.h"
 #include "outputs_screen.h"
 #include "ui_screen.h"
+#include "ui_focus.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -409,6 +410,16 @@ bool picker_screen_has_drawing(void);
  * @return true when it can
  */
 bool picker_screen_can_draw(void);
+
+/**
+ * @brief The Dial's items on the board view (ui_focus.h): the open
+ *        protocol list's rows, else the list's face, CLEAR ALL while it is
+ *        offered and a button a pin.  CLEAR ALL is a 2s hold: a SELECT taps
+ *        it, and the panel answers with its hint.
+ * @param out Receives them.
+ * @return false while the board cannot be drawn.
+ */
+bool picker_screen_focus(ui_focus_list_t *out);
 
 #ifdef __cplusplus
 }
