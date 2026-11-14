@@ -164,7 +164,7 @@ static void publish_status(uint16_t bat_mv)
  */
 static void print_line(uint16_t bat_mv)
 {
-    char role[112];
+    char role[200];
     node_role.line(role, sizeof role);
     rcnode_status_t s;
     node_last_status(&s);

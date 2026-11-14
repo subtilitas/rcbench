@@ -17,8 +17,7 @@ history is in git.
   Bluetooth LE as `rcbench-pwr-XXXX`, reads its cell through a
   200kΩ/200kΩ divider on GPIO3, sleeps after 120s without a link or a
   pack and checks for a pack every 10s, and prints a console line every
-  second. The balance role is a stub. The panel does not connect to a
-  node yet. CI builds the image and a release carries
+  second. The panel does not connect to a node yet. CI builds the image and a release carries
   `rcbench-node-pwr-<version>.bin` and `rcbench-node-pwr-merged-<version>.bin`
   ([The sensor nodes](docs/Nodes.md)).
 - Protocol module `protocols/rcnode`: the nodes' service and
@@ -55,12 +54,30 @@ history is in git.
   artifact `dial`); a release carries `rcbench-dial-<version>.bin` and
   `rcbench-dial-merged-<version>.bin`. `tools/image_slot.py` takes the
   image's file name as a second argument.
-- Module `shared/vibe`, host-tested and in no image yet: the balance
+- Module `shared/vibe`, host-tested: the balance
   node's index comparator and its demodulator of the 1x, 2x and blade-pass
   against the index (integer only, for the ESP32-C6), a no-index mode at an
   rpm the panel gives, and the two-run and four-run balance corrections for
   the panel. Angles count from the index mark in the order points pass the
   index sensor ([vibe](shared/vibe/README.md)).
+- The balance node's firmware (`firmware/node`, role `bal`): an ADXL335 or
+  ADXL337 axis on GPIO0, the TCRT5000 module's D0 on GPIO1 and the battery
+  divider on GPIO3 in one ADC1 stream (continuous mode, 30,120 conversions
+  a second, 10,040Hz a channel), the index found in the stream with the
+  mark's polarity taken from the shorter level, shared/vibe's demodulator,
+  and a balance report every 250ms on STREAM (`RCNODE_T_BAL_REPORT`).
+  BLADES sets the blade count, RPM the no-index mode. The scale comes from
+  the chip's ADC calibration and 330mV/g. The TCRT5000 module runs from
+  GPIO20, switched off before a sleep; the node sleeps after 120s without
+  a link until the RESET key. CI builds the image and a release carries
+  `rcbench-node-bal-<version>.bin` and
+  `rcbench-node-bal-merged-<version>.bin`
+  ([The sensor nodes](docs/Nodes.md#the-balance-node)).
+- `shared/vibe`: the node's ADC frames split into channels with a lost
+  conversion found (`vibe_frame_split()`), the scale and the DC window from
+  two points of the ADC's calibration curve (`vibe_cfg_scale()`), and the
+  index with its polarity found (`vibe_index_scan()`); host suite
+  `test_vibe_frame`.
 
 - The IOmcu's 3s console report ends with the main loop's pass times since
   the report before it: the longest pass, the passes over 500us, the

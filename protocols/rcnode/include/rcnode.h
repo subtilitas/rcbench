@@ -271,7 +271,7 @@ typedef struct {
     uint16_t     rpm;        /**< 1rpm steps */
     uint16_t     spread_pm;  /**< (longest - shortest period) / mean period, 0.1% steps */
     uint16_t     mag_1x;     /**< the 1x component, the imbalance: mg, or ADC counts with RCNODE_BF_COUNTS */
-    uint16_t     phase_1x;   /**< 0.1° steps from the index edge, in the direction of rotation, 0 to 3599 */
+    uint16_t     phase_1x;   /**< 0.1° steps from the index edge, against the direction of rotation (shared/vibe's sense), 0 to 3599 */
     uint16_t     mag_2x;     /**< the 2x component, misalignment: as mag_1x */
     uint16_t     mag_blade;  /**< the blade-pass component: as mag_1x */
     uint16_t     rms;        /**< mg, the broadband rms (root mean square) after the DC is removed */

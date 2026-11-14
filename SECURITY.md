@@ -171,8 +171,10 @@ Current limitation, the sensor nodes (`firmware/node`): a node offers no
 pairing and no bonding, so its BLE link is not authenticated. The trigger
 is any BLE central in range that connects while no other central holds
 the node: it reads the node's readings, and a write to CONTROL puts the
-node to sleep (SLEEP) or switches it off until its RESET key (OFF), or
-restarts its run extremes (RUN). The node drives no output and its
+node to sleep (SLEEP) or switches it off until its RESET key (OFF),
+restarts its run extremes (RUN), or on the balance node changes the blade
+count (BLADES) or the rpm of the no-index mode (RPM), which changes its
+readings. The node drives no output and its
 readings feed no protection. The panel does not connect to a node yet.
 
 Two classes of report apply.

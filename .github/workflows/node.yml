@@ -2,14 +2,15 @@ name: Node image
 
 # The sensor nodes' firmware (firmware/node) for the ESP32-C6 on a
 # Waveshare ESP32-C6-Zero, built with ESP-IDF v6.1 from a clean build
-# directory.  The power role only: the balance role is a stub and is not
-# published.  The build fails on a warning from the node's own code
-# (main/CMakeLists.txt sets -Werror).
+# directory each, once for each role: the power node and the balance node.
+# The build fails on a warning from the node's own code (main/CMakeLists.txt
+# sets -Werror).
 #
 # Called by ci.yml and by release.yml, which publishes the images.
-# Artifact "node": rcbench-node-pwr-<version>.bin, the application, and
-# rcbench-node-pwr-merged-<version>.bin, bootloader, partition table and
-# application for 0x0 over USB (docs/Nodes.md, "Flashing").
+# Artifact "node", for each role (pwr, bal): rcbench-node-<role>-<version>.bin,
+# the application, and rcbench-node-<role>-merged-<version>.bin, bootloader,
+# partition table and application for 0x0 over USB (docs/Nodes.md,
+# "Building and flashing").
 
 on:
   workflow_call:
@@ -43,16 +44,33 @@ jobs:
             idf.py -B build-pwr -D SDKCONFIG=build-pwr/sdkconfig build
             && idf.py -B build-pwr merge-bin -o rcbench-node-pwr-merged.bin
 
+      - name: Build the balance node
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32c6
+          path: 'firmware/node'
+          command: >-
+            idf.py -B build-bal -D SDKCONFIG=build-bal/sdkconfig
+            -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.balance" build
+            && idf.py -B build-bal merge-bin -o rcbench-node-bal-merged.bin
+
       - name: Name the images for their version
         run: |
           ver=$(sed -n 's/^#define RCBENCH_VERSION_\(MAJOR\|MINOR\|PATCH\) \([0-9]*\).*/\2/p' \
                   shared/link/include/rcbench_version.h | paste -sd.)
           test -n "$ver"
           mkdir -p node-dist
-          cp firmware/node/build-pwr/rcbench-node.bin \
-             "node-dist/rcbench-node-pwr-$ver.bin"
-          cp firmware/node/build-pwr/rcbench-node-pwr-merged.bin \
-             "node-dist/rcbench-node-pwr-merged-$ver.bin"
+          for role in pwr bal; do
+            cp "firmware/node/build-$role/rcbench-node.bin" \
+               "node-dist/rcbench-node-$role-$ver.bin"
+            cp "firmware/node/build-$role/rcbench-node-$role-merged.bin" \
+               "node-dist/rcbench-node-$role-merged-$ver.bin"
+          done
+          # Each image carries its own role: the balance role's start-up
+          # text is in the balance image only.
+          grep -aq 'bal: ADC ' firmware/node/build-bal/rcbench-node.bin
+          ! grep -aq 'bal: ADC ' firmware/node/build-pwr/rcbench-node.bin
           ls -l node-dist
           sha256sum node-dist/*.bin
 

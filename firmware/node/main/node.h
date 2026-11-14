@@ -8,7 +8,7 @@
  * status, console line, sleep policy, and the control writes.  NimBLE's host
  * task serves the GATT (generic attribute profile) server.  `ble_tx` sends
  * the STREAM packets the role queues.  The power role adds `pwr`, its
- * sampler.  The console's REPL (read-eval-print loop) runs in its own task.
+ * sampler; the balance role adds `bal`, which reads the ADC stream.  The console's REPL (read-eval-print loop) runs in its own task.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -138,11 +138,15 @@ void node_control_post(const rcnode_ctl_t *c);
 
 /* ------------------------------------------------------------ battery */
 
-/** @brief Set up the ADC (analogue-to-digital converter) on the divider's pin. */
+/** @brief Set up the ADC (analogue-to-digital converter) on the divider's
+ *  pin: a one-shot read on the power node (node_bat.c), the calibration of
+ *  the stream's battery channel on the balance node (node_bal.c). */
 void node_bat_init(void);
 
 /**
- * @brief Read the cell: 16 samples averaged.
+ * @brief Read the cell: 16 samples averaged on the power node, the mean of
+ *        the stream's battery samples since the last read on the balance
+ *        node.
  *
  * @return mV; NODE_BAT_ERR (node_policy.h) when the ADC or its calibration
  *         fails.

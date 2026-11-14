@@ -6,14 +6,16 @@ Ein Sensorknoten ist ein ESP32-C6-Board an einer eigenen LiPo-Zelle, das
 fertige Messwerte über Bluetooth LE (Low Energy, BLE) sendet. Er hat kein
 Kabel zum Prüfstand. Der Leistungsknoten liest den INA228 eines MATEK
 I2C-INA-BM im XT60-Leistungspfad des ESC (Electronic Speed Controller,
-Motorregler). Der Auswuchtknoten wird den Vibrationssensor und den
-Indexsensor tragen; seine Firmware ist ein Stub.
+Motorregler). Der Auswuchtknoten liest eine Achse eines
+Beschleunigungssensors und einen Indexsensor und sendet alle 250ms einen
+Auswuchtbericht.
 
 Der Leistungsknoten dient der Messung, nicht als Schutzfunktion. Keine
 Grenze, keine Abschaltung und kein Fehlerpfad des Prüfstands liest ihn, so
 wie heute keiner den verkabelten INA228 liest.
 
-Waveshare, MATEK, GERUI und Texas Instruments sind Namen ihrer Inhaber, und
+Waveshare, MATEK, GERUI, Texas Instruments, Analog Devices und Vishay sind
+Namen ihrer Inhaber, und
 Bluetooth ist eine Marke ihres Inhabers. rcbench ist unabhängig: nicht mit
 ihnen verbunden, nicht von ihnen unterstützt oder gesponsert. Die Namen
 sagen, aus welchen Teilen der Knoten gebaut ist.
@@ -28,8 +30,9 @@ enthält den Hinweis des Projekts.
 | der GATT-Server (Generic Attribute Profile) und das Advertising auf NimBLE | `firmware/node/main/node_ble.c` |
 | die Rolle Leistung: der INA228, die Fenster, die Akkumulatoren | `firmware/node/main/node_pwr.c` |
 | der INA228-Treiber, derselbe wie im IOmcu | `shared/sense/ina228.c`, `shared/sense/sense_bus.c` |
-| die Rolle Auswuchten, ein Stub | `firmware/node/main/node_bal.c` |
-| die Akkumessung | `firmware/node/main/node_bat.c` |
+| die Rolle Auswuchten: der ADC-Datenstrom, der Index, der Bericht, der Akku | `firmware/node/main/node_bal.c` |
+| die ADC-Frames, die Skala, der Index und der Demodulator, in der Host-Suite getestet | `shared/vibe` |
+| die Akkumessung des Leistungsknotens | `firmware/node/main/node_bat.c` |
 | die Konsole | `firmware/node/main/node_console.c` |
 
 ## Die Teile des Leistungsknotens
@@ -162,6 +165,12 @@ Sleep wecken (nur GPIO0 bis GPIO7 können das). Die Taste RESET ist die
 Wecktaste. Der Auswuchtknoten hat keinen Sensor, der ihm das Aufwachen
 sagt: Er schläft bis zur Taste RESET.
 
+Der Auswuchtknoten hat kein Pack. Er ist untätig ohne Verbindung und ohne
+`stay on`; ein drehender Rotor oder ein Indeximpuls hält ihn nicht wach,
+weil ohne Verbindung niemand seine Berichte nimmt. Nach 120s Untätigkeit
+hält er den ADC-Datenstrom an, schaltet die Versorgung des Moduls TCRT5000
+(GPIO20) ab und schläft bis zur Taste RESET.
+
 Ein Timer-Wecken lädt das Image ohne erneute Prüfung
 (`CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP`). Wie lange ein
 Timer-Wecken dauert und welchen mittleren Strom der Knoten im Schlaf zieht,
@@ -207,9 +216,170 @@ Panel übernommen hat, verloren:
 Die Fensterpakete tragen Strom und Spannung durch eine solche Lücke; das
 Panel kann die Lücke aus ihnen zählen.
 
+## Der Auswuchtknoten
+
+Der Auswuchtknoten tastet eine Achse eines Beschleunigungssensors und einen
+Indexsensor in einem ADC-Datenstrom (Analog-Digital-Wandler) ab,
+demoduliert die Vibration auf dem Knoten gegen den Index (shared/vibe) und
+sendet alle 250ms einen Auswuchtbericht. Seine Sensoren und seine Zelle
+gehören ihm allein: Er berührt kein Pack, und die Masseregel des
+Leistungsknotens gilt für ihn nicht. Wo die Sensoren an einem Prüfstand
+oder einem Flugzeug sitzen, steht in [Auswuchten](Balance-de.md).
+
+### Teile
+
+| Teil | Zweck |
+| --- | --- |
+| Waveshare ESP32-C6-Zero | wie beim Leistungsknoten |
+| Modul GERUI CD42, eine 1S-LiPo-Zelle, 2 × 200kΩ und 1 × 100nF | wie beim Leistungsknoten: Versorgung und Akku-Spannungsteiler |
+| Breakout ADXL335 oder ADXL337 (Analog Devices), 3 Achsen, ±3g | die Vibration; eine Achse wird genutzt |
+| 2 × 4,7nF Keramikkondensator, 0603 oder die Bauform des Breakouts | ersetzen die Filterkondensatoren von X und Y |
+| Modul TCRT5000 mit Komparator LM393 (TCRT5000 von Vishay) | der Index: ein Impuls je Umdrehung von einem Strich auf der Motorglocke |
+
+### Verdrahtung
+
+| Von | Nach | Hinweis |
+| --- | --- | --- |
+| Zelle, CD42, Teiler nach GPIO3 | wie beim Leistungsknoten | der Akku: GPIO3 ist ADC1 Kanal 3 |
+| ESP32-C6-Zero 3V3 | ADXL VCC | die Versorgung des Beschleunigungssensors, der LDO des Boards |
+| ESP32-C6-Zero GND | ADXL GND | |
+| ESP32-C6-Zero GPIO0 | ADXL X oder Y | ADC1 Kanal 0: die Achse in der Ebene der Halterung, quer zur Welle |
+| ADXL Z | nicht verbunden | |
+| ESP32-C6-Zero GPIO20 | Modul TCRT5000 VCC | 3,3V, solange der Knoten läuft, aus vor dem Schlafen |
+| ESP32-C6-Zero GND | Modul TCRT5000 GND | |
+| ESP32-C6-Zero GPIO1 | Modul TCRT5000 D0 | ADC1 Kanal 1: der Ausgang des Komparators |
+| Modul TCRT5000 A0 | nicht verbunden | |
+
+Die Sensorleitungen sind mit ihrer Masse verdrillt und 30cm lang oder
+kürzer.
+
+**Pins.** GPIO0 und GPIO1 sind ADC1 Kanal 0 und 1 und keine
+Strapping-Pins: Die Strapping-Pins des ESP32-C6 sind GPIO4, GPIO5, GPIO8,
+GPIO9 und GPIO15 (sein Datenblatt v1.6, Tabelle 3-1). GPIO0 und GPIO1 sind
+auch die Pins eines externen 32kHz-Quarzes. Das ESP32-C6-Zero trägt keinen
+(sein Schaltplan zeigt nur den 40MHz-Quarz), und die Firmware betreibt den
+langsamen Takt am internen RC-Oszillator (`CONFIG_RTC_CLK_SRC_INT_RC`).
+GPIO20 liegt an der Stiftleiste des Boards und ist weder ein ADC-Kanal noch
+ein Strapping-Pin.
+
+**Die Versorgung des Moduls aus GPIO20.** Die Infrarot-LED des TCRT5000 ist
+die größte Sensorlast des Knotens. Ein Pin mit Treiberstärke 3 liefert bis
+zu 40mA bei 2,64V oder mehr (Datenblatt v1.6, Tabelle 5-4). Der Knoten
+setzt GPIO20 beim Start auf high und vor dem Schlafen auf low, also ist die
+LED dunkel, solange der Knoten schläft. Der Strom des Moduls hängt von
+seinem LED-Widerstand ab und ist nicht gemessen. Das Modul darf nicht an
+5V laufen: D0 erreicht dann 5V, und die Pins des ESP32-C6 vertragen 3,3V.
+
+**Der Beschleunigungssensor an 3V3.** Der Ausgang des ADXL ist
+ratiometrisch: Empfindlichkeit und Nullpunkt folgen seiner Versorgung. 3V3
+des Boards ist die sauberste Versorgung am Knoten. Ein Breakout mit eigenem
+Regler (das GY-61 trägt einen) legt den ADXL an den Ausgang dieses Reglers,
+der nicht gemessen ist. Der ADXL zieht 350µA, auch während der Knoten
+schläft.
+
+### Die Filterkondensatoren des Beschleunigungssensors
+
+ADXL335 und ADXL337 setzen die Bandbreite jeder Achse mit einem
+Kondensator vom Ausgangspin nach GND, gegen einen internen Widerstand von
+32kΩ ±15%: Bandbreite = 1 / (2π × 32kΩ × C). Übliche Breakouts tragen
+0,1µF an jeder Achse: 50Hz. Bei 10.000rpm liegt 1x bei 167Hz, und 50Hz
+lassen davon 29% durch.
+
+Die Kondensatoren von X und Y gegen 4,7nF tauschen: 1.058Hz, 920Hz bis
+1.245Hz über die Toleranz des Widerstands. 4,7nF ist der kleinste Wert,
+den das Datenblatt empfiehlt; die Achsen X und Y reichen bis 1.600Hz. Der
+Kondensator von Z kann bleiben.
+
+Die gefundene Dokumentation der Breakouts nennt keine Positionen der
+Kondensatoren. Auf dem EVAL-ADXL335Z von Analog Devices sitzen C2, C3 und
+C4 an XOUT, YOUT und ZOUT. Auf einem anderen Breakout jeden mit dem
+Messgerät suchen: der Kondensator mit einem Ende am Pin X (oder Y) der
+Stiftleiste und dem anderen an GND.
+
+Mit 4,7nF verzögert das Filter das Signal um etwa 150µs und lässt 98,8%
+von 167Hz durch, 9° später. Beides ist bei einer Drehzahl konstant und
+hebt sich in der Zwei- und der Vier-Lauf-Methode auf. Der Knoten gleicht es
+nicht aus: Die Amplitude, die er bei 167Hz meldet, ist 1,2% zu niedrig,
+seine Phase 9° zu spät.
+
+### Das Modul TCRT5000
+
+Der Komparator des Moduls vergleicht den Fototransistor mit der Schwelle,
+die sein Potentiometer setzt. Seine LED an D0 leuchtet bei einem Pegel von
+D0. Das Potentiometer bei von Hand gedrehtem Rotor einstellen: D0 wechselt,
+wenn der Strich am Sensor vorbeiläuft, und nur dort.
+
+Der Knoten liest D0 in seinem ADC-Datenstrom mit Schwellen von 1100mV und
+2200mV. Er nimmt als Markierung den Pegel, auf dem D0 kürzer steht,
+gewogen über je 250ms, also funktionieren ein dunkler Strich auf heller
+Glocke und ein heller Strich auf dunkler Glocke. Die Indexflanke ist der
+Anfang des Strichs: die Kante, die zuerst am Sensor vorbeiläuft.
+
+Das Datenblatt des TCRT5000 nennt 2,5mm als Abstand des höchsten Signals.
+Der Kontrast des Strichs auf einer Motorglocke und die Flanke des Moduls
+sind nicht gemessen.
+
+### Anordnung
+
+- Der Strich auf der Motorglocke liegt in Linie mit Blatt 1, wie
+  [Auswuchten](Balance-de.md) sagt.
+- Das Modul TCRT5000 zeigt auf die Außenfläche der Glocke, 2mm bis 3mm
+  entfernt.
+- Der ADXL sitzt an einem steifen Teil nahe am Lager, die Achse an GPIO0
+  in der Ebene der Halterung und quer zur Welle.
+- Das Breakout wird mit seiner Masse isoliert vom Metall des Prüfstands
+  befestigt (Nylonschrauben oder eine isolierende Unterlage), damit die
+  Masse des Knotens keinen Weg zum Prüfstand hat.
+
+### Was der Knoten misst
+
+| Stufe | Wert |
+| --- | --- |
+| ADC | ADC1 im Continuous-Modus, ein Muster aus 3 Kanälen: GPIO0, GPIO1, GPIO3, 12dB Dämpfung, 12 Bit |
+| Rate | 30.000 Wandlungen je Sekunde angefragt; ESP-IDF v6.1 setzt 30.120, 10.040Hz je Kanal. Der Treiber nimmt 611 bis 83.333 je Sekunde, 27.777Hz je Kanal bei 3; das Datenblatt des ESP32-C6 nennt 100.000 |
+| Index | im Datenstrom, ein Drittel Sample nach dem Vibrationskanal. Ein Sample sind 100µs, 6° einer Umdrehung bei 10.000rpm; ein Bericht summiert seine Umdrehungen, und ±1 Sample Jitter ergibt im Test von shared/vibe 1,25° in einem Bericht bei 10.000rpm |
+| Skala | die Kalibrierkurve des Chips für Kanal 0 bei den Werten 1000 und 3000; nominal 0 bis 3300mV über 4096 Werte, 805µV je Wert, 2,44mg je Wert bei 330mV/g |
+| Empfindlichkeit | 330mV/g: die 300mV/g der Datenblätter bei 3,0V (270 bis 330mV/g), auf 3,3V skaliert |
+| Sensor im Bereich | der Gleichanteil der Achse zwischen 1000mV und 2300mV setzt `RCNODE_BF_DC_OK`: 1650mV ± 165mV Nullpunkttoleranz und ± 330mV Schwerkraft an einer geneigten Achse, mit 150mV Reserve |
+| Bericht | alle 2.510 Samples, 250ms: Drehzahl, Streuung der Periode, Amplitude und Phase von 1x, die Amplituden von 2x und der Blattfrequenz, Effektivwert, Güte, Umdrehungen, Flags (`RCNODE_T_BAL_REPORT`, [protocols/rcnode](../protocols/rcnode/README.md)) |
+
+Der Akku ist der dritte Kanal des Datenstroms: Ein Einzelwandeln an ADC1
+schlägt fehl, solange der Continuous-Modus die Einheit hält. STATUS nimmt
+den Mittelwert der Akku-Samples einer Sekunde.
+
+Die Phase zählt in Grad ab der Indexflanke, in der Reihenfolge, in der die
+Punkte am Indexsensor vorbeilaufen: gegen die Drehrichtung, wie der
+Bildschirm BALANCE zählt. Die Flanke ist der Anfang des Strichs, die halbe
+Strichbreite vor seiner Mitte: 5,7° bei einem 3mm-Strich auf einer
+30mm-Glocke. Die Korrektur der Zwei-Lauf-Methode ist frei von diesem
+Versatz, weil der Probelauf ihn ebenso misst.
+
+**Steuerung.** BLADES setzt die Blattzahl für die Blattfrequenz (2 bis zum
+ersten Write). RPM mit einem Wert von 1 bis 60000 schaltet in den Modus
+ohne Index: Der Knoten demoduliert bei dieser Drehzahl, die Phase liest 0,
+und der Bericht trägt `RCNODE_BF_NO_INDEX`. RPM 0 kehrt zum Index zurück.
+RUN wird angenommen und ändert am Auswuchtknoten nichts.
+
+**STATUS.** Der Sensorzustand ist `RCNODE_SENSOR_UNPROBED` (1) vor dem
+ersten Bericht, `RCNODE_SENSOR_ONLINE` (5), solange der Gleichanteil des
+letzten Berichts im Bereich lag, `RCNODE_SENSOR_ABSENT` (2), bevor er es je
+war, `RCNODE_SENSOR_OFFLINE` (6), nachdem er es war,
+und `RCNODE_SENSOR_REFUSED` (4), wenn der ADC-Datenstrom nicht startete. `errors` zählt verlorene Wandlungen und
+einen vollen Puffer des Treibers (ein verlorener Frame); jedes startet den
+Demodulator neu, was `resets` zählt, und verliert den offenen Bericht.
+
+**Kalibrierung.** Nichts am Knoten ist gegen eine bekannte Vibration
+kalibriert. Der Fehler des ADC nach der Kalibrierung ist ±40mV bei 12dB
+(Datenblatt v1.6, Tabelle 5-6), seine effektiven Bits bei 10kHz sind nicht
+gemessen, und die Empfindlichkeit des ADXL ist ±10% und folgt seiner
+Versorgung. Der absolute Wert in g trägt diese Fehler; die Korrekturen der
+Zwei- und der Vier-Lauf-Methode nutzen Verhältnisse und tragen sie nicht.
+Ein Shaker oder eine bekannte Unwucht am Prüfstand des Besitzers misst die
+Skala.
+
 ## Bluetooth LE
 
-Der Knoten sendet sein Advertising als `rcbench-pwr-XXXX`, die letzten zwei
+Der Knoten sendet sein Advertising als `rcbench-pwr-XXXX` oder `rcbench-bal-XXXX`, die letzten zwei
 Bytes seiner Adresse in Hex, alle 100ms, solange keine Verbindung steht.
 Die Herstellerdaten tragen die Rolle, die Scan Response die UUID des
 Knotendienstes. Eine Central zur Zeit, kein Pairing, kein Bonding. Der
@@ -218,10 +388,10 @@ von 247 an und keine eigenen Verbindungsparameter.
 
 | Characteristic | Eigenschaften | Inhalt |
 | --- | --- | --- |
-| STREAM | NOTIFY | Fenster alle 20ms, Akkumulatoren und Extremwerte alle 500ms |
+| STREAM | NOTIFY | Leistung: Fenster alle 20ms, Akkumulatoren und Extremwerte alle 500ms; Auswuchten: ein Bericht alle 250ms |
 | STATUS | READ, NOTIFY | Akku, Flags, Firmwareversion, Zähler, alle 1000ms |
 | CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN mit einem Tag von 1 bis 255, SLEEP, OFF; BLADES (1 bis 12) und RPM am Auswuchtknoten |
-| INFO | READ | Protokoll, Rolle, Board, Adresse, die Einstellung des INA228 |
+| INFO | READ | Protokoll, Rolle, Board, Adresse, die Einstellung des INA228 (0 am Auswuchtknoten) |
 
 Ein Write, den die Rolle nicht annimmt oder der eine andere Länge hat,
 wird mit dem ATT-Fehler 0x13 oder 0x0D abgelehnt.
@@ -247,16 +417,18 @@ idf.py -B build-pwr -D SDKCONFIG=build-pwr/sdkconfig build
 idf.py -B build-pwr merge-bin -o rcbench-node-pwr-merged.bin
 ```
 
-Der Stub des Auswuchtknotens:
+Der Auswuchtknoten:
 
 ```sh
 idf.py -B build-bal -D SDKCONFIG=build-bal/sdkconfig \
   -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.balance" build
+idf.py -B build-bal merge-bin -o rcbench-node-bal-merged.bin
 ```
 
-Ein Release enthält `rcbench-node-pwr-<version>.bin`, die Anwendung, und
-`rcbench-node-pwr-merged-<version>.bin` für 0x0. Der CI-Job (Continuous
-Integration) "Node image" baut beide.
+Ein Release enthält für jede Rolle (`pwr`, `bal`)
+`rcbench-node-<rolle>-<version>.bin`, die Anwendung, und
+`rcbench-node-<rolle>-merged-<version>.bin` für 0x0. Der CI-Job (Continuous
+Integration) "Node image" baut beide Rollen.
 
 Zum Flashen zuerst das Pack vom XT60 abziehen (die Masseregel), dann USB-C
 des Knotens anschließen:
@@ -265,6 +437,9 @@ des Knotens anschließen:
 python -m esptool --chip esp32c6 -p /dev/ttyACM0 -b 460800 \
   write-flash 0x0 rcbench-node-pwr-merged-<version>.bin
 ```
+
+Der Auswuchtknoten nimmt `rcbench-node-bal-merged-<version>.bin` auf
+dieselbe Weise.
 
 Ein schlafender Knoten antwortet nicht über USB. RESET drücken, um ihn zu
 starten, oder BOOT halten und RESET drücken für den Download-Modus des ROM.
@@ -289,6 +464,29 @@ I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online, epoch 1; link up
 | `bat` | die Zelle; unter 1.00V ohne Zelle; `error`, wenn die Messung fehlschlug |
 | `errors`, `resets`, `dropped` | die Zähler von STATUS |
 
+Die Zeile des Auswuchtknotens:
+
+```text
+I (5123) node: bal 4 rep/s, adc 10040/s, 8420rpm 0.3%, 1x 412mg 265.00deg q91%, 2x 38mg, blade 120mg (3), rms 530mg, revs 35, dc 1652mV, flags 0x01c7, mark high; link up -58dBm, sub 1, bat 3.92V, errors 0, resets 0, dropped 0
+```
+
+| Feld | Bedeutung |
+| --- | --- |
+| `rep/s` | Berichte in der letzten Sekunde, 4 |
+| `adc` | Durchläufe des Musters in der letzten Sekunde: die Rate, die ein Kanal bekommt |
+| Drehzahl und Prozent | Drehzahl und Streuung der Periode des letzten Berichts |
+| `1x`, `q` | Amplitude und Phase von 1x, die Güte |
+| `2x`, `blade`, `rms` | die Amplituden von 2x und der Blattfrequenz (die Blattzahl in Klammern), der Effektivwert |
+| `revs` | Umdrehungen im letzten Bericht |
+| `dc` | der Gleichanteil der Achse: 1650mV bei ruhendem ADXL an 3,3V |
+| `flags` | die Flags des Berichts, `VIBE_F_*` (shared/vibe) |
+| `mark` | `high` oder `low`: der Pegel von D0, den der Knoten als Strich nimmt |
+| `nominal scale` | erscheint, wenn der Chip keine ADC-Kalibrierung hat und die Nennkurve einspringt |
+
+Beim Start schreibt der Knoten die Rate, die Werte für 1g und den Bereich
+des Gleichanteils:
+`bal: ADC 10040Hz a channel, 1g = 409 counts, DC 1241 to 2855, calibrated`.
+
 | Befehl | Wirkung |
 | --- | --- |
 | `status` | Name, Firmware, Rolle und der letzte Status vollständig |
@@ -308,9 +506,16 @@ this start`.
   geliefert. Die Pins, das Aufwachen, die Ströme und das Verhalten des CD42
   sind nicht gemessen.
 - Die Abschaltschwelle des CD42 bei geringer Last ist nicht bekannt (oben).
-- Die Rolle Auswuchten ist ein Stub: Sie sendet ihr Advertising als
-  `rcbench-bal-XXXX`, nimmt BLADES und RPM an, sendet keinen Bericht und
-  schläft bis zur Taste RESET.
+- Rate, Skala, Rauschen und Indexzeit des Auswuchtknotens sind nicht
+  gemessen: Die Werte oben sind die der Datenblätter und von ESP-IDF. Die
+  Station kann den Index mit einem Impuls des Pi an GPIO1 und dem LA2016
+  prüfen; ein Signal am Vibrationseingang braucht einen Generator, den die
+  Station nicht hat.
+- Der Auswuchtknoten gleicht das Filter des ADXL nicht aus: Bei 167Hz ist
+  seine Amplitude 1,2% zu niedrig und seine Phase 9° zu spät (oben).
+- Eine verlorene Wandlung oder ein voller Puffer des Treibers verliert den
+  offenen Auswuchtbericht (`errors`, `resets` in STATUS).
+- Der Auswuchtknoten versorgt seinen ADXL im Schlaf weiter aus 3V3: 350µA.
 - Die WS2812 wird nicht angesteuert. Ihr Ruhestrom ist nicht gemessen.
 - Die Firmware wird nur über USB aktualisiert.
 - Fenster ohne Sample zwischen zwei Fenstern werden nicht gesendet: Ein

@@ -5,13 +5,15 @@
 A sensor node is an ESP32-C6 board on its own LiPo cell that sends finished
 readings over Bluetooth LE (Low Energy, BLE). It has no wire to the bench.
 The power node reads the INA228 of a MATEK I2C-INA-BM on the ESC's
-(electronic speed controller's) XT60 power path. The balance node will
-carry the vibration sensor and the index sensor; its firmware is a stub.
+(electronic speed controller's) XT60 power path. The balance node reads an
+accelerometer axis and an index sensor and sends a balance report every
+250ms.
 
 The power node is a measurement, not a protection. No limit, trip or error
 path of the bench reads it, as none reads the wired INA228 today.
 
-Waveshare, MATEK, GERUI and Texas Instruments are names of their owners, and
+Waveshare, MATEK, GERUI, Texas Instruments, Analog Devices and Vishay are
+names of their owners, and
 Bluetooth is a trademark of its owner. rcbench is independent: it is not
 affiliated with, endorsed by or sponsored by them. The names say which
 parts the node is built from.
@@ -26,8 +28,9 @@ the project's notice.
 | the GATT (generic attribute profile) server and the advertising on NimBLE | `firmware/node/main/node_ble.c` |
 | the power role: the INA228, the windows, the accumulators | `firmware/node/main/node_pwr.c` |
 | the INA228 driver, the IOmcu's own | `shared/sense/ina228.c`, `shared/sense/sense_bus.c` |
-| the balance role, a stub | `firmware/node/main/node_bal.c` |
-| the battery reading | `firmware/node/main/node_bat.c` |
+| the balance role: the ADC stream, the index, the report, the battery | `firmware/node/main/node_bal.c` |
+| the ADC frames, the scale, the index and the demodulator, under the host suite | `shared/vibe` |
+| the power node's battery reading | `firmware/node/main/node_bat.c` |
 | the console | `firmware/node/main/node_console.c` |
 
 ## The power node's parts
@@ -156,6 +159,12 @@ The BOOT key is GPIO9, which cannot wake the ESP32-C6 from deep sleep (only
 GPIO0 to GPIO7 can). The RESET key is the wake button. The balance node has
 no sensor that tells it to wake: asleep, it sleeps until the RESET key.
 
+The balance node has no pack. It is idle with no link and no `stay on`; a
+turning rotor or an index pulse does not hold it awake, because without a
+link nobody takes its reports. After 120s idle it stops the ADC stream,
+switches the TCRT5000 module's supply (GPIO20) off and sleeps until the
+RESET key.
+
 A timer wake loads the image without checking it again
 (`CONFIG_BOOTLOADER_SKIP_VALIDATE_IN_DEEP_SLEEP`). The time a timer wake
 takes and the node's mean current asleep are not measured. The plan's
@@ -198,9 +207,158 @@ ENERGY counted since the last accumulator packet the panel took are gone:
 The window packets carry current and voltage through such a gap; the
 panel can count the gap from them.
 
+## The balance node
+
+The balance node samples one accelerometer axis and an index sensor in one
+ADC (analogue-to-digital converter) stream, demodulates the vibration
+against the index on the node (shared/vibe), and sends a balance report
+every 250ms. Its sensors and its cell are its own: it touches no pack, and
+the ground rule of the power node does not apply to it. Where the sensors
+go on a rig or an aircraft is in [Balancing](Balance.md).
+
+### Parts
+
+| Part | Use |
+| --- | --- |
+| Waveshare ESP32-C6-Zero | as the power node |
+| GERUI CD42 module, a 1S LiPo cell, 2 × 200kΩ and 1 × 100nF | as the power node: power and the battery divider |
+| ADXL335 or ADXL337 breakout (Analog Devices), 3 axes, ±3g | the vibration; one axis is used |
+| 2 × 4.7nF ceramic capacitors, 0603 or the breakout's size | replace the X and Y filter capacitors |
+| TCRT5000 module with an LM393 comparator (TCRT5000 by Vishay) | the index: one pulse per revolution from a line on the motor bell |
+
+### Wiring
+
+| From | To | Note |
+| --- | --- | --- |
+| cell, CD42, divider to GPIO3 | as the power node | the battery: GPIO3 is ADC1 channel 3 |
+| ESP32-C6-Zero 3V3 | ADXL VCC | the accelerometer's supply, the board's LDO |
+| ESP32-C6-Zero GND | ADXL GND | |
+| ESP32-C6-Zero GPIO0 | ADXL X or Y | ADC1 channel 0: the axis in the mount's plane, across the shaft |
+| ADXL Z | not connected | |
+| ESP32-C6-Zero GPIO20 | TCRT5000 module VCC | 3.3V while the node runs, off before a sleep |
+| ESP32-C6-Zero GND | TCRT5000 module GND | |
+| ESP32-C6-Zero GPIO1 | TCRT5000 module D0 | ADC1 channel 1: the comparator's output |
+| TCRT5000 module A0 | not connected | |
+
+The sensor leads are twisted with their ground and 30cm or shorter.
+
+**Pins.** GPIO0 and GPIO1 are ADC1 channels 0 and 1 and no strapping pins:
+the ESP32-C6's strapping pins are GPIO4, GPIO5, GPIO8, GPIO9 and GPIO15
+(its datasheet v1.6, table 3-1). GPIO0 and GPIO1 are also the pins of an
+external 32kHz crystal. The ESP32-C6-Zero carries none (its schematic shows
+the 40MHz crystal only), and the firmware runs the slow clock on the
+internal RC oscillator (`CONFIG_RTC_CLK_SRC_INT_RC`). GPIO20 is on the
+board's header, neither an ADC channel nor a strapping pin.
+
+**The module's supply from GPIO20.** The TCRT5000's infrared LED is the
+node's largest sensor load. A pin at drive strength 3 sources up to 40mA at
+2.64V or more (datasheet v1.6, table 5-4). The node drives GPIO20 high at
+start and low before a sleep, so the LED is dark while the node sleeps. The
+module's current depends on its LED resistor and is not measured. The
+module must not run from 5V: D0 then reaches 5V, and the ESP32-C6's pins
+take 3.3V.
+
+**The accelerometer on 3V3.** The ADXL's output is ratiometric: its
+sensitivity and its zero-g level follow its supply. The board's 3V3 is the
+cleanest supply on the node. A breakout with its own regulator (the GY-61
+carries one) puts the ADXL on that regulator's output, which is not
+measured. The ADXL draws 350µA, also while the node sleeps.
+
+### The accelerometer's filter capacitors
+
+The ADXL335 and ADXL337 set each axis's bandwidth with one capacitor from
+the output pin to GND, against an internal 32kΩ ±15%: bandwidth =
+1 / (2π × 32kΩ × C). Common breakouts fit 0.1µF on each axis: 50Hz. At
+10,000rpm the 1x is 167Hz, and 50Hz passes 29% of it.
+
+Change the X and Y capacitors to 4.7nF: 1,058Hz, 920Hz to 1,245Hz over the
+resistor's tolerance. 4.7nF is the smallest value the datasheet
+recommends; the X and Y axes reach 1,600Hz. The Z capacitor can stay.
+
+The breakout documentation found names no positions for the capacitors.
+On Analog Devices' EVAL-ADXL335Z, C2, C3 and C4 sit at XOUT, YOUT and
+ZOUT. On another breakout, find each one with a meter: the capacitor with
+one end on the X (or Y) pin of the header and the other on GND.
+
+At 4.7nF the filter delays the signal by about 150µs and passes 98.8% of
+167Hz, 9° late. Both are constant at one rpm, so they cancel in the
+two-run and four-run methods. The node does not compensate them: the
+magnitude it reports at 167Hz is 1.2% low, its phase 9° late.
+
+### The TCRT5000 module
+
+The module's comparator compares the phototransistor with the threshold its
+potentiometer sets. Its D0 LED lights at one level of D0. Set the
+potentiometer with the rotor turned by hand: D0 changes as the line passes
+the sensor, and only there.
+
+The node reads D0 in its ADC stream with thresholds of 1100mV and 2200mV.
+It takes as the mark the level D0 spends less time at, weighed over each
+250ms, so a dark line on a bright bell and a bright line on a dark bell
+both work. The index edge is the start of the line: the edge that passes
+the sensor first.
+
+The TCRT5000's datasheet gives 2.5mm as its distance of the highest output.
+The line's contrast on a motor bell and the module's edge are not measured.
+
+### Placement
+
+- The line on the motor bell goes in line with blade 1, as
+  [Balancing](Balance.md) says.
+- The TCRT5000 module faces the bell's outer surface, 2mm to 3mm from it.
+- The ADXL goes on a rigid part close to the bearing, the axis on GPIO0 in
+  the plane of the mount and across the shaft.
+- The breakout is mounted with its ground isolated from the rig's metal
+  (nylon screws or an insulating pad), so the node's ground has no path to
+  the bench.
+
+### What the node measures
+
+| Stage | Figure |
+| --- | --- |
+| ADC | ADC1 in continuous mode, a pattern of 3 channels: GPIO0, GPIO1, GPIO3, 12dB attenuation, 12 bits |
+| Rate | 30,000 conversions a second asked; ESP-IDF v6.1 sets 30,120, 10,040Hz a channel. The driver takes 611 to 83,333 a second, 27,777Hz a channel for 3; the ESP32-C6's datasheet names 100,000 |
+| Index | in the stream, a third of a sample after the vibration channel. A sample is 100µs, 6° of a revolution at 10,000rpm; a report sums its revolutions, and ±1 sample of jitter reads 1.25° in a report at 10,000rpm in shared/vibe's test |
+| Scale | the chip's calibration curve of channel 0 at counts 1000 and 3000; nominally 0 to 3300mV over 4096 counts, 805µV a count, 2.44mg a count at 330mV/g |
+| Sensitivity | 330mV/g: the datasheets' 300mV/g at 3.0V (270 to 330mV/g), scaled to 3.3V |
+| Sensor in range | the DC of the axis between 1000mV and 2300mV sets `RCNODE_BF_DC_OK`: 1650mV ± 165mV of zero-g tolerance and ± 330mV of gravity on a tilted axis, with 150mV to spare |
+| Report | every 2,510 samples, 250ms: rpm, period spread, the 1x magnitude and phase, the 2x and blade-pass magnitudes, rms, quality, revolutions, flags (`RCNODE_T_BAL_REPORT`, [protocols/rcnode](../protocols/rcnode/README.md)) |
+
+The battery is the third channel of the stream: a one-shot read of ADC1
+fails while continuous mode holds the unit. STATUS takes the mean of a
+second's battery samples.
+
+The phase counts in degrees from the index edge, in the order points pass
+the index sensor: against the direction of rotation, as the BALANCE screen
+counts. The edge is the start of the line, half the line's width before
+its middle: 5.7° for a 3mm line on a 30mm bell. The correction of the
+two-run method is free of this offset, because the trial run measures it
+too.
+
+**Control.** BLADES sets the blade count for the blade-pass (2 until the
+first write). RPM with a value of 1 to 60000 switches to the no-index mode:
+the node demodulates at that rpm, the phase reads 0 and the report carries
+`RCNODE_BF_NO_INDEX`. RPM 0 returns to the index. RUN is taken and changes
+nothing on the balance node.
+
+**STATUS.** The sensor state is `RCNODE_SENSOR_UNPROBED` (1) before the
+first report, `RCNODE_SENSOR_ONLINE` (5) while the last report's DC was in
+range, `RCNODE_SENSOR_ABSENT` (2) before it ever was,
+`RCNODE_SENSOR_OFFLINE` (6) after it was, and `RCNODE_SENSOR_REFUSED` (4)
+when the ADC stream did not start. `errors` counts lost
+conversions and a full driver pool (a lost frame); each restarts the
+demodulator, which `resets` counts, and loses the open report.
+
+**Calibration.** Nothing on the node is calibrated against a known
+vibration. The ADC's error after calibration is ±40mV at 12dB (datasheet
+v1.6, table 5-6), its effective bits at 10kHz are not measured, and the
+ADXL's sensitivity is ±10% and follows its supply. The absolute g value
+carries these; the two-run and four-run corrections use ratios and do not.
+A shaker or a known imbalance on the owner's rig measures the scale.
+
 ## Bluetooth LE
 
-The node advertises as `rcbench-pwr-XXXX`, the last two bytes of its address
+The node advertises as `rcbench-pwr-XXXX` or `rcbench-bal-XXXX`, the last two bytes of its address
 in hex, every 100ms while no link stands. The manufacturer data carries the
 role; the scan response carries the node service's UUID. One central at a
 time, no pairing, no bonding. The node asks for an ATT (attribute protocol)
@@ -209,10 +367,10 @@ its own.
 
 | Characteristic | Properties | Content |
 | --- | --- | --- |
-| STREAM | NOTIFY | windows every 20ms, accumulators and run extremes every 500ms |
+| STREAM | NOTIFY | power: windows every 20ms, accumulators and run extremes every 500ms; balance: a report every 250ms |
 | STATUS | READ, NOTIFY | battery, flags, firmware version, counters, every 1000ms |
 | CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN with a tag of 1 to 255, SLEEP, OFF; BLADES (1 to 12) and RPM on the balance node |
-| INFO | READ | protocol, role, board, address, the INA228's set-up |
+| INFO | READ | protocol, role, board, address, the INA228's set-up (0 on the balance node) |
 
 A write the role does not take, or of another length, is refused with ATT
 error 0x13 or 0x0D.
@@ -237,16 +395,18 @@ idf.py -B build-pwr -D SDKCONFIG=build-pwr/sdkconfig build
 idf.py -B build-pwr merge-bin -o rcbench-node-pwr-merged.bin
 ```
 
-The balance stub:
+The balance node:
 
 ```sh
 idf.py -B build-bal -D SDKCONFIG=build-bal/sdkconfig \
   -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.balance" build
+idf.py -B build-bal merge-bin -o rcbench-node-bal-merged.bin
 ```
 
-A release carries `rcbench-node-pwr-<version>.bin`, the application, and
-`rcbench-node-pwr-merged-<version>.bin`, which goes to 0x0. The CI
-(continuous integration) job "Node image" builds them.
+A release carries, for each role (`pwr`, `bal`),
+`rcbench-node-<role>-<version>.bin`, the application, and
+`rcbench-node-<role>-merged-<version>.bin`, which goes to 0x0. The CI
+(continuous integration) job "Node image" builds both roles.
 
 To flash, take the pack off the XT60 first (the ground rule), then connect
 the node's USB-C:
@@ -255,6 +415,9 @@ the node's USB-C:
 python -m esptool --chip esp32c6 -p /dev/ttyACM0 -b 460800 \
   write-flash 0x0 rcbench-node-pwr-merged-<version>.bin
 ```
+
+The balance node takes `rcbench-node-bal-merged-<version>.bin` the same
+way.
 
 A node asleep does not answer on USB. Press RESET to start it, or hold BOOT
 and press RESET for the ROM's download mode.
@@ -279,6 +442,28 @@ I (5123) node: pwr 50 win/s, n 18, 22.18V 14.300A, part online, epoch 1; link up
 | `bat` | the cell; under 1.00V without a cell; `error` when the read failed |
 | `errors`, `resets`, `dropped` | STATUS's counters |
 
+The balance node's line:
+
+```text
+I (5123) node: bal 4 rep/s, adc 10040/s, 8420rpm 0.3%, 1x 412mg 265.00deg q91%, 2x 38mg, blade 120mg (3), rms 530mg, revs 35, dc 1652mV, flags 0x01c7, mark high; link up -58dBm, sub 1, bat 3.92V, errors 0, resets 0, dropped 0
+```
+
+| Field | Meaning |
+| --- | --- |
+| `rep/s` | reports in the last second, 4 |
+| `adc` | rounds of the pattern in the last second: the rate a channel gets |
+| the rpm and the percentage | the last report's rpm and period spread |
+| `1x`, `q` | the 1x magnitude and phase, the quality |
+| `2x`, `blade`, `rms` | the 2x and blade-pass magnitudes (the blade count in brackets), the rms |
+| `revs` | revolutions in the last report |
+| `dc` | the axis's DC: 1650mV with the ADXL at rest on 3.3V |
+| `flags` | the report's flags, `VIBE_F_*` (shared/vibe) |
+| `mark` | `high` or `low`: the level of D0 the node takes as the line |
+| `nominal scale` | shown when the chip has no ADC calibration and the nominal curve stands in |
+
+At start the node prints the rate, the counts of 1g and the DC window:
+`bal: ADC 10040Hz a channel, 1g = 409 counts, DC 1241 to 2855, calibrated`.
+
 | Command | Does |
 | --- | --- |
 | `status` | the name, the firmware, the role and the last status in full |
@@ -296,8 +481,16 @@ this start`.
 - No node has run on hardware: the boards are ordered, not delivered. The
   pins, the wake, the currents and the CD42's behaviour are not measured.
 - The CD42's light-load auto-shutdown threshold is not known (above).
-- The balance role is a stub: it advertises as `rcbench-bal-XXXX`, takes
-  BLADES and RPM, sends no report, and sleeps until the RESET key.
+- The balance node's rate, scale, noise and index timing are not measured:
+  the figures above are the datasheets' and ESP-IDF's. The station can
+  check the index with a pulse from the Pi on GPIO1 and the LA2016; a
+  signal on the vibration input needs a generator the station does not
+  have.
+- The balance node does not compensate the ADXL's filter: at 167Hz its
+  magnitude reads 1.2% low and its phase 9° late (above).
+- A lost conversion or a full driver pool loses the open balance report
+  (`errors`, `resets` in STATUS).
+- The balance node holds its ADXL on 3V3 while it sleeps: 350µA.
 - The WS2812 is not driven. Its current at idle is not measured.
 - The firmware is updated over USB only.
 - Windows without a sample between two windows are not sent: a stalled

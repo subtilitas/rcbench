@@ -10,7 +10,7 @@ menu "rcbench node"
         config RCNODE_ROLE_POWER
             bool "Power: the INA228 on the ESC's XT60 power path"
         config RCNODE_ROLE_BALANCE
-            bool "Balance: vibration and index sensors (stub)"
+            bool "Balance: an accelerometer axis and an index sensor"
     endchoice
 
 endmenu
