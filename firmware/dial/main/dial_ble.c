@@ -31,6 +31,8 @@
 
 #include "dial.h"
 
+#include "devota.h"
+#include "driver/gpio.h"
 #include "esp_app_desc.h"
 #include "esp_log.h"
 #include "freertos/FreeRTOS.h"
@@ -339,6 +341,7 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
             atomic_store(&s_conn, ev->connect.conn_handle);
             atomic_fetch_add(&s_links, 1u);
             ESP_LOGI(TAG, "connected");
+            devota_connected(ev->connect.conn_handle);
         } else {
             adv_start();
         }
@@ -349,6 +352,7 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
         atomic_store(&s_conn, CONN_NONE);
         atomic_store(&s_sub_event, false);
         atomic_store(&s_sub_status, false);
+        devota_disconnected();
         adv_start();
         break;
     case BLE_GAP_EVENT_ADV_COMPLETE:
@@ -362,6 +366,9 @@ static int gap_event(struct ble_gap_event *ev, void *arg)
             }
         } else if (ev->subscribe.attr_handle == s_h_status) {
             atomic_store(&s_sub_status, ev->subscribe.cur_notify != 0);
+        } else {
+            devota_subscribe(ev->subscribe.attr_handle,
+                             ev->subscribe.cur_notify != 0);
         }
         break;
     case BLE_GAP_EVENT_CONN_UPDATE: {
@@ -406,6 +413,14 @@ static void on_reset(int reason)
     ESP_LOGW(TAG, "host reset, reason %d", reason);
 }
 
+/** @brief The screen button, the update's confirming key: a press accepts,
+ *         a hold of 1,000ms refuses (protocols/bleota).
+ *  @return true while it is pressed */
+static bool update_key(void)
+{
+    return gpio_get_level(DIAL_PIN_BTN) == 0;
+}
+
 /** @brief NimBLE's host task. @param arg unused */
 static void host_task(void *arg)
 {
@@ -430,6 +445,7 @@ void dial_ble_start(void)
         ESP_LOGE(TAG, "the GATT service was refused");
         return;
     }
+    (void)devota_start(BLEOTA_KIND_DIAL, BLEOTA_CONFIRM_PRESS, update_key);
     nimble_port_freertos_init(host_task);
 }
 

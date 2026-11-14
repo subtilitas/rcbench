@@ -40,6 +40,7 @@
 #include "fw_c6.h"
 #include "panel.h"
 #include "panel_ble.h"
+#include "panel_devupd.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "upd_c6.h"
@@ -320,6 +321,8 @@ static fw_c6_feed_t feed_now(bool armed)
     /* blestart brings the link up and resets the C6's controller: not
      * under an update's steps. */
     f.ble_starting = panel_ble_state() == PANEL_BLE_STARTING;
+    /* A wireless device's update runs on the C6's controller. */
+    f.device = panel_devupd_busy();
     return f;
 }
 

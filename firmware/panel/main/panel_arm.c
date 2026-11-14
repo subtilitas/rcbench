@@ -29,6 +29,7 @@
 #include "outputs_pages.h"
 #include "outputs_screen.h"
 #include "panel.h"
+#include "panel_devupd.h"
 #include "prog_link.h"
 #include "sense_link.h"
 #include "servo_link.h"
@@ -795,6 +796,13 @@ void drain_commands(bool link_up, bench_state_t *bench)
             /* Programming a servo and an armed bench are exclusive,
              * whichever screen asks. */
             control_alert(esc_taken() ? TR(ALERT_ARM_ESC) : TR(ALERT_ARM_PROG));
+            arming_refuse_ask(&s_arm, ask);
+            continue;
+        }
+        if (arms && panel_devupd_busy()) {
+            /* A wireless device's update holds the Dial's link and runs
+             * only on a SAFE bench. */
+            control_alert(TR(ALERT_ARM_DEVUPD));
             arming_refuse_ask(&s_arm, ask);
             continue;
         }

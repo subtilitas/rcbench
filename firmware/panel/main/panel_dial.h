@@ -65,6 +65,29 @@ bool panel_dial_blec_step(uint32_t now, bleu_act_t *out);
 void panel_dial_blec_publish(uint32_t now);
 
 /**
+ * @brief The `blec` task's hold on the Dial for its update: ON ends the
+ *        link and keeps it ended, as Dial OFF does, SETUP's values left as
+ *        they are; OFF gives the link back to SETUP's values.
+ * @param on  The hold.
+ * @param now The clock, ms.
+ */
+void panel_dial_blec_hold(bool on, uint32_t now);
+
+/**
+ * @brief What the Dial's update needs of the link, in the `blec` task.
+ * @param addr    Receives the bound Dial's address; false when none is
+ *                bound.
+ * @param linked  Receives whether the Dial is connected and its INFO read
+ *                and taken.
+ * @param version Receives the version its INFO named, with @p linked.
+ * @param down    Receives whether no link to the Dial stands or is under
+ *                way.
+ * @return false when no Dial is bound.
+ */
+bool panel_dial_blec_target(bleu_addr_t *addr, bool *linked,
+                            uint8_t version[3], bool *down);
+
+/**
  * @brief A value changed: SET_DIAL_* go to the task.
  * @param id The setting.
  */
