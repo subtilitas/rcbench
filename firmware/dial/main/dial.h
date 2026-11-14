@@ -9,9 +9,10 @@
  *
  * Tasks: the input task (dial_input.c) polls the encoder, the buttons and
  * the touch controller every 5ms and sends EVENT; the face task
- * (dial_main.c) takes the panel's packets, draws and sends STATUS; NimBLE's
- * host task runs dial_ble.c's callbacks; the console's REPL (read-eval-
- * print loop) task runs dial_console.c.
+ * (dial_main.c) takes the panel's packets, draws the face (dial_screen.c,
+ * shared/dial) and sends STATUS; NimBLE's host task runs dial_ble.c's
+ * callbacks; the console's REPL (read-eval-print loop) task runs
+ * dial_console.c.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -21,6 +22,7 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "dial_face.h"
 #include "dialknob.h"
 #include "gfx.h"
 
@@ -110,6 +112,15 @@ bool dial_lcd_init(void);
  */
 void dial_lcd_flush(const uint16_t *fb, int y0, int y1);
 /**
+ * @brief Send a rectangle of a frame to the display.
+ * @param fb the frame, DIAL_LCD_SIZE x DIAL_LCD_SIZE RGB565 pixels
+ * @param x  the first column
+ * @param y  the first row
+ * @param w  the columns
+ * @param h  the rows
+ */
+void dial_lcd_flush_rect(const uint16_t *fb, int x, int y, int w, int h);
+/**
  * @brief Set the backlight.
  * @param pct 0 to 100%
  */
@@ -158,6 +169,13 @@ bool dial_input_inject(uint8_t kind, int32_t arg, uint8_t x, uint8_t y);
 void dial_input_sound(bool on);
 /** @brief Whether the Dial clicks per detent. @return ON */
 bool dial_input_sound_on(void);
+/**
+ * @brief Tell the input task of the panel's packets: while
+ *        dk_link_lost() of them holds, it sends no EVENT and no keepalive.
+ * @param any     a panel packet came on this connection
+ * @param last_ms the last one's arrival, ms
+ */
+void dial_input_link(bool any, uint32_t last_ms);
 
 /** @brief What the input task last sent, for the console. */
 typedef struct {
@@ -237,20 +255,22 @@ void dial_console_start(void);
 
 /* --- dial_screen.c --------------------------------------------------- */
 
-/** @brief What the placeholder face shows besides the panel's model. */
-typedef struct {
-    bool        lost;    /**< no panel packet for DK_DIAL_LOST_MS */
-    bool        ready;   /**< connected and subscribed */
-    bool        bound;   /**< a panel is bound */
-    const char *name;    /**< the Dial's name */
-} dial_view_t;
+/**
+ * @brief Start the face renderer over its const ring tables and bind it to
+ *        the frame.
+ * @param fb the frame, DIAL_LCD_SIZE x DIAL_LCD_SIZE RGB565 pixels
+ * @return true when the renderer started
+ */
+bool dial_screen_init(gfx_color_t *fb);
 
 /**
- * @brief Draw the placeholder face: a plain frame, the panel screen's title
- *        and the value the knob acts on as text, or the link's state.
- * @param c the canvas, DIAL_LCD_SIZE square
- * @param f the panel's model
- * @param v the link's state
+ * @brief Draw what changed on the face (shared/dial) and send only the
+ *        rectangles of the frame that were written; with @p all the whole
+ *        frame is drawn and sent.
+ * @param f   the panel's model
+ * @param v   the Dial's state
+ * @param all draw and send the whole frame
+ * @return true when a pixel was sent
  */
-void dial_screen_draw(gfx_canvas_t *c, const dk_face_t *f,
-                      const dial_view_t *v);
+bool dial_screen_show(const dk_face_t *f, const dial_face_view_t *v,
+                      bool all);

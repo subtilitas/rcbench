@@ -8,7 +8,9 @@
  * and, every 20ms, the touch controller.  It sends an EVENT at once when
  * the detent counter, a button, the touch point or a gesture changed, and
  * every 200ms (DK_KEEPALIVE_MS) when nothing did.  One gesture goes in each
- * packet; a second one waits for the next tick.
+ * packet; a second one waits for the next tick.  While the Dial's side of
+ * the link is lost, no panel packet for 500ms (DK_DIAL_LOST_MS) or none
+ * since the connection, no EVENT goes, keepalives included.
  *
  * The encoder: quadrature x4 on PCNT with its glitch filter at 1,000ns,
  * channel A on GPIO41 and B on GPIO40, 4 counts a detent.  The detent
@@ -129,6 +131,12 @@ static input_t s_in;
 static dial_input_stats_t s_stats;
 /** @brief Whether a detent clicks; the face and console tasks set it. */
 static atomic_bool s_sound = true;
+/** @brief The face task's view of the link: a panel packet came on this
+ *         connection, and the last one's arrival, ms.  dk_link_lost() of
+ *         them mutes the EVENTs. @{ */
+static atomic_bool s_link_any;
+static atomic_uint_least32_t s_link_ms; /**< the last panel packet, ms */
+/** @} */
 
 #if RCBENCH_DIAL_HOOKS
 /** @brief An injected input on its way to the task. */
@@ -158,6 +166,13 @@ void dial_input_sound(bool on)
 bool dial_input_sound_on(void)
 {
     return atomic_load(&s_sound);
+}
+
+void dial_input_link(bool any, uint32_t last_ms)
+{
+    /* The time first: a reader that sees any sees the time with it. */
+    atomic_store(&s_link_ms, last_ms);
+    atomic_store(&s_link_any, any);
 }
 
 void dial_input_stats(dial_input_stats_t *out)
@@ -386,8 +401,15 @@ static void send_poll(uint32_t now)
     s_in.sent_y = e.touch_y;
     s_in.sent_ms = now;
     s_in.force = false;
-    if (!dial_ble_ready() || dk_evt_encode(&e, pkt) == 0u) {
-        ++s_stats.unsent;       /* no link: the gesture and turn go stale */
+    const bool any = atomic_load(&s_link_any);
+    const bool lost = dk_link_lost(any, (uint32_t)atomic_load(&s_link_ms),
+                                   now);
+    if (!dial_ble_ready() || lost || dk_evt_encode(&e, pkt) == 0u) {
+        /* No link, or LINK LOST: no EVENT and no keepalive, so the panel's
+         * clock runs out as the Dial's did.  The gesture and the turn go
+         * stale; the panel takes the next EVENT, more than 300ms later, as
+         * a new reference (DK_STALE_MS). */
+        ++s_stats.unsent;
         s_in.queued = 0u;
 #if RCBENCH_DIAL_HOOKS
         s_in.inj_mark = false;

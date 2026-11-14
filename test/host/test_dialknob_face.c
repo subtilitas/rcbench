@@ -3,8 +3,9 @@
  *
  * The failures this is about: a face that shows the value of the screen
  * before after the panel moved on, a refused or repeated packet that
- * changes what the face shows, and a face that does not say LINK LOST when
- * the panel's stream stops.
+ * changes what the face shows, a face that does not say LINK LOST when
+ * the panel's stream stops, a Dial that keeps sending EVENTs while it says
+ * LINK LOST, and rings that keep the full scales of the screen before.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -56,7 +57,8 @@ TEST_CASE(a_new_screen_empties_the_value_of_the_screen_before)
     CHECK(value(&f, 4, 300, 10));
     CHECK(f.have_meta && f.have_value);
     CHECK_EQ(f.value.value, 300);
-    CHECK_EQ(f.changed, DK_CH_SCREEN | DK_CH_NAV | DK_CH_META | DK_CH_VALUE);
+    CHECK_EQ(f.changed, DK_CH_SCREEN | DK_CH_NAV | DK_CH_META | DK_CH_VALUE
+                            | DK_CH_SCALE);
 
     /* The same screen again (the 5s repeat) keeps them. */
     f.changed = 0;
@@ -195,6 +197,45 @@ TEST_CASE(the_dial_ends_the_link_when_link_lost_has_held_for_500ms)
     CHECK(!dk_face_drop(NULL, 0));
 }
 
+TEST_CASE(the_dial_sends_no_event_while_its_side_of_the_link_is_lost)
+{
+    /* No panel packet on this connection: lost, so no EVENT goes. */
+    CHECK(dk_link_lost(false, 0, 0));
+    CHECK(dk_link_lost(false, 100, 100));
+    CHECK(!dk_link_lost(true, 100, 100));
+    CHECK(!dk_link_lost(true, 0xFFFFFF00u, 0xFFFFFF00u + DK_DIAL_LOST_MS - 1u));
+    CHECK(dk_link_lost(true, 0xFFFFFF00u, 0xFFFFFF00u + DK_DIAL_LOST_MS));
+}
+
+TEST_CASE(a_new_screen_empties_the_scale_of_the_screen_before)
+{
+    dk_face_t f;
+    dk_scale_t sc = { 2, 12000, 16800, 4000, 600, 1000, 2000, 7400, 300 };
+    uint8_t b[DK_LEN_SCALE];
+
+    dk_face_init(&f);
+    CHECK(screen(&f, 1, DK_FACE_MOTOR, "MOTOR & ESC", 0));
+    CHECK_EQ(dk_scale_encode(&sc, b), DK_LEN_SCALE);
+    CHECK(dk_face_feed(&f, b, sizeof b, 5));
+    CHECK(f.have_scale);
+    CHECK_EQ(f.scale.rpm, 12000);
+    /* The same screen again (the 5s repeat) keeps it. */
+    f.changed = 0;
+    CHECK(screen(&f, 3, DK_FACE_MOTOR, "MOTOR & ESC", 10));
+    CHECK(f.have_scale);
+    CHECK_EQ(f.changed & DK_CH_SCALE, 0);
+    /* Another face empties it, so no ring takes MOTOR's full scales. */
+    CHECK(screen(&f, 4, DK_FACE_SERVO, "SERVO", 20));
+    CHECK(!f.have_scale);
+    CHECK_EQ(f.changed & DK_CH_SCALE, DK_CH_SCALE);
+    /* So does another title on the same face. */
+    sc.seq = 5;
+    CHECK_EQ(dk_scale_encode(&sc, b), DK_LEN_SCALE);
+    CHECK(dk_face_feed(&f, b, sizeof b, 30));
+    CHECK(screen(&f, 6, DK_FACE_SERVO, "SERVO 2", 40));
+    CHECK(!f.have_scale);
+}
+
 /** Follow a run of counts from detent 0; return the detent at the end and
  *  the moves taken in @p moves. */
 static int32_t follow(const int32_t *counts, unsigned n, unsigned *moves)
@@ -274,6 +315,8 @@ int main(void)
     RUN(the_face_says_link_lost_500ms_after_the_last_panel_packet);
     RUN(a_new_link_empties_the_model_and_learns_the_seq_again);
     RUN(the_dial_ends_the_link_when_link_lost_has_held_for_500ms);
+    RUN(the_dial_sends_no_event_while_its_side_of_the_link_is_lost);
+    RUN(a_new_screen_empties_the_scale_of_the_screen_before);
     RUN(a_detent_moves_3_counts_from_its_center_and_jitter_never_clicks);
     return test_summary("dialknob_face");
 }

@@ -111,6 +111,7 @@ One German word per English concept, on every screen and in the report.
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |
+| press, hold (the Dial's screen button: `PRESS: OPEN`, `HOLD: BACK`) | DRÜCKEN, HALTEN (`DRÜCKEN: ÖFFNEN`, `HALTEN: ZURÜCK`) |
 | refused | abgelehnt |
 | screen (a page of the interface) | Seite |
 | screen (the display) | Anzeige |
@@ -366,14 +367,15 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,662 entries
+A language is one more column in every entry of the table: 3,695 entries
 with an ID and 113 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and
-   the parameter to every macro that reads a column: 7 empty defaults at the
-   head of the table and 20 `#define` lines in 7 files (`ui_text.h`,
+   the parameter to every macro that reads a column: 8 empty defaults at the
+   head of the table and 24 `#define` lines in 9 files (`ui_text.h`,
    `ui_text.c`, `settings.c`, `settings_text.c`, `settings_opts.h`,
-   `servo_str.c`, `wa_page.c`). `NULL` shows the English.
+   `servo_str.c`, `wa_page.c`, `dial_text.h`, `dial_text.c`). `NULL` shows
+   the English.
 2. Add `UI_LANG_xx` to `ui_lang_t` in `shared/ui/include/ui_text.h`, and the
    language's own name to the `language` option list, in the same position.
 3. Copy the German block in `shared/ui/ui_text.c` (`DE()`, its tables and
@@ -393,7 +395,9 @@ with an ID and 113 options, 10 of them with an empty English.
 Two readers take the German column by position: `TABLE_ENTRY` in
 `tools/check_docs.py` and the servo controls' check in
 `configurator/core/test/help.test.ts`. The Wi-Fi page chooses its language
-by a flag, `wifi_access_set_german()`, and an ESC profile carries its
-family and manual steps in English and in German (`family`, `family_de`,
-`action`, `action_de`); neither takes a third language without a change of
-its own.
+by a flag, `wifi_access_set_german()`, an ESC profile carries its family
+and manual steps in English and in German (`family`, `family_de`, `action`,
+`action_de`), and the M5Stack Dial takes its language from the SCREEN
+packet's language field, 0 English or 1 German (`DK_LANG_EN`,
+`DK_LANG_DE` in `protocols/dialknob`); none takes a third language without
+a change of its own.

@@ -15,7 +15,7 @@ rcbench/
   test/tools/             pytest-Fälle für die Werkzeuge
   test/web/               Playwright-Test des Dateimanagers der Wi-Fi-Seite
   shared/                 reines C: kein ESP-IDF, kein pico-sdk, keine FreeRTOS-Typen
-    gfx/                  Rasterizer und sieben Fonts
+    gfx/                  Rasterizer, sieben Fonts und kantengeglättete Ring-Tabellen
     touch/                Koordinaten- und Event-Mapping
     ui/                   Theme · Widgets · Icons · Router · Bildschirme
     settings/             typisiertes Schema und Werte
@@ -35,6 +35,8 @@ rcbench/
     clock/                Regeln der Uhr: echtes Datum oder nicht · Zeitstempel · Zeitzonen · die NTP-Anfrage
     text/                 die Wörter der Oberfläche, alle Sprachen in einer Tabelle (nur Header)
     mstime/               überlaufsichere Vergleiche eines 32-Bit-Millisekundenzählers (nur Header)
+    vibe/                 Messung der Unwucht: Index-Komparator · Demodulator für 1x, 2x und Blattfrequenz · Löser für zwei und vier Läufe
+    dial/                 die Faces des M5Stack Dial: Listen, Werte, Messwerte und Ringe, Link und Binden; auf dem Host gerendert
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
     ppm/                  PPM-Frame-Layout · PIO- und DMA-Treiber
@@ -99,7 +101,7 @@ als INTERFACE-Bibliothek `rcbench_<modul>_rp2350`. Includes sind flach:
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | ja | ja | ja |
 | `escwire` | ja | ja | ja |
 | `witmotion` | ja | | ja |
-| `hc05` · `dialknob` · `vibe` · `rcnode` | | | ja |
+| `hc05` · `dialknob` · `vibe` · `rcnode` · `dial` | | | ja |
 | `bleuart` | ja | | ja |
 
 ## Toolchains

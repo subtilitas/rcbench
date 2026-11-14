@@ -20,12 +20,14 @@
 
 #include "esp_app_desc.h"
 #include "esp_console.h"
+#include "esp_heap_caps.h"
 #include "esp_log.h"
 
 /** @brief The log's tag. */
 static const char *TAG = "console";
 
-/** @brief `status`: the name, the addresses, the link and the counts.
+/** @brief `status`: the name, the addresses, the link, the counts and
+ *         the internal heap.
  *  @param argc unused @param argv unused @return 0 */
 static int cmd_status(int argc, char **argv)
 {
@@ -51,6 +53,9 @@ static int cmd_status(int argc, char **argv)
     } else {
         printf("battery unknown\n");
     }
+    printf("internal heap %u bytes free, %u at the lowest\n",
+           (unsigned)heap_caps_get_free_size(MALLOC_CAP_INTERNAL),
+           (unsigned)heap_caps_get_minimum_free_size(MALLOC_CAP_INTERNAL));
     return 0;
 }
 
@@ -198,7 +203,7 @@ static int cmd_ping(int argc, char **argv)
 
 /** @brief The commands. */
 static const esp_console_cmd_t k_cmds[] = {
-    { .command = "status", .help = "name, addresses, link and counts",
+    { .command = "status", .help = "name, addresses, link, counts, heap",
       .func = cmd_status },
     { .command = "sound", .help = "the click per detent", .hint = "on|off",
       .func = cmd_sound },

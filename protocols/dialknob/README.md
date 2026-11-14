@@ -37,6 +37,8 @@ the bytes of each characteristic.
   or a position.
 - No pairing and no security in protocol version 1: any device in range
   that serves the service under the bound address is taken.
+- Protocol 1 (`DK_PROTOCOL`) is not final until the first release that
+  carries the Dial.
 
 ## The service
 
@@ -262,7 +264,14 @@ for a later ARM. A packet on the same connection after a LOST returns the
 link to UP; the tracker's stale rule makes that packet a reference.
 
 The Dial's side shows LINK LOST when no panel packet came for 500ms
-(`DK_DIAL_LOST_MS`, `dk_face_lost()`). When LINK LOST has held for 500ms
+(`DK_DIAL_LOST_MS`, `dk_face_lost()`), or none since the connection. While
+LINK LOST shows, the Dial sends no EVENT and no keepalive
+(`dk_link_lost()`): the panel's clock counts from the last EVENT, so it
+runs out too: the panel sees DEGRADED 500ms and LOST 1,000ms after the
+last EVENT. A new connection's first EVENT goes after the panel's first
+packet, so the panel writes SCREEN and STATE first, without waiting for an
+EVENT.
+When LINK LOST has held for 500ms
 more, 1,000ms after the last panel packet on the connection
 (`DK_DIAL_DROP_MS`, `dk_face_drop()`), the Dial ends the link and sends
 nothing until it is connected again. The loss is then the same on both
@@ -284,7 +293,7 @@ moves by as many detents in one call.
 SCREEN, the three NAV rows by slot, VALUE_META, VALUE, LIVE_MOTOR,
 LIVE_SERVO, STATE and SCALE, each with a `have_` flag, and `changed` bits for the
 caller's redraw. A SCREEN with another face or title empties the NAV rows,
-VALUE_META and VALUE. A NAV row with another index or count empties the
+VALUE_META, VALUE and SCALE. A NAV row with another index or count empties the
 other slots. A refused packet counts in `bad`, a repeated seq in
 `repeats`, and neither changes the model. `dk_face_link_reset()` empties
 the model at a connect and learns the seq again.
@@ -331,6 +340,7 @@ void    dk_face_init(dk_face_t *f);
 void    dk_face_link_reset(dk_face_t *f);
 bool    dk_face_feed(dk_face_t *f, const uint8_t *buf, size_t len,
                      uint32_t now_ms);
+bool    dk_link_lost(bool any, uint32_t last_ms, uint32_t now_ms);
 bool    dk_face_lost(const dk_face_t *f, uint32_t now_ms);
 bool    dk_face_drop(const dk_face_t *f, uint32_t now_ms);
 int32_t dk_detent_follow(int32_t detent, int32_t count);
