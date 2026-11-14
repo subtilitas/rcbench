@@ -5958,6 +5958,11 @@ Panel berührt und der Prüfstand ruht.
   Sein nächstes MOVE oder UP weckt das Bild und erreicht die Seite, auf der
   er gedrückt hat.
 - Eine Drehung des Drehknopfs weckt das Bild nicht.
+- Eine Drehung, ein PRESS oder ein HOLD des M5Stack Dial weckt es und
+  startet die Minuten neu. Auf einem ruhenden Prüfstand tut die Eingabe,
+  die es geweckt hat, sonst nichts; auf einem Prüfstand, der nicht ruht,
+  und bei einem HOLD auf MOTOR & ESC oder einem SERVO-Bildschirm wirkt sie
+  auch ([Navigation und SET](Dial-de.md#navigation-und-set)).
 - Die Regel ist `shared/ui/screen_dim.c`, gehalten von `test_screen_dim`;
   die Render-Schleife setzt das Tastverhältnis mit
   `board_backlight_percent()`, wenn es sich ändert.
@@ -6051,6 +6056,20 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
   ist.
 - Der Knopf ist an Hardware nicht gemessen: seine Drehrichtung, sein Rauschen
   und sein Verhalten ohne Magnet darüber.
+
+### PANEL: der Fokus des M5Stack Dial
+
+Ein verbundenes M5Stack Dial navigiert das Menü, SETUP, die Kacheln von
+SERVO und seine SETTINGS-Liste, die Platinenansicht von OUTPUTS, die
+Auswahllisten und die Warnung beim Verlassen, solange der Prüfstand SAFE
+ist ([Navigation und SET](Dial-de.md#navigation-und-set)). Ein 2px-Rahmen
+in der Akzentfarbe markiert den Eintrag im Fokus; eine Rastung bewegt ihn
+einen Eintrag weiter und läuft an beiden Enden um. PRESS tippt den Eintrag,
+HOLD tut, was das Home-Tag tut. Eine Zahl, die das Ziffernfeld nimmt, wird
+auf ihrem Ziffernfeld durch Drehen eingestellt: PRESS ist OK, HOLD ist
+CANCEL. Kein Rahmen erscheint, solange das Dial OFF oder nicht verbunden
+ist, bei ARMED, bei offener Hilfe, offenem Screenshot-Popup oder offener
+Tastatur und auf jedem anderen Bildschirm.
 
 ### SENSORS: die geteilte Ansicht
 

@@ -13,10 +13,11 @@ Dial: die Selbsthaltung, den Encoder, die Tasten, das Touch-Glas, den Klick
 pro Rastung, die Faces auf dem Display, das BLE-Peripheral mit seinem
 gebundenen Panel und die USB-Konsole; und die Seite des Panels: SETUP >
 WIRELESS > DIAL, Suche und Bindung, der Link mit seiner Verlustregel, die
-Drehung auf MOTOR & ESC und SERVO LIVE, die Bildschirmtaste und der Strom
-des Panel-Bildschirms zum Dial ([Das Panel](#das-panel)). Die Navigation
-der Listen des Panels vom Dial aus, das BLE-Update und das Pairing folgen
-in späteren Schritten.
+Drehung auf MOTOR & ESC und SERVO LIVE, die Bildschirmtaste, die Navigation
+der Menüs und Listen des Panels mit SET eines Werts und der Strom des
+Panel-Bildschirms zum Dial ([Das Panel](#das-panel)). Die Bildschirme der
+Programmer (KST, Hitec, ESC), das BLE-Update und das Pairing folgen in
+späteren Schritten.
 
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
 Bluetooth ist eine Marke ihres Inhabers. rcbench ist unabhängig: Es ist
@@ -70,6 +71,10 @@ das Panel wendet sie an ([Das Panel](#das-panel)):
   auf 0% und auf SERVO auf CENTER; ein Halten von 1s macht DISARM.
 - Kein BLE-Scan im Zustand ARMED: Die Funkzeit eines Scans würde dem Link
   fehlen, der den Knopf trägt.
+- Navigation nur bei SAFE: Ein SELECT ist ein Tippen von einem Frame, es
+  vollendet also kein 2s-Halten, und bei ARMED bewegt das Dial keinen Fokus
+  weg von dem Ausgang, den es treibt
+  ([Navigation und SET](#navigation-und-set)).
 
 Die Regeln des Links und ihre Zeiten stehen im Protokollmodul, jede mit
 einem Host-Test
@@ -198,13 +203,14 @@ Eine Rastung am Dial nimmt den Weg des eigenen Knopfs des Panels, mit
 denselben Regeln: relativ, durch denselben Drehungs-Tracker, nichts bewegt
 sich, solange der Prüfstand SAFE ist, und Drehungen bei SAFE werden nicht
 für das ARM aufgehoben. Auf MOTOR & ESC verstellt eine Rastung das Gas um
-den Gas-Schritt, auf SERVO LIVE das Horn um den Servo-Schritt. Andere
-Bildschirme nehmen keine Drehung an.
+den Gas-Schritt, auf SERVO LIVE das Horn um den Servo-Schritt. Die
+Bildschirme aus [Navigation und SET](#navigation-und-set) nehmen die Drehung
+als Schritt des Fokus; alle anderen nehmen keine an.
 
 | Geste | MOTOR & ESC, ARMED | SERVO LIVE, ARMED | SAFE, oder ein anderer Bildschirm |
 | --- | --- | --- | --- |
 | PRESS: Bildschirmtaste vor 1.000ms losgelassen | Gas 0% | CENTER | nichts |
-| HOLD: Bildschirmtaste 1.000ms gedrückt | DISARM | DISARM; eine laufende Folge ARM + START endet mit allen Ausgängen aus, auch vor ARMED | nichts |
+| HOLD: Bildschirmtaste 1.000ms gedrückt | DISARM | DISARM; eine laufende Folge ARM + START endet mit allen Ausgängen aus, auch vor ARMED | nichts; BACK auf einem Bildschirm, den das Dial navigiert |
 
 Auf MOTOR & ESC schaltet ein HOLD auch DISARM, solange ein ARM unterwegs
 ist, angefragt und noch nicht bestätigt, und beendet einen ESC-STICK-Lauf
@@ -215,6 +221,77 @@ Hilfeblase offen. Die gehaltenen Zustände von Taste und Touch im EVENT werden n
 Druck oder Berührung gelesen, eine am Dial gehaltene Taste ist also kein
 Halten am Panel: ARM und jedes andere 2s-Halten bleiben beim Panel.
 
+### Navigation und SET
+
+Solange das Dial verbunden und der Prüfstand SAFE ist, navigiert es diese
+Bildschirme:
+
+| Bildschirm | Einträge, in Drehrichtung |
+| --- | --- |
+| das Menü | seine 8 Kacheln, Zeile für Zeile |
+| die Kacheln von SETUP | die Kacheln, dann SAVE, solange Speichern angeboten ist |
+| eine Liste von SETUP | ihre Zeilen, dann RESET und SAVE; auf SENSORS und WIRELESS zuerst die Einträge links |
+| SERVO | die 8 Kacheln, dann SETTINGS; die offene SETTINGS-Liste wie eine Liste von SETUP |
+| OUTPUTS, Platinenansicht | das Feld der Protokollliste, CLEAR ALL, solange angeboten, dann je eine Pin-Taste |
+| eine offene Auswahlliste | ihre Zeilen, der Fokus auf der gültigen |
+| die Warnung beim Verlassen | STAY, DISCARD, SAVE |
+
+| Geste | Navigation | SET |
+| --- | --- | --- |
+| Drehen | der Fokus geht eine Rastung einen Eintrag weiter und läuft an beiden Enden um; eine Zeile außer Sicht rollt herein | der Wert geht eine Rastung einen Schritt, innerhalb seines Bereichs |
+| PRESS | SELECT: ein Tippen auf den Eintrag im Fokus | KEEP |
+| HOLD | BACK: was das Home-Tag tut, eine Auswahlliste oder das Ziffernfeld schließt | CANCEL: der Wert wie vorher |
+
+Das Panel zeichnet einen 2px-Rahmen in der Akzentfarbe um den Eintrag im
+Fokus. Der Rahmen hebt die Pixel darunter je Framebuffer auf und setzt sie
+zurück, wenn er weiterzieht: Eine Rastung zeichnet die zwei Rahmen neu,
+nie den Bildschirm. Kein Rahmen erscheint und das Dial nimmt nicht am
+Bildschirm teil, solange das Dial OFF oder nicht verbunden ist, der
+Prüfstand ARMED ist, die Bildschirmhilfe oder das Screenshot-Popup offen
+ist oder die Texttastatur offen ist.
+
+Ein SELECT ist ein Tippen: ein DOWN und ein UP in der Mitte des Eintrags im
+selben Frame. Die Zeile im Fokus rollt zuerst ins Bild, auch wenn ein Finger
+die Liste seitdem gerollt hat; ein Punkt neben dem Eintrag oder außer Sicht
+wird nie getippt, und der Druck tut dann nichts. Ein 2s-Halten am Panel braucht den Kontakt 2s lang über
+Frames, also wird vom Dial aus kein Halten vollendet: ARM, Spannung EIN,
+WRITE n VALUES und das Löschen bleiben beim Panel. Ein SELECT auf eine
+Halte-Taste wie CLEAR ALL auf OUTPUTS zeigt den Hinweis, den das Panel bei
+jedem Tippen zeigt. Auf den Kacheln von SERVO beendet ein HOLD zuerst eine
+laufende Folge ARM + START, wie auf jedem SERVO-Bildschirm; BACK folgt nur,
+wo es nichts gestoppt hat.
+
+SET:
+
+- eine Zahl, die das Ziffernfeld nimmt: SELECT tippt ihren Wert, und das
+  Ziffernfeld öffnet sich. Die Drehung schreibt den Wert in die Eingabe, um
+  den Schritt der Einstellung und innerhalb ihres Bereichs; eine Drehung an
+  einem Ende bleibt dort stehen. Eine Einstellung mit einer AUS-Lücke (etwa
+  ein INA3221-Shunt, AUS oder 5.0 bis 1000.0mΩ) nimmt eine Rastung von AUS
+  zu ihrem kleinsten Wert und eine zurück, wie viele Rastungen ein Frame
+  auch bringt. PRESS ist das OK des Ziffernfelds, mit
+  seinen Prüfungen; HOLD ist CANCEL.
+- ein Ein/Aus oder eine Liste von Optionen: SELECT startet SET auf der
+  Zeile. Jede Rastung tippt ihre Taste `-` oder `+`, höchstens 16 je Frame;
+  Ein/Aus und Optionslisten laufen um wie ihre Tasten; das VALUE-Face zeigt
+  die Stelle einer Optionsliste von 0 bis zu ihrer letzten Option. PRESS behält den
+  Wert; HOLD tippt die andere Taste so oft, wie ein Tippen den Wert geändert
+  hat.
+
+Dimmen nach: Eine Drehung, ein PRESS oder ein HOLD des Dial weckt ein
+gedimmtes Panel und startet seine Minuten neu, wie eine Berührung. Auf
+einem gedimmten Panel mit ruhendem Prüfstand tut die Eingabe, die es
+geweckt hat, sonst nichts: Sie öffnet, bewegt und stellt nichts ein. Auf
+einem Prüfstand, der nicht ruht, wirkt sie sofort; ein PRESS für 0% oder
+CENTER auf einem ARMED-Prüfstand wird also nie verschluckt, und ein HOLD
+auf MOTOR & ESC oder einem SERVO-Bildschirm wirkt immer.
+
+Das Dial zeigt das NAV-Face, solange es den Fokus bewegt, mit dem Namen des
+Bildschirms, dem Eintrag im Fokus zwischen den Einträgen davor und danach
+und seiner Stelle in der Liste. In SET zeigt es das VALUE-Face mit dem
+Namen der Einstellung als Titel. Auf dem Menü bleibt das Face HOME und
+zeichnet die Kacheln als Liste.
+
 ### Der Strom
 
 Das Panel schreibt seinen Bildschirm in Panel-Paketen zum Dial, eines zur
@@ -223,14 +300,17 @@ Zeit:
 | Paket | Wann |
 | --- | --- |
 | SCREEN | Face, Titel, Sprache oder Flags geändert, oder 5.000ms nach dem letzten |
-| VALUE_META, VALUE | auf MOTOR & ESC und SERVO LIVE, wenn sich Bereich, Schritt oder Wert ändern |
+| VALUE_META, VALUE | auf MOTOR & ESC und SERVO LIVE und in SET, wenn sich Bereich, Schritt oder Wert ändern |
+| NAV | solange das Dial navigiert: wenn sich der Eintrag im Fokus, der davor oder danach oder die Liste ändert; eine Zeile je Paket |
 | SCALE | auf MOTOR & ESC und SERVO LIVE: beim Betreten und bei jedem Connect, dann wenn sich ein Vollausschlag ändert, höchstens alle 200ms |
 | LIVE_MOTOR, LIVE_SERVO | auf MOTOR & ESC und SERVO LIVE, alle 50ms (20Hz) |
 | STATE | ARMED, DEGRADED oder ein Schritt geändert, 200ms ohne Paket, oder 1.000ms nach dem letzten STATE |
 
 Jeder Connect sendet das ganze Modell erneut, SCREEN zuerst. Die Faces sind
-MOTOR, SERVO und HOME (das Menü); jeder andere Bildschirm sendet seinen
-Titel und den Zustand des Prüfstands. LIVE_MOTOR trägt das Gas und die
+MOTOR, SERVO, HOME (das Menü), NAV und VALUE
+([Navigation und SET](#navigation-und-set)); jeder andere Bildschirm sendet
+seinen Titel und den Zustand des Prüfstands. SCREEN trägt das Flag
+NAVIGATES, solange das Dial navigiert. LIVE_MOTOR trägt das Gas und die
 Messwerte, die der Prüfstand meldet: Spannung, Strom, Leistung, Drehzahl,
 die Temperatur von ESC und Motor. LIVE_SERVO trägt den Puls, den
 befohlenen Winkel, den gemessenen Winkel, wenn die Winkelquelle einen
@@ -472,8 +552,19 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 
 ## Grenzen
 
-- Das Dial navigiert noch keine Liste am Panel: Kein Bildschirm füllt NAV.
-  Das ist der nächste Schritt.
+- Das Dial navigiert nur die Bildschirme aus
+  [Navigation und SET](#navigation-und-set). Auf LOGS, FILES, WI-FI,
+  UPDATES, IMU, der Rasteransicht von OUTPUTS, den Programmern (KST, Hitec,
+  ESC) und den eigenen Listen und Reitern der Prüfstandsbildschirme bewegt
+  es keinen Fokus; ein HOLD tut dort auf einem SAFE-Prüfstand nichts.
+- Eine Liste nimmt den Fokus für 64 Einträge, RESET und SAVE darunter; die
+  letzten Zeilen einer längeren Liste erreicht das Dial nicht.
+- Ein Pixel, das der Bildschirm unter dem Rahmen genau in der Farbe des
+  Rahmens malt (der Akzent mit gekipptem untersten Bit), gilt als Rahmen
+  und wird zurückgesetzt, wenn der Rahmen weiterzieht.
+- Das Wasserzeichen eines simulierten Prüfstands blendet über den Rahmen;
+  wo es das tut, bleiben die Pixel des Rahmens stehen, wenn er weiterzieht,
+  bis der Bildschirm dort neu zeichnet.
 - Das ARMED-Flag des Panels für die Verlustregel und die Ablehnung der Suche
   gehört dem Control-Task und wird vom Bluetooth-Task gelesen; es kann einen
   Control-Durchlauf, etwa 5ms, alt sein.

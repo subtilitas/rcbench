@@ -348,6 +348,25 @@ void hub_event(const touch_event_t *evt)
     }
 }
 
+bool servo_hub_focus(ui_focus_list_t *out)
+{
+    if (out == NULL || s.fn != SERVO_FN_HUB || modal_open() || s.ov_have) {
+        return false;
+    }
+    if (svs_list_shown()) {
+        out->list = 0x5348u;
+        return ui_focus_add_setlist(out, &s.sl);
+    }
+    out->list = 0x5354u;
+    for (int i = 0; i < HUB_TILES; ++i) {
+        (void)ui_focus_add(out, servo_hub_tile_rect(i),
+                           svs_fn_name((servo_fn_t)(i + 1)));
+    }
+    (void)ui_focus_add(out, ui_footer_rect(UI_FOOTER_SETTINGS),
+                       TR(FOOT_SETTINGS));
+    return true;
+}
+
 /* ------------------------------------------------------------ the guide */
 
 /** @brief The tiles' page: the dock on the right over the third column,

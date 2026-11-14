@@ -147,6 +147,18 @@ bool screen_dim_is_dim(const screen_dim_t *d)
     return d != NULL && d->dimmed;
 }
 
+bool screen_dim_wake(screen_dim_t *d, uint32_t now_ms)
+{
+    if (d == NULL) {
+        return false;
+    }
+    const bool was_dim = d->dimmed;
+    d->dimmed = false;
+    d->last_ms = now_ms;
+    d->why = (uint8_t)SCREEN_DIM_WHY_DIAL;
+    return was_dim;
+}
+
 /**
  * @brief A touch event type's name for the console line.
  * @param type  touch_event_type_t
@@ -186,6 +198,9 @@ size_t screen_dim_line(const screen_dim_t *d, uint32_t now_ms, int dim_after,
         break;
     case SCREEN_DIM_WHY_OFF:
         (void)snprintf(why, sizeof(why), "off");
+        break;
+    case SCREEN_DIM_WHY_DIAL:
+        (void)snprintf(why, sizeof(why), "dial");
         break;
     case SCREEN_DIM_WHY_START:
     default:
