@@ -26,7 +26,7 @@ branch `research/round1-results`. The plan for round 2 is in
 `hardware/research/round2/` on `research/round2-results`.
 
 The [KiCad library](kicad/README.md) holds a footprint, a symbol and a STEP
-3D model for each of the 12 modules the bench is built from. Its positions
+3D model for each of 16 modules. Its positions
 come from manufacturer drawings and photos, without caliper verification. Part
 heights come from models, datasheets or estimates for the part class, as listed in the library.
 [Mechanical parts](mechanical/README.md) holds STEP models of the M16
@@ -40,6 +40,16 @@ coin-cell holder are placed from Waveshare's photo of the rear, good to 0.3mm,
 because that file draws other sockets than the board carries. The sockets'
 height, 5.5mm +- 0.5mm, is read from an angled photo. No dimension is verified
 with a caliper on a board.
+It holds STEP models, part by part with the print of both sides, of an INA219
+board with the print CJMCU, a lithium polymer charger board with 5V boost
+output, a 5V boost board with an enable pad and the Waveshare ESP32-C6-Zero,
+and of two lithium polymer cells, 702030 with 380mAh and 102540 with 1000mAh.
+The same four board models are the 3D models of their footprints in the KiCad
+library. They are measured from three owner photos on 5mm squared paper,
+positions within about 0.2mm; the ESP32-C6-Zero's outline and pads follow
+Waveshare's drawing. Board thickness, inductor heights and the cells' wire
+length are estimated. The boost board does not name its enable pad; the one
+pad besides the 4 corner pads is taken as it.
 It holds STEP models of the INA228 current sensor module with its two XT90PW
 connectors, 225 solids with the print, and of its printed case. The board is
 measured from three owner photos on 5mm squared paper: positions within about
