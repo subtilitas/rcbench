@@ -16,10 +16,12 @@
  *
  * The FT6336G sits on the INA228's bus (node_pwr_bus()), at 400kHz, so a
  * touch read of 5 bytes (about 170µs on the wire) can hold a sample of
- * `pwr` back by as long.  The controller's registers are the FT5x06
- * family's: 0x02 the number of touch points (low 4 bits), then the first
- * point's X high (low 4 bits), X low, Y high, Y low.  Its interrupt line is
- * not used: the read is polled.
+ * `pwr` back by as long.  The read takes the FT5x06 family's registers, as
+ * the Dial's FT3267 does (firmware/dial/main/dial_touch.c): 0x02 the number
+ * of touch points (low 4 bits), then the first point's X high (low 4
+ * bits), X low, Y high, Y low.  That the FT6336G answers them is not
+ * checked against its datasheet.  Its interrupt line is not used: the read
+ * is polled.
  *
  * The screen's texts are English unless a linked panel wrote LANG German
  * (node_disp_lang()); without a link they are English again.
@@ -54,7 +56,8 @@
 #define TP_REG_STATUS 0x02u  /**< TD_STATUS, the first register a read covers */
 /** @} */
 /** @brief The controller's reset: low this long, then this long before the
- *         first read (FT6336G datasheet: 5ms and 300ms at least). @{ */
+ *         first read.  The FT6336G datasheet's own minimums were not read
+ *         for this; the values are unconfirmed. @{ */
 #define TP_RST_LOW_MS  10u
 #define TP_RST_WAIT_MS 300u
 /** @} */
