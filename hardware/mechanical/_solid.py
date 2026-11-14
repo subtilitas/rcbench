@@ -17,6 +17,9 @@ circle edges and cylinder faces, not polygons.
 
 import math
 
+# The value a rod has in the place of a shape's holes.
+PIPE = "pipe"
+
 Z = ((0.0, 0.0, 0.0), (1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0))
 # Profile (y, z), pushed along x.
 X = ((0.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0), (1.0, 0.0, 0.0))
@@ -86,6 +89,34 @@ def strip(path, t):
             out.append((x + side * k * nx, y + side * k * ny))
         return out
     return offset(-1) + offset(1)[::-1]
+
+
+def turned(profile, cx, cy, angle):
+    """A profile turned about (cx, cy), degrees counter-clockwise."""
+    c, s = math.cos(math.radians(angle)), math.sin(math.radians(angle))
+
+    def turn(u, v):
+        return (cx + c * (u - cx) - s * (v - cy),
+                cy + s * (u - cx) + c * (v - cy))
+
+    return [turn(*q[:2]) if len(q) == 2
+            else turn(*q[:2]) + ((*turn(*q[2][:2]), q[2][2]),)
+            for q in profile]
+
+
+def pipe(path, radius, rgb, frame=Z):
+    """A shape: a round rod along a path in the frame's (u, v) plane.
+
+    Args:
+        path: The corners of the rod's centre line, open; a corner is
+            (u, v) for a straight piece to the next corner or
+            (u, v, (cu, cv, turn)) for an arc to it. Each piece starts
+            in the direction the one before it ends in.
+        radius: The rod's radius, less than every arc's.
+        rgb: The colour.
+        frame: The frame of the path's plane.
+    """
+    return (path, PIPE, radius, 0.0, rgb, frame)
 
 
 def ext(outer, d0, d1, rgb, holes=(), frame=Z):
@@ -200,7 +231,78 @@ def _brep(outer, holes, d0, d1, frame):
     return points, edges, faces
 
 
+def _pipe(path, radius, frame):
+    """Points, edges and faces of a rod: cylinders and pieces of tori."""
+    o, u, v, w = frame
+
+    def at(p, d=0.0):
+        return tuple(o[k] + p[0] * u[k] + p[1] * v[k] + d * w[k]
+                     for k in range(3))
+
+    def vec(a):
+        return tuple(a[0] * u[k] + a[1] * v[k] for k in range(3))
+
+    pieces = []
+    for q, nxt in zip(path, path[1:], strict=False):
+        a, b = q[:2], nxt[:2]
+        arc = q[2] if len(q) > 2 else None
+        if arc is None:
+            length = math.hypot(b[0] - a[0], b[1] - a[1])
+            t0 = t1 = ((b[0] - a[0]) / length, (b[1] - a[1]) / length)
+        else:
+            big = math.hypot(a[0] - arc[0], a[1] - arc[1])
+            t0 = (-arc[2] * (a[1] - arc[1]) / big,
+                  arc[2] * (a[0] - arc[0]) / big)
+            t1 = (-arc[2] * (b[1] - arc[1]) / big,
+                  arc[2] * (b[0] - arc[0]) / big)
+        if pieces and math.hypot(t0[0] - pieces[-1][4][0],
+                                 t0[1] - pieces[-1][4][1]) > 1e-9:
+            raise ValueError("a rod's pieces must join without a corner")
+        pieces.append((a, b, arc, t0, t1))
+    nodes = [(piece[0], piece[3]) for piece in pieces]
+    nodes.append((pieces[-1][1], pieces[-1][4]))
+    points, edges, faces = [], [], []
+    for p, t in nodes:
+        for k in range(4):
+            c, s = (1, 0, -1, 0)[k], (0, 1, 0, -1)[k]
+            points.append(at((p[0] - radius * c * t[1],
+                              p[1] + radius * c * t[0]), radius * s))
+    for i, (p, t) in enumerate(nodes):
+        for k in range(4):
+            edges.append((4 * i + k, 4 * i + (k + 1) % 4,
+                          ("circle", at(p), vec(t), radius)))
+    first = len(edges)
+    for i, (_a, _b, arc, _t0, _t1) in enumerate(pieces):
+        for k in range(4):
+            curve = ("line",)
+            if arc is not None:
+                c, s = (1, 0, -1, 0)[k], (0, 1, 0, -1)[k]
+                big = math.hypot(_a[0] - arc[0], _a[1] - arc[1])
+                curve = ("circle", at(arc[:2], radius * s),
+                         tuple(arc[2] * x for x in w),
+                         big - arc[2] * radius * c)
+            edges.append((4 * i + k, 4 * (i + 1) + k, curve))
+    for i, (a, _b, arc, t0, _t1) in enumerate(pieces):
+        for k in range(4):
+            loop = [(4 * i + k, True), (first + 4 * i + (k + 1) % 4, True),
+                    (4 * (i + 1) + k, False), (first + 4 * i + k, False)]
+            if arc is None:
+                surface = ("cylinder", at(a), vec(t0), radius)
+            else:
+                surface = ("torus", at(arc[:2]), w,
+                           math.hypot(a[0] - arc[0], a[1] - arc[1]), radius)
+            faces.append((surface, True, [loop]))
+    last = len(nodes) - 1
+    faces.append((("plane", at(nodes[0][0]),
+                   tuple(-x for x in vec(nodes[0][1]))), True,
+                  [[(k, False) for k in reversed(range(4))]]))
+    faces.append((("plane", at(nodes[last][0]), vec(nodes[last][1])), True,
+                  [[(4 * last + k, True) for k in range(4)]]))
+    return points, edges, faces
+
+
 def items(shapes):
     """The shapes as step_gen.write takes them."""
-    return [("brep", *_brep(outer, holes, d0, d1, frame), rgb)
+    return [("brep", *(_pipe(outer, d0, frame) if holes == PIPE
+                       else _brep(outer, holes, d0, d1, frame)), rgb)
             for outer, holes, d0, d1, rgb, frame in shapes]

@@ -40,6 +40,15 @@ coin-cell holder are placed from Waveshare's photo of the rear, good to 0.3mm,
 because that file draws other sockets than the board carries. The sockets'
 height, 5.5mm +- 0.5mm, is read from an angled photo. No dimension is verified
 with a caliper on a board.
+It holds STEP models of the INA228 current sensor module with its two XT90PW
+connectors, 225 solids with the print, and of its printed case. The board is
+measured from three owner photos on 5mm squared paper: positions within about
+0.2mm, the board's 80.1mm x 48.6mm and the screw holes' 70.15mm x 38.8mm within
+about 0.3mm. The connectors follow a dealer's dimension drawing of XT90PW; the
+board's thickness and the shunt's heights are the owner's measurements. Solder
+heights, the tails' diameter, and the case's floor and rim are estimated; the case's
+standoff height, 7.9mm, is within about 0.6mm. The KiCad module of the board
+carries the same measurements.
 It also holds STEP models of the M5Stack Dial and its ring nut. Their 9
 plastic parts are M5Stack's mesh (MIT licence) fitted again with planes,
 cylinders, cones, tori and the thread's helical surfaces; the models are
