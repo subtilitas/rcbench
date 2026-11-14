@@ -672,7 +672,7 @@ TEST_CASE(microseconds_to_raw_hits_the_fixed_points_and_rounds_like_sbus_to_us)
     CHECK_EQ(sbus_from_us(1001u), 174u);    /* 173.639 */
     CHECK_EQ(sbus_from_us(999u), 170u);     /* 170.361 */
     CHECK_EQ(sbus_from_us(1250u), 582u);    /* 581.75 */
-    CHECK_EQ(sbus_from_us(1500u), 992u);    /* 991.5, a half, away from 1000us */
+    CHECK_EQ(sbus_from_us(1500u), 992u);    /* 991.5: a half, away from 172 */
     CHECK_EQ(sbus_from_us(1750u), 1401u);   /* 1401.25 */
     /* The ends of the raw field and the clamp past them. */
     CHECK_EQ(sbus_from_us(895u), 0u);       /* -0.095 */
