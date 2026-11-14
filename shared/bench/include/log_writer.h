@@ -106,13 +106,16 @@ typedef struct {
  * @brief The values of the last column, "source", of a bench file and a supply
  *        file: "measured" for a row whose values a meter or a supply produced,
  *        "model" for a row the panel's model produced (LINK_BN_SIMULATED on a
- *        bench row, supply_state_t.modelled on a supply row).
+ *        bench row, supply_state_t.modelled on a supply row), "node" for a
+ *        bench row whose INA228 figures came from the power node over
+ *        Bluetooth LE (bench_state_t.from_node with LINK_BN_SENSED).
  *
  * A reader takes a file with the column and a file without it; a file written
  * without it ends at the previous column.
  */
 #define LOG_WRITER_SRC_MEASURED "measured"
 #define LOG_WRITER_SRC_MODEL    "model"  /**< the last column of a row the panel's model produced */
+#define LOG_WRITER_SRC_NODE     "node"   /**< the last column of a row with the power node's INA228 figures */
 
 /**
  * @brief Sets up a writer on a sink.

@@ -855,6 +855,9 @@ SCREENS = {
     # SETUP > WIRELESS on the DIAL entry: the Dial linked, two found by a
     # scan, the first bound.
     "setup-wireless-dial": ("setup-wireless-dial.png", "setup", "dark"),
+    # SETUP > WIRELESS on the POWER NODE entry: the node connected, INA228
+    # SOURCE NODE, one node found and bound, its cell at 3.92V.
+    "setup-wireless-pnode": ("setup-wireless-pnode.png", "setup", "dark"),
     # RUDDER AUTO: SAFE on the bench's outputs, READY's PORT row red; its
     # SETTINGS list; on the rbmod carrier SAFE with the hold offered, the
     # ARM + START sequence waiting for the PROG 5V, and its read-back
@@ -946,6 +949,7 @@ FIT_ONLY = {
     "help-setup-sensors-2": (None, "setup", "dark"),
     "help-setup-wireless-imu": (None, "setup", "dark"),
     "help-setup-wireless-dial": (None, "setup", "dark"),
+    "help-setup-wireless-pnode": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),
     "help-outputs-port": (None, "outputs", "dark"),
     "help-outputs-port-2": (None, "outputs", "dark"),

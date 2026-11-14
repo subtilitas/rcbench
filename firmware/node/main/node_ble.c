@@ -189,7 +189,7 @@ static void advertise(void)
     uint8_t ad[RCNODE_ADV_LEN];
     uint8_t rsp[RCNODE_RSP_LEN];
     const size_t n_ad = rcnode_adv_build(s_role, s_addr, ad, sizeof ad);
-    const size_t n_rsp = rcnode_rsp_build(rsp, sizeof rsp);
+    const size_t n_rsp = rcnode_rsp_build(s_role, s_addr, rsp, sizeof rsp);
     int rc = ble_gap_adv_set_data(ad, (int)n_ad);
     if (rc == 0) {
         rc = ble_gap_adv_rsp_set_data(rsp, (int)n_rsp);
@@ -391,6 +391,7 @@ void node_ble_status(rcnode_status_t *s)
     if (atomic_load(&s_linked)) {
         ble_gatts_chr_updated(s_h_status);
     }
+    node_ble_stream(b, sizeof b);
 }
 
 bool node_ble_linked(void)

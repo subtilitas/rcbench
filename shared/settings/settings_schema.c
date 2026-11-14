@@ -579,4 +579,18 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
     [SET_DIAL_SRV] = {
         "dial_srv", "",
         SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 1, ENUM_OPTS(dial_srv) },
+    /*
+     * The power node (pnode_ctl.h, docs/Nodes.md): ON starts Bluetooth LE
+     * and connects the bound node.  INA228 SOURCE says whose INA228 feeds
+     * MOTOR & ESC's voltage, current and totals: WIRED the IOmcu's part,
+     * NODE the power node's readings over Bluetooth LE.  NODE feeds no
+     * protection; a run then ends on the node's dropouts as servo_gap.h
+     * says (pnode_meter.h).
+     */
+    [SET_PNODE_EN] = {
+        "pnode_en", "",
+        SET_CAT_WIRELESS, SET_TYPE_BOOL, 0, 1, 1, 0, NULL, 0 },
+    [SET_I228_SRC] = {
+        "i228_src", "",
+        SET_CAT_WIRELESS, SET_TYPE_ENUM, 0, 0, 1, 0, ENUM_OPTS(i228_src) },
 };

@@ -141,6 +141,13 @@ typedef struct {
     float    throttle_pct;
     /** @brief throttle_pct is set; false on a row of a window alone. */
     bool     throttle_ok;
+    /**
+     * @brief The INA228 figures (LINK_BN_SENSED) are the power node's, over
+     *        Bluetooth LE, not the IOmcu's wired part: INA228 SOURCE is
+     *        NODE (pnode_reading_bench()).  The log's source column says
+     *        so.  Not on the wire.
+     */
+    bool     from_node;
 } bench_state_t;
 
 /**

@@ -100,8 +100,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `vibe` · `rcnode` · `dial` | | | yes |
-| `bleuart` · `dialknob` | yes | | yes |
+| `hc05` · `vibe` · `dial` | | | yes |
+| `bleuart` · `dialknob` · `rcnode` | yes | | yes |
 
 ## Toolchains
 

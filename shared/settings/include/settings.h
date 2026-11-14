@@ -237,6 +237,9 @@ typedef enum {
     SET_DIAL_EN,
     SET_DIAL_THR,
     SET_DIAL_SRV,
+    /* --- the power node (SETUP > WIRELESS > POWER NODE, pnode_ctl.h) ---- */
+    SET_PNODE_EN,
+    SET_I228_SRC,
 
     SETTING_COUNT
 } setting_id_t;
@@ -282,6 +285,10 @@ typedef enum {
     SET_TEXT_DIAL_ADDR,      /**< the bound Dial's BLE address and its
                                   type; key dial_ble                      */
     SET_TEXT_DIAL_NAME,      /**< its name from the scan, "DIAL-3A10"    */
+    SET_TEXT_PNODE_ADDR,     /**< the bound power node's BLE address and
+                                  its type; key pnode_ble                 */
+    SET_TEXT_PNODE_NAME,     /**< its name from the scan,
+                                  "rcbench-pwr-3456"                      */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 
@@ -378,12 +385,13 @@ void settings_set_armed(settings_armed_fn fn);
  * @brief Whether @p id changes on a SAFE bench only: held while the
  *        source settings_set_armed() installed says ARMED, as the throttle
  *        endpoints on MOTOR & ESC > SETTINGS are locked while ARMED.
- *        Screen rotation, which moves every control under the finger, and
- *        the PD mini's wiring, whose change switches off the supply an
- *        ARMED servo may run from.
+ *        Screen rotation, which moves every control under the finger, the
+ *        PD mini's wiring, whose change switches off the supply an ARMED
+ *        servo may run from, and INA228 SOURCE, whose change would swap
+ *        a run's readings and its dropout rule under it.
  * @param id The setting.
- * @return True for SET_SCREEN_ROT, SET_PDMINI_EN, SET_PDMINI_TX, SET_PDMINI_RX
- *         and SET_PDMINI_BAUD.
+ * @return True for SET_SCREEN_ROT, SET_PDMINI_EN, SET_PDMINI_TX, SET_PDMINI_RX,
+ *         SET_PDMINI_BAUD and SET_I228_SRC.
  */
 bool settings_safe_only(setting_id_t id);
 

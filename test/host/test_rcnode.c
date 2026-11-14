@@ -743,8 +743,8 @@ TEST_CASE(the_advertising_has_its_bytes_and_matches_its_role)
     static const uint8_t addr[6] = { 0x56, 0x34, 0x12, 0xA1, 0xDF, 0x7C };
     static const uint8_t want[29] = {
         0x02, 0x01, 0x06,
-        0x11, 0x09, 'r', 'c', 'b', 'e', 'n', 'c', 'h', '-', 'p', 'w', 'r',
-        '-', '3', '4', '5', '6',
+        0x11, 0x07, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x01, 0x00,
+        0x68, 0x63, 0x6E, 0x65, 0x62, 0x63, 0x72,
         0x07, 0xFF, 0xFF, 0xFF, 'r', 'c', 0x01, 0x01,
     };
     uint8_t ad[31];
@@ -761,16 +761,29 @@ TEST_CASE(the_advertising_has_its_bytes_and_matches_its_role)
     CHECK(rcnode_adv_match(ad, 29, &role));
     CHECK_EQ(role, RCNODE_ROLE_BALANCE);
 
-    uint8_t rsp[18];
-    CHECK_EQ(rcnode_rsp_build(rsp, sizeof rsp), 18);
-    CHECK_EQ(rsp[0], 17);
-    CHECK_EQ(rsp[1], 0x07);
-    CHECK_EQ(rsp[17], 0x72);
-    CHECK_EQ(rsp[8], 0x00);
-    CHECK_EQ(rsp[9], 0x01);
-    CHECK(rcnode_adv_match(rsp, 18, &role));
+    /* the service UUID alone, as a report cut after it, matches with no
+     * role, in a complete list and in an incomplete one */
+    CHECK(rcnode_adv_match(want, 21, &role));
     CHECK_EQ(role, 0);
-    CHECK_EQ(rcnode_rsp_build(rsp, 17), 0);
+    uint8_t some[18];
+    memcpy(some, want + 3, sizeof some);
+    some[1] = 0x06u;
+    role = 99u;
+    CHECK(rcnode_adv_match(some, sizeof some, &role));
+    CHECK_EQ(role, 0);
+
+    static const uint8_t want_rsp[18] = {
+        0x11, 0x09, 'r', 'c', 'b', 'e', 'n', 'c', 'h', '-', 'p', 'w', 'r',
+        '-', '3', '4', '5', '6',
+    };
+    uint8_t rsp[18];
+    CHECK_EQ(rcnode_rsp_build(RCNODE_ROLE_POWER, addr, rsp, sizeof rsp), 18);
+    CHECK(same_bytes(rsp, want_rsp, 18));
+    CHECK(rcnode_adv_match(rsp, 18, &role));
+    CHECK_EQ(role, RCNODE_ROLE_POWER);
+    CHECK_EQ(rcnode_rsp_build(RCNODE_ROLE_POWER, addr, rsp, 17), 0);
+    CHECK_EQ(rcnode_rsp_build(0u, addr, rsp, sizeof rsp), 0);
+    CHECK_EQ(rcnode_adv_build(RCNODE_ROLE_POWER, NULL, ad, sizeof ad), 0);
 }
 
 TEST_CASE(a_name_alone_matches_and_other_devices_do_not)
@@ -813,6 +826,16 @@ TEST_CASE(a_name_alone_matches_and_other_devices_do_not)
     CHECK_EQ(role, RCNODE_ROLE_POWER);
 }
 
+TEST_CASE(a_name_gives_its_role)
+{
+    CHECK_EQ(rcnode_name_role("rcbench-pwr-3456"), RCNODE_ROLE_POWER);
+    CHECK_EQ(rcnode_name_role("rcbench-bal-A00F"), RCNODE_ROLE_BALANCE);
+    CHECK_EQ(rcnode_name_role("rcbench-pwr"), 0);
+    CHECK_EQ(rcnode_name_role("DIAL-3A10"), 0);
+    CHECK_EQ(rcnode_name_role(""), 0);
+    CHECK_EQ(rcnode_name_role(NULL), 0);
+}
+
 TEST_CASE(a_length_past_the_end_refuses_the_report_and_padding_ends_it)
 {
     static const uint8_t cut[] = {
@@ -842,7 +865,8 @@ TEST_CASE(a_null_argument_does_nothing)
     CHECK_EQ(rcnode_enc_status(NULL, b, sizeof b), 0);
     CHECK_EQ(rcnode_enc_info(NULL, b, sizeof b), 0);
     CHECK_EQ(rcnode_enc_ctl(NULL, b, sizeof b), 0);
-    CHECK_EQ(rcnode_rsp_build(NULL, 18), 0);
+    CHECK_EQ(rcnode_rsp_build(RCNODE_ROLE_POWER, NULL, b, 18), 0);
+    CHECK_EQ(rcnode_rsp_build(RCNODE_ROLE_POWER, b, NULL, 18), 0);
     rcnode_status_t s;
     memset(&s, 0, sizeof s);
     CHECK_EQ(rcnode_enc_status(&s, NULL, 20), 0);
@@ -889,6 +913,7 @@ int main(void)
     RUN(the_name_takes_the_two_address_bytes_printed_last);
     RUN(the_advertising_has_its_bytes_and_matches_its_role);
     RUN(a_name_alone_matches_and_other_devices_do_not);
+    RUN(a_name_gives_its_role);
     RUN(a_length_past_the_end_refuses_the_report_and_padding_ends_it);
     RUN(a_null_argument_does_nothing);
     return test_summary("rcnode");

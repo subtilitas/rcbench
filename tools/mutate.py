@@ -73,6 +73,7 @@ REPO = pathlib.Path(__file__).resolve().parent.parent
 # What the host build reads: the code under test, the suite, the
 # IOmcu's pin header, PIO program and sources, which tests read or
 # compile, the panel's storage component, which test_storage compiles, the
+# node firmware's decisions, which test_node_policy compiles, the
 # touch injector's core, which the host build compiles and tests, and the
 # profile generator, which the esc_parity test holds the card reader to.
 COPIED = ("shared", "protocols", "test/host", "firmware/iomcu",

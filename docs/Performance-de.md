@@ -437,7 +437,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU und des Dial aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`) | 4 096 | 1 808 | 1 248 |
+| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und des Leistungsknotens aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -759,7 +759,7 @@ Freier PSRAM beim Start: nicht gemessen.
 Auch Bluetooth LE (Low Energy) läuft auf dem C6; der P4 betreibt seinen Host,
 NimBLE ([Der Funk über den ESP32-C6, Bluetooth LE über den
 ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)). Der Host startet
-mit `panel_ble_start()`, das die Seiten der IMU und des Dials im Task `blec` beim ersten IMU EIN oder Dial EIN und `ble scan`
+mit `panel_ble_start()`, das die Seiten der IMU, des Dials und des Leistungsknotens im Task `blec` beim ersten IMU EIN, Dial EIN oder Leistungsknoten EIN und `ble scan`
 des Konsolen-Builds aufrufen, und bleibt bis zum Neustart des Panels. Der Start protokolliert den freien
 Speicher davor und danach:
 
@@ -796,7 +796,12 @@ weil die IMU und das Dial ihn starten:
 Die Zeile der Konsole ist ohne den Client des Dials gemessen (`panel_dial.c`,
 `dial_ctl.c`, `dial_stream.c`, `dial_panel.c` und `protocols/dialknob`); mit
 ihm nicht gemessen. Der Client des Dials fügt dem Standard-Build 4 376 Bytes
-DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image.
+DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image. Der Client
+des Leistungsknotens, nur seine Objekte (`panel_pnode.c`, `pnode_ctl.c`,
+`pnode_meter.c`, `wireless_pnode.c` und `protocols/rcnode`), fügt 3 869
+Bytes DIRAM hinzu, davon 3 861 Bytes .bss, und 11 748 Bytes Image
+(`esp_idf_size --files`); seine Texte und seine Aufrufe in anderen Dateien
+sind nicht gezählt.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
 Verbindungen fügen dem Standard-Build mit einer Verbindung 3 704 Bytes

@@ -134,7 +134,11 @@ static ui_text_id_t entry_text(int pane, int e)
     if (pane != STG_PANE_WIRELESS) {
         return TX_HG_SET_ENTRY;
     }
-    return (e == WL_ENTRY_DIAL) ? TX_HG_SET_ENTRY_DIAL : TX_HG_SET_ENTRY_IMU;
+    switch (e) {
+    case WL_ENTRY_DIAL:  return TX_HG_SET_ENTRY_DIAL;
+    case WL_ENTRY_PNODE: return TX_HG_SET_ENTRY_PNODE;
+    default:             return TX_HG_SET_ENTRY_IMU;
+    }
 }
 
 /**

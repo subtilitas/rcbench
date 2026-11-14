@@ -62,6 +62,8 @@ static const struct {
     [SET_TEXT_IMU_NAME]     = { "imu_name", "", SET_CAT_COUNT },
     [SET_TEXT_DIAL_ADDR]    = { "dial_ble", "", SET_CAT_COUNT },
     [SET_TEXT_DIAL_NAME]    = { "dial_name", "", SET_CAT_COUNT },
+    [SET_TEXT_PNODE_ADDR]   = { "pnode_ble", "", SET_CAT_COUNT },
+    [SET_TEXT_PNODE_NAME]   = { "pnode_name", "", SET_CAT_COUNT },
 }; /**< the string settings' table */
 
 /** @brief The values, the copy the medium holds, the store and the hooks. */
@@ -201,7 +203,8 @@ void settings_set_armed(settings_armed_fn fn)
 bool settings_safe_only(setting_id_t id)
 {
     return id == SET_SCREEN_ROT || id == SET_PDMINI_EN || id == SET_PDMINI_TX
-           || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD;
+           || id == SET_PDMINI_RX || id == SET_PDMINI_BAUD
+           || id == SET_I228_SRC;
 }
 
 bool settings_held(setting_id_t id)
