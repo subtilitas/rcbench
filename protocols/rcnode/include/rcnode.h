@@ -706,9 +706,10 @@ void rcnode_run_step(rcnode_run_t *r, const rcnode_pwr_win_t *closed, int tag);
 #define RCNODE_COMPANY 0xFFFFu
 /** @brief A name: "rcbench-pwr-XXXX" + NUL. */
 #define RCNODE_NAME_MAX 17u
-/** @brief Advertising data the node sends, bytes: flags, name, manufacturer data. */
+/** @brief Advertising data the node sends, bytes: flags, the 128-bit service
+ *  UUID, manufacturer data. */
 #define RCNODE_ADV_LEN  29u
-/** @brief The scan response: the 128-bit service UUID. */
+/** @brief The scan response: the complete name. */
 #define RCNODE_RSP_LEN  18u
 
 /**
@@ -724,8 +725,13 @@ void rcnode_run_step(rcnode_run_t *r, const rcnode_pwr_win_t *closed, int tag);
 bool rcnode_name(uint8_t role, const uint8_t addr[6], char out[RCNODE_NAME_MAX]);
 
 /**
- * @brief The advertising data: flags 0x06, the complete name, and the
- * manufacturer data RCNODE_COMPANY, 'r', 'c', RCNODE_PROTO, role.
+ * @brief The advertising data: flags 0x06, the service's 128-bit UUID in a
+ * complete list, and the manufacturer data RCNODE_COMPANY, 'r', 'c',
+ * RCNODE_PROTO, role.
+ *
+ * The UUID travels in the advertising itself, as the M5Stack Dial's does: a
+ * central that scans with duplicate filtering lists the node from its first
+ * report, whether or not a scan response merges.
  *
  * @param role RCNODE_ROLE_*.
  * @param addr The address, least significant byte first.
@@ -737,13 +743,26 @@ size_t rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
                         size_t cap);
 
 /**
- * @brief The scan response: the service's 128-bit UUID in a complete list.
+ * @brief The scan response: the complete name (rcnode_name()).
  *
+ * @param role RCNODE_ROLE_*.
+ * @param addr The address, least significant byte first.
  * @param out Receives RCNODE_RSP_LEN bytes.
  * @param cap The buffer's size.
- * @return RCNODE_RSP_LEN, 0 for a small buffer or a NULL argument.
+ * @return RCNODE_RSP_LEN, 0 for an unknown role, a small buffer or a NULL
+ * argument.
  */
-size_t rcnode_rsp_build(uint8_t *out, size_t cap);
+size_t rcnode_rsp_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
+                        size_t cap);
+
+/**
+ * @brief The role a node's name names: "rcbench-pwr-" or "rcbench-bal-" at
+ * its start.
+ *
+ * @param name The name, NUL-terminated; NULL names none.
+ * @return RCNODE_ROLE_*, 0 for another name.
+ */
+uint8_t rcnode_name_role(const char *name);
 
 /**
  * @brief The role a report's advertising or scan response names: the
@@ -757,6 +776,19 @@ size_t rcnode_rsp_build(uint8_t *out, size_t cap);
  * for a structure whose length runs past the end.
  */
 bool rcnode_adv_match(const uint8_t *ad, size_t len, uint8_t *role);
+
+/**
+ * @brief The role a report's manufacturer data names, without the name's
+ * or the service UUID's fallback of rcnode_adv_match(): a scan lists a node
+ * by it, never by a name alone.
+ *
+ * @param ad The AD (advertising data) bytes.
+ * @param len Their count.
+ * @return RCNODE_ROLE_POWER or RCNODE_ROLE_BALANCE; 0 without the rcnode
+ * manufacturer data, for a structure whose length runs past the end, or
+ * for NULL.
+ */
+uint8_t rcnode_adv_maker_role(const uint8_t *ad, size_t len);
 
 #ifdef __cplusplus
 }

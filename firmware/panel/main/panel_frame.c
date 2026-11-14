@@ -36,6 +36,7 @@
 #include "balance_screen.h"
 #include "panel_bal.h"
 #include "panel_dial.h"
+#include "panel_pnode.h"
 #include "panel_imu.h"
 #include "panel_main.h"
 #include "panel_perf.h"
@@ -680,6 +681,7 @@ void panel_frame_loop(void)
                 .srv_tenths = dial_step_tenths(settings_get_int(SET_DIAL_SRV)),
             };
             panel_dial_frame(&dial_in);
+            panel_pnode_frame(armed || arm_wanted_now);
             /* The balance node: its view and commands, its report to the
              * screens, the blade count and a real rpm to its no-index
              * mode (a simulated bench's is none). */

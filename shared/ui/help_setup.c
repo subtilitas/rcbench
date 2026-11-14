@@ -135,9 +135,10 @@ static ui_text_id_t entry_text(int pane, int e)
         return TX_HG_SET_ENTRY;
     }
     switch (e) {
-    case WL_ENTRY_DIAL: return TX_HG_SET_ENTRY_DIAL;
-    case WL_ENTRY_BAL:  return TX_HG_SET_ENTRY_BAL;
-    default:            return TX_HG_SET_ENTRY_IMU;
+    case WL_ENTRY_DIAL:  return TX_HG_SET_ENTRY_DIAL;
+    case WL_ENTRY_PNODE: return TX_HG_SET_ENTRY_PNODE;
+    case WL_ENTRY_BAL:   return TX_HG_SET_ENTRY_BAL;
+    default:             return TX_HG_SET_ENTRY_IMU;
     }
 }
 

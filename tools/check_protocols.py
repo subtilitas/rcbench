@@ -384,6 +384,15 @@ ASSERTED = {
             "DK_LEN_INFO <= BLEU_PARAM_MAX",
             "DK_PKT_MAX <= BLEU_WRITE_MAX",
         ),
+        "shared/ui/pnode_ctl.c": (
+            "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
+            "RCNODE_PKT_MAX <= BLEU_EVT_DATA",
+            "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
+            "PNODE_BLE_OWNER < BLEU_OWNER_MAX",
+            "PNODE_ADDR_MAX == BLEU_ADDR_TEXT_MAX",
+            "PNODE_NAME_MAX == BLEU_NAME_MAX",
+            "PNODE_FOUND_MAX == BLEU_FOUND_MAX",
+        ),
         "shared/ui/bal_ctl.c": (
             "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
             "RCNODE_STATUS_LEN <= BLEU_EVT_DATA",
@@ -477,6 +486,13 @@ ASSERTED = {
         ),
     },
     "rcnode": {
+        # The panel's central keeps INFO whole, takes a packet in one event
+        # and writes a control in one write.
+        "shared/ui/pnode_ctl.c": (
+            "RCNODE_INFO_LEN <= BLEU_PARAM_MAX",
+            "RCNODE_PKT_MAX <= BLEU_EVT_DATA",
+            "RCNODE_CTL_MAX <= BLEU_WRITE_MAX",
+        ),
         # The panel's client keeps INFO and STATUS whole, takes a report in
         # one event and a CONTROL write in one write.
         "shared/ui/bal_ctl.c": (

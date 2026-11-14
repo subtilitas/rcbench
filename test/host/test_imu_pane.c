@@ -70,8 +70,9 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
             CHECK(settings_screen_row_of(SET_CAT_WIRELESS, i) >= 0);
         }
     }
-    /* The IMU's 7, the Dial's 3 and the balance node's 2. */
-    CHECK_EQ(n, 12);
+    /* The IMU's 7, the Dial's 3, the power node's 2 and the balance
+     * node's 2. */
+    CHECK_EQ(n, 14);
     /* SENSORS holds no IMU row: 65 less the IMU's 7. */
     CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 96), 58);
 }

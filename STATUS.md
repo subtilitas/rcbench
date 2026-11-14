@@ -1199,6 +1199,33 @@ and the control task's side (`firmware/panel/main/panel_dial.c`,
 `panel_supply.c`). Navigation from the Dial is not built. The battery's
 reading pin is unknown; the encoder's direction is not measured.
 
+### The power node on the panel
+
+Built and host-tested, not run with a node: the panel's side of the power
+node ([docs/Nodes.md](docs/Nodes.md), "The panel"). The controller on the
+panel's Bluetooth LE hub, owner 2 (`shared/ui/pnode_ctl.c`,
+`test_pnode_ctl` against a scripted host stack and node: the profile's
+UUIDs, INFO's protocol, role and INA228 set-up, UP, STALE after 300ms and
+LOST, the scan refused while ARMED and stopped at the switch to ARMED,
+power nodes listed by the role in the manufacturer data and nameless
+balance nodes not, the bind, the RUN marker at the switch to ARMED, after a
+drop within the run and after a node restart under another tag). The readings
+(`shared/ui/pnode_meter.c`, `test_pnode_meter`: the mean of the windows
+since the last read, stale after 300ms, a clipped window at the full scale
+of INFO's range and shunt, the run's peaks with the node's RUN extremes
+under its tag, the totals as differences of the 40-bit accumulators with
+the restart rule, the scaling against `ina228_calibrate()`, and the
+dropout rule of `servo_gap.h` at 299ms, 300ms and 301ms and a second gap
+9.9s and 10.1s after the first, for a motor run and not for a servo run,
+the totals baseline at 500ms and 501ms, and the ARM refusal with the node
+OFF or without a reading in the last 100ms). SETUP > WIRELESS > POWER NODE with
+INA228 SOURCE, which keeps its value while ARMED
+(`shared/ui/wireless_pnode.c`, `test_wireless_pnode`), the
+log's `node` source (`test_logwriter`), and the `blec` task's and the
+control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
+`panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
+measured.
+
 ### Phase tap (ESC tones)
 
 The detector (`protocols/phase_tap/tone.c`, `test_tone`) turns edge times into beeps and
@@ -1469,7 +1496,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 571 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 574 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1584,6 +1611,7 @@ The host suite is 571 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
 `test_bleuart_hub`, `test_bleuart_backoff`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`,
 `test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`,
@@ -2080,7 +2108,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-968 committed screenshots to the current render, 484 in English and the same 484 in German, and `render_ui.py --fit` fails on a string that
+970 committed screenshots to the current render, 485 in English and the same 485 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

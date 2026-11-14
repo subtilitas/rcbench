@@ -209,38 +209,6 @@ static void resort(bal_ctl_t *c, uint8_t i)
     }
 }
 
-/** @brief AD type of manufacturer specific data. */
-#define AD_MAKER 0xFFu
-/** @brief Its length after the type: company, 'r', 'c', protocol, role. */
-#define AD_MAKER_LEN 6u
-
-/**
- * @brief The role an advertising report's manufacturer data names.
- * @param ad  The AD structures.
- * @param len Their bytes.
- * @return The role byte of the rcnode manufacturer data (company
- *         RCNODE_COMPANY, 'r', 'c'); 0 without it or for a length past the
- *         end.
- */
-static uint8_t maker_role(const uint8_t *ad, size_t len)
-{
-    size_t i = 0u;
-    while (i < len && ad[i] != 0u) {
-        const size_t l = ad[i];
-        if (i + 1u + l > len) {
-            return 0u;
-        }
-        const uint8_t *d = ad + i + 2u;
-        if (ad[i + 1u] == AD_MAKER && l - 1u == AD_MAKER_LEN
-            && d[0] == (RCNODE_COMPANY & 0xFFu) && d[1] == (RCNODE_COMPANY >> 8)
-            && d[2] == (uint8_t)'r' && d[3] == (uint8_t)'c') {
-            return d[5];
-        }
-        i += 1u + l;
-    }
-    return 0u;
-}
-
 /**
  * @brief One advertising report during a scan.  A report whose
  *        manufacturer data names the balance role lists its device; a
@@ -270,7 +238,7 @@ static void take_adv(bal_ctl_t *c, const bleu_evt_t *e)
         }
         return;
     }
-    const uint8_t role = maker_role(e->data, e->len);
+    const uint8_t role = rcnode_adv_maker_role(e->data, e->len);
     if (role != RCNODE_ROLE_BALANCE) {
         uint8_t any = 0u;
         if (role != 0u || !rcnode_adv_match(e->data, e->len, &any)) {

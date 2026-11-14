@@ -352,7 +352,8 @@ static size_t adv_noname(uint8_t *out, uint8_t role)
 
 /* The scan lists the advertising of balance nodes, not of a power node or
  * another device; a scan response refreshes a listed node's RSSI and lists
- * none; the strongest is first; a bind takes one. */
+ * none; the node's own scan response names it; the strongest is first; a
+ * bind takes one. */
 TEST_CASE(the_scan_lists_balance_nodes_and_a_bind_takes_one)
 {
     brig_t r;
@@ -370,9 +371,13 @@ TEST_CASE(the_scan_lists_balance_nodes_and_a_bind_takes_one)
     CHECK_EQ(rcnode_adv_build(RCNODE_ROLE_POWER, a1, pwr, sizeof pwr),
              RCNODE_ADV_LEN);
     CHECK_EQ(rsp_uuid(rsp), 18u);
+    uint8_t named[RCNODE_RSP_LEN];
+    CHECK_EQ(rcnode_rsp_build(RCNODE_ROLE_BALANCE, a1, named, sizeof named),
+             RCNODE_RSP_LEN);
     const uint8_t other[] = { 2u, 0x01u, 0x06u, 4u, 0x09u, 'F', 'O', 'O' };
     adv(&r, 1u, -70, pwr, sizeof pwr);
     adv(&r, 2u, -60, bal, sizeof bal);
+    adv(&r, 2u, -60, named, sizeof named); /* its scan response names it */
     adv(&r, 3u, -80, other, sizeof other);
     adv(&r, 4u, -55, rsp, 18u);            /* a response, no listing */
     adv(&r, 5u, -75, bal, sizeof bal);

@@ -204,5 +204,3 @@ placement guides work without the node.
   and the fault log busy. A delete or a move of the file in the few ms of
   an append can lose that row; the line under ADD then says
   `Row NOT written` only when the write itself fails.
-- The balance node firmware sends STATUS on its own characteristic only,
-  not on STREAM: Node battery shows `--` with it.

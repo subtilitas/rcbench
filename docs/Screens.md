@@ -1253,13 +1253,15 @@ the switch arms no motor. It has two more columns before `source`:
 - The other columns of a SERVO file are a MOTOR file's, without
   `throttle`.
 
-`source` is `measured` for rows produced by a meter and `model` for rows
+`source` is `measured` for rows produced by a meter, `node` for rows whose
+INA228 figures come from the power node (INA228 source NODE,
+[WIRELESS: the power node](#wireless-the-power-node)), and `model` for rows
 produced by the panel's model (the SIMULATED mark). Supply files use the
-same final column. Files without it end at `ch3 voltage` or `energy`;
+same final column, without `node`. Files without it end at `ch3 voltage` or `energy`;
 LOGS and the tools read both forms. `source` is text and is never plotted.
 
-`ina voltage` and `ina current` come from the INA228 and are empty when it
-is not the source. `esc current` is the ESC's telemetry current, read from
+`ina voltage` and `ina current` come from the INA228, the IOmcu's or the
+power node's, and are empty when it is not the source. `esc current` is the ESC's telemetry current, read from
 the SENSE page when the INA228 is the source and the BENCH page otherwise.
 It is empty if the ESC reports no current or the panel models the bench.
 Any unmeasured quantity leaves an empty cell.
@@ -5136,7 +5138,7 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 - Four categories: PANEL, SENSORS, WIRELESS and SD CARD, the bench-wide
   settings. A tile names the number of settings its list shows; SENSORS'
-  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL`.
+  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL, POWER, BALANCE NODES`.
   A tap opens the category's list.
   The pack, motor and throttle-output settings are on
   MOTOR & ESC > OPTIONS
@@ -6061,9 +6063,10 @@ a run ([Servo procedures](Servo.md)).
 ### WIRELESS: the IMU and the Dial
 
 WIRELESS holds the panel's Bluetooth LE devices in a split view of
-SENSORS' kind: 3 entries on the left, IMU, DIAL and BALANCE NODE, each with
-its name and its state, and the selected entry's rows on the right. The
-first IMU ON, Dial ON or Balance node ON starts Bluetooth LE until the panel
+SENSORS' kind: 4 entries on the left, IMU, DIAL, BALANCE NODE and POWER
+NODE, each with its name and its state, and the selected entry's rows on
+the right. The first IMU ON, Dial ON, Power node ON or Balance node ON
+starts Bluetooth LE until the panel
 restarts.
 
 | Entry | State while on | Rows |
@@ -6071,6 +6074,7 @@ restarts.
 | IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 7 while on |
 | DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
 | BALANCE NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A NODE`, `CONNECTED, READING INFO`, `ROLE r, PROTOCOL p`, `CONNECTED, NO REPORT`, `REPORTING` | 1 while off; 5 while on |
+| POWER NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `NOT A POWER NODE`, `CONNECTED, NO READING`, `OTHER PROTOCOL n`, `INA228 SET-UP REFUSED`, `NO INA228 ON THE NODE`, `CONNECTED`, `NO READING FOR 300ms`, `NODE LOST` ([WIRELESS: the power node](#wireless-the-power-node)) | 2 while off: Power node and INA228 SOURCE; 5 while on |
 
 ![WIRELESS on the DIAL entry](img/setup-wireless-dial.png)
 
@@ -6090,6 +6094,52 @@ goes quiet, `DIAL LOST` when it is lost while SAFE, and
 `DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF` for the error
 while ARMED.
 
+### WIRELESS: the power node
+
+![WIRELESS on the POWER NODE entry](img/setup-wireless-pnode.png)
+
+The POWER NODE entry connects the INA228 power node
+([Sensor nodes](Nodes.md#the-panel)) and says whose INA228 feeds MOTOR &
+ESC's voltage, current, power and totals.
+
+| Row | Values | Default | What it does |
+| --- | --- | --- | --- |
+| Power node | ON, OFF | OFF | the link to the bound node; OFF ends it without an error |
+| INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, the bound one marked; a tap on one binds it and asks for a save. A balance node is not listed |
+| Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
+
+RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
+the bound node stays. The signal strength of a linked node is not shown:
+its STATUS carries none, and the found list's dBm are the scan's.
+
+With INA228 source on NODE:
+
+- The node's readings replace the INA228 figures while the IOmcu link is
+  up: `ina voltage`, `ina current` and the log's `source` column read
+  `node`. The ESC's own telemetry stays beside them.
+- A reading older than 300ms is none: voltage, current and power show as
+  not measured.
+- An ARM of MOTOR & ESC or ESC STICK is refused while Power node is OFF
+  or no reading came in the last 100ms; the band reads `Cannot switch to
+  ARMED: no power node readings. Set INA228 source WIRED or connect the
+  node.` SERVO's and OUTPUTS' arms read no INA228 and are not refused.
+- A MOTOR & ESC or ESC STICK run counts on the node. A gap without a
+  reading of up to 300ms rides, once in 10s. A longer gap, or a second one
+  within 10s of the first's start, is an error: SAFE, every output off, and
+  the band reads
+  `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`.
+  A SERVO or OUTPUTS run does not end on the node.
+- INA228 source does not change while ARMED: its row has no keys.
+- The node's readings feed no protection: the IOmcu's current limit and the
+  panel's trips read their own sensors.
+
+The band shows `POWER NODE: NO READING FOR 300ms` when a linked node stops
+sending readings, and `POWER NODE LOST` when the link drops while SAFE.
+
+### WIRELESS: the balance node
+
 ![WIRELESS on the BALANCE NODE entry](img/setup-wireless-bal.png)
 
 The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance-node)):
@@ -6099,7 +6149,7 @@ The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance
 | Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
 | Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
 | Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, the bound one marked; a tap on one binds it and asks for a save |
-| Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from its STATUS, read every 5s while linked; `--` before the first read on a link |
+| Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from the STATUS it sends on STREAM beside its reports; `--` before the first on a link |
 | Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
 
 RESET BALANCE NODE sets Balance node back to OFF and Trial mass to 0.50g;

@@ -861,6 +861,9 @@ SCREENS = {
     # SETUP > WIRELESS on the DIAL entry: the Dial linked, two found by a
     # scan, the first bound.
     "setup-wireless-dial": ("setup-wireless-dial.png", "setup", "dark"),
+    # SETUP > WIRELESS on the POWER NODE entry: the node connected, INA228
+    # SOURCE NODE, one node found and bound, its cell at 3.92V.
+    "setup-wireless-pnode": ("setup-wireless-pnode.png", "setup", "dark"),
     # SETUP > WIRELESS on the BALANCE NODE entry: the node reporting, two
     # found by a scan, the first bound, its cell at 3.91V.
     "setup-wireless-bal": ("setup-wireless-bal.png", "setup", "dark"),
@@ -955,6 +958,7 @@ FIT_ONLY = {
     "help-setup-sensors-2": (None, "setup", "dark"),
     "help-setup-wireless-imu": (None, "setup", "dark"),
     "help-setup-wireless-dial": (None, "setup", "dark"),
+    "help-setup-wireless-pnode": (None, "setup", "dark"),
     "help-setup-wireless-bal": (None, "setup", "dark"),
     "help-outputs-2": (None, "outputs", "dark"),
     "help-outputs-port": (None, "outputs", "dark"),

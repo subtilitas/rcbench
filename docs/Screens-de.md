@@ -1355,14 +1355,16 @@ zusätzliche Spalten:
 - Die übrigen Spalten einer SERVO-Datei sind die einer MOTOR-Datei, ohne
   `throttle`.
 
-`source` ist `measured` bei Zeilen mit Werten eines Messgeräts und `model`
+`source` ist `measured` bei Zeilen mit Werten eines Messgeräts, `node` bei
+Zeilen, deren INA228-Werte vom Leistungsknoten kommen (INA228-Quelle NODE,
+[WIRELESS: der Leistungsknoten](#wireless-der-leistungsknoten)), und `model`
 bei Zeilen aus dem Panelmodell (Markierung SIMULIERT). Netzteildateien
-haben dieselbe letzte Spalte. Dateien ohne diese Spalte enden bei
+haben dieselbe letzte Spalte, ohne `node`. Dateien ohne diese Spalte enden bei
 `ch3 voltage` oder `energy`. LOGS und die Werkzeuge lesen beide Formen;
 `source` ist eine Textspalte und wird nicht als Kurve dargestellt.
 
-`ina voltage` und `ina current` stammen vom INA228 und sind leer, wenn er
-nicht die Quelle ist. `esc current` ist der Telemetriestrom des ESC: aus
+`ina voltage` und `ina current` stammen vom INA228, dem des IOmcu oder dem
+des Leistungsknotens, und sind leer, wenn er nicht die Quelle ist. `esc current` ist der Telemetriestrom des ESC: aus
 der SENSE-Page, wenn der INA228 die Quelle ist, sonst aus der BENCH-Page.
 Die Zelle bleibt leer, wenn der ESC keinen Strom meldet oder das Panel den
 Prüfstand simuliert. Jede nicht gemessene Größe bleibt leer.
@@ -5600,7 +5602,7 @@ Zeile in der Schrift 10 x 20px.
 - PANEL, SENSORS, WIRELESS und SD CARD enthalten die Einstellungen für den
   gesamten Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer
   Liste; SENSORS nennt stattdessen die verfügbaren Gruppen,
-  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL, LEISTUNG, AUSWUCHTEN`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
@@ -6590,9 +6592,10 @@ Laufs ([Servoverfahren](Servo-de.md)).
 ### WIRELESS: die IMU und das Dial
 
 WIRELESS enthält die Bluetooth-LE-Geräte des Panels in einer geteilten
-Ansicht wie SENSORS: links 3 Einträge, IMU, DIAL und AUSWUCHTKNOTEN, jeder
-mit Namen und Zustand, rechts die Zeilen des gewählten Eintrags. Das erste
-IMU EIN, Dial EIN oder Auswuchtknoten EIN startet Bluetooth LE bis zum
+Ansicht wie SENSORS: links 4 Einträge, IMU, DIAL, AUSWUCHTKNOTEN und
+LEISTUNGSKNOTEN, jeder mit Namen und Zustand, rechts die Zeilen des
+gewählten Eintrags. Das erste IMU EIN, Dial EIN, Leistungsknoten EIN oder
+Auswuchtknoten EIN startet Bluetooth LE bis zum
 Neustart des Panels.
 
 | Eintrag | Zustand im Betrieb | Zeilen |
@@ -6600,6 +6603,7 @@ Neustart des Panels.
 | IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 7 bei EIN |
 | DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 5 bei EIN |
 | AUSWUCHTKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN KNOTEN`, `VERBUNDEN, LIEST INFO`, `ROLLE r, PROTOKOLL p`, `VERBUNDEN, KEIN BERICHT`, `BERICHTET` | 1 bei AUS; 5 bei EIN |
+| LEISTUNGSKNOTEN | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN KNOTEN GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `KEIN LEISTUNGSKNOTEN`, `VERBUNDEN, KEIN MESSWERT`, `ANDERES PROTOKOLL n`, `INA228-SETUP ABGELEHNT`, `KEIN INA228 AM KNOTEN`, `VERBUNDEN`, `300ms KEIN MESSWERT`, `KNOTEN VERLOREN` ([WIRELESS: der Leistungsknoten](#wireless-der-leistungsknoten)) | 2 bei AUS: Leistungsknoten und INA228-QUELLE; 5 bei EIN |
 
 ![WIRELESS auf dem DIAL-Eintrag](img/de/setup-wireless-dial.png)
 
@@ -6619,6 +6623,56 @@ ein verbundenes Dial verstummt, `DIAL VERLOREN`, wenn es bei SAFE verloren
 geht, und `DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`
 für den Fehler bei ARMED.
 
+### WIRELESS: der Leistungsknoten
+
+![WIRELESS auf dem LEISTUNGSKNOTEN-Eintrag](img/de/setup-wireless-pnode.png)
+
+Der LEISTUNGSKNOTEN-Eintrag verbindet den INA228-Leistungsknoten
+([Sensorknoten](Nodes-de.md#das-panel)) und legt fest, wessen INA228
+Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
+
+| Zeile | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Leistungsknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie ohne Fehler |
+| INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen sucht 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE` |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Leistungsknoten der letzten Suche, `rcbench-pwr-3456  -58dBm`, der gebundene markiert; Tippen auf einen bindet ihn und fragt nach dem Speichern. Ein Auswuchtknoten wird nicht gelistet |
+| Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
+
+LEISTUNGSKNOTEN ZURÜCKSETZEN setzt Leistungsknoten auf AUS und
+INA228-Quelle auf WIRED zurück; der gebundene Knoten bleibt. Die
+Signalstärke eines verbundenen Knotens wird nicht angezeigt: sein STATUS
+trägt keine, und die dBm der Trefferliste stammen aus der Suche.
+
+Mit INA228-Quelle auf NODE:
+
+- Die Messwerte des Knotens ersetzen die INA228-Werte, solange die
+  IOmcu-Verbindung steht: `ina voltage`, `ina current` und die Spalte
+  `source` des Logs zeigen `node`. Die eigene Telemetrie des ESC bleibt
+  daneben.
+- Ein Messwert, der älter als 300ms ist, gilt als keiner: Spannung, Strom
+  und Leistung erscheinen als nicht gemessen.
+- Ein ARM von MOTOR & ESC oder ESC STICK wird abgelehnt, solange
+  Leistungsknoten AUS ist oder in den letzten 100ms kein Messwert kam; das
+  Band zeigt `ARMED gesperrt: Leistungsknoten sendet nicht. INA228-Quelle
+  WIRED oder Knoten verbinden.` Die ARMs von SERVO und OUTPUTS lesen
+  keinen INA228 und werden nicht abgelehnt.
+- Ein Lauf von MOTOR & ESC oder ESC STICK zählt auf den Knoten. Eine Lücke
+  ohne Messwert von bis zu 300ms wird überbrückt, einmal in 10s. Eine
+  längere Lücke oder eine zweite innerhalb von 10s nach dem Beginn der
+  ersten ist ein Fehler: SAFE, alle Ausgänge aus, und das Band zeigt
+  `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`.
+  Ein SERVO- oder OUTPUTS-Lauf endet nicht am Knoten.
+- INA228-Quelle ändert sich bei ARMED nicht: ihre Zeile hat keine Tasten.
+- Die Messwerte des Knotens speisen keine Schutzfunktion: das Stromlimit
+  des IOmcu und die Abschaltungen des Panels lesen ihre eigenen Sensoren.
+
+Das Band zeigt `LEISTUNGSKNOTEN: 300ms KEIN MESSWERT`, wenn ein verbundener
+Knoten keine Messwerte mehr sendet, und `LEISTUNGSKNOTEN VERLOREN`, wenn die
+Verbindung bei SAFE abbricht.
+
+### WIRELESS: der Auswuchtknoten
+
 ![WIRELESS auf dem AUSWUCHTKNOTEN-Eintrag](img/de/setup-wireless-bal.png)
 
 Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-dem-auswuchtknoten)):
@@ -6628,7 +6682,7 @@ Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-de
 | Auswuchtknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie, und sein Verlust ist kein Fehler: der Knoten misst und steuert nichts |
 | Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen sucht 10s lang nach Knoten, die die Rolle Auswuchten anzeigen, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE` |
 | Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Knoten der letzten Suche, `rcbench-bal-3456  -58dBm`, den gebundenen markiert; Tippen auf einen bindet ihn und fragt nach dem Speichern |
-| Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus seinem STATUS, bei bestehender Verbindung alle 5s gelesen; `--` vor dem ersten Lesen einer Verbindung |
+| Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus dem STATUS, den er auf STREAM neben seinen Berichten sendet; `--` vor dem ersten auf einer Verbindung |
 | Testmasse | 0.01g bis 20.00g in Schritten von 0.01g | 0.50g | die Masse, die für die Testläufe von MOTOR & ESC > WUCHTEN aufgeklebt wird |
 
 AUSWUCHTKNOTEN ZURÜCKSETZEN setzt Auswuchtknoten auf AUS und Testmasse auf

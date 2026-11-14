@@ -223,5 +223,3 @@ Knoten.
   oder Verschieben der Datei in den wenigen ms eines Anhängens kann diese
   Zeile verlieren; die Zeile unter HINZU sagt dann nur `NICHT geschrieben`,
   wenn das Schreiben selbst fehlschlägt.
-- Die Firmware des Auswuchtknotens sendet STATUS nur auf der eigenen
-  Characteristic, nicht auf STREAM: Knotenakku zeigt damit `--`.

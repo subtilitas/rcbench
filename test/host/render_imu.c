@@ -12,6 +12,9 @@
  * setup-wireless-imu-off: WIRELESS on the IMU entry with the IMU off,
  * ANGLE SOURCE under it.  setup-wireless-dial: WIRELESS on the DIAL entry,
  * the Dial on and linked, a scan that found two Dials, the second bound.
+ * setup-wireless-pnode: WIRELESS on the POWER NODE entry, the node on and
+ * connected, INA228 SOURCE NODE, a scan that found one node, bound, its
+ * cell at 3.92V.
  * setup-wireless-bal: WIRELESS on the BALANCE NODE entry, the node on and
  * reporting, a scan that found two nodes, the first bound, its cell at
  * 3.91V.
@@ -121,6 +124,29 @@ static void pose_dial(void)
     settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_DIAL);
 }
 
+/** @brief WIRELESS on the POWER NODE entry: on, connected, NODE chosen,
+ *         one node found and bound, its cell at 3.92V. */
+static void pose_pnode(void)
+{
+    pnode_view_t p;
+    memset(&p, 0, sizeof(p));
+    p.link = PNODE_LINK_UP;
+    p.scan_done = true;
+    p.found_n = 1u;
+    snprintf(p.found[0].addr, sizeof(p.found[0].addr), "7C:DF:A1:12:34:56 P");
+    snprintf(p.found[0].name, sizeof(p.found[0].name), "rcbench-pwr-3456");
+    p.found[0].rssi = -58;
+    snprintf(p.bound_addr, sizeof(p.bound_addr), "%s", p.found[0].addr);
+    snprintf(p.bound_name, sizeof(p.bound_name), "%s", p.found[0].name);
+    p.proto = 1u;
+    p.have_status = true;
+    p.vbat_mv = 3920u;
+    settings_set(SET_PNODE_EN, 1.0f);
+    settings_set(SET_I228_SRC, 1.0f);
+    wireless_pane_set_pnode(&p);
+    settings_screen_open_on(SET_CAT_WIRELESS, WL_ENTRY_PNODE);
+}
+
 /**
  * @brief WIRELESS on the BALANCE NODE entry: the node on and reporting,
  *        two nodes found, the first bound, its cell at 3.91V.
@@ -156,6 +182,10 @@ void render_imu_pose(const char *view)
     }
     if (strcmp(view, "setup-wireless-dial") == 0) {
         pose_dial();
+        return;
+    }
+    if (strcmp(view, "setup-wireless-pnode") == 0) {
+        pose_pnode();
         return;
     }
     if (strcmp(view, "setup-wireless-bal") == 0) {

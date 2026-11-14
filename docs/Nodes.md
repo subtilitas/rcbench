@@ -9,8 +9,10 @@ The power node reads the INA228 of a MATEK I2C-INA-BM on the ESC's
 accelerometer axis and an index sensor and sends a balance report every
 250ms.
 
-The power node is a measurement, not a protection. No limit, trip or error
-path of the bench reads it, as none reads the wired INA228 today.
+The power node is a measurement, not a protection. No limit or trip of the
+bench reads it, as none reads the wired INA228. With INA228 SOURCE NODE a
+run ends on the node's dropouts as on any measurement sensor's
+([The panel](#the-panel)).
 
 Waveshare, MATEK, GERUI, Texas Instruments, Analog Devices and Vishay are
 names of their owners, and
@@ -32,6 +34,10 @@ the project's notice.
 | the ADC frames, the scale, the index and the demodulator, under the host suite | `shared/vibe` |
 | the power node's battery reading | `firmware/node/main/node_bat.c` |
 | the console | `firmware/node/main/node_console.c` |
+| the panel's central for the power node: scan, bind, INFO's check, the RUN marker, under the host suite | `shared/ui/pnode_ctl.c` |
+| the panel's readings, totals, peaks and dropout rule, under the host suite | `shared/ui/pnode_meter.c` |
+| SETUP > WIRELESS' POWER NODE entry | `shared/ui/wireless_pnode.c` |
+| the panel's `blec` task client and the control task's glue | `firmware/panel/main/panel_pnode.c` |
 
 ## The power node's parts
 
@@ -375,15 +381,16 @@ A shaker or a known imbalance on the owner's rig measures the scale.
 ## Bluetooth LE
 
 The node advertises as `rcbench-pwr-XXXX` or `rcbench-bal-XXXX`, the last two bytes of its address
-in hex, every 100ms while no link stands. The manufacturer data carries the
-role; the scan response carries the node service's UUID. One central at a
+in hex, every 100ms while no link stands. The advertising carries the node
+service's UUID and the manufacturer data with the role; the scan response
+carries the name. One central at a
 time, no pairing, no bonding. The node asks for an ATT (attribute protocol)
 MTU (maximum transmission unit) of 247 and for no connection parameters of
 its own.
 
 | Characteristic | Properties | Content |
 | --- | --- | --- |
-| STREAM | NOTIFY | power: windows every 20ms, accumulators and run extremes every 500ms; balance: a report every 250ms |
+| STREAM | NOTIFY | power: windows every 20ms, accumulators and run extremes every 500ms; balance: a report every 250ms; both: the STATUS packet every 1000ms |
 | STATUS | READ, NOTIFY | battery, flags, firmware version, counters, every 1000ms |
 | CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN with a tag of 1 to 255, SLEEP, OFF; BLADES (1 to 12) and RPM on the balance node |
 | INFO | READ | protocol, role, board, address, the INA228's set-up (0 on the balance node) |
@@ -397,6 +404,87 @@ drops the packet and counts it in STATUS's `dropped`. The stack would cut
 a longer notification without an error; the power node's packets are 20
 bytes, which fit the smallest MTU of 23, and the balance report is 24
 bytes, which needs 27.
+
+## The panel
+
+The panel connects to one power node as the third client of its Bluetooth
+LE hub, beside the IMU and the Dial (owner 2 of `protocols/bleuart`'s hub).
+SETUP > WIRELESS > POWER NODE holds its rows
+([Screens](Screens.md#wireless-the-power-node)). The first Power node ON
+starts Bluetooth LE until the panel restarts. The balance node is the
+fourth client, owner 3
+([Balancing](Balance.md#measuring-with-the-balance-node)).
+
+- **Scan and bind.** SCAN FOR NODE scans 10s and lists the devices whose
+  advertising names the node service and the power role in its
+  manufacturer data (`rcnode_adv_match()`, the name only where no
+  manufacturer data came). A balance node is not listed, named or not. A tap binds one by its address, kept in SETUP
+  (`pnode_ble`, `pnode_name`). A bound node is connected again after each
+  drop without a scan, 1000ms after the drop and on the hub's backoff
+  after a failed connect. A scan while ARMED is refused, and a scan that
+  runs is stopped at the switch to ARMED.
+- **The link.** The panel subscribes to STREAM and reads INFO once after
+  each subscribe. A node whose INFO names another protocol than 1, another
+  role than power, or an INA228 set-up that `ina228_calibrate()` does not
+  give for that shunt at that range's full scale sends nothing the panel
+  takes. The central subscribes to one characteristic, so the node sends
+  its STATUS packet on STREAM as well; the battery row reads it.
+- **The RUN marker.** At each switch to ARMED the panel writes RUN with the
+  run's tag, 1 to 255, to CONTROL. A link that is down then gets the write
+  when it comes back within the run. A link that comes back within the run
+  to a node whose first RUN packet carries another tag, a node that started
+  again, gets the write again.
+
+INA228 SOURCE (WIRED, NODE; WIRED by default) says whose INA228 feeds MOTOR
+& ESC. It changes only while SAFE: while ARMED its row has no keys and
+`settings_set()` and RESET leave it (`settings_safe_only()`). With NODE,
+after each read of the IOmcu's BENCH page:
+
+| Figure | From the node |
+| --- | --- |
+| voltage, current, power | the mean of the windows with the INA228 online that came since the last read, every 50ms; the last window's when none came; none once the last is older than 300ms |
+| a clipped current | a window whose every current sample sat at an end reads that end, the full scale at INFO's ADCRANGE and shunt (204.8A for the MATEK), marked clipped; a window with some clipped samples reads the mean of the rest, marked clipped |
+| lowest voltage, highest current, highest power | since the switch to ARMED: the windows' extremes and the node's RUN extremes under the run's tag, which hold the windows the radio lost |
+| charge, energy | differences of the 40-bit accumulators with CHARGE_OK and ENERGY_OK, from the last packet before the switch to ARMED, up to 500ms before it; an epoch change or a fall in ENERGY adds the new counts from 0 (`rcnode_acc_restarted()`); the steps become µC and mJ with `ina228_charge_uc()` and `ina228_energy_mj()` |
+| the ESC's telemetry | BENCH's own voltage and current, which are the ESC's while the IOmcu's INA228 is not the source, move to the ESC's figures |
+
+A run without an accumulator packet in the 500ms before the switch to
+ARMED has no node totals: the panel counts charge and energy from the
+readings. Totals older than 1500ms lose their mark, and the panel counts
+from the readings while they are absent.
+
+**The switch to ARMED.** With NODE, an ARM of MOTOR & ESC or ESC STICK,
+whose runs read BENCH, is refused while POWER NODE is OFF or no reading
+came in the last 100ms. The band reads `Cannot switch to ARMED: no power
+node readings. Set INA228 source WIRED or connect the node.` The refusal
+sits with the panel's other arm refusals (`drain_commands()`), so every
+path that arms the throttle meets it. SERVO's and OUTPUTS' arms read no
+INA228 and are not refused for the node.
+
+**Dropouts.** A run counts on the node when it reads BENCH, MOTOR & ESC or
+ESC STICK, with NODE. A SERVO or OUTPUTS run counts none. In such a run, no
+reading for more than 100ms opens a dropout dated from the last reading,
+not before the run's start, and the next reading closes it. The rule is
+the one of every measurement sensor (`servo_gap.h`): a dropout of up to
+300ms rides, once in 10s; a longer one, or a second one that starts within
+10s of the first's start, is an error: SAFE and every output off, with
+`POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`
+in the band. While WIRED the node's link ends nothing.
+
+The dropout times are the `blec` task's processing times: a window counts
+when the task takes its notification, every 5ms, not when the node closed
+it. The delay from the node's window to the task is not measured.
+
+The panel's console prints the link's changes and, once a second while
+linked, a line tagged `node`:
+
+```
+I (52120) node: 50 windows in 1000ms, 2214 readings, 55 packets, lost 0 bad 0 unread 0, restarts 0, cell 3920mV, runs 1, 0 events dropped
+```
+
+The bench log names the source: `source` reads `node` on a row whose INA228
+figures are the node's, and `ina voltage` and `ina current` hold them
+([Screens](Screens.md#table-and-what-the-esc-says)).
 
 ## Building and flashing
 
@@ -492,10 +580,13 @@ this start`.
 
 ## Current limitations
 
-- The panel connects to the balance node (SETUP > WIRELESS,
-  [Balancing](Balance.md#measuring-with-the-balance-node)). It does not
-  connect to the power node; a phone's BLE scanner shows its service and
-  its stream.
+- The panel connects to the power node and to the balance node (SETUP >
+  WIRELESS, [Balancing](Balance.md#measuring-with-the-balance-node)).
+- The panel shows no signal strength of a linked node. STATUS carries
+  none; the found list shows the scan's dBm.
+- The node's readings reach MOTOR & ESC only while the IOmcu link is up:
+  with the link down, the panel's model runs.
+- The latency from a node's window to the panel's read is not measured.
 - No node has run on hardware: the boards are ordered, not delivered. The
   pins, the wake, the currents and the CD42's behaviour are not measured.
 - The CD42's light-load auto-shutdown threshold is not known (above).
