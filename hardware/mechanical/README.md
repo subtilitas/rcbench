@@ -215,8 +215,8 @@ file.
 | Socket of the radio's serial port, 4 pins, 1.0 pitch, top entry | 6.35 x 3.05 x 4.5 | E, P |
 | USB Type-A socket | 12.2 x 10.0 x 5.7, 0.6 above the board | E, P |
 | 2 USB Type-C sockets | 8.94 x 7.35 x 3.16 | E |
-| Shield can over the ESP32-P4 | 21.3 x 17.0 x 2.6 | P; height estimated |
-| Coin-cell holder | 15.4 across, 4.3 tall | P; height estimated |
+| Shield can over the ESP32-P4 | 21.3 x 17.0 x 1.9 | P, Q |
+| Coin-cell holder | 15.4 across, 3.8 tall | P, Q |
 | microSD card slot | 16.1 x 15.0 x 1.85 | E |
 | 326 chip parts, 33 leaded packages, 89 further solids | as measured | E |
 
@@ -237,8 +237,11 @@ Sources:
   the holes of the 4 standoffs at 7.35 pixels per mm, with 1.1 pixels left at
   each. A position read from it is good to 0.3mm.
 - **Q**: Waveshare's angled photo of the rear,
-  `esp32-p4-wifi6-touch-lcd-7b-5.jpg`, for the height of the wire sockets
-  against the 6.0mm standoffs: 5.5mm +- 0.5mm.
+  `esp32-p4-wifi6-touch-lcd-7b-5.jpg`, for heights against the 6.0mm
+  standoffs, each +- 0.5mm: the wire sockets 5.5mm, the coin-cell holder
+  3.8mm, the shield can 1.9mm.
+- **N**: the nominal height of the ESP32-P4's package, 0.9mm. E draws it
+  2.0mm high, which the shield can does not clear.
 - **S**: Waveshare's schematic of the board, a PDF file of 2025-09-25, for
   the parts' names.
 
@@ -259,16 +262,16 @@ caps, a leaded package as a body and one lead a foot, a connector as its
 shape of `_parts.py`, every other solid as its box. `check_panel_7b.py`
 compares the result with E, component by component: no side of a chip part
 is off by more than 0.04mm, of a leaded package by more than 0.01mm, of a
-box by more than 0.00mm, and of a connector by more than 0.90mm, where a
-shape of `_parts.py` has its own nominal size. It needs E and is not run in
+box by more than 0.00mm, and of a named part by more than 1.10mm: a
+connector, where a shape of `_parts.py` has its own nominal size, by 0.90mm,
+and the ESP32-P4, drawn 0.9mm high where E draws 2.0mm, by 1.10mm. It needs E and is not run in
 CI (continuous integration). `check_overlap.py` runs in CI: no two of the
 1497 solids share more than 1e-6mm3.
 
 Limits:
 
 - No dimension is verified with a caliper on a board.
-- Estimated, in no source: the heights of the shield can and of the
-  coin-cell holder, the wall thickness of the connectors, the plungers of the
+- Estimated, in no source: the wall thickness of the connectors, the plungers of the
   2 buttons, the flat cables' paths through the board's slots, the display as
   a steel back 0.3mm thick with a black panel in it.
 - The row of pins of the two 12-pin sockets lies 0.5mm off the housing's

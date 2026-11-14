@@ -3,7 +3,7 @@
 A facsimile for designing the enclosure: the cover glass, the display,
 the board with its cut-outs, the 4 standoffs, the two flat cables and
 every part on the board. It is not Waveshare's file. The dimensions
-come from five sources, all mm:
+come from six sources, all mm:
 
 - D: Waveshare's outline drawing of the board, a PDF of 2025-11-08 in
   ESP32-P4-WIFI6-Touch-LCD-7B-3D.zip on the board's wiki page
@@ -23,8 +23,11 @@ come from five sources, all mm:
   7 top-entry wire sockets of 2.0 pitch, whose pins it shows end on,
   the shield can over the ESP32-P4 and the coin-cell holder.
 - Q: Waveshare's angled photo of the rear
-  (esp32-p4-wifi6-touch-lcd-7b-5.jpg), for the height of the wire
-  sockets against the 6.0 standoffs: 5.5 +- 0.5.
+  (esp32-p4-wifi6-touch-lcd-7b-5.jpg), for heights against the 6.0
+  standoffs, each +- 0.5: the wire sockets 5.5, the coin-cell holder
+  3.8, the shield can 1.9.
+- N: the nominal height of the ESP32-P4's package, 0.9; E draws it 2.0
+  high, which the shield can does not clear.
 - S: Waveshare's schematic of the board, a PDF of 2025-09-25, for the
   parts' names.
 
@@ -43,8 +46,7 @@ from its measured box: chip parts with their end caps, leaded packages
 as a body and one lead a foot, the connectors as the shapes of
 _parts.py, every other solid as its box.
 
-Estimated, in no source: the heights of the shield can (2.6) and of the
-coin-cell holder (4.3), the walls of the connectors, the plungers of
+Estimated, in no source: the walls of the connectors, the plungers of
 the two buttons (2.4 x 1.6), the flat cables' paths through the board's
 slots, the display as a steel back 0.3 thick with a black panel in it.
 
@@ -122,8 +124,9 @@ TOUCH_PARTS = (
 )
 CABLE_T = 0.15
 # From P: the shield can over the ESP32-P4 and the coin-cell holder.
-SHIELD = (47.7, 37.2, 69.0, 54.2, 2.6)
-HOLDER = (17.9, 85.7, 15.4, 4.3)        # centre, diameter, height
+SHIELD = (47.7, 37.2, 69.0, 54.2, 1.9)
+HOLDER = (17.9, 85.7, 15.4, 3.8)        # centre, diameter, height
+P4_H = 0.9              # height of the ESP32-P4's package (N); E draws 2.0
 # From P: the wire sockets, 2.0 pitch, top entry: pins, centre of the
 # housing, turn (the solder leads point to +y at turn 0), and the shift
 # of the row of pins along the housing. The 4 at the left edge are 14.9
@@ -323,8 +326,8 @@ def connectors():
     out += [box(x0, y0, x1, y1, 0.0, z1 - 0.1, p.WHITE),
             box(x0 + 0.42, y1 - 1.7, x1 - 0.46, y1, z1 - 0.1, z1, p.BLACK)]
     # The ESP32-P4 under its shield can, and the coin-cell holder.
-    x0, y0, z0, x1, y1, z1 = NAMED["p4"][0]
-    out.append(box(x0, y0, x1, y1, z0, z1, p.EPOXY))
+    x0, y0, z0, x1, y1, _z1 = NAMED["p4"][0]
+    out.append(box(x0, y0, x1, y1, z0, P4_H, p.EPOXY))
     x0, y0, x1, y1, height = SHIELD
     out += place(p.shield(x1 - x0, y1 - y0, height), (x0 + x1) / 2,
                  (y0 + y1) / 2)
