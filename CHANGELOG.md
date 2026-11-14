@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: STEP models of the INA228 current sensor module
+  with its two XT90PW connectors (`ina228_xt90.step`, 225 solids,
+  83.95mm x 48.6mm x 12.6mm) and of its printed case with 4 screws
+  (`ina228_xt90_case.step`), generated from `ina228_xt90.py`. The board is
+  measured from three photos on 5mm squared paper with `_photo_grid.py`,
+  which fits the paper's grid and corrects a size for its height over the
+  paper; the connectors follow a dimension drawing of XT90PW; the shunt is
+  1.2mm high at its ends and 1.8mm in the middle.
+  `_trace_ina228_print.py` traces the printed legends from the top photo.
+  `_solid.py` writes round rods along a path of lines and arcs as cylinders
+  and pieces of tori, used for the connectors' bent tails.
+  `check_overlap.py` checks the module together with its case
+  ([Mechanical parts](hardware/mechanical/README.md#ina228-module-with-xt90-connectors)).
 - `hardware/mechanical/`: a STEP model of the panel board, the Waveshare
   ESP32-P4-WIFI6-Touch-LCD-7B, generated from `panel_7b.py`: 164.28mm x
   99.18mm of glass, 15.1mm thick, 1497 solids. `_measure_step.py` measures
@@ -316,6 +329,11 @@ history is in git.
 
 ### Changed
 
+- KiCad module `INA228_BIFRC_XT90_80x48mm`: board 80.1mm x 48.6mm (was
+  79.9mm x 48.3mm), screw holes 70.15mm x 38.8mm apart (was 70.42mm x
+  38.58mm), header, bars, shunt, slots and connector outlines moved by up
+  to 1.2mm to their places in three photos on squared paper; 16 slots under
+  the connectors added to the fabrication drawing.
 - SETUP > WIRELESS: SCAN FOR DIAL and SCAN FOR NODE, on POWER NODE and
   BALANCE NODE, open the found list while they read `FOUND n`; in their
   other states a tap scans as before. The found list, from these rows and

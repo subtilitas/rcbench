@@ -6,7 +6,11 @@ surface and +z points away from it. All sizes are mm. Package sizes are
 the packages' nominal ones, not measured on a board.
 """
 
-from _solid import X, Y, box, circle, ext, place, rect, rounded, stadium
+import math
+
+from _solid import (
+    X, Y, box, circle, ext, pipe, place, rect, rounded, stadium,
+)
 
 TIN = (0.80, 0.80, 0.78)
 STEEL = (0.72, 0.72, 0.72)
@@ -18,6 +22,9 @@ CREAM = (0.92, 0.89, 0.80)
 WHITE = (0.95, 0.95, 0.93)
 GREY = (0.45, 0.45, 0.45)
 LENS = (0.95, 0.90, 0.60)
+YELLOW = (0.95, 0.75, 0.10)
+COPPER = (0.80, 0.48, 0.28)
+BRONZE = (0.66, 0.42, 0.24)
 
 
 def rows(n, pitch):
@@ -496,3 +503,162 @@ def coin_holder(diameter, height):
         box(-1.0, r, 1.0, r + 3.0, 0.0, 0.3, GOLD),
         box(-1.0, -r - 3.0, 1.0, -r, 0.0, 0.3, GOLD),
     ]
+
+
+def pin_header(pins, below=3.0, above=6.1):
+    """A straight 2.54 pitch pin header, one row along x.
+
+    The origin is the centre of the row on the board. The plastic is
+    2.5 high and 2.5 deep; each 0.64 square pin reaches ``below`` under
+    the board's surface and ``above`` over the plastic.
+    """
+    half, p = pins * 1.27, 0.32
+    xs = rows(pins, 2.54)
+    out = [ext(rect(-half, -1.25, half, 1.25), 0.0, 2.5, BLACK,
+               holes=[rect(x - p, -p, x + p, p) for x in xs])]
+    for x in xs:
+        out.append(box(x - p, -p, x + p, p, -below, 2.5 + above, GOLD))
+    return out
+
+
+def shunt(length, width, ends, element, top, gap, radius=0.5):
+    """A metal-strip current shunt, its length along x.
+
+    Args:
+        length: The footprint's length.
+        width: The footprint's width.
+        ends: Height of the two copper ends.
+        element: Length of the resistance strip between the ends.
+        top: Height of the strip's top over the board.
+        gap: Height of the strip's underside over the board.
+        radius: Radius of the upper edges across the shunt: the ends'
+            outer ones and the strip's two.
+    """
+    x, y, e, r = length / 2, width / 2, element / 2, radius
+    end = [(-x, 0.0), (-e, 0.0), (-e, ends),
+           (-x + r, ends, (-x + r, ends - r, 1)), (-x, ends - r)]
+    strip = [(-e, gap), (e, gap), (e, top - r, (e - r, top - r, 1)),
+             (e - r, top), (-e + r, top, (-e + r, top - r, 1)),
+             (-e, top - r)]
+    return [ext(end, -y, y, COPPER, frame=Y),
+            ext(strip, -y, y, BRONZE, frame=Y),
+            ext([(-u, v) if len(q) == 2 else (-u, v, (-q[2][0], q[2][1], -1))
+                 for q in end for u, v in [q[:2]]], -y, y, COPPER, frame=Y)]
+
+
+def vssop10():
+    """VSSOP-10: 3.0 x 3.0 body, 1.1 high, 0.5 pitch, 4.9 over the leads."""
+    return leaded(3.0, 3.0, 1.1, rows(5, 0.5), rows(5, 0.5), 4.9, 0.23)
+
+
+# XT90PW, the right-angle board version of the XT90, after a dealer's
+# dimension drawing: contact pitch, contact pin diameter, the round
+# tails' diameter and bend radius (both scaled from the drawing), the
+# tails' and pegs' length under the housing, the rear plate (length,
+# width, thickness), the pegs' distance from the tails (socket half,
+# pin half) and from the centre line.
+XT90_PITCH = 10.9
+XT90_PIN = 4.5
+XT90_TAIL = 3.5
+XT90_BEND = 3.8
+XT90_UNDER = 3.0
+XT90_PLATE = (5.0, 18.9, 1.1)
+XT90_PEG = (8.9, 9.4)
+XT90_PEG_Y = 9.45
+
+
+def _d_shape(y, z0, z1, cut, bevel):
+    """The XT90's mating outline in (y, z): two corners cut at one end."""
+    pts = [(-y, z0), (y - cut, z0), (y, z0 + cut), (y, z1 - cut),
+           (y - cut, z1), (-y, z1)]
+    return pts if bevel > 0 else [(-a, b) for a, b in pts]
+
+
+def _xt90_rear(top, peg, under):
+    """What both XT90PW have behind and under the housing.
+
+    The rear plate with its window, a wall at each side that slopes
+    from the housing's top to the plate, the two tails, which leave the
+    rear at mid-height and bend down through the plate, and the two
+    pegs.
+
+    Args:
+        top: Height of the housing.
+        peg: Distance of the pegs from the tails.
+        under: Length of the tails and pegs under the housing.
+    """
+    length, width, thick = XT90_PLATE
+    r, half, tail, mid = XT90_TAIL / 2, width / 2, -XT90_BEND, top / 2
+    reach = math.sqrt(r * r - (length + tail) ** 2)
+    turn = math.degrees(math.atan2(reach, -length - tail))
+    outline = [(0.0, -half), (0.0, half), (tail, half),
+               (-length, half - 1.15)]
+    for y in (XT90_PITCH / 2, -XT90_PITCH / 2):
+        for angle in (turn, 45.0, -45.0):
+            outline.append((tail + r * math.cos(math.radians(angle)),
+                            y + r * math.sin(math.radians(angle)),
+                            (tail, y, -1)))
+        outline.append((-length, y - reach))
+    outline += [(-length, -half + 1.15), (tail, -half)]
+    out = [ext(outline, 0.0, thick, YELLOW,
+               holes=[rect(-1.9, -1.5, -0.5, 1.5)])]
+    wall = [(0.0, thick), (0.0, top), (tail, thick)]
+    for a, b in ((half - 1.0, half), (-half, -half + 1.0)):
+        out.append(ext(wall, -b, -a, YELLOW, frame=Y))
+    path = [(0.0, mid, (0.0, mid - XT90_BEND, 1)), (tail, mid - XT90_BEND),
+            (tail, -under)]
+    for y in (XT90_PITCH / 2, -XT90_PITCH / 2):
+        out += place([pipe(path, r, GOLD, frame=Y)], y=y)
+    x = tail + peg
+    for y in (-XT90_PEG_Y, XT90_PEG_Y):
+        out.append(box(x - 0.5, y - 0.2, x + 0.5, y + 0.2, -under, 0.0, TIN))
+    return out
+
+
+def xt90pw_f(bevel=1, under=XT90_UNDER):
+    """XT90PW-F, the socket half, lying on the board; it mates at +x.
+
+    The origin is the centre of the housing's rear edge on the board.
+    Collar 20.8 wide, 9.9 high and 7.8 long, nose 19.2 x 8.3 and 11.2
+    long, a rear plate 5.0 long: 24.0 in all. The two tails end 3.8
+    behind the housing; the two pegs are 8.9 in front of the tails.
+
+    Args:
+        bevel: +1 for the nose's two cut corners at +y, -1 at -y.
+        under: Length of the tails and pegs under the housing.
+    """
+    top, sleeve = 9.9, XT90_PIN / 2 + 0.5
+    nose = _d_shape(9.6, 0.8, 9.1, 2.2, bevel)
+    out = [ext(rounded(-10.4, 0.0, 10.4, top, 0.8), 0.0, 7.8, YELLOW,
+               frame=X),
+           ext(nose, 7.8, 9.0, YELLOW, frame=X),
+           ext(nose, 9.0, 19.0, YELLOW, frame=X,
+               holes=[circle(y, top / 2, sleeve)
+                      for y in (-XT90_PITCH / 2, XT90_PITCH / 2)])]
+    for y in (-XT90_PITCH / 2, XT90_PITCH / 2):
+        out.append(ext(circle(y, top / 2, sleeve), 9.0, 18.5, GOLD, frame=X,
+                       holes=[circle(y, top / 2, XT90_PIN / 2)]))
+    return out + _xt90_rear(top, XT90_PEG[0], under)
+
+
+def xt90pw_m(bevel=1, under=XT90_UNDER):
+    """XT90PW-M, the pin half, lying on the board; it mates at +x.
+
+    The origin is the centre of the housing's rear edge on the board.
+    Housing 20.8 wide, 9.9 high and 20.7 long with a shroud 12.5 deep
+    round the two 4.5 pins; a rear plate 5.0 long: 25.7 in all. Tails
+    as XT90PW-F; the pegs are 9.4 in front of the tails.
+
+    Args:
+        bevel: +1 for the shroud's two cut corners at +y, -1 at -y.
+        under: Length of the tails and pegs under the housing.
+    """
+    top, floor, end = 9.9, 8.2, 20.7
+    section = rounded(-10.4, 0.0, 10.4, top, 0.8)
+    out = [ext(section, 0.0, floor, YELLOW, frame=X),
+           ext(section, floor, end, YELLOW, frame=X,
+               holes=[_d_shape(9.8, 0.6, 9.3, 2.2, bevel)])]
+    for p in (-XT90_PITCH / 2, XT90_PITCH / 2):
+        out.append(ext(circle(p, top / 2, XT90_PIN / 2), floor, end - 1.0,
+                       GOLD, frame=X))
+    return out + _xt90_rear(top, XT90_PEG[1], under)

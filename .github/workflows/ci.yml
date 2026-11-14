@@ -666,10 +666,11 @@ jobs:
           python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
           python3 hardware/kicad/tools/step_check.py
 
-      # The panel board's model is drawn part by part from measured boxes
-      # and from shapes of hardware/mechanical/_parts.py. Two parts that
-      # share volume are a part placed or sized wrongly.
-      - name: No two solids of the panel board's model share volume
+      # The models of the panel board and of the INA228 module in its case
+      # are drawn part by part from measured boxes and from shapes of
+      # hardware/mechanical/_parts.py. Two parts that share volume are a
+      # part placed or sized wrongly.
+      - name: No two solids of a model drawn part by part share volume
         run: python3 hardware/mechanical/check_overlap.py
 
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
