@@ -96,9 +96,9 @@ bool panel_ble_get(bleu_evt_t *out);
 
 /**
  * @brief Perform one action of a client's link (bleuart.h), as the hub
- *        passes it: a scan, a connect, a GATT step, a write.  Its answer comes as an event with
- *        its token; a call NimBLE refuses is answered at once with the
- *        refusal's status.  BLEU_ACT_CANCEL, BLEU_ACT_DISCONNECT and
+ *        passes it: a scan, a connect, a GATT step, a write.  Its answer
+ *        comes as an event with its token; a call NimBLE refuses is
+ *        answered at once with the refusal's status.  BLEU_ACT_CANCEL, BLEU_ACT_DISCONNECT and
  *        BLEU_ACT_SCAN_STOP are answered by NimBLE's events or not at all.
  *        A BLEU_ACT_WRITE_NR gets no event: its status is returned, for
  *        bleu_hub_written().
