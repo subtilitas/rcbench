@@ -223,8 +223,8 @@ firmware. A panel image carries the C6 firmware of its esp_hosted version,
 
 A C6 that refuses the update leaves `The C6 radio takes no update over
 SDIO. Flash it over header H4.`; it keeps its firmware and Wi-Fi works as
-before. The flash over header H4 is in [Building: Recovery over header
-H4](Building.md#recovery-over-header-h4). Whether the shipped C6 takes
+before. The flash over header H4 is in [The ESP32-C6 radio: Recovery over header
+H4](C6.md#recovery-over-header-h4). Whether the shipped C6 takes
 the update over SDIO, and how long it takes, is not measured.
 
 ### The SD card of 0.21.0 and older

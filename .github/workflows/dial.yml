@@ -1,0 +1,100 @@
+name: Dial image
+
+# The M5Stack Dial v1.1's firmware (firmware/dial): the wireless knob for
+# the panel, an ESP32-S3 with the dialknob BLE service.  Two builds: the
+# released image, and the test build whose USB console injects input
+# (RCBENCH_DIAL_HOOKS=ON, docs/Dial.md).  The released image holds none of
+# the hooks' code.
+#
+# Called by ci.yml and by release.yml, which publishes the released image.
+# Artifact "dial": rcbench-dial-<version>.bin, the application, and
+# rcbench-dial-merged-<version>.bin, bootloader, partition table and
+# application for 0x0 over USB; rcbench-dial-hooks-merged-<version>.bin,
+# the test build for 0x0.
+
+on:
+  workflow_call:
+    inputs:
+      ref:
+        description: 'The commit to build'
+        type: string
+        required: false
+        default: ''
+
+permissions:
+  contents: read
+
+jobs:
+  dial:
+    name: Dial image (ESP-IDF v6.1, ESP32-S3)
+    runs-on: ubuntu-26.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.ref || github.sha }}
+
+      # The one managed component, the GC9A01 driver, pinned by
+      # firmware/dial/dependencies.lock; fetched by the build otherwise.
+      - name: Restore the managed components
+        uses: actions/cache@v6
+        with:
+          path: firmware/dial/managed_components
+          key: dial-components-${{ hashFiles('firmware/dial/dependencies.lock') }}
+
+      # The checkout holds no sdkconfig, so the build generates one from
+      # sdkconfig.defaults.  The application's own files build with -Wextra
+      # and -Werror (firmware/dial/main/CMakeLists.txt).
+      - name: Build
+        uses: espressif/esp-idf-ci-action@v1
+        with:
+          esp_idf_version: v6.1
+          target: esp32s3
+          path: 'firmware/dial'
+          command: >-
+            idf.py build && idf.py merge-bin -o rcbench-dial-merged.bin
+            && idf.py -B build-hooks -D RCBENCH_DIAL_HOOKS=ON build
+            && idf.py -B build-hooks merge-bin -o rcbench-dial-merged.bin
+
+      # A build that rewrites the lock file resolved a version the commit
+      # does not pin.
+      - name: The build leaves the lock file as committed
+        run: git diff --exit-code firmware/dial/dependencies.lock
+
+      - name: The generated sdkconfig holds sdkconfig.defaults
+        run: >-
+          python3 tools/check_sdkconfig.py --check --project firmware/dial
+          --sdkconfig firmware/dial/sdkconfig
+
+      - name: Both images fit their update slot
+        run: |
+          python3 tools/image_slot.py firmware/dial/build rcbench-dial.bin
+          python3 tools/image_slot.py firmware/dial/build-hooks rcbench-dial.bin
+
+      # The symbol table names the injection when the hooks are built in.
+      - name: The hooks are in the test build only
+        run: |
+          grep -q -a dial_input_inject firmware/dial/build-hooks/rcbench-dial.elf
+          if grep -q -a dial_input_inject firmware/dial/build/rcbench-dial.elf; then
+            echo "::error::the released Dial image holds the console's hooks"
+            exit 1
+          fi
+
+      - name: Name the images by version
+        run: |
+          v=$(sed -n 's/^#define RCBENCH_VERSION_\(MAJOR\|MINOR\|PATCH\) \([0-9]*\).*/\2/p' \
+                shared/link/include/rcbench_version.h | paste -sd.)
+          mkdir -p dial-dist
+          cp firmware/dial/build/rcbench-dial.bin "dial-dist/rcbench-dial-$v.bin"
+          cp firmware/dial/build/rcbench-dial-merged.bin \
+             "dial-dist/rcbench-dial-merged-$v.bin"
+          cp firmware/dial/build-hooks/rcbench-dial-merged.bin \
+             "dial-dist/rcbench-dial-hooks-merged-$v.bin"
+          ls -l dial-dist
+          sha256sum dial-dist/*.bin
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: dial
+          path: dial-dist/*.bin
+          if-no-files-found: error

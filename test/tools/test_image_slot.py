@@ -91,7 +91,7 @@ def test_slots_of_two_sizes_fail_and_the_smaller_bounds_the_image():
 def test_main_reports_a_missing_build(tmp_path, capsys):
     """Main reports a missing build."""
     assert im.main(["image_slot.py", str(tmp_path)]) == 1
-    assert "build the panel first" in capsys.readouterr().err
+    assert "build it first" in capsys.readouterr().err
 
 
 def test_main_checks_a_built_tree(tmp_path, capsys):
@@ -103,6 +103,17 @@ def test_main_checks_a_built_tree(tmp_path, capsys):
     assert "image 1,000 bytes" in capsys.readouterr().out
     (tmp_path / im.IMAGE).write_bytes(b"\0" * (SLOT + 1))
     assert im.main(["image_slot.py", str(tmp_path)]) == 1
+
+
+def test_main_checks_another_image_by_its_name(tmp_path, capsys):
+    """Main checks the image the third argument names."""
+    (tmp_path / "partition_table").mkdir()
+    (tmp_path / im.TABLE).write_bytes(TWO)
+    (tmp_path / "rcbench-dial.bin").write_bytes(b"\0" * 1000)
+    assert im.main(["image_slot.py", str(tmp_path), "rcbench-dial.bin"]) == 0
+    assert im.main(["image_slot.py", str(tmp_path)]) == 1   # no panel image
+    (tmp_path / "rcbench-dial.bin").write_bytes(b"\0" * (SLOT + 1))
+    assert im.main(["image_slot.py", str(tmp_path), "rcbench-dial.bin"]) == 1
 
 
 def test_the_entry_layout_is_32_bytes():

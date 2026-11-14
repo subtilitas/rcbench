@@ -318,7 +318,7 @@ not host-tested).
 
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
 `esp_hosted` (`components/c6_link`, [Wi-Fi through the
-ESP32-C6](docs/Building.md#wi-fi-through-the-esp32-c6)). Measured on a home network on
+ESP32-C6](docs/C6.md#wi-fi-through-the-esp32-c6)). Measured on a home network on
 2026-10-23, panel build 408c43bd: a download of a 16MiB file at 688-757kB/s, the card read
 and the radio together, not separated; an upload of a 2.56MB image to `/update` at
 556-599kB/s; a ping average of 14.6ms; no SDIO error and 60fps during the downloads. The
@@ -1144,6 +1144,21 @@ ANGLE SOURCE IMU the servo test reads its angle in AS5600 counts; RUDDER, AUTO, 
 RUN and MEASURED take its degrees as read. The link has not run against NimBLE's answers or the sensor. `protocols/hc05`
 and its suites stay in the host suite; no firmware builds them.
 
+### M5Stack Dial
+
+Built and host-tested: the knob protocol of the M5Stack Dial v1.1 over BLE
+(`protocols/dialknob`): every packet in both directions with its bounds
+(`test_dialknob`, with 1,000,000 random packets), the panel's turn tracker
+and the link's DEGRADED and LOST timing (`test_dialknob_track`), and the
+Dial's model of its face (`test_dialknob_face`). Built, not run on the
+device: the Dial's firmware (`firmware/dial`, ESP-IDF v6.1 for the
+ESP32-S3; CI's `dial.yml`) with the power latch, the encoder on PCNT, the
+buttons, the FT3267 touch glass, the click per detent, the GC9A01 display
+with a placeholder face, the NimBLE peripheral with its bound panel, and
+the USB console with the test build's hooks ([The M5Stack Dial](docs/Dial.md)).
+Not built: the panel's side, so no panel connects to a Dial. The battery's
+reading pin is unknown; the encoder's direction is not measured.
+
 ### Phase tap (ESC tones)
 
 The detector (`protocols/phase_tap/tone.c`, `test_tone`) turns edge times into beeps and
@@ -1359,11 +1374,13 @@ rcbench/
   protocols/              one module per external interface: a pure C core,
                           its RP2350 pin driver in rp2350/, a README.md
     dshot/ ppm/ sbus/ openyge/ pdmini/ phase_tap/ kst/ hitec/ escwire/
-    hc05/ bleuart/
+    hc05/ bleuart/ dialknob/
 
   firmware/panel/         ESP-IDF: main/, components/, sdkconfig.defaults,
                           partitions.csv
   firmware/iomcu/         pico-sdk: src/, include/
+  firmware/dial/          ESP-IDF: the M5Stack Dial, main/, sdkconfig.defaults,
+                          partitions.csv
 ```
 
 ### Who compiles what
@@ -1377,7 +1394,7 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `vibe` | | | yes |
+| `hc05` · `dialknob` · `vibe` | | | yes |
 | `bleuart` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
@@ -1399,6 +1416,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
 | `mutation.yml` | Sunday 03:17 UTC, manual | every mutant of the lines of `shared/safety` and `shared/outputs` (6400 mutants in 81 files) in 6 parallel shards of files, no mutant limit, no mutant started after 18000s in a shard; the mutants left then are reported as not run; does not fail on a survivor; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
+| `dial.yml` | called by `ci.yml` and `release.yml` | the M5Stack Dial's image on ESP-IDF v6.1 for the ESP32-S3 and its test build with `RCBENCH_DIAL_HOOKS=ON`; the generated sdkconfig against `sdkconfig.defaults`, both images against their update slot, no hook in the released image; artifact `dial` |
 | `pages.yml` | pull request and push to `main` touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh`; a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
 
 Not in CI: clang-tidy over `firmware/`, which needs the ESP-IDF and pico-sdk headers to
@@ -1411,7 +1429,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 551 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 554 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
 `test_touch_merge_multi`, `test_inj_line_id`, `test_inj_emu`, `test_inj_multi`, `test_nav`,
@@ -1523,7 +1541,8 @@ The host suite is 551 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
-`test_bleuart_hub`, `test_imu`, `test_imu_filter`,
+`test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_imu`, `test_imu_filter`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
@@ -2305,6 +2324,9 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/bleuart/bleuart_hub.c` | 223 | 223 | 100.0% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
+| `protocols/dialknob/dialknob.c` | 492 | 482 | 98.0% |
+| `protocols/dialknob/dk_track.c` | 92 | 92 | 100.0% |
+| `protocols/dialknob/dk_face.c` | 102 | 102 | 100.0% |
 | `shared/logfile/servo_store.c` | 267 | 265 | 99.2% |
 | `shared/outputs/kst_port.c` | 665 | 664 | 99.8% |
 | `shared/outputs/hitec_port.c` | 525 | 524 | 99.8% |
@@ -2444,7 +2466,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **92956** | **91112** | **98.0%** |
+| **total** | **93642** | **91788** | **98.0%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

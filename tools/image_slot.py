@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Hold the panel's application image to its update slot.
+"""Hold an ESP-IDF application image to its update slot.
 
 An update from the card or over Wi-Fi writes the application slot that is
 not running.  An image larger than the smaller of the two slots builds, and
@@ -8,8 +8,12 @@ check names one partition; this tool reads the partition table the build
 wrote and holds the image to the smaller of the two OTA (over-the-air)
 slots, and prints the room left.
 
-    tools/image_slot.py [BUILD]     check; BUILD defaults to
-                                    firmware/panel/build
+    tools/image_slot.py [BUILD [IMAGE]]
+                                    check; BUILD defaults to
+                                    firmware/panel/build and IMAGE, the
+                                    application's file in it, to
+                                    rcbench-panel.bin; the Dial's is
+                                    rcbench-dial.bin
 
 It fails when the build has no image or no partition table, when the table
 has fewer than two OTA application slots, when the slots differ in size, and
@@ -80,19 +84,21 @@ def problems(image: int, slots: dict[str, int]) -> list[str]:
 
 
 def main(argv: list[str]) -> int:
-    """Check a panel build and print the room left in its smallest slot.
+    """Check a build and print the room left in its smallest slot.
 
     Args:
-        argv: Program name, then optionally the build directory.
+        argv: Program name, then optionally the build directory and the
+            application image's file name in it.
 
     Returns:
         0 when the image fits, 1 when it does not or a file is missing.
     """
     build = Path(argv[1]) if len(argv) > 1 else BUILD
-    image, table = build / IMAGE, build / TABLE
+    name = argv[2] if len(argv) > 2 else IMAGE
+    image, table = build / name, build / TABLE
     for f in (image, table):
         if not f.is_file():
-            print(f"image_slot: {f} is not there; build the panel first",
+            print(f"image_slot: {f} is not there; build it first",
                   file=sys.stderr)
             return 1
     size = image.stat().st_size

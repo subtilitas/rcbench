@@ -1,0 +1,38 @@
+# The M5Stack Dial v1.1: ESP32-S3FN8, 8MB of quad flash in the package, no
+# PSRAM (pseudo-static RAM).  Read when ESP-IDF generates sdkconfig; build
+# with -D SDKCONFIG=<build folder>/sdkconfig to start from these.
+CONFIG_IDF_TARGET="esp32s3"
+CONFIG_ESPTOOLPY_FLASHSIZE_8MB=y
+CONFIG_ESPTOOLPY_FLASHMODE_QIO=y
+CONFIG_PARTITION_TABLE_CUSTOM=y
+CONFIG_PARTITION_TABLE_CUSTOM_FILENAME="partitions.csv"
+CONFIG_SPIRAM=n
+
+CONFIG_COMPILER_OPTIMIZATION_PERF=y
+# 1ms ticks: the input task's 5ms poll is 5 ticks.
+CONFIG_FREERTOS_HZ=1000
+
+# The console is the USB Serial/JTAG port on the USB-C socket: the only
+# port the Dial brings out.
+CONFIG_ESP_CONSOLE_USB_SERIAL_JTAG=y
+
+# Bluetooth LE, NimBLE host on the S3's own controller, peripheral only: one
+# connection, to the bound panel.  No pairing or bond in this protocol
+# version.
+CONFIG_BT_ENABLED=y
+CONFIG_BT_NIMBLE_ENABLED=y
+CONFIG_BT_NIMBLE_ROLE_CENTRAL=n
+CONFIG_BT_NIMBLE_ROLE_OBSERVER=n
+CONFIG_BT_NIMBLE_ROLE_PERIPHERAL=y
+CONFIG_BT_NIMBLE_ROLE_BROADCASTER=y
+CONFIG_BT_NIMBLE_GATT_CLIENT=n
+CONFIG_BT_NIMBLE_MAX_CONNECTIONS=1
+CONFIG_BT_NIMBLE_SECURITY_ENABLE=n
+CONFIG_BT_NIMBLE_NVS_PERSIST=n
+CONFIG_BT_NIMBLE_50_FEATURE_SUPPORT=n
+CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=247
+CONFIG_BT_NIMBLE_SVC_GAP_DEVICE_NAME="DIAL"
+CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y
+
+# app_main() runs the face task: the drawing and the flush.
+CONFIG_ESP_MAIN_TASK_STACK_SIZE=6144

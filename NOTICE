@@ -99,6 +99,24 @@ Apache License 2.0. esp_wifi_remote's dummy_src.c is an empty file without a
 licence line.
 
 
+Components the M5Stack Dial build fetches
+-----------------------------------------
+
+The Dial's firmware for the ESP32-S3 drives its display with a component
+from the Espressif component registry. It is not in this repository:
+firmware/dial/dependencies.lock names it with its hash, and a build
+downloads it into firmware/dial/managed_components/. A Dial image contains
+its compiled code.
+
+  espressif/esp_lcd_gc9a01 2.0.4         Apache License 2.0
+  espressif/cmake_utilities 0.5.3        Apache License 2.0 (build scripts,
+                                         not linked)
+
+  Copyright Espressif Systems (Shanghai) CO LTD.  The Apache License 2.0 is
+  published at https://www.apache.org/licenses/LICENSE-2.0 and is shipped in
+  each component's license.txt file.
+
+
 Design and protocol references
 ------------------------------
 

@@ -6,6 +6,7 @@ Using the bench
 
 - [What this is for](Manifest.md)
 - [Building](Building.md)
+- [The ESP32-C6 radio](C6.md)
 - [Bringing up the link](Bringup.md)
 - [First run on hardware](FirstRun.md)
 - [Screens](Screens.md)
@@ -15,6 +16,7 @@ Using the bench
 - [Servo programmer for Hitec servos](HitecProgrammer.md)
 - [MOVE SERVO on the Hitec programmer](HitecMove.md)
 - [The Bluetooth IMU](IMU.md)
+- [The M5Stack Dial](Dial.md)
 - [Stick programming](StickProgramming.md)
 - [Receiver buses](Receivers.md)
 - [Safety](Safety.md)
@@ -43,6 +45,7 @@ Den Prüfstand benutzen
 
 - [Worum es geht](Manifest-de.md)
 - [Bauen](Building-de.md)
+- [Der Funk über den ESP32-C6](C6-de.md)
 - [Den Link in Betrieb nehmen](Bringup-de.md)
 - [Erster Lauf auf der Hardware](FirstRun-de.md)
 - [Bildschirme](Screens-de.md)
@@ -52,6 +55,7 @@ Den Prüfstand benutzen
 - [Servoprogrammierung für Hitec-Servos](HitecProgrammer-de.md)
 - [SERVO BEWEGEN in der Hitec-Programmierung](HitecMove-de.md)
 - [Die Bluetooth-IMU](IMU-de.md)
+- [Das M5Stack Dial](Dial-de.md)
 - [Stick-Programmierung](StickProgramming-de.md)
 - [Empfängerbusse](Receivers-de.md)
 - [Sicherheit](Safety-de.md)
