@@ -450,8 +450,11 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   nächsten Zug des Hubs nach einem laufenden Versuch. GEBUNDENER KNOTEN
   ohne Liste sagt auf dem Band, warum. Ein gebundener Knoten wird nach
   jedem Abbruch ohne Suche wieder verbunden, 1000ms nach dem Abbruch und
-  nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Eine
-  Suche bei ARMED wird abgelehnt, und eine laufende Suche endet beim
+  nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Hält
+  der Connect eines anderen Clients den Hub, wartet der Connect des
+  Knotens in der Warteschlange des Hubs und folgt nach höchstens einem
+  Versuch jedes anderen Clients, je 5000ms. Eine Suche bei ARMED wird
+  abgelehnt, und eine laufende Suche endet beim
   Schalten auf ARMED.
 - **Die Verbindung.** Das Panel abonniert STREAM und liest INFO einmal nach
   jedem Abonnieren. Ein Knoten, dessen INFO ein anderes Protokoll als 1,

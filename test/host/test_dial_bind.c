@@ -893,7 +893,11 @@ static waits_t worst_wait(unsigned others)
  * connect is a hurried one: an attempt of theirs that runs goes to its
  * end, and the Dial's connect takes the next turn, within its
  * BLEU_RETRY_TURN_MS retry and a poll.  With none running it goes at once,
- * as without them. */
+ * as without them.  Beside the IMU alone some picks find the slot free;
+ * beside both, the hub hands the slot from one absent peer's attempt
+ * straight to the other's, and the connect the scan cut comes back as the
+ * scan ends, 10 of its 1,000ms retries on, so every pick finds an attempt
+ * running. */
 TEST_CASE(a_pick_waits_for_one_running_attempt_at_most)
 {
     const uint32_t ui = TAP_MS + 2u * FRAME_MS;
@@ -902,7 +906,7 @@ TEST_CASE(a_pick_waits_for_one_running_attempt_at_most)
     for (unsigned k = 0; k < 2u; ++k) {
         const waits_t w = worst_wait(set[k]);
         CHECK(w.connect <= BLEU_CONNECT_MS + 2u + turn + ui);
-        CHECK(w.free_n > 0u);
+        CHECK(k == 1u || w.free_n > 0u);
         CHECK(w.held_n > 0u);
         CHECK(w.free_go <= BLEC_MS);
         CHECK(w.turn <= turn);
