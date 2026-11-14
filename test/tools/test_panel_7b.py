@@ -88,9 +88,9 @@ def test_strip_keeps_its_thickness_round_a_corner():
 
 
 def test_wire_socket_sizes():
-    """A side-entry socket is 2 x (pins - 1) + 5.9 wide and 5.5 high."""
+    """A top-entry socket is 2 x (pins - 1) + 5.9 wide and 5.5 high."""
     for pins in (2, 4, 12):
-        box = extent(_solid.items(_parts.ph_side(pins)))
+        box = extent(_solid.items(_parts.ph_top(pins)))
         tabs = 2 * 0.7
         assert box[3] - box[0] == pytest.approx(2 * (pins - 1) + 5.9 + tabs)
         assert box[5] == pytest.approx(5.5)

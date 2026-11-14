@@ -32,6 +32,14 @@ heights come from models, datasheets or estimates for the part class, as listed 
 [Mechanical parts](mechanical/README.md) holds STEP models of the M16
 emergency stop button, its nut and anti-rotation shim; dimensions not on the seller's
 drawing are estimated.
+It holds a STEP model of the panel board, the Waveshare
+ESP32-P4-WIFI6-Touch-LCD-7B, of 1497 solids: the stack, the board's outline
+and its parts are measured in Waveshare's STEP file of the board, which is not
+in the repository; the 7 wire sockets, the shield can over the ESP32-P4 and the
+coin-cell holder are placed from Waveshare's photo of the rear, good to 0.3mm,
+because that file draws other sockets than the board carries. The sockets'
+height, 5.5mm +- 0.5mm, is read from an angled photo. No dimension is verified
+with a caliper on a board.
 It also holds STEP models of the M5Stack Dial and its ring nut. Their 9
 plastic parts are M5Stack's mesh (MIT licence) fitted again with planes,
 cylinders, cones, tori and the thread's helical surfaces; the models are

@@ -8,6 +8,17 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/`: a STEP model of the panel board, the Waveshare
+  ESP32-P4-WIFI6-Touch-LCD-7B, generated from `panel_7b.py`: 164.28mm x
+  99.18mm of glass, 15.1mm thick, 1497 solids. `_measure_step.py` measures
+  the stack, the board's outline and the place of every part in Waveshare's
+  STEP file of the board, which is not in the repository. The 7 wire sockets
+  of 2.0mm pitch, the shield can over the ESP32-P4 and the coin-cell holder
+  come from Waveshare's photo of the board's rear, because that file draws
+  other sockets than the board carries. `_solid.py` writes profiles of
+  straight sides and arcs as solids with flat and cylindrical faces;
+  `check_overlap.py` fails in CI on two solids that share volume
+  ([Mechanical parts](hardware/mechanical/README.md#panel-board)).
 - Firmware update over Bluetooth LE for the M5Stack Dial and both sensor
   node roles. Protocol module `protocols/bleota`: a GATT service with CTRL
   (write with response, notify) and DATA (write without response); BEGIN

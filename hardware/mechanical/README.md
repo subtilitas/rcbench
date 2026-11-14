@@ -9,6 +9,13 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | --- | --- |
 | `estop_m16.py` | spec of the M16 emergency stop button: dimensions, sources, estimates |
 | `m5dial.py` | spec of the M5Stack Dial: dimensions, sources, estimates |
+| `panel_7b.py` | spec of the panel board, the Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: dimensions, sources, estimates |
+| `_panel_7b_data.py` | the place and size of the panel board's parts, written by `_measure_step.py` |
+| `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
+| `_solid.py` | profiles of straight sides and arcs pushed along an axis, turned and moved, as solids with flat and cylindrical faces |
+| `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons |
+| `check_overlap.py` | fails when two solids of the panel board's model share volume |
+| `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
 | `_refit.py` | fits planes, cylinders, cones, tori and a thread's surfaces to a mesh part |
@@ -24,6 +31,7 @@ python3 hardware/mechanical/gen_models.py --check  # CI: exit 1 on drift
 pip install cadquery-ocp==8.0.1.1.0 pillow
 python3 hardware/kicad/tools/step_check.py         # also checks models/
 python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
+python3 hardware/mechanical/check_overlap.py       # 1 minute
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 \
     --step hardware/mechanical/models/*.step
@@ -178,3 +186,100 @@ fits the whole file shows the assembled dial small. The 2 STEP files hold
 M5Stack's geometry and are under the same licence.
 
 ![Mechanical models](renders/all.png)
+
+## Panel board
+
+The Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: a 7-inch touch display of 1024 x
+600 pixels on a board with the ESP32-P4. `panel_7b.step` is a facsimile for
+designing the enclosure, drawn here from measurements. It is not Waveshare's
+file.
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `panel_7b.step` | glass, display, board, 4 standoffs, 2 flat cables and every part on the board; 1497 solids, 7.5MB | the centre of the view area on the glass's front face; +z to the viewer; seen from the front, x to the right and y up with the USB sockets on the left |
+
+| Part | Size, mm | From |
+| --- | --- | --- |
+| Cover glass | 164.28 x 99.18 x 1.90 | D, E |
+| View area | 154.58 x 86.41, 6.64 and 3.06 from the glass's short edges, 8.74 and 4.03 from its long edges | D, E |
+| Display | 164.0 x 97.1 x 3.60, its front 2.10 behind the glass's front | D, E |
+| Board | 164.0 x 97.0 x 1.60, its rear 8.80 behind the glass's front | D, E |
+| Cut-out at the antenna | 14.25 x 5.15, in a long edge | E |
+| Step at the 2 buttons | 1.5 deep, 17.87 long | E |
+| 2 slots for the flat cables | 8.0 x 3.0 and 22.0 x 3.0 | E |
+| 4 standoffs, M2.5 thread | 5.5 across, 6.0 tall, 156 x 89 apart, 4.0 from the board's edges | D, E |
+| 4 wire sockets at the short edge, 4 pins, 2.0 pitch, top entry | 11.9 x 5.8 x 5.5, 14.9 apart | P, Q, D |
+| 2 wire sockets at the long edge, 12 pins, 2.0 pitch, top entry | 27.9 x 5.8 x 5.5, 76.75 apart | P, Q |
+| Speaker socket, 2 pins, 2.0 pitch, top entry | 7.9 x 5.8 x 5.5 | P, Q |
+| Battery socket, 2 pins, 1.25 pitch, side entry, the plug entering from inboard | 7.65 x 5.2 x 3.3 | E, P |
+| Socket of the radio's serial port, 4 pins, 1.0 pitch, top entry | 6.35 x 3.05 x 4.5 | E, P |
+| USB Type-A socket | 12.2 x 10.0 x 5.7, 0.6 above the board | E, P |
+| 2 USB Type-C sockets | 8.94 x 7.35 x 3.16 | E |
+| Shield can over the ESP32-P4 | 21.3 x 17.0 x 2.6 | P; height estimated |
+| Coin-cell holder | 15.4 across, 4.3 tall | P; height estimated |
+| microSD card slot | 16.1 x 15.0 x 1.85 | E |
+| 326 chip parts, 33 leaded packages, 89 further solids | as measured | E |
+
+The model is 15.1mm thick, from the glass's front to the top of the USB
+Type-A socket, and 166.04mm long with the switch's lever, which stands
+1.76mm past the glass.
+
+Sources:
+
+- **D**: Waveshare's outline drawing of the board, a PDF (Portable Document
+  Format) file of 2025-11-08 in `ESP32-P4-WIFI6-Touch-LCD-7B-3D.zip` on
+  [the board's wiki page](https://www.waveshare.com/wiki/ESP32-P4-WIFI6-Touch-LCD-7B).
+- **E**: Waveshare's STEP file of the board in the same archive, 1337 solids.
+  `_measure_step.py` reads it with OpenCASCADE and writes
+  `_panel_7b_data.py`.
+- **P**: Waveshare's photo of the board's rear, 1600 x 1200 pixels,
+  `esp32-p4-wifi6-touch-lcd-7b-3.jpg` on the product page. It is fitted to
+  the holes of the 4 standoffs at 7.35 pixels per mm, with 1.1 pixels left at
+  each. A position read from it is good to 0.3mm.
+- **Q**: Waveshare's angled photo of the rear,
+  `esp32-p4-wifi6-touch-lcd-7b-5.jpg`, for the height of the wire sockets
+  against the 6.0mm standoffs: 5.5mm +- 0.5mm.
+- **S**: Waveshare's schematic of the board, a PDF file of 2025-09-25, for
+  the parts' names.
+
+Waveshare states no licence for E and the photos, so they are not in this
+repository; only dimensions measured in them are.
+
+E and D differ from the board in its wire sockets. They draw 4 side-entry
+shrouds 6.5mm high at the short edge, where the board has top-entry sockets,
+and sockets of 1.0mm pitch, 14.35mm long, where the board has the two 12-pin
+sockets of 2.0mm pitch, 27.9mm long. All 7 wire sockets of the board are
+top-entry: the plug goes in from above the board, and P shows the pins end
+on. E has neither the shield can nor
+the coin-cell holder. Where P and E differ, the model follows P. D's 15.3mm
+over all is the height of E's shrouds.
+
+Each part of E is drawn again from its measured box: a chip part with its end
+caps, a leaded package as a body and one lead a foot, a connector as its
+shape of `_parts.py`, every other solid as its box. `check_panel_7b.py`
+compares the result with E, component by component: no side of a chip part
+is off by more than 0.04mm, of a leaded package by more than 0.01mm, of a
+box by more than 0.00mm, and of a connector by more than 0.90mm, where a
+shape of `_parts.py` has its own nominal size. It needs E and is not run in
+CI (continuous integration). `check_overlap.py` runs in CI: no two of the
+1497 solids share more than 1e-6mm3.
+
+Limits:
+
+- No dimension is verified with a caliper on a board.
+- Estimated, in no source: the heights of the shield can and of the
+  coin-cell holder, the wall thickness of the connectors, the plungers of the
+  2 buttons, the flat cables' paths through the board's slots, the display as
+  a steel back 0.3mm thick with a black panel in it.
+- The row of pins of the two 12-pin sockets lies 0.5mm off the housing's
+  centre in P; the model draws it so.
+- E has two spacers 20mm x 96mm between display and board. The one under the
+  touch panel's cable is drawn cut back to clear the cable.
+- Not modelled: the print on the board, tracks, vias, solder, pads, the
+  battery and the speaker.
+
+```sh
+pip install cadquery-ocp==8.0.1.1.0
+python3 hardware/mechanical/_measure_step.py FILE.stp   # rewrite _panel_7b_data.py
+python3 hardware/mechanical/check_panel_7b.py FILE.stp  # compare the model with E
+```

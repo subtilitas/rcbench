@@ -301,14 +301,15 @@ def micro_sd():
     return out
 
 
-def ph_side(pins, pin_shift=0.0):
-    """A side-entry wire socket of 2.0 pitch for the board's surface.
+def ph_top(pins, pin_shift=0.0):
+    """A top-entry wire socket of 2.0 pitch; the plug enters from +z.
 
-    The plug enters from -y. The origin is the centre of the housing's
-    footprint, which is 2 x (pins - 1) + 5.9 wide and 5.8 deep; the
-    leads reach 2.2 behind it. The housing is 5.5 high: a floor, two end
-    walls, a rear wall and a roof over its rear half; the pins show
-    through the open front half. A solder tab stands at each end.
+    The origin is the centre of the housing's footprint, which is
+    2 x (pins - 1) + 5.9 wide and 5.8 deep; the solder leads reach 2.2
+    past it at +y. The housing is 5.5 high: a floor 0.8 thick and four
+    walls 1.0 thick round the upright pins. The wall at -y is 2.0 high
+    between its two ends, for the plug's key. A solder tab stands at
+    each end.
 
     Args:
         pins: Number of pins.
@@ -316,21 +317,24 @@ def ph_side(pins, pin_shift=0.0):
             housing's centre.
     """
     half, front, back, height = pins - 1 + 2.95, -2.9, 2.9, 5.5
+    key = 0.6 * (half - 1.0)
     out = [
-        box(-half + 1.0, front, half - 1.0, back - 1.0, 0.0, 0.8, CREAM),
+        box(-half + 1.0, front + 1.0, half - 1.0, back - 1.0, 0.0, 0.8,
+            CREAM),
         box(-half, front, -half + 1.0, back, 0.0, height, CREAM),
         box(half - 1.0, front, half, back, 0.0, height, CREAM),
         box(-half + 1.0, back - 1.0, half - 1.0, back, 0.0, height, CREAM),
-        box(-half + 1.0, 0.0, half - 1.0, back - 1.0, height - 1.0, height,
-            CREAM),
+        box(-half + 1.0, front, -key, front + 1.0, 0.0, height, CREAM),
+        box(key, front, half - 1.0, front + 1.0, 0.0, height, CREAM),
+        box(-key, front, key, front + 1.0, 0.0, 2.0, CREAM),
     ]
     for side in (-1, 1):
         a, b = sorted((side * half, side * (half + 0.7)))
         out.append(box(a, -1.6, b, 1.4, 0.0, 1.6, TIN))
     for p in rows(pins, 2.0):
         x = p + pin_shift
-        out.append(box(x - 0.25, front + 1.2, x + 0.25, back - 1.0, 1.95,
-                       2.45, TIN))
+        out.append(box(x - 0.25, 0.05, x + 0.25, 0.55, 0.8, height - 1.5,
+                       TIN))
         out.append(box(x - 0.35, back, x + 0.35, back + 2.2, 0.0, 0.4, TIN))
     return out
 

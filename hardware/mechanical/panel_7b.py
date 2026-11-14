@@ -18,19 +18,20 @@ come from five sources, all mm:
   and size of every part but those taken from P.
 - P: Waveshare's photo of the board's rear, 1600 x 1200
   (esp32-p4-wifi6-touch-lcd-7b-3.jpg on the product page), fitted to the
-  holes of the 4 standoffs at 7.35 px/mm with 1.1 px left at each. A
-  position read from it is good to 0.3. Taken from it: the 7 wire
-  sockets of 2.0 pitch, the shield can over the ESP32-P4 and the
-  coin-cell holder.
+  holes of the 4 standoffs at 7.35 pixels per mm, with 1.1 pixels left
+  at each. A position read from it is good to 0.3. Taken from it: the
+  7 top-entry wire sockets of 2.0 pitch, whose pins it shows end on,
+  the shield can over the ESP32-P4 and the coin-cell holder.
 - Q: Waveshare's angled photo of the rear
   (esp32-p4-wifi6-touch-lcd-7b-5.jpg), for the height of the wire
   sockets against the 6.0 standoffs: 5.5 +- 0.5.
 - S: Waveshare's schematic of the board, a PDF of 2025-09-25, for the
   parts' names.
 
-E and D draw other wire sockets than the board carries: 4 open shrouds
-6.5 high at the left edge, and top-entry sockets of 1.0 pitch 14.35
-long where the board has two 12-pin sockets of 2.0 pitch 27.9 long.
+E and D draw other wire sockets than the board carries: 4 side-entry
+shrouds 6.5 high at the left edge, where the board has top-entry
+sockets, and sockets of 1.0 pitch 14.35 long where the board has two
+12-pin sockets of 2.0 pitch 27.9 long.
 E has neither the shield can nor the coin-cell holder. P shows the
 board; where P and E differ the model follows P. D's 15.3 over all is
 E's, with the 6.5 shrouds; the model is 15.1, to the top of the USB
@@ -123,9 +124,9 @@ CABLE_T = 0.15
 # From P: the shield can over the ESP32-P4 and the coin-cell holder.
 SHIELD = (47.7, 37.2, 69.0, 54.2, 2.6)
 HOLDER = (17.9, 85.7, 15.4, 4.3)        # centre, diameter, height
-# From P: the wire sockets, 2.0 pitch, side entry: pins, centre of the
-# housing, turn (the plug enters from -y at turn 0), and the shift of
-# the row of pins along the housing. The 4 at the left edge are 14.9
+# From P: the wire sockets, 2.0 pitch, top entry: pins, centre of the
+# housing, turn (the solder leads point to +y at turn 0), and the shift
+# of the row of pins along the housing. The 4 at the left edge are 14.9
 # apart (D).
 WIRE_SOCKETS = (
     (4, 4.0, 17.7, -90.0, 0.0),         # RS485
@@ -283,7 +284,7 @@ def connectors():
         return place(shapes, x, y, turn=turn)
 
     for pins, x, y, turn, shift in WIRE_SOCKETS:
-        out += place(p.ph_side(pins, shift), x, y, turn=turn)
+        out += place(p.ph_top(pins, shift), x, y, turn=turn)
     x0, _y0, _z0, x1, y1, z1 = NAMED["uart_socket"][0]
     out += place(p.top_socket(4, 1.0, 6.35, 3.05, z1), (x0 + x1) / 2,
                  y1 - 1.525)
