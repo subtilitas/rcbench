@@ -4,6 +4,7 @@ SPDX-License-Identifier: MIT
 """
 
 import pathlib
+import re
 import shutil
 import subprocess
 
@@ -372,6 +373,26 @@ def test_the_tools_own_tree_is_never_the_copy():
     """The tool's own tree is never the copy."""
     assert mu.REPO == pathlib.Path(mu.__file__).resolve().parent.parent
     assert set(mu.MUTATED) <= set(mu.COPIED)
+
+
+def test_the_copy_holds_every_source_the_host_suite_reads():
+    """The copy holds every source the host suite reads.
+
+    A path test/host/CMakeLists.txt reads only behind an if(EXISTS ...)
+    may stay out, as tools/sense_trace.py does.
+    """
+    text = (mu.REPO / "test/host/CMakeLists.txt").read_text()
+    paths = set(re.findall(r"\.\./\.\./([A-Za-z0-9_./-]+)", text))
+    guarded = set(re.findall(
+        r"EXISTS\s+\"\$\{CMAKE_CURRENT_SOURCE_DIR\}/\.\./\.\./"
+        r"([A-Za-z0-9_./-]+)\"", text))
+    paths -= guarded
+    assert paths
+    missing = sorted(
+        p for p in paths
+        if not any(p == c or p.startswith(c.rstrip("/") + "/")
+                   for c in mu.COPIED))
+    assert not missing, f"not in mutate.COPIED: {missing}"
 
 
 def test_a_protocol_core_is_mutated_and_its_pin_driver_is_not():
