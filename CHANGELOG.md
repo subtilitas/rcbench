@@ -494,6 +494,17 @@ history is in git.
   read before the frame kept a bind in SETUP no longer unbind the Dial just
   picked; such a post left SETUP holding no Dial
   ([The M5Stack Dial](docs/Dial.md#scan-and-bind)).
+- SETUP > WIRELESS > POWER NODE and BALANCE NODE: a pick the controller
+  refuses, because a scan started first or the list changed, says so on
+  the band and the console. A tap on SCAN FOR NODE while a scan runs, and
+  a scan the controller refuses while another runs or an arm waits, say
+  why on the band instead of nothing. Settings read before the frame kept
+  a bind in SETUP, an INA228 SOURCE change among them, no longer unbind
+  the node just picked; such a post left SETUP holding no node
+  ([Sensor nodes](docs/Nodes.md#the-panel)).
+- SETUP: a press on INA228 SOURCE or SCREEN ROTATION while ARMED shows
+  `Set on a SAFE bench only` on the band and in place of the row's help
+  line, as MOTOR & ESC's pulse rows do; it showed nothing.
 - HITEC programmer: while a write runs, the SERVO tab no longer shows
   `Writing was interrupted. The settings may be incomplete.` for the record
   of that same write; the state line shows the write's step.

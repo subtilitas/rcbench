@@ -62,7 +62,11 @@ const char *wireless_pane_bal_word(const bal_view_t *v, char *buf, size_t n,
                                    gfx_color_t *ink);
 
 /**
- * @brief The controller's view, each frame; a change repaints SETUP.
+ * @brief The controller's view, each frame; a change repaints SETUP, and a
+ *        refusal the controller counted since the last view says why on
+ *        the band: a bind (NODE_BIND_SCANNING, NODE_BIND_GONE), a scan
+ *        while an arm waits (BNODE_SCAN_ARMED) or while one runs or
+ *        Bluetooth is not ready (NODE_SCAN_RUNNING, BNODE_SCAN_OFF).
  * @param v The view, NULL clears it.
  */
 void wireless_pane_set_bal(const bal_view_t *v);

@@ -242,6 +242,8 @@ changed under it, reads `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` or
 `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the console logs
 `dial: bind of n refused`. A bound Dial logs `dial: bound <address>
 <name>`.
+A tap on SCAN FOR DIAL while a scan runs starts none; the band reads
+`A SCAN IS RUNNING: IT ENDS WITHIN 10s`.
 
 The connect after a bind starts at once while the central is free. An IMU
 or a node that is ON and bound to a device out of range holds the one

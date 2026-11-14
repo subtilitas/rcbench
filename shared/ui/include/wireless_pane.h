@@ -15,7 +15,9 @@
  * DIAL_BIND_EMPTY, DIAL_BIND_SCANNING, DIAL_BIND_GONE) and the two steps.
  * SCAN FOR DIAL reading FOUND n opens the same list as BOUND DIAL; the
  * list's last row, SCAN AGAIN, scans.  The nodes' SCAN FOR NODE and BOUND
- * NODE rows do the same, with NODE_BIND_EMPTY and NODE_BIND_SCANNING;
+ * NODE rows do the same, with NODE_BIND_EMPTY, NODE_BIND_SCANNING and
+ * NODE_BIND_GONE; SCAN FOR NODE tapped while a scan runs reads
+ * NODE_SCAN_RUNNING;
  * its state is the panel's (wireless_pane_set_dial()).  POWER NODE: Power node and INA228
  * SOURCE while it is off, so the source can go back to WIRED without
  * switching the node on; on, SCAN FOR NODE (refused while ARMED with the
@@ -162,7 +164,10 @@ int wireless_list_rows(bool listed, unsigned found_n);
 
 /**
  * @brief The power node as the panel last read it.  A change repaints
- *        SETUP.
+ *        SETUP; a refusal the controller counted since the last view says
+ *        why on the band: a bind (NODE_BIND_SCANNING, NODE_BIND_GONE), a
+ *        scan while an arm waits (PNODE_SCAN_ARMED) or while one runs or
+ *        Bluetooth is not ready (NODE_SCAN_RUNNING, PNODE_SCAN_OFF).
  * @param v The view; NULL is a node OFF.
  */
 void wireless_pane_set_pnode(const pnode_view_t *v);

@@ -430,6 +430,24 @@ fourth client, owner 3
   attempt of each other client, 5000ms each. A scan while ARMED is
   refused, and a scan that
   runs is stopped at the switch to ARMED.
+- **Refusals.** A tap on SCAN FOR NODE while a scan runs reads
+  `A SCAN IS RUNNING: IT ENDS WITHIN 10s` and asks for none. The frame
+  passes a command to the `blec` task, and the controller can still refuse
+  it there; the view counts each refusal and the band names it. A pick
+  refused because a scan started first reads
+  `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`, one refused because the
+  list changed `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the
+  console logs `node: bind of n refused` (`bal:` for the balance node). A
+  scan refused while an arm waits reads the ARMED text, one refused while
+  another runs `A SCAN IS RUNNING: IT ENDS WITHIN 10s`, and the console
+  logs `scan refused`.
+- **The bind kept.** The frame writes a bind's address and then its name
+  to SETUP in the frame after the controller bound it, and each write posts
+  SETUP's values to the controller. A post read before that write, as an
+  INA228 SOURCE change in the frame between, carries the address before
+  the bind; it carries the count of binds SETUP had kept, and the
+  controller keeps the bound node for a count behind its own and takes the
+  other values. The balance node does the same.
 - **The link.** The panel subscribes to STREAM and reads INFO once after
   each subscribe. A node whose INFO names another protocol than 1, another
   role than power, or an INA228 set-up that `ina228_calibrate()` does not
@@ -443,7 +461,8 @@ fourth client, owner 3
   again, gets the write again.
 
 INA228 SOURCE (WIRED, NODE; WIRED by default) says whose INA228 feeds MOTOR
-& ESC. It changes only while SAFE: while ARMED its row has no keys and
+& ESC. It changes only while SAFE: while ARMED its row has no keys, a
+press on it shows `Set on a SAFE bench only` on the band, and
 `settings_set()` and RESET leave it (`settings_safe_only()`). With NODE,
 after each read of the IOmcu's BENCH page:
 

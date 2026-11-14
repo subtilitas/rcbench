@@ -84,6 +84,11 @@ typedef struct {
     bool en;                     /**< BALANCE NODE ON */
     char addr[BAL_ADDR_MAX];     /**< SET_TEXT_BNODE_ADDR: "" none */
     char name[BAL_NAME_MAX];     /**< SET_TEXT_BNODE_NAME */
+    uint32_t bind_seq;           /**< the binds SETUP had kept when these
+                                      values were read (bal_ctl_t's
+                                      bind_seq): values read before the
+                                      last bind was kept carry an address
+                                      older than it, which is not taken */
 } bal_cfg_t;
 
 /** @brief A node a scan found. */
@@ -135,6 +140,13 @@ typedef struct {
     uint32_t  boots;      /**< node restarts found since power-up */
     bool      held;       /**< an update holds the link off: link reads
                                OFF while BALANCE NODE stays ON */
+    uint16_t  bind_refused; /**< binds the controller refused, counted: a
+                                 change is a refusal to show */
+    uint16_t  scan_armed; /**< scans the controller refused while ARMED or
+                               an arm waits, counted */
+    uint16_t  scan_unready; /**< scans the controller refused while OFF,
+                                 held, without sync or with a scan running,
+                                 counted */
 } bal_view_t;
 
 /** @brief A command of SETUP > WIRELESS for the controller. */
@@ -180,6 +192,10 @@ typedef struct {
     uint32_t    bad;          /**< stream packets that are no report */
     uint32_t    unread;       /**< reports dropped before INFO matched */
     uint32_t    refused;      /**< scans refused while ARMED */
+    uint32_t    scan_unready; /**< scans refused while OFF, held, without
+                                   sync or with a scan running */
+    uint32_t    bind_refused; /**< binds refused: a scan ran or the index
+                                   was past the list */
     uint32_t    info_failed;  /**< INFO reads that failed, each a reconnect */
     uint32_t    boots;        /**< node restarts found: INFO's clock not
                                    where the last report's left it */
@@ -210,7 +226,9 @@ void bal_ctl_init(bal_ctl_t *c);
 /**
  * @brief Take SETUP's values.  OFF stops a scan and ends the link; ON
  *        connects a bound node once Bluetooth is synced.  A new address
- *        binds it.
+ *        binds it, unless the values were read before SETUP kept the last
+ *        bind (cfg->bind_seq behind the controller's): then the bound
+ *        address and name stay, and the other values are taken.
  * @param c      The controller.
  * @param cfg    The values; NULL does nothing.
  * @param now_ms The clock.
@@ -258,7 +276,9 @@ bool bal_ctl_target(const bal_ctl_t *c, bleu_addr_t *addr, bool *linked,
  * @param c      The controller.
  * @param armed  The bench is ARMED, or a switch to ARMED waits.
  * @param now_ms The clock.
- * @return BAL_SCAN_ARMED while @p armed, whatever else holds.
+ * @return BAL_SCAN_ARMED while @p armed, whatever else holds, counted in
+ *         refused; BAL_SCAN_NOT_READY counted in scan_unready.  The view
+ *         carries both counts to the band.
  */
 bal_scan_t bal_ctl_scan(bal_ctl_t *c, bool armed, uint32_t now_ms);
 
@@ -267,7 +287,9 @@ bal_scan_t bal_ctl_scan(bal_ctl_t *c, bool armed, uint32_t now_ms);
  * @param c      The controller.
  * @param i      Its index; one past the list is refused.
  * @param now_ms The clock.
- * @return Whether it bound; cfg.addr and cfg.name then hold it.
+ * @return Whether it bound; cfg.addr and cfg.name then hold it.  A
+ *         refusal while a scan runs or past the list counts in
+ *         bind_refused, which the view carries to the band.
  */
 bool bal_ctl_bind(bal_ctl_t *c, uint8_t i, uint32_t now_ms);
 

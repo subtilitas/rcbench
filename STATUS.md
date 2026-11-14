@@ -711,7 +711,11 @@ STATUS on STREAM, a scan refused while ARMED and stopped at ARM, the no-index rp
 `test_node_balance`): the stale rule at 999ms and 1000ms, the quality word's order, a run
 of 8 reports and its failures, and both methods end to end through the report's decode
 against known imbalances (within 0.01g and 1°). SETUP > WIRELESS's BALANCE NODE entry
-(`test_wireless_bal`), BALANCE's readings and MOTOR & ESC's BALANCE tab
+(`test_wireless_bal`; `test_bal_bind` from the tap on SCAN FOR NODE and BOUND NODE through
+a model of the frame and `blec` glue to the controller and a node: a bind or a scan the
+controller refuses says why on the band, a scan tapped while one runs too, and a settings
+post read before the frame kept a bind leaves the bind and the address SETUP keeps),
+BALANCE's readings and MOTOR & ESC's BALANCE tab
 (`test_motor_balance`). The panel firmware runs it in the `blec` task (`panel_bal.c`); not
 run on hardware.
 
@@ -1237,8 +1241,13 @@ dropout rule of `servo_gap.h` at 299ms, 300ms and 301ms and a second gap
 9.9s and 10.1s after the first, for a motor run and not for a servo run,
 the totals baseline at 500ms and 501ms, and the ARM refusal with the node
 OFF or without a reading in the last 100ms). SETUP > WIRELESS > POWER NODE with
-INA228 SOURCE, which keeps its value while ARMED
-(`shared/ui/wireless_pnode.c`, `test_wireless_pnode`), the
+INA228 SOURCE, which keeps its value while ARMED and says so on the band
+at a press (`shared/ui/wireless_pnode.c`, `test_wireless_pnode`;
+`test_pnode_bind` from the tap on SCAN FOR NODE and BOUND NODE through a
+model of the frame and `blec` glue to the controller and a node: a bind or
+a scan the controller refuses says why on the band, a scan tapped while
+one runs too, and an INA228 SOURCE change read before the frame kept a
+bind leaves the bind and the address SETUP keeps), the
 log's `node` source (`test_logwriter`), and the `blec` task's and the
 control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
 `panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
@@ -1559,7 +1568,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 583 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 585 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1675,8 +1684,8 @@ The host suite is 583 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart_hub`, `test_bleuart_backoff`, `test_bleuart_fair`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
 `test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
-`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`,
-`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`, `test_pnode_bind`,
+`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`,
 `test_imu`, `test_imu_filter`,
@@ -2342,7 +2351,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
-| `shared/ui/settings_screen.c` | 325 | 316 | 97.2% |
+| `shared/ui/settings_screen.c` | 328 | 319 | 97.3% |
 | `shared/ui/settings_draw.c` | 67 | 67 | 100.0% |
 | `shared/ui/settings_rows.c` | 44 | 43 | 97.7% |
 | `shared/ui/ui_setlist.c` | 626 | 612 | 97.8% |
@@ -2385,14 +2394,14 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_focus.c` | 430 | 381 | 88.6% |
 | `shared/ui/ui_focus_list.c` | 92 | 81 | 88.0% |
 | `shared/ui/ui_focus_screens.c` | 21 | 20 | 95.2% |
-| `shared/ui/wireless_pane.c` | 256 | 252 | 98.4% |
-| `shared/ui/wireless_pnode.c` | 140 | 135 | 96.4% |
-| `shared/ui/pnode_ctl.c` | 259 | 251 | 96.9% |
+| `shared/ui/wireless_pane.c` | 259 | 255 | 98.5% |
+| `shared/ui/wireless_pnode.c` | 159 | 157 | 98.7% |
+| `shared/ui/pnode_ctl.c` | 273 | 264 | 96.7% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
 | `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
-| `shared/ui/bal_ctl.c` | 346 | 332 | 96.0% |
+| `shared/ui/bal_ctl.c` | 361 | 344 | 95.3% |
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
-| `shared/ui/wireless_bal.c` | 179 | 168 | 93.8% |
+| `shared/ui/wireless_bal.c` | 199 | 195 | 98.0% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
 | `shared/settings/settings.c` | 424 | 417 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
@@ -2648,7 +2657,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **100130** | **98000** | **97.9%** |
+| **total** | **100204** | **98080** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
