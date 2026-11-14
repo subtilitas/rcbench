@@ -24,14 +24,12 @@
  *
  * SPDX-License-Identifier: MIT
  */
-#include "settings_rig.h"
+#include "wl_bind_rig.h"
 
 #include "ble_sim.h"
 #include "bleuart_hub.h"
 #include "dial_ctl.h"
 #include "dialknob.h"
-#include "ui_focus.h"
-#include "ui_setlist.h"
 
 /** @brief The frame task's period, ms: 60Hz rounded down. */
 #define FRAME_MS 16u
@@ -435,23 +433,14 @@ static void next_frame(void)
 
 /* ------------------------------------------------------------- the glass */
 
-/** @brief A finger down at (@p x, @p y), panel coordinates. */
-static void down(int x, int y)
-{
-    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
-                        .point = { .id = 1, .x = (int16_t)x,
-                                   .y = (int16_t)y } };
-    ui_router_event(&e);
-}
-
-/** @brief The finger up at (@p x, @p y). */
-static void up(int x, int y)
-{
-    touch_event_t e = { .type = TOUCH_EVENT_UP,
-                        .point = { .id = 1, .x = (int16_t)x,
-                                   .y = (int16_t)y } };
-    ui_router_event(&e);
-}
+/* The glass is wl_bind_rig.h's, on the DIAL entry. */
+#define down(x, y)          wbr_down((x), (y))
+#define up(x, y)            wbr_up((x), (y))
+#define custom_row(c)       wbr_row(WL_ENTRY_DIAL, (c))
+#define row_mid(c, x, y)    wbr_row_mid(WL_ENTRY_DIAL, (c), (x), (y))
+#define choice_rect(k, out) wbr_choice((k), (out))
+#define band()              wbr_band()
+#define value_of(c)         wbr_value(c)
 
 /** @brief A tap of TAP_MS at (@p x, @p y), the clock running under it. */
 static void tap_at(int x, int y)
@@ -461,68 +450,12 @@ static void tap_at(int x, int y)
     up(x, y);
 }
 
-/** @brief The DIAL entry's row of the custom row @p c, -1 none: the
- *         pane's rows are the entry's, in order. */
-static int custom_row(const ui_setlist_custom_t *c)
-{
-    wl_row_t rows[WL_ENTRY_ROWS_MAX];
-    const int n = wireless_pane_rows(WL_ENTRY_DIAL, rows, WL_ENTRY_ROWS_MAX);
-    for (int i = 0; i < n && i < WL_ENTRY_ROWS_MAX; ++i) {
-        if (rows[i].custom == c) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-/** @brief The middle of the open list's row of @p c, panel coordinates. */
-static void row_mid(const ui_setlist_custom_t *c, int *x, int *y)
-{
-    const int row = custom_row(c);
-    CHECK(row >= 0);
-    const gfx_rect_t r = settings_screen_row_rect(row);
-    *x = r.x + r.w / 3;
-    *y = UI_BAND_H + r.y + r.h / 2;
-}
-
 /** @brief A tap on the row of @p c. */
 static void tap_row(const ui_setlist_custom_t *c)
 {
     int x, y;
     row_mid(c, &x, &y);
     tap_at(x, y);
-}
-
-/** @brief The open popup's choice @p k, panel coordinates, as the focus
- *         layer lists it (ui_setlist_choice_rect()); false with no popup.
- *         A list of rows names its setlist, a popup's choices do not. */
-static bool choice_rect(int k, gfx_rect_t *out)
-{
-    ui_focus_list_t f;
-    memset(&f, 0, sizeof f);
-    *out = gfx_rect_make(0, 0, 0, 0);
-    if (!settings_screen_focus(&f) || f.sl != NULL || k < 0
-        || k >= f.count) {
-        return false;
-    }
-    *out = f.item[k].rect;
-    out->y = (int16_t)(out->y + UI_BAND_H);
-    return true;
-}
-
-/** @brief The band's alert, "" with none. */
-static const char *band(void)
-{
-    const char *a = ui_router_alert();
-    return a != NULL ? a : "";
-}
-
-/** @brief A value text of a custom row. */
-static const char *value_of(const ui_setlist_custom_t *c)
-{
-    static char buf[64];
-    c->value_text(buf, sizeof buf);
-    return buf;
 }
 
 /* --------------------------------------------------------------- set-up */

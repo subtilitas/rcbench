@@ -29,6 +29,11 @@ typedef struct {
     bool src_node;              /**< INA228 SOURCE is NODE */
     char addr[PNODE_ADDR_MAX];  /**< SET_TEXT_PNODE_ADDR: "" none */
     char name[PNODE_NAME_MAX];  /**< SET_TEXT_PNODE_NAME */
+    uint32_t bind_seq;          /**< the binds SETUP had kept when these
+                                     values were read (pnode_ctl_t's
+                                     bind_seq): values read before the
+                                     last bind was kept carry an address
+                                     older than it, which is not taken */
 } pnode_cfg_t;
 
 /** @brief A node a scan found. */
@@ -83,6 +88,13 @@ typedef struct {
     bool        bat_none;   /**< it says RCNODE_ST_BAT_NONE: no cell */
     bool        bat_err;    /**< it says RCNODE_ST_BAT_ERR: read failed */
     uint16_t    vbat_mv;    /**< its cell voltage, mV */
+    uint16_t    bind_refused; /**< binds the controller refused, counted:
+                                   a change is a refusal to show */
+    uint16_t    scan_armed; /**< scans the controller refused while ARMED
+                                 or an arm waits, counted */
+    uint16_t    scan_unready; /**< scans the controller refused while OFF,
+                                   held, without sync or with a scan
+                                   running, counted */
 } pnode_view_t;
 
 /** @brief A command of SETUP > WIRELESS for the controller. */

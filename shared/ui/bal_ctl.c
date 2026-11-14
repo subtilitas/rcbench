@@ -319,6 +319,14 @@ void bal_ctl_config(bal_ctl_t *c, const bal_cfg_t *cfg, uint32_t now_ms)
     }
     const bal_cfg_t was = c->cfg;
     c->cfg = *cfg;
+    if (cfg->bind_seq != c->bind_seq) {
+        /* Read from SETUP before the frame kept the last bind there: its
+         * address is the one before the bind, and taking it would unbind
+         * the node just picked.  The write-back's values come next. */
+        memcpy(c->cfg.addr, was.addr, sizeof(c->cfg.addr));
+        memcpy(c->cfg.name, was.name, sizeof(c->cfg.name));
+        c->cfg.bind_seq = c->bind_seq;
+    }
     c->cfg.addr[BAL_ADDR_MAX - 1u] = '\0';
     c->cfg.name[BAL_NAME_MAX - 1u] = '\0';
     if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
@@ -396,6 +404,7 @@ bal_scan_t bal_ctl_scan(bal_ctl_t *c, bool armed, uint32_t now_ms)
         return BAL_SCAN_ARMED;
     }
     if (!is_on(c) || c->radio != IMU_RADIO_READY || c->b.scanning) {
+        ++c->scan_unready;
         return BAL_SCAN_NOT_READY;
     }
     c->found_n = 0u;
@@ -405,12 +414,20 @@ bal_scan_t bal_ctl_scan(bal_ctl_t *c, bool armed, uint32_t now_ms)
     c->scan_cut = false;
     c->scan_open = bleu_scan(&c->b, now_ms);
     c->scanning = c->scan_open;
-    return c->scan_open ? BAL_SCAN_STARTED : BAL_SCAN_NOT_READY;
+    if (!c->scan_open) {
+        ++c->scan_unready;
+        return BAL_SCAN_NOT_READY;
+    }
+    return BAL_SCAN_STARTED;
 }
 
 bool bal_ctl_bind(bal_ctl_t *c, uint8_t i, uint32_t now_ms)
 {
-    if (c == NULL || i >= c->found_n || c->b.scanning) {
+    if (c == NULL) {
+        return false;
+    }
+    if (i >= c->found_n || c->b.scanning) {
+        ++c->bind_refused;
         return false;
     }
     snprintf(c->cfg.addr, sizeof(c->cfg.addr), "%s", c->found[i].addr);
@@ -419,6 +436,7 @@ bool bal_ctl_bind(bal_ctl_t *c, uint8_t i, uint32_t now_ms)
     bleu_hurry(&c->b);
     c->have_rep = false;
     ++c->bind_seq;
+    c->cfg.bind_seq = c->bind_seq;
     follow_link(c, now_ms);
     return true;
 }
@@ -660,6 +678,9 @@ void bal_ctl_view(const bal_ctl_t *c, uint32_t now_ms, bal_view_t *out)
     out->bat_flags = c->bat_flags;
     out->boots = c->boots;
     out->held = c->held;
+    out->bind_refused = (uint16_t)c->bind_refused;
+    out->scan_armed = (uint16_t)c->refused;
+    out->scan_unready = (uint16_t)c->scan_unready;
 }
 
 bool bal_ctl_report(const bal_ctl_t *c, uint32_t now_ms,

@@ -5821,7 +5821,8 @@ kopfüber eingebaut ist.
   Espressifs esp_lvgl_adapter 0.6.4 ihn patcht
   (`firmware/panel/ppa_dig734.cmake`).
 - Solange der Prüfstand ARMED ist, bleibt die Einstellung gesperrt. Die
-  Zeile hat keine Tasten; KATEGORIE ZURÜCKSETZEN und VERWERFEN ändern sie nicht. Eine Drehung
+  Zeile hat keine Tasten, ihre Hilfezeile und das Band bei einem Druck zeigen
+  `Nur bei SAFE einstellbar`, und KATEGORIE ZURÜCKSETZEN und VERWERFEN ändern sie nicht. Eine Drehung
   bewegt jedes Bedienelement unter dem Finger weg, STOP eingeschlossen. Es gilt dieselbe Regel wie für Leerlaufpuls und Vollgaspuls unter
   MOTOR & ESC, OPTIONEN: Änderungen sind nur bei einem Prüfstand in SAFE erlaubt.
 
@@ -6668,8 +6669,8 @@ Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
 | --- | --- | --- | --- |
 | Leistungsknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie ohne Fehler |
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
-| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE` |
-| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Leistungsknoten der letzten Suche, `rcbench-pwr-3456  -58dBm`, bis zu 6, der gebundene markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ein Auswuchtknoten wird nicht gelistet. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN` |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Leistungsknoten der letzten Suche, `rcbench-pwr-3456  -58dBm`, bis zu 6, der gebundene markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ein Auswuchtknoten wird nicht gelistet. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`; eine Wahl, abgelehnt, weil sich die Liste änderte, zeigt `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN` |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
 
 LEISTUNGSKNOTEN ZURÜCKSETZEN setzt Leistungsknoten auf AUS und
@@ -6696,7 +6697,8 @@ Mit INA228-Quelle auf NODE:
   ersten ist ein Fehler: SAFE, alle Ausgänge aus, und das Band zeigt
   `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`.
   Ein SERVO- oder OUTPUTS-Lauf endet nicht am Knoten.
-- INA228-Quelle ändert sich bei ARMED nicht: ihre Zeile hat keine Tasten.
+- INA228-Quelle ändert sich bei ARMED nicht: ihre Zeile hat keine Tasten,
+  und ein Druck darauf zeigt `Nur bei SAFE einstellbar` auf dem Band.
 - Die Messwerte des Knotens speisen keine Schutzfunktion: das Stromlimit
   des IOmcu und die Abschaltungen des Panels lesen ihre eigenen Sensoren.
 
@@ -6713,8 +6715,8 @@ Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-de
 | Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
 | Auswuchtknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie, und sein Verlust ist kein Fehler: der Knoten misst und steuert nichts |
-| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang nach Knoten, die die Rolle Auswuchten anzeigen, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE` |
-| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Knoten der letzten Suche, `rcbench-bal-3456  -58dBm`, bis zu 6, den gebundenen markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN` |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang nach Knoten, die die Rolle Auswuchten anzeigen, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Knoten der letzten Suche, `rcbench-bal-3456  -58dBm`, bis zu 6, den gebundenen markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`; eine Wahl, abgelehnt, weil sich die Liste änderte, zeigt `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN` |
 | Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus dem STATUS, den er auf STREAM neben seinen Berichten sendet; `--` vor dem ersten auf einer Verbindung |
 | Testmasse | 0.01g bis 20.00g in Schritten von 0.01g | 0.50g | die Masse, die für die Testläufe von MOTOR & ESC > WUCHTEN aufgeklebt wird |
 

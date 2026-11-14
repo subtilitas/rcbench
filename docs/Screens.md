@@ -5335,7 +5335,8 @@ panel mounted upside down.
 - The PPA's SRM (scale, rotate, mirror) engine runs with Espressif's
   workaround for hardware bug DIG-734 on for every copy, as Espressif's
   esp_lvgl_adapter 0.6.4 patches it (`firmware/panel/ppa_dig734.cmake`).
-- Locked while ARMED: the row has no keys, and RESET CATEGORY and DISCARD
+- Locked while ARMED: the row has no keys, its help line and the band at a
+  press read `Set on a SAFE bench only`, and RESET CATEGORY and DISCARD
   leave the value unchanged. A turn moves every control away from the finger, STOP
   included. This follows the same rule as Idle pulse and Full pulse on MOTOR & ESC,
   OPTIONS: changes require a SAFE bench.
@@ -6133,8 +6134,8 @@ ESC's voltage, current, power and totals.
 | --- | --- | --- | --- |
 | Power node | ON, OFF | OFF | the link to the bound node; OFF ends it without an error |
 | INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
-| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
-| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. A balance node is not listed. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS` |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. A balance node is not listed. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`; a pick refused because the list changed reads `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
 
 RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
@@ -6158,7 +6159,8 @@ With INA228 source on NODE:
   the band reads
   `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`.
   A SERVO or OUTPUTS run does not end on the node.
-- INA228 source does not change while ARMED: its row has no keys.
+- INA228 source does not change while ARMED: its row has no keys, and a
+  press on it reads `Set on a SAFE bench only` on the band.
 - The node's readings feed no protection: the IOmcu's current limit and the
   panel's trips read their own sensors.
 
@@ -6174,8 +6176,8 @@ The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance
 | Row | Values | Default | What it does |
 | --- | --- | --- | --- |
 | Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
-| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
-| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS` |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`; a pick refused because the list changed reads `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` |
 | Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from the STATUS it sends on STREAM beside its reports; `--` before the first on a link |
 | Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
 

@@ -273,6 +273,41 @@ TEST_CASE(the_source_does_not_change_while_armed)
     settings_set_armed(NULL);
 }
 
+/* INA228 SOURCE's "+" pressed on the glass while ARMED: the value stays,
+ * and the band says why instead of nothing.  SAFE, the same press steps
+ * it with no band text. */
+TEST_CASE(the_source_row_says_why_while_armed)
+{
+    fresh_hub();
+    settings_set_armed(pn_armed);
+    open_wireless(SET_PNODE_EN);
+    CHECK_EQ(wireless_pane_selected(), WL_ENTRY_PNODE);
+    wl_row_t rows[WL_ENTRY_ROWS_MAX];
+    const int n = wireless_pane_rows(WL_ENTRY_PNODE, rows, WL_ENTRY_ROWS_MAX);
+    int row = -1;
+    for (int i = 0; i < n && i < WL_ENTRY_ROWS_MAX; ++i) {
+        if (rows[i].custom == NULL && rows[i].id == SET_I228_SRC) {
+            row = i;
+        }
+    }
+    CHECK(row >= 0);
+    const gfx_rect_t r = settings_screen_row_rect(row < 0 ? 0 : row);
+    const int y = UI_BAND_H + r.y + r.h / 2;
+    s_pn_armed = true;
+    const uint32_t n0 = ui_router_alert_number();
+    tap(PLUS_X + BTN_W / 2, y);
+    CHECK_EQ(settings_get_int(SET_I228_SRC), 0);
+    CHECK(ui_router_alert_number() != n0);
+    const char *why = ui_router_alert();
+    CHECK_STR_EQ(why != NULL ? why : "", TR(MO_SET_SAFE_ONLY));
+    s_pn_armed = false;
+    const uint32_t n1 = ui_router_alert_number();
+    tap(PLUS_X + BTN_W / 2, y);
+    CHECK_EQ(settings_get_int(SET_I228_SRC), 1);
+    CHECK_EQ(ui_router_alert_number(), n1);
+    settings_set_armed(NULL);
+}
+
 /* SCAN FOR NODE reading FOUND n opens BOUND NODE's list, SCAN AGAIN
  * last; any other reading scans at a tap.  A full scan lists 6 devices and
  * SCAN AGAIN in the 7 rows a list holds, and no pick binds an index past
@@ -310,7 +345,7 @@ TEST_CASE(the_scan_row_opens_the_found_list_with_scan_again)
     CHECK(!wireless_pane_take_pnode(&c));
     CHECK_STR_EQ(ui_router_alert(), TR(PNODE_SCAN_ARMED));
     set_armed(false);
-    /* STOPPED BY ARM, a scan running, none found, none yet: a tap scans. */
+    /* STOPPED BY ARM, a scan running, none found, none yet: no list. */
     v.scan_cut = true;
     wireless_pane_set_pnode(&v);
     CHECK_EQ(sr->choices(), 0);
@@ -369,5 +404,6 @@ int main(void)
     RUN(every_node_state_word_fits_25_cells_in_its_colour);
     RUN(reset_keeps_the_bound_node);
     RUN(the_source_does_not_change_while_armed);
+    RUN(the_source_row_says_why_while_armed);
     return test_summary("wireless_pnode");
 }

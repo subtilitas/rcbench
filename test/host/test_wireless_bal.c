@@ -279,7 +279,7 @@ TEST_CASE(the_scan_row_opens_the_found_list_with_scan_again)
     CHECK(!wireless_pane_take_bal(&c));
     CHECK_STR_EQ(ui_router_alert(), TR(BNODE_SCAN_ARMED));
     set_armed(false);
-    /* STOPPED BY ARM, a scan running, none found, none yet: a tap scans. */
+    /* STOPPED BY ARM, a scan running, none found, none yet: no list. */
     v.scan_cut = true;
     wireless_pane_set_bal(&v);
     CHECK_EQ(sr->choices(), 0);
