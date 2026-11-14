@@ -6,11 +6,11 @@ order: 62
 
 # Wireless
 
-WIRELESS auf [SETUP](setup.md) enthält die Bluetooth-LE-Geräte (Low Energy) des Panels: die IMU (Inertial Measurement Unit) WitMotion BWT901CL und das M5Stack Dial, einen Drehknopf ohne Kabel. Beide erreichen das Panel über den ESP32-C6 des Boards. Das erste IMU EIN oder Dial EIN startet Bluetooth LE bis zum Neustart des Panels. Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
+WIRELESS auf [SETUP](setup.md) enthält die Bluetooth-LE-Geräte (Low Energy) des Panels: die IMU (Inertial Measurement Unit) WitMotion BWT901CL, das M5Stack Dial, einen Drehknopf ohne Kabel, und den Leistungsknoten, einen INA228 am XT60 des ESC. Alle erreichen das Panel über den ESP32-C6 des Boards. Das erste IMU EIN, Dial EIN oder Leistungsknoten EIN startet Bluetooth LE bis zum Neustart des Panels. Die Einstellungen gelten und werden gespeichert wie andere SETUP-Werte.
 
 ## Die linke Liste
 
-Die linke, 220px breite Liste hat 2 Einträge: IMU und DIAL. Jeder zeigt seinen Namen und seinen Zustand. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen. Die Liste funktioniert wie unter [Sensoren](setup-sensors.md#die-linke-liste): ein ausgeschalteter Eintrag zeigt nur seine Einschaltzeile und den Zustand `AUS`, jeder Eintrag behält seine Scrollposition, und die Rücksetztaste nennt den Eintrag, `DIAL ZURÜCKSETZEN`.
+Die linke, 220px breite Liste hat 3 Einträge: IMU, DIAL und LEISTUNGSKNOTEN. Jeder zeigt seinen Namen und seinen Zustand. Tippe auf einen Eintrag, um seine Einstellungen im 754px breiten rechten Bereich zu sehen. Die Liste funktioniert wie unter [Sensoren](setup-sensors.md#die-linke-liste): ein ausgeschalteter Eintrag zeigt nur seine Einschaltzeile und den Zustand `AUS`, jeder Eintrag behält seine Scrollposition, und die Rücksetztaste nennt den Eintrag, `DIAL ZURÜCKSETZEN`.
 
 ## Die IMU
 
@@ -86,6 +86,45 @@ Auf den Prüfstandsbildschirmen:
 | `GESTÖRT` | 500ms kein EVENT |
 | `DIAL VERLOREN` | 1000ms kein EVENT, oder die Trennung |
 
+## Der Leistungsknoten
+
+![WIRELESS auf dem LEISTUNGSKNOTEN-Eintrag, verbunden](view:setup-wireless-pnode)
+
+Der Leistungsknoten ist ein ESP32-C6 mit eigener Zelle, der einen INA228 am XT60 des ESC (Electronic Speed Controller, Motorregler) liest und seine Messwerte über Bluetooth LE sendet. INA228-Quelle legt fest, wessen INA228 MOTOR & ESC zeigt: den des IOmcu, verkabelt, oder den des Knotens.
+
+| Einstellung | Bereich | Vorgabe | Wirkung |
+|---|---|---|---|
+| Leistungsknoten | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Knoten; AUS beendet die Verbindung ohne Fehler |
+| INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu ([Sensoren](setup-sensors.md)); NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle auf WIRED zurück kann |
+| Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
+| Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen listet die Knoten der letzten Suche mit ihrem Signal in dBm; Tippen auf einen bindet ihn und fragt nach dem Speichern. Zurücksetzen behält den gebundenen Knoten |
+| Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zelle des Knotens aus seinem Status jede 1s; `SCHWACH` unter 3.5V |
+
+Mit INA228-Quelle auf NODE:
+
+- Spannung, Strom, Leistung, Spitzen, Ladung und Energie von MOTOR & ESC sind die des Knotens, solange die IOmcu-Verbindung steht. Die eigene Telemetrie des ESC bleibt daneben. Die Spalte `source` des Logs zeigt `node`.
+- Ein Messwert, der älter als 300ms ist, gilt als keiner.
+- Eine Lücke ohne Messwert bis 300ms wird überbrückt, einmal in 10s. Eine längere Lücke oder eine zweite innerhalb von 10s schaltet den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. Ein ARM ohne verbundenen Knoten endet aus demselben Grund 301ms später.
+- Die Messwerte des Knotens speisen keine Schutzfunktion: Stromgrenzen und Abschaltungen lesen ihre eigenen Sensoren.
+
+| Zustand | Wann |
+|---|---|
+| `AUS` | Leistungsknoten AUS |
+| `BLUETOOTH STARTET` | Bluetooth LE startet |
+| `KEIN BLUETOOTH AM C6` | der Host hat keinen Sync mit dem C6; er versucht es weiter |
+| `C6 AUSGEFALLEN: NEUSTART` | die Verbindung zum C6 ist bis zum Neustart des Panels ausgefallen |
+| `KEIN KNOTEN GEBUNDEN` | Bluetooth läuft; kein Knoten ist gebunden |
+| `SUCHE LÄUFT` | eine Suche läuft |
+| `VERBINDE` | das Panel verbindet sich mit dem gebundenen Knoten und richtet seinen Dienst ein |
+| `KEIN LEISTUNGSKNOTEN` | das gebundene Gerät bietet keinen Knotendienst, oder es ist ein Auswuchtknoten |
+| `VERBUNDEN, KEIN MESSWERT` | die Verbindung steht; noch kein Messwert |
+| `ANDERES PROTOKOLL 2` | die Firmware des Knotens spricht eine andere Protokollversion; nichts, was er sendet, wird genommen |
+| `INA228-SETUP ABGELEHNT` | der Knoten nennt einen Shunt und Bereich, die das Panel nicht umrechnen kann; nichts, was er sendet, wird genommen |
+| `KEIN INA228 AM KNOTEN` | der Knoten sendet, aber sein INA228 ist nicht online |
+| `VERBUNDEN` | ein Messwert in den letzten 300ms |
+| `300ms KEIN MESSWERT` | verbunden, 300ms kein Messwert |
+| `KNOTEN VERLOREN` | die Verbindung brach nach einem Messwert ab |
+
 ## Verwandte Seiten
 
 - [Setup](setup.md)
@@ -93,3 +132,4 @@ Auf den Prüfstandsbildschirmen:
 - [Sensoren](setup-sensors.md)
 - [Motor und ESC](motor.md)
 - [Servo](servo.md)
+- [Sensorknoten](https://github.com/subtilitas/rcbench/wiki/Nodes-de#das-panel)

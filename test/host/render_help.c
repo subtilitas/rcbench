@@ -52,6 +52,7 @@ static const struct {
     { "help-setup-sensors", "setup-sensors" },
     { "help-setup-wireless-imu", "setup-wireless-imu" },
     { "help-setup-wireless-dial", "setup-wireless-dial" },
+    { "help-setup-wireless-pnode", "setup-wireless-pnode" },
     { "help-outputs", "outputs" },
     { "help-outputs-port", "outputs-port" },
     { "help-outputs-grid", "outputs-grid" },

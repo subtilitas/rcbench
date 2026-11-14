@@ -34,6 +34,7 @@
 #include "overview_screen.h"
 #include "panel.h"
 #include "panel_dial.h"
+#include "panel_pnode.h"
 #include "panel_imu.h"
 #include "panel_main.h"
 #include "panel_perf.h"
@@ -678,6 +679,7 @@ void panel_frame_loop(void)
                 .srv_tenths = dial_step_tenths(settings_get_int(SET_DIAL_SRV)),
             };
             panel_dial_frame(&dial_in);
+            panel_pnode_frame(armed || arm_wanted_now);
         }
 
         if (splash_screen_done() && ui_router_current() == SCREEN_SPLASH) {

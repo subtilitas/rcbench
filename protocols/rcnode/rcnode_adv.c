@@ -64,18 +64,18 @@ bool rcnode_name(uint8_t role, const uint8_t addr[6], char out[RCNODE_NAME_MAX])
 size_t rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
                         size_t cap)
 {
-    char name[RCNODE_NAME_MAX];
-    if (out == NULL || cap < RCNODE_ADV_LEN || !rcnode_name(role, addr, name)) {
+    if (out == NULL || cap < RCNODE_ADV_LEN || role_word(role) == NULL
+        || addr == NULL) {
         return 0u;
     }
     size_t i = 0u;
     out[i++] = 2u;
     out[i++] = AD_FLAGS;
     out[i++] = 0x06u;                    /* LE general discoverable, no BR/EDR */
-    out[i++] = (uint8_t)(1u + RCNODE_NAME_MAX - 1u);
-    out[i++] = AD_NAME_FULL;
-    memcpy(out + i, name, RCNODE_NAME_MAX - 1u);
-    i += RCNODE_NAME_MAX - 1u;
+    out[i++] = 17u;
+    out[i++] = AD_UUID128_LIST;
+    rcnode_uuid(RCNODE_ID_SERVICE, out + i);
+    i += 16u;
     out[i++] = (uint8_t)(1u + MAKER_LEN);
     out[i++] = AD_MAKER;
     out[i++] = (uint8_t)(RCNODE_COMPANY & 0xFFu);
@@ -87,14 +87,16 @@ size_t rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
     return i;
 }
 
-size_t rcnode_rsp_build(uint8_t *out, size_t cap)
+size_t rcnode_rsp_build(uint8_t role, const uint8_t addr[6], uint8_t *out,
+                        size_t cap)
 {
-    if (out == NULL || cap < RCNODE_RSP_LEN) {
+    char name[RCNODE_NAME_MAX];
+    if (out == NULL || cap < RCNODE_RSP_LEN || !rcnode_name(role, addr, name)) {
         return 0u;
     }
-    out[0] = 17u;
-    out[1] = AD_UUID128_LIST;
-    rcnode_uuid(RCNODE_ID_SERVICE, out + 2);
+    out[0] = (uint8_t)(1u + RCNODE_NAME_MAX - 1u);
+    out[1] = AD_NAME_FULL;
+    memcpy(out + 2, name, RCNODE_NAME_MAX - 1u);
     return RCNODE_RSP_LEN;
 }
 
@@ -119,6 +121,11 @@ static uint8_t name_role(const uint8_t *s, size_t n)
         return RCNODE_ROLE_BALANCE;
     }
     return 0u;
+}
+
+uint8_t rcnode_name_role(const char *name)
+{
+    return (name == NULL) ? 0u : name_role((const uint8_t *)name, strlen(name));
 }
 
 /**

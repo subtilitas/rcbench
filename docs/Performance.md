@@ -410,7 +410,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,680 | 1,424 |
 | `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's and the Dial's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`) | 4,096 | 1,808 | 1,248 |
+| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and the power node's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`) | 4,096 | 1,808 | 1,248 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -708,7 +708,7 @@ PSRAM free at start-up: not measured.
 Bluetooth LE (Low Energy) runs on the C6 as well; the P4 runs its host,
 NimBLE ([The ESP32-C6 radio, Bluetooth LE through the
 ESP32-C6](C6.md#bluetooth-le-through-the-esp32-c6)). The host starts
-at `panel_ble_start()`, which the IMU's and the Dial's sides of the `blec` task call at the first IMU ON or Dial ON and
+at `panel_ble_start()`, which the IMU's, the Dial's and the power node's sides of the `blec` task call at the first IMU ON, Dial ON or Power node ON and
 the console build's `ble scan` calls, and stays until the panel restarts. The start logs the free memory before and
 after it:
 
@@ -743,7 +743,11 @@ since the IMU and the Dial start it:
 The console row is measured without the Dial's client (`panel_dial.c`,
 `dial_ctl.c`, `dial_stream.c`, `dial_panel.c` and `protocols/dialknob`); with
 it, not measured. The Dial's client adds 4,376 bytes of DIRAM, 4,368 of them
-.bss, and 23,536 bytes of image to the default build.
+.bss, and 23,536 bytes of image to the default build. The power node's
+client, its objects alone (`panel_pnode.c`, `pnode_ctl.c`, `pnode_meter.c`,
+`wireless_pnode.c` and `protocols/rcnode`), adds 3,731 bytes of DIRAM,
+3,723 of them .bss, and 10,560 bytes of image (`esp_idf_size --files`);
+its texts and its calls in other files are not counted.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one

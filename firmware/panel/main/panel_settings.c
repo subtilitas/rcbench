@@ -29,6 +29,7 @@
 #include "freertos/FreeRTOS.h"
 #include "panel.h"
 #include "panel_dial.h"
+#include "panel_pnode.h"
 #include "panel_imu.h"
 #include "panel_main.h"
 #include "sdkconfig.h"
@@ -166,6 +167,7 @@ void settings_text_changed(setting_text_id_t id)
     publish_log_folder(id);
     panel_imu_text_changed(id);
     panel_dial_text_changed(id);
+    panel_pnode_text_changed(id);
 }
 
 void publish_log_folder(setting_text_id_t id)
@@ -288,6 +290,8 @@ void settings_changed(setting_id_t id)
     } else if (id == SET_DIAL_EN || id == SET_DIAL_THR
                || id == SET_DIAL_SRV) {
         panel_dial_settings_changed(id);
+    } else if (id == SET_PNODE_EN || id == SET_I228_SRC) {
+        panel_pnode_settings_changed(id);
     } else if (settings_sensors_row(id)) {
         publish_sense();          /* SETUP > SENSORS */
     } else {

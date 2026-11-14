@@ -1188,6 +1188,29 @@ and the control task's side (`firmware/panel/main/panel_dial.c`,
 `panel_supply.c`). Navigation from the Dial is not built. The battery's
 reading pin is unknown; the encoder's direction is not measured.
 
+### The power node on the panel
+
+Built and host-tested, not run with a node: the panel's side of the power
+node ([docs/Nodes.md](docs/Nodes.md), "The panel"). The controller on the
+panel's Bluetooth LE hub, owner 2 (`shared/ui/pnode_ctl.c`,
+`test_pnode_ctl` against a scripted host stack and node: the profile's
+UUIDs, INFO's protocol, role and INA228 set-up, UP, STALE after 300ms and
+LOST, the scan refused while ARMED and stopped at the switch to ARMED,
+power nodes listed and balance nodes not, the bind, the RUN marker at the
+switch to ARMED and after a drop within the run). The readings
+(`shared/ui/pnode_meter.c`, `test_pnode_meter`: the mean of the windows
+since the last read, stale after 300ms, a clipped window at the full scale
+of INFO's range and shunt, the run's peaks with the node's RUN extremes
+under its tag, the totals as differences of the 40-bit accumulators with
+the restart rule, the scaling against `ina228_calibrate()`, and the
+dropout rule of `servo_gap.h` at 299ms, 300ms and 301ms and a second gap
+9.9s and 10.1s after the first). SETUP > WIRELESS > POWER NODE with
+INA228 SOURCE (`shared/ui/wireless_pnode.c`, `test_wireless_pnode`), the
+log's `node` source (`test_logwriter`), and the `blec` task's and the
+control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
+`panel_supply.c`). The latency from a window to the panel's read is not
+measured.
+
 ### Phase tap (ESC tones)
 
 The detector (`protocols/phase_tap/tone.c`, `test_tone`) turns edge times into beeps and
@@ -1423,8 +1446,8 @@ rcbench/
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `vibe` · `rcnode` · `dial` | | | yes |
-| `bleuart` · `dialknob` | yes | | yes |
+| `hc05` · `vibe` · `dial` | | | yes |
+| `bleuart` · `dialknob` · `rcnode` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1458,7 +1481,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 566 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 569 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1573,6 +1596,7 @@ The host suite is 566 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
 `test_bleuart_hub`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`,
 `test_settings_panes`,
 `test_dial_face`, `test_dial_fit`,
 `test_imu`, `test_imu_filter`,
@@ -2065,7 +2089,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-962 committed screenshots to the current render, 481 in English and the same 481 in German, and `render_ui.py --fit` fails on a string that
+964 committed screenshots to the current render, 482 in English and the same 482 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

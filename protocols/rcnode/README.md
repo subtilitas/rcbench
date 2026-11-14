@@ -40,7 +40,7 @@ server on its own Bluetooth stack. The caller moves the bytes.
 | XXXX | Characteristic | Properties | Content |
 |---|---|---|---|
 | 0100 | the node service | | |
-| 0101 | STREAM | NOTIFY | power: windows, accumulators, run extremes; balance: reports |
+| 0101 | STREAM | NOTIFY | power: windows, accumulators, run extremes; balance: reports; both: `RCNODE_T_STATUS` |
 | 0102 | STATUS | READ, NOTIFY | `RCNODE_T_STATUS`, notified every 1000ms |
 | 0103 | CONTROL | WRITE, WRITE WITHOUT RESPONSE | 1 to 3 bytes, below |
 | 0104 | INFO | READ | `RCNODE_T_INFO` |
@@ -53,11 +53,16 @@ server on its own Bluetooth stack. The caller moves the bytes.
 | 0x02 | `RCNODE_T_PWR_ACC` | STREAM | 20 bytes | every 500ms |
 | 0x03 | `RCNODE_T_PWR_RUN` | STREAM | 18 bytes | every 500ms |
 | 0x20 | `RCNODE_T_BAL_REPORT` | STREAM | 24 bytes | every 250ms |
-| 0x30 | `RCNODE_T_STATUS` | STATUS | 20 bytes | every 1000ms and on a read |
+| 0x30 | `RCNODE_T_STATUS` | STATUS, STREAM | 20 bytes | every 1000ms and on a read |
 | 0x31 | `RCNODE_T_INFO` | INFO | 20 bytes | on a read |
 
 The byte tables of each packet are in `include/rcnode.h`, beside its
 struct.
+
+The STATUS packet goes on STREAM as well, so a central that subscribes to
+STREAM alone, as protocols/bleuart's does, receives it. Its `seq` counts
+STATUS packets; a gap in STREAM's own `seq` is counted over the other
+types only.
 
 - **Power window.** Flags, the sample count, the mean and the highest
   current (µA, signed 32 bits), the mean and the lowest bus voltage (2mV
@@ -128,17 +133,19 @@ role takes which operation.
 
 ### Advertising
 
-- Legacy advertising, 29 bytes: flags 0x06, the complete name
-  `rcbench-pwr-XXXX` or `rcbench-bal-XXXX` (the two address bytes printed
-  last, upper-case hex), and manufacturer data: company 0xFFFF (the value
+- Legacy advertising, 29 bytes: flags 0x06, the service UUID in a complete
+  list of 128-bit UUIDs, and manufacturer data: company 0xFFFF (the value
   left for tests and for no registered company), `r`, `c`, the protocol
-  version and the role.
-- Scan response, 18 bytes: the service UUID in a complete list of 128-bit
-  UUIDs.
+  version and the role. A central that scans with duplicate filtering
+  lists the node from this report alone.
+- Scan response, 18 bytes: the complete name `rcbench-pwr-XXXX` or
+  `rcbench-bal-XXXX` (the two address bytes printed last, upper-case hex).
 - `rcnode_adv_match()` takes a report's advertising or scan response. The
   manufacturer data names the role first, then the name. The service UUID
   alone matches with role 0. A structure whose length runs past the end
   refuses the report.
+- `rcnode_name_role()` takes a name a scan kept and gives the role its
+  prefix names, 0 for another name.
 
 ### The power node's windows
 
@@ -190,8 +197,9 @@ void         rcnode_run_take(rcnode_run_t *r, const rcnode_pwr_win_t *w);
 void         rcnode_run_step(rcnode_run_t *r, const rcnode_pwr_win_t *closed, int tag);
 bool         rcnode_name(uint8_t role, const uint8_t addr[6], char out[RCNODE_NAME_MAX]);
 size_t       rcnode_adv_build(uint8_t role, const uint8_t addr[6], uint8_t *out, size_t cap);
-size_t       rcnode_rsp_build(uint8_t *out, size_t cap);
+size_t       rcnode_rsp_build(uint8_t role, const uint8_t addr[6], uint8_t *out, size_t cap);
 bool         rcnode_adv_match(const uint8_t *ad, size_t len, uint8_t *role);
+uint8_t      rcnode_name_role(const char *name);
 ```
 
 ## Use in another project

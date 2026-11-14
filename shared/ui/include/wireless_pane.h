@@ -1,7 +1,7 @@
 /**
  * @file wireless_pane.h
  * @brief SETUP > WIRELESS' split pane: the panel's Bluetooth LE devices,
- *        IMU and DIAL, in a left list of the kind SENSORS has
+ *        IMU, DIAL and POWER NODE, in a left list of the kind SENSORS has
  *        (sensors_pane.h), the rows each one shows, its state word and its
  *        reset.
  *
@@ -11,7 +11,11 @@
  * is off; on, SCAN FOR DIAL (a tap scans 10s, refused while ARMED with the
  * band's DIAL_SCAN_ARMED), BOUND DIAL (a tap lists the Dials the last scan
  * found, a tap on one binds it) and the two steps; its state is the
- * panel's (wireless_pane_set_dial()).
+ * panel's (wireless_pane_set_dial()).  POWER NODE: Power node and INA228
+ * SOURCE while it is off, so the source can go back to WIRED without
+ * switching the node on; on, SCAN FOR NODE (refused while ARMED with the
+ * band's PNODE_SCAN_ARMED), BOUND NODE and NODE BATTERY under them; its
+ * state is the panel's (wireless_pane_set_pnode(), wireless_pnode.c).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -22,6 +26,7 @@
 
 #include "dial_ctl.h"
 #include "gfx.h"
+#include "pnode_view.h"
 #include "settings.h"
 #include "ui_setlist.h"
 
@@ -34,6 +39,7 @@ enum {
     WL_ENTRY_IMU = 0, /**< enable, angle source, axis, sign, rate,
                            algorithm, filter */
     WL_ENTRY_DIAL,    /**< enable, scan, bind, two steps */
+    WL_ENTRY_PNODE,   /**< enable, INA228 source, scan, bind, battery */
     WL_ENTRY_COUNT
 };
 
@@ -126,6 +132,45 @@ const char *wireless_pane_dial_word(const dial_view_t *v, char *buf,
  * @return false when none waits.
  */
 bool wireless_pane_take_dial(dial_cmd_t *out);
+
+/**
+ * @brief The power node as the panel last read it.  A change repaints
+ *        SETUP.
+ * @param v The view; NULL is a node OFF.
+ */
+void wireless_pane_set_pnode(const pnode_view_t *v);
+
+/**
+ * @brief The power node's view as last set.
+ * @return The view; never NULL.
+ */
+const pnode_view_t *wireless_pane_pnode(void);
+
+/**
+ * @brief A power node state in words, at most 25 cells.
+ * @param v   The view.
+ * @param buf Takes the words.
+ * @param n   The size of @p buf, bytes.
+ * @param ink Takes their colour; may be NULL.
+ * @return @p buf; "" for no buffer.
+ */
+const char *wireless_pane_pnode_word(const pnode_view_t *v, char *buf,
+                                     size_t n, gfx_color_t *ink);
+
+/**
+ * @brief The next command of the POWER NODE entry's rows, for the panel.
+ * @param out Receives it.
+ * @return false when none waits.
+ */
+bool wireless_pane_take_pnode(pnode_cmd_t *out);
+
+/** @brief SCAN FOR NODE, the POWER NODE entry's third row; public for the
+ *         tests. */
+extern const ui_setlist_custom_t wireless_pane_pnode_scan_row;
+/** @brief BOUND NODE, its fourth row; public for the tests. */
+extern const ui_setlist_custom_t wireless_pane_pnode_bind_row;
+/** @brief NODE BATTERY, its fifth row; public for the tests. */
+extern const ui_setlist_custom_t wireless_pane_pnode_bat_row;
 
 /** @brief SCAN FOR DIAL, the DIAL entry's second row; public for the
  *         tests. */

@@ -237,6 +237,9 @@ typedef enum {
     SET_DIAL_EN,
     SET_DIAL_THR,
     SET_DIAL_SRV,
+    /* --- the power node (SETUP > WIRELESS > POWER NODE, pnode_ctl.h) ---- */
+    SET_PNODE_EN,
+    SET_I228_SRC,
 
     SETTING_COUNT
 } setting_id_t;
@@ -282,6 +285,10 @@ typedef enum {
     SET_TEXT_DIAL_ADDR,      /**< the bound Dial's BLE address and its
                                   type; key dial_ble                      */
     SET_TEXT_DIAL_NAME,      /**< its name from the scan, "DIAL-3A10"    */
+    SET_TEXT_PNODE_ADDR,     /**< the bound power node's BLE address and
+                                  its type; key pnode_ble                 */
+    SET_TEXT_PNODE_NAME,     /**< its name from the scan,
+                                  "rcbench-pwr-3456"                      */
     SETTING_TEXT_COUNT
 } setting_text_id_t;
 

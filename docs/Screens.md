@@ -1253,13 +1253,15 @@ the switch arms no motor. It has two more columns before `source`:
 - The other columns of a SERVO file are a MOTOR file's, without
   `throttle`.
 
-`source` is `measured` for rows produced by a meter and `model` for rows
+`source` is `measured` for rows produced by a meter, `node` for rows whose
+INA228 figures come from the power node (INA228 source NODE,
+[WIRELESS: the power node](#wireless-the-power-node)), and `model` for rows
 produced by the panel's model (the SIMULATED mark). Supply files use the
-same final column. Files without it end at `ch3 voltage` or `energy`;
+same final column, without `node`. Files without it end at `ch3 voltage` or `energy`;
 LOGS and the tools read both forms. `source` is text and is never plotted.
 
-`ina voltage` and `ina current` come from the INA228 and are empty when it
-is not the source. `esc current` is the ESC's telemetry current, read from
+`ina voltage` and `ina current` come from the INA228, the IOmcu's or the
+power node's, and are empty when it is not the source. `esc current` is the ESC's telemetry current, read from
 the SENSE page when the INA228 is the source and the BENCH page otherwise.
 It is empty if the ESC reports no current or the panel models the bench.
 Any unmeasured quantity leaves an empty cell.
@@ -5102,7 +5104,7 @@ over its name in the 12 x 24px face, and a line in the 10 x 20px face.
 
 - Four categories: PANEL, SENSORS, WIRELESS and SD CARD, the bench-wide
   settings. A tile names the number of settings its list shows; SENSORS'
-  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL`.
+  says what it holds, `CURRENT, ANGLE, PHASE TAP`, and WIRELESS' `IMU, DIAL, POWER NODE`.
   A tap opens the category's list.
   The pack, motor and throttle-output settings are on
   MOTOR & ESC > OPTIONS
@@ -6027,14 +6029,16 @@ a run ([Servo procedures](Servo.md)).
 ### WIRELESS: the IMU and the Dial
 
 WIRELESS holds the panel's Bluetooth LE devices in a split view of
-SENSORS' kind: 2 entries on the left, IMU and DIAL, each with its name and
-its state, and the selected entry's rows on the right. The first IMU ON or
-Dial ON starts Bluetooth LE until the panel restarts.
+SENSORS' kind: 3 entries on the left, IMU, DIAL and POWER NODE, each with
+its name and its state, and the selected entry's rows on the right. The
+first IMU ON, Dial ON or Power node ON starts Bluetooth LE until the panel
+restarts.
 
 | Entry | State while on | Rows |
 | --- | --- | --- |
 | IMU | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO SENSOR BOUND`, `SCANNING`, `CONNECTING`, `BOUND`, `CONNECTED 50Hz`, `NO FRAMES` ([The Bluetooth IMU](#the-bluetooth-imu)) | 2 while off: IMU and ANGLE SOURCE; 7 while on |
 | DIAL | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO DIAL BOUND`, `SCANNING`, `CONNECTING`, `BOUND: NOT A DIAL`, `CONNECTED, NO EVENT`, `OTHER PROTOCOL n`, `CONNECTED`, `DEGRADED`, `DIAL LOST` | 1 while off; 5 while on |
+| POWER NODE | `STARTING BLUETOOTH`, `NO BLUETOOTH ON C6`, `C6 FAILED: RESTART`, `NO NODE BOUND`, `SCANNING`, `CONNECTING`, `NOT A POWER NODE`, `CONNECTED, NO READING`, `OTHER PROTOCOL n`, `INA228 SET-UP REFUSED`, `NO INA228 ON THE NODE`, `CONNECTED`, `NO READING FOR 300ms`, `NODE LOST` ([WIRELESS: the power node](#wireless-the-power-node)) | 2 while off: Power node and INA228 SOURCE; 5 while on |
 
 ![WIRELESS on the DIAL entry](img/setup-wireless-dial.png)
 
@@ -6053,6 +6057,45 @@ stays. The band shows `DIAL: NO EVENT FOR 500ms` when a linked Dial
 goes quiet, `DIAL LOST` when it is lost while SAFE, and
 `DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF` for the error
 while ARMED.
+
+### WIRELESS: the power node
+
+![WIRELESS on the POWER NODE entry](img/setup-wireless-pnode.png)
+
+The POWER NODE entry connects the INA228 power node
+([Sensor nodes](Nodes.md#the-panel)) and says whose INA228 feeds MOTOR &
+ESC's voltage, current, power and totals.
+
+| Row | Values | Default | What it does |
+| --- | --- | --- | --- |
+| Power node | ON, OFF | OFF | the link to the bound node; OFF ends it without an error |
+| INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, the bound one marked; a tap on one binds it and asks for a save. A balance node is not listed |
+| Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
+
+RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
+the bound node stays. The signal strength of a linked node is not shown:
+its STATUS carries none, and the found list's dBm are the scan's.
+
+With INA228 source on NODE:
+
+- The node's readings replace the INA228 figures while the IOmcu link is
+  up: `ina voltage`, `ina current` and the log's `source` column read
+  `node`. The ESC's own telemetry stays beside them.
+- A reading older than 300ms is none: voltage, current and power show as
+  not measured.
+- A run counts on the node. A gap without a reading of up to 300ms rides,
+  once in 10s. A longer gap, or a second one within 10s of the first's
+  start, is an error: SAFE, every output off, and the band reads
+  `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`.
+  A switch to ARMED with no reading in the last 100ms starts a gap at once,
+  so a node that is off or out of range ends the run after 301ms.
+- The node's readings feed no protection: the IOmcu's current limit and the
+  panel's trips read their own sensors.
+
+The band shows `POWER NODE: NO READING FOR 300ms` when a linked node stops
+sending readings, and `POWER NODE LOST` when the link drops while SAFE.
 
 ### SD CARD: which logs are written, and where
 

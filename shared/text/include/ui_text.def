@@ -1706,6 +1706,9 @@ UI_TEXT(HG_SET_TITLE_WIRELESS, 0,
 UI_TEXT(HG_SET_ENTRY_DIAL, 0,
     "The M5Stack Dial, a knob over Bluetooth LE. A tap shows its rows on the right.",
     "Das M5Stack Dial, ein Drehknopf über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
+UI_TEXT(HG_SET_ENTRY_PNODE, 0,
+    "The power node, an INA228 on the ESC's XT60 over Bluetooth LE. A tap shows its rows on the right.",
+    "Der Leistungsknoten, ein INA228 am XT60 des ESC über Bluetooth LE. Tippen zeigt rechts seine Zeilen.")
 UI_TEXT(HG_SET_OUTPUTS, 0,
     "Binds the IOmcu's pins to protocols and sets each programming port's pin and function.",
     "Ordnet die Pins des IOmcu Protokollen zu und stellt Pin und Funktion jedes Programmierports ein.")
@@ -11905,8 +11908,8 @@ UI_TEXT(IMU_ERR_SCAN, 53,
 /* SETUP > WIRELESS: the tile's line, the DIAL entry's rows and options,
  * its state words (25 cells of 8 x 16), the scan's and the bind's rows. */
 UI_TEXT(SET_HUB_WIRELESS, 0,
-    "IMU, DIAL",
-    "IMU, DIAL")
+    "IMU, DIAL, POWER NODE",
+    "IMU, DIAL, LEISTUNGSKNOTEN")
 UI_SETTING_LABEL(SET_DIAL_EN,
     "Dial",
     "Dial")
@@ -12011,6 +12014,102 @@ UI_TEXT(DIAL_LOST_SAFE, 94,
 UI_TEXT(ALERT_DIAL_LOST, 94,
     "DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF",
     "DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS")
+
+/* --- the power node (pnode_ctl.c, wireless_pnode.c, panel_pnode.c) ----- */
+/* SETUP > WIRELESS: the POWER NODE entry's rows and options, its state
+ * words (25 cells of 8 x 16), the scan's, the bind's and the battery's
+ * rows.  The scan's and the bind's values are the Dial's words. */
+UI_SETTING_LABEL(SET_PNODE_EN,
+    "Power node",
+    "Leistungsknoten")
+UI_SETTING_HELP(SET_PNODE_EN,
+    "INA228 power node over Bluetooth LE",
+    "INA228-Leistungsknoten über Bluetooth LE")
+UI_SETTING_LABEL(SET_I228_SRC,
+    "INA228 source",
+    "INA228-Quelle")
+UI_SETTING_HELP(SET_I228_SRC,
+    "Whose INA228 feeds MOTOR & ESC's readings",
+    "Wessen INA228 MOTOR & ESC speist")
+UI_OPTIONS(i228_src)
+UI_OPTION("WIRED", NULL)
+UI_OPTION("NODE", NULL)
+UI_OPTIONS_END(i228_src)
+UI_TEXT(PNODE_ENTRY, 16,
+    "POWER NODE",
+    "LEISTUNGSKNOTEN")
+UI_TEXT(PNODE_ST_NONE, 25,
+    "NO NODE BOUND",
+    "KEIN KNOTEN GEBUNDEN")
+UI_TEXT(PNODE_ST_NOT_NODE, 25,
+    "NOT A POWER NODE",
+    "KEIN LEISTUNGSKNOTEN")
+UI_TEXT(PNODE_ST_WAITING, 25,
+    "CONNECTED, NO READING",
+    "VERBUNDEN, KEIN MESSWERT")
+UI_TEXT(PNODE_ST_SETUP, 25,
+    "INA228 SET-UP REFUSED",
+    "INA228-SETUP ABGELEHNT")
+UI_TEXT(PNODE_ST_NO_SENSOR, 25,
+    "NO INA228 ON THE NODE",
+    "KEIN INA228 AM KNOTEN")
+UI_TEXT(PNODE_ST_STALE, 25,
+    "NO READING FOR 300ms",
+    "300ms KEIN MESSWERT")
+UI_TEXT(PNODE_ST_LOST, 25,
+    "NODE LOST",
+    "KNOTEN VERLOREN")
+UI_TEXT(PNODE_ROW_SCAN, 43,
+    "Scan for node",
+    "Knoten suchen")
+UI_TEXT(PNODE_ROW_SCAN_HELP, 43,
+    "Lists the power nodes in range for 10s",
+    "Listet 10s lang Knoten in Reichweite")
+UI_TEXT(PNODE_ROW_BIND, 43,
+    "Bound node",
+    "Gebundener Knoten")
+UI_TEXT(PNODE_ROW_BIND_HELP, 43,
+    "A tap lists the nodes the last scan found",
+    "Tippen listet die Knoten der letzten Suche")
+UI_TEXT(PNODE_ROW_BAT, 43,
+    "Node battery",
+    "Knotenakku")
+UI_TEXT(PNODE_ROW_BAT_HELP, 43,
+    "The cell voltage the node reports every 1s",
+    "Zellspannung, die der Knoten jede 1s meldet")
+UI_TEXT(PNODE_BAT_V, 18,
+    "%u.%02uV",
+    "%u.%02uV")
+UI_TEXT(PNODE_BAT_LOW, 18,
+    "LOW %u.%02uV",
+    "SCHWACH %u.%02uV")
+UI_TEXT(PNODE_BAT_NONE, 18,
+    "NO CELL",
+    "KEINE ZELLE")
+UI_TEXT(PNODE_BAT_ERR, 18,
+    "READ FAILED",
+    "LESEFEHLER")
+UI_TEXT(PNODE_BAT_UNKNOWN, 18,
+    "NOT LINKED",
+    "NICHT VERBUNDEN")
+/* The band's texts: the scan refused while ARMED, the link's notices, and
+ * the error of the node's readings lost while ARMED with INA228 SOURCE
+ * NODE. */
+UI_TEXT(PNODE_SCAN_ARMED, 94,
+    "NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST",
+    "KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN")
+UI_TEXT(PNODE_SCAN_OFF, 94,
+    "BLUETOOTH IS NOT READY: NO NODE SCAN",
+    "BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE")
+UI_TEXT(PNODE_STALE, 94,
+    "POWER NODE: NO READING FOR 300ms",
+    "LEISTUNGSKNOTEN: 300ms KEIN MESSWERT")
+UI_TEXT(PNODE_LOST_SAFE, 94,
+    "POWER NODE LOST",
+    "LEISTUNGSKNOTEN VERLOREN")
+UI_TEXT(ALERT_PNODE_LOST, 94,
+    "POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF",
+    "MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS")
 /* Slice 8: the LIMIT RUN settings' SERVO row and the limit run's lines for a
  * Hitec servo (servo_limit_seam.c). */
 UI_TEXT(SV_ROW_LIM_SERVO, 0,

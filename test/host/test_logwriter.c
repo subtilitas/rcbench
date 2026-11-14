@@ -1332,6 +1332,48 @@ TEST_CASE(a_bench_row_names_its_source)
     CHECK(memcmp(r2_end - 6, ";model", 6) == 0);
 }
 
+/* A row whose INA228 figures are the power node's says "node", and its ina
+ * cells hold the node's figures; the same flags without from_node say
+ * "measured", and the model wins over both. */
+TEST_CASE(a_bench_row_from_the_power_node_says_node)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.flags = LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK | LINK_BN_SENSED;
+    b.voltage = 22.2f;
+    b.current = 31.5f;
+    b.from_node = true;
+    CHECK(log_writer_row(&w, 1.0f, &b));
+    b.from_node = false;
+    CHECK(log_writer_row(&w, 1.05f, &b));
+    b.from_node = true;
+    b.flags = LINK_BN_VOLTAGE_OK;   /* not SENSED: the node is no source */
+    CHECK(log_writer_row(&w, 1.1f, &b));
+    b.flags = LINK_BN_SENSED | LINK_BN_SIMULATED;
+    CHECK(log_writer_row(&w, 1.15f, &b));
+    const char *p = strchr(g_mem.buf, '\n');
+    const char *want[4] = { ";node", ";measured", ";measured", ";model" };
+    for (int k = 0; k < 4; ++k) {
+        CHECK(p != NULL);
+        if (p == NULL) {
+            return;
+        }
+        const char *row = p + 1;
+        p = strchr(row, '\n');
+        CHECK(p != NULL);
+        if (p == NULL) {
+            return;
+        }
+        const size_t n = strlen(want[k]);
+        CHECK(memcmp(p - n, want[k], n) == 0);
+        if (k == 0) {
+            CHECK(strstr(row, ";22.20;31.50;") != NULL);
+        }
+    }
+}
+
 /* The reader takes a file with the column, a file without it, and a file whose
  * source cells hold anything else: the column is text, never a channel, and
  * the numeric columns read the same in all three. */
@@ -1381,6 +1423,7 @@ int main(void)
 {
     RUN(a_written_run_reads_back);
     RUN(a_bench_row_names_its_source);
+    RUN(a_bench_row_from_the_power_node_says_node);
     RUN(a_reader_takes_a_file_with_and_without_the_source_column);
     RUN(the_header_carries_the_units_and_no_row_is_wasted);
     RUN(a_column_nothing_measured_is_empty_rather_than_zero);

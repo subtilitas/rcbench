@@ -8,6 +8,19 @@ history is in git.
 
 ### Added
 
+- The power node on the panel: a third Bluetooth LE client on the panel's
+  hub, SETUP > WIRELESS > POWER NODE with Power node ON or OFF, INA228
+  SOURCE (WIRED or NODE, WIRED by default), SCAN FOR NODE (refused while
+  ARMED, stopped at the switch to ARMED), BOUND NODE and NODE BATTERY.
+  With NODE the node's windows feed MOTOR & ESC's voltage, current, power
+  and peaks, and its 40-bit accumulators the run's charge and energy, as
+  differences from the last packet before the arm with the restart rule.
+  The node's readings feed no protection; a gap of up to 300ms rides once
+  in 10s, a longer one or a second one within 10s ends the run as an
+  error. The bench log's `source` column reads `node` on such rows. At
+  each switch to ARMED the panel writes RUN with the run's tag
+  ([The sensor nodes](docs/Nodes.md#the-panel)).
+
 - The sensor nodes' firmware (`firmware/node`), one ESP-IDF v6.1 project
   for the ESP32-C6 on a Waveshare ESP32-C6-Zero, the role chosen at build
   time. The power node reads a MATEK I2C-INA-BM's INA228 (0x45, 200µΩ, the
@@ -17,7 +30,7 @@ history is in git.
   Bluetooth LE as `rcbench-pwr-XXXX`, reads its cell through a
   200kΩ/200kΩ divider on GPIO3, sleeps after 120s without a link or a
   pack and checks for a pack every 10s, and prints a console line every
-  second. The panel does not connect to a node yet. CI builds the image and a release carries
+  second. CI builds the image and a release carries
   `rcbench-node-pwr-<version>.bin` and `rcbench-node-pwr-merged-<version>.bin`
   ([The sensor nodes](docs/Nodes.md)).
 - Protocol module `protocols/rcnode`: the nodes' service and
@@ -182,6 +195,12 @@ history is in git.
 
 ### Changed
 
+- The nodes advertise the service's 128-bit UUID and the manufacturer
+  data, and send the name in the scan response, so a central that filters
+  duplicates lists a node from its first report. `rcnode_rsp_build()` takes
+  the role and the address. The nodes send their STATUS packet on STREAM
+  as well, for a central that subscribes to STREAM alone
+  ([protocols/rcnode](protocols/rcnode/README.md)).
 - SETUP has a WIRELESS tile, `IMU, DIAL`, for the panel's Bluetooth LE
   devices. The IMU's 7 rows move from SENSORS to its IMU entry, unchanged
   in key and behaviour; SENSORS has 8 entries. The IMU screen's OPTIONS

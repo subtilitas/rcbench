@@ -37,6 +37,9 @@ static const setting_id_t k_imu[] = { SET_IMU_EN, SET_ANGLE_SOURCE,
 /** @brief The Dial's settings, the enable row first. */
 static const setting_id_t k_dial[] = { SET_DIAL_EN, SET_DIAL_THR,
                                        SET_DIAL_SRV };
+/** @brief The power node's settings, the enable row first and INA228
+ *         SOURCE second: both stand while the node is off. */
+static const setting_id_t k_pnode[] = { SET_PNODE_EN, SET_I228_SRC };
 
 _Static_assert(sizeof(k_imu) / sizeof(k_imu[0]) <= WL_ENTRY_ROWS_MAX,
                "the IMU's rows fit an entry");
@@ -194,6 +197,11 @@ int wireless_pane_entry_of(setting_id_t id)
             return WL_ENTRY_DIAL;
         }
     }
+    for (size_t i = 0; i < sizeof(k_pnode) / sizeof(k_pnode[0]); ++i) {
+        if (k_pnode[i] == id) {
+            return WL_ENTRY_PNODE;
+        }
+    }
     return -1;
 }
 
@@ -246,6 +254,15 @@ int wireless_pane_rows(int entry, wl_row_t *out, int max)
             n = add_id(out, max, n, SET_DIAL_THR);
             n = add_id(out, max, n, SET_DIAL_SRV);
         }
+    } else if (entry == WL_ENTRY_PNODE) {
+        /* Off: Power node and INA228 SOURCE. */
+        n = add_id(out, max, n, SET_PNODE_EN);
+        n = add_id(out, max, n, SET_I228_SRC);
+        if (settings_get_bool(SET_PNODE_EN)) {
+            n = add_custom(out, max, n, &wireless_pane_pnode_scan_row);
+            n = add_custom(out, max, n, &wireless_pane_pnode_bind_row);
+            n = add_custom(out, max, n, &wireless_pane_pnode_bat_row);
+        }
     }
     return n;
 }
@@ -260,6 +277,8 @@ const char *wireless_pane_name(int entry, char *buf, size_t n)
         snprintf(buf, n, "IMU");
     } else if (entry == WL_ENTRY_DIAL) {
         snprintf(buf, n, "%s", TR(DIAL_ENTRY));
+    } else if (entry == WL_ENTRY_PNODE) {
+        snprintf(buf, n, "%s", TR(PNODE_ENTRY));
     }
     return buf;
 }
@@ -347,6 +366,13 @@ const char *wireless_pane_state(int entry, char *buf, size_t n,
         } else {
             (void)wireless_pane_dial_word(&s_dial, buf, n, ink);
         }
+    } else if (entry == WL_ENTRY_PNODE) {
+        if (!settings_get_bool(SET_PNODE_EN)) {
+            snprintf(buf, n, "%s", TR(OFF));
+        } else {
+            (void)wireless_pane_pnode_word(wireless_pane_pnode(), buf, n,
+                                           ink);
+        }
     }
     return buf;
 }
@@ -358,6 +384,9 @@ void wireless_pane_reset(int entry)
     } else if (entry == WL_ENTRY_DIAL) {
         settings_reset_rows(k_dial,
                             (int)(sizeof(k_dial) / sizeof(k_dial[0])));
+    } else if (entry == WL_ENTRY_PNODE) {
+        settings_reset_rows(k_pnode,
+                            (int)(sizeof(k_pnode) / sizeof(k_pnode[0])));
     }
 }
 

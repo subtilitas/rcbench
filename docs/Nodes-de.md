@@ -11,8 +11,10 @@ Beschleunigungssensors und einen Indexsensor und sendet alle 250ms einen
 Auswuchtbericht.
 
 Der Leistungsknoten dient der Messung, nicht als Schutzfunktion. Keine
-Grenze, keine Abschaltung und kein Fehlerpfad des Prüfstands liest ihn, so
-wie heute keiner den verkabelten INA228 liest.
+Grenze und keine Abschaltung des Prüfstands liest ihn, so wie keine den
+verkabelten INA228 liest. Mit INA228-QUELLE NODE endet ein Lauf an den
+Aussetzern des Knotens wie an denen jedes Messsensors
+([Das Panel](#das-panel)).
 
 Waveshare, MATEK, GERUI, Texas Instruments, Analog Devices und Vishay sind
 Namen ihrer Inhaber, und
@@ -34,6 +36,10 @@ enthält den Hinweis des Projekts.
 | die ADC-Frames, die Skala, der Index und der Demodulator, in der Host-Suite getestet | `shared/vibe` |
 | die Akkumessung des Leistungsknotens | `firmware/node/main/node_bat.c` |
 | die Konsole | `firmware/node/main/node_console.c` |
+| die Central des Panels für den Leistungsknoten: Suche, Bindung, Prüfung von INFO, der RUN-Marker, in der Host-Suite getestet | `shared/ui/pnode_ctl.c` |
+| Messwerte, Summen, Spitzen und Aussetzerregel des Panels, in der Host-Suite getestet | `shared/ui/pnode_meter.c` |
+| der Eintrag LEISTUNGSKNOTEN unter SETUP > WIRELESS | `shared/ui/wireless_pnode.c` |
+| der Client der `blec`-Task des Panels und die Anbindung an die Control-Task | `firmware/panel/main/panel_pnode.c` |
 
 ## Die Teile des Leistungsknotens
 
@@ -400,14 +406,14 @@ Skala.
 
 Der Knoten sendet sein Advertising als `rcbench-pwr-XXXX` oder `rcbench-bal-XXXX`, die letzten zwei
 Bytes seiner Adresse in Hex, alle 100ms, solange keine Verbindung steht.
-Die Herstellerdaten tragen die Rolle, die Scan Response die UUID des
-Knotendienstes. Eine Central zur Zeit, kein Pairing, kein Bonding. Der
+Das Advertising trägt die UUID des Knotendienstes und die Herstellerdaten
+mit der Rolle, die Scan Response den Namen. Eine Central zur Zeit, kein Pairing, kein Bonding. Der
 Knoten fragt eine ATT-MTU (Attribute Protocol, Maximum Transmission Unit)
 von 247 an und keine eigenen Verbindungsparameter.
 
 | Characteristic | Eigenschaften | Inhalt |
 | --- | --- | --- |
-| STREAM | NOTIFY | Leistung: Fenster alle 20ms, Akkumulatoren und Extremwerte alle 500ms; Auswuchten: ein Bericht alle 250ms |
+| STREAM | NOTIFY | Leistung: Fenster alle 20ms, Akkumulatoren und Extremwerte alle 500ms; Auswuchten: ein Bericht alle 250ms; beide: das STATUS-Paket alle 1000ms |
 | STATUS | READ, NOTIFY | Akku, Flags, Firmwareversion, Zähler, alle 1000ms |
 | CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN mit einem Tag von 1 bis 255, SLEEP, OFF; BLADES (1 bis 12) und RPM am Auswuchtknoten |
 | INFO | READ | Protokoll, Rolle, Board, Adresse, die Einstellung des INA228 (0 am Auswuchtknoten) |
@@ -422,6 +428,74 @@ zählt es in `dropped` von STATUS. Der Stack würde eine längere
 Notification ohne Fehler kürzen; die Pakete des Leistungsknotens haben 20
 Bytes und passen in die kleinste MTU von 23, der Auswuchtbericht hat 24
 Bytes und braucht 27.
+
+## Das Panel
+
+Das Panel verbindet sich mit einem Leistungsknoten als drittem Client
+seines Bluetooth-LE-Hubs, neben der IMU und dem Dial (Owner 2 des Hubs von
+`protocols/bleuart`). SETUP > WIRELESS > LEISTUNGSKNOTEN enthält seine
+Zeilen ([Bildschirme](Screens-de.md#wireless-der-leistungsknoten)). Das
+erste Leistungsknoten EIN startet Bluetooth LE bis zum Neustart des
+Panels.
+
+- **Suchen und binden.** KNOTEN SUCHEN sucht 10s lang und listet die Geräte,
+  deren Advertising den Knotendienst nennt, ohne die, deren Name die Rolle
+  Auswuchten nennt. Tippen bindet einen über seine Adresse, in SETUP
+  gehalten (`pnode_ble`, `pnode_name`). Ein gebundener Knoten wird nach
+  jedem Abbruch ohne Suche wieder verbunden, 1000ms nach dem Abbruch und
+  nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Eine
+  Suche bei ARMED wird abgelehnt, und eine laufende Suche endet beim
+  Schalten auf ARMED.
+- **Die Verbindung.** Das Panel abonniert STREAM und liest INFO einmal nach
+  jedem Abonnieren. Ein Knoten, dessen INFO ein anderes Protokoll als 1,
+  eine andere Rolle als Leistung oder eine INA228-Einstellung nennt, die
+  `ina228_calibrate()` für diesen Shunt beim Vollausschlag dieses Bereichs
+  nicht ergibt, sendet nichts, was das Panel nimmt. Die Central abonniert
+  eine Characteristic, deshalb sendet der Knoten sein STATUS-Paket auch auf
+  STREAM; die Akkuzeile liest es.
+- **Der RUN-Marker.** Bei jedem Schalten auf ARMED schreibt das Panel RUN
+  mit dem Tag des Laufs, 1 bis 255, auf CONTROL. Eine Verbindung, die dann
+  nicht steht, bekommt den Write, wenn sie innerhalb des Laufs wiederkommt.
+
+INA228-QUELLE (WIRED, NODE; Vorgabe WIRED) legt fest, wessen INA228 MOTOR &
+ESC speist. Mit NODE nach jedem Lesen der BENCH-Page des IOmcu:
+
+| Wert | Vom Knoten |
+| --- | --- |
+| Spannung, Strom, Leistung | der Mittelwert der Fenster mit INA228 online seit dem letzten Lesen, alle 50ms; die Werte des letzten Fensters, wenn keines kam; keiner, sobald das letzte älter als 300ms ist |
+| ein begrenzter Strom | ein Fenster, dessen Stromsamples alle an einem Ende lagen, liest dieses Ende, den Vollausschlag bei ADCRANGE und Shunt aus INFO (204.8A beim MATEK), als begrenzt markiert; ein Fenster mit einigen begrenzten Samples liest den Mittelwert der übrigen, als begrenzt markiert |
+| niedrigste Spannung, höchster Strom, höchste Leistung | seit dem Schalten auf ARMED: die Extremwerte der Fenster und die RUN-Extremwerte des Knotens unter dem Tag des Laufs, die auch Fenster enthalten, die der Funk verloren hat |
+| Ladung, Energie | Differenzen der 40-Bit-Akkumulatoren mit CHARGE_OK und ENERGY_OK, ab dem letzten Paket vor dem Schalten auf ARMED, bis zu 500ms davor; ein Wechsel der Epoche oder ein Fallen von ENERGY addiert die neuen Zählwerte ab 0 (`rcnode_acc_restarted()`); die Schritte werden mit `ina228_charge_uc()` und `ina228_energy_mj()` zu µC und mJ |
+| die Telemetrie des ESC | Spannung und Strom der BENCH-Page selbst, die die des ESC sind, solange der INA228 des IOmcu nicht die Quelle ist, werden zu den Werten des ESC |
+
+Ein Lauf ohne Akkumulatorpaket in den 1500ms vor dem Schalten auf ARMED hat
+keine Summen vom Knoten: das Panel zählt Ladung und Energie aus den
+Messwerten. Summen, die älter als 1500ms sind, verlieren ihre Markierung,
+und das Panel zählt aus den Messwerten, solange sie fehlen.
+
+**Aussetzer.** Bei ARMED mit NODE öffnet ein Messwert, der mehr als 100ms ausbleibt,
+einen Aussetzer, datiert ab dem letzten Messwert; der nächste Messwert
+schließt ihn. Die Regel ist die jedes Messsensors (`servo_gap.h`): ein
+Aussetzer bis 300ms wird überbrückt, einmal in 10s; ein längerer oder ein
+zweiter, der innerhalb von 10s nach dem Beginn des ersten beginnt, ist ein
+Fehler: SAFE und alle Ausgänge aus, mit
+`MESSWERTE DES LEISTUNGSKNOTENS BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`
+im Band. Ein Schalten auf ARMED ohne Messwert in den letzten 100ms öffnet
+sofort einen Aussetzer. Ein ausgeschalteter, zu weit entfernter oder nicht
+gebundener Knoten beendet einen Lauf also nach 301ms. Bei WIRED beendet die
+Verbindung des Knotens nichts.
+
+Die Konsole des Panels gibt die Wechsel der Verbindung aus und, solange sie
+steht, einmal je Sekunde eine Zeile mit dem Tag `node`:
+
+```
+I (52120) node: 50 windows in 1000ms, 2214 readings, 55 packets, lost 0 bad 0 unread 0, restarts 0, cell 3920mV, runs 1, 0 events dropped
+```
+
+Das Log des Prüfstands nennt die Quelle: `source` zeigt `node` in einer
+Zeile, deren INA228-Werte die des Knotens sind, und `ina voltage` und
+`ina current` enthalten sie
+([Bildschirme](Screens-de.md#tabelle-und-was-der-esc-meldet)).
 
 ## Bauen und Flashen
 
@@ -518,9 +592,19 @@ this start`.
 
 ## Aktuelle Einschränkungen
 
-- Das Panel verbindet sich mit keinem Knoten. Der BLE-Hub und die Seite des
-  Panels sind spätere Schritte; ein BLE-Scanner auf einem Telefon zeigt den
-  Dienst und den Stream.
+- Das Panel verbindet sich nur mit dem Leistungsknoten. Der Auswuchtknoten
+  hat noch keine Seite im Panel; ein BLE-Scanner auf einem Telefon zeigt
+  seinen Dienst und seinen Stream.
+- Mit INA228-QUELLE NODE wird das Schalten auf ARMED nicht abgelehnt, wenn
+  kein Knoten verbunden ist: der Lauf endet nach 301ms, wie die
+  Aussetzerregel sagt.
+- Das Panel zeigt keine Signalstärke eines verbundenen Knotens. STATUS
+  trägt keine; die Trefferliste zeigt die dBm der Suche.
+- Die Messwerte des Knotens erreichen MOTOR & ESC nur, solange die
+  IOmcu-Verbindung steht: bei getrennter Verbindung läuft das Modell des
+  Panels.
+- Die Latenz von einem Fenster des Knotens bis zum Lesen im Panel ist nicht
+  gemessen.
 - Kein Knoten ist auf Hardware gelaufen: Die Boards sind bestellt, nicht
   geliefert. Die Pins, das Aufwachen, die Ströme und das Verhalten des CD42
   sind nicht gemessen.
