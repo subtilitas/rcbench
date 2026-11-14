@@ -6,6 +6,11 @@
  * middle of a frame, staying locked, and reporting sixteen plausible channels
  * that are all wrong.  Nothing downstream can detect plausible-and-wrong.
  *
+ * The encoder is held to frames whose bytes were worked out apart from it,
+ * from the published layout (channel 1 in data byte 1 and the low three
+ * bits of data byte 2, and so on), and to the decoder: a frame it packs
+ * decodes to the frame it was given.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include <string.h>
@@ -402,6 +407,328 @@ TEST_CASE(the_microsecond_mapping_rounds_the_same_way_on_both_sides)
     }
 }
 
+/* ------------------------------------------------------------ the encoder */
+
+/* A frame with every field set from arguments, for the encoder tests. */
+static sbus_frame_t frame_of(const uint16_t *ch, uint8_t flags)
+{
+    sbus_frame_t f;
+    memset(&f, 0, sizeof(f));
+    memcpy(f.channel, ch, sizeof(f.channel));
+    f.ch17       = (flags & SBUS_FLAG_CH17) != 0u;
+    f.ch18       = (flags & SBUS_FLAG_CH18) != 0u;
+    f.frame_lost = (flags & SBUS_FLAG_FRAME_LOST) != 0u;
+    f.failsafe   = (flags & SBUS_FLAG_FAILSAFE) != 0u;
+    return f;
+}
+
+/* Byte by byte, so a failure names the byte. */
+static bool same_bytes(const char *name, const uint8_t *got,
+                       const uint8_t *want)
+{
+    for (unsigned i = 0; i < SBUS_FRAME_BYTES; ++i) {
+        if (got[i] != want[i]) {
+            T_FAIL("%s: byte %u is 0x%02X, want 0x%02X", name, i, got[i],
+                   want[i]);
+            return false;
+        }
+    }
+    return true;
+}
+
+/*
+ * Two frames whose bytes were computed apart from this module: the sixteen
+ * values shifted into one 176-bit integer written out least significant
+ * byte first, then read back through the published per-channel expressions
+ * (channel 2 is data byte 2 shifted down three bits ORed with data byte 3
+ * shifted up five, and so on) before the bytes were taken.
+ */
+TEST_CASE(the_encoder_writes_the_published_layout_byte_for_byte)
+{
+    /* Every channel at 1024: bit 10 alone, which walks through the bytes. */
+    static const uint8_t centre[SBUS_FRAME_BYTES] = {
+        0x0F, 0x00, 0x04, 0x20, 0x00, 0x01, 0x08, 0x40, 0x00, 0x02, 0x10,
+        0x80, 0x00, 0x04, 0x20, 0x00, 0x01, 0x08, 0x40, 0x00, 0x02, 0x10,
+        0x80, 0x00, 0x00,
+    };
+    /* Both fixed points, both raw limits, a false header (0x0F in channel
+     * 9), alternating bits, CH17 and failsafe. */
+    static const uint16_t mixed_ch[SBUS_CHANNELS] = {
+        172, 992, 1811, 0, 2047, 1, 1024, 1023,
+        0x0F, 0x555, 0x2AA, 1500, 300, 1700, 7, 2040,
+    };
+    static const uint8_t mixed[SBUS_FRAME_BYTES] = {
+        0x0F, 0xAC, 0x00, 0xDF, 0xC4, 0x01, 0xF0, 0xFF, 0x00, 0x00, 0xF0,
+        0x7F, 0x0F, 0xA8, 0xAA, 0xAA, 0xB8, 0xCB, 0x12, 0x52, 0x1F, 0x00,
+        0xFF, 0x09, 0x00,
+    };
+    uint16_t ch[SBUS_CHANNELS];
+    for (unsigned c = 0; c < SBUS_CHANNELS; ++c) {
+        ch[c] = 1024u;
+    }
+    uint8_t got[SBUS_FRAME_BYTES];
+
+    sbus_frame_t f = frame_of(ch, 0);
+    CHECK(sbus_encode(&f, got));
+    same_bytes("all 1024", got, centre);
+
+    f = frame_of(mixed_ch, SBUS_FLAG_CH17 | SBUS_FLAG_FAILSAFE);
+    CHECK(sbus_encode(&f, got));
+    same_bytes("mixed", got, mixed);
+
+    /* The test's own packer agrees, flags and footer included. */
+    uint8_t want[SBUS_FRAME_BYTES];
+    make(want, mixed_ch, SBUS_FLAG_CH17 | SBUS_FLAG_FAILSAFE, SBUS_FOOTER);
+    same_bytes("mixed against make()", got, want);
+}
+
+/*
+ * The two ends of the field.  The output is filled with 0xA5 first, so a
+ * byte the encoder does not write shows up rather than reading as zero.
+ */
+TEST_CASE(all_zero_and_all_2047_fill_the_payload_and_nothing_else)
+{
+    uint16_t ch[SBUS_CHANNELS];
+    uint8_t got[SBUS_FRAME_BYTES];
+    uint8_t want[SBUS_FRAME_BYTES];
+
+    memset(ch, 0, sizeof(ch));
+    sbus_frame_t f = frame_of(ch, 0);
+    memset(got, 0xA5, sizeof(got));
+    CHECK(sbus_encode(&f, got));
+    memset(want, 0x00, sizeof(want));
+    want[0] = SBUS_HEADER;
+    same_bytes("all zero", got, want);
+
+    for (unsigned c = 0; c < SBUS_CHANNELS; ++c) {
+        ch[c] = SBUS_RAW_MAX;
+    }
+    f = frame_of(ch, 0);
+    memset(got, 0xA5, sizeof(got));
+    CHECK(sbus_encode(&f, got));
+    /* 176 one bits fill the 22 payload bytes exactly. */
+    memset(want, 0xFF, sizeof(want));
+    want[0]  = SBUS_HEADER;
+    want[23] = 0x00;
+    want[24] = SBUS_FOOTER;
+    same_bytes("all 2047", got, want);
+}
+
+/*
+ * One flag at a time: its own bit in byte 23, no other byte moved, bits 4
+ * to 7 clear, and the decoder reads back that flag alone.
+ */
+TEST_CASE(each_flag_alone_sets_its_own_bit_and_decodes_alone)
+{
+    uint16_t ch[SBUS_CHANNELS];
+    for (unsigned c = 0; c < SBUS_CHANNELS; ++c) {
+        ch[c] = (uint16_t)(c * 97u + 300u);
+    }
+    uint8_t none[SBUS_FRAME_BYTES];
+    sbus_frame_t f = frame_of(ch, 0);
+    CHECK(sbus_encode(&f, none));
+    CHECK_EQ(none[23], 0x00);
+
+    static const uint8_t flags[] = {
+        SBUS_FLAG_CH17, SBUS_FLAG_CH18, SBUS_FLAG_FRAME_LOST,
+        SBUS_FLAG_FAILSAFE,
+    };
+    for (size_t i = 0; i < sizeof(flags); ++i) {
+        f = frame_of(ch, flags[i]);
+        uint8_t got[SBUS_FRAME_BYTES];
+        CHECK(sbus_encode(&f, got));
+        uint8_t want[SBUS_FRAME_BYTES];
+        memcpy(want, none, sizeof(want));
+        want[23] = flags[i];
+        same_bytes("one flag", got, want);
+
+        sbus_decoder_t d;
+        sbus_frame_t back;
+        sbus_decoder_reset(&d);
+        uint32_t now = 0;
+        gap(&now);
+        if (feed(&d, got, SBUS_FRAME_BYTES, &now, &back) != 1) {
+            T_FAIL("flag 0x%02X: the frame did not decode", flags[i]);
+            continue;
+        }
+        CHECK_EQ(back.ch17, flags[i] == SBUS_FLAG_CH17);
+        CHECK_EQ(back.ch18, flags[i] == SBUS_FLAG_CH18);
+        CHECK_EQ(back.frame_lost, flags[i] == SBUS_FLAG_FRAME_LOST);
+        CHECK_EQ(back.failsafe, flags[i] == SBUS_FLAG_FAILSAFE);
+    }
+
+    /* All four together are 0x0F and still leave the upper nibble clear. */
+    f = frame_of(ch, 0x0Fu);
+    uint8_t all[SBUS_FRAME_BYTES];
+    CHECK(sbus_encode(&f, all));
+    CHECK_EQ(all[23], 0x0F);
+}
+
+/* xorshift32: a fixed sequence, the same on every host. */
+static uint32_t next_rand(uint32_t *s)
+{
+    uint32_t x = *s;
+    x ^= x << 13;
+    x ^= x >> 17;
+    x ^= x << 5;
+    *s = x;
+    return x;
+}
+
+/*
+ * Random frames through the encoder and back through the decoder, fed as
+ * one stream at the real byte spacing with the inter-frame gap.  Every
+ * channel and every flag comes back as given.
+ */
+TEST_CASE(random_frames_encode_and_decode_back_unchanged)
+{
+    uint32_t seed = 0x5B05C0DEu;
+    sbus_decoder_t d;
+    sbus_decoder_reset(&d);
+    uint32_t now = 0;
+
+    for (unsigned n = 0; n < 2000u; ++n) {
+        uint16_t ch[SBUS_CHANNELS];
+        for (unsigned c = 0; c < SBUS_CHANNELS; ++c) {
+            ch[c] = (uint16_t)(next_rand(&seed) & SBUS_RAW_MAX);
+        }
+        const sbus_frame_t in = frame_of(ch, (uint8_t)(next_rand(&seed)
+                                                       & 0x0Fu));
+        uint8_t bytes[SBUS_FRAME_BYTES];
+        if (!sbus_encode(&in, bytes)) {
+            T_FAIL("frame %u was refused", n);
+            return;
+        }
+        sbus_frame_t out;
+        gap(&now);
+        if (feed(&d, bytes, SBUS_FRAME_BYTES, &now, &out) != 1) {
+            T_FAIL("frame %u did not decode", n);
+            return;
+        }
+        if (memcmp(out.channel, in.channel, sizeof(in.channel)) != 0
+            || out.ch17 != in.ch17 || out.ch18 != in.ch18
+            || out.frame_lost != in.frame_lost
+            || out.failsafe != in.failsafe) {
+            T_FAIL("frame %u came back different", n);
+            return;
+        }
+    }
+    CHECK_EQ(d.frames, 2000);
+    CHECK_EQ(d.bad_footer, 0);
+    CHECK_EQ(d.resyncs, 0);
+}
+
+/*
+ * A channel above eleven bits refuses the frame, in every channel position,
+ * and leaves the output as it was.  2047 is the last value accepted.
+ */
+TEST_CASE(a_channel_above_2047_refuses_the_frame_and_writes_nothing)
+{
+    static const uint16_t bad[] = { SBUS_RAW_MAX + 1u, 4095u, 0xFFFFu };
+    for (unsigned c = 0; c < SBUS_CHANNELS; ++c) {
+        for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+            uint16_t ch[SBUS_CHANNELS];
+            for (unsigned k = 0; k < SBUS_CHANNELS; ++k) {
+                ch[k] = 1000u;
+            }
+            ch[c] = bad[i];
+            const sbus_frame_t f = frame_of(ch, 0x0Fu);
+            uint8_t got[SBUS_FRAME_BYTES];
+            memset(got, 0xA5, sizeof(got));
+            if (sbus_encode(&f, got)) {
+                T_FAIL("channel %u = %u was accepted", c, bad[i]);
+                return;
+            }
+            for (unsigned b = 0; b < SBUS_FRAME_BYTES; ++b) {
+                if (got[b] != 0xA5u) {
+                    T_FAIL("channel %u = %u: byte %u written on refusal", c,
+                           bad[i], b);
+                    return;
+                }
+            }
+        }
+        uint16_t ch[SBUS_CHANNELS];
+        memset(ch, 0, sizeof(ch));
+        ch[c] = SBUS_RAW_MAX;
+        const sbus_frame_t f = frame_of(ch, 0);
+        uint8_t got[SBUS_FRAME_BYTES];
+        CHECK(sbus_encode(&f, got));
+    }
+
+    /* NULL on either side is refused rather than dereferenced. */
+    uint16_t ch[SBUS_CHANNELS];
+    memset(ch, 0, sizeof(ch));
+    const sbus_frame_t f = frame_of(ch, 0);
+    uint8_t got[SBUS_FRAME_BYTES];
+    CHECK_EQ(sbus_encode(NULL, got), false);
+    CHECK_EQ(sbus_encode(&f, NULL), false);
+}
+
+TEST_CASE(microseconds_to_raw_hits_the_fixed_points_and_rounds_like_sbus_to_us)
+{
+    CHECK_EQ(sbus_from_us(1000u), SBUS_RAW_1000US);
+    CHECK_EQ(sbus_from_us(2000u), SBUS_RAW_2000US);
+    /* 1.639 counts per us, rounded to nearest. */
+    CHECK_EQ(sbus_from_us(1001u), 174u);    /* 173.639 */
+    CHECK_EQ(sbus_from_us(999u), 170u);     /* 170.361 */
+    CHECK_EQ(sbus_from_us(1250u), 582u);    /* 581.75 */
+    CHECK_EQ(sbus_from_us(1500u), 992u);    /* 991.5, a half, away from 1000us */
+    CHECK_EQ(sbus_from_us(1750u), 1401u);   /* 1401.25 */
+    /* The ends of the raw field and the clamp past them. */
+    CHECK_EQ(sbus_from_us(895u), 0u);       /* -0.095 */
+    CHECK_EQ(sbus_from_us(894u), 0u);       /* -1.734, clamped */
+    CHECK_EQ(sbus_from_us(0u), 0u);
+    CHECK_EQ(sbus_from_us(2144u), 2047u);   /* 2047.016 */
+    CHECK_EQ(sbus_from_us(2145u), 2047u);   /* 2048.655, clamped */
+    CHECK_EQ(sbus_from_us(0xFFFFu), 2047u);
+    /* Mirror pulses about 1000us give mirror counts about 172, as far as
+     * the lower clamp allows: halves go away from 1000us on both sides. */
+    for (unsigned d = 0; d <= 105u; ++d) {
+        CHECK_EQ((int)sbus_from_us((uint16_t)(1000u + d)) - 172,
+                 172 - (int)sbus_from_us((uint16_t)(1000u - d)));
+    }
+}
+
+/*
+ * Every pulse width a uint16_t holds.  From 895us to 2144us the decoder's
+ * mapping gives back the pulse the encoder's mapping was given; outside
+ * that the raw value is clamped to 0 or 2047, the ends of the field.
+ * The other way, raw to us to raw, lands within one count.
+ */
+TEST_CASE(microseconds_round_trip_over_the_whole_raw_range)
+{
+    for (uint32_t us = 0; us <= 0xFFFFu; ++us) {
+        const uint16_t raw = sbus_from_us((uint16_t)us);
+        const uint16_t back = sbus_to_us(raw);
+        uint16_t want = (uint16_t)us;
+        if (us < 895u) {
+            want = 895u;
+        } else if (us > 2144u) {
+            want = 2144u;
+        }
+        if (raw > SBUS_RAW_MAX || back != want) {
+            T_FAIL("%u us -> raw %u -> %u us, want %u", (unsigned)us,
+                   raw, back, want);
+            return;
+        }
+        if (us > 0u && raw < sbus_from_us((uint16_t)(us - 1u))) {
+            T_FAIL("%u us went backwards", (unsigned)us);
+            return;
+        }
+    }
+    for (uint32_t raw = 0; raw <= SBUS_RAW_MAX; ++raw) {
+        const int again = (int)sbus_from_us(sbus_to_us((uint16_t)raw));
+        if (again - (int)raw > 1 || (int)raw - again > 1) {
+            T_FAIL("raw %u -> %u us -> raw %d", (unsigned)raw,
+                   sbus_to_us((uint16_t)raw), again);
+            return;
+        }
+    }
+    /* Both fixed points survive that direction exactly. */
+    CHECK_EQ(sbus_from_us(sbus_to_us(SBUS_RAW_1000US)), SBUS_RAW_1000US);
+    CHECK_EQ(sbus_from_us(sbus_to_us(SBUS_RAW_2000US)), SBUS_RAW_2000US);
+}
+
 int main(void)
 {
     RUN(a_frame_decodes_to_the_channels_that_were_packed);
@@ -416,5 +743,12 @@ int main(void)
     RUN(the_microsecond_mapping_hits_its_two_fixed_points);
     RUN(the_microsecond_mapping_rounds_the_same_way_on_both_sides);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
+    RUN(the_encoder_writes_the_published_layout_byte_for_byte);
+    RUN(all_zero_and_all_2047_fill_the_payload_and_nothing_else);
+    RUN(each_flag_alone_sets_its_own_bit_and_decodes_alone);
+    RUN(random_frames_encode_and_decode_back_unchanged);
+    RUN(a_channel_above_2047_refuses_the_frame_and_writes_nothing);
+    RUN(microseconds_to_raw_hits_the_fixed_points_and_rounds_like_sbus_to_us);
+    RUN(microseconds_round_trip_over_the_whole_raw_range);
     return test_summary("sbus");
 }
