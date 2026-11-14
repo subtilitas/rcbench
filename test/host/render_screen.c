@@ -2665,33 +2665,94 @@ static void pose_upd(const char *view)
     }
     upd_c6_set(&c6);
 
-    /* The DIAL FIRMWARE row: no Dial connected, the hold grey;
-     * updates-dial a Dial on 0.21.0 asked to accept 0.22.0, 27s left;
-     * updates-dial-* the other labels the fit check measures. */
-    upd_dev_view_t dial = {
-        .row = DEVUPD_ROW_NOT_LINKED, .have_image = true,
-        .carried = { 0u, 22u, 0u },
-    };
-    if (strncmp(view, "updates-dial", 12) == 0) {
-        dial.known = true;
-        dial.running = (fw_version_t){ 0u, 21u, 0u };
-        dial.row = DEVUPD_ROW_UPDATING;
+    /* The wireless devices: none connected, every hold grey.  updates-dial
+     * the Dial on 0.21.0 asked to accept 0.22.0, 27s left, on UPDATES'
+     * entry; updates-devices the page with the Dial offered 0.22.0, the
+     * power node its reinstall and the balance node not connected;
+     * updates-node the page with the power node on 0.23.11 asked for its
+     * BOOT key, 27s left; updates-dial-* and updates-node-* the other
+     * labels the fit check measures, on the page. */
+    upd_dev_view_t dv[UPD_DEV_COUNT];
+    memset(dv, 0, sizeof(dv));
+    for (int i = 0; i < UPD_DEV_COUNT; ++i) {
+        dv[i].row = DEVUPD_ROW_NOT_LINKED;
+        dv[i].have_image = true;
+        dv[i].carried = (fw_version_t){ 0u, 23u, 12u };
+    }
+    dv[UPD_DEV_DIAL].carried = (fw_version_t){ 0u, 22u, 0u };
+    const bool dial_view = strncmp(view, "updates-dial", 12) == 0;
+    const bool node_view = strncmp(view, "updates-node", 12) == 0;
+    const bool page = strncmp(view, "updates-devices", 15) == 0
+                      || node_view
+                      || (dial_view && strcmp(view, "updates-dial") != 0);
+    if (dial_view) {
+        dv[UPD_DEV_DIAL].known = true;
+        dv[UPD_DEV_DIAL].running = (fw_version_t){ 0u, 21u, 0u };
+        dv[UPD_DEV_DIAL].row = DEVUPD_ROW_UPDATING;
+        dv[UPD_DEV_PNODE].row = DEVUPD_ROW_BUSY;
+        dv[UPD_DEV_BAL].row = DEVUPD_ROW_BUSY;
     }
     if (strcmp(view, "updates-dial") == 0) {
-        dial.phase = DEVUPD_CONFIRM;
-        dial.secs = 27u;
+        dv[UPD_DEV_DIAL].phase = DEVUPD_CONFIRM;
+        dv[UPD_DEV_DIAL].secs = 27u;
     } else if (strcmp(view, "updates-dial-ready") == 0) {
-        dial.row = DEVUPD_ROW_READY;
+        dv[UPD_DEV_DIAL].row = DEVUPD_ROW_READY;
+        dv[UPD_DEV_PNODE].row = DEVUPD_ROW_NOT_LINKED;
+        dv[UPD_DEV_BAL].row = DEVUPD_ROW_NOT_LINKED;
     } else if (strcmp(view, "updates-dial-reinstall") == 0) {
-        dial.row = DEVUPD_ROW_REINSTALL;
-        dial.running = dial.carried;
+        dv[UPD_DEV_DIAL].row = DEVUPD_ROW_REINSTALL;
+        dv[UPD_DEV_DIAL].running = dv[UPD_DEV_DIAL].carried;
     } else if (strcmp(view, "updates-dial-connecting") == 0) {
-        dial.phase = DEVUPD_LINK;
+        dv[UPD_DEV_DIAL].phase = DEVUPD_LINK;
     } else if (strcmp(view, "updates-dial-progress") == 0) {
-        dial.phase = DEVUPD_SEND;
-        dial.percent = 42u;
+        dv[UPD_DEV_DIAL].phase = DEVUPD_SEND;
+        dv[UPD_DEV_DIAL].percent = 42u;
+    } else if (strcmp(view, "updates-devices") == 0) {
+        dv[UPD_DEV_DIAL].known = true;
+        dv[UPD_DEV_DIAL].running = (fw_version_t){ 0u, 21u, 0u };
+        dv[UPD_DEV_DIAL].row = DEVUPD_ROW_READY;
+        dv[UPD_DEV_PNODE].known = true;
+        dv[UPD_DEV_PNODE].running = dv[UPD_DEV_PNODE].carried;
+        dv[UPD_DEV_PNODE].row = DEVUPD_ROW_REINSTALL;
+    } else if (node_view) {
+        upd_dev_view_t *pn = &dv[UPD_DEV_PNODE];
+        upd_dev_view_t *bn = &dv[UPD_DEV_BAL];
+        pn->known = true;
+        pn->running = (fw_version_t){ 0u, 23u, 11u };
+        pn->row = DEVUPD_ROW_UPDATING;
+        bn->known = true;
+        bn->running = (fw_version_t){ 0u, 23u, 11u };
+        bn->row = DEVUPD_ROW_BUSY;
+        dv[UPD_DEV_DIAL].known = true;
+        dv[UPD_DEV_DIAL].running = dv[UPD_DEV_DIAL].carried;
+        dv[UPD_DEV_DIAL].row = DEVUPD_ROW_BUSY;
+        if (strcmp(view, "updates-node") == 0) {
+            pn->phase = DEVUPD_CONFIRM;
+            pn->secs = 27u;
+        } else if (strcmp(view, "updates-node-ready") == 0) {
+            pn->row = DEVUPD_ROW_READY;
+            bn->row = DEVUPD_ROW_REINSTALL;
+            bn->running = bn->carried;
+        } else if (strcmp(view, "updates-node-connecting") == 0) {
+            /* Two at once only to measure both labels. */
+            pn->phase = DEVUPD_LINK;
+            bn->row = DEVUPD_ROW_UPDATING;
+            bn->phase = DEVUPD_SEND;
+            bn->percent = 42u;
+        } else if (strcmp(view, "updates-node-progress") == 0) {
+            pn->phase = DEVUPD_SEND;
+            pn->percent = 42u;
+            bn->row = DEVUPD_ROW_UPDATING;
+            bn->phase = DEVUPD_LINK;
+        }
     }
-    upd_dev_set(UPD_DEV_DIAL, &dial);
+    for (int i = 0; i < UPD_DEV_COUNT; ++i) {
+        upd_dev_set((upd_dev_id_t)i, &dv[i]);
+    }
+    if (page) {
+        tap(UPD_DEV_X + UPD_DEV_W / 2,
+            UI_BAND_H + UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);
+    }
     if (strcmp(view, "updates-settings") == 0) {
         /* The footer's SETTINGS: the list of the reminder and RELEASES. */
         const gfx_rect_t r = ui_footer_rect(UI_FOOTER_SETTINGS);

@@ -525,9 +525,16 @@ Zeile, deren INA228-Werte die des Knotens sind, und `ina voltage` und
 Ein Knoten nimmt ein neues Anwendungs-Image über BLE von einem Central an,
 über den Update-Dienst von `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
-Das Panel bringt die Images beider Rollen mit und prüft sie beim Start; die
-Zeilen des Panels, die sie senden, kommen mit den Knoten-Clients des
-Panels.
+Das Panel bringt die Images beider Rollen mit, prüft sie beim Start und
+sendet sie von der Seite der Funkgeräte auf UPDATES:
+LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE
+([Bildschirme: Die Sensorknoten](Screens-de.md#die-sensorknoten)). Das
+Halten von 2s auf der Zeile beendet den eigenen Link des Knotens
+(`pnode_ctl_hold()`, `bal_ctl_hold()`); dieses Ende und die Rückkehr des
+Links zählen als kein Verlust, das Band zeigt also kein
+`LEISTUNGSKNOTEN VERLOREN`. Nach dem Update verbindet sich der Client des
+Knotens wieder aus den Werten von SETUP, und die Zeile liest die Version
+des Knotens aus seinem ersten STATUS-Paket auf der neuen Verbindung.
 
 1. Das Central verbindet sich und sendet BEGIN: die Art (Leistungsknoten
    oder Auswuchtknoten), die Größe, die Version und den SHA-256 des Images.
@@ -593,8 +600,8 @@ Die Geräteseite läuft im Task `ota`, Priorität 3, alle 10ms, mit einem
 Stack von 8.192 Bytes aus dem Heap beim Start, der Größe der OTA-Beispiele
 von ESP-IDF; seine Tiefe ist nicht gemessen. Ihr statischer RAM sind
 3.623 Bytes: der Ring des Fensters von 2.048 Bytes, ein Schreibpuffer von
-1.024 Bytes und der Zustand. Das Image des Leistungsknotens hat 646.112
-Bytes, 41,1% eines Slots; das des Auswuchtknotens 642.544 Bytes, 40,9%.
+1.024 Bytes und der Zustand. Das Image des Leistungsknotens hat 646.176
+Bytes, 41,1% eines Slots; das des Auswuchtknotens 642.608 Bytes, 40,9%.
 
 ## Bauen und Flashen
 

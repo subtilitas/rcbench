@@ -623,7 +623,7 @@ static void reset(void)
     ui_hold_reset(&u.s.hold);
     ui_hold_reset(&u.s.cu_hold);
     upd_c6_drop();
-    upd_dev_drop();
+    upd_dev_close();
     memset(&u.cu, 0, sizeof(u.cu));
     u.cu_req = false;
     upd_list_reset();
@@ -642,11 +642,15 @@ static void event(const touch_event_t *evt)
         }
         return;
     }
+    if (upd_dev_shown()) {
+        (void)upd_dev_event(evt, false);   /* the devices' page, whole */
+        return;
+    }
     if (upd_c6_event(evt, u.s.have_press || upd_dev_pressed())) {
         return;                    /* the C6 RADIO row's press */
     }
     if (upd_dev_event(evt, u.s.have_press || upd_c6_pressed())) {
-        return;                    /* a device row's press */
+        return;                    /* the devices' entry */
     }
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
@@ -756,7 +760,7 @@ static void enter(void)
 {
     upd_list_close();
     upd_c6_drop();
-    upd_dev_drop();
+    upd_dev_close();
     ui_hold_reset(&u.s.hold);
     ui_hold_reset(&u.s.cu_hold);
     touched();
@@ -767,50 +771,11 @@ static void leave(void)
 {
     upd_list_close();
     upd_c6_drop();
-    upd_dev_drop();
+    upd_dev_close();
     u.s.hit = HIT_NONE;
     u.s.have_press = false;
     ui_hold_reset(&u.s.hold);
     ui_hold_reset(&u.s.cu_hold);
-}
-
-void upd_cu_text(const upd_cu_view_t *v, const char **line,
-                 gfx_color_t *col)
-{
-    *col = UI_WARN;
-    switch (v->sec) {
-    case CU_SEC_NO_IMAGE: *line = TR(UPD_CU_NO_IMAGE); *col = UI_TEXT_DIM;
-                          break;
-    case CU_SEC_BUSY:     *line = TR(UPD_WAIT_COPROC);  break;
-    case CU_SEC_NO_LINK:  *line = TR(UPD_CU_NO_LINK);   break;
-    case CU_SEC_UNKNOWN:  *line = TR(UPD_CU_UNKNOWN); *col = UI_TEXT; break;
-    case CU_SEC_CHECKING: *line = TR(UPD_CU_CHECKING); *col = UI_TEXT; break;
-    case CU_SEC_FAILED:   *line = TR(UPD_CU_FAILED);    break;
-    case CU_SEC_USB:      *line = TR(UPD_CU_USB);       break;
-    case CU_SEC_NO_BOARD: *line = TR(UPD_CU_NO_BOARD); *col = UI_TEXT_DIM;
-                          break;
-    case CU_SEC_SAME:     *line = TR(UPD_CU_SAME); *col = UI_TEXT_DIM; break;
-    case CU_SEC_UNSAFE:   *line = TR(UPD_CU_UNSAFE);    break;
-    case CU_SEC_RADIO:    *line = TR(UPD_CU_RADIO);     break;
-    case CU_SEC_INSTALL:  *line = TR(UPD_CU_INSTALL);   break;
-    case CU_SEC_READY:
-    default:
-        /* As the question says it: an older image in the warning colour,
-         * the same number of another build plainly, else what the update
-         * does to the bench. */
-        if (coproc_update_older(v->running, v->carried)) {
-            *line = TR(CU_Q_OLDER);
-        } else if (v->running.major == v->carried.major
-                   && v->running.minor == v->carried.minor
-                   && v->running.patch == v->carried.patch) {
-            *line = TR(CU_Q_SAME);
-            *col = UI_TEXT_DIM;
-        } else {
-            *line = TR(CU_Q_WHAT);
-            *col = UI_TEXT_DIM;
-        }
-        break;
-    }
 }
 
 /** @brief Writes a version as "major.minor.patch", or says it is not known. */
@@ -874,6 +839,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     if ((u.s.drawn_mask & bit) != 0u) {
         return;            /* every event and every change clears the mask */
+    }
+    if (upd_dev_shown()) {
+        upd_dev_render_page(c);
+        if (upd_dev_flashing()) {
+            u.s.drawn_mask = 0u;
+        } else {
+            u.s.drawn_mask |= bit;
+        }
+        return;
     }
     gfx_clear(c, UI_BG);
 
@@ -972,10 +946,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
 }
 
-/** @brief The home tag closes the list first, through its leave warning.
+/** @brief The home tag closes the devices' page, or the list through its
+ *        leave warning.
  *  @return Whether it went up a level. */
 static bool back(void)
 {
+    if (upd_dev_shown()) {
+        upd_dev_close();
+        return true;
+    }
     const bool was = upd_list_shown();
     const bool climbed = upd_list_back();
     if (was) {
@@ -984,8 +963,9 @@ static bool back(void)
     return climbed;
 }
 
-/** @brief The list covers the screen. @return Whether it is open. */
-static bool covered(void) { return upd_list_shown(); }
+/** @brief The list or the devices' page covers the screen.
+ *  @return Whether one is open. */
+static bool covered(void) { return upd_list_shown() || upd_dev_shown(); }
 
 bool upd_guide_newer(void) { return have_newer(); }
 

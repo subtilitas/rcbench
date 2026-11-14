@@ -1,28 +1,35 @@
 /**
  * @file panel_devupd.h
  * @brief The wireless devices' update on the panel: the images this panel
- *        carries, their check, SETUP > UPDATES' DIAL FIRMWARE row, and the
- *        transfer over Bluetooth LE as a client of the `blec` task
+ *        carries, their check, the rows of SETUP > UPDATES' devices' page
+ *        (DIAL FIRMWARE, POWER NODE FIRMWARE, BALANCE NODE FIRMWARE), and
+ *        the transfer over Bluetooth LE as a client of the `blec` task
  *        (shared/devupd).
  *
  * The images: the M5Stack Dial's, the power node's and the balance node's,
  * each embedded at build time (main/CMakeLists.txt) and checked once in
  * the `blec` task after the start: an application of the device's chip and
- * project that fits its slot, with its appended SHA-256 right; then the
- * SHA-256 of the whole image that BEGIN carries.  The nodes' rows come
- * with their panel clients; this part offers the Dial's.
+ * project that fits its slot, with its appended SHA-256 right, and the
+ * device's role in its head (bleota_head_check()); then the SHA-256 of the
+ * whole image that BEGIN carries.  A row offers its hold only once its
+ * image passed.
  *
- * An update: the 2s hold on the row asks the `blec` task to start it.  The
- * task holds the Dial's own link ended (panel_dial_blec_hold()), connects
- * the update client to the bound Dial once that link is down, and runs the
- * transfer; the Dial asks for a press of its screen button before it erases
- * anything.  At the end, installed or not, the client lets go of the Dial
- * and the Dial's link connects again from SETUP's values.  ARM is refused
- * from the hold to the end (panel_devupd_busy(), a devupd_gate_t), and the
- * `blec` task refuses the start when the bench is ARMED or an arm waits,
- * at the take and again before the update client connects.  A link that
- * ends after END leaves the install's result to the version the Dial
- * reports once it is back (devupd_settle()).
+ * An update: the 2s hold on a row asks the `blec` task to start it for
+ * that device (devupd_gate_ask()).  The task holds the device's own link
+ * ended (panel_dial_blec_hold(), panel_pnode_blec_hold(),
+ * panel_bal_blec_hold()), connects the update client to the bound device
+ * once that link is down, and runs the transfer; the device asks for its
+ * confirmation before it erases anything: a press of the Dial's screen
+ * button, a node's BOOT key held 1s.  At the end, installed or not, the
+ * client lets go of the device and its own client connects again from
+ * SETUP's values; a node's hold counts no loss, so the band shows no
+ * node lost.  The device's version comes back from its own client: the
+ * Dial's INFO, a node's STATUS.  One update runs at a time.  ARM is
+ * refused from the hold to the end (panel_devupd_busy(), a
+ * devupd_gate_t), and the `blec` task refuses the start when the bench is
+ * ARMED or an arm waits, at the take and again before the update client
+ * connects.  A link that ends after END leaves the install's result to
+ * the version the device reports once it is back (devupd_settle()).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -40,8 +47,8 @@
 void panel_devupd_start(void);
 
 /**
- * @brief The `blec` task's turn, first: the images' check, a start the row
- *        asked for, the Dial's hold, the end.
+ * @brief The `blec` task's turn, first: the images' check, a start a row
+ *        asked for, the device's hold, the end.
  * @param now The clock, ms.
  */
 void panel_devupd_blec_poll(uint32_t now);
@@ -75,8 +82,8 @@ void panel_devupd_blec_chunks(uint32_t now);
 void panel_devupd_blec_publish(uint32_t now);
 
 /**
- * @brief SETUP > UPDATES' DIAL FIRMWARE row and the band's lines of an
- *        update, once a frame on app_main after c6_service().
+ * @brief SETUP > UPDATES' device rows and the band's lines of an update,
+ *        once a frame on app_main after c6_service().
  * @param armed ARMED, or an arm waiting.
  */
 void devupd_service(bool armed);

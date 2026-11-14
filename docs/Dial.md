@@ -139,10 +139,10 @@ range that connects first, or that spoofs the bound address, is taken.
 The panel carries the Dial's application image and sends it over BLE. The
 protocol is `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
-the panel's side is SETUP > UPDATES > DIAL FIRMWARE
-([Screens, The Dial](Screens.md#the-dial)).
+the panel's side is the DIAL FIRMWARE row on the page that UPDATES'
+WIRELESS DEVICES entry opens ([Screens, The Dial](Screens.md#the-dial)).
 
-1. The Dial is bound and linked, and the bench is SAFE. UPDATES shows
+1. The Dial is bound and linked, and the bench is SAFE. The row shows
    `Dial: 0.23.11. Included: 0.23.12.` and `HOLD 2s TO UPDATE THE DIAL`.
 2. The 2s hold ends the Dial's knob link. The panel connects to the Dial's
    update service and sends BEGIN: kind DIAL, size, version and the

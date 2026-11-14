@@ -1,25 +1,36 @@
 /**
  * @file upd_dev.h
- * @brief SETUP > UPDATES' rows of the wireless devices: DIAL FIRMWARE, the
- *        M5Stack Dial's.  Each row names the device's version and the
- *        version of the image this panel carries, and holds HOLD 2s TO
- *        UPDATE THE DIAL, or HOLD 2s TO REINSTALL THE DIAL FIRMWARE while
- *        the Dial reports the carried version.
+ * @brief SETUP > UPDATES' wireless devices: the WIRELESS DEVICES entry on
+ *        UPDATES and the page it opens with one row per device, DIAL
+ *        FIRMWARE (the M5Stack Dial), POWER NODE FIRMWARE and BALANCE NODE
+ *        FIRMWARE.  Each row names the device's version and the version of
+ *        the image this panel carries, and holds HOLD 2s TO UPDATE THE
+ *        DIAL (THE POWER NODE, THE BALANCE NODE), or HOLD 2s TO REINSTALL
+ *        while the device reports the carried version.
  *
- * The DIAL FIRMWARE row sits in UPDATES' left column between the IOmcu
- * section and the IOmcu's hold: its heading at body y 236, its line at
- * y 260 and its hold, 460 x 56px, at y 316.  The hold is live only while
- * the application's view reads DEVUPD_ROW_READY or DEVUPD_ROW_REINSTALL.
- * A release before 2s on a live hold shows the hold's hint on the band; a
- * tap on a grey hold shows why it is grey there (upd_dev_reason()).  While
- * an update runs the button reads DIAL UPDATE: CONNECTING, PRESS THE DIAL
- * TO ACCEPT with the seconds the Dial gave, or DIAL UPDATE and the share
- * the Dial took.
+ * The entry sits in UPDATES' left column between the IOmcu section and the
+ * IOmcu's hold: its heading at body y 236, its line (connected devices and
+ * devices with another version) at y 260 and its button, 460 x 56px, at
+ * y 316.  A tap on the button opens the page; while an update runs the
+ * button reads that row's label.
  *
- * UPDATES (upd_screen.c) hands the rows every touch event first
- * (upd_dev_event()), its ticks and its draw; the application hands each
- * row what to show (upd_dev_set()) and drains its completed hold
- * (upd_dev_take()).  A row commands nothing.
+ * The page covers UPDATES' body: the rows at body y 24, 128 and 232, each
+ * its heading and its line in the left half, 496px from x 16, and its
+ * hold, 480 x 56px, from x 528; a note under them; the footer's name and
+ * BACK in the footer's right slot.  BACK and the home tag close the page.
+ * A hold is live only while the application's view reads DEVUPD_ROW_READY
+ * or DEVUPD_ROW_REINSTALL.  A release before 2s on a live hold shows the
+ * hold's hint on the band; a tap on a grey hold shows why it is grey
+ * there (upd_dev_reason()).  While an update runs the hold reads the
+ * device's UPDATE: CONNECTING, its ask (PRESS THE DIAL TO ACCEPT, PRESS
+ * BOOT ON THE NODE) with the seconds the device gave, or its UPDATE and
+ * the share the device took.
+ *
+ * UPDATES (upd_screen.c) hands this module every touch event first
+ * (upd_dev_event()), its ticks and its draw, and the whole body while the
+ * page is open (upd_dev_shown()); the application hands each row what to
+ * show (upd_dev_set()) and drains its completed hold (upd_dev_take()).  A
+ * row commands nothing.
  *
  * Pure C, no ESP-IDF (Espressif Internet-of-Things Development Framework).
  *
@@ -39,21 +50,35 @@
 extern "C" {
 #endif
 
-/** @brief The rows. */
+/** @brief The rows, in the page's order. */
 typedef enum {
     UPD_DEV_DIAL = 0, /**< DIAL FIRMWARE */
+    UPD_DEV_PNODE,    /**< POWER NODE FIRMWARE */
+    UPD_DEV_BAL,      /**< BALANCE NODE FIRMWARE */
     UPD_DEV_COUNT,
 } upd_dev_id_t;
 
-/** @name The DIAL FIRMWARE row, in UPDATES' body
+/** @name The WIRELESS DEVICES entry, in UPDATES' body
  *  @{ */
 #define UPD_DEV_X       16    /**< left edge: the IOmcu section's        */
 #define UPD_DEV_W       460   /**< width: the IOmcu hold's                */
 #define UPD_DEV_HEAD_Y  236   /**< the heading                            */
-#define UPD_DEV_LINE_Y  260   /**< the versions' line                     */
-#define UPD_DEV_BTN_Y   316   /**< the hold's top: one pitch over the
-                                   IOmcu's                                */
-#define UPD_DEV_BTN_H   56    /**< the hold's height                      */
+#define UPD_DEV_LINE_Y  260   /**< the summary line                       */
+#define UPD_DEV_BTN_Y   316   /**< the button's top: one pitch over the
+                                   IOmcu's hold                           */
+#define UPD_DEV_BTN_H   56    /**< the button's and the holds' height     */
+/** @} */
+
+/** @name The page, in UPDATES' body
+ *  @{ */
+#define UPD_DEVP_Y0     24    /**< the first row's top                    */
+#define UPD_DEVP_PITCH  104   /**< from one row's top to the next's       */
+#define UPD_DEVP_TEXT_X 16    /**< the heading's and the line's left edge */
+#define UPD_DEVP_TEXT_W 496   /**< their width                            */
+#define UPD_DEVP_LINE_DY 28   /**< the line under the heading             */
+#define UPD_DEVP_HOLD_X 528   /**< the holds' left edge                   */
+#define UPD_DEVP_HOLD_W 480   /**< their width                            */
+#define UPD_DEVP_NOTE_Y 336   /**< the note's top                         */
 /** @} */
 
 /** @brief What a row shows. */
@@ -108,7 +133,7 @@ void upd_dev_line(upd_dev_id_t id, const upd_dev_view_t *v, char *out,
                   size_t n);
 
 /**
- * @brief A row's button label.
+ * @brief A row's hold label.
  * @param id  the row
  * @param v   the view
  * @param out the label
@@ -118,22 +143,62 @@ void upd_dev_label(upd_dev_id_t id, const upd_dev_view_t *v, char *out,
                    size_t n);
 
 /**
- * @brief A row's hold, in UPDATES' body.
+ * @brief The entry's summary line: the devices that reported a version,
+ *        and those whose hold offers another version.
+ * @param out the line
+ * @param n   bytes of @p out
+ */
+void upd_dev_summary(char *out, size_t n);
+
+/**
+ * @brief The entry's button label: the running update's hold label, or
+ *        WIRELESS DEVICE FIRMWARE.
+ * @param out the label
+ * @param n   bytes of @p out
+ */
+void upd_dev_entry_label(char *out, size_t n);
+
+/**
+ * @brief A row's hold on the page, in UPDATES' body.
  * @param id the row
  * @return the rectangle
  */
 gfx_rect_t upd_dev_rect(upd_dev_id_t id);
 
 /**
- * @brief A touch event on UPDATES, offered to the rows first.
+ * @brief The entry's button on UPDATES, in UPDATES' body.
+ * @return the rectangle
+ */
+gfx_rect_t upd_dev_entry_rect(void);
+
+/**
+ * @brief The page's BACK, in UPDATES' body: the footer's right slot.
+ * @return the rectangle
+ */
+gfx_rect_t upd_dev_back_rect(void);
+
+/** @brief Whether the page is open. @return true while it is */
+bool upd_dev_shown(void);
+
+/** @brief Open the page.  A repaint follows. */
+void upd_dev_open(void);
+
+/** @brief Close the page; every press on it ends unfired. */
+void upd_dev_close(void);
+
+/**
+ * @brief A touch event on UPDATES, offered to this module first.  With the
+ *        page closed only the entry's button takes one; with it open every
+ *        event is the page's.
  * @param evt   the event, body coordinates
  * @param other whether another control of UPDATES holds a press: then a
- *              DOWN is not a row's
- * @return true when a row took the event
+ *              DOWN on the entry is not taken
+ * @return true when the module took the event
  */
 bool upd_dev_event(const touch_event_t *evt, bool other);
 
-/** @brief Whether a press is on a row. @return true while one is */
+/** @brief Whether a press is on the entry, a row or BACK.
+ *  @return true while one is */
 bool upd_dev_pressed(void);
 
 /**
@@ -147,10 +212,16 @@ bool upd_dev_tick(float dt_s);
 void upd_dev_drop(void);
 
 /**
- * @brief Draw the rows.
+ * @brief Draw the entry on UPDATES.
  * @param c canvas, UPDATES' body
  */
 void upd_dev_render(gfx_canvas_t *c);
+
+/**
+ * @brief Draw the page, whole.
+ * @param c canvas, UPDATES' body
+ */
+void upd_dev_render_page(gfx_canvas_t *c);
 
 /** @brief Whether a hold's flash runs. @return true while one does */
 bool upd_dev_flashing(void);

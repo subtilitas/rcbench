@@ -74,13 +74,23 @@ void bal_ctl_init(bal_ctl_t *c)
 }
 
 /**
+ * @brief BALANCE NODE ON and no update holding the link (bal_ctl_hold()).
+ * @param c The controller.
+ * @return Whether the controller runs the link.
+ */
+static bool is_on(const bal_ctl_t *c)
+{
+    return c->cfg.en && !c->held;
+}
+
+/**
  * @brief Run the central while ON and the radio is synced.
  * @param c      The controller.
  * @param now_ms The clock.
  */
 static void apply(bal_ctl_t *c, uint32_t now_ms)
 {
-    bleu_enable(&c->b, c->cfg.en && c->radio == IMU_RADIO_READY, now_ms);
+    bleu_enable(&c->b, is_on(c) && c->radio == IMU_RADIO_READY, now_ms);
 }
 
 /**
@@ -314,6 +324,37 @@ void bal_ctl_radio(bal_ctl_t *c, imu_radio_t radio, uint32_t now_ms)
     }
 }
 
+void bal_ctl_hold(bal_ctl_t *c, bool on, uint32_t now_ms)
+{
+    if (c == NULL || on == c->held) {
+        return;
+    }
+    c->held = on;
+    /* The report of the image before the update is not the node's after
+     * it; a scan ends with the link. */
+    c->have_rep = false;
+    c->scan_open = false;
+    c->scanning = false;
+    c->scan_cut = false;
+    apply(c, now_ms);
+    follow_link(c, now_ms);
+}
+
+bool bal_ctl_target(const bal_ctl_t *c, bleu_addr_t *addr, bool *linked,
+                    uint8_t version[3], bool *down)
+{
+    if (c == NULL || addr == NULL || linked == NULL || version == NULL
+        || down == NULL || !c->b.bound
+        || !bleu_addr_parse(c->cfg.addr, addr)) {
+        return false;
+    }
+    *linked = c->linked && c->info_ok && c->bat_known;
+    memcpy(version, c->fw, 3u);
+    *down = !c->linked && c->b.settle == 0u
+            && (c->b.st == BLEU_ST_OFF || c->b.st == BLEU_ST_IDLE);
+    return true;
+}
+
 bal_scan_t bal_ctl_scan(bal_ctl_t *c, bool armed, uint32_t now_ms)
 {
     if (c == NULL) {
@@ -325,7 +366,7 @@ bal_scan_t bal_ctl_scan(bal_ctl_t *c, bool armed, uint32_t now_ms)
         ++c->refused;
         return BAL_SCAN_ARMED;
     }
-    if (!c->cfg.en || c->radio != IMU_RADIO_READY || c->b.scanning) {
+    if (!is_on(c) || c->radio != IMU_RADIO_READY || c->b.scanning) {
         return BAL_SCAN_NOT_READY;
     }
     c->found_n = 0u;
@@ -395,6 +436,7 @@ static void take_stream(bal_ctl_t *c, const uint8_t *data, size_t len,
         c->bat_known = true;
         c->bat_mv = p.u.status.vbat;
         c->bat_flags = p.u.status.flags;
+        memcpy(c->fw, p.u.status.fw, sizeof(c->fw));
         return;
     }
     if (p.hdr.type != RCNODE_T_BAL_REPORT) {
@@ -422,7 +464,7 @@ void bal_ctl_event(bal_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
     const bool stream = bleu_event(&c->b, e, now_ms);
     take_scan(c);
     follow_link(c, now_ms);
-    if (stream && c->cfg.en) {
+    if (stream && is_on(c)) {
         take_stream(c, e->data, e->len, now_ms);
     }
 }
@@ -527,7 +569,7 @@ bool bal_ctl_step(bal_ctl_t *c, uint32_t now_ms, bool armed, bleu_act_t *out)
 
 bal_link_t bal_ctl_link(const bal_ctl_t *c, uint32_t now_ms)
 {
-    if (c == NULL || !c->cfg.en) {
+    if (c == NULL || !is_on(c)) {
         return BAL_LINK_OFF;
     }
     switch (c->radio) {
@@ -591,7 +633,7 @@ void bal_ctl_view(const bal_ctl_t *c, uint32_t now_ms, bal_view_t *out)
 bool bal_ctl_report(const bal_ctl_t *c, uint32_t now_ms,
                     rcnode_bal_report_t *out, uint32_t *age_ms)
 {
-    if (c == NULL || out == NULL || age_ms == NULL || !c->cfg.en
+    if (c == NULL || out == NULL || age_ms == NULL || !is_on(c)
         || !c->have_rep) {
         return false;
     }

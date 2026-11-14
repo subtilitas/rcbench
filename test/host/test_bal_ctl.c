@@ -13,7 +13,9 @@
  * packet; a scan refused while ARMED and stopped at ARM; the scan listing
  * nodes whose manufacturer data names the balance role, never a name
  * alone, a scan response naming or refreshing a listed one, a bind; seq
- * gaps counted; OFF ending it all.
+ * gaps counted; OFF ending it all; the update's hold handing the link to
+ * the update client and taking it back, with the version read back from
+ * the STATUS after the reconnect.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -544,6 +546,87 @@ TEST_CASE(off_ends_the_link_and_hands_on_nothing)
     CHECK(!v.scan_done);
 }
 
+/* The update's hand-over: the hold ends the link and keeps it ended
+ * whatever SETUP sends, drops the old image's report and takes no packet;
+ * the take-back connects again, and the version comes from the first
+ * STATUS on the new link. */
+TEST_CASE(the_update_hold_hands_the_link_over_and_takes_it_back)
+{
+    brig_t r;
+    brig_up(&r);
+    r.fw[0] = 0u;
+    r.fw[1] = 23u;
+    r.fw[2] = 11u;
+    const rcnode_bal_report_t p = brig_steady(420u, 2650u, 8000u);
+    brig_report(&r, &p);
+    bleu_addr_t a;
+    bool linked = true, down = true;
+    uint8_t ver[3] = { 9u, 9u, 9u };
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);                       /* no STATUS yet: no version */
+    CHECK(!down);
+    brig_status(&r, 1u);
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(linked);
+    CHECK(!down);
+    CHECK_EQ(ver[1], 23u);
+    CHECK_EQ(ver[2], 11u);
+    bleu_addr_t want;
+    CHECK(bleu_addr_parse(BRIG_ADDR, &want));
+    CHECK(bleu_addr_eq(&a, &want));
+
+    bal_ctl_hold(&r.c, true, r.now);
+    bal_ctl_hold(&r.c, true, r.now);      /* twice is once */
+    brig_run(&r, 100u);
+    CHECK(!r.c.linked);
+    CHECK_EQ(bal_ctl_link(&r.c, r.now), BAL_LINK_OFF);
+    rcnode_bal_report_t got;
+    uint32_t age;
+    CHECK(!bal_ctl_report(&r.c, r.now, &got, &age));
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);
+    CHECK(down);
+    /* SETUP's values while held keep the link ended; no scan. */
+    const unsigned connects = r.connects;
+    bal_cfg_t cfg = r.c.cfg;
+    bal_ctl_config(&r.c, &cfg, r.now);
+    bal_ctl_radio(&r.c, IMU_RADIO_READY, r.now);
+    CHECK_EQ(bal_ctl_scan(&r.c, false, r.now), BAL_SCAN_NOT_READY);
+    const unsigned nw = r.nw;
+    bal_ctl_drive(&r.c, 4u, 0u);
+    brig_run(&r, 30000u);
+    CHECK_EQ(r.connects, connects);
+    CHECK_EQ(r.nw, nw);
+    CHECK(r.c.cfg.en);                    /* SETUP's value kept */
+
+    /* The take-back: the node, restarted on its new image, is back. */
+    r.fw[2] = 12u;
+    bal_ctl_hold(&r.c, false, r.now);
+    brig_run(&r, 100u);
+    CHECK_EQ(r.connects, connects + 1u);
+    CHECK(r.c.linked);
+    CHECK(r.c.info_ok);
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(!linked);                       /* the old link's STATUS is gone */
+    CHECK(!bal_ctl_report(&r.c, r.now, &got, &age)); /* and its report */
+    brig_status(&r, 2u);
+    CHECK(bal_ctl_target(&r.c, &a, &linked, ver, &down));
+    CHECK(linked);
+    CHECK_EQ(ver[2], 12u);
+    CHECK_EQ(r.nw > nw, true);            /* BLADES 4 written on the link */
+
+    /* No node bound, or a missing argument: no target. */
+    CHECK(!bal_ctl_target(&r.c, NULL, &linked, ver, &down));
+    CHECK(!bal_ctl_target(NULL, &a, &linked, ver, &down));
+    brig_t n;
+    brig_init(&n);
+    bal_cfg_t none = n.c.cfg;
+    none.addr[0] = '\0';
+    bal_ctl_config(&n.c, &none, n.now);
+    CHECK(!bal_ctl_target(&n.c, &a, &linked, ver, &down));
+    bal_ctl_hold(NULL, true, 0u);
+}
+
 /* The radio's states read through to the link word. */
 TEST_CASE(the_radio_states_read_through)
 {
@@ -580,5 +663,6 @@ int main(void)
     RUN(seq_gaps_and_foreign_packets_are_counted);
     RUN(off_ends_the_link_and_hands_on_nothing);
     RUN(the_radio_states_read_through);
+    RUN(the_update_hold_hands_the_link_over_and_takes_it_back);
     return test_summary("bal_ctl");
 }

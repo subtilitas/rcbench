@@ -370,6 +370,12 @@ LIBRARY_RE = re.compile(r"\brcbench_\w+")
 # module's public headers.  Paths are relative to the repository root.
 ASSERTED = {
     "bleota": {
+        "firmware/panel/main/panel_devupd.c": (
+            "UPD_DEV_COUNT == BLEOTA_KIND_MAX"
+            " && UPD_DEV_DIAL == BLEOTA_KIND_DIAL - 1"
+            " && UPD_DEV_PNODE == BLEOTA_KIND_NODE_POWER - 1"
+            " && UPD_DEV_BAL == BLEOTA_KIND_NODE_BAL - 1",
+        ),
         "shared/devupd/devupd_client.c": (
             "BLEOTA_CTRL_MAX <= BLEU_WRITE_MAX",
             "BLEOTA_LEN_STATUS <= BLEU_EVT_DATA",

@@ -438,8 +438,8 @@ before the panel carries it: an ESP-IDF application of the role's chip
 tree. It tells the node roles apart by the balance node's console text and
 fails on a swapped pair. The panel options `RCBENCH_DIAL_BIN`,
 `RCBENCH_NODE_PWR_BIN` and `RCBENCH_NODE_BAL_BIN` take the paths; the panel
-checks each image again at start, and UPDATES offers the Dial's
-([Screens: The Dial](Screens.md#the-dial)). A panel built without an option
+checks each image again at start, and UPDATES' wireless devices' page
+offers each ([Screens: The wireless devices](Screens.md#the-wireless-devices)). A panel built without an option
 offers no update to that device.
 
 ## Tools

@@ -491,8 +491,14 @@ figures are the node's, and `ina voltage` and `ina current` hold them
 A node takes a new application image over BLE from a central, through the
 update service of `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)).
-The panel carries both roles' images and checks them at start; the panel's
-rows that send them come with the panel's node clients.
+The panel carries both roles' images, checks them at start and sends them
+from UPDATES' wireless devices' page: POWER NODE FIRMWARE and BALANCE NODE
+FIRMWARE ([Screens: The sensor nodes](Screens.md#the-sensor-nodes)). The
+row's 2s hold ends the node's own link (`pnode_ctl_hold()`,
+`bal_ctl_hold()`); that end and the link's return count as no loss, so the
+band shows no `POWER NODE LOST`. After the update the node's client
+connects again from SETUP's values, and the row reads the node's version
+from its first STATUS packet on the new link.
 
 1. The central connects and sends BEGIN: the kind (power node or balance
    node), the size, the version and the image's SHA-256.
@@ -554,8 +560,8 @@ The device side runs on the task `ota`, priority 3, every 10ms, with a
 stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA
 examples; its depth is not measured. Its static RAM is 3,623 bytes:
 the window's ring of 2,048 bytes, a write buffer of 1,024 bytes and the
-state. The power node's image is 646,112 bytes, 41.1% of a slot; the
-balance node's 642,544 bytes, 40.9%.
+state. The power node's image is 646,176 bytes, 41.1% of a slot; the
+balance node's 642,608 bytes, 40.9%.
 
 ## Building and flashing
 

@@ -59,6 +59,30 @@ bool panel_bal_blec_step(uint32_t now, bleu_act_t *out);
 void panel_bal_blec_publish(uint32_t now);
 
 /**
+ * @brief The `blec` task's hold on the balance node for its update: ON
+ *        ends the link and keeps it ended, as BALANCE NODE OFF does, SETUP's
+ *        values kept and the old image's report dropped (bal_ctl_hold());
+ *        OFF gives the link back to SETUP's values.
+ * @param on  The hold.
+ * @param now The clock, ms.
+ */
+void panel_bal_blec_hold(bool on, uint32_t now);
+
+/**
+ * @brief What the balance node's update needs of the link, in the
+ *        `blec` task (bal_ctl_target()).
+ * @param addr    Receives the bound node's address.
+ * @param linked  Receives whether the node is connected, its INFO taken
+ *                and its version read from a STATUS on this link.
+ * @param version Receives that version.
+ * @param down    Receives whether no link to the node stands or is under
+ *                way.
+ * @return false when no node is bound.
+ */
+bool panel_bal_blec_target(bleu_addr_t *addr, bool *linked,
+                          uint8_t version[3], bool *down);
+
+/**
  * @brief A setting changed: SET_BNODE_EN goes to the controller.
  * @param id The setting.
  */

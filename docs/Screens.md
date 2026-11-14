@@ -617,6 +617,10 @@ replaces a visible hint.
 | HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO UPDATE THE DIAL on UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
 | HOLD 2s TO REINSTALL THE DIAL FIRMWARE on UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE POWER NODE on UPDATES | `Hold 2s to update the power node. Its readings stop until it connects again.` |
+| HOLD 2s TO REINSTALL THE POWER NODE on UPDATES | `Hold 2s to reinstall the power node firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE BALANCE NODE on UPDATES | `Hold 2s to update the balance node. Its reports stop until it connects again.` |
+| HOLD 2s TO REINSTALL THE BALANCE NODE on UPDATES | `Hold 2s to reinstall the balance node firmware this panel carries.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -6556,9 +6560,10 @@ right is 532px wide, from body y 16 to 336; its text runs in lines of 41
 characters of the 12 x 24px face, 28px apart. When a result runs down to
 the card's last three lines, those lines are left out. Under CHECK the
 IOmcu section's lines are in the 10 x 20px face, and its hold is a button
-of the same size, from body y 380. Between them the DIAL FIRMWARE row: its
-heading at body y 236, its line at y 260 and its hold, 460 x 56px, at
-y 316 ([The Dial](#the-dial)). Under the card the C6 RADIO row: one
+of the same size, from body y 380. Between them the WIRELESS DEVICES
+entry: its heading at body y 236, its line at y 260 and its button,
+460 x 56px, at y 316 ([The wireless devices](#the-wireless-devices)).
+Under the card the C6 RADIO row: one
 line at body y 348 and its hold, 532 x 56px, beside the IOmcu's
 ([The C6 radio](#the-c6-radio)). The footer
 ([The footer and the settings list](#the-footer-and-the-settings-list))
@@ -6573,8 +6578,7 @@ slot is empty until a check finds a newer release.
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
 | `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
-| `HOLD 2s TO UPDATE THE DIAL` | Sends the M5Stack Dial's image this panel carries to the linked Dial over Bluetooth LE ([The Dial](#the-dial)). |
-| `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the carried version ([The Dial](#the-dial)). |
+| `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
 
 ![UPDATES' OPTIONS list](img/updates-settings.png)
 
@@ -6850,17 +6854,45 @@ While the update runs, ARM is refused with `Cannot switch to ARMED: the C6
 radio update is running.`, Wi-Fi does not start, and the panel's install,
 the GitHub check and the IOmcu's update wait.
 
+### The wireless devices
+
+The WIRELESS DEVICES entry on UPDATES counts the devices:
+`Connected: 1 of 3. Another version: 0.` names the devices that reported
+a version and those whose row offers another version than the carried
+one. A tap on `WIRELESS DEVICE FIRMWARE` opens the page; while an update
+runs the button reads that row's label.
+
+![The WIRELESS DEVICES entry while the Dial asks for its press](img/updates-dial.png)
+
+The page covers UPDATES' body. It holds one row per device, at body
+y 24, 128 and 232: DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
+FIRMWARE. Each row's heading and line take 496px from x 16, its hold
+480 x 56px from x 528. A note under the rows says how a device accepts an
+update. `BACK` in the footer's right slot and the home tag close the page;
+leaving UPDATES closes it as well. One update runs at a time: while one
+runs, the other rows' holds are grey.
+
+![The wireless devices' page](img/updates-devices.png)
+
+| Control | Action |
+| --- | --- |
+| `HOLD 2s TO UPDATE THE DIAL` | Sends the M5Stack Dial's image this panel carries to the linked Dial over Bluetooth LE ([The Dial](#the-dial)). |
+| `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the carried version. |
+| `HOLD 2s TO UPDATE THE POWER NODE` | Sends the power node's image this panel carries to the bound power node ([The sensor nodes](#the-sensor-nodes)). |
+| `HOLD 2s TO REINSTALL THE POWER NODE` | The same, while the node reports the carried version. |
+| `HOLD 2s TO UPDATE THE BALANCE NODE` | Sends the balance node's image this panel carries to the bound balance node. |
+| `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the carried version. |
+| `BACK` | Closes the page. |
+
 ### The Dial
 
 The DIAL FIRMWARE row shows the M5Stack Dial's firmware:
 `Dial: 0.21.0. Included: 0.22.0.`, the version the linked Dial's INFO
 named, or `not connected`, and the version of the Dial image this panel
-carries, or `none`. Under it `HOLD 2s TO UPDATE THE DIAL`, or `HOLD 2s TO
+carries, or `none`. Beside it `HOLD 2s TO UPDATE THE DIAL`, or `HOLD 2s TO
 REINSTALL THE DIAL FIRMWARE` while the Dial reports the carried version.
 The Dial and its update are in [The M5Stack Dial: Update over Bluetooth
 LE](Dial.md#update-over-bluetooth-le).
-
-![The DIAL FIRMWARE row while the Dial asks for its press](img/updates-dial.png)
 
 While the update runs the button reads, one after the other:
 
@@ -6918,6 +6950,53 @@ While the update runs, ARM is refused with `Cannot switch to ARMED: a
 wireless device update is running.`, and the C6's update waits. The knob
 does not drive the panel from the hold until its link connects again; that
 gap is no loss error. The transfer time is not measured.
+
+### The sensor nodes
+
+The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show a node's
+firmware: `Node: 0.23.11. Included: 0.23.12.`, the version the node's
+STATUS packet named on the current link, or `not connected`, and the
+version of the node image this panel carries, or `none`. The two roles'
+images differ: the power node's row sends the power image, the balance
+node's the balance image, and a node refuses the other role's image. The
+nodes and their update are in [The sensor nodes: Update over Bluetooth
+LE](Nodes.md#update-over-bluetooth-le).
+
+![The page while the power node asks for its BOOT key](img/updates-node.png)
+
+While a node's update runs its hold reads, one after the other:
+
+| Button | Step |
+| --- | --- |
+| `POWER NODE UPDATE: CONNECTING` | the node's own link ends, and the update connects to the bound node |
+| `PRESS BOOT ON THE NODE: 27s` | the node took BEGIN and waits for its BOOT key (GPIO9) held 1s; the seconds are the node's |
+| `POWER NODE UPDATE 37%` | the share of the image the node took |
+
+The balance node's row reads `BALANCE NODE UPDATE: CONNECTING` and
+`BALANCE NODE UPDATE 37%`. The band says `Hold the node's BOOT key 1s
+within 30s to accept the update.` when the node asks. The grey hold's
+reasons are the Dial's ([The Dial](#the-dial)); `Connect the device on
+WIRELESS first.` stands until the node is linked, its INFO taken and its
+first STATUS packet on the link has named its version. A node image that
+fails its check is no ESP32-C6 application of the project `rcbench-node`
+with that node's role, is larger than the node's slot of 1,572,864 bytes,
+or its appended SHA-256 differs.
+
+From the hold to the end the node's own client keeps its link ended, as
+the node's OFF does; SETUP > WIRELESS shows the node OFF meanwhile. That
+end counts as no loss: the band shows no `POWER NODE LOST`, and the link
+that comes back after the update reads no loss either. A power node's
+readings and a balance node's reports stop from the hold until the node is
+back. Once the update ends the node's client connects again from SETUP's
+values, and the row's version comes from the first STATUS packet on the
+new link.
+
+The alert band's lines name the node: `Power node updated to 0.23.12.
+It connects again by itself.`, `Balance node update stopped: <reason>.
+Previous firmware is running.`, `Power node did not report after its
+update. Check its version on UPDATES.` The reasons are the Dial's;
+`not accepted within 30s` means no BOOT hold of 1s on the node, and
+`refused on the device` does not occur, as a node has no refusal key.
 
 ### The reminder
 

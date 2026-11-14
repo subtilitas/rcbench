@@ -194,7 +194,7 @@ TEST_CASE(a_list_a_keyboard_or_the_question_leaves_wifi_no_page)
 /* ----------------------------------------------------------- UPDATES */
 
 /** @brief What upd_pose() shows: 0 as fresh, 1 a newer release found,
- *         2 the OPTIONS list open. */
+ *         2 the OPTIONS list open, 3 the wireless devices' page open. */
 static int s_upd_state;
 
 /** @brief UPDATES, fresh, in s_upd_state's state. */
@@ -208,30 +208,38 @@ static void upd_pose(void)
     if (s_upd_state == 2) {
         tap(upd(), UP_SET_X, UP_SET_Y);
     }
+    if (s_upd_state == 3) {
+        tap(upd(), UPD_DEV_X + UPD_DEV_W / 2,
+            UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);
+    }
 }
 
 /* Each state in both languages and themes, SAFE and ARMED: CHECK's page
  * and the card's, the download's hold on it once a check found a newer
- * release; over the OPTIONS list the list's two. */
+ * release; over the OPTIONS list the list's two; over the wireless
+ * devices' page its one, with the three rows and BACK. */
 TEST_CASE(every_updates_page_fits)
 {
     static const struct {
         const char *what;
+        int pages;
         int titles[2];
         int items[2];
     } k_states[] = {
-        { "UPDATES", { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD },
+        { "UPDATES", 2, { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD },
           { 4, 3 } },
-        { "UPDATES newer", { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD },
-          { 4, 4 } },
-        { "UPDATES OPTIONS", { TX_HG_SL_TITLE_ROWS, TX_HG_SL_TITLE_VALUES },
-          { 3, 3 } },
+        { "UPDATES newer", 2,
+          { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD }, { 4, 4 } },
+        { "UPDATES OPTIONS", 2,
+          { TX_HG_SL_TITLE_ROWS, TX_HG_SL_TITLE_VALUES }, { 3, 3 } },
+        { "UPDATES devices", 1, { TX_HG_UPD_TITLE_DEVS, 0 }, { 4, 0 } },
     };
     for (int k = 0; k < (int)(sizeof(k_states) / sizeof(k_states[0])); ++k) {
         s_upd_state = k;
-        CHECK_EQ(check_every_state(upd(), upd_pose, k_states[k].what), 2);
+        CHECK_EQ(check_every_state(upd(), upd_pose, k_states[k].what),
+                 k_states[k].pages);
         upd_pose();
-        for (int n = 0; n < 2; ++n) {
+        for (int n = 0; n < k_states[k].pages; ++n) {
             ui_help_page_t p;
             REQUIRE(ui_help_page(upd(), true, n, &p));
             CHECK_EQ((int)p.title, k_states[k].titles[n]);
@@ -250,11 +258,11 @@ TEST_CASE(the_updates_pages_follow_the_check_and_the_c6)
     REQUIRE(ui_help_page(upd(), false, 0, &p));
     CHECK_STR_EQ(p.item[0].label, TR(UPD_CHECK));
     CHECK(gfx_rect_contains(p.item[0].rect, UP_BTN_X, UP_CHECK_Y));
-    /* The IOmcu section ends above the DIAL FIRMWARE row, which is an
-     * item of its own around its heading, line and hold. */
+    /* The IOmcu section ends above the WIRELESS DEVICES entry, which is
+     * an item of its own around its heading, line and button. */
     CHECK_EQ(p.item[1].text, TX_HG_UPD_CU);
     CHECK(p.item[1].rect.y + p.item[1].rect.h < UPD_DEV_HEAD_Y);
-    CHECK_EQ(p.item[3].text, TX_HG_UPD_DIAL);
+    CHECK_EQ(p.item[3].text, TX_HG_UPD_DEVS);
     CHECK(gfx_rect_contains(p.item[3].rect, UPD_DEV_X + UPD_DEV_W / 2,
                             UPD_DEV_HEAD_Y));
     CHECK(gfx_rect_contains(p.item[3].rect, UPD_DEV_X + UPD_DEV_W / 2,
@@ -279,6 +287,31 @@ TEST_CASE(the_updates_pages_follow_the_check_and_the_c6)
     CHECK_STR_EQ(p.item[2].label, TR(UPD_HOLD_DL));
     CHECK_EQ(p.item[2].text, TX_HG_UPD_DL);
     CHECK(!ui_help_page(upd(), false, 2, &p));
+
+    /* The devices' page names each row by its heading, around its
+     * heading, line and hold, then BACK. */
+    s_upd_state = 3;
+    upd_pose();
+    REQUIRE(upd_dev_shown());
+    REQUIRE(ui_help_page(upd(), false, 0, &p));
+    static const int k_text[UPD_DEV_COUNT] = {
+        TX_HG_UPD_DIAL, TX_HG_UPD_PNODE, TX_HG_UPD_BAL,
+    };
+    static const ui_text_id_t k_head[UPD_DEV_COUNT] = {
+        TX_UPD_DIAL_HEAD, TX_UPD_PNODE_HEAD, TX_UPD_BAL_HEAD,
+    };
+    for (int i = 0; i < UPD_DEV_COUNT; ++i) {
+        CHECK_STR_EQ(p.item[i].label, ui_tr(k_head[i]));
+        CHECK_EQ((int)p.item[i].text, k_text[i]);
+        /* Cut to the half the dock leaves: the hold whole. */
+        const gfx_rect_t h = upd_dev_rect((upd_dev_id_t)i);
+        CHECK(gfx_rect_contains(p.item[i].rect, h.x, h.y));
+        CHECK(gfx_rect_contains(p.item[i].rect, h.x + h.w - 1,
+                                h.y + h.h - 1));
+    }
+    CHECK_EQ(p.item[3].text, TX_HG_UPD_DEVS_BACK);
+    CHECK(!ui_help_page(upd(), false, 1, &p));
+    s_upd_state = 0;
 }
 
 int main(void)

@@ -769,9 +769,12 @@ TEST_CASE(the_gate_reads_busy_from_the_ask_to_the_end_and_refuses_armed)
     devupd_gate_t g;
     atomic_init(&g.req, false);
     atomic_init(&g.run, false);
+    atomic_init(&g.dev, 0u);
+    unsigned dev = 99u;
     CHECK(!devupd_gate_busy(&g));
-    CHECK_EQ(devupd_gate_take(&g, false), DEVUPD_TAKE_NONE);
-    devupd_gate_ask(&g);
+    CHECK_EQ(devupd_gate_take(&g, false, &dev), DEVUPD_TAKE_NONE);
+    CHECK_EQ(dev, 99u);                  /* nothing taken, nothing named */
+    devupd_gate_ask(&g, 1u);
     CHECK(devupd_gate_busy(&g));
     /* The take's two stores, each seen on its own: busy throughout. */
     atomic_store(&g.run, true);
@@ -780,21 +783,26 @@ TEST_CASE(the_gate_reads_busy_from_the_ask_to_the_end_and_refuses_armed)
     CHECK(devupd_gate_busy(&g));
     atomic_store(&g.run, false);
     CHECK(!devupd_gate_busy(&g));
-    /* The real take. */
-    devupd_gate_ask(&g);
-    CHECK_EQ(devupd_gate_take(&g, false), DEVUPD_TAKE_START);
+    /* The real take names the device the ask named. */
+    devupd_gate_ask(&g, 2u);
+    CHECK_EQ(devupd_gate_take(&g, false, &dev), DEVUPD_TAKE_START);
+    CHECK_EQ(dev, 2u);
     CHECK(devupd_gate_busy(&g));
     CHECK(!atomic_load(&g.req));
-    devupd_gate_ask(&g);                 /* a second ask while it runs */
+    devupd_gate_ask(&g, 0u);             /* a second ask while it runs */
     CHECK(devupd_gate_busy(&g));
     devupd_gate_end(&g);
     CHECK(devupd_gate_busy(&g));         /* the second ask still stands */
-    CHECK_EQ(devupd_gate_take(&g, true), DEVUPD_TAKE_ARMED);
+    CHECK_EQ(devupd_gate_take(&g, true, &dev), DEVUPD_TAKE_ARMED);
+    CHECK_EQ(dev, 0u);                   /* the refused ask names its own */
     CHECK(!devupd_gate_busy(&g));
-    CHECK_EQ(devupd_gate_take(&g, false), DEVUPD_TAKE_NONE);
+    CHECK_EQ(devupd_gate_take(&g, false, NULL), DEVUPD_TAKE_NONE);
+    devupd_gate_ask(&g, 1u);
+    CHECK_EQ(devupd_gate_take(&g, false, NULL), DEVUPD_TAKE_START);
+    devupd_gate_end(&g);
     CHECK(!devupd_gate_busy(NULL));
-    CHECK_EQ(devupd_gate_take(NULL, false), DEVUPD_TAKE_NONE);
-    devupd_gate_ask(NULL);
+    CHECK_EQ(devupd_gate_take(NULL, false, &dev), DEVUPD_TAKE_NONE);
+    devupd_gate_ask(NULL, 0u);
     devupd_gate_end(NULL);
 }
 

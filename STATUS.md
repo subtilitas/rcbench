@@ -1246,14 +1246,25 @@ link lost after END left unknown and settled by the device's version; its
 client on the Bluetooth LE hub (`test_devupd_client`) against a scripted
 host stack; the start's gate and the busy flag that refuses ARM, read busy
 at every point from the ask to the end; the node's sleep policy during an
-update (`test_node_policy`); and UPDATES' DIAL FIRMWARE row
-with its reasons, its hold and its progress (`shared/ui/upd_dev.c`,
-`test_upd_dev`). Built, not run on a device: the device side on NimBLE with
-ESP-IDF's OTA (over-the-air) calls and the rollback mark
-(`firmware/devota`) in the Dial's image and both node roles', and the
-panel's side (`firmware/panel/main/panel_devupd.c`) with the three images
-embedded. The rate and a rollback are not measured; the panel's rows for
-the nodes are not built.
+update (`test_node_policy`); UPDATES' WIRELESS DEVICES entry and its
+page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE FIRMWARE
+rows: the entry opening the page, BACK and the home tag closing it, each
+row's hold at 1,999ms and 2,000ms, its reasons, its hints and its
+progress, the node rows' PRESS BOOT ON THE NODE, one press at a time
+(`shared/ui/upd_dev.c`, `test_upd_dev`, the page's guide in
+`test_help_net`); the gate naming the device it started
+(`test_devupd`); and each node client's hand-over and take-back: the
+update's hold ends the link with no STALE or LOST at any ms, keeps it
+ended through SETUP's values for 30s, takes no packet, and the take-back
+reconnects and reads the node's version from its first STATUS
+(`pnode_ctl_hold()`, `pnode_ctl_target()`, `test_pnode_ctl`;
+`bal_ctl_hold()`, `bal_ctl_target()`, `test_bal_ctl`). Built, not run on
+a device: the device side on NimBLE with ESP-IDF's OTA (over-the-air)
+calls and the rollback mark (`firmware/devota`) in the Dial's image and
+both node roles', and the panel's side
+(`firmware/panel/main/panel_devupd.c`, the hooks in `panel_dial.c`,
+`panel_pnode.c` and `panel_bal.c`) with the three images embedded. The
+rate and a rollback are not measured.
 
 ### Phase tap (ESC tones)
 
@@ -2138,7 +2149,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check` and `render_dial.py --check` hold
-976 committed screenshots to the current render, 488 in English and the same 488 in German, and `render_ui.py --fit` fails on a string that
+980 committed screenshots to the current render, 490 in English and the same 490 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

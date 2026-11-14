@@ -29,13 +29,21 @@ history is in git.
   result by the device's version. The node does not sleep while an update
   runs and switches off for an empty cell only under 3.0V. The panel carries the Dial's
   and both nodes' images, checked by `tools/c6_image.py device` in CI and
-  again at start; SETUP > UPDATES gets the DIAL FIRMWARE row with a 2s
-  hold, the Dial's confirmation countdown and the progress
-  ([Screens: The Dial](docs/Screens.md#the-dial)). ARM is refused while a
-  device update runs, and the C6 radio's update waits for it. No pairing
-  and no signature: integrity rests on the SHA-256 alone
-  ([SECURITY.md](SECURITY.md)). The panel's rows for the nodes are not
-  built.
+  again at start. SETUP > UPDATES gets the WIRELESS DEVICES entry, which
+  counts the connected devices and those with another version and opens a
+  page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
+  FIRMWARE rows: each with the device's and the carried version, a 2s
+  hold, the device's confirmation countdown (PRESS THE DIAL TO ACCEPT,
+  PRESS BOOT ON THE NODE) and the progress
+  ([Screens: The wireless devices](docs/Screens.md#the-wireless-devices)).
+  One update runs at a time. A row's hold is live only after its image's
+  check. The device's own client gives the link up for the update and
+  takes it back after it (`pnode_ctl_hold()`, `bal_ctl_hold()`, the Dial's
+  hold); a node's update reads as no loss on the band, and the row reads
+  the node's version from its first STATUS packet after the reconnect.
+  ARM is refused while a device update runs, and the C6 radio's update
+  waits for it. No pairing and no signature: integrity rests on the
+  SHA-256 alone ([SECURITY.md](SECURITY.md)).
 - `protocols/bleuart`: a profile entry may share a UUID with another, and
   every matching entry takes the characteristic; the found value handles
   and properties are recorded.

@@ -412,7 +412,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,680 | 1,424 |
 | `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and the power node's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the wireless devices' update in `panel_devupd.c`) | 4,096 | 1,808 | 1,248 |
+| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`) | 4,096 | 1,808 | 1,248 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -760,12 +760,12 @@ client, its objects alone (`panel_pnode.c`, `pnode_ctl.c`, `pnode_meter.c`,
 3,861 of them .bss, and 11,748 bytes of image (`esp_idf_size --files`);
 its texts and its calls in other files are not counted.
 The wireless devices' update, from the linker map of the default build:
-`panel_devupd.c` holds 1,810 bytes of DIRAM (1,382 .bss, 428 .data) and
-4,030 bytes of code; `upd_dev.c` 112 bytes of .bss and 1,598 of code;
-`shared/devupd` 3,224 bytes of code and `protocols/bleota` 446. The three
-carried images, the Dial's and both nodes', add 2,130,080 bytes of image at
-0.23.12: 841,424, 646,112 and 642,544. With them the application image is
-7,314,912 bytes, 811,552 (10.0%) under the slot of 8,126,464.
+`panel_devupd.c` holds 1,900 bytes of DIRAM (1,472 .bss, 428 .data) and
+4,656 bytes of code; `upd_dev.c` 489 bytes of .bss and 3,472 of code;
+`shared/devupd` 3,258 bytes of code and `protocols/bleota` 446. The three
+carried images, the Dial's and both nodes', add 2,130,208 bytes of image at
+0.23.12: 841,424, 646,176 and 642,608. With them the application image is
+7,362,880 bytes, 763,584 (9.4%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one
@@ -773,8 +773,8 @@ connection; `libbt.a`'s figures are the same with 1 connection and 5.
 esp_hosted (157,827 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and
 Bluetooth LE together; its Bluetooth LE share is not measured.
 
-The .bss in PSRAM is 2,647,872 bytes in both builds, with and without
-Bluetooth LE.
+The .bss in PSRAM is 2,648,207 bytes in the default build. The build
+without Bluetooth LE is not measured at this state.
 
 A radio start that fails logs the step, the error's name and the internal
 heap at that moment:

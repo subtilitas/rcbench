@@ -439,7 +439,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und des Leistungsknotens aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
+| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -814,12 +814,12 @@ Bytes DIRAM hinzu, davon 3 861 Bytes .bss, und 11 748 Bytes Image
 (`esp_idf_size --files`); seine Texte und seine Aufrufe in anderen Dateien
 sind nicht gezählt.
 Das Update der Funkgeräte, aus der Linker-Map des Standard-Builds:
-`panel_devupd.c` hält 1 810 Bytes DIRAM (1 382 .bss, 428 .data) und 4 030
-Bytes Code; `upd_dev.c` 112 Bytes .bss und 1 598 Bytes Code;
-`shared/devupd` 3 224 Bytes Code und `protocols/bleota` 446. Die drei
+`panel_devupd.c` hält 1 900 Bytes DIRAM (1 472 .bss, 428 .data) und 4 656
+Bytes Code; `upd_dev.c` 489 Bytes .bss und 3 472 Bytes Code;
+`shared/devupd` 3 258 Bytes Code und `protocols/bleota` 446. Die drei
 mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
-2 130 080 Bytes Image hinzu: 841 424, 646 112 und 642 544. Mit ihnen hat
-das Anwendungs-Image 7 314 912 Bytes, 811 552 (10,0%) unter dem Slot von
+2 130 208 Bytes Image hinzu: 841 424, 646 176 und 642 608. Mit ihnen hat
+das Anwendungs-Image 7 362 880 Bytes, 763 584 (9,4%) unter dem Slot von
 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
@@ -829,8 +829,8 @@ sind mit 1 und mit 5 Verbindungen gleich. esp_hosted (157 827 Bytes Flash,
 1 571 Bytes DIRAM) trägt WLAN und Bluetooth LE zusammen; sein
 Bluetooth-LE-Anteil ist nicht gemessen.
 
-Die .bss im PSRAM ist in beiden Builds 2 647 872 Bytes, mit und ohne
-Bluetooth LE.
+Die .bss im PSRAM ist im Standard-Build 2 648 207 Bytes. Der Build ohne
+Bluetooth LE ist in diesem Stand nicht gemessen.
 
 Ein WLAN-Start, der fehlschlägt, protokolliert den Schritt, den Namen des
 Fehlers und den internen Heap in diesem Moment:

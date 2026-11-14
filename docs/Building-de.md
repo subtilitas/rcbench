@@ -458,8 +458,8 @@ Version des Baums. Die Knotenrollen unterscheidet es am Konsolentext des
 Auswuchtknotens und schlägt bei einem vertauschten Paar fehl. Die
 Panel-Optionen `RCBENCH_DIAL_BIN`, `RCBENCH_NODE_PWR_BIN` und
 `RCBENCH_NODE_BAL_BIN` nehmen die Pfade; das Panel prüft jedes Image beim
-Start erneut, und UPDATES bietet das des Dial an
-([Bildschirme: Das Dial](Screens-de.md#das-dial)). Ein Panel ohne eine
+Start erneut, und die Seite der Funkgeräte auf UPDATES bietet jedes an
+([Bildschirme: Die Funkgeräte](Screens-de.md#die-funkgeräte)). Ein Panel ohne eine
 Option bietet diesem Gerät kein Update an.
 
 ## Werkzeuge

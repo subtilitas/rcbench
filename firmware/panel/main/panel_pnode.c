@@ -176,6 +176,23 @@ void panel_pnode_blec_poll(uint32_t now)
     pnode_ctl_radio(&s_ctl, radio_now(), now);
 }
 
+void panel_pnode_blec_hold(bool on, uint32_t now)
+{
+    if (s_q == NULL || on == s_ctl.held) {
+        return;
+    }
+    ESP_LOGI(TAG, "%s", on ? "link held off for the node's update"
+                           : "link back to SETUP's values");
+    pnode_ctl_hold(&s_ctl, on, now);
+}
+
+bool panel_pnode_blec_target(bleu_addr_t *addr, bool *linked,
+                          uint8_t version[3], bool *down)
+{
+    return s_q != NULL
+           && pnode_ctl_target(&s_ctl, addr, linked, version, down);
+}
+
 void panel_pnode_blec_event(const bleu_evt_t *e, uint32_t now)
 {
     if (s_q != NULL) {

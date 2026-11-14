@@ -187,6 +187,9 @@ typedef struct {
     bool        bat_known;    /**< a STATUS came on this link */
     uint16_t    bat_mv;       /**< its cell, mV */
     uint16_t    bat_flags;    /**< its RCNODE_ST_* flags */
+    uint8_t     fw[3];        /**< its firmware, MAJOR, MINOR, PATCH */
+    bool        held;         /**< an update holds the link off
+                                   (bal_ctl_hold()) */
 } bal_ctl_t;
 
 /** @brief Clear: OFF, nothing bound, 2 blades.  @param c NULL does
@@ -210,6 +213,32 @@ void bal_ctl_config(bal_ctl_t *c, const bal_cfg_t *cfg, uint32_t now_ms);
  * @param now_ms The clock.
  */
 void bal_ctl_radio(bal_ctl_t *c, imu_radio_t radio, uint32_t now_ms);
+
+/**
+ * @brief The node's update holds the link (panel_devupd.c): ON ends the
+ *        link and keeps it ended, as BALANCE NODE OFF does, with SETUP's
+ *        values kept and SETUP's later values taken, and drops the report
+ *        of the image before the update; OFF gives the link back to
+ *        SETUP's values.
+ * @param c      The controller; NULL does nothing.
+ * @param on     The hold.
+ * @param now_ms The clock.
+ */
+void bal_ctl_hold(bal_ctl_t *c, bool on, uint32_t now_ms);
+
+/**
+ * @brief What the node's update needs of the link.
+ * @param c       The controller.
+ * @param addr    Receives the bound node's address.
+ * @param linked  Receives whether the node is connected, its INFO taken
+ *                and a STATUS packet on this link named its version.
+ * @param version Receives that version, MAJOR, MINOR, PATCH.
+ * @param down    Receives whether no link to the node stands or is under
+ *                way.
+ * @return false when no node is bound, or an argument is NULL.
+ */
+bool bal_ctl_target(const bal_ctl_t *c, bleu_addr_t *addr, bool *linked,
+                    uint8_t version[3], bool *down);
 
 /**
  * @brief SCAN FOR NODE: the list cleared and a scan of BLEU_SCAN_MS.

@@ -388,17 +388,21 @@ devupd_settle_t devupd_settle(bool known, fw_version_t running,
                                    : DEVUPD_SETTLE_WAIT;
 }
 
-void devupd_gate_ask(devupd_gate_t *g)
+void devupd_gate_ask(devupd_gate_t *g, unsigned dev)
 {
     if (g != NULL) {
+        atomic_store(&g->dev, dev);
         atomic_store(&g->req, true);
     }
 }
 
-devupd_take_t devupd_gate_take(devupd_gate_t *g, bool armed)
+devupd_take_t devupd_gate_take(devupd_gate_t *g, bool armed, unsigned *dev)
 {
     if (g == NULL || !atomic_load(&g->req)) {
         return DEVUPD_TAKE_NONE;
+    }
+    if (dev != NULL) {
+        *dev = atomic_load(&g->dev);
     }
     atomic_store(&g->run, true);
     atomic_store(&g->req, false);

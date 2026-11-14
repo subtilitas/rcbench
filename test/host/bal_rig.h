@@ -55,6 +55,7 @@ typedef struct {
     uint8_t      role;       /**< the role INFO names */
     uint16_t     vbat;       /**< the cell STATUS names, mV */
     uint16_t     st_flags;   /**< the flags STATUS names */
+    uint8_t      fw[3];      /**< the firmware STATUS names */
     uint16_t     tok_conn;   /**< the last connect's token */
     unsigned     connects;   /**< CONNECT actions */
     unsigned     scans;      /**< SCAN actions */
@@ -269,6 +270,7 @@ static inline void brig_status(brig_t *r, uint8_t seq)
     st.hdr.t_node = r->now * 1000u;
     st.vbat = r->vbat;
     st.flags = r->st_flags;
+    memcpy(st.fw, r->fw, sizeof st.fw);
     bleu_evt_t e = brig_ev(BLEU_EV_NOTIFY, 0u);
     e.h1 = BRIG_STREAM_VAL;
     e.len = (uint8_t)rcnode_enc_status(&st, e.data, sizeof e.data);

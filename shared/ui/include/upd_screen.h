@@ -212,7 +212,9 @@ const upd_cu_view_t *upd_screen_coproc(void);
 bool upd_screen_take_coproc(void);
 
 /**
- * @brief The section's state line for @p v, and its colour.
+ * @brief The section's state line for @p v, and its colour; defined
+ *        beside the IOmcu's question (coproc_update_screen.c), whose
+ *        words it shares.
  *
  * @param v the section
  * @param line receives the line

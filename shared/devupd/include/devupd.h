@@ -312,6 +312,7 @@ devupd_settle_t devupd_settle(bool known, fw_version_t running,
 typedef struct {
     atomic_bool req; /**< a start was asked and not taken yet */
     atomic_bool run; /**< the running task holds an update */
+    atomic_uint dev; /**< the device the last ask named, stored before req */
 } devupd_gate_t;
 
 /** @brief What devupd_gate_take() found. */
@@ -322,10 +323,13 @@ typedef enum {
 } devupd_take_t;
 
 /**
- * @brief Ask for a start; the asking task.
- * @param g the gate
+ * @brief Ask for a start of device @p dev's update; the asking task.  The
+ *        device is stored before the request, so the running task that
+ *        sees the request reads it.
+ * @param g   the gate
+ * @param dev the device, the caller's index
  */
-void devupd_gate_ask(devupd_gate_t *g);
+void devupd_gate_ask(devupd_gate_t *g, unsigned dev);
 
 /**
  * @brief Take a start that was asked; the running task.  The run is
@@ -336,9 +340,11 @@ void devupd_gate_ask(devupd_gate_t *g);
  *        published.
  * @param g     the gate
  * @param armed the bench is ARMED or an arm waits
+ * @param dev   receives the device the ask named, with START and ARMED;
+ *              NULL takes none
  * @return what was found
  */
-devupd_take_t devupd_gate_take(devupd_gate_t *g, bool armed);
+devupd_take_t devupd_gate_take(devupd_gate_t *g, bool armed, unsigned *dev);
 
 /**
  * @brief The update ended; the running task.

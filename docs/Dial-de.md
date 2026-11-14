@@ -146,11 +146,12 @@ wird angenommen.
 Das Panel bringt das Anwendungs-Image des Dial mit und sendet es über BLE.
 Das Protokoll ist `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
-die Seite des Panels ist SETUP > UPDATES > DIAL-FIRMWARE
+die Seite des Panels ist die Zeile DIAL-FIRMWARE auf der Seite, die der
+Eintrag FUNKGERÄTE auf UPDATES öffnet
 ([Bildschirme, Das Dial](Screens-de.md#das-dial)).
 
-1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. UPDATES zeigt
-   `Dial: 0.23.11. Im Panel: 0.23.12.` und `2s HALTEN ZUM DIAL-UPDATE`.
+1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. Die Zeile
+   zeigt `Dial: 0.23.11. Im Panel: 0.23.12.` und `2s HALTEN ZUM DIAL-UPDATE`.
 2. Das Halten von 2s beendet den Knopf-Link des Dial. Das Panel verbindet
    sich mit dem Update-Dienst des Dial und sendet BEGIN: Art DIAL, Größe,
    Version und den SHA-256 des Images.
