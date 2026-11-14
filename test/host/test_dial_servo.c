@@ -147,6 +147,7 @@ TEST_CASE(scale_carries_the_travel_and_the_pulse_ends)
     while ((n = dial_stream_next(&st, &m, 0, false, pkt)) != 0u
            && pkt[0] != DK_K_SCALE) { }
     dk_scale_t c;
+    memset(&c, 0, sizeof c);
     CHECK(n == DK_LEN_SCALE && dk_scale_decode(pkt, n, &c));
     CHECK_EQ(c.us_min, lo);
     CHECK_EQ(c.travel, m.scale.travel);

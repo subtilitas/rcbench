@@ -171,6 +171,8 @@ TEST_CASE(scale_takes_the_peak_the_supply_and_else_the_plot)
     b.rpm_max = 14321.4f;
     dial_model_build(&bld, &in, &m);
     CHECK_EQ(m.scale.rpm, 14321u);
+    /* cppcheck-suppress redundantAssignment
+     * the build reads b through in.bench */
     b.rpm_max = 90000.0f;
     dial_model_build(&bld, &in, &m);
     CHECK_EQ(m.scale.rpm, 65535u);
@@ -240,6 +242,8 @@ TEST_CASE(live_motor_carries_each_reading_with_its_flag_only)
     CHECK_EQ(m.motor.esc_c, 42);
     CHECK_EQ(m.motor.mot_c, 55);
     /* Voltage alone: no power. */
+    /* cppcheck-suppress redundantAssignment
+     * the build reads b through in.bench */
     b.flags = LINK_BN_VOLTAGE_OK;
     dial_model_build(&bld, &in, &m);
     CHECK_EQ(m.motor.valid, (uint8_t)DK_MV_VOLT);
