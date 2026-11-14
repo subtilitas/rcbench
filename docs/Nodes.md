@@ -563,8 +563,8 @@ The device side runs on the task `ota`, priority 3, every 10ms, with a
 stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA
 examples; its depth is not measured. Its static RAM is 3,623 bytes:
 the window's ring of 2,048 bytes, a write buffer of 1,024 bytes and the
-state. The power node's image is 646,176 bytes, 41.1% of a slot; the
-balance node's 642,608 bytes, 40.9%.
+state. The power node's image is 646,240 bytes, 41.1% of a slot; the
+balance node's 642,672 bytes, 40.9%.
 
 ## Building and flashing
 

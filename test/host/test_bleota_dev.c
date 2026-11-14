@@ -10,7 +10,9 @@
  *        before the first write, END early, the SHA-256 compare, the
  *        install and the restart (also after an ABORT or a lost link
  *        while it runs), the idle timeout, a failed open or write and a
- *        lost link.
+ *        lost link, and a lost link or an ABORT while the caller opens the
+ *        slot, writes or finishes the SHA-256 outside the device's lock:
+ *        exactly one release follows and a new BEGIN starts.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -559,6 +561,7 @@ TEST_CASE(a_silent_central_a_failed_write_and_a_lost_link_end_it)
     send_hash(&t, sha, 0u);
     bleota_dev_key(&t.d, true, 0u);
     bleota_dev_key(&t.d, true, 1000u);
+    CHECK_EQ(bleota_dev_poll(&t.d, 1000u), BLEOTA_DO_OPEN);
     bleota_dev_opened(&t.d, false, 1000u);
     while (next_status(&t, &s) && s.ev != BLEOTA_EV_FAIL) {
     }
@@ -767,6 +770,150 @@ TEST_CASE(an_abort_or_a_lost_link_during_the_install_waits_for_its_result)
     }
 }
 
+/**
+ * @brief Run the caller's steps until none is due, as `ota` does.
+ * @param t   the device
+ * @param now the clock
+ * @return the CLOSEs run: the releases of the slot
+ */
+static int settle(devsim_t *t, uint32_t now)
+{
+    int closes = 0;
+    for (int i = 0; i < 8; ++i) {
+        if (bleota_dev_poll(&t->d, now) != BLEOTA_DO_CLOSE) {
+            break;
+        }
+        ++closes;
+        bleota_dev_closed(&t->d);
+    }
+    return closes;
+}
+
+/**
+ * @brief Drop the notifications, then check that a new BEGIN starts.
+ * @param t   the device
+ * @param now the clock
+ */
+static void begin_starts(devsim_t *t, uint32_t now)
+{
+    const uint16_t v[3] = { 0u, 25u, 0u };
+    bleota_status_t s = { 0 };
+    while (next_status(t, &s)) {
+    }
+    send_begin(t, BLEOTA_KIND_NODE_POWER, 1000u, v, 0u, now);
+    CHECK_EQ(t->d.st, BLEOTA_DEV_HASH);
+    CHECK(!t->d.open);
+    CHECK(!next_status(t, &s));
+}
+
+/**
+ * @brief End the transfer as the host task does while `ota` is in a step.
+ * @param t     the device
+ * @param abort an ABORT; a lost link otherwise
+ * @param now   the clock
+ */
+static void cancel(devsim_t *t, bool abort, uint32_t now)
+{
+    if (abort) {
+        send_op(t, BLEOTA_OP_ABORT, now);
+    } else {
+        bleota_dev_lost(&t->d);
+    }
+    CHECK_EQ(t->d.st, BLEOTA_DEV_IDLE);
+    CHECK_EQ(t->d.code, BLEOTA_E_ABORTED);
+}
+
+/**
+ * @brief A BEGIN while the step under way has not reported is refused BUSY.
+ * @param t   the device
+ * @param now the clock
+ */
+static void begin_is_busy(devsim_t *t, uint32_t now)
+{
+    const uint16_t v[3] = { 0u, 25u, 0u };
+    bleota_status_t s = { 0 };
+    while (next_status(t, &s)) {
+    }
+    send_begin(t, BLEOTA_KIND_NODE_POWER, 1000u, v, 0u, now);
+    CHECK_EQ(t->d.st, BLEOTA_DEV_IDLE);
+    CHECK(next_status(t, &s));
+    CHECK_EQ(s.ev, BLEOTA_EV_FAIL);
+    CHECK_EQ(s.code, BLEOTA_E_BUSY);
+}
+
+/* The caller opens the slot outside the device's lock.  A lost link or an
+ * ABORT meanwhile: an open that worked is dropped once, one that failed
+ * drops nothing, and BEGIN waits for the open's report. */
+TEST_CASE(an_end_while_the_slot_opens_releases_it_exactly_once)
+{
+    for (int k = 0; k < 4; ++k) {
+        const bool abort = (k & 1) != 0, ok = k < 2;
+        devsim_t t;
+        bleota_status_t s = { 0 };
+        uint8_t sha[32] = { 0 };
+        const uint16_t v[3] = { 0u, 25u, 0u };
+        dev_init(&t, BLEOTA_CONFIRM_HOLD);
+        send_begin(&t, BLEOTA_KIND_NODE_POWER, 1000u, v, 0u, 0u);
+        send_hash(&t, sha, 0u);
+        bleota_dev_key(&t.d, true, 10u);
+        bleota_dev_key(&t.d, true, 1010u);
+        CHECK_EQ(bleota_dev_poll(&t.d, 1010u), BLEOTA_DO_OPEN);
+        cancel(&t, abort, 1011u);
+        CHECK_EQ(bleota_dev_poll(&t.d, 1012u), BLEOTA_DO_NONE);
+        begin_is_busy(&t, 1012u);
+        bleota_dev_opened(&t.d, ok, 1013u);
+        CHECK_EQ(t.d.st, BLEOTA_DEV_IDLE);
+        CHECK(!next_status(&t, &s));
+        CHECK_EQ(settle(&t, 1014u), ok ? 1 : 0);
+        begin_starts(&t, 1015u);
+    }
+}
+
+/* A write outside the lock: its report after the end is ignored, the slot
+ * is dropped once, then BEGIN starts. */
+TEST_CASE(an_end_during_a_write_releases_the_slot_exactly_once)
+{
+    for (int k = 0; k < 2; ++k) {
+        devsim_t t;
+        uint8_t sha[32] = { 0 };
+        uint8_t buf[BLEOTA_HEAD_LEN];
+        to_recv(&t, 1000u, sha);
+        send_chunk(&t, 0u, 240u, 0u, 1100u);
+        send_chunk(&t, 240u, 240u, 0u, 1100u);
+        CHECK_EQ(bleota_dev_poll(&t.d, 1101u), BLEOTA_DO_WRITE);
+        CHECK_EQ(bleota_dev_take(&t.d, buf, sizeof buf), BLEOTA_HEAD_LEN);
+        cancel(&t, k != 0, 1102u);
+        bleota_dev_written(&t.d, true, 1103u);
+        CHECK_EQ(t.d.wr, 0u);
+        begin_is_busy(&t, 1103u);
+        CHECK_EQ(settle(&t, 1104u), 1);
+        begin_starts(&t, 1105u);
+    }
+}
+
+/* The SHA-256 is finished outside the lock: an end meanwhile refuses the
+ * compare, drops the slot once, then BEGIN starts. */
+TEST_CASE(an_end_during_the_verify_releases_the_slot_exactly_once)
+{
+    for (int k = 0; k < 2; ++k) {
+        devsim_t t;
+        uint8_t sha[32];
+        memset(sha, 0x33, sizeof sha);
+        to_recv(&t, 300u, sha);
+        send_chunk(&t, 0u, 240u, 0u, 1100u);
+        send_chunk(&t, 240u, 60u, 0u, 1100u);
+        send_op(&t, BLEOTA_OP_END, 1101u);
+        drain(&t, 1102u);
+        CHECK_EQ(bleota_dev_poll(&t.d, 1102u), BLEOTA_DO_VERIFY);
+        cancel(&t, k != 0, 1103u);
+        CHECK(!bleota_dev_verify(&t.d, sha, 1104u));
+        CHECK_EQ(t.d.st, BLEOTA_DEV_IDLE);
+        begin_is_busy(&t, 1104u);
+        CHECK_EQ(settle(&t, 1105u), 1);
+        begin_starts(&t, 1106u);
+    }
+}
+
 int main(void)
 {
     RUN(init_refuses_a_small_or_uneven_buffer_and_a_kind_out_of_range);
@@ -784,5 +931,8 @@ int main(void)
     RUN(the_head_is_checked_before_the_first_write);
     RUN(an_abort_or_a_lost_link_during_the_install_waits_for_its_result);
     RUN(a_full_notification_queue_drops_the_oldest_and_nulls_are_safe);
+    RUN(an_end_while_the_slot_opens_releases_it_exactly_once);
+    RUN(an_end_during_a_write_releases_the_slot_exactly_once);
+    RUN(an_end_during_the_verify_releases_the_slot_exactly_once);
     return test_summary("bleota_dev");
 }

@@ -115,7 +115,7 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The released image is
-841,424 bytes, 26.7% of a slot; the seven fonts of the faces are 243,194
+841,504 bytes, 26.8% of a slot; the seven fonts of the faces are 243,194
 bytes of it and the ring tables 25,032. Its static RAM: 216,534 of 341,760
 bytes of internal DRAM and IRAM, the frame of 115,200 bytes among them. The
 heap that NimBLE takes at run time is not measured; the log at start and

@@ -363,7 +363,10 @@ typedef struct {
     uint16_t ver[3];        /**< BEGIN's version */
     uint8_t  sha[32];       /**< the SHA-256 BEGIN's HASH writes gave */
     uint32_t t;             /**< the state's start, or the last write */
-    bool     open;          /**< the slot is open: a CLOSE is due on a fail */
+    bool     open;          /**< the slot is open, or being opened: a CLOSE
+                                 is due on a fail */
+    bool     opening;       /**< DO_OPEN is out, bleota_dev_opened() not
+                                 yet called */
     bool     close_due;     /**< DO_CLOSE is due */
     bool     end_asked;     /**< END came */
     bool     head_ok;       /**< the image's head passed: writes may go */
@@ -451,7 +454,10 @@ void bleota_dev_lost(bleota_dev_t *d);
 bleota_do_t bleota_dev_poll(bleota_dev_t *d, uint32_t now);
 
 /**
- * @brief The slot opened, or did not.
+ * @brief The slot opened, or did not.  A transfer that ended while the slot
+ *        opened (a lost link, an ABORT) already holds a CLOSE due for an
+ *        open that worked; one that did not open clears it, so exactly one
+ *        release follows either way.
  * @param d   the device
  * @param ok  it opened
  * @param now the clock

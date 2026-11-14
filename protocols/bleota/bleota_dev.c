@@ -126,7 +126,7 @@ static uint8_t begin_refusal(const bleota_dev_t *d, const bleota_ctrl_t *c)
  */
 static void begin(bleota_dev_t *d, const bleota_ctrl_t *c, uint32_t now)
 {
-    if (d->st != BLEOTA_DEV_IDLE || d->close_due) {
+    if (d->st != BLEOTA_DEV_IDLE || d->close_due || d->opening) {
         bleota_status_t s;
         memset(&s, 0, sizeof s);
         s.ev = BLEOTA_EV_FAIL;
@@ -335,6 +335,9 @@ bleota_do_t bleota_dev_poll(bleota_dev_t *d, uint32_t now)
     if (d == NULL) {
         return BLEOTA_DO_NONE;
     }
+    if (d->opening) {
+        return BLEOTA_DO_NONE; /* the open under way reports first */
+    }
     if (d->close_due) {
         return BLEOTA_DO_CLOSE;
     }
@@ -351,6 +354,11 @@ bleota_do_t bleota_dev_poll(bleota_dev_t *d, uint32_t now)
         }
         return BLEOTA_DO_NONE;
     case BLEOTA_DEV_OPEN:
+        /* The slot counts as open from here on: a fail while the caller
+         * opens it leaves a CLOSE due, and BEGIN stays refused until
+         * bleota_dev_opened() settles it. */
+        d->opening = true;
+        d->open = true;
         return BLEOTA_DO_OPEN;
     case BLEOTA_DEV_RECV:
         if (!d->head_ok && (d->rx >= BLEOTA_HEAD_LEN || d->rx == d->size)) {
@@ -389,14 +397,23 @@ bleota_do_t bleota_dev_poll(bleota_dev_t *d, uint32_t now)
 
 void bleota_dev_opened(bleota_dev_t *d, bool ok, uint32_t now)
 {
-    if (d == NULL || d->st != BLEOTA_DEV_OPEN) {
+    if (d == NULL || !d->opening) {
         return;
     }
+    d->opening = false;
     if (!ok) {
-        fail(d, BLEOTA_E_FLASH);
+        /* Nothing opened: nothing to drop. */
+        d->open = false;
+        if (d->st == BLEOTA_DEV_OPEN) {
+            fail(d, BLEOTA_E_FLASH);
+        } else {
+            d->close_due = false;
+        }
         return;
     }
-    d->open = true;
+    if (d->st != BLEOTA_DEV_OPEN) {
+        return; /* ended while it opened: its fail left the CLOSE due */
+    }
     d->st = BLEOTA_DEV_RECV;
     d->t = now;
     credit(d, BLEOTA_CREDIT_ROUTINE);

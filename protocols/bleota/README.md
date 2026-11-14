@@ -239,6 +239,14 @@ it returns (`bleota_do_t`): open the slot, write what `bleota_dev_take()`
 hands it, finish the SHA-256, install, close or restart. Each step reports
 back with its own call. `bleota_dev_status()` gives the next notification.
 
+The steps run outside the caller's lock, so a lost link or an ABORT can end
+the transfer while one runs. The slot counts as open from `BLEOTA_DO_OPEN`
+on. Until `bleota_dev_opened()` reports, `bleota_dev_poll()` hands out
+nothing and BEGIN is refused with `E_BUSY`. A step's report after the end
+changes nothing. An open that worked is then dropped by exactly one
+`BLEOTA_DO_CLOSE`; an open that failed holds nothing and gets none. BEGIN
+stays refused until that CLOSE is reported.
+
 ## Use in another project
 
 ```cmake

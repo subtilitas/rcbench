@@ -604,8 +604,8 @@ Die Geräteseite läuft im Task `ota`, Priorität 3, alle 10ms, mit einem
 Stack von 8.192 Bytes aus dem Heap beim Start, der Größe der OTA-Beispiele
 von ESP-IDF; seine Tiefe ist nicht gemessen. Ihr statischer RAM sind
 3.623 Bytes: der Ring des Fensters von 2.048 Bytes, ein Schreibpuffer von
-1.024 Bytes und der Zustand. Das Image des Leistungsknotens hat 646.176
-Bytes, 41,1% eines Slots; das des Auswuchtknotens 642.608 Bytes, 40,9%.
+1.024 Bytes und der Zustand. Das Image des Leistungsknotens hat 646.240
+Bytes, 41,1% eines Slots; das des Auswuchtknotens 642.672 Bytes, 40,9%.
 
 ## Bauen und Flashen
 

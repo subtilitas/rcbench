@@ -821,8 +821,8 @@ Das Update der Funkgeräte, aus der Linker-Map des Standard-Builds:
 Bytes Code; `upd_dev.c` 566 Bytes .bss und 3 926 Bytes Code;
 `shared/devupd` 3 540 Bytes Code und `protocols/bleota` 446. Die drei
 mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
-2 130 208 Bytes Image hinzu: 841 424, 646 176 und 642 608. Mit ihnen hat
-das Anwendungs-Image 7 375 088 Bytes, 751 376 (9,2%) unter dem Slot von
+2 130 416 Bytes Image hinzu: 841 504, 646 240 und 642 672. Mit ihnen hat
+das Anwendungs-Image 7 375 296 Bytes, 751 168 (9,2%) unter dem Slot von
 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5

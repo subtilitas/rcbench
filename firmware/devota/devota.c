@@ -197,9 +197,15 @@ static void verify_and_install(void)
     }
     xSemaphoreTake(s_lock, portMAX_DELAY);
     const bool same = bleota_dev_verify(&s_dev, digest, now_ms());
+    const uint8_t why = s_dev.code;
     xSemaphoreGive(s_lock);
     if (!same) {
-        ESP_LOGW(TAG, "the SHA-256 of what was written differs from BEGIN's");
+        /* A mismatch or an end while the SHA-256 finished: the device
+         * left a CLOSE due either way. */
+        if (why == BLEOTA_E_SHA) {
+            ESP_LOGW(TAG, "the SHA-256 of what was written differs from "
+                          "BEGIN's");
+        }
         return;
     }
     uint8_t code = BLEOTA_OK;
@@ -220,7 +226,10 @@ static void verify_and_install(void)
 }
 
 /**
- * @brief The device side's next step, outside the lock.
+ * @brief The device side's next step, outside the lock.  The host task may
+ *        end the transfer while a step runs; the step's report then finds
+ *        the transfer over, and bleota_dev_poll() hands out the one CLOSE
+ *        that releases the slot and the SHA-256, if anything was opened.
  * @param act the step
  * @return true when another step may follow at once
  */
@@ -245,9 +254,9 @@ static bool run_step(bleota_do_t act)
         psa_hash_abort(&s_hash);
         xSemaphoreTake(s_lock, portMAX_DELAY);
         bleota_dev_closed(&s_dev);
+        const unsigned code = s_dev.code;
         xSemaphoreGive(s_lock);
-        ESP_LOGW(TAG, "update ended, code %u; the running image stays",
-                 (unsigned)s_dev.code);
+        ESP_LOGW(TAG, "update ended, code %u; the running image stays", code);
         return true;
     case BLEOTA_DO_RESTART:
         send_status();
