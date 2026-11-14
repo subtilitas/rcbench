@@ -491,9 +491,10 @@ value sends that value's part of its row, not the frame of 153,600 bytes.
 | a tap on a row's highest and lowest (x 220 to 319) | resets that row's two |
 | a hold of 2s anywhere | resets all six, once, while still held |
 
-Nothing else is a touch function. A tap is a press that ends before 2s;
-the press ends 60ms after the last touch read, and the touch is read every
-20ms. From 300ms of a press on, a bar at the band's foot fills toward the
+Nothing else is a touch function. The hold fires on the first touch read
+that sees the finger 2s or more into the press. A press whose last touch
+read comes before 2s is a tap; the press ends 60ms after the last touch
+read, and the touch is read every 20ms. From 300ms of a press on, a bar at the band's foot fills toward the
 2s and the band reads `RESET ALL`.
 
 ![A hold of 1.2s](img/node-hold.png)

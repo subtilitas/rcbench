@@ -189,8 +189,9 @@ size_t nv_fmt_unit(int q, int32_t v, char *buf, size_t n);
  * @param x      Where, screen px (nv_touch_map()).
  * @param y      Where, screen px.
  * @param now_ms The clock; wraps are handled.
- * @return NV_TOUCH_HOLD once at NV_HOLD_MS into a press; NV_TOUCH_TAP when
- *         a press that did not hold ends, NV_UP_MS after the last touch;
+ * @return NV_TOUCH_HOLD once, on the first read with the finger down
+ *         NV_HOLD_MS or more into a press; NV_TOUCH_TAP when a press that
+ *         did not hold ends, NV_UP_MS after the last touch;
  *         NV_TOUCH_NONE otherwise.
  */
 nv_touch_ev_t nv_touch_step(nv_touch_t *t, bool down, int x, int y,

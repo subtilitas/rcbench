@@ -273,6 +273,29 @@ TEST_CASE(a_hold_fires_once_at_2s_and_its_release_is_no_tap)
     CHECK_EQ(nv_touch_step(NULL, true, 0, 0, 0u), NV_TOUCH_NONE);
 }
 
+TEST_CASE(a_release_just_before_2s_is_a_tap_not_a_hold)
+{
+    nv_touch_t t;
+    memset(&t, 0, sizeof t);
+    CHECK_EQ(nv_touch_step(&t, true, 300, 60, 0u), NV_TOUCH_NONE);
+    for (uint32_t k = 20u; k <= 1980u; k += 20u) {
+        CHECK_EQ(nv_touch_step(&t, true, 300, 60, k), NV_TOUCH_NONE);
+    }
+    /* Up from 2000ms: the reads past 2s without the finger fire no hold. */
+    for (uint32_t k = 2000u; k < 1980u + NV_UP_MS; k += 20u) {
+        CHECK_EQ(nv_touch_step(&t, false, 0, 0, k), NV_TOUCH_NONE);
+    }
+    CHECK_EQ(nv_touch_step(&t, false, 0, 0, 1980u + NV_UP_MS), NV_TOUCH_TAP);
+    /* A gap across 2s inside a press: the hold fires on the next read
+     * that sees the finger. */
+    memset(&t, 0, sizeof t);
+    CHECK_EQ(nv_touch_step(&t, true, 10, 100, 0u), NV_TOUCH_NONE);
+    CHECK_EQ(nv_touch_step(&t, true, 10, 100, 1980u), NV_TOUCH_NONE);
+    CHECK_EQ(nv_touch_step(&t, false, 0, 0, 2000u), NV_TOUCH_NONE);
+    CHECK_EQ(nv_touch_step(&t, true, 10, 100, 2020u), NV_TOUCH_HOLD);
+    CHECK_EQ(nv_touch_step(&t, false, 0, 0, 2020u + NV_UP_MS), NV_TOUCH_NONE);
+}
+
 TEST_CASE(the_hold_bar_shows_from_300ms_to_the_hold)
 {
     nv_touch_t t;
@@ -427,6 +450,7 @@ int main(void)
     RUN(a_reset_clears_one_row_or_all_and_the_next_window_sets_them);
     RUN(a_press_under_2s_is_a_tap_at_its_start_60ms_after_the_last_touch);
     RUN(a_hold_fires_once_at_2s_and_its_release_is_no_tap);
+    RUN(a_release_just_before_2s_is_a_tap_not_a_hold);
     RUN(the_hold_bar_shows_from_300ms_to_the_hold);
     RUN(only_a_rows_highest_and_lowest_are_tap_targets);
     RUN(the_touch_map_turns_portrait_to_landscape_and_clamps);

@@ -216,21 +216,13 @@ nv_touch_ev_t nv_touch_step(nv_touch_t *t, bool down, int x, int y,
         return NV_TOUCH_NONE;
     }
     if (!t->down || (uint32_t)(now_ms - t->t_seen) < NV_UP_MS) {
-        /* A gap of a read or two inside a press is still the press. */
-        if (t->down && !t->fired
-            && (uint32_t)(now_ms - t->t_down) >= NV_HOLD_MS) {
-            t->fired = true;
-            return NV_TOUCH_HOLD;
-        }
+        /* A gap of a read or two inside a press is still the press. The
+         * hold fires only on a read that sees the finger, so a release
+         * shortly before NV_HOLD_MS stays a tap. */
         return NV_TOUCH_NONE;
     }
     t->down = false;
-    /* A hold that fired, or a press that reached the hold's time between
-     * two reads, is no tap. */
-    if (t->fired || (uint32_t)(t->t_seen - t->t_down) >= NV_HOLD_MS) {
-        return NV_TOUCH_NONE;
-    }
-    return NV_TOUCH_TAP;
+    return t->fired ? NV_TOUCH_NONE : NV_TOUCH_TAP;
 }
 
 uint16_t nv_touch_progress(const nv_touch_t *t, uint32_t now_ms)

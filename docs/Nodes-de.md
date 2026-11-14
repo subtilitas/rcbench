@@ -522,9 +522,10 @@ Bild von 153.600 Byte.
 | ein Tippen auf Höchst- und Tiefstwert einer Zeile (x 220 bis 319) | setzt die beiden dieser Zeile zurück |
 | 2s Halten an beliebiger Stelle | setzt alle sechs zurück, einmal, noch während des Haltens |
 
-Sonst hat der Touch keine Funktion. Ein Tippen ist ein Druck, der vor 2s
-endet; der Druck endet 60ms nach dem letzten gelesenen Kontakt, und der
-Touch wird alle 20ms gelesen. Ab 300ms Druck füllt sich unten im Band ein
+Sonst hat der Touch keine Funktion. Das Halten löst beim ersten Lesen aus,
+das den Finger 2s oder später nach Beginn des Drucks sieht. Ein Druck, dessen
+letzter gelesener Kontakt vor 2s liegt, ist ein Tippen; der Druck endet 60ms
+nach dem letzten gelesenen Kontakt, und der Touch wird alle 20ms gelesen. Ab 300ms Druck füllt sich unten im Band ein
 Balken bis zu den 2s, und das Band zeigt `ALLE ZURÜCKSETZEN`.
 
 ![1,2s Halten](img/de/node-hold.png)
