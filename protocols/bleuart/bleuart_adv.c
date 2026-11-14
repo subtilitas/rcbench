@@ -77,6 +77,16 @@ static void copy_name(char *out, const uint8_t *src, size_t n)
 
 bool bleu_adv_parse(const uint8_t *ad, size_t len, bleu_adv_t *out)
 {
+    return bleu_adv_parse_for(&bleu_profile_issc, ad, len, out);
+}
+
+bool bleu_adv_parse_for(const bleu_profile_t *p, const uint8_t *ad,
+                        size_t len, bleu_adv_t *out)
+{
+    if (p == NULL) {
+        p = &bleu_profile_issc;
+    }
+    const uint8_t *svc = p->adv_svc != NULL ? p->adv_svc : p->svc;
     if (out == NULL) {
         return false;
     }
@@ -101,13 +111,14 @@ bool bleu_adv_parse(const uint8_t *ad, size_t len, bleu_adv_t *out)
             out->flags = d[0];
         } else if (type == AD_UUID16_ANY || type == AD_UUID16_ALL) {
             for (size_t i = 0; i + 2u <= dn; i += 2u) {
-                if ((uint16_t)(d[i] | (d[i + 1u] << 8)) == BLEU_UUID16_ADV) {
+                if (p->adv_uuid16 != 0u
+                    && (uint16_t)(d[i] | (d[i + 1u] << 8)) == p->adv_uuid16) {
                     out->has_18f0 = true;
                 }
             }
         } else if (type == AD_UUID128_ANY || type == AD_UUID128_ALL) {
             for (size_t i = 0; i + 16u <= dn; i += 16u) {
-                if (memcmp(&d[i], bleu_uuid_svc, 16u) == 0) {
+                if (svc != NULL && memcmp(&d[i], svc, 16u) == 0) {
                     out->has_issc = true;
                 }
             }
@@ -213,12 +224,19 @@ static bool remember(bleu_list_t *l, const bleu_addr_t *a, bool matched)
 void bleu_list_report(bleu_list_t *l, const bleu_addr_t *addr, int8_t rssi,
                       const uint8_t *ad, size_t len)
 {
+    bleu_list_report_for(l, &bleu_profile_issc, addr, rssi, ad, len);
+}
+
+void bleu_list_report_for(bleu_list_t *l, const bleu_profile_t *p,
+                          const bleu_addr_t *addr, int8_t rssi,
+                          const uint8_t *ad, size_t len)
+{
     if (l == NULL || addr == NULL) {
         return;
     }
     ++l->reports;
     bleu_adv_t adv;
-    const bool match = bleu_adv_parse(ad, len, &adv);
+    const bool match = bleu_adv_parse_for(p, ad, len, &adv);
     for (size_t i = 0; i < l->found_n; ++i) {
         if (bleu_addr_eq(&l->found[i].addr, addr)) {
             merge(&l->found[i], rssi, &adv);

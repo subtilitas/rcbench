@@ -8,7 +8,9 @@
  * profile marks optional, missing; the connect's parameters from the
  * profile; every rule of bleu_profile_valid() at its limit; bleu_setup()
  * refusing and keeping what it had; a connect answered BLEU_STATUS_BUSY
- * tried again after 1,000ms, not 999ms, with the error before it kept.
+ * tried again after 1,000ms, not 999ms, with the error before it kept; a
+ * scan that lists what its own profile advertises and not the ISSC
+ * service; a PARAM read of 20 bytes kept whole.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -400,6 +402,89 @@ TEST_CASE(a_busy_scan_end_ends_the_scan_with_its_status)
     CHECK_EQ(b.scan_status, BLEU_STATUS_BUSY);
 }
 
+/* One advertising report of @p addr's last byte with a 128-bit UUID list
+ * holding @p uuid, or a 16-bit list holding 0x18F0 for NULL. */
+static void adv(bleu_t *b, uint8_t last, const uint8_t *uuid, uint32_t now)
+{
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_ADV;
+    e.rssi = -60;
+    e.addr.val[0] = last;
+    e.addr.type = BLEU_ADDR_RANDOM;
+    if (uuid != NULL) {
+        e.data[0] = 17u;
+        e.data[1] = 0x07u;
+        memcpy(&e.data[2], uuid, 16u);
+        e.len = 18u;
+    } else {
+        e.data[0] = 3u;
+        e.data[1] = 0x03u;
+        e.data[2] = 0xF0u;
+        e.data[3] = 0x18u;
+        e.len = 4u;
+    }
+    (void)bleu_event(b, &e, now);
+}
+
+TEST_CASE(a_scan_lists_what_its_own_profile_advertises)
+{
+    bleu_t b;
+    bleu_init(&b);
+    CHECK(bleu_setup(&b, &k_node, 1u));
+    bleu_enable(&b, true, 0);
+    CHECK(bleu_scan(&b, 0));
+    adv(&b, 1u, bleu_uuid_svc, 1);
+    adv(&b, 2u, NULL, 2);
+    adv(&b, 3u, k_svc, 3);
+    CHECK_EQ(b.list.found_n, 1);
+    CHECK_EQ(b.list.found[0].addr.val[0], 3);
+    CHECK_EQ(b.list.found[0].flags, BLEU_DEV_ISSC);
+    CHECK_EQ(b.list.hidden, 2);
+
+    /* The ISSC machine lists both of its own and not the node. */
+    bleu_t i;
+    bleu_init(&i);
+    bleu_enable(&i, true, 0);
+    CHECK(bleu_scan(&i, 0));
+    adv(&i, 1u, bleu_uuid_svc, 1);
+    adv(&i, 2u, NULL, 2);
+    adv(&i, 3u, k_svc, 3);
+    CHECK_EQ(i.list.found_n, 2);
+    CHECK_EQ(i.list.hidden, 1);
+
+    /* adv_svc in place of the service, and no 16-bit UUID. */
+    bleu_profile_t p = k_node;
+    p.adv_svc = bleu_uuid_svc;
+    bleu_adv_t a;
+    const uint8_t ad16[] = { 3u, 0x03u, 0xF0u, 0x18u };
+    CHECK(!bleu_adv_parse_for(&p, ad16, sizeof ad16, &a));
+    p.adv_uuid16 = 0x18F0u;
+    CHECK(bleu_adv_parse_for(&p, ad16, sizeof ad16, &a));
+    CHECK(a.has_18f0);
+    CHECK(bleu_adv_parse_for(NULL, ad16, sizeof ad16, &a));
+}
+
+TEST_CASE(a_param_of_20_bytes_is_kept_whole)
+{
+    bleu_t b;
+    bleu_init(&b);
+    CHECK(bleu_setup(&b, &k_node, 1u));
+    b.rd_busy = true;
+    b.tok_link = 0x2005u;
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_READ;
+    e.token = 0x2005u;
+    e.len = 21u;
+    for (unsigned k = 0; k < 21u; ++k) {
+        e.data[k] = (uint8_t)(k + 1u);
+    }
+    (void)bleu_event(&b, &e, 0);
+    CHECK_EQ(b.param_len, 20);
+    CHECK_EQ(b.param[19], 20);
+}
+
 int main(void)
 {
     RUN(tokens_carry_the_owner_in_their_top_3_bits);
@@ -413,5 +498,7 @@ int main(void)
     RUN(setup_refuses_and_keeps_what_it_had);
     RUN(a_busy_connect_retries_after_1000ms_not_999_and_keeps_the_error);
     RUN(a_busy_scan_end_ends_the_scan_with_its_status);
+    RUN(a_scan_lists_what_its_own_profile_advertises);
+    RUN(a_param_of_20_bytes_is_kept_whole);
     return test_summary("bleuart_profile");
 }

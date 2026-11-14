@@ -61,6 +61,8 @@ const bleu_profile_t bleu_profile_issc = {
         .scan_itvl = BLEU_CONN_SCAN_ITVL,
         .scan_window = BLEU_CONN_SCAN_WINDOW,
     },
+    .adv_svc = NULL,
+    .adv_uuid16 = BLEU_UUID16_ADV,
 };
 
 /** @brief bleu_t.settle. @{ */
@@ -681,8 +683,9 @@ bool bleu_event(bleu_t *b, const bleu_evt_t *e, uint32_t now_ms)
     switch (e->kind) {
     case BLEU_EV_ADV:
         if (b->scanning) {
-            bleu_list_report(&b->list, &e->addr, e->rssi, e->data,
-                             e->len < BLEU_EVT_DATA ? e->len : BLEU_EVT_DATA);
+            bleu_list_report_for(&b->list, prof_of(b), &e->addr, e->rssi,
+                                 e->data, e->len < BLEU_EVT_DATA
+                                              ? e->len : BLEU_EVT_DATA);
         } else {
             ++b->stray;
         }

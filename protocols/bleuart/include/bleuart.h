@@ -75,7 +75,8 @@ extern "C" {
 #define BLEU_EVT_DATA    40u    /**< data bytes one event carries */
 #define BLEU_WRITE_MAX   20u    /**< bytes of one command write */
 #define BLEU_ACT_QUEUE   6u     /**< actions waiting for bleu_step() */
-#define BLEU_PARAM_MAX   8u     /**< bytes of 6DAA's value kept */
+#define BLEU_PARAM_MAX   20u    /**< bytes of the PARAM's value kept: 6DAA's
+                                     8, a 20-byte value whole */
 /** @} */
 
 /** @brief The 16-bit service UUID (universally unique identifier) the
@@ -169,11 +170,18 @@ typedef struct {
                                   PARAM, any NONE */
     uint8_t            chr_n; /**< how many of chr[] are used */
     bleu_conn_params_t conn; /**< the connect's parameters */
+    const uint8_t     *adv_svc; /**< the 128-bit UUID a scan lists a device
+                                     for when an AD (advertising data)
+                                     128-bit UUID list holds it; NULL is
+                                     svc */
+    uint16_t           adv_uuid16; /**< a 16-bit UUID a scan lists a device
+                                        for as well, 0 none: 0x18F0 for
+                                        the ISSC profile */
 } bleu_profile_t;
 
 /** @brief The ISSC Transparent UART profile, every machine's default:
- *         1E4D STREAM, 8841 CMD, ACA3 NONE, 6DAA PARAM, and the BLEU_ITVL_*
- *         set. */
+ *         1E4D STREAM, 8841 CMD, ACA3 NONE, 6DAA PARAM, the BLEU_ITVL_*
+ *         set, and a scan that lists 0x18F0 or the ISSC service. */
 extern const bleu_profile_t bleu_profile_issc;
 
 /** @brief A device address. */
@@ -183,8 +191,10 @@ typedef struct {
 } bleu_addr_t;
 
 /** @brief bleu_dev_t.flags. @{ */
-#define BLEU_DEV_18F0      0x01u /**< a report listed 0x18F0 */
-#define BLEU_DEV_ISSC      0x02u /**< a report listed the ISSC service */
+#define BLEU_DEV_18F0      0x01u /**< a report listed the profile's 16-bit
+                                      UUID, 0x18F0 for the ISSC profile */
+#define BLEU_DEV_ISSC      0x02u /**< a report listed the profile's 128-bit
+                                      service, the ISSC one by default */
 #define BLEU_DEV_NAME_FULL 0x04u /**< name is a complete local name */
 /** @} */
 
@@ -218,8 +228,10 @@ typedef struct {
                                       up to its first NUL */
     uint8_t name_kind;   /**< 0 none, 0x08 shortened, 0x09 complete */
     uint8_t flags;       /**< AD 0x01's byte, 0 without */
-    bool    has_18f0;    /**< 0x18F0 in a 16-bit UUID list */
-    bool    has_issc;    /**< the service in a 128-bit UUID list */
+    bool    has_18f0;    /**< 0x18F0, or the profile's 16-bit UUID, in a
+                              16-bit UUID list */
+    bool    has_issc;    /**< the ISSC service, or the profile's 128-bit
+                              UUID, in a 128-bit UUID list */
     bool    cut;         /**< a length ran past the end: the rest dropped */
 } bleu_adv_t;
 
@@ -537,6 +549,19 @@ bool bleu_can_send(const bleu_t *b);
  */
 bool bleu_adv_parse(const uint8_t *ad, size_t len, bleu_adv_t *out);
 
+/**
+ * @brief Parse one advertising report as bleu_adv_parse() does, matched
+ *        against @p p's advertising: has_issc for its 128-bit UUID
+ *        (adv_svc, else svc), has_18f0 for its adv_uuid16.
+ * @param p   The profile; NULL is bleu_profile_issc.
+ * @param ad  The bytes; NULL with @p len 0 is an empty report.
+ * @param len Their count.
+ * @param out Receives what the report says.
+ * @return true when the report lists either.
+ */
+bool bleu_adv_parse_for(const bleu_profile_t *p, const uint8_t *ad,
+                        size_t len, bleu_adv_t *out);
+
 /** @brief Clear a scan list. @param l The list; NULL does nothing. */
 void bleu_list_clear(bleu_list_t *l);
 
@@ -553,6 +578,21 @@ void bleu_list_clear(bleu_list_t *l);
  */
 void bleu_list_report(bleu_list_t *l, const bleu_addr_t *addr, int8_t rssi,
                       const uint8_t *ad, size_t len);
+
+/**
+ * @brief bleu_list_report() with the match of @p p's advertising
+ *        (bleu_adv_parse_for()): a machine's scan lists what its own
+ *        profile advertises.
+ * @param l    The list.
+ * @param p    The profile; NULL is bleu_profile_issc.
+ * @param addr The advertiser.
+ * @param rssi Its RSSI, dBm, 127 unknown.
+ * @param ad   The AD bytes.
+ * @param len  Their count.
+ */
+void bleu_list_report_for(bleu_list_t *l, const bleu_profile_t *p,
+                          const bleu_addr_t *addr, int8_t rssi,
+                          const uint8_t *ad, size_t len);
 
 /**
  * @brief Write @p a as `00:0C:BF:08:19:29`, with ` P` or ` R` after it
