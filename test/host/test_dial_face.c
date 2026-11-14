@@ -628,8 +628,10 @@ TEST_CASE(the_dials_words_exist_in_both_languages_with_their_glyphs)
                 T_FAIL("%s converts %%%c and %%%c", dial_text_name(
                            (dial_text_id_t)i), a[1], b[1]);
             }
-            a += 2;
-            b += 2;
+            /* A '%' that ends the string (`PRESS: 0%`) has no conversion
+             * after it: step past it alone, never past the NUL. */
+            a += (a[1] != '\0') ? 2 : 1;
+            b += (b[1] != '\0') ? 2 : 1;
         }
         if ((a == NULL) != (b == NULL)) {
             T_FAIL("%s: the conversions differ", dial_text_name(
