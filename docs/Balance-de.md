@@ -116,9 +116,10 @@ ARMED ist kein Fehler, und seine Tasten gehen auch bei ARMED.
 
 1. SETUP > WIRELESS > AUSWUCHTKNOTEN: Auswuchtknoten EIN, dann Knoten
    suchen (10s, nur bei SAFE: eine Suche bei ARMED wird abgelehnt, und das
-   Schalten auf ARMED beendet eine laufende). Gebundener Knoten listet die
-   gefundenen Knoten, `rcbench-bal-XXXX`; Tippen bindet einen und behält
-   ihn über einen Neustart. Knotenakku zeigt die Zelle aus den
+   Schalten auf ARMED beendet eine laufende). Gebundener Knoten, oder
+   Knoten suchen, solange es `n GEFUNDEN` zeigt, listet die gefundenen
+   Knoten, `rcbench-bal-XXXX`, und zuletzt `ERNEUT SUCHEN`; Tippen bindet
+   einen und behält ihn über einen Neustart. Knotenakku zeigt die Zelle aus den
    STATUS-Paketen, die der Knoten neben seinen Berichten sendet.
 2. Blattzahl und Rotorart auf BALANCE einstellen. Das Panel schreibt die
    Blattzahl an den Knoten (BLADES).

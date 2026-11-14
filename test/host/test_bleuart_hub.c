@@ -17,7 +17,12 @@
  * old handle keeping its new link; each GATT
  * step answered lost; the slot ended by its SCAN_END and by a connection
  * that failed to be established; the slot's time limits at their limit
- * and 1ms before; strays and NULL.
+ * and 1ms before; strays and NULL; a hurried connect (bleu_hurry())
+ * keeping the next turn behind the attempt under way, other clients
+ * answered busy on the free slot, a scan not held back, the turn lapsing
+ * 200ms after the slot freed, and a hurried bind beside two absent peers
+ * connecting within 20ms of the running attempt's end where an unhurried
+ * one waits past 11,000ms.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -834,6 +839,225 @@ TEST_CASE(strays_full_queues_and_null)
     CHECK(n > 0u);
 }
 
+/* A CONNECT of owner @p o with token count @p seq, hurried or not. */
+static bleu_act_t turn_connect(uint8_t o, uint16_t seq, bool hurry)
+{
+    bleu_act_t a;
+    memset(&a, 0, sizeof a);
+    a.kind = BLEU_ACT_CONNECT;
+    a.token = (uint16_t)(((unsigned)o << BLEU_OWNER_SHIFT) | seq);
+    a.ms = (uint16_t)BLEU_CONNECT_MS;
+    a.flags = hurry ? BLEU_ACT_F_HURRY : 0u;
+    return a;
+}
+
+/* The status of the one CONNECT the hub answered to its client, or 0 when
+ * it passed the action on to the host stack. */
+static uint16_t turn_answer(bleu_hub_t *h, uint8_t o, const bleu_act_t *a,
+                            uint32_t t)
+{
+    bleu_hub_action(h, o, a, t);
+    uint8_t who = 0xFFu;
+    bleu_evt_t e;
+    uint16_t st = 0u;
+    while (bleu_hub_next_event(h, &who, &e)) {
+        CHECK_EQ(who, o);
+        st = e.status;
+    }
+    bleu_act_t out;
+    while (bleu_hub_next_action(h, &out)) {
+        CHECK(st == 0u);
+    }
+    return st;
+}
+
+/* The slot's connect ends: its CONNECT event, failed. */
+static void turn_end(bleu_hub_t *h, uint16_t token, uint32_t t)
+{
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_CONNECT;
+    e.token = token;
+    e.status = 9u;
+    bleu_hub_event(h, &e, t);
+    uint8_t who;
+    while (bleu_hub_next_event(h, &who, &e)) { }
+}
+
+/* A hurried CONNECT while another client's connect runs keeps the next
+ * turn: answered BLEU_STATUS_TURN, the running connect left alone.  On the
+ * free slot another client's CONNECT, hurried or not, is answered busy and
+ * a SCAN goes; the turn's client then takes the slot.  One turn at a time:
+ * a second hurried client is answered busy. */
+TEST_CASE(a_hurried_connect_keeps_the_next_turn)
+{
+    bleu_hub_t h;
+    bleu_hub_init(&h);
+    for (uint8_t o = 0; o < 4u; ++o) {
+        CHECK(bleu_hub_add(&h, o));
+    }
+    const bleu_act_t c0 = turn_connect(0, 1, false);
+    CHECK_EQ(turn_answer(&h, 0, &c0, 0), 0u);
+    CHECK_EQ(h.gap, BLEU_HUB_GAP_CONNECT);
+    const bleu_act_t c1 = turn_connect(1, 1, true);
+    CHECK_EQ(turn_answer(&h, 1, &c1, 10), BLEU_STATUS_TURN);
+    CHECK(h.turn_set);
+    CHECK_EQ(h.turn_owner, 1u);
+    CHECK_EQ(h.gap_owner, 0u);
+    const bleu_act_t c2 = turn_connect(2, 1, true);
+    CHECK_EQ(turn_answer(&h, 2, &c2, 20), BLEU_STATUS_BUSY);
+    CHECK_EQ(h.turn_owner, 1u);
+    /* Client 1 again while the attempt runs: the turn stays its. */
+    const bleu_act_t c1b = turn_connect(1, 2, true);
+    CHECK_EQ(turn_answer(&h, 1, &c1b, 30), BLEU_STATUS_TURN);
+    turn_end(&h, c0.token, 5002);
+    CHECK_EQ(h.gap, BLEU_HUB_GAP_FREE);
+    const bleu_act_t c3 = turn_connect(3, 1, false);
+    CHECK_EQ(turn_answer(&h, 3, &c3, 5003), BLEU_STATUS_BUSY);
+    CHECK_EQ(turn_answer(&h, 2, &c2, 5004), BLEU_STATUS_BUSY);
+    /* A SCAN is not held back by the kept turn. */
+    bleu_act_t sc;
+    memset(&sc, 0, sizeof sc);
+    sc.kind = BLEU_ACT_SCAN;
+    sc.token = (uint16_t)((3u << BLEU_OWNER_SHIFT) | 2u);
+    sc.ms = 100u;
+    CHECK_EQ(turn_answer(&h, 3, &sc, 5005), 0u);
+    CHECK_EQ(h.gap, BLEU_HUB_GAP_SCAN);
+    bleu_evt_t end;
+    memset(&end, 0, sizeof end);
+    end.kind = BLEU_EV_SCAN_END;
+    end.token = sc.token;
+    bleu_hub_event(&h, &end, 5105);
+    uint8_t who;
+    while (bleu_hub_next_event(&h, &who, &end)) { }
+    CHECK(h.turn_set);
+    const bleu_act_t c1c = turn_connect(1, 3, true);
+    CHECK_EQ(turn_answer(&h, 1, &c1c, 5110), 0u);
+    CHECK(!h.turn_set);
+    CHECK_EQ(h.gap_owner, 1u);
+    CHECK_EQ(h.gap_token, c1c.token);
+}
+
+/* A kept turn whose client does not come back lapses 200ms after the slot
+ * became free, not 199ms: until then another client is answered busy,
+ * from then on it takes the slot. */
+TEST_CASE(a_kept_turn_lapses_200ms_after_the_slot_is_free)
+{
+    bleu_hub_t h;
+    bleu_hub_init(&h);
+    CHECK(bleu_hub_add(&h, 0));
+    CHECK(bleu_hub_add(&h, 1));
+    CHECK(bleu_hub_add(&h, 2));
+    const bleu_act_t c0 = turn_connect(0, 1, false);
+    CHECK_EQ(turn_answer(&h, 0, &c0, 0), 0u);
+    const bleu_act_t c1 = turn_connect(1, 1, true);
+    CHECK_EQ(turn_answer(&h, 1, &c1, 1), BLEU_STATUS_TURN);
+    /* The slot busy for 5,000ms: the turn does not lapse meanwhile. */
+    bleu_hub_tick(&h, 4000);
+    CHECK(h.turn_set);
+    turn_end(&h, c0.token, 5000);
+    const bleu_act_t c2 = turn_connect(2, 1, false);
+    bleu_hub_tick(&h, 5199);
+    CHECK(h.turn_set);
+    CHECK_EQ(turn_answer(&h, 2, &c2, 5199), BLEU_STATUS_BUSY);
+    bleu_hub_tick(&h, 5200);
+    CHECK(!h.turn_set);
+    CHECK_EQ(turn_answer(&h, 2, &c2, 5200), 0u);
+    CHECK_EQ(h.gap_owner, 2u);
+}
+
+/* The machines through the hub: clients 0 and 2 bound to peers that never
+ * answer, client 1 bound 1ms on.  Client 0's connect holds the slot from
+ * 0ms to its cancel's event at 5,002ms.  Unhurried, client 1 tries again
+ * each 1,000ms, 1ms behind the others' grid: each free slot goes to client
+ * 0's or client 2's next attempt first, and client 1 gets none in 40,000ms
+ * (40 busy answers).  Hurried, client 0's attempt runs to its end uncut,
+ * and client 1 connects within 20ms of the slot's end. */
+TEST_CASE(a_hurried_bind_connects_after_the_running_attempt)
+{
+    for (int hurry = 0; hurry < 2; ++hurry) {
+        rig_t *r = rig_init(3);
+        r->s[0].absent = true;
+        r->s[2].absent = true;
+        rig_on(r, 0, 0);
+        rig_on(r, 2, 0);
+        rig_tick(r, 0);
+        rig_on(r, 1, 1);
+        if (hurry) {
+            bleu_hurry(&r->b[1]);
+        }
+        rig_run(r, 1, 40000);
+        const bsim_log_t *cancel = rig_nth(r, BLEU_ACT_CANCEL, 0);
+        CHECK(cancel != NULL);
+        CHECK(cancel == NULL || cancel->t == BLEU_CONNECT_MS);
+        const bsim_log_t *c1 = NULL;
+        for (unsigned i = 0; i < r->ndone && c1 == NULL; ++i) {
+            const bleu_act_t *a = &r->done[i].a;
+            if (a->kind == BLEU_ACT_CONNECT
+                && bleu_token_owner(a->token) == 1u) {
+                c1 = &r->done[i];
+            }
+        }
+        if (!hurry) {
+            CHECK(c1 == NULL);
+            CHECK(r->hub.c[1].busy >= 39u);
+            CHECK(!bleu_link_up(&r->b[1]));
+            continue;
+        }
+        CHECK(c1 != NULL);
+        if (c1 != NULL) {
+            CHECK(c1->t >= BLEU_CONNECT_MS + 2u);
+            CHECK(c1->t <= BLEU_CONNECT_MS + 2u + BLEU_RETRY_TURN_MS);
+            CHECK_EQ(c1->a.flags, BLEU_ACT_F_HURRY);
+        }
+        CHECK(!r->b[1].hurry);
+        CHECK(!r->hub.turn_set);
+        CHECK(bleu_link_up(&r->b[1]));
+        CHECK_EQ(r->b[1].err, BLEU_ERR_NONE);
+    }
+}
+
+/* bleu_hurry() with nothing bound does nothing; a bind and OFF end it, and
+ * so does a connect that times out. */
+TEST_CASE(hurry_needs_a_bind_and_ends_with_an_answer)
+{
+    bleu_t b;
+    bleu_init(&b);
+    bleu_hurry(NULL);
+    bleu_hurry(&b);
+    CHECK(!b.hurry);
+    bleu_bind(&b, &k_addr[0], 0);
+    bleu_hurry(&b);
+    CHECK(b.hurry);
+    bleu_bind(&b, &k_addr[1], 0);
+    CHECK(!b.hurry);
+    bleu_hurry(&b);
+    bleu_enable(&b, true, 0);
+    bleu_enable(&b, false, 0);
+    CHECK(!b.hurry);
+    bleu_enable(&b, true, 0);
+    bleu_hurry(&b);
+    bleu_act_t a;
+    CHECK(bleu_step(&b, 0, &a));
+    CHECK_EQ(a.kind, BLEU_ACT_CONNECT);
+    CHECK_EQ(a.flags, BLEU_ACT_F_HURRY);
+    /* Answered with the turn: still hurried, tried again 20ms on. */
+    bleu_evt_t e;
+    memset(&e, 0, sizeof e);
+    e.kind = BLEU_EV_CONNECT;
+    e.token = a.token;
+    e.status = BLEU_STATUS_TURN;
+    (void)bleu_event(&b, &e, 1);
+    CHECK(b.hurry);
+    CHECK(!bleu_step(&b, 20, &a));
+    CHECK(bleu_step(&b, 21, &a));
+    CHECK_EQ(a.kind, BLEU_ACT_CONNECT);
+    CHECK_EQ(a.flags, BLEU_ACT_F_HURRY);
+    /* Unanswered for 5,000ms: no longer hurried. */
+    while (bleu_step(&b, 21 + BLEU_CONNECT_MS, &a)) { }
+    CHECK(!b.hurry);
+}
+
 int main(void)
 {
     RUN(one_client_runs_as_without_the_hub);
@@ -851,6 +1075,10 @@ int main(void)
     RUN(each_gatt_step_on_another_clients_handle_is_answered_lost);
     RUN(a_client_that_holds_the_slot_takes_it_again);
     RUN(a_stale_disconnect_of_an_old_handle_keeps_the_new_link);
+    RUN(a_hurried_connect_keeps_the_next_turn);
+    RUN(a_kept_turn_lapses_200ms_after_the_slot_is_free);
+    RUN(a_hurried_bind_connects_after_the_running_attempt);
+    RUN(hurry_needs_a_bind_and_ends_with_an_answer);
     RUN(a_write_without_response_is_answered_at_once);
     RUN(strays_full_queues_and_null);
     return test_summary("bleuart_hub");

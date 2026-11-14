@@ -75,6 +75,11 @@ typedef struct {
     char    name[DIAL_NAME_MAX];  /**< SET_TEXT_DIAL_NAME */
     uint8_t thr_tenths;           /**< a detent's throttle, 0.1%, 1 to 100 */
     uint8_t srv_tenths;           /**< a detent's horn angle, 0.1°, 1 to 100 */
+    uint32_t bind_seq;            /**< the binds SETUP had kept when these
+                                       values were read (dial_ctl_t's
+                                       bind_seq): values read before the
+                                       last bind was kept carry an address
+                                       older than it, which is not taken */
 } dial_cfg_t;
 
 /** @brief A Dial a scan found. */
@@ -130,6 +135,8 @@ typedef struct {
     char       bound_addr[DIAL_ADDR_MAX]; /**< the bound Dial, "" none */
     char       bound_name[DIAL_NAME_MAX]; /**< its name, "" none */
     uint8_t    proto;      /**< the protocol its INFO named, 0 unread */
+    uint16_t   bind_refused; /**< binds the controller refused, counted:
+                                  a change is a refusal to show */
 } dial_view_t;
 
 /** @brief A command of SETUP > WIRELESS for the controller. */
@@ -167,6 +174,8 @@ typedef struct {
     uint8_t       found_n;     /**< their count */
     uint16_t      hidden;      /**< other devices the last scan heard */
     uint32_t      bind_seq;    /**< binds, counted */
+    uint32_t      bind_refused; /**< binds refused: a scan ran or the index
+                                     was past the list */
     dial_input_t  in;          /**< input not yet taken */
     uint32_t      events;      /**< EVENTs decoded and taken */
     uint32_t      bad;         /**< stream bytes that are no EVENT */
@@ -195,7 +204,9 @@ void dial_ctl_init(dial_ctl_t *c);
 /**
  * @brief Take SETUP's values.  OFF stops a scan and ends the link; ON
  *        connects a bound Dial once Bluetooth is synced.  A new address
- *        binds it.
+ *        binds it, unless the values were read before SETUP kept the last
+ *        bind (cfg->bind_seq behind the controller's): then the bound
+ *        address and name stay, and the other values are taken.
  * @param c      The controller.
  * @param cfg    The values; NULL does nothing.
  * @param now_ms The clock.
@@ -224,7 +235,9 @@ dial_scan_t dial_ctl_scan(dial_ctl_t *c, bool armed, uint32_t now_ms);
  * @param c      The controller.
  * @param i      Its index; one past the list is refused.
  * @param now_ms The clock.
- * @return Whether it bound; cfg.addr and cfg.name then hold it.
+ * @return Whether it bound; cfg.addr and cfg.name then hold it.  A
+ *         refusal while a scan runs or past the list counts in
+ *         bind_refused, which the view carries to the band.
  */
 bool dial_ctl_bind(dial_ctl_t *c, uint8_t i, uint32_t now_ms);
 

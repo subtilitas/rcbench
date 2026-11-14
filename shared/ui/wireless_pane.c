@@ -98,13 +98,6 @@ static void scan_tap(void)
     push(DIAL_CMD_SCAN, 0u);
 }
 
-/** @brief SCAN FOR DIAL: the last scan's result, a tap scans. */
-const ui_setlist_custom_t wireless_pane_scan_row = {
-    .label = TX_DIAL_ROW_SCAN,
-    .help = TX_DIAL_ROW_SCAN_HELP,
-    .value_text = scan_value,
-    .tap = scan_tap,
-};
 
 /** @brief BOUND DIAL's value: the bound Dial's name, its address, or NONE.
  *  @param out The text. @param n Its size. */
@@ -119,21 +112,52 @@ static void bind_value(char *out, size_t n)
     }
 }
 
-/** @brief The found list's rows. @return The count. */
+int wireless_list_devices(unsigned found_n)
+{
+    const unsigned most = (unsigned)UI_SL_CHOICES_MAX - 1u;
+    return (int)(found_n < most ? found_n : most);
+}
+
+int wireless_list_rows(bool listed, unsigned found_n)
+{
+    return (listed && found_n > 0u) ? wireless_list_devices(found_n) + 1
+                                    : 0;
+}
+
+/** @brief The Dials the found list shows. @return The count. */
+static int listed_n(void)
+{
+    return wireless_list_devices(s_dial.found_n);
+}
+
+/** @brief The found list's rows, SCAN AGAIN last. @return The count. */
 static int bind_choices(void)
 {
-    return s_dial.scan_done ? (int)s_dial.found_n : 0;
+    return wireless_list_rows(s_dial.scan_done
+                                  && s_dial.link != DIAL_LINK_SCANNING,
+                              s_dial.found_n);
+}
+
+/** @brief SCAN FOR DIAL's list: BOUND DIAL's while it reads FOUND n.
+ *  @return The count, 0 to scan at a tap. */
+static int scan_choices(void)
+{
+    return s_dial.scan_cut ? 0 : bind_choices();
 }
 
 /**
- * @brief A found Dial's row: its name or address and its RSSI.
+ * @brief A row of the found list: a Dial's name or address and its RSSI,
+ *        or SCAN AGAIN.
  * @param i The row.
  * @return The text, valid until the next call.
  */
 static const char *bind_choice(int i)
 {
     static char line[48];
-    if (i < 0 || i >= (int)s_dial.found_n) {
+    if (i == listed_n()) {
+        return TR(WL_SCAN_AGAIN);
+    }
+    if (i < 0 || i > listed_n()) {
         return "";
     }
     const dial_dev_t *d = &s_dial.found[i];
@@ -145,7 +169,7 @@ static const char *bind_choice(int i)
 /** @brief The found Dial that is bound. @return Its row, -1 none. */
 static int bind_chosen(void)
 {
-    for (int i = 0; i < (int)s_dial.found_n; ++i) {
+    for (int i = 0; i < listed_n(); ++i) {
         if (strcmp(s_dial.found[i].addr, s_dial.bound_addr) == 0) {
             return i;
         }
@@ -153,19 +177,53 @@ static int bind_chosen(void)
     return -1;
 }
 
-/** @brief A found Dial tapped: bound. @param i Its row. */
+/** @brief A row of the found list tapped: SCAN AGAIN scans, a Dial is
+ *         bound; a scan that runs refuses the bind on the band.  SCAN
+ *         AGAIN never reaches the controller as an index.
+ *  @param i Its row. */
 static void bind_pick(int i)
 {
-    if (i >= 0 && i < (int)s_dial.found_n) {
+    if (i == listed_n()) {
+        scan_tap();
+        return;
+    }
+    if (s_dial.link == DIAL_LINK_SCANNING) {
+        ui_router_set_alert(TR(DIAL_BIND_SCANNING));
+        return;
+    }
+    if (i >= 0 && i < listed_n()) {
         push(DIAL_CMD_BIND, (uint8_t)i);
     }
 }
 
-/** @brief BOUND DIAL: the bound Dial, the last scan's list, a pick binds. */
+/** @brief BOUND DIAL tapped with no list to open: the band says why, a
+ *         scan that runs or none that found a Dial. */
+static void bind_tap(void)
+{
+    ui_router_set_alert(s_dial.link == DIAL_LINK_SCANNING
+                            ? TR(DIAL_BIND_SCANNING) : TR(DIAL_BIND_EMPTY));
+}
+
+/** @brief SCAN FOR DIAL: the last scan's result; a tap scans, or while it
+ *         reads FOUND n opens the found list. */
+const ui_setlist_custom_t wireless_pane_scan_row = {
+    .label = TX_DIAL_ROW_SCAN,
+    .help = TX_DIAL_ROW_SCAN_HELP,
+    .value_text = scan_value,
+    .tap = scan_tap,
+    .choices = scan_choices,
+    .choice = bind_choice,
+    .chosen = bind_chosen,
+    .pick = bind_pick,
+};
+
+/** @brief BOUND DIAL: the bound Dial, the last scan's list, a pick binds;
+ *         a tap with no list says why on the band. */
 const ui_setlist_custom_t wireless_pane_bind_row = {
     .label = TX_DIAL_ROW_BIND,
     .help = TX_DIAL_ROW_BIND_HELP,
     .value_text = bind_value,
+    .tap = bind_tap,
     .choices = bind_choices,
     .choice = bind_choice,
     .chosen = bind_chosen,
@@ -427,6 +485,7 @@ static bool view_eq(const dial_view_t *a, const dial_view_t *b)
     if (a->link != b->link || a->scan_done != b->scan_done
         || a->scan_cut != b->scan_cut || a->found_n != b->found_n
         || a->hidden != b->hidden || a->proto != b->proto
+        || a->bind_refused != b->bind_refused
         || memcmp(a->bound_addr, b->bound_addr, sizeof(a->bound_addr)) != 0
         || memcmp(a->bound_name, b->bound_name, sizeof(a->bound_name)) != 0) {
         return false;
@@ -447,8 +506,16 @@ void wireless_pane_set_dial(const dial_view_t *v)
     } else {
         memset(&next, 0, sizeof(next));
     }
-    if (!view_eq(&next, &s_dial)) {
-        s_dial = next;
-        settings_screen_invalidate();
+    if (view_eq(&next, &s_dial)) {
+        return;
+    }
+    /* A bind the controller refused after the pick queued it: a scan that
+     * started first, or a list that changed under it. */
+    const bool refused = v != NULL && next.bind_refused != s_dial.bind_refused;
+    s_dial = next;
+    settings_screen_invalidate();
+    if (refused) {
+        ui_router_set_alert(s_dial.link == DIAL_LINK_SCANNING
+                                ? TR(DIAL_BIND_SCANNING) : TR(DIAL_BIND_GONE));
     }
 }

@@ -33,11 +33,11 @@ unique identifier) 0x18F0. The stream bytes go to `protocols/witmotion`.
 - The core includes `<stdbool.h>`, `<stddef.h>`, `<stdint.h>` and
   `<string.h>` and no file outside this folder.
 - No heap, no floating point, no mutable global or static state, no clock
-  read and no I/O (input/output). A machine (`bleu_t`) is 1008 bytes on
+  read and no I/O (input/output). A machine (`bleu_t`) is 1016 bytes on
   x86-64, an event (`bleu_evt_t`) 64 bytes, an action (`bleu_act_t`) 52
-  bytes, a profile (`bleu_profile_t`) 104 bytes, a hub (`bleu_hub_t`) 1112
-  bytes. `bleuart.c`, `bleuart_adv.c` and `bleuart_hub.c` are 5274, 2569
-  and 2634 bytes of code and constant data with gcc 13 `-Os` there.
+  bytes, a profile (`bleu_profile_t`) 104 bytes, a hub (`bleu_hub_t`) 1120
+  bytes. `bleuart.c`, `bleuart_adv.c` and `bleuart_hub.c` are 5468, 2569
+  and 2991 bytes of code and constant data with gcc 13 `-Os` there.
 - Times are unsigned differences of a free-running 32-bit millisecond
   clock the caller passes in, so a wait holds across the clock's wrap at
   2^32ms.
@@ -121,7 +121,11 @@ time, one the host stack ends with a failure, HCI 0x3E (failed to be
 established) among them, 7000ms (`BLEU_RETRY_CONNECT_MS`), and each
 further one twice the gap before, up to 30000ms (`BLEU_BACKOFF_MAX_MS`).
 A scan, a bind, switching on and a connect that comes up start the gaps
-over at 1000ms. A bound peripheral that is away so holds the host stack's
+over at 1000ms. `bleu_hurry()` after `bleu_bind()` marks the bound
+address's next connects as asked for by the operator: they carry
+`BLEU_ACT_F_HURRY` in `flags` until one is answered by the host stack or
+times out, or the machine is bound again or switched off, and the hub
+keeps its next turn for them. A bound peripheral that is away so holds the host stack's
 one connect for 5000ms in 6000ms at first and for 5000ms in 35000ms
 after six tries, which leaves the slot to the hub's other clients.
 
@@ -142,7 +146,10 @@ in `BLEU_ST_NOT_PEER` (`BLEU_ST_NOT_WIT`) until the address is bound again
 or the central is switched off and on. A connect answered with
 `BLEU_STATUS_BUSY` (0xFFFD), which the hub gives while another machine
 holds the host stack's one scan or connect, is tried again after
-`BLEU_RETRY_MS` and keeps the error of the attempt before it.
+`BLEU_RETRY_MS` and keeps the error of the attempt before it. A hurried
+connect answered with `BLEU_STATUS_TURN` (0xFFFC), which the hub gives
+while it keeps the next turn for it, is tried again after 20ms
+(`BLEU_RETRY_TURN_MS`), the error kept the same way.
 A drop ends the link with `BLEU_ERR_LOST` and the reason in `reason`.
 When the host stack ends a pending step because of the drop before it
 reports the disconnect, as NimBLE does, the error is `BLEU_ERR_GATT` with
@@ -316,7 +323,9 @@ second with `BLE_HS_EALREADY` or `BLE_HS_EBUSY`). The hub holds that slot:
 | `BLEU_ACT_SCAN` or `BLEU_ACT_CONNECT` | the slot is free or the client's own | passes it on and gives the slot to it |
 | `BLEU_ACT_SCAN` | another client scans, or its scan waits | answers `BLEU_EV_SCAN_END` with `BLEU_STATUS_BUSY` |
 | `BLEU_ACT_SCAN` | another client connects | cancels that connect and holds the scan until the connect's event, or for 2000ms (`BLEU_SETTLE_MS`); a failed event goes to its client with `BLEU_STATUS_BUSY` |
-| `BLEU_ACT_CONNECT` | another client holds the slot | answers `BLEU_EV_CONNECT` with `BLEU_STATUS_BUSY`: the machine tries again after 1000ms |
+| `BLEU_ACT_CONNECT` | another client holds the slot, or the slot is free and the next turn is kept for another client | answers `BLEU_EV_CONNECT` with `BLEU_STATUS_BUSY`: the machine tries again after 1000ms |
+| `BLEU_ACT_CONNECT` with `BLEU_ACT_F_HURRY` | another client holds the slot, and no other client's turn is kept | keeps the next turn for the client and answers `BLEU_EV_CONNECT` with `BLEU_STATUS_TURN`: the machine tries again after 20ms; the attempt under way runs to its end |
+| `BLEU_ACT_CONNECT` | the slot is free and the next turn is the client's | passes it on, gives the slot to it and ends the kept turn |
 | `BLEU_ACT_CANCEL`, `BLEU_ACT_SCAN_STOP` | another client holds the slot | drops it |
 
 The slot ends on its answer (`BLEU_EV_SCAN_END`, `BLEU_EV_CONNECT`, or a
@@ -324,6 +333,16 @@ The slot ends on its answer (`BLEU_EV_SCAN_END`, `BLEU_EV_CONNECT`, or a
 `BLEU_ACT_SCAN_STOP`, or 2000ms after the action's own duration (12000ms
 for a scan, 7000ms for a connect). With one client every action and every
 event passes as it would without the hub.
+
+One turn is kept at a time. A kept turn does not hold back a scan, and
+it lapses 200ms (`BLEU_HUB_TURN_MS`) after the slot became free without
+its client's connect: a client that was switched off or unbound meanwhile
+leaves the slot to the others. Beside clients bound to peripherals that
+are away, a hurried connect so waits for the end of one attempt under
+way, 5000ms at most, and its 20ms retry; with none under way it goes at
+once. An unhurried connect has no turn: on 1000ms retries that fall right
+behind other clients' attempts it can be answered busy every time (in
+`test_bleuart_hub.c` none of 40 tries in 40000ms got the slot).
 
 The hub has two out queues of 8 (`BLEU_HUB_OUT`); a full one drops and
 counts in `drops`. One event or action puts at most 2 events and 2
@@ -378,7 +397,12 @@ token and by handle, a scan during another client's connect, a second
 scan, a lost and a held-back DISCONNECT, another client's cancel, stop
 and handle, the slot's ends and its time limits, an absent peripheral's
 gaps doubling to 30000ms beside a Dial that, dropped, is up again after
-its 1000ms retry, and failed connects' gaps doubling from 7000ms. The table in `STATUS.md` has the line coverage per file.
+its 1000ms retry, and failed connects' gaps doubling from 7000ms;
+`test_bleuart_hub.c` also a hurried connect keeping the next turn, other
+clients answered busy on the free slot, a scan not held back, the turn
+lapsing 200ms after the slot freed and not 199ms, and a hurried bind
+beside two absent peripherals connecting within 20ms of the attempt
+under way ending. The table in `STATUS.md` has the line coverage per file.
 
 ```sh
 cmake -S test/host -B test/host/build

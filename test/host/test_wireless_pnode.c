@@ -115,10 +115,11 @@ TEST_CASE(a_found_node_binds_by_its_row)
     const pnode_view_t v = two_found();
     wireless_pane_set_pnode(&v);
     const ui_setlist_custom_t *b = &wireless_pane_pnode_bind_row;
-    CHECK_EQ(b->choices(), 2);
+    CHECK_EQ(b->choices(), 3);
     CHECK_STR_EQ(b->choice(0), "rcbench-pwr-3401  -52dBm");
     CHECK_STR_EQ(b->choice(1), "7C:DF:A1:12:34:02 P  -77dBm");
-    CHECK_STR_EQ(b->choice(2), "");
+    CHECK_STR_EQ(b->choice(2), TR(WL_SCAN_AGAIN));
+    CHECK_STR_EQ(b->choice(3), "");
     CHECK_EQ(b->chosen(), 1);
     pnode_cmd_t c;
     while (wireless_pane_take_pnode(&c)) { }
@@ -126,7 +127,11 @@ TEST_CASE(a_found_node_binds_by_its_row)
     CHECK(wireless_pane_take_pnode(&c));
     CHECK_EQ(c.kind, PNODE_CMD_BIND);
     CHECK_EQ(c.arg, 0u);
+    /* SCAN AGAIN scans; it is never a bind of index 2. */
     b->pick(2);
+    CHECK(wireless_pane_take_pnode(&c));
+    CHECK_EQ(c.kind, PNODE_CMD_SCAN);
+    b->pick(3);
     b->pick(-1);
     CHECK(!wireless_pane_take_pnode(&c));
     char val[48];
@@ -268,11 +273,98 @@ TEST_CASE(the_source_does_not_change_while_armed)
     settings_set_armed(NULL);
 }
 
+/* SCAN FOR NODE reading FOUND n opens BOUND NODE's list, SCAN AGAIN
+ * last; any other reading scans at a tap.  A full scan lists 6 devices and
+ * SCAN AGAIN in the 7 rows a list holds, and no pick binds an index past
+ * them.  SCAN AGAIN while ARMED is refused on the band.  BOUND NODE
+ * with no list, or while a scan runs, says why on the band. */
+TEST_CASE(the_scan_row_opens_the_found_list_with_scan_again)
+{
+    fresh_hub();
+    pnode_cmd_t c;
+    while (wireless_pane_take_pnode(&c)) { }
+    pnode_view_t v = two_found();
+    wireless_pane_set_pnode(&v);
+    const ui_setlist_custom_t *sr = &wireless_pane_pnode_scan_row;
+    const ui_setlist_custom_t *br = &wireless_pane_pnode_bind_row;
+    CHECK(sr->tap != NULL);
+    CHECK(sr->choices != NULL && br->tap != NULL);
+    if (sr->choices == NULL || br->tap == NULL) {
+        return;
+    }
+    CHECK_EQ(sr->choices(), 3);
+    for (int i = 0; i < 4; ++i) {
+        CHECK_STR_EQ(sr->choice(i), br->choice(i));
+    }
+    CHECK_EQ(sr->chosen(), br->chosen());
+    sr->pick(0);
+    CHECK(wireless_pane_take_pnode(&c));
+    CHECK_EQ(c.kind, PNODE_CMD_BIND);
+    CHECK_EQ(c.arg, 0u);
+    sr->pick(2);
+    CHECK(wireless_pane_take_pnode(&c));
+    CHECK_EQ(c.kind, PNODE_CMD_SCAN);
+    /* SCAN AGAIN while ARMED. */
+    set_armed(true);
+    sr->pick(2);
+    CHECK(!wireless_pane_take_pnode(&c));
+    CHECK_STR_EQ(ui_router_alert(), TR(PNODE_SCAN_ARMED));
+    set_armed(false);
+    /* STOPPED BY ARM, a scan running, none found, none yet: a tap scans. */
+    v.scan_cut = true;
+    wireless_pane_set_pnode(&v);
+    CHECK_EQ(sr->choices(), 0);
+    CHECK_EQ(br->choices(), 3);
+    v = two_found();
+    v.link = PNODE_LINK_SCANNING;
+    wireless_pane_set_pnode(&v);
+    CHECK_EQ(sr->choices(), 0);
+    CHECK_EQ(br->choices(), 0);
+    br->tap();
+    CHECK_STR_EQ(ui_router_alert(), TR(NODE_BIND_SCANNING));
+    /* A pick from a list opened before the scan started. */
+    br->pick(0);
+    CHECK(!wireless_pane_take_pnode(&c));
+    v = two_found();
+    v.found_n = 0u;
+    wireless_pane_set_pnode(&v);
+    CHECK_EQ(sr->choices(), 0);
+    br->tap();
+    CHECK_STR_EQ(ui_router_alert(), TR(NODE_BIND_EMPTY));
+    wireless_pane_set_pnode(NULL);
+    CHECK_EQ(sr->choices(), 0);
+    CHECK_EQ(br->choices(), 0);
+    br->tap();
+    CHECK_STR_EQ(ui_router_alert(), TR(NODE_BIND_EMPTY));
+    CHECK(!wireless_pane_take_pnode(&c));
+    /* A full scan: 6 devices, SCAN AGAIN at row 6. */
+    v = two_found();
+    v.found_n = 8u;
+    wireless_pane_set_pnode(&v);
+    CHECK_EQ(br->choices(), UI_SL_CHOICES_MAX);
+    CHECK_EQ(wireless_list_devices(8u), 6);
+    CHECK_STR_EQ(br->choice(6), TR(WL_SCAN_AGAIN));
+    CHECK_STR_EQ(br->choice(7), "");
+    br->pick(5);
+    CHECK(wireless_pane_take_pnode(&c));
+    CHECK_EQ(c.kind, PNODE_CMD_BIND);
+    CHECK_EQ(c.arg, 5u);
+    br->pick(6);
+    CHECK(wireless_pane_take_pnode(&c));
+    CHECK_EQ(c.kind, PNODE_CMD_SCAN);
+    br->pick(7);
+    CHECK(!wireless_pane_take_pnode(&c));
+    CHECK_EQ(wireless_list_rows(false, 3u), 0);
+    CHECK_EQ(wireless_list_rows(true, 0u), 0);
+    CHECK_EQ(wireless_list_rows(true, 1u), 2);
+}
+
 int main(void)
 {
     RUN(the_entry_shows_on_and_source_off_and_its_rows_on);
     RUN(a_node_scan_while_armed_is_refused_with_a_band_text);
     RUN(a_found_node_binds_by_its_row);
+    RUN(the_scan_row_opens_the_found_list_with_scan_again);
     RUN(the_battery_row_says_what_the_status_says);
     RUN(every_node_state_word_fits_25_cells_in_its_colour);
     RUN(reset_keeps_the_bound_node);

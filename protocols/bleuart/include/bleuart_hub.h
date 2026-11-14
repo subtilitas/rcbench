@@ -38,6 +38,14 @@
  *   waits, is answered SCAN_END with BLEU_STATUS_BUSY;
  * - a CONNECT while another client holds the slot is answered CONNECT with
  *   BLEU_STATUS_BUSY: the machine tries again after BLEU_RETRY_MS;
+ * - a hurried CONNECT (BLEU_ACT_F_HURRY, bleu_hurry()) while another
+ *   client holds the slot is answered CONNECT with BLEU_STATUS_TURN, and
+ *   the hub keeps the next turn for its client: the attempt under way runs
+ *   to its end, the machine tries again after BLEU_RETRY_TURN_MS, and
+ *   another client's CONNECT is answered busy while the turn is kept.  One
+ *   turn is kept at a time; it lapses BLEU_HUB_TURN_MS after the slot
+ *   became free without its client's CONNECT.  A SCAN is not held back by
+ *   a kept turn;
  * - a SCAN while another client connects waits: the hub cancels that
  *   connect, its CONNECT event is passed on with BLEU_STATUS_BUSY when it
  *   failed, and the SCAN goes out once it came, or after BLEU_SETTLE_MS;
@@ -70,6 +78,9 @@ extern "C" {
 #define BLEU_HUB_CLIENTS 5u
 /** @brief Events and actions each of the hub's two out queues holds. */
 #define BLEU_HUB_OUT     8u
+/** @brief A kept turn lapses this many ms after the slot became free
+ *         without its client's CONNECT: ten of its BLEU_RETRY_TURN_MS. */
+#define BLEU_HUB_TURN_MS 200u
 
 /** @brief Who holds the host stack's one scan or connect. */
 typedef enum {
@@ -107,6 +118,9 @@ typedef struct {
     bool       held;       /**< held_act waits for the slot */
     uint8_t    held_owner; /**< its client */
     bleu_act_t held_act;   /**< a SCAN that waits */
+    bool       turn_set;   /**< the next turn is kept for turn_owner */
+    uint8_t    turn_owner; /**< its client */
+    uint32_t   turn_t;     /**< when the turn was kept or the slot freed */
     bool       adv_set;    /**< adv_owner holds a client */
     uint8_t    adv_owner;  /**< the last scan's client */
     bleu_hub_dlv_t ev[BLEU_HUB_OUT]; /**< events due to clients */
