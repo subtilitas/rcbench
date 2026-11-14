@@ -489,6 +489,22 @@ history is in git.
 
 ### Fixed
 
+- The panel's Bluetooth LE hub gives every connect that waits a turn. A
+  connect after a link loss, at Dial, node or IMU ON or at start-up took
+  no turn: on 1,000ms retries that fell right behind other clients'
+  attempts it was answered busy every time, and in the host model a
+  client beside two devices out of range got no slot in 40,000ms. Each
+  connect answered busy or with the turn waits in a queue, first come
+  first, a hurried one ahead of the others. The next turn is kept for the
+  queue's first client, which is answered `BLEU_STATUS_TURN` and tries
+  again every 20ms, so it takes the slot when the attempt under way ends;
+  an unhurried one is answered busy while a scan holds the slot. A
+  connect a scan cut waits in front. A waiting client takes the slot after
+  at most one attempt of each other client: at most 10,046ms beside two
+  devices out of range and 20,092ms beside four in the host model, the
+  device update's connect too. A client that does not come back leaves
+  the queue 200ms after the slot is free and its retry was due
+  ([bleuart: the hub](protocols/bleuart/README.md#the-hub)).
 - SETUP > WIRELESS > DIAL: a tap on BOUND DIAL with no list, before a scan,
   after one that found none or while a scan runs, says why on the band
   instead of nothing. A pick the controller refuses, because a scan started
@@ -496,6 +512,17 @@ history is in git.
   read before the frame kept a bind in SETUP no longer unbind the Dial just
   picked; such a post left SETUP holding no Dial
   ([The M5Stack Dial](docs/Dial.md#scan-and-bind)).
+- SETUP > WIRELESS > POWER NODE and BALANCE NODE: a pick the controller
+  refuses, because a scan started first or the list changed, says so on
+  the band and the console. A tap on SCAN FOR NODE while a scan runs, and
+  a scan the controller refuses while another runs or an arm waits, say
+  why on the band instead of nothing. Settings read before the frame kept
+  a bind in SETUP, an INA228 SOURCE change among them, no longer unbind
+  the node just picked; such a post left SETUP holding no node
+  ([Sensor nodes](docs/Nodes.md#the-panel)).
+- SETUP: a press on INA228 SOURCE or SCREEN ROTATION while ARMED shows
+  `Set on a SAFE bench only` on the band and in place of the row's help
+  line, as MOTOR & ESC's pulse rows do; it showed nothing.
 - HITEC programmer: while a write runs, the SERVO tab no longer shows
   `Writing was interrupted. The settings may be incomplete.` for the record
   of that same write; the state line shows the write's step.

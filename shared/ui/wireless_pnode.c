@@ -75,7 +75,9 @@ static bool view_same(const pnode_view_t *a, const pnode_view_t *b)
         || a->hidden != b->hidden || a->proto != b->proto
         || a->have_status != b->have_status || a->bat_low != b->bat_low
         || a->bat_none != b->bat_none || a->bat_err != b->bat_err
-        || a->vbat_mv != b->vbat_mv
+        || a->vbat_mv != b->vbat_mv || a->bind_refused != b->bind_refused
+        || a->scan_armed != b->scan_armed
+        || a->scan_unready != b->scan_unready
         || strncmp(a->bound_addr, b->bound_addr, sizeof a->bound_addr) != 0
         || strncmp(a->bound_name, b->bound_name, sizeof a->bound_name) != 0) {
         return false;
@@ -96,9 +98,28 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
     } else {
         memset(&next, 0, sizeof(next));
     }
-    if (!view_same(&next, &s_node)) {
-        s_node = next;
-        settings_screen_invalidate();
+    if (view_same(&next, &s_node)) {
+        return;
+    }
+    /* A command the controller refused after the frame passed it on: a
+     * bind behind a scan or a changed list, a scan while an arm waits or
+     * one runs. */
+    const bool bind_no = v != NULL
+                         && next.bind_refused != s_node.bind_refused;
+    const bool armed_no = v != NULL && next.scan_armed != s_node.scan_armed;
+    const bool scan_no = v != NULL
+                         && next.scan_unready != s_node.scan_unready;
+    s_node = next;
+    settings_screen_invalidate();
+    const bool scanning = s_node.link == PNODE_LINK_SCANNING;
+    if (bind_no) {
+        ui_router_set_alert(scanning ? TR(NODE_BIND_SCANNING)
+                                     : TR(NODE_BIND_GONE));
+    } else if (armed_no) {
+        ui_router_set_alert(TR(PNODE_SCAN_ARMED));
+    } else if (scan_no) {
+        ui_router_set_alert(scanning ? TR(NODE_SCAN_RUNNING)
+                                     : TR(PNODE_SCAN_OFF));
     }
 }
 
@@ -121,11 +142,16 @@ static void scan_value(char *out, size_t n)
     }
 }
 
-/** @brief SCAN FOR NODE tapped: refused while ARMED, else asked. */
+/** @brief SCAN FOR NODE tapped: refused while ARMED or while a scan runs,
+ *         each with its text on the band, else asked. */
 static void scan_tap(void)
 {
     if (ui_router_status()->armed) {
         ui_router_set_alert(TR(PNODE_SCAN_ARMED));
+        return;
+    }
+    if (s_node.link == PNODE_LINK_SCANNING) {
+        ui_router_set_alert(TR(NODE_SCAN_RUNNING));
         return;
     }
     push(PNODE_CMD_SCAN, 0u);

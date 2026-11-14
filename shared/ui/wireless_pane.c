@@ -95,6 +95,11 @@ static void scan_tap(void)
         ui_router_set_alert(TR(DIAL_SCAN_ARMED));
         return;
     }
+    /* The controller refuses a second scan: say so, ask for none. */
+    if (s_dial.link == DIAL_LINK_SCANNING) {
+        ui_router_set_alert(TR(NODE_SCAN_RUNNING));
+        return;
+    }
     push(DIAL_CMD_SCAN, 0u);
 }
 

@@ -733,7 +733,7 @@ I (…) ble: host started; internal RAM <n>B free before, <n>B after; PSRAM <n>B
 Its internal RAM: the `nimble_host` stack of 4,096 bytes for good, the
 `blestart` stack of 4,096 bytes until the start has ended, and in .bss the
 event queue of 64 x 64 = 4,096 bytes, the 8 kept DISCONNECTs of 512 bytes
-and the clients' hub (`bleu_hub_t`) of 1,112 bytes. esp_hosted takes a
+and the clients' hub (`bleu_hub_t`) of 1,164 bytes. esp_hosted takes a
 buffer per HCI packet; those are not counted. NimBLE's pools and buffers
 are in PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); they grow with
 `CONFIG_BT_NIMBLE_MAX_CONNECTIONS`, 5, by an amount not measured; the

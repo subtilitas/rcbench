@@ -103,6 +103,10 @@ typedef struct {
     uint32_t      unread;      /**< STREAM packets dropped before INFO
                                     was read and taken */
     uint32_t      refused;     /**< scans refused while ARMED */
+    uint32_t      scan_unready; /**< scans refused while OFF, held, without
+                                     sync or with a scan running */
+    uint32_t      bind_refused; /**< binds refused: a scan ran or the index
+                                     was past the list */
     uint32_t      runs_sent;   /**< RUN writes handed to the central */
     uint32_t      info_failed; /**< INFO reads that failed, each a
                                     reconnect */
@@ -117,7 +121,9 @@ void pnode_ctl_init(pnode_ctl_t *c);
 /**
  * @brief Take SETUP's values.  OFF stops a scan and ends the link; ON
  *        connects a bound node once Bluetooth is synced.  A new address
- *        binds it.
+ *        binds it, unless the values were read before SETUP kept the last
+ *        bind (cfg->bind_seq behind the controller's): then the bound
+ *        address and name stay, and the other values are taken.
  * @param c      The controller.
  * @param cfg    The values; NULL does nothing.
  * @param now_ms The clock.
@@ -164,7 +170,9 @@ bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
  * @param c      The controller.
  * @param armed  The bench is ARMED, or a switch to ARMED waits.
  * @param now_ms The clock.
- * @return PNODE_SCAN_ARMED while @p armed, whatever else holds.
+ * @return PNODE_SCAN_ARMED while @p armed, whatever else holds, counted
+ *         in refused; PNODE_SCAN_NOT_READY counted in scan_unready.  The
+ *         view carries both counts to the band.
  */
 pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms);
 
@@ -173,7 +181,9 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms);
  * @param c      The controller.
  * @param i      Its index; one past the list is refused.
  * @param now_ms The clock.
- * @return Whether it bound; cfg.addr and cfg.name then hold it.
+ * @return Whether it bound; cfg.addr and cfg.name then hold it.  A
+ *         refusal while a scan runs or past the list counts in
+ *         bind_refused, which the view carries to the band.
  */
 bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms);
 

@@ -257,6 +257,8 @@ eine Suche startete oder sich die Liste darunter änderte, zeigt
 `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
 schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
 `dial: bound <Adresse> <Name>`.
+Ein Tippen auf DIAL SUCHEN, während eine Suche läuft, startet keine; das
+Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`.
 
 Der Connect nach dem Binden startet sofort, wenn die Central frei ist. Eine
 IMU oder ein Knoten, EIN und an ein Gerät außer Reichweite gebunden, hält
@@ -270,8 +272,9 @@ Host-Modell wartet der erste Connect des Dial nach der Wahl bis zu
 zwei solchen Clients, und er startet im selben Durchlauf wie das BIND,
 wenn kein Versuch läuft; auf dem Panel sind diese Wartezeiten nicht
 gemessen. Ein Connect nach einem Verlust, bei Dial EIN oder beim Start
-nimmt keinen Zug und kann hinter den Versuchen solcher Clients länger
-warten.
+wartet in der Warteschlange des Hubs, wer zuerst kommt, zuerst: Er folgt
+nach höchstens einem Versuch jedes anderen Clients, im Host-Modell
+höchstens 10.046ms neben zwei solchen Clients und 20.092ms neben vier.
 
 ### Der Link
 

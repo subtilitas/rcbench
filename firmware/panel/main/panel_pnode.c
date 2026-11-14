@@ -103,6 +103,9 @@ static void cfg_from_settings(pnode_cfg_t *out)
             sizeof(out->addr) - 1u);
     strncpy(out->name, settings_text(SET_TEXT_PNODE_NAME),
             sizeof(out->name) - 1u);
+    /* The binds kept in SETUP so far: values read before the frame keeps
+     * a bind carry the address before it, which the controller leaves. */
+    out->bind_seq = s_kept_seq;
 }
 
 /** @brief SETUP's values to the task; dropped while its queue is full. */
@@ -152,6 +155,11 @@ static void run_command(const pnode_cmd_t *cmd, uint32_t now)
     } else if (cmd->kind == PNODE_CMD_BIND) {
         if (pnode_ctl_bind(&s_ctl, cmd->arg, now)) {
             ESP_LOGI(TAG, "bound %s %s", s_ctl.cfg.addr, s_ctl.cfg.name);
+        } else {
+            ESP_LOGW(TAG, "bind of %u refused: %s, %u listed (%u refused)",
+                     (unsigned)cmd->arg,
+                     s_ctl.b.scanning ? "a scan runs" : "not in the list",
+                     (unsigned)s_ctl.found_n, (unsigned)s_ctl.bind_refused);
         }
     }
 }
@@ -345,7 +353,9 @@ void panel_pnode_frame(bool armed)
     wireless_pane_set_pnode(&s_seen);
     link_notices((pnode_link_t)s_seen.link, armed);
     /* A bind that ended is kept in SETUP, with a save asked, so the node
-     * is the bound one after a restart. */
+     * is the bound one after a restart.  ADDR before NAME: each write
+     * posts both, and a post of the old address with the new count would
+     * unbind the node. */
     if (bind_seq != s_kept_seq) {
         s_kept_seq = bind_seq;
         settings_set_text(SET_TEXT_PNODE_ADDR, s_seen.bound_addr);

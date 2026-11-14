@@ -614,9 +614,34 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   nächsten Zug des Hubs nach einem laufenden Versuch. GEBUNDENER KNOTEN
   ohne Liste sagt auf dem Band, warum. Ein gebundener Knoten wird nach
   jedem Abbruch ohne Suche wieder verbunden, 1000ms nach dem Abbruch und
-  nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Eine
-  Suche bei ARMED wird abgelehnt, und eine laufende Suche endet beim
+  nach einem gescheiterten Verbindungsaufbau im Backoff des Hubs. Hält
+  der Connect eines anderen Clients den Hub, wartet der Connect des
+  Knotens in der Warteschlange des Hubs und folgt nach höchstens einem
+  Versuch jedes anderen Clients, je 5000ms. Eine Suche bei ARMED wird
+  abgelehnt, und eine laufende Suche endet beim
   Schalten auf ARMED.
+- **Ablehnungen.** Tippen auf KNOTEN SUCHEN während einer Suche zeigt
+  `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` und startet keine. Der
+  Frame gibt einen Befehl an den `blec`-Task weiter, und der Controller
+  kann ihn dort noch ablehnen; die Ansicht zählt jede Ablehnung, und das
+  Band nennt sie. Eine Wahl, abgelehnt, weil zuerst eine Suche startete,
+  zeigt `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`, eine, abgelehnt,
+  weil sich die Liste änderte,
+  `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
+  schreibt `node: bind of n refused` (`bal:` beim Auswuchtknoten). Eine
+  Suche, abgelehnt, während ein ARM wartet, zeigt den ARMED-Text, eine,
+  abgelehnt, während eine andere läuft,
+  `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`, und die Konsole schreibt
+  `scan refused`.
+- **Die Bindung bleibt.** Der Frame schreibt die Adresse einer Bindung und
+  dann ihren Namen in SETUP, im Frame nach der Bindung durch den
+  Controller, und jeder Schreibvorgang schickt die Werte von SETUP an den
+  Controller. Ein Post, der vor diesem Schreiben gelesen wurde, etwa eine
+  Änderung der INA228-QUELLE im Frame dazwischen, trägt die Adresse vor der
+  Bindung; er trägt die Zahl der Bindungen, die SETUP gehalten hatte, und
+  der Controller behält bei einer Zahl hinter seiner eigenen den
+  gebundenen Knoten und nimmt die übrigen Werte. Der Auswuchtknoten macht
+  es ebenso.
 - **Die Verbindung.** Das Panel abonniert STREAM und liest INFO einmal nach
   jedem Abonnieren. Ein Knoten, dessen INFO ein anderes Protokoll als 1,
   eine andere Rolle als Leistung oder eine INA228-Einstellung nennt, die
@@ -633,7 +658,8 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
 
 INA228-QUELLE (WIRED, NODE; Vorgabe WIRED) legt fest, wessen INA228 MOTOR &
 ESC speist. Sie ändert sich nur bei SAFE: bei ARMED hat ihre Zeile keine
-Tasten, und `settings_set()` und Zurücksetzen lassen sie stehen
+Tasten, ein Druck darauf zeigt `Nur bei SAFE einstellbar` auf dem Band, und
+`settings_set()` und Zurücksetzen lassen sie stehen
 (`settings_safe_only()`). Mit NODE nach jedem Lesen der BENCH-Page des
 IOmcu:
 

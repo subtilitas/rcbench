@@ -125,7 +125,7 @@ over at 1000ms. `bleu_hurry()` after `bleu_bind()` marks the bound
 address's next connects as asked for by the operator: they carry
 `BLEU_ACT_F_HURRY` in `flags` until one is answered by the host stack or
 times out, or the machine is bound again or switched off, and the hub
-keeps its next turn for them. A bound peripheral that is away so holds the host stack's
+puts them ahead of other machines' connects that wait. A bound peripheral that is away so holds the host stack's
 one connect for 5000ms in 6000ms at first and for 5000ms in 35000ms
 after six tries, which leaves the slot to the hub's other clients.
 
@@ -146,9 +146,9 @@ in `BLEU_ST_NOT_PEER` (`BLEU_ST_NOT_WIT`) until the address is bound again
 or the central is switched off and on. A connect answered with
 `BLEU_STATUS_BUSY` (0xFFFD), which the hub gives while another machine
 holds the host stack's one scan or connect, is tried again after
-`BLEU_RETRY_MS` and keeps the error of the attempt before it. A hurried
-connect answered with `BLEU_STATUS_TURN` (0xFFFC), which the hub gives
-while it keeps the next turn for it, is tried again after 20ms
+`BLEU_RETRY_MS` and keeps the error of the attempt before it. A connect
+answered with `BLEU_STATUS_TURN` (0xFFFC), which the hub gives while it
+keeps the next turn for it, is tried again after 20ms
 (`BLEU_RETRY_TURN_MS`), the error kept the same way.
 A drop ends the link with `BLEU_ERR_LOST` and the reason in `reason`.
 When the host stack ends a pending step because of the drop before it
@@ -323,8 +323,9 @@ second with `BLE_HS_EALREADY` or `BLE_HS_EBUSY`). The hub holds that slot:
 | `BLEU_ACT_SCAN` or `BLEU_ACT_CONNECT` | the slot is free or the client's own | passes it on and gives the slot to it |
 | `BLEU_ACT_SCAN` | another client scans, or its scan waits | answers `BLEU_EV_SCAN_END` with `BLEU_STATUS_BUSY` |
 | `BLEU_ACT_SCAN` | another client connects | cancels that connect and holds the scan until the connect's event, or for 2000ms (`BLEU_SETTLE_MS`); a failed event goes to its client with `BLEU_STATUS_BUSY` |
-| `BLEU_ACT_CONNECT` | another client holds the slot, or the slot is free and the next turn is kept for another client | answers `BLEU_EV_CONNECT` with `BLEU_STATUS_BUSY`: the machine tries again after 1000ms |
-| `BLEU_ACT_CONNECT` with `BLEU_ACT_F_HURRY` | another client holds the slot, and no other client's turn is kept | keeps the next turn for the client and answers `BLEU_EV_CONNECT` with `BLEU_STATUS_TURN`: the machine tries again after 20ms; the attempt under way runs to its end |
+| `BLEU_ACT_CONNECT` | another client holds the slot, or the slot is free and the next turn is kept for another client | puts the client in the queue, keeps the next turn for the queue's first client when none is kept, and answers `BLEU_EV_CONNECT`: with `BLEU_STATUS_TURN` when the turn is the client's (the machine tries again after 20ms), else with `BLEU_STATUS_BUSY` (after 1000ms); the attempt under way runs to its end |
+| `BLEU_ACT_CONNECT` | a scan holds the slot and the next turn is kept for the client, unhurried | answers `BLEU_EV_CONNECT` with `BLEU_STATUS_BUSY`: a scan holds the slot for up to 12000ms, so the machine comes back on its 1000ms retry |
+| `BLEU_ACT_CONNECT` with `BLEU_ACT_F_HURRY` | the next turn is kept for an unhurried client | takes that turn; the other client goes back to the queue's front |
 | `BLEU_ACT_CONNECT` | the slot is free and the next turn is the client's | passes it on, gives the slot to it and ends the kept turn |
 | `BLEU_ACT_CANCEL`, `BLEU_ACT_SCAN_STOP` | another client holds the slot | drops it |
 
@@ -334,15 +335,36 @@ The slot ends on its answer (`BLEU_EV_SCAN_END`, `BLEU_EV_CONNECT`, or a
 for a scan, 7000ms for a connect). With one client every action and every
 event passes as it would without the hub.
 
-One turn is kept at a time. A kept turn does not hold back a scan, and
-it lapses 200ms (`BLEU_HUB_TURN_MS`) after the slot became free without
-its client's connect: a client that was switched off or unbound meanwhile
-leaves the slot to the others. Beside clients bound to peripherals that
-are away, a hurried connect so waits for the end of one attempt under
-way, 5000ms at most, and its 20ms retry; with none under way it goes at
-once. An unhurried connect has no turn: on 1000ms retries that fall right
-behind other clients' attempts it can be answered busy every time (in
-`test_bleuart_hub.c` none of 40 tries in 40000ms got the slot).
+The queue (`q`, up to 5 clients) holds the clients whose connect was
+answered busy or with the turn, first come first. A hurried client goes
+behind the hurried clients that wait and ahead of every other. A client
+whose connect a scan cut goes ahead of the unhurried clients that wait.
+A client that waits keeps its place when it asks again; a turn kept for
+a client that then asks hurried becomes a hurried turn, which no later
+hurried client takes. One turn is kept
+at a time, for the client the hub took from the queue's front. A kept
+turn and the queue do not hold back a scan. A client that waits leaves
+the queue 200ms (`BLEU_HUB_TURN_MS`) after the slot became free and its
+retry was due (`due`: its last answer and 20ms or 1000ms) without its
+connect, and so does a kept turn's client: a client that was switched
+off or unbound meanwhile leaves the slot to the others.
+
+A client in the queue takes the slot after at most one connect of each
+other client: the attempt under way and one for each client ahead of
+it. The turn's client hears `BLEU_STATUS_TURN` at its next retry once
+its turn is kept, within 2000ms of an attempt's start, so its 20ms retry
+takes the slot when an attempt of 5000ms ends. Beside N clients bound to
+peripherals that are away, each attempt holding the slot for 5000ms and
+its cancel's event 2ms, a connect so waits at most N x 5023ms, the 20ms
+retry and a 1ms tick included: 10046ms for N = 2, 20092ms for N = 4.
+With a 5ms poll, as `panel_blec.c` runs, add 5ms an attempt. A connect
+the host stack never answers holds the slot until its limit, 7000ms.
+A hurried connect waits for the end of the attempt under way, 5000ms at
+most, and its 20ms retry, behind only the hurried clients that came
+before it; with none under way it goes at once. Each hurried connect and
+each scan that goes ahead adds one turn or one scan to the others' wait.
+In `test_bleuart_fair.c`, over 225 runs of 2 to 4 absent peripherals, an
+unhurried client waits at most 9780ms, 14800ms and 19820ms.
 
 The hub has two out queues of 8 (`BLEU_HUB_OUT`); a full one drops and
 counts in `drops`. One event or action puts at most 2 events and 2
@@ -402,7 +424,13 @@ its 1000ms retry, and failed connects' gaps doubling from 7000ms;
 clients answered busy on the free slot, a scan not held back, the turn
 lapsing 200ms after the slot freed and not 199ms, and a hurried bind
 beside two absent peripherals connecting within 20ms of the attempt
-under way ending. The table in `STATUS.md` has the line coverage per file.
+under way ending; `test_bleuart_fair.c` an unhurried connect beside two
+absent peripherals getting the slot after their two attempts, a sweep of
+2 to 4 absent peripherals at 75 phases each with every client's wait
+within one attempt of each other client, the queue's order, a connect a
+scan cut waiting in front, the turn answered busy during a scan, and a
+client that does not come back leaving the queue after 200ms and not
+199ms. The table in `STATUS.md` has the line coverage per file.
 
 ```sh
 cmake -S test/host -B test/host/build

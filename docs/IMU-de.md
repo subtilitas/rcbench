@@ -147,7 +147,7 @@ Verbindungsaufbau zur Zeit laufen:
 | --- | --- | --- |
 | einen Scan | sich verbindet | bricht dessen Verbindungsaufbau ab und startet den Scan, sobald dessen Event kam, spätestens nach 2 000ms |
 | einen Scan | sucht | beendet den Scan der IMU sofort mit Status 0xFFFD (belegt): `DIE SUCHE STARTETE NICHT: CODE 65533` |
-| eine Verbindung | sucht oder sich verbindet | antwortet belegt; die IMU versucht es nach 1 000ms erneut, ihr Fehler bleibt |
+| eine Verbindung | sucht oder sich verbindet | reiht die IMU in die Warteschlange des Hubs ein, wer zuerst kommt, zuerst, und antwortet belegt, oder mit ihrem Zug (0xFFFC), sobald der nächste Zug der IMU gehört; die IMU versucht es nach 1 000ms erneut, mit ihrem Zug nach 20ms, ihr Fehler bleibt, und verbindet sich nach höchstens einem Versuch jedes anderen Clients |
 
 Mit der IMU allein läuft jede Aktion und jedes Event wie mit einer
 Verbindung. Ein C6-Image mit 3 Verbindungen lehnt eine vierte ab; die

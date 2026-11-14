@@ -526,6 +526,20 @@ static void host_release(int kind, int index, int x, int y)
     }
 }
 
+/**
+ * @brief Why a row takes no change: a setting set on a SAFE bench only
+ *        (settings_safe_only(): SCREEN ROTATION, INA228 SOURCE), held
+ *        while ARMED.  The list shows it in place of the help line and on
+ *        the band at a press.
+ * @param id The setting.
+ * @return The reason, NULL while the row takes a change.
+ */
+static const char *host_locked(setting_id_t id)
+{
+    return (settings_safe_only(id) && settings_held(id)) ? TR(MO_SET_SAFE_ONLY)
+                                                         : NULL;
+}
+
 /** @brief SETUP's side of its list. */
 static const ui_setlist_host_t k_host = {
     .count       = host_count,
@@ -537,6 +551,7 @@ static const ui_setlist_host_t k_host = {
     .reset       = host_reset,
     .help        = settings_screen_help,
     .unheld      = settings_screen_unheld,
+    .locked      = host_locked,
     .changed     = host_changed,
     .invalidate  = settings_screen_invalidate,
     .way_out     = host_way_out,

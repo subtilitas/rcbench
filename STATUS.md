@@ -711,7 +711,11 @@ STATUS on STREAM, a scan refused while ARMED and stopped at ARM, the no-index rp
 `test_node_balance`): the stale rule at 999ms and 1000ms, the quality word's order, a run
 of 8 reports and its failures, and both methods end to end through the report's decode
 against known imbalances (within 0.01g and 1°). SETUP > WIRELESS's BALANCE NODE entry
-(`test_wireless_bal`), BALANCE's readings and MOTOR & ESC's BALANCE tab
+(`test_wireless_bal`; `test_bal_bind` from the tap on SCAN FOR NODE and BOUND NODE through
+a model of the frame and `blec` glue to the controller and a node: a bind or a scan the
+controller refuses says why on the band, a scan tapped while one runs too, and a settings
+post read before the frame kept a bind leaves the bind and the address SETUP keeps),
+BALANCE's readings and MOTOR & ESC's BALANCE tab
 (`test_motor_balance`). The panel firmware runs it in the `blec` task (`panel_bal.c`); not
 run on hardware.
 
@@ -1239,8 +1243,13 @@ dropout rule of `servo_gap.h` at 299ms, 300ms and 301ms and a second gap
 9.9s and 10.1s after the first, for a motor run and not for a servo run,
 the totals baseline at 500ms and 501ms, and the ARM refusal with the node
 OFF or without a reading in the last 100ms). SETUP > WIRELESS > POWER NODE with
-INA228 SOURCE, which keeps its value while ARMED
-(`shared/ui/wireless_pnode.c`, `test_wireless_pnode`), the
+INA228 SOURCE, which keeps its value while ARMED and says so on the band
+at a press (`shared/ui/wireless_pnode.c`, `test_wireless_pnode`;
+`test_pnode_bind` from the tap on SCAN FOR NODE and BOUND NODE through a
+model of the frame and `blec` glue to the controller and a node: a bind or
+a scan the controller refuses says why on the band, a scan tapped while
+one runs too, and an INA228 SOURCE change read before the frame kept a
+bind leaves the bind and the address SETUP keeps), the
 log's `node` source (`test_logwriter`), and the `blec` task's and the
 control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
 `panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
@@ -1578,7 +1587,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 583 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 586 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1691,11 +1700,11 @@ The host suite is 583 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
-`test_bleuart_hub`, `test_bleuart_backoff`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_bleuart_hub`, `test_bleuart_backoff`, `test_bleuart_fair`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
 `test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
-`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`,
-`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`, `test_pnode_bind`,
+`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`,
 `test_imu`, `test_imu_filter`,
@@ -1885,8 +1894,16 @@ client's old handle keeping its new link, the slot's limits of 7000ms and 12000m
 2000ms at their limit and 1ms before, and a bind's hurried connect (`bleu_hurry()`) keeping the
 next turn behind the attempt under way, other clients answered busy on the free slot, a scan
 not held back, the turn lapsing 200ms after the slot freed and not 199ms, and a hurried bind
-beside two absent peers connecting within 20ms of that attempt's end where an unhurried one gets
-no slot in 40000ms. `test_bleuart_backoff` runs the connect backoff on the
+beside two absent peers connecting within 20ms of that attempt's end. `test_bleuart_fair` runs
+the hub's queue: an unhurried connect beside two absent peers getting the slot after their two
+attempts, 10040ms after its bind, on 1000ms retries 1ms behind their grid; 2 to 4 absent
+peers on 1ms, 333ms and 1000ms grids with an unhurried client switched on every 250ms from 0 to
+6000ms, every client's wait from its first busy answer to the slot within one attempt of each
+other client (at most 9780ms, 14800ms and 19820ms against 10046ms, 15069ms and 20092ms) and none
+leaving the queue without the slot; the queue's order with hurried clients ahead, a turn kept for
+an unhurried client given to a hurried one, a connect a scan cut waiting in front, the turn
+answered busy while a scan holds the slot, and a client that does not come back leaving the
+queue 200ms after the slot freed and its retry was due, not 199ms. `test_bleuart_backoff` runs the connect backoff on the
 same rig: an absent peer's gaps doubling from 1000ms to 30000ms, 7 connects in 100s, a Dial
 dropped while that peer waits up again after its 1000ms retry, a scan and a bind starting the
 gaps over, and failed connects doubling from 7000ms.

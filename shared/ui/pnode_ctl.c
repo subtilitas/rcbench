@@ -240,6 +240,14 @@ void pnode_ctl_config(pnode_ctl_t *c, const pnode_cfg_t *cfg,
     }
     const pnode_cfg_t was = c->cfg;
     c->cfg = *cfg;
+    if (cfg->bind_seq != c->bind_seq) {
+        /* Read from SETUP before the frame kept the last bind there: its
+         * address is the one before the bind, and taking it would unbind
+         * the node just picked.  The write-back's values come next. */
+        memcpy(c->cfg.addr, was.addr, sizeof(c->cfg.addr));
+        memcpy(c->cfg.name, was.name, sizeof(c->cfg.name));
+        c->cfg.bind_seq = c->bind_seq;
+    }
     c->cfg.addr[PNODE_ADDR_MAX - 1u] = '\0';
     c->cfg.name[PNODE_NAME_MAX - 1u] = '\0';
     if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
@@ -314,6 +322,7 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
         return PNODE_SCAN_ARMED;
     }
     if (!is_on(c) || c->radio != IMU_RADIO_READY || c->b.scanning) {
+        ++c->scan_unready;
         return PNODE_SCAN_NOT_READY;
     }
     c->found_n = 0u;
@@ -322,16 +331,22 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
     c->scan_cut = false;
     c->roles_n = 0u;
     c->scan_open = bleu_scan(&c->b, now_ms);
-    return c->scan_open ? PNODE_SCAN_STARTED : PNODE_SCAN_NOT_READY;
+    if (!c->scan_open) {
+        ++c->scan_unready;
+        return PNODE_SCAN_NOT_READY;
+    }
+    return PNODE_SCAN_STARTED;
 }
 
 bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms)
 {
-    if (c == NULL || i >= c->found_n || c->b.scanning) {
+    if (c == NULL) {
         return false;
     }
     bleu_addr_t a;
-    if (!bleu_addr_parse(c->found[i].addr, &a)) {
+    if (i >= c->found_n || c->b.scanning
+        || !bleu_addr_parse(c->found[i].addr, &a)) {
+        ++c->bind_refused;
         return false;
     }
     snprintf(c->cfg.addr, sizeof(c->cfg.addr), "%s", c->found[i].addr);
@@ -340,6 +355,7 @@ bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms)
     bleu_hurry(&c->b);
     c->lost = false;
     ++c->bind_seq;
+    c->cfg.bind_seq = c->bind_seq;
     follow_link(c, now_ms);
     return true;
 }
@@ -529,6 +545,9 @@ void pnode_ctl_view(const pnode_ctl_t *c, uint32_t now_ms, pnode_view_t *out)
         memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
     }
     out->proto = c->info_proto;
+    out->bind_refused = (uint16_t)c->bind_refused;
+    out->scan_armed = (uint16_t)c->refused;
+    out->scan_unready = (uint16_t)c->scan_unready;
     if (c->linked && c->m.have_status) {
         const uint16_t f = c->m.status.flags;
         out->have_status = true;

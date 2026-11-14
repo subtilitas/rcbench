@@ -242,6 +242,8 @@ changed under it, reads `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` or
 `DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the console logs
 `dial: bind of n refused`. A bound Dial logs `dial: bound <address>
 <name>`.
+A tap on SCAN FOR DIAL while a scan runs starts none; the band reads
+`A SCAN IS RUNNING: IT ENDS WITHIN 10s`.
 
 The connect after a bind starts at once while the central is free. An IMU
 or a node that is ON and bound to a device out of range holds the one
@@ -253,8 +255,9 @@ model the Dial's first connect waits up to 5,061ms after the pick, the
 tap of 80ms and a frame included, with one or two such clients, and goes
 in the same poll as the BIND when no attempt is under way; on the panel
 these waits are not measured. A connect after a loss, at Dial ON or at
-start-up takes no turn and can wait behind such clients' attempts for
-longer.
+start-up waits in the hub's queue, first come first: it goes after at
+most one attempt of each other client, at most 10,046ms beside two such
+clients and 20,092ms beside four in the host model.
 
 ### The link
 
