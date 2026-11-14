@@ -233,6 +233,20 @@ history is in git.
   (`bleu_hub_written()`), never through the event queue; a client ends an
   unusable link as a failed GATT step with `bleu_fail_link()`.
 
+- `hardware/mechanical/`: STEP models of the M5Stack Dial (SKU K130) and
+  its ring nut, generated from `m5dial.py`. The 9 plastic parts come from
+  M5Stack's mesh, copied to `vendor/m5stack_dial/Dial.stl` under its MIT
+  licence: `_refit.py` fits its 29240 triangles with 3929 faces on planes,
+  cylinders, cones, tori and, for the thread of 2.6mm pitch, B-spline
+  surfaces along the helix, within 0.124mm of the mesh.
+  `check_refit.py` holds the written solids against the mesh in CI. The
+  power terminal, PORT.A, PORT.B and the USB-C receptacle are added from
+  their makers' drawings and M5Stack's Stamp-S3 model; the display lens
+  and module, the main board and the 2 M2 screw heads from the mesh's
+  pockets and estimates. `step_gen.py` writes solids with faces on
+  curved surfaces (`"brep"`) besides prisms and turned profiles
+  ([Mechanical parts](hardware/mechanical/README.md#m5stack-dial)).
+
 ### Changed
 
 - The nodes advertise the service's 128-bit UUID and the manufacturer
