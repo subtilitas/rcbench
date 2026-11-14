@@ -1,0 +1,347 @@
+(footprint "LiPo_Charger_Boost5V_15.2x24mm"
+	(version 20260206)
+	(generator "pcbnew")
+	(generator_version "10.0")
+	(layer "F.Cu")
+	(property "Reference" "REF**"
+		(at 6.4 -2.8 0)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "90933ffe-ad09-5127-9640-e0f55aa30c58")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Value" "LiPo_Charger_Boost5V_15.2x24mm"
+		(at 6.4 24.2 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "79632b5f-8fa1-57a0-b713-6f639d5b27cf")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Datasheet" ""
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "87a1ae86-ccc6-5853-a4b9-06c26bca9b73")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(property "Description" "Lithium polymer charger board with 5V boost output (print Charge & DisCharge) 15.2 x 24mm. Pads 1-6, 2.54mm, along one short edge, seen from the top side: 1 OUT 5V, 2 GND, 3 BAT, 4 GND, 5 GND, 6 VIN. Push button at the right long edge, plunger 1.5mm past the edge, 20.4mm below the pad row; 4 LEDs at the far short edge. Measured from owner photos on squared paper, about 0.2mm."
+		(at 0 0 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(hide yes)
+		(uuid "36333ace-f617-539b-9bac-a5bdbc6626c7")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(attr through_hole)
+	(duplicate_pad_numbers_are_jumpers no)
+	(fp_rect
+		(start -1.2 -1.3)
+		(end 14 22.7)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "d39dbb6e-3bbb-5661-918b-97a958f2c0c2")
+	)
+	(fp_rect
+		(start 1.65 2.7)
+		(end 8.35 9.4)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "8a94c4ac-e850-58e9-86ce-933f9287e1a4")
+	)
+	(fp_rect
+		(start 3.85 13.1)
+		(end 8.75 17)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "893d0299-d782-5433-b85e-77442e01b3a0")
+	)
+	(fp_rect
+		(start 11.95 16.45)
+		(end 14.3 21)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "37721e79-a134-519c-9ede-1949d679321e")
+	)
+	(fp_rect
+		(start 14.3 17.9)
+		(end 15.5 19.5)
+		(stroke
+			(width 0.12)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.SilkS")
+		(uuid "01e36b5a-e939-550d-befb-475fe284467a")
+	)
+	(fp_text user "5V"
+		(at 0 2.3 90)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "b11e912f-8c8a-58b2-8cb5-8b6e8a6c7e9c")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "GND"
+		(at 2.54 2.3 90)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "bc93ce5c-e3e0-5b61-9729-60eeb65a9b68")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "BAT"
+		(at 5.08 2.3 90)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "01cb46ad-ab25-5d22-98d5-7e04d46ef817")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "GND"
+		(at 7.62 2.3 90)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "eea898f8-b16a-526c-b4fd-ae333debca48")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "GND"
+		(at 10.16 2.3 90)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "7fc72cfd-29c7-53a5-86f4-656a07e906c2")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_text user "VIN"
+		(at 12.7 2.3 90)
+		(unlocked yes)
+		(layer "F.SilkS")
+		(uuid "4f5e01e8-ea00-51a5-a732-048343d760f7")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_rect
+		(start -1.2 -1.3)
+		(end 14 22.7)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "8061f672-6766-526e-b07f-a524722f3507")
+	)
+	(fp_rect
+		(start 1.65 2.7)
+		(end 8.35 9.4)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "af4a4aa3-b78c-58cc-ab9e-1d96741ace92")
+	)
+	(fp_rect
+		(start 3.85 13.1)
+		(end 8.75 17)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "3934ace5-b9f9-5c4c-9201-f840d3b3d5ee")
+	)
+	(fp_rect
+		(start 11.95 16.45)
+		(end 14.3 21)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "7f4e3e02-82bf-58cc-822f-5ce5a1f7286d")
+	)
+	(fp_rect
+		(start 14.3 17.9)
+		(end 15.5 19.5)
+		(stroke
+			(width 0.1)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.Fab")
+		(uuid "59dc708d-0695-514b-863d-5f27cc9b9d94")
+	)
+	(fp_text user "1R0"
+		(at 5 6.05 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "91ec2c26-1388-5552-b180-b06ea3316729")
+		(effects
+			(font
+				(size 0.9 0.9)
+				(thickness 0.14)
+			)
+		)
+	)
+	(fp_text user "button"
+		(at 11.2 18.7 90)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "5cf1c294-f091-52be-a34a-03642b4241b0")
+		(effects
+			(font
+				(size 0.6 0.6)
+				(thickness 0.09)
+			)
+		)
+	)
+	(fp_rect
+		(start -1.45 -1.55)
+		(end 15.75 22.95)
+		(stroke
+			(width 0.05)
+			(type solid)
+		)
+		(fill no)
+		(layer "F.CrtYd")
+		(uuid "edeb63d3-6679-5a97-80e5-dcf52b7e9f9a")
+	)
+	(fp_text user "${REFERENCE}"
+		(at 6.4 10.7 0)
+		(unlocked yes)
+		(layer "F.Fab")
+		(uuid "5a81af3b-f0ff-58bb-8b40-c1e917a9d45d")
+		(effects
+			(font
+				(size 1 1)
+				(thickness 0.15)
+			)
+		)
+	)
+	(pad "1" thru_hole rect
+		(at 0 0)
+		(size 1.5 2.3)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "db5a2542-527a-5676-921c-eb1a8f9dc781")
+	)
+	(pad "2" thru_hole oval
+		(at 2.54 0)
+		(size 1.5 2.3)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "6abff1b7-aa56-5494-954a-f37a027ea941")
+	)
+	(pad "3" thru_hole rect
+		(at 5.08 0)
+		(size 1.5 2.3)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "1bdaae96-6569-5d8a-8555-6ab5d8927993")
+	)
+	(pad "4" thru_hole oval
+		(at 7.62 0)
+		(size 1.5 2.3)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "c82e0496-c717-549c-98c0-a3cb7a498bb1")
+	)
+	(pad "5" thru_hole oval
+		(at 10.16 0)
+		(size 1.5 2.3)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "6bee1bad-5a94-5069-b8aa-0171a86f1e9b")
+	)
+	(pad "6" thru_hole rect
+		(at 12.7 0)
+		(size 1.5 2.3)
+		(drill 0.9)
+		(layers "*.Cu" "*.Mask")
+		(remove_unused_layers no)
+		(uuid "6b74741f-fdcf-5995-a602-0a4c8e9e6448")
+	)
+	(embedded_fonts no)
+	(model "${RCBENCH_MODULES_3D}/LiPo_Charger_Boost5V_15.2x24mm.step"
+		(offset
+			(xyz 0 0 0)
+		)
+		(scale
+			(xyz 1 1 1)
+		)
+		(rotate
+			(xyz 0 0 0)
+		)
+	)
+)

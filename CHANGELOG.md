@@ -8,6 +8,21 @@ history is in git.
 
 ### Added
 
+- `hardware/mechanical/` and `hardware/kicad/`: STEP models, drawn part by
+  part with the print of both sides, of 4 module boards: an INA219 board with
+  the print CJMCU (24.2mm x 21.9mm, 225 solids), a lithium polymer charger
+  board with 5V boost output (15.2mm x 24.0mm), a 5V boost board with an
+  enable pad (13.7mm x 21.7mm) and the Waveshare ESP32-C6-Zero (18.0mm x
+  23.5mm, 263 solids). Each has a footprint and a symbol in the KiCad
+  library, whose 3D model is the same model: a spec's `MODEL` with the key
+  `detail` names the mechanical spec that draws it. `lipo_cells.py` draws two
+  lithium polymer cells, 702030 with 380mAh and 102540 with 1000mAh, with
+  their wires and plug. The boards and cells are measured from three photos
+  on 5mm squared paper; the ESP32-C6-Zero's outline and pads follow
+  Waveshare's drawing. `_font.py` holds letter outlines for board print,
+  written by `_gen_font.py`; `_board.py` places parts by their position on a
+  board
+  ([Mechanical parts](hardware/mechanical/README.md#module-boards-and-cells)).
 - `hardware/mechanical/`: STEP models of the INA228 current sensor module
   with its two XT90PW connectors (`ina228_xt90.step`, 225 solids,
   83.95mm x 48.6mm x 12.6mm) and of its printed case with 4 screws

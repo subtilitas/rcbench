@@ -8,6 +8,7 @@ the packages' nominal ones, not measured on a board.
 
 import math
 
+from _font import GLYPHS, SPACE
 from _solid import (
     X, Y, box, circle, ext, pipe, place, rect, rounded, stadium,
 )
@@ -25,6 +26,12 @@ LENS = (0.95, 0.90, 0.60)
 YELLOW = (0.95, 0.75, 0.10)
 COPPER = (0.80, 0.48, 0.28)
 BRONZE = (0.66, 0.42, 0.24)
+ORANGE = (0.85, 0.45, 0.12)
+RED = (0.75, 0.08, 0.06)
+FOIL = (0.80, 0.81, 0.83)
+KAPTON = (0.85, 0.62, 0.10)
+PRINT = 0.02            # thickness of print on a board
+PAD = 0.035             # thickness of a board's copper
 
 
 def rows(n, pitch):
@@ -662,3 +669,179 @@ def xt90pw_m(bevel=1, under=XT90_UNDER):
         out.append(ext(circle(p, top / 2, XT90_PIN / 2), floor, end - 1.0,
                        GOLD, frame=X))
     return out + _xt90_rear(top, XT90_PEG[1], under)
+
+
+def text(string, height, rgb=WHITE, width=None, thick=PRINT):
+    """A line of board print, the letters of _font.py.
+
+    The origin is the centre of the line's box; the line reads along x
+    and stands on z = 0.
+
+    Args:
+        string: The text.
+        height: Height of a capital letter.
+        rgb: The print's colour.
+        width: The line's width; the letters are made narrower or wider
+            to fit. None keeps the font's own width.
+        thick: The print's thickness.
+    """
+    steps = [SPACE if c == " " else GLYPHS[c][0] for c in string]
+    k = width / sum(steps) if width else height
+    out, x = [], -sum(steps) * k / 2
+    for c, step in zip(string, steps, strict=True):
+        if c != " ":
+            for outline, holes in GLYPHS[c][1]:
+                def put(points, x=x):
+                    return [(x + u * k, (v - 0.5) * height)
+                            for u, v in points]
+                out.append(ext(put(outline), 0.0, thick, rgb,
+                               holes=[put(h) for h in holes]))
+        x += step * k
+    return out
+
+
+def frame(x0, y0, x1, y1, line=0.15, rgb=WHITE, thick=PRINT):
+    """A printed rectangle, its line's middle on the given box."""
+    h = line / 2
+    return [ext(rect(x0 - h, y0 - h, x1 + h, y1 + h), 0.0, thick, rgb,
+                holes=[rect(x0 + h, y0 + h, x1 - h, y1 - h)])]
+
+
+def hole_pad(drill, size, board, rgb=GOLD, square=False, long=None):
+    """The copper of a plated hole: a pad on each side and the barrel.
+
+    The origin is the hole's centre on the board's underside.
+
+    Args:
+        drill: The hole's diameter; the barrel is PAD thick inside it.
+        size: The pad's diameter, or its side when square.
+        board: The board's thickness.
+        rgb: The plating's colour.
+        square: Whether the pad is a square.
+        long: The pad's length along y when it is longer than ``size``:
+            a rectangle when square, else a slot shape.
+    """
+    r, d = size / 2, drill / 2
+    half = (long or size) / 2
+    if square:
+        shape = rect(-r, -half, r, half)
+    elif long:
+        shape = stadium(-r, -half, r, half)
+    else:
+        shape = circle(0.0, 0.0, r)
+    hole = [circle(0.0, 0.0, d)]
+    return [ext(shape, board, board + PAD, rgb, holes=hole),
+            ext(shape, -PAD, 0.0, rgb, holes=hole),
+            ext(circle(0.0, 0.0, d), 0.0, board, rgb,
+                holes=[circle(0.0, 0.0, d - PAD)])]
+
+
+def pad(length, width, rgb=TIN, thick=PAD):
+    """A bare pad, a rectangle on the board."""
+    return [box(-length / 2, -width / 2, length / 2, width / 2, 0.0, thick,
+                rgb)]
+
+
+def r0805():
+    return chip(2.0, 1.25, 0.5, EPOXY)
+
+
+def c1206():
+    return chip(3.2, 1.6, 1.1, TAN)
+
+
+def r2512():
+    """A 2512 current-sense resistor: 6.3 x 3.2, 0.6 high, ends 0.6."""
+    return [box(-3.15, -1.6, -2.55, 1.6, 0.0, 0.6, TIN),
+            box(-2.55, -1.6, 2.55, 1.6, 0.0, 0.6, BLACK),
+            box(2.55, -1.6, 3.15, 1.6, 0.0, 0.6, TIN)]
+
+
+def soic8():
+    """SOIC-8: 3.9 x 4.9 body 1.5 high, leads 1.27 apart, 6.0 span."""
+    return leaded(3.9, 4.9, 1.5, rows(4, 1.27), rows(4, 1.27), 6.0, 0.4)
+
+
+def sot23_8():
+    """SOT-23-8: 1.6 x 2.9 body 1.1 high, leads 0.65 apart, 2.8 span."""
+    return leaded(1.6, 2.9, 1.1, rows(4, 0.65), rows(4, 0.65), 2.8, 0.3)
+
+
+def sma():
+    """An SMA diode: 4.3 x 2.6 body 2.2 high, 5.2 over the leads."""
+    return sod(4.3, 2.6, 2.2, 5.2, 1.5)
+
+
+def tact_switch(length, width, height, cap, cap_height):
+    """A surface-mount push button pressed from above.
+
+    Args:
+        length: The steel body's size along x.
+        width: The body's size along y.
+        height: The body's height.
+        cap: The side of the square cap in the body's middle.
+        cap_height: The cap's top over the board.
+    """
+    x, y, c = length / 2, width / 2, cap / 2
+    return [box(-x, -y, x, y, 0.0, height, STEEL),
+            box(-c, -c, c, c, height, cap_height, BLACK)]
+
+
+def pouch_cell(width, length, thick, head, head_thick, tape, seam=0.0):
+    """A lithium polymer cell in its pouch, with its protection board.
+
+    The origin is the middle of the cell's width at the end away from
+    the wires, on the face the cell lies on. The pouch runs along +y,
+    then the head: the folded seal with the protection board under
+    tape. The head lies in the middle of the cell's thickness.
+
+    Args:
+        width: Size along x, side seams included.
+        length: Length along y, head included.
+        thick: The pouch's thickness.
+        head: The head's length.
+        head_thick: The head's thickness.
+        tape: Colour of the tape round the head.
+        seam: How far the side seams stand out at each side: a seam
+            leaves the pouch at half its thickness and is folded up.
+            0 for seams that lie flat on the pouch.
+    """
+    x, r, sheet = width / 2 - seam, 0.3 * thick, 0.3
+    body, mid = length - head, thick / 2
+    out = [ext(rounded(-x, 0.0, x, thick, r), -body, 0.0, FOIL, frame=Y)]
+    for side in (-1, 1):
+        if seam:
+            a, b = sorted((side * x, side * (width / 2 - sheet)))
+            out.append(box(a, 0.0, b, body, mid - sheet / 2,
+                           mid + sheet / 2, FOIL))
+            a, b = sorted((side * (width / 2 - sheet), side * width / 2))
+            out.append(box(a, 0.0, b, body, mid - sheet / 2, 0.9 * thick,
+                           FOIL))
+    z = (thick - head_thick) / 2
+    out.append(ext(rounded(-width / 2, z, width / 2, z + head_thick, 0.8),
+                   -length, -body, tape, frame=Y))
+    return out
+
+
+def cell_lead(length, pitch=1.25, wire=1.2):
+    """A cell's two wires and their plug, drawn straight along +x.
+
+    The origin is where the wires leave the cell, between the two, at
+    the height of their axes. Red is at +y. The plug is a 2 pin
+    housing 3.6 wide, 4.4 long and 2.1 high.
+
+    Args:
+        length: Length of the wires up to the plug.
+        pitch: Distance between the two wires' axes at the plug.
+        wire: Diameter of a wire's insulation.
+    """
+    h = max(pitch, wire) / 2
+    out = []
+    for side, rgb in ((1, RED), (-1, BLACK)):
+        out.append(pipe([(0.0, side * h), (length, side * h)], wire / 2,
+                        rgb))
+    out.append(ext(rect(-1.8, -1.05, 1.8, 1.05), length, length + 4.4,
+                   WHITE, holes=[rect(side * pitch / 2 - 0.4, -0.5,
+                                      side * pitch / 2 + 0.4, 0.5)
+                                 for side in (-1, 1)], frame=X))
+    return out

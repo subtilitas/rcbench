@@ -11,13 +11,20 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `m5dial.py` | spec of the M5Stack Dial: dimensions, sources, estimates |
 | `panel_7b.py` | spec of the panel board, the Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: dimensions, sources, estimates |
 | `ina228_xt90.py` | spec of the INA228 current sensor module with 2 XT90PW connectors and of its case: dimensions, sources, estimates |
+| `ina219_cjmcu219.py` | spec of the INA219 current sensor board, print CJMCU |
+| `lipo_charger_boost_5v.py` | spec of the lithium polymer charger board with 5V boost output |
+| `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
+| `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
+| `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
+| `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's centre |
+| `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
 | `_trace_ina228_print.py` | traces the INA228 module's printed legends from the top photo into `_ina228_print.py` |
 | `_panel_7b_data.py` | the place and size of the panel board's parts, written by `_measure_step.py` |
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model or in the INA228 module with its case |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards or in a cell |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -371,4 +378,70 @@ Limits:
 pip install opencv-python-headless
 python3 hardware/mechanical/_photo_grid.py PHOTOS DIR      # the photos, flattened
 python3 hardware/mechanical/_trace_ina228_print.py PHOTOS  # rewrite _ina228_print.py
+```
+
+## Module boards and cells
+
+Four module boards and two lithium polymer cells, drawn part by part
+with the print of both sides. Each board's model is also the 3D model of
+its footprint in the [KiCad library](../kicad/README.md), in the same
+frame; the INA219 board stands on a 6-pin header there and is bare here.
+
+| | | |
+| --- | --- | --- |
+| ![INA219 board](renders/ina219_cjmcu219.png) | ![charger board](renders/lipo_charger_boost_5v.png) | ![boost board](renders/boost_5v_en.png) |
+| `ina219_cjmcu219.step` | `lipo_charger_boost_5v.step` | `boost_5v_en.step` |
+| ![ESP32-C6-Zero](renders/esp32_c6_zero.png) | ![380mAh cell](renders/lipo_702030_380mah.png) | ![1000mAh cell](renders/lipo_102540_1000mah.png) |
+| `esp32_c6_zero.step` | `lipo_702030_380mah.step` | `lipo_102540_1000mah.step` |
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `ina219_cjmcu219.step` | INA219 board, print CJMCU: 12 plated holes, shunt R100 (2512), INA219 (SOT-23-8), 5 chip parts (0805), 4 bridge pads, print of both sides; 225 solids, 3.5MB | 24.2 x 21.9 x 1.6, parts to 1.1 over the board | header hole 1 (Vcc) on the underside; x along the header, y towards the terminal holes |
+| `lipo_charger_boost_5v.step` | charger board: 6 plated holes, chip (SOIC-8), inductor, 6 capacitors, 4 resistors, 4 LEDs, side push button, underside's white field with black names; 121 solids, 1.3MB | 15.2 x 24.0 x 1.6, inductor 3.0 over the board, button plunger 1.5 past the edge | hole 1 (OUT 5V) on the underside; x along the row, y from the LEDs to the row |
+| `boost_5v_en.step` | boost board: 4 plated corner holes, enable pad, chip (SOIC-8), inductor, 2 diodes (SMA), 3 capacitors, 3 resistors, print, underside's white field; 69 solids, 0.6MB | 13.7 x 21.7 x 1.6, inductor 3.0 over the board | IN+ hole on the underside; x towards IN-, y towards the outputs |
+| `esp32_c6_zero.step` | Waveshare ESP32-C6-Zero: 18 edge pads with holes and half holes, 7 underside pads, USB Type-C socket, chip (QFN, 40 leads), antenna, 2 buttons, LED, regulator, diode, crystal, 21 chip parts, print; 263 solids, 2.6MB | 18.0 x 23.5 x 1.6, socket 3.25 over the board and 1.21 past the edge | 5V pad's hole on the underside; x towards the TX pad, y towards the socket |
+| `lipo_702030_380mah.step` | cell, print 702030 3.7V 380mAh 1.406Wh: pouch with folded side seams, head under amber tape, print, 2 wires, plug; 40 solids | 20.0 x 31.0 x 7.0; wires 60 | middle of the width at the end away from the head, on the lower face; y towards the head, wires to -x |
+| `lipo_102540_1000mah.step` | cell, print 102540 3.7V 1000mAh: pouch, head under black tape, print, 2 wires, plug; 28 solids | 25.0 x 40.5 x 10.0; wires 60 | as the other cell |
+
+Sources: three owner photos on 5mm squared paper, of the top sides, the
+undersides and the cells on edge, which are not in the repository; for the
+ESP32-C6-Zero also Waveshare's dimension drawing and STEP file, which are
+not in the repository either. `_photo_grid.py`'s grid fit lies within
+0.20mm of the paper's grid in these photos. The camera stands 171mm over
+the paper. The 2.54mm rows of the INA219 board and the charger board read
+1.005 times their size, and sizes read off a board's top are divided by
+that. A part's top lies further from the point under the camera than its
+foot, by 0.155mm to 0.37mm per mm of height on these boards; tall parts
+are set back by that.
+
+The print is not traced. `_font.py` holds the outlines of OpenCV's
+single-stroke font, strokes 0.11 of the letter height wide; each printed
+line is set to the height and width it has in the photo. Print is 0.02mm
+thick, copper 0.035mm.
+
+Limits:
+
+- Positions on the boards are within about 0.2mm, the ESP32-C6-Zero's
+  chip parts within about 0.3mm, the cells' lengths within about 1mm. No
+  dimension is verified with a caliper.
+- Not measured: every board's thickness (drawn 1.6mm), the inductors'
+  height (3.0mm), the charger's button height (1.8mm), the cells' head
+  thickness, the wires' length (about 60mm, drawn straight) and the plug's
+  height. The cells' thickness and width are the type numbers' 7.0 x 20
+  and 10 x 25; the photos give 6.7 x 20 and 9.7 x 24.8.
+- The cells' plug is 3.6 x 4.4mm in the photo. Its type and pitch are not
+  identified; the model draws 1.25mm between the wires.
+- Part sizes and heights are the packages' nominal ones, by the look of
+  each part in the photo. The chips of the charger and the boost board are
+  not identified.
+- The boost board's round pad is drawn as the enable input because it is
+  the only pad besides the 4 corner pads; the board does not name it.
+- Not modelled: tracks, vias, pads under parts, the frames printed round
+  parts (bar those of the INA219 board), solder, the prints 1R0 and 2R2 on
+  the inductors, 4 labels left of the charger's LEDs, the maker's name and
+  the pad names on the ESP32-C6-Zero's underside, and about 6 of its chip
+  parts beside the USB socket, which the photo does not resolve.
+
+```sh
+python3 hardware/mechanical/_gen_font.py     # rewrite _font.py; needs OpenCV
 ```
