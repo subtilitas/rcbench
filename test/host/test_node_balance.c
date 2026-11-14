@@ -12,7 +12,8 @@
  * the method does not have; a capture of 8 new reports (a report seen
  * again counts once), failing on a gap of 1000ms and not 999ms, on a
  * report without a revolution, without the index in two runs, and on an
- * rpm 5% off (not at 5%); the two-run and four-run corrections against
+ * rpm 5% off (not at 5%); a trial whose mean rpm is 5.1% from the
+ * baseline's refused in both methods, 4.9% taken, and no row from it; the two-run and four-run corrections against
  * known imbalances; the CSV row's fields under its header; the instance's
  * one row per solution, solved again with a new row for a new trial mass,
  * the row's written / not written state; a dropped link stale, not the
@@ -294,6 +295,86 @@ TEST_CASE(a_capture_fails_on_no_revolution_no_index_and_rpm_drift)
     p.rpm = 7599u;
     feed(&s, &p, 1u);
     CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM);
+}
+
+/* One capture of slot @p slot at a steady @p rpm. */
+static void take_at(nb_session_t *s, uint8_t slot, uint16_t rpm)
+{
+    rcnode_bal_report_t p = steady((uint16_t)(300u + 40u * slot),
+                                   (uint16_t)(900u * slot), rpm);
+    CHECK_EQ(nb_take(s, slot, true), NB_TAKE_STARTED);
+    feed(s, &p, NB_CAP_REPORTS);
+}
+
+/* A trial's mean rpm 4.9% from the baseline's is taken, one 5.1% away
+ * fails as NB_FAIL_RPM_BASE and leaves nothing to solve, both above and
+ * below, in both methods; a baseline taken again at another rpm fails the
+ * trials taken before it. */
+TEST_CASE(a_trial_at_another_rpm_than_the_baseline_fails)
+{
+    nb_session_t s;
+    vibe_solution_t sol;
+    nb_init(&s);
+    take_at(&s, 0u, 8000u);
+    take_at(&s, 1u, 8392u);          /* +4.9%: taken */
+    CHECK_EQ(s.cap[1].state, NB_CAP_DONE);
+    CHECK(nb_ready(&s));
+    CHECK(nb_solve(&s, 0.5f, &sol));
+    take_at(&s, 1u, 8408u);          /* +5.1% */
+    CHECK_EQ(s.cap[1].state, NB_CAP_FAILED);
+    CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM_BASE);
+    CHECK(!nb_ready(&s));
+    CHECK(!nb_solve(&s, 0.5f, &sol));
+    take_at(&s, 1u, 7608u);          /* -4.9%: taken */
+    CHECK(nb_ready(&s));
+    take_at(&s, 1u, 7592u);          /* -5.1% */
+    CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM_BASE);
+    /* A trial taken before the baseline is held to it once it is done. */
+    nb_clear(&s);
+    take_at(&s, 1u, 8000u);
+    CHECK_EQ(s.cap[1].state, NB_CAP_DONE);
+    take_at(&s, 0u, 8500u);          /* the trial 5.9% below it */
+    CHECK_EQ(s.cap[1].state, NB_CAP_FAILED);
+    CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM_BASE);
+
+    nb_set_method(&s, NB_FOUR_RUNS);
+    take_at(&s, 0u, 8000u);
+    take_at(&s, 1u, 8000u);
+    take_at(&s, 2u, 8392u);          /* +4.9% */
+    take_at(&s, 3u, 7608u);          /* -4.9% */
+    CHECK(nb_ready(&s));
+    CHECK(nb_solve(&s, 0.5f, &sol));
+    take_at(&s, 3u, 7592u);          /* -5.1% */
+    CHECK_EQ(s.cap[3].fail, NB_FAIL_RPM_BASE);
+    CHECK(!nb_ready(&s));
+    take_at(&s, 3u, 8000u);
+    take_at(&s, 2u, 8408u);          /* +5.1% */
+    CHECK_EQ(s.cap[2].fail, NB_FAIL_RPM_BASE);
+    CHECK_EQ(s.cap[3].state, NB_CAP_DONE);
+    CHECK(!nb_ready(&s));
+    /* The baseline taken again at 8500rpm: 8000rpm is 5.9% off. */
+    take_at(&s, 0u, 8500u);
+    take_at(&s, 2u, 8500u);
+    CHECK_EQ(s.cap[1].fail, NB_FAIL_RPM_BASE);
+    CHECK_EQ(s.cap[2].state, NB_CAP_DONE);
+    CHECK_EQ(s.cap[3].fail, NB_FAIL_RPM_BASE);
+}
+
+/* The CSV row: a row never comes from runs at different rpm. */
+TEST_CASE(no_row_from_runs_at_different_rpm)
+{
+    node_balance_reset();
+    settings_reset_all();
+    nb_session_t *s = node_balance_session();
+    take_at(s, 0u, 8000u);
+    take_at(s, 1u, 8408u);
+    char row[NB_CSV_MAX];
+    CHECK(!node_balance_result(NULL, NULL));
+    CHECK_EQ(node_balance_take_csv(2, row, sizeof row), 0u);
+    take_at(s, 1u, 8392u);
+    CHECK(node_balance_result(NULL, NULL));
+    CHECK(node_balance_take_csv(2, row, sizeof row) > 0u);
+    node_balance_reset();
 }
 
 /** A complex number of polar parts in degrees. */
@@ -614,6 +695,8 @@ int main(void)
     RUN(a_capture_averages_8_new_reports);
     RUN(a_capture_fails_on_a_stale_gap_at_1000ms);
     RUN(a_capture_fails_on_no_revolution_no_index_and_rpm_drift);
+    RUN(a_trial_at_another_rpm_than_the_baseline_fails);
+    RUN(no_row_from_runs_at_different_rpm);
     RUN(two_runs_end_to_end_find_the_known_imbalance);
     RUN(four_runs_end_to_end_find_the_known_imbalance);
     RUN(the_csv_row_matches_its_header);

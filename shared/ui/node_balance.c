@@ -210,6 +210,39 @@ nb_take_t nb_take(nb_session_t *s, uint8_t slot, bool is_fresh)
 }
 
 /**
+ * @brief Whether a capture's mean rpm lies more than NB_RPM_DRIFT_PCT from
+ *        the baseline's: vibe_solve.h takes runs of one rpm only.
+ * @param c    The capture, DONE.
+ * @param base The baseline, DONE.
+ * @return true when the two are too far apart.
+ */
+static bool rpm_apart(const nb_cap_t *c, const nb_cap_t *base)
+{
+    return fabsf(c->rpm - base->rpm) * 100.0f
+           > base->rpm * (float)NB_RPM_DRIFT_PCT;
+}
+
+/**
+ * @brief The trials held to the baseline's rpm: a DONE trial too far from
+ *        a DONE baseline fails with NB_FAIL_RPM_BASE.
+ * @param s The session.
+ */
+static void check_rpm(nb_session_t *s)
+{
+    const nb_cap_t *base = &s->cap[0];
+    if (base->state != NB_CAP_DONE) {
+        return;
+    }
+    for (uint8_t i = 1u; i < NB_SLOTS; ++i) {
+        nb_cap_t *c = &s->cap[i];
+        if (c->state == NB_CAP_DONE && rpm_apart(c, base)) {
+            c->state = NB_CAP_FAILED;
+            c->fail = NB_FAIL_RPM_BASE;
+        }
+    }
+}
+
+/**
  * @brief End the running capture.
  * @param s    The session.
  * @param why  NB_FAIL_NONE for DONE, else the reason.
@@ -229,6 +262,7 @@ static void finish(nb_session_t *s, nb_fail_t why)
         c->state = NB_CAP_DONE;
     }
     s->taking = -1;
+    check_rpm(s);
     ++s->rev;
 }
 
@@ -306,7 +340,8 @@ bool nb_ready(const nb_session_t *s)
     }
     const uint8_t n = nb_slots(s->method);
     for (uint8_t i = 0; i < n; ++i) {
-        if (s->cap[i].state != NB_CAP_DONE) {
+        if (s->cap[i].state != NB_CAP_DONE
+            || (i > 0u && rpm_apart(&s->cap[i], &s->cap[0]))) {
             return false;
         }
     }

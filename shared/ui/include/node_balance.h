@@ -18,7 +18,9 @@
  * magnitude (the four-run method needs only it).  It fails on a gap of
  * BAL_STALE_MS, a report without a counted revolution, a report without
  * the index in the two-run method, or an rpm more than NB_RPM_DRIFT_PCT
- * from the capture's first report.  The two-run method takes the baseline
+ * from the capture's first report.  A trial whose mean rpm lies more than
+ * NB_RPM_DRIFT_PCT from the baseline's fails too, when it ends or when the
+ * baseline is taken again: shared/vibe solves runs of one rpm only.  The two-run method takes the baseline
  * and the trial mass in line with blade 1 (0°); the four-run method the
  * baseline and the trial mass at 0°, 120° and 240°.  Angles count against
  * the direction of rotation from the index mark, as shared/vibe's do.
@@ -109,6 +111,8 @@ typedef enum {
     NB_FAIL_NO_REV,   /**< a report without a counted revolution */
     NB_FAIL_NO_PHASE, /**< two runs: a report without the index */
     NB_FAIL_RPM,      /**< the rpm moved more than NB_RPM_DRIFT_PCT */
+    NB_FAIL_RPM_BASE, /**< a trial's mean rpm more than NB_RPM_DRIFT_PCT
+                           from the baseline's */
     NB_FAIL_COUNT     /**< the number of reasons */
 } nb_fail_t;
 
@@ -247,7 +251,8 @@ void nb_feed(nb_session_t *s, bool present, const rcnode_bal_report_t *r,
              uint32_t age_ms);
 
 /**
- * @brief Whether every run of the method is DONE.
+ * @brief Whether every run of the method is DONE, every trial within
+ *        NB_RPM_DRIFT_PCT of the baseline's mean rpm.
  * @param s The session.
  * @return true when nb_solve() has its input.
  */

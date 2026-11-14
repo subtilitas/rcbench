@@ -1454,8 +1454,9 @@ unter den Registerkarten misst 600 x 150px:
   jeder Taste ihr Lauf: `LÄUFT n/8`, der Mittelwert (`0.42g 265°` bei zwei
   Läufen, der Betrag bei vier) oder der Grund des Abbruchs: `KEIN BERICHT`
   (1000ms ohne Bericht), `KEINE UMDREHUNG`, `KEIN INDEX` (zwei Läufe
-  brauchen den Index) oder `DREHZAHL GEÄNDERT` (mehr als 5% vom ersten
-  Bericht des Laufs).
+  brauchen den Index), `DREHZAHL GEÄNDERT` (mehr als 5% vom ersten
+  Bericht des Laufs) oder, unter einem Testlauf, `ANDERE DREHZAHL` (seine
+  mittlere Drehzahl mehr als 5% von der der Referenz).
 - 2 LÄUFE, 4 LÄUFE und LÖSCHEN. Ein Wechsel der Methode löscht die Läufe.
 - Sind alle Läufe aufgenommen: `HINZU 0.35g  WO zwischen 1 und 2` (beim
   EDF `Nabe, 265°`), neu gelöst, wenn sich die Testmasse ändert, darunter,

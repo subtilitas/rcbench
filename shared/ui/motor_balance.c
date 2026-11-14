@@ -129,6 +129,7 @@ static void cap_text(const nb_cap_t *c, bool two, char *out, size_t n)
         case NB_FAIL_STALE:    snprintf(out, n, "%s", TR(MB_FAIL_STALE)); break;
         case NB_FAIL_NO_REV:   snprintf(out, n, "%s", TR(MB_FAIL_NO_REV)); break;
         case NB_FAIL_NO_PHASE: snprintf(out, n, "%s", TR(MB_FAIL_NO_PHASE)); break;
+        case NB_FAIL_RPM_BASE: snprintf(out, n, "%s", TR(MB_FAIL_RPM_BASE)); break;
         default:               snprintf(out, n, "%s", TR(MB_FAIL_RPM)); break;
         }
         break;

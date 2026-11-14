@@ -146,7 +146,9 @@ history is in git.
   BALANCE pane only (`balance-node` in `tools/frame_cost.py`, held at
   1,000 fills by CI). MOTOR & ESC gets a BALANCE tab beside PLOT and
   TABLE: a TAKE key for each run of the two-run and four-run methods (8
-  reports, 2s, each), the correction through shared/vibe as ADD and WHERE,
+  reports, 2s, each; a trial whose mean rpm lies more than 5% from the
+  baseline's fails as `NOT BASELINE RPM`), the correction through
+  shared/vibe as ADD and WHERE,
   solved again when the trial mass changes, and a row in
   `BENCH/BALANCE/BALANCE.CSV` for each solution; the hint under ADD says
   whether the row was written. A file whose last row was cut gets a line

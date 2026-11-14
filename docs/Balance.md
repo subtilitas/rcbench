@@ -175,7 +175,11 @@ without the index.
 
 **A run fails** on 1000ms without a report, a report without a counted
 revolution, a report without the index (two runs) or an rpm more than 5%
-away from the run's first report. Its key shows why; press it again.
+away from the run's first report. A trial run also fails when its mean rpm
+lies more than 5% from the baseline run's (`NOT BASELINE RPM`): the
+solver takes runs of one rpm only. A trial taken before the baseline is
+held to it once the baseline is done, and a baseline taken again fails
+each trial more than 5% from its rpm. Its key shows why; press it again.
 
 **The CSV row.** `BENCH/BALANCE/BALANCE.CSV` gets a header in a new file and
 one row each time the runs are solved: the method, the trial mass, the unit

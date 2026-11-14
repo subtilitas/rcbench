@@ -189,7 +189,12 @@ Modus; die Zwei-Lauf-Methode lehnt einen Bericht ohne Index ab.
 
 **Ein Lauf bricht ab** bei 1000ms ohne Bericht, einem Bericht ohne gezählte
 Umdrehung, einem Bericht ohne Index (zwei Läufe) oder einer Drehzahl mehr
-als 5% neben dem ersten Bericht des Laufs. Seine Taste zeigt den Grund;
+als 5% neben dem ersten Bericht des Laufs. Ein Testlauf bricht auch ab,
+wenn seine mittlere Drehzahl mehr als 5% von der des Referenzlaufs
+abweicht (`ANDERE DREHZAHL`): der Löser nimmt nur Läufe einer Drehzahl.
+Ein vor der Referenz aufgenommener Testlauf wird an ihr gemessen, sobald
+sie fertig ist, und eine neu aufgenommene Referenz lässt jeden Testlauf
+abbrechen, der mehr als 5% von ihrer Drehzahl abweicht. Seine Taste zeigt den Grund;
 erneut drücken.
 
 **Die CSV-Zeile.** `BENCH/BALANCE/BALANCE.CSV` erhält in einer neuen Datei
