@@ -682,7 +682,8 @@ TEST_CASE(microseconds_to_raw_hits_the_fixed_points_and_rounds_like_sbus_to_us)
     CHECK_EQ(sbus_from_us(2145u), 2047u);   /* 2048.655, clamped */
     CHECK_EQ(sbus_from_us(0xFFFFu), 2047u);
     /* Mirror pulses about 1000us give mirror counts about 172, as far as
-     * the lower clamp allows: halves go away from 1000us on both sides. */
+     * the lower clamp allows.  The only half below 1000us is at 500us,
+     * where the clamp gives 0 whichever way the half goes. */
     for (unsigned d = 0; d <= 105u; ++d) {
         CHECK_EQ((int)sbus_from_us((uint16_t)(1000u + d)) - 172,
                  172 - (int)sbus_from_us((uint16_t)(1000u - d)));

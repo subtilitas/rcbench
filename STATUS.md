@@ -845,9 +845,12 @@ before its bind, and the extended-telemetry ask sent in place of stop frames onl
 instrument has been on any output pin.
 [Reference](docs/DShot.md).
 
-### S.BUS decoder
+### S.BUS decoder and encoder
 
-Built and tested; the PIO (programmable input/output) receiver is not written.
+Built and tested on the host: `protocols/sbus` decodes a byte stream into
+frames and encodes a frame into its 25 bytes, and maps microseconds to raw
+values both ways. The PIO (programmable input/output) receiver and a
+transmitter are not written, and no firmware calls the encoder.
 
 ### Motor pole count over the link
 
@@ -2671,10 +2674,11 @@ Decoder built; the inverted 8E2 receiver at 100 kbaud is a PIO program that is n
 ### Bus servos are not started
 
 Step 5 of the servo tester (#223): Feetech SCS/STS and Dynamixel 2.0 serial servos, S.BUS
-and S.BUS2 output, and JETI EX Bus channel output, each from its published specification. A
-"ditec" bus servo on the owner's list is unconfirmed, possibly Hitec; a Hitec bus is taken
-up only if one is specified. S.BUS2 telemetry slots and configuration over EX Bus stay not
-planned.
+and S.BUS2 output, and JETI EX Bus channel output, each from its published specification. The
+S.BUS frame encoder is built and host-tested (`protocols/sbus`); no pin driver sends its
+bytes and no output uses it. A "ditec" bus servo on the owner's list is unconfirmed, possibly
+Hitec; a Hitec bus is taken up only if one is specified. S.BUS2 telemetry slots and
+configuration over EX Bus stay not planned.
 
 **Next evidence or work:** the specifications, a servo of each, and a decision on the order.
 

@@ -246,6 +246,15 @@ history is in git.
   pockets and estimates. `step_gen.py` writes solids with faces on
   curved surfaces (`"brep"`) besides prisms and turned profiles
   ([Mechanical parts](hardware/mechanical/README.md#m5stack-dial)).
+- `protocols/sbus` encodes frames. `sbus_encode()` packs an
+  `sbus_frame_t` into the 25 bytes the decoder reads: header 0x0F, 16
+  channels of 11 bits, the flag byte with CH17, CH18, frame lost and
+  failsafe in bits 0 to 3, footer 0x00. A channel above 2047 refuses the
+  frame and leaves the output unwritten. `sbus_from_us()` maps a pulse
+  width to a raw value on 172 = 1000us and 1811 = 2000us, rounded to the
+  nearest and clamped to 0 to 2047; from 895us to 2144us `sbus_to_us()`
+  gives the same pulse back. The module has no pin driver
+  ([sbus](protocols/sbus/README.md)).
 
 ### Changed
 

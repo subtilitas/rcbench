@@ -40,7 +40,7 @@ rcbench/
   protocols/              ein Modul je externem Interface: ein Kern in reinem C, sein RP2350-Pin-Treiber in rp2350/, eine README.md
     dshot/                DShot-Frames · GCR-Dekodierung · eRPM · PIO-Treiber, einfach und bidirektional
     ppm/                  PPM-Frame-Layout · PIO- und DMA-Treiber
-    sbus/                 S.BUS-Decoder; kein Pin-Treiber
+    sbus/                 S.BUS-Decoder und -Encoder; kein Pin-Treiber
     openyge/              OpenYGE-Framing, CRC, Status und Parameter-Cache; kein Pin-Treiber
     pdmini/               PD-mini-Treiber · PIO-UART
     phase_tap/            ESC-Ton-Detektor · Leser des Flankenrings · PIO-Capture
