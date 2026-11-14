@@ -188,10 +188,12 @@ bool panel_pnode_blec_step(uint32_t now, bleu_act_t *out)
     if (s_q == NULL) {
         return false;
     }
-    const uint32_t errors = s_ctl.m.errors;
     const bool acted = pnode_ctl_step(&s_ctl, now, atomic_load(&s_live),
                                       atomic_load(&s_bench_run), out);
-    if (s_ctl.m.errors != errors) {
+    /* Against the count last published, not a count taken before the step:
+     * a window that closes a gap counts its error in
+     * panel_pnode_blec_event(), which the blec task runs before this. */
+    if (s_ctl.m.errors != atomic_load(&s_errors)) {
         ESP_LOGE(TAG, "readings lost while ARMED on NODE: an error, the "
                       "bench to SAFE (gap %ums, %u gaps, %u)",
                  (unsigned)s_ctl.m.gap.longest_ms,
