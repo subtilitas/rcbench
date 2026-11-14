@@ -6,6 +6,38 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.13 - 2026-11-15
+
+0.23.13 is a testing release. It adds the M5Stack Dial v1.1 as a Bluetooth LE
+(Low Energy) knob, the power node with an INA228 current sensor and the
+balance node on the ESP32-C6, and the display node on the LCDWIKI ES3C28P
+board. The panel updates the Dial and both nodes over Bluetooth LE. The KST
+and HITEC programmers write their values after a 2s hold. Its minor number,
+23, is odd. GitHub publishes it as a pre-release and does not mark it as
+latest. It runs on the ESP32-P4 panel, as 0.23.12 does; an ESP32-S3 panel
+stays on the 0.22 line and is not offered it. The link protocol is 4.37,
+unchanged from 0.23.12. The assets are
+`rcbench-panel-p4-v0.23.13.zip`, `rcbench-panel-p4-v0.23.13.bin`,
+`rcbench-iomcu-v0.23.13.zip`, `rcbench-iomcu-rbmod-v0.23.13.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.13.bin`, `rcbench-node-pwr-merged-0.23.13.bin`,
+`rcbench-node-bal-0.23.13.bin`, `rcbench-node-bal-merged-0.23.13.bin`,
+`rcbench-node-display-merged-0.23.13.bin`, `rcbench-dial-0.23.13.bin`,
+`rcbench-dial-merged-0.23.13.bin` and `SHA256SUMS`.
+
+A bench on 0.23.12 gets 0.23.13 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The panel carries the images of the
+Dial and of the power and balance nodes and sends them over Bluetooth LE from
+SETUP > UPDATES; the display node's image is loaded over USB (Universal Serial
+Bus). To set up a new bench, load both boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes.
+
+The entries below cover the 52 pull requests merged since v0.23.12: #803 to
+#846 and #848 to #855.
+
 ### Added
 
 - The display node: the power node on the LCDWIKI ES3C28P 2.8" ESP32-S3
