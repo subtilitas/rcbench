@@ -95,6 +95,16 @@ TEST_CASE(a_scan_while_armed_is_refused_with_a_band_text)
     }
     CHECK_EQ(n, 4);
     CHECK(!wireless_pane_take_dial(NULL));
+    /* A tap while a scan runs asks for none and says why. */
+    dial_view_t v;
+    memset(&v, 0, sizeof v);
+    v.link = DIAL_LINK_SCANNING;
+    wireless_pane_set_dial(&v);
+    ui_router_set_alert("");
+    wireless_pane_scan_row.tap();
+    CHECK(!wireless_pane_take_dial(&c));
+    CHECK_STR_EQ(ui_router_alert(), TR(NODE_SCAN_RUNNING));
+    wireless_pane_set_dial(NULL);
 }
 
 TEST_CASE(a_found_dial_binds_by_its_row)

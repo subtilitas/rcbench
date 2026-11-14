@@ -257,6 +257,8 @@ eine Suche startete oder sich die Liste darunter änderte, zeigt
 `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
 schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
 `dial: bound <Adresse> <Name>`.
+Ein Tippen auf DIAL SUCHEN, während eine Suche läuft, startet keine; das
+Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`.
 
 Der Connect nach dem Binden startet sofort, wenn die Central frei ist. Eine
 IMU oder ein Knoten, EIN und an ein Gerät außer Reichweite gebunden, hält
