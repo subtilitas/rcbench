@@ -496,6 +496,12 @@ static void act_connect(bleu_hub_t *h, uint8_t owner, const bleu_act_t *a,
 {
     const bool hurry = (a->flags & BLEU_ACT_F_HURRY) != 0u;
     designate(h);
+    /* The client whose turn is kept comes hurried: the turn is a hurried
+     * one from now on, so a later hurried client does not take it. */
+    if (hurry && h->turn_set && h->turn_owner == owner && !h->turn_hurry) {
+        h->turn_hurry = true;
+        h->c[owner].hurry = true;
+    }
     if (hurry && h->turn_set && h->turn_owner != owner && !h->turn_hurry) {
         h->turn_set = false;
         enqueue(h, h->turn_owner, false, true);

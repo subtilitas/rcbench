@@ -339,7 +339,9 @@ The queue (`q`, up to 5 clients) holds the clients whose connect was
 answered busy or with the turn, first come first. A hurried client goes
 behind the hurried clients that wait and ahead of every other. A client
 whose connect a scan cut goes ahead of the unhurried clients that wait.
-A client that waits keeps its place when it asks again. One turn is kept
+A client that waits keeps its place when it asks again; a turn kept for
+a client that then asks hurried becomes a hurried turn, which no later
+hurried client takes. One turn is kept
 at a time, for the client the hub took from the queue's front. A kept
 turn and the queue do not hold back a scan. A client that waits leaves
 the queue 200ms (`BLEU_HUB_TURN_MS`) after the slot became free and its
