@@ -311,6 +311,16 @@ TEST_CASE(the_updates_pages_follow_the_check_and_the_c6)
     }
     CHECK_EQ(p.item[3].text, TX_HG_UPD_DEVS_BACK);
     CHECK(!ui_help_page(upd(), false, 1, &p));
+    /* While an update runs CANCEL UPDATE is an item before BACK. */
+    upd_dev_view_t run = *upd_dev_view(UPD_DEV_PNODE);
+    run.row = DEVUPD_ROW_UPDATING;
+    run.phase = DEVUPD_SEND;
+    upd_dev_set(UPD_DEV_PNODE, &run);
+    REQUIRE(ui_help_page(upd(), false, 0, &p));
+    CHECK_EQ(p.count, 5);
+    CHECK_EQ(p.item[3].text, TX_HG_UPD_DEVS_CANCEL);
+    CHECK_STR_EQ(p.item[3].label, TR(UPD_DEVS_CANCEL));
+    CHECK_EQ(p.item[4].text, TX_HG_UPD_DEVS_BACK);
     s_upd_state = 0;
 }
 

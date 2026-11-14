@@ -13,7 +13,8 @@
  * device's next offset when a CREDIT marks the bytes from there as lost
  * (BLEOTA_CREDIT_GAP) or the same CREDIT comes twice, asks for a CREDIT
  * with POLL after DEVUPD_POLL_MS without one, and ends the transfer after
- * DEVUPD_POLLS polls in a row go unanswered.  A refusal, a failed control
+ * DEVUPD_POLLS polls in a row go unanswered, or when the device's next
+ * offset has not moved for DEVUPD_STALL_MS however it answers.  A refusal, a failed control
  * write, a lost link or a step that runs past its time ends the transfer;
  * the device keeps the image it runs.  A link that ends after END, or an
  * END without DONE in time, leaves the install's result unknown
@@ -50,6 +51,8 @@ extern "C" {
 #define DEVUPD_CONFIRM_MS (BLEOTA_CONFIRM_MS + 5000u) /**< WAIT to CREDIT */
 #define DEVUPD_POLL_MS     1000u /**< no CREDIT this long: POLL */
 #define DEVUPD_POLLS          3u /**< polls in a row unanswered: ended */
+#define DEVUPD_STALL_MS   30000u /**< SEND: the device's next offset unmoved
+                                      this long, answers or not: ended */
 #define DEVUPD_END_MS     15000u /**< END written to DONE */
 #define DEVUPD_RESTART_MS  5000u /**< DONE to the device's disconnect */
 /** @} */
@@ -108,6 +111,8 @@ typedef enum {
                             the install's result is not known */
     DEVUPD_E_ARMED,    /**< the bench was ARMED, or an arm waited, at the
                             start: the panel's refusal */
+    DEVUPD_E_STALLED,  /**< SEND: the device's next offset did not move for
+                            DEVUPD_STALL_MS */
 } devupd_err_t;
 
 /** @brief What devupd_step() gives. */
@@ -140,6 +145,7 @@ typedef struct {
     uint32_t t_credit;        /**< the last CREDIT, or the last POLL */
     uint32_t sent;            /**< the next offset to send */
     uint32_t next;            /**< the device's next offset */
+    uint32_t t_moved;         /**< SEND: when next last moved */
     uint32_t limit;           /**< the device's limit */
     uint16_t secs;            /**< CONFIRM: seconds the device gave */
     uint8_t  polls;           /**< polls in a row unanswered */
@@ -212,12 +218,22 @@ bool devupd_step(devupd_t *e, uint32_t now, bool can_ctrl, devupd_out_t *out);
 void devupd_unsend(devupd_t *e, const devupd_out_t *out);
 
 /**
- * @brief End a running transfer.  The caller ends the link, and the device
- *        drops what it took on the disconnect.
+ * @brief End a running transfer before END: DEVUPD_E_ABORTED.  The caller
+ *        ends the link, and the device drops what it took on the
+ *        disconnect.  From END on the device installs whatever comes, as it
+ *        ignores ABORT then: the transfer runs on to DONE or
+ *        DEVUPD_E_UNSURE, and the call does nothing.
  * @param e   the transfer
  * @param now the clock
  */
 void devupd_abort(devupd_t *e, uint32_t now);
+
+/**
+ * @brief Whether devupd_abort() ends the transfer now.
+ * @param e the transfer
+ * @return true from DEVUPD_LINK to DEVUPD_SEND
+ */
+bool devupd_abortable(const devupd_t *e);
 
 /**
  * @brief Whether a transfer runs, from the start to the device's restart:
@@ -298,6 +314,57 @@ typedef enum {
  */
 devupd_settle_t devupd_settle(bool known, fw_version_t running,
                               fw_version_t want, uint32_t age);
+
+/** @brief What the caller sees of one device's link. */
+typedef struct {
+    bool         known;   /**< connected, its version reported */
+    fw_version_t running; /**< that version */
+} devupd_seen_t;
+
+/** @brief The settle of one unknown install, tied to its device: another
+ *         device's update reads nothing of it. */
+typedef struct {
+    bool         pending; /**< an unknown install waits for its device */
+    unsigned     dev;     /**< that device, the caller's index */
+    fw_version_t want;    /**< the image's version */
+    uint32_t     t;       /**< when the transfer ended */
+} devupd_settler_t;
+
+/** @brief A settle's outcome. */
+typedef struct {
+    unsigned        dev;     /**< its device */
+    devupd_settle_t r;       /**< DONE, FAILED or UNKNOWN */
+    fw_version_t    running; /**< the version its device reported */
+} devupd_settled_t;
+
+/**
+ * @brief Hold an unknown install of device @p dev for its version.  A
+ *        settle still pending is replaced: the caller reports it first
+ *        (devupd_settler_step() with @p now_start).
+ * @param s    the settle
+ * @param dev  the device
+ * @param want the image's version
+ * @param now  when the transfer ended
+ */
+void devupd_settler_arm(devupd_settler_t *s, unsigned dev, fw_version_t want,
+                        uint32_t now);
+
+/**
+ * @brief Settle a pending install by its own device's entry in @p seen
+ *        alone (devupd_settle()).  @p now_start is a new start: the
+ *        settle ends now, UNKNOWN while its device has not reported, so
+ *        its result is reported before the new update begins.
+ * @param s         the settle
+ * @param seen      every device's link, by the caller's index
+ * @param n         their count; a device past it reads as not reported
+ * @param now       the clock
+ * @param now_start a new update is to start
+ * @param out       receives the outcome
+ * @return true when the settle ended and @p out holds its outcome
+ */
+bool devupd_settler_step(devupd_settler_t *s, const devupd_seen_t *seen,
+                         unsigned n, uint32_t now, bool now_start,
+                         devupd_settled_t *out);
 
 /* ------------------------------------------------- the start and busy */
 

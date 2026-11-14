@@ -176,6 +176,7 @@ static void credit(devupd_t *e, const bleota_status_t *s, uint32_t now)
         e->next = s->next;
         e->limit = s->limit;
         e->t_credit = now;
+        e->t_moved = now;
         e->polls = 0u;
         return;
     }
@@ -186,6 +187,9 @@ static void credit(devupd_t *e, const bleota_status_t *s, uint32_t now)
     if (s->next < e->sent && (s->code == BLEOTA_CREDIT_GAP || stuck)) {
         ++e->rewinds;
         e->sent = s->next;
+    }
+    if (s->next > e->next) {
+        e->t_moved = now;
     }
     e->next = s->next;
     e->limit = s->limit;
@@ -255,6 +259,12 @@ static void times(devupd_t *e, uint32_t now)
         }
         break;
     case DEVUPD_SEND:
+        /* Answers that never move the device on end it as well: each
+         * CREDIT clears the polls, and each POLL the device's own timer. */
+        if (now - e->t_moved >= DEVUPD_STALL_MS) {
+            fail(e, DEVUPD_E_STALLED, 0u, now);
+            break;
+        }
         if (now - e->t_credit >= DEVUPD_POLL_MS) {
             if (e->polls >= DEVUPD_POLLS) {
                 fail(e, DEVUPD_E_TIMEOUT, 0u, now);
@@ -331,9 +341,14 @@ void devupd_unsend(devupd_t *e, const devupd_out_t *out)
     --e->chunks;
 }
 
+bool devupd_abortable(const devupd_t *e)
+{
+    return e != NULL && e->phase >= DEVUPD_LINK && e->phase <= DEVUPD_SEND;
+}
+
 void devupd_abort(devupd_t *e, uint32_t now)
 {
-    if (e == NULL || !devupd_busy(e)) {
+    if (!devupd_abortable(e)) {
         return;
     }
     fail(e, DEVUPD_E_ABORTED, 0u, now);
@@ -425,4 +440,40 @@ bool devupd_gate_busy(devupd_gate_t *g)
     /* The request first: the running task stores the run before it clears
      * the request, so a reader that misses the request sees the run. */
     return g != NULL && (atomic_load(&g->req) || atomic_load(&g->run));
+}
+
+void devupd_settler_arm(devupd_settler_t *s, unsigned dev, fw_version_t want,
+                        uint32_t now)
+{
+    if (s != NULL) {
+        s->pending = true;
+        s->dev = dev;
+        s->want = want;
+        s->t = now;
+    }
+}
+
+bool devupd_settler_step(devupd_settler_t *s, const devupd_seen_t *seen,
+                         unsigned n, uint32_t now, bool now_start,
+                         devupd_settled_t *out)
+{
+    if (s == NULL || out == NULL || !s->pending) {
+        return false;
+    }
+    const bool own = seen != NULL && s->dev < n;
+    const bool known = own && seen[s->dev].known;
+    const fw_version_t run = known ? seen[s->dev].running
+                                   : (fw_version_t){ 0u, 0u, 0u };
+    devupd_settle_t r = devupd_settle(known, run, s->want, now - s->t);
+    if (r == DEVUPD_SETTLE_WAIT && now_start) {
+        r = DEVUPD_SETTLE_UNKNOWN;
+    }
+    if (r == DEVUPD_SETTLE_WAIT) {
+        return false;
+    }
+    s->pending = false;
+    out->dev = s->dev;
+    out->r = r;
+    out->running = run;
+    return true;
 }

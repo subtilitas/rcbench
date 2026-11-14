@@ -6120,6 +6120,12 @@ UI_TEXT(DEV_FAIL_IMAGE, 36,
 UI_TEXT(DEV_FAIL_ARMED, 36,
     "the bench is not SAFE",
     "der Prüfstand ist nicht SAFE")
+UI_TEXT(DEV_FAIL_CANCELLED, 36,
+    "canceled on UPDATES",
+    "auf UPDATES abgebrochen")
+UI_TEXT(DEV_FAIL_STALLED, 36,
+    "no progress for 30s",
+    "30s ohne Fortschritt")
 UI_TEXT(DEV_FAIL_OTHER, 36,
     "error %u",
     "Fehler %u")
@@ -6893,6 +6899,9 @@ UI_TEXT(HG_UPD_PNODE, 0,
 UI_TEXT(HG_UPD_BAL, 0,
     "The balance node's version and the included one. The hold sends it; BOOT held 1s accepts.",
     "Version des Knotens und die enthaltene. Das Halten sendet sie; BOOT 1s gehalten nimmt an.")
+UI_TEXT(HG_UPD_DEVS_CANCEL, 0,
+    "Ends the update before its last byte; the device keeps its firmware. Grey while it installs.",
+    "Beendet das Update vor dem letzten Byte; das Gerät behält seine Firmware. Grau beim Installieren.")
 UI_TEXT(HG_UPD_DEVS_BACK, 0,
     "Back to UPDATES, as the home tag.",
     "Zurück zu UPDATES, wie das Home-Tag.")
@@ -8665,8 +8674,8 @@ UI_TEXT(UPD_NODE_LINE, 0,
     "Node: %s. Included: %s.",
     "Knoten: %s. Im Panel: %s.")
 UI_TEXT(UPD_NODE_PRESS, 0,
-    "PRESS BOOT ON THE NODE: %us",
-    "BOOT AM KNOTEN DRÜCKEN: %us")
+    "HOLD BOOT 1s ON THE NODE: %us",
+    "BOOT AM KNOTEN 1s HALTEN: %us")
 UI_TEXT(UPD_PNODE_HEAD, 0,
     "POWER NODE FIRMWARE",
     "LEISTUNGSKNOTEN-FIRMWARE")
@@ -8707,6 +8716,9 @@ UI_TEXT(UPD_DEVS_LINE, 0,
 UI_TEXT(UPD_DEVS_OPEN, 0,
     "WIRELESS DEVICE FIRMWARE",
     "FIRMWARE DER FUNKGERÄTE")
+UI_TEXT(UPD_DEVS_CANCEL, 0,
+    "CANCEL UPDATE",
+    "UPDATE ABBRECHEN")
 UI_TEXT(UPD_DEVS_BACK, 0,
     "BACK",
     "ZURÜCK")
@@ -8732,6 +8744,9 @@ UI_TEXT(DEV_WHY_ARMED, 94,
 UI_TEXT(DEV_WHY_BUSY, 94,
     "The device update waits for the other update to finish.",
     "Das Geräte-Update wartet auf das Ende des anderen Updates.")
+UI_TEXT(DEV_WHY_INSTALLING, 94,
+    "The device installs the update and cannot stop now. Its result follows.",
+    "Das Gerät installiert das Update und hält jetzt nicht an. Das Ergebnis folgt.")
 UI_TEXT(DEV_WHY_UPDATING, 94,
     "The device update is running.",
     "Das Geräte-Update läuft.")

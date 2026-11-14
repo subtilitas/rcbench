@@ -22,9 +22,12 @@
  * or DEVUPD_ROW_REINSTALL.  A release before 2s on a live hold shows the
  * hold's hint on the band; a tap on a grey hold shows why it is grey
  * there (upd_dev_reason()).  While an update runs the hold reads the
- * device's UPDATE: CONNECTING, its ask (PRESS THE DIAL TO ACCEPT, PRESS
- * BOOT ON THE NODE) with the seconds the device gave, or its UPDATE and
- * the share the device took.
+ * device's UPDATE: CONNECTING, its ask (PRESS THE DIAL TO ACCEPT, HOLD
+ * BOOT 1s ON THE NODE) with the seconds the device gave, or its UPDATE and
+ * the share the device took, and CANCEL UPDATE stands in the footer's
+ * middle slot: a plain tap, as every stop is.  From END on the device
+ * installs whatever comes; CANCEL UPDATE is grey then, and a tap on it
+ * says so on the band.
  *
  * UPDATES (upd_screen.c) hands this module every touch event first
  * (upd_dev_event()), its ticks and its draw, and the whole body while the
@@ -170,6 +173,23 @@ gfx_rect_t upd_dev_rect(upd_dev_id_t id);
  * @return the rectangle
  */
 gfx_rect_t upd_dev_entry_rect(void);
+
+/**
+ * @brief The page's CANCEL UPDATE, in UPDATES' body: the footer's middle
+ *        slot, shown while an update runs.
+ * @return the rectangle
+ */
+gfx_rect_t upd_dev_cancel_rect(void);
+
+/** @brief Whether a row's update runs: CANCEL UPDATE stands.
+ *  @return true while one row reads DEVUPD_ROW_UPDATING */
+bool upd_dev_running(void);
+
+/**
+ * @brief Whether CANCEL UPDATE was tapped while it was live, once.
+ * @return true once after the tap
+ */
+bool upd_dev_take_cancel(void);
 
 /**
  * @brief The page's BACK, in UPDATES' body: the footer's right slot.

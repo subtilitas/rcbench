@@ -139,6 +139,20 @@ typedef struct {
     fw_version_t running;   /**< that version */
 } dev_pub_t;
 
+/** @brief One update's end, for the band. */
+typedef struct {
+    uint8_t      dev;       /**< its device, by s_img's index */
+    bool         ok;        /**< it installed */
+    bool         unknown;   /**< its install's result is not known */
+    uint8_t      err;       /**< otherwise devupd_err_t */
+    uint8_t      code;      /**< and the device's BLEOTA_E_* */
+    fw_version_t ver;       /**< the image's version */
+} end_t;
+
+/** @brief Ends the publication keeps: a settle reported at a new start and
+ *         that start's refusal can fall in one poll. */
+#define END_RING 4u
+
 /** @brief What the `blec` task publishes for the frame. */
 typedef struct {
     dev_pub_t    d[BLEOTA_KIND_MAX]; /**< each device */
@@ -147,10 +161,7 @@ typedef struct {
     unsigned     percent;   /**< its share taken */
     unsigned     secs;      /**< DEVUPD_CONFIRM: seconds given */
     uint32_t     end_seq;   /**< updates ended, counted */
-    bool         ok;        /**< the last one installed */
-    bool         unknown;   /**< its install's result is not known */
-    uint8_t      err;       /**< otherwise devupd_err_t */
-    uint8_t      code;      /**< and the device's BLEOTA_E_* */
+    end_t        ends[END_RING]; /**< the last ends, by end_seq % END_RING */
 } pub_t;
 
 /** @brief The update client, the `blec` task's own. */
@@ -179,12 +190,12 @@ static portMUX_TYPE    s_mux = portMUX_INITIALIZER_UNLOCKED;
 static pub_t           s_pub;
 /** @brief The start between the frame and `blec`, and panel_devupd_busy(). */
 static devupd_gate_t   s_gate;
-/** @brief An install whose result is not known waits for the device's
- *         version, the `blec` task's own. @{ */
-static bool            s_settle;
-static uint32_t        s_settle_t;  /**< when the transfer ended */
-/** @} */
-/** @brief The frame task's last end_seq. */
+/** @brief An install whose result is not known waits for its own
+ *         device's version, the `blec` task's own. */
+static devupd_settler_t s_settler;
+/** @brief The frame asked to cancel the running update. */
+static atomic_bool     s_cancel;
+/** @brief The frame task's last end_seq: the ends it reported. */
 static uint32_t        s_seen_end;
 /** @brief The device the frame task last asked to update. */
 static unsigned        s_ask_dev;
@@ -261,6 +272,37 @@ static void check_next(void)
     }
 }
 
+/** @brief What each device's link says, at this poll. */
+typedef struct {
+    bleu_addr_t addr;   /**< its bound address */
+    bool        bound;  /**< one is bound */
+    bool        linked; /**< connected, its version read */
+    bool        down;   /**< no link stands or is under way */
+    uint8_t     ver[3]; /**< its version */
+} seen_t;
+
+/**
+ * @brief Publish one update's end for the band, with the version of the
+ *        image being sent.
+ * @param dev     its device, by s_img's index
+ * @param ok      it installed
+ * @param unknown its install's result is not known
+ * @param err     devupd_err_t otherwise
+ * @param code    the device's BLEOTA_E_*
+ */
+static void push_end(unsigned dev, bool ok, bool unknown, uint8_t err,
+                     uint8_t code)
+{
+    end_t *e = &s_next.ends[s_next.end_seq % END_RING];
+    e->dev = (uint8_t)dev;
+    e->ok = ok;
+    e->unknown = unknown;
+    e->err = err;
+    e->code = code;
+    e->ver = s_im.version;
+    ++s_next.end_seq;
+}
+
 /**
  * @brief The running update's device as the console names it.
  * @return its name, from the carried image's table
@@ -290,8 +332,7 @@ static void finish(bool ok, uint8_t err, uint8_t code, uint32_t now)
                       "whether %u.%u.%u is installed", cur_word(),
                  (unsigned)s_im.version.major, (unsigned)s_im.version.minor,
                  (unsigned)s_im.version.patch);
-        s_settle = true;
-        s_settle_t = now;
+        devupd_settler_arm(&s_settler, s_cur, s_im.version, now);
         return;
     }
     if (ok) {
@@ -311,38 +352,41 @@ static void finish(bool ok, uint8_t err, uint8_t code, uint32_t now)
                  (unsigned long)s_cli.e.next, (unsigned long)s_im.size,
                  (unsigned long)ms);
     }
-    s_next.ok = ok;
-    s_next.unknown = false;
-    s_next.err = err;
-    s_next.code = code;
-    ++s_next.end_seq;
+    push_end(s_cur, ok, false, err, code);
 }
 
 /**
- * @brief Settle an install whose result is not known by the version the
- *        device reports once it is back (devupd_settle()).
- * @param linked the device is connected and reported its version
- * @param ver    that version
- * @param now    the clock
+ * @brief Report the pending settle when its own device has reported its
+ *        version, its time ran out, or a new update is to start
+ *        (devupd_settler_step()).
+ * @param t         what each device's link says, by s_img's index
+ * @param now       the clock
+ * @param now_start a new update is to start
  */
-static void settle(bool linked, const uint8_t ver[3], uint32_t now)
+static void settle(const seen_t t[BLEOTA_KIND_MAX], uint32_t now,
+                   bool now_start)
 {
-    const fw_version_t run = { ver[0], ver[1], ver[2] };
-    const devupd_settle_t r = devupd_settle(linked, run, s_im.version,
-                                            now - s_settle_t);
-    if (r == DEVUPD_SETTLE_WAIT) {
+    devupd_seen_t seen[BLEOTA_KIND_MAX];
+    for (unsigned i = 0; i < BLEOTA_KIND_MAX; ++i) {
+        seen[i].known = t[i].bound && t[i].linked;
+        seen[i].running = (fw_version_t){ t[i].ver[0], t[i].ver[1],
+                                          t[i].ver[2] };
+    }
+    const fw_version_t want = s_settler.want;
+    devupd_settled_t r;
+    if (!devupd_settler_step(&s_settler, seen, BLEOTA_KIND_MAX, now,
+                             now_start, &r)) {
         return;
     }
-    s_settle = false;
-    ESP_LOGI(TAG, "%s update settled: %s, it runs %u.%u.%u", cur_word(),
-             r == DEVUPD_SETTLE_DONE ? "installed"
-             : r == DEVUPD_SETTLE_FAILED ? "not installed" : "not known",
-             (unsigned)ver[0], (unsigned)ver[1], (unsigned)ver[2]);
-    s_next.ok = r == DEVUPD_SETTLE_DONE;
-    s_next.unknown = r == DEVUPD_SETTLE_UNKNOWN;
-    s_next.err = DEVUPD_E_LOST;
-    s_next.code = 0u;
-    ++s_next.end_seq;
+    ESP_LOGI(TAG, "%s update settled%s: %s, it runs %u.%u.%u",
+             s_img[r.dev].word, now_start ? " before a new start" : "",
+             r.r == DEVUPD_SETTLE_DONE ? "installed"
+             : r.r == DEVUPD_SETTLE_FAILED ? "not installed" : "not known",
+             (unsigned)r.running.major, (unsigned)r.running.minor,
+             (unsigned)r.running.patch);
+    push_end(r.dev, r.r == DEVUPD_SETTLE_DONE, r.r == DEVUPD_SETTLE_UNKNOWN,
+             DEVUPD_E_LOST, 0u);
+    s_next.ends[(s_next.end_seq - 1u) % END_RING].ver = want;
 }
 
 /**
@@ -417,15 +461,6 @@ static void log_progress(void)
     }
 }
 
-/** @brief What each device's link says, at this poll. */
-typedef struct {
-    bleu_addr_t addr;   /**< its bound address */
-    bool        bound;  /**< one is bound */
-    bool        linked; /**< connected, its version read */
-    bool        down;   /**< no link stands or is under way */
-    uint8_t     ver[3]; /**< its version */
-} seen_t;
-
 void panel_devupd_blec_poll(uint32_t now)
 {
     if (!s_started) {
@@ -447,7 +482,9 @@ void panel_devupd_blec_poll(uint32_t now)
         dev = 0u;
     }
     if (take == DEVUPD_TAKE_START) {
-        s_settle = false;
+        /* A pending unknown install is reported first, from its own
+         * device: the new update never reads as its result. */
+        settle(t, now, true);
         begin(dev, t[dev].bound, t[dev].linked, t[dev].ver, now);
     } else if (take == DEVUPD_TAKE_ARMED) {
         s_cur = dev;
@@ -457,6 +494,16 @@ void panel_devupd_blec_poll(uint32_t now)
         finish(false, DEVUPD_E_ARMED, 0u, now);
     }
     const seen_t *c = &t[s_cur];
+    if (atomic_exchange(&s_cancel, false) && s_stage != STAGE_IDLE) {
+        ESP_LOGW(TAG, "%s update: cancelled on UPDATES", cur_word());
+        if (s_stage == STAGE_HOLD) {
+            finish(false, DEVUPD_E_ABORTED, 0u, now);
+        } else {
+            /* From END on the device installs whatever comes: the abort
+             * does nothing and the result follows. */
+            devupd_client_abort(&s_cli, now);
+        }
+    }
     if (s_stage == STAGE_HOLD && live) {
         ESP_LOGW(TAG, "%s update ended before its start: ARMED", cur_word());
         finish(false, DEVUPD_E_ARMED, 0u, now);
@@ -478,8 +525,8 @@ void panel_devupd_blec_poll(uint32_t now)
                    s_cli.e.dev_code, now);
         }
     }
-    if (s_settle && s_stage == STAGE_IDLE) {
-        settle(c->bound && c->linked, c->ver, now);
+    if (s_stage == STAGE_IDLE) {
+        settle(t, now, false);
     }
     for (unsigned i = 0; i < BLEOTA_KIND_MAX; ++i) {
         const carried_t *g = &s_img[i];
@@ -543,12 +590,12 @@ void panel_devupd_blec_publish(uint32_t now)
 
 /**
  * @brief The band's reason for a failed update.
- * @param p   what was published
+ * @param p   the end
  * @param buf room for an "error %u" text
  * @param n   its bytes
  * @return the text
  */
-static const char *fail_text(const pub_t *p, char *buf, size_t n)
+static const char *fail_text(const end_t *p, char *buf, size_t n)
 {
     if (p->err != DEVUPD_E_DEVICE) {
         switch (p->err) {
@@ -557,6 +604,8 @@ static const char *fail_text(const pub_t *p, char *buf, size_t n)
         case DEVUPD_E_TIMEOUT: return TR(DEV_FAIL_TIMEOUT);
         case DEVUPD_E_WRITE:   return TR(DEV_FAIL_WRITE);
         case DEVUPD_E_ARMED:   return TR(DEV_FAIL_ARMED);
+        case DEVUPD_E_ABORTED: return TR(DEV_FAIL_CANCELLED);
+        case DEVUPD_E_STALLED: return TR(DEV_FAIL_STALLED);
         default:
             snprintf(buf, n, TR(DEV_FAIL_OTHER), (unsigned)p->err);
             return buf;
@@ -619,21 +668,30 @@ void devupd_service(bool armed)
         ui_router_set_notice(ui_tr(k_dev[dev].ask));
     }
     s_seen_phase = p.phase;
-    if (p.end_seq != s_seen_end) {
-        s_seen_end = p.end_seq;
+    if (upd_dev_take_cancel()) {
+        atomic_store(&s_cancel, true);
+    }
+    /* Each end since the last frame, in order; more than the ring holds
+     * only the last END_RING. */
+    if (p.end_seq - s_seen_end > END_RING) {
+        s_seen_end = p.end_seq - END_RING;
+    }
+    while (s_seen_end != p.end_seq) {
+        const end_t *e = &p.ends[s_seen_end % END_RING];
+        ++s_seen_end;
         char line[128], why[40];
         char ver[24];
-        const fw_version_t car = p.d[dev].carried;
-        snprintf(ver, sizeof(ver), "%u.%u.%u", (unsigned)car.major,
-                 (unsigned)car.minor, (unsigned)car.patch);
-        const char *name = ui_tr(k_dev[dev].name);
-        if (p.ok) {
+        snprintf(ver, sizeof(ver), "%u.%u.%u", (unsigned)e->ver.major,
+                 (unsigned)e->ver.minor, (unsigned)e->ver.patch);
+        const unsigned d = e->dev < BLEOTA_KIND_MAX ? e->dev : 0u;
+        const char *name = ui_tr(k_dev[d].name);
+        if (e->ok) {
             snprintf(line, sizeof(line), TR(ALERT_DEV_DONE), name, ver);
-        } else if (p.unknown) {
+        } else if (e->unknown) {
             snprintf(line, sizeof(line), TR(ALERT_DEV_UNKNOWN), name);
         } else {
             snprintf(line, sizeof(line), TR(ALERT_DEV_FAILED), name,
-                     fail_text(&p, why, sizeof(why)));
+                     fail_text(e, why, sizeof(why)));
         }
         control_alert(line);
     }

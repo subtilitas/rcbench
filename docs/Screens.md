@@ -6882,6 +6882,7 @@ runs, the other rows' holds are grey.
 | `HOLD 2s TO REINSTALL THE POWER NODE` | The same, while the node reports the carried version. |
 | `HOLD 2s TO UPDATE THE BALANCE NODE` | Sends the balance node's image this panel carries to the bound balance node. |
 | `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the carried version. |
+| `CANCEL UPDATE` | In the footer's middle slot while an update runs; a plain tap. Before END it ends the update: the device drops what it took and keeps its firmware, and the band reads `<device> update stopped: canceled on UPDATES. Previous firmware is running.` From END on the device installs whatever comes: the key is grey, a tap puts `The device installs the update and cannot stop now. Its result follows.` in the band, and the result follows as without the tap. |
 | `BACK` | Closes the page. |
 
 ### The Dial
@@ -6926,7 +6927,10 @@ The alert band says how an update ended:
 | `Dial did not report after its update. Check its version on UPDATES.` | The link dropped after END, or DONE did not come in 15s, and no Dial reported its version within 60s. |
 
 When the link drops after END, the Dial may be installing: the panel waits
-up to 60s for the Dial's version. The image's version is reported as done;
+up to 60s for the Dial's version, read from the Dial alone. A start of
+another device's update within those 60s reports the wait first: the
+Dial's version if it reported, else `Dial did not report after its
+update.` The image's version is reported as done;
 another version as stopped, `connection lost`.
 
 | Reason | Cause |
@@ -6935,6 +6939,8 @@ another version as stopped, `connection lost`.
 | `connection lost` | the link ended during the transfer |
 | `no answer` | the Dial did not answer a step within its limit or 3 polls in a row, or the Dial saw no write for 10s |
 | `a write was refused` | the host stack refused a write |
+| `no progress for 30s` | the Dial answered, but its next offset did not move for 30s |
+| `canceled on UPDATES` | `CANCEL UPDATE` before END |
 | `the bench is not SAFE` | ARMED, or an arm waiting, when the update was to start |
 | `image for another device` | the Dial refused the kind |
 | `image too large` | the Dial refused the size |
@@ -6969,7 +6975,7 @@ While a node's update runs its hold reads, one after the other:
 | Button | Step |
 | --- | --- |
 | `POWER NODE UPDATE: CONNECTING` | the node's own link ends, and the update connects to the bound node |
-| `PRESS BOOT ON THE NODE: 27s` | the node took BEGIN and waits for its BOOT key (GPIO9) held 1s; the seconds are the node's |
+| `HOLD BOOT 1s ON THE NODE: 27s` | the node took BEGIN and waits for its BOOT key (GPIO9) held 1s; the seconds are the node's |
 | `POWER NODE UPDATE 37%` | the share of the image the node took |
 
 The balance node's row reads `BALANCE NODE UPDATE: CONNECTING` and

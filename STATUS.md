@@ -1250,10 +1250,15 @@ update (`test_node_policy`); UPDATES' WIRELESS DEVICES entry and its
 page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE FIRMWARE
 rows: the entry opening the page, BACK and the home tag closing it, each
 row's hold at 1,999ms and 2,000ms, its reasons, its hints and its
-progress, the node rows' PRESS BOOT ON THE NODE, one press at a time
+progress, the node rows' HOLD BOOT 1s ON THE NODE, one press at a time
 (`shared/ui/upd_dev.c`, `test_upd_dev`, the page's guide in
 `test_help_net`); the gate naming the device it started
-(`test_devupd`); and each node client's hand-over and take-back: the
+(`test_devupd`), the 30s progress limit at 29.9s and 30.1s against a
+device that answers the gap mark at one offset, an abort in every phase
+that waits through the install from END on, and the settle of an unknown
+install read from its own device and reported before a second device's
+start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
+END on (`test_upd_dev`); and each node client's hand-over and take-back: the
 update's hold ends the link with no STALE or LOST at any ms, keeps it
 ended through SETUP's values for 30s, takes no packet, and the take-back
 reconnects and reads the node's version from its first STATUS

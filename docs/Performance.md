@@ -760,12 +760,12 @@ client, its objects alone (`panel_pnode.c`, `pnode_ctl.c`, `pnode_meter.c`,
 3,861 of them .bss, and 11,748 bytes of image (`esp_idf_size --files`);
 its texts and its calls in other files are not counted.
 The wireless devices' update, from the linker map of the default build:
-`panel_devupd.c` holds 1,900 bytes of DIRAM (1,472 .bss, 428 .data) and
-4,656 bytes of code; `upd_dev.c` 489 bytes of .bss and 3,472 of code;
-`shared/devupd` 3,258 bytes of code and `protocols/bleota` 446. The three
+`panel_devupd.c` holds 2,008 bytes of DIRAM (1,580 .bss, 428 .data) and
+5,050 bytes of code; `upd_dev.c` 566 bytes of .bss and 3,926 of code;
+`shared/devupd` 3,540 bytes of code and `protocols/bleota` 446. The three
 carried images, the Dial's and both nodes', add 2,130,208 bytes of image at
 0.23.12: 841,424, 646,176 and 642,608. With them the application image is
-7,362,880 bytes, 763,584 (9.4%) under the slot of 8,126,464.
+7,364,656 bytes, 761,808 (9.4%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one

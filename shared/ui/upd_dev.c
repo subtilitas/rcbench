@@ -103,6 +103,10 @@ static bool        s_shown;
 static dev_press_t s_entry;
 /** @brief BACK's press, on the page. */
 static dev_press_t s_back;
+/** @brief CANCEL UPDATE's press, on the page. */
+static dev_press_t s_cancel;
+/** @brief CANCEL UPDATE was tapped, not yet taken. */
+static bool        s_cancel_req;
 
 /**
  * @brief A row id in range.
@@ -138,6 +142,44 @@ gfx_rect_t upd_dev_entry_rect(void)
 gfx_rect_t upd_dev_back_rect(void)
 {
     return ui_footer_rect(UI_FOOTER_SETTINGS);
+}
+
+gfx_rect_t upd_dev_cancel_rect(void)
+{
+    return ui_footer_rect(UI_FOOTER_HOLD);
+}
+
+bool upd_dev_take_cancel(void)
+{
+    const bool was = s_cancel_req;
+    s_cancel_req = false;
+    return was;
+}
+
+/**
+ * @brief The row whose update runs.
+ * @return its index, or UPD_DEV_COUNT for none
+ */
+static unsigned running_row(void)
+{
+    for (unsigned i = 0; i < UPD_DEV_COUNT; ++i) {
+        if (s_rows[i].v.row == DEVUPD_ROW_UPDATING) {
+            return i;
+        }
+    }
+    return UPD_DEV_COUNT;
+}
+
+bool upd_dev_running(void) { return running_row() < UPD_DEV_COUNT; }
+
+/**
+ * @brief Whether CANCEL UPDATE ends the running update now: before END.
+ * @return false with no update running, or from END on
+ */
+static bool cancel_live(void)
+{
+    const unsigned i = running_row();
+    return i < UPD_DEV_COUNT && s_rows[i].v.phase < DEVUPD_END;
 }
 
 /** @brief Every row's press ends unfired. */
@@ -348,7 +390,7 @@ void upd_dev_entry_label(char *out, size_t n)
 
 bool upd_dev_pressed(void)
 {
-    if (s_entry.have || s_back.have) {
+    if (s_entry.have || s_back.have || s_cancel.have) {
         return true;
     }
     for (unsigned i = 0; i < UPD_DEV_COUNT; ++i) {
@@ -469,6 +511,21 @@ static void page_event(const touch_event_t *evt)
             return;
         }
     }
+    if (running_row() < UPD_DEV_COUNT || s_cancel.have) {
+        const bool other = upd_dev_pressed() && !s_cancel.have;
+        const int got = tap_event(&s_cancel, upd_dev_cancel_rect(), evt,
+                                  other);
+        if (got == 2) {
+            if (cancel_live()) {
+                s_cancel_req = true;
+            } else if (running_row() < UPD_DEV_COUNT) {
+                ui_router_set_notice(TR(DEV_WHY_INSTALLING));
+            }
+        }
+        if (got != 0) {
+            return;
+        }
+    }
     const bool busy = upd_dev_pressed() && !s_back.have;
     if (tap_event(&s_back, upd_dev_back_rect(), evt, busy) == 2) {
         upd_dev_close();
@@ -522,6 +579,7 @@ void upd_dev_drop(void)
     drop_rows();
     s_entry.have = false;
     s_back.have = false;
+    s_cancel.have = false;
 }
 
 void upd_dev_render(gfx_canvas_t *c)
@@ -569,6 +627,10 @@ void upd_dev_render_page(gfx_canvas_t *c)
                        NOTE_PITCH, TR(UPD_DEVS_NOTE), NOTE_FONT,
                        UI_TEXT_DIM);
     ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "UPDATES", NULL, false);
+    if (running_row() < UPD_DEV_COUNT) {
+        ui_button_font(c, upd_dev_cancel_rect(), TR(UPD_DEVS_CANCEL),
+                       UI_PANEL_HI, s_cancel.have, cancel_live(), DEV_FONT);
+    }
     ui_button_font(c, upd_dev_back_rect(), TR(UPD_DEVS_BACK), UI_PANEL_HI,
                    s_back.have, true, DEV_FONT);
 }

@@ -34,10 +34,14 @@ history is in git.
   page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
   FIRMWARE rows: each with the device's and the carried version, a 2s
   hold, the device's confirmation countdown (PRESS THE DIAL TO ACCEPT,
-  PRESS BOOT ON THE NODE) and the progress
+  HOLD BOOT 1s ON THE NODE) and the progress
   ([Screens: The wireless devices](docs/Screens.md#the-wireless-devices)).
-  One update runs at a time. A row's hold is live only after its image's
-  check. The device's own client gives the link up for the update and
+  One update runs at a time; CANCEL UPDATE, a plain tap, ends it before
+  END, and from END on the result is waited for. A transfer whose device
+  answers without moving on ends after 30s with no progress. An unknown
+  install is settled by its own device's version and reported before
+  another device's update starts. A row's hold is live only after its
+  image's check. The device's own client gives the link up for the update and
   takes it back after it (`pnode_ctl_hold()`, `bal_ctl_hold()`, the Dial's
   hold); a node's update reads as no loss on the band, and the row reads
   the node's version from its first STATUS packet after the reconnect.

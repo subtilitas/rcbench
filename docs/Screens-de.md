@@ -7464,6 +7464,7 @@ Halten der anderen Zeilen grau.
 | `2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
 | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Sendet das Image des Auswuchtknotens, das dieses Panel mitbringt, an den gebundenen Auswuchtknoten. |
 | `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
+| `UPDATE ABBRECHEN` | Im mittleren Platz der Fußleiste, solange ein Update läuft; ein einfaches Tippen. Vor END beendet es das Update: Das Gerät verwirft, was es angenommen hat, und behält seine Firmware, und das Band zeigt `<Gerät>-Update abgebrochen: auf UPDATES abgebrochen. Vorherige Firmware läuft.` Ab END installiert das Gerät, was kommt: Die Taste ist grau, ein Tippen zeigt `Das Gerät installiert das Update und hält jetzt nicht an. Das Ergebnis folgt.` im Band, und das Ergebnis folgt wie ohne das Tippen. |
 | `ZURÜCK` | Schließt die Seite. |
 
 ### Das Dial
@@ -7509,7 +7510,10 @@ Das Alarmband sagt, wie ein Update endete:
 | `Dial hat sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` | Der Link brach nach END ab, oder DONE kam nicht in 15s, und kein Dial hat innerhalb von 60s seine Version gemeldet. |
 
 Bricht der Link nach END ab, kann das Dial gerade installieren: Das Panel
-wartet bis zu 60s auf die Version des Dial. Die Version des Images wird als
+wartet bis zu 60s auf die Version des Dial, nur vom Dial gelesen. Startet
+in diesen 60s das Update eines anderen Geräts, meldet es zuerst das
+Warten: die Version des Dial, wenn es sie gemeldet hat, sonst `Dial hat
+sich nach dem Update nicht gemeldet.` Die Version des Images wird als
 erledigt gemeldet, eine andere Version als abgebrochen, `Verbindung
 verloren`.
 
@@ -7519,6 +7523,8 @@ verloren`.
 | `Verbindung verloren` | der Link endete während der Übertragung |
 | `keine Antwort` | das Dial hat einen Schritt nicht innerhalb seiner Grenze oder 3 Abfragen in Folge nicht beantwortet, oder das Dial sah 10s kein Schreiben |
 | `Schreiben abgelehnt` | der Host-Stack hat ein Schreiben abgelehnt |
+| `30s ohne Fortschritt` | das Dial hat geantwortet, aber sein nächster Offset hat sich 30s nicht bewegt |
+| `auf UPDATES abgebrochen` | `UPDATE ABBRECHEN` vor END |
 | `der Prüfstand ist nicht SAFE` | ARMED, oder ein ARM wartete, als das Update starten sollte |
 | `Image für ein anderes Gerät` | das Dial hat die Art abgelehnt |
 | `Image zu groß` | das Dial hat die Größe abgelehnt |
@@ -7556,7 +7562,7 @@ Während das Update eines Knotens läuft, zeigt sein Halten nacheinander:
 | Taste | Schritt |
 | --- | --- |
 | `LEISTUNGSKNOTEN-UPDATE: VERBINDET` | Der eigene Link des Knotens endet, und das Update verbindet sich mit dem gebundenen Knoten |
-| `BOOT AM KNOTEN DRÜCKEN: 27s` | Der Knoten hat BEGIN angenommen und wartet auf seine BOOT-Taste (GPIO9), 1s gehalten; die Sekunden sind die des Knotens |
+| `BOOT AM KNOTEN 1s HALTEN: 27s` | Der Knoten hat BEGIN angenommen und wartet auf seine BOOT-Taste (GPIO9), 1s gehalten; die Sekunden sind die des Knotens |
 | `LEISTUNGSKNOTEN-UPDATE 37%` | der Anteil des Images, den der Knoten angenommen hat |
 
 Die Zeile des Auswuchtknotens zeigt `AUSWUCHTKNOTEN-UPDATE: VERBINDET` und

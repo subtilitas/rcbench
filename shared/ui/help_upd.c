@@ -8,7 +8,8 @@
  * hold and the WIRELESS DEVICES entry with the dock on the right; the
  * card, the C6 radio's hold, the download's hold while a check found a
  * newer release, and OPTIONS with the dock on the left.  The devices'
- * page: its three rows and BACK, the dock on the left.  UPDATES drives no
+ * page: its three rows, CANCEL UPDATE while an update runs, and BACK, the
+ * dock on the left.  UPDATES drives no
  * output, so every page shows while ARMED as well.
  *
  * SPDX-License-Identifier: MIT
@@ -87,6 +88,10 @@ static void devs_page(ui_help_page_t *p)
                              gfx_rect_make(UPD_DEVP_TEXT_X, h.y,
                                            h.x + h.w - UPD_DEVP_TEXT_X, h.h),
                              UI_HELP_AT_RIGHT);
+    }
+    if (upd_dev_running()) {
+        (void)ui_help_add(p, TR(UPD_DEVS_CANCEL), TX_HG_UPD_DEVS_CANCEL,
+                          upd_dev_cancel_rect());
     }
     (void)ui_help_add(p, TR(UPD_DEVS_BACK), TX_HG_UPD_DEVS_BACK,
                       upd_dev_back_rect());

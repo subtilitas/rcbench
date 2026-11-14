@@ -8,8 +8,10 @@
  * state; a state change under the finger ending the hold unfired; one
  * press at a time across the rows, and on UPDATES with SETTINGS and the
  * C6 row; the label of every phase of a running update, the node rows
- * asking for BOOT; the entry's summary and label; the line and the labels
- * inside their fields in both languages.
+ * asking for the BOOT hold; the entry's summary and label; CANCEL UPDATE
+ * as a plain tap in every phase before END, grey with its reason from END
+ * on, absent with no update; the line and the labels inside their fields
+ * in both languages.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -349,9 +351,9 @@ TEST_CASE(the_label_follows_the_update_phase)
     upd_dev_label(UPD_DEV_DIAL, &v, out, sizeof(out));
     CHECK_STR_EQ(out, "PRESS THE DIAL TO ACCEPT: 27s");
     upd_dev_label(UPD_DEV_PNODE, &v, out, sizeof(out));
-    CHECK_STR_EQ(out, "PRESS BOOT ON THE NODE: 27s");
+    CHECK_STR_EQ(out, "HOLD BOOT 1s ON THE NODE: 27s");
     upd_dev_label(UPD_DEV_BAL, &v, out, sizeof(out));
-    CHECK_STR_EQ(out, "PRESS BOOT ON THE NODE: 27s");
+    CHECK_STR_EQ(out, "HOLD BOOT 1s ON THE NODE: 27s");
     v.phase = DEVUPD_SEND;
     v.percent = 142u;
     upd_dev_label(UPD_DEV_DIAL, &v, out, sizeof(out));
@@ -399,7 +401,7 @@ TEST_CASE(the_entry_counts_the_devices_and_shows_a_running_update)
     v.secs = 12u;
     upd_dev_set(UPD_DEV_PNODE, &v);
     upd_dev_entry_label(out, sizeof(out));
-    CHECK_STR_EQ(out, "PRESS BOOT ON THE NODE: 12s");
+    CHECK_STR_EQ(out, "HOLD BOOT 1s ON THE NODE: 12s");
 }
 
 static void fits(upd_dev_id_t id, const upd_dev_view_t *v)
@@ -444,6 +446,58 @@ TEST_CASE(the_lines_and_the_labels_fit_in_both_languages)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* CANCEL UPDATE stands while an update runs: a plain tap asks for the
+ * cancel in every phase before END; from END on it is grey and the band
+ * says the install runs; with no update it is not there. */
+TEST_CASE(cancel_is_a_tap_before_end_and_grey_through_the_install)
+{
+    const gfx_rect_t c = upd_dev_cancel_rect();
+    const int cx = c.x + c.w / 2, cy = c.y + c.h / 2;
+    /* No update: nothing there. */
+    on_page();
+    tap(cx, cy);
+    CHECK(!upd_dev_take_cancel());
+    CHECK(upd_dev_shown());
+    static const uint8_t k_live[] = {
+        DEVUPD_IDLE, DEVUPD_LINK, DEVUPD_BEGIN, DEVUPD_CONFIRM, DEVUPD_SEND,
+    };
+    for (size_t i = 0; i < sizeof(k_live); ++i) {
+        on_page();
+        upd_dev_view_t v = view_of(DEVUPD_ROW_UPDATING);
+        v.phase = k_live[i];
+        upd_dev_set(UPD_DEV_PNODE, &v);
+        ev(TOUCH_EVENT_DOWN, 1, cx, cy);
+        CHECK(!upd_dev_take_cancel());        /* the release acts */
+        ev(TOUCH_EVENT_UP, 1, cx, cy);
+        CHECK(upd_dev_take_cancel());
+        CHECK(!upd_dev_take_cancel());        /* once */
+        CHECK(upd_dev_shown());
+    }
+    static const uint8_t k_late[] = { DEVUPD_END, DEVUPD_RESTART };
+    for (size_t i = 0; i < sizeof(k_late); ++i) {
+        on_page();
+        upd_dev_view_t v = view_of(DEVUPD_ROW_UPDATING);
+        v.phase = k_late[i];
+        upd_dev_set(UPD_DEV_DIAL, &v);
+        tap(cx, cy);
+        CHECK(!upd_dev_take_cancel());
+        CHECK(band_says(TR(DEV_WHY_INSTALLING)));
+    }
+    /* A row's press keeps the cancel off; sliding off asks nothing. */
+    on_page();
+    upd_dev_view_t v = view_of(DEVUPD_ROW_UPDATING);
+    v.phase = DEVUPD_SEND;
+    upd_dev_set(UPD_DEV_BAL, &v);
+    ev(TOUCH_EVENT_DOWN, 1, row_x(UPD_DEV_DIAL), row_y(UPD_DEV_DIAL));
+    tap(cx, cy);
+    CHECK(!upd_dev_take_cancel());
+    ev(TOUCH_EVENT_UP, 1, row_x(UPD_DEV_DIAL), row_y(UPD_DEV_DIAL));
+    ev(TOUCH_EVENT_DOWN, 1, cx, cy);
+    ev(TOUCH_EVENT_MOVE, 1, cx, c.y - 30);
+    ev(TOUCH_EVENT_UP, 1, cx, c.y - 30);
+    CHECK(!upd_dev_take_cancel());
+}
+
 int main(void)
 {
     RUN(the_entry_opens_the_page_and_back_and_the_home_tag_close_it);
@@ -455,5 +509,6 @@ int main(void)
     RUN(the_label_follows_the_update_phase);
     RUN(the_entry_counts_the_devices_and_shows_a_running_update);
     RUN(the_lines_and_the_labels_fit_in_both_languages);
+    RUN(cancel_is_a_tap_before_end_and_grey_through_the_install);
     return test_summary("upd_dev");
 }

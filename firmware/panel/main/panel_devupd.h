@@ -28,8 +28,11 @@
  * refused from the hold to the end (panel_devupd_busy(), a
  * devupd_gate_t), and the `blec` task refuses the start when the bench is
  * ARMED or an arm waits, at the take and again before the update client
- * connects.  A link that ends after END leaves the install's result to
- * the version the device reports once it is back (devupd_settle()).
+ * connects.  CANCEL UPDATE ends the update before END from every stage,
+ * releasing the hold and the gate; from END on the result is waited for.
+ * A link that ends after END leaves the install's result to the version
+ * its own device reports once it is back (devupd_settler_t); a new start
+ * reports that result first.
  *
  * SPDX-License-Identifier: MIT
  */

@@ -179,6 +179,7 @@ The WIRELESS DEVICES entry counts the devices that reported a version and those 
 | HOLD 2s TO REINSTALL THE POWER NODE | the same, while the node reports the carried version |
 | HOLD 2s TO UPDATE THE BALANCE NODE | sends the balance node's image to the bound balance node |
 | HOLD 2s TO REINSTALL THE BALANCE NODE | the same, while the node reports the carried version |
+| CANCEL UPDATE | in the footer's middle while an update runs, a plain tap: ends the update before its last byte, and the device keeps its firmware; from then on the device installs and the key is grey |
 | BACK | closes the page |
 
 One update runs at a time; while one runs, the other holds are grey.
@@ -203,7 +204,7 @@ The image carries no signature: the Dial accepts any Dial image a nearby device 
 The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, from its STATUS packet on the current link, and the version of that role's image this panel carries: `Node: 0.23.11. Included: 0.23.12.` The hold needs the bench SAFE, the node bound and linked with its version read, and no other update running.
 
 1. The hold ends the node's own link; WIRELESS shows the node OFF until the update ends. The button reads `POWER NODE UPDATE: CONNECTING`.
-2. The node waits 30s for its BOOT key held 1s; the button reads `PRESS BOOT ON THE NODE: 27s` and the band `Hold the node's BOOT key 1s within 30s to accept the update.` No hold refuses. Nothing is erased before the hold.
+2. The node waits 30s for its BOOT key held 1s; the button reads `HOLD BOOT 1s ON THE NODE: 27s` and the band `Hold the node's BOOT key 1s within 30s to accept the update.` No hold refuses. Nothing is erased before the hold.
 3. The node writes the image; the button reads `POWER NODE UPDATE 37%`.
 4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.12. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
 

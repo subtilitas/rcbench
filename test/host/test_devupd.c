@@ -10,7 +10,12 @@
  *        a wrong SHA-256, no confirmation, a disconnect mid-transfer and a
  *        retry from the first byte, the link and answer timeouts, a failed
  *        control write, the chunk size at each MTU, devupd_busy() over every
- *        phase (the bench refuses ARM while it holds) and UPDATES' row.
+ *        phase (the bench refuses ARM while it holds) and UPDATES' row;
+ *        a device that answers without moving on, ended at 30s of no
+ *        progress and not at 29.9s; an abort in every phase, which waits
+ *        through the install from END on; and the settle of an unknown
+ *        install tied to its own device, reported before a second
+ *        device's start.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -806,6 +811,211 @@ TEST_CASE(the_gate_reads_busy_from_the_ask_to_the_end_and_refuses_armed)
     devupd_gate_end(NULL);
 }
 
+/** @brief Hand the engine one CTRL notification. */
+static void notify_st(devupd_t *e, uint8_t ev, uint8_t code, uint32_t next,
+                      uint32_t limit, uint32_t now)
+{
+    bleota_status_t st;
+    uint8_t b[BLEOTA_LEN_STATUS];
+    memset(&st, 0, sizeof st);
+    st.ev = ev;
+    st.code = code;
+    st.next = next;
+    st.limit = limit;
+    st.secs = 30u;
+    CHECK_EQ(bleota_status_encode(&st, b), (size_t)BLEOTA_LEN_STATUS);
+    devupd_notify(e, b, sizeof b, now);
+}
+
+/** @brief Step the engine, every write taken, to @p until in 5ms steps,
+ *         the device answering CREDIT with the gap mark at @p at every
+ *         100ms. */
+static void stuck_until(devupd_t *e, uint32_t *now, uint32_t until,
+                        uint32_t at)
+{
+    devupd_out_t o;
+    while (*now < until && devupd_busy(e)) {
+        *now += STEP;
+        for (int i = 0; i < 4 && devupd_step(e, *now, true, &o); ++i) {
+            if (o.kind == DEVUPD_OUT_CTRL) {
+                devupd_written(e, 0u, *now);
+            }
+        }
+        if (*now % 100u == 0u) {
+            notify_st(e, BLEOTA_EV_CREDIT, BLEOTA_CREDIT_GAP, at,
+                      at + BLEOTA_WINDOW, *now);
+        }
+    }
+}
+
+/* A device that answers every chunk with the gap mark at the same offset
+ * clears the polls each time: only the progress limit ends it, 30s after
+ * the offset last moved, and a move starts the 30s again. */
+TEST_CASE(a_transfer_that_makes_no_progress_ends_at_30s)
+{
+    make_image();
+    devupd_image_t im;
+    memset(&im, 0, sizeof im);
+    im.img = s_img;
+    im.size = IMG;
+    im.kind = BLEOTA_KIND_DIAL;
+    im.version = (fw_version_t){ 0u, 25u, 0u };
+    static devupd_t e;
+    devupd_init(&e);
+    uint32_t now = 1000u;
+    CHECK(devupd_start(&e, &im, now));
+    devupd_link(&e, true, BLEOTA_MTU, now);
+    devupd_out_t o;
+    for (int i = 0; i < 8 && devupd_step(&e, now, true, &o); ++i) {
+        if (o.kind == DEVUPD_OUT_CTRL) {
+            devupd_written(&e, 0u, now);
+        }
+    }
+    notify_st(&e, BLEOTA_EV_WAIT, 0u, 0u, 0u, now);
+    notify_st(&e, BLEOTA_EV_CREDIT, 0u, 0u, BLEOTA_WINDOW, now);
+    CHECK_EQ(e.phase, DEVUPD_SEND);
+    /* 20s at offset 0, then one move to 4,096: the limit starts again. */
+    stuck_until(&e, &now, 21000u, 0u);
+    CHECK_EQ(e.phase, DEVUPD_SEND);
+    const uint32_t moved = now;
+    notify_st(&e, BLEOTA_EV_CREDIT, 0u, 4096u, 4096u + BLEOTA_WINDOW, now);
+    stuck_until(&e, &now, moved + DEVUPD_STALL_MS - 100u, 4096u);
+    CHECK_EQ(e.phase, DEVUPD_SEND);           /* 29.9s: still sending */
+    CHECK_EQ(e.polls_sent, 0u);               /* every answer came */
+    stuck_until(&e, &now, moved + DEVUPD_STALL_MS + 100u, 4096u);
+    CHECK_EQ(e.phase, DEVUPD_FAILED);         /* 30.1s: ended */
+    CHECK_EQ(e.err, DEVUPD_E_STALLED);
+    CHECK(!devupd_busy(&e));
+    CHECK_EQ(e.next, 4096u);
+}
+
+/** @brief A simulation run until the engine reaches @p phase; false when
+ *         it did not within 60s. */
+static bool run_to(sim_t *s, devupd_phase_t phase)
+{
+    const uint32_t end = s->now + 60000u;
+    while (s->e.phase != phase && devupd_busy(&s->e) && s->now < end) {
+        sim_step(s);
+    }
+    return s->e.phase == phase;
+}
+
+/* An abort before END ends the transfer at once in every phase, and the
+ * device drops what it took on the disconnect.  From END on the device
+ * installs whatever comes: the abort does nothing, and the transfer runs
+ * on to DONE, or to the unknown result when the link drops. */
+TEST_CASE(an_abort_ends_each_phase_before_end_and_waits_through_the_install)
+{
+    static const devupd_phase_t k_before[] = {
+        DEVUPD_LINK, DEVUPD_BEGIN, DEVUPD_CONFIRM, DEVUPD_SEND,
+    };
+    for (size_t i = 0; i < sizeof(k_before) / sizeof(k_before[0]); ++i) {
+        static sim_t s;
+        sim_init(&s);
+        s.press = false;
+        s.press_at = 0u;
+        CHECK(devupd_start(&s.e, &s.im, s.now));
+        if (k_before[i] != DEVUPD_LINK) {
+            link_up(&s);
+            if (k_before[i] == DEVUPD_SEND) {
+                s.press = true;
+            }
+            if (!run_to(&s, k_before[i])) {
+                T_FAIL("the phase was not reached");
+                continue;
+            }
+        }
+        CHECK(devupd_abortable(&s.e));
+        devupd_abort(&s.e, s.now);
+        CHECK_EQ(s.e.phase, DEVUPD_FAILED);
+        CHECK_EQ(s.e.err, DEVUPD_E_ABORTED);
+        CHECK(!devupd_busy(&s.e));
+        CHECK(!devupd_abortable(&s.e));
+        link_down(&s);
+        CHECK(!s.restarted);
+        CHECK_EQ(s.e.err, DEVUPD_E_ABORTED);   /* the drop changes nothing */
+    }
+    /* END: the abort waits, DONE comes, the device restarts. */
+    devupd_t e;
+    devupd_init(&e);
+    e.phase = DEVUPD_END;
+    e.t = 0u;
+    e.up = true;
+    CHECK(!devupd_abortable(&e));
+    devupd_abort(&e, 10u);
+    CHECK_EQ(e.phase, DEVUPD_END);
+    CHECK(devupd_busy(&e));
+    notify_st(&e, BLEOTA_EV_DONE, 0u, 0u, 0u, 20u);
+    CHECK_EQ(e.phase, DEVUPD_RESTART);
+    devupd_abort(&e, 30u);
+    CHECK_EQ(e.phase, DEVUPD_RESTART);
+    devupd_link(&e, false, 0u, 40u);
+    CHECK_EQ(e.phase, DEVUPD_DONE);
+    /* END, aborted, then the link drops: the result is not known. */
+    devupd_init(&e);
+    e.phase = DEVUPD_END;
+    e.up = true;
+    devupd_abort(&e, 10u);
+    devupd_link(&e, false, 0u, 20u);
+    CHECK_EQ(e.err, DEVUPD_E_UNSURE);
+    devupd_abort(NULL, 0u);
+    CHECK(!devupd_abortable(NULL));
+}
+
+/* The settle of an unknown install reads its own device alone: a second
+ * device reporting the wanted version settles nothing.  A second device's
+ * start reports the pending settle first: from its own device when that
+ * one reported, else as unknown. */
+TEST_CASE(the_settle_reads_its_own_device_and_reports_before_a_new_start)
+{
+    const fw_version_t want = { 0u, 23u, 12u };
+    const fw_version_t old = { 0u, 23u, 11u };
+    devupd_seen_t seen[3];
+    memset(seen, 0, sizeof seen);
+    devupd_settler_t st;
+    memset(&st, 0, sizeof st);
+    devupd_settled_t out;
+    CHECK(!devupd_settler_step(&st, seen, 3u, 0u, false, &out));
+    devupd_settler_arm(&st, 1u, want, 1000u);
+    /* Devices 0 and 2 report the wanted version: device 1 still waits. */
+    seen[0] = (devupd_seen_t){ true, want };
+    seen[2] = (devupd_seen_t){ true, want };
+    CHECK(!devupd_settler_step(&st, seen, 3u, 2000u, false, &out));
+    CHECK(st.pending);
+    /* Device 2's start: device 1 has not reported, so unknown, and the
+     * settle is over before the start. */
+    CHECK(devupd_settler_step(&st, seen, 3u, 3000u, true, &out));
+    CHECK_EQ(out.dev, 1u);
+    CHECK_EQ(out.r, DEVUPD_SETTLE_UNKNOWN);
+    CHECK(!st.pending);
+    CHECK(!devupd_settler_step(&st, seen, 3u, 4000u, false, &out));
+    /* Device 1 back on the old version, a start: failed, its version. */
+    devupd_settler_arm(&st, 1u, want, 1000u);
+    seen[1] = (devupd_seen_t){ true, old };
+    CHECK(devupd_settler_step(&st, seen, 3u, 3000u, true, &out));
+    CHECK_EQ(out.r, DEVUPD_SETTLE_FAILED);
+    CHECK_EQ(out.running.patch, 11u);
+    /* Without a start: done once its device reports the version, and
+     * unknown at 60s, never earlier. */
+    devupd_settler_arm(&st, 1u, want, 1000u);
+    seen[1].known = false;
+    CHECK(!devupd_settler_step(&st, seen, 3u,
+                               1000u + DEVUPD_SETTLE_MS - 1u, false, &out));
+    CHECK(devupd_settler_step(&st, seen, 3u, 1000u + DEVUPD_SETTLE_MS,
+                              false, &out));
+    CHECK_EQ(out.r, DEVUPD_SETTLE_UNKNOWN);
+    devupd_settler_arm(&st, 1u, want, 1000u);
+    seen[1] = (devupd_seen_t){ true, want };
+    CHECK(devupd_settler_step(&st, seen, 3u, 1500u, false, &out));
+    CHECK_EQ(out.r, DEVUPD_SETTLE_DONE);
+    /* A device past the table reads as not reported. */
+    devupd_settler_arm(&st, 7u, want, 0u);
+    CHECK(!devupd_settler_step(&st, seen, 3u, 10u, false, &out));
+    CHECK(devupd_settler_step(&st, seen, 3u, 10u, true, &out));
+    CHECK_EQ(out.r, DEVUPD_SETTLE_UNKNOWN);
+    CHECK(!devupd_settler_step(NULL, seen, 3u, 0u, true, &out));
+}
+
 int main(void)
 {
     RUN(a_whole_image_goes_in_order_and_installs);
@@ -824,5 +1034,8 @@ int main(void)
     RUN(the_chunk_follows_the_mtu_and_a_refused_chunk_goes_again);
     RUN(busy_holds_from_the_start_to_the_restart_and_arm_is_refused);
     RUN(the_row_offers_the_hold_only_when_nothing_stands_in_the_way);
+    RUN(a_transfer_that_makes_no_progress_ends_at_30s);
+    RUN(an_abort_ends_each_phase_before_end_and_waits_through_the_install);
+    RUN(the_settle_reads_its_own_device_and_reports_before_a_new_start);
     return test_summary("devupd");
 }

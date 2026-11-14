@@ -1189,6 +1189,7 @@ FIT_ONLY = {
     "help-updates-settings":   (None, "updates", "dark"),
     "help-updates-settings-2": (None, "updates", "dark"),
     "help-updates-devices": (None, "updates", "dark"),
+    "help-updates-node": (None, "updates", "dark"),
     # TEST's guide at its READY page, and TEST's list at LENGTH AND TIMING
     # and at its end.
     "help-servo-test-2": (None, "servo", "dark"),
