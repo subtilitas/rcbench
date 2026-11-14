@@ -352,6 +352,12 @@ jobs:
       - name: The screen guide's marks stay cheap
         run: python3 tools/frame_cost.py overview-guide --max-lines 1000
 
+      # The M5Stack Dial's focus ring keeps the pixels under it: a move
+      # puts back one 2px ring and draws another, about 1,060 fills on the
+      # menu; a move that repaints a tile costs several thousand.
+      - name: A focus move costs its ring, not a repaint
+        run: python3 tools/frame_cost.py overview-focus --max-lines 1300
+
       - name: The SIMULATION watermark has not grown
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
              --max-lines 3600
@@ -659,6 +665,14 @@ jobs:
         run: |
           python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
           python3 hardware/kicad/tools/step_check.py
+
+      # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
+      # OpenCASCADE meshes each solid again; the two meshes are within
+      # 0.15mm of each other both ways and 1% in volume.
+      - name: The M5Stack Dial's solids follow M5Stack's mesh
+        run: |
+          python3 -m pip install --quiet numpy==2.5.3
+          python3 hardware/mechanical/check_refit.py
 
   # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
   # Fails on a warning tools/doc_check_baseline.txt does not hold, on a

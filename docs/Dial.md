@@ -13,11 +13,12 @@ firmware: the power latch, the encoder, the buttons, the touch glass, the
 click per detent, the faces on the display, the BLE peripheral with its
 bound panel, and the USB console; and the panel's side: SETUP > WIRELESS >
 DIAL, the scan and the bind, the link with its loss rule, the turn on
-MOTOR & ESC and SERVO LIVE, the screen button, and the stream of the
-panel's screen to the Dial ([The panel](#the-panel)); and the firmware
-update over BLE from SETUP > UPDATES ([Update over Bluetooth
-LE](#update-over-bluetooth-le)). Navigation of the panel's lists from the
-Dial and pairing are later slices.
+MOTOR & ESC and SERVO LIVE, the screen button, the navigation of the
+panel's menus and lists with SET of a value, and the stream of the panel's
+screen to the Dial ([The panel](#the-panel)); and the firmware update over
+BLE from SETUP > UPDATES ([Update over Bluetooth
+LE](#update-over-bluetooth-le)). The programmers' screens (KST, Hitec,
+ESC) and pairing are later slices.
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products, and
 Bluetooth is a trademark of its owner. rcbench is independent: it is not
@@ -68,6 +69,9 @@ panel applies them ([The panel](#the-panel)):
   CENTER on SERVO; a 1s hold DISARMs.
 - No BLE scan while ARMED: a scan's radio time would starve the link that
   carries the knob.
+- Navigation only while SAFE: a SELECT is a tap of one frame, so it
+  completes no 2s hold, and while ARMED the Dial moves no focus away from
+  the output it drives ([Navigation and SET](#navigation-and-set)).
 
 The link rules and their timing are in the protocol module, with a host test
 each ([protocols/dialknob](https://github.com/subtilitas/rcbench/blob/main/protocols/dialknob/README.md)).
@@ -259,12 +263,14 @@ A detent turned on the Dial goes the path of the panel's own knob, with the
 same rules: relative, through the same turn tracker, nothing moves while
 the bench is SAFE, and turns made while SAFE are not kept for the ARM. On
 MOTOR & ESC a detent moves the throttle by the throttle step. On SERVO LIVE
-it moves the horn by the servo step. Other screens take no turn.
+it moves the horn by the servo step. The screens of
+[Navigation and SET](#navigation-and-set) take the turn as a move of the
+focus; every other screen takes none.
 
 | Gesture | MOTOR & ESC, ARMED | SERVO LIVE, ARMED | SAFE, or another screen |
 | --- | --- | --- | --- |
 | PRESS: the screen button released before 1,000ms | throttle 0% | CENTER | nothing |
-| HOLD: the screen button down for 1,000ms | DISARM | DISARM; an ARM + START sequence under way ends with every output off, also before ARMED | nothing |
+| HOLD: the screen button down for 1,000ms | DISARM | DISARM; an ARM + START sequence under way ends with every output off, also before ARMED | nothing; BACK on a screen the Dial navigates |
 
 On MOTOR & ESC a HOLD also DISARMs while an ARM is on its way, asked and
 not yet confirmed, and ends an ESC STICK run as ABORT does, in ARMING too:
@@ -275,6 +281,69 @@ The EVENT's held button and touch states are never read as a press or a
 touch, so a button held down on the Dial is no hold on the panel: ARM and
 every other 2s hold stay the panel's own.
 
+### Navigation and SET
+
+While the Dial is linked and the bench is SAFE, it navigates these screens:
+
+| Screen | Items, in turn order |
+| --- | --- |
+| the menu | its 8 tiles, row by row |
+| SETUP's tiles | the tiles, then SAVE while a save is offered |
+| a SETUP list | its rows, then RESET and SAVE; on SENSORS and WIRELESS the entries on the left first |
+| SERVO | the 8 tiles, then SETTINGS; the open SETTINGS list as a SETUP list |
+| OUTPUTS, board view | the protocol list's face, CLEAR ALL while offered, then a pin button each |
+| an open choice list | its rows, the focus on the one in force |
+| the leave warning | STAY, DISCARD, SAVE |
+
+| Gesture | Navigation | SET |
+| --- | --- | --- |
+| turn | the focus moves one item a detent and wraps at either end; a row out of sight scrolls into it | the value moves one step a detent, inside its range |
+| PRESS | SELECT: a tap on the focused item | KEEP |
+| HOLD | BACK: what the home tag does, a choice list or the keypad closes | CANCEL: the value as it was |
+
+The panel draws a 2px ring in the accent colour round the focused item. The
+ring keeps the pixels under it per frame buffer and puts them back when it
+moves: a detent repaints the two rings, never the screen. No ring shows and
+the Dial takes no part in the screen while the Dial is OFF or not linked,
+while the bench is ARMED, while the screen guide or the screenshot popup is
+open, or with the text keyboard open.
+
+A SELECT is one tap: a DOWN and an UP at the middle of the item in the same
+frame. The focused row is scrolled into view first, also when a finger
+scrolled the list since; a tap point off the item or out of sight is never
+tapped, and the press then does nothing. A 2s hold on the panel needs the contact down for 2s of frames, so no
+hold completes from the Dial: ARM, voltage ON, WRITE n VALUES and the deletes
+stay the panel's. A SELECT on a hold button, such as CLEAR ALL on OUTPUTS,
+shows the hint the panel shows for any tap. On SERVO's tiles a HOLD first
+ends an ARM + START sequence under way, as on every SERVO screen; BACK
+follows only where it stopped nothing.
+
+SET:
+
+- a number the keypad takes: SELECT taps its value, and the keypad opens.
+  The turn writes the value into the entry, by the setting's step and inside
+  its range; a turn at an end stops there. A setting with an OFF gap (such
+  as an INA3221 shunt, OFF or 5.0 to 1000.0mΩ) takes one detent from OFF to
+  its lowest value and one back, however many detents a frame brings. PRESS is the keypad's OK, with
+  its checks; HOLD is CANCEL.
+- an on/off or a list of options: SELECT starts SET on the row. Each detent
+  taps its `-` or `+` key, at most 16 a frame; an on/off and an option list
+  wrap as their keys do; the VALUE face shows an option list's place from 0
+  to its last option. PRESS keeps the value; HOLD taps the other key as
+  often as a tap changed the value.
+
+Dim after: a turn, PRESS or HOLD of the Dial wakes a dimmed panel and
+starts its minutes again, as a touch does. On a dimmed panel with the bench
+idle the input that woke it does nothing else: it opens, moves and sets
+nothing. On a bench that is not idle it acts at once, so a PRESS for 0% or
+CENTER on an ARMED bench is never swallowed, and a HOLD on MOTOR & ESC or a
+SERVO screen always acts.
+
+The Dial shows the NAV face while it moves the focus, with the screen's name,
+the focused item between the items before and after it, and its place in
+the list. In SET it shows the VALUE face with the setting's name as the
+title. On the menu the face stays HOME and draws the tiles as a list.
+
 ### The stream
 
 The panel writes its screen to the Dial in panel packets, one at a time:
@@ -282,14 +351,16 @@ The panel writes its screen to the Dial in panel packets, one at a time:
 | Packet | When |
 | --- | --- |
 | SCREEN | the face, the title, the language or the flags changed, or 5,000ms after the last |
-| VALUE_META, VALUE | on MOTOR & ESC and SERVO LIVE, when the range, the step or the value changed |
+| VALUE_META, VALUE | on MOTOR & ESC and SERVO LIVE, and in SET, when the range, the step or the value changed |
+| NAV | while the Dial navigates: when the focused item, the item before or after it, or the list changed; one row a packet |
 | SCALE | on MOTOR & ESC and SERVO LIVE: on entry and at each connect, then when a full scale changed, at most every 200ms |
 | LIVE_MOTOR, LIVE_SERVO | on MOTOR & ESC and SERVO LIVE, every 50ms (20Hz) |
 | STATE | ARMED, DEGRADED or a step changed, 200ms without any packet, or 1,000ms after the last STATE |
 
 Each connect sends the whole model again, SCREEN first. The faces are MOTOR,
-SERVO and HOME (the menu); every other screen sends its title and the
-bench's state. LIVE_MOTOR carries the throttle and the readings the bench
+SERVO, HOME (the menu), NAV and VALUE ([Navigation and SET](#navigation-and-set));
+every other screen sends its title and the bench's state. SCREEN carries
+the NAVIGATES flag while the Dial navigates. LIVE_MOTOR carries the throttle and the readings the bench
 reports: voltage, current, power, RPM, the ESC's and the motor's
 temperature. LIVE_SERVO carries the pulse, the commanded angle, the
 measured angle when the angle source reports one, and the servo rail's
@@ -522,8 +593,18 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 
 ## Limits
 
-- The Dial navigates no list on the panel yet: no screen fills NAV. That is
-  the next slice.
+- The Dial navigates the screens of [Navigation and SET](#navigation-and-set)
+  only. On LOGS, FILES, WI-FI, UPDATES, IMU, OUTPUTS' grid view, the
+  programmers (KST, Hitec, ESC) and the bench screens' own lists and tabs it
+  moves no focus; a HOLD there does nothing on a SAFE bench.
+- A list takes focus for 64 items, RESET and SAVE among them; the last rows
+  of a longer list are not reached from the Dial.
+- A pixel the screen paints in exactly the ring's colour (the accent with
+  its lowest bit flipped) under the ring is taken for the ring and put back
+  when the ring moves.
+- The watermark over a simulated bench blends over the ring; where it does,
+  the ring's pixels are left when the ring moves, until the screen repaints
+  there.
 - The panel's ARMED flag for the loss rule and the scan's refusal is the
   control task's, read by the Bluetooth task; it can be one control pass,
   about 5ms, old.

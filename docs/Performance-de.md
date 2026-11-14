@@ -66,6 +66,7 @@ throttle                    10,078    1260 KiB
 chrome                      48,248    6031 KiB
 overview                         0       0 KiB
 overview-guide                 361      45 KiB
+overview-focus               1,062     133 KiB
 servo                        2,410     301 KiB
 servo-grip                     589      74 KiB
 servo-current                1,980     248 KiB
@@ -122,6 +123,7 @@ est. ms and est. fps: not measured
 | `chrome` | der Motorprüfstand ohne Cache, vollständig neu gezeichnet |
 | `overview` | das Menü, Chrome gecacht |
 | `overview-guide` | das Menü mit offener Bildschirmhilfe auf Seite 1: das Dock gecacht, Abzeichen und Eckwinkel von 4 Kacheln in jedem Frame gezeichnet |
+| `overview-focus` | das Menü mit verbundenem M5Stack Dial, der Fokus in jedem Frame eine Kachel weiter: der 2px-Rahmen zurückgesetzt und neu gezeichnet, keine Kachel neu gezeichnet |
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
@@ -266,6 +268,7 @@ im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpas
 | --- | ---: | --- |
 | `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `motor-wire-hold`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
 | `overview-guide` | 1 000 | Marken der Hilfe, die mehr als ihre Abzeichen und Winkel zeichnen |
+| `overview-focus` | 1 300 | einen Fokusschritt, der eine Kachel oder den Bildschirm neu zeichnet |
 | `servo` | 2 800 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
@@ -530,7 +533,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  377
+  382
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -819,7 +822,7 @@ Bytes Code; `upd_dev.c` 566 Bytes .bss und 3 926 Bytes Code;
 `shared/devupd` 3 540 Bytes Code und `protocols/bleota` 446. Die drei
 mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
 2 130 208 Bytes Image hinzu: 841 424, 646 176 und 642 608. Mit ihnen hat
-das Anwendungs-Image 7 365 648 Bytes, 760 816 (9,4%) unter dem Slot von
+das Anwendungs-Image 7 375 088 Bytes, 751 376 (9,2%) unter dem Slot von
 8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5

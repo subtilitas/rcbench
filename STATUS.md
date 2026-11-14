@@ -440,7 +440,10 @@ the link report writes every 60s, does not count (`screen_dim_idle()`), nor does
 (`shot_facts_t::no_lit_fault`); every other FAULT bit does. The console
 prints `dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%` every 300
 frames (`screen_dim_line()`, `backlight_line()`). The press that wakes a dim screen reaches no
-screen, except a press on STOP. `firmware/panel/main/panel_render.c` sets the duty with
+screen, except a press on STOP. The M5Stack Dial's input wakes it too
+(`screen_dim_wake()`); on an idle bench the waking input does nothing else, while a HOLD on
+a bench screen and every input on a busy bench act (`dial_dim_filter()`, `test_dial_nav`).
+`firmware/panel/main/panel_render.c` sets the duty with
 `board_backlight_percent()`; not host-tested. Not run on a panel: the dim, the wake,
 the light 20% duty gives. [PANEL: Dim after](docs/Screens.md#panel-dim-after).
 
@@ -1196,8 +1199,18 @@ into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
 SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
 (`shared/ui/wireless_pane.c`, `test_wireless_pane`), and the `blec` task's
 and the control task's side (`firmware/panel/main/panel_dial.c`,
-`panel_supply.c`). Navigation from the Dial is not built. The battery's
-reading pin is unknown; the encoder's direction is not measured.
+`panel_supply.c`). Built and host-tested, not run with a Dial: navigation
+and SET (`shared/ui/ui_focus.c`, `ui_focus_list.c`, `ui_focus_screens.c`,
+`test_dial_nav`, `test_dial_nav_hold`: the focus moves and wraps on the
+menu, SETUP, SERVO's tiles and OUTPUTS' board view; a SELECT opens what a
+tap opens; a SELECT on CLEAR ALL completes no hold; a number kept and
+cancelled on its keypad, an on/off stepped and restored; a choice list
+picked and closed; no focus while the Dial is off or the bench ARMED; a
+ring move writes two rings and leaves the screen as drawn; a list of 70
+rows keeps RESET and SAVE; a dimmed panel woken by the Dial), with the
+`overview-focus` frame-cost mode. The programmers' screens take no focus
+yet. The battery's reading pin is unknown; the encoder's direction is not
+measured.
 
 ### The power node on the panel
 
@@ -1541,7 +1554,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 579 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 581 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1655,7 +1668,8 @@ The host suite is 579 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
 `test_bleuart_hub`, `test_bleuart_backoff`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
-`test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
+`test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
+`test_dial_nav_hold`, `test_wireless_pane`,
 `test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`,
 `test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`,
 `test_motor_balance`,
@@ -2206,7 +2220,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 438 | 436 | 99.5% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 658 | 647 | 98.3% |
+| `shared/ui/ui_router.c` | 653 | 642 | 98.3% |
+| `shared/ui/ui_router_alert.c` | 15 | 15 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -2226,13 +2241,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/supply_guide.c` | 79 | 79 | 100.0% |
 | `shared/ui/prog5v_box.c` | 284 | 284 | 100.0% |
 | `shared/ui/prog_choice.c` | 127 | 126 | 99.2% |
-| `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
+| `shared/ui/ui_keypad.c` | 312 | 307 | 98.4% |
 | `shared/ui/ui_setting_keypad.c` | 138 | 135 | 97.8% |
 | `shared/ui/ui_textkey.c` | 579 | 565 | 97.6% |
 | `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
 | `shared/ui/shot_gate.c` | 65 | 65 | 100.0% |
-| `shared/ui/screen_dim.c` | 104 | 102 | 98.1% |
+| `shared/ui/screen_dim.c` | 115 | 113 | 98.3% |
 | `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
 | `shared/ui/stop_hold.c` | 45 | 45 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
@@ -2262,7 +2277,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 309 | 304 | 98.4% |
 | `shared/ui/servo_fn.c` | 85 | 84 | 98.8% |
-| `shared/ui/servo_hub.c` | 202 | 196 | 97.0% |
+| `shared/ui/servo_hub.c` | 214 | 205 | 95.8% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
 | `shared/ui/servo_lists.c` | 243 | 240 | 98.8% |
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
@@ -2310,7 +2325,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
-| `shared/ui/settings_screen.c` | 295 | 285 | 96.6% |
+| `shared/ui/settings_screen.c` | 325 | 316 | 97.2% |
 | `shared/ui/settings_draw.c` | 67 | 67 | 100.0% |
 | `shared/ui/settings_rows.c` | 44 | 43 | 97.7% |
 | `shared/ui/ui_setlist.c` | 626 | 611 | 97.6% |
@@ -2324,7 +2339,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/outputs_port_entry.c` | 410 | 403 | 98.3% |
 | `shared/ui/port_view.c` | 97 | 97 | 100.0% |
 | `shared/ui/port_mail.c` | 103 | 103 | 100.0% |
-| `shared/ui/picker_screen.c` | 326 | 322 | 98.8% |
+| `shared/ui/picker_screen.c` | 355 | 350 | 98.6% |
 | `shared/ui/picker_geometry.c` | 155 | 151 | 97.4% |
 | `shared/ui/picker_draw.c` | 328 | 326 | 99.4% |
 | `shared/ui/picker_cat.c` | 94 | 93 | 98.9% |
@@ -2348,7 +2363,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/imu_guide.c` | 33 | 32 | 97.0% |
 | `shared/ui/dial_ctl.c` | 245 | 228 | 93.1% |
 | `shared/ui/dial_stream.c` | 242 | 234 | 96.7% |
-| `shared/ui/dial_panel.c` | 163 | 158 | 96.9% |
+| `shared/ui/dial_panel.c` | 231 | 219 | 94.8% |
+| `shared/ui/ui_focus.c` | 430 | 381 | 88.6% |
+| `shared/ui/ui_focus_list.c` | 92 | 81 | 88.0% |
+| `shared/ui/ui_focus_screens.c` | 21 | 20 | 95.2% |
 | `shared/ui/wireless_pane.c` | 228 | 220 | 96.5% |
 | `shared/ui/wireless_pnode.c` | 124 | 119 | 96.0% |
 | `shared/ui/pnode_ctl.c` | 237 | 229 | 96.6% |
@@ -2608,7 +2626,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **98030** | **96032** | **98.0%** |
+| **total** | **98755** | **96683** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

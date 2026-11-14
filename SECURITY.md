@@ -195,7 +195,17 @@ role). The panel then takes that device's packets as the real one's:
   device also receives the screen model the panel streams to the Dial: the
   live readings and the run's state. It cannot ARM the bench and cannot
   switch SUPPLY ON, PROG 5V or WRITE: those are the panel's 2s holds.
-  Turns while SAFE move nothing and are not kept for the ARM. What limits
+  Turns while SAFE move no output and are not kept for the ARM. While the
+  bench is SAFE the Dial's focus reaches the overview, SETUP, the SERVO
+  hub and the OUTPUTS board view, so the device can open those screens,
+  set any setting a row offers, tap RESET, SAVE and DISCARD, and pick a
+  pin's protocol on the OUTPUTS board. It does not reach UPDATES, so it
+  cannot open WIRELESS DEVICES, start a device update or tap CANCEL
+  UPDATE. That includes the protection
+  settings: RESET on SENSORS sets an INA3221 channel's LIMIT to its
+  default, and LIMIT 0 turns that channel's overcurrent trip off for the
+  runs after it. No 2s hold completes from the Dial, so CLEAR ALL and the
+  other holds stay the panel's. What limits
   it: STOP on the panel and the hardware stop act as always, every limit
   and trip of the run applies as to the panel's own knob, and a loss of
   the link while

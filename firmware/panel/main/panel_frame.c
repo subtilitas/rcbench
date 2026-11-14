@@ -828,7 +828,7 @@ void panel_frame_loop(void)
          * a bench that is not idle is lit in this frame. */
         backlight_service(&idle_facts);
         ui_router_tick(dt_s);
-        knob_apply(&knob_turn, frame_lost);
+        knob_apply(&knob_turn, frame_lost, &idle_facts);
         wifi_service(arm_wanted_now || armed_now, stops_now);
         upd_service(arm_wanted_now || armed_now,
                     arm_wanted_now || armed_now || supply_now

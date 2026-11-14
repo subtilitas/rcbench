@@ -137,6 +137,19 @@ history is in git.
   `test_dial_fit`; `tools/render_dial.py` writes the 20 images in
   `docs/img` and CI's `--check` holds them
   ([The M5Stack Dial](docs/Dial.md#the-faces)).
+- The M5Stack Dial navigates the panel while it is linked and the bench is
+  SAFE: the menu, SETUP's tiles and lists, SERVO's tiles and SETTINGS
+  list, OUTPUTS' board view, the choice lists and the leave warning. A 2px
+  ring in the accent colour marks the focused item; a detent moves it and
+  wraps, PRESS taps it in one frame, HOLD does what the home tag does. A
+  number is set on its keypad by turning, PRESS OK, HOLD CANCEL; an on/off
+  or option row is stepped by its keys, PRESS keeps, HOLD restores. The
+  Dial shows NAV and VALUE. The ring keeps the pixels under it: a move
+  costs about 1,060 cache-line fills on the menu, held under 1,300 by the
+  `overview-focus` frame-cost mode. No 2s hold completes from the Dial.
+  The Dial's input wakes a dimmed panel; on an idle bench the waking input
+  does nothing else, as a waking touch
+  ([Navigation and SET](docs/Dial.md#navigation-and-set)).
 - `gfx_ring_aa()` in `shared/gfx`: a 1px ring antialiased by each pixel's
   coverage clamp(1 - |d - r|, 0, 1), from a table of the pixels the ring
   touches sorted by angle, 3 bytes each; `gfx_ring_move()` repaints only
@@ -275,6 +288,20 @@ history is in git.
   response is answered at once with the host call's status
   (`bleu_hub_written()`), never through the event queue; a client ends an
   unusable link as a failed GATT step with `bleu_fail_link()`.
+
+- `hardware/mechanical/`: STEP models of the M5Stack Dial (SKU K130) and
+  its ring nut, generated from `m5dial.py`. The 9 plastic parts come from
+  M5Stack's mesh, copied to `vendor/m5stack_dial/Dial.stl` under its MIT
+  licence: `_refit.py` fits its 29240 triangles with 3929 faces on planes,
+  cylinders, cones, tori and, for the thread of 2.6mm pitch, B-spline
+  surfaces along the helix, within 0.124mm of the mesh.
+  `check_refit.py` holds the written solids against the mesh in CI. The
+  power terminal, PORT.A, PORT.B and the USB-C receptacle are added from
+  their makers' drawings and M5Stack's Stamp-S3 model; the display lens
+  and module, the main board and the 2 M2 screw heads from the mesh's
+  pockets and estimates. `step_gen.py` writes solids with faces on
+  curved surfaces (`"brep"`) besides prisms and turned profiles
+  ([Mechanical parts](hardware/mechanical/README.md#m5stack-dial)).
 
 ### Changed
 

@@ -63,6 +63,7 @@ throttle                    10,078    1260 KiB
 chrome                      48,248    6031 KiB
 overview                         0       0 KiB
 overview-guide                 361      45 KiB
+overview-focus               1,062     133 KiB
 servo                        2,410     301 KiB
 servo-grip                     589      74 KiB
 servo-current                1,980     248 KiB
@@ -119,6 +120,7 @@ est. ms and est. fps: not measured
 | `chrome` | the motor bench with nothing cached, repainted in full |
 | `overview` | the menu, chrome cached |
 | `overview-guide` | the menu with its screen guide open at page 1: the dock cached, the badges and corner brackets of 4 tiles drawn every frame |
+| `overview-focus` | the menu with the M5Stack Dial linked and its focus moved one tile every frame: the 2px ring put back and drawn again, no tile repainted |
 | `servo` | the servo screen with the arm redrawn |
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
@@ -249,6 +251,7 @@ increased drawing work in the model; it does not detect a missed display deadlin
 | --- | ---: | --- |
 | `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `motor-wire-hold`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
 | `overview-guide` | 1,000 | guide marks that draw more than their badges and brackets |
+| `overview-focus` | 1,300 | a focus move that repaints a tile or the screen |
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
@@ -495,7 +498,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  377 such
+  382 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its
@@ -765,7 +768,7 @@ The wireless devices' update, from the linker map of the default build:
 `shared/devupd` 3,540 bytes of code and `protocols/bleota` 446. The three
 carried images, the Dial's and both nodes', add 2,130,208 bytes of image at
 0.23.12: 841,424, 646,176 and 642,608. With them the application image is
-7,365,648 bytes, 760,816 (9.4%) under the slot of 8,126,464.
+7,375,088 bytes, 751,376 (9.2%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one

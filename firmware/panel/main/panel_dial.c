@@ -28,6 +28,7 @@
 #include "panel.h"
 #include "panel_ble.h"
 #include "panel_blec.h"
+#include "ui_focus.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "wireless_pane.h"
@@ -378,6 +379,15 @@ void panel_dial_frame(const dial_model_in_t *in)
     taskEXIT_CRITICAL(&s_mux);
     wireless_pane_set_dial(&s_seen);
     link_notices((dial_link_t)s_seen.link, in->armed);
+    /* The focus ring and the Dial's navigation only while it is linked.
+     * The ARMED this frame read keeps the focus off a running bench: a
+     * screen the focus navigates (ui_focus_screens.c) must never gain an
+     * ARM control unless the focus layer checks ARMED again in the frame
+     * that SELECTs it, or a SELECT could land on ARM before this flag
+     * follows. */
+    ui_focus_set_link(s_seen.link == DIAL_LINK_UP
+                          || s_seen.link == DIAL_LINK_DEGRADED,
+                      in->armed);
     /* A bind that ended is kept in SETUP, with a save asked, so the Dial
      * is the bound one after a restart. */
     if (bind_seq != s_kept_seq) {

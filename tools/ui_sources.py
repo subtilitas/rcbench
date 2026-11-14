@@ -44,6 +44,7 @@ SOURCES = [
     "shared/ui/prog_registry.c",
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
+    "shared/ui/ui_router_alert.c",
     "shared/ui/ui_help.c",
     "shared/ui/help_outputs.c",
     "shared/ui/help_setup.c",
@@ -218,6 +219,10 @@ SOURCES = [
     "shared/ui/dial_ctl.c",
     "shared/ui/dial_stream.c",
     "shared/ui/dial_panel.c",
+    "shared/ui/screen_dim.c",
+    "shared/ui/ui_focus.c",
+    "shared/ui/ui_focus_list.c",
+    "shared/ui/ui_focus_screens.c",
     "shared/ui/wireless_pane.c",
     "shared/ui/settings_panes.c",
     # The power node's entry on WIRELESS.
@@ -376,8 +381,6 @@ EXCLUDED = {
         "the control task posts to it; no screen calls it",
     "shared/ui/port_mail.c":
         "the control task fills it; the screens read port_view.c",
-    "shared/ui/screen_dim.c":
-        "the render loop's backlight and touch filter; no screen calls it",
     "shared/ui/pnode_ctl.c":
         "the power node's central, the blec task's; WIRELESS reads its view",
     "shared/ui/pnode_meter.c":

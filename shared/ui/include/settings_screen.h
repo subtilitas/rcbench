@@ -18,6 +18,7 @@
 #include "settings.h"
 #include "ui_keypad.h"
 #include "ui_screen.h"
+#include "ui_focus.h"
 #include "ui_textkey.h"
 
 #ifdef __cplusplus
@@ -278,6 +279,15 @@ bool settings_screen_warning(void);
  * @return true when there is such a line
  */
 bool settings_screen_warn_line(int i, char *line, size_t n);
+
+/**
+ * @brief The Dial's items on SETUP (ui_focus.h): the hub's tiles and SAVE
+ *        while it is offered; a split pane's entries, then the list's rows
+ *        and strip (ui_focus_add_setlist()), starting on the selected entry.
+ * @param out Receives them.
+ * @return false while the keyboard is open.
+ */
+bool settings_screen_focus(ui_focus_list_t *out);
 
 #ifdef __cplusplus
 }
