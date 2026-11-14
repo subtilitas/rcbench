@@ -16,7 +16,7 @@ Results: board 13.7 x 21.7mm, square corners. Seen from the top side
 with the inductor down: OUT+ upper left, OUT- upper right, IN+ lower
 left, IN- lower right. Output holes 10.1mm apart, 1.95mm below the
 upper edge, pads about 3.5mm square. Input holes 10.4mm apart, 1.5mm
-above the lower edge, pads about 2.6 x 3.3mm on the top side. Holes
+above the lower edge, pads about 2.6 x 3.0mm on the top side. Holes
 about 1.3mm. A round pad of 1.4mm without a hole lies at the right
 edge 8.05mm above the lower edge, next to R3. A hole of about 1.8mm
 without a pad lies at the left edge 7.9mm above the lower edge.
@@ -42,7 +42,7 @@ DESC = ("5V boost converter board with enable pad, 13.7 x 21.7mm. "
 
 W, H = 13.7, 21.7
 IN_Y, OUT_Y = 20.2, 1.95
-PADS = (("1", 1.65, IN_Y, (2.6, 3.3)), ("2", 12.05, IN_Y, (2.6, 3.3)),
+PADS = (("1", 1.65, IN_Y, (2.6, 3.0)), ("2", 12.05, IN_Y, (2.6, 3.0)),
         ("3", 1.8, OUT_Y, (3.5, 3.5)), ("4", 11.9, OUT_Y, (3.5, 3.5)))
 DRILL = 1.3
 EN = (12.85, 13.65, 1.4)

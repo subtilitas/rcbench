@@ -108,6 +108,19 @@ def test_board_is_as_large_as_its_footprint(spec):
     assert (-box[0], box[4]) == pytest.approx(fp["origin"])
 
 
+@pytest.mark.parametrize("spec", BOARDS)
+def test_nothing_but_plugs_and_buttons_passes_the_edge(spec):
+    """Pads, print and parts stay on the board, bar the listed parts."""
+    fp = spec.kicad.FOOTPRINT
+    box = extent(model(spec))
+    past = {esp32_c6_zero: (0.0, 0.0, 0.0, 1.21),
+            lipo_charger_boost_5v: (0.0, 0.0, 1.5, 0.0)}.get(spec, (0,) * 4)
+    ox, oy = fp["origin"]
+    w, h = fp["board"]
+    got = (-ox - box[0], oy - h - box[1], box[3] - (w - ox), box[4] - oy)
+    assert got == pytest.approx(past, abs=0.11)
+
+
 def test_ina219_extent():
     """24.2 x 21.9; the chip's 1.1 is the highest part."""
     box = extent(model(ina219_cjmcu219))
