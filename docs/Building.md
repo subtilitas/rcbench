@@ -40,7 +40,7 @@ rcbench/
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
     ppm/                  PPM frame layout · PIO and DMA driver
-    sbus/                 S.BUS decoder; no pin driver
+    sbus/                 S.BUS decoder and encoder; no pin driver
     openyge/              OpenYGE framing, CRC, status and parameter cache; no pin driver
     pdmini/               PD mini driver · PIO UART
     phase_tap/            ESC tone detector · edge ring reader · PIO capture

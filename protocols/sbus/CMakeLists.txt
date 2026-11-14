@@ -1,7 +1,8 @@
 # S.BUS: 16 channels in 25 bytes, with no checksum and a header byte that is
-# also an ordinary channel value.  Pure C with no include outside this
-# folder and the C standard headers.  The module has no pin driver: a PIO
-# (programmable input/output) receiver that produces the bytes is not
+# also an ordinary channel value.  The module decodes and encodes frames.
+# Pure C with no include outside this folder and the C standard headers.
+# The module has no pin driver: a PIO (programmable input/output) receiver
+# that produces the bytes and a transmitter that sends them are not
 # written, and everything about what the bytes mean is tested on a host.
 set(SRCS sbus.c)
 

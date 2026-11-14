@@ -1,7 +1,8 @@
 /**
  * @file
- * @brief S.BUS frame decoder: framing on the byte gap, footer check and
- *        channel unpacking.
+ * @brief S.BUS frame decoder and encoder: framing on the byte gap, footer
+ *        check, channel unpacking and packing, and the microsecond mapping
+ *        both ways.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -52,6 +53,55 @@ static void unpack(const uint8_t *p, uint16_t *out)
                              | ((uint32_t)p[byte + 2u] << 16);
         out[ch] = (uint16_t)((win >> shift) & 0x7FFu);
     }
+}
+
+/**
+ * @brief The mirror of unpack(): channel n at bit 11n of the payload, least
+ *        significant bit first, each value ORed into a three-byte window.
+ *
+ * @p p must be cleared beforehand; the windows of neighbouring channels
+ * share bytes.  Every value is at most SBUS_RAW_MAX, so the window is at
+ * most eighteen bits wide and fits the three bytes.
+ */
+static void pack(const uint16_t *in, uint8_t *p)
+{
+    for (unsigned ch = 0; ch < SBUS_CHANNELS; ++ch) {
+        const unsigned bit  = ch * 11u;
+        const unsigned byte = 1u + (bit / 8u);   /* 1: past the header */
+        const uint32_t win  = (uint32_t)in[ch] << (bit % 8u);
+        p[byte]      |= (uint8_t)(win & 0xFFu);
+        p[byte + 1u] |= (uint8_t)((win >> 8) & 0xFFu);
+        p[byte + 2u] |= (uint8_t)((win >> 16) & 0xFFu);
+    }
+}
+
+bool sbus_encode(const sbus_frame_t *f, uint8_t *out)
+{
+    if (f == NULL || out == NULL) {
+        return false;
+    }
+    /*
+     * Refused rather than clamped or masked.  Masking sends 2048 as 0, the
+     * other end of the travel; clamping sends a value the caller did not ask
+     * for as full travel.  A value above eleven bits is a fault in the
+     * caller, and the caller is the one that knows what to send instead.
+     * Checked before the first write, so a refused frame leaves out as it
+     * was.
+     */
+    for (unsigned ch = 0; ch < SBUS_CHANNELS; ++ch) {
+        if (f->channel[ch] > SBUS_RAW_MAX) {
+            return false;
+        }
+    }
+    memset(out, 0, SBUS_FRAME_BYTES);
+    out[0] = SBUS_HEADER;
+    pack(f->channel, out);
+    out[23] = (uint8_t)((f->ch17 ? SBUS_FLAG_CH17 : 0u)
+                        | (f->ch18 ? SBUS_FLAG_CH18 : 0u)
+                        | (f->frame_lost ? SBUS_FLAG_FRAME_LOST : 0u)
+                        | (f->failsafe ? SBUS_FLAG_FAILSAFE : 0u));
+    out[SBUS_FRAME_BYTES - 1u] = SBUS_FOOTER;
+    return true;
 }
 
 bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
@@ -133,4 +183,29 @@ uint16_t sbus_to_us(uint16_t raw)
         us = 2200;
     }
     return (uint16_t)us;
+}
+
+uint16_t sbus_from_us(uint16_t us)
+{
+    /*
+     * The line of sbus_to_us() solved for the raw value, with the same
+     * rounding: to the nearest, halves away from the 1000us point.  1639
+     * counts per 1000us puts a half at 1500us (991.5), which goes to 992.
+     * Rounding the raw value moves the pulse by at most half a count,
+     * 0.31us, less than the 0.5us at which sbus_to_us() rounds to a
+     * neighbour, so sbus_to_us() gives the same pulse back wherever the raw
+     * value is not clamped.  The largest product, 64535 * 1639, fits an
+     * int32_t.
+     */
+    const int32_t span_raw = (int32_t)SBUS_RAW_2000US - (int32_t)SBUS_RAW_1000US;
+    const int32_t num = ((int32_t)us - 1000) * span_raw;
+    int32_t raw = (int32_t)SBUS_RAW_1000US
+                  + (num >= 0 ? (num + 500) / 1000 : (num - 500) / 1000);
+    if (raw < (int32_t)SBUS_RAW_MIN) {
+        raw = (int32_t)SBUS_RAW_MIN;
+    }
+    if (raw > (int32_t)SBUS_RAW_MAX) {
+        raw = (int32_t)SBUS_RAW_MAX;
+    }
+    return (uint16_t)raw;
 }
