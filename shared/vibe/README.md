@@ -12,7 +12,7 @@ Pure C, no SDK (software development kit). Two halves:
 
 The balance node's image (`firmware/node`, `node_bal.c`) compiles
 `vibe_frame`, `vibe_edge` and `vibe_demod`. The host suite holds the module:
-`test_vibe` (28 cases), `test_vibe_frame` (16 cases) and `test_vibe_solve`
+`test_vibe` (28 cases), `test_vibe_frame` (18 cases) and `test_vibe_solve`
 (10 cases), on synthetic signals from `test/host/vibe_synth.h`. The report
 is a plain C struct (`vibe_report_t`); the radio packet that carries it is
 `RCNODE_T_BAL_REPORT` in `protocols/rcnode`.
@@ -143,6 +143,13 @@ vibe_split_t r = vibe_frame_split(&f, frame, len, out, 100);
   the rows before it, the open round is dropped, and the next call skips to
   the pattern's first channel. The caller restarts the demodulator there,
   because the sample clock has a gap.
+- A full driver pool drops whole frames, whole rounds the order cannot
+  show. `vibe_frame_whole()` takes the driver's overflow count before and
+  after a read and the count when the stream started: a read is whole when
+  the three are equal. The node restarts the stream on any other read.
+- `vibe_frame_time()` dates a conversion from the newest frame the driver
+  finished: its time less the conversions after the one asked for, so a
+  backlog in the pool does not make a report late.
 - `vibe_cfg_scale()` takes two points of the ADC's calibration curve
   (`vibe_adc_cal_t`), the sensor's sensitivity in µV/g and the DC window in
   mV, and sets `ug_per_count_q16`, `dc_min` and `dc_max`.

@@ -265,8 +265,9 @@ ein Strapping-Pin.
 **Die Versorgung des Moduls aus GPIO20.** Die Infrarot-LED des TCRT5000 ist
 die größte Sensorlast des Knotens. Ein Pin mit Treiberstärke 3 liefert bis
 zu 40mA bei 2,64V oder mehr (Datenblatt v1.6, Tabelle 5-4). Der Knoten
-setzt GPIO20 beim Start auf high und vor dem Schlafen auf low, also ist die
-LED dunkel, solange der Knoten schläft. Der Strom des Moduls hängt von
+setzt GPIO20 beim Start auf high und vor dem Schlafen auf low und hält ihn
+im Deep Sleep dort (`gpio_hold_en()`), also ist die LED dunkel, solange der
+Knoten schläft. Der Strom des Moduls hängt von
 seinem LED-Widerstand ab und ist nicht gemessen. Das Modul darf nicht an
 5V laufen: D0 erreicht dann 5V, und die Pins des ESP32-C6 vertragen 3,3V.
 
@@ -345,7 +346,15 @@ sind nicht gemessen.
 
 Der Akku ist der dritte Kanal des Datenstroms: Ein Einzelwandeln an ADC1
 schlägt fehl, solange der Continuous-Modus die Einheit hält. STATUS nimmt
-den Mittelwert der Akku-Samples einer Sekunde.
+den Mittelwert der Akku-Samples einer Sekunde. Solange der Datenstrom nicht
+läuft (er startete nicht oder ließ sich nicht wieder starten), liest der
+Knoten den Akku mit Einzelwandlungen, 16 Samples gemittelt, wie der
+Leistungsknoten.
+
+`t_node` eines Berichts ist die Zeit, zu der das letzte Vibrationssample
+seines Fensters gewandelt wurde. Der Knoten datiert es vom neuesten Frame,
+den der Treiber fertiggestellt hat, also macht ein Rückstau von Frames im
+Puffer des Treibers es nicht später.
 
 Die Phase zählt in Grad ab der Indexflanke, in der Reihenfolge, in der die
 Punkte am Indexsensor vorbeilaufen: gegen die Drehrichtung, wie der
@@ -364,9 +373,19 @@ RUN wird angenommen und ändert am Auswuchtknoten nichts.
 ersten Bericht, `RCNODE_SENSOR_ONLINE` (5), solange der Gleichanteil des
 letzten Berichts im Bereich lag, `RCNODE_SENSOR_ABSENT` (2), bevor er es je
 war, `RCNODE_SENSOR_OFFLINE` (6), nachdem er es war,
-und `RCNODE_SENSOR_REFUSED` (4), wenn der ADC-Datenstrom nicht startete. `errors` zählt verlorene Wandlungen und
-einen vollen Puffer des Treibers (ein verlorener Frame); jedes startet den
-Demodulator neu, was `resets` zählt, und verliert den offenen Bericht.
+und `RCNODE_SENSOR_REFUSED` (4), wenn der ADC-Datenstrom nicht startete.
+`errors` zählt zwei Ereignisse und `resets` die Neustarts, die sie
+auslösen; jedes verliert den offenen Bericht:
+
+- eine Wandlung außerhalb der Reihenfolge des Musters: Der Demodulator
+  startet dort neu;
+- ein voller Puffer des Treibers. Der Knoten ist mehr als 8 Frames (80ms)
+  zurückgefallen, und der Treiber hat die Frames verworfen, die er hielt.
+  Verlorene Frames sind ganze Durchläufe des Musters, also zeigt die
+  Reihenfolge sie nicht. Der Knoten zählt die Überläufe des Treibers,
+  verwirft einen Lesevorgang, vor oder während dem einer kam, hält den
+  Datenstrom an, leert den Puffer und startet Datenstrom und Demodulator
+  neu. Die Samples bis zum Neustart gehen verloren, etwa 80ms oder mehr.
 
 **Kalibrierung.** Nichts am Knoten ist gegen eine bekannte Vibration
 kalibriert. Der Fehler des ADC nach der Kalibrierung ist ±40mV bei 12dB
@@ -513,8 +532,9 @@ this start`.
   Station nicht hat.
 - Der Auswuchtknoten gleicht das Filter des ADXL nicht aus: Bei 167Hz ist
   seine Amplitude 1,2% zu niedrig und seine Phase 9° zu spät (oben).
-- Eine verlorene Wandlung oder ein voller Puffer des Treibers verliert den
-  offenen Auswuchtbericht (`errors`, `resets` in STATUS).
+- Eine verlorene Wandlung verliert den offenen Auswuchtbericht; ein voller
+  Puffer des Treibers verliert ihn und mindestens 80ms an Samples
+  (`errors`, `resets` in STATUS).
 - Der Auswuchtknoten versorgt seinen ADXL im Schlaf weiter aus 3V3: 350µA.
 - Die WS2812 wird nicht angesteuert. Ihr Ruhestrom ist nicht gemessen.
 - Die Firmware wird nur über USB aktualisiert.

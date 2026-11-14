@@ -74,7 +74,9 @@ history is in git.
   `rcbench-node-bal-merged-<version>.bin`
   ([The sensor nodes](docs/Nodes.md#the-balance-node)).
 - `shared/vibe`: the node's ADC frames split into channels with a lost
-  conversion found (`vibe_frame_split()`), the scale and the DC window from
+  conversion found (`vibe_frame_split()`), a read checked against the
+  driver's overflow count (`vibe_frame_whole()`), a conversion dated from
+  the newest frame done (`vibe_frame_time()`), the scale and the DC window from
   two points of the ADC's calibration curve (`vibe_cfg_scale()`), and the
   index with its polarity found (`vibe_index_scan()`); host suite
   `test_vibe_frame`.

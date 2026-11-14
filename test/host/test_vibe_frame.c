@@ -204,6 +204,31 @@ TEST_CASE(a_pattern_past_four_entries_is_cut_and_none_writes_nothing)
     CHECK_EQ(r.used, 0);
 }
 
+TEST_CASE(a_read_is_whole_only_with_no_overflow_since_the_start_or_during_it)
+{
+    CHECK(vibe_frame_whole(7u, 7u, 7u));
+    CHECK(!vibe_frame_whole(7u, 7u, 8u));      /* during the read */
+    CHECK(!vibe_frame_whole(7u, 8u, 8u));      /* before it, since the start */
+    CHECK(!vibe_frame_whole(7u, 8u, 9u));
+    CHECK(vibe_frame_whole(UINT32_MAX, UINT32_MAX, UINT32_MAX));
+    CHECK(!vibe_frame_whole(UINT32_MAX, UINT32_MAX, 0u));   /* across the wrap */
+}
+
+TEST_CASE(a_conversion_is_dated_back_from_the_newest_frame_done)
+{
+    /* 8 frames of 1,200 bytes done at 1s; the node read the first 2. */
+    const uint64_t t = vibe_frame_time(1000000u, 9600u, 2400u, 33200u);
+    /* 7,200 bytes, 1,800 conversions of 33.2us: 59,760us earlier. */
+    CHECK_EQ(t, 1000000u - 59760u);
+    CHECK_EQ(vibe_frame_time(1000000u, 9600u, 9600u, 33200u), 1000000u);
+    /* The byte counts wrap. */
+    CHECK_EQ(vibe_frame_time(1000000u, 400u, (uint32_t)(0u - 800u), 33200u),
+             1000000u - 9960u);  /* 1,200 bytes: 300 conversions, 9,960us */
+    /* Past the newest frame counts as at it; no time before 0. */
+    CHECK_EQ(vibe_frame_time(1000000u, 400u, 404u, 33200u), 1000000u);
+    CHECK_EQ(vibe_frame_time(10u, 4000u, 0u, 33200u), 0u);
+}
+
 /* ------------------------------------------------------------ the scale */
 
 TEST_CASE(the_nominal_curve_is_3300mV_over_4096_counts)
@@ -418,6 +443,8 @@ int main(void)
     RUN(a_word_of_an_invalid_channel_is_a_break);
     RUN(a_full_output_ends_the_call_after_whole_rounds);
     RUN(a_pattern_past_four_entries_is_cut_and_none_writes_nothing);
+    RUN(a_read_is_whole_only_with_no_overflow_since_the_start_or_during_it);
+    RUN(a_conversion_is_dated_back_from_the_newest_frame_done);
     RUN(the_nominal_curve_is_3300mV_over_4096_counts);
     RUN(the_scale_at_330mV_per_g_on_the_nominal_curve_is_2441ug_a_count);
     RUN(counts_and_millivolts_round_and_hold_to_the_range);

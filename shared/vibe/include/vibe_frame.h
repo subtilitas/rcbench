@@ -105,6 +105,42 @@ uint16_t vibe_frame_word(const uint8_t *b, uint8_t *chan);
 vibe_split_t vibe_frame_split(vibe_frame_t *f, const uint8_t *b, size_t n,
                               int16_t *const out[], size_t cap);
 
+/**
+ * @brief Whether one read of the stream is whole: no frame lost in the
+ *        driver's pool since the last read taken, and none while this read
+ *        ran.
+ *
+ * The driver counts a full pool in its overflow callback; the caller keeps
+ * that count as a generation and reads it before and after each read.  A
+ * lost frame is whole rounds of the pattern, so the splitter cannot see
+ * it; a read that is not whole is dropped, and the stream and everything
+ * that counts on its clock start again.
+ *
+ * @param seen    The generation when the stream last started.
+ * @param before  The generation just before the read.
+ * @param after   The generation just after it.
+ * @return        true when all three are equal.
+ */
+bool vibe_frame_whole(uint32_t seen, uint32_t before, uint32_t after);
+
+/**
+ * @brief When a conversion ended, from the newest frame the driver
+ *        finished: its time, less the conversions after the one asked
+ *        for.  A backlog in the driver's pool then dates the samples by
+ *        when they were converted, not by when they were read.
+ *
+ * @param done_us      When the newest frame was finished, µs.
+ * @param done_bytes   Bytes finished since the stream started, to that
+ *                     frame's end; wraps.
+ * @param at_bytes     Bytes since the stream started to the end of the
+ *                     conversion asked for; wraps.  Past @p done_bytes
+ *                     counts as @p done_bytes.
+ * @param ns_per_conv  The time of one conversion, ns.
+ * @return             µs.
+ */
+uint64_t vibe_frame_time(uint64_t done_us, uint32_t done_bytes, uint32_t at_bytes,
+                         uint32_t ns_per_conv);
+
 /** @brief Two points of an ADC's calibration curve. */
 typedef struct {
     uint16_t raw_lo;  /**< a raw count */

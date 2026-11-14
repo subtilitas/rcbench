@@ -76,6 +76,23 @@ vibe_split_t vibe_frame_split(vibe_frame_t *f, const uint8_t *b, size_t n,
     return r;
 }
 
+bool vibe_frame_whole(uint32_t seen, uint32_t before, uint32_t after)
+{
+    return before == seen && after == seen;
+}
+
+uint64_t vibe_frame_time(uint64_t done_us, uint32_t done_bytes, uint32_t at_bytes,
+                         uint32_t ns_per_conv)
+{
+    const uint32_t ahead = done_bytes - at_bytes;
+    if (ahead > UINT32_MAX / 2u) {
+        return done_us;         /* past the newest frame: wrapped negative */
+    }
+    const uint64_t ns = (uint64_t)(ahead / VIBE_FRAME_WORD) * ns_per_conv;
+    const uint64_t us = (ns + 500u) / 1000u;
+    return us > done_us ? 0u : done_us - us;
+}
+
 void vibe_adc_cal_nominal(vibe_adc_cal_t *c)
 {
     if (c == NULL) {

@@ -69,8 +69,14 @@ jobs:
           done
           # Each image carries its own role: the balance role's start-up
           # text is in the balance image only.
-          grep -aq 'bal: ADC ' firmware/node/build-bal/rcbench-node.bin
-          ! grep -aq 'bal: ADC ' firmware/node/build-pwr/rcbench-node.bin
+          if ! grep -aq 'bal: ADC ' firmware/node/build-bal/rcbench-node.bin; then
+            echo "::error::the balance image lacks the balance role"
+            exit 1
+          fi
+          if grep -aq 'bal: ADC ' firmware/node/build-pwr/rcbench-node.bin; then
+            echo "::error::the power image carries the balance role"
+            exit 1
+          fi
           ls -l node-dist
           sha256sum node-dist/*.bin
 

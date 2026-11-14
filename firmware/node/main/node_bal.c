@@ -34,13 +34,26 @@
  * window (vibe_cfg_scale()).  Without the calibration the nominal 0 to
  * 3300mV over 4096 counts stands in, and the console says so.
  *
- * Breaks.  A conversion out of the pattern's order (vibe_frame_split()) or
- * a full driver pool restarts the demodulator and the index: the open
- * report is lost, STATUS counts the event in `errors` and the restart in
- * `resets`.
+ * Breaks.  A conversion out of the pattern's order (vibe_frame_split())
+ * restarts the demodulator and the index there.  A full driver pool loses
+ * whole frames, which the splitter cannot see: the overflow callback
+ * counts a generation, read before and after each read, and a read that
+ * is not whole (vibe_frame_whole()) is dropped, the stream stopped, its
+ * pool emptied and the stream and the demodulator started again.  Either
+ * way the open report is lost, STATUS counts the event in `errors` and the
+ * restart in `resets`.
+ *
+ * Time.  The frame-done callback keeps the bytes the driver finished and
+ * when; a report's t_node is its window's last vibration sample, dated
+ * back from there (vibe_frame_time()), so a backlog in the pool does not
+ * make it late.
  *
  * The TCRT5000 module's supply comes from GPIO20, high while the role runs
- * and low before a sleep: its infrared LED is the node's largest load.
+ * and low and held through deep sleep before a sleep: its infrared LED is
+ * the node's largest load.
+ *
+ * The battery: from the stream while it runs; a one-shot read of ADC1
+ * when it does not (the stream did not start, or stopped).
  *
  * Sleep: the node sleeps when no central is connected and the console does
  * not hold it awake for NODE_IDLE_MS; a turning rotor does not hold it.
@@ -58,7 +71,9 @@
 #include "esp_adc/adc_cali.h"
 #include "esp_adc/adc_cali_scheme.h"
 #include "esp_adc/adc_continuous.h"
+#include "esp_adc/adc_oneshot.h"
 #include "esp_log.h"
+#include "esp_timer.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/task.h"
 #include "soc/soc_caps.h"
@@ -105,6 +120,8 @@ _Static_assert((BAL_VIBE_FLAGS & RCNODE_BF_COUNTS) == 0u, "RCNODE_BF_COUNTS is t
 #define BAL_POOL_FRAMES  8u      /**< frames the driver holds: 80ms */
 #define BAL_EDGES       16u      /**< index edges a frame, at most: 60,000rpm gives 10 */
 #define BAL_READ_MS    100u      /**< a read's timeout */
+#define BAL_NS_PER_CONV (BAL_INTERVAL * (1000000000u / BAL_TRIG_HZ)) /**< 33,200ns */
+#define BAL_BAT_ONE_N   16u      /**< one-shot battery samples averaged */
 /** @} */
 
 _Static_assert(BAL_REQ_HZ >= SOC_ADC_SAMPLE_FREQ_THRES_LOW
@@ -131,6 +148,9 @@ static adc_cali_handle_t s_cali_bat;        /**< channel 3's calibration */
 static vibe_adc_cal_t s_cal;                /**< channel 0's two points */
 static bool s_cal_nominal;                  /**< s_cal is the nominal curve */
 static TaskHandle_t s_task;                 /**< `bal` */
+static uint8_t s_chans[BAL_NCH];            /**< the pattern's channels */
+static adc_channel_t s_bat_chan;            /**< the battery's channel */
+static adc_oneshot_unit_handle_t s_one;     /**< ADC1 one-shot, while no stream runs */
 
 /* The `bal` task's own state. */
 static uint8_t s_buf[BAL_FRAME_BYTES];      /**< one read */
@@ -143,7 +163,9 @@ static vibe_index_t  s_ix;                  /**< the index comparator */
 static vibe_demod_t  s_d;                   /**< the demodulator */
 static vibe_cfg_t    s_cfg;                 /**< its settings */
 static uint32_t s_samples;                  /**< samples pushed since the demodulator started */
-static uint64_t s_frame_us;                 /**< when the last frame was taken */
+static uint64_t s_rows_us;                  /**< when the last vibration sample fed was converted */
+static uint32_t s_taken;                    /**< bytes read since the stream started, wraps */
+static uint32_t s_gen_seen;                 /**< the overflow generation when the stream started */
 static uint8_t  s_blades_now;               /**< the blade count in use */
 static uint16_t s_rpm_now;                  /**< the rpm in use, 0 index mode */
 static bool     s_online_once;              /**< the DC was in range once */
@@ -153,7 +175,11 @@ static atomic_uint s_blades = BAL_BLADES_START; /**< the blade count written */
 static atomic_uint s_rpm;                   /**< the rpm written, 0 index mode */
 static atomic_bool s_stop;                  /**< the `bal` task is to stop the stream */
 static atomic_bool s_stopped;               /**< it has */
-static atomic_bool s_ovf;                   /**< the driver's pool was full */
+static atomic_uint s_ovf_gen;               /**< full pools counted by the driver's callback */
+static atomic_bool s_streaming;             /**< the stream runs: the battery comes from it */
+static portMUX_TYPE s_done_mux = portMUX_INITIALIZER_UNLOCKED; /**< guards the two below */
+static uint32_t s_done_bytes;               /**< bytes the driver finished since the stream started */
+static uint64_t s_done_us;                  /**< when it finished the last frame */
 static atomic_bool s_low_mark;              /**< the index's mark is the low level */
 static atomic_uint s_errors;                /**< breaks and full pools */
 static atomic_uint s_resets;                /**< demodulator restarts */
@@ -167,7 +193,7 @@ static portMUX_TYPE s_last_mux = portMUX_INITIALIZER_UNLOCKED; /**< guards s_las
 static vibe_report_t s_last;                /**< the last report, for the console */
 
 /**
- * @brief The driver's pool was full: a frame is lost.  ISR (interrupt
+ * @brief The driver's pool was full: frames are lost.  ISR (interrupt
  *        service routine) context.
  *
  * @param h The handle.
@@ -181,7 +207,28 @@ static bool on_pool_ovf(adc_continuous_handle_t h, const adc_continuous_evt_data
     (void)h;
     (void)ev;
     (void)ctx;
-    atomic_store(&s_ovf, true);
+    atomic_fetch_add(&s_ovf_gen, 1u);
+    return false;
+}
+
+/**
+ * @brief The driver finished a frame: its bytes and the time.  ISR context.
+ *
+ * @param h The handle.
+ * @param ev The frame.
+ * @param ctx Unused.
+ * @return false: no task to wake.
+ */
+static bool on_conv_done(adc_continuous_handle_t h, const adc_continuous_evt_data_t *ev,
+                         void *ctx)
+{
+    (void)h;
+    (void)ctx;
+    const uint64_t now = (uint64_t)esp_timer_get_time();
+    portENTER_CRITICAL_ISR(&s_done_mux);
+    s_done_bytes += ev->size;
+    s_done_us = now;
+    portEXIT_CRITICAL_ISR(&s_done_mux);
     return false;
 }
 
@@ -209,11 +256,11 @@ static void on_report(const vibe_report_t *r, void *ctx)
     (void)ctx;
     rcnode_bal_report_t p;
     memset(&p, 0, sizeof p);
-    /* The window ended before the frame's last sample. */
+    /* The window ended before the last sample fed. */
     const uint32_t back = s_samples - r->end_sample;
     const uint64_t back_us = (uint64_t)back * 1000000u / BAL_FS_HZ;
     p.hdr.seq    = node_ble_stream_seq();
-    p.hdr.t_node = (uint32_t)(s_frame_us - back_us);
+    p.hdr.t_node = (uint32_t)(s_rows_us - back_us);
     p.flags      = (uint16_t)(r->flags & BAL_VIBE_FLAGS);
     p.quality    = (uint8_t)(r->quality_pct > 100u ? 100u : r->quality_pct);
     p.revs       = r->revs;
@@ -307,6 +354,45 @@ static void take_rows(size_t rows)
 }
 
 /**
+ * @brief Frames were lost in the driver's pool: the stream stopped, the
+ *        pool emptied, the stream, the splitter and the demodulator
+ *        started again on a clock without a gap.
+ *
+ * @return false when the stream does not start again.
+ */
+static bool stream_restart(void)
+{
+    (void)adc_continuous_stop(s_adc);
+    (void)adc_continuous_flush_pool(s_adc);
+    taskENTER_CRITICAL(&s_done_mux);
+    s_done_bytes = 0u;
+    taskEXIT_CRITICAL(&s_done_mux);
+    s_taken = 0u;
+    s_gen_seen = atomic_load(&s_ovf_gen);
+    vibe_frame_init(&s_fr, s_chans, BAL_NCH);
+    demod_restart();
+    return adc_continuous_start(s_adc) == ESP_OK;
+}
+
+/**
+ * @brief When the last vibration sample of the rows split so far was
+ *        converted.
+ *
+ * @param done_us When the driver finished its newest frame.
+ * @param done_bytes The bytes it had finished then.
+ * @param pos Bytes since the stream started to the end of the split.
+ * @return µs.
+ */
+static uint64_t rows_time(uint64_t done_us, uint32_t done_bytes, uint32_t pos)
+{
+    /* The open round's words come after the last row; the vibration
+     * sample is the row's first conversion. */
+    const uint32_t open = s_fr.synced ? s_fr.at : 0u;
+    const uint32_t vib_end = pos - VIBE_FRAME_WORD * (open + BAL_NCH - 1u);
+    return vibe_frame_time(done_us, done_bytes, vib_end, BAL_NS_PER_CONV);
+}
+
+/**
  * @brief `bal`: reads the stream, a frame at a time, until s_stop.
  *
  * @param arg Unused.
@@ -318,8 +404,19 @@ static void bal_task(void *arg)
     demod_start();
     while (!atomic_load(&s_stop)) {
         uint32_t len = 0u;
+        const uint32_t g0 = atomic_load(&s_ovf_gen);
         const esp_err_t e = adc_continuous_read(s_adc, s_buf, sizeof s_buf, &len,
                                                 BAL_READ_MS);
+        const uint32_t g1 = atomic_load(&s_ovf_gen);
+        if (!vibe_frame_whole(s_gen_seen, g0, g1)) {
+            /* A frame was lost before this read's data or during it. */
+            if (!stream_restart()) {
+                ESP_LOGE(NODE_TAG, "bal: the ADC stream did not start again");
+                atomic_store(&s_sensor, RCNODE_SENSOR_REFUSED);
+                break;
+            }
+            continue;
+        }
         if (e == ESP_ERR_TIMEOUT) {
             continue;           /* nothing in 100ms */
         }
@@ -327,10 +424,10 @@ static void bal_task(void *arg)
             vTaskDelay(pdMS_TO_TICKS(10));    /* the `node` task runs below */
             continue;
         }
-        s_frame_us = node_us();
-        if (atomic_exchange(&s_ovf, false)) {
-            demod_restart();
-        }
+        taskENTER_CRITICAL(&s_done_mux);
+        const uint32_t done_bytes = s_done_bytes;
+        const uint64_t done_us = s_done_us;
+        taskEXIT_CRITICAL(&s_done_mux);
         take_control();
         size_t at = 0u;
         while (at < len) {
@@ -338,6 +435,7 @@ static void bal_task(void *arg)
                                                     s_out, BAL_ROWS);
             at += r.used;
             if (r.rows > 0u) {
+                s_rows_us = rows_time(done_us, done_bytes, s_taken + (uint32_t)at);
                 take_rows(r.rows);
             }
             if (r.broke) {
@@ -346,8 +444,10 @@ static void bal_task(void *arg)
                 break;          /* bytes past the last whole word */
             }
         }
+        s_taken += len;
     }
     (void)adc_continuous_stop(s_adc);
+    atomic_store(&s_streaming, false);
     atomic_store(&s_stopped, true);
     vTaskSuspend(NULL);
 }
@@ -423,11 +523,10 @@ static bool word_layout_ok(void)
  *
  * @return true when the stream runs.
  */
-static bool stream_start(void)
+static bool stream_open(void)
 {
     static const int gpios[BAL_NCH] = { BAL_VIB_GPIO, BAL_IDX_GPIO, BAL_BAT_GPIO };
     adc_digi_pattern_config_t pat[BAL_NCH];
-    uint8_t chans[BAL_NCH];
     for (unsigned k = 0; k < BAL_NCH; ++k) {
         adc_unit_t unit;
         adc_channel_t chan;
@@ -440,12 +539,15 @@ static bool stream_start(void)
         pat[k].channel = (uint8_t)chan;
         pat[k].unit = ADC_UNIT_1;
         pat[k].bit_width = SOC_ADC_DIGI_MAX_BITWIDTH;
-        chans[k] = (uint8_t)chan;
+        s_chans[k] = (uint8_t)chan;
     }
-    vibe_frame_init(&s_fr, chans, BAL_NCH);
+    vibe_frame_init(&s_fr, s_chans, BAL_NCH);
+    /* A full pool drops the frames it holds and keeps the newest; the
+     * generation check restarts the stream either way. */
     const adc_continuous_handle_cfg_t hc = {
         .max_store_buf_size = BAL_FRAME_BYTES * BAL_POOL_FRAMES,
         .conv_frame_size    = BAL_FRAME_BYTES,
+        .flags = { .flush_pool = 1 },
     };
     if (adc_continuous_new_handle(&hc, &s_adc) != ESP_OK) {
         s_adc = NULL;
@@ -457,10 +559,34 @@ static bool stream_start(void)
         .sample_freq_hz = BAL_REQ_HZ,
         .conv_mode      = ADC_CONV_SINGLE_UNIT_1,
     };
-    const adc_continuous_evt_cbs_t cbs = { .on_pool_ovf = on_pool_ovf };
+    const adc_continuous_evt_cbs_t cbs = {
+        .on_conv_done = on_conv_done,
+        .on_pool_ovf  = on_pool_ovf,
+    };
+    s_gen_seen = atomic_load(&s_ovf_gen);
     return adc_continuous_config(s_adc, &cc) == ESP_OK
            && adc_continuous_register_event_callbacks(s_adc, &cbs, NULL) == ESP_OK
            && adc_continuous_start(s_adc) == ESP_OK;
+}
+
+/**
+ * @brief Starts the stream; on a failure frees the driver, so the battery's
+ *        one-shot read can take ADC1.
+ *
+ * @return true when the stream runs.
+ */
+static bool stream_start(void)
+{
+    if (stream_open()) {
+        atomic_store(&s_streaming, true);
+        return true;
+    }
+    if (s_adc != NULL) {
+        (void)adc_continuous_stop(s_adc);
+        (void)adc_continuous_deinit(s_adc);
+        s_adc = NULL;
+    }
+    return false;
 }
 
 /** @brief The TCRT5000 module's supply, the scale and the stream. */
@@ -470,8 +596,12 @@ static void bal_start(void)
         .pin_bit_mask = 1ull << BAL_IR_GPIO,
         .mode = GPIO_MODE_OUTPUT,
     };
+    /* Low first, so the pad leaves the hold of the last sleep at the
+     * level it was held at. */
+    (void)gpio_set_level(BAL_IR_GPIO, 0);
     (void)gpio_config(&io);
     (void)gpio_set_drive_capability(BAL_IR_GPIO, GPIO_DRIVE_CAP_3);
+    (void)gpio_hold_dis(BAL_IR_GPIO);
     (void)gpio_set_level(BAL_IR_GPIO, 1);
 
     s_cali_vib = cali_for(ADC_CHANNEL_0);
@@ -492,8 +622,13 @@ static void bal_start(void)
              (unsigned)s_cfg.dc_min, (unsigned)s_cfg.dc_max,
              s_cal_nominal ? "nominal curve, no calibration" : "calibrated");
     if (xTaskCreate(bal_task, "bal", 4096, NULL, 5, &s_task) != pdPASS) {
+        s_task = NULL;
         ESP_LOGE(NODE_TAG, "bal: task not started");
         atomic_store(&s_sensor, RCNODE_SENSOR_REFUSED);
+        atomic_store(&s_streaming, false);
+        (void)adc_continuous_stop(s_adc);
+        (void)adc_continuous_deinit(s_adc);
+        s_adc = NULL;
     }
 }
 
@@ -576,7 +711,8 @@ static bool bal_busy(void)
     return false;
 }
 
-/** @brief The stream stopped, then the TCRT5000 module's supply off. */
+/** @brief The stream stopped, then the TCRT5000 module's supply off and
+ *  held off through deep sleep. */
 static void bal_sleep(void)
 {
     if (s_task != NULL) {
@@ -586,6 +722,7 @@ static void bal_sleep(void)
         }
     }
     (void)gpio_set_level(BAL_IR_GPIO, 0);
+    (void)gpio_hold_en(BAL_IR_GPIO);
 }
 
 /**
@@ -605,19 +742,58 @@ static bool bal_wake(int32_t *vbus_uv)
 void node_bat_init(void)
 {
     adc_unit_t unit;
-    adc_channel_t chan;
-    if (adc_continuous_io_to_channel(BAL_BAT_GPIO, &unit, &chan) != ESP_OK) {
+    if (adc_continuous_io_to_channel(BAL_BAT_GPIO, &unit, &s_bat_chan) != ESP_OK) {
         ESP_LOGE(NODE_TAG, "bat: GPIO%d has no ADC channel", BAL_BAT_GPIO);
         return;
     }
-    s_cali_bat = cali_for(chan);
+    s_cali_bat = cali_for(s_bat_chan);
     if (s_cali_bat == NULL) {
         ESP_LOGW(NODE_TAG, "bat: no ADC calibration");
     }
 }
 
+/**
+ * @brief The battery without the stream: a one-shot read of ADC1, as the
+ *        power node reads it, BAL_BAT_ONE_N samples averaged.
+ *
+ * @return The pin, mV; -1 when the read fails.
+ */
+static int bat_oneshot_mv(void)
+{
+    if (s_one == NULL) {
+        const adc_oneshot_unit_init_cfg_t uc = { .unit_id = ADC_UNIT_1 };
+        if (adc_oneshot_new_unit(&uc, &s_one) != ESP_OK) {
+            s_one = NULL;
+            return -1;
+        }
+        const adc_oneshot_chan_cfg_t cc = {
+            .atten    = ADC_ATTEN_DB_12,
+            .bitwidth = ADC_BITWIDTH_12,
+        };
+        if (adc_oneshot_config_channel(s_one, s_bat_chan, &cc) != ESP_OK) {
+            return -1;
+        }
+    }
+    int sum = 0;
+    for (unsigned k = 0; k < BAL_BAT_ONE_N; ++k) {
+        int mv = 0;
+        if (adc_oneshot_get_calibrated_result(s_one, s_cali_bat, s_bat_chan, &mv) != ESP_OK) {
+            return -1;
+        }
+        sum += mv < 0 ? 0 : mv;
+    }
+    return sum / (int)BAL_BAT_ONE_N;
+}
+
 uint16_t node_bat_read(void)
 {
+    if (!atomic_load(&s_streaming)) {
+        if (s_cali_bat == NULL) {
+            return NODE_BAT_ERR;
+        }
+        const int mv = bat_oneshot_mv();
+        return mv < 0 ? NODE_BAT_ERR : node_bat_mv((uint32_t)mv);
+    }
     taskENTER_CRITICAL(&s_mux);
     const uint32_t sum = s_bat_sum;
     const uint32_t cnt = s_bat_n;

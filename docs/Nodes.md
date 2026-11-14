@@ -248,7 +248,9 @@ the ESP32-C6's strapping pins are GPIO4, GPIO5, GPIO8, GPIO9 and GPIO15
 external 32kHz crystal. The ESP32-C6-Zero carries none (its schematic shows
 the 40MHz crystal only), and the firmware runs the slow clock on the
 internal RC oscillator (`CONFIG_RTC_CLK_SRC_INT_RC`). GPIO20 is on the
-board's header, neither an ADC channel nor a strapping pin.
+board's header, neither an ADC channel nor a strapping pin. The node
+holds it low through deep sleep (`gpio_hold_en()`) and releases the hold at
+start.
 
 **The module's supply from GPIO20.** The TCRT5000's infrared LED is the
 node's largest sensor load. A pin at drive strength 3 sources up to 40mA at
@@ -326,7 +328,13 @@ The line's contrast on a motor bell and the module's edge are not measured.
 
 The battery is the third channel of the stream: a one-shot read of ADC1
 fails while continuous mode holds the unit. STATUS takes the mean of a
-second's battery samples.
+second's battery samples. While the stream does not run (it did not start,
+or it could not start again), the node reads the battery one-shot, 16
+samples averaged, as the power node does.
+
+A report's `t_node` is the time its window's last vibration sample was
+converted. The node dates it from the newest frame the driver finished,
+so a backlog of frames in the driver's pool does not make it late.
 
 The phase counts in degrees from the index edge, in the order points pass
 the index sensor: against the direction of rotation, as the BALANCE screen
@@ -345,9 +353,17 @@ nothing on the balance node.
 first report, `RCNODE_SENSOR_ONLINE` (5) while the last report's DC was in
 range, `RCNODE_SENSOR_ABSENT` (2) before it ever was,
 `RCNODE_SENSOR_OFFLINE` (6) after it was, and `RCNODE_SENSOR_REFUSED` (4)
-when the ADC stream did not start. `errors` counts lost
-conversions and a full driver pool (a lost frame); each restarts the
-demodulator, which `resets` counts, and loses the open report.
+when the ADC stream did not start. `errors` counts two events, and
+`resets` the restarts they cause; each loses the open report:
+
+- a conversion out of the pattern's order: the demodulator starts again
+  there;
+- a full driver pool. The node fell more than 8 frames (80ms) behind, and
+  the driver dropped the frames it held. Lost frames are whole rounds of
+  the pattern, so the order does not show them. The node counts the
+  driver's overflows, drops a read that one came before or during, stops
+  the stream, empties the pool and starts the stream and the demodulator
+  again. The samples up to the restart are lost, about 80ms or more.
 
 **Calibration.** Nothing on the node is calibrated against a known
 vibration. The ADC's error after calibration is ±40mV at 12dB (datasheet
@@ -488,8 +504,8 @@ this start`.
   have.
 - The balance node does not compensate the ADXL's filter: at 167Hz its
   magnitude reads 1.2% low and its phase 9° late (above).
-- A lost conversion or a full driver pool loses the open balance report
-  (`errors`, `resets` in STATUS).
+- A lost conversion loses the open balance report; a full driver pool loses
+  it and at least 80ms of samples (`errors`, `resets` in STATUS).
 - The balance node holds its ADXL on 3V3 while it sleeps: 350µA.
 - The WS2812 is not driven. Its current at idle is not measured.
 - The firmware is updated over USB only.
