@@ -31,6 +31,7 @@ extern "C" {
 typedef enum {
     MOTOR_PANE_PLOT = 0,
     MOTOR_PANE_TABLE,
+    MOTOR_PANE_BAL,     /**< the balance node's runs (motor_balance.h) */
     MOTOR_PANE_COUNT
 } motor_pane_t;
 

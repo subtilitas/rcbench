@@ -17,6 +17,8 @@
  * | --- | --- | --- |
  * | 0 | the Bluetooth IMU | panel_imu.c |
  * | 1 | the M5Stack Dial | panel_dial.c |
+ * | 2 | the power node | panel_pnode.c |
+ * | 3 | the balance node | panel_bal.c |
  *
  * SPDX-License-Identifier: MIT
  */
@@ -26,6 +28,10 @@
 #define PANEL_BLEC_IMU 0u
 /** @brief The M5Stack Dial's owner (dial_ctl.h, DIAL_BLE_OWNER). */
 #define PANEL_BLEC_DIAL 1u
+/** @brief The power node's owner (pnode_ctl.h, PNODE_BLE_OWNER). */
+#define PANEL_BLEC_PNODE 2u
+/** @brief The balance node's owner (bal_ctl.h, BAL_BLE_OWNER). */
+#define PANEL_BLEC_BAL 3u
 
 /**
  * @brief Start the task, once, after every client's start function.  Later

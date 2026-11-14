@@ -114,10 +114,16 @@ advertisement loses the response's name.
 ## Connect
 
 `bleu_bind()` keeps the address; `bleu_enable()` switches the central on
-and off. While on and bound, the central connects, and after any failure
-or drop it tries again after 1000ms (`BLEU_RETRY_MS`); a connect the host
-stack ends with a failure, HCI 0x3E (failed to be established) among
-them, is tried again after 7000ms (`BLEU_RETRY_CONNECT_MS`).
+and off. While on and bound, the central connects, and after a failed
+step or a drop it tries again after 1000ms (`BLEU_RETRY_MS`). A connect
+that goes unanswered backs off: one that times out waits 1000ms the first
+time, one the host stack ends with a failure, HCI 0x3E (failed to be
+established) among them, 7000ms (`BLEU_RETRY_CONNECT_MS`), and each
+further one twice the gap before, up to 30000ms (`BLEU_BACKOFF_MAX_MS`).
+A scan, a bind, switching on and a connect that comes up start the gaps
+over at 1000ms. A bound peripheral that is away so holds the host stack's
+one connect for 5000ms in 6000ms at first and for 5000ms in 35000ms
+after six tries, which leaves the slot to the hub's other clients.
 
 | Step | Action | Timeout | Fails as |
 |---|---|---|---|
@@ -370,7 +376,9 @@ rules at their limits and the busy connect's retry;
 without it, three clients coming up one connect at a time, routing by
 token and by handle, a scan during another client's connect, a second
 scan, a lost and a held-back DISCONNECT, another client's cancel, stop
-and handle, the slot's ends and its time limits. The table in `STATUS.md` has the line coverage per file.
+and handle, the slot's ends and its time limits, an absent peripheral's
+gaps doubling to 30000ms beside a Dial that, dropped, is up again after
+its 1000ms retry, and failed connects' gaps doubling from 7000ms. The table in `STATUS.md` has the line coverage per file.
 
 ```sh
 cmake -S test/host -B test/host/build

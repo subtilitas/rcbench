@@ -23,6 +23,7 @@
 #include "ui_footer.h"
 #include "ui_widgets.h"
 
+#include "motor_balance.h"
 #include "motor_live_int.h"
 
 /* ------------------------------------------------------------------ events */
@@ -194,6 +195,9 @@ void mo_event(const touch_event_t *evt)
         /* The other pane paints over this one's region, so the record of
          * what was drawn there is void -- not merely the chrome's. */
         motor_invalidate();
+    } else if (on_live && s.tabs.selected == MOTOR_PANE_BAL) {
+        /* TAKE, the method, CLEAR: a measurement, no output moves. */
+        (void)mbal_event(evt, mo_bal_area());
     }
     /* Refused while the value is not live: the track takes no press, so a
      * bench armed under a finger resting on it moves nothing until the next

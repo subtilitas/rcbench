@@ -19,8 +19,10 @@
 #include "bleuart_hub.h"
 #include "panel.h"
 #include "panel_ble.h"
+#include "panel_bal.h"
 #include "panel_dial.h"
 #include "panel_imu.h"
+#include "panel_pnode.h"
 
 /** @brief The console lines' tag. */
 static const char *TAG = "blec";
@@ -53,6 +55,10 @@ static void client_event(uint8_t owner, const bleu_evt_t *e, uint32_t now)
         panel_imu_blec_event(e, now);
     } else if (owner == PANEL_BLEC_DIAL) {
         panel_dial_blec_event(e, now);
+    } else if (owner == PANEL_BLEC_PNODE) {
+        panel_pnode_blec_event(e, now);
+    } else if (owner == PANEL_BLEC_BAL) {
+        panel_bal_blec_event(e, now);
     }
 }
 
@@ -70,6 +76,12 @@ static bool client_step(uint8_t owner, uint32_t now, bleu_act_t *out)
     }
     if (owner == PANEL_BLEC_DIAL) {
         return panel_dial_blec_step(now, out);
+    }
+    if (owner == PANEL_BLEC_PNODE) {
+        return panel_pnode_blec_step(now, out);
+    }
+    if (owner == PANEL_BLEC_BAL) {
+        return panel_bal_blec_step(now, out);
     }
     return false;
 }
@@ -115,6 +127,8 @@ static void blec_task(void *arg)
         const uint32_t now = now_ms();
         panel_imu_blec_poll(now);
         panel_dial_blec_poll(now);
+        panel_pnode_blec_poll(now);
+        panel_bal_blec_poll(now);
         bleu_evt_t e;
         for (unsigned i = 0; i < BLEC_EVTS_MAX && panel_ble_get(&e); ++i) {
             bleu_hub_event(&s_hub, &e, now);
@@ -132,6 +146,8 @@ static void blec_task(void *arg)
         }
         panel_imu_blec_publish(now);
         panel_dial_blec_publish(now);
+        panel_pnode_blec_publish(now);
+        panel_bal_blec_publish(now);
     }
 }
 
@@ -144,6 +160,8 @@ void panel_blec_start(void)
     bleu_hub_init(&s_hub);
     (void)bleu_hub_add(&s_hub, PANEL_BLEC_IMU);
     (void)bleu_hub_add(&s_hub, PANEL_BLEC_DIAL);
+    (void)bleu_hub_add(&s_hub, PANEL_BLEC_PNODE);
+    (void)bleu_hub_add(&s_hub, PANEL_BLEC_BAL);
     /*
      * Core 0 beside the renderer, at the knob's priority 2: polls of 5ms,
      * nothing with a deadline.  Stack 4096 bytes: the clients and the hub

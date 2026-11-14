@@ -30,6 +30,7 @@
 
 #include "ui_footer.h"
 
+#include "motor_balance.h"
 #include "motor_live_int.h"
 
 /**
@@ -102,7 +103,7 @@ static void draw_header(gfx_canvas_t *c, bool on_live)
                     line, MO_FONT_LABEL, ui_theme_color(UI_C_TEXT_DIM), 1,
                     GFX_ALIGN_LEFT);
         /* At its widest, a 10-digit count in German, 40 cells of 8px:
-         * 320 of the line's 386px. */
+         * 320 of the line's 322px. */
         char refused[48];
         if (ui_link_refused_label(st, refused, sizeof(refused))) {
             gfx_text_in(c, (gfx_rect_t){ (int16_t)x0, SUB_Y + 22,
@@ -772,6 +773,9 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
                             GFX_ALIGN_CENTER);
             }
         }
+    } else if (s.tabs.selected == MOTOR_PANE_BAL) {
+        /* The balance node's runs, on their own revision. */
+        mbal_render(c, buf, mo_bal_area(), ui_theme_color(UI_C_PANEL));
     } else if (data_moved) {
         /* From the legend's line down: PLOT | TABLE and the rate over
          * it are drawn on their own counters. */

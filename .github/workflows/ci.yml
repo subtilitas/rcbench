@@ -343,7 +343,8 @@ jobs:
 
       # A reading costs at most 700 fills; 1,000 catches a whole page (16,000+).
       - name: A reading repaints only what the page shows of it
-        run: python3 tools/frame_cost.py servo-kst servo-hitec wifi-idle imu imu-hold --max-lines 1000
+        run: python3 tools/frame_cost.py servo-kst servo-hitec wifi-idle imu imu-hold
+             balance-node --max-lines 1000
 
       # The screen guide caches its dock and draws its badges and corner
       # brackets every frame, about 370 fills on the menu; 1,000 catches

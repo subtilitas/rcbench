@@ -190,9 +190,10 @@ bool panel_dial_blec_step(uint32_t now, bleu_act_t *out)
     if (s_q == NULL) {
         return false;
     }
-    const uint32_t errors = s_ctl.errors;
     const bool acted = dial_ctl_step(&s_ctl, now, atomic_load(&s_live), out);
-    if (s_ctl.errors != errors) {
+    /* Against the count last published, as panel_pnode.c does: a count
+     * raised outside the step is published too. */
+    if (s_ctl.errors != atomic_load(&s_errors)) {
         ESP_LOGE(TAG, "Dial lost while ARMED: an error, the bench to SAFE "
                       "(%u)", (unsigned)s_ctl.errors);
         atomic_store(&s_errors, s_ctl.errors);

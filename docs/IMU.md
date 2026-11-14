@@ -109,7 +109,7 @@ IMU ON when it is off and starts the scan once Bluetooth LE runs
 
 | Step | Time limit | Fails as |
 | --- | ---: | --- |
-| connect to the bound address, interval 30 to 50ms, latency 0, supervision timeout 4,000ms, connect scan 30ms in every 60ms | 5,000ms | NO CONNECTION, again after 7,000ms for a failure the host reports (HCI 0x3E among them), after 1,000ms for the time limit |
+| connect to the bound address, interval 30 to 50ms, latency 0, supervision timeout 4,000ms, connect scan 30ms in every 60ms | 5,000ms | NO CONNECTION, again after 7,000ms for a failure the host reports (HCI 0x3E among them), after 1,000ms for the time limit; each further connect without an answer waits twice the gap before, up to 30,000ms, until a scan, a bind or a link starts it over |
 | find the ISSC service 49535343-FE7D-4AE5-8FA9-9FAFD205E455 | 5,000ms | NOT A WITMOTION SENSOR, no retry until a new bind or IMU OFF and ON |
 | its characteristics: 1E4D with NOTIFY, 8841 with WRITE or WRITE NO RESPONSE | 5,000ms | NOT A WITMOTION SENSOR |
 | 1E4D's CCCD (client characteristic configuration descriptor) | 5,000ms | NOT A WITMOTION SENSOR |

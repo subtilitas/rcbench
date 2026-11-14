@@ -87,4 +87,7 @@
 #define BL_KP_Y            64            /**< The keypad's top. */
 #define BL_KP_H            428           /**< Its height, px. */
 #define BL_MARK_Y          338           /**< The SIMULATED pill's top. */
+#define BL_READ_Y          218           /**< The first reading's row. */
+#define BL_READ_H          28            /**< A reading's row, px. */
+#define BL_VALUE_X         780           /**< The readings' values' left. */
 #define BL_NOTE_RULE_Y     360           /**< The rule over the note. */

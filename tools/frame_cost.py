@@ -87,7 +87,7 @@ MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
          "battery-chrome", "balance-chrome", "motor-stick-chrome",
          "motor-wire-chrome",
          "picker", "picker-chrome", "wifi", "wifi-chrome", "wifi-keys",
-         "wifi-idle", "imu", "imu-hold",
+         "wifi-idle", "imu", "imu-hold", "balance-node",
          "clear",
          "vlines", "hlines"]
 

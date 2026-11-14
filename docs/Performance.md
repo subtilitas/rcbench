@@ -87,7 +87,7 @@ settings-sim                 3,374     422 KiB
 battery-sim                  3,300     412 KiB
 analyser-chrome             53,472    6684 KiB
 logs-chrome                 28,260    3532 KiB
-settings-chrome             33,886    4236 KiB
+settings-chrome             35,719    4465 KiB
 settings-list-chrome        37,319    4665 KiB
 battery-chrome              54,643    6830 KiB
 balance-chrome              57,992    7249 KiB
@@ -101,6 +101,7 @@ wifi-keys                   36,944    4618 KiB
 wifi-idle                        0       0 KiB
 imu                            137      17 KiB
 imu-hold                       626      78 KiB
+balance-node                   683      85 KiB
 clear                       19,207    2401 KiB
 vlines                      10,201    1275 KiB
 hlines                         180      22 KiB
@@ -135,6 +136,7 @@ est. ms and est. fps: not measured
 | `wifi-idle` | WI-FI with the access point up, the idle time 1s shorter in every frame: the page shows it in whole minutes, so nothing is repainted |
 | `imu` | the IMU screen with an angle frame in every frame, X 0.1° from the one before: the X line repainted, clipped to itself |
 | `imu-hold` | the IMU screen, a finger on HOLD 2s: CALIBRATE in the footer: the button and the age on the RATE line repainted, each clipped to itself |
+| `balance-node` | BALANCE with a balance node linked and a report in every frame whose magnitude, angle, rpm and quality differ from the one before: the four values VIBRATION, ANGLE, SPEED and SIGNAL repainted in their boxes |
 | `<screen>-sim` | the same screen with the SIMULATION watermark |
 | `<screen>-chrome` | the same screen invalidated on every frame |
 | `clear` | a full-screen clear |
@@ -255,7 +257,7 @@ increased drawing work in the model; it does not detect a missed display deadlin
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
 | `servo-rudder` | 4,600 | a new angle on RUDDER that repaints more than the readout, the state lines and the flap's two boxes |
 | `servo-test` | 1,000 | a moving arm or a new reading that repaints the TEST page |
-| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold` | 1,000 | a PD mini reading the state line does not show that repaints the session, an idle second inside the minute shown that repaints WI-FI, or a reading or the hold's fill that repaints the IMU screen whole |
+| `servo-kst`, `servo-hitec`, `wifi-idle`, `imu`, `imu-hold`, `balance-node` | 1,000 | a PD mini reading the state line does not show that repaints the session, an idle second inside the minute shown that repaints WI-FI, a reading or the hold's fill that repaints the IMU screen whole, or a balance node's report that repaints BALANCE whole |
 | `motor-stick` | 2,000 | a growing steady frame of ESC STICK, 1,713 fills in the table above |
 | the three `-sim` modes | 3,600 | a watermark that has grown past the full canvas |
 | the eleven `-chrome` modes | 72,000 | a growing full repaint |
@@ -409,11 +411,11 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,704 | 2,448 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,720 | 2,432 |
 | `control` | `control_task` | 6,144 | 3,680 | 1,424 |
 | `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's and the Dial's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`) | 4,096 | 1,808 | 1,248 |
+| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and the power node's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`) | 4,096 | 1,808 | 1,248 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -421,7 +423,7 @@ its stack less 1024 bytes.
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
-| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,216 | 1,840 |
+| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
 | `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,432 | 3,696 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of
@@ -711,7 +713,7 @@ PSRAM free at start-up: not measured.
 Bluetooth LE (Low Energy) runs on the C6 as well; the P4 runs its host,
 NimBLE ([The ESP32-C6 radio, Bluetooth LE through the
 ESP32-C6](C6.md#bluetooth-le-through-the-esp32-c6)). The host starts
-at `panel_ble_start()`, which the IMU's and the Dial's sides of the `blec` task call at the first IMU ON or Dial ON and
+at `panel_ble_start()`, which the IMU's, the Dial's and the power node's sides of the `blec` task call at the first IMU ON, Dial ON or Power node ON and
 the console build's `ble scan` calls, and stays until the panel restarts. The start logs the free memory before and
 after it:
 
@@ -746,7 +748,11 @@ since the IMU and the Dial start it:
 The console row is measured without the Dial's client (`panel_dial.c`,
 `dial_ctl.c`, `dial_stream.c`, `dial_panel.c` and `protocols/dialknob`); with
 it, not measured. The Dial's client adds 4,376 bytes of DIRAM, 4,368 of them
-.bss, and 23,536 bytes of image to the default build.
+.bss, and 23,536 bytes of image to the default build. The power node's
+client, its objects alone (`panel_pnode.c`, `pnode_ctl.c`, `pnode_meter.c`,
+`wireless_pnode.c` and `protocols/rcnode`), adds 3,869 bytes of DIRAM,
+3,861 of them .bss, and 11,748 bytes of image (`esp_idf_size --files`);
+its texts and its calls in other files are not counted.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one

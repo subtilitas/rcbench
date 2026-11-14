@@ -21,7 +21,7 @@ SETUP enthält die prüfstandsweiten Paneleinstellungen in den Kategorien PANEL,
 | WI-FI | `NETZWERK, DATEIEN, UPLOAD` | [WLAN](wifi.md): Funkverbindung für Kartendateien und Firmware-Images im Browser. |
 | UPDATES | `VERSIONEN AUF GITHUB` | [Updates](updates.md): Suche nach neuerer Panel-Firmware und Update-Erinnerung. |
 | IMU | `BLUETOOTH-WINKELSENSOR` | [IMU](imu.md): WitMotion BWT901CL über Bluetooth LE, Sensorsuche und Binden, Kalibrierung und aktuelle Winkel. |
-| WIRELESS | `IMU, DIAL` | [Wireless](setup-wireless.md): die Einstellungen der IMU und das M5Stack Dial, seine Suche, seine Bindung und seine Schritte. |
+| WIRELESS | `IMU, DIAL, LEISTUNG, AUSWUCHTEN` | [Wireless](setup-wireless.md): die Einstellungen der IMU, das M5Stack Dial, seine Suche, seine Bindung und seine Schritte, der Leistungsknoten mit INA228-Quelle und der Auswuchtknoten mit seiner Testmasse. |
 | LAYOUT | `STECKER UND PINS` | [Layout](layout.md): nur auf dem rbmod-Carrier mit fest verlöteten Pins. |
 
 1 Platz bleibt frei; auf dem Carrier belegt ihn LAYOUT. Wie bei den Listen steht unten rechts die Speichertaste. Sie zeigt ungespeicherte Änderungen aus allen Kategorien an:

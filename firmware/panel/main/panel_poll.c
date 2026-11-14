@@ -27,6 +27,7 @@
 #include "outputs_screen.h"
 #include "outputs_pages.h"
 #include "panel.h"
+#include "panel_pnode.h"
 #include "prog_link.h"
 #include "sense_link.h"
 #include "servo_page.h"
@@ -141,6 +142,9 @@ static bool poll_bench(bench_state_t *bench)
         sense_map_service(written && !armed && !outputs_armed(&s_out));
         sense_link_service(written && !armed && !outputs_armed(&s_out),
                            bench);
+        /* And the power node's readings over them while INA228 SOURCE is
+         * NODE: BENCH's own then move to the ESC's figures. */
+        panel_pnode_bench(bench);
         /* And every channel's last window, armed or not: readings.  After
          * SERVO_WIN, so the pages hold the ring's newest window or a newer
          * one, and a row of the ring finds its window on them. */
