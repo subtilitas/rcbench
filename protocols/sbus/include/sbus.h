@@ -2,9 +2,10 @@
  * @file
  * @brief Futaba S.BUS: sixteen channels in twenty-five bytes.
  *
- * Implements the S.BUS receiver protocol of Futaba.  Futaba and S.BUS are
- * names or trademarks of their respective owners; they are used here only to
- * say which receivers this module works with (NOTICE, "Trademarks").
+ * Implements the S.BUS protocol of Futaba in both directions.  Futaba and
+ * S.BUS are names or trademarks of their respective owners; they are used
+ * here only to say which receivers and devices this module works with
+ * (NOTICE, "Trademarks").
  *
  * The wire is an inverted 8E2 UART (universal asynchronous
  * receiver-transmitter) at 100 kbaud.  This file decodes the bytes a
@@ -141,6 +142,12 @@ uint16_t sbus_to_us(uint16_t raw);
  * the raw value, rounded to the nearest and halves away from 1000us, then
  * clamped to SBUS_RAW_MIN to SBUS_RAW_MAX.  1500us is a half and gives 992.
  *
+ * The microseconds are those of this line, not of every device.  A device
+ * that reads 0.625us per count from 880us puts 1811 at 2011.9us, 11.9us
+ * higher, and 172 at 987.5us, 12.5us lower; these figures are worked out
+ * from the formula and not measured on a device.  A caller that holds a
+ * ceiling on the pulse a device produces applies it in raw counts.
+ *
  * For every @p us from 895 to 2144, sbus_to_us(sbus_from_us(us)) == us.
  * Below 895us the result is 0 and above 2144us it is 2047, which
  * sbus_to_us() reads as 895us and 2144us.  The other direction does not
@@ -163,7 +170,10 @@ uint16_t sbus_from_us(uint16_t us);
  *
  * A channel above SBUS_RAW_MAX does not fit in eleven bits and is refused,
  * not clamped: the whole frame is refused and @p out is not written, so the
- * caller decides what to send in its place.
+ * caller decides what to send in its place.  On false the caller does not
+ * send @p out, which holds whatever it held before.  It sends a frame with
+ * the throttle channel at its stop value and the failsafe flag set, or it
+ * stops sending and lets the device's own failsafe act.
  *
  * @param f    Frame to pack.  NULL returns false.
  * @param out  Receives SBUS_FRAME_BYTES bytes.  NULL returns false.

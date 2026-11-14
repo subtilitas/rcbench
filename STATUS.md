@@ -2671,14 +2671,15 @@ Decoder built; the inverted 8E2 receiver at 100 kbaud is a PIO program that is n
 
 **Next evidence or work:** PIO program.
 
-### Bus servos are not started
+### Bus servo outputs: S.BUS frames only
 
-Step 5 of the servo tester (#223): Feetech SCS/STS and Dynamixel 2.0 serial servos, S.BUS
-and S.BUS2 output, and JETI EX Bus channel output, each from its published specification. The
-S.BUS frame encoder is built and host-tested (`protocols/sbus`); no pin driver sends its
-bytes and no output uses it. A "ditec" bus servo on the owner's list is unconfirmed, possibly
-Hitec; a Hitec bus is taken up only if one is specified. S.BUS2 telemetry slots and
-configuration over EX Bus stay not planned.
+Step 5 of the servo tester (#223): Feetech SCS/STS and Dynamixel 2.0 serial
+servos, S.BUS and S.BUS2 output, and JETI EX Bus channel output, each from its
+published specification. The S.BUS frame encoder is built and host-tested
+(`protocols/sbus`); no pin driver sends its bytes and no output uses it. The
+rest is not started. A "ditec" bus servo on the owner's list is unconfirmed,
+possibly Hitec; a Hitec bus is taken up only if one is specified. S.BUS2
+telemetry slots and configuration over EX Bus stay not planned.
 
 **Next evidence or work:** the specifications, a servo of each, and a decision on the order.
 

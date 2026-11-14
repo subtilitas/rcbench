@@ -6,10 +6,10 @@
  * middle of a frame, staying locked, and reporting sixteen plausible channels
  * that are all wrong.  Nothing downstream can detect plausible-and-wrong.
  *
- * The encoder is held to frames whose bytes were worked out apart from it,
- * from the published layout (channel 1 in data byte 1 and the low three
- * bits of data byte 2, and so on), and to the decoder: a frame it packs
- * decodes to the frame it was given.
+ * The encoder is held to frames whose bytes come from the published layout,
+ * not from this module (channel 1 in data byte 1 and the low three bits of
+ * data byte 2, and so on), and to the decoder: a frame it packs decodes to
+ * the frame it was given.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -437,11 +437,11 @@ static bool same_bytes(const char *name, const uint8_t *got,
 }
 
 /*
- * Two frames whose bytes were computed apart from this module: the sixteen
- * values shifted into one 176-bit integer written out least significant
- * byte first, then read back through the published per-channel expressions
- * (channel 2 is data byte 2 shifted down three bits ORed with data byte 3
- * shifted up five, and so on) before the bytes were taken.
+ * Two frames whose bytes come from the published layout, not from this
+ * module: the sixteen values shifted into one 176-bit integer written out
+ * least significant byte first, and the bytes read back to the same values
+ * through the published per-channel expressions (channel 2 is data byte 2
+ * shifted down three bits ORed with data byte 3 shifted up five, and so on).
  */
 TEST_CASE(the_encoder_writes_the_published_layout_byte_for_byte)
 {

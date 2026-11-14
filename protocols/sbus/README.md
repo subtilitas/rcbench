@@ -53,7 +53,9 @@ and frames with an invalid footer.
 `sbus_encode()` writes `SBUS_FRAME_BYTES` bytes to `out` and returns true.
 It returns false and leaves `out` unchanged when an argument is NULL or a
 channel is above 2047. A frame it writes decodes with `sbus_decode_byte()`
-to the frame it was given.
+to the frame it was given. On false the caller does not send `out`. It
+sends a frame with the throttle channel at its stop value and the failsafe
+flag set, or it stops sending and lets the device's own failsafe act.
 
 `sbus_to_us()` rounds to the nearest microsecond and clamps to 800us to
 2200us. `sbus_from_us()` is its inverse: it rounds to the nearest count,
@@ -61,6 +63,12 @@ halves away from 1000us (1500us gives 992), and clamps to 0 to 2047. From
 895us to 2144us, `sbus_to_us(sbus_from_us(us))` returns `us`; below 895us
 the raw value is 0 and above 2144us it is 2047. The other direction lands
 within 1 count, since 2048 raw values share 1250 pulse widths.
+
+Both functions use the line through 172 = 1000us and 1811 = 2000us. A
+device that reads 0.625us per count from 880us produces 2011.9us at 1811,
+11.9us higher, and 987.5us at 172, 12.5us lower. These figures come from
+the formula and are not measured on a device. A caller that holds a
+ceiling on the pulse a device produces applies it in raw counts.
 
 ## Use in another pico-sdk project
 
@@ -76,7 +84,8 @@ program.
 ## Trademarks
 
 Futaba and S.BUS are names or trademarks of their respective owners; they
-are used here only to say which receivers this module works with. The
+are used here only to say which receivers and devices this module works
+with. The
 project is not affiliated with them. No vendor code is included.
 The full notice is in the repository's
 [README](../../README.md#legal-notice-and-disclaimer) and in the section
