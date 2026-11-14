@@ -15,7 +15,7 @@ rcbench/
   test/tools/             pytest cases for the tools
   test/web/               Playwright test of the Wi-Fi page's file manager
   shared/                 pure C: no ESP-IDF, no pico-sdk, no FreeRTOS types
-    gfx/                  rasteriser and seven fonts
+    gfx/                  rasteriser, seven fonts and antialiased ring tables
     touch/                coordinate and event mapping
     ui/                   theme · widgets · icons · router · screens
     settings/             typed schema and values
@@ -36,6 +36,7 @@ rcbench/
     text/                 the interface's words, every language in one table (header only)
     mstime/               wrap-safe comparisons of a 32-bit millisecond counter (header only)
     vibe/                 balance measurement: index comparator · 1x, 2x and blade-pass demodulator · two-run and four-run solvers
+    dial/                 the M5Stack Dial's faces: lists, values, readings and rings, link and bind; host-rendered
   protocols/              one module per external interface: a pure C core, its RP2350 pin driver in rp2350/, a README.md
     dshot/                DShot frames · GCR decode · eRPM · PIO driver, plain and bidirectional
     ppm/                  PPM frame layout · PIO and DMA driver
@@ -99,8 +100,8 @@ in a pico-sdk build only. Includes are flat: `#include "gfx.h"`.
 | `sense` · `pdmini` · `phase_tap` · `kst` · `hitec` · `dshot` | yes | yes | yes |
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
-| `hc05` · `dialknob` · `vibe` · `rcnode` | | | yes |
-| `bleuart` | yes | | yes |
+| `hc05` · `vibe` · `rcnode` · `dial` | | | yes |
+| `bleuart` · `dialknob` | yes | | yes |
 
 ## Toolchains
 

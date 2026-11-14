@@ -1,6 +1,6 @@
 /**
  * @file settings_draw.c
- * @brief SETUP's drawing: the hub's tiles and SENSORS' left list; a
+ * @brief SETUP's drawing: the hub's tiles and a split pane's left list; a
  *        category's rows, the SAVE strip and the warning that holds the way
  *        out are the settings list's (ui_setlist.h).
  *        settings_screen.c holds the state, the touch handling and the
@@ -53,15 +53,17 @@ static void draw_hub(gfx_canvas_t *c)
 }
 
 /**
- * @brief SENSORS' left list: each entry's name and its state under it, the
- *        selected entry lit, a pressed one with the accent edge.
- * @param c The canvas.
+ * @brief A split pane's left list, SENSORS' or WIRELESS': each entry's name
+ *        and its state under it, the selected entry lit, a pressed one with
+ *        the accent edge.
+ * @param c    The canvas.
+ * @param pane The pane (stg_pane()).
  */
-static void draw_entries(gfx_canvas_t *c)
+static void draw_entries(gfx_canvas_t *c, int pane)
 {
-    for (int e = 0; e < SENS_ENTRY_COUNT; ++e) {
+    for (int e = 0; e < stg_pane_count(pane); ++e) {
         const gfx_rect_t r = settings_screen_entry_rect(e);
-        const bool sel = e == sensors_pane_selected();
+        const bool sel = e == stg_pane_selected(pane);
         const bool down = s.sl.hit_kind == HIT_ENTRY && s.sl.hit_index == e;
         const int cy = r.y + ENTRY_INSET, ch = r.h - 2 * ENTRY_INSET;
         gfx_fill_chamfer_rect_ex(c, r.x, cy, r.w, ch, 8, 0, 8, 0,
@@ -70,8 +72,8 @@ static void draw_entries(gfx_canvas_t *c)
                                  (sel || down) ? UI_ACCENT : UI_EDGE);
         char name[24], state[48];
         gfx_color_t ink = UI_TEXT_DIM;
-        (void)sensors_pane_name(e, name, sizeof(name));
-        (void)sensors_pane_state(e, state, sizeof(state), &ink);
+        (void)stg_pane_name(pane, e, name, sizeof(name));
+        (void)stg_pane_state(pane, e, state, sizeof(state), &ink);
         gfx_text(c, r.x + 12, r.y + ENTRY_NAME_DY, name, STG_F_BODY,
                  sel ? UI_ACCENT : UI_TEXT, 1);
         gfx_text(c, r.x + 12, r.y + ENTRY_STATE_DY, state, &gfx_font_8x16, ink,
@@ -80,15 +82,16 @@ static void draw_entries(gfx_canvas_t *c)
 }
 
 /**
- * @brief Draws the list of the open category: on SENSORS its left list, then
- *        the rows clipped to the pane, the category's name and RESET
- *        (ui_setlist.h).
+ * @brief Draws the list of the open category: on a split pane its left
+ *        list, then the rows clipped to the pane, the category's name and
+ *        RESET (ui_setlist.h).
  * @param c The canvas.
  */
 static void draw_list(gfx_canvas_t *c)
 {
-    if (s.cat == SET_CAT_SENSORS) {
-        draw_entries(c);
+    const int pane = stg_pane(s.cat);
+    if (pane >= 0) {
+        draw_entries(c, pane);
     }
     ui_setlist_draw_rows(&s.sl, c);
     ui_setlist_draw_strip(&s.sl, c);

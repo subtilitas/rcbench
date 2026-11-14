@@ -433,11 +433,11 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 512 | 2 640 |
-| `control` | `control_task` | 6 144 | 3 664 | 1 440 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 704 | 2 448 |
+| `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`) | 4 096 | 1 792 | 1 264 |
+| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU und des Dial aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -528,7 +528,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  378
+  377
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -759,7 +759,7 @@ Freier PSRAM beim Start: nicht gemessen.
 Auch Bluetooth LE (Low Energy) läuft auf dem C6; der P4 betreibt seinen Host,
 NimBLE ([Der Funk über den ESP32-C6, Bluetooth LE über den
 ESP32-C6](C6-de.md#bluetooth-le-über-den-esp32-c6)). Der Host startet
-mit `panel_ble_start()`, das die Seite der IMU im Task `blec` beim ersten IMU EIN und `ble scan`
+mit `panel_ble_start()`, das die Seiten der IMU und des Dials im Task `blec` beim ersten IMU EIN oder Dial EIN und `ble scan`
 des Konsolen-Builds aufrufen, und bleibt bis zum Neustart des Panels. Der Start protokolliert den freien
 Speicher davor und danach:
 
@@ -786,13 +786,17 @@ RAM frei. Mit 5 Verbindungen sind diese Werte nicht gemessen.
 
 Der Bluetooth-LE-Teil des Images, aus der Linker-Map (`esp_idf_size`),
 ESP-IDF v6.1, gebaut ohne die IOmcu-Images. Beide Builds enthalten den Host,
-weil die IMU ihn startet:
+weil die IMU und das Dial ihn starten:
 
 | Build | Anwendungs-Image (Bytes) | Davon NimBLE, `libbt.a`, Flash (Bytes) | Davon die Central, `libbleuart.a`, Flash (Bytes) | Interner RAM des Images, DIRAM (Bytes) | Davon NimBLE (Bytes) |
 | --- | ---: | ---: | ---: | ---: | ---: |
-| Standard | 3 301 552 | 62 062 | 12 419 | 188 050 | 693 |
+| Standard | 3 325 088 | 62 062 | 13 249 | 192 426 | 693 |
 | Konsole (`RCBENCH_PANEL_CONSOLE`) | 3 325 872 | 62 102 | 12 419 | 197 880 | 693 |
 
+Die Zeile der Konsole ist ohne den Client des Dials gemessen (`panel_dial.c`,
+`dial_ctl.c`, `dial_stream.c`, `dial_panel.c` und `protocols/dialknob`); mit
+ihm nicht gemessen. Der Client des Dials fügt dem Standard-Build 4 376 Bytes
+DIRAM hinzu, davon 4 368 Bytes .bss, und 23 536 Bytes Image.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
 Verbindungen fügen dem Standard-Build mit einer Verbindung 3 704 Bytes

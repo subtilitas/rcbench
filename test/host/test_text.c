@@ -886,7 +886,8 @@ typedef struct {
 
 /** @brief Every entry of every table of ui_text.def, read here from the
  *  file itself: the screens', the settings' labels, help lines,
- *  categories and options, the servo test's and the Wi-Fi page's. */
+ *  categories and options, the servo test's, the Wi-Fi page's and the
+ *  Dial's. */
 static const text_entry_t k_entries[] = {
 #define UI_TEXT(id, cells, en, de) { "UI_TEXT", #id, (en), (de) },
 #define UI_SETTING_LABEL(id, en, de) { "UI_SETTING_LABEL", #id, (en), (de) },
@@ -896,6 +897,7 @@ static const text_entry_t k_entries[] = {
 #define UI_OPTION(en, de) { "UI_OPTION", "", (en), (de) },
 #define UI_SERVO_TEXT(id, en, de) { "UI_SERVO_TEXT", #id, (en), (de) },
 #define UI_WEB_TEXT(id, en, de) { "UI_WEB_TEXT", #id, (en), (de) },
+#define UI_DIAL_TEXT(id, en, de) { "UI_DIAL_TEXT", #id, (en), (de) },
 #include "ui_text.def"
 };
 

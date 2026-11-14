@@ -242,6 +242,55 @@ void servo_screen_knob_cancel(void)
     svs_knob_withdraw();
 }
 
+static void end_dial_drag(void);
+
+bool servo_screen_knob_shown(void)
+{
+    return (live_shown() || rudder_shown()) && !servo_test_running(&s.test)
+           && !servo_limrun_running(&s.lim) && !s.lim_leaving
+           && !servo_rauto_running(&s.ra.run) && !s.sweeping && !s.paused;
+}
+
+float servo_screen_travel_deg(void)
+{
+    return s.travel_deg;
+}
+
+void servo_screen_pulse_ends(uint16_t *min_us, uint16_t *max_us)
+{
+    if (min_us != NULL) {
+        *min_us = s.min_us;
+    }
+    if (max_us != NULL) {
+        *max_us = s.max_us;
+    }
+}
+
+float servo_screen_commanded_deg(void)
+{
+    return s.commanded_deg;
+}
+
+bool servo_screen_dial_press(void)
+{
+    /* As CENTER's press, a sweep included: it stops.  A test, a limit run
+     * and an AUTO run keep the horn, and so does a command the knob may
+     * not overwrite. */
+    if (!value_live() || (!live_shown() && !rudder_shown())
+        || servo_test_running(&s.test) || servo_limrun_running(&s.lim)
+        || s.lim_leaving || servo_rauto_running(&s.ra.run)
+        || (s.pending.kind != SERVO_CMD_NONE
+            && s.pending.kind != SERVO_CMD_POSITION)) {
+        return false;
+    }
+    end_dial_drag();
+    stop_sweep();
+    s.commanded_deg = 0.0f;
+    post(SERVO_CMD_CENTER, svs_deg_to_us(0.0f));
+    ++s.ctrl_rev;
+    return true;
+}
+
 void servo_screen_knob(float span_fraction)
 {
     svs_knob_note_owner();

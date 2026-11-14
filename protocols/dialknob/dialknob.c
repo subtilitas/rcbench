@@ -24,7 +24,8 @@ _Static_assert(DK_LEN_EVENT <= DK_PKT_MAX && DK_LEN_STATUS <= DK_PKT_MAX
                && DK_LEN_VALUE <= DK_PKT_MAX
                && DK_LEN_LIVE_MOTOR <= DK_PKT_MAX
                && DK_LEN_LIVE_SERVO <= DK_PKT_MAX
-               && DK_LEN_STATE <= DK_PKT_MAX,
+               && DK_LEN_STATE <= DK_PKT_MAX
+               && DK_LEN_SCALE <= DK_PKT_MAX,
                "every packet fits one ATT payload at MTU 23");
 _Static_assert(4u + DK_TITLE_MAX + 1u == DK_LEN_SCREEN,
                "SCREEN: kind, seq, face, lang, flags, title");
@@ -702,6 +703,58 @@ size_t dk_state_encode(const dk_state_t *s, uint8_t *out)
                   dk_state_decode(out, DK_LEN_STATE, &chk));
 }
 
+/* --- SCALE ---------------------------------------------------------------- */
+
+bool dk_scale_decode(const uint8_t *buf, size_t len, dk_scale_t *out)
+{
+    dk_scale_t s;
+    if (!head_ok(buf, len, DK_LEN_SCALE, DK_K_SCALE) || out == NULL) {
+        return false;
+    }
+    s.seq = buf[1];
+    s.rpm = get16(buf + 2);
+    s.mv = get16(buf + 4);
+    s.ca = get16(buf + 6);
+    s.travel = get16(buf + 8);
+    s.us_min = get16(buf + 10);
+    s.us_max = get16(buf + 12);
+    s.rail_mv = get16(buf + 14);
+    s.rail_ca = get16(buf + 16);
+    if (s.travel > (uint16_t)DK_DDEG_MAX) {
+        return false;
+    }
+    /* Both ends of the pulse are known, inside the pulse's range and in
+     * order, or neither is. */
+    if (s.us_min != 0u || s.us_max != 0u) {
+        if (s.us_min < DK_US_MIN || s.us_max > DK_US_MAX
+            || s.us_min >= s.us_max) {
+            return false;
+        }
+    }
+    *out = s;
+    return true;
+}
+
+size_t dk_scale_encode(const dk_scale_t *s, uint8_t *out)
+{
+    dk_scale_t chk;
+    if (s == NULL || out == NULL) {
+        return 0;
+    }
+    out[0] = DK_K_SCALE;
+    out[1] = s->seq;
+    put16(out + 2, s->rpm);
+    put16(out + 4, s->mv);
+    put16(out + 6, s->ca);
+    put16(out + 8, s->travel);
+    put16(out + 10, s->us_min);
+    put16(out + 12, s->us_max);
+    put16(out + 14, s->rail_mv);
+    put16(out + 16, s->rail_ca);
+    return finish(out, DK_LEN_SCALE,
+                  dk_scale_decode(out, DK_LEN_SCALE, &chk));
+}
+
 /* --- any panel packet ----------------------------------------------------- */
 
 bool dk_panel_decode(const uint8_t *buf, size_t len, dk_panel_pkt_t *out)
@@ -733,6 +786,9 @@ bool dk_panel_decode(const uint8_t *buf, size_t len, dk_panel_pkt_t *out)
         break;
     case DK_K_STATE:
         ok = dk_state_decode(buf, len, &p.u.state);
+        break;
+    case DK_K_SCALE:
+        ok = dk_scale_decode(buf, len, &p.u.scale);
         break;
     default:
         ok = false;

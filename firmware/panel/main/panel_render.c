@@ -20,6 +20,8 @@
 #include "hitec_panel.h"
 #include "knob.h"
 #include "knob_task.h"
+#include "dial_panel.h"
+#include "panel_dial.h"
 #include "kst_panel.h"
 #include "kst_prog.h"
 #include "motor_screen.h"
@@ -391,6 +393,13 @@ void test_lines_service(void)
  * the knob.  The knob moves a value by how far it turned; it arms nothing,
  * and a disarm, a stop or leaving the screen act exactly as they do for the
  * touch slider.
+ *
+ * The M5Stack Dial's turn takes the same path (dial_panel.h): its detents,
+ * each SETUP's Dial step, add to the wired knob's span in the same frame
+ * under the same rules.  Its button's PRESS is a throttle of 0% or a CENTER
+ * under the turn's rules; its HOLD is a DISARM, which no frame refuses.
+ * Neither arms, and nothing the Dial sends is a touch, so no hold on the
+ * panel completes from it.
  */
 knob_turn_t knob_take(void)
 {
@@ -403,7 +412,8 @@ knob_turn_t knob_take(void)
     servo_screen_knob_frame();
     return (knob_turn_t){ .steps = on ? steps : 0,
                           .route = ui_router_current(),
-                          .navigations = ui_router_navigations() };
+                          .navigations = ui_router_navigations(),
+                          .dial = panel_dial_take() };
 }
 
 /**
@@ -418,20 +428,34 @@ static void knob_withdraw(void)
 
 void knob_apply(const knob_turn_t *turn, bool frame_lost)
 {
-    if (turn->steps == 0 || frame_lost
-        || ui_router_navigations() != turn->navigations
-        || ui_router_current() != turn->route || !ui_router_take_knob()) {
-        return;
+    /* Only a frame with a turn or a press asks the router, so an idle
+     * frame leaves a help bubble open; a HOLD acts in any case. */
+    const bool taken = !frame_lost
+                       && ui_router_navigations() == turn->navigations
+                       && ui_router_current() == turn->route
+                       && dial_knob_take(turn->steps, &turn->dial);
+    float span = 0.0f;
+    if (taken && turn->steps != 0) {
+        span = knob_span_fraction(turn->steps,
+                                  settings_get_int(SET_KNOB_SCALE));
     }
-    const float span =
-        knob_span_fraction(turn->steps, settings_get_int(SET_KNOB_SCALE));
+    if (taken) {
+        span += dial_span(turn->route, turn->dial.detents,
+                          dial_step_tenths(settings_get_int(SET_DIAL_THR)),
+                          dial_step_tenths(settings_get_int(SET_DIAL_SRV)));
+    }
     /* Every SERVO screen takes the turn; the shared code moves the horn on
      * LIVE, SWEEP, RUDDER and RUDDER AUTO only. */
-    if (turn->route == SCREEN_MOTOR) {
-        motor_screen_knob(span);
-    } else if (servo_screen_owns(turn->route)) {
-        servo_screen_knob(span);
+    if (span != 0.0f) {
+        if (turn->route == SCREEN_MOTOR) {
+            motor_screen_knob(span);
+        } else if (servo_screen_owns(turn->route)) {
+            servo_screen_knob(span);
+        }
     }
+    /* After the turn: a PRESS's 0% or CENTER wins over it, a HOLD's DISARM
+     * over both. */
+    dial_gestures(ui_router_current(), &turn->dial, taken);
 }
 
 /*

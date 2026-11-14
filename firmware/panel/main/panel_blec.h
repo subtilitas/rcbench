@@ -16,6 +16,7 @@
  * | Owner | Client | Code |
  * | --- | --- | --- |
  * | 0 | the Bluetooth IMU | panel_imu.c |
+ * | 1 | the M5Stack Dial | panel_dial.c |
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,6 +24,8 @@
 
 /** @brief The Bluetooth IMU's owner: 0, the one bleu_init() gives. */
 #define PANEL_BLEC_IMU 0u
+/** @brief The M5Stack Dial's owner (dial_ctl.h, DIAL_BLE_OWNER). */
+#define PANEL_BLEC_DIAL 1u
 
 /**
  * @brief Start the task, once, after every client's start function.  Later

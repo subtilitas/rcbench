@@ -143,7 +143,7 @@ TEST_CASE(a_packet_of_a_wrong_length_or_kind_is_refused)
     CHECK(!dk_panel_decode(b, DK_LEN_STATE - 1u, &p));
     CHECK(!dk_panel_decode(b, DK_LEN_STATE + 1u, &p));
     for (unsigned k = 0; k < 256u; ++k) {
-        if (k >= DK_K_SCREEN && k <= DK_K_STATE) {
+        if (k >= DK_K_SCREEN && k <= DK_K_SCALE) {
             continue;
         }
         b[0] = (uint8_t)k;      /* a Dial kind or no kind at all */
@@ -576,6 +576,57 @@ TEST_CASE(state_holds_its_steps_and_the_full_panel_clock)
     CHECK_EQ(dk_state_encode(&s, b), 0u);
 }
 
+TEST_CASE(scale_holds_the_travel_and_both_pulse_ends_or_neither)
+{
+    uint8_t b[DK_LEN_SCALE];
+    dk_scale_t s = { 7, 14591, 30000, 8000, 450, 500, 2500, 8400, 500 };
+    dk_scale_t o;
+    dk_panel_pkt_t p;
+
+    CHECK_EQ(dk_scale_encode(&s, b), DK_LEN_SCALE);
+    CHECK_EQ(b[0], DK_K_SCALE);
+    CHECK_EQ(b[2], 0xFF);       /* 14,591 = 0x38FF, least significant first */
+    CHECK_EQ(b[3], 0x38);
+    CHECK(dk_scale_decode(b, DK_LEN_SCALE, &o));
+    CHECK(o.rpm == 14591 && o.mv == 30000 && o.ca == 8000
+          && o.travel == 450 && o.us_min == 500 && o.us_max == 2500
+          && o.rail_mv == 8400 && o.rail_ca == 500);
+    CHECK(dk_panel_decode(b, DK_LEN_SCALE, &p));
+    CHECK_EQ(p.kind, DK_K_SCALE);
+    CHECK(!dk_scale_decode(b, DK_LEN_SCALE - 1u, &o));
+    CHECK(!dk_scale_decode(NULL, DK_LEN_SCALE, &o));
+    CHECK(!dk_scale_decode(b, DK_LEN_SCALE, NULL));
+
+    /* Every full scale may be 0, not known. */
+    memset(&s, 0, sizeof s);
+    CHECK_EQ(dk_scale_encode(&s, b), DK_LEN_SCALE);
+    s.travel = DK_DDEG_MAX;
+    CHECK_EQ(dk_scale_encode(&s, b), DK_LEN_SCALE);
+    s.travel = DK_DDEG_MAX + 1u;
+    CHECK_EQ(dk_scale_encode(&s, b), 0u);
+    s.travel = 0;
+    /* One pulse end alone, an end out of range or the ends out of order. */
+    s.us_min = 500;
+    CHECK_EQ(dk_scale_encode(&s, b), 0u);
+    s.us_min = 0;
+    s.us_max = 2500;
+    CHECK_EQ(dk_scale_encode(&s, b), 0u);
+    s.us_min = DK_US_MIN - 1u;
+    CHECK_EQ(dk_scale_encode(&s, b), 0u);
+    s.us_min = DK_US_MIN;
+    s.us_max = DK_US_MAX;
+    CHECK_EQ(dk_scale_encode(&s, b), DK_LEN_SCALE);
+    s.us_max = DK_US_MAX + 1u;
+    CHECK_EQ(dk_scale_encode(&s, b), 0u);
+    s.us_min = 1500;
+    s.us_max = 1500;
+    CHECK_EQ(dk_scale_encode(&s, b), 0u);
+    s.us_max = 1501;
+    CHECK_EQ(dk_scale_encode(&s, b), DK_LEN_SCALE);
+    CHECK_EQ(dk_scale_encode(NULL, b), 0u);
+    CHECK_EQ(dk_scale_encode(&s, NULL), 0u);
+}
+
 TEST_CASE(every_packet_round_trips_through_its_encoder_and_decoder)
 {
     uint8_t b[DK_PKT_MAX];
@@ -639,6 +690,7 @@ static size_t panel_encode(const dk_panel_pkt_t *p, uint8_t *out)
     case DK_K_LIVE_MOTOR: return dk_live_motor_encode(&p->u.motor, out);
     case DK_K_LIVE_SERVO: return dk_live_servo_encode(&p->u.servo, out);
     case DK_K_STATE:      return dk_state_encode(&p->u.state, out);
+    case DK_K_SCALE:      return dk_scale_encode(&p->u.scale, out);
     default:              return 0;
     }
 }
@@ -666,12 +718,12 @@ TEST_CASE(a_million_random_packets_decode_only_to_their_own_bytes)
         if (len > 0u) {
             /* Most packets get a valid kind, or nearly all would stop at
              * byte 0. */
-            static const uint8_t kinds[10] = {
+            static const uint8_t kinds[11] = {
                 DK_K_EVENT, DK_K_STATUS, DK_K_INFO, DK_K_SCREEN, DK_K_NAV,
                 DK_K_VALUE_META, DK_K_VALUE, DK_K_LIVE_MOTOR,
-                DK_K_LIVE_SERVO, DK_K_STATE };
+                DK_K_LIVE_SERVO, DK_K_STATE, DK_K_SCALE };
             if ((rnd(&seed) & 7u) != 0u) {
-                pkt[0] = kinds[rnd(&seed) % 10u];
+                pkt[0] = kinds[rnd(&seed) % 11u];
             }
             /* And a share get small fields, so range checks pass often. */
             if ((rnd(&seed) & 1u) != 0u) {
@@ -803,6 +855,7 @@ int main(void)
     RUN(live_motor_holds_throttle_temperatures_and_valid_bits);
     RUN(live_servo_holds_pulses_angles_and_valid_flags);
     RUN(state_holds_its_steps_and_the_full_panel_clock);
+    RUN(scale_holds_the_travel_and_both_pulse_ends_or_neither);
     RUN(every_packet_round_trips_through_its_encoder_and_decoder);
     RUN(a_million_random_packets_decode_only_to_their_own_bytes);
     RUN(the_service_uuid_is_found_in_advertising_data);

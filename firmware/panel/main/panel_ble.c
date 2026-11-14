@@ -992,10 +992,10 @@ esp_err_t panel_ble_controller(void)
     return ESP_OK;
 }
 
-void panel_ble_do(const bleu_act_t *a)
+bool panel_ble_do(const bleu_act_t *a, int *written)
 {
     if (a == NULL) {
-        return;
+        return false;
     }
     ble_uuid128_t svc = { .u = { .type = BLE_UUID_TYPE_128 } };
     memcpy(svc.value, a->data, sizeof(svc.value));
@@ -1055,19 +1055,24 @@ void panel_ble_do(const bleu_act_t *a)
         answer = BLEU_EV_WRITE_DONE;
         break;
     case BLEU_ACT_WRITE_NR:
+        /* No answer comes on the air: the call's own status is the answer,
+         * handed back rather than queued, so a full queue cannot lose it. */
         rc = ble_gattc_write_no_rsp_flat(a->conn, a->h1, a->data, a->len);
-        post_answer(BLEU_EV_WRITE_DONE, a->token, a->conn, rc);
-        return;
+        if (written != NULL) {
+            *written = rc;
+        }
+        return true;
     case BLEU_ACT_READ:
         rc = ble_gattc_read(a->conn, a->h1, read_cb, arg_of(a->token));
         answer = BLEU_EV_READ;
         break;
     case BLEU_ACT_NONE:
     default:
-        return;
+        return false;
     }
     if (rc != 0 && answer != BLEU_EV_NONE) {
         ESP_LOGW(TAG, "action %u refused: %d", (unsigned)a->kind, rc);
         post_answer(answer, a->token, a->conn, rc);
     }
+    return false;
 }

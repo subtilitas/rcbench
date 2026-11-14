@@ -19,6 +19,7 @@
 #include "bleuart_hub.h"
 #include "panel.h"
 #include "panel_ble.h"
+#include "panel_dial.h"
 #include "panel_imu.h"
 
 /** @brief The console lines' tag. */
@@ -50,6 +51,8 @@ static void client_event(uint8_t owner, const bleu_evt_t *e, uint32_t now)
 {
     if (owner == PANEL_BLEC_IMU) {
         panel_imu_blec_event(e, now);
+    } else if (owner == PANEL_BLEC_DIAL) {
+        panel_dial_blec_event(e, now);
     }
 }
 
@@ -65,23 +68,37 @@ static bool client_step(uint8_t owner, uint32_t now, bleu_act_t *out)
     if (owner == PANEL_BLEC_IMU) {
         return panel_imu_blec_step(now, out);
     }
+    if (owner == PANEL_BLEC_DIAL) {
+        return panel_dial_blec_step(now, out);
+    }
     return false;
 }
 
 /**
- * @brief The hub's events to their clients and its actions to NimBLE.
+ * @brief The hub's events to their clients and its actions to NimBLE; a
+ *        write without response is answered at once (bleu_hub_written()).
  * @param now The clock.
  */
 static void hand_out(uint32_t now)
 {
     uint8_t owner;
     bleu_evt_t e;
-    while (bleu_hub_next_event(&s_hub, &owner, &e)) {
-        client_event(owner, &e, now);
-    }
     bleu_act_t a;
-    while (bleu_hub_next_action(&s_hub, &a)) {
-        panel_ble_do(&a);
+    bool more = true;
+    while (more) {
+        more = false;
+        while (bleu_hub_next_event(&s_hub, &owner, &e)) {
+            client_event(owner, &e, now);
+        }
+        while (bleu_hub_next_action(&s_hub, &a)) {
+            int written = 0;
+            if (panel_ble_do(&a, &written)) {
+                /* A write without response is answered here, at once:
+                 * its WRITE_DONE goes to the client before the next. */
+                bleu_hub_written(&s_hub, &a, written, now);
+                more = true;
+            }
+        }
     }
 }
 
@@ -97,6 +114,7 @@ static void blec_task(void *arg)
         vTaskDelay(pdMS_TO_TICKS(BLEC_POLL_MS));
         const uint32_t now = now_ms();
         panel_imu_blec_poll(now);
+        panel_dial_blec_poll(now);
         bleu_evt_t e;
         for (unsigned i = 0; i < BLEC_EVTS_MAX && panel_ble_get(&e); ++i) {
             bleu_hub_event(&s_hub, &e, now);
@@ -113,6 +131,7 @@ static void blec_task(void *arg)
             }
         }
         panel_imu_blec_publish(now);
+        panel_dial_blec_publish(now);
     }
 }
 
@@ -124,6 +143,7 @@ void panel_blec_start(void)
     s_started = true;
     bleu_hub_init(&s_hub);
     (void)bleu_hub_add(&s_hub, PANEL_BLEC_IMU);
+    (void)bleu_hub_add(&s_hub, PANEL_BLEC_DIAL);
     /*
      * Core 0 beside the renderer, at the knob's priority 2: polls of 5ms,
      * nothing with a deadline.  Stack 4096 bytes: the clients and the hub

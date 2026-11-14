@@ -302,9 +302,9 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 
 | Seite, Zustand | Hilfeseiten | Markiert |
 | --- | --- | --- |
-| SETUP, Kacheln | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, LAYOUT auf dem Träger, SPEICHERN |
+| SETUP, Kacheln | 2 | PANEL, SENSORS, SD CARD, WI-FI, IMU; OUTPUTS, UPDATES, WIRELESS, LAYOUT auf dem Träger, SPEICHERN |
 | SETUP, eine Liste | 2 | die erste ganze Zeile, der Name der Liste, ZURÜCKSETZEN; von den ganz sichtbaren Zeilen die erste, deren Wert das Ziffernfeld öffnet, sonst die erste mit Tasten: ihr `-` oder `<`, der Wert, `+` oder `>`; SPEICHERN |
-| SETUP, SENSORS | 2 | wie eine Liste, zuerst der gewählte Eintrag |
+| SETUP, SENSORS und WIRELESS | 2 | wie eine Liste, zuerst der gewählte Eintrag |
 | OUTPUTS, Platinenansicht | 2 | die Fläche der Protokollliste, LETZTER SCHREIBVORGANG, PINS, die linke Taste; BELEGT, die Haltetaste zum Löschen aller Pin-Zuordnungen, wenn angeboten, die rechte Taste |
 | OUTPUTS, Eintrag PROG PORT | 2 | die Fläche des Eintrags, PIN, FUNKTION, SERVO-TESTER, PORT-PWM; dann BELEGT und eine Taste, in der Platinenansicht |
 | OUTPUTS, Rasteransicht | 1 | die Fläche der Protokollliste, das erste Feld, LETZTER SCHREIBVORGANG; bei einem Eintrag PROG PORT seine Fläche und Zeilen |
@@ -869,7 +869,7 @@ Bedienelemente über y 436 des Inhalts.
 | MOTOR & ESC | ARM / DISARM | die Liste der 8 Einstellungen für Motor, Akku und Gasausgang |
 | SUPPLY | AUSGANG EIN / AUS | die Liste der Grenzen des Netzteils und der Anschlüsse des PD mini |
 | ESC STICK, auf der Seite eines Profils, seinem Lauf und seinem Ergebnis | START n / ABBRECHEN / OK | die Liste des Netzteils und der 12 Timing-Einstellungen |
-| IMU | 2s HALTEN: KALIBRIEREN | die Liste SENSORS von SETUP beim Eintrag IMU |
+| IMU | 2s HALTEN: KALIBRIEREN | die Liste WIRELESS von SETUP beim Eintrag IMU |
 | UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung und Versionen |
 | LOGS, auf der Dateiliste | leer | die Liste SD CARD von SETUP |
 | FILES, auf den Bereichen | leer | die Liste SD CARD von SETUP |
@@ -5562,10 +5562,10 @@ Zeile in der Schrift 10 x 20px.
 
 ![Setup](img/de/setup.png)
 
-- PANEL, SENSORS und SD CARD enthalten die Einstellungen für den gesamten
-  Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer Liste;
-  SENSORS nennt stattdessen die verfügbaren Gruppen,
-  `STROM, WINKEL, PHASENABGRIFF`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
+- PANEL, SENSORS, WIRELESS und SD CARD enthalten die Einstellungen für den
+  gesamten Prüfstand. Jede Kachel nennt die Zahl der Einstellungen in ihrer
+  Liste; SENSORS nennt stattdessen die verfügbaren Gruppen,
+  `STROM, WINKEL, PHASENABGRIFF`, und WIRELESS `IMU, DIAL`. Ein Tippen öffnet die Liste der Kategorie. Die Einstellungen von Akku,
   Motor und Gasausgang stehen unter MOTOR & ESC > OPTIONEN
   ([MOTOR & ESC, Optionen](#motor--esc-optionen)).
 - Vier eigene Bildschirme: OUTPUTS ([Outputs](#outputs)), WI-FI ([WLAN](#wlan)),
@@ -5574,8 +5574,8 @@ Zeile in der Schrift 10 x 20px.
   seine Kachel, und das Band dieser Seite zeigt SETUP. [Files](#files) ist ein
   Tab der Kachel [LOGS](#logs).
 - LAYOUT ([Layout](#layout)) als letzte Kachel auf einem Board mit verlöteten
-  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board sind 2 Plätze
-  frei, auf diesem 1. Die Seite bietet 9 Plätze; ein zehnter
+  Pins, dem [rbmod-Carrier](Carrier-de.md). Auf jedem anderen Board ist 1 Platz
+  frei, auf diesem keiner. Die Seite bietet 9 Plätze; ein zehnter
   Eintrag lässt den Build fehlschlagen.
 - SPEICHERN, unten rechts, ist dieselbe Taste wie auf den Listen
   ([Werte behalten](#werte-behalten)). Eine ungespeicherte Änderung in
@@ -6009,15 +6009,17 @@ Horn über ein Drittel seines Wegs von -Weg bis +Weg.
 
 ### SENSORS: die geteilte Ansicht
 
-SENSORS fasst die vom IOmcu ausgelesenen Geräte und die Bluetooth-IMU des
-Panels in einer geteilten Ansicht zusammen. Links stehen 9 Einträge;
-rechts erscheinen die Einstellungen des gewählten Eintrags.
+SENSORS fasst die vom IOmcu ausgelesenen Geräte in einer geteilten Ansicht
+zusammen. Links stehen 8 Einträge; rechts erscheinen die Einstellungen des
+gewählten Eintrags. Die Bluetooth-IMU des Panels steht unter WIRELESS
+([WIRELESS: die IMU und das Dial](#wireless-die-imu-und-das-dial)), in einer
+geteilten Ansicht derselben Art.
 
 ![SENSORS, zwei Bausteine bestückt](img/de/setup-sensors.png)
 
-Die linke Liste reicht von Body-y 8 bis 440, 4px über dem Streifen: 9 Einträge
-von 220 x 48px im Abstand von 48px, von oben nach unten SENSORBUS, INA228,
-INA3221 0x40 bis 0x43, AS5600, PHASENABGRIFF und IMU. Ein Eintrag nimmt
+Die linke Liste hat von Body-y 8 bis 440, 4px über dem Streifen, Platz für 9
+Einträge von 220 x 48px im Abstand von 48px. SENSORS belegt 8, von oben nach
+unten SENSORBUS, INA228, INA3221 0x40 bis 0x43, AS5600 und PHASENABGRIFF. Ein Eintrag nimmt
 Berührungen über seine 48px an und zeichnet seine Karte 1px innerhalb seiner
 Ober- und Unterkante, 2px zwischen zwei Karten. Jeder Eintrag zeigt seinen Namen in der Schrift 12 x 24px und darunter
 seinen Zustand in 8 x 16px. Der gewählte Eintrag hat die helle Füllung und
@@ -6033,7 +6035,6 @@ Schrift 10 x 20px.
 | INA3221 0x40 bis 0x43 | ein Zustand der Tabelle unter [SENSORS: die INA3221-Bausteine](#sensors-die-ina3221-bausteine) | 10 |
 | AS5600 | `EIN`, `VOM IOMCU ABGELEHNT` | 2 |
 | PHASENABGRIFF | `EIN`, `VOM IOMCU ABGELEHNT` | 7 |
-| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 6 |
 
 - Bei einem ausgeschalteten Eintrag mit Einschaltzeile erscheint nur diese
   Zeile; sein Zustand lautet `AUS`. EIN blendet die übrigen Zeilen ein.
@@ -6528,13 +6529,13 @@ Die IMU-Kachel unter SETUP öffnet den Bildschirm für den Winkelsensor
 WitMotion BWT901CL. Er ist über Bluetooth LE durch den ESP32-C6 des Boards
 mit dem Panel verbunden ([Die Bluetooth-IMU](IMU-de.md)); das erste IMU EIN
 startet Bluetooth LE. Seine Einstellungen
-stehen im IMU-Eintrag unter SENSORS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
+stehen im IMU-Eintrag unter WIRELESS: IMU EIN oder AUS, ACHSE (X, Y, Z), VORZEICHEN (+, -), RATE (10, 20,
 50, 100 oder 200Hz, ab Werk 50Hz), ALGORITHMUS (6-AXIS oder 9-AXIS) und
 WINKELQUELLE. Die Bedienelemente links, 460 x 56px im Abstand von 64px ab
 Body-y 16: SENSOREN SUCHEN, dann NULLPUNKT und NULLPUNKT LÖSCHEN
 nebeneinander. Die Fußleiste
 ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
-lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet SENSORS
+lautet `[IMU] [2s HALTEN: KALIBRIEREN] [OPTIONEN]`; OPTIONEN öffnet WIRELESS
 auf dem IMU-Eintrag, dessen Home-Feld führt zurück. Die Karte rechts, x 484
 bis 1016, Body-y 16 bis 436, nennt den gebundenen Sensor
 und seine Adresse mit ihrem Typ, die Firmware des C6, den Zustand, die Winkel X, Y und Z
@@ -6549,7 +6550,37 @@ Laufs ([Servoverfahren](Servo-de.md)).
 
 ![Die Liste nach SENSOREN SUCHEN](img/de/imu-scan.png)
 
-![SENSORS auf dem IMU-Eintrag](img/de/setup-sensors-imu.png)
+![WIRELESS auf dem IMU-Eintrag](img/de/setup-wireless-imu.png)
+
+### WIRELESS: die IMU und das Dial
+
+WIRELESS enthält die Bluetooth-LE-Geräte des Panels in einer geteilten
+Ansicht wie SENSORS: links 2 Einträge, IMU und DIAL, jeder mit Namen und
+Zustand, rechts die Zeilen des gewählten Eintrags. Das erste IMU EIN oder
+Dial EIN startet Bluetooth LE bis zum Neustart des Panels.
+
+| Eintrag | Zustand im Betrieb | Zeilen |
+| --- | --- | --- |
+| IMU | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN SENSOR GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN`, `VERBUNDEN 50Hz`, `KEINE FRAMES` ([Die Bluetooth-IMU](#die-bluetooth-imu)) | 2 bei AUS: IMU und WINKELQUELLE; 7 bei EIN |
+| DIAL | `BLUETOOTH STARTET`, `KEIN BLUETOOTH AM C6`, `C6 AUSGEFALLEN: NEUSTART`, `KEIN DIAL GEBUNDEN`, `SUCHE LÄUFT`, `VERBINDE`, `GEBUNDEN: KEIN DIAL`, `VERBUNDEN, KEIN EREIGNIS`, `ANDERES PROTOKOLL n`, `VERBUNDEN`, `GESTÖRT`, `DIAL VERLOREN` | 1 bei AUS; 5 bei EIN |
+
+![WIRELESS auf dem DIAL-Eintrag](img/de/setup-wireless-dial.png)
+
+Die Zeilen des DIAL-Eintrags ([Das M5Stack Dial](Dial-de.md#das-panel)):
+
+| Zeile | Werte | Vorgabe | Wirkung |
+| --- | --- | --- | --- |
+| Dial | EIN, AUS | AUS | die Verbindung zum gebundenen Dial; AUS beendet sie ohne Fehler |
+| Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen sucht 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE` |
+| Gebundenes Dial | der Name des gebundenen Dials, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Dials der letzten Suche, `DIAL-3A10  -52dBm`, das gebundene markiert; Tippen auf eines bindet es und fragt nach dem Speichern |
+| Dial-Schritt, Gas | 0.5%, 1%, 2%, 5% | 1% | das Gas, das eine Raste auf MOTOR & ESC verstellt |
+| Dial-Schritt, Servo | 0.5°, 1°, 2°, 5° | 1° | der Hornwinkel, den eine Raste auf SERVO verstellt |
+
+DIAL ZURÜCKSETZEN setzt Dial auf AUS und die Schritte auf 1% und 1° zurück;
+das gebundene Dial bleibt. Das Band zeigt `DIAL: 500ms KEIN EREIGNIS`, wenn
+ein verbundenes Dial verstummt, `DIAL VERLOREN`, wenn es bei SAFE verloren
+geht, und `DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`
+für den Fehler bei ARMED.
 
 ### SD CARD: welche Logs geschrieben werden, und wohin
 

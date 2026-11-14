@@ -37,7 +37,11 @@ static void router_on(void)
 static void on_imu(const imu_view_t *v)
 {
     router_on();
-    const int tile = settings_hub_tiles() - 1;
+    int tile = 0;
+    while (tile < settings_hub_tiles()
+           && settings_hub_tile_screen(tile) != SCREEN_IMU) {
+        ++tile;
+    }
     CHECK_EQ(settings_hub_tile_screen(tile), SCREEN_IMU);
     tap(tile_x(tile), tile_y(tile));
     CHECK_EQ(ui_router_current(), SCREEN_IMU);
@@ -104,13 +108,13 @@ TEST_CASE(the_tile_opens_the_screen_and_home_returns_to_setup)
      * return is no opening. */
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
-    /* The footer's SETTINGS opens SENSORS on the IMU entry; its home tag
+    /* The footer's SETTINGS opens WIRELESS on the IMU entry; its home tag
      * comes back. */
     on_imu(&v);
     tap_rect(imu_screen_row_rect(IMS_ROW_SETTINGS));
     CHECK_EQ(ui_router_current(), SCREEN_SETUP);
-    CHECK_EQ(settings_screen_category(), SET_CAT_SENSORS);
-    CHECK_EQ(sensors_pane_selected(), SENS_ENTRY_IMU);
+    CHECK_EQ(settings_screen_category(), SET_CAT_WIRELESS);
+    CHECK_EQ(wireless_pane_selected(), WL_ENTRY_IMU);
     tap_home();
     CHECK_EQ(ui_router_current(), SCREEN_IMU);
     tap_home();

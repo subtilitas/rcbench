@@ -1,7 +1,8 @@
 /**
  * @file
  * @brief SETUP's screen guide (settings_screen_int.h): two pages for the
- *        tiles, two for a list, two for SENSORS.
+ *        tiles, two for a list, the first of them on SENSORS and WIRELESS
+ *        with the selected entry.
  *
  * The tiles: the left and middle columns' first two rows and the third
  * row's first tile with the dock on the right, the right column, the third
@@ -9,8 +10,8 @@
  * marked where the dock leaves it in view.  A list: a row, the list's name
  * and RESET with the dock on the right, then one row's keys and value and
  * SAVE with the dock on the left, the row whose value opens the keypad
- * where one shows; SENSORS adds its selected entry to the first, the
- * IMU's as the panel's own over Bluetooth LE.  The warning, the keyboard
+ * where one shows; SENSORS and WIRELESS add their selected entry to the
+ * first, WIRELESS' as the panel's own over Bluetooth LE.  The warning, the keyboard
  * and the keypad leave no page.  SETUP drives no output, so every page
  * shows while ARMED as well.
  *
@@ -27,9 +28,9 @@
 #include "settings_screen_int.h"
 
 /** @brief The hub's slots of page 1 and of page 2, -1 past the last. */
-static const int8_t k_hub_slots[2][4] = { { 0, 1, 3, 4 }, { 2, 5, 7, -1 } };
+static const int8_t k_hub_slots[2][4] = { { 0, 1, 3, 4 }, { 2, 5, 7, 8 } };
 
-/** @brief The name of SENSORS' selected entry, the label of its mark. */
+/** @brief The name of a split pane's selected entry, its mark's label. */
 static char s_entry[40];
 
 int stg_help_count(void)
@@ -48,6 +49,7 @@ static ui_text_id_t tile_text(const hub_tile_t *t)
     case SET_CAT_APP:     return TX_HG_SET_PANEL;
     case SET_CAT_SENSORS: return TX_HG_SET_SENSORS;
     case SET_CAT_CARD:    return TX_HG_SET_CARD;
+    case SET_CAT_WIRELESS: return TX_HG_SET_WIRELESS;
     default:              break;
     }
     switch (t->screen) {
@@ -86,7 +88,7 @@ static void add_tile(ui_help_page_t *p, int slot)
 static bool keyed(int i)
 {
     const settings_row_t e = stg_row_entry(i);
-    return e.text < 0 && settings_def(e.id) != NULL && !settings_derived(e.id)
+    return e.text < 0 && e.custom == NULL && settings_def(e.id) != NULL && !settings_derived(e.id)
            && !settings_fixed(e.id) && !settings_held(e.id);
 }
 
@@ -123,20 +125,33 @@ static int first_row(bool keys)
 }
 
 /**
- * @brief The list's first page: SENSORS' entry, a row, the name, RESET.
+ * @brief The text of entry @p e of pane @p pane, for the guide.
+ * @param pane The pane.  @param e The entry.
+ * @return The text: the IOmcu's sensor, or a Bluetooth LE device.
+ */
+static ui_text_id_t entry_text(int pane, int e)
+{
+    if (pane != STG_PANE_WIRELESS) {
+        return TX_HG_SET_ENTRY;
+    }
+    return (e == WL_ENTRY_DIAL) ? TX_HG_SET_ENTRY_DIAL : TX_HG_SET_ENTRY_IMU;
+}
+
+/**
+ * @brief The list's first page: a split pane's entry, a row, the name,
+ *        RESET.
  * @param p The page, its side set.
  */
 static void list_rows(ui_help_page_t *p)
 {
-    const bool sensors = s.cat == SET_CAT_SENSORS;
-    p->title = sensors ? TX_HG_SET_TITLE_SENSORS : TX_HG_SET_TITLE_ROWS;
-    if (sensors) {
-        const int e = sensors_pane_selected();
-        /* The IMU is the panel's, over Bluetooth LE; the rest the IOmcu's. */
-        (void)ui_help_add(p, sensors_pane_name(e, s_entry, sizeof(s_entry)),
-                          (e == SENS_ENTRY_IMU) ? TX_HG_SET_ENTRY_IMU
-                                                : TX_HG_SET_ENTRY,
-                          settings_screen_entry_rect(e));
+    const int pane = stg_pane(s.cat);
+    p->title = (pane == STG_PANE_SENSORS)    ? TX_HG_SET_TITLE_SENSORS
+               : (pane == STG_PANE_WIRELESS) ? TX_HG_SET_TITLE_WIRELESS
+                                             : TX_HG_SET_TITLE_ROWS;
+    if (pane >= 0) {
+        const int e = stg_pane_selected(pane);
+        (void)ui_help_add(p, stg_pane_name(pane, e, s_entry, sizeof(s_entry)),
+                          entry_text(pane, e), settings_screen_entry_rect(e));
     }
     const int row = first_row(false);
     if (row >= 0) {

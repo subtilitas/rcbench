@@ -4,10 +4,13 @@
 # dialknob BLE service (protocols/dialknob) as a NimBLE peripheral.
 cmake_minimum_required(VERSION 3.16)
 
-# The bench's rasteriser and the knob protocol are components from here;
-# each one's CMakeLists registers an IDF component under ESP_PLATFORM.
+# The bench's rasteriser, the Dial's faces, the interface's words and the
+# knob protocol are components from here; each one's CMakeLists registers
+# an IDF component under ESP_PLATFORM.
 set(EXTRA_COMPONENT_DIRS
     "${CMAKE_CURRENT_LIST_DIR}/../../shared/gfx"
+    "${CMAKE_CURRENT_LIST_DIR}/../../shared/dial"
+    "${CMAKE_CURRENT_LIST_DIR}/../../shared/text"
     "${CMAKE_CURRENT_LIST_DIR}/../../protocols/dialknob")
 
 # The application's version is the bench's: MAJOR.MINOR.PATCH from the one

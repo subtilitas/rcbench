@@ -135,6 +135,17 @@ void ui_icon_board(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
  * @param color  the colour
  */
 void ui_icon_wifi(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
+
+/**
+ * @brief A knob with a pointer, under two short waves: the Dial and the
+ *        other devices of SETUP > WIRELESS.
+ * @param c The canvas.
+ * @param x The center's x.
+ * @param y The center's y.
+ * @param size The box's side, px.
+ * @param color The ink.
+ */
+void ui_icon_dial(gfx_canvas_t *c, int x, int y, int size, gfx_color_t color);
 /**
  * @brief A folder: its tab and its body.
  * @param c      the canvas

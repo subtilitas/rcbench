@@ -4,10 +4,12 @@
  * schema.
  *
  * SETUP opens on a grid of tiles, the menu's kind: one per category it
- * holds (PANEL, SD CARD, SENSORS), and one per screen of its own that SETUP
- * reaches (OUTPUTS, WI-FI, UPDATES).  A category's tile opens its list across the screen's width;
- * SENSORS' list stands right of a left list of its 8 sensors and shows the
- * selected one's rows (sensors_pane.h), each entry with its own scroll.
+ * holds (PANEL, SENSORS, SD CARD, WIRELESS), and one per screen of its own
+ * that SETUP reaches (OUTPUTS, WI-FI, UPDATES, IMU).  A category's tile opens
+ * its list across the screen's width; SENSORS' and WIRELESS' lists stand
+ * right of a left list of their devices and show the selected one's rows
+ * (sensors_pane.h, wireless_pane.h, settings_panes.c), each entry with its
+ * own scroll.
  * The list walks the rows shared/settings declares (settings_rows.c) and
  * draws each row by its type: a stepper for a number, a toggle for a bool, a choice for an
  * enum.  A tap on a number's value, between its "-" and "+" keys, opens the
@@ -181,7 +183,7 @@ int settings_screen_category(void)
 
 int stg_list_x(void)
 {
-    return (s.sl.open && s.cat == SET_CAT_SENSORS) ? PANE_X : HUB_M;
+    return (s.sl.open && stg_pane(s.cat) >= 0) ? PANE_X : HUB_M;
 }
 
 gfx_rect_t settings_screen_entry_rect(int entry)
@@ -363,6 +365,9 @@ static int host_count(void)
 static ui_setlist_row_t host_row(int i)
 {
     const settings_row_t e = stg_row_entry(i);
+    if (e.custom != NULL) {
+        return (ui_setlist_row_t)UI_SL_ROW_CUSTOM(e.custom);
+    }
     if (e.text >= 0) {
         return (ui_setlist_row_t){ (uint8_t)UI_SL_TEXT, e.text,
                                    (setting_id_t)0, TX_COUNT, NULL };
@@ -380,27 +385,30 @@ static const char *host_name(void)
 }
 
 /**
- * @brief RESET names what it resets on SENSORS: the selected entry alone.
+ * @brief RESET names what it resets on a split pane: the selected entry
+ *        alone.
  * @param out Takes the label.
  * @param n   Bytes at @p out.
  */
 static void host_reset_label(char *out, size_t n)
 {
     char entry[24];
-    if (s.cat == SET_CAT_SENSORS) {
+    const int pane = stg_pane(s.cat);
+    if (pane >= 0) {
         snprintf(out, n, TR(SET_RESET_ONE),
-                 sensors_pane_name(sensors_pane_selected(), entry,
-                                   sizeof(entry)));
+                 stg_pane_name(pane, stg_pane_selected(pane), entry,
+                               sizeof(entry)));
     } else {
         snprintf(out, n, "%s", TR(SET_RESET));
     }
 }
 
-/** @brief RESET: the category, or SENSORS' selected entry. */
+/** @brief RESET: the category, or a split pane's selected entry. */
 static void host_reset(void)
 {
-    if (s.cat == SET_CAT_SENSORS) {
-        sensors_pane_reset(sensors_pane_selected());
+    const int pane = stg_pane(s.cat);
+    if (pane >= 0) {
+        stg_pane_reset(pane, stg_pane_selected(pane));
     } else {
         settings_reset(s.cat);
     }
@@ -437,23 +445,24 @@ static void host_way_out(void)
 static void open_tile(int index);
 
 /**
- * @brief A tap on an entry of SENSORS' left list.
+ * @brief A tap on an entry of a split pane's left list.
  * @param entry The entry.
  */
 static void open_entry(int entry);
 
 /**
- * @brief The entry of SENSORS' left list under a point.
+ * @brief The entry of a split pane's left list under a point.
  * @param x The point's x, in the screen's coordinates.
  * @param y Its y.
  * @return The entry; -1 off every entry and on any other list.
  */
 static int entry_at(int x, int y)
 {
-    if (!s.sl.open || s.cat != SET_CAT_SENSORS) {
+    const int pane = stg_pane(s.cat);
+    if (!s.sl.open || pane < 0) {
         return -1;
     }
-    for (int e = 0; e < SENS_ENTRY_COUNT; ++e) {
+    for (int e = 0; e < stg_pane_count(pane); ++e) {
         if (gfx_rect_contains(settings_screen_entry_rect(e), x, y)) {
             return e;
         }
@@ -478,8 +487,8 @@ static bool still_on_entry(int entry, int x, int y)
 }
 
 /**
- * @brief A DOWN on SETUP's own: a tile on the hub, an entry of SENSORS'
- *        left list.  An entry arms here and selects on its release, as a
+ * @brief A DOWN on SETUP's own: a tile on the hub, an entry of a split
+ *        pane's left list.  An entry arms here and selects on its release, as a
  *        row's key; a DOWN the tracker made for a jump arms none.
  */
 static int host_press(int x, int y, bool jump, int *index)
@@ -553,6 +562,7 @@ static void reset(void)
     ui_setlist_init(&s.sl, &k_host);
     s.cat = SET_CAT_APP;
     sensors_pane_select(SENS_ENTRY_BUS);
+    wireless_pane_select(WL_ENTRY_IMU);
     stg_clamp_scroll();
 }
 
@@ -620,19 +630,21 @@ static void tick(float dt_s)
 }
 
 /**
- * @brief A category's list shown, at the scroll SENSORS' entry had or at its
- *        top.
+ * @brief A category's list shown, at the scroll a split pane's entry had or
+ *        at its top.
  * @param cat The category.
  */
 static void open_list(setting_cat_t cat)
 {
     if (s.cat != cat) {
-        if (s.cat == SET_CAT_SENSORS) {
-            s.entry_scroll[sensors_pane_selected()] = s.sl.scroll;
+        const int was = stg_pane(s.cat);
+        if (was >= 0) {
+            s.entry_scroll[was][stg_pane_selected(was)] = s.sl.scroll;
         }
         s.cat = cat;
-        s.sl.scroll = (s.cat == SET_CAT_SENSORS)
-                          ? s.entry_scroll[sensors_pane_selected()] : 0;
+        const int pane = stg_pane(s.cat);
+        s.sl.scroll = (pane >= 0)
+                          ? s.entry_scroll[pane][stg_pane_selected(pane)] : 0;
     }
     s.sl.open = true;
     stg_clamp_scroll();
@@ -650,14 +662,18 @@ static void open_tile(int index)
 }
 
 /*
- * A tap on an entry of SENSORS' left list: its rows, at the scroll the
- * entry had.  What is unsaved stays unsaved and stays in the warning.
+ * A tap on an entry of a split pane's left list: its rows, at the scroll
+ * the entry had.  What is unsaved stays unsaved and stays in the warning.
  */
 static void open_entry(int entry)
 {
-    s.entry_scroll[sensors_pane_selected()] = s.sl.scroll;
-    sensors_pane_select(entry);
-    s.sl.scroll = s.entry_scroll[sensors_pane_selected()];
+    const int pane = stg_pane(s.cat);
+    if (pane < 0) {
+        return;
+    }
+    s.entry_scroll[pane][stg_pane_selected(pane)] = s.sl.scroll;
+    stg_pane_select(pane, entry);
+    s.sl.scroll = s.entry_scroll[pane][stg_pane_selected(pane)];
     stg_clamp_scroll();
     settings_screen_invalidate();
 }
@@ -665,7 +681,7 @@ static void open_entry(int entry)
 void settings_screen_open_on(setting_cat_t cat, int entry)
 {
     open_list(cat);
-    if (cat == SET_CAT_SENSORS) {
+    if (stg_pane(cat) >= 0) {
         open_entry(entry);
     }
     s.opened = true;

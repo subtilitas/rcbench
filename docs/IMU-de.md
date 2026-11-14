@@ -47,7 +47,7 @@ enthält den Hinweis des Projekts.
 
 ## Start
 
-Das erste IMU EIN (SETUP > SENSOREN > IMU, SENSOREN SUCHEN auf der
+Das erste IMU EIN (SETUP > WIRELESS > IMU, SENSOREN SUCHEN auf der
 IMU-Seite oder IMU SUCHEN in der Liste WINKELQUELLE von SERVO bei
 ausgeschalteter IMU, und beim Einschalten mit gespeichertem IMU EIN)
 startet Bluetooth LE: die Verbindung zum C6, den
@@ -197,7 +197,7 @@ ARM + START wird verweigert. Ein Tippen auf die Zeile öffnet die Liste
 IMU-GIEREN mit dem Titel `DREHE DIE IMU UM 90°, SCHARNIER AUF X ODER Y`
 und den zwei Achsen, die funktionieren, und keiner anderen: `IMU-ACHSE X
 NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`. Eine Wahl schreibt
-IMU-Achse und speichert sie wie SETUP > SENSOREN. SETUP > SENSOREN bietet
+IMU-Achse und speichert sie wie SETUP > WIRELESS. SETUP > WIRELESS bietet
 Achse Z weiter an; TEST und LIMIT RUN lesen sie für ihre Winkelspalten.
 Ein anderer IMU-Algorithmus verwirft Nullpunkt und MAX von RUDER, wie
 eine andere Achse oder ein anderes Vorzeichen.
@@ -243,7 +243,7 @@ RATE geht nur bei einer Änderung zum Sensor, nicht bei jedem Verbinden:
 jede RATE kommt mit einem SAVE in den Flash des Sensors, und die Rate gilt
 erst nach dem Aus- und Einschalten. RATE in SETUP ist das, was das Panel
 erfragt, Vorgabe 50Hz. Der Sensor läuft mit der zuletzt gespeicherten
-Rate, ab Werk 10Hz. Der IMU-Bildschirm und SETUP > SENSOREN > IMU zeigen
+Rate, ab Werk 10Hz. Der IMU-Bildschirm und SETUP > WIRELESS > IMU zeigen
 die Rate, mit der die Winkel-Frames ankommen, gemessen am Panel. Welche
 RATE-Werte über die BLE-Verbindung passen, hängt von den Frames je
 Messung ab (RSW, unten).
@@ -294,7 +294,7 @@ verloren.
 
 ## Der Filter
 
-IMU-Filter (SETUP > SENSOREN > IMU, Schlüssel `imu_filter`) ist ein
+IMU-Filter (SETUP > WIRELESS > IMU, Schlüssel `imu_filter`) ist ein
 Tiefpass auf dem Winkel, auf dem Panel. Er läuft einmal je Winkel-Frame und
 Achse:
 

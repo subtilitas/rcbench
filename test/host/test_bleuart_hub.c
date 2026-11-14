@@ -957,6 +957,38 @@ TEST_CASE(a_stale_disconnect_of_an_old_handle_keeps_the_new_link)
     CHECK(!h.c[0].linked);
 }
 
+/* A write without response is answered by the host call's own status, at
+ * once and to its own client; nothing waits for an event that a full
+ * queue could drop.  Any other action is not answered there. */
+TEST_CASE(a_write_without_response_is_answered_at_once)
+{
+    bleu_hub_t h;
+    bleu_hub_init(&h);
+    CHECK(bleu_hub_add(&h, 1u));
+    CHECK(bleu_hub_add(&h, 2u));
+    bleu_act_t a;
+    memset(&a, 0, sizeof a);
+    a.kind = BLEU_ACT_WRITE_NR;
+    a.token = (uint16_t)((2u << 13) | 0x0042u);
+    a.conn = 7u;
+    bleu_hub_written(&h, &a, 6, 1000u);
+    uint8_t owner = 0u;
+    bleu_evt_t e;
+    CHECK(bleu_hub_next_event(&h, &owner, &e));
+    CHECK_EQ(owner, 2u);
+    CHECK_EQ(e.kind, BLEU_EV_WRITE_DONE);
+    CHECK_EQ(e.token, a.token);
+    CHECK_EQ(e.conn, 7u);
+    CHECK_EQ(e.status, 6u);
+    CHECK(!bleu_hub_next_event(&h, &owner, &e));
+    a.kind = BLEU_ACT_WRITE;
+    bleu_hub_written(&h, &a, 0, 1000u);
+    CHECK(!bleu_hub_next_event(&h, &owner, &e));
+    bleu_hub_written(NULL, &a, 0, 1000u);
+    bleu_hub_written(&h, NULL, 0, 1000u);
+    CHECK(!bleu_hub_next_event(&h, &owner, &e));
+}
+
 TEST_CASE(strays_full_queues_and_null)
 {
     bleu_hub_t h;
@@ -1036,6 +1068,7 @@ int main(void)
     RUN(each_gatt_step_on_another_clients_handle_is_answered_lost);
     RUN(a_client_that_holds_the_slot_takes_it_again);
     RUN(a_stale_disconnect_of_an_old_handle_keeps_the_new_link);
+    RUN(a_write_without_response_is_answered_at_once);
     RUN(strays_full_queues_and_null);
     return test_summary("bleuart_hub");
 }

@@ -60,6 +60,8 @@ static const struct {
     [SET_TEXT_LOG_USER_DIR] = { "log_user_dir", "USER/LOGS", SET_CAT_CARD },
     [SET_TEXT_IMU_ADDR]     = { "imu_ble", "", SET_CAT_COUNT },
     [SET_TEXT_IMU_NAME]     = { "imu_name", "", SET_CAT_COUNT },
+    [SET_TEXT_DIAL_ADDR]    = { "dial_ble", "", SET_CAT_COUNT },
+    [SET_TEXT_DIAL_NAME]    = { "dial_name", "", SET_CAT_COUNT },
 }; /**< the string settings' table */
 
 /** @brief The values, the copy the medium holds, the store and the hooks. */

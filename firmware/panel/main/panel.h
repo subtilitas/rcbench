@@ -26,6 +26,7 @@
 #include "arming.h"
 #include "stop_latch.h"
 #include "bench_state.h"
+#include "dial_ctl.h"
 #include "log_cols.h"
 #include "bind_link.h"
 #include "card_tree.h"
@@ -2048,6 +2049,9 @@ typedef struct {
     ui_screen_id_t route;  /**< The screen the knob was turned on. */
     /** @brief The router's navigation count when the motion was taken. */
     uint32_t       navigations;
+    /** @brief The M5Stack Dial's detents and gestures of the frame
+     *         (panel_dial_take()). */
+    dial_input_t   dial;
 } knob_turn_t;
 
 /**

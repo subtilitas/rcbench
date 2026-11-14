@@ -33,6 +33,7 @@
 #include "outputs_screen.h"
 #include "overview_screen.h"
 #include "panel.h"
+#include "panel_dial.h"
 #include "panel_imu.h"
 #include "panel_main.h"
 #include "panel_perf.h"
@@ -656,6 +657,28 @@ void panel_frame_loop(void)
             .mcu_temp_c  = mcu_temp_c,
         };
         ui_router_set_status(&status);
+        {
+            /* The Dial's view and commands, and the screen model its
+             * stream sends: the screen on top as this frame drew it. */
+            const ui_screen_id_t on_top = ui_router_current();
+            const dial_model_in_t dial_in = {
+                .route = on_top,
+                .title = ui_router_title(on_top),
+                .lang = (ui_text_language() == UI_LANG_DE) ? DK_LANG_DE
+                                                           : DK_LANG_EN,
+                .armed = armed || arm_wanted_now,
+                .motor_armed = motor_armed_now,
+                .servo_armed = servo_armed_now,
+                .fault = faults != 0u,
+                .run_s = (uint16_t)(run_seconds > 0xFFFFu ? 0xFFFFu
+                                                          : run_seconds),
+                .bench = &bench,
+                .supply_on = supply_screen_output_on(),
+                .thr_tenths = dial_step_tenths(settings_get_int(SET_DIAL_THR)),
+                .srv_tenths = dial_step_tenths(settings_get_int(SET_DIAL_SRV)),
+            };
+            panel_dial_frame(&dial_in);
+        }
 
         if (splash_screen_done() && ui_router_current() == SCREEN_SPLASH) {
             /*

@@ -213,6 +213,14 @@ SOURCES = [
     "shared/bench/imu.c",
     "protocols/witmotion/witmotion.c",
     "protocols/bleuart/bleuart.c",
+    # The Dial: its controller, its stream, the frame's paths, WIRELESS.
+    "shared/ui/dial_ctl.c",
+    "shared/ui/dial_stream.c",
+    "shared/ui/dial_panel.c",
+    "shared/ui/wireless_pane.c",
+    "shared/ui/settings_panes.c",
+    "protocols/dialknob/dialknob.c",
+    "protocols/dialknob/dk_track.c",
     "protocols/bleuart/bleuart_adv.c",
     # FILES, and the file manager's core it starts its jobs and keeps its
     # panes with (shared/files), the logger's open-file rule with it.
@@ -343,6 +351,7 @@ INCLUDES = [
     "protocols/dshot/include",
     "protocols/bleuart/include",
     "protocols/witmotion/include",
+    "protocols/dialknob/include",
 ]
 
 # The files of shared/ui/CMakeLists.txt that SOURCES leaves out, and why.

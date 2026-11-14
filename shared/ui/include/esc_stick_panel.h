@@ -70,6 +70,15 @@ void esc_stick_panel_bench(uint32_t now_ms, bool armed, uint32_t stops,
 void esc_stick_panel_stop_released(void);
 
 /**
+ * @brief The M5Stack Dial's HOLD on MOTOR & ESC (motor_screen_dial_hold()):
+ *        a run under way ends as ABORT ends it, an ARM it queued and the
+ *        application has not taken included, so a run in ARMING never
+ *        arms after the HOLD.
+ * @return true when a run ended.
+ */
+bool esc_stick_panel_dial_hold(void);
+
+/**
  * @brief The output binding, every frame: whether one is read
  * (BIND_READ_OK), and the channels it binds as a throttle
  * (outputs_role_channels(), one bit each).  RUN is refused

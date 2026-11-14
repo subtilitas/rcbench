@@ -80,7 +80,8 @@ static bool served(setting_id_t id)
         return false;
     }
     return d->cat == SET_CAT_APP || d->cat == SET_CAT_PDMINI
-           || d->cat == SET_CAT_SENSORS || d->cat == SET_CAT_STICK;
+           || d->cat == SET_CAT_SENSORS || d->cat == SET_CAT_STICK
+           || d->cat == SET_CAT_WIRELESS;
 }
 
 TEST_CASE(every_stepped_value_typed_is_the_stepped_value)

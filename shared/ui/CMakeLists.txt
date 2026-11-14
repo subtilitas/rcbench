@@ -131,6 +131,8 @@ set(SRCS
     prog5v_box.c
     prog_choice.c
     sensors_pane.c
+    wireless_pane.c
+    settings_panes.c
     sensors_rows.c
     outputs_screen.c
     outputs_view.c
@@ -163,6 +165,9 @@ set(SRCS
     imu_screen.c
     imu_screen_draw.c
     imu_guide.c
+    dial_ctl.c
+    dial_stream.c
+    dial_panel.c
     files_draw.c
     files_events.c
     files_text.c
@@ -174,13 +179,13 @@ set(SRCS
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include
                            REQUIRES gfx touch bench logfile settings sbus link outputs servo can esc
-                                    text files clock bleuart witmotion fwupdate
+                                    text files clock bleuart witmotion dialknob fwupdate
                            PRIV_REQUIRES mstime)
     # RCBENCH_TOUCH_INJECTOR comes with component text (shared/text).
 else()
     add_library(rcbench_ui STATIC ${SRCS})
     target_include_directories(rcbench_ui PUBLIC include "${CMAKE_CURRENT_LIST_DIR}/../link/include" "${CMAKE_CURRENT_LIST_DIR}/../can/include")
     # RCBENCH_TOUCH_INJECTOR comes with rcbench_text (shared/text).
-    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo rcbench_text rcbench_files rcbench_clock rcbench_bleuart rcbench_witmotion rcbench_fwupdate
+    target_link_libraries(rcbench_ui PUBLIC rcbench_gfx rcbench_touch rcbench_bench rcbench_logfile rcbench_settings rcbench_sbus rcbench_link rcbench_outputs rcbench_can rcbench_esc rcbench_servo rcbench_text rcbench_files rcbench_clock rcbench_bleuart rcbench_witmotion rcbench_dialknob rcbench_fwupdate
                           PRIVATE rcbench_mstime)
 endif()

@@ -6,7 +6,7 @@ order: 66
 
 # IMU
 
-The IMU screen controls a Bluetooth inertial measurement unit: a WitMotion BWT901CL angle sensor mounted on a control surface. It reaches the panel over Bluetooth LE (Low Energy) through the board's ESP32-C6; no wire, no pairing, no PIN. Open the screen from the IMU tile on [Setup](setup.md); the home tag returns there. This screen drives no outputs. Its settings are in the IMU entry of [Sensors](setup-sensors.md#the-imu). See [The Bluetooth IMU](https://github.com/subtilitas/rcbench/wiki/IMU) for the link and the sensor's commands.
+The IMU screen controls a Bluetooth inertial measurement unit: a WitMotion BWT901CL angle sensor mounted on a control surface. It reaches the panel over Bluetooth LE (Low Energy) through the board's ESP32-C6; no wire, no pairing, no PIN. Open the screen from the IMU tile on [Setup](setup.md); the home tag returns there. This screen drives no outputs. Its settings are in the IMU entry of [Wireless](setup-wireless.md#the-imu). See [The Bluetooth IMU](https://github.com/subtilitas/rcbench/wiki/IMU) for the link and the sensor's commands.
 
 ![IMU with Bluetooth LE running and no sensor bound](view:imu)
 
@@ -18,7 +18,7 @@ The IMU screen controls a Bluetooth inertial measurement unit: a WitMotion BWT90
 | HOLD 2s: CALIBRATE | in the footer's middle; starts accelerometer calibration while connected; keep the sensor still and level during the 3s countdown |
 | ZERO | uses the current angles as zero when a reading is available; with ANGLE SOURCE IMU, this clears RUDDER's zero and MAX |
 | CLEAR ZERO | restores angles relative to the sensor's own zero |
-| OPTIONS | in the footer's right; opens the IMU entry of [Sensors](setup-sensors.md#the-imu); its home tag returns here |
+| OPTIONS | in the footer's right; opens the IMU entry of [Wireless](setup-wireless.md#the-imu); its home tag returns here |
 
 A press shorter than 2s does not start calibration. The band shows `Hold 2s to calibrate the accelerometer.`.
 

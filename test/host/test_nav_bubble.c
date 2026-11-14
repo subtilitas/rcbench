@@ -34,6 +34,7 @@
  */
 
 #include "nav_rig.h"
+#include "dial_panel.h"
 
 #include "prog5v_box.h"
 
@@ -1014,9 +1015,36 @@ TEST_CASE(a_knob_turn_closes_the_bubble_and_moves_nothing)
     CHECK(ui_router_take_knob());
 }
 
+/* A frame without a turn or a press asks the router nothing: the bubble
+ * stays open.  A frame with one closes it and moves nothing. */
+TEST_CASE(a_frame_without_knob_input_leaves_the_bubble_open)
+{
+    open_on_overview(&k_all_chips, UI_BAND_CHIP_LINK);
+    const dial_input_t none = { 0 };
+    const dial_input_t hold = { .holds = 1u };
+    for (int k = 0; k < 10; ++k) {
+        CHECK(!dial_knob_take(0, &none));
+        CHECK(!dial_knob_take(0, &hold));
+        CHECK(!dial_knob_take(0, NULL));
+    }
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_LINK);
+    const dial_input_t turn = { .detents = -2 };
+    CHECK(!dial_knob_take(0, &turn));
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+    CHECK(dial_knob_take(0, &turn));
+    open_on_overview(&k_all_chips, UI_BAND_CHIP_LINK);
+    const dial_input_t press = { .presses = 1u };
+    CHECK(!dial_knob_take(0, &press));
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+    open_on_overview(&k_all_chips, UI_BAND_CHIP_LINK);
+    CHECK(!dial_knob_take(3, &none));
+    CHECK_EQ(ui_router_help(), UI_BAND_CHIP_NONE);
+}
+
 int main(void)
 {
     RUN(the_armed_chip_names_the_role);
+    RUN(a_frame_without_knob_input_leaves_the_bubble_open);
     RUN(the_safe_chip_names_a_held_port_and_a_move);
     RUN(the_band_renders_the_role_of_the_arm);
     RUN(the_fault_chip_text_reads_on_its_fill_in_both_themes);

@@ -318,9 +318,12 @@ OPTION_RE = re.compile(r'^UI_OPTION\("([^"]+)",', re.M)
 # Y, Z) and SIGN (imu_sign: +, -) are single characters any page holds,
 # and its RATE (imu_rate, 10Hz to 200Hz) frequencies prose gives for much
 # else.  The PD mini's baud rates (pdmini_baud) are numbers prose names one
-# at a time, and their AUTO is also RUDDER's AUTO.
+# at a time, and their AUTO is also RUDDER's AUTO.  The Dial's steps
+# (dial_thr: 0.5% to 5%; dial_srv: 0.5° to 5°) are percentages and angles
+# prose gives for much else.
 NOT_MENUS = {"ina228_addr", "old_addr", "old_ch", "watch", "kb_see",
-             "web_writes", "imu_axis", "imu_sign", "imu_rate", "pdmini_baud"}
+             "web_writes", "imu_axis", "imu_sign", "imu_rate", "pdmini_baud",
+             "dial_thr", "dial_srv"}
 
 
 def option_lists() -> dict[str, list[str]]:

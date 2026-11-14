@@ -66,6 +66,7 @@ TRACKED = [
     "shared/gfx/gfx_seg.c",
     "shared/gfx/gfx_sprite.c",
     "shared/gfx/gfx_damage.c",
+    "shared/gfx/gfx_ring.c",
     "shared/gfx/gfx_turn.c",
     "shared/gfx/gfx_trapezoid.c",
     "shared/touch/touch_map.c",
@@ -229,6 +230,11 @@ TRACKED = [
     "shared/ui/imu_screen.c",
     "shared/ui/imu_screen_draw.c",
     "shared/ui/imu_guide.c",
+    "shared/ui/dial_ctl.c",
+    "shared/ui/dial_stream.c",
+    "shared/ui/dial_panel.c",
+    "shared/ui/wireless_pane.c",
+    "shared/ui/settings_panes.c",
     "shared/settings/settings.c",
     "shared/settings/settings_sensors.c",
     "shared/settings/settings_text.c",
@@ -437,6 +443,9 @@ TRACKED = [
     "shared/vibe/vibe_edge.c",
     "shared/vibe/vibe_frame.c",
     "shared/vibe/vibe_solve.c",
+    "shared/dial/dial_scene.c",
+    "shared/dial/dial_draw.c",
+    "shared/dial/dial_text.c",
     "shared/bench/report_lines.c",
     "shared/bench/report_steps.c",
     "shared/bench/imu.c",
@@ -496,6 +505,8 @@ DATA_ONLY = {
     "shared/gfx/gfx_font12x24.c",
     "shared/gfx/gfx_font20x36.c",
     "shared/gfx/gfx_font_num32x44.c",
+    # The Dial's ring tables written by tools/gen_dial_rings.py.
+    "shared/dial/dial_rings.c",
     # The cats' drawings written by tools/gen_cats.py.
     "shared/ui/ui_cats_art.c",
     # The ESC profile tables written by tools/gen_esc_profiles.py.
