@@ -143,9 +143,9 @@ SETUP > WIRELESS > DIAL holds the Dial's rows
 default), SCAN FOR DIAL, BOUND DIAL, and the steps of a detent, 0.5%, 1%, 2%
 or 5% of throttle (1% by default) and 0.5°, 1°, 2° or 5° of horn angle (1° by
 default). The first Dial ON starts Bluetooth LE on the board's ESP32-C6,
-as the first IMU ON does; it runs until the panel restarts. The Dial and the
-IMU are two clients of the panel's Bluetooth LE central, one connect or scan
-at a time between them.
+as the first IMU ON does; it runs until the panel restarts. The Dial, the
+IMU and the nodes are clients of the panel's Bluetooth LE central, one
+connect or scan at a time between them.
 
 ### Scan and bind
 
@@ -155,10 +155,27 @@ ARMED, or an arm waits, the scan is refused and the band reads
 `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs it
 reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. A scan started while SAFE
 stops at the switch to ARMED, and SCAN FOR DIAL reads `STOPPED BY ARM`. A
-tap on a found Dial binds it:
-the panel keeps its address and name in SETUP (`dial_ble`, `dial_name`) and
-asks for a save. One Dial is bound at a time. The panel connects to it by
-its address, without a scan, at Dial ON, at start-up and after each loss.
+tap on BOUND DIAL lists the Dials the last scan found, and a tap on one
+binds it: the panel keeps its address and name in SETUP (`dial_ble`,
+`dial_name`) and asks for a save. One Dial is bound at a time. The panel
+connects to it by its address, without a scan, at Dial ON, at start-up and
+after each loss.
+
+A tap on BOUND DIAL with no list says why on the band:
+`NO DIAL LISTED: TAP SCAN FOR DIAL FIRST` before a scan and after one that
+found none, `THE SCAN RUNS: PICK THE DIAL WHEN IT ENDS` while a scan runs.
+A pick the controller refuses, because a scan started first or the list
+changed under it, reads `THE SCAN RUNS: PICK THE DIAL WHEN IT ENDS` or
+`DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the console logs
+`dial: bind of n refused`. A bound Dial logs `dial: bound <address>
+<name>`.
+
+The connect after a bind starts at once while the central is free. An IMU
+or a node that is ON and bound to a device out of range holds the one
+connect for 5,000ms an attempt, and the Dial's connect is answered busy and
+tried again 1,000ms on. In the host model the Dial's first connect waits
+up to 5,101ms after the pick with one such client and up to 10,101ms with
+two; on the panel these waits are not measured.
 
 ### The link
 

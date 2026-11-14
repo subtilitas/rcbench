@@ -378,6 +378,13 @@ history is in git.
 
 ### Fixed
 
+- SETUP > WIRELESS > DIAL: a tap on BOUND DIAL with no list, before a scan,
+  after one that found none or while a scan runs, says why on the band
+  instead of nothing. A pick the controller refuses, because a scan started
+  first or the list changed, says so on the band and the console. Settings
+  read before the frame kept a bind in SETUP no longer unbind the Dial just
+  picked; such a post left SETUP holding no Dial
+  ([The M5Stack Dial](docs/Dial.md#scan-and-bind)).
 - HITEC programmer: while a write runs, the SERVO tab no longer shows
   `Writing was interrupted. The settings may be incomplete.` for the record
   of that same write; the state line shows the write's step.

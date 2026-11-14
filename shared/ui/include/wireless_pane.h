@@ -10,8 +10,10 @@
  * state is the panel's (sensors_rows_set_imu()).  DIAL: Dial alone while it
  * is off; on, SCAN FOR DIAL (a tap scans 10s, refused while ARMED with the
  * band's DIAL_SCAN_ARMED), BOUND DIAL (a tap lists the Dials the last scan
- * found, a tap on one binds it) and the two steps; its state is the
- * panel's (wireless_pane_set_dial()).  POWER NODE: Power node and INA228
+ * found, a tap on one binds it; with no list, or a scan running, the tap
+ * and a bind the controller refused say why on the band:
+ * DIAL_BIND_EMPTY, DIAL_BIND_SCANNING, DIAL_BIND_GONE) and the two steps;
+ * its state is the panel's (wireless_pane_set_dial()).  POWER NODE: Power node and INA228
  * SOURCE while it is off, so the source can go back to WIRED without
  * switching the node on; on, SCAN FOR NODE (refused while ARMED with the
  * band's PNODE_SCAN_ARMED), BOUND NODE and NODE BATTERY under them; its

@@ -101,6 +101,9 @@ static void cfg_from_settings(dial_cfg_t *out)
             sizeof(out->name) - 1u);
     out->thr_tenths = dial_step_tenths(settings_get_int(SET_DIAL_THR));
     out->srv_tenths = dial_step_tenths(settings_get_int(SET_DIAL_SRV));
+    /* The binds kept in SETUP so far: values read before the frame keeps
+     * a bind carry the address before it, which the controller leaves. */
+    out->bind_seq = s_kept_seq;
 }
 
 /** @brief SETUP's values to the task; dropped while its queue is full. */
@@ -150,6 +153,11 @@ static void run_command(const dial_cmd_t *cmd, uint32_t now)
     } else if (cmd->kind == DIAL_CMD_BIND) {
         if (dial_ctl_bind(&s_ctl, cmd->arg, now)) {
             ESP_LOGI(TAG, "bound %s %s", s_ctl.cfg.addr, s_ctl.cfg.name);
+        } else {
+            ESP_LOGW(TAG, "bind of %u refused: %s, %u listed (%u refused)",
+                     (unsigned)cmd->arg,
+                     s_ctl.b.scanning ? "a scan runs" : "not in the list",
+                     (unsigned)s_ctl.found_n, (unsigned)s_ctl.bind_refused);
         }
     }
 }

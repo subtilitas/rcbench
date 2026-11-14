@@ -177,6 +177,14 @@ void dial_ctl_config(dial_ctl_t *c, const dial_cfg_t *cfg, uint32_t now_ms)
     }
     const dial_cfg_t was = c->cfg;
     c->cfg = *cfg;
+    if (cfg->bind_seq != c->bind_seq) {
+        /* Read from SETUP before the frame kept the last bind there: its
+         * address is the one before the bind, and taking it would unbind
+         * the Dial just picked.  The write-back's values come next. */
+        memcpy(c->cfg.addr, was.addr, sizeof(c->cfg.addr));
+        memcpy(c->cfg.name, was.name, sizeof(c->cfg.name));
+        c->cfg.bind_seq = c->bind_seq;
+    }
     c->cfg.addr[DIAL_ADDR_MAX - 1u] = '\0';
     c->cfg.name[DIAL_NAME_MAX - 1u] = '\0';
     if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
@@ -235,17 +243,20 @@ dial_scan_t dial_ctl_scan(dial_ctl_t *c, bool armed, uint32_t now_ms)
 
 bool dial_ctl_bind(dial_ctl_t *c, uint8_t i, uint32_t now_ms)
 {
-    if (c == NULL || i >= c->found_n || c->b.scanning) {
+    if (c == NULL) {
         return false;
     }
     bleu_addr_t a;
-    if (!bleu_addr_parse(c->found[i].addr, &a)) {
+    if (i >= c->found_n || c->b.scanning
+        || !bleu_addr_parse(c->found[i].addr, &a)) {
+        ++c->bind_refused;
         return false;
     }
     snprintf(c->cfg.addr, sizeof(c->cfg.addr), "%s", c->found[i].addr);
     snprintf(c->cfg.name, sizeof(c->cfg.name), "%s", c->found[i].name);
     bleu_bind(&c->b, &a, now_ms);
     ++c->bind_seq;
+    c->cfg.bind_seq = c->bind_seq;
     follow_link(c, now_ms);
     return true;
 }
@@ -448,4 +459,5 @@ void dial_ctl_view(const dial_ctl_t *c, dial_view_t *out)
         memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
     }
     out->proto = c->info_proto;
+    out->bind_refused = (uint16_t)c->bind_refused;
 }

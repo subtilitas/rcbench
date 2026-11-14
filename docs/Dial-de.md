@@ -153,8 +153,8 @@ SETUP > WIRELESS > DIAL enthält die Zeilen des Dial
 0.5%, 1%, 2% oder 5% Gas (ab Werk 1%) und 0.5°, 1°, 2° oder 5° Hornwinkel (ab
 Werk 1°). Das erste Dial EIN startet Bluetooth LE auf dem ESP32-C6 des
 Boards, wie das erste IMU EIN; es läuft bis zum Neustart des Panels. Das
-Dial und die IMU sind zwei Clients der Bluetooth-LE-Central des Panels, mit
-einem Connect oder Scan zur Zeit zwischen ihnen.
+Dial, die IMU und die Knoten sind Clients der Bluetooth-LE-Central des
+Panels, mit einem Connect oder Scan zur Zeit zwischen ihnen.
 
 ### Suchen und Binden
 
@@ -164,10 +164,30 @@ Prüfstand ARMED oder wartet ein Arm, wird die Suche abgelehnt, und das Band
 zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
 läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Eine bei SAFE
 gestartete Suche endet beim Schalten auf ARMED, und DIAL SUCHEN zeigt
-`DURCH ARM BEENDET`. Ein Tippen auf ein gefundenes Dial bindet es: Das Panel behält Adresse und Namen in SETUP
-(`dial_ble`, `dial_name`) und fragt nach dem Speichern. Es ist immer ein
-Dial gebunden oder keins. Das Panel verbindet sich über die Adresse mit ihm,
-ohne Suche, bei Dial EIN, beim Start und nach jedem Verlust.
+`DURCH ARM BEENDET`. Ein Tippen auf GEBUNDENES DIAL listet die Dials der
+letzten Suche, und ein Tippen auf eins bindet es: Das Panel behält Adresse
+und Namen in SETUP (`dial_ble`, `dial_name`) und fragt nach dem Speichern.
+Es ist immer ein Dial gebunden oder keins. Das Panel verbindet sich über
+die Adresse mit ihm, ohne Suche, bei Dial EIN, beim Start und nach jedem
+Verlust.
+
+Ein Tippen auf GEBUNDENES DIAL ohne Liste sagt auf dem Band, warum:
+`KEIN DIAL GELISTET: ERST DIAL SUCHEN TIPPEN` vor einer Suche und nach
+einer, die keins fand, `SUCHE LÄUFT: DAS DIAL NACH IHREM ENDE WÄHLEN`,
+solange eine Suche läuft. Eine Wahl, die der Controller ablehnt, weil zuerst
+eine Suche startete oder sich die Liste darunter änderte, zeigt
+`SUCHE LÄUFT: DAS DIAL NACH IHREM ENDE WÄHLEN` oder
+`DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
+schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
+`dial: bound <Adresse> <Name>`.
+
+Der Connect nach dem Binden startet sofort, wenn die Central frei ist. Eine
+IMU oder ein Knoten, EIN und an ein Gerät außer Reichweite gebunden, hält
+den einen Connect 5.000ms pro Versuch, und der Connect des Dial wird als
+belegt beantwortet und 1.000ms später wiederholt. Im Host-Modell wartet der
+erste Connect des Dial nach der Wahl bis zu 5.101ms bei einem solchen
+Client und bis zu 10.101ms bei zweien; auf dem Panel sind diese Wartezeiten
+nicht gemessen.
 
 ### Der Link
 
