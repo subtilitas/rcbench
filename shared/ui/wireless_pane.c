@@ -390,6 +390,43 @@ void wireless_pane_reset(int entry)
     }
 }
 
+/**
+ * @brief Whether two found Dials read the same.
+ * @param a One.
+ * @param b The other.
+ * @return true when every field is equal.
+ */
+static bool dev_eq(const dial_dev_t *a, const dial_dev_t *b)
+{
+    return memcmp(a->addr, b->addr, sizeof(a->addr)) == 0
+        && memcmp(a->name, b->name, sizeof(a->name)) == 0
+        && a->rssi == b->rssi;
+}
+
+/**
+ * @brief Whether two views of the controller read the same, field by
+ *        field: the struct has padding, so its bytes are no measure.
+ * @param a One.
+ * @param b The other.
+ * @return true when every field is equal.
+ */
+static bool view_eq(const dial_view_t *a, const dial_view_t *b)
+{
+    if (a->link != b->link || a->scan_done != b->scan_done
+        || a->scan_cut != b->scan_cut || a->found_n != b->found_n
+        || a->hidden != b->hidden || a->proto != b->proto
+        || memcmp(a->bound_addr, b->bound_addr, sizeof(a->bound_addr)) != 0
+        || memcmp(a->bound_name, b->bound_name, sizeof(a->bound_name)) != 0) {
+        return false;
+    }
+    for (size_t i = 0; i < DIAL_FOUND_MAX; ++i) {
+        if (!dev_eq(&a->found[i], &b->found[i])) {
+            return false;
+        }
+    }
+    return true;
+}
+
 void wireless_pane_set_dial(const dial_view_t *v)
 {
     dial_view_t next;
@@ -398,7 +435,7 @@ void wireless_pane_set_dial(const dial_view_t *v)
     } else {
         memset(&next, 0, sizeof(next));
     }
-    if (memcmp(&next, &s_dial, sizeof(next)) != 0) {
+    if (!view_eq(&next, &s_dial)) {
         s_dial = next;
         settings_screen_invalidate();
     }

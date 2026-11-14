@@ -249,7 +249,7 @@ static bool scale_eq(const dk_scale_t *a, const dk_scale_t *b)
  * @param now_ms The clock.
  * @return @p len.
  */
-static size_t sent(dial_stream_t *st, uint8_t *out, size_t len,
+static size_t sent(dial_stream_t *st, const uint8_t *out, size_t len,
                    uint32_t now_ms)
 {
     if (len == 0u) {
