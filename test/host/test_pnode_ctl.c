@@ -51,7 +51,10 @@ typedef struct {
     unsigned    connects; /**< CONNECT actions */
     unsigned    scans;    /**< SCAN actions */
     unsigned    stops;    /**< SCAN_STOP actions */
-    unsigned    writes;   /**< CONTROL writes */
+    unsigned    writes;   /**< CONTROL writes but LANG */
+    unsigned    langs;    /**< LANG writes */
+    uint8_t     lang;     /**< the last one's language */
+    uint16_t    lang_status; /**< the ATT status the node answers LANG with */
     uint8_t     wr[4];    /**< the last one's bytes */
     uint8_t     wr_len;   /**< its length */
     uint8_t     seq;      /**< the node's STREAM seq */
@@ -145,6 +148,14 @@ static void act(rig_t *r, const bleu_act_t *a)
         break;
     case BLEU_ACT_WRITE:
     case BLEU_ACT_WRITE_NR:
+        if (a->len == 2u && a->data[0] == RCNODE_OP_LANG) {
+            ++r->langs;
+            r->lang = a->data[1];
+            e = ev(BLEU_EV_WRITE_DONE, a->token);
+            e.status = r->lang_status;
+            pnode_ctl_event(&r->c, &e, r->now);
+            break;
+        }
         ++r->writes;
         r->wr_len = a->len < sizeof r->wr ? a->len : (uint8_t)sizeof r->wr;
         memcpy(r->wr, a->data, r->wr_len);
@@ -506,6 +517,68 @@ TEST_CASE(the_run_marker_goes_at_the_arm_and_after_a_drop_within_the_run)
     CHECK_EQ(r.writes, 2u);
 }
 
+TEST_CASE(lang_goes_once_a_link_and_once_a_change_after_run)
+{
+    rig_t r;
+    up(&r, true);
+    run(&r, 5u);
+    CHECK_EQ(r.langs, 1u);
+    CHECK_EQ(r.lang, RCNODE_LANG_EN);
+    run(&r, 100u);
+    CHECK_EQ(r.langs, 1u);
+    pnode_ctl_lang(&r.c, RCNODE_LANG_DE);
+    run(&r, 5u);
+    CHECK_EQ(r.langs, 2u);
+    CHECK_EQ(r.lang, RCNODE_LANG_DE);
+    /* A value past German is English. */
+    pnode_ctl_lang(&r.c, 7u);
+    run(&r, 5u);
+    CHECK_EQ(r.langs, 3u);
+    CHECK_EQ(r.lang, RCNODE_LANG_EN);
+    /* RUN first: a change at the arm waits for the RUN write. */
+    window(&r, RCNODE_WF_ONLINE);
+    pnode_ctl_lang(&r.c, RCNODE_LANG_DE);
+    r.armed = true;
+    bleu_act_t a;
+    CHECK(pnode_ctl_step(&r.c, ++r.now, r.armed, true, &a));
+    CHECK_EQ(a.data[0], RCNODE_OP_RUN);
+    act(&r, &a);
+    run(&r, 5u);
+    CHECK_EQ(r.writes, 1u);
+    CHECK_EQ(r.langs, 4u);
+    CHECK_EQ(r.lang, RCNODE_LANG_DE);
+    /* A new link gets it again. */
+    r.armed = false;
+    run(&r, 5u);
+    bleu_evt_t e = ev(BLEU_EV_DISCONNECT, r.tok_conn);
+    e.status = 0x213u;
+    pnode_ctl_event(&r.c, &e, r.now);
+    run(&r, BLEU_RETRY_MS + 100u);
+    CHECK(r.c.linked);
+    CHECK_EQ(r.langs, 5u);
+    CHECK_EQ(r.lang, RCNODE_LANG_DE);
+}
+
+TEST_CASE(a_node_that_refuses_lang_keeps_its_link_and_is_not_asked_again)
+{
+    rig_t r;
+    init(&r, true);
+    r.lang_status = 0x113u;      /* "value not allowed": a node before LANG */
+    run(&r, 50u);
+    CHECK(r.c.linked);
+    CHECK(r.c.info_ok);
+    CHECK_EQ(r.langs, 1u);
+    run(&r, 500u);
+    CHECK_EQ(r.langs, 1u);
+    CHECK(r.c.linked);
+    /* RUN still goes after the refusal. */
+    window(&r, RCNODE_WF_ONLINE);
+    r.armed = true;
+    run(&r, 2u);
+    CHECK_EQ(r.writes, 1u);
+    CHECK_EQ(r.wr[0], RCNODE_OP_RUN);
+}
+
 TEST_CASE(power_node_off_ends_the_link_and_is_no_loss)
 {
     rig_t r;
@@ -685,6 +758,8 @@ int main(void)
     RUN(the_scan_lists_power_nodes_and_binds_one);
     RUN(the_run_marker_goes_at_the_arm_and_after_a_drop_within_the_run);
     RUN(power_node_off_ends_the_link_and_is_no_loss);
+    RUN(lang_goes_once_a_link_and_once_a_change_after_run);
+    RUN(a_node_that_refuses_lang_keeps_its_link_and_is_not_asked_again);
     RUN(a_node_that_started_again_gets_run_again_and_a_servo_run_no_gap);
     RUN(the_update_hold_hands_the_link_over_and_takes_it_back);
     return test_summary("pnode_ctl");

@@ -205,6 +205,9 @@ bool panel_pnode_blec_step(uint32_t now, bleu_act_t *out)
     if (s_q == NULL) {
         return false;
     }
+    /* The language a display node shows its texts in (LANG). */
+    pnode_ctl_lang(&s_ctl, ui_text_language() == UI_LANG_DE ? RCNODE_LANG_DE
+                                                            : RCNODE_LANG_EN);
     const bool acted = pnode_ctl_step(&s_ctl, now, atomic_load(&s_live),
                                       atomic_load(&s_bench_run), out);
     /* Against the count last published, not a count taken before the step:

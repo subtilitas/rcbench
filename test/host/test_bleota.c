@@ -319,6 +319,30 @@ TEST_CASE(random_writes_decode_only_to_their_own_bytes)
     CHECK(ctrl > 10000u);
 }
 
+TEST_CASE(the_c6_and_s3_power_images_do_not_cross)
+{
+    uint8_t c6[BLEOTA_HEAD_LEN];
+    uint8_t s3[BLEOTA_HEAD_LEN];
+    test_head_write(c6, TEST_CHIP_C6, BLEOTA_KIND_NODE_POWER);
+    test_head_write(s3, TEST_CHIP_S3, BLEOTA_KIND_NODE_POWER_S3);
+    CHECK_EQ(bleota_head_check(c6, sizeof c6, TEST_CHIP_C6,
+                               BLEOTA_KIND_NODE_POWER), BLEOTA_OK);
+    CHECK_EQ(bleota_head_check(s3, sizeof s3, TEST_CHIP_S3,
+                               BLEOTA_KIND_NODE_POWER_S3), BLEOTA_OK);
+    /* The display node takes no C6 image, the C6 node no display one. */
+    CHECK_EQ(bleota_head_check(c6, sizeof c6, TEST_CHIP_S3,
+                               BLEOTA_KIND_NODE_POWER_S3), BLEOTA_E_KIND);
+    CHECK_EQ(bleota_head_check(s3, sizeof s3, TEST_CHIP_C6,
+                               BLEOTA_KIND_NODE_POWER), BLEOTA_E_KIND);
+    /* The chip alone or the role alone refuses as well. */
+    test_head_write(c6, TEST_CHIP_C6, BLEOTA_KIND_NODE_POWER_S3);
+    CHECK_EQ(bleota_head_check(c6, sizeof c6, TEST_CHIP_C6,
+                               BLEOTA_KIND_NODE_POWER), BLEOTA_E_KIND);
+    test_head_write(s3, TEST_CHIP_S3, BLEOTA_KIND_NODE_POWER);
+    CHECK_EQ(bleota_head_check(s3, sizeof s3, TEST_CHIP_S3,
+                               BLEOTA_KIND_NODE_POWER_S3), BLEOTA_E_KIND);
+}
+
 TEST_CASE(the_head_check_takes_only_this_chip_and_this_role)
 {
     uint8_t h[BLEOTA_HEAD_LEN + 1u];
@@ -373,5 +397,6 @@ int main(void)
     RUN(the_chunk_fills_the_mtu_up_to_240_bytes);
     RUN(random_writes_decode_only_to_their_own_bytes);
     RUN(the_head_check_takes_only_this_chip_and_this_role);
+    RUN(the_c6_and_s3_power_images_do_not_cross);
     return test_summary("bleota");
 }

@@ -213,6 +213,7 @@ TEST_CASE(begin_is_refused_for_kind_size_version_protocol_and_flags)
     } k[] = {
         { BLEOTA_KIND_DIAL, 100u, newer, 0u, BLEOTA_E_KIND },
         { BLEOTA_KIND_NODE_BAL, 100u, newer, 0u, BLEOTA_E_KIND },
+        { BLEOTA_KIND_NODE_POWER_S3, 100u, newer, 0u, BLEOTA_E_KIND },
         { BLEOTA_KIND_NODE_POWER, 0u, newer, 0u, BLEOTA_E_SIZE },
         { BLEOTA_KIND_NODE_POWER, SLOT + 1u, newer, 0u, BLEOTA_E_SIZE },
         { BLEOTA_KIND_NODE_POWER, 100u, k_ver, 0u, BLEOTA_E_SAME },

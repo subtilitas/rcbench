@@ -64,7 +64,8 @@ Base UUID `706E340C-76DB-4FB2-AEF1-A89F7CBDF9xx`:
 | 0x04 | ABORT | 1 | op |
 | 0x05 | POLL | 1 | op |
 
-Kinds: 1 the Dial, 2 the power node, 3 the balance node. Flags: bit 0
+Kinds: 1 the Dial, 2 the power node, 3 the balance node, 4 the power node on
+the ES3C28P display board (ESP32-S3). Flags: bit 0
 `BLEOTA_F_REINSTALL`; the other bits are refused.
 
 ### Notifications
