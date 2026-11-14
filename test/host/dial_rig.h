@@ -244,16 +244,16 @@ static inline void drig_up(drig_t *r)
 static inline void drig_event(drig_t *r, int16_t counter, uint8_t buttons,
                               uint8_t gesture)
 {
-    dk_evt_t ev;
-    memset(&ev, 0, sizeof ev);
-    ev.seq = r->seq++;
-    ev.counter = counter;
-    ev.buttons = buttons;
-    ev.gesture = gesture;
-    ev.ms = (uint16_t)r->now;
+    dk_evt_t evt;
+    memset(&evt, 0, sizeof evt);
+    evt.seq = r->seq++;
+    evt.counter = counter;
+    evt.buttons = buttons;
+    evt.gesture = gesture;
+    evt.ms = (uint16_t)r->now;
     bleu_evt_t e = drig_ev(BLEU_EV_NOTIFY, 0u);
     e.h1 = DRIG_EVENT_VAL;
-    e.len = (uint8_t)dk_evt_encode(&ev, e.data);
+    e.len = (uint8_t)dk_evt_encode(&evt, e.data);
     dial_ctl_event(&r->c, &e, r->now);
 }
 
