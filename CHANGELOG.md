@@ -28,7 +28,7 @@ history is in git.
   scene, so that a changed scene is captured alone; a kept part of
   1024 bytes or less is captured again ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `minircbench-features`: every screen of the MiniRcBench,
-  firmware 0.1.0, in 12 chapters, narrated, 1008.43s. The stills
+  firmware 0.1.0, in 12 chapters, narrated, 1000.70s. The stills
   under `tools/video/stills/` are 83 frames of MiniRcBench's host suite
   at its commit 2cdf044.
 - Storyboard `minircbench-build`: building a MiniRcBench in 10 steps,
