@@ -396,7 +396,7 @@ export function buildBoard(data) {
       }
       for (const p of sc.fit || []) {
         if (p.kind === 'link') {
-          // A 0402 chip resistor of 0 Ω on the board until t, then taken
+          // A 0402 chip resistor of 0Ω on the board until t, then taken
           // off on a blob of solder: its two lands stay.
           const a = point(p.a), b = point(p.b);
           const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
