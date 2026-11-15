@@ -673,6 +673,12 @@ jobs:
       - name: No two solids of a model drawn part by part share volume
         run: python3 hardware/mechanical/check_overlap.py
 
+      # The two parts of the M5Stack Dial's base are built with
+      # OpenCASCADE: the files match their spec, each is a valid solid,
+      # and neither shares volume with the dial, its nut or the cell.
+      - name: Dial base matches its spec and clears dial, nut and cell
+        run: python3 hardware/mechanical/_gen_dial_base.py --check
+
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
       # OpenCASCADE meshes each solid again; the two meshes are within
       # 0.15mm of each other both ways and 1% in volume.
