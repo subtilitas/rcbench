@@ -359,7 +359,7 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   socket's pins, its enable pad on GP28 with 10kΩ to ground, a male servo
   connector with the switched 5V in each of the case's two openings, the
   INA219 in the boost board's OUT+, JST-SH leads in the 12-pin and the
-  I2C socket, no fuse, both small boards on double-sided tape, a 470µF electrolytic capacitor of 10V or more and a 5.6V zener diode across the boost board's output. The zener is rated 2W to 5W; its package is not stated and it is drawn as an axial part. Its own
+  I2C socket, no fuse, a cell with its own protection circuit (stated on 2026-11-15), both small boards on double-sided tape, a 470µF electrolytic capacitor of 10V or more and a 5.6V zener diode across the boost board's output. The zener is rated 2W to 5W; its package is not stated and it is drawn as an axial part. Its own
   statements, found nowhere else: the order of the steps, the wire
   colours, the pull-down's place between EN and IN-, that the boost
   board's IN- and OUT- are one net, the daisy chain from the TMT to the

@@ -85,6 +85,7 @@ export function makeDial(gltf, bases = null) {
       tex.colorSpace = THREE.SRGBColorSpace;
       tex.anisotropy = 8;
       tex.needsUpdate = true;
+      if (f.m.map) f.m.map.dispose();
       f.m.map = tex;
       f.m.needsUpdate = true;
       f.image = image;
