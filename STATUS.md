@@ -429,6 +429,45 @@ contact together with an injector contact.
 
 [Screenshot](docs/Screens.md#screenshot).
 
+### Videos from storyboards
+
+`tools/make_video.py` renders a storyboard, a JSON file under
+`tools/video/storyboards/`, into an MP4 video of 1920 x 1080 pixels at 30 frames per
+second: the case as a three.js model with labels, the panel's screens as the host renderer
+draws them with pointer bubbles and tap and hold marks or with an animated caption, marks and
+a spotlight, and a recap. `tools/video_audio.py` computes the sound track from the same
+storyboard: synthesizer pads and one quiet sound per event, no percussion, the loudest sample
+at -3dBFS (decibels relative to full scale); its balance has not been judged by ear. `--check` reads every
+storyboard and fails on a field the player would not draw; `test/tools/test_make_video.py`
+runs it. Five storyboards and a thumbnail: `kst-rbmod`, programming a KST servo on the rbmod carrier, 8 steps,
+100.4s, and `features`, every screen of the bench in 8 chapters, where it opens from and what
+it does on the rbmod carrier, narrated, 755.92s, with Bach's Prelude in C major or Pachelbel's
+Canon in D major as its bed. `tools/video_voice.py` speaks a storyboard with Kokoro, a
+text-to-speech model that runs on the machine and whose files are not in the tree; a speech
+recogniser returned the lines with their words, and the voice has not been judged by ear.
+The
+renderer draws the KST views on the carrier (`servo-kst-STATE-rbmod`) and MOTOR & ESC's plot
+with an IOmcu answering (`motor-plot`) for them (`test/host/render_screen.c`). `features` draws the case from its CAD (computer-aided design) assembly, which
+`tools/video_cad.py` converts from a STEP file that is not in the tree; its colours are set
+by part name, and its components fly in and seat one after another, held in the air while a
+label names each. `rbmod-rework` shows the rework of a rev 1 rbmod carrier in 4 steps and 83s,
+without narration: the track cut between the pads of R1, the wire from GP15 to R1's outer pad,
+the 2.2kΩ pull-down on M7's EN and the 5.6V zener on M7's output. It draws the board flat
+(`tools/video/player/board.js`) from a file that `tools/video_board.py` converts from the
+rev 1 KiCad board, which is not in the tree. `minircbench-build` shows the build of a MiniRcBench, the pocket bench of the repository of that name, in 10 steps, narrated, 505.57s: its assembly in 3D (`tools/video/player/mini3d.js`), its wiring on a flat drawing (`tools/video/boards/minircbench-wiring.json`) and its screens as stills of that project's host suite. `rbmod-build` shows the build of a rev 1 carrier
+in 13 steps and 347.32s on the same board, narrated, with Pachelbel's Canon as its bed: the parts take
+their places, the modules sit on the plastic of straight pin strips and are soldered on both
+sides, the large holes of M5 and M6 take a wire and solder, J6 takes no connector but 4 wires
+to a USB-C plug board for the PD mini, and a drawing of the panel's back
+(`tools/video/boards/p4-7b-back.json`) shows the 2 wires of header P3 that stay in its 12-pin plug, the CAN cable's H and L, and the
+supply and ground from J7 on the RS485 header's 5V and GND pins. `dial` shows the M5Stack Dial, in its printed hand-held base, coming
+into use in 7 steps and 295.69s, narrated, step 1 the assembly of the base with its cell: its STEP model with the faces of
+`tools/render_dial.py` on its display and its knob turning (`tools/video/player/dial3d.js`),
+and SETUP > WIRELESS > DIAL as the host renderer draws it. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
+there is not confirmed. A render is not run in CI.
+
+[Videos from storyboards](tools/video/README.md).
+
 ### Dim after
 
 Built and tested on the host (`shared/ui/screen_dim.c`; `test_screen_dim`):
@@ -1523,6 +1562,7 @@ rcbench/
   .github/workflows/      ci · docs · pages · release
   docs/                   the wiki source, English and German
   tools/                  generators, checks and analysis scripts
+  tools/video/            the video player, the case model and the storyboards
   test/tools/             pytest cases for the tools
   test/host/              one suite over shared/ and protocols/;
                           fixtures/ holds the CSV corpus

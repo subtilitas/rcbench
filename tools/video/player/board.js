@@ -1,0 +1,491 @@
+// A printed circuit board seen flat from its front, drawn as SVG from the
+// file tools/video_board.py writes: the tracks of the front copper, the
+// pads and the outline of every part.  Units are mm from the drawing's
+// top left corner.  A storyboard's board scene moves the view over it and
+// draws work on it: a part taking its place, solder joints, a net lit up,
+// a track cut, a wire, a part soldered across two pads.
+//
+// SPDX-License-Identifier: MIT
+
+const NS = 'http://www.w3.org/2000/svg';
+const cl = (x, a = 0, b = 1) => Math.min(b, Math.max(a, x));
+const ss = x => { x = cl(x); return x * x * (3 - 2 * x); };
+const ramp = (t, a, b) => ss((t - a) / (b - a));
+
+// [pattern on a part's footprint, fill, the kind of drawing].
+const LOOKS = [
+  [/RP2350/, '#1d4fa8', 'module'],
+  [/INA3221/, '#5a2d82', 'module'],
+  [/DCDC_Buck|USBC_PD_Trigger/, '#15803a', 'module'],
+  [/PinHeader/, '#15171c', 'plug'],
+  [/JST|Molex/, '#e9e4d6', 'plug'],
+  [/R_Axial|D_DO/, '#b9a27a', 'axial'],
+  [/R_1206/, 'none', 'empty'],
+];
+// The colours of a module's parts, by the names of its model.
+const PAINT = {metal: '#c9cdd3', chip: '#1b1d22', black: '#15171c',
+               white: '#e9edf2', red: '#a0201a', termgreen: '#2a8c45',
+               termblue: '#2a66bf', plastic: '#1a1a1a', beige: '#e6dbbd',
+               yellow: '#f2bf1a', gold: '#d4ad38', ceramic: '#a88c66',
+               glass: '#1a1f2e', green: '#1f8540', blue: '#0d388c'};
+const MASK = '#17503f', TRACK = '#2c8f70', GOLD = '#d9b04a', HOLE = '#0b1512';
+// The colour bands of an axial resistor by its text or its value.
+const BANDS = {'2.2 kΩ': ['#d0122a', '#d0122a', '#d0122a', '#c9a227'],
+               '4k7': ['#e8c81a', '#7a3fb0', '#d0122a', '#c9a227'],
+               '10 kΩ': ['#7a4a1e', '#15171c', '#e8731a', '#c9a227']};
+
+export function buildBoard(data) {
+  const svg = document.querySelector('#pcb');
+  const still = document.createElementNS(NS, 'g');
+  const live = document.createElementNS(NS, 'g');
+  const above = document.createElementNS(NS, 'g');
+  const [W, H] = data.size;
+  const pads = Object.fromEntries(data.pads.map(p => [p.name, p]));
+  // A part of a drawn board can bring its own fill, kind and label.
+  const look = part => part.fill ? [null, part.fill, part.kind || 'plug']
+    : LOOKS.find(([re]) => re.test(part.footprint))
+      || [null, '#23262c', 'plug'];
+  const [mask0, mask1] = data.mask || ['#1b5c49', '#113c30'];
+  const padSvg = p => {
+    const r = p.round ? Math.min(p.w, p.h) / 2 : .18;
+    return `<rect x="${p.x - p.w / 2}" y="${p.y - p.h / 2}" width="${p.w}"
+      height="${p.h}" rx="${r}" fill="${GOLD}"/>`
+      + (p.drill ? `<circle cx="${p.x}" cy="${p.y}" r="${p.drill / 2}"
+      fill="${HOLE}"/>` : '');
+  };
+  const own = Object.fromEntries(data.parts.map(q => [q.ref, look(q)[2]]));
+  let h = `<defs><linearGradient id="pcbmask" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="${mask0}"/><stop offset="1"
+      stop-color="${mask1}"/></linearGradient>
+    <filter id="pcbshadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="1.2" stdDeviation="1.6" flood-opacity=".55"/>
+    </filter></defs>
+    <rect x="0" y="0" width="${W}" height="${H}" rx="1.6"
+      fill="url(#pcbmask)" filter="url(#pcbshadow)"/>`;
+  for (const t of data.tracks) {
+    h += `<line x1="${t.a[0]}" y1="${t.a[1]}" x2="${t.b[0]}" y2="${t.b[1]}"
+      stroke="${TRACK}" stroke-width="${t.w}" stroke-linecap="round"/>`;
+  }
+  // Every pad is the carrier's; a module covers its own and carries a
+  // pad of its own over each.
+  for (const p of data.pads) h += padSvg(p);
+  still.innerHTML = h;
+  const groups = {};
+  for (const q of data.parts) {
+    const [, fill, kind] = look(q), [x0, y0, x1, y1] = q.box;
+    const cx = (x0 + x1) / 2, cy = (y0 + y1) / 2;
+    h = '';
+    let over = '';
+    if (q.back) {
+      // A part on the back: its outline, dashed.
+      h += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"
+        rx=".8" fill="#e9e4d6" fill-opacity=".12" stroke="#e9e4d6"
+        stroke-width=".18" stroke-dasharray=".7 .5"/>
+        <text x="${cx}" y="${cy}" text-anchor="middle"
+        dominant-baseline="middle" font-family="Inter, sans-serif"
+        font-weight="700" font-size="1.3" fill="#e8f1ec"
+        fill-opacity=".8">${q.ref}</text>`;
+    } else if (kind === 'empty') {
+      h += `<rect x="${x0 + .25}" y="${y0 + .25}" width="${x1 - x0 - .5}"
+        height="${y1 - y0 - .5}" rx=".3" fill="none" stroke="#e8f1ec"
+        stroke-opacity=".45" stroke-width=".12"/>`;
+    } else if (kind === 'axial') {
+      // Drawn along x from its pad 1, then turned onto its pads: a
+      // diode in glass with its band at pad 1, the cathode, or a
+      // resistor with the colour bands of its value.
+      const [a, b] = data.pads.filter(p => p.ref === q.ref);
+      const len = Math.hypot(b.x - a.x, b.y - a.y);
+      const deg = Math.atan2(b.y - a.y, b.x - a.x) * 180 / Math.PI;
+      const diode = /D_DO/.test(q.footprint);
+      const body = diode ? 3.0 : Math.min(6.3, len * .62);
+      const thick = diode ? 1.5 : 2.2, bx = (len - body) / 2;
+      let s = `<line x1="0" y1="0" x2="${len}" y2="0" stroke="#c8ccd2"
+        stroke-width=".5"/>`;
+      if (diode) {
+        s += `<rect x="${bx}" y="${-thick / 2}" width="${body}"
+          height="${thick}" rx=".45" fill="#c9622e"/>
+          <rect x="${bx + .3}" y="${-thick / 2}" width=".5"
+          height="${thick}" fill="#15171c"/>`;
+      } else {
+        s += `<rect x="${bx}" y="${-thick / 2}" width="${body}"
+          height="${thick}" rx=".9" fill="${fill}"/>`;
+        (BANDS[q.value] || []).forEach((c, i, all) => {
+          const at = bx + .9 + i * .85 + (i === all.length - 1 ? .9 : 0);
+          s += `<rect x="${at}" y="${-thick / 2}" width=".45"
+            height="${thick}" fill="${c}"/>`;
+        });
+      }
+      s += `<rect x="${bx}" y="${-thick / 2}" width="${body}"
+        height="${thick * .3}" rx=".3" fill="#fff" fill-opacity=".18"/>`;
+      h += `<g transform="translate(${a.x} ${a.y}) rotate(${deg})">${s}</g>`;
+    } else {
+      h += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}"
+        rx=".8" fill="${fill}" fill-opacity="${kind === 'module' ? .93 : .96}"
+        stroke="#000" stroke-opacity=".35" stroke-width=".15"/>`;
+    }
+    // The larger parts of a module: its sockets, chips and terminals.
+    for (const d of q.back ? [] : q.details || []) {
+      if (d.pad) {
+        // A pad's number, drawn over the pad and over its solder joint.
+        over += `<text x="${d.at[0]}" y="${d.at[1]}" text-anchor="middle"
+          dominant-baseline="central" font-family="Inter, sans-serif"
+          font-weight="800" font-size="${d.size}"
+          fill="#10141c">${d.text}</text>`;
+        continue;
+      }
+      if (d.text) {
+        // A print of the module: dark on a light part, else white.
+        const on = q.details.find(b => b.box && d.at[0] > b.box[0]
+          && d.at[0] < b.box[2] && d.at[1] > b.box[1] && d.at[1] < b.box[3]);
+        const dark = d.ink === 'dark'
+          || (on && (on.color === 'metal' || on.color === 'white'));
+        h += `<text x="${d.at[0]}" y="${d.at[1]}"
+          text-anchor="${d.anchor || 'middle'}"
+          dominant-baseline="middle" font-family="Inter, sans-serif"
+          font-weight="700" font-size="${Math.max(.65, d.size)}"
+          fill="${dark ? '#10141c' : '#fff'}" fill-opacity=".92"
+          ${d.name && !dark ? `stroke="#0b1020" stroke-width=".2"
+          stroke-opacity=".8" paint-order="stroke"` : ''}
+          >${d.text}</text>`;
+        continue;
+      }
+      const paint = PAINT[d.color] || '#23262c';
+      const light = d.color === 'metal' || d.color === 'white';
+      h += d.box
+        ? `<rect x="${d.box[0]}" y="${d.box[1]}"
+            width="${d.box[2] - d.box[0]}" height="${d.box[3] - d.box[1]}"
+            rx=".3" fill="${paint}" stroke="#000" stroke-opacity=".3"
+            stroke-width=".08"/>
+           <rect x="${d.box[0]}" y="${d.box[1]}"
+            width="${d.box[2] - d.box[0]}"
+            height="${(d.box[3] - d.box[1]) * .28}" rx=".3" fill="#fff"
+            fill-opacity="${light ? .35 : .07}"/>`
+        : `<circle cx="${d.at[0]}" cy="${d.at[1]}" r="${d.r}"
+            fill="${paint}"/>`;
+    }
+    if (q.back) {
+      // Drawn above.
+    } else if (kind === 'module') {
+      for (const p of data.pads) if (p.ref === q.ref) h += padSvg(p);
+      const [lx, ly] = q.labelAt || [cx, cy];
+      h += `<text x="${lx}" y="${ly}" text-anchor="middle"
+        dominant-baseline="middle" font-family="Inter, sans-serif"
+        font-weight="700" font-size="${q.size || 1.9}"
+        fill="${q.ink || '#fff'}"
+        fill-opacity="${q.ink ? .85 : .5}">${q.label ?? q.ref}</text>`;
+    } else if (kind !== 'axial') {
+      h += `<text x="${cx}" y="${kind === 'empty' ? y0 - .5 : cy}"
+        text-anchor="middle" dominant-baseline="middle"
+        font-family="Inter, sans-serif" font-weight="700"
+        font-size="${kind === 'empty' ? 1.0 : 1.5}"
+        fill="${q.ink || (fill === '#e9e4d6' ? '#333' : '#e8f1ec')}"
+        fill-opacity=".7">${q.label ?? q.ref}</text>`;
+    }
+    const g = document.createElementNS(NS, 'g');
+    g.innerHTML = h;
+    still.appendChild(g);
+    const top = document.createElementNS(NS, 'g');
+    top.innerHTML = over;
+    above.appendChild(top);
+    groups[q.ref] = {g, top, fixed: kind === 'empty'};
+  }
+  svg.replaceChildren(still, live, above);
+
+  // A point of the board: a pad's name, or [x, y] in mm.  A scene's plug
+  // boards add their pads, NAME.G, NAME.D+, NAME.D- and NAME.V.
+  const PLUG = ['G', 'D+', 'D-', 'V'];
+  let loose = {};
+  const point = at => {
+    if (Array.isArray(at)) return at;
+    if (loose[at]) return loose[at];
+    const p = pads[at];
+    if (!p) throw new Error('the board has no pad ' + at);
+    return [p.x, p.y];
+  };
+  let view = [0, 0, W];
+  const blob = ([x, y], k, r = .95) => `<circle cx="${x}" cy="${y}"
+    r="${r * k}" fill="#cfd4da"/><circle cx="${x - r * .23}"
+    cy="${y - r * .26}" r="${r * .32 * k}" fill="#fff" fill-opacity=".75"/>`;
+
+  return {
+    data, point,
+    // The frame pixel of a point of the board.
+    project: at => {
+      const [x, y] = point(at), s = 1920 / view[2];
+      return [(x - view[0]) * s, (y - view[1]) * s];
+    },
+    // Draw the board at time lt of scene sc.  cam is [[cx, cy], width]:
+    // the point at the frame's centre and the mm the frame is wide.
+    draw: (sc, lt, cam) => {
+      const [[cx, cy], w] = cam, hh = w * 9 / 16;
+      view = [cx - w / 2, cy - hh / 2, w];
+      svg.setAttribute('viewBox', `${view[0]} ${view[1]} ${w} ${hh}`);
+      let g = '';
+      // A USB-C plug board beside the board: its 4 pads in a column at
+      // "at", 2mm apart, G at the top, the plug pointing left.
+      loose = {};
+      for (const p of sc.plugs || []) {
+        const [x, y] = p.at, k = ramp(lt, p.t, p.t + .7);
+        PLUG.forEach((name, i) => {
+          loose[`${p.name}.${name}`] = [x, y + (i - 1.5) * 2];
+        });
+        if (k <= 0) continue;
+        let s = `<rect x="${x - 13.6}" y="${y - 4.1}" width="7.4"
+            height="8.2" rx="1.2" fill="#c9cdd3"/>
+          <rect x="${x - 13.6}" y="${y - 4.1}" width="7.4" height="2.2"
+            rx="1.1" fill="#fff" fill-opacity=".35"/>
+          <rect x="${x - 13.0}" y="${y - 3.3}" width=".5" height="6.6"
+            fill="#6b7078"/>
+          <rect x="${x - 6.3}" y="${y - 4.4}" width="2.1" height="8.8"
+            rx=".4" fill="#15171c"/>
+          <rect x="${x - 4.3}" y="${y - 4.1}" width="6.0" height="8.2"
+            rx=".4" fill="#1f7a45"/>`;
+        PLUG.forEach((name, i) => {
+          const py = y + (i - 1.5) * 2;
+          s += `<rect x="${x - 1.0}" y="${py - .65}" width="2.2"
+              height="1.3" rx=".15" fill="${GOLD}"/>
+            <text x="${x - 2.6}" y="${py}" text-anchor="middle"
+              dominant-baseline="middle" font-family="Inter, sans-serif"
+              font-weight="700" font-size=".95" fill="#e8f1ec"
+              >${name.replace('-', '−')}</text>`;
+        });
+        g += `<g opacity="${k}"
+          transform="translate(${(1 - k) * -3.5} 0)">${s}</g>`;
+      }
+      // A bare board shows a part from its mount on: the part comes
+      // down onto its place.
+      const when = {};
+      for (const m of sc.mount || []) {
+        for (const ref of m.refs) when[ref] = m.t;
+      }
+      for (const [ref, part] of Object.entries(groups)) {
+        const k = part.fixed || !sc.bare ? 1
+          : ref in when ? ramp(lt, when[ref], when[ref] + .7) : 0;
+        part.g.setAttribute('opacity', k);
+        part.top.setAttribute('opacity', k);
+        part.g.setAttribute('transform',
+                            `translate(0 ${(1 - k) * -3.5})`);
+      }
+      // Solder joints, one pad after another over the span.
+      for (const s of sc.solder || []) {
+        const list = s.pads || data.pads.filter(p => s.refs.includes(p.ref))
+          .map(p => p.name);
+        list.forEach((name, i) => {
+          // A plug board's pad has a place and no size.
+          const p = pads[name] || (loose[name]
+            && {x: loose[name][0], y: loose[name][1], w: 1.7, h: 1.7});
+          if (!p) throw new Error('the board has no pad ' + name);
+          const t0 = s.t[0] + (s.t[1] - s.t[0]) * i / list.length;
+          const k = ramp(lt, t0, t0 + .25);
+          const r = Math.max(.8, Math.min(p.w, p.h) * .47);
+          if (s.back) {
+            // A joint on the back of the board: a ring that fades.
+            const o = k * (1 - ramp(lt, t0 + .5, t0 + 1.6));
+            if (o > 0) {
+              g += `<circle cx="${p.x}" cy="${p.y}" r="${r * (.7 + .6 * k)}"
+                fill="#cfd4da" fill-opacity="${.25 * o}" stroke="#e9edf2"
+                stroke-opacity="${o}" stroke-width=".2"/>`;
+            }
+          } else if (k > 0) {
+            g += blob([p.x, p.y], k, r);
+          }
+        });
+      }
+      for (const n of sc.nets || []) {
+        const o = Math.min(ramp(lt, n.from, n.from + .5),
+                           1 - ramp(lt, n.to - .5, n.to));
+        if (o <= 0) continue;
+        const col = n.style === 'warn' ? '#ffb400' : '#00e5ff';
+        // The light runs along the net from its first track to its last.
+        for (const t of data.tracks) {
+          if (t.net !== n.net) continue;
+          g += `<line x1="${t.a[0]}" y1="${t.a[1]}" x2="${t.b[0]}"
+            y2="${t.b[1]}" stroke="${col}" stroke-opacity="${.3 * o}"
+            stroke-width="${t.w + .9}" stroke-linecap="round"/>
+            <line x1="${t.a[0]}" y1="${t.a[1]}" x2="${t.b[0]}" y2="${t.b[1]}"
+            stroke="${col}" stroke-opacity="${o}" stroke-width="${t.w}"
+            stroke-linecap="round"/>`;
+        }
+        for (const p of data.pads) {
+          if (p.net !== n.net) continue;
+          g += `<circle cx="${p.x}" cy="${p.y}"
+            r="${Math.max(p.w, p.h) / 2 + .35}" fill="none" stroke="${col}"
+            stroke-opacity="${o}" stroke-width=".22"/>`;
+        }
+      }
+      for (const c of sc.cuts || []) {
+        const [a, b] = c.between.map(point);
+        const k = ramp(lt, c.t[0], c.t[1]);
+        if (k <= 0) continue;
+        const mx = (a[0] + b[0]) / 2, my = (a[1] + b[1]) / 2;
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const ux = (b[0] - a[0]) / len, uy = (b[1] - a[1]) / len;
+        const gap = (c.gap || .7) * k / 2, wide = .62;
+        // The track is opened: the bare board shows through, and the
+        // scratches of the blade lie across it.
+        g += `<line x1="${mx - ux * gap}" y1="${my - uy * gap}"
+          x2="${mx + ux * gap}" y2="${my + uy * gap}" stroke="#0e2f26"
+          stroke-width="${wide}"/>`;
+        for (const s of [-.6, 0, .6]) {
+          const px = mx + ux * gap * s, py = my + uy * gap * s;
+          g += `<line x1="${px + uy * wide * .7}" y1="${py - ux * wide * .7}"
+            x2="${px - uy * wide * .7}" y2="${py + ux * wide * .7}"
+            stroke="#d7e2dc" stroke-opacity="${.5 * k}" stroke-width=".06"/>`;
+        }
+        // The blade: a line across the track that passes once.
+        const q = cl((lt - c.t[0]) / (c.t[1] - c.t[0])), far = 1.7;
+        if (q > 0 && q < 1) {
+          const s = (q * 2 - 1) * far;
+          g += `<line x1="${mx + uy * s - ux * .9}"
+            y1="${my - ux * s - uy * .9}" x2="${mx + uy * s + ux * .9}"
+            y2="${my - ux * s + uy * .9}" stroke="#ff5b6e"
+            stroke-width=".16" stroke-linecap="round"/>`;
+        }
+        const ring = ramp(lt, c.t[1], c.t[1] + .4);
+        g += `<ellipse cx="${mx}" cy="${my}" rx="${.9 + uy * .3}"
+          ry="${.9 + ux * .3}" fill="none" stroke="#ff5b6e"
+          stroke-opacity="${.9 * Math.max(k * (1 - ring), .55 * ring)}"
+          stroke-width=".12" stroke-dasharray=".35 .25"/>`;
+      }
+      for (const w of sc.wires || []) {
+        const k = ramp(lt, w.t[0], w.t[1]);
+        if (k <= 0) continue;
+        const pts = [w.from, ...(w.via || []), w.to].map(point);
+        let d = `M${pts[0][0]} ${pts[0][1]}`, len = 0;
+        for (let i = 1; i < pts.length; i++) {
+          d += `L${pts[i][0]} ${pts[i][1]}`;
+          len += Math.hypot(pts[i][0] - pts[i - 1][0],
+                            pts[i][1] - pts[i - 1][1]);
+        }
+        const dash = `stroke-dasharray="${len}"
+          stroke-dashoffset="${len * (1 - k)}"`;
+        // A wire with "gone" is pulled out along its own way over that
+        // span; a "plain" wire is crimped, not soldered: no joints.
+        const out = w.gone ? ramp(lt, w.gone[0], w.gone[1]) : 0;
+        if (out >= 1) continue;
+        const end = pts.at(-1), near = pts.at(-2);
+        const run = Math.hypot(end[0] - near[0], end[1] - near[1]) || 1;
+        g += `<g opacity="${1 - out}" transform="translate(${
+          (end[0] - near[0]) / run * 9 * out} ${
+          (end[1] - near[1]) / run * 9 * out})">`;
+        // A thin wire is a lead of a 1.0mm plug: half as wide, with
+        // joints half as large.
+        const f = w.thin ? .55 : 1;
+        g += `<path d="${d}" fill="none" stroke="#000" stroke-opacity=".35"
+          stroke-width="${.8 * f}" stroke-linejoin="round"
+          stroke-linecap="round" transform="translate(.25 .4)" ${dash}/>
+          <path d="${d}" fill="none" stroke="${w.color || '#e5484d'}"
+          stroke-width="${.7 * f}" stroke-linejoin="round"
+          stroke-linecap="round" ${dash}/>
+          <path d="${d}" fill="none" stroke="#fff" stroke-opacity=".3"
+          stroke-width="${.16 * f}" stroke-linejoin="round"
+          stroke-linecap="round" transform="translate(-.08 -.14)"
+          ${dash}/></g>`;
+        if (w.plain) continue;
+        // "ends" says which ends are soldered: "a", "b" or both.
+        const ends = w.ends || 'ab';
+        // "small" names the ends on a small pad: a joint half as large.
+        const size = e => .95 * ((w.small || '').includes(e) ? .5 : f);
+        if (ends.includes('a')) {
+          g += blob(pts[0], ramp(lt, w.t[0] - .3, w.t[0]) || k, size('a'));
+        }
+        // A loose wire leaves the board: no joint at its far end.
+        if (k >= 1 && !w.loose && ends.includes('b')) {
+          g += blob(pts.at(-1), ramp(lt, w.t[1], w.t[1] + .3), size('b'));
+        }
+      }
+      for (const p of sc.fit || []) {
+        if (p.kind === 'link') {
+          // A 0402 chip resistor of 0Ω on the board until t, then taken
+          // off on a blob of solder: its two lands stay.
+          const a = point(p.a), b = point(p.b);
+          const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+          const deg = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+          const k = ramp(lt, p.t, p.t + .9), x0 = (len - 1) / 2;
+          g += `<g transform="translate(${a[0]} ${a[1]}) rotate(${deg})">
+            <rect x="${x0 - .2}" y="-.32" width=".5" height=".64"
+              fill="#c8ccd2"/>
+            <rect x="${x0 + .7}" y="-.32" width="${len - x0 - .7}"
+              height=".64" fill="#c8ccd2"/>
+            <g opacity="${1 - k}" transform="translate(0 ${k * -2.4})">
+            <rect x="${x0}" y="-.25" width="1" height=".5" fill="#17181c"/>
+            <rect x="${x0}" y="-.25" width=".22" height=".5" fill="#e3e6ea"/>
+            <rect x="${x0 + .78}" y="-.25" width=".22" height=".5"
+              fill="#e3e6ea"/></g></g>`
+            + blob([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - k * 2.4],
+                   ramp(lt, p.t - .6, p.t - .2) * (1 - ramp(lt, p.t + .5,
+                                                            p.t + .9)), .7);
+          continue;
+        }
+        const k = ramp(lt, p.t, p.t + .7);
+        if (k <= 0) continue;
+        const a = point(p.a), b = point(p.b);
+        const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+        const deg = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+        if (p.kind === 'cap') {
+          // A radial electrolytic capacitor lying beyond pad b, its axis
+          // along a to b: the plus lead comes from a past b, the stripe
+          // on the can marks the minus lead's side.
+          const x0 = len + 3, can = 10.5, wide = 8;
+          const s = `<path d="M0 0L2 -2.4L${len + 1.4} -2.4L${x0} -1.3"
+              fill="none" stroke="#c8ccd2" stroke-width=".4"
+              stroke-linejoin="round"/>
+            <path d="M${len} 0L${len + 1.6} 1.3L${x0} 1.3" fill="none"
+              stroke="#c8ccd2" stroke-width=".4" stroke-linejoin="round"/>
+            <rect x="${x0}" y="${-wide / 2}" width="${can}" height="${wide}"
+              rx="1" fill="#1d2f6a"/>
+            <rect x="${x0 + .5}" y="${wide / 2 - 2.3}" width="${can - 1}"
+              height="1.5" fill="#cfd6e6"/>
+            <rect x="${x0}" y="${-wide / 2}" width="${can}"
+              height="${wide * .3}" rx="1" fill="#fff" fill-opacity=".16"/>
+            <rect x="${x0 + can - .8}" y="${-wide / 2}" width=".8"
+              height="${wide}" rx=".4" fill="#aeb4bd"/>
+            <text x="${x0 + can / 2}" y="-.6" text-anchor="middle"
+              dominant-baseline="middle" font-family="Inter, sans-serif"
+              font-weight="700" font-size="1.25" fill="#e8f1ec"
+              >${p.text || ''}</text>
+            <text x="${x0 + can / 2}" y="${wide / 2 - 1.5}"
+              text-anchor="middle" dominant-baseline="middle"
+              font-family="Inter, sans-serif" font-weight="800"
+              font-size="1.1" fill="#1d2f6a">− − −</text>`;
+          g += `<g opacity="${k}" transform="translate(${a[0]} ${a[1]})
+            rotate(${deg}) translate(0 ${(1 - k) * -2.2})">${s}</g>`
+            + blob(a, ramp(lt, p.t + .5, p.t + .9))
+            + blob(b, ramp(lt, p.t + .5, p.t + .9));
+          continue;
+        }
+        const body = Math.min(p.kind === 'zener' ? 3.4 : 4.2, len * .55);
+        const thick = p.kind === 'zener' ? 1.5 : 1.7, x0 = (len - body) / 2;
+        // Drawn along x from pad a, then turned onto the pads; the part
+        // comes down onto the board.
+        let s = `<line x1="0" y1="0" x2="${len}" y2="0" stroke="#c8ccd2"
+          stroke-width=".4"/>`;
+        if (p.kind === 'zener') {
+          s += `<rect x="${x0}" y="${-thick / 2}" width="${body}"
+            height="${thick}" rx=".3" fill="#1b1d22"/>
+            <rect x="${x0 + .3}" y="${-thick / 2}" width=".55"
+            height="${thick}" fill="#e9edf2"/>`;
+        } else {
+          s += `<rect x="${x0}" y="${-thick / 2}" width="${body}"
+            height="${thick}" rx=".75" fill="#c9ae82"/>`;
+          (BANDS[p.text] || []).forEach((c, i, all) => {
+            const bx = x0 + .7 + i * .62 + (i === all.length - 1 ? .5 : 0);
+            s += `<rect x="${bx}" y="${-thick / 2}" width=".34"
+              height="${thick}" fill="${c}"/>`;
+          });
+        }
+        s += `<rect x="${x0}" y="${-thick / 2}" width="${body}"
+          height="${thick * .32}" rx=".3" fill="#fff" fill-opacity=".16"/>`;
+        g += `<g opacity="${k}" transform="translate(${a[0]} ${a[1]})
+          rotate(${deg}) translate(0 ${(1 - k) * -2.2})">
+          <g transform="translate(.25 .45)" opacity=".22">
+          <line x1="0" y1="0" x2="${len}" y2="0" stroke="#000"
+          stroke-width="${thick * .8}" stroke-linecap="round"
+          stroke-opacity=".5"/></g>${s}</g>`
+          + blob(a, ramp(lt, p.t + .5, p.t + .9))
+          + blob(b, ramp(lt, p.t + .5, p.t + .9));
+      }
+      live.innerHTML = g;
+    },
+  };
+}

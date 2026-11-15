@@ -1,0 +1,2457 @@
+{
+ "name": "minircbench-build",
+ "lang": "en",
+ "product": "MiniRcBench",
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "brand": "build along",
+ "steps": 10,
+ "scenes": [
+  {
+   "type": "case",
+   "model": "mini",
+   "panel": [
+    [
+     0,
+     "mini-splash"
+    ],
+    [
+     9.5,
+     "mini-tester-idle"
+    ]
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Building the Mini R C bench: a pocket tester for speed controllers and servos, with its own 5 volt servo supply and a current sensor. Ten steps."
+    },
+    {
+     "at": 12.07,
+     "text": "The printed case holds everything. Two male servo connectors sit in its lower wall, marked E-S-C and T-M-T. Between them is the U-S-B C socket, which also charges the cell."
+    }
+   ],
+   "title": {
+    "from": 0.3,
+    "to": 11.77,
+    "kicker": "MiniRcBench · build along",
+    "heading": "Building the<br>MiniRcBench",
+    "text": "Display board, cell, 5 V boost board, current sensor, case.<br>10 steps with a soldering iron."
+   },
+   "labels": [
+    {
+     "from": 12.07,
+     "to": 25.41,
+     "anchor": "esc",
+     "at": [
+      150,
+      610
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "ESC",
+     "text": "Male servo connector on SIG, GPIO 0."
+    },
+    {
+     "from": 12.370000000000001,
+     "to": 25.41,
+     "anchor": "tmt",
+     "at": [
+      1330,
+      760
+     ],
+     "size": "sm",
+     "title": "TMT",
+     "text": "Male servo connector on AUX, GPIO 1."
+    },
+    {
+     "from": 12.67,
+     "to": 25.41,
+     "anchor": "buttons",
+     "at": [
+      1400,
+      330
+     ],
+     "size": "sm",
+     "title": "Side",
+     "text": "PWR, RESET and BOOT buttons, microSD slot."
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      120,
+      150,
+      190
+     ],
+     [
+      0,
+      12,
+      0
+     ]
+    ],
+    [
+     11.77,
+     [
+      70,
+      135,
+      175
+     ],
+     [
+      0,
+      12,
+      0
+     ]
+    ],
+    [
+     13.57,
+     [
+      30,
+      62,
+      200
+     ],
+     [
+      0,
+      10,
+      10
+     ]
+    ],
+    [
+     26.01,
+     [
+      -20,
+      70,
+      195
+     ],
+     [
+      0,
+      10,
+      10
+     ]
+    ]
+   ],
+   "dur": 26.31
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "panel": [
+    [
+     0,
+     "mini-tester-idle"
+    ]
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Step 1. The parts. The display board is a Waveshare R P 23 50 touch L-C-D 2.8. It brings the charger for one lithium polymer cell."
+    },
+    {
+     "at": 11.03,
+     "text": "Behind it: one cell of 1000 milliamp hours with a 1.25 millimetre plug, a 5 volt boost board with an enable pad, and an INA219 current sensor board."
+    },
+    {
+     "at": 22.89,
+     "text": "Also needed: two male servo connectors, with pins as on a receiver, the 12 pin and the 4 pin lead that come with the display board, a 10 kilo ohm resistor, a 5.6 volt zener diode of 2 to 5 watts, a 470 micro farad capacitor, double sided tape, and four M 2.5 screws."
+    }
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 43.79,
+     "n": 1,
+     "text": "The parts"
+    }
+   ],
+   "labels": [
+    {
+     "from": 2.7,
+     "to": 10.729999999999999,
+     "anchor": "board",
+     "at": [
+      1280,
+      150
+     ],
+     "n": 1,
+     "title": "RP2350-Touch-LCD-2.8",
+     "text": "Waveshare display board, 240 x 320, with charger, microSD slot and JST sockets."
+    },
+    {
+     "from": 11.03,
+     "to": 22.59,
+     "anchor": "cell",
+     "at": [
+      90,
+      170
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "LiPo cell, 1S",
+     "text": "102540, 1000 mAh, 1.25 mm 2-pin plug."
+    },
+    {
+     "from": 13.53,
+     "to": 22.59,
+     "anchor": "boost",
+     "at": [
+      1380,
+      520
+     ],
+     "size": "sm",
+     "title": "5 V boost board",
+     "text": "13.7 x 21.7 mm. IN, OUT and one enable pad."
+    },
+    {
+     "from": 16.03,
+     "to": 22.59,
+     "anchor": "ina",
+     "at": [
+      1330,
+      800
+     ],
+     "size": "sm",
+     "title": "INA219 board",
+     "text": "CJMCU, 0.1 Ω shunt, 24.2 x 21.9 mm."
+    },
+    {
+     "from": 22.89,
+     "to": 43.190000000000005,
+     "anchor": "plugs",
+     "at": [
+      120,
+      740
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "2 male servo connectors",
+     "text": "3 pins, 2.54 mm, in a shroud: the pin end of a servo extension lead. A servo's plug goes straight on."
+    },
+    {
+     "from": 23.89,
+     "to": 43.190000000000005,
+     "anchor": "shell",
+     "at": [
+      100,
+      420
+     ],
+     "size": "sm",
+     "side": "r",
+     "title": "Also",
+     "text": "12-pin and 4-pin JST-SH leads, 10 kΩ resistor, 5.6 V zener diode (2 W to 5 W), 470 µF capacitor (10 V or more), double-sided tape, 4 screws M2.5 x 6."
+    }
+   ],
+   "parts": {
+    "board": [
+     [
+      0,
+      0
+     ],
+     [
+      1.3,
+      0
+     ],
+     [
+      3.3,
+      0.42
+     ],
+     [
+      43.79,
+      0.42
+     ]
+    ],
+    "cell": [
+     [
+      0,
+      0
+     ],
+     [
+      1.3,
+      0
+     ],
+     [
+      3.3,
+      0.36
+     ],
+     [
+      43.79,
+      0.36
+     ]
+    ],
+    "ina": [
+     [
+      0,
+      0
+     ],
+     [
+      1.3,
+      0
+     ],
+     [
+      3.3,
+      0.5
+     ],
+     [
+      43.79,
+      0.5
+     ]
+    ],
+    "boost": [
+     [
+      0,
+      0
+     ],
+     [
+      1.3,
+      0
+     ],
+     [
+      3.3,
+      0.5
+     ],
+     [
+      43.79,
+      0.5
+     ]
+    ],
+    "plugs": [
+     [
+      0,
+      0
+     ],
+     [
+      1.3,
+      0
+     ],
+     [
+      3.3,
+      0.55
+     ],
+     [
+      43.79,
+      0.55
+     ]
+    ],
+    "buttons": [
+     [
+      0,
+      0
+     ],
+     [
+      1.3,
+      0
+     ],
+     [
+      3.3,
+      0.5
+     ],
+     [
+      43.79,
+      0.5
+     ]
+    ],
+    "screws": [
+     [
+      0,
+      1
+     ],
+     [
+      43.79,
+      1
+     ]
+    ]
+   },
+   "camera": [
+    [
+     0,
+     [
+      -20,
+      70,
+      195
+     ],
+     [
+      0,
+      10,
+      10
+     ]
+    ],
+    [
+     3.5,
+     [
+      110,
+      150,
+      210
+     ],
+     [
+      0,
+      34,
+      6
+     ]
+    ],
+    [
+     22.59,
+     [
+      -60,
+      165,
+      215
+     ],
+     [
+      0,
+      34,
+      6
+     ]
+    ],
+    [
+     43.790000000000006,
+     [
+      -120,
+      120,
+      200
+     ],
+     [
+      0,
+      30,
+      6
+     ]
+    ]
+   ],
+   "dur": 44.09
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "panel": [
+    [
+     0,
+     "mini-splash"
+    ]
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Step 2. Load the firmware first, while the board lies open. Download the U-F 2 file of the latest release."
+    },
+    {
+     "at": 9.25,
+     "text": "Connect the board to a computer. Hold Boot, tap Reset, and release Boot. A drive appears. Copy the file onto it. The board restarts and shows this screen."
+    }
+   ],
+   "parts": {
+    "shell": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "cell": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "ina": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "boost": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "plugs": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "buttons": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ],
+    "screws": [
+     [
+      0,
+      1
+     ],
+     [
+      1,
+      1
+     ]
+    ]
+   },
+   "chips": [
+    {
+     "from": 0,
+     "to": 21.86,
+     "n": 2,
+     "text": "Load the firmware"
+    }
+   ],
+   "labels": [
+    {
+     "from": 1.5,
+     "to": 21.259999999999998,
+     "anchor": "usbc",
+     "at": [
+      1250,
+      720
+     ],
+     "n": 2,
+     "title": "UF2 over USB-C",
+     "text": "<b>MiniRcBench-&lt;version&gt;-touch-lcd-2.8.uf2</b> from the releases page. Hold BOOT, tap RESET, release BOOT, copy the file onto the drive."
+    },
+    {
+     "from": 9.25,
+     "to": 21.259999999999998,
+     "anchor": "keys",
+     "at": [
+      1330,
+      300
+     ],
+     "size": "sm",
+     "title": "BOOT and RESET",
+     "text": "On the board's edge, beside PWR."
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      40,
+      150,
+      150
+     ],
+     [
+      0,
+      22,
+      0
+     ]
+    ],
+    [
+     21.86,
+     [
+      90,
+      110,
+      150
+     ],
+     [
+      4,
+      22,
+      4
+     ]
+    ]
+   ],
+   "dur": 22.16
+  },
+  {
+   "type": "board",
+   "board": "minircbench-wiring",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "The wiring, seen from the rear of the display board. All parts lie flat here. In the case they sit behind the board."
+    },
+    {
+     "at": 9.99,
+     "text": "Step 3. The boost board takes its input from the battery socket. The print beside the socket marks plus and minus: plus is the pin next to the R-T-C socket."
+    },
+    {
+     "at": 22.45,
+     "text": "Solder a red wire from the plus pin to in plus, and a black wire from the minus pin to in minus. The pins are 1.25 millimetres apart: use thin wire and little solder. The cell stays unplugged."
+    },
+    {
+     "at": 37.57,
+     "text": "The cell then feeds the board and the boost board, and the board's charger charges it over U-S-B. No fuse is fitted: on a short of these two wires, the cell's own protection circuit is what switches off."
+    },
+    {
+     "at": 53.51,
+     "text": "Step 4. The enable pad. As delivered, a zero ohm resistor next to the pad ties enable to in plus, so the output is always on. It has to come off first. It is tiny, size oh four oh two: a blob of solder on the tip of the iron picks it up."
+    },
+    {
+     "at": 71.97,
+     "text": "Then check with a meter that enable is no longer connected to in plus."
+    },
+    {
+     "at": 78.06,
+     "text": "Now solder a 10 kilo ohm resistor from the enable pad to in minus. It holds the 5 volts off while the board is off or the wire is loose."
+    },
+    {
+     "at": 89.03,
+     "text": "Then plug the 12 pin lead into the board. Its eleventh wire is I-O 28. Solder it to the enable pad. The bench switches the servo supply with this pin."
+    },
+    {
+     "at": 101.04,
+     "text": "Step 5. The current sensor goes on the I 2 C socket, with the 4 pin lead. Ground to G-N-D, 3.3 volts to V-C-C, S-D-A to S-D-A, S-C-L to S-C-L."
+    },
+    {
+     "at": 112.46,
+     "text": "The sensor runs on 3.3 volts, never on 5: its pull-ups would lift the touch controller's bus to 5 volts. Do not use a ready made Qwiic cable; its pin order is different."
+    },
+    {
+     "at": 125.88,
+     "text": "Step 6. The 5 volt path. First, two parts across the output of the boost board. A 5.6 volt zener diode, rated 2 to 5 watts, from out plus to out minus, its band on out plus. It clamps the output if the voltage rises."
+    },
+    {
+     "at": 142.78,
+     "text": "And an electrolytic capacitor of 470 micro farad, rated 10 volts or more, as a buffer. Its plus lead goes to out plus. The stripe on the can marks minus."
+    },
+    {
+     "at": 155.01,
+     "text": "Then out plus goes on to V-in plus on the sensor, at the two holes of the screw terminal, not at the header."
+    },
+    {
+     "at": 163.91,
+     "text": "From V-in minus, the measured 5 volts go to the middle pin of both servo connectors. Out minus goes to the minus pin of both."
+    },
+    {
+     "at": 174.07,
+     "text": "Step 7. The signals. Wire 9 of the 12 pin lead is T-X-D, G-P-I-O 0, the bench's S-I-G pin. It goes to the signal pin of the E-S-C connector."
+    },
+    {
+     "at": 185.34,
+     "text": "Wire 10 is R-X-D, G-P-I-O 1, the A-U-X pin. It goes to the signal pin of the T-M-T connector."
+    },
+    {
+     "at": 193.13,
+     "text": "Nine wires of this lead are not used: both grounds, V-bus, the two U-S-B data wires, 3.3 volts, S-D-A, S-C-L and I-O 29. Take them out of the plug, so no bare end can touch a part."
+    },
+    {
+     "at": 207.36,
+     "text": "Each contact is held by a small plastic latch of the housing. Lift the latch a little with a needle, and pull the wire out to the back, without force. A latch bent too far breaks off."
+    },
+    {
+     "at": 221.82,
+     "text": "Step 8. Check before the cell goes in. With a meter: no connection between plus and minus at the servo connectors, and none between the battery pins."
+    },
+    {
+     "at": 233.76,
+     "text": "Then plug the cell into the battery socket. The 5 volts must stay off: measure 0 volts between plus and minus at both servo connectors. If you read more, do not plug in a servo."
+    }
+   ],
+   "tags": [
+    {
+     "from": 1.0,
+     "to": 9.69,
+     "at": [
+      30,
+      12
+     ],
+     "text": "display board, rear",
+     "side": "t",
+     "d": 30
+    },
+    {
+     "from": 1.3,
+     "to": 9.69,
+     "at": [
+      73,
+      44
+     ],
+     "text": "5 V boost board",
+     "side": "t",
+     "d": 40
+    },
+    {
+     "from": 1.6,
+     "to": 9.69,
+     "at": [
+      108,
+      56
+     ],
+     "text": "INA219 board",
+     "side": "t",
+     "d": 40
+    },
+    {
+     "from": 1.9,
+     "to": 9.69,
+     "at": [
+      130,
+      12
+     ],
+     "text": "servo connectors, male",
+     "side": "t",
+     "d": 40
+    },
+    {
+     "from": 2.2,
+     "to": 9.69,
+     "at": [
+      84,
+      8
+     ],
+     "text": "cell",
+     "side": "t",
+     "d": 30
+    },
+    {
+     "from": 11.99,
+     "to": 53.21,
+     "at": "BAT.+",
+     "text": "BAT +",
+     "side": "r",
+     "d": 60
+    },
+    {
+     "from": 12.29,
+     "to": 53.21,
+     "at": "BAT.-",
+     "text": "BAT −",
+     "side": "r",
+     "d": 30
+    },
+    {
+     "from": 55.51,
+     "to": 80.67,
+     "at": "BOOST.EN",
+     "text": "EN",
+     "side": "r",
+     "d": 40
+    },
+    {
+     "from": 56.51,
+     "to": 69.17,
+     "at": [
+      77.35,
+      57.65
+     ],
+     "text": "0 Ω",
+     "side": "b",
+     "d": 60,
+     "style": "warn"
+    },
+    {
+     "from": 80.06,
+     "to": 100.73,
+     "at": "BOOST.EN",
+     "text": "EN",
+     "side": "r",
+     "d": 40
+    },
+    {
+     "from": 91.23,
+     "to": 100.74,
+     "at": "J4.11",
+     "text": "IO28 · wire 11",
+     "side": "l",
+     "d": 110
+    },
+    {
+     "from": 104.04,
+     "to": 121.16,
+     "at": "INA.Gnd",
+     "text": "GND",
+     "side": "t",
+     "d": 150
+    },
+    {
+     "from": 105.84,
+     "to": 121.16,
+     "at": "INA.Vcc",
+     "text": "3V3",
+     "side": "t",
+     "d": 190
+    },
+    {
+     "from": 107.64,
+     "to": 121.16,
+     "at": "INA.Sda",
+     "text": "SDA",
+     "side": "t",
+     "d": 70
+    },
+    {
+     "from": 109.44,
+     "to": 121.16,
+     "at": "INA.Scl",
+     "text": "SCL",
+     "side": "t",
+     "d": 110
+    },
+    {
+     "from": 159.01,
+     "to": 177.61,
+     "at": "INA.T+",
+     "text": "Vin+",
+     "side": "r",
+     "d": 50
+    },
+    {
+     "from": 159.01,
+     "to": 177.61,
+     "at": "INA.T-",
+     "text": "Vin−",
+     "side": "l",
+     "d": 50
+    },
+    {
+     "from": 180.57,
+     "to": 194.04,
+     "at": "ESC.S",
+     "text": "SIG · GPIO 0",
+     "side": "l",
+     "d": 90
+    },
+    {
+     "from": 189.84,
+     "to": 192.83,
+     "at": "TMT.S",
+     "text": "AUX · GPIO 1",
+     "side": "l",
+     "d": 90
+    },
+    {
+     "from": 193.63,
+     "to": 221.52,
+     "at": [
+      16.5,
+      57.2
+     ],
+     "text": "11 · IO28 → EN",
+     "side": "t",
+     "d": 70
+    },
+    {
+     "from": 193.83,
+     "to": 221.52,
+     "at": [
+      21.8,
+      58.2
+     ],
+     "text": "10 · RXD → TMT",
+     "side": "r",
+     "d": 150
+    },
+    {
+     "from": 194.03,
+     "to": 221.52,
+     "at": [
+      23,
+      59.2
+     ],
+     "text": "9 · TXD → ESC",
+     "side": "r",
+     "d": 60
+    }
+   ],
+   "labels": [
+    {
+     "from": 23.45,
+     "to": 37.27,
+     "anchor": "BAT.+",
+     "at": [
+      1180,
+      170
+     ],
+     "title": "Input on the battery socket's pins",
+     "text": "<b>BAT +</b> to <b>IN+</b>, <b>BAT −</b> to <b>IN−</b>. The socket stays free for the cell's plug. Solder with the cell unplugged.",
+     "n": 3
+    },
+    {
+     "from": 37.57,
+     "to": 53.21,
+     "anchor": "BOOST.IN+",
+     "at": [
+      1180,
+      640
+     ],
+     "title": "No fuse",
+     "text": "A short here is left to the cell's protection circuit. Keep the two wires short and apart.",
+     "style": "warn",
+     "size": "sm"
+    },
+    {
+     "from": 57.51,
+     "to": 71.67,
+     "anchor": "BOOST.EN",
+     "at": [
+      1250,
+      150
+     ],
+     "title": "Take off the 0 Ω resistor",
+     "text": "Size 0402, 1.0 x 0.5 mm, between <b>EN</b> and <b>IN+</b>. A blob of solder on the tip picks it up.",
+     "n": 4,
+     "style": "warn"
+    },
+    {
+     "from": 71.97,
+     "to": 77.76,
+     "anchor": "BOOST.IN+",
+     "at": [
+      300,
+      150
+     ],
+     "title": "Check: EN is free",
+     "text": "No continuity between <b>EN</b> and <b>IN+</b>.",
+     "side": "b"
+    },
+    {
+     "from": 81.06,
+     "to": 88.73,
+     "anchor": "BOOST.EN",
+     "at": [
+      1250,
+      150
+     ],
+     "title": "10 kΩ from EN to IN−",
+     "text": "A pull-down at the boost board. Without it the output can stay on when the enable wire is open."
+    },
+    {
+     "from": 92.03,
+     "to": 100.74,
+     "anchor": "J4.11",
+     "at": [
+      300,
+      150
+     ],
+     "title": "IO28 switches the supply",
+     "text": "12-pin socket, wire 11, to <b>EN</b>. The board's print names every pin: GND is next to the USB-C end, IO29 at the far end.",
+     "side": "b"
+    },
+    {
+     "from": 103.04,
+     "to": 112.16,
+     "anchor": [
+      18.5,
+      74.8
+     ],
+     "at": [
+      250,
+      250
+     ],
+     "title": "I2C socket to the INA219",
+     "text": "Print on the board, left to right: <b>GND, 3V3, SDA, SCL</b>. SDA is GPIO 6, SCL is GPIO 7.",
+     "n": 5,
+     "side": "b"
+    },
+    {
+     "from": 112.46,
+     "to": 125.58,
+     "anchor": "INA.Vcc",
+     "at": [
+      1150,
+      250
+     ],
+     "title": "3.3 V only",
+     "text": "VCC from the I2C socket. A Qwiic or STEMMA QT cable has another pin order and does not fit this socket's wiring.",
+     "style": "warn",
+     "side": "b"
+    },
+    {
+     "from": 130.88,
+     "to": 142.48,
+     "anchor": "BOOST.OUT+",
+     "at": [
+      60,
+      150
+     ],
+     "title": "5.6 V zener across the output",
+     "text": "Rated 2 W to 5 W. Cathode, the band, on <b>OUT+</b>. Anode on <b>OUT−</b>.",
+     "n": 6,
+     "side": "b"
+    },
+    {
+     "from": 143.78,
+     "to": 154.71,
+     "anchor": [
+      86,
+      46
+     ],
+     "at": [
+      1150,
+      150
+     ],
+     "title": "470 µF, 10 V or more",
+     "text": "Across <b>OUT+</b> and <b>OUT−</b>, at the boost board. <b>Mind the polarity:</b> the stripe is minus.",
+     "style": "warn",
+     "side": "b"
+    },
+    {
+     "from": 157.01,
+     "to": 163.61,
+     "anchor": "INA.T+",
+     "at": [
+      60,
+      640
+     ],
+     "title": "Through the shunt",
+     "text": "<b>OUT+</b> to <b>Vin+</b>. The current then flows through the 0.1 Ω shunt to Vin−. The header's Vin pins stay empty: they are next to SDA.",
+     "side": "t"
+    },
+    {
+     "from": 164.91,
+     "to": 173.77,
+     "anchor": "TMT.+",
+     "at": [
+      200,
+      150
+     ],
+     "title": "One supply for both connectors",
+     "text": "<b>Vin−</b> to both <b>+</b> pins. <b>OUT−</b> to both <b>−</b> pins. The sensor reads the sum of both servos.",
+     "side": "b"
+    },
+    {
+     "from": 176.07,
+     "to": 192.83,
+     "anchor": [
+      15,
+      59
+     ],
+     "at": [
+      330,
+      420
+     ],
+     "title": "Wires 9 and 10",
+     "text": "<b>TXD</b> (GPIO 0) to ESC <b>S</b>. <b>RXD</b> (GPIO 1) to TMT <b>S</b>.",
+     "n": 7,
+     "side": "b"
+    },
+    {
+     "from": 222.82,
+     "to": 233.46,
+     "anchor": "ESC.+",
+     "at": [
+      1150,
+      420
+     ],
+     "title": "Before the cell",
+     "text": "No continuity from <b>+</b> to <b>−</b> at the servo connectors or at the battery pins.",
+     "n": 8,
+     "side": "t",
+     "size": "sm"
+    },
+    {
+     "from": 236.76,
+     "to": 247.47,
+     "anchor": "TMT.+",
+     "at": [
+      1080,
+      560
+     ],
+     "title": "With the cell: 0 V at the connectors",
+     "text": "The enable pin is low, so the output must be off. A boost board that passes the cell's voltage with enable low is the wrong type for this build.",
+     "style": "warn",
+     "side": "t"
+    }
+   ],
+   "chips": [
+    {
+     "from": 9.99,
+     "to": 53.51,
+     "n": 3,
+     "text": "Boost input on BAT"
+    },
+    {
+     "from": 53.51,
+     "to": 101.04,
+     "n": 4,
+     "text": "Enable: 0 Ω off, pull-down, IO28"
+    },
+    {
+     "from": 101.04,
+     "to": 125.88,
+     "n": 5,
+     "text": "INA219 on the I2C socket"
+    },
+    {
+     "from": 125.88,
+     "to": 174.07,
+     "n": 6,
+     "text": "Zener, capacitor, 5 V path"
+    },
+    {
+     "from": 174.07,
+     "to": 221.82,
+     "n": 7,
+     "text": "Signals, unused wires out"
+    },
+    {
+     "from": 221.82,
+     "to": 247.77,
+     "n": 8,
+     "text": "Check, then the cell"
+    }
+   ],
+   "fit": [
+    {
+     "kind": "link",
+     "a": [
+      76.55,
+      57.65
+     ],
+     "b": [
+      78.14999999999999,
+      57.65
+     ],
+     "t": 69.17
+    },
+    {
+     "kind": "resistor",
+     "a": "BOOST.EN",
+     "b": "BOOST.IN-",
+     "t": 80.56,
+     "text": "10 kΩ"
+    },
+    {
+     "kind": "zener",
+     "a": "BOOST.OUT+",
+     "b": "BOOST.OUT-",
+     "t": 131.88
+    },
+    {
+     "kind": "cap",
+     "a": "BOOST.OUT+",
+     "b": "BOOST.OUT-",
+     "t": 144.28,
+     "text": "470 µF"
+    }
+   ],
+   "insets": [
+    {
+     "from": 203.06,
+     "to": 221.52,
+     "kind": "latch",
+     "at": [
+      1160,
+      150
+     ],
+     "title": "Take the unused wires out",
+     "good": "lift the latch",
+     "bad": "pull the wire out",
+     "lower": "1.0 mm plug, cut open",
+     "text": "A latch of the housing lies behind each contact. Lift it <b>a little</b> with a needle and pull the wire out to the back <b>without force</b>. 9 of the 12 wires come out: 1 to 8 and 12."
+    }
+   ],
+   "wires": [
+    {
+     "from": "BAT.+",
+     "to": "BOOST.IN+",
+     "t": [
+      22.95,
+      24.95
+     ],
+     "via": [
+      [
+       58,
+       63.58
+      ],
+      [
+       60,
+       68.6
+      ],
+      [
+       67.65,
+       68.6
+      ]
+     ],
+     "color": "#e5484d",
+     "small": "a"
+    },
+    {
+     "from": "BAT.-",
+     "to": "BOOST.IN-",
+     "t": [
+      25.95,
+      27.95
+     ],
+     "via": [
+      [
+       57,
+       64.85
+      ],
+      [
+       58.6,
+       70.4
+      ],
+      [
+       78.05,
+       70.4
+      ]
+     ],
+     "color": "#565d6c",
+     "small": "a"
+    },
+    {
+     "from": [
+      15.7,
+      67.2
+     ],
+     "to": [
+      19.6,
+      67.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      208.86,
+      209.66
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      66.2
+     ],
+     "to": [
+      19.6,
+      66.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      209.76,
+      210.56
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      65.2
+     ],
+     "to": [
+      19.6,
+      65.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      210.66,
+      211.46
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      64.2
+     ],
+     "to": [
+      19.6,
+      64.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      211.56,
+      212.36
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      63.2
+     ],
+     "to": [
+      19.6,
+      63.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      212.46,
+      213.26
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      62.2
+     ],
+     "to": [
+      19.6,
+      62.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      213.36,
+      214.16
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      61.2
+     ],
+     "to": [
+      19.6,
+      61.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      214.26,
+      215.06
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      60.2
+     ],
+     "to": [
+      19.6,
+      60.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      215.16,
+      215.96
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      56.2
+     ],
+     "to": [
+      19.6,
+      56.2
+     ],
+     "t": [
+      89.23,
+      89.93
+     ],
+     "color": "#8b93a3",
+     "thin": true,
+     "plain": true,
+     "gone": [
+      216.06,
+      216.86
+     ]
+    },
+    {
+     "from": [
+      15.7,
+      57.2
+     ],
+     "to": "BOOST.EN",
+     "t": [
+      91.53,
+      94.53
+     ],
+     "via": [
+      [
+       16.5,
+       57.2
+      ],
+      [
+       16.5,
+       85.5
+      ],
+      [
+       86,
+       85.5
+      ],
+      [
+       86,
+       57.65
+      ]
+     ],
+     "color": "#f2c21d",
+     "thin": true,
+     "ends": "b"
+    },
+    {
+     "from": [
+      17,
+      77.2
+     ],
+     "to": "INA.Gnd",
+     "t": [
+      104.04,
+      105.64
+     ],
+     "via": [
+      [
+       17,
+       82.9
+      ],
+      [
+       104.29,
+       82.9
+      ]
+     ],
+     "color": "#565d6c",
+     "thin": true,
+     "ends": "b"
+    },
+    {
+     "from": [
+      18,
+      77.2
+     ],
+     "to": "INA.Vcc",
+     "t": [
+      105.84,
+      107.44
+     ],
+     "via": [
+      [
+       18,
+       81.8
+      ],
+      [
+       101.75,
+       81.8
+      ]
+     ],
+     "color": "#e5484d",
+     "thin": true,
+     "ends": "b"
+    },
+    {
+     "from": [
+      19,
+      77.2
+     ],
+     "to": "INA.Sda",
+     "t": [
+      107.64,
+      109.24
+     ],
+     "via": [
+      [
+       19,
+       80.7
+      ],
+      [
+       109.37,
+       80.7
+      ]
+     ],
+     "color": "#3b9bff",
+     "thin": true,
+     "ends": "b"
+    },
+    {
+     "from": [
+      20,
+      77.2
+     ],
+     "to": "INA.Scl",
+     "t": [
+      109.44,
+      111.04
+     ],
+     "via": [
+      [
+       20,
+       79.6
+      ],
+      [
+       106.83,
+       79.6
+      ]
+     ],
+     "color": "#f2c21d",
+     "thin": true,
+     "ends": "b"
+    },
+    {
+     "from": "BOOST.OUT+",
+     "to": "INA.T+",
+     "t": [
+      156.51,
+      159.51
+     ],
+     "via": [
+      [
+       67.8,
+       38.2
+      ],
+      [
+       109.85,
+       38.2
+      ]
+     ],
+     "color": "#e5484d"
+    },
+    {
+     "from": "INA.T-",
+     "to": "TMT.+",
+     "t": [
+      164.91,
+      167.41
+     ],
+     "via": [
+      [
+       106.35,
+       50
+      ],
+      [
+       121.2,
+       50
+      ],
+      [
+       121.2,
+       34.94
+      ]
+     ],
+     "color": "#ff8a3d"
+    },
+    {
+     "from": "TMT.+",
+     "to": "ESC.+",
+     "t": [
+      167.61,
+      168.81
+     ],
+     "via": [
+      [
+       122.4,
+       34.94
+      ],
+      [
+       122.4,
+       16.94
+      ]
+     ],
+     "color": "#ff8a3d"
+    },
+    {
+     "from": "BOOST.OUT-",
+     "to": "TMT.-",
+     "t": [
+      169.91,
+      172.41
+     ],
+     "via": [
+      [
+       77.9,
+       40.2
+      ],
+      [
+       113.5,
+       40.2
+      ],
+      [
+       113.5,
+       37.48
+      ]
+     ],
+     "color": "#565d6c"
+    },
+    {
+     "from": "TMT.-",
+     "to": "ESC.-",
+     "t": [
+      172.61,
+      173.81
+     ],
+     "via": [
+      [
+       120.2,
+       37.48
+      ],
+      [
+       120.2,
+       19.48
+      ]
+     ],
+     "color": "#565d6c"
+    },
+    {
+     "from": [
+      15.7,
+      59.2
+     ],
+     "to": "ESC.S",
+     "t": [
+      177.07,
+      181.07
+     ],
+     "via": [
+      [
+       23,
+       59.2
+      ],
+      [
+       23,
+       2.2
+      ],
+      [
+       119.5,
+       2.2
+      ],
+      [
+       119.5,
+       14.4
+      ]
+     ],
+     "color": "#e9edf2",
+     "thin": true,
+     "ends": "b"
+    },
+    {
+     "from": [
+      15.7,
+      58.2
+     ],
+     "to": "TMT.S",
+     "t": [
+      186.34,
+      190.34
+     ],
+     "via": [
+      [
+       21.8,
+       58.2
+      ],
+      [
+       21.8,
+       3.8
+      ],
+      [
+       117.5,
+       3.8
+      ],
+      [
+       117.5,
+       32.4
+      ]
+     ],
+     "color": "#35c46a",
+     "thin": true,
+     "ends": "b"
+    },
+    {
+     "from": [
+      64,
+      27
+     ],
+     "to": [
+      47.6,
+      63.6
+     ],
+     "t": [
+      235.26,
+      237.26
+     ],
+     "via": [
+      [
+       44,
+       27
+      ],
+      [
+       44,
+       63.6
+      ]
+     ],
+     "color": "#e5484d",
+     "plain": true
+    },
+    {
+     "from": [
+      64,
+      29
+     ],
+     "to": [
+      47.6,
+      64.85
+     ],
+     "t": [
+      235.46,
+      237.46
+     ],
+     "via": [
+      [
+       42.6,
+       29
+      ],
+      [
+       42.6,
+       64.85
+      ]
+     ],
+     "color": "#565d6c",
+     "plain": true
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      69,
+      42
+     ],
+     165
+    ],
+    [
+     9.98,
+     [
+      69,
+      42
+     ],
+     165
+    ],
+    [
+     11.79,
+     [
+      62,
+      60
+     ],
+     56
+    ],
+    [
+     53.5,
+     [
+      62,
+      60
+     ],
+     56
+    ],
+    [
+     55.31,
+     [
+      74,
+      57
+     ],
+     30
+    ],
+    [
+     78.05,
+     [
+      74,
+      57
+     ],
+     30
+    ],
+    [
+     79.86,
+     [
+      50,
+      64
+     ],
+     100
+    ],
+    [
+     101.03,
+     [
+      50,
+      64
+     ],
+     100
+    ],
+    [
+     102.84,
+     [
+      63,
+      66
+     ],
+     112
+    ],
+    [
+     125.87,
+     [
+      63,
+      66
+     ],
+     112
+    ],
+    [
+     127.68,
+     [
+      103,
+      42
+     ],
+     132
+    ],
+    [
+     174.06,
+     [
+      103,
+      42
+     ],
+     132
+    ],
+    [
+     175.87,
+     [
+      69,
+      42
+     ],
+     165
+    ],
+    [
+     193.12,
+     [
+      69,
+      42
+     ],
+     165
+    ],
+    [
+     194.93,
+     [
+      17,
+      58.5
+     ],
+     34
+    ],
+    [
+     221.81,
+     [
+      17,
+      58.5
+     ],
+     34
+    ],
+    [
+     223.62,
+     [
+      69,
+      42
+     ],
+     165
+    ],
+    [
+     248.37,
+     [
+      69,
+      42
+     ],
+     165
+    ]
+   ],
+   "dur": 248.37
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "panel": [
+    [
+     0,
+     "mini-splash"
+    ]
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Step 9. Into the case. Press the two servo connectors into their pockets, the pins to the outside. Set the three button caps into the side wall."
+    },
+    {
+     "at": 12.07,
+     "text": "Fix the boost board and the sensor board with double sided tape: the boost board on edge beside the 12 pin socket, the sensor above the servo connectors. No bare pad may touch another part."
+    },
+    {
+     "at": 26.97,
+     "text": "Lay the cell behind the display, its lead towards the battery socket. Then lower the display board into the case, without pinching a wire."
+    },
+    {
+     "at": 38.09,
+     "text": "Turn the case over. Four M 2.5 screws go through the back into the board's standoffs. Tighten them by hand."
+    }
+   ],
+   "labels": [
+    {
+     "from": 3.5,
+     "to": 11.77,
+     "anchor": "plugs",
+     "at": [
+      150,
+      700
+     ],
+     "n": 9,
+     "side": "r",
+     "title": "Connectors and buttons",
+     "text": "A male connector in each pocket, behind ESC and TMT. 3 button caps for PWR, RESET and BOOT."
+    },
+    {
+     "from": 13.07,
+     "to": 26.669999999999998,
+     "anchor": "boost",
+     "at": [
+      1320,
+      240
+     ],
+     "title": "Double-sided tape",
+     "text": "Holds both small boards. The tape also insulates their undersides."
+    },
+    {
+     "from": 43.89,
+     "to": 46.620000000000005,
+     "anchor": "screws",
+     "at": [
+      1300,
+      240
+     ],
+     "title": "4 screws M2.5 x 6",
+     "text": "From the back into the 4 standoffs. The length follows from the model: 2.2 mm of case, 4 mm of thread."
+    }
+   ],
+   "flip": [
+    [
+     0,
+     0
+    ],
+    [
+     38.39,
+     0
+    ],
+    [
+     40.69,
+     180
+    ],
+    [
+     47.42,
+     180
+    ]
+   ],
+   "parts": {
+    "plugs": [
+     [
+      0,
+      1
+     ],
+     [
+      3.0,
+      1
+     ],
+     [
+      4.6,
+      0
+     ],
+     [
+      47.42,
+      0
+     ]
+    ],
+    "buttons": [
+     [
+      0,
+      1
+     ],
+     [
+      8.0,
+      1
+     ],
+     [
+      9.6,
+      0
+     ],
+     [
+      47.42,
+      0
+     ]
+    ],
+    "boost": [
+     [
+      0,
+      1
+     ],
+     [
+      13.57,
+      1
+     ],
+     [
+      15.17,
+      0
+     ],
+     [
+      47.42,
+      0
+     ]
+    ],
+    "ina": [
+     [
+      0,
+      1
+     ],
+     [
+      17.57,
+      1
+     ],
+     [
+      19.17,
+      0
+     ],
+     [
+      47.42,
+      0
+     ]
+    ],
+    "cell": [
+     [
+      0,
+      1
+     ],
+     [
+      27.47,
+      1
+     ],
+     [
+      29.07,
+      0
+     ],
+     [
+      47.42,
+      0
+     ]
+    ],
+    "board": [
+     [
+      0,
+      1
+     ],
+     [
+      32.47,
+      1
+     ],
+     [
+      34.67,
+      0
+     ],
+     [
+      47.42,
+      0
+     ]
+    ],
+    "screws": [
+     [
+      0,
+      1
+     ],
+     [
+      42.29,
+      1
+     ],
+     [
+      43.69,
+      0
+     ],
+     [
+      47.42,
+      0
+     ]
+    ]
+   },
+   "chips": [
+    {
+     "from": 0,
+     "to": 47.42,
+     "n": 9,
+     "text": "Into the case"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      100,
+      170,
+      170
+     ],
+     [
+      0,
+      22,
+      0
+     ]
+    ],
+    [
+     12.07,
+     [
+      -90,
+      180,
+      150
+     ],
+     [
+      0,
+      22,
+      0
+     ]
+    ],
+    [
+     26.97,
+     [
+      60,
+      190,
+      160
+     ],
+     [
+      0,
+      22,
+      0
+     ]
+    ],
+    [
+     38.09,
+     [
+      80,
+      150,
+      180
+     ],
+     [
+      0,
+      16,
+      0
+     ]
+    ],
+    [
+     47.42,
+     [
+      40,
+      170,
+      170
+     ],
+     [
+      0,
+      14,
+      0
+     ]
+    ]
+   ],
+   "dur": 47.42
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Step 10. Tell the bench what is fitted. Hold the power button until the screen lights. On the tester, open Menu, then Settings."
+    },
+    {
+     "at": 10.81,
+     "text": "Under servo supply, step to G-P 28. Below it, switch current sense to INA219. The caption must read: found. Then hold save."
+    },
+    {
+     "at": 20.82,
+     "text": "The boost board now feeds the servo. The two servo programmers, for K-S-T and for Hitec servos, switch the 5 volts on by themselves."
+    },
+    {
+     "at": 31.5,
+     "text": "The servo tester feeds its servo from the boost board too, and shows the sensor's current and voltage beside the pulse."
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-tester-idle"
+    ],
+    [
+     7.0,
+     "mini-menu"
+    ],
+    [
+     10.81,
+     "mini-gp28"
+    ],
+    [
+     14.81,
+     "mini-supply-sense"
+    ],
+    [
+     20.82,
+     "mini-kst-switched"
+    ],
+    [
+     31.5,
+     "mini-servo-sense"
+    ]
+   ],
+   "labels": [
+    {
+     "from": 11.31,
+     "to": 14.81,
+     "anchor": [
+      5.47,
+      24.9,
+      9.09
+     ],
+     "at": [
+      1250,
+      380
+     ],
+     "n": 10,
+     "title": "SERVO SUPPLY: GP28",
+     "text": "The pin the enable wire is on: J4 pin 11."
+    },
+    {
+     "from": 15.11,
+     "to": 20.52,
+     "anchor": [
+      13.87,
+      24.9,
+      5.46
+     ],
+     "at": [
+      1250,
+      380
+     ],
+     "n": 10,
+     "style": "ok",
+     "title": "CURRENT SENSE: INA219",
+     "text": "<b>FOUND</b>: the sensor answers at address 0x40. Hold SAVE to keep both settings."
+    },
+    {
+     "from": 21.32,
+     "to": 31.2,
+     "anchor": [
+      0.0,
+      24.9,
+      -14.19
+     ],
+     "at": [
+      1250,
+      300
+     ],
+     "title": "KST SERVO, HITEC SERVO",
+     "text": "The programmers switch the 5 V on GP28: off for 2 s, then on, before each try."
+    },
+    {
+     "from": 32.0,
+     "to": 40.910000000000004,
+     "anchor": [
+      16.42,
+      24.9,
+      4.73
+     ],
+     "at": [
+      1250,
+      560
+     ],
+     "title": "SERVO TESTER: current and voltage",
+     "text": "0.42 A and 5.02 V in this picture, from the sensor's model. No hardware was measured."
+    }
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 41.71,
+     "n": 10,
+     "text": "Settings and first use"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      20,
+      170,
+      120
+     ],
+     [
+      0,
+      24,
+      0
+     ]
+    ],
+    [
+     6.5,
+     [
+      22,
+      196,
+      58
+     ],
+     [
+      22,
+      24,
+      2
+     ]
+    ],
+    [
+     41.71,
+     [
+      16,
+      200,
+      50
+     ],
+     [
+      22,
+      24,
+      2
+     ]
+    ]
+   ],
+   "dur": 41.71
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "panel": [
+    [
+     0,
+     "mini-tester-idle"
+    ]
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Before the first servo, three rules. A servo plug goes in with its signal wire on the connector's signal pin. Mark that side on the case."
+    },
+    {
+     "at": 11.55,
+     "text": "A speed controller brings its own 5 volts on the middle wire. Cut or pull that wire before it goes onto a connector of this bench."
+    },
+    {
+     "at": 22.08,
+     "text": "And charge the cell only while you are there. The build has no fuse."
+    }
+   ],
+   "labels": [
+    {
+     "from": 2.5,
+     "to": 11.25,
+     "anchor": "esc",
+     "at": [
+      140,
+      560
+     ],
+     "side": "r",
+     "title": "Signal side",
+     "text": "S, +, − as you wired them. Mark the S side beside each opening."
+    },
+    {
+     "from": 11.55,
+     "to": 21.779999999999998,
+     "anchor": "tmt",
+     "at": [
+      1300,
+      620
+     ],
+     "style": "warn",
+     "title": "ESC: no middle wire",
+     "text": "An ESC's BEC output must not meet the bench's 5 V. Signal and ground only."
+    },
+    {
+     "from": 22.08,
+     "to": 27.72,
+     "anchor": "usbc",
+     "at": [
+      1300,
+      300
+     ],
+     "style": "warn",
+     "size": "sm",
+     "title": "Charging",
+     "text": "Over USB-C, attended. No fuse is fitted."
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -40,
+      80,
+      200
+     ],
+     [
+      0,
+      10,
+      10
+     ]
+    ],
+    [
+     28.52,
+     [
+      50,
+      70,
+      200
+     ],
+     [
+      0,
+      10,
+      10
+     ]
+    ]
+   ],
+   "dur": 28.52
+  },
+  {
+   "type": "end",
+   "dur": 9,
+   "heading": "MiniRcBench built",
+   "items": [
+    "The parts",
+    "Load the firmware",
+    "Boost input on BAT + and −",
+    "0 Ω off EN, 10 kΩ on EN, IO28 to EN",
+    "INA219 on the I2C socket",
+    "Zener and 470 µF on the output, 5 V through the sensor",
+    "TXD to ESC, RXD to TMT, 9 wires out",
+    "Check, then plug the cell",
+    "Tape, case, 4 screws",
+    "SERVO SUPPLY GP28, CURRENT SENSE INA219"
+   ],
+   "say": "The Mini R C bench is built. The manual in the project's wiki goes on from here.",
+   "note": "Manual: github.com/subtilitas/MiniRcBench/wiki · not tested on hardware: the INA219 and the switched boost board."
+  }
+ ]
+}

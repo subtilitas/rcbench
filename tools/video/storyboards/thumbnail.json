@@ -1,0 +1,63 @@
+{
+ "name": "thumbnail",
+ "lang": "en",
+ "brand": "feature tour",
+ "steps": 0,
+ "scenes": [
+  {
+   "type": "case",
+   "model": "cad",
+   "dur": 900,
+   "display": {
+    "view": "overview"
+   },
+   "title": {
+    "from": 0.2,
+    "to": 899,
+    "kicker": "rcbench · feature tour",
+    "heading": "Motor, ESC and<br>servo test bench",
+    "text": "Every screen, what it does and where it is."
+   },
+   "camera": [
+    [
+     0,
+     [
+      -285,
+      275,
+      385
+     ],
+     [
+      -112,
+      58,
+      0
+     ]
+    ],
+    [
+     900,
+     [
+      -285,
+      275,
+      385
+     ],
+     [
+      -112,
+      58,
+      0
+     ]
+    ]
+   ],
+   "parts": {
+    "lid": [
+     [
+      0,
+      0.22
+     ],
+     [
+      900,
+      0.22
+     ]
+    ]
+   }
+  }
+ ]
+}
