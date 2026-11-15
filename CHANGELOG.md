@@ -46,6 +46,14 @@ history is in git.
   joints and a cross-section card, and takes narration cues. Music bed
   `vivaldi-spring`; a storyboard's `music_gain` sets a bed's level
   ([Videos from storyboards](tools/video/README.md)).
+- `imu_feed_angles()` in `shared/bench/imu.c`: one frame of another
+  sensor's roll, pitch and yaw, in degrees, at a time in ms, through the
+  same filter, still time, rate and stale time as a WitMotion angle frame
+  through `imu_feed()`. The same angles at the same times give the same
+  reading on both paths. An angle below -180° or at 180° and above is
+  wrapped first; a frame with an angle that is not finite is dropped. The
+  WitMotion path is unchanged. No firmware calls it. Under `test_imu_angles`
+  ([The Bluetooth IMU](docs/IMU.md#the-filter)).
 - `hardware/mechanical/`: a hand-held base for the M5Stack Dial in two
   printed parts, `dial_base_top` and `dial_base_bottom`, each as STEP and
   STL. The top part seats the dial in a 45.2mm hole; the bottom part holds
