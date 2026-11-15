@@ -51,6 +51,8 @@
 #define PWR_SHUNT_UOHM 200u  /**< the MATEK's shunt, µΩ */
 #define PWR_MAX_MA  204800u  /**< the MATEK's range, mA: ADCRANGE 1 */
 #define PWR_XFER_MS      5    /**< one transaction's timeout */
+_Static_assert(pdMS_TO_TICKS(PWR_XFER_MS) >= 1,
+               "an I2C timeout under one tick ends every transaction");
 /** @} */
 
 /** @brief The schedule. @{ */

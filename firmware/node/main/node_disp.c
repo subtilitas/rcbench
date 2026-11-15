@@ -55,6 +55,8 @@
 #define TP_TIMEOUT_MS 5
 #define TP_REG_STATUS 0x02u  /**< TD_STATUS, the first register a read covers */
 /** @} */
+_Static_assert(pdMS_TO_TICKS(TP_TIMEOUT_MS) >= 1,
+               "an I2C timeout under one tick ends every read");
 /** @brief The controller's reset: low this long, then this long before the
  *         first read.  The FT6336G datasheet's own minimums were not read
  *         for this; the values are unconfirmed. @{ */
