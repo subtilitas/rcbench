@@ -45,6 +45,7 @@
 
 #include "dial.h"
 #include "dial_button.h"
+#include "devota.h"
 
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
@@ -277,9 +278,16 @@ static bool button_poll(button_t *b, uint32_t now)
 static void screen_button(uint32_t now)
 {
     dial_face_view_t v;
+    unsigned act = 0u;
     (void)button_poll(&s_in.screen, now);
-    const unsigned act = dial_button_step(&s_in.button, s_in.screen.down,
-                                          s_in.local_turns, now);
+    if (devota_active()) {
+        /* The update's offer reads the screen button itself
+         * (dial_ble.c): its press must not answer a hidden choice. */
+        dial_button_yield(&s_in.button, s_in.screen.down, now);
+    } else {
+        act = dial_button_step(&s_in.button, s_in.screen.down,
+                               s_in.local_turns, now);
+    }
     s_in.local_turns = 0;
     if ((act & DIAL_BTN_PRESS) != 0u) {
         gesture_push(DK_G_PRESS, 0, 0);

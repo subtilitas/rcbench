@@ -88,6 +88,18 @@ unsigned dial_button_step(dial_button_t *b, bool down, int32_t turns,
                           uint32_t now);
 
 /**
+ * @brief The update's offer took the screen and the screen button: the
+ *        warning or the choice ends without an answer, and the press under
+ *        way, or one that starts while this is called, goes nowhere until
+ *        it is released.  Called every step instead of dial_button_step()
+ *        while the update runs.
+ * @param b    the state
+ * @param down the button is down
+ * @param now  the time, ms
+ */
+void dial_button_yield(dial_button_t *b, bool down, uint32_t now);
+
+/**
  * @brief Whether the warning or the choice is up: turns and the screen
  *        button stay on the Dial.
  * @param b the state

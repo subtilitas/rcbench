@@ -108,6 +108,17 @@ unsigned dial_button_step(dial_button_t *b, bool down, int32_t turns,
     return act;
 }
 
+void dial_button_yield(dial_button_t *b, bool down, uint32_t now)
+{
+    b->stage = DIAL_OFF_NONE;
+    b->focus_off = false;
+    if (down && !b->down) {
+        b->down_ms = now;
+    }
+    b->down = down;
+    b->own = down;
+}
+
 bool dial_button_local(const dial_button_t *b)
 {
     return b->stage != DIAL_OFF_NONE;

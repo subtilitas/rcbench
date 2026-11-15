@@ -186,6 +186,35 @@ TEST_CASE(a_press_on_off_switches_off)
     CHECK(!dial_button_local(&b));
 }
 
+TEST_CASE(an_update_offer_ends_the_choice_and_its_press_answers_nothing)
+{
+    dial_button_t b;
+    seen_t s = { 0 };
+    start(&b);
+    hold_release(&b, 6000u, &s);
+    CHECK_EQ(step(&b, false, 1), 0u);
+    /* The offer comes: the choice on OFF ends, and the press that
+     * accepts the update is the update's alone. */
+    dial_button_yield(&b, false, s_now);
+    CHECK(!dial_button_local(&b));
+    for (uint32_t t = 0; t < 200u; t += STEP) {
+        dial_button_yield(&b, true, s_now);
+        s_now += STEP;
+    }
+    dial_button_yield(&b, false, s_now);
+    s_now += STEP;
+    s.any = 0u;
+    run(&b, false, 12000u, &s);
+    CHECK_EQ(s.any, 0u);
+    /* A press held while the update ends stays swallowed to its release. */
+    dial_button_yield(&b, true, s_now);
+    s_now += STEP;
+    run(&b, true, 6000u, &s);
+    s.any |= step(&b, false, 0);
+    CHECK_EQ(s.any, 0u);
+    CHECK(!dial_button_local(&b));
+}
+
 TEST_CASE(a_press_on_keep_on_keeps_the_dial_on)
 {
     dial_button_t b;
@@ -329,6 +358,7 @@ int main(void)
     RUN(a_release_from_5000ms_to_9999ms_opens_the_choice_on_keep_on);
     RUN(a_turn_moves_the_focus_clockwise_to_off_and_back);
     RUN(a_press_on_off_switches_off);
+    RUN(an_update_offer_ends_the_choice_and_its_press_answers_nothing);
     RUN(a_press_on_keep_on_keeps_the_dial_on);
     RUN(a_hold_in_the_choice_keeps_on_at_1000ms_and_sends_nothing);
     RUN(ten_seconds_without_a_turn_or_a_press_keep_on);
