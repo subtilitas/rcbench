@@ -1,0 +1,1986 @@
+{
+ "name": "rbmod-build",
+ "lang": "en",
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "brand": "rbmod carrier build",
+ "steps": 13,
+ "scenes": [
+  {
+   "type": "case",
+   "model": "cad",
+   "dur": 9.0,
+   "title": {
+    "from": 0.3,
+    "to": 5.2,
+    "kicker": "rcbench · rbmod carrier",
+    "heading": "Building the<br>rbmod carrier",
+    "text": "A rev 1 board, five modules and the rework.<br>13 steps with a soldering iron."
+   },
+   "camera": [
+    [
+     0,
+     [
+      -330,
+      250,
+      470
+     ],
+     [
+      -70,
+      10,
+      0
+     ]
+    ],
+    [
+     5.0,
+     [
+      -250,
+      300,
+      420
+     ],
+     [
+      -40,
+      20,
+      0
+     ]
+    ],
+    [
+     9.0,
+     [
+      -90,
+      400,
+      300
+     ],
+     [
+      10,
+      30,
+      0
+     ]
+    ]
+   ],
+   "lid": [
+    [
+     4.6,
+     0
+    ],
+    [
+     6.6,
+     62
+    ]
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Building the R B mod carrier of the R C bench: a revision 1 board, five modules and the rework, in 13 steps."
+    }
+   ],
+   "labels": [
+    {
+     "from": 6.2,
+     "to": 8.7,
+     "anchor": "rbmod",
+     "at": [
+      1330,
+      610
+     ],
+     "size": "sm",
+     "title": "rbmod carrier",
+     "text": "Under the display, modules up. The display leaves the modules little height."
+    }
+   ]
+  },
+  {
+   "type": "board",
+   "board": "rbmod-rev1",
+   "bare": true,
+   "dur": 195.8,
+   "camera": [
+    [
+     0,
+     [
+      44.5,
+      40
+     ],
+     172
+    ],
+    [
+     9.0,
+     [
+      44.5,
+      40
+     ],
+     172
+    ],
+    [
+     11.4,
+     [
+      66,
+      48.5
+     ],
+     100
+    ],
+    [
+     15.6,
+     [
+      66,
+      48.5
+     ],
+     100
+    ],
+    [
+     18.0,
+     [
+      78,
+      63
+     ],
+     22
+    ],
+    [
+     23.4,
+     [
+      78,
+      63
+     ],
+     22
+    ],
+    [
+     25.8,
+     [
+      76,
+      57
+     ],
+     40
+    ],
+    [
+     34.4,
+     [
+      76,
+      57
+     ],
+     40
+    ],
+    [
+     36.8,
+     [
+      44.5,
+      40
+     ],
+     172
+    ],
+    [
+     48.6,
+     [
+      44.5,
+      40
+     ],
+     172
+    ],
+    [
+     51.0,
+     [
+      66,
+      70
+     ],
+     56
+    ],
+    [
+     59.4,
+     [
+      66,
+      70
+     ],
+     56
+    ],
+    [
+     61.8,
+     [
+      52,
+      25
+     ],
+     112
+    ],
+    [
+     84.0,
+     [
+      52,
+      25
+     ],
+     112
+    ],
+    [
+     86.4,
+     [
+      50,
+      22
+     ],
+     84
+    ],
+    [
+     98.4,
+     [
+      50,
+      22
+     ],
+     84
+    ],
+    [
+     100.8,
+     [
+      47,
+      62
+     ],
+     92
+    ],
+    [
+     119.0,
+     [
+      47,
+      62
+     ],
+     92
+    ],
+    [
+     121.4,
+     [
+      36,
+      16
+     ],
+     76
+    ],
+    [
+     132.6,
+     [
+      36,
+      16
+     ],
+     76
+    ],
+    [
+     135.0,
+     [
+      68,
+      56.5
+     ],
+     44
+    ],
+    [
+     146.4,
+     [
+      68,
+      56.5
+     ],
+     44
+    ],
+    [
+     148.8,
+     [
+      41,
+      35
+     ],
+     40
+    ],
+    [
+     159.6,
+     [
+      41,
+      35
+     ],
+     40
+    ],
+    [
+     161.6,
+     [
+      43,
+      34
+     ],
+     36
+    ],
+    [
+     172.6,
+     [
+      43,
+      34
+     ],
+     36
+    ],
+    [
+     175.0,
+     [
+      -2,
+      44
+     ],
+     52
+    ],
+    [
+     190.4,
+     [
+      -2,
+      44
+     ],
+     52
+    ],
+    [
+     193.2,
+     [
+      44.5,
+      40
+     ],
+     172
+    ],
+    [
+     195.8,
+     [
+      44.5,
+      40
+     ],
+     172
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 9.0,
+     "n": "i",
+     "text": "The bare board, module side"
+    },
+    {
+     "from": 9.0,
+     "to": 23.6,
+     "n": 1,
+     "text": "Open the track at R1"
+    },
+    {
+     "from": 23.6,
+     "to": 34.6,
+     "n": 2,
+     "text": "D1 and R9"
+    },
+    {
+     "from": 34.6,
+     "to": 48.8,
+     "n": 3,
+     "text": "Connectors"
+    },
+    {
+     "from": 48.8,
+     "to": 59.6,
+     "n": 4,
+     "text": "Pin headers J1 and J2"
+    },
+    {
+     "from": 59.6,
+     "to": 84.2,
+     "n": 5,
+     "text": "RP2350-CAN on pin strips"
+    },
+    {
+     "from": 84.2,
+     "to": 98.6,
+     "n": 6,
+     "text": "Buck modules M8 and M7"
+    },
+    {
+     "from": 98.6,
+     "to": 119.2,
+     "n": 7,
+     "text": "INA3221 and its large holes"
+    },
+    {
+     "from": 119.2,
+     "to": 132.8,
+     "n": 8,
+     "text": "USB-C PD trigger"
+    },
+    {
+     "from": 132.8,
+     "to": 146.6,
+     "n": 9,
+     "text": "Wire GPIO 15 to R1's outer pad"
+    },
+    {
+     "from": 146.6,
+     "to": 159.8,
+     "n": 10,
+     "text": "Pull-down on M7's EN"
+    },
+    {
+     "from": 159.8,
+     "to": 172.8,
+     "n": 11,
+     "text": "Zener on M7's output"
+    },
+    {
+     "from": 172.8,
+     "to": 195.8,
+     "n": 12,
+     "text": "J6 to a USB-C plug for the PD mini"
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.6,
+     "to": 4.6,
+     "anchor": [
+      70,
+      62.5
+     ],
+     "at": [
+      1400,
+      560
+     ],
+     "title": "R1 to R8 stay empty",
+     "text": "Eight footprints for 120 Ω. A track joins the two pads of each.",
+     "size": "sm"
+    },
+    {
+     "from": 0.9,
+     "to": 4.6,
+     "anchor": "J6.2",
+     "at": [
+      60,
+      300
+     ],
+     "title": "J6 takes no connector",
+     "text": "Its pads take wires to a USB-C plug board in the last step.",
+     "size": "sm",
+     "side": "r"
+    },
+    {
+     "from": 5.0,
+     "to": 8.8,
+     "anchor": [
+      44.5,
+      40
+     ],
+     "at": [
+      60,
+      250
+     ],
+     "title": "What goes on the board",
+     "text": "5 modules on straight 2.54 mm pin strips, 2 angled 3 x 4 pin headers, 5 JST PH connectors, 1 Mini-Fit Jr, 1 USB-C plug board, a 3 V zener and 4.7 kΩ. For the rework: a wire, 2.2 kΩ and a 5.6 V zener.",
+     "side": "r"
+    },
+    {
+     "from": 11.7,
+     "to": 15.4,
+     "anchor": [
+      80.88,
+      58
+     ],
+     "at": [
+      70,
+      330
+     ],
+     "title": "PROGP03 runs to GPIO 26",
+     "text": "GPIO 26 is an ADC pin and <b>not 5 V tolerant</b>. A Hitec or KST servo pulls the programming line up to its supply. Do this first, while the board is bare.",
+     "side": "r",
+     "style": "warn",
+     "n": 1
+    },
+    {
+     "from": 18.3,
+     "to": 23.2,
+     "anchor": [
+      80.88,
+      63
+     ],
+     "at": [
+      70,
+      300
+     ],
+     "title": "Scratch the track open at R1",
+     "text": "Between the two pads of <b>R1</b>, the end footprint of the row, next to J1 pin 1. Afterwards the two pads must not conduct to each other.",
+     "side": "r",
+     "n": 1
+    },
+    {
+     "from": 26.2,
+     "to": 34.2,
+     "anchor": [
+      80,
+      56.9
+     ],
+     "at": [
+      70,
+      330
+     ],
+     "title": "D1 and R9: the TAP input",
+     "text": "D1 is a 3 V zener, its <b>banded end on the square pad</b>. R9 is 4.7 kΩ. Both lie flat on the board and are soldered on the back.",
+     "side": "r",
+     "n": 2
+    },
+    {
+     "from": 37.2,
+     "to": 48.4,
+     "anchor": [
+      85.4,
+      37
+     ],
+     "at": [
+      1400,
+      250
+     ],
+     "title": "JST PH and Mini-Fit Jr",
+     "text": "J3, J4, J5, J7 and J9 on the right edge and J8 on the left: on the module side, soldered on the back.",
+     "size": "sm",
+     "n": 3
+    },
+    {
+     "from": 40.0,
+     "to": 48.4,
+     "anchor": "J6.2",
+     "at": [
+      60,
+      300
+     ],
+     "title": "J6 stays empty",
+     "text": "No connector here: its pads take wires in step 12.",
+     "size": "sm",
+     "side": "r",
+     "style": "muted"
+    },
+    {
+     "from": 51.4,
+     "to": 59.2,
+     "anchor": [
+      66,
+      76
+     ],
+     "at": [
+      70,
+      300
+     ],
+     "title": "J1 and J2: angled 3 x 4 headers",
+     "text": "The pins point out over the board edge, towards the case wall. J1 carries the programming ports, J2 the servo outputs. Soldered on the back.",
+     "side": "r",
+     "n": 4
+    },
+    {
+     "from": 73.0,
+     "to": 83.8,
+     "anchor": [
+      70,
+      9
+     ],
+     "at": [
+      60,
+      300
+     ],
+     "title": "M1 · RP2350-CAN",
+     "text": "The USB-C socket at the board edge. 2 x 20 pins: solder each on the module, then turn the board and solder each on the back.",
+     "side": "r",
+     "n": 5
+    },
+    {
+     "from": 86.8,
+     "to": 98.2,
+     "anchor": [
+      43,
+      12
+     ],
+     "at": [
+      1330,
+      250
+     ],
+     "title": "M8 and M7: the same way",
+     "text": "On pin strips with the plastic between: four pin pairs each and M7's EN pin, soldered on both sides. M8 makes the IOmcu's 5 V. M7 makes the 5 V of the programming ports and is switched through <b>EN</b>.",
+     "n": 6
+    },
+    {
+     "from": 101.2,
+     "to": 106.2,
+     "anchor": [
+      28,
+      62
+     ],
+     "at": [
+      1260,
+      250
+     ],
+     "title": "M5 · INA3221",
+     "text": "On an 8-pin strip, the plastic between, soldered on both sides.",
+     "size": "sm",
+     "n": 7
+    },
+    {
+     "from": 121.8,
+     "to": 132.4,
+     "anchor": [
+      17,
+      12
+     ],
+     "at": [
+      1300,
+      250
+     ],
+     "title": "M6 · USB-C PD trigger",
+     "text": "Its <b>two large holes</b> the same way: bare wire through both boards, filled with solder. Set its DIP switch to <b>15 V</b>.",
+     "n": 8
+    },
+    {
+     "from": 135.2,
+     "to": 146.2,
+     "anchor": [
+      69,
+      61.4
+     ],
+     "at": [
+      70,
+      560
+     ],
+     "title": "Wire GPIO 15 to the outer pad",
+     "text": "From the module's pad 20, <b>GP15</b>, to the pad of R1 that leads on to J1. GPIO 26 ends at the inner pad and stays unused.",
+     "side": "r",
+     "n": 9
+    },
+    {
+     "from": 149.0,
+     "to": 159.4,
+     "anchor": [
+      33.8,
+      41.1
+     ],
+     "at": [
+      1370,
+      250
+     ],
+     "title": "2.2 kΩ from EN to GND",
+     "text": "On top of the module, from <b>EN</b> to the <b>GND</b> pad beside it. An open EN reads as on: the pull-down keeps the ports' 5 V off while the IOmcu is in reset, in BOOTSEL or unpowered.",
+     "n": 10
+    },
+    {
+     "from": 161.8,
+     "to": 172.4,
+     "anchor": [
+      56.06,
+      33.6
+     ],
+     "at": [
+      70,
+      250
+     ],
+     "title": "5.6 V zener from OUT+ to GND",
+     "text": "A 2 W or 5 W part on top of the module, its <b>banded end, the cathode, on OUT+</b>. A braking servo feeds energy back into the 5 V, and M7 latches off above about 6.0 V. The zener takes that energy.",
+     "side": "r",
+     "n": 11
+    },
+    {
+     "from": 175.4,
+     "to": 190.2,
+     "anchor": [
+      -3,
+      41.6
+     ],
+     "at": [
+      1260,
+      570
+     ],
+     "title": "J6: four wires to a USB-C plug board",
+     "text": "No connector on J6. <b>15 V to V, GND to G.</b> The UART crosses over: the IOmcu's <b>TX, GPIO 7, to D−</b>, its <b>RX, GPIO 6, to D+</b>. The PD mini sends on D+ and listens on D−.",
+     "side": "t",
+     "n": 12
+    },
+    {
+     "from": 182.6,
+     "to": 190.2,
+     "anchor": [
+      -19,
+      41
+     ],
+     "at": [
+      60,
+      620
+     ],
+     "title": "Into the PD mini only",
+     "text": "The plug carries 15 V on V. It goes into the PD mini's USB-C socket and nowhere else.",
+     "size": "sm",
+     "side": "t",
+     "style": "warn"
+    }
+   ],
+   "tags": [
+    {
+     "from": 11.9,
+     "to": 15.4,
+     "at": "M1.31",
+     "text": "GPIO 26",
+     "side": "t",
+     "style": "warn"
+    },
+    {
+     "from": 12.2,
+     "to": 15.4,
+     "at": "J1.9",
+     "text": "J1 · PROGP03",
+     "side": "r",
+     "style": "warn"
+    },
+    {
+     "from": 18.5,
+     "to": 23.2,
+     "at": "R1.1",
+     "text": "R1 inner pad · from GPIO 26",
+     "side": "r"
+    },
+    {
+     "from": 18.8,
+     "to": 23.2,
+     "at": "R1.2",
+     "text": "R1 outer pad · to J1",
+     "side": "r"
+    },
+    {
+     "from": 27.4,
+     "to": 34.2,
+     "at": "D1.1",
+     "text": "D1 band · cathode",
+     "side": "t"
+    },
+    {
+     "from": 91.0,
+     "to": 98.2,
+     "at": "M7.3",
+     "text": "M7 EN: fit this pin",
+     "side": "b"
+    },
+    {
+     "from": 123.4,
+     "to": 132.4,
+     "at": "M6.1",
+     "text": "+ · 15 V",
+     "side": "b"
+    },
+    {
+     "from": 123.7,
+     "to": 132.4,
+     "at": "M6.2",
+     "text": "GND",
+     "side": "r"
+    },
+    {
+     "from": 135.4,
+     "to": 146.2,
+     "at": "M1.20",
+     "text": "GP15 · pad 20",
+     "side": "l"
+    },
+    {
+     "from": 135.7,
+     "to": 146.2,
+     "at": "R1.2",
+     "text": "R1 outer pad",
+     "side": "r"
+    },
+    {
+     "from": 149.0,
+     "to": 159.4,
+     "at": "M7.3",
+     "text": "EN",
+     "side": "b"
+    },
+    {
+     "from": 149.3,
+     "to": 159.4,
+     "at": "M7.2b",
+     "text": "GND",
+     "side": "l"
+    },
+    {
+     "from": 161.8,
+     "to": 172.4,
+     "at": "M7.4b",
+     "text": "OUT+ · 5 V",
+     "side": "r"
+    },
+    {
+     "from": 162.1,
+     "to": 172.4,
+     "at": "M7.5a",
+     "text": "GND",
+     "side": "r"
+    },
+    {
+     "from": 176.0,
+     "to": 190.2,
+     "at": "J6.1",
+     "text": "15 V → V",
+     "side": "r"
+    },
+    {
+     "from": 176.2,
+     "to": 190.2,
+     "at": "J6.2",
+     "text": "TX · GPIO 7 → D−",
+     "side": "r"
+    },
+    {
+     "from": 176.4,
+     "to": 190.2,
+     "at": "J6.3",
+     "text": "RX · GPIO 6 → D+",
+     "side": "r"
+    },
+    {
+     "from": 176.6,
+     "to": 190.2,
+     "at": "J6.4",
+     "text": "GND → G",
+     "side": "r"
+    }
+   ],
+   "nets": [
+    {
+     "from": 11.5,
+     "to": 17.6,
+     "net": "GPIO26_PROGP03",
+     "style": "warn"
+    }
+   ],
+   "cuts": [
+    {
+     "between": [
+      "R1.1",
+      "R1.2"
+     ],
+     "gap": 1.0,
+     "t": [
+      19.4,
+      20.8
+     ]
+    }
+   ],
+   "wires": [
+    {
+     "from": "M1.20",
+     "to": "R1.2",
+     "via": [
+      [
+       62.2,
+       54.0
+      ],
+      [
+       73.5,
+       66.2
+      ],
+      [
+       79.4,
+       66.2
+      ]
+     ],
+     "t": [
+      137.0,
+      140.0
+     ]
+    },
+    {
+     "from": "J6.1",
+     "to": "USB.V",
+     "color": "#e5484d",
+     "t": [
+      177.4,
+      178.8
+     ]
+    },
+    {
+     "from": "J6.2",
+     "to": "USB.D-",
+     "color": "#e8c81a",
+     "t": [
+      178.20000000000002,
+      179.60000000000002
+     ]
+    },
+    {
+     "from": "J6.3",
+     "to": "USB.D+",
+     "color": "#3fa7e8",
+     "t": [
+      179.0,
+      180.4
+     ]
+    },
+    {
+     "from": "J6.4",
+     "to": "USB.G",
+     "color": "#2b2e35",
+     "t": [
+      179.8,
+      181.20000000000002
+     ]
+    }
+   ],
+   "fit": [
+    {
+     "kind": "resistor",
+     "a": "M7.3",
+     "b": "M7.2b",
+     "t": 151.8,
+     "text": "2.2 kΩ"
+    },
+    {
+     "kind": "zener",
+     "a": "M7.4b",
+     "b": "M7.5a",
+     "t": 164.6
+    }
+   ],
+   "mount": [
+    {
+     "refs": [
+      "D1",
+      "R9"
+     ],
+     "t": 26.4
+    },
+    {
+     "refs": [
+      "J7",
+      "J3",
+      "J4",
+      "J5",
+      "J9"
+     ],
+     "t": 37.4
+    },
+    {
+     "refs": [
+      "J8"
+     ],
+     "t": 38.6
+    },
+    {
+     "refs": [
+      "J1",
+      "J2"
+     ],
+     "t": 51.6
+    },
+    {
+     "refs": [
+      "M1"
+     ],
+     "t": 72.8
+    },
+    {
+     "refs": [
+      "M8"
+     ],
+     "t": 87.0
+    },
+    {
+     "refs": [
+      "M7"
+     ],
+     "t": 88.4
+    },
+    {
+     "refs": [
+      "M5"
+     ],
+     "t": 101.4
+    },
+    {
+     "refs": [
+      "M6"
+     ],
+     "t": 122.0
+    }
+   ],
+   "solder": [
+    {
+     "pads": [
+      "D1.1",
+      "D1.2",
+      "R9.1",
+      "R9.2"
+     ],
+     "back": true,
+     "t": [
+      28.6,
+      30.2
+     ]
+    },
+    {
+     "refs": [
+      "J7",
+      "J3",
+      "J4",
+      "J5",
+      "J9",
+      "J8"
+     ],
+     "back": true,
+     "t": [
+      41.4,
+      43.8
+     ]
+    },
+    {
+     "refs": [
+      "J1",
+      "J2"
+     ],
+     "back": true,
+     "t": [
+      53.6,
+      56.6
+     ]
+    },
+    {
+     "refs": [
+      "M1"
+     ],
+     "t": [
+      74.6,
+      80.6
+     ]
+    },
+    {
+     "refs": [
+      "M8",
+      "M7"
+     ],
+     "t": [
+      90.2,
+      94.2
+     ]
+    },
+    {
+     "pads": [
+      "M5.1",
+      "M5.2a",
+      "M5.3",
+      "M5.4",
+      "M5.5",
+      "M5.6",
+      "M5.7",
+      "M5.8"
+     ],
+     "t": [
+      103.2,
+      105.2
+     ]
+    },
+    {
+     "pads": [
+      "M5.9",
+      "M5.10",
+      "M5.11",
+      "M5.12",
+      "M5.13",
+      "M5.14",
+      "M5.15",
+      "M5.2c",
+      "M5.2b"
+     ],
+     "t": [
+      109.6,
+      115.2
+     ]
+    },
+    {
+     "pads": [
+      "M6.1",
+      "M6.2"
+     ],
+     "t": [
+      124.2,
+      126.0
+     ]
+    }
+   ],
+   "insets": [
+    {
+     "from": 5.2,
+     "to": 8.8,
+     "kind": "pins",
+     "at": [
+      1220,
+      300
+     ],
+     "title": "Pin strips, 2.54 mm, straight",
+     "rows": [
+      [
+       20,
+       "RP2350-CAN, left row"
+      ],
+      [
+       20,
+       "RP2350-CAN, right row"
+      ],
+      [
+       8,
+       "INA3221"
+      ],
+      [
+       2,
+       "× 8, the pin pairs of M8 and M7"
+      ],
+      [
+       1,
+       "M7's EN"
+      ]
+     ],
+     "text": "<b>65 pins</b> in all: two strips of 40 are enough."
+    },
+    {
+     "from": 62.0,
+     "to": 72.6,
+     "kind": "strip",
+     "at": [
+      60,
+      250
+     ],
+     "title": "Modules sit on the strip's plastic",
+     "good": "plastic between the boards",
+     "bad": "module on the carrier",
+     "text": "Straight pin strips, the plastic <b>between module and carrier</b>: without it the through-hole parts can short out. The pins are <b>soldered on both sides</b>, on top of the module and on the back of the carrier. Press the module down level: the display leaves little headroom."
+    },
+    {
+     "from": 106.4,
+     "to": 118.8,
+     "kind": "fill",
+     "at": [
+      1230,
+      230
+     ],
+     "title": "Large holes: wire and solder",
+     "good": "bare wire through both holes",
+     "bad": "soldered on the module and on the back",
+     "upper": "INA3221",
+     "lower": "carrier",
+     "color": "#5a2d82",
+     "text": "The <b>9 large holes</b> carry the supply currents. Each takes a piece of bare wire through module and carrier and is filled with solder."
+    }
+   ],
+   "plugs": [
+    {
+     "name": "USB",
+     "at": [
+      -10,
+      38.183
+     ],
+     "t": 175.6
+    }
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "This is the bare R B mod carrier, seen from the module side. The eight resistor footprints stay empty. J 6 gets no connector: wires go to its pads in the last step."
+    },
+    {
+     "at": 5.0,
+     "text": "You need five modules on straight pin strips, two angled pin headers, the connectors, a 3 volt zener diode and a 4.7 kilo ohm resistor. For the rework: a wire, a 2.2 kilo ohm resistor and a 5.6 volt zener diode."
+    },
+    {
+     "at": 9.3,
+     "text": "Step 1. On this board, programming port 3 runs to G-P-I-O 26, which is not 5 volt tolerant. Open that track while the board is bare."
+    },
+    {
+     "at": 18.2,
+     "text": "Scratch the track open between the two pads of R 1, the end footprint next to J 1. Then check that the two pads no longer conduct."
+    },
+    {
+     "at": 23.9,
+     "text": "Step 2. Fit the 3 volt zener diode D 1, with its band on the square pad, and the 4.7 kilo ohm resistor R 9. Solder both on the back."
+    },
+    {
+     "at": 34.9,
+     "text": "Step 3. Fit the J-S-T connectors on the right edge and the power connector J 8 on the left, and solder them on the back. J 6 stays empty."
+    },
+    {
+     "at": 49.1,
+     "text": "Step 4. Fit the two angled pin headers, J 1 and J 2, with their pins pointing out over the board edge."
+    },
+    {
+     "at": 59.9,
+     "text": "Step 5. The modules sit on straight pin strips, with the plastic between module and carrier. Without the plastic, the through hole parts can short out. Solder every pin on both sides: on top of the module and on the back of the carrier. Press each module down level, because the display leaves little headroom."
+    },
+    {
+     "at": 72.9,
+     "text": "Start with the R P 23 50 can module, its U S B socket at the board edge."
+    },
+    {
+     "at": 84.5,
+     "text": "Step 6. The two buck modules go on the same way. M 7 also needs its enable pin."
+    },
+    {
+     "at": 98.9,
+     "text": "Step 7. The I-N-A 32 21 module sits on an 8 pin strip."
+    },
+    {
+     "at": 106.5,
+     "text": "Its nine large holes carry the supply currents. Push a piece of bare wire through module and carrier, and fill each hole with solder on both sides."
+    },
+    {
+     "at": 119.5,
+     "text": "Step 8. The U S B C, P-D trigger gets the same wire and solder in its two large holes. Set its dip switch to 15 volts."
+    },
+    {
+     "at": 133.1,
+     "text": "Step 9. Now the rework wire. Solder it from pad 20 of the module, G-P 15, to the outer pad of R 1."
+    },
+    {
+     "at": 146.9,
+     "text": "Step 10. Solder 2.2 kilo ohm on top of M 7, from the enable pad to the ground pad beside it. It keeps the 5 volts of the programming ports off until the controller switches them on."
+    },
+    {
+     "at": 160.1,
+     "text": "Step 11. Solder the 5.6 volt zener diode on top of M 7, from the output to ground, with its band on the output pad. It takes the energy that a braking servo feeds back."
+    },
+    {
+     "at": 173.1,
+     "text": "Step 12. J 6 takes no connector. Solder four wires from its pads to a U S B C plug board: 15 volts to V, ground to G, the transmit line, G-P-I-O 7, to D minus, and the receive line, G-P-I-O 6, to D plus. The plug goes into the P-D mini and nowhere else, because it carries 15 volts."
+    }
+   ]
+  },
+  {
+   "type": "board",
+   "board": "p4-7b-back",
+   "dur": 57.0,
+   "camera": [
+    [
+     0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ],
+    [
+     7.0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ],
+    [
+     9.0,
+     [
+      44,
+      84
+     ],
+     62
+    ],
+    [
+     36.6,
+     [
+      44,
+      84
+     ],
+     62
+    ],
+    [
+     39.4,
+     [
+      6,
+      71
+     ],
+     74
+    ],
+    [
+     57.0,
+     [
+      6,
+      71
+     ],
+     74
+    ],
+    [
+     60.0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ],
+    [
+     62.0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 57.0,
+     "n": 13,
+     "text": "Wire the panel"
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.6,
+     "to": 6.6,
+     "anchor": [
+      83,
+      48
+     ],
+     "at": [
+      680,
+      130
+     ],
+     "side": "b",
+     "size": "sm",
+     "title": "The panel from the back",
+     "text": "The 7 inch ESP32-P4 display board. Three cables run from here to the carrier."
+    },
+    {
+     "from": 9.4,
+     "to": 16.0,
+     "anchor": [
+      44.25,
+      99
+     ],
+     "at": [
+      1240,
+      250
+     ],
+     "n": 13,
+     "title": "Header P3: two of twelve wires",
+     "text": "The 12-pin PH2.0 cable carries the heartbeat. <b>IO28 and GND</b> go to J3 on the carrier. The other ten wires come out of the plug."
+    },
+    {
+     "from": 39.8,
+     "to": 56.8,
+     "anchor": [
+      -9,
+      63
+     ],
+     "at": [
+      1250,
+      130
+     ],
+     "n": 13,
+     "title": "CAN header: the link",
+     "text": "A 4-pin PH2.0 cable. Only <b>H and L</b> go to the screw terminal of the RP2350-CAN. Its GND and 5 V wires come out: ground comes through J7. The 120 Ω termination is on at both ends."
+    },
+    {
+     "from": 40.2,
+     "to": 56.8,
+     "anchor": [
+      -9,
+      79
+     ],
+     "at": [
+      1250,
+      640
+     ],
+     "side": "t",
+     "n": 13,
+     "title": "RS485 header: the panel's supply",
+     "text": "A second 4-pin cable. Its <b>5 V and GND</b> pins take the supply from J7 on the carrier, the connector with 5 V twice and GND twice. No other ground wire runs to the panel. The wires A and B come out."
+    }
+   ],
+   "tags": [
+    {
+     "from": 1.0,
+     "to": 6.6,
+     "at": "CAN.H",
+     "text": "CAN header",
+     "side": "r"
+    },
+    {
+     "from": 1.2,
+     "to": 6.6,
+     "at": "RS485.A",
+     "text": "RS485 header",
+     "side": "r"
+    },
+    {
+     "from": 1.4,
+     "to": 6.6,
+     "at": "P3.7",
+     "text": "12-pin header P3",
+     "side": "t"
+    },
+    {
+     "from": 9.6,
+     "to": 36.4,
+     "at": "P3.2",
+     "text": "GND → J3",
+     "side": "t",
+     "d": 110
+    },
+    {
+     "from": 9.8,
+     "to": 36.4,
+     "at": "P3.7",
+     "text": "IO28 → J3 · heartbeat",
+     "side": "t",
+     "d": 60
+    },
+    {
+     "from": 40.0,
+     "to": 56.8,
+     "at": "CAN.L",
+     "text": "L → CAN L on M1",
+     "side": "r"
+    },
+    {
+     "from": 40.2,
+     "to": 56.8,
+     "at": "CAN.H",
+     "text": "H → CAN H on M1",
+     "side": "r"
+    },
+    {
+     "from": 40.4,
+     "to": 56.8,
+     "at": "CAN.GND",
+     "text": "GND · taken out",
+     "side": "r",
+     "style": "muted"
+    },
+    {
+     "from": 40.6,
+     "to": 56.8,
+     "at": "CAN.5V",
+     "text": "5 V · taken out",
+     "side": "r",
+     "style": "muted"
+    },
+    {
+     "from": 40.8,
+     "to": 56.8,
+     "at": "RS485.B",
+     "text": "B · taken out",
+     "side": "r",
+     "style": "muted"
+    },
+    {
+     "from": 41.0,
+     "to": 56.8,
+     "at": "RS485.A",
+     "text": "A · taken out",
+     "side": "r",
+     "style": "muted"
+    },
+    {
+     "from": 41.2,
+     "to": 56.8,
+     "at": "RS485.GND",
+     "text": "GND ← J7",
+     "side": "r"
+    },
+    {
+     "from": 41.4,
+     "to": 56.8,
+     "at": "RS485.5V",
+     "text": "5 V ← J7",
+     "side": "r"
+    }
+   ],
+   "wires": [
+    {
+     "from": "P3.1",
+     "to": [
+      26.1,
+      112
+     ],
+     "via": [
+      [
+       33.25,
+       100
+      ]
+     ],
+     "color": "#e5484d",
+     "plain": true,
+     "t": [
+      9.8,
+      11.2
+     ],
+     "gone": [
+      21.0,
+      22.2
+     ]
+    },
+    {
+     "from": "P3.2",
+     "to": [
+      29.4,
+      112
+     ],
+     "via": [
+      [
+       35.25,
+       100
+      ]
+     ],
+     "color": "#2b2e35",
+     "plain": true,
+     "t": [
+      9.9,
+      11.299999999999999
+     ]
+    },
+    {
+     "from": "P3.3",
+     "to": [
+      32.7,
+      112
+     ],
+     "via": [
+      [
+       37.25,
+       100
+      ]
+     ],
+     "color": "#e8c81a",
+     "plain": true,
+     "t": [
+      10.0,
+      11.399999999999999
+     ],
+     "gone": [
+      21.8,
+      23.0
+     ]
+    },
+    {
+     "from": "P3.4",
+     "to": [
+      36.0,
+      112
+     ],
+     "via": [
+      [
+       39.25,
+       100
+      ]
+     ],
+     "color": "#3fa7e8",
+     "plain": true,
+     "t": [
+      10.100000000000001,
+      11.5
+     ],
+     "gone": [
+      22.6,
+      23.8
+     ]
+    },
+    {
+     "from": "P3.5",
+     "to": [
+      39.3,
+      112
+     ],
+     "via": [
+      [
+       41.25,
+       100
+      ]
+     ],
+     "color": "#4cc26a",
+     "plain": true,
+     "t": [
+      10.200000000000001,
+      11.6
+     ],
+     "gone": [
+      23.4,
+      24.6
+     ]
+    },
+    {
+     "from": "P3.6",
+     "to": [
+      42.6,
+      112
+     ],
+     "via": [
+      [
+       43.25,
+       100
+      ]
+     ],
+     "color": "#e88a2b",
+     "plain": true,
+     "t": [
+      10.3,
+      11.7
+     ],
+     "gone": [
+      24.2,
+      25.4
+     ]
+    },
+    {
+     "from": "P3.7",
+     "to": [
+      45.9,
+      112
+     ],
+     "via": [
+      [
+       45.25,
+       100
+      ]
+     ],
+     "color": "#f2f2f2",
+     "plain": true,
+     "t": [
+      10.4,
+      11.799999999999999
+     ]
+    },
+    {
+     "from": "P3.8",
+     "to": [
+      49.2,
+      112
+     ],
+     "via": [
+      [
+       47.25,
+       100
+      ]
+     ],
+     "color": "#9b59d0",
+     "plain": true,
+     "t": [
+      10.5,
+      11.899999999999999
+     ],
+     "gone": [
+      25.0,
+      26.2
+     ]
+    },
+    {
+     "from": "P3.9",
+     "to": [
+      52.5,
+      112
+     ],
+     "via": [
+      [
+       49.25,
+       100
+      ]
+     ],
+     "color": "#8a6a4a",
+     "plain": true,
+     "t": [
+      10.600000000000001,
+      12.0
+     ],
+     "gone": [
+      25.8,
+      27.0
+     ]
+    },
+    {
+     "from": "P3.10",
+     "to": [
+      55.8,
+      112
+     ],
+     "via": [
+      [
+       51.25,
+       100
+      ]
+     ],
+     "color": "#e86aa6",
+     "plain": true,
+     "t": [
+      10.700000000000001,
+      12.1
+     ],
+     "gone": [
+      26.6,
+      27.8
+     ]
+    },
+    {
+     "from": "P3.11",
+     "to": [
+      59.1,
+      112
+     ],
+     "via": [
+      [
+       53.25,
+       100
+      ]
+     ],
+     "color": "#6ad0d0",
+     "plain": true,
+     "t": [
+      10.8,
+      12.2
+     ],
+     "gone": [
+      27.4,
+      28.6
+     ]
+    },
+    {
+     "from": "P3.12",
+     "to": [
+      62.4,
+      112
+     ],
+     "via": [
+      [
+       55.25,
+       100
+      ]
+     ],
+     "color": "#c9cdd3",
+     "plain": true,
+     "t": [
+      10.9,
+      12.299999999999999
+     ],
+     "gone": [
+      28.2,
+      29.4
+     ]
+    },
+    {
+     "from": "CAN.L",
+     "to": [
+      -26,
+      58.410000000000004
+     ],
+     "via": [
+      [
+       -6,
+       60.81
+      ]
+     ],
+     "color": "#3fa7e8",
+     "plain": true,
+     "t": [
+      40.2,
+      41.6
+     ]
+    },
+    {
+     "from": "CAN.H",
+     "to": [
+      -26,
+      62.010000000000005
+     ],
+     "via": [
+      [
+       -6,
+       62.81
+      ]
+     ],
+     "color": "#e8c81a",
+     "plain": true,
+     "t": [
+      40.400000000000006,
+      41.800000000000004
+     ]
+    },
+    {
+     "from": "CAN.GND",
+     "to": [
+      -26,
+      65.61
+     ],
+     "via": [
+      [
+       -6,
+       64.81
+      ]
+     ],
+     "color": "#2b2e35",
+     "plain": true,
+     "t": [
+      40.6,
+      42.0
+     ],
+     "gone": [
+      46.0,
+      47.4
+     ]
+    },
+    {
+     "from": "CAN.5V",
+     "to": [
+      -26,
+      69.21000000000001
+     ],
+     "via": [
+      [
+       -6,
+       66.81
+      ]
+     ],
+     "color": "#e5484d",
+     "plain": true,
+     "t": [
+      40.800000000000004,
+      42.2
+     ],
+     "gone": [
+      47.0,
+      48.4
+     ]
+    },
+    {
+     "from": "RS485.B",
+     "to": [
+      -26,
+      73.19999999999999
+     ],
+     "via": [
+      [
+       -6,
+       75.6
+      ]
+     ],
+     "color": "#3fa7e8",
+     "plain": true,
+     "t": [
+      40.2,
+      41.6
+     ],
+     "gone": [
+      48.0,
+      49.4
+     ]
+    },
+    {
+     "from": "RS485.A",
+     "to": [
+      -26,
+      76.8
+     ],
+     "via": [
+      [
+       -6,
+       77.6
+      ]
+     ],
+     "color": "#e8c81a",
+     "plain": true,
+     "t": [
+      40.400000000000006,
+      41.800000000000004
+     ],
+     "gone": [
+      49.0,
+      50.4
+     ]
+    },
+    {
+     "from": "RS485.GND",
+     "to": [
+      -26,
+      80.39999999999999
+     ],
+     "via": [
+      [
+       -6,
+       79.6
+      ]
+     ],
+     "color": "#2b2e35",
+     "plain": true,
+     "t": [
+      40.6,
+      42.0
+     ]
+    },
+    {
+     "from": "RS485.5V",
+     "to": [
+      -26,
+      84.0
+     ],
+     "via": [
+      [
+       -6,
+       81.6
+      ]
+     ],
+     "color": "#e5484d",
+     "plain": true,
+     "t": [
+      40.800000000000004,
+      42.2
+     ]
+    }
+   ],
+   "insets": [
+    {
+     "from": 16.4,
+     "to": 36.4,
+     "kind": "extract",
+     "at": [
+      1180,
+      150
+     ],
+     "title": "Take the unused wires out",
+     "good": "press the tongue down",
+     "bad": "pull the wire out",
+     "lower": "plug housing, cut open",
+     "text": "Each crimp contact is held by a small metal tongue that stands in a window of the housing. Press it down with a needle or a fine blade, and pull the wire out to the back <b>without force</b>. Bent up again, the tongue holds the contact when it is put back."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Step 13. The wiring on the back of the panel. Three cables run from here to the carrier."
+    },
+    {
+     "at": 7.4,
+     "text": "The heartbeat uses the twelve pin header P 3. Only two of its twelve wires are needed: ground, and I-O 28. Both go to J 3 on the carrier."
+    },
+    {
+     "at": 16.4,
+     "text": "Take the ten unused wires out of the plug. Each contact is held by a small metal tongue that sits in a window of the housing. Press the tongue down with a needle, and pull the wire out to the back, without force."
+    },
+    {
+     "at": 37.4,
+     "text": "A four pin cable goes into the can header. Only can high and can low run to the screw terminal of the R P 23 50 can module. Its ground and 5 volt wires are not used and come out."
+    },
+    {
+     "at": 47.0,
+     "text": "The panel gets its supply through the R-S 4 85 header. Its 5 volt and ground pins are wired to J 7 on the carrier, the connector with 5 volts twice and ground twice. The wires A and B come out. This is the only ground between panel and carrier."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 8,
+   "heading": "rbmod carrier built",
+   "items": [
+    "Scratch R1's track open",
+    "D1 and R9",
+    "Connectors, J6 stays empty",
+    "Headers J1 and J2",
+    "RP2350-CAN on pin strips",
+    "Buck modules M8 and M7",
+    "INA3221: large holes with wire",
+    "PD trigger: DIP switch to 15 V",
+    "Wire GP15 to R1's outer pad",
+    "2.2 kΩ from M7's EN to GND",
+    "5.6 V zener on M7's OUT+",
+    "J6 to a USB-C plug for the PD mini",
+    "Panel: heartbeat, CAN, 5 V on the RS485 header"
+   ],
+   "say": "The carrier is built and wired. Next, load the I O M C U image for the R B mod carrier.",
+   "note": "Next: the IOmcu image rcbench-iomcu-rbmod. Reference: docs/Carrier.md."
+  }
+ ]
+}

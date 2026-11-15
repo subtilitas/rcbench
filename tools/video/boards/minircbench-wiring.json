@@ -1,0 +1,1340 @@
+{
+ "size": [
+  142.0,
+  88.0
+ ],
+ "layer": "drawn",
+ "turn": 0,
+ "mask": [
+  "#1c2536",
+  "#111827"
+ ],
+ "tracks": [],
+ "pads": [
+  {
+   "ref": "LCD",
+   "num": "1",
+   "name": "J4.1",
+   "x": 9.4,
+   "y": 67.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "2",
+   "name": "J4.2",
+   "x": 9.4,
+   "y": 66.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "3",
+   "name": "J4.3",
+   "x": 9.4,
+   "y": 65.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "4",
+   "name": "J4.4",
+   "x": 9.4,
+   "y": 64.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "5",
+   "name": "J4.5",
+   "x": 9.4,
+   "y": 63.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "6",
+   "name": "J4.6",
+   "x": 9.4,
+   "y": 62.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "7",
+   "name": "J4.7",
+   "x": 9.4,
+   "y": 61.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "8",
+   "name": "J4.8",
+   "x": 9.4,
+   "y": 60.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "9",
+   "name": "J4.9",
+   "x": 9.4,
+   "y": 59.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "10",
+   "name": "J4.10",
+   "x": 9.4,
+   "y": 58.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "11",
+   "name": "J4.11",
+   "x": 9.4,
+   "y": 57.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "12",
+   "name": "J4.12",
+   "x": 9.4,
+   "y": 56.2,
+   "w": 1.5,
+   "h": 0.6,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "1",
+   "name": "J3.1",
+   "x": 20.0,
+   "y": 71.3,
+   "w": 0.6,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "2",
+   "name": "J3.2",
+   "x": 19.0,
+   "y": 71.3,
+   "w": 0.6,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "3",
+   "name": "J3.3",
+   "x": 18.0,
+   "y": 71.3,
+   "w": 0.6,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "4",
+   "name": "J3.4",
+   "x": 17.0,
+   "y": 71.3,
+   "w": 0.6,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "+",
+   "name": "BAT.+",
+   "x": 53.5,
+   "y": 63.6,
+   "w": 1.5,
+   "h": 0.7,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "LCD",
+   "num": "-",
+   "name": "BAT.-",
+   "x": 53.5,
+   "y": 64.85,
+   "w": 1.5,
+   "h": 0.7,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "BOOST",
+   "num": "OUT+",
+   "name": "BOOST.OUT+",
+   "x": 67.8,
+   "y": 45.95,
+   "w": 3.0,
+   "h": 3.0,
+   "round": false,
+   "drill": 1.3,
+   "net": ""
+  },
+  {
+   "ref": "BOOST",
+   "num": "OUT-",
+   "name": "BOOST.OUT-",
+   "x": 77.9,
+   "y": 45.95,
+   "w": 3.0,
+   "h": 3.0,
+   "round": false,
+   "drill": 1.3,
+   "net": ""
+  },
+  {
+   "ref": "BOOST",
+   "num": "IN+",
+   "name": "BOOST.IN+",
+   "x": 67.65,
+   "y": 64.2,
+   "w": 2.6,
+   "h": 2.6,
+   "round": false,
+   "drill": 1.3,
+   "net": ""
+  },
+  {
+   "ref": "BOOST",
+   "num": "IN-",
+   "name": "BOOST.IN-",
+   "x": 78.05,
+   "y": 64.2,
+   "w": 2.6,
+   "h": 2.6,
+   "round": false,
+   "drill": 1.3,
+   "net": ""
+  },
+  {
+   "ref": "BOOST",
+   "num": "EN",
+   "name": "BOOST.EN",
+   "x": 78.85,
+   "y": 57.65,
+   "w": 1.4,
+   "h": 1.4,
+   "round": true,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "INA",
+   "num": "Vcc",
+   "name": "INA.Vcc",
+   "x": 101.75,
+   "y": 75.9,
+   "w": 1.7,
+   "h": 1.7,
+   "round": false,
+   "drill": 1.0,
+   "net": ""
+  },
+  {
+   "ref": "INA",
+   "num": "Gnd",
+   "name": "INA.Gnd",
+   "x": 104.29,
+   "y": 75.9,
+   "w": 1.7,
+   "h": 1.7,
+   "round": true,
+   "drill": 1.0,
+   "net": ""
+  },
+  {
+   "ref": "INA",
+   "num": "Scl",
+   "name": "INA.Scl",
+   "x": 106.83,
+   "y": 75.9,
+   "w": 1.7,
+   "h": 1.7,
+   "round": true,
+   "drill": 1.0,
+   "net": ""
+  },
+  {
+   "ref": "INA",
+   "num": "Sda",
+   "name": "INA.Sda",
+   "x": 109.37,
+   "y": 75.9,
+   "w": 1.7,
+   "h": 1.7,
+   "round": true,
+   "drill": 1.0,
+   "net": ""
+  },
+  {
+   "ref": "INA",
+   "num": "Vin-",
+   "name": "INA.Vin-",
+   "x": 111.91,
+   "y": 75.9,
+   "w": 1.7,
+   "h": 1.7,
+   "round": true,
+   "drill": 1.0,
+   "net": ""
+  },
+  {
+   "ref": "INA",
+   "num": "Vin+",
+   "name": "INA.Vin+",
+   "x": 114.45,
+   "y": 75.9,
+   "w": 1.7,
+   "h": 1.7,
+   "round": true,
+   "drill": 1.0,
+   "net": ""
+  },
+  {
+   "ref": "INA",
+   "num": "T-",
+   "name": "INA.T-",
+   "x": 106.35,
+   "y": 59.6,
+   "w": 2.0,
+   "h": 2.0,
+   "round": true,
+   "drill": 1.2,
+   "net": ""
+  },
+  {
+   "ref": "INA",
+   "num": "T+",
+   "name": "INA.T+",
+   "x": 109.85,
+   "y": 59.6,
+   "w": 2.0,
+   "h": 2.0,
+   "round": true,
+   "drill": 1.2,
+   "net": ""
+  },
+  {
+   "ref": "ESC",
+   "num": "S",
+   "name": "ESC.S",
+   "x": 124.2,
+   "y": 14.4,
+   "w": 2.0,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "ESC",
+   "num": "+",
+   "name": "ESC.+",
+   "x": 124.2,
+   "y": 16.94,
+   "w": 2.0,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "ESC",
+   "num": "-",
+   "name": "ESC.-",
+   "x": 124.2,
+   "y": 19.48,
+   "w": 2.0,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "TMT",
+   "num": "S",
+   "name": "TMT.S",
+   "x": 124.2,
+   "y": 32.4,
+   "w": 2.0,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "TMT",
+   "num": "+",
+   "name": "TMT.+",
+   "x": 124.2,
+   "y": 34.94,
+   "w": 2.0,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  },
+  {
+   "ref": "TMT",
+   "num": "-",
+   "name": "TMT.-",
+   "x": 124.2,
+   "y": 37.48,
+   "w": 2.0,
+   "h": 1.5,
+   "round": false,
+   "drill": 0,
+   "net": ""
+  }
+ ],
+ "parts": [
+  {
+   "ref": "LCD",
+   "value": "",
+   "footprint": "drawn",
+   "back": false,
+   "box": [
+    5.050000000000001,
+    8.399999999999999,
+    54.95,
+    77.4
+   ],
+   "fill": "#1d4fa8",
+   "kind": "module",
+   "label": "RP2350-Touch-LCD-2.8 \u00b7 rear",
+   "ink": "#dbe6ff",
+   "size": 2.0,
+   "details": [
+    {
+     "at": [
+      9.5,
+      72.9
+     ],
+     "r": 3.1,
+     "color": "metal"
+    },
+    {
+     "at": [
+      9.5,
+      72.9
+     ],
+     "r": 1.25,
+     "color": "black"
+    },
+    {
+     "at": [
+      50.5,
+      72.9
+     ],
+     "r": 3.1,
+     "color": "metal"
+    },
+    {
+     "at": [
+      50.5,
+      72.9
+     ],
+     "r": 1.25,
+     "color": "black"
+    },
+    {
+     "at": [
+      9.5,
+      12.9
+     ],
+     "r": 3.1,
+     "color": "metal"
+    },
+    {
+     "at": [
+      9.5,
+      12.9
+     ],
+     "r": 1.25,
+     "color": "black"
+    },
+    {
+     "at": [
+      50.5,
+      12.9
+     ],
+     "r": 3.1,
+     "color": "metal"
+    },
+    {
+     "at": [
+      50.5,
+      12.9
+     ],
+     "r": 1.25,
+     "color": "black"
+    },
+    {
+     "box": [
+      25.53,
+      67.3,
+      34.47,
+      74.6
+     ],
+     "color": "metal"
+    },
+    {
+     "box": [
+      7.4,
+      41.6,
+      18.6,
+      52.9
+     ],
+     "color": "metal"
+    },
+    {
+     "box": [
+      27.7,
+      53.5,
+      34.7,
+      60.5
+     ],
+     "color": "chip"
+    },
+    {
+     "box": [
+      32.6,
+      41.9,
+      36.3,
+      51.6
+     ],
+     "color": "chip"
+    },
+    {
+     "box": [
+      23.4,
+      25.6,
+      36.6,
+      31.1
+     ],
+     "color": "white"
+    },
+    {
+     "box": [
+      38.2,
+      28.7,
+      45.7,
+      34.6
+     ],
+     "color": "white"
+    },
+    {
+     "box": [
+      10.4,
+      54.5,
+      15.5,
+      68.9
+     ],
+     "color": "beige"
+    },
+    {
+     "box": [
+      15.3,
+      72.2,
+      21.7,
+      77.4
+     ],
+     "color": "beige"
+    },
+    {
+     "box": [
+      38.3,
+      72.2,
+      44.7,
+      77.4
+     ],
+     "color": "beige"
+    },
+    {
+     "box": [
+      47.5,
+      60.4,
+      52.7,
+      68.05
+     ],
+     "color": "beige"
+    },
+    {
+     "box": [
+      47.5,
+      54.7,
+      52.7,
+      59.05
+     ],
+     "color": "beige"
+    },
+    {
+     "box": [
+      47.5,
+      42.5,
+      52.7,
+      52.65
+     ],
+     "color": "beige"
+    },
+    {
+     "text": "GND",
+     "at": [
+      8.3,
+      67.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "VBus",
+     "at": [
+      8.3,
+      66.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "D\u2212",
+     "at": [
+      8.3,
+      65.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "D+",
+     "at": [
+      8.3,
+      64.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "GND",
+     "at": [
+      8.3,
+      63.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "3V3",
+     "at": [
+      8.3,
+      62.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "SCL",
+     "at": [
+      8.3,
+      61.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "SDA",
+     "at": [
+      8.3,
+      60.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "TXD",
+     "at": [
+      8.3,
+      59.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "RXD",
+     "at": [
+      8.3,
+      58.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "IO28",
+     "at": [
+      8.3,
+      57.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "IO29",
+     "at": [
+      8.3,
+      56.2
+     ],
+     "size": 0.72,
+     "anchor": "end"
+    },
+    {
+     "text": "12P",
+     "at": [
+      12.95,
+      61.7
+     ],
+     "size": 1.1,
+     "anchor": "middle",
+     "ink": "dark"
+    },
+    {
+     "text": "SCL",
+     "at": [
+      20.0,
+      68.45
+     ],
+     "size": 0.5,
+     "anchor": "middle"
+    },
+    {
+     "text": "SDA",
+     "at": [
+      19.0,
+      69.2
+     ],
+     "size": 0.5,
+     "anchor": "middle"
+    },
+    {
+     "text": "3V3",
+     "at": [
+      18.0,
+      68.45
+     ],
+     "size": 0.5,
+     "anchor": "middle"
+    },
+    {
+     "text": "GND",
+     "at": [
+      17.0,
+      69.2
+     ],
+     "size": 0.5,
+     "anchor": "middle"
+    },
+    {
+     "text": "I2C",
+     "at": [
+      18.5,
+      75.2
+     ],
+     "size": 1.1,
+     "anchor": "middle",
+     "ink": "dark"
+    },
+    {
+     "text": "UART",
+     "at": [
+      41.5,
+      75.2
+     ],
+     "size": 1.1,
+     "anchor": "middle",
+     "ink": "dark"
+    },
+    {
+     "text": "USB-C",
+     "at": [
+      30,
+      71
+     ],
+     "size": 1.1,
+     "anchor": "middle",
+     "ink": "dark"
+    },
+    {
+     "text": "card",
+     "at": [
+      13,
+      47.2
+     ],
+     "size": 1.2,
+     "anchor": "middle",
+     "ink": "dark"
+    },
+    {
+     "text": "RP2350",
+     "at": [
+      31.2,
+      57
+     ],
+     "size": 1.0,
+     "anchor": "middle"
+    },
+    {
+     "text": "BAT",
+     "at": [
+      50.1,
+      64.2
+     ],
+     "size": 1.0,
+     "anchor": "middle",
+     "ink": "dark"
+    },
+    {
+     "text": "+",
+     "at": [
+      53.6,
+      62.3
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "\u2212",
+     "at": [
+      53.6,
+      66.2
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "RTC",
+     "at": [
+      50.1,
+      56.9
+     ],
+     "size": 0.9,
+     "anchor": "middle",
+     "ink": "dark"
+    },
+    {
+     "text": "speaker",
+     "at": [
+      50.1,
+      47.6
+     ],
+     "size": 0.75,
+     "anchor": "middle",
+     "ink": "dark"
+    }
+   ],
+   "labelAt": [
+    30,
+    16.5
+   ]
+  },
+  {
+   "ref": "BOOST",
+   "value": "",
+   "footprint": "drawn",
+   "back": false,
+   "box": [
+    66.0,
+    44.0,
+    79.7,
+    65.7
+   ],
+   "fill": "#15803a",
+   "kind": "module",
+   "label": "",
+   "size": 1.2,
+   "details": [
+    {
+     "box": [
+      69.3,
+      57.15,
+      76.0,
+      63.85
+     ],
+     "color": "chip"
+    },
+    {
+     "box": [
+      73.5,
+      50.55,
+      78.4,
+      54.45
+     ],
+     "color": "chip"
+    },
+    {
+     "box": [
+      67.6,
+      50.2,
+      71.4,
+      52.6
+     ],
+     "color": "black"
+    },
+    {
+     "box": [
+      67.6,
+      53.6,
+      71.4,
+      56.0
+     ],
+     "color": "black"
+    },
+    {
+     "text": "2R2",
+     "at": [
+      72.65,
+      60.5
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "OUT+",
+     "at": [
+      67.8,
+      48.9
+     ],
+     "size": 0.8,
+     "anchor": "middle"
+    },
+    {
+     "text": "OUT\u2212",
+     "at": [
+      77.9,
+      48.9
+     ],
+     "size": 0.8,
+     "anchor": "middle"
+    },
+    {
+     "text": "IN+",
+     "at": [
+      67.65,
+      61.6
+     ],
+     "size": 0.8,
+     "anchor": "middle"
+    },
+    {
+     "text": "IN\u2212",
+     "at": [
+      78.05,
+      61.6
+     ],
+     "size": 0.8,
+     "anchor": "middle"
+    },
+    {
+     "text": "EN",
+     "at": [
+      77.3,
+      56.1
+     ],
+     "size": 0.8,
+     "anchor": "middle"
+    }
+   ]
+  },
+  {
+   "ref": "INA",
+   "value": "",
+   "footprint": "drawn",
+   "back": false,
+   "box": [
+    96.0,
+    56.0,
+    120.2,
+    77.9
+   ],
+   "fill": "#1d3fa0",
+   "kind": "module",
+   "label": "",
+   "size": 1.2,
+   "details": [
+    {
+     "box": [
+      104.95,
+      63.1,
+      111.25,
+      66.3
+     ],
+     "color": "black"
+    },
+    {
+     "box": [
+      106.65,
+      69.45,
+      109.55,
+      71.05
+     ],
+     "color": "chip"
+    },
+    {
+     "text": "R100",
+     "at": [
+      108.1,
+      64.7
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "INA219",
+     "at": [
+      108.1,
+      68.2
+     ],
+     "size": 1.2,
+     "anchor": "middle"
+    },
+    {
+     "text": "Vin\u2212",
+     "at": [
+      102.6,
+      59.6
+     ],
+     "size": 0.9,
+     "anchor": "middle"
+    },
+    {
+     "text": "Vin+",
+     "at": [
+      113.7,
+      59.6
+     ],
+     "size": 0.9,
+     "anchor": "middle"
+    },
+    {
+     "at": [
+      98.0,
+      58.95
+     ],
+     "r": 1.7,
+     "color": "gold"
+    },
+    {
+     "at": [
+      98.0,
+      58.95
+     ],
+     "r": 1.25,
+     "color": "black"
+    },
+    {
+     "at": [
+      118.2,
+      58.95
+     ],
+     "r": 1.7,
+     "color": "gold"
+    },
+    {
+     "at": [
+      118.2,
+      58.95
+     ],
+     "r": 1.25,
+     "color": "black"
+    },
+    {
+     "at": [
+      98.0,
+      75.9
+     ],
+     "r": 1.7,
+     "color": "gold"
+    },
+    {
+     "at": [
+      98.0,
+      75.9
+     ],
+     "r": 1.25,
+     "color": "black"
+    },
+    {
+     "at": [
+      118.2,
+      75.9
+     ],
+     "r": 1.7,
+     "color": "gold"
+    },
+    {
+     "at": [
+      118.2,
+      75.9
+     ],
+     "r": 1.25,
+     "color": "black"
+    },
+    {
+     "text": "Vcc",
+     "at": [
+      101.75,
+      73.6
+     ],
+     "size": 0.75,
+     "anchor": "middle"
+    },
+    {
+     "text": "Gnd",
+     "at": [
+      104.29,
+      73.6
+     ],
+     "size": 0.75,
+     "anchor": "middle"
+    },
+    {
+     "text": "Scl",
+     "at": [
+      106.83,
+      73.6
+     ],
+     "size": 0.75,
+     "anchor": "middle"
+    },
+    {
+     "text": "Sda",
+     "at": [
+      109.37,
+      73.6
+     ],
+     "size": 0.75,
+     "anchor": "middle"
+    },
+    {
+     "text": "Vin\u2212",
+     "at": [
+      111.91,
+      73.6
+     ],
+     "size": 0.75,
+     "anchor": "middle"
+    },
+    {
+     "text": "Vin+",
+     "at": [
+      114.45,
+      73.6
+     ],
+     "size": 0.75,
+     "anchor": "middle"
+    }
+   ]
+  },
+  {
+   "ref": "CELL",
+   "value": "",
+   "footprint": "drawn",
+   "back": false,
+   "box": [
+    64,
+    8,
+    104,
+    33
+   ],
+   "fill": "#b9bec6",
+   "kind": "plug",
+   "label": "LiPo cell \u00b7 1S \u00b7 1000 mAh",
+   "ink": "#222",
+   "details": [
+    {
+     "box": [
+      64,
+      8,
+      69,
+      33
+     ],
+     "color": "black"
+    }
+   ]
+  },
+  {
+   "ref": "ESC",
+   "value": "",
+   "footprint": "drawn",
+   "back": false,
+   "box": [
+    123,
+    12.0,
+    137,
+    21.9
+   ],
+   "fill": "#15171c",
+   "kind": "module",
+   "label": "",
+   "size": 1.2,
+   "details": [
+    {
+     "text": "S",
+     "at": [
+      127.3,
+      14.4
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "+",
+     "at": [
+      127.3,
+      16.94
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "\u2212",
+     "at": [
+      127.3,
+      19.48
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "ESC",
+     "at": [
+      132.3,
+      16.95
+     ],
+     "size": 1.9,
+     "anchor": "middle"
+    }
+   ]
+  },
+  {
+   "ref": "TMT",
+   "value": "",
+   "footprint": "drawn",
+   "back": false,
+   "box": [
+    123,
+    30.0,
+    137,
+    39.9
+   ],
+   "fill": "#15171c",
+   "kind": "module",
+   "label": "",
+   "size": 1.2,
+   "details": [
+    {
+     "text": "S",
+     "at": [
+      127.3,
+      32.4
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "+",
+     "at": [
+      127.3,
+      34.94
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "\u2212",
+     "at": [
+      127.3,
+      37.48
+     ],
+     "size": 1.1,
+     "anchor": "middle"
+    },
+    {
+     "text": "TMT",
+     "at": [
+      132.3,
+      34.95
+     ],
+     "size": 1.9,
+     "anchor": "middle"
+    }
+   ]
+  }
+ ]
+}

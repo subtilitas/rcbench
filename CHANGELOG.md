@@ -6,6 +6,44 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- `tools/make_video.py` renders a storyboard under `tools/video/storyboards/`
+  into an MP4 video: the case as a 3D model, the panel's screens from the
+  host renderer with pointer bubbles, and a recap. Storyboard `kst-rbmod`
+  shows programming a KST servo on the rbmod carrier in 8 steps and 100.4s;
+  storyboard `features` shows every screen of the bench in 8 chapters and
+  755.92s. `tools/video_audio.py` computes the sound track: synthesizer
+  pads and one sound per event, no percussion. `tools/video_voice.py`
+  narrates a storyboard with the Kokoro text-to-speech model on the
+  machine. `tools/video_cad.py` converts the case's STEP assembly into
+  the model the opening of `features` shows
+  ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `rbmod-rework`: the rework of a rev 1 rbmod carrier in 4
+  steps and 83s. A `board` scene draws a circuit board flat, with a net
+  lit up, a track cut, a wire and a part soldered across two pads;
+  `tools/video_board.py` converts a KiCad board file into the board it
+  draws, each module with the parts, prints and pin names of its spec
+  under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
+  scene, so that a changed scene is captured alone ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `minircbench-build`: building a MiniRcBench in 10 steps,
+  narrated. A `case` scene with the model `mini` draws the bench
+  from its assembly, seats its components, shows stills on its display
+  and rolls it over; `tools/video_cad.py --parts` converts a STEP
+  assembly with one node a component. A wire of a `board` scene can be
+  `thin`; the inset `latch` shows a contact leaving a 1.0mm plug
+  ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `dial`: bringing the M5Stack Dial into use in 6 steps and
+  209.43s, narrated. A `case` scene with the model `dial` draws the
+  Dial from its STEP model, shows its faces on the display and turns its
+  knob; `tools/video_cad.py --solids` converts a STEP part with one mesh
+  a solid ([Videos from storyboards](tools/video/README.md)).
+- Storyboard `rbmod-build`: building a rev 1 rbmod carrier and wiring
+  the panel in 13 steps and 347.32s, narrated. A `board` scene mounts parts, shows solder
+  joints and a cross-section card, and takes narration cues. Music bed
+  `vivaldi-spring`; a storyboard's `music_gain` sets a bed's level
+  ([Videos from storyboards](tools/video/README.md)).
+
 ## 0.23.13 - 2026-11-15
 
 0.23.13 is a testing release. It adds the M5Stack Dial v1.1 as a Bluetooth LE
