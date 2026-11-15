@@ -40,3 +40,9 @@ CONFIG_BOOTLOADER_LOG_LEVEL_WARN=y
 CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE=y
 
 CONFIG_COMPILER_OPTIMIZATION_SIZE=y
+
+# 1ms ticks.  An I2C transaction waits its timeout in ticks
+# (pdMS_TO_TICKS()); at the default 100Hz the 5ms timeouts of the INA228
+# and the touch controller are 0 ticks, and every read ends as a timeout
+# before its transfer of about 170us is done.
+CONFIG_FREERTOS_HZ=1000

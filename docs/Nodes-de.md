@@ -8,7 +8,10 @@ Kabel zum Prüfstand. Der Leistungsknoten liest den INA228 eines MATEK
 I2C-INA-BM im XT60-Leistungspfad des ESC (Electronic Speed Controller,
 Motorregler). Der Auswuchtknoten liest eine Achse eines
 Beschleunigungssensors und einen Indexsensor und sendet alle 250ms einen
-Auswuchtbericht.
+Auswuchtbericht. Der Anzeigeknoten ist der Leistungsknoten auf einem
+2,8"-Touch-Display-Board mit ESP32-S3, versorgt aus dem Pack, das seine
+Messwerte auch auf dem eigenen Bildschirm zeigt
+([Der Anzeigeknoten](#der-anzeigeknoten)).
 
 Der Leistungsknoten dient der Messung, nicht als Schutzfunktion. Keine
 Grenze und keine Abschaltung des Prüfstands liest ihn, so wie keine den
@@ -35,6 +38,9 @@ enthält den Hinweis des Projekts.
 | die Rolle Auswuchten: der ADC-Datenstrom, der Index, der Bericht, der Akku | `firmware/node/main/node_bal.c` |
 | die ADC-Frames, die Skala, der Index und der Demodulator, in der Host-Suite getestet | `shared/vibe` |
 | die Akkumessung des Leistungsknotens | `firmware/node/main/node_bat.c` |
+| Pins, INFO-Board-Byte und Update-Art jedes Boards | `firmware/node/main/node_board.h` |
+| der Bildschirm des Anzeigeknotens: Werte, Höchst- und Tiefstwert, Touch, Formate, Zeichnen, in der Host-Suite getestet | `firmware/node/main/node_view.c` |
+| Display und Touch des Anzeigeknotens | `firmware/node/main/node_lcd.c`, `firmware/node/main/node_disp.c` |
 | die Konsole | `firmware/node/main/node_console.c` |
 | die Central des Panels für den Leistungsknoten: Suche, Bindung, Prüfung von INFO, der RUN-Marker, in der Host-Suite getestet | `shared/ui/pnode_ctl.c` |
 | Messwerte, Summen, Spitzen und Aussetzerregel des Panels, in der Host-Suite getestet | `shared/ui/pnode_meter.c` |
@@ -402,6 +408,165 @@ Zwei- und der Vier-Lauf-Methode nutzen Verhältnisse und tragen sie nicht.
 Ein Shaker oder eine bekannte Unwucht am Prüfstand des Besitzers misst die
 Skala.
 
+## Der Anzeigeknoten
+
+Der Anzeigeknoten ist der Leistungsknoten auf dem LCDWIKI ES3C28P, einem
+2,8"-Display-Board mit ESP32-S3, das Hosyond verkauft. Er liest den INA228
+wie der Leistungsknoten und zeigt Spannung, Strom und Leistung mit ihrem
+Höchst- und Tiefstwert auf dem eigenen Bildschirm. Der Bildschirm läuft
+mit und ohne Panel. Ist das Panel verbunden, bedient der Knoten es wie der
+Leistungsknoten auf dem ESP32-C6: derselbe Dienst, dieselben Pakete mit
+denselben Raten, dieselbe INA228-Einstellung in INFO. Das Board-Byte in
+INFO ist 2.
+
+Der Bau folgt den Unterlagen von LCDWIKI zum ES3C28P: der Spezifikation
+(`ES3C28P_ES2N28P_Specification_V1.0.pdf`, Abschnitt 4.2), dem
+Benutzerhandbuch, dem Schaltplan und der Display-Einstellung
+`ILI9341V_Init.txt`, alle unter `https://www.lcdwiki.com/res/ES3C28P/`. Das
+Angebot des Verkäufers ließ sich nicht lesen. Ein Board mit ESP32-WROOM-32
+oder resistivem Touchscreen ist eine andere Bauart: Dieses Image läuft
+darauf nicht.
+
+| Teil | Zweck |
+| --- | --- |
+| LCDWIKI ES3C28P | ESP32-S3R8: 8MB Octal-PSRAM im Gehäuse, 16MB QSPI-Flash; 2,8" IPS 240 × 320, ILI9341V über 4-Draht-SPI; kapazitiver Touch FT6336G an I2C-Adresse 0x38; Audio-Codec ES8311 an 0x18, nicht benutzt; USB-C (USB Serial/JTAG des Chips); 1,25mm-Buchsen für I2C, UART, 4 GPIO, eine 3,7V-Zelle und einen Lautsprecher; BOOT-Taste an IO0; RESET-Taste |
+| MATEK I2C-INA-BM | INA228, 200µΩ-Shunt, Adresse 0x45, XT60 ein und aus |
+| ein 5V-Abwärtswandler | aus dem Pack an seinem Stecker gespeist, vor dem Shunt; sein Strom wird nicht gemessen |
+
+### Pins
+
+| Signal | Pin am ES3C28P | Quelle |
+| --- | --- | --- |
+| LCD CS, low-aktiv | IO10 | Spezifikation 4.2 |
+| LCD DC, high Daten | IO46 | Spezifikation 4.2 |
+| LCD SCLK | IO12 | Spezifikation 4.2 |
+| LCD MOSI | IO11 | Spezifikation 4.2 |
+| LCD MISO, nicht gelesen | IO13 | Spezifikation 4.2 |
+| LCD-Reset | CHIP_PU, geteilt mit dem Reset des Chips | Spezifikation 4.2; die Firmware setzt das Panel per Befehl 0x01 zurück |
+| Hintergrundbeleuchtung, high an | IO45 | Spezifikation 4.2, Benutzerhandbuch "LCD backlight control circuit" |
+| Touch SDA = SDA der I2C-Buchse | IO16 | Spezifikation 4.2 |
+| Touch SCL = SCL der I2C-Buchse | IO15 | Spezifikation 4.2 |
+| Touch-Reset, low-aktiv | IO18 | Spezifikation 4.2 |
+| Touch-Interrupt, low bei Berührung; nicht benutzt | IO17 | Spezifikation 4.2 |
+| BOOT-Taste, die Bestätigungstaste des Updates | IO0 | Spezifikation 4.2 |
+| Akku, über einen Teiler von 2 | IO9 | Spezifikation 4.2, Benutzerhandbuch "Battery level detection circuit" |
+
+Touch, I2C-Buchse und Audio-Codec teilen einen I2C-Bus (Spezifikation 4.2).
+Das Board zieht SDA und SCL mit 4,7kΩ auf 3,3V (R29, R30, Schaltplan). Die
+Pinfolge der I2C-Buchse stammt aus dem Text des Schaltplans und ist an
+einem gelieferten Board nicht bestätigt: Pin 1 VCC3V3, Pin 2 GND, Pin 3
+IIC_SCL, Pin 4 IIC_SDA.
+
+### Verdrahtung des Anzeigeknotens
+
+| Von | Nach | Hinweis |
+| --- | --- | --- |
+| Wandler 5V | ES3C28P USB-C VBUS | über ein USB-C-Anschlusskabel; der LDO (Low-Dropout-Regler) des Boards erzeugt 3,3V |
+| Wandler GND | ES3C28P USB-C GND | der Minuspol des Packs |
+| Wandler 5V | MATEK 5V | die Versorgung des INA228 |
+| ES3C28P I2C-Buchse Pin 2 (GND) | MATEK G | |
+| ES3C28P I2C-Buchse Pin 4 (IIC_SDA, IO16) | MATEK SDA | kein eigener Pull-up: die 4,7kΩ des Boards |
+| ES3C28P I2C-Buchse Pin 3 (IIC_SCL, IO15) | MATEK SCL | |
+
+**Vor dem ersten Anschließen.** Zwischen Pin 1 und Pin 2 der I2C-Buchse
+3,3V messen: Das bestätigt die Pinfolge oben. Die Pull-up-Schiene des
+MATEK wie beim Leistungsknoten prüfen ([Verdrahtung](#verdrahtung)): SDA
+und SCL zeigen gegen G 3,3V oder weniger, mit dem MATEK allein an 5V.
+
+[Die Masseregel](#die-masseregel) gilt: GND des Knotens ist der Minuspol
+des Packs, also kein USB-Kabel zu einem Computer, solange ein Pack am XT60
+steckt. Die UART-Buchse führt ebenfalls 5V (über Q5, Schaltplan); ihre
+Pinfolge ist nicht bestätigt, darum gehen die 5V in die USB-C-Buchse. Eine
+Zelle an der Akkubuchse braucht es nicht; der Knoten überwacht sie nicht,
+und STATUS meldet, was IO9 liest.
+
+### Der Bildschirm
+
+![Der Anzeigeknoten, verbunden mit einem Panel auf Deutsch](img/de/node-values.png)
+
+Der Bildschirm ist 320 × 240 groß, im Querformat. Das Band oben nennt die
+Verbindung: ohne Verbindung `STANDALONE`, `VERBUNDEN`, sobald ein Central
+verbunden ist und abonniert hat. Darunter liegen drei Zeilen: Spannung,
+Strom und Leistung. Jede Zeile zeigt ihren aktuellen Wert in 32x44-Ziffern
+und rechts der Linie ihren Höchstwert (rotes Dreieck) und Tiefstwert
+(blaues Dreieck).
+
+| Wert | Anzeige | Bereich |
+| --- | --- | --- |
+| Spannung | 2 Nachkommastellen | 0.00V bis 99.99V |
+| Strom | 1 Nachkommastelle | -999.9A bis 999.9A |
+| Leistung | 1 Nachkommastelle unter 100W, sonst ganze Watt | -99999W bis 99999W |
+
+Der Bildschirm schreibt Zahlen mit Punkt, wie das Panel. Jeder Wert wird
+kaufmännisch von null weg gerundet und auf seinen Bereich begrenzt; die
+Einheit folgt ohne Leerzeichen (`12.60V`, `35.2A`, `443W`). Die aktuellen
+Werte sind der Mittelwert der 20ms-Fenster des INA228 seit dem letzten
+Bild, 5 Bilder je Sekunde (`NV_FRAME_MS`, 200ms): etwa 10 Fenster je Bild.
+Die Leistung eines Fensters ist seine mittlere Spannung mal seinem
+mittleren Strom. Höchst- und Tiefstwert sind die einzelner Fenster seit
+dem Start oder dem letzten Zurücksetzen; sie liegen im RAM, ein Neustart
+löscht sie. Ein Fenster ohne Sample oder mit nur übersteuerten
+Stromsamples zählt nicht. Ohne Fenster seit dem letzten Bild zeigen die
+Werte `--`, und das Band zeigt `KEIN SENSOR`.
+
+![Kein Fenster vom INA228](img/de/node-no-sensor.png)
+
+Nur was sich geändert hat, wird gezeichnet und zum Display gesendet: Ein
+Bild mit einem neuen Wert sendet den Teil seiner Zeile, nicht das ganze
+Bild von 153.600 Byte.
+
+### Touch
+
+| Berührung | Wirkung |
+| --- | --- |
+| ein Tippen auf Höchst- und Tiefstwert einer Zeile (x 220 bis 319) | setzt die beiden dieser Zeile zurück |
+| 2s Halten an beliebiger Stelle | setzt alle sechs zurück, einmal, noch während des Haltens |
+
+Sonst hat der Touch keine Funktion. Das Halten löst beim ersten Lesen aus,
+das den Finger 2s oder später nach Beginn des Drucks sieht. Ein Druck, dessen
+letzter gelesener Kontakt vor 2s liegt, ist ein Tippen; der Druck endet 60ms
+nach dem letzten gelesenen Kontakt, und der Touch wird alle 20ms gelesen. Ab 300ms Druck füllt sich unten im Band ein
+Balken bis zu den 2s, und das Band zeigt `ALLE ZURÜCKSETZEN`.
+
+![1,2s Halten](img/de/node-hold.png)
+
+Der FT6336G meldet das Hochformat des Panels; die Firmware dreht es für den
+Bildschirm im Querformat. Dass die Drehung zum Board passt, ist nicht
+bestätigt: Jedes Tippen schreibt seinen Punkt auf die Konsole (`disp: tap
+at 260,60: highest and lowest reset`). `NODE_LCD_TURN` 1 in `node_board.h`
+dreht Bildschirm und Touch um 180°.
+
+### Sprache
+
+Die Texte sind englisch. Solange ein Panel verbunden ist, folgen sie seiner
+Sprache: Das Panel schreibt LANG nach CONTROL, nach INFO bei jeder
+Verbindung und bei jedem Wechsel seiner Sprache
+([protocols/rcnode](../protocols/rcnode/README.md)). Auf Deutsch zeigt der
+Bildschirm `VERBUNDEN`, `KEIN SENSOR` und `ALLE ZURÜCKSETZEN`. Ohne
+Verbindung sind die Texte wieder englisch.
+
+### Versorgung und Schlaf
+
+Der Anzeigeknoten schläft nie und schaltet sich nicht wegen seiner Zelle
+ab: Seine 5V kommen aus dem Pack. Er lehnt SLEEP von CONTROL und von der
+Konsole ab (`SLEEP refused: the display node stays on`); OFF schaltet ihn
+bis RESET oder bis zum Aus- und Einschalten ab. Das Panel sendet keins von
+beiden.
+
+### Update und Flashen
+
+Der Anzeigeknoten wird über USB geflasht, mit abgezogenem Pack am XT60:
+
+```sh
+esptool.py --chip esp32s3 write_flash 0x0 rcbench-node-display-merged-<version>.bin
+```
+
+Er behält den Update-Dienst über Bluetooth LE: Art 4
+(`BLEOTA_KIND_NODE_POWER_S3`), die Chip-ID des ESP32-S3 im Kopf des Images,
+BOOT (IO0) 1s halten zum Bestätigen. Er lehnt ein Image des
+C6-Leistungsknotens ab, und der C6-Leistungsknoten lehnt seines ab, bei
+BEGIN und noch einmal am Kopf. Das Panel trägt sein Image nicht (unten).
+
 ## Bluetooth LE
 
 Der Knoten sendet sein Advertising als `rcbench-pwr-XXXX` oder `rcbench-bal-XXXX`, die letzten zwei
@@ -415,7 +580,7 @@ von 247 an und keine eigenen Verbindungsparameter.
 | --- | --- | --- |
 | STREAM | NOTIFY | Leistung: Fenster alle 20ms, Akkumulatoren und Extremwerte alle 500ms; Auswuchten: ein Bericht alle 250ms; beide: das STATUS-Paket alle 1000ms |
 | STATUS | READ, NOTIFY | Akku, Flags, Firmwareversion, Zähler, alle 1000ms |
-| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN mit einem Tag von 1 bis 255, SLEEP, OFF; BLADES (1 bis 12) und RPM am Auswuchtknoten |
+| CONTROL | WRITE, WRITE WITHOUT RESPONSE | RUN mit einem Tag von 1 bis 255, SLEEP, OFF; LANG (0 Englisch, 1 Deutsch) am Leistungsknoten; BLADES (1 bis 12) und RPM am Auswuchtknoten |
 | INFO | READ | Protokoll, Rolle, Board, Adresse, die Einstellung des INA228 (0 am Auswuchtknoten) |
 
 Ein Write, den die Rolle nicht annimmt oder der eine andere Länge hat,
@@ -674,6 +839,19 @@ python -m esptool --chip esp32c6 -p /dev/ttyACM0 -b 460800 \
 Der Auswuchtknoten nimmt `rcbench-node-bal-merged-<version>.bin` auf
 dieselbe Weise.
 
+Der Anzeigeknoten (ESP32-S3, [Der Anzeigeknoten](#der-anzeigeknoten)):
+
+```sh
+idf.py -B build-display -D SDKCONFIG=build-display/sdkconfig \
+  -D IDF_TARGET=esp32s3 \
+  -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p" build
+idf.py -B build-display merge-bin -o rcbench-node-display-merged.bin
+esptool.py --chip esp32s3 write_flash 0x0 \
+  build-display/rcbench-node-display-merged.bin
+```
+
+Ein Release enthält dafür `rcbench-node-display-merged-<version>.bin`.
+
 Ein schlafender Knoten antwortet nicht über USB. RESET drücken, um ihn zu
 starten, oder BOOT halten und RESET drücken für den Download-Modus des ROM.
 
@@ -767,3 +945,19 @@ this start`.
   anbieten, auch ältere, und ein Halten von BOOT für 1s installiert es.
 - Fenster ohne Sample zwischen zwei Fenstern werden nicht gesendet: Ein
   stehender Sampler zeigt sich als Sprung in `t_node` ohne Sprung in `seq`.
+- Das Panel trägt das Image des Anzeigeknotens nicht, und UPDATES bietet
+  kein Update dafür an: Im Anwendungs-Slot des Panels von 8.126.464 Byte
+  sind mit den getragenen Images etwa 9% (etwa 750KB) frei, und das Image
+  des Anzeigeknotens hat 654.576 Byte. Der Anzeigeknoten wird über USB
+  geflasht. Ein als Leistungsknoten des Panels gebundener Anzeigeknoten
+  nennt in INFO Board 2; LEISTUNGSKNOTEN-FIRMWARE bietet dann kein Update
+  an, und ein Tippen zeigt `Dieses Panel enthält keine Firmware für dieses
+  Gerät.` (`pnode_ctl_other_board()`).
+- Der Anzeigeknoten ist auf keinem Board gelaufen. Die Einstellung des
+  ILI9341V ist die des Herstellers, nicht gemessen; der SPI-Takt von 20MHz,
+  die Ausrichtung des Touch, die Pinfolge der I2C-Buchse und der zur
+  Laufzeit für Bluetooth LE freie interne RAM sind nicht gemessen. Ein
+  Board ohne PSRAM läuft ohne Display.
+- Das Lesen des Touch teilt den Bus mit dem INA228: 5 Byte bei 400kHz,
+  etwa 170µs, können ein Sample um so viel verzögern. Die Wirkung auf die
+  Sample-Zahl eines Fensters ist nicht gemessen.

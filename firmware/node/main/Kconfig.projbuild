@@ -13,4 +13,20 @@ menu "rcbench node"
             bool "Balance: an accelerometer axis and an index sensor"
     endchoice
 
+    choice RCNODE_BOARD
+        prompt "Board"
+        default RCNODE_BOARD_ES3C28P if IDF_TARGET_ESP32S3
+        default RCNODE_BOARD_C6_ZERO
+        help
+            The board the image runs on: its pins and its update kind
+            (main/node_board.h).
+
+        config RCNODE_BOARD_C6_ZERO
+            bool "Waveshare ESP32-C6-Zero"
+            depends on IDF_TARGET_ESP32C6
+        config RCNODE_BOARD_ES3C28P
+            bool "LCDWIKI ES3C28P: 2.8in ESP32-S3 display board, power role"
+            depends on IDF_TARGET_ESP32S3 && RCNODE_ROLE_POWER
+    endchoice
+
 endmenu

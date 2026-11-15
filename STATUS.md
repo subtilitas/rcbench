@@ -1231,7 +1231,9 @@ UUIDs, INFO's protocol, role and INA228 set-up, UP, STALE after 300ms and
 LOST, the scan refused while ARMED and stopped at the switch to ARMED,
 power nodes listed by the role in the manufacturer data and nameless
 balance nodes not, the bind, the RUN marker at the switch to ARMED, after a
-drop within the run and after a node restart under another tag). The readings
+drop within the run and after a node restart under another tag; the LANG
+write once a link and once a language change, after a RUN write owed, and
+a node that refuses it keeping its link). The readings
 (`shared/ui/pnode_meter.c`, `test_pnode_meter`: the mean of the windows
 since the last read, stale after 300ms, a clipped window at the full scale
 of INFO's range and shunt, the run's peaks with the node's RUN extremes
@@ -1252,6 +1254,23 @@ log's `node` source (`test_logwriter`), and the `blec` task's and the
 control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
 `panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
 measured.
+
+### The display node
+
+Built and host-tested, not run on a board: the power node on the LCDWIKI
+ES3C28P 2.8" ESP32-S3 display board ([docs/Nodes.md](docs/Nodes.md), "The
+display node"; `firmware/node`, `sdkconfig.s3_es3c28p`, 654,576 bytes,
+41.6% of a slot). The screen's logic and drawing (`node_view.c`,
+`test_node_view`: the formats at their limits, 0.00V to 99.99V, -999.9A to
+999.9A, 18000W and the decimal under 100W, no `-0.0`; the highest and lowest
+of single windows and their resets; the tap at 1,999ms and the hold once
+at 2,000ms, across the clock's wrap; the tap targets; the touch map; the
+texts English without a link; the fit of the widest values and texts; a
+frame that redraws only what changed) and its 6 screenshots
+(`tools/render_node.py --check`). The ILI9341V set-up, the touch's
+orientation, the SPI clock of 20MHz on this board, the I2C socket's pin
+order and the RAM left for Bluetooth LE at run time are not measured. The
+panel does not carry the display node's image: it is flashed over USB.
 
 ### Firmware update over Bluetooth LE
 
@@ -1568,7 +1587,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 585 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 586 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1695,7 +1714,7 @@ The host suite is 585 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`,
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client` and `test_upd_dev`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
@@ -2193,8 +2212,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` and `render_dial.py --check` hold
-980 committed screenshots to the current render, 490 in English and the same 490 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
+986 committed screenshots to the current render, 493 in English and the same 493 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2396,7 +2415,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_focus_screens.c` | 21 | 20 | 95.2% |
 | `shared/ui/wireless_pane.c` | 259 | 255 | 98.5% |
 | `shared/ui/wireless_pnode.c` | 159 | 157 | 98.7% |
-| `shared/ui/pnode_ctl.c` | 273 | 264 | 96.7% |
+| `shared/ui/pnode_ctl.c` | 292 | 282 | 96.6% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
 | `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
 | `shared/ui/bal_ctl.c` | 361 | 344 | 95.3% |
@@ -2504,7 +2523,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/bleuart/bleuart_hub.c` | 317 | 315 | 99.4% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
-| `protocols/rcnode/rcnode.c` | 303 | 303 | 100.0% |
+| `protocols/rcnode/rcnode.c` | 311 | 309 | 99.4% |
 | `protocols/rcnode/rcnode_win.c` | 97 | 96 | 99.0% |
 | `protocols/rcnode/rcnode_adv.c` | 104 | 102 | 98.1% |
 | `protocols/bleota/bleota.c` | 115 | 115 | 100.0% |
@@ -2657,7 +2676,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **100204** | **98080** | **97.9%** |
+| **total** | **100231** | **98104** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

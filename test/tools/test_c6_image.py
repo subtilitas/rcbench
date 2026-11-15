@@ -344,6 +344,24 @@ def test_a_node_image_must_carry_its_own_role():
         c6.check_device("node-bal", bytes(mixed), "0.23.12", 4096)
 
 
+def test_the_display_node_image_and_the_c6_power_image_do_not_cross():
+    """The S3 power image passes as node-display only, the C6 one not."""
+    s3 = image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+               project="rcbench-node", kind=4)
+    pwr = image(version="0.23.12", project="rcbench-node", kind=2)
+    assert "node-display 0.23.12" in c6.check_device(
+        "node-display", s3, "0.23.12", 4096)
+    with pytest.raises(c6.C6Error, match="chip"):
+        c6.check_device("node-pwr", s3, "0.23.12", 4096)
+    with pytest.raises(c6.C6Error, match="chip"):
+        c6.check_device("node-display", pwr, "0.23.12", 4096)
+    # The S3 chip with the C6 power node's kind: refused by the role.
+    s3_kind2 = image(chip=c6.CHIP_ESP32S3, version="0.23.12",
+                     project="rcbench-node", kind=2)
+    with pytest.raises(c6.C6Error, match="role is kind 2"):
+        c6.check_device("node-display", s3_kind2, "0.23.12", 4096)
+
+
 def test_the_tree_version_and_the_device_call(tmp_path, capsys):
     """The version comes from rcbench_version.h; device checks a file."""
     assert c6.tree_version("#define RCBENCH_VERSION_MAJOR 1\n"

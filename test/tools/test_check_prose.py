@@ -175,6 +175,15 @@ def test_esp32s3_said_of_the_dial_is_no_hit():
     assert rules("The dialog, ESP32-S3.\n") == ["stale-esp32s3"]
 
 
+def test_esp32s3_said_of_the_display_node_is_no_hit():
+    """The display node's board is an ESP32-S3: near its names it passes."""
+    assert rules("The display node runs on an ESP32-S3.\n") == []
+    assert rules("The LCDWIKI ES3C28P, an ESP32-S3 board.\n") == []
+    assert rules("Der Anzeigeknoten (ESP32-S3).\n") == []
+    assert rules("A display.\n" + "x" * 301 + " ESP32-S3.\n") == [
+        "stale-esp32s3"]
+
+
 def test_code_links_and_urls_are_skipped():
     """Fenced and indented code, spans, link targets, URLs and tags."""
     text = ("`we` and ``just `x` easy``\n"

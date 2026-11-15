@@ -329,6 +329,7 @@ typedef struct {
 
 /** @brief Boards. @{ */
 #define RCNODE_BOARD_C6_ZERO 1u  /**< Waveshare ESP32-C6-Zero */
+#define RCNODE_BOARD_ES3C28P 2u  /**< 2.8" ESP32-S3 display board, LCDWIKI ES3C28P */
 /** @} */
 
 /**
@@ -381,6 +382,12 @@ typedef struct {
 #define RCNODE_OP_OFF    0x03u  /**< 1 byte: off until the RESET key or a power cycle */
 #define RCNODE_OP_BLADES 0x04u  /**< 2 bytes: op, count; balance only */
 #define RCNODE_OP_RPM    0x05u  /**< 3 bytes: op, rpm (16 bits); balance only, 0 = index mode */
+#define RCNODE_OP_LANG   0x06u  /**< 2 bytes: op, RCNODE_LANG_*; power only: the language of a display node's texts */
+/** @} */
+
+/** @brief RCNODE_OP_LANG's values: the panel's language. @{ */
+#define RCNODE_LANG_EN 0u  /**< English */
+#define RCNODE_LANG_DE 1u  /**< German */
 /** @} */
 
 /** @brief Limits of the control values. @{ */
@@ -398,6 +405,7 @@ typedef struct {
     uint8_t  tag;     /**< RCNODE_OP_RUN: the tag, 1 to 255; 0 means no RUN yet and is refused */
     uint8_t  blades;  /**< RCNODE_OP_BLADES: the count */
     uint16_t rpm;     /**< RCNODE_OP_RPM: the rotation rate, 0 for index mode */
+    uint8_t  lang;    /**< RCNODE_OP_LANG: RCNODE_LANG_* */
 } rcnode_ctl_t;
 
 /* ------------------------------------------------------------- codec */
@@ -517,7 +525,8 @@ size_t rcnode_enc_ctl(const rcnode_ctl_t *c, uint8_t *out, size_t cap);
  * @return RCNODE_OK; RCNODE_ERR_TYPE for an unknown operation,
  * RCNODE_ERR_LEN for another length than the operation's,
  * RCNODE_ERR_RANGE for a RUN tag of 0 (the tag before any RUN), a blade
- * count or an rpm out of range.
+ * count or an rpm out of range, or a language other than RCNODE_LANG_EN
+ * and RCNODE_LANG_DE.
  */
 rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out);
 
@@ -526,8 +535,8 @@ rcnode_err_t rcnode_dec_ctl(const uint8_t *b, size_t n, rcnode_ctl_t *out);
  *
  * @param role RCNODE_ROLE_*.
  * @param op RCNODE_OP_*.
- * @return true for RUN, SLEEP and OFF on both roles and BLADES and RPM on
- * the balance role.
+ * @return true for RUN, SLEEP and OFF on both roles, LANG on the power
+ * role, and BLADES and RPM on the balance role.
  */
 bool rcnode_ctl_for_role(uint8_t role, uint8_t op);
 

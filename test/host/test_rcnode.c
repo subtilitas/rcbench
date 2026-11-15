@@ -434,6 +434,37 @@ TEST_CASE(the_power_role_takes_run_sleep_off_and_not_the_balance_writes)
     CHECK(!rcnode_ctl_for_role(RCNODE_ROLE_BALANCE, 0x06u));
 }
 
+TEST_CASE(lang_is_two_bytes_takes_en_and_de_and_only_the_power_role)
+{
+    uint8_t b[4];
+    rcnode_ctl_t c;
+    memset(&c, 0, sizeof c);
+    c.op = RCNODE_OP_LANG;
+    c.lang = RCNODE_LANG_DE;
+    CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 2);
+    CHECK_EQ(b[0], 0x06);
+    CHECK_EQ(b[1], 0x01);
+    c.lang = 2u;
+    CHECK_EQ(rcnode_enc_ctl(&c, b, sizeof b), 0);
+
+    rcnode_ctl_t d;
+    static const uint8_t en[2] = { 0x06, 0x00 };
+    static const uint8_t de[2] = { 0x06, 0x01 };
+    static const uint8_t other[2] = { 0x06, 0x02 };
+    CHECK_EQ(rcnode_dec_ctl(en, 2, &d), RCNODE_OK);
+    CHECK_EQ(d.op, RCNODE_OP_LANG);
+    CHECK_EQ(d.lang, RCNODE_LANG_EN);
+    CHECK_EQ(rcnode_dec_ctl(de, 2, &d), RCNODE_OK);
+    CHECK_EQ(d.lang, RCNODE_LANG_DE);
+    CHECK_EQ(rcnode_dec_ctl(other, 2, &d), RCNODE_ERR_RANGE);
+    CHECK_EQ(d.lang, RCNODE_LANG_DE);          /* left as it was */
+    CHECK_EQ(rcnode_dec_ctl(de, 1, &d), RCNODE_ERR_LEN);
+    CHECK_EQ(rcnode_dec_ctl(de, 3, &d), RCNODE_ERR_LEN);
+
+    CHECK(rcnode_ctl_for_role(RCNODE_ROLE_POWER, RCNODE_OP_LANG));
+    CHECK(!rcnode_ctl_for_role(RCNODE_ROLE_BALANCE, RCNODE_OP_LANG));
+}
+
 TEST_CASE(seq_counts_losses_across_its_wrap_at_256)
 {
     CHECK_EQ(rcnode_seq_lost(5u, 6u), 0);
@@ -908,6 +939,7 @@ int main(void)
     RUN(a_refused_packet_leaves_the_output_as_it_was);
     RUN(every_control_write_has_its_bytes_and_its_limits);
     RUN(the_power_role_takes_run_sleep_off_and_not_the_balance_writes);
+    RUN(lang_is_two_bytes_takes_en_and_de_and_only_the_power_role);
     RUN(seq_counts_losses_across_its_wrap_at_256);
     RUN(t_node_differences_hold_across_the_wrap_at_2_32us);
     RUN(the_40_bit_accumulators_sign_extend_and_wrap);
