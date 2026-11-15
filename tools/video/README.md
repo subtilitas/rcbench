@@ -379,6 +379,12 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   SUPPLY at GP28, and the same with CURRENT SENSE at INA219 and its
   caption FOUND. A change of MiniRcBench's screens does not reach the
   stills.
+- `minircbench-build` says that the servo tester feeds its servo from
+  the boost board (stated by the owner on 2026-11-15). MiniRcBench at
+  its commit 25b5a36 does not do that: its servo tester never drives the
+  enable pin and shows `GP28 SUPPLY STAYS OFF HERE.`; the KST and Hitec
+  programmers switch the supply. The still `mini-servo-supply` shows
+  that line and is not used in the video.
 - The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x
   129mm of the assembly. The order of the connectors on the wall and
   J1's pin order follow the case. J2's row order is assumed to match

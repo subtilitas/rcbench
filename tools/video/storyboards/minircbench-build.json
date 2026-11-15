@@ -2193,11 +2193,11 @@
     },
     {
      "at": 20.82,
-     "text": "The 5 volts are switched by the two servo programmers, for K-S-T and for Hitec servos. On their screens the bench switches the supply on by itself."
+     "text": "The boost board now feeds the servo. The two servo programmers, for K-S-T and for Hitec servos, switch the 5 volts on by themselves."
     },
     {
-     "at": 32.61,
-     "text": "With firmware 0.1.0 the servo tester leaves this supply off. It shows the sensor's current and voltage for a servo on its own supply."
+     "at": 31.5,
+     "text": "The servo tester feeds its servo from the boost board too, and shows the sensor's current and voltage beside the pulse."
     }
    ],
    "panel": [
@@ -2222,11 +2222,7 @@
      "mini-kst-switched"
     ],
     [
-     32.61,
-     "mini-servo-supply"
-    ],
-    [
-     37.61,
+     31.5,
      "mini-servo-sense"
     ]
    ],
@@ -2266,7 +2262,7 @@
     },
     {
      "from": 21.32,
-     "to": 32.31,
+     "to": 31.2,
      "anchor": [
       0.0,
       24.9,
@@ -2280,24 +2276,8 @@
      "text": "The programmers switch the 5 V on GP28: off for 2 s, then on, before each try."
     },
     {
-     "from": 33.11,
-     "to": 37.61,
-     "anchor": [
-      0.0,
-      24.9,
-      -20.73
-     ],
-     "at": [
-      1250,
-      240
-     ],
-     "style": "warn",
-     "title": "SERVO TESTER, firmware 0.1.0",
-     "text": "<b>GP28 SUPPLY STAYS OFF HERE.</b> The tester does not switch this supply."
-    },
-    {
-     "from": 37.91,
-     "to": 43.06,
+     "from": 32.0,
+     "to": 40.910000000000004,
      "anchor": [
       16.42,
       24.9,
@@ -2307,14 +2287,14 @@
       1250,
       560
      ],
-     "title": "Current and voltage",
+     "title": "SERVO TESTER: current and voltage",
      "text": "0.42 A and 5.02 V in this picture, from the sensor's model. No hardware was measured."
     }
    ],
    "chips": [
     {
      "from": 0,
-     "to": 43.86,
+     "to": 41.71,
      "n": 10,
      "text": "Settings and first use"
     }
@@ -2347,7 +2327,7 @@
      ]
     ],
     [
-     43.86,
+     41.71,
      [
       16,
       200,
@@ -2360,7 +2340,7 @@
      ]
     ]
    ],
-   "dur": 43.86
+   "dur": 41.71
   },
   {
    "type": "case",
