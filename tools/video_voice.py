@@ -75,6 +75,8 @@ SPELL = (
     (r"\bUSB-PD\b", "U S B P D"),
     (r"\bUSB-C\b", "U S B C"),
     (r"\bPD mini\b", "P D mini"),
+    # Said letter by letter only when written whole and in capitals.
+    (r"\bINA219\b", "INA 2 19"),
     (r"\bINA228\b", "I N A 228"),
     (r"\bINA3221\b", "I N A 3221"),
     (r"\bAS5600\b", "A-S 5600"),
@@ -101,6 +103,9 @@ SPELL = (
     (r"\s+", " "),
 )
 
+# Words in capitals the speaker says letter by letter.
+LETTERS = ("INA",)
+
 
 def spoken(text: str) -> str:
     """Turn a caption into what the speaker is given.
@@ -115,7 +120,8 @@ def spoken(text: str) -> str:
     """
     for pattern, said in SPELL:
         text = re.sub(pattern, said, text)
-    text = re.sub(r"\b[A-Z]{3,}\b", lambda m: m.group(0).capitalize(), text)
+    text = re.sub(r"\b[A-Z]{3,}\b", lambda m: m.group(0) if m.group(0)
+                  in LETTERS else m.group(0).capitalize(), text)
     return text.strip()
 
 

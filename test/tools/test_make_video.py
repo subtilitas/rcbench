@@ -577,3 +577,9 @@ def test_a_silent_bed_keeps_the_narration(tmp_path, monkeypatch):
     with wave.open(str(tmp_path / "a.wav")) as wav:
         data = np.frombuffer(wav.readframes(wav.getnframes()), "<i2")
     assert np.abs(data).max() > 10000
+
+
+def test_ina219_is_said_letter_by_letter():
+    """INA stays in capitals for the speaker; a screen's name does not."""
+    assert video_voice.spoken("an INA219 board") == "an INA 2 19 board"
+    assert video_voice.spoken("open SETUP") == "open Setup"

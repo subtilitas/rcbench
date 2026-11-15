@@ -156,17 +156,17 @@
     },
     {
      "at": 11.03,
-     "text": "Behind it: one cell of 1000 milliamp hours with a 1.25 millimetre plug, a 5 volt boost board with an enable pad, and an I-N-A 2 19 current sensor board."
+     "text": "Behind it: one cell of 1000 milliamp hours with a 1.25 millimetre plug, a 5 volt boost board with an enable pad, and an INA219 current sensor board."
     },
     {
-     "at": 23.19,
+     "at": 22.89,
      "text": "Also needed: two male servo connectors, with pins as on a receiver, the 12 pin and the 4 pin lead that come with the display board, a 10 kilo ohm resistor, a 5.6 volt zener diode of 2 to 5 watts, a 470 micro farad capacitor, double sided tape, and four M 2.5 screws."
     }
    ],
    "chips": [
     {
      "from": 0,
-     "to": 44.09,
+     "to": 43.79,
      "n": 1,
      "text": "The parts"
     }
@@ -186,7 +186,7 @@
     },
     {
      "from": 11.03,
-     "to": 22.89,
+     "to": 22.59,
      "anchor": "cell",
      "at": [
       90,
@@ -199,7 +199,7 @@
     },
     {
      "from": 13.53,
-     "to": 22.89,
+     "to": 22.59,
      "anchor": "boost",
      "at": [
       1380,
@@ -211,7 +211,7 @@
     },
     {
      "from": 16.03,
-     "to": 22.89,
+     "to": 22.59,
      "anchor": "ina",
      "at": [
       1330,
@@ -222,8 +222,8 @@
      "text": "CJMCU, 0.1 Ω shunt, 24.2 x 21.9 mm."
     },
     {
-     "from": 23.19,
-     "to": 43.49,
+     "from": 22.89,
+     "to": 43.190000000000005,
      "anchor": "plugs",
      "at": [
       120,
@@ -235,8 +235,8 @@
      "text": "3 pins, 2.54 mm, in a shroud: the pin end of a servo extension lead. A servo's plug goes straight on."
     },
     {
-     "from": 24.19,
-     "to": 43.49,
+     "from": 23.89,
+     "to": 43.190000000000005,
      "anchor": "shell",
      "at": [
       100,
@@ -263,7 +263,7 @@
       0.42
      ],
      [
-      44.09,
+      43.79,
       0.42
      ]
     ],
@@ -281,7 +281,7 @@
       0.36
      ],
      [
-      44.09,
+      43.79,
       0.36
      ]
     ],
@@ -299,7 +299,7 @@
       0.5
      ],
      [
-      44.09,
+      43.79,
       0.5
      ]
     ],
@@ -317,7 +317,7 @@
       0.5
      ],
      [
-      44.09,
+      43.79,
       0.5
      ]
     ],
@@ -335,7 +335,7 @@
       0.55
      ],
      [
-      44.09,
+      43.79,
       0.55
      ]
     ],
@@ -353,7 +353,7 @@
       0.5
      ],
      [
-      44.09,
+      43.79,
       0.5
      ]
     ],
@@ -363,7 +363,7 @@
       1
      ],
      [
-      44.09,
+      43.79,
       1
      ]
     ]
@@ -396,7 +396,7 @@
      ]
     ],
     [
-     22.89,
+     22.59,
      [
       -60,
       165,
@@ -409,7 +409,7 @@
      ]
     ],
     [
-     44.09,
+     43.790000000000006,
      [
       -120,
       120,
@@ -422,7 +422,7 @@
      ]
     ]
    ],
-   "dur": 44.39
+   "dur": 44.09
   },
   {
    "type": "case",
@@ -593,66 +593,66 @@
     },
     {
      "at": 22.45,
-     "text": "Solder a red wire from the plus pin to I-N plus, and a black wire from the minus pin to I-N minus. The pins are 1.25 millimetres apart: use thin wire and little solder. The cell stays unplugged."
+     "text": "Solder a red wire from the plus pin to in plus, and a black wire from the minus pin to in minus. The pins are 1.25 millimetres apart: use thin wire and little solder. The cell stays unplugged."
     },
     {
-     "at": 37.72,
+     "at": 37.57,
      "text": "The cell then feeds the board and the boost board, and the board's charger charges it over U-S-B. No fuse is fitted: a short on these two wires is a short on the cell."
     },
     {
-     "at": 50.99,
-     "text": "Step 4. The enable pad. Solder a 10 kilo ohm resistor from the enable pad to I-N minus. It holds the 5 volts off while the board is off or the wire is loose."
+     "at": 50.84,
+     "text": "Step 4. The enable pad. Solder a 10 kilo ohm resistor from the enable pad to in minus. It holds the 5 volts off while the board is off or the wire is loose."
     },
     {
-     "at": 63.52,
+     "at": 63.3,
      "text": "Then plug the 12 pin lead into the board. Its eleventh wire is I-O 28. Solder it to the enable pad. The bench switches the servo supply with this pin."
     },
     {
-     "at": 75.53,
+     "at": 75.31,
      "text": "Step 5. The current sensor goes on the I 2 C socket, with the 4 pin lead. Ground to G-N-D, 3.3 volts to V-C-C, S-D-A to S-D-A, S-C-L to S-C-L."
     },
     {
-     "at": 86.95,
+     "at": 86.73,
      "text": "The sensor runs on 3.3 volts, never on 5: its pull-ups would lift the touch controller's bus to 5 volts. Do not use a ready made Qwiic cable; its pin order is different."
     },
     {
-     "at": 100.37,
+     "at": 100.15,
      "text": "Step 6. The 5 volt path. First, two parts across the output of the boost board. A 5.6 volt zener diode, rated 2 to 5 watts, from out plus to out minus, its band on out plus. It clamps the output if the voltage rises."
     },
     {
-     "at": 117.27,
+     "at": 117.05,
      "text": "And an electrolytic capacitor of 470 micro farad, rated 10 volts or more, as a buffer. Its plus lead goes to out plus. The stripe on the can marks minus."
     },
     {
-     "at": 129.5,
+     "at": 129.28,
      "text": "Then out plus goes on to V-in plus on the sensor, at the two holes of the screw terminal, not at the header."
     },
     {
-     "at": 138.4,
+     "at": 138.18,
      "text": "From V-in minus, the measured 5 volts go to the middle pin of both servo connectors. Out minus goes to the minus pin of both."
     },
     {
-     "at": 148.56,
+     "at": 148.34,
      "text": "Step 7. The signals. Wire 9 of the 12 pin lead is T-X-D, G-P-I-O 0, the bench's S-I-G pin. It goes to the signal pin of the E-S-C connector."
     },
     {
-     "at": 159.83,
+     "at": 159.61,
      "text": "Wire 10 is R-X-D, G-P-I-O 1, the A-U-X pin. It goes to the signal pin of the T-M-T connector."
     },
     {
-     "at": 167.62,
+     "at": 167.4,
      "text": "Nine wires of this lead are not used: both grounds, V-bus, the two U-S-B data wires, 3.3 volts, S-D-A, S-C-L and I-O 29. Take them out of the plug, so no bare end can touch a part."
     },
     {
-     "at": 181.85,
+     "at": 181.63,
      "text": "Each contact is held by a small plastic latch of the housing. Lift the latch a little with a needle, and pull the wire out to the back, without force. A latch bent too far breaks off."
     },
     {
-     "at": 196.31,
+     "at": 196.09,
      "text": "Step 8. Check before the cell goes in. With a meter: no connection between plus and minus at the servo connectors, and none between the battery pins."
     },
     {
-     "at": 208.25,
+     "at": 208.03,
      "text": "Then plug the cell into the battery socket. The 5 volts must stay off: measure 0 volts between plus and minus at both servo connectors. If you read more, do not plug in a servo."
     }
    ],
@@ -714,7 +714,7 @@
     },
     {
      "from": 11.99,
-     "to": 50.69,
+     "to": 50.54,
      "at": "BAT.+",
      "text": "BAT +",
      "side": "r",
@@ -722,95 +722,95 @@
     },
     {
      "from": 12.29,
-     "to": 50.69,
+     "to": 50.54,
      "at": "BAT.-",
      "text": "BAT −",
      "side": "r",
      "d": 30
     },
     {
-     "from": 52.99,
-     "to": 75.22,
+     "from": 52.84,
+     "to": 75.0,
      "at": "BOOST.EN",
      "text": "EN",
      "side": "r",
      "d": 40
     },
     {
-     "from": 65.72,
-     "to": 75.23,
+     "from": 65.5,
+     "to": 75.01,
      "at": "J4.11",
      "text": "IO28 · wire 11",
      "side": "l",
      "d": 110
     },
     {
-     "from": 78.53,
-     "to": 95.65,
+     "from": 78.31,
+     "to": 95.43,
      "at": "INA.Gnd",
      "text": "GND",
      "side": "t",
      "d": 150
     },
     {
-     "from": 80.33,
-     "to": 95.65,
+     "from": 80.11,
+     "to": 95.43,
      "at": "INA.Vcc",
      "text": "3V3",
      "side": "t",
      "d": 190
     },
     {
-     "from": 82.13,
-     "to": 95.65,
+     "from": 81.91,
+     "to": 95.43,
      "at": "INA.Sda",
      "text": "SDA",
      "side": "t",
      "d": 70
     },
     {
-     "from": 83.93,
-     "to": 95.65,
+     "from": 83.71,
+     "to": 95.43,
      "at": "INA.Scl",
      "text": "SCL",
      "side": "t",
      "d": 110
     },
     {
-     "from": 133.5,
-     "to": 152.1,
+     "from": 133.28,
+     "to": 151.88,
      "at": "INA.T+",
      "text": "Vin+",
      "side": "r",
      "d": 50
     },
     {
-     "from": 133.5,
-     "to": 152.1,
+     "from": 133.28,
+     "to": 151.88,
      "at": "INA.T-",
      "text": "Vin−",
      "side": "l",
      "d": 50
     },
     {
-     "from": 155.06,
-     "to": 168.53,
+     "from": 154.84,
+     "to": 168.31,
      "at": "ESC.S",
      "text": "SIG · GPIO 0",
      "side": "l",
      "d": 90
     },
     {
-     "from": 164.33,
-     "to": 167.32,
+     "from": 164.11,
+     "to": 167.1,
      "at": "TMT.S",
      "text": "AUX · GPIO 1",
      "side": "l",
      "d": 90
     },
     {
-     "from": 168.12,
-     "to": 196.01,
+     "from": 167.9,
+     "to": 195.79,
      "at": [
       16.5,
       57.2
@@ -820,8 +820,8 @@
      "d": 70
     },
     {
-     "from": 168.32,
-     "to": 196.01,
+     "from": 168.1,
+     "to": 195.79,
      "at": [
       21.8,
       58.2
@@ -831,8 +831,8 @@
      "d": 150
     },
     {
-     "from": 168.52,
-     "to": 196.01,
+     "from": 168.3,
+     "to": 195.79,
      "at": [
       23,
       59.2
@@ -845,7 +845,7 @@
    "labels": [
     {
      "from": 23.45,
-     "to": 37.42,
+     "to": 37.27,
      "anchor": "BAT.+",
      "at": [
       1180,
@@ -856,8 +856,8 @@
      "n": 3
     },
     {
-     "from": 37.72,
-     "to": 50.69,
+     "from": 37.57,
+     "to": 50.54,
      "anchor": "BOOST.IN+",
      "at": [
       1180,
@@ -869,8 +869,8 @@
      "size": "sm"
     },
     {
-     "from": 53.99,
-     "to": 63.22,
+     "from": 53.84,
+     "to": 63.0,
      "anchor": "BOOST.EN",
      "at": [
       1250,
@@ -881,8 +881,8 @@
      "n": 4
     },
     {
-     "from": 66.52,
-     "to": 75.23,
+     "from": 66.3,
+     "to": 75.01,
      "anchor": "J4.11",
      "at": [
       300,
@@ -893,8 +893,8 @@
      "side": "b"
     },
     {
-     "from": 77.53,
-     "to": 86.65,
+     "from": 77.31,
+     "to": 86.43,
      "anchor": [
       18.5,
       74.8
@@ -909,8 +909,8 @@
      "side": "b"
     },
     {
-     "from": 86.95,
-     "to": 100.07,
+     "from": 86.73,
+     "to": 99.85,
      "anchor": "INA.Vcc",
      "at": [
       1150,
@@ -922,8 +922,8 @@
      "side": "b"
     },
     {
-     "from": 105.37,
-     "to": 116.97,
+     "from": 105.15,
+     "to": 116.75,
      "anchor": "BOOST.OUT+",
      "at": [
       60,
@@ -935,8 +935,8 @@
      "side": "b"
     },
     {
-     "from": 118.27,
-     "to": 129.2,
+     "from": 118.05,
+     "to": 128.98,
      "anchor": [
       86,
       46
@@ -951,8 +951,8 @@
      "side": "b"
     },
     {
-     "from": 131.5,
-     "to": 138.1,
+     "from": 131.28,
+     "to": 137.88,
      "anchor": "INA.T+",
      "at": [
       60,
@@ -963,8 +963,8 @@
      "side": "t"
     },
     {
-     "from": 139.4,
-     "to": 148.26,
+     "from": 139.18,
+     "to": 148.04,
      "anchor": "TMT.+",
      "at": [
       200,
@@ -975,8 +975,8 @@
      "side": "b"
     },
     {
-     "from": 150.56,
-     "to": 167.32,
+     "from": 150.34,
+     "to": 167.1,
      "anchor": [
       15,
       59
@@ -991,8 +991,8 @@
      "side": "b"
     },
     {
-     "from": 197.31,
-     "to": 207.95,
+     "from": 197.09,
+     "to": 207.73,
      "anchor": "ESC.+",
      "at": [
       1150,
@@ -1005,8 +1005,8 @@
      "size": "sm"
     },
     {
-     "from": 211.25,
-     "to": 221.96,
+     "from": 211.03,
+     "to": 221.74,
      "anchor": "TMT.+",
      "at": [
       1080,
@@ -1021,37 +1021,37 @@
    "chips": [
     {
      "from": 9.99,
-     "to": 50.99,
+     "to": 50.84,
      "n": 3,
      "text": "Boost input on BAT"
     },
     {
-     "from": 50.99,
-     "to": 75.53,
+     "from": 50.84,
+     "to": 75.31,
      "n": 4,
      "text": "Enable: pull-down and IO28"
     },
     {
-     "from": 75.53,
-     "to": 100.37,
+     "from": 75.31,
+     "to": 100.15,
      "n": 5,
      "text": "INA219 on the I2C socket"
     },
     {
-     "from": 100.37,
-     "to": 148.56,
+     "from": 100.15,
+     "to": 148.34,
      "n": 6,
      "text": "Zener, capacitor, 5 V path"
     },
     {
-     "from": 148.56,
-     "to": 196.31,
+     "from": 148.34,
+     "to": 196.09,
      "n": 7,
      "text": "Signals, unused wires out"
     },
     {
-     "from": 196.31,
-     "to": 222.26,
+     "from": 196.09,
+     "to": 222.04,
      "n": 8,
      "text": "Check, then the cell"
     }
@@ -1061,27 +1061,27 @@
      "kind": "resistor",
      "a": "BOOST.EN",
      "b": "BOOST.IN-",
-     "t": 53.49,
+     "t": 53.34,
      "text": "10 kΩ"
     },
     {
      "kind": "zener",
      "a": "BOOST.OUT+",
      "b": "BOOST.OUT-",
-     "t": 106.37
+     "t": 106.15
     },
     {
      "kind": "cap",
      "a": "BOOST.OUT+",
      "b": "BOOST.OUT-",
-     "t": 118.77,
+     "t": 118.55,
      "text": "470 µF"
     }
    ],
    "insets": [
     {
-     "from": 177.55,
-     "to": 196.01,
+     "from": 177.33,
+     "to": 195.79,
      "kind": "latch",
      "at": [
       1160,
@@ -1153,15 +1153,15 @@
       67.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      183.35,
-      184.15
+      183.13,
+      183.93
      ]
     },
     {
@@ -1174,15 +1174,15 @@
       66.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      184.25,
-      185.05
+      184.03,
+      184.83
      ]
     },
     {
@@ -1195,15 +1195,15 @@
       65.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      185.15,
-      185.95
+      184.93,
+      185.73
      ]
     },
     {
@@ -1216,15 +1216,15 @@
       64.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      186.05,
-      186.85
+      185.83,
+      186.63
      ]
     },
     {
@@ -1237,15 +1237,15 @@
       63.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      186.95,
-      187.75
+      186.73,
+      187.53
      ]
     },
     {
@@ -1258,15 +1258,15 @@
       62.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      187.85,
-      188.65
+      187.63,
+      188.43
      ]
     },
     {
@@ -1279,15 +1279,15 @@
       61.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      188.75,
-      189.55
+      188.53,
+      189.33
      ]
     },
     {
@@ -1300,15 +1300,15 @@
       60.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      189.65,
-      190.45
+      189.43,
+      190.23
      ]
     },
     {
@@ -1321,15 +1321,15 @@
       56.2
      ],
      "t": [
-      63.72,
-      64.42
+      63.5,
+      64.2
      ],
      "color": "#8b93a3",
      "thin": true,
      "plain": true,
      "gone": [
-      190.55,
-      191.35
+      190.33,
+      191.13
      ]
     },
     {
@@ -1339,8 +1339,8 @@
      ],
      "to": "BOOST.EN",
      "t": [
-      66.02,
-      69.02
+      65.8,
+      68.8
      ],
      "via": [
       [
@@ -1371,8 +1371,8 @@
      ],
      "to": "INA.Gnd",
      "t": [
-      78.53,
-      80.13
+      78.31,
+      79.91
      ],
      "via": [
       [
@@ -1395,8 +1395,8 @@
      ],
      "to": "INA.Vcc",
      "t": [
-      80.33,
-      81.93
+      80.11,
+      81.71
      ],
      "via": [
       [
@@ -1419,8 +1419,8 @@
      ],
      "to": "INA.Sda",
      "t": [
-      82.13,
-      83.73
+      81.91,
+      83.51
      ],
      "via": [
       [
@@ -1443,8 +1443,8 @@
      ],
      "to": "INA.Scl",
      "t": [
-      83.93,
-      85.53
+      83.71,
+      85.31
      ],
      "via": [
       [
@@ -1464,8 +1464,8 @@
      "from": "BOOST.OUT+",
      "to": "INA.T+",
      "t": [
-      131.0,
-      134.0
+      130.78,
+      133.78
      ],
      "via": [
       [
@@ -1483,8 +1483,8 @@
      "from": "INA.T-",
      "to": "TMT.+",
      "t": [
-      139.4,
-      141.9
+      139.18,
+      141.68
      ],
      "via": [
       [
@@ -1506,8 +1506,8 @@
      "from": "TMT.+",
      "to": "ESC.+",
      "t": [
-      142.1,
-      143.3
+      141.88,
+      143.08
      ],
      "via": [
       [
@@ -1525,8 +1525,8 @@
      "from": "BOOST.OUT-",
      "to": "TMT.-",
      "t": [
-      144.4,
-      146.9
+      144.18,
+      146.68
      ],
      "via": [
       [
@@ -1548,8 +1548,8 @@
      "from": "TMT.-",
      "to": "ESC.-",
      "t": [
-      147.1,
-      148.3
+      146.88,
+      148.08
      ],
      "via": [
       [
@@ -1570,8 +1570,8 @@
      ],
      "to": "ESC.S",
      "t": [
-      151.56,
-      155.56
+      151.34,
+      155.34
      ],
      "via": [
       [
@@ -1602,8 +1602,8 @@
      ],
      "to": "TMT.S",
      "t": [
-      160.83,
-      164.83
+      160.61,
+      164.61
      ],
      "via": [
       [
@@ -1637,8 +1637,8 @@
       63.6
      ],
      "t": [
-      209.75,
-      211.75
+      209.53,
+      211.53
      ],
      "via": [
       [
@@ -1663,8 +1663,8 @@
       64.85
      ],
      "t": [
-      209.95,
-      211.95
+      209.73,
+      211.73
      ],
      "via": [
       [
@@ -1706,7 +1706,7 @@
      56
     ],
     [
-     50.98,
+     50.83,
      [
       62,
       60
@@ -1714,7 +1714,7 @@
      56
     ],
     [
-     52.79,
+     52.64,
      [
       50,
       64
@@ -1722,7 +1722,7 @@
      100
     ],
     [
-     75.52,
+     75.3,
      [
       50,
       64
@@ -1730,7 +1730,7 @@
      100
     ],
     [
-     77.33,
+     77.11,
      [
       63,
       66
@@ -1738,7 +1738,7 @@
      112
     ],
     [
-     100.36,
+     100.14,
      [
       63,
       66
@@ -1746,7 +1746,7 @@
      112
     ],
     [
-     102.17,
+     101.95,
      [
       103,
       42
@@ -1754,7 +1754,7 @@
      132
     ],
     [
-     148.55,
+     148.33,
      [
       103,
       42
@@ -1762,7 +1762,7 @@
      132
     ],
     [
-     150.36,
+     150.14,
      [
       69,
       42
@@ -1770,7 +1770,7 @@
      165
     ],
     [
-     167.61,
+     167.39,
      [
       69,
       42
@@ -1778,7 +1778,7 @@
      165
     ],
     [
-     169.42,
+     169.2,
      [
       17,
       58.5
@@ -1786,7 +1786,7 @@
      34
     ],
     [
-     196.3,
+     196.08,
      [
       17,
       58.5
@@ -1794,7 +1794,7 @@
      34
     ],
     [
-     198.11,
+     197.89,
      [
       69,
       42
@@ -1802,7 +1802,7 @@
      165
     ],
     [
-     222.86,
+     222.64,
      [
       69,
       42
@@ -1810,7 +1810,7 @@
      165
     ]
    ],
-   "dur": 222.86
+   "dur": 222.64
   },
   {
    "type": "case",
@@ -2109,14 +2109,14 @@
     },
     {
      "at": 10.81,
-     "text": "Under servo supply, step to G-P 28. Below it, switch current sense to I-N-A 2 19. The caption must read: found. Then hold save."
+     "text": "Under servo supply, step to G-P 28. Below it, switch current sense to INA219. The caption must read: found. Then hold save."
     },
     {
-     "at": 21.12,
+     "at": 20.82,
      "text": "The 5 volts are switched by the two servo programmers, for K-S-T and for Hitec servos. On their screens the bench switches the supply on by itself."
     },
     {
-     "at": 32.91,
+     "at": 32.61,
      "text": "With firmware 0.1.0 the servo tester leaves this supply off. It shows the sensor's current and voltage for a servo on its own supply."
     }
    ],
@@ -2138,15 +2138,15 @@
      "mini-supply-sense"
     ],
     [
-     21.12,
+     20.82,
      "mini-kst-switched"
     ],
     [
-     32.91,
+     32.61,
      "mini-servo-supply"
     ],
     [
-     37.91,
+     37.61,
      "mini-servo-sense"
     ]
    ],
@@ -2169,7 +2169,7 @@
     },
     {
      "from": 15.11,
-     "to": 20.82,
+     "to": 20.52,
      "anchor": [
       13.87,
       24.9,
@@ -2185,8 +2185,8 @@
      "text": "<b>FOUND</b>: the sensor answers at address 0x40. Hold SAVE to keep both settings."
     },
     {
-     "from": 21.62,
-     "to": 32.61,
+     "from": 21.32,
+     "to": 32.31,
      "anchor": [
       0.0,
       24.9,
@@ -2200,8 +2200,8 @@
      "text": "The programmers switch the 5 V on GP28: off for 2 s, then on, before each try."
     },
     {
-     "from": 33.41,
-     "to": 37.91,
+     "from": 33.11,
+     "to": 37.61,
      "anchor": [
       0.0,
       24.9,
@@ -2216,8 +2216,8 @@
      "text": "<b>GP28 SUPPLY STAYS OFF HERE.</b> The tester does not switch this supply."
     },
     {
-     "from": 38.209999999999994,
-     "to": 43.36,
+     "from": 37.91,
+     "to": 43.06,
      "anchor": [
       16.42,
       24.9,
@@ -2234,7 +2234,7 @@
    "chips": [
     {
      "from": 0,
-     "to": 44.16,
+     "to": 43.86,
      "n": 10,
      "text": "Settings and first use"
     }
@@ -2267,7 +2267,7 @@
      ]
     ],
     [
-     44.16,
+     43.86,
      [
       16,
       200,
@@ -2280,7 +2280,7 @@
      ]
     ]
    ],
-   "dur": 44.16
+   "dur": 43.86
   },
   {
    "type": "case",
