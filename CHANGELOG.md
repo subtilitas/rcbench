@@ -31,7 +31,8 @@ history is in git.
   from its assembly, seats its components, shows stills on its display
   and rolls it over; `tools/video_cad.py --parts` converts a STEP
   assembly with one node a component. A wire of a `board` scene can be
-  `thin`; the inset `latch` shows a contact leaving a 1.0mm plug
+  `thin`, a `fit` of the kind `link` is a 0402 chip resistor taken off
+  the board; the inset `latch` shows a contact leaving a 1.0mm plug
   ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `dial`: bringing the M5Stack Dial into use in 6 steps and
   209.43s, narrated. A `case` scene with the model `dial` draws the

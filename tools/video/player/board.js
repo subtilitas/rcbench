@@ -395,6 +395,28 @@ export function buildBoard(data) {
         }
       }
       for (const p of sc.fit || []) {
+        if (p.kind === 'link') {
+          // A 0402 chip resistor of 0 Ω on the board until t, then taken
+          // off on a blob of solder: its two lands stay.
+          const a = point(p.a), b = point(p.b);
+          const len = Math.hypot(b[0] - a[0], b[1] - a[1]);
+          const deg = Math.atan2(b[1] - a[1], b[0] - a[0]) * 180 / Math.PI;
+          const k = ramp(lt, p.t, p.t + .9), x0 = (len - 1) / 2;
+          g += `<g transform="translate(${a[0]} ${a[1]}) rotate(${deg})">
+            <rect x="${x0 - .2}" y="-.32" width=".5" height=".64"
+              fill="#c8ccd2"/>
+            <rect x="${x0 + .7}" y="-.32" width="${len - x0 - .7}"
+              height=".64" fill="#c8ccd2"/>
+            <g opacity="${1 - k}" transform="translate(0 ${k * -2.4})">
+            <rect x="${x0}" y="-.25" width="1" height=".5" fill="#17181c"/>
+            <rect x="${x0}" y="-.25" width=".22" height=".5" fill="#e3e6ea"/>
+            <rect x="${x0 + .78}" y="-.25" width=".22" height=".5"
+              fill="#e3e6ea"/></g></g>`
+            + blob([(a[0] + b[0]) / 2, (a[1] + b[1]) / 2 - k * 2.4],
+                   ramp(lt, p.t - .6, p.t - .2) * (1 - ramp(lt, p.t + .5,
+                                                            p.t + .9)), .7);
+          continue;
+        }
         const k = ramp(lt, p.t, p.t + .7);
         if (k <= 0) continue;
         const a = point(p.a), b = point(p.b);

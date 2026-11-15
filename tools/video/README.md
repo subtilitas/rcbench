@@ -182,7 +182,7 @@ A `board` scene:
 | `mount` | optional `{refs, t}`: the parts of these references come down onto their places from `t` on |
 | `solder` | optional `{refs, t: [t0, t1]}` or `{pads, t: [t0, t1]}` and optional `back`: a joint on every pad of the parts, or on the pads named, one after another over the span. With `back` the joint is on the other side of the board and shows as a ring that fades |
 | `insets` | optional `{from, to, kind, at, title}` and optional `text`, `good`, `bad`, `upper`, `lower`, `color`: a card at `at` with a cross-section. `strip` draws a module on the plastic of its pin strips, soldered on both sides, beside a module lying on the carrier; `fill` draws a wire through a large hole of both boards, soldered on both sides; `extract` draws a plug housing cut open, a needle on the contact's tongue and the wire leaving to the back; `pins` draws one pin strip per entry of `rows`, `[count, text]`, with its count; `latch` draws a 1.0mm plug cut open, a needle lifting the housing's latch behind a contact and the wire leaving to the back |
-| `fit` | optional `{kind, a, b, t}`: a `resistor`, a `zener` or a `cap` soldered across two pads from `t` on; a zener's band is at `a`; a `cap` is a radial electrolytic capacitor lying beyond `b`, its plus lead on `a`, its stripe on the minus lead's side, with `text` on its can; a resistor with `text` `2.2 kΩ` carries its colour bands, as does one of `10 kΩ` |
+| `fit` | optional `{kind, a, b, t}`: a `resistor`, a `zener` or a `cap` soldered across two pads from `t` on; a zener's band is at `a`; a `cap` is a radial electrolytic capacitor lying beyond `b`, its plus lead on `a`, its stripe on the minus lead's side, with `text` on its can; a resistor with `text` `2.2 kΩ` carries its colour bands, as does one of `10 kΩ`; a `link` is a 0402 chip resistor, 1.0 x 0.5mm, that lies between `a` and `b` until `t` and is then taken off |
 
 A board's lengths are mm from the top left corner of its drawing. A pad's
 name is its reference and number, `M1.20`; where a footprint has several
@@ -359,7 +359,7 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   socket's pins, its enable pad on GP28 with 10kΩ to ground, a male servo
   connector with the switched 5V in each of the case's two openings, the
   INA219 in the boost board's OUT+, JST-SH leads in the 12-pin and the
-  I2C socket, no fuse, a cell with its own protection circuit (stated on 2026-11-15), both small boards on double-sided tape, a 470µF electrolytic capacitor of 10V or more and a 5.6V zener diode across the boost board's output. The zener is rated 2W to 5W; its package is not stated and it is drawn as an axial part. Its own
+  I2C socket, a 0Ω resistor of size 0402 between the boost board's EN pad and IN+ that is taken off before the pull-down goes on (stated on 2026-11-15), no fuse, a cell with its own protection circuit (stated on 2026-11-15), both small boards on double-sided tape, a 470µF electrolytic capacitor of 10V or more and a 5.6V zener diode across the boost board's output. The zener is rated 2W to 5W; its package is not stated and it is drawn as an axial part. Its own
   statements, found nowhere else: the order of the steps, the wire
   colours, the pull-down's place between EN and IN-, that the boost
   board's IN- and OUT- are one net, the daisy chain from the TMT to the

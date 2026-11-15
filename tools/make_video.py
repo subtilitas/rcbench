@@ -72,7 +72,7 @@ BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
 PART_FRAMES = 900
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
-FITS = ("resistor", "zener", "cap")
+FITS = ("resistor", "zener", "cap", "link")
 INSETS = ("strip", "fill", "extract", "pins", "latch")
 
 
