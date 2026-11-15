@@ -32,7 +32,7 @@ a new session needs beyond it.
 | `tools/video_board.py`, `player/board.js` | a KiCad board drawn flat, with a net lit up, a cut, a wire and a part across two pads |
 | `storyboards/rbmod-rework.json` | the rev 1 rework in 4 steps, 83s, no narration |
 | `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 347.32s, narrated in the voice of `features`, bed `pachelbel-canon` at half level |
-| `storyboards/dial.json` | the M5Stack Dial coming into use in 6 steps, 209.43s, narrated, bed `pachelbel-canon` at half level |
+| `storyboards/dial.json` | the M5Stack Dial coming into use in 6 steps, 209.43s, narrated, bed `pachelbel-canon` at half level; `dial_base` puts the Dial into its printed hand-held base |
 | `storyboards/minircbench-build.json`, `player/mini3d.js`, `boards/minircbench-wiring.json`, `stills/` | the build of a MiniRcBench in 10 steps, 482.1s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; `tools/video_cad.py --parts` converts its assembly |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `test/tools/test_make_video.py` | 35 cases; the storyboard check, the script, the freezes |

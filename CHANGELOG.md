@@ -37,7 +37,8 @@ history is in git.
   209.43s, narrated. A `case` scene with the model `dial` draws the
   Dial from its STEP model, shows its faces on the display and turns its
   knob; `tools/video_cad.py --solids` converts a STEP part with one mesh
-  a solid ([Videos from storyboards](tools/video/README.md)).
+  a solid. A storyboard's `dial_base` puts the Dial into its printed
+  hand-held base ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `rbmod-build`: building a rev 1 rbmod carrier and wiring
   the panel in 13 steps and 347.32s, narrated. A `board` scene mounts parts, shows solder
   joints and a cross-section card, and takes narration cues. Music bed

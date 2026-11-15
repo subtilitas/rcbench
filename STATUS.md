@@ -460,7 +460,7 @@ their places, the modules sit on the plastic of straight pin strips and are sold
 sides, the large holes of M5 and M6 take a wire and solder, J6 takes no connector but 4 wires
 to a USB-C plug board for the PD mini, and a drawing of the panel's back
 (`tools/video/boards/p4-7b-back.json`) shows the 2 wires of header P3 that stay in its 12-pin plug, the CAN cable's H and L, and the
-supply and ground from J7 on the RS485 header's 5V and GND pins. `dial` shows the M5Stack Dial coming
+supply and ground from J7 on the RS485 header's 5V and GND pins. `dial` shows the M5Stack Dial, in its printed hand-held base, coming
 into use in 6 steps and 209.43s, narrated: its STEP model with the faces of
 `tools/render_dial.py` on its display and its knob turning (`tools/video/player/dial3d.js`),
 and SETUP > WIRELESS > DIAL as the host renderer draws it. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order

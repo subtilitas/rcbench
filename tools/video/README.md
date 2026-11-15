@@ -123,6 +123,7 @@ Top level:
 | --- | --- |
 | `lang` | `en` or `de`: the language the renderer draws the screens in |
 | `product` | optional: the name at the top left in place of `rcbench` |
+| `dial_base` | optional, `true` or `false`, the default: the Dial of the models `dial` and `duo` sits in its printed hand-held base, `dial_base_top` and `dial_base_bottom` of `hardware/mechanical/models/` |
 | `brand` | the line beside the product's name at the top left |
 | `steps` | the count of step marks at the bottom left |
 | `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.42s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part and are not checked against a score. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
@@ -314,7 +315,18 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   ```
 
   The Dial stands on its rear parts, without its ring nut and without a
-  panel. Its faces are the fixed models of `tools/render_dial.py`, so the
+  panel. With `dial_base` it sits in its printed base, whose two parts
+  are converted the same way and are not in the tree either:
+
+  ```sh
+  for part in dial_base_top dial_base_bottom; do
+      python3 tools/video_cad.py --solids \
+          hardware/mechanical/models/$part.step -o tools/video/cad/$part.glb
+  done
+  ```
+
+  The base is drawn closed: its screws and the cell inside are not shown.
+  Its faces are the fixed models of `tools/render_dial.py`, so the
   readings do not follow the knob outside a `run`. A run's numbers are
   the panel's models' (`telemetry_sim`, `servo_sim`, `supply_sim`), posed
   by the panel's renderer (`motor-live`, `servo-live`) and sent to the
