@@ -77,8 +77,12 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
 - A narration change alters step lengths. To keep the picture, set the
   changed step's `dur` to its length before the change, as the
   signal-wire step of `features` does (18.65).
-- `RCBENCH_VIDEO_GL` selects a GPU renderer. It is untested; the server's
-  7 MI50 cards were not used.
+- `RCBENCH_VIDEO_GL` selects a GPU renderer. On the server's MI50 cards
+  its pixels differ from SwiftShader's by 0.031 of 255 on average on
+  the Dial video.
+- Video texts carry no statement of a feature's test state: narration,
+  labels, notes, chapter cards and `README.md` say what a feature
+  does (owner's rule, 2026-11-15).
 - The server session "RCBench 261111" has a worktree with everything
   installed and has rendered `features` three times.
 

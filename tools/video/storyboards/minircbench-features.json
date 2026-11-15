@@ -26,7 +26,7 @@
   "Tools",
   "SD log",
   "Settings",
-  "Rules and limits"
+  "Shared rules"
  ],
  "scenes": [
   {
@@ -903,18 +903,18 @@
     },
     {
      "at": 86.27,
-     "text": "Bluejay and BLHeli_S open the same way. Their write has run against a simulated speed controller only, not against a real one."
+     "text": "Bluejay and BLHeli_S open the same way, with their own list of settings."
     },
     {
-     "at": 96.5,
+     "at": 92.5,
      "text": "Back opens a leave page: unplug the battery, then leave. The bench writes settings only. It does not update a speed controller's firmware."
     },
     {
-     "at": 107.62,
+     "at": 103.62,
      "text": "For that there is the U-S-B bridge. It passes a tool on a computer through to the speed controller's bootloader. The bench waits for the tool's first byte."
     },
     {
-     "at": 120.0,
+     "at": 116.0,
      "text": "That byte picks the mode: plain passthrough, or the 4-way interface, in which the bench answers like a flight controller. A motor command from the computer is refused."
     }
    ],
@@ -1029,7 +1029,7 @@
     },
     {
      "from": 86.57,
-     "to": 96.2,
+     "to": 92.2,
      "anchor": [
       0.0,
       24.9,
@@ -1040,12 +1040,11 @@
       255
      ],
      "title": "Bluejay, BLHeli_S",
-     "text": "Bluejay 0.21 and BLHeli_S 16.3 to 16.7 are editable.",
-     "style": "warn"
+     "text": "Bluejay 0.21 and BLHeli_S 16.3 to 16.7 are editable."
     },
     {
-     "from": 96.8,
-     "to": 107.32,
+     "from": 92.8,
+     "to": 103.32,
      "anchor": [
       0.0,
       24.9,
@@ -1059,8 +1058,8 @@
      "text": "The bootloader waits for commands and may read DShot as one. Unplug first."
     },
     {
-     "from": 107.92,
-     "to": 119.7,
+     "from": 103.92,
+     "to": 115.7,
      "anchor": [
       -10.95,
       24.9,
@@ -1074,8 +1073,8 @@
      "text": "The board's serial port, 19200 baud on the signal pin. DShot is off."
     },
     {
-     "from": 120.3,
-     "to": 132.97,
+     "from": 116.3,
+     "to": 128.97,
      "anchor": [
       0.0,
       24.9,
@@ -1123,30 +1122,30 @@
      "mini-efm8-list"
     ],
     [
-     96.3,
+     92.3,
      "mini-am32-leave"
     ],
     [
-     107.42,
+     103.42,
      "mini-bridge-waiting"
     ],
     [
-     119.8,
+     115.8,
      "mini-bridge-passthrough"
     ],
     [
-     126.0,
+     122.0,
      "mini-bridge-4way"
     ],
     [
-     133.07,
+     129.07,
      "mini-bridge-leave"
     ]
    ],
    "chips": [
     {
      "from": 0,
-     "to": 141.66,
+     "to": 137.66,
      "n": 5,
      "text": "ESC config"
     }
@@ -1166,7 +1165,7 @@
      ]
     ],
     [
-     141.66,
+     137.66,
      [
       11,
       162,
@@ -1179,7 +1178,7 @@
      ]
     ]
    ],
-   "dur": 141.66
+   "dur": 137.66
   },
   {
    "type": "case",
@@ -2499,7 +2498,7 @@
      "from": 0,
      "to": 45.36,
      "n": 12,
-     "text": "Rules and limits"
+     "text": "Shared rules"
     }
    ],
    "camera": [
@@ -2548,7 +2547,7 @@
     "Tools: angle meter",
     "SD log: blackbox, run summary, USB drive",
     "Settings",
-    "Rules and limits"
+    "Shared rules"
    ],
    "say": "That is every screen of the Mini R C bench. The manual in the project's wiki has the details.",
    "note": "Manual: github.com/subtilitas/MiniRcBench/wiki · firmware 0.1.0, frames drawn by the project's host test suite."
