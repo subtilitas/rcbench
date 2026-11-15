@@ -83,6 +83,7 @@ typedef struct {
                                     the meter took its set-up */
     uint8_t       info_proto;  /**< the protocol INFO named, 0 unread */
     uint8_t       info_role;   /**< the role INFO named, 0 unread */
+    uint8_t       info_board;  /**< the board INFO named, 0 unread */
     bool          was_up;      /**< a reading came on this link */
     bool          lost;        /**< the link dropped after a reading */
     bool          run_owed;    /**< the RUN write waits for the link */
@@ -164,6 +165,16 @@ void pnode_ctl_hold(pnode_ctl_t *c, bool on, uint32_t now_ms);
  */
 bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
                       uint8_t version[3], bool *down);
+
+/**
+ * @brief Whether the linked node's INFO names a board other than the
+ *        ESP32-C6-Zero (RCNODE_BOARD_C6_ZERO), whose image is the one the
+ *        panel carries: the ES3C28P display node is flashed over USB.
+ * @param c The controller.
+ * @return true while INFO is taken on this link and names another board;
+ *         false before INFO, for the C6-Zero, or when @p c is NULL.
+ */
+bool pnode_ctl_other_board(const pnode_ctl_t *c);
 
 /**
  * @brief SCAN FOR NODE: the list cleared and a scan of BLEU_SCAN_MS.

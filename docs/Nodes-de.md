@@ -949,10 +949,10 @@ this start`.
   kein Update dafür an: Im Anwendungs-Slot des Panels von 8.126.464 Byte
   sind mit den getragenen Images etwa 9% (etwa 750KB) frei, und das Image
   des Anzeigeknotens hat 654.576 Byte. Der Anzeigeknoten wird über USB
-  geflasht. Ist ein Anzeigeknoten als Leistungsknoten des Panels gebunden,
-  zeigt LEISTUNGSKNOTEN-FIRMWARE das C6-Image; eine Übertragung endet bei
-  BEGIN mit Code 1 (`E_KIND`, das Image ist für ein anderes Gerät), bevor
-  der Knoten nach BOOT fragt.
+  geflasht. Ein als Leistungsknoten des Panels gebundener Anzeigeknoten
+  nennt in INFO Board 2; LEISTUNGSKNOTEN-FIRMWARE bietet dann kein Update
+  an, und ein Tippen zeigt `Dieses Panel enthält keine Firmware für dieses
+  Gerät.` (`pnode_ctl_other_board()`).
 - Der Anzeigeknoten ist auf keinem Board gelaufen. Die Einstellung des
   ILI9341V ist die des Herstellers, nicht gemessen; der SPI-Takt von 20MHz,
   die Ausrichtung des Touch, die Pinfolge der I2C-Buchse und der zur

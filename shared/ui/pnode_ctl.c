@@ -119,6 +119,7 @@ static bool take_info(pnode_ctl_t *c, uint32_t now_ms)
     }
     c->info_proto = p.u.info.proto;
     c->info_role = p.u.info.role;
+    c->info_board = p.u.info.board;
     c->info_ok = p.u.info.proto == RCNODE_PROTO
                  && p.u.info.role == RCNODE_ROLE_POWER
                  && pnode_meter_info(&c->m, &p.u.info);
@@ -141,6 +142,7 @@ static void follow_link(pnode_ctl_t *c, uint32_t now_ms)
         c->info_ok = false;
         c->info_proto = 0u;
         c->info_role = 0u;
+        c->info_board = 0u;
         c->was_up = false;
         c->m.have_status = false;
         c->lang_sent = PNODE_LANG_NONE;
@@ -308,6 +310,11 @@ bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
     *down = !c->linked && c->b.settle == 0u
             && (c->b.st == BLEU_ST_OFF || c->b.st == BLEU_ST_IDLE);
     return true;
+}
+
+bool pnode_ctl_other_board(const pnode_ctl_t *c)
+{
+    return c != NULL && c->info_ok && c->info_board != RCNODE_BOARD_C6_ZERO;
 }
 
 pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)

@@ -668,6 +668,29 @@ static bool run_saw_loss(rig_t *r, uint32_t ms)
     return saw;
 }
 
+/* UPDATES carries the C6-Zero's image only: a display node (ES3C28P)
+ * reads as another board once its INFO is taken, and no longer once its
+ * link ends. */
+TEST_CASE(a_display_node_reads_as_another_board_after_info)
+{
+    rig_t r;
+    up(&r, false);
+    CHECK(r.c.info_ok);
+    CHECK(!pnode_ctl_other_board(&r.c));       /* the C6-Zero */
+
+    init(&r, false);
+    r.info.board = RCNODE_BOARD_ES3C28P;
+    CHECK(!pnode_ctl_other_board(&r.c));       /* no INFO yet */
+    run(&r, 50u);
+    CHECK(r.c.info_ok);
+    CHECK_EQ(r.c.info_board, RCNODE_BOARD_ES3C28P);
+    CHECK(pnode_ctl_other_board(&r.c));
+    pnode_ctl_hold(&r.c, true, r.now);
+    run(&r, 100u);
+    CHECK(!pnode_ctl_other_board(&r.c));       /* the link ended */
+    CHECK(!pnode_ctl_other_board(NULL));
+}
+
 /* The update's hand-over: the hold ends the link of a node that sent
  * readings and keeps it ended whatever SETUP sends; nothing on the way
  * reads STALE or LOST, so the band shows no loss.  The take-back connects
@@ -761,6 +784,7 @@ int main(void)
     RUN(lang_goes_once_a_link_and_once_a_change_after_run);
     RUN(a_node_that_refuses_lang_keeps_its_link_and_is_not_asked_again);
     RUN(a_node_that_started_again_gets_run_again_and_a_servo_run_no_gap);
+    RUN(a_display_node_reads_as_another_board_after_info);
     RUN(the_update_hold_hands_the_link_over_and_takes_it_back);
     return test_summary("pnode_ctl");
 }

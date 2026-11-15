@@ -88,6 +88,13 @@ bool panel_pnode_blec_target(bleu_addr_t *addr, bool *linked,
                           uint8_t version[3], bool *down);
 
 /**
+ * @brief Whether the bound node runs a board whose image the panel does not
+ *        carry (pnode_ctl_other_board()), for UPDATES; `blec` task only.
+ * @return true for a linked display node
+ */
+bool panel_pnode_blec_other_board(void);
+
+/**
  * @brief A value changed: SET_PNODE_EN and SET_I228_SRC go to the task.
  * @param id The setting.
  */

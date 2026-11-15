@@ -888,9 +888,9 @@ this start`.
   update for it: the panel's application slot of 8,126,464 bytes has about
   9% (about 750KB) free with the images it carries, and the display node's
   image is 654,576 bytes. The display node is flashed over USB. A display
-  node bound as the panel's power node shows POWER NODE FIRMWARE with the
-  C6 image; a transfer ends at BEGIN with code 1 (`E_KIND`, the image is
-  for another device), before the node asks for BOOT.
+  node bound as the panel's power node names board 2 in INFO; POWER NODE
+  FIRMWARE then offers no update, and a tap reads `This panel includes no
+  firmware for this device.` (`pnode_ctl_other_board()`).
 - The display node has not run on a board. The ILI9341V set-up is the
   vendor's, not measured; the SPI clock of 20MHz, the touch's orientation,
   the I2C socket's pin order and the internal RAM left for Bluetooth LE at

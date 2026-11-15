@@ -115,16 +115,19 @@ typedef struct {
     /** @brief What its link says (panel_dial_blec_target()). */
     bool (*target)(bleu_addr_t *addr, bool *linked, uint8_t version[3],
                    bool *down);
+    /** @brief The device runs a board whose image the panel does not
+     *         carry (panel_pnode_blec_other_board()); NULL: never. */
+    bool (*other_board)(void);
 } dev_hooks_t;
 
 /** @brief The devices, by BLEOTA_KIND_* - 1, as s_img. */
 static const dev_hooks_t k_dev[DEV_N] = {
     { TX_DEV_NAME_DIAL, TX_ALERT_DIAL_ASK, panel_dial_blec_hold,
-      panel_dial_blec_target },
+      panel_dial_blec_target, NULL },
     { TX_DEV_NAME_PNODE, TX_ALERT_NODE_ASK, panel_pnode_blec_hold,
-      panel_pnode_blec_target },
+      panel_pnode_blec_target, panel_pnode_blec_other_board },
     { TX_DEV_NAME_BAL, TX_ALERT_NODE_ASK, panel_bal_blec_hold,
-      panel_bal_blec_target },
+      panel_bal_blec_target, NULL },
 };
 
 /** @brief Where the `blec` task's update stands. */
@@ -137,7 +140,8 @@ typedef enum {
 /** @brief What a device's link and image say, for its row. */
 typedef struct {
     bool         img_due;   /**< its image is not checked yet */
-    bool         have_img;  /**< it is carried */
+    bool         have_img;  /**< it is carried, and for the board the device
+                                 runs */
     bool         img_ok;    /**< it passed */
     fw_version_t carried;   /**< its version */
     bool         linked;    /**< the device is connected, its version read */
@@ -283,6 +287,7 @@ typedef struct {
     bool        bound;  /**< one is bound */
     bool        linked; /**< connected, its version read */
     bool        down;   /**< no link stands or is under way */
+    bool        other;  /**< it runs a board the carried image is not for */
     uint8_t     ver[3]; /**< its version */
 } seen_t;
 
@@ -477,6 +482,8 @@ void panel_devupd_blec_poll(uint32_t now)
     for (unsigned i = 0; i < DEV_N; ++i) {
         t[i].bound = k_dev[i].target(&t[i].addr, &t[i].linked, t[i].ver,
                                      &t[i].down);
+        t[i].other = t[i].bound && k_dev[i].other_board != NULL
+                     && k_dev[i].other_board();
     }
     /* The control task's live flag, which it hands the Dial: ARMED or an
      * arm waiting, for every device. */
@@ -490,7 +497,8 @@ void panel_devupd_blec_poll(uint32_t now)
         /* A pending unknown install is reported first, from its own
          * device: the new update never reads as its result. */
         settle(t, now, true);
-        begin(dev, t[dev].bound, t[dev].linked, t[dev].ver, now);
+        begin(dev, t[dev].bound, t[dev].linked && !t[dev].other, t[dev].ver,
+              now);
     } else if (take == DEVUPD_TAKE_ARMED) {
         s_cur = dev;
         ESP_LOGW(TAG, "%s update refused: the bench is ARMED", cur_word());
@@ -537,8 +545,9 @@ void panel_devupd_blec_poll(uint32_t now)
         const carried_t *g = &s_img[i];
         dev_pub_t *d = &s_next.d[i];
         d->img_due = g->st == IMG_DUE;
-        d->have_img = g->st != IMG_NONE;
-        d->img_ok = g->st == IMG_READY;
+        /* A display node runs another board: no carried image is its. */
+        d->have_img = g->st != IMG_NONE && !t[i].other;
+        d->img_ok = g->st == IMG_READY && !t[i].other;
         d->carried = g->info.version;
         d->linked = t[i].bound && t[i].linked;
         d->running = (fw_version_t){ t[i].ver[0], t[i].ver[1], t[i].ver[2] };
