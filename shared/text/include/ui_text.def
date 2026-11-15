@@ -6084,6 +6084,9 @@ UI_TEXT(DEV_NAME_BAL, 36,
 UI_TEXT(DEV_FAIL_LINK, 36,
     "no connection",
     "keine Verbindung")
+UI_TEXT(DEV_FAIL_NO_SERVICE, 36,
+    "no update service, flash it by USB",
+    "kein Update-Dienst, per USB flashen")
 UI_TEXT(DEV_FAIL_LOST, 36,
     "connection lost",
     "Verbindung verloren")

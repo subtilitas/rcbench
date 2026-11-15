@@ -50,6 +50,7 @@ typedef struct {
     unsigned        qn;        /**< their count */
     uint32_t        now;       /**< the clock */
     bool            no_data;   /**< the device lacks DATA */
+    bool            no_svc;    /**< the device lacks the update service */
     bool            drop_end;  /**< the link drops before END's answer */
     bool            linked;    /**< a connection stands */
     unsigned        connects;  /**< CONNECTs seen */
@@ -118,9 +119,11 @@ static void act(host_t *h, const bleu_act_t *a)
         break;
     case BLEU_ACT_DISC_SVC:
         CHECK(memcmp(a->data, bleota_uuid_svc, 16u) == 0);
-        e = ev(h, BLEU_EV_SVC, a->token);
-        e->h1 = H_START;
-        e->h2 = H_END;
+        if (!h->no_svc) {
+            e = ev(h, BLEU_EV_SVC, a->token);
+            e->h1 = H_START;
+            e->h2 = H_END;
+        }
         (void)ev(h, BLEU_EV_SVC_DONE, a->token);
         break;
     case BLEU_ACT_DISC_CHRS:
@@ -337,6 +340,25 @@ TEST_CASE(a_device_without_data_never_starts_the_transfer)
     CHECK(!h.c.on);
 }
 
+TEST_CASE(a_device_without_the_service_ends_the_transfer_at_once)
+{
+    static host_t h;
+    start(&h, false);
+    h.no_svc = true;
+    for (int i = 0; i < 1000 && devupd_busy(&h.c.e); ++i) {
+        poll(&h);
+    }
+    CHECK_EQ(h.c.e.phase, DEVUPD_FAILED);
+    CHECK_EQ(h.c.e.err, DEVUPD_E_NO_SERVICE);
+    CHECK_EQ(h.ctrl_writes, 0u);
+    CHECK_EQ(h.connects, 1u);
+    CHECK(!h.c.on);
+    /* Only a transfer that waits for its link ends this way. */
+    devupd_no_service(&h.c.e, h.now);
+    CHECK_EQ(h.c.e.err, DEVUPD_E_NO_SERVICE);
+    devupd_no_service(NULL, h.now);
+}
+
 TEST_CASE(an_abort_ends_the_link_and_owners_out_of_range_are_refused)
 {
     static host_t h;
@@ -376,6 +398,7 @@ int main(void)
 {
     RUN(an_update_connects_finds_data_sends_and_switches_off);
     RUN(a_device_without_data_never_starts_the_transfer);
+    RUN(a_device_without_the_service_ends_the_transfer_at_once);
     RUN(an_abort_ends_the_link_and_owners_out_of_range_are_refused);
     RUN(a_link_lost_before_ends_answer_leaves_the_install_unknown);
     return test_summary("devupd_client");

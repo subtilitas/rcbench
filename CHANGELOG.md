@@ -90,6 +90,10 @@ history is in git.
 
 - M5Stack Dial: the knob turned the wrong way. Clockwise now counts up, as
   the protocol says.
+- Device update over Bluetooth LE: a Dial or node whose firmware predates
+  the update has no update service. The update ends at once with
+  `no update service, flash it by USB` instead of `no connection` after
+  30s.
 
 ## 0.23.13 - 2026-11-15
 
