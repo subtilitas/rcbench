@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """INA228 module with two XT90PW connectors, board print "BIFRC V1.1".
 
 Source: three owner photos of the board on 5mm squared paper (top

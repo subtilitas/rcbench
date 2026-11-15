@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Checks of the part drawings against the catalogue. Every function is pure and
 // returns findings; an empty list is a pass. The command line is `cli.ts`.
 
@@ -49,7 +50,7 @@ const ANIMATION = new Set(['set', 'animate', 'animatemotion', 'animatetransform'
 
 /** Every element the generator writes, by its name as written. A file with another element is a finding. */
 export const ELEMENTS: ReadonlySet<string> = new Set([
-  'svg', 'title', 'desc', 'defs', 'linearGradient', 'radialGradient', 'stop', 'filter', 'feDropShadow',
+  'svg', 'title', 'desc', 'metadata', 'defs', 'linearGradient', 'radialGradient', 'stop', 'filter', 'feDropShadow',
   'g', 'rect', 'circle', 'path', 'text',
 ]);
 

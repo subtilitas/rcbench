@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Trace the INA228 module's printed legends from the owner's top photo.
 
 The photo is the owner's ina228_top.jpg, taken on squared paper; it is

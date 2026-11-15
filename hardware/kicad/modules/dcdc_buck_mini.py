@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Mini buck DC-DC module, 30 x 18mm, 4R7 inductor, input 6-20V, EN pad.
 
 Hole grid from the dimensions printed on the vendor photo: pairs 2.54mm

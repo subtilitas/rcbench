@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Waveshare RP2350-CAN, 21.00 x 51.00mm, 40 pads in the Pico pinout.
 
 Pad grid from the maker's dimension drawing (Waveshare wiki RP2350-CAN,

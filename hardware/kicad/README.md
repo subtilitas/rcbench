@@ -172,5 +172,18 @@ The renders are not checked by CI; run the command after changing a
 
 ## Licence
 
-MIT (Massachusetts Institute of Technology), as the rest of the tree:
-[LICENSE](../../LICENSE).
+Everything in this directory is licensed under CC BY-NC-SA 4.0 (Creative
+Commons Attribution-NonCommercial-ShareAlike 4.0 International):
+non-commercial use, attribution, share-alike. This covers the 3D shapes, the
+footprints, the symbol library, the renders and the Python scripts. The text
+is [LICENSE-CAD.txt](../LICENSE-CAD.txt); a summary is at
+<https://creativecommons.org/licenses/by-nc-sa/4.0/>.
+
+The Python files carry `SPDX-License-Identifier: CC-BY-NC-SA-4.0` in a
+comment (SPDX is Software Package Data Exchange), and each STEP file names the
+licence in its `FILE_DESCRIPTION`. KiCad has no comment syntax, so the
+`.kicad_mod` and `.kicad_sym` files carry no line; this section covers them.
+The rest of the repository is MIT: [LICENSE](../../LICENSE).
+
+Maker names and logos drawn on the module models remain their owners'
+trademarks.

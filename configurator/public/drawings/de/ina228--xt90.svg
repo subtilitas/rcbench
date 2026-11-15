@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" lang="de" xml:lang="de" viewBox="0 0 420 280" width="420" height="280" role="img" aria-labelledby="ixt-t" aria-describedby="ixt-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
 <title id="ixt-t">INA228-Akkustromsensor, INA228-Modul mit XT90-Steckern (Aufdruck: BIFRC V1.1)</title>
 <desc id="ixt-d">Illustration des INA228-Moduls mit 2 XT90-Steckern und 5-poliger Leiste mit dem Aufdruck L A V G 5.</desc>
+<metadata>SPDX-License-Identifier: CC-BY-NC-SA-4.0</metadata>
 <defs>
 <linearGradient id="ixt-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
 <linearGradient id="ixt-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>

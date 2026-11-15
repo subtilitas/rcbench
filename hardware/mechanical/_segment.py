@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Give every triangle of a mesh part a face on a fitted surface.
 
 The second of three modules; _refit.py describes the method.

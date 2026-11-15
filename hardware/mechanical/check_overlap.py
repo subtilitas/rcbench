@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Check that no two solids of a mechanical model share volume.
 
 Each named model of hardware/mechanical/models/ is read back with

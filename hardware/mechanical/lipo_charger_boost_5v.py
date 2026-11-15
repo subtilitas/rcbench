@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Lithium polymer charger board with a 5V boost output, part by part.
 
 The board is the one of hardware/kicad/modules/lipo_charger_boost_5v.py;

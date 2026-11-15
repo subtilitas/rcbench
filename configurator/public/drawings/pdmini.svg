@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 350 244" width="350" height="244" role="img" aria-labelledby="pdm-t" aria-describedby="pdm-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
 <title id="pdm-t">WeAct Studio PD Power Mini V1 Buck module</title>
 <desc id="pdm-d">Illustration of the PD mini board: USB-C input, 4 buttons, display, 4-pole output terminal.</desc>
+<metadata>SPDX-License-Identifier: CC-BY-NC-SA-4.0</metadata>
 <defs>
 <linearGradient id="pdm-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
 <linearGradient id="pdm-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>

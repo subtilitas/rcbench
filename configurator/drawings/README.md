@@ -244,3 +244,15 @@ depend on colour alone.
   the name of the part without the values: it names no resistance and no
   rating, as the card lets a visitor choose both. A star has no drawing of its own; its pins keep the names
   corner A, B and C.
+
+## Licence
+
+The drawings in `public/drawings/`, `anchors.json`, `panel.json` and the
+scripts in this folder are licensed under CC BY-NC-SA 4.0 (Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International), text in
+[hardware/LICENSE-CAD.txt](../../hardware/LICENSE-CAD.txt). Each SVG file
+holds `SPDX-License-Identifier: CC-BY-NC-SA-4.0` (SPDX is Software Package
+Data Exchange) in a `metadata` element; each script starts with the same line
+in a comment. JSON has no comment, so the two JSON files rely on this
+section. `wires.ts` stays MIT, because the pages of the configurator import
+it. The rest of the configurator is MIT.

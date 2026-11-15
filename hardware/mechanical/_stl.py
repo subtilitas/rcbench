@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Read a binary STL mesh and split it into its parts.
 
 A part is a set of triangles connected through shared edges. Each part

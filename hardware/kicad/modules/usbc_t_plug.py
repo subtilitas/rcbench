@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """USB-C tap "T-plug": USB-C board F-F with a plug board, pads G D+ D- V.
 
 The assembly is a black T-shaped board, 17.0 x 19.6mm, with the USB-C

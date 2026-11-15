@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Waveshare ESP32-P4-WIFI6-Touch-LCD-7B, the bench's panel board.
 
 A facsimile for designing the enclosure: the cover glass, the display,

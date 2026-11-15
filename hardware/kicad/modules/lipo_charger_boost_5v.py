@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Lithium polymer charger board with a 5V boost output, 15.2 x 24mm.
 
 Black board, underside print "Charge & DisCharge". 6 holes at 2.54mm

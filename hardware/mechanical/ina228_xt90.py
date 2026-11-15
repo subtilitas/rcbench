@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """INA228 current sensor module with two XT90PW connectors, part by part.
 
 The board, print "BIFRC V1.1", is the one of

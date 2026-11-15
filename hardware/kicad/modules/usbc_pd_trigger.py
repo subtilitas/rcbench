@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """USB-C PD trigger board, 30 x 20mm, 3-way DIP switch, two output holes.
 
 Measured from a vendor photo of the component side (32.6px/mm across,

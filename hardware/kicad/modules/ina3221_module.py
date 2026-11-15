@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """DAOKAI INA3221 board (CJMCU-3221 style), 38.0 x 31.8mm, 3 channels.
 
 Measured from the owner's photos 16-ina3221-front.webp (component side) and

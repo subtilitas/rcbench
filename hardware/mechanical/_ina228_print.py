@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """The INA228 module's printed legends, traced from the photo.
 
 Written by _trace_ina228_print.py; do not edit. Each shape is

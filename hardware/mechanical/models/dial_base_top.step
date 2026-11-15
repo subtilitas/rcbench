@@ -1,6 +1,6 @@
 ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('Open CASCADE Model'),'2;1');
+FILE_DESCRIPTION(('Open CASCADE Model, SPDX-License-Identifier: CC-BY-NC-SA-4.0'),'2;1');
 FILE_NAME('dial_base_top.step','2000-01-01T00:00:00',(''),(''),'rcbench _gen_dial_base.py','OpenCASCADE','');
 FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));
 ENDSEC;

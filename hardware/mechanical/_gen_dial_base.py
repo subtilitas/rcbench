@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Write the two parts of a hand-held base for the M5Stack Dial.
 
 The base is a body of revolution about the dial's axis, shaped like a
@@ -376,6 +377,10 @@ def step_text(stem, solid):
     writer.Write(str(path))
     text = path.read_text()
     path.unlink()
+    text = text.replace(
+        "FILE_DESCRIPTION(('Open CASCADE Model'),",
+        "FILE_DESCRIPTION(('Open CASCADE Model, "
+        "SPDX-License-Identifier: CC-BY-NC-SA-4.0'),", 1)
     text = re.sub(r"FILE_NAME\(.*?\);", "FILE_NAME('" + stem + ".step',"
                   "'2000-01-01T00:00:00',(''),(''),'rcbench "
                   "_gen_dial_base.py','OpenCASCADE','');", text, count=1,

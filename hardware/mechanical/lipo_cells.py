@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Two lithium polymer cells with protection board, wires and plug.
 
     lipo_702030_380mah     print "702030 3.7V 380mAh 1.406Wh"

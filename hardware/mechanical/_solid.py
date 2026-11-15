@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Extruded solids with flat and cylindrical faces, placed in space.
 
 A shape is a profile in a plane, with holes, pushed along the plane's

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """5V boost converter board with an enable pad, green, 13.7 x 21.7mm.
 
 4 tinned corner pads with holes and one round pad without a hole. The

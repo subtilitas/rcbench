@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """ADXL345 accelerometer board GY-291, 14.8 x 20.6mm, 8-hole header, 2 holes.
 
 No owner photo. Measured from the Core Electronics product photo

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """MATEK I2C-INA-BM, INA228 current and voltage monitor, 27 x 20mm.
 
 Sources: the maker's 3D model I2C-INA-BM.step (mateksys.com download,

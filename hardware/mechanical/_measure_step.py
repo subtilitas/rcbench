@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Measure Waveshare's STEP file of the 7-inch panel board for panel_7b.py.
 
 The file is ESP32-P4-WIFI6-Touch-LCD-7B_3d-20251108.stp from
@@ -280,7 +281,8 @@ def main(argv):
         0.
     """
     chips, named, leaded, boxes = classify(measure(Path(argv[0])))
-    lines = ['"""Dimensions of the 7-inch panel board, by _measure_step.py.',
+    lines = ["# SPDX-License-Identifier: CC-BY-NC-SA-4.0",
+             '"""Dimensions of the 7-inch panel board, by _measure_step.py.',
              "",
              "Measured in Waveshare's STEP file of the board, in that",
              "file's frame, mm. CHIPS holds (kind, x, y, turn) of each chip",

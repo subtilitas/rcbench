@@ -134,7 +134,21 @@ Security and safety reports: [SECURITY.md](SECURITY.md).
 
 ## Licences and attributions
 
-rcbench is MIT licensed: [LICENSE](LICENSE).
+rcbench is MIT licensed: [LICENSE](LICENSE). MIT covers the software. The
+hardware design files are the exception: the models and CAD
+(computer-aided design) files under `hardware/mechanical/` and
+`hardware/kicad/`, and the part drawings of the configurator
+(`configurator/public/drawings/` and the scripts in `configurator/drawings/`
+that write them). Those are licensed under CC BY-NC-SA 4.0 (Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International): non-commercial use,
+attribution, and share-alike for derived files. LICENSE itself holds the
+MIT text only, which the panel's release archive carries; the scope is stated
+here and in the header of the licence file. The licence text is
+[hardware/LICENSE-CAD.txt](hardware/LICENSE-CAD.txt); a summary is at
+<https://creativecommons.org/licenses/by-nc-sa/4.0/>. The exception is
+`hardware/mechanical/vendor/m5stack_dial/`, which keeps M5Stack's MIT licence.
+Maker names and logos drawn on the module models remain their owners'
+trademarks.
 
 - **DejaVu Sans Mono.** The seven font tables under `shared/gfx/` are glyph
   bitmaps rendered from DejaVu Sans Mono by `tools/gen_font.py`, under the
@@ -194,4 +208,5 @@ by law, the author accepts no liability for:
 - damage to computers, microcontrollers or other connected hardware,
 - injury or damage that results from operating the hardware.
 
-The licence terms are in [LICENSE](LICENSE).
+The licence terms are in [LICENSE](LICENSE) and, for the models and CAD
+files, [hardware/LICENSE-CAD.txt](hardware/LICENSE-CAD.txt).

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Surfaces a mesh part is refitted with, and the fits to its points.
 
 The first of three modules: this one has the tolerances, the surfaces

@@ -22,6 +22,12 @@ reading GPL source cannot be relicensed by rewording it.
   SRXL2, JETI EX Bus, DShot and DroneCAN. The code here is written
   independently of them.
 
+A contribution to the models and CAD files under `hardware/mechanical/` and
+`hardware/kicad/`, or to the configurator's part drawings, is licensed under CC
+BY-NC-SA 4.0 ([hardware/LICENSE-CAD.txt](hardware/LICENSE-CAD.txt)); every
+other contribution is MIT. A new Python file in those directories starts with
+`# SPDX-License-Identifier: CC-BY-NC-SA-4.0`.
+
 A protocol with no published description and no capture of its wire is not
 implemented. The programming protocol of KST and Chaservo servos has no
 published description and is written from captures made on hardware the

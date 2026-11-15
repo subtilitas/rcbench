@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Waveshare ESP32-C6-Zero, part by part.
 
 The board is the one of hardware/kicad/modules/esp32_c6_zero.py;

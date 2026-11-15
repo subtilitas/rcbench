@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Outlines of the letters printed on boards.
 
 Written by _gen_font.py; do not edit. GLYPHS maps a character

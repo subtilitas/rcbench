@@ -141,7 +141,19 @@ Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
 ## Lizenzen und Quellen
 
 rcbench steht unter der MIT-Lizenz (Massachusetts Institute of Technology):
-[LICENSE](LICENSE).
+[LICENSE](LICENSE). MIT gilt für die Software. Ausgenommen sind die
+Hardware-Entwurfsdateien: die Modelle und CAD-Dateien (Computer-Aided Design)
+unter `hardware/mechanical/` und `hardware/kicad/` und die Teilezeichnungen
+des Konfigurators (`configurator/public/drawings/` und die Skripte in
+`configurator/drawings/`, die sie erzeugen). Sie stehen
+unter CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike
+4.0 International): nichtkommerzielle Nutzung, Namensnennung und Weitergabe
+abgeleiteter Dateien unter gleichen Bedingungen. Der Lizenztext steht in
+[hardware/LICENSE-CAD.txt](hardware/LICENSE-CAD.txt), eine Zusammenfassung
+unter <https://creativecommons.org/licenses/by-nc-sa/4.0/deed.de>. Davon
+ausgenommen ist `hardware/mechanical/vendor/m5stack_dial/`, das die
+MIT-Lizenz von M5Stack behält. Namen und Logos von Herstellern, die auf den
+Modellen der Module abgebildet sind, bleiben Marken ihrer Inhaber.
 
 - **DejaVu Sans Mono.** Die sieben Fonttabellen unter `shared/gfx/` sind
   Glyphen-Bitmaps, die `tools/gen_font.py` aus DejaVu Sans Mono erzeugt, unter
@@ -204,4 +216,5 @@ zulässig, übernimmt der Autor keine Haftung für:
   Hardware,
 - Verletzungen oder Schäden, die durch den Betrieb der Hardware entstehen.
 
-Die Lizenzbedingungen stehen in [LICENSE](LICENSE).
+Die Lizenzbedingungen stehen in [LICENSE](LICENSE) und, für die Modelle und
+CAD-Dateien, in [hardware/LICENSE-CAD.txt](hardware/LICENSE-CAD.txt).

@@ -195,7 +195,8 @@ nut 5.0mm). This is not checked on a part.
 binary STL of 58480 triangles in mm. It holds each part twice: assembled
 about the z axis, and set apart at x from -568mm to -37mm. A viewer that
 fits the whole file shows the assembled dial small. The 2 STEP files hold
-M5Stack's geometry and are under the same licence.
+M5Stack's geometry, which stays under M5Stack's MIT notice; the files are
+licensed as the rest of this directory (see [Licence](#licence)).
 
 ![Mechanical models](renders/all.png)
 
@@ -549,3 +550,24 @@ Limits:
 ```sh
 python3 hardware/mechanical/_gen_font.py     # rewrite _font.py; needs OpenCV
 ```
+
+## Licence
+
+Everything in this directory is licensed under CC BY-NC-SA 4.0 (Creative
+Commons Attribution-NonCommercial-ShareAlike 4.0 International):
+non-commercial use, attribution, share-alike. This covers the models, the
+renders and the Python scripts with their data. The text is
+[LICENSE-CAD.txt](../LICENSE-CAD.txt); a summary is at
+<https://creativecommons.org/licenses/by-nc-sa/4.0/>.
+
+The Python files carry `SPDX-License-Identifier: CC-BY-NC-SA-4.0` in a
+comment (SPDX is Software Package Data Exchange), and each STEP file names the
+licence in its `FILE_DESCRIPTION`. The STL files and the renders carry no line;
+this section covers them.
+
+The exception is `vendor/m5stack_dial/`, which keeps M5Stack's MIT licence
+(Massachusetts Institute of Technology). The rest of the repository is MIT:
+[LICENSE](../../LICENSE).
+
+Maker names and logos drawn on the module models remain their owners'
+trademarks.

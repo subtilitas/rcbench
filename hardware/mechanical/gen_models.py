@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Write the STEP models of the mechanical parts from their specs.
 
 The specs are hardware/mechanical/*.py other than this file, the checks

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Builds the part drawings and their anchor table from the catalogue.
 // Pure: the same catalogue gives the same bytes. No file, no clock, no random number.
 

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Write the rcbench KiCad library from the module specs.
 
 The specs are hardware/kicad/modules/*.py; the output is
@@ -83,7 +84,8 @@ def model_text(fp, model):
         The file's text.
     """
     if model.get("detail"):
-        return step_gen.write(fp["name"], detail(model), "module model")
+        return step_gen.write(fp["name"], detail(model),
+                              "module model, " + step_gen.SPDX)
     return step_gen.step(fp, model)
 
 

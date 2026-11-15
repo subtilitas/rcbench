@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 320 224" width="320" height="224" role="img" aria-labelledby="srv-t" aria-describedby="srv-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
 <title id="srv-t">Servo (yours)</title>
 <desc id="srv-d">Illustration of a servo with its 3-wire lead: signal, plus, minus.</desc>
+<metadata>SPDX-License-Identifier: CC-BY-NC-SA-4.0</metadata>
 <defs>
 <linearGradient id="srv-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
 <linearGradient id="srv-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>

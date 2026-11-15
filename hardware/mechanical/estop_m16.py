@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Emergency stop button, M16 x 1 panel mount, mushroom head 24.9mm.
 
 A latching mushroom push button turned to release ("STOP" with rotation

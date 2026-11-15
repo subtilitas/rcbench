@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 import assert from 'node:assert/strict';
 import { test } from 'node:test';
 import type { Catalogue } from '../../contract.ts';

@@ -6,6 +6,21 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- Licence of the models and CAD (computer-aided design) files: everything under
+  `hardware/mechanical/` and `hardware/kicad/` moves from MIT to CC BY-NC-SA
+  4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+  International), text in `hardware/LICENSE-CAD.txt`. The exception is
+  `hardware/mechanical/vendor/m5stack_dial/`, which keeps M5Stack's MIT
+  licence. The configurator's part drawings (`configurator/public/drawings/`
+  and the scripts in `configurator/drawings/`, bar `wires.ts`) move too; each
+  SVG (Scalable Vector Graphics) file carries the licence in a `metadata`
+  element. MIT covers the software, the rest of the tree. The Python scripts
+  carry `SPDX-License-Identifier: CC-BY-NC-SA-4.0`, the STEP files name the
+  licence in their `FILE_DESCRIPTION`, and `tools/check_docs.py` fails on an
+  MIT line or a missing licence line in those directories.
+
 ### Added
 
 - `tools/make_video.py` renders a storyboard under `tools/video/storyboards/`

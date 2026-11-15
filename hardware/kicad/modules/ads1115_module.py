@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """ADS1115 16-bit ADC board, blue, 28.0 x 17.0mm, 10-hole header, 2 holes.
 
 The common board printed "16Bit I2C ADC+PGA ADS1115" (often sold as

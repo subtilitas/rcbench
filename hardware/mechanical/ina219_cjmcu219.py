@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """INA219 current sensor board, print CJMCU, part by part.
 
 The board is the one of hardware/kicad/modules/ina219_cjmcu219.py;

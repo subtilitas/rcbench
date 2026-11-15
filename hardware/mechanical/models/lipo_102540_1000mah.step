@@ -1,6 +1,6 @@
 ISO-10303-21;
 HEADER;
-FILE_DESCRIPTION(('lipo_102540_1000mah model'),'2;1');
+FILE_DESCRIPTION(('lipo_102540_1000mah model, SPDX-License-Identifier: CC-BY-NC-SA-4.0'),'2;1');
 FILE_NAME('lipo_102540_1000mah.step','2026-01-01T00:00:00',(''),(''),'rcbench step_gen.py','rcbench step_gen.py','');
 FILE_SCHEMA(('AUTOMOTIVE_DESIGN { 1 0 10303 214 1 1 1 1 }'));
 ENDSEC;

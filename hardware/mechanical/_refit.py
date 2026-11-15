@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Refit a closed triangle mesh with the surfaces it was cut from.
 
 The mesh is a tessellated CAD model: its vertices lie on the model's

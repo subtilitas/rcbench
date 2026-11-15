@@ -1,7 +1,13 @@
 rcbench — third-party notices
 =============================
 
-rcbench itself is licensed under the MIT License; see LICENSE.
+rcbench itself is licensed under the MIT License; see LICENSE. The models and
+CAD files under hardware/mechanical/ and hardware/kicad/ are licensed under
+CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International), as are the configurator's part drawings (configurator/
+public/drawings/ and the scripts in configurator/drawings/ other than
+wires.ts); see hardware/LICENSE-CAD.txt. hardware/mechanical/vendor/
+m5stack_dial/ keeps its MIT License.
 
 This file records the material in this repository that originates elsewhere.
 
@@ -133,7 +139,8 @@ hardware/mechanical/vendor/m5stack_dial/LICENSE. The STEP models
 
 are generated from that mesh by hardware/mechanical/m5dial.py, which fits
 surfaces to its triangles. They hold M5Stack's geometry of the 9 plastic
-parts and are under the same licence.
+parts. M5Stack's MIT notice above applies to that geometry; the two files
+are licensed under CC BY-NC-SA 4.0 like the rest of hardware/mechanical/.
 
 
 Design and protocol references

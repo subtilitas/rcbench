@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 380 290" width="380" height="290" role="img" aria-labelledby="pnl-t" aria-describedby="pnl-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
 <title id="pnl-t">7-inch ESP32-P4 display board from Waveshare</title>
 <desc id="pnl-d">Illustration of the back of the panel board, turned so that the CAN header is on the right: CAN header H11 with 5V, GND, CAN H and CAN L, 12-pin header P3 with IO28 at the top edge.</desc>
+<metadata>SPDX-License-Identifier: CC-BY-NC-SA-4.0</metadata>
 <defs>
 <linearGradient id="pnl-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
 <linearGradient id="pnl-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>

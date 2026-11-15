@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Waveshare ESP32-C6-Zero, 18.0 x 23.5mm, 18 edge pads and 7 under it.
 
 A microcontroller board with a USB Type-C socket at one short edge and

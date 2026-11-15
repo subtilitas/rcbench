@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Compare the refit M5Stack Dial solids with the mesh they come from.
 
 m5dial.py fits surfaces to the 9 parts of vendor/m5stack_dial/Dial.stl.

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """INA219 current sensor board, blue, 25.4 x 21.5mm, 4 holes.
 
 6-hole header + 2-pole screw terminal.

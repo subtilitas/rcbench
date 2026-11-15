@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // The part drawings: one draw function per drawing and the list of drawings.
 // A draw function places shapes and pins on a Dwg. It reads no file and no clock.
 // Coordinates are px of the viewBox. The sources of the shapes are the owner's

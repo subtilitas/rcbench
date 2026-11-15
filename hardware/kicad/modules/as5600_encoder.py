@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """AS5600 magnetic angle encoder board, 22.5 x 22.5mm, white, 4 corner holes.
 
 Measured from the owner's photo 10-as5600-b.webp (component side, oblique).

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """WeAct Studio PD Power Mini V1 Buck, 61 x 40mm, USB-C PD input.
 
 The board carries a 0.96 inch display, 4 buttons, a 3.81mm 4-pole pluggable

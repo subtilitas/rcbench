@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """A module's board for the specs: the plate and where its parts go.
 
 A spec gives positions on the board in mm from the board's centre, x

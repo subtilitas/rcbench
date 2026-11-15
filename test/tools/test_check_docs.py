@@ -361,6 +361,39 @@ def test_spdx_covers_the_tool_scripts(tree):
         "tools/bad.py has no SPDX-License-Identifier"]
 
 
+def test_spdx_names_the_licence_of_its_directory(tree):
+    """The CAD directories carry CC-BY-NC-SA-4.0, the rest MIT."""
+    cad = "# SPDX-License-Identifier: CC-BY-NC-SA-4.0\n"
+    step = "FILE_DESCRIPTION(('x','SPDX-License-Identifier: CC-BY-NC-SA-4.0'))"
+    for rel, text in (
+            ("hardware/mechanical/ok.py", cad),
+            ("hardware/kicad/tools/ok.py", cad),
+            ("hardware/mechanical/models/ok.step", step),
+            ("hardware/mechanical/bad_mit.py",
+             "# SPDX-License-Identifier: MIT\n"),
+            ("hardware/kicad/modules/bad_none.py", "x = 1\n"),
+            ("hardware/mechanical/models/bad.step",
+             "SPDX-License-Identifier: MIT\n"),
+            ("hardware/mechanical/vendor/m5stack_dial/v.py", "x = 1\n"),
+            ("hardware/kicad/x.kicad_mod", "(footprint)\n"),
+            ("tools/bad_cad.py", cad)):
+        f = tree / rel
+        f.parent.mkdir(parents=True, exist_ok=True)
+        f.write_text(text)
+    problems = []
+    cd.check_spdx(problems)
+    assert sorted(problems) == [
+        "hardware/kicad/modules/bad_none.py has no SPDX-License-Identifier",
+        "hardware/mechanical/bad_mit.py names MIT in an "
+        "SPDX-License-Identifier; hardware/LICENSE-CAD.txt covers it, "
+        "so it is CC-BY-NC-SA-4.0",
+        "hardware/mechanical/models/bad.step names MIT in an "
+        "SPDX-License-Identifier; hardware/LICENSE-CAD.txt covers it, "
+        "so it is CC-BY-NC-SA-4.0",
+        "tools/bad_cad.py has SPDX-License-Identifier CC-BY-NC-SA-4.0, "
+        "not MIT"]
+
+
 def sdk_tree(tree, **change):
     """The CI files and pages that agree on pico-sdk 2.3.0 and ESP-IDF v6.1.
 

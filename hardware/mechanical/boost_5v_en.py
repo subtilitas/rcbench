@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """5V boost converter board with an enable pad, part by part.
 
 The board is the one of hardware/kicad/modules/boost_5v_en.py; outline,

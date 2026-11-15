@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Write KiCad 10 footprints and symbols from module specs.
 
 A spec is a Python module in hardware/kicad/modules/ that defines FOOTPRINT

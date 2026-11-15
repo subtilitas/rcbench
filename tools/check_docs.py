@@ -1577,31 +1577,59 @@ def check_sdk_tags(problems: list[str]) -> None:
                                 f"ci.yml builds {idf}")
 
 
-# Where the SPDX line is required: the directories walked and the suffixes
-# of the files that carry one.
+# Where the SPDX line is required: the directories walked, the suffixes of
+# the files that carry one, and the identifier it names.  The models and CAD
+# (computer-aided design) files of hardware/mechanical and hardware/kicad are
+# CC-BY-NC-SA-4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+# International), as hardware/LICENSE-CAD.txt states; the rest is MIT.  A
+# KiCad footprint or symbol file has no comment syntax, so none is required.
+SPDX_MIT = "MIT"
+SPDX_CAD = "CC-BY-NC-SA-4.0"
 SPDX_DIRS = (
-    ("shared", (".c", ".h")),
-    ("protocols", (".c", ".h")),
-    ("firmware", (".c", ".h")),
-    ("test", (".c", ".h")),
-    ("tools", (".py", ".sh", ".js")),
-    ("test/tools", (".py", ".sh", ".js")),
+    ("shared", (".c", ".h"), SPDX_MIT),
+    ("protocols", (".c", ".h"), SPDX_MIT),
+    ("firmware", (".c", ".h"), SPDX_MIT),
+    ("test", (".c", ".h"), SPDX_MIT),
+    ("tools", (".py", ".sh", ".js"), SPDX_MIT),
+    ("test/tools", (".py", ".sh", ".js"), SPDX_MIT),
+    ("hardware/mechanical", (".py", ".step", ".stp"), SPDX_CAD),
+    ("hardware/kicad", (".py", ".step", ".stp"), SPDX_CAD),
+    # The configurator's part drawings (SVG, Scalable Vector Graphics) and
+    # the scripts that write and check only them.
+    ("configurator/drawings", (".ts",), SPDX_CAD),
+    ("configurator/public/drawings", (".svg",), SPDX_CAD),
 )
+
+# A directory that keeps its own licence inside a covered one: M5Stack's
+# files, under M5Stack's MIT licence.
+SPDX_SKIP = ("hardware/mechanical/vendor",)
+
+# A file of a covered directory that stays MIT: wires.ts holds the wire
+# palette and colour rules the configurator's pages import at run time.
+SPDX_SKIP_FILES = ("configurator/drawings/wires.ts",)
+
+SPDX_LINE = re.compile(r"SPDX-License-Identifier:\s*([A-Za-z0-9.+-]+)")
 
 
 def check_spdx(problems: list[str]) -> None:
-    """Check that every source file and tool script carries an SPDX line.
+    """Check that every source file carries the SPDX line of its directory.
 
     SPDX is Software Package Data Exchange.  A new file without the licence
-    line fails the build.  The walk skips build trees, tool caches and the
-    registry components a panel build fetches.
+    line fails the build, and so does a file whose identifier is not the
+    one of its directory: MIT for the code and tools, CC-BY-NC-SA-4.0 for
+    the Python scripts and STEP models of hardware/mechanical and
+    hardware/kicad and the drawings of the configurator, so a new MIT line
+    there fails.  The walk skips build trees, tool caches, the registry
+    components a panel build fetches and the vendored files of
+    hardware/mechanical/vendor.
 
     Args:
-        problems: Receives one line per file without the licence line.
+        problems: Receives one line per file without the licence line or
+            with the wrong one.
     """
     import os
     seen = set()
-    for base, suffixes in SPDX_DIRS:
+    for base, suffixes, want in SPDX_DIRS:
         for dp, dn, fn in os.walk(REPO / base):
             # Prune build trees in place (build, build-san, build-cov) so the
             # walk never reaches a toolchain's own probe files, the caches
@@ -1611,14 +1639,30 @@ def check_spdx(problems: list[str]) -> None:
             dn[:] = [d for d in dn if not d.startswith("build")
                      and d not in ("__pycache__", "node_modules",
                                    "managed_components")]
+            rel_dir = pathlib.Path(dp).relative_to(REPO).as_posix()
+            if any(rel_dir == s or rel_dir.startswith(s + "/")
+                   for s in SPDX_SKIP):
+                continue
             for f in fn:
                 path = pathlib.Path(dp) / f
                 if not f.endswith(suffixes) or path in seen:
                     continue
                 seen.add(path)
-                if "SPDX-License-Identifier" not in read(path):
-                    rel = path.relative_to(REPO)
+                rel = path.relative_to(REPO)
+                if rel.as_posix() in SPDX_SKIP_FILES:
+                    continue
+                found = SPDX_LINE.findall(read(path))
+                if not found:
                     problems.append(f"{rel} has no SPDX-License-Identifier")
+                elif want == SPDX_CAD and any(i != want for i in found):
+                    other = sorted(set(found) - {want})[0]
+                    problems.append(f"{rel} names {other} in an "
+                                    f"SPDX-License-Identifier; "
+                                    f"hardware/LICENSE-CAD.txt covers it, "
+                                    f"so it is {want}")
+                elif want != SPDX_CAD and found[0] != want:
+                    problems.append(f"{rel} has SPDX-License-Identifier "
+                                    f"{found[0]}, not {want}")
 
 
 def main() -> int:

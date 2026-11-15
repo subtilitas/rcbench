@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Write _font.py, the outlines of the letters printed on boards.
 
 The letters are OpenCV's single-stroke Hershey font, the kind of font
@@ -102,6 +103,7 @@ def _points(points, indent):
 def text():
     """The data file's text."""
     lines = [
+        "# SPDX-License-Identifier: CC-BY-NC-SA-4.0",
         '"""Outlines of the letters printed on boards.',
         "",
         "Written by _gen_font.py; do not edit. GLYPHS maps a character",

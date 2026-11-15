@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Load every STEP model of the library with OpenCASCADE and check it.
 
 For each rcbench_modules.3dshapes/*.step: the file reads without error,

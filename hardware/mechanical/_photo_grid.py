@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Measure a board from a photo taken on squared paper.
 
 The paper's grid, PITCH apart, gives the scale. ``lattice`` finds the

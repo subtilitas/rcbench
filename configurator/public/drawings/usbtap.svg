@@ -1,6 +1,7 @@
 <svg xmlns="http://www.w3.org/2000/svg" lang="en" xml:lang="en" viewBox="0 0 260 324" width="260" height="324" role="img" aria-labelledby="tpl-t" aria-describedby="tpl-d" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
 <title id="tpl-t">USB-C tap with 3-wire lead, the T-plug of the PD mini</title>
 <desc id="tpl-d">Illustration of the T-plug: USB-C sockets IN and OUT, third socket with a plug board that has the pads G, D+, D− and V.</desc>
+<metadata>SPDX-License-Identifier: CC-BY-NC-SA-4.0</metadata>
 <defs>
 <linearGradient id="tpl-tin" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#f6f7f8"/><stop offset=".5" stop-color="#c9ced4"/><stop offset="1" stop-color="#9aa1a9"/></linearGradient>
 <linearGradient id="tpl-gold" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#fbe9ad"/><stop offset=".5" stop-color="#dcb450"/><stop offset="1" stop-color="#a47a1e"/></linearGradient>

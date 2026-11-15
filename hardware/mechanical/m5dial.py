@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """M5Stack Dial (SKU K130), panel-mount rotary encoder with a round display.
 
 An ESP32-S3 (Stamp-S3) module in a round housing: a rotating knob ring

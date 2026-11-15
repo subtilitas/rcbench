@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Drawing helpers of the part drawings. No dependency.
 // Every id in an output file starts with the prefix of its drawing.
 
@@ -282,7 +283,7 @@ export class Dwg {
       ...this.grads.values(),
     ];
     return `<svg xmlns="http://www.w3.org/2000/svg" lang="${this.lang}" xml:lang="${this.lang}" viewBox="0 0 ${this.w} ${this.h}" width="${this.w}" height="${this.h}" role="img" aria-labelledby="${p}-t" aria-describedby="${p}-d" font-family="${FONT}">\n`
-      + `<title id="${p}-t">${esc(this.title)}</title>\n<desc id="${p}-d">${esc(this.desc)}</desc>\n<defs>\n${defs.join('\n')}\n</defs>\n`
+      + `<title id="${p}-t">${esc(this.title)}</title>\n<desc id="${p}-d">${esc(this.desc)}</desc>\n<metadata>SPDX-License-Identifier: CC-BY-NC-SA-4.0</metadata>\n<defs>\n${defs.join('\n')}\n</defs>\n`
       + `<rect width="${this.w}" height="${this.h}" rx="10" fill="${CARD}"/>\n${this.out.join('\n')}\n</svg>\n`;
   }
 }

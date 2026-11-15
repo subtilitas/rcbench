@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // Command line of the part drawings.
 //
 //   node drawings/cli.ts            writes public/drawings/**, drawings/anchors.json and drawings/panel.json

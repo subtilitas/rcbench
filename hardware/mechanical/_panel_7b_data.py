@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Dimensions of the 7-inch panel board, by _measure_step.py.
 
 Measured in Waveshare's STEP file of the board, in that

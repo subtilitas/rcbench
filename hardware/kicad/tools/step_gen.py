@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Write STEP 3D models of the modules from the ``MODEL`` of a spec.
 
 The output is ISO 10303-21 text, schema AP214 (automotive design), one
@@ -92,6 +93,11 @@ def _r(v):
     """A real as STEP writes it: always a decimal point, no -0."""
     s = f"{round(v, 6):.6f}".rstrip("0")
     return "0." if s in ("-0.", "0.") else s
+
+
+# The licence of the models (hardware/LICENSE-CAD.txt), written at the end of
+# the file's description, after the name and the kind of model.
+SPDX = "SPDX-License-Identifier: CC-BY-NC-SA-4.0"
 
 
 def _q(s):
@@ -555,10 +561,10 @@ def step(fp, model):
         The file's text.
     """
     return write(fp["name"], [("prism",) + s for s in solids(fp, model)],
-                 "module model")
+                 "module model, " + SPDX)
 
 
-def write(name, items, what="model"):
+def write(name, items, what="model, " + SPDX):
     """The STEP text of one product made of several solids.
 
     Args:

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Render every STEP model of the library to PNG with OpenCASCADE.
 
 Each model is read back from rcbench_modules.3dshapes/ as KiCad reads it,

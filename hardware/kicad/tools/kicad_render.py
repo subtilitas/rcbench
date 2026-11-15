@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Load the library with kicad-cli and render it to PNG.
 
 KiCad 10's kicad-cli renders every footprint and symbol to SVG, and cairosvg

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Draw a module spec as PNG: footprint (silkscreen, fab, pads) and symbol.
 
 With --photo, the footprint is drawn over a photo of the board's component

@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """INA219 current sensor board, print CJMCU, blue, 24.2 x 21.9mm.
 
 6-hole header and the 2 holes of a screw terminal that is not fitted.

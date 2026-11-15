@@ -1,3 +1,4 @@
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Electronic parts as shapes for _solid.py.
 
 Every function returns shapes in the part's own frame: the origin is

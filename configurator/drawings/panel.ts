@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: CC-BY-NC-SA-4.0
 // The panel drawing of the IOmcu board: the parts of `copro.svg` as flat
 // shapes on the real pad grid of the board, for the PICK A PIN screen of the
 // panel. tools/gen_board_drawing.py turns `panel.json` into the table the

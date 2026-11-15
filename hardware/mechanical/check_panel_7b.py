@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+# SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """Hold the panel board's model against Waveshare's STEP file of it.
 
 The file is the one _measure_step.py reads; it is not in this

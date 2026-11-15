@@ -30,14 +30,24 @@ on modules and development boards.
 `hardware/` has its own repository structure (README, STATUS, `docs/`) so
 it can be separated later with a `git mv`. While it remains here:
 
-- `tools/check_docs.py` checks its links and anchors, and nothing else.
+- `tools/check_docs.py` checks its links and anchors, and the licence line
+  of the files in `mechanical/` and `kicad/`; nothing else.
 - The pages are English only. The wiki is bilingual because it is a manual;
   this directory is a design record, with translation deferred until the boards exist.
 
 ## Licence
 
 MIT (Massachusetts Institute of Technology), as the rest of the tree:
-[LICENSE](../LICENSE).
+[LICENSE](../LICENSE). This covers this page, `docs/`, `research/` and
+`STATUS.md`.
+
+The models and CAD (computer-aided design) files under `mechanical/` and
+`kicad/` are licensed under CC BY-NC-SA 4.0 (Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International): non-commercial use,
+attribution, share-alike. The text is [LICENSE-CAD.txt](LICENSE-CAD.txt). The
+exception is `mechanical/vendor/m5stack_dial/`, which keeps M5Stack's MIT
+licence. The configurator's part drawings (`configurator/public/drawings/`)
+are under the same licence.
 
 Maker, product, protocol and firmware names belong to their owners and are
 used only to describe compatibility:
