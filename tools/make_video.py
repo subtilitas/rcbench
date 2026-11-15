@@ -31,6 +31,7 @@ Attributes:
     BEDS: The music beds of tools/video_audio.py.
     UNITS: The components of the cad model that a scene can move.
     PART_FRAMES: The frames of one part that --keep keeps.
+    PART_LEAST: The size in bytes a part must exceed to be reused.
     ANCHORS: The named points of the case model a label can point at.
     CONNECTORS: The headers of the case model and their position count.
     FITS: The parts a board scene solders across two pads.
@@ -71,6 +72,7 @@ UNITS = ("lid", "estop", "xt60", "usbc", "pdmini", "mcu", "ina",
 CONNECTORS = {"J1": 4, "J2": 4}
 BEDS = ("pads", "bach-prelude", "pachelbel-canon", "vivaldi-spring")
 PART_FRAMES = 900
+PART_LEAST = 1024
 ACTIONS = ("tap", "hold")
 STYLES = ("ok", "warn", "muted")
 FITS = ("resistor", "zener", "cap", "link")
@@ -887,6 +889,18 @@ def _plan(scene: dict) -> pathlib.Path:
     return drawn if drawn.is_file() else VIDEO / "cad" / drawn.name
 
 
+def _holds_video(path: pathlib.Path) -> bool:
+    """Tell whether a captured part can be used.
+
+    Args:
+        path: The part's file.
+
+    Returns:
+        True for a file of more than PART_LEAST bytes.
+    """
+    return path.is_file() and path.stat().st_size > PART_LEAST
+
+
 def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
              jobs: int, keep: pathlib.Path | None,
              shots: pathlib.Path) -> int:
@@ -952,11 +966,16 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
 
     def one(span):
         a, b, done = span
-        if keep is not None and done.is_file():
+        # A part without video is one whose capture died: drawn again.
+        if keep is not None and _holds_video(done):
             return 0
         part = done.with_suffix(".part.mp4")
         status = subprocess.run(cmd + ["video", str(part), str(fps),
                                        str(a), str(b)]).returncode
+        if status == 0 and not _holds_video(part):
+            print(f"{part.name}: the capture wrote no video",
+                  file=sys.stderr)
+            return 1
         if status == 0:
             part.replace(done)
         return status

@@ -1,0 +1,2665 @@
+{
+ "name": "minircbench-features",
+ "lang": "en",
+ "product": "MiniRcBench",
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "brand": "every screen",
+ "steps": 12,
+ "chapters": [
+  "The tester",
+  "Telemetry",
+  "The menu",
+  "ESC commands",
+  "ESC config",
+  "Servo tester",
+  "Servo programmer",
+  "RX signals",
+  "Tools",
+  "SD log",
+  "Settings",
+  "Rules and limits"
+ ],
+ "scenes": [
+  {
+   "type": "case",
+   "model": "mini",
+   "dur": 33.97,
+   "say": [
+    {
+     "at": 0.5,
+     "text": "The Mini R C bench is a pocket tester for speed controllers and servos. This video walks through every screen of firmware 0.1.0, in 12 chapters."
+    },
+    {
+     "at": 12.07,
+     "text": "It starts with a splash that stays for 3 seconds. The amber line says: unplug any servo from G-P 0 now. D shot starts on that pin right after the splash."
+    },
+    {
+     "at": 24.3,
+     "text": "Then the tester opens. With no speed controller connected it reads no telemetry, and every tile shows two dashes."
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-splash"
+    ],
+    [
+     24.1,
+     "mini-tester-noesc"
+    ]
+   ],
+   "title": {
+    "from": 0.3,
+    "to": 11.67,
+    "kicker": "MiniRcBench · firmware 0.1.0",
+    "heading": "Every screen of<br>the MiniRcBench",
+    "text": "ESC tester, telemetry, ESC settings, servo tester, servo programmers,<br>S.BUS monitor, angle meter, SD log, settings. 12 chapters."
+   },
+   "camera": [
+    [
+     0,
+     [
+      120,
+      150,
+      190
+     ],
+     [
+      0,
+      12,
+      0
+     ]
+    ],
+    [
+     11.07,
+     [
+      70,
+      135,
+      175
+     ],
+     [
+      0,
+      12,
+      0
+     ]
+    ],
+    [
+     14.57,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     33.97,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "labels": [
+    {
+     "from": 15.07,
+     "to": 23.9,
+     "anchor": [
+      0.0,
+      24.9,
+      26.55
+     ],
+     "at": [
+      1250,
+      600
+     ],
+     "style": "warn",
+     "title": "UNPLUG ANY SERVO FROM GP0 NOW",
+     "text": "DShot starts on the signal pin after the 3 s splash. A servo reads it as a pulse."
+    },
+    {
+     "from": 24.7,
+     "to": 33.47,
+     "anchor": [
+      -13.69,
+      24.9,
+      -10.19
+     ],
+     "at": [
+      1250,
+      330
+     ],
+     "title": "NO TELEMETRY",
+     "text": "No ESC answers: <b>--</b> in the six tiles, a dark red zero for the RPM."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 1, the tester. It drives one speed controller over bidirectional D shot. The large number is the motor's R P M, worked out from the electrical R P M and the pole count."
+    },
+    {
+     "at": 14.44,
+     "text": "The top row holds the state, safe or armed, the D shot rate, the state of the card, and the voltage of the bench's own cell."
+    },
+    {
+     "at": 24.53,
+     "text": "Arming takes a hold of 1 second on hold to arm, with the throttle at zero. A green bar fills along the badge while the finger stays down."
+    },
+    {
+     "at": 35.58,
+     "text": "Armed, the badge is red. The bar sets the throttle. Its full width is the ceiling, 20 percent by default. Here the bar gives 13 percent."
+    },
+    {
+     "at": 46.55,
+     "text": "The area above the bar is a swipe pad for fine steps. Latch keeps the throttle where the finger leaves it. Disarm acts on touch, not on release."
+    },
+    {
+     "at": 58.12,
+     "text": "While armed, the line under the number reads R P M per volt. From 75 percent throttle on, an estimate of the motor's kV appears: 1758 in this picture."
+    },
+    {
+     "at": 70.13,
+     "text": "A speed controller set to 3 D mode gets a note on the tester: from zero to 50 percent the motor runs reversed."
+    },
+    {
+     "at": 79.18,
+     "text": "Three interlocks stop a motor on their own. 30 seconds without a touch disarm the tester. Opening the menu disarms it. And when the display stalls for 250 milliseconds, the second processor core sets the throttle to zero."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 14.14,
+     "anchor": [
+      12.78,
+      24.9,
+      -14.55
+     ],
+     "at": [
+      1250,
+      286
+     ],
+     "title": "RPM",
+     "text": "RPM = eRPM / (poles / 2). 14 poles by default; a tap on the pole count opens SETTINGS."
+    },
+    {
+     "from": 14.74,
+     "to": 24.23,
+     "anchor": [
+      17.34,
+      24.9,
+      -23.83
+     ],
+     "at": [
+      1250,
+      199
+     ],
+     "title": "BOARD 3.92 V",
+     "text": "The bench's own cell, not the ESC's battery. The ESC's voltage is in the VOLTAGE tile."
+    },
+    {
+     "from": 24.83,
+     "to": 35.28,
+     "anchor": [
+      -12.78,
+      24.9,
+      28.01
+     ],
+     "at": [
+      1250,
+      683
+     ],
+     "title": "HOLD TO ARM",
+     "text": "1 s hold, throttle at zero for at least 250 ms."
+    },
+    {
+     "from": 35.88,
+     "to": 46.25,
+     "anchor": [
+      -5.47,
+      24.9,
+      21.83
+     ],
+     "at": [
+      1250,
+      626
+     ],
+     "title": "Throttle bar",
+     "text": "Full width = MAX, the ceiling: 20 % by default, 5 % to 100 % in SETTINGS."
+    },
+    {
+     "from": 46.85,
+     "to": 57.82,
+     "anchor": [
+      -10.95,
+      24.9,
+      28.01
+     ],
+     "at": [
+      1250,
+      683
+     ],
+     "title": "DISARM acts on touch",
+     "text": "Every other control acts when the finger lifts. LATCH off sets the throttle to zero.",
+     "style": "warn"
+    },
+    {
+     "from": 58.42,
+     "to": 69.83,
+     "anchor": [
+      -10.95,
+      24.9,
+      -6.18
+     ],
+     "at": [
+      1250,
+      364
+     ],
+     "title": "RPM/V and KV EST",
+     "text": "RPM/V 1400 at 79 % throttle, KV EST 1758: RPM × 2000 / (voltage × throttle)."
+    },
+    {
+     "from": 70.43,
+     "to": 78.88,
+     "anchor": [
+      -1.82,
+      24.9,
+      -5.09
+     ],
+     "at": [
+      1250,
+      374
+     ],
+     "title": "3D MODE ESC",
+     "text": "0 to 50 % reversed at twice the step, above 50 % the set way.",
+     "style": "warn"
+    },
+    {
+     "from": 79.48,
+     "to": 96.15,
+     "anchor": [
+      -12.78,
+      24.9,
+      -23.83
+     ],
+     "at": [
+      1250,
+      199
+     ],
+     "title": "Three interlocks",
+     "text": "Idle disarm after 30 s, with a countdown over the last 5 s.<br>MENU disarms.<br>Heartbeat: throttle zero after 250 ms."
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-tester-idle"
+    ],
+    [
+     24.33,
+     "mini-tester-disarmed"
+    ],
+    [
+     35.38,
+     "mini-tester-armed"
+    ],
+    [
+     57.92,
+     "mini-tester-kv"
+    ],
+    [
+     69.93,
+     "mini-tester-3d"
+    ],
+    [
+     78.98,
+     "mini-tester-armed"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 97.05,
+     "n": 1,
+     "text": "The tester"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     97.05,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 97.05
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 2, telemetry. Six tiles. Voltage, current, temperature, stress and status come as extended D shot telemetry, E-D-T, on the signal wire itself. No third wire is needed."
+    },
+    {
+     "at": 14.36,
+     "text": "Status reads O K in green, a warning in amber, an error in red. The link tile counts the answers per second and the error rate: 998 per second with zero percent errors is a clean link."
+    },
+    {
+     "at": 28.89,
+     "text": "With a KISS telemetry wire on the second pin, the tags change to KISS. The steps are then a hundredth of a volt and of an ampere, and the used milliamp hours appear."
+    },
+    {
+     "at": 42.01,
+     "text": "A value that is not refreshed for 1 second turns into dashes. An expired status never reads O K."
+    },
+    {
+     "at": 50.02,
+     "text": "The top row also shows the card: S D, a red rec while a log runs, no S D, or an amber chip after a write error."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 14.06,
+     "anchor": [
+      -2.74,
+      24.9,
+      -1.46
+     ],
+     "at": [
+      1250,
+      408
+     ],
+     "title": "EDT",
+     "text": "Extended DShot telemetry. Steps of 0.25 V and 1 A. The bench switches it on by itself."
+    },
+    {
+     "from": 14.66,
+     "to": 28.59,
+     "anchor": [
+      11.86,
+      24.9,
+      13.82
+     ],
+     "at": [
+      1250,
+      551
+     ],
+     "title": "LINK 998/S, 0% ERR",
+     "text": "A clean 1 kHz link. The error rate turns amber above 5 %: set DSHOT to 300."
+    },
+    {
+     "from": 29.19,
+     "to": 41.71,
+     "anchor": [
+      19.71,
+      24.9,
+      -1.46
+     ],
+     "at": [
+      1250,
+      408
+     ],
+     "title": "KISS",
+     "text": "A third wire on AUX, 115200 baud, 50 frames/s. Steps of 0.01 V and 0.01 A, and the used mAh."
+    },
+    {
+     "from": 42.31,
+     "to": 49.72,
+     "anchor": [
+      -10.95,
+      24.9,
+      7.28
+     ],
+     "at": [
+      1250,
+      490
+     ],
+     "title": "Expired",
+     "text": "EDT values after 1 s, the RPM after 500 ms without an answer.",
+     "style": "muted"
+    },
+    {
+     "from": 50.32,
+     "to": 58.84,
+     "anchor": [
+      9.49,
+      24.9,
+      -23.28
+     ],
+     "at": [
+      1250,
+      204
+     ],
+     "title": "SD, REC, NOSD, SDERR",
+     "text": "The state of the microSD card and of the log."
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-tester-live"
+    ],
+    [
+     28.69,
+     "mini-tester-kiss"
+    ],
+    [
+     41.81,
+     "mini-tester-stale"
+    ],
+    [
+     49.82,
+     "mini-tester-sderr"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 59.74,
+     "n": 2,
+     "text": "Telemetry"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     59.74,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 59.74
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 3, the menu. Eight rows: commands and config for the speed controller, servo tester, servo programmer, receiver signals, tools, S D log and settings. The list scrolls under a finger."
+    },
+    {
+     "at": 15.47,
+     "text": "The strip on top names the two pins and the D shot rate. The chip beside it says what the speed controller answers: E-D-T on, a red E-D-T off, or no speed controller."
+    },
+    {
+     "at": 28.67,
+     "text": "Dragged up, the last two rows carry a state: the card's, and settings that are not saved yet, in amber."
+    },
+    {
+     "at": 37.2,
+     "text": "When a tool hands the signal pin back, D shot restarts, and the rows are outlines for that moment."
+    },
+    {
+     "at": 45.36,
+     "text": "After a settings session an amber line asks for a power cycle of the speed controller. It stays until the motor's R P M answers again."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 15.17,
+     "anchor": [
+      0.0,
+      24.9,
+      3.64
+     ],
+     "at": [
+      1250,
+      456
+     ],
+     "title": "8 rows",
+     "text": "ESC COMMANDS, ESC CONFIG, SERVO TESTER, SERVO PROGRAMMER, RX SIGNALS, TOOLS, SD LOG, SETTINGS."
+    },
+    {
+     "from": 15.77,
+     "to": 28.37,
+     "anchor": [
+      16.79,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "EDT ON, EDT OFF, NO ESC",
+     "text": "EDT OFF: the ESC sends its RPM, but no extended telemetry."
+    },
+    {
+     "from": 28.97,
+     "to": 36.9,
+     "anchor": [
+      17.34,
+      24.9,
+      24.92
+     ],
+     "at": [
+      1250,
+      654
+     ],
+     "title": "READY, UNSAVED",
+     "text": "SD LOG shows the card's state, SETTINGS shows UNSAVED or UPDATED."
+    },
+    {
+     "from": 37.5,
+     "to": 45.06,
+     "anchor": [
+      -5.47,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "DSHOT RESTARTING",
+     "text": "The rows take no tap until DShot runs again.",
+     "style": "muted"
+    },
+    {
+     "from": 45.66,
+     "to": 55.89,
+     "anchor": [
+      5.47,
+      24.9,
+      -16.19
+     ],
+     "at": [
+      1250,
+      270
+     ],
+     "title": "POWER-CYCLE THE ESC TO RUN IT",
+     "text": "The bench sends no start command to a bootloader.",
+     "style": "warn"
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-menu"
+    ],
+    [
+     15.27,
+     "mini-menu-edt-on"
+    ],
+    [
+     20.97,
+     "mini-menu-edt-off"
+    ],
+    [
+     23.97,
+     "mini-menu-no-esc"
+    ],
+    [
+     28.47,
+     "mini-menu-unsaved"
+    ],
+    [
+     37.0,
+     "mini-menu-restarting"
+    ],
+    [
+     45.16,
+     "mini-menu-run-cue"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 56.79,
+     "n": 3,
+     "text": "The menu"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     56.79,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 56.79
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 4, commands. Three things a speed controller takes as a D shot command: a beep, the direction of rotation, and 3 D mode."
+    },
+    {
+     "at": 10.88,
+     "text": "Beep 1 to 5 finds a motor in a model. Direction and 3 D mode take a hold of 1 second. The bench sets the value, then sends the save command."
+    },
+    {
+     "at": 22.15,
+     "text": "While a command goes out, the controls are outlines."
+    },
+    {
+     "at": 27.6,
+     "text": "A speed controller sends no answer to a command. The screen says so, and tells you to check the result on the tester."
+    },
+    {
+     "at": 37.17,
+     "text": "With no speed controller answering, nothing is sent."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 10.58,
+     "anchor": [
+      0.0,
+      24.9,
+      -23.64
+     ],
+     "at": [
+      1250,
+      201
+     ],
+     "title": "ESC COMMANDS",
+     "text": "DShot commands, sent only while the tester is disarmed and the motor stands."
+    },
+    {
+     "from": 11.18,
+     "to": 21.85,
+     "anchor": [
+      0.0,
+      24.9,
+      -1.46
+     ],
+     "at": [
+      1250,
+      408
+     ],
+     "title": "HOLD 1 S",
+     "text": "NORMAL, REVERSED, 3D OFF and 3D ON are set and then saved in the ESC."
+    },
+    {
+     "from": 22.45,
+     "to": 27.3,
+     "anchor": [
+      -9.12,
+      24.9,
+      16.01
+     ],
+     "at": [
+      1250,
+      571
+     ],
+     "title": "SENDING 3 (BEEP 3)",
+     "text": "One command at a time.",
+     "style": "muted"
+    },
+    {
+     "from": 27.9,
+     "to": 36.87,
+     "anchor": [
+      0.0,
+      24.9,
+      20.92
+     ],
+     "at": [
+      1250,
+      617
+     ],
+     "title": "No answer to a command",
+     "text": "The bench cannot confirm the setting. The tester shows the 3D note until a restart or 3D OFF.",
+     "style": "warn"
+    },
+    {
+     "from": 37.47,
+     "to": 42.32,
+     "anchor": [
+      -5.47,
+      24.9,
+      16.01
+     ],
+     "at": [
+      1250,
+      571
+     ],
+     "title": "NO ESC ANSWERS ON SIG GP0",
+     "text": "All controls are outlines.",
+     "style": "muted"
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-esccmd"
+    ],
+    [
+     21.95,
+     "mini-esccmd-sending"
+    ],
+    [
+     27.4,
+     "mini-esccmd-3d-on"
+    ],
+    [
+     36.97,
+     "mini-esccmd-no-esc"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 43.22,
+     "n": 4,
+     "text": "ESC commands"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     43.22,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 43.22
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 5, config. Two entries. Settings reads and writes the settings of A-M 32, Bluejay and BLHeli_S speed controllers. The U-S-B bridge is for a desktop tool on a computer."
+    },
+    {
+     "at": 14.36,
+     "text": "Settings talks to the bootloader, and a bootloader listens only briefly at power-up. So the screen asks: power-cycle the speed controller. Unplug its battery and plug it in again while this screen is open."
+    },
+    {
+     "at": 30.45,
+     "text": "Then the list. The strip names the controller and its firmware, here A-M 32 version 2.16. The rows scroll under a finger."
+    },
+    {
+     "at": 40.31,
+     "text": "Tap a row to edit it. Minus and plus make fine steps, a sideways swipe a coarse one. A changed value turns cyan, and revert takes every change back."
+    },
+    {
+     "at": 52.17,
+     "text": "Write opens a page that lists every change and still writes nothing. With a card in the slot, the old settings go into a backup file first. Then: hold to write, for 1 second."
+    },
+    {
+     "at": 65.96,
+     "text": "The bench reads the settings back and compares every byte. Write verified, in green. A power cycle of the speed controller applies them."
+    },
+    {
+     "at": 76.93,
+     "text": "Hex shows the raw bytes. A settings layout the bench does not know opens in this view only, and cannot be written."
+    },
+    {
+     "at": 86.27,
+     "text": "Bluejay and BLHeli_S open the same way. Their write has run against a simulated speed controller only, not against a real one."
+    },
+    {
+     "at": 96.5,
+     "text": "Back opens a leave page: unplug the battery, then leave. The bench writes settings only. It does not update a speed controller's firmware."
+    },
+    {
+     "at": 107.62,
+     "text": "For that there is the U-S-B bridge. It passes a tool on a computer through to the speed controller's bootloader. The bench waits for the tool's first byte."
+    },
+    {
+     "at": 120.0,
+     "text": "That byte picks the mode: plain passthrough, or the 4-way interface, in which the bench answers like a flight controller. A motor command from the computer is refused."
+    },
+    {
+     "at": 133.27,
+     "text": "The bridge is not tested on hardware. Whether a desktop tool works through it is not checked."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 14.06,
+     "anchor": [
+      0.0,
+      24.9,
+      -12.73
+     ],
+     "at": [
+      1250,
+      303
+     ],
+     "title": "ESC SETTINGS, USB BRIDGE",
+     "text": "Settings on the bench itself, or a computer's tool passed through."
+    },
+    {
+     "from": 14.66,
+     "to": 30.15,
+     "anchor": [
+      0.91,
+      24.9,
+      -12.55
+     ],
+     "at": [
+      1250,
+      304
+     ],
+     "title": "POWER-CYCLE THE ESC",
+     "text": "19200 baud on the signal wire. 1 s of silence, then 3 handshakes per try.",
+     "style": "warn"
+    },
+    {
+     "from": 30.75,
+     "to": 40.01,
+     "anchor": [
+      -5.47,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "NEOESC F051, AM32 2.16",
+     "text": "What the ESC answered. Fields an older firmware does not read are hidden."
+    },
+    {
+     "from": 40.61,
+     "to": 51.87,
+     "anchor": [
+      0.91,
+      24.9,
+      16.37
+     ],
+     "at": [
+      1250,
+      575
+     ],
+     "title": "Edit",
+     "text": "PWM FREQ from 24 kHz to 25 kHz. Nothing is written yet."
+    },
+    {
+     "from": 52.47,
+     "to": 65.66,
+     "anchor": [
+      0.91,
+      24.9,
+      26.55
+     ],
+     "at": [
+      1250,
+      670
+     ],
+     "title": "HOLD TO WRITE",
+     "text": "5 changes, backup BACKUP/AM001.TXT. Without the backup on the card, nothing is written."
+    },
+    {
+     "from": 66.26,
+     "to": 76.63,
+     "anchor": [
+      -10.95,
+      24.9,
+      9.82
+     ],
+     "at": [
+      1250,
+      513
+     ],
+     "title": "WRITE VERIFIED",
+     "text": "Read back 300 ms after the write, up to 3 tries.",
+     "style": "ok"
+    },
+    {
+     "from": 77.23,
+     "to": 85.97,
+     "anchor": [
+      -5.47,
+      24.9,
+      -9.09
+     ],
+     "at": [
+      1250,
+      337
+     ],
+     "title": "ESC HEX",
+     "text": "Layouts 2 to 4 are editable. Others are read-only and still get a backup.",
+     "style": "muted"
+    },
+    {
+     "from": 86.57,
+     "to": 96.2,
+     "anchor": [
+      0.0,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "Bluejay, BLHeli_S",
+     "text": "Bluejay 0.21 and BLHeli_S 16.3 to 16.7 are editable. Not verified on an ESC.",
+     "style": "warn"
+    },
+    {
+     "from": 96.8,
+     "to": 107.32,
+     "anchor": [
+      0.0,
+      24.9,
+      -13.64
+     ],
+     "at": [
+      1250,
+      294
+     ],
+     "title": "Leave page",
+     "text": "The bootloader waits for commands and may read DShot as one. Unplug first."
+    },
+    {
+     "from": 107.92,
+     "to": 119.7,
+     "anchor": [
+      -10.95,
+      24.9,
+      -14.73
+     ],
+     "at": [
+      1250,
+      284
+     ],
+     "title": "USB BRIDGE: WAITING",
+     "text": "The board's serial port, 19200 baud on the signal pin. DShot is off."
+    },
+    {
+     "from": 120.3,
+     "to": 132.97,
+     "anchor": [
+      0.0,
+      24.9,
+      8.73
+     ],
+     "at": [
+      1250,
+      503
+     ],
+     "title": "PASSTHROUGH or 4-WAY INTERFACE",
+     "text": "The bridge never spins the motor: MOTOR COMMAND FROM THE PC REFUSED."
+    },
+    {
+     "from": 133.57,
+     "to": 140.76,
+     "anchor": [
+      0.0,
+      24.9,
+      0.36
+     ],
+     "at": [
+      1250,
+      425
+     ],
+     "title": "Not tested on hardware",
+     "text": "No desktop tool is checked against the bridge.",
+     "style": "warn"
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-esc-chooser"
+    ],
+    [
+     14.16,
+     "mini-am32-connect"
+    ],
+    [
+     30.25,
+     "mini-am32-list"
+    ],
+    [
+     40.11,
+     "mini-am32-edit"
+    ],
+    [
+     51.97,
+     "mini-am32-write"
+    ],
+    [
+     65.76,
+     "mini-am32-written-backup"
+    ],
+    [
+     76.73,
+     "mini-am32-hex"
+    ],
+    [
+     86.07,
+     "mini-efm8-list"
+    ],
+    [
+     96.3,
+     "mini-am32-leave"
+    ],
+    [
+     107.42,
+     "mini-bridge-waiting"
+    ],
+    [
+     119.8,
+     "mini-bridge-passthrough"
+    ],
+    [
+     126.0,
+     "mini-bridge-4way"
+    ],
+    [
+     133.07,
+     "mini-bridge-leave"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 141.66,
+     "n": 5,
+     "text": "ESC config"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     141.66,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 141.66
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 6, the servo tester. It sends servo pulses of 400 to 2500 microseconds, 50 to 560 times a second. It opens safe: the pin is low, there is no pulse, and the servo's supply is off."
+    },
+    {
+     "at": 15.18,
+     "text": "Hold to start, for 1 second. The boost converter switches on, and the servo goes to centre."
+    },
+    {
+     "at": 22.82,
+     "text": "Drag on the dial, or tap min, centre and max. The horn on the screen is the commanded position. The bench gets no feedback from the servo."
+    },
+    {
+     "at": 33.94,
+     "text": "Sweep moves the servo to and fro and counts the moves. Speed slows every move, down to 10 percent, where the full travel takes 5 seconds. Stop acts on touch."
+    },
+    {
+     "at": 46.47,
+     "text": "Set holds the profile: one or two servos, the type, the rate, the three pulse lengths, and the sweep's shape, rate, amplitude, dwell and count. Nothing of it is stored."
+    },
+    {
+     "at": 59.81,
+     "text": "A heli type, or a rate above 60 hertz, waits for a second hold, because such a profile can destroy a servo that is not made for it."
+    },
+    {
+     "at": 70.41,
+     "text": "With two servos, the second runs on the other pin. A, B, or both, and reverse B mirrors the second one."
+    },
+    {
+     "at": 78.94,
+     "text": "With the current sensor fitted, the screen shows the supply's current and voltage: 0.42 ampere and 5.02 volts in this picture."
+    },
+    {
+     "at": 89.17,
+     "text": "The sensor also cuts the supply: at 3 ampere, above 1 ampere for 400 milliseconds, which is a stalled servo, or under 4 volts for 1 second. A cut is not a fuse."
+    },
+    {
+     "at": 101.92,
+     "text": "And it times a move: how long the servo took, the peak current and the holding current."
+    },
+    {
+     "at": 109.26,
+     "text": "Back opens the leave page. Unplug the servo first, because a servo reads D shot on its pin as a pulse. The servo tester is not tested on hardware."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 14.88,
+     "anchor": [
+      18.25,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "SAFE",
+     "text": "No pulse. GP28 SUPPLY ON AT START: the boost converter is off until the hold."
+    },
+    {
+     "from": 15.48,
+     "to": 22.52,
+     "anchor": [
+      -6.39,
+      24.9,
+      28.55
+     ],
+     "at": [
+      1250,
+      688
+     ],
+     "title": "HOLD TO START",
+     "text": "1 s. The supply counts as up at 4.5 V, or after 500 ms without a sensor."
+    },
+    {
+     "from": 23.12,
+     "to": 33.64,
+     "anchor": [
+      -10.95,
+      24.9,
+      12.19
+     ],
+     "at": [
+      1250,
+      535
+     ],
+     "title": "1000 US",
+     "text": "The pulse the bench sends, not a measured position."
+    },
+    {
+     "from": 34.24,
+     "to": 46.17,
+     "anchor": [
+      17.34,
+      24.9,
+      12.37
+     ],
+     "at": [
+      1250,
+      537
+     ],
+     "title": "SWEEP 1",
+     "text": "The sweep runs on the second core. STOP switches the pulses and the supply off."
+    },
+    {
+     "from": 46.77,
+     "to": 59.51,
+     "anchor": [
+      0.0,
+      24.9,
+      0.0
+     ],
+     "at": [
+      1250,
+      422
+     ],
+     "title": "SERVO SET",
+     "text": "Types: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC, HELI TAIL 760. Sweep: SQUARE, SINE, TRIANGLE."
+    },
+    {
+     "from": 60.11,
+     "to": 70.11,
+     "anchor": [
+      -10.95,
+      24.9,
+      26.37
+     ],
+     "at": [
+      1250,
+      668
+     ],
+     "title": "HOLD TO APPLY",
+     "text": "333 Hz and 1520 µs wait for a 1 s hold.",
+     "style": "warn"
+    },
+    {
+     "from": 70.71,
+     "to": 78.64,
+     "anchor": [
+      14.6,
+      24.9,
+      9.46
+     ],
+     "at": [
+      1250,
+      510
+     ],
+     "title": "A, B, AB",
+     "text": "A 1750 µs, B 1250 µs: mirrored by REVERSE B."
+    },
+    {
+     "from": 79.24,
+     "to": 88.87,
+     "anchor": [
+      15.51,
+      24.9,
+      10.0
+     ],
+     "at": [
+      1250,
+      515
+     ],
+     "title": "0.42 A, 5.02 V",
+     "text": "From the INA219, read 40 times a second."
+    },
+    {
+     "from": 89.47,
+     "to": 101.62,
+     "anchor": [
+      16.79,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "OVERCURRENT",
+     "text": "Cuts: 3.0 A in one reading, more than 1.0 A for 400 ms, less than 4.0 V for 1 s. A cut takes up to 60 ms.",
+     "style": "warn"
+    },
+    {
+     "from": 102.22,
+     "to": 108.96,
+     "anchor": [
+      0.91,
+      24.9,
+      -16.37
+     ],
+     "at": [
+      1250,
+      269
+     ],
+     "title": "MOVE 0.45 S, PEAK 0.95 A, HOLD 0.12 A",
+     "text": "An upper bound at SPEED 100 %. Its accuracy is not measured."
+    },
+    {
+     "from": 109.56,
+     "to": 120.67,
+     "anchor": [
+      0.0,
+      24.9,
+      -15.46
+     ],
+     "at": [
+      1250,
+      277
+     ],
+     "title": "Not tested on hardware",
+     "text": "The servo tester, its switched supply and its current cuts.",
+     "style": "warn"
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-servo-supply"
+    ],
+    [
+     20.18,
+     "mini-servo-running"
+    ],
+    [
+     22.62,
+     "mini-servo-running"
+    ],
+    [
+     33.74,
+     "mini-servo-sweep"
+    ],
+    [
+     46.27,
+     "mini-servo-set"
+    ],
+    [
+     59.61,
+     "mini-servo-set-warning"
+    ],
+    [
+     70.21,
+     "mini-servo-two"
+    ],
+    [
+     78.74,
+     "mini-servo-sense"
+    ],
+    [
+     88.97,
+     "mini-servo-overcurrent"
+    ],
+    [
+     101.72,
+     "mini-servo-set-move"
+    ],
+    [
+     109.06,
+     "mini-leave-servo"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 121.57,
+     "n": 6,
+     "text": "Servo tester"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     121.57,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 121.57
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 7, the servo programmer. Three entries: KST and Chaservo, Hitec D series, and Hitec classic. With a switched supply, the bench powers the servo itself."
+    },
+    {
+     "at": 13.18,
+     "text": "A KST servo answers only right after power-on. So the bench switches the supply off for 2 seconds, then on, and tries. It does that up to 14 times in 30 seconds."
+    },
+    {
+     "at": 26.01,
+     "text": "Without a switched supply, the screen says when to power the servo up by hand."
+    },
+    {
+     "at": 32.69,
+     "text": "Then the list: 27 fields in groups. Tune, pulse, failsafe, and a locked group in grey that is read-only."
+    },
+    {
+     "at": 41.29,
+     "text": "Editing works as on the speed controller: tap, minus and plus, or a swipe. Here the dead band goes from 2.0 to 2.2 microseconds."
+    },
+    {
+     "at": 51.67,
+     "text": "Write lists the change and names the backup file. Then hold to write. Each register is written and read back, and at the end everything is verified."
+    },
+    {
+     "at": 63.53,
+     "text": "Write verified. When a write fails, the bench rolls back, and the screen says whether the servo holds its old values or is in doubt."
+    },
+    {
+     "at": 74.21,
+     "text": "Files saves the settings to the card, loads a file as pending changes, and restores a backup."
+    },
+    {
+     "at": 82.0,
+     "text": "The leave page switches the supply off. Hold to reboot restarts the servo with its new values."
+    },
+    {
+     "at": 89.86,
+     "text": "Hitec D series servos have 20 parameters: speed, dead band, soft start, neutral and both ends, direction, failsafe, overload protection and more."
+    },
+    {
+     "at": 101.5,
+     "text": "The steps are the same: edit, the write page, hold to write, with a backup on the card. Keep the horn clear."
+    },
+    {
+     "at": 110.4,
+     "text": "The classic families, HS-5xxx and HS-7xxx, are read as well. A bad checksum shows in amber and can be repaired."
+    },
+    {
+     "at": 119.52,
+     "text": "Neither programmer is tested on hardware. For Hitec, no byte has been on a pin of this board."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 12.88,
+     "anchor": [
+      0.0,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "PROGRAMMER",
+     "text": "SERVO SUPPLY GP28: the bench switches the 5 V. HITEC CLASSIC needs that."
+    },
+    {
+     "from": 13.48,
+     "to": 25.71,
+     "anchor": [
+      0.91,
+      24.9,
+      -12.37
+     ],
+     "at": [
+      1250,
+      306
+     ],
+     "title": "SWITCHED SUPPLY",
+     "text": "Off 2 s, on, one try. 14 power-ups in 30 s."
+    },
+    {
+     "from": 26.31,
+     "to": 32.39,
+     "anchor": [
+      0.91,
+      24.9,
+      -10.91
+     ],
+     "at": [
+      1250,
+      320
+     ],
+     "title": "POWER UP THE SERVO NOW",
+     "text": "One try about every 118 ms, for 30 s.",
+     "style": "warn"
+    },
+    {
+     "from": 32.99,
+     "to": 40.99,
+     "anchor": [
+      0.0,
+      24.9,
+      -5.46
+     ],
+     "at": [
+      1250,
+      371
+     ],
+     "title": "27 fields",
+     "text": "32 registers, each read until 3 of 5 reads agree."
+    },
+    {
+     "from": 41.59,
+     "to": 51.37,
+     "anchor": [
+      0.91,
+      24.9,
+      17.28
+     ],
+     "at": [
+      1250,
+      583
+     ],
+     "title": "DEAD BAND 2.0 → 2.2 US",
+     "text": "Cyan: changed, not yet written."
+    },
+    {
+     "from": 51.97,
+     "to": 63.23,
+     "anchor": [
+      0.91,
+      24.9,
+      26.55
+     ],
+     "at": [
+      1250,
+      670
+     ],
+     "title": "HOLD TO WRITE",
+     "text": "1 s. Backup BACKUP/KST001.TXT, record KST/KST.TXT."
+    },
+    {
+     "from": 63.83,
+     "to": 73.91,
+     "anchor": [
+      -12.78,
+      24.9,
+      9.82
+     ],
+     "at": [
+      1250,
+      513
+     ],
+     "title": "WRITE VERIFIED",
+     "text": "Other results: ROLLED BACK, NOTHING WAS WRITTEN, IN DOUBT. After IN DOUBT only a restore is accepted.",
+     "style": "ok"
+    },
+    {
+     "from": 74.51,
+     "to": 81.7,
+     "anchor": [
+      0.91,
+      24.9,
+      19.64
+     ],
+     "at": [
+      1250,
+      605
+     ],
+     "title": "KST FILES",
+     "text": "SAVE AS, LOAD, RESTORE. Up to 50 files."
+    },
+    {
+     "from": 82.3,
+     "to": 89.56,
+     "anchor": [
+      11.86,
+      24.9,
+      16.55
+     ],
+     "at": [
+      1250,
+      576
+     ],
+     "title": "HOLD TO REBOOT",
+     "text": "A power cycle of the servo from the bench."
+    },
+    {
+     "from": 90.16,
+     "to": 101.2,
+     "anchor": [
+      0.0,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "HITEC SERVO: D485HW",
+     "text": "21 registers, 115200 bit/s, half duplex on the signal wire."
+    },
+    {
+     "from": 101.8,
+     "to": 110.1,
+     "anchor": [
+      0.91,
+      24.9,
+      17.28
+     ],
+     "at": [
+      1250,
+      583
+     ],
+     "title": "SPEED 100 % → 90 %",
+     "text": "KEEP THE SERVO HORN CLEAR: the servo may move on a write."
+    },
+    {
+     "from": 110.7,
+     "to": 119.22,
+     "anchor": [
+      -13.69,
+      24.9,
+      14.55
+     ],
+     "at": [
+      1250,
+      558
+     ],
+     "title": "CHECKSUM BAD, REPAIR",
+     "text": "Measured models: HS-5645MG and HS-7955TG. Others are written in the classic layout.",
+     "style": "warn"
+    },
+    {
+     "from": 119.82,
+     "to": 127.01,
+     "anchor": [
+      0.0,
+      24.9,
+      -20.73
+     ],
+     "at": [
+      1250,
+      228
+     ],
+     "title": "Not tested on hardware",
+     "text": "KST / Chaservo and both Hitec programmers.",
+     "style": "warn"
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-prog-chooser-switched"
+    ],
+    [
+     12.98,
+     "mini-kst-switched"
+    ],
+    [
+     25.81,
+     "mini-kst-search"
+    ],
+    [
+     32.49,
+     "mini-kst-list"
+    ],
+    [
+     41.09,
+     "mini-kst-edit"
+    ],
+    [
+     51.47,
+     "mini-kst-write"
+    ],
+    [
+     61.67,
+     "mini-kst-result"
+    ],
+    [
+     63.33,
+     "mini-kst-result"
+    ],
+    [
+     74.01,
+     "mini-kst-files"
+    ],
+    [
+     81.8,
+     "mini-leave-kst-switched"
+    ],
+    [
+     89.66,
+     "mini-hitec-list"
+    ],
+    [
+     101.3,
+     "mini-hitec-preview"
+    ],
+    [
+     106.5,
+     "mini-hitec-write"
+    ],
+    [
+     110.2,
+     "mini-hitec-repair"
+    ],
+    [
+     119.32,
+     "mini-hitec-read-wait"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 127.91,
+     "n": 7,
+     "text": "Servo programmer"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     127.91,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 127.91
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 8, receiver signals. Monitor is built. Output, S.BUS to a flight controller, is not built."
+    },
+    {
+     "at": 8.66,
+     "text": "The monitor reads S.BUS from a receiver on G-P 1, at 100 kilobaud. The receiver runs on its own supply."
+    },
+    {
+     "at": 17.19,
+     "text": "16 channels as bars, with their pulse lengths in microseconds. Below them: channels 17 and 18, the frame interval, 14 milliseconds here, and counters for lost frames and errors."
+    },
+    {
+     "at": 31.2,
+     "text": "In failsafe the bars turn red. After 100 milliseconds of silence they turn grey."
+    },
+    {
+     "at": 38.03,
+     "text": "Leaving asks to unplug the receiver before D shot restarts. The monitor is not tested on hardware."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 8.36,
+     "anchor": [
+      0.0,
+      24.9,
+      0.91
+     ],
+     "at": [
+      1250,
+      430
+     ],
+     "title": "MONITOR, OUTPUT",
+     "text": "OUTPUT is an outline: NOT BUILT."
+    },
+    {
+     "from": 8.96,
+     "to": 16.89,
+     "anchor": [
+      -9.12,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "AUX GP1, 100 KBAUD, 8E2",
+     "text": "Inverted S.BUS, signal and ground only."
+    },
+    {
+     "from": 17.49,
+     "to": 30.9,
+     "anchor": [
+      0.0,
+      24.9,
+      3.64
+     ],
+     "at": [
+      1250,
+      456
+     ],
+     "title": "16 channels",
+     "text": "172 = 1000 µs, 992 = 1500 µs, 1811 = 2000 µs."
+    },
+    {
+     "from": 31.5,
+     "to": 37.73,
+     "anchor": [
+      16.06,
+      24.9,
+      -17.82
+     ],
+     "at": [
+      1250,
+      255
+     ],
+     "title": "FAILSAFE",
+     "text": "Chips: OK, FRAME LOST, FAILSAFE, NO SIGNAL.",
+     "style": "warn"
+    },
+    {
+     "from": 38.33,
+     "to": 45.89,
+     "anchor": [
+      0.0,
+      24.9,
+      -15.46
+     ],
+     "at": [
+      1250,
+      277
+     ],
+     "title": "Not tested on hardware",
+     "text": "No receiver has been read by this board.",
+     "style": "warn"
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-rx-chooser"
+    ],
+    [
+     8.46,
+     "mini-sbus-waiting"
+    ],
+    [
+     16.99,
+     "mini-sbus-live"
+    ],
+    [
+     31.0,
+     "mini-sbus-failsafe"
+    ],
+    [
+     37.83,
+     "mini-sbus-leave"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 46.79,
+     "n": 8,
+     "text": "RX signals"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     46.79,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 46.79
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 9, tools. One tool so far: the angle meter. It uses the motion sensor on the board, with no wire and no pin."
+    },
+    {
+     "at": 9.99,
+     "text": "Lay the bench on a wing or a control surface. It shows the angle in tenths of a degree. Zero takes the present position as the reference, and max keeps the largest angle to each side."
+    },
+    {
+     "at": 24.45,
+     "text": "With the surface's length set, it also gives the throw at the trailing edge: 13.7 millimetres for 20 degrees on 40 millimetres."
+    },
+    {
+     "at": 34.76,
+     "text": "Flip cal calibrates the sensor in three poses. The accuracy is not measured. Treat a reading as a comparison between two surfaces, not as an exact angle."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 9.69,
+     "anchor": [
+      0.0,
+      24.9,
+      -10.91
+     ],
+     "at": [
+      1250,
+      320
+     ],
+     "title": "ANGLE METER",
+     "text": "Incidence, decalage, dihedral and control surface throw, from the QMI8658 accelerometer."
+    },
+    {
+     "from": 10.29,
+     "to": 24.15,
+     "anchor": [
+      5.47,
+      24.9,
+      -11.28
+     ],
+     "at": [
+      1250,
+      316
+     ],
+     "title": "−20.0°",
+     "text": "SETTLED: within 0.5° for 1 s. ZERO waits for a settled reading."
+    },
+    {
+     "from": 24.75,
+     "to": 34.46,
+     "anchor": [
+      14.6,
+      24.9,
+      -1.82
+     ],
+     "at": [
+      1250,
+      405
+     ],
+     "title": "−13.7 MM",
+     "text": "LENGTH 40 mm from hinge to trailing edge, set under SETUP: 10 to 500 mm."
+    },
+    {
+     "from": 35.06,
+     "to": 46.69,
+     "anchor": [
+      0.0,
+      24.9,
+      -14.55
+     ],
+     "at": [
+      1250,
+      286
+     ],
+     "title": "Not tested on hardware",
+     "text": "Accuracy not measured. Run the bench from its cell, not from USB.",
+     "style": "warn"
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-tools-chooser"
+    ],
+    [
+     9.79,
+     "mini-angle-main"
+    ],
+    [
+     30.95,
+     "mini-angle-setup"
+    ],
+    [
+     34.56,
+     "mini-angle-flip"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 47.59,
+     "n": 9,
+     "text": "Tools"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     47.59,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 47.59
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 10, the S D log. With a card in the slot, arming starts a log and disarming stops it. Start and stop do the same by hand."
+    },
+    {
+     "at": 10.96,
+     "text": "It records 500 frames per second in the Betaflight blackbox format, about 26 megabytes per hour. Dropped frames should stay at zero. This picture shows 3, in red."
+    },
+    {
+     "at": 23.86,
+     "text": "After a stop the screen shows the run: highest R P M, current and temperature, lowest voltage, used capacity and armed time. The same goes into a text file beside the log."
+    },
+    {
+     "at": 37.43,
+     "text": "U-S-B drive hands the card to a computer, read-only, so no card reader is needed. While the computer holds the card, arming is blocked."
+    },
+    {
+     "at": 48.33,
+     "text": "The card is mounted at power-up. For a card that goes in later, press retry mount."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 10.66,
+     "anchor": [
+      0.0,
+      24.9,
+      21.28
+     ],
+     "at": [
+      1250,
+      620
+     ],
+     "title": "SD LOG",
+     "text": "Files LOGS/LOGnnnnn.BFL on a FAT32 card."
+    },
+    {
+     "from": 11.26,
+     "to": 23.56,
+     "anchor": [
+      17.34,
+      24.9,
+      -2.91
+     ],
+     "at": [
+      1250,
+      394
+     ],
+     "title": "DROPPED FRAMES 3",
+     "text": "BUF PEAK turns amber above half of the 8192 bytes, red above three quarters.",
+     "style": "warn"
+    },
+    {
+     "from": 24.16,
+     "to": 37.13,
+     "anchor": [
+      5.47,
+      24.9,
+      -2.0
+     ],
+     "at": [
+      1250,
+      403
+     ],
+     "title": "The run",
+     "text": "LOG00001.TXT beside LOG00001.BFL. A maximum counts after 3 readings in a row."
+    },
+    {
+     "from": 37.73,
+     "to": 48.03,
+     "anchor": [
+      0.0,
+      24.9,
+      -14.91
+     ],
+     "at": [
+      1250,
+      282
+     ],
+     "title": "USB DRIVE",
+     "text": "Refused while armed or recording. EJECT gives the card back."
+    },
+    {
+     "from": 48.63,
+     "to": 55.0,
+     "anchor": [
+      -10.04,
+      24.9,
+      25.83
+     ],
+     "at": [
+      1250,
+      663
+     ],
+     "title": "RETRY MOUNT",
+     "text": "The slot has no card-detect pin."
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-log-ready"
+    ],
+    [
+     10.76,
+     "mini-log-screen"
+    ],
+    [
+     23.66,
+     "mini-log-last"
+    ],
+    [
+     37.23,
+     "mini-log-usb-serving"
+    ],
+    [
+     44.43,
+     "mini-tester-card-held"
+    ],
+    [
+     48.13,
+     "mini-log-nocard"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 55.9,
+     "n": 10,
+     "text": "SD log"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     55.9,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 55.9
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 11, settings. One list in sections. Motor poles and the throttle ceiling come first. The ceiling goes from 5 to 100 percent."
+    },
+    {
+     "at": 11.18,
+     "text": "Wiring: the signal pin, the D shot rate from 150 to 1200, KISS telemetry, and the second pin. One step swaps the two pins, so they never share one."
+    },
+    {
+     "at": 22.97,
+     "text": "Servo supply names the pin that switches the boost converter, or own, for a servo with a supply of its own. Current sense tells the bench that an INA219 is fitted. Found means: it answers."
+    },
+    {
+     "at": 37.8,
+     "text": "Display: the backlight, and a high contrast theme for daylight."
+    },
+    {
+     "at": 44.67,
+     "text": "At the end: the firmware version, the clock, the reason of the last restart, and the uptime. The board has no clock battery, so a computer sets the clock after each power-up."
+    },
+    {
+     "at": 58.46,
+     "text": "Nothing is kept until hold to save. Until then an amber line reads unsaved. Hold defaults brings the defaults back."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 10.88,
+     "anchor": [
+      0.0,
+      24.9,
+      -10.0
+     ],
+     "at": [
+      1250,
+      328
+     ],
+     "title": "ESC TESTER",
+     "text": "MOTOR POLES 2 to 28, MAX THROTTLE 5 % to 100 % in steps of 5 %."
+    },
+    {
+     "from": 11.48,
+     "to": 22.67,
+     "anchor": [
+      14.6,
+      24.9,
+      -4.55
+     ],
+     "at": [
+      1250,
+      379
+     ],
+     "title": "WIRING",
+     "text": "SIG PIN, DSHOT 150 / 300 / 600 / 1200, KISS TELEM, AUX PIN."
+    },
+    {
+     "from": 23.27,
+     "to": 37.5,
+     "anchor": [
+      14.6,
+      24.9,
+      8.55
+     ],
+     "at": [
+      1250,
+      501
+     ],
+     "title": "SERVO SUPPLY, CURRENT SENSE",
+     "text": "OWN, GP28 or GP29. NONE or INA219, with FOUND, NOT FOUND or OTHER PART."
+    },
+    {
+     "from": 38.1,
+     "to": 44.37,
+     "anchor": [
+      14.6,
+      24.9,
+      10.91
+     ],
+     "at": [
+      1250,
+      524
+     ],
+     "title": "CONTRAST HIGH",
+     "text": "NORMAL or HIGH. BACKLIGHT 16 to 255."
+    },
+    {
+     "from": 44.97,
+     "to": 58.16,
+     "anchor": [
+      14.6,
+      24.9,
+      2.73
+     ],
+     "at": [
+      1250,
+      447
+     ],
+     "title": "BOARD, DIAGNOSTICS",
+     "text": "LAST RESTART is amber for BROWN-OUT, GLITCH and WATCHDOG."
+    },
+    {
+     "from": 58.76,
+     "to": 67.58,
+     "anchor": [
+      -6.39,
+      24.9,
+      23.64
+     ],
+     "at": [
+      1250,
+      643
+     ],
+     "title": "HOLD TO SAVE",
+     "text": "1 s. Writes all settings to flash."
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-settings"
+    ],
+    [
+     10.98,
+     "mini-settings-supply"
+    ],
+    [
+     22.77,
+     "mini-settings-sense"
+    ],
+    [
+     37.6,
+     "mini-settings-contrast"
+    ],
+    [
+     41.3,
+     "mini-tester-contrast"
+    ],
+    [
+     44.47,
+     "mini-settings-scrolled"
+    ],
+    [
+     58.26,
+     "mini-settings"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 68.48,
+     "n": 11,
+     "text": "Settings"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     68.48,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 68.48
+  },
+  {
+   "type": "case",
+   "model": "mini",
+   "say": [
+    {
+     "at": 0.5,
+     "text": "Chapter 12, what all screens share. A tap acts when the finger lifts. Disarm and stop act on touch. Minus and plus repeat while held. And everything that writes, to a speed controller, a servo or the flash, takes a hold of 1 second."
+    },
+    {
+     "at": 18.59,
+     "text": "When the bench's own cell is low, under 3.3 volts, a write is refused, so that it cannot stop halfway."
+    },
+    {
+     "at": 27.05,
+     "text": "On hardware, the project reports bidirectional D shot, E-D-T and KISS telemetry as working. Marked as not tested on hardware are the servo tester, both servo programmers, the S.BUS monitor, the U-S-B bridge and the angle meter."
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 18.29,
+     "anchor": [
+      -10.95,
+      24.9,
+      28.01
+     ],
+     "at": [
+      1250,
+      683
+     ],
+     "title": "One set of rules",
+     "text": "Tap: on release.<br>DISARM, STOP: on touch.<br>− and +: repeat.<br>Writes: 1 s hold."
+    },
+    {
+     "from": 18.89,
+     "to": 26.75,
+     "anchor": [
+      0.0,
+      24.9,
+      7.28
+     ],
+     "at": [
+      1250,
+      490
+     ],
+     "title": "BOARD VOLTAGE IS RED: NOT WRITTEN",
+     "text": "Below 3.30 V, until the cell is back at 3.35 V.",
+     "style": "warn"
+    },
+    {
+     "from": 27.35,
+     "to": 44.46,
+     "anchor": [
+      0.0,
+      24.9,
+      7.28
+     ],
+     "at": [
+      1250,
+      490
+     ],
+     "title": "Not tested on hardware",
+     "text": "SERVO TESTER, KST / CHASERVO, HITEC, S.BUS MONITOR, USB BRIDGE, ANGLE METER.",
+     "style": "warn"
+    }
+   ],
+   "panel": [
+    [
+     0,
+     "mini-tester-idle"
+    ],
+    [
+     18.39,
+     "mini-am32-board-low"
+    ],
+    [
+     26.85,
+     "mini-menu"
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 45.36,
+     "n": 12,
+     "text": "Rules and limits"
+    }
+   ],
+   "camera": [
+    [
+     0,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ],
+    [
+     45.36,
+     [
+      11,
+      162,
+      5.5
+     ],
+     [
+      11,
+      24,
+      -0.5
+     ]
+    ]
+   ],
+   "dur": 45.36
+  },
+  {
+   "type": "end",
+   "dur": 9,
+   "heading": "MiniRcBench 0.1.0",
+   "items": [
+    "The tester: arm, throttle, RPM, kV estimate",
+    "Telemetry: EDT and KISS",
+    "The menu and its state chips",
+    "ESC commands: beep, direction, 3D",
+    "ESC config: AM32, Bluejay, BLHeli_S, USB bridge",
+    "Servo tester: pulses, sweep, two servos, current cuts",
+    "Servo programmer: KST, Chaservo, Hitec",
+    "RX signals: S.BUS monitor",
+    "Tools: angle meter",
+    "SD log: blackbox, run summary, USB drive",
+    "Settings",
+    "Rules and limits"
+   ],
+   "say": "That is every screen of the Mini R C bench. The manual in the project's wiki has the details.",
+   "note": "Manual: github.com/subtilitas/MiniRcBench/wiki · firmware 0.1.0, frames drawn by the project's host test suite."
+  }
+ ]
+}

@@ -60,6 +60,8 @@ python3 tools/make_video.py features --jobs 3 --keep build/video/parts
                                                    # a changed player file, display
                                                    # picture or model captures all
                                                    # scenes again
+                                                   # a kept part of 1024 bytes or
+                                                   # less is captured again
 python3 tools/make_video.py features --music bach-prelude,pachelbel-canon
                                                    # one video per bed
 python3 tools/make_video.py features --no-voice    # no narrator, lengths as written
@@ -100,7 +102,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `../video_board.py` | converts a KiCad board file into `cad/NAME.json`, the board `board.js` draws |
 | `boards/p4-7b-back.json` | the back of the 7 inch ESP32-P4 display board, drawn by hand in the format `video_board.py` writes: its connectors, modules and sockets as boxes, the pads of the 4-pin and 12-pin headers |
 | `boards/minircbench-wiring.json` | the parts of a MiniRcBench laid out flat: the rear of the RP2350-Touch-LCD-2.8 with its sockets, the 5V boost board, the INA219 board, the cell and the two male servo connectors, with the pads the wires go to |
-| `stills/mini-*.png` | 12 frames of the MiniRcBench's 240 x 320 display, drawn by that project's host suite |
+| `stills/mini-*.png` | 83 frames of the MiniRcBench's 240 x 320 display, drawn by that project's host suite |
 | `player/capture.js` | steps the player through the frames and pipes them to ffmpeg |
 | `storyboards/kst-rbmod.json` | programming a KST servo on the rbmod carrier, 8 steps, 100.4s |
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
@@ -108,6 +110,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
 | `storyboards/dial.json` | bringing the M5Stack Dial into use in 7 steps: the Dial, its ring nut, the cell 102540 and a foam pad into the two parts of the printed base and its 4 screws M3 x 12, flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 295.69s, Pachelbel's Canon at half level |
 | `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the 0Ω resistor off the enable pad, the pull-down and IO28 on it, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 505.57s, Pachelbel's Canon at half level |
+| `storyboards/minircbench-features.json` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters: the tester, its telemetry, the menu, ESC COMMANDS, ESC CONFIG with ESC SETTINGS and USB BRIDGE, SERVO TESTER, SERVO PROGRAMMER for KST, Chaservo and Hitec, RX SIGNALS with the S.BUS monitor, TOOLS with the angle meter, SD LOG, SETTINGS, and the rules all screens share with the list of what is not tested on hardware; the bench stands frontal with 81 stills on its display, one label a line of narration; narrated, 1008.43s, Pachelbel's Canon at half level |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
@@ -378,19 +381,27 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   board comes with. No part of the build is measured: MiniRcBench
   states that no INA219 and no boost board has been on its board.
 - The stills are frames of MiniRcBench's host suite (`cd test && make`
-  writes `shot_*.ppm`) at its commit 8c7ace3. `mini-gp28` and
+  writes `shot_*.ppm`) at its commit 2cdf044. `mini-gp28` and
   `mini-supply-sense` come from two frame dumps added to
-  `test/test_ui.cpp` for this video and not in that repository: SERVO
-  SUPPLY at GP28, and the same with CURRENT SENSE at INA219 and its
-  caption FOUND. A change of MiniRcBench's screens does not reach the
-  stills.
+  `test/test_ui.cpp` for the build video and not in that repository:
+  SERVO SUPPLY at GP28, and the same with CURRENT SENSE at INA219 and
+  its caption FOUND. A change of MiniRcBench's screens does not reach
+  the stills.
+- `minircbench-features` shows no hardware: every frame is drawn by the
+  host suite from simulated values, and the 0.42 A, the 5.02 V, the
+  RPM and the telemetry in the pictures are not measurements. What the
+  narration says about a feature, and which features it names as not
+  tested on hardware, is taken from MiniRcBench's wiki at its commit
+  2cdf044: the servo tester, the KST and Hitec programmers, the S.BUS
+  monitor, the USB bridge and the angle meter. Whether ESC SETTINGS and
+  the SD log are tested on hardware is not stated there for every part
+  and is not said in the video. The frames `mini-am32-*` and
+  `mini-efm8-*` are of a simulated ESC.
 - `minircbench-build` says that the servo tester feeds its servo from
-  the boost board. The owner stated on 2026-11-15 that the firmware is
-  to do so; the release is not named. MiniRcBench at its commit 25b5a36
-  does not do that: its servo tester never drives the
-  enable pin and shows `GP28 SUPPLY STAYS OFF HERE.`; the KST and Hitec
-  programmers switch the supply. The still `mini-servo-supply` shows
-  that line and is not used in the video.
+  the boost board. MiniRcBench at its commit 2cdf044 does so: the servo
+  tester switches the enable pin on at HOLD TO START and off at STOP.
+  The firmware release that carries this is not named; 0.1.0 is
+  unreleased.
 - The `mockup` model is estimated: 190 x 120 x 34mm against the 172 x
   129mm of the assembly. The order of the connectors on the wall and
   J1's pin order follow the case. J2's row order is assumed to match
