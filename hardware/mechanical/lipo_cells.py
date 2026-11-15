@@ -37,6 +37,8 @@ Frame of both models: origin at the middle of the cell's width, at
 the end away from the head, on the face the cell lies on. x across
 the cell, y towards the head, z up; the print is on the upper face and
 the wires leave towards -x. All sizes are mm.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import _parts as p

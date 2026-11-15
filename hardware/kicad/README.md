@@ -172,5 +172,11 @@ The renders are not checked by CI; run the command after changing a
 
 ## Licence
 
-MIT (Massachusetts Institute of Technology), as the rest of the tree:
+CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International): the symbols, footprints and 3D shapes, the module specs, the
+renders and the scripts in `tools/`. They may be used, changed and shared for
+non-commercial purposes, with credit and under the same licence. Commercial
+use needs a separate licence from the copyright holder. Terms:
+[LICENSE](LICENSE), as for all of `hardware/` ([../LICENSE](../LICENSE)). The
+software of rcbench is MIT (Massachusetts Institute of Technology) licensed:
 [LICENSE](../../LICENSE).

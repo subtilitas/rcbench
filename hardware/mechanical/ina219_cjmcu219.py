@@ -19,6 +19,8 @@ tracks are not drawn.
 Frame: as the KiCad model of the module. Origin at header pin 1 (Vcc)
 on the board's underside, x along the header towards pin 6, y from the
 header towards the terminal holes, z up. All sizes are mm.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import _board

@@ -30,6 +30,8 @@ datasheet range applies.
 Unknown: board thickness, the pull-up values on the board, whether the
 mounting holes connect to GND, the print of GPO (the catalogue marks it
 unconfirmed; the photo shows "GPO").
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "AS5600_Encoder_22.5x22.5mm"

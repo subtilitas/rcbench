@@ -24,6 +24,8 @@ limit, what the button and the LEDs do. The board's thickness is not
 measured; the model draws 1.6mm.
 
 The 3D model is hardware/mechanical/lipo_charger_boost_5v.py.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "LiPo_Charger_Boost5V_15.2x24mm"

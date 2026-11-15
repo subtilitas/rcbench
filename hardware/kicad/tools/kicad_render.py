@@ -8,6 +8,8 @@ it cannot parse.
 Usage: kicad_render.py <out_dir>
 Environment: KICAD_CLI, the kicad-cli to run (default: kicad-cli on PATH).
 Needs cairosvg for the PNGs; without it the SVGs stay.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import os

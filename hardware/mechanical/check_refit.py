@@ -19,6 +19,8 @@ Usage:
 
 Exit status 1 when a part fails. Needs OCP (pip install cadquery-ocp)
 and numpy.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import sys

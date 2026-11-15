@@ -38,6 +38,8 @@ socket that P does not resolve.
 Frame: as the KiCad model of the module. Origin at the 5V pad's hole
 on the board's underside, x towards the TX pad, y towards the USB
 socket, z up. All sizes are mm.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import _board

@@ -21,6 +21,8 @@ SWCLK, then GND and SWDIO (Waveshare pinout image, bottom view mirrored);
 from the pad 20 side (Waveshare pinout image). The terminal is drawn on
 F.Fab only; it has no pads. Unknown: terminal and USB-C heights, the
 SWD pad drill, which slider position of SW1 is ON in the top view.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "RP2350-CAN"

@@ -12,6 +12,8 @@ Usage:
     python3 hardware/mechanical/gen_models.py --check   exit 1 when a file
                                                         differs from its
                                                         spec
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import importlib.util

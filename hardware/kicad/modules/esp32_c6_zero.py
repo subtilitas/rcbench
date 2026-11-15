@@ -34,6 +34,8 @@ over the board. Unknown: the drill of the holes (drawn 1.0mm), the
 size of the underside pads (1.0 x 1.2mm in P).
 
 The 3D model is hardware/mechanical/esp32_c6_zero.py.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "ESP32-C6-Zero_Waveshare_18x23.5mm"

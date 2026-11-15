@@ -136,6 +136,18 @@ Security and safety reports: [SECURITY.md](SECURITY.md).
 
 rcbench is MIT licensed: [LICENSE](LICENSE).
 
+The hardware is licensed differently. Everything in `hardware/` and the
+carrier board's page ([Carrier](docs/Carrier.md)) is under CC BY-NC-SA 4.0
+(Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International):
+the board and pin documents, the part lists and sourcing, the component
+research, the STEP and STL models, the KiCad symbols, footprints and 3D
+shapes, the renders and the Python scripts that draw them. They may be used,
+changed and shared for non-commercial purposes, with credit and under the
+same licence. Commercial use needs a separate licence from the copyright
+holder. The terms are in [hardware/LICENSE](hardware/LICENSE). M5Stack's Dial mesh, the
+two Dial STEP files fitted to it and the letter outlines in
+`hardware/mechanical/_font.py` keep the MIT licence.
+
 - **DejaVu Sans Mono.** The seven font tables under `shared/gfx/` are glyph
   bitmaps rendered from DejaVu Sans Mono by `tools/gen_font.py`, under the
   Bitstream Vera Fonts Copyright ([NOTICE](NOTICE)). No font file is
@@ -194,4 +206,5 @@ by law, the author accepts no liability for:
 - damage to computers, microcontrollers or other connected hardware,
 - injury or damage that results from operating the hardware.
 
-The licence terms are in [LICENSE](LICENSE).
+The licence terms are in [LICENSE](LICENSE); for the hardware in
+[hardware/LICENSE](hardware/LICENSE).

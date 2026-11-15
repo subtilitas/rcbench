@@ -37,6 +37,8 @@ y up. The nut and shim files have their own origin: z = 0 on the face
 towards the panel, the part below it. The assembly places them for a
 1.6mm panel: with the 0.8mm shim that puts the nut's front face 2.4mm
 behind the bezel, as the drawing's 31.7 and 29.3 give.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

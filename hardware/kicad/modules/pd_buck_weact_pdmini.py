@@ -33,6 +33,8 @@ settings.c). The bench reaches them through the USB-C T-plug.
 
 Unknown: drill size of the 4 USB-C shell slots (the drawing gives the pad
 ovals only); board thickness; height of the parts.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

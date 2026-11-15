@@ -22,6 +22,8 @@ at the top right.
 
 Unknown: board thickness, the drill of the mounting holes (photo only),
 whether this matches every seller's board; some versions have 4 holes.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "ADS1115_Module_28x17mm"

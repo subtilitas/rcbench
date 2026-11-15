@@ -6,6 +6,8 @@ point's distance from each, the fits, the mesh part with its triangle
 neighbours, and what is found on the bare mesh: the axes of its arcs
 and the pitch of its helices. _segment.py grows the faces, _refit.py
 gives them edges. _refit.py describes the method.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

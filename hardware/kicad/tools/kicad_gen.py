@@ -40,6 +40,8 @@ Symbol graphics::
 Symbol pins: (type, name, number, x, y, rotation), length 2.54mm.
 
 File formats: footprint 20260206, symbol library 20251024 (KiCad 10).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import uuid

@@ -36,8 +36,19 @@ it can be separated later with a `git mv`. While it remains here:
 
 ## Licence
 
-MIT (Massachusetts Institute of Technology), as the rest of the tree:
-[LICENSE](../LICENSE).
+Everything in this folder is licensed CC BY-NC-SA 4.0 (Creative Commons
+Attribution-NonCommercial-ShareAlike 4.0 International): the board and pin
+documents, the part lists and sourcing, the component research, the 3D
+models, the KiCad module library and the scripts that draw them. So is the
+carrier board's page, [Carrier](../docs/Carrier.md). They may be used,
+changed and shared for non-commercial purposes, with credit and under the
+same licence. Commercial use needs a separate licence from the copyright
+holder. Terms: [LICENSE](LICENSE).
+
+Under the MIT (Massachusetts Institute of Technology) licence instead:
+M5Stack's Dial mesh and the two Dial STEP files fitted to it, and
+`mechanical/_font.py` ([mechanical/LICENSE](mechanical/LICENSE)). The rest
+of rcbench, the software, is MIT licensed: [LICENSE](../LICENSE).
 
 Maker, product, protocol and firmware names belong to their owners and are
 used only to describe compatibility:

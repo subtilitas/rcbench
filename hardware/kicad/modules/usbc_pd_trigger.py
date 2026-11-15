@@ -5,6 +5,8 @@ Measured from a vendor photo of the component side (32.6px/mm across,
 against a board). The holes are the two Usb-Pwr holes, 5.08mm apart, 2.0mm
 in from the right edge. Polarity follows the board's GND and VCC print:
 upper hole GND, lower hole VCC.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "USBC_PD_Trigger_DIP3_30x20mm"

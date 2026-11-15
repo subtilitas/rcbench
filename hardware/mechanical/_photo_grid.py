@@ -40,6 +40,8 @@ DIR/ina228_underside.png, both in the board frame at SCALE pixels per
 mm with MARGIN mm round the board, and DIR/ina228_case.png on the
 paper's frame, and prints each fit. Needs
 numpy and OpenCV (pip install opencv-python-headless).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import sys

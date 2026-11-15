@@ -37,6 +37,8 @@ through the mesh's vertices.
 
 No dependency outside the standard library; the result is the same on
 every run.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

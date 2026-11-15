@@ -13,6 +13,8 @@ shapes by changing their frames only. ``items`` writes the shapes as
 ("brep", points, edges, faces, rgb) for
 lib/rcbench/hardware/kicad/tools/step_gen.py's ``write``: arcs become
 circle edges and cylinder faces, not polygons.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

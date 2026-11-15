@@ -28,6 +28,8 @@ thickness is not measured; the model draws 1.6mm.
 
 The 3D model is hardware/mechanical/ina219_cjmcu219.py, on a 6-pin
 header.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "INA219_CJMCU-219_24.2x21.9mm"

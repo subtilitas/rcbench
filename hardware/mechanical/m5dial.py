@@ -95,6 +95,8 @@ M5Stack's mesh the nut's face is 1.8 behind the panel seat.
 On a panel thicker than 2.2 the nut, 5.0 thick, reaches past the front
 of the body's USB-C notch, 7.2 behind the panel seat; not checked on a
 part.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

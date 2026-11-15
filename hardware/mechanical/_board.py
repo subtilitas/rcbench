@@ -5,6 +5,8 @@ to the right and y down as seen from the top side, the way they are
 read off a photo. ``Board`` turns them into the model's frame, which is
 the frame of the module's KiCad model: the origin at the footprint's
 origin on the board's underside, x to the right, y up, z up.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import importlib.util

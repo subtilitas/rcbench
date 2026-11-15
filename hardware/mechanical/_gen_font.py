@@ -14,6 +14,8 @@ Usage:
 
 Writes hardware/mechanical/_font.py. Needs numpy and OpenCV (pip
 install opencv-python-headless).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import argparse

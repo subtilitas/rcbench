@@ -27,6 +27,8 @@ on the inductor.
 Frame: as the KiCad model of the module. Origin at hole 1 (OUT 5V) on
 the board's underside, x along the row towards hole 6, y from the LEDs
 towards the row, z up. All sizes are mm.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import _board
