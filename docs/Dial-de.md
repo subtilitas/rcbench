@@ -142,6 +142,18 @@ Ein Halten der Bildschirmtaste von 10s vergisst das gebundene Panel, ebenso
 `forget` auf der Konsole. Das Dial piept, beendet einen Link und sendet
 wieder für jeden. Die HOLD-Geste nach 1s geht dabei an das Panel.
 
+## Ausschalten
+
+Die Bildschirmtaste ist die WAKE-Taste des Dials: Nur an der Zelle schaltet
+ein Druck das Dial ein, und die Firmware hält die Versorgung mit GPIO46 auf
+high. Zum Ausschalten die Bildschirmtaste 3s halten. Das Dial piept mit
+600Hz für 150ms; wird sie vor 10s losgelassen, setzt es GPIO46 auf low, und
+die Versorgung fällt ab. Die HOLD-Geste nach 1s geht dabei an das Panel,
+wie bei jedem Halten. Bis 10s gehalten, vergisst das Halten stattdessen das
+gebundene Panel, und das Dial bleibt an. An USB bleibt das Dial nach dem
+Loslassen an; RST schaltet es an der Zelle ebenfalls aus. Geht das Dial mit
+einem Link aus, nimmt das Panel das als verlorenen Link.
+
 Protokollversion 1 hat kein Pairing und keine Verschlüsselung: Ein Gerät in
 Reichweite, das sich zuerst verbindet oder die gebundene Adresse fälscht,
 wird angenommen.
@@ -719,6 +731,6 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 - Das Dial prüft Art, Chip und Segmente des Images, nicht seine Herkunft:
   Ein Central in Reichweite kann jedes Dial-Image anbieten, auch ältere,
   und ein Druck installiert es.
-- Noch kein Schlaf, keine Stufen des Hintergrundlichts und keine
-  Abschaltung: Das Dial bleibt an, bis RST gedrückt wird oder die Zelle leer
-  ist. Die Laufzeit mit einer Zelle ist nicht gemessen.
+- Kein Schlaf, keine Stufen des Hintergrundlichts und keine automatische
+  Abschaltung: Das Dial bleibt an bis zum Halten von 3s, bis RST oder bis
+  die Zelle leer ist. Die Laufzeit mit einer Zelle ist nicht gemessen.

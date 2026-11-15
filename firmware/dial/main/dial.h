@@ -61,6 +61,14 @@
  *         let go.  The first call of app_main(). */
 void dial_power_hold(void);
 
+/** @brief A screen button release after this many ms of hold, and before
+ *         DK_FORGET_MS, switches the Dial off. */
+#define DIAL_OFF_MS 3000u
+
+/** @brief Drive GPIO46 low: on the cell alone the power drops once the
+ *         WAKE button is up; on USB the Dial stays on. */
+void dial_power_off(void);
+
 /** @brief What the Dial knows of its supply. */
 typedef struct {
     uint16_t mv;       /**< the cell's voltage, mV; 0 unknown */

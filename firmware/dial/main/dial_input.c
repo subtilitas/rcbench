@@ -22,8 +22,11 @@
  * not measured: DIAL_ENC_SIGN holds the direction.
  *
  * The screen button: released before 1,000ms is PRESS, held for 1,000ms is
- * HOLD (sent once, while it is down), held for 10,000ms forgets the bound
- * panel.  A tap on the glass is a touch of at most 500ms that moves at most
+ * HOLD (sent once, while it is down).  Held for 3,000ms (DIAL_OFF_MS) it
+ * beeps, and a release before 10,000ms switches the Dial off
+ * (dial_power_off()): the screen button is the WAKE button, so the cell's
+ * power drops when it is let go.  Held for 10,000ms it forgets the bound
+ * panel and the Dial stays on.  A tap on the glass is a touch of at most 500ms that moves at most
  * 24px; it is TAP at the point it started.
  *
  * A test build (RCBENCH_DIAL_HOOKS) takes input from the console as well:
@@ -100,6 +103,7 @@ typedef struct {
     uint32_t  down_ms;           /**< when the screen button went down */
     bool      hold_sent;         /**< HOLD went for this press */
     bool      forgot;            /**< the bind was forgotten for it */
+    bool      off;               /**< its release switches the Dial off */
     bool      touch_down;        /**< a finger is on the glass */
     bool      touch_moved;       /**< it moved more than TAP_MOVE */
     uint8_t   tx;                /**< the touch point */
@@ -246,7 +250,8 @@ static bool button_poll(button_t *b, uint32_t now)
     return false;
 }
 
-/** @brief The screen button's gestures: PRESS, HOLD and the forget.
+/** @brief The screen button's gestures: PRESS, HOLD, the switch-off and
+ *         the forget.
  *  @param now the time */
 static void screen_button(uint32_t now)
 {
@@ -255,6 +260,10 @@ static void screen_button(uint32_t now)
             s_in.down_ms = now;
             s_in.hold_sent = false;
             s_in.forgot = false;
+            s_in.off = false;
+        } else if (s_in.off) {
+            ESP_LOGI(TAG, "3s hold released: switching off");
+            dial_power_off();
         } else if (!s_in.hold_sent) {
             gesture_push(DK_G_PRESS, 0, 0);
         }
@@ -266,8 +275,13 @@ static void screen_button(uint32_t now)
         s_in.hold_sent = true;
         gesture_push(DK_G_HOLD, 0, 0);
     }
+    if (!s_in.off && !s_in.forgot && now - s_in.down_ms >= DIAL_OFF_MS) {
+        s_in.off = true;
+        dial_buzz_tone(600, 150);
+    }
     if (!s_in.forgot && now - s_in.down_ms >= DK_FORGET_MS) {
         s_in.forgot = true;
+        s_in.off = false;
         ESP_LOGI(TAG, "10s hold: the bound panel is forgotten");
         dial_ble_forget();
         dial_buzz_tone(1000, 200);

@@ -135,6 +135,18 @@ A 10s hold of the screen button forgets the bound panel; so does `forget` on
 the console. The Dial beeps, ends a link, and advertises to anyone again.
 The 1s HOLD gesture goes to the panel on the way.
 
+## Switching off
+
+The screen button is the Dial's WAKE button: on the cell alone, a press
+switches the Dial on, and the firmware holds the power with GPIO46 high.
+To switch it off, hold the screen button for 3s. The Dial beeps at 600Hz
+for 150ms; let go before 10s and it drives GPIO46 low, and the power drops.
+The 1s HOLD gesture goes to the panel on the way, as at every hold. Held on
+to 10s, the hold forgets the bound panel instead and the Dial stays on.
+On USB the Dial stays on after the release; RST switches it off on the cell
+as well. When the Dial goes off with a link, the panel takes it as a lost
+link.
+
 There is no pairing and no encryption in protocol version 1: a device in
 range that connects first, or that spoofs the bound address, is taken.
 
@@ -673,5 +685,5 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The Dial checks the image's kind, chip and segments, not its origin: a
   central in range can offer any Dial image, older ones included, and a
   press installs it.
-- No sleep, no backlight steps and no auto-off yet: the Dial stays on until
-  RST is pressed or the cell is empty. Runtime on a cell is not measured.
+- No sleep, no backlight steps and no auto-off: the Dial stays on until
+  the 3s hold, RST or an empty cell. Runtime on a cell is not measured.
