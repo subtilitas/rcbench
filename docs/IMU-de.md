@@ -349,6 +349,21 @@ Servotests als verspätet, wenn der gefilterte Winkel bis zum nächsten
 Befehl nicht eingeschwungen ist. Eine rechtzeitig eingeschwungene Bewegung
 wird bis zum Stillstand des Sensors gemessen.
 
+Das Modell in `shared/bench/imu.c` nimmt auch die Winkel eines anderen
+Sensors: `imu_feed_angles(m, roll, pitch, yaw, now_ms)`, ein Aufruf je
+Frame, in Grad und in ms der 32-Bit-Uhr. Diese Winkel durchlaufen
+denselben Filter, dieselbe Ruhezeit, Rate und Veraltung wie ein
+Winkel-Frame des WitMotion; dieselben Winkel zu denselben Zeiten ergeben
+auf beiden Wegen denselben Messwert (`test_imu_angles`). Die Winkel
+behalten ihre Float-Auflösung, nicht die Stufe des WitMotion von
+180° / 32768 (0,0055°). Ein Winkel unter -180° oder ab 180° wird zuerst
+auf -180 bis 180° gefaltet. Ein Frame mit einem nicht endlichen Winkel
+wird ganz verworfen; der Messwert veraltet 300ms nach dem letzten
+endlichen Frame. Ein so übergebener Frame zählt in der Rate und lässt
+Frame-Zahl, Version, Akku und Temperatur unverändert. Keine Firmware dieses
+Repositorys ruft `imu_feed_angles()` auf; die IMU des Panels ist der
+BWT901CL.
+
 ## Konsolenzeilen
 
 Die Zeilen tragen die Tags `imu` und `ble`:

@@ -1,11 +1,14 @@
 /**
  * @file
- * @brief The IMU's reading (imu.h): frames from protocols/witmotion into
- *        the newest angles through the low-pass, the frame rate, battery,
- *        temperature, the zero, the still time and the age.
+ * @brief The IMU's reading (imu.h): frames from protocols/witmotion, or
+ *        another sensor's three angles, into the newest angles through the
+ *        low-pass, the frame rate, battery, temperature, the zero, the
+ *        still time and the age.
  *
- * Only an angle frame (0x53) makes the reading valid; it goes stale
- * IMU_STALE_MS after the last one, the non-safety allowance of servo_gap.h.
+ * Only an angle frame makes the reading valid: a WitMotion 0x53 through
+ * imu_feed() or three angles through imu_feed_angles(), which share one
+ * path from the decoded angles on.  The reading goes stale IMU_STALE_MS
+ * after the last angle frame, the non-safety allowance of servo_gap.h.
  * Every time is an unsigned difference of the 32-bit ms clock, so the age,
  * the still time and the rate window hold across its wrap.
  *
@@ -234,12 +237,11 @@ static void still_take(imu_t *m, int i, float v, float far, bool live,
  *        stepped, each axis' still time carried on or started again, the
  *        rate counted.
  * @param m      The model.
- * @param a      The decoded frame.
+ * @param v      The frame's roll, pitch and yaw, ° -180 to under 180.
  * @param now_ms When it came.
  */
-static void take_angle(imu_t *m, const wit_angle_t *a, uint32_t now_ms)
+static void take_angle(imu_t *m, const float v[3], uint32_t now_ms)
 {
-    const float v[3] = { a->roll, a->pitch, a->yaw };
     /* A gap that no tick saw yet ends the old reading before this frame:
      * the frame seeds the filter and starts the still time again. */
     expire(m, now_ms);
@@ -249,7 +251,6 @@ static void take_angle(imu_t *m, const wit_angle_t *a, uint32_t now_ms)
     for (int i = 0; i < 3; ++i) {
         still_take(m, i, v[i], far[i], live, now_ms);
     }
-    m->r.version  = a->version;
     m->r.taken_ms = now_ms;
     m->r.valid    = true;
     ++m->rate_count;
@@ -274,7 +275,9 @@ void imu_feed(imu_t *m, const uint8_t *b, size_t n, uint32_t now_ms)
         wit_gyro_t gyro;
         wit_angle_t ang;
         if (wit_decode_angle(&f, &ang)) {
-            take_angle(m, &ang, now_ms);
+            const float v[3] = { ang.roll, ang.pitch, ang.yaw };
+            take_angle(m, v, now_ms);
+            m->r.version = ang.version;
         } else if (wit_decode_gyro(&f, &gyro)) {
             m->r.battery_v = gyro.battery_v;
         } else if (wit_decode_acc(&f, &acc)) {
@@ -282,6 +285,28 @@ void imu_feed(imu_t *m, const uint8_t *b, size_t n, uint32_t now_ms)
         }
     }
     m->r.bad = m->p.bad_sum + m->p.resyncs;
+    imu_tick(m, now_ms);
+}
+
+void imu_feed_angles(imu_t *m, float roll, float pitch, float yaw,
+                     uint32_t now_ms)
+{
+    if (m == NULL) {
+        return;
+    }
+    float v[3] = { roll, pitch, yaw };
+    for (int i = 0; i < 3; ++i) {
+        if (!isfinite(v[i])) {
+            imu_tick(m, now_ms);    /* no angle: the frame is dropped */
+            return;
+        }
+        /* An angle in range, as every WitMotion angle is, passes unchanged:
+         * the same angles give the same reading on both paths. */
+        if (v[i] < -180.0f || v[i] >= 180.0f) {
+            v[i] = wrap180(v[i]);
+        }
+    }
+    take_angle(m, v, now_ms);
     imu_tick(m, now_ms);
 }
 
