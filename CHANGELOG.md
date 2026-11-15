@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- `imu_feed_angles()` in `shared/bench/imu.c`: one frame of another
+  sensor's roll, pitch and yaw, in degrees, at a time in ms, through the
+  same filter, still time, rate and stale time as a WitMotion angle frame
+  through `imu_feed()`. The same angles at the same times give the same
+  reading on both paths. An angle outside -180 to 180° is wrapped first;
+  a frame with an angle that is not finite is dropped. The WitMotion path
+  is unchanged. No firmware calls it. Under `test_imu_angles`
+  ([The Bluetooth IMU](docs/IMU.md#the-filter)).
+
 ## 0.23.13 - 2026-11-15
 
 0.23.13 is a testing release. It adds the M5Stack Dial v1.1 as a Bluetooth LE

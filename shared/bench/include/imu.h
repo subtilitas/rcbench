@@ -3,8 +3,9 @@
  * @brief The IMU's reading as the bench keeps it: the newest angles
  *        through the low-pass filter, the frame rate, battery,
  *        temperature, the zero, the still time and the age.  Fed the
- *        sensor's stream through protocols/witmotion.  Stale after
- *        IMU_STALE_MS.  Pure C.
+ *        WitMotion sensor's stream through protocols/witmotion
+ *        (imu_feed()), or another sensor's roll, pitch and yaw
+ *        (imu_feed_angles()).  Stale after IMU_STALE_MS.  Pure C.
  *
  * The filter takes each angle frame, per axis: deg += (new - deg) / k,
  * with k the IMU FILTER setting, 1 to 50; k 1 passes each frame through.
@@ -125,6 +126,26 @@ void imu_content_restart(imu_t *m);
  * @param now_ms The clock.
  */
 void imu_feed(imu_t *m, const uint8_t *b, size_t n, uint32_t now_ms);
+/**
+ * @brief Feed one angle frame of another sensor at @p now_ms: roll, pitch
+ *        and yaw through the same filter, still time, rate and age as a
+ *        WitMotion angle frame (0x53) through imu_feed().  The same angles
+ *        at the same times give the same angle[], still_ms[], valid,
+ *        taken_ms and rate_dhz on both paths.  frames, bad, version,
+ *        battery_v, temp_c and the content count stay as they are: they
+ *        count the WitMotion stream.
+ *
+ * An angle below -180° or at 180° and above is wrapped to -180 to 180
+ * first.  A frame with an angle that is not finite (NaN, not a number,
+ * or infinity) is dropped whole; the reading ages as with no frame.
+ * @param m      The model; NULL does nothing.
+ * @param roll   Roll, X, °.
+ * @param pitch  Pitch, Y, °.
+ * @param yaw    Yaw, Z, °.
+ * @param now_ms The clock.
+ */
+void imu_feed_angles(imu_t *m, float roll, float pitch, float yaw,
+                     uint32_t now_ms);
 /** @brief Age the reading: valid goes false IMU_STALE_MS after the last
  *         angle frame; the rate window rolls.
  *  @param m      The model; NULL does nothing.

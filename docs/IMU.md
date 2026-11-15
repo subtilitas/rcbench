@@ -315,6 +315,19 @@ Current limitation: with IMU filter above 1, a move of the servo test
 counts as late when the filtered angle has not settled by the next
 command. A move that settles in time is timed to the sensor's stop.
 
+The model in `shared/bench/imu.c` also takes another sensor's angles:
+`imu_feed_angles(m, roll, pitch, yaw, now_ms)`, one call per frame, in
+degrees and in ms of the 32-bit clock. Those angles take the same filter,
+still time, rate and stale time as a WitMotion angle frame; the same
+angles at the same times give the same reading on both paths
+(`test_imu_angles`). The angles keep their float resolution, not the
+WitMotion's 180° / 32768 (0.0055°) a step. An angle below -180° or at 180°
+and above is wrapped to -180 to 180° first. A frame with an angle that is
+not finite is dropped whole, and the reading goes stale 300ms after the
+last finite frame. A frame fed this way counts in the rate and leaves the
+frame count, the version, the battery and the temperature as they are. No
+firmware of this repository calls it; the panel's IMU is the BWT901CL.
+
 ## Console lines
 
 The lines carry the tags `imu` and `ble`:
