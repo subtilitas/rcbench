@@ -361,7 +361,8 @@ auf -180 bis 180° gefaltet. Ein Frame mit einem nicht endlichen Winkel
 wird ganz verworfen; der Messwert veraltet 300ms nach dem letzten
 endlichen Frame. Ein so übergebener Frame zählt in der Rate und lässt
 Frame-Zahl, Version, Akku und Temperatur unverändert. Keine Firmware dieses
-Repositorys ruft ihn auf; die IMU des Panels ist der BWT901CL.
+Repositorys ruft `imu_feed_angles()` auf; die IMU des Panels ist der
+BWT901CL.
 
 ## Konsolenzeilen
 

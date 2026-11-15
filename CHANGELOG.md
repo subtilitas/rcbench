@@ -12,10 +12,19 @@ history is in git.
   sensor's roll, pitch and yaw, in degrees, at a time in ms, through the
   same filter, still time, rate and stale time as a WitMotion angle frame
   through `imu_feed()`. The same angles at the same times give the same
-  reading on both paths. An angle outside -180 to 180° is wrapped first;
-  a frame with an angle that is not finite is dropped. The WitMotion path
-  is unchanged. No firmware calls it. Under `test_imu_angles`
+  reading on both paths. An angle below -180° or at 180° and above is
+  wrapped first; a frame with an angle that is not finite is dropped. The
+  WitMotion path is unchanged. No firmware calls it. Under `test_imu_angles`
   ([The Bluetooth IMU](docs/IMU.md#the-filter)).
+- `hardware/mechanical/`: a hand-held base for the M5Stack Dial in two
+  printed parts, `dial_base_top` and `dial_base_bottom`, each as STEP and
+  STL. The top part seats the dial in a 45.2mm hole; the bottom part holds
+  the 1000mAh cell 102540; 4 M3 x 12 screws join them from below. The base
+  is a body of revolution 72.0mm across and 32.5mm high with a rounded
+  underside for the palm and 18 flutes round the belly. `_gen_dial_base.py`
+  builds it with OpenCASCADE and its `--check`, run in CI, fails when a part
+  shares volume with the dial, its nut or the cell
+  ([Mechanical parts](hardware/mechanical/README.md#hand-held-base-for-the-m5stack-dial)).
 
 ## 0.23.13 - 2026-11-15
 
@@ -402,6 +411,15 @@ The entries below cover the 52 pull requests merged since v0.23.12: #803 to
   pockets and estimates. `step_gen.py` writes solids with faces on
   curved surfaces (`"brep"`) besides prisms and turned profiles
   ([Mechanical parts](hardware/mechanical/README.md#m5stack-dial)).
+- `protocols/sbus` encodes frames. `sbus_encode()` packs an
+  `sbus_frame_t` into the 25 bytes the decoder reads: header 0x0F, 16
+  channels of 11 bits, the flag byte with CH17, CH18, frame lost and
+  failsafe in bits 0 to 3, footer 0x00. A channel above 2047 refuses the
+  frame and leaves the output unwritten. `sbus_from_us()` maps a pulse
+  width to a raw value on 172 = 1000us and 1811 = 2000us, rounded to the
+  nearest and clamped to 0 to 2047; from 895us to 2144us `sbus_to_us()`
+  gives the same pulse back. The module has no pin driver
+  ([sbus](protocols/sbus/README.md)).
 
 ### Changed
 

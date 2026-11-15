@@ -2,13 +2,15 @@
  * @file
  * @brief Futaba S.BUS: sixteen channels in twenty-five bytes.
  *
- * Implements the S.BUS receiver protocol of Futaba.  Futaba and S.BUS are
- * names or trademarks of their respective owners; they are used here only to
- * say which receivers this module works with (NOTICE, "Trademarks").
+ * Implements the S.BUS protocol of Futaba in both directions.  Futaba and
+ * S.BUS are names or trademarks of their respective owners; they are used
+ * here only to say which receivers and devices this module works with
+ * (NOTICE, "Trademarks").
  *
  * The wire is an inverted 8E2 UART (universal asynchronous
- * receiver-transmitter) at 100 kbaud, produced by the IOmcu's PIO
- * (programmable input/output); this file decodes the bytes.
+ * receiver-transmitter) at 100 kbaud.  This file decodes the bytes a
+ * receiver sends and encodes the bytes of a frame to send; the pin driver
+ * that receives or transmits them is not part of the module.
  *
  * S.BUS has no checksum and no escaping.  A frame is a header byte, a
  * bit-packed payload and a footer, and the header value 0x0F is an ordinary
@@ -42,6 +44,7 @@ extern "C" {
 /** @brief Frame layout: byte count, header byte and channel count. */
 #define SBUS_FRAME_BYTES 25u   /**< bytes per frame, header to footer */
 #define SBUS_HEADER      0x0Fu /**< first byte of every frame */
+#define SBUS_FOOTER      0x00u /**< last byte of a frame the encoder writes */
 #define SBUS_CHANNELS    16u   /**< channels per frame */
 
 /** @brief Raw channel range: eleven bits. */
@@ -73,7 +76,7 @@ extern "C" {
 #define SBUS_FLAG_FRAME_LOST 0x04u /**< frame did not arrive intact */
 #define SBUS_FLAG_FAILSAFE   0x08u /**< receiver is in failsafe */
 
-/** @brief One decoded S.BUS frame. */
+/** @brief One S.BUS frame: decoded, or to be encoded. */
 typedef struct {
     uint16_t channel[SBUS_CHANNELS]; /**< 0..2047, as sent */
     bool     ch17;                   /**< the two digital channels */
@@ -131,6 +134,53 @@ bool sbus_decode_byte(sbus_decoder_t *d, uint8_t byte, uint32_t now_us,
  * @return Pulse width in us, clamped to 800 to 2200.
  */
 uint16_t sbus_to_us(uint16_t raw);
+
+/**
+ * @brief Raw channel value for a pulse width: the inverse of sbus_to_us().
+ *
+ * The same line as sbus_to_us(), 1000us = 172 and 2000us = 1811, solved for
+ * the raw value, rounded to the nearest and halves away from 1000us, then
+ * clamped to SBUS_RAW_MIN to SBUS_RAW_MAX.  1500us is a half and gives 992.
+ *
+ * The microseconds are those of this line, not of every device.  A device
+ * that reads 0.625us per count from 880us puts 1811 at 2011.9us, 11.9us
+ * higher, and 172 at 987.5us, 12.5us lower; these figures are worked out
+ * from the formula and not measured on a device.  A caller that holds a
+ * ceiling on the pulse a device produces applies it in raw counts.
+ *
+ * For every @p us from 895 to 2144, sbus_to_us(sbus_from_us(us)) == us.
+ * Below 895us the result is 0 and above 2144us it is 2047, which
+ * sbus_to_us() reads as 895us and 2144us.  The other direction does not
+ * round-trip: 2048 raw values share 1250 pulse widths, so
+ * sbus_from_us(sbus_to_us(raw)) is within one count of @p raw.
+ *
+ * @param us  Pulse width in us.  Every value is accepted.
+ * @return Raw channel value, 0 to 2047.
+ */
+uint16_t sbus_from_us(uint16_t us);
+
+/**
+ * @brief Pack a frame into the SBUS_FRAME_BYTES bytes sent on the wire.
+ *
+ * Byte 0 is SBUS_HEADER.  Bytes 1 to 22 hold the sixteen channels, channel
+ * n at bit 11n of the payload, least significant bit first, as
+ * sbus_decode_byte() reads them.  Byte 23 holds SBUS_FLAG_CH17,
+ * SBUS_FLAG_CH18, SBUS_FLAG_FRAME_LOST and SBUS_FLAG_FAILSAFE from the four
+ * flags of @p f, with bits 4 to 7 clear.  Byte 24 is SBUS_FOOTER.
+ *
+ * A channel above SBUS_RAW_MAX does not fit in eleven bits and is refused,
+ * not clamped: the whole frame is refused and @p out is not written, so the
+ * caller decides what to send in its place.  On false the caller does not
+ * send @p out, which holds whatever it held before.  It sends a frame with
+ * the throttle channel at its stop value and the failsafe flag set, or it
+ * stops sending and lets the device's own failsafe act.
+ *
+ * @param f    Frame to pack.  NULL returns false.
+ * @param out  Receives SBUS_FRAME_BYTES bytes.  NULL returns false.
+ * @return true when @p out holds the frame; false when an argument is NULL
+ *         or a channel is above SBUS_RAW_MAX, with @p out unchanged.
+ */
+bool sbus_encode(const sbus_frame_t *f, uint8_t *out);
 
 #ifdef __cplusplus
 }

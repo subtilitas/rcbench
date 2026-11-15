@@ -326,7 +326,8 @@ and above is wrapped to -180 to 180° first. A frame with an angle that is
 not finite is dropped whole, and the reading goes stale 300ms after the
 last finite frame. A frame fed this way counts in the rate and leaves the
 frame count, the version, the battery and the temperature as they are. No
-firmware of this repository calls it; the panel's IMU is the BWT901CL.
+firmware of this repository calls `imu_feed_angles()`; the panel's IMU is
+the BWT901CL.
 
 ## Console lines
 
