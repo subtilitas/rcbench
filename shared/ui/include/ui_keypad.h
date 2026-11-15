@@ -161,6 +161,24 @@ void ui_keypad_refuse(ui_keypad_t *k);
 void ui_keypad_refuse_why(ui_keypad_t *k, const char *reason);
 
 /**
+ * @brief The value the keypad stands on: what is typed, else the value it
+ *        was opened with.
+ * @param k The keypad.
+ * @return The value; 0 for NULL.
+ */
+float ui_keypad_value(const ui_keypad_t *k);
+
+/**
+ * @brief Write @p v into the entry as if typed, with the keypad's decimals
+ *        (fewer where UI_KEYPAD_ENTRY_MAX characters cannot hold them).
+ *        A refusal shown goes; OK then takes the entry as it takes a typed
+ *        one.  The M5Stack Dial's turn sets the value this way (ui_focus.h).
+ * @param k The keypad, open.
+ * @param v The value.
+ */
+void ui_keypad_set(ui_keypad_t *k, float v);
+
+/**
  * @brief Where a key is drawn and hit: the grid ends 8px inside the
  *        area, or at UI_KEYS_FOOT (4px above the alert band, body
  *        coordinates) where the area reaches further.

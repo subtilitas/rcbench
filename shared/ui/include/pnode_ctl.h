@@ -28,6 +28,11 @@
  *   gets it when it comes back within the run, and a link that comes back
  *   within the run to a node whose RUN packets carry another tag (it
  *   started again) gets it again.
+ * - After INFO is taken on each link, and at each change of the panel's
+ *   language, LANG goes to CONTROL with that language, after any RUN write
+ *   owed: a display node (docs/Nodes.md, "The display node") shows its
+ *   texts in it.  A node that refuses the write (one built before LANG)
+ *   gets it again only at the next link or change.
  *
  * Every function of one controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -59,6 +64,9 @@ extern const bleu_profile_t pnode_profile;
  *         IMU is owner 0, the Dial 1. */
 #define PNODE_BLE_OWNER 2u
 
+/** @brief pnode_ctl_t's lang_sent before a LANG write on the link. */
+#define PNODE_LANG_NONE 0xFFu
+
 /** @brief Devices a scan keeps the role of (rcnode_adv_match()). */
 #define PNODE_ROLES_MAX 16u
 
@@ -75,9 +83,13 @@ typedef struct {
                                     the meter took its set-up */
     uint8_t       info_proto;  /**< the protocol INFO named, 0 unread */
     uint8_t       info_role;   /**< the role INFO named, 0 unread */
+    uint8_t       info_board;  /**< the board INFO named, 0 unread */
     bool          was_up;      /**< a reading came on this link */
     bool          lost;        /**< the link dropped after a reading */
     bool          run_owed;    /**< the RUN write waits for the link */
+    uint8_t       lang;        /**< the panel's language, RCNODE_LANG_* */
+    uint8_t       lang_sent;   /**< the language LANG last went with on
+                                    this link; PNODE_LANG_NONE before */
     bool          scan_open;   /**< a scan started, its end unread */
     bool          scan_done;   /**< a scan ended since POWER NODE ON */
     bool          scan_cut;    /**< the bench ARMED stopped that scan */
@@ -92,9 +104,15 @@ typedef struct {
     uint32_t      unread;      /**< STREAM packets dropped before INFO
                                     was read and taken */
     uint32_t      refused;     /**< scans refused while ARMED */
+    uint32_t      scan_unready; /**< scans refused while OFF, held, without
+                                     sync or with a scan running */
+    uint32_t      bind_refused; /**< binds refused: a scan ran or the index
+                                     was past the list */
     uint32_t      runs_sent;   /**< RUN writes handed to the central */
     uint32_t      info_failed; /**< INFO reads that failed, each a
                                     reconnect */
+    bool          held;        /**< an update holds the link off
+                                    (pnode_ctl_hold()) */
 } pnode_ctl_t;
 
 /** @brief Clear: POWER NODE OFF, nothing bound.  @param c NULL does
@@ -104,7 +122,9 @@ void pnode_ctl_init(pnode_ctl_t *c);
 /**
  * @brief Take SETUP's values.  OFF stops a scan and ends the link; ON
  *        connects a bound node once Bluetooth is synced.  A new address
- *        binds it.
+ *        binds it, unless the values were read before SETUP kept the last
+ *        bind (cfg->bind_seq behind the controller's): then the bound
+ *        address and name stay, and the other values are taken.
  * @param c      The controller.
  * @param cfg    The values; NULL does nothing.
  * @param now_ms The clock.
@@ -121,11 +141,49 @@ void pnode_ctl_config(pnode_ctl_t *c, const pnode_cfg_t *cfg,
 void pnode_ctl_radio(pnode_ctl_t *c, imu_radio_t radio, uint32_t now_ms);
 
 /**
+ * @brief The node's update holds the link (panel_devupd.c): ON ends the
+ *        link and keeps it ended, as POWER NODE OFF does, with SETUP's
+ *        values kept and SETUP's later values taken; OFF gives the link
+ *        back to them.  Neither counts as a loss, so no STALE or LOST
+ *        follows from the update.
+ * @param c      The controller; NULL does nothing.
+ * @param on     The hold.
+ * @param now_ms The clock.
+ */
+void pnode_ctl_hold(pnode_ctl_t *c, bool on, uint32_t now_ms);
+
+/**
+ * @brief What the node's update needs of the link.
+ * @param c       The controller.
+ * @param addr    Receives the bound node's address.
+ * @param linked  Receives whether the node is connected, its INFO taken
+ *                and a STATUS packet on this link named its version.
+ * @param version Receives that version, MAJOR, MINOR, PATCH.
+ * @param down    Receives whether no link to the node stands or is under
+ *                way.
+ * @return false when no node is bound, or an argument is NULL.
+ */
+bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
+                      uint8_t version[3], bool *down);
+
+/**
+ * @brief Whether the linked node's INFO names a board other than the
+ *        ESP32-C6-Zero (RCNODE_BOARD_C6_ZERO), whose image is the one the
+ *        panel carries: the ES3C28P display node is flashed over USB.
+ * @param c The controller.
+ * @return true while INFO is taken on this link and names another board;
+ *         false before INFO, for the C6-Zero, or when @p c is NULL.
+ */
+bool pnode_ctl_other_board(const pnode_ctl_t *c);
+
+/**
  * @brief SCAN FOR NODE: the list cleared and a scan of BLEU_SCAN_MS.
  * @param c      The controller.
  * @param armed  The bench is ARMED, or a switch to ARMED waits.
  * @param now_ms The clock.
- * @return PNODE_SCAN_ARMED while @p armed, whatever else holds.
+ * @return PNODE_SCAN_ARMED while @p armed, whatever else holds, counted
+ *         in refused; PNODE_SCAN_NOT_READY counted in scan_unready.  The
+ *         view carries both counts to the band.
  */
 pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms);
 
@@ -134,7 +192,9 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms);
  * @param c      The controller.
  * @param i      Its index; one past the list is refused.
  * @param now_ms The clock.
- * @return Whether it bound; cfg.addr and cfg.name then hold it.
+ * @return Whether it bound; cfg.addr and cfg.name then hold it.  A
+ *         refusal while a scan runs or past the list counts in
+ *         bind_refused, which the view carries to the band.
  */
 bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms);
 
@@ -150,7 +210,7 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms);
 /**
  * @brief Advance to @p now_ms: the meter's run and dropout rule, a running
  *        scan stopped while @p armed, then the central's next action, else
- *        the RUN write owed.  Call until it returns false, at least every
+ *        the RUN write owed, else the LANG write owed.  Call until it returns false, at least every
  *        10ms.
  * @param c         The controller.
  * @param now_ms    The clock.
@@ -161,6 +221,13 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms);
  */
 bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
                     bool bench_run, bleu_act_t *out);
+
+/**
+ * @brief The panel's language, for the LANG write (above).
+ * @param c    The controller; NULL does nothing.
+ * @param lang RCNODE_LANG_EN or RCNODE_LANG_DE; another value is English.
+ */
+void pnode_ctl_lang(pnode_ctl_t *c, uint8_t lang);
 
 /**
  * @brief Where the node stands.

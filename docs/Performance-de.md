@@ -66,6 +66,7 @@ throttle                    10,078    1260 KiB
 chrome                      48,248    6031 KiB
 overview                         0       0 KiB
 overview-guide                 361      45 KiB
+overview-focus               1,062     133 KiB
 servo                        2,410     301 KiB
 servo-grip                     589      74 KiB
 servo-current                1,980     248 KiB
@@ -122,6 +123,7 @@ est. ms and est. fps: not measured
 | `chrome` | der Motorprüfstand ohne Cache, vollständig neu gezeichnet |
 | `overview` | das Menü, Chrome gecacht |
 | `overview-guide` | das Menü mit offener Bildschirmhilfe auf Seite 1: das Dock gecacht, Abzeichen und Eckwinkel von 4 Kacheln in jedem Frame gezeichnet |
+| `overview-focus` | das Menü mit verbundenem M5Stack Dial, der Fokus in jedem Frame eine Kachel weiter: der 2px-Rahmen zurückgesetzt und neu gezeichnet, keine Kachel neu gezeichnet |
 | `servo` | der Servobildschirm mit neu gezeichnetem Arm |
 | `servo-grip` | der Servobildschirm, nur der Griff neu gezeichnet |
 | `servo-current` | wie `servo-grip`, mit dem INA3221 als Messgerät der Servo-Schiene und einem Fenster in jedem Frame, dessen Strom sich in den gezeigten Ziffern unterscheidet: der Griff, der Wert der Zeile STROM, die Zeile über dem Plot und der Plot neu gezeichnet, jedes auf sich selbst beschnitten |
@@ -266,6 +268,7 @@ im Modell. Sie erkennt nicht, ob ein Frame den nächsten Anzeigezeitpunkt verpas
 | --- | ---: | --- |
 | `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `motor-wire-hold`, `picker`, `wifi` | 1 000 | einen Bildschirm mit gecachtem Chrome, der neu zu zeichnen begonnen hat |
 | `overview-guide` | 1 000 | Marken der Hilfe, die mehr als ihre Abzeichen und Winkel zeichnen |
+| `overview-focus` | 1 300 | einen Fokusschritt, der eine Kachel oder den Bildschirm neu zeichnet |
 | `servo` | 2 800 | ein Wachsen der Arm- und Griffzeichnung |
 | `servo-grip` | 1 000 | ein Atmen, das mehr als seine Box neu zeichnet |
 | `servo-current` | 4 000 | eine geänderte Ziffer des Stroms, die die ganze Karte neu zeichnet |
@@ -439,7 +442,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 | `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
-| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und des Leistungsknotens aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`) | 4 096 | 1 808 | 1 248 |
+| `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
 | `nimble_host` | `ble_host_task`, der Host von NimBLE: HCI (Host Controller Interface) zum C6 und zurück, die Berichte des Scans, die Antworten der Verbindung und von GATT (`panel_ble.c`) | 4 096 | 1 936 | 1 120 |
 | `touch` | `touch_task`, der GT911-Leser (`components/gt911`) | 4 096 | 1 392 | 1 664 |
@@ -530,7 +533,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  377
+  382
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -602,6 +605,15 @@ zeigt Speicherbedarf, den das Werkzeug nicht verfolgt.
 
 Die Tasks von ESP-IDF und esp_hosted stehen nicht in der Tabelle: ihre Namen
 und Zahlen kommen aus der Konsole eines Musters, und keine ist aufgezeichnet.
+
+### Das Dial und die Sensorknoten
+
+Das M5Stack Dial und beide Knotenrollen führen die Geräteseite des
+Firmware-Updates im Task `ota` aus (`firmware/devota`): 8 192 Bytes Stack aus
+dem Heap beim Start, der Größe der OTA-Beispiele von ESP-IDF, Priorität 3, ein Schritt alle 10ms. `esp_ota_end()`
+liest das geschriebene Image zurück und prüft es auf diesem Stack. Seine
+Tiefe ist nicht gemessen: Kein Werkzeug liest dafür das Xtensa-Image des
+Dial oder das Image des Knotens, und keine High-Water-Mark ist aufgezeichnet.
 
 ### Der IOmcu
 
@@ -772,7 +784,7 @@ I (…) ble: host started; internal RAM <n>B free before, <n>B after; PSRAM <n>B
 Sein interner RAM: der Stack von `nimble_host` mit 4 096 Bytes auf Dauer,
 der Stack von `blestart` mit 4 096 Bytes, bis der Start vorbei ist, und in
 .bss die Event-Queue mit 64 x 64 = 4 096 Bytes, die 8 aufgehobenen
-DISCONNECTs mit 512 Bytes und der Hub der Clients (`bleu_hub_t`) mit 1 112
+DISCONNECTs mit 512 Bytes und der Hub der Clients (`bleu_hub_t`) mit 1 164
 Bytes. esp_hosted belegt je HCI-Paket einen Puffer; diese sind nicht
 gezählt. Die Pools und Puffer von NimBLE liegen im PSRAM
 (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); sie wachsen mit
@@ -804,6 +816,14 @@ des Leistungsknotens, nur seine Objekte (`panel_pnode.c`, `pnode_ctl.c`,
 Bytes DIRAM hinzu, davon 3 861 Bytes .bss, und 11 748 Bytes Image
 (`esp_idf_size --files`); seine Texte und seine Aufrufe in anderen Dateien
 sind nicht gezählt.
+Das Update der Funkgeräte, aus der Linker-Map des Standard-Builds:
+`panel_devupd.c` hält 2 008 Bytes DIRAM (1 580 .bss, 428 .data) und 5 050
+Bytes Code; `upd_dev.c` 566 Bytes .bss und 3 926 Bytes Code;
+`shared/devupd` 3 540 Bytes Code und `protocols/bleota` 446. Die drei
+mitgebrachten Images, das des Dial und die beider Knoten, fügen bei 0.23.12
+2 130 416 Bytes Image hinzu: 841 504, 646 240 und 642 672. Mit ihnen hat
+das Anwendungs-Image 7 375 296 Bytes, 751 168 (9,2%) unter dem Slot von
+8 126 464.
 Die 4 096 Bytes der Ereignis-Warteschlange, die aufgehobenen DISCONNECTs
 und der Hub stecken in der DIRAM-Zahl, außerhalb von `libbt.a`. Hub und 5
 Verbindungen fügen dem Standard-Build mit einer Verbindung 3 704 Bytes
@@ -812,8 +832,8 @@ sind mit 1 und mit 5 Verbindungen gleich. esp_hosted (157 827 Bytes Flash,
 1 571 Bytes DIRAM) trägt WLAN und Bluetooth LE zusammen; sein
 Bluetooth-LE-Anteil ist nicht gemessen.
 
-Die .bss im PSRAM ist in beiden Builds 2 647 872 Bytes, mit und ohne
-Bluetooth LE.
+Die .bss im PSRAM ist im Standard-Build 2 648 207 Bytes. Der Build ohne
+Bluetooth LE ist in diesem Stand nicht gemessen.
 
 Ein WLAN-Start, der fehlschlägt, protokolliert den Schritt, den Namen des
 Fehlers und den internen Heap in diesem Moment:

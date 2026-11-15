@@ -289,6 +289,12 @@ jobs:
       - name: The committed Dial faces match the current render
         run: python3 tools/render_dial.py --check
 
+      # The display node's screen is drawn by the code the node runs
+      # (firmware/node/main/node_view.c) from the fixed models of
+      # test/host/render_node.c; every string's fit is test_node_view's.
+      - name: The committed display node screens match the current render
+        run: python3 tools/render_node.py --check
+
       # A string longer than its field is cut or runs into its neighbour;
       # this draws every view in both languages and measures.  The English
       # overflows the layout has are listed by name in the tool and printed;
@@ -351,6 +357,12 @@ jobs:
       # marks that draw more, such as a full outline (about 4,400).
       - name: The screen guide's marks stay cheap
         run: python3 tools/frame_cost.py overview-guide --max-lines 1000
+
+      # The M5Stack Dial's focus ring keeps the pixels under it: a move
+      # puts back one 2px ring and draws another, about 1,060 fills on the
+      # menu; a move that repaints a tile costs several thousand.
+      - name: A focus move costs its ring, not a repaint
+        run: python3 tools/frame_cost.py overview-focus --max-lines 1300
 
       - name: The SIMULATION watermark has not grown
         run: python3 tools/frame_cost.py balance-sim settings-sim battery-sim
@@ -433,10 +445,11 @@ jobs:
       # in the host build; cppcheck reads it with the firmware.
       # render_screen.c, render_files.c, render_hitec.c, render_esc_wire.c,
       # render_help.c, render_shot.c, render_rudder.c, render_imu.c,
-      # render_dial.c and bench_frame.c are built by tools/render_ui.py,
-      # tools/render_dial.py and tools/frame_cost.py, not by CMake, so they
-      # have no compile command here; the two render tools build the first
-      # nine with -Werror, cppcheck reads all ten.
+      # render_dial.c, render_node.c and bench_frame.c are built by
+      # tools/render_ui.py, tools/render_dial.py, tools/render_node.py and
+      # tools/frame_cost.py, not by CMake, so they have no compile command
+      # here; the three render tools build the first ten with -Werror,
+      # cppcheck reads all eleven.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
       # run; no result is kept between runs.
@@ -454,6 +467,7 @@ jobs:
                         -e 'test/host/render_rudder.c' \
                         -e 'test/host/render_imu.c' \
                         -e 'test/host/render_dial.c' \
+                        -e 'test/host/render_node.c' \
                         -e 'test/host/bench_frame.c' \
               | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 
@@ -660,6 +674,13 @@ jobs:
           python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
           python3 hardware/kicad/tools/step_check.py
 
+      # The models of the panel board and of the INA228 module in its case
+      # are drawn part by part from measured boxes and from shapes of
+      # hardware/mechanical/_parts.py. Two parts that share volume are a
+      # part placed or sized wrongly.
+      - name: No two solids of a model drawn part by part share volume
+        run: python3 hardware/mechanical/check_overlap.py
+
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
       # OpenCASCADE meshes each solid again; the two meshes are within
       # 0.15mm of each other both ways and 1% in volume.
@@ -741,9 +762,9 @@ jobs:
     # stays "ESP-IDF v5.5.5" until the ruleset's required check is renamed
     # to the same text as this name (tools/check_docs.py, PANEL_CHECK_NAME).
     name: Panel (ESP-IDF v6.1, ESP32-P4)
-    # The build carries the IOmcu and C6 images of this commit, as the
-    # release does.
-    needs: [iomcu, c6]
+    # The build carries the IOmcu and C6 images of this commit, and the
+    # Dial's and the nodes' images, as the release does.
+    needs: [iomcu, c6, dial, node]
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
@@ -751,12 +772,24 @@ jobs:
 
       # Inside firmware/panel, the directory the build runs in, so the
       # container sees it under the same relative path: each artifact in a
-      # folder of its name (iomcu, iomcu-console, iomcu-rbmod, c6).
-      - name: Fetch the IOmcu and C6 images
+      # folder of its name (iomcu, iomcu-console, iomcu-rbmod, c6, dial,
+      # node).
+      - name: Fetch the IOmcu, C6, Dial and node images
         uses: actions/download-artifact@v7
         with:
-          pattern: '{iomcu,iomcu-console,iomcu-rbmod,c6}'
+          pattern: '{iomcu,iomcu-console,iomcu-rbmod,c6,dial,node}'
           path: firmware/panel
+
+      # Each device image the panel carries is its role's application of
+      # this tree's version, inside its slot (tools/c6_image.py device).
+      - name: The Dial and node images are their roles' builds
+        run: |
+          python3 tools/c6_image.py device dial \
+            "$(ls firmware/panel/dial/rcbench-dial-[0-9]*.bin)"
+          python3 tools/c6_image.py device node-pwr \
+            "$(ls firmware/panel/node/rcbench-node-pwr-[0-9]*.bin)"
+          python3 tools/c6_image.py device node-bal \
+            "$(ls firmware/panel/node/rcbench-node-bal-[0-9]*.bin)"
 
       # The managed components (firmware/panel/managed_components) come from
       # the ESP component registry at build time; the lock file pins their
@@ -788,7 +821,11 @@ jobs:
           command: >-
             idf.py -D RCBENCH_IOMCU_BIN=iomcu/rcbench-iomcu.bin
             -D RCBENCH_IOMCU_RBMOD_BIN=iomcu-rbmod/rcbench-iomcu-rbmod.bin
-            -D RCBENCH_C6_BIN=$(ls c6/rcbench-c6-[0-9]*.bin) build
+            -D RCBENCH_C6_BIN=$(ls c6/rcbench-c6-[0-9]*.bin)
+            -D RCBENCH_DIAL_BIN=$(ls dial/rcbench-dial-[0-9]*.bin)
+            -D RCBENCH_NODE_PWR_BIN=$(ls node/rcbench-node-pwr-[0-9]*.bin)
+            -D RCBENCH_NODE_BAL_BIN=$(ls node/rcbench-node-bal-[0-9]*.bin)
+            build
             && idf.py merge-bin -o rcbench-panel-merged.bin
 
       # The sdkconfig the build generated holds every setting of
@@ -829,10 +866,11 @@ jobs:
         run: python3 tools/stack_check.py firmware/panel/build --check-doc
 
       # The symbols target_add_binary_data() names the embedded images by:
-      # the module's, the rbmod carrier's and the C6 radio's.
-      - name: Both IOmcu images and the C6 image are carried
+      # the module's, the rbmod carrier's, the C6 radio's, the Dial's and
+      # the two nodes'.
+      - name: Both IOmcu images, the C6, Dial and node images are carried
         run: |
-          for s in iomcu iomcu_rbmod c6; do
+          for s in iomcu iomcu_rbmod c6 dial node_pwr node_bal; do
             grep -aq "_binary_rcbench_${s}_bin_start" \
               firmware/panel/build/rcbench-panel.elf
           done

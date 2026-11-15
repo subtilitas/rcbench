@@ -17,6 +17,7 @@
 
 #include "dial.h"
 
+#include "devota.h"
 #include "esp_app_desc.h"
 #include "esp_heap_caps.h"
 #include "esp_log.h"
@@ -58,6 +59,15 @@ static void view_read(dial_face_view_t *v, char *addr, uint32_t now)
     v->rssi = dial_ble_rssi();
     v->batt_mv = sup.known ? sup.mv : 0u;
     v->usb = sup.usb;
+    devota_view_t u;
+    devota_view(&u);
+    v->upd = u.st == BLEOTA_DEV_IDLE ? DIAL_UPD_NONE
+             : u.st <= BLEOTA_DEV_CONFIRM ? DIAL_UPD_ASK
+             : u.st == BLEOTA_DEV_DONE ? DIAL_UPD_DONE : DIAL_UPD_SEND;
+    v->upd_secs = u.secs;
+    v->upd_pct = (uint8_t)(u.percent > 100u ? 100u : u.percent);
+    memcpy(v->upd_from, u.from, sizeof v->upd_from);
+    memcpy(v->upd_to, u.to, sizeof v->upd_to);
 }
 
 /** @brief The ms clock, low 32 bits. @return ms since start */
@@ -177,7 +187,7 @@ void app_main(void)
         take_packets(now);
         dial_input_link(s_face.any, s_face.last_ms);
         view_read(&view, addr, now);
-        if (view.ready && dk_face_drop(&s_face, now)) {
+        if (view.ready && !devota_active() && dk_face_drop(&s_face, now)) {
             /* LINK LOST has held for 500ms: end the link, so the panel
              * sees the disconnect.  No EVENT has gone since LINK LOST
              * (dial_input_link()), and none goes until the panel's first

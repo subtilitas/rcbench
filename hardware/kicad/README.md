@@ -7,7 +7,7 @@ loads both files. KiCad 9 and older refuse both files.
 
 | Path | Content |
 | --- | --- |
-| `rcbench_modules.pretty/` | 12 footprints, one `.kicad_mod` each |
+| `rcbench_modules.pretty/` | 16 footprints, one `.kicad_mod` each |
 | `rcbench_modules.kicad_sym` | 12 symbols; each Footprint field names `rcbench_modules:<footprint>` |
 | `rcbench_modules.3dshapes/` | 12 STEP (AP214) models, one per footprint; each footprint names `${RCBENCH_MODULES_3D}/<footprint>.step` |
 | `modules/*.py` | one spec per module: geometry, pads, drawings, symbol, and in its docstring the source, scale, accuracy and unknowns |
@@ -57,13 +57,17 @@ repository; each spec names them.
 | `RP2350-CAN` | Waveshare RP2350-CAN, 21.00 x 51.00mm | 40, Pico order, 2.54mm | maker drawing | pad grid exact; parts about 0.3mm |
 | `INA3221_Module` | INA3221 board, 3 channels, 38.0 x 31.8mm | 15 (header 1-8, channels 9-14, VPU 15; GND holes on 2) | owner photos, front and back | about 0.3mm |
 | `INA228_Matek_I2C-INA-BM_27x20mm` | MATEK I2C-INA-BM | 10 (2 x JST-GH, BAT+, ESC+) | maker 3D model and product image | 0.05mm to the model; pads about 0.3mm |
-| `INA228_BIFRC_XT90_80x48mm` | INA228 board with 2 XT90, print "BIFRC V1.1" | 10 (header L A V G 5, solder bars, test pads) | owner photo, rectified | header 0.2mm; outline 0.6mm; XT90 1.5mm |
+| `INA228_BIFRC_XT90_80x48mm` | INA228 board with 2 XT90PW, print "BIFRC V1.1", 80.1mm x 48.6mm | 10 (header L A V G 5, solder bars, test pads) | owner photos on 5mm squared paper | positions 0.2mm; outline and holes 0.3mm; XT90PW 0.5mm |
 | `AS5600_Encoder_22.5x22.5mm` | AS5600 angle encoder board | 7 (VCC OUT GND, DIR SCL SDA GPO) | owner photo, rectified | about 0.3mm |
 | `PD_Buck_WeAct_PDPowerMiniV1_61x40mm` | WeAct PD Power Mini V1 Buck | 12 (terminal 1-4, header 5-12) | maker vector drawing | outline and pads 0.02mm; parts 0.2mm |
 | `USBC_T-plug_17x30mm` | USB-C tap board with plug board | 4 (G D+ D- V) | owner photo, scaled by USB-C sizes | about 0.5mm |
 | `ADS1115_Module_28x17mm` | ADS1115 16-bit ADC board | 10 | vendor photo and dimension drawing | about 0.2mm |
 | `ADXL345_GY-291_14.8x20.6mm` | ADXL345 board GY-291 | 8 | one oblique vendor photo, fitted | about 0.3mm |
 | `INA219_MCU-219_25.4x21.5mm` | INA219 board with screw terminal | 8 (header 1-6, terminal 7-8) | vendor photo, rectified | about 0.2mm |
+| `INA219_CJMCU-219_24.2x21.9mm` | INA219 board, print CJMCU, terminal not fitted | 8 (header 1-6, terminal holes 7-8) | owner photos on 5mm squared paper | about 0.2mm |
+| `LiPo_Charger_Boost5V_15.2x24mm` | lithium polymer charger with 5V boost output, print "Charge & DisCharge" | 6 (OUT 5V, GND, BAT, GND, GND, VIN) | owner photos on 5mm squared paper | about 0.2mm |
+| `Boost_5V_EN_13.7x21.7mm` | 5V boost converter, 2R2 | 5 (IN+ IN- OUT+ OUT- EN) | owner photos on 5mm squared paper | about 0.2mm; the EN pad is not named on the board |
+| `ESP32-C6-Zero_Waveshare_18x23.5mm` | Waveshare ESP32-C6-Zero, 18.00 x 23.50mm | 25 (18 edge pads at 2.54mm, 7 underside pads at 1.6mm) | maker drawing; owner photos | pad grid exact; parts about 0.3mm |
 | `USBC_PD_Trigger_DIP3_30x20mm` | USB-C PD trigger, 3-way DIP switch | 2 (+, -) | vendor photo | about 0.2mm |
 | `DCDC_Buck_Mini_30x18mm_EN` | mini buck DC-DC, 4R7, input 6-20V | 5 (IN+ IN- EN OUT+ OUT-) | dimensions printed on the vendor photo | grid exact; EN pad 0.5mm |
 
@@ -82,6 +86,14 @@ planar faces only; circles are polygons of 16 to 32 sides. Each drilled
 pad is a hole through the module board. The model uses the
 footprint's coordinate system: origin at pad 1, z = 0 on the carrier's top side, so the
 footprint places it with no offset, scale or rotation.
+
+Four modules have a `MODEL` of the one key `detail`: the INA219 board with
+the print CJMCU, the charger board, the boost board and the
+ESP32-C6-Zero. Their models come from the specs of the same name in
+[hardware/mechanical](../mechanical/README.md#module-boards-and-cells),
+which draw each board part by part with its print, in the board's own
+colour, with round holes and arcs as cylinders. The INA219 board stands
+on a 6-pin header, the other three lie flat.
 
 | Mount | Modules | Position |
 | --- | --- | --- |
@@ -131,9 +143,18 @@ The renders are not checked by CI; run the command after changing a
 | `INA228_Matek_I2C-INA-BM_27x20mm` | `INA3221_Module` | `PD_Buck_WeAct_PDPowerMiniV1_61x40mm` |
 | ![RP2350-CAN](renders/RP2350-CAN.png) | ![USBC_PD_Trigger_DIP3_30x20mm](renders/USBC_PD_Trigger_DIP3_30x20mm.png) | ![USBC_T-plug_17x30mm](renders/USBC_T-plug_17x30mm.png) |
 | `RP2350-CAN` | `USBC_PD_Trigger_DIP3_30x20mm` | `USBC_T-plug_17x30mm` |
+| ![Boost_5V_EN_13.7x21.7mm](renders/Boost_5V_EN_13.7x21.7mm.png) | ![ESP32-C6-Zero_Waveshare_18x23.5mm](renders/ESP32-C6-Zero_Waveshare_18x23.5mm.png) | ![INA219_CJMCU-219_24.2x21.9mm](renders/INA219_CJMCU-219_24.2x21.9mm.png) |
+| `Boost_5V_EN_13.7x21.7mm` | `ESP32-C6-Zero_Waveshare_18x23.5mm` | `INA219_CJMCU-219_24.2x21.9mm` |
+| ![LiPo_Charger_Boost5V_15.2x24mm](renders/LiPo_Charger_Boost5V_15.2x24mm.png) | | |
+| `LiPo_Charger_Boost5V_15.2x24mm` | | |
 
 ## Limitations
 
+- The ESP32-C6-Zero footprint is for the board soldered flat. Its 7
+  underside pads are pads on the carrier's top side; with the board on
+  headers they are not connected.
+- The boost board's pad 5 is taken as the enable input. The board does not
+  name it, and the level that enables the output is not known.
 - The AS5600 footprint has THT pads under both rows. With the model's
   right-angle headers the pins do not reach them; the board is wired.
 - The MATEK and XT90 INA228 boards are wired, not soldered to a carrier;

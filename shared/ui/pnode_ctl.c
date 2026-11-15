@@ -79,13 +79,23 @@ void pnode_ctl_init(pnode_ctl_t *c)
 }
 
 /**
+ * @brief POWER NODE ON and no update holding the link (pnode_ctl_hold()).
+ * @param c The controller.
+ * @return Whether the controller runs the link.
+ */
+static bool is_on(const pnode_ctl_t *c)
+{
+    return c->cfg.en && !c->held;
+}
+
+/**
  * @brief Run the central while POWER NODE is ON and the radio is synced.
  * @param c      The controller.
  * @param now_ms The clock.
  */
 static void apply(pnode_ctl_t *c, uint32_t now_ms)
 {
-    bleu_enable(&c->b, c->cfg.en && c->radio == IMU_RADIO_READY, now_ms);
+    bleu_enable(&c->b, is_on(c) && c->radio == IMU_RADIO_READY, now_ms);
 }
 
 /**
@@ -109,6 +119,7 @@ static bool take_info(pnode_ctl_t *c, uint32_t now_ms)
     }
     c->info_proto = p.u.info.proto;
     c->info_role = p.u.info.role;
+    c->info_board = p.u.info.board;
     c->info_ok = p.u.info.proto == RCNODE_PROTO
                  && p.u.info.role == RCNODE_ROLE_POWER
                  && pnode_meter_info(&c->m, &p.u.info);
@@ -131,8 +142,10 @@ static void follow_link(pnode_ctl_t *c, uint32_t now_ms)
         c->info_ok = false;
         c->info_proto = 0u;
         c->info_role = 0u;
+        c->info_board = 0u;
         c->was_up = false;
         c->m.have_status = false;
+        c->lang_sent = PNODE_LANG_NONE;
     } else if (!up && c->linked) {
         c->lost = c->was_up;
         c->info_ok = false;
@@ -229,6 +242,14 @@ void pnode_ctl_config(pnode_ctl_t *c, const pnode_cfg_t *cfg,
     }
     const pnode_cfg_t was = c->cfg;
     c->cfg = *cfg;
+    if (cfg->bind_seq != c->bind_seq) {
+        /* Read from SETUP before the frame kept the last bind there: its
+         * address is the one before the bind, and taking it would unbind
+         * the node just picked.  The write-back's values come next. */
+        memcpy(c->cfg.addr, was.addr, sizeof(c->cfg.addr));
+        memcpy(c->cfg.name, was.name, sizeof(c->cfg.name));
+        c->cfg.bind_seq = c->bind_seq;
+    }
     c->cfg.addr[PNODE_ADDR_MAX - 1u] = '\0';
     c->cfg.name[PNODE_NAME_MAX - 1u] = '\0';
     if (!c->configured || strcmp(was.addr, c->cfg.addr) != 0) {
@@ -261,6 +282,41 @@ void pnode_ctl_radio(pnode_ctl_t *c, imu_radio_t radio, uint32_t now_ms)
     }
 }
 
+void pnode_ctl_hold(pnode_ctl_t *c, bool on, uint32_t now_ms)
+{
+    if (c == NULL || on == c->held) {
+        return;
+    }
+    c->held = on;
+    /* The link ends for the update and comes back to a node that
+     * restarted: neither is a loss, as POWER NODE OFF is none. */
+    c->lost = false;
+    c->scan_open = false;
+    c->scan_cut = false;
+    apply(c, now_ms);
+    follow_link(c, now_ms);
+}
+
+bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
+                      uint8_t version[3], bool *down)
+{
+    if (c == NULL || addr == NULL || linked == NULL || version == NULL
+        || down == NULL || !c->b.bound
+        || !bleu_addr_parse(c->cfg.addr, addr)) {
+        return false;
+    }
+    *linked = c->linked && c->info_ok && c->m.have_status;
+    memcpy(version, c->m.status.fw, 3u);
+    *down = !c->linked && c->b.settle == 0u
+            && (c->b.st == BLEU_ST_OFF || c->b.st == BLEU_ST_IDLE);
+    return true;
+}
+
+bool pnode_ctl_other_board(const pnode_ctl_t *c)
+{
+    return c != NULL && c->info_ok && c->info_board != RCNODE_BOARD_C6_ZERO;
+}
+
 pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
 {
     if (c == NULL) {
@@ -272,7 +328,8 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
         ++c->refused;
         return PNODE_SCAN_ARMED;
     }
-    if (!c->cfg.en || c->radio != IMU_RADIO_READY || c->b.scanning) {
+    if (!is_on(c) || c->radio != IMU_RADIO_READY || c->b.scanning) {
+        ++c->scan_unready;
         return PNODE_SCAN_NOT_READY;
     }
     c->found_n = 0u;
@@ -281,23 +338,31 @@ pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
     c->scan_cut = false;
     c->roles_n = 0u;
     c->scan_open = bleu_scan(&c->b, now_ms);
-    return c->scan_open ? PNODE_SCAN_STARTED : PNODE_SCAN_NOT_READY;
+    if (!c->scan_open) {
+        ++c->scan_unready;
+        return PNODE_SCAN_NOT_READY;
+    }
+    return PNODE_SCAN_STARTED;
 }
 
 bool pnode_ctl_bind(pnode_ctl_t *c, uint8_t i, uint32_t now_ms)
 {
-    if (c == NULL || i >= c->found_n || c->b.scanning) {
+    if (c == NULL) {
         return false;
     }
     bleu_addr_t a;
-    if (!bleu_addr_parse(c->found[i].addr, &a)) {
+    if (i >= c->found_n || c->b.scanning
+        || !bleu_addr_parse(c->found[i].addr, &a)) {
+        ++c->bind_refused;
         return false;
     }
     snprintf(c->cfg.addr, sizeof(c->cfg.addr), "%s", c->found[i].addr);
     snprintf(c->cfg.name, sizeof(c->cfg.name), "%s", c->found[i].name);
     bleu_bind(&c->b, &a, now_ms);
+    bleu_hurry(&c->b);
     c->lost = false;
     ++c->bind_seq;
+    c->cfg.bind_seq = c->bind_seq;
     follow_link(c, now_ms);
     return true;
 }
@@ -313,7 +378,7 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms)
     const bool stream = bleu_event(&c->b, e, now_ms);
     take_scan(c);
     follow_link(c, now_ms);
-    if (!stream || !c->cfg.en) {
+    if (!stream || !is_on(c)) {
         return;
     }
     if (!c->info_ok) {
@@ -352,6 +417,38 @@ static bool send_run(pnode_ctl_t *c, uint32_t now_ms)
     return true;
 }
 
+/**
+ * @brief The LANG write owed, when the central can send and no RUN write
+ *        waits: the panel's language, once a link and once a change.  A
+ *        refused LANG (a node built before it) is not sent again before
+ *        the next link or change.
+ * @param c      The controller.
+ * @param now_ms The clock.
+ * @return true when it was handed to the central.
+ */
+static bool send_lang(pnode_ctl_t *c, uint32_t now_ms)
+{
+    if (c->lang_sent == c->lang || c->run_owed || !c->info_ok
+        || !bleu_can_send(&c->b)) {
+        return false;
+    }
+    const rcnode_ctl_t w = { .op = RCNODE_OP_LANG, .lang = c->lang };
+    uint8_t buf[RCNODE_CTL_MAX];
+    const size_t n = rcnode_enc_ctl(&w, buf, sizeof(buf));
+    if (n == 0u || !bleu_send(&c->b, buf, n, now_ms)) {
+        return false;
+    }
+    c->lang_sent = c->lang;
+    return true;
+}
+
+void pnode_ctl_lang(pnode_ctl_t *c, uint8_t lang)
+{
+    if (c != NULL) {
+        c->lang = lang == RCNODE_LANG_DE ? RCNODE_LANG_DE : RCNODE_LANG_EN;
+    }
+}
+
 bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
                     bool bench_run, bleu_act_t *out)
 {
@@ -382,7 +479,7 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
         return true;
     }
     take_scan(c);
-    if (send_run(c, now_ms)) {
+    if (send_run(c, now_ms) || send_lang(c, now_ms)) {
         return bleu_step(&c->b, now_ms, out);
     }
     return false;
@@ -390,7 +487,7 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
 
 pnode_link_t pnode_ctl_link(const pnode_ctl_t *c, uint32_t now_ms)
 {
-    if (c == NULL || !c->cfg.en) {
+    if (c == NULL || !is_on(c)) {
         return PNODE_LINK_OFF;
     }
     switch (c->radio) {
@@ -455,6 +552,9 @@ void pnode_ctl_view(const pnode_ctl_t *c, uint32_t now_ms, pnode_view_t *out)
         memcpy(out->bound_name, c->cfg.name, sizeof(out->bound_name));
     }
     out->proto = c->info_proto;
+    out->bind_refused = (uint16_t)c->bind_refused;
+    out->scan_armed = (uint16_t)c->refused;
+    out->scan_unready = (uint16_t)c->scan_unready;
     if (c->linked && c->m.have_status) {
         const uint16_t f = c->m.status.flags;
         out->have_status = true;

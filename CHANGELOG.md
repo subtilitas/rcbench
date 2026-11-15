@@ -6,8 +6,140 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.13 - 2026-11-15
+
+0.23.13 is a testing release. It adds the M5Stack Dial v1.1 as a Bluetooth LE
+(Low Energy) knob, the power node with an INA228 current sensor and the
+balance node on the ESP32-C6, and the display node on the LCDWIKI ES3C28P
+board. The panel updates the Dial and both nodes over Bluetooth LE. The KST
+and HITEC programmers write their values after a 2s hold. Its minor number,
+23, is odd. GitHub publishes it as a pre-release and does not mark it as
+latest. It runs on the ESP32-P4 panel, as 0.23.12 does; an ESP32-S3 panel
+stays on the 0.22 line and is not offered it. The link protocol is 4.37,
+unchanged from 0.23.12. The assets are
+`rcbench-panel-p4-v0.23.13.zip`, `rcbench-panel-p4-v0.23.13.bin`,
+`rcbench-iomcu-v0.23.13.zip`, `rcbench-iomcu-rbmod-v0.23.13.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.13.bin`, `rcbench-node-pwr-merged-0.23.13.bin`,
+`rcbench-node-bal-0.23.13.bin`, `rcbench-node-bal-merged-0.23.13.bin`,
+`rcbench-node-display-merged-0.23.13.bin`, `rcbench-dial-0.23.13.bin`,
+`rcbench-dial-merged-0.23.13.bin` and `SHA256SUMS`.
+
+A bench on 0.23.12 gets 0.23.13 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The panel carries the images of the
+Dial and of the power and balance nodes and sends them over Bluetooth LE from
+SETUP > UPDATES; the display node's image is loaded over USB (Universal Serial
+Bus). To set up a new bench, load both boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes.
+
+The entries below cover the 52 pull requests merged since v0.23.12: #803 to
+#846 and #848 to #855.
+
 ### Added
 
+- The display node: the power node on the LCDWIKI ES3C28P 2.8" ESP32-S3
+  display board (ILI9341V 240 x 320 over SPI, FT6336G touch), powered with
+  5V from the pack. It shows voltage, current and power in 32x44 digits, 5
+  frames a second, each the mean of the INA228's 20ms windows since the
+  last frame, with the highest and lowest single window beside each; a tap
+  on a row's highest and lowest resets them, a 2s hold resets all six. It
+  runs with or without the panel and serves the panel as the C6 power node
+  does. Built with `sdkconfig.s3_es3c28p` (board choice in
+  `firmware/node/main/Kconfig.projbuild`, pins in `node_board.h`); the
+  release carries `rcbench-node-display-merged-<version>.bin` for 0x0 over
+  USB. The panel does not carry its image. Screen logic in `node_view.c`
+  under `test_node_view`, screenshots under `tools/render_node.py --check`
+  ([Sensor nodes](docs/Nodes.md#the-display-node)).
+- `protocols/rcnode`: the control write LANG (0x06, 0 English, 1 German),
+  which the panel sends a linked power node after INFO and at each change
+  of its language; INFO's board 2 is the ES3C28P. `protocols/bleota`: kind
+  4, the display node, which neither power node's image passes for the
+  other.
+- `hardware/mechanical/` and `hardware/kicad/`: STEP models, drawn part by
+  part with the print of both sides, of 4 module boards: an INA219 board with
+  the print CJMCU (24.2mm x 21.9mm, 225 solids), a lithium polymer charger
+  board with 5V boost output (15.2mm x 24.0mm), a 5V boost board with an
+  enable pad (13.7mm x 21.7mm) and the Waveshare ESP32-C6-Zero (18.0mm x
+  23.5mm, 263 solids). Each has a footprint and a symbol in the KiCad
+  library, whose 3D model is the same model: a spec's `MODEL` with the key
+  `detail` names the mechanical spec that draws it. `lipo_cells.py` draws two
+  lithium polymer cells, 702030 with 380mAh and 102540 with 1000mAh, with
+  their wires and plug. The boards and cells are measured from three photos
+  on 5mm squared paper; the ESP32-C6-Zero's outline and pads follow
+  Waveshare's drawing. `_font.py` holds letter outlines for board print,
+  written by `_gen_font.py`; `_board.py` places parts by their position on a
+  board
+  ([Mechanical parts](hardware/mechanical/README.md#module-boards-and-cells)).
+- `hardware/mechanical/`: STEP models of the INA228 current sensor module
+  with its two XT90PW connectors (`ina228_xt90.step`, 225 solids,
+  83.95mm x 48.6mm x 12.6mm) and of its printed case with 4 screws
+  (`ina228_xt90_case.step`), generated from `ina228_xt90.py`. The board is
+  measured from three photos on 5mm squared paper with `_photo_grid.py`,
+  which fits the paper's grid and corrects a size for its height over the
+  paper; the connectors follow a dimension drawing of XT90PW; the shunt is
+  1.2mm high at its ends and 1.8mm in the middle.
+  `_trace_ina228_print.py` traces the printed legends from the top photo.
+  `_solid.py` writes round rods along a path of lines and arcs as cylinders
+  and pieces of tori, used for the connectors' bent tails.
+  `check_overlap.py` checks the module together with its case
+  ([Mechanical parts](hardware/mechanical/README.md#ina228-module-with-xt90-connectors)).
+- `hardware/mechanical/`: a STEP model of the panel board, the Waveshare
+  ESP32-P4-WIFI6-Touch-LCD-7B, generated from `panel_7b.py`: 164.28mm x
+  99.18mm of glass, 15.1mm thick, 1497 solids. `_measure_step.py` measures
+  the stack, the board's outline and the place of every part in Waveshare's
+  STEP file of the board, which is not in the repository. The 7 wire sockets
+  of 2.0mm pitch, the shield can over the ESP32-P4 and the coin-cell holder
+  come from Waveshare's photo of the board's rear, because that file draws
+  other sockets than the board carries. `_solid.py` writes profiles of
+  straight sides and arcs as solids with flat and cylindrical faces;
+  `check_overlap.py` fails in CI on two solids that share volume
+  ([Mechanical parts](hardware/mechanical/README.md#panel-board)).
+- Firmware update over Bluetooth LE for the M5Stack Dial and both sensor
+  node roles. Protocol module `protocols/bleota`: a GATT service with CTRL
+  (write with response, notify) and DATA (write without response); BEGIN
+  with kind, size, version and the image's SHA-256; chunks with their
+  offset, up to 240 bytes at an MTU of 247; a credit window of 2,048 bytes
+  notified in steps of 512, with a gap mark for lost bytes so a lossless
+  link sends every byte once; END with the SHA-256 compare; refusal codes
+  for another device's kind, a size over the slot and the running version;
+  the image's head (chip and role, `DEVOTA_ROLE` after the application
+  descriptor) checked before the first flash write
+  ([protocols/bleota](protocols/bleota/README.md)). The device side
+  (`firmware/devota`) erases nothing before a physical confirmation within
+  30s: a press of the Dial's screen button (a 1s hold refuses), or a node's
+  BOOT key (GPIO9) held 1s. A new image starts on trial
+  (`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE` on the Dial and the node) and
+  marks itself valid at its first connection; a device flashed before this
+  firmware has no trial or rollback until one USB flash. A lost link or an
+  ABORT during the install lets the install finish; the panel settles the
+  result by the device's version. The node does not sleep while an update
+  runs and switches off for an empty cell only under 3.0V. The panel carries the Dial's
+  and both nodes' images, checked by `tools/c6_image.py device` in CI and
+  again at start. SETUP > UPDATES gets the WIRELESS DEVICES entry, which
+  counts the connected devices and those with another version and opens a
+  page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
+  FIRMWARE rows: each with the device's and the carried version, a 2s
+  hold, the device's confirmation countdown (PRESS THE DIAL TO ACCEPT,
+  HOLD BOOT 1s ON THE NODE) and the progress
+  ([Screens: The wireless devices](docs/Screens.md#the-wireless-devices)).
+  One update runs at a time; CANCEL UPDATE, a plain tap, ends it before
+  END, and from END on the result is waited for. A transfer whose device
+  answers without moving on ends after 30s with no progress. An unknown
+  install is settled by its own device's version and reported before
+  another device's update starts. A row's hold is live only after its
+  image's check. The device's own client gives the link up for the update and
+  takes it back after it (`pnode_ctl_hold()`, `bal_ctl_hold()`, the Dial's
+  hold); a node's update reads as no loss on the band, and the row reads
+  the node's version from its first STATUS packet after the reconnect.
+  ARM is refused while a device update runs, and the C6 radio's update
+  waits for it. No pairing and no signature: integrity rests on the
+  SHA-256 alone ([SECURITY.md](SECURITY.md)).
+- `protocols/bleuart`: a profile entry may share a UUID with another, and
+  every matching entry takes the characteristic; the found value handles
+  and properties are recorded.
 - The power node on the panel: a third Bluetooth LE client on the panel's
   hub, SETUP > WIRELESS > POWER NODE with Power node ON or OFF, INA228
   SOURCE (WIRED or NODE, WIRED by default), SCAN FOR NODE (refused while
@@ -94,6 +226,19 @@ history is in git.
   `test_dial_fit`; `tools/render_dial.py` writes the 20 images in
   `docs/img` and CI's `--check` holds them
   ([The M5Stack Dial](docs/Dial.md#the-faces)).
+- The M5Stack Dial navigates the panel while it is linked and the bench is
+  SAFE: the menu, SETUP's tiles and lists, SERVO's tiles and SETTINGS
+  list, OUTPUTS' board view, the choice lists and the leave warning. A 2px
+  ring in the accent colour marks the focused item; a detent moves it and
+  wraps, PRESS taps it in one frame, HOLD does what the home tag does. A
+  number is set on its keypad by turning, PRESS OK, HOLD CANCEL; an on/off
+  or option row is stepped by its keys, PRESS keeps, HOLD restores. The
+  Dial shows NAV and VALUE. The ring keeps the pixels under it: a move
+  costs about 1,060 cache-line fills on the menu, held under 1,300 by the
+  `overview-focus` frame-cost mode. No 2s hold completes from the Dial.
+  The Dial's input wakes a dimmed panel; on an idle bench the waking input
+  does nothing else, as a waking touch
+  ([Navigation and SET](docs/Dial.md#navigation-and-set)).
 - `gfx_ring_aa()` in `shared/gfx`: a 1px ring antialiased by each pixel's
   coverage clamp(1 - |d - r|, 0, 1), from a table of the pixels the ring
   touches sorted by angle, 3 bytes each; `gfx_ring_move()` repaints only
@@ -258,6 +403,32 @@ history is in git.
 
 ### Changed
 
+- KiCad module `INA228_BIFRC_XT90_80x48mm`: board 80.1mm x 48.6mm (was
+  79.9mm x 48.3mm), screw holes 70.15mm x 38.8mm apart (was 70.42mm x
+  38.58mm), header, bars, shunt, slots and connector outlines moved by up
+  to 1.2mm to their places in three photos on squared paper; 16 slots under
+  the connectors added to the fabrication drawing.
+- SETUP > WIRELESS: SCAN FOR DIAL and SCAN FOR NODE, on POWER NODE and
+  BALANCE NODE, open the found list while they read `FOUND n`; in their
+  other states a tap scans as before. The found list, from these rows and
+  from the BOUND rows, shows up to 6 devices and `SCAN AGAIN` last, which
+  starts a new 10s scan with the same refusals while ARMED and before
+  Bluetooth LE runs. A tap on BOUND NODE with no list says why on the
+  band, `NO NODE LISTED: TAP SCAN FOR NODE FIRST` or
+  `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`
+  ([Screens](docs/Screens.md#wireless-the-imu-and-the-dial)).
+- A bind from SETUP goes first on the panel's Bluetooth LE hub. The first
+  connect after a bind of the Dial, a node or the IMU carries
+  `BLEU_ACT_F_HURRY` (`bleu_hurry()`); while another client's connect
+  runs, the hub keeps the next turn for it and answers
+  `BLEU_STATUS_TURN`, the machine tries again every 20ms, and other
+  clients' connects are answered busy until it takes the slot. The
+  attempt under way is not cut. A kept turn lapses 200ms after the slot
+  became free without its client. Beside an IMU and a power node bound
+  to devices out of range, the Dial's first connect after the pick comes
+  at most 5,061ms after the tap in the host model, where it came up to
+  10,101ms
+  ([bleuart: the hub](protocols/bleuart/README.md#the-hub)).
 - The nodes advertise the service's 128-bit UUID and the manufacturer
   data, and send the name in the scan response, so a central that filters
   duplicates lists a node from its first report. `rcnode_rsp_build()` takes
@@ -374,6 +545,40 @@ history is in git.
 
 ### Fixed
 
+- The panel's Bluetooth LE hub gives every connect that waits a turn. A
+  connect after a link loss, at Dial, node or IMU ON or at start-up took
+  no turn: on 1,000ms retries that fell right behind other clients'
+  attempts it was answered busy every time, and in the host model a
+  client beside two devices out of range got no slot in 40,000ms. Each
+  connect answered busy or with the turn waits in a queue, first come
+  first, a hurried one ahead of the others. The next turn is kept for the
+  queue's first client, which is answered `BLEU_STATUS_TURN` and tries
+  again every 20ms, so it takes the slot when the attempt under way ends;
+  an unhurried one is answered busy while a scan holds the slot. A
+  connect a scan cut waits in front. A waiting client takes the slot after
+  at most one attempt of each other client: at most 10,046ms beside two
+  devices out of range and 20,092ms beside four in the host model, the
+  device update's connect too. A client that does not come back leaves
+  the queue 200ms after the slot is free and its retry was due
+  ([bleuart: the hub](protocols/bleuart/README.md#the-hub)).
+- SETUP > WIRELESS > DIAL: a tap on BOUND DIAL with no list, before a scan,
+  after one that found none or while a scan runs, says why on the band
+  instead of nothing. A pick the controller refuses, because a scan started
+  first or the list changed, says so on the band and the console. Settings
+  read before the frame kept a bind in SETUP no longer unbind the Dial just
+  picked; such a post left SETUP holding no Dial
+  ([The M5Stack Dial](docs/Dial.md#scan-and-bind)).
+- SETUP > WIRELESS > POWER NODE and BALANCE NODE: a pick the controller
+  refuses, because a scan started first or the list changed, says so on
+  the band and the console. A tap on SCAN FOR NODE while a scan runs, and
+  a scan the controller refuses while another runs or an arm waits, say
+  why on the band instead of nothing. Settings read before the frame kept
+  a bind in SETUP, an INA228 SOURCE change among them, no longer unbind
+  the node just picked; such a post left SETUP holding no node
+  ([Sensor nodes](docs/Nodes.md#the-panel)).
+- SETUP: a press on INA228 SOURCE or SCREEN ROTATION while ARMED shows
+  `Set on a SAFE bench only` on the band and in place of the row's help
+  line, as MOTOR & ESC's pulse rows do; it showed nothing.
 - HITEC programmer: while a write runs, the SERVO tab no longer shows
   `Writing was interrupted. The settings may be incomplete.` for the record
   of that same write; the state line shows the write's step.

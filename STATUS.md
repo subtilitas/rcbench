@@ -440,7 +440,10 @@ the link report writes every 60s, does not count (`screen_dim_idle()`), nor does
 (`shot_facts_t::no_lit_fault`); every other FAULT bit does. The console
 prints `dim: after <min>min <dim|awake>, <s>s since <cause>, PWM <pct>%` every 300
 frames (`screen_dim_line()`, `backlight_line()`). The press that wakes a dim screen reaches no
-screen, except a press on STOP. `firmware/panel/main/panel_render.c` sets the duty with
+screen, except a press on STOP. The M5Stack Dial's input wakes it too
+(`screen_dim_wake()`); on an idle bench the waking input does nothing else, while a HOLD on
+a bench screen and every input on a busy bench act (`dial_dim_filter()`, `test_dial_nav`).
+`firmware/panel/main/panel_render.c` sets the duty with
 `board_backlight_percent()`; not host-tested. Not run on a panel: the dim, the wake,
 the light 20% duty gives. [PANEL: Dim after](docs/Screens.md#panel-dim-after).
 
@@ -708,7 +711,11 @@ STATUS on STREAM, a scan refused while ARMED and stopped at ARM, the no-index rp
 `test_node_balance`): the stale rule at 999ms and 1000ms, the quality word's order, a run
 of 8 reports and its failures, and both methods end to end through the report's decode
 against known imbalances (within 0.01g and 1°). SETUP > WIRELESS's BALANCE NODE entry
-(`test_wireless_bal`), BALANCE's readings and MOTOR & ESC's BALANCE tab
+(`test_wireless_bal`; `test_bal_bind` from the tap on SCAN FOR NODE and BOUND NODE through
+a model of the frame and `blec` glue to the controller and a node: a bind or a scan the
+controller refuses says why on the band, a scan tapped while one runs too, and a settings
+post read before the frame kept a bind leaves the bind and the address SETUP keeps),
+BALANCE's readings and MOTOR & ESC's BALANCE tab
 (`test_motor_balance`). The panel firmware runs it in the `blec` task (`panel_bal.c`); not
 run on hardware.
 
@@ -1179,7 +1186,7 @@ number shown in part), and the antialiased ring from a coverage table
 (`test_gfx_ring`, against a reference from the same formula; the Dial's
 six tables generated as const data by `tools/gen_dial_rings.py`, held to
 `gfx_ring_build()` by `test_dial_face`); `tools/render_dial.py --check`
-holds the 20 committed images. The Dial sends no EVENT while it shows LINK
+holds the 24 committed images. The Dial sends no EVENT while it shows LINK
 LOST (`dk_link_lost()`, `test_dialknob_face`). Built, not run on the
 device: the Dial's
 firmware (`firmware/dial`, ESP-IDF v6.1 for the ESP32-S3; CI's `dial.yml`)
@@ -1197,10 +1204,25 @@ SCALE (`shared/ui/dial_stream.c`, `test_dial_stream`), the frame's paths
 into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
 `test_dial_servo`: a 10s Dial press on ARM's place arms nothing, turns while
 SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
-(`shared/ui/wireless_pane.c`, `test_wireless_pane`), and the `blec` task's
+(`shared/ui/wireless_pane.c`, `test_wireless_pane`; `test_dial_bind` from
+the tap on SCAN FOR DIAL and BOUND DIAL, the found list with SCAN AGAIN,
+through a model of the frame and `blec` glue, the controller and the hub
+to the link UP, with an IMU and a power node bound to absent peers: the
+pick's connect at most 5061ms after the tap; `test_wireless_pnode`,
+`test_wireless_bal` the nodes' rows alike), and the `blec` task's
 and the control task's side (`firmware/panel/main/panel_dial.c`,
-`panel_supply.c`). Navigation from the Dial is not built. The battery's
-reading pin is unknown; the encoder's direction is not measured.
+`panel_supply.c`). Built and host-tested, not run with a Dial: navigation
+and SET (`shared/ui/ui_focus.c`, `ui_focus_list.c`, `ui_focus_screens.c`,
+`test_dial_nav`, `test_dial_nav_hold`: the focus moves and wraps on the
+menu, SETUP, SERVO's tiles and OUTPUTS' board view; a SELECT opens what a
+tap opens; a SELECT on CLEAR ALL completes no hold; a number kept and
+cancelled on its keypad, an on/off stepped and restored; a choice list
+picked and closed; no focus while the Dial is off or the bench ARMED; a
+ring move writes two rings and leaves the screen as drawn; a list of 70
+rows keeps RESET and SAVE; a dimmed panel woken by the Dial), with the
+`overview-focus` frame-cost mode. The programmers' screens take no focus
+yet. The battery's reading pin is unknown; the encoder's direction is not
+measured.
 
 ### The power node on the panel
 
@@ -1212,7 +1234,9 @@ UUIDs, INFO's protocol, role and INA228 set-up, UP, STALE after 300ms and
 LOST, the scan refused while ARMED and stopped at the switch to ARMED,
 power nodes listed by the role in the manufacturer data and nameless
 balance nodes not, the bind, the RUN marker at the switch to ARMED, after a
-drop within the run and after a node restart under another tag). The readings
+drop within the run and after a node restart under another tag; the LANG
+write once a link and once a language change, after a RUN write owed, and
+a node that refuses it keeping its link). The readings
 (`shared/ui/pnode_meter.c`, `test_pnode_meter`: the mean of the windows
 since the last read, stale after 300ms, a clipped window at the full scale
 of INFO's range and shunt, the run's peaks with the node's RUN extremes
@@ -1222,12 +1246,79 @@ dropout rule of `servo_gap.h` at 299ms, 300ms and 301ms and a second gap
 9.9s and 10.1s after the first, for a motor run and not for a servo run,
 the totals baseline at 500ms and 501ms, and the ARM refusal with the node
 OFF or without a reading in the last 100ms). SETUP > WIRELESS > POWER NODE with
-INA228 SOURCE, which keeps its value while ARMED
-(`shared/ui/wireless_pnode.c`, `test_wireless_pnode`), the
+INA228 SOURCE, which keeps its value while ARMED and says so on the band
+at a press (`shared/ui/wireless_pnode.c`, `test_wireless_pnode`;
+`test_pnode_bind` from the tap on SCAN FOR NODE and BOUND NODE through a
+model of the frame and `blec` glue to the controller and a node: a bind or
+a scan the controller refuses says why on the band, a scan tapped while
+one runs too, and an INA228 SOURCE change read before the frame kept a
+bind leaves the bind and the address SETUP keeps), the
 log's `node` source (`test_logwriter`), and the `blec` task's and the
 control task's side (`firmware/panel/main/panel_pnode.c`, `panel_poll.c`,
 `panel_supply.c`, the ARM refusal in `panel_arm.c`). The latency from a window to the panel's read is not
 measured.
+
+### The display node
+
+Built and host-tested, not run on a board: the power node on the LCDWIKI
+ES3C28P 2.8" ESP32-S3 display board ([docs/Nodes.md](docs/Nodes.md), "The
+display node"; `firmware/node`, `sdkconfig.s3_es3c28p`, 654,576 bytes,
+41.6% of a slot). The screen's logic and drawing (`node_view.c`,
+`test_node_view`: the formats at their limits, 0.00V to 99.99V, -999.9A to
+999.9A, 18000W and the decimal under 100W, no `-0.0`; the highest and lowest
+of single windows and their resets; the tap at 1,999ms and the hold once
+at 2,000ms, across the clock's wrap; the tap targets; the touch map; the
+texts English without a link; the fit of the widest values and texts; a
+frame that redraws only what changed) and its 6 screenshots
+(`tools/render_node.py --check`). The ILI9341V set-up, the touch's
+orientation, the SPI clock of 20MHz on this board, the I2C socket's pin
+order and the RAM left for Bluetooth LE at run time are not measured. The
+panel does not carry the display node's image: it is flashed over USB.
+
+### Firmware update over Bluetooth LE
+
+Built and host-tested: the update protocol (`protocols/bleota`): every
+control write and notification at its limits and 200,000 random writes
+through the decoders and a device side (`test_bleota`); the device side's
+refusals by code, the confirmation window in both modes at 30,000ms and the
+1,000ms hold at their limits, a key already down, the HASH and idle
+timeouts, a skipped chunk answered once with the gap mark, the 512-byte
+credit step, the image head checked before the first write, the SHA-256
+compare, an ABORT and a lost link during the install, and a lost link
+(`test_bleota_dev`). The panel's engine (`shared/devupd`, `test_devupd`)
+against that device side: an image sent whole, a lossless link with 0ms,
+20ms and 40ms of latency sent once with no rewind, a lost chunk and a lost
+tail found by POLL, a credit stall that ends
+after 3 polls, each refusal code, a SHA-256 that differs, no confirmation,
+a disconnect mid-transfer followed by a new transfer from byte 0, and a
+link lost after END left unknown and settled by the device's version; its
+client on the Bluetooth LE hub (`test_devupd_client`) against a scripted
+host stack; the start's gate and the busy flag that refuses ARM, read busy
+at every point from the ask to the end; the node's sleep policy during an
+update (`test_node_policy`); UPDATES' WIRELESS DEVICES entry and its
+page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE FIRMWARE
+rows: the entry opening the page, BACK and the home tag closing it, each
+row's hold at 1,999ms and 2,000ms, its reasons, its hints and its
+progress, the node rows' HOLD BOOT 1s ON THE NODE, one press at a time
+(`shared/ui/upd_dev.c`, `test_upd_dev`, the page's guide in
+`test_help_net`); the gate naming the device it started
+(`test_devupd`), the 30s progress limit at 29.9s and 30.1s against a
+device that answers the gap mark at one offset, an abort in every phase
+that waits through the install from END on, and the settle of an unknown
+install read from its own device and reported before a second device's
+start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
+END on (`test_upd_dev`); and each node client's hand-over and take-back: the
+update's hold ends the link with no STALE or LOST at any ms, keeps it
+ended through SETUP's values for 30s, takes no packet, and the take-back
+reconnects and reads the node's version from its first STATUS
+(`pnode_ctl_hold()`, `pnode_ctl_target()`, `test_pnode_ctl`;
+`bal_ctl_hold()`, `bal_ctl_target()`, `test_bal_ctl`). Built, not run on
+a device: the device side on NimBLE with ESP-IDF's OTA (over-the-air)
+calls and the rollback mark (`firmware/devota`) in the Dial's image and
+both node roles', and the panel's side
+(`firmware/panel/main/panel_devupd.c`, the hooks in `panel_dial.c`,
+`panel_pnode.c` and `panel_bal.c`) with the three images embedded. The
+rate and a rollback are not measured.
 
 ### Phase tap (ESC tones)
 
@@ -1465,7 +1556,7 @@ rcbench/
 | `escwire` | yes | yes | yes |
 | `witmotion` | yes | | yes |
 | `hc05` · `dial` | | | yes |
-| `bleuart` · `dialknob` · `vibe` · `rcnode` | yes | | yes |
+| `bleuart` · `dialknob` · `vibe` · `rcnode` · `bleota` · `devupd` | yes | | yes |
 
 Each module carries one `CMakeLists.txt` that registers an IDF component under
 `ESP_PLATFORM` and a static library otherwise. The panel sets
@@ -1499,7 +1590,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 574 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 586 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1612,10 +1703,11 @@ The host suite is 574 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel_run`, `test_hitec_panel_move`, `test_hitec_panel_find`, `test_servo_rudder`,
 `test_servo_rudder_panel`, `test_servo_rudder_steps`, `test_servo_rudder_zero`, `test_rudder_layout`, `test_hc05`, `test_hc05_lines`, `test_hc05_bind`,
 `test_bleuart`, `test_bleuart_adv`, `test_bleuart_link`, `test_bleuart_profile`,
-`test_bleuart_hub`, `test_bleuart_backoff`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
-`test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_wireless_pane`,
-`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`,
-`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`,
+`test_bleuart_hub`, `test_bleuart_backoff`, `test_bleuart_fair`, `test_dialknob`, `test_dialknob_track`, `test_dialknob_face`,
+`test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
+`test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
+`test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`, `test_pnode_bind`,
+`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`,
 `test_imu`, `test_imu_filter`,
@@ -1625,7 +1717,8 @@ The host suite is 574 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
-`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode` and `test_node_policy`.
+`test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client` and `test_upd_dev`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -1800,8 +1893,20 @@ lost DISCONNECT whose handle another client gets, a held-back DISCONNECT, anothe
 cancel, stop and handle refused with each GATT step answered lost, the slot ended by its
 SCAN_END and by a connection that failed to be established, a client that holds the slot
 scanning or connecting again with no cancel and no busy answer, a stale DISCONNECT of a
-client's old handle keeping its new link, and the slot's limits of 7000ms and 12000ms and the cancel's
-2000ms at their limit and 1ms before. `test_bleuart_backoff` runs the connect backoff on the
+client's old handle keeping its new link, the slot's limits of 7000ms and 12000ms and the cancel's
+2000ms at their limit and 1ms before, and a bind's hurried connect (`bleu_hurry()`) keeping the
+next turn behind the attempt under way, other clients answered busy on the free slot, a scan
+not held back, the turn lapsing 200ms after the slot freed and not 199ms, and a hurried bind
+beside two absent peers connecting within 20ms of that attempt's end. `test_bleuart_fair` runs
+the hub's queue: an unhurried connect beside two absent peers getting the slot after their two
+attempts, 10040ms after its bind, on 1000ms retries 1ms behind their grid; 2 to 4 absent
+peers on 1ms, 333ms and 1000ms grids with an unhurried client switched on every 250ms from 0 to
+6000ms, every client's wait from its first busy answer to the slot within one attempt of each
+other client (at most 9780ms, 14800ms and 19820ms against 10046ms, 15069ms and 20092ms) and none
+leaving the queue without the slot; the queue's order with hurried clients ahead, a turn kept for
+an unhurried client given to a hurried one, a connect a scan cut waiting in front, the turn
+answered busy while a scan holds the slot, and a client that does not come back leaving the
+queue 200ms after the slot freed and its retry was due, not 199ms. `test_bleuart_backoff` runs the connect backoff on the
 same rig: an absent peer's gaps doubling from 1000ms to 30000ms, 7 connects in 100s, a Dial
 dropped while that peer waits up again after its 1000ms retry, a scan and a bind starting the
 gaps over, and failed connects doubling from 7000ms.
@@ -2110,8 +2215,8 @@ the suite executables: `sense_trace_tool`, `tools/sense_trace.py` on a synthetic
 Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fails on drift
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
-no counters. `render_ui.py --check` and `render_dial.py --check` hold
-970 committed screenshots to the current render, 485 in English and the same 485 in German, and `render_ui.py --fit` fails on a string that
+no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
+986 committed screenshots to the current render, 493 in English and the same 493 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2153,7 +2258,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/help_setup.c` | 95 | 91 | 95.8% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
-| `shared/ui/help_upd.c` | 34 | 33 | 97.1% |
+| `shared/ui/help_upd.c` | 49 | 48 | 98.0% |
 | `shared/ui/help_wifi.c` | 59 | 59 | 100.0% |
 | `shared/ui/ui_watermark.c` | 44 | 42 | 95.5% |
 | `shared/ui/ui_plot.c` | 200 | 191 | 95.5% |
@@ -2163,7 +2268,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 438 | 436 | 99.5% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 658 | 647 | 98.3% |
+| `shared/ui/ui_router.c` | 653 | 642 | 98.3% |
+| `shared/ui/ui_router_alert.c` | 15 | 15 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -2183,13 +2289,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/supply_guide.c` | 79 | 79 | 100.0% |
 | `shared/ui/prog5v_box.c` | 284 | 284 | 100.0% |
 | `shared/ui/prog_choice.c` | 127 | 126 | 99.2% |
-| `shared/ui/ui_keypad.c` | 290 | 288 | 99.3% |
+| `shared/ui/ui_keypad.c` | 312 | 307 | 98.4% |
 | `shared/ui/ui_setting_keypad.c` | 138 | 135 | 97.8% |
 | `shared/ui/ui_textkey.c` | 579 | 565 | 97.6% |
 | `shared/ui/ui_textkey_cursor.c` | 111 | 109 | 98.2% |
 | `shared/ui/ui_shot.c` | 245 | 245 | 100.0% |
 | `shared/ui/shot_gate.c` | 65 | 65 | 100.0% |
-| `shared/ui/screen_dim.c` | 104 | 102 | 98.1% |
+| `shared/ui/screen_dim.c` | 115 | 113 | 98.3% |
 | `shared/ui/shot_hold.c` | 67 | 67 | 100.0% |
 | `shared/ui/stop_hold.c` | 45 | 45 | 100.0% |
 | `shared/ui/ui_pinlist.c` | 62 | 62 | 100.0% |
@@ -2219,7 +2325,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 309 | 304 | 98.4% |
 | `shared/ui/servo_fn.c` | 85 | 84 | 98.8% |
-| `shared/ui/servo_hub.c` | 202 | 196 | 97.0% |
+| `shared/ui/servo_hub.c` | 214 | 205 | 95.8% |
 | `shared/ui/servo_footer.c` | 161 | 158 | 98.1% |
 | `shared/ui/servo_lists.c` | 243 | 240 | 98.8% |
 | `shared/ui/servo_pick.c` | 99 | 99 | 100.0% |
@@ -2267,10 +2373,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/text_view.c` | 385 | 378 | 98.2% |
 | `shared/ui/text_view_draw.c` | 270 | 253 | 93.7% |
 | `shared/ui/text_view_keys.c` | 489 | 471 | 96.3% |
-| `shared/ui/settings_screen.c` | 295 | 285 | 96.6% |
+| `shared/ui/settings_screen.c` | 328 | 319 | 97.3% |
 | `shared/ui/settings_draw.c` | 67 | 67 | 100.0% |
 | `shared/ui/settings_rows.c` | 44 | 43 | 97.7% |
-| `shared/ui/ui_setlist.c` | 626 | 611 | 97.6% |
+| `shared/ui/ui_setlist.c` | 626 | 612 | 97.8% |
 | `shared/ui/ui_setlist_draw.c` | 283 | 264 | 93.3% |
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
@@ -2281,7 +2387,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/outputs_port_entry.c` | 410 | 403 | 98.3% |
 | `shared/ui/port_view.c` | 97 | 97 | 100.0% |
 | `shared/ui/port_mail.c` | 103 | 103 | 100.0% |
-| `shared/ui/picker_screen.c` | 326 | 322 | 98.8% |
+| `shared/ui/picker_screen.c` | 355 | 350 | 98.6% |
 | `shared/ui/picker_geometry.c` | 155 | 151 | 97.4% |
 | `shared/ui/picker_draw.c` | 328 | 326 | 99.4% |
 | `shared/ui/picker_cat.c` | 94 | 93 | 98.9% |
@@ -2293,27 +2399,31 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
-| `shared/ui/coproc_update_screen.c` | 302 | 302 | 100.0% |
-| `shared/ui/upd_screen.c` | 663 | 637 | 96.1% |
+| `shared/ui/coproc_update_screen.c` | 331 | 331 | 100.0% |
+| `shared/ui/upd_screen.c` | 657 | 626 | 95.3% |
 | `shared/ui/upd_settings.c` | 43 | 39 | 90.7% |
-| `shared/ui/upd_c6.c` | 117 | 115 | 98.3% |
+| `shared/ui/upd_c6.c` | 118 | 116 | 98.3% |
+| `shared/ui/upd_dev.c` | 290 | 259 | 89.3% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
-| `shared/ui/imu_ble.c` | 134 | 133 | 99.2% |
+| `shared/ui/imu_ble.c` | 135 | 134 | 99.3% |
 | `shared/ui/imu_sensor.c` | 210 | 210 | 100.0% |
 | `shared/ui/imu_screen.c` | 354 | 346 | 97.7% |
 | `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
 | `shared/ui/imu_guide.c` | 33 | 32 | 97.0% |
-| `shared/ui/dial_ctl.c` | 245 | 228 | 93.1% |
+| `shared/ui/dial_ctl.c` | 254 | 238 | 93.7% |
 | `shared/ui/dial_stream.c` | 242 | 234 | 96.7% |
-| `shared/ui/dial_panel.c` | 163 | 158 | 96.9% |
-| `shared/ui/wireless_pane.c` | 228 | 220 | 96.5% |
-| `shared/ui/wireless_pnode.c` | 124 | 119 | 96.0% |
-| `shared/ui/pnode_ctl.c` | 237 | 229 | 96.6% |
+| `shared/ui/dial_panel.c` | 231 | 219 | 94.8% |
+| `shared/ui/ui_focus.c` | 430 | 381 | 88.6% |
+| `shared/ui/ui_focus_list.c` | 92 | 81 | 88.0% |
+| `shared/ui/ui_focus_screens.c` | 21 | 20 | 95.2% |
+| `shared/ui/wireless_pane.c` | 259 | 255 | 98.5% |
+| `shared/ui/wireless_pnode.c` | 159 | 157 | 98.7% |
+| `shared/ui/pnode_ctl.c` | 292 | 282 | 96.6% |
 | `shared/ui/pnode_meter.c` | 261 | 257 | 98.5% |
 | `shared/ui/settings_panes.c` | 43 | 43 | 100.0% |
-| `shared/ui/bal_ctl.c` | 322 | 308 | 95.7% |
+| `shared/ui/bal_ctl.c` | 361 | 344 | 95.3% |
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
-| `shared/ui/wireless_bal.c` | 163 | 152 | 93.2% |
+| `shared/ui/wireless_bal.c` | 199 | 195 | 98.0% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
 | `shared/settings/settings.c` | 424 | 417 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
@@ -2411,14 +2521,16 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/escwire/ew_file_load.c` | 93 | 93 | 100.0% |
 | `protocols/hc05/hc05.c` | 384 | 383 | 99.7% |
 | `protocols/hc05/hc05_line.c` | 125 | 125 | 100.0% |
-| `protocols/bleuart/bleuart.c` | 473 | 472 | 99.8% |
+| `protocols/bleuart/bleuart.c` | 489 | 488 | 99.8% |
 | `protocols/bleuart/bleuart_adv.c` | 175 | 175 | 100.0% |
-| `protocols/bleuart/bleuart_hub.c` | 232 | 232 | 100.0% |
+| `protocols/bleuart/bleuart_hub.c` | 317 | 315 | 99.4% |
 | `protocols/i2c_txq/i2c_txq.c` | 379 | 379 | 100.0% |
 | `protocols/witmotion/witmotion.c` | 118 | 118 | 100.0% |
-| `protocols/rcnode/rcnode.c` | 303 | 303 | 100.0% |
+| `protocols/rcnode/rcnode.c` | 311 | 309 | 99.4% |
 | `protocols/rcnode/rcnode_win.c` | 97 | 96 | 99.0% |
 | `protocols/rcnode/rcnode_adv.c` | 104 | 102 | 98.1% |
+| `protocols/bleota/bleota.c` | 115 | 115 | 100.0% |
+| `protocols/bleota/bleota_dev.c` | 313 | 309 | 98.7% |
 | `protocols/dialknob/dialknob.c` | 530 | 520 | 98.1% |
 | `protocols/dialknob/dk_track.c` | 92 | 92 | 100.0% |
 | `protocols/dialknob/dk_face.c` | 111 | 111 | 100.0% |
@@ -2523,7 +2635,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/vibe/vibe_edge.c` | 67 | 63 | 94.0% |
 | `shared/vibe/vibe_frame.c` | 93 | 90 | 96.8% |
 | `shared/vibe/vibe_solve.c` | 183 | 168 | 91.8% |
-| `shared/dial/dial_scene.c` | 284 | 279 | 98.2% |
+| `shared/dial/dial_scene.c` | 316 | 310 | 98.1% |
 | `shared/dial/dial_draw.c` | 509 | 481 | 94.5% |
 | `shared/dial/dial_text.c` | 10 | 9 | 90.0% |
 | `shared/bench/report_lines.c` | 104 | 102 | 98.1% |
@@ -2550,8 +2662,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_install.c` | 68 | 68 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
-| `shared/fwupdate/fw_c6.c` | 156 | 156 | 100.0% |
+| `shared/fwupdate/fw_c6.c` | 158 | 158 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
+| `shared/devupd/devupd.c` | 279 | 267 | 95.7% |
+| `shared/devupd/devupd_client.c` | 88 | 79 | 89.8% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
 | `shared/webaccess/wa_fetch.c` | 427 | 415 | 97.2% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
@@ -2565,7 +2679,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **98064** | **96066** | **98.0%** |
+| **total** | **100265** | **98138** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

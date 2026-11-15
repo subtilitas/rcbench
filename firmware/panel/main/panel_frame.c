@@ -35,6 +35,7 @@
 #include "panel.h"
 #include "balance_screen.h"
 #include "panel_bal.h"
+#include "panel_devupd.h"
 #include "panel_dial.h"
 #include "panel_pnode.h"
 #include "panel_imu.h"
@@ -827,13 +828,14 @@ void panel_frame_loop(void)
          * a bench that is not idle is lit in this frame. */
         backlight_service(&idle_facts);
         ui_router_tick(dt_s);
-        knob_apply(&knob_turn, frame_lost);
+        knob_apply(&knob_turn, frame_lost, &idle_facts);
         wifi_service(arm_wanted_now || armed_now, stops_now);
         upd_service(arm_wanted_now || armed_now,
                     arm_wanted_now || armed_now || supply_now
                         || supplies_live_or_coming(),
                     stops_now, &cu);
         c6_service(arm_wanted_now || armed_now);
+        devupd_service(arm_wanted_now || armed_now);
 
         /*
          * The arm this frame began with, acknowledged -- only by a frame that

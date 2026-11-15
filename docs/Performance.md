@@ -63,6 +63,7 @@ throttle                    10,078    1260 KiB
 chrome                      48,248    6031 KiB
 overview                         0       0 KiB
 overview-guide                 361      45 KiB
+overview-focus               1,062     133 KiB
 servo                        2,410     301 KiB
 servo-grip                     589      74 KiB
 servo-current                1,980     248 KiB
@@ -119,6 +120,7 @@ est. ms and est. fps: not measured
 | `chrome` | the motor bench with nothing cached, repainted in full |
 | `overview` | the menu, chrome cached |
 | `overview-guide` | the menu with its screen guide open at page 1: the dock cached, the badges and corner brackets of 4 tiles drawn every frame |
+| `overview-focus` | the menu with the M5Stack Dial linked and its focus moved one tile every frame: the 2px ring put back and drawn again, no tile repainted |
 | `servo` | the servo screen with the arm redrawn |
 | `servo-grip` | the servo screen with only the grip repainted |
 | `servo-current` | as `servo-grip`, with the INA3221 as the servo rail's meter and a window in every frame whose current differs in the digits shown: the grip, the CURRENT row's value, the line and the plot repainted, each clipped to itself |
@@ -249,6 +251,7 @@ increased drawing work in the model; it does not detect a missed display deadlin
 | --- | ---: | --- |
 | `overview`, `analyser`, `logs`, `settings`, `settings-list`, `battery`, `balance`, `motor-wire`, `motor-wire-hold`, `picker`, `wifi` | 1,000 | a screen with cached chrome that has started repainting |
 | `overview-guide` | 1,000 | guide marks that draw more than their badges and brackets |
+| `overview-focus` | 1,300 | a focus move that repaints a tile or the screen |
 | `servo` | 2,800 | a growing arm and grip drawing |
 | `servo-grip` | 1,000 | a breath that repaints more than its box |
 | `servo-current` | 4,000 | a changed digit of the current that repaints the whole card |
@@ -412,7 +415,7 @@ its stack less 1024 bytes.
 | `control` | `control_task` | 6,144 | 3,680 | 1,424 |
 | `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
-| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and the power node's SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`) | 4,096 | 1,808 | 1,248 |
+| `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`) | 4,096 | 1,808 | 1,248 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
 | `nimble_host` | `ble_host_task`, NimBLE's host: HCI (host controller interface) to and from the C6, the scan's reports, the connection's and GATT's answers (`panel_ble.c`) | 4,096 | 1,936 | 1,120 |
 | `touch` | `touch_task`, the GT911 reader (`components/gt911`) | 4,096 | 1,392 | 1,664 |
@@ -495,7 +498,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  377 such
+  382 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its
@@ -562,6 +565,15 @@ tool does not follow.
 
 The tasks of ESP-IDF and esp_hosted are not in the table: their names and
 figures come from the console of a sample, and none is recorded.
+
+### The Dial and the sensor nodes
+
+The M5Stack Dial and both node roles run the firmware update's device side
+on the task `ota` (`firmware/devota`): 8,192 bytes of stack from the heap at
+start, the size of ESP-IDF's OTA examples, priority 3, a step every 10ms. `esp_ota_end()` reads the written
+image back and checks it on this stack. Its depth is not measured: no tool
+reads the Dial's Xtensa image or the node's image for it, and no
+high-water mark is recorded.
 
 ### The IOmcu
 
@@ -721,7 +733,7 @@ I (…) ble: host started; internal RAM <n>B free before, <n>B after; PSRAM <n>B
 Its internal RAM: the `nimble_host` stack of 4,096 bytes for good, the
 `blestart` stack of 4,096 bytes until the start has ended, and in .bss the
 event queue of 64 x 64 = 4,096 bytes, the 8 kept DISCONNECTs of 512 bytes
-and the clients' hub (`bleu_hub_t`) of 1,112 bytes. esp_hosted takes a
+and the clients' hub (`bleu_hub_t`) of 1,164 bytes. esp_hosted takes a
 buffer per HCI packet; those are not counted. NimBLE's pools and buffers
 are in PSRAM (`CONFIG_BT_NIMBLE_MEM_ALLOC_MODE_EXTERNAL`); they grow with
 `CONFIG_BT_NIMBLE_MAX_CONNECTIONS`, 5, by an amount not measured; the
@@ -750,6 +762,13 @@ client, its objects alone (`panel_pnode.c`, `pnode_ctl.c`, `pnode_meter.c`,
 `wireless_pnode.c` and `protocols/rcnode`), adds 3,869 bytes of DIRAM,
 3,861 of them .bss, and 11,748 bytes of image (`esp_idf_size --files`);
 its texts and its calls in other files are not counted.
+The wireless devices' update, from the linker map of the default build:
+`panel_devupd.c` holds 2,008 bytes of DIRAM (1,580 .bss, 428 .data) and
+5,050 bytes of code; `upd_dev.c` 566 bytes of .bss and 3,926 of code;
+`shared/devupd` 3,540 bytes of code and `protocols/bleota` 446. The three
+carried images, the Dial's and both nodes', add 2,130,416 bytes of image at
+0.23.12: 841,504, 646,240 and 642,672. With them the application image is
+7,375,296 bytes, 751,168 (9.2%) under the slot of 8,126,464.
 The event queue's 4,096 bytes, the kept DISCONNECTs and the hub are in the
 DIRAM figure, outside `libbt.a`. The hub and 5 connections add 3,704 bytes
 of DIRAM and 3,570 bytes of `libbleuart.a` to the default build of one
@@ -757,8 +776,8 @@ connection; `libbt.a`'s figures are the same with 1 connection and 5.
 esp_hosted (157,827 bytes of flash, 1,571 of DIRAM) carries Wi-Fi and
 Bluetooth LE together; its Bluetooth LE share is not measured.
 
-The .bss in PSRAM is 2,647,872 bytes in both builds, with and without
-Bluetooth LE.
+The .bss in PSRAM is 2,648,207 bytes in the default build. The build
+without Bluetooth LE is not measured at this state.
 
 A radio start that fails logs the step, the error's name and the internal
 heap at that moment:

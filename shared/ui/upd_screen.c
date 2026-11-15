@@ -16,6 +16,7 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "upd_c6.h"
+#include "upd_dev.h"
 #include "upd_screen_int.h"
 #include "upd_settings_int.h"
 
@@ -287,9 +288,11 @@ static void blocked_text(upd_why_t why, char *out, size_t n, char *second,
         snprintf(second, n2, "%s", TR(WF_NEEDS_2));
         break;
     case UPD_WHY_COPROC:
-        /* The gate holds for the IOmcu's update and the C6's alike. */
+        /* The gate holds for the IOmcu's update, the C6's and a wireless
+         * device's alike. */
         snprintf(out, n, "%s",
                  upd_c6_view()->row == FW_C6_ROW_UPDATING ? TR(UPD_WAIT_C6)
+                 : upd_dev_running()                      ? TR(UPD_WAIT_DEVICE)
                                                           : TR(UPD_WAIT_COPROC));
         break;
     case UPD_WHY_DRAWING: snprintf(out, n, "%s", TR(UPD_WAIT_DRAWING)); break;
@@ -622,6 +625,7 @@ static void reset(void)
     ui_hold_reset(&u.s.hold);
     ui_hold_reset(&u.s.cu_hold);
     upd_c6_drop();
+    upd_dev_close();
     memset(&u.cu, 0, sizeof(u.cu));
     u.cu_req = false;
     upd_list_reset();
@@ -640,12 +644,19 @@ static void event(const touch_event_t *evt)
         }
         return;
     }
-    if (upd_c6_event(evt, u.s.have_press)) {
+    if (upd_dev_shown()) {
+        (void)upd_dev_event(evt, false);   /* the devices' page, whole */
+        return;
+    }
+    if (upd_c6_event(evt, u.s.have_press || upd_dev_pressed())) {
         return;                    /* the C6 RADIO row's press */
+    }
+    if (upd_dev_event(evt, u.s.have_press || upd_c6_pressed())) {
+        return;                    /* the devices' entry */
     }
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
-        if (u.s.have_press || upd_c6_pressed()) {
+        if (u.s.have_press || upd_c6_pressed() || upd_dev_pressed()) {
             return;                /* one press at a time */
         }
         u.s.hit = hit_at(x, y);
@@ -709,6 +720,9 @@ static void tick(float dt_s)
     if (upd_c6_tick(dt_s)) {
         touched();             /* the C6 row's fill follows its hold */
     }
+    if (upd_dev_tick(dt_s)) {
+        touched();             /* a device row's fill follows its hold */
+    }
     if (u.s.hold.down || u.s.hold.flash_ms > 0 || u.s.cu_hold.down
         || u.s.cu_hold.flash_ms > 0) {
         touched();             /* the fill follows the hold */
@@ -732,6 +746,7 @@ static void cancel(void)
 {
     upd_list_cancel();
     upd_c6_drop();
+    upd_dev_drop();
     if (u.s.hit == HIT_DOWNLOAD) {
         (void)ui_hold_left(&u.s.hold);
     } else if (u.s.hit == HIT_COPROC) {
@@ -747,6 +762,7 @@ static void enter(void)
 {
     upd_list_close();
     upd_c6_drop();
+    upd_dev_close();
     ui_hold_reset(&u.s.hold);
     ui_hold_reset(&u.s.cu_hold);
     touched();
@@ -757,49 +773,11 @@ static void leave(void)
 {
     upd_list_close();
     upd_c6_drop();
+    upd_dev_close();
     u.s.hit = HIT_NONE;
     u.s.have_press = false;
     ui_hold_reset(&u.s.hold);
     ui_hold_reset(&u.s.cu_hold);
-}
-
-void upd_cu_text(const upd_cu_view_t *v, const char **line,
-                 gfx_color_t *col)
-{
-    *col = UI_WARN;
-    switch (v->sec) {
-    case CU_SEC_NO_IMAGE: *line = TR(UPD_CU_NO_IMAGE); *col = UI_TEXT_DIM;
-                          break;
-    case CU_SEC_BUSY:     *line = TR(UPD_WAIT_COPROC);  break;
-    case CU_SEC_NO_LINK:  *line = TR(UPD_CU_NO_LINK);   break;
-    case CU_SEC_UNKNOWN:  *line = TR(UPD_CU_UNKNOWN); *col = UI_TEXT; break;
-    case CU_SEC_CHECKING: *line = TR(UPD_CU_CHECKING); *col = UI_TEXT; break;
-    case CU_SEC_FAILED:   *line = TR(UPD_CU_FAILED);    break;
-    case CU_SEC_USB:      *line = TR(UPD_CU_USB);       break;
-    case CU_SEC_NO_BOARD: *line = TR(UPD_CU_NO_BOARD); *col = UI_TEXT_DIM;
-                          break;
-    case CU_SEC_SAME:     *line = TR(UPD_CU_SAME); *col = UI_TEXT_DIM; break;
-    case CU_SEC_UNSAFE:   *line = TR(UPD_CU_UNSAFE);    break;
-    case CU_SEC_RADIO:    *line = TR(UPD_CU_RADIO);     break;
-    case CU_SEC_INSTALL:  *line = TR(UPD_CU_INSTALL);   break;
-    case CU_SEC_READY:
-    default:
-        /* As the question says it: an older image in the warning colour,
-         * the same number of another build plainly, else what the update
-         * does to the bench. */
-        if (coproc_update_older(v->running, v->carried)) {
-            *line = TR(CU_Q_OLDER);
-        } else if (v->running.major == v->carried.major
-                   && v->running.minor == v->carried.minor
-                   && v->running.patch == v->carried.patch) {
-            *line = TR(CU_Q_SAME);
-            *col = UI_TEXT_DIM;
-        } else {
-            *line = TR(CU_Q_WHAT);
-            *col = UI_TEXT_DIM;
-        }
-        break;
-    }
 }
 
 /** @brief Writes a version as "major.minor.patch", or says it is not known. */
@@ -864,6 +842,15 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if ((u.s.drawn_mask & bit) != 0u) {
         return;            /* every event and every change clears the mask */
     }
+    if (upd_dev_shown()) {
+        upd_dev_render_page(c);
+        if (upd_dev_flashing()) {
+            u.s.drawn_mask = 0u;
+        } else {
+            u.s.drawn_mask |= bit;
+        }
+        return;
+    }
     gfx_clear(c, UI_BG);
 
     /* CHECK, and the footer: the download's hold, SETTINGS. */
@@ -880,6 +867,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
                        upd_settings_free());
     render_coproc(c);
     upd_c6_render(c);
+    upd_dev_render(c);
 
     /* What is kept, what runs, what last happened. */
     ui_card(c, gfx_rect_make(RX, RY, RW, RH), UI_PANEL);
@@ -952,17 +940,23 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, ui_tr(about[i]), lit ? UI_TEXT : UI_TEXT_DIM);
     }
 
-    if (u.s.hold.flash_ms > 0 || u.s.cu_hold.flash_ms > 0 || upd_c6_flashing()) {
+    if (u.s.hold.flash_ms > 0 || u.s.cu_hold.flash_ms > 0 || upd_c6_flashing()
+        || upd_dev_flashing()) {
         u.s.drawn_mask = 0u;
     } else {
         u.s.drawn_mask |= bit;
     }
 }
 
-/** @brief The home tag closes the list first, through its leave warning.
+/** @brief The home tag closes the devices' page, or the list through its
+ *        leave warning.
  *  @return Whether it went up a level. */
 static bool back(void)
 {
+    if (upd_dev_shown()) {
+        upd_dev_close();
+        return true;
+    }
     const bool was = upd_list_shown();
     const bool climbed = upd_list_back();
     if (was) {
@@ -971,8 +965,9 @@ static bool back(void)
     return climbed;
 }
 
-/** @brief The list covers the screen. @return Whether it is open. */
-static bool covered(void) { return upd_list_shown(); }
+/** @brief The list or the devices' page covers the screen.
+ *  @return Whether one is open. */
+static bool covered(void) { return upd_list_shown() || upd_dev_shown(); }
 
 bool upd_guide_newer(void) { return have_newer(); }
 

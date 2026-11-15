@@ -4,7 +4,9 @@
 The specs are hardware/kicad/modules/*.py; the output is
 hardware/kicad/rcbench_modules.pretty/, rcbench_modules.kicad_sym and, for
 each spec with a MODEL, a STEP model in rcbench_modules.3dshapes/. Each
-footprint names its model as ${RCBENCH_MODULES_3D}/<name>.step.
+footprint names its model as ${RCBENCH_MODULES_3D}/<name>.step. A MODEL
+with a "detail" key takes its solids from the spec of that name in
+hardware/mechanical/, which draws the module part by part.
 
 Usage:
     python3 hardware/kicad/tools/gen_all.py           write the files
@@ -22,6 +24,7 @@ from pathlib import Path
 
 HERE = Path(__file__).resolve().parent
 KICAD = HERE.parent
+MECHANICAL = KICAD.parent / "mechanical"
 LIB = "rcbench_modules"
 MODEL_VAR = "RCBENCH_MODULES_3D"
 NS = uuid.UUID("6f1d3c52-2a4e-4b8e-9a63-0c3d7e2b51a4")
@@ -46,6 +49,42 @@ def load_specs():
         spec.loader.exec_module(mod)
         specs.append(mod)
     return specs
+
+
+def detail(model):
+    """The solids of a model drawn in hardware/mechanical/.
+
+    Args:
+        model: A spec's MODEL with a "detail" key, the name of the
+            mechanical spec; its ``kicad_model`` gives the solids in the
+            footprint's model frame.
+
+    Returns:
+        The solids as step_gen.write takes them.
+    """
+    if str(MECHANICAL) not in sys.path:
+        sys.path.insert(0, str(MECHANICAL))
+    name = model["detail"]
+    spec = importlib.util.spec_from_file_location(
+        name, MECHANICAL / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod.kicad_model()
+
+
+def model_text(fp, model):
+    """The STEP text of a module's model.
+
+    Args:
+        fp: The spec's FOOTPRINT.
+        model: The spec's MODEL.
+
+    Returns:
+        The file's text.
+    """
+    if model.get("detail"):
+        return step_gen.write(fp["name"], detail(model), "module model")
+    return step_gen.step(fp, model)
 
 
 def uid_for(name):
@@ -75,7 +114,7 @@ def outputs():
         model = getattr(mod, "MODEL", None)
         if model:
             out[KICAD / f"{LIB}.3dshapes" / f"{fp['name']}.step"] = \
-                step_gen.step(fp, model)
+                model_text(fp, model)
             fp = dict(fp, model=f"${{{MODEL_VAR}}}/{fp['name']}.step")
         out[KICAD / f"{LIB}.pretty" / f"{fp['name']}.kicad_mod"] = \
             kicad_gen.footprint(fp, uid_for(fp["name"]))

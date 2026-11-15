@@ -474,6 +474,16 @@ bool ui_router_help_rect(gfx_rect_t *out);
 bool ui_router_take_knob(void);
 
 /**
+ * @brief What a tap on the home tag does, for the M5Stack Dial's BACK
+ *        (ui_focus.h): the screen climbs a level of its own or closes what
+ *        covers it (back(), hold()), else the parent screen comes up.  An
+ *        open guide or help bubble closes first.
+ * @return false on a screen without the home tag, or under the
+ *         screenshot's popup: nothing happened.
+ */
+bool ui_router_home(void);
+
+/**
  * @brief Whether the screen guide is open.
  *
  * A tap on the band's "?" opens it on the screen on top, at its first page

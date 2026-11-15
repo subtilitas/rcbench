@@ -73,7 +73,7 @@ SOURCES = ["test/host/bench_frame.c", *ui_sources.SOURCES]
 INCLUDES = ui_sources.INCLUDES
 
 MODES = ["frame", "frame-idle", "held", "sim", "throttle", "chrome",
-         "overview", "overview-guide", "servo", "servo-grip",
+         "overview", "overview-guide", "overview-focus", "servo", "servo-grip",
          "servo-current", "servo-rudder", "servo-test", "servo-kst",
          "servo-hitec", "supply",
          "supply-chrome",

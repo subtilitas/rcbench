@@ -697,3 +697,50 @@ static const ui_screen_t s_screen = {
  * @return its hooks
  */
 const ui_screen_t *picker_screen(void) { return &s_screen; }
+
+bool picker_screen_focus(ui_focus_list_t *out)
+{
+    if (out == NULL || !picker_screen_can_draw()) {
+        return false;
+    }
+    if (s.open) {
+        /* The list: a row a protocol, then a row a PROG PORT entry. */
+        out->list = 0x5049u;
+        for (int i = 0; i < pk_pop_rows(); ++i) {
+            char name[24];
+            if (i < (int)OUTBIND_PROTOS) {
+                snprintf(name, sizeof(name), "%s",
+                         outputs_proto_name((uint8_t)i));
+            } else {
+                outputs_port_name((uint8_t)(i - (int)OUTBIND_PROTOS), name,
+                                  sizeof(name));
+            }
+            (void)ui_focus_add(out, picker_screen_list_row((uint8_t)i), name);
+        }
+        out->start = (s.port >= 0) ? (int)OUTBIND_PROTOS + s.port
+                                   : (int)pk_proto_shown();
+        return true;
+    }
+    /* The list's face, UNBIND ALL PINS while offered, then a button a pin
+     * in the catalogue's order. */
+    out->list = 0x5042u;
+    (void)ui_focus_add(out, picker_screen_list_face(),
+                       (s.port >= 0) ? TR(OUT_PROG_PORT)
+                                     : outputs_proto_name(pk_proto_shown()));
+    if (outputs_unbind_offered()) {
+        (void)ui_focus_add(out, outputs_unbind_rect(), TR(HG_OUT_UNBIND_NAME));
+    }
+    const outbind_pin_t *pins = outbind_pins(s.bind.board);
+    const uint8_t n = outbind_pin_count(s.bind.board);
+    for (uint8_t i = 0; i < n; ++i) {
+        gfx_rect_t r;
+        if (!pk_button_at(i, &r, NULL)) {
+            continue;
+        }
+        char name[16];
+        snprintf(name, sizeof(name), "GPIO %u",
+                 (pins != NULL) ? (unsigned)pins[i].gpio : (unsigned)i);
+        (void)ui_focus_add(out, r, name);
+    }
+    return true;
+}

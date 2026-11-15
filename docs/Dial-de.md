@@ -13,10 +13,12 @@ Dial: die Selbsthaltung, den Encoder, die Tasten, das Touch-Glas, den Klick
 pro Rastung, die Faces auf dem Display, das BLE-Peripheral mit seinem
 gebundenen Panel und die USB-Konsole; und die Seite des Panels: SETUP >
 WIRELESS > DIAL, Suche und Bindung, der Link mit seiner Verlustregel, die
-Drehung auf MOTOR & ESC und SERVO LIVE, die Bildschirmtaste und der Strom
-des Panel-Bildschirms zum Dial ([Das Panel](#das-panel)). Die Navigation
-der Listen des Panels vom Dial aus, das BLE-Update und das Pairing folgen
-in späteren Schritten.
+Drehung auf MOTOR & ESC und SERVO LIVE, die Bildschirmtaste, die Navigation
+der Menüs und Listen des Panels mit SET eines Werts und der Strom des
+Panel-Bildschirms zum Dial ([Das Panel](#das-panel)); und das
+Firmware-Update über BLE von SETUP > UPDATES ([Update über Bluetooth
+LE](#update-über-bluetooth-le)). Die Bildschirme der Programmer (KST,
+Hitec, ESC) und das Pairing folgen in späteren Schritten.
 
 M5Stack, Dial und Stamp-S3A sind Namen ihres Inhabers und seiner Produkte,
 Bluetooth ist eine Marke ihres Inhabers. rcbench ist unabhängig: Es ist
@@ -70,6 +72,10 @@ das Panel wendet sie an ([Das Panel](#das-panel)):
   auf 0% und auf SERVO auf CENTER; ein Halten von 1s macht DISARM.
 - Kein BLE-Scan im Zustand ARMED: Die Funkzeit eines Scans würde dem Link
   fehlen, der den Knopf trägt.
+- Navigation nur bei SAFE: Ein SELECT ist ein Tippen von einem Frame, es
+  vollendet also kein 2s-Halten, und bei ARMED bewegt das Dial keinen Fokus
+  weg von dem Ausgang, den es treibt
+  ([Navigation und SET](#navigation-und-set)).
 
 Die Regeln des Links und ihre Zeiten stehen im Protokollmodul, jede mit
 einem Host-Test
@@ -91,7 +97,7 @@ SHA-256-Summen in `SHA256SUMS`.
 
    ```bash
    python -m esptool --chip esp32s3 -p /dev/ttyACM0 -b 460800 \
-     write-flash 0x0 rcbench-dial-merged-0.23.12.bin
+     write-flash 0x0 rcbench-dial-merged-0.23.13.bin
    ```
 
    esptool 5 schreibt den Befehl `write-flash`, esptool 4 `write_flash`.
@@ -115,8 +121,8 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 Die Partitionstabelle (`firmware/dial/partitions.csv`) enthält den NVS, zwei
 Anwendungsslots von 3.072kB und ihre otadata. Das veröffentlichte Image hat
-817.280 Bytes, 26,0% eines Slots; die sieben Fonts der Faces sind 243.194
-Bytes davon und die Ring-Tabellen 25.032. Sein statischer RAM: 212.822 von
+841.504 Bytes, 26,8% eines Slots; die sieben Fonts der Faces sind 243.194
+Bytes davon und die Ring-Tabellen 25.032. Sein statischer RAM: 216.534 von
 341.760 Bytes internem DRAM und IRAM, darunter der Frame von 115.200 Bytes.
 Den Heap, den NimBLE zur Laufzeit nimmt, hat niemand gemessen; das Log beim
 Start und `status` nennen den freien internen Heap und seinen Tiefstwert
@@ -140,6 +146,80 @@ Protokollversion 1 hat kein Pairing und keine Verschlüsselung: Ein Gerät in
 Reichweite, das sich zuerst verbindet oder die gebundene Adresse fälscht,
 wird angenommen.
 
+## Update über Bluetooth LE
+
+Das Panel bringt das Anwendungs-Image des Dial mit und sendet es über BLE.
+Das Protokoll ist `protocols/bleota`
+([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
+die Seite des Panels ist die Zeile DIAL-FIRMWARE auf der Seite, die der
+Eintrag FUNKGERÄTE auf UPDATES öffnet
+([Bildschirme, Das Dial](Screens-de.md#das-dial)).
+
+1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. Die Zeile
+   zeigt `Dial: 0.23.12. Im Panel: 0.23.13.` und `2s HALTEN ZUM DIAL-UPDATE`.
+2. Das Halten von 2s beendet den Knopf-Link des Dial. Das Panel verbindet
+   sich mit dem Update-Dienst des Dial und sendet BEGIN: Art DIAL, Größe,
+   Version und den SHA-256 des Images.
+3. Das Dial prüft die Art, die Größe gegen seinen Slot von 3.145.728 Bytes
+   und die Version. Dann zeigt es 30s lang `UPDATE`, `v0.23.12 AUF
+   v0.23.13`, `DRÜCKEN: ANNEHMEN`, die verbleibenden Sekunden und
+   `HALTEN: ABLEHNEN`. Vor der Antwort wird nichts gelöscht.
+   - Ein Druck der Bildschirmtaste, innerhalb von 1s losgelassen, nimmt an.
+   - Ein Halten von 1s lehnt ab.
+   - Kein Druck in 30s lehnt ab.
+4. Angenommen: Das Dial nimmt die ersten 296 Bytes des Images und prüft,
+   dass sie den ESP32-S3 und die Rolle des Dial nennen (`DEVOTA_ROLE`,
+   hinter dem Anwendungsdeskriptor von ESP-IDF). Das Image eines anderen
+   Geräts wird abgelehnt, bevor etwas geschrieben ist. Dann löscht und
+   schreibt das Dial den Slot, aus dem es nicht läuft, und zeigt den
+   Fortschritt als Ring mit `DIAL AN LASSEN`.
+
+![Die Frage des Updates am Dial](img/de/dial-update-ask.png)
+![Der Fortschritt des Updates am Dial](img/de/dial-update-send.png)
+
+5. Das Panel sendet END. Das Dial vergleicht den SHA-256 jedes
+   geschriebenen Bytes mit dem aus BEGIN, lässt ESP-IDF das Image prüfen,
+   setzt den Boot-Slot, zeigt `STARTET NEU` und startet 500ms später neu.
+6. Das neue Image startet auf Probe. Es markiert sich bei seiner ersten
+   Verbindung als gültig, die es nur mit laufendem BLE-Stack annimmt. Der
+   Knopf-Link des Panels verbindet sich wieder aus den Werten von SETUP.
+
+Eine Ablehnung, ein verlorener Link, 10s ohne Schreiben oder ein
+abweichender SHA-256 beenden die Übertragung: Das Dial schließt den Slot
+und läuft mit seinem Image weiter. Eine neue Übertragung beginnt bei Byte
+0. Die Ausnahme ist die Installation nach END: Der Boot-Slot kann schon
+gesetzt sein, wenn der Link abbricht oder das ABORT des Panels kommt. Das
+Dial beendet die Installation dann und startet in das neue Image, wenn es
+die Prüfung von ESP-IDF bestanden hat, ohne Link, um es dem Panel zu
+sagen. Das Panel liest die Version des Dial, sobald es zurück ist, bis zu
+60s lang, und meldet, was es findet
+([Bildschirme, Das Dial](Screens-de.md#das-dial)).
+
+Ein neues Image, das vor seiner ersten Verbindung neu startet, auch durch
+einen Stromausfall, startet wieder das Image davor
+(`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`). Probe und Rollback gehören dem
+Bootloader: Ein Dial, das über USB mit einem Image vor dieser
+Update-Firmware geflasht wurde, hat einen Bootloader ohne beides. Es nimmt
+Updates über Funk an, aber ohne Probe und ohne Rollback, bis es einmal über
+USB mit einem Release geflasht wird, das das Update trägt.
+
+Das Update braucht kein USB und kein Werkzeug. Der Knopf steuert das Panel
+vom Halten an nicht, bis sich der Link wieder verbindet; diese Lücke ist
+kein Verlustfehler, denn der Prüfstand ist SAFE, und ARM wird abgelehnt,
+solange das Update läuft. Das Dial hält seinen Link, solange eine
+Übertragung läuft: Das Trennen nach 500ms ohne Paket des Panels wartet.
+
+Sicherheit: kein Pairing, keine Verschlüsselung und keine Signatur. Die
+Unversehrtheit stützt sich auf den SHA-256 in BEGIN. Jedes Central in
+Reichweite kann BEGIN senden; der Druck am Dial nimmt es an
+([SECURITY.md](../SECURITY.md)).
+
+Die Geräteseite läuft im Task `ota`, Priorität 3, alle 10ms, mit einem
+Stack von 8.192 Bytes aus dem Heap beim Start, der Größe der OTA-Beispiele
+von ESP-IDF; seine Tiefe ist nicht gemessen. Ihr statischer RAM sind
+3.487 Bytes: der Ring des Fensters von 2.048 Bytes, ein Schreibpuffer von
+1.024 Bytes und der Zustand.
+
 ## Das Panel
 
 SETUP > WIRELESS > DIAL enthält die Zeilen des Dial
@@ -148,8 +228,8 @@ SETUP > WIRELESS > DIAL enthält die Zeilen des Dial
 0.5%, 1%, 2% oder 5% Gas (ab Werk 1%) und 0.5°, 1°, 2° oder 5° Hornwinkel (ab
 Werk 1°). Das erste Dial EIN startet Bluetooth LE auf dem ESP32-C6 des
 Boards, wie das erste IMU EIN; es läuft bis zum Neustart des Panels. Das
-Dial und die IMU sind zwei Clients der Bluetooth-LE-Central des Panels, mit
-einem Connect oder Scan zur Zeit zwischen ihnen.
+Dial, die IMU und die Knoten sind Clients der Bluetooth-LE-Central des
+Panels, mit einem Connect oder Scan zur Zeit zwischen ihnen.
 
 ### Suchen und Binden
 
@@ -159,10 +239,42 @@ Prüfstand ARMED oder wartet ein Arm, wird die Suche abgelehnt, und das Band
 zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
 läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Eine bei SAFE
 gestartete Suche endet beim Schalten auf ARMED, und DIAL SUCHEN zeigt
-`DURCH ARM BEENDET`. Ein Tippen auf ein gefundenes Dial bindet es: Das Panel behält Adresse und Namen in SETUP
-(`dial_ble`, `dial_name`) und fragt nach dem Speichern. Es ist immer ein
-Dial gebunden oder keins. Das Panel verbindet sich über die Adresse mit ihm,
-ohne Suche, bei Dial EIN, beim Start und nach jedem Verlust.
+`DURCH ARM BEENDET`. Ein Tippen auf GEBUNDENES DIAL, oder auf DIAL SUCHEN,
+solange es `n GEFUNDEN` zeigt, listet die Dials der letzten Suche, bis zu
+6, und zuletzt `ERNEUT SUCHEN`, das eine neue Suche mit denselben
+Ablehnungen startet. Ein Tippen auf ein Dial bindet es: Das Panel behält Adresse
+und Namen in SETUP (`dial_ble`, `dial_name`) und fragt nach dem Speichern.
+Es ist immer ein Dial gebunden oder keins. Das Panel verbindet sich über
+die Adresse mit ihm, ohne Suche, bei Dial EIN, beim Start und nach jedem
+Verlust.
+
+Ein Tippen auf GEBUNDENES DIAL ohne Liste sagt auf dem Band, warum:
+`KEIN DIAL GELISTET: ERST AUF DIAL SUCHEN TIPPEN` vor einer Suche und nach
+einer, die keins fand, `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`,
+solange eine Suche läuft. Eine Wahl, die der Controller ablehnt, weil zuerst
+eine Suche startete oder sich die Liste darunter änderte, zeigt
+`SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN` oder
+`DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
+schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
+`dial: bound <Adresse> <Name>`.
+Ein Tippen auf DIAL SUCHEN, während eine Suche läuft, startet keine; das
+Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`.
+
+Der Connect nach dem Binden startet sofort, wenn die Central frei ist. Eine
+IMU oder ein Knoten, EIN und an ein Gerät außer Reichweite gebunden, hält
+den einen Connect 5.000ms pro Versuch. Der Connect nach dem Binden nimmt
+den nächsten Zug des Hubs
+([bleuart: der Hub](../protocols/bleuart/README.md#the-hub)): Ein
+laufender Versuch eines anderen Clients läuft zu Ende, und der Connect des
+Dial folgt innerhalb von 20ms, vor den Wiederholungen der anderen. Im
+Host-Modell wartet der erste Connect des Dial nach der Wahl bis zu
+5.061ms, das Tippen von 80ms und ein Frame eingerechnet, bei einem oder
+zwei solchen Clients, und er startet im selben Durchlauf wie das BIND,
+wenn kein Versuch läuft; auf dem Panel sind diese Wartezeiten nicht
+gemessen. Ein Connect nach einem Verlust, bei Dial EIN oder beim Start
+wartet in der Warteschlange des Hubs, wer zuerst kommt, zuerst: Er folgt
+nach höchstens einem Versuch jedes anderen Clients, im Host-Modell
+höchstens 10.046ms neben zwei solchen Clients und 20.092ms neben vier.
 
 ### Der Link
 
@@ -198,13 +310,14 @@ Eine Rastung am Dial nimmt den Weg des eigenen Knopfs des Panels, mit
 denselben Regeln: relativ, durch denselben Drehungs-Tracker, nichts bewegt
 sich, solange der Prüfstand SAFE ist, und Drehungen bei SAFE werden nicht
 für das ARM aufgehoben. Auf MOTOR & ESC verstellt eine Rastung das Gas um
-den Gas-Schritt, auf SERVO LIVE das Horn um den Servo-Schritt. Andere
-Bildschirme nehmen keine Drehung an.
+den Gas-Schritt, auf SERVO LIVE das Horn um den Servo-Schritt. Die
+Bildschirme aus [Navigation und SET](#navigation-und-set) nehmen die Drehung
+als Schritt des Fokus; alle anderen nehmen keine an.
 
 | Geste | MOTOR & ESC, ARMED | SERVO LIVE, ARMED | SAFE, oder ein anderer Bildschirm |
 | --- | --- | --- | --- |
 | PRESS: Bildschirmtaste vor 1.000ms losgelassen | Gas 0% | CENTER | nichts |
-| HOLD: Bildschirmtaste 1.000ms gedrückt | DISARM | DISARM; eine laufende Folge ARM + START endet mit allen Ausgängen aus, auch vor ARMED | nichts |
+| HOLD: Bildschirmtaste 1.000ms gedrückt | DISARM | DISARM; eine laufende Folge ARM + START endet mit allen Ausgängen aus, auch vor ARMED | nichts; BACK auf einem Bildschirm, den das Dial navigiert |
 
 Auf MOTOR & ESC schaltet ein HOLD auch DISARM, solange ein ARM unterwegs
 ist, angefragt und noch nicht bestätigt, und beendet einen ESC-STICK-Lauf
@@ -215,6 +328,77 @@ Hilfeblase offen. Die gehaltenen Zustände von Taste und Touch im EVENT werden n
 Druck oder Berührung gelesen, eine am Dial gehaltene Taste ist also kein
 Halten am Panel: ARM und jedes andere 2s-Halten bleiben beim Panel.
 
+### Navigation und SET
+
+Solange das Dial verbunden und der Prüfstand SAFE ist, navigiert es diese
+Bildschirme:
+
+| Bildschirm | Einträge, in Drehrichtung |
+| --- | --- |
+| das Menü | seine 8 Kacheln, Zeile für Zeile |
+| die Kacheln von SETUP | die Kacheln, dann SAVE, solange Speichern angeboten ist |
+| eine Liste von SETUP | ihre Zeilen, dann RESET und SAVE; auf SENSORS und WIRELESS zuerst die Einträge links |
+| SERVO | die 8 Kacheln, dann SETTINGS; die offene SETTINGS-Liste wie eine Liste von SETUP |
+| OUTPUTS, Platinenansicht | das Feld der Protokollliste, CLEAR ALL, solange angeboten, dann je eine Pin-Taste |
+| eine offene Auswahlliste | ihre Zeilen, der Fokus auf der gültigen |
+| die Warnung beim Verlassen | STAY, DISCARD, SAVE |
+
+| Geste | Navigation | SET |
+| --- | --- | --- |
+| Drehen | der Fokus geht eine Rastung einen Eintrag weiter und läuft an beiden Enden um; eine Zeile außer Sicht rollt herein | der Wert geht eine Rastung einen Schritt, innerhalb seines Bereichs |
+| PRESS | SELECT: ein Tippen auf den Eintrag im Fokus | KEEP |
+| HOLD | BACK: was das Home-Tag tut, eine Auswahlliste oder das Ziffernfeld schließt | CANCEL: der Wert wie vorher |
+
+Das Panel zeichnet einen 2px-Rahmen in der Akzentfarbe um den Eintrag im
+Fokus. Der Rahmen hebt die Pixel darunter je Framebuffer auf und setzt sie
+zurück, wenn er weiterzieht: Eine Rastung zeichnet die zwei Rahmen neu,
+nie den Bildschirm. Kein Rahmen erscheint und das Dial nimmt nicht am
+Bildschirm teil, solange das Dial OFF oder nicht verbunden ist, der
+Prüfstand ARMED ist, die Bildschirmhilfe oder das Screenshot-Popup offen
+ist oder die Texttastatur offen ist.
+
+Ein SELECT ist ein Tippen: ein DOWN und ein UP in der Mitte des Eintrags im
+selben Frame. Die Zeile im Fokus rollt zuerst ins Bild, auch wenn ein Finger
+die Liste seitdem gerollt hat; ein Punkt neben dem Eintrag oder außer Sicht
+wird nie getippt, und der Druck tut dann nichts. Ein 2s-Halten am Panel braucht den Kontakt 2s lang über
+Frames, also wird vom Dial aus kein Halten vollendet: ARM, Spannung EIN,
+WRITE n VALUES und das Löschen bleiben beim Panel. Ein SELECT auf eine
+Halte-Taste wie CLEAR ALL auf OUTPUTS zeigt den Hinweis, den das Panel bei
+jedem Tippen zeigt. Auf den Kacheln von SERVO beendet ein HOLD zuerst eine
+laufende Folge ARM + START, wie auf jedem SERVO-Bildschirm; BACK folgt nur,
+wo es nichts gestoppt hat.
+
+SET:
+
+- eine Zahl, die das Ziffernfeld nimmt: SELECT tippt ihren Wert, und das
+  Ziffernfeld öffnet sich. Die Drehung schreibt den Wert in die Eingabe, um
+  den Schritt der Einstellung und innerhalb ihres Bereichs; eine Drehung an
+  einem Ende bleibt dort stehen. Eine Einstellung mit einer AUS-Lücke (etwa
+  ein INA3221-Shunt, AUS oder 5.0 bis 1000.0mΩ) nimmt eine Rastung von AUS
+  zu ihrem kleinsten Wert und eine zurück, wie viele Rastungen ein Frame
+  auch bringt. PRESS ist das OK des Ziffernfelds, mit
+  seinen Prüfungen; HOLD ist CANCEL.
+- ein Ein/Aus oder eine Liste von Optionen: SELECT startet SET auf der
+  Zeile. Jede Rastung tippt ihre Taste `-` oder `+`, höchstens 16 je Frame;
+  Ein/Aus und Optionslisten laufen um wie ihre Tasten; das VALUE-Face zeigt
+  die Stelle einer Optionsliste von 0 bis zu ihrer letzten Option. PRESS behält den
+  Wert; HOLD tippt die andere Taste so oft, wie ein Tippen den Wert geändert
+  hat.
+
+Dimmen nach: Eine Drehung, ein PRESS oder ein HOLD des Dial weckt ein
+gedimmtes Panel und startet seine Minuten neu, wie eine Berührung. Auf
+einem gedimmten Panel mit ruhendem Prüfstand tut die Eingabe, die es
+geweckt hat, sonst nichts: Sie öffnet, bewegt und stellt nichts ein. Auf
+einem Prüfstand, der nicht ruht, wirkt sie sofort; ein PRESS für 0% oder
+CENTER auf einem ARMED-Prüfstand wird also nie verschluckt, und ein HOLD
+auf MOTOR & ESC oder einem SERVO-Bildschirm wirkt immer.
+
+Das Dial zeigt das NAV-Face, solange es den Fokus bewegt, mit dem Namen des
+Bildschirms, dem Eintrag im Fokus zwischen den Einträgen davor und danach
+und seiner Stelle in der Liste. In SET zeigt es das VALUE-Face mit dem
+Namen der Einstellung als Titel. Auf dem Menü bleibt das Face HOME und
+zeichnet die Kacheln als Liste.
+
 ### Der Strom
 
 Das Panel schreibt seinen Bildschirm in Panel-Paketen zum Dial, eines zur
@@ -223,14 +407,17 @@ Zeit:
 | Paket | Wann |
 | --- | --- |
 | SCREEN | Face, Titel, Sprache oder Flags geändert, oder 5.000ms nach dem letzten |
-| VALUE_META, VALUE | auf MOTOR & ESC und SERVO LIVE, wenn sich Bereich, Schritt oder Wert ändern |
+| VALUE_META, VALUE | auf MOTOR & ESC und SERVO LIVE und in SET, wenn sich Bereich, Schritt oder Wert ändern |
+| NAV | solange das Dial navigiert: wenn sich der Eintrag im Fokus, der davor oder danach oder die Liste ändert; eine Zeile je Paket |
 | SCALE | auf MOTOR & ESC und SERVO LIVE: beim Betreten und bei jedem Connect, dann wenn sich ein Vollausschlag ändert, höchstens alle 200ms |
 | LIVE_MOTOR, LIVE_SERVO | auf MOTOR & ESC und SERVO LIVE, alle 50ms (20Hz) |
 | STATE | ARMED, DEGRADED oder ein Schritt geändert, 200ms ohne Paket, oder 1.000ms nach dem letzten STATE |
 
 Jeder Connect sendet das ganze Modell erneut, SCREEN zuerst. Die Faces sind
-MOTOR, SERVO und HOME (das Menü); jeder andere Bildschirm sendet seinen
-Titel und den Zustand des Prüfstands. LIVE_MOTOR trägt das Gas und die
+MOTOR, SERVO, HOME (das Menü), NAV und VALUE
+([Navigation und SET](#navigation-und-set)); jeder andere Bildschirm sendet
+seinen Titel und den Zustand des Prüfstands. SCREEN trägt das Flag
+NAVIGATES, solange das Dial navigiert. LIVE_MOTOR trägt das Gas und die
 Messwerte, die der Prüfstand meldet: Spannung, Strom, Leistung, Drehzahl,
 die Temperatur von ESC und Motor. LIVE_SERVO trägt den Puls, den
 befohlenen Winkel, den gemessenen Winkel, wenn die Winkelquelle einen
@@ -472,8 +659,19 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 
 ## Grenzen
 
-- Das Dial navigiert noch keine Liste am Panel: Kein Bildschirm füllt NAV.
-  Das ist der nächste Schritt.
+- Das Dial navigiert nur die Bildschirme aus
+  [Navigation und SET](#navigation-und-set). Auf LOGS, FILES, WI-FI,
+  UPDATES, IMU, der Rasteransicht von OUTPUTS, den Programmern (KST, Hitec,
+  ESC) und den eigenen Listen und Reitern der Prüfstandsbildschirme bewegt
+  es keinen Fokus; ein HOLD tut dort auf einem SAFE-Prüfstand nichts.
+- Eine Liste nimmt den Fokus für 64 Einträge, RESET und SAVE darunter; die
+  letzten Zeilen einer längeren Liste erreicht das Dial nicht.
+- Ein Pixel, das der Bildschirm unter dem Rahmen genau in der Farbe des
+  Rahmens malt (der Akzent mit gekipptem untersten Bit), gilt als Rahmen
+  und wird zurückgesetzt, wenn der Rahmen weiterzieht.
+- Das Wasserzeichen eines simulierten Prüfstands blendet über den Rahmen;
+  wo es das tut, bleiben die Pixel des Rahmens stehen, wenn er weiterzieht,
+  bis der Bildschirm dort neu zeichnet.
 - Das ARMED-Flag des Panels für die Verlustregel und die Ablehnung der Suche
   gehört dem Control-Task und wird vom Bluetooth-Task gelesen; es kann einen
   Control-Durchlauf, etwa 5ms, alt sein.
@@ -515,6 +713,12 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   gelaufen: Das Dial ist bestellt, nicht geliefert. Die Latenz von der
   Drehung zum Ausgang über Funk ist nicht gemessen; die Station misst sie
   mit dem Test-Build, sobald das Dial an ihrem USB hängt.
+- Das Update über BLE ist mit keinem Dial gelaufen. Seine Rate über die
+  ESP32-C6-Verbindung des Panels, die Dauer einer Übertragung von 840kB und
+  ein Rollback am Dial sind nicht gemessen.
+- Das Dial prüft Art, Chip und Segmente des Images, nicht seine Herkunft:
+  Ein Central in Reichweite kann jedes Dial-Image anbieten, auch ältere,
+  und ein Druck installiert es.
 - Noch kein Schlaf, keine Stufen des Hintergrundlichts und keine
   Abschaltung: Das Dial bleibt an, bis RST gedrückt wird oder die Zelle leer
   ist. Die Laufzeit mit einer Zelle ist nicht gemessen.

@@ -41,6 +41,10 @@ module board's top side::
       0, the board's top side; negative values go below the board's
       underside at -thickness).
 
+A ``MODEL`` of the one key "detail" names a spec of hardware/mechanical/
+that draws the module part by part; gen_all.py writes that spec's
+``kicad_model`` in place of the prisms above.
+
 Unless ``pad_holes`` is False, every drilled pad of the footprint is a hole
 through the board. A hole must lie inside the outline and clear of every
 other hole.

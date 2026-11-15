@@ -35,6 +35,8 @@
 #include "overview_screen.h"
 #include "splash_screen.h"
 #include "ui_band.h"
+#include "ui_focus.h"
+#include "ui_router_int.h"
 #include "ui_help.h"
 #include "ui_theme.h"
 #include "ui_watermark.h"
@@ -151,6 +153,8 @@ static struct {
 } s;  /**< The router's state. */
 
 static bool has_band(ui_screen_id_t id);
+static bool has_home(ui_screen_id_t id);
+static void router_back(void);
 static void release_owned(void);
 static void drop_notice(void);
 static void guide_check(void);
@@ -275,6 +279,7 @@ void ui_router_init(void)
     ui_shot_reset();
     shot_hold_reset();
     stop_hold_reset();
+    ui_focus_reset();
     ui_router_invalidate();
 }
 
@@ -549,6 +554,17 @@ bool ui_router_take_knob(void)
         s.help = UI_BAND_CHIP_NONE;
         return false;
     }
+    return true;
+}
+
+bool ui_router_home(void)
+{
+    if (!has_band(s.current) || !has_home(s.current) || ui_shot_open()) {
+        return false;
+    }
+    guide_close();
+    s.help = UI_BAND_CHIP_NONE;
+    router_back();
     return true;
 }
 
@@ -1259,57 +1275,6 @@ const char *ui_router_alert(void)
     return s.has_held ? s.held : NULL;
 }
 
-/* The alert's text, in UI_FONT_BAND (10 x 20): from x 12, the panel's width
- * less 12px at the left and 36px at the right, which clears the "x"
- * (976px, 97 cells of 10px, on the 1024px panel).  Text wider than one
- * line breaks at a space onto a second, 20px under the first: two rows
- * fill 40 of the band's 44px, 2px from its top. */
-/** @brief The alert text's left edge: 12px. */
-#define ALERT_TEXT_X 12
-/** @brief The alert text's width: 976px, 97 cells, clear of the "x". */
-#define ALERT_TEXT_W (PANEL_W - 2 * ALERT_TEXT_X - 24)
-/** @brief An alert row to the next: 20px. */
-#define ALERT_PITCH  20
-/** @brief The alert's face: 10 x 20px. */
-#define ALERT_FONT   UI_FONT_BAND
-
-int ui_router_alert_rows(const char *text)
-{
-    return ui_text_wrap(NULL, gfx_rect_make(ALERT_TEXT_X, 0, ALERT_TEXT_W,
-                                            ALERT_PITCH),
-                        ALERT_PITCH, text, ALERT_FONT, 0);
-}
-
-/**
- * @brief Draw the alert band across the bottom of the panel.
- * @param c        The canvas, the panel's.
- * @param text     The alert, on one row centered or on two from the top.
- * @param closable A tap closes it: the "x" at its right end shows.
- */
-static void draw_alert(gfx_canvas_t *c, const char *text, bool closable)
-{
-    /* A notice is amber with dark text; an alert is the danger colour. */
-    const bool notice = ui_router_alert_is_notice();
-    const gfx_color_t fill = ui_theme_color(notice ? UI_C_WARN : UI_C_DANGER);
-    const gfx_color_t ink = ui_theme_color(notice ? UI_C_TEXT_ON_LIGHT
-                                                  : UI_C_TEXT);
-    const int y = PANEL_H - ALERT_H;
-    /* One row centered in the band's height. */
-    const int y1 = y + (ALERT_H - gfx_text_height(ALERT_FONT, 1)) / 2;
-    gfx_fill_rect(c, 0, y, PANEL_W, ALERT_H, fill);
-    if (ui_router_alert_rows(text) <= 1) {
-        gfx_text(c, ALERT_TEXT_X, y1, text, ALERT_FONT, ink, 1);
-    } else {
-        (void)ui_text_wrap(c, gfx_rect_make(ALERT_TEXT_X, y + 2, ALERT_TEXT_W,
-                                            ALERT_PITCH),
-                           ALERT_PITCH, text, ALERT_FONT, ink);
-    }
-    if (closable) {
-        gfx_text(c, PANEL_W - 12 - gfx_text_width(ALERT_FONT, "x", 1), y1,
-                 "x", ALERT_FONT, ink, 1);
-    }
-}
-
 /**
  * @brief The open guide over the screen: the dock when it changed in this
  *        buffer or the buffer has not got it, as the band; PREV and NEXT
@@ -1454,11 +1419,15 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
             live.y = (int16_t)(live.y - UI_BAND_H);
             (void)gfx_clip_intersect(&sub, live);
         }
+        /* The Dial's focus ring over what the screen drew, its pixels
+         * kept (ui_focus.h). */
+        ui_focus_render_begin(&sub);
         if (ui_shot_open()) {
             ui_shot_render(&sub, buffer_index);
         } else {
             scr->render(&sub, buffer_index);
         }
+        ui_focus_render_end(&sub, buffer_index);
     }
     if (guide) {
         ui_help_watch_end();
@@ -1478,7 +1447,7 @@ void ui_router_render(gfx_canvas_t *c, int buffer_index)
     }
 
     if (s.has_alert || s.has_held) {
-        draw_alert(c, ui_router_alert(), s.has_alert);
+        ui_router_alert_draw(c, ui_router_alert(), s.has_alert);
     }
 
     /*

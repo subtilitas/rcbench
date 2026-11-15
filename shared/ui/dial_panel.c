@@ -8,12 +8,14 @@
 #include "dial_panel.h"
 
 #include <math.h>
+#include <stdint.h>
 #include <string.h>
 
 #include "link_pages.h"
 #include "motor_screen.h"
 #include "servo_screen.h"
 #include "settings.h"
+#include "ui_focus.h"
 
 float dial_span(ui_screen_id_t route, int32_t detents, uint8_t thr_tenths,
                 uint8_t srv_tenths)
@@ -43,32 +45,83 @@ bool dial_knob_take(int32_t knob_steps, const dial_input_t *in)
     return input && ui_router_take_knob();
 }
 
-void dial_gestures(ui_screen_id_t route, const dial_input_t *in,
+bool dial_gestures(ui_screen_id_t route, const dial_input_t *in,
                    bool press_ok)
 {
     if (in == NULL) {
-        return;
+        return false;
     }
     const bool motor = route == SCREEN_MOTOR;
     const bool servo = servo_screen_owns(route);
     if (in->holds != 0u) {
+        bool acted = false;
         if (motor) {
-            (void)motor_screen_dial_hold();
+            acted = motor_screen_dial_hold();
         } else if (servo) {
-            (void)servo_screen_dial_hold();
+            acted = servo_screen_dial_hold();
         }
         /* A press after a hold in one frame goes nowhere: the bench is
          * SAFE then. */
-        return;
+        return acted;
     }
     if (in->presses == 0u || !press_ok) {
-        return;
+        return false;
     }
     if (motor) {
-        (void)motor_screen_dial_press();
-    } else if (servo) {
-        (void)servo_screen_dial_press();
+        return motor_screen_dial_press();
     }
+    if (servo) {
+        return servo_screen_dial_press();
+    }
+    return false;
+}
+
+bool dial_navigate(ui_screen_id_t route, const dial_input_t *in,
+                   bool steady, bool taken)
+{
+    if (in == NULL || !ui_focus_shown()) {
+        return false;
+    }
+    if (in->holds != 0u) {
+        /* The end of a sequence first, as on every SERVO screen; BACK
+         * only where the hold stopped nothing. */
+        if (!dial_gestures(ui_router_current(), in, false) && steady) {
+            (void)ui_focus_hold();
+        }
+        return true;
+    }
+    if (!taken) {
+        return true;
+    }
+    if (in->detents != 0) {
+        (void)ui_focus_turn((int)in->detents);
+    }
+    if (in->presses != 0u && ui_router_current() == route) {
+        /* One SELECT a frame: a second press of the frame would land on
+         * whatever the first opened. */
+        (void)ui_focus_press();
+    }
+    return true;
+}
+
+dial_input_t dial_dim_filter(screen_dim_t *d, const dial_input_t *in,
+                             ui_screen_id_t route, const shot_facts_t *facts,
+                             uint32_t now_ms)
+{
+    const dial_input_t none = { 0 };
+    if (in == NULL) {
+        return none;
+    }
+    if (in->detents == 0 && in->presses == 0u && in->holds == 0u) {
+        return *in;
+    }
+    const bool was_dim = screen_dim_wake(d, now_ms);
+    const bool stops = in->holds != 0u
+                       && (route == SCREEN_MOTOR || servo_screen_owns(route));
+    if (was_dim && !stops && screen_dim_idle(facts)) {
+        return none;
+    }
+    return *in;
 }
 
 /**
@@ -212,6 +265,62 @@ static void full_scales(const dial_model_in_t *in, dk_scale_t *c)
     c->rail_ca = (uint16_t)round_in(sup_i * 100.0f, 0, UINT16_MAX);
 }
 
+/**
+ * @brief The focus layer's face (ui_focus.h): VALUE while a value is set,
+ *        NAV while the knob moves the focus; the overview stays HOME with
+ *        its tiles as the rows, which the Dial draws as NAV.
+ * @param in    The inputs.
+ * @param out   The model, its title the screen's.
+ * @return false where the layer does not navigate.
+ */
+static bool focus_model(const dial_model_in_t *in, dial_model_t *out)
+{
+    if (!ui_focus_shown()) {
+        return false;
+    }
+    out->flags = DK_SCR_NAVIGATES;
+    ui_focus_value_t v;
+    if (ui_focus_value(&v)) {
+        const int d = (v.decimals < 0) ? 0
+                      : (v.decimals > (int)DK_DECIMALS_MAX)
+                          ? (int)DK_DECIMALS_MAX : v.decimals;
+        float scale = 1.0f;
+        for (int i = 0; i < d; ++i) {
+            scale *= 10.0f;
+        }
+        out->face = DK_FACE_VALUE;
+        (void)dk_text_copy(out->title, sizeof(out->title),
+                           v.name != NULL ? v.name : "");
+        out->has_value = true;
+        (void)dk_text_copy(out->meta.unit, sizeof(out->meta.unit),
+                           v.unit != NULL ? v.unit : "");
+        out->meta.decimals = (uint8_t)d;
+        out->meta.min = round_in(v.min * scale, INT32_MIN / 2, INT32_MAX / 2);
+        out->meta.max = round_in(v.max * scale, out->meta.min,
+                                 INT32_MAX / 2);
+        out->meta.step = round_in(v.step * scale, 1, INT32_MAX / 2);
+        out->value.value = round_in(v.value * scale, out->meta.min,
+                                    out->meta.max);
+        out->value.was = round_in(v.was * scale, out->meta.min,
+                                  out->meta.max);
+        out->value.flags = (uint8_t)(DK_VAL_SET
+                                     | (v.limit ? DK_VAL_LIMIT : 0u));
+        return true;
+    }
+    out->face = (in->route == SCREEN_OVERVIEW) ? DK_FACE_HOME : DK_FACE_NAV;
+    out->has_nav = true;
+    const int index = ui_focus_index();
+    const int count = ui_focus_count();
+    for (unsigned k = 0; k < 3u; ++k) {
+        dk_nav_t *n = &out->nav[k];
+        n->index = (uint8_t)(index > 255 ? 255 : index);
+        n->count = (uint8_t)(count > 255 ? 255 : count);
+        (void)dk_text_copy(n->item, sizeof(n->item),
+                           ui_focus_label(index + (int)k - 1));
+    }
+    return true;
+}
+
 void dial_model_build(dial_builder_t *bld, const dial_model_in_t *in,
                       dial_model_t *out)
 {
@@ -226,6 +335,7 @@ void dial_model_build(dial_builder_t *bld, const dial_model_in_t *in,
     (void)dk_text_copy(out->title, sizeof(out->title),
                        in->title != NULL ? in->title : "");
     int32_t value = 0;
+    bool given = false;
     if (in->route == SCREEN_MOTOR && motor_screen_knob_shown()) {
         out->face = DK_FACE_MOTOR;
         out->has_motor = true;
@@ -250,6 +360,8 @@ void dial_model_build(dial_builder_t *bld, const dial_model_in_t *in,
         out->meta.max = t;
         out->meta.step = in->srv_tenths;
         value = round_in(servo_screen_commanded_deg() * 10.0f, -t, t);
+    } else if (focus_model(in, out)) {
+        given = true;
     } else if (in->route == SCREEN_OVERVIEW) {
         out->face = DK_FACE_HOME;
     } else {
@@ -263,7 +375,7 @@ void dial_model_build(dial_builder_t *bld, const dial_model_in_t *in,
         bld->face = out->face;
         bld->was = value;
     }
-    if (out->has_value) {
+    if (out->has_value && !given) {
         out->value.value = value;
         out->value.was = bld->was;
     }

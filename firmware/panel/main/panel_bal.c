@@ -119,6 +119,9 @@ static void cfg_from_settings(bal_cfg_t *out)
             sizeof(out->addr) - 1u);
     strncpy(out->name, settings_text(SET_TEXT_BNODE_NAME),
             sizeof(out->name) - 1u);
+    /* The binds kept in SETUP so far: values read before the frame keeps
+     * a bind carry the address before it, which the controller leaves. */
+    out->bind_seq = s_kept_seq;
 }
 
 /** @brief SETUP's values to the task; dropped while its queue is full. */
@@ -167,6 +170,11 @@ static void run_command(const bal_cmd_t *cmd, uint32_t now)
     } else if (cmd->kind == BAL_CMD_BIND) {
         if (bal_ctl_bind(&s_ctl, cmd->arg, now)) {
             ESP_LOGI(TAG, "bound %s %s", s_ctl.cfg.addr, s_ctl.cfg.name);
+        } else {
+            ESP_LOGW(TAG, "bind of %u refused: %s, %u listed (%u refused)",
+                     (unsigned)cmd->arg,
+                     s_ctl.b.scanning ? "a scan runs" : "not in the list",
+                     (unsigned)s_ctl.found_n, (unsigned)s_ctl.bind_refused);
         }
     }
 }
@@ -193,6 +201,22 @@ void panel_bal_blec_poll(uint32_t now)
     const bal_drive_t d = s_wants;
     taskEXIT_CRITICAL(&s_mux);
     bal_ctl_drive(&s_ctl, d.blades, d.rpm);
+}
+
+void panel_bal_blec_hold(bool on, uint32_t now)
+{
+    if (s_q == NULL || on == s_ctl.held) {
+        return;
+    }
+    ESP_LOGI(TAG, "%s", on ? "link held off for the node's update"
+                           : "link back to SETUP's values");
+    bal_ctl_hold(&s_ctl, on, now);
+}
+
+bool panel_bal_blec_target(bleu_addr_t *addr, bool *linked,
+                          uint8_t version[3], bool *down)
+{
+    return s_q != NULL && bal_ctl_target(&s_ctl, addr, linked, version, down);
 }
 
 void panel_bal_blec_event(const bleu_evt_t *e, uint32_t now)
@@ -314,7 +338,9 @@ void panel_bal_frame(bool armed, int blades, uint32_t rpm)
     taskEXIT_CRITICAL(&s_mux);
     wireless_pane_set_bal(&s_seen.v);
     /* A bind that ended is kept in SETUP, with a save asked, so the node
-     * is the bound one after a restart. */
+     * is the bound one after a restart.  ADDR before NAME: each write
+     * posts both, and a post of the old address with the new count would
+     * unbind the node. */
     if (s_seen.bind_seq != s_kept_seq) {
         s_kept_seq = s_seen.bind_seq;
         settings_set_text(SET_TEXT_BNODE_ADDR, s_seen.v.bound_addr);
@@ -338,8 +364,11 @@ void panel_bal_frame(bool armed, int blades, uint32_t rpm)
     /* ON and bound with the link down: "--" and the kept result, never
      * the model; the model only while OFF or unbound. */
     const uint32_t age = now_ms() - s_seen.rep_ms;
+    /* The node's own update holds the link off with BALANCE NODE ON: no
+     * change of ON, so a failed update keeps the runs; an installed one
+     * restarts the node, and boots clears them. */
     const nb_context_t ctx = {
-        .on = s_seen.v.link != BAL_LINK_OFF,
+        .on = s_seen.v.link != BAL_LINK_OFF || s_seen.v.held,
         .addr = s_seen.v.bound_addr,
         .boots = s_seen.v.boots,
         .blades = blades,

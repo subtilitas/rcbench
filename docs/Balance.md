@@ -107,8 +107,9 @@ ARMED is no error, and its keys work while ARMED.
 
 1. SETUP > WIRELESS > BALANCE NODE: Balance node ON, then Scan for node
    (10s, SAFE only: a scan while ARMED is refused, and a switch to ARMED
-   stops a running one). Bound node lists the nodes found, `rcbench-bal-XXXX`;
-   a tap binds one and keeps it over a restart. Node battery shows the cell
+   stops a running one). Bound node, or Scan for node while it reads
+   `FOUND n`, lists the nodes found, `rcbench-bal-XXXX`, and `SCAN AGAIN`
+   last; a tap binds one and keeps it over a restart. Node battery shows the cell
    from the STATUS packets the node sends beside its reports.
 2. Set the blade count and the rotor type on BALANCE. The panel writes the
    blade count to the node (BLADES).
@@ -200,7 +201,11 @@ and so does each of these changes, with ADD and WHERE: the other method
 node bound with another address, and a restart of the node. The panel
 finds a node restart at each link-up: the node's clock in INFO lies more
 than 2s from where the last report's clock and the panel's time since then
-put it. A panel restart starts with no runs. A dropped link and a
+put it. An update of the node on UPDATES that installs restarts it on its
+new image, and the link that comes back finds that restart, so its runs
+clear; an update that ends without an install restarts nothing and keeps
+them, as the update's hold leaves Balance node ON. A panel restart starts
+with no runs. A dropped link and a
 reconnect of the same node keep the runs, and an unbind keeps them until
 another node is bound. The BALANCE tab follows no motor or ESC profile,
 and a profile change keeps the runs.

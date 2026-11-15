@@ -116,8 +116,9 @@ types only.
   transactions, sensor set-ups after a reset or a loss, and STREAM packets
   not sent.
 - **Info.** The protocol version (1), the role, the board (1 = Waveshare
-  ESP32-C6-Zero), the address and its type, and for the power node the
-  INA228's address, ADCRANGE and shunt in µΩ.
+  ESP32-C6-Zero, 2 = the LCDWIKI ES3C28P 2.8" ESP32-S3 display board),
+  the address and its type, and for the power node the INA228's address,
+  ADCRANGE and shunt in µΩ.
 
 ### Control
 
@@ -128,10 +129,13 @@ types only.
 | 0x03 | OFF | 1 | | both |
 | 0x04 | BLADES | 2 | 1 to 12, shared/vibe's `VIBE_BLADES_MAX` | balance |
 | 0x05 | RPM | 3 | 16 bits, 0 to 60000; 0 is the index mode | balance |
+| 0x06 | LANG | 2 | 0 English, 1 German: the language of a display node's texts | power |
 
 The decoder refuses an unknown operation, another length than the
-operation's, a RUN tag of 0, and a value out of range. `rcnode_ctl_for_role()` says which
-role takes which operation.
+operation's, a RUN tag of 0, and a value out of range.
+`rcnode_ctl_for_role()` says which role takes which operation. A power
+node without a display takes LANG and ignores it; a node built before
+LANG refuses it with ATT error 0x13.
 
 ### Advertising
 

@@ -112,6 +112,7 @@ bool imu_ble_bind(imu_ble_t *l, uint8_t i, uint32_t now_ms,
     (void)bleu_addr_format(&a, true, out->addr, sizeof(out->addr));
     memcpy(out->name, d->name, IMU_NAME_MAX - 1u);
     bleu_bind(&l->b, &a, now_ms);
+    bleu_hurry(&l->b);
     return true;
 }
 

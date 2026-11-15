@@ -116,9 +116,10 @@ ARMED ist kein Fehler, und seine Tasten gehen auch bei ARMED.
 
 1. SETUP > WIRELESS > AUSWUCHTKNOTEN: Auswuchtknoten EIN, dann Knoten
    suchen (10s, nur bei SAFE: eine Suche bei ARMED wird abgelehnt, und das
-   Schalten auf ARMED beendet eine laufende). Gebundener Knoten listet die
-   gefundenen Knoten, `rcbench-bal-XXXX`; Tippen bindet einen und behält
-   ihn über einen Neustart. Knotenakku zeigt die Zelle aus den
+   Schalten auf ARMED beendet eine laufende). Gebundener Knoten, oder
+   Knoten suchen, solange es `n GEFUNDEN` zeigt, listet die gefundenen
+   Knoten, `rcbench-bal-XXXX`, und zuletzt `ERNEUT SUCHEN`; Tippen bindet
+   einen und behält ihn über einen Neustart. Knotenakku zeigt die Zelle aus den
    STATUS-Paketen, die der Knoten neben seinen Berichten sendet.
 2. Blattzahl und Rotorart auf BALANCE einstellen. Das Panel schreibt die
    Blattzahl an den Knoten (BLADES).
@@ -219,8 +220,12 @@ Auswuchtknoten AUS oder EIN, ein Knoten mit anderer Adresse gebunden und
 ein Neustart des Knotens. Einen Neustart des Knotens erkennt das Panel bei
 jedem Verbindungsaufbau: die Uhr des Knotens in INFO liegt mehr als 2s
 neben dem Stand, den die Uhr des letzten Berichts und die seither
-vergangene Zeit des Panels ergeben. Ein Neustart des Panels beginnt ohne
-Läufe. Eine abgerissene Verbindung und ein erneutes Verbinden desselben
+vergangene Zeit des Panels ergeben. Ein Update des Knotens auf UPDATES,
+das installiert, startet ihn mit seinem neuen Image neu, und die
+Verbindung, die zurückkommt, erkennt diesen Neustart, seine Läufe leeren
+sich also; ein Update, das ohne Installation endet, startet nichts neu und
+behält sie, da das Halten des Updates Auswuchtknoten EIN lässt. Ein
+Neustart des Panels beginnt ohne Läufe. Eine abgerissene Verbindung und ein erneutes Verbinden desselben
 Knotens behalten die Läufe, und ein Entbinden behält sie, bis ein anderer
 Knoten gebunden wird. Der Reiter BALANCE folgt keinem Motor- oder
 ESC-Profil, und ein Profilwechsel behält die Läufe.

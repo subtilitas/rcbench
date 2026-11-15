@@ -103,6 +103,9 @@ static void cfg_from_settings(pnode_cfg_t *out)
             sizeof(out->addr) - 1u);
     strncpy(out->name, settings_text(SET_TEXT_PNODE_NAME),
             sizeof(out->name) - 1u);
+    /* The binds kept in SETUP so far: values read before the frame keeps
+     * a bind carry the address before it, which the controller leaves. */
+    out->bind_seq = s_kept_seq;
 }
 
 /** @brief SETUP's values to the task; dropped while its queue is full. */
@@ -152,6 +155,11 @@ static void run_command(const pnode_cmd_t *cmd, uint32_t now)
     } else if (cmd->kind == PNODE_CMD_BIND) {
         if (pnode_ctl_bind(&s_ctl, cmd->arg, now)) {
             ESP_LOGI(TAG, "bound %s %s", s_ctl.cfg.addr, s_ctl.cfg.name);
+        } else {
+            ESP_LOGW(TAG, "bind of %u refused: %s, %u listed (%u refused)",
+                     (unsigned)cmd->arg,
+                     s_ctl.b.scanning ? "a scan runs" : "not in the list",
+                     (unsigned)s_ctl.found_n, (unsigned)s_ctl.bind_refused);
         }
     }
 }
@@ -176,6 +184,28 @@ void panel_pnode_blec_poll(uint32_t now)
     pnode_ctl_radio(&s_ctl, radio_now(), now);
 }
 
+void panel_pnode_blec_hold(bool on, uint32_t now)
+{
+    if (s_q == NULL || on == s_ctl.held) {
+        return;
+    }
+    ESP_LOGI(TAG, "%s", on ? "link held off for the node's update"
+                           : "link back to SETUP's values");
+    pnode_ctl_hold(&s_ctl, on, now);
+}
+
+bool panel_pnode_blec_target(bleu_addr_t *addr, bool *linked,
+                          uint8_t version[3], bool *down)
+{
+    return s_q != NULL
+           && pnode_ctl_target(&s_ctl, addr, linked, version, down);
+}
+
+bool panel_pnode_blec_other_board(void)
+{
+    return s_q != NULL && pnode_ctl_other_board(&s_ctl);
+}
+
 void panel_pnode_blec_event(const bleu_evt_t *e, uint32_t now)
 {
     if (s_q != NULL) {
@@ -188,6 +218,9 @@ bool panel_pnode_blec_step(uint32_t now, bleu_act_t *out)
     if (s_q == NULL) {
         return false;
     }
+    /* The language a display node shows its texts in (LANG). */
+    pnode_ctl_lang(&s_ctl, ui_text_language() == UI_LANG_DE ? RCNODE_LANG_DE
+                                                            : RCNODE_LANG_EN);
     const bool acted = pnode_ctl_step(&s_ctl, now, atomic_load(&s_live),
                                       atomic_load(&s_bench_run), out);
     /* Against the count last published, not a count taken before the step:
@@ -325,7 +358,9 @@ void panel_pnode_frame(bool armed)
     wireless_pane_set_pnode(&s_seen);
     link_notices((pnode_link_t)s_seen.link, armed);
     /* A bind that ended is kept in SETUP, with a save asked, so the node
-     * is the bound one after a restart. */
+     * is the bound one after a restart.  ADDR before NAME: each write
+     * posts both, and a post of the old address with the new count would
+     * unbind the node. */
     if (bind_seq != s_kept_seq) {
         s_kept_seq = bind_seq;
         settings_set_text(SET_TEXT_PNODE_ADDR, s_seen.bound_addr);

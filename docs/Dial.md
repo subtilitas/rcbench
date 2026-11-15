@@ -13,9 +13,12 @@ firmware: the power latch, the encoder, the buttons, the touch glass, the
 click per detent, the faces on the display, the BLE peripheral with its
 bound panel, and the USB console; and the panel's side: SETUP > WIRELESS >
 DIAL, the scan and the bind, the link with its loss rule, the turn on
-MOTOR & ESC and SERVO LIVE, the screen button, and the stream of the
-panel's screen to the Dial ([The panel](#the-panel)). Navigation of the
-panel's lists from the Dial, the BLE update and pairing are later slices.
+MOTOR & ESC and SERVO LIVE, the screen button, the navigation of the
+panel's menus and lists with SET of a value, and the stream of the panel's
+screen to the Dial ([The panel](#the-panel)); and the firmware update over
+BLE from SETUP > UPDATES ([Update over Bluetooth
+LE](#update-over-bluetooth-le)). The programmers' screens (KST, Hitec,
+ESC) and pairing are later slices.
 
 M5Stack, Dial and Stamp-S3A are names of their owner and its products, and
 Bluetooth is a trademark of its owner. rcbench is independent: it is not
@@ -66,6 +69,9 @@ panel applies them ([The panel](#the-panel)):
   CENTER on SERVO; a 1s hold DISARMs.
 - No BLE scan while ARMED: a scan's radio time would starve the link that
   carries the knob.
+- Navigation only while SAFE: a SELECT is a tap of one frame, so it
+  completes no 2s hold, and while ARMED the Dial moves no focus away from
+  the output it drives ([Navigation and SET](#navigation-and-set)).
 
 The link rules and their timing are in the protocol module, with a host test
 each ([protocols/dialknob](https://github.com/subtilitas/rcbench/blob/main/protocols/dialknob/README.md)).
@@ -86,7 +92,7 @@ sums in `SHA256SUMS`.
 
    ```bash
    python -m esptool --chip esp32s3 -p /dev/ttyACM0 -b 460800 \
-     write-flash 0x0 rcbench-dial-merged-0.23.12.bin
+     write-flash 0x0 rcbench-dial-merged-0.23.13.bin
    ```
 
    esptool 5 spells the command `write-flash`; esptool 4 `write_flash`.
@@ -109,8 +115,8 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
 application slots of 3,072kB and their otadata. The released image is
-817,280 bytes, 26.0% of a slot; the seven fonts of the faces are 243,194
-bytes of it and the ring tables 25,032. Its static RAM: 212,822 of 341,760
+841,504 bytes, 26.8% of a slot; the seven fonts of the faces are 243,194
+bytes of it and the ring tables 25,032. Its static RAM: 216,534 of 341,760
 bytes of internal DRAM and IRAM, the frame of 115,200 bytes among them. The
 heap that NimBLE takes at run time is not measured; the log at start and
 `status` give the internal heap free and its lowest since the start.
@@ -132,6 +138,76 @@ The 1s HOLD gesture goes to the panel on the way.
 There is no pairing and no encryption in protocol version 1: a device in
 range that connects first, or that spoofs the bound address, is taken.
 
+## Update over Bluetooth LE
+
+The panel carries the Dial's application image and sends it over BLE. The
+protocol is `protocols/bleota`
+([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
+the panel's side is the DIAL FIRMWARE row on the page that UPDATES'
+WIRELESS DEVICES entry opens ([Screens, The Dial](Screens.md#the-dial)).
+
+1. The Dial is bound and linked, and the bench is SAFE. The row shows
+   `Dial: 0.23.12. Included: 0.23.13.` and `HOLD 2s TO UPDATE THE DIAL`.
+2. The 2s hold ends the Dial's knob link. The panel connects to the Dial's
+   update service and sends BEGIN: kind DIAL, size, version and the
+   image's SHA-256.
+3. The Dial checks the kind, the size against its slot of 3,145,728 bytes
+   and the version. It then shows `UPDATE`, `v0.23.12 TO v0.23.13`, `PRESS
+   TO ACCEPT`, the seconds left and `HOLD TO REFUSE` for 30s. Nothing is
+   erased before the answer.
+   - A press of the screen button released within 1s accepts.
+   - A hold of 1s refuses.
+   - No press in 30s refuses.
+4. Accepted: the Dial takes the image's first 296 bytes and checks that
+   they name the ESP32-S3 and the Dial's role (`DEVOTA_ROLE`, after
+   ESP-IDF's application descriptor). Another device's image is refused
+   before anything is written. The Dial then erases and writes the slot it
+   does not run from and shows its progress as a ring with `KEEP THE DIAL
+   ON`.
+
+![The update's question on the Dial](img/dial-update-ask.png)
+![The update's progress on the Dial](img/dial-update-send.png)
+
+5. The panel sends END. The Dial compares the SHA-256 of every byte it
+   wrote with BEGIN's, lets ESP-IDF check the image, sets the boot slot,
+   shows `RESTARTING` and restarts 500ms later.
+6. The new image starts on trial. It marks itself valid at its first
+   connection, which it takes only with its BLE stack running. The panel's
+   knob link connects again from SETUP's values.
+
+A refusal, a lost link, 10s without a write or a SHA-256 that differs ends
+the transfer: the Dial closes the slot and keeps running its image. A new
+transfer starts from byte 0. The exception is the install after END: the
+boot slot may already be set when the link drops or the panel's ABORT
+comes. The Dial then finishes the install and restarts into the new image
+if it passed ESP-IDF's check, without a link to tell the panel. The panel
+reads the Dial's version once it is back, up to 60s, and reports what it
+finds ([Screens, The Dial](Screens.md#the-dial)).
+
+A new image that restarts before its first connection, a power cut
+included, starts the image before it again
+(`CONFIG_BOOTLOADER_APP_ROLLBACK_ENABLE`). The trial and the rollback are
+the bootloader's: a Dial flashed over USB with an image older than this
+update firmware has a bootloader without them. It takes updates over the
+air, but with no trial and no rollback, until it is flashed once over USB
+with a release that carries the update.
+
+The update needs no USB and no tool. The knob does not drive the panel
+from the hold until the link connects again; that gap is no loss error,
+since the bench is SAFE and ARM is refused while the update runs. The Dial
+holds its link while a transfer runs: the drop after 500ms without a panel
+packet waits.
+
+Security: no pairing, no encryption and no signature. Integrity rests on
+the SHA-256 in BEGIN. Any central in range can send BEGIN; the press on the
+Dial is what accepts it ([SECURITY.md](../SECURITY.md)).
+
+The device side runs on the task `ota`, priority 3, every 10ms, with a
+stack of 8,192 bytes from the heap at start, the size of ESP-IDF's OTA
+examples; its depth is not measured. Its static RAM is 3,487 bytes:
+the window's ring of 2,048 bytes, a write buffer of 1,024 bytes and the
+state.
+
 ## The panel
 
 SETUP > WIRELESS > DIAL holds the Dial's rows
@@ -139,9 +215,9 @@ SETUP > WIRELESS > DIAL holds the Dial's rows
 default), SCAN FOR DIAL, BOUND DIAL, and the steps of a detent, 0.5%, 1%, 2%
 or 5% of throttle (1% by default) and 0.5°, 1°, 2° or 5° of horn angle (1° by
 default). The first Dial ON starts Bluetooth LE on the board's ESP32-C6,
-as the first IMU ON does; it runs until the panel restarts. The Dial and the
-IMU are two clients of the panel's Bluetooth LE central, one connect or scan
-at a time between them.
+as the first IMU ON does; it runs until the panel restarts. The Dial, the
+IMU and the nodes are clients of the panel's Bluetooth LE central, one
+connect or scan at a time between them.
 
 ### Scan and bind
 
@@ -151,10 +227,37 @@ ARMED, or an arm waits, the scan is refused and the band reads
 `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs it
 reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. A scan started while SAFE
 stops at the switch to ARMED, and SCAN FOR DIAL reads `STOPPED BY ARM`. A
-tap on a found Dial binds it:
-the panel keeps its address and name in SETUP (`dial_ble`, `dial_name`) and
-asks for a save. One Dial is bound at a time. The panel connects to it by
-its address, without a scan, at Dial ON, at start-up and after each loss.
+tap on BOUND DIAL, or on SCAN FOR DIAL while it reads `FOUND n`, lists the
+Dials the last scan found, up to 6, and `SCAN AGAIN` last, which starts a
+new scan with the same refusals. A tap on a Dial binds it: the panel keeps its address and name in SETUP (`dial_ble`,
+`dial_name`) and asks for a save. One Dial is bound at a time. The panel
+connects to it by its address, without a scan, at Dial ON, at start-up and
+after each loss.
+
+A tap on BOUND DIAL with no list says why on the band:
+`NO DIAL LISTED: TAP SCAN FOR DIAL FIRST` before a scan and after one that
+found none, `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` while a scan runs.
+A pick the controller refuses, because a scan started first or the list
+changed under it, reads `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` or
+`DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the console logs
+`dial: bind of n refused`. A bound Dial logs `dial: bound <address>
+<name>`.
+A tap on SCAN FOR DIAL while a scan runs starts none; the band reads
+`A SCAN IS RUNNING: IT ENDS WITHIN 10s`.
+
+The connect after a bind starts at once while the central is free. An IMU
+or a node that is ON and bound to a device out of range holds the one
+connect for 5,000ms an attempt. The bind's connect takes the hub's next
+turn ([bleuart: the hub](../protocols/bleuart/README.md#the-hub)): an
+attempt of another client under way runs to its end, and the Dial's
+connect goes within 20ms of it, ahead of the others' retries. In the host
+model the Dial's first connect waits up to 5,061ms after the pick, the
+tap of 80ms and a frame included, with one or two such clients, and goes
+in the same poll as the BIND when no attempt is under way; on the panel
+these waits are not measured. A connect after a loss, at Dial ON or at
+start-up waits in the hub's queue, first come first: it goes after at
+most one attempt of each other client, at most 10,046ms beside two such
+clients and 20,092ms beside four in the host model.
 
 ### The link
 
@@ -187,12 +290,14 @@ A detent turned on the Dial goes the path of the panel's own knob, with the
 same rules: relative, through the same turn tracker, nothing moves while
 the bench is SAFE, and turns made while SAFE are not kept for the ARM. On
 MOTOR & ESC a detent moves the throttle by the throttle step. On SERVO LIVE
-it moves the horn by the servo step. Other screens take no turn.
+it moves the horn by the servo step. The screens of
+[Navigation and SET](#navigation-and-set) take the turn as a move of the
+focus; every other screen takes none.
 
 | Gesture | MOTOR & ESC, ARMED | SERVO LIVE, ARMED | SAFE, or another screen |
 | --- | --- | --- | --- |
 | PRESS: the screen button released before 1,000ms | throttle 0% | CENTER | nothing |
-| HOLD: the screen button down for 1,000ms | DISARM | DISARM; an ARM + START sequence under way ends with every output off, also before ARMED | nothing |
+| HOLD: the screen button down for 1,000ms | DISARM | DISARM; an ARM + START sequence under way ends with every output off, also before ARMED | nothing; BACK on a screen the Dial navigates |
 
 On MOTOR & ESC a HOLD also DISARMs while an ARM is on its way, asked and
 not yet confirmed, and ends an ESC STICK run as ABORT does, in ARMING too:
@@ -203,6 +308,69 @@ The EVENT's held button and touch states are never read as a press or a
 touch, so a button held down on the Dial is no hold on the panel: ARM and
 every other 2s hold stay the panel's own.
 
+### Navigation and SET
+
+While the Dial is linked and the bench is SAFE, it navigates these screens:
+
+| Screen | Items, in turn order |
+| --- | --- |
+| the menu | its 8 tiles, row by row |
+| SETUP's tiles | the tiles, then SAVE while a save is offered |
+| a SETUP list | its rows, then RESET and SAVE; on SENSORS and WIRELESS the entries on the left first |
+| SERVO | the 8 tiles, then SETTINGS; the open SETTINGS list as a SETUP list |
+| OUTPUTS, board view | the protocol list's face, CLEAR ALL while offered, then a pin button each |
+| an open choice list | its rows, the focus on the one in force |
+| the leave warning | STAY, DISCARD, SAVE |
+
+| Gesture | Navigation | SET |
+| --- | --- | --- |
+| turn | the focus moves one item a detent and wraps at either end; a row out of sight scrolls into it | the value moves one step a detent, inside its range |
+| PRESS | SELECT: a tap on the focused item | KEEP |
+| HOLD | BACK: what the home tag does, a choice list or the keypad closes | CANCEL: the value as it was |
+
+The panel draws a 2px ring in the accent colour round the focused item. The
+ring keeps the pixels under it per frame buffer and puts them back when it
+moves: a detent repaints the two rings, never the screen. No ring shows and
+the Dial takes no part in the screen while the Dial is OFF or not linked,
+while the bench is ARMED, while the screen guide or the screenshot popup is
+open, or with the text keyboard open.
+
+A SELECT is one tap: a DOWN and an UP at the middle of the item in the same
+frame. The focused row is scrolled into view first, also when a finger
+scrolled the list since; a tap point off the item or out of sight is never
+tapped, and the press then does nothing. A 2s hold on the panel needs the contact down for 2s of frames, so no
+hold completes from the Dial: ARM, voltage ON, WRITE n VALUES and the deletes
+stay the panel's. A SELECT on a hold button, such as CLEAR ALL on OUTPUTS,
+shows the hint the panel shows for any tap. On SERVO's tiles a HOLD first
+ends an ARM + START sequence under way, as on every SERVO screen; BACK
+follows only where it stopped nothing.
+
+SET:
+
+- a number the keypad takes: SELECT taps its value, and the keypad opens.
+  The turn writes the value into the entry, by the setting's step and inside
+  its range; a turn at an end stops there. A setting with an OFF gap (such
+  as an INA3221 shunt, OFF or 5.0 to 1000.0mΩ) takes one detent from OFF to
+  its lowest value and one back, however many detents a frame brings. PRESS is the keypad's OK, with
+  its checks; HOLD is CANCEL.
+- an on/off or a list of options: SELECT starts SET on the row. Each detent
+  taps its `-` or `+` key, at most 16 a frame; an on/off and an option list
+  wrap as their keys do; the VALUE face shows an option list's place from 0
+  to its last option. PRESS keeps the value; HOLD taps the other key as
+  often as a tap changed the value.
+
+Dim after: a turn, PRESS or HOLD of the Dial wakes a dimmed panel and
+starts its minutes again, as a touch does. On a dimmed panel with the bench
+idle the input that woke it does nothing else: it opens, moves and sets
+nothing. On a bench that is not idle it acts at once, so a PRESS for 0% or
+CENTER on an ARMED bench is never swallowed, and a HOLD on MOTOR & ESC or a
+SERVO screen always acts.
+
+The Dial shows the NAV face while it moves the focus, with the screen's name,
+the focused item between the items before and after it, and its place in
+the list. In SET it shows the VALUE face with the setting's name as the
+title. On the menu the face stays HOME and draws the tiles as a list.
+
 ### The stream
 
 The panel writes its screen to the Dial in panel packets, one at a time:
@@ -210,14 +378,16 @@ The panel writes its screen to the Dial in panel packets, one at a time:
 | Packet | When |
 | --- | --- |
 | SCREEN | the face, the title, the language or the flags changed, or 5,000ms after the last |
-| VALUE_META, VALUE | on MOTOR & ESC and SERVO LIVE, when the range, the step or the value changed |
+| VALUE_META, VALUE | on MOTOR & ESC and SERVO LIVE, and in SET, when the range, the step or the value changed |
+| NAV | while the Dial navigates: when the focused item, the item before or after it, or the list changed; one row a packet |
 | SCALE | on MOTOR & ESC and SERVO LIVE: on entry and at each connect, then when a full scale changed, at most every 200ms |
 | LIVE_MOTOR, LIVE_SERVO | on MOTOR & ESC and SERVO LIVE, every 50ms (20Hz) |
 | STATE | ARMED, DEGRADED or a step changed, 200ms without any packet, or 1,000ms after the last STATE |
 
 Each connect sends the whole model again, SCREEN first. The faces are MOTOR,
-SERVO and HOME (the menu); every other screen sends its title and the
-bench's state. LIVE_MOTOR carries the throttle and the readings the bench
+SERVO, HOME (the menu), NAV and VALUE ([Navigation and SET](#navigation-and-set));
+every other screen sends its title and the bench's state. SCREEN carries
+the NAVIGATES flag while the Dial navigates. LIVE_MOTOR carries the throttle and the readings the bench
 reports: voltage, current, power, RPM, the ESC's and the motor's
 temperature. LIVE_SERVO carries the pulse, the commanded angle, the
 measured angle when the angle source reports one, and the servo rail's
@@ -450,8 +620,18 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 
 ## Limits
 
-- The Dial navigates no list on the panel yet: no screen fills NAV. That is
-  the next slice.
+- The Dial navigates the screens of [Navigation and SET](#navigation-and-set)
+  only. On LOGS, FILES, WI-FI, UPDATES, IMU, OUTPUTS' grid view, the
+  programmers (KST, Hitec, ESC) and the bench screens' own lists and tabs it
+  moves no focus; a HOLD there does nothing on a SAFE bench.
+- A list takes focus for 64 items, RESET and SAVE among them; the last rows
+  of a longer list are not reached from the Dial.
+- A pixel the screen paints in exactly the ring's colour (the accent with
+  its lowest bit flipped) under the ring is taken for the ring and put back
+  when the ring moves.
+- The watermark over a simulated bench blends over the ring; where it does,
+  the ring's pixels are left when the ring moves, until the screen repaints
+  there.
 - The panel's ARMED flag for the loss rule and the scan's refusal is the
   control task's, read by the Bluetooth task; it can be one control pass,
   about 5ms, old.
@@ -487,5 +667,11 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
   Dial is ordered, not delivered. The turn-to-output latency over the air is
   not measured; the station measures it with the test build once the Dial
   is on its USB.
+- The update over BLE has not run with a Dial. Its rate over the panel's
+  ESP32-C6 link, the time of an 840kB transfer and a rollback on the Dial
+  are not measured.
+- The Dial checks the image's kind, chip and segments, not its origin: a
+  central in range can offer any Dial image, older ones included, and a
+  press installs it.
 - No sleep, no backlight steps and no auto-off yet: the Dial stays on until
   RST is pressed or the cell is empty. Runtime on a cell is not measured.

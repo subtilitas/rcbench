@@ -10,6 +10,11 @@
  * is present.  Any other start (the RESET key, power on, a flash) starts
  * the node in full.
  *
+ * A board that is always on (NODE_BOARD_ALWAYS_ON, the display node) runs
+ * no sleep policy: it neither sleeps when idle nor switches itself off on
+ * its cell, and it refuses SLEEP from CONTROL and the console.  OFF is
+ * taken.
+ *
  * SPDX-License-Identifier: MIT
  */
 #include "node.h"
@@ -27,6 +32,7 @@
 #include "freertos/task.h"
 #include "nvs_flash.h"
 
+#include "devota.h"
 #include "node_policy.h"
 #include "rcbench_version.h"
 
@@ -202,7 +208,14 @@ static void node_loop(void)
                                 ? 0 : (TickType_t)(next - now);
         rcnode_ctl_t c;
         if (xQueueReceive(s_ctlq, &c, wait) == pdTRUE) {
-            if (c.op == RCNODE_OP_SLEEP) {
+            const bool down = c.op == RCNODE_OP_SLEEP || c.op == RCNODE_OP_OFF;
+            if (down && devota_active()) {
+                /* A firmware update's transfer or install runs. */
+                ESP_LOGW(NODE_TAG, "%s refused: a firmware update runs",
+                         c.op == RCNODE_OP_OFF ? "OFF" : "SLEEP");
+            } else if (c.op == RCNODE_OP_SLEEP && NODE_BOARD_ALWAYS_ON) {
+                ESP_LOGW(NODE_TAG, "SLEEP refused: the display node stays on");
+            } else if (c.op == RCNODE_OP_SLEEP) {
                 go_down(NODE_SLEEP, pol.low_reads);
             } else if (c.op == RCNODE_OP_OFF) {
                 go_down(NODE_OFF, pol.low_reads);
@@ -212,7 +225,12 @@ static void node_loop(void)
             continue;
         }
         const int ask = atomic_exchange(&s_ask, NODE_RUN);
-        if (ask != NODE_RUN) {
+        if (ask != NODE_RUN && devota_active()) {
+            ESP_LOGW(NODE_TAG, "%s refused: a firmware update runs",
+                     ask == NODE_OFF ? "off" : "sleep");
+        } else if (ask == NODE_SLEEP && NODE_BOARD_ALWAYS_ON) {
+            ESP_LOGW(NODE_TAG, "sleep refused: the display node stays on");
+        } else if (ask != NODE_RUN) {
             go_down((node_act_t)ask, pol.low_reads);
         }
         next += pdMS_TO_TICKS(STEP_MS);
@@ -220,18 +238,21 @@ static void node_loop(void)
         const uint16_t bat = node_bat_read();
         publish_status(bat);
         print_line(bat);
+#if !NODE_BOARD_ALWAYS_ON
         const node_inputs_t in = {
             .now_ms = (uint32_t)(node_us() / 1000u),
             .link   = node_ble_linked(),
             .pack   = node_role.busy(),
             .stay   = atomic_load(&s_stay),
             .bat_mv = bat,
+            .update = devota_active(),
         };
         const node_act_t act = node_policy_step(&pol, &in);
         s_low_reads = pol.low_reads;
         if (act != NODE_RUN) {
             go_down(act, pol.low_reads);
         }
+#endif
     }
 }
 
@@ -266,6 +287,9 @@ void app_main(void)
     }
     s_ctlq = xQueueCreate(CTL_QUEUE_LEN, sizeof(rcnode_ctl_t));
     node_role.start();
+#if NODE_BOARD_DISPLAY
+    node_disp_start();
+#endif
     node_ble_start(node_role.role);
     node_console_start();
     node_loop();

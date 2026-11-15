@@ -398,8 +398,9 @@ void test_lines_service(void)
  * each SETUP's Dial step, add to the wired knob's span in the same frame
  * under the same rules.  Its button's PRESS is a throttle of 0% or a CENTER
  * under the turn's rules; its HOLD is a DISARM, which no frame refuses.
- * Neither arms, and nothing the Dial sends is a touch, so no hold on the
- * panel completes from it.
+ * Neither arms.  On a screen the Dial navigates (dial_navigate(), never
+ * while ARMED) the turn moves the focus, PRESS is a synthetic tap of one
+ * call and HOLD is BACK, so no hold on the panel completes from it.
  */
 knob_turn_t knob_take(void)
 {
@@ -426,21 +427,38 @@ static void knob_withdraw(void)
     servo_screen_knob_cancel();
 }
 
-void knob_apply(const knob_turn_t *turn, bool frame_lost)
+/**
+ * @brief Dim after's state (screen_dim.h): render loop only.  Zeroed, it is
+ *        awake with the minutes counted from 0ms, as screen_dim_init() at
+ *        0ms leaves it.  knob_apply() wakes it for the Dial, drain_touch()
+ *        for a touch, backlight_service() steps it.
+ */
+static screen_dim_t s_dim;
+
+void knob_apply(const knob_turn_t *turn, bool frame_lost,
+                const shot_facts_t *facts)
 {
+    /* The Dial's input wakes a dim panel; on an idle bench the input that
+     * woke it is dropped, as a waking touch is. */
+    const dial_input_t dial = dial_dim_filter(&s_dim, &turn->dial,
+                                              ui_router_current(), facts,
+                                              now_ms());
     /* Only a frame with a turn or a press asks the router, so an idle
      * frame leaves a help bubble open; a HOLD acts in any case. */
-    const bool taken = !frame_lost
-                       && ui_router_navigations() == turn->navigations
-                       && ui_router_current() == turn->route
-                       && dial_knob_take(turn->steps, &turn->dial);
+    const bool steady = !frame_lost
+                        && ui_router_navigations() == turn->navigations
+                        && ui_router_current() == turn->route;
+    const bool taken = steady && dial_knob_take(turn->steps, &dial);
+    /* Where the Dial navigates (SAFE, a list on top) its input is the
+     * focus layer's and moves no output. */
+    const bool nav = dial_navigate(turn->route, &dial, steady, taken);
     float span = 0.0f;
     if (taken && turn->steps != 0) {
         span = knob_span_fraction(turn->steps,
                                   settings_get_int(SET_KNOB_SCALE));
     }
-    if (taken) {
-        span += dial_span(turn->route, turn->dial.detents,
+    if (taken && !nav) {
+        span += dial_span(turn->route, dial.detents,
                           dial_step_tenths(settings_get_int(SET_DIAL_THR)),
                           dial_step_tenths(settings_get_int(SET_DIAL_SRV)));
     }
@@ -455,7 +473,9 @@ void knob_apply(const knob_turn_t *turn, bool frame_lost)
     }
     /* After the turn: a PRESS's 0% or CENTER wins over it, a HOLD's DISARM
      * over both. */
-    dial_gestures(ui_router_current(), &turn->dial, taken);
+    if (!nav) {
+        (void)dial_gestures(ui_router_current(), &dial, taken);
+    }
 }
 
 /*
@@ -616,12 +636,6 @@ static void touch_stream_broke(uint32_t stops_now, uint32_t cur,
     flush_screen_commands(stops_now);
 }
 
-/**
- * @brief Dim after's state (screen_dim.h): render loop only.  Zeroed, it is
- *        awake with the minutes counted from 0ms, as screen_dim_init() at
- *        0ms leaves it.
- */
-static screen_dim_t s_dim;
 /** @brief The duty the backlight was last set to, %: display_init()'s. */
 static unsigned s_backlight_pct = SCREEN_FULL_PCT;
 

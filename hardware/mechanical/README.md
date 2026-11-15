@@ -9,6 +9,23 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | --- | --- |
 | `estop_m16.py` | spec of the M16 emergency stop button: dimensions, sources, estimates |
 | `m5dial.py` | spec of the M5Stack Dial: dimensions, sources, estimates |
+| `panel_7b.py` | spec of the panel board, the Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: dimensions, sources, estimates |
+| `ina228_xt90.py` | spec of the INA228 current sensor module with 2 XT90PW connectors and of its case: dimensions, sources, estimates |
+| `ina219_cjmcu219.py` | spec of the INA219 current sensor board, print CJMCU |
+| `lipo_charger_boost_5v.py` | spec of the lithium polymer charger board with 5V boost output |
+| `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
+| `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
+| `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
+| `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's centre |
+| `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
+| `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
+| `_trace_ina228_print.py` | traces the INA228 module's printed legends from the top photo into `_ina228_print.py` |
+| `_panel_7b_data.py` | the place and size of the panel board's parts, written by `_measure_step.py` |
+| `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
+| `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
+| `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards or in a cell |
+| `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
 | `_refit.py` | fits planes, cylinders, cones, tori and a thread's surfaces to a mesh part |
@@ -24,6 +41,7 @@ python3 hardware/mechanical/gen_models.py --check  # CI: exit 1 on drift
 pip install cadquery-ocp==8.0.1.1.0 pillow
 python3 hardware/kicad/tools/step_check.py         # also checks models/
 python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
+python3 hardware/mechanical/check_overlap.py       # 1 minute
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 \
     --step hardware/mechanical/models/*.step
@@ -178,3 +196,252 @@ fits the whole file shows the assembled dial small. The 2 STEP files hold
 M5Stack's geometry and are under the same licence.
 
 ![Mechanical models](renders/all.png)
+
+## Panel board
+
+The Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: a 7-inch touch display of 1024 x
+600 pixels on a board with the ESP32-P4. `panel_7b.step` is a facsimile for
+designing the enclosure, drawn here from measurements. It is not Waveshare's
+file.
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `panel_7b.step` | glass, display, board, 4 standoffs, 2 flat cables and every part on the board; 1497 solids, 7.5MB | the centre of the view area on the glass's front face; +z to the viewer; seen from the front, x to the right and y up with the USB sockets on the left |
+
+| Part | Size, mm | From |
+| --- | --- | --- |
+| Cover glass | 164.28 x 99.18 x 1.90 | D, E |
+| View area | 154.58 x 86.41, 6.64 and 3.06 from the glass's short edges, 8.74 and 4.03 from its long edges | D, E |
+| Display | 164.0 x 97.1 x 3.60, its front 2.10 behind the glass's front | D, E |
+| Board | 164.0 x 97.0 x 1.60, its rear 8.80 behind the glass's front | D, E |
+| Cut-out at the antenna | 14.25 x 5.15, in a long edge | E |
+| Step at the 2 buttons | 1.5 deep, 17.87 long | E |
+| 2 slots for the flat cables | 8.0 x 3.0 and 22.0 x 3.0 | E |
+| 4 standoffs, M2.5 thread | 5.5 across, 6.0 tall, 156 x 89 apart, 4.0 from the board's edges | D, E |
+| 4 wire sockets at the short edge, 4 pins, 2.0 pitch, top entry | 11.9 x 5.8 x 5.5, 14.9 apart | P, Q, D |
+| 2 wire sockets at the long edge, 12 pins, 2.0 pitch, top entry | 27.9 x 5.8 x 5.5, 76.75 apart | P, Q |
+| Speaker socket, 2 pins, 2.0 pitch, top entry | 7.9 x 5.8 x 5.5 | P, Q |
+| Battery socket, 2 pins, 1.25 pitch, side entry, the plug entering from inboard | 7.65 x 5.2 x 3.3 | E, P |
+| Socket of the radio's serial port, 4 pins, 1.0 pitch, top entry | 6.35 x 3.05 x 4.5 | E, P |
+| USB Type-A socket | 12.2 x 10.0 x 5.7, 0.6 above the board | E, P |
+| 2 USB Type-C sockets | 8.94 x 7.35 x 3.16 | E |
+| Shield can over the ESP32-P4 | 21.3 x 17.0 x 1.9 | P, Q |
+| Coin-cell holder | 15.4 across, 3.8 tall | P, Q |
+| microSD card slot | 16.1 x 15.0 x 1.85 | E |
+| 326 chip parts, 33 leaded packages, 89 further solids | as measured | E |
+
+The model is 15.1mm thick, from the glass's front to the top of the USB
+Type-A socket, and 166.04mm long with the switch's lever, which stands
+1.76mm past the glass.
+
+Sources:
+
+- **D**: Waveshare's outline drawing of the board, a PDF (Portable Document
+  Format) file of 2025-11-08 in `ESP32-P4-WIFI6-Touch-LCD-7B-3D.zip` on
+  [the board's wiki page](https://www.waveshare.com/wiki/ESP32-P4-WIFI6-Touch-LCD-7B).
+- **E**: Waveshare's STEP file of the board in the same archive, 1337 solids.
+  `_measure_step.py` reads it with OpenCASCADE and writes
+  `_panel_7b_data.py`.
+- **P**: Waveshare's photo of the board's rear, 1600 x 1200 pixels,
+  `esp32-p4-wifi6-touch-lcd-7b-3.jpg` on the product page. It is fitted to
+  the holes of the 4 standoffs at 7.35 pixels per mm, with 1.1 pixels left at
+  each. A position read from it is good to 0.3mm.
+- **Q**: Waveshare's angled photo of the rear,
+  `esp32-p4-wifi6-touch-lcd-7b-5.jpg`, for heights against the 6.0mm
+  standoffs, each +- 0.5mm: the wire sockets 5.5mm, the coin-cell holder
+  3.8mm, the shield can 1.9mm.
+- **N**: the nominal height of the ESP32-P4's package, 0.9mm. E draws it
+  2.0mm high, which the shield can does not clear.
+- **S**: Waveshare's schematic of the board, a PDF file of 2025-09-25, for
+  the parts' names.
+
+Waveshare states no licence for E and the photos, so they are not in this
+repository; only dimensions measured in them are.
+
+E and D differ from the board in its wire sockets. They draw 4 side-entry
+shrouds 6.5mm high at the short edge, where the board has top-entry sockets,
+and sockets of 1.0mm pitch, 14.35mm long, where the board has the two 12-pin
+sockets of 2.0mm pitch, 27.9mm long. All 7 wire sockets of the board are
+top-entry: the plug goes in from above the board, and P shows the pins end
+on. E has neither the shield can nor
+the coin-cell holder. Where P and E differ, the model follows P. D's 15.3mm
+over all is the height of E's shrouds.
+
+Each part of E is drawn again from its measured box: a chip part with its end
+caps, a leaded package as a body and one lead a foot, a connector as its
+shape of `_parts.py`, every other solid as its box. `check_panel_7b.py`
+compares the result with E, component by component: no side of a chip part
+is off by more than 0.04mm, of a leaded package by more than 0.01mm, of a
+box by more than 0.00mm, and of a named part by more than 1.10mm: a
+connector, where a shape of `_parts.py` has its own nominal size, by 0.90mm,
+and the ESP32-P4, drawn 0.9mm high where E draws 2.0mm, by 1.10mm. It needs E and is not run in
+CI (continuous integration). `check_overlap.py` runs in CI: no two of the
+1497 solids share more than 1e-6mm3.
+
+Limits:
+
+- No dimension is verified with a caliper on a board.
+- Estimated, in no source: the wall thickness of the connectors, the plungers of the
+  2 buttons, the flat cables' paths through the board's slots, the display as
+  a steel back 0.3mm thick with a black panel in it.
+- The row of pins of the two 12-pin sockets lies 0.5mm off the housing's
+  centre in P; the model draws it so.
+- E has two spacers 20mm x 96mm between display and board. The one under the
+  touch panel's cable is drawn cut back to clear the cable.
+- Not modelled: the print on the board, tracks, vias, solder, pads, the
+  battery and the speaker.
+
+```sh
+pip install cadquery-ocp==8.0.1.1.0
+python3 hardware/mechanical/_measure_step.py FILE.stp   # rewrite _panel_7b_data.py
+python3 hardware/mechanical/check_panel_7b.py FILE.stp  # compare the model with E
+```
+
+## INA228 module with XT90 connectors
+
+The current sensor module of the power path: a board of 80.1mm x 48.6mm,
+print "BIFRC V1.1", with an INA228 current and voltage monitor, a shunt in
+the minus line and one XT90PW connector at each end. XT90PW is the
+right-angle board version of the XT90: the housing lies on the board and
+two round tails bend down through it. The KiCad module
+`INA228_BIFRC_XT90_80x48mm` ([KiCad library](../kicad/README.md)) is the
+same board as boxes; these two models draw it part by part, in the same
+frame.
+
+![INA228 module](renders/ina228_xt90.png)
+
+| File | Content | Origin |
+| --- | --- | --- |
+| `ina228_xt90.step` | board with 59 holes, XT90PW-M, XT90PW-F, solder on the bars of both sides and round the tails, shunt, INA228, 13 chip parts, 4-pin header, bare pads, print; 225 solids, 1.7MB | header pin 1 (L) on the board's underside; x along the header to pin 5, y towards the plus bar, +z up |
+| `ina228_xt90_case.step` | printed shell with 4 standoffs, 4 M3 screws; 17 solids | the same frame: both files loaded together give the module in its case |
+
+| Part | Size, mm | From |
+| --- | --- | --- |
+| Board | 80.1 x 48.6 x 1.6, corners 2.4; 4 screw holes of 3.05 in tinned rings of 5.1, 70.15 x 38.8 apart | P; thickness O |
+| Slots through the board | 42 of 2.2 x 0.9: rows of 12, 6 and 3 slanted 45 degrees at 2.95 pitch, 5 along the board, 8 under each connector | P |
+| XT90PW-M, pin half | housing 20.8 x 9.9, 20.7 long, 25.7 with the rear plate; 2.25 past the board's edge | W, P |
+| XT90PW-F, socket half | collar 20.8 x 9.9 and 7.8 long, nose 19.2 x 8.3 and 11.2 long, 24.0 with the rear plate; 1.05 past the board's edge | W, P |
+| Contacts | 2 at 10.9 pitch; pins 4.5 | W |
+| Tails | round, 3.5, bent down on a radius of 3.8, 3.8 behind the housing, through the board | W scaled, P |
+| Pegs | 2 per half, 18.9 apart, 9.4 (pin half) and 8.9 (socket half) from the tails, through the board | W, P |
+| Solder on the bars, top side | plus 33.7 x 5.1, minus 8.5 and 9.9 x 5.5, 0.8 high | P; height estimated |
+| Solder on the underside | plus 36.1 x 4.9; minus strips 9.2 and 10.05 long with blocks 6.15 x 8.0 and 5.3 x 8.0 under the shunt's ends; 6.6 across round each tail | P; heights estimated |
+| Shunt, print 0m50 1% | 15.3 x 7.9; ends 1.2 high; the middle 5.3 long, its top at 1.8, 0.2 off the board; upper edges across the shunt rounded 0.5 | P, O |
+| INA228 | VSSOP-10: 3.0 x 3.0 x 1.1, 4.9 over the leads | package |
+| Header | 4 pins of 2.54 pitch, 6.1 over the 2.5 plastic; hole 5 is empty | P, standard part |
+| Print | BIFRC V1.1, GND, 5V and L A V G 5 traced from the photo; 4 round marks of 5.9, rings round the header's labels at 2.6 pitch, frames round chip parts and header, lines round the shunt and the underside's diode; 0.02 thick | P |
+| Overall, module | 83.95 x 48.6 x 12.6: 1.1 of tail under the board, 9.9 of connector over it | |
+| Case | 85.1 x 53.6 x 10.1: wall 2.25, floor 1.6, standoffs 9.2 across and 7.9 high from the case's underside, rim 0.6 over the board with an opening of 21.4 for each connector | P; see the limits |
+
+Sources: P, three owner photos on 5mm squared paper, of the top side, the
+underside and the case, which are not in the repository; W, a dealer's
+dimension drawing of XT90PW Male/Female; O, the owner's measurements of the
+board's thickness and the shunt's heights.
+
+`_photo_grid.py` reads the photos. It finds the crossings of the paper's
+grid lines, 125 to 159 per photo, and fits the projection from pixels to mm;
+the crossings lie within 0.10 to 0.12mm of the grid. The camera stands
+196mm over the paper, which follows from the 64mm focal length (35mm
+equivalent) of two of the photos. A thing h over the paper looks larger by
+196 / (196 - h): the board's underside, 11.65mm up on its connectors,
+measures 85.15 x 51.70 on the paper and is 80.07 x 48.62. The top and the
+underside photo are laid onto each other by the 4 screw holes. The
+header's pitch reads 2.52mm on the underside and 2.56mm on the top side.
+
+Limits:
+
+- Positions on the board are within about 0.2mm, the board's size and the
+  hole spacing within about 0.3mm. No dimension is verified with a caliper
+  but the board's thickness and the shunt's heights.
+- The two housings are placed from their upper faces in the top photo,
+  corrected for their height, and from the pegs' solder joints on the
+  underside; the two agree within 0.05mm.
+- Not measured: the solder's heights, how
+  far tails, pegs and header pins stand out of the underside, the tails'
+  diameter and bend radius, the shroud's depth (12.5mm drawn), the pegs'
+  section. Which end of the XT90's mating outline has the two cut corners
+  on this board is not seen; the model draws them at the minus contact.
+- The shunt's 1.8mm is drawn as the height of the middle's top over the
+  board.
+- Case: the standoffs' height follows from the spacing of the case's 4
+  holes on the paper, 73.3 x 40.3 against 70.15 x 38.8, and is within
+  about 0.6mm. The floor's thickness, the rim's height over the board and
+  the split of the 2.5mm between gap and wall are estimated. The chamfer
+  between the pocket's wall and its floor is not drawn. The screws are
+  plain cylinders, 2.2mm thick where they cut their thread.
+- Not modelled: the Chinese warning line between the bars, the print's
+  frames round bare pads and bars, part values, tracks, vias, pads under
+  parts, the housings' latch windows and logo, the slits of the contact
+  pins.
+
+```sh
+pip install opencv-python-headless
+python3 hardware/mechanical/_photo_grid.py PHOTOS DIR      # the photos, flattened
+python3 hardware/mechanical/_trace_ina228_print.py PHOTOS  # rewrite _ina228_print.py
+```
+
+## Module boards and cells
+
+Four module boards and two lithium polymer cells, drawn part by part
+with the print of both sides. Each board's model is also the 3D model of
+its footprint in the [KiCad library](../kicad/README.md), in the same
+frame; the INA219 board stands on a 6-pin header there and is bare here.
+
+| | | |
+| --- | --- | --- |
+| ![INA219 board](renders/ina219_cjmcu219.png) | ![charger board](renders/lipo_charger_boost_5v.png) | ![boost board](renders/boost_5v_en.png) |
+| `ina219_cjmcu219.step` | `lipo_charger_boost_5v.step` | `boost_5v_en.step` |
+| ![ESP32-C6-Zero](renders/esp32_c6_zero.png) | ![380mAh cell](renders/lipo_702030_380mah.png) | ![1000mAh cell](renders/lipo_102540_1000mah.png) |
+| `esp32_c6_zero.step` | `lipo_702030_380mah.step` | `lipo_102540_1000mah.step` |
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `ina219_cjmcu219.step` | INA219 board, print CJMCU: 12 plated holes, shunt R100 (2512), INA219 (SOT-23-8), 5 chip parts (0805), 4 bridge pads, print of both sides; 225 solids, 3.5MB | 24.2 x 21.9 x 1.6, parts to 1.1 over the board | header hole 1 (Vcc) on the underside; x along the header, y towards the terminal holes |
+| `lipo_charger_boost_5v.step` | charger board: 6 plated holes, chip (SOIC-8), inductor, 6 capacitors, 4 resistors, 4 LEDs, side push button, underside's white field with black names; 121 solids, 1.3MB | 15.2 x 24.0 x 1.6, inductor 3.0 over the board, button plunger 1.5 past the edge | hole 1 (OUT 5V) on the underside; x along the row, y from the LEDs to the row |
+| `boost_5v_en.step` | boost board: 4 plated corner holes, enable pad, chip (SOIC-8), inductor, 2 diodes (SMA), 3 capacitors, 3 resistors, print, underside's white field; 69 solids, 0.6MB | 13.7 x 21.7 x 1.6, inductor 3.0 over the board | IN+ hole on the underside; x towards IN-, y towards the outputs |
+| `esp32_c6_zero.step` | Waveshare ESP32-C6-Zero: 18 edge pads with holes and half holes, 7 underside pads, USB Type-C socket, chip (QFN, 40 leads), antenna, 2 buttons, LED, regulator, diode, crystal, 21 chip parts, print; 263 solids, 2.6MB | 18.0 x 23.5 x 1.6, socket 3.25 over the board and 1.21 past the edge | 5V pad's hole on the underside; x towards the TX pad, y towards the socket |
+| `lipo_702030_380mah.step` | cell, print 702030 3.7V 380mAh 1.406Wh: pouch with folded side seams, head under amber tape, print, 2 wires, plug; 40 solids | 20.0 x 31.0 x 7.0; wires 60 | middle of the width at the end away from the head, on the lower face; y towards the head, wires to -x |
+| `lipo_102540_1000mah.step` | cell, print 102540 3.7V 1000mAh: pouch, head under black tape, print, 2 wires, plug; 28 solids | 25.0 x 40.5 x 10.0; wires 60 | as the other cell |
+
+Sources: three owner photos on 5mm squared paper, of the top sides, the
+undersides and the cells on edge, which are not in the repository; for the
+ESP32-C6-Zero also Waveshare's dimension drawing and STEP file, which are
+not in the repository either. `_photo_grid.py`'s grid fit lies within
+0.20mm of the paper's grid in these photos. The camera stands 171mm over
+the paper. The 2.54mm rows of the INA219 board and the charger board read
+1.005 times their size, and sizes read off a board's top are divided by
+that. A part's top lies further from the point under the camera than its
+foot, by 0.155mm to 0.37mm per mm of height on these boards; tall parts
+are set back by that.
+
+The print is not traced. `_font.py` holds the outlines of OpenCV's
+single-stroke font, strokes 0.11 of the letter height wide; each printed
+line is set to the height and width it has in the photo. Print is 0.02mm
+thick, copper 0.035mm.
+
+Limits:
+
+- Positions on the boards are within about 0.2mm, the ESP32-C6-Zero's
+  chip parts within about 0.3mm, the cells' lengths within about 1mm. No
+  dimension is verified with a caliper.
+- Not measured: every board's thickness (drawn 1.6mm), the inductors'
+  height (3.0mm), the charger's button height (1.8mm), the cells' head
+  thickness, the wires' length (about 60mm, drawn straight) and the plug's
+  height. The cells' thickness and width are the type numbers' 7.0 x 20
+  and 10 x 25; the photos give 6.7 x 20 and 9.7 x 24.8.
+- The cells' plug is 3.6 x 4.4mm in the photo. Its type and pitch are not
+  identified; the model draws 1.25mm between the wires.
+- Part sizes and heights are the packages' nominal ones, by the look of
+  each part in the photo. The chips of the charger and the boost board are
+  not identified.
+- The boost board's round pad is drawn as the enable input because it is
+  the only pad besides the 4 corner pads; the board does not name it.
+- Not modelled: tracks, vias, pads under parts, the frames printed round
+  parts (bar those of the INA219 board), solder, the prints 1R0 and 2R2 on
+  the inductors, 4 labels left of the charger's LEDs, the maker's name and
+  the pad names on the ESP32-C6-Zero's underside, and about 6 of its chip
+  parts beside the USB socket, which the photo does not resolve.
+
+```sh
+python3 hardware/mechanical/_gen_font.py     # rewrite _font.py; needs OpenCV
+```

@@ -9,6 +9,7 @@
  * task serves the GATT (generic attribute profile) server.  `ble_tx` sends
  * the STREAM packets the role queues.  The power role adds `pwr`, its
  * sampler; the balance role adds `bal`, which reads the ADC stream.  The console's REPL (read-eval-print loop) runs in its own task.
+ * A board with a display (node_board.h) adds `disp` (node_disp.c).
  *
  * SPDX-License-Identifier: MIT
  */
@@ -18,7 +19,12 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "node_board.h"
 #include "rcnode.h"
+
+#if NODE_BOARD_DISPLAY
+#include "driver/i2c_types.h"
+#endif
 
 #ifdef __cplusplus
 extern "C" {
@@ -179,6 +185,47 @@ void node_console_start(void);
 
 /** @brief The node's µs clock, 64 bits.  @return µs since the start. */
 uint64_t node_us(void);
+
+#if NODE_BOARD_DISPLAY
+/* ---------------------------------------------------------- the display */
+
+/** @brief The power role's I2C bus, which the touch controller shares.
+ *  @return The bus; NULL when it did not start. */
+i2c_master_bus_handle_t node_pwr_bus(void);
+
+/** @brief Start `disp`: the display, the touch and the frames
+ *         (node_disp.c). */
+void node_disp_start(void);
+
+/**
+ * @brief Take a closed window for the screen's values; from `pwr`.
+ * @param w The window.
+ */
+void node_disp_window(const rcnode_pwr_win_t *w);
+
+/**
+ * @brief LANG from the panel: the screen's language while linked.
+ * @param lang RCNODE_LANG_*; another value is English.
+ */
+void node_disp_lang(uint8_t lang);
+
+/** @brief Set up the ILI9341V and its SPI bus, the backlight off.
+ *  @return true when the display took its set-up. */
+bool node_lcd_init(void);
+
+/** @brief Switch the backlight.  @param on On, else off. */
+void node_lcd_backlight(bool on);
+
+/**
+ * @brief Send a rectangle of the frame to the display.
+ * @param fb The frame, 320 x 240 RGB565.
+ * @param x  The left edge.
+ * @param y  The top edge.
+ * @param w  The width.
+ * @param h  The height.
+ */
+void node_lcd_flush_rect(const uint16_t *fb, int x, int y, int w, int h);
+#endif
 
 #ifdef __cplusplus
 }

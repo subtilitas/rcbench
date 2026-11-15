@@ -1,17 +1,26 @@
 # The sensor nodes' firmware: one ESP-IDF (Espressif Internet-of-Things
 # Development Framework) project for the ESP32-C6 on a Waveshare
-# ESP32-C6-Zero.  The role (power or balance) is chosen at build time,
-# main/Kconfig.projbuild:
+# ESP32-C6-Zero, and the power node on the ES3C28P 2.8" ESP32-S3 display
+# board.  The role (power or balance) and the board are chosen at build
+# time, main/Kconfig.projbuild:
 #   idf.py build                                   the power node
 #   idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.balance" build
 #                                                  the balance node
+#   idf.py -D IDF_TARGET=esp32s3 \
+#     -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p" build
+#                                                  the display node
 cmake_minimum_required(VERSION 3.16)
 
-# The packets (protocols/rcnode), the balance measurement (shared/vibe) and
+# The packets (protocols/rcnode), the balance measurement (shared/vibe),
 # the INA228 driver of shared/sense (components/ina228 compiles its two
-# files).
+# files), and the firmware update over Bluetooth LE (protocols/bleota and
+# its device end, firmware/devota), and the rasteriser the display node
+# draws with (shared/gfx).
 set(EXTRA_COMPONENT_DIRS "${CMAKE_CURRENT_LIST_DIR}/../../protocols/rcnode"
-                         "${CMAKE_CURRENT_LIST_DIR}/../../shared/vibe")
+                         "${CMAKE_CURRENT_LIST_DIR}/../../shared/gfx"
+                         "${CMAKE_CURRENT_LIST_DIR}/../../shared/vibe"
+                         "${CMAKE_CURRENT_LIST_DIR}/../../protocols/bleota"
+                         "${CMAKE_CURRENT_LIST_DIR}/../devota")
 
 # The application's version, as the panel's: MAJOR.MINOR.PATCH from the one
 # header every build reads.

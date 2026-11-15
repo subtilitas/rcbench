@@ -615,6 +615,12 @@ replaces a visible hint.
 | HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
 | HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO UPDATE THE DIAL on UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
+| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE POWER NODE on UPDATES | `Hold 2s to update the power node. Its readings stop until it connects again.` |
+| HOLD 2s TO REINSTALL THE POWER NODE on UPDATES | `Hold 2s to reinstall the power node firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE BALANCE NODE on UPDATES | `Hold 2s to update the balance node. Its reports stop until it connects again.` |
+| HOLD 2s TO REINSTALL THE BALANCE NODE on UPDATES | `Hold 2s to reinstall the balance node firmware this panel carries.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -5329,7 +5335,8 @@ panel mounted upside down.
 - The PPA's SRM (scale, rotate, mirror) engine runs with Espressif's
   workaround for hardware bug DIG-734 on for every copy, as Espressif's
   esp_lvgl_adapter 0.6.4 patches it (`firmware/panel/ppa_dig734.cmake`).
-- Locked while ARMED: the row has no keys, and RESET CATEGORY and DISCARD
+- Locked while ARMED: the row has no keys, its help line and the band at a
+  press read `Set on a SAFE bench only`, and RESET CATEGORY and DISCARD
   leave the value unchanged. A turn moves every control away from the finger, STOP
   included. This follows the same rule as Idle pulse and Full pulse on MOTOR & ESC,
   OPTIONS: changes require a SAFE bench.
@@ -5462,6 +5469,10 @@ bench is idle.
   owner: its next MOVE or UP wakes the screen and reaches the screen it
   pressed.
 - A turn of the rotary knob does not wake the screen.
+- A turn, PRESS or HOLD of the M5Stack Dial wakes it and starts the minutes
+  again. On an idle bench the input that woke it does nothing else; on a
+  bench that is not idle, and for a HOLD on MOTOR & ESC or a SERVO screen,
+  it acts as well ([Navigation and SET](Dial.md#navigation-and-set)).
 - The rule is `shared/ui/screen_dim.c`, held by `test_screen_dim`; the
   render loop sets the duty with `board_backlight_percent()` when it
   changes.
@@ -5549,6 +5560,18 @@ across a third of its travel from -travel to +travel.
   status: the keys stay hidden until Rotary knob is OFF.
 - The knob's direction, noise and behaviour without a magnet have not been
   measured on hardware.
+
+### PANEL: the M5Stack Dial's focus
+
+A linked M5Stack Dial navigates the menu, SETUP, SERVO's tiles and its
+SETTINGS list, OUTPUTS' board view, the choice lists and the leave warning
+while the bench is SAFE ([Navigation and SET](Dial.md#navigation-and-set)).
+A 2px ring in the accent colour marks the focused item; a detent moves it
+one item and wraps at either end. PRESS taps the item, HOLD does what the
+home tag does. A number the keypad takes is set by turning on its keypad:
+PRESS is OK, HOLD is CANCEL. No ring shows while the Dial is OFF or not
+linked, while ARMED, with the guide, the screenshot popup or a keyboard
+open, and on every other screen.
 
 ### SENSORS: the split pane
 
@@ -6088,8 +6111,8 @@ The DIAL entry's rows ([The M5Stack Dial](Dial.md#the-panel)):
 | Row | Values | Default | What it does |
 | --- | --- | --- | --- |
 | Dial | ON, OFF | OFF | the link to the bound Dial; OFF ends it without an error |
-| Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN` |
-| Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap lists the Dials the last scan found, `DIAL-3A10  -52dBm`, the bound one marked; a tap on one binds it and asks for a save |
+| Scan for Dial | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound Dial's list; otherwise a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; while a scan runs it starts none and the band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO DIAL SCAN` |
+| Bound Dial | the bound Dial's name, else its address, else `NONE` | `NONE` | a tap lists the Dials the last scan found, `DIAL-3A10  -52dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a Dial binds it and asks for a save, `SCAN AGAIN` scans as Scan for Dial does. With no list the band reads `NO DIAL LISTED: TAP SCAN FOR DIAL FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` |
 | Dial step, throttle | 0.5%, 1%, 2%, 5% | 1% | the throttle a detent moves on MOTOR & ESC |
 | Dial step, servo | 0.5°, 1°, 2°, 5° | 1° | the horn angle a detent moves on SERVO |
 
@@ -6111,8 +6134,8 @@ ESC's voltage, current, power and totals.
 | --- | --- | --- | --- |
 | Power node | ON, OFF | OFF | the link to the bound node; OFF ends it without an error |
 | INA228 source | WIRED, NODE | WIRED | WIRED: the IOmcu's INA228 on SENSORS; NODE: the power node's readings. Shown while the node is off too, so the source can go back to WIRED without switching the node on |
-| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
-| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, the bound one marked; a tap on one binds it and asks for a save. A balance node is not listed |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the power nodes the last scan found, `rcbench-pwr-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. A balance node is not listed. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`; a pick refused because the list changed reads `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` |
 | Node battery | `3.92V`, `LOW 3.41V`, `NO CELL`, `READ FAILED`, `NOT LINKED` | | the cell voltage of the node's last STATUS, sent every 1000ms; `LOW` under 3.5V, `NO CELL` on USB alone |
 
 RESET POWER NODE sets Power node back to OFF and INA228 source to WIRED;
@@ -6136,7 +6159,8 @@ With INA228 source on NODE:
   the band reads
   `POWER NODE READINGS LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`.
   A SERVO or OUTPUTS run does not end on the node.
-- INA228 source does not change while ARMED: its row has no keys.
+- INA228 source does not change while ARMED: its row has no keys, and a
+  press on it reads `Set on a SAFE bench only` on the band.
 - The node's readings feed no protection: the IOmcu's current limit and the
   panel's trips read their own sensors.
 
@@ -6152,8 +6176,8 @@ The BALANCE NODE entry's rows ([Balancing](Balance.md#measuring-with-the-balance
 | Row | Values | Default | What it does |
 | --- | --- | --- | --- |
 | Balance node | ON, OFF | OFF | the link to the bound node; OFF ends it, and its loss is no error: the node measures and drives nothing |
-| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN` |
-| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, the bound one marked; a tap on one binds it and asks for a save |
+| Scan for node | `SCAN`, `SCANNING`, `FOUND n`, `NONE FOUND`, `STOPPED BY ARM` | | at `FOUND n` a tap opens Bound node's list; otherwise a tap scans 10s for nodes that advertise the balance role, and a switch to ARMED stops it; while ARMED it scans nothing and the band reads `NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs, `BLUETOOTH IS NOT READY: NO NODE SCAN`; while a scan runs, `A SCAN IS RUNNING: IT ENDS WITHIN 10s` |
+| Bound node | the bound node's name, else its address, else `NONE` | `NONE` | a tap lists the nodes the last scan found, `rcbench-bal-3456  -58dBm`, up to 6, the bound one marked, and `SCAN AGAIN` last; a tap on a node binds it and asks for a save, `SCAN AGAIN` scans. With no list the band reads `NO NODE LISTED: TAP SCAN FOR NODE FIRST`, while a scan runs `A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS`; a pick refused because the list changed reads `NODE NOT BOUND: THE LIST CHANGED, PICK IT AGAIN` |
 | Node battery | `3.91V`, `3.40V LOW` (under 3.50V), `NO READING`, `--` | | the node's cell from the STATUS it sends on STREAM beside its reports; `--` before the first on a link |
 | Trial mass | 0.01g to 20.00g in 0.01g steps | 0.50g | the mass taped on for the trial runs of MOTOR & ESC > BALANCE |
 
@@ -6559,7 +6583,10 @@ right is 532px wide, from body y 16 to 336; its text runs in lines of 41
 characters of the 12 x 24px face, 28px apart. When a result runs down to
 the card's last three lines, those lines are left out. Under CHECK the
 IOmcu section's lines are in the 10 x 20px face, and its hold is a button
-of the same size, from body y 380. Under the card the C6 RADIO row: one
+of the same size, from body y 380. Between them the WIRELESS DEVICES
+entry: its heading at body y 236, its line at y 260 and its button,
+460 x 56px, at y 316 ([The wireless devices](#the-wireless-devices)).
+Under the card the C6 RADIO row: one
 line at body y 348 and its hold, 532 x 56px, beside the IOmcu's
 ([The C6 radio](#the-c6-radio)). The footer
 ([The footer and the settings list](#the-footer-and-the-settings-list))
@@ -6574,6 +6601,7 @@ slot is empty until a check finds a newer release.
 | `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
 | `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
 | `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
+| `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
 
 ![UPDATES' OPTIONS list](img/updates-settings.png)
 
@@ -6828,6 +6856,7 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits: panel firmware installation is running.` | The panel's download or install runs. |
 | `The C6 update waits for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on. |
 | `The C6 update waits: Bluetooth is starting.` | Bluetooth LE's start task `blestart` runs. |
+| `The C6 update waits for the wireless device update to finish.` | A Dial's update runs or was asked for ([The Dial](#the-dial)). |
 | `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
 
 A C6 that reports no version, as the shipped one does, is offered the
@@ -6847,6 +6876,159 @@ The alert band says how an update ended:
 While the update runs, ARM is refused with `Cannot switch to ARMED: the C6
 radio update is running.`, Wi-Fi does not start, and the panel's install,
 the GitHub check and the IOmcu's update wait.
+
+### The wireless devices
+
+The WIRELESS DEVICES entry on UPDATES counts the devices:
+`Connected: 1 of 3. Another version: 0.` names the devices that reported
+a version and those whose row offers another version than the carried
+one. A tap on `WIRELESS DEVICE FIRMWARE` opens the page; while an update
+runs the button reads that row's label.
+
+![The WIRELESS DEVICES entry while the Dial asks for its press](img/updates-dial.png)
+
+The page covers UPDATES' body. It holds one row per device, at body
+y 24, 128 and 232: DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
+FIRMWARE. Each row's heading and line take 496px from x 16, its hold
+480 x 56px from x 528. A note under the rows says how a device accepts an
+update. `BACK` in the footer's right slot and the home tag close the page;
+leaving UPDATES closes it as well. One update runs at a time: while one
+runs, the other rows' holds are grey.
+
+![The wireless devices' page](img/updates-devices.png)
+
+| Control | Action |
+| --- | --- |
+| `HOLD 2s TO UPDATE THE DIAL` | Sends the M5Stack Dial's image this panel carries to the linked Dial over Bluetooth LE ([The Dial](#the-dial)). |
+| `HOLD 2s TO REINSTALL THE DIAL FIRMWARE` | The same, while the Dial reports the carried version. |
+| `HOLD 2s TO UPDATE THE POWER NODE` | Sends the power node's image this panel carries to the bound power node ([The sensor nodes](#the-sensor-nodes)). |
+| `HOLD 2s TO REINSTALL THE POWER NODE` | The same, while the node reports the carried version. |
+| `HOLD 2s TO UPDATE THE BALANCE NODE` | Sends the balance node's image this panel carries to the bound balance node. |
+| `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the carried version. |
+| `CANCEL UPDATE` | In the footer's middle slot while an update runs; a plain tap. Before END it ends the update: the device drops what it took and keeps its firmware, and the band reads `<device> update stopped: canceled on UPDATES. Previous firmware is running.` From END on the device installs whatever comes: the key is grey, a tap puts `The device installs the update and cannot stop now. Its result follows.` in the band, and the result follows as without the tap. |
+| `BACK` | Closes the page. |
+
+### The Dial
+
+The DIAL FIRMWARE row shows the M5Stack Dial's firmware:
+`Dial: 0.21.0. Included: 0.22.0.`, the version the linked Dial's INFO
+named, or `not connected`, and the version of the Dial image this panel
+carries, or `none`. Beside it `HOLD 2s TO UPDATE THE DIAL`, or `HOLD 2s TO
+REINSTALL THE DIAL FIRMWARE` while the Dial reports the carried version.
+The Dial and its update are in [The M5Stack Dial: Update over Bluetooth
+LE](Dial.md#update-over-bluetooth-le).
+
+While the update runs the button reads, one after the other:
+
+| Button | Step |
+| --- | --- |
+| `DIAL UPDATE: CONNECTING` | the Dial's knob link ends, and the update connects to the bound Dial |
+| `PRESS THE DIAL TO ACCEPT: 27s` | the Dial took BEGIN and asks for a press of its screen button; the seconds are the Dial's |
+| `DIAL UPDATE 37%` | the share of the image the Dial took |
+
+The band says `Press the Dial's screen button within 30s to accept the
+update.` when the Dial asks. The hold is live only when none of the
+reasons below holds. Otherwise it is grey, and a tap on it shows the first
+reason on the alert band:
+
+| Band | Condition |
+| --- | --- |
+| `The device update is running.` | An update runs or was asked for. |
+| `This panel includes no firmware for this device.` | The panel was built without the Dial's image. |
+| `The included firmware for this device is being checked.` | The carried image's check has not run since the start. |
+| `The included firmware for this device failed its check.` | The carried image is no ESP32-S3 application of the project `rcbench-dial` with the Dial's role, is larger than the Dial's slot of 3,145,728 bytes, or its appended SHA-256 differs. |
+| `The device update requires SAFE.` | ARMED, or an arm waiting. |
+| `The device update waits for the other update to finish.` | The C6's or the IOmcu's update, or the panel's download or install, runs. |
+| `Connect the device on WIRELESS first.` | No Dial is linked, or its INFO has not come. |
+
+The alert band says how an update ended:
+
+| Alert | Meaning |
+| --- | --- |
+| `Dial updated to 0.22.0. It connects again by itself.` | The Dial took, checked and installed the image and restarts; its knob link connects again from SETUP's values. |
+| `Dial update stopped: <reason>. Previous firmware is running.` | The update ended without an install. |
+| `Dial did not report after its update. Check its version on UPDATES.` | The link dropped after END, or DONE did not come in 15s, and no Dial reported its version within 60s. |
+
+When the link drops after END, the Dial may be installing: the panel waits
+up to 60s for the Dial's version, read from the Dial alone. A start of
+another device's update within those 60s reports the wait first: the
+Dial's version if it reported, else `Dial did not report after its
+update.` The image's version is reported as done;
+another version as stopped, `connection lost`.
+
+| Reason | Cause |
+| --- | --- |
+| `no connection` | no connection to the Dial within 30s |
+| `connection lost` | the link ended during the transfer |
+| `no answer` | the Dial did not answer a step within its limit or 3 polls in a row, or the Dial saw no write for 10s |
+| `a write was refused` | the host stack refused a write |
+| `no progress for 30s` | the Dial answered, but its next offset did not move for 30s |
+| `canceled on UPDATES` | `CANCEL UPDATE` before END |
+| `the bench is not SAFE` | ARMED, or an arm waiting, when the update was to start |
+| `image for another device` | the Dial refused the kind |
+| `image too large` | the Dial refused the size |
+| `it runs this version` | the Dial runs the version, and the hold was no reinstall |
+| `not accepted within 30s` | no press on the Dial |
+| `refused on the device` | the 1s hold on the Dial |
+| `image arrived damaged` | the SHA-256 of what the Dial wrote differs |
+| `the device's flash failed` | the Dial's slot did not open, take a write or become the boot slot |
+| `the device refused the image` | ESP-IDF's image check on the Dial refused it |
+| `error 6` | another of the Dial's codes, such as 6 for a write out of order ([protocols/bleota](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)) |
+
+While the update runs, ARM is refused with `Cannot switch to ARMED: a
+wireless device update is running.`, and the C6's update waits. The
+panel's own download and install wait as well, with `Waiting for the
+wireless device update to finish.`: their restart would cut the transfer,
+and the device drops a partial image. The knob
+does not drive the panel from the hold until its link connects again; that
+gap is no loss error. The transfer time is not measured.
+
+### The sensor nodes
+
+The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show a node's
+firmware: `Node: 0.23.12. Included: 0.23.13.`, the version the node's
+STATUS packet named on the current link, or `not connected`, and the
+version of the node image this panel carries, or `none`. The two roles'
+images differ: the power node's row sends the power image, the balance
+node's the balance image, and a node refuses the other role's image. The
+nodes and their update are in [The sensor nodes: Update over Bluetooth
+LE](Nodes.md#update-over-bluetooth-le).
+
+![The page while the power node asks for its BOOT key](img/updates-node.png)
+
+While a node's update runs its hold reads, one after the other:
+
+| Button | Step |
+| --- | --- |
+| `POWER NODE UPDATE: CONNECTING` | the node's own link ends, and the update connects to the bound node |
+| `HOLD BOOT 1s ON THE NODE: 27s` | the node took BEGIN and waits for its BOOT key (GPIO9) held 1s; the seconds are the node's |
+| `POWER NODE UPDATE 37%` | the share of the image the node took |
+
+The balance node's row reads `BALANCE NODE UPDATE: CONNECTING` and
+`BALANCE NODE UPDATE 37%`. The band says `Hold the node's BOOT key 1s
+within 30s to accept the update.` when the node asks. The grey hold's
+reasons are the Dial's ([The Dial](#the-dial)); `Connect the device on
+WIRELESS first.` stands until the node is linked, its INFO taken and its
+first STATUS packet on the link has named its version. A node image that
+fails its check is no ESP32-C6 application of the project `rcbench-node`
+with that node's role, is larger than the node's slot of 1,572,864 bytes,
+or its appended SHA-256 differs.
+
+From the hold to the end the node's own client keeps its link ended, as
+the node's OFF does; SETUP > WIRELESS shows the node OFF meanwhile. That
+end counts as no loss: the band shows no `POWER NODE LOST`, and the link
+that comes back after the update reads no loss either. A power node's
+readings and a balance node's reports stop from the hold until the node is
+back. Once the update ends the node's client connects again from SETUP's
+values, and the row's version comes from the first STATUS packet on the
+new link.
+
+The alert band's lines name the node: `Power node updated to 0.23.13.
+It connects again by itself.`, `Balance node update stopped: <reason>.
+Previous firmware is running.`, `Power node did not report after its
+update. Check its version on UPDATES.` The reasons are the Dial's;
+`not accepted within 30s` means no BOOT hold of 1s on the node, and
+`refused on the device` does not occur, as a node has no refusal key.
 
 ### The reminder
 

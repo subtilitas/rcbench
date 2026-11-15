@@ -75,7 +75,9 @@ static bool view_same(const pnode_view_t *a, const pnode_view_t *b)
         || a->hidden != b->hidden || a->proto != b->proto
         || a->have_status != b->have_status || a->bat_low != b->bat_low
         || a->bat_none != b->bat_none || a->bat_err != b->bat_err
-        || a->vbat_mv != b->vbat_mv
+        || a->vbat_mv != b->vbat_mv || a->bind_refused != b->bind_refused
+        || a->scan_armed != b->scan_armed
+        || a->scan_unready != b->scan_unready
         || strncmp(a->bound_addr, b->bound_addr, sizeof a->bound_addr) != 0
         || strncmp(a->bound_name, b->bound_name, sizeof a->bound_name) != 0) {
         return false;
@@ -96,9 +98,28 @@ void wireless_pane_set_pnode(const pnode_view_t *v)
     } else {
         memset(&next, 0, sizeof(next));
     }
-    if (!view_same(&next, &s_node)) {
-        s_node = next;
-        settings_screen_invalidate();
+    if (view_same(&next, &s_node)) {
+        return;
+    }
+    /* A command the controller refused after the frame passed it on: a
+     * bind behind a scan or a changed list, a scan while an arm waits or
+     * one runs. */
+    const bool bind_no = v != NULL
+                         && next.bind_refused != s_node.bind_refused;
+    const bool armed_no = v != NULL && next.scan_armed != s_node.scan_armed;
+    const bool scan_no = v != NULL
+                         && next.scan_unready != s_node.scan_unready;
+    s_node = next;
+    settings_screen_invalidate();
+    const bool scanning = s_node.link == PNODE_LINK_SCANNING;
+    if (bind_no) {
+        ui_router_set_alert(scanning ? TR(NODE_BIND_SCANNING)
+                                     : TR(NODE_BIND_GONE));
+    } else if (armed_no) {
+        ui_router_set_alert(TR(PNODE_SCAN_ARMED));
+    } else if (scan_no) {
+        ui_router_set_alert(scanning ? TR(NODE_SCAN_RUNNING)
+                                     : TR(PNODE_SCAN_OFF));
     }
 }
 
@@ -121,23 +142,21 @@ static void scan_value(char *out, size_t n)
     }
 }
 
-/** @brief SCAN FOR NODE tapped: refused while ARMED, else asked. */
+/** @brief SCAN FOR NODE tapped: refused while ARMED or while a scan runs,
+ *         each with its text on the band, else asked. */
 static void scan_tap(void)
 {
     if (ui_router_status()->armed) {
         ui_router_set_alert(TR(PNODE_SCAN_ARMED));
         return;
     }
+    if (s_node.link == PNODE_LINK_SCANNING) {
+        ui_router_set_alert(TR(NODE_SCAN_RUNNING));
+        return;
+    }
     push(PNODE_CMD_SCAN, 0u);
 }
 
-/** @brief SCAN FOR NODE: the last scan's result, a tap scans. */
-const ui_setlist_custom_t wireless_pane_pnode_scan_row = {
-    .label = TX_PNODE_ROW_SCAN,
-    .help = TX_PNODE_ROW_SCAN_HELP,
-    .value_text = scan_value,
-    .tap = scan_tap,
-};
 
 /* ------------------------------------------------------------- BOUND NODE */
 
@@ -154,21 +173,39 @@ static void bind_value(char *out, size_t n)
     }
 }
 
-/** @brief The found list's rows. @return The count. */
+/** @brief The nodes the found list shows. @return The count. */
+static int listed_n(void)
+{
+    return wireless_list_devices(s_node.found_n);
+}
+
+/** @brief The found list's rows, SCAN AGAIN last. @return The count. */
 static int bind_choices(void)
 {
-    return s_node.scan_done ? (int)s_node.found_n : 0;
+    return wireless_list_rows(s_node.scan_done && s_node.link != PNODE_LINK_SCANNING,
+                              s_node.found_n);
+}
+
+/** @brief SCAN FOR NODE's list: BOUND NODE's while it reads FOUND n.
+ *  @return The count, 0 to scan at a tap. */
+static int scan_choices(void)
+{
+    return s_node.scan_cut ? 0 : bind_choices();
 }
 
 /**
- * @brief A found node's row: its name or address and its RSSI.
+ * @brief A row of the found list: a node's name or address and its RSSI,
+ *        or SCAN AGAIN.
  * @param i The row.
  * @return The text, valid until the next call.
  */
 static const char *bind_choice(int i)
 {
     static char line[48];
-    if (i < 0 || i >= (int)s_node.found_n) {
+    if (i == listed_n()) {
+        return TR(WL_SCAN_AGAIN);
+    }
+    if (i < 0 || i > listed_n()) {
         return "";
     }
     const pnode_dev_t *d = &s_node.found[i];
@@ -180,7 +217,7 @@ static const char *bind_choice(int i)
 /** @brief The found node that is bound. @return Its row, -1 none. */
 static int bind_chosen(void)
 {
-    for (int i = 0; i < (int)s_node.found_n; ++i) {
+    for (int i = 0; i < listed_n(); ++i) {
         if (strcmp(s_node.found[i].addr, s_node.bound_addr) == 0) {
             return i;
         }
@@ -188,19 +225,53 @@ static int bind_chosen(void)
     return -1;
 }
 
-/** @brief A found node tapped: bound. @param i Its row. */
+/** @brief A row of the found list tapped: SCAN AGAIN scans, a node is
+ *         bound; a scan that runs refuses the bind on the band.  SCAN
+ *         AGAIN never reaches the controller as an index.
+ *  @param i Its row. */
 static void bind_pick(int i)
 {
-    if (i >= 0 && i < (int)s_node.found_n) {
+    if (i == listed_n()) {
+        scan_tap();
+        return;
+    }
+    if (s_node.link == PNODE_LINK_SCANNING) {
+        ui_router_set_alert(TR(NODE_BIND_SCANNING));
+        return;
+    }
+    if (i >= 0 && i < listed_n()) {
         push(PNODE_CMD_BIND, (uint8_t)i);
     }
 }
 
-/** @brief BOUND NODE: the bound node, the last scan's list, a pick binds. */
+/** @brief BOUND NODE tapped with no list to open: the band says why, a
+ *         scan that runs or none that found a node. */
+static void bind_tap(void)
+{
+    ui_router_set_alert(s_node.link == PNODE_LINK_SCANNING ? TR(NODE_BIND_SCANNING)
+                                       : TR(NODE_BIND_EMPTY));
+}
+
+/** @brief SCAN FOR NODE: the last scan's result; a tap scans, or while it
+ *         reads FOUND n opens the found list. */
+const ui_setlist_custom_t wireless_pane_pnode_scan_row = {
+    .label = TX_PNODE_ROW_SCAN,
+    .help = TX_PNODE_ROW_SCAN_HELP,
+    .value_text = scan_value,
+    .tap = scan_tap,
+    .choices = scan_choices,
+    .choice = bind_choice,
+    .chosen = bind_chosen,
+    .pick = bind_pick,
+};
+
+/** @brief BOUND NODE: the bound node, the last scan's list, a pick binds;
+ *         a tap with no list says why on the band. */
 const ui_setlist_custom_t wireless_pane_pnode_bind_row = {
     .label = TX_PNODE_ROW_BIND,
     .help = TX_PNODE_ROW_BIND_HELP,
     .value_text = bind_value,
+    .tap = bind_tap,
     .choices = bind_choices,
     .choice = bind_choice,
     .chosen = bind_chosen,

@@ -647,3 +647,43 @@ static const ui_screen_t k_screen = {
 };
 
 const ui_screen_t *coproc_update_screen(void) { return &k_screen; }
+
+/* UPDATES' IOmcu section says its state as the question does. */
+void upd_cu_text(const upd_cu_view_t *v, const char **line,
+                 gfx_color_t *col)
+{
+    *col = UI_WARN;
+    switch (v->sec) {
+    case CU_SEC_NO_IMAGE: *line = TR(UPD_CU_NO_IMAGE); *col = UI_TEXT_DIM;
+                          break;
+    case CU_SEC_BUSY:     *line = TR(UPD_WAIT_COPROC);  break;
+    case CU_SEC_NO_LINK:  *line = TR(UPD_CU_NO_LINK);   break;
+    case CU_SEC_UNKNOWN:  *line = TR(UPD_CU_UNKNOWN); *col = UI_TEXT; break;
+    case CU_SEC_CHECKING: *line = TR(UPD_CU_CHECKING); *col = UI_TEXT; break;
+    case CU_SEC_FAILED:   *line = TR(UPD_CU_FAILED);    break;
+    case CU_SEC_USB:      *line = TR(UPD_CU_USB);       break;
+    case CU_SEC_NO_BOARD: *line = TR(UPD_CU_NO_BOARD); *col = UI_TEXT_DIM;
+                          break;
+    case CU_SEC_SAME:     *line = TR(UPD_CU_SAME); *col = UI_TEXT_DIM; break;
+    case CU_SEC_UNSAFE:   *line = TR(UPD_CU_UNSAFE);    break;
+    case CU_SEC_RADIO:    *line = TR(UPD_CU_RADIO);     break;
+    case CU_SEC_INSTALL:  *line = TR(UPD_CU_INSTALL);   break;
+    case CU_SEC_READY:
+    default:
+        /* As the question says it: an older image in the warning colour,
+         * the same number of another build plainly, else what the update
+         * does to the bench. */
+        if (coproc_update_older(v->running, v->carried)) {
+            *line = TR(CU_Q_OLDER);
+        } else if (v->running.major == v->carried.major
+                   && v->running.minor == v->carried.minor
+                   && v->running.patch == v->carried.patch) {
+            *line = TR(CU_Q_SAME);
+            *col = UI_TEXT_DIM;
+        } else {
+            *line = TR(CU_Q_WHAT);
+            *col = UI_TEXT_DIM;
+        }
+        break;
+    }
+}

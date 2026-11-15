@@ -68,6 +68,7 @@ On the bench screens:
 - A turn moves nothing while the bench is SAFE, and turns made while SAFE are not kept for the ARM. The first EVENT after a connect, an EVENT more than 300ms after the last and a jump of more than 16 detents move nothing.
 - A press of the Dial's screen button while ARMED sets the throttle to 0% on MOTOR & ESC and the horn to CENTER on SERVO. A 1s hold DISARMs, also while an ARM is on its way, and ends an ESC STICK run as ABORT does.
 - A Dial lost while ARMED is an error: 1000ms without an EVENT, or the disconnect, switches the bench to SAFE with all outputs off, and the band shows `DIAL LOST WHILE ARMED: SWITCHED TO SAFE, ALL OUTPUTS OFF`. 500ms without an EVENT shows `DIAL: NO EVENT FOR 500ms`. The clock starts at the first EVENT of a connection, so a connect that has sent none is no loss.
+- While SAFE the Dial navigates the menu, SETUP, the SERVO tiles with their SETTINGS, the OUTPUTS board and every choice list: a ring in the accent colour marks the focused item, a turn moves it, a press taps it and a 1s hold goes back as the home tag does. A press on a number opens its keypad; a turn then sets the value, a press is OK and a hold CANCEL. A press on an on/off or option row sets it by turning: a press keeps, a hold restores. No 2s hold on the panel completes from the Dial.
 - Other screens take no turn from the Dial. The Dial shows their title and the bench's state.
 
 | State | When |

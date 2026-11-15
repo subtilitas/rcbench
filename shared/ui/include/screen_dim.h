@@ -66,6 +66,7 @@ typedef enum {
     SCREEN_DIM_WHY_TOUCH,     /**< a touch event                           */
     SCREEN_DIM_WHY_BUSY,      /**< a frame that found the bench not idle   */
     SCREEN_DIM_WHY_OFF,       /**< a frame with Dim after at 0 minutes     */
+    SCREEN_DIM_WHY_DIAL,      /**< the M5Stack Dial's input (screen_dim_wake()) */
 } screen_dim_why_t;
 
 /** @brief The state of the rule. */
@@ -166,6 +167,16 @@ bool screen_dim_touch(screen_dim_t *d, const touch_event_t *evt,
  * @return true between the step that dimmed it and the next wake
  */
 bool screen_dim_is_dim(const screen_dim_t *d);
+
+/**
+ * @brief Input that is no touch, the M5Stack Dial's turn, PRESS or HOLD:
+ *        the backlight wakes and the minutes start again, as a touch does.
+ *        Whether the input acts is the caller's (dial_dim_filter()).
+ * @param d      the state
+ * @param now_ms the clock
+ * @return true when the backlight was dim
+ */
+bool screen_dim_wake(screen_dim_t *d, uint32_t now_ms);
 
 #ifdef __cplusplus
 }

@@ -28,6 +28,7 @@
 #include "panel.h"
 #include "panel_ble.h"
 #include "panel_blec.h"
+#include "ui_focus.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "wireless_pane.h"
@@ -85,6 +86,10 @@ static dial_link_t   s_frame_was = DIAL_LINK_OFF;
 static atomic_bool   s_live;
 /** @brief Losses while ARMED, from the `blec` task. */
 static atomic_uint   s_errors;
+/** @brief SETUP's last values, the `blec` task's own. */
+static dial_cfg_t    s_cfg_in;
+/** @brief The device update holds the link ended, the `blec` task's own. */
+static bool          s_held;
 
 /**
  * @brief SETUP's values as the controller takes them.
@@ -100,6 +105,9 @@ static void cfg_from_settings(dial_cfg_t *out)
             sizeof(out->name) - 1u);
     out->thr_tenths = dial_step_tenths(settings_get_int(SET_DIAL_THR));
     out->srv_tenths = dial_step_tenths(settings_get_int(SET_DIAL_SRV));
+    /* The binds kept in SETUP so far: values read before the frame keeps
+     * a bind carry the address before it, which the controller leaves. */
+    out->bind_seq = s_kept_seq;
 }
 
 /** @brief SETUP's values to the task; dropped while its queue is full. */
@@ -149,6 +157,11 @@ static void run_command(const dial_cmd_t *cmd, uint32_t now)
     } else if (cmd->kind == DIAL_CMD_BIND) {
         if (dial_ctl_bind(&s_ctl, cmd->arg, now)) {
             ESP_LOGI(TAG, "bound %s %s", s_ctl.cfg.addr, s_ctl.cfg.name);
+        } else {
+            ESP_LOGW(TAG, "bind of %u refused: %s, %u listed (%u refused)",
+                     (unsigned)cmd->arg,
+                     s_ctl.b.scanning ? "a scan runs" : "not in the list",
+                     (unsigned)s_ctl.found_n, (unsigned)s_ctl.bind_refused);
         }
     }
 }
@@ -165,6 +178,10 @@ void panel_dial_blec_poll(uint32_t now)
                 ESP_LOGI(TAG, "Dial ON: starting Bluetooth LE");
                 panel_ble_start();
             }
+            s_cfg_in = m.cfg;
+            if (s_held) {
+                m.cfg.en = false;
+            }
             dial_ctl_config(&s_ctl, &m.cfg, now);
         } else {
             run_command(&m.cmd, now);
@@ -175,6 +192,34 @@ void panel_dial_blec_poll(uint32_t now)
     s_model_blec = s_model;
     taskEXIT_CRITICAL(&s_mux);
     dial_ctl_model(&s_ctl, &s_model_blec);
+}
+
+void panel_dial_blec_hold(bool on, uint32_t now)
+{
+    if (s_q == NULL || on == s_held) {
+        return;
+    }
+    s_held = on;
+    dial_cfg_t c = s_cfg_in;
+    if (on) {
+        c.en = false;
+    }
+    ESP_LOGI(TAG, "%s", on ? "link held off for the Dial's update"
+                           : "link back to SETUP's values");
+    dial_ctl_config(&s_ctl, &c, now);
+}
+
+bool panel_dial_blec_target(bleu_addr_t *addr, bool *linked,
+                            uint8_t version[3], bool *down)
+{
+    if (s_q == NULL || !bleu_addr_parse(s_ctl.cfg.addr, addr)) {
+        return false;
+    }
+    *linked = s_ctl.linked && s_ctl.info_ok;
+    memcpy(version, s_ctl.info.fw, 3u);
+    *down = !s_ctl.linked && s_ctl.b.settle == 0u
+            && (s_ctl.b.st == BLEU_ST_OFF || s_ctl.b.st == BLEU_ST_IDLE);
+    return true;
 }
 
 void panel_dial_blec_event(const bleu_evt_t *e, uint32_t now)
@@ -342,6 +387,15 @@ void panel_dial_frame(const dial_model_in_t *in)
     taskEXIT_CRITICAL(&s_mux);
     wireless_pane_set_dial(&s_seen);
     link_notices((dial_link_t)s_seen.link, in->armed);
+    /* The focus ring and the Dial's navigation only while it is linked.
+     * The ARMED this frame read keeps the focus off a running bench: a
+     * screen the focus navigates (ui_focus_screens.c) must never gain an
+     * ARM control unless the focus layer checks ARMED again in the frame
+     * that SELECTs it, or a SELECT could land on ARM before this flag
+     * follows. */
+    ui_focus_set_link(s_seen.link == DIAL_LINK_UP
+                          || s_seen.link == DIAL_LINK_DEGRADED,
+                      in->armed);
     /* A bind that ended is kept in SETUP, with a save asked, so the Dial
      * is the bound one after a restart. */
     if (bind_seq != s_kept_seq) {
@@ -374,6 +428,11 @@ void panel_dial_frame(const dial_model_in_t *in)
 void panel_dial_set_live(bool live)
 {
     atomic_store(&s_live, live);
+}
+
+bool panel_dial_live(void)
+{
+    return atomic_load(&s_live);
 }
 
 uint32_t panel_dial_errors(void)

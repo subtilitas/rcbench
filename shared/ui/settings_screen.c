@@ -526,6 +526,20 @@ static void host_release(int kind, int index, int x, int y)
     }
 }
 
+/**
+ * @brief Why a row takes no change: a setting set on a SAFE bench only
+ *        (settings_safe_only(): SCREEN ROTATION, INA228 SOURCE), held
+ *        while ARMED.  The list shows it in place of the help line and on
+ *        the band at a press.
+ * @param id The setting.
+ * @return The reason, NULL while the row takes a change.
+ */
+static const char *host_locked(setting_id_t id)
+{
+    return (settings_safe_only(id) && settings_held(id)) ? TR(MO_SET_SAFE_ONLY)
+                                                         : NULL;
+}
+
 /** @brief SETUP's side of its list. */
 static const ui_setlist_host_t k_host = {
     .count       = host_count,
@@ -537,6 +551,7 @@ static const ui_setlist_host_t k_host = {
     .reset       = host_reset,
     .help        = settings_screen_help,
     .unheld      = settings_screen_unheld,
+    .locked      = host_locked,
     .changed     = host_changed,
     .invalidate  = settings_screen_invalidate,
     .way_out     = host_way_out,
@@ -756,4 +771,50 @@ const ui_keypad_t *settings_screen_keypad(void)
 int settings_screen_keypad_setting(void)
 {
     return ui_setlist_keypad_setting(&s.sl);
+}
+
+bool settings_screen_focus(ui_focus_list_t *out)
+{
+    if (out == NULL) {
+        return false;
+    }
+    const int pane = stg_pane(s.cat);
+    out->list = s.sl.open ? (uint32_t)s.cat + 1u : 0u;
+    if (pane >= 0 && s.sl.open) {
+        out->list = out->list * 16u + (uint32_t)stg_pane_selected(pane);
+    }
+    if (!s.sl.open && !s.sl.warn && !s.sl.kp.open && !s.sl.tk.open) {
+        /* The hub: a tile a category or a screen, then SAVE. */
+        for (int i = 0; i < stg_tile_count(); ++i) {
+            const hub_tile_t *t = stg_hub_tile(i);
+            (void)ui_focus_add(out, stg_tile_rect(i),
+                               (t->cat < 0)
+                                   ? ui_router_title(t->screen)
+                                   : ui_setting_category(
+                                         (setting_cat_t)t->cat));
+        }
+        if (stg_save_offered()) {
+            (void)ui_focus_add(out, stg_save_rect(), TR(SET_SAVE));
+        }
+        return true;
+    }
+    const bool plain = s.sl.open && !s.sl.warn && !s.sl.kp.open
+                       && !s.sl.tk.open && s.sl.choice_row < 0;
+    if (plain && pane >= 0) {
+        /* A split pane: its entries first, the selected one in focus. */
+        for (int e = 0; e < stg_pane_count(pane); ++e) {
+            char name[24];
+            (void)ui_focus_add(out, settings_screen_entry_rect(e),
+                               stg_pane_name(pane, e, name, sizeof(name)));
+        }
+        out->start = stg_pane_selected(pane);
+    }
+    const int start = out->start;
+    if (!ui_focus_add_setlist(out, &s.sl)) {
+        return false;
+    }
+    if (plain && pane >= 0) {
+        out->start = start;
+    }
+    return true;
 }

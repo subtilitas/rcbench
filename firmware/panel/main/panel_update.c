@@ -34,6 +34,7 @@
 #include "link_update_host.h"
 #include "out_bind.h"
 #include "panel.h"
+#include "panel_devupd.h"
 #include "rcbench_version.h"
 #include "settings.h"
 #include "upd_screen.h"
@@ -627,9 +628,12 @@ bool panel_run_open(void)
 /** @brief Whether flash may be written now, and if not why: see fw_gate(). */
 static fw_gate_t fw_gate_now(bool armed)
 {
+    /* A wireless device's update ends with the restart an install makes:
+     * no install or download under it (panel_devupd.c, the other way). */
     return fw_gate(armed, supplies_live_or_coming(), run_open_now(),
                    s_artbusy || atomic_load(&s_keeping),
-                   atomic_load(&s_cu_busy) || panel_c6_busy());
+                   atomic_load(&s_cu_busy) || panel_c6_busy()
+                       || panel_devupd_busy());
 }
 
 /**
