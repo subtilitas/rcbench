@@ -606,7 +606,9 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
         off = (len(kern) - 1) // 2
         duck = np.clip(full[off:off + n], 0.0, 1.0)
         out *= 0.63 * (1.0 - 0.72 * duck)
-        out += 0.9 * voice * float(np.max(np.abs(out)) / 0.20)
+        # The voice's level follows the bed's; a silent bed has none.
+        peak = float(np.max(np.abs(out)))
+        out += 0.9 * voice * (peak / 0.20 if peak > 0 else 1.0)
     t = np.arange(n) / RATE
     out *= np.minimum(1.0, t / 1.5) * np.clip((total - t) / 3.5, 0.0, 1.0)
     # The level: the loudest sample at LEVEL of full scale, no limiter.

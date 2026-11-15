@@ -27,7 +27,7 @@ history is in git.
   under `hardware/kicad/modules/`. `--keep` keeps the captured parts per
   scene, so that a changed scene is captured alone ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `minircbench-build`: building a MiniRcBench in 10 steps,
-  narrated. A `case` scene with the model `mini` draws the bench
+  narrated, 482.1s. A `case` scene with the model `mini` draws the bench
   from its assembly, seats its components, shows stills on its display
   and rolls it over; `tools/video_cad.py --parts` converts a STEP
   assembly with one node a component. A wire of a `board` scene can be

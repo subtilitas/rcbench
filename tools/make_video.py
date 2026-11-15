@@ -878,7 +878,8 @@ def _plan(scene: dict) -> pathlib.Path:
 
 
 def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
-             jobs: int, keep: pathlib.Path | None) -> int:
+             jobs: int, keep: pathlib.Path | None,
+             shots: pathlib.Path) -> int:
     import concurrent.futures
     import hashlib
 
@@ -909,6 +910,12 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
         # that leaves every length as it was captures that scene alone.
         code = digest([path.read_text(encoding="utf-8") for path in sorted(
             (VIDEO / "player").iterdir()) if path.is_file()])
+        # What the player loads besides: the pictures of the displays
+        # and the models.
+        seen = digest([[path.name, hashlib.sha256(
+            path.read_bytes()).hexdigest()] for path in sorted(
+                list(shots.glob("*.png")) + list((VIDEO / "cad").glob(
+                    "*.glb")))])
         # The bed and its level are heard, not seen.
         rest = {name: value for name, value in board.items()
                 if name not in ("scenes", "music", "music_gain")}
@@ -919,7 +926,8 @@ def _capture(cmd: list, board: dict, out: pathlib.Path, fps: int,
             if scene["type"] == "board":
                 plan = _plan(scene).read_text(encoding="utf-8")
             mark = digest([rest, scene, start, total, n,
-                           len(board["scenes"]), before, plan, code])
+                           len(board["scenes"]), before, plan, code,
+                           seen])
             first = round(start * fps)
             end = frames if n == len(times) - 1 else round(
                 (start + length) * fps)
@@ -1079,7 +1087,7 @@ def main() -> int:
                     cmd + ["stills", str(out), args.stills]).returncode
             else:
                 status = _capture(cmd, board, silent, args.fps,
-                                  max(1, args.jobs), args.keep)
+                                  max(1, args.jobs), args.keep, shots)
             server.shutdown()
         beds = args.music.split(",") if args.music else [None]
         outs = [out if len(beds) == 1 else

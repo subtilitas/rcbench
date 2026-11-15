@@ -538,3 +538,42 @@ def test_the_wiring_drawing_holds_what_the_storyboard_names():
     names = {pad["name"] for pad in plan["pads"]}
     assert {"BAT.+", "BAT.-", "J4.11", "BOOST.EN", "INA.T+", "ESC.S",
             "TMT.S"} <= names
+
+
+def test_a_first_cue_at_zero_stretches():
+    """A scene whose first line starts at 0 takes the room its lines need."""
+    scene = {"type": "case", "dur": 10, "camera": [[0, 1], [6, 2]],
+             "say": [{"at": 0, "text": "a"}, {"at": 4, "text": "b"}]}
+    video_voice._stretch(scene, [0.0, 0, 4, 10], [0.0, 0, 7, 13])
+    assert scene["dur"] == 13
+    assert [key[0] for key in scene["camera"]] == [0, 9]
+    assert [cue["at"] for cue in scene["say"]] == [0, 7]
+
+
+def test_a_track_takes_its_net_name_from_the_list_of_nets():
+    """A board from before KiCad 10 names a track's net by its number."""
+    import video_board
+
+    old = _PCB.replace(
+        ' (gr_rect', ' (net 0 "") (net 1 "A") (net 3 "GND")\n (gr_rect', 1
+    ).replace('(layer "F.Cu") (net "A"))', '(layer "F.Cu") (net 1))', 1)
+    plan = video_board.convert(old)
+    assert [track["net"] for track in plan["tracks"]] == ["A"]
+    assert {pad["net"] for pad in plan["pads"]} == {"A", "GND"}
+
+
+def test_a_silent_bed_keeps_the_narration(tmp_path, monkeypatch):
+    """With "music_gain" 0 and no event sound the line is still heard."""
+    monkeypatch.setattr(video_audio, "events", lambda board: [])
+    import wave
+
+    import numpy as np
+
+    board = {"lang": "en", "steps": 0, "music_gain": 0, "scenes": [
+        {"type": "end", "dur": 4, "title": "x"}]}
+    t = np.arange(video_audio.RATE) / video_audio.RATE
+    clip = 0.3 * np.sin(2 * np.pi * 220 * t)
+    video_audio.render(board, tmp_path / "a.wav", [(1.0, clip)])
+    with wave.open(str(tmp_path / "a.wav")) as wav:
+        data = np.frombuffer(wav.readframes(wav.getnframes()), "<i2")
+    assert np.abs(data).max() > 10000

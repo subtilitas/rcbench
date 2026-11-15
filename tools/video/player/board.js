@@ -271,7 +271,9 @@ export function buildBoard(data) {
         const list = s.pads || data.pads.filter(p => s.refs.includes(p.ref))
           .map(p => p.name);
         list.forEach((name, i) => {
-          const p = pads[name];
+          // A plug board's pad has a place and no size.
+          const p = pads[name] || (loose[name]
+            && {x: loose[name][0], y: loose[name][1], w: 1.7, h: 1.7});
           if (!p) throw new Error('the board has no pad ' + name);
           const t0 = s.t[0] + (s.t[1] - s.t[0]) * i / list.length;
           const k = ramp(lt, t0, t0 + .25);

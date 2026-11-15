@@ -158,6 +158,9 @@ def _stretch(scene: dict, old: list, new: list) -> None:
         n = 0
         while n < len(old) - 2 and t > old[n + 1]:
             n += 1
+        # A first cue at 0 leaves no time before it.
+        if old[n + 1] == old[n]:
+            return round(new[n], 2)
         return round(new[n] + (t - old[n]) * (new[n + 1] - new[n])
                      / (old[n + 1] - old[n]), 2)
 

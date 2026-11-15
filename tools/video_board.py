@@ -89,10 +89,14 @@ def _one(node: list, name: str):
     return found[0] if found else None
 
 
-def _net(node: list) -> str:
-    # (net "NAME") from KiCad 10, (net NUMBER "NAME") before it.
+def _net(node: list, names: dict) -> str:
+    # (net "NAME") from KiCad 10.  Before it (net NUMBER "NAME") on a pad
+    # and (net NUMBER) on a track, the number's name in the board's own
+    # list of nets.
     net = _one(node, "net")
-    return net[-1] if net and len(net) > 1 else ""
+    if not net or len(net) < 2:
+        return ""
+    return names.get(net[-1], net[-1]) if len(net) == 2 else net[-1]
 
 
 def _xy(node: list) -> tuple:
@@ -161,13 +165,15 @@ def convert(text: str, turn: int = 90, specs: dict | None = None) -> dict:
     def r3(v):
         return round(v, 3)
 
+    names = {net[1]: net[2] for net in _all(board, "net") if len(net) > 2}
     tracks = []
     for seg in _all(board, "segment"):
         if _one(seg, "layer")[1] != LAYER:
             continue
         a, b = place(*_xy(_one(seg, "start"))), place(*_xy(_one(seg, "end")))
         tracks.append({"a": [r3(a[0]), r3(a[1])], "b": [r3(b[0]), r3(b[1])],
-                       "w": float(_one(seg, "width")[1]), "net": _net(seg)})
+                       "w": float(_one(seg, "width")[1]),
+                       "net": _net(seg, names)})
     pads, parts = [], []
     for fp in _all(board, "footprint"):
         at = _one(fp, "at")
@@ -197,7 +203,7 @@ def convert(text: str, turn: int = 90, specs: dict | None = None) -> dict:
                          "round": pad[3] in ("circle", "oval"),
                          "drill": float(drill[-1]) if drill
                          and len(drill) > 1 and drill[-1] != "oval" else 0,
-                         "net": _net(pad)})
+                         "net": _net(pad, names)})
         for num, where in seen.items():
             for k, n in enumerate(where):
                 letter = "abcdefgh"[k] if len(where) > 1 else ""

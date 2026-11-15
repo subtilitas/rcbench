@@ -57,6 +57,9 @@ python3 tools/make_video.py features --jobs 3 --keep build/video/parts
                                                    # scene; a run cut off continues
                                                    # from them, and a changed scene
                                                    # is captured alone
+                                                   # a changed player file, display
+                                                   # picture or model captures all
+                                                   # scenes again
 python3 tools/make_video.py features --music bach-prelude,pachelbel-canon
                                                    # one video per bed
 python3 tools/make_video.py features --no-voice    # no narrator, lengths as written
@@ -104,7 +107,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
 | `storyboards/dial.json` | bringing the M5Stack Dial into use in 6 steps: flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 209.43s, Pachelbel's Canon at half level. The battery is taken as fitted |
-| `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the pull-down and IO28 on the enable pad, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, Pachelbel's Canon at half level |
+| `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the pull-down and IO28 on the enable pad, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 482.1s, Pachelbel's Canon at half level |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
 | `../video_voice.py` | the narration: the lines, the speaker, the room each line needs |
