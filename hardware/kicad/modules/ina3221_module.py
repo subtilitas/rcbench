@@ -19,6 +19,8 @@ Header drill: 1.0mm by the photo's ring of 1.5mm; footprint pads 1.7mm.
 
 Unknown: board thickness, whether the mounting holes connect to GND, the
 exact drill of the large holes.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "INA3221_Module"

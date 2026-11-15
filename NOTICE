@@ -3,6 +3,12 @@ rcbench — third-party notices
 
 rcbench itself is licensed under the MIT License; see LICENSE.
 
+Exception: hardware/mechanical/ and hardware/kicad/ (the 3D models, the KiCad
+module library, their renders and the scripts that draw them) are licensed
+under CC BY-NC-SA 4.0; see hardware/mechanical/LICENSE and
+hardware/kicad/LICENSE. In hardware/mechanical/, M5Stack's Dial mesh, the two
+Dial STEP files fitted to it and _font.py keep the MIT licence.
+
 This file records the material in this repository that originates elsewhere.
 
 

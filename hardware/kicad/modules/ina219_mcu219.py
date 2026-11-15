@@ -29,6 +29,8 @@ seller text); here they are separate pads 5/7 and 6/8.
 Unknown: board thickness, terminal drill (holes about 0.9mm open in the
 photo with the pins out; drawn 1.1mm), terminal block depth beyond the
 print, whether the mounting holes connect to a net.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "INA219_MCU-219_25.4x21.5mm"

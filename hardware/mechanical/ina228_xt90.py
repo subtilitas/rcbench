@@ -55,6 +55,8 @@ Not measured, estimated or drawn from the sources above:
 Frame: as the KiCad model of the module. Origin at header pin 1 (L) on
 the board's underside, x along the header towards pin 5, y from the
 header towards the plus bar, z up. All sizes are mm.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import importlib.util

@@ -64,6 +64,18 @@ history is in git.
   shares volume with the dial, its nut or the cell
   ([Mechanical parts](hardware/mechanical/README.md#hand-held-base-for-the-m5stack-dial)).
 
+### Changed
+
+- Licence: `hardware/mechanical/` and `hardware/kicad/` are under CC BY-NC-SA
+  4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+  International) in place of MIT: the 3D models, the KiCad module library,
+  their renders and the Python scripts that draw them, each script marked
+  `SPDX-License-Identifier: CC-BY-NC-SA-4.0`. Commercial use needs a separate
+  licence from the copyright holder. M5Stack's Dial mesh, `m5dial.step`,
+  `m5dial_nut.step` and `_font.py` stay MIT, as does the rest of rcbench
+  ([hardware/mechanical/LICENSE](hardware/mechanical/LICENSE),
+  [hardware/kicad/LICENSE](hardware/kicad/LICENSE)).
+
 ## 0.23.13 - 2026-11-15
 
 0.23.13 is a testing release. It adds the M5Stack Dial v1.1 as a Bluetooth LE

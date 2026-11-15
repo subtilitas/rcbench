@@ -23,6 +23,8 @@ right of the ADXL345.
 
 Unknown: board thickness, the exact hole drill, the pin 1 corner of the
 ADXL345 (not readable in the photo).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "ADXL345_GY-291_14.8x20.6mm"

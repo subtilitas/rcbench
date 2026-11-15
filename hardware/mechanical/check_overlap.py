@@ -12,6 +12,8 @@ Usage:
 Without a stem it checks MODELS, the models drawn part by part. Exit
 status 1 when a pair fails. Needs OCP (pip install
 cadquery-ocp==8.0.1.1.0).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import sys

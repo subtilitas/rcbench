@@ -28,6 +28,8 @@ the inductor.
 Frame: as the KiCad model of the module. Origin at the IN+ hole on the
 board's underside, x towards IN-, y towards the outputs, z up. All
 sizes are mm.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import _board

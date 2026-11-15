@@ -14,6 +14,8 @@ Usage:
 
 --png writes a shaded view of each model to DIR (needs matplotlib).
 Needs OCP, the OpenCASCADE binding: pip install cadquery-ocp.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import argparse

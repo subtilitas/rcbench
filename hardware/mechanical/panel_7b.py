@@ -61,6 +61,8 @@ and y up seen from the front with the USB sockets on the left. The
 parts are listed in E's frame, as the rear shows them: x and y from the
 board's corner with the USB sockets on the right, z = 0 on the board's
 component side and +z away from the display.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import _parts as p

@@ -15,6 +15,8 @@ Usage:
 
 UUIDs derive from the module name and the item's place in it, so the output
 is the same on every run.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import importlib.util

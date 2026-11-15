@@ -31,6 +31,8 @@ Unknown: which side the board expects the battery (the pin half's side
 is named BAT after the configurator drawing); pin 1 marking under the
 header plastic; copper extent under the solder. The board print warns
 that the screw holes carry circuitry ("do not short").
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

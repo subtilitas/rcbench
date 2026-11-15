@@ -11,6 +11,8 @@ Usage:
 
 --at is the pixel of the board frame's (0, 0); --scale is px per mm along x
 and y. Needs Pillow.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import argparse

@@ -3,6 +3,8 @@
 Written by _trace_ina228_print.py; do not edit. Each shape is
 (legend, outline, holes) with (x, y) points in mm in the board
 frame of hardware/kicad/modules/ina228_bifrc_xt90.py, y down.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 PRINT = (

@@ -4,6 +4,8 @@ Every function returns shapes in the part's own frame: the origin is
 the centre of the part's footprint on the board, z = 0 is the board's
 surface and +z points away from it. All sizes are mm. Package sizes are
 the packages' nominal ones, not measured on a board.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

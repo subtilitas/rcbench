@@ -5,6 +5,8 @@ apart, the inner holes of the + and - pairs 8.92mm apart, 26mm between the
 input and output columns; every outer hole sits 2.0mm in from both edges.
 The EN pad is read from the top-view photo (about 18.7px/mm), within about
 0.5mm (estimate). Output voltage: not stated on the photos.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "DCDC_Buck_Mini_30x18mm_EN"

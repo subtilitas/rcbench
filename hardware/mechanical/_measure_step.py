@@ -30,6 +30,8 @@ Usage:
 
 Writes hardware/mechanical/_panel_7b_data.py. Needs OCP (pip install
 cadquery-ocp==8.0.1.1.0).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import sys
@@ -287,7 +289,8 @@ def main(argv):
              "part; NAMED the boxes (x0, y0, z0, x1, y1, z1) of each named",
              "part; LEADED (body box, feet as (x0, y0, x1, y1)) of each",
              "leaded package; BOXES (box, colour) of each other solid.",
-             "Do not edit; run _measure_step.py.", '"""', ""]
+             "Do not edit; run _measure_step.py.", "",
+             "SPDX-License-Identifier: CC-BY-NC-SA-4.0", '"""', ""]
     lines += _lines("CHIPS", chips, 2)
     lines += ["", "NAMED = {"]
     for name, found in named.items():

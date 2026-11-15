@@ -51,6 +51,8 @@ other hole.
 
 The output is the same on every run: entity numbers follow the build
 order and the file's time stamp is fixed.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

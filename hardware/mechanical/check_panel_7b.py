@@ -14,6 +14,8 @@ Prints the largest difference of a side for each kind of part and the
 components no shape answers. Exit status 1 when a difference is above
 the kind's limit in LIMITS or a component has no shape. Needs OCP (pip
 install cadquery-ocp==8.0.1.1.0).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import sys

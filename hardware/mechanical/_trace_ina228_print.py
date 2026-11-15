@@ -19,6 +19,8 @@ PHOTOS is the directory that holds the photo.
 
 Writes hardware/mechanical/_ina228_print.py. Needs numpy and OpenCV
 (pip install opencv-python-headless).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import argparse
@@ -150,6 +152,8 @@ def text(shapes):
         "Written by _trace_ina228_print.py; do not edit. Each shape is",
         "(legend, outline, holes) with (x, y) points in mm in the board",
         "frame of hardware/kicad/modules/ina228_bifrc_xt90.py, y down.",
+        "",
+        "SPDX-License-Identifier: CC-BY-NC-SA-4.0",
         '"""',
         "",
         "PRINT = (",

@@ -3,6 +3,8 @@
 A part is a set of triangles connected through shared edges. Each part
 must be a closed 2-manifold: every directed edge has exactly one reverse.
 No dependency outside the standard library.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import struct

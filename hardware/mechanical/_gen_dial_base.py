@@ -62,6 +62,8 @@ taken apart to DIR/dial_base_exploded.png and cut open to
 DIR/dial_base_section.png, 1200 x 1000 pixels. Needs OCP, the
 OpenCASCADE binding (pip install cadquery-ocp==8.0.1.1.0); --render
 needs an OpenGL context: an X display, or xvfb-run with Mesa.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import math

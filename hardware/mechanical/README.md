@@ -549,3 +549,21 @@ Limits:
 ```sh
 python3 hardware/mechanical/_gen_font.py     # rewrite _font.py; needs OpenCV
 ```
+
+## Licence
+
+CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International): the STEP and STL models, the renders and the Python scripts
+that draw, check and render them. They may be used, changed and shared for
+non-commercial purposes, with credit and under the same licence. Commercial
+use needs a separate licence from the copyright holder. Terms:
+[LICENSE](LICENSE).
+
+Under the MIT (Massachusetts Institute of Technology) licence instead:
+
+- `vendor/m5stack_dial/Dial.stl`, M5Stack's mesh
+  ([vendor/m5stack_dial/LICENSE](vendor/m5stack_dial/LICENSE));
+- `models/m5dial.step` and `models/m5dial_nut.step`, M5Stack's geometry
+  fitted to that mesh ([M5Stack Dial](#m5stack-dial));
+- `_font.py`, letter outlines traced from OpenCV's single-stroke Hershey
+  font ([LICENSE](../../LICENSE)).

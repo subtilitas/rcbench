@@ -22,6 +22,8 @@ Unknown: which lead the maker calls JST pin 1 (numbering here follows the
 print, top to bottom); the copper extent of BAT+ and ESC+ under the shunt;
 board thickness (the maker states 6mm overall height; the 3D model's
 connectors are 4.35mm tall).
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "INA228_Matek_I2C-INA-BM_27x20mm"

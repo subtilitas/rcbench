@@ -29,6 +29,8 @@ the level that enables the output. The board's thickness is not
 measured; the model draws 1.6mm.
 
 The 3D model is hardware/mechanical/boost_5v_en.py.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "Boost_5V_EN_13.7x21.7mm"

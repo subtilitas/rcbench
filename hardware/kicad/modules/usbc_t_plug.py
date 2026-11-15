@@ -22,6 +22,8 @@ pad to its carrier pad. Pad 1 = G (square).
 Unknown: the maker and part number of both boards, board thickness, the
 position of the plug board when the plug is not fully seated, what the V
 pad connects to on the plug board beyond VBUS.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 NAME = "USBC_T-plug_17x30mm"

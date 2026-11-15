@@ -14,6 +14,8 @@ Usage:
 
 Needs OCP (pip install cadquery-ocp), Pillow for the contact sheet, and
 an OpenGL context: an X display, or xvfb-run with Mesa.
+
+SPDX-License-Identifier: CC-BY-NC-SA-4.0
 """
 
 import argparse
