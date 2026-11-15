@@ -96,6 +96,12 @@ renderer.shadowMap.enabled = true;
 renderer.shadowMap.type = THREE.PCFSoftShadowMap;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
 renderer.toneMappingExposure = 1.15;
+// The Dial's hand-held base, its two printed parts, when the storyboard
+// asks for it.
+const dialBase = sb.dial_base
+  ? [await loadCad('/cad/dial_base_top.glb'),
+     await loadCad('/cad/dial_base_bottom.glb')]
+  : null;
 for (const sc of sb.scenes) {
   if (sc.type === 'board') {
     sc.plan = await (await fetch(`/cad/${sc.board}.json`)).json();
@@ -106,9 +112,11 @@ for (const sc of sb.scenes) {
   // draws the mockup.
   sc.rig = sc.model === 'cad'
     ? buildCadCase(shown, await loadCad('/cad/case.glb'))
-    : sc.model === 'dial' ? buildDial(await loadCad('/cad/m5dial.glb'))
+    : sc.model === 'dial'
+      ? buildDial(await loadCad('/cad/m5dial.glb'), dialBase)
     : sc.model === 'duo' ? buildDuo(await loadCad('/cad/case.glb'),
-                                    await loadCad('/cad/m5dial.glb'))
+                                    await loadCad('/cad/m5dial.glb'),
+                                    dialBase)
     : sc.model === 'mini'
       ? buildMini(await loadCad('/cad/minircbench.glb'))
     : buildCase(shown);
