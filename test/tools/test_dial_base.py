@@ -37,6 +37,29 @@ def test_parts_are_valid_and_apart(built):
     assert base.volume(both) == pytest.approx(0.0, abs=1e-6)
 
 
+def test_rim_stands_on_the_wall(built):
+    """The rim has material under it all round, not only at the screws.
+
+    Under the rim's whole width a ledge joins it to the wall, at an
+    angle between two screw columns as at one; each part is one piece.
+    """
+    rise, thick, gap = base.RIM
+    outer = base.inner_radius(base.SPLIT + rise) - gap
+    bottom = built["dial_base_bottom"]
+    for angle in (0.0, 90.0, 200.0):
+        probe = base._turned(base._box(
+            outer - thick, -0.5, base.SPLIT - 1.0, outer, 0.5,
+            base.SPLIT), angle)
+        shared = base.volume(BRepAlgoAPI_Common(bottom, probe).Shape())
+        assert shared == pytest.approx(thick * 1.0 * 1.0, rel=0.02)
+        gap_probe = base._turned(base._box(
+            outer, -0.5, base.SPLIT - 1.0, outer + 0.3, 0.5, base.SPLIT),
+            angle)
+        assert base.volume(
+            BRepAlgoAPI_Common(bottom, gap_probe).Shape()) > 0.25
+    assert [base.pieces(solid) for solid in built.values()] == [1, 1]
+
+
 def test_overall_size(built):
     """72 across at the belly, 32.5 high, split 19.0 below the top."""
     top = base._extent(built["dial_base_top"])

@@ -676,8 +676,12 @@ jobs:
       # The two parts of the M5Stack Dial's base are built with
       # OpenCASCADE: the files match their spec, each is a valid solid,
       # and neither shares volume with the dial, its nut or the cell.
+      # The base's tests need OpenCASCADE, which this job installs after
+      # its pytest step, where they are skipped; they run here.
       - name: Dial base matches its spec and clears dial, nut and cell
-        run: python3 hardware/mechanical/_gen_dial_base.py --check
+        run: |
+          python3 hardware/mechanical/_gen_dial_base.py --check
+          python3 -m pytest test/tools/test_dial_base.py -q
 
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
       # OpenCASCADE meshes each solid again; the two meshes are within

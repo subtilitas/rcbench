@@ -41,8 +41,9 @@ Stamp-S3 and leave the dial at its +y end, away from the USB plug, then
 drop to the cell. A pad of foam 2 thick lies between the cell and the
 dial; it holds the cell and leaves it room to swell.
 
-``check`` puts the dial, its nut and the cell where they sit and fails
-when one shares volume with a part of the base.
+``check`` fails when a part is not one valid solid, and puts the dial,
+its nut and the cell where they sit and fails when one shares volume
+with a part of the base.
 
 Usage:
     python3 hardware/mechanical/_gen_dial_base.py           write
@@ -92,6 +93,8 @@ from OCP.StlAPI import StlAPI_Writer
 from OCP.TCollection import TCollection_ExtendedString
 from OCP.TDataStd import TDataStd_Name
 from OCP.TDocStd import TDocStd_Document
+from OCP.TopAbs import TopAbs_SOLID
+from OCP.TopExp import TopExp_Explorer
 from OCP.XCAFDoc import XCAFDoc_ColorGen, XCAFDoc_DocumentTool
 
 HERE = Path(__file__).resolve().parent
@@ -119,6 +122,7 @@ SPLIT = -19.0           # z of the joint
 FLOOR = -HEIGHT + WALL   # z of the floor's upper face
 # Rim of the bottom part inside the top part: height, thickness, gap.
 RIM = (2.0, 1.0, 0.2)
+LEDGE = 1.5             # height of the ledge's upright side under the rim
 # Screws: circle radius, angles, boss diameter, pilot hole, clearance
 # hole, head recess diameter, z of the head's seat, z the pilot hole
 # reaches up to.
@@ -291,13 +295,22 @@ def parts():
         top, BRepAlgoAPI_Common(tube, _body()).Shape()).Shape()
     top = BRepAlgoAPI_Cut(top, _bar(width, height, corner, z, 20.0,
                                     big)).Shape()
-    # Rim of the bottom part, rising into the top part.
+    # Rim of the bottom part, rising into the top part. It stands on a
+    # ledge that fills the wall in to the rim's inner side below the
+    # joint and ends in a 45 degree slope, so it prints without support.
     rise, thick, gap = RIM
     outer = inner_radius(SPLIT + rise) - gap
-    rim = BRepAlgoAPI_Cut(_cylinder(0, 0, outer, SPLIT, SPLIT + rise),
-                          _cylinder(0, 0, outer - thick, SPLIT - 1,
-                                    SPLIT + rise + 1)).Shape()
-    bottom = BRepAlgoAPI_Fuse(bottom, rim).Shape()
+    inside, drop = outer - thick, LEDGE
+    slope = BELLY[0] - inside
+    rim = _revolve([
+        _line((inside, SPLIT + rise), (outer, SPLIT + rise)),
+        _line((outer, SPLIT + rise), (outer, SPLIT)),
+        _line((outer, SPLIT), (BELLY[0], SPLIT)),
+        _line((BELLY[0], SPLIT), (BELLY[0], SPLIT - drop - slope)),
+        _line((BELLY[0], SPLIT - drop - slope), (inside, SPLIT - drop)),
+        _line((inside, SPLIT - drop), (inside, SPLIT + rise))])
+    bottom = BRepAlgoAPI_Fuse(
+        bottom, BRepAlgoAPI_Common(rim, _body()).Shape()).Shape()
     # Screw columns with clearance holes and head recesses.
     for x, y, _angle in _screw_points():
         column = BRepAlgoAPI_Common(
@@ -370,6 +383,15 @@ def step_text(stem, solid):
     return text
 
 
+def pieces(shape):
+    """The number of solids a shape is made of."""
+    count, walk = 0, TopExp_Explorer(shape, TopAbs_SOLID)
+    while walk.More():
+        count += 1
+        walk.Next()
+    return count
+
+
 def volume(shape):
     """A shape's volume in mm3."""
     props = GProp_GProps()
@@ -424,6 +446,9 @@ def check(built):
     for stem, solid in built.items():
         if not BRepCheck_Analyzer(solid).IsValid():
             errors.append(f"{stem}: not a valid solid")
+        count = pieces(solid)
+        if count != 1:
+            errors.append(f"{stem}: {count} separate pieces")
     top, bottom = built["dial_base_top"], built["dial_base_bottom"]
     shared = volume(BRepAlgoAPI_Common(top, bottom).Shape())
     if shared > 1e-6:

@@ -215,7 +215,7 @@ while the other turns the knob.
 | File | Content | Print |
 | --- | --- | --- |
 | `dial_base_top.step`, `.stl` | the dial's seat: top plate with the 45.2mm hole, wall, 4 screw bosses, USB opening with its guide tube; 13.9cm3 | top face down, no support |
-| `dial_base_bottom.step`, `.stl` | floor with the cell's pocket, centring rim, 4 screw columns; 14.8cm3 | foot down, no support |
+| `dial_base_bottom.step`, `.stl` | floor with the cell's pocket, centring rim, 4 screw columns; 15.6cm3 | foot down, no support |
 
 Both files are in the dial's frame: z = 0 is the top plate's upper face,
 where the dial's flange seats, the knob points to +z, the `^` mark is at
@@ -232,7 +232,7 @@ The shape is a body of revolution about the dial's axis:
 | Underside | rounded on a radius of 11.5 for 50 degrees, then a cone of that slope to a flat foot 57 across |
 | Flutes | 18, each 5.6 wide and 0.7 deep at the belly, 18 degrees apart, fading out 8.3 above and 4.0 below it; none within 14 degrees of the USB opening |
 | Wall | 2.4; 1.7 under a flute |
-| Joint | level, 19.0 below the top, with a shadow gap 0.4 wide and deep; the bottom part's rim, 2.0 high and 1.0 thick, stands 0.2 inside the top part's wall |
+| Joint | level, 19.0 below the top, with a shadow gap 0.4 wide and deep; the bottom part's rim, 2.0 high and 1.0 thick, stands 0.2 inside the top part's wall, on a ledge that fills the wall in below the joint for 1.5 and ends in a 45 degree slope |
 
 The underside is the part the palm holds. The flutes keep the base from
 turning in the hand while the knob turns; the knob has 20 grooves at the
@@ -242,7 +242,7 @@ For scale, two things made to be held or turned in one hand: Microsoft's
 Surface Dial is 59mm across and 30mm high (Microsoft's specification), an
 ice hockey puck 76.2mm across and 25.4mm high. The base lies between them
 in width, 72.0mm, and is 32.5mm high. The dial weighs 46.3g and the two
-parts, printed solid in PLA at 1.24g/cm3, 36g; the cell's weight is not
+parts, printed solid in PLA at 1.24g/cm3, 37g; the cell's weight is not
 measured.
 
 | Feature | mm |
