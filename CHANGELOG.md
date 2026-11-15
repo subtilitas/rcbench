@@ -6,6 +6,38 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.14 - 2026-11-15
+
+0.23.14 is a testing release. It adds a switch-off to the M5Stack Dial (a 5s
+hold of the screen button, then the choice OFF or KEEP ON), turns the Dial's
+knob the right way round and ends a device update at once when the device has
+no update service. The hardware files are licensed CC BY-NC-SA 4.0. The video
+tool gains storyboards for the Dial, the rbmod carrier and the MiniRcBench.
+Its minor number, 23, is odd. GitHub publishes it as a pre-release and does
+not mark it as latest. It runs on the ESP32-P4 panel, as 0.23.13 does; an
+ESP32-S3 panel stays on the 0.22 line and is not offered it. The link
+protocol is 4.37, unchanged from 0.23.13. The assets are
+`rcbench-panel-p4-v0.23.14.zip`, `rcbench-panel-p4-v0.23.14.bin`,
+`rcbench-iomcu-v0.23.14.zip`, `rcbench-iomcu-rbmod-v0.23.14.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.14.bin`, `rcbench-node-pwr-merged-0.23.14.bin`,
+`rcbench-node-bal-0.23.14.bin`, `rcbench-node-bal-merged-0.23.14.bin`,
+`rcbench-node-display-merged-0.23.14.bin`, `rcbench-dial-0.23.14.bin`,
+`rcbench-dial-merged-0.23.14.bin` and `SHA256SUMS`.
+
+A bench on 0.23.13 gets 0.23.14 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The panel carries the images of the
+Dial and of the power and balance nodes and sends them over Bluetooth LE from
+SETUP > UPDATES; the display node's image is loaded over USB (Universal Serial
+Bus). To set up a new bench, load both boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes.
+
+The entries below cover the 7 pull requests merged since v0.23.13: #847,
+#857 to #860, #862 and #863.
+
 ### Added
 
 - M5Stack Dial: a 5s hold of the screen button beeps (600Hz, 150ms) and
