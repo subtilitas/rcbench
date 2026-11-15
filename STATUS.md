@@ -608,7 +608,7 @@ and Hitec sessions count a PD mini reading as their state line writes it
 
 RUDDER (`shared/ui/servo_rudder_panel.c`, `shared/servo/servo_rudder.c`) shows the angle
 source's angle, the AS5600's or the IMU's, as a control surface's deflection from ZERO in
-0.1°, with 295.69s (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
+0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTER
 and 2000us and takes the knob only while ARMED, its PORT button over the READY rows
 (`test_servo_rudder`, `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`; host suite only).
