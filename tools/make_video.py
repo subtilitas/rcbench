@@ -61,7 +61,8 @@ ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
            "ina", "buck", "trigger", "knob", "bezel", "usb", "power",
            "portA", "portB", "body", "dial", "glass", "board", "card",
            "buttons", "shell", "back", "ports", "esc", "tmt", "plugs",
-           "screws", "cell", "boost", "keys")
+           "screws", "cell", "boost", "keys", "stamp", "nut", "top",
+           "bottom", "pad")
 MINI_UNITS = ("shell", "buttons", "ina", "board", "cell", "boost",
               "plugs", "screws")
 STILLS = VIDEO / "stills"
@@ -207,7 +208,8 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         if label.get("style", "ok") not in STYLES:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
     for name, keys in scene.get("parts", {}).items():
-        known = MINI_UNITS if mini else UNITS
+        known = MINI_UNITS if mini else DIAL_UNITS if scene.get(
+            "model") == "dial" else UNITS
         if name not in known:
             errors.append(f"{where} parts: {name} is not one of "
                           f"{', '.join(known)}")
@@ -477,7 +479,9 @@ def _check_tour(scene: dict, steps: int, where: str, errors: list) -> None:
 
 
 #: The two printed parts of the Dial's hand-held base, in tools/video/cad/.
-DIAL_BASE = ("dial_base_top", "dial_base_bottom")
+DIAL_BASE = ("dial_base_top", "dial_base_bottom", "m5dial_nut")
+#: What stands apart in a scene of the Dial in its base.
+DIAL_UNITS = ("upper", "dial", "nut", "cell", "pad", "screws")
 
 
 def check(board: dict) -> list:

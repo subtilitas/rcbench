@@ -3,7 +3,7 @@
  "lang": "en",
  "brand": "M5Stack Dial",
  "dial_base": true,
- "steps": 6,
+ "steps": 7,
  "music": "pachelbel-canon",
  "music_gain": 0.5,
  "voice": {
@@ -24,7 +24,7 @@
     "to": 5.2,
     "kicker": "rcbench · M5Stack Dial",
     "heading": "The Dial:<br>a wireless knob",
-    "text": "Flash it, bind it, turn it.<br>6 steps. A battery is already inside."
+    "text": "Assemble it, flash it, bind it, turn it.<br>7 steps."
    },
    "chips": [
     {
@@ -180,16 +180,15 @@
       1330,
       300
      ],
-     "title": "Battery inside",
-     "text": "One LiPo cell of 1,000 mAh or less on the MX1.25 socket, in the printed base's lower part. This video takes it as fitted.",
-     "size": "sm",
-     "style": "muted"
+     "title": "Hand-held base",
+     "text": "Printed in two parts. One LiPo cell of 1,000 mAh lies in its lower part.",
+     "size": "sm"
     }
    ],
    "say": [
     {
      "at": 0.6,
-     "text": "The M 5 stack dial is a wireless knob for the R C bench. This video shows how to flash it, bind it to the panel, and use it. A battery is taken as fitted."
+     "text": "The M 5 stack dial is a wireless knob for the R C bench. This video shows how to put it into its printed base with a battery, flash it, bind it to the panel, and use it."
     },
     {
      "at": 6.2,
@@ -204,12 +203,438 @@
   {
    "type": "case",
    "model": "dial",
+   "dur": 78.0,
+   "chips": [
+    {
+     "from": 0,
+     "to": 78.0,
+     "n": 1,
+     "text": "Into the base"
+    }
+   ],
+   "faces": [
+    [
+     0,
+     "bind"
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      -215,
+      150,
+      335
+     ],
+     [
+      0,
+      42,
+      0
+     ]
+    ],
+    [
+     10.0,
+     [
+      -215,
+      150,
+      335
+     ],
+     [
+      0,
+      42,
+      0
+     ]
+    ],
+    [
+     12.5,
+     [
+      -70,
+      30,
+      215
+     ],
+     [
+      0,
+      78,
+      0
+     ]
+    ],
+    [
+     29.0,
+     [
+      -60,
+      34,
+      215
+     ],
+     [
+      0,
+      78,
+      0
+     ]
+    ],
+    [
+     31.5,
+     [
+      -170,
+      150,
+      290
+     ],
+     [
+      0,
+      50,
+      0
+     ]
+    ],
+    [
+     41.5,
+     [
+      -150,
+      150,
+      290
+     ],
+     [
+      0,
+      40,
+      0
+     ]
+    ],
+    [
+     43.5,
+     [
+      -150,
+      200,
+      270
+     ],
+     [
+      0,
+      22,
+      0
+     ]
+    ],
+    [
+     53.5,
+     [
+      -130,
+      200,
+      270
+     ],
+     [
+      0,
+      22,
+      0
+     ]
+    ],
+    [
+     56.0,
+     [
+      -150,
+      130,
+      250
+     ],
+     [
+      0,
+      16,
+      0
+     ]
+    ],
+    [
+     60.0,
+     [
+      -130,
+      150,
+      230
+     ],
+     [
+      0,
+      22,
+      0
+     ]
+    ],
+    [
+     69.0,
+     [
+      -100,
+      150,
+      230
+     ],
+     [
+      0,
+      22,
+      0
+     ]
+    ],
+    [
+     72.5,
+     [
+      -125,
+      128,
+      195
+     ],
+     [
+      0,
+      16,
+      0
+     ]
+    ],
+    [
+     78.0,
+     [
+      -105,
+      132,
+      195
+     ],
+     [
+      0,
+      16,
+      0
+     ]
+    ]
+   ],
+   "parts": {
+    "dial": [
+     [
+      0,
+      1
+     ],
+     [
+      32.0,
+      1
+     ],
+     [
+      35.0,
+      0
+     ]
+    ],
+    "nut": [
+     [
+      0,
+      1
+     ],
+     [
+      36.5,
+      1
+     ],
+     [
+      39.0,
+      0
+     ]
+    ],
+    "cell": [
+     [
+      0,
+      1
+     ],
+     [
+      44.0,
+      1
+     ],
+     [
+      46.5,
+      0
+     ]
+    ],
+    "pad": [
+     [
+      0,
+      1
+     ],
+     [
+      49.0,
+      1
+     ],
+     [
+      51.0,
+      0
+     ]
+    ],
+    "upper": [
+     [
+      0,
+      1
+     ],
+     [
+      54.8,
+      1
+     ],
+     [
+      57.6,
+      0
+     ]
+    ],
+    "screws": [
+     [
+      0,
+      1
+     ],
+     [
+      63.5,
+      1
+     ],
+     [
+      66.5,
+      0
+     ]
+    ]
+   },
+   "flip": [
+    [
+     0,
+     0
+    ],
+    [
+     59.0,
+     0
+    ],
+    [
+     62.0,
+     180
+    ],
+    [
+     69.5,
+     180
+    ],
+    [
+     72.0,
+     0
+    ]
+   ],
+   "labels": [
+    {
+     "from": 1.0,
+     "to": 10.4,
+     "anchor": "top",
+     "at": [
+      1290,
+      300
+     ],
+     "n": 1,
+     "title": "Top part",
+     "text": "Seats the Dial in a 45.2 mm hole. The opening at the side leads to the USB-C socket.",
+     "size": "sm"
+    },
+    {
+     "from": 1.4,
+     "to": 10.4,
+     "anchor": "bottom",
+     "at": [
+      1290,
+      720
+     ],
+     "title": "Bottom part",
+     "text": "Holds the cell 102540, 1,000 mAh, in a pocket of 42.9 x 26.0 mm.",
+     "size": "sm"
+    },
+    {
+     "from": 12.8,
+     "to": 29.0,
+     "anchor": "stamp",
+     "at": [
+      1250,
+      250
+     ],
+     "n": 1,
+     "title": "The cell's plug",
+     "text": "Take the Stamp-S3 off: 2 screws M2. Plug the cell into the 2-pin socket under it, lead the wires out at the end away from the USB-C socket, put the Stamp-S3 back."
+    },
+    {
+     "from": 20.0,
+     "to": 29.0,
+     "anchor": "stamp",
+     "at": [
+      150,
+      620
+     ],
+     "side": "r",
+     "style": "warn",
+     "size": "sm",
+     "title": "Check the polarity first",
+     "text": "Which pin of the socket is plus is not checked against the cell's plug."
+    },
+    {
+     "from": 31.6,
+     "to": 41.2,
+     "anchor": "nut",
+     "at": [
+      1270,
+      560
+     ],
+     "n": 1,
+     "title": "Dial and ring nut",
+     "text": "The Dial through the top part, its USB-C socket in line with the opening. The ring nut goes on from below."
+    },
+    {
+     "from": 43.6,
+     "to": 53.2,
+     "anchor": "cell",
+     "at": [
+      1270,
+      330
+     ],
+     "n": 1,
+     "title": "Cell and foam pad",
+     "text": "The cell in its pocket, its wires on the side away from the USB opening. A foam pad of 2 mm, about 20 x 30 mm, on top: it holds the cell and leaves it room to swell."
+    },
+    {
+     "from": 62.6,
+     "to": 69.2,
+     "anchor": "screws",
+     "at": [
+      1270,
+      300
+     ],
+     "n": 1,
+     "title": "4 screws M3 x 12",
+     "text": "Pan head, from the foot into the top part's bosses. Their heads sit 8 mm deep."
+    },
+    {
+     "from": 72.8,
+     "to": 77.6,
+     "anchor": "body",
+     "at": [
+      1330,
+      700
+     ],
+     "style": "muted",
+     "size": "sm",
+     "title": "Not printed yet",
+     "text": "No base has been printed, so no fit is tried."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.4,
+     "text": "Step 1. The dial goes into its hand-held base. The base is printed in two parts. The top part seats the dial. The bottom part holds one lithium polymer cell of 1000 milliamp hours."
+    },
+    {
+     "at": 11.0,
+     "text": "First, the cell's plug. On the back of the dial, take off the stamp board, it is held by two small screws. Plug the cell into the socket under it. Lead the wires out at the end away from the U S B socket, and put the stamp board back. Check which pin is plus before you plug in."
+    },
+    {
+     "at": 30.0,
+     "text": "Put the dial through the hole of the top part, with its U S B socket in line with the opening. Then turn the ring nut on from below."
+    },
+    {
+     "at": 42.0,
+     "text": "Lay the cell into its pocket in the bottom part, with the wires on the side away from the U S B opening. A foam pad of 2 millimetres goes on top of it."
+    },
+    {
+     "at": 54.0,
+     "text": "Close the base. Turn it over, and drive the four M 3 screws, 12 millimetres long, into the foot."
+    },
+    {
+     "at": 70.0,
+     "text": "Turned back, the dial is ready to be flashed. No base has been printed yet, so this fit is not tried."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "dial",
    "dur": 19.0,
    "chips": [
     {
      "from": 0,
      "to": 19.0,
-     "n": 1,
+     "n": 2,
      "text": "Flash the firmware"
     }
    ],
@@ -297,7 +722,7 @@
      ],
      "title": "Flash over USB",
      "text": "Connect the socket to a computer and write the merged image at offset 0x0:<br><b>python -m esptool --chip esp32s3 write-flash 0x0 rcbench-dial-merged-&lt;version&gt;.bin</b><br>A Dial that runs other firmware: hold the Stamp button while plugging in.",
-     "n": 1
+     "n": 2
     },
     {
      "from": 13.2,
@@ -309,14 +734,14 @@
      ],
      "title": "NOT BOUND",
      "text": "After the restart the Dial shows its name, <b>DIAL-</b> and 4 hex digits, and where to bind it.",
-     "n": 1,
+     "n": 2,
      "style": "ok"
     }
    ],
    "say": [
     {
      "at": 0.4,
-     "text": "Step 1. Flash the firmware over U S B. Connect the socket to a computer and write the merged image with E-S-P tool. A dial that runs other firmware needs its stamp button held while you plug it in."
+     "text": "Step 2. Flash the firmware over U S B. Connect the socket to a computer and write the merged image with E-S-P tool. A dial that runs other firmware needs its stamp button held while you plug it in."
     },
     {
      "at": 12.8,
@@ -331,7 +756,7 @@
     {
      "view": "setup-wireless-dial",
      "dur": 7.0,
-     "n": 2,
+     "n": 3,
      "kicker": "Bind",
      "path": [
       "HOME",
@@ -347,12 +772,12 @@
       755,
       64
      ],
-     "say": "Step 2. On the panel, open setup, wireless, dial. Set dial to on. The panel starts Bluetooth."
+     "say": "Step 3. On the panel, open setup, wireless, dial. Set dial to on. The panel starts Bluetooth."
     },
     {
      "view": "setup-wireless-dial",
      "dur": 9.0,
-     "n": 2,
+     "n": 3,
      "kicker": "Bind",
      "path": [
       "HOME",
@@ -397,7 +822,7 @@
     {
      "view": "setup-wireless-dial",
      "dur": 6.0,
-     "n": 2,
+     "n": 3,
      "kicker": "Bind",
      "path": [
       "HOME",
@@ -425,7 +850,7 @@
     {
      "from": 0,
      "to": 29.0,
-     "n": 3,
+     "n": 4,
      "text": "Menus and values"
     }
    ],
@@ -618,7 +1043,7 @@
      ],
      "title": "The turn moves the focus",
      "text": "On the panel a ring marks the focused item; the Dial names it with its neighbours and its place. <b>PRESS</b> opens it.",
-     "n": 3,
+     "n": 4,
      "side": "t"
     },
     {
@@ -631,7 +1056,7 @@
      ],
      "title": "PRESS a value to set it",
      "text": "The keypad opens and the turn moves the value by its step, inside its range. <b>PRESS</b> keeps it, <b>HOLD</b> cancels.",
-     "n": 3,
+     "n": 4,
      "side": "r"
     },
     {
@@ -644,7 +1069,7 @@
      ],
      "title": "HOLD goes back",
      "text": "One level a hold. The Dial navigates only while the bench is SAFE, and no hold of the panel completes from it.",
-     "n": 3,
+     "n": 4,
      "side": "r",
      "style": "muted"
     }
@@ -652,7 +1077,7 @@
    "say": [
     {
      "at": 0.4,
-     "text": "Step 3. The dial navigates the panel. Each detent moves the focus by one item. The panel marks it with a ring, the dial shows its name. A press opens it."
+     "text": "Step 4. The dial navigates the panel. Each detent moves the focus by one item. The panel marks it with a ring, the dial shows its name. A press opens it."
     },
     {
      "at": 10.4,
@@ -672,7 +1097,7 @@
     {
      "from": 0,
      "to": 30.0,
-     "n": 4,
+     "n": 5,
      "text": "MOTOR & ESC"
     }
    ],
@@ -807,7 +1232,7 @@
      ],
      "title": "The same readings on both",
      "text": "Six readings, a ring for each. While the bench is SAFE a turn moves nothing: <b>ARM on the panel</b>, with its 2 s hold.",
-     "n": 4,
+     "n": 5,
      "side": "t"
     },
     {
@@ -820,7 +1245,7 @@
      ],
      "title": "A detent is 1 % of throttle",
      "text": "The panel and the Dial show the same run: throttle, speed, voltage, current and power.",
-     "n": 4,
+     "n": 5,
      "style": "ok",
      "side": "r"
     },
@@ -834,14 +1259,14 @@
      ],
      "title": "PRESS: throttle 0 %",
      "text": "A press on the Dial's screen sets the throttle to 0 %. A <b>HOLD</b> of 1 s disarms.",
-     "n": 4,
+     "n": 5,
      "side": "r"
     }
    ],
    "say": [
     {
      "at": 0.4,
-     "text": "Step 4. Open motor and E-S-C on the panel. The dial shows the same six readings, each with a ring. While the bench is safe, a turn moves nothing. Arm on the panel, with its 2 second hold."
+     "text": "Step 5. Open motor and E-S-C on the panel. The dial shows the same six readings, each with a ring. While the bench is safe, a turn moves nothing. Arm on the panel, with its 2 second hold."
     },
     {
      "at": 10.2,
@@ -861,7 +1286,7 @@
     {
      "from": 0,
      "to": 17.0,
-     "n": 5,
+     "n": 6,
      "text": "SERVO LIVE"
     }
    ],
@@ -968,7 +1393,7 @@
      ],
      "title": "SERVO LIVE: a detent is 1°",
      "text": "The horn on the panel and the commanded angle and pulse on the Dial move together.",
-     "n": 5,
+     "n": 6,
      "side": "r"
     },
     {
@@ -981,14 +1406,14 @@
      ],
      "title": "PRESS: CENTER",
      "text": "A press centres the servo. A <b>HOLD</b> of 1 s disarms.",
-     "n": 5,
+     "n": 6,
      "side": "r"
     }
    ],
    "say": [
     {
      "at": 0.4,
-     "text": "Step 5. On servo live, each detent moves the horn by 1 degree. The panel and the dial show the same angle and pulse."
+     "text": "Step 6. On servo live, each detent moves the horn by 1 degree. The panel and the dial show the same angle and pulse."
     },
     {
      "at": 11.2,
@@ -1004,7 +1429,7 @@
     {
      "from": 0,
      "to": 26.0,
-     "n": 6,
+     "n": 7,
      "text": "What the Dial cannot do"
     }
    ],
@@ -1104,7 +1529,7 @@
      ],
      "title": "Not a safety device",
      "text": "STOP is on the panel only. ARM, SUPPLY ON, PROG 5V and WRITE stay the panel's 2 s holds: no turn or press switches power on.",
-     "n": 6,
+     "n": 7,
      "style": "warn"
     },
     {
@@ -1117,7 +1542,7 @@
      ],
      "title": "Link lost while ARMED",
      "text": "500 ms without a packet: LINK LOST, no turn is sent. After 1,000 ms the panel switches the bench <b>SAFE, all outputs off</b>.",
-     "n": 6,
+     "n": 7,
      "style": "warn"
     },
     {
@@ -1130,13 +1555,13 @@
      ],
      "title": "Forget the panel",
      "text": "A <b>10 s hold</b> of the screen button forgets the bound panel. Protocol version 1 has no pairing and no encryption.",
-     "n": 6
+     "n": 7
     }
    ],
    "say": [
     {
      "at": 0.4,
-     "text": "Step 6. What the dial cannot do. It is not a safety device. Stop is on the panel only, and no turn or press ever switches power on."
+     "text": "Step 7. What the dial cannot do. It is not a safety device. Stop is on the panel only, and no turn or press ever switches power on."
     },
     {
      "at": 8.0,
@@ -1153,6 +1578,7 @@
    "dur": 8,
    "heading": "The Dial is bound and in use",
    "items": [
+    "Dial and cell into the printed base",
     "Flash over USB",
     "SETUP › WIRELESS › DIAL: ON",
     "Scan, tap your Dial, SAVE",

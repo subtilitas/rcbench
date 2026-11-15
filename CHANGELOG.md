@@ -34,12 +34,13 @@ history is in git.
   `thin`, a `fit` of the kind `link` is a 0402 chip resistor taken off
   the board; the inset `latch` shows a contact leaving a 1.0mm plug
   ([Videos from storyboards](tools/video/README.md)).
-- Storyboard `dial`: bringing the M5Stack Dial into use in 6 steps and
-  209.43s, narrated. A `case` scene with the model `dial` draws the
+- Storyboard `dial`: bringing the M5Stack Dial into use in 7 steps and
+  295.69s, narrated. A `case` scene with the model `dial` draws the
   Dial from its STEP model, shows its faces on the display and turns its
   knob; `tools/video_cad.py --solids` converts a STEP part with one mesh
   a solid. A storyboard's `dial_base` puts the Dial into its printed
-  hand-held base ([Videos from storyboards](tools/video/README.md)).
+  hand-held base; its parts, the ring nut, the cell, a foam pad and the
+  4 screws stand apart (`parts`) and the whole rolls over (`flip`) ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `rbmod-build`: building a rev 1 rbmod carrier and wiring
   the panel in 13 steps and 347.32s, narrated. A `board` scene mounts parts, shows solder
   joints and a cross-section card, and takes narration cues. Music bed
@@ -1166,7 +1167,7 @@ The entries below cover the 22 pull requests merged since v0.23.9: #750 to
   travel, reverse, HV) and DUT (name, report). It opens at any time. Each
   function screen's footer holds its name with the port line, ARM / DISARM
   and SETTINGS for that function's list, which opens only while SAFE:
-  SWEEP's curve, TEST's and LIMIT RUN's run settings, RUDDER's LENGTH and
+  SWEEP's curve, TEST's and LIMIT RUN's run settings, RUDDER's 295.69s and
   ENC CENTRE, RUDDER AUTO's and HITEC's lists, KST's EXPERT MODE page.
   LIVE has no list.
 - The output card's TARGET row gives way to the PORT button, 380 x 48px at
@@ -1247,7 +1248,7 @@ The entries below cover the 22 pull requests merged since v0.23.9: #750 to
   ELSEWHERE`. A step past 6.0V turns the hold into a tap that opens HV
   SERVOS ONLY, whose 2s hold arms and starts.
 - TEST's SETTINGS is one list of 17 rows under four headings, VOLTAGE
-  STEPS, BROWN-OUT, PASS/FAIL LIMITS and LENGTH AND TIMING, in place of the
+  STEPS, BROWN-OUT, PASS/FAIL LIMITS and 295.69s AND TIMING, in place of the
   automatic test's page of rows and the brown-out walk's page. Each
   heading's line names what its rows give; the BROWN-OUT line names the
   walk with its count, `From 5.00V down in 0.20V steps to 3.30V, 10
@@ -1874,8 +1875,8 @@ The entries below cover the 16 pull requests merged since v0.23.6: #713 to
 - RUDDER is one of the five tasks in SERVO's strip. While ARMED, it drives
   the servo to 1000us, CENTRE or 2000us, or lets the rotary knob set its
   position. It shows control-surface deflection from AS5600 or IMU in
-  0.1°. With LENGTH set, it also shows trailing-edge travel, L x sin, in
-  0.1mm. LENGTH is the hinge-to-trailing-edge distance: 10 to 500mm, kept
+  0.1°. With 295.69s set, it also shows trailing-edge travel, L x sin, in
+  0.1mm. 295.69s is the hinge-to-trailing-edge distance: 10 to 500mm, kept
   across restarts; 0 means unset. ZERO records neutral. MAX retains the
   largest deflection on each side until ZERO or RESET MAX. A state line
   names the angle source and explains a missing reading. The screen guide
@@ -1907,7 +1908,7 @@ The entries below cover the 16 pull requests merged since v0.23.6: #713 to
   programmer session. The limit run's current guard remains active; a
   stall before reaching the goal ends the run with SURFACE BINDS AT.
   RUDDER's ZERO row contains ZERO, RESET MAX and AUTO, each 160px wide.
-  AUTO's box replaces LENGTH, the drive buttons and the state lines;
+  AUTO's box replaces 295.69s, the drive buttons and the state lines;
   MANUAL restores them. The run writes RUDDRnnn.TXT and RUDDRnnn.CSV.
   RESET MAX is labelled MAX LÖSCHEN in German.
 - LIMIT RUN and AUTO support Hitec servos. The SERVO row in LIMIT RUN

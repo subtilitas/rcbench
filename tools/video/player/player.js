@@ -113,7 +113,8 @@ for (const sc of sb.scenes) {
   sc.rig = sc.model === 'cad'
     ? buildCadCase(shown, await loadCad('/cad/case.glb'))
     : sc.model === 'dial'
-      ? buildDial(await loadCad('/cad/m5dial.glb'), dialBase)
+      ? buildDial(await loadCad('/cad/m5dial.glb'), dialBase,
+                  dialBase && await loadCad('/cad/m5dial_nut.glb'))
     : sc.model === 'duo' ? buildDuo(await loadCad('/cad/case.glb'),
                                     await loadCad('/cad/m5dial.glb'),
                                     dialBase)

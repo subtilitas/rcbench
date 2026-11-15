@@ -106,7 +106,7 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `storyboards/features.json` | every screen of the bench in 8 chapters: where it opens from and what it does on the rbmod carrier, narrated, 755.92s |
 | `storyboards/rbmod-rework.json` | the rework of a rev 1 rbmod carrier in 4 steps: the track cut at R1, the wire from GP15, the pull-down on M7's EN and the zener on M7's output; 83s, no narration |
 | `storyboards/rbmod-build.json` | building a rev 1 rbmod carrier in 13 steps, the 4 rework steps among them: the bare board, D1 and R9, the connectors, the headers, the 5 modules on pin strips, the large holes closed with wire and solder, the 4 wires from J6's pads to a USB-C plug board for the PD mini, and the panel's back with the heartbeat wires of header P3, the CAN cable and the supply on the RS485 header; narrated, 347.32s, Pachelbel's Canon as its bed at half level |
-| `storyboards/dial.json` | bringing the M5Stack Dial into use in 6 steps: flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 209.43s, Pachelbel's Canon at half level. The battery is taken as fitted |
+| `storyboards/dial.json` | bringing the M5Stack Dial into use in 7 steps: the Dial, its ring nut, the cell 102540 and a foam pad into the two parts of the printed base and its 4 screws M3 x 12, flashing over USB, the bind on SETUP > WIRELESS > DIAL, the menu and the SET of a value, the knob on MOTOR & ESC and on SERVO LIVE, and what the Dial does not do; the bench and the Dial stand in one 3D scene and show the same screen, run and value; narrated, 295.69s, Pachelbel's Canon at half level |
 | `storyboards/minircbench-build.json` | building a MiniRcBench in 10 steps: the parts, the firmware, the boost board's input on the battery socket's pins, the pull-down and IO28 on the enable pad, the INA219 on the I2C socket, the 5.6V zener and the 470µF capacitor across the boost board's output, the 5V path through the sensor to both male servo connectors, the signals and the 9 unused wires taken out of the 12-pin plug, the check before the cell, the case, and the settings; narrated, 482.1s, Pachelbel's Canon at half level |
 | `storyboards/thumbnail.json` | the thumbnail of `features`: the case with its display lifted and the title; `--stills 3` writes it |
 | `../video_audio.py` | the sound track of a storyboard as a WAV file |
@@ -123,7 +123,7 @@ Top level:
 | --- | --- |
 | `lang` | `en` or `de`: the language the renderer draws the screens in |
 | `product` | optional: the name at the top left in place of `rcbench` |
-| `dial_base` | optional, `true` or `false`, the default: the Dial of the models `dial` and `duo` sits in its printed hand-held base, `dial_base_top` and `dial_base_bottom` of `hardware/mechanical/models/` |
+| `dial_base` | optional, `true` or `false`, the default: the Dial of the models `dial` and `duo` sits in its printed hand-held base, `dial_base_top` and `dial_base_bottom` of `hardware/mechanical/models/`, with the ring nut `m5dial_nut` under the top part |
 | `brand` | the line beside the product's name at the top left |
 | `steps` | the count of step marks at the bottom left |
 | `music` | optional: `pads`, the default bed; `bach-prelude`, J. S. Bach's Prelude in C major BWV 846 on the same voices, one bar every 4s; or `pachelbel-canon`, Johann Pachelbel's Canon in D major, its ground bass at 2s a note under three of the violin's variations. `vivaldi-spring` is the opening of Antonio Vivaldi's "Spring" RV 269 in E major, 0.42s an eighth note: its two themes on a bowed voice with the third below, over a plucked bass; its notes are set down from memory of the violin part and are not checked against a score. All three compositions are in the public domain and no recording is used; the notes are set down in `tools/video_audio.py`. Bars 33 and 34 of the prelude keep the pattern of the other bars so that the piece loops |
@@ -139,14 +139,14 @@ A `case` scene:
 | --- | --- |
 | `dur` | length in s |
 | `model` | optional: `mockup`, the default, `cad`, the assembly converted by `tools/video_cad.py`, `dial`, the M5Stack Dial converted by `tools/video_cad.py --solids`, `duo`, the case of `cad` with the Dial 128mm right of its middle, or `mini`, the MiniRcBench converted by `tools/video_cad.py --parts` |
-| `flip` | optional, `mini` model: keys `[t, degrees]`, the bench rolled over about its long axis; 180 shows its back |
+| `flip` | optional, `mini` model: keys `[t, degrees]`, the bench rolled over about its long axis; 180 shows its back. `dial` model with `dial_base`: the Dial in its base rolled over; 180 shows the foot |
 | `faces` | optional, `dial` and `duo` models: keys `[t, name]`, a face of `tools/render_dial.py` on the Dial's display from `t` on, cross-faded over 0.5s |
 | `panel` | optional, `dial` and `duo` models: keys `[t, view]` or `[t, view, screen]`, the panel's screen from `t` on: on the case's display with `duo`, as a flat shot left of the Dial with `dial`. With the `mini` model a key is `[t, name]`, the still `stills/NAME.png` on the display from `t` on |
 | `run` | optional, `dial` and `duo` models: the panel and the Dial following each other from `from` to `to`. The panel's renderer applies the Dial's gestures and writes the packets the panel sends a Dial; the Dial's renderer draws its face from them. The shots go into `panel` and `faces`, and `turn` follows the run. `kind` is `motor`, the default: `arm` and `throttle`, keys `[t, percent]` joined by lines and `[t, percent, "press"]` for a value set at once; drawn 10 times a second from one simulated run, SAFE before `arm`, a detent a percent. `servo`: `angle`, keys `[t, degrees]` as `throttle`'s, on SERVO LIVE while ARMED, a detent a degree. `nav`: `view`, an optional `screen` and `ops`, keys `[t, op]` with `t` and a count of detents, `p` a PRESS or `h` a HOLD, on a SAFE bench; drawn at each gesture |
 | `turn` | optional, `dial` and `duo` models: keys `[t, degrees]`, the knob ring's angle, clockwise seen from the front; the sound track clicks once per 22.5°, a detent |
 | `camera` | keys `[t, [x, y, z], [x, y, z]]`: position and target in mm |
 | `lid` | optional keys `[t, mm]`: how far the display is lifted |
-| `parts` | optional, `cad` model only: keys `[t, k]` per component, `k` from 1, out of sight along the component's way in, to 0, seated. A value held between two keys freezes the component in the air while the camera moves on. Components: `case`, `estop`, `xt60`, `usbc`, `pdmini`, `rbmod`, `mcu`, `ina`, `buck`, `trigger`, `lid`. The `mini` model's: `shell`, `buttons`, `plugs`, `boost`, `ina`, `cell`, `board`, `screws` |
+| `parts` | optional, `cad` model only: keys `[t, k]` per component, `k` from 1, out of sight along the component's way in, to 0, seated. A value held between two keys freezes the component in the air while the camera moves on. Components: `case`, `estop`, `xt60`, `usbc`, `pdmini`, `rbmod`, `mcu`, `ina`, `buck`, `trigger`, `lid`. The `mini` model's: `shell`, `buttons`, `plugs`, `boost`, `ina`, `cell`, `board`, `screws`. The `dial` model's, with `dial_base`: `upper`, the top part with the Dial and the nut, `dial` and `nut` within it, `cell`, `pad`, `screws` |
 | `display` | optional `{view}`: the renderer view on the model's display |
 | `title` | optional `{from, to, kicker, heading, text}` |
 | `chips` | optional `{from, to, n, text}`: the chip at the top right; a numeric `n` also sets the step marks |
@@ -316,16 +316,21 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 
   The Dial stands on its rear parts, without its ring nut and without a
   panel. With `dial_base` it sits in its printed base, whose two parts
-  are converted the same way and are not in the tree either:
+  and the ring nut are converted the same way and are not in the tree
+  either:
 
   ```sh
-  for part in dial_base_top dial_base_bottom; do
+  for part in dial_base_top dial_base_bottom m5dial_nut; do
       python3 tools/video_cad.py --solids \
           hardware/mechanical/models/$part.step -o tools/video/cad/$part.glb
   done
   ```
 
-  The base is drawn closed: its screws and the cell inside are not shown.
+  The cell, the foam pad and the 4 screws are plain solids drawn by
+  `dial3d.js` from the numbers of `hardware/mechanical/README.md`; the
+  cell's wires are two stubs and its plug, the Dial's battery socket and
+  the Stamp-S3 coming off are not drawn. No base is printed, so the
+  assembly the video shows is not tried.
   Its faces are the fixed models of `tools/render_dial.py`, so the
   readings do not follow the knob outside a `run`. A run's numbers are
   the panel's models' (`telemetry_sim`, `servo_sim`, `supply_sim`), posed

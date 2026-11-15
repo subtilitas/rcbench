@@ -461,7 +461,7 @@ sides, the large holes of M5 and M6 take a wire and solder, J6 takes no connecto
 to a USB-C plug board for the PD mini, and a drawing of the panel's back
 (`tools/video/boards/p4-7b-back.json`) shows the 2 wires of header P3 that stay in its 12-pin plug, the CAN cable's H and L, and the
 supply and ground from J7 on the RS485 header's 5V and GND pins. `dial` shows the M5Stack Dial, in its printed hand-held base, coming
-into use in 6 steps and 209.43s, narrated: its STEP model with the faces of
+into use in 7 steps and 295.69s, narrated, step 1 the assembly of the base with its cell: its STEP model with the faces of
 `tools/render_dial.py` on its display and its knob turning (`tools/video/player/dial3d.js`),
 and SETUP > WIRELESS > DIAL as the host renderer draws it. `kst-rbmod` draws a mockup of boxes whose size is estimated, and J2's row order
 there is not confirmed. A render is not run in CI.
@@ -608,7 +608,7 @@ and Hitec sessions count a PD mini reading as their state line writes it
 
 RUDDER (`shared/ui/servo_rudder_panel.c`, `shared/servo/servo_rudder.c`) shows the angle
 source's angle, the AS5600's or the IMU's, as a control surface's deflection from ZERO in
-0.1°, with LENGTH (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
+0.1°, with 295.69s (0 or 10 to 500mm, `rud_len_mm`) the trailing edge's travel L x sin in
 0.1mm, the largest deflection each side until ZERO or RESET MAX, and drives 1000us, CENTER
 and 2000us and takes the knob only while ARMED, its PORT button over the READY rows
 (`test_servo_rudder`, `test_servo_rudder_panel`, `test_servo_rudder_zero`, `test_rudder_layout`; host suite only).

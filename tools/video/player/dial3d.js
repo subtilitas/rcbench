@@ -11,6 +11,14 @@
 // is two printed parts in the Dial's own frame: z = 0 where the Dial's
 // flange seats.  The Dial then stands on the base's foot.
 //
+// With the base and its extra parts the whole can stand apart: the Dial
+// with its ring nut and the base's top part form the upper half, the
+// bottom part with the cell and the foam pad the lower one.  setParts()
+// takes a number per part, 0 seated and 1 fully out; setFlip() rolls the
+// whole over, so that the foot and its 4 screws show.  The cell, the pad
+// and the screws are drawn here as plain solids from the numbers of
+// hardware/mechanical/README.md.
+//
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 
@@ -42,9 +50,17 @@ function layMeshes(gltf, box, put, look) {
   });
 }
 
+// How far out a part stands at 1, in mm: [name, its group's way].
+const AWAY = {
+  upper: [0, 58, 0], dial: [0, 46, 0], nut: [0, -26, 0],
+  cell: [0, 20, 0], pad: [0, 34, 0], screws: [0, -34, 0],
+};
+const HEIGHT = [-32.5, 14.6];   // the base's foot and the bezel's top
+
 // The Dial alone: a group that stands on y = 0, with what moves on it.
 // bases: the glTF files of the base's two parts, or null for none.
-export function makeDial(gltf, bases = null) {
+// nut: the glTF file of the ring nut, or null.
+export function makeDial(gltf, bases = null, nut = null) {
   const root = new THREE.Group();
   const body = new THREE.Group(), knob = new THREE.Group();
   const box = new THREE.Box3();
@@ -58,15 +74,84 @@ export function makeDial(gltf, bases = null) {
     });
   // The rear parts stand on the ground; with the base, its foot does.
   const alone = -box.min.y;
-  const base = new THREE.Group();
-  for (const part of bases || []) {
-    layMeshes(part, box, mesh => base.add(mesh),
-      c => new THREE.MeshStandardMaterial(
-        {color: c.clone(), roughness: .75, metalness: 0}));
+  const g = {};
+  for (const name of ['all', 'upper', 'dial', 'top', 'nut', 'lower',
+                      'cell', 'pad', 'screws']) {
+    g[name] = new THREE.Group();
   }
+  const plain = c => new THREE.MeshStandardMaterial(
+    {color: c.clone(), roughness: .75, metalness: 0});
+  (bases || []).forEach((part, n) => {
+    // The top part first, then the bottom part.
+    layMeshes(part, box, mesh => g[n ? 'lower' : 'top'].add(mesh), plain);
+  });
   const rest = -box.min.y;
-  body.position.y = knob.position.y = base.position.y = rest;
-  root.add(body, knob, base);
+  const solid = (geo, at, color, rough = .6, metal = .1) => {
+    geo.translate(...at);
+    const mesh = new THREE.Mesh(geo, new THREE.MeshStandardMaterial(
+      {color, roughness: rough, metalness: metal}));
+    mesh.castShadow = mesh.receiveShadow = true;
+    return mesh;
+  };
+  if (bases && nut) {
+    // The ring nut under the top plate, 2.0mm thick.
+    const none = new THREE.Box3();
+    layMeshes(nut, none, mesh => g.nut.add(mesh), c => {
+      const dark = c.r + c.g + c.b < .12;
+      return new THREE.MeshStandardMaterial({
+        color: dark ? new THREE.Color(.07, .075, .09) : c.clone(),
+        roughness: .5, metalness: .2});
+    });
+    for (const mesh of g.nut.children) mesh.position.y = -2;
+    // The cell 102540, 40.5 x 25 x 10mm, its top 20.1mm under the seat,
+    // its length across the ^ mark, its wires away from the USB socket.
+    g.cell.add(
+      solid(new THREE.BoxGeometry(40.5, 10, 25), [0, -25.1, 0], 0xb9bec7,
+            .35, .6),
+      solid(new THREE.BoxGeometry(3, 10.1, 25.1), [-18.8, -25.1, 0],
+            0xc9a23a, .5, .2),
+      solid(new THREE.BoxGeometry(1.1, 1.1, 9), [-17.5, -22, -16.5],
+            0xd23b3b, .6, 0),
+      solid(new THREE.BoxGeometry(1.1, 1.1, 9), [-15.5, -22, -16.5],
+            0x23262d, .6, 0));
+    // The foam pad, 2mm, about 20 x 30mm, on the cell.
+    g.pad.add(solid(new THREE.BoxGeometry(30, 2, 20), [0, -19.1, 0],
+                    0x2b2f37, .95, 0));
+    // 4 screws M3 x 12 on a circle of 58mm at 45 degrees, their pan
+    // heads sunk 8mm into the foot.
+    for (const [sx, sz] of [[1, 1], [1, -1], [-1, 1], [-1, -1]]) {
+      const x = sx * 29 * Math.SQRT1_2, z = sz * 29 * Math.SQRT1_2;
+      g.screws.add(
+        solid(new THREE.CylinderGeometry(2.8, 2.8, 2, 24),
+              [x, -25.5, z], 0xa9afb9, .35, .8),
+        solid(new THREE.CylinderGeometry(1.5, 1.5, 12, 16),
+              [x, -18.5, z], 0xa9afb9, .35, .8));
+    }
+  }
+  g.dial.add(body, knob);
+  g.upper.add(g.dial, g.top, g.nut);
+  g.lower.add(g.cell, g.pad);
+  g.all.add(g.upper, g.lower, g.screws);
+  g.all.position.y = rest;
+  root.add(g.all);
+  const state = {};
+  let flip = 0;
+  const place = () => {
+    for (const [name, away] of Object.entries(AWAY)) {
+      const k = state[name] || 0;
+      g[name].position.set(away[0] * k, away[1] * k, away[2] * k);
+    }
+    // The screws leave through the ground: gone at their far end.
+    g.screws.visible = (state.screws || 0) < .98;
+    // Rolled over about its middle, lifted so that no edge dips.
+    const turn = flip * Math.PI / 180, mid = (HEIGHT[0] + HEIGHT[1]) / 2;
+    g.all.rotation.z = turn;
+    g.all.position.set(
+      mid * Math.sin(turn),
+      rest + mid * (1 - Math.cos(turn)) + 36 * Math.abs(Math.sin(turn)),
+      0);
+  };
+  place();
 
   // Two faces on the glass, the second over the first.
   const faces = [0, 1].map(k => {
@@ -74,9 +159,9 @@ export function makeDial(gltf, bases = null) {
       {toneMapped: false, transparent: true, opacity: k ? 0 : 1});
     const disc = new THREE.Mesh(new THREE.CircleGeometry(SCREEN, 96), m);
     disc.rotation.x = -Math.PI / 2;
-    disc.position.y = rest + GLASS + .06 + k * .02;
+    disc.position.y = GLASS + .06 + k * .02;
     disc.visible = false;
-    root.add(disc);
+    g.dial.add(disc);
     return {m, disc, image: null};
   });
   const show = (f, image, opacity) => {
@@ -95,9 +180,10 @@ export function makeDial(gltf, bases = null) {
   };
 
   // A point of the Dial in the scene, wherever the group stands.
-  const at = (x, y, z) => () => root.localToWorld(
-    new THREE.Vector3(x, rest + y, z)).toArray();
-  const inBase = base.children.length > 0;
+  const on = (name, x, y, z) => () => g[name].localToWorld(
+    new THREE.Vector3(x, y, z)).toArray();
+  const at = (x, y, z) => on('dial', x, y, z);
+  const inBase = g.top.children.length > 0;
   return {
     root,
     // How far the base raises the Dial over standing alone, mm.
@@ -113,8 +199,20 @@ export function makeDial(gltf, bases = null) {
       power: at(0, -9, -18.7),
       portA: at(-17, -9, 0),
       portB: at(17, -9, 0),
-      body: inBase ? at(-30, -24, 16) : at(-21, -6, 10),
+      body: inBase ? on('lower', -30, -24, 16) : at(-21, -6, 10),
+      // The Stamp-S3 on the Dial's rear, the parts of the base.
+      stamp: at(0, -16.5, 9),
+      nut: on('nut', 24.5, -4.5, 6),
+      top: on('top', -29, -8, 14),
+      bottom: on('lower', -30, -26, 16),
+      cell: on('cell', 10, -20.1, 4),
+      pad: on('pad', -8, -18.1, 2),
+      screws: on('screws', 29 * Math.SQRT1_2, -26.5, 29 * Math.SQRT1_2),
     },
+    // How far out each part stands: {name: 0 to 1}.
+    setParts: parts => { Object.assign(state, parts); place(); },
+    // The whole rolled over, in degrees: 180 shows the foot.
+    setFlip: deg => { flip = deg; place(); },
     // The face images a and b and how far b has come in over a, 0 to 1.
     setFace: (a, b, mix) => {
       show(faces[0], a, 1);
@@ -127,7 +225,7 @@ export function makeDial(gltf, bases = null) {
 
 // The Dial in a scene of its own.  With the base the ground drops by the
 // base's lift, so the Dial stays where the camera paths look for it.
-export function buildDial(gltf, bases = null) {
+export function buildDial(gltf, bases = null, nut = null) {
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(30, 16 / 9, 2, 2000);
   scene.add(new THREE.HemisphereLight(0xcfe3ff, 0x10151f, 1.5));
@@ -153,7 +251,7 @@ export function buildDial(gltf, bases = null) {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  const dial = makeDial(gltf, bases);
+  const dial = makeDial(gltf, bases, nut);
   dial.root.position.y = -dial.lift;
   ground.position.y -= dial.lift;
   scene.add(dial.root);

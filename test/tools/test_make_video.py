@@ -585,3 +585,18 @@ def test_ina219_is_said_letter_by_letter():
     """INA stays in capitals for the speaker; a screen's name does not."""
     assert video_voice.spoken("an INA219 board") == "an INA 2 19 board"
     assert video_voice.spoken("open SETUP") == "open Setup"
+
+
+def test_a_dial_scene_takes_the_parts_of_its_base():
+    """The Dial in its base stands apart by its own part names."""
+    scene = {"type": "case", "model": "dial", "dur": 10,
+             "camera": [[0, [0, 100, 200], [0, 20, 0]]],
+             "parts": {"upper": [[0, 1], [4, 0]], "screws": [[0, 1]]},
+             "flip": [[0, 0], [8, 180]],
+             "labels": [{"from": 1, "to": 4, "anchor": "nut",
+                         "at": [1200, 300], "title": "x"}]}
+    board = {"lang": "en", "steps": 0, "dial_base": True,
+             "scenes": [scene]}
+    assert make_video.check(board) == []
+    scene["parts"]["lid"] = [[0, 1]]
+    assert any("lid is not one of" in e for e in make_video.check(board))
