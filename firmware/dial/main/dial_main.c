@@ -68,6 +68,7 @@ static void view_read(dial_face_view_t *v, char *addr, uint32_t now)
     v->upd_pct = (uint8_t)(u.percent > 100u ? 100u : u.percent);
     memcpy(v->upd_from, u.from, sizeof v->upd_from);
     memcpy(v->upd_to, u.to, sizeof v->upd_to);
+    dial_input_off(v);
 }
 
 /** @brief The ms clock, low 32 bits. @return ms since start */

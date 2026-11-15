@@ -1221,16 +1221,20 @@ and the link's DEGRADED and LOST timing (`test_dialknob_track`), and the
 Dial's model of its face (`test_dialknob_face`). Built and host-tested:
 the Dial's faces (`shared/dial`): the list, the value, MOTOR & ESC and
 SERVO with their six readings and rings, LINK LOST connected and after
-the link ended, waiting, bind and the screens the knob does nothing on, in
-English and German (`test_dial_face`, with a draw of what changed held to
+the link ended, waiting, bind, the screens the knob does nothing on, and
+the switch-off's warning and choice, in English and German (`test_dial_face`, with a draw of what changed held to
 a full draw pixel for pixel; `test_dial_fit`, every string inside radius
 100, inside its cell and inside the rows a repaint clears for it, and no
 number shown in part), and the antialiased ring from a coverage table
 (`test_gfx_ring`, against a reference from the same formula; the Dial's
 six tables generated as const data by `tools/gen_dial_rings.py`, held to
 `gfx_ring_build()` by `test_dial_face`); `tools/render_dial.py --check`
-holds the 24 committed images. The Dial sends no EVENT while it shows LINK
-LOST (`dk_link_lost()`, `test_dialknob_face`). Built, not run on the
+holds the 28 committed images. The Dial sends no EVENT while it shows LINK
+LOST (`dk_link_lost()`, `test_dialknob_face`). The screen button's gestures
+(`shared/dial/dial_button.c`): PRESS, HOLD, the switch-off's warning at
+5,000ms and its choice OFF / KEEP ON, and the forget at 10,000ms, with no
+panel gesture and no turn while the warning or the choice is up
+(`test_dial_button`). Built, not run on the
 device: the Dial's
 firmware (`firmware/dial`, ESP-IDF v6.1 for the ESP32-S3; CI's `dial.yml`)
 with the power latch, the encoder on PCNT, the buttons, the FT3267 touch
@@ -1634,7 +1638,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 587 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 588 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1753,7 +1757,7 @@ The host suite is 587 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`, `test_pnode_bind`,
 `test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`,
 `test_motor_balance`,
-`test_dial_face`, `test_dial_fit`,
+`test_dial_face`, `test_dial_fit`, `test_dial_button`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
@@ -2260,7 +2264,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-986 committed screenshots to the current render, 493 in English and the same 493 in German, and `render_ui.py --fit` fails on a string that
+990 committed screenshots to the current render, 495 in English and the same 495 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

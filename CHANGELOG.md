@@ -8,9 +8,15 @@ history is in git.
 
 ### Added
 
-- M5Stack Dial: a 3s hold of the screen button beeps, and a release
-  before 10s switches the Dial off (GPIO46 low). The 10s hold still
-  forgets the bound panel. On USB the Dial stays on.
+- M5Stack Dial: a 5s hold of the screen button beeps (600Hz, 150ms) and
+  the face blinks red, 500ms red and 500ms dark: `RELEASE NOW TO SWITCH
+  OFF`, `HOLD ON TO UNBIND`. A release before 10s opens the choice
+  `KEEP ON` / `OFF`, the focus on `KEEP ON`; a turn moves the focus, a
+  press takes it, and a 1s hold or 10s without input takes `KEEP ON`.
+  `OFF` drives GPIO46 low and the power drops on the cell; on USB the Dial
+  stays on and shows its faces again. The 10s hold forgets the bound panel
+  and opens no choice. Neither the warning nor the choice sends a
+  turn, PRESS or HOLD to the panel.
 - `tools/make_video.py` renders a storyboard under `tools/video/storyboards/`
   into an MP4 video: the case as a 3D model, the panel's screens from the
   host renderer with pointer bubbles, and a recap. Storyboard `kst-rbmod`

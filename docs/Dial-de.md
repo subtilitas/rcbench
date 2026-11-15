@@ -140,19 +140,42 @@ listet ein gebundenes Dial weiterhin.
 
 Ein Halten der Bildschirmtaste von 10s vergisst das gebundene Panel, ebenso
 `forget` auf der Konsole. Das Dial piept, beendet einen Link und sendet
-wieder für jeden. Die HOLD-Geste nach 1s geht dabei an das Panel.
+wieder für jeden. Die HOLD-Geste nach 1s geht dabei an das Panel, und ab 5s
+zeigt das Face die Warnung vor dem Ausschalten ([Ausschalten](#ausschalten)).
 
 ## Ausschalten
 
 Die Bildschirmtaste ist die WAKE-Taste des Dials: Nur an der Zelle schaltet
 ein Druck das Dial ein, und die Firmware hält die Versorgung mit GPIO46 auf
-high. Zum Ausschalten die Bildschirmtaste 3s halten. Das Dial piept mit
-600Hz für 150ms; wird sie vor 10s losgelassen, setzt es GPIO46 auf low, und
-die Versorgung fällt ab. Die HOLD-Geste nach 1s geht dabei an das Panel,
-wie bei jedem Halten. Bis 10s gehalten, vergisst das Halten stattdessen das
-gebundene Panel, und das Dial bleibt an. An USB bleibt das Dial nach dem
-Loslassen an; RST schaltet es an der Zelle ebenfalls aus. Geht das Dial mit
-einem Link aus, nimmt das Panel das als verlorenen Link.
+high. Solange die Taste gedrückt ist, hat das Dial Versorgung; sie fällt
+erst ab, wenn die Taste oben ist.
+
+![Die Warnung vor dem Ausschalten, ihre rote Hälfte](img/de/dial-off-warn.png)
+![Die Wahl beim Ausschalten](img/de/dial-off-ask.png)
+
+| Die Bildschirmtaste | Was folgt |
+| --- | --- |
+| vor 1.000ms losgelassen | PRESS an das Panel |
+| 1.000ms gehalten | HOLD an das Panel, einmal, wie bei jedem Halten |
+| 5.000ms gehalten | ein Piepton mit 600Hz für 150ms; das Face blinkt rot, 500ms rot und 500ms dunkel: `JETZT LOSLASSEN: AUSSCHALTEN` und `WEITER HALTEN: PANEL VERGESSEN`, rot mit sechs roten Ringen am Rand, dann weiß über der matten Spur der Ringe |
+| ab 5.000ms und vor 10.000ms losgelassen | die Wahl: `AN LASSEN` über `AUS`, der Fokus auf `AN LASSEN` |
+| 10.000ms gehalten | das gebundene Panel ist vergessen ([Binden](#binden)), mit einem Piepton mit 1.000Hz für 200ms; die Warnung endet, keine Wahl folgt, das Dial bleibt an |
+
+In der Wahl setzt eine Rastung im Uhrzeigersinn den Fokus auf `AUS`, eine
+gegen den Uhrzeigersinn zurück auf `AN LASSEN`. Ein Druck der
+Bildschirmtaste nimmt die Antwort im Fokus. Ein Halten von 1.000ms nimmt
+`AN LASSEN`, ebenso 10s (10.000ms) ohne Drehung und ohne Druck der
+Bildschirmtaste; die zweite Hinweiszeile zählt diese Sekunden herunter.
+`AUS` setzt GPIO46 auf low, und an der Zelle fällt die Versorgung ab. An USB
+bleibt das Dial nach `AUS` an und zeigt wieder seine Faces. `AN LASSEN`
+kehrt zu den Faces zurück.
+
+Solange die Warnung oder die Wahl steht, klickt eine Drehung, lässt aber
+den Zähler im EVENT unverändert, und kein PRESS und kein HOLD geht an das
+Panel. Ein Druck, der in der Wahl beginnt, gehört der Wahl, bis die Taste
+oben ist, auch über 5s und 10s hinaus. RST schaltet das Dial an der Zelle
+ebenfalls aus. Geht das Dial mit einem Link aus, nimmt das Panel das als
+verlorenen Link.
 
 Protokollversion 1 hat kein Pairing und keine Verschlüsselung: Ein Gerät in
 Reichweite, das sich zuerst verbindet oder die gebundene Adresse fälscht,
@@ -733,5 +756,5 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   Ein Central in Reichweite kann jedes Dial-Image anbieten, auch ältere,
   und ein Druck installiert es.
 - Kein Schlaf, keine Stufen des Hintergrundlichts und keine automatische
-  Abschaltung: Das Dial bleibt an bis zum Halten von 3s, bis RST oder bis
-  die Zelle leer ist. Die Laufzeit mit einer Zelle ist nicht gemessen.
+  Abschaltung: Das Dial bleibt an bis `AUS` in der Wahl beim Ausschalten,
+  bis RST oder bis die Zelle leer ist. Die Laufzeit mit einer Zelle ist nicht gemessen.

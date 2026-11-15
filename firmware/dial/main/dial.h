@@ -61,12 +61,9 @@
  *         let go.  The first call of app_main(). */
 void dial_power_hold(void);
 
-/** @brief A screen button release after this many ms of hold, and before
- *         DK_FORGET_MS, switches the Dial off. */
-#define DIAL_OFF_MS 3000u
-
 /** @brief Drive GPIO46 low: on the cell alone the power drops once the
- *         WAKE button is up; on USB the Dial stays on. */
+ *         WAKE button is up; on USB the Dial stays on.  The switch-off's
+ *         OFF calls it (dial_button.h). */
 void dial_power_off(void);
 
 /** @brief What the Dial knows of its supply. */
@@ -184,6 +181,13 @@ bool dial_input_sound_on(void);
  * @param last_ms the last one's arrival, ms
  */
 void dial_input_link(bool any, uint32_t last_ms);
+
+/**
+ * @brief The switch-off's state for the face: fill the view's off,
+ *        off_lit, off_focus and off_secs as the input task last set them.
+ * @param v the view
+ */
+void dial_input_off(dial_face_view_t *v);
 
 /** @brief What the input task last sent, for the console. */
 typedef struct {

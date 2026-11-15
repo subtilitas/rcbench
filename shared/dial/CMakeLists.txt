@@ -3,8 +3,10 @@
 # (shared/gfx), its palette (shared/ui/ui_theme.c) and its words
 # (shared/text).  Pure C, so the host suite renders and checks every face
 # and tools/render_dial.py writes the committed images; the Dial's
-# firmware (firmware/dial) draws with the same code.
-set(SRCS dial_scene.c dial_draw.c dial_text.c dial_rings.c)
+# firmware (firmware/dial) draws with the same code.  dial_button.c is the
+# screen button's gestures, the switch-off and the forget, tested on the
+# host as well.
+set(SRCS dial_scene.c dial_draw.c dial_text.c dial_rings.c dial_button.c)
 
 if(ESP_PLATFORM)
     # The Dial builds the theme alone of shared/ui: ui_theme.c needs gfx.h

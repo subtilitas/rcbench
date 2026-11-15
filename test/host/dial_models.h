@@ -29,6 +29,8 @@ typedef enum {
     DM_OTHER,
     DM_UPDATE_ASK,
     DM_UPDATE_SEND,
+    DM_OFF_WARN,
+    DM_OFF_ASK,
     DM_COUNT
 } dial_model_id_t;
 
@@ -36,7 +38,7 @@ typedef enum {
 static const char *const k_dial_model_name[DM_COUNT] = {
     "navigation", "value-set", "servo-live", "motor-armed", "motor-safe",
     "link-lost", "link-ended", "waiting", "bind", "other", "update-ask",
-    "update-send",
+    "update-send", "off-warn", "off-ask",
 };
 
 /** @brief A model and the view beside it. */
@@ -256,6 +258,17 @@ static inline void dial_model(dial_model_t *m, int id, uint8_t lang)
         m->view.upd_pct = 42u;
         m->view.upd_from[1] = 24u;
         m->view.upd_to[1] = 25u;
+        break;
+    case DM_OFF_WARN:
+    case DM_OFF_ASK:
+        /* The screen button held 5,000ms over a list, in the blink's red
+         * half; or released, the choice open with its 10s. */
+        dm_screen(m, DK_FACE_NAV, lang, "SETUP");
+        dm_nav(m, 3, 9, DK_SLOT_FOCUS, de ? "SENSOREN" : "SENSORS");
+        dm_state(m, 0);
+        m->view.off = id == DM_OFF_WARN ? DIAL_OFF_WARN : DIAL_OFF_ASK;
+        m->view.off_lit = true;
+        m->view.off_secs = 10u;
         break;
     case DM_BIND:
         m->view.ready = false;

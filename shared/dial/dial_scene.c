@@ -479,6 +479,52 @@ static void update(dial_scene_t *s, const dk_face_t *f,
     s->ring[0].end = end_of((int64_t)pct, 100);
 }
 
+/**
+ * @brief The switch-off on the screen button.  DIAL_OFF_WARN: the two
+ *        lines and the six rings blink red, DIAL_OFF_BLINK_MS red and as
+ *        long dark, the rings at their track while dark.  DIAL_OFF_ASK:
+ *        KEEP ON above OFF, the focused one in the accent's brackets, and
+ *        the seconds until KEEP ON.
+ * @param s the scene
+ * @param f the model
+ * @param v the view
+ */
+static void switch_off(dial_scene_t *s, const dk_face_t *f,
+                       const dial_face_view_t *v)
+{
+    const uint8_t l = s->lang;
+    char line[DIAL_TXT];
+    s->has_title = true;
+    furniture(s, f, v, v->lost || !v->ready);
+    if (v->off == DIAL_OFF_WARN) {
+        const uint8_t c = (uint8_t)(v->off_lit ? UI_C_DANGER : UI_C_TEXT);
+        s->face = DIAL_FACE_OFF_WARN;
+        dk_text_copy(s->title, sizeof s->title,
+                     v->name != NULL ? v->name : "");
+        s->has_title = s->title[0] != '\0';
+        block(s, 0, DF(DIAL_SWOFF_RELEASE), 104, DIAL_FONT_MID, c, 2,
+              DIAL_B_TEXT);
+        block(s, 1, DF(DIAL_SWOFF_HOLD_ON), 152, DIAL_FONT_SMALL, c, 2,
+              DIAL_B_TEXT);
+        for (int i = 0; i < DIAL_RINGS; ++i) {
+            s->ring[i].used = true;
+            s->ring[i].color = UI_C_DANGER;
+            s->ring[i].end = v->off_lit ? GFX_RING_TURN : 0u;
+        }
+        return;
+    }
+    s->face = DIAL_FACE_OFF_ASK;
+    dk_text_copy(s->title, sizeof s->title, DF(DIAL_SWOFF_ASK));
+    block(s, 0, DF(DIAL_SWOFF_KEEP_ON), 98, DIAL_FONT_MID,
+          (uint8_t)(v->off_focus ? UI_C_TEXT_DIM : UI_C_TEXT), 1,
+          (uint8_t)(v->off_focus ? DIAL_B_TEXT : DIAL_B_FOCUS));
+    block(s, 1, DF(DIAL_SWOFF_OFF), 140, DIAL_FONT_MID,
+          (uint8_t)(v->off_focus ? UI_C_DANGER : UI_C_TEXT_DIM), 1,
+          (uint8_t)(v->off_focus ? DIAL_B_FOCUS : DIAL_B_TEXT));
+    snprintf(line, sizeof line, DF(DIAL_UPD_SECS), (unsigned)v->off_secs);
+    hints(s, DF(DIAL_SWOFF_SELECT), line, UI_C_TEXT_FAINT);
+}
+
 void dial_scene_build(dial_scene_t *s, const dk_face_t *f,
                       const dial_face_view_t *v, uint8_t lang_last)
 {
@@ -493,6 +539,10 @@ void dial_scene_build(dial_scene_t *s, const dk_face_t *f,
 
     if (v->upd != DIAL_UPD_NONE) {
         update(s, f, v);
+        return;
+    }
+    if (v->off != DIAL_OFF_NONE) {
+        switch_off(s, f, v);
         return;
     }
 
