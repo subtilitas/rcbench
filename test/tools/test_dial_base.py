@@ -78,8 +78,8 @@ def test_screws_reach_their_bosses(built):
 
 
 def test_cell_pocket(built):
-    """The 40.5 x 25 x 10 cell lies on the floor with 0.4 play."""
-    length, width, play, _rail, _high = base.CELL
+    """The 40.5 x 25 x 10 cell lies on the floor, 1.2 free at each end."""
+    length, width, play, _side, _rail, _high = base.CELL
     cell = base._box(-length / 2, -width / 2, base.FLOOR, length / 2,
                      width / 2, base.FLOOR + 10.0)
     snug = base._box(-length / 2 - play - 0.1, -4.0, base.FLOOR,
@@ -93,8 +93,9 @@ def test_cell_pocket(built):
 def test_usb_tube_guides_the_plug(built):
     """A 12.4 x 6.5 plug passes the tube to 20 from the axis.
 
-    The tube's wall stands round it from the outer wall in to 23 from
-    the axis, and stays 0.33 under the ring nut.
+    The tube's wall stands round it from the outer wall in to 24.5
+    from the axis, 2.5 off the dial's thread, and stays 0.33 under the
+    ring nut.
     """
     _width, height, z, _corner = base.USB
     wall, near, _tie = base.TUBE
@@ -107,6 +108,7 @@ def test_usb_tube_guides_the_plug(built):
         got = base.volume(BRepAlgoAPI_Common(top, roof).Shape())
         assert (got > 1.5) is there
     assert -7.0 - (z + height / 2 + wall) == pytest.approx(0.33)
+    assert near - 22.0 == pytest.approx(2.5)
 
 
 def test_floor_is_a_wall_thick():

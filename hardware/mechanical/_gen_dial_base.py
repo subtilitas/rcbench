@@ -32,8 +32,14 @@ The dial's ring nut holds it from below the top plate, on a plate 2.0
 thick so the nut stays clear of the dial's USB notch. Each M3 x 12 pan
 head screw enters a column of the bottom part from below, its head
 sunk 8.0 into the foot, and cuts its thread in a boss of the top part.
-The cell lies flat in its pocket, its length across the "^" mark; its
-wires rise beside it to the dial's battery socket.
+The cell lies flat in its pocket, its length across the "^" mark, its
+wires towards +y, the side away from the USB opening. The dial's
+battery socket (1.25 pitch, 2 pins) is on its main board under the
+Stamp-S3, at the USB end (M5Stack's picture "Dial Lithium Battery
+Expansion Interface", docs.m5stack.com). The wires run under the
+Stamp-S3 and leave the dial at its +y end, away from the USB plug, then
+drop to the cell. A pad of foam 2 thick lies between the cell and the
+dial; it holds the cell and leaves it room to swell.
 
 ``check`` puts the dial, its nut and the cell where they sit and fails
 when one shares volume with a part of the base.
@@ -122,11 +128,12 @@ BOSS, PILOT, CLEAR, HEAD, SEAT, DEPTH = 6.0, 2.6, 3.4, 6.2, -24.5, -9.0
 USB = (13.4, 7.6, -12.13, 1.5)
 # Guide tube round the opening: its wall, the distance of its inner end
 # from the axis, and the distance from the axis beyond which a block
-# ties it to the top plate, clear of the ring nut.
-TUBE = (1.0, 23.0, 26.5)
-# Cell pocket: the cell's length (along x), width, the gap round it,
-# the rails' thickness and height.
-CELL = (40.5, 25.0, 0.4, 1.4, 6.0)
+# ties it to the top plate, clear of the ring nut. The inner end stays
+# 2.5 off the dial's thread.
+TUBE = (1.0, 24.5, 26.5)
+# Cell pocket: the cell's length (along x) and width, the play at each
+# end and at each side, the rails' thickness and height.
+CELL = (40.5, 25.0, 1.2, 0.5, 1.4, 6.0)
 GROOVE = 0.4            # shadow gap at the joint
 
 
@@ -302,8 +309,8 @@ def parts():
         bottom = BRepAlgoAPI_Cut(bottom, _cylinder(
             x, y, HEAD / 2, -HEIGHT - 1, SEAT)).Shape()
     # Rails round the cell, open at the corners: the wires leave at one.
-    length, width, play, rail, high = CELL
-    half_x, half_y = length / 2 + play, width / 2 + play
+    length, width, end, side, rail, high = CELL
+    half_x, half_y = length / 2 + end, width / 2 + side
     for x0, y0, x1, y1 in (
             (-half_x + 6, half_y, half_x - 6, half_y + rail),
             (-half_x + 6, -half_y - rail, half_x - 6, -half_y),
