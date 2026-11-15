@@ -97,7 +97,7 @@ SHA-256-Summen in `SHA256SUMS`.
 
    ```bash
    python -m esptool --chip esp32s3 -p /dev/ttyACM0 -b 460800 \
-     write-flash 0x0 rcbench-dial-merged-0.23.12.bin
+     write-flash 0x0 rcbench-dial-merged-0.23.13.bin
    ```
 
    esptool 5 schreibt den Befehl `write-flash`, esptool 4 `write_flash`.
@@ -156,13 +156,13 @@ Eintrag FUNKGERÄTE auf UPDATES öffnet
 ([Bildschirme, Das Dial](Screens-de.md#das-dial)).
 
 1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. Die Zeile
-   zeigt `Dial: 0.23.11. Im Panel: 0.23.12.` und `2s HALTEN ZUM DIAL-UPDATE`.
+   zeigt `Dial: 0.23.12. Im Panel: 0.23.13.` und `2s HALTEN ZUM DIAL-UPDATE`.
 2. Das Halten von 2s beendet den Knopf-Link des Dial. Das Panel verbindet
    sich mit dem Update-Dienst des Dial und sendet BEGIN: Art DIAL, Größe,
    Version und den SHA-256 des Images.
 3. Das Dial prüft die Art, die Größe gegen seinen Slot von 3.145.728 Bytes
-   und die Version. Dann zeigt es 30s lang `UPDATE`, `v0.23.11 AUF
-   v0.23.12`, `DRÜCKEN: ANNEHMEN`, die verbleibenden Sekunden und
+   und die Version. Dann zeigt es 30s lang `UPDATE`, `v0.23.12 AUF
+   v0.23.13`, `DRÜCKEN: ANNEHMEN`, die verbleibenden Sekunden und
    `HALTEN: ABLEHNEN`. Vor der Antwort wird nichts gelöscht.
    - Ein Druck der Bildschirmtaste, innerhalb von 1s losgelassen, nimmt an.
    - Ein Halten von 1s lehnt ab.
