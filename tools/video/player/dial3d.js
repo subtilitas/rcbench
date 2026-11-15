@@ -7,23 +7,28 @@
 // The knob ring is one solid and turns alone.  The display shows a face of
 // the Dial, a 240 x 240 image, on the round glass; two faces cross-fade.
 //
+// The hand-held base (hardware/mechanical/_gen_dial_base.py), when given,
+// is two printed parts in the Dial's own frame: z = 0 where the Dial's
+// flange seats.  The Dial then stands on the base's foot.
+//
 // SPDX-License-Identifier: MIT
 import * as THREE from 'three';
 
 const KNOB = 'solid-0';     // the ring with the 20 grooves
 const GLASS = 13.8;         // the top of the glass above the panel seat
 const SCREEN = 16.2;        // the radius of the lit display, 1.28in across
+const BASE_SIDE = 35.2;     // the base's radius 12mm under the seat, at
+                            // the USB opening: the arc of 49.5 from 60
+                            // across at the top to 72 across 21mm down
 
-// The Dial alone: a group that stands on y = 0, with what moves on it.
-export function makeDial(gltf) {
-  const root = new THREE.Group();
+// The meshes of a file tools/video_cad.py writes with --solids, laid into
+// the scene's frame: each handed to put(mesh, name), all in box.
+function layMeshes(gltf, box, put, look) {
   // The writer turns mm into m; a quarter turn about x stands z up.
   const src = gltf.scene;
   src.updateMatrixWorld(true);
   const lay = new THREE.Matrix4().makeRotationX(-Math.PI / 2)
     .multiply(new THREE.Matrix4().makeScale(1000, 1000, 1000));
-  const body = new THREE.Group(), knob = new THREE.Group();
-  const box = new THREE.Box3();
   src.traverse(o => {
     if (!o.isMesh) return;
     const g = o.geometry.clone();
@@ -31,18 +36,37 @@ export function makeDial(gltf) {
     g.computeVertexNormals();
     g.computeBoundingBox();
     box.union(g.boundingBox);
-    const c = o.material.color;
-    // A black part of the model would swallow the light: lifted a little.
-    const dark = c.r + c.g + c.b < .12;
-    const mesh = new THREE.Mesh(g, new THREE.MeshStandardMaterial({
-      color: dark ? new THREE.Color(.05, .055, .07) : c.clone(),
-      roughness: dark ? .45 : .6, metalness: dark ? .25 : .1}));
+    const mesh = new THREE.Mesh(g, look(o.material.color));
     mesh.castShadow = mesh.receiveShadow = true;
-    (o.name === KNOB ? knob : body).add(mesh);
+    put(mesh, o.name);
   });
-  const rest = -box.min.y;        // the rear parts stand on the ground
-  body.position.y = knob.position.y = rest;
-  root.add(body, knob);
+}
+
+// The Dial alone: a group that stands on y = 0, with what moves on it.
+// bases: the glTF files of the base's two parts, or null for none.
+export function makeDial(gltf, bases = null) {
+  const root = new THREE.Group();
+  const body = new THREE.Group(), knob = new THREE.Group();
+  const box = new THREE.Box3();
+  layMeshes(gltf, box, (mesh, name) => (name === KNOB ? knob : body).add(mesh),
+    c => {
+      // A black part of the model would swallow the light: lifted a little.
+      const dark = c.r + c.g + c.b < .12;
+      return new THREE.MeshStandardMaterial({
+        color: dark ? new THREE.Color(.05, .055, .07) : c.clone(),
+        roughness: dark ? .45 : .6, metalness: dark ? .25 : .1});
+    });
+  // The rear parts stand on the ground; with the base, its foot does.
+  const alone = -box.min.y;
+  const base = new THREE.Group();
+  for (const part of bases || []) {
+    layMeshes(part, box, mesh => base.add(mesh),
+      c => new THREE.MeshStandardMaterial(
+        {color: c.clone(), roughness: .75, metalness: 0}));
+  }
+  const rest = -box.min.y;
+  body.position.y = knob.position.y = base.position.y = rest;
+  root.add(body, knob, base);
 
   // Two faces on the glass, the second over the first.
   const faces = [0, 1].map(k => {
@@ -72,19 +96,23 @@ export function makeDial(gltf) {
   // A point of the Dial in the scene, wherever the group stands.
   const at = (x, y, z) => () => root.localToWorld(
     new THREE.Vector3(x, rest + y, z)).toArray();
+  const inBase = base.children.length > 0;
   return {
     root,
-    // Named points: x right, y up from the ground, z towards the USB-C
-    // socket.
+    // How far the base raises the Dial over standing alone, mm.
+    lift: rest - alone,
+    // Named points: x right, y up from the Dial's seat, z towards the
+    // USB-C socket.  In the base, the socket is reached through the
+    // base's opening and the cell lies in the base's lower part.
     anchors: {
       display: at(0, GLASS, 0),
       knob: at(23.5, 8, 8),
       bezel: at(-15, 14.6, -14),
-      usb: at(0, -12, 18.5),
+      usb: inBase ? at(0, -12, BASE_SIDE) : at(0, -12, 18.5),
       power: at(0, -9, -18.7),
       portA: at(-17, -9, 0),
       portB: at(17, -9, 0),
-      body: at(-21, -6, 10),
+      body: inBase ? at(-30, -24, 16) : at(-21, -6, 10),
     },
     // The face images a and b and how far b has come in over a, 0 to 1.
     setFace: (a, b, mix) => {
@@ -96,8 +124,9 @@ export function makeDial(gltf) {
   };
 }
 
-// The Dial in a scene of its own.
-export function buildDial(gltf) {
+// The Dial in a scene of its own.  With the base the ground drops by the
+// base's lift, so the Dial stays where the camera paths look for it.
+export function buildDial(gltf, bases = null) {
   const scene = new THREE.Scene();
   const cam = new THREE.PerspectiveCamera(30, 16 / 9, 2, 2000);
   scene.add(new THREE.HemisphereLight(0xcfe3ff, 0x10151f, 1.5));
@@ -123,7 +152,9 @@ export function buildDial(gltf) {
   ground.receiveShadow = true;
   scene.add(ground);
 
-  const dial = makeDial(gltf);
+  const dial = makeDial(gltf, bases);
+  dial.root.position.y = -dial.lift;
+  ground.position.y -= dial.lift;
   scene.add(dial.root);
   return {
     scene, cam, ...dial,

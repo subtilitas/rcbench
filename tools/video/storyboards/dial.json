@@ -2,6 +2,7 @@
  "name": "dial",
  "lang": "en",
  "brand": "M5Stack Dial",
+ "dial_base": true,
  "steps": 6,
  "music": "pachelbel-canon",
  "music_gain": 0.5,
@@ -180,7 +181,7 @@
       300
      ],
      "title": "Battery inside",
-     "text": "One LiPo cell of 1,000 mAh or less on the MX1.25 socket. This video takes it as fitted.",
+     "text": "One LiPo cell of 1,000 mAh or less on the MX1.25 socket, in the printed base's lower part. This video takes it as fitted.",
      "size": "sm",
      "style": "muted"
     }

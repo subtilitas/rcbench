@@ -476,6 +476,10 @@ def _check_tour(scene: dict, steps: int, where: str, errors: list) -> None:
             errors.append(f"{at}: points must be a list")
 
 
+#: The two printed parts of the Dial's hand-held base, files in tools/video/cad/.
+DIAL_BASE = ("dial_base_top", "dial_base_bottom")
+
+
 def check(board: dict) -> list:
     """Find what the player would not draw.
 
@@ -508,6 +512,8 @@ def check(board: dict) -> list:
             isinstance(blend, dict) and blend
             and all(_number(part) and part > 0 for part in blend.values())):
         errors.append("voice blend holds a positive part per voice")
+    if not isinstance(board.get("dial_base", False), bool):
+        errors.append("dial_base is true or false")
     chapters = board.get("chapters")
     if chapters is not None and not (
             isinstance(chapters, list) and len(chapters) == steps
@@ -1021,6 +1027,12 @@ def main() -> int:
         sys.exit("tools/video/cad/m5dial.glb is missing; tools/video_cad.py "
                  "--solids writes it from "
                  "hardware/mechanical/models/m5dial.step")
+    if board.get("dial_base"):
+        for part in DIAL_BASE:
+            if not (VIDEO / "cad" / f"{part}.glb").is_file():
+                sys.exit(f"tools/video/cad/{part}.glb is missing; "
+                         "tools/video_cad.py --solids writes it from "
+                         f"hardware/mechanical/models/{part}.step")
     for n, scene in enumerate(board["scenes"]):
         if scene["type"] != "board":
             continue

@@ -8,9 +8,10 @@
 import {buildCadCase} from './case_cad.js';
 import {makeDial} from './dial3d.js';
 
-export function buildDuo(caseGltf, dialGltf) {
+export function buildDuo(caseGltf, dialGltf, baseGltfs = null) {
   const rig = buildCadCase(null, caseGltf);
-  const dial = makeDial(dialGltf);
+  // With its base the Dial stands on the base's foot.
+  const dial = makeDial(dialGltf, baseGltfs);
   dial.root.position.set(128, 0, 30);
   rig.scene.add(dial.root);
   rig.scene.updateMatrixWorld(true);
