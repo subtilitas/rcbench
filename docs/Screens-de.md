@@ -7549,6 +7549,7 @@ verloren`.
 | Grund | Ursache |
 | --- | --- |
 | `keine Verbindung` | keine Verbindung zum Dial innerhalb von 30s |
+| `kein Update-Dienst, per USB flashen` | das Dial hat sich ohne den Update-Dienst verbunden: Seine Firmware ist älter als das Update über Bluetooth LE und wird einmal über USB geflasht ([Dial, Flashen über USB](Dial-de.md#flashen-über-usb)) |
 | `Verbindung verloren` | der Link endete während der Übertragung |
 | `keine Antwort` | das Dial hat einen Schritt nicht innerhalb seiner Grenze oder 3 Abfragen in Folge nicht beantwortet, oder das Dial sah 10s kein Schreiben |
 | `Schreiben abgelehnt` | der Host-Stack hat ein Schreiben abgelehnt |

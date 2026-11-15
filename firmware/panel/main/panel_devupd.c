@@ -620,6 +620,7 @@ static const char *fail_text(const end_t *p, char *buf, size_t n)
         case DEVUPD_E_ARMED:   return TR(DEV_FAIL_ARMED);
         case DEVUPD_E_ABORTED: return TR(DEV_FAIL_CANCELLED);
         case DEVUPD_E_STALLED: return TR(DEV_FAIL_STALLED);
+        case DEVUPD_E_NO_SERVICE: return TR(DEV_FAIL_NO_SERVICE);
         default:
             snprintf(buf, n, TR(DEV_FAIL_OTHER), (unsigned)p->err);
             return buf;

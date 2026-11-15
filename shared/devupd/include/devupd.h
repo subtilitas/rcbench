@@ -113,6 +113,8 @@ typedef enum {
                             start: the panel's refusal */
     DEVUPD_E_STALLED,  /**< SEND: the device's next offset did not move for
                             DEVUPD_STALL_MS */
+    DEVUPD_E_NO_SERVICE, /**< the device connected without the update
+                              service: its firmware predates the update */
 } devupd_err_t;
 
 /** @brief What devupd_step() gives. */
@@ -182,6 +184,15 @@ bool devupd_start(devupd_t *e, const devupd_image_t *im, uint32_t now);
  * @param now the clock
  */
 void devupd_link(devupd_t *e, bool up, uint16_t mtu, uint32_t now);
+
+/**
+ * @brief The device connected, and its GATT (generic attribute profile)
+ *        table holds no update service: a transfer waiting for its link
+ *        ends at once with DEVUPD_E_NO_SERVICE.
+ * @param e   the transfer
+ * @param now the clock
+ */
+void devupd_no_service(devupd_t *e, uint32_t now);
 
 /**
  * @brief The answer to the last control write.

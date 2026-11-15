@@ -6959,6 +6959,7 @@ another version as stopped, `connection lost`.
 | Reason | Cause |
 | --- | --- |
 | `no connection` | no connection to the Dial within 30s |
+| `no update service, flash it by USB` | the Dial connected without the update service: its firmware predates the update over Bluetooth LE and is flashed once over USB ([Dial, Flashing over USB](Dial.md#flashing-over-usb)) |
 | `connection lost` | the link ended during the transfer |
 | `no answer` | the Dial did not answer a step within its limit or 3 polls in a row, or the Dial saw no write for 10s |
 | `a write was refused` | the host stack refused a write |

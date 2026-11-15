@@ -77,6 +77,13 @@ history is in git.
   and `_font.py` stay MIT, as does the software
   ([hardware/LICENSE](hardware/LICENSE)).
 
+### Fixed
+
+- Device update over Bluetooth LE: a Dial or node whose firmware predates
+  the update has no update service. The update ends at once with
+  `no update service, flash it by USB` instead of `no connection` after
+  30s.
+
 ## 0.23.13 - 2026-11-15
 
 0.23.13 is a testing release. It adds the M5Stack Dial v1.1 as a Bluetooth LE
