@@ -62,32 +62,32 @@
     "to": 11.67,
     "kicker": "MiniRcBench · firmware 0.1.0",
     "heading": "Every screen of<br>the MiniRcBench",
-    "text": "ESC tester, telemetry, ESC settings, servo tester, servo programmers,<br>S.BUS monitor, angle meter, SD log, settings. 12 chapters."
+    "text": "ESC tester, telemetry, ESC settings, servo tester, servo programmers, S.BUS monitor, angle meter, SD log, settings. 12 chapters."
    },
    "camera": [
     [
      0,
      [
-      120,
+      40,
       150,
-      190
+      200
      ],
      [
-      0,
-      12,
+      -60,
+      10,
       0
      ]
     ],
     [
      11.07,
      [
-      70,
+      -5,
       135,
-      175
+      185
      ],
      [
-      0,
-      12,
+      -60,
+      10,
       0
      ]
     ],
@@ -125,7 +125,7 @@
      "anchor": [
       0.0,
       24.9,
-      26.55
+      24.92
      ],
      "at": [
       1250,
