@@ -450,3 +450,12 @@ Item 3's limits:
   2W zener's value depends on the part; no 2W part is named here.
 - Back-feed of several hundred mA is not measured. Whether a larger servo
   still latches M7 with either zener is not measured.
+
+## Licence
+
+This page describes a board. Like everything in `hardware/`, it is licensed
+CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+International): non-commercial use, with credit and under the same licence.
+Commercial use needs a separate licence from the copyright holder. Terms:
+[hardware/LICENSE](../hardware/LICENSE). The `rcbench-iomcu-rbmod` image is
+software and MIT licensed, as the rest of rcbench.

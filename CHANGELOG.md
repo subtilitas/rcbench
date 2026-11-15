@@ -66,17 +66,16 @@ history is in git.
 
 ### Changed
 
-- Licence: `hardware/mechanical/` and `hardware/kicad/` are under CC BY-NC-SA
-  4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
-  International) in place of MIT: the 3D models, the KiCad module library,
+- Licence: the hardware is under CC BY-NC-SA 4.0 (Creative Commons
+  Attribution-NonCommercial-ShareAlike 4.0 International) in place of MIT:
+  everything in `hardware/` (board and pin documents, part lists and
+  sourcing, the component research, the 3D models, the KiCad module library,
   their renders and the Python scripts that draw them, each script marked
-  `SPDX-License-Identifier: CC-BY-NC-SA-4.0`. So are the component research
-  runs in `hardware/research/` and their record `hardware/docs/Research.md`
-  ([hardware/research/LICENSE](hardware/research/LICENSE)). Commercial use needs a separate
-  licence from the copyright holder. M5Stack's Dial mesh, `m5dial.step`,
-  `m5dial_nut.step` and `_font.py` stay MIT, as does the rest of rcbench
-  ([hardware/mechanical/LICENSE](hardware/mechanical/LICENSE),
-  [hardware/kicad/LICENSE](hardware/kicad/LICENSE)).
+  `SPDX-License-Identifier: CC-BY-NC-SA-4.0`) and the carrier board's page
+  `docs/Carrier.md`. Commercial use needs a separate licence from the
+  copyright holder. M5Stack's Dial mesh, `m5dial.step`, `m5dial_nut.step`
+  and `_font.py` stay MIT, as does the software
+  ([hardware/LICENSE](hardware/LICENSE)).
 
 ## 0.23.13 - 2026-11-15
 

@@ -475,3 +475,13 @@ Grenzen von Punkt 3:
 - Rückspeisung von mehreren hundert mA ist nicht gemessen. Ob ein
   größeres Servo M7 mit einer der beiden Z-Dioden weiter abschaltet, ist
   nicht gemessen.
+
+## Lizenz
+
+Diese Seite beschreibt eine Platine. Wie alles in `hardware/` steht sie unter
+CC BY-NC-SA 4.0 (Creative Commons Namensnennung - Nicht kommerziell -
+Weitergabe unter gleichen Bedingungen 4.0 International): nicht kommerzielle
+Nutzung, mit Namensnennung und unter derselben Lizenz. Eine kommerzielle
+Nutzung braucht eine eigene Lizenz des Rechteinhabers. Bedingungen:
+[hardware/LICENSE](../hardware/LICENSE). Das Image `rcbench-iomcu-rbmod` ist
+Software und steht wie das übrige rcbench unter der MIT-Lizenz.

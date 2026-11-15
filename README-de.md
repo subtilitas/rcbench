@@ -143,21 +143,19 @@ Sicherheitsmeldungen: [SECURITY.md](SECURITY.md).
 rcbench steht unter der MIT-Lizenz (Massachusetts Institute of Technology):
 [LICENSE](LICENSE).
 
-Die 3D-Modelle und die KiCad-Modulbibliothek stehen unter einer anderen
-Lizenz. `hardware/mechanical/` und `hardware/kicad/` stehen unter CC BY-NC-SA
-4.0 (Creative Commons Namensnennung - Nicht kommerziell - Weitergabe unter
-gleichen Bedingungen 4.0 International): die STEP- und STL-Modelle, die
-Symbole, Footprints und 3D-Formen, die Renderbilder und die Python-Skripte,
-die sie zeichnen. Ebenso die Läufe der Bauteilrecherche in
-`hardware/research/` und ihr Protokoll `hardware/docs/Research.md`
-([hardware/research/LICENSE](hardware/research/LICENSE)). Sie dürfen für nicht kommerzielle Zwecke genutzt, geändert
-und weitergegeben werden, mit Namensnennung und unter derselben Lizenz. Eine
-kommerzielle Nutzung braucht eine eigene Lizenz des Rechteinhabers. Die
-Bedingungen stehen in [hardware/mechanical/LICENSE](hardware/mechanical/LICENSE)
-und [hardware/kicad/LICENSE](hardware/kicad/LICENSE). Das Dial-Mesh von
-M5Stack, die beiden daran angepassten Dial-STEP-Dateien und die
-Buchstabenumrisse in `hardware/mechanical/_font.py` bleiben unter der
-MIT-Lizenz.
+Die Hardware steht unter einer anderen Lizenz. Alles in `hardware/` und die
+Seite der Trägerplatine ([Carrier](docs/Carrier-de.md)) steht unter CC
+BY-NC-SA 4.0 (Creative Commons Namensnennung - Nicht kommerziell - Weitergabe
+unter gleichen Bedingungen 4.0 International): die Platinen- und
+Pin-Dokumente, die Teilelisten und Bezugsquellen, die Bauteilrecherche, die
+STEP- und STL-Modelle, die KiCad-Symbole, -Footprints und -3D-Formen, die
+Renderbilder und die Python-Skripte, die sie zeichnen. Sie dürfen für nicht
+kommerzielle Zwecke genutzt, geändert und weitergegeben werden, mit
+Namensnennung und unter derselben Lizenz. Eine kommerzielle Nutzung braucht
+eine eigene Lizenz des Rechteinhabers. Die Bedingungen stehen in
+[hardware/LICENSE](hardware/LICENSE). Das Dial-Mesh von M5Stack, die beiden
+daran angepassten Dial-STEP-Dateien und die Buchstabenumrisse in
+`hardware/mechanical/_font.py` bleiben unter der MIT-Lizenz.
 
 - **DejaVu Sans Mono.** Die sieben Fonttabellen unter `shared/gfx/` sind
   Glyphen-Bitmaps, die `tools/gen_font.py` aus DejaVu Sans Mono erzeugt, unter
@@ -220,7 +218,5 @@ zulässig, übernimmt der Autor keine Haftung für:
   Hardware,
 - Verletzungen oder Schäden, die durch den Betrieb der Hardware entstehen.
 
-Die Lizenzbedingungen stehen in [LICENSE](LICENSE); für die 3D-Modelle und
-die KiCad-Modulbibliothek in
-[hardware/mechanical/LICENSE](hardware/mechanical/LICENSE) und
-[hardware/kicad/LICENSE](hardware/kicad/LICENSE).
+Die Lizenzbedingungen stehen in [LICENSE](LICENSE); für die Hardware in
+[hardware/LICENSE](hardware/LICENSE).

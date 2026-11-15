@@ -136,17 +136,15 @@ Security and safety reports: [SECURITY.md](SECURITY.md).
 
 rcbench is MIT licensed: [LICENSE](LICENSE).
 
-The 3D models and the KiCad module library are licensed differently.
-`hardware/mechanical/` and `hardware/kicad/` are under CC BY-NC-SA 4.0
+The hardware is licensed differently. Everything in `hardware/` and the
+carrier board's page ([Carrier](docs/Carrier.md)) is under CC BY-NC-SA 4.0
 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International):
-the STEP and STL models, the symbols, footprints and 3D shapes, the renders
-and the Python scripts that draw them. So are the component research runs in
-`hardware/research/` and their record `hardware/docs/Research.md`
-([hardware/research/LICENSE](hardware/research/LICENSE)). They may be used, changed and shared
-for non-commercial purposes, with credit and under the same licence.
-Commercial use needs a separate licence from the copyright holder. The terms
-are in [hardware/mechanical/LICENSE](hardware/mechanical/LICENSE) and
-[hardware/kicad/LICENSE](hardware/kicad/LICENSE). M5Stack's Dial mesh, the
+the board and pin documents, the part lists and sourcing, the component
+research, the STEP and STL models, the KiCad symbols, footprints and 3D
+shapes, the renders and the Python scripts that draw them. They may be used,
+changed and shared for non-commercial purposes, with credit and under the
+same licence. Commercial use needs a separate licence from the copyright
+holder. The terms are in [hardware/LICENSE](hardware/LICENSE). M5Stack's Dial mesh, the
 two Dial STEP files fitted to it and the letter outlines in
 `hardware/mechanical/_font.py` keep the MIT licence.
 
@@ -208,6 +206,5 @@ by law, the author accepts no liability for:
 - damage to computers, microcontrollers or other connected hardware,
 - injury or damage that results from operating the hardware.
 
-The licence terms are in [LICENSE](LICENSE); for the 3D models and the KiCad
-module library in [hardware/mechanical/LICENSE](hardware/mechanical/LICENSE)
-and [hardware/kicad/LICENSE](hardware/kicad/LICENSE).
+The licence terms are in [LICENSE](LICENSE); for the hardware in
+[hardware/LICENSE](hardware/LICENSE).

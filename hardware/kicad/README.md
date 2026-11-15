@@ -177,5 +177,6 @@ International): the symbols, footprints and 3D shapes, the module specs, the
 renders and the scripts in `tools/`. They may be used, changed and shared for
 non-commercial purposes, with credit and under the same licence. Commercial
 use needs a separate licence from the copyright holder. Terms:
-[LICENSE](LICENSE). The rest of rcbench is MIT (Massachusetts Institute of
-Technology) licensed: [LICENSE](../../LICENSE).
+[LICENSE](LICENSE), as for all of `hardware/` ([../LICENSE](../LICENSE)). The
+software of rcbench is MIT (Massachusetts Institute of Technology) licensed:
+[LICENSE](../../LICENSE).
