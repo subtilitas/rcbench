@@ -17,9 +17,9 @@
  * follows the count with hysteresis (dk_detent_follow()): it moves when the
  * count is 3 counts from the current detent's center, so a detent counts
  * at three quarters of its travel, and a jitter of 1 count at any rest
- * position never clicks.  Which
- * direction counts up, and where in its 4 counts the encoder rests, are
- * not measured: DIAL_ENC_SIGN holds the direction.
+ * position never clicks.  The encoder's count falls clockwise on the
+ * Dial v1.1; DIAL_ENC_SIGN turns it so that clockwise counts up.  Where in
+ * its 4 counts the encoder rests is not measured.
  *
  * The screen button: released before 1,000ms is PRESS, held for 1,000ms is
  * HOLD (sent once, while it is down).  Held for 3,000ms (DIAL_OFF_MS) it
@@ -50,9 +50,10 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 
-/** @brief +1 or -1: which way of the encoder counts up.  Not measured on
- *         the device: clockwise positive is the protocol's rule. */
-#define DIAL_ENC_SIGN 1
+/** @brief +1 or -1: which way of the encoder counts up.  The count falls
+ *         clockwise on the Dial v1.1, and clockwise positive is the
+ *         protocol's rule. */
+#define DIAL_ENC_SIGN (-1)
 /** @brief PCNT's count limits; the driver accumulates past them. @{ */
 #define ENC_LIMIT 1000
 /** @} */

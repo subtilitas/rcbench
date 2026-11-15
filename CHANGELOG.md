@@ -80,6 +80,11 @@ history is in git.
   and `_font.py` stay MIT, as does the software
   ([hardware/LICENSE](hardware/LICENSE)).
 
+### Fixed
+
+- M5Stack Dial: the knob turned the wrong way. Clockwise now counts up, as
+  the protocol says.
+
 ## 0.23.13 - 2026-11-15
 
 0.23.13 is a testing release. It adds the M5Stack Dial v1.1 as a Bluetooth LE

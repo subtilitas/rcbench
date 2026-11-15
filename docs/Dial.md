@@ -657,8 +657,9 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The battery's voltage is unknown: no source names the pin it reaches.
   STATUS carries 0 and its "battery unknown" flag. The charger's state is
   unknown as well.
-- Which way of the encoder counts up is not measured, nor where in its 4
-  counts the encoder rests. Clockwise positive is the protocol's rule. A
+- The encoder's count falls clockwise on the Dial v1.1; the firmware
+  turns it so that clockwise counts up, the protocol's rule. Where in its
+  4 counts the encoder rests is not measured. A
   detent moves 3 counts from its center, so an encoder that rests between
   two counts never clicks.
 - The touch controller's start-up time after the shared reset is taken as

@@ -699,9 +699,10 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 - Die Spannung des Akkus ist unbekannt: Keine Quelle nennt den Pin, den sie
   erreicht. STATUS trägt 0 und das Flag "Akku unbekannt". Der Zustand des
   Laders ist ebenfalls unbekannt.
-- Welche Drehrichtung des Encoders hochzählt, ist nicht gemessen, ebenso
-  wenig, wo in seinen 4 Zählschritten der Encoder einrastet. Im Uhrzeigersinn
-  positiv ist die Regel des Protokolls. Eine Rastung wechselt 3 Zählschritte
+- Der Zähler des Encoders fällt beim Dial v1.1 im Uhrzeigersinn; die
+  Firmware dreht ihn um, sodass im Uhrzeigersinn hochgezählt wird, die
+  Regel des Protokolls. Wo in seinen 4 Zählschritten der Encoder einrastet,
+  ist nicht gemessen. Eine Rastung wechselt 3 Zählschritte
   von ihrer Mitte, also klickt ein Encoder, der zwischen zwei Zählschritten
   ruht, nie.
 - Die Startzeit des Touch-Controllers nach dem gemeinsamen Reset ist mit
