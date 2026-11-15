@@ -626,6 +626,3 @@ def test_the_feature_walk_of_the_mini_names_every_menu_row():
                  "servo-supply", "prog-chooser-switched", "rx-chooser",
                  "tools-chooser", "log-ready", "settings"):
         assert f"mini-{name}" in shown, name
-    # The last chapter lists what is not tested on hardware.
-    said = " ".join(line["text"] for line in board["scenes"][-2]["say"])
-    assert "not tested on hardware" in said

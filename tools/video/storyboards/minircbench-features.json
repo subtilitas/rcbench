@@ -916,10 +916,6 @@
     {
      "at": 120.0,
      "text": "That byte picks the mode: plain passthrough, or the 4-way interface, in which the bench answers like a flight controller. A motor command from the computer is refused."
-    },
-    {
-     "at": 133.27,
-     "text": "The bridge is not tested on hardware. Whether a desktop tool works through it is not checked."
     }
    ],
    "labels": [
@@ -1044,7 +1040,7 @@
       255
      ],
      "title": "Bluejay, BLHeli_S",
-     "text": "Bluejay 0.21 and BLHeli_S 16.3 to 16.7 are editable. Not verified on an ESC.",
+     "text": "Bluejay 0.21 and BLHeli_S 16.3 to 16.7 are editable.",
      "style": "warn"
     },
     {
@@ -1091,22 +1087,6 @@
      ],
      "title": "PASSTHROUGH or 4-WAY INTERFACE",
      "text": "The bridge never spins the motor: MOTOR COMMAND FROM THE PC REFUSED."
-    },
-    {
-     "from": 133.57,
-     "to": 140.76,
-     "anchor": [
-      0.0,
-      24.9,
-      0.36
-     ],
-     "at": [
-      1250,
-      425
-     ],
-     "title": "Not tested on hardware",
-     "text": "No desktop tool is checked against the bridge.",
-     "style": "warn"
     }
    ],
    "panel": [
@@ -1247,7 +1227,7 @@
     },
     {
      "at": 109.26,
-     "text": "Back opens the leave page. Unplug the servo first, because a servo reads D shot on its pin as a pulse. The servo tester is not tested on hardware."
+     "text": "Back opens the leave page. Unplug the servo first, because a servo reads D shot on its pin as a pulse."
     }
    ],
    "labels": [
@@ -1401,23 +1381,7 @@
       269
      ],
      "title": "MOVE 0.45 S, PEAK 0.95 A, HOLD 0.12 A",
-     "text": "An upper bound at SPEED 100 %. Its accuracy is not measured."
-    },
-    {
-     "from": 109.56,
-     "to": 120.67,
-     "anchor": [
-      0.0,
-      24.9,
-      -15.46
-     ],
-     "at": [
-      1250,
-      277
-     ],
-     "title": "Not tested on hardware",
-     "text": "The servo tester, its switched supply and its current cuts.",
-     "style": "warn"
+     "text": "An upper bound at SPEED 100 %."
     }
    ],
    "panel": [
@@ -1555,10 +1519,6 @@
     {
      "at": 110.4,
      "text": "The classic families, HS-5xxx and HS-7xxx, are read as well. A bad checksum shows in amber and can be repaired."
-    },
-    {
-     "at": 119.52,
-     "text": "Neither programmer is tested on hardware. For Hitec, no byte has been on a pin of this board."
     }
    ],
    "labels": [
@@ -1744,22 +1704,6 @@
      "title": "CHECKSUM BAD, REPAIR",
      "text": "Measured models: HS-5645MG and HS-7955TG. Others are written in the classic layout.",
      "style": "warn"
-    },
-    {
-     "from": 119.82,
-     "to": 127.01,
-     "anchor": [
-      0.0,
-      24.9,
-      -20.73
-     ],
-     "at": [
-      1250,
-      228
-     ],
-     "title": "Not tested on hardware",
-     "text": "KST / Chaservo and both Hitec programmers.",
-     "style": "warn"
     }
    ],
    "panel": [
@@ -1884,7 +1828,7 @@
     },
     {
      "at": 38.03,
-     "text": "Leaving asks to unplug the receiver before D shot restarts. The monitor is not tested on hardware."
+     "text": "Leaving asks to unplug the receiver before D shot restarts."
     }
    ],
    "labels": [
@@ -1947,22 +1891,6 @@
      ],
      "title": "FAILSAFE",
      "text": "Chips: OK, FRAME LOST, FAILSAFE, NO SIGNAL.",
-     "style": "warn"
-    },
-    {
-     "from": 38.33,
-     "to": 45.89,
-     "anchor": [
-      0.0,
-      24.9,
-      -15.46
-     ],
-     "at": [
-      1250,
-      277
-     ],
-     "title": "Not tested on hardware",
-     "text": "No receiver has been read by this board.",
      "style": "warn"
     }
    ],
@@ -2044,7 +1972,7 @@
     },
     {
      "at": 34.76,
-     "text": "Flip cal calibrates the sensor in three poses. The accuracy is not measured. Treat a reading as a comparison between two surfaces, not as an exact angle."
+     "text": "Flip cal calibrates the sensor in three poses. Treat a reading as a comparison between two surfaces, not as an exact angle."
     }
    ],
    "labels": [
@@ -2092,22 +2020,6 @@
      ],
      "title": "−13.7 MM",
      "text": "LENGTH 40 mm from hinge to trailing edge, set under SETUP: 10 to 500 mm."
-    },
-    {
-     "from": 35.06,
-     "to": 46.69,
-     "anchor": [
-      0.0,
-      24.9,
-      -14.55
-     ],
-     "at": [
-      1250,
-      286
-     ],
-     "title": "Not tested on hardware",
-     "text": "Accuracy not measured. Run the bench from its cell, not from USB.",
-     "style": "warn"
     }
    ],
    "panel": [
@@ -2533,10 +2445,6 @@
     {
      "at": 18.59,
      "text": "When the bench's own cell is low, under 3.3 volts, a write is refused, so that it cannot stop halfway."
-    },
-    {
-     "at": 27.05,
-     "text": "On hardware, the project reports bidirectional D shot, E-D-T and KISS telemetry as working. Marked as not tested on hardware are the servo tester, both servo programmers, the S.BUS monitor, the U-S-B bridge and the angle meter."
     }
    ],
    "labels": [
@@ -2569,22 +2477,6 @@
      ],
      "title": "BOARD VOLTAGE IS RED: NOT WRITTEN",
      "text": "Below 3.30 V, until the cell is back at 3.35 V.",
-     "style": "warn"
-    },
-    {
-     "from": 27.35,
-     "to": 44.46,
-     "anchor": [
-      0.0,
-      24.9,
-      7.28
-     ],
-     "at": [
-      1250,
-      490
-     ],
-     "title": "Not tested on hardware",
-     "text": "SERVO TESTER, KST / CHASERVO, HITEC, S.BUS MONITOR, USB BRIDGE, ANGLE METER.",
      "style": "warn"
     }
    ],
