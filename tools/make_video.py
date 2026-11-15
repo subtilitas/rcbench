@@ -476,7 +476,7 @@ def _check_tour(scene: dict, steps: int, where: str, errors: list) -> None:
             errors.append(f"{at}: points must be a list")
 
 
-#: The two printed parts of the Dial's hand-held base, files in tools/video/cad/.
+#: The two printed parts of the Dial's hand-held base, in tools/video/cad/.
 DIAL_BASE = ("dial_base_top", "dial_base_bottom")
 
 
