@@ -72,11 +72,11 @@ function fakeTree(c: Catalogue, edit: (files: Map<string, string[]>) => void = (
     settings[line] = `        "key", "GPIO",`;
     settings[line + 1] = `        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, ${def}, NULL, 0 },`;
   };
-  entry(140, 'SET_SENSE_SDA', 16);
-  entry(143, 'SET_SENSE_SCL', 17);
-  entry(170, 'SET_TONE_PIN', 22);
-  entry(205, 'SET_PDMINI_TX', -1);
-  entry(208, 'SET_PDMINI_RX', -1);
+  entry(144, 'SET_SENSE_SDA', 16);
+  entry(147, 'SET_SENSE_SCL', 17);
+  entry(174, 'SET_TONE_PIN', 22);
+  entry(209, 'SET_PDMINI_TX', -1);
+  entry(212, 'SET_PDMINI_RX', -1);
 
   const iomcu = filler();
   iomcu[53] = '#define IOMCU_HEARTBEAT_PIN  3';
@@ -846,7 +846,7 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
 
   // A named text that the line does not hold.
   const wrong = [...ANCHOR_TEXTS, { path: 'docs/FirstRun.md', line: 802, has: '| SDA | GP16 (pad 21) |' }];
-  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:802 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.23\.12/);
+  reports(checkSrc(moved, tree, wrong).findings, 'function.servo', /FirstRun\.md:802 does not hold "\| SDA \| GP16 \(pad 21\) \|" at v0\.23\.13/);
   reports(checkAll(moved, tree, true, wrong).findings, 'function.servo', /does not hold/);
   // Without the tree the text is not compared.
   assert.deepEqual(checkSrc(moved, null, wrong).findings, []);
@@ -872,9 +872,9 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
     doc.splice(532, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'wire.26', /FirstRun\.md:534 does not hold "\| SDA \| GPIO 16 \(pad 21\) \|"/);
-  reports(found, 'wire.27', /FirstRun\.md:535 does not hold/);
-  reports(found, 'check.ina3221-pullups', /FirstRun\.md:536 does not hold/);
+  reports(found, 'wire.26', /FirstRun\.md:588 does not hold "\| SDA \| GPIO 16 \(pad 21\) \|"/);
+  reports(found, 'wire.27', /FirstRun\.md:589 does not hold/);
+  reports(found, 'check.ina3221-pullups', /FirstRun\.md:590 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -885,14 +885,14 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The sensor bus rows of docs/FirstRun.md at the tag: 534 SDA, 535 SCL,
-  // 536 the pull-ups.
+  // The sensor bus rows of docs/FirstRun.md at the tag: 588 SDA, 589 SCL,
+  // 590 the pull-ups.
   const sda = CATALOGUE.wires.find((w) => w.n === 26)?.src;
   const scl = CATALOGUE.wires.find((w) => w.n === 27)?.src;
-  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 534, tag: TAG });
-  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 535, tag: TAG });
+  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 588, tag: TAG });
+  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 589, tag: TAG });
   const pullups = CATALOGUE.checks.find((k) => k.id === 'ina3221-pullups')?.src;
-  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 536, tag: TAG });
+  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 590, tag: TAG });
   // The AS5600 board's OUT and GPO have no repository source at the tag:
   // docs/Building.md describes the panel's knob, an MT6701, since 0.21.0.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
@@ -1061,7 +1061,7 @@ test('tree: the pin defaults are read from settings_schema.c where the tree has 
   });
   assert.deepEqual(errors(checkTree(CATALOGUE, split)), []);
   const stale = fakeTree(CATALOGUE, (files) => {
-    lines(files, SCHEMA)[141] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+    lines(files, SCHEMA)[145] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, stale), 'pin.sda', /GPIO 16 in the data and 18 in shared\/settings\/settings_schema\.c/);
 
@@ -1075,25 +1075,25 @@ test('tree: the pin defaults are read from settings_schema.c where the tree has 
   };
   assert.deepEqual(errors(checkTree(CATALOGUE, without(() => {}))), []);
   const old = without((files) => {
-    lines(files, SETTINGS)[141] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+    lines(files, SETTINGS)[145] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, old), 'pin.sda', /GPIO 16 in the data and 18 in shared\/settings\/settings\.c/);
 });
 
 test('tree: stale pin defaults are reported', () => {
   const sda = fakeTree(CATALOGUE, (files) => {
-    lines(files, SCHEMA)[141] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
+    lines(files, SCHEMA)[145] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 18, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, sda), 'pin.sda', /GPIO 16 in the data and 18/);
 
   // The firmware has a default for a pin the data calls a proposal.
   const pd = fakeTree(CATALOGUE, (files) => {
-    lines(files, SCHEMA)[206] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
+    lines(files, SCHEMA)[210] = '        SET_CAT_SENSORS, SET_TYPE_INT, -1, 47, 1, 14, NULL, 0 },';
   });
   reports(checkTree(CATALOGUE, pd), 'pin.pd_tx', /proposal in the data/);
 
   const renamed = fakeTree(CATALOGUE, (files) => {
-    lines(files, SCHEMA)[169] = '    [SET_TAP_PIN] = {';
+    lines(files, SCHEMA)[173] = '    [SET_TAP_PIN] = {';
   });
   reports(checkTree(CATALOGUE, renamed), 'pin.tap', /no SET_TONE_PIN/);
 

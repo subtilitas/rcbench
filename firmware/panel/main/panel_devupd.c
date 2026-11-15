@@ -41,7 +41,12 @@ static const char *TAG = "devupd";
 _Static_assert(PANEL_BLEC_UPD == 4u, "the update client is the hub's owner 4");
 _Static_assert(PANEL_BLEC_UPD < BLEU_OWNER_MAX,
                "the update client's owner fits a token");
-_Static_assert(UPD_DEV_COUNT == BLEOTA_KIND_MAX
+/** @brief The devices the panel carries an image for, BLEOTA_KIND_DIAL to
+ *         BLEOTA_KIND_NODE_BAL.  BLEOTA_KIND_NODE_POWER_S3, the display
+ *         node, is flashed over USB: its image is not carried. */
+#define DEV_N BLEOTA_KIND_NODE_BAL
+
+_Static_assert(UPD_DEV_COUNT == BLEOTA_KIND_NODE_BAL
                    && UPD_DEV_DIAL == BLEOTA_KIND_DIAL - 1
                    && UPD_DEV_PNODE == BLEOTA_KIND_NODE_POWER - 1
                    && UPD_DEV_BAL == BLEOTA_KIND_NODE_BAL - 1,
@@ -90,7 +95,7 @@ typedef struct {
 } carried_t;
 
 /** @brief The images, by BLEOTA_KIND_* - 1. */
-static carried_t s_img[BLEOTA_KIND_MAX] = {
+static carried_t s_img[DEV_N] = {
     { .word = "Dial", .kind = BLEOTA_KIND_DIAL, .chip = DEVUPD_CHIP_ESP32S3,
       .project = DEVUPD_PROJECT_DIAL, .slot = DEVUPD_SLOT_DIAL },
     { .word = "power node", .kind = BLEOTA_KIND_NODE_POWER,
@@ -110,16 +115,19 @@ typedef struct {
     /** @brief What its link says (panel_dial_blec_target()). */
     bool (*target)(bleu_addr_t *addr, bool *linked, uint8_t version[3],
                    bool *down);
+    /** @brief The device runs a board whose image the panel does not
+     *         carry (panel_pnode_blec_other_board()); NULL: never. */
+    bool (*other_board)(void);
 } dev_hooks_t;
 
 /** @brief The devices, by BLEOTA_KIND_* - 1, as s_img. */
-static const dev_hooks_t k_dev[BLEOTA_KIND_MAX] = {
+static const dev_hooks_t k_dev[DEV_N] = {
     { TX_DEV_NAME_DIAL, TX_ALERT_DIAL_ASK, panel_dial_blec_hold,
-      panel_dial_blec_target },
+      panel_dial_blec_target, NULL },
     { TX_DEV_NAME_PNODE, TX_ALERT_NODE_ASK, panel_pnode_blec_hold,
-      panel_pnode_blec_target },
+      panel_pnode_blec_target, panel_pnode_blec_other_board },
     { TX_DEV_NAME_BAL, TX_ALERT_NODE_ASK, panel_bal_blec_hold,
-      panel_bal_blec_target },
+      panel_bal_blec_target, NULL },
 };
 
 /** @brief Where the `blec` task's update stands. */
@@ -132,7 +140,8 @@ typedef enum {
 /** @brief What a device's link and image say, for its row. */
 typedef struct {
     bool         img_due;   /**< its image is not checked yet */
-    bool         have_img;  /**< it is carried */
+    bool         have_img;  /**< it is carried, and for the board the device
+                                 runs */
     bool         img_ok;    /**< it passed */
     fw_version_t carried;   /**< its version */
     bool         linked;    /**< the device is connected, its version read */
@@ -155,7 +164,7 @@ typedef struct {
 
 /** @brief What the `blec` task publishes for the frame. */
 typedef struct {
-    dev_pub_t    d[BLEOTA_KIND_MAX]; /**< each device */
+    dev_pub_t    d[DEV_N]; /**< each device */
     uint8_t      dev;       /**< the device of the running or last update */
     uint8_t      phase;     /**< devupd_phase_t of the transfer */
     unsigned     percent;   /**< its share taken */
@@ -227,7 +236,7 @@ void panel_devupd_start(void)
     // cppcheck-suppress subtractPointers
     s_img[2].n = (uint32_t)(_binary_rcbench_node_bal_bin_end - _binary_rcbench_node_bal_bin_start);
 #endif
-    for (unsigned i = 0; i < BLEOTA_KIND_MAX; ++i) {
+    for (unsigned i = 0; i < DEV_N; ++i) {
         s_img[i].st = s_img[i].p != NULL ? IMG_DUE : IMG_NONE;
     }
     s_started = devupd_client_init(&s_cli, PANEL_BLEC_UPD);
@@ -242,7 +251,7 @@ void panel_devupd_start(void)
  */
 static void check_next(void)
 {
-    for (unsigned i = 0; i < BLEOTA_KIND_MAX; ++i) {
+    for (unsigned i = 0; i < DEV_N; ++i) {
         carried_t *c = &s_img[i];
         if (c->st != IMG_DUE) {
             continue;
@@ -278,6 +287,7 @@ typedef struct {
     bool        bound;  /**< one is bound */
     bool        linked; /**< connected, its version read */
     bool        down;   /**< no link stands or is under way */
+    bool        other;  /**< it runs a board the carried image is not for */
     uint8_t     ver[3]; /**< its version */
 } seen_t;
 
@@ -363,18 +373,18 @@ static void finish(bool ok, uint8_t err, uint8_t code, uint32_t now)
  * @param now       the clock
  * @param now_start a new update is to start
  */
-static void settle(const seen_t t[BLEOTA_KIND_MAX], uint32_t now,
+static void settle(const seen_t t[DEV_N], uint32_t now,
                    bool now_start)
 {
-    devupd_seen_t seen[BLEOTA_KIND_MAX];
-    for (unsigned i = 0; i < BLEOTA_KIND_MAX; ++i) {
+    devupd_seen_t seen[DEV_N];
+    for (unsigned i = 0; i < DEV_N; ++i) {
         seen[i].known = t[i].bound && t[i].linked;
         seen[i].running = (fw_version_t){ t[i].ver[0], t[i].ver[1],
                                           t[i].ver[2] };
     }
     const fw_version_t want = s_settler.want;
     devupd_settled_t r;
-    if (!devupd_settler_step(&s_settler, seen, BLEOTA_KIND_MAX, now,
+    if (!devupd_settler_step(&s_settler, seen, DEV_N, now,
                              now_start, &r)) {
         return;
     }
@@ -467,25 +477,28 @@ void panel_devupd_blec_poll(uint32_t now)
         return;
     }
     check_next();
-    seen_t t[BLEOTA_KIND_MAX];
+    seen_t t[DEV_N];
     memset(t, 0, sizeof(t));
-    for (unsigned i = 0; i < BLEOTA_KIND_MAX; ++i) {
+    for (unsigned i = 0; i < DEV_N; ++i) {
         t[i].bound = k_dev[i].target(&t[i].addr, &t[i].linked, t[i].ver,
                                      &t[i].down);
+        t[i].other = t[i].bound && k_dev[i].other_board != NULL
+                     && k_dev[i].other_board();
     }
     /* The control task's live flag, which it hands the Dial: ARMED or an
      * arm waiting, for every device. */
     const bool live = panel_dial_live();
     unsigned dev = 0u;
     const devupd_take_t take = devupd_gate_take(&s_gate, live, &dev);
-    if (dev >= BLEOTA_KIND_MAX) {
+    if (dev >= DEV_N) {
         dev = 0u;
     }
     if (take == DEVUPD_TAKE_START) {
         /* A pending unknown install is reported first, from its own
          * device: the new update never reads as its result. */
         settle(t, now, true);
-        begin(dev, t[dev].bound, t[dev].linked, t[dev].ver, now);
+        begin(dev, t[dev].bound, t[dev].linked && !t[dev].other, t[dev].ver,
+              now);
     } else if (take == DEVUPD_TAKE_ARMED) {
         s_cur = dev;
         ESP_LOGW(TAG, "%s update refused: the bench is ARMED", cur_word());
@@ -528,12 +541,13 @@ void panel_devupd_blec_poll(uint32_t now)
     if (s_stage == STAGE_IDLE) {
         settle(t, now, false);
     }
-    for (unsigned i = 0; i < BLEOTA_KIND_MAX; ++i) {
+    for (unsigned i = 0; i < DEV_N; ++i) {
         const carried_t *g = &s_img[i];
         dev_pub_t *d = &s_next.d[i];
         d->img_due = g->st == IMG_DUE;
-        d->have_img = g->st != IMG_NONE;
-        d->img_ok = g->st == IMG_READY;
+        /* A display node runs another board: no carried image is its. */
+        d->have_img = g->st != IMG_NONE && !t[i].other;
+        d->img_ok = g->st == IMG_READY && !t[i].other;
         d->carried = g->info.version;
         d->linked = t[i].bound && t[i].linked;
         d->running = (fw_version_t){ t[i].ver[0], t[i].ver[1], t[i].ver[2] };
@@ -635,7 +649,7 @@ void devupd_service(bool armed)
     taskEXIT_CRITICAL(&s_mux);
     const bool busy = devupd_gate_busy(&s_gate);
     const bool other = panel_c6_busy() || panel_cu_busy() || panel_fw_busy();
-    for (unsigned i = 0; i < BLEOTA_KIND_MAX; ++i) {
+    for (unsigned i = 0; i < DEV_N; ++i) {
         const dev_pub_t *d = &p.d[i];
         /* The frame asks alone, so the device it asked for is the one the
          * gate holds while it reads busy. */
@@ -663,7 +677,7 @@ void devupd_service(bool armed)
             }
         }
     }
-    const unsigned dev = p.dev < BLEOTA_KIND_MAX ? p.dev : 0u;
+    const unsigned dev = p.dev < DEV_N ? p.dev : 0u;
     if (busy && p.phase == DEVUPD_CONFIRM && s_seen_phase != DEVUPD_CONFIRM) {
         ui_router_set_notice(ui_tr(k_dev[dev].ask));
     }
@@ -683,7 +697,7 @@ void devupd_service(bool armed)
         char ver[24];
         snprintf(ver, sizeof(ver), "%u.%u.%u", (unsigned)e->ver.major,
                  (unsigned)e->ver.minor, (unsigned)e->ver.patch);
-        const unsigned d = e->dev < BLEOTA_KIND_MAX ? e->dev : 0u;
+        const unsigned d = e->dev < DEV_N ? e->dev : 0u;
         const char *name = ui_tr(k_dev[d].name);
         if (e->ok) {
             snprintf(line, sizeof(line), TR(ALERT_DEV_DONE), name, ver);

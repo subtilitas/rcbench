@@ -119,6 +119,7 @@ static bool take_info(pnode_ctl_t *c, uint32_t now_ms)
     }
     c->info_proto = p.u.info.proto;
     c->info_role = p.u.info.role;
+    c->info_board = p.u.info.board;
     c->info_ok = p.u.info.proto == RCNODE_PROTO
                  && p.u.info.role == RCNODE_ROLE_POWER
                  && pnode_meter_info(&c->m, &p.u.info);
@@ -141,8 +142,10 @@ static void follow_link(pnode_ctl_t *c, uint32_t now_ms)
         c->info_ok = false;
         c->info_proto = 0u;
         c->info_role = 0u;
+        c->info_board = 0u;
         c->was_up = false;
         c->m.have_status = false;
+        c->lang_sent = PNODE_LANG_NONE;
     } else if (!up && c->linked) {
         c->lost = c->was_up;
         c->info_ok = false;
@@ -309,6 +312,11 @@ bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
     return true;
 }
 
+bool pnode_ctl_other_board(const pnode_ctl_t *c)
+{
+    return c != NULL && c->info_ok && c->info_board != RCNODE_BOARD_C6_ZERO;
+}
+
 pnode_scan_t pnode_ctl_scan(pnode_ctl_t *c, bool armed, uint32_t now_ms)
 {
     if (c == NULL) {
@@ -409,6 +417,38 @@ static bool send_run(pnode_ctl_t *c, uint32_t now_ms)
     return true;
 }
 
+/**
+ * @brief The LANG write owed, when the central can send and no RUN write
+ *        waits: the panel's language, once a link and once a change.  A
+ *        refused LANG (a node built before it) is not sent again before
+ *        the next link or change.
+ * @param c      The controller.
+ * @param now_ms The clock.
+ * @return true when it was handed to the central.
+ */
+static bool send_lang(pnode_ctl_t *c, uint32_t now_ms)
+{
+    if (c->lang_sent == c->lang || c->run_owed || !c->info_ok
+        || !bleu_can_send(&c->b)) {
+        return false;
+    }
+    const rcnode_ctl_t w = { .op = RCNODE_OP_LANG, .lang = c->lang };
+    uint8_t buf[RCNODE_CTL_MAX];
+    const size_t n = rcnode_enc_ctl(&w, buf, sizeof(buf));
+    if (n == 0u || !bleu_send(&c->b, buf, n, now_ms)) {
+        return false;
+    }
+    c->lang_sent = c->lang;
+    return true;
+}
+
+void pnode_ctl_lang(pnode_ctl_t *c, uint8_t lang)
+{
+    if (c != NULL) {
+        c->lang = lang == RCNODE_LANG_DE ? RCNODE_LANG_DE : RCNODE_LANG_EN;
+    }
+}
+
 bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
                     bool bench_run, bleu_act_t *out)
 {
@@ -439,7 +479,7 @@ bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
         return true;
     }
     take_scan(c);
-    if (send_run(c, now_ms)) {
+    if (send_run(c, now_ms) || send_lang(c, now_ms)) {
         return bleu_step(&c->b, now_ms, out);
     }
     return false;

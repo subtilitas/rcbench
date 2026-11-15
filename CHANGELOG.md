@@ -17,6 +17,59 @@ history is in git.
   builds it with OpenCASCADE and its `--check`, run in CI, fails when a part
   shares volume with the dial, its nut or the cell
   ([Mechanical parts](hardware/mechanical/README.md#hand-held-base-for-the-m5stack-dial)).
+
+## 0.23.13 - 2026-11-15
+
+0.23.13 is a testing release. It adds the M5Stack Dial v1.1 as a Bluetooth LE
+(Low Energy) knob, the power node with an INA228 current sensor and the
+balance node on the ESP32-C6, and the display node on the LCDWIKI ES3C28P
+board. The panel updates the Dial and both nodes over Bluetooth LE. The KST
+and HITEC programmers write their values after a 2s hold. Its minor number,
+23, is odd. GitHub publishes it as a pre-release and does not mark it as
+latest. It runs on the ESP32-P4 panel, as 0.23.12 does; an ESP32-S3 panel
+stays on the 0.22 line and is not offered it. The link protocol is 4.37,
+unchanged from 0.23.12. The assets are
+`rcbench-panel-p4-v0.23.13.zip`, `rcbench-panel-p4-v0.23.13.bin`,
+`rcbench-iomcu-v0.23.13.zip`, `rcbench-iomcu-rbmod-v0.23.13.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.13.bin`, `rcbench-node-pwr-merged-0.23.13.bin`,
+`rcbench-node-bal-0.23.13.bin`, `rcbench-node-bal-merged-0.23.13.bin`,
+`rcbench-node-display-merged-0.23.13.bin`, `rcbench-dial-0.23.13.bin`,
+`rcbench-dial-merged-0.23.13.bin` and `SHA256SUMS`.
+
+A bench on 0.23.12 gets 0.23.13 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The panel carries the images of the
+Dial and of the power and balance nodes and sends them over Bluetooth LE from
+SETUP > UPDATES; the display node's image is loaded over USB (Universal Serial
+Bus). To set up a new bench, load both boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes.
+
+The entries below cover the 52 pull requests merged since v0.23.12: #803 to
+#846 and #848 to #855.
+
+### Added
+
+- The display node: the power node on the LCDWIKI ES3C28P 2.8" ESP32-S3
+  display board (ILI9341V 240 x 320 over SPI, FT6336G touch), powered with
+  5V from the pack. It shows voltage, current and power in 32x44 digits, 5
+  frames a second, each the mean of the INA228's 20ms windows since the
+  last frame, with the highest and lowest single window beside each; a tap
+  on a row's highest and lowest resets them, a 2s hold resets all six. It
+  runs with or without the panel and serves the panel as the C6 power node
+  does. Built with `sdkconfig.s3_es3c28p` (board choice in
+  `firmware/node/main/Kconfig.projbuild`, pins in `node_board.h`); the
+  release carries `rcbench-node-display-merged-<version>.bin` for 0x0 over
+  USB. The panel does not carry its image. Screen logic in `node_view.c`
+  under `test_node_view`, screenshots under `tools/render_node.py --check`
+  ([Sensor nodes](docs/Nodes.md#the-display-node)).
+- `protocols/rcnode`: the control write LANG (0x06, 0 English, 1 German),
+  which the panel sends a linked power node after INFO and at each change
+  of its language; INFO's board 2 is the ES3C28P. `protocols/bleota`: kind
+  4, the display node, which neither power node's image passes for the
+  other.
 - `hardware/mechanical/` and `hardware/kicad/`: STEP models, drawn part by
   part with the print of both sides, of 4 module boards: an INA219 board with
   the print CJMCU (24.2mm x 21.9mm, 225 solids), a lithium polymer charger

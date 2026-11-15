@@ -6986,7 +6986,7 @@ gap is no loss error. The transfer time is not measured.
 ### The sensor nodes
 
 The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show a node's
-firmware: `Node: 0.23.11. Included: 0.23.12.`, the version the node's
+firmware: `Node: 0.23.12. Included: 0.23.13.`, the version the node's
 STATUS packet named on the current link, or `not connected`, and the
 version of the node image this panel carries, or `none`. The two roles'
 images differ: the power node's row sends the power image, the balance
@@ -7023,7 +7023,7 @@ back. Once the update ends the node's client connects again from SETUP's
 values, and the row's version comes from the first STATUS packet on the
 new link.
 
-The alert band's lines name the node: `Power node updated to 0.23.12.
+The alert band's lines name the node: `Power node updated to 0.23.13.
 It connects again by itself.`, `Balance node update stopped: <reason>.
 Previous firmware is running.`, `Power node did not report after its
 update. Check its version on UPDATES.` The reasons are the Dial's;

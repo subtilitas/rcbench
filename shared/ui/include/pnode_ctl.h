@@ -28,6 +28,11 @@
  *   gets it when it comes back within the run, and a link that comes back
  *   within the run to a node whose RUN packets carry another tag (it
  *   started again) gets it again.
+ * - After INFO is taken on each link, and at each change of the panel's
+ *   language, LANG goes to CONTROL with that language, after any RUN write
+ *   owed: a display node (docs/Nodes.md, "The display node") shows its
+ *   texts in it.  A node that refuses the write (one built before LANG)
+ *   gets it again only at the next link or change.
  *
  * Every function of one controller is called from one task.  Times are
  * unsigned differences of a free-running 32-bit ms clock.
@@ -59,6 +64,9 @@ extern const bleu_profile_t pnode_profile;
  *         IMU is owner 0, the Dial 1. */
 #define PNODE_BLE_OWNER 2u
 
+/** @brief pnode_ctl_t's lang_sent before a LANG write on the link. */
+#define PNODE_LANG_NONE 0xFFu
+
 /** @brief Devices a scan keeps the role of (rcnode_adv_match()). */
 #define PNODE_ROLES_MAX 16u
 
@@ -75,9 +83,13 @@ typedef struct {
                                     the meter took its set-up */
     uint8_t       info_proto;  /**< the protocol INFO named, 0 unread */
     uint8_t       info_role;   /**< the role INFO named, 0 unread */
+    uint8_t       info_board;  /**< the board INFO named, 0 unread */
     bool          was_up;      /**< a reading came on this link */
     bool          lost;        /**< the link dropped after a reading */
     bool          run_owed;    /**< the RUN write waits for the link */
+    uint8_t       lang;        /**< the panel's language, RCNODE_LANG_* */
+    uint8_t       lang_sent;   /**< the language LANG last went with on
+                                    this link; PNODE_LANG_NONE before */
     bool          scan_open;   /**< a scan started, its end unread */
     bool          scan_done;   /**< a scan ended since POWER NODE ON */
     bool          scan_cut;    /**< the bench ARMED stopped that scan */
@@ -155,6 +167,16 @@ bool pnode_ctl_target(const pnode_ctl_t *c, bleu_addr_t *addr, bool *linked,
                       uint8_t version[3], bool *down);
 
 /**
+ * @brief Whether the linked node's INFO names a board other than the
+ *        ESP32-C6-Zero (RCNODE_BOARD_C6_ZERO), whose image is the one the
+ *        panel carries: the ES3C28P display node is flashed over USB.
+ * @param c The controller.
+ * @return true while INFO is taken on this link and names another board;
+ *         false before INFO, for the C6-Zero, or when @p c is NULL.
+ */
+bool pnode_ctl_other_board(const pnode_ctl_t *c);
+
+/**
  * @brief SCAN FOR NODE: the list cleared and a scan of BLEU_SCAN_MS.
  * @param c      The controller.
  * @param armed  The bench is ARMED, or a switch to ARMED waits.
@@ -188,7 +210,7 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms);
 /**
  * @brief Advance to @p now_ms: the meter's run and dropout rule, a running
  *        scan stopped while @p armed, then the central's next action, else
- *        the RUN write owed.  Call until it returns false, at least every
+ *        the RUN write owed, else the LANG write owed.  Call until it returns false, at least every
  *        10ms.
  * @param c         The controller.
  * @param now_ms    The clock.
@@ -199,6 +221,13 @@ void pnode_ctl_event(pnode_ctl_t *c, const bleu_evt_t *e, uint32_t now_ms);
  */
 bool pnode_ctl_step(pnode_ctl_t *c, uint32_t now_ms, bool armed,
                     bool bench_run, bleu_act_t *out);
+
+/**
+ * @brief The panel's language, for the LANG write (above).
+ * @param c    The controller; NULL does nothing.
+ * @param lang RCNODE_LANG_EN or RCNODE_LANG_DE; another value is English.
+ */
+void pnode_ctl_lang(pnode_ctl_t *c, uint8_t lang);
 
 /**
  * @brief Where the node stands.

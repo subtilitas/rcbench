@@ -33,7 +33,7 @@
 #if CONFIG_RCNODE_ROLE_BALANCE
 DEVOTA_ROLE(BLEOTA_KIND_NODE_BAL);
 #else
-DEVOTA_ROLE(BLEOTA_KIND_NODE_POWER);
+DEVOTA_ROLE(NODE_KIND_POWER);
 #endif
 
 /** @brief STREAM packets waiting for `ble_tx`: 32 is 640ms of windows. */
@@ -108,7 +108,7 @@ static int chr_access(uint16_t conn, uint16_t attr,
         info.hdr.t_node = (uint32_t)node_us();
         info.proto      = RCNODE_PROTO;
         info.role       = s_role;
-        info.board      = RCNODE_BOARD_C6_ZERO;
+        info.board      = NODE_BOARD_ID;
         info.addr_type  = s_own_type == BLE_OWN_ADDR_PUBLIC ? 0u : 1u;
         memcpy(info.addr, s_addr, sizeof s_addr);
         node_role.info(&info);
@@ -345,7 +345,7 @@ static void tx_task(void *arg)
 
 /**
  * @brief The BOOT key, the update's confirming key: a hold of 1,000ms
- *        accepts (protocols/bleota).  The board's pull-up holds GPIO9 high;
+ *        accepts (protocols/bleota).  A pull-up holds NODE_PIN_BOOT high;
  *        the key pulls it low.
  * @return true while it is pressed
  */
@@ -388,7 +388,7 @@ void node_ble_start(uint8_t role)
     };
     (void)gpio_config(&key);
     (void)devota_start(role == RCNODE_ROLE_BALANCE ? BLEOTA_KIND_NODE_BAL
-                                               : BLEOTA_KIND_NODE_POWER,
+                                               : NODE_KIND_POWER,
                        BLEOTA_CONFIRM_HOLD, update_key);
     xTaskCreate(tx_task, "ble_tx", 3072, NULL, 6, NULL);
     nimble_port_freertos_init(host_task);
