@@ -140,7 +140,9 @@ The 3D models and the KiCad module library are licensed differently.
 `hardware/mechanical/` and `hardware/kicad/` are under CC BY-NC-SA 4.0
 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0 International):
 the STEP and STL models, the symbols, footprints and 3D shapes, the renders
-and the Python scripts that draw them. They may be used, changed and shared
+and the Python scripts that draw them. So are the component research runs in
+`hardware/research/` and their record `hardware/docs/Research.md`
+([hardware/research/LICENSE](hardware/research/LICENSE)). They may be used, changed and shared
 for non-commercial purposes, with credit and under the same licence.
 Commercial use needs a separate licence from the copyright holder. The terms
 are in [hardware/mechanical/LICENSE](hardware/mechanical/LICENSE) and

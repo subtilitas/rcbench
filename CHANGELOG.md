@@ -70,7 +70,9 @@ history is in git.
   4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
   International) in place of MIT: the 3D models, the KiCad module library,
   their renders and the Python scripts that draw them, each script marked
-  `SPDX-License-Identifier: CC-BY-NC-SA-4.0`. Commercial use needs a separate
+  `SPDX-License-Identifier: CC-BY-NC-SA-4.0`. So are the component research
+  runs in `hardware/research/` and their record `hardware/docs/Research.md`
+  ([hardware/research/LICENSE](hardware/research/LICENSE)). Commercial use needs a separate
   licence from the copyright holder. M5Stack's Dial mesh, `m5dial.step`,
   `m5dial_nut.step` and `_font.py` stay MIT, as does the rest of rcbench
   ([hardware/mechanical/LICENSE](hardware/mechanical/LICENSE),

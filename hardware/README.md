@@ -36,13 +36,14 @@ it can be separated later with a `git mv`. While it remains here:
 
 ## Licence
 
-- `mechanical/` and `kicad/`: CC BY-NC-SA 4.0 (Creative Commons
-  Attribution-NonCommercial-ShareAlike 4.0 International), for
-  non-commercial use: [mechanical/LICENSE](mechanical/LICENSE),
-  [kicad/LICENSE](kicad/LICENSE). Commercial use needs a separate licence
-  from the copyright holder.
-- Everything else here (`docs/`, `research/`, this page): MIT (Massachusetts
-  Institute of Technology), as the rest of the tree: [LICENSE](../LICENSE).
+- `mechanical/`, `kicad/`, `research/` and [docs/Research.md](docs/Research.md):
+  CC BY-NC-SA 4.0 (Creative Commons Attribution-NonCommercial-ShareAlike 4.0
+  International), for non-commercial use: [mechanical/LICENSE](mechanical/LICENSE),
+  [kicad/LICENSE](kicad/LICENSE), [research/LICENSE](research/LICENSE).
+  Commercial use needs a separate licence from the copyright holder.
+- Everything else here (the other pages in `docs/`, this page): MIT
+  (Massachusetts Institute of Technology), as the rest of the tree:
+  [LICENSE](../LICENSE).
 
 Maker, product, protocol and firmware names belong to their owners and are
 used only to describe compatibility:

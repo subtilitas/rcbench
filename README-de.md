@@ -148,7 +148,9 @@ Lizenz. `hardware/mechanical/` und `hardware/kicad/` stehen unter CC BY-NC-SA
 4.0 (Creative Commons Namensnennung - Nicht kommerziell - Weitergabe unter
 gleichen Bedingungen 4.0 International): die STEP- und STL-Modelle, die
 Symbole, Footprints und 3D-Formen, die Renderbilder und die Python-Skripte,
-die sie zeichnen. Sie dürfen für nicht kommerzielle Zwecke genutzt, geändert
+die sie zeichnen. Ebenso die Läufe der Bauteilrecherche in
+`hardware/research/` und ihr Protokoll `hardware/docs/Research.md`
+([hardware/research/LICENSE](hardware/research/LICENSE)). Sie dürfen für nicht kommerzielle Zwecke genutzt, geändert
 und weitergegeben werden, mit Namensnennung und unter derselben Lizenz. Eine
 kommerzielle Nutzung braucht eine eigene Lizenz des Rechteinhabers. Die
 Bedingungen stehen in [hardware/mechanical/LICENSE](hardware/mechanical/LICENSE)
