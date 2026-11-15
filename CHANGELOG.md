@@ -43,6 +43,15 @@ history is in git.
   joints and a cross-section card, and takes narration cues. Music bed
   `vivaldi-spring`; a storyboard's `music_gain` sets a bed's level
   ([Videos from storyboards](tools/video/README.md)).
+- `hardware/mechanical/`: a hand-held base for the M5Stack Dial in two
+  printed parts, `dial_base_top` and `dial_base_bottom`, each as STEP and
+  STL. The top part seats the dial in a 45.2mm hole; the bottom part holds
+  the 1000mAh cell 102540; 4 M3 x 12 screws join them from below. The base
+  is a body of revolution 72.0mm across and 32.5mm high with a rounded
+  underside for the palm and 18 flutes round the belly. `_gen_dial_base.py`
+  builds it with OpenCASCADE and its `--check`, run in CI, fails when a part
+  shares volume with the dial, its nut or the cell
+  ([Mechanical parts](hardware/mechanical/README.md#hand-held-base-for-the-m5stack-dial)).
 
 ## 0.23.13 - 2026-11-15
 

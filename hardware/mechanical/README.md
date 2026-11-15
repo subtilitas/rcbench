@@ -9,6 +9,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | --- | --- |
 | `estop_m16.py` | spec of the M16 emergency stop button: dimensions, sources, estimates |
 | `m5dial.py` | spec of the M5Stack Dial: dimensions, sources, estimates |
+| `_gen_dial_base.py` | builds the two parts of a hand-held base for the M5Stack Dial with OpenCASCADE, checks their fit round dial, nut and cell, writes STEP and STL |
 | `panel_7b.py` | spec of the panel board, the Waveshare ESP32-P4-WIFI6-Touch-LCD-7B: dimensions, sources, estimates |
 | `ina228_xt90.py` | spec of the INA228 current sensor module with 2 XT90PW connectors and of its case: dimensions, sources, estimates |
 | `ina219_cjmcu219.py` | spec of the INA219 current sensor board, print CJMCU |
@@ -42,6 +43,7 @@ pip install cadquery-ocp==8.0.1.1.0 pillow
 python3 hardware/kicad/tools/step_check.py         # also checks models/
 python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
 python3 hardware/mechanical/check_overlap.py       # 1 minute
+python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 \
     --step hardware/mechanical/models/*.step
@@ -196,6 +198,108 @@ fits the whole file shows the assembled dial small. The 2 STEP files hold
 M5Stack's geometry and are under the same licence.
 
 ![Mechanical models](renders/all.png)
+
+## Hand-held base for the M5Stack Dial
+
+A printed base in two parts that turns the dial into a hand-held
+controller. The dial sits flat on top, face up; the 1000mAh lithium
+polymer cell 102540 lies in the bottom part. One hand holds the base
+while the other turns the knob.
+
+![Base with the dial](renders/dial_base.png)
+
+| | |
+| --- | --- |
+| ![Taken apart](renders/dial_base_exploded.png) | ![Cut open](renders/dial_base_section.png) |
+
+| File | Content | Print |
+| --- | --- | --- |
+| `dial_base_top.step`, `.stl` | the dial's seat: top plate with the 45.2mm hole, wall, 4 screw bosses, USB opening with its guide tube; 13.9cm3 | top face down, no support |
+| `dial_base_bottom.step`, `.stl` | floor with the cell's pocket, centring rim, 4 screw columns; 15.6cm3 | foot down, no support |
+
+Both files are in the dial's frame: z = 0 is the top plate's upper face,
+where the dial's flange seats, the knob points to +z, the `^` mark is at
++y and the USB socket at -y. Loaded with `m5dial.step` they give the
+assembly; the nut's file moves to z = -2.0mm.
+
+The shape is a body of revolution about the dial's axis:
+
+| | mm |
+| --- | --- |
+| Overall | 72.0 across, 32.5 high; with the dial 47.1 high |
+| Top | flat, 60 across, its edge rounded 2.0 into the side |
+| Side | one arc of radius 49.5 from the top to the belly, 72.0 across, 21.0 below the top |
+| Underside | rounded on a radius of 11.5 for 50 degrees, then a cone of that slope to a flat foot 57 across |
+| Flutes | 18, each 5.6 wide and 0.7 deep at the belly, 18 degrees apart, fading out 8.3 above and 4.0 below it; none within 14 degrees of the USB opening |
+| Wall | 2.4; 1.7 under a flute |
+| Joint | level, 19.0 below the top, with a shadow gap 0.4 wide and deep; the bottom part's rim, 2.0 high and 1.0 thick, stands 0.2 inside the top part's wall, on a ledge that fills the wall in below the joint for 1.5 and ends in a 45 degree slope |
+
+The underside is the part the palm holds. The flutes keep the base from
+turning in the hand while the knob turns; the knob has 20 grooves at the
+same pitch of 18 degrees.
+
+For scale, two things made to be held or turned in one hand: Microsoft's
+Surface Dial is 59mm across and 30mm high (Microsoft's specification), an
+ice hockey puck 76.2mm across and 25.4mm high. The base lies between them
+in width, 72.0mm, and is 32.5mm high. The dial weighs 46.3g and the two
+parts, printed solid in PLA at 1.24g/cm3, 37g; the cell's weight is not
+measured.
+
+| Feature | mm |
+| --- | --- |
+| Dial's hole | 45.2 in a plate 2.0 thick; the dial takes 45.0 +/- 0.2 and a panel of 0 to 6 |
+| Room for the ring nut | 4.2 between the nut, 50.82 across, and the wall; 0.6 to each boss |
+| Room under the dial | the dial's screw heads end 17.7 below the top; the cell's top is 20.1 below it |
+| USB opening | 13.4 x 7.6 with corners rounded 1.5 at -y, centre 12.13 below the top, on the dial's USB socket, whose opening lies 18.45 from the axis |
+| Guide tube | the opening runs on as a tube with a wall of 1.0 from the outer wall in to 24.5 from the axis, 10.7 long and 6.05 short of the socket, 2.5 off the dial's thread; beyond 26.5 from the axis a block ties it to the top plate; its top is 0.33 under the ring nut |
+| Cell pocket | 42.9 x 26.0 between 4 rails 1.4 thick and 6.0 high, open at the 4 corners: 1.2 free at each end of the cell and 0.5 at each side; the cell's length lies across the `^` mark, its wires towards +y, the side away from the USB opening |
+| Foam pad | 2 thick, about 20 x 30, between the cell and the dial, in the 2.4 between them; it holds the cell and leaves it room to swell |
+| Screws | 4 x M3 x 12, pan head, on a circle of 58.0 at 45 degrees to the axes; clearance holes 3.4, heads sunk 8.0 into the foot in recesses of 6.2; pilot holes 2.6 in bosses of 6.0, 6.5 of thread |
+
+The dial's battery socket, 1.25mm pitch with 2 pins, is on its main board
+under the Stamp-S3, at the USB end (M5Stack's picture "Dial Lithium
+Battery Expansion Interface"). The cell's plug has that size in the
+photo. The wires run under the Stamp-S3 and leave the dial at its +y
+end, the end away from the USB socket, so a USB plug cannot pinch them;
+from there they drop to the cell.
+
+Assembly: take the Stamp-S3 off the dial (2 M2 screws), plug the cell in,
+lead the wires out at the end away from the USB socket and put the
+Stamp-S3 back. Put
+the dial through the top part and turn the ring nut on from below with
+the USB socket in line with the opening. Lay the cell in its pocket with
+the foam pad on it, close the base and drive the 4 screws.
+
+`_gen_dial_base.py` builds both parts with OpenCASCADE: every face is a
+plane, a cylinder, a cone or a piece of a torus. Its `--check` runs in CI
+and fails when a file differs from the script, when a part is not a valid
+solid, or when a part shares volume with the dial, the nut or the cell.
+
+Limits:
+
+- No part is printed yet, so no fit is tried and the base has not been
+  held in a hand: the 0.2mm gap of the rim and the 2.6mm pilot holes are
+  design values for a 0.4mm nozzle.
+- The battery socket's place is read from M5Stack's picture, not
+  measured, and the socket is not in the dial's model. The passage for
+  the wires under the Stamp-S3 and out at its +y end is not in the model
+  either and is not tried on a dial. Which of its pins
+  is plus is not checked against the cell's plug: check it before
+  plugging in.
+- The dial's dimensions come from M5Stack's mesh and the cell's from
+  photos; neither is verified with a caliper. The cell is drawn 40.5mm
+  long, within about 1mm; the pocket takes a cell up to 42.9mm.
+- The ring nut is turned with a fingertip or a pin in its notches, in the
+  4.2mm round it.
+- A plug's body wider than 13.4mm or higher than 7.6mm does not enter the
+  USB opening; the wall's outer face is 16.8mm from the socket's opening.
+  The tube guides the plug's body, not its metal tip, over the last 6.05mm.
+
+```sh
+python3 hardware/mechanical/_gen_dial_base.py            # write STEP and STL
+xvfb-run -a python3 hardware/mechanical/_gen_dial_base.py \
+    --render hardware/mechanical/renders
+```
 
 ## Panel board
 
