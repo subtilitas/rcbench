@@ -103,6 +103,12 @@ static void follow(devupd_client_t *c, uint32_t now)
         c->up = true;
         devupd_link(&c->e, true, c->b.mtu, now);
     }
+    /* A device without the update service holds the machine in
+     * BLEU_ST_NOT_PEER: no retry would find it, so the transfer ends now
+     * rather than after DEVUPD_LINK_MS. */
+    if (c->on && c->b.st == BLEU_ST_NOT_PEER) {
+        devupd_no_service(&c->e, now);
+    }
     if (c->on && !devupd_busy(&c->e)) {
         bleu_enable(&c->b, false, now);
         bleu_bind(&c->b, NULL, now);

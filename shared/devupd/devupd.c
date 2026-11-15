@@ -143,6 +143,13 @@ void devupd_link(devupd_t *e, bool up, uint16_t mtu, uint32_t now)
     }
 }
 
+void devupd_no_service(devupd_t *e, uint32_t now)
+{
+    if (e != NULL && e->phase == DEVUPD_LINK) {
+        fail(e, DEVUPD_E_NO_SERVICE, 0u, now);
+    }
+}
+
 void devupd_written(devupd_t *e, uint16_t status, uint32_t now)
 {
     if (e == NULL || !e->ctrl_busy) {
