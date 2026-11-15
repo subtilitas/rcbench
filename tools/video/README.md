@@ -380,8 +380,9 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
   caption FOUND. A change of MiniRcBench's screens does not reach the
   stills.
 - `minircbench-build` says that the servo tester feeds its servo from
-  the boost board (stated by the owner on 2026-11-15). MiniRcBench at
-  its commit 25b5a36 does not do that: its servo tester never drives the
+  the boost board. The owner stated on 2026-11-15 that the firmware is
+  to do so; the release is not named. MiniRcBench at its commit 25b5a36
+  does not do that: its servo tester never drives the
   enable pin and shows `GP28 SUPPLY STAYS OFF HERE.`; the KST and Hitec
   programmers switch the supply. The still `mini-servo-supply` shows
   that line and is not used in the video.
