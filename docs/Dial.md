@@ -133,7 +133,40 @@ bound Dial.
 
 A 10s hold of the screen button forgets the bound panel; so does `forget` on
 the console. The Dial beeps, ends a link, and advertises to anyone again.
-The 1s HOLD gesture goes to the panel on the way.
+The 1s HOLD gesture goes to the panel on the way, and from 5s the face
+shows the switch-off's warning ([Switching off](#switching-off)).
+
+## Switching off
+
+The screen button is the Dial's WAKE button: on the cell alone, a press
+switches the Dial on, and the firmware holds the power with GPIO46 high.
+While the button is down the Dial has power, so the power drops only once
+the button is up.
+
+![The switch-off's warning, its red half](img/dial-off-warn.png)
+![The switch-off's choice](img/dial-off-ask.png)
+
+| The screen button | What follows |
+| --- | --- |
+| released before 1,000ms | PRESS to the panel |
+| held 1,000ms | HOLD to the panel, once, as at every hold |
+| held 5,000ms | a beep at 600Hz for 150ms; the face blinks red, 500ms red and 500ms dark: `RELEASE NOW TO SWITCH OFF` and `HOLD ON TO UNBIND`, in red with six red rings at the rim, then in white over the rings' dim track |
+| released from 5,000ms and before 10,000ms | the choice: `KEEP ON` above `OFF`, the focus on `KEEP ON` |
+| held 10,000ms | the bound panel is forgotten ([Bind](#bind)) with a beep at 1,000Hz for 200ms; the warning ends, no choice follows, the Dial stays on |
+
+In the choice a clockwise detent moves the focus to `OFF`, an
+anticlockwise one back to `KEEP ON`. A press of the screen button takes
+the focused answer. A hold of 1,000ms takes `KEEP ON`, and so do 10s
+(10,000ms) without a turn and without a press of the screen button; the
+second hint line counts those seconds down. `OFF` drives GPIO46 low, and on
+the cell the power drops. On USB the Dial stays on after `OFF` and shows
+its faces again. `KEEP ON` returns to the faces.
+
+While the warning or the choice is up, a turn clicks but leaves EVENT's
+counter alone, and no PRESS and no HOLD goes to the panel. A press that
+starts in the choice stays the choice's until it is up, even past 5s and
+10s. RST switches the Dial off on the cell as well. When the Dial goes off
+with a link, the panel takes it as a lost link.
 
 There is no pairing and no encryption in protocol version 1: a device in
 range that connects first, or that spoofs the bound address, is taken.
@@ -645,8 +678,9 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The battery's voltage is unknown: no source names the pin it reaches.
   STATUS carries 0 and its "battery unknown" flag. The charger's state is
   unknown as well.
-- Which way of the encoder counts up is not measured, nor where in its 4
-  counts the encoder rests. Clockwise positive is the protocol's rule. A
+- The encoder's count falls clockwise on the Dial v1.1; the firmware
+  turns it so that clockwise counts up, the protocol's rule. Where in its
+  4 counts the encoder rests is not measured. A
   detent moves 3 counts from its center, so an encoder that rests between
   two counts never clicks.
 - The touch controller's start-up time after the shared reset is taken as
@@ -673,5 +707,5 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - The Dial checks the image's kind, chip and segments, not its origin: a
   central in range can offer any Dial image, older ones included, and a
   press installs it.
-- No sleep, no backlight steps and no auto-off yet: the Dial stays on until
-  RST is pressed or the cell is empty. Runtime on a cell is not measured.
+- No sleep, no backlight steps and no auto-off: the Dial stays on until
+  `OFF` in the switch-off's choice, RST or an empty cell. Runtime on a cell is not measured.

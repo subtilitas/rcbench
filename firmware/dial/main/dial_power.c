@@ -3,8 +3,8 @@
  * @brief The Dial's power latch and its supply reading.
  *
  * The WAKE button powers the Dial while it is held; GPIO46 high keeps the
- * power on after it is let go (M5Stack's documentation for battery-only
- * operation).  GPIO46 is a strapping pin of the ESP32-S3, so it is driven
+ * power on after it is let go, and GPIO46 low cuts it (M5Stack's
+ * documentation for battery-only operation).  GPIO46 is a strapping pin of the ESP32-S3, so it is driven
  * from app_main(), after the chip has read it at reset, and never earlier.
  *
  * The cell's voltage: no source read for this device (the Dial's pages,
@@ -34,6 +34,11 @@ void dial_power_hold(void)
     gpio_set_level(DIAL_PIN_HOLD, 1);
     gpio_config(&io);
     gpio_set_level(DIAL_PIN_HOLD, 1);
+}
+
+void dial_power_off(void)
+{
+    gpio_set_level(DIAL_PIN_HOLD, 0);
 }
 
 void dial_supply_read(dial_supply_t *out)

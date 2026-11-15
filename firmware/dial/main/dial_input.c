@@ -17,14 +17,20 @@
  * follows the count with hysteresis (dk_detent_follow()): it moves when the
  * count is 3 counts from the current detent's center, so a detent counts
  * at three quarters of its travel, and a jitter of 1 count at any rest
- * position never clicks.  Which
- * direction counts up, and where in its 4 counts the encoder rests, are
- * not measured: DIAL_ENC_SIGN holds the direction.
+ * position never clicks.  The encoder's count falls clockwise on the
+ * Dial v1.1; DIAL_ENC_SIGN turns it so that clockwise counts up.  Where in
+ * its 4 counts the encoder rests is not measured.
  *
- * The screen button: released before 1,000ms is PRESS, held for 1,000ms is
- * HOLD (sent once, while it is down), held for 10,000ms forgets the bound
- * panel.  A tap on the glass is a touch of at most 500ms that moves at most
- * 24px; it is TAP at the point it started.
+ * The screen button (shared/dial/dial_button.c): released before 1,000ms
+ * is PRESS, held for 1,000ms is HOLD (sent once, while it is down).  Held
+ * for 5,000ms (DIAL_OFF_MS) it beeps at 600Hz for 150ms and the face
+ * blinks red; a release before 10,000ms opens the choice OFF / KEEP ON,
+ * and OFF switches the Dial off (dial_power_off()).  Held for 10,000ms it
+ * forgets the bound panel and the Dial stays on.  While the warning or
+ * the choice is up, a turn moves the choice's focus, clicks, and leaves
+ * EVENT's counter alone; no gesture of the screen button goes to the
+ * panel.  A tap on the glass is a touch of at most 500ms that moves at
+ * most 24px; it is TAP at the point it started.
  *
  * A test build (RCBENCH_DIAL_HOOKS) takes input from the console as well:
  * an injected turn moves the counter one detent every 20ms, and the packet
@@ -38,6 +44,8 @@
 #include <string.h>
 
 #include "dial.h"
+#include "dial_button.h"
+#include "devota.h"
 
 #include "driver/gpio.h"
 #include "driver/pulse_cnt.h"
@@ -47,9 +55,10 @@
 #include "freertos/queue.h"
 #include "freertos/task.h"
 
-/** @brief +1 or -1: which way of the encoder counts up.  Not measured on
- *         the device: clockwise positive is the protocol's rule. */
-#define DIAL_ENC_SIGN 1
+/** @brief +1 or -1: which way of the encoder counts up.  The count falls
+ *         clockwise on the Dial v1.1, and clockwise positive is the
+ *         protocol's rule. */
+#define DIAL_ENC_SIGN (-1)
 /** @brief PCNT's count limits; the driver accumulates past them. @{ */
 #define ENC_LIMIT 1000
 /** @} */
@@ -97,9 +106,8 @@ typedef struct {
     int16_t   counter;           /**< EVENT's counter, wrapping */
     button_t  screen;            /**< GPIO42 */
     button_t  stamp;             /**< GPIO0 */
-    uint32_t  down_ms;           /**< when the screen button went down */
-    bool      hold_sent;         /**< HOLD went for this press */
-    bool      forgot;            /**< the bind was forgotten for it */
+    dial_button_t button;        /**< the screen button's gestures */
+    int32_t   local_turns;       /**< detents the switch-off's choice takes */
     bool      touch_down;        /**< a finger is on the glass */
     bool      touch_moved;       /**< it moved more than TAP_MOVE */
     uint8_t   tx;                /**< the touch point */
@@ -129,6 +137,10 @@ typedef struct {
 static input_t s_in;
 /** @brief The counts the console reads. */
 static dial_input_stats_t s_stats;
+/** @brief The switch-off for the face: DIAL_OFF_* in bits 0-1, the
+ *         blink's red half in bit 2, the focus on OFF in bit 3, the
+ *         choice's seconds left in bits 8-15. */
+static atomic_uint_least32_t s_off;
 /** @brief Whether a detent clicks; the face and console tasks set it. */
 static atomic_bool s_sound = true;
 /** @brief The face task's view of the link: a panel packet came on this
@@ -180,6 +192,15 @@ void dial_input_stats(dial_input_stats_t *out)
     *out = s_stats;
 }
 
+void dial_input_off(dial_face_view_t *v)
+{
+    const uint32_t w = (uint32_t)atomic_load(&s_off);
+    v->off = (uint8_t)(w & 3u);
+    v->off_lit = (w & 4u) != 0u;
+    v->off_focus = (w & 8u) != 0u;
+    v->off_secs = (uint8_t)(w >> 8);
+}
+
 /**
  * @brief Queue a gesture for a packet; a full queue drops it.
  * @param g the gesture
@@ -213,16 +234,21 @@ static void gesture_pop(pending_t *out)
 
 /**
  * @brief Move the counter by detents that turned, with a click and the
- *        link's latency back to 0.
+ *        link's latency back to 0; while the switch-off's warning or
+ *        choice is up, the detents go to the choice instead.
  * @param d   detents
  * @param now the time
  */
 static void turned(int32_t d, uint32_t now)
 {
-    s_in.counter = (int16_t)(uint16_t)((uint16_t)s_in.counter + (uint16_t)d);
     if (atomic_load(&s_sound)) {
         dial_buzz_click();
     }
+    if (dial_button_local(&s_in.button)) {
+        s_in.local_turns += d;
+        return;
+    }
+    s_in.counter = (int16_t)(uint16_t)((uint16_t)s_in.counter + (uint16_t)d);
     dial_ble_turned(now);
 }
 
@@ -246,32 +272,49 @@ static bool button_poll(button_t *b, uint32_t now)
     return false;
 }
 
-/** @brief The screen button's gestures: PRESS, HOLD and the forget.
- *  @param now the time */
+/** @brief The screen button: PRESS and HOLD for the panel, the
+ *         switch-off's warning and choice, the forget; and the
+ *         switch-off's state for the face.  @param now the time */
 static void screen_button(uint32_t now)
 {
-    if (button_poll(&s_in.screen, now)) {
-        if (s_in.screen.down) {
-            s_in.down_ms = now;
-            s_in.hold_sent = false;
-            s_in.forgot = false;
-        } else if (!s_in.hold_sent) {
-            gesture_push(DK_G_PRESS, 0, 0);
-        }
+    dial_face_view_t v;
+    unsigned act = 0u;
+    (void)button_poll(&s_in.screen, now);
+    if (devota_active()) {
+        /* The update's offer reads the screen button itself
+         * (dial_ble.c): its press must not answer a hidden choice. */
+        dial_button_yield(&s_in.button, s_in.screen.down, now);
+    } else {
+        act = dial_button_step(&s_in.button, s_in.screen.down,
+                               s_in.local_turns, now);
     }
-    if (!s_in.screen.down) {
-        return;
+    s_in.local_turns = 0;
+    if ((act & DIAL_BTN_PRESS) != 0u) {
+        gesture_push(DK_G_PRESS, 0, 0);
     }
-    if (!s_in.hold_sent && now - s_in.down_ms >= DK_HOLD_MS) {
-        s_in.hold_sent = true;
+    if ((act & DIAL_BTN_HOLD) != 0u) {
         gesture_push(DK_G_HOLD, 0, 0);
     }
-    if (!s_in.forgot && now - s_in.down_ms >= DK_FORGET_MS) {
-        s_in.forgot = true;
+    if ((act & DIAL_BTN_WARN) != 0u) {
+        ESP_LOGI(TAG, "5s hold: release to switch off, hold on to unbind");
+        dial_buzz_tone(600, 150);
+    }
+    if ((act & DIAL_BTN_FORGET) != 0u) {
         ESP_LOGI(TAG, "10s hold: the bound panel is forgotten");
         dial_ble_forget();
         dial_buzz_tone(1000, 200);
     }
+    if ((act & DIAL_BTN_KEEP) != 0u) {
+        ESP_LOGI(TAG, "switch-off: KEEP ON");
+    }
+    if ((act & DIAL_BTN_OFF) != 0u) {
+        ESP_LOGI(TAG, "switch-off: OFF");
+        dial_power_off();
+    }
+    dial_button_view(&s_in.button, now, &v);
+    atomic_store(&s_off, (uint_least32_t)v.off | (v.off_lit ? 4u : 0u)
+                             | (v.off_focus ? 8u : 0u)
+                             | ((uint32_t)v.off_secs << 8));
 }
 
 /** @brief Read the touch controller every TOUCH_MS; a short touch that
@@ -514,6 +557,7 @@ void dial_input_start(void)
         .pull_up_en = GPIO_PULLUP_ENABLE,
     };
     memset(&s_in, 0, sizeof s_in);
+    dial_button_init(&s_in.button);
     s_in.screen.pin = DIAL_PIN_BTN;
     s_in.stamp.pin = DIAL_PIN_STAMP_BTN;
     gpio_config(&buttons);

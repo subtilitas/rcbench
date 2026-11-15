@@ -74,6 +74,9 @@ FACES = {
     "other": "a screen the knob does nothing on",
     "update-ask": "a firmware update offered: a press accepts it",
     "update-send": "a firmware update coming in, 42% taken",
+    "off-warn": "the screen button held 5,000ms: blinks red, release to "
+                "switch off, hold on to unbind",
+    "off-ask": "the screen button released after 5,000ms: OFF or KEEP ON",
 }
 
 LANGS = {"en": ".", "de": "de"}

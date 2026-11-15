@@ -261,6 +261,18 @@ TEST_CASE(every_string_fits_at_the_ends_of_every_field)
         dial_model(&m, DM_WAITING, l);
         m.view.name = "DIAL-WWWWWWW";
         fits(&m, l, "long name waiting");
+        /* The switch-off: the blink's dark half with the longest name,
+         * the choice with the focus on OFF and every count of seconds. */
+        dial_model(&m, DM_OFF_WARN, l);
+        m.view.off_lit = false;
+        m.view.name = "DIAL-WWWWWWW";
+        fits(&m, l, "switch-off warning, dark, long name");
+        for (uint8_t secs = 0; secs <= 10u; ++secs) {
+            dial_model(&m, DM_OFF_ASK, l);
+            m.view.off_focus = (secs % 2u) == 0u;
+            m.view.off_secs = secs;
+            fits(&m, l, "switch-off choice");
+        }
     }
 }
 

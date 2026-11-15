@@ -140,7 +140,42 @@ listet ein gebundenes Dial weiterhin.
 
 Ein Halten der Bildschirmtaste von 10s vergisst das gebundene Panel, ebenso
 `forget` auf der Konsole. Das Dial piept, beendet einen Link und sendet
-wieder für jeden. Die HOLD-Geste nach 1s geht dabei an das Panel.
+wieder für jeden. Die HOLD-Geste nach 1s geht dabei an das Panel, und ab 5s
+zeigt das Face die Warnung vor dem Ausschalten ([Ausschalten](#ausschalten)).
+
+## Ausschalten
+
+Die Bildschirmtaste ist die WAKE-Taste des Dials: Nur an der Zelle schaltet
+ein Druck das Dial ein, und die Firmware hält die Versorgung mit GPIO46 auf
+high. Solange die Taste gedrückt ist, hat das Dial Versorgung; sie fällt
+erst ab, wenn die Taste oben ist.
+
+![Die Warnung vor dem Ausschalten, ihre rote Hälfte](img/de/dial-off-warn.png)
+![Die Wahl beim Ausschalten](img/de/dial-off-ask.png)
+
+| Die Bildschirmtaste | Was folgt |
+| --- | --- |
+| vor 1.000ms losgelassen | PRESS an das Panel |
+| 1.000ms gehalten | HOLD an das Panel, einmal, wie bei jedem Halten |
+| 5.000ms gehalten | ein Piepton mit 600Hz für 150ms; das Face blinkt rot, 500ms rot und 500ms dunkel: `JETZT LOSLASSEN: AUSSCHALTEN` und `WEITER HALTEN: PANEL VERGESSEN`, rot mit sechs roten Ringen am Rand, dann weiß über der matten Spur der Ringe |
+| ab 5.000ms und vor 10.000ms losgelassen | die Wahl: `AN LASSEN` über `AUS`, der Fokus auf `AN LASSEN` |
+| 10.000ms gehalten | das gebundene Panel ist vergessen ([Binden](#binden)), mit einem Piepton mit 1.000Hz für 200ms; die Warnung endet, keine Wahl folgt, das Dial bleibt an |
+
+In der Wahl setzt eine Rastung im Uhrzeigersinn den Fokus auf `AUS`, eine
+gegen den Uhrzeigersinn zurück auf `AN LASSEN`. Ein Druck der
+Bildschirmtaste nimmt die Antwort im Fokus. Ein Halten von 1.000ms nimmt
+`AN LASSEN`, ebenso 10s (10.000ms) ohne Drehung und ohne Druck der
+Bildschirmtaste; die zweite Hinweiszeile zählt diese Sekunden herunter.
+`AUS` setzt GPIO46 auf low, und an der Zelle fällt die Versorgung ab. An USB
+bleibt das Dial nach `AUS` an und zeigt wieder seine Faces. `AN LASSEN`
+kehrt zu den Faces zurück.
+
+Solange die Warnung oder die Wahl steht, klickt eine Drehung, lässt aber
+den Zähler im EVENT unverändert, und kein PRESS und kein HOLD geht an das
+Panel. Ein Druck, der in der Wahl beginnt, gehört der Wahl, bis die Taste
+oben ist, auch über 5s und 10s hinaus. RST schaltet das Dial an der Zelle
+ebenfalls aus. Geht das Dial mit einem Link aus, nimmt das Panel das als
+verlorenen Link.
 
 Protokollversion 1 hat kein Pairing und keine Verschlüsselung: Ein Gerät in
 Reichweite, das sich zuerst verbindet oder die gebundene Adresse fälscht,
@@ -687,9 +722,10 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 - Die Spannung des Akkus ist unbekannt: Keine Quelle nennt den Pin, den sie
   erreicht. STATUS trägt 0 und das Flag "Akku unbekannt". Der Zustand des
   Laders ist ebenfalls unbekannt.
-- Welche Drehrichtung des Encoders hochzählt, ist nicht gemessen, ebenso
-  wenig, wo in seinen 4 Zählschritten der Encoder einrastet. Im Uhrzeigersinn
-  positiv ist die Regel des Protokolls. Eine Rastung wechselt 3 Zählschritte
+- Der Zähler des Encoders fällt beim Dial v1.1 im Uhrzeigersinn; die
+  Firmware dreht ihn um, sodass im Uhrzeigersinn hochgezählt wird, die
+  Regel des Protokolls. Wo in seinen 4 Zählschritten der Encoder einrastet,
+  ist nicht gemessen. Eine Rastung wechselt 3 Zählschritte
   von ihrer Mitte, also klickt ein Encoder, der zwischen zwei Zählschritten
   ruht, nie.
 - Die Startzeit des Touch-Controllers nach dem gemeinsamen Reset ist mit
@@ -719,6 +755,6 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
 - Das Dial prüft Art, Chip und Segmente des Images, nicht seine Herkunft:
   Ein Central in Reichweite kann jedes Dial-Image anbieten, auch ältere,
   und ein Druck installiert es.
-- Noch kein Schlaf, keine Stufen des Hintergrundlichts und keine
-  Abschaltung: Das Dial bleibt an, bis RST gedrückt wird oder die Zelle leer
-  ist. Die Laufzeit mit einer Zelle ist nicht gemessen.
+- Kein Schlaf, keine Stufen des Hintergrundlichts und keine automatische
+  Abschaltung: Das Dial bleibt an bis `AUS` in der Wahl beim Ausschalten,
+  bis RST oder bis die Zelle leer ist. Die Laufzeit mit einer Zelle ist nicht gemessen.

@@ -96,6 +96,12 @@ typedef struct {
     uint8_t     upd_pct; /**< DIAL_UPD_SEND: the share taken, 0 to 100 */
     uint16_t    upd_from[3]; /**< the version the Dial runs */
     uint16_t    upd_to[3];   /**< the version offered */
+    uint8_t     off;     /**< the switch-off on the screen button:
+                              DIAL_OFF_*, DIAL_OFF_NONE for none */
+    bool        off_lit; /**< DIAL_OFF_WARN: the blink's red half */
+    bool        off_focus; /**< DIAL_OFF_ASK: the focus is on OFF, not on
+                                KEEP ON */
+    uint8_t     off_secs; /**< DIAL_OFF_ASK: seconds left until KEEP ON */
 } dial_face_view_t;
 
 /** @brief Where a firmware update stands on the Dial. @{ */
@@ -103,6 +109,14 @@ typedef struct {
 #define DIAL_UPD_ASK  1u /**< offered: a press accepts, a hold refuses */
 #define DIAL_UPD_SEND 2u /**< accepted: the image comes in */
 #define DIAL_UPD_DONE 3u /**< installed: the Dial restarts */
+/** @} */
+
+/** @brief Where the switch-off on the screen button stands
+ *         (dial_button.h). @{ */
+#define DIAL_OFF_NONE 0u /**< none: the other faces */
+#define DIAL_OFF_WARN 1u /**< held 5,000ms: a release now asks, a hold to
+                              10,000ms forgets the bound panel */
+#define DIAL_OFF_ASK  2u /**< released: OFF or KEEP ON */
 /** @} */
 
 /** @brief The faces. */
@@ -115,6 +129,8 @@ typedef enum {
     DIAL_FACE_READING,     /**< MOTOR & ESC or SERVO: six readings */
     DIAL_FACE_OTHER,       /**< a screen the knob does nothing on, HOME */
     DIAL_FACE_UPDATE,      /**< a firmware update over Bluetooth LE */
+    DIAL_FACE_OFF_WARN,    /**< the screen button held 5,000ms: blinks */
+    DIAL_FACE_OFF_ASK,     /**< then released: OFF or KEEP ON */
 } dial_face_id_t;
 
 /** @brief Kinds of body block. @{ */
