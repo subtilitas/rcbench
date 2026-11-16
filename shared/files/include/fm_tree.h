@@ -67,9 +67,11 @@ typedef enum {
     FM_GO_NEXT,       /**< the page after the one on show                */
     FM_GO_PREV,       /**< the page before the one on show               */
     FM_GO_LAST,       /**< the folder's last page                        */
-    FM_GO_SAME        /**< the page on show again: the first page from
+    FM_GO_SAME,       /**< the page on show again: the first page from
                            the folder's first entry, a later page from its
                            own first entry                               */
+    FM_GO_NEWEST      /**< FM_GO_SAME with the folder's newest file
+                           selected (fm_tree_page())                     */
 } fm_go_t;
 
 /**
@@ -85,6 +87,10 @@ typedef struct {
     unsigned unlisted; /**< entries not listed: too long, or hidden       */
     int selected;    /**< the selected row, -1 for none                   */
     unsigned mount;  /**< the mount the page was read from                */
+    /** @brief The folder's newest file at the last walk, on any page: the
+     *         run log or report with the highest number, as LOGS ranks
+     *         runs (log_name_rank()); "" when the folder holds none. */
+    char newest[FM_NAME_BUF];
 } fm_tree_t;
 
 /**
@@ -117,6 +123,16 @@ void fm_tree_at(fm_tree_t *tree, const char *dir, const fm_entry_t *key);
  * The selection stays on its name when the name is on the new page, and
  * is cleared otherwise.  A page past the folder's end, which a file
  * deleted at the edge leaves, is the last page.
+ *
+ * FM_GO_NEWEST reads the page as FM_GO_SAME does and selects the folder's
+ * newest file (the field newest).  The entries carry no date: FAT stamps
+ * 1980 until NTP sets the panel's clock (log_name.h), so the run number in
+ * the name is the age.  Folders, and files without a run number, are never
+ * chosen; a folder whose files carry none keeps the selection as
+ * FM_GO_SAME keeps it.  A newest file on another page brings the page that
+ * holds it, of the pages PREV and NEXT step through from the page on show
+ * (FM_PAGE_MAX entries apart), in two more walks; a page that would start
+ * before the folder's first entry is the first page.
  *
  * @param tree   the pane
  * @param io     the card

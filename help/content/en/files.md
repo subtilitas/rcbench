@@ -36,7 +36,7 @@ Unavailable buttons are dimmed. Tap one to see the reason above the button row.
 
 | Button | What it does |
 |---|---|
-| RESCAN | looks at the card slot and reads each pane again at the page it shows. The top row and the selected entry stay; when the selected entry has gone from the card, nothing is selected, as after DELETE |
+| RESCAN | looks at the card slot, reads each pane again at the page it shows and selects the pane's newest run: the run log or report with the highest run number. The name order and the top row stay. When the newest run is on another page, that page shows, as PREV or NEXT would show it. A folder without runs keeps its selection; when the selected entry has gone from the card, nothing is selected, as after DELETE |
 | COPY | copies the selected file into the other pane's folder. Folders are not copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name, the cursor before a file's extension and at the end of a folder's name |

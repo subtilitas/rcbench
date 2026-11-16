@@ -2958,8 +2958,8 @@ UI_TEXT(HG_FS_PANE, 0,
     "A second folder, USER/LOGS at the start. COPY and MOVE take the active pane's entry to the other.",
     "Ein zweiter Ordner, anfangs USER/LOGS. KOPIEREN und VERSCHIEBEN bringen den Eintrag in die andere Spalte.")
 UI_TEXT(HG_FS_RESCAN, 0,
-    "Checks the card slot and reads each pane's page again.",
-    "Prüft den Kartenslot und liest die Seite jeder Spalte neu.")
+    "Checks the card slot, reads each pane's page again and selects its newest run.",
+    "Prüft den Kartenslot, liest die Seite jeder Spalte neu und wählt ihren neuesten Lauf.")
 UI_TEXT(HG_FS_COPY, 0,
     "Copies the selected file into the other pane's folder. A name there is never overwritten.",
     "Kopiert die gewählte Datei in den Ordner der anderen Spalte. Ein Name dort wird nie überschrieben.")

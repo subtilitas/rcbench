@@ -6,6 +6,17 @@ history is in git.
 
 ## Unreleased
 
+### Changed
+
+- FILES (LOG > FILES > FILES): RESCAN selects each pane's newest file, the
+  run log or report with the highest run number, as LOGS ranks runs. The
+  rows stay in name order and each pane keeps its page; the list scrolls
+  the selected row on screen. A newest file on another page brings the
+  page PREV or NEXT reaches from the page shown. Folders and files without
+  a run number are never selected; a folder without runs keeps its
+  selection. The way back into FILES and the Wi-Fi page's RESCAN keep each
+  selection on its entry.
+
 ## 0.23.14 - 2026-11-15
 
 0.23.14 is a testing release. It adds a switch-off to the M5Stack Dial (a 5s

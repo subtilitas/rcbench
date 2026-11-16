@@ -226,6 +226,24 @@ static void start_panes(void)
 }
 
 /**
+ * @brief Scroll pane @p i the least that brings its selected row on
+ *        screen; a pane with nothing selected keeps its scroll.
+ * @param i  the pane
+ */
+static void show_selected(int i)
+{
+    const int r = s.pane[i].selected;
+    if (r < 0) {
+        return;
+    }
+    if (r < s.scroll[i]) {
+        s.scroll[i] = r;
+    } else if (r >= s.scroll[i] + FS_ROWS) {
+        s.scroll[i] = r - FS_ROWS + 1;
+    }
+}
+
+/**
  * @brief Select @p name on pane @p i's page when it is there, and scroll
  *        the row into sight.
  * @param i     the pane
@@ -237,11 +255,7 @@ static void select_name(int i, const char *name)
     for (int r = 0; r < t->held; ++r) {
         if (strcmp(t->page[r].name, name) == 0) {
             (void)fm_tree_select(t, r);
-            if (r < s.scroll[i]) {
-                s.scroll[i] = r;
-            } else if (r >= s.scroll[i] + FS_ROWS) {
-                s.scroll[i] = r - FS_ROWS + 1;
-            }
+            show_selected(i);
             return;
         }
     }
@@ -293,15 +307,19 @@ static void place_note(int i, place_t *p)
 /**
  * @brief RESCAN's answer for pane @p i keeps the pane's place: the entry
  *        that was the top row on screen stays the top row, and the
- *        selection stays on its entry (fm_tree_page() keeps it by name).
+ *        selection is on the folder's newest file (FM_GO_NEWEST); the list
+ *        then scrolls the least that brings the selected row on screen.
  *
  * A list that showed the folder's first entry on top shows the folder's
  * first entry again, so an entry new on the card that ranks first is in
  * sight.  A top row gone from the card leaves the entry now at its place
- * on top.  A selected entry gone from the card, or moved off the page, leaves
- * nothing selected, as after a DELETE: MOVE and RENAME act on the
- * selection without a question, so no other entry takes it.  The scroll
- * is held to the rows after (fs_clamp_scroll()).
+ * on top.  A folder whose files carry no run number keeps the selection
+ * on its entry (fm_tree_page() keeps it by name); one gone from the card,
+ * or moved off the page, leaves nothing selected, as after a DELETE: MOVE
+ * and RENAME act on the selection without a question, so no other entry
+ * takes it.  A newest file on another page brings the page that holds it,
+ * as PREV and NEXT step there.  The scroll is held to the rows after
+ * (fs_clamp_scroll()).
  *
  * @param i  the pane
  * @param p  the place before the answer (place_note())
@@ -311,6 +329,8 @@ static void place_keep(int i, const place_t *p)
     if (p->have && !p->start) {
         s.scroll[i] = place_of(&s.pane[i], &p->top);
     }
+    fs_clamp_scroll(i);
+    show_selected(i);
 }
 
 /**
@@ -756,12 +776,13 @@ void fs_foot(fs_foot_t b)
     const fm_entry_t *e = fs_selected();
     const char *name = (e != NULL) ? e->name : "";
     if (b == FS_RESCAN) {
-        /* Each pane's page again from its first entry, its place kept;
-         * behind a request under way, as every listing waits. */
+        /* Each pane's page again from its first entry, its place kept and
+         * its newest file selected; behind a request under way, as every
+         * listing waits. */
         fs_quiet();
         s.need_look = true;
         for (int i = 0; i < 2; ++i) {
-            want(i, NEED_PAGE, FM_GO_SAME);
+            want(i, NEED_PAGE, FM_GO_NEWEST);
             s.keep_place[i] = true;
         }
         fs_pump();

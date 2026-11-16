@@ -36,7 +36,7 @@ Nicht verfügbare Tasten sind gedimmt. Tippe darauf, um den Grund über der Tast
 
 | Taste | Wirkung |
 |---|---|
-| AKTUALISIEREN | Prüft den Karteneinschub und liest beide Spalten auf ihrer aktuellen Seite neu ein. Oberste Zeile und Auswahl bleiben erhalten. Fehlt der gewählte Eintrag auf der Karte, wird die Auswahl wie nach LÖSCHEN aufgehoben. |
+| AKTUALISIEREN | Prüft den Karteneinschub, liest beide Spalten auf ihrer aktuellen Seite neu ein und wählt in jeder Spalte den neuesten Lauf: die Laufaufzeichnung oder den Bericht mit der höchsten Laufnummer. Namensreihenfolge und oberste Zeile bleiben erhalten. Liegt der neueste Lauf auf einer anderen Seite, erscheint diese Seite, wie VORIGE oder NÄCHSTE sie zeigen. Ein Ordner ohne Läufe behält seine Auswahl. Fehlt der gewählte Eintrag auf der Karte, wird die Auswahl wie nach LÖSCHEN aufgehoben. |
 | KOPIEREN | Kopiert die gewählte Datei in den Ordner der anderen Spalte. Ordner werden nicht kopiert. |
 | VERSCHIEBEN | Verschiebt die gewählte Datei oder den gewählten Ordner in den Ordner der anderen Spalte. |
 | UMBENENNEN | Öffnet die Tastatur mit dem Namen des Eintrags, den Cursor bei einer Datei vor der Endung, bei einem Ordner am Ende. |

@@ -3916,7 +3916,7 @@ above the row of buttons, using the 12 x 24 font.
 
 | Button | What it does |
 |---|---|
-| RESCAN | checks the slot and rereads each pane's current page; see [RESCAN](#rescan) |
+| RESCAN | checks the slot, rereads each pane's current page and selects its newest run; see [RESCAN](#rescan) |
 | COPY | copies the selected file into the other pane's folder; folders cannot be copied |
 | MOVE | moves the selected file or folder into the other pane's folder |
 | RENAME | opens the keyboard with the entry's name |
@@ -4209,14 +4209,34 @@ beside `SERVO` logs, appears on it. Later pages start at their own first
 entry, as with PREV and NEXT. New entries before that point belong to
 an earlier page.
 
-Returning to FILES rereads both panes in the same way. Each pane preserves
-its position:
+RESCAN then selects each pane's newest file, the run written last:
+
+- The newest file is the run log or report with the highest run number
+  (`MOTOR043.CSV` before `SERVO042.CSV`, `LIMIT044.TXT` before both), as
+  LOGS ranks runs. The entries carry no date: the panel stamps 1980 until
+  NTP sets its clock, so the number in the name
+  is the age. A labelled name such as `MOTOR042_kv1200.CSV` counts as run
+  42.
+- A run and its report share one number. The first by name is selected:
+  `ATEST042.CSV` before `ATEST042.TXT`.
+- Folders and files without a run number are never selected. A pane
+  whose folder holds no run log or report keeps its selection.
+- The rows stay in name order. The list scrolls the least that brings the
+  selected row on screen.
+- A newest file on another page brings that page: the one PREV or NEXT
+  reaches from the page shown, pages 48 entries apart. A page that would
+  start before the folder's first entry is the first page. Reading that
+  page takes two more passes over the folder.
+
+Returning to FILES rereads both panes as RESCAN does, without selecting
+the newest file. Each pane preserves its position:
 
 - If the folder's first entry was at the top, its first entry is at the
   top again, including a newly added one.
 - Otherwise, the previous top entry stays at the top. If it has been
   removed, the entry at its sorted position takes its place.
-- The selected entry stays selected if it is still on the page. If it
+- On the way back into FILES, and on RESCAN in a folder without runs,
+  the selected entry stays selected if it is still on the page. If it
   was removed or moved to another page, nothing is selected, as after
   DELETE. MOVE and RENAME act without asking, so the selection never
   transfers automatically to another entry. Tap to select again.
@@ -4758,7 +4778,7 @@ slot. Inserting another card returns the panes to these starting folders.
 
 | Button | What it does |
 |---|---|
-| RESCAN | asks the panel's state again, then reads each pane again at the page it shows, as FILES' [RESCAN](#rescan) does; a card swapped since starts both panes again in the root and the User log folder |
+| RESCAN | asks the panel's state again, then reads each pane again at the page it shows, each selection kept on its entry; FILES' [RESCAN](#rescan) reads its pages the same way and also selects the newest run. A card swapped since starts both panes again in the root and the User log folder |
 | INFO | the entry's name, folder, kind, size or entries, time and rule, as FILES' INFO box; the time is the stamp the card holds in the zone of SETUP > PANEL's Time zone, `not known` for a stamp in 1980 |
 | DOWNLOAD | the selected file through `/card/<path>`; dimmed on a folder |
 | OPEN | enters a folder, or shows a file in the viewer over the page. Dimmed on a file over 1,048,576 bytes, on a file the logger writes and on the servo programmers' records, which DOWNLOAD still sends |
