@@ -12,6 +12,8 @@ coverage and [constraints](#constraints) for the design limits.
 
 [README.md](README.md) is the front page; the
 [wiki](https://github.com/subtilitas/rcbench/wiki) is the manual.
+[HANDOVER.md](HANDOVER.md) lists the owner's open to-dos; a new session
+names them to the owner at the start.
 
 ## Architecture
 
