@@ -520,6 +520,7 @@ DATA_ONLY = {
     "shared/gfx/gfx_font_num24x30.c",
     "shared/gfx/gfx_font10x20.c",
     "shared/gfx/gfx_font12x24.c",
+    "shared/gfx/gfx_font6x12.c",
     "shared/gfx/gfx_font20x36.c",
     "shared/gfx/gfx_font_num32x44.c",
     # The Dial's ring tables written by tools/gen_dial_rings.py.

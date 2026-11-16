@@ -605,6 +605,9 @@ extern const gfx_font_t gfx_font_20x36;
 /** @brief 32x44 digits and punctuation, 0x20..0x3A.  Cap height 40px.  Hero
  *  numerals on the 1024 x 600 panel. */
 extern const gfx_font_t gfx_font_num_32x44;
+/** @brief 6x12 monospaced, ASCII 0x20..0x7E and the German letters.  The
+ *  Dial's title tag for a title too wide for 8x16. */
+extern const gfx_font_t gfx_font_6x12;
 
 /* ------------------------------------------------- seven-segment numerals */
 
