@@ -4,7 +4,8 @@
  *        and counts, the taps that select, switch and open, UP, PREV and
  *        NEXT, the scroll by drag and by the bar, the card gone, swapped or
  *        never there, a task that does not start, a listing under way, and
- *        RESCAN, which keeps each pane's page, top row and selection.
+ *        RESCAN, which keeps each pane's page and top row, and the
+ *        selection in a folder whose files carry no run number.
  *
  * Cases:
  * - the_panes_start_in_the_root_and_user_log_folder
@@ -526,25 +527,28 @@ static const char *chosen(int i)
 }
 
 /**
- * @brief The card of a beta bench: SERVO001 to SERVO030 in BENCH/LOGS,
- *        ATEST001 to ATEST012 in USER/LOGS; the left pane in BENCH/LOGS
- *        with SERVO018.CSV on top and SERVO020.CSV selected, the right
- *        one with ATEST004.CSV on top and ATEST006.CSV selected.
+ * @brief A card of files the logger did not write: TRACE001 to TRACE030 in
+ *        BENCH/LOGS, PLOT001 to PLOT012 in USER/LOGS.  No name carries a
+ *        run number, so RESCAN finds no newest file and keeps each pane's
+ *        selection.  The left pane in BENCH/LOGS with TRACE018.CSV on top
+ *        and TRACE020.CSV selected, the right one with PLOT004.CSV on top
+ *        and PLOT006.CSV selected.
  */
 static void two_scrolled_panes(void)
 {
     fresh_bare();
     card_default();
     char path[64];
-    for (int k = 2; k <= 30; ++k) {
-        snprintf(path, sizeof(path), "BENCH/LOGS/SERVO%03d.CSV", k);
+    gone("BENCH/LOGS/SERVO001.CSV");
+    for (int k = 1; k <= 30; ++k) {
+        snprintf(path, sizeof(path), "BENCH/LOGS/TRACE%03d.CSV", k);
         fk_file(&g_h.card, path, NULL, 4096u);
     }
     gone("USER/LOGS/ATEST005.CSV");
     gone("USER/LOGS/ATEST005.TXT");
     gone("USER/LOGS/LIMIT006.TXT");
     for (int k = 1; k <= 12; ++k) {
-        snprintf(path, sizeof(path), "USER/LOGS/ATEST%03d.CSV", k);
+        snprintf(path, sizeof(path), "USER/LOGS/PLOT%03d.CSV", k);
         fk_file(&g_h.card, path, NULL, 15104u);
     }
     screen()->enter();
@@ -553,12 +557,12 @@ static void two_scrolled_panes(void)
     CHECK(open_dir(0, "LOGS"));
     scroll_down(0, 17);
     scroll_down(1, 3);
-    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
-    CHECK_STR_EQ(on_screen(1, 0), "ATEST004.CSV");
+    CHECK_STR_EQ(on_screen(0, 0), "TRACE018.CSV");
+    CHECK_STR_EQ(on_screen(1, 0), "PLOT004.CSV");
     tap_row(1, 2);
     tap_row(0, 2);
-    CHECK_STR_EQ(chosen(0), "SERVO020.CSV");
-    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    CHECK_STR_EQ(chosen(0), "TRACE020.CSV");
+    CHECK_STR_EQ(chosen(1), "PLOT006.CSV");
     CHECK_EQ(files_screen_active(), 0);
     draw();
 }
@@ -576,21 +580,21 @@ TEST_CASE(rescan_keeps_each_panes_page_top_row_and_selection)
     CHECK_STR_EQ(files_screen_pane(1)->dir, "USER/LOGS");
     CHECK_EQ(files_screen_scroll(0), 17);
     CHECK_EQ(files_screen_scroll(1), 3);
-    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
-    CHECK_STR_EQ(on_screen(1, 0), "ATEST004.CSV");
-    CHECK_STR_EQ(chosen(0), "SERVO020.CSV");
-    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    CHECK_STR_EQ(on_screen(0, 0), "TRACE018.CSV");
+    CHECK_STR_EQ(on_screen(1, 0), "PLOT004.CSV");
+    CHECK_STR_EQ(chosen(0), "TRACE020.CSV");
+    CHECK_STR_EQ(chosen(1), "PLOT006.CSV");
     CHECK_EQ(files_screen_active(), 0);
     /* A file new on the card is listed in its place in the order. */
-    fk_file(&g_h.card, "BENCH/LOGS/SERVO031.CSV", NULL, 4096u);
+    fk_file(&g_h.card, "BENCH/LOGS/TRACE031.CSV", NULL, 4096u);
     tap_foot(FS_SPOT_RESCAN);
-    CHECK(row_of(0, "SERVO031.CSV") >= 0);
-    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
-    CHECK_STR_EQ(chosen(0), "SERVO020.CSV");
+    CHECK(row_of(0, "TRACE031.CSV") >= 0);
+    CHECK_STR_EQ(on_screen(0, 0), "TRACE018.CSV");
+    CHECK_STR_EQ(chosen(0), "TRACE020.CSV");
     /* And a second RESCAN in a row changes nothing more. */
     tap_foot(FS_SPOT_RESCAN);
-    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
-    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    CHECK_STR_EQ(on_screen(0, 0), "TRACE018.CSV");
+    CHECK_STR_EQ(chosen(1), "PLOT006.CSV");
 }
 
 TEST_CASE(rescan_keeps_a_later_page_from_its_first_entry)
@@ -644,11 +648,11 @@ TEST_CASE(rescan_selects_none_when_the_selected_entry_is_gone)
     two_scrolled_panes();
     /* The selected file gone: nothing is selected, as after a DELETE, and
      * the top row stays. */
-    gone("BENCH/LOGS/SERVO020.CSV");
+    gone("BENCH/LOGS/TRACE020.CSV");
     tap_foot(FS_SPOT_RESCAN);
     CHECK_EQ(files_screen_pane(0)->selected, -1);
-    CHECK(row_of(0, "SERVO021.CSV") >= 0);
-    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
+    CHECK(row_of(0, "TRACE021.CSV") >= 0);
+    CHECK_STR_EQ(on_screen(0, 0), "TRACE018.CSV");
     CHECK_EQ(files_screen_scroll(0), 17);
     /* MOVE and RENAME then ask for a selection and change nothing. */
     tap_foot(FS_SPOT_MOVE);
@@ -657,14 +661,14 @@ TEST_CASE(rescan_selects_none_when_the_selected_entry_is_gone)
     tap_foot(FS_SPOT_RENAME);
     CHECK_EQ(files_screen_view(), FILES_VIEW_PANES);
     CHECK_STR_EQ(files_screen_message(), TR(FM_SELECT_FIRST));
-    CHECK(fk_get(&g_h.card, "BENCH/LOGS/SERVO021.CSV") != NULL);
+    CHECK(fk_get(&g_h.card, "BENCH/LOGS/TRACE021.CSV") != NULL);
     /* The other pane keeps its selection. */
-    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    CHECK_STR_EQ(chosen(1), "PLOT006.CSV");
     /* The folder's last entry gone: nothing selected either. */
     scroll_down(1, 5);
     tap_row(1, FS_SPOT_ROWS - 1);
-    CHECK_STR_EQ(chosen(1), "ATEST012.CSV");
-    gone("USER/LOGS/ATEST012.CSV");
+    CHECK_STR_EQ(chosen(1), "PLOT012.CSV");
+    gone("USER/LOGS/PLOT012.CSV");
     tap_foot(FS_SPOT_RESCAN);
     CHECK_EQ(files_screen_pane(1)->selected, -1);
     CHECK_EQ(files_screen_pane(1)->held, 11);
@@ -679,7 +683,7 @@ TEST_CASE(rescan_selects_none_when_the_selected_entry_is_gone)
     /* An emptied folder: no rows, and none selected. */
     for (int k = 1; k <= 11; ++k) {
         char path[64];
-        snprintf(path, sizeof(path), "USER/LOGS/ATEST%03d.CSV", k);
+        snprintf(path, sizeof(path), "USER/LOGS/PLOT%03d.CSV", k);
         gone(path);
     }
     tap_foot(FS_SPOT_RESCAN);
@@ -723,33 +727,33 @@ TEST_CASE(rescan_keeps_the_top_rows_entry_on_top)
     two_scrolled_panes();
     /* Two entries above the top row gone: the top row's entry stays on
      * top, two rows nearer the page's start. */
-    gone("BENCH/LOGS/SERVO002.CSV");
-    gone("BENCH/LOGS/SERVO003.CSV");
+    gone("BENCH/LOGS/TRACE002.CSV");
+    gone("BENCH/LOGS/TRACE003.CSV");
     tap_foot(FS_SPOT_RESCAN);
-    CHECK_STR_EQ(on_screen(0, 0), "SERVO018.CSV");
+    CHECK_STR_EQ(on_screen(0, 0), "TRACE018.CSV");
     CHECK_EQ(files_screen_scroll(0), 15);
     /* The top row's own entry gone: the entry now at its place. */
-    gone("BENCH/LOGS/SERVO018.CSV");
+    gone("BENCH/LOGS/TRACE018.CSV");
     tap_foot(FS_SPOT_RESCAN);
-    CHECK_STR_EQ(on_screen(0, 0), "SERVO019.CSV");
-    CHECK_STR_EQ(chosen(0), "SERVO020.CSV");
+    CHECK_STR_EQ(on_screen(0, 0), "TRACE019.CSV");
+    CHECK_STR_EQ(chosen(0), "TRACE020.CSV");
 }
 
 TEST_CASE(rescan_holds_the_scroll_to_fewer_rows)
 {
     two_scrolled_panes();
-    /* SERVO018 to SERVO030 gone: 18 rows are left, and the list shows
+    /* TRACE018 to TRACE030 gone: 18 rows are left, and the list shows
      * its last 6 with no empty row under them. */
     char path[64];
     for (int k = 18; k <= 30; ++k) {
-        snprintf(path, sizeof(path), "BENCH/LOGS/SERVO%03d.CSV", k);
+        snprintf(path, sizeof(path), "BENCH/LOGS/TRACE%03d.CSV", k);
         gone(path);
     }
     tap_foot(FS_SPOT_RESCAN);
     const fm_tree_t *t = files_screen_pane(0);
     CHECK_EQ(t->held, 17);
     CHECK_EQ(files_screen_scroll(0), 17 - FS_SPOT_ROWS);
-    CHECK_STR_EQ(on_screen(0, FS_SPOT_ROWS - 1), "SERVO017.CSV");
+    CHECK_STR_EQ(on_screen(0, FS_SPOT_ROWS - 1), "TRACE017.CSV");
     CHECK_EQ(t->selected, -1);
     draw();
 }
@@ -759,7 +763,7 @@ TEST_CASE(rescan_of_a_folder_gone_shows_no_rows)
     two_scrolled_panes();
     for (int k = 1; k <= 30; ++k) {
         char path[64];
-        snprintf(path, sizeof(path), "BENCH/LOGS/SERVO%03d.CSV", k);
+        snprintf(path, sizeof(path), "BENCH/LOGS/TRACE%03d.CSV", k);
         gone(path);
     }
     gone("BENCH/LOGS");
@@ -778,8 +782,8 @@ TEST_CASE(rescan_of_a_folder_gone_shows_no_rows)
     CHECK_STR_EQ(files_screen_message(), TR(FM_SELECT_FIRST));
     draw();
     /* The other pane keeps its place. */
-    CHECK_STR_EQ(on_screen(1, 0), "ATEST004.CSV");
-    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    CHECK_STR_EQ(on_screen(1, 0), "PLOT004.CSV");
+    CHECK_STR_EQ(chosen(1), "PLOT006.CSV");
     /* UP leads out of it. */
     tap(FS_SPOT_UP_CX(0), FS_SPOT_HEAD_CY);
     CHECK_STR_EQ(files_screen_pane(0)->dir, "BENCH");
@@ -829,8 +833,8 @@ TEST_CASE(rescan_waits_behind_a_request_under_way)
     CHECK(!files_screen_busy());
     CHECK_STR_EQ(files_screen_pane(0)->dir, "BENCH");
     CHECK_STR_EQ(chosen(0), "LOGS");
-    CHECK_STR_EQ(on_screen(1, 0), "ATEST004.CSV");
-    CHECK_STR_EQ(chosen(1), "ATEST006.CSV");
+    CHECK_STR_EQ(on_screen(1, 0), "PLOT004.CSV");
+    CHECK_STR_EQ(chosen(1), "PLOT006.CSV");
 }
 
 TEST_CASE(rescan_during_a_page_turn_turns_the_page_first)

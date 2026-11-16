@@ -4266,7 +4266,7 @@ Meldungsfeld über der Tastenzeile, in der Schrift 12 x 24.
 
 | Taste | Funktion |
 |---|---|
-| AKTUALISIEREN | prüft den Steckplatz und liest die aktuelle Seite jedes Bereichs neu; siehe [AKTUALISIEREN](#aktualisieren) |
+| AKTUALISIEREN | prüft den Steckplatz, liest die aktuelle Seite jedes Bereichs neu und wählt dort den neuesten Lauf; siehe [AKTUALISIEREN](#aktualisieren) |
 | KOPIEREN | kopiert die gewählte Datei in den Ordner des anderen Bereichs; Ordner können nicht kopiert werden |
 | VERSCHIEBEN | verschiebt die gewählte Datei oder den gewählten Ordner in den anderen Bereich |
 | UMBENENNEN | öffnet die Tastatur mit dem Namen des Eintrags |
@@ -4595,16 +4595,39 @@ vor den anderen einsortiert wird, etwa `ATEST001.CSV` neben
 bei ihrem eigenen ersten Eintrag, wie bei VORIGE und NÄCHSTE. Neue
 Einträge vor dieser Stelle gehören auf eine frühere Seite.
 
-Bei der Rückkehr zu FILES werden beide Bereiche ebenso neu gelesen.
-Jeder behält seine Position:
+Danach wählt AKTUALISIEREN in jedem Bereich die neueste Datei, den
+zuletzt geschriebenen Lauf:
+
+- Die neueste Datei ist die Laufaufzeichnung oder der Bericht mit der
+  höchsten Laufnummer (`MOTOR043.CSV` vor `SERVO042.CSV`, `LIMIT044.TXT`
+  vor beiden), wie LOGS Läufe ordnet. Die Einträge tragen kein Datum: das
+  Panel stempelt 1980, bis NTP seine Uhr stellt; die Nummer im Namen ist
+  daher das Alter. Ein Name mit Zusatz wie `MOTOR042_kv1200.CSV` zählt als
+  Lauf 42.
+- Ein Lauf und sein Bericht teilen eine Nummer. Gewählt wird der erste
+  nach Namen: `ATEST042.CSV` vor `ATEST042.TXT`.
+- Ordner und Dateien ohne Laufnummer werden nie gewählt. Ein Bereich,
+  dessen Ordner keine Laufaufzeichnung und keinen Bericht enthält,
+  behält seine Auswahl.
+- Die Zeilen bleiben in Namensreihenfolge. Die Liste scrollt so wenig
+  wie nötig, bis die gewählte Zeile sichtbar ist.
+- Liegt die neueste Datei auf einer anderen Seite, erscheint diese Seite:
+  die Seite, die VORIGE oder NÄCHSTE von der gezeigten Seite aus
+  erreicht, Seiten 48 Einträge auseinander. Eine Seite, die vor dem
+  ersten Ordnereintrag begänne, ist die erste Seite. Das Lesen dieser
+  Seite kostet zwei weitere Durchläufe durch den Ordner.
+
+Bei der Rückkehr zu FILES werden beide Bereiche wie bei AKTUALISIEREN neu
+gelesen, ohne die neueste Datei zu wählen. Jeder behält seine Position:
 
 - Stand der erste Ordnereintrag oben, steht wieder der erste oben,
   einschließlich eines neu hinzugefügten Eintrags.
 - Andernfalls bleibt der bisherige oberste Eintrag oben. Wurde er
   entfernt, tritt der Eintrag an seiner sortierten Position an seine
   Stelle.
-- Der gewählte Eintrag bleibt gewählt, wenn er weiterhin auf der Seite
-  liegt. Wurde er entfernt oder auf eine andere Seite verschoben, ist
+- Bei der Rückkehr zu FILES und bei AKTUALISIEREN in einem Ordner ohne
+  Läufe bleibt der gewählte Eintrag gewählt, wenn er weiterhin auf der
+  Seite liegt. Wurde er entfernt oder auf eine andere Seite verschoben, ist
   wie nach LÖSCHEN nichts gewählt. VERSCHIEBEN und UMBENENNEN wirken ohne
   Rückfrage; deshalb wird die Auswahl nie automatisch auf einen anderen
   Eintrag übertragen. Tippe, um erneut auszuwählen.
@@ -5189,7 +5212,7 @@ diesen Ausgangsorten.
 
 | Taste | Was sie tut |
 |---|---|
-| AKTUALISIEREN | fragt den Zustand des Panels neu und liest dann jede Spalte auf der Seite neu, die sie zeigt, wie [AKTUALISIEREN](#aktualisieren) in FILES; eine seitdem getauschte Karte beginnt beide Spalten wieder im Stammverzeichnis und im Ordner Testaufzeichnungen |
+| AKTUALISIEREN | fragt den Zustand des Panels neu und liest dann jede Spalte auf der Seite neu, die sie zeigt; jede Auswahl bleibt auf ihrem Eintrag. [AKTUALISIEREN](#aktualisieren) in FILES liest seine Seiten ebenso und wählt zusätzlich den neuesten Lauf. Eine seitdem getauschte Karte beginnt beide Spalten wieder im Stammverzeichnis und im Ordner Testaufzeichnungen |
 | INFO | Name, Ordner, Art, Größe oder Einträge, Zeit und Regel des Eintrags wie der INFO-Kasten von FILES; die Zeit ist der Zeitstempel der Karte in der Zone von SETUP > PANEL, `Zeitzone`, `nicht bekannt` für einen Zeitstempel in 1980 |
 | HERUNTERLADEN | die gewählte Datei über `/card/<Pfad>`; auf einem Ordner gedimmt |
 | ÖFFNEN | geht in einen Ordner oder zeigt eine Datei im Betrachter über der Seite. Gedimmt auf einer Datei über 1.048.576 Bytes, einer Datei, die der Logger schreibt, und den Vermerken der Servoprogrammierung, die HERUNTERLADEN trotzdem sendet |

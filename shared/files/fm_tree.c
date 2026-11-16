@@ -22,6 +22,7 @@ typedef struct {
     const char *dir;           /**< the folder walked                    */
     int listed;                /**< entries offered                      */
     unsigned long_names;       /**< names too long to list               */
+    char newest[FM_NAME_BUF];  /**< the newest file so far, "" for none  */
 } pane_walk_t;
 
 int fm_tree_rank(const void *a, const void *b)
@@ -64,6 +65,11 @@ static void take(const fm_dirent_t *e, void *vctx)
     f.busy = !f.is_dir && fm_busy(w->bench, w->dir, f.name);
     ++w->listed;
     fm_select_offer(&w->sel, &f);
+    /* The newest file of the whole folder, whichever page it is on. */
+    if (!f.is_dir && log_name_number(f.name) >= LOG_RUN_FIRST
+        && (w->newest[0] == '\0' || log_name_rank(f.name, w->newest) < 0)) {
+        memcpy(w->newest, f.name, n + 1u);
+    }
 }
 
 /**
@@ -78,6 +84,7 @@ static void empty_page(fm_tree_t *tree, int total)
     tree->ahead = 0;
     tree->total = total;
     tree->unlisted = 0u;
+    tree->newest[0] = '\0';
 }
 
 /**
@@ -121,6 +128,7 @@ static fm_err_t walk_once(fm_tree_t *tree, const fm_io_t *io,
     tree->total = w.listed;
     tree->unlisted = unlisted + w.long_names;
     tree->mount = mount;
+    memcpy(tree->newest, w.newest, sizeof(tree->newest));
     return err;
 }
 
@@ -180,22 +188,107 @@ static fm_err_t read_page(fm_tree_t *tree, const fm_io_t *io,
 }
 
 /**
+ * @brief The row that holds @p name.
+ * @param tree  the pane
+ * @param name  the name to find; "" for none
+ * @return the row, -1 when the page does not hold it
+ */
+static int row_of(const fm_tree_t *tree, const char *name)
+{
+    if (name[0] == '\0') {
+        return -1;
+    }
+    for (int i = 0; i < tree->held; ++i) {
+        if (strcmp(tree->page[i].name, name) == 0) {
+            return i;
+        }
+    }
+    return -1;
+}
+
+/**
  * @brief Select the row that holds @p name, or nothing.
  * @param tree  the pane
  * @param name  the name to find; "" for none
  */
 static void reselect(fm_tree_t *tree, const char *name)
 {
-    tree->selected = -1;
-    if (name[0] == '\0') {
-        return;
+    tree->selected = row_of(tree, name);
+}
+
+/**
+ * @brief Read the page of the pane's pages, as PREV and NEXT step from the
+ *        page on show, that holds the folder's newest file.
+ *
+ * The page on show starts @p shown entries into the folder, and its pages
+ * start FM_PAGE_MAX entries apart from there.  One walk reads the entries
+ * ahead of the file (FM_PAGE_BEFORE): their count is the file's place in
+ * the folder, and the entry that starts its page is among them.  A second
+ * walk reads the page from that entry on.  A page start before the
+ * folder's first entry is the first page.
+ *
+ * @param tree   the pane
+ * @param io     the card
+ * @param bench  what the rules need; may be NULL
+ * @param file   the newest file's entry, the caller's copy
+ * @param shown  entries ahead of the page on show
+ * @return FM_OK or why a walk failed
+ */
+static fm_err_t read_page_of(fm_tree_t *tree, const fm_io_t *io,
+                             const fm_bench_t *bench, const fm_entry_t *file,
+                             int shown)
+{
+    fm_err_t err = read_page(tree, io, bench, FM_PAGE_BEFORE, file);
+    if (err != FM_OK || row_of(tree, file->name) >= 0) {
+        /* Nothing ranks ahead of it: read_page() read the first page. */
+        return err;
     }
-    for (int i = 0; i < tree->held; ++i) {
-        if (strcmp(tree->page[i].name, name) == 0) {
-            tree->selected = i;
-            return;
-        }
+    const int place = tree->ahead + tree->held;
+    const int into = ((place - shown) % FM_PAGE_MAX + FM_PAGE_MAX)
+                     % FM_PAGE_MAX;
+    if (place - into <= 0) {
+        return read_page(tree, io, bench, FM_PAGE_FROM, NULL);
     }
+    if (into == 0) {
+        return read_page(tree, io, bench, FM_PAGE_FROM, file);
+    }
+    /* The key is copied out of the page: the walk writes the page. */
+    const fm_entry_t start = tree->page[tree->held - into];
+    return read_page(tree, io, bench, FM_PAGE_FROM, &start);
+}
+
+/**
+ * @brief Select the folder's newest file, after a page read as FM_GO_SAME:
+ *        on the page, or on the page of the pane's pages that holds it.
+ * @param tree   the pane, its page read
+ * @param io     the card
+ * @param bench  what the rules need; may be NULL
+ * @param kept   the name selected before; selected again when the newest
+ *               file has gone from the card since the first walk
+ * @return FM_OK, or what a further walk answered
+ */
+static fm_err_t select_newest(fm_tree_t *tree, const fm_io_t *io,
+                              const fm_bench_t *bench, const char *kept)
+{
+    if (tree->newest[0] == '\0') {
+        return FM_OK;               /* no file of known age: kept as it is */
+    }
+    int row = row_of(tree, tree->newest);
+    fm_err_t err = FM_OK;
+    if (row < 0) {
+        /* The key is copied out of the pane: the walk writes newest. */
+        fm_entry_t file;
+        memset(&file, 0, sizeof(file));
+        memcpy(file.name, tree->newest, sizeof(file.name));
+        err = read_page_of(tree, io, bench, &file, tree->ahead);
+        row = row_of(tree, file.name);
+    }
+    if (row >= 0) {
+        tree->selected = row;
+    } else {
+        reselect(tree, kept);
+    }
+    return err;
 }
 
 void fm_tree_init(fm_tree_t *tree, const char *dir)
@@ -256,6 +349,7 @@ fm_err_t fm_tree_page(fm_tree_t *tree, const fm_io_t *io,
         side = FM_PAGE_BEFORE;
         break;
     case FM_GO_SAME:
+    case FM_GO_NEWEST:
         /* The first page stays the first: an entry new on the card that
          * ranks before its first row comes onto it.  A later page keeps
          * its first entry, and such an entry goes to the page before. */
@@ -275,6 +369,9 @@ fm_err_t fm_tree_page(fm_tree_t *tree, const fm_io_t *io,
     }
     const fm_err_t err = read_page(tree, io, bench, side, edge);
     reselect(tree, name);
+    if (go == FM_GO_NEWEST && err == FM_OK) {
+        return select_newest(tree, io, bench, name);
+    }
     return err;
 }
 
