@@ -44,7 +44,7 @@ extern "C" {
 /** @brief The left list's entries, top to bottom. */
 enum {
     WL_ENTRY_IMU = 0, /**< enable, angle source, axis, sign, rate,
-                           algorithm, filter */
+                           algorithm, filter, settling time, precision */
     WL_ENTRY_DIAL,    /**< enable, scan, bind, two steps */
     WL_ENTRY_BAL,     /**< enable, scan, bind, battery, trial mass
                            (wireless_bal.h) */
@@ -54,8 +54,8 @@ enum {
     WL_ENTRY_COUNT
 };
 
-/** @brief The most rows an entry has: the IMU's 7. */
-#define WL_ENTRY_ROWS_MAX 7
+/** @brief The most rows an entry has: the IMU's 9. */
+#define WL_ENTRY_ROWS_MAX 9
 
 /** @brief One row of an entry: a setting, or a custom row (custom set). */
 typedef struct {

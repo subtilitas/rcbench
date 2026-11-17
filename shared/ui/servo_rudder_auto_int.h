@@ -53,8 +53,9 @@ typedef enum {
     RA_C_COUNT      /**< the count, RA_C_NONE included     */
 } rauto_ctl_t;
 
-/** @brief The lines the box draws. */
-#define RA_LINES 3
+/** @brief The lines the box draws: the step or the goals, the result,
+ *         the servo or the report, and the verify pass after programming. */
+#define RA_LINES 4
 
 /** @brief The box's state, the member `ra` of the screen's state. */
 typedef struct {

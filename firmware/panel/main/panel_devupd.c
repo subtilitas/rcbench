@@ -29,6 +29,8 @@
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "upd_dev.h"
+#include "upd_screen.h"
+#include "upd_wizard.h"
 
 /** @brief The console lines' tag. */
 static const char *TAG = "devupd";
@@ -144,6 +146,7 @@ typedef struct {
                                  runs */
     bool         img_ok;    /**< it passed */
     fw_version_t carried;   /**< its version */
+    bool         bound;     /**< a device of the kind is bound */
     bool         linked;    /**< the device is connected, its version read */
     fw_version_t running;   /**< that version */
 } dev_pub_t;
@@ -206,6 +209,9 @@ static devupd_settler_t s_settler;
 static atomic_bool     s_cancel;
 /** @brief The frame task's last end_seq: the ends it reported. */
 static uint32_t        s_seen_end;
+/** @brief The rows were published once, or the client was not set up and
+ *         publishes none: panel_devupd_known(). */
+static atomic_bool     s_known;
 /** @brief The device the frame task last asked to update. */
 static unsigned        s_ask_dev;
 /** @brief The frame task's last phase, for the band's ask. */
@@ -214,6 +220,11 @@ static uint8_t         s_seen_phase;
 bool panel_devupd_busy(void)
 {
     return devupd_gate_busy(&s_gate);
+}
+
+bool panel_devupd_known(void)
+{
+    return atomic_load(&s_known);
 }
 
 void panel_devupd_start(void)
@@ -242,6 +253,7 @@ void panel_devupd_start(void)
     s_started = devupd_client_init(&s_cli, PANEL_BLEC_UPD);
     if (!s_started) {
         ESP_LOGE(TAG, "update client not set up; no device updates");
+        atomic_store(&s_known, true);
     }
 }
 
@@ -549,6 +561,7 @@ void panel_devupd_blec_poll(uint32_t now)
         d->have_img = g->st != IMG_NONE && !t[i].other;
         d->img_ok = g->st == IMG_READY && !t[i].other;
         d->carried = g->info.version;
+        d->bound = t[i].bound;
         d->linked = t[i].bound && t[i].linked;
         d->running = (fw_version_t){ t[i].ver[0], t[i].ver[1], t[i].ver[2] };
     }
@@ -600,6 +613,7 @@ void panel_devupd_blec_publish(uint32_t now)
     taskENTER_CRITICAL(&s_mux);
     s_pub = s_next;
     taskEXIT_CRITICAL(&s_mux);
+    atomic_store(&s_known, true);
 }
 
 /**
@@ -663,7 +677,7 @@ void devupd_service(bool armed)
             .other = other || (busy && !mine), .busy = mine,
         };
         const upd_dev_view_t v = {
-            .row = devupd_row(&in), .known = d->linked,
+            .row = devupd_row(&in), .bound = d->bound, .known = d->linked,
             .running = d->running, .have_image = d->img_ok,
             .carried = d->carried, .phase = mine ? p.phase : 0u,
             .percent = mine ? p.percent : 0u, .secs = mine ? p.secs : 0u,
@@ -709,5 +723,8 @@ void devupd_service(bool armed)
                      fail_text(e, why, sizeof(why)));
         }
         control_alert(line);
+        /* UPDATES' step of that device shows a failure on its card, the
+         * hold the retry; a success clears it. */
+        upd_screen_set_result(UPD_WIZ_DIAL + d, e->ok ? NULL : line);
     }
 }

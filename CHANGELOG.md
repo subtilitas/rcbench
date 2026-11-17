@@ -6,8 +6,57 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- UPDATES: a step model (`shared/ui/upd_wizard.c`) puts the updates in the
+  order PANEL, IOMCU, C6 RADIO, DIAL, POWER NODE, BALANCE NODE. From the
+  live state of each it names every step's state, the current step and its
+  one control. The device rows' feed tells a device that is not bound from
+  one that is bound and not connected.
+- Panel: the run note in NVS (non-volatile storage), key `run_note` beside
+  the restart note: an update run that goes on after a restart. The panel
+  install writes it once the image is written whole and checked, the C6
+  radio's update on success. Each start reads it once: a note of another
+  layout, a corrupt one or one that names another version than the
+  running build (a rollback) is erased and is no run; otherwise the start
+  spends one of 2 openings.
+- UPDATES after a restart: while an update run stands, UPDATES opens by
+  itself once per start on the menu, with the bench SAFE, the supply output
+  off, Wi-Fi off and no install under way; the alert band names what holds
+  it back (`Update run: UPDATES opens once SAFE with the supply off.`). A
+  step whose IOmcu or bound device is not connected yet waits and goes on
+  once it links. The run ends on the home tag or when no step is left, and
+  a run opens UPDATES at 2 starts at most. The start-up check does not run
+  during a run.
+  spends one of 2 openings. No screen reads it.
+- SETUP > WIRELESS > IMU: IMU settling time (`imu_settle_s`, 0.5 to
+  10.0s, default 3.0s) and IMU precision (`imu_prec`, 0.05 to 1.00°,
+  default 0.10°), the settle rule of a RUDDER AUTO measure on the IMU.
+- RUDDER AUTO: the approach. Every measure first drives the servo to the
+  pulse it comes from and waits there by the same rule (phase APPROACH):
+  each end, in the main pass and in the verify pass, from PULSE CENTER,
+  the verify pass's center from 2000us. The same servo value read up to
+  0.33° apart by the side it was reached from.
+- RUDDER AUTO: the verify pass. A run that wrote measures 1000us, 2000us
+  and PULSE CENTER once more with the same rule and ends at the center;
+  each end within TOLERANCE of its goal and the center within TOLERANCE
+  of ZERO pass, one outside ends the run as FAIL (`1000us outside the
+  tolerance at verify`, `2000us ...`, `center outside the tolerance at
+  verify`). The box's fourth line shows the three, the report a VERIFY
+  section, the CSV three rows with `V` in the write column. A run that
+  wrote nothing does not verify.
+
 ### Changed
 
+- IOmcu update: the question on the menu is gone. An IOmcu that runs
+  another build opens UPDATES at step 2 (IOMCU), once per offer, on the
+  menu with the bench SAFE, the supply output off, Wi-Fi off and no panel
+  install under way; its 2s hold starts the update. SKIP THIS STEP or the
+  home tag that leaves UPDATES declines the offer until the panel
+  restarts. The band lines name UPDATES (`IOmcu runs a different build.
+  UPDATES opens once SAFE with the supply off.`). The progress returns to
+  UPDATES. An update run and an offer due together open UPDATES once, and
+  while the run waits the band carries its line only.
 - FILES (LOG > FILES > FILES): RESCAN selects each pane's newest file, the
   run log or report with the highest run number, as LOGS ranks runs. The
   rows stay in name order and each pane keeps its page; the list scrolls
@@ -46,6 +95,41 @@ history is in git.
   bus, the PD mini or the phase tap with the screen that sets it, OFF
   selected (`GPIO 7: DSHOT600. PICK A PROTOCOL FIRST`), a full protocol or
   a PWM rule the move breaks.
+- UPDATES: the IOmcu section and its hold, the C6 RADIO row with its
+  reinstall and the WIRELESS DEVICES entry with its page move to the new
+  page SINGLE UPDATES, opened from the row Single updates in OPTIONS. Each
+  keeps its place, 2s hold and gates; BACK in the footer and the home tag
+  close the page, and leaving UPDATES ends a hold under way without
+  starting anything.
+- UPDATES leads through the updates as steps: PANEL, IOMCU, C6 RADIO,
+  DIAL, POWER NODE and BALANCE NODE in a list under CHECK FOR UPDATES,
+  each with its version and a tag (`NEXT`, `CURRENT`, `LATER`, `FAILED`,
+  `SKIPPED`, `NOT CONNECTED`, `NOT BOUND` and others). The card on the
+  right shows only the current step: its versions, what its update does,
+  why it waits, the last failed attempt's reason, and its one control, a
+  2s hold, grey with the reason on the band while a gate holds it. HOLD 2s
+  TO DOWNLOAD & INSTALL moves from the footer to PANEL's card. SKIP THIS
+  STEP passes a step until the panel restarts; on the IOmcu's step it
+  declines the IOmcu's offer as CANCEL on its question does. With no step
+  left the card reads `All firmware is current.` and names the steps not
+  connected, not updatable and skipped, with SHOW SKIPPED STEPS. CANCEL
+  UPDATE stands in the footer while a device's transfer runs. OPTIONS is
+  grey while any update runs as well. The panel hands the card the IOmcu's,
+  the C6's and each device's last failure and whether an update run stands
+  after a restart.
+
+### Fixed
+
+- RUDDER AUTO on the IMU took the angle while the sensor still crept
+  after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
+  to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,
+  so a run passed with ends 0.63° and 1.04° off the goal at a 0.5°
+  tolerance. A measure on the IMU also waits until the readings over
+  the last IMU settling time span IMU precision or less: with the defaults
+  the angle lies within 0.07° of the settled value, taken 6.5s to 10.4s
+  after the surface arrives. The measure's wait grows by 10,000ms plus the
+  settling time, 16,000ms with the defaults; `surface not settled in
+  time` replaces `surface not still within 3s`.
 
 ## 0.23.14 - 2026-11-15
 

@@ -1675,18 +1675,18 @@ with the IOmcu's HASH_RUNNING over the same number of bytes.
 | Result | Panel |
 | --- | --- |
 | same | nothing |
-| different | the alert `IOmcu runs a different build. Update it on UPDATES.`, or the line naming what holds the question back ([Screens](Screens.md#iomcu-update)); the question opens on the menu while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
+| different | the alert `IOmcu runs a different build. Update it on UPDATES.`, or the line naming what holds the opening back ([Screens](Screens.md#iomcu-update)); UPDATES opens on the menu at step 2 (IOMCU) while the bench is SAFE, the supply output off, the panel's Wi-Fi radio wholly off and no panel install under way |
 | an image on trial | writes BUY at once and says `New IOmcu firmware kept.` |
 | BAD_PAGE or no slots | the alert `IOmcu cannot update over CAN. Install firmware once via USB.` |
 
 The check runs at a protocol major mismatch as well: the identity registers
 and the update pages answer across majors, and the update moves the
-IOmcu to the panel's own major. CANCEL or the home tag dismisses the question
-for that IOmcu version until the panel restarts. If a lost link brings up
-the fault screen over the question, it remains unanswered and is offered
-again at the next link-up. An older carried image is offered too; the
-question then says so. [Screens](Screens.md#iomcu-update) shows the
-question and the progress.
+IOmcu to the panel's own major. SKIP THIS STEP on step 2, or the home tag
+that leaves UPDATES, declines the offer for that IOmcu version until the
+panel restarts. If a lost link brings up the fault screen over UPDATES,
+the offer remains unanswered and is made again at the next link-up. An
+older carried image is offered too; step 2's card then says so.
+[Screens](Screens.md#iomcu-update) shows the offer and the progress.
 
 A panel built without `RCBENCH_IOMCU_BIN` carries no image, runs no check and
 offers nothing.

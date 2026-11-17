@@ -24,6 +24,7 @@
 #include "fw_boot.h"
 #include "fw_image.h"
 #include "fw_install.h"
+#include "fw_run.h"
 
 #ifdef __cplusplus
 extern "C" {
@@ -60,6 +61,58 @@ const fw_flash_t *fw_ota_flash(void);
 void fw_ota_note_restart(const char *version);
 
 /**
+ * @brief Note an update run before a restart (fw_run_begin()): the next
+ *        start running @p expect finds the run with FW_RUN_OPENS
+ *        openings.  Written to NVS beside the restart note, key
+ *        `run_note`, and committed.  Says one console line:
+ *        `run note: <version>, 2 openings`, or a warning when no note was
+ *        written.  The C6 radio's update calls it on success with the
+ *        running version.  app_main's task only.
+ * @param expect The version the next start is expected to run.
+ * @return False when the text or NVS refused it.
+ */
+bool fw_ota_run_begin(const char *expect);
+
+/**
+ * @brief After the install's last step: note the run when the image is
+ *        written whole and checked (fw_run_after_install()), before
+ *        fw_ota_note_restart() and the restart.  Any other status writes
+ *        and says nothing.  app_main's task only.
+ * @param st      The install's last fw_install_step() status.
+ * @param version The written build's version.
+ * @return True when the run was noted.
+ */
+bool fw_ota_run_installed(fw_install_status_t st, const char *version);
+
+/**
+ * @brief Whether an update run stands in this start: the run note named
+ *        the running build and this start spent one of its openings
+ *        (fw_run_settle(), run by fw_ota_boot_check() once the start is
+ *        settled), and fw_ota_run_end() has not ended it.  False before
+ *        the start check.  app_main's task only.
+ * @return True while the run stands.
+ */
+bool fw_ota_run_active(void);
+
+/**
+ * @brief Whether this start has read its run note (fw_run_settle()): at
+ *        once on a start that is no trial, when the trial is kept on one
+ *        that is (up to FW_TRIAL_BOUND_MS, 30s, after the start).  Until
+ *        then fw_ota_run_active() is false although a run may stand, and
+ *        the start-up check waits.  app_main's task only.
+ * @return True once the note was read.
+ */
+bool fw_ota_run_settled(void);
+
+/**
+ * @brief End the update run: fw_ota_run_active() is false for the rest of
+ *        this start, and the note is erased (fw_run_end()).  A refused
+ *        erase is a console warning; the note left then spends its
+ *        openings at the next starts.  app_main's task only.
+ */
+void fw_ota_run_end(void);
+
+/**
  * @brief Whether the running build is on its first start after an update
  *        (pending verify), and fw_ota_boot_check() still settles it.
  * @return True on a trial start.
@@ -79,6 +132,10 @@ bool fw_ota_trial_pending(void);
  * every outcome but a trial that goes back (fw_boot_settle()).  An install
  * from a build that kept the note in LP (low-power) RAM leaves no NVS
  * note: that start reads none, as a panel that never installed does.
+ *
+ * Once the start is settled, the run note is read once (fw_run_settle()
+ * with the running version): see fw_ota_run_active().  It says a line
+ * `run note: ...` when it found an entry.
  *
  * Says one console line at INFO, before a trial that goes back restarts
  * and otherwise before it returns:

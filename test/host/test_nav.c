@@ -106,9 +106,9 @@ TEST_CASE(no_screen_can_draw_over_the_band)
 
     for (int id = SCREEN_OVERVIEW; id < SCREEN_COUNT; ++id) {
         ui_router_goto((ui_screen_id_t)id);
-        if (id == SCREEN_UPDATE) {
-            /* The firmware write draws the whole panel and offers no STOP:
-             * asserted, not skipped. */
+        if (id == SCREEN_UPDATE || id == SCREEN_COPROC_UPDATE) {
+            /* The firmware write and the IOmcu's update draw the whole
+             * panel and offer no STOP: asserted, not skipped. */
             CHECK(!ui_router_stop_live());
             continue;
         }
@@ -158,9 +158,11 @@ TEST_CASE(stop_works_from_every_screen_that_has_a_band)
          * and a STOP there would offer to stop something that is not
          * running.
          */
-        if (id == SCREEN_BUSFAULT || id == SCREEN_UPDATE) {
+        if (id == SCREEN_BUSFAULT || id == SCREEN_UPDATE
+            || id == SCREEN_COPROC_UPDATE) {
             /* The firmware write likewise: the bench is SAFE and the
-             * IOmcu in failsafe while the panel writes its flash. */
+             * IOmcu in failsafe while the panel writes its flash; and the
+             * IOmcu's update, which refuses ARM for the whole session. */
             ui_router_goto((ui_screen_id_t)id);
             CHECK(!ui_router_stop_live());
             (void)ui_router_take_stop();

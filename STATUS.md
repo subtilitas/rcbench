@@ -308,13 +308,19 @@ Built and host-tested (`shared/fwupdate/`, `shared/webaccess/`, `test_wifi_scree
 `test_wifi_kept`, `test_wifi_layout`); the panel side is
 `firmware/panel/components/wifi_access/` and `fw_ota/`. A panel install and the IOmcu's
 update exclude each other (`fw_gate()`, `fw_coproc_may_start()`, `test_fw_install`): the
-install waits while the IOmcu's update or BUY runs, and the IOmcu's question opens and its
+install waits while the IOmcu's update or BUY runs, and an IOmcu offer opens UPDATES and its
 START is taken only with the radio wholly off and no install under way. A new build's first
 start is kept once every task has run a pass and a frame is on the display, or 30s after the
 start with the screen loop running (`fw_trial.h`, `test_fw_trial`); a reset before that goes
 back to the build before it, which reports it from the restart note the install keeps in NVS
 (`fw_note_write()`, `fw_boot_settle()`, `test_fw_install`; the NVS calls in `fw_ota.c` are
-not host-tested).
+not host-tested). Beside it the run note keeps an update run across a restart: written after a
+complete install and after a C6 update, read once per start, 2 openings at most, erased on a
+version mismatch or a corrupt entry (`fw_run.h`, `test_fw_run`). While a run stands UPDATES
+opens by itself once per start under the conditions an IOmcu offer opens it under, once when
+both are due, the band names what holds it back with one line per frame, the start-up check waits, and the run ends on the home tag or with no step left, not
+while the C6's restart is due (`upd_run.h`, `test_upd_run`: both restarts over a store in
+memory, a power cut before step 2, a rollback; `panel_updrun.c` feeds it on the panel).
 
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
 `esp_hosted` (`components/c6_link`, [Wi-Fi through the
@@ -360,8 +366,10 @@ highest of its 10 newest releases and the rule that offers only a newer release
 (`test_fw_release_scan`), the check and the download with their budgets, aborts and a
 scripted HTTP client (`shared/webaccess/wa_fetch.c`, `test_wa_fetch`), RELEASES' two
 channels and GitHub's request limit (`test_wa_fetch_channel`), a job's task that outlives
-the radio in a name lookup (`test_wa_fetch_task`), and UPDATES, the reminder and the
-download's screen (`shared/ui/upd_screen.c`, `test_upd_screen`). The panel side is
+the radio in a name lookup (`test_wa_fetch_task`), UPDATES, the reminder and the
+download's screen (`shared/ui/upd_screen.c`, `shared/ui/upd_remind.c`, `test_upd_screen`),
+and SINGLE UPDATES, opened from OPTIONS: BACK, the home tag, leaving, one press at a time
+and the rows' rectangles (`shared/ui/upd_single.c`, `test_upd_single`). The panel side is
 `wifi_access_fetch_*()` over esp_http_client in `firmware/panel/components/wifi_access/`.
 Not run on a panel or against GitHub: the API request of RELEASES on TESTING, the TLS
 (transport layer security) handshakes, the durations of the check and the download, and the
@@ -404,8 +412,8 @@ RUN is not offered while that control shows; SUPPLY's OUTPUT OFF, in the footer'
 slot, lies under either dock, so SUPPLY offers no page while its output is on. OUTPUTS, SETUP,
 LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`, `help_logs.c`,
 `help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`, `test_help_files`).
-WI-FI has 3 pages with the radio off and 1 or 2 with it on, UPDATES 2 and its OPTIONS
-list's 2 (`help_wifi.c`, `help_upd.c`; `test_help_net`). MOTOR & ESC has 2 pages on LIVE
+WI-FI has 3 pages with the radio off and 1 or 2 with it on, UPDATES 2, its OPTIONS
+list's 2, SINGLE UPDATES 2 and the wireless devices' page 1 (`help_wifi.c`, `help_upd.c`; `test_help_net`). MOTOR & ESC has 2 pages on LIVE
 and 2 on PROGRAM's list with 9 items each, and the OPTIONS
 list's 2 (`shared/ui/motor_guide.c`; `test_help_motor`); none unless the bench is SAFE, as
 either dock covers part of DISARM. ESC STICK has 2 pages on its list and 2 on a profile, the
@@ -636,7 +644,14 @@ servo set to CW and found by the first write on every other; two writes in a row
 not move their side end the run as `writes do not move the 2000us side`
 (`test_servo_rauto`, `test_servo_rauto_guard`, `test_servo_rauto_effect` on the core with a
 linear servo model, `test_servo_rauto_kst` through the screen and the programmer on the modelled
-KST servo, `test_servo_rauto_panel`; host suite only).
+KST servo, `test_servo_rauto_panel`; host suite only). On the IMU a measure also waits until
+the readings over IMU settling time (default 3.0s) span IMU precision (default 0.10°) or
+less (`shared/servo/servo_settle.c`, `test_servo_settle`); the creep curves the BWT901CL
+showed after servo steps on 2026-11-17 and 2026-11-18, fed at 100Hz, are taken within 0.07°
+of their final value 6.5s to 10.4s after the surface arrives, where the 500ms still test
+alone took them 0.8° to 2.7° off (`test_servo_rauto_settle`). Every end is approached from
+PULSE CENTER, the verify pass's center from 2000us. A run that wrote verifies 1000us, 2000us and PULSE
+CENTER once more and fails on one outside the tolerance (`test_servo_rauto_verify`).
 Its READY card (`shared/ui/servo_rudder_auto_ready.c`, `shared/ui/servo_ready.c`) gives
 each check of the start gate one row, and the footer's HOLD 2s: ARM + START runs
 `shared/servo/servo_start_seq.c`: PORT PWM, PROG 5V or the PD mini, the read-back within
@@ -866,9 +881,10 @@ a question that takes the 2s hold. `test_link_update` runs both ends over the li
 against a simulated flash and boot ROM. Which slot runs, which one the update writes, the
 trial, where a write lands and when a BUY counts are `fw_slots.h` (`test_fw_slots`); the boot
 ROM's calls in `firmware/iomcu/src/update_hw.c` are not host-tested.
-`test_coproc_update_screen` runs the question and the progress, with CANCEL and the home tag as the only declines and a forced screen over the
-question declining nothing; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold
-starts the same update, also after a declined question.
+`test_coproc_update_screen` runs the progress and the offer's driver, with a forced screen over
+UPDATES declining nothing; `test_upd_coproc` the offer that opens UPDATES at step 2 once per
+offer, SKIP THIS STEP and the home tag as the only declines, and SINGLE UPDATES' IOmcu section,
+whose 2s hold starts the same update, also after a declined offer.
 
 The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu
 loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`.
@@ -1349,7 +1365,7 @@ link lost after END left unknown and settled by the device's version; its
 client on the Bluetooth LE hub (`test_devupd_client`) against a scripted
 host stack; the start's gate and the busy flag that refuses ARM, read busy
 at every point from the ask to the end; the node's sleep policy during an
-update (`test_node_policy`); UPDATES' WIRELESS DEVICES entry and its
+update (`test_node_policy`); SINGLE UPDATES' WIRELESS DEVICES entry and its
 page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE FIRMWARE
 rows: the entry opening the page, BACK and the home tag closing it, each
 row's hold at 1,999ms and 2,000ms, its reasons, its hints and its
@@ -1361,7 +1377,27 @@ device that answers the gap mark at one offset, an abort in every phase
 that waits through the install from END on, and the settle of an unknown
 install read from its own device and reported before a second device's
 start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
-END on (`test_upd_dev`); and each node client's hand-over and take-back: the
+END on (`test_upd_dev`); UPDATES' step model:
+every IOmcu section state, C6 row and reason, and device row with
+not bound, bound and not connected, and connected mapped to one step
+state, the current step as the lowest that blocks or the one whose update
+runs, a newer panel release making PANEL current again, ABSENT waiting
+only in a run, SKIP and a failed attempt (`shared/ui/upd_wizard.c`,
+`test_upd_wizard`, `test_upd_wizard_map`), fed `bound` apart from
+connected by `panel_devupd.c`; UPDATES' steps drawn: on a 16px grid over
+the body only the current step's control, SKIP, CHECK and OPTIONS take a
+press in each step, the rows none; each step's hold fires its own latch
+at 2.00s and not at 1.99s; a grey hold names its reason on the band for
+each step and gate; a hold slid off, lost, or whose step changes under it
+(link lost, ARMED, a newer release) ends unfired; SKIP and SHOW SKIPPED
+STEPS, SKIP on the IOmcu's step declining the standing offer; CANCEL
+UPDATE only during a device's transfer, grey from END; a device's phases
+on the hold's face; a failed attempt on the card with the hold live; a
+failed or stopped download blocking nothing; the last card naming the
+steps not connected, without firmware and skipped; STOP and ARMED during
+each step; a second finger; every state inside its canvas in both
+languages (`shared/ui/upd_wiz_view.c`, `shared/ui/upd_wiz_card.c`,
+`test_upd_wiz_view`); and each node client's hand-over and take-back: the
 update's hold ends the link with no STALE or LOST at any ms, keeps it
 ended through SETUP's values for 30s, takes no packet, and the take-back
 reconnects and reads the node's version from its first STATUS
@@ -1645,7 +1681,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 592 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1744,10 +1780,10 @@ The host suite is 592 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
-`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
+`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
 `test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
 `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
-`test_upd_screen`, `test_upd_settings`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
+`test_upd_screen`, `test_upd_settings`, `test_upd_single`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
@@ -1768,12 +1804,13 @@ The host suite is 592 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
-`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
+`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
-`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client` and `test_upd_dev`.
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_upd_dev`,
+`test_upd_wizard`, `test_upd_wizard_map` and `test_upd_wiz_view`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -2271,7 +2308,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1000 committed screenshots to the current render, 500 in English and the same 500 in German, and `render_ui.py --fit` fails on a string that
+1006 committed screenshots to the current render, 503 in English and the same 503 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2313,7 +2350,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/help_setup.c` | 95 | 91 | 95.8% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
-| `shared/ui/help_upd.c` | 49 | 48 | 98.0% |
+| `shared/ui/help_upd.c` | 78 | 75 | 96.2% |
 | `shared/ui/help_wifi.c` | 59 | 59 | 100.0% |
 | `shared/ui/ui_watermark.c` | 44 | 42 | 95.5% |
 | `shared/ui/ui_plot.c` | 200 | 191 | 95.5% |
@@ -2371,7 +2408,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_limit_seam.c` | 90 | 86 | 95.6% |
 | `shared/ui/servo_workbench.c` | 178 | 174 | 97.8% |
 | `shared/ui/servo_rudder_panel.c` | 479 | 474 | 99.0% |
-| `shared/ui/servo_rudder_auto_panel.c` | 585 | 539 | 92.1% |
+| `shared/ui/servo_rudder_auto_panel.c` | 613 | 558 | 91.0% |
 | `shared/ui/servo_rudder_auto_ready.c` | 287 | 282 | 98.3% |
 | `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
@@ -2454,11 +2491,16 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
-| `shared/ui/coproc_update_screen.c` | 331 | 331 | 100.0% |
-| `shared/ui/upd_screen.c` | 657 | 626 | 95.3% |
-| `shared/ui/upd_settings.c` | 43 | 39 | 90.7% |
-| `shared/ui/upd_c6.c` | 118 | 116 | 98.3% |
-| `shared/ui/upd_dev.c` | 290 | 259 | 89.3% |
+| `shared/ui/coproc_update_screen.c` | 335 | 335 | 100.0% |
+| `shared/ui/upd_screen.c` | 344 | 325 | 94.5% |
+| `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
+| `shared/ui/upd_single.c` | 166 | 164 | 98.8% |
+| `shared/ui/upd_settings.c` | 57 | 53 | 93.0% |
+| `shared/ui/upd_c6.c` | 119 | 117 | 98.3% |
+| `shared/ui/upd_dev.c` | 292 | 286 | 98.0% |
+| `shared/ui/upd_wizard.c` | 278 | 278 | 100.0% |
+| `shared/ui/upd_wiz_view.c` | 311 | 299 | 96.1% |
+| `shared/ui/upd_wiz_card.c` | 193 | 191 | 99.0% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 135 | 134 | 99.3% |
 | `shared/ui/imu_sensor.c` | 210 | 210 | 100.0% |
@@ -2528,8 +2570,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_limrun_report.c` | 316 | 313 | 99.0% |
 | `shared/servo/servo_gap.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_angle.c` | 33 | 33 | 100.0% |
-| `shared/servo/servo_rudder_auto.c` | 556 | 544 | 97.8% |
-| `shared/servo/servo_rudder_auto_report.c` | 250 | 250 | 100.0% |
+| `shared/servo/servo_rudder_auto.c` | 599 | 585 | 97.7% |
+| `shared/servo/servo_rudder_auto_report.c` | 293 | 292 | 99.7% |
+| `shared/servo/servo_rudder_auto_verify.c` | 31 | 30 | 96.8% |
+| `shared/servo/servo_settle.c` | 63 | 63 | 100.0% |
 | `shared/servo/servo_limrun_family.c` | 29 | 29 | 100.0% |
 | `shared/servo/servo_start_seq.c` | 205 | 198 | 96.6% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
@@ -2645,6 +2689,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
 | `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
 | `shared/outputs/out_bind.c` | 562 | 549 | 97.7% |
+| `shared/outputs/out_bind_take.c` | 100 | 99 | 99.0% |
 | `shared/outputs/board_fix.c` | 98 | 98 | 100.0% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 240 | 238 | 99.2% |
@@ -2691,7 +2736,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/vibe/vibe_frame.c` | 93 | 90 | 96.8% |
 | `shared/vibe/vibe_solve.c` | 183 | 168 | 91.8% |
 | `shared/dial/dial_scene.c` | 346 | 340 | 98.3% |
-| `shared/dial/dial_draw.c` | 509 | 481 | 94.5% |
+| `shared/dial/dial_draw.c` | 512 | 484 | 94.5% |
 | `shared/dial/dial_text.c` | 10 | 9 | 90.0% |
 | `shared/dial/dial_button.c` | 82 | 82 | 100.0% |
 | `shared/bench/report_lines.c` | 104 | 102 | 98.1% |
@@ -2717,6 +2762,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_release.c` | 430 | 430 | 100.0% |
 | `shared/fwupdate/fw_install.c` | 68 | 68 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
+| `shared/fwupdate/fw_run.c` | 85 | 85 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
 | `shared/fwupdate/fw_c6.c` | 158 | 158 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
@@ -2735,7 +2781,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **100437** | **98309** | **97.9%** |
+| **total** | **101473** | **99353** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

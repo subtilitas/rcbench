@@ -242,6 +242,10 @@ bool upd_dev_take(upd_dev_id_t id)
     return was;
 }
 
+void upd_dev_fire(upd_dev_id_t id) { s_rows[in_range(id)].req = true; }
+
+void upd_dev_fire_cancel(void) { s_cancel_req = true; }
+
 const char *upd_dev_reason(const upd_dev_view_t *v)
 {
     if (v == NULL) {

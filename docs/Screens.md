@@ -291,8 +291,10 @@ ARMED.
 | FILES, panes | 3 | LOGS, the left pane's folder, a row and scroll bar; RESCAN, COPY, MOVE, RENAME; the right pane, DELETE, NEW, INFO, OPEN |
 | WI-FI, radio off | 3 | ACCESS POINT, JOIN HOME NETWORK, CHOOSE HOME NETWORK, FORGET HOME NETWORK, ACCESS CODE ON or OFF; HOTSPOT PASSWORD and ACCESS CODE, RANDOM or KEPT; the card |
 | WI-FI, radio on | 1, 2 with the writes' button | the rows while the page is served, the lines under them, WI-FI OFF; the browser writes' button |
-| UPDATES | 2 | CHECK FOR UPDATES or CANCEL, the IOmcu section, its hold; the card, the C6 radio's hold, the download's hold once a check found a newer release, OPTIONS |
+| UPDATES | 2 | CHECK FOR UPDATES or CANCEL; the card, the download's hold once a check found a newer release, OPTIONS |
 | UPDATES, OPTIONS | 2 | as a settings list |
+| UPDATES, SINGLE UPDATES | 2 | the IOmcu section, its hold, the WIRELESS DEVICES entry; the heading, the C6 radio's hold, BACK |
+| UPDATES, the wireless devices' page | 1 | the three device rows, CANCEL UPDATE while an update runs, BACK |
 
 ![SETUP's guide at page 1](img/help-setup.png)
 
@@ -423,7 +425,7 @@ explain where to hold.
 | A hold while one waits | replaces it in the same memory: `New screenshot taken. It replaces the waiting one.` |
 | A hold while a stopped save ends | no picture: `Screenshot not taken: the last one is still being written.`, for at most one row of the PNG |
 | A kept value on the glass | no picture: `Screenshot not taken: this screen shows a kept password or code.` WI-FI refuses it while it shows a [HOTSPOT PASSWORD or ACCESS CODE](#hotspot-password-and-access-code) that is kept, on that value's view, on its keyboard and on the rows of a running radio with either one kept. A picture on the card can be read from the browser. A RANDOM password and code are taken, since they end with the session |
-| Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. The IOmcu update's question and the release reminder: they cannot say whether a box covers them, and the popup would open after they have gone. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
+| Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. The release reminder: it cannot say whether a box covers it, and the popup would open after it has gone. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
 
 The render task captures the current frame immediately, whatever the bench
 is doing. Capture neither reads nor changes an output; STOP, DISARM and
@@ -615,15 +617,15 @@ replaces a visible hint.
 | DONE of a stick run's step before a power-up | `Hold 2s to confirm the step before the supply switches on.` |
 | HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
-| HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
-| HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
-| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
-| HOLD 2s TO UPDATE THE DIAL on UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
-| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
-| HOLD 2s TO UPDATE THE POWER NODE on UPDATES | `Hold 2s to update the power node. Its readings stop until it connects again.` |
-| HOLD 2s TO REINSTALL THE POWER NODE on UPDATES | `Hold 2s to reinstall the power node firmware this panel carries.` |
-| HOLD 2s TO UPDATE THE BALANCE NODE on UPDATES | `Hold 2s to update the balance node. Its reports stop until it connects again.` |
-| HOLD 2s TO REINSTALL THE BALANCE NODE on UPDATES | `Hold 2s to reinstall the balance node firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE IOMCU on UPDATES' step 2 and on SINGLE UPDATES | `Hold 2s to update the IOmcu.` |
+| HOLD 2s TO UPDATE THE C6 RADIO on SINGLE UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO UPDATE THE DIAL on SINGLE UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
+| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE POWER NODE on SINGLE UPDATES | `Hold 2s to update the power node. Its readings stop until it connects again.` |
+| HOLD 2s TO REINSTALL THE POWER NODE on SINGLE UPDATES | `Hold 2s to reinstall the power node firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to update the balance node. Its reports stop until it connects again.` |
+| HOLD 2s TO REINSTALL THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to reinstall the balance node firmware this panel carries.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -644,8 +646,8 @@ whose sequence waits for ARMED and its read-backs before the run.
   or the run arriving inside the 300ms restarts nothing; a press gets one
   flash.
 - A button that goes as its hold fires, such as a warning's HOLD TO APPLY,
-  a programmer page's hold, HOLD 2s TO RUN of a stick run, OVERWRITE and
-  START on the IOmcu update's question, flashes where it was drawn. The
+  a programmer page's hold, HOLD 2s TO RUN of a stick run and OVERWRITE,
+  flashes where it was drawn. The
   screen beneath is drawn again when the flash ends.
 - A state that arrives with no press, such as ARMED from another screen,
   flashes the button once.
@@ -816,7 +818,7 @@ y 436.
 | SUPPLY | OUTPUT ON / OFF | the list of the supply's limits and the PD mini's wiring |
 | ESC STICK, on a profile's page, its run and its result | RUN n / ABORT / OK | the list of the supply and the 12 timing settings |
 | IMU | HOLD 2s: CALIBRATE | SETUP's WIRELESS list at the IMU entry |
-| UPDATES | HOLD 2s TO DOWNLOAD & INSTALL, with a newer release found | the list of the reminder and the releases |
+| UPDATES | HOLD 2s TO DOWNLOAD & INSTALL, with a newer release found | the list of the reminder, the releases and Single updates |
 | LOGS, on the file list | empty | SETUP's SD CARD list |
 | FILES, on the panes | empty | SETUP's SD CARD list |
 | RECEIVER, BATTERY, BALANCE | empty | nothing: the slot is empty |
@@ -835,11 +837,11 @@ OPTIONS opens the screen's settings list over the whole body. The SETUP
 tile on the menu holds the bench-wide settings; OPTIONS holds this screen's
 own. It opens only while the screen drives nothing. MOTOR & ESC needs a SAFE bench with
 ARM not held; SUPPLY needs the output off and no ON on its way; ESC STICK
-needs a SAFE bench and no run; UPDATES needs no check and no download
-running. Otherwise the button is grey and a tap puts
+needs a SAFE bench and no run; UPDATES needs no check, no download and no
+update running. Otherwise the button is grey and a tap puts
 `OPTIONS open on a SAFE bench only. Switch to SAFE first.`,
 `OPTIONS open with the output off only. Switch it off first.` or
-`OPTIONS open with no check or download running.` in the alert band. An output that goes live under an open list closes it.
+`OPTIONS open with no check, download or update running.` in the alert band. An output that goes live under an open list closes it.
 
 The list is SETUP's category list ([Keys and the list](#keys-and-the-list)):
 
@@ -5146,6 +5148,33 @@ invalid entry treated as absent; the slot is the bootloader's last invalid one o
 is `NORMAL`, `UPDATED`, `ROLLED_BACK`, `UNCONFIRMED` or `GOING_BACK`, the
 last said before a trial that goes back restarts.
 
+Beside it the panel keeps the run note: the fact that an update run goes
+on after a restart. One 18-byte entry, namespace `fw_ota`, key
+`run_note`: a layout byte (0xB1), the version the next start is expected
+to run in 16 bytes padded with zeros, and the openings left, 2 when
+written. The install writes it once the image is written whole and
+checked, before the restart note. The C6 radio's update writes it on
+success, with the running version. A power cut before the write leaves no
+run. A version text over 16 bytes is not written, and a note that stands
+is erased. What a run does after the restart is in
+[Updates: After a restart](#after-a-restart).
+
+Each start reads the note once, after its start check:
+
+| Entry | Effect |
+| --- | --- |
+| none | no run |
+| another size, layout byte or opening count (1 to 2), or a text that is empty or holds a byte outside 0x21 to 0x7E | no run; erased |
+| another version than the running one (a build that went back) | no run; erased |
+| the running version | the run stands; one opening spent: the count less 1 saved, the entry erased at 0 |
+| the running version, the spend refused by NVS | no run |
+
+The console says each write and each entry found:
+
+    I (…) fw_ota: run note: 0.24.1, 2 openings
+    I (…) fw_ota: run note: 0.24.1, an update run stands, openings left 1
+    W (…) fw_ota: run note: 0.24.1 expected, 0.24.0 runs; the update run ends
+
 Current limitations:
 
 - An install whose NVS write fails says so on the console
@@ -6508,46 +6537,60 @@ band's LINK), the screen offers RECONNECT:
 A panel built with the IOmcu's image carries it and offers it when the
 IOmcu runs another build. The check runs at every link-up and compares
 SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
-build raises the alert `IOmcu runs a different build. Update it on UPDATES.`, and the question opens on the menu while the bench is SAFE, the
-supply's output is off, the panel's Wi-Fi radio is wholly off and no install
-of a panel image is under way. A START request made while the radio is active or a panel installation is
-running is consumed without starting an update. The question opens again
+build is an offer: it opens [Updates](#updates) with step 2 (IOMCU)
+current, once per offer, on the menu, while the bench is SAFE, the
+supply's output is off, the panel's Wi-Fi radio is wholly off and no
+install of a panel image is under way. The band says
+`IOmcu runs a different build. Update it on UPDATES.` in the same frame.
+
+![UPDATES opened by an offer](img/updates-offer.png)
+
+Step 2's card names the version the IOmcu runs and the version this
+panel carries ([The steps](#the-steps)). `HOLD 2s TO UPDATE THE IOMCU`
+starts the update: the 2s hold, the ARM gesture and the same fade. An
+older image is offered too: the card then says
+`The firmware on this panel is older.` in the warning colour, and the hold
+is the same.
+
+While something holds the opening back, the band names it in place of
+`Update it on UPDATES.`. It is said once per offer on the first screen with
+a band, and again when the opening waits for something else:
+
+| The opening waits for | Alert |
+| --- | --- |
+| SAFE and the supply output off | `IOmcu runs a different build. UPDATES opens once SAFE with the supply off.` |
+| the panel's Wi-Fi off | `IOmcu runs a different build. UPDATES opens once the panel's Wi-Fi is off.` |
+| the panel's install to end | `IOmcu runs a different build. UPDATES opens after the panel firmware install.` |
+
+While an update run waits to open UPDATES after a restart
+([After a restart](#after-a-restart)), the band carries the run's line
+and the offer says nothing: one line per frame. The run's opening and
+the offer's are one opening: UPDATES opens once when both are due, and an
+offer that comes while UPDATES shows opens nothing later.
+
+Two acts decline the offer:
+
+- SKIP THIS STEP on step 2;
+- the home tag that leaves UPDATES. Over the OPTIONS list, SINGLE
+  UPDATES or the devices' page the home tag closes that first and
+  declines nothing.
+
+A decline counts for the offer UPDATES showed. The panel does not offer
+that IOmcu version again until it restarts. SINGLE UPDATES still starts
+the update after a decline ([The IOmcu](#the-iomcu)). A START request made
+while the radio is active or a panel installation is running is consumed
+without starting an update; the offer is made again, and step 2 takes it
 once both have ended.
 
-While something holds the question back, the alert names it in place of
-`Update it on UPDATES.`. It is said once per offer on the first screen with a
-band, and again when the question waits for something else:
+A screen the panel opens over UPDATES does not decline: the fault screen
+after 4000ms without the link, and PANEL UPDATE's download. The offer
+remains unanswered, and the check at the next link-up offers it again. A
+new offer opens UPDATES under the same conditions as the first, brings
+back a skipped step 2, and ends a hold under way on step 2: its versions
+may have changed. A hold the forced screen ended starts nothing. STOP
+declines nothing.
 
-| The question waits for | Alert |
-| --- | --- |
-| SAFE and the supply output off | `IOmcu runs a different build. Its update question opens once SAFE with the supply off.` |
-| the panel's Wi-Fi off | `IOmcu runs a different build. Its update question opens once the panel's Wi-Fi is off.` |
-| the panel's install to end | `IOmcu runs a different build. Its update question opens after the panel firmware install.` |
-
-![The IOmcu update question](img/coproc-update.png)
-
-The question is a box of 860 x 248px in the body, its lines in the
-12 x 24px face. CANCEL and START are 398 x 56px each, side by side,
-START on the right; their middles are at panel x 305 and 719, y 376.
-
-The question names the version the IOmcu runs and the version this
-panel carries. CANCEL is a tap: the question closes, and the panel does not
-ask again for that IOmcu version until it restarts. The home tag declines
-the same way. SETUP > UPDATES still starts the update after a decline
-([The IOmcu](#the-iomcu)). START takes the 2s hold, the ARM gesture and the
-same fade.
-
-If the panel opens another screen over the question, it does not count as
-a decline: the fault
-screen after 4000ms without the link, and PANEL UPDATE's download. The offer remains unanswered, and the check at the next link-up presents
-it again. The question then opens on the menu under the same conditions as
-the first time. A press on START that the forced screen ended starts nothing.
-
-An older image is offered too. The question then says `The firmware on this panel is older.` in the warning colour, and START takes the same hold.
-
-![An older image](img/coproc-update-older.png)
-
-Once the START hold completes, the update occupies the panel: the link to
+Once the hold completes, the update occupies the panel: the link to
 the IOmcu goes down, the outputs are off, the IOmcu refuses ARM
 until the update ends, and the progress fills the screen. It has no band and
 no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
@@ -6567,8 +6610,9 @@ count, and three notes in the 12 x 24px face, 28px apart.
 | `IOmcu is starting the new firmware.` | it restarts into the new slot, on trial |
 | `Keeping the new firmware.` | the panel reads the new image's identity and writes BUY |
 
-The screen returns to the menu when the update ends, or to UPDATES when
-UPDATES' hold started it. The alert band then says how it ended:
+The screen returns to UPDATES when the update ends. The alert band then
+says how it ended, and step 2's card keeps a failure's line until the
+next attempt or the next start:
 
 | Alert | Meaning |
 | --- | --- |
@@ -6588,9 +6632,6 @@ IOmcu does not run from. [Link](Link.md#firmware-update-over-the-link)
 has the transfer, the flash layout and the limits. The transfer time is not
 measured.
 
-The question opens from the menu rather than from LOGS: the offer comes with
-the link, and LOGS is about the SD card.
-
 ## Updates
 
 UPDATES checks GitHub for the newest panel firmware release and offers to
@@ -6599,49 +6640,63 @@ there. The startup reminder performs the same check once per panel start. 0.22 i
 release for the ESP32-S3 panel; the ESP32-P4 panel is offered every newer
 release ([The release line](#the-release-line)).
 
-![UPDATES](img/updates.png)
+![UPDATES: the last card](img/updates.png)
 
-CHECK FOR UPDATES is 460 x 56px at body y 16 on the left. The card on the
-right is 532px wide, from body y 16 to 336; its text runs in lines of 41
-characters of the 12 x 24px face, 28px apart. When a result runs down to
-the card's last three lines, those lines are left out. Under CHECK the
-IOmcu section's lines are in the 10 x 20px face, and its hold is a button
-of the same size, from body y 380. Between them the WIRELESS DEVICES
-entry: its heading at body y 236, its line at y 260 and its button,
-460 x 56px, at y 316 ([The wireless devices](#the-wireless-devices)).
-Under the card the C6 RADIO row: one
-line at body y 348 and its hold, 532 x 56px, beside the IOmcu's
-([The C6 radio](#the-c6-radio)). The footer
-([The footer and the settings list](#the-footer-and-the-settings-list))
-reads `[UPDATES] [HOLD 2s TO DOWNLOAD & INSTALL] [OPTIONS]`; the middle
-slot is empty until a check finds a newer release.
+UPDATES leads through six steps in a fixed order: PANEL, IOMCU, C6 RADIO,
+DIAL, POWER NODE and BALANCE NODE. The panel image carries every other
+image, so PANEL comes first. The C6 radio comes before the wireless
+devices: their transfers run on its Bluetooth LE (Low Energy) controller,
+and its update restarts the panel. Only the current step has a control
+([The steps](#the-steps)).
+
+CHECK FOR UPDATES is 460 x 56px at body y 16 on the left. Under it the six
+step rows, 460 x 48px from body y 88, 56px apart: a 48 x 48px number box,
+the step's name, the version its target runs and the step's tag,
+right-aligned, in the 10 x 20px face. The rows take no press. The card on
+the right, 532px wide from body y 16 to 436, shows the current step; its
+text runs in lines of 41 characters of the 12 x 24px face, 28px apart. The
+current step's control, 500 x 64px, stands at body y 292, SKIP THIS STEP,
+500 x 56px, at y 364, 16px over the card's foot. Text that does not fit
+over the controls gives way: first the lines on what an update does and
+the notes on the last card; the versions, the reasons and the results
+stay. The footer ([The footer and the settings list](#the-footer-and-the-settings-list))
+reads `[UPDATES] [CANCEL UPDATE] [OPTIONS]`; the middle slot is empty
+unless a device's transfer runs. The IOmcu's, the C6 radio's and the
+wireless devices' updates and reinstalls outside the order are on SINGLE
+UPDATES, a page that OPTIONS' row Single updates opens
+([Single updates](#single-updates)).
 
 | Control | Action |
 | --- | --- |
-| `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
-| `HOLD 2s TO DOWNLOAD & INSTALL` | In the footer's middle slot once a check found a newer release. Downloads, checks and installs it. |
-| `OPTIONS` | Opens the list of Reminder at start and Releases. Grey while a check or a download runs or a finger holds the download; a tap then puts `OPTIONS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
-| `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
-| `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
-| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
-| `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
+| `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. Drawn in the accent colour only while no step is current. |
+| The current step's control | A 2s hold that starts the step's update ([The steps](#the-steps)). Grey while a gate holds the step; a press of any length then puts the reason in the alert band. |
+| `SKIP THIS STEP` | A tap passes the current step until the panel restarts; the next blocking step becomes current. |
+| `SHOW SKIPPED STEPS` | On the last card while a step is skipped. A tap brings every skipped step back. |
+| `SAVE A NETWORK: OPEN WI-FI` | On the last card, in the control's place, while no home network is kept. Opens WI-FI. |
+| `CANCEL UPDATE` | In the footer's middle slot while a device's transfer runs. A tap ends the transfer before its last byte. From END on the device installs: the key is grey, and a tap puts `The device installs the update and cannot stop now. Its result follows.` in the alert band. |
+| `OPTIONS` | Opens the list of Reminder at start, Releases and Single updates. Grey while a check, a download or any step's update runs, or a finger holds the step's control; a tap then puts `OPTIONS open with no check, download or update running.` in the alert band. A check that starts under the open list closes it. |
+
+One finger at a time: while a finger is on a control, a second finger
+starts nothing. STOP in the band is taken at any time.
 
 ![UPDATES' OPTIONS list](img/updates-settings.png)
 
-| Setting | Values | Default | Effect |
+| Row | Values | Default | Effect |
 | --- | --- | --- | --- |
 | Reminder at start | OFF, ON | ON | the start-up check and its reminder |
 | Releases | STABLE, TESTING | STABLE | which releases a check reads ([The check](#the-check)); a change hides the last check's result, and a release found on the other setting is not offered |
+| Single updates | - | - | a tap closes the list and opens SINGLE UPDATES ([Single updates](#single-updates)); with a value unsaved, the leave warning first, and its SAVE or DISCARD opens the page |
 
 A change applies at once; SAVE in the list's strip keeps it, as on SETUP
 ([Keeping the values](#keeping-the-values)).
 
-The card names the running version and the kept home network. Both the
-check and the download need:
+PANEL's card and the last card name the running version and the kept
+home network. Both the check and the download need:
 
 - a home network kept on WI-FI ([Home network](#home-network)).
-  Without one, the card says `No home network saved.` over the button
-  `SAVE A NETWORK: OPEN WI-FI`, and CHECK FOR UPDATES is grey. The button
+  Without one, the card says `No home network saved.`, the last card holds
+  the button `SAVE A NETWORK: OPEN WI-FI` in the control's place, and
+  CHECK FOR UPDATES is grey. The button
   opens WI-FI, whose home tag comes back here; the radio goes off on the way,
   as by any way off WI-FI. A check that ended for want of a network says
   `Save a network on WI-FI.` on PANEL UPDATE;
@@ -6652,6 +6707,165 @@ check and the download need:
 
 Downloading, like installing, also requires that no board drawing is being
 fetched or saved.
+
+### The steps
+
+The current step is the step whose update runs; with none running, the
+lowest-numbered step that blocks. The step list and the card are decided
+every frame from what the panel knows: no step position is kept, so a
+restart, a lost link or a failed step shows the right step without a
+recovery path. A newer panel release found while a later step is current
+makes PANEL current again: its image replaces the images the later steps
+send.
+
+| Step | Current while | Control |
+| --- | --- | --- |
+| 1 PANEL | a check found a newer release | `HOLD 2s TO DOWNLOAD & INSTALL` ([The download](#the-download)); the card names the release and says that the panel restarts into it |
+| 2 IOMCU | the IOmcu runs another build than the carried one | `HOLD 2s TO UPDATE THE IOMCU` ([The IOmcu](#the-iomcu)); `The firmware on this panel is older.` in the warning colour for an older image |
+| 3 C6 RADIO | the C6 reports another version than the carried image's | `HOLD 2s TO UPDATE THE C6 RADIO` ([The C6 radio](#the-c6-radio)); the card says `The panel restarts after this step.` |
+| 4 DIAL | the connected Dial runs another version | `HOLD 2s TO UPDATE THE DIAL` ([The Dial](#the-dial)) |
+| 5 POWER NODE | the connected power node runs another version | `HOLD 2s TO UPDATE THE POWER NODE` ([The sensor nodes](#the-sensor-nodes)) |
+| 6 BALANCE NODE | the connected balance node runs another version | `HOLD 2s TO UPDATE THE BALANCE NODE` |
+
+A check that found nothing newer, or failed, never blocks; nor does a
+download that failed or was stopped. PANEL then reads `CURRENT`,
+`NOT CHECKED` or `FAILED`, the card shows the result, and CHECK FOR
+UPDATES is the way back. A step whose update ran and failed since the
+panel's start stays current: its row reads `FAILED`, the card shows the
+alert's line in the warning colour, and the hold is the retry.
+
+![Step 2: the IOmcu](img/updates-step-iomcu.png)
+
+| Tag | Meaning |
+| --- | --- |
+| `NEXT` | the current step: its control is live, or grey with the reason on the card |
+| `CURRENT` | runs the carried or newest version; its number box is filled in the OK colour |
+| `LATER` | a step after the current one with another version; while PANEL is current with a newer release, also IOMCU and every connected device: the release carries newer images for them |
+| `UPDATING`, `CHECKING` | its update runs; or a short wait: the IOmcu's build check, the carried image's check, Bluetooth LE's start, another update's end. The card says which; no control |
+| `FAILED` | its last attempt since the panel's start ended without an install |
+| `SKIPPED` | SKIP THIS STEP was tapped since the panel's start |
+| `NOT CHECKED` | PANEL: no check result at this start |
+| `NO LINK`, `NOT CONNECTED` | no IOmcu answers; a bound device is not connected |
+| `NOT BOUND` | no device of the kind is bound on WIRELESS |
+| `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to act on: the panel carries no image, the carried image fails its check, the IOmcu's build check gave no answer, the IOmcu takes no update over CAN, the C6 failed its link, the C6 named no version |
+
+A step with nothing to act on is passed. While an update run stands after
+a restart, the IOmcu without a link and a bound device that is not
+connected wait instead: the card says `Waiting for the IOmcu to answer.`
+or `Switch the Dial on and keep it within range.`, with SKIP THIS STEP,
+and the step goes on by itself once the target links. Outside a run they
+are passed and named on the last card.
+
+![A step held while ARMED](img/updates-held.png)
+
+A step whose gate the operator can clear is held: ARMED, an arm waiting,
+the supply output on, an open log run, Wi-Fi on, a board drawing being
+fetched, a panel install. The control is grey, the card names the
+reason, and a press on the control names it in the alert band. A hold
+under way ends without firing when its step changes under the finger:
+the gate closes, the link drops, a newer release comes in. It does not
+come back with the state.
+
+![The C6 radio's step](img/updates-step-c6.png)
+![The Dial's step](img/updates-step-dial.png)
+
+While a device's transfer runs, the control shows its phase as SINGLE
+UPDATES' row does: `DIAL UPDATE: CONNECTING`,
+`PRESS THE DIAL TO ACCEPT: 27s`, `DIAL UPDATE 43%`. The card says how the
+device accepts: `Press the Dial's screen button to accept. A 1s hold on it refuses.`
+or `Hold the node's BOOT key 1s to accept.` CANCEL UPDATE stands in the
+footer.
+
+![The Dial asks for its press](img/updates-step-dial-ask.png)
+![The Dial's step waiting in a run after a restart](img/updates-step-waiting.png)
+
+SKIP THIS STEP sets the step's bit in a mask in RAM (random-access
+memory), cleared at the panel's start and by SHOW SKIPPED STEPS. On the
+IOmcu's step it also declines the IOmcu's offer UPDATES showed: neither
+the opening nor its band line comes again for that offer
+([IOmcu update](#iomcu-update)). A new offer brings the step back. An
+update that runs is never skipped.
+
+With no step current the card reads `All firmware is current.`, the
+running version, the home network, the last check's result, and the steps
+that were passed: `Not connected: POWER NODE.`,
+`No update here: C6 RADIO. The list names the reason.` and
+`Skipped: DIAL.`, then the notes on the reminder and RELEASES. SHOW
+SKIPPED STEPS stands under them while a step is skipped. CHECK FOR
+UPDATES is drawn in the accent colour.
+
+![The last card with the Dial skipped](img/updates-done.png)
+
+### After a restart
+
+An update run has two restarts inside it: after the panel's install and
+after the C6 radio's update. The run note in NVS (non-volatile storage)
+keeps the fact that a run stands ([Installing: PANEL UPDATE](#installing-panel-update));
+the steps are decided again from what the panel knows after the restart.
+
+While a run stands, UPDATES opens by itself once per start, on the menu,
+past the splash, with the bench SAFE, no arm waiting, the supply output
+off, the panel's radio wholly off and no panel install under way: the
+conditions under which an IOmcu offer opens it. UPDATES opens once when
+both are due: the run's opening comes first in the frame, the offer counts
+as shown there, and UPDATES already shown in this start, by hand or for an
+offer, spends the run's opening. A start that runs a run spends one of the note's 2
+openings, so a run opens UPDATES at 2 starts at most, a power cut between
+them included.
+
+![Step 2 after the panel's restart](img/updates-run-iomcu.png)
+
+While a condition holds the opening back, the alert band names it once,
+and again when the reason changes:
+
+| Band | Condition |
+| --- | --- |
+| `Update run: UPDATES opens once SAFE with the supply off.` | ARMED, an arm waiting, or the supply output on or switching on |
+| `Update run: UPDATES opens once the panel's Wi-Fi is off.` | a check, a download or the WI-FI screen has the radio on |
+| `Update run: UPDATES opens after the panel firmware install.` | a panel download or install runs |
+
+On another screen it waits without a line. The start-up check
+([The check](#the-check)) does not run during a run, nor before the
+start has read the run note: it switches the radio on and holds the
+IOmcu's step.
+
+During a run the IOmcu without a link and a bound device that is not
+connected wait ([The steps](#the-steps)). The run ends, and the note is
+erased, when:
+
+- the home tag leaves UPDATES. The home tag over the OPTIONS
+  list, SINGLE UPDATES or the devices' page closes that first and ends
+  nothing;
+- no step blocks any more, once the wireless devices' rows were published
+  by the Bluetooth LE client: before that every device reads as not bound.
+
+The erase is a flash write, and a flash write stalls both cores, the
+control task with its heartbeat and STOP among them. A run that ends
+while the bench is ARMED, has an arm waiting or has a supply output on or
+switching on keeps its note until the bench is SAFE with the outputs off.
+
+Neither ends the run while a C6 update runs or its restart is due: the
+note that update wrote for the start after it stands. A screen the panel
+opens over UPDATES ends nothing: PANEL UPDATE, the IOmcu's progress, the
+bus-fault screen. A build that went back finds the note naming another
+version and erases it; its start opens nothing, and the band keeps the
+`failed to start` line. The console says each opening and each end:
+
+    I (…) rcbench: update run: UPDATES opened
+    I (…) rcbench: update run: ends, UPDATES left by the home tag
+    I (…) rcbench: update run: ends, no step left
+    I (…) fw_ota: run note: erased; the update run ends
+
+Current limitations:
+
+- A panel whose Bluetooth LE client is not set up publishes no device
+  row and ends no run by itself: the home tag ends it, or the second
+  start's opening is the last.
+- On a trial start the note is read once the build is kept, up to 30s
+  after the start. An IOmcu offer can open UPDATES before that; the run
+  then opens nothing in that start, also when the home tag has left
+  UPDATES before the note was read.
+- Time from the panel's start to a linked Dial or node: not measured.
 
 ### The check
 
@@ -6699,7 +6913,7 @@ the radio is off:
 
 | Card | Meaning |
 | --- | --- |
-| `Version 0.22.1 is available.` | The newest release is newer than the running build. The hold appears. |
+| `Version 0.22.1 is available.` | The newest release is newer than the running build. PANEL's step becomes current with the download's hold. |
 | `Up to date. Panel version: 0.22.0.` and `Latest release on GitHub: 0.22.0.` | The newest release is the running version or older. |
 | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` and `Latest release on GitHub: 0.23.0.` | A panel held to the 0.22 line only: the newest release is newer than the running build and past the release line. It is not offered, and the reminder at start does not open for it. |
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15s.`, `Connection to the home network lost.` | The join failed, as on WI-FI. |
@@ -6808,16 +7022,51 @@ Current limitation of the 0.22 line: the list holds the 10 newest releases
 by date (`per_page=10`). A 0.22.x patch release with 10 or more releases
 published after it is not found, on either setting.
 
+### Single updates
+
+SINGLE UPDATES starts one update or reinstall at a time: the IOmcu's, the
+C6 radio's or a wireless device's. It opens from OPTIONS' row Single
+updates and covers UPDATES' body. Every start is a 2s hold.
+
+![SINGLE UPDATES](img/updates-single.png)
+
+The card's place, 532px wide from body y 16 to 336, holds the heading
+`Single updates and reinstalls. The steps on UPDATES are the normal way.`
+and a line on what a reinstall does. The left column holds the IOmcu
+section: its lines in the 10 x 20px face from body y 88, and its hold,
+460 x 56px, at body y 380 ([The IOmcu](#the-iomcu)). Between them the
+WIRELESS DEVICES entry: its heading at body y 236, its line at y 260 and
+its button, 460 x 56px, at y 316
+([The wireless devices](#the-wireless-devices)). Under the heading the C6
+RADIO row: one line at body y 348 and its hold, 532 x 56px, beside the
+IOmcu's ([The C6 radio](#the-c6-radio)). The footer reads
+`[UPDATES] [ ] [BACK]`.
+
+| Control | Action |
+| --- | --- |
+| `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
+| `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
+| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
+| `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows over this page ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
+| `BACK` | Closes the page: UPDATES shows again. |
+
+One finger at a time: while a finger is on one of the holds, the entry or
+BACK, a second finger starts nothing. The home tag closes the devices'
+page first, then this page, then leaves UPDATES. Leaving UPDATES closes
+the page, and a hold under way ends without starting anything. A check
+or a download that starts while the page shows closes nothing; CHECK and
+the download's hold are not on the page.
+
 ### The IOmcu
 
-Under the buttons, UPDATES shows the IOmcu's update: the version the
-IOmcu runs (`Running: 0.21.2`), the version of the image this panel
+On SINGLE UPDATES, the left column shows the IOmcu's update: the version
+the IOmcu runs (`Running: 0.21.2`), the version of the image this panel
 carries (`Included: 0.22.0`), one line of state, and
-`HOLD 2s TO UPDATE THE IOMCU`. The hold starts the update that the
-link-up's question starts, with the same progress screen
-([IOmcu update](#iomcu-update)). It also starts it after that
-question was declined. When the update ends, or the START request is consumed without starting
-one, the screen returns to UPDATES.
+`HOLD 2s TO UPDATE THE IOMCU`. The hold starts the update that UPDATES'
+step 2 starts, with the same progress screen
+([IOmcu update](#iomcu-update)). It also starts it after the offer was
+declined. When the update ends, or the START request is consumed without
+starting one, the screen returns to UPDATES, with SINGLE UPDATES closed.
 
 ![The IOmcu section with another build](img/updates-coproc.png)
 
@@ -6842,16 +7091,16 @@ alert band, as the C6 radio's and the devices' grey holds do:
 | `Waiting: panel firmware installation is running.` | A panel install is under way. |
 | `Outputs stay off. ARMED is blocked until the update ends.` | The hold starts the update. For an older image the line reads `The firmware on this panel is older.` in the warning colour; for the same version number `Same version number, but a different build.` |
 
-The conditions are the question's: another build, the bench SAFE, the
-supply output off, the radio wholly off and no panel install. An IOmcu
-that runs the carried build gets no hold; the link-up's question does not
-open for it either. An IOmcu of another protocol major shows NO LINK in
-the band and still takes the update, as the question offers it to that
-IOmcu too.
+The conditions are those of step 2 and of an offer's opening: another
+build, the bench SAFE, the supply output off, the radio wholly off and no
+panel install. An IOmcu that runs the carried build gets no hold, and no
+offer opens UPDATES for it. An IOmcu of another protocol major shows NO
+LINK in the band and still takes the update; its offer opens UPDATES as
+any other.
 
 ### The C6 radio
 
-Under the card, UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
+Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
 Bluetooth: `C6 radio: 2.13.0. Included: 2.13.0.`, the version the C6
 reported at the first Wi-Fi start since the panel started, or
 `not reported`, and the version of the image this panel carries, or
@@ -6892,7 +7141,7 @@ The alert band says how an update ended:
 
 | Alert | Meaning |
 | --- | --- |
-| `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later. |
+| `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later, and the update run goes on after it ([After a restart](#after-a-restart)). |
 | `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([The ESP32-C6 radio: Recovery over header H4](C6.md#recovery-over-header-h4)). |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | The link to the C6 failed. |
 | `C6 update stopped: <reason>. Previous firmware is running.` | A write, the C6's image check or the activate call failed (`a write failed`, `the C6's image check failed`, `activation failed`), or a step went unanswered past its limit (`no response`). |
@@ -6903,7 +7152,7 @@ the GitHub check and the IOmcu's update wait.
 
 ### The wireless devices
 
-The WIRELESS DEVICES entry on UPDATES counts the devices:
+The WIRELESS DEVICES entry on SINGLE UPDATES counts the devices:
 `Connected: 1 of 3. Another version: 0.` names the devices that reported
 a version and those whose row offers another version than the carried
 one. A tap on `WIRELESS DEVICE FIRMWARE` opens the page; while an update
@@ -6911,12 +7160,12 @@ runs the button reads that row's label.
 
 ![The WIRELESS DEVICES entry while the Dial asks for its press](img/updates-dial.png)
 
-The page covers UPDATES' body. It holds one row per device, at body
+The page covers SINGLE UPDATES. It holds one row per device, at body
 y 24, 128 and 232: DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
 FIRMWARE. Each row's heading and line take 496px from x 16, its hold
 480 x 56px from x 528. A note under the rows says how a device accepts an
-update. `BACK` in the footer's right slot and the home tag close the page;
-leaving UPDATES closes it as well. One update runs at a time: while one
+update. `BACK` in the footer's right slot and the home tag close the page
+and show SINGLE UPDATES again; leaving UPDATES closes both. One update runs at a time: while one
 runs, the other rows' holds are grey.
 
 ![The wireless devices' page](img/updates-devices.png)
@@ -6930,7 +7179,7 @@ runs, the other rows' holds are grey.
 | `HOLD 2s TO UPDATE THE BALANCE NODE` | Sends the balance node's image this panel carries to the bound balance node. |
 | `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the carried version. |
 | `CANCEL UPDATE` | In the footer's middle slot while an update runs; a plain tap. Before END it ends the update: the device drops what it took and keeps its firmware, and the band reads `<device> update stopped: canceled on UPDATES. Previous firmware is running.` From END on the device installs whatever comes: the key is grey, a tap puts `The device installs the update and cannot stop now. Its result follows.` in the band, and the result follows as without the tap. |
-| `BACK` | Closes the page. |
+| `BACK` | Closes the page: SINGLE UPDATES shows again. |
 
 ### The Dial
 
@@ -7071,9 +7320,9 @@ that startup.
 
 When the check finds a newer release, the reminder opens on the menu
 (OVERVIEW). It does not open while the bench is ARMED or an arm waits,
-while the supply output is on, or while the IOmcu's update question or
-its progress is up: those come first, and the reminder opens once they have
-gone and the menu shows.
+while the supply output is on, or while the IOmcu's update is offered or
+runs: those come first, and the reminder opens once they have gone and the
+menu shows.
 
 | Control | Action |
 | --- | --- |

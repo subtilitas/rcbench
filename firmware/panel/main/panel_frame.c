@@ -739,23 +739,30 @@ void panel_frame_loop(void)
         }
 
         /*
-         * The IOmcu's update.  The question opens on the menu, on a
+         * The IOmcu's update.  An offer opens UPDATES on the menu, on a
          * bench that is SAFE with the supply off, the panel's radio wholly
-         * off and no install of the panel under way, once per offer; START
-         * and CANCEL go to the control task.  SETUP > UPDATES' hold starts
-         * the same update, offered or declined, under the same conditions.  While the update runs the screen
-         * shows its progress, and the menu comes back when it has ended --
-         * the alert says how.
+         * off and no install of the panel under way, once per offer; its
+         * step 2 holds the update's 2s hold, and SKIP THIS STEP or the home
+         * tag declines.  SINGLE UPDATES' hold starts the same update,
+         * offered or declined, under the same conditions.  While the update
+         * runs the screen shows its progress, and UPDATES comes back when
+         * it has ended -- the alert says how.
          */
-        /* The release reminder first: it yields to the IOmcu's
-         * question, which comes first. */
+        /* The release reminder first: it yields to the IOmcu's offer,
+         * which comes first. */
         upd_remind_service(armed || arm_wanted_now,
                            armed || arm_wanted_now || supply_now
                                || supplies_live_or_coming(),
                            &cu);
+        /* An update run after a restart opens UPDATES before an IOmcu
+         * offer can, and while it waits the band line is its own: UPDATES
+         * opens once when both are due. */
+        const bool run_waits =
+            updrun_service(armed || arm_wanted_now || supply_now
+                           || supplies_live_or_coming());
         cu_render_service(armed || arm_wanted_now || supply_now
                               || supplies_live_or_coming(),
-                          link_up, &cu);
+                          link_up, &cu, run_waits);
 
         /* The interface pins of a board that solders them (the rbmod
          * carrier) follow the board the IOmcu reports, and each one that
@@ -779,8 +786,8 @@ void panel_frame_loop(void)
          * OFF stay on screen for as long as it is live.  Nor over WI-FI,
          * whose Wi-Fi does not need the link, nor over PANEL
          * UPDATE, which withholds the heartbeat on purpose while it writes.
-         * The IOmcu's question under it stays unanswered: the next link-up's
-         * check offers again.
+         * An IOmcu offer on UPDATES under it stays unanswered: the next
+         * link-up's check offers again.
          *
          * The timestamp is read once and tested twice.  The control task
          * clears it on the other core the moment the link answers, and a
@@ -835,7 +842,9 @@ void panel_frame_loop(void)
                         || supplies_live_or_coming(),
                     stops_now, &cu);
         c6_service(arm_wanted_now || armed_now);
+        const bool dev_known = panel_devupd_known();
         devupd_service(arm_wanted_now || armed_now);
+        updrun_fed(dev_known);
 
         /*
          * The arm this frame began with, acknowledged -- only by a frame that

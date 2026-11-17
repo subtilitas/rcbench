@@ -20,7 +20,7 @@ Die Erinnerung meldet ein neueres Release der Panel-Firmware auf GitHub. Sie öf
 
 Bei eingeschalteter Erinnerung und gespeichertem Heimnetz sucht das Panel einmal nach jedem Start. Es wartet, bis der Splash geschlossen, der Prüfstand SAFE und der Netzteilausgang aus ist. Außerdem darf kein Aufzeichnungslauf offen sein. WI-FI muss geschlossen sein, und es darf kein IOmcu-Update angeboten werden oder laufen. Sind diese Bedingungen innerhalb von 10min nach dem Start nicht erfüllt, entfällt die Suche für diesen Start.
 
-Die Erinnerung wartet, solange der Prüfstand ARMED ist oder eine ARM-Anfrage aussteht, der Netzteilausgang eingeschaltet ist oder eine Rückfrage beziehungsweise Fortschrittsanzeige zum IOmcu-Update geöffnet ist. Sobald diese Bedingungen entfallen und das Menü sichtbar ist, öffnet sich die Erinnerung.
+Die Erinnerung wartet, solange der Prüfstand ARMED ist oder eine ARM-Anfrage aussteht, der Netzteilausgang eingeschaltet ist oder ein IOmcu-Update angeboten wird oder läuft. Sobald diese Bedingungen entfallen und das Menü sichtbar ist, öffnet sich die Erinnerung.
 
 Scheitert die Suche oder findet sie kein neueres Release, erscheint keine Erinnerung. Das Ergebnis steht unter [Updates](updates.md).
 

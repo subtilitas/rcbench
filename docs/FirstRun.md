@@ -183,14 +183,15 @@ is 4.37, and an IOmcu of 0.19.0 or later speaks 4.22 or later: the major,
    the IOmcu's running image with the image it carries by SHA-256, finds
    another build, and the band says `IOmcu runs a different build. Update
    it on UPDATES.`.
-2. The question opens on the menu while the bench is SAFE, the supply's
-   output is off and the panel's Wi-Fi radio is off. While one of them
-   holds it back, the band's line names it, such as `IOmcu runs a different
-   build. Its update question opens once the panel's Wi-Fi is off.`. It names the version
-   on the IOmcu and the version in the panel. Hold START for 2s, or after
-   CANCEL `HOLD 2s TO UPDATE THE IOMCU` on SETUP > UPDATES. The progress fills
-   the screen ([Screens: IOmcu update](Screens.md#iomcu-update)), and back
-   on the menu the band says `IOmcu updated to X.Y.Z.`.
+2. UPDATES opens on the menu at step 2 (IOMCU) while the bench is SAFE,
+   the supply's output is off and the panel's Wi-Fi radio is off. While
+   one of them holds it back, the band's line names it, such as `IOmcu
+   runs a different build. UPDATES opens once the panel's Wi-Fi is off.`.
+   The step's card names the version on the IOmcu and the version in the
+   panel. Hold `HOLD 2s TO UPDATE THE IOMCU` for 2s; after SKIP THIS STEP
+   the same hold stands on SETUP > UPDATES > OPTIONS > Single updates. The
+   progress fills the screen ([Screens: IOmcu update](Screens.md#iomcu-update)),
+   and back on UPDATES the band says `IOmcu updated to X.Y.Z.`.
 
 The update writes the slot the IOmcu does not run from. Its bindings, the
 supply's wiring and the current monitors' set-up stay: they are in the

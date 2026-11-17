@@ -1,7 +1,8 @@
 /**
  * @file test_upd_layout.c
- * @brief UPDATES, the start-up reminder, the IOmcu's update question and
- *        progress, PANEL UPDATE, the bus-fault screen and the splash at the
+ * @brief UPDATES, SINGLE UPDATES, the start-up reminder, the IOmcu's
+ *        update progress, PANEL UPDATE, the bus-fault screen and the
+ *        splash at the
  *        1024 x 600 sizes: every control a finger tall and acting where it
  *        is drawn, nothing under the alert band where the band shows, the
  *        longest German texts and the fullest lists inside their places.
@@ -10,7 +11,6 @@
  * - updates_buttons_act_where_they_are_drawn
  * - the_iomcu_hold_acts_at_its_foot_above_the_alert_band
  * - the_reminder_buttons_act_at_their_edges
- * - the_question_buttons_act_at_their_edges_and_old_taps_miss
  * - no_ink_under_the_alert_band
  * - the_acknowledgement_spans_the_foot_and_acts_at_its_corners
  * - the_fullest_bus_fault_lists_end_above_the_notes_and_the_rule
@@ -197,15 +197,17 @@ TEST_CASE(updates_buttons_act_where_they_are_drawn)
 }
 
 /*
- * HOLD 2s: UPDATE IOMCU is 460 x 56px with its foot at body y 436: a
- * hold on its bottom row completes, a hold one row under it starts
- * nothing, and the row lies 8px over the floor above the alert band.
+ * SINGLE UPDATES' HOLD 2s TO UPDATE THE IOMCU is 460 x 56px with its foot
+ * at body y 436: a hold on its bottom row completes, a hold one row under
+ * it starts nothing, and the row lies 8px over the floor above the alert
+ * band.
  */
 TEST_CASE(the_iomcu_hold_acts_at_its_foot_above_the_alert_band)
 {
     fresh(UI_LANG_EN);
     upd_pose(UPD_GOT_CURRENT, false, UPD_WHY_NONE);
     const ui_screen_t *u = upd_screen();
+    upd_open_single(u);
     CHECK(UP_CU_T + UP_BTN_H <= UP_FLOOR);
     CHECK(UP_CARD_B <= UP_FLOOR);
     hold(u, UP_BTN_X, UP_CU_T + UP_BTN_H);
@@ -239,44 +241,11 @@ TEST_CASE(the_reminder_buttons_act_at_their_edges)
     CHECK(UP_R_BOX_B <= UP_FLOOR);
 }
 
-/* ------------------------------------------------------- the question */
-
 /*
- * CANCEL and START are 398 x 56px at body y 288: CANCEL acts at its
- * corners, START's hold completes on its bottom-right pixel.  A tap where
- * they were at 800 x 480 (body 264, 282 and 536, 282) lands on nothing.
- */
-TEST_CASE(the_question_buttons_act_at_their_edges_and_old_taps_miss)
-{
-    fresh(UI_LANG_EN);
-    const cu_version_t a = { 0, 21, 2 }, b = { 0, 22, 0 };
-    const ui_screen_t *q = coproc_update_screen();
-    coproc_update_screen_offer(a, b);
-    CHECK(CU_Q_BTN_H >= UI_TAP_MIN);
-    tap(q, 264, 282);
-    hold(q, 536, 282);
-    CHECK(!coproc_update_screen_take_cancel());
-    CHECK(!coproc_update_screen_take_start());
-
-    tap(q, CU_Q_CANCEL_X - CU_Q_BTN_W / 2, CU_Q_BTN_T);
-    CHECK(coproc_update_screen_take_cancel());
-    tap(q, CU_Q_CANCEL_X + CU_Q_BTN_W / 2 - 1, CU_Q_BTN_T + CU_Q_BTN_H - 1);
-    CHECK(coproc_update_screen_take_cancel());
-    tap(q, CU_Q_CANCEL_X, CU_Q_BTN_T + CU_Q_BTN_H);
-    CHECK(!coproc_update_screen_take_cancel());
-
-    hold(q, CU_Q_START_X + CU_Q_BTN_W / 2 - 1, CU_Q_BTN_T + CU_Q_BTN_H - 1);
-    CHECK(coproc_update_screen_take_start());
-    CHECK_EQ(coproc_update_screen_view(), CU_VIEW_PROGRESS);
-    CHECK(CU_Q_BTN_T + CU_Q_BTN_H <= UP_FLOOR);
-}
-
-/*
- * In English and German nothing of UPDATES, the reminder or the question
- * is drawn on the rows from 4px over the alert band to the body's foot:
- * UPDATES at its fullest (the release line capped, the hold of the IOmcu)
- * and shut by the gate, the reminder with the hold shut, the question for
- * an older image.
+ * In English and German nothing of UPDATES or the reminder is drawn on the
+ * rows from 4px over the alert band to the body's foot: UPDATES at its
+ * fullest (the release line capped, the hold of the IOmcu) and shut by the
+ * gate, the reminder with the hold shut.
  */
 TEST_CASE(no_ink_under_the_alert_band)
 {
@@ -290,14 +259,17 @@ TEST_CASE(no_ink_under_the_alert_band)
         upd_pose(UPD_GOT_BLOCKED, false, UPD_WHY_ARMED);
         upd_screen()->render(&s_body, 0);
         CHECK_EQ(ink(0, UP_FLOOR, UI_PANEL_W, UI_BODY_H), 0);
+
+        /* SINGLE UPDATES over it. */
+        upd_pose(UPD_GOT_CURRENT, false, UPD_WHY_NONE);
+        upd_open_single(upd_screen());
+        CHECK(upd_screen()->covered());
+        upd_screen()->render(&s_body, 0);
+        CHECK_EQ(ink(0, UP_FLOOR, UI_PANEL_W, UI_BODY_H), 0);
+        (void)upd_screen()->back();
         upd_pose(UPD_GOT_NEWER, false, UPD_WHY_DRAWING);
         upd_remind_screen()->enter();
         upd_remind_screen()->render(&s_body, 0);
-        CHECK_EQ(ink(0, UP_FLOOR, UI_PANEL_W, UI_BODY_H), 0);
-
-        const cu_version_t a = { 0, 22, 1 }, b = { 0, 22, 0 };
-        coproc_update_screen_offer(a, b);
-        coproc_update_screen()->render(&s_body, 0);
         CHECK_EQ(ink(0, UP_FLOOR, UI_PANEL_W, UI_BODY_H), 0);
     }
     ui_text_set_language(UI_LANG_EN);
@@ -382,7 +354,7 @@ TEST_CASE(the_progress_bar_is_36_px_and_the_notes_wrap_in_german)
 {
     fresh(UI_LANG_DE);
     const cu_version_t a = { 0, 21, 2 }, b = { 0, 22, 0 };
-    coproc_update_screen_offer(a, b);
+    coproc_update_screen_versions(a, b);
     coproc_update_screen_progress(CU_STEP_SEND, 2994u, 2994u);
     coproc_update_screen()->render(&s_panel, 0);
     const gfx_color_t acc = ui_theme_color(UI_C_ACCENT);
@@ -442,7 +414,6 @@ int main(void)
     RUN(updates_buttons_act_where_they_are_drawn);
     RUN(the_iomcu_hold_acts_at_its_foot_above_the_alert_band);
     RUN(the_reminder_buttons_act_at_their_edges);
-    RUN(the_question_buttons_act_at_their_edges_and_old_taps_miss);
     RUN(no_ink_under_the_alert_band);
     RUN(the_acknowledgement_spans_the_foot_and_acts_at_its_corners);
     RUN(the_fullest_bus_fault_lists_end_above_the_notes_and_the_rule);

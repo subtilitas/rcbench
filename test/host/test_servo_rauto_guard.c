@@ -158,10 +158,27 @@ TEST_CASE(window_means_above_1000ma_end_the_run_at_400ms)
 
 TEST_CASE(not_still_within_3s_ends_not_still)
 {
+    /* An approach that never settles ends the run as a measure does,
+     * 3000ms after its command, with no angle taken. */
     rig_init(0u);
     g.jitter = true;
     CHECK(start());
+    CHECK(run_to(SERVO_RAUTO_PH_APPROACH, RAUTO_MS));
+    const uint32_t from = g.run.move_ms;
+    CHECK_EQ(g.run.cmd_us, RCENTER);
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NOT_STILL);
+    CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_APPROACH);
+    CHECK_EQ(g.run.end_ms - from, SERVO_RAUTO_MOVE_MS);
+    CHECK_EQ(g.run.step_n, 0u);
+    CHECK(ended_safe());
+
+    /* The same in the measure: the surface never still after its
+     * approach. */
+    rig_init(0u);
+    CHECK(start());
     CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
+    g.jitter = true;
     const uint32_t at = g.run.move_ms;
     CHECK(run_to(SERVO_RAUTO_PH_SETTLE, 1000u));
     CHECK_EQ(g.now - at, 500u);
@@ -211,10 +228,10 @@ TEST_CASE(not_still_within_3s_ends_not_still)
 TEST_CASE(not_still_waits_the_filter_settle_longer)
 {
     rig_init(0u);
-    g.jitter = true;
     g.settle_ms = 5000u;
     CHECK(start());
     CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
+    g.jitter = true;
     const uint32_t at = g.run.move_ms;
     g.settle_ms = 0u;
     while (g.now - at < SERVO_RAUTO_MOVE_MS + 5000u - 1u) {
@@ -571,6 +588,7 @@ TEST_CASE(the_words_name_every_reason_and_phase)
         SERVO_STR_RA_WHY_LIMIT, SERVO_STR_RA_WHY_WRITE_CAP,
         SERVO_STR_L_WHY_BENCH, SERVO_STR_L_WHY_SUPPLY,
         SERVO_STR_RA_WHY_NO_EFFECT_LO, SERVO_STR_RA_WHY_CAP,
+        SERVO_STR_RA_WHY_VERIFY_LO,
     };
     r.test_why = SERVO_TEST_AB_STOP;
     for (int k = 0; k < (int)SERVO_RAUTO_WHY_COUNT; ++k) {
@@ -583,13 +601,20 @@ TEST_CASE(the_words_name_every_reason_and_phase)
     CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_RA_WHY_NO_EFFECT_HI);
     CHECK_STR_EQ(servo_str(SERVO_STR_RA_WHY_NO_EFFECT_HI),
                  "writes do not move the 2000us side");
+    r.why = SERVO_RAUTO_WHY_VERIFY;
+    r.vbad = 1u;
+    CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_RA_WHY_VERIFY_HI);
+    r.vbad = 2u;
+    CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_RA_WHY_VERIFY_MID);
+    CHECK_STR_EQ(servo_str(SERVO_STR_RA_WHY_VERIFY_MID),
+                 "center outside the tolerance at verify");
     r.why = SERVO_RAUTO_WHY_COUNT;
     CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_AB_NONE);
     static const servo_str_t k_ph[] = {
         SERVO_STR_PHASE_NONE, SERVO_STR_RA_PH_READ, SERVO_STR_PHASE_MOVE,
         SERVO_STR_PHASE_SETTLE, SERVO_STR_L_PH_SAFE, SERVO_STR_L_PH_CONNECT,
         SERVO_STR_L_PH_WRITE, SERVO_STR_L_PH_LEAVE, SERVO_STR_L_PH_ARM,
-        SERVO_STR_L_PH_CHECK,
+        SERVO_STR_L_PH_CHECK, SERVO_STR_RA_PH_VERIFY,
     };
     for (int k = 0; k < (int)(sizeof(k_ph) / sizeof(k_ph[0])); ++k) {
         CHECK_EQ(servo_rauto_phase_str((servo_rauto_phase_t)k), k_ph[k]);

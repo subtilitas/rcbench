@@ -41,6 +41,7 @@
 #include "render_imu.h"
 #include "render_outputs.h"
 #include "render_rudder.h"
+#include "render_upd_wiz.h"
 #include "render_shot.h"
 #include "render_esc_wire.h"
 #include "render_hitec.h"
@@ -2558,8 +2559,20 @@ static void pose_wifi(const char *view)
     }
 }
 
+/* OPTIONS, then its row Single updates: SINGLE UPDATES opens over
+ * UPDATES, as an operator opens it. */
+static void open_single(void)
+{
+    const gfx_rect_t o = ui_footer_rect(UI_FOOTER_SETTINGS);
+    tap(o.x + o.w / 2, UI_BAND_H + o.y + o.h / 2);
+    const gfx_rect_t r = ui_setlist_row_rect(upd_screen_settings_list(), 2);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
 /* SETUP > UPDATES and the reminder: the application's view handed in, as
- * the panel hands it after a check with a home network kept. */
+ * the panel hands it after a check with a home network kept.  The views of
+ * the IOmcu section, the C6 RADIO row and the wireless devices show
+ * SINGLE UPDATES, opened from OPTIONS. */
 static void pose_upd(const char *view)
 {
     upd_view_t v;
@@ -2571,7 +2584,8 @@ static void pose_upd(const char *view)
     v.phase = UPD_PH_ENDED;
     v.budget_s = 30u;
     if (strcmp(view, "updates") == 0
-        || strcmp(view, "updates-settings") == 0) {
+        || strcmp(view, "updates-settings") == 0
+        || strcmp(view, "updates-single") == 0) {
         v.phase = UPD_PH_IDLE;
     } else if (strcmp(view, "updates-checking") == 0) {
         v.phase = UPD_PH_ASKING;
@@ -2628,6 +2642,26 @@ static void pose_upd(const char *view)
     }
     upd_screen_set(&v);
 
+    /* SINGLE UPDATES and the devices' page open first, as an operator
+     * opens them with no update running: OPTIONS is grey while one runs. */
+    const bool dial_view = strncmp(view, "updates-dial", 12) == 0;
+    const bool node_view = strncmp(view, "updates-node", 12) == 0;
+    const bool page = strncmp(view, "updates-devices", 15) == 0
+                      || node_view
+                      || (dial_view && strcmp(view, "updates-dial") != 0);
+    const bool single = page || dial_view
+                        || strcmp(view, "updates-single") == 0
+                        || strcmp(view, "updates-coproc") == 0
+                        || strncmp(view, "updates-cu-", 11) == 0
+                        || strncmp(view, "updates-c6", 10) == 0;
+    if (single) {
+        open_single();
+    }
+    if (page) {
+        tap(UPD_DEV_X + UPD_DEV_W / 2,
+            UI_BAND_H + UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);
+    }
+
     /* The IOmcu section: an IOmcu on the build this panel
      * carries, 0.22.0, as on the panel's card; updates-coproc an IOmcu
      * on 0.21.2 the hold may move to 0.22.0; updates-cu-* every other
@@ -2637,6 +2671,7 @@ static void pose_upd(const char *view)
         cu_sec_t    sec;
     } k_cu[] = {
         { "updates-coproc",      CU_SEC_READY },
+        { "updates-single",      CU_SEC_READY },
         { "updates-cu-older",    CU_SEC_READY },
         { "updates-cu-rebuilt",  CU_SEC_READY },
         { "updates-cu-noimage",  CU_SEC_NO_IMAGE },
@@ -2684,7 +2719,8 @@ static void pose_upd(const char *view)
         .have_image = true,
         .running = { 2u, 13u, 0u }, .carried = { 2u, 13u, 0u },
     };
-    if (strcmp(view, "updates-c6-reinstall") == 0) {
+    if (strcmp(view, "updates-c6-reinstall") == 0
+        || strcmp(view, "updates-single") == 0) {
         c6.row = FW_C6_ROW_REINSTALL;
         c6.why = FW_C6_WHY_NONE;
     } else if (strcmp(view, "updates-c6") == 0) {
@@ -2718,11 +2754,6 @@ static void pose_upd(const char *view)
         dv[i].carried = (fw_version_t){ 0u, 23u, 12u };
     }
     dv[UPD_DEV_DIAL].carried = (fw_version_t){ 0u, 22u, 0u };
-    const bool dial_view = strncmp(view, "updates-dial", 12) == 0;
-    const bool node_view = strncmp(view, "updates-node", 12) == 0;
-    const bool page = strncmp(view, "updates-devices", 15) == 0
-                      || node_view
-                      || (dial_view && strcmp(view, "updates-dial") != 0);
     if (dial_view) {
         dv[UPD_DEV_DIAL].known = true;
         dv[UPD_DEV_DIAL].running = (fw_version_t){ 0u, 21u, 0u };
@@ -2745,6 +2776,11 @@ static void pose_upd(const char *view)
     } else if (strcmp(view, "updates-dial-progress") == 0) {
         dv[UPD_DEV_DIAL].phase = DEVUPD_SEND;
         dv[UPD_DEV_DIAL].percent = 42u;
+    } else if (strcmp(view, "updates-single") == 0) {
+        /* The Dial on 0.21.0 offered 0.22.0; the nodes not connected. */
+        dv[UPD_DEV_DIAL].known = true;
+        dv[UPD_DEV_DIAL].running = (fw_version_t){ 0u, 21u, 0u };
+        dv[UPD_DEV_DIAL].row = DEVUPD_ROW_READY;
     } else if (strcmp(view, "updates-devices") == 0) {
         dv[UPD_DEV_DIAL].known = true;
         dv[UPD_DEV_DIAL].running = (fw_version_t){ 0u, 21u, 0u };
@@ -2787,15 +2823,13 @@ static void pose_upd(const char *view)
     for (int i = 0; i < UPD_DEV_COUNT; ++i) {
         upd_dev_set((upd_dev_id_t)i, &dv[i]);
     }
-    if (page) {
-        tap(UPD_DEV_X + UPD_DEV_W / 2,
-            UI_BAND_H + UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);
-    }
     if (strcmp(view, "updates-settings") == 0) {
         /* The footer's SETTINGS: the list of the reminder and RELEASES. */
         const gfx_rect_t r = ui_footer_rect(UI_FOOTER_SETTINGS);
         tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
     }
+    /* The steps' own views: each step current, the last card. */
+    render_upd_wiz_pose(view);
 }
 
 /* The firmware write, at a point inside it, at its end, or failed; and the
@@ -5142,21 +5176,14 @@ int main(int argc, char **argv)
     st.prog_moving = hitec_prog_move_on(hitec_panel_model());
     ui_router_set_status(&st);
     if (id == SCREEN_COPROC_UPDATE) {
-        /* The question as a link-up poses it: an IOmcu on 0.21.2 and
-         * a panel carrying 0.22.0, the version of the alert `IOmcu
-         * updated to 0.22.0` in Screens.md; the older one with the two
-         * swapped.  Fixed, as the examples above are.  The progress half
-         * way through the blocks of a 191,592-byte image. */
-        const cu_version_t old_v = { 0, 21, 2 };
-        const cu_version_t new_v = { 0, 22, 0 };
-        if (strcmp(view, "coproc-update-older") == 0) {
-            coproc_update_screen_offer(new_v, old_v);
-        } else {
-            coproc_update_screen_offer(old_v, new_v);
-        }
-        if (strcmp(view, "coproc-update-progress") == 0) {
-            coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
-        }
+        /* The progress as UPDATES' IOmcu step starts it: an IOmcu on
+         * 0.21.2 and a panel carrying 0.22.0, the version of the alert
+         * `IOmcu updated to 0.22.0` in Screens.md, half way through the
+         * blocks of a 191,592-byte image.  Fixed, as the examples above
+         * are. */
+        coproc_update_screen_versions((cu_version_t){ 0, 21, 2 },
+                                      (cu_version_t){ 0, 22, 0 });
+        coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
     }
     if (id == SCREEN_FILES) {
         render_files_prepare(view);

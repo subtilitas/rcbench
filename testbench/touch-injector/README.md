@@ -149,13 +149,13 @@ one reply line; a gesture gets a second when it ends.
 
 Coordinates are panel pixels: x 0 to 1023, y 0 to 599, the 60px status
 band at y 0 to 59 included. `ms` is 1 to 30000. They are not screen-body
-coordinates, which start 60px lower down (`UI_BAND_H`). The boot question
-that offers the IOmcu update has its START button at panel (719, 376) and
-its CANCEL button at panel (305, 376). Their body coordinates, panel y minus
-60px, are (719, 316) and (305, 316), the centers of the rectangles `Q_START`
-and `Q_CANCEL` in `shared/ui/coproc_update_screen.c` (398x56px each). A tap
-at y 316 lands at body y 256, inside the question box above the buttons, and
-misses both.
+coordinates, which start 60px lower down (`UI_BAND_H`). On UPDATES the
+current step's control, such as `HOLD 2s TO UPDATE THE IOMCU`, has its
+center at panel (750, 384) and SKIP THIS STEP at panel (750, 452). Their
+body coordinates, panel y minus 60px, are (750, 324) and (750, 392), the
+centers of the rectangles at `UPD_WIZ_ACT_Y` and `UPD_WIZ_SKIP_Y` in
+`shared/ui/upd_wiz_view.h` (500x64px and 500x56px). A tap at y 324 lands at
+body y 264, on the card's text above the control, and misses both.
 
 The panel takes injected points as pixels of its 1024 x 600 UI (user
 interface) area, unmirrored, and lands each on the pixel named; a point past
@@ -341,10 +341,9 @@ reaches is not measured; the verdict line reports it as `rate=`.
 7. `tap 890 462` presses the SETUP tile. The reply is
    `done tap frames=2 ms=<100 to 110>`.
 
-The IOmcu's update question, which opens on the menu when the IOmcu runs
-another build, has CANCEL at panel (305, 376) and START at (719, 376).
-`tap 305 376` declines it; `hold 719 376 2500` starts the update after the
-2s hold.
+An IOmcu that runs another build opens UPDATES on the menu at step 2
+(IOMCU). `hold 750 384 2500` starts the update after the 2s hold;
+`tap 750 452` (SKIP THIS STEP) declines it.
 
 ## LED
 

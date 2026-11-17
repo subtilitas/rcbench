@@ -138,7 +138,7 @@ MOTOR & ESC has a page for LIVE or PROGRAM's list with the dock on the right, th
 ![ESC STICK's guide at page 1 on a profile](view:help-motor-stick)
 ![IMU's guide at page 1](view:help-imu)
 
-OUTPUTS, SETUP, LOGS, FILES, WI-FI and UPDATES have a set of pages for each state: the tiles, a list and SENSORS on SETUP, the board view, a PROG PORT entry and the grid view on OUTPUTS, the file list, the import view and the plot on LOGS, the panes on FILES, the radio off and on on WI-FI, the screen and its OPTIONS list on UPDATES. Their dock takes the right half on page 1. A control the dock covers in part is marked where it shows. These screens drive no output, so all their pages show while ARMED.
+OUTPUTS, SETUP, LOGS, FILES, WI-FI and UPDATES have a set of pages for each state: the tiles, a list and SENSORS on SETUP, the board view, a PROG PORT entry and the grid view on OUTPUTS, the file list, the import view and the plot on LOGS, the panes on FILES, the radio off and on on WI-FI, the screen, its OPTIONS list, SINGLE UPDATES and the wireless devices' page on UPDATES. Their dock takes the right half on page 1. A control the dock covers in part is marked where it shows. These screens drive no output, so all their pages show while ARMED.
 
 ![SETUP's guide at page 1](view:help-setup)
 ![OUTPUTS' guide at page 1](view:help-outputs)

@@ -149,36 +149,57 @@ const fw_flash_t *fw_ota_flash(void) { return &k_flash; }
 /* ------------------------------------------------------- the first start */
 
 /*
- * The restart note lives in NVS (non-volatile storage), namespace
- * NOTE_NS, key NOTE_KEY: a blob of FW_NOTE_BYTES that a restart, a panic
- * and a power cut keep, at no address the build's layout decides.
- * settings_nvs_store() brings NVS up in bring_up() before the start check
- * runs; without it the note is not written and reads as none.
+ * The restart note and the run note live in NVS (non-volatile storage),
+ * namespace NOTE_NS, keys "restart_note" (FW_NOTE_BYTES) and "run_note"
+ * (FW_RUN_BYTES): blobs that a restart, a panic and a power cut keep, at
+ * no address the build's layout decides.  settings_nvs_store() brings NVS
+ * up in bring_up() before the start check runs; without it no note is
+ * written and each reads as none.
  */
 
-/** @brief The note's NVS namespace. */
+/** @brief The notes' NVS namespace. */
 #define NOTE_NS  "fw_ota"
-/** @brief The note's NVS key. */
-#define NOTE_KEY "restart_note"
+
+/** @brief One note's NVS key and the console words about it. */
+typedef struct {
+    const char *key;    /**< its NVS key, up to 15 characters        */
+    const char *name;   /**< its name in a console line              */
+    const char *lost;   /**< what a refused write costs              */
+    const char *stale;  /**< what a refused erase costs              */
+} note_key_t;
+
+/** @brief The restart note (fw_boot.h). */
+static note_key_t k_restart_key = {
+    "restart_note", "restart note",
+    "a start that goes back is not reported",
+    "the next start may report it again",
+};
+
+/** @brief The run note (fw_run.h), beside it. */
+static note_key_t k_run_key = {
+    "run_note", "run note",
+    "the next start finds no update run",
+    "its openings are spent at the next starts",
+};
 
 /**
- * @brief Read the note's blob.
- * @param ctx Unused.
+ * @brief Read a note's blob.
+ * @param ctx The note_key_t.
  * @param buf Where it goes.
  * @param cap Bytes at @p buf.
  * @return Its bytes; 0 when there is none or NVS will not open.
  */
 static uint32_t note_load(void *ctx, uint8_t *buf, uint32_t cap)
 {
-    (void)ctx;
+    const note_key_t *k = ctx;
     nvs_handle_t h;
     if (nvs_open(NOTE_NS, NVS_READONLY, &h) != ESP_OK) {
         return 0u;   /* no namespace yet: nothing was ever noted */
     }
     size_t len = 0u;
-    esp_err_t e = nvs_get_blob(h, NOTE_KEY, NULL, &len);
+    esp_err_t e = nvs_get_blob(h, k->key, NULL, &len);
     if (e == ESP_OK && len > 0u && len <= cap) {
-        e = nvs_get_blob(h, NOTE_KEY, buf, &len);
+        e = nvs_get_blob(h, k->key, buf, &len);
     }
     nvs_close(h);
     if (e == ESP_ERR_NVS_NOT_FOUND) {
@@ -186,59 +207,59 @@ static uint32_t note_load(void *ctx, uint8_t *buf, uint32_t cap)
     }
     if (e != ESP_OK) {
         /* There is an entry it cannot read: one that reads as no note. */
-        ESP_LOGW(TAG, "restart note unreadable: %s", esp_err_to_name(e));
+        ESP_LOGW(TAG, "%s unreadable: %s", k->name, esp_err_to_name(e));
         return UINT32_MAX;
     }
     return (uint32_t)len;
 }
 
 /**
- * @brief Write the note's blob and commit it.
- * @param ctx Unused.
+ * @brief Write a note's blob and commit it.
+ * @param ctx The note_key_t.
  * @param buf The entry.
  * @param len Bytes at @p buf.
  * @return False when NVS refused.
  */
 static bool note_save(void *ctx, const uint8_t *buf, uint32_t len)
 {
-    (void)ctx;
+    const note_key_t *k = ctx;
     nvs_handle_t h;
     esp_err_t e = nvs_open(NOTE_NS, NVS_READWRITE, &h);
     if (e == ESP_OK) {
-        e = nvs_set_blob(h, NOTE_KEY, buf, len);
+        e = nvs_set_blob(h, k->key, buf, len);
         if (e == ESP_OK) {
             e = nvs_commit(h);
         }
         nvs_close(h);
     }
     if (e != ESP_OK) {
-        ESP_LOGW(TAG, "restart note not kept: %s; a start that goes back "
-                      "is not reported", esp_err_to_name(e));
+        ESP_LOGW(TAG, "%s not kept: %s; %s", k->name, esp_err_to_name(e),
+                 k->lost);
         return false;
     }
     return true;
 }
 
 /**
- * @brief Erase the note's blob and commit.
- * @param ctx Unused.
+ * @brief Erase a note's blob and commit.
+ * @param ctx The note_key_t.
  * @return False when NVS refused.
  */
 static bool note_erase(void *ctx)
 {
-    (void)ctx;
+    const note_key_t *k = ctx;
     nvs_handle_t h;
     esp_err_t e = nvs_open(NOTE_NS, NVS_READWRITE, &h);
     if (e == ESP_OK) {
-        e = nvs_erase_key(h, NOTE_KEY);
+        e = nvs_erase_key(h, k->key);
         if (e == ESP_OK || e == ESP_ERR_NVS_NOT_FOUND) {
             e = nvs_commit(h);
         }
         nvs_close(h);
     }
     if (e != ESP_OK) {
-        ESP_LOGW(TAG, "restart note not erased: %s; the next start may "
-                      "report it again", esp_err_to_name(e));
+        ESP_LOGW(TAG, "%s not erased: %s; %s", k->name, esp_err_to_name(e),
+                 k->stale);
         return false;
     }
     return true;
@@ -246,12 +267,102 @@ static bool note_erase(void *ctx)
 
 /** @brief The store fw_note_write() and fw_boot_settle() use. */
 static const fw_note_ops_t k_note = {
-    note_load, note_save, note_erase, NULL,
+    note_load, note_save, note_erase, &k_restart_key,
 };
+
+/** @brief The store fw_run.h's calls use. */
+static const fw_run_ops_t k_run_ops = {
+    note_load, note_save, note_erase, &k_run_key,
+};
+
+/** @brief This start's view of the run; app_main's task only. */
+static fw_run_t s_run;
 
 void fw_ota_note_restart(const char *version)
 {
     (void)fw_note_write(&k_note, version);
+}
+
+/* ---------------------------------------------------------- the run note */
+
+/**
+ * @brief The console line after a note was or was not written.
+ * @param ok     Whether the run was noted.
+ * @param expect The version it names.
+ * @return @p ok.
+ */
+static bool said_begin(bool ok, const char *expect)
+{
+    if (ok) {
+        ESP_LOGI(TAG, "run note: %s, %u openings", expect,
+                 (unsigned)FW_RUN_OPENS);
+    } else {
+        ESP_LOGW(TAG, "run note: none for '%s'; the next start finds no "
+                      "update run", expect != NULL ? expect : "");
+    }
+    return ok;
+}
+
+bool fw_ota_run_begin(const char *expect)
+{
+    return said_begin(fw_run_begin(&k_run_ops, &s_run, expect), expect);
+}
+
+bool fw_ota_run_installed(fw_install_status_t st, const char *version)
+{
+    const bool ok = fw_run_after_install(&k_run_ops, &s_run, st, version);
+    /* An install that did not end is no run: nothing written, nothing
+     * said. */
+    return (st == FW_INSTALL_DONE) ? said_begin(ok, version) : ok;
+}
+
+/**
+ * @brief Settle the run note once per start, with its console line.
+ * @param running The running build's version.
+ */
+static void run_settle(const char *running)
+{
+    if (s_run.settled) {
+        return;
+    }
+    switch (fw_run_settle(&k_run_ops, &s_run, running)) {
+    case FW_RUN_STANDS:
+        ESP_LOGI(TAG, "run note: %s, an update run stands, openings left "
+                      "%u", s_run.expect, (unsigned)s_run.opens_left);
+        break;
+    case FW_RUN_FOREIGN:
+        ESP_LOGW(TAG, "run note: unreadable, erased; no update run");
+        break;
+    case FW_RUN_MISMATCH:
+        ESP_LOGW(TAG, "run note: %s expected, %s runs; the update run ends",
+                 s_run.expect, running);
+        break;
+    case FW_RUN_UNSPENT:
+        ESP_LOGW(TAG, "run note: %s, opening not spent; no update run",
+                 s_run.expect);
+        break;
+    case FW_RUN_NONE:
+    default:
+        break;
+    }
+}
+
+bool fw_ota_run_active(void)
+{
+    return s_run.active;
+}
+
+bool fw_ota_run_settled(void)
+{
+    return s_run.settled;
+}
+
+void fw_ota_run_end(void)
+{
+    const bool was = s_run.active;
+    if (fw_run_end(&k_run_ops, &s_run) && was) {
+        ESP_LOGI(TAG, "run note: erased; the update run ends");
+    }
 }
 
 /** @brief This start's note, filled by fw_boot_settle() before any
@@ -382,5 +493,8 @@ fw_boot_t fw_ota_boot_check(bool ui_up, char *other, uint32_t other_cap)
     if (r == FW_BOOT_ROLLED_BACK && other_cap > 0u) {
         snprintf(other, other_cap, "%s", s_seen.version);
     }
+    /* After the start is settled: a trial that goes back never gets here,
+     * and the build before reads the note at its own start. */
+    run_settle(esp_app_get_description()->version);
     return r;
 }

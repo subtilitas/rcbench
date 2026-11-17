@@ -6,28 +6,77 @@ order: 64
 
 # Updates
 
-UPDATES sucht auf GitHub nach neuerer Panel-Firmware und bietet deren Installation an. Öffne die Seite über [Setup](setup.md). Die [Erinnerung beim Start](upd_remind.md) führt dieselbe Suche einmal je Panelstart aus. Das ESP32-S3-Panel ist auf die Linie 0.22 begrenzt; ESP32-P4 unterstützt neuere Linien. Siehe [Die Release-Linie](#die-release-linie).
+UPDATES führt in sechs Schritten durch die Firmware-Updates: PANEL, IOMCU, C6-FUNK, DIAL, LEISTUNGSKNOTEN und AUSWUCHTKNOTEN. Nur der aktuelle Schritt hat ein Bedienelement. NACH UPDATES SUCHEN fragt GitHub nach neuerer Panel-Firmware. Öffne UPDATES über [Setup](setup.md). Die [Erinnerung beim Start](upd_remind.md) führt dieselbe Suche einmal je Panelstart aus. Das ESP32-S3-Panel ist auf die Linie 0.22 begrenzt; ESP32-P4 unterstützt neuere Linien. Siehe [Die Release-Linie](#die-release-linie).
 
-![UPDATES](view:updates)
+![UPDATES: die letzte Karte](view:updates)
+
+Die Schrittliste links zeigt je Schritt Nummer, Namen, die Version seines Ziels und sein Etikett. Die Karte rechts zeigt den aktuellen Schritt: seine Versionen, was sein Update tut, worauf er wartet und wie sein letzter Versuch endete.
 
 | Bedienelement | Wirkung |
 |---|---|
 | NACH UPDATES SUCHEN | Fragt GitHub einmal ab. Während der Suche heißt die Taste ABBRECHEN. |
-| 2s HALTEN: LADEN & INSTALLIEREN | In der Mitte der Fußleiste nach Fund eines neueren Releases; lädt, prüft und installiert es. |
-| OPTIONEN | Rechts in der Fußleiste; öffnet die Liste mit Erinnerung beim Start und Releases, siehe [Optionen](#optionen). Grau, solange eine Suche oder ein Download läuft. |
-| 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage. |
-| 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
-| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN | Dasselbe, solange der C6 die mitgelieferte Version meldet. |
-| FIRMWARE DER FUNKGERÄTE | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten, siehe [Funkgeräte](#funkgeräte); während ein Update läuft, zeigt sie die Beschriftung dieser Zeile. |
+| das Bedienelement des aktuellen Schritts | Auf der Karte; 2s Halten startet das Update des Schritts, siehe [Die Schritte](#die-schritte). Grau, solange etwas es sperrt; ein Druck zeigt den Grund im Meldeband. |
+| SCHRITT ÜBERSPRINGEN | Auf der Karte; ein Tippen übergeht den Schritt bis zum Neustart des Panels, der nächste Schritt wird aktuell. |
+| ÜBERSPRUNGENE SCHRITTE ZEIGEN | Auf der letzten Karte, solange ein Schritt übersprungen ist; holt die übersprungenen Schritte zurück. |
+| UPDATE ABBRECHEN | In der Mitte der Fußleiste, während die Übertragung eines Geräts läuft; beendet sie vor dem letzten Byte, grau, sobald das Gerät installiert. |
+| OPTIONEN | Rechts in der Fußleiste; öffnet die Liste mit Erinnerung beim Start, Releases und Einzelne Updates, siehe [Optionen](#optionen). Grau, solange eine Suche, ein Download oder ein Update läuft. |
+
+Updates und Neuinstallationen außerhalb der Reihe stehen auf der Seite EINZELNE UPDATES, siehe [Einzelne Updates](#einzelne-updates).
+
+## Die Schritte
+
+![Schritt 2: der IOmcu](view:updates-step-iomcu)
+
+| Schritt | Aktuell, solange | Bedienelement |
+|---|---|---|
+| 1 PANEL | eine Suche ein neueres Release fand | 2s HALTEN: LADEN & INSTALLIEREN, siehe [Der Download](#der-download) |
+| 2 IOMCU | der IOmcu einen anderen Build als den auf diesem Panel ausführt | 2s HALTEN ZUM IOMCU-UPDATE, siehe [Der IOmcu](#der-iomcu) |
+| 3 C6-FUNK | der C6 eine andere Version als die enthaltene meldet; nach diesem Schritt startet das Panel neu | 2s HALTEN ZUM C6-FUNK-UPDATE, siehe [Der C6-Funk](#der-c6-funk) |
+| 4 DIAL | das verbundene Dial eine andere Version ausführt | 2s HALTEN ZUM DIAL-UPDATE, siehe [Das Dial](#das-dial) |
+| 5 LEISTUNGSKNOTEN | der verbundene Leistungsknoten eine andere Version ausführt | 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE, siehe [Die Sensorknoten](#die-sensorknoten) |
+| 6 AUSWUCHTKNOTEN | der verbundene Auswuchtknoten eine andere Version ausführt | 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE |
+
+Das Panel-Image bringt jedes andere Image mit, darum kommt PANEL zuerst. Ein neueres Release, das gefunden wird, während ein späterer Schritt aktuell ist, macht PANEL wieder aktuell. Eine Suche, die nichts Neueres fand oder fehlschlug, sperrt nie, ebenso wenig ein fehlgeschlagener oder gestoppter Download: NACH UPDATES SUCHEN ist der Weg zurück.
+
+| Etikett | Bedeutung |
+|---|---|
+| `ALS NÄCHSTES` | der aktuelle Schritt |
+| `AKTUELL` | führt die enthaltene oder neueste Version aus |
+| `SPÄTER` | wartet auf den aktuellen Schritt |
+| `UPDATE LÄUFT`, `WIRD GEPRÜFT` | sein Update läuft, oder eine kurze Wartezeit; die Karte sagt welche |
+| `FEHLGESCHLAGEN` | sein letzter Versuch seit dem Start des Panels schlug fehl; die Karte zeigt den Grund, das Halten ist der neue Versuch |
+| `ÜBERSPRUNGEN` | SCHRITT ÜBERSPRINGEN wurde seit dem Start des Panels getippt |
+| `NICHT GESUCHT` | PANEL: keine Suche seit dem Start |
+| `OHNE VERBINDUNG`, `NICHT VERBUNDEN`, `NICHT GEBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden; kein Gerät der Art ist gebunden |
+| `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | hier nichts zu aktualisieren; die letzte Karte nennt diese Schritte |
+
+![Ein Schritt, gesperrt bei ARMED](view:updates-held)
+
+ARMED, der Netzteilausgang an, ein offener Aufzeichnungslauf, WLAN an oder eine Platinenzeichnung, die geladen wird, sperren den Schritt: Das Bedienelement ist grau, und die Karte nennt den Grund. Ein laufendes Halten endet ohne Start, wenn sich sein Schritt unter dem Finger ändert.
+
+![Das Dial fragt nach seinem Druck](view:updates-step-dial-ask)
+
+Während die Übertragung eines Geräts läuft, zeigt das Bedienelement ihre Phase, zum Beispiel `AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s`, und UPDATE ABBRECHEN steht in der Fußleiste.
+
+Nach der Installation des Panels und nach dem Update des C6-Funks startet das Panel neu, und der Update-Lauf geht weiter: UPDATES öffnet sich einmal je Start von selbst im Menü, bei SAFE, Netzteilausgang aus, WLAN aus und ohne laufende Installation. Bis dahin nennt das Meldeband, worauf es wartet, zum Beispiel `Update-Lauf: UPDATES öffnet bei SAFE und Netzteilausgang aus.` Die Suche beim Start läuft während eines Laufs nicht. Das Home-Tag auf UPDATES beendet den Lauf, ebenso der letzte erledigte Schritt. Ein Lauf öffnet UPDATES bei höchstens 2 Starts.
+
+Nach einem Neustart in einem Update-Lauf wartet ein Schritt, dessen IOmcu oder Gerät noch nicht verbunden ist, mit SCHRITT ÜBERSPRINGEN und geht weiter, sobald es sich verbindet.
+
+![Der Schritt des Dial wartet nach einem Neustart](view:updates-step-waiting)
+
+Ist kein Schritt mehr übrig, sagt die Karte `Alle Firmware ist aktuell.` und nennt die Schritte, die nicht verbunden, hier nicht aktualisierbar oder übersprungen sind.
+
+![Die letzte Karte mit übersprungenem Dial](view:updates-done)
 
 ## Optionen
 
 ![Die OPTIONEN von UPDATES](view:updates-settings)
 
-| Einstellung | Werte | Wirkung |
+| Zeile | Werte | Wirkung |
 |---|---|---|
 | Erinnerung beim Start | AUS, EIN; Vorgabe EIN | schaltet die Suche beim Start und ihre Erinnerung |
 | Releases | STABLE, TESTING; Vorgabe STABLE | wählt die geprüften Releases, siehe [Die Suche](#die-suche); ein Wechsel verwirft die Ergebnisanzeige, und ein unter der anderen Einstellung gefundenes Release wird nicht angeboten |
+| Einzelne Updates | - | schließt die Liste und öffnet EINZELNE UPDATES, siehe [Einzelne Updates](#einzelne-updates); bei ungespeicherter Änderung mit Rückfrage |
 
 Eine Änderung gilt sofort. SPEICHERN in der Leiste der Liste behält sie, wie unter [Setup](setup.md#die-werte-behalten). Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.
 
@@ -35,7 +84,7 @@ Eine Änderung gilt sofort. SPEICHERN in der Leiste der Liste behält sie, wie u
 
 Die Karte zeigt laufende Version und gespeichertes Heimnetz. Suche und Download benötigen:
 
-- Ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne dieses erscheinen `Kein Heimnetz gespeichert.` und `NETZWERK SPEICHERN: WI-FI ÖFFNEN`. Öffne WI-FI zum Speichern eines Netzwerks und kehre über das Home-Feld zurück. NACH UPDATES SUCHEN bleibt bis dahin grau.
+- Ein unter [WLAN](wifi.md#ein-heimnetz-wählen) gespeichertes Heimnetz. Ohne dieses erscheint `Kein Heimnetz gespeichert.`, und die letzte Karte trägt `NETZWERK SPEICHERN: WI-FI ÖFFNEN`. Öffne WI-FI zum Speichern eines Netzwerks und kehre über das Home-Feld zurück. NACH UPDATES SUCHEN bleibt bis dahin grau.
 - Einen Prüfstand in SAFE, ausgeschalteten Netzteilausgang und keine offene Aufzeichnung. Andernfalls ist die Taste grau; die Karte zeigt `WLAN benötigt SAFE und einen ausgeschalteten Netzteilausgang.`.
 - Kein laufendes IOmcu-Update und keine laufende Panel-Installation.
 
@@ -62,7 +111,7 @@ In beiden Einstellungen wird ein Release nur angeboten, wenn es zur Release-Lini
 
 | Karte | Bedeutung |
 |---|---|
-| `Version 0.22.1 ist verfügbar.` | das neueste Release ist neuer als der laufende Build; das Halten erscheint |
+| `Version 0.22.1 ist verfügbar.` | das neueste Release ist neuer als der laufende Build; der Schritt PANEL wird mit dem Halten aktuell |
 | `Aktuell. Panel-Version: 0.22.0.` | das neueste Release ist die laufende Version oder älter |
 | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` | nur auf einem Panel mit der Linie 0.22: das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie; es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | das Verbinden scheiterte, wie unter Dateien und Update |
@@ -119,13 +168,29 @@ ABBRECHEN beendet den Download. Auch STOP, ARMED, ein eingeschalteter Netzteilau
 
 ![Ein abgebrochener Download](view:panel-download-failed)
 
+## Einzelne Updates
+
+![EINZELNE UPDATES](view:updates-single)
+
+EINZELNE UPDATES startet ein Update oder eine Neuinstallation zur Zeit: des IOmcu, des C6-Funks oder eines Funkgeräts. Öffne die Seite über die Zeile Einzelne Updates in OPTIONEN. Sie bedeckt UPDATES; jeder Start ist ein Halten von 2s.
+
+| Bedienelement | Wirkung |
+|---|---|
+| 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung des Angebots, siehe [Der IOmcu](#der-iomcu). |
+| 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
+| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN | Dasselbe, solange der C6 die mitgelieferte Version meldet. |
+| FIRMWARE DER FUNKGERÄTE | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten, siehe [Funkgeräte](#funkgeräte); während ein Update läuft, zeigt sie die Beschriftung dieser Zeile. |
+| ZURÜCK | Rechts in der Fußleiste; schließt die Seite. |
+
+Ein Finger zur Zeit: Ein zweiter Finger auf einem anderen Bedienelement startet nichts. Das Home-Tag schließt zuerst die Seite der Funkgeräte, dann EINZELNE UPDATES, dann verlässt es UPDATES. Das Verlassen von UPDATES schließt die Seite, und ein laufendes Halten startet nichts. Eine Suche, die startet, während die Seite offen ist, schließt nichts.
+
 ## Der IOmcu
 
 ![Ein anderer Build auf dem IOmcu](view:updates-coproc)
 
-Unter NACH UPDATES SUCHEN nennt UPDATES die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie die Rückfrage beim Verbindungsaufbau. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
+In der linken Spalte von EINZELNE UPDATES nennt die Seite die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie Schritt 2 auf UPDATES. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
 
-Für das Halten gelten dieselben Voraussetzungen wie für die Rückfrage: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund; ein Tippen oder Halten auf die graue Taste zeigt dieselbe Zeile auf dem Alarmband:
+Für das Halten gelten dieselben Voraussetzungen wie für Schritt 2: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund; ein Tippen oder Halten auf die graue Taste zeigt dieselbe Zeile auf dem Alarmband:
 
 | Zeile | Bedingung |
 |---|---|
@@ -148,7 +213,7 @@ Bei verfügbarer Haltetaste steht `Ausgänge bleiben aus. ARMED ist bis zum Ende
 
 ![Der C6 im Auslieferungszustand: keine Version gemeldet](view:updates-c6)
 
-Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE sendet das mitgelieferte Image über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
+Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE sendet das mitgelieferte Image über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
 
 Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft und das WLAN aus ist. Bei einem C6, der die mitgelieferte Version meldet, heißt es 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
 
@@ -167,7 +232,7 @@ Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und
 
 ![Der Eintrag FUNKGERÄTE, während das Dial nach seinem Druck fragt](view:updates-dial)
 
-Der Eintrag FUNKGERÄTE zählt die Geräte, die eine Version gemeldet haben, und die, denen eine andere Version angeboten wird: `Verbunden: 1 von 3. Andere Version: 0.` FIRMWARE DER FUNKGERÄTE öffnet die Seite. ZURÜCK und das Home-Tag schließen sie.
+Der Eintrag FUNKGERÄTE auf EINZELNE UPDATES zählt die Geräte, die eine Version gemeldet haben, und die, denen eine andere Version angeboten wird: `Verbunden: 1 von 3. Andere Version: 0.` FIRMWARE DER FUNKGERÄTE öffnet die Seite über EINZELNE UPDATES. ZURÜCK und das Home-Tag schließen sie und zeigen wieder EINZELNE UPDATES.
 
 ![Die Seite der Funkgeräte](view:updates-devices)
 
@@ -180,7 +245,7 @@ Der Eintrag FUNKGERÄTE zählt die Geräte, die eine Version gemeldet haben, und
 | 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE | Sendet das Image des Auswuchtknotens an den gebundenen Auswuchtknoten. |
 | 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN | Dasselbe, solange der Knoten die mitgelieferte Version meldet. |
 | UPDATE ABBRECHEN | In der Mitte der Fußleiste, solange ein Update läuft, ein einfaches Tippen: Beendet das Update vor seinem letzten Byte, und das Gerät behält seine Firmware; danach installiert das Gerät, und die Taste ist grau. |
-| ZURÜCK | Schließt die Seite. |
+| ZURÜCK | Schließt die Seite: EINZELNE UPDATES erscheint wieder. |
 
 Es läuft ein Update zur Zeit; solange eines läuft, ist das Halten der anderen Zeilen grau.
 

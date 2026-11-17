@@ -6,24 +6,22 @@ order: 100
 
 # IOmcu update
 
-Each panel firmware image includes an IOmcu image. The panel offers it whenever the connected IOmcu runs a different build. It checks at every link-up over the CAN (Controller Area Network) bus, comparing SHA-256 (Secure Hash Algorithm, 256 bits) digests rather than version numbers. A mismatch raises the alert `IOmcu runs a different build. Update it on UPDATES.`. While the bench is not SAFE with the supply off, the Wi-Fi is on or a panel install runs, the alert names that instead, such as `IOmcu runs a different build. Its update question opens once the panel's Wi-Fi is off.`, and again when the question waits for something else.
+Each panel firmware image includes an IOmcu image. The panel offers it whenever the connected IOmcu runs a different build. It checks at every link-up over the CAN (Controller Area Network) bus, comparing SHA-256 (Secure Hash Algorithm, 256 bits) digests rather than version numbers.
 
-## The question
+## The offer
 
-![The question on the menu](view:coproc-update)
+![UPDATES opened by an offer](view:updates-offer)
 
-The update question opens on the [menu](overview.md), with UPDATE in the band, when the bench is SAFE, the supply output and Wi-Fi radio are off, and no panel update is running. It shows the IOmcu's running version and the version included with the panel.
+An offer opens [Updates](updates.md) with step 2, IOMCU, as the current step, once per offer. It opens on the [menu](overview.md) when the bench is SAFE, the supply output and the Wi-Fi radio are off, and no panel update is running. The band says `IOmcu runs a different build. Update it on UPDATES.`. While one of these conditions holds it back, the band names it instead, such as `IOmcu runs a different build. UPDATES opens once the panel's Wi-Fi is off.`, and again when the opening waits for something else. While an update run after a restart waits to open UPDATES, the band shows the run's line only, and UPDATES opens once for both.
+
+The step's card shows the IOmcu's running version and the version included with the panel. An older image is offered too: the card then reads `The firmware on this panel is older.` in the warning colour.
 
 | Control | What it does |
 |---|---|
-| HOLD 2s TO START | starts the update after a 2s hold, with the gesture and fade of ARM |
-| CANCEL | closes the question; the panel does not ask again for that version until it restarts, and [Updates](updates.md#the-iomcu) still starts the update |
+| HOLD 2s TO UPDATE THE IOMCU | starts the update after a 2s hold, with the gesture and fade of ARM |
+| SKIP THIS STEP | declines the offer; the panel does not offer that version again until it restarts, and [Single updates](updates.md#the-iomcu) still starts the update |
 
-The home tag declines the update as CANCEL does. An interruption by another screen does not decline it: this applies to the [fault screen](busfault.md) after a lost link and to a panel-update download. The next link-up offers the update again, and the question opens on the menu when the same conditions are met.
-
-![An older image](view:coproc-update-older)
-
-An older image is offered too. The question then reads `The firmware on this panel is older.` in the warning colour.
+The home tag that leaves UPDATES declines the offer as SKIP THIS STEP does. Over OPTIONS, SINGLE UPDATES or the devices' page it closes that page first and declines nothing. A screen the panel opens over UPDATES does not decline: the [fault screen](busfault.md) after a lost link and a panel-update download. The next link-up offers the update again, and UPDATES opens on the menu when the same conditions are met. A new offer brings back a skipped step 2 and ends a hold under way on it.
 
 ## The progress
 
@@ -43,7 +41,7 @@ The transfer time is not measured.
 
 ## How it ended
 
-When the update ends, the panel returns to the menu, or to [Updates](updates.md#the-iomcu) if it was started there. The alert band reports the result:
+When the update ends, the panel returns to [Updates](updates.md). The alert band reports the result, and step 2's card keeps a failure's line until the next attempt or the next start:
 
 | Alert | Meaning |
 |---|---|

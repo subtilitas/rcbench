@@ -376,14 +376,9 @@ TEST_CASE(a_screen_that_cannot_say_whether_it_is_covered_has_no_hold)
     start();
     gfx_rect_t g;
     REQUIRE(ui_router_shot_gap(&g));
-    static const ui_screen_id_t k_ids[] = { SCREEN_COPROC_UPDATE,
-                                            SCREEN_UPD_REMIND };
+    static const ui_screen_id_t k_ids[] = { SCREEN_UPD_REMIND };
     for (size_t i = 0u; i < sizeof(k_ids) / sizeof(k_ids[0]); ++i) {
         start();
-        if (k_ids[i] == SCREEN_COPROC_UPDATE) {
-            coproc_update_screen_offer((cu_version_t){ 0, 17, 0 },
-                                       (cu_version_t){ 0, 18, 0 });
-        }
         ui_router_goto(k_ids[i]);
         CHECK_EQ(ui_router_current(), k_ids[i]);
         CHECK(ui_router_stop_live());       /* the band is up ... */

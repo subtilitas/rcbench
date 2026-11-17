@@ -314,8 +314,10 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 | FILES, Spalten | 3 | LOGS, Ordner, Zeile und Scrollleiste der linken Spalte; AKTUALISIEREN, KOPIEREN, VERSCHIEBEN, UMBENENNEN; die rechte Spalte, LÖSCHEN, NEU, INFO, ÖFFNEN |
 | WI-FI, WLAN aus | 3 | WLAN-HOTSPOT, MIT HEIMNETZ VERBINDEN, HEIMNETZ WÄHLEN, HEIMNETZ LÖSCHEN, ZUGANGSCODE EIN oder AUS; HOTSPOT-PASSWORT und ZUGANGSCODE, ZUFALL oder FEST; die Karte |
 | WI-FI, WLAN an | 1, 2 mit der Taste für Browser-Schreibzugriffe | die Zeilen, solange die Seite erreichbar ist, die Zeilen darunter, WLAN AUS; die Taste für Browser-Schreibzugriffe |
-| UPDATES | 2 | NACH UPDATES SUCHEN oder ABBRECHEN, der Abschnitt IOMCU, seine Haltetaste; die Karte, die Haltetaste des C6-Funks, die Haltetaste zum Laden, sobald eine Suche ein neueres Release fand, OPTIONEN |
+| UPDATES | 2 | NACH UPDATES SUCHEN oder ABBRECHEN; die Karte, die Haltetaste zum Laden, sobald eine Suche ein neueres Release fand, OPTIONEN |
 | UPDATES, OPTIONEN | 2 | wie eine Optionsliste |
+| UPDATES, EINZELNE UPDATES | 2 | der Abschnitt IOMCU, seine Haltetaste, der Eintrag FUNKGERÄTE; die Überschrift, die Haltetaste des C6-Funks, ZURÜCK |
+| UPDATES, die Seite der Funkgeräte | 1 | die drei Gerätezeilen, UPDATE ABBRECHEN während eines Updates, ZURÜCK |
 
 ![Die Hilfe von SETUP auf Seite 1](img/de/help-setup.png)
 
@@ -455,7 +457,7 @@ erklären ihre Lage.
 | Halten bei wartendem Bild | ersetzt es im selben Speicherbereich: `Neuer Screenshot aufgenommen. Er ersetzt den wartenden.` |
 | Halten, während ein abgebrochenes Speichern endet | kein Bild: `Kein Screenshot: Der letzte wird noch geschrieben.`, höchstens eine PNG-Zeile lang |
 | Ein fest gespeicherter Wert in der Anzeige | kein Bild: `Kein Screenshot: Diese Seite zeigt ein festes Passwort oder einen festen Code.` WI-FI lehnt ab, solange es ein festes [HOTSPOT-PASSWORT oder einen festen ZUGANGSCODE](#hotspot-passwort-und-zugangscode) zeigt: in der Ansicht dieses Werts, auf seiner Tastatur und in den Zeilen eines laufenden Funks mit einem der beiden fest. Ein Bild auf der Karte ist vom Browser lesbar. Ein ZUFALL-Passwort und ein ZUFALL-Code werden aufgenommen, denn sie enden mit der Sitzung |
-| Seiten ohne diese Haltegeste | SPLASH, der Busfehler-Seite, PANEL UPDATE und der Fortschritt des IOmcu-Updates: Sie haben kein Band. Die Frage des IOmcu-Updates und die Release-Erinnerung: Sie können nicht sagen, ob ein Dialog sie verdeckt, und das Popup würde sich erst öffnen, nachdem sie geschlossen wurden. MOTOR & ESC, der längste Titel, hat mit ARMED MOTOR und einem langen FEHLER-Chip keine Lücke |
+| Seiten ohne diese Haltegeste | SPLASH, der Busfehler-Seite, PANEL UPDATE und der Fortschritt des IOmcu-Updates: Sie haben kein Band. Die Release-Erinnerung: Sie kann nicht sagen, ob ein Dialog sie verdeckt, und das Popup würde sich erst öffnen, nachdem sie geschlossen wurde. MOTOR & ESC, der längste Titel, hat mit ARMED MOTOR und einem langen FEHLER-Chip keine Lücke |
 
 Die Render-Task nimmt den aktuellen Frame sofort auf, unabhängig vom
 Zustand des Prüfstands. Die Aufnahme liest und ändert keinen Ausgang;
@@ -661,15 +663,15 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | ERLEDIGT eines Schritts vor einem Einschalten im Stick-Lauf | `Halte 2s, um den Schritt vor dem Einschalten der Versorgung zu bestätigen.` |
 | 2s HALTEN ZUM INSTALLIEREN auf WI-FI | `Halte 2s, um zu installieren.` |
 | 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
-| 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
-| 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
-| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
-| 2s HALTEN ZUM DIAL-UPDATE auf UPDATES | `Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.` |
-| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Dial-Firmware des Panels neu zu installieren.` |
-| 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE auf UPDATES | `Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.` |
-| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.` |
-| 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE auf UPDATES | `Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.` |
-| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.` |
+| 2s HALTEN ZUM IOMCU-UPDATE in Schritt 2 von UPDATES und auf EINZELNE UPDATES | `Halte 2s, um den IOmcu zu aktualisieren.` |
+| 2s HALTEN ZUM C6-FUNK-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN ZUM DIAL-UPDATE auf EINZELNE UPDATES | `Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.` |
+| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Dial-Firmware des Panels neu zu installieren.` |
+| 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.` |
+| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.` |
+| 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.` |
+| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
@@ -693,8 +695,8 @@ wartet.
   nicht neu; ein Druck blitzt einmal.
 - Eine Taste, die mit ihrem Halten verschwindet, etwa 2s HALTEN ZUM
   ÜBERNEHMEN einer Warnung, die Halte-Taste einer Programmier-Seite, 2s
-  HALTEN ZUM STARTEN eines Stick-Laufs, ÜBERSCHREIBEN und START im
-  Bestätigungsdialog des IOmcu-Updates, blitzt dort, wo sie gezeichnet war.
+  HALTEN ZUM STARTEN eines Stick-Laufs und ÜBERSCHREIBEN, blitzt dort, wo
+  sie gezeichnet war.
   Danach wird die Seite darunter neu gezeichnet.
 - Ein Zustand, der ohne Druck eintrifft, etwa ARMED von einer anderen
   Seite, lässt die Taste einmal aufblitzen.
@@ -879,7 +881,7 @@ Bedienelemente über y 436 des Inhalts.
 | SUPPLY | AUSGANG EIN / AUS | die Liste der Grenzen des Netzteils und der Anschlüsse des PD mini |
 | ESC STICK, auf der Seite eines Profils, seinem Lauf und seinem Ergebnis | START n / ABBRECHEN / OK | die Liste des Netzteils und der 12 Timing-Einstellungen |
 | IMU | 2s HALTEN: KALIBRIEREN | die Liste WIRELESS von SETUP beim Eintrag IMU |
-| UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung und Versionen |
+| UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung, Versionen und Einzelne Updates |
 | LOGS, auf der Dateiliste | leer | die Liste SD CARD von SETUP |
 | FILES, auf den Bereichen | leer | die Liste SD CARD von SETUP |
 | RECEIVER, BATTERY, BALANCE | leer | nichts: das Feld bleibt leer |
@@ -899,11 +901,11 @@ Kachel SETUP im Menü enthält die Einstellungen des ganzen Prüfstands,
 OPTIONEN die eigenen dieser Seite. Die Liste öffnet nur, solange die Seite nichts ansteuert. MOTOR & ESC braucht einen
 Prüfstand in SAFE ohne gehaltenes ARM, SUPPLY einen ausgeschalteten Ausgang
 ohne unterwegs befindliches EIN, ESC STICK einen Prüfstand in SAFE ohne
-Lauf, UPDATES keine laufende Suche und keinen laufenden Download. Sonst
-ist die Taste grau, und ein Tippen zeigt
+Lauf, UPDATES keine laufende Suche, keinen laufenden Download und kein
+laufendes Update. Sonst ist die Taste grau, und ein Tippen zeigt
 `OPTIONEN nur bei SAFE. Schalte zuerst auf SAFE.`,
 `OPTIONEN nur bei Ausgang aus. Schalte ihn zuerst aus.` oder
-`OPTIONEN nur ohne laufende Suche oder Download.` im Alarmband.
+`OPTIONEN nur ohne laufende Suche, Download oder Update.` im Alarmband.
 Wird ein Ausgang unter der offenen Liste aktiv, schließt sie.
 
 Die Liste ist die Kategorieliste von SETUP ([Tasten und Liste](#tasten-und-liste)):
@@ -5612,6 +5614,34 @@ oder `none`; das Ergebnis ist `NORMAL`, `UPDATED`, `ROLLED_BACK`,
 `UNCONFIRMED` oder `GOING_BACK`, Letzteres vor dem Neustart eines
 Versuchsstarts, der zurückgeht.
 
+Daneben hält das Panel die Laufnotiz: dass ein Update-Lauf nach einem
+Neustart weitergeht. Ein 18-Byte-Eintrag, Namespace `fw_ota`, Schlüssel
+`run_note`: ein Layout-Byte (0xB1), die Version, die der nächste Start
+laufen soll, in 16 Bytes mit Nullen aufgefüllt, und die verbleibenden
+Öffnungen, beim Schreiben 2. Die Installation schreibt ihn, sobald das
+Image ganz geschrieben und geprüft ist, vor der Neustartnotiz. Das Update
+des C6-Funkchips schreibt ihn bei Erfolg, mit der laufenden Version. Ein
+Stromausfall vor dem Schreiben hinterlässt keinen Lauf. Ein Versionstext
+über 16 Bytes wird nicht geschrieben, und eine bestehende Notiz wird
+gelöscht. Was ein Lauf nach dem Neustart tut, steht in
+[Updates: Nach einem Neustart](#nach-einem-neustart).
+
+Jeder Start liest die Notiz einmal, nach seiner Startprüfung:
+
+| Eintrag | Wirkung |
+| --- | --- |
+| keiner | kein Lauf |
+| andere Größe, anderes Layout-Byte oder andere Öffnungszahl (1 bis 2), oder ein Text, der leer ist oder ein Byte außerhalb 0x21 bis 0x7E enthält | kein Lauf; gelöscht |
+| eine andere Version als die laufende (ein Build, der zurückging) | kein Lauf; gelöscht |
+| die laufende Version | der Lauf steht; eine Öffnung verbraucht: die Zahl minus 1 gespeichert, der Eintrag bei 0 gelöscht |
+| die laufende Version, das Verbrauchen vom NVS abgelehnt | kein Lauf |
+
+Die Konsole nennt jedes Schreiben und jeden gefundenen Eintrag:
+
+    I (…) fw_ota: run note: 0.24.1, 2 openings
+    I (…) fw_ota: run note: 0.24.1, an update run stands, openings left 1
+    W (…) fw_ota: run note: 0.24.1 expected, 0.24.0 runs; the update run ends
+
 Aktuelle Einschränkungen:
 
 - Eine Installation, deren NVS-Schreiben scheitert, meldet das auf der
@@ -7084,51 +7114,66 @@ LINK des Bands), bietet der Bildschirm NEUVERBINDEN an:
 
 Enthält der Panel-Build ein IOmcu-Image, bietet er es an, sobald der
 verbundene IOmcu einen anderen Build verwendet. Die Prüfung läuft bei jedem
-Verbindungsaufbau und vergleicht SHA-256-Digests (Secure Hash Algorithm).
-Versionsnummern sind für diesen Vergleich nicht maßgeblich. Ein anderer Build meldet den Alarm
-`IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`, und
-die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der
-Ausgang der Versorgung aus, der Funk des Panels ganz aus und
-keine Installation eines Panel-Images im Gang. Ein START bei noch aktivem WLAN oder laufender Panel-Installation wird
-verworfen. Die Frage erscheint erneut, sobald beide Hindernisse entfallen.
+Verbindungsaufbau und vergleicht SHA-256-Digests (Secure Hash Algorithm),
+keine Versionsnummern. Ein anderer Build ist ein Angebot: Es öffnet
+[Updates](#updates) mit Schritt 2 (IOMCU) als aktuellem Schritt, einmal je
+Angebot, auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der
+Versorgung aus, der Funk des Panels ganz aus und keine Installation eines
+Panel-Images im Gang. Das Band sagt im selben Frame
+`IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`.
 
-Solange etwas die Frage zurückhält, nennt der Alarm es anstelle von
+![UPDATES, von einem Angebot geöffnet](img/de/updates-offer.png)
+
+Die Karte von Schritt 2 nennt die laufende IOmcu-Version und die im Panel
+enthaltene Version ([Die Schritte](#die-schritte)).
+`2s HALTEN ZUM IOMCU-UPDATE` startet das Update: 2s Halten, die ARM-Geste
+mit demselben Überblenden. Ein älteres Image wird ebenfalls angeboten. Die
+Karte sagt dann `Die Firmware auf diesem Panel ist älter.` in der
+Warnfarbe, und das Halten ist dasselbe.
+
+Solange etwas das Öffnen zurückhält, nennt der Alarm es anstelle von
 `Aktualisiere ihn auf UPDATES.`. Er erscheint einmal je Angebot auf der
-ersten Seite mit Band und erneut, wenn die Frage auf etwas anderes wartet:
+ersten Seite mit Band und erneut, wenn das Öffnen auf etwas anderes
+wartet:
 
-| Die Frage wartet auf | Alarm |
+| Das Öffnen wartet auf | Alarm |
 | --- | --- |
-| SAFE und Netzteilausgang aus | `IOmcu nutzt einen anderen Build. Die Update-Frage öffnet bei SAFE und Netzteilausgang aus.` |
-| das WLAN des Panels aus | `IOmcu nutzt einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels aus ist.` |
-| das Ende der Panel-Installation | `IOmcu nutzt einen anderen Build. Die Update-Frage öffnet nach der Panel-Installation.` |
+| SAFE und Netzteilausgang aus | `IOmcu nutzt einen anderen Build. UPDATES öffnet bei SAFE und Netzteilausgang aus.` |
+| das WLAN des Panels aus | `IOmcu nutzt einen anderen Build. UPDATES öffnet, sobald das WLAN des Panels aus ist.` |
+| das Ende der Panel-Installation | `IOmcu nutzt einen anderen Build. UPDATES öffnet nach der Panel-Installation.` |
 
-![Die Frage zum IOmcu-Update](img/de/coproc-update.png)
+Wartet nach einem Neustart ein Update-Lauf darauf, UPDATES zu öffnen
+([Nach einem Neustart](#nach-einem-neustart)), trägt das Band die Zeile
+des Laufs, und das Angebot sagt nichts: eine Zeile je Frame. Das Öffnen
+durch den Lauf und das durch das Angebot sind ein Öffnen: UPDATES öffnet
+einmal, wenn beide fällig sind, und ein Angebot, das kommt, während
+UPDATES zu sehen ist, öffnet später nichts.
 
-Die Frage ist ein Kasten von 860 x 248px im Körper, ihre Zeilen in der
-Schrift 12 x 24px. ABBRECHEN und START sind je 398 x 56px, nebeneinander,
-START rechts; ihre Mitten liegen auf dem Panel bei x 305 und 719, y 376.
+Zwei Handlungen lehnen das Angebot ab:
 
-Die Frage nennt die laufende IOmcu-Version und die im Panel enthaltene
-Version. Ein Tipp auf ABBRECHEN schließt sie. Bis zum nächsten Neustart
-fragt das Panel für diese IOmcu-Version nicht erneut. Das Home-Feld lehnt
-das Angebot ebenfalls ab.
-SETUP > UPDATES startet das Update auch nach einer Ablehnung
-([Der IOmcu](#der-iomcu)). START braucht 2s Halten, die
-ARM-Geste mit demselben Überblenden.
+- SCHRITT ÜBERSPRINGEN in Schritt 2;
+- das Home-Feld, das UPDATES verlässt. Über der OPTIONEN-Liste, EINZELNE
+  UPDATES oder der Geräteseite schließt das Home-Feld zuerst diese und
+  lehnt nichts ab.
 
-Wird die Frage vom Panel überdeckt, zählt das nicht als Ablehnung. Das gilt
-für den Busfehler-Bildschirm nach 4000ms ohne Verbindung und für den Download
-von PANEL UPDATE. Das Angebot bleibt unbeantwortet; die Prüfung beim
-nächsten Verbindungsaufbau bietet es erneut an. Die Frage öffnet dann auf
-dem Menü unter denselben Bedingungen wie beim ersten Mal. Ein durch den Bildschirmwechsel abgebrochener Druck auf START löst kein
-Update aus.
+Eine Ablehnung gilt für das Angebot, das UPDATES gezeigt hat. Bis zum
+nächsten Neustart bietet das Panel diese IOmcu-Version nicht erneut an.
+EINZELNE UPDATES startet das Update auch nach einer Ablehnung
+([Der IOmcu](#der-iomcu)). Ein START bei noch aktivem WLAN oder laufender
+Panel-Installation wird verworfen; das Angebot kommt erneut, und Schritt 2
+nimmt es an, sobald beide Hindernisse entfallen.
 
-Ein älteres Image wird ebenfalls angeboten. Die Frage sagt dann `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe, und START braucht dasselbe
-Halten.
+Öffnet das Panel eine andere Seite über UPDATES, zählt das nicht als
+Ablehnung. Das gilt für den Busfehler-Bildschirm nach 4000ms ohne
+Verbindung und für den Download von PANEL UPDATE. Das Angebot bleibt
+unbeantwortet; die Prüfung beim nächsten Verbindungsaufbau bietet es
+erneut an. Ein neues Angebot öffnet UPDATES unter denselben Bedingungen
+wie das erste, holt einen übersprungenen Schritt 2 zurück und beendet ein
+laufendes Halten in Schritt 2, da sich seine Versionen geändert haben
+können. Ein durch den Bildschirmwechsel abgebrochenes Halten löst kein
+Update aus. STOP lehnt nichts ab.
 
-![Ein älteres Image](img/de/coproc-update-older.png)
-
-Nach dem vollständigen Halten von START beginnt das Update. Die normale
+Nach dem vollständigen Halten beginnt das Update. Die normale
 Verbindung zum IOmcu wird unterbrochen, die Ausgänge sind aus, und der
 IOmcu lehnt ARM bis zum Ende des Updates ab. Die Fortschrittsanzeige füllt
 den Bildschirm. Er hat kein Band und kein STOP, wie der Bus-Fehler-Bildschirm:
@@ -7149,9 +7194,9 @@ Breite ab y 180, die Blockzahl und drei Hinweise in der Schrift 12 x 24px,
 | `IOmcu startet die neue Firmware.` | er in den neuen Slot neu startet, auf Probe |
 | `Neue Firmware wird dauerhaft übernommen.` | das Panel die Identität des neuen Images liest und BUY schreibt |
 
-Der Bildschirm kehrt zum Menü zurück, wenn das Update endet, oder zu
-UPDATES, wenn das Halten auf UPDATES es gestartet hat. Das Alarmband sagt
-dann, wie es endete:
+Der Bildschirm kehrt zu UPDATES zurück, wenn das Update endet. Das
+Alarmband sagt dann, wie es endete, und die Karte von Schritt 2 behält die
+Zeile eines Fehlschlags bis zum nächsten Versuch oder zum nächsten Start:
 
 | Alarm | Bedeutung |
 | --- | --- |
@@ -7172,9 +7217,6 @@ Geschrieben wird ausschließlich der inaktive Slot.
 Flash-Aufteilung und Grenzen. Die Dauer der Übertragung ist nicht
 gemessen.
 
-Die Frage öffnet sich vom Menü aus, nicht von LOGS: das Angebot kommt mit dem
-Link, und LOGS gehört der SD-Karte.
-
 ## Updates
 
 UPDATES sucht auf GitHub nach dem neuesten Release der Panel-Firmware
@@ -7184,49 +7226,65 @@ Start führt dieselbe Suche einmal je Panel-Start aus. 0.22 ist das letzte Relea
 dem ESP32-P4-Panel wird jedes neuere Release angeboten
 ([Die Release-Linie](#die-release-linie)).
 
-![UPDATES](img/de/updates.png)
+![UPDATES: die letzte Karte](img/de/updates.png)
 
-NACH UPDATES SUCHEN ist 460 x 56px bei y 16 im Körper, links. Die Karte
-rechts ist 532px breit, von y 16 bis 336 im Körper; ihr Text läuft in
-Zeilen von 41 Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein
-Ergebnis bis in die letzten drei Zeilen der Karte, entfallen diese Zeilen.
-Unter NACH UPDATES SUCHEN stehen die Zeilen des IOmcu-Abschnitts in der
-Schrift 10 x 20px, und sein Halten ist eine Taste derselben Größe, ab y 380
-im Körper. Dazwischen der Eintrag FUNKGERÄTE: seine Überschrift bei y 236
-im Körper, seine Zeile bei y 260 und seine Taste, 460 x 56px, bei y 316
-([Die Funkgeräte](#die-funkgeräte)). Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
-im Körper und ihr Halten, 532 x 56px, neben dem des IOmcu
-([Der C6-Funk](#der-c6-funk)). Die Fußleiste
+UPDATES führt durch sechs Schritte in fester Reihe: PANEL, IOMCU, C6-FUNK,
+DIAL, LEISTUNGSKNOTEN und AUSWUCHTKNOTEN. Das Panel-Image bringt jedes
+andere Image mit, darum kommt PANEL zuerst. Der C6-Funk kommt vor den
+Funkgeräten: Ihre Übertragung läuft über seinen Bluetooth-LE-Controller
+(Low Energy), und sein Update startet das Panel neu. Nur der aktuelle
+Schritt hat ein Bedienelement ([Die Schritte](#die-schritte)).
+
+NACH UPDATES SUCHEN ist 460 x 56px bei y 16 im Körper, links. Darunter die
+sechs Schrittzeilen, 460 x 48px ab y 88 im Körper, 56px auseinander: ein
+Nummernfeld 48 x 48px, der Name des Schritts, die Version, die sein Ziel
+ausführt, und sein Etikett rechtsbündig, in der Schrift 10 x 20px. Die
+Zeilen nehmen keinen Druck an. Die Karte rechts, 532px breit von y 16 bis
+436 im Körper, zeigt den aktuellen Schritt; ihr Text läuft in Zeilen von
+41 Zeichen der Schrift 12 x 24px, 28px auseinander. Das Bedienelement des
+aktuellen Schritts, 500 x 64px, steht bei y 292 im Körper, SCHRITT
+ÜBERSPRINGEN, 500 x 56px, bei y 364, 16px über dem Fuß der Karte. Text, der
+nicht über die Bedienelemente passt, weicht: zuerst die Zeilen dazu, was
+ein Update tut, und die Hinweise auf der letzten Karte; Versionen, Gründe
+und Ergebnisse bleiben. Die Fußleiste
 ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
-lautet `[UPDATES] [2s HALTEN: LADEN & INSTALLIEREN] [OPTIONEN]`; der
-mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
+lautet `[UPDATES] [UPDATE ABBRECHEN] [OPTIONEN]`; der mittlere Platz
+bleibt leer, außer während der Übertragung eines Geräts. Die Updates und
+Neuinstallationen des IOmcu, des C6-Funks und der Funkgeräte außerhalb der
+Reihe stehen auf EINZELNE UPDATES, einer Seite, die die Zeile Einzelne
+Updates der OPTIONEN öffnet ([Einzelne Updates](#einzelne-updates)).
 
 | Bedienelement | Wirkung |
 | --- | --- |
-| `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
-| `2s HALTEN: LADEN & INSTALLIEREN` | In der Mitte der Fußleiste, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
-| `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start und Releases. Grau, solange eine Suche oder ein Download läuft oder ein Finger den Download hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche oder Download.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
-| `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
-| `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
-| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
-| `FIRMWARE DER FUNKGERÄTE` | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten ([Die Funkgeräte](#die-funkgeräte)). Während ein Update läuft, zeigt die Taste die Beschriftung dieser Zeile. |
+| `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. In der Akzentfarbe nur, solange kein Schritt aktuell ist. |
+| Das Bedienelement des aktuellen Schritts | 2s Halten startet das Update des Schritts ([Die Schritte](#die-schritte)). Grau, solange eine Sperre den Schritt hält; ein Druck beliebiger Länge zeigt dann den Grund im Meldeband. |
+| `SCHRITT ÜBERSPRINGEN` | Ein Tippen übergeht den aktuellen Schritt bis zum Neustart des Panels; der nächste sperrende Schritt wird aktuell. |
+| `ÜBERSPRUNGENE SCHRITTE ZEIGEN` | Auf der letzten Karte, solange ein Schritt übersprungen ist. Ein Tippen holt jeden übersprungenen Schritt zurück. |
+| `NETZWERK SPEICHERN: WI-FI ÖFFNEN` | Auf der letzten Karte, am Platz des Bedienelements, solange kein Heimnetz gespeichert ist. Öffnet WI-FI. |
+| `UPDATE ABBRECHEN` | In der Mitte der Fußleiste, während die Übertragung eines Geräts läuft. Ein Tippen beendet sie vor ihrem letzten Byte. Ab END installiert das Gerät: Die Taste ist grau, und ein Tippen zeigt `Das Gerät installiert das Update und hält jetzt nicht an. Das Ergebnis folgt.` im Meldeband. |
+| `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start, Releases und Einzelne Updates. Grau, solange eine Suche, ein Download oder das Update eines Schritts läuft oder ein Finger das Bedienelement des Schritts hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche, Download oder Update.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
+
+Ein Finger auf einmal: Liegt ein Finger auf einem Bedienelement, startet
+ein zweiter Finger nichts. STOP im Band wird jederzeit angenommen.
 
 ![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
 
-| Einstellung | Werte | Vorgabe | Wirkung |
+| Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
 | Erinnerung beim Start | AUS, EIN | EIN | die Suche beim Start und ihre Erinnerung |
 | Releases | STABLE, TESTING | STABLE | welche Releases eine Suche liest ([Die Suche](#die-suche)); ein Wechsel blendet das Ergebnis der letzten Suche aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
+| Einzelne Updates | - | - | ein Tippen schließt die Liste und öffnet EINZELNE UPDATES ([Einzelne Updates](#einzelne-updates)); ist ein Wert ungespeichert, kommt zuerst die Warnung beim Verlassen, und ihr SPEICHERN oder VERWERFEN öffnet die Seite |
 
 Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, wie
 auf SETUP ([Werte behalten](#werte-behalten)).
 
-Die Karte nennt die laufende Version und das gespeicherte Heimnetz. Suche
-und Download brauchen:
+Die Karte von PANEL und die letzte Karte nennen die laufende Version und
+das gespeicherte Heimnetz. Suche und Download brauchen:
 
 - ein auf WI-FI gespeichertes Heimnetz ([Heimnetz](#heimnetz)).
-  Ohne eines sagt die Karte `Kein Heimnetz gespeichert.` über der Taste
-  `NETZWERK SPEICHERN: WI-FI ÖFFNEN`, und NACH UPDATES SUCHEN ist grau. Die
+  Ohne eines sagt die Karte `Kein Heimnetz gespeichert.`, die letzte Karte
+  trägt die Taste `NETZWERK SPEICHERN: WI-FI ÖFFNEN` am Platz des
+  Bedienelements, und NACH UPDATES SUCHEN ist grau. Die
   Taste öffnet WI-FI, dessen Home-Feld hierher zurückführt; der Funk geht dabei
   aus, wie auf jedem Weg von WI-FI weg. Eine Prüfung, die mangels
   Netz endete, sagt auf PANEL UPDATE `Speichere ein Netzwerk unter WI-FI.`;
@@ -7239,6 +7297,179 @@ und Download brauchen:
 
 Der Download braucht wie eine Installation außerdem, dass keine
 Platinenzeichnung geladen oder gespeichert wird.
+
+### Die Schritte
+
+Aktuell ist der Schritt, dessen Update läuft; läuft keines, der Schritt
+mit der kleinsten Nummer, der sperrt. Schrittliste und Karte entstehen in
+jedem Bild aus dem, was das Panel weiß: Keine Schrittposition wird
+gespeichert, darum zeigen ein Neustart, eine verlorene Verbindung oder ein
+fehlgeschlagener Schritt den richtigen Schritt ohne Wiederherstellung. Ein
+neueres Panel-Release, das gefunden wird, während ein späterer Schritt
+aktuell ist, macht PANEL wieder aktuell: Sein Image ersetzt die Images,
+die die späteren Schritte senden.
+
+| Schritt | Aktuell, solange | Bedienelement |
+| --- | --- | --- |
+| 1 PANEL | eine Suche ein neueres Release fand | `2s HALTEN: LADEN & INSTALLIEREN` ([Der Download](#der-download)); die Karte nennt das Release und sagt, dass das Panel damit neu startet |
+| 2 IOMCU | der IOmcu einen anderen Build als den mitgebrachten ausführt | `2s HALTEN ZUM IOMCU-UPDATE` ([Der IOmcu](#der-iomcu)); `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe für ein älteres Image |
+| 3 C6-FUNK | der C6 eine andere Version als die des mitgebrachten Images meldet | `2s HALTEN ZUM C6-FUNK-UPDATE` ([Der C6-Funk](#der-c6-funk)); die Karte sagt `Nach diesem Schritt startet das Panel neu.` |
+| 4 DIAL | das verbundene Dial eine andere Version ausführt | `2s HALTEN ZUM DIAL-UPDATE` ([Das Dial](#das-dial)) |
+| 5 LEISTUNGSKNOTEN | der verbundene Leistungsknoten eine andere Version ausführt | `2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE` ([Die Sensorknoten](#die-sensorknoten)) |
+| 6 AUSWUCHTKNOTEN | der verbundene Auswuchtknoten eine andere Version ausführt | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` |
+
+Eine Suche, die nichts Neueres fand oder fehlschlug, sperrt nie; ebenso
+wenig ein Download, der fehlschlug oder gestoppt wurde. PANEL zeigt dann
+`AKTUELL`, `NICHT GESUCHT` oder `FEHLGESCHLAGEN`, die Karte zeigt das
+Ergebnis, und NACH UPDATES SUCHEN ist der Weg zurück. Ein Schritt, dessen
+Update seit dem Start des Panels lief und fehlschlug, bleibt aktuell:
+Seine Zeile zeigt `FEHLGESCHLAGEN`, die Karte die Zeile der Meldung in der
+Warnfarbe, und das Halten ist der neue Versuch.
+
+![Schritt 2: der IOmcu](img/de/updates-step-iomcu.png)
+
+| Etikett | Bedeutung |
+| --- | --- |
+| `ALS NÄCHSTES` | der aktuelle Schritt: sein Bedienelement ist aktiv, oder grau mit dem Grund auf der Karte |
+| `AKTUELL` | führt die mitgebrachte oder neueste Version aus; sein Nummernfeld ist in der OK-Farbe gefüllt |
+| `SPÄTER` | ein Schritt nach dem aktuellen mit einer anderen Version; ist PANEL mit einem neueren Release aktuell, auch IOMCU und jedes verbundene Gerät: Das Release bringt neuere Images für sie mit |
+| `UPDATE LÄUFT`, `WIRD GEPRÜFT` | sein Update läuft; oder eine kurze Wartezeit: die Build-Prüfung des IOmcu, die Prüfung des mitgebrachten Images, der Start von Bluetooth LE, das Ende eines anderen Updates. Die Karte sagt welche; kein Bedienelement |
+| `FEHLGESCHLAGEN` | sein letzter Versuch seit dem Start des Panels endete ohne Installation |
+| `ÜBERSPRUNGEN` | SCHRITT ÜBERSPRINGEN wurde seit dem Start des Panels getippt |
+| `NICHT GESUCHT` | PANEL: kein Suchergebnis seit diesem Start |
+| `OHNE VERBINDUNG`, `NICHT VERBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden |
+| `NICHT GEBUNDEN` | kein Gerät der Art ist auf WIRELESS gebunden |
+| `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | nichts zu tun: Das Panel bringt kein Image mit, das mitgebrachte Image besteht seine Prüfung nicht, die Build-Prüfung des IOmcu gab keine Antwort, der IOmcu nimmt kein Update über CAN an, die Verbindung zum C6 schlug fehl, der C6 nannte keine Version |
+
+Ein Schritt, bei dem nichts zu tun ist, wird übergangen. Steht nach einem
+Neustart ein Update-Lauf, warten stattdessen der IOmcu ohne Verbindung und
+ein gebundenes, nicht verbundenes Gerät: Die Karte sagt
+`Wartet auf die Antwort des IOmcu.` oder
+`Schalte das Dial ein und halte es in Reichweite.`, mit SCHRITT
+ÜBERSPRINGEN, und der Schritt geht von selbst weiter, sobald sich das Ziel
+verbindet. Außerhalb eines Laufs werden sie übergangen und auf der letzten
+Karte genannt.
+
+![Ein Schritt, gesperrt bei ARMED](img/de/updates-held.png)
+
+Ein Schritt, dessen Sperre der Bediener aufheben kann, ist gesperrt:
+ARMED, ein wartendes ARM, der Netzteilausgang an, ein offener
+Aufzeichnungslauf, WLAN an, eine Platinenzeichnung, die geladen wird, eine
+Panel-Installation. Das Bedienelement ist grau, die Karte nennt den Grund,
+und ein Druck auf das Bedienelement nennt ihn im Meldeband. Ein laufendes
+Halten endet ohne Auslösen, wenn sich sein Schritt unter dem Finger
+ändert: Die Sperre greift, die Verbindung fällt weg, ein neueres Release
+kommt herein. Es kehrt mit dem Zustand nicht zurück.
+
+![Der Schritt des C6-Funks](img/de/updates-step-c6.png)
+![Der Schritt des Dial](img/de/updates-step-dial.png)
+
+Während die Übertragung eines Geräts läuft, zeigt das Bedienelement ihre
+Phase wie die Zeile auf EINZELNE UPDATES: `DIAL-UPDATE: VERBINDET`,
+`AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s`, `DIAL-UPDATE 43%`. Die Karte sagt,
+wie das Gerät annimmt: `Drücke die Taste am Dial zum Annehmen. 1s Halten lehnt ab.`
+oder `Halte BOOT am Knoten 1s zum Annehmen.` UPDATE ABBRECHEN steht in der
+Fußleiste.
+
+![Das Dial fragt nach seinem Druck](img/de/updates-step-dial-ask.png)
+![Der Schritt des Dial wartet in einem Lauf nach einem Neustart](img/de/updates-step-waiting.png)
+
+SCHRITT ÜBERSPRINGEN setzt das Bit des Schritts in einer Maske im RAM
+(Arbeitsspeicher), gelöscht beim Start des Panels und durch
+ÜBERSPRUNGENE SCHRITTE ZEIGEN. Auf dem Schritt des IOmcu lehnt es
+außerdem das Angebot des IOmcu ab, das UPDATES gezeigt hat: Weder das
+Öffnen noch seine Bandzeile kommen für dieses Angebot wieder
+([IOmcu-Update](#iomcu-update)). Ein neues Angebot holt den Schritt
+zurück. Ein laufendes Update wird nie übersprungen.
+
+Ist kein Schritt aktuell, sagt die Karte `Alle Firmware ist aktuell.`,
+die laufende Version, das Heimnetz, das Ergebnis der letzten Suche und
+die übergangenen Schritte: `Nicht verbunden: LEISTUNGSKNOTEN.`,
+`Kein Update hier: C6-FUNK. Die Liste nennt den Grund.` und
+`Übersprungen: DIAL.`, danach die Hinweise zur Erinnerung und zu
+RELEASES. ÜBERSPRUNGENE SCHRITTE ZEIGEN steht darunter, solange ein
+Schritt übersprungen ist. NACH UPDATES SUCHEN ist in der Akzentfarbe
+gezeichnet.
+
+![Die letzte Karte mit übersprungenem Dial](img/de/updates-done.png)
+
+### Nach einem Neustart
+
+Ein Update-Lauf enthält zwei Neustarts: nach der Installation des Panels
+und nach dem Update des C6-Funks. Die Laufnotiz im NVS (nichtflüchtiger
+Speicher) hält fest, dass ein Lauf steht
+([Installieren: PANEL UPDATE](#installieren-panel-update)); die Schritte
+werden nach dem Neustart neu aus dem entschieden, was das Panel weiß.
+
+Steht ein Lauf, öffnet sich UPDATES einmal je Start von selbst: im Menü,
+nach dem Splash, bei SAFE, ohne wartendes ARM, mit Netzteilausgang aus,
+ganz ausgeschaltetem Funk des Panels und ohne laufende
+Panel-Installation, also unter den Bedingungen, unter denen ein Angebot
+des IOmcu es öffnet. UPDATES öffnet einmal, wenn beide fällig sind: Das
+Öffnen durch den Lauf kommt im Frame zuerst, das Angebot gilt dort als
+gezeigt, und ein in diesem Start schon gezeigtes UPDATES, von Hand oder
+für ein Angebot geöffnet, verbraucht das Öffnen des Laufs. Ein Start mit
+Lauf verbraucht eine der 2 Öffnungen der Notiz, also öffnet ein Lauf
+UPDATES bei höchstens 2 Starts, ein Stromausfall dazwischen eingeschlossen.
+
+![Schritt 2 nach dem Neustart des Panels](img/de/updates-run-iomcu.png)
+
+Solange eine Bedingung das Öffnen zurückhält, nennt das Meldeband sie
+einmal, und wieder, wenn sich der Grund ändert:
+
+| Band | Bedingung |
+| --- | --- |
+| `Update-Lauf: UPDATES öffnet bei SAFE und Netzteilausgang aus.` | ARMED, ein wartendes ARM, oder der Netzteilausgang an oder im Einschalten |
+| `Update-Lauf: UPDATES öffnet, sobald das WLAN des Panels aus ist.` | eine Suche, ein Download oder der Bildschirm WI-FI hält den Funk an |
+| `Update-Lauf: UPDATES öffnet nach der Panel-Installation.` | ein Download oder eine Installation des Panels läuft |
+
+Auf einem anderen Bildschirm wartet es ohne Zeile. Die Suche beim Start
+([Die Suche](#die-suche)) läuft während eines Laufs nicht, und auch nicht,
+bevor der Start die Laufnotiz gelesen hat: Sie schaltet den Funk ein und
+sperrt den Schritt des IOmcu.
+
+Während eines Laufs warten der IOmcu ohne Verbindung und ein gebundenes,
+nicht verbundenes Gerät ([Die Schritte](#die-schritte)). Der Lauf endet,
+und die Notiz wird gelöscht, wenn:
+
+- das Home-Tag UPDATES verlässt. Das Home-Tag über der
+  Liste OPTIONEN, EINZELNE UPDATES oder der Seite der Funkgeräte schließt
+  zuerst diese und beendet nichts;
+- kein Schritt mehr sperrt, sobald der Bluetooth-LE-Client die Zeilen der
+  Funkgeräte veröffentlicht hat: Vorher gilt jedes Gerät als nicht
+  gebunden.
+
+Das Löschen ist ein Schreiben in den Flash, und ein Schreiben in den Flash
+hält beide Kerne an, darunter die Steuer-Task mit Heartbeat und STOP. Ein
+Lauf, der endet, während der Prüfstand ARMED ist, ein ARM wartet oder ein Netzteilausgang an ist oder angeht, behält seine Notiz,
+bis der Prüfstand SAFE ist und die Ausgänge aus sind.
+
+Beides beendet den Lauf nicht, solange ein C6-Update läuft oder sein
+Neustart ansteht: Die Notiz, die dieses Update für den Start danach
+geschrieben hat, bleibt. Ein Bildschirm, den das Panel über UPDATES
+öffnet, beendet nichts: PANEL UPDATE, der Fortschritt des IOmcu, der
+Busfehler-Bildschirm. Ein Build, der zurückging, findet eine Notiz mit
+einer anderen Version und löscht sie; sein Start öffnet nichts, und das
+Band behält die Zeile, dass der Start fehlschlug. Die Konsole nennt jedes
+Öffnen und jedes Ende:
+
+    I (…) rcbench: update run: UPDATES opened
+    I (…) rcbench: update run: ends, UPDATES left by the home tag
+    I (…) rcbench: update run: ends, no step left
+    I (…) fw_ota: run note: erased; the update run ends
+
+Aktuelle Einschränkungen:
+
+- Ein Panel, dessen Bluetooth-LE-Client nicht eingerichtet ist,
+  veröffentlicht keine Zeile eines Geräts und beendet keinen Lauf von
+  selbst: Das Home-Tag beendet ihn, oder die Öffnung des zweiten Starts
+  ist die letzte.
+- Bei einem Versuchsstart wird die Notiz gelesen, sobald der Build
+  bestätigt ist, bis zu 30s nach dem Start. Ein Angebot des IOmcu kann
+  UPDATES vorher öffnen; der Lauf öffnet in diesem Start dann nichts,
+  auch wenn das Home-Feld UPDATES vor dem Lesen der Notiz verlassen hat.
+- Zeit vom Start des Panels bis zu einem verbundenen Dial oder Knoten:
+  nicht gemessen.
 
 ### Die Suche
 
@@ -7288,7 +7519,7 @@ verschwindet ihr Ergebnis nach Ende der WI-FI-Sitzung und Abschalten des WLANs:
 
 | Karte | Bedeutung |
 | --- | --- |
-| `Version 0.22.1 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Das Halten erscheint. |
+| `Version 0.22.1 ist verfügbar.` | Das neueste Release ist neuer als der laufende Build. Der Schritt PANEL wird mit dem Halten des Downloads aktuell. |
 | `Aktuell. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.22.0.` | Das neueste Release ist die laufende Version oder älter. |
 | `Kein neueres Release für das ESP32-S3-Panel. Panel-Version: 0.22.0.` und `Neuestes Release auf GitHub: 0.23.0.` | Nur auf einem Panel mit der Linie 0.22: Das neueste Release ist neuer als der laufende Build und liegt hinter der Release-Linie. Es wird nicht angeboten, und die Erinnerung beim Start öffnet sich dafür nicht. |
 | `Verbindung fehlgeschlagen. Passwort abgelehnt.`, `Verbindung fehlgeschlagen. Netzwerk nicht gefunden.`, `Keine Verbindung. Nach 15s noch keine IP-Adresse.`, `Verbindung zum Heimnetz verloren.` | Das Verbinden scheiterte, wie auf WI-FI. |
@@ -7397,15 +7628,54 @@ Aktuelle Einschränkung der Linie 0.22: Die Liste enthält die 10 nach Datum
 neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr
 Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
 
+### Einzelne Updates
+
+EINZELNE UPDATES startet ein Update oder eine Neuinstallation zur Zeit:
+des IOmcu, des C6-Funks oder eines Funkgeräts. Die Seite öffnet über die
+Zeile Einzelne Updates der OPTIONEN und bedeckt den Körper von UPDATES.
+Jeder Start ist ein Halten von 2s.
+
+![EINZELNE UPDATES](img/de/updates-single.png)
+
+Der Platz der Karte, 532px breit von y 16 bis 336 im Körper, trägt die
+Überschrift `Einzelne Updates und Neuinstallationen. Der normale Weg sind
+die Schritte auf UPDATES.` und eine Zeile dazu, was eine Neuinstallation
+tut. Die linke Spalte trägt den IOmcu-Abschnitt: seine Zeilen in der
+Schrift 10 x 20px ab y 88 im Körper und sein Halten, 460 x 56px, bei
+y 380 ([Der IOmcu](#der-iomcu)). Dazwischen der Eintrag FUNKGERÄTE: seine
+Überschrift bei y 236 im Körper, seine Zeile bei y 260 und seine Taste,
+460 x 56px, bei y 316 ([Die Funkgeräte](#die-funkgeräte)). Unter der
+Überschrift die Zeile C6 RADIO: eine Zeile bei y 348 im Körper und ihr
+Halten, 532 x 56px, neben dem des IOmcu ([Der C6-Funk](#der-c6-funk)).
+Die Fußleiste lautet `[UPDATES] [ ] [ZURÜCK]`.
+
+| Bedienelement | Wirkung |
+| --- | --- |
+| `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
+| `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
+| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
+| `FIRMWARE DER FUNKGERÄTE` | Öffnet über dieser Seite die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten ([Die Funkgeräte](#die-funkgeräte)). Während ein Update läuft, zeigt die Taste die Beschriftung dieser Zeile. |
+| `ZURÜCK` | Schließt die Seite: UPDATES erscheint wieder. |
+
+Ein Finger zur Zeit: Liegt ein Finger auf einem Halten, dem Eintrag oder
+ZURÜCK, startet ein zweiter nichts. Das Home-Tag schließt zuerst die Seite
+der Funkgeräte, dann diese Seite, dann verlässt es UPDATES. Das Verlassen
+von UPDATES schließt die Seite, und ein laufendes Halten endet, ohne etwas
+zu starten. Eine Suche oder ein Download, der startet, während die Seite
+offen ist, schließt nichts; NACH UPDATES SUCHEN und das Halten zum Laden stehen nicht
+auf der Seite.
+
 ### Der IOmcu
 
-Unter den Tasten zeigt UPDATES den IOmcu-Abschnitt: die laufende Version
+Auf EINZELNE UPDATES zeigt die linke Spalte den IOmcu-Abschnitt: die laufende Version
 (`Läuft: 0.21.2`), die Version des enthaltenen Images
 (`Auf diesem Panel: 0.22.0`), eine Statuszeile und
-`2s HALTEN ZUM IOMCU-UPDATE`. Das Halten startet dasselbe Update mit derselben Fortschrittsanzeige wie
-die Frage beim Verbindungsaufbau ([IOmcu-Update](#iomcu-update)), auch wenn
-diese Frage zuvor abgelehnt wurde. Nach dem Update oder einem verworfenen
-START ohne begonnenes Update kehrt der Bildschirm zu UPDATES zurück.
+`2s HALTEN ZUM IOMCU-UPDATE`. Das Halten startet dasselbe Update mit
+derselben Fortschrittsanzeige wie Schritt 2 auf UPDATES
+([IOmcu-Update](#iomcu-update)), auch wenn das Angebot zuvor abgelehnt
+wurde. Nach dem Update oder einem verworfenen
+START ohne begonnenes Update kehrt der Bildschirm zu UPDATES zurück,
+EINZELNE UPDATES geschlossen.
 
 ![Der IOmcu-Abschnitt mit einem anderen Build](img/de/updates-coproc.png)
 
@@ -7431,15 +7701,17 @@ und der Geräte:
 | `Wartet: Die Installation der Panel-Firmware läuft.` | Eine Panel-Installation ist im Gang. |
 | `Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.` | Das Halten startet das Update. Bei einem älteren Image lautet die Zeile `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe, bei gleicher Versionsnummer `Gleiche Versionsnummer, aber ein anderer Build.` |
 
-Die Bedingungen sind die der Frage: ein anderer Build, der Prüfstand SAFE,
-der Netzteilausgang aus, der Funk ganz aus und keine Panel-Installation. Verwendet der IOmcu bereits den enthaltenen Build, bleibt die Taste zum
-Halten inaktiv. Auch die Frage beim Verbindungsaufbau erscheint dann nicht. Ein IOmcu einer
-anderen Protokoll-Hauptversion zeigt KEINE VERBINDUNG im Band und nimmt das
-Update trotzdem, wie die Frage es auch ihm anbietet.
+Die Bedingungen sind die von Schritt 2 und vom Öffnen durch ein Angebot:
+ein anderer Build, der Prüfstand SAFE, der Netzteilausgang aus, der Funk
+ganz aus und keine Panel-Installation. Verwendet der IOmcu bereits den
+enthaltenen Build, bleibt die Taste zum Halten inaktiv, und kein Angebot
+öffnet UPDATES. Ein IOmcu einer anderen Protokoll-Hauptversion zeigt KEINE
+VERBINDUNG im Band und nimmt das Update trotzdem; sein Angebot öffnet
+UPDATES wie jedes andere.
 
 ### Der C6-Funk
 
-Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und
+Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und
 Bluetooth trägt: `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`, die Version,
 die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start gemeldet hat, oder
 `nicht gemeldet`, und die Version des Images, das dieses Panel mitbringt,
@@ -7482,7 +7754,7 @@ Alarmband sagt, wie ein Update endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
-| `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu. |
+| `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu, und der Update-Lauf geht danach weiter ([Nach einem Neustart](#nach-einem-neustart)). |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Der Funk über den ESP32-C6: Wiederherstellung über Header H4](C6-de.md#wiederherstellung-über-header-h4)). |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
 | `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |
@@ -7493,7 +7765,7 @@ GitHub-Prüfung und IOmcu-Update warten.
 
 ### Die Funkgeräte
 
-Der Eintrag FUNKGERÄTE auf UPDATES zählt die Geräte:
+Der Eintrag FUNKGERÄTE auf EINZELNE UPDATES zählt die Geräte:
 `Verbunden: 1 von 3. Andere Version: 0.` nennt die Geräte, die eine
 Version gemeldet haben, und die, deren Zeile eine andere als die
 mitgebrachte Version anbietet. Ein Tippen auf `FIRMWARE DER FUNKGERÄTE`
@@ -7502,13 +7774,13 @@ Beschriftung dieser Zeile.
 
 ![Der Eintrag FUNKGERÄTE, während das Dial nach seinem Druck fragt](img/de/updates-dial.png)
 
-Die Seite bedeckt den Körper von UPDATES. Sie hat eine Zeile je Gerät, bei
+Die Seite bedeckt EINZELNE UPDATES. Sie hat eine Zeile je Gerät, bei
 y 24, 128 und 232 im Körper: DIAL-FIRMWARE, LEISTUNGSKNOTEN-FIRMWARE und
 AUSWUCHTKNOTEN-FIRMWARE. Überschrift und Zeile nehmen 496px ab x 16 ein,
 das Halten 480 x 56px ab x 528. Ein Hinweis unter den Zeilen sagt, wie
 ein Gerät ein Update annimmt. `ZURÜCK` im rechten Platz der Fußleiste und
-das Home-Tag schließen die Seite; das Verlassen von UPDATES schließt sie
-ebenfalls. Es läuft ein Update zur Zeit: Solange eines läuft, ist das
+das Home-Tag schließen die Seite und zeigen wieder EINZELNE UPDATES; das
+Verlassen von UPDATES schließt beide. Es läuft ein Update zur Zeit: Solange eines läuft, ist das
 Halten der anderen Zeilen grau.
 
 ![Die Seite der Funkgeräte](img/de/updates-devices.png)
@@ -7522,7 +7794,7 @@ Halten der anderen Zeilen grau.
 | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Sendet das Image des Auswuchtknotens, das dieses Panel mitbringt, an den gebundenen Auswuchtknoten. |
 | `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
 | `UPDATE ABBRECHEN` | Im mittleren Platz der Fußleiste, solange ein Update läuft; ein einfaches Tippen. Vor END beendet es das Update: Das Gerät verwirft, was es angenommen hat, und behält seine Firmware, und das Band zeigt `<Gerät>-Update abgebrochen: auf UPDATES abgebrochen. Vorherige Firmware läuft.` Ab END installiert das Gerät, was kommt: Die Taste ist grau, ein Tippen zeigt `Das Gerät installiert das Update und hält jetzt nicht an. Das Ergebnis folgt.` im Band, und das Ergebnis folgt wie ohne das Tippen. |
-| `ZURÜCK` | Schließt die Seite. |
+| `ZURÜCK` | Schließt die Seite: EINZELNE UPDATES erscheint wieder. |
 
 ### Das Dial
 
@@ -7673,8 +7945,8 @@ entfällt die Suche für diesen Start.
 
 Findet die Suche ein neueres Release, erscheint die Erinnerung im Menü
 (OVERVIEW). Sie wartet, solange der Prüfstand ARMED ist, ARM angefordert
-ist, der Netzteilausgang eingeschaltet ist oder die Frage beziehungsweise
-Fortschrittsanzeige des IOmcu-Updates sichtbar ist. Sobald diese Hindernisse
+ist, der Netzteilausgang eingeschaltet ist oder das IOmcu-Update angeboten
+wird oder läuft. Sobald diese Hindernisse
 entfallen und das Menü zu sehen ist, öffnet sie sich.
 
 | Bedienelement | Wirkung |

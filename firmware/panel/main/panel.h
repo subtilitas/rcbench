@@ -198,6 +198,9 @@ typedef struct {
     uint8_t      check;     /**< the last build check, a cu_check_t */
     bool         mismatch;  /**< an IOmcu of another protocol major
                                answers its identity (the link stays down) */
+    char         fail[48];  /**< the last update's failure since the
+                                 panel's start, the reason the band named;
+                                 "" after a success or a new start       */
 } cu_snap_t;
 
 /**
@@ -525,6 +528,32 @@ bool panel_cu_busy(void);
  * @return true from its hold until it has failed (panel_update.c)
  */
 bool panel_fw_busy(void);
+
+/* --------------------------------------------------------- panel_updrun.c */
+
+/**
+ * @brief The update run after a restart, once a frame on app_main before
+ *        cu_render_service(): UPDATES opens by itself once per start under
+ *        the conditions an IOmcu offer opens it under, the band names
+ *        what holds it back, and the run ends on the home tag or with no
+ *        step left (upd_run.h); the note's erase waits for a bench that
+ *        is not @p unsafe, as every flash write does.
+ * @param unsafe ARMED, an arm waiting, or the supply's output on or coming
+ * @return true while the run waits to open UPDATES (upd_run_waits()):
+ *         cu_render_service() then leaves the band line and the opening
+ *         to it
+ */
+bool updrun_service(bool unsafe);
+
+/**
+ * @brief Marks this frame's feed of UPDATES' views done: called after
+ *        upd_service(), c6_service() and devupd_service().  The next
+ *        frame's updrun_service() counts "no step blocks" only from then,
+ *        only when the device rows were published before that feed, and
+ *        only when that feed carried the run flag as it stands now.
+ * @param dev_known panel_devupd_known(), read before devupd_service()
+ */
+void updrun_fed(bool dev_known);
 
 /* ------------------------------------------------------------- panel_c6.c */
 
@@ -2207,9 +2236,13 @@ void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs);
 /**
- * @brief Drive the IOmcu update's screen; once a frame on the render side.
+ * @brief Drive the IOmcu update's offer and progress; once a frame on the
+ *        render side, after updrun_service().
  * @param unsafe ARMED, an arm waiting, or the supply's output on or coming
  * @param link_up whether the link to the IOmcu answers
  * @param cs the IOmcu update's state this frame
+ * @param run_waits an update run waits to open UPDATES: the band line is
+ *                  the run's, and an offer neither speaks nor opens
  */
-void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs);
+void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs,
+                       bool run_waits);

@@ -2,33 +2,41 @@
  * @file upd_screen.h
  * @brief Panel updates from GitHub: SETUP's UPDATES screen and the reminder.
  *
- * UPDATES (SCREEN_UPDATES, from SETUP): CHECK FOR UPDATES asks GitHub once
- * which release is the newest, over the home network the panel keeps; the
- * answer stays on the screen.  The footer's SETTINGS opens the list of
- * Reminder at start, which switches the start-up check on and off
- * (SET_UPD_REMIND), and Releases, STABLE or TESTING (SET_UPD_CHANNEL):
- * which releases a check looks at; the application drops a result found on
- * the other channel from the view.  When a newer release was found, HOLD
- * 2s TO DOWNLOAD & INSTALL in the footer's middle slot fetches and installs
- * it.
+ * UPDATES (SCREEN_UPDATES, from SETUP) leads through six steps in order:
+ * PANEL, IOMCU, C6 RADIO, DIAL, POWER NODE and BALANCE NODE (upd_wizard.h
+ * decides them, upd_wiz_view.h draws them).  CHECK FOR UPDATES asks GitHub
+ * once which release is the newest, over the home network the panel
+ * keeps; the answer stays on the screen.  The step list shows every step's
+ * state; the card on the right shows the current step and its one
+ * control: HOLD 2s TO DOWNLOAD & INSTALL while a check found a newer
+ * release, the IOmcu's, the C6's or a device's 2s hold after it, and SKIP
+ * THIS STEP, which passes the step until the panel restarts.  With no step
+ * left the card says all firmware is current.  The footer's OPTIONS opens
+ * the list of Reminder at start, which switches the start-up check on and
+ * off (SET_UPD_REMIND), Releases, STABLE or TESTING (SET_UPD_CHANNEL):
+ * which releases a check looks at, and Single updates, which opens SINGLE
+ * UPDATES; the application drops a result found on the other channel from
+ * the view.
  *
- * Its IOmcu section, under CHECK: the version the IOmcu
- * runs, the version of the image this panel carries, and HOLD 2s: UPDATE
- * IOMCU, which starts the update the link-up's question starts, also
- * after that question was declined.  The hold is live only while
- * coproc_update_section() reads CU_SEC_READY; any other state greys it and
- * says why in the line above it.  coproc_update_drive() hands the section
- * in (upd_screen_set_coproc()) and drains the hold
- * (upd_screen_take_coproc()).
+ * SINGLE UPDATES (upd_single.c) covers UPDATES' body.  Its IOmcu section:
+ * the version the IOmcu runs, the version of the image this panel
+ * carries, and HOLD 2s TO UPDATE THE IOMCU, which starts the update
+ * UPDATES' IOmcu step starts, also after its offer was declined.  The
+ * hold is live only while coproc_update_section() reads CU_SEC_READY; any
+ * other state greys it and says why in the line above it, and a press on
+ * it says why on the band.  coproc_update_drive() hands the section in
+ * (upd_screen_set_coproc()) and drains the hold
+ * (upd_screen_take_coproc()).  The page also holds the C6 RADIO row
+ * (upd_c6.h) and the WIRELESS DEVICES entry (upd_dev.h).
  *
  * The reminder (SCREEN_UPD_REMIND): the start-up check found a newer
  * release.  It opens on OVERVIEW only, with the bench SAFE and the supply
- * off, and never over the IOmcu's update question or its progress,
- * which come first.  IGNORE NOW closes it until the next start; NEVER
- * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2s:
- * DOWNLOAD & INSTALL is the same hold as on UPDATES, and the one
+ * off, and never while the IOmcu's update is offered or runs: UPDATES
+ * opened for the offer, or the progress, comes first.  NOT NOW closes it until the next start; NEVER
+ * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2s
+ * TO DOWNLOAD & INSTALL is the same hold as on UPDATES, and the one
  * confirmation: no question follows the download.  Leaving it by the HOME
- * tag is IGNORE NOW.
+ * tag is NOT NOW.  The reminder and its driver are upd_remind.c.
  *
  * The screens command nothing.  The application hands them what to show
  * (upd_screen_set()) and drains what they ask for (upd_screen_take()), as
@@ -213,8 +221,7 @@ bool upd_screen_take_coproc(void);
 
 /**
  * @brief The section's state line for @p v, and its colour; defined
- *        beside the IOmcu's question (coproc_update_screen.c), whose
- *        words it shares.
+ *        beside the IOmcu's update driver (coproc_update_screen.c).
  *
  * @param v the section
  * @param line receives the line
@@ -274,6 +281,49 @@ void upd_result_text(const upd_view_t *v, char *out, size_t n,
  */
 bool upd_result_said_above(const upd_view_t *v);
 
+/**
+ * @brief Whether an update run stands after a restart (fw_ota_run_active()
+ *        on the panel): a step whose target comes up by itself after a
+ *        start waits for it.  False until set.
+ * @param run the flag
+ */
+void upd_screen_set_run(bool run);
+
+/**
+ * @brief A step's last attempt since the panel's start that ended without
+ *        an install: the band's line, shown on the step's card in the
+ *        warning colour, the step's hold the retry.  Copied, cut to
+ *        UI_ALERT_MAX - 1 bytes.
+ * @param step the step, an upd_wiz_id_t; another value does nothing
+ * @param text the line; NULL or "" clears it
+ */
+void upd_screen_set_result(unsigned step, const char *text);
+
+/**
+ * @brief Whether SKIP THIS STEP was tapped on the IOmcu's step, once:
+ *        coproc_update_drive() hands it over as the decline of the offer
+ *        UPDATES showed.
+ * @return true once after the tap
+ */
+bool upd_screen_take_skip_coproc(void);
+
+/**
+ * @brief Whether the home tag left UPDATES since the last call, once: no
+ *        list, SINGLE UPDATES or devices' page covered it.  A screen the
+ *        application opens over UPDATES does not count.  The update run
+ *        ends on it (upd_run.h).
+ * @return true once after the home tag left UPDATES
+ */
+bool upd_screen_take_left(void);
+
+/**
+ * @brief The same leave of UPDATES by the home tag, once, for the IOmcu's
+ *        offer: coproc_update_drive() hands it over as the decline of the
+ *        offer UPDATES showed.
+ * @return true once after the home tag left UPDATES
+ */
+bool upd_screen_take_left_cu(void);
+
 /** Repaint on the next frame. */
 void upd_screen_invalidate(void);
 
@@ -318,6 +368,8 @@ typedef struct {
     bool     coproc;       /**< the IOmcu's update is offered or runs */
     bool     unsafe;       /**< ARMED, an arm waiting, the supply on        */
     bool     newer;        /**< the start-up check found a newer release   */
+    bool     run;          /**< an update run stands, or the start's run
+                                note is not read yet: no start-up check   */
 } upd_feed_t;
 
 /** @brief What the reminder driver keeps between frames. */
@@ -331,7 +383,8 @@ typedef struct {
 /**
  * @brief Whether the start-up check starts now: once per start, with the reminder
  * on, a home network kept, Wi-Fi available, the gate open, FILES & UPDATE
- * closed, the IOmcu's update neither offered nor running, the router
+ * closed, the IOmcu's update neither offered nor running, no update run
+ * (it would switch the radio on and hold the IOmcu's step), the router
  * past the splash, and within UPD_START_WAIT_MS of the first drive.  True
  * once; the caller starts the check.
  *
