@@ -26,6 +26,7 @@
  * - every_take_reason_ends_left_of_the_board
  * - the_tapped_key_stays_visible_on_every_built_in_board
  * - the_card_and_its_buttons_clear_the_key_on_every_drawable_board
+ * - each_card_starts_the_dial_on_cancel
  *
  * SPDX-License-Identifier: MIT
  */
@@ -1075,6 +1076,60 @@ TEST_CASE(the_card_and_its_buttons_clear_the_key_on_every_drawable_board)
     outbind_forget_learned();
 }
 
+/*
+ * The Dial on MOVE PIN when CANCEL is touched: the next card starts on
+ * CANCEL again, through the router and the focus layer.
+ */
+TEST_CASE(each_card_starts_the_dial_on_cancel)
+{
+    const outbind_t b = bench();
+    visit(&b);
+    ui_router_init();
+    outputs_screen_set_apply(on_apply);
+    picker_screen_set_apply(on_apply);
+    four_ports();
+    outputs_screen_set_binding(&b);
+    picker_screen_set_binding(&b);
+    CHECK(serve_drawing());
+    ui_router_goto(SCREEN_OUTPUTS);
+    outputs_screen_select(b.proto);
+    ui_router_tick(0.016f);
+    ui_focus_set_link(true, false);
+    s_applied = 0;
+
+    for (int round = 0; round < 3; ++round) {
+        const gfx_rect_t k = key(7u);
+        touch_event_t e = { TOUCH_EVENT_DOWN,
+                            { 1u, (int16_t)(k.x + k.w / 2),
+                              (int16_t)(UI_BAND_H + k.y + k.h / 2), 40 },
+                            0u };
+        ui_router_event(&e);
+        e.type = TOUCH_EVENT_UP;
+        ui_router_event(&e);
+        ui_router_tick(0.016f);
+        CHECK(pin_take_open_in(PIN_TAKE_BOARD));
+        CHECK_EQ(ui_focus_count(), 2);
+        CHECK_STR_EQ(ui_focus_label(ui_focus_index()), "CANCEL");
+        CHECK(ui_focus_turn(1));
+        CHECK_STR_EQ(ui_focus_label(ui_focus_index()), "MOVE PIN");
+        /* CANCEL by touch, the Dial left on MOVE PIN. */
+        const gfx_rect_t cn = pin_take_button(PIN_TAKE_BTN_CANCEL);
+        touch_event_t c = { TOUCH_EVENT_DOWN,
+                            { 1u, (int16_t)(cn.x + cn.w / 2),
+                              (int16_t)(UI_BAND_H + cn.y + cn.h / 2), 40 },
+                            0u };
+        ui_router_event(&c);
+        c.type = TOUCH_EVENT_UP;
+        ui_router_event(&c);
+        ui_router_tick(0.016f);
+        CHECK(!pin_take_is_open());
+        CHECK(ui_focus_count() > 2);
+    }
+    CHECK_EQ(s_applied, 0);
+    ui_focus_set_link(false, false);
+    ui_router_goto(SCREEN_OVERVIEW);
+}
+
 int main(void)
 {
     RUN(a_tap_on_an_esc_pin_under_servo_pwm_asks_and_writes_nothing);
@@ -1097,5 +1152,6 @@ int main(void)
     RUN(every_take_reason_ends_left_of_the_board);
     RUN(the_tapped_key_stays_visible_on_every_built_in_board);
     RUN(the_card_and_its_buttons_clear_the_key_on_every_drawable_board);
+    RUN(each_card_starts_the_dial_on_cancel);
     return test_summary("pin_take");
 }

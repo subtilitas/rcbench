@@ -953,7 +953,7 @@ or `PORT1` to `PORT4`, `BUS`, `PD`, `TAP` (`test_picker_screen`, `test_picker_sc
 another protocol holds asks to move the pin on a card over the board or beside the cell;
 MOVE PIN writes the binding `outbind_take_check()` returns once, CANCEL, the home tag, a press
 off the card, a binding read that fails or changes, a pick and a view switch write nothing; a
-port's, an interface's or OFF's tap gives a reason line (`test_pin_take`, 19 cases, and
+port's, an interface's or OFF's tap gives a reason line (`test_pin_take`, 21 cases, and
 `test_pin_take_grid`, 7 cases, the grid and the rbmod carrier).
 
 ### Output binding in the IOmcu's flash

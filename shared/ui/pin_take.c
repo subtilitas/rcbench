@@ -54,6 +54,7 @@ static struct {
     uint16_t            why_board; /**< on that board                  */
 
     uint32_t            rev;      /**< bumped by every change drawn    */
+    uint32_t            opened;   /**< cards opened, for the Dial's list */
 } t = { .press = BTN_NONE };  /**< The card's state. */
 
 /** @brief Marks the card's picture changed. */
@@ -155,6 +156,7 @@ bool pin_take_tap(pin_take_view_t view, const outbind_t *b, uint8_t index,
         t.info  = info;
         t.press = BTN_NONE;
         t.why   = false;
+        ++t.opened;
         touched();
         return true;
     }
@@ -588,7 +590,9 @@ bool pin_take_focus(ui_focus_list_t *out)
     if (!t.open || out == NULL) {
         return false;
     }
-    out->list = 0x5054u;        /* "PT": the card's own list */
+    /* "PT" and the opening's number: each card is a new list to the
+     * focus layer, which starts it on CANCEL, never one to go back to. */
+    out->list = 0x50540000u | (t.opened & 0xFFFFu);
     (void)ui_focus_add(out, pin_take_button(PIN_TAKE_BTN_MOVE),
                        TR(PK_TAKE_MOVE));
     (void)ui_focus_add(out, pin_take_button(PIN_TAKE_BTN_CANCEL), TR(CANCEL));
