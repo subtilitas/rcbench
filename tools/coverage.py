@@ -413,6 +413,7 @@ TRACKED = [
     "shared/outputs/outputs.c",
     "shared/outputs/outputs_pages.c",
     "shared/outputs/out_bind.c",
+    "shared/outputs/out_bind_take.c",
     "shared/outputs/board_fix.c",
     "shared/outputs/out_pwm_map.c",
     "shared/outputs/servo_page.c",
