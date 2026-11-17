@@ -269,8 +269,10 @@ static void report_end(uint32_t now_ms)
         /* The update run goes on after the restart into this build. */
         {
             fw_image_info_t me;
-            (void)fw_ota_running(&me);
-            (void)fw_ota_run_begin(me.version_text);
+            memset(&me, 0, sizeof(me));
+            if (fw_ota_running(&me)) {
+                (void)fw_ota_run_begin(me.version_text);
+            }
         }
         s_restart = true;
         s_restart_at = now_ms + C6_RESTART_MS;
