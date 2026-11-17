@@ -472,7 +472,7 @@ TEST_CASE(the_focus_name_carries_the_tag)
         bind_more("DSHOT600", &gp, 1u, "SERVO PWM");
         memset(&list, 0, sizeof(list));
         CHECK(picker_screen_focus(&list));
-        bool seven = false, zero = false, tap = false;
+        bool seven = false, zero = false, tap_seen = false;
         for (int k = 0; k < list.count; ++k) {
             const char *l = list.item[k].label;
             CHECK(strlen(l) <= 15u);
@@ -480,11 +480,11 @@ TEST_CASE(the_focus_name_carries_the_tag)
             zero = zero || strcmp(l, "GPIO 0") == 0;
             char want[24];
             snprintf(want, sizeof(want), "GPIO 22 %s", ui_tr(TX_PK_TAG_TAP));
-            tap = tap || strcmp(l, want) == 0;
+            tap_seen = tap_seen || strcmp(l, want) == 0;
         }
         CHECK(seven);
         CHECK(zero);
-        CHECK(tap);
+        CHECK(tap_seen);
     }
     ui_text_set_language(UI_LANG_EN);
 }
