@@ -133,7 +133,7 @@ A pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD mini settings](supply.
 
 ![The question card over the board](view:outputs-take)
 
-A tap on a key another protocol holds asks to move the pin to the protocol selected. Any protocol takes from any other, PPM included. The card covers the board; the key tapped stays on top with an accent edge.
+A tap on a key another protocol holds asks to move the pin to the protocol selected. Any protocol takes from any other, PPM included. The card covers the board, or moves above or below the key tapped on a short board; that key keeps an accent edge and stays clear of the card.
 
 | Line | Example |
 |---|---|

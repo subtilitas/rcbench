@@ -25,6 +25,7 @@
  * - the_worst_case_card_fits_in_both_languages
  * - every_take_reason_ends_left_of_the_board
  * - the_tapped_key_stays_visible_on_every_built_in_board
+ * - the_card_and_its_buttons_clear_the_key_on_every_drawable_board
  *
  * SPDX-License-Identifier: MIT
  */
@@ -931,6 +932,149 @@ TEST_CASE(the_tapped_key_stays_visible_on_every_built_in_board)
     }
 }
 
+/**
+ * @brief A learned board of @p per_side pads a row, @p w x @p h in 0.01mm
+ *        at 0.1in pitch from @p corner, GPIO n on pad (n + 7) mod pads + 1:
+ *        GPIO 0 on pad 8.  Shown in the board view, nothing bound but
+ *        GPIO @p gpio to DSHOT600, SERVO PWM picked.
+ * @return false when the board or its shape is refused
+ */
+static bool learned_visit(uint16_t w, uint16_t h, uint8_t per_side,
+                          uint8_t corner, uint8_t gpio, uint8_t *pins)
+{
+    const uint16_t id = 4300u;
+    const unsigned pads = 2u * per_side;
+    const unsigned n = (pads < 24u) ? pads : 24u;
+    uint16_t cat[LINK_CAT_COUNT];
+    memset(cat, 0, sizeof(cat));
+    for (unsigned i = 0; i < n && i < LINK_CAT_COUNT; ++i) {
+        cat[i] = LINK_CAT_OF(i, (i + 7u) % pads + 1u, LINK_PIN_FREE);
+    }
+    *pins = (uint8_t)n;
+    outbind_forget_learned();
+    if (!outbind_learn_board(id, cat)) {
+        return false;
+    }
+    uint16_t sh[LINK_SH_COUNT];
+    sh[LINK_SH_WIDTH_CMM]  = w;
+    sh[LINK_SH_HEIGHT_CMM] = h;
+    sh[LINK_SH_LAYOUT]     = LINK_SH_LAYOUT_OF(corner, per_side);
+    sh[LINK_SH_PITCH_CMM]  = 254u;
+    sh[LINK_SH_INSET_CMM]  = 100u;
+    if (!outbind_learn_shape(id, sh)) {
+        return false;
+    }
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, id);
+    outbind_set_proto(&b, proto_named("DSHOT600"));
+    if (!outbind_toggle(&b, outbind_index_of(id, gpio))) {
+        return false;
+    }
+    outbind_set_proto(&b, proto_named("SERVO PWM"));
+    view()->reset();
+    picker_screen_set_prog_ports(0u, NULL);
+    outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
+    s_applied = 0;
+    outputs_screen_set_apply(on_apply);
+    picker_screen_set_apply(on_apply);
+    outputs_screen_set_binding(&b);
+    picker_screen_set_binding(&b);
+    (void)picker_screen_set_drawing(NULL, 0u, NULL);
+    view()->enter();
+    outputs_screen_select(b.proto);
+    view()->tick(0.016f);
+    frame();
+    return outputs_view_is_board();
+}
+
+/** @brief Whether @p a and @p b share a pixel. */
+static bool meet(gfx_rect_t a, gfx_rect_t b)
+{
+    return gfx_rect_intersect(a, b, NULL);
+}
+
+/*
+ * Every board the board view draws -- the RP2350-CAN from its drawing and
+ * from its shape, and learned shapes from a 1mm to a 60mm outline, 10 and
+ * 20 pads a row, from two corners -- asked about each key: the card stands
+ * clear of the key, inside the body, and a tap on the key a second time
+ * closes the card without writing.  Among them the 60 x 12mm board with
+ * GPIO 0 on pad 8, whose key lay under MOVE PIN in the tallest board's box.
+ */
+TEST_CASE(the_card_and_its_buttons_clear_the_key_on_every_drawable_board)
+{
+    static const uint16_t heights[] = { 100u, 600u, 1200u, 2100u, 3000u,
+                                        6000u };
+    static const uint16_t widths[] = { 6000u, 12000u };
+    static const uint8_t rows[] = { 10u, 20u };
+    static const uint8_t corners[] = { LINK_SH_BOTTOM_LEFT,
+                                       LINK_SH_TOP_RIGHT };
+    int asked = 0;
+    for (size_t hi = 0; hi < sizeof(heights) / sizeof(heights[0]); ++hi) {
+        for (size_t wi = 0; wi < sizeof(widths) / sizeof(widths[0]); ++wi) {
+            for (size_t ri = 0; ri < sizeof(rows) / sizeof(rows[0]); ++ri) {
+                for (size_t ci = 0; ci < 2u; ++ci) {
+                    uint8_t n = 0u;
+                    for (uint8_t g = 0; g < 24u; ++g) {
+                        if (!learned_visit(widths[wi], heights[hi], rows[ri],
+                                           corners[ci], g, &n)) {
+                            break;
+                        }
+                        if (g >= n) {
+                            break;
+                        }
+                        gfx_rect_t k;
+                        if (!picker_screen_button_rect(
+                                outbind_index_of(4300u, g), &k)) {
+                            continue;
+                        }
+                        tap_at(k);
+                        if (!pin_take_open_in(PIN_TAKE_BOARD)) {
+                            /* At 5px a mm keys overlap: the press went to
+                             * the key drawn over this one. */
+                            continue;
+                        }
+                        ++asked;
+                        const gfx_rect_t r = pin_take_rect();
+                        if (meet(k, pin_take_button(PIN_TAKE_BTN_MOVE))
+                            || meet(k, pin_take_button(PIN_TAKE_BTN_CANCEL))
+                            || meet(k, r) || r.y < 0
+                            || r.y + r.h + 4 > PK_FOOT) {
+                            T_FAIL("%ux%u, %u a row, corner %u: GPIO %u's "
+                                   "key at (%d,%d) meets the card at "
+                                   "(%d,%d)", widths[wi], heights[hi],
+                                   rows[ri], corners[ci], g, k.x, k.y, r.x,
+                                   r.y);
+                        }
+                        tap_at(k);          /* a press off the card */
+                        CHECK(!pin_take_is_open());
+                        CHECK_EQ(s_applied, 0);
+                    }
+                }
+            }
+        }
+    }
+    CHECK(asked > 500);
+
+    /* The 60 x 12mm board, 20 pads a row: GPIO 0 on pad 8 has its key
+     * inside the tallest board's box, and a second tap on it is a press
+     * off the card, not MOVE PIN. */
+    uint8_t n = 0u;
+    CHECK(learned_visit(6000u, 1200u, 20u, LINK_SH_BOTTOM_LEFT, 0u, &n));
+    gfx_rect_t k;
+    CHECK(picker_screen_button_rect(outbind_index_of(4300u, 0u), &k));
+    CHECK(meet(k, gfx_rect_make((SCREEN_W - 600) / 2, (PK_FOOT - 240) / 2,
+                                600, 240)));
+    tap_at(k);
+    CHECK(pin_take_open_in(PIN_TAKE_BOARD));
+    CHECK(!meet(k, pin_take_rect()));
+    tap_at(k);
+    CHECK(!pin_take_is_open());
+    CHECK_EQ(s_applied, 0);
+    outbind_forget_learned();
+}
+
 int main(void)
 {
     RUN(a_tap_on_an_esc_pin_under_servo_pwm_asks_and_writes_nothing);
@@ -952,5 +1096,6 @@ int main(void)
     RUN(the_worst_case_card_fits_in_both_languages);
     RUN(every_take_reason_ends_left_of_the_board);
     RUN(the_tapped_key_stays_visible_on_every_built_in_board);
+    RUN(the_card_and_its_buttons_clear_the_key_on_every_drawable_board);
     return test_summary("pin_take");
 }

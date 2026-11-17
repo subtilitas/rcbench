@@ -435,6 +435,39 @@ void pk_take_ctx(outbind_take_ctx_t *ctx)
 /* ----------------------------------------------------------------- input */
 
 /**
+ * @brief Where the card goes for a tap on key @p index: the box of the
+ *        tallest board, 600 x 240px, where that leaves the key clear;
+ *        else ending 6px above the key, else starting 6px below it.
+ *
+ * A board drawn shorter than 240px has keys inside the tallest board's
+ * box, and a key under MOVE PIN or CANCEL would take a press meant for
+ * the card.  Above or below the key one of the two always fits: the keys
+ * of a board centered between body y 0 and FOOT stand at most 186px from
+ * the body's middle.
+ *
+ * @param index the key's catalogue entry
+ * @return the card's box
+ */
+static gfx_rect_t card_box(int index)
+{
+    gfx_rect_t box = gfx_rect_make((SCREEN_W - BOARD_W) / 2,
+                                   (FOOT - BOARD_MAX_H) / 2, BOARD_W,
+                                   BOARD_MAX_H);
+    gfx_rect_t k;
+    if (!pk_button_at(index, &k, NULL) || !gfx_rect_intersect(box, k, NULL)) {
+        return box;
+    }
+    const int above = k.y - 6 - BOARD_MAX_H;
+    const int below = k.y + k.h + 6;
+    if (above >= 4) {
+        box.y = (int16_t)above;
+    } else if (below + BOARD_MAX_H <= FOOT) {
+        box.y = (int16_t)below;
+    }
+    return box;
+}
+
+/**
  * @brief MOVE PIN on the card: the binding after the move is the one shown
  *        and goes out at once, as a tick's does.
  * @param after the binding pin_take_event() returned
@@ -629,9 +662,7 @@ static void event(const touch_event_t *evt)
     if (st == PICKER_PIN_HELD) {
         outbind_take_ctx_t ctx;
         pk_take_ctx(&ctx);
-        const gfx_rect_t card = gfx_rect_make((SCREEN_W - BOARD_W) / 2,
-                                              (FOOT - BOARD_MAX_H) / 2,
-                                              BOARD_W, BOARD_MAX_H);
+        const gfx_rect_t card = card_box(was);
         if (pin_take_tap(PIN_TAKE_BOARD, &s.bind, (uint8_t)was, &ctx, card)) {
             s.refused = -1;
             return;

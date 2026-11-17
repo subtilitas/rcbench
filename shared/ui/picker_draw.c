@@ -631,11 +631,19 @@ void pk_render(gfx_canvas_t *c, int buffer_index)
         if (s.open) {
             draw_list(c);
         }
-        /* The card over the board, and the key it asks about over the
-         * card where the two meet. */
+        /* The card, and the key it asks about with an accent edge.  The
+         * card stands clear of that key (card_box() in picker_screen.c);
+         * a key that met MOVE PIN or CANCEL is not drawn over them. */
         if (pin_take_open_in(PIN_TAKE_BOARD)) {
             pin_take_draw(c);
-            draw_key(c, pin_take_index(), true);
+            gfx_rect_t k;
+            if (pk_button_at(pin_take_index(), &k, NULL)
+                && !gfx_rect_intersect(k, pin_take_button(PIN_TAKE_BTN_MOVE),
+                                       NULL)
+                && !gfx_rect_intersect(k, pin_take_button(PIN_TAKE_BTN_CANCEL),
+                                       NULL)) {
+                draw_key(c, pin_take_index(), true);
+            }
         }
     }
     /* Last, so the fit check sees a string under it as painted over. */

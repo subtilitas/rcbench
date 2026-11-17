@@ -8717,8 +8717,12 @@ Beschriftung der Platine.
 Ein Tippen auf eine Taste, die ein anderes Protokoll hält, fragt, ob der Pin
 zum gewählten Protokoll wechselt. Jedes Protokoll nimmt von jedem anderen,
 auch PPM. Die Karte deckt das Feld der höchsten Platine ab, 600 x 240px bei
-Körper-x 212 bis 812, y 126 bis 366. Die angetippte Taste bleibt mit einem
-Rand in Akzentfarbe über der Karte, wo beide sich treffen. In der
+Körper-x 212 bis 812, y 126 bis 366. Auf einer Platine, die niedriger als
+240px gezeichnet ist, kann eine Taste in diesem Feld stehen; für eine solche
+Taste rückt die Karte so, dass sie 6px darüber endet oder 6px darunter
+beginnt, damit Karte und Tasten die angetippte Taste nie berühren. Diese
+Taste behält einen Rand in Akzentfarbe, und ein zweites Tippen auf sie ist
+ein Druck neben die Karte. In der
 Rasteransicht nimmt die Karte die zwei Spalten fern der angetippten Zelle
 ein, 342 x 480px ab Körper-y 8: über den Spalten 2 und 3 für eine Zelle in
 Spalte 0 oder 1, sonst über den Spalten 0 und 1. Sie deckt die angetippte

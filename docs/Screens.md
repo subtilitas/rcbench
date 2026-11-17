@@ -8046,8 +8046,10 @@ the board rather than the screen.
 A tap on a key another protocol holds asks to move the pin to the protocol
 selected. Any protocol takes from any other, PPM included. The card covers
 the box of the tallest board, 600 x 240px at body x 212 to 812, y 126 to
-366. The key tapped stays on top of the card with an accent edge, where the
-two meet. In the grid view the card takes the two columns away from the
+366. On a board drawn shorter than 240px a key can stand inside that box;
+for such a key the card moves to end 6px above it, or to start 6px below
+it, so the card and its buttons never meet the key tapped. That key keeps
+an accent edge, and a second tap on it is a press off the card. In the grid view the card takes the two columns away from the
 tapped cell, 342 x 480px from body y 8: over columns 2 and 3 for a cell in
 column 0 or 1, over columns 0 and 1 otherwise. It never covers the tapped
 cell, whose edge turns accent.

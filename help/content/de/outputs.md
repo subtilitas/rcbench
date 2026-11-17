@@ -133,7 +133,7 @@ Auch durch [SETUP > SENSORS](setup-sensors.md) oder [SUPPLY > PD MINI](supply.md
 
 ![Die Frage-Karte über der Platine](view:outputs-take)
 
-Ein Tipp auf eine Taste, die ein anderes Protokoll hält, fragt, ob der Pin zum gewählten Protokoll wechselt. Jedes Protokoll nimmt von jedem anderen, auch PPM. Die Karte deckt die Platine ab; die angetippte Taste bleibt mit einem Rand in Akzentfarbe darüber.
+Ein Tipp auf eine Taste, die ein anderes Protokoll hält, fragt, ob der Pin zum gewählten Protokoll wechselt. Jedes Protokoll nimmt von jedem anderen, auch PPM. Die Karte deckt die Platine ab oder rückt auf einer niedrigen Platine über oder unter die angetippte Taste; diese behält einen Rand in Akzentfarbe und bleibt frei von der Karte.
 
 | Zeile | Beispiel |
 |---|---|
