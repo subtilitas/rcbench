@@ -231,8 +231,9 @@ foreach(suite servo_rudder_panel servo_rudder_steps servo_rudder_zero rudder_lay
         "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
 endforeach()
 # UPDATES' steps' suites reach the card's paragraphs and the controls'
-# rectangles through upd_wiz_view.h.
-foreach(suite upd_wiz_view upd_run)
+# rectangles through upd_wiz_view.h, the IOmcu's suites the steps and
+# SINGLE UPDATES' latch through it and upd_single.h.
+foreach(suite upd_wiz_view upd_run upd_coproc coproc_update_screen)
     target_include_directories(test_${suite} PRIVATE
         "${CMAKE_CURRENT_SOURCE_DIR}/../../shared/ui")
 endforeach()

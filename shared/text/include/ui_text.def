@@ -755,9 +755,6 @@ UI_TEXT(BF_DROPPED, 0,
 UI_TEXT(CU_TITLE, 0,
     "IOMCU UPDATE",
     "IOMCU-UPDATE")
-UI_TEXT(CU_Q_VERSIONS, 0,
-    "IOmcu version: %s. Version on this panel: %s.",
-    "IOmcu-Version: %s. Version auf diesem Panel: %s.")
 UI_TEXT(CU_Q_OLDER, 0,
     "The firmware on this panel is older.",
     "Die Firmware auf diesem Panel ist älter.")
@@ -767,9 +764,6 @@ UI_TEXT(CU_Q_SAME, 67,
 UI_TEXT(CU_Q_WHAT, 0,
     "Outputs stay off. ARMED is blocked until the update ends.",
     "Ausgänge bleiben aus. ARMED ist bis zum Ende des Updates gesperrt.")
-UI_TEXT(CU_START, 0,
-    "HOLD 2s TO START",
-    "2s HALTEN ZUM STARTEN")
 UI_TEXT(CU_P_PREPARE, 48,
     "Preparing firmware.",
     "Firmware wird vorbereitet.")
@@ -6004,14 +5998,14 @@ UI_TEXT(ALERT_CU_OFFER, 94,
     "IOmcu runs a different build. Update it on UPDATES.",
     "IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.")
 UI_TEXT(ALERT_CU_OFFER_SAFE, 94,
-    "IOmcu runs a different build. Its update question opens once SAFE with the supply off.",
-    "IOmcu nutzt einen anderen Build. Die Update-Frage öffnet bei SAFE und Netzteilausgang aus.")
+    "IOmcu runs a different build. UPDATES opens once SAFE with the supply off.",
+    "IOmcu nutzt einen anderen Build. UPDATES öffnet bei SAFE und Netzteilausgang aus.")
 UI_TEXT(ALERT_CU_OFFER_WIFI, 94,
-    "IOmcu runs a different build. Its update question opens once the panel's Wi-Fi is off.",
-    "IOmcu nutzt einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels aus ist.")
+    "IOmcu runs a different build. UPDATES opens once the panel's Wi-Fi is off.",
+    "IOmcu nutzt einen anderen Build. UPDATES öffnet, sobald das WLAN des Panels aus ist.")
 UI_TEXT(ALERT_CU_OFFER_INSTALL, 94,
-    "IOmcu runs a different build. Its update question opens after the panel firmware install.",
-    "IOmcu nutzt einen anderen Build. Die Update-Frage öffnet nach der Panel-Installation.")
+    "IOmcu runs a different build. UPDATES opens after the panel firmware install.",
+    "IOmcu nutzt einen anderen Build. UPDATES öffnet nach der Panel-Installation.")
 UI_TEXT(ALERT_RUN_WAIT_SAFE, 94,
     "Update run: UPDATES opens once SAFE with the supply off.",
     "Update-Lauf: UPDATES öffnet bei SAFE und Netzteilausgang aus.")

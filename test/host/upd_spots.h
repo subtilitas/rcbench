@@ -1,10 +1,9 @@
 /**
  * @file
  * @brief Where a finger lands on UPDATES, SINGLE UPDATES, the start-up
- *        reminder, the IOmcu's update question and PANEL UPDATE, mirrored
- *        from upd_screen.c, upd_single.h, upd_c6.h, upd_remind.c,
- *        coproc_update_screen.c and update_screen.c; and the taps that open
- *        SINGLE UPDATES.
+ *        reminder and PANEL UPDATE, mirrored from upd_screen.c,
+ *        upd_single.h, upd_c6.h, upd_remind.c and update_screen.c; and the
+ *        taps that open SINGLE UPDATES.
  *
  * If the layout moves these move with it.  Taken by the screens' suites.
  *
@@ -22,8 +21,6 @@
  *   - the reminder, in the body: NOT NOW and NEVER REMIND ME 398 x 56px
  *     at y 328 from x 106 and 520, the hold 812 x 64px at y 400 from
  *     x 106;
- *   - the IOmcu's question, in the body: CANCEL and START 398 x 56px at
- *     y 288 from x 106 and 520;
  *   - PANEL UPDATE, on the whole panel: its one button 240 x 56px from
  *     x 24, 18px above the panel's foot.
  *
@@ -75,13 +72,6 @@
 #define UP_R_HOLD_T    400      /**< Its top. */
 #define UP_R_HOLD_Y    (UP_R_HOLD_T + 32) /**< Its middle row. */
 #define UP_R_BOX_B     488      /**< The row under the reminder's box. */
-
-#define CU_Q_CANCEL_X  305      /**< The question's CANCEL. */
-#define CU_Q_START_X   719      /**< Its START. */
-#define CU_Q_BTN_T     288      /**< Their top. */
-#define CU_Q_BTN_Y     (CU_Q_BTN_T + 28)  /**< Their middle row. */
-#define CU_Q_BTN_W     398      /**< Their width, px. */
-#define CU_Q_BTN_H     56       /**< Their height, px. */
 
 #define UP_U_BTN_X     144      /**< PANEL UPDATE's CLOSE or CANCEL. */
 #define UP_U_BTN_Y     (UI_PANEL_H - 18 - 28)  /**< Its middle row. */

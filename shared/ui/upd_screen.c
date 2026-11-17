@@ -49,6 +49,7 @@ typedef struct {
     upd_view_t    v;       /**< what both screens show */
     unsigned      req;     /**< what they ask for, not yet taken */
     bool          left;    /**< the home tag left UPDATES, not yet taken */
+    bool          left_cu; /**< the same, for the IOmcu's offer */
     upd_main_t    s;       /**< UPDATES */
 } upd_state_t;
 
@@ -127,6 +128,13 @@ bool upd_screen_take_left(void)
 {
     const bool was = u.left;
     u.left = false;
+    return was;
+}
+
+bool upd_screen_take_left_cu(void)
+{
+    const bool was = u.left_cu;
+    u.left_cu = false;
     return was;
 }
 
@@ -442,6 +450,7 @@ static void reset(void)
 {
     memset(&u.s, 0, sizeof(u.s));
     u.left = false;
+    u.left_cu = false;
     upd_wiz_reset();
     upd_single_reset();
     upd_list_reset();
@@ -617,6 +626,7 @@ static bool back(void)
     }
     /* Nothing covers UPDATES: the router leaves it for the parent. */
     u.left = u.left || !climbed;
+    u.left_cu = u.left_cu || !climbed;
     return climbed;
 }
 

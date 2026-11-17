@@ -7,15 +7,18 @@
  * An update run stands after the panel's install and after the C6 radio's
  * update (fw_run.h keeps the fact across the restart; the panel's
  * fw_ota_run_active() reads it).  upd_run_drive() is called once a frame
- * on the render side, before the IOmcu's question is served, so that
- * UPDATES comes first when both are due.
+ * on the render side, before the IOmcu's offer is served
+ * (coproc_update_drive()), so that UPDATES opens once when both are due.
  *
  * UPDATES opens by itself once per start, on OVERVIEW (past the splash),
  * with the bench not unsafe (SAFE, no arm waiting, the supply off), the
- * panel's radio wholly off and no panel install under way: the IOmcu
- * question's conditions.  While one of the last three holds it back, the
- * band names it, once, and again when the reason changes.  On another
- * screen it waits without a line.
+ * panel's radio wholly off and no panel install under way: the conditions
+ * under which an IOmcu offer opens it.  While one of the last three holds
+ * it back, the band names it, once, and again when the reason changes; the
+ * offer's own line is not said meanwhile (upd_run_waits()).  On another
+ * screen it waits without a line.  UPDATES already shown in this start,
+ * current when the run is read or opened for an IOmcu offer
+ * (coproc_update_opened()) before it, spends the run's opening.
  *
  * The run ends, and the caller erases the run note, when:
  * - the operator leaves UPDATES by the home tag (upd_screen_take_left()):
@@ -107,6 +110,16 @@ ui_text_id_t upd_run_wait_text(upd_run_wait_t w);
  * @return the end, or UPD_RUN_GOES_ON
  */
 upd_run_end_t upd_run_drive(upd_run_t *r, const upd_run_feed_t *f);
+
+/**
+ * @brief Whether the run waits to open UPDATES: the band line that names
+ *        the wait is the run's this frame, and an IOmcu offer neither
+ *        speaks nor opens (cu_feed_t.run_waits).
+ * @param r the driver, after this frame's upd_run_drive()
+ * @param f this frame's feed
+ * @return true while a run stands and UPDATES has not opened for it
+ */
+bool upd_run_waits(const upd_run_t *r, const upd_run_feed_t *f);
 
 #ifdef __cplusplus
 }

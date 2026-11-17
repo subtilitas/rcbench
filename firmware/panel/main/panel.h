@@ -534,12 +534,15 @@ bool panel_fw_busy(void);
 /**
  * @brief The update run after a restart, once a frame on app_main before
  *        cu_render_service(): UPDATES opens by itself once per start under
- *        the IOmcu question's conditions, the band names what holds it
- *        back, and the run ends on the home tag or with no step left
- *        (upd_run.h).
+ *        the conditions an IOmcu offer opens it under, the band names
+ *        what holds it back, and the run ends on the home tag or with no
+ *        step left (upd_run.h).
  * @param unsafe ARMED, an arm waiting, or the supply's output on or coming
+ * @return true while the run waits to open UPDATES (upd_run_waits()):
+ *         cu_render_service() then leaves the band line and the opening
+ *         to it
  */
-void updrun_service(bool unsafe);
+bool updrun_service(bool unsafe);
 
 /**
  * @brief Marks this frame's feed of UPDATES' views done: called after
@@ -2231,9 +2234,13 @@ void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs);
 void upd_service(bool armed, bool unsafe, uint32_t stops_now,
                  const cu_snap_t *cs);
 /**
- * @brief Drive the IOmcu update's screen; once a frame on the render side.
+ * @brief Drive the IOmcu update's offer and progress; once a frame on the
+ *        render side, after updrun_service().
  * @param unsafe ARMED, an arm waiting, or the supply's output on or coming
  * @param link_up whether the link to the IOmcu answers
  * @param cs the IOmcu update's state this frame
+ * @param run_waits an update run waits to open UPDATES: the band line is
+ *                  the run's, and an offer neither speaks nor opens
  */
-void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs);
+void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs,
+                       bool run_waits);

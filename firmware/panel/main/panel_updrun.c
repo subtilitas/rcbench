@@ -7,7 +7,7 @@
  * an update run: by the install once the image is written whole and
  * checked, and by the C6 radio's update on success.  Each start reads it
  * once in fw_ota_boot_check() and spends one of its 2 openings.  This
- * file asks upd_run_drive() once a frame, before the IOmcu's question is
+ * file asks upd_run_drive() once a frame, before the IOmcu's offer is
  * served, and ends the run (fw_ota_run_end(): the note is erased) when it
  * says so.  UPDATES' steps read the run flag from upd_service().
  *
@@ -34,7 +34,7 @@ static bool s_fed_known;
 
 void updrun_fed(bool dev_known) { s_fed_known = s_fed_known || dev_known; }
 
-void updrun_service(bool unsafe)
+bool updrun_service(bool unsafe)
 {
     static upd_run_t drv;     /* zeroed at the start: once per start */
     const upd_run_feed_t f = {
@@ -51,10 +51,11 @@ void updrun_service(bool unsafe)
         ESP_LOGI(TAG, "update run: UPDATES opened");
     }
     if (end == UPD_RUN_GOES_ON) {
-        return;
+        return upd_run_waits(&drv, &f);
     }
     ESP_LOGI(TAG, "update run: ends, %s",
              end == UPD_RUN_END_LEFT ? "UPDATES left by the home tag"
                                      : "no step left");
     fw_ota_run_end();
+    return false;
 }

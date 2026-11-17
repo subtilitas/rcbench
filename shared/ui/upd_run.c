@@ -7,6 +7,7 @@
 
 #include "upd_run.h"
 
+#include "coproc_update_screen.h"
 #include "ui_screen.h"
 #include "upd_screen.h"
 #include "upd_wiz_view.h"
@@ -66,6 +67,12 @@ upd_run_end_t upd_run_drive(upd_run_t *r, const upd_run_feed_t *f)
             return UPD_RUN_END_DONE;
         }
     }
+    /* UPDATES shows, or an IOmcu offer opened it in this start before the
+     * run was read: the run's opening is spent, UPDATES opens once. */
+    if (!r->opened && (ui_router_current() == SCREEN_UPDATES
+                       || coproc_update_opened())) {
+        r->opened = true;
+    }
     if (r->opened) {
         return UPD_RUN_GOES_ON;
     }
@@ -81,4 +88,9 @@ upd_run_end_t upd_run_drive(upd_run_t *r, const upd_run_feed_t *f)
         r->said = (uint8_t)w;
     }
     return UPD_RUN_GOES_ON;
+}
+
+bool upd_run_waits(const upd_run_t *r, const upd_run_feed_t *f)
+{
+    return r != NULL && f != NULL && f->run && !r->opened;
 }

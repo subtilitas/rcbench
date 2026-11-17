@@ -5175,21 +5175,14 @@ int main(int argc, char **argv)
     st.prog_moving = hitec_prog_move_on(hitec_panel_model());
     ui_router_set_status(&st);
     if (id == SCREEN_COPROC_UPDATE) {
-        /* The question as a link-up poses it: an IOmcu on 0.21.2 and
-         * a panel carrying 0.22.0, the version of the alert `IOmcu
-         * updated to 0.22.0` in Screens.md; the older one with the two
-         * swapped.  Fixed, as the examples above are.  The progress half
-         * way through the blocks of a 191,592-byte image. */
-        const cu_version_t old_v = { 0, 21, 2 };
-        const cu_version_t new_v = { 0, 22, 0 };
-        if (strcmp(view, "coproc-update-older") == 0) {
-            coproc_update_screen_offer(new_v, old_v);
-        } else {
-            coproc_update_screen_offer(old_v, new_v);
-        }
-        if (strcmp(view, "coproc-update-progress") == 0) {
-            coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
-        }
+        /* The progress as UPDATES' IOmcu step starts it: an IOmcu on
+         * 0.21.2 and a panel carrying 0.22.0, the version of the alert
+         * `IOmcu updated to 0.22.0` in Screens.md, half way through the
+         * blocks of a 191,592-byte image.  Fixed, as the examples above
+         * are. */
+        coproc_update_screen_versions((cu_version_t){ 0, 21, 2 },
+                                      (cu_version_t){ 0, 22, 0 });
+        coproc_update_screen_progress(CU_STEP_SEND, 1497u, 2994u);
     }
     if (id == SCREEN_FILES) {
         render_files_prepare(view);

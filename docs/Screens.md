@@ -422,7 +422,7 @@ explain where to hold.
 | A hold while one waits | replaces it in the same memory: `New screenshot taken. It replaces the waiting one.` |
 | A hold while a stopped save ends | no picture: `Screenshot not taken: the last one is still being written.`, for at most one row of the PNG |
 | A kept value on the glass | no picture: `Screenshot not taken: this screen shows a kept password or code.` WI-FI refuses it while it shows a [HOTSPOT PASSWORD or ACCESS CODE](#hotspot-password-and-access-code) that is kept, on that value's view, on its keyboard and on the rows of a running radio with either one kept. A picture on the card can be read from the browser. A RANDOM password and code are taken, since they end with the session |
-| Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. The IOmcu update's question and the release reminder: they cannot say whether a box covers them, and the popup would open after they have gone. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
+| Screens with no hold | SPLASH, the bus-fault screen, PANEL UPDATE and the IOmcu update's progress: they have no band. The release reminder: it cannot say whether a box covers it, and the popup would open after it has gone. MOTOR & ESC, the longest title, has no gap with ARMED MOTOR and a long FAULT chip |
 
 The render task captures the current frame immediately, whatever the bench
 is doing. Capture neither reads nor changes an output; STOP, DISARM and
@@ -614,7 +614,7 @@ replaces a visible hint.
 | DONE of a stick run's step before a power-up | `Hold 2s to confirm the step before the supply switches on.` |
 | HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
-| HOLD 2s TO UPDATE THE IOMCU on SINGLE UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
+| HOLD 2s TO UPDATE THE IOMCU on UPDATES' step 2 and on SINGLE UPDATES | `Hold 2s to update the IOmcu.` |
 | HOLD 2s TO UPDATE THE C6 RADIO on SINGLE UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
 | HOLD 2s TO UPDATE THE DIAL on SINGLE UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
@@ -643,8 +643,8 @@ whose sequence waits for ARMED and its read-backs before the run.
   or the run arriving inside the 300ms restarts nothing; a press gets one
   flash.
 - A button that goes as its hold fires, such as a warning's HOLD TO APPLY,
-  a programmer page's hold, HOLD 2s TO RUN of a stick run, OVERWRITE and
-  START on the IOmcu update's question, flashes where it was drawn. The
+  a programmer page's hold, HOLD 2s TO RUN of a stick run and OVERWRITE,
+  flashes where it was drawn. The
   screen beneath is drawn again when the flash ends.
 - A state that arrives with no press, such as ARMED from another screen,
   flashes the button once.
@@ -6534,46 +6534,60 @@ band's LINK), the screen offers RECONNECT:
 A panel built with the IOmcu's image carries it and offers it when the
 IOmcu runs another build. The check runs at every link-up and compares
 SHA-256 (Secure Hash Algorithm) digests, not version numbers. A different
-build raises the alert `IOmcu runs a different build. Update it on UPDATES.`, and the question opens on the menu while the bench is SAFE, the
-supply's output is off, the panel's Wi-Fi radio is wholly off and no install
-of a panel image is under way. A START request made while the radio is active or a panel installation is
-running is consumed without starting an update. The question opens again
+build is an offer: it opens [Updates](#updates) with step 2 (IOMCU)
+current, once per offer, on the menu, while the bench is SAFE, the
+supply's output is off, the panel's Wi-Fi radio is wholly off and no
+install of a panel image is under way. The band says
+`IOmcu runs a different build. Update it on UPDATES.` in the same frame.
+
+![UPDATES opened by an offer](img/updates-offer.png)
+
+Step 2's card names the version the IOmcu runs and the version this
+panel carries ([The steps](#the-steps)). `HOLD 2s TO UPDATE THE IOMCU`
+starts the update: the 2s hold, the ARM gesture and the same fade. An
+older image is offered too: the card then says
+`The firmware on this panel is older.` in the warning colour, and the hold
+is the same.
+
+While something holds the opening back, the band names it in place of
+`Update it on UPDATES.`. It is said once per offer on the first screen with
+a band, and again when the opening waits for something else:
+
+| The opening waits for | Alert |
+| --- | --- |
+| SAFE and the supply output off | `IOmcu runs a different build. UPDATES opens once SAFE with the supply off.` |
+| the panel's Wi-Fi off | `IOmcu runs a different build. UPDATES opens once the panel's Wi-Fi is off.` |
+| the panel's install to end | `IOmcu runs a different build. UPDATES opens after the panel firmware install.` |
+
+While an update run waits to open UPDATES after a restart
+([After a restart](#after-a-restart)), the band carries the run's line
+and the offer says nothing: one line per frame. The run's opening and
+the offer's are one opening: UPDATES opens once when both are due, and an
+offer that comes while UPDATES shows opens nothing later.
+
+Two acts decline the offer:
+
+- SKIP THIS STEP on step 2;
+- the home tag that leaves UPDATES. Over the OPTIONS list, SINGLE
+  UPDATES or the devices' page the home tag closes that first and
+  declines nothing.
+
+A decline counts for the offer UPDATES showed. The panel does not offer
+that IOmcu version again until it restarts. SINGLE UPDATES still starts
+the update after a decline ([The IOmcu](#the-iomcu)). A START request made
+while the radio is active or a panel installation is running is consumed
+without starting an update; the offer is made again, and step 2 takes it
 once both have ended.
 
-While something holds the question back, the alert names it in place of
-`Update it on UPDATES.`. It is said once per offer on the first screen with a
-band, and again when the question waits for something else:
+A screen the panel opens over UPDATES does not decline: the fault screen
+after 4000ms without the link, and PANEL UPDATE's download. The offer
+remains unanswered, and the check at the next link-up offers it again. A
+new offer opens UPDATES under the same conditions as the first, brings
+back a skipped step 2, and ends a hold under way on step 2: its versions
+may have changed. A hold the forced screen ended starts nothing. STOP
+declines nothing.
 
-| The question waits for | Alert |
-| --- | --- |
-| SAFE and the supply output off | `IOmcu runs a different build. Its update question opens once SAFE with the supply off.` |
-| the panel's Wi-Fi off | `IOmcu runs a different build. Its update question opens once the panel's Wi-Fi is off.` |
-| the panel's install to end | `IOmcu runs a different build. Its update question opens after the panel firmware install.` |
-
-![The IOmcu update question](img/coproc-update.png)
-
-The question is a box of 860 x 248px in the body, its lines in the
-12 x 24px face. CANCEL and START are 398 x 56px each, side by side,
-START on the right; their middles are at panel x 305 and 719, y 376.
-
-The question names the version the IOmcu runs and the version this
-panel carries. CANCEL is a tap: the question closes, and the panel does not
-ask again for that IOmcu version until it restarts. The home tag declines
-the same way. SETUP > UPDATES still starts the update after a decline
-([The IOmcu](#the-iomcu)). START takes the 2s hold, the ARM gesture and the
-same fade.
-
-If the panel opens another screen over the question, it does not count as
-a decline: the fault
-screen after 4000ms without the link, and PANEL UPDATE's download. The offer remains unanswered, and the check at the next link-up presents
-it again. The question then opens on the menu under the same conditions as
-the first time. A press on START that the forced screen ended starts nothing.
-
-An older image is offered too. The question then says `The firmware on this panel is older.` in the warning colour, and START takes the same hold.
-
-![An older image](img/coproc-update-older.png)
-
-Once the START hold completes, the update occupies the panel: the link to
+Once the hold completes, the update occupies the panel: the link to
 the IOmcu goes down, the outputs are off, the IOmcu refuses ARM
 until the update ends, and the progress fills the screen. It has no band and
 no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
@@ -6593,8 +6607,9 @@ count, and three notes in the 12 x 24px face, 28px apart.
 | `IOmcu is starting the new firmware.` | it restarts into the new slot, on trial |
 | `Keeping the new firmware.` | the panel reads the new image's identity and writes BUY |
 
-The screen returns to the menu when the update ends, or to UPDATES when
-UPDATES' hold started it. The alert band then says how it ended:
+The screen returns to UPDATES when the update ends. The alert band then
+says how it ended, and step 2's card keeps a failure's line until the
+next attempt or the next start:
 
 | Alert | Meaning |
 | --- | --- |
@@ -6613,9 +6628,6 @@ the next link-up offers the update again. The update writes the slot the
 IOmcu does not run from. [Link](Link.md#firmware-update-over-the-link)
 has the transfer, the flash layout and the limits. The transfer time is not
 measured.
-
-The question opens from the menu rather than from LOGS: the offer comes with
-the link, and LOGS is about the SD card.
 
 ## Updates
 
@@ -6766,10 +6778,10 @@ footer.
 
 SKIP THIS STEP sets the step's bit in a mask in RAM (random-access
 memory), cleared at the panel's start and by SHOW SKIPPED STEPS. On the
-IOmcu's step it also declines the IOmcu's offer that stands, as CANCEL on
-the IOmcu's question does: the question and its band line do not come
-again for that offer ([IOmcu update](#iomcu-update)). An update that runs
-is never skipped.
+IOmcu's step it also declines the IOmcu's offer UPDATES showed: neither
+the opening nor its band line comes again for that offer
+([IOmcu update](#iomcu-update)). A new offer brings the step back. An
+update that runs is never skipped.
 
 With no step current the card reads `All firmware is current.`, the
 running version, the home network, the last check's result, and the steps
@@ -6791,9 +6803,10 @@ the steps are decided again from what the panel knows after the restart.
 While a run stands, UPDATES opens by itself once per start, on the menu,
 past the splash, with the bench SAFE, no arm waiting, the supply output
 off, the panel's radio wholly off and no panel install under way: the
-conditions of the IOmcu's question. In the same frame UPDATES comes
-first, and the IOmcu's question does not open over it; its step 2 holds
-the same 2s hold. A start that runs a run spends one of the note's 2
+conditions under which an IOmcu offer opens it. UPDATES opens once when
+both are due: the run's opening comes first in the frame, the offer counts
+as shown there, and UPDATES already shown in this start, by hand or for an
+offer, spends the run's opening. A start that runs a run spends one of the note's 2
 openings, so a run opens UPDATES at 2 starts at most, a power cut between
 them included.
 
@@ -6841,8 +6854,9 @@ Current limitations:
   row and ends no run by itself: the home tag ends it, or the second
   start's opening is the last.
 - On a trial start the note is read once the build is kept, up to 30s
-  after the start. The IOmcu's question can open on the menu before
-  that; its progress returns to the menu, and UPDATES opens after it.
+  after the start. An IOmcu offer can open UPDATES before that; the run
+  then opens nothing in that start, also when the home tag has left
+  UPDATES before the note was read.
 - Time from the panel's start to a linked Dial or node: not measured.
 
 ### The check
@@ -7040,11 +7054,11 @@ the download's hold are not on the page.
 On SINGLE UPDATES, the left column shows the IOmcu's update: the version
 the IOmcu runs (`Running: 0.21.2`), the version of the image this panel
 carries (`Included: 0.22.0`), one line of state, and
-`HOLD 2s TO UPDATE THE IOMCU`. The hold starts the update that the
-link-up's question starts, with the same progress screen
-([IOmcu update](#iomcu-update)). It also starts it after that
-question was declined. When the update ends, or the START request is consumed without starting
-one, the screen returns to UPDATES, with SINGLE UPDATES closed.
+`HOLD 2s TO UPDATE THE IOMCU`. The hold starts the update that UPDATES'
+step 2 starts, with the same progress screen
+([IOmcu update](#iomcu-update)). It also starts it after the offer was
+declined. When the update ends, or the START request is consumed without
+starting one, the screen returns to UPDATES, with SINGLE UPDATES closed.
 
 ![The IOmcu section with another build](img/updates-coproc.png)
 
@@ -7069,12 +7083,12 @@ alert band, as the C6 radio's and the devices' grey holds do:
 | `Waiting: panel firmware installation is running.` | A panel install is under way. |
 | `Outputs stay off. ARMED is blocked until the update ends.` | The hold starts the update. For an older image the line reads `The firmware on this panel is older.` in the warning colour; for the same version number `Same version number, but a different build.` |
 
-The conditions are the question's: another build, the bench SAFE, the
-supply output off, the radio wholly off and no panel install. An IOmcu
-that runs the carried build gets no hold; the link-up's question does not
-open for it either. An IOmcu of another protocol major shows NO LINK in
-the band and still takes the update, as the question offers it to that
-IOmcu too.
+The conditions are those of step 2 and of an offer's opening: another
+build, the bench SAFE, the supply output off, the radio wholly off and no
+panel install. An IOmcu that runs the carried build gets no hold, and no
+offer opens UPDATES for it. An IOmcu of another protocol major shows NO
+LINK in the band and still takes the update; its offer opens UPDATES as
+any other.
 
 ### The C6 radio
 
@@ -7298,9 +7312,9 @@ that startup.
 
 When the check finds a newer release, the reminder opens on the menu
 (OVERVIEW). It does not open while the bench is ARMED or an arm waits,
-while the supply output is on, or while the IOmcu's update question or
-its progress is up: those come first, and the reminder opens once they have
-gone and the menu shows.
+while the supply output is on, or while the IOmcu's update is offered or
+runs: those come first, and the reminder opens once they have gone and the
+menu shows.
 
 | Control | Action |
 | --- | --- |

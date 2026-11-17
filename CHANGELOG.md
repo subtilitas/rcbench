@@ -31,6 +31,15 @@ history is in git.
 
 ### Changed
 
+- IOmcu update: the question on the menu is gone. An IOmcu that runs
+  another build opens UPDATES at step 2 (IOMCU), once per offer, on the
+  menu with the bench SAFE, the supply output off, Wi-Fi off and no panel
+  install under way; its 2s hold starts the update. SKIP THIS STEP or the
+  home tag that leaves UPDATES declines the offer until the panel
+  restarts. The band lines name UPDATES (`IOmcu runs a different build.
+  UPDATES opens once SAFE with the supply off.`). The progress returns to
+  UPDATES. An update run and an offer due together open UPDATES once, and
+  while the run waits the band carries its line only.
 - FILES (LOG > FILES > FILES): RESCAN selects each pane's newest file, the
   run log or report with the highest run number, as LOGS ranks runs. The
   rows stay in name order and each pane keeps its page; the list scrolls

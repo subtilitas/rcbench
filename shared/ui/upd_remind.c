@@ -311,8 +311,8 @@ void upd_remind_drive(upd_driver_t *d, const upd_feed_t *f)
              * application goes there itself. */
             ui_router_goto(SCREEN_OVERVIEW);
         } else if (!may) {
-            /* ARMED, the supply, the IOmcu's question: they come
-             * first.  The reminder comes back once they have gone. */
+            /* ARMED, the supply, the IOmcu's offer: they come first.
+             * The reminder comes back once they have gone. */
             rem.yield = true;
             ui_router_goto(SCREEN_OVERVIEW);
             rem.yield = false;

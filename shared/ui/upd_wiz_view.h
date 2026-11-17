@@ -81,6 +81,16 @@ void upd_wiz_reset(void);
  *         enter, leave and cancel. */
 void upd_wiz_drop(void);
 
+/** @brief A hold under way on step @p step's control ends unfired; a
+ *         press on another step's control goes on.
+ *  @param step an upd_wiz_id_t */
+void upd_wiz_drop_step(unsigned step);
+
+/** @brief Step @p step is no longer skipped: a new IOmcu offer brings
+ *         its step back.
+ *  @param step an upd_wiz_id_t; another value does nothing */
+void upd_wiz_unskip(unsigned step);
+
 /**
  * @brief A touch event on UPDATES, offered to the card's controls and
  *        CANCEL UPDATE first.

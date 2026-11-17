@@ -6,24 +6,22 @@ order: 100
 
 # IOmcu-Update
 
-Jedes Firmware-Image des Panels enthält ein IOmcu-Image. Das Panel bietet es an, wenn auf dem verbundenen IOmcu ein anderer Build läuft. Die Prüfung erfolgt bei jedem Verbindungsaufbau über den CAN-Bus (Controller Area Network). Sie vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit) statt Versionsnummern. Bei einer Abweichung erscheint der Alarm `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`. Ist der Prüfstand nicht SAFE mit ausgeschaltetem Netzteil, das WLAN an oder eine Panel-Installation im Gang, nennt der Alarm stattdessen dies, etwa `IOmcu nutzt einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels aus ist.`, und erneut, wenn die Frage auf etwas anderes wartet.
+Jedes Firmware-Image des Panels enthält ein IOmcu-Image. Das Panel bietet es an, wenn auf dem verbundenen IOmcu ein anderer Build läuft. Die Prüfung erfolgt bei jedem Verbindungsaufbau über den CAN-Bus (Controller Area Network). Sie vergleicht SHA-256-Prüfsummen (Secure Hash Algorithm, 256 Bit) statt Versionsnummern.
 
-## Die Frage
+## Das Angebot
 
-![Die Frage auf dem Menü](view:coproc-update)
+![UPDATES, von einem Angebot geöffnet](view:updates-offer)
 
-Die Update-Rückfrage öffnet sich im [Menü](overview.md), mit UPDATE im Band. Dazu muss der Prüfstand SAFE sein; Netzteilausgang und WLAN-Funkmodul müssen ausgeschaltet sein, und es darf kein Panel-Update laufen. Die Rückfrage zeigt die laufende Version des IOmcu und die im Panel enthaltene Version.
+Ein Angebot öffnet [Updates](updates.md) mit Schritt 2, IOMCU, als aktuellem Schritt, einmal je Angebot. Es öffnet sich im [Menü](overview.md), wenn der Prüfstand SAFE ist, Netzteilausgang und WLAN-Funkmodul ausgeschaltet sind und kein Panel-Update läuft. Das Band meldet `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`. Hält eine dieser Bedingungen das Öffnen zurück, nennt das Band sie stattdessen, etwa `IOmcu nutzt einen anderen Build. UPDATES öffnet, sobald das WLAN des Panels aus ist.`, und erneut, wenn das Öffnen auf etwas anderes wartet. Wartet nach einem Neustart ein Update-Lauf darauf, UPDATES zu öffnen, zeigt das Band nur die Zeile des Laufs, und UPDATES öffnet für beide einmal.
+
+Die Karte des Schritts zeigt die laufende Version des IOmcu und die im Panel enthaltene Version. Ein älteres Image wird ebenfalls angeboten. Die Karte zeigt dann `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe.
 
 | Bedienelement | Funktion |
 |---|---|
-| 2s HALTEN ZUM STARTEN | startet das Update nach 2s Halten, mit derselben Geste und demselben Übergang wie ARM |
-| ABBRECHEN | schließt die Rückfrage; bis zum Neustart fragt das Panel für diese Version nicht erneut. Du kannst das Update weiterhin unter [Updates](updates.md#der-iomcu) starten. |
+| 2s HALTEN ZUM IOMCU-UPDATE | startet das Update nach 2s Halten, mit derselben Geste und demselben Übergang wie ARM |
+| SCHRITT ÜBERSPRINGEN | lehnt das Angebot ab; bis zum Neustart bietet das Panel diese Version nicht erneut an. Du kannst das Update weiterhin unter [Einzelne Updates](updates.md#der-iomcu) starten. |
 
-Das Home-Feld lehnt das Update ebenso wie ABBRECHEN ab. Wird die Rückfrage durch eine andere Seite unterbrochen, gilt das nicht als Ablehnung. Das betrifft die [Fehlerseite](busfault.md) bei einer verlorenen Verbindung und den Download eines Panel-Updates. Beim nächsten Verbindungsaufbau wird das Update erneut angeboten. Die Rückfrage öffnet sich im Menü, sobald dieselben Bedingungen erfüllt sind.
-
-![Ein älteres Image](view:coproc-update-older)
-
-Ein älteres Image wird ebenfalls angeboten. Die Frage zeigt dann `Die Firmware auf diesem Panel ist älter.` in der Warnfarbe.
+Das Home-Feld, das UPDATES verlässt, lehnt das Angebot ebenso wie SCHRITT ÜBERSPRINGEN ab. Über OPTIONEN, EINZELNE UPDATES oder der Geräteseite schließt es zuerst diese Seite und lehnt nichts ab. Öffnet das Panel eine andere Seite über UPDATES, gilt das nicht als Ablehnung. Das betrifft die [Fehlerseite](busfault.md) bei einer verlorenen Verbindung und den Download eines Panel-Updates. Beim nächsten Verbindungsaufbau wird das Update erneut angeboten, und UPDATES öffnet sich im Menü, sobald dieselben Bedingungen erfüllt sind. Ein neues Angebot holt einen übersprungenen Schritt 2 zurück und beendet ein laufendes Halten darauf.
 
 ## Der Fortschritt
 
@@ -43,7 +41,7 @@ Die Übertragungsdauer ist nicht gemessen.
 
 ## Wie es endete
 
-Nach dem Update kehrt das Panel ins Menü zurück. Wurde das Update unter [Updates](updates.md#der-iomcu) gestartet, kehrt es dorthin zurück. Das Alarmband meldet das Ergebnis:
+Nach dem Update kehrt das Panel zu [Updates](updates.md) zurück. Das Alarmband meldet das Ergebnis, und die Karte von Schritt 2 behält die Zeile eines Fehlschlags bis zum nächsten Versuch oder zum nächsten Start:
 
 | Alarm | Bedeutung |
 |---|---|

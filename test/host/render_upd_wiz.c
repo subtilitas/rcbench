@@ -43,6 +43,7 @@ bool render_upd_wiz_view(const char *view)
 {
     return starts(view, "updates-step-") || starts(view, "updates-wiz-")
            || starts(view, "updates-run-")
+           || strcmp(view, "updates-offer") == 0
            || strcmp(view, "updates-held") == 0
            || strcmp(view, "updates-done") == 0;
 }
@@ -125,13 +126,15 @@ static void cu_behind(wiz_pose_t *w, cu_sec_t sec)
 static bool shot_views(const char *view, wiz_pose_t *w)
 {
     if (strcmp(view, "updates-step-iomcu") == 0
-        || strcmp(view, "updates-run-iomcu") == 0) {
+        || strcmp(view, "updates-run-iomcu") == 0
+        || strcmp(view, "updates-offer") == 0) {
         /* updates-run-iomcu: the same, opened by the update run after
-         * the panel's restart. */
+         * the panel's restart; updates-offer: opened by a link-up's
+         * offer, no check since the start. */
         cu_behind(w, CU_SEC_READY);
         dial_behind(w);
-        if (strcmp(view, "updates-run-iomcu") == 0) {
-            w->run = true;
+        if (strcmp(view, "updates-step-iomcu") != 0) {
+            w->run = strcmp(view, "updates-run-iomcu") == 0;
             /* No check in a run: PANEL reads NOT CHECKED. */
             w->p.phase = UPD_PH_IDLE;
             w->p.got = UPD_GOT_NONE;
@@ -259,6 +262,10 @@ void render_upd_wiz_pose(const char *view)
         char line[UI_ALERT_MAX];
         snprintf(line, sizeof(line), TR(ALERT_FW_UPDATED), w.p.running);
         ui_router_set_alert(line);
+    }
+    if (strcmp(view, "updates-offer") == 0) {
+        /* The offer's band line, said in the frame that opened UPDATES. */
+        ui_router_set_alert(TR(ALERT_CU_OFFER));
     }
     if (strcmp(view, "updates-done") == 0) {
         /* The Dial's step skipped: SKIP THIS STEP, 500 x 56px at y 364. */
