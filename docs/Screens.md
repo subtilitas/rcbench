@@ -291,8 +291,10 @@ ARMED.
 | FILES, panes | 3 | LOGS, the left pane's folder, a row and scroll bar; RESCAN, COPY, MOVE, RENAME; the right pane, DELETE, NEW, INFO, OPEN |
 | WI-FI, radio off | 3 | ACCESS POINT, JOIN HOME NETWORK, CHOOSE HOME NETWORK, FORGET HOME NETWORK, ACCESS CODE ON or OFF; HOTSPOT PASSWORD and ACCESS CODE, RANDOM or KEPT; the card |
 | WI-FI, radio on | 1, 2 with the writes' button | the rows while the page is served, the lines under them, WI-FI OFF; the browser writes' button |
-| UPDATES | 2 | CHECK FOR UPDATES or CANCEL, the IOmcu section, its hold; the card, the C6 radio's hold, the download's hold once a check found a newer release, OPTIONS |
+| UPDATES | 2 | CHECK FOR UPDATES or CANCEL; the card, the download's hold once a check found a newer release, OPTIONS |
 | UPDATES, OPTIONS | 2 | as a settings list |
+| UPDATES, SINGLE UPDATES | 2 | the IOmcu section, its hold, the WIRELESS DEVICES entry; the heading, the C6 radio's hold, BACK |
+| UPDATES, the wireless devices' page | 1 | the three device rows, CANCEL UPDATE while an update runs, BACK |
 
 ![SETUP's guide at page 1](img/help-setup.png)
 
@@ -612,15 +614,15 @@ replaces a visible hint.
 | DONE of a stick run's step before a power-up | `Hold 2s to confirm the step before the supply switches on.` |
 | HOLD 2s TO INSTALL on Wi-Fi | `Hold 2s to install.` |
 | HOLD 2s TO DOWNLOAD & INSTALL on UPDATES and in the update reminder | `Hold 2s to download and install.` |
-| HOLD 2s TO UPDATE THE IOMCU on UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
-| HOLD 2s TO UPDATE THE C6 RADIO on UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
-| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
-| HOLD 2s TO UPDATE THE DIAL on UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
-| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
-| HOLD 2s TO UPDATE THE POWER NODE on UPDATES | `Hold 2s to update the power node. Its readings stop until it connects again.` |
-| HOLD 2s TO REINSTALL THE POWER NODE on UPDATES | `Hold 2s to reinstall the power node firmware this panel carries.` |
-| HOLD 2s TO UPDATE THE BALANCE NODE on UPDATES | `Hold 2s to update the balance node. Its reports stop until it connects again.` |
-| HOLD 2s TO REINSTALL THE BALANCE NODE on UPDATES | `Hold 2s to reinstall the balance node firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE IOMCU on SINGLE UPDATES, and START on the IOmcu update's question | `Hold 2s to update the IOmcu.` |
+| HOLD 2s TO UPDATE THE C6 RADIO on SINGLE UPDATES | `Hold 2s to update the C6 radio. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the C6 firmware this panel carries. Wi-Fi stays off until it ends.` |
+| HOLD 2s TO UPDATE THE DIAL on SINGLE UPDATES | `Hold 2s to update the Dial. Its knob stops until it connects again.` |
+| HOLD 2s TO REINSTALL THE DIAL FIRMWARE on SINGLE UPDATES | `Hold 2s to reinstall the Dial firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE POWER NODE on SINGLE UPDATES | `Hold 2s to update the power node. Its readings stop until it connects again.` |
+| HOLD 2s TO REINSTALL THE POWER NODE on SINGLE UPDATES | `Hold 2s to reinstall the power node firmware this panel carries.` |
+| HOLD 2s TO UPDATE THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to update the balance node. Its reports stop until it connects again.` |
+| HOLD 2s TO REINSTALL THE BALANCE NODE on SINGLE UPDATES | `Hold 2s to reinstall the balance node firmware this panel carries.` |
 | HOLD 2s TO CLEAR ALL PIN ASSIGNMENTS on OUTPUTS | `Hold 2s to clear all pin assignments.` |
 | OVERWRITE on FILES' editor's question | `Hold 2s to overwrite.` |
 | HOLD 2s TO ACKNOWLEDGE on the bus-fault screen | `Hold 2s to acknowledge.` |
@@ -813,7 +815,7 @@ y 436.
 | SUPPLY | OUTPUT ON / OFF | the list of the supply's limits and the PD mini's wiring |
 | ESC STICK, on a profile's page, its run and its result | RUN n / ABORT / OK | the list of the supply and the 12 timing settings |
 | IMU | HOLD 2s: CALIBRATE | SETUP's WIRELESS list at the IMU entry |
-| UPDATES | HOLD 2s TO DOWNLOAD & INSTALL, with a newer release found | the list of the reminder and the releases |
+| UPDATES | HOLD 2s TO DOWNLOAD & INSTALL, with a newer release found | the list of the reminder, the releases and Single updates |
 | LOGS, on the file list | empty | SETUP's SD CARD list |
 | FILES, on the panes | empty | SETUP's SD CARD list |
 | RECEIVER, BATTERY, BALANCE | empty | nothing: the slot is empty |
@@ -6630,34 +6632,26 @@ release ([The release line](#the-release-line)).
 CHECK FOR UPDATES is 460 x 56px at body y 16 on the left. The card on the
 right is 532px wide, from body y 16 to 336; its text runs in lines of 41
 characters of the 12 x 24px face, 28px apart. When a result runs down to
-the card's last three lines, those lines are left out. Under CHECK the
-IOmcu section's lines are in the 10 x 20px face, and its hold is a button
-of the same size, from body y 380. Between them the WIRELESS DEVICES
-entry: its heading at body y 236, its line at y 260 and its button,
-460 x 56px, at y 316 ([The wireless devices](#the-wireless-devices)).
-Under the card the C6 RADIO row: one
-line at body y 348 and its hold, 532 x 56px, beside the IOmcu's
-([The C6 radio](#the-c6-radio)). The footer
+the card's last three lines, those lines are left out. The footer
 ([The footer and the settings list](#the-footer-and-the-settings-list))
 reads `[UPDATES] [HOLD 2s TO DOWNLOAD & INSTALL] [OPTIONS]`; the middle
-slot is empty until a check finds a newer release.
+slot is empty until a check finds a newer release. The IOmcu's, the C6
+radio's and the wireless devices' updates are on SINGLE UPDATES, a page
+that OPTIONS' row Single updates opens ([Single updates](#single-updates)).
 
 | Control | Action |
 | --- | --- |
 | `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. |
 | `HOLD 2s TO DOWNLOAD & INSTALL` | In the footer's middle slot once a check found a newer release. Downloads, checks and installs it. |
-| `OPTIONS` | Opens the list of Reminder at start and Releases. Grey while a check or a download runs or a finger holds the download; a tap then puts `OPTIONS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
-| `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
-| `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
-| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
-| `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
+| `OPTIONS` | Opens the list of Reminder at start, Releases and Single updates. Grey while a check or a download runs or a finger holds the download; a tap then puts `OPTIONS open with no check or download running.` in the alert band. A check that starts under the open list closes it. |
 
 ![UPDATES' OPTIONS list](img/updates-settings.png)
 
-| Setting | Values | Default | Effect |
+| Row | Values | Default | Effect |
 | --- | --- | --- | --- |
 | Reminder at start | OFF, ON | ON | the start-up check and its reminder |
 | Releases | STABLE, TESTING | STABLE | which releases a check reads ([The check](#the-check)); a change hides the last check's result, and a release found on the other setting is not offered |
+| Single updates | - | - | a tap closes the list and opens SINGLE UPDATES ([Single updates](#single-updates)); with a value unsaved, the leave warning first, and its SAVE or DISCARD opens the page |
 
 A change applies at once; SAVE in the list's strip keeps it, as on SETUP
 ([Keeping the values](#keeping-the-values)).
@@ -6834,16 +6828,51 @@ Current limitation of the 0.22 line: the list holds the 10 newest releases
 by date (`per_page=10`). A 0.22.x patch release with 10 or more releases
 published after it is not found, on either setting.
 
+### Single updates
+
+SINGLE UPDATES starts one update or reinstall at a time: the IOmcu's, the
+C6 radio's or a wireless device's. It opens from OPTIONS' row Single
+updates and covers UPDATES' body. Every start is a 2s hold.
+
+![SINGLE UPDATES](img/updates-single.png)
+
+The card's place, 532px wide from body y 16 to 336, holds the heading
+`Single updates and reinstalls. The steps on UPDATES are the normal way.`
+and a line on what a reinstall does. The left column holds the IOmcu
+section: its lines in the 10 x 20px face from body y 88, and its hold,
+460 x 56px, at body y 380 ([The IOmcu](#the-iomcu)). Between them the
+WIRELESS DEVICES entry: its heading at body y 236, its line at y 260 and
+its button, 460 x 56px, at y 316
+([The wireless devices](#the-wireless-devices)). Under the heading the C6
+RADIO row: one line at body y 348 and its hold, 532 x 56px, beside the
+IOmcu's ([The C6 radio](#the-c6-radio)). The footer reads
+`[UPDATES] [ ] [BACK]`.
+
+| Control | Action |
+| --- | --- |
+| `HOLD 2s TO UPDATE THE IOMCU` | Starts the IOmcu's update from the image this panel carries ([The IOmcu](#the-iomcu)). |
+| `HOLD 2s TO UPDATE THE C6 RADIO` | Sends the C6 radio's image this panel carries to the board's ESP32-C6 ([The C6 radio](#the-c6-radio)). |
+| `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` | The same, while the C6 reports the carried version ([The C6 radio](#the-c6-radio)). |
+| `WIRELESS DEVICE FIRMWARE` | Opens the page of the Dial's and the sensor nodes' firmware rows over this page ([The wireless devices](#the-wireless-devices)). While an update runs the button reads that row's label. |
+| `BACK` | Closes the page: UPDATES shows again. |
+
+One finger at a time: while a finger is on one of the holds, the entry or
+BACK, a second finger starts nothing. The home tag closes the devices'
+page first, then this page, then leaves UPDATES. Leaving UPDATES closes
+the page, and a hold under way ends without starting anything. A check
+or a download that starts while the page shows closes nothing; CHECK and
+the download's hold are not on the page.
+
 ### The IOmcu
 
-Under the buttons, UPDATES shows the IOmcu's update: the version the
-IOmcu runs (`Running: 0.21.2`), the version of the image this panel
+On SINGLE UPDATES, the left column shows the IOmcu's update: the version
+the IOmcu runs (`Running: 0.21.2`), the version of the image this panel
 carries (`Included: 0.22.0`), one line of state, and
 `HOLD 2s TO UPDATE THE IOMCU`. The hold starts the update that the
 link-up's question starts, with the same progress screen
 ([IOmcu update](#iomcu-update)). It also starts it after that
 question was declined. When the update ends, or the START request is consumed without starting
-one, the screen returns to UPDATES.
+one, the screen returns to UPDATES, with SINGLE UPDATES closed.
 
 ![The IOmcu section with another build](img/updates-coproc.png)
 
@@ -6877,7 +6906,7 @@ IOmcu too.
 
 ### The C6 radio
 
-Under the card, UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
+Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and
 Bluetooth: `C6 radio: 2.13.0. Included: 2.13.0.`, the version the C6
 reported at the first Wi-Fi start since the panel started, or
 `not reported`, and the version of the image this panel carries, or
@@ -6929,7 +6958,7 @@ the GitHub check and the IOmcu's update wait.
 
 ### The wireless devices
 
-The WIRELESS DEVICES entry on UPDATES counts the devices:
+The WIRELESS DEVICES entry on SINGLE UPDATES counts the devices:
 `Connected: 1 of 3. Another version: 0.` names the devices that reported
 a version and those whose row offers another version than the carried
 one. A tap on `WIRELESS DEVICE FIRMWARE` opens the page; while an update
@@ -6937,12 +6966,12 @@ runs the button reads that row's label.
 
 ![The WIRELESS DEVICES entry while the Dial asks for its press](img/updates-dial.png)
 
-The page covers UPDATES' body. It holds one row per device, at body
+The page covers SINGLE UPDATES. It holds one row per device, at body
 y 24, 128 and 232: DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE
 FIRMWARE. Each row's heading and line take 496px from x 16, its hold
 480 x 56px from x 528. A note under the rows says how a device accepts an
-update. `BACK` in the footer's right slot and the home tag close the page;
-leaving UPDATES closes it as well. One update runs at a time: while one
+update. `BACK` in the footer's right slot and the home tag close the page
+and show SINGLE UPDATES again; leaving UPDATES closes both. One update runs at a time: while one
 runs, the other rows' holds are grey.
 
 ![The wireless devices' page](img/updates-devices.png)
@@ -6956,7 +6985,7 @@ runs, the other rows' holds are grey.
 | `HOLD 2s TO UPDATE THE BALANCE NODE` | Sends the balance node's image this panel carries to the bound balance node. |
 | `HOLD 2s TO REINSTALL THE BALANCE NODE` | The same, while the node reports the carried version. |
 | `CANCEL UPDATE` | In the footer's middle slot while an update runs; a plain tap. Before END it ends the update: the device drops what it took and keeps its firmware, and the band reads `<device> update stopped: canceled on UPDATES. Previous firmware is running.` From END on the device installs whatever comes: the key is grey, a tap puts `The device installs the update and cannot stop now. Its result follows.` in the band, and the result follows as without the tap. |
-| `BACK` | Closes the page. |
+| `BACK` | Closes the page: SINGLE UPDATES shows again. |
 
 ### The Dial
 

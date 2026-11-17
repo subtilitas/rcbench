@@ -14,20 +14,19 @@ UPDATES checks GitHub for newer panel firmware and offers to install it. Open it
 |---|---|
 | CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
 | HOLD 2s TO DOWNLOAD & INSTALL | in the footer's middle once a check found a newer release; downloads, checks and installs it |
-| OPTIONS | in the footer's right; opens the list of Reminder at start and Releases, see [Settings](#settings); grey while a check or a download runs |
-| HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined |
-| HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
-| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE | the same, while the C6 reports the carried version |
-| WIRELESS DEVICE FIRMWARE | opens the page of the Dial's and the sensor nodes' firmware rows, see [Wireless devices](#wireless-devices); while an update runs it reads that row's label |
+| OPTIONS | in the footer's right; opens the list of Reminder at start, Releases and Single updates, see [Settings](#settings); grey while a check or a download runs |
+
+The IOmcu's, the C6 radio's and the wireless devices' updates are on the page SINGLE UPDATES, see [Single updates](#single-updates).
 
 ## Settings
 
 ![UPDATES' OPTIONS list](view:updates-settings)
 
-| Setting | Values | What it does |
+| Row | Values | What it does |
 |---|---|---|
 | Reminder at start | OFF, ON; ON by default | switches the check at start and its reminder |
 | Releases | STABLE, TESTING; STABLE by default | sets which releases a check reads, see [The check](#the-check); a change hides the last result, and a release found on the other setting is not offered |
+| Single updates | - | closes the list and opens SINGLE UPDATES, see [Single updates](#single-updates); with a change not saved it asks first |
 
 A change applies at once. SAVE in the list's strip keeps it, as on [Setup](setup.md#keeping-the-values). The home tag closes the list; with a change not saved it asks first.
 
@@ -119,11 +118,27 @@ CANCEL ends the download. STOP, ARMED, supply output, an open log run or a board
 
 ![A download that stopped](view:panel-download-failed)
 
+## Single updates
+
+![SINGLE UPDATES](view:updates-single)
+
+SINGLE UPDATES starts one update or reinstall at a time: the IOmcu's, the C6 radio's or a wireless device's. Open it from the row Single updates in OPTIONS. It covers UPDATES; every start is a 2s hold.
+
+| Control | What it does |
+|---|---|
+| HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined, see [The IOmcu](#the-iomcu) |
+| HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
+| HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE | the same, while the C6 reports the carried version |
+| WIRELESS DEVICE FIRMWARE | opens the page of the Dial's and the sensor nodes' firmware rows, see [Wireless devices](#wireless-devices); while an update runs it reads that row's label |
+| BACK | in the footer's right; closes the page |
+
+One finger at a time: a second finger on another control starts nothing. The home tag closes the devices' page first, then SINGLE UPDATES, then leaves UPDATES. Leaving UPDATES closes the page, and a hold under way starts nothing. A check that starts while the page shows closes nothing.
+
 ## The IOmcu
 
 ![Another build on the IOmcu](view:updates-coproc)
 
-Below CHECK FOR UPDATES, UPDATES shows the running IOmcu version (`Running: 0.21.2`) and bundled image version (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the same update and progress screen as the prompt at link-up. The screen returns to UPDATES when the update ends or the START request expires.
+In the left column of SINGLE UPDATES, the page shows the running IOmcu version (`Running: 0.21.2`) and bundled image version (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the same update and progress screen as the prompt at link-up. The screen returns to UPDATES when the update ends or the START request expires.
 
 The hold has the same requirements as the prompt: an IOmcu running a different build, a SAFE bench, supply output off, Wi-Fi fully off and no panel installation. Otherwise it is grey. The line above it shows the first applicable reason, and a tap or a hold on the grey button shows the same line on the alert band:
 
@@ -148,7 +163,7 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 
 ![The C6 as shipped: no version reported](view:updates-c6)
 
-Under the card, UPDATES shows the board's ESP32-C6, which carries Wi-Fi and Bluetooth: `C6 radio: not reported. Included: 2.13.0.` The first version is the one the C6 named at the first Wi-Fi start since the panel started; the shipped C6 names none. HOLD 2s TO UPDATE THE C6 RADIO sends the carried image over the board's SDIO (Secure Digital input/output) link; the button then reads `C6 UPDATE 37%`.
+Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and Bluetooth: `C6 radio: not reported. Included: 2.13.0.` The first version is the one the C6 named at the first Wi-Fi start since the panel started; the shipped C6 names none. HOLD 2s TO UPDATE THE C6 RADIO sends the carried image over the board's SDIO (Secure Digital input/output) link; the button then reads `C6 UPDATE 37%`.
 
 The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, and Wi-Fi off. On a C6 that reports the carried version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
 
@@ -167,7 +182,7 @@ After every end but the first, the C6 keeps the firmware it ran and Wi-Fi works 
 
 ![The WIRELESS DEVICES entry while the Dial asks for its press](view:updates-dial)
 
-The WIRELESS DEVICES entry counts the devices that reported a version and those offered another version: `Connected: 1 of 3. Another version: 0.` WIRELESS DEVICE FIRMWARE opens the page. BACK and the home tag close it.
+The WIRELESS DEVICES entry on SINGLE UPDATES counts the devices that reported a version and those offered another version: `Connected: 1 of 3. Another version: 0.` WIRELESS DEVICE FIRMWARE opens the page over SINGLE UPDATES. BACK and the home tag close it and show SINGLE UPDATES again.
 
 ![The wireless devices' page](view:updates-devices)
 
@@ -180,7 +195,7 @@ The WIRELESS DEVICES entry counts the devices that reported a version and those 
 | HOLD 2s TO UPDATE THE BALANCE NODE | sends the balance node's image to the bound balance node |
 | HOLD 2s TO REINSTALL THE BALANCE NODE | the same, while the node reports the carried version |
 | CANCEL UPDATE | in the footer's middle while an update runs, a plain tap: ends the update before its last byte, and the device keeps its firmware; from then on the device installs and the key is grey |
-| BACK | closes the page |
+| BACK | closes the page: SINGLE UPDATES shows again |
 
 One update runs at a time; while one runs, the other holds are grey.
 

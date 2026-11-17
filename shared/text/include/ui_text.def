@@ -6873,11 +6873,26 @@ UI_TEXT(HG_WF_WRITES, 0,
     "The browser may change the card until the radio goes off. A tap on OFF ends it.",
     "Der Browser darf die Karte ändern, bis das WLAN ausgeht. Tippen auf AUS beendet es.")
 UI_TEXT(HG_UPD_TITLE_CHECK, 0,
-    "UPDATES: CHECK, IOMCU, DEVICES",
-    "UPDATES: SUCHE, IOMCU, GERÄTE")
+    "UPDATES: CHECK",
+    "UPDATES: SUCHE")
 UI_TEXT(HG_UPD_TITLE_CARD, 0,
-    "UPDATES: PANEL AND C6",
-    "UPDATES: PANEL UND C6")
+    "UPDATES: PANEL",
+    "UPDATES: PANEL")
+UI_TEXT(HG_UPD_TITLE_SINGLE, 0,
+    "SINGLE UPDATES: IOMCU, DEVICES",
+    "EINZELNE UPDATES: IOMCU, GERÄTE")
+UI_TEXT(HG_UPD_TITLE_SINGLE_2, 0,
+    "SINGLE UPDATES: C6",
+    "EINZELNE UPDATES: C6")
+UI_TEXT(HG_UPD_SINGLE_NAME, 0,
+    "SINGLE UPDATES",
+    "EINZELNE UPDATES")
+UI_TEXT(HG_UPD_SINGLE_CARD, 0,
+    "One update or reinstall at a time, beside the steps on UPDATES. Each starts with a 2s hold.",
+    "Je ein Update oder eine Neuinstallation, neben den Schritten auf UPDATES. Start mit 2s Halten.")
+UI_TEXT(HG_UPD_SINGLE_BACK, 0,
+    "Back to UPDATES, as the home tag.",
+    "Zurück zu UPDATES, wie das Home-Tag.")
 UI_TEXT(HG_UPD_CARD_NAME, 0,
     "PANEL",
     "PANEL")
@@ -6906,8 +6921,8 @@ UI_TEXT(HG_UPD_DEVS_CANCEL, 0,
     "Ends the update before its last byte; the device keeps its firmware. Grey while it installs.",
     "Beendet das Update vor dem letzten Byte; das Gerät behält seine Firmware. Grau beim Installieren.")
 UI_TEXT(HG_UPD_DEVS_BACK, 0,
-    "Back to UPDATES, as the home tag.",
-    "Zurück zu UPDATES, wie das Home-Tag.")
+    "Back to SINGLE UPDATES, as the home tag.",
+    "Zurück zu EINZELNE UPDATES, wie das Home-Tag.")
 UI_TEXT(HG_UPD_TITLE_DEVS, 0,
     "UPDATES: WIRELESS DEVICES",
     "UPDATES: FUNKGERÄTE")
@@ -6921,8 +6936,8 @@ UI_TEXT(HG_UPD_DL, 0,
     "Downloads, checks and installs the newer release the check found.",
     "Lädt, prüft und installiert das neuere Release, das die Suche fand.")
 UI_TEXT(HG_UPD_OPTIONS, 0,
-    "Reminder at start and Releases, STABLE or TESTING. Grey while a check or a download runs.",
-    "Erinnerung beim Start und Releases, STABLE oder TESTING. Grau, solange Suche oder Download läuft.")
+    "Reminder at start, Releases and Single updates. Grey while a check or a download runs.",
+    "Erinnerung, Releases und Einzelne Updates. Grau, solange Suche oder Download läuft.")
 UI_TEXT(KP_DOUBT, 116,
     "The settings currently in the servo are unknown.",
     "Die aktuellen Werte im Servo sind unbekannt.")
@@ -8709,7 +8724,21 @@ UI_TEXT(UPD_BAL_CONNECTING, 0,
 UI_TEXT(UPD_BAL_PROGRESS, 0,
     "BALANCE NODE UPDATE %u%%",
     "AUSWUCHTKNOTEN-UPDATE %u%%")
-/* UPDATES' WIRELESS DEVICES entry and the page it opens (upd_dev.c). */
+/* UPDATES' OPTIONS row Single updates and the page it opens
+ * (upd_settings.c, upd_single.c): the heading in the card's place. */
+UI_TEXT(UPD_SINGLE_ROW, 0,
+    "Single updates",
+    "Einzelne Updates")
+UI_TEXT(UPD_SINGLE_ROW_HELP, 0,
+    "IOmcu, C6 radio and wireless devices, each on its own",
+    "IOmcu, C6-Funk und Funkgeräte, jedes für sich")
+UI_TEXT(UPD_SINGLE_HEAD, 0,
+    "Single updates and reinstalls. The steps on UPDATES are the normal way.",
+    "Einzelne Updates und Neuinstallationen. Der normale Weg sind die Schritte auf UPDATES.")
+UI_TEXT(UPD_SINGLE_NOTE, 0,
+    "Each hold updates one part on its own. A reinstall writes the included firmware again to a C6 or a device that already runs it.",
+    "Jedes Halten aktualisiert ein Teil für sich. Neu installieren schreibt die enthaltene Firmware erneut auf einen C6 oder ein Gerät, das sie schon hat.")
+/* SINGLE UPDATES' WIRELESS DEVICES entry and the page it opens (upd_dev.c). */
 UI_TEXT(UPD_DEVS_HEAD, 0,
     "WIRELESS DEVICES",
     "FUNKGERÄTE")

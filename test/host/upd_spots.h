@@ -1,18 +1,21 @@
 /**
  * @file
- * @brief Where a finger lands on UPDATES, the start-up reminder, the
- *        IOmcu's update question and PANEL UPDATE, mirrored from
- *        upd_screen.c, upd_c6.h, coproc_update_screen.c and
- *        update_screen.c.
+ * @brief Where a finger lands on UPDATES, SINGLE UPDATES, the start-up
+ *        reminder, the IOmcu's update question and PANEL UPDATE, mirrored
+ *        from upd_screen.c, upd_single.h, upd_c6.h, upd_remind.c,
+ *        coproc_update_screen.c and update_screen.c; and the taps that open
+ *        SINGLE UPDATES.
  *
  * If the layout moves these move with it.  Taken by the screens' suites.
  *
  *   - UPDATES, in the body under the band: CHECK 460 x 56px from x 16 at
- *     y 16; the IOmcu's hold 460 x 56px at y 380; the card x 484 to 1016,
- *     y 16 to 336; the C6 RADIO hold 532 x 56px from x 484 at y 380; the
- *     footer (ui_footer.h) at y 444, 48px tall: the download's hold in its
- *     middle slot from x 348, SETTINGS in its right slot from x 686, each
- *     328px wide;
+ *     y 16; the card x 484 to 1016, y 16 to 336; the footer (ui_footer.h)
+ *     at y 444, 48px tall: the download's hold in its middle slot from
+ *     x 348, OPTIONS in its right slot from x 686, each 328px wide;
+ *     OPTIONS' third row, Single updates, opens SINGLE UPDATES;
+ *   - SINGLE UPDATES, in the body: the IOmcu's hold 460 x 56px at y 380;
+ *     the heading in the card's place; the C6 RADIO hold 532 x 56px from
+ *     x 484 at y 380; BACK in the footer's right slot;
  *   - the reminder, in the body: NOT NOW and NEVER REMIND ME 398 x 56px
  *     at y 328 from x 106 and 520, the hold 812 x 64px at y 400 from
  *     x 106;
@@ -25,7 +28,11 @@
  */
 #pragma once
 
+#include "touch_types.h"
 #include "ui_layout.h"
+#include "ui_screen.h"
+#include "ui_setlist.h"
+#include "upd_screen.h"
 
 #define UP_BTN_X       246      /**< UPDATES' buttons' middle column. */
 #define UP_BTN_W       460      /**< Their width, px. */
@@ -37,6 +44,9 @@
 #define UP_DL_Y        UP_FOOT_Y     /**< Its middle row. */
 #define UP_SET_X       850      /**< SETTINGS' middle. */
 #define UP_SET_Y       UP_FOOT_Y     /**< Its middle row. */
+#define UP_SINGLE_ROW  2        /**< OPTIONS' row Single updates. */
+#define UP_BACK_X      UP_SET_X /**< SINGLE UPDATES' BACK: OPTIONS' slot. */
+#define UP_BACK_Y      UP_FOOT_Y     /**< Its middle row. */
 #define UP_CU_T        380      /**< HOLD 2s: UPDATE IOMCU's top. */
 #define UP_CU_Y        (UP_CU_T + 28)  /**< Its middle row. */
 #define UP_CARD_X      484      /**< The card's left edge. */
@@ -66,3 +76,24 @@
 
 /** @brief The body row 4px over the alert band: nothing reaches it. */
 #define UP_FLOOR       (UI_ALERT_Y - UI_BAND_H - 4)
+
+/** @brief A tap of finger 1 at (@p x, @p y) on @p scr. */
+static inline void upd_spot_tap(const ui_screen_t *scr, int x, int y)
+{
+    touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                        .point = { .id = 1, .x = (int16_t)x,
+                                   .y = (int16_t)y, .strength = 40 } };
+    scr->event(&e);
+    e.type = TOUCH_EVENT_UP;
+    scr->event(&e);
+}
+
+/** @brief The way an operator opens SINGLE UPDATES on UPDATES (@p scr):
+ *         OPTIONS, then its row Single updates. */
+static inline void upd_open_single(const ui_screen_t *scr)
+{
+    upd_spot_tap(scr, UP_SET_X, UP_SET_Y);
+    const gfx_rect_t r = ui_setlist_row_rect(upd_screen_settings_list(),
+                                             UP_SINGLE_ROW);
+    upd_spot_tap(scr, r.x + r.w / 2, r.y + r.h / 2);
+}
