@@ -39,6 +39,7 @@
 #include "render_files.h"
 #include "render_help.h"
 #include "render_imu.h"
+#include "render_outputs.h"
 #include "render_rudder.h"
 #include "render_shot.h"
 #include "render_esc_wire.h"
@@ -5169,6 +5170,7 @@ int main(int argc, char **argv)
         render_files_pose(view);
     }
     render_rudder_pose(view);
+    (void)render_outputs_pose(view);
     rauto_rbmod_hold(view);
     if (strncmp(view, "band-", 5) == 0) {
         band_view(view, &st);

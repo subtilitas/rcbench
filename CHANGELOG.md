@@ -33,6 +33,19 @@ history is in git.
   tagged key with its tag, `GPIO 7 ESC`. The grid view draws the name of a
   pin another protocol holds in full ink in every protocol's view, not only
   on OFF.
+- OUTPUTS: a tap on a pin another protocol holds asks to move it to the
+  protocol selected, in both views. A card over the board, or beside the
+  tapped cell on the grid and the rbmod carrier, names the pin and its
+  holder, what the holder keeps, the channel's new role when it changes and,
+  in amber, the lead that gets the new signal from the next ARM. A tap on
+  MOVE PIN writes the binding once, with every channel number kept; CANCEL,
+  the home tag or a press off the card writes nothing, and the card closes
+  when the binding changes under it. Moving the pin back is the undo. A tap
+  on a pin that asks nothing says why under the count: a programming port's
+  pin (`GPIO 13: PROG PORT 1. FREE IT ON ITS ENTRY`), a pin of the sensor
+  bus, the PD mini or the phase tap with the screen that sets it, OFF
+  selected (`GPIO 7: DSHOT600. PICK A PROTOCOL FIRST`), a full protocol or
+  a PWM rule the move breaks.
 
 ## 0.23.14 - 2026-11-15
 

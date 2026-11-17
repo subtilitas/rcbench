@@ -21,6 +21,7 @@
 #include "gfx.h"
 #include "link_drawing.h"
 #include "out_bind.h"
+#include "out_bind_take.h"
 #include "outputs_screen.h"
 #include "outputs_screen_int.h"
 #include "picker_screen.h"
@@ -314,6 +315,12 @@ uint8_t pk_proto_shown(void);
 bool pk_prog_taken(uint8_t index);
 outputs_iface_t pk_iface_taken(uint8_t index);
 int8_t pk_channel_of(uint8_t index);
+/**
+ * @brief What stands beside the binding for a move (pin_take.h): whether a
+ *        read confirmed it, the ports' pins and each interface's pins.
+ * @param ctx takes it; its arrays hold until the next call
+ */
+void pk_take_ctx(outbind_take_ctx_t *ctx);
 /**
  * @brief Where LAST WRITE stands: right of the list's face, or at the foot of
  *        the IN USE column on a board with a key there.

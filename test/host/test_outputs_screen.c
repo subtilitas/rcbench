@@ -265,6 +265,10 @@ TEST_CASE(the_programming_ports_pin_is_taken_and_takes_no_tick)
         tap_pin(13);
         CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
         CHECK_EQ(s_applied, was);
+        /* No card: the line names the port and where its pin is set. */
+        CHECK(!scr()->covered());
+        CHECK_EQ(strncmp(reason(), "GPIO 13: ", 9), 0);
+        CHECK(strstr(reason(), TR(OUT_PROG_PORT)) != NULL);
         /* The pin beside it is not the port's. */
         CHECK_EQ(outputs_screen_cell(idx(14), NULL, 0), OUTPUTS_CELL_FREE);
         guard_canvas_init(&g, &c, px, SCREEN_W, SCREEN_H);
@@ -347,6 +351,12 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
                      OUTPUTS_CELL_RESERVED);
             CHECK_STR_EQ(l, TR(OUT_IFACE_SENSE));
             tap_pin(gp);
+            /* No tick and no card: the line names the screen that sets
+             * the bus. */
+            CHECK(!scr()->covered());
+            char want[64];
+            snprintf(want, sizeof(want), TR(PK_TAKE_WHY_SENSE), (unsigned)gp);
+            CHECK_STR_EQ(reason(), want);
         }
         CHECK_EQ(outbind_chosen(outputs_screen_binding()), 0);
         CHECK_EQ(s_applied, was);
@@ -372,6 +382,10 @@ TEST_CASE(an_interface_pin_is_taken_named_and_takes_no_tick)
                      OUTPUTS_CELL_RESERVED);
             CHECK_STR_EQ(l, TR(OUT_IFACE_PDMINI));
             tap_pin(gp);
+            char want[64];
+            snprintf(want, sizeof(want), TR(PK_TAKE_WHY_PDMINI),
+                     (unsigned)gp);
+            CHECK_STR_EQ(reason(), want);
         }
         CHECK_EQ(s_applied, was);
         /* A pin at -1, or both on one pin: the panel writes the page OFF,

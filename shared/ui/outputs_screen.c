@@ -13,6 +13,7 @@
 #include <string.h>
 
 #include "link_pages.h"
+#include "pin_take.h"
 #include "ui_pinlist.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -214,7 +215,7 @@ const outbind_t *outputs_screen_binding(void) { return &s.bind; }
 
 uint32_t outputs_screen_revision(void)
 {
-    return s.gen + outputs_port_revision();
+    return s.gen + outputs_port_revision() + pin_take_revision();
 }
 
 /**
@@ -284,6 +285,7 @@ void outputs_screen_set_binding(const outbind_t *b)
     s.confirmed = s.bind;
     s.read      = BIND_READ_OK;
     drop_clear_hold();
+    pin_take_follow(PIN_TAKE_GRID, &s.bind, true);
     touched();
 }
 
@@ -325,6 +327,7 @@ void outputs_screen_set_reading(const bind_reading_t *r)
     if (s.read != BIND_READ_ODD) {
         drop_clear_hold();
     }
+    pin_take_follow(PIN_TAKE_GRID, &s.bind, outputs_screen_editable());
     touched();
 }
 
@@ -352,6 +355,7 @@ void outputs_screen_select(uint8_t proto)
     outbind_set_proto(&s.bind, proto);
     s.off_picked = (proto == 0u);
     s.refused = -1;
+    pin_take_reset();           /* the card and the reason were the last's */
     outputs_port_hide();
     touched();
 }
@@ -504,6 +508,7 @@ void outputs_screen_set_board_view(bool board)
     if (board != s.board_view) {
         s.board_view = board;
         drop_clear_hold();
+        pin_take_close();       /* the card is the view's it opened in */
         s.open = false;
         s.hit_kind = HIT_NONE;
         outputs_port_set_view(board);
@@ -520,6 +525,7 @@ static void reset(void)
     s.confirmed = s.bind;
     s.read = BIND_READ_OK;
     s.refused = -1;
+    pin_take_reset();
     outputs_port_reset();
     ui_hold_reset(&s.clear);
     outputs_port_forget_open();
@@ -548,6 +554,7 @@ static void leave(void)
     s.open = false;
     drop_clear_hold();
     outputs_port_cancel();
+    pin_take_close();
 }
 
 /**
@@ -556,6 +563,10 @@ static void leave(void)
  */
 static bool back(void)
 {
+    if (pin_take_open_in(PIN_TAKE_GRID)) {
+        pin_take_close();
+        return true;
+    }
     if (!s.open) {
         return outputs_port_back();   /* the entry's FUNCTION list */
     }
@@ -604,6 +615,56 @@ static void tick(float dt_s)
     touched();      /* the fill follows the hold */
 }
 
+/**
+ * @brief What stands beside the grid's binding for a move (pin_take.h).
+ * @param ctx takes it; its arrays hold until the next call
+ */
+static void take_ctx(outbind_take_ctx_t *ctx)
+{
+    static uint8_t ports[LINK_PG_PORTS_MAX];
+    static uint64_t iface[OUTPUTS_IFACE_COUNT];
+    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        ports[n] = (n < outputs_screen_port_entries())
+                       ? outputs_screen_port_pin(n) : OUTBIND_NO_GPIO;
+    }
+    outputs_iface_read(iface);
+    *ctx = (outbind_take_ctx_t){
+        .read = outputs_screen_editable(), .ports = ports,
+        .pwm_ports = outputs_port_pins(), .port_count = LINK_PG_PORTS_MAX,
+        .ifaces = iface, .iface_count = OUTPUTS_IFACE_COUNT,
+    };
+}
+
+/**
+ * @brief A tap on cell @p index another protocol, a port or an interface
+ *        holds: the card over the two columns away from the cell, which it
+ *        never covers, or the reason line.
+ * @param index the cell's catalogue entry
+ * @return true when the tap was the card's
+ */
+static bool take_tap(int index)
+{
+    outbind_take_ctx_t ctx;
+    take_ctx(&ctx);
+    const int far = (cell_pos(index) / GRID_ROWS < 2) ? 2 : 0;
+    const gfx_rect_t card = gfx_rect_make(
+        GRID_X + far * (CELL_W + CELL_GAP), GRID_Y, 2 * CELL_W + CELL_GAP,
+        GRID_ROWS * CELL_H + (GRID_ROWS - 1) * ROW_GAP - 4);
+    return pin_take_tap(PIN_TAKE_GRID, &s.bind, (uint8_t)index, &ctx, card);
+}
+
+/**
+ * @brief Whether a port, an interface or another protocol holds pin
+ *        @p index: OFF takes a press on it, to say why it moves nothing.
+ * @param index the pin's catalogue entry
+ * @return true when one does
+ */
+static bool spoken_for(uint8_t index)
+{
+    return outbind_group_of(&s.bind, index) != 0u || prog_taken(index)
+           || iface_taken(index) != OUTPUTS_IFACE_NONE;
+}
+
 /** @brief Takes a touch event of the screen. */
 static void event(const touch_event_t *evt)
 {
@@ -611,6 +672,20 @@ static void event(const touch_event_t *evt)
         return;
     }
     const int x = evt->point.x, y = evt->point.y;
+
+    /* The card takes every press while it is up. */
+    if (pin_take_open_in(PIN_TAKE_GRID)) {
+        outbind_take_ctx_t ctx;
+        outbind_t after;
+        take_ctx(&ctx);
+        if (pin_take_event(evt, &s.bind, &ctx, &after) == PIN_TAKE_MOVE) {
+            s.bind = after;
+            s.refused = -1;
+            changed();
+        }
+        touched();
+        return;
+    }
 
     if (!s.open && (outputs_port_event(evt) || outputs_unbind_event(evt))) {
         return;
@@ -631,13 +706,11 @@ static void event(const touch_event_t *evt)
             s.hit_kind = HIT_DD; touched(); return;
         }
         /* A binding that is not confirmed takes no press on a pin, and
-         * neither does OFF, which edits none: the reason is under the
-         * protocol, and a cell that lit under the finger would say a tap
-         * there acts. */
-        const int c = (outputs_screen_editable()
-                       && chosen_proto()->max_pins != 0u)
-                          ? cell_at(x, y) : -1;
-        if (c >= 0) {
+         * OFF, which edits none, only on a pin something holds, to say
+         * why: the reason is under the protocol. */
+        const int c = outputs_screen_editable() ? cell_at(x, y) : -1;
+        if (c >= 0 && (chosen_proto()->max_pins != 0u
+                       || spoken_for((uint8_t)c))) {
             s.hit_kind = HIT_CELL; s.hit_index = c; touched();
         }
         return;
@@ -670,13 +743,20 @@ static void event(const touch_event_t *evt)
          * count under the protocol does not move and the reason is printed
          * in the cell or under the protocol.  A PWM clash names the pin
          * tapped there. */
-        if (outputs_screen_editable() && clashes((uint8_t)index)) {
-            s.refused = index;
+        if (!outputs_screen_editable()) {
             touched();
-        } else if (outputs_screen_editable() && !prog_taken((uint8_t)index)
+        } else if (take_tap(index)) {
+            s.refused = -1;     /* the card asks, or the line says why */
+            touched();
+        } else if (clashes((uint8_t)index)) {
+            s.refused = index;
+            pin_take_forget_why();
+            touched();
+        } else if (!prog_taken((uint8_t)index)
                    && iface_taken((uint8_t)index) == OUTPUTS_IFACE_NONE
                    && outbind_toggle(&s.bind, (uint8_t)index)) {
             s.refused = -1;
+            pin_take_forget_why();
             changed();
         }
     } else {
@@ -869,7 +949,12 @@ bool outputs_screen_reason(char *buf, size_t cap)
         snprintf(buf, cap, "%s", TR(OUT_NOT_MAPPED));
         return true;
     }
-    return outputs_reason_of(&s.bind, buf, cap)
+    /* Why the pin tapped last is not one to ask about comes first: it
+     * answers the tap. */
+    outbind_take_ctx_t ctx;
+    take_ctx(&ctx);
+    return pin_take_reason(PIN_TAKE_GRID, &s.bind, &ctx, buf, cap)
+           || outputs_reason_of(&s.bind, buf, cap)
            || outputs_clash_reason(&s.bind, s.refused, outputs_port_pins(),
                                    LINK_PG_PORTS_MAX, buf, cap);
 }
@@ -1092,11 +1177,14 @@ static void draw_cell(gfx_canvas_t *c, int i)
     const bool can = live && !reserved && !clashes((uint8_t)i)
                      && outbind_can_add(&s.bind, (uint8_t)i);
     const bool lit = (live && on) || port_lit;
+    /* The cell the card asks about keeps an accent edge while it is up. */
+    const bool asked = pin_take_open_in(PIN_TAKE_GRID)
+                       && pin_take_index() == i;
 
     gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
                              down ? UI_PANEL_HI : UI_PANEL);
     gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 0, 8, 0,
-                             lit ? UI_ACCENT : UI_EDGE);
+                             (lit || asked) ? UI_ACCENT : UI_EDGE);
 
     /* The box: filled when chosen, hollow when free, and struck through when
      * the pin is spoken for.  It sits beside the name, above the line that
@@ -1181,7 +1269,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     bool stale = true;
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         stale = !s.chrome_valid[buffer_index]
-                || s.drawn_gen != s.gen + outputs_port_revision();
+                || s.drawn_gen != outputs_screen_revision();
     }
     if (!stale) {
         return;
@@ -1196,10 +1284,13 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if (s.open) {
         draw_popup(c);
     }
+    if (pin_take_open_in(PIN_TAKE_GRID)) {
+        pin_take_draw(c);
+    }
 
     if (buffer_index >= 0 && buffer_index < MAX_FBS) {
         s.chrome_valid[buffer_index] = true;
-        s.drawn_gen = s.gen + outputs_port_revision();
+        s.drawn_gen = outputs_screen_revision();
         /* One framebuffer is now current and the others are not; the next
          * pass into each of them repaints. */
         for (int i = 0; i < MAX_FBS; ++i) {
@@ -1220,6 +1311,7 @@ static void cancel(void)
 {
     s.hit_kind  = HIT_NONE;
     s.hit_index = -1;
+    pin_take_cancel();          /* a press on the card's buttons, too */
     /* And a segment acts on its release, as a pin does. */
     outputs_port_cancel();
     /* And a hold completes on a timer: one whose release went missing would
@@ -1229,10 +1321,15 @@ static void cancel(void)
 }
 
 /**
- * @brief ui_screen_t's covered: the protocol list or the FUNCTION list.
+ * @brief ui_screen_t's covered: the protocol list, the FUNCTION list or
+ *        the card.
  * @return true while one is up
  */
-static bool covered(void) { return s.open || outputs_port_fn_open(); }
+static bool covered(void)
+{
+    return s.open || outputs_port_fn_open()
+           || pin_take_open_in(PIN_TAKE_GRID);
+}
 
 /** @brief The screen's table. */
 static const ui_screen_t s_screen = {

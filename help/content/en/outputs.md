@@ -22,7 +22,7 @@ Pads are less than 40px across, smaller than a fingertip. Each therefore has a 5
 |---|---|---|
 | ivory or ebony | free | binds it to the selected protocol |
 | accent colour | bound in the selected protocol | gives it back |
-| grey, the number in 16 x 28 over a tag | held: the tag names what holds it, in at most 5 cells of 8 x 16 (table below) | changes nothing |
+| grey, the number in 16 x 28 over a tag | held: the tag names what holds it, in at most 5 cells of 8 x 16 (table below) | another protocol's pin: asks to [move it](#moving-a-pin-between-protocols); a port's or an interface's: prints the reason under the count |
 | grey, the number alone | the pin shares a PWM slice or compare register with a bound pin or a port's pin, the protocol is full, or the binding is not confirmed | changes nothing; a tap on a shared slice or register prints the reason under the count |
 | no key, red cross on the pad | reserved: GPIO 3 heartbeat, GPIO 8 to GPIO 12 CAN (Controller Area Network) | none |
 
@@ -54,10 +54,11 @@ The board also marks the other wires of a servo lead:
 
 ## Binding pins
 
-1. Pick a protocol in the list. Until then a tap on a key does nothing.
+1. Pick a protocol in the list. Until then a tap on a key binds nothing.
 2. Tap a key. The tap binds the pin to the protocol at once; there is no APPLY key.
 3. Tap an accented key to give its pin back.
-4. Pick OFF to go back to the overview.
+4. Tap a grey key with a tag another protocol holds to [move its pin](#moving-a-pin-between-protocols) to the protocol selected. A card asks first.
+5. Pick OFF to go back to the overview.
 
 A pin belongs to one protocol at most. Several protocols can be bound at once.
 
@@ -106,6 +107,11 @@ Under the list, `4 OF 8 SLOTS IN USE` counts the pins over every protocol. Under
 | `NO VALID ASSIGNMENT IN THE PAGES` | the pages describe no binding; every key is grey |
 | `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13` | a tap on GPIO 28 under SERVO PWM or MOTOR PWM while the programming port holds GPIO 13: one PWM slice; the key is grey |
 | `GPIO 16: SAME PWM CHANNEL AS GPIO 0` | a tap on GPIO 16 under SERVO PWM or MOTOR PWM with GPIO 0 bound as PWM: one PWM compare register; the key is grey |
+| `GPIO 7: DSHOT600. PICK A PROTOCOL FIRST` | a tap on a bound pin with OFF selected |
+| `GPIO 13: PROG PORT 1. FREE IT ON ITS ENTRY` | a tap on a programming port's pin |
+| `GPIO 16: SENSOR BUS, SET ON SENSORS` | a tap on a pin of the sensor bus; `GPIO 18: PD MINI, SET ON SUPPLY` and `GPIO 22: PHASE TAP, SET ON SENSORS` likewise |
+
+A line a tap gives stays until the next pick or tap.
 
 ![Eight of eight slots in use](view:outputs-full)
 
@@ -115,13 +121,45 @@ PINS on the left lists the selected protocol's pins in channel order, with the p
 
 ![GPIO 13 held by the programming port](view:outputs-prog)
 
-The programming port's pin, GPIO 13 (pad 17) by default, is grey with the tag `PORT` while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name; with 2 to 4 ports the tags are `PORT1` to `PORT4`.
+The programming port's pin, GPIO 13 (pad 17) by default, is grey with the tag `PORT` while no protocol holds it, and IN USE lists it first under `PROG PORT`. A tap on it moves nothing: its pin is set on its [PROG PORT entry](#the-prog-port-entry). Each further port the IOmcu reports holds its pin the same way, listed under the same name; with 2 to 4 ports the tags are `PORT1` to `PORT4`.
 
 ![The interfaces' pins held and named under IN USE](view:outputs-iface)
 
 A pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD mini settings](supply.md#pd-mini-rows) holds is grey the same way, tagged `BUS`, `PD` or `TAP`, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.
 
 ![OFF selected: every bound pin under IN USE](view:outputs-off)
+
+## Moving a pin between protocols
+
+![The question card over the board](view:outputs-take)
+
+A tap on a key another protocol holds asks to move the pin to the protocol selected. Any protocol takes from any other, PPM included. The card covers the board; the key tapped stays on top with an accent edge.
+
+| Line | Example |
+|---|---|
+| the pin and its holder | `GPIO 7: DSHOT600` |
+| the question | `REMOVE GPIO 7 FROM DSHOT600 AND GIVE IT TO SERVO PWM?` |
+| what the holder keeps | `DSHOT600 KEEPS 1 PIN.`, `... KEEPS NO PIN.` |
+| the channel's new role, when it changes | `CH4 BECOMES A SERVO CHANNEL: IT CENTERS AT REST.` |
+| the lead, in amber | `THE LEAD ON PAD 10 GETS SERVO PWM FROM THE NEXT ARM.` |
+
+1. Tap MOVE PIN. A tap is enough: the move switches nothing on.
+2. The binding is written once, with the pin moved. [LAST WRITE](#last-write) says what became of it.
+3. To undo, select the old protocol and move the pin back. Channels follow pins, so the binding is the same as before.
+
+CANCEL, the home tag or a press anywhere off the card closes it and writes nothing. The card also closes, writing nothing, when a read leaves the binding unconfirmed, a read-back changes a pin, another protocol is picked, the board changes or the screen is left. MOVE PIN checks the move again first and writes nothing when the pin moved since.
+
+![SERVO PWM's last pin under DSHOT600 BIDIR](view:outputs-take-last)
+
+The move is written at rest. On an ARMED bank the IOmcu refuses it: LAST WRITE reads `REFUSED` and the pin stays with its holder. From the next ARM the lead on the pin gets the new signal: an ESC left there gets SERVO PWM's 1500us center when SERVO arms. What an ESC does with that pulse at its arming is not measured, so move the lead as the amber line says.
+
+A tap that asks nothing says why under the count instead: a programming port's pin, set on its entry; a pin of SENSORS or the PD mini, set on that screen; OFF selected; a protocol that is full; a PWM rule the move breaks.
+
+![GPIO 16 of the sensor bus tapped](view:outputs-take-why)
+
+The [grid view](#the-grid-view) and the [rbmod carrier](#on-the-rbmod-carrier) ask on a card beside the tapped cell.
+
+![The card beside the grid](view:outputs-grid-take)
 
 ## The PROG PORT entry
 
@@ -172,10 +210,10 @@ Without a board drawing or shape, OUTPUTS uses a grid of 4 columns and 7 rows in
 | Cell | Meaning | A tap |
 |---|---|---|
 | ticked, `PAD 6` | bound in the selected protocol; the pad number printed on the board | gives it back |
-| the other protocol's name in full ink, box filled grey | held by another protocol; dim while the binding is not confirmed | does nothing |
+| the other protocol's name in full ink, box filled grey | held by another protocol; dim while the binding is not confirmed | asks to [move it](#moving-a-pin-between-protocols) |
 | red, struck through | reserved: GPIO 3 carries the safety heartbeat, GPIO 8 to GPIO 12 the CAN (Controller Area Network) controller | does nothing |
-| `PROG PORT` | the pin of the IOmcu's programming port, GPIO 13 by default | does nothing |
-| red, `SENSOR BUS`, `PD MINI` or `PHASE TAP` | a pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD mini settings](supply.md#pd-mini-rows) holds: Sensor SDA and SCL while the INA228 or AS5600 is ON or an INA3221 is fitted on [SETUP > SENSORS](setup-sensors.md); PD mini TX and RX while the PD mini is ON with both pins set; the tap pin while the phase tap is ON. The cell follows those settings | does nothing |
+| `PROG PORT` | the pin of the IOmcu's programming port, GPIO 13 by default | prints `GPIO 13: PROG PORT. FREE IT ON ITS ENTRY` under the count |
+| red, `SENSOR BUS`, `PD MINI` or `PHASE TAP` | a pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD mini settings](supply.md#pd-mini-rows) holds: Sensor SDA and SCL while the INA228 or AS5600 is ON or an INA3221 is fitted on [SETUP > SENSORS](setup-sensors.md); PD mini TX and RX while the PD mini is ON with both pins set; the tap pin while the phase tap is ON. The cell follows those settings | prints the screen that sets it under the count, `GPIO 16: SENSOR BUS, SET ON SENSORS` |
 | greyed, `SLICE OF GPIO 13` | under SERVO PWM and MOTOR PWM: the pin shares a PWM slice with a programming port's pin, any port the IOmcu reports; GPIO 28 and GPIO 13 are slice 6 | does nothing; `GPIO 28: SHARES PWM SLICE WITH PROG PORT GPIO 13` under the count |
 | greyed, `PWM CH OF GPIO 0` | under SERVO PWM and MOTOR PWM: the pin shares a PWM compare register with a pin bound as PWM (GPIO 0 and GPIO 16, GPIO 1 and GPIO 17, GPIO 2 and GPIO 18, GPIO 4 and GPIO 20, GPIO 5 and GPIO 21, GPIO 6 and GPIO 22) | does nothing; `GPIO 16: SAME PWM CHANNEL AS GPIO 0` under the count |
 | free, `PAD 7` | not bound | binds it |
@@ -192,6 +230,10 @@ The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) has fixe
 
 PWM02 and PWM03 are one PWM slice and run at one frame rate. A surface protocol (SERVO PWM) and a throttle protocol (MOTOR PWM) are not offered on the two together: the cell reads `SLICE OF PWM02` and a tap on it `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on its own state machine and is offered beside either.
 
+![PWM01 tapped under DSHOT300](view:outputs-rbmod-take)
+
+A tap on an output another protocol holds asks to move it, as on the board. The card names the output, `THE LEAD ON PWM01 GETS DSHOT300 FROM THE NEXT ARM.`
+
 ![PROG PORT 1 on the carrier](view:outputs-rbmod-port)
 
 PROG PORT entries show their fixed connector and pin, for example `PROGP01 ON GPIO 13`. PIN and FUNCTION cannot be edited directly. FUNCTION shows SERVO PWM when the port serves the tester, otherwise PROGRAMMING.
@@ -202,7 +244,7 @@ With IOmcu protocol 4.36 or later, SERVO TESTER and PORT PWM are available. Sele
 
 ![OFF shows the protocol of every bound pin](view:outputs-off)
 
-From SETUP, OUTPUTS always opens with OFF selected. OFF changes no assignment. IN USE groups all assigned pins by protocol; pin taps do nothing and the hint reads `CHOOSE A PROTOCOL, THEN TAP PINS`. Opening the screen writes nothing to the IOmcu.
+From SETUP, OUTPUTS always opens with OFF selected. OFF changes no assignment. IN USE groups all assigned pins by protocol and the hint reads `CHOOSE A PROTOCOL, THEN TAP PINS`. A tap on a free pin does nothing; a tap on a bound pin moves nothing and names its protocol, `GPIO 7: DSHOT600. PICK A PROTOCOL FIRST`. Opening the screen writes nothing to the IOmcu.
 
 OFF remains selected until you choose a protocol, including after leaving the screen. A board change also selects OFF, whether an IOmcu first answers during the visit or is replaced by another. This prevents a previous protocol selection from carrying over to a different board. Select a protocol to edit its pins, then OFF to return to the overview.
 
