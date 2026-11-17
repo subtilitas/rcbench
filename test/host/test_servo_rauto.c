@@ -299,13 +299,20 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(in_report("Model: deflection"));
     CHECK(!in_report("Restore:"));
     CHECK(!in_report("Angle gaps"));
-    CHECK_EQ(g.rows, 1u + 5u);
+    /* The verify pass after programming: both ends and PULSE CENTER. */
+    CHECK(in_report("VERIFY (pulse, measured, goal; center from the zero)"));
+    CHECK(in_report("1000us  measured 27.60°  goal 27.50°  within"));
+    CHECK(in_report("1500us  measured 0.00°  goal 0.00°  within"));
+    CHECK_EQ(g.run.vn, SERVO_RAUTO_VERIFY_N);
+    CHECK_EQ(g.rows, 1u + 5u + 3u);
     static const char head[] = "step;side (us);write;value;measured (deg);"
                                "goal (deg);measured (mm);goal (mm);within\n";
     CHECK(strncmp(g.csv, head, sizeof(head) - 1u) == 0);
     CHECK(strstr(g.csv, "\n1;1000;0;;30.00;27.50;50.00;46.17;0\n") != NULL);
     CHECK(strstr(g.csv, "\n2;1000;1;138;27.60;27.50;46.33;46.17;1\n") != NULL);
     CHECK(strstr(g.csv, "\n5;1000;1;138;27.60;27.50;") != NULL);
+    CHECK(strstr(g.csv, "\n6;1000;V;;27.60;27.50;46.33;46.17;1\n") != NULL);
+    CHECK(strstr(g.csv, "\n8;1500;V;;0.00;0.00;0.00;0.00;1\n") != NULL);
 
     /* German, a backup named, no length: the mm columns empty. */
     static const char *de[SERVO_STR_COUNT];
@@ -406,9 +413,10 @@ TEST_CASE(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_
 
 TEST_CASE(the_clock_wrap_inside_a_settle_does_not_end_it)
 {
-    /* The first move's command lands about 1.4s after the start: the
-     * clock wraps 1.6s in, inside that settle. */
-    rig_init(0xFFFFFFFFu - 1900u);
+    /* The first move's command lands about 1.9s after the start, after
+     * the approach's 500ms at PULSE CENTER: the clock wraps 2.1s in,
+     * inside that settle. */
+    rig_init(0xFFFFFFFFu - 2400u);
     CHECK(start());
     CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
     const uint32_t at = g.run.move_ms;

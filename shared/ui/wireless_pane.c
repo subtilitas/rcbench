@@ -34,7 +34,8 @@ static unsigned   s_q_n;
 static const setting_id_t k_imu[] = { SET_IMU_EN, SET_ANGLE_SOURCE,
                                       SET_IMU_AXIS, SET_IMU_SIGN,
                                       SET_IMU_RATE, SET_IMU_ALGO,
-                                      SET_IMU_FILTER };
+                                      SET_IMU_FILTER, SET_IMU_SETTLE,
+                                      SET_IMU_PREC };
 /** @brief The Dial's settings, the enable row first. */
 static const setting_id_t k_dial[] = { SET_DIAL_EN, SET_DIAL_THR,
                                        SET_DIAL_SRV };

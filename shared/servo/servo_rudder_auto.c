@@ -7,7 +7,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "servo_rudder_auto.h"
+#include "servo_rudder_auto_int.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -28,19 +28,10 @@ static bool due(uint32_t now, uint32_t then, uint32_t ms)
     return (int32_t)(now - then) >= (int32_t)ms;
 }
 
-/**
- * @brief The tolerance, °.
- * @param r Run state.
- * @return cfg.tol_ddeg / 10.
- */
-static float tol_deg(const servo_rauto_t *r)
+float rauto_tol_deg(const servo_rauto_t *r)
 {
     return (float)r->cfg.tol_ddeg / 10.0f;
 }
-
-/** @brief What a float difference of two angles may lie past the tolerance
- *         and still count as within, °: 27.6 - 27.5 in float is 0.1000004. */
-#define RAUTO_EPS_DEG 0.0005f
 
 void servo_rauto_init(servo_rauto_t *r)
 {
@@ -66,14 +57,15 @@ static bool prog_phase(servo_rauto_phase_t ph)
 }
 
 /**
- * @brief The phases that measure: the servo driven to an end pulse.
+ * @brief The phases that measure: the servo driven to a pulse.
  * @param ph The phase.
- * @return true for MOVE, SETTLE and CHECK.
+ * @return true for MOVE, SETTLE, CHECK and VERIFY.
  */
 static bool measuring(servo_rauto_phase_t ph)
 {
     return ph == SERVO_RAUTO_PH_MOVE || ph == SERVO_RAUTO_PH_SETTLE
-        || ph == SERVO_RAUTO_PH_CHECK;
+        || ph == SERVO_RAUTO_PH_CHECK || ph == SERVO_RAUTO_PH_VERIFY
+        || ph == SERVO_RAUTO_PH_APPROACH;
 }
 
 bool servo_rauto_switching(const servo_rauto_t *r)
@@ -219,6 +211,12 @@ static void finish(servo_rauto_t *r, servo_rauto_verdict_t v,
     r->cmd_due = false;
 }
 
+void rauto_end(servo_rauto_t *r, servo_rauto_verdict_t v,
+               servo_rauto_why_t why, uint32_t now_ms)
+{
+    finish(r, v, why, now_ms);
+}
+
 /**
  * @brief End the run as FAIL.
  * @param r      Run state.
@@ -275,6 +273,7 @@ static void go_safe(servo_rauto_t *r, uint32_t now_ms)
     r->safe_asked = false;
     r->cmd_us     = r->cfg.center_us;
     r->cmd_due    = true;
+    r->held_ok    = false;
 }
 
 /**
@@ -287,12 +286,34 @@ static void go_safe(servo_rauto_t *r, uint32_t now_ms)
 static void begin_measure(servo_rauto_t *r, uint8_t side, bool check,
                           uint32_t now_ms)
 {
-    r->side     = side;
-    r->phase    = check ? SERVO_RAUTO_PH_CHECK : SERVO_RAUTO_PH_MOVE;
+    r->side = side;
+    rauto_measure_via(r, check ? SERVO_RAUTO_PH_CHECK : SERVO_RAUTO_PH_MOVE,
+                      k_end_us[side], r->cfg.center_us, now_ms);
+}
+
+void rauto_measure_via(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
+                       uint16_t from_us, uint32_t now_ms)
+{
+    if (r->held_ok && r->held_us == from_us) {
+        rauto_command(r, ph, us, now_ms);
+        return;
+    }
+    r->next_ph = ph;
+    r->next_us = us;
+    rauto_command(r, SERVO_RAUTO_PH_APPROACH, from_us, now_ms);
+}
+
+void rauto_command(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
+                   uint32_t now_ms)
+{
+    r->phase    = ph;
     r->phase_ms = now_ms;
     r->move_ms  = now_ms;
-    r->cmd_us   = k_end_us[side];
+    r->cmd_us   = us;
     r->cmd_due  = true;
+    r->held_ok  = false;
+    /* The settle window counts from the command. */
+    servo_settle_reset(&r->hold);
 }
 
 /**
@@ -308,7 +329,8 @@ static bool side_settled(const servo_rauto_t *r, uint8_t side)
 }
 
 /**
- * @brief The next side to measure, or PASS when both are settled.
+ * @brief The next side to measure; with both settled the verify pass on a
+ *        programmed servo, else PASS.
  * @param r      Run state.
  * @param now_ms Time, ms.
  */
@@ -319,6 +341,10 @@ static void next_measure(servo_rauto_t *r, uint32_t now_ms)
             begin_measure(r, s, r->verified[s], now_ms);
             return;
         }
+    }
+    if (r->programmed) {
+        rauto_verify_begin(r, 0u, now_ms);
+        return;
     }
     finish(r, SERVO_RAUTO_PASS, SERVO_RAUTO_WHY_NONE, now_ms);
 }
@@ -544,7 +570,7 @@ static bool judge_effect(servo_rauto_t *r, float ms, bool within,
                          uint32_t now_ms)
 {
     const uint8_t s = r->side;
-    const float tol = tol_deg(r);
+    const float tol = rauto_tol_deg(r);
     const float e = r->eff_expect[s];
     const float big = fabsf(e);
     const float along = (ms - r->eff_from[s]) * (e < 0.0f ? -1.0f : 1.0f);
@@ -598,7 +624,7 @@ static void measured(servo_rauto_t *r, float deg, uint32_t now_ms)
 {
     const uint8_t s = r->side;
     const float goal = r->goal_deg[s];
-    const float tol = tol_deg(r);
+    const float tol = rauto_tol_deg(r);
     if (r->sign[s] == 0 && fabsf(deg) >= tol) {
         r->sign[s] = deg > 0.0f ? 1 : -1;
     }
@@ -657,12 +683,41 @@ static void measure_step(servo_rauto_t *r, uint32_t now_ms,
         r->phase    = SERVO_RAUTO_PH_SETTLE;
         r->phase_ms = now_ms;
     }
-    if (in->angle_valid && in->still_ms >= SERVO_RAUTO_STILL_MS
+    /* On the IMU the reading held within IMU PRECISION over IMU SETTLING
+     * TIME too: the sensor's creep after the step (servo_settle.h). */
+    const bool held = r->cfg.settle_win_ms == 0u
+                      || servo_settle_held(&r->hold, r->cfg.settle_win_ms,
+                                           r->cfg.settle_band_deg);
+    if (in->angle_valid && in->still_ms >= SERVO_RAUTO_STILL_MS && held
         && r->gap.open == false) {
-        measured(r, in->angle_deg, now_ms);
-    } else if (due(now_ms, r->move_ms, SERVO_RAUTO_MOVE_MS + r->settle_ms)) {
+        if (r->phase == SERVO_RAUTO_PH_APPROACH) {
+            /* Settled where the measure comes from: its own pulse now. */
+            rauto_command(r, r->next_ph, r->next_us, now_ms);
+            return;
+        }
+        /* The servo stands settled here until the next command. */
+        r->held_ok = true;
+        r->held_us = r->cmd_us;
+        if (r->phase == SERVO_RAUTO_PH_VERIFY) {
+            rauto_verify_take(r, in->angle_deg, now_ms);
+        } else {
+            measured(r, in->angle_deg, now_ms);
+        }
+    } else if (due(now_ms, r->move_ms, servo_rauto_wait_ms(r))) {
         fail(r, SERVO_RAUTO_WHY_NOT_STILL, now_ms);
     }
+}
+
+uint32_t servo_rauto_wait_ms(const servo_rauto_t *r)
+{
+    if (r == NULL) {
+        return SERVO_RAUTO_MOVE_MS;
+    }
+    uint32_t ms = SERVO_RAUTO_MOVE_MS + r->settle_ms;
+    if (r->cfg.settle_win_ms > 0u) {
+        ms += SERVO_RAUTO_CREEP_MS + r->cfg.settle_win_ms;
+    }
+    return ms;
 }
 
 /* ------------------------------------------------------------- inputs */
@@ -675,7 +730,9 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
         || cfg->tol_ddeg < SERVO_RAUTO_TOL_MIN_DDEG
         || cfg->tol_ddeg > SERVO_RAUTO_TOL_MAX_DDEG
         || cfg->family > (uint8_t)SERVO_RAUTO_FAM_HITEC_C
-        || !(cfg->center_us > k_end_us[0] && cfg->center_us < k_end_us[1])) {
+        || !(cfg->center_us > k_end_us[0] && cfg->center_us < k_end_us[1])
+        || cfg->settle_win_ms > SERVO_SETTLE_WIN_MAX_MS
+        || (cfg->settle_win_ms > 0u && !(cfg->settle_band_deg > 0.0f))) {
         return false;
     }
     for (int s = 0; s < 2; ++s) {
@@ -717,12 +774,16 @@ static int32_t mag(int16_t ma)
  */
 static void stalled(servo_rauto_t *r, uint32_t now_ms)
 {
-    if (measuring(r->phase) && r->angle_valid) {
+    /* The verify pass's center and an approach have no goal to bind
+     * short of. */
+    const bool no_goal = (r->phase == SERVO_RAUTO_PH_VERIFY && r->vstep >= 2u)
+                         || r->phase == SERVO_RAUTO_PH_APPROACH;
+    if (measuring(r->phase) && r->angle_valid && !no_goal) {
         const uint8_t s = r->side;
         const float along = r->sign[s] != 0
                                 ? r->angle_deg * (float)r->sign[s]
                                 : fabsf(r->angle_deg);
-        if (along < r->goal_deg[s] - tol_deg(r)) {
+        if (along < r->goal_deg[s] - rauto_tol_deg(r)) {
             r->bind_deg = r->angle_deg;
             finish(r, SERVO_RAUTO_FAIL, SERVO_RAUTO_WHY_BINDS, now_ms);
             return;
@@ -1021,6 +1082,8 @@ static void phase_step(servo_rauto_t *r, uint32_t now_ms,
     case SERVO_RAUTO_PH_MOVE:
     case SERVO_RAUTO_PH_SETTLE:
     case SERVO_RAUTO_PH_CHECK:
+    case SERVO_RAUTO_PH_VERIFY:
+    case SERVO_RAUTO_PH_APPROACH:
         if (!in->live) {
             servo_rauto_abort(r, SERVO_TEST_AB_DISARMED, now_ms);
         } else {
@@ -1068,6 +1131,9 @@ void servo_rauto_step(servo_rauto_t *r, uint32_t now_ms,
     if (servo_rauto_running(r) && in != NULL) {
         r->angle_valid = in->angle_valid;
         r->angle_deg   = in->angle_deg;
+        if (in->angle_valid && measuring(r->phase)) {
+            servo_settle_add(&r->hold, in->angle_deg, now_ms);
+        }
         /* The longest: a filter made slower in a run waits longer from
          * then on, one made faster does not cut a wait short. */
         if (in->settle_ms > r->settle_ms) {

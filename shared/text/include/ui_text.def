@@ -11577,8 +11577,8 @@ UI_SERVO_TEXT(SERVO_STR_RA_BINDS_AT,
     "surface binds at %.1f°",
     "Ruder klemmt bei %.1f°")
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_NOT_STILL,
-    "surface not still within 3s",
-    "Ruder nach 3s nicht ruhig")
+    "surface not settled in time",
+    "Ruder nicht rechtzeitig ruhig")
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_ANGLE,
     "angle source dropped out",
     "Winkelquelle ausgefallen")
@@ -11703,6 +11703,40 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_MODEL,
     "dem Nullpunkt des Ruders als linear zum "
     "Endpoint-Wert. Das ist eine Annahme, keine "
     "Messung. Der Lauf misst nach jedem Schreiben.")
+UI_SERVO_TEXT(SERVO_STR_RA_PH_VERIFY,
+    "VERIFY",
+    "NACHMESSEN")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_VERIFY_LO,
+    "1000us outside the tolerance at verify",
+    "1000us beim Nachmessen außer Toleranz")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_VERIFY_HI,
+    "2000us outside the tolerance at verify",
+    "2000us beim Nachmessen außer Toleranz")
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_VERIFY_MID,
+    "center outside the tolerance at verify",
+    "Mitte beim Nachmessen außer Toleranz")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SETTLE_IMU,
+    "Measure:        angle stable for %ums, its "
+    "span at most %.2f° over %.1fs, within %ums "
+    "of the command",
+    "Messung:         Winkel %ums stabil, Spanne "
+    "höchstens %.2f° über %.1fs, spätestens %ums "
+    "nach dem Befehl")
+UI_SERVO_TEXT(SERVO_STR_RA_R_VERIFY_HEAD,
+    "VERIFY (pulse, measured, goal; center from the zero)",
+    "NACHMESSEN (Puls, gemessen, Soll; Mitte ab Nullpunkt)")
+UI_SERVO_TEXT(SERVO_STR_RA_R_VERIFY,
+    "%uus  measured %.2f°  goal %.2f°  %s",
+    "%uus  gemessen %.2f°  Soll %.2f°  %s")
+UI_SERVO_TEXT(SERVO_STR_RA_R_VERIFY_NONE,
+    "Not reached: the run ended before it.",
+    "Nicht erreicht: Der Lauf endete vorher.")
+UI_SERVO_TEXT(SERVO_STR_RA_R_VERIFY_NO_WRITE,
+    "No write: the measurements above are the last.",
+    "Kein Schreiben: Die Messungen oben gelten.")
+UI_SERVO_TEXT(SERVO_STR_RA_PH_APPROACH,
+    "APPROACH",
+    "ANFAHRT")
 /* AUTO's box on RUDDER (servo_rudder_auto_panel.c): the button that
  * shows it and the one back, its rows, its START, its lines and why a
  * START is refused. */
@@ -11727,6 +11761,9 @@ UI_TEXT(RA_LAST, 50,
 UI_TEXT(RA_SET, 50,
     "PASS: %u>%u, %u>%u %s",
     "BESTANDEN: %u>%u, %u>%u %s")
+UI_TEXT(RA_VERIFY, 50,
+    "VERIFY 1000us %s, 2000us %s, CENTER %s",
+    "NACHMESSEN 1000us %s, 2000us %s, MITTE %s")
 UI_TEXT(RA_FILE, 50,
     "REPORT %s",
     "BERICHT %s")
@@ -12162,6 +12199,18 @@ UI_SETTING_LABEL(SET_IMU_FILTER,
 UI_SETTING_HELP(SET_IMU_FILTER,
     "Angle low-pass, frames to 63%; 1 is off",
     "Winkel-Tiefpass, Frames bis 63%; 1 ist aus")
+UI_SETTING_LABEL(SET_IMU_SETTLE,
+    "IMU settling time",
+    "IMU-Einschwingzeit")
+UI_SETTING_HELP(SET_IMU_SETTLE,
+    "RUDDER AUTO measures once still this long",
+    "RUDER AUTO misst nach so langer Ruhe")
+UI_SETTING_LABEL(SET_IMU_PREC,
+    "IMU precision",
+    "IMU-Genauigkeit")
+UI_SETTING_HELP(SET_IMU_PREC,
+    "RUDDER AUTO: the angle's span in that time",
+    "RUDER AUTO: Winkelspanne in dieser Zeit")
 UI_OPTIONS(imu_axis)
 UI_OPTION("X", NULL)
 UI_OPTION("Y", NULL)

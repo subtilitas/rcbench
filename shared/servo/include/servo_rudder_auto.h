@@ -12,8 +12,8 @@
  * D series takes 1000us as 76.9% of the way to 0xB2, hitec_live.h); then
  * per side, at most SERVO_RAUTO_WRITES_MAX times: move to the end pulse,
  * wait for still (SERVO_RAUTO_STILL_MS within IMU_STILL_DEG on the axis
- * read, at most SERVO_RAUTO_MOVE_MS plus the angle source's settle),
- * measure, done when |measured - goal| <= tol, else
+ * read, on the IMU the settle rule of servo_settle.h too, at most
+ * servo_rauto_wait_ms()), measure, done when |measured - goal| <= tol, else
  * value = value x goal / measured within lo..hi (a linear servo between
  * neutral and the end), write in a session, move again.  Which register
  * moves which side is known from the family and its direction (Hitec D
@@ -25,8 +25,8 @@
  * SERVO_LIMRUN_STALL_MS): a stall before the goal ends the run with
  * SURFACE BINDS AT x°; the angle lost longer than SERVO_GAP_MAX_MS ends it
  * (servo_gap.h); every end switches the output off and asks SAFE.
- * Report RUDDRnnn.TXT; CSV RUDDRnnn.CSV one row a step, the CSV handed out
- * first, as the automatic test's.
+ * Report RUDDRnnn.TXT; CSV RUDDRnnn.CSV one row a step and one a verify
+ * measure, the CSV handed out first, as the automatic test's.
  *
  * In detail:
  *
@@ -39,12 +39,36 @@
  *   - A measure: the end pulse commanded (phase MOVE), the surface judged
  *     from SERVO_RAUTO_STILL_MS after the command on (phase SETTLE): the
  *     first step with a valid angle still for SERVO_RAUTO_STILL_MS takes
- *     the angle.  None by SERVO_RAUTO_MOVE_MS after the command, plus the
- *     caller's settle_ms, ends the run as FAIL (SERVO_RAUTO_WHY_NOT_STILL).
- *     settle_ms is the time the IMU's filter can take to settle after the
- *     surface stopped (imu_filter_settle_ms()); the IMU's still time reads
- *     0 until it has, so the angle a measure takes is a settled one.  A side measured again after
- *     a write to the other register is a CHECK.
+ *     the angle.  On the IMU (cfg.settle_win_ms above 0) the angle must
+ *     also have stayed within cfg.settle_band_deg (IMU PRECISION) over the
+ *     trailing cfg.settle_win_ms (IMU SETTLING TIME), counted from the
+ *     command (servo_settle.h): the sensor's own creep after a step.
+ *     None by servo_rauto_wait_ms() after the command ends the run as FAIL
+ *     (SERVO_RAUTO_WHY_NOT_STILL): SERVO_RAUTO_MOVE_MS plus the caller's
+ *     settle_ms, and on the IMU SERVO_RAUTO_CREEP_MS plus the settling
+ *     time.  settle_ms is the time the IMU's filter can take to settle
+ *     after the surface stopped (imu_filter_settle_ms()); the IMU's still
+ *     time reads 0 until it has, so the angle a measure takes is a
+ *     settled one.  A side measured again after a write to the other
+ *     register is a CHECK.
+ *   - The approach (phase APPROACH): every measure, of the main pass and
+ *     of the verify pass, first drives the servo to the pulse it is to
+ *     come from and waits there by the measure's own rule, then commands
+ *     its pulse: an end comes from PULSE CENTER, the verify pass's center
+ *     from 2000us, so a pulse is always reached from the same side (the
+ *     surface and the IMU read up to 0.33° apart by the side, bench of
+ *     2026-11-18).  A measure that comes from where the last one took its
+ *     angle, the verify pass's center after its 2000us, needs no approach.
+ *     The approach takes no angle and ends the run as a measure does when
+ *     it does not settle (SERVO_RAUTO_WHY_NOT_STILL).
+ *   - The verify pass (phase VERIFY): a run that changed the servo's
+ *     values or pulses (programmed) and has both sides within measures
+ *     1000us, 2000us and PULSE CENTER once more, each as a measure, and
+ *     passes when the two ends lie within the tolerance of their goals and
+ *     the center within the tolerance of the zero.  Otherwise it ends as
+ *     FAIL (SERVO_RAUTO_WHY_VERIFY) after all three, naming the first one
+ *     outside.  A run that wrote nothing does not verify: its two measures
+ *     were taken after the last change.
  *   - A side's direction is the sign of its first measure, which must lie
  *     at least the tolerance from the zero unless it is within the
  *     tolerance of the goal; the two sides of opposite signs.  Otherwise,
@@ -146,6 +170,7 @@
 #include "servo_angle.h"
 #include "servo_gap.h"
 #include "servo_limrun.h"
+#include "servo_settle.h"
 #include "servo_test.h"
 
 #ifdef __cplusplus
@@ -174,6 +199,19 @@ extern "C" {
 /** @brief A measure ends the run when the angle is not still this long after
  *         the command, ms. */
 #define SERVO_RAUTO_MOVE_MS     3000u
+/**
+ * @brief On the IMU, the time a measure gives the sensor's own creep after
+ *        a step on top of SERVO_RAUTO_MOVE_MS and IMU SETTLING TIME, ms.
+ *        The BWT901CL in 6-AXIS came within 0.1° of its final value 7.4s
+ *        after a servo step (2026-11-17), and a slower tail of about 3.5s
+ *        showed on 2026-11-18: on that tail the default rule (3.0s within
+ *        0.10°) takes the angle 10.4s after the surface arrives.  10000ms
+ *        with the 3000ms and the window's 3000ms leave 16000ms, 5.6s past
+ *        that.
+ */
+#define SERVO_RAUTO_CREEP_MS    10000u
+/** @brief The verify pass's measures: 1000us, 2000us and PULSE CENTER. */
+#define SERVO_RAUTO_VERIFY_N    3u
 /** @brief The largest margin, %. */
 #define SERVO_RAUTO_MARGIN_MAX  50u      /**< % */
 /** @brief The tolerance's range, 0.1°. */
@@ -197,6 +235,11 @@ typedef struct {
     uint8_t  family;          /**< servo_rauto_family_t */
     uint16_t center_us;       /**< the bench's PULSE CENTER */
     float    len_mm;          /**< 0 for none: the report in ° only */
+    uint16_t settle_win_ms;   /**< IMU SETTLING TIME, ms, at most
+                                   SERVO_SETTLE_WIN_MAX_MS; 0 no window:
+                                   the AS5600 */
+    float    settle_band_deg; /**< IMU PRECISION, °, above 0 with a
+                                   window */
     /* For the report only. */
     char     dut[24];         /**< DUT NAME */
     char     type[20];        /**< the servo type's name */
@@ -262,7 +305,7 @@ typedef enum {
     SERVO_RAUTO_PH_NONE = 0, SERVO_RAUTO_PH_READ, SERVO_RAUTO_PH_MOVE,
     SERVO_RAUTO_PH_SETTLE, SERVO_RAUTO_PH_SAFE, SERVO_RAUTO_PH_CONNECT,
     SERVO_RAUTO_PH_WRITE, SERVO_RAUTO_PH_LEAVE, SERVO_RAUTO_PH_ARM,
-    SERVO_RAUTO_PH_CHECK,
+    SERVO_RAUTO_PH_CHECK, SERVO_RAUTO_PH_VERIFY, SERVO_RAUTO_PH_APPROACH,
 } servo_rauto_phase_t;
 /** @brief How a run ended. */
 typedef enum { SERVO_RAUTO_PASS = 0, SERVO_RAUTO_FAIL, SERVO_RAUTO_ABORTED } servo_rauto_verdict_t;
@@ -273,7 +316,7 @@ typedef enum {
     SERVO_RAUTO_WHY_ANGLE, SERVO_RAUTO_WHY_NO_SERVO, SERVO_RAUTO_WHY_PROG,
     SERVO_RAUTO_WHY_WRITE, SERVO_RAUTO_WHY_MAPPING, SERVO_RAUTO_WHY_LIMIT,
     SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_SUPPLY,
-    SERVO_RAUTO_WHY_NO_EFFECT, SERVO_RAUTO_WHY_CAP,
+    SERVO_RAUTO_WHY_NO_EFFECT, SERVO_RAUTO_WHY_CAP, SERVO_RAUTO_WHY_VERIFY,
     SERVO_RAUTO_WHY_COUNT,
 } servo_rauto_why_t;
 
@@ -311,6 +354,23 @@ typedef struct {
     float    bind_deg;                /**< the angle at a bind */
     uint32_t settle_ms;               /**< the largest settle_ms a step had */
     servo_gap_t gap;                  /**< the angle source's gaps */
+    servo_settle_t hold;              /**< the measure's readings, for the
+                                           settle rule on the IMU */
+    servo_rauto_phase_t next_ph;      /**< APPROACH: the measure's phase
+                                           once the servo settled there */
+    uint16_t next_us;                 /**< APPROACH: the measure's pulse */
+    bool     held_ok;                 /**< the servo stands where the last
+                                           measure took a settled angle */
+    uint16_t held_us;                 /**< that pulse, us */
+    uint8_t  vstep;                   /**< VERIFY: the measure under way,
+                                           0 1000us, 1 2000us, 2 center */
+    uint8_t  vn;                      /**< verify measures taken */
+    uint8_t  vbad;                    /**< the first one outside */
+    float    vdeg[SERVO_RAUTO_VERIFY_N];  /**< each: the ends along their
+                                               direction, the center
+                                               signed, ° */
+    bool     vwithin[SERVO_RAUTO_VERIFY_N]; /**< each within the
+                                                 tolerance */
     /** @brief Every measure, in order. */
     servo_rauto_step_t steps[SERVO_RAUTO_STEPS_MAX];
     uint8_t  step_n;                  /**< steps recorded */
@@ -388,7 +448,9 @@ void servo_rauto_init(servo_rauto_t *r);
  * @param cfg    What the run is asked.
  * @param now_ms Start time, ms.
  * @return false for a target outside 0.1 to 90°, a margin above the
- *          maximum, a tolerance outside its range, or RUNNING; also for
+ *          maximum, a tolerance outside its range, a settling window above
+ *          SERVO_SETTLE_WIN_MAX_MS or one without a band above 0, or
+ *          RUNNING; also for
  *          NULL, a family not in servo_rauto_family_t, and a center not
  *          strictly between 1000us and 2000us.
  */
@@ -487,6 +549,14 @@ void servo_rauto_supply_changed(servo_rauto_t *r, uint32_t now_ms);
  * @return true while RUNNING.
  */
 bool servo_rauto_running(const servo_rauto_t *r);
+/**
+ * @brief The longest a measure waits for its angle after the command:
+ *        SERVO_RAUTO_MOVE_MS plus the largest settle_ms a step had, and
+ *        with a settling window SERVO_RAUTO_CREEP_MS plus the window.
+ * @param r Run state; NULL gives SERVO_RAUTO_MOVE_MS.
+ * @return The wait, ms.
+ */
+uint32_t servo_rauto_wait_ms(const servo_rauto_t *r);
 /**
  * @brief The run asked SAFE or ARMED and waits for it, or holds the
  *        programmer: a disarm then is its own.
