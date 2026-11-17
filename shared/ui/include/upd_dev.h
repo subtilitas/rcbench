@@ -88,7 +88,10 @@ typedef enum {
 /** @brief What a row shows. */
 typedef struct {
     devupd_row_t row;        /**< devupd_row()                            */
-    bool         known;      /**< the device reported its version         */
+    bool         bound;      /**< a device of the kind is bound, linked or
+                                  not                                     */
+    bool         known;      /**< the device is connected and reported its
+                                  version                                 */
     fw_version_t running;    /**< that version                            */
     bool         have_image; /**< this panel carries an image that passed */
     fw_version_t carried;    /**< its version                             */

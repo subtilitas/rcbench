@@ -5145,11 +5145,40 @@ invalid entry treated as absent; the slot is the bootloader's last invalid one o
 is `NORMAL`, `UPDATED`, `ROLLED_BACK`, `UNCONFIRMED` or `GOING_BACK`, the
 last said before a trial that goes back restarts.
 
+Beside it the panel keeps the run note: the fact that an update run goes
+on after a restart. One 18-byte entry, namespace `fw_ota`, key
+`run_note`: a layout byte (0xB1), the version the next start is expected
+to run in 16 bytes padded with zeros, and the openings left, 2 when
+written. The install writes it once the image is written whole and
+checked, before the restart note. The C6 radio's update writes it on
+success, with the running version. A power cut before the write leaves no
+run. A version text over 16 bytes is not written, and a note that stands
+is erased.
+
+Each start reads the note once, after its start check:
+
+| Entry | Effect |
+| --- | --- |
+| none | no run |
+| another size, layout byte or opening count (1 to 2), or a text that is empty or holds a byte outside 0x21 to 0x7E | no run; erased |
+| another version than the running one (a build that went back) | no run; erased |
+| the running version | the run stands; one opening spent: the count less 1 saved, the entry erased at 0 |
+| the running version, the spend refused by NVS | no run |
+
+The console says each write and each entry found:
+
+    I (…) fw_ota: run note: 0.24.1, 2 openings
+    I (…) fw_ota: run note: 0.24.1, an update run stands, openings left 1
+    W (…) fw_ota: run note: 0.24.1 expected, 0.24.0 runs; the update run ends
+
 Current limitations:
 
 - An install whose NVS write fails says so on the console
   (`restart note not kept`), and a start of its build that goes back shows
   no line on the band.
+- The run note opens no screen: after a restart UPDATES does not open by
+  itself, and a run ends only when its 2 openings are spent or another
+  version runs.
 - A trial start that stops before the screen loop runs, in a card mount
   that does not return for example, is not kept and not reset either: the
   task watchdog reports and does not restart (CONFIG_ESP_TASK_WDT_PANIC is
