@@ -571,6 +571,7 @@ TEST_CASE(the_words_name_every_reason_and_phase)
         SERVO_STR_RA_WHY_LIMIT, SERVO_STR_RA_WHY_WRITE_CAP,
         SERVO_STR_L_WHY_BENCH, SERVO_STR_L_WHY_SUPPLY,
         SERVO_STR_RA_WHY_NO_EFFECT_LO, SERVO_STR_RA_WHY_CAP,
+        SERVO_STR_RA_WHY_VERIFY_LO,
     };
     r.test_why = SERVO_TEST_AB_STOP;
     for (int k = 0; k < (int)SERVO_RAUTO_WHY_COUNT; ++k) {
@@ -583,13 +584,20 @@ TEST_CASE(the_words_name_every_reason_and_phase)
     CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_RA_WHY_NO_EFFECT_HI);
     CHECK_STR_EQ(servo_str(SERVO_STR_RA_WHY_NO_EFFECT_HI),
                  "writes do not move the 2000us side");
+    r.why = SERVO_RAUTO_WHY_VERIFY;
+    r.vbad = 1u;
+    CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_RA_WHY_VERIFY_HI);
+    r.vbad = 2u;
+    CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_RA_WHY_VERIFY_MID);
+    CHECK_STR_EQ(servo_str(SERVO_STR_RA_WHY_VERIFY_MID),
+                 "center outside the tolerance at verify");
     r.why = SERVO_RAUTO_WHY_COUNT;
     CHECK_EQ(servo_rauto_why_str(&r), SERVO_STR_AB_NONE);
     static const servo_str_t k_ph[] = {
         SERVO_STR_PHASE_NONE, SERVO_STR_RA_PH_READ, SERVO_STR_PHASE_MOVE,
         SERVO_STR_PHASE_SETTLE, SERVO_STR_L_PH_SAFE, SERVO_STR_L_PH_CONNECT,
         SERVO_STR_L_PH_WRITE, SERVO_STR_L_PH_LEAVE, SERVO_STR_L_PH_ARM,
-        SERVO_STR_L_PH_CHECK,
+        SERVO_STR_L_PH_CHECK, SERVO_STR_RA_PH_VERIFY,
     };
     for (int k = 0; k < (int)(sizeof(k_ph) / sizeof(k_ph[0])); ++k) {
         CHECK_EQ(servo_rauto_phase_str((servo_rauto_phase_t)k), k_ph[k]);

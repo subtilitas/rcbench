@@ -252,9 +252,17 @@ static bool head_lines(const servo_rauto_t *r, cur_t *c)
         return true;
     }
     if (here(c)) {
-        snprintf(c->buf, c->n, LS(RA_R_SETTLE),
-                 (unsigned)SERVO_RAUTO_STILL_MS,
-                 (unsigned)(SERVO_RAUTO_MOVE_MS + r->settle_ms));
+        if (g->settle_win_ms > 0u) {
+            snprintf(c->buf, c->n, LS(RA_R_SETTLE_IMU),
+                     (unsigned)SERVO_RAUTO_STILL_MS,
+                     (double)g->settle_band_deg,
+                     (double)g->settle_win_ms / 1000.0,
+                     (unsigned)servo_rauto_wait_ms(r));
+        } else {
+            snprintf(c->buf, c->n, LS(RA_R_SETTLE),
+                     (unsigned)SERVO_RAUTO_STILL_MS,
+                     (unsigned)servo_rauto_wait_ms(r));
+        }
         return true;
     }
     if (here(c)) {
@@ -402,6 +410,69 @@ static bool step_lines(const servo_rauto_t *r, cur_t *c)
     return false;
 }
 
+/**
+ * @brief The pulse of a verify measure.
+ * @param r Run state.
+ * @param k The measure, 0 to SERVO_RAUTO_VERIFY_N - 1.
+ * @return 1000, 2000, or PULSE CENTER, us.
+ */
+static unsigned verify_us(const servo_rauto_t *r, unsigned k)
+{
+    return k == 0u ? 1000u : k == 1u ? 2000u : (unsigned)r->cfg.center_us;
+}
+
+/**
+ * @brief The goal of a verify measure: the side's, 0 for the center.
+ * @param r Run state.
+ * @param k The measure.
+ * @return The goal, °.
+ */
+static float verify_goal(const servo_rauto_t *r, unsigned k)
+{
+    return k < 2u ? r->goal_deg[k] : 0.0f;
+}
+
+/**
+ * @brief A verify measure as printed to 0.01°: one that rounds to 0 is 0,
+ *        not -0.00.
+ * @param r Run state.
+ * @param k The measure.
+ * @return The angle, °.
+ */
+static double verify_deg(const servo_rauto_t *r, unsigned k)
+{
+    const double v = (double)r->vdeg[k];
+    return fabs(v) < 0.005 ? 0.0 : v;
+}
+
+/**
+ * @brief The verify pass: one line a measure taken, or why there is none.
+ * @param r Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is one of them.
+ */
+static bool verify_lines(const servo_rauto_t *r, cur_t *c)
+{
+    if (blank(c) || text_line(c, SERVO_STR_RA_R_VERIFY_HEAD)) {
+        return true;
+    }
+    if (!r->programmed) {
+        return text_line(c, SERVO_STR_RA_R_VERIFY_NO_WRITE);
+    }
+    if (r->vn == 0u) {
+        return text_line(c, SERVO_STR_RA_R_VERIFY_NONE);
+    }
+    for (unsigned k = 0; k < r->vn; ++k) {
+        if (here(c)) {
+            snprintf(c->buf, c->n, LS(RA_R_VERIFY), verify_us(r, k),
+                     verify_deg(r, k), (double)verify_goal(r, k),
+                     r->vwithin[k] ? LS(RA_R_IN) : LS(RA_R_OUT));
+            return true;
+        }
+    }
+    return false;
+}
+
 bool servo_rauto_report_line(const servo_rauto_t *r, unsigned idx, char *buf,
                              size_t n)
 {
@@ -411,7 +482,8 @@ bool servo_rauto_report_line(const servo_rauto_t *r, unsigned idx, char *buf,
     }
     cur_t c = { idx, 0u, buf, n, r->cfg.text };
     return head_lines(r, &c) || prog_lines(r, &c) || step_lines(r, &c)
-        || blank(&c) || text_line(&c, SERVO_STR_RA_R_MODEL);
+        || verify_lines(r, &c) || blank(&c)
+        || text_line(&c, SERVO_STR_RA_R_MODEL);
 }
 
 static bool csv_line(const servo_rauto_t *r, unsigned idx, char *buf,
@@ -422,7 +494,23 @@ static bool csv_line(const servo_rauto_t *r, unsigned idx, char *buf,
         return true;
     }
     if (idx > r->step_n) {
-        return false;
+        /* The verify pass's measures after the steps, "V" in write. */
+        const unsigned k = idx - 1u - r->step_n;
+        if (k >= r->vn) {
+            return false;
+        }
+        char mm[16] = "", gm[16] = "";
+        if (r->cfg.len_mm > 0.0f) {
+            snprintf(mm, sizeof(mm), "%.2f",
+                     (double)mm_of((float)verify_deg(r, k), r->cfg.len_mm));
+            snprintf(gm, sizeof(gm), "%.2f",
+                     (double)mm_of(verify_goal(r, k), r->cfg.len_mm));
+        }
+        snprintf(buf, n, "%u;%u;V;;%.2f;%.2f;%s;%s;%u", idx,
+                 verify_us(r, k), verify_deg(r, k),
+                 (double)verify_goal(r, k), mm, gm,
+                 r->vwithin[k] ? 1u : 0u);
+        return true;
     }
     const servo_rauto_step_t *p = &r->steps[idx - 1u];
     char v[8] = "", mm[16] = "", gm[16] = "";
@@ -481,6 +569,11 @@ servo_str_t servo_rauto_why_str(const servo_rauto_t *r)
     case SERVO_RAUTO_WHY_NO_EFFECT: return r->side == 0u
                                                ? SERVO_STR_RA_WHY_NO_EFFECT_LO
                                                : SERVO_STR_RA_WHY_NO_EFFECT_HI;
+    case SERVO_RAUTO_WHY_VERIFY:    return r->vbad == 0u
+                                               ? SERVO_STR_RA_WHY_VERIFY_LO
+                                           : r->vbad == 1u
+                                               ? SERVO_STR_RA_WHY_VERIFY_HI
+                                               : SERVO_STR_RA_WHY_VERIFY_MID;
     default:                        return SERVO_STR_AB_NONE;
     }
 }
@@ -497,6 +590,7 @@ servo_str_t servo_rauto_phase_str(servo_rauto_phase_t ph)
     case SERVO_RAUTO_PH_LEAVE:   return SERVO_STR_L_PH_LEAVE;
     case SERVO_RAUTO_PH_ARM:     return SERVO_STR_L_PH_ARM;
     case SERVO_RAUTO_PH_CHECK:   return SERVO_STR_L_PH_CHECK;
+    case SERVO_RAUTO_PH_VERIFY:  return SERVO_STR_RA_PH_VERIFY;
     default:                     return SERVO_STR_PHASE_NONE;
     }
 }

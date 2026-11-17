@@ -15,6 +15,17 @@ history is in git.
   layout, a corrupt one or one that names another version than the
   running build (a rollback) is erased and is no run; otherwise the start
   spends one of 2 openings. No screen reads it.
+- SETUP > WIRELESS > IMU: IMU settling time (`imu_settle_s`, 0.5 to
+  10.0s, default 2.0s) and IMU precision (`imu_prec`, 0.05 to 1.00°,
+  default 0.20°), the settle rule of a RUDDER AUTO measure on the IMU.
+- RUDDER AUTO: the verify pass. A run that wrote measures 1000us, 2000us
+  and PULSE CENTER once more with the same rule and ends at the center;
+  each end within TOLERANCE of its goal and the center within TOLERANCE
+  of ZERO pass, one outside ends the run as FAIL (`1000us outside the
+  tolerance at verify`, `2000us ...`, `center outside the tolerance at
+  verify`). The box's fourth line shows the three, the report a VERIFY
+  section, the CSV three rows with `V` in the write column. A run that
+  wrote nothing does not verify.
 
 ### Changed
 
@@ -35,6 +46,19 @@ history is in git.
   the section's line on the alert band, for example `IOmcu runs the build
   included on this panel.`, as the grey holds of the C6 radio and the
   devices do. It gave no answer before.
+
+### Fixed
+
+- RUDDER AUTO on the IMU took the angle while the sensor still crept
+  after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
+  to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,
+  so a run passed with ends 0.63° and 1.04° off the goal at a 0.5°
+  tolerance. A measure on the IMU also waits until the readings over
+  the last IMU settling time span IMU precision or less: with the defaults
+  the angle lies within 0.09° of the settled value, taken 4s to 8s after
+  the surface arrives. The measure's wait grows by 8,000ms plus the
+  settling time, 13,000ms with the defaults; `surface not settled in
+  time` replaces `surface not still within 3s`.
 
 ## 0.23.14 - 2026-11-15
 

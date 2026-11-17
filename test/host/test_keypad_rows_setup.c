@@ -169,9 +169,9 @@ TEST_CASE(every_number_row_on_setup_takes_ok_and_refuses_and_cancels)
             ++rows;
         }
     }
-    /* PANEL 4, SENSORS 34, WIRELESS 2 (IMU FILTER, TRIAL MASS): every
-     * number row an entry shows. */
-    CHECK_EQ(rows, 40);
+    /* PANEL 4, SENSORS 34, WIRELESS 4 (IMU FILTER, IMU SETTLING TIME, IMU
+     * PRECISION, TRIAL MASS): every number row an entry shows. */
+    CHECK_EQ(rows, 42);
 }
 
 /*

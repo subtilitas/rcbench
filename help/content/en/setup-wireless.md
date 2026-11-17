@@ -29,8 +29,12 @@ The WitMotion BWT901CL connects over Bluetooth LE through the board's ESP32-C6. 
 | IMU rate | 10Hz, 20Hz, 50Hz, 100Hz, 200Hz | 50Hz | the sensor's frames a second; sent only when changed, it takes effect after the sensor is switched off and on; the sensor ships at 10Hz, and `CONNECTED` shows the rate it runs |
 | IMU algorithm | 6-AXIS, 9-AXIS | 6-AXIS | 9-AXIS takes the magnetometer for Z |
 | IMU filter | 1 to 50 | 1 | the panel's low-pass on the angle; 1 is off |
+| IMU settling time | 0.5 to 10.0s, steps of 0.5s | 2.0s | RUDDER AUTO on the IMU: how long the angle must hold before a measure takes it |
+| IMU precision | 0.05 to 1.00°, steps of 0.05° | 0.20° | RUDDER AUTO on the IMU: the span the angle may cover in that time |
 
 IMU filter smooths the angle on the panel, per frame and axis: the angle moves by 1/k of the difference to the new frame, with k the setting. It covers 63% of a step in about k frames, so at 10Hz an IMU filter of 10 takes about 1s. The frames per second are the rate the sensor runs, which `CONNECTED` shows, not the IMU rate asked. The IMU screen, RUDDER, AUTO and the servo runs read the filtered angle. The first frame after a connect starts the filter at its own value, and a crossing of 180° takes the short way. AUTO waits until the filtered angle has settled, up to 3000ms plus the time the setting can take ([The Bluetooth IMU](https://github.com/subtilitas/rcbench/wiki/IMU#the-filter)).
+
+IMU settling time and IMU precision are the rule a RUDDER AUTO measure keeps on the IMU: it takes the angle once the readings over the last settling time span no more than the precision. The BWT901CL in 6-AXIS keeps creeping for 5s to 8s after a servo step; with the defaults the angle taken lies within 0.09° of where the reading settles. A longer settling time or a smaller precision makes each measure slower and closer; the measure's wait grows with the settling time ([The settle rule](https://github.com/subtilitas/rcbench/wiki/IMU#the-settle-rule)).
 
 RATE and ALGORITHM changes are sent with the sensor's SAVE command (`FF AA 00 00 00`). For a connected sensor, the rate message is `RATE SAVED: SWITCH THE SENSOR OFF AND ON`. If disconnected, the panel shows `RATE IS SENT WHEN THE SENSOR CONNECTS; THEN SWITCH IT OFF AND ON` and waits for frames. During IMU calibration it shows `RATE IS SENT AFTER CALIBRATION; THEN SWITCH THE SENSOR OFF AND ON` and defers the change until after CALSW 0 and SAVE.
 

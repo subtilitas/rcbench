@@ -60,7 +60,7 @@
 
 _Static_assert(2 * RA_HALF_W + RA_GAP == RA_W, "two halves fill the column");
 _Static_assert(RA_LINES_H >= RA_LINES * 20 + (RA_LINES - 1) * RA_LINE_GAP,
-               "three lines of one row each fit above the footer");
+               "four lines of one row each fit above the footer");
 _Static_assert(RA_PLOT_Y + UI_TAP_MIN <= RA_LINE_Y - 4,
                "the plot ends above the side view and the lines");
 
@@ -185,6 +185,12 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     c->center_us = s.center_us;
     const float len = settings_get(SET_RUDDER_LEN_MM);
     c->len_mm = (len >= SERVO_RUDDER_LEN_MIN_MM) ? len : 0.0f;
+    if (enc_src() == SERVO_ANGLE_IMU) {
+        /* The IMU's settle rule: SETTLING TIME and PRECISION. */
+        c->settle_win_ms =
+            (uint16_t)lroundf(settings_get(SET_IMU_SETTLE) * 1000.0f);
+        c->settle_band_deg = settings_get(SET_IMU_PREC);
+    }
     snprintf(c->dut, sizeof(c->dut), "%s", settings_text(SET_TEXT_DUT_NAME));
     snprintf(c->type, sizeof(c->type), "%s", type()->name);
     (void)servo_target_line(c->output, sizeof(c->output), s.drive_target,
@@ -793,6 +799,33 @@ static void restore_text(char *b, size_t n, const servo_rauto_t *r)
 }
 
 /**
+ * @brief The verify pass as the box gives it once taken: each measure from
+ *        its goal, the center from the zero, "-" for one not taken.
+ * @param b where it goes
+ * @param n its size
+ * @param r the run
+ */
+static void verify_line(char *b, size_t n, const servo_rauto_t *r)
+{
+    if (r->vn == 0u) {
+        return;
+    }
+    char d[SERVO_RAUTO_VERIFY_N][12];
+    for (unsigned k = 0; k < SERVO_RAUTO_VERIFY_N; ++k) {
+        if (k >= r->vn) {
+            snprintf(d[k], sizeof(d[k]), "-");
+        } else {
+            const float goal = k < 2u ? r->goal_deg[k] : 0.0f;
+            const double e = (double)(r->vdeg[k] - goal);
+            /* One that rounds to 0 reads +0.00, not -0.00. */
+            snprintf(d[k], sizeof(d[k]), "%+.2f°",
+                     fabs(e) < 0.005 ? 0.0 : e);
+        }
+    }
+    snprintf(b, n, TR(RA_VERIFY), d[0], d[1], d[2]);
+}
+
+/**
  * @brief Why no run is under way, as the first line gives it: the last
  *        sequence's failure, a start the run refused, or the first row
  *        that refuses the hold.
@@ -817,9 +850,12 @@ const char *rauto_line(int i, char *buf, size_t n)
     switch (i) {
     case 0: {
         if (running) {
+            const bool mid = r->phase == SERVO_RAUTO_PH_VERIFY
+                             && r->vstep >= 2u;
             snprintf(buf, n, TR(RA_STEP),
                      ui_servo_str(servo_rauto_phase_str(r->phase)),
-                     r->side == 0u ? 1000u : 2000u,
+                     mid ? (unsigned)r->cfg.center_us
+                         : r->side == 0u ? 1000u : 2000u,
                      (unsigned)r->writes[r->side],
                      (unsigned)SERVO_RAUTO_WRITES_MAX, r->sessions);
             break;
@@ -871,6 +907,9 @@ const char *rauto_line(int i, char *buf, size_t n)
         } else {
             file_name(buf, n);
         }
+        break;
+    case 3:
+        verify_line(buf, n, r);
         break;
     default:
         break;
@@ -949,6 +988,17 @@ void rauto_render(gfx_canvas_t *c)
                 (i == 0 && !running && !svs_seq_busy() && idle_why() != NULL)
                 || (i == 2 && servo_rauto_restore(r));
             gfx_color_t col = ui_theme_color(warn ? UI_C_WARN : UI_C_TEXT_DIM);
+            if (i == 3) {
+                /* Red at the first one outside, green once all three are
+                 * within. */
+                bool out = false;
+                for (unsigned k = 0; k < r->vn; ++k) {
+                    out = out || !r->vwithin[k];
+                }
+                col = out ? ui_theme_color(UI_C_DANGER)
+                      : r->vn == SERVO_RAUTO_VERIFY_N ? ui_theme_color(UI_C_OK)
+                                                      : col;
+            }
             if (i == 1) {
                 col = r->verdict == SERVO_RAUTO_PASS ? ui_theme_color(UI_C_OK)
                       : r->verdict == SERVO_RAUTO_FAIL
@@ -1044,6 +1094,7 @@ uint32_t rauto_sig(void)
     const uint32_t v[] = {
         s.ra.view ? 1u : 0u, (uint32_t)r->state, (uint32_t)r->phase,
         (uint32_t)r->side, (uint32_t)r->writes[0], (uint32_t)r->writes[1],
+        (uint32_t)r->vstep, (uint32_t)r->vn,
         r->sessions, (uint32_t)r->verdict, (uint32_t)r->why,
         (uint32_t)(s.ra.file + 2), s.ra.off ? 1u : 0u, s.ra.pressed,
         servo_rauto_restore(r) ? 1u : 0u,
