@@ -45,6 +45,8 @@
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "upd_c6.h"
+#include "upd_screen.h"
+#include "upd_wizard.h"
 #include "wifi_access.h"
 
 /** @brief Log tag, the panel's. */
@@ -266,6 +268,7 @@ static void report_end(uint32_t now_ms)
                  (unsigned)C6_RESTART_MS);
         snprintf(line, sizeof(line), TR(ALERT_C6_DONE), s_info.version_text);
         control_alert(line);
+        upd_screen_set_result(UPD_WIZ_C6, NULL);
         /* The update run goes on after the restart into this build. */
         {
             fw_image_info_t me;
@@ -280,11 +283,13 @@ static void report_end(uint32_t now_ms)
     case FW_C6_RES_NO_LINK:
         ESP_LOGE(TAG, "C6 update: the C6 did not answer");
         control_alert(TR(ALERT_C6_NO_LINK));
+        upd_screen_set_result(UPD_WIZ_C6, TR(ALERT_C6_NO_LINK));
         break;
     case FW_C6_RES_REFUSED:
         ESP_LOGE(TAG, "C6 update: begin refused, error 0x%x; the C6 takes "
                       "no update over SDIO", (unsigned)o->error);
         control_alert(TR(ALERT_C6_NO_OTA));
+        upd_screen_set_result(UPD_WIZ_C6, TR(ALERT_C6_NO_OTA));
         break;
     default:
         ESP_LOGE(TAG, "C6 update ended %u in phase %u, error 0x%x, %lu of "
@@ -295,6 +300,7 @@ static void report_end(uint32_t now_ms)
         snprintf(line, sizeof(line), TR(ALERT_C6_FAILED),
                  fail_text(o->result));
         control_alert(line);
+        upd_screen_set_result(UPD_WIZ_C6, line);
         break;
     }
 }

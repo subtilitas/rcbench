@@ -40,6 +40,7 @@
 #include "render_help.h"
 #include "render_imu.h"
 #include "render_rudder.h"
+#include "render_upd_wiz.h"
 #include "render_shot.h"
 #include "render_esc_wire.h"
 #include "render_hitec.h"
@@ -2640,6 +2641,26 @@ static void pose_upd(const char *view)
     }
     upd_screen_set(&v);
 
+    /* SINGLE UPDATES and the devices' page open first, as an operator
+     * opens them with no update running: OPTIONS is grey while one runs. */
+    const bool dial_view = strncmp(view, "updates-dial", 12) == 0;
+    const bool node_view = strncmp(view, "updates-node", 12) == 0;
+    const bool page = strncmp(view, "updates-devices", 15) == 0
+                      || node_view
+                      || (dial_view && strcmp(view, "updates-dial") != 0);
+    const bool single = page || dial_view
+                        || strcmp(view, "updates-single") == 0
+                        || strcmp(view, "updates-coproc") == 0
+                        || strncmp(view, "updates-cu-", 11) == 0
+                        || strncmp(view, "updates-c6", 10) == 0;
+    if (single) {
+        open_single();
+    }
+    if (page) {
+        tap(UPD_DEV_X + UPD_DEV_W / 2,
+            UI_BAND_H + UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);
+    }
+
     /* The IOmcu section: an IOmcu on the build this panel
      * carries, 0.22.0, as on the panel's card; updates-coproc an IOmcu
      * on 0.21.2 the hold may move to 0.22.0; updates-cu-* every other
@@ -2732,11 +2753,6 @@ static void pose_upd(const char *view)
         dv[i].carried = (fw_version_t){ 0u, 23u, 12u };
     }
     dv[UPD_DEV_DIAL].carried = (fw_version_t){ 0u, 22u, 0u };
-    const bool dial_view = strncmp(view, "updates-dial", 12) == 0;
-    const bool node_view = strncmp(view, "updates-node", 12) == 0;
-    const bool page = strncmp(view, "updates-devices", 15) == 0
-                      || node_view
-                      || (dial_view && strcmp(view, "updates-dial") != 0);
     if (dial_view) {
         dv[UPD_DEV_DIAL].known = true;
         dv[UPD_DEV_DIAL].running = (fw_version_t){ 0u, 21u, 0u };
@@ -2806,23 +2822,13 @@ static void pose_upd(const char *view)
     for (int i = 0; i < UPD_DEV_COUNT; ++i) {
         upd_dev_set((upd_dev_id_t)i, &dv[i]);
     }
-    const bool single = page || dial_view
-                        || strcmp(view, "updates-single") == 0
-                        || strcmp(view, "updates-coproc") == 0
-                        || strncmp(view, "updates-cu-", 11) == 0
-                        || strncmp(view, "updates-c6", 10) == 0;
-    if (single) {
-        open_single();
-    }
-    if (page) {
-        tap(UPD_DEV_X + UPD_DEV_W / 2,
-            UI_BAND_H + UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);
-    }
     if (strcmp(view, "updates-settings") == 0) {
         /* The footer's SETTINGS: the list of the reminder and RELEASES. */
         const gfx_rect_t r = ui_footer_rect(UI_FOOTER_SETTINGS);
         tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
     }
+    /* The steps' own views: each step current, the last card. */
+    render_upd_wiz_pose(view);
 }
 
 /* The firmware write, at a point inside it, at its end, or failed; and the

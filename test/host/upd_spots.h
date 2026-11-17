@@ -9,9 +9,12 @@
  * If the layout moves these move with it.  Taken by the screens' suites.
  *
  *   - UPDATES, in the body under the band: CHECK 460 x 56px from x 16 at
- *     y 16; the card x 484 to 1016, y 16 to 336; the footer (ui_footer.h)
- *     at y 444, 48px tall: the download's hold in its middle slot from
- *     x 348, OPTIONS in its right slot from x 686, each 328px wide;
+ *     y 16; the six step rows 460 x 48px from x 16, y 88, 56px apart; the
+ *     card x 484 to 1016, y 16 to 436, the current step's control
+ *     500 x 64px from x 500 at y 292 (the download's hold while PANEL's
+ *     step is current), SKIP THIS STEP 500 x 56px at y 364; the footer
+ *     (ui_footer.h) at y 444, 48px tall: CANCEL UPDATE in its middle slot
+ *     from x 348, OPTIONS in its right slot from x 686, each 328px wide;
  *     OPTIONS' third row, Single updates, opens SINGLE UPDATES;
  *   - SINGLE UPDATES, in the body: the IOmcu's hold 460 x 56px at y 380;
  *     the heading in the card's place; the C6 RADIO hold 532 x 56px from
@@ -40,8 +43,17 @@
 #define UP_CHECK_Y     (16 + 28)     /**< CHECK FOR UPDATES' middle row. */
 #define UP_FOOT_T      444      /**< The footer's top. */
 #define UP_FOOT_Y      (UP_FOOT_T + 24)  /**< Its middle row. */
-#define UP_DL_X        512      /**< HOLD 2s TO DOWNLOAD & INSTALL's middle. */
-#define UP_DL_Y        UP_FOOT_Y     /**< Its middle row. */
+#define UP_ACT_X       750      /**< The current step's control's middle. */
+#define UP_ACT_T       292      /**< Its top. */
+#define UP_ACT_Y       (UP_ACT_T + 32)  /**< Its middle row. */
+#define UP_SKIP_T      364      /**< SKIP THIS STEP's top. */
+#define UP_SKIP_Y      (UP_SKIP_T + 28) /**< Its middle row. */
+#define UP_ROW_T       88       /**< The first step row's top. */
+#define UP_ROW_PITCH   56       /**< From one step row to the next. */
+#define UP_CANCEL_X    512      /**< CANCEL UPDATE, the footer's middle. */
+#define UP_DL_X        UP_ACT_X /**< HOLD 2s TO DOWNLOAD & INSTALL: PANEL's
+                                     step's control. */
+#define UP_DL_Y        UP_ACT_Y /**< Its middle row. */
 #define UP_SET_X       850      /**< SETTINGS' middle. */
 #define UP_SET_Y       UP_FOOT_Y     /**< Its middle row. */
 #define UP_SINGLE_ROW  2        /**< OPTIONS' row Single updates. */

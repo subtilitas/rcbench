@@ -28,8 +28,9 @@
 
 /* Panel coordinates of the controls, from the suites' spots. */
 #define CAPS_TEST  SV_CAPS_X, (UI_BAND_H + SV_CAPS_TEST_Y)
-/** @brief UPDATES' button that opens WI-FI: on the card, under its two lines. */
-#define UPD_NET    750, (UI_BAND_H + 120)
+/** @brief UPDATES' button that opens WI-FI: on the last card, in the
+ *         place of a step's control, 500 x 64px from x 500 at y 292. */
+#define UPD_NET    750, (UI_BAND_H + 324)
 /** @brief LOGS' WI-FI button. */
 #define LOGS_WIFI  LV_WIFI_CX, (UI_BAND_H + LV_BR_FOOT_CY)
 /** @brief The footer's SETTINGS (ui_footer.h), as LOGS and FILES draw it. */

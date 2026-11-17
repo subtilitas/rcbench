@@ -70,6 +70,12 @@ bool upd_single_tick(float dt_s);
  */
 bool upd_single_render(gfx_canvas_t *c);
 
+/** @brief Set the latch the IOmcu hold sets: UPDATES' IOMCU step's hold
+ *         completed.  upd_screen_take_coproc() drains it;
+ *         coproc_update_drive() reads the section once more before it
+ *         starts. */
+void upd_single_fire_coproc(void);
+
 /** @brief The page's BACK, in the footer's right slot.
  *  @return Its rectangle in the body. */
 gfx_rect_t upd_single_back_rect(void);

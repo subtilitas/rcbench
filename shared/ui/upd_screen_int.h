@@ -1,13 +1,14 @@
 /**
  * @file
  * @brief UPDATES' private seam (upd_screen.c, upd_single.c, upd_remind.c,
- *        help_upd.c): the layout of CHECK, the card and the IOmcu section,
+ *        upd_wiz_view.c, upd_wiz_card.c, help_upd.c): the layout of CHECK,
+ *        SINGLE UPDATES' heading and its IOmcu section,
  *        the faces and drawing helpers the screens share, what the reminder
  *        and the screen guide read of the screen's state, and the guide's
  *        pages.
  *
- * The macros have short names (BX, RX); nothing but these four files
- * includes this header.
+ * The macros have short names (BX, RX); nothing but these files includes
+ * this header.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -35,18 +36,19 @@
 
 /*
  * UPDATES, in the body below the band: 1024 x 540px:
- * CHECK on the left, 460 x 56px at y 16.  The card on the right, x 484 to
- * 1016, y 16 to 336: what is kept and what last happened, each text broken
- * into lines of its 500px column (41 cells of UPD_FONT_BODY), 28px apart.
- * The footer (ui_footer.h) under both: UPDATES, the download's hold in the
- * middle slot while a newer release is found, and OPTIONS, the list of the
+ * CHECK on the left, 460 x 56px at y 16, the step list under it and the
+ * card on the right, x 484 to 1016, y 16 to 436, with the current step's
+ * control and SKIP THIS STEP (upd_wiz_view.h names their geometry).  The
+ * footer (ui_footer.h) under both: UPDATES, CANCEL UPDATE in the middle
+ * slot while a device's transfer runs, and OPTIONS, the list of the
  * reminder, RELEASES and Single updates (upd_settings.c).
  *
- * SINGLE UPDATES (upd_single.c) covers the body: its heading in the card's
- * place, the IOmcu section under CHECK's place, the WIRELESS DEVICES entry
- * (upd_dev.h) between the section's lines and its hold, the C6 RADIO row
- * (upd_c6.h) under the card: its line at y 348, its hold beside the
- * IOmcu's at y 380; BACK in the footer's right slot.
+ * SINGLE UPDATES (upd_single.c) covers the body: its heading in a card at
+ * the card's place, 320px tall (RH), the IOmcu section under CHECK's
+ * place, the WIRELESS DEVICES entry (upd_dev.h) between the section's
+ * lines and its hold, the C6 RADIO row (upd_c6.h) under the heading: its
+ * line at y 348, its hold beside the IOmcu's at y 380; BACK in the
+ * footer's right slot.
  */
 /** @brief The buttons' left edge. */
 #define BX      16
@@ -62,7 +64,8 @@
 #define RY      16
 /** @brief The card's width, px. */
 #define RW      532
-/** @brief The card's height, px: it ends 12px over the C6 row's line. */
+/** @brief SINGLE UPDATES' heading card's height, px: it ends 12px over
+ *         the C6 row's line. */
 #define RH      320
 /** @brief The card's inner padding, px. */
 #define RPAD    16
@@ -155,11 +158,11 @@ void upd_remind_touched(void);
 void upd_remind_drop_if_gone(void);
 
 /**
- * @brief Whether the last check found a newer release and nothing runs:
- *        the download's hold stands in the footer's middle slot.
- * @return True then.
+ * @brief The colour of the result line: good news, bad news or neither.
+ * @param v The view.
+ * @return The colour.
  */
-bool upd_guide_newer(void);
+gfx_color_t upd_result_colour(const upd_view_t *v);
 
 /**
  * @brief Whether CHECK reads CANCEL: a check runs.

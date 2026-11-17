@@ -123,6 +123,21 @@ const upd_dev_view_t *upd_dev_view(upd_dev_id_t id);
 bool upd_dev_take(upd_dev_id_t id);
 
 /**
+ * @brief Set the latch a row's hold sets: UPDATES' device step's hold
+ *        completed.  upd_dev_take() drains it; the service checks the row
+ *        once more before it asks.
+ * @param id the row; out of range is the first row
+ */
+void upd_dev_fire(upd_dev_id_t id);
+
+/**
+ * @brief Set the latch a live CANCEL UPDATE sets: UPDATES' CANCEL UPDATE
+ *        was tapped while the transfer could still stop.
+ *        upd_dev_take_cancel() drains it.
+ */
+void upd_dev_fire_cancel(void);
+
+/**
  * @brief The band's line for a grey hold: why it is grey.
  * @param v the view; NULL is none
  * @return the text, or NULL while the hold is live

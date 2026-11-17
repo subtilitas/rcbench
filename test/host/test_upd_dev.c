@@ -116,8 +116,7 @@ static void on_updates(void)
     ui_router_init();
     upd()->reset();
     ui_router_goto(SCREEN_UPDATES);
-    upd_open_single(upd());
-    ui_router_set_alert(NULL);
+    /* The rows first: OPTIONS is grey while an update runs. */
     const upd_c6_view_t c6 = { .row = FW_C6_ROW_NO_IMAGE };
     upd_c6_set(&c6);
     for (int i = 0; i < UPD_DEV_COUNT; ++i) {
@@ -125,6 +124,8 @@ static void on_updates(void)
         upd_dev_set((upd_dev_id_t)i, &v);
         (void)upd_dev_take((upd_dev_id_t)i);
     }
+    upd_open_single(upd());
+    ui_router_set_alert(NULL);
 }
 
 /* on_updates(), and the page opened by a tap on the entry. */

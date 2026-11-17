@@ -180,7 +180,10 @@ the panel's side is the DIAL FIRMWARE row on the page that the WIRELESS
 DEVICES entry of SINGLE UPDATES opens; SINGLE UPDATES opens from the row
 Single updates in UPDATES' OPTIONS
 ([Screens, Single updates](Screens.md#single-updates),
-[Screens, The Dial](Screens.md#the-dial)).
+[Screens, The Dial](Screens.md#the-dial)). On UPDATES itself the Dial is
+step 4: while a connected Dial runs another version and the steps before
+it are done, its card holds the same hold
+([Screens, The steps](Screens.md#the-steps)).
 
 1. The Dial is bound and linked, and the bench is SAFE. The row shows
    `Dial: 0.23.13. Included: 0.23.14.` and `HOLD 2s TO UPDATE THE DIAL`.
