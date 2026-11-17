@@ -32,7 +32,16 @@ static const char *TAG = "rcbench";
  *         the previous frame fed, never the zeroed ones of the start. */
 static bool s_fed_known;
 
-void updrun_fed(bool dev_known) { s_fed_known = s_fed_known || dev_known; }
+/** @brief The run flag the last feed gave UPDATES' steps.  A trial start
+ *         settles the run at the end of a frame, after the feed: until a
+ *         feed carries the run as it stands, the steps judge it wrongly. */
+static bool s_fed_run;
+
+void updrun_fed(bool dev_known)
+{
+    s_fed_known = s_fed_known || dev_known;
+    s_fed_run = fw_ota_run_active();
+}
 
 void updrun_service(bool unsafe)
 {
@@ -42,7 +51,7 @@ void updrun_service(bool unsafe)
         .unsafe      = unsafe,
         .radio_up    = s_wifi_ok && !wifi_access_down(),
         .installing  = panel_fw_busy(),
-        .known       = s_fed_known,
+        .known       = s_fed_known && s_fed_run == fw_ota_run_active(),
         .restart_due = panel_c6_busy(),
     };
     const bool opened = drv.opened;
