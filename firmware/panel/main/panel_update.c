@@ -714,6 +714,9 @@ static void fw_install_run(void)
             st = fw_install_step(&in, quiet);
             update_frame(UPDATE_WRITING, info.version_text, in.done, bytes);
         } while (st == FW_INSTALL_RUNNING);
+        /* Only an image written whole and checked notes the update run:
+         * a power cut before this line leaves no run. */
+        (void)fw_ota_run_installed(st, info.version_text);
         if (st == FW_INSTALL_DONE) {
             update_frame(UPDATE_RESTARTING, info.version_text, bytes, bytes);
             fw_ota_note_restart(info.version_text);

@@ -314,7 +314,9 @@ start is kept once every task has run a pass and a frame is on the display, or 3
 start with the screen loop running (`fw_trial.h`, `test_fw_trial`); a reset before that goes
 back to the build before it, which reports it from the restart note the install keeps in NVS
 (`fw_note_write()`, `fw_boot_settle()`, `test_fw_install`; the NVS calls in `fw_ota.c` are
-not host-tested).
+not host-tested). Beside it the run note keeps an update run across a restart: written after a
+complete install and after a C6 update, read once per start, 2 openings at most, erased on a
+version mismatch or a corrupt entry (`fw_run.h`, `test_fw_run`); no screen reads it.
 
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
 `esp_hosted` (`components/c6_link`, [Wi-Fi through the
@@ -1638,7 +1640,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 588 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 589 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1737,7 +1739,7 @@ The host suite is 588 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
-`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
+`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
 `test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
 `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
