@@ -43,7 +43,7 @@ void servo_settle_reset(servo_settle_t *s)
     }
 }
 
-void servo_settle_feed(servo_settle_t *s, float deg, uint32_t now_ms)
+void servo_settle_add(servo_settle_t *s, float deg, uint32_t now_ms)
 {
     if (s == NULL || !isfinite(deg)) {
         return;

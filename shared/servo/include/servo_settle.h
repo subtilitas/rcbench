@@ -79,7 +79,7 @@ void servo_settle_reset(servo_settle_t *s);
  * @param deg    The angle, °; one not finite is dropped.
  * @param now_ms Its time, ms.
  */
-void servo_settle_feed(servo_settle_t *s, float deg, uint32_t now_ms);
+void servo_settle_add(servo_settle_t *s, float deg, uint32_t now_ms);
 
 /**
  * @brief The span of the readings over the trailing @p win_ms.

@@ -1132,7 +1132,7 @@ void servo_rauto_step(servo_rauto_t *r, uint32_t now_ms,
         r->angle_valid = in->angle_valid;
         r->angle_deg   = in->angle_deg;
         if (in->angle_valid && measuring(r->phase)) {
-            servo_settle_feed(&r->hold, in->angle_deg, now_ms);
+            servo_settle_add(&r->hold, in->angle_deg, now_ms);
         }
         /* The longest: a filter made slower in a run waits longer from
          * then on, one made faster does not cut a wait short. */
