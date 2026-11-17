@@ -14,6 +14,12 @@
 #include "driver/ledc.h"
 #include "esp_timer.h"
 
+#if !DIAL_HAS_BUZZER
+/* No buzzer on this board: every sound is silent. */
+void dial_buzz_init(void) {}
+void dial_buzz_tone(uint32_t hz, uint32_t ms) { (void)hz; (void)ms; }
+void dial_buzz_click(void) {}
+#else
 /** @brief The LEDC timer, channel and resolution the buzzer uses. @{ */
 #define BUZZ_TIMER   LEDC_TIMER_0
 #define BUZZ_CHANNEL LEDC_CHANNEL_0 /**< the LEDC channel */
@@ -36,12 +42,6 @@ static void buzz_stop(void *arg)
     ledc_update_duty(LEDC_LOW_SPEED_MODE, BUZZ_CHANNEL);
 }
 
-#if !DIAL_HAS_BUZZER
-/* No buzzer on this board: every sound is silent. */
-void dial_buzz_init(void) {}
-void dial_buzz_tone(uint32_t hz, uint32_t ms) { (void)hz; (void)ms; }
-void dial_buzz_click(void) {}
-#else
 void dial_buzz_init(void)
 {
     const ledc_timer_config_t t = {
