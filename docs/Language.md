@@ -190,7 +190,7 @@ Every string is UTF-8 (Unicode Transformation Format, 8-bit), from the C
 source to the TXT report on the card. `gfx` decodes it, and one code point
 is one cell:
 
-- The five text faces hold printable ASCII (American Standard Code for
+- The six text faces hold printable ASCII (American Standard Code for
   Information Interchange, 0x20 to 0x7E), the degree sign ° (U+00B0), the
   seven German letters Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC, U+00DF,
   U+00E4, U+00F6, U+00FC) and the ohm sign Ω (U+03A9), 104 glyphs each.
@@ -266,7 +266,7 @@ fails on any other entry under a condition.
 | `shared/servo/servo_str.c` | the servo test's English, which the CSV also uses |
 | `shared/webaccess/wa_page.c` | the Wi-Fi page's English and German |
 
-The five text faces hold printable ASCII (0x20 to 0x7E), the degree sign °,
+The six text faces hold printable ASCII (0x20 to 0x7E), the degree sign °,
 the 7 German letters Ä Ö Ü ä ö ü ß and the ohm sign Ω. Any other code point draws as `?`, and so does a
 byte that starts no valid UTF-8 sequence.
 `every_drawn_string_has_its_glyphs` in `test_text` holds every string of
@@ -383,9 +383,9 @@ with an ID and 115 options, 10 of them with an empty English.
    declaration to `ui_text.h`.
 4. A letter the text faces do not hold goes into the list in `FONTS` in
    `tools/gen_font.py`, and `python3 tools/gen_font.py` regenerates them.
-   Each letter takes one byte a pixel in each of the five text faces: 128,
-   200, 288, 448 and 720 bytes in the 8x16, 10x20, 12x24, 16x28 and 20x36
-   faces, 1,784 bytes in all.
+   Each letter takes one byte a pixel in each of the six text faces: 72,
+   128, 200, 288, 448 and 720 bytes in the 6x12, 8x16, 10x20, 12x24, 16x28
+   and 20x36 faces, 1,856 bytes in all.
 5. Add the language to `LANGS` in `tools/render_ui.py` and to the argument
    `test/host/render_screen.c` takes, and run
    `python3 tools/render_ui.py --fit` and `python3 tools/render_ui.py`.

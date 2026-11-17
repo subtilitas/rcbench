@@ -16,6 +16,11 @@ history is in git.
   a run number are never selected; a folder without runs keeps its
   selection. The way back into FILES and the Wi-Fi page's RESCAN keep each
   selection on its entry.
+- M5Stack Dial: a title that the 8x16 face does not hold inside radius 101
+  (12 to 14 cells) is drawn in the new 6x12 face, so PANEL UPDATE shows
+  whole instead of as PANEL UPDAT. Only a title of more than 14 cells is
+  cut. The 6x12 face holds the same 104 glyphs as the other text faces and
+  adds 7,522 bytes to the Dial's image, 850,800 bytes in all.
 
 ## 0.23.14 - 2026-11-15
 

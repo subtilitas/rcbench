@@ -116,7 +116,7 @@ that needs it (`OUT_STORE_SLOT_BYTES` in `out_store_rec.h`).
 
 ### Rasteriser, fonts, touch mapping, theme, widgets, icons, router
 
-Built and tested; text is UTF-8, one cell a code point, and the five text faces carry °, Ä Ö
+Built and tested; text is UTF-8, one cell a code point, and the six text faces carry °, Ä Ö
 Ü ß ä ö ü and Ω.
 
 ### Interface language

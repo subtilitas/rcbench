@@ -114,9 +114,9 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 ```
 
 The partition table (`firmware/dial/partitions.csv`) holds NVS, two
-application slots of 3,072kB and their otadata. The released image is
-841,504 bytes, 26.8% of a slot; the seven fonts of the faces are 243,194
-bytes of it and the ring tables 25,032. Its static RAM: 216,534 of 341,760
+application slots of 3,072kB and their otadata. The image is
+850,800 bytes, 27.0% of a slot; the eight fonts of the faces are 250,716
+bytes of it and the ring tables 25,044. Its static RAM: 216,550 of 341,760
 bytes of internal DRAM and IRAM, the frame of 115,200 bytes among them. The
 heap that NimBLE takes at run time is not measured; the log at start and
 `status` give the internal heap free and its lowest since the start.
@@ -475,7 +475,7 @@ Every face has the same furniture:
 
 | Element | Where | What |
 | --- | --- | --- |
-| title tag | middle row 42, 20px tall | the panel screen's name in the 8x16 face on the accent; dimmed while the link is lost; a title wider than radius 101 allows is cut |
+| title tag | middle row 42, 20px tall | the panel screen's name in the 8x16 face on the accent, in the 6x12 face when 8x16 would leave radius 101 (12 to 14 cells); dimmed while the link is lost; a title wider than 6x12 holds is cut |
 | state pill | middle row 66, 19px tall | `SAFE`, or `ARMED` with the run clock (`0:42`, from 1h `1h05`) on MOTOR & ESC; in the 10x20 face, in the 8x16 face when the icons beside it would leave radius 101 |
 | link bars | 6px left of the pill | 4 bars, 3px wide: 4 at -60dBm or more, 3 at -70dBm, 2 at -80dBm, 1 below; amber while the panel marks the link DEGRADED; none while not connected |
 | battery | 6px right of the pill | 18 x 9px, filled from 3,300 to 4,200mV; a dash while the reading is unknown; `USB` in its place while the reading is unknown and a USB host reads the port, where the row has room |

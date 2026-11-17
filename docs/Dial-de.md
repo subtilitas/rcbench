@@ -120,9 +120,9 @@ idf.py -B build-hooks -D SDKCONFIG=build-hooks/sdkconfig -D RCBENCH_DIAL_HOOKS=O
 ```
 
 Die Partitionstabelle (`firmware/dial/partitions.csv`) enthält den NVS, zwei
-Anwendungsslots von 3.072kB und ihre otadata. Das veröffentlichte Image hat
-841.504 Bytes, 26,8% eines Slots; die sieben Fonts der Faces sind 243.194
-Bytes davon und die Ring-Tabellen 25.032. Sein statischer RAM: 216.534 von
+Anwendungsslots von 3.072kB und ihre otadata. Das Image hat
+850.800 Bytes, 27,0% eines Slots; die acht Fonts der Faces sind 250.716
+Bytes davon und die Ring-Tabellen 25.044. Sein statischer RAM: 216.550 von
 341.760 Bytes internem DRAM und IRAM, darunter der Frame von 115.200 Bytes.
 Den Heap, den NimBLE zur Laufzeit nimmt, hat niemand gemessen; das Log beim
 Start und `status` nennen den freien internen Heap und seinen Tiefstwert
@@ -510,7 +510,7 @@ Jedes Face hat dieselbe Ausstattung:
 
 | Element | Wo | Was |
 | --- | --- | --- |
-| Titel-Tag | mittlere Zeile 42, 20px hoch | der Name des Panel-Bildschirms im Font 8x16 auf dem Akzent; gedimmt, solange der Link verloren ist; ein Titel, der über Radius 101 hinausreicht, wird gekürzt |
+| Titel-Tag | mittlere Zeile 42, 20px hoch | der Name des Panel-Bildschirms im Font 8x16 auf dem Akzent, im Font 6x12, wenn 8x16 Radius 101 verlassen würde (12 bis 14 Zellen); gedimmt, solange der Link verloren ist; ein Titel, der auch in 6x12 nicht passt, wird gekürzt |
 | Zustandspille | mittlere Zeile 66, 19px hoch | `SAFE`, oder `ARMED` mit der Laufuhr (`0:42`, ab 1h `1h05`) auf MOTOR & ESC; im Font 10x20, im Font 8x16, wenn die Symbole daneben Radius 101 verlassen würden |
 | Link-Balken | 6px links der Pille | 4 Balken, 3px breit: 4 ab -60dBm, 3 ab -70dBm, 2 ab -80dBm, darunter 1; gelb, solange das Panel den Link als DEGRADED markiert; keine ohne Verbindung |
 | Akku | 6px rechts der Pille | 18 x 9px, gefüllt von 3.300 bis 4.200mV; ein Strich, solange der Messwert unbekannt ist; `USB` an seiner Stelle, solange der Messwert unbekannt ist und ein USB-Host den Port liest, wo die Zeile Platz hat |
