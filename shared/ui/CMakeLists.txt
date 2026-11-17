@@ -160,6 +160,7 @@ set(SRCS
     upd_settings.c
     upd_c6.c
     upd_dev.c
+    upd_wizard.c
     files_screen.c
     layout_screen.c
     imu_ctl.c

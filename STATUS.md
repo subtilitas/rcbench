@@ -1354,7 +1354,14 @@ device that answers the gap mark at one offset, an abort in every phase
 that waits through the install from END on, and the settle of an unknown
 install read from its own device and reported before a second device's
 start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
-END on (`test_upd_dev`); and each node client's hand-over and take-back: the
+END on (`test_upd_dev`); UPDATES' step model, which no screen draws:
+every IOmcu section state, C6 row and reason, and device row with
+not bound, bound and not connected, and connected mapped to one step
+state, the current step as the lowest that blocks or the one whose update
+runs, a newer panel release making PANEL current again, ABSENT waiting
+only in a run, SKIP and a failed attempt (`shared/ui/upd_wizard.c`,
+`test_upd_wizard`, `test_upd_wizard_map`), fed `bound` apart from
+connected by `panel_devupd.c`; and each node client's hand-over and take-back: the
 update's hold ends the link with no STALE or LOST at any ms, keeps it
 ended through SETUP's values for 30s, takes no packet, and the take-back
 reconnects and reads the node's version from its first STATUS
@@ -1638,7 +1645,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 588 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 590 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1766,7 +1773,8 @@ The host suite is 588 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
-`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client` and `test_upd_dev`.
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_upd_dev`,
+`test_upd_wizard` and `test_upd_wizard_map`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through

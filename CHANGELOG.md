@@ -6,6 +6,14 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- UPDATES: a step model (`shared/ui/upd_wizard.c`) puts the updates in the
+  order PANEL, IOMCU, C6 RADIO, DIAL, POWER NODE, BALANCE NODE. From the
+  live state of each it names every step's state, the current step and its
+  one control. The device rows' feed tells a device that is not bound from
+  one that is bound and not connected. No screen draws the model.
+
 ### Changed
 
 - FILES (LOG > FILES > FILES): RESCAN selects each pane's newest file, the
