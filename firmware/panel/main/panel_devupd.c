@@ -29,6 +29,8 @@
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "upd_dev.h"
+#include "upd_screen.h"
+#include "upd_wizard.h"
 
 /** @brief The console lines' tag. */
 static const char *TAG = "devupd";
@@ -711,5 +713,8 @@ void devupd_service(bool armed)
                      fail_text(e, why, sizeof(why)));
         }
         control_alert(line);
+        /* UPDATES' step of that device shows a failure on its card, the
+         * hold the retry; a success clears it. */
+        upd_screen_set_result(UPD_WIZ_DIAL + d, e->ok ? NULL : line);
     }
 }

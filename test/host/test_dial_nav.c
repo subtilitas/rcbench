@@ -821,6 +821,8 @@ TEST_CASE(an_off_gap_takes_detents_alike_in_any_batch)
 TEST_CASE(updates_offers_no_focus_and_no_device_hold_or_cancel)
 {
     on(SCREEN_UPDATES);
+    /* SINGLE UPDATES opened first: OPTIONS is grey while an update runs. */
+    upd_open_single(upd_screen());
     upd_dev_view_t v;
     memset(&v, 0, sizeof(v));
     v.row = DEVUPD_ROW_READY;
@@ -832,8 +834,6 @@ TEST_CASE(updates_offers_no_focus_and_no_device_hold_or_cancel)
     v.row = DEVUPD_ROW_UPDATING;
     v.phase = DEVUPD_SEND;
     upd_dev_set(UPD_DEV_BAL, &v);
-    CHECK(!ui_focus_shown());
-    upd_open_single(upd_screen());
     CHECK(!ui_focus_shown());
     tap(UPD_DEV_X + UPD_DEV_W / 2,
         UI_BAND_H + UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);

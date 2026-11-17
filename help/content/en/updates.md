@@ -6,17 +6,65 @@ order: 64
 
 # Updates
 
-UPDATES checks GitHub for newer panel firmware and offers to install it. Open it from [Setup](setup.md). The [startup reminder](upd_remind.md) performs the same check once per panel start. The ESP32-S3 panel is limited to the 0.22 release line; ESP32-P4 accepts newer lines. See [The release line](#the-release-line).
+UPDATES leads through the firmware updates in six steps: PANEL, IOMCU, C6 RADIO, DIAL, POWER NODE and BALANCE NODE. Only the current step has a control. CHECK FOR UPDATES asks GitHub for newer panel firmware. Open UPDATES from [Setup](setup.md). The [startup reminder](upd_remind.md) performs the same check once per panel start. The ESP32-S3 panel is limited to the 0.22 release line; ESP32-P4 accepts newer lines. See [The release line](#the-release-line).
 
-![UPDATES](view:updates)
+![UPDATES: the last card](view:updates)
+
+The step list on the left shows each step's number, name, the version its target runs and its tag. The card on the right shows the current step: its versions, what its update does, why it waits and how its last attempt ended.
 
 | Control | What it does |
 |---|---|
 | CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
-| HOLD 2s TO DOWNLOAD & INSTALL | in the footer's middle once a check found a newer release; downloads, checks and installs it |
-| OPTIONS | in the footer's right; opens the list of Reminder at start, Releases and Single updates, see [Settings](#settings); grey while a check or a download runs |
+| the current step's control | on the card; a 2s hold starts the step's update, see [The steps](#the-steps); grey while something blocks it, and a press shows the reason on the alert band |
+| SKIP THIS STEP | on the card; a tap passes the step until the panel restarts, and the next step becomes current |
+| SHOW SKIPPED STEPS | on the last card while a step is skipped; brings the skipped steps back |
+| CANCEL UPDATE | in the footer's middle while a device's transfer runs; ends it before its last byte, grey once the device installs |
+| OPTIONS | in the footer's right; opens the list of Reminder at start, Releases and Single updates, see [Settings](#settings); grey while a check, a download or an update runs |
 
-The IOmcu's, the C6 radio's and the wireless devices' updates are on the page SINGLE UPDATES, see [Single updates](#single-updates).
+Updates and reinstalls outside the order are on the page SINGLE UPDATES, see [Single updates](#single-updates).
+
+## The steps
+
+![Step 2: the IOmcu](view:updates-step-iomcu)
+
+| Step | Current while | Control |
+|---|---|---|
+| 1 PANEL | a check found a newer release | HOLD 2s TO DOWNLOAD & INSTALL, see [The download](#the-download) |
+| 2 IOMCU | the IOmcu runs another build than the one this panel includes | HOLD 2s TO UPDATE THE IOMCU, see [The IOmcu](#the-iomcu) |
+| 3 C6 RADIO | the C6 reports another version than the included one; the panel restarts after this step | HOLD 2s TO UPDATE THE C6 RADIO, see [The C6 radio](#the-c6-radio) |
+| 4 DIAL | the connected Dial runs another version | HOLD 2s TO UPDATE THE DIAL, see [The Dial](#the-dial) |
+| 5 POWER NODE | the connected power node runs another version | HOLD 2s TO UPDATE THE POWER NODE, see [The sensor nodes](#the-sensor-nodes) |
+| 6 BALANCE NODE | the connected balance node runs another version | HOLD 2s TO UPDATE THE BALANCE NODE |
+
+The panel image carries every other image, so PANEL comes first. A newer release found while a later step is current makes PANEL current again. A check that found nothing newer or failed never blocks, nor does a failed or stopped download: CHECK FOR UPDATES is the way back.
+
+| Tag | Meaning |
+|---|---|
+| `NEXT` | the current step |
+| `CURRENT` | runs the included or newest version |
+| `LATER` | waits for the current step |
+| `UPDATING`, `CHECKING` | its update runs, or a short wait; the card says which |
+| `FAILED` | its last attempt since the panel's start failed; the card shows the reason, the hold is the retry |
+| `SKIPPED` | SKIP THIS STEP was tapped since the panel's start |
+| `NOT CHECKED` | PANEL: no check since the start |
+| `NO LINK`, `NOT CONNECTED`, `NOT BOUND` | no IOmcu answers; a bound device is not connected; no device of the kind is bound |
+| `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to update here; the card of the last step lists these steps |
+
+![A step held while ARMED](view:updates-held)
+
+ARMED, the supply output on, an open log run, Wi-Fi on or a board drawing being fetched hold the step: the control is grey and the card names the reason. A hold in progress ends without starting anything when its step changes under the finger.
+
+![The Dial asks for its press](view:updates-step-dial-ask)
+
+While a device's transfer runs, the control shows its phase, for example `PRESS THE DIAL TO ACCEPT: 27s`, and CANCEL UPDATE stands in the footer.
+
+After a restart during an update run, a step whose IOmcu or device is not connected yet waits with SKIP THIS STEP and goes on once it connects.
+
+![The Dial's step waiting after a restart](view:updates-step-waiting)
+
+With no step left the card reads `All firmware is current.` and names the steps not connected, not updatable here and skipped.
+
+![The last card with the Dial skipped](view:updates-done)
 
 ## Settings
 
@@ -34,7 +82,7 @@ A change applies at once. SAVE in the list's strip keeps it, as on [Setup](setup
 
 The card shows the running version and saved home network. Checking and downloading require:
 
-- A home network saved on [Wi-Fi](wifi.md#choosing-a-home-network). Without one, the card shows `No home network saved.` and the button `SAVE A NETWORK: OPEN WI-FI`. Open WI-FI to save a network, then use its home tag to return. CHECK FOR UPDATES remains grey until a network is saved.
+- A home network saved on [Wi-Fi](wifi.md#choosing-a-home-network). Without one, the card shows `No home network saved.`, and the last card holds the button `SAVE A NETWORK: OPEN WI-FI`. Open WI-FI to save a network, then use its home tag to return. CHECK FOR UPDATES remains grey until a network is saved.
 - A SAFE bench, the supply output off and no open log run. Otherwise the button is grey and the card shows `Wi-Fi requires SAFE, the supply output off,`.
 - No IOmcu update or panel installation in progress.
 
@@ -61,7 +109,7 @@ On both settings a release is offered only when it is of the panel's release lin
 
 | Card | Meaning |
 |---|---|
-| `Version 0.22.1 is available.` | the newest release is newer than the running build; the hold appears |
+| `Version 0.22.1 is available.` | the newest release is newer than the running build; PANEL's step becomes current with the hold |
 | `Up to date. Panel version: 0.22.0.` | the newest release is the running version or older |
 | `No newer release for the ESP32-S3 panel. Panel version: 0.22.0.` | a panel held to the 0.22 line only: the newest release is newer than the running build and past the release line; it is not offered, and the reminder at start does not open for it |
 | `Could not connect. Password rejected.`, `Could not connect. Network not found.`, `Connection failed. No IP address within 15s.`, `Connection to the home network lost.` | the join failed, as on Files and update |

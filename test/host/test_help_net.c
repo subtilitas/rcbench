@@ -218,9 +218,9 @@ static void upd_pose(void)
     }
 }
 
-/* Each state in both languages and themes, SAFE and ARMED: CHECK's page
- * and the card's, the download's hold on it once a check found a newer
- * release; over the OPTIONS list the list's two; over the wireless
+/* Each state in both languages and themes, SAFE and ARMED: the page of
+ * CHECK and the step list and the card's, the download's hold and SKIP
+ * THIS STEP on it once a check found a newer release; over the OPTIONS list the list's two; over the wireless
  * devices' page its one, with the three rows and BACK; on SINGLE UPDATES
  * the IOmcu's and the devices' page and the heading's, C6's and BACK's. */
 TEST_CASE(every_updates_page_fits)
@@ -232,9 +232,9 @@ TEST_CASE(every_updates_page_fits)
         int items[2];
     } k_states[] = {
         { "UPDATES", 2, { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD },
-          { 1, 2 } },
+          { 2, 2 } },
         { "UPDATES newer", 2,
-          { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD }, { 1, 3 } },
+          { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD }, { 2, 4 } },
         { "UPDATES OPTIONS", 2,
           { TX_HG_SL_TITLE_ROWS, TX_HG_SL_TITLE_VALUES }, { 3, 3 } },
         { "UPDATES devices", 1, { TX_HG_UPD_TITLE_DEVS, 0 }, { 4, 0 } },
@@ -304,9 +304,13 @@ TEST_CASE(the_updates_pages_follow_the_check_and_the_c6)
     base_view();
     set_newer();
     push();
+    /* A newer release: PANEL's step is current, its hold and SKIP THIS
+     * STEP are items between the card and OPTIONS. */
     REQUIRE(ui_help_page(upd(), false, 1, &p));
     CHECK_STR_EQ(p.item[1].label, TR(UPD_HOLD_DL));
-    CHECK_EQ(p.item[1].text, TX_HG_UPD_DL);
+    CHECK_EQ(p.item[1].text, TX_HG_UPD_ACT);
+    CHECK_EQ(p.item[2].text, TX_HG_UPD_SKIP);
+    CHECK_EQ(p.item[3].text, TX_HG_UPD_OPTIONS);
     CHECK(!ui_help_page(upd(), false, 2, &p));
 
     /* The devices' page names each row by its heading, around its

@@ -229,6 +229,8 @@ TRACKED = [
     "shared/ui/upd_c6.c",
     "shared/ui/upd_dev.c",
     "shared/ui/upd_wizard.c",
+    "shared/ui/upd_wiz_view.c",
+    "shared/ui/upd_wiz_card.c",
     "shared/ui/imu_ctl.c",
     "shared/ui/imu_ble.c",
     "shared/ui/imu_sensor.c",

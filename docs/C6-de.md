@@ -138,6 +138,10 @@ cd firmware/panel && idf.py -D RCBENCH_C6_BIN=../../c6-dist/rcbench-c6-2.13.0.bi
 
 #### Das Update über SDIO
 
+Auf UPDATES ist der C6 Schritt 3: Meldet er eine andere Version als die
+des mitgebrachten Images und sind die Schritte davor erledigt, trägt seine
+Karte `2s HALTEN ZUM C6-FUNK-UPDATE`
+([Bildschirme, Die Schritte](Screens-de.md#die-schritte)).
 Die Zeile C6 RADIO auf SETUP > UPDATES > EINZELNE UPDATES (OPTIONEN, Zeile
 Einzelne Updates; [Bildschirme, Einzelne Updates](Screens-de.md#einzelne-updates))
 zeigt die Version, die der C6 beim

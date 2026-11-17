@@ -583,6 +583,14 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
             ui_router_goto(SCREEN_OVERVIEW);
         }
     }
+    /* SKIP THIS STEP on UPDATES' IOmcu step declines the offer that stands
+     * as CANCEL does; neither the question nor its band line comes for it
+     * afterwards. */
+    if (upd_screen_take_skip_coproc() && f->offered) {
+        out->decline = true;
+        d->shown_gen = f->offer_gen;
+        d->said_gen = f->offer_gen;
+    }
 
     /* What UPDATES' section shows, after this frame's START is counted. */
     const upd_cu_view_t sec = {

@@ -79,7 +79,7 @@ Institute of Technology) licence's "without warranty of any kind" applies.
 | LOGS | browse, import and plot CSV from the card; runs are recorded to `BENCH/LOGS` while ARMED or while the supply's output is on, tests to `USER/LOGS` (the default folders), each switchable and set under SETUP > SD CARD | built |
 | FILES | the SD (Secure Digital) card in two panes: copy, move, rename and delete files, make folders and empty text files, file information; writes only while the bench is SAFE and no log file is open, and refuses the bench's own folders and the files the logger writes | screen built and host-tested; opens from Logs and from Setup |
 | WI-FI | the panel's radio, on only while the screen is open and for update checks: its own access point (WPA2 (Wi-Fi Protected Access 2), 2.4GHz channel 6, 1 client) or a saved home network (WPA2 or WPA3 personal); a browser page downloads every file of the card or the whole card as one ZIP file and uploads a panel firmware image, installed by a 2s hold on the panel | built and host-tested; a 16MiB download ran at 688-757kB/s on one home network; range not measured |
-| UPDATES | asks GitHub for the newest panel release (STABLE or TESTING), reminds once per start, downloads it over HTTPS and installs it on a 2s hold; installs the IOmcu image the panel carries on the IOmcu on a 2s hold | built and host-tested; the duration of a check and a download on a real network is not measured |
+| UPDATES | leads through six steps in order, panel, IOmcu, C6 radio, Dial, power node and balance node, with one 2s hold on the current step's card; asks GitHub for the newest panel release (STABLE or TESTING), reminds once per start, downloads it over HTTPS and installs it; sends the IOmcu, C6 and device images the panel carries | built and host-tested; the duration of a check and a download on a real network is not measured |
 | OUTPUTS | the protocols bound to the IOmcu's pins and the pins each drives, behind the OUTPUTS tile, on the IOmcu board drawn to scale, which shows where the lead of a pin goes | built and host-tested |
 | SETUP | settings in the dark and the light theme, stored in NVS (non-volatile storage) | built |
 | SETUP > PANEL | Time zone (10 zones, BERLIN by default) sets the time zone for saving and displaying file timestamps. The clock starts unset at each power-on. Each time the panel joins the home network, SNTP (Simple Network Time Protocol) sets it once from `pool.ntp.org`, within 30000ms. Screen rotation turns the picture and the touch by 180° | built and host-tested; the board has no RTC (real-time clock) chip; a turned frame on SERVO LIVE sweeping took 3.8 to 4.8ms (TURN) at 30.2fps against 39 to 45fps unturned, 180° at rest is not measured |
@@ -127,7 +127,7 @@ this is a licensing requirement. Test coverage must meet both the overall
 minimum and the minimum for each file.
 
 <!-- coverage:start -->
-Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 98,929 of 101,032 lines in 446 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
+Host-suite line coverage of `shared/` and `protocols/`: **97.9%**, 99,353 of 101,473 lines in 448 files. CI fails below 94% in total or below 85% in any file. [STATUS.md](STATUS.md#tests-and-ci) has the table per file.
 <!-- coverage:end -->
 
 Security and safety reports: [SECURITY.md](SECURITY.md).

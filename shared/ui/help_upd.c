@@ -4,9 +4,10 @@
  *        and on SINGLE UPDATES, the OPTIONS list's while it is open, or one
  *        page while the wireless devices' page is open.
  *
- * UPDATES: CHECK FOR UPDATES (CANCEL while a check runs) with the dock on
- * the right; the card, the download's hold while a check found a newer
- * release, and OPTIONS with the dock on the left.  SINGLE UPDATES: the
+ * UPDATES: CHECK FOR UPDATES (CANCEL while a check runs) and the step
+ * list with the dock on the right; the card, the current step's control,
+ * SKIP THIS STEP or SHOW SKIPPED STEPS, CANCEL UPDATE while a device's
+ * transfer runs, and OPTIONS with the dock on the left.  SINGLE UPDATES: the
  * IOmcu section, its hold and the WIRELESS DEVICES entry with the dock on
  * the right; the heading, the C6 radio's hold and BACK with the dock on
  * the left.  The devices' page: its three rows, CANCEL UPDATE while an
@@ -28,6 +29,7 @@
 
 #include "upd_screen_int.h"
 #include "upd_single.h"
+#include "upd_wiz_view.h"
 
 /**
  * @brief The C6 radio's hold as the page names it: its label, or its
@@ -35,6 +37,12 @@
  *        holds a pointer to its labels while the guide shows it.
  */
 static char s_c6_label[32];
+
+/**
+ * @brief The current step's control as the page names it: its label, its
+ *        phase while its update runs, or the button that opens WI-FI.
+ */
+static char s_act_label[96];
 
 
 int upd_help_count(void)
@@ -47,7 +55,7 @@ int upd_help_count(void)
 }
 
 /**
- * @brief UPDATES' page 1: CHECK, the dock on the right.
+ * @brief UPDATES' page 1: CHECK and the step list, the dock on the right.
  * @param p The page, zeroed.
  */
 static void check_page(ui_help_page_t *p)
@@ -56,6 +64,12 @@ static void check_page(ui_help_page_t *p)
     p->side = UI_HELP_DOCK_RIGHT;
     (void)ui_help_add(p, upd_guide_cancels() ? TR(CANCEL) : TR(UPD_CHECK),
                       TX_HG_UPD_CHECK, gfx_rect_make(BX, RY, BW, BH));
+    const gfx_rect_t first = upd_wiz_row_rect(0u);
+    const gfx_rect_t last = upd_wiz_row_rect(UPD_WIZ_STEPS - 1u);
+    (void)ui_help_add_at(p, TR(HG_UPD_STEPS_NAME), TX_HG_UPD_STEPS,
+                         gfx_rect_make(first.x, first.y, first.w,
+                                       last.y + last.h - first.y),
+                         UI_HELP_AT_RIGHT);
 }
 
 /**
@@ -127,22 +141,42 @@ static void single_page_2(ui_help_page_t *p)
 }
 
 /**
- * @brief UPDATES' page 2: the card, the download's hold while it stands,
- *        OPTIONS; the dock on the left.
+ * @brief UPDATES' page 2: the card, the current step's control, SKIP or
+ *        SHOW SKIPPED STEPS, CANCEL UPDATE while it stands, OPTIONS; the
+ *        dock on the left.
  * @param p The page, zeroed.
  */
 static void card_page(ui_help_page_t *p)
 {
+    upd_wiz_t w;
+    upd_wiz_now(&w);
     p->title = TX_HG_UPD_TITLE_CARD;
     p->side = UI_HELP_DOCK_LEFT;
     (void)ui_help_add_at(p, TR(HG_UPD_CARD_NAME), TX_HG_UPD_CARD,
-                         gfx_rect_make(RX, RY, RW, RH), UI_HELP_AT_RIGHT);
-    if (upd_guide_newer()) {
-        (void)ui_help_add(p, TR(UPD_HOLD_DL), TX_HG_UPD_DL,
+                         gfx_rect_make(UPD_WIZ_CARD_X, UPD_WIZ_CARD_Y,
+                                       UPD_WIZ_CARD_W, UPD_WIZ_ACT_Y - 8
+                                                           - UPD_WIZ_CARD_Y),
+                         UI_HELP_AT_RIGHT);
+    if (w.act != UPD_WIZ_ACT_NONE) {
+        upd_wiz_act_label(&w, s_act_label, sizeof(s_act_label));
+        (void)ui_help_add(p, s_act_label, TX_HG_UPD_ACT, upd_wiz_act_rect());
+    } else if (upd_wiz_net_shown(&w)) {
+        (void)ui_help_add(p, TR(UPD_OPEN_WIFI), TX_HG_UPD_NET,
+                          upd_wiz_act_rect());
+    }
+    if (w.can_skip) {
+        (void)ui_help_add(p, TR(UPD_WIZ_SKIP), TX_HG_UPD_SKIP,
+                          upd_wiz_skip_rect());
+    } else if (w.show_skipped) {
+        (void)ui_help_add(p, TR(UPD_WIZ_SHOW_SKIPPED), TX_HG_UPD_SHOW_SKIPPED,
+                          upd_wiz_skip_rect());
+    }
+    if (w.cancel) {
+        (void)ui_help_add(p, TR(UPD_DEVS_CANCEL), TX_HG_UPD_DEVS_CANCEL,
                           ui_footer_rect(UI_FOOTER_HOLD));
     }
-    /* OPTIONS' text starts at its left edge, beside the download's
-     * hold: the badge in its top-right corner. */
+    /* OPTIONS' text starts at its left edge, beside CANCEL UPDATE's
+     * slot: the badge in its top-right corner. */
     (void)ui_help_add_at(p, TR(FOOT_SETTINGS), TX_HG_UPD_OPTIONS,
                          ui_footer_rect(UI_FOOTER_SETTINGS),
                          UI_HELP_AT_RIGHT);

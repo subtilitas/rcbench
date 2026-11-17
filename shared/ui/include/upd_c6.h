@@ -75,6 +75,13 @@ const upd_c6_view_t *upd_c6_view(void);
 bool upd_c6_take(void);
 
 /**
+ * @brief Set the latch the row's hold sets: UPDATES' C6 RADIO step's hold
+ *        completed.  upd_c6_take() drains it; the service checks the row
+ *        once more before it starts.
+ */
+void upd_c6_fire(void);
+
+/**
  * @brief The band's line for a grey hold: why it is grey.
  * @param v the view; NULL is none
  * @return the text, or NULL while the hold is live

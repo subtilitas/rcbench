@@ -83,6 +83,8 @@ bool upd_c6_take(void)
     return was;
 }
 
+void upd_c6_fire(void) { c6.req = true; }
+
 const char *upd_c6_reason(const upd_c6_view_t *v)
 {
     if (v == NULL) {
