@@ -620,9 +620,9 @@ static void row_render(gfx_canvas_t *c, const upd_wiz_t *w, unsigned i)
  */
 static void controls_render(gfx_canvas_t *c, const upd_wiz_t *w)
 {
-    char label[96];
     const gfx_rect_t a = upd_wiz_act_rect();
     if (w->act != UPD_WIZ_ACT_NONE) {
+        char label[96];
         upd_wiz_act_label(w, label, sizeof(label));
         if (w->step[w->current].state == UPD_WIZ_RUNNING) {
             /* The running update's phase, bright: the device's ask. */

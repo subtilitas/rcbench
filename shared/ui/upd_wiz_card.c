@@ -246,7 +246,7 @@ static void c6_card(const upd_wiz_t *w)
 {
     const upd_wiz_step_t *st = &w->step[UPD_WIZ_C6];
     versions(st, TR(UPD_C6_NOT_REPORTED));
-    add(TR(UPD_WIZ_DO_C6), UI_TEXT, 12, true);
+    add(TR(UPD_WIZ_DO_C6), UI_TEXT, 12, false);
     const char *why = upd_c6_reason(upd_c6_view());
     if (why != NULL) {
         add(why, st->state == UPD_WIZ_HELD ? UI_WARN : UI_TEXT, 12, true);
