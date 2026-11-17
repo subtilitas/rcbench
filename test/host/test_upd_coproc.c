@@ -812,6 +812,35 @@ TEST_CASE(every_section_state_renders_inside_its_canvas)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * The grey hold says why, on the band: a hold of 2.3s on the same build
+ * starts nothing and gives the section's line, as the C6 and device rows
+ * give theirs; a tap with no IOmcu answering gives that line.
+ */
+TEST_CASE(the_grey_hold_says_why_on_the_band)
+{
+    on_updates();
+    g_feed.check = CU_CHECK_SAME;
+    g_feed.running = k_new;
+    (void)frame();
+    CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_SAME);
+    hold_for(2.30f);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
+    cu_hand_t h = frame();
+    CHECK_EQ(h.starts, 0u);
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+    const char *a = ui_router_alert();
+    CHECK(a != NULL && strcmp(a, TR(UPD_CU_SAME)) == 0);
+
+    g_feed.reachable = false;
+    (void)frame();
+    CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_NO_LINK);
+    upd_ev(TOUCH_EVENT_DOWN, UP_BTN_X, UP_CU_Y);
+    upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
+    a = ui_router_alert();
+    CHECK(a != NULL && strcmp(a, TR(UPD_CU_NO_LINK)) == 0);
+}
+
 int main(void)
 {
     RUN(the_section_names_the_first_reason_in_its_order);
@@ -832,5 +861,7 @@ int main(void)
     RUN(the_section_hold_slides_off_cancels_and_leaves_unfired);
     RUN(the_wifi_hint_names_one_tile);
     RUN(every_section_state_renders_inside_its_canvas);
+    RUN(the_grey_hold_says_why_on_the_band);
     return test_summary("upd_coproc");
 }
+

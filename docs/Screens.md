@@ -6820,7 +6820,8 @@ one, the screen returns to UPDATES.
 
 The hold is enabled only under the condition in the table's last row.
 Otherwise it is grey, and the line shows the first applicable reason in
-this order:
+this order. A tap or a hold on the grey button shows the same line on the
+alert band, as the C6 radio's and the devices' grey holds do:
 
 | Line | Condition |
 | --- | --- |

@@ -7408,7 +7408,9 @@ START ohne begonnenes Update kehrt der Bildschirm zu UPDATES zurück.
 
 Die Taste zum Halten ist nur im Zustand der letzten Tabellenzeile aktiv.
 Andernfalls ist sie grau; die Statuszeile nennt den ersten zutreffenden
-Grund in dieser Reihenfolge:
+Grund in dieser Reihenfolge. Ein Tippen oder Halten auf die graue Taste
+zeigt dieselbe Zeile auf dem Alarmband, wie die grauen Tasten des C6-Funks
+und der Geräte:
 
 | Zeile | Bedingung |
 | --- | --- |
