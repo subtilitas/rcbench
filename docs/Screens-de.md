@@ -7422,6 +7422,11 @@ und die Notiz wird gelöscht, wenn:
   Funkgeräte veröffentlicht hat: Vorher gilt jedes Gerät als nicht
   gebunden.
 
+Das Löschen ist ein Schreiben in den Flash, und ein Schreiben in den Flash
+hält beide Kerne an, darunter die Steuer-Task mit Heartbeat und STOP. Ein
+Lauf, der endet, während der Prüfstand ARMED ist, ein ARM wartet oder ein Netzteilausgang an ist oder angeht, behält seine Notiz,
+bis der Prüfstand SAFE ist und die Ausgänge aus sind.
+
 Beides beendet den Lauf nicht, solange ein C6-Update läuft oder sein
 Neustart ansteht: Die Notiz, die dieses Update für den Start danach
 geschrieben hat, bleibt. Ein Bildschirm, den das Panel über UPDATES

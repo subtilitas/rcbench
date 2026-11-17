@@ -536,7 +536,8 @@ bool panel_fw_busy(void);
  *        cu_render_service(): UPDATES opens by itself once per start under
  *        the IOmcu question's conditions, the band names what holds it
  *        back, and the run ends on the home tag or with no step left
- *        (upd_run.h).
+ *        (upd_run.h); the note's erase waits for a bench that is not
+ *        @p unsafe, as every flash write does.
  * @param unsafe ARMED, an arm waiting, or the supply's output on or coming
  */
 void updrun_service(bool unsafe);

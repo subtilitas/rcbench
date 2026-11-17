@@ -9,7 +9,9 @@
  * once in fw_ota_boot_check() and spends one of its 2 openings.  This
  * file asks upd_run_drive() once a frame, before the IOmcu's question is
  * served, and ends the run (fw_ota_run_end(): the note is erased) when it
- * says so.  UPDATES' steps read the run flag from upd_service().
+ * says so, once the bench is SAFE with no arm waiting and the supply off:
+ * the erase is a flash write.  UPDATES' steps read the run flag from
+ * upd_service().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -59,11 +61,22 @@ void updrun_service(bool unsafe)
     if (drv.opened && !opened) {
         ESP_LOGI(TAG, "update run: UPDATES opened");
     }
-    if (end == UPD_RUN_GOES_ON) {
+    /* The end erases the note in NVS, and a flash write stalls both
+     * cores, the control task's heartbeat, STOP and supply trips among
+     * them (flash_gate.h).  An end decided on a bench that is ARMED, has an
+     * arm waiting or a supply output on or coming waits for it to be SAFE
+     * with the outputs off, as a settings save does. */
+    static bool end_due;
+    if (end != UPD_RUN_GOES_ON && !end_due) {
+        end_due = true;
+        ESP_LOGI(TAG, "update run: ends, %s%s",
+                 end == UPD_RUN_END_LEFT ? "UPDATES left by the home tag"
+                                         : "no step left",
+                 unsafe ? "; the note waits for SAFE" : "");
+    }
+    if (!end_due || unsafe) {
         return;
     }
-    ESP_LOGI(TAG, "update run: ends, %s",
-             end == UPD_RUN_END_LEFT ? "UPDATES left by the home tag"
-                                     : "no step left");
+    end_due = false;
     fw_ota_run_end();
 }
