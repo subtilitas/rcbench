@@ -12,9 +12,12 @@
  * 6-AXIS keeps creeping after a servo step, the remaining error x0.55 a
  * second (tau about 1.7s, measured 2026-11-17 at 5.00V and 6.00V), and
  * passes that still test 0.6s to 2.3s after the surface arrives, 0.8° to
- * 0.9° short of where it settles.  The defaults, W 2.0s and P 0.20°,
- * leave at most 0.09° at tau 1.7s, inside RUDDER AUTO's smallest
- * tolerance of 0.1°; a tau of 2.9s leaves at most 0.20°.
+ * 0.9° short of where it settles.  Its tail is slower: measures taken 4.1s
+ * to 6.2s after arrival under W 2.0s and P 0.20° lay 0.14° to 0.26° from
+ * the value held 10s later, the reading still moving 0.07°/s to 0.1°/s
+ * (2026-11-18), a second component with tau about 3.5s.  The defaults,
+ * W 3.0s and P 0.10°, leave at most 0.08° at tau 3.5s and 0.03° at tau
+ * 1.7s, inside RUDDER AUTO's smallest tolerance of 0.1°.
  *
  * The window is kept as SERVO_SETTLE_BUCKET_MS buckets of the lowest and
  * highest angle in each, so the span is that of the buckets that reach
@@ -44,9 +47,9 @@ extern "C" {
 #define SERVO_SETTLE_BUCKETS \
     (SERVO_SETTLE_WIN_MAX_MS / SERVO_SETTLE_BUCKET_MS + 2u)
 /** @brief IMU SETTLING TIME's default, ms (see the file's comment). */
-#define SERVO_SETTLE_WIN_DEFAULT_MS  2000u
+#define SERVO_SETTLE_WIN_DEFAULT_MS  3000u
 /** @brief IMU PRECISION's default, ° (see the file's comment). */
-#define SERVO_SETTLE_BAND_DEFAULT_DEG 0.2f
+#define SERVO_SETTLE_BAND_DEFAULT_DEG 0.1f
 /** @brief What a float span may lie past the band and still count as
  *         within, °: 0.3 - 0.1 in float is 0.20000002. */
 #define SERVO_SETTLE_EPS_DEG     0.0005f

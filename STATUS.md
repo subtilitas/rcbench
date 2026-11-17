@@ -639,11 +639,12 @@ not move their side end the run as `writes do not move the 2000us side`
 (`test_servo_rauto`, `test_servo_rauto_guard`, `test_servo_rauto_effect` on the core with a
 linear servo model, `test_servo_rauto_kst` through the screen and the programmer on the modelled
 KST servo, `test_servo_rauto_panel`; host suite only). On the IMU a measure also waits until
-the readings over IMU settling time (default 2.0s) span IMU precision (default 0.20°) or
+the readings over IMU settling time (default 3.0s) span IMU precision (default 0.10°) or
 less (`shared/servo/servo_settle.c`, `test_servo_settle`); the creep curves the BWT901CL
-measured after servo steps on 2026-11-17, fed at 100Hz, are taken within 0.09° of their final
-value 4.1s to 8.0s after the surface arrives, where the 500ms still test alone took them 0.8°
-to 2.7° off (`test_servo_rauto_settle`). A run that wrote verifies 1000us, 2000us and PULSE
+showed after servo steps on 2026-11-17 and 2026-11-18, fed at 100Hz, are taken within 0.07°
+of their final value 6.5s to 10.4s after the surface arrives, where the 500ms still test
+alone took them 0.8° to 2.7° off (`test_servo_rauto_settle`). Every end is approached from
+PULSE CENTER, the verify pass's center from 2000us. A run that wrote verifies 1000us, 2000us and PULSE
 CENTER once more and fails on one outside the tolerance (`test_servo_rauto_verify`).
 Its READY card (`shared/ui/servo_rudder_auto_ready.c`, `shared/ui/servo_ready.c`) gives
 each check of the start gate one row, and the footer's HOLD 2s: ARM + START runs

@@ -15,6 +15,13 @@
  *      -33.497 (+2.3), -34.041 (+3.3), -34.338 (+4.3), -34.503 (+5.3),
  *      -34.596 (+6.4), final -34.711: short of it, creeping on.
  *   C  2000us -> center: 11.393° (+1.3s), 13.508 (+6.3), final 13.607.
+ *   D  the slow tail of 2026-11-18 (rud1118): measures taken 4.1s to
+ *      6.2s after arrival under 2.0s within 0.20° lay 0.14° to 0.26° from
+ *      the value held 10s later, the reading still moving 0.07°/s to
+ *      0.1°/s.  Fitted as two components, 2.11° x exp(-t / 1.7s) and
+ *      1.09° x exp(-t / 3.5s): B's 2.77° at 0.3s, and under the 2.0s /
+ *      0.20° rule a take at 6.9s 0.19° short, 0.07°/s.  Run short of the
+ *      final value (D-) and past it (D+).
  *
  * Before its first point a curve holds that point's error.  At 6.00V the
  * same steps settle at 60.23° and -34.59° with the same shape, so the
@@ -24,12 +31,13 @@
  *
  * Under test: the rule of 0.23.13 (500ms within 0.5°, no window) takes
  * the first angle more than the tolerance from where the reading settles;
- * the settle rule with IMU SETTLING TIME 2.0s and IMU PRECISION 0.20°
+ * the settle rule with IMU SETTLING TIME 3.0s and IMU PRECISION 0.10°
  * takes every angle, the verify pass's included, within the tolerance
  * (0.5° and 0.1°) of the surface, on every curve, both supplies; a reading
  * that never settles ends the run NOT STILL at the measure's wait, and the
- * 0.23.13 rule takes it; noise of ±0.05° around a settled value passes;
- * IMU filter 10 adds its own settle to the wait.
+ * 0.23.13 rule takes it; noise of ±0.02° around a settled value passes
+ * (2026-11-18 at rest: 0.006° in any 2s); IMU filter 10 adds its own
+ * settle to the wait.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -46,6 +54,7 @@
 typedef struct {
     const float (*p)[2];
     int n;
+    float sign;          /* a curve given by its components: 0 none */
 } curve_t;
 
 static const float k_a[][2] = {
@@ -58,10 +67,13 @@ static const float k_b[][2] = {
     { 6.4f, -0.115f },
 };
 static const float k_c[][2] = { { 1.3f, -2.214f }, { 6.3f, -0.099f } };
-static const curve_t k_curve[3] = {
-    { k_a, (int)(sizeof k_a / sizeof k_a[0]) },
-    { k_b, (int)(sizeof k_b / sizeof k_b[0]) },
-    { k_c, (int)(sizeof k_c / sizeof k_c[0]) },
+#define N_CURVES 5
+static const curve_t k_curve[N_CURVES] = {
+    { k_a, (int)(sizeof k_a / sizeof k_a[0]), 0.0f },
+    { k_b, (int)(sizeof k_b / sizeof k_b[0]), 0.0f },
+    { k_c, (int)(sizeof k_c / sizeof k_c[0]), 0.0f },
+    { NULL, 0, -1.0f },                     /* D- */
+    { NULL, 0, 1.0f },                      /* D+ */
 };
 
 /** @brief The sensor, the curve it follows, and what the run took. */
@@ -84,6 +96,9 @@ static struct {
 /** @brief Error of curve @p c at @p t s after arrival, °. */
 static float err_at(const curve_t *c, float t)
 {
+    if (c->sign != 0.0f) {
+        return c->sign * (2.11f * expf(-t / 1.7f) + 1.09f * expf(-t / 3.5f));
+    }
     if (t <= c->p[0][0]) {
         return c->p[0][1];
     }
@@ -233,7 +248,7 @@ static const float k_side[2][2] = { { 46.62f, 48.29f }, { 46.65f, 48.17f } };
 TEST_CASE(the_0_23_13_rule_takes_the_first_angle_outside_the_tolerance)
 {
     for (int v = 0; v < 2; ++v) {
-        for (int c = 0; c < 3; ++c) {
+        for (int c = 0; c < N_CURVES; ++c) {
             creep_rig(k_side[v][0], k_side[v][1], 5u, &k_curve[c], false);
             CHECK(crun(RAUTO_MS));
             CHECK(f.steps + f.vn >= 1u);
@@ -247,7 +262,7 @@ TEST_CASE(the_settle_rule_takes_every_angle_within_the_tolerance)
 {
     static const uint16_t k_tol[2] = { 5u, 1u };
     for (int v = 0; v < 2; ++v) {
-        for (int c = 0; c < 3; ++c) {
+        for (int c = 0; c < N_CURVES; ++c) {
             for (int t = 0; t < 2; ++t) {
                 creep_rig(k_side[v][0], k_side[v][1], k_tol[t], &k_curve[c],
                           true);
@@ -255,9 +270,11 @@ TEST_CASE(the_settle_rule_takes_every_angle_within_the_tolerance)
                 CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
                 CHECK_EQ(g.run.vn, SERVO_RAUTO_VERIFY_N);
                 CHECK(f.worst <= (float)k_tol[t] / 10.0f);
-                /* After arrival: 4.2s on A, 6.9s on B, 8.0s on C; 2.0s
-                 * more for a verify measure where the servo stands. */
-                CHECK(f.took_max <= 10100u);
+                /* The defaults: 0.07° at most on every curve. */
+                CHECK(f.worst <= 0.07f);
+                /* After arrival: 6.5s on A, 9.4s on B, 9.3s on C, 10.4s
+                 * on D. */
+                CHECK(f.took_max <= 10600u);
                 for (int s = 0; s < 2; ++s) {
                     CHECK(fabsf(g.run.measured_deg[s] - g.run.goal_deg[s])
                           <= (float)k_tol[t] / 10.0f + 0.0005f);
@@ -265,7 +282,7 @@ TEST_CASE(the_settle_rule_takes_every_angle_within_the_tolerance)
             }
         }
     }
-    CHECK(in_report("its span at most 0.20° over 2.0s, within 13000ms"));
+    CHECK(in_report("its span at most 0.10° over 3.0s, within 16000ms"));
 }
 
 TEST_CASE(a_reading_that_never_settles_ends_not_still_at_the_wait)
@@ -290,7 +307,7 @@ TEST_CASE(a_reading_that_never_settles_ends_not_still_at_the_wait)
 TEST_CASE(noise_around_a_settled_value_passes)
 {
     creep_rig(46.62f, 48.29f, 5u, &k_curve[1], true);
-    f.noise = 0.05f;
+    f.noise = 0.02f;
     CHECK(crun(RAUTO_MS));
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
     CHECK(f.worst <= 0.5f);

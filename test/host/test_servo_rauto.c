@@ -413,9 +413,10 @@ TEST_CASE(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_
 
 TEST_CASE(the_clock_wrap_inside_a_settle_does_not_end_it)
 {
-    /* The first move's command lands about 1.4s after the start: the
-     * clock wraps 1.6s in, inside that settle. */
-    rig_init(0xFFFFFFFFu - 1900u);
+    /* The first move's command lands about 1.9s after the start, after
+     * the approach's 500ms at PULSE CENTER: the clock wraps 2.1s in,
+     * inside that settle. */
+    rig_init(0xFFFFFFFFu - 2400u);
     CHECK(start());
     CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
     const uint32_t at = g.run.move_ms;

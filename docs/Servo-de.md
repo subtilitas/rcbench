@@ -1972,6 +1972,16 @@ angefragt ist).
   an. VERBINDEN liest das Servo aus. Nur bei KST/Chaservo werden
   PULSE LOWER und PULSE UPPER bei Bedarf auf 1000,0us und 2000,0us
   geschrieben. Danach folgen VERLASSEN und die Anforderung von ARMED.
+- Die Anfahrt: jede Messung fährt das Servo zuerst auf den Puls, von dem
+  sie kommt, wartet dort nach ihrer eigenen Regel und fordert dann ihren
+  Puls an (Phase ANFAHRT, die erste Zeile `ANFAHRT 1500us: ...`). Jedes
+  Ende, im Hauptdurchgang wie beim Nachmessen, kommt von PULS MITTE; die
+  Mitte des Nachmessens kommt von 2000us, wo ihre Messung davor den Winkel
+  nahm, ohne eigene Anfahrt. Ein Puls wird so immer von derselben Seite
+  erreicht: am Prüfstand am 2026-11-18 las ein Servowert 46,86° von der
+  Mitte und 46,58° von 2000us, die Mitte +0,02° von 2000us und +0,35° von
+  1000us. Eine Anfahrt nimmt keinen Winkel und beendet den Lauf wie eine
+  Messung, wenn sie nicht ruhig wird.
 - Für eine Messung wird der Endpuls angefordert. Ab 500ms nach dem
   Befehl zählt der erste Winkel, der seit 500ms ruhig ist. Mit der IMU
   ist das die Ruhezeit der Einstellung IMU-Achse allein, und der Winkel
@@ -1979,9 +1989,9 @@ angefragt ist).
   IMU-Genauigkeit geblieben sein, gezählt ab dem Befehl (die
   Einschwingregel unten). Liegt bis zur Wartezeit der Messung kein Winkel
   vor, endet der Lauf mit `Ruder nicht rechtzeitig ruhig`. Die Wartezeit
-  ist 3 000ms nach dem Befehl; mit der IMU zusätzlich 8 000ms für das
+  ist 3 000ms nach dem Befehl; mit der IMU zusätzlich 10 000ms für das
   Kriechen des Sensors, die IMU-Einschwingzeit und das längste
-  Einschwingen des IMU-Filters: 13 000ms mit den Vorgaben.
+  Einschwingen des IMU-Filters: 16 000ms mit den Vorgaben.
 - Die Einschwingregel, nur an der IMU (`shared/servo/servo_settle.c`). Die
   Messwerte seit dem Befehl liegen in 100ms-Fächern mit ihrem kleinsten
   und größten Winkel. Eine Messung nimmt den Winkel, sobald die Fächer,
@@ -1991,25 +2001,29 @@ angefragt ist).
 
   | Einstellung | Schlüssel | Bereich | Schritt | Vorgabe |
   | --- | --- | --- | --- | --- |
-  | IMU-Einschwingzeit | `imu_settle_s` | 0,5 bis 10,0s | 0,5s | 2,0s |
-  | IMU-Genauigkeit | `imu_prec` | 0,05 bis 1,00° | 0,05° | 0,20° |
+  | IMU-Einschwingzeit | `imu_settle_s` | 0,5 bis 10,0s | 0,5s | 3,0s |
+  | IMU-Genauigkeit | `imu_prec` | 0,05 bis 1,00° | 0,05° | 0,10° |
 
   Ein Messwert, der sich seinem Endwert als e x exp(-t / tau) nähert,
   bewegt sich über ein Fenster W um e x (exp(W / tau) - 1); ein Fenster W
   innerhalb P lässt also höchstens P / (exp(W / tau) - 1) übrig. Die
   BWT901CL im 6-AXIS kriecht nach einem Servoschritt mit tau etwa 1,7s,
   der Restfehler x0,55 je Sekunde (Prüfstand 2026-11-17, 5,00V und 6,00V,
-  IMU-Filter 1, 100Hz). Mit den Vorgaben bleiben höchstens 0,09°, innerhalb
-  der kleinsten Toleranz von 0,1°; ein tau von 2,9s lässt 0,20°. Auf den
-  drei an dem Tag gemessenen Kurven, mit 100Hz in den Lauf gespeist
-  (`test_servo_rauto_settle`), nimmt der Lauf den Winkel 4,1s nach dem
+  IMU-Filter 1, 100Hz), und mit einem langsameren Ausläufer: unter 2,0s
+  innerhalb 0,20° lagen Messungen 4,1s bis 6,2s nach dem Ankommen 0,14°
+  bis 0,26° von dem Wert, der 10s später stand, der Messwert noch mit
+  0,07°/s bis 0,1°/s in Bewegung (Prüfstand 2026-11-18, 5,0V). Die Tests
+  setzen diesen Ausläufer als zweite Komponente mit tau 3,5s an. Mit den
+  Vorgaben lässt die Regel höchstens 0,08° bei tau 3,5s und 0,03° bei tau
+  1,7s übrig, innerhalb der kleinsten Toleranz von 0,1°. Auf den
+  gemessenen Kurven, mit 100Hz in den Lauf gespeist
+  (`test_servo_rauto_settle`), nimmt der Lauf den Winkel 6,5s nach dem
   Ankommen der Fläche bei einem Schritt, der überschießt und zurückkriecht
-  (Mitte nach 1000us), 6,8s bei einem, der zu kurz bleibt und
-  weiterkriecht (Mitte nach 2000us), und 8,0s bei der Rückkehr zur Mitte,
-  jeweils innerhalb 0,09° vom Endwert. Eine Messung, bei der das Servo
-  schon steht, dauert 2,0s, das Fenster. Die Ruheprüfung allein, 500ms
-  innerhalb 0,5°, nimmt diese Winkel 0,5s nach dem Ankommen, 0,8° bis 2,7°
-  vom Endwert. Der AS5600 hat kein Fenster: seine Messung ist die
+  (Mitte nach 1000us), 9,4s bei einem, der zu kurz bleibt und
+  weiterkriecht (Mitte nach 2000us), 9,3s bei der Rückkehr zur Mitte und
+  10,4s auf dem langsamen Ausläufer, jeweils innerhalb 0,07° vom Endwert.
+  Die Ruheprüfung allein, 500ms innerhalb 0,5°, nimmt diese Winkel 0,5s
+  nach dem Ankommen, 0,8° bis 2,7° vom Endwert. Der AS5600 hat kein Fenster: seine Messung ist die
   Ruheprüfung allein.
 - Die Richtung einer Seite ist das Vorzeichen ihrer ersten Messung. Beide
   Seiten mit einem Vorzeichen beenden den Lauf mit `Endpoint einer Seite fehlt`.
@@ -2077,10 +2091,14 @@ angefragt ist).
   angeboten. Ein Lauf ohne Schreiben misst nicht nach: seine zwei Messungen
   liegen nach der letzten Änderung. Das Nachmessen fährt innerhalb PULS
   MIN und PULS MAX mit den 5,0V des Laufs; der Schutz unten gilt darin,
-  und STOP beendet es wie jede andere Phase. Auf den drei Kurven oben
-  dauert es mit den Vorgaben der IMU 11,0s bis 18,8s: 4,1s bis 8,0s je
-  Messung nach dem Ankommen der Fläche, 2,0s für die erste, wo das Servo
-  schon auf 1000us steht.
+  und STOP beendet es wie jede andere Phase.
+- Die Dauer eines Laufs, auf den Kurven oben mit den Vorgaben der IMU und
+  einem Servo, das je Seite ein Schreiben braucht
+  (`test_servo_rauto_settle`): 6,8s bis 10,6s vom Befehl einer Messung bis
+  zu ihrem Winkel; eine Anfahrt 3,0s, wo das Servo schon in der Mitte
+  steht, bis so lang wie eine Messung, wo es von einem Ende kommt; das
+  Nachmessen 34s bis 53s; der ganze Lauf 100s bis 153s, davon die
+  Anfahrten 41s bis 63s.
 - NICHT BESTANDEN endet wie jedes Ende mit losgelassenem Servo, dem
   Prüfstand in SAFE und den Versorgungen aus (siehe Schutz). Nach einem
   Lauf mit NICHT BESTANDEN oder ABGEBROCHEN, der einen Wert geändert hat,
@@ -2129,7 +2147,7 @@ und 3 Ziffern. Der Bericht nennt das Servo, den Ausgang, die Winkelquelle
 und das Messgerät, eingegebene Ausschläge, Zielwerte und Toleranz, die Endpoints davor und
 danach mit der Seite, die jeder bewegt, die Schreibvorgänge und Sitzungen,
 die Backup-Datei, die Regel der Messung (`Messung: Winkel 500ms stabil,
-Spanne höchstens 0.20° über 2.0s, spätestens 13000ms nach dem Befehl` an
+Spanne höchstens 0.10° über 3.0s, spätestens 16000ms nach dem Befehl` an
 der IMU), jede Messung mit Registerwert, Winkel und der Angabe, ob sie
 innerhalb der Toleranz liegt, und das Nachmessen: eine Zeile je Messung,
 `1500us  gemessen 0.05°  Soll 0.00°  innerhalb`, oder `Kein Schreiben:
@@ -2162,13 +2180,15 @@ Abstand von NEUTRAL.
 - Eine Messung des Nachmessens außerhalb der Toleranz beendet den Lauf mit
   NICHT BESTANDEN; der Lauf schreibt danach keine Korrektur. Eine Seite,
   die der Hauptdurchgang um weniger als den Restfehler der Einschwingregel
-  (0,09° mit den Vorgaben an der BWT901CL) innerhalb der Toleranz nahm,
-  kann beim Nachmessen außerhalb liegen.
+  (0,08° mit den Vorgaben auf dem langsamen Ausläufer der BWT901CL)
+  innerhalb der Toleranz nahm, kann beim Nachmessen außerhalb liegen.
 - Die Zahlen der Einschwingregel stammen von einem Sensor, einer BWT901CL
-  im 6-AXIS mit IMU-Filter 1, an einem Aufbau. 9-AXIS, IMU-Filter über 1
-  am Prüfstand und andere Sensoren sind nicht gemessen. Ein Sensor, der
-  langsamer als mit tau 2,9s kriecht, kann mehr als die IMU-Genauigkeit
-  übrig lassen; eine längere IMU-Einschwingzeit deckt das ab.
+  im 6-AXIS mit IMU-Filter 1, an einem Aufbau, an zwei Tagen. 9-AXIS,
+  IMU-Filter über 1 am Prüfstand und andere Sensoren sind nicht gemessen.
+  Das tau von 3,5s des langsamen Ausläufers ist an 12 Vergleiche
+  angepasst, keine gemessene Kurve. Ein Sensor, der langsamer kriecht,
+  kann mehr als 0,1° übrig lassen; eine längere IMU-Einschwingzeit deckt
+  das ab.
 - Ein Servo der D-Serie hält bei 1000us nach dem Zielmodell aus
   `hitec_live.h` bei 76,9% des Wegs zu seinem Endpoint an; das ist nicht
   gemessen, der Lauf misst nach jedem Schreiben. Die Zuordnung der

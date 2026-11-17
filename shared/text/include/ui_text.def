@@ -11557,6 +11557,9 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_VERIFY_NONE,
 UI_SERVO_TEXT(SERVO_STR_RA_R_VERIFY_NO_WRITE,
     "No write: the measurements above are the last.",
     "Kein Schreiben: Die Messungen oben gelten.")
+UI_SERVO_TEXT(SERVO_STR_RA_PH_APPROACH,
+    "APPROACH",
+    "ANFAHRT")
 /* AUTO's box on RUDDER (servo_rudder_auto_panel.c): the button that
  * shows it and the one back, its rows, its START, its lines and why a
  * START is refused. */
@@ -12023,14 +12026,14 @@ UI_SETTING_LABEL(SET_IMU_SETTLE,
     "IMU settling time",
     "IMU-Einschwingzeit")
 UI_SETTING_HELP(SET_IMU_SETTLE,
-    "RUDDER AUTO: angle held this long before a measure",
-    "RUDER AUTO: so lange ruhig vor einer Messung")
+    "RUDDER AUTO measures once still this long",
+    "RUDER AUTO misst nach so langer Ruhe")
 UI_SETTING_LABEL(SET_IMU_PREC,
     "IMU precision",
     "IMU-Genauigkeit")
 UI_SETTING_HELP(SET_IMU_PREC,
     "RUDDER AUTO: the angle's span in that time",
-    "RUDER AUTO: Spanne des Winkels in dieser Zeit")
+    "RUDER AUTO: Winkelspanne in dieser Zeit")
 UI_OPTIONS(imu_axis)
 UI_OPTION("X", NULL)
 UI_OPTION("Y", NULL)

@@ -82,6 +82,10 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
         CHECK(fabsf(fabsf(horn - 1500.0f) * DEG_PER_US - 22.0f) <= 0.5f);
     }
     CHECK_EQ(g_rig.fc.saves, 1u);
+    /* The supply's OFF asked at the end decision, before the report's
+     * first file opens. */
+    CHECK(ra.open_seen);
+    CHECK(ra.off_at_open);
     /* The read, two writes, and the LEAVE after each write: five
      * power-ups at least. */
     CHECK(g_rig.sim.power_ups >= 5u);
@@ -115,7 +119,7 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
 /* The same run on the IMU at 10Hz through IMU FILTER 10: AUTO waits for
  * the filtered angle to settle, 3000ms plus the 78 frames at 150ms of the
  * allowance at the rate measured, plus SERVO_RAUTO_CREEP_MS and IMU
- * SETTLING TIME's default 2.0s, passes, and lands both end points on the
+ * SETTLING TIME's default 3.0s, passes, and lands both end points on the
  * 22° goal within the tolerance; the settle the IMU gives does not reach
  * a run on the AS5600. */
 TEST_CASE(auto_on_the_filtered_imu_waits_for_its_settle_and_passes)
@@ -134,7 +138,7 @@ TEST_CASE(auto_on_the_filtered_imu_waits_for_its_settle_and_passes)
                         + SERVO_RAUTO_CREEP_MS
                         + SERVO_SETTLE_WIN_DEFAULT_MS));
     CHECK(strstr(ra.report, want) != NULL);
-    CHECK(strstr(ra.report, "its span at most 0.20° over 2.0s") != NULL);
+    CHECK(strstr(ra.report, "its span at most 0.10° over 3.0s") != NULL);
     for (int k = 0; k < 2; ++k) {
         const float horn = sim_horn_us(g_rig.sim.acting,
                                        k == 0 ? 1000u : 2000u, 4.0f, false);
@@ -720,6 +724,9 @@ TEST_CASE(writes_that_do_not_move_the_2000us_side_end_auto_after_two)
     CHECK(!g_rig.sup_on);
     CHECK(ra.offs >= 1u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    /* After a FAIL as after a PASS: the OFF before the report. */
+    CHECK(ra.open_seen);
+    CHECK(ra.off_at_open);
 }
 
 int main(void)

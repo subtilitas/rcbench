@@ -16,8 +16,13 @@ history is in git.
   running build (a rollback) is erased and is no run; otherwise the start
   spends one of 2 openings. No screen reads it.
 - SETUP > WIRELESS > IMU: IMU settling time (`imu_settle_s`, 0.5 to
-  10.0s, default 2.0s) and IMU precision (`imu_prec`, 0.05 to 1.00°,
-  default 0.20°), the settle rule of a RUDDER AUTO measure on the IMU.
+  10.0s, default 3.0s) and IMU precision (`imu_prec`, 0.05 to 1.00°,
+  default 0.10°), the settle rule of a RUDDER AUTO measure on the IMU.
+- RUDDER AUTO: the approach. Every measure first drives the servo to the
+  pulse it comes from and waits there by the same rule (phase APPROACH):
+  each end, in the main pass and in the verify pass, from PULSE CENTER,
+  the verify pass's center from 2000us. The same servo value read up to
+  0.33° apart by the side it was reached from.
 - RUDDER AUTO: the verify pass. A run that wrote measures 1000us, 2000us
   and PULSE CENTER once more with the same rule and ends at the center;
   each end within TOLERANCE of its goal and the center within TOLERANCE
@@ -55,9 +60,9 @@ history is in git.
   so a run passed with ends 0.63° and 1.04° off the goal at a 0.5°
   tolerance. A measure on the IMU also waits until the readings over
   the last IMU settling time span IMU precision or less: with the defaults
-  the angle lies within 0.09° of the settled value, taken 4s to 8s after
-  the surface arrives. The measure's wait grows by 8,000ms plus the
-  settling time, 13,000ms with the defaults; `surface not settled in
+  the angle lies within 0.07° of the settled value, taken 6.5s to 10.4s
+  after the surface arrives. The measure's wait grows by 10,000ms plus the
+  settling time, 16,000ms with the defaults; `surface not settled in
   time` replaces `surface not still within 3s`.
 
 ## 0.23.14 - 2026-11-15

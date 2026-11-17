@@ -1876,14 +1876,24 @@ ARMED is asked).
   CONNECT and the read; for KST/Chaservo only, PULSE LOWER and PULSE UPPER
   are set to 1000.0us and 2000.0us if needed; then LEAVE and a request
   for ARMED.
+- The approach: every measure first drives the servo to the pulse it
+  comes from and waits there by the measure's own rule, then commands its
+  pulse (phase APPROACH, the first line `APPROACH 1500us: ...`). Each end,
+  in the main pass and in the verify pass, comes from PULSE CENTER; the
+  verify pass's center comes from 2000us, where its measure before took
+  its angle, with no approach of its own. A pulse is so always reached
+  from the same side: on the bench of 2026-11-18 one servo value read
+  46.86° from the center and 46.58° from 2000us, and the center +0.02°
+  from 2000us and +0.35° from 1000us. An approach takes no angle and ends
+  the run as a measure does when it does not settle.
 - A measure: the end pulse commanded; from 500ms after the command the
   first angle still for 500ms is taken. With the IMU that is the still
   time of the IMU axis setting alone, and the angle must also have held
   within IMU precision over the last IMU settling time, counted from the
   command (the settle rule below). No angle by the measure's wait ends the
   run as `surface not settled in time`. The wait is 3,000ms after the
-  command; with the IMU, plus 8,000ms for the sensor's creep, plus IMU
-  settling time, plus the IMU filter's longest settle: 13,000ms with the
+  command; with the IMU, plus 10,000ms for the sensor's creep, plus IMU
+  settling time, plus the IMU filter's longest settle: 16,000ms with the
   defaults.
 - The settle rule, on the IMU only (`shared/servo/servo_settle.c`). The
   readings since the command are kept in 100ms buckets of their lowest and
@@ -1893,24 +1903,28 @@ ARMED is asked).
 
   | Setting | Key | Range | Step | Default |
   | --- | --- | --- | --- | --- |
-  | IMU settling time | `imu_settle_s` | 0.5 to 10.0s | 0.5s | 2.0s |
-  | IMU precision | `imu_prec` | 0.05 to 1.00° | 0.05° | 0.20° |
+  | IMU settling time | `imu_settle_s` | 0.5 to 10.0s | 0.5s | 3.0s |
+  | IMU precision | `imu_prec` | 0.05 to 1.00° | 0.05° | 0.10° |
 
   A reading that comes to its final value as e x exp(-t / tau) moves
   e x (exp(W / tau) - 1) over a window W, so a window W within P leaves at
   most P / (exp(W / tau) - 1) to go. The BWT901CL in 6-AXIS creeps after a
   servo step with tau about 1.7s, the remaining error x0.55 a second (bench
-  of 2026-11-17, 5.00V and 6.00V, IMU filter 1, 100Hz). With the defaults
-  that leaves at most 0.09°, inside the smallest tolerance of 0.1°; a tau
-  of 2.9s leaves 0.20°. On the three curves measured that day, fed to the
-  run at 100Hz (`test_servo_rauto_settle`), the angle is taken 4.1s after
-  the surface arrives on a step that overshoots and creeps back (center to
-  1000us), 6.8s on one that falls short and creeps on (center to 2000us)
-  and 8.0s on the return to the center, each within 0.09° of the final
-  value. A measure where the servo already stands takes 2.0s, the window.
-  The still test alone, 500ms within 0.5°, takes those angles 0.5s after
-  the arrival, 0.8° to 2.7° from the final value. The AS5600 has no
-  window: its measure is the still test alone.
+  of 2026-11-17, 5.00V and 6.00V, IMU filter 1, 100Hz), and with a slower
+  tail: under 2.0s within 0.20°, measures taken 4.1s to 6.2s after the
+  surface arrived lay 0.14° to 0.26° from the value held 10s later, the
+  reading still moving 0.07°/s to 0.1°/s (bench of 2026-11-18, 5.0V). The
+  tests fit that tail as a second component with tau 3.5s. With the
+  defaults the rule leaves at most 0.08° at tau 3.5s and 0.03° at tau
+  1.7s, inside the smallest tolerance of 0.1°. On the curves measured,
+  fed to the run at 100Hz (`test_servo_rauto_settle`), the angle is taken
+  6.5s after the surface arrives on a step that overshoots and creeps
+  back (center to 1000us), 9.4s on one that falls short and creeps on
+  (center to 2000us), 9.3s on the return to the center and 10.4s on the
+  slow tail, each within 0.07° of the final value. The still test alone,
+  500ms within 0.5°, takes those angles 0.5s after the arrival, 0.8° to
+  2.7° from the final value. The AS5600 has no window: its measure is the
+  still test alone.
 - A side's direction is the sign of its first measure. Both sides on one
   sign end the run as `end point of a side not found`.
 - A side outside the tolerance gets value x goal / measured, held to the
@@ -1967,9 +1981,13 @@ ARMED is asked).
   that wrote nothing does not verify: its two measures were taken after
   the last change. The pass moves within PULSE MIN and PULSE MAX at the
   run's 5.0V; the guards below hold in it, and STOP ends it as every
-  other phase. On the three curves above with the IMU's defaults it takes
-  11.0s to 18.8s: 4.1s to 8.0s a measure after the surface arrives, 2.0s
-  for the first one where the servo stands at 1000us already.
+  other phase.
+- The time a run takes, on the curves above with the IMU's defaults and a
+  servo that needs one write a side (`test_servo_rauto_settle`): 6.8s to
+  10.6s from a measure's command to its angle; an approach 3.0s where the
+  servo stands at the center already, up to as long as a measure where it
+  comes from an end; the verify pass 34s to 53s; the whole
+  run 100s to 153s, of which the approaches take 41s to 63s.
 - A FAIL ends with the servo let go, the bench SAFE and the supplies off,
   as every end (see Protections). After a FAIL or ABORTED run that changed
   a value, the third line of AUTO's box names how the values before the
@@ -2011,7 +2029,7 @@ The report RUDDRnnn.TXT and the CSV RUDDRnnn.CSV, one row a measure, go to
 USER/LOGS. RUDDR, not RUDDER: an 8.3 name holds 5 letters and 3 digits.
 The report names the servo, the output, the angle source and the meter,
 the targets, goals and tolerance, the measure's rule (`Measure: angle
-stable for 500ms, its span at most 0.20° over 2.0s, within 13000ms of the
+stable for 500ms, its span at most 0.10° over 3.0s, within 16000ms of the
 command` on the IMU), the end points before and after with the side each
 moves, the writes and sessions, the backup file, every measure with its
 value, its angle and whether it lies within, and the verify pass: one
@@ -2044,12 +2062,14 @@ report still names a D series end point by its distance from NEUTRAL.
 - Degrees are entered; a target in mm at the trailing edge is not.
 - A verify measure outside the tolerance ends the run as FAIL; the run
   writes no correction after it. A side the main pass took within the
-  tolerance by less than the settle rule's remaining error (0.09° with the
-  defaults on the BWT901CL) can measure outside in the verify pass.
+  tolerance by less than the settle rule's remaining error (0.08° with the
+  defaults on the BWT901CL's slow tail) can measure outside in the verify
+  pass.
 - The settle rule's numbers come from one sensor, a BWT901CL in 6-AXIS
-  with IMU filter 1, on one rig. 9-AXIS, IMU filter above 1 on the bench
-  and other sensors are not measured. A sensor that creeps slower than a
-  tau of 2.9s can leave more than IMU precision to go; a longer IMU
+  with IMU filter 1, on one rig, two days. 9-AXIS, IMU filter above 1 on
+  the bench and other sensors are not measured. The slow tail's tau of
+  3.5s is a fit to 12 comparisons, not a measured curve. A sensor that
+  creeps slower than that can leave more than 0.1° to go; a longer IMU
   settling time covers it.
 - A D series servo at 1000us stops 76.9% of the way to its end point by
   the target model of `hitec_live.h`, which is not measured; the run

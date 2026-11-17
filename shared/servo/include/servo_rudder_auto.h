@@ -51,6 +51,16 @@
  *     time reads 0 until it has, so the angle a measure takes is a
  *     settled one.  A side measured again after a write to the other
  *     register is a CHECK.
+ *   - The approach (phase APPROACH): every measure, of the main pass and
+ *     of the verify pass, first drives the servo to the pulse it is to
+ *     come from and waits there by the measure's own rule, then commands
+ *     its pulse: an end comes from PULSE CENTER, the verify pass's center
+ *     from 2000us, so a pulse is always reached from the same side (the
+ *     surface and the IMU read up to 0.33° apart by the side, bench of
+ *     2026-11-18).  A measure that comes from where the last one took its
+ *     angle, the verify pass's center after its 2000us, needs no approach.
+ *     The approach takes no angle and ends the run as a measure does when
+ *     it does not settle (SERVO_RAUTO_WHY_NOT_STILL).
  *   - The verify pass (phase VERIFY): a run that changed the servo's
  *     values or pulses (programmed) and has both sides within measures
  *     1000us, 2000us and PULSE CENTER once more, each as a measure, and
@@ -193,9 +203,13 @@ extern "C" {
  * @brief On the IMU, the time a measure gives the sensor's own creep after
  *        a step on top of SERVO_RAUTO_MOVE_MS and IMU SETTLING TIME, ms.
  *        The BWT901CL in 6-AXIS came within 0.1° of its final value 7.4s
- *        after a servo step (2026-11-17): 8000ms covers that.
+ *        after a servo step (2026-11-17), and a slower tail of about 3.5s
+ *        showed on 2026-11-18: on that tail the default rule (3.0s within
+ *        0.10°) takes the angle 10.4s after the surface arrives.  10000ms
+ *        with the 3000ms and the window's 3000ms leave 16000ms, 5.6s past
+ *        that.
  */
-#define SERVO_RAUTO_CREEP_MS    8000u
+#define SERVO_RAUTO_CREEP_MS    10000u
 /** @brief The verify pass's measures: 1000us, 2000us and PULSE CENTER. */
 #define SERVO_RAUTO_VERIFY_N    3u
 /** @brief The largest margin, %. */
@@ -291,7 +305,7 @@ typedef enum {
     SERVO_RAUTO_PH_NONE = 0, SERVO_RAUTO_PH_READ, SERVO_RAUTO_PH_MOVE,
     SERVO_RAUTO_PH_SETTLE, SERVO_RAUTO_PH_SAFE, SERVO_RAUTO_PH_CONNECT,
     SERVO_RAUTO_PH_WRITE, SERVO_RAUTO_PH_LEAVE, SERVO_RAUTO_PH_ARM,
-    SERVO_RAUTO_PH_CHECK, SERVO_RAUTO_PH_VERIFY,
+    SERVO_RAUTO_PH_CHECK, SERVO_RAUTO_PH_VERIFY, SERVO_RAUTO_PH_APPROACH,
 } servo_rauto_phase_t;
 /** @brief How a run ended. */
 typedef enum { SERVO_RAUTO_PASS = 0, SERVO_RAUTO_FAIL, SERVO_RAUTO_ABORTED } servo_rauto_verdict_t;
@@ -342,6 +356,12 @@ typedef struct {
     servo_gap_t gap;                  /**< the angle source's gaps */
     servo_settle_t hold;              /**< the measure's readings, for the
                                            settle rule on the IMU */
+    servo_rauto_phase_t next_ph;      /**< APPROACH: the measure's phase
+                                           once the servo settled there */
+    uint16_t next_us;                 /**< APPROACH: the measure's pulse */
+    bool     held_ok;                 /**< the servo stands where the last
+                                           measure took a settled angle */
+    uint16_t held_us;                 /**< that pulse, us */
     uint8_t  vstep;                   /**< VERIFY: the measure under way,
                                            0 1000us, 1 2000us, 2 center */
     uint8_t  vn;                      /**< verify measures taken */

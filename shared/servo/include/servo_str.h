@@ -325,6 +325,7 @@ typedef enum {
     SERVO_STR_RA_R_VERIFY,
     SERVO_STR_RA_R_VERIFY_NONE,
     SERVO_STR_RA_R_VERIFY_NO_WRITE,
+    SERVO_STR_RA_PH_APPROACH,
     SERVO_STR_START_AUTO_RUNS,
     /* Slice 8: the limit run on a Hitec servo. */
     SERVO_STR_L_WHY_NOT_HITEC,

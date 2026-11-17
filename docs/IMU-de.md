@@ -342,10 +342,10 @@ Filters (`imu_filter_settle_ms()`): die Frames, die ein Abstand von 180°
 bis auf 0,05° braucht, zum 1,5-Fachen der gemessenen Frame-Periode,
 höchstens 300ms je Frame. Das sind 0ms bei IMU-Filter 1, 11 700ms bei
 IMU-Filter 10 mit 10Hz und 60 900ms bei IMU-Filter 50 mit 10Hz. An der
-IMU enthält die Wartezeit zusätzlich 8 000ms für das Kriechen des Sensors
-und die IMU-Einschwingzeit (unten). Der Bericht nennt die Wartezeit:
-`spätestens 24700ms nach dem Befehl` bei IMU-Filter 10 mit 10Hz und der
-vorgegebenen Einschwingzeit.
+IMU enthält die Wartezeit zusätzlich 10 000ms für das Kriechen des
+Sensors und die IMU-Einschwingzeit (unten). Der Bericht nennt die
+Wartezeit: `spätestens 27700ms nach dem Befehl` bei IMU-Filter 10 mit
+10Hz und der vorgegebenen Einschwingzeit.
 
 ## Die Einschwingregel
 
@@ -356,7 +356,11 @@ Zeitkonstante von etwa 1,7s; Prüfstand 2026-11-17, IMU-Filter 1, 100Hz,
 5,00V und 6,00V). Über 500ms bleibt dieses Kriechen innerhalb 0,5°, die
 Ruhezeit ist also 0,6s bis 2,3s nach dem Ankommen der Fläche erfüllt,
 0,8° bis 0,9° von dem Wert, auf dem der Messwert zur Ruhe kommt
-(RUDDR044).
+(RUDDR044). Ihr Ausläufer ist noch langsamer: unter einem Fenster von
+2,0s innerhalb 0,20° lagen Messungen 4,1s bis 6,2s nach dem Ankommen der
+Fläche 0,14° bis 0,26° von dem Wert, der 10s später stand, der Messwert
+mit 0,07°/s bis 0,1°/s in Bewegung (Prüfstand 2026-11-18), eine zweite
+Komponente mit einer Zeitkonstante von etwa 3,5s.
 
 RUDER AUTO an der IMU wartet deshalb zusätzlich, bis der Winkel über die
 letzte IMU-Einschwingzeit innerhalb der IMU-Genauigkeit geblieben ist
@@ -367,13 +371,13 @@ zurückreichen, höchstens die IMU-Genauigkeit überspannen.
 
 | Einstellung | Schlüssel | Bereich | Schritt | Vorgabe |
 | --- | --- | --- | --- | --- |
-| IMU-Einschwingzeit | `imu_settle_s` | 0,5 bis 10,0s | 0,5s | 2,0s |
-| IMU-Genauigkeit | `imu_prec` | 0,05 bis 1,00° | 0,05° | 0,20° |
+| IMU-Einschwingzeit | `imu_settle_s` | 0,5 bis 10,0s | 0,5s | 3,0s |
+| IMU-Genauigkeit | `imu_prec` | 0,05 bis 1,00° | 0,05° | 0,10° |
 
 Ein Messwert, der sich seinem Endwert als e x exp(-t / tau) nähert,
 bewegt sich über ein Fenster W um e x (exp(W / tau) - 1). Ein Fenster W
-innerhalb P lässt höchstens P / (exp(W / tau) - 1) übrig: 0,09° mit den
-Vorgaben bei tau 1,7s, 0,20° bei tau 2,9s. Beide Einstellungen gelten ab
+innerhalb P lässt höchstens P / (exp(W / tau) - 1) übrig: 0,03° mit den
+Vorgaben bei tau 1,7s, 0,08° bei tau 3,5s. Beide Einstellungen gelten ab
 dem Start des Laufs. Der Servotest und der ENDLAGENLAUF nutzen sie nicht:
 der Servotest misst die Zeit einer Bewegung mit der Ruhezeit und
 entscheidet nichts über den Winkel, und der ENDLAGENLAUF berichtet den

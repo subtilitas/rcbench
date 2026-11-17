@@ -591,6 +591,7 @@ servo_str_t servo_rauto_phase_str(servo_rauto_phase_t ph)
     case SERVO_RAUTO_PH_ARM:     return SERVO_STR_L_PH_ARM;
     case SERVO_RAUTO_PH_CHECK:   return SERVO_STR_L_PH_CHECK;
     case SERVO_RAUTO_PH_VERIFY:  return SERVO_STR_RA_PH_VERIFY;
+    case SERVO_RAUTO_PH_APPROACH: return SERVO_STR_RA_PH_APPROACH;
     default:                     return SERVO_STR_PHASE_NONE;
     }
 }

@@ -158,10 +158,27 @@ TEST_CASE(window_means_above_1000ma_end_the_run_at_400ms)
 
 TEST_CASE(not_still_within_3s_ends_not_still)
 {
+    /* An approach that never settles ends the run as a measure does,
+     * 3000ms after its command, with no angle taken. */
     rig_init(0u);
     g.jitter = true;
     CHECK(start());
+    CHECK(run_to(SERVO_RAUTO_PH_APPROACH, RAUTO_MS));
+    const uint32_t from = g.run.move_ms;
+    CHECK_EQ(g.run.cmd_us, RCENTER);
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NOT_STILL);
+    CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_APPROACH);
+    CHECK_EQ(g.run.end_ms - from, SERVO_RAUTO_MOVE_MS);
+    CHECK_EQ(g.run.step_n, 0u);
+    CHECK(ended_safe());
+
+    /* The same in the measure: the surface never still after its
+     * approach. */
+    rig_init(0u);
+    CHECK(start());
     CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
+    g.jitter = true;
     const uint32_t at = g.run.move_ms;
     CHECK(run_to(SERVO_RAUTO_PH_SETTLE, 1000u));
     CHECK_EQ(g.now - at, 500u);
@@ -211,10 +228,10 @@ TEST_CASE(not_still_within_3s_ends_not_still)
 TEST_CASE(not_still_waits_the_filter_settle_longer)
 {
     rig_init(0u);
-    g.jitter = true;
     g.settle_ms = 5000u;
     CHECK(start());
     CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
+    g.jitter = true;
     const uint32_t at = g.run.move_ms;
     g.settle_ms = 0u;
     while (g.now - at < SERVO_RAUTO_MOVE_MS + 5000u - 1u) {

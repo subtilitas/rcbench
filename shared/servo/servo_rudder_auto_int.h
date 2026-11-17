@@ -46,6 +46,20 @@ void rauto_command(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
                    uint32_t now_ms);
 
 /**
+ * @brief A measure next, reached from @p from_us: the approach first
+ *        (phase APPROACH) unless the servo stands settled at @p from_us
+ *        already, then @p ph at @p us (servo_rudder_auto.h, "The
+ *        approach").
+ * @param r       Run state.
+ * @param ph      MOVE, CHECK or VERIFY.
+ * @param us      The measure's pulse, us.
+ * @param from_us The pulse it comes from, us.
+ * @param now_ms  Time, ms.
+ */
+void rauto_measure_via(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
+                       uint16_t from_us, uint32_t now_ms);
+
+/**
  * @brief The verify pass's measure @p step next (servo_rudder_auto.h, "The
  *        verify pass").
  * @param r      Run state.

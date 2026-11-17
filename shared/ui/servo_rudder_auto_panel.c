@@ -850,11 +850,13 @@ const char *rauto_line(int i, char *buf, size_t n)
     switch (i) {
     case 0: {
         if (running) {
-            const bool mid = r->phase == SERVO_RAUTO_PH_VERIFY
-                             && r->vstep >= 2u;
+            /* An approach and the verify pass name the pulse commanded,
+             * every other phase the side. */
+            const bool cmd = r->phase == SERVO_RAUTO_PH_APPROACH
+                             || r->phase == SERVO_RAUTO_PH_VERIFY;
             snprintf(buf, n, TR(RA_STEP),
                      ui_servo_str(servo_rauto_phase_str(r->phase)),
-                     mid ? (unsigned)r->cfg.center_us
+                     cmd ? (unsigned)r->cmd_us
                          : r->side == 0u ? 1000u : 2000u,
                      (unsigned)r->writes[r->side],
                      (unsigned)SERVO_RAUTO_WRITES_MAX, r->sessions);

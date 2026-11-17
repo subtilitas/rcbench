@@ -8,8 +8,9 @@
  * offered; a center off the zero fails VERIFY on the center; a reading
  * that never settles in the verify pass ends NOT STILL at the measure's
  * wait; STOP in the verify pass ends the run ABORTED with every output
- * off; a run that writes nothing does not verify.  The CSV carries the
- * three as "V" rows.
+ * off; a run that writes nothing does not verify; every end is approached
+ * from PULSE CENTER and the verify pass's center from 2000us.  The CSV
+ * carries the three as "V" rows.
  *
  * The rig is servo_rauto_rig.h.
  *
@@ -166,6 +167,54 @@ TEST_CASE(a_run_that_writes_nothing_does_not_verify)
     CHECK(strstr(g.csv, ";V;") == NULL);
 }
 
+/*
+ * The approach: every end the run measures, in the main pass and in the
+ * verify pass, is commanded from PULSE CENTER after the servo held still
+ * there SERVO_RAUTO_STILL_MS; the verify pass's center is commanded from
+ * 2000us, where its measure before took its angle, with no approach.
+ */
+TEST_CASE(every_end_comes_from_the_center_and_the_center_from_2000us)
+{
+    rig_init(0u);
+    CHECK(start());
+    uint16_t last = g.cmd;
+    uint32_t since = g.now;
+    unsigned ends = 0u, approaches = 0u;
+    bool center_seen = false;
+    servo_rauto_phase_t was = g.run.phase;
+    while (servo_rauto_running(&g.run)) {
+        tick();
+        if (g.run.phase == SERVO_RAUTO_PH_APPROACH
+            && was != SERVO_RAUTO_PH_APPROACH) {
+            ++approaches;
+            /* An approach for an end goes to PULSE CENTER. */
+            CHECK_EQ(g.run.cmd_us, RCENTER);
+        }
+        was = g.run.phase;
+        if (g.cmd == last) {
+            continue;
+        }
+        if (g.cmd == 1000u || g.cmd == 2000u) {
+            ++ends;
+            CHECK_EQ(last, RCENTER);
+            /* Held at the center its still time and more. */
+            CHECK(g.now - since > SERVO_RAUTO_STILL_MS);
+        } else if (g.run.phase == SERVO_RAUTO_PH_VERIFY
+                   && g.run.vstep == 2u) {
+            center_seen = true;
+            CHECK_EQ(last, 2000u);
+        }
+        last = g.cmd;
+        since = g.now;
+    }
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK(center_seen);
+    /* The main pass's 5 measures and the verify pass's 2 ends. */
+    CHECK_EQ(ends, 5u + 2u);
+    CHECK_EQ(approaches, ends);
+    CHECK_EQ(g.run.step_n, 5u);
+}
+
 int main(void)
 {
     RUN(a_programmed_run_verifies_both_ends_and_the_center_and_passes);
@@ -174,5 +223,6 @@ int main(void)
     RUN(a_reading_that_never_settles_in_verify_ends_not_still);
     RUN(stop_in_verify_ends_the_run_aborted_with_every_output_off);
     RUN(a_run_that_writes_nothing_does_not_verify);
+    RUN(every_end_comes_from_the_center_and_the_center_from_2000us);
     return test_summary("servo_rauto_verify");
 }
