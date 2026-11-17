@@ -328,8 +328,8 @@ TEST_CASE(the_overview_shows_no_count_and_no_pressed_face)
 /*
  * The overview draws the protocol under each bound pin in full ink, apart
  * from the pad numbers of free pins.  With a protocol picked, the pins of
- * the others are dimmed as before, and so is the overview while the
- * binding is not confirmed.
+ * the others keep their holder's name in full ink; the overview is dimmed
+ * while the binding is not confirmed.
  */
 TEST_CASE(the_overview_draws_each_bound_pins_protocol_in_full_ink)
 {
@@ -345,8 +345,8 @@ TEST_CASE(the_overview_draws_each_bound_pins_protocol_in_full_ink)
 
     choose_named("SERVO PWM");
     scr()->render(&c, 0);
-    CHECK(!label_inked(&c, 0, UI_TEXT));
-    CHECK(label_inked(&c, 0, UI_TEXT_DIM));
+    CHECK(label_inked(&c, 0, UI_TEXT));
+    CHECK(!label_inked(&c, 0, UI_TEXT_DIM));
 
     choose_named("OFF");
     bind_reading_t none;

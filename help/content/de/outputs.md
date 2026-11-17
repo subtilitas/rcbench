@@ -22,8 +22,22 @@ Pads sind weniger als 40px breit und damit kleiner als eine Fingerkuppe. Jedes e
 |---|---|---|
 | elfenbein- oder ebenholzfarben | frei | ordnet ihn dem gewählten Protokoll zu |
 | Akzentfarbe | dem gewählten Protokoll zugeordnet | gibt ihn frei |
-| grau | anderes Protokoll oder Programmierport belegt den Pin, Protokoll voll oder Zuordnung unbestätigt | keine Änderung |
+| grau, die Nummer in 16 x 28 über einem Tag | belegt: der Tag nennt, was den Pin hält, in höchstens 5 Zellen zu 8 x 16 (Tabelle unten) | keine Änderung |
+| grau, nur die Nummer | der Pin teilt einen PWM-Slice oder ein Compare-Register mit einem zugeordneten Pin oder dem Pin eines Ports, das Protokoll ist voll, oder die Zuordnung ist unbestätigt | keine Änderung; ein Tipp auf einen geteilten Slice oder ein geteiltes Register nennt den Grund unter der Anzahl |
 | keine Taste, rotes Kreuz auf dem Pad | reserviert: GPIO 3 für Heartbeat, GPIO 8 bis GPIO 12 für CAN (Controller Area Network) | keine |
+
+| Tag | Gehalten von |
+|---|---|
+| `ESC` | MOTOR PWM, DSHOT300, DSHOT600, DSHOT300 BIDIR oder DSHOT600 BIDIR |
+| `SERVO` | SERVO PWM |
+| `PPM` | PPM |
+| `PORT` | dem Programmierport, bei einem Prüfstand mit 1 Port |
+| `PORT1` bis `PORT4` | diesem Programmierport, bei einem Prüfstand mit 2 bis 4 Ports |
+| `BUS` | SENSORBUS |
+| `PD` | PD MINI |
+| `PHASE` | PHASENABGRIFF |
+
+Der Tag nennt die Rolle; BELEGT nennt das genaue Protokoll. Eine Taste mit Tag behält ihn bei AUS, in einem PROG-PORT-Eintrag und bei unbestätigter Zuordnung. Das Dial (M5Stack-Drehknopf) nennt eine Taste mit Tag samt Tag, `GPIO 7 ESC`.
 
 Ein Tipp schreibt die Zuordnung sofort. [LETZTER SCHREIBVORGANG](#letzter-schreibvorgang) zeigt das Ergebnis.
 
@@ -101,11 +115,11 @@ PINS links listet die Pins des gewählten Protokolls nach Kanalnummer, ergänzt 
 
 ![GPIO 13 vom Programmierport gehalten](view:outputs-prog)
 
-Der Programmierport belegt standardmäßig GPIO 13 (Pad 17). Ist der Pin keinem Protokoll zugeordnet, erscheint er grau und zuerst unter `PROG-PORT` in BELEGT. Weitere vom IOmcu gemeldete Ports belegen ihre Pins ebenso und stehen unter derselben Überschrift.
+Der Programmierport belegt standardmäßig GPIO 13 (Pad 17). Ist der Pin keinem Protokoll zugeordnet, erscheint er grau mit dem Tag `PORT` und zuerst unter `PROG-PORT` in BELEGT. Weitere vom IOmcu gemeldete Ports belegen ihre Pins ebenso und stehen unter derselben Überschrift; bei 2 bis 4 Ports lauten die Tags `PORT1` bis `PORT4`.
 
 ![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](view:outputs-iface)
 
-Auch durch [SETUP > SENSORS](setup-sensors.md) oder [SUPPLY > PD MINI](supply.md#zeilen-des-pd-mini) belegte Pins sind grau. BELEGT listet sie nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Passt eine Tabelle nicht vollständig, nennt `+N` die Anzahl ausgelassener Zeilen.
+Auch durch [SETUP > SENSORS](setup-sensors.md) oder [SUPPLY > PD MINI](supply.md#zeilen-des-pd-mini) belegte Pins sind grau, mit dem Tag `BUS`, `PD` oder `PHASE`. BELEGT listet sie nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Passt eine Tabelle nicht vollständig, nennt `+N` die Anzahl ausgelassener Zeilen.
 
 ![AUS gewählt: jeder gebundene Pin unter BELEGT](view:outputs-off)
 
@@ -145,7 +159,7 @@ Der IOmcu speichert Pin und Funktion jedes Ports zusammen mit den Ausgangszuordn
 
 Das Öffnen eines Port-Eintrags schreibt nichts und zeigt keinen LETZTEN SCHREIBVORGANG. Die beiden Tester-Einstellungen bleiben im Panel gespeichert und werden bei ruhendem Prüfstand an den IOmcu gesendet. Bei mehreren Ports heißen die Einträge `PROG-PORT 1` bis `PROG-PORT 4`.
 
-Pins anderer Ports, Protokolle und Schnittstellen bleiben grau. Mit KEINE kann ein Port jeden freien Pin verwenden. Bis zum Auslesen der IOmcu-Ports sind alle Pin-Tasten grau.
+Pins anderer Ports, Protokolle und Schnittstellen bleiben grau, mit ihrem Tag. Mit KEINE kann ein Port jeden freien Pin verwenden. Bis zum Auslesen der IOmcu-Ports sind alle Pin-Tasten grau.
 
 ![PROG-PORT 3, ein Port ohne Pin](view:outputs-port3)
 
@@ -158,7 +172,7 @@ Ohne Platinenzeichnung oder Formbeschreibung zeigt OUTPUTS ein Raster aus 4 Spal
 | Zelle | Bedeutung | Ein Tipp |
 |---|---|---|
 | abgehakt, `PAD 6` | im gewählten Protokoll zugeordnet; die auf der Platine gedruckte Pad-Nummer | gibt ihn frei |
-| ausgegraut, der Name des anderen Protokolls | von einem anderen Protokoll gehalten | tut nichts |
+| der Name des anderen Protokolls in voller Schrift, Kästchen grau gefüllt | von einem anderen Protokoll gehalten; gedimmt bei unbestätigter Zuordnung | tut nichts |
 | rot, durchgestrichen | reserviert: GPIO 3 trägt den Sicherheits-Heartbeat, GPIO 8 bis GPIO 12 den CAN-Controller (Controller Area Network) | tut nichts |
 | `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GPIO 13 | tut nichts |
 | rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder der [Abschnitt PD MINI der SUPPLY-Optionen](supply.md#zeilen-des-pd-mini) hält: Sensor-SDA und -SCL, solange INA228 oder AS5600 EIN ist oder ein INA3221 unter [SETUP > SENSORS](setup-sensors.md) bestückt ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | tut nichts |

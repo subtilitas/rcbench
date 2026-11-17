@@ -930,8 +930,10 @@ positions, the timeouts across the 2^32ms wrap. Whether one frame per exchange e
 LINK` a tester's bench shows on 0.14.0 with an INA3221 enabled is not known; why a frame is
 lost there is not known. Reserved pins are shown and refused. PICK A PIN has the same
 protocol list, the count `N OF 8 SLOTS IN USE` with the refusal reason, a PAD column, and
-shows the programming port's pin (GPIO 13 by default) held under `PROG PORT`
-(`test_picker_screen`, `test_picker_screen_hold` and `test_picker_screen_table`, 42 cases).
+shows the programming port's pin (GPIO 13 by default) held under `PROG PORT`. A held key
+names its holder in a tag of at most 5 cells under its number: `ESC`, `SERVO`, `PPM`, `PORT`
+or `PORT1` to `PORT4`, `BUS`, `PD`, `TAP` (`test_picker_screen`, `test_picker_screen_hold`,
+`test_picker_screen_table` and `test_picker_tags`, 56 cases).
 
 ### Output binding in the IOmcu's flash
 
@@ -1638,7 +1640,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 588 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 589 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1696,7 +1698,7 @@ The host suite is 588 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
-`test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
+`test_picker_tags`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
 `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,

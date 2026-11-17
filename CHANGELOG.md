@@ -25,6 +25,14 @@ history is in git.
   the section's line on the alert band, for example `IOmcu runs the build
   included on this panel.`, as the grey holds of the C6 radio and the
   devices do. It gave no answer before.
+- OUTPUTS board view: a grey key whose pin is held draws its number in
+  16 x 28 over a tag in 8 x 16 that names the holder: `ESC` (MOTOR PWM and
+  the four DShot entries), `SERVO`, `PPM`, `PORT` or `PORT1` to `PORT4`,
+  `BUS`, `PD` and `TAP` (German `PHASE`), at most 5 cells. A grey key
+  without a tag is one the selected protocol cannot add. The Dial names a
+  tagged key with its tag, `GPIO 7 ESC`. The grid view draws the name of a
+  pin another protocol holds in full ink in every protocol's view, not only
+  on OFF.
 
 ## 0.23.14 - 2026-11-15
 

@@ -92,13 +92,12 @@ picker_pin_t picker_port_pin(const outbind_t *b, uint8_t index, uint8_t port,
     if (v->pin[port] == gpio) {
         return locked ? PICKER_PIN_LOCKED : PICKER_PIN_TICKED;
     }
-    char name[24];
-    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
-        if (n != port && holds(v, n) && v->pin[n] == gpio) {
-            outputs_port_name(n, name, sizeof(name));
-            hold(holder, cap, name);
-            return PICKER_PIN_HELD;
-        }
+    const int other = picker_port_other(gpio, port);
+    if (other >= 0) {
+        char name[24];
+        outputs_port_name((uint8_t)other, name, sizeof(name));
+        hold(holder, cap, name);
+        return PICKER_PIN_HELD;
     }
     const uint8_t g = outbind_group_of(b, index);
     if (g != 0u) {
@@ -129,6 +128,17 @@ picker_pin_t picker_port_pin(const outbind_t *b, uint8_t index, uint8_t port,
     default:
         return PICKER_PIN_FREE;
     }
+}
+
+int picker_port_other(uint8_t gpio, uint8_t port)
+{
+    const port_view_t *v = port_view_get();
+    for (uint8_t n = 0; n < LINK_PG_PORTS_MAX; ++n) {
+        if (n != port && holds(v, n) && v->pin[n] == gpio) {
+            return (int)n;
+        }
+    }
+    return -1;
 }
 
 bool picker_port_tap(const outbind_t *b, uint8_t index, uint8_t port,
