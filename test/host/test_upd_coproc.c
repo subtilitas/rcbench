@@ -1,5 +1,6 @@
 /*
- * SETUP > UPDATES' IOmcu section: the state coproc_update_section()
+ * SETUP > UPDATES > SINGLE UPDATES' IOmcu section, each case opening the
+ * page from OPTIONS first: the state coproc_update_section()
  * names, in its order; the line each state draws, in both languages and in
  * two lines of the left column; the hold at 1.99s and 2.00s, slid off,
  * cancelled and left; a link lost under it; a second hold while one runs;
@@ -165,12 +166,14 @@ static void feed_ready(void)
     g_feed.check = CU_CHECK_DIFFERENT;
 }
 
-/* UPDATES open on a READY section, as SETUP's tile opens it. */
+/* SINGLE UPDATES open on a READY section: SETUP's tile opens UPDATES,
+ * OPTIONS' row Single updates the page. */
 static void on_updates(void)
 {
     drive_fresh();
     feed_ready();
     ui_router_goto(SCREEN_UPDATES);
+    upd_open_single(upd());
     (void)frame();
 }
 
@@ -361,6 +364,7 @@ TEST_CASE(an_offer_under_the_fault_screen_stands_for_updates)
     ui_router_goto(SCREEN_OVERVIEW);    /* acknowledged */
     upd()->reset();
     ui_router_goto(SCREEN_UPDATES);
+    upd_open_single(upd());
     h = frame();
     CHECK(!h.decline);
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_NO_LINK);
@@ -392,6 +396,7 @@ TEST_CASE(a_declined_offer_starts_from_updates_and_returns_there)
 
     upd()->reset();
     ui_router_goto(SCREEN_UPDATES);
+    upd_open_single(upd());
     (void)frame();
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_READY);
     hold_for(2.00f);
@@ -614,6 +619,7 @@ TEST_CASE(a_second_hold_while_one_runs_starts_nothing)
     CHECK_EQ(h.starts, 1u);
     /* Not yet taken: an alert's jump back to UPDATES finds the hold grey. */
     ui_router_goto(SCREEN_UPDATES);
+    upd_open_single(upd());
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_BUSY);
     hold_for(2.50f);
     upd_ev(TOUCH_EVENT_UP, UP_BTN_X, UP_CU_Y);
@@ -630,6 +636,7 @@ TEST_CASE(a_second_hold_while_one_runs_starts_nothing)
     CHECK_EQ(ui_router_current(), SCREEN_COPROC_UPDATE);
     /* Running, an alert's jump to UPDATES: grey, and undone next frame. */
     ui_router_goto(SCREEN_UPDATES);
+    upd_open_single(upd());
     CHECK_EQ(upd_screen_coproc()->sec, CU_SEC_BUSY);
     hold_for(2.50f);
     CHECK(!upd_screen_take_coproc());
@@ -725,6 +732,7 @@ TEST_CASE(only_a_ready_section_takes_the_hold)
 {
     for (int sec = CU_SEC_NO_IMAGE; sec <= CU_SEC_READY; ++sec) {
         upd_fresh();
+        upd_open_single(upd());
         const upd_cu_view_t v = cu_view((cu_sec_t)sec);
         upd_screen_set_coproc(&v);
         scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
@@ -742,6 +750,7 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     const upd_cu_view_t v = cu_view(CU_SEC_READY);
     /* Slid off the button. */
     upd_fresh();
+    upd_open_single(upd());
     upd_screen_set_coproc(&v);
     scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
     scr_ticks(upd(), HOLD_TICKS / 2);
@@ -750,6 +759,7 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     CHECK(!upd_screen_take_coproc());
     /* Cancelled by the router. */
     upd_fresh();
+    upd_open_single(upd());
     upd_screen_set_coproc(&v);
     scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
     scr_ticks(upd(), HOLD_TICKS / 2);
@@ -758,6 +768,7 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     CHECK(!upd_screen_take_coproc());
     /* The screen left. */
     upd_fresh();
+    upd_open_single(upd());
     upd_screen_set_coproc(&v);
     scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
     scr_ticks(upd(), HOLD_TICKS / 2);
@@ -765,14 +776,17 @@ TEST_CASE(the_section_hold_slides_off_cancels_and_leaves_unfired)
     upd()->enter();
     scr_ticks(upd(), HOLD_TICKS);
     CHECK(!upd_screen_take_coproc());
-    /* A second finger elsewhere does not end the first one's hold. */
+    /* A second finger on BACK neither ends the first one's hold nor closes
+     * the page. */
     upd_fresh();
+    upd_open_single(upd());
     upd_screen_set_coproc(&v);
     scr_ev(upd(), TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y, 0);
     scr_ev(upd(), TOUCH_EVENT_DOWN, 2, UP_SET_X, UP_SET_Y, 0);
     scr_ev(upd(), TOUCH_EVENT_UP, 2, UP_SET_X, UP_SET_Y, 0);
     scr_ticks(upd(), HOLD_TICKS);
     CHECK(upd_screen_take_coproc());
+    CHECK(upd()->covered());
 }
 
 TEST_CASE(the_wifi_hint_names_one_tile)
@@ -801,11 +815,17 @@ TEST_CASE(every_section_state_renders_inside_its_canvas)
                 v.known = (sec % 2 == 0);
                 v.running = (cu_version_t){ 65535, 65535, 65535 };
                 upd_screen_set_coproc(&v);
-                guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
-                upd_screen_invalidate();
-                upd()->render(&c, 0);
-                CHECK_EQ(guard_canvas_touched(&g), 0u);
-                CHECK_EQ(guard_canvas_unpainted(&g), 0u);
+                /* UPDATES, then SINGLE UPDATES over it. */
+                for (int page = 0; page < 2; ++page) {
+                    if (page == 1) {
+                        upd_open_single(upd());
+                    }
+                    guard_canvas_init(&g, &c, px, UI_PANEL_W, UI_BODY_H);
+                    upd_screen_invalidate();
+                    upd()->render(&c, 0);
+                    CHECK_EQ(guard_canvas_touched(&g), 0u);
+                    CHECK_EQ(guard_canvas_unpainted(&g), 0u);
+                }
             }
         }
     }

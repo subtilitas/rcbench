@@ -38,6 +38,7 @@
 #include "rcbench_version.h"
 #include "settings.h"
 #include "upd_screen.h"
+#include "upd_wizard.h"
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "wa_fetch.h"
@@ -385,6 +386,11 @@ static void cu_alert_failed(void)
     char line[ALERT_MAX];
     snprintf(line, sizeof(line), TR(ALERT_CU_FAILED), why);
     control_alert(line);
+    /* UPDATES' IOmcu step shows it on its card until a success or the
+     * next start. */
+    snap_lock();
+    snprintf(s_snap.cu.fail, sizeof(s_snap.cu.fail), "%s", why);
+    snap_unlock();
 }
 
 /** @brief The check has ended: what it found decides the offer. */
@@ -561,6 +567,9 @@ bool cu_service(bool *link_up, bench_state_t *bench,
                  (unsigned)s_cu_img.board, (unsigned long)s_cu_img.len);
         link_uph_update(&s_cu, s_cu_img.image, s_cu_img.len, now_ms());
         cu_enter(CU_UPDATING);
+        snap_lock();
+        s_snap.cu.fail[0] = '\0';     /* a new attempt: no failure yet */
+        snap_unlock();
         s_cu_took_down = false;
         s_cu_missed = false;
         /* The START taken and the update running in one snapshot: a render
@@ -714,6 +723,9 @@ static void fw_install_run(void)
             st = fw_install_step(&in, quiet);
             update_frame(UPDATE_WRITING, info.version_text, in.done, bytes);
         } while (st == FW_INSTALL_RUNNING);
+        /* Only an image written whole and checked notes the update run:
+         * a power cut before this line leaves no run. */
+        (void)fw_ota_run_installed(st, info.version_text);
         if (st == FW_INSTALL_DONE) {
             update_frame(UPDATE_RESTARTING, info.version_text, bytes, bytes);
             fw_ota_note_restart(info.version_text);
@@ -1020,6 +1032,10 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
     const bool stop = (stops_now != seen_stops);
     seen_stops = stops_now;
 
+    /* UPDATES' steps wait for a target that comes up by itself while an
+     * update run stands after a restart. */
+    upd_screen_set_run(fw_ota_run_active());
+
     static upd_view_t v;     /* off the stack: the loop's is the display's */
     memset(&v, 0, sizeof(v));
     snprintf(v.running, sizeof(v.running), "%s", RCBENCH_VERSION_STRING);
@@ -1175,6 +1191,14 @@ void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs)
         .radio_up     = s_wifi_ok && !wifi_access_down(),
         .installing   = atomic_load(&s_fw_installing),
     };
+    /* The last failure on UPDATES' IOmcu step, as the band said it. */
+    if (cs->fail[0] != '\0') {
+        char line[ALERT_MAX];
+        snprintf(line, sizeof(line), TR(ALERT_CU_FAILED), cs->fail);
+        upd_screen_set_result(UPD_WIZ_IOMCU, line);
+    } else {
+        upd_screen_set_result(UPD_WIZ_IOMCU, NULL);
+    }
     cu_hand_t hand;
     coproc_update_drive(&driver, &feed, unsafe, &hand);
     if (hand.starts > 0u) {

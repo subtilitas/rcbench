@@ -255,7 +255,10 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
  * (upd_screen_take_coproc()) on a section still READY opens the progress
  * and hands over a START as the question's does.  That progress returns to
  * UPDATES when the update ends or its START was spent; the question's
- * returns to the menu.
+ * returns to the menu.  SKIP THIS STEP on UPDATES' IOmcu step
+ * (upd_screen_take_skip_coproc()) is handed over as a decline while an
+ * offer stands, and the question and its band line do not come for that
+ * offer.
  *
  * @param d      What the driver keeps between frames.
  * @param f      The update as the application knows it this frame.

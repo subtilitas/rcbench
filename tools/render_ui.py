@@ -71,6 +71,8 @@ SOURCES = [
     # The Bluetooth IMU: its screen handed a view, SCAN tapped; SENSORS on
     # the IMU entry.
     "test/host/render_imu.c",
+    # UPDATES' steps: the views handed in, SKIP tapped.
+    "test/host/render_upd_wiz.c",
     "shared/bench/hitec_link.c",
     "shared/outputs/hitec_port.c",
     # The Hitec files' views run their requests on a folder in memory.
@@ -805,10 +807,11 @@ SCREENS = {
     "panel-update-done": ("panel-update-done.png", "panel-update", "dark"),
     "panel-update-failed": ("panel-update-failed.png", "panel-update",
                             "dark"),
-    # SETUP > UPDATES: nothing asked yet; a check asking GitHub; a newer
-    # release found, with the download's hold; up to date; no answer in
-    # time.  The reminder a start-up check opens on OVERVIEW.  The download
-    # under way, and stopped by a SHA-256 that differs.
+    # SETUP > UPDATES: nothing asked yet, the last card; a check asking
+    # GitHub, PANEL's step current; a newer release found, PANEL's step
+    # with the download's hold; up to date; no answer in time.  The
+    # reminder a start-up check opens on OVERVIEW.  The download under
+    # way, and stopped by a SHA-256 that differs.
     "updates": ("updates.png", "updates", "dark"),
     "updates-checking": ("updates-checking.png", "updates", "dark"),
     "updates-newer": ("updates-newer.png", "updates", "dark"),
@@ -816,21 +819,37 @@ SCREENS = {
     "updates-failed": ("updates-failed.png", "updates", "dark"),
     # RELEASES on TESTING, and the testing release it found.
     "updates-testing": ("updates-testing.png", "updates", "dark"),
-    # Its IOmcu section with an IOmcu on another build: the
+    # UPDATES' steps: the IOmcu's current after a panel install, held while
+    # ARMED, the C6's, the Dial's, the Dial asking for its press, the Dial
+    # waiting in a run after a restart, and the last card with the Dial
+    # skipped and the power node not connected.
+    "updates-step-iomcu": ("updates-step-iomcu.png", "updates", "dark"),
+    "updates-held": ("updates-held.png", "updates", "dark"),
+    "updates-step-c6": ("updates-step-c6.png", "updates", "dark"),
+    "updates-step-dial": ("updates-step-dial.png", "updates", "dark"),
+    "updates-step-dial-ask": ("updates-step-dial-ask.png", "updates",
+                              "dark"),
+    "updates-step-waiting": ("updates-step-waiting.png", "updates", "dark"),
+    "updates-done": ("updates-done.png", "updates", "dark"),
+    # SINGLE UPDATES' IOmcu section with an IOmcu on another build: the
     # hold that starts the IOmcu's update.
     "updates-coproc": ("updates-coproc.png", "updates", "dark"),
-    # Its C6 RADIO row with the C6 as shipped: no version reported, the
-    # hold that updates it to the carried image.
+    # SINGLE UPDATES' C6 RADIO row with the C6 as shipped: no version
+    # reported, the hold that updates it to the carried image.
     "updates-c6": ("updates-c6.png", "updates", "dark"),
-    # The WIRELESS DEVICES entry while the Dial asks for its press.
+    # SINGLE UPDATES' WIRELESS DEVICES entry while the Dial asks for its
+    # press.
     "updates-dial": ("updates-dial.png", "updates", "dark"),
     # The wireless devices' page: the Dial offered a newer version, the
     # power node its reinstall, the balance node not connected.
     "updates-devices": ("updates-devices.png", "updates", "dark"),
     # The page while the power node asks for its BOOT key.
     "updates-node": ("updates-node.png", "updates", "dark"),
-    # Its SETTINGS list: the reminder at start and RELEASES.
+    # Its OPTIONS list: the reminder at start, RELEASES and Single updates.
     "updates-settings": ("updates-settings.png", "updates", "dark"),
+    # SINGLE UPDATES, opened from OPTIONS: an IOmcu on another build, the
+    # C6's reinstall offered, the Dial offered a newer version.
+    "updates-single": ("updates-single.png", "updates", "dark"),
     "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
     "panel-download": ("panel-download.png", "panel-update", "dark"),
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
@@ -1119,6 +1138,23 @@ FIT_ONLY = {
     "updates-node-progress": (None, "updates", "dark"),
     "updates-c6-noimage":  (None, "updates", "dark"),
     "updates-c6-failed":   (None, "updates", "dark"),
+    # UPDATES' steps: every tag and every line of the card.
+    "updates-wiz-node":       (None, "updates", "dark"),
+    "updates-wiz-node-ask":   (None, "updates", "dark"),
+    "updates-wiz-dev-send":   (None, "updates", "dark"),
+    "updates-wiz-wait-iomcu": (None, "updates", "dark"),
+    "updates-wiz-wait-node":  (None, "updates", "dark"),
+    "updates-wiz-failed":     (None, "updates", "dark"),
+    "updates-wiz-older":      (None, "updates", "dark"),
+    "updates-wiz-cu-busy":    (None, "updates", "dark"),
+    "updates-wiz-pending":    (None, "updates", "dark"),
+    "updates-wiz-c6-running": (None, "updates", "dark"),
+    "updates-wiz-dl-held":    (None, "updates", "dark"),
+    "updates-wiz-absent-a":   (None, "updates", "dark"),
+    "updates-wiz-absent-b":   (None, "updates", "dark"),
+    "updates-wiz-absent-c":   (None, "updates", "dark"),
+    "updates-wiz-absent-d":   (None, "updates", "dark"),
+    "updates-wiz-capped":     (None, "updates", "dark"),
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),
@@ -1177,7 +1213,8 @@ FIT_ONLY = {
     "help-servo-hitec-other":    (None, "servo", "dark"),
     # WI-FI's guide with the radio off at pages 2 and 3, with the access
     # point up, joined, and with Browser writes HOLD at both pages;
-    # UPDATES' at page 2, with a newer release found, and over OPTIONS.
+    # UPDATES' at page 2, with a newer release found, and over OPTIONS;
+    # SINGLE UPDATES' at pages 1 and 2.
     "help-wifi-2":        (None, "wifi", "dark"),
     "help-wifi-3":        (None, "wifi", "dark"),
     "help-wifi-ap":       (None, "wifi", "dark"),
@@ -1190,6 +1227,13 @@ FIT_ONLY = {
     "help-updates-settings-2": (None, "updates", "dark"),
     "help-updates-devices": (None, "updates", "dark"),
     "help-updates-node": (None, "updates", "dark"),
+    "help-updates-single":   (None, "updates", "dark"),
+    "help-updates-single-2": (None, "updates", "dark"),
+    # The card's page over the last card with a step skipped, without a
+    # home network, and while the Dial asks for its press.
+    "help-updates-done-2": (None, "updates", "dark"),
+    "help-updates-nonet-2": (None, "updates", "dark"),
+    "help-updates-ask-2": (None, "updates", "dark"),
     # TEST's guide at its READY page, and TEST's list at LENGTH AND TIMING
     # and at its end.
     "help-servo-test-2": (None, "servo", "dark"),

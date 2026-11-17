@@ -2045,8 +2045,8 @@ UI_TEXT(FOOT_SETTINGS_ON, 94,
 /* The alert band on a tap on UPDATES' OPTIONS while a check or a
  * download runs, or a finger holds the download. */
 UI_TEXT(FOOT_SETTINGS_BUSY, 94,
-    "OPTIONS open with no check or download running.",
-    "OPTIONEN nur ohne laufende Suche oder Download.")
+    "OPTIONS open with no check, download or update running.",
+    "OPTIONEN nur ohne laufende Suche, Download oder Update.")
 /* The settings list's screen guide (ui_setlist.h). */
 UI_TEXT(HG_SL_TITLE_ROWS, 0,
     "OPTIONS: ROWS",
@@ -6899,14 +6899,47 @@ UI_TEXT(HG_WF_WRITES, 0,
     "The browser may change the card until the radio goes off. A tap on OFF ends it.",
     "Der Browser darf die Karte ändern, bis das WLAN ausgeht. Tippen auf AUS beendet es.")
 UI_TEXT(HG_UPD_TITLE_CHECK, 0,
-    "UPDATES: CHECK, IOMCU, DEVICES",
-    "UPDATES: SUCHE, IOMCU, GERÄTE")
+    "UPDATES: STEPS",
+    "UPDATES: SCHRITTE")
 UI_TEXT(HG_UPD_TITLE_CARD, 0,
-    "UPDATES: PANEL AND C6",
-    "UPDATES: PANEL UND C6")
+    "UPDATES: CURRENT STEP",
+    "UPDATES: AKTUELLER SCHRITT")
+UI_TEXT(HG_UPD_STEPS_NAME, 0,
+    "STEPS",
+    "SCHRITTE")
+UI_TEXT(HG_UPD_STEPS, 0,
+    "Six steps in order. NEXT is the step on the card, CURRENT is done, LATER follows it. Rows take no press.",
+    "Sechs Schritte der Reihe nach. ALS NÄCHSTES steht auf der Karte, AKTUELL ist erledigt, SPÄTER folgt.")
+UI_TEXT(HG_UPD_ACT, 0,
+    "A 2s hold starts the step's update. Grey while something blocks it; a press says why.",
+    "2s Halten startet das Update. Grau, wenn gesperrt; Drücken nennt den Grund.")
+UI_TEXT(HG_UPD_NET, 0,
+    "Opens WI-FI to save the home network a check needs.",
+    "Öffnet WI-FI zum Speichern des Heimnetzes, das die Suche braucht.")
+UI_TEXT(HG_UPD_SKIP, 0,
+    "Passes this step until the panel restarts. The next step becomes current.",
+    "Übergeht diesen Schritt bis zum Neustart des Panels. Der nächste Schritt folgt.")
+UI_TEXT(HG_UPD_SHOW_SKIPPED, 0,
+    "Brings the skipped steps back into the order.",
+    "Holt die übersprungenen Schritte zurück in die Reihe.")
+UI_TEXT(HG_UPD_TITLE_SINGLE, 0,
+    "SINGLE UPDATES: IOMCU, DEVICES",
+    "EINZELNE UPDATES: IOMCU, GERÄTE")
+UI_TEXT(HG_UPD_TITLE_SINGLE_2, 0,
+    "SINGLE UPDATES: C6",
+    "EINZELNE UPDATES: C6")
+UI_TEXT(HG_UPD_SINGLE_NAME, 0,
+    "SINGLE UPDATES",
+    "EINZELNE UPDATES")
+UI_TEXT(HG_UPD_SINGLE_CARD, 0,
+    "One update or reinstall at a time, beside the steps on UPDATES. Each starts with a 2s hold.",
+    "Je ein Update oder eine Neuinstallation, neben den Schritten auf UPDATES. Start mit 2s Halten.")
+UI_TEXT(HG_UPD_SINGLE_BACK, 0,
+    "Back to UPDATES, as the home tag.",
+    "Zurück zu UPDATES, wie das Home-Tag.")
 UI_TEXT(HG_UPD_CARD_NAME, 0,
-    "PANEL",
-    "PANEL")
+    "CURRENT STEP",
+    "AKTUELLER SCHRITT")
 UI_TEXT(HG_UPD_CHECK, 0,
     "Asks GitHub once over the kept home network. CANCEL on the same key stops it.",
     "Fragt GitHub einmal über das gespeicherte Heimnetz. ABBRECHEN auf derselben Taste stoppt.")
@@ -6932,23 +6965,20 @@ UI_TEXT(HG_UPD_DEVS_CANCEL, 0,
     "Ends the update before its last byte; the device keeps its firmware. Grey while it installs.",
     "Beendet das Update vor dem letzten Byte; das Gerät behält seine Firmware. Grau beim Installieren.")
 UI_TEXT(HG_UPD_DEVS_BACK, 0,
-    "Back to UPDATES, as the home tag.",
-    "Zurück zu UPDATES, wie das Home-Tag.")
+    "Back to SINGLE UPDATES, as the home tag.",
+    "Zurück zu EINZELNE UPDATES, wie das Home-Tag.")
 UI_TEXT(HG_UPD_TITLE_DEVS, 0,
     "UPDATES: WIRELESS DEVICES",
     "UPDATES: FUNKGERÄTE")
 UI_TEXT(HG_UPD_CARD, 0,
-    "The running version, the home network and the last check's result. Without a network a button opens WI-FI.",
-    "Laufende Version, Heimnetz und Ergebnis der letzten Suche. Ohne Netz öffnet eine Taste WI-FI.")
+    "The current step: versions, what it does, why it waits. The last card: all firmware is current.",
+    "Der aktuelle Schritt: Versionen, was er tut, worauf er wartet. Zuletzt: alle Firmware aktuell.")
 UI_TEXT(HG_UPD_C6, 0,
     "Sends the included build to the C6 radio, which carries Wi-Fi. The panel restarts then.",
     "Sendet den enthaltenen Build an den C6-Funk, der das WLAN trägt. Danach startet das Panel neu.")
-UI_TEXT(HG_UPD_DL, 0,
-    "Downloads, checks and installs the newer release the check found.",
-    "Lädt, prüft und installiert das neuere Release, das die Suche fand.")
 UI_TEXT(HG_UPD_OPTIONS, 0,
-    "Reminder at start and Releases, STABLE or TESTING. Grey while a check or a download runs.",
-    "Erinnerung beim Start und Releases, STABLE oder TESTING. Grau, solange Suche oder Download läuft.")
+    "Reminder at start, Releases and Single updates. Grey while a check, a download or an update runs.",
+    "Erinnerung, Releases und Einzelne Updates. Grau, solange Suche, Download oder Update läuft.")
 UI_TEXT(KP_DOUBT, 116,
     "The settings currently in the servo are unknown.",
     "Die aktuellen Werte im Servo sind unbekannt.")
@@ -8735,7 +8765,21 @@ UI_TEXT(UPD_BAL_CONNECTING, 0,
 UI_TEXT(UPD_BAL_PROGRESS, 0,
     "BALANCE NODE UPDATE %u%%",
     "AUSWUCHTKNOTEN-UPDATE %u%%")
-/* UPDATES' WIRELESS DEVICES entry and the page it opens (upd_dev.c). */
+/* UPDATES' OPTIONS row Single updates and the page it opens
+ * (upd_settings.c, upd_single.c): the heading in the card's place. */
+UI_TEXT(UPD_SINGLE_ROW, 0,
+    "Single updates",
+    "Einzelne Updates")
+UI_TEXT(UPD_SINGLE_ROW_HELP, 0,
+    "IOmcu, C6 radio and wireless devices, each on its own",
+    "IOmcu, C6-Funk und Funkgeräte, jedes für sich")
+UI_TEXT(UPD_SINGLE_HEAD, 0,
+    "Single updates and reinstalls. The steps on UPDATES are the normal way.",
+    "Einzelne Updates und Neuinstallationen. Der normale Weg sind die Schritte auf UPDATES.")
+UI_TEXT(UPD_SINGLE_NOTE, 0,
+    "Each hold updates one part on its own. A reinstall writes the included firmware again to a C6 or a device that already runs it.",
+    "Jedes Halten aktualisiert ein Teil für sich. Neu installieren schreibt die enthaltene Firmware erneut auf einen C6 oder ein Gerät, das sie schon hat.")
+/* SINGLE UPDATES' WIRELESS DEVICES entry and the page it opens (upd_dev.c). */
 UI_TEXT(UPD_DEVS_HEAD, 0,
     "WIRELESS DEVICES",
     "FUNKGERÄTE")
@@ -8779,6 +8823,130 @@ UI_TEXT(DEV_WHY_INSTALLING, 94,
 UI_TEXT(DEV_WHY_UPDATING, 94,
     "The device update is running.",
     "Das Geräte-Update läuft.")
+/* UPDATES' steps (upd_wiz_view.c, upd_wiz_card.c): each step's name in
+ * its row and the card's heading, the rows' tags, the card's lines, SKIP
+ * THIS STEP and SHOW SKIPPED STEPS.  The updates-step-* and updates-wiz-*
+ * views measure each. */
+UI_TEXT(UPD_WIZ_N_PANEL, 0,
+    "PANEL",
+    "PANEL")
+UI_TEXT(UPD_WIZ_N_IOMCU, 0,
+    "IOMCU",
+    "IOMCU")
+UI_TEXT(UPD_WIZ_N_C6, 0,
+    "C6 RADIO",
+    "C6-FUNK")
+UI_TEXT(UPD_WIZ_N_DIAL, 0,
+    "DIAL",
+    "DIAL")
+UI_TEXT(UPD_WIZ_N_PNODE, 0,
+    "POWER NODE",
+    "LEISTUNGSKNOTEN")
+UI_TEXT(UPD_WIZ_N_BAL, 0,
+    "BALANCE NODE",
+    "AUSWUCHTKNOTEN")
+UI_TEXT(UPD_WIZ_T_NOT_CHECKED, 0,
+    "NOT CHECKED",
+    "NICHT GESUCHT")
+UI_TEXT(UPD_WIZ_T_CURRENT, 0,
+    "CURRENT",
+    "AKTUELL")
+UI_TEXT(UPD_WIZ_T_NEXT, 0,
+    "NEXT",
+    "ALS NÄCHSTES")
+UI_TEXT(UPD_WIZ_T_UPDATING, 0,
+    "UPDATING",
+    "UPDATE LÄUFT")
+UI_TEXT(UPD_WIZ_T_CHECKING, 0,
+    "CHECKING",
+    "WIRD GEPRÜFT")
+UI_TEXT(UPD_WIZ_T_FAILED, 0,
+    "FAILED",
+    "FEHLGESCHLAGEN")
+UI_TEXT(UPD_WIZ_T_SKIPPED, 0,
+    "SKIPPED",
+    "ÜBERSPRUNGEN")
+UI_TEXT(UPD_WIZ_T_LATER, 0,
+    "LATER",
+    "SPÄTER")
+UI_TEXT(UPD_WIZ_T_NO_IMAGE, 0,
+    "NO FIRMWARE",
+    "KEINE FIRMWARE")
+UI_TEXT(UPD_WIZ_T_BAD_IMAGE, 0,
+    "BAD FIRMWARE",
+    "FIRMWARE DEFEKT")
+UI_TEXT(UPD_WIZ_T_NO_LINK, 0,
+    "NO LINK",
+    "OHNE VERBINDUNG")
+UI_TEXT(UPD_WIZ_T_CHECK_FAILED, 0,
+    "CHECK FAILED",
+    "PRÜFFEHLER")
+UI_TEXT(UPD_WIZ_T_USB_ONLY, 0,
+    "USB ONLY",
+    "NUR USB")
+UI_TEXT(UPD_WIZ_T_LINK_FAILED, 0,
+    "NO ANSWER",
+    "KEINE ANTWORT")
+UI_TEXT(UPD_WIZ_T_NOT_REPORTED, 0,
+    "NOT REPORTED",
+    "NICHT GEMELDET")
+UI_TEXT(UPD_WIZ_T_NOT_CONNECTED, 0,
+    "NOT CONNECTED",
+    "NICHT VERBUNDEN")
+UI_TEXT(UPD_WIZ_T_NOT_BOUND, 0,
+    "NOT BOUND",
+    "NICHT GEBUNDEN")
+UI_TEXT(UPD_WIZ_HEAD, 0,
+    "STEP %u OF %u: %s",
+    "SCHRITT %u VON %u: %s")
+UI_TEXT(UPD_WIZ_DONE_HEAD, 0,
+    "All firmware is current.",
+    "Alle Firmware ist aktuell.")
+UI_TEXT(UPD_WIZ_DO_PANEL, 0,
+    "The panel restarts into %s. The steps for the IOmcu and the devices follow after the restart.",
+    "Das Panel startet mit %s neu. Die Schritte für IOmcu und Geräte folgen nach dem Neustart.")
+UI_TEXT(UPD_WIZ_DO_C6, 0,
+    "The panel restarts after this step.",
+    "Nach diesem Schritt startet das Panel neu.")
+UI_TEXT(UPD_WIZ_DO_DIAL, 0,
+    "The Dial writes nothing until its screen button is pressed within 30s.",
+    "Das Dial schreibt nichts, bevor seine Taste innerhalb von 30s gedrückt wird.")
+UI_TEXT(UPD_WIZ_DO_NODE, 0,
+    "The node writes nothing until its BOOT key is held 1s within 30s.",
+    "Der Knoten schreibt nichts, bevor BOOT innerhalb von 30s 1s gehalten wird.")
+UI_TEXT(UPD_WIZ_ASK_DIAL, 0,
+    "Press the Dial's screen button to accept. A 1s hold on it refuses.",
+    "Drücke die Taste am Dial zum Annehmen. 1s Halten lehnt ab.")
+UI_TEXT(UPD_WIZ_ASK_NODE, 0,
+    "Hold the node's BOOT key 1s to accept.",
+    "Halte BOOT am Knoten 1s zum Annehmen.")
+UI_TEXT(UPD_WIZ_WAIT_IOMCU, 0,
+    "Waiting for the IOmcu to answer.",
+    "Wartet auf die Antwort des IOmcu.")
+UI_TEXT(UPD_WIZ_WAIT_DIAL, 0,
+    "Switch the Dial on and keep it within range.",
+    "Schalte das Dial ein und halte es in Reichweite.")
+UI_TEXT(UPD_WIZ_WAIT_NODE, 0,
+    "Switch the node on and keep it within range.",
+    "Schalte den Knoten ein und halte ihn in Reichweite.")
+UI_TEXT(UPD_WIZ_SKIP, 0,
+    "SKIP THIS STEP",
+    "SCHRITT ÜBERSPRINGEN")
+UI_TEXT(UPD_WIZ_SHOW_SKIPPED, 0,
+    "SHOW SKIPPED STEPS",
+    "ÜBERSPRUNGENE SCHRITTE ZEIGEN")
+UI_TEXT(UPD_WIZ_END_NOT_CONN, 0,
+    "Not connected: %s.",
+    "Nicht verbunden: %s.")
+UI_TEXT(UPD_WIZ_END_CONNECT, 0,
+    "Connect it and open UPDATES again to update it.",
+    "Verbinde es und öffne UPDATES erneut für das Update.")
+UI_TEXT(UPD_WIZ_END_OTHER, 0,
+    "No update here: %s. The list names the reason.",
+    "Kein Update hier: %s. Die Liste nennt den Grund.")
+UI_TEXT(UPD_WIZ_END_SKIPPED, 0,
+    "Skipped: %s.",
+    "Übersprungen: %s.")
 UI_TEXT(UPD_ABOUT_1, 0,
     "With reminders on, the panel checks GitHub at startup.",
     "Mit Erinnerung prüft das Panel beim Start GitHub auf Updates.")

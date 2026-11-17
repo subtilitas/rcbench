@@ -1,13 +1,14 @@
 /*
- * SETUP > UPDATES' wireless devices (upd_dev.c): the WIRELESS DEVICES
- * entry opening the page, BACK and the home tag closing it, the page
- * covering UPDATES; on the page, for DIAL FIRMWARE, POWER NODE FIRMWARE
+ * SETUP > UPDATES > SINGLE UPDATES' wireless devices (upd_dev.c), SINGLE
+ * UPDATES opened from OPTIONS first: the WIRELESS DEVICES entry opening
+ * the page, BACK and the home tag closing it, the page covering SINGLE
+ * UPDATES; on the page, for DIAL FIRMWARE, POWER NODE FIRMWARE
  * and BALANCE NODE FIRMWARE each: the hold at 1,999ms and at 2,000ms,
  * once, for an update and for a reinstall; a short press's hint on the
  * band; a tap on the grey hold naming why on the band, for every grey
  * state; a state change under the finger ending the hold unfired; one
- * press at a time across the rows, and on UPDATES with SETTINGS and the
- * C6 row; the label of every phase of a running update, the node rows
+ * press at a time across the rows, and on SINGLE UPDATES with BACK and
+ * the C6 row; the label of every phase of a running update, the node rows
  * asking for the BOOT hold; the entry's summary and label; CANCEL UPDATE
  * as a plain tap in every phase before END, grey with its reason from END
  * on, absent with no update; the line and the labels inside their fields
@@ -33,7 +34,7 @@
 
 #include "upd_spots.h"
 
-/** @brief The entry's middle on UPDATES, body coordinates. @{ */
+/** @brief The entry's middle on SINGLE UPDATES, body coordinates. @{ */
 #define ENTRY_X (UPD_DEV_X + UPD_DEV_W / 2)
 #define ENTRY_Y (UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2)
 /** @} */
@@ -103,7 +104,8 @@ static void tap(int x, int y)
     ev(TOUCH_EVENT_UP, 7, x, y);
 }
 
-/* UPDATES open, every device row READY, the C6 row grey; the page closed. */
+/* SINGLE UPDATES open, every device row READY, the C6 row grey; the
+ * devices' page closed. */
 static void on_updates(void)
 {
     ui_theme_set(UI_THEME_DARK);
@@ -114,7 +116,7 @@ static void on_updates(void)
     ui_router_init();
     upd()->reset();
     ui_router_goto(SCREEN_UPDATES);
-    ui_router_set_alert(NULL);
+    /* The rows first: OPTIONS is grey while an update runs. */
     const upd_c6_view_t c6 = { .row = FW_C6_ROW_NO_IMAGE };
     upd_c6_set(&c6);
     for (int i = 0; i < UPD_DEV_COUNT; ++i) {
@@ -122,6 +124,8 @@ static void on_updates(void)
         upd_dev_set((upd_dev_id_t)i, &v);
         (void)upd_dev_take((upd_dev_id_t)i);
     }
+    upd_open_single(upd());
+    ui_router_set_alert(NULL);
 }
 
 /* on_updates(), and the page opened by a tap on the entry. */
@@ -153,8 +157,7 @@ TEST_CASE(the_entry_opens_the_page_and_back_and_the_home_tag_close_it)
 {
     on_updates();
     CHECK(!upd_dev_shown());
-    CHECK(!upd()->covered());
-    /* A hold's spot on the page is nothing on UPDATES. */
+    /* A hold's spot on the page is nothing on SINGLE UPDATES. */
     hold_for(UPD_DEV_PNODE, UI_HOLD_S + 0.5f);
     ev(TOUCH_EVENT_UP, 1, row_x(UPD_DEV_PNODE), row_y(UPD_DEV_PNODE));
     CHECK(!upd_dev_take(UPD_DEV_PNODE));
@@ -171,20 +174,26 @@ TEST_CASE(the_entry_opens_the_page_and_back_and_the_home_tag_close_it)
     const gfx_rect_t b = upd_dev_back_rect();
     tap(b.x + b.w / 2, b.y + b.h / 2);
     CHECK(!upd_dev_shown());
-    /* The home tag closes it and stays on UPDATES; a hold under way ends
-     * unfired. */
+    /* The home tag closes it and stays on SINGLE UPDATES; a hold under way
+     * ends unfired. */
     tap(ENTRY_X, ENTRY_Y);
     hold_for(UPD_DEV_BAL, 1.0f);
     CHECK(upd()->back());
     CHECK(!upd_dev_shown());
+    CHECK(upd()->covered());        /* SINGLE UPDATES */
     upd()->tick(2.0f);
     CHECK(!upd_dev_take(UPD_DEV_BAL));
     CHECK(!upd_dev_pressed());
+    CHECK(upd()->back());           /* SINGLE UPDATES closes */
+    CHECK(!upd()->covered());
     CHECK(!upd()->back());          /* closed: the tag leaves UPDATES */
     /* Leaving UPDATES closes it. */
+    upd_open_single(upd());
     tap(ENTRY_X, ENTRY_Y);
+    CHECK(upd_dev_shown());
     ui_router_goto(SCREEN_SETUP);
     CHECK(!upd_dev_shown());
+    CHECK(!upd()->covered());
 }
 
 TEST_CASE(each_hold_fires_at_2s_and_not_at_1999ms)
@@ -306,14 +315,15 @@ TEST_CASE(one_press_at_a_time_on_the_page_and_on_updates)
     tap(b.x + b.w / 2, b.y + b.h / 2);
     CHECK(upd_dev_shown());
     ev(TOUCH_EVENT_UP, 1, row_x(UPD_DEV_PNODE), row_y(UPD_DEV_PNODE));
-    /* On UPDATES: SETTINGS' press keeps the entry off. */
+    /* On SINGLE UPDATES: BACK's press keeps the entry off. */
     on_updates();
-    ev(TOUCH_EVENT_DOWN, 1, UP_SET_X, UP_SET_Y);
+    ev(TOUCH_EVENT_DOWN, 1, UP_BACK_X, UP_BACK_Y);
     ev(TOUCH_EVENT_DOWN, 2, ENTRY_X, ENTRY_Y);
     CHECK(!upd_dev_pressed());
     ev(TOUCH_EVENT_UP, 2, ENTRY_X, ENTRY_Y);
     CHECK(!upd_dev_shown());
-    ev(TOUCH_EVENT_UP, 1, UP_SET_X, UP_SET_Y);
+    ev(TOUCH_EVENT_UP, 1, UP_BACK_X, UP_BACK_Y);
+    CHECK(!upd()->covered());       /* BACK closed SINGLE UPDATES */
     /* The C6 row's press holds the entry off, and the other way. */
     on_updates();
     const upd_c6_view_t c6 = { .row = FW_C6_ROW_READY, .have_image = true };

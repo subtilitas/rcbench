@@ -29,6 +29,8 @@
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "upd_dev.h"
+#include "upd_screen.h"
+#include "upd_wizard.h"
 
 /** @brief The console lines' tag. */
 static const char *TAG = "devupd";
@@ -144,6 +146,7 @@ typedef struct {
                                  runs */
     bool         img_ok;    /**< it passed */
     fw_version_t carried;   /**< its version */
+    bool         bound;     /**< a device of the kind is bound */
     bool         linked;    /**< the device is connected, its version read */
     fw_version_t running;   /**< that version */
 } dev_pub_t;
@@ -549,6 +552,7 @@ void panel_devupd_blec_poll(uint32_t now)
         d->have_img = g->st != IMG_NONE && !t[i].other;
         d->img_ok = g->st == IMG_READY && !t[i].other;
         d->carried = g->info.version;
+        d->bound = t[i].bound;
         d->linked = t[i].bound && t[i].linked;
         d->running = (fw_version_t){ t[i].ver[0], t[i].ver[1], t[i].ver[2] };
     }
@@ -663,7 +667,7 @@ void devupd_service(bool armed)
             .other = other || (busy && !mine), .busy = mine,
         };
         const upd_dev_view_t v = {
-            .row = devupd_row(&in), .known = d->linked,
+            .row = devupd_row(&in), .bound = d->bound, .known = d->linked,
             .running = d->running, .have_image = d->img_ok,
             .carried = d->carried, .phase = mine ? p.phase : 0u,
             .percent = mine ? p.percent : 0u, .secs = mine ? p.secs : 0u,
@@ -709,5 +713,8 @@ void devupd_service(bool armed)
                      fail_text(e, why, sizeof(why)));
         }
         control_alert(line);
+        /* UPDATES' step of that device shows a failure on its card, the
+         * hold the retry; a success clears it. */
+        upd_screen_set_result(UPD_WIZ_DIAL + d, e->ok ? NULL : line);
     }
 }

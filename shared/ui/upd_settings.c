@@ -1,8 +1,9 @@
 /**
  * @file upd_settings.c
- * @brief UPDATES' SETTINGS list (ui_setlist.h), opened by the footer's
- *        SETTINGS: Reminder at start (SET_UPD_REMIND) and Releases
- *        (SET_UPD_CHANNEL), the two settings of SET_CAT_UPDATE.
+ * @brief UPDATES' OPTIONS list (ui_setlist.h), opened by the footer's
+ *        OPTIONS: Reminder at start (SET_UPD_REMIND) and Releases
+ *        (SET_UPD_CHANNEL), the two settings of SET_CAT_UPDATE, and Single
+ *        updates, a row whose tap opens SINGLE UPDATES (upd_single.h).
  *
  * SETUP's list: 64px rows at a 70px pitch, "<" and ">" on the switch and
  * the choice, and the strip [UPDATES] [RESET UPDATES] [SAVE] at the
@@ -12,7 +13,9 @@
  * the list, through the leave warning while something is unsaved and no
  * save is asked for.  The footer opens the list while no check or download
  * runs (upd_settings_free()), and the list closes when one starts under
- * it.
+ * it.  A tap on Single updates closes the list and opens the page;
+ * while something is unsaved the leave warning comes first, and its SAVE
+ * or DISCARD opens the page.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -24,11 +27,21 @@
 #include "ui_text.h"
 #include "upd_screen.h"
 #include "upd_settings_int.h"
+#include "upd_single.h"
+
+static void single_tap(void);
+
+/** @brief Single updates: a tap opens SINGLE UPDATES. */
+static const ui_setlist_custom_t k_single = {
+    .label = TX_UPD_SINGLE_ROW, .help = TX_UPD_SINGLE_ROW_HELP,
+    .tap = single_tap,
+};
 
 /** @brief The list's rows in their order. */
 static const ui_setlist_row_t k_rows[] = {
     UI_SL_ROW_SETTING(SET_UPD_REMIND),
     UI_SL_ROW_SETTING(SET_UPD_CHANNEL),
+    UI_SL_ROW_CUSTOM(&k_single),
 };
 /** @brief The rows' count. */
 #define ROW_COUNT ((int)(sizeof(k_rows) / sizeof(k_rows[0])))
@@ -37,6 +50,8 @@ static const ui_setlist_row_t k_rows[] = {
 static struct {
     ui_setlist_t sl;          /**< the list                            */
     uint32_t     rev;         /**< bumped when the list's look changes */
+    bool         to_single;   /**< the leave warning stands for Single
+                                   updates: its way out opens the page */
 } p; /**< the list's state */
 
 /** @brief The rows' count. @return ROW_COUNT */
@@ -59,8 +74,28 @@ static const char *list_name(void) { return "UPDATES"; }
 /** @brief The list's look changed. */
 static void list_invalidate(void) { ++p.rev; }
 
-/** @brief The leave warning's SAVE and DISCARD: the list closes. */
-static void list_way_out(void) { upd_list_close(); }
+/** @brief The leave warning's SAVE and DISCARD: the list closes, and
+ *         SINGLE UPDATES opens when Single updates raised the warning. */
+static void list_way_out(void)
+{
+    const bool single = p.to_single;
+    upd_list_close();
+    if (single) {
+        upd_single_open();
+    }
+}
+
+/** @brief Single updates tapped: the leave warning while something is
+ *         unsaved, else the list closes and SINGLE UPDATES opens. */
+static void single_tap(void)
+{
+    if (ui_setlist_warn(&p.sl)) {
+        p.to_single = true;
+        return;
+    }
+    upd_list_close();
+    upd_single_open();
+}
 
 /** @brief UPDATES' side of its list. */
 static const ui_setlist_host_t k_host = {
@@ -79,6 +114,7 @@ void upd_list_reset(void)
 
 void upd_list_open(void)
 {
+    p.to_single = false;
     ui_setlist_open(&p.sl);
     ++p.rev;
     upd_screen_invalidate();
@@ -86,6 +122,7 @@ void upd_list_open(void)
 
 void upd_list_close(void)
 {
+    p.to_single = false;
     if (p.sl.open || ui_setlist_covered(&p.sl)) {
         ui_setlist_close(&p.sl);
         ++p.rev;
@@ -100,6 +137,7 @@ bool upd_list_back(void)
     if (!p.sl.open) {
         return false;
     }
+    p.to_single = false;    /* the home tag's warning leaves to UPDATES */
     if (ui_setlist_back(&p.sl) || ui_setlist_warn(&p.sl)) {
         return true;
     }
