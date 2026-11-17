@@ -536,7 +536,8 @@ bool panel_fw_busy(void);
  *        cu_render_service(): UPDATES opens by itself once per start under
  *        the conditions an IOmcu offer opens it under, the band names
  *        what holds it back, and the run ends on the home tag or with no
- *        step left (upd_run.h).
+ *        step left (upd_run.h); the note's erase waits for a bench that
+ *        is not @p unsafe, as every flash write does.
  * @param unsafe ARMED, an arm waiting, or the supply's output on or coming
  * @return true while the run waits to open UPDATES (upd_run_waits()):
  *         cu_render_service() then leaves the band line and the opening
@@ -548,7 +549,8 @@ bool updrun_service(bool unsafe);
  * @brief Marks this frame's feed of UPDATES' views done: called after
  *        upd_service(), c6_service() and devupd_service().  The next
  *        frame's updrun_service() counts "no step blocks" only from then,
- *        and only when the device rows were published before that feed.
+ *        only when the device rows were published before that feed, and
+ *        only when that feed carried the run flag as it stands now.
  * @param dev_known panel_devupd_known(), read before devupd_service()
  */
 void updrun_fed(bool dev_known);

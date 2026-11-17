@@ -9,7 +9,9 @@
  * once in fw_ota_boot_check() and spends one of its 2 openings.  This
  * file asks upd_run_drive() once a frame, before the IOmcu's offer is
  * served, and ends the run (fw_ota_run_end(): the note is erased) when it
- * says so.  UPDATES' steps read the run flag from upd_service().
+ * says so, once the bench is SAFE with no arm waiting and the supply off:
+ * the erase is a flash write.  UPDATES' steps read the run flag from
+ * upd_service().
  *
  * SPDX-License-Identifier: MIT
  */
@@ -32,7 +34,16 @@ static const char *TAG = "rcbench";
  *         the previous frame fed, never the zeroed ones of the start. */
 static bool s_fed_known;
 
-void updrun_fed(bool dev_known) { s_fed_known = s_fed_known || dev_known; }
+/** @brief The run flag the last feed gave UPDATES' steps.  A trial start
+ *         settles the run at the end of a frame, after the feed: until a
+ *         feed carries the run as it stands, the steps judge it wrongly. */
+static bool s_fed_run;
+
+void updrun_fed(bool dev_known)
+{
+    s_fed_known = s_fed_known || dev_known;
+    s_fed_run = fw_ota_run_active();
+}
 
 bool updrun_service(bool unsafe)
 {
@@ -42,7 +53,7 @@ bool updrun_service(bool unsafe)
         .unsafe      = unsafe,
         .radio_up    = s_wifi_ok && !wifi_access_down(),
         .installing  = panel_fw_busy(),
-        .known       = s_fed_known,
+        .known       = s_fed_known && s_fed_run == fw_ota_run_active(),
         .restart_due = panel_c6_busy(),
     };
     const bool opened = drv.opened;
@@ -50,12 +61,26 @@ bool updrun_service(bool unsafe)
     if (drv.opened && !opened) {
         ESP_LOGI(TAG, "update run: UPDATES opened");
     }
-    if (end == UPD_RUN_GOES_ON) {
+    /* The end erases the note in NVS, and a flash write stalls both
+     * cores, the control task's heartbeat, STOP and supply trips among
+     * them (flash_gate.h).  An end decided on a bench that is ARMED, has an
+     * arm waiting or a supply output on or coming waits for it to be SAFE
+     * with the outputs off, as a settings save does. */
+    static bool end_due;
+    if (end != UPD_RUN_GOES_ON && !end_due) {
+        end_due = true;
+        ESP_LOGI(TAG, "update run: ends, %s%s",
+                 end == UPD_RUN_END_LEFT ? "UPDATES left by the home tag"
+                                         : "no step left",
+                 unsafe ? "; the note waits for SAFE" : "");
+    }
+    if (!end_due) {
         return upd_run_waits(&drv, &f);
     }
-    ESP_LOGI(TAG, "update run: ends, %s",
-             end == UPD_RUN_END_LEFT ? "UPDATES left by the home tag"
-                                     : "no step left");
+    if (unsafe) {
+        return false;     /* ended: the band and the opening are free */
+    }
+    end_due = false;
     fw_ota_run_end();
     return false;
 }

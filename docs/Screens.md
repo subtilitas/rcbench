@@ -6836,6 +6836,11 @@ erased, when:
 - no step blocks any more, once the wireless devices' rows were published
   by the Bluetooth LE client: before that every device reads as not bound.
 
+The erase is a flash write, and a flash write stalls both cores, the
+control task with its heartbeat and STOP among them. A run that ends
+while the bench is ARMED, has an arm waiting or has a supply output on or
+switching on keeps its note until the bench is SAFE with the outputs off.
+
 Neither ends the run while a C6 update runs or its restart is due: the
 note that update wrote for the start after it stands. A screen the panel
 opens over UPDATES ends nothing: PANEL UPDATE, the IOmcu's progress, the
