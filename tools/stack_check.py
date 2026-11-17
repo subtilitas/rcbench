@@ -378,7 +378,8 @@ NIMBLE_CALLS = {
 # The fw_boot_ops_t and fw_note_ops_t callbacks shared/fwupdate calls: the
 # panel's start check after an update, in components/fw_ota, which writes
 # otadata and erases the restart note in NVS on the main task, the
-# install's write of that note, and the run note's reads and writes.  The same checks as PORT_CALLS.
+# install's write of that note, and the run note's reads and writes.  The
+# same checks as PORT_CALLS.
 BOOT_CALLS = {
     "fw_boot_decide": ("boot_pending", "boot_mark_invalid", "boot_mark_valid",
                        "boot_restart", "boot_last_invalid"),
