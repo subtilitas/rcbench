@@ -411,7 +411,7 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,720 | 2,432 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,768 | 2,384 |
 | `control` | `control_task` | 6,144 | 3,680 | 1,424 |
 | `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
@@ -423,7 +423,7 @@ its stack less 1024 bytes.
 | `mdns` | `mdns_task`, the mDNS (multicast domain name system) responder while the panel is joined to a home network | 4,096 | 1,440 | 1,616 |
 | `wifi_get` | `fetch_task`, one release check or download from GitHub (`components/wifi_access`) | 8,192 | 1,568 | 5,584 |
 | `cardjob` | `files_task`, FILES' card operations (`panel_files.c`) | 6,656 | 2,064 | 3,552 |
-| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,248 | 1,808 |
+| `c6upd` | `c6_task`, the C6 radio's update, one step at a time (`panel_c6.c`) | 4,096 | 1,216 | 1,840 |
 | `shot` | `shot_task`, one screenshot job, then gone (`panel_shot.c`) | 7,168 | 2,432 | 3,696 |
 
 The page's HTTP (hypertext transfer protocol) server runs on a task of

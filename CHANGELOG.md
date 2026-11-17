@@ -12,7 +12,7 @@ history is in git.
   order PANEL, IOMCU, C6 RADIO, DIAL, POWER NODE, BALANCE NODE. From the
   live state of each it names every step's state, the current step and its
   one control. The device rows' feed tells a device that is not bound from
-  one that is bound and not connected. No screen draws the model.
+  one that is bound and not connected.
 - Panel: the run note in NVS (non-volatile storage), key `run_note` beside
   the restart note: an update run that goes on after a restart. The panel
   install writes it once the image is written whole and checked, the C6
@@ -45,8 +45,23 @@ history is in git.
   page SINGLE UPDATES, opened from the row Single updates in OPTIONS. Each
   keeps its place, 2s hold and gates; BACK in the footer and the home tag
   close the page, and leaving UPDATES ends a hold under way without
-  starting anything. UPDATES itself shows CHECK FOR UPDATES, the card, the
-  download's hold and OPTIONS.
+  starting anything.
+- UPDATES leads through the updates as steps: PANEL, IOMCU, C6 RADIO,
+  DIAL, POWER NODE and BALANCE NODE in a list under CHECK FOR UPDATES,
+  each with its version and a tag (`NEXT`, `CURRENT`, `LATER`, `FAILED`,
+  `SKIPPED`, `NOT CONNECTED`, `NOT BOUND` and others). The card on the
+  right shows only the current step: its versions, what its update does,
+  why it waits, the last failed attempt's reason, and its one control, a
+  2s hold, grey with the reason on the band while a gate holds it. HOLD 2s
+  TO DOWNLOAD & INSTALL moves from the footer to PANEL's card. SKIP THIS
+  STEP passes a step until the panel restarts; on the IOmcu's step it
+  declines the IOmcu's offer as CANCEL on its question does. With no step
+  left the card reads `All firmware is current.` and names the steps not
+  connected, not updatable and skipped, with SHOW SKIPPED STEPS. CANCEL
+  UPDATE stands in the footer while a device's transfer runs. OPTIONS is
+  grey while any update runs as well. The panel hands the card the IOmcu's,
+  the C6's and each device's last failure and whether an update run stands
+  after a restart.
 
 ## 0.23.14 - 2026-11-15
 

@@ -84,10 +84,11 @@ static void on_updates(void)
     ui_router_init();
     upd()->reset();
     ui_router_goto(SCREEN_UPDATES);
-    upd_open_single(upd());
-    ui_router_set_alert(NULL);
+    /* The row READY first: OPTIONS is grey while an update runs. */
     const upd_c6_view_t v = view_of(FW_C6_ROW_READY, FW_C6_WHY_NONE);
     upd_c6_set(&v);
+    upd_open_single(upd());
+    ui_router_set_alert(NULL);
     (void)upd_c6_take();
 }
 

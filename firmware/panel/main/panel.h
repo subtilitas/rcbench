@@ -198,6 +198,9 @@ typedef struct {
     uint8_t      check;     /**< the last build check, a cu_check_t */
     bool         mismatch;  /**< an IOmcu of another protocol major
                                answers its identity (the link stays down) */
+    char         fail[48];  /**< the last update's failure since the
+                                 panel's start, the reason the band named;
+                                 "" after a success or a new start       */
 } cu_snap_t;
 
 /**

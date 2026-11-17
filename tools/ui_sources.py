@@ -209,6 +209,8 @@ SOURCES = [
     "shared/ui/upd_c6.c",
     "shared/ui/upd_dev.c",
     "shared/ui/upd_wizard.c",
+    "shared/ui/upd_wiz_view.c",
+    "shared/ui/upd_wiz_card.c",
     # IMU, its controller and the protocol cores they read.
     "shared/ui/imu_ctl.c",
     "shared/ui/imu_ble.c",

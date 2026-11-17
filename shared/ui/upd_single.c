@@ -88,6 +88,8 @@ bool upd_screen_take_coproc(void)
     return was;
 }
 
+void upd_single_fire_coproc(void) { sp.cu_req = true; }
+
 /* ---------------------------------------------------------- the page */
 
 bool upd_single_shown(void) { return sp.shown; }

@@ -1358,14 +1358,27 @@ device that answers the gap mark at one offset, an abort in every phase
 that waits through the install from END on, and the settle of an unknown
 install read from its own device and reported before a second device's
 start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
-END on (`test_upd_dev`); UPDATES' step model, which no screen draws:
+END on (`test_upd_dev`); UPDATES' step model:
 every IOmcu section state, C6 row and reason, and device row with
 not bound, bound and not connected, and connected mapped to one step
 state, the current step as the lowest that blocks or the one whose update
 runs, a newer panel release making PANEL current again, ABSENT waiting
 only in a run, SKIP and a failed attempt (`shared/ui/upd_wizard.c`,
 `test_upd_wizard`, `test_upd_wizard_map`), fed `bound` apart from
-connected by `panel_devupd.c`; and each node client's hand-over and take-back: the
+connected by `panel_devupd.c`; UPDATES' steps drawn: on a 16px grid over
+the body only the current step's control, SKIP, CHECK and OPTIONS take a
+press in each step, the rows none; each step's hold fires its own latch
+at 2.00s and not at 1.99s; a grey hold names its reason on the band for
+each step and gate; a hold slid off, lost, or whose step changes under it
+(link lost, ARMED, a newer release) ends unfired; SKIP and SHOW SKIPPED
+STEPS, SKIP on the IOmcu's step declining the standing offer; CANCEL
+UPDATE only during a device's transfer, grey from END; a device's phases
+on the hold's face; a failed attempt on the card with the hold live; a
+failed or stopped download blocking nothing; the last card naming the
+steps not connected, without firmware and skipped; STOP and ARMED during
+each step; a second finger; every state inside its canvas in both
+languages (`shared/ui/upd_wiz_view.c`, `shared/ui/upd_wiz_card.c`,
+`test_upd_wiz_view`); and each node client's hand-over and take-back: the
 update's hold ends the link with no STALE or LOST at any ms, keeps it
 ended through SETUP's values for 30s, takes no packet, and the take-back
 reconnects and reads the node's version from its first STATUS
@@ -1649,7 +1662,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 592 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 593 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1778,7 +1791,7 @@ The host suite is 592 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_upd_dev`,
-`test_upd_wizard` and `test_upd_wizard_map`.
+`test_upd_wizard`, `test_upd_wizard_map` and `test_upd_wiz_view`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -2276,7 +2289,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-992 committed screenshots to the current render, 496 in English and the same 496 in German, and `render_ui.py --fit` fails on a string that
+1006 committed screenshots to the current render, 503 in English and the same 503 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

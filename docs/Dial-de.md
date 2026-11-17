@@ -190,7 +190,10 @@ die Seite des Panels ist die Zeile DIAL-FIRMWARE auf der Seite, die der
 Eintrag FUNKGERÄTE auf EINZELNE UPDATES öffnet; EINZELNE UPDATES öffnet
 über die Zeile Einzelne Updates in den OPTIONEN von UPDATES
 ([Bildschirme, Einzelne Updates](Screens-de.md#einzelne-updates),
-[Bildschirme, Das Dial](Screens-de.md#das-dial)).
+[Bildschirme, Das Dial](Screens-de.md#das-dial)). Auf UPDATES selbst ist
+das Dial Schritt 4: Läuft auf einem verbundenen Dial eine andere Version
+und sind die Schritte davor erledigt, trägt seine Karte dasselbe Halten
+([Bildschirme, Die Schritte](Screens-de.md#die-schritte)).
 
 1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. Die Zeile
    zeigt `Dial: 0.23.13. Im Panel: 0.23.14.` und `2s HALTEN ZUM DIAL-UPDATE`.
