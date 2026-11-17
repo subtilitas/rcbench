@@ -125,7 +125,7 @@ ABBRECHEN beendet den Download. Auch STOP, ARMED, ein eingeschalteter Netzteilau
 
 Unter NACH UPDATES SUCHEN nennt UPDATES die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie die Rückfrage beim Verbindungsaufbau. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
 
-Für das Halten gelten dieselben Voraussetzungen wie für die Rückfrage: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund:
+Für das Halten gelten dieselben Voraussetzungen wie für die Rückfrage: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund; ein Tippen oder Halten auf die graue Taste zeigt dieselbe Zeile auf dem Alarmband:
 
 | Zeile | Bedingung |
 |---|---|

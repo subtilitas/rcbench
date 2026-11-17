@@ -21,6 +21,10 @@ history is in git.
   whole instead of as PANEL UPDAT. Only a title of more than 14 cells is
   cut. The 6x12 face holds the same 104 glyphs as the other text faces and
   adds 7,522 bytes to the Dial's image, 850,800 bytes in all.
+- UPDATES: a tap or a hold on the grey HOLD 2s TO UPDATE THE IOMCU shows
+  the section's line on the alert band, for example `IOmcu runs the build
+  included on this panel.`, as the grey holds of the C6 radio and the
+  devices do. It gave no answer before.
 
 ## 0.23.14 - 2026-11-15
 

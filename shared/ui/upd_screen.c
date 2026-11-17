@@ -70,6 +70,7 @@ enum {
     HIT_IGNORE,
     HIT_NEVER,
     HIT_COPROC,         /* HOLD 2s: UPDATE IOMCU */
+    HIT_COPROC_WHY,     /* the grey UPDATE IOMCU: why, on the band */
     HIT_NET,            /* no home network: opens WI-FI */
 };
 
@@ -587,8 +588,8 @@ static int hit_at(int x, int y)
     if (download_allowed() && gfx_rect_contains(dl_rect(), x, y)) {
         return HIT_DOWNLOAD;
     }
-    if (coproc_allowed() && gfx_rect_contains(CU_BTN, x, y)) {
-        return HIT_COPROC;
+    if (gfx_rect_contains(CU_BTN, x, y)) {
+        return coproc_allowed() ? HIT_COPROC : HIT_COPROC_WHY;
     }
     return HIT_NONE;
 }
@@ -613,6 +614,15 @@ static void act(int hit)
         /* WI-FI's home tag comes back here (ui_router_parent()). */
         ui_router_goto(SCREEN_WIFI);
         break;
+    case HIT_COPROC_WHY: {
+        /* A tap or a hold on the grey hold: the section's line, on the
+         * band, as the C6 and device rows say theirs. */
+        const char *why = "";
+        gfx_color_t col = UI_TEXT;
+        upd_cu_text(&u.cu, &why, &col);
+        ui_router_set_notice(why);
+        break;
+    }
     default:
         break;
     }
