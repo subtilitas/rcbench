@@ -38,6 +38,7 @@
 
 #include "c6_link.h"
 #include "fw_c6.h"
+#include "fw_ota.h"
 #include "panel.h"
 #include "panel_ble.h"
 #include "panel_devupd.h"
@@ -265,6 +266,14 @@ static void report_end(uint32_t now_ms)
                  (unsigned)C6_RESTART_MS);
         snprintf(line, sizeof(line), TR(ALERT_C6_DONE), s_info.version_text);
         control_alert(line);
+        /* The update run goes on after the restart into this build. */
+        {
+            fw_image_info_t me;
+            memset(&me, 0, sizeof(me));
+            if (fw_ota_running(&me)) {
+                (void)fw_ota_run_begin(me.version_text);
+            }
+        }
         s_restart = true;
         s_restart_at = now_ms + C6_RESTART_MS;
         break;

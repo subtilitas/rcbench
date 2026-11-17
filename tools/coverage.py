@@ -485,6 +485,7 @@ TRACKED = [
     "shared/fwupdate/fw_release.c",
     "shared/fwupdate/fw_install.c",
     "shared/fwupdate/fw_boot.c",
+    "shared/fwupdate/fw_run.c",
     "shared/fwupdate/fw_trial.c",
     "shared/fwupdate/fw_c6.c",
     "shared/fwupdate/fw_slots.c",
