@@ -5609,11 +5609,41 @@ oder `none`; das Ergebnis ist `NORMAL`, `UPDATED`, `ROLLED_BACK`,
 `UNCONFIRMED` oder `GOING_BACK`, Letzteres vor dem Neustart eines
 Versuchsstarts, der zurückgeht.
 
+Daneben hält das Panel die Laufnotiz: dass ein Update-Lauf nach einem
+Neustart weitergeht. Ein 18-Byte-Eintrag, Namespace `fw_ota`, Schlüssel
+`run_note`: ein Layout-Byte (0xB1), die Version, die der nächste Start
+laufen soll, in 16 Bytes mit Nullen aufgefüllt, und die verbleibenden
+Öffnungen, beim Schreiben 2. Die Installation schreibt ihn, sobald das
+Image ganz geschrieben und geprüft ist, vor der Neustartnotiz. Das Update
+des C6-Funkchips schreibt ihn bei Erfolg, mit der laufenden Version. Ein
+Stromausfall vor dem Schreiben hinterlässt keinen Lauf. Ein Versionstext
+über 16 Bytes wird nicht geschrieben, und eine bestehende Notiz wird
+gelöscht.
+
+Jeder Start liest die Notiz einmal, nach seiner Startprüfung:
+
+| Eintrag | Wirkung |
+| --- | --- |
+| keiner | kein Lauf |
+| andere Größe, anderes Layout-Byte oder andere Öffnungszahl (1 bis 2), oder ein Text, der leer ist oder ein Byte außerhalb 0x21 bis 0x7E enthält | kein Lauf; gelöscht |
+| eine andere Version als die laufende (ein Build, der zurückging) | kein Lauf; gelöscht |
+| die laufende Version | der Lauf steht; eine Öffnung verbraucht: die Zahl minus 1 gespeichert, der Eintrag bei 0 gelöscht |
+| die laufende Version, das Verbrauchen vom NVS abgelehnt | kein Lauf |
+
+Die Konsole nennt jedes Schreiben und jeden gefundenen Eintrag:
+
+    I (…) fw_ota: run note: 0.24.1, 2 openings
+    I (…) fw_ota: run note: 0.24.1, an update run stands, openings left 1
+    W (…) fw_ota: run note: 0.24.1 expected, 0.24.0 runs; the update run ends
+
 Aktuelle Einschränkungen:
 
 - Eine Installation, deren NVS-Schreiben scheitert, meldet das auf der
   Konsole (`restart note not kept`), und ein Start ihres Builds, der
   zurückgeht, zeigt keine Zeile im Band.
+- Die Laufnotiz öffnet keinen Bildschirm: Nach einem Neustart öffnet sich
+  UPDATES nicht von selbst, und ein Lauf endet nur, wenn seine 2 Öffnungen
+  verbraucht sind oder eine andere Version läuft.
 - Hängt ein Versuchsstart vor der Bildschirmschleife, etwa beim Einhängen
   der Karte, wird er weder bestätigt noch automatisch zurückgesetzt.
   Der Task-Watchdog meldet den Fehler, löst aber keinen Neustart aus

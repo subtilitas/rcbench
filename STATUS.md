@@ -314,7 +314,9 @@ start is kept once every task has run a pass and a frame is on the display, or 3
 start with the screen loop running (`fw_trial.h`, `test_fw_trial`); a reset before that goes
 back to the build before it, which reports it from the restart note the install keeps in NVS
 (`fw_note_write()`, `fw_boot_settle()`, `test_fw_install`; the NVS calls in `fw_ota.c` are
-not host-tested).
+not host-tested). Beside it the run note keeps an update run across a restart: written after a
+complete install and after a C6 update, read once per start, 2 openings at most, erased on a
+version mismatch or a corrupt entry (`fw_run.h`, `test_fw_run`); no screen reads it.
 
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
 `esp_hosted` (`components/c6_link`, [Wi-Fi through the
@@ -1354,7 +1356,14 @@ device that answers the gap mark at one offset, an abort in every phase
 that waits through the install from END on, and the settle of an unknown
 install read from its own device and reported before a second device's
 start (`test_devupd`); CANCEL UPDATE as a tap before END and grey from
-END on (`test_upd_dev`); and each node client's hand-over and take-back: the
+END on (`test_upd_dev`); UPDATES' step model, which no screen draws:
+every IOmcu section state, C6 row and reason, and device row with
+not bound, bound and not connected, and connected mapped to one step
+state, the current step as the lowest that blocks or the one whose update
+runs, a newer panel release making PANEL current again, ABSENT waiting
+only in a run, SKIP and a failed attempt (`shared/ui/upd_wizard.c`,
+`test_upd_wizard`, `test_upd_wizard_map`), fed `bound` apart from
+connected by `panel_devupd.c`; and each node client's hand-over and take-back: the
 update's hold ends the link with no STALE or LOST at any ms, keeps it
 ended through SETUP's values for 30s, takes no packet, and the take-back
 reconnects and reads the node's version from its first STATUS
@@ -1638,7 +1647,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 589 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 592 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1737,7 +1746,7 @@ The host suite is 589 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_hitec_panel`, `test_hitec_panel_states`, `test_hitec_panel_stop_fingers`, `test_hitec_panel_write`, `test_hitec_panel_gate`,
 `test_hitec_panel_file`, `test_page_console`, `test_kst_card`, `test_prog_link`,
 `test_prog_link_ask`, `test_port_mail`, `test_port_screens`, `test_wifi_screen`,
-`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_trial`,
+`test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
 `test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
 `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
 `test_upd_screen`, `test_upd_settings`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
@@ -1766,7 +1775,8 @@ The host suite is 589 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
-`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client` and `test_upd_dev`.
+`test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_upd_dev`,
+`test_upd_wizard` and `test_upd_wizard_map`.
 
 The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
@@ -2452,6 +2462,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/upd_settings.c` | 43 | 39 | 90.7% |
 | `shared/ui/upd_c6.c` | 118 | 116 | 98.3% |
 | `shared/ui/upd_dev.c` | 290 | 259 | 89.3% |
+| `shared/ui/upd_wizard.c` | 278 | 278 | 100.0% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 135 | 134 | 99.3% |
 | `shared/ui/imu_sensor.c` | 210 | 210 | 100.0% |
@@ -2710,6 +2721,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_release.c` | 430 | 430 | 100.0% |
 | `shared/fwupdate/fw_install.c` | 68 | 68 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
+| `shared/fwupdate/fw_run.c` | 85 | 85 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
 | `shared/fwupdate/fw_c6.c` | 158 | 158 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
@@ -2728,7 +2740,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **100446** | **98318** | **97.9%** |
+| **total** | **100809** | **98681** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
