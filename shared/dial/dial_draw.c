@@ -96,6 +96,7 @@ static const metric_t k_metric[] = {
     { &gfx_font_20x36, 17, 29, 30 },
     { &gfx_font_num_24x30, 15, 29, 32 },
     { &gfx_font_num_32x44, 21, 41, 44 },
+    { &gfx_font_6x12, 6, 10, 12 },
 };
 
 /** @brief A font's metrics. @param f the font @return its row */
@@ -569,9 +570,16 @@ static void decoration(dial_render_t *r, gfx_canvas_t *c, uint8_t deco)
     }
 }
 
-/** @brief The title tag: the text on the accent, or dimmed; cut so the
- *         tag stays inside DIAL_R_SHAPE.  @param r the renderer
- *         @param c the canvas @param s the scene */
+/** @brief The title tag's faces, tried in order: a title the first does
+ *         not hold whole inside DIAL_R_SHAPE is drawn in the second. */
+static const gfx_font_t *const k_tag_font[2] = {
+    &gfx_font_8x16, &gfx_font_6x12,
+};
+
+/** @brief The title tag: the text on the accent, or dimmed.  A title too
+ *         wide for 8x16 is drawn in 6x12, cut only when that does not
+ *         hold it either, so the tag stays inside DIAL_R_SHAPE.
+ *         @param r the renderer @param c the canvas @param s the scene */
 static void draw_title(dial_render_t *r, gfx_canvas_t *c,
                        const dial_scene_t *s)
 {
@@ -580,13 +588,18 @@ static void draw_title(dial_render_t *r, gfx_canvas_t *c,
     if (!s->has_title || s->title[0] == '\0') {
         return;
     }
-    l.font = &gfx_font_8x16;
-    dk_text_copy(l.text, sizeof l.text, s->title);
-    for (int cells = gfx_text_cells(s->title); cells > 0; --cells) {
-        l.text[gfx_text_prefix(s->title, cells)] = '\0';
-        w = cells * l.font->width + TAG_PAD;
-        if (dial_box_inside(gfx_rect_make(MID - w / 2, TAG_Y - TAG_H / 2, w,
-                                          TAG_H), DIAL_R_SHAPE)) {
+    for (size_t f = 0; f < sizeof k_tag_font / sizeof k_tag_font[0]; ++f) {
+        l.font = k_tag_font[f];
+        dk_text_copy(l.text, sizeof l.text, s->title);
+        for (int cells = gfx_text_cells(s->title); cells > 0; --cells) {
+            l.text[gfx_text_prefix(s->title, cells)] = '\0';
+            w = cells * l.font->width + TAG_PAD;
+            if (dial_box_inside(gfx_rect_make(MID - w / 2, TAG_Y - TAG_H / 2,
+                                              w, TAG_H), DIAL_R_SHAPE)) {
+                break;
+            }
+        }
+        if (strcmp(l.text, s->title) == 0) {
             break;
         }
     }

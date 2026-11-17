@@ -194,7 +194,7 @@ Jeder Text ist UTF-8 (Unicode Transformation Format, 8 Bit), vom C-Quelltext
 bis zum TXT-Bericht auf der Karte. `gfx` dekodiert ihn, und ein Codepoint ist
 eine Zelle:
 
-- Die fünf Text-Fonts enthalten druckbares ASCII (American Standard Code
+- Die sechs Text-Fonts enthalten druckbares ASCII (American Standard Code
   for Information Interchange, 0x20 bis 0x7E), das Gradzeichen ° (U+00B0),
   die sieben deutschen Buchstaben Ä Ö Ü ß ä ö ü (U+00C4, U+00D6, U+00DC,
   U+00DF, U+00E4, U+00F6, U+00FC) und das Ohmzeichen Ω (U+03A9), je 104
@@ -275,7 +275,7 @@ unter einer Bedingung fehl.
 | `shared/servo/servo_str.c` | das Englisch des Servotests, das auch die CSV nutzt |
 | `shared/webaccess/wa_page.c` | Englisch und Deutsch der WLAN-Seite |
 
-Die fünf Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E), das
+Die sechs Text-Fonts enthalten druckbares ASCII (0x20 bis 0x7E), das
 Gradzeichen °, die 7 deutschen Buchstaben Ä Ö Ü ä ö ü ß und das Ohmzeichen Ω. Jeder andere Codepoint erscheint als
 `?`, ebenso ein Byte, das keine gültige UTF-8-Folge beginnt.
 `every_drawn_string_has_its_glyphs` in `test_text` hält jeden Text der
@@ -402,9 +402,9 @@ Einträge mit ID und 115 Optionen, 10 davon mit leerem Englisch.
    `k_langs` und seine Deklaration in `ui_text.h` ein.
 4. Ein Buchstabe, den die Text-Fonts nicht enthalten, kommt in die Liste in
    `FONTS` in `tools/gen_font.py`, und `python3 tools/gen_font.py` erzeugt
-   sie neu. Jeder Buchstabe belegt ein Byte je Pixel in jedem der fünf
-   Text-Fonts: 128, 200, 288, 448 und 720 Byte in den Fonts 8x16, 10x20,
-   12x24, 16x28 und 20x36, zusammen 1.784 Byte.
+   sie neu. Jeder Buchstabe belegt ein Byte je Pixel in jedem der sechs
+   Text-Fonts: 72, 128, 200, 288, 448 und 720 Byte in den Fonts 6x12, 8x16,
+   10x20, 12x24, 16x28 und 20x36, zusammen 1.856 Byte.
 5. Trage die Sprache in `LANGS` in `tools/render_ui.py` und im Argument von
    `test/host/render_screen.c` ein. Führe dann
    `python3 tools/render_ui.py --fit` und `python3 tools/render_ui.py`

@@ -183,10 +183,10 @@ static bool in_face(const gfx_font_t *f, const char *s)
     return true;
 }
 
-/** @brief The five text faces, which hold the same letters. */
+/** @brief The six text faces, which hold the same letters. */
 static const gfx_font_t *const k_text_faces[] = {
-    &gfx_font_8x16, &gfx_font_10x20, &gfx_font_12x24, &gfx_font_16x28,
-    &gfx_font_20x36,
+    &gfx_font_6x12, &gfx_font_8x16, &gfx_font_10x20, &gfx_font_12x24,
+    &gfx_font_16x28, &gfx_font_20x36,
 };
 
 /** @brief Whether every text face holds every code point of @p s. */

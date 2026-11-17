@@ -76,6 +76,8 @@ FONTS = [
      "shared/gfx/gfx_font20x36.c", TEXT_EXTRA),
     ("gfx_font_num_32x44", 32, 44, 0x20, 0x3A, 52, -1, -9, 120,
      "shared/gfx/gfx_font_num32x44.c", []),
+    ("gfx_font_6x12",      6, 12, 0x20, 0x7E, 10, 0, 0, 110,
+     "shared/gfx/gfx_font6x12.c", TEXT_EXTRA),
 ]
 
 # Faces that must have no solid ink outside their cell.  The 8x16, 16x28 and

@@ -254,6 +254,18 @@ TEST_CASE(every_string_fits_at_the_ends_of_every_field)
         dial_model(&m, DM_MOTOR_ARMED, l);
         CHECK(dm_screen(&m, DK_FACE_MOTOR, l, "WWWWWWWWWWWWWWW"));
         fits(&m, l, "long motor title");
+        /* A title of 12 to 14 cells, too wide for 8x16, is drawn whole in
+         * 6x12. */
+        dial_model(&m, DM_OTHER, l);
+        CHECK(dm_screen(&m, DK_FACE_OTHER, l, "PANEL UPDATE"));
+        fits(&m, l, "PANEL UPDATE");
+        bool whole = false;
+        for (int i = 0; i < s_n; ++i) {
+            whole = whole || strcmp(s_seen[i].text, "PANEL UPDATE") == 0;
+        }
+        if (!whole) {
+            T_FAIL("(%u): the title \"PANEL UPDATE\" is cut", l);
+        }
         /* The longest name a Dial carries. */
         dial_model(&m, DM_BIND, l);
         m.view.name = "DIAL-WWWWWWW";
