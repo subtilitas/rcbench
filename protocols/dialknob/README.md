@@ -105,7 +105,7 @@ characteristic.
 | 1 | protocol | `DK_PROTOCOL`, 1 to 255 |
 | 2 to 4 | firmware | major, minor, patch |
 | 5 | flags | bit0 a bound panel is held, bit1 a test build whose console injects input; bits 2 to 7 are 0 |
-| 6 | hardware | 1, the M5Stack Dial v1.1 (`DK_HW_DIAL11`) |
+| 6 | hardware | 1, the M5Stack Dial v1.1 (`DK_HW_DIAL11`); 2, the ELECROW CrowPanel 1.28in rotary display (`DK_HW_CROW128`) |
 | 7 | reserved | 0 |
 | 8 to 19 | name | 12 bytes printable ASCII, NUL-padded |
 

@@ -60,9 +60,21 @@ the section is corrected to that.
 
 ### 4. ELECROW ESP32 Rotary Display 1.28 inch as a Dial alternative
 
-Listed by the owner as an alternative to the M5Stack Dial. No code in the
-repository supports it: `firmware/dial/` targets the M5Stack Dial only. The
-owner decides whether it gets a port, and its state goes into STATUS.md.
+Listed by the owner as an alternative to the M5Stack Dial. Branch
+`dial/crow128` holds a board choice of `firmware/dial`
+(`main/dial_board.h`, `sdkconfig.crow128`): update kind 5, INFO hardware
+byte 2. It builds with ESP-IDF v6.1; it has not run on the board. Open
+before it merges:
+
+- Run it on the board: display orientation (no X mirror), touch mapping,
+  encoder counts a detent (2 per the EC3501 datasheet, 4 in the vendor's
+  example) and direction, the CST816D's start.
+- The panel carries the CrowPanel's image and picks the Dial row's image
+  by the bound knob's INFO hardware byte (`panel_devupd.c`); a panel
+  built before the branch refuses INFO hardware 2, so it does not bind.
+- CI (`dial.yml`, a second build), the release assets,
+  `tools/c6_image.py` (role `dial-crow`), docs/Dial.md and Dial-de.md,
+  STATUS.md, CHANGELOG.md.
 
 ### 5. Group order of rev 2 boards
 

@@ -220,7 +220,11 @@ TEST_CASE(info_carries_the_protocol_and_an_ascii_name)
     i.proto = 0;
     CHECK_EQ(dk_info_encode(&i, b), 0u);
     i.proto = DK_PROTOCOL;
-    i.hw = 2;
+    i.hw = DK_HW_CROW128;                       /* the CrowPanel */
+    CHECK_EQ(dk_info_encode(&i, b), DK_LEN_INFO);
+    CHECK(dk_info_decode(b, sizeof b, &o));
+    CHECK_EQ(o.hw, DK_HW_CROW128);
+    i.hw = 3;                                   /* no such board */
     CHECK_EQ(dk_info_encode(&i, b), 0u);
     i.hw = DK_HW_DIAL11;
     i.flags = 0x04;
