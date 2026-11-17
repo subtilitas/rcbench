@@ -16,7 +16,7 @@ WIRELESS > DIAL, Suche und Bindung, der Link mit seiner Verlustregel, die
 Drehung auf MOTOR & ESC und SERVO LIVE, die Bildschirmtaste, die Navigation
 der Menüs und Listen des Panels mit SET eines Werts und der Strom des
 Panel-Bildschirms zum Dial ([Das Panel](#das-panel)); und das
-Firmware-Update über BLE von SETUP > UPDATES ([Update über Bluetooth
+Firmware-Update über BLE von SETUP > UPDATES > EINZELNE UPDATES ([Update über Bluetooth
 LE](#update-über-bluetooth-le)). Die Bildschirme der Programmer (KST,
 Hitec, ESC) und das Pairing folgen in späteren Schritten.
 
@@ -187,8 +187,10 @@ Das Panel bringt das Anwendungs-Image des Dial mit und sendet es über BLE.
 Das Protokoll ist `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
 die Seite des Panels ist die Zeile DIAL-FIRMWARE auf der Seite, die der
-Eintrag FUNKGERÄTE auf UPDATES öffnet
-([Bildschirme, Das Dial](Screens-de.md#das-dial)).
+Eintrag FUNKGERÄTE auf EINZELNE UPDATES öffnet; EINZELNE UPDATES öffnet
+über die Zeile Einzelne Updates in den OPTIONEN von UPDATES
+([Bildschirme, Einzelne Updates](Screens-de.md#einzelne-updates),
+[Bildschirme, Das Dial](Screens-de.md#das-dial)).
 
 1. Das Dial ist gebunden und verbunden, der Prüfstand ist SAFE. Die Zeile
    zeigt `Dial: 0.23.13. Im Panel: 0.23.14.` und `2s HALTEN ZUM DIAL-UPDATE`.

@@ -816,21 +816,25 @@ SCREENS = {
     "updates-failed": ("updates-failed.png", "updates", "dark"),
     # RELEASES on TESTING, and the testing release it found.
     "updates-testing": ("updates-testing.png", "updates", "dark"),
-    # Its IOmcu section with an IOmcu on another build: the
+    # SINGLE UPDATES' IOmcu section with an IOmcu on another build: the
     # hold that starts the IOmcu's update.
     "updates-coproc": ("updates-coproc.png", "updates", "dark"),
-    # Its C6 RADIO row with the C6 as shipped: no version reported, the
-    # hold that updates it to the carried image.
+    # SINGLE UPDATES' C6 RADIO row with the C6 as shipped: no version
+    # reported, the hold that updates it to the carried image.
     "updates-c6": ("updates-c6.png", "updates", "dark"),
-    # The WIRELESS DEVICES entry while the Dial asks for its press.
+    # SINGLE UPDATES' WIRELESS DEVICES entry while the Dial asks for its
+    # press.
     "updates-dial": ("updates-dial.png", "updates", "dark"),
     # The wireless devices' page: the Dial offered a newer version, the
     # power node its reinstall, the balance node not connected.
     "updates-devices": ("updates-devices.png", "updates", "dark"),
     # The page while the power node asks for its BOOT key.
     "updates-node": ("updates-node.png", "updates", "dark"),
-    # Its SETTINGS list: the reminder at start and RELEASES.
+    # Its OPTIONS list: the reminder at start, RELEASES and Single updates.
     "updates-settings": ("updates-settings.png", "updates", "dark"),
+    # SINGLE UPDATES, opened from OPTIONS: an IOmcu on another build, the
+    # C6's reinstall offered, the Dial offered a newer version.
+    "updates-single": ("updates-single.png", "updates", "dark"),
     "upd-remind": ("upd-remind.png", "upd-remind", "dark"),
     "panel-download": ("panel-download.png", "panel-update", "dark"),
     "panel-download-failed": ("panel-download-failed.png", "panel-update",
@@ -1177,7 +1181,8 @@ FIT_ONLY = {
     "help-servo-hitec-other":    (None, "servo", "dark"),
     # WI-FI's guide with the radio off at pages 2 and 3, with the access
     # point up, joined, and with Browser writes HOLD at both pages;
-    # UPDATES' at page 2, with a newer release found, and over OPTIONS.
+    # UPDATES' at page 2, with a newer release found, and over OPTIONS;
+    # SINGLE UPDATES' at pages 1 and 2.
     "help-wifi-2":        (None, "wifi", "dark"),
     "help-wifi-3":        (None, "wifi", "dark"),
     "help-wifi-ap":       (None, "wifi", "dark"),
@@ -1190,6 +1195,8 @@ FIT_ONLY = {
     "help-updates-settings-2": (None, "updates", "dark"),
     "help-updates-devices": (None, "updates", "dark"),
     "help-updates-node": (None, "updates", "dark"),
+    "help-updates-single":   (None, "updates", "dark"),
+    "help-updates-single-2": (None, "updates", "dark"),
     # TEST's guide at its READY page, and TEST's list at LENGTH AND TIMING
     # and at its end.
     "help-servo-test-2": (None, "servo", "dark"),

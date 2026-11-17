@@ -16,7 +16,7 @@ DIAL, the scan and the bind, the link with its loss rule, the turn on
 MOTOR & ESC and SERVO LIVE, the screen button, the navigation of the
 panel's menus and lists with SET of a value, and the stream of the panel's
 screen to the Dial ([The panel](#the-panel)); and the firmware update over
-BLE from SETUP > UPDATES ([Update over Bluetooth
+BLE from SETUP > UPDATES > SINGLE UPDATES ([Update over Bluetooth
 LE](#update-over-bluetooth-le)). The programmers' screens (KST, Hitec,
 ESC) and pairing are later slices.
 
@@ -176,8 +176,11 @@ range that connects first, or that spoofs the bound address, is taken.
 The panel carries the Dial's application image and sends it over BLE. The
 protocol is `protocols/bleota`
 ([README](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md));
-the panel's side is the DIAL FIRMWARE row on the page that UPDATES'
-WIRELESS DEVICES entry opens ([Screens, The Dial](Screens.md#the-dial)).
+the panel's side is the DIAL FIRMWARE row on the page that the WIRELESS
+DEVICES entry of SINGLE UPDATES opens; SINGLE UPDATES opens from the row
+Single updates in UPDATES' OPTIONS
+([Screens, Single updates](Screens.md#single-updates),
+[Screens, The Dial](Screens.md#the-dial)).
 
 1. The Dial is bound and linked, and the bench is SAFE. The row shows
    `Dial: 0.23.13. Included: 0.23.14.` and `HOLD 2s TO UPDATE THE DIAL`.

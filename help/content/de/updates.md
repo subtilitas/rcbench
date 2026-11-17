@@ -14,20 +14,19 @@ UPDATES sucht auf GitHub nach neuerer Panel-Firmware und bietet deren Installati
 |---|---|
 | NACH UPDATES SUCHEN | Fragt GitHub einmal ab. Während der Suche heißt die Taste ABBRECHEN. |
 | 2s HALTEN: LADEN & INSTALLIEREN | In der Mitte der Fußleiste nach Fund eines neueren Releases; lädt, prüft und installiert es. |
-| OPTIONEN | Rechts in der Fußleiste; öffnet die Liste mit Erinnerung beim Start und Releases, siehe [Optionen](#optionen). Grau, solange eine Suche oder ein Download läuft. |
-| 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage. |
-| 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
-| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN | Dasselbe, solange der C6 die mitgelieferte Version meldet. |
-| FIRMWARE DER FUNKGERÄTE | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten, siehe [Funkgeräte](#funkgeräte); während ein Update läuft, zeigt sie die Beschriftung dieser Zeile. |
+| OPTIONEN | Rechts in der Fußleiste; öffnet die Liste mit Erinnerung beim Start, Releases und Einzelne Updates, siehe [Optionen](#optionen). Grau, solange eine Suche oder ein Download läuft. |
+
+Die Updates des IOmcu, des C6-Funks und der Funkgeräte stehen auf der Seite EINZELNE UPDATES, siehe [Einzelne Updates](#einzelne-updates).
 
 ## Optionen
 
 ![Die OPTIONEN von UPDATES](view:updates-settings)
 
-| Einstellung | Werte | Wirkung |
+| Zeile | Werte | Wirkung |
 |---|---|---|
 | Erinnerung beim Start | AUS, EIN; Vorgabe EIN | schaltet die Suche beim Start und ihre Erinnerung |
 | Releases | STABLE, TESTING; Vorgabe STABLE | wählt die geprüften Releases, siehe [Die Suche](#die-suche); ein Wechsel verwirft die Ergebnisanzeige, und ein unter der anderen Einstellung gefundenes Release wird nicht angeboten |
+| Einzelne Updates | - | schließt die Liste und öffnet EINZELNE UPDATES, siehe [Einzelne Updates](#einzelne-updates); bei ungespeicherter Änderung mit Rückfrage |
 
 Eine Änderung gilt sofort. SPEICHERN in der Leiste der Liste behält sie, wie unter [Setup](setup.md#die-werte-behalten). Das Home-Feld schließt die Liste, bei ungespeicherter Änderung mit Rückfrage.
 
@@ -119,11 +118,27 @@ ABBRECHEN beendet den Download. Auch STOP, ARMED, ein eingeschalteter Netzteilau
 
 ![Ein abgebrochener Download](view:panel-download-failed)
 
+## Einzelne Updates
+
+![EINZELNE UPDATES](view:updates-single)
+
+EINZELNE UPDATES startet ein Update oder eine Neuinstallation zur Zeit: des IOmcu, des C6-Funks oder eines Funkgeräts. Öffne die Seite über die Zeile Einzelne Updates in OPTIONEN. Sie bedeckt UPDATES; jeder Start ist ein Halten von 2s.
+
+| Bedienelement | Wirkung |
+|---|---|
+| 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage, siehe [Der IOmcu](#der-iomcu). |
+| 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
+| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN | Dasselbe, solange der C6 die mitgelieferte Version meldet. |
+| FIRMWARE DER FUNKGERÄTE | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten, siehe [Funkgeräte](#funkgeräte); während ein Update läuft, zeigt sie die Beschriftung dieser Zeile. |
+| ZURÜCK | Rechts in der Fußleiste; schließt die Seite. |
+
+Ein Finger zur Zeit: Ein zweiter Finger auf einem anderen Bedienelement startet nichts. Das Home-Tag schließt zuerst die Seite der Funkgeräte, dann EINZELNE UPDATES, dann verlässt es UPDATES. Das Verlassen von UPDATES schließt die Seite, und ein laufendes Halten startet nichts. Eine Suche, die startet, während die Seite offen ist, schließt nichts.
+
 ## Der IOmcu
 
 ![Ein anderer Build auf dem IOmcu](view:updates-coproc)
 
-Unter NACH UPDATES SUCHEN nennt UPDATES die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie die Rückfrage beim Verbindungsaufbau. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
+In der linken Spalte von EINZELNE UPDATES nennt die Seite die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie die Rückfrage beim Verbindungsaufbau. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
 
 Für das Halten gelten dieselben Voraussetzungen wie für die Rückfrage: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund; ein Tippen oder Halten auf die graue Taste zeigt dieselbe Zeile auf dem Alarmband:
 
@@ -148,7 +163,7 @@ Bei verfügbarer Haltetaste steht `Ausgänge bleiben aus. ARMED ist bis zum Ende
 
 ![Der C6 im Auslieferungszustand: keine Version gemeldet](view:updates-c6)
 
-Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE sendet das mitgelieferte Image über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
+Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE sendet das mitgelieferte Image über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
 
 Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft und das WLAN aus ist. Bei einem C6, der die mitgelieferte Version meldet, heißt es 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
 
@@ -167,7 +182,7 @@ Nach jedem Ende außer dem ersten behält der C6 die Firmware, die er hatte, und
 
 ![Der Eintrag FUNKGERÄTE, während das Dial nach seinem Druck fragt](view:updates-dial)
 
-Der Eintrag FUNKGERÄTE zählt die Geräte, die eine Version gemeldet haben, und die, denen eine andere Version angeboten wird: `Verbunden: 1 von 3. Andere Version: 0.` FIRMWARE DER FUNKGERÄTE öffnet die Seite. ZURÜCK und das Home-Tag schließen sie.
+Der Eintrag FUNKGERÄTE auf EINZELNE UPDATES zählt die Geräte, die eine Version gemeldet haben, und die, denen eine andere Version angeboten wird: `Verbunden: 1 von 3. Andere Version: 0.` FIRMWARE DER FUNKGERÄTE öffnet die Seite über EINZELNE UPDATES. ZURÜCK und das Home-Tag schließen sie und zeigen wieder EINZELNE UPDATES.
 
 ![Die Seite der Funkgeräte](view:updates-devices)
 
@@ -180,7 +195,7 @@ Der Eintrag FUNKGERÄTE zählt die Geräte, die eine Version gemeldet haben, und
 | 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE | Sendet das Image des Auswuchtknotens an den gebundenen Auswuchtknoten. |
 | 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN | Dasselbe, solange der Knoten die mitgelieferte Version meldet. |
 | UPDATE ABBRECHEN | In der Mitte der Fußleiste, solange ein Update läuft, ein einfaches Tippen: Beendet das Update vor seinem letzten Byte, und das Gerät behält seine Firmware; danach installiert das Gerät, und die Taste ist grau. |
-| ZURÜCK | Schließt die Seite. |
+| ZURÜCK | Schließt die Seite: EINZELNE UPDATES erscheint wieder. |
 
 Es läuft ein Update zur Zeit; solange eines läuft, ist das Halten der anderen Zeilen grau.
 

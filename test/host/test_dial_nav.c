@@ -44,6 +44,7 @@
 #include "ui_focus.h"
 #include "ui_keypad.h"
 #include "upd_dev.h"
+#include "upd_spots.h"
 
 /** @brief The ring's colour as ui_focus.c draws it. */
 static gfx_color_t ring_color(void)
@@ -813,9 +814,10 @@ TEST_CASE(an_off_gap_takes_detents_alike_in_any_batch)
     CHECK(!k->open);
 }
 
-/* UPDATES offers no focus, also with the wireless devices' page open: the
- * Dial's turn, press and hold reach none of its 2s holds, not CANCEL
- * UPDATE and not BACK: the page stays as the panel's finger left it. */
+/* UPDATES offers no focus, also with SINGLE UPDATES and the wireless
+ * devices' page open over it: the Dial's turn, press and hold reach none
+ * of its 2s holds, not CANCEL UPDATE and not BACK: the page stays as the
+ * panel's finger left it. */
 TEST_CASE(updates_offers_no_focus_and_no_device_hold_or_cancel)
 {
     on(SCREEN_UPDATES);
@@ -830,6 +832,8 @@ TEST_CASE(updates_offers_no_focus_and_no_device_hold_or_cancel)
     v.row = DEVUPD_ROW_UPDATING;
     v.phase = DEVUPD_SEND;
     upd_dev_set(UPD_DEV_BAL, &v);
+    CHECK(!ui_focus_shown());
+    upd_open_single(upd_screen());
     CHECK(!ui_focus_shown());
     tap(UPD_DEV_X + UPD_DEV_W / 2,
         UI_BAND_H + UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);

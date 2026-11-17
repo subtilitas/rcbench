@@ -1,6 +1,7 @@
 /**
  * @file test_upd_layout.c
- * @brief UPDATES, the start-up reminder, the IOmcu's update question and
+ * @brief UPDATES, SINGLE UPDATES, the start-up reminder, the IOmcu's
+ *        update question and
  *        progress, PANEL UPDATE, the bus-fault screen and the splash at the
  *        1024 x 600 sizes: every control a finger tall and acting where it
  *        is drawn, nothing under the alert band where the band shows, the
@@ -197,15 +198,17 @@ TEST_CASE(updates_buttons_act_where_they_are_drawn)
 }
 
 /*
- * HOLD 2s: UPDATE IOMCU is 460 x 56px with its foot at body y 436: a
- * hold on its bottom row completes, a hold one row under it starts
- * nothing, and the row lies 8px over the floor above the alert band.
+ * SINGLE UPDATES' HOLD 2s TO UPDATE THE IOMCU is 460 x 56px with its foot
+ * at body y 436: a hold on its bottom row completes, a hold one row under
+ * it starts nothing, and the row lies 8px over the floor above the alert
+ * band.
  */
 TEST_CASE(the_iomcu_hold_acts_at_its_foot_above_the_alert_band)
 {
     fresh(UI_LANG_EN);
     upd_pose(UPD_GOT_CURRENT, false, UPD_WHY_NONE);
     const ui_screen_t *u = upd_screen();
+    upd_open_single(u);
     CHECK(UP_CU_T + UP_BTN_H <= UP_FLOOR);
     CHECK(UP_CARD_B <= UP_FLOOR);
     hold(u, UP_BTN_X, UP_CU_T + UP_BTN_H);
@@ -290,6 +293,14 @@ TEST_CASE(no_ink_under_the_alert_band)
         upd_pose(UPD_GOT_BLOCKED, false, UPD_WHY_ARMED);
         upd_screen()->render(&s_body, 0);
         CHECK_EQ(ink(0, UP_FLOOR, UI_PANEL_W, UI_BODY_H), 0);
+
+        /* SINGLE UPDATES over it. */
+        upd_pose(UPD_GOT_CURRENT, false, UPD_WHY_NONE);
+        upd_open_single(upd_screen());
+        CHECK(upd_screen()->covered());
+        upd_screen()->render(&s_body, 0);
+        CHECK_EQ(ink(0, UP_FLOOR, UI_PANEL_W, UI_BODY_H), 0);
+        (void)upd_screen()->back();
         upd_pose(UPD_GOT_NEWER, false, UPD_WHY_DRAWING);
         upd_remind_screen()->enter();
         upd_remind_screen()->render(&s_body, 0);

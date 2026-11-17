@@ -56,6 +56,13 @@ history is in git.
   the section's line on the alert band, for example `IOmcu runs the build
   included on this panel.`, as the grey holds of the C6 radio and the
   devices do. It gave no answer before.
+- UPDATES: the IOmcu section and its hold, the C6 RADIO row with its
+  reinstall and the WIRELESS DEVICES entry with its page move to the new
+  page SINGLE UPDATES, opened from the row Single updates in OPTIONS. Each
+  keeps its place, 2s hold and gates; BACK in the footer and the home tag
+  close the page, and leaving UPDATES ends a hold under way without
+  starting anything. UPDATES itself shows CHECK FOR UPDATES, the card, the
+  download's hold and OPTIONS.
 
 ### Fixed
 

@@ -139,7 +139,7 @@ MOTOR & ESC hat eine Hilfeseite für LIVE oder die Liste von PROGRAMMIEREN mit d
 ![Die Hilfe von ESC STICK auf Seite 1 bei einem Profil](view:help-motor-stick)
 ![Die Hilfe von IMU auf Seite 1](view:help-imu)
 
-OUTPUTS, SETUP, LOGS, FILES, WI-FI und UPDATES haben eigene Hilfeseiten für jeden Zustand: Kacheln, Liste und SENSORS auf SETUP, Platinenansicht, Eintrag PROG PORT und Rasteransicht auf OUTPUTS, Dateiliste, Importansicht und Grafik auf LOGS, die Spalten auf FILES, WLAN aus und an auf WI-FI, die Seite und ihre Optionsliste auf UPDATES. Auf Hilfeseite 1 steht das Hilfefeld rechts. Ein Bedienelement, das das Hilfefeld zum Teil verdeckt, wird markiert, wo es sichtbar ist. Diese Seiten steuern keinen Ausgang an, daher bleiben alle ihre Hilfeseiten auch in ARMED sichtbar.
+OUTPUTS, SETUP, LOGS, FILES, WI-FI und UPDATES haben eigene Hilfeseiten für jeden Zustand: Kacheln, Liste und SENSORS auf SETUP, Platinenansicht, Eintrag PROG PORT und Rasteransicht auf OUTPUTS, Dateiliste, Importansicht und Grafik auf LOGS, die Spalten auf FILES, WLAN aus und an auf WI-FI, die Seite, ihre Optionsliste, EINZELNE UPDATES und die Seite der Funkgeräte auf UPDATES. Auf Hilfeseite 1 steht das Hilfefeld rechts. Ein Bedienelement, das das Hilfefeld zum Teil verdeckt, wird markiert, wo es sichtbar ist. Diese Seiten steuern keinen Ausgang an, daher bleiben alle ihre Hilfeseiten auch in ARMED sichtbar.
 
 ![Die Hilfe von SETUP auf Seite 1](view:help-setup)
 ![Die Hilfe von OUTPUTS auf Seite 1](view:help-outputs)

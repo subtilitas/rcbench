@@ -314,8 +314,10 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 | FILES, Spalten | 3 | LOGS, Ordner, Zeile und Scrollleiste der linken Spalte; AKTUALISIEREN, KOPIEREN, VERSCHIEBEN, UMBENENNEN; die rechte Spalte, LÖSCHEN, NEU, INFO, ÖFFNEN |
 | WI-FI, WLAN aus | 3 | WLAN-HOTSPOT, MIT HEIMNETZ VERBINDEN, HEIMNETZ WÄHLEN, HEIMNETZ LÖSCHEN, ZUGANGSCODE EIN oder AUS; HOTSPOT-PASSWORT und ZUGANGSCODE, ZUFALL oder FEST; die Karte |
 | WI-FI, WLAN an | 1, 2 mit der Taste für Browser-Schreibzugriffe | die Zeilen, solange die Seite erreichbar ist, die Zeilen darunter, WLAN AUS; die Taste für Browser-Schreibzugriffe |
-| UPDATES | 2 | NACH UPDATES SUCHEN oder ABBRECHEN, der Abschnitt IOMCU, seine Haltetaste; die Karte, die Haltetaste des C6-Funks, die Haltetaste zum Laden, sobald eine Suche ein neueres Release fand, OPTIONEN |
+| UPDATES | 2 | NACH UPDATES SUCHEN oder ABBRECHEN; die Karte, die Haltetaste zum Laden, sobald eine Suche ein neueres Release fand, OPTIONEN |
 | UPDATES, OPTIONEN | 2 | wie eine Optionsliste |
+| UPDATES, EINZELNE UPDATES | 2 | der Abschnitt IOMCU, seine Haltetaste, der Eintrag FUNKGERÄTE; die Überschrift, die Haltetaste des C6-Funks, ZURÜCK |
+| UPDATES, die Seite der Funkgeräte | 1 | die drei Gerätezeilen, UPDATE ABBRECHEN während eines Updates, ZURÜCK |
 
 ![Die Hilfe von SETUP auf Seite 1](img/de/help-setup.png)
 
@@ -658,15 +660,15 @@ ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 | ERLEDIGT eines Schritts vor einem Einschalten im Stick-Lauf | `Halte 2s, um den Schritt vor dem Einschalten der Versorgung zu bestätigen.` |
 | 2s HALTEN ZUM INSTALLIEREN auf WI-FI | `Halte 2s, um zu installieren.` |
 | 2s HALTEN: LADEN & INSTALLIEREN auf UPDATES und in der Update-Erinnerung | `Halte 2s, um zu laden und zu installieren.` |
-| 2s HALTEN ZUM IOMCU-UPDATE auf UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
-| 2s HALTEN ZUM C6-FUNK-UPDATE auf UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
-| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
-| 2s HALTEN ZUM DIAL-UPDATE auf UPDATES | `Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.` |
-| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Dial-Firmware des Panels neu zu installieren.` |
-| 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE auf UPDATES | `Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.` |
-| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.` |
-| 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE auf UPDATES | `Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.` |
-| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf UPDATES | `Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.` |
+| 2s HALTEN ZUM IOMCU-UPDATE auf EINZELNE UPDATES und START im Bestätigungsdialog des IOmcu-Updates | `Halte 2s, um den IOmcu zu aktualisieren.` |
+| 2s HALTEN ZUM C6-FUNK-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den C6-Funk zu aktualisieren. Das WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die C6-Firmware des Panels neu zu installieren. WLAN bleibt bis zum Ende aus.` |
+| 2s HALTEN ZUM DIAL-UPDATE auf EINZELNE UPDATES | `Halte 2s, um das Dial zu aktualisieren. Der Drehknopf ruht bis zur neuen Verbindung.` |
+| 2s HALTEN: DIAL-FIRMWARE NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Dial-Firmware des Panels neu zu installieren.` |
+| 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den Leistungsknoten zu aktualisieren. Messwerte ruhen bis zur neuen Verbindung.` |
+| 2s HALTEN: LEISTUNGSKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Firmware des Leistungsknotens neu zu installieren.` |
+| 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE auf EINZELNE UPDATES | `Halte 2s, um den Auswuchtknoten zu aktualisieren. Messungen ruhen bis zur neuen Verbindung.` |
+| 2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN auf EINZELNE UPDATES | `Halte 2s, um die Firmware des Auswuchtknotens neu zu installieren.` |
 | 2s HALTEN ZUM LÖSCHEN ALLER PIN-ZUORDNUNGEN auf OUTPUTS | `Halte 2s, um alle Pin-Zuordnungen zu löschen.` |
 | ÜBERSCHREIBEN im Bestätigungsdialog des FILES-Editors | `Halte 2s, um zu überschreiben.` |
 | 2s HALTEN ZUM BESTÄTIGEN auf der Busfehler-Seite | `Halte 2s, um zu bestätigen.` |
@@ -876,7 +878,7 @@ Bedienelemente über y 436 des Inhalts.
 | SUPPLY | AUSGANG EIN / AUS | die Liste der Grenzen des Netzteils und der Anschlüsse des PD mini |
 | ESC STICK, auf der Seite eines Profils, seinem Lauf und seinem Ergebnis | START n / ABBRECHEN / OK | die Liste des Netzteils und der 12 Timing-Einstellungen |
 | IMU | 2s HALTEN: KALIBRIEREN | die Liste WIRELESS von SETUP beim Eintrag IMU |
-| UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung und Versionen |
+| UPDATES | 2s HALTEN: LADEN & INSTALLIEREN, wenn eine neuere Version gefunden ist | die Liste mit Erinnerung, Versionen und Einzelne Updates |
 | LOGS, auf der Dateiliste | leer | die Liste SD CARD von SETUP |
 | FILES, auf den Bereichen | leer | die Liste SD CARD von SETUP |
 | RECEIVER, BATTERY, BALANCE | leer | nichts: das Feld bleibt leer |
@@ -7217,33 +7219,27 @@ NACH UPDATES SUCHEN ist 460 x 56px bei y 16 im Körper, links. Die Karte
 rechts ist 532px breit, von y 16 bis 336 im Körper; ihr Text läuft in
 Zeilen von 41 Zeichen der Schrift 12 x 24px, 28px auseinander. Reicht ein
 Ergebnis bis in die letzten drei Zeilen der Karte, entfallen diese Zeilen.
-Unter NACH UPDATES SUCHEN stehen die Zeilen des IOmcu-Abschnitts in der
-Schrift 10 x 20px, und sein Halten ist eine Taste derselben Größe, ab y 380
-im Körper. Dazwischen der Eintrag FUNKGERÄTE: seine Überschrift bei y 236
-im Körper, seine Zeile bei y 260 und seine Taste, 460 x 56px, bei y 316
-([Die Funkgeräte](#die-funkgeräte)). Unter der Karte steht die Zeile C6 RADIO: eine Zeile bei y 348
-im Körper und ihr Halten, 532 x 56px, neben dem des IOmcu
-([Der C6-Funk](#der-c6-funk)). Die Fußleiste
+Die Fußleiste
 ([Die Fußleiste und die Optionsliste](#die-fußleiste-und-die-optionsliste))
 lautet `[UPDATES] [2s HALTEN: LADEN & INSTALLIEREN] [OPTIONEN]`; der
-mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet.
+mittlere Platz bleibt leer, bis eine Suche ein neueres Release findet. Die
+Updates des IOmcu, des C6-Funks und der Funkgeräte stehen auf EINZELNE
+UPDATES, einer Seite, die die Zeile Einzelne Updates der OPTIONEN öffnet
+([Einzelne Updates](#einzelne-updates)).
 
 | Bedienelement | Wirkung |
 | --- | --- |
 | `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. |
 | `2s HALTEN: LADEN & INSTALLIEREN` | In der Mitte der Fußleiste, sobald eine Suche ein neueres Release gefunden hat. Lädt es, prüft es und installiert es. |
-| `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start und Releases. Grau, solange eine Suche oder ein Download läuft oder ein Finger den Download hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche oder Download.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
-| `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
-| `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
-| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
-| `FIRMWARE DER FUNKGERÄTE` | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten ([Die Funkgeräte](#die-funkgeräte)). Während ein Update läuft, zeigt die Taste die Beschriftung dieser Zeile. |
+| `OPTIONEN` | Öffnet die Liste mit Erinnerung beim Start, Releases und Einzelne Updates. Grau, solange eine Suche oder ein Download läuft oder ein Finger den Download hält; ein Tippen zeigt dann `OPTIONEN nur ohne laufende Suche oder Download.` im Meldeband. Eine Suche, die unter der offenen Liste startet, schließt sie. |
 
 ![Die OPTIONEN von UPDATES](img/de/updates-settings.png)
 
-| Einstellung | Werte | Vorgabe | Wirkung |
+| Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
 | Erinnerung beim Start | AUS, EIN | EIN | die Suche beim Start und ihre Erinnerung |
 | Releases | STABLE, TESTING | STABLE | welche Releases eine Suche liest ([Die Suche](#die-suche)); ein Wechsel blendet das Ergebnis der letzten Suche aus, und ein mit der anderen Einstellung gefundenes Release wird nicht angeboten |
+| Einzelne Updates | - | - | ein Tippen schließt die Liste und öffnet EINZELNE UPDATES ([Einzelne Updates](#einzelne-updates)); ist ein Wert ungespeichert, kommt zuerst die Warnung beim Verlassen, und ihr SPEICHERN oder VERWERFEN öffnet die Seite |
 
 Eine Änderung gilt sofort; SPEICHERN in der Leiste der Liste behält sie, wie
 auf SETUP ([Werte behalten](#werte-behalten)).
@@ -7424,15 +7420,53 @@ Aktuelle Einschränkung der Linie 0.22: Die Liste enthält die 10 nach Datum
 neuesten Releases (`per_page=10`). Ein Patch-Release 0.22.x, nach dem 10 oder mehr
 Releases veröffentlicht wurden, wird in keiner Einstellung gefunden.
 
+### Einzelne Updates
+
+EINZELNE UPDATES startet ein Update oder eine Neuinstallation zur Zeit:
+des IOmcu, des C6-Funks oder eines Funkgeräts. Die Seite öffnet über die
+Zeile Einzelne Updates der OPTIONEN und bedeckt den Körper von UPDATES.
+Jeder Start ist ein Halten von 2s.
+
+![EINZELNE UPDATES](img/de/updates-single.png)
+
+Der Platz der Karte, 532px breit von y 16 bis 336 im Körper, trägt die
+Überschrift `Einzelne Updates und Neuinstallationen. Der normale Weg sind
+die Schritte auf UPDATES.` und eine Zeile dazu, was eine Neuinstallation
+tut. Die linke Spalte trägt den IOmcu-Abschnitt: seine Zeilen in der
+Schrift 10 x 20px ab y 88 im Körper und sein Halten, 460 x 56px, bei
+y 380 ([Der IOmcu](#der-iomcu)). Dazwischen der Eintrag FUNKGERÄTE: seine
+Überschrift bei y 236 im Körper, seine Zeile bei y 260 und seine Taste,
+460 x 56px, bei y 316 ([Die Funkgeräte](#die-funkgeräte)). Unter der
+Überschrift die Zeile C6 RADIO: eine Zeile bei y 348 im Körper und ihr
+Halten, 532 x 56px, neben dem des IOmcu ([Der C6-Funk](#der-c6-funk)).
+Die Fußleiste lautet `[UPDATES] [ ] [ZURÜCK]`.
+
+| Bedienelement | Wirkung |
+| --- | --- |
+| `2s HALTEN ZUM IOMCU-UPDATE` | Startet das Update des IOmcu aus dem Image, das dieses Panel mitbringt ([Der IOmcu](#der-iomcu)). |
+| `2s HALTEN ZUM C6-FUNK-UPDATE` | Sendet das Image des C6-Funks, das dieses Panel mitbringt, an den ESP32-C6 des Boards ([Der C6-Funk](#der-c6-funk)). |
+| `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` | Dasselbe, solange der C6 die mitgebrachte Version meldet ([Der C6-Funk](#der-c6-funk)). |
+| `FIRMWARE DER FUNKGERÄTE` | Öffnet über dieser Seite die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten ([Die Funkgeräte](#die-funkgeräte)). Während ein Update läuft, zeigt die Taste die Beschriftung dieser Zeile. |
+| `ZURÜCK` | Schließt die Seite: UPDATES erscheint wieder. |
+
+Ein Finger zur Zeit: Liegt ein Finger auf einem Halten, dem Eintrag oder
+ZURÜCK, startet ein zweiter nichts. Das Home-Tag schließt zuerst die Seite
+der Funkgeräte, dann diese Seite, dann verlässt es UPDATES. Das Verlassen
+von UPDATES schließt die Seite, und ein laufendes Halten endet, ohne etwas
+zu starten. Eine Suche oder ein Download, der startet, während die Seite
+offen ist, schließt nichts; NACH UPDATES SUCHEN und das Halten zum Laden stehen nicht
+auf der Seite.
+
 ### Der IOmcu
 
-Unter den Tasten zeigt UPDATES den IOmcu-Abschnitt: die laufende Version
+Auf EINZELNE UPDATES zeigt die linke Spalte den IOmcu-Abschnitt: die laufende Version
 (`Läuft: 0.21.2`), die Version des enthaltenen Images
 (`Auf diesem Panel: 0.22.0`), eine Statuszeile und
 `2s HALTEN ZUM IOMCU-UPDATE`. Das Halten startet dasselbe Update mit derselben Fortschrittsanzeige wie
 die Frage beim Verbindungsaufbau ([IOmcu-Update](#iomcu-update)), auch wenn
 diese Frage zuvor abgelehnt wurde. Nach dem Update oder einem verworfenen
-START ohne begonnenes Update kehrt der Bildschirm zu UPDATES zurück.
+START ohne begonnenes Update kehrt der Bildschirm zu UPDATES zurück,
+EINZELNE UPDATES geschlossen.
 
 ![Der IOmcu-Abschnitt mit einem anderen Build](img/de/updates-coproc.png)
 
@@ -7466,7 +7500,7 @@ Update trotzdem, wie die Frage es auch ihm anbietet.
 
 ### Der C6-Funk
 
-Unter der Karte zeigt UPDATES den ESP32-C6 des Boards, der Wi-Fi und
+Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und
 Bluetooth trägt: `C6-Funk: 2.13.0. Auf diesem Panel: 2.13.0.`, die Version,
 die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start gemeldet hat, oder
 `nicht gemeldet`, und die Version des Images, das dieses Panel mitbringt,
@@ -7520,7 +7554,7 @@ GitHub-Prüfung und IOmcu-Update warten.
 
 ### Die Funkgeräte
 
-Der Eintrag FUNKGERÄTE auf UPDATES zählt die Geräte:
+Der Eintrag FUNKGERÄTE auf EINZELNE UPDATES zählt die Geräte:
 `Verbunden: 1 von 3. Andere Version: 0.` nennt die Geräte, die eine
 Version gemeldet haben, und die, deren Zeile eine andere als die
 mitgebrachte Version anbietet. Ein Tippen auf `FIRMWARE DER FUNKGERÄTE`
@@ -7529,13 +7563,13 @@ Beschriftung dieser Zeile.
 
 ![Der Eintrag FUNKGERÄTE, während das Dial nach seinem Druck fragt](img/de/updates-dial.png)
 
-Die Seite bedeckt den Körper von UPDATES. Sie hat eine Zeile je Gerät, bei
+Die Seite bedeckt EINZELNE UPDATES. Sie hat eine Zeile je Gerät, bei
 y 24, 128 und 232 im Körper: DIAL-FIRMWARE, LEISTUNGSKNOTEN-FIRMWARE und
 AUSWUCHTKNOTEN-FIRMWARE. Überschrift und Zeile nehmen 496px ab x 16 ein,
 das Halten 480 x 56px ab x 528. Ein Hinweis unter den Zeilen sagt, wie
 ein Gerät ein Update annimmt. `ZURÜCK` im rechten Platz der Fußleiste und
-das Home-Tag schließen die Seite; das Verlassen von UPDATES schließt sie
-ebenfalls. Es läuft ein Update zur Zeit: Solange eines läuft, ist das
+das Home-Tag schließen die Seite und zeigen wieder EINZELNE UPDATES; das
+Verlassen von UPDATES schließt beide. Es läuft ein Update zur Zeit: Solange eines läuft, ist das
 Halten der anderen Zeilen grau.
 
 ![Die Seite der Funkgeräte](img/de/updates-devices.png)
@@ -7549,7 +7583,7 @@ Halten der anderen Zeilen grau.
 | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` | Sendet das Image des Auswuchtknotens, das dieses Panel mitbringt, an den gebundenen Auswuchtknoten. |
 | `2s HALTEN: AUSWUCHTKNOTEN NEU INSTALLIEREN` | Dasselbe, solange der Knoten die mitgebrachte Version meldet. |
 | `UPDATE ABBRECHEN` | Im mittleren Platz der Fußleiste, solange ein Update läuft; ein einfaches Tippen. Vor END beendet es das Update: Das Gerät verwirft, was es angenommen hat, und behält seine Firmware, und das Band zeigt `<Gerät>-Update abgebrochen: auf UPDATES abgebrochen. Vorherige Firmware läuft.` Ab END installiert das Gerät, was kommt: Die Taste ist grau, ein Tippen zeigt `Das Gerät installiert das Update und hält jetzt nicht an. Das Ergebnis folgt.` im Band, und das Ergebnis folgt wie ohne das Tippen. |
-| `ZURÜCK` | Schließt die Seite. |
+| `ZURÜCK` | Schließt die Seite: EINZELNE UPDATES erscheint wieder. |
 
 ### Das Dial
 

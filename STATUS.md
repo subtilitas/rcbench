@@ -362,8 +362,10 @@ highest of its 10 newest releases and the rule that offers only a newer release
 (`test_fw_release_scan`), the check and the download with their budgets, aborts and a
 scripted HTTP client (`shared/webaccess/wa_fetch.c`, `test_wa_fetch`), RELEASES' two
 channels and GitHub's request limit (`test_wa_fetch_channel`), a job's task that outlives
-the radio in a name lookup (`test_wa_fetch_task`), and UPDATES, the reminder and the
-download's screen (`shared/ui/upd_screen.c`, `test_upd_screen`). The panel side is
+the radio in a name lookup (`test_wa_fetch_task`), UPDATES, the reminder and the
+download's screen (`shared/ui/upd_screen.c`, `shared/ui/upd_remind.c`, `test_upd_screen`),
+and SINGLE UPDATES, opened from OPTIONS: BACK, the home tag, leaving, one press at a time
+and the rows' rectangles (`shared/ui/upd_single.c`, `test_upd_single`). The panel side is
 `wifi_access_fetch_*()` over esp_http_client in `firmware/panel/components/wifi_access/`.
 Not run on a panel or against GitHub: the API request of RELEASES on TESTING, the TLS
 (transport layer security) handshakes, the durations of the check and the download, and the
@@ -406,8 +408,8 @@ RUN is not offered while that control shows; SUPPLY's OUTPUT OFF, in the footer'
 slot, lies under either dock, so SUPPLY offers no page while its output is on. OUTPUTS, SETUP,
 LOGS and FILES have 20 pages over 11 states (`help_outputs.c`, `help_setup.c`, `help_logs.c`,
 `help_files.c`; `test_help_outputs`, `test_help_setup`, `test_help_logs`, `test_help_files`).
-WI-FI has 3 pages with the radio off and 1 or 2 with it on, UPDATES 2 and its OPTIONS
-list's 2 (`help_wifi.c`, `help_upd.c`; `test_help_net`). MOTOR & ESC has 2 pages on LIVE
+WI-FI has 3 pages with the radio off and 1 or 2 with it on, UPDATES 2, its OPTIONS
+list's 2, SINGLE UPDATES 2 and the wireless devices' page 1 (`help_wifi.c`, `help_upd.c`; `test_help_net`). MOTOR & ESC has 2 pages on LIVE
 and 2 on PROGRAM's list with 9 items each, and the OPTIONS
 list's 2 (`shared/ui/motor_guide.c`; `test_help_motor`); none unless the bench is SAFE, as
 either dock covers part of DISARM. ESC STICK has 2 pages on its list and 2 on a profile, the
@@ -876,7 +878,7 @@ against a simulated flash and boot ROM. Which slot runs, which one the update wr
 trial, where a write lands and when a BUY counts are `fw_slots.h` (`test_fw_slots`); the boot
 ROM's calls in `firmware/iomcu/src/update_hw.c` are not host-tested.
 `test_coproc_update_screen` runs the question and the progress, with CANCEL and the home tag as the only declines and a forced screen over the
-question declining nothing; `test_upd_coproc` SETUP > UPDATES' IOmcu section, whose 2s hold
+question declining nothing; `test_upd_coproc` SETUP > UPDATES > SINGLE UPDATES' IOmcu section, whose 2s hold
 starts the same update, also after a declined question.
 
 The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu
@@ -1351,7 +1353,7 @@ link lost after END left unknown and settled by the device's version; its
 client on the Bluetooth LE hub (`test_devupd_client`) against a scripted
 host stack; the start's gate and the busy flag that refuses ARM, read busy
 at every point from the ask to the end; the node's sleep policy during an
-update (`test_node_policy`); UPDATES' WIRELESS DEVICES entry and its
+update (`test_node_policy`); SINGLE UPDATES' WIRELESS DEVICES entry and its
 page with the DIAL FIRMWARE, POWER NODE FIRMWARE and BALANCE NODE FIRMWARE
 rows: the entry opening the page, BACK and the home tag closing it, each
 row's hold at 1,999ms and 2,000ms, its reasons, its hints and its
@@ -1654,7 +1656,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 595 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 596 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1756,7 +1758,7 @@ The host suite is 595 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_wifi_kept`, `test_wifi_layout`, `test_fw_image`, `test_fw_c6`, `test_fw_install`, `test_fw_run`, `test_fw_trial`,
 `test_fw_slots`, `test_fw_upload`, `test_fw_release`, `test_fw_release_scan`, `test_wa_session`,
 `test_wa_scan`, `test_wa_fetch`, `test_wa_fetch_channel`, `test_wa_fetch_task`,
-`test_upd_screen`, `test_upd_settings`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
+`test_upd_screen`, `test_upd_settings`, `test_upd_single`, `test_upd_c6`, `test_wa_text`, `test_wa_walk`, `test_wa_send`, `test_wa_zip`,
 `test_wa_page`, `test_wa_page_de`, `test_wa_hl`, `test_wa_edit`, `test_wa_mdns`,
 `test_wa_guard`, `test_wa_kept`, `test_wa_cookie`, `test_wa_api`, `test_wa_api_file`,
 `test_wa_api_write`, `test_sense_i2c`, `test_storage`, `test_storage_swap`, `test_text_buf`,
@@ -2281,7 +2283,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-990 committed screenshots to the current render, 495 in English and the same 495 in German, and `render_ui.py --fit` fails on a string that
+992 committed screenshots to the current render, 496 in English and the same 496 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2323,7 +2325,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/help_setup.c` | 95 | 91 | 95.8% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
-| `shared/ui/help_upd.c` | 49 | 48 | 98.0% |
+| `shared/ui/help_upd.c` | 63 | 62 | 98.4% |
 | `shared/ui/help_wifi.c` | 59 | 59 | 100.0% |
 | `shared/ui/ui_watermark.c` | 44 | 42 | 95.5% |
 | `shared/ui/ui_plot.c` | 200 | 191 | 95.5% |
@@ -2465,10 +2467,12 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 331 | 331 | 100.0% |
-| `shared/ui/upd_screen.c` | 663 | 632 | 95.3% |
-| `shared/ui/upd_settings.c` | 43 | 39 | 90.7% |
+| `shared/ui/upd_screen.c` | 430 | 412 | 95.8% |
+| `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
+| `shared/ui/upd_single.c` | 165 | 163 | 98.8% |
+| `shared/ui/upd_settings.c` | 57 | 53 | 93.0% |
 | `shared/ui/upd_c6.c` | 118 | 116 | 98.3% |
-| `shared/ui/upd_dev.c` | 290 | 259 | 89.3% |
+| `shared/ui/upd_dev.c` | 290 | 284 | 97.9% |
 | `shared/ui/upd_wizard.c` | 278 | 278 | 100.0% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 135 | 134 | 99.3% |
@@ -2750,7 +2754,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **101117** | **98975** | **97.9%** |
+| **total** | **101032** | **98929** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
