@@ -644,7 +644,14 @@ servo set to CW and found by the first write on every other; two writes in a row
 not move their side end the run as `writes do not move the 2000us side`
 (`test_servo_rauto`, `test_servo_rauto_guard`, `test_servo_rauto_effect` on the core with a
 linear servo model, `test_servo_rauto_kst` through the screen and the programmer on the modelled
-KST servo, `test_servo_rauto_panel`; host suite only).
+KST servo, `test_servo_rauto_panel`; host suite only). On the IMU a measure also waits until
+the readings over IMU settling time (default 3.0s) span IMU precision (default 0.10°) or
+less (`shared/servo/servo_settle.c`, `test_servo_settle`); the creep curves the BWT901CL
+showed after servo steps on 2026-11-17 and 2026-11-18, fed at 100Hz, are taken within 0.07°
+of their final value 6.5s to 10.4s after the surface arrives, where the 500ms still test
+alone took them 0.8° to 2.7° off (`test_servo_rauto_settle`). Every end is approached from
+PULSE CENTER, the verify pass's center from 2000us. A run that wrote verifies 1000us, 2000us and PULSE
+CENTER once more and fails on one outside the tolerance (`test_servo_rauto_verify`).
 Its READY card (`shared/ui/servo_rudder_auto_ready.c`, `shared/ui/servo_ready.c`) gives
 each check of the start gate one row, and the footer's HOLD 2s: ARM + START runs
 `shared/servo/servo_start_seq.c`: PORT PWM, PROG 5V or the PD mini, the read-back within
@@ -1667,7 +1674,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 594 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 598 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1721,7 +1728,7 @@ The host suite is 594 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_sense_link_view`, `test_sense_map_link`, `test_sense_win_link`,
 `test_sense_limit_link`, `test_log_cols`, `test_log_throttle`, `test_sense_windows`, `test_servo_source`,
 `test_sbus`, `test_dshot_frame`, `test_dshot_telem`, `test_dshot_edt`, `test_dshot_cadence`, `test_out_dshot`, `test_ppm`,
-`test_outbind`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
+`test_outbind`, `test_outbind_take`, `test_board_fix`, `test_outputs_screen`, `test_outputs_screen_draw`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
@@ -1790,7 +1797,7 @@ The host suite is 594 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
-`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
+`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
@@ -2336,7 +2343,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/help_setup.c` | 95 | 91 | 95.8% |
 | `shared/ui/help_logs.c` | 54 | 53 | 98.2% |
 | `shared/ui/help_files.c` | 24 | 23 | 95.8% |
-| `shared/ui/help_upd.c` | 49 | 48 | 98.0% |
+| `shared/ui/help_upd.c` | 78 | 75 | 96.2% |
 | `shared/ui/help_wifi.c` | 59 | 59 | 100.0% |
 | `shared/ui/ui_watermark.c` | 44 | 42 | 95.5% |
 | `shared/ui/ui_plot.c` | 200 | 191 | 95.5% |
@@ -2394,7 +2401,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_limit_seam.c` | 90 | 86 | 95.6% |
 | `shared/ui/servo_workbench.c` | 178 | 174 | 97.8% |
 | `shared/ui/servo_rudder_panel.c` | 479 | 474 | 99.0% |
-| `shared/ui/servo_rudder_auto_panel.c` | 585 | 539 | 92.1% |
+| `shared/ui/servo_rudder_auto_panel.c` | 613 | 558 | 91.0% |
 | `shared/ui/servo_rudder_auto_ready.c` | 287 | 282 | 98.3% |
 | `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
@@ -2477,11 +2484,16 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
-| `shared/ui/coproc_update_screen.c` | 331 | 331 | 100.0% |
-| `shared/ui/upd_screen.c` | 657 | 626 | 95.3% |
-| `shared/ui/upd_settings.c` | 43 | 39 | 90.7% |
-| `shared/ui/upd_c6.c` | 118 | 116 | 98.3% |
-| `shared/ui/upd_dev.c` | 290 | 259 | 89.3% |
+| `shared/ui/coproc_update_screen.c` | 335 | 335 | 100.0% |
+| `shared/ui/upd_screen.c` | 344 | 325 | 94.5% |
+| `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
+| `shared/ui/upd_single.c` | 166 | 164 | 98.8% |
+| `shared/ui/upd_settings.c` | 57 | 53 | 93.0% |
+| `shared/ui/upd_c6.c` | 119 | 117 | 98.3% |
+| `shared/ui/upd_dev.c` | 292 | 286 | 98.0% |
+| `shared/ui/upd_wizard.c` | 278 | 278 | 100.0% |
+| `shared/ui/upd_wiz_view.c` | 311 | 299 | 96.1% |
+| `shared/ui/upd_wiz_card.c` | 193 | 191 | 99.0% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 135 | 134 | 99.3% |
 | `shared/ui/imu_sensor.c` | 210 | 210 | 100.0% |
@@ -2551,8 +2563,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_limrun_report.c` | 316 | 313 | 99.0% |
 | `shared/servo/servo_gap.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_angle.c` | 33 | 33 | 100.0% |
-| `shared/servo/servo_rudder_auto.c` | 556 | 544 | 97.8% |
-| `shared/servo/servo_rudder_auto_report.c` | 250 | 250 | 100.0% |
+| `shared/servo/servo_rudder_auto.c` | 599 | 585 | 97.7% |
+| `shared/servo/servo_rudder_auto_report.c` | 293 | 292 | 99.7% |
+| `shared/servo/servo_rudder_auto_verify.c` | 31 | 30 | 96.8% |
+| `shared/servo/servo_settle.c` | 63 | 63 | 100.0% |
 | `shared/servo/servo_limrun_family.c` | 29 | 29 | 100.0% |
 | `shared/servo/servo_start_seq.c` | 205 | 198 | 96.6% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
@@ -2668,6 +2682,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
 | `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
 | `shared/outputs/out_bind.c` | 562 | 549 | 97.7% |
+| `shared/outputs/out_bind_take.c` | 100 | 99 | 99.0% |
 | `shared/outputs/board_fix.c` | 98 | 98 | 100.0% |
 | `shared/outputs/out_pwm_map.c` | 20 | 20 | 100.0% |
 | `shared/outputs/servo_page.c` | 240 | 238 | 99.2% |
@@ -2714,7 +2729,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/vibe/vibe_frame.c` | 93 | 90 | 96.8% |
 | `shared/vibe/vibe_solve.c` | 183 | 168 | 91.8% |
 | `shared/dial/dial_scene.c` | 346 | 340 | 98.3% |
-| `shared/dial/dial_draw.c` | 509 | 481 | 94.5% |
+| `shared/dial/dial_draw.c` | 512 | 484 | 94.5% |
 | `shared/dial/dial_text.c` | 10 | 9 | 90.0% |
 | `shared/dial/dial_button.c` | 82 | 82 | 100.0% |
 | `shared/bench/report_lines.c` | 104 | 102 | 98.1% |
@@ -2740,6 +2755,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/fwupdate/fw_release.c` | 430 | 430 | 100.0% |
 | `shared/fwupdate/fw_install.c` | 68 | 68 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
+| `shared/fwupdate/fw_run.c` | 85 | 85 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
 | `shared/fwupdate/fw_c6.c` | 158 | 158 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
@@ -2758,7 +2774,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **100437** | **98309** | **97.9%** |
+| **total** | **101473** | **99353** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

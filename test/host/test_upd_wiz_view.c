@@ -617,6 +617,27 @@ TEST_CASE(the_device_step_shows_connecting_the_ask_with_seconds_and_the_share)
     CHECK(!w.cancel);
 }
 
+/* A failed C6 update whose retry waits for the supply output: the card
+ * keeps the failure's reason in both languages and lets the restart note
+ * go first when the card is full (Codex P2 on #874). */
+TEST_CASE(a_held_c6_retry_keeps_the_failure_reason_on_the_card)
+{
+    static char why[128];
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
+        set_held((held_t){ UPD_WIZ_C6, 1 });         /* FW_C6_WHY_SUPPLY */
+        on_step(UPD_WIZ_C6);
+        set_held((held_t){ UPD_WIZ_C6, 1 });
+        (void)snprintf(why, sizeof(why), TR(ALERT_C6_FAILED),
+                       TR(C6_FAIL_VERIFY));
+        upd_screen_set_result(UPD_WIZ_C6, why);
+        CHECK_EQ(wiz().current, UPD_WIZ_C6);
+        CHECK(card_has(why));
+        upd_screen_set_result(UPD_WIZ_C6, NULL);
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 /* A failed attempt: FAILED in the row, the reason on the card, the hold
  * live as the retry; a success clears it. */
 TEST_CASE(a_failed_attempt_shows_its_reason_and_keeps_the_hold)
@@ -882,6 +903,7 @@ int main(void)
     RUN(skip_on_the_iomcu_step_hands_over_the_decline_while_an_offer_stands);
     RUN(cancel_update_stands_only_while_a_device_transfer_runs);
     RUN(the_device_step_shows_connecting_the_ask_with_seconds_and_the_share);
+    RUN(a_held_c6_retry_keeps_the_failure_reason_on_the_card);
     RUN(a_failed_attempt_shows_its_reason_and_keeps_the_hold);
     RUN(a_failed_download_blocks_nothing_and_check_is_the_way_back);
     RUN(the_end_card_names_skipped_and_absent_steps);

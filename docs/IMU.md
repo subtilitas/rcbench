@@ -308,8 +308,45 @@ within 0.05° of the sensor's. AUTO waits up to 3,000ms after the command
 plus the filter's longest settle (`imu_filter_settle_ms()`): the frames a
 distance of 180° needs to come within 0.05°, at 1.5 times the frame period
 measured, 300ms a frame at most. That is 0ms for IMU filter 1, 11,700ms
-for IMU filter 10 at 10Hz and 60,900ms for IMU filter 50 at 10Hz. The
-report names the wait: `within 14700ms of the command`.
+for IMU filter 10 at 10Hz and 60,900ms for IMU filter 50 at 10Hz. On
+the IMU the wait also holds 10,000ms for the sensor's creep and IMU
+settling time (below). The report names the wait: `within 27700ms of the
+command` for IMU filter 10 at 10Hz and the default settling time.
+
+## The settle rule
+
+The still time alone does not hold a sensor that creeps after a step.
+The BWT901CL in 6-AXIS keeps moving toward its final value for 5s to 8s
+after a servo step, the remaining error x0.55 a second (a time constant
+of about 1.7s; bench of 2026-11-17, IMU filter 1, 100Hz, 5.00V and
+6.00V). Over 500ms that creep stays inside 0.5°, so the still time
+passes 0.6s to 2.3s after the surface arrives, 0.8° to 0.9° from where
+the reading settles (RUDDR044). Its tail is slower still: under a 2.0s
+window within 0.20°, measures taken 4.1s to 6.2s after the surface
+arrived lay 0.14° to 0.26° from the value held 10s later, the reading
+moving 0.07°/s to 0.1°/s (bench of 2026-11-18), a second component with
+a time constant of about 3.5s.
+
+RUDDER AUTO on the IMU therefore also waits until the angle held within
+IMU precision over the last IMU settling time
+(`shared/servo/servo_settle.c`). The readings since the command are kept
+in 100ms buckets of their lowest and highest angle; the angle is taken
+once the buckets reaching back IMU settling time from the newest reading
+span IMU precision or less.
+
+| Setting | Key | Range | Step | Default |
+| --- | --- | --- | --- | --- |
+| IMU settling time | `imu_settle_s` | 0.5 to 10.0s | 0.5s | 3.0s |
+| IMU precision | `imu_prec` | 0.05 to 1.00° | 0.05° | 0.10° |
+
+A reading that comes to its final value as e x exp(-t / tau) moves
+e x (exp(W / tau) - 1) over a window W. A window W within P leaves at most
+P / (exp(W / tau) - 1) to go: 0.03° with the defaults at tau 1.7s, 0.08°
+at tau 3.5s. Both settings are read when the run starts. The servo test
+and the LIMIT RUN do not use them: the servo test times a move by the
+still time and decides nothing by the angle, and the LIMIT RUN reports the
+angle at the furthest free position without a still test. The rule's
+effect on a run is in [Servo: AUTO end points](Servo.md#auto-end-points).
 
 Current limitation: with IMU filter above 1, a move of the servo test
 counts as late when the filtered angle has not settled by the next

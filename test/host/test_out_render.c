@@ -8,7 +8,8 @@
  * either binds; a slot bound anew on PIO (DShot, PPM) lets every DShot port
  * go before its bind, and a slot outside the bind mask or a PWM slot does
  * not; a PWM slot lets a SERVO PWM port on its slice go right before its
- * bind, and leaves ports on other slices, parked ports and DShot ports; the
+ * bind, and leaves ports on other slices, parked ports and DShot ports; a
+ * slot that changes driver on its pin lets the old driver go first; the
  * extended-telemetry ask (DSHOT_CMD_EDT_ENABLE with the telemetry bit) goes
  * out in place of stop frames, DSHOT_CMD_REPEATS of them, never in place of
  * a throttle, and never on a plain DShot slot or a DShot port; a moved
@@ -330,6 +331,39 @@ TEST_CASE(slots_exchanging_pins_let_both_go_before_either_binds)
     g_n = 0u;
     out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
     CHECK_EQ(g_n, 0u);
+}
+
+/*
+ * A pin moved between protocols in one commit: the slot keeps its pin and
+ * its channel and changes driver.  The old driver lets the pin go before
+ * the new one binds it, in both directions, and the slot beside it is not
+ * touched.
+ */
+TEST_CASE(a_slot_changing_driver_on_its_pin_lets_the_old_go_first)
+{
+    fresh();
+    slot(0u, OUT_DRIVER_DSHOT, 6u, 0u);
+    slot(1u, OUT_DRIVER_DSHOT, 7u, 1u);
+    out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+    CHECK(out_render_bound(&g_r, 0u) && out_render_bound(&g_r, 1u));
+
+    static const out_driver_t to[2] = { OUT_DRIVER_PWM, OUT_DRIVER_DSHOT };
+    for (unsigned k = 0; k < 2u; ++k) {
+        const out_driver_t was = (k == 0u) ? OUT_DRIVER_DSHOT : OUT_DRIVER_PWM;
+        slot(0u, to[k], 6u, 0u);
+        g_n = 0u;
+        out_render_apply(&g_r, &g_o, g_rate, 0xFFu);
+        const unsigned rel = find(EV_RELEASE, 6u, 0u);
+        const unsigned bnd = find(EV_BIND, 6u, 0u);
+        CHECK(rel < LOG_MAX && bnd < LOG_MAX);
+        CHECK(rel < bnd);
+        CHECK_EQ(g_log[rel].driver, was);
+        CHECK_EQ(g_log[bnd].driver, to[k]);
+        CHECK_EQ(count(EV_RELEASE), 1u);
+        CHECK_EQ(count(EV_BIND), 1u);
+        CHECK_EQ(find(EV_RELEASE, 7u, 0u), LOG_MAX);
+        CHECK(out_render_bound(&g_r, 0u) && out_render_bound(&g_r, 1u));
+    }
 }
 
 /*
@@ -945,6 +979,7 @@ int main(void)
 {
     RUN(the_lowest_bound_bidirectional_slot_reports);
     RUN(slots_exchanging_pins_let_both_go_before_either_binds);
+    RUN(a_slot_changing_driver_on_its_pin_lets_the_old_go_first);
     RUN(a_pio_slot_bound_anew_lets_every_dshot_port_go_first);
     RUN(a_pwm_slot_lets_the_ports_on_its_slice_go_right_before_its_bind);
     RUN(ports_exchanging_pins_let_both_go_before_either_binds);

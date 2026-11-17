@@ -445,11 +445,11 @@ jobs:
       # in the host build; cppcheck reads it with the firmware.
       # render_screen.c, render_files.c, render_hitec.c, render_esc_wire.c,
       # render_help.c, render_shot.c, render_rudder.c, render_imu.c,
-      # render_dial.c, render_node.c and bench_frame.c are built by
-      # tools/render_ui.py, tools/render_dial.py, tools/render_node.py and
-      # tools/frame_cost.py, not by CMake, so they have no compile command
-      # here; the three render tools build the first ten with -Werror,
-      # cppcheck reads all eleven.
+      # render_dial.c, render_node.c, render_upd_wiz.c and bench_frame.c are
+      # built by tools/render_ui.py, tools/render_dial.py,
+      # tools/render_node.py and tools/frame_cost.py, not by CMake, so they
+      # have no compile command here; the three render tools build the first
+      # eleven with -Werror, cppcheck reads all twelve.
       # Configuration and the reason for each disabled check are in
       # .clang-tidy and test/host/.clang-tidy.  Every file runs on every
       # run; no result is kept between runs.
@@ -468,6 +468,7 @@ jobs:
                         -e 'test/host/render_imu.c' \
                         -e 'test/host/render_dial.c' \
                         -e 'test/host/render_node.c' \
+                        -e 'test/host/render_upd_wiz.c' \
                         -e 'test/host/bench_frame.c' \
               | xargs -P "$(nproc)" -n 4 clang-tidy -p test/host/build --quiet
 
