@@ -8,6 +8,11 @@ history is in git.
 
 ### Added
 
+- UPDATES: a step model (`shared/ui/upd_wizard.c`) puts the updates in the
+  order PANEL, IOMCU, C6 RADIO, DIAL, POWER NODE, BALANCE NODE. From the
+  live state of each it names every step's state, the current step and its
+  one control. The device rows' feed tells a device that is not bound from
+  one that is bound and not connected. No screen draws the model.
 - Panel: the run note in NVS (non-volatile storage), key `run_note` beside
   the restart note: an update run that goes on after a restart. The panel
   install writes it once the image is written whole and checked, the C6
