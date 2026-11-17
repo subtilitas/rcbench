@@ -46,7 +46,7 @@
 #include "services/gatt/ble_svc_gatt.h"
 
 /** @brief The image's role, which an update over Bluetooth LE checks. */
-DEVOTA_ROLE(BLEOTA_KIND_DIAL);
+DEVOTA_ROLE(DIAL_BOARD_KIND);
 
 /** @brief The panel's packets waiting for the face task. */
 #define PANEL_QUEUE 32u
@@ -136,7 +136,7 @@ static size_t info_value(uint8_t *out)
     }
     i.flags = (uint8_t)((atomic_load(&s_bound) ? DK_INFO_BOUND : 0u)
                         | (RCBENCH_DIAL_HOOKS ? DK_INFO_HOOKS : 0u));
-    i.hw = DK_HW_DIAL11;
+    i.hw = DIAL_BOARD_HW;
     dk_text_copy(i.name, sizeof i.name, s_name);
     return dk_info_encode(&i, out);
 }
@@ -448,7 +448,7 @@ void dial_ble_start(void)
         ESP_LOGE(TAG, "the GATT service was refused");
         return;
     }
-    (void)devota_start(BLEOTA_KIND_DIAL, BLEOTA_CONFIRM_PRESS, update_key);
+    (void)devota_start(DIAL_BOARD_KIND, BLEOTA_CONFIRM_PRESS, update_key);
     nimble_port_freertos_init(host_task);
 }
 

@@ -20,11 +20,13 @@
 
 #include "driver/gpio.h"
 #include "driver/usb_serial_jtag.h"
+#include "esp_sleep.h"
 
 /** @brief A test build's injected reading, mV; 0 none.  Written by the
  *         console task, read by the face task: one aligned 16-bit store. */
 static volatile uint16_t s_inject_mv;
 
+#if DIAL_HAS_LATCH
 void dial_power_hold(void)
 {
     const gpio_config_t io = {
@@ -40,6 +42,30 @@ void dial_power_off(void)
 {
     gpio_set_level(DIAL_PIN_HOLD, 0);
 }
+#else
+/* No latch (the CrowPanel): its 5V comes from USB-C.  The rails the display
+ * needs are switched on here, first of all. */
+void dial_power_hold(void)
+{
+    const gpio_config_t io = {
+        .pin_bit_mask = (1ULL << DIAL_PIN_RAIL_A) | (1ULL << DIAL_PIN_RAIL_B)
+                        | (1ULL << DIAL_PIN_POWER_LED),
+        .mode = GPIO_MODE_OUTPUT,
+    };
+    gpio_config(&io);
+    gpio_set_level(DIAL_PIN_RAIL_A, 1);
+    gpio_set_level(DIAL_PIN_RAIL_B, 1);
+    gpio_set_level(DIAL_PIN_POWER_LED, 0);
+}
+
+/* OFF: the backlight off and deep sleep with no wake source; RESET or a
+ * power cycle starts the knob again. */
+void dial_power_off(void)
+{
+    dial_lcd_backlight(0);
+    esp_deep_sleep_start();
+}
+#endif
 
 void dial_supply_read(dial_supply_t *out)
 {

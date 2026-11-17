@@ -29,7 +29,7 @@
 
 /** @brief The SPI host, its clock and the rows of one bounce buffer. @{ */
 #define LCD_HOST     SPI2_HOST
-#define LCD_PCLK_HZ  (40u * 1000u * 1000u) /**< the SPI clock, Hz */
+#define LCD_PCLK_HZ  DIAL_LCD_PCLK_HZ /**< the SPI clock, Hz */
 #define LCD_STRIP    20 /**< rows a bounce buffer holds */
 /** @} */
 /** @brief The backlight's LEDC timer and channel; the buzzer has 0. @{ */
@@ -147,7 +147,7 @@ bool dial_lcd_init(void)
     if (esp_lcd_panel_reset(s_panel) != ESP_OK
         || esp_lcd_panel_init(s_panel) != ESP_OK
         || esp_lcd_panel_invert_color(s_panel, true) != ESP_OK
-        || esp_lcd_panel_mirror(s_panel, true, false) != ESP_OK
+        || esp_lcd_panel_mirror(s_panel, DIAL_LCD_MIRROR_X != 0, false) != ESP_OK
         || esp_lcd_panel_disp_on_off(s_panel, true) != ESP_OK) {
         ESP_LOGE(TAG, "the GC9A01 did not take its set-up");
         return false;

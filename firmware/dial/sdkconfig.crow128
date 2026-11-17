@@ -1,0 +1,9 @@
+# The ELECROW CrowPanel 1.28in HMI ESP32 Rotary Display: ESP32-S3R8, 16MB
+# of quad flash, 8MB of octal PSRAM that the image does not use.  Read on
+# top of sdkconfig.defaults:
+#   idf.py -B build-crow -D SDKCONFIG=build-crow/sdkconfig \
+#          -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.crow128" build
+# The partition table is the M5Stack Dial's 8MB one; the rest of the flash
+# is not allocated.
+CONFIG_RCDIAL_BOARD_CROW128=y
+CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y

@@ -18,7 +18,8 @@
  * count is 3 counts from the current detent's center, so a detent counts
  * at three quarters of its travel, and a jitter of 1 count at any rest
  * position never clicks.  The encoder's count falls clockwise on the
- * Dial v1.1; DIAL_ENC_SIGN turns it so that clockwise counts up.  Where in
+ * Dial v1.1; DIAL_ENC_SIGN turns it so that clockwise counts up, and
+ * DIAL_ENC_SCALE takes a board of 2 counts a detent to 4 (dial_board.h).  Where in
  * its 4 counts the encoder rests is not measured.
  *
  * The screen button (shared/dial/dial_button.c): released before 1,000ms
@@ -58,7 +59,6 @@
 /** @brief +1 or -1: which way of the encoder counts up.  The count falls
  *         clockwise on the Dial v1.1, and clockwise positive is the
  *         protocol's rule. */
-#define DIAL_ENC_SIGN (-1)
 /** @brief PCNT's count limits; the driver accumulates past them. @{ */
 #define ENC_LIMIT 1000
 /** @} */
@@ -362,6 +362,9 @@ static void mark_off(void *arg)
 /** @brief Raise GPIO1 for MARK_US: a packet of an injected detent went. */
 static void mark(void)
 {
+    if (s_mark_off == NULL) {
+        return;     /* no mark pin on this board */
+    }
     gpio_set_level(DIAL_PIN_MARK, 1);
     esp_timer_stop(s_mark_off);
     esp_timer_start_once(s_mark_off, MARK_US);
@@ -487,7 +490,7 @@ static void input_task(void *arg)
         int count = 0;
         if (pcnt_unit_get_count(s_in.pcnt, &count) == ESP_OK) {
             const int32_t d = dk_detent_follow(s_in.detent,
-                                               (int32_t)count * DIAL_ENC_SIGN);
+                                               (int32_t)count * DIAL_ENC_SIGN * DIAL_ENC_SCALE);
             if (d != s_in.detent) {
                 turned(d - s_in.detent, now);
                 s_in.detent = d;
@@ -565,7 +568,7 @@ void dial_input_start(void)
         ESP_LOGE(TAG, "the encoder's PCNT unit did not start");
     }
 #if RCBENCH_DIAL_HOOKS
-    {
+    if (DIAL_PIN_MARK != DIAL_PIN_NONE) {
         const gpio_config_t mark_pin = {
             .pin_bit_mask = 1ULL << DIAL_PIN_MARK,
             .mode = GPIO_MODE_OUTPUT,
@@ -577,8 +580,8 @@ void dial_input_start(void)
         gpio_set_level(DIAL_PIN_MARK, 0);
         gpio_config(&mark_pin);
         esp_timer_create(&off, &s_mark_off);
-        s_inject = xQueueCreate(8, sizeof(inject_t));
     }
+    s_inject = xQueueCreate(8, sizeof(inject_t));
 #endif
     xTaskCreate(input_task, "input", INPUT_STACK, NULL, 5, NULL);
 }

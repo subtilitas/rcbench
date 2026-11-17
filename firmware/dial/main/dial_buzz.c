@@ -36,6 +36,12 @@ static void buzz_stop(void *arg)
     ledc_update_duty(LEDC_LOW_SPEED_MODE, BUZZ_CHANNEL);
 }
 
+#if !DIAL_HAS_BUZZER
+/* No buzzer on this board: every sound is silent. */
+void dial_buzz_init(void) {}
+void dial_buzz_tone(uint32_t hz, uint32_t ms) { (void)hz; (void)ms; }
+void dial_buzz_click(void) {}
+#else
 void dial_buzz_init(void)
 {
     const ledc_timer_config_t t = {
@@ -77,3 +83,4 @@ void dial_buzz_click(void)
 {
     dial_buzz_tone(CLICK_HZ, CLICK_MS);
 }
+#endif

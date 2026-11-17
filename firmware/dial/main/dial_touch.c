@@ -15,11 +15,14 @@
  */
 #include "dial.h"
 
+#include "driver/gpio.h"
 #include "driver/i2c_master.h"
+#include "freertos/FreeRTOS.h"
+#include "freertos/task.h"
 #include "esp_log.h"
 
 /** @brief The controller's address, bus clock and one read's timeout. @{ */
-#define TOUCH_ADDR       0x38u
+#define TOUCH_ADDR       DIAL_TOUCH_ADDR
 #define TOUCH_HZ         400000u /**< the bus clock, Hz */
 #define TOUCH_TIMEOUT_MS 10 /**< one read's timeout, ms */
 /** @} */
@@ -32,6 +35,30 @@ static const char *TAG = "touch";
 static i2c_master_bus_handle_t s_bus;
 static i2c_master_dev_handle_t s_dev; /**< the controller on the bus */
 /** @} */
+
+#if DIAL_TOUCH_CST816D
+/** @brief The CST816D's start as the vendor's driver has it: a pulse on
+ *         INT, then RST low 10ms and 300ms after it rises. */
+static void cst816d_reset(void)
+{
+    const gpio_config_t io = {
+        .pin_bit_mask = (1ULL << DIAL_PIN_TOUCH_INT)
+                        | (1ULL << DIAL_PIN_TOUCH_RST),
+        .mode = GPIO_MODE_OUTPUT,
+    };
+    gpio_config(&io);
+    gpio_set_level(DIAL_PIN_TOUCH_INT, 1);
+    vTaskDelay(pdMS_TO_TICKS(1));
+    gpio_set_level(DIAL_PIN_TOUCH_INT, 0);
+    vTaskDelay(pdMS_TO_TICKS(1));
+    gpio_set_level(DIAL_PIN_TOUCH_RST, 0);
+    vTaskDelay(pdMS_TO_TICKS(10));
+    gpio_set_level(DIAL_PIN_TOUCH_RST, 1);
+    vTaskDelay(pdMS_TO_TICKS(300));
+    gpio_reset_pin(DIAL_PIN_TOUCH_INT);
+    gpio_set_direction(DIAL_PIN_TOUCH_INT, GPIO_MODE_INPUT);
+}
+#endif
 
 bool dial_touch_init(void)
 {
@@ -50,6 +77,9 @@ bool dial_touch_init(void)
     };
     uint8_t x;
     uint8_t y;
+#if DIAL_TOUCH_CST816D
+    cst816d_reset();
+#endif
     if (i2c_new_master_bus(&bus, &s_bus) != ESP_OK
         || i2c_master_bus_add_device(s_bus, &dev, &s_dev) != ESP_OK) {
         ESP_LOGE(TAG, "the I2C bus did not start");
@@ -60,6 +90,13 @@ bool dial_touch_init(void)
         ESP_LOGW(TAG, "no answer at 0x%02X", (unsigned)TOUCH_ADDR);
         return false;
     }
+#if DIAL_TOUCH_CST816D
+    {
+        /* Auto sleep off: a sleeping CST816D does not answer a poll. */
+        const uint8_t w[2] = { 0xFEu, 0xFFu };
+        (void)i2c_master_transmit(s_dev, w, sizeof w, TOUCH_TIMEOUT_MS);
+    }
+#endif
     (void)dial_touch_read(&x, &y);
     return true;
 }
