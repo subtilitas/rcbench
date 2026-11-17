@@ -541,6 +541,15 @@ bool panel_fw_busy(void);
  */
 void updrun_service(bool unsafe);
 
+/**
+ * @brief Marks this frame's feed of UPDATES' views done: called after
+ *        upd_service(), c6_service() and devupd_service().  The next
+ *        frame's updrun_service() counts "no step blocks" only from then,
+ *        and only when the device rows were published before that feed.
+ * @param dev_known panel_devupd_known(), read before devupd_service()
+ */
+void updrun_fed(bool dev_known);
+
 /* ------------------------------------------------------------- panel_c6.c */
 
 /**

@@ -839,7 +839,9 @@ void panel_frame_loop(void)
                         || supplies_live_or_coming(),
                     stops_now, &cu);
         c6_service(arm_wanted_now || armed_now);
+        const bool dev_known = panel_devupd_known();
         devupd_service(arm_wanted_now || armed_now);
+        updrun_fed(dev_known);
 
         /*
          * The arm this frame began with, acknowledged -- only by a frame that

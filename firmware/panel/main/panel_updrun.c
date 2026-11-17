@@ -26,6 +26,14 @@
 /** @brief Log tag, the panel's. */
 static const char *TAG = "rcbench";
 
+/** @brief Every view UPDATES' steps read has been fed once in this start,
+ *         with the device rows published: set by updrun_fed() after the
+ *         frame's feeders ran, so a frame's updrun_service() sees the views
+ *         the previous frame fed, never the zeroed ones of the start. */
+static bool s_fed_known;
+
+void updrun_fed(bool dev_known) { s_fed_known = s_fed_known || dev_known; }
+
 void updrun_service(bool unsafe)
 {
     static upd_run_t drv;     /* zeroed at the start: once per start */
@@ -34,7 +42,7 @@ void updrun_service(bool unsafe)
         .unsafe      = unsafe,
         .radio_up    = s_wifi_ok && !wifi_access_down(),
         .installing  = panel_fw_busy(),
-        .known       = panel_devupd_known(),
+        .known       = s_fed_known,
         .restart_due = panel_c6_busy(),
     };
     const bool opened = drv.opened;
