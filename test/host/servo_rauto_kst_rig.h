@@ -47,6 +47,8 @@ static struct {
     unsigned n;
     unsigned disarms, arms, dropped;
     unsigned opens_csv, opens_txt, ends;
+    bool open_seen;         /* the run's first file opened */
+    bool off_at_open;       /* the supply's OFF asked or taken by then */
     int prefix;
     char report[16384];
     size_t len;
@@ -137,6 +139,12 @@ static inline void ra_drain(void)
             return;
         }
         ra.prefix = servo_screen_test_prefix();
+        if (o == SERVO_TEST_OUT_OPEN && !ra.open_seen) {
+            /* What the end left on as the report starts: the OFF asked
+             * in the run's last step, taken at the next frame. */
+            ra.open_seen = true;
+            ra.off_at_open = ra.offs > 0u || supply_screen_off_pending();
+        }
         if (o == SERVO_TEST_OUT_OPEN) {
             ra.opens_csv++;
         } else if (o == SERVO_TEST_OUT_OPEN_TXT) {

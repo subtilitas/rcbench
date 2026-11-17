@@ -589,16 +589,11 @@ static bool has_band(ui_screen_id_t id)
      * bench cannot be driven, and a STOP button on it would offer to stop
      * something that is not running.  Nor does the panel's firmware write,
      * for the same reason: the bench is SAFE and the IOmcu in
-     * failsafe. */
-    if (id == SCREEN_COPROC_UPDATE) {
-        /* Nor does an update under way: the IOmcu refuses ARM for
-         * the whole session, so there is nothing for STOP to stop, and
-         * the menu would lead to screens that cannot reach it.  The
-         * question before it carries the band. */
-        return coproc_update_screen_view() == CU_VIEW_QUESTION;
-    }
+     * failsafe.  Nor does the IOmcu's update under way: the IOmcu
+     * refuses ARM for the whole session, so there is nothing for STOP to
+     * stop, and the menu would lead to screens that cannot reach it. */
     return id != SCREEN_SPLASH && id != SCREEN_BUSFAULT
-           && id != SCREEN_UPDATE;
+           && id != SCREEN_UPDATE && id != SCREEN_COPROC_UPDATE;
 }
 
 bool ui_router_guide_shown(void)

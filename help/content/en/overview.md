@@ -71,4 +71,4 @@ At power-on, the splash lists each subsystem as it starts: board, display, touch
 ## Related pages
 
 - [Status band and STOP](band.md)
-- [IOmcu update](coproc_update.md): the question that opens on the menu when the IOmcu runs another build.
+- [IOmcu update](coproc_update.md): the offer that opens UPDATES at its IOmcu step when the IOmcu runs another build, and the update's progress.

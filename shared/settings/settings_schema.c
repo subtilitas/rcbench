@@ -534,6 +534,19 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         "imu_filter", "",
         SET_CAT_WIRELESS, SET_TYPE_INT, 1, 50, 1, 1, NULL, 0 },
     /*
+     * The settle rule a RUDDER AUTO measure on the IMU keeps
+     * (servo_settle.h): the angle's span over the trailing SETTLING TIME
+     * at most PRECISION.  The defaults, 3.0s and 0.10°, leave at most
+     * 0.08° to go on a sensor that creeps with a time constant of 3.5s,
+     * the slow tail the BWT901CL in 6-AXIS showed after servo steps.
+     */
+    [SET_IMU_SETTLE] = {
+        "imu_settle_s", "s",
+        SET_CAT_WIRELESS, SET_TYPE_FLOAT, 0.5f, 10.0f, 0.5f, 3.0f, NULL, 0 },
+    [SET_IMU_PREC] = {
+        "imu_prec", "°",
+        SET_CAT_WIRELESS, SET_TYPE_FLOAT, 0.05f, 1.0f, 0.05f, 0.1f, NULL, 0 },
+    /*
      * AUTO on RUDDER (servo_rudder_auto.h): the deflection each end pulse
      * is to reach, 1000us and 2000us, as a magnitude; the margin it is
      * programmed past that by; and how near the goal a measure has to be.

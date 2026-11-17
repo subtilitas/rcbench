@@ -7,7 +7,7 @@
  * changes under it (link lost, ARMED, a newer release found), ends
  * unfired; SKIP passes the step and the next becomes current, SHOW
  * SKIPPED STEPS brings it back; SKIP on the IOmcu's step declines the
- * offer that stands; a newer release moves the current step back to
+ * offer UPDATES shows; a newer release moves the current step back to
  * PANEL; CANCEL UPDATE stands only while a device's transfer runs and is
  * grey from END; a device's phases on the hold's face; a failed attempt's
  * reason on the card with the hold live; the last card names the steps
@@ -505,10 +505,10 @@ static cu_hand_t cu_frame(void)
     return h;
 }
 
-/* SKIP on the IOmcu's step hands the decline over while an offer stands:
- * once, for that offer; the question does not open for it on OVERVIEW
- * afterwards, as it does for an offer nobody skipped, and its band line
- * is not said.  Without an offer SKIP declines nothing. */
+/* SKIP on the IOmcu's step hands the decline over while the offer UPDATES
+ * shows stands: once, for that offer.  An offer UPDATES has shown does not
+ * open it again from OVERVIEW, skipped or not, and its band line is not
+ * said.  Without an offer SKIP declines nothing. */
 TEST_CASE(skip_on_the_iomcu_step_hands_over_the_decline_while_an_offer_stands)
 {
     for (int k = 0; k < 3; ++k) {
@@ -535,8 +535,7 @@ TEST_CASE(skip_on_the_iomcu_step_hands_over_the_decline_while_an_offer_stands)
         ui_router_goto(SCREEN_OVERVIEW);
         ui_router_set_alert(NULL);
         (void)cu_frame();
-        CHECK_EQ(ui_router_current(), offered && !skip ? SCREEN_COPROC_UPDATE
-                                                       : SCREEN_OVERVIEW);
+        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
         CHECK(ui_router_alert() == NULL);
     }
 }

@@ -300,6 +300,34 @@ TEST_CASE(the_scan_row_opens_the_found_list_with_scan_again)
     CHECK_EQ(wireless_list_rows(true, 1u), 2);
 }
 
+/*
+ * A WIRELESS row's label and help are clipped 10px short of its "-" key
+ * (ui_setlist_draw.c): from the pane's text at PANE_X 240 + 16 to MINUS_X
+ * 704 - 10 (settings_screen_int.h, ui_setlist_int.h), 438px, 21 cells of
+ * the 20 x 36 name face and 43 of the 10 x 20 help face.  Every setting
+ * any WIRELESS entry shows fits, in every language.
+ */
+TEST_CASE(every_wireless_row_fits_left_of_its_keys)
+{
+    const int room = 704 - 10 - (240 + 16);
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        ui_text_set_language((ui_lang_t)l);
+        for (int i = 0; i < SETTING_COUNT; ++i) {
+            if (wireless_pane_entry_of((setting_id_t)i) < 0) {
+                continue;
+            }
+            const char *label = ui_setting_label((setting_id_t)i);
+            const char *help = ui_setting_help((setting_id_t)i);
+            if (gfx_text_cells(label) * 20 > room
+                || gfx_text_cells(help) * 10 > room) {
+                T_FAIL("language %d %s: \"%s\" / \"%s\"", l,
+                       settings_def((setting_id_t)i)->key, label, help);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_dial_entry_shows_its_rows_under_on);
@@ -308,5 +336,6 @@ int main(void)
     RUN(the_scan_row_opens_the_found_list_with_scan_again);
     RUN(every_state_word_fits_25_cells_in_its_colour);
     RUN(reset_keeps_the_bind);
+    RUN(every_wireless_row_fits_left_of_its_keys);
     return test_summary("wireless_pane");
 }

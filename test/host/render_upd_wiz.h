@@ -1,6 +1,7 @@
 /**
  * @file render_upd_wiz.h
  * @brief UPDATES' step views for render_screen.c: each step current, the
+ *        IOmcu's opened by an update run after the panel's restart, the
  *        Dial asking for its press, a step waiting in a run, a step held,
  *        the last card with a step skipped, and the fit check's views of
  *        every tag and card line.
@@ -15,8 +16,8 @@
 /**
  * @brief Whether @p view is one of the steps' own views.
  * @param view the view's name
- * @return true for updates-step-*, updates-held, updates-done and
- *         updates-wiz-*
+ * @return true for updates-step-*, updates-run-*, updates-held,
+ *         updates-done and updates-wiz-*
  */
 bool render_upd_wiz_view(const char *view);
 

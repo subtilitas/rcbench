@@ -308,7 +308,7 @@ Built and host-tested (`shared/fwupdate/`, `shared/webaccess/`, `test_wifi_scree
 `test_wifi_kept`, `test_wifi_layout`); the panel side is
 `firmware/panel/components/wifi_access/` and `fw_ota/`. A panel install and the IOmcu's
 update exclude each other (`fw_gate()`, `fw_coproc_may_start()`, `test_fw_install`): the
-install waits while the IOmcu's update or BUY runs, and the IOmcu's question opens and its
+install waits while the IOmcu's update or BUY runs, and an IOmcu offer opens UPDATES and its
 START is taken only with the radio wholly off and no install under way. A new build's first
 start is kept once every task has run a pass and a frame is on the display, or 30s after the
 start with the screen loop running (`fw_trial.h`, `test_fw_trial`); a reset before that goes
@@ -316,7 +316,11 @@ back to the build before it, which reports it from the restart note the install 
 (`fw_note_write()`, `fw_boot_settle()`, `test_fw_install`; the NVS calls in `fw_ota.c` are
 not host-tested). Beside it the run note keeps an update run across a restart: written after a
 complete install and after a C6 update, read once per start, 2 openings at most, erased on a
-version mismatch or a corrupt entry (`fw_run.h`, `test_fw_run`); no screen reads it.
+version mismatch or a corrupt entry (`fw_run.h`, `test_fw_run`). While a run stands UPDATES
+opens by itself once per start under the conditions an IOmcu offer opens it under, once when
+both are due, the band names what holds it back with one line per frame, the start-up check waits, and the run ends on the home tag or with no step left, not
+while the C6's restart is due (`upd_run.h`, `test_upd_run`: both restarts over a store in
+memory, a power cut before step 2, a rollback; `panel_updrun.c` feeds it on the panel).
 
 On the ESP32-P4 the radio is the board's ESP32-C6 on SDIO through `esp_wifi_remote` and
 `esp_hosted` (`components/c6_link`, [Wi-Fi through the
@@ -640,7 +644,14 @@ servo set to CW and found by the first write on every other; two writes in a row
 not move their side end the run as `writes do not move the 2000us side`
 (`test_servo_rauto`, `test_servo_rauto_guard`, `test_servo_rauto_effect` on the core with a
 linear servo model, `test_servo_rauto_kst` through the screen and the programmer on the modelled
-KST servo, `test_servo_rauto_panel`; host suite only).
+KST servo, `test_servo_rauto_panel`; host suite only). On the IMU a measure also waits until
+the readings over IMU settling time (default 3.0s) span IMU precision (default 0.10°) or
+less (`shared/servo/servo_settle.c`, `test_servo_settle`); the creep curves the BWT901CL
+showed after servo steps on 2026-11-17 and 2026-11-18, fed at 100Hz, are taken within 0.07°
+of their final value 6.5s to 10.4s after the surface arrives, where the 500ms still test
+alone took them 0.8° to 2.7° off (`test_servo_rauto_settle`). Every end is approached from
+PULSE CENTER, the verify pass's center from 2000us. A run that wrote verifies 1000us, 2000us and PULSE
+CENTER once more and fails on one outside the tolerance (`test_servo_rauto_verify`).
 Its READY card (`shared/ui/servo_rudder_auto_ready.c`, `shared/ui/servo_ready.c`) gives
 each check of the start gate one row, and the footer's HOLD 2s: ARM + START runs
 `shared/servo/servo_start_seq.c`: PORT PWM, PROG 5V or the PD mini, the read-back within
@@ -870,9 +881,10 @@ a question that takes the 2s hold. `test_link_update` runs both ends over the li
 against a simulated flash and boot ROM. Which slot runs, which one the update writes, the
 trial, where a write lands and when a BUY counts are `fw_slots.h` (`test_fw_slots`); the boot
 ROM's calls in `firmware/iomcu/src/update_hw.c` are not host-tested.
-`test_coproc_update_screen` runs the question and the progress, with CANCEL and the home tag as the only declines and a forced screen over the
-question declining nothing; `test_upd_coproc` SETUP > UPDATES > SINGLE UPDATES' IOmcu section, whose 2s hold
-starts the same update, also after a declined question.
+`test_coproc_update_screen` runs the progress and the offer's driver, with a forced screen over
+UPDATES declining nothing; `test_upd_coproc` the offer that opens UPDATES at step 2 once per
+offer, SKIP THIS STEP and the home tag as the only declines, and SINGLE UPDATES' IOmcu section,
+whose 2s hold starts the same update, also after a declined offer.
 
 The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu
 loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`.
@@ -1664,7 +1676,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 595 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 599 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1787,7 +1799,7 @@ The host suite is 595 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
-`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
+`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
@@ -2391,7 +2403,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_limit_seam.c` | 90 | 86 | 95.6% |
 | `shared/ui/servo_workbench.c` | 178 | 174 | 97.8% |
 | `shared/ui/servo_rudder_panel.c` | 479 | 474 | 99.0% |
-| `shared/ui/servo_rudder_auto_panel.c` | 585 | 539 | 92.1% |
+| `shared/ui/servo_rudder_auto_panel.c` | 613 | 558 | 91.0% |
 | `shared/ui/servo_rudder_auto_ready.c` | 287 | 282 | 98.3% |
 | `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
@@ -2553,8 +2565,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_limrun_report.c` | 316 | 313 | 99.0% |
 | `shared/servo/servo_gap.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_angle.c` | 33 | 33 | 100.0% |
-| `shared/servo/servo_rudder_auto.c` | 556 | 544 | 97.8% |
-| `shared/servo/servo_rudder_auto_report.c` | 250 | 250 | 100.0% |
+| `shared/servo/servo_rudder_auto.c` | 599 | 585 | 97.7% |
+| `shared/servo/servo_rudder_auto_report.c` | 293 | 292 | 99.7% |
+| `shared/servo/servo_rudder_auto_verify.c` | 31 | 30 | 96.8% |
+| `shared/servo/servo_settle.c` | 63 | 63 | 100.0% |
 | `shared/servo/servo_limrun_family.c` | 29 | 29 | 100.0% |
 | `shared/servo/servo_start_seq.c` | 205 | 198 | 96.6% |
 | `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |

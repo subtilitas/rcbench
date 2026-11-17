@@ -58,6 +58,8 @@ ARMED, the supply output on, an open log run, Wi-Fi on or a board drawing being 
 
 While a device's transfer runs, the control shows its phase, for example `PRESS THE DIAL TO ACCEPT: 27s`, and CANCEL UPDATE stands in the footer.
 
+After the panel's install and after the C6 radio's update the panel restarts, and the update run goes on: UPDATES opens by itself once per start on the menu, with the bench SAFE, the supply output off, Wi-Fi off and no install under way. Until then the alert band names what it waits for, for example `Update run: UPDATES opens once SAFE with the supply off.` The check at start does not run during a run. The home tag on UPDATES ends the run; so does the last step done. A run opens UPDATES at 2 starts at most.
+
 After a restart during an update run, a step whose IOmcu or device is not connected yet waits with SKIP THIS STEP and goes on once it connects.
 
 ![The Dial's step waiting after a restart](view:updates-step-waiting)
@@ -174,7 +176,7 @@ SINGLE UPDATES starts one update or reinstall at a time: the IOmcu's, the C6 rad
 
 | Control | What it does |
 |---|---|
-| HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its question was declined, see [The IOmcu](#the-iomcu) |
+| HOLD 2s TO UPDATE THE IOMCU | starts the [IOmcu update](coproc_update.md) from the image this panel carries, also after its offer was declined, see [The IOmcu](#the-iomcu) |
 | HOLD 2s TO UPDATE THE C6 RADIO | sends the C6 radio's image this panel carries to the board's ESP32-C6, see [The C6 radio](#the-c6-radio) |
 | HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE | the same, while the C6 reports the carried version |
 | WIRELESS DEVICE FIRMWARE | opens the page of the Dial's and the sensor nodes' firmware rows, see [Wireless devices](#wireless-devices); while an update runs it reads that row's label |
@@ -186,9 +188,9 @@ One finger at a time: a second finger on another control starts nothing. The hom
 
 ![Another build on the IOmcu](view:updates-coproc)
 
-In the left column of SINGLE UPDATES, the page shows the running IOmcu version (`Running: 0.21.2`) and bundled image version (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the same update and progress screen as the prompt at link-up. The screen returns to UPDATES when the update ends or the START request expires.
+In the left column of SINGLE UPDATES, the page shows the running IOmcu version (`Running: 0.21.2`) and bundled image version (`Included: 0.22.0`). HOLD 2s TO UPDATE THE IOMCU starts the same update and progress screen as step 2 on UPDATES. The screen returns to UPDATES when the update ends or the START request expires.
 
-The hold has the same requirements as the prompt: an IOmcu running a different build, a SAFE bench, supply output off, Wi-Fi fully off and no panel installation. Otherwise it is grey. The line above it shows the first applicable reason, and a tap or a hold on the grey button shows the same line on the alert band:
+The hold has the same requirements as step 2: an IOmcu running a different build, a SAFE bench, supply output off, Wi-Fi fully off and no panel installation. Otherwise it is grey. The line above it shows the first applicable reason, and a tap or a hold on the grey button shows the same line on the alert band:
 
 | Line | Condition |
 |---|---|

@@ -209,6 +209,9 @@ static devupd_settler_t s_settler;
 static atomic_bool     s_cancel;
 /** @brief The frame task's last end_seq: the ends it reported. */
 static uint32_t        s_seen_end;
+/** @brief The rows were published once, or the client was not set up and
+ *         publishes none: panel_devupd_known(). */
+static atomic_bool     s_known;
 /** @brief The device the frame task last asked to update. */
 static unsigned        s_ask_dev;
 /** @brief The frame task's last phase, for the band's ask. */
@@ -217,6 +220,11 @@ static uint8_t         s_seen_phase;
 bool panel_devupd_busy(void)
 {
     return devupd_gate_busy(&s_gate);
+}
+
+bool panel_devupd_known(void)
+{
+    return atomic_load(&s_known);
 }
 
 void panel_devupd_start(void)
@@ -245,6 +253,7 @@ void panel_devupd_start(void)
     s_started = devupd_client_init(&s_cli, PANEL_BLEC_UPD);
     if (!s_started) {
         ESP_LOGE(TAG, "update client not set up; no device updates");
+        atomic_store(&s_known, true);
     }
 }
 
@@ -604,6 +613,7 @@ void panel_devupd_blec_publish(uint32_t now)
     taskENTER_CRITICAL(&s_mux);
     s_pub = s_next;
     taskEXIT_CRITICAL(&s_mux);
+    atomic_store(&s_known, true);
 }
 
 /**

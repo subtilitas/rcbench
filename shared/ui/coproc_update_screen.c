@@ -14,35 +14,18 @@
 #include "ui_theme.h"
 #include "ui_widgets.h"
 #include "upd_screen.h"
+#include "upd_wiz_view.h"
+#include "upd_wizard.h"
 
 /*
- * The faces of the type scale this screen draws in:
+ * The faces of the type scale the progress draws in:
  * CU_FONT_HEAD (20 x 36) for the title and the step, CU_FONT_BODY (12 x 24)
- * for every line read at a distance, CU_FONT_LABEL (10 x 20) for the
- * buttons.
+ * for every line read at a distance.
  */
 /** @brief The title and the step: 20 x 36. */
 #define CU_FONT_HEAD  (&gfx_font_20x36)
 /** @brief The lines read at a distance: 12 x 24. */
 #define CU_FONT_BODY  UI_FONT_BODY
-/** @brief The buttons: 10 x 20. */
-#define CU_FONT_LABEL (&gfx_font_10x20)
-
-/*
- * The question, in the body under the band:
- * A box 860 x 248px, its lines in CU_FONT_BODY 36px apart from 44px
- * under its top edge, CANCEL and START side by side under them, 398 x 56px
- * each, 16px apart.  START's foot is body y 344, 152px above the alert
- * band.  On the panel CANCEL's middle is (305, 376) and START's (719, 376).
- */
-/** @brief The question's box, in the body. */
-#define Q_BOX    gfx_rect_make(82, 120, 860, 248)
-#define Q_TEXT_X (82 + 24)          /**< the lines' left edge */
-#define Q_TEXT_W (860 - 48)         /**< 67 cells of CU_FONT_BODY */
-/** @brief CANCEL, in the body. */
-#define Q_CANCEL gfx_rect_make(106, 288, 398, 56)
-/** @brief START, in the body. */
-#define Q_START  gfx_rect_make(520, 288, 398, 56)
 
 /*
  * The progress, on the whole panel:
@@ -69,12 +52,7 @@
 /** @brief The first note's top. */
 #define NOTE_Y   288
 
-_Static_assert(56 >= UI_TAP_MIN, "CANCEL and START are a finger tall");
-_Static_assert(288 + 56 + 4 <= UI_ALERT_Y - UI_BAND_H,
-               "the question's buttons end above the alert band");
-
 static struct {
-    cu_view_t    view;  /**< the view shown */
     cu_version_t running;  /**< the version the IOmcu runs */
     cu_version_t carried;  /**< the version this panel carries */
 
@@ -82,16 +60,9 @@ static struct {
     uint16_t  block;  /**< the blocks committed */
     uint16_t  blocks;  /**< the blocks the update has */
 
-    ui_hold_t hold;          /**< START                                    */
-    int       press_btn;     /**< 0 CANCEL, 1 START, -1 none               */
-    bool      have_press;    /**< a contact owns the press               */
-    uint8_t   press_id;      /**< the contact that owns it               */
-
-    bool      start;         /**< latched for the application             */
-    bool      cancel;        /**< latched for the application             */
-
+    bool      opened;        /**< an offer opened UPDATES in this start   */
     unsigned  drawn_mask;    /**< the static half, per framebuffer         */
-} s = { .press_btn = -1 };  /**< the question's or the progress's state */
+} s;  /**< the progress's state */
 
 void coproc_update_screen_invalidate(void) { s.drawn_mask = 0; }
 
@@ -106,190 +77,37 @@ bool coproc_update_older(cu_version_t running, cu_version_t carried)
     return carried.patch < running.patch;
 }
 
-/** @brief Whether the IOmcu runs the version this panel carries. */
-static bool same_version(void)
-{
-    return s.running.major == s.carried.major
-           && s.running.minor == s.carried.minor
-           && s.running.patch == s.carried.patch;
-}
-
-/** @brief Ends the press; @p up is its release, NULL for a press dropped. */
-static void drop_press(const touch_event_t *up)
-{
-    s.have_press = false;
-    s.press_btn = -1;
-    (void)ui_hold_end(&s.hold, up, Q_START);
-}
-
-/** @brief Returns the screen to its initial state. */
+/** @brief Returns the screen to its initial state: the panel's start. */
 static void reset(void)
 {
     memset(&s, 0, sizeof(s));
-    s.press_btn = -1;
-    ui_hold_reset(&s.hold);
 }
 
-void coproc_update_screen_offer(cu_version_t running, cu_version_t carried)
+void coproc_update_screen_versions(cu_version_t running,
+                                   cu_version_t carried)
 {
-    s.view = CU_VIEW_QUESTION;
     s.running = running;
     s.carried = carried;
-    s.step = CU_STEP_PREPARE;
-    s.block = 0u;
-    s.blocks = 0u;
-    s.start = false;
-    s.cancel = false;
-    drop_press(NULL);
-    ui_hold_reset(&s.hold);
     s.drawn_mask = 0;
 }
 
 void coproc_update_screen_progress(cu_step_t step, uint16_t block,
                                    uint16_t blocks)
 {
-    if (s.view != CU_VIEW_PROGRESS || step != s.step) {
+    if (step != s.step) {
         s.drawn_mask = 0;
     }
-    s.view = CU_VIEW_PROGRESS;
     s.step = step;
     s.block = (block > blocks) ? blocks : block;
     s.blocks = blocks;
 }
 
-cu_view_t coproc_update_screen_view(void) { return s.view; }
-
-bool coproc_update_screen_take_start(void)
-{
-    const bool was = s.start;
-    s.start = false;
-    return was;
-}
-
-bool coproc_update_screen_take_cancel(void)
-{
-    const bool was = s.cancel;
-    s.cancel = false;
-    return was;
-}
-
-/* ------------------------------------------------------------------ input */
-
-/** @brief Finds the button at a point. */
-static int button_at(int16_t x, int16_t y)
-{
-    if (gfx_rect_contains(Q_CANCEL, x, y)) {
-        return 0;
-    }
-    if (gfx_rect_contains(Q_START, x, y)) {
-        return 1;
-    }
-    return -1;
-}
-
-/** @brief Takes a touch event of the question. */
-static void event(const touch_event_t *evt)
-{
-    if (evt == NULL || s.view != CU_VIEW_QUESTION) {
-        return;
-    }
-    const int16_t x = evt->point.x, y = evt->point.y;
-    switch (evt->type) {
-    case TOUCH_EVENT_DOWN:
-        /* The first contact on a button owns the press. */
-        if (!s.have_press) {
-            s.press_btn = button_at(x, y);
-            if (s.press_btn >= 0) {
-                s.have_press = true;
-                s.press_id = evt->point.id;
-                if (s.press_btn == 1) {
-                    ui_hold_begin(&s.hold, TX_HOLD_HINT_IOMCU_UPDATE);
-                }
-            }
-        }
-        break;
-    case TOUCH_EVENT_MOVE:
-        /* A finger that slides off START abandons the hold, as on every
-         * held control. */
-        if (s.have_press && evt->point.id == s.press_id
-            && s.press_btn == 1 && button_at(x, y) != 1) {
-            (void)ui_hold_leave(&s.hold);
-        }
-        break;
-    case TOUCH_EVENT_UP:
-    default:
-        if (!s.have_press || evt->point.id != s.press_id) {
-            break;
-        }
-        /* CANCEL is a tap: pressed and released on it by the same
-         * contact.  START asked for nothing unless its hold completed. */
-        if (s.press_btn == 0 && (evt->flags & TOUCH_FLAG_NO_TAP) == 0u
-            && button_at(x, y) == 0) {
-            s.cancel = true;
-        }
-        drop_press(evt);
-        break;
-    }
-}
-
-/** @brief Runs the screen for one frame: the START hold. */
-static void tick(float dt_s)
-{
-    /* START's flash runs on over the progress the hold opened, and the
-     * progress is drawn whole once it ends. */
-    if (ui_hold_flashing(&s.hold)) {
-        ui_hold_flash_step(&s.hold, dt_s);
-        if (!ui_hold_flashing(&s.hold) && s.view == CU_VIEW_PROGRESS) {
-            s.drawn_mask = 0;
-        }
-    }
-    if (s.view != CU_VIEW_QUESTION) {
-        return;
-    }
-    if (ui_hold_tick(&s.hold, dt_s)) {
-        /* The hold is the gesture: it completes here, not on the release.
-         * Its flash started with it. */
-        s.start = true;
-        s.view = CU_VIEW_PROGRESS;
-        s.step = CU_STEP_PREPARE;
-        s.drawn_mask = 0;
-        ui_hold_flash_step(&s.hold, dt_s);
-    }
-}
-
-/**
- * @brief The home tag: on the question it is the operator's answer, as
- *        CANCEL is.
- * @return false: the router goes on to the screen's parent.
- */
-static bool back(void)
-{
-    if (s.view == CU_VIEW_QUESTION && !s.start) {
-        s.cancel = true;
-    }
-    return false;
-}
-
-/**
- * @brief The router has moved off the screen.  A move answers nothing: only
- *        CANCEL and back() decline, and a screen the panel forces over the
- *        question leaves the offer standing.
- */
-static void leave(void)
-{
-    drop_press(NULL);
-}
+bool coproc_update_opened(void) { return s.opened; }
 
 /** @brief Enters the screen. */
 static void enter(void)
 {
     s.drawn_mask = 0;
-}
-
-/** @brief Drops the press under way, as touch events were lost. */
-static void cancel(void)
-{
-    drop_press(NULL);
 }
 
 /* ---------------------------------------------------------------- drawing */
@@ -299,51 +117,6 @@ static void fmt_version(char *out, size_t n, cu_version_t v)
 {
     snprintf(out, n, "%u.%u.%u", (unsigned)v.major, (unsigned)v.minor,
              (unsigned)v.patch);
-}
-
-/**
- * @brief The question: the box and its lines once per framebuffer, the two
- *        buttons every frame.
- * @param c   Canvas, the body under the band.
- * @param bit The framebuffer's bit in the drawn mask.
- */
-static void render_question(gfx_canvas_t *c, unsigned bit)
-{
-    const gfx_rect_t box = Q_BOX;
-    const int lh = gfx_text_height(CU_FONT_BODY, 1);
-    if ((s.drawn_mask & bit) == 0u) {
-        gfx_clear(c, UI_BG);
-        ui_panel(c, box, TR(CU_TITLE), UI_ACCENT);
-
-        char run[20], car[20], line[112];
-        fmt_version(run, sizeof(run), s.running);
-        fmt_version(car, sizeof(car), s.carried);
-        snprintf(line, sizeof(line), TR(CU_Q_VERSIONS), run, car);
-        gfx_text_in(c, gfx_rect_make(Q_TEXT_X, box.y + 44, Q_TEXT_W, lh),
-                    line, CU_FONT_BODY, UI_TEXT, 1, GFX_ALIGN_LEFT);
-
-        /* An older image is said in its own colour: it is the way back, and
-         * a step back taken by mistake costs a second update. */
-        const gfx_rect_t second =
-            gfx_rect_make(Q_TEXT_X, box.y + 80, Q_TEXT_W, lh);
-        if (coproc_update_older(s.running, s.carried)) {
-            gfx_text_in(c, second, TR(CU_Q_OLDER), CU_FONT_BODY, UI_WARN, 1,
-                        GFX_ALIGN_LEFT);
-        } else if (same_version()) {
-            gfx_text_in(c, second, TR(CU_Q_SAME), CU_FONT_BODY, UI_TEXT_DIM,
-                        1, GFX_ALIGN_LEFT);
-        }
-        gfx_text_in(c, gfx_rect_make(Q_TEXT_X, box.y + 116, Q_TEXT_W, lh),
-                    TR(CU_Q_WHAT), CU_FONT_BODY, UI_TEXT_DIM, 1,
-                    GFX_ALIGN_LEFT);
-        s.drawn_mask |= bit;
-    }
-
-    /* The buttons every frame: START fades across its hold. */
-    ui_button_font(c, Q_CANCEL, TR(CANCEL), UI_PANEL_HI, s.press_btn == 0,
-                   true, CU_FONT_LABEL);
-    ui_hold_button(c, Q_START, TR(CU_START), UI_PANEL_HI, UI_ACCENT, &s.hold,
-                   false, true, CU_FONT_LABEL);
 }
 
 /** @brief Gives the progress view's text for a step. */
@@ -422,12 +195,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
     /* A framebuffer index the mask has no bit for is redrawn whole. */
     const unsigned bit = (buffer_index >= 0 && buffer_index < 8)
                              ? 1u << buffer_index : 0u;
-    if (s.view == CU_VIEW_PROGRESS) {
-        render_progress(c, bit);
-        ui_hold_ghost(c, &s.hold);      /* START, as the question goes */
-    } else {
-        render_question(c, bit);
-    }
+    render_progress(c, bit);
 }
 
 /* ----------------------------------------------------------- the driver */
@@ -469,34 +237,22 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
 }
 
 /**
- * @brief UPDATES' hold, completed: the progress, and the START it hands over.
- * The same as the question's START, from another screen.
+ * @brief UPDATES' hold, completed: the progress, and the START it hands
+ *        over.
+ * @param d   What the driver keeps.
+ * @param f   This frame's update.
+ * @param out What this frame hands over.
  */
-static void start_from_updates(const cu_feed_t *f)
+static void start_from_updates(cu_driver_t *d, const cu_feed_t *f,
+                               cu_hand_t *out)
 {
-    s.running = f->running;
-    s.carried = f->carried;
-    s.view = CU_VIEW_PROGRESS;
+    coproc_update_screen_versions(f->running, f->carried);
     s.step = CU_STEP_PREPARE;
     s.block = 0u;
     s.blocks = 0u;
-    s.start = true;
-    s.cancel = false;
-    drop_press(NULL);
-    ui_hold_reset(&s.hold);
-    s.drawn_mask = 0;
+    ++d->starts_sent;
+    ++out->starts;
     ui_router_goto(SCREEN_COPROC_UPDATE);
-}
-
-/**
- * @brief Where a progress that has ended goes.  The origin stays until another
- * start sets it: a snapshot that shows the START taken a moment before it
- * shows the update active lands here, and the progress the next frame
- * opens again still returns to UPDATES.
- */
-static void progress_done(const cu_driver_t *d)
-{
-    ui_router_goto(d->from_updates ? SCREEN_UPDATES : SCREEN_OVERVIEW);
 }
 
 cu_wait_t coproc_update_wait(const cu_feed_t *f, bool unsafe)
@@ -525,9 +281,10 @@ ui_text_id_t coproc_update_offer_text(cu_wait_t w)
 }
 
 /**
- * @brief The band line of an offer the question has not opened for: said
- *        once on the first frame with a band, and again when what the
- *        question waits for changes to another reason.
+ * @brief The band line of an offer UPDATES has not shown: said once on the
+ *        first frame with a band, and again when what the opening waits
+ *        for changes to another reason.  While an update run waits to open
+ *        UPDATES the line is the run's: the offer's counts as said.
  * @param d      What the driver keeps.
  * @param f      This frame's update.
  * @param unsafe ARMED, an arm waiting, or the supply's output on or coming.
@@ -541,10 +298,26 @@ static void say_offer(cu_driver_t *d, const cu_feed_t *f, bool unsafe)
     const cu_wait_t w = coproc_update_wait(f, unsafe);
     const bool fresh = f->offer_gen != d->said_gen;
     if (fresh || (w != CU_WAIT_NONE && (uint8_t)w != d->said_wait)) {
-        ui_router_set_alert(ui_tr(coproc_update_offer_text(w)));
+        if (!f->run_waits) {
+            ui_router_set_alert(ui_tr(coproc_update_offer_text(w)));
+        }
         d->said_gen  = f->offer_gen;
         d->said_wait = (uint8_t)w;
     }
+}
+
+/**
+ * @brief UPDATES shows the offer @p gen: it counts as shown, a skipped
+ *        IOmcu step comes back for it, and a hold under way on that step
+ *        ends unfired, as its versions may have changed.
+ * @param d   What the driver keeps.
+ * @param gen The offer's offer_gen.
+ */
+static void show_offer(cu_driver_t *d, uint32_t gen)
+{
+    d->shown_gen = gen;
+    upd_wiz_unskip(UPD_WIZ_IOMCU);
+    upd_wiz_drop_step(UPD_WIZ_IOMCU);
 }
 
 void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
@@ -558,41 +331,26 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
         return;
     }
 
-    /* UPDATES' hold first: its START goes out with this frame's.  The
-     * section is read again here, a frame after the hold completed, and a
-     * hold the state no longer allows starts nothing. */
+    /* UPDATES' hold first.  The section is read again here, a frame after
+     * the hold completed, and a hold the state no longer allows starts
+     * nothing. */
     if (upd_screen_take_coproc()
         && coproc_update_section(d, f, unsafe) == CU_SEC_READY
         && ui_router_current() == SCREEN_UPDATES) {
-        d->from_updates = true;
-        start_from_updates(f);
+        start_from_updates(d, f, out);
     }
 
-    /* Both latches, wherever the router is: a home tag has left the screen
-     * by now.  A decline counts for the offer its question showed: one
-     * given on the question of an offer since replaced declines nothing. */
-    if (coproc_update_screen_take_start()) {
-        ++d->starts_sent;
-        ++out->starts;
-    }
-    if (coproc_update_screen_take_cancel() && f->offered
-        && f->offer_gen == d->shown_gen) {
+    /* SKIP THIS STEP and the home tag that left UPDATES, wherever the
+     * router is now: each declines the offer UPDATES showed, and one given
+     * for an offer replaced since declines nothing. */
+    const bool skip = upd_screen_take_skip_coproc();
+    const bool left = upd_screen_take_left_cu();
+    if ((skip || left) && f->offered && f->offer_gen == d->shown_gen) {
         out->decline = true;
-        if (ui_router_current() == SCREEN_COPROC_UPDATE
-            && s.view == CU_VIEW_QUESTION) {
-            ui_router_goto(SCREEN_OVERVIEW);
-        }
-    }
-    /* SKIP THIS STEP on UPDATES' IOmcu step declines the offer that stands
-     * as CANCEL does; neither the question nor its band line comes for it
-     * afterwards. */
-    if (upd_screen_take_skip_coproc() && f->offered) {
-        out->decline = true;
-        d->shown_gen = f->offer_gen;
-        d->said_gen = f->offer_gen;
     }
 
-    /* What UPDATES' section shows, after this frame's START is counted. */
+    /* What UPDATES' IOmcu step shows, after this frame's START is
+     * counted. */
     const upd_cu_view_t sec = {
         .sec        = coproc_update_section(d, f, unsafe),
         .known      = f->have_image && f->reachable
@@ -612,51 +370,45 @@ void coproc_update_drive(cu_driver_t *d, const cu_feed_t *f, bool unsafe,
     }
 
     if (ui_router_current() == SCREEN_COPROC_UPDATE) {
-        if (s.view == CU_VIEW_PROGRESS) {
-            /* Ended, or the START was spent on an offer that had gone. */
-            if (f->starts_taken == d->starts_sent) {
-                progress_done(d);
-            }
-        } else if (!f->offered) {
-            /* The offer went -- another link-up checks again -- and with
-             * it the question.  Leaving it declines nothing. */
-            ui_router_goto(SCREEN_OVERVIEW);
-        } else if (f->offer_gen != d->shown_gen) {
-            /* A newer link-up's offer, its withdrawal between two frames:
-             * the question shows the versions it is about. */
-            d->shown_gen = f->offer_gen;
-            coproc_update_screen_offer(f->running, f->carried);
+        /* Ended, or the START was spent on an offer that had gone.  A
+         * snapshot that shows the START taken a moment before it shows
+         * the update active lands here too, and the progress the next
+         * frame opens again returns to UPDATES as well. */
+        if (f->starts_taken == d->starts_sent) {
+            ui_router_goto(SCREEN_UPDATES);
         }
         return;
     }
 
+    if (!f->offered || f->offer_gen == d->shown_gen) {
+        return;
+    }
+    if (ui_router_current() == SCREEN_UPDATES) {
+        /* UPDATES shows it already: its IOmcu step is the question. */
+        show_offer(d, f->offer_gen);
+        return;
+    }
     say_offer(d, f, unsafe);
-    if (f->offered && f->offer_gen != d->shown_gen
-        && coproc_update_wait(f, unsafe) == CU_WAIT_NONE
+    if (!f->run_waits && coproc_update_wait(f, unsafe) == CU_WAIT_NONE
         && ui_router_current() == SCREEN_OVERVIEW) {
-        d->shown_gen = f->offer_gen;
-        d->from_updates = false;
-        coproc_update_screen_offer(f->running, f->carried);
-        ui_router_goto(SCREEN_COPROC_UPDATE);
+        show_offer(d, f->offer_gen);
+        s.opened = true;
+        ui_router_goto(SCREEN_UPDATES);
     }
 }
 
-/** @brief The screen's table. */
+/** @brief The screen's table: the progress takes no touch and has no
+ *         band, so no home tag either. */
 static const ui_screen_t k_screen = {
     .title  = "UPDATE",
     .reset  = reset,
     .enter  = enter,
-    .leave  = leave,
-    .tick   = tick,
-    .event  = event,
-    .cancel = cancel,
-    .back   = back,
     .render = render,
 };
 
 const ui_screen_t *coproc_update_screen(void) { return &k_screen; }
 
-/* UPDATES' IOmcu section says its state as the question does. */
+/* UPDATES' IOmcu step and SINGLE UPDATES' IOmcu section say its state. */
 void upd_cu_text(const upd_cu_view_t *v, const char **line,
                  gfx_color_t *col)
 {
@@ -678,9 +430,9 @@ void upd_cu_text(const upd_cu_view_t *v, const char **line,
     case CU_SEC_INSTALL:  *line = TR(UPD_CU_INSTALL);   break;
     case CU_SEC_READY:
     default:
-        /* As the question says it: an older image in the warning colour,
-         * the same number of another build plainly, else what the update
-         * does to the bench. */
+        /* An older image in the warning colour, the same number of
+         * another build plainly, else what the update does to the
+         * bench. */
         if (coproc_update_older(v->running, v->carried)) {
             *line = TR(CU_Q_OLDER);
         } else if (v->running.major == v->carried.major

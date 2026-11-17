@@ -839,7 +839,8 @@ void log_follow_runs(void)
 
 /* ------------------------------------------------------------------ main */
 
-/* The IOmcu update's screen, cu_render_service(): panel_update.c.  The
+/* The IOmcu update's offer and progress, cu_render_service():
+ * panel_update.c.  The
  * start-up, bring_up(): panel_boot.c.  The settings the control task
  * follows: panel_settings.c.  The render loop: panel_frame.c. */
 

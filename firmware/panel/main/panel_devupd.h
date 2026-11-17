@@ -97,3 +97,12 @@ void devupd_service(bool armed);
  * @return true from the hold to the update's end.
  */
 bool panel_devupd_busy(void);
+
+/**
+ * @brief Whether the device rows say what is bound and linked: the `blec`
+ *        task published them once, or the update client was not set up
+ *        and publishes none.  Before it every row reads as not bound.
+ *        Any task.
+ * @return true from the first publication on.
+ */
+bool panel_devupd_known(void);
