@@ -3,9 +3,10 @@
  * @brief The Dial firmware's pins and the calls its parts make on each
  *        other.
  *
- * Pins from the M5Stack Dial v1.1's documentation, confirmed against the
- * board support package and M5GFX (RESEARCH-DIAL.md, "Pin map").  The
- * battery's reading pin is named by no source and is not used.
+ * The pins and parts of the board the image is built for are in
+ * dial_board.h: the M5Stack Dial v1.1 or the ELECROW CrowPanel 1.28in.  The
+ * M5Stack Dial's battery reading pin is named by no source and is not used;
+ * the CrowPanel has no battery.
  *
  * Tasks: the input task (dial_input.c) polls the encoder, the buttons and
  * the touch controller every 5ms and sends EVENT; the face task
@@ -22,30 +23,10 @@
 #include <stddef.h>
 #include <stdint.h>
 
+#include "dial_board.h"
 #include "dial_face.h"
 #include "dialknob.h"
 #include "gfx.h"
-
-/** @brief GPIO numbers. @{ */
-#define DIAL_PIN_HOLD      46 /**< power latch: high keeps the Dial on */
-#define DIAL_PIN_ENC_A     41 /**< encoder channel A */
-#define DIAL_PIN_ENC_B     40 /**< encoder channel B */
-#define DIAL_PIN_BTN       42 /**< the screen button, low when pressed */
-#define DIAL_PIN_STAMP_BTN 0  /**< the Stamp-S3A's button, low when pressed;
-                                   the download mode strap at reset */
-#define DIAL_PIN_BUZZER    3  /**< buzzer, LEDC (LED controller) PWM */
-#define DIAL_PIN_LCD_DC    4  /**< GC9A01 data/command */
-#define DIAL_PIN_LCD_MOSI  5  /**< GC9A01 data */
-#define DIAL_PIN_LCD_SCLK  6  /**< GC9A01 clock */
-#define DIAL_PIN_LCD_CS    7  /**< GC9A01 chip select */
-#define DIAL_PIN_LCD_RST   8  /**< GC9A01 reset, shared with the touch and
-                                   RFID parts */
-#define DIAL_PIN_LCD_BL    9  /**< backlight, LEDC PWM */
-#define DIAL_PIN_I2C_SDA   11 /**< internal I2C: touch, RTC, RFID */
-#define DIAL_PIN_I2C_SCL   12 /**< internal I2C clock */
-#define DIAL_PIN_TOUCH_INT 14 /**< FT3267 interrupt, low on a touch */
-#define DIAL_PIN_MARK      1  /**< PORT.B G1: the test hooks' 1ms mark */
-/** @} */
 
 /** @brief The display's size in pixels. */
 #define DIAL_LCD_SIZE 240
@@ -57,11 +38,11 @@
 
 /* --- dial_power.c ---------------------------------------------------- */
 
-/** @brief Drive GPIO46 high: the Dial stays on after the WAKE button is
+/** @brief Drive the latch high (dial_board.h; none on the CrowPanel): the Dial stays on after the WAKE button is
  *         let go.  The first call of app_main(). */
 void dial_power_hold(void);
 
-/** @brief Drive GPIO46 low: on the cell alone the power drops once the
+/** @brief Drive the latch low: on the cell alone the power drops once the
  *         WAKE button is up; on USB the Dial stays on.  The switch-off's
  *         OFF calls it (dial_button.h). */
 void dial_power_off(void);

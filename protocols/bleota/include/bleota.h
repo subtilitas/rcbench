@@ -75,7 +75,9 @@ extern const uint8_t bleota_uuid_data[16];
 #define BLEOTA_KIND_NODE_BAL   3u /**< the balance node */
 #define BLEOTA_KIND_NODE_POWER_S3 4u /**< the power node on the ES3C28P
                                          display board (ESP32-S3) */
-#define BLEOTA_KIND_MAX        4u /**< the highest kind */
+#define BLEOTA_KIND_DIAL_CROW  5u /**< the Dial image on the ELECROW
+                                         CrowPanel 1.28in (ESP32-S3) */
+#define BLEOTA_KIND_MAX        5u /**< the highest kind */
 /** @} */
 
 /** @brief Control writes, the first byte of a CTRL write. @{ */

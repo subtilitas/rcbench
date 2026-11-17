@@ -1,0 +1,17 @@
+menu "rcbench Dial"
+
+    choice RCDIAL_BOARD
+        prompt "Board"
+        default RCDIAL_BOARD_M5DIAL
+        help
+            The knob the image runs on: its pins, its display and touch
+            controller, its update kind and its INFO hardware byte
+            (main/dial_board.h).  An image runs on its own board only.
+
+        config RCDIAL_BOARD_M5DIAL
+            bool "M5Stack Dial v1.1"
+        config RCDIAL_BOARD_CROW128
+            bool "ELECROW CrowPanel 1.28in HMI ESP32 Rotary Display"
+    endchoice
+
+endmenu

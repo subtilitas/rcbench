@@ -219,6 +219,8 @@ typedef struct {
 /** @} */
 /** @brief INFO hardware: the M5Stack Dial v1.1. */
 #define DK_HW_DIAL11 1u
+/** @brief INFO hardware: the ELECROW CrowPanel 1.28in rotary display. */
+#define DK_HW_CROW128 2u
 
 /** @brief Dial to panel: INFO, read once after connect. */
 typedef struct {
