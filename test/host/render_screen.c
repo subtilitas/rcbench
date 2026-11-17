@@ -2557,8 +2557,20 @@ static void pose_wifi(const char *view)
     }
 }
 
+/* OPTIONS, then its row Single updates: SINGLE UPDATES opens over
+ * UPDATES, as an operator opens it. */
+static void open_single(void)
+{
+    const gfx_rect_t o = ui_footer_rect(UI_FOOTER_SETTINGS);
+    tap(o.x + o.w / 2, UI_BAND_H + o.y + o.h / 2);
+    const gfx_rect_t r = ui_setlist_row_rect(upd_screen_settings_list(), 2);
+    tap(r.x + r.w / 2, UI_BAND_H + r.y + r.h / 2);
+}
+
 /* SETUP > UPDATES and the reminder: the application's view handed in, as
- * the panel hands it after a check with a home network kept. */
+ * the panel hands it after a check with a home network kept.  The views of
+ * the IOmcu section, the C6 RADIO row and the wireless devices show
+ * SINGLE UPDATES, opened from OPTIONS. */
 static void pose_upd(const char *view)
 {
     upd_view_t v;
@@ -2570,7 +2582,8 @@ static void pose_upd(const char *view)
     v.phase = UPD_PH_ENDED;
     v.budget_s = 30u;
     if (strcmp(view, "updates") == 0
-        || strcmp(view, "updates-settings") == 0) {
+        || strcmp(view, "updates-settings") == 0
+        || strcmp(view, "updates-single") == 0) {
         v.phase = UPD_PH_IDLE;
     } else if (strcmp(view, "updates-checking") == 0) {
         v.phase = UPD_PH_ASKING;
@@ -2636,6 +2649,7 @@ static void pose_upd(const char *view)
         cu_sec_t    sec;
     } k_cu[] = {
         { "updates-coproc",      CU_SEC_READY },
+        { "updates-single",      CU_SEC_READY },
         { "updates-cu-older",    CU_SEC_READY },
         { "updates-cu-rebuilt",  CU_SEC_READY },
         { "updates-cu-noimage",  CU_SEC_NO_IMAGE },
@@ -2683,7 +2697,8 @@ static void pose_upd(const char *view)
         .have_image = true,
         .running = { 2u, 13u, 0u }, .carried = { 2u, 13u, 0u },
     };
-    if (strcmp(view, "updates-c6-reinstall") == 0) {
+    if (strcmp(view, "updates-c6-reinstall") == 0
+        || strcmp(view, "updates-single") == 0) {
         c6.row = FW_C6_ROW_REINSTALL;
         c6.why = FW_C6_WHY_NONE;
     } else if (strcmp(view, "updates-c6") == 0) {
@@ -2744,6 +2759,11 @@ static void pose_upd(const char *view)
     } else if (strcmp(view, "updates-dial-progress") == 0) {
         dv[UPD_DEV_DIAL].phase = DEVUPD_SEND;
         dv[UPD_DEV_DIAL].percent = 42u;
+    } else if (strcmp(view, "updates-single") == 0) {
+        /* The Dial on 0.21.0 offered 0.22.0; the nodes not connected. */
+        dv[UPD_DEV_DIAL].known = true;
+        dv[UPD_DEV_DIAL].running = (fw_version_t){ 0u, 21u, 0u };
+        dv[UPD_DEV_DIAL].row = DEVUPD_ROW_READY;
     } else if (strcmp(view, "updates-devices") == 0) {
         dv[UPD_DEV_DIAL].known = true;
         dv[UPD_DEV_DIAL].running = (fw_version_t){ 0u, 21u, 0u };
@@ -2785,6 +2805,14 @@ static void pose_upd(const char *view)
     }
     for (int i = 0; i < UPD_DEV_COUNT; ++i) {
         upd_dev_set((upd_dev_id_t)i, &dv[i]);
+    }
+    const bool single = page || dial_view
+                        || strcmp(view, "updates-single") == 0
+                        || strcmp(view, "updates-coproc") == 0
+                        || strncmp(view, "updates-cu-", 11) == 0
+                        || strncmp(view, "updates-c6", 10) == 0;
+    if (single) {
+        open_single();
     }
     if (page) {
         tap(UPD_DEV_X + UPD_DEV_W / 2,

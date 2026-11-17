@@ -1,23 +1,24 @@
 /**
  * @file upd_dev.h
- * @brief SETUP > UPDATES' wireless devices: the WIRELESS DEVICES entry on
- *        UPDATES and the page it opens with one row per device, DIAL
+ * @brief SETUP > UPDATES > SINGLE UPDATES' wireless devices: the WIRELESS
+ *        DEVICES entry on SINGLE UPDATES and the page it opens with one row per device, DIAL
  *        FIRMWARE (the M5Stack Dial), POWER NODE FIRMWARE and BALANCE NODE
  *        FIRMWARE.  Each row names the device's version and the version of
  *        the image this panel carries, and holds HOLD 2s TO UPDATE THE
  *        DIAL (THE POWER NODE, THE BALANCE NODE), or HOLD 2s TO REINSTALL
  *        while the device reports the carried version.
  *
- * The entry sits in UPDATES' left column between the IOmcu section and the
- * IOmcu's hold: its heading at body y 236, its line (connected devices and
+ * The entry sits in SINGLE UPDATES' left column between the IOmcu section
+ * and the IOmcu's hold: its heading at body y 236, its line (connected devices and
  * devices with another version) at y 260 and its button, 460 x 56px, at
  * y 316.  A tap on the button opens the page; while an update runs the
  * button reads that row's label.
  *
- * The page covers UPDATES' body: the rows at body y 24, 128 and 232, each
+ * The page covers SINGLE UPDATES: the rows at body y 24, 128 and 232, each
  * its heading and its line in the left half, 496px from x 16, and its
  * hold, 480 x 56px, from x 528; a note under them; the footer's name and
- * BACK in the footer's right slot.  BACK and the home tag close the page.
+ * BACK in the footer's right slot.  BACK and the home tag close the page
+ * and show SINGLE UPDATES again.
  * A hold is live only while the application's view reads DEVUPD_ROW_READY
  * or DEVUPD_ROW_REINSTALL.  A release before 2s on a live hold shows the
  * hold's hint on the band; a tap on a grey hold shows why it is grey
@@ -29,7 +30,7 @@
  * installs whatever comes; CANCEL UPDATE is grey then, and a tap on it
  * says so on the band.
  *
- * UPDATES (upd_screen.c) hands this module every touch event first
+ * SINGLE UPDATES (upd_single.c) hands this module every touch event first
  * (upd_dev_event()), its ticks and its draw, and the whole body while the
  * page is open (upd_dev_shown()); the application hands each row what to
  * show (upd_dev_set()) and drains its completed hold (upd_dev_take()).  A
@@ -61,7 +62,7 @@ typedef enum {
     UPD_DEV_COUNT,
 } upd_dev_id_t;
 
-/** @name The WIRELESS DEVICES entry, in UPDATES' body
+/** @name The WIRELESS DEVICES entry, in SINGLE UPDATES' body
  *  @{ */
 #define UPD_DEV_X       16    /**< left edge: the IOmcu section's        */
 #define UPD_DEV_W       460   /**< width: the IOmcu hold's                */
@@ -72,7 +73,7 @@ typedef enum {
 #define UPD_DEV_BTN_H   56    /**< the button's and the holds' height     */
 /** @} */
 
-/** @name The page, in UPDATES' body
+/** @name The page, over SINGLE UPDATES' body
  *  @{ */
 #define UPD_DEVP_Y0     24    /**< the first row's top                    */
 #define UPD_DEVP_PITCH  104   /**< from one row's top to the next's       */

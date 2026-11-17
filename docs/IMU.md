@@ -139,7 +139,7 @@ C6 image hold 5 connections each (`CONFIG_BT_NIMBLE_MAX_CONNECTIONS`,
 With the IMU alone every action and event passes as it did with one link.
 A C6 image with 3 links refuses a fourth connect; the console line names
 it (below). Such an image reports esp_hosted 2.13.0, as the panel's 5-link
-image does, so SETUP > UPDATES' C6 RADIO row offers
+image does, so the C6 RADIO row on SETUP > UPDATES > SINGLE UPDATES offers
 `HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE` for it.
 
 The connect values are chosen as a phone's central asks them, not

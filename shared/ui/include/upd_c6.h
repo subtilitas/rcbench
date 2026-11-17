@@ -1,19 +1,20 @@
 /**
  * @file upd_c6.h
- * @brief SETUP > UPDATES' C6 RADIO row: the version the board's ESP32-C6
+ * @brief SETUP > UPDATES > SINGLE UPDATES' C6 RADIO row: the version the
+ *        board's ESP32-C6
  *        reports, the version of the image this panel carries, and
  *        HOLD 2s TO UPDATE THE C6 RADIO, or HOLD 2s TO REINSTALL THIS
  *        PANEL'S C6 FIRMWARE while the C6 reports the carried version.
  *
- * The row sits in UPDATES' right column under the card: one line with both
- * versions ("not reported" while the C6 has named none), and the hold
- * under it, 532 x 56px at body y 428.  The hold is live only while the
+ * The row sits in SINGLE UPDATES' right column under the heading: one line
+ * with both versions ("not reported" while the C6 has named none) at body
+ * y 348, and the hold under it, 532 x 56px at body y 380.  The hold is live only while the
  * application's view reads FW_C6_ROW_READY or FW_C6_ROW_REINSTALL.  A release before 2s on a live
  * hold shows the hold's hint on the alert band; a tap on a grey hold shows
  * why it is grey there (upd_c6_reason()).  While an update runs the button
  * reads C6 UPDATE and the share sent.
  *
- * UPDATES (upd_screen.c) hands the row every touch event first
+ * SINGLE UPDATES (upd_single.c) hands the row every touch event first
  * (upd_c6_event()), its ticks, and its draw; the application hands it what
  * to show (upd_c6_set()) and drains the completed hold (upd_c6_take()).
  * The row commands nothing.
@@ -37,7 +38,7 @@
 extern "C" {
 #endif
 
-/** @name The row, in UPDATES' body
+/** @name The row, in SINGLE UPDATES' body
  *  @{ */
 #define UPD_C6_X      484   /**< left edge: the card's                    */
 #define UPD_C6_W      532   /**< width: the card's                        */

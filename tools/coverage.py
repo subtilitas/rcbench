@@ -223,6 +223,8 @@ TRACKED = [
     "shared/ui/update_screen.c",
     "shared/ui/coproc_update_screen.c",
     "shared/ui/upd_screen.c",
+    "shared/ui/upd_remind.c",
+    "shared/ui/upd_single.c",
     "shared/ui/upd_settings.c",
     "shared/ui/upd_c6.c",
     "shared/ui/upd_dev.c",

@@ -1,6 +1,7 @@
 /**
  * @file upd_screen.c
- * @brief upd_screen.h says what these two screens are for.
+ * @brief UPDATES: upd_screen.h says what it is for.  The reminder is
+ *        upd_remind.c, SINGLE UPDATES upd_single.c.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -10,7 +11,6 @@
 #include <stdio.h>
 #include <string.h>
 
-#include "settings.h"
 #include "ui_footer.h"
 #include "ui_text.h"
 #include "ui_theme.h"
@@ -19,91 +19,35 @@
 #include "upd_dev.h"
 #include "upd_screen_int.h"
 #include "upd_settings_int.h"
+#include "upd_single.h"
 
-/*
- * The faces of the type scale these screens draw in:
- * UPD_FONT_LABEL (10 x 20) for the buttons, the IOmcu section's lines and
- * the reminder's buttons; UPD_FONT_BODY (12 x 24) for the card's text and
- * the reminder's lines.
- */
-/** @brief The buttons and the IOmcu section: 10 x 20. */
-#define UPD_FONT_LABEL (&gfx_font_10x20)
-/** @brief The card's text and the reminder's lines: 12 x 24. */
-#define UPD_FONT_BODY  UI_FONT_BODY
-
-/*
- * The reminder:
- * A box 860 x 480px from body y 8, its lines in UPD_FONT_BODY; NOT NOW and
- * NEVER REMIND ME side by side, 398 x 56px, the hold 812 x 64px under
- * them; the box's foot is body y 488.
- */
-/** @brief The reminder's box, in the body. */
-#define R_BOX     gfx_rect_make(82, 8, 860, 480)
-/** @brief NOT NOW. */
-#define R_IGNORE  gfx_rect_make(106, 328, 398, 56)
-/** @brief NEVER REMIND ME. */
-#define R_NEVER   gfx_rect_make(520, 328, 398, 56)
-/** @brief The reminder's hold. */
-#define R_HOLD    gfx_rect_make(106, 400, 812, 64)
-
-/** @brief The body row 4px above the alert band: every control ends over
- *         it. */
-#define UPD_FLOOR (UI_ALERT_Y - UI_BAND_H - 4)
 _Static_assert(BH >= UI_TAP_MIN, "UPDATES' buttons are a finger tall");
-_Static_assert(RY + BH + 16 <= CU_HEAD_Y,
-               "the IOmcu section starts under CHECK");
-_Static_assert(CU_LINE_Y + 2 * CU_PITCH + 20 < CU_BTN_Y,
-               "two lines of state end over the IOmcu's hold");
-_Static_assert(CU_BTN_Y + BH <= UI_FOOTER_FLOOR,
-               "the IOmcu's hold ends over the footer");
 _Static_assert(RY + RH <= UI_FOOTER_FLOOR, "the card ends over the footer");
-_Static_assert(RY + RH + 12 <= UPD_C6_LINE_Y, "the card ends over the C6 row");
 _Static_assert(RX + RW <= UI_PANEL_W - UI_MARGIN, "the card keeps the margin");
-_Static_assert(8 + 480 <= UPD_FLOOR, "the reminder ends over the band");
-_Static_assert(400 + 64 + 24 <= 8 + 480, "the hold ends inside the box");
 
 enum {
     HIT_NONE = 0,
     HIT_CHECK,          /* CHECK FOR UPDATES, or CANCEL while one runs */
-    HIT_SETTINGS,       /* the footer's SETTINGS */
-    HIT_DOWNLOAD,
-    HIT_IGNORE,
-    HIT_NEVER,
-    HIT_COPROC,         /* HOLD 2s: UPDATE IOMCU */
-    HIT_COPROC_WHY,     /* the grey UPDATE IOMCU: why, on the band */
+    HIT_SETTINGS,       /* the footer's OPTIONS */
+    HIT_DOWNLOAD,       /* HOLD 2s TO DOWNLOAD & INSTALL */
     HIT_NET,            /* no home network: opens WI-FI */
 };
 
-/** @brief UPDATES' press, holds and drawn buffers. */
+/** @brief UPDATES' press, hold and drawn buffers. */
 typedef struct {
     int       hit;           /**< the control the press began on */
     uint8_t   press_id;      /**< the press's contact */
     bool      have_press;    /**< a press is on a control */
     ui_hold_t hold;          /**< DOWNLOAD & INSTALL */
-    ui_hold_t cu_hold;       /**< UPDATE IOMCU */
     unsigned  drawn_mask;    /**< the buffers that hold the current frame */
     uint32_t  drawn_list[2]; /**< the list's revision as each buffer drew it */
 } upd_main_t;
-
-/** @brief The reminder's press, hold and answer. */
-typedef struct {
-    int       hit;           /**< the control the press began on */
-    uint8_t   press_id;      /**< the press's contact */
-    bool      have_press;    /**< a press is on a control */
-    ui_hold_t hold;          /**< the reminder's DOWNLOAD & INSTALL */
-    bool      answered;      /**< IGNORE NOW, NEVER REMIND ME or the hold */
-    bool      yield;         /**< the driver takes it down: not an answer */
-    unsigned  drawn_mask;    /**< the buffers that hold the current frame */
-} upd_rem_t;
 
 /** @brief The update screens' state, one instance per image. */
 typedef struct {
     upd_view_t    v;       /**< what both screens show */
     unsigned      req;     /**< what they ask for, not yet taken */
-    upd_cu_view_t cu;      /**< UPDATES' IOmcu section */
-    bool          cu_req;  /**< the IOmcu hold completed, not yet taken */
     upd_main_t    s;       /**< UPDATES */
-    upd_rem_t     rem;     /**< the reminder */
 } upd_state_t;
 
 /** @brief The update screens' one instance. */
@@ -113,7 +57,7 @@ static upd_state_t u;
 static void touched(void)
 {
     u.s.drawn_mask = 0u;
-    u.rem.drawn_mask = 0u;
+    upd_remind_touched();
 }
 
 void upd_screen_invalidate(void) { touched(); }
@@ -134,11 +78,15 @@ static bool have_newer(void)
            && u.v.got == UPD_GOT_NEWER && !u.v.unavailable;
 }
 
-/** @brief Whether a download may start now. */
-static bool download_allowed(void)
+bool upd_download_allowed(void)
 {
     return have_newer() && u.v.dl_block == UPD_WHY_NONE && u.v.have_net;
 }
+
+/** @brief Whether a download may start now. @return True then. */
+static bool download_allowed(void) { return upd_download_allowed(); }
+
+void upd_screen_ask(unsigned req) { u.req |= req; }
 
 /** @brief Whether a check may start now. */
 static bool check_allowed(void)
@@ -155,31 +103,17 @@ static bool cancel_allowed(void)
     return upd_busy(&u.v) && u.v.job == UPD_JOB_CHECK;
 }
 
-/** @brief Whether UPDATE IOMCU's hold may run. @return true while READY */
-static bool coproc_allowed(void) { return u.cu.sec == CU_SEC_READY; }
-
 /**
  * @brief A press on a hold the model took away under it ends here.
  */
 static void drop_holds_if_gone(void)
 {
-    if (!coproc_allowed() && u.s.have_press && u.s.hit == HIT_COPROC) {
-        (void)ui_hold_left(&u.s.cu_hold);
+    if (!download_allowed() && u.s.have_press && u.s.hit == HIT_DOWNLOAD) {
+        (void)ui_hold_left(&u.s.hold);
         u.s.hit = HIT_NONE;
         u.s.have_press = false;
     }
-    if (!download_allowed()) {
-        if (u.s.have_press && u.s.hit == HIT_DOWNLOAD) {
-            (void)ui_hold_left(&u.s.hold);
-            u.s.hit = HIT_NONE;
-            u.s.have_press = false;
-        }
-        if (u.rem.have_press && u.rem.hit == HIT_DOWNLOAD) {
-            (void)ui_hold_left(&u.rem.hold);
-            u.rem.hit = HIT_NONE;
-            u.rem.have_press = false;
-        }
-    }
+    upd_remind_drop_if_gone();
 }
 
 void upd_screen_set(const upd_view_t *v)
@@ -195,26 +129,6 @@ void upd_screen_set(const upd_view_t *v)
 }
 
 const upd_view_t *upd_screen_view(void) { return &u.v; }
-
-void upd_screen_set_coproc(const upd_cu_view_t *v)
-{
-    /* NOLINTNEXTLINE(bugprone-suspicious-memory-comparison) */
-    if (v == NULL || memcmp(v, &u.cu, sizeof(u.cu)) == 0) {
-        return;
-    }
-    u.cu = *v;
-    drop_holds_if_gone();
-    touched();
-}
-
-const upd_cu_view_t *upd_screen_coproc(void) { return &u.cu; }
-
-bool upd_screen_take_coproc(void)
-{
-    const bool was = u.cu_req;
-    u.cu_req = false;
-    return was;
-}
 
 unsigned upd_screen_take(void)
 {
@@ -271,11 +185,8 @@ static const char *join_text(const upd_view_t *v)
     }
 }
 
-/**
- * @brief Why a job did not start (BLOCKED): one line, or two for the gate.
- */
-static void blocked_text(upd_why_t why, char *out, size_t n, char *second,
-                         size_t n2)
+void upd_blocked_text(upd_why_t why, char *out, size_t n, char *second,
+                      size_t n2)
 {
     if (n2 > 0u) {
         second[0] = '\0';
@@ -394,7 +305,7 @@ void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
         snprintf(second, n2, "%s", TR(UPD_KEEP_NET));
         break;
     case UPD_GOT_BLOCKED:
-        blocked_text(v->why, out, n, second, n2);
+        upd_blocked_text(v->why, out, n, second, n2);
         break;
     case UPD_GOT_ABORTED:
         snprintf(out, n, "%s", aborted_text(v->why));
@@ -467,18 +378,8 @@ static gfx_color_t result_colour(void)
     }
 }
 
-/**
- * @brief One line of @p t in @p f at (@p x, @p y), @p w wide.
- * @param c   Canvas, the body.
- * @param x   Its left edge.
- * @param y   Its top.
- * @param w   Its width.
- * @param t   The text.
- * @param f   Its face.
- * @param col Its colour.
- */
-static void text_in(gfx_canvas_t *c, int x, int y, int w, const char *t,
-                    const gfx_font_t *f, gfx_color_t col)
+void upd_text_in(gfx_canvas_t *c, int x, int y, int w, const char *t,
+                 const gfx_font_t *f, gfx_color_t col)
 {
     gfx_text_in(c, gfx_rect_make(x, y, w, gfx_text_height(f, 1)), t, f, col,
                 1, GFX_ALIGN_LEFT);
@@ -504,23 +405,13 @@ static int para(gfx_canvas_t *c, int x, int y, int w, const char *t,
                                     PITCH, t, UPD_FONT_BODY, col);
 }
 
-/** @brief Gives a hold button's fill. */
-static gfx_color_t hold_fill(const ui_hold_t *h)
+gfx_color_t upd_hold_fill(const ui_hold_t *h)
 {
     return ui_hold_button_fill(UI_PANEL_HI, UI_OK, h);
 }
 
-/**
- * @brief A button of these screens: ui_button_font() in UPD_FONT_LABEL.
- * @param c       Canvas, the body.
- * @param r       The button.
- * @param label   Its label.
- * @param fill    Its fill.
- * @param pressed Whether a finger is on it.
- * @param enabled Whether it takes a press.
- */
-static void button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
-                   gfx_color_t fill, bool pressed, bool enabled)
+void upd_button(gfx_canvas_t *c, gfx_rect_t r, const char *label,
+                gfx_color_t fill, bool pressed, bool enabled)
 {
     ui_button_font(c, r, label, fill, pressed, enabled, UPD_FONT_LABEL);
 }
@@ -588,9 +479,6 @@ static int hit_at(int x, int y)
     if (download_allowed() && gfx_rect_contains(dl_rect(), x, y)) {
         return HIT_DOWNLOAD;
     }
-    if (gfx_rect_contains(CU_BTN, x, y)) {
-        return coproc_allowed() ? HIT_COPROC : HIT_COPROC_WHY;
-    }
     return HIT_NONE;
 }
 
@@ -614,15 +502,6 @@ static void act(int hit)
         /* WI-FI's home tag comes back here (ui_router_parent()). */
         ui_router_goto(SCREEN_WIFI);
         break;
-    case HIT_COPROC_WHY: {
-        /* A tap or a hold on the grey hold: the section's line, on the
-         * band, as the C6 and device rows say theirs. */
-        const char *why = "";
-        gfx_color_t col = UI_TEXT;
-        upd_cu_text(&u.cu, &why, &col);
-        ui_router_set_notice(why);
-        break;
-    }
     default:
         break;
     }
@@ -633,11 +512,7 @@ static void reset(void)
 {
     memset(&u.s, 0, sizeof(u.s));
     ui_hold_reset(&u.s.hold);
-    ui_hold_reset(&u.s.cu_hold);
-    upd_c6_drop();
-    upd_dev_close();
-    memset(&u.cu, 0, sizeof(u.cu));
-    u.cu_req = false;
+    upd_single_reset();
     upd_list_reset();
 }
 
@@ -654,19 +529,13 @@ static void event(const touch_event_t *evt)
         }
         return;
     }
-    if (upd_dev_shown()) {
-        (void)upd_dev_event(evt, false);   /* the devices' page, whole */
+    if (upd_single_shown()) {
+        upd_single_event(evt);     /* SINGLE UPDATES, whole */
         return;
-    }
-    if (upd_c6_event(evt, u.s.have_press || upd_dev_pressed())) {
-        return;                    /* the C6 RADIO row's press */
-    }
-    if (upd_dev_event(evt, u.s.have_press || upd_c6_pressed())) {
-        return;                    /* the devices' entry */
     }
     const int x = evt->point.x, y = evt->point.y;
     if (evt->type == TOUCH_EVENT_DOWN) {
-        if (u.s.have_press || upd_c6_pressed() || upd_dev_pressed()) {
+        if (u.s.have_press) {
             return;                /* one press at a time */
         }
         u.s.hit = hit_at(x, y);
@@ -675,8 +544,6 @@ static void event(const touch_event_t *evt)
             u.s.press_id = evt->point.id;
             if (u.s.hit == HIT_DOWNLOAD) {
                 ui_hold_begin(&u.s.hold, TX_HOLD_HINT_DOWNLOAD);
-            } else if (u.s.hit == HIT_COPROC) {
-                ui_hold_begin(&u.s.cu_hold, TX_HOLD_HINT_IOMCU_UPDATE);
             }
         }
         touched();
@@ -687,10 +554,8 @@ static void event(const touch_event_t *evt)
     }
     if (evt->type == TOUCH_EVENT_MOVE) {
         /* Sliding off the hold abandons it, as on every held control. */
-        if ((u.s.hit == HIT_DOWNLOAD && !gfx_rect_contains(dl_rect(), x, y)
-             && ui_hold_leave(&u.s.hold))
-            || (u.s.hit == HIT_COPROC && !gfx_rect_contains(CU_BTN, x, y)
-                && ui_hold_leave(&u.s.cu_hold))) {
+        if (u.s.hit == HIT_DOWNLOAD && !gfx_rect_contains(dl_rect(), x, y)
+            && ui_hold_leave(&u.s.hold)) {
             u.s.hit = HIT_NONE;
             u.s.have_press = false;
             touched();
@@ -709,10 +574,6 @@ static void event(const touch_event_t *evt)
         (void)ui_hold_end(&u.s.hold, evt, dl_rect());
         return;
     }
-    if (hit == HIT_COPROC) {
-        (void)ui_hold_end(&u.s.cu_hold, evt, CU_BTN);
-        return;
-    }
     if (touch_event_is_tap_up(evt) && hit_at(x, y) == hit) {
         act(hit);
     }
@@ -727,27 +588,16 @@ static void tick(float dt_s)
         touched();
     }
     upd_list_tick(dt_s);
-    if (upd_c6_tick(dt_s)) {
-        touched();             /* the C6 row's fill follows its hold */
+    if (upd_single_tick(dt_s)) {
+        touched();             /* a fill on SINGLE UPDATES follows its hold */
     }
-    if (upd_dev_tick(dt_s)) {
-        touched();             /* a device row's fill follows its hold */
-    }
-    if (u.s.hold.down || u.s.hold.flash_ms > 0 || u.s.cu_hold.down
-        || u.s.cu_hold.flash_ms > 0) {
+    if (u.s.hold.down || u.s.hold.flash_ms > 0) {
         touched();             /* the fill follows the hold */
     }
     ui_hold_flash_step(&u.s.hold, dt_s);
-    ui_hold_flash_step(&u.s.cu_hold, dt_s);
     if (download_allowed() && ui_hold_tick(&u.s.hold, dt_s)) {
         u.req |= UPD_REQ_DOWNLOAD;
         ui_hold_reached(&u.s.hold);
-    }
-    if (coproc_allowed() && ui_hold_tick(&u.s.cu_hold, dt_s)) {
-        /* coproc_update_drive() takes it next frame and opens the
-         * progress. */
-        u.cu_req = true;
-        ui_hold_reached(&u.s.cu_hold);
     }
 }
 
@@ -755,12 +605,9 @@ static void tick(float dt_s)
 static void cancel(void)
 {
     upd_list_cancel();
-    upd_c6_drop();
-    upd_dev_drop();
+    upd_single_cancel();
     if (u.s.hit == HIT_DOWNLOAD) {
         (void)ui_hold_left(&u.s.hold);
-    } else if (u.s.hit == HIT_COPROC) {
-        (void)ui_hold_left(&u.s.cu_hold);
     }
     u.s.hit = HIT_NONE;
     u.s.have_press = false;
@@ -771,63 +618,20 @@ static void cancel(void)
 static void enter(void)
 {
     upd_list_close();
-    upd_c6_drop();
-    upd_dev_close();
+    upd_single_close();
     ui_hold_reset(&u.s.hold);
-    ui_hold_reset(&u.s.cu_hold);
     touched();
 }
 
-/** @brief Leaves the UPDATES screen. */
+/** @brief Leaves the UPDATES screen: SINGLE UPDATES closes, every hold on
+ *         it ends unfired. */
 static void leave(void)
 {
     upd_list_close();
-    upd_c6_drop();
-    upd_dev_close();
+    upd_single_close();
     u.s.hit = HIT_NONE;
     u.s.have_press = false;
     ui_hold_reset(&u.s.hold);
-    ui_hold_reset(&u.s.cu_hold);
-}
-
-/** @brief Writes a version as "major.minor.patch", or says it is not known. */
-static void cu_version_text(char *out, size_t n, bool known, cu_version_t v)
-{
-    if (known) {
-        snprintf(out, n, "%u.%u.%u", (unsigned)v.major, (unsigned)v.minor,
-                 (unsigned)v.patch);
-    } else {
-        snprintf(out, n, "%s", TR(UPD_CU_NOT_KNOWN));
-    }
-}
-
-/**
- * @brief The IOmcu section: heading, versions, state, hold.
- * @param c Canvas, the body.
- */
-static void render_coproc(gfx_canvas_t *c)
-{
-    char ver[24], line[96];
-    text_in(c, BX, CU_HEAD_Y, BW, TR(UPD_CU_HEAD), UPD_FONT_LABEL,
-            UI_TEXT_DIM);
-    cu_version_text(ver, sizeof(ver), u.cu.known, u.cu.running);
-    snprintf(line, sizeof(line), TR(UPD_CU_RUNNING), ver);
-    text_in(c, BX, CU_RUN_Y, BW, line, UPD_FONT_LABEL, UI_TEXT);
-    cu_version_text(ver, sizeof(ver), u.cu.have_image, u.cu.carried);
-    snprintf(line, sizeof(line), TR(UPD_CU_CARRIED), ver);
-    text_in(c, BX, CU_CAR_Y, BW, line, UPD_FONT_LABEL, UI_TEXT);
-
-    const char *state = "";
-    gfx_color_t col = UI_TEXT;
-    upd_cu_text(&u.cu, &state, &col);
-    (void)ui_text_wrap(c, gfx_rect_make(BX, CU_LINE_Y, BW,
-                                        gfx_text_height(UPD_FONT_LABEL, 1)),
-                       CU_PITCH, state, UPD_FONT_LABEL, col);
-
-    const gfx_color_t fill = coproc_allowed() ? hold_fill(&u.s.cu_hold)
-                                              : UI_PANEL_HI;
-    ui_button_font(c, CU_BTN, TR(UPD_CU_HOLD), fill, false, coproc_allowed(),
-                   UPD_FONT_LABEL);
 }
 
 /**
@@ -852,9 +656,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
     if ((u.s.drawn_mask & bit) != 0u) {
         return;            /* every event and every change clears the mask */
     }
-    if (upd_dev_shown()) {
-        upd_dev_render_page(c);
-        if (upd_dev_flashing()) {
+    if (upd_single_shown()) {
+        /* SINGLE UPDATES, or the devices' page over it. */
+        if (upd_single_render(c)) {
             u.s.drawn_mask = 0u;
         } else {
             u.s.drawn_mask |= bit;
@@ -863,9 +667,9 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     gfx_clear(c, UI_BG);
 
-    /* CHECK, and the footer: the download's hold, SETTINGS. */
+    /* CHECK, and the footer: the download's hold, OPTIONS. */
     const bool busy = cancel_allowed();
-    button(c, check_rect(), busy ? TR(CANCEL) : TR(UPD_CHECK),
+    upd_button(c, check_rect(), busy ? TR(CANCEL) : TR(UPD_CHECK),
            busy ? UI_PANEL_HI : UI_ACCENT,
            u.s.have_press && u.s.hit == HIT_CHECK, busy || check_allowed());
     ui_footer_name(c, ui_footer_rect(UI_FOOTER_NAME), "UPDATES", NULL, false);
@@ -875,9 +679,6 @@ static void render(gfx_canvas_t *c, int buffer_index)
     }
     ui_footer_settings(c, u.s.have_press && u.s.hit == HIT_SETTINGS,
                        upd_settings_free());
-    render_coproc(c);
-    upd_c6_render(c);
-    upd_dev_render(c);
 
     /* What is kept, what runs, what last happened. */
     ui_card(c, gfx_rect_make(RX, RY, RW, RH), UI_PANEL);
@@ -894,7 +695,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, line, UI_TEXT_DIM) + 12;
     } else {
         y = para(c, x, y, w, TR(WF_HOME_NONE), UI_WARN);
-        button(c, net_rect(), TR(UPD_OPEN_WIFI), UI_PANEL_HI,
+        upd_button(c, net_rect(), TR(UPD_OPEN_WIFI), UI_PANEL_HI,
                u.s.have_press && u.s.hit == HIT_NET, !upd_busy(&u.v));
         y += 4 + BH + 12;
     }
@@ -917,7 +718,7 @@ static void render(gfx_canvas_t *c, int buffer_index)
             : (have_newer() ? u.v.dl_block : UPD_WHY_NONE);
         if (why != UPD_WHY_NONE
             && !(u.v.got == UPD_GOT_BLOCKED && u.v.why == why)) {
-            blocked_text(why, line, sizeof(line), second, sizeof(second));
+            upd_blocked_text(why, line, sizeof(line), second, sizeof(second));
             y = para(c, x, y, w, line, UI_WARN);
             y = para(c, x, y, w, second, UI_WARN) + 12;
         }
@@ -950,21 +751,24 @@ static void render(gfx_canvas_t *c, int buffer_index)
         y = para(c, x, y, w, ui_tr(about[i]), lit ? UI_TEXT : UI_TEXT_DIM);
     }
 
-    if (u.s.hold.flash_ms > 0 || u.s.cu_hold.flash_ms > 0 || upd_c6_flashing()
-        || upd_dev_flashing()) {
+    if (u.s.hold.flash_ms > 0) {
         u.s.drawn_mask = 0u;
     } else {
         u.s.drawn_mask |= bit;
     }
 }
 
-/** @brief The home tag closes the devices' page, or the list through its
- *        leave warning.
+/** @brief The home tag closes the devices' page, SINGLE UPDATES, or the
+ *        list through its leave warning.
  *  @return Whether it went up a level. */
 static bool back(void)
 {
     if (upd_dev_shown()) {
         upd_dev_close();
+        return true;
+    }
+    if (upd_single_shown()) {
+        upd_single_close();
         return true;
     }
     const bool was = upd_list_shown();
@@ -975,9 +779,12 @@ static bool back(void)
     return climbed;
 }
 
-/** @brief The list or the devices' page covers the screen.
+/** @brief The list, SINGLE UPDATES or the devices' page covers the screen.
  *  @return Whether one is open. */
-static bool covered(void) { return upd_list_shown() || upd_dev_shown(); }
+static bool covered(void)
+{
+    return upd_list_shown() || upd_single_shown() || upd_dev_shown();
+}
 
 bool upd_guide_newer(void) { return have_newer(); }
 
@@ -1000,259 +807,3 @@ static const ui_screen_t k_screen = {
 };
 
 const ui_screen_t *upd_screen(void) { return &k_screen; }
-
-/* ========================================================= the reminder */
-
-/** @brief Finds the control of the reminder at a point. */
-static int r_hit_at(int x, int y)
-{
-    if (gfx_rect_contains(R_IGNORE, x, y)) {
-        return HIT_IGNORE;
-    }
-    if (gfx_rect_contains(R_NEVER, x, y)) {
-        return HIT_NEVER;
-    }
-    if (download_allowed() && gfx_rect_contains(R_HOLD, x, y)) {
-        return HIT_DOWNLOAD;
-    }
-    return HIT_NONE;
-}
-
-/** @brief Returns the reminder to its initial state. */
-static void r_reset(void)
-{
-    memset(&u.rem, 0, sizeof(u.rem));
-    ui_hold_reset(&u.rem.hold);
-}
-
-/** @brief Takes a touch event of the reminder. */
-static void r_event(const touch_event_t *evt)
-{
-    if (evt == NULL || u.rem.answered) {
-        return;
-    }
-    const int x = evt->point.x, y = evt->point.y;
-    if (evt->type == TOUCH_EVENT_DOWN) {
-        if (u.rem.have_press) {
-            return;
-        }
-        u.rem.hit = r_hit_at(x, y);
-        if (u.rem.hit != HIT_NONE) {
-            u.rem.have_press = true;
-            u.rem.press_id = evt->point.id;
-            if (u.rem.hit == HIT_DOWNLOAD) {
-                ui_hold_begin(&u.rem.hold, TX_HOLD_HINT_DOWNLOAD);
-            }
-        }
-        touched();
-        return;
-    }
-    if (!u.rem.have_press || evt->point.id != u.rem.press_id) {
-        return;
-    }
-    if (evt->type == TOUCH_EVENT_MOVE) {
-        if (u.rem.hit == HIT_DOWNLOAD && !gfx_rect_contains(R_HOLD, x, y)
-            && ui_hold_leave(&u.rem.hold)) {
-            u.rem.hit = HIT_NONE;
-            u.rem.have_press = false;
-            touched();
-        }
-        return;
-    }
-    if (evt->type != TOUCH_EVENT_UP) {
-        return;
-    }
-    const int hit = u.rem.hit;
-    u.rem.hit = HIT_NONE;
-    u.rem.have_press = false;
-    touched();
-    if (hit == HIT_DOWNLOAD) {
-        (void)ui_hold_end(&u.rem.hold, evt, R_HOLD);
-        return;
-    }
-    if (!touch_event_is_tap_up(evt) || r_hit_at(x, y) != hit) {
-        return;
-    }
-    if (hit == HIT_NEVER) {
-        settings_set(SET_UPD_REMIND, 0.0f);
-        settings_request_save();
-        u.rem.answered = true;
-    } else if (hit == HIT_IGNORE) {
-        u.rem.answered = true;
-    }
-}
-
-/** @brief Runs the reminder for one frame: its hold. */
-static void r_tick(float dt_s)
-{
-    drop_holds_if_gone();
-    if (u.rem.hold.down || u.rem.hold.flash_ms > 0) {
-        touched();
-    }
-    ui_hold_flash_step(&u.rem.hold, dt_s);
-    if (!u.rem.answered && download_allowed() && ui_hold_tick(&u.rem.hold, dt_s)) {
-        u.req |= UPD_REQ_DOWNLOAD;
-        u.rem.answered = true;
-        ui_hold_reached(&u.rem.hold);
-    }
-}
-
-/** @brief Drops the presses under way, as touch events were lost. */
-static void r_cancel(void)
-{
-    if (u.rem.hit == HIT_DOWNLOAD) {
-        (void)ui_hold_left(&u.rem.hold);
-    }
-    u.rem.hit = HIT_NONE;
-    u.rem.have_press = false;
-    touched();
-}
-
-/** @brief Enters the reminder. */
-static void r_enter(void)
-{
-    u.rem.answered = false;
-    u.rem.yield = false;
-    u.rem.hit = HIT_NONE;
-    u.rem.have_press = false;
-    ui_hold_reset(&u.rem.hold);
-    touched();
-}
-
-/**
- * @brief Left any way but the driver's own: answered, as IGNORE NOW.
- */
-static void r_leave(void)
-{
-    if (!u.rem.yield) {
-        u.rem.answered = true;
-    }
-    u.rem.hit = HIT_NONE;
-    u.rem.have_press = false;
-    ui_hold_reset(&u.rem.hold);
-}
-
-/**
- * @brief The reminder, drawn whole once per framebuffer and again after
- *        every change and through the hold's flash.
- * @param c            Canvas, the body.
- * @param buffer_index The framebuffer drawn into.
- */
-static void r_render(gfx_canvas_t *c, int buffer_index)
-{
-    const unsigned bit = 1u << (buffer_index & 1);
-    if ((u.rem.drawn_mask & bit) != 0u) {
-        return;
-    }
-    gfx_clear(c, UI_BG);
-    const gfx_rect_t box = R_BOX;
-    ui_panel(c, box, TR(UPD_R_TITLE), UI_ACCENT);
-    const int x = box.x + 24, w = box.w - 48;
-    char line[112];
-    snprintf(line, sizeof(line), TR(UPD_R_VERSIONS), u.v.found, u.v.running);
-    /* The versions, what the hold does, how to turn the reminder back on,
-     * and why the hold is grey: the lines of a group 28px apart, the
-     * groups 36 to 48px. */
-    text_in(c, x, box.y + 44, w, line, UPD_FONT_BODY, UI_TEXT);
-    text_in(c, x, box.y + 84, w, TR(UPD_R_WHAT_1), UPD_FONT_BODY,
-            UI_TEXT_DIM);
-    text_in(c, x, box.y + 84 + PITCH, w, TR(UPD_R_WHAT_2), UPD_FONT_BODY,
-            UI_TEXT_DIM);
-    text_in(c, x, box.y + 148, w, TR(UPD_R_NEVER), UPD_FONT_BODY,
-            UI_TEXT_DIM);
-    if (!download_allowed()) {
-        char second[96];
-        const upd_why_t why = (u.v.dl_block != UPD_WHY_NONE)
-                                  ? u.v.dl_block : UPD_WHY_BUSY;
-        blocked_text(why, line, sizeof(line), second, sizeof(second));
-        text_in(c, x, box.y + 196, w, line, UPD_FONT_BODY, UI_WARN);
-        if (second[0] != '\0') {
-            text_in(c, x, box.y + 196 + PITCH, w, second, UPD_FONT_BODY,
-                    UI_WARN);
-        }
-    }
-    button(c, R_IGNORE, TR(UPD_IGNORE), UI_PANEL_HI,
-           u.rem.have_press && u.rem.hit == HIT_IGNORE, true);
-    button(c, R_NEVER, TR(UPD_NEVER), UI_PANEL_HI,
-           u.rem.have_press && u.rem.hit == HIT_NEVER, true);
-    button(c, R_HOLD, TR(UPD_HOLD_DL), hold_fill(&u.rem.hold), false,
-           download_allowed());
-    if (u.rem.hold.flash_ms > 0) {
-        u.rem.drawn_mask = 0u;
-    } else {
-        u.rem.drawn_mask |= bit;
-    }
-}
-
-/** @brief The reminder's table. */
-static const ui_screen_t k_remind = {
-    .title  = "UPDATE",
-    .reset  = r_reset,
-    .enter  = r_enter,
-    .leave  = r_leave,
-    .tick   = r_tick,
-    .event  = r_event,
-    .cancel = r_cancel,
-    .render = r_render,
-};
-
-const ui_screen_t *upd_remind_screen(void) { return &k_remind; }
-
-/* =========================================================== the driver */
-
-bool upd_startup_due(upd_driver_t *d, const upd_feed_t *f)
-{
-    if (d == NULL || f == NULL) {
-        return false;
-    }
-    if (!d->started) {
-        d->started = true;
-        d->start_ms = f->now_ms;
-    }
-    if (d->check_done) {
-        return false;
-    }
-    /* A start-up check: with the reminder off, no home network or no
-     * Wi-Fi at this start there is none, and none comes later. */
-    if (!f->remind || !f->available || !f->have_net
-        || (uint32_t)(f->now_ms - d->start_ms) >= UPD_START_WAIT_MS) {
-        d->check_done = true;
-        return false;
-    }
-    if (!f->gate_open || f->files_open || f->coproc
-        || ui_router_current() == SCREEN_SPLASH) {
-        return false;      /* waits for a moment the bench allows */
-    }
-    d->check_done = true;
-    return true;
-}
-
-void upd_remind_drive(upd_driver_t *d, const upd_feed_t *f)
-{
-    if (d == NULL || f == NULL) {
-        return;
-    }
-    const bool may = f->newer && f->remind && !f->unsafe && !f->coproc;
-    if (ui_router_current() == SCREEN_UPD_REMIND) {
-        if (u.rem.answered) {
-            d->dismissed = true;
-            /* The hold's download takes the panel to PANEL UPDATE: the
-             * application goes there itself. */
-            ui_router_goto(SCREEN_OVERVIEW);
-        } else if (!may) {
-            /* ARMED, the supply, the IOmcu's question: they come
-             * first.  The reminder comes back once they have gone. */
-            u.rem.yield = true;
-            ui_router_goto(SCREEN_OVERVIEW);
-            u.rem.yield = false;
-        }
-        return;
-    }
-    if (u.rem.answered) {
-        d->dismissed = true;        /* left by the HOME tag or the menu */
-        u.rem.answered = false;
-    }
-    if (!d->dismissed && may && ui_router_current() == SCREEN_OVERVIEW) {
-        ui_router_goto(SCREEN_UPD_REMIND);
-    }
-}

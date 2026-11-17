@@ -157,6 +157,8 @@ set(SRCS
     update_screen.c
     coproc_update_screen.c
     upd_screen.c
+    upd_remind.c
+    upd_single.c
     upd_settings.c
     upd_c6.c
     upd_dev.c

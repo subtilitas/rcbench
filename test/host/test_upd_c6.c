@@ -1,9 +1,10 @@
 /*
- * SETUP > UPDATES' C6 RADIO row (upd_c6.c): the hold at 1,999ms and at
+ * SETUP > UPDATES > SINGLE UPDATES' C6 RADIO row (upd_c6.c), the page
+ * opened from OPTIONS first: the hold at 1,999ms and at
  * 2,000ms, once; a short press's hint on the band; a tap on the grey hold
  * naming why on the band, for every state and reason; a state change
  * under the finger ending the hold unfired; sliding off; one press at a
- * time with UPDATES' other holds; the versions' line and the button's
+ * time with the page's IOmcu hold and BACK; the versions' line and the button's
  * label in both languages inside the row, at every state.
  *
  * SPDX-License-Identifier: MIT
@@ -72,7 +73,7 @@ static upd_c6_view_t view_of(fw_c6_row_t row, fw_c6_why_t why)
     return v;
 }
 
-/* UPDATES open, the row READY for a C6 that named no version. */
+/* SINGLE UPDATES open, the row READY for a C6 that named no version. */
 static void on_updates(void)
 {
     ui_theme_set(UI_THEME_DARK);
@@ -83,6 +84,7 @@ static void on_updates(void)
     ui_router_init();
     upd()->reset();
     ui_router_goto(SCREEN_UPDATES);
+    upd_open_single(upd());
     ui_router_set_alert(NULL);
     const upd_c6_view_t v = view_of(FW_C6_ROW_READY, FW_C6_WHY_NONE);
     upd_c6_set(&v);
@@ -247,21 +249,45 @@ TEST_CASE(sliding_off_and_leaving_abandon_the_hold)
 TEST_CASE(one_press_at_a_time_with_the_iomcu_hold)
 {
     on_updates();
-    /* A finger on SETTINGS first: the row takes no second one. */
-    ev(TOUCH_EVENT_DOWN, 1, UP_SET_X, UP_SET_Y);
+    /* A finger on BACK first: the row takes no second one. */
+    ev(TOUCH_EVENT_DOWN, 1, UP_BACK_X, UP_BACK_Y);
     ev(TOUCH_EVENT_DOWN, 2, UP_C6_X, UP_C6_Y);
     CHECK(!upd_c6_pressed());
     upd()->tick(3.0f);
     CHECK(!upd_c6_take());
-    ev(TOUCH_EVENT_UP, 1, UP_SET_X, UP_SET_Y);
-    CHECK(upd()->covered());               /* that tap opened the list */
-    /* And the row's press holds UPDATES' other buttons off. */
+    ev(TOUCH_EVENT_UP, 1, UP_BACK_X, UP_BACK_Y);
+    CHECK(!upd()->covered());              /* that tap closed the page */
+    /* A finger on the IOmcu's hold first: the same, and that hold fires. */
     on_updates();
+    const upd_cu_view_t cu = {
+        .sec = CU_SEC_READY, .known = true, .have_image = true,
+        .running = { 0, 17, 0 }, .carried = { 0, 18, 0 },
+    };
+    upd_screen_set_coproc(&cu);
+    ev(TOUCH_EVENT_DOWN, 1, UP_BTN_X, UP_CU_Y);
+    ev(TOUCH_EVENT_DOWN, 2, UP_C6_X, UP_C6_Y);
+    CHECK(!upd_c6_pressed());
+    for (int i = 0; i < 10; ++i) {
+        upd()->tick(UI_HOLD_MAX_CREDIT_S);   /* 2.5s */
+    }
+    CHECK(!upd_c6_take());
+    CHECK(upd_screen_take_coproc());
+    ev(TOUCH_EVENT_UP, 2, UP_C6_X, UP_C6_Y);
+    ev(TOUCH_EVENT_UP, 1, UP_BTN_X, UP_CU_Y);
+    /* And the row's press holds the page's other buttons off. */
+    on_updates();
+    upd_screen_set_coproc(&cu);
     ev(TOUCH_EVENT_DOWN, 1, UP_C6_X, UP_C6_Y);
-    ev(TOUCH_EVENT_DOWN, 2, UP_SET_X, UP_SET_Y);
-    ev(TOUCH_EVENT_UP, 2, UP_SET_X, UP_SET_Y);
-    CHECK(!upd()->covered());
+    ev(TOUCH_EVENT_DOWN, 2, UP_BACK_X, UP_BACK_Y);
+    ev(TOUCH_EVENT_UP, 2, UP_BACK_X, UP_BACK_Y);
+    CHECK(upd()->covered());
     CHECK(upd_c6_pressed());
+    ev(TOUCH_EVENT_DOWN, 2, UP_BTN_X, UP_CU_Y);
+    for (int i = 0; i < 10; ++i) {
+        upd()->tick(UI_HOLD_MAX_CREDIT_S);   /* 2.5s */
+    }
+    CHECK(!upd_screen_take_coproc());
+    CHECK(upd_c6_take());
 }
 
 /* --------------------------------------------------------- the texts */

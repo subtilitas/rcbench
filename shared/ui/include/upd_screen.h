@@ -4,31 +4,33 @@
  *
  * UPDATES (SCREEN_UPDATES, from SETUP): CHECK FOR UPDATES asks GitHub once
  * which release is the newest, over the home network the panel keeps; the
- * answer stays on the screen.  The footer's SETTINGS opens the list of
+ * answer stays on the screen.  The footer's OPTIONS opens the list of
  * Reminder at start, which switches the start-up check on and off
- * (SET_UPD_REMIND), and Releases, STABLE or TESTING (SET_UPD_CHANNEL):
- * which releases a check looks at; the application drops a result found on
- * the other channel from the view.  When a newer release was found, HOLD
- * 2s TO DOWNLOAD & INSTALL in the footer's middle slot fetches and installs
- * it.
+ * (SET_UPD_REMIND), Releases, STABLE or TESTING (SET_UPD_CHANNEL): which
+ * releases a check looks at, and Single updates, which opens SINGLE
+ * UPDATES; the application drops a result found on the other channel from
+ * the view.  When a newer release was found, HOLD 2s TO DOWNLOAD & INSTALL
+ * in the footer's middle slot fetches and installs it.
  *
- * Its IOmcu section, under CHECK: the version the IOmcu
- * runs, the version of the image this panel carries, and HOLD 2s: UPDATE
- * IOMCU, which starts the update the link-up's question starts, also
- * after that question was declined.  The hold is live only while
- * coproc_update_section() reads CU_SEC_READY; any other state greys it and
- * says why in the line above it.  coproc_update_drive() hands the section
- * in (upd_screen_set_coproc()) and drains the hold
- * (upd_screen_take_coproc()).
+ * SINGLE UPDATES (upd_single.c) covers UPDATES' body.  Its IOmcu section:
+ * the version the IOmcu runs, the version of the image this panel
+ * carries, and HOLD 2s TO UPDATE THE IOMCU, which starts the update the
+ * link-up's question starts, also after that question was declined.  The
+ * hold is live only while coproc_update_section() reads CU_SEC_READY; any
+ * other state greys it and says why in the line above it, and a press on
+ * it says why on the band.  coproc_update_drive() hands the section in
+ * (upd_screen_set_coproc()) and drains the hold
+ * (upd_screen_take_coproc()).  The page also holds the C6 RADIO row
+ * (upd_c6.h) and the WIRELESS DEVICES entry (upd_dev.h).
  *
  * The reminder (SCREEN_UPD_REMIND): the start-up check found a newer
  * release.  It opens on OVERVIEW only, with the bench SAFE and the supply
  * off, and never over the IOmcu's update question or its progress,
- * which come first.  IGNORE NOW closes it until the next start; NEVER
- * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2s:
- * DOWNLOAD & INSTALL is the same hold as on UPDATES, and the one
+ * which come first.  NOT NOW closes it until the next start; NEVER
+ * REMIND ME switches SET_UPD_REMIND off and asks for the save; HOLD 2s
+ * TO DOWNLOAD & INSTALL is the same hold as on UPDATES, and the one
  * confirmation: no question follows the download.  Leaving it by the HOME
- * tag is IGNORE NOW.
+ * tag is NOT NOW.  The reminder and its driver are upd_remind.c.
  *
  * The screens command nothing.  The application hands them what to show
  * (upd_screen_set()) and drains what they ask for (upd_screen_take()), as

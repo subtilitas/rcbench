@@ -153,7 +153,7 @@ Mit der IMU allein läuft jede Aktion und jedes Event wie mit einer
 Verbindung. Ein C6-Image mit 3 Verbindungen lehnt eine vierte ab; die
 Konsolenzeile nennt das (unten). Ein solches Image meldet esp_hosted 2.13.0
 wie das Image des Panels mit 5 Verbindungen, deshalb bietet die Zeile C6
-RADIO auf SETUP > UPDATES dafür
+RADIO auf SETUP > UPDATES > EINZELNE UPDATES dafür
 `2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN` an.
 
 Die Verbindungswerte sind so gewählt, wie eine Handy-Central sie

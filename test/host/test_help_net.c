@@ -194,7 +194,8 @@ TEST_CASE(a_list_a_keyboard_or_the_question_leaves_wifi_no_page)
 /* ----------------------------------------------------------- UPDATES */
 
 /** @brief What upd_pose() shows: 0 as fresh, 1 a newer release found,
- *         2 the OPTIONS list open, 3 the wireless devices' page open. */
+ *         2 the OPTIONS list open, 3 the wireless devices' page open over
+ *         SINGLE UPDATES, 4 SINGLE UPDATES open. */
 static int s_upd_state;
 
 /** @brief UPDATES, fresh, in s_upd_state's state. */
@@ -208,6 +209,9 @@ static void upd_pose(void)
     if (s_upd_state == 2) {
         tap(upd(), UP_SET_X, UP_SET_Y);
     }
+    if (s_upd_state == 3 || s_upd_state == 4) {
+        upd_open_single(upd());
+    }
     if (s_upd_state == 3) {
         tap(upd(), UPD_DEV_X + UPD_DEV_W / 2,
             UPD_DEV_BTN_Y + UPD_DEV_BTN_H / 2);
@@ -217,7 +221,8 @@ static void upd_pose(void)
 /* Each state in both languages and themes, SAFE and ARMED: CHECK's page
  * and the card's, the download's hold on it once a check found a newer
  * release; over the OPTIONS list the list's two; over the wireless
- * devices' page its one, with the three rows and BACK. */
+ * devices' page its one, with the three rows and BACK; on SINGLE UPDATES
+ * the IOmcu's and the devices' page and the heading's, C6's and BACK's. */
 TEST_CASE(every_updates_page_fits)
 {
     static const struct {
@@ -227,12 +232,14 @@ TEST_CASE(every_updates_page_fits)
         int items[2];
     } k_states[] = {
         { "UPDATES", 2, { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD },
-          { 4, 3 } },
+          { 1, 2 } },
         { "UPDATES newer", 2,
-          { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD }, { 4, 4 } },
+          { TX_HG_UPD_TITLE_CHECK, TX_HG_UPD_TITLE_CARD }, { 1, 3 } },
         { "UPDATES OPTIONS", 2,
           { TX_HG_SL_TITLE_ROWS, TX_HG_SL_TITLE_VALUES }, { 3, 3 } },
         { "UPDATES devices", 1, { TX_HG_UPD_TITLE_DEVS, 0 }, { 4, 0 } },
+        { "SINGLE UPDATES", 2,
+          { TX_HG_UPD_TITLE_SINGLE, TX_HG_UPD_TITLE_SINGLE_2 }, { 3, 3 } },
     };
     for (int k = 0; k < (int)(sizeof(k_states) / sizeof(k_states[0])); ++k) {
         s_upd_state = k;
@@ -258,21 +265,35 @@ TEST_CASE(the_updates_pages_follow_the_check_and_the_c6)
     REQUIRE(ui_help_page(upd(), false, 0, &p));
     CHECK_STR_EQ(p.item[0].label, TR(UPD_CHECK));
     CHECK(gfx_rect_contains(p.item[0].rect, UP_BTN_X, UP_CHECK_Y));
-    /* The IOmcu section ends above the WIRELESS DEVICES entry, which is
-     * an item of its own around its heading, line and button. */
-    CHECK_EQ(p.item[1].text, TX_HG_UPD_CU);
-    CHECK(p.item[1].rect.y + p.item[1].rect.h < UPD_DEV_HEAD_Y);
-    CHECK_EQ(p.item[3].text, TX_HG_UPD_DEVS);
-    CHECK(gfx_rect_contains(p.item[3].rect, UPD_DEV_X + UPD_DEV_W / 2,
+    REQUIRE(ui_help_page(upd(), false, 1, &p));
+    CHECK_EQ(p.item[1].text, TX_HG_UPD_OPTIONS);
+
+    /* SINGLE UPDATES: the IOmcu section ends above the WIRELESS DEVICES
+     * entry, which is an item of its own around its heading, line and
+     * button; the C6 radio's hold is named as it reads; BACK last. */
+    s_upd_state = 4;
+    upd_pose();
+    REQUIRE(ui_help_page(upd(), false, 0, &p));
+    CHECK_EQ(p.item[0].text, TX_HG_UPD_CU);
+    CHECK(p.item[0].rect.y + p.item[0].rect.h < UPD_DEV_HEAD_Y);
+    CHECK_EQ(p.item[1].text, TX_HG_UPD_CU_HOLD);
+    CHECK(gfx_rect_contains(p.item[1].rect, UP_BTN_X, UP_CU_Y));
+    CHECK_EQ(p.item[2].text, TX_HG_UPD_DEVS);
+    CHECK(gfx_rect_contains(p.item[2].rect, UPD_DEV_X + UPD_DEV_W / 2,
                             UPD_DEV_HEAD_Y));
-    CHECK(gfx_rect_contains(p.item[3].rect, UPD_DEV_X + UPD_DEV_W / 2,
+    CHECK(gfx_rect_contains(p.item[2].rect, UPD_DEV_X + UPD_DEV_W / 2,
                             UPD_DEV_BTN_Y + UPD_DEV_BTN_H - 1));
     REQUIRE(ui_help_page(upd(), false, 1, &p));
+    CHECK_EQ(p.item[0].text, TX_HG_UPD_SINGLE_CARD);
     char c6[32];
     upd_c6_label(upd_c6_view(), c6, sizeof(c6));
     CHECK_STR_EQ(p.item[1].label, c6);
     CHECK_EQ(p.item[1].text, TX_HG_UPD_C6);
-    CHECK_EQ(p.item[2].text, TX_HG_UPD_OPTIONS);
+    CHECK_EQ(p.item[2].text, TX_HG_UPD_SINGLE_BACK);
+    CHECK(gfx_rect_contains(p.item[2].rect, UP_BACK_X, UP_BACK_Y));
+    CHECK(!ui_help_page(upd(), false, 2, &p));
+    s_upd_state = 0;
+    upd_pose();
 
     g_v.job = UPD_JOB_CHECK;
     g_v.phase = UPD_PH_JOINING;
@@ -284,8 +305,8 @@ TEST_CASE(the_updates_pages_follow_the_check_and_the_c6)
     set_newer();
     push();
     REQUIRE(ui_help_page(upd(), false, 1, &p));
-    CHECK_STR_EQ(p.item[2].label, TR(UPD_HOLD_DL));
-    CHECK_EQ(p.item[2].text, TX_HG_UPD_DL);
+    CHECK_STR_EQ(p.item[1].label, TR(UPD_HOLD_DL));
+    CHECK_EQ(p.item[1].text, TX_HG_UPD_DL);
     CHECK(!ui_help_page(upd(), false, 2, &p));
 
     /* The devices' page names each row by its heading, around its
