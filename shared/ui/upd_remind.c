@@ -290,7 +290,7 @@ bool upd_startup_due(upd_driver_t *d, const upd_feed_t *f)
         d->check_done = true;
         return false;
     }
-    if (!f->gate_open || f->files_open || f->coproc
+    if (!f->gate_open || f->files_open || f->coproc || f->run
         || ui_router_current() == SCREEN_SPLASH) {
         return false;      /* waits for a moment the bench allows */
     }

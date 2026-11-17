@@ -6012,6 +6012,15 @@ UI_TEXT(ALERT_CU_OFFER_WIFI, 94,
 UI_TEXT(ALERT_CU_OFFER_INSTALL, 94,
     "IOmcu runs a different build. Its update question opens after the panel firmware install.",
     "IOmcu nutzt einen anderen Build. Die Update-Frage öffnet nach der Panel-Installation.")
+UI_TEXT(ALERT_RUN_WAIT_SAFE, 94,
+    "Update run: UPDATES opens once SAFE with the supply off.",
+    "Update-Lauf: UPDATES öffnet bei SAFE und Netzteilausgang aus.")
+UI_TEXT(ALERT_RUN_WAIT_WIFI, 94,
+    "Update run: UPDATES opens once the panel's Wi-Fi is off.",
+    "Update-Lauf: UPDATES öffnet, sobald das WLAN des Panels aus ist.")
+UI_TEXT(ALERT_RUN_WAIT_INSTALL, 94,
+    "Update run: UPDATES opens after the panel firmware install.",
+    "Update-Lauf: UPDATES öffnet nach der Panel-Installation.")
 UI_TEXT(ALERT_CU_USB, 94,
     "IOmcu cannot update over CAN. Install firmware once via USB.",
     "IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.")

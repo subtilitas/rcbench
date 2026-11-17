@@ -5620,7 +5620,8 @@ Image ganz geschrieben und geprüft ist, vor der Neustartnotiz. Das Update
 des C6-Funkchips schreibt ihn bei Erfolg, mit der laufenden Version. Ein
 Stromausfall vor dem Schreiben hinterlässt keinen Lauf. Ein Versionstext
 über 16 Bytes wird nicht geschrieben, und eine bestehende Notiz wird
-gelöscht.
+gelöscht. Was ein Lauf nach dem Neustart tut, steht in
+[Updates: Nach einem Neustart](#nach-einem-neustart).
 
 Jeder Start liest die Notiz einmal, nach seiner Startprüfung:
 
@@ -5643,9 +5644,6 @@ Aktuelle Einschränkungen:
 - Eine Installation, deren NVS-Schreiben scheitert, meldet das auf der
   Konsole (`restart note not kept`), und ein Start ihres Builds, der
   zurückgeht, zeigt keine Zeile im Band.
-- Die Laufnotiz öffnet keinen Bildschirm: Nach einem Neustart öffnet sich
-  UPDATES nicht von selbst, und ein Lauf endet nur, wenn seine 2 Öffnungen
-  verbraucht sind oder eine andere Version läuft.
 - Hängt ein Versuchsstart vor der Bildschirmschleife, etwa beim Einhängen
   der Karte, wird er weder bestätigt noch automatisch zurückgesetzt.
   Der Task-Watchdog meldet den Fehler, löst aber keinen Neustart aus
@@ -7380,6 +7378,77 @@ gezeichnet.
 
 ![Die letzte Karte mit übersprungenem Dial](img/de/updates-done.png)
 
+### Nach einem Neustart
+
+Ein Update-Lauf enthält zwei Neustarts: nach der Installation des Panels
+und nach dem Update des C6-Funks. Die Laufnotiz im NVS (nichtflüchtiger
+Speicher) hält fest, dass ein Lauf steht
+([Installieren: PANEL UPDATE](#installieren-panel-update)); die Schritte
+werden nach dem Neustart neu aus dem entschieden, was das Panel weiß.
+
+Steht ein Lauf, öffnet sich UPDATES einmal je Start von selbst: im Menü,
+nach dem Splash, bei SAFE, ohne wartendes ARM, mit Netzteilausgang aus,
+ganz ausgeschaltetem Funk des Panels und ohne laufende
+Panel-Installation, also unter den Bedingungen der Frage des IOmcu. Im
+selben Frame kommt UPDATES zuerst, und die Frage des IOmcu öffnet sich
+nicht darüber; sein Schritt 2 trägt dasselbe 2s-Halten. Ein Start mit
+Lauf verbraucht eine der 2 Öffnungen der Notiz, also öffnet ein Lauf
+UPDATES bei höchstens 2 Starts, ein Stromausfall dazwischen eingeschlossen.
+
+![Schritt 2 nach dem Neustart des Panels](img/de/updates-run-iomcu.png)
+
+Solange eine Bedingung das Öffnen zurückhält, nennt das Meldeband sie
+einmal, und wieder, wenn sich der Grund ändert:
+
+| Band | Bedingung |
+| --- | --- |
+| `Update-Lauf: UPDATES öffnet bei SAFE und Netzteilausgang aus.` | ARMED, ein wartendes ARM, oder der Netzteilausgang an oder im Einschalten |
+| `Update-Lauf: UPDATES öffnet, sobald das WLAN des Panels aus ist.` | eine Suche, ein Download oder der Bildschirm WI-FI hält den Funk an |
+| `Update-Lauf: UPDATES öffnet nach der Panel-Installation.` | ein Download oder eine Installation des Panels läuft |
+
+Auf einem anderen Bildschirm wartet es ohne Zeile. Die Suche beim Start
+([Die Suche](#die-suche)) läuft während eines Laufs nicht, und auch nicht,
+bevor der Start die Laufnotiz gelesen hat: Sie schaltet den Funk ein und
+sperrt den Schritt des IOmcu.
+
+Während eines Laufs warten der IOmcu ohne Verbindung und ein gebundenes,
+nicht verbundenes Gerät ([Die Schritte](#die-schritte)). Der Lauf endet,
+und die Notiz wird gelöscht, wenn:
+
+- das Home-Tag UPDATES verlässt. Das Home-Tag über der
+  Liste OPTIONEN, EINZELNE UPDATES oder der Seite der Funkgeräte schließt
+  zuerst diese und beendet nichts;
+- kein Schritt mehr sperrt, sobald der Bluetooth-LE-Client die Zeilen der
+  Funkgeräte veröffentlicht hat: Vorher gilt jedes Gerät als nicht
+  gebunden.
+
+Beides beendet den Lauf nicht, solange ein C6-Update läuft oder sein
+Neustart ansteht: Die Notiz, die dieses Update für den Start danach
+geschrieben hat, bleibt. Ein Bildschirm, den das Panel über UPDATES
+öffnet, beendet nichts: PANEL UPDATE, der Fortschritt des IOmcu, der
+Busfehler-Bildschirm. Ein Build, der zurückging, findet eine Notiz mit
+einer anderen Version und löscht sie; sein Start öffnet nichts, und das
+Band behält die Zeile, dass der Start fehlschlug. Die Konsole nennt jedes
+Öffnen und jedes Ende:
+
+    I (…) rcbench: update run: UPDATES opened
+    I (…) rcbench: update run: ends, UPDATES left by the home tag
+    I (…) rcbench: update run: ends, no step left
+    I (…) fw_ota: run note: erased; the update run ends
+
+Aktuelle Einschränkungen:
+
+- Ein Panel, dessen Bluetooth-LE-Client nicht eingerichtet ist,
+  veröffentlicht keine Zeile eines Geräts und beendet keinen Lauf von
+  selbst: Das Home-Tag beendet ihn, oder die Öffnung des zweiten Starts
+  ist die letzte.
+- Bei einem Versuchsstart wird die Notiz gelesen, sobald der Build
+  bestätigt ist, bis zu 30s nach dem Start. Die Frage des IOmcu kann sich
+  vorher im Menü öffnen; ihr Fortschritt kehrt ins Menü zurück, und
+  UPDATES öffnet sich danach.
+- Zeit vom Start des Panels bis zu einem verbundenen Dial oder Knoten:
+  nicht gemessen.
+
 ### Die Suche
 
 Die Versionsnummer eines Releases kennzeichnet seine Art. Eine ungerade Minor-Nummer ist ein
@@ -7660,7 +7729,7 @@ Alarmband sagt, wie ein Update endete:
 
 | Alarm | Bedeutung |
 | --- | --- |
-| `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu. |
+| `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu, und der Update-Lauf geht danach weiter ([Nach einem Neustart](#nach-einem-neustart)). |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Der Funk über den ESP32-C6: Wiederherstellung über Header H4](C6-de.md#wiederherstellung-über-header-h4)). |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
 | `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |

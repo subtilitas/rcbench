@@ -48,6 +48,7 @@ typedef struct {
 typedef struct {
     upd_view_t    v;       /**< what both screens show */
     unsigned      req;     /**< what they ask for, not yet taken */
+    bool          left;    /**< the home tag left UPDATES, not yet taken */
     upd_main_t    s;       /**< UPDATES */
 } upd_state_t;
 
@@ -120,6 +121,13 @@ unsigned upd_screen_take(void)
     const unsigned q = u.req;
     u.req = 0u;
     return q;
+}
+
+bool upd_screen_take_left(void)
+{
+    const bool was = u.left;
+    u.left = false;
+    return was;
 }
 
 /* ------------------------------------------------------------ the texts */
@@ -433,6 +441,7 @@ static void act(int hit)
 static void reset(void)
 {
     memset(&u.s, 0, sizeof(u.s));
+    u.left = false;
     upd_wiz_reset();
     upd_single_reset();
     upd_list_reset();
@@ -588,7 +597,8 @@ static void render(gfx_canvas_t *c, int buffer_index)
 }
 
 /** @brief The home tag closes the devices' page, SINGLE UPDATES, or the
- *        list through its leave warning.
+ *        list through its leave warning; with none of them shown it leaves
+ *        UPDATES, which upd_screen_take_left() reports once.
  *  @return Whether it went up a level. */
 static bool back(void)
 {
@@ -605,6 +615,8 @@ static bool back(void)
     if (was) {
         touched();
     }
+    /* Nothing covers UPDATES: the router leaves it for the parent. */
+    u.left = u.left || !climbed;
     return climbed;
 }
 

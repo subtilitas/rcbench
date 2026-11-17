@@ -529,6 +529,18 @@ bool panel_cu_busy(void);
  */
 bool panel_fw_busy(void);
 
+/* --------------------------------------------------------- panel_updrun.c */
+
+/**
+ * @brief The update run after a restart, once a frame on app_main before
+ *        cu_render_service(): UPDATES opens by itself once per start under
+ *        the IOmcu question's conditions, the band names what holds it
+ *        back, and the run ends on the home tag or with no step left
+ *        (upd_run.h).
+ * @param unsafe ARMED, an arm waiting, or the supply's output on or coming
+ */
+void updrun_service(bool unsafe);
+
 /* ------------------------------------------------------------- panel_c6.c */
 
 /**

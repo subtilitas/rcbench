@@ -352,6 +352,11 @@ bool fw_ota_run_active(void)
     return s_run.active;
 }
 
+bool fw_ota_run_settled(void)
+{
+    return s_run.settled;
+}
+
 void fw_ota_run_end(void)
 {
     const bool was = s_run.active;
