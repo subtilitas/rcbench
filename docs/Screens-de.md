@@ -621,8 +621,9 @@ Gefahrenfarbe. Tippe auf das Band, um ihn früher zu löschen. Der Hinweis
 passt in eine Zeile mit höchstens 97 Zeichen.
 
 Ein kurzer Tipp ist keine Störung; der Hinweis ist deshalb eine Mitteilung.
-Alarme haben Vorrang: Solange ein Alarm sichtbar ist, bleibt der Hinweis
-ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
+Alarme haben Vorrang: Solange ein Alarm sichtbar ist, wartet eine
+Mitteilung, die jüngste, und erscheint für ihre eigenen 4s, sobald der Alarm
+gelöscht ist. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 
 - Der Hinweis erscheint nur, wenn du den Finger auf der Taste loslässt.
   Er erscheint nicht nach dem Herausgleiten, bei verlorener Berührung,

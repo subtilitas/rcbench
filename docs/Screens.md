@@ -578,8 +578,9 @@ PROG 5V OFF, DISARM, STOP or ABORT, takes a tap. Instead, the alert band shows a
 to dismiss it earlier. The hint fits on one line of at most 97 characters.
 
 A short tap is not a fault, so the hint is a notice. Alerts take priority:
-a hint stays hidden while an alert is visible, and an arriving alert
-replaces a visible hint.
+while an alert is visible, one notice waits, the latest, and shows for its
+own 4s once the alert has cleared. An arriving alert replaces a visible
+hint.
 
 - The hint appears only when the finger lifts while still on the button. It does
   not show when the finger left the button first (the hold is abandoned),
