@@ -217,11 +217,12 @@ Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-F
 
 The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, and Wi-Fi off. On a C6 that reports the carried version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
 
-While the update runs, ARM is refused and Wi-Fi stays off. It ends with one alert:
+While the update runs, ARM, the supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused, and Wi-Fi stays off. It ends with one alert:
 
 | Alert | Meaning |
 |---|---|
 | `C6 radio updated to 2.13.0. The panel restarts.` | done; the panel restarts 3s later |
+| `C6 radio updated to 2.13.0. The panel restarts once SAFE with all outputs off.` | done; the restart waits until the bench is SAFE, the supply output and PROG 5V are off and no programmer holds a port |
 | `The C6 radio takes no update over SDIO. Flash it over header H4.` | the C6's firmware refused the update; the old firmware runs |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | the link to the C6 failed |
 | `C6 update stopped: no response. Previous firmware is running.` | a step went unanswered; `a write failed`, `the C6's image check failed` and `activation failed` read the same way |

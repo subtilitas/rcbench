@@ -27,6 +27,7 @@
 #include "freertos/queue.h"
 
 #include "arming.h"
+#include "fw_c6.h"
 #include "hitec_link.h"
 #include "hitec_prog.h"
 #include "hitec_rx_link.h"
@@ -62,8 +63,8 @@ static uint32_t             s_hitec_stops;
 /**
  * @brief Carry out one command.
  *
- * No port is taken on an armed bench: an OPEN is answered BUSY and nothing
- * is sent.
+ * No port is taken on an armed bench or while the C6 radio's update runs:
+ * an OPEN is answered BUSY and nothing is sent.
  *
  * @param c The command.
  */
@@ -73,6 +74,12 @@ static void hitec_command(const hitec_prog_cmd_t *c)
 
     switch (c->kind) {
     case HITEC_PROG_CMD_OPEN:
+        if (fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_SESSION)) {
+            /* The C6 radio's update ends in a restart of the panel. */
+            control_alert(TR(ALERT_PROG_C6));
+            a = HITEC_LINK_START_BUSY;
+            break;
+        }
         a = outputs_armed(&s_out)
                 ? HITEC_LINK_START_BUSY
                 : hitec_link_open(&s_hitec_link, c->port, c->family,

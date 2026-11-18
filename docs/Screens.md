@@ -7142,13 +7142,18 @@ The alert band says how an update ended:
 | Alert | Meaning |
 | --- | --- |
 | `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later, and the update run goes on after it ([After a restart](#after-a-restart)). |
+| `C6 radio updated to 2.13.0. The panel restarts once SAFE with all outputs off.` | The restart waits: the bench is ARMED, an output is on or a programmer holds a port ([The ESP32-C6 radio](C6.md)). |
 | `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([The ESP32-C6 radio: Recovery over header H4](C6.md#recovery-over-header-h4)). |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | The link to the C6 failed. |
 | `C6 update stopped: <reason>. Previous firmware is running.` | A write, the C6's image check or the activate call failed (`a write failed`, `the C6's image check failed`, `activation failed`), or a step went unanswered past its limit (`no response`). |
 
-While the update runs, ARM is refused with `Cannot switch to ARMED: the C6
-radio update is running.`, Wi-Fi does not start, and the panel's install,
-the GitHub check and the IOmcu's update wait.
+From the update's start to the restart, ARM is refused with `Cannot switch
+to ARMED: the C6 radio update is running.`, SUPPLY's OUTPUT ON with `Supply
+output not switched on: the C6 radio update is running.`, PROG 5V ON with
+`PROG ports 5V not switched on: the C6 radio update is running.` and a
+programmer session's start with `Programmer not started: the C6 radio
+update is running.`. Wi-Fi does not start, and the panel's install, the
+GitHub check and the IOmcu's update wait.
 
 ### The wireless devices
 

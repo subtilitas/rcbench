@@ -22,6 +22,7 @@
 #include "arming.h"
 #include "esc_link.h"
 #include "esc_prog.h"
+#include "fw_c6.h"
 #include "link_host.h"
 #include "link_pages.h"
 #include "outputs.h"
@@ -49,7 +50,8 @@ static esc_link_outcome_t s_esc_outcome;
 
 /**
  * @brief Carry out one command.  No pin is taken on an armed bench: an OPEN is
- *        answered BUSY and nothing is sent.  With a stop latched only what gives
+ *        answered BUSY and nothing is sent.  While the C6 radio's update runs
+ *        an OPEN and an ENTER, which powers the ESC, are answered BUSY.  With a stop latched only what gives
  *        the pin back or cuts goes (esc_prog_cmd_allowed()).
  * @param c The command.
  */
@@ -58,6 +60,14 @@ static void esc_command(const esc_prog_cmd_t *c)
     esc_link_start_t a = ESC_LINK_START_ARG;
 
     if (!esc_prog_cmd_allowed(c->kind, arming_stopped(&s_arm))) {
+        s_esc_answer = (uint8_t)ESC_LINK_START_BUSY;
+        s_esc_answer_id = c->id;
+        return;
+    }
+    if ((c->kind == ESC_PROG_CMD_OPEN || c->kind == ESC_PROG_CMD_ENTER)
+        && fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_SESSION)) {
+        /* The C6 radio's update ends in a restart of the panel. */
+        control_alert(TR(ALERT_PROG_C6));
         s_esc_answer = (uint8_t)ESC_LINK_START_BUSY;
         s_esc_answer_id = c->id;
         return;

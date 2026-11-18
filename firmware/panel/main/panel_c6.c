@@ -13,11 +13,16 @@
  * update on app_main; c6upd's late answer is then ignored, and the gates
  * stay closed (FW_C6_WHY_ENDING) until c6upd is out of the call.
  *
- * While an update runs, or c6upd is in a call, panel_c6_busy() is true:
- * Wi-Fi does not start, ARM is refused, and the panel's own install, the
- * GitHub check and the IOmcu's update wait.  An update that ends
- * FW_C6_RES_UPDATED restarts the panel 3s later, so the host side and the
- * C6 start their link afresh; every other end leaves the panel running,
+ * While an update runs, c6upd is in a call or a restart is due,
+ * panel_c6_busy() is true: Wi-Fi does not start, ARM, the supply's ON, the
+ * PROG ports' 5V ON and a programmer session's start are refused
+ * (fw_c6_refuses()), and the panel's own install, the GitHub check and the
+ * IOmcu's update wait.  An update that ends FW_C6_RES_UPDATED restarts the
+ * panel, so the host side and the C6 start their link afresh: 3s later at
+ * the earliest, and only on a bench that is SAFE with the supply and the
+ * PROG ports' 5V off and no programmer holding a port.  The update run's
+ * note, a flash write, waits for the same bench (fw_c6_restart_step()).
+ * Every other end leaves the panel running,
  * the C6 on the firmware it ran, and Wi-Fi usable (except after a failed
  * link, which holds the C6 in reset until the panel restarts).
  *
@@ -32,6 +37,7 @@
 #include "esp_hosted_ota.h"
 #include "esp_log.h"
 #include "esp_system.h"
+#include "flash_gate.h"
 #include "freertos/FreeRTOS.h"
 #include "freertos/queue.h"
 #include "freertos/task.h"
@@ -59,9 +65,6 @@ static const char *TAG = "rcbench";
 #define C6_PRIO       2
 /** @brief c6upd's core: 0, with the radio's tasks. */
 #define C6_CORE       0
-/** @brief From an update's end FW_C6_RES_UPDATED to the restart, ms: the
- *         alert shows that long. */
-#define C6_RESTART_MS 3000u
 
 #ifdef RCBENCH_C6_IMAGE
 /** @brief First byte of the carried C6 image (main/CMakeLists.txt). */
@@ -83,8 +86,7 @@ static fw_image_info_t s_info;       /**< the carried image, once checked */
 static bool            s_checked;    /**< the image was checked */
 static fw_err_t        s_check;      /**< and what the check said */
 static bool            s_seen_end;   /**< the update's end was reported */
-static bool            s_restart;    /**< a restart is due at s_restart_at */
-static uint32_t        s_restart_at; /**< when the restart is due, ms */
+static fw_c6_restart_t s_restart;    /**< the restart after a success */
 static TaskHandle_t    s_task;       /**< c6upd, once created */
 static QueueHandle_t   s_steps;      /**< app_main to c6upd, one deep */
 static QueueHandle_t   s_answers;    /**< c6upd to app_main, one deep */
@@ -253,8 +255,8 @@ static const char *fail_text(fw_c6_res_t res)
 }
 
 /**
- * @brief Once, at an update's end: the console line, the alert, the
- *        restart after a success.
+ * @brief Once, at an update's end: the console line, the alert, and the
+ *        restart owed after a success (restart_service()).
  * @param now_ms now
  */
 static void report_end(uint32_t now_ms)
@@ -265,20 +267,11 @@ static void report_end(uint32_t now_ms)
     case FW_C6_RES_UPDATED:
         ESP_LOGI(TAG, "C6: updated to esp_hosted %s, %lu bytes; restarting "
                       "in %ums", s_info.version_text, (unsigned long)o->total,
-                 (unsigned)C6_RESTART_MS);
+                 (unsigned)FW_C6_RESTART_MS);
         snprintf(line, sizeof(line), TR(ALERT_C6_DONE), s_info.version_text);
         control_alert(line);
         upd_screen_set_result(UPD_WIZ_C6, NULL);
-        /* The update run goes on after the restart into this build. */
-        {
-            fw_image_info_t me;
-            memset(&me, 0, sizeof(me));
-            if (fw_ota_running(&me)) {
-                (void)fw_ota_run_begin(me.version_text);
-            }
-        }
-        s_restart = true;
-        s_restart_at = now_ms + C6_RESTART_MS;
+        fw_c6_restart_due(&s_restart, now_ms);
         break;
     case FW_C6_RES_NO_LINK:
         ESP_LOGE(TAG, "C6 update: the C6 did not answer");
@@ -307,7 +300,7 @@ static void report_end(uint32_t now_ms)
 
 /**
  * @brief What the row's gate reads of the bench now.
- * @param armed ARMED or an arm waiting
+ * @param armed ARMED, an arm waiting or an ARM queued
  * @return the feed
  */
 static fw_c6_feed_t feed_now(bool armed)
@@ -326,6 +319,7 @@ static fw_c6_feed_t feed_now(bool armed)
     f.link_failed = c6_link_failed();
     f.updating = fw_c6_ota_active(&s_ota);
     f.ending = atomic_load(&s_in_call);
+    f.restarting = fw_c6_restart_pending(&s_restart);
     f.armed = armed;
     f.supply = supplies_live_or_coming();
     f.run = panel_run_open();
@@ -376,6 +370,47 @@ static void start_update(bool armed, uint32_t now)
              s_info.version_text, (unsigned long)len);
 }
 
+/**
+ * @brief The restart owed after a success, one frame: the run note and the
+ *        restart only on a quiet bench, the alert while it is not.
+ * @param armed ARMED, an arm waiting or an ARM queued
+ * @param now   now
+ */
+static void restart_service(bool armed, uint32_t now)
+{
+    /* The flash gate, one flash writer at a time, and no programmer on a
+     * port: the restart stops the heartbeat and ends its session. */
+    const bool quiet = flash_gate_open(armed, supplies_live_or_coming())
+                       && !s_artbusy && !atomic_load(&s_keeping)
+                       && !atomic_load(&s_prog_open);
+    switch (fw_c6_restart_step(&s_restart, quiet, now)) {
+    case FW_C6_RST_NOTE: {
+        /* The update run goes on after the restart into this build. */
+        fw_image_info_t me;
+        memset(&me, 0, sizeof(me));
+        if (fw_ota_running(&me)) {
+            (void)fw_ota_run_begin(me.version_text);
+        }
+        break;
+    }
+    case FW_C6_RST_TELL: {
+        char line[ALERT_MAX];
+        ESP_LOGW(TAG, "C6: the restart waits for SAFE with all outputs off");
+        snprintf(line, sizeof(line), TR(ALERT_C6_WAITS), s_info.version_text);
+        control_alert(line);
+        break;
+    }
+    case FW_C6_RST_GO:
+        esp_restart();
+        break;
+    case FW_C6_RST_IDLE:
+    case FW_C6_RST_SHOWING:
+    case FW_C6_RST_WAITING:
+    default:
+        break;
+    }
+}
+
 void c6_service(bool armed)
 {
     check_once();
@@ -413,8 +448,6 @@ void c6_service(bool armed)
     upd_c6_set(&v);
 
     atomic_store(&s_busy, fw_c6_ota_active(&s_ota) || atomic_load(&s_in_call)
-                              || s_restart);
-    if (s_restart && (int32_t)(now - s_restart_at) >= 0) {
-        esp_restart();
-    }
+                              || fw_c6_restart_pending(&s_restart));
+    restart_service(armed, now);
 }

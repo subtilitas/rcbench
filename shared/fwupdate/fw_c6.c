@@ -72,6 +72,12 @@ fw_c6_row_t fw_c6_row(const fw_c6_feed_t *f, fw_c6_why_t *why)
     if (f->updating) {
         return FW_C6_ROW_UPDATING;
     }
+    if (f->restarting) {
+        if (why != NULL) {
+            *why = FW_C6_WHY_ENDING;
+        }
+        return FW_C6_ROW_BLOCKED;
+    }
     if (f->link_failed) {
         return FW_C6_ROW_LINK_FAILED;
     }
@@ -84,6 +90,49 @@ fw_c6_row_t fw_c6_row(const fw_c6_feed_t *f, fw_c6_why_t *why)
     }
     return (f->known && fw_version_cmp(f->running, f->carried) == 0)
                ? FW_C6_ROW_REINSTALL : FW_C6_ROW_READY;
+}
+
+bool fw_c6_refuses(bool busy, fw_c6_ask_t ask)
+{
+    return busy && ask != FW_C6_ASK_OFF;
+}
+
+void fw_c6_restart_due(fw_c6_restart_t *r, uint32_t now_ms)
+{
+    memset(r, 0, sizeof(*r));
+    r->due = true;
+    r->since_ms = now_ms;
+}
+
+bool fw_c6_restart_pending(const fw_c6_restart_t *r)
+{
+    return r != NULL && r->due;
+}
+
+fw_c6_rst_t fw_c6_restart_step(fw_c6_restart_t *r, bool quiet,
+                               uint32_t now_ms)
+{
+    if (!r->due) {
+        return FW_C6_RST_IDLE;
+    }
+    /* Latched: a wait across the 32-bit millisecond wrap stays past. */
+    if ((uint32_t)(now_ms - r->since_ms) >= FW_C6_RESTART_MS) {
+        r->shown = true;
+    }
+    if (!quiet) {
+        if (r->told
+            && (uint32_t)(now_ms - r->told_ms) < FW_C6_RESTART_TELL_MS) {
+            return FW_C6_RST_WAITING;
+        }
+        r->told = true;
+        r->told_ms = now_ms;
+        return FW_C6_RST_TELL;
+    }
+    if (!r->noted) {
+        r->noted = true;
+        return FW_C6_RST_NOTE;
+    }
+    return r->shown ? FW_C6_RST_GO : FW_C6_RST_SHOWING;
 }
 
 void fw_c6_ota_init(fw_c6_ota_t *o)

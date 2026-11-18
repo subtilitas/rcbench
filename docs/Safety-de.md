@@ -765,7 +765,9 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   also hält jedes Löschen und Schreiben beide Kerne des Panels an, die
   Control-Task mit Heartbeat, STOP, OUTPUT OFF und den Abschaltungen des
   Netzteils eingeschlossen. Die Regel ist `flash_gate_open()` in
-  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Sie hält das
+  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Ein ARM, das ein
+  Bildschirm eingereiht und die Control-Task noch nicht übernommen hat,
+  zählt als wartendes Schalten auf ARMED (`flash_gate_arm()`). Sie hält das
   Speichern der Einstellungen und das Ablegen der Zeichnung der Platine zurück.
   Das Schalten auf ARMED und das Netzteil werden für einen Schreibvorgang nie
   verweigert: der Schreibvorgang wartet. Das Ablegen (2 Löschvorgänge zu 4kB

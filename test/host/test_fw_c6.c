@@ -6,7 +6,11 @@
  * ignored, each step's limit at one millisecond under it and at it, the
  * same across the 32-bit millisecond wrap, the activate call only from
  * 2.6.0 on, a failed write closed without an activate, and the write
- * lengths at one byte under and over a run.
+ * lengths at one byte under and over a run.  Then the bench under the
+ * update: what is refused while it is busy, the row blocked from a success
+ * to the restart, and the restart's wait: the run note and the restart only
+ * in a quiet frame, the restart not before FW_C6_RESTART_MS, the alert once
+ * and again every FW_C6_RESTART_TELL_MS.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -562,6 +566,135 @@ TEST_CASE(an_image_one_byte_short_of_a_run_is_one_short_write)
     CHECK_EQ(last.len, 1u);
 }
 
+/* --------------------------------------------- the bench under the update */
+
+TEST_CASE(arm_supply_on_prog5v_on_and_a_session_are_refused_while_busy)
+{
+    static const fw_c6_ask_t ons[] = { FW_C6_ASK_ARM, FW_C6_ASK_SUPPLY_ON,
+                                       FW_C6_ASK_PROG5V_ON,
+                                       FW_C6_ASK_SESSION };
+    for (size_t i = 0; i < sizeof(ons) / sizeof(ons[0]); ++i) {
+        CHECK(fw_c6_refuses(true, ons[i]));
+        CHECK(!fw_c6_refuses(false, ons[i]));
+    }
+    /* What switches off or gives a port back is never refused. */
+    CHECK(!fw_c6_refuses(true, FW_C6_ASK_OFF));
+    CHECK(!fw_c6_refuses(false, FW_C6_ASK_OFF));
+}
+
+/* R08-6: from a success to the restart the C6 still reports the version it
+ * ran before; the row must not offer the hold again. */
+TEST_CASE(the_row_is_blocked_from_a_success_to_the_restart)
+{
+    fw_c6_feed_t f = ready_feed();
+    f.known = true;
+    f.running = k_old;
+    fw_c6_why_t why = FW_C6_WHY_NONE;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_READY);
+    fw_c6_restart_t r;
+    memset(&r, 0, sizeof(r));
+    CHECK(!fw_c6_restart_pending(&r));
+    CHECK(!fw_c6_restart_pending(NULL));
+    fw_c6_restart_due(&r, 1000u);
+    f.restarting = fw_c6_restart_pending(&r);
+    CHECK(f.restarting);
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);
+    CHECK_EQ(why, FW_C6_WHY_ENDING);
+    CHECK_EQ(fw_c6_row(&f, NULL), FW_C6_ROW_BLOCKED);
+    /* The same on the carried version: no reinstall either. */
+    f.running = k_carried;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);
+    /* An update running and a bad image still come first. */
+    f.updating = true;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_UPDATING);
+}
+
+TEST_CASE(a_quiet_bench_gets_the_note_at_once_and_the_restart_after_3000ms)
+{
+    fw_c6_restart_t r;
+    memset(&r, 0, sizeof(r));
+    CHECK_EQ(fw_c6_restart_step(&r, true, 0u), FW_C6_RST_IDLE);
+    CHECK_EQ(fw_c6_restart_step(&r, false, 0u), FW_C6_RST_IDLE);
+    const uint32_t t0 = 50000u;
+    fw_c6_restart_due(&r, t0);
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0), FW_C6_RST_NOTE);
+    /* The note once; then the alert shows. */
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0 + 16u), FW_C6_RST_SHOWING);
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0 + FW_C6_RESTART_MS - 1u),
+             FW_C6_RST_SHOWING);
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0 + FW_C6_RESTART_MS),
+             FW_C6_RST_GO);
+    CHECK(fw_c6_restart_pending(&r));
+}
+
+/* R10-1, R08-1: the supply on at the update's end.  No note and no restart
+ * until the bench is quiet. */
+TEST_CASE(the_note_and_the_restart_wait_for_a_quiet_bench)
+{
+    fw_c6_restart_t r;
+    const uint32_t t0 = 7000u;
+    fw_c6_restart_due(&r, t0);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0), FW_C6_RST_TELL);
+    for (uint32_t t = t0 + 16u; t < t0 + 20000u; t += 16u) {
+        CHECK_EQ(fw_c6_restart_step(&r, false, t), FW_C6_RST_WAITING);
+    }
+    /* Quiet at last, long past 3000ms: the note first, the restart in the
+     * next quiet frame. */
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0 + 20000u), FW_C6_RST_NOTE);
+    /* A frame that is not quiet between the two holds the restart. */
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + 20016u), FW_C6_RST_WAITING);
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0 + 20032u), FW_C6_RST_GO);
+}
+
+TEST_CASE(a_bench_that_stops_being_quiet_inside_the_3000ms_holds_the_restart)
+{
+    fw_c6_restart_t r;
+    const uint32_t t0 = 100u;
+    fw_c6_restart_due(&r, t0);
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0), FW_C6_RST_NOTE);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + 1000u), FW_C6_RST_TELL);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + FW_C6_RESTART_MS),
+             FW_C6_RST_WAITING);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + 2u * FW_C6_RESTART_MS),
+             FW_C6_RST_WAITING);
+    /* The note is not asked for twice. */
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0 + 2u * FW_C6_RESTART_MS + 16u),
+             FW_C6_RST_GO);
+}
+
+TEST_CASE(the_waiting_alert_is_posted_once_and_again_every_30000ms)
+{
+    fw_c6_restart_t r;
+    const uint32_t t0 = 0u;
+    fw_c6_restart_due(&r, t0);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0), FW_C6_RST_TELL);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + FW_C6_RESTART_TELL_MS - 1u),
+             FW_C6_RST_WAITING);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + FW_C6_RESTART_TELL_MS),
+             FW_C6_RST_TELL);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + FW_C6_RESTART_TELL_MS + 1u),
+             FW_C6_RST_WAITING);
+    CHECK_EQ(fw_c6_restart_step(&r, false,
+                                t0 + 2u * FW_C6_RESTART_TELL_MS - 1u),
+             FW_C6_RST_WAITING);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + 2u * FW_C6_RESTART_TELL_MS),
+             FW_C6_RST_TELL);
+}
+
+TEST_CASE(the_restart_wait_holds_across_the_millisecond_wrap)
+{
+    fw_c6_restart_t r;
+    const uint32_t t0 = 0xFFFFFFFFu - 1000u;
+    fw_c6_restart_due(&r, t0);
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0), FW_C6_RST_NOTE);
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0 + FW_C6_RESTART_MS - 1u),
+             FW_C6_RST_SHOWING);
+    CHECK_EQ(fw_c6_restart_step(&r, false, t0 + FW_C6_RESTART_MS),
+             FW_C6_RST_TELL);
+    /* 3000ms once passed stay passed, whatever the clock reads later. */
+    CHECK_EQ(fw_c6_restart_step(&r, true, t0 - 5u), FW_C6_RST_GO);
+}
+
 int main(void)
 {
     g_img = malloc(FW_C6_SLOT_BYTES + 64u);
@@ -586,6 +719,13 @@ int main(void)
     RUN(the_last_write_is_the_rest_of_the_image);
     RUN(a_step_carries_its_update_and_a_success_names_no_failed_phase);
     RUN(an_image_one_byte_short_of_a_run_is_one_short_write);
+    RUN(arm_supply_on_prog5v_on_and_a_session_are_refused_while_busy);
+    RUN(the_row_is_blocked_from_a_success_to_the_restart);
+    RUN(a_quiet_bench_gets_the_note_at_once_and_the_restart_after_3000ms);
+    RUN(the_note_and_the_restart_wait_for_a_quiet_bench);
+    RUN(a_bench_that_stops_being_quiet_inside_the_3000ms_holds_the_restart);
+    RUN(the_waiting_alert_is_posted_once_and_again_every_30000ms);
+    RUN(the_restart_wait_holds_across_the_millisecond_wrap);
     free(g_img);
     return test_summary("fw_c6");
 }

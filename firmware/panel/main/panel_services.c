@@ -16,6 +16,7 @@
 #include "freertos/queue.h"
 
 #include "arming.h"
+#include "fw_c6.h"
 #include "kst_link.h"
 #include "kst_prog.h"
 #include "link_host.h"
@@ -115,6 +116,7 @@ __attribute__((noinline)) void kst_port_look(void)
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
     s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken() || esc_taken();
+    atomic_store(&s_prog_open, s_prog_taken);
     /* The port the band's SAFE chip names: the KST session's, else the
      * Hitec page's, else some port while a HITEC hold has no number. */
     atomic_store(&s_prog_band,
@@ -675,9 +677,15 @@ __attribute__((noinline)) void kst_commands(void)
         if (cmd.kind == KST_PROG_CMD_START) {
             /* No port is taken on an armed bench: nothing is sent.  A
              * REBOOT is the CONNECT that switches the supply off first. */
-            s_kst_answer    = ((cmd.req.op == LINK_KST_OP_ENTER
-                                || cmd.req.op == LINK_KST_OP_REBOOT)
-                               && outputs_armed(&s_out))
+            const bool takes = cmd.req.op == LINK_KST_OP_ENTER
+                               || cmd.req.op == LINK_KST_OP_REBOOT;
+            const bool c6 = takes && fw_c6_refuses(panel_c6_busy(),
+                                                   FW_C6_ASK_SESSION);
+            if (c6) {
+                /* The C6 radio's update ends in a restart of the panel. */
+                control_alert(TR(ALERT_PROG_C6));
+            }
+            s_kst_answer    = ((takes && outputs_armed(&s_out)) || c6)
                                   ? KST_LINK_START_BUSY
                                   : kst_link_start(&s_kst_link, &cmd.req);
             s_kst_answer_id = cmd.id;

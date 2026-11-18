@@ -430,6 +430,12 @@ atomic_uint s_psup_ack;
  * snapshot is a frame old, and an ON queued in this frame is in neither.
  * See supply_live_or_coming().
  */
+/** @brief The ARMs queued (panel.h). */
+atomic_uint s_arms_sent;
+/** @brief The ARMs the control task is done with (panel.h). */
+atomic_uint s_arms_taken;
+/** @brief A programmer holds a port, for the render side (panel.h). */
+atomic_bool s_prog_open;
 atomic_bool s_supply_live;
 atomic_uint s_supply_ons_sent;
 atomic_uint s_supply_ons_taken;
