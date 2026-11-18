@@ -15,6 +15,7 @@ from collections import Counter
 from pathlib import Path
 
 import pytest
+from conftest import import_or_fail
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "hardware" / "mechanical"))
@@ -140,8 +141,8 @@ def solid(box, fill=1.0, rgb=None, flats=()):
 
 def test_measured_solids_are_sorted_by_kind():
     """Chip, named, wrong, leaded and plain solids go where they belong."""
-    measure = pytest.importorskip(
-        "_measure_step", reason="needs OCP, the OpenCASCADE binding")
+    measure = import_or_fail(
+        "_measure_step", "needs OCP, the OpenCASCADE binding")
     chip = [solid((0.0, 0.0, 0.0, 0.35, 0.8, 0.8)),
             solid((0.35, 0.0, 0.0, 1.25, 0.8, 0.8)),
             solid((1.25, 0.0, 0.0, 1.6, 0.8, 0.8))]
