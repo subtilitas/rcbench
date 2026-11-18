@@ -10,6 +10,7 @@
  * - the_release_after_a_hold_does_not_disarm
  * - the_arm_button_fades_across_the_hold
  * - an_unanswered_bench_does_not_show_numbers
+ * - a_speed_above_the_ceiling_does_not_read_as_65535
  * - the_plot_records_one_run
  * - leaving_the_screen_does_not_erase_the_run
  * - a_cancelled_gesture_does_not_arm
@@ -289,6 +290,53 @@ TEST_CASE(an_unanswered_bench_does_not_show_numbers)
 }
 
 /*
+ * A speed above the register's ceiling of 65,535rpm arrives as 65535 with
+ * the valid bit clear.  The screen shows the bound as one: not the reading
+ * 65535, and not the placeholder of a speed nothing measured.
+ */
+TEST_CASE(a_speed_above_the_ceiling_does_not_read_as_65535)
+{
+    gfx_color_t *shot[3] = { NULL, NULL, NULL };
+    /* 65,535rpm measured, 90,000rpm from the IOmcu, and no speed at all. */
+    static const float k_rpm[3] = { 65535.0f, 90000.0f, 0.0f };
+    bool over[3] = { false, false, false };
+    for (int k = 0; k < 3; ++k) {
+        fresh();
+        bench_state_t in;
+        memset(&in, 0, sizeof(in));
+        in.voltage = 24.0f;
+        in.rpm     = k_rpm[k];
+        in.flags   = (uint16_t)(LINK_BN_VOLTAGE_OK
+                                | ((k < 2) ? LINK_BN_RPM_OK : 0));
+        uint16_t regs[LINK_BN_COUNT];
+        bench_state_to_regs(&in, regs);
+        bench_state_t b;
+        memset(&b, 0, sizeof(b));
+        bench_state_from_regs(&b, regs, 0, LINK_BN_COUNT);
+        over[k] = bench_state_rpm_over(&b);
+        motor_screen_push(&b);
+        scr->render(&cv, 0);
+        shot[k] = malloc((size_t)W * H * sizeof(gfx_color_t));
+        REQUIRE_ALLOC(shot[k]);
+        memcpy(shot[k], fb, (size_t)W * H * sizeof(gfx_color_t));
+    }
+    CHECK(!over[0]);
+    CHECK(over[1]);
+    CHECK(!over[2]);
+    int from_reading = 0;
+    int from_none = 0;
+    for (int i = 0; i < W * H; ++i) {
+        if (shot[1][i] != shot[0][i]) { ++from_reading; }
+        if (shot[1][i] != shot[2][i]) { ++from_none; }
+    }
+    CHECK(from_reading > 100);
+    CHECK(from_none > 100);
+    for (int k = 0; k < 3; ++k) {
+        free(shot[k]);
+    }
+}
+
+/*
  * The run boundary: what the plot does across an arm and a disarm.
  *
  * The trace is the record of a run, so it advances only while the bench is
@@ -546,6 +594,7 @@ int main(void)
     RUN(the_release_after_a_hold_does_not_disarm);
     RUN(the_arm_button_fades_across_the_hold);
     RUN(an_unanswered_bench_does_not_show_numbers);
+    RUN(a_speed_above_the_ceiling_does_not_read_as_65535);
     RUN(the_plot_records_one_run);
     RUN(leaving_the_screen_does_not_erase_the_run);
     RUN(a_cancelled_gesture_does_not_arm);

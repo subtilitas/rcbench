@@ -114,6 +114,28 @@ TEST_CASE(a_run_counts_only_while_the_output_is_on)
     supply_reset_totals(NULL);
 }
 
+TEST_CASE(a_run_counts_50mA_up_to_100000mAh)
+{
+    /* One hour of 50mA at 5.00V in 100ms steps adds 50mAh and 0.25Wh, from
+     * every total up to 100,000mAh.  A float sum adds 53mAh from 4,096mAh
+     * and nothing from 32,768mAh. */
+    static const double k_from[] = { 0.0, 4096.0, 16384.0, 40000.0, 99950.0 };
+    for (size_t k = 0u; k < sizeof(k_from) / sizeof(k_from[0]); ++k) {
+        supply_state_t st;
+        memset(&st, 0, sizeof(st));
+        st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
+        st.v = 5.0f; st.i = 0.05f; st.p = 0.25f;
+        st.output = true;
+        st.charge_mah = k_from[k];
+        st.energy_wh  = k_from[k] * 0.005;
+        for (int i = 0; i < 36000; ++i) {
+            supply_count_totals(&st, 0.1f);
+        }
+        CHECK_NEAR(st.charge_mah - k_from[k], 50.0, 0.01);
+        CHECK_NEAR(st.energy_wh - k_from[k] * 0.005, 0.25, 0.0001);
+    }
+}
+
 TEST_CASE(the_extremes_take_only_what_arrived)
 {
     supply_state_t st;
@@ -410,6 +432,7 @@ int main(void)
     RUN(the_model_holds_its_voltage_until_the_load_reaches_the_limit);
     RUN(set_points_follow_the_caps);
     RUN(a_run_counts_only_while_the_output_is_on);
+    RUN(a_run_counts_50mA_up_to_100000mAh);
     RUN(the_extremes_take_only_what_arrived);
     RUN(the_limits_narrow_the_caps_and_never_below_the_floor);
     RUN(a_trip_fires_once_a_reading_has_been_over_for_its_time);

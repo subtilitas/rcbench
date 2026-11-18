@@ -1197,6 +1197,14 @@ Fähigkeiten erneut. Ob ein Bauteil antwortet, melden die FLAGS von SENSE und
 BENCH-Bit 5, die das Panel regelmäßig abfragt. Die
 Page TONE fügt kein Bit hinzu.
 
+Das rpm-Register trägt 0 bis 65.535rpm. Bei einer Drehzahl über 65.535rpm
+steht 65535 darin und Flag-Bit 2 ist gelöscht: eine Grenze, kein Messwert.
+Eine Drehzahl, die nichts gemessen hat, steht als 0 mit gelöschtem Bit 2
+darin. Das Register der höchsten rpm hat kein Gültig-Bit: 65535 steht für
+eine Spitze von 65.535rpm oder mehr. Das Panel zeigt und protokolliert beide
+Grenzen als `>65535`. Ein IOmcu mit Firmware 0.23.14 oder älter meldet eine
+Drehzahl über 65.535rpm als 65535 mit gesetztem Bit 2.
+
 BENCH-Flags: Bit 0 Spannung gültig, Bit 1 Strom gültig, Bit 2 Drehzahl
 gültig, Bit 3 Temperatur des ESC gültig, Bit 4 Temperatur des Motors gültig,
 Bit 5 Spannung, Strom und Leistung sind die des INA228 und nicht die

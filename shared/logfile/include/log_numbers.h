@@ -77,6 +77,7 @@ typedef struct {
     char unit[LOG_UNIT_MAX];      /**< unit suffix, "" when none           */
     int  sign; /**< +1 or -1 */
     int  exp;  /**< explicit exponent, 0 when absent */
+    bool bound; /**< the cell began with '>': the number is a lower bound */
 } log_value_t;
 
 /**
@@ -85,6 +86,10 @@ typedef struct {
  * Grouping characters that are never decimal points -- ASCII space, the
  * apostrophe Swiss exporters use, U+00A0 and U+202F -- are removed here, so
  * @c digits carries only digits, '.' and ','.
+ *
+ * A leading '>' marks a lower bound, as the bench writes a speed above its
+ * register's ceiling (`>65535`): the cell is the number after it, with
+ * @c bound set.
  *
  * @param raw  The raw cell text.
  * @param out  Receives the parts.

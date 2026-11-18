@@ -107,9 +107,11 @@ typedef struct {
     float         p_max;  /**< highest power since then, W */
     bool          sag_seeded; /**< v_min is a reading yet                */
 
-    /* What the run delivered, counted by the panel (supply_count_totals). */
-    float         charge_mah;  /**< charge delivered, mAh */
-    float         energy_wh;  /**< energy delivered, Wh */
+    /* What the run delivered, counted by the panel (supply_count_totals).
+     * Double: a float sum of 0.0014mAh steps (50mA, 100ms) miscounts from
+     * 4,096mAh and stands still from 16,384mAh. */
+    double        charge_mah;  /**< charge delivered, mAh */
+    double        energy_wh;  /**< energy delivered, Wh */
     uint8_t       counted;    /**< BENCH_COUNTED_* from bench_state.h    */
 } supply_state_t;
 

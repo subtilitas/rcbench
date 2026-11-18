@@ -88,7 +88,17 @@ Bei ausgeschalteter IMU schaltet SENSOREN SUCHEN in SETUP IMU EIN
 STARTET`, bis Bluetooth LE läuft, dann startet die Suche. Ohne Sync mit
 dem C6 (`KEIN BLUETOOTH AM C6`) und bei ausgefallenem C6 nimmt SENSOREN
 SUCHEN keinen Druck an. Die Zustandszeile der Karte zeigt `IMU AUS: SUCHEN
-SCHALTET SIE EIN`, solange die IMU aus ist.
+SCHALTET SIE EIN`, solange die IMU aus ist. Eine Suche, die auf Bluetooth
+LE wartet, endet ohne Scan, wenn der Start in `KEIN BLUETOOTH AM C6`
+endet, wenn die Liste geschlossen wird und wenn die Bench auf ARMED
+schaltet.
+
+Solange die Bench ARMED ist, starten SENSOREN SUCHEN, AKTUALISIEREN und
+IMU SUCHEN auf SERVO keinen Scan, und das Band zeigt `KEINE IMU-SUCHE BEI
+ARMED: ERST AUF SAFE SCHALTEN`. Ein Scan, der beim Schalten auf ARMED
+läuft, wird beendet; die Liste behält, was er bis dahin gehört hat. Die
+Scans des Dial und der Knoten folgen derselben Regel
+([Dial](Dial-de.md)).
 
 Ein Tippen auf eine Zeile bindet diesen Sensor sofort. SETUP behält seine
 Adresse mit dem Adresstyp, `00:0C:BF:08:19:29 P` (öffentlich) oder `... R`
@@ -229,7 +239,13 @@ bei der nächsten Verbindung wieder an: der Ausstieg aus einer
 Kalibrierung (Unlock, CALSW 0, SAVE), ein RSW, eine RATE oder ein
 ALGORITHMUS, mit den dann aktuellen Werten aus SETUP. IMU AUS lässt ein laufendes
 Schreiben genauso scheitern; eine durch IMU AUS beendete Kalibrierung
-sendet CALSW 0 und SAVE also, sobald der Sensor wieder verbunden ist. Ein
+sendet CALSW 0 und SAVE also, sobald der Sensor wieder verbunden ist. Eine
+Gruppe geht auf einer Verbindung ganz oder gar nicht: Eine Verbindung, die
+zwischen zwei Befehlen einer Gruppe endet, in einer Lücke von 50ms,
+verwirft den Rest, und die ganze Gruppe steht ab ihrem Unlock bei der
+nächsten Verbindung wieder an. Eine Verbindung, die zwischen Unlock und
+CALSW 1 am Start einer Kalibrierung endet, lässt die Kalibrierung
+scheitern. Ein
 abgelehntes Unlock oder CALSW 1 am Start der Kalibrierung lässt sie sofort
 scheitern, und ihr Ausstieg geht wie nach jedem Ende. Eine Änderung von RATE oder
 ALGORITHMUS bei nicht verbundenem Sensor wartet, bis dessen Frames

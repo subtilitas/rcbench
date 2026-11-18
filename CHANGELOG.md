@@ -133,6 +133,28 @@ history is in git.
 
 ### Fixed
 
+- Charge and energy totals: the running sums of SUPPLY, of a SERVO run's
+  rail and of BENCH without the INA228's totals are double. A float sum
+  of 50mA in 50ms steps added 35mAh an hour from 4,096mAh and nothing
+  from 16,384mAh.
+- A speed above 65,535rpm read 65535 as a valid reading. The IOmcu clears
+  the rpm valid bit and the register holds 65535; MOTOR & ESC shows
+  `>65535` for the speed and for a peak of 65,535rpm or more, and the
+  log's `rpm` cell holds `>65535`. LOGS reads a cell that begins with `>`
+  as the number after it, so the column stays numeric.
+- IMU: a link that ended in the 50ms between two commands of a group
+  (unlock, register writes, SAVE) left the rest in the outbox. At the next
+  connection the register write and SAVE went without their unlock, and
+  the write was not due again. The rest is dropped, and the whole group is
+  sent again at the next connection. A calibration's exit is covered the
+  same way.
+- IMU: SCAN FOR SENSORS, SCAN AGAIN and SERVO's SEARCH FOR IMU start no
+  scan while ARMED (`NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST`), and
+  a running scan stops at the switch to ARMED, as the Dial's and the
+  nodes' scans do. A scan that waits for Bluetooth LE is dropped by `NO
+  BLUETOOTH ON C6`, by CLOSE and by ARMED.
+- Hitec MOVE SERVO: the live line showed 995mA to 999mA of each ampere as
+  x.99A. The current is rounded once to 10mA: 1,996mA reads `2.00A`.
 - UPDATES: a check that started beside a wireless device's transfer took
   the card, the device's ask and CANCEL UPDATE away for up to 30s. The
   check's gate counts a wireless device's update, as the IOmcu's and the

@@ -75,7 +75,9 @@ das Panel wendet sie an ([Das Panel](#das-panel)):
   Lauf den Prüfstand für seine Programmiersitzung auf SAFE hält, und nimmt ein
   ARM zurück, das unterwegs ist.
 - Kein BLE-Scan im Zustand ARMED: Die Funkzeit eines Scans würde dem Link
-  fehlen, der den Knopf trägt.
+  fehlen, der den Knopf trägt. Die Regel gilt für den Scan des Dial, der
+  Knoten und der IMU. Ein Scan, der beim Schalten auf ARMED läuft, wird
+  beendet.
 - Navigation nur bei SAFE: Ein SELECT ist ein Tippen von einem Frame, es
   vollendet also kein 2s-Halten, und bei ARMED bewegt das Dial keinen Fokus
   weg von dem Ausgang, den es treibt
@@ -723,9 +725,6 @@ verschiedener Reihenfolge; GPIO1 ist in beiden Fällen der Pin dieser Nummer.
   Feedback-Servos.
 - Eine Servoschiene, die PROG 5V speist, hat in SCALE keinen Vollausschlag:
   0, ihre Ringe zeigen nur ihre Spur.
-- Eine IMU-Suche (SETUP > IMU oder IMU SUCHEN auf SERVO) wird bei ARMED nicht
-  abgelehnt. Ihre Wirkung auf die Pakete eines verbundenen Dial ist nicht
-  gemessen.
 - Das Panel hat keinen Konsolenbefehl, der eine Drehung oder einen Druck des
   Dial einspeist; das macht der Test-Build des Dial von seiner Seite aus.
 - Die Spannung des Akkus ist unbekannt: Keine Quelle nennt den Pin, den sie
