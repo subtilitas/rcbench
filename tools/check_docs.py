@@ -7,7 +7,8 @@ go anywhere, is that list of test binaries the list CMake builds, is that
 count the count.
 
 Covered: docs/ (the wiki source), README.md and README-de.md, STATUS.md, and
-the pages under hardware/.  A screenshot the web help (help/content) shows
+the pages under hardware/; CONTRIBUTING.md, SECURITY.md and CHANGELOG.md for
+their links and anchors only.  A screenshot the web help (help/content) shows
 by view name counts as shown.  The wiki pages are additionally held to the
 sidebar and to having a German counterpart.  The `Who compiles what` table in
 STATUS.md and docs/Building.md is derived from the three build files, and the
@@ -52,6 +53,12 @@ HELP = REPO / "help" / "content"
 # Markdown outside docs/ that the link and anchor checks also cover: the
 # README in both languages, the running record, and the hardware pages.
 ROOT_PAGES = [REPO / "README.md", REPO / "README-de.md", REPO / "STATUS.md"]
+
+# Pages held to the link and anchor checks alone.  The changelog's released
+# sections state what a release was, so the checks of what the tree is now
+# (option lists, constants) do not read it; a link in it still has to open.
+LINK_ONLY_PAGES = [REPO / "CONTRIBUTING.md", REPO / "SECURITY.md",
+                   REPO / "CHANGELOG.md"]
 
 # Pages that are navigation rather than content, and so are not expected to be
 # linked from the sidebar like the rest.
@@ -103,12 +110,21 @@ def hardware_pages() -> list[pathlib.Path]:
 
 
 def linked_pages() -> list[pathlib.Path]:
-    """Every markdown file whose links and anchors are checked.
+    """Every markdown file held to the tree: links, anchors and claims.
 
     A root page that does not exist is reported by check_translations rather
     than crashing the link walk.
     """
     return pages() + [p for p in ROOT_PAGES if p.exists()] + hardware_pages()
+
+
+def walked_pages() -> list[pathlib.Path]:
+    """Every markdown file whose links and anchors are checked.
+
+    Returns:
+        linked_pages() and the pages of LINK_ONLY_PAGES that exist.
+    """
+    return linked_pages() + [p for p in LINK_ONLY_PAGES if p.exists()]
 
 
 HEADING_RE = re.compile(r"^#{1,6}\s+(.*?)\s*$", re.M)
@@ -138,10 +154,10 @@ def check_anchors(problems: list[str]) -> None:
     at the top of the page.
     """
     known = {}
-    for page in linked_pages():
+    for page in walked_pages():
         known[page.resolve()] = anchors(read(page))
 
-    for page in linked_pages():
+    for page in walked_pages():
         for target, fragment in ANCHOR_RE.findall(read(page)):
             if "://" in target:
                 continue
@@ -185,7 +201,7 @@ def help_images() -> set[pathlib.Path]:
 def check_links(problems: list[str]) -> None:
     """Every relative link and image reference resolves to a real file."""
     referenced: set[pathlib.Path] = set()
-    for page in linked_pages():
+    for page in walked_pages():
         base = page.parent
         for target in LINK_RE.findall(read(page)):
             if "://" in target or target.startswith("mailto:"):
