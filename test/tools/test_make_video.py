@@ -655,3 +655,23 @@ def test_the_first_programming_video_tells_one_version_sequence():
     running = [s["versions"][0] for s in steps]
     assert running == sorted(running)
     assert running[0] == "0.24.0" and running[-1] == "0.24.2"
+
+
+def test_a_board_scene_takes_a_tilt_an_entrance_and_windows():
+    """A window's pointer names items of that window."""
+    scene = {"type": "board", "board": "p4-7b-back", "dur": 10,
+             "camera": [[0, [83, 48], 190], [10, [83, 48], 190]],
+             "tilt": [15, -15], "enter": {"t": [0.2, 3], "view": "splash"},
+             "windows": [{"from": 3, "to": 9, "at": [60, 150], "w": 900,
+                          "url": "example.org", "body": [
+                              {"button": "Connect", "id": "go"},
+                              {"file": "a.bin", "id": "f", "get": [5, 7]}],
+                          "pointer": [[4, "go", "click"], [5, "f"]]}]}
+    board = {"lang": "en", "steps": 1, "scenes": [scene]}
+    assert make_video.check(board) == []
+    assert make_video.views(board)["splash"] == ("splash", None, "en")
+    scene["windows"][0]["pointer"][0][1] = "nowhere"
+    assert any("pointer" in e for e in make_video.check(board))
+    scene["windows"][0]["pointer"][0][1] = "go"
+    scene["tilt"] = [80, 0]
+    assert any("tilt" in e for e in make_video.check(board))

@@ -87,3 +87,34 @@ svg#ov{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
 #pcb{position:absolute;left:0;top:0;width:1920px;height:1080px;display:none}
 .bub.inset{width:640px}
 .bub.inset svg{display:block;width:100%;margin-top:10px}
+#pcbf{position:absolute;display:none;border-radius:14px;background:linear-gradient(160deg,#232b3a,#0c0f15);border:2px solid #4a5670;backface-visibility:hidden;box-shadow:0 30px 90px rgba(0,0,0,.6)}
+#pcbf div,#pcbf img{position:absolute;left:5.2%;top:8%;width:89.6%;height:84%;border-radius:6px;background:linear-gradient(140deg,#1b2a44 0%,#070a10 38%,#05070b 62%,#16243c 100%)}
+.win{position:absolute;border-radius:18px;background:#0f1522;border:1px solid rgba(255,255,255,.14);box-shadow:0 34px 100px rgba(0,0,0,.65);overflow:hidden;color:#e8eef8}
+.win .top{display:flex;align-items:center;gap:9px;height:76.2px;padding:0 24.5px;background:#1a2233;border-bottom:1px solid rgba(255,255,255,.08)}
+.win .top i{width:13px;height:17.7px;border-radius:50%;background:#3a4560}
+.win .top .url{flex:1;margin-left:14px;padding:10.9px 21.8px;border-radius:999px;background:#0c111c;border:1px solid rgba(255,255,255,.08);font-size:25.8px;color:#b9c6dc;white-space:nowrap;overflow:hidden}
+.win .top b{margin-left:14px;font-size:27.2px;font-weight:650;color:#c9d3e4}
+.win .in{display:flex;position:relative}
+.win .side{flex:none;width:300px;padding:27.2px 19px;background:#0c111c;border-right:1px solid rgba(255,255,255,.07)}
+.win .body{flex:1;position:relative;padding:29.9px 35.4px 35.4px;min-width:0}
+.win h3{font-size:36.7px;font-weight:750;margin-bottom:12px}
+.win p{font-size:27.2px;line-height:1.4;color:#aebbd0;margin-bottom:12px}
+.win p b{color:#fff;font-weight:650}
+.win pre{font-family:ui-monospace,Menlo,Consolas,monospace;font-size:23.8px;color:#8fe3b0;margin:3px 0}
+.win .file,.win .drive{position:relative;display:flex;align-items:center;gap:13px;padding:15px 19px 20.4px;margin:6px 0;border-radius:11px;background:rgba(255,255,255,.045);border:1px solid rgba(255,255,255,.07);font-size:27.2px}
+.win .file i{flex:none;width:17px;height:31.3px;border-radius:3px;background:#9fb4e6}
+.win .drive i{flex:none;width:26px;height:23.1px;border-radius:4px;background:#c9cdd3;box-shadow:inset 0 -5px 0 #8b93a3}
+.win .file span,.win .drive span{flex:1;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.win .file em,.win .drive em,.win .prog em{font-style:normal;font-size:23.1px;color:#93a1b8}
+.win .file.done em{color:var(--gr);font-weight:800}
+.win .file u,.win .prog u{position:absolute;left:14px;right:14px;bottom:6px;height:5.4px;border-radius:2px;background:rgba(255,255,255,.12);overflow:hidden}
+.win s{display:block;height:100%;background:linear-gradient(90deg,var(--cy),var(--gr))}
+.win .hit{border-color:var(--cy)!important;background:rgba(0,229,255,.16)!important}
+.win .btn{display:inline-block;margin:8px 10px 8px 0;padding:16.3px 40.8px;border-radius:10px;background:#26324a;border:1px solid rgba(255,255,255,.14);font-size:27.2px;font-weight:700;letter-spacing:.03em}
+.win .btn.ok{background:#1f8a4c;border-color:#35b56a;color:#fff}
+.win .btn.go{background:#1c6fd1;border-color:#4a96ee;color:#fff}
+.win .btn.off{opacity:.35}
+.win .prog{position:relative;display:flex;justify-content:space-between;padding:13.6px 19px 24.5px;margin:8px 0;border-radius:11px;background:rgba(255,255,255,.045);font-size:25.8px;font-weight:600}
+.win .dlg{position:absolute;left:50%;top:96px;width:620px;margin-left:-310px;padding:21.8px 21.8px 16.3px;border-radius:14px;background:#1c2538;border:1px solid rgba(255,255,255,.2);box-shadow:0 24px 70px rgba(0,0,0,.7);z-index:2}
+.win .dlg b{display:block;font-size:25.2px;font-weight:650;color:#c9d3e4;margin-bottom:10px}
+.win .dlg .row{padding:13.6px 16.3px;margin:4px 0;border-radius:8px;border:1px solid transparent;font-size:25.8px;background:rgba(255,255,255,.05)}

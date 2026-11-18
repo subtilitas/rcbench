@@ -11,6 +11,7 @@ import * as THREE from 'three';
 import {buildCase, CONNECTORS, WIRE_COLORS} from './case3d.js';
 import {buildCadCase, loadCad} from './case_cad.js';
 import {buildBoard} from './board.js';
+import {drawWindows} from './windows.js';
 import {buildDial} from './dial3d.js';
 import {buildDuo} from './duo3d.js';
 import {buildMini} from './mini3d.js';
@@ -74,6 +75,7 @@ for (const sc of sb.scenes) {
     }
   }
   if (sc.type === 'case' && sc.display) need.add(sc.display.view);
+  if (sc.type === 'board' && sc.enter?.view) need.add(sc.enter.view);
   // A dial scene shows faces of the Dial: the shots dial-NAME.
   for (const [, face] of (sc.type === 'case' && sc.faces) || []) {
     need.add('dial-' + face);
@@ -424,8 +426,10 @@ function drawBoard(sc, lt, a, pulse, ui) {
     e.dataset.for = String(sc.t);
   }
   e.style.display = 'block';
-  e.style.opacity = a * (sc.title ? .35 + .65 * ramp(lt, sc.title.to - .6,
-                                                     sc.title.to) : 1);
+  // Under a title the board is dimmed, once it has come in.
+  const in1 = sc.enter ? sc.enter.t[1] : 0;
+  e.style.opacity = a * (sc.title ? 1 - .65 * ramp(lt, in1 - .2, in1 + .6)
+    * (1 - ramp(lt, sc.title.to - .6, sc.title.to)) : 1);
   const k = sc.camera;
   let i = 0;
   while (i < k.length - 2 && lt > k[i + 1][0]) i++;
@@ -436,7 +440,51 @@ function drawBoard(sc, lt, a, pulse, ui) {
   sc.rig.draw(sc, lt, [[mix(k[i][1][0], k[j][1][0]),
                         mix(k[i][1][1], k[j][1][1])],
                        Math.exp(mix(Math.log(k[i][2]), Math.log(k[j][2])))]);
-  drawNotes(sc, lt, a, pulse, ui, sc.rig.project);
+  // "tilt", [rx, ry] in degrees, leans the board away from the viewer;
+  // "enter" brings it in turning about its upright axis over t, from its
+  // other side, the display, which shows the view "view" or dark glass.
+  let proj = sc.rig.project;
+  e.style.transform = '';
+  if (sc.tilt || sc.enter) {
+    const [rx, ry0] = sc.tilt || [0, 0], P = 2600, R = Math.PI / 180;
+    const q = sc.enter ? ramp(lt, sc.enter.t[0], sc.enter.t[1]) : 1;
+    const ry = ry0 - (1 - q) * 205, s = .42 + .58 * q;
+    const pose = b => `perspective(${P}px) translateY(${(1 - q) * 60}px) `
+      + `rotateX(${rx}deg) rotateY(${b}deg) scale(${s})`;
+    e.style.transformOrigin = '960px 540px';
+    e.style.backfaceVisibility = 'hidden';
+    e.style.transform = pose(ry);
+    if (q < 1) {
+      const f = $('#pcbf'), [w, h] = sc.plan.size, flat = sc.rig.project;
+      const [x0, y0] = flat([0, 0]), [x1, y1] = flat([w, h]);
+      f.style.display = 'block';
+      f.style.opacity = a;
+      f.style.left = (1920 - x1) + 'px';
+      f.style.top = y0 + 'px';
+      f.style.width = (x1 - x0) + 'px';
+      f.style.height = (y1 - y0) + 'px';
+      f.style.transformOrigin = `${960 - (1920 - x1)}px ${540 - y0}px`;
+      f.style.transform = pose(ry + 180);
+      if (f.dataset.for !== String(sc.t)) {
+        f.innerHTML = sc.enter.view
+          ? `<img src="${imgs[sc.enter.view].src}" alt="">` : '<div></div>';
+        f.dataset.for = String(sc.t);
+      }
+    }
+    const flat = sc.rig.project;
+    const [ca, sa, cb, sb2] = [Math.cos(rx * R), Math.sin(rx * R),
+                               Math.cos(ry * R), Math.sin(ry * R)];
+    proj = at => {
+      const [px, py] = flat(at);
+      const x = (px - 960) * s, y = (py - 540) * s;
+      const x1 = x * cb, z1 = -x * sb2;
+      const y2 = y * ca - z1 * sa, z2 = y * sa + z1 * ca;
+      const k = P / (P - z2);
+      return [960 + x1 * k, 540 + ((1 - q) * 60 + y2) * k];
+    };
+  }
+  drawNotes(sc, lt, a, pulse, ui, proj);
+  drawWindows(sc, lt, a, bubs, ov);
   // Insets: a cross-section of a solder joint, in a card.
   for (const n of sc.insets || []) {
     const o = win(lt, n.from, n.to) * a;
@@ -455,7 +503,7 @@ function drawBoard(sc, lt, a, pulse, ui) {
   for (const m of sc.tags || []) {
     const o = win(lt, m.from, m.to, .3) * a;
     if (o <= 0) continue;
-    const [x, y] = sc.rig.project(m.at), d = m.d || 46;
+    const [x, y] = proj(m.at), d = m.d || 46;
     const side = m.side || 'r';
     const [ex, ey] = side === 'b' ? [x, y + d] : side === 't' ? [x, y - d]
       : side === 'l' ? [x - d, y] : [x + d, y];
@@ -711,7 +759,8 @@ window.TOTAL = TOTAL;
 window.renderAt = t => {
   bubs.innerHTML = '';
   ov.innerHTML = '';
-  for (const id of ['#gl', '#pcb', '#dev', '#end', '#cap', '#card']) {
+  for (const id of ['#gl', '#pcb', '#pcbf', '#dev', '#end', '#cap',
+                    '#card']) {
     $(id).style.display = 'none';
   }
   $('#dev').style.transformOrigin = '';

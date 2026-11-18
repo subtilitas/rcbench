@@ -25,7 +25,17 @@
   {
    "type": "board",
    "board": "p4-7b-back",
-   "dur": 77.64,
+   "dur": 79.74,
+   "tilt": [
+    15,
+    -15
+   ],
+   "enter": {
+    "t": [
+     0.2,
+     3.6
+    ]
+   },
    "camera": [
     [
      0,
@@ -33,209 +43,360 @@
       83,
       48.5
      ],
-     190
+     250
     ],
     [
-     44.32,
+     20.08,
      [
       83,
       48.5
      ],
-     190
+     250
     ],
     [
-     46.72,
+     22.279999999999998,
      [
-      128,
-      74
+      190,
+      40
      ],
-     100
+     330
     ],
     [
-     77.64,
+     44.72,
      [
-      128,
-      74
+      190,
+      40
      ],
-     100
+     330
+    ],
+    [
+     47.12,
+     [
+      83,
+      48.5
+     ],
+     250
+    ],
+    [
+     52.12,
+     [
+      83,
+      48.5
+     ],
+     250
+    ],
+    [
+     54.32,
+     [
+      100,
+      68
+     ],
+     150
+    ],
+    [
+     79.74,
+     [
+      100,
+      68
+     ],
+     150
     ]
    ],
    "title": {
-    "from": 0.3,
-    "to": 19.48,
+    "from": 3.4,
+    "to": 20.08,
     "kicker": "rcbench · rbmod carrier",
     "heading": "First<br>programming",
     "text": "Panel and IOmcu over USB.<br>Later updates from GitHub and over Wi-Fi."
    },
    "chips": [
     {
-     "from": 20.48,
-     "to": 44.22,
+     "from": 21.08,
+     "to": 44.82,
      "n": 1,
      "text": "Download the release"
     },
     {
-     "from": 44.72,
-     "to": 77.64,
+     "from": 45.32,
+     "to": 79.74,
      "n": 2,
      "text": "The panel: ESP Web Tool"
     }
    ],
    "labels": [
     {
-     "from": 20.68,
-     "to": 33.44,
+     "from": 45.52,
+     "to": 51.72,
      "anchor": [
-      83,
-      48
+      58,
+      50
      ],
      "at": [
-      560,
-      250
+      90,
+      720
      ],
-     "side": "b",
-     "n": 1,
-     "title": "github.com/subtilitas/rcbench/releases",
-     "text": "<b>rcbench-panel-p4-vX.Y.Z.zip</b><br><b>rcbench-iomcu-rbmod-vX.Y.Z.zip</b><br><b>SHA256SUMS</b>"
-    },
-    {
-     "from": 34.64,
-     "to": 43.72,
-     "anchor": [
-      83,
-      48
-     ],
-     "at": [
-      560,
-      250
-     ],
-     "side": "b",
-     "n": 1,
-     "title": "The two files to load",
-     "text": "Panel: <b>rcbench-panel-merged.bin</b><br>IOmcu: <b>rcbench-iomcu-rbmod-install.uf2</b><br><b>sha256sum -c SHA256SUMS</b> prints OK for each download."
-    },
-    {
-     "from": 44.92,
-     "to": 51.12,
-     "anchor": [
-      157.3,
-      67.7
-     ],
-     "at": [
-      110,
-      300
-     ],
-     "side": "r",
+     "side": "t",
      "n": 2,
-     "title": "The panel over USB",
-     "text": "The 7 inch ESP32-P4 display board, seen from the back. Either USB-C socket takes the cable."
-    },
-    {
-     "from": 52.32,
-     "to": 56.52,
-     "anchor": [
-      157.3,
-      67.7
-     ],
-     "at": [
-      110,
-      300
-     ],
-     "side": "r",
-     "n": 2,
-     "title": "1 · Open the ESP Web Tool",
-     "text": "<b>esptool.spacehuhn.com</b><br>Chrome or Edge on a computer: the tool uses the browser's serial port."
-    },
-    {
-     "from": 57.72,
-     "to": 61.28,
-     "anchor": [
-      157.3,
-      67.7
-     ],
-     "at": [
-      110,
-      300
-     ],
-     "side": "r",
-     "n": 2,
-     "title": "2 · Connect",
-     "text": "Click <b>Connect</b>. The browser lists the serial ports. Pick the panel's and confirm."
-    },
-    {
-     "from": 62.48,
-     "to": 66.84,
-     "anchor": [
-      157.3,
-      67.7
-     ],
-     "at": [
-      110,
-      300
-     ],
-     "side": "r",
-     "n": 2,
-     "title": "3 · Add the image at 0x0",
-     "text": "File: <b>rcbench-panel-merged.bin</b><br>Address: <b>0x0</b>. One file holds the bootloader, the partition table and the application."
-    },
-    {
-     "from": 68.04,
-     "to": 76.64,
-     "anchor": [
-      157.3,
-      67.7
-     ],
-     "at": [
-      110,
-      300
-     ],
-     "side": "r",
-     "n": 2,
-     "style": "ok",
-     "title": "4 · Program",
-     "text": "Click <b>Program</b> and wait for the tool's last line. The panel starts on its default settings."
+     "size": "sm",
+     "title": "The panel from the back",
+     "text": "The 7 inch ESP32-P4 display board. Either USB-C socket takes the cable."
     }
    ],
-   "tags": [],
+   "tags": [
+    {
+     "from": 45.62,
+     "to": 51.72,
+     "at": [
+      157.3,
+      67.7
+     ],
+     "text": "USB-C → computer",
+     "side": "t",
+     "d": 90
+    },
+    {
+     "from": 54.519999999999996,
+     "to": 79.74,
+     "at": [
+      157.3,
+      67.7
+     ],
+     "text": "USB-C → computer",
+     "side": "t",
+     "d": 60
+    }
+   ],
    "say": [
     {
-     "at": 0.6,
+     "at": 1.2,
      "text": "This video shows how to load the firmware onto a new R C bench with the R B mod carrier: the panel from a browser, the I O M C U from a U S B drive. Then it shows the two ways to update later: from GitHub, and from a browser over Wi-Fi."
     },
     {
-     "at": 20.48,
+     "at": 21.08,
      "text": "Step 1. Download three files from the releases page on GitHub: the panel's zip file, the zip file of the I O M C U for the R B mod carrier, and the checksum file."
     },
     {
-     "at": 34.44,
+     "at": 35.04,
      "text": "Unpack both zip files. Two files in them are needed: the merged panel image, and the install image of the I O M C U."
     },
     {
-     "at": 44.72,
+     "at": 45.32,
      "text": "Step 2. The panel. Connect one of the panel's two U S B C sockets to a computer."
     },
     {
-     "at": 52.12,
+     "at": 52.72,
      "text": "Open the E-S-P web tool by Spacehuhn in Chrome or Edge."
     },
     {
-     "at": 57.52,
+     "at": 58.12,
      "text": "Click Connect and pick the panel's serial port."
     },
     {
-     "at": 62.28,
+     "at": 62.88,
      "text": "Add the merged panel image and leave its address at zero."
     },
     {
-     "at": 67.84,
+     "at": 68.44,
      "text": "Click Program. When the tool reports the end, the panel holds its firmware and starts on its default settings."
+    }
+   ],
+   "windows": [
+    {
+     "from": 21.68,
+     "to": 34.44,
+     "at": [
+      800,
+      170
+     ],
+     "w": 1050,
+     "kind": "browser",
+     "url": "github.com/subtilitas/rcbench/releases",
+     "body": [
+      {
+       "h": "rcbench 0.24.0"
+      },
+      {
+       "p": "Assets"
+      },
+      {
+       "file": "rcbench-panel-p4-v0.24.0.zip",
+       "id": "f1",
+       "note": "zip",
+       "get": [
+        24.479999999999997,
+        27.479999999999997
+       ]
+      },
+      {
+       "file": "rcbench-iomcu-rbmod-v0.24.0.zip",
+       "id": "f2",
+       "note": "zip",
+       "get": [
+        27.68,
+        30.279999999999998
+       ]
+      },
+      {
+       "file": "SHA256SUMS",
+       "id": "f3",
+       "note": "text",
+       "get": [
+        31.68,
+        32.68
+       ]
+      },
+      {
+       "p": "<b>3 downloads</b> in the folder Downloads",
+       "from": 32.879999999999995
+      }
+     ],
+     "pointer": [
+      [
+       24.279999999999998,
+       "f1",
+       "click"
+      ],
+      [
+       27.479999999999997,
+       "f2",
+       "click"
+      ],
+      [
+       31.479999999999997,
+       "f3",
+       "click"
+      ]
+     ]
+    },
+    {
+     "from": 35.339999999999996,
+     "to": 44.72,
+     "at": [
+      800,
+      170
+     ],
+     "w": 1050,
+     "kind": "folder",
+     "title": "Downloads",
+     "body": [
+      {
+       "p": "rcbench-panel-p4-v0.24.0"
+      },
+      {
+       "file": "rcbench-panel-merged.bin",
+       "id": "bin",
+       "note": "for the panel",
+       "from": 36.64
+      },
+      {
+       "p": "rcbench-iomcu-rbmod-v0.24.0",
+       "from": 38.24
+      },
+      {
+       "file": "rcbench-iomcu-rbmod-install.uf2",
+       "id": "uf2",
+       "note": "for the IOmcu",
+       "from": 39.64
+      },
+      {
+       "log": "sha256sum -c SHA256SUMS: OK",
+       "from": 41.44
+      }
+     ]
+    },
+    {
+     "from": 53.019999999999996,
+     "to": 79.44,
+     "at": [
+      60,
+      150
+     ],
+     "w": 1040,
+     "kind": "browser",
+     "url": "esptool.spacehuhn.com",
+     "body": [
+      {
+       "h": "ESP Web Tool"
+      },
+      {
+       "p": "1. Click on Connect &nbsp; 2. Select the port &nbsp; 3. Add the .bin and set the address &nbsp; 4. Click Program"
+      },
+      {
+       "button": "Connect",
+       "id": "connect",
+       "style": "ok"
+      },
+      {
+       "dialog": "esptool.spacehuhn.com wants to connect to a serial port",
+       "rows": [
+        {
+         "text": "USB serial port of the panel",
+         "id": "port"
+        }
+       ],
+       "from": 59.62,
+       "to": 61.62
+      },
+      {
+       "log": "Connected to ESP32-P4",
+       "from": 61.72
+      },
+      {
+       "file": "rcbench-panel-merged.bin",
+       "id": "image",
+       "note": "0x 0",
+       "from": 64.28,
+       "get": [
+        69.84,
+        73.74
+       ],
+       "done": "written"
+      },
+      {
+       "button": "Program",
+       "id": "program",
+       "style": "go",
+       "on": 64.28,
+       "from": 61.72
+      },
+      {
+       "log": "Done. The panel restarts.",
+       "from": 73.94
+      }
+     ],
+     "pointer": [
+      [
+       59.419999999999995,
+       "connect",
+       "click"
+      ],
+      [
+       61.32,
+       "port",
+       "click"
+      ],
+      [
+       64.08,
+       "image",
+       "click"
+      ],
+      [
+       69.64,
+       "program",
+       "click"
+      ]
+     ]
     }
    ]
   },
   {
    "type": "board",
    "board": "rbmod-rev1",
-   "dur": 38.0,
+   "dur": 39.0,
+   "tilt": [
+    15,
+    -15
+   ],
    "camera": [
     [
      0,
@@ -243,7 +404,7 @@
       44.5,
       40
      ],
-     172
+     200
     ],
     [
      6.3999999999999995,
@@ -251,29 +412,29 @@
       44.5,
       40
      ],
-     172
+     200
     ],
     [
      8.8,
      [
-      72,
-      13
+      44,
+      14
      ],
-     52
+     70
     ],
     [
-     38.0,
+     39.0,
      [
-      72,
-      13
+      44,
+      14
      ],
-     52
+     70
     ]
    ],
    "chips": [
     {
      "from": 0,
-     "to": 38.0,
+     "to": 39.0,
      "n": 3,
      "text": "The IOmcu: USB drive"
     }
@@ -298,56 +459,28 @@
      "from": 7.0,
      "to": 14.08,
      "at": [
-      1240,
-      330
+      600,
+      640
      ],
      "n": 3,
+     "side": "r",
      "anchor": [
       64.15,
       12.35
      ],
      "style": "warn",
-     "title": "1 · Hold BOOT, plug in",
+     "title": "Hold BOOT, plug in",
      "text": "Hold <b>BOOT</b> while the USB cable goes in. Release it once the cable is in."
     },
     {
-     "from": 15.28,
-     "to": 18.52,
+     "from": 29.0,
+     "to": 38.0,
      "at": [
-      1240,
-      330
+      600,
+      640
      ],
      "n": 3,
-     "anchor": [
-      69.86,
-      2.6
-     ],
-     "title": "2 · The drive RP2350",
-     "text": "The module appears as a USB drive named <b>RP2350</b>."
-    },
-    {
-     "from": 19.72,
-     "to": 26.8,
-     "at": [
-      1240,
-      330
-     ],
-     "n": 3,
-     "anchor": [
-      69.86,
-      2.6
-     ],
-     "title": "3 · Copy the install image",
-     "text": "<b>rcbench-iomcu-rbmod-install.uf2</b><br>The drive disappears and the module restarts into slot A."
-    },
-    {
-     "from": 28.0,
-     "to": 37.0,
-     "at": [
-      1240,
-      330
-     ],
-     "n": 3,
+     "side": "r",
      "anchor": [
       70,
       23.5
@@ -362,31 +495,34 @@
      "from": 7.1,
      "to": 14.08,
      "at": [
-      69.86,
-      2.6
+      66,
+      3.2
      ],
      "text": "USB-C → computer",
-     "side": "t"
+     "side": "l",
+     "d": 60
     },
     {
      "from": 15.38,
      "to": 18.52,
      "at": [
-      69.86,
-      2.6
+      66,
+      3.2
      ],
      "text": "USB-C → computer",
-     "side": "t"
+     "side": "l",
+     "d": 60
     },
     {
      "from": 19.82,
-     "to": 26.8,
+     "to": 27.8,
      "at": [
-      69.86,
-      2.6
+      66,
+      3.2
      ],
      "text": "USB-C → computer",
-     "side": "t"
+     "side": "l",
+     "d": 60
     }
    ],
    "say": [
@@ -407,8 +543,68 @@
      "text": "Copy the install image onto the drive. The module restarts by itself and runs the firmware."
     },
     {
-     "at": 27.8,
+     "at": 28.8,
      "text": "The install image also writes a partition table. With it, every later update comes from the panel over the CAN bus."
+    }
+   ],
+   "windows": [
+    {
+     "from": 14.88,
+     "to": 29.0,
+     "at": [
+      50,
+      540
+     ],
+     "w": 1120,
+     "kind": "folder",
+     "title": "Downloads",
+     "side": [
+      {
+       "p": "This computer"
+      },
+      {
+       "drive": "Downloads",
+       "id": "dl"
+      },
+      {
+       "drive": "RP2350",
+       "id": "drive",
+       "note": "USB",
+       "from": 15.98,
+       "to": 25.119999999999997
+      }
+     ],
+     "body": [
+      {
+       "p": "rcbench-iomcu-rbmod-v0.24.0"
+      },
+      {
+       "file": "rcbench-iomcu-rbmod-install.uf2",
+       "id": "uf2",
+       "note": "UF2",
+       "get": [
+        21.919999999999998,
+        24.52
+       ],
+       "done": "copied"
+      },
+      {
+       "log": "RP2350 restarts into slot A",
+       "from": 25.32
+      }
+     ],
+     "pointer": [
+      [
+       20.419999999999998,
+       "uf2",
+       "grab"
+      ],
+      [
+       21.82,
+       "drive",
+       "drop"
+      ]
+     ]
     }
    ]
   },

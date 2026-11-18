@@ -328,6 +328,77 @@ def _check_board(scene: dict, where: str, errors: list) -> None:
                 and 0 <= fit["t"] < dur):
             errors.append(f"{where} fit {n + 1}: needs kind, one of "
                           f"{', '.join(FITS)}, the pads a and b, and t")
+    tilt = scene.get("tilt")
+    if tilt is not None and not (
+            isinstance(tilt, list) and len(tilt) == 2
+            and all(_number(v) and -45 <= v <= 45 for v in tilt)):
+        errors.append(f"{where}: tilt is [rx, ry] in degrees, each from "
+                      "-45 to 45")
+    enter = scene.get("enter")
+    if enter is not None and not (
+            isinstance(enter, dict) and _within(enter.get("t"), dur)
+            and isinstance(enter.get("view", ""), str)):
+        errors.append(f"{where}: enter needs t, [t0, t1] within the scene, "
+                      "and takes a view")
+    for n, window in enumerate(scene.get("windows", [])):
+        _check_window(window, dur, f"{where} window {n + 1}", errors)
+
+
+def _within(value, dur: float) -> bool:
+    return (isinstance(value, list) and len(value) == 2
+            and all(_number(v) for v in value)
+            and 0 <= value[0] < value[1] <= dur)
+
+
+WINDOW_ITEMS = ("h", "p", "log", "file", "button", "bar", "drive", "dialog")
+
+
+def _check_window(window: dict, dur: float, where: str,
+                  errors: list) -> None:
+    if not (isinstance(window, dict)
+            and _within([window.get("from"), window.get("to")], dur)
+            and _place(window.get("at")) and isinstance(window["at"], list)
+            and _number(window.get("w")) and 200 <= window["w"] <= 1920
+            and window.get("kind", "browser") in ("browser", "folder")
+            and isinstance(window.get("url") or window.get("title"), str)):
+        errors.append(f"{where}: needs from and to within the scene, at, "
+                      "[x, y], w from 200 to 1920, kind browser or folder, "
+                      "and a url or a title")
+        return
+    ids = set()
+    for item in window.get("side", []) + window.get("body", []):
+        kinds = [k for k in WINDOW_ITEMS if isinstance(item, dict)
+                 and k in item]
+        if len(kinds) != 1:
+            errors.append(f"{where}: an item is one of "
+                          f"{', '.join(WINDOW_ITEMS)}")
+            continue
+        if "id" in item:
+            ids.add(item["id"])
+        for key in ("get", "bar"):
+            if key in item and not _within(item[key], dur):
+                errors.append(f"{where}: {key} is [t0, t1] within the "
+                              "scene")
+        if kinds[0] == "dialog":
+            rows = item.get("rows")
+            if not (isinstance(rows, list) and rows and all(
+                    isinstance(r, dict) and isinstance(r.get("text"), str)
+                    for r in rows)):
+                errors.append(f"{where}: a dialog needs rows, each with "
+                              "text")
+                continue
+            ids.update(r["id"] for r in rows if "id" in r)
+    last = 0.0
+    for key in window.get("pointer", []):
+        if not (isinstance(key, list) and len(key) in (2, 3)
+                and _number(key[0]) and last <= key[0] <= dur
+                and key[1] in ids
+                and (len(key) == 2 or key[2] in ("click", "grab", "drop"))):
+            errors.append(f"{where} pointer: a key is [t, id] or [t, id, "
+                          "op] with rising t, an item's id and op click, "
+                          "grab or drop")
+            continue
+        last = key[0]
 
 
 def _names(value) -> bool:
@@ -581,6 +652,9 @@ def views(board: dict) -> dict:
             shot = scene["display"]
             found[shot["view"]] = (shot["view"], shot.get("screen"),
                                    board["lang"])
+        if scene["type"] == "board" and scene.get("enter", {}).get("view"):
+            view = scene["enter"]["view"]
+            found[view] = (view, scene["enter"].get("screen"), board["lang"])
         for key in scene.get("panel", []) if scene["type"] == "case" else []:
             # A run's shots are drawn by runs(), not from a view's name;
             # the mini model's are stills.
