@@ -43,7 +43,7 @@ test/tools/test_check_protocols.py | none | the cases of one tool
 test/host/render_screen.c | none | F11: one view table
 
 # Workflows.
-.github/workflows/ci.yml | 1038 +-100 | one workflow: a job's needs: reaches the jobs of its own file only, and the job the branch ruleset requires joins the host jobs; every comment line counts in YAML
+.github/workflows/ci.yml | 1207 +-100 | one workflow: a job's needs: reaches the jobs of its own file only, and the job the branch ruleset requires joins the host jobs; every comment line counts in YAML
 
 # The configurator.
 configurator/core/catalogue.ts | none | one catalogue; its largest table is 696 lines

@@ -39,11 +39,16 @@ name: Configurator
 #   configurator's size budget: the budget is checked on the
 #   configurator's files alone.
 #
+# A pull request runs when the label `ci` is added, as ci.yml does: a push
+# to a pull request starts no run.  Another label starts a run in which
+# every job is skipped; no check of this workflow is a required one.
+#
 # The repository setting "Pages source: GitHub Actions" is a precondition of
 # the deploy job.
 
 on:
   pull_request:
+    types: [labeled]
     paths:
       - 'configurator/**'
       - 'shared/link/include/rcbench_version.h'
@@ -74,12 +79,16 @@ on:
       - 'protocols/**'
       - 'firmware/panel/**'
       - 'firmware/iomcu/**'
+      - 'firmware/dial/**'
+      - 'firmware/node/**'
+      - 'firmware/devota/**'
       - 'testbench/touch-injector/core/**'
 
-# A newer push to a pull request replaces the run in progress. A run on main
-# finishes, so a deployment is never cut off.
+# A second `ci` label on a pull request replaces the run in progress; a run
+# another label starts has a group of its own and replaces none. A run on
+# main finishes, so a deployment is never cut off.
 concurrency:
-  group: configurator-${{ github.ref }}
+  group: configurator-${{ github.ref }}${{ github.event_name == 'pull_request' && github.event.label.name != 'ci' && '-other-label' || '' }}
   cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 permissions:
@@ -94,6 +103,7 @@ env:
 jobs:
   changes:
     name: Full run or API only
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 5
     # actions: read for the list of earlier runs of this workflow.
@@ -133,7 +143,9 @@ jobs:
     needs: changes
     if: needs.changes.outputs.full == 'true'
     runs-on: ubuntu-26.04
-    timeout-minutes: 10
+    # The test suite and the coverage run, which repeats it, take 4min47s
+    # to 8min12s together on the runners measured.
+    timeout-minutes: 20
     defaults:
       run:
         working-directory: configurator/core
@@ -367,6 +379,7 @@ jobs:
 
   help:
     name: Web help
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
@@ -395,6 +408,7 @@ jobs:
 
   api:
     name: API reference
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:

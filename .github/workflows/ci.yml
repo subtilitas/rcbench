@@ -6,23 +6,33 @@ on:
     # Tags too: a release builds from the tagged commit, which need not be on
     # main, and the host suite runs against it before firmware is published.
     tags: ['v*']
-  # A push to a pull request starts no run.  Adding a label does, the label
-  # `ci` by convention, once the reviews of the head are clean; a later head
-  # takes the label off and on again.  A head that a review round or a
-  # rebase replaces costs no run.  Only a pull_request run counts for the
-  # required checks: a manual run reports its checks on the commit, and the
-  # pull request does not take them.
+  # A push to a pull request starts no run.  Adding the label `ci` does,
+  # once the reviews of the head are clean; a later head takes the label off
+  # and on again.  A head that a review round or a rebase replaces costs no
+  # run.  Only a pull_request run counts for the required checks: a manual
+  # run reports its checks on the commit, and the pull request does not take
+  # them.
+  #
+  # GitHub has no trigger filter on a label's name, so any other label
+  # starts a run too.  That run builds and tests nothing and ends within
+  # 2min: the four required checks that are single jobs (lint, cppcheck,
+  # Doxygen comments, IOmcu) fail in their first step, the two that join
+  # other jobs (host suite, panel) fail on their skipped needs, and every
+  # other job is skipped.  The required checks fail and do not skip,
+  # because a skipped required check counts as passed.  After another
+  # label the head needs `ci` taken off and added again.
   pull_request:
     types: [labeled]
   workflow_dispatch:
 
-# One run per ref, the newest: a push to a pull request cancels the run of
-# the push before it.  A push to main is the exception and has a group of its
-# own, so its run is never cancelled: docs.yml waits for the run on its
-# commit, and a later push to main that does not touch docs/ starts no
-# docs.yml run to publish in its place.
+# One run per ref, the newest: a second `ci` label on a pull request cancels
+# the run of the one before it.  A run another label starts has a group of
+# its own and cancels no `ci` run in flight.  A push to main is the
+# exception and has a group of its own, so its run is never cancelled:
+# docs.yml waits for the run on its commit, and a later push to main that
+# does not touch docs/ starts no docs.yml run to publish in its place.
 concurrency:
-  group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}
+  group: ci-${{ github.ref }}${{ github.ref == 'refs/heads/main' && format('-{0}', github.sha) || '' }}${{ github.event_name == 'pull_request' && github.event.label.name != 'ci' && '-other-label' || '' }}
   cancel-in-progress: true
 
 permissions:
@@ -48,6 +58,7 @@ env:
 jobs:
   host-build:
     name: Host suite, build and ctest
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -69,6 +80,7 @@ jobs:
 
   host-sanitizers:
     name: Host suite under sanitizers
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -99,6 +111,7 @@ jobs:
 
   host-coverage:
     name: Host suite coverage
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -162,13 +175,14 @@ jobs:
           name: coverage-cobertura
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+        uses: codecov/codecov-action@v6
         with:
           files: coverage.xml
           fail_ci_if_error: true
 
   host-checks:
     name: Checks that hold prose and generated files to the tree
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -227,12 +241,14 @@ jobs:
       - name: The docs agree with the tree
         run: python3 tools/check_docs.py
 
-      # A number and its unit stand together, 40s and 6.00V, in the docs,
-      # the interface's texts and reports, and the code's comments; the
-      # exceptions are in tools/check_units_allow.txt with their reasons.
+      # HOTSPOT PASSWORD and WEB CODE are named only in the sources the tool
+      # lists, and no log or console call names one.
       - name: A kept Wi-Fi value stays out of logs and other sources
         run: python3 tools/check_wifi_secrets.py
 
+      # A number and its unit stand together, 40s and 6.00V, in the docs,
+      # the interface's texts and reports, and the code's comments; the
+      # exceptions are in tools/check_units_allow.txt with their reasons.
       - name: Numbers carry their unit without a space
         run: python3 tools/check_units.py --check
 
@@ -304,6 +320,7 @@ jobs:
 
   host-frames:
     name: Frame cost of every screen
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 20
     steps:
@@ -418,6 +435,16 @@ jobs:
       CLANG_TIDY_VERSION: 22.1.8
       CLANG_TIDY_SHA256: 1a3de07ba82d4403d8b692ae63a5520d4db5c606014c92c24bbcef9259057bf1
     steps:
+      # A required check fails on a label other than `ci`: skipped, it
+      # would count as passed (the comment at `on:` above).
+      - name: The run was started by the label ci
+        if: github.event_name == 'pull_request' && github.event.label.name != 'ci'
+        env:
+          LABEL: ${{ github.event.label.name }}
+        run: |
+          echo "::error::the label '$LABEL' starts no CI run; take the label ci off and add it again"
+          exit 1
+
       - uses: actions/checkout@v6
 
       - uses: ./.github/actions/apt-prepare
@@ -505,6 +532,16 @@ jobs:
       CPPCHECK_VERSION: 2.17.1
       CPPCHECK_SHA256: bfd681868248ec03855ca7c2aea7bcb1f39b8b18860d76aec805a92a967b966c
     steps:
+      # A required check fails on a label other than `ci`: skipped, it
+      # would count as passed (the comment at `on:` above).
+      - name: The run was started by the label ci
+        if: github.event_name == 'pull_request' && github.event.label.name != 'ci'
+        env:
+          LABEL: ${{ github.event.label.name }}
+        run: |
+          echo "::error::the label '$LABEL' starts no CI run; take the label ci off and add it again"
+          exit 1
+
       - uses: actions/checkout@v6
 
       # The build is cached on the version and the hash; a hit builds nothing.
@@ -627,8 +664,9 @@ jobs:
 
   tools:
     name: Tool tests
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@v6
 
@@ -638,12 +676,45 @@ jobs:
 
       # The runner image carries git, cmake and a C compiler, which the
       # end-to-end cases of the mutation tool build a three-file project
-      # with; a case skips when one is missing.  test_gen_cats.py draws the
-      # cats with the Pillow the checked-in tables were made with.
-      - name: Install pytest
+      # with.  test_gen_cats.py draws the cats with the Pillow the
+      # checked-in tables were made with.  numpy, OpenCASCADE (cadquery-ocp)
+      # and OpenCV are what the cases of test_make_video.py,
+      # test_dial_base.py, test_panel_7b.py and test_ina228_xt90.py import;
+      # the model checks below the pytest step use the first two as well.
+      # A case whose tool or module is missing fails here and skips on a
+      # developer's machine (conftest.py, skip_or_fail and import_or_fail).
+      - name: Install pytest and the modules the cases import
         run: >-
           python3 -m pip install --quiet pytest==9.1.1 markdown-it-py==3.0.0
-          pillow==12.3.0
+          pillow==12.3.0 numpy==2.5.3 cadquery-ocp==8.0.1.1.0
+          opencv-python-headless==5.0.0.93
+
+      # test_check_protocols.py holds the check's reading of a .pio file
+      # to the C pioasm writes.  pioasm is built from the pinned pico-sdk
+      # tag, without the SDK's submodules, and cached on the tag.
+      - name: Restore pioasm
+        id: pioasm-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/pioasm
+          key: pioasm-${{ env.PICO_SDK_TAG }}-${{ runner.os }}-${{ runner.arch }}
+
+      - name: Build pioasm
+        if: steps.pioasm-cache.outputs.cache-hit != 'true'
+        run: |
+          git clone --quiet --depth 1 -b "$PICO_SDK_TAG" \
+            https://github.com/raspberrypi/pico-sdk.git "$RUNNER_TEMP/pico-sdk"
+          cmake -S "$RUNNER_TEMP/pico-sdk/tools/pioasm" \
+            -B "$RUNNER_TEMP/pioasm-build" \
+            -DPIOASM_VERSION_STRING="$PICO_SDK_TAG"
+          cmake --build "$RUNNER_TEMP/pioasm-build" -j"$(nproc)"
+          mkdir -p ~/pioasm
+          cp "$RUNNER_TEMP/pioasm-build/pioasm" ~/pioasm/pioasm
+
+      - name: pioasm is the pinned release
+        run: |
+          ~/pioasm/pioasm --version | grep -F "$PICO_SDK_TAG"
+          echo "PIOASM=$HOME/pioasm/pioasm" >> "$GITHUB_ENV"
 
       # test/tools/test_doc_check.py runs Doxygen on a scratch tree.
       # The archive is 115MB; the cache holds it, and the script checks
@@ -663,18 +734,17 @@ jobs:
       # The checks are a gate, so each rule of a check has a case that
       # breaks it: a flag taken out of the sanitizer build, a source left
       # out of the coverage measurement, a number in a page that differs
-      # from its constant, an overflow that is not a known one.
+      # from its constant, an overflow that is not a known one.  -rs lists
+      # every skipped case with its reason.
       - name: pytest
-        run: python3 -m pytest test/tools -q
+        run: python3 -m pytest test/tools -q -rs
 
       # The STEP models of the KiCad library and of hardware/mechanical are
       # text the generators write; OpenCASCADE reads each back and checks
       # its solids and colours, and a module's bounding box, against the
       # spec.
       - name: The KiCad STEP models load in OpenCASCADE
-        run: |
-          python3 -m pip install --quiet cadquery-ocp==8.0.1.1.0
-          python3 hardware/kicad/tools/step_check.py
+        run: python3 hardware/kicad/tools/step_check.py
 
       # The models of the panel board and of the INA228 module in its case
       # are drawn part by part from measured boxes and from shapes of
@@ -686,20 +756,16 @@ jobs:
       # The two parts of the M5Stack Dial's base are built with
       # OpenCASCADE: the files match their spec, each is a valid solid,
       # and neither shares volume with the dial, its nut or the cell.
-      # The base's tests need OpenCASCADE, which this job installs after
-      # its pytest step, where they are skipped; they run here.
+      # The base's tests are test/tools/test_dial_base.py, in the pytest
+      # step above.
       - name: Dial base matches its spec and clears dial, nut and cell
-        run: |
-          python3 hardware/mechanical/_gen_dial_base.py --check
-          python3 -m pytest test/tools/test_dial_base.py -q
+        run: python3 hardware/mechanical/_gen_dial_base.py --check
 
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
       # OpenCASCADE meshes each solid again; the two meshes are within
       # 0.15mm of each other both ways and 1% in volume.
       - name: The M5Stack Dial's solids follow M5Stack's mesh
-        run: |
-          python3 -m pip install --quiet numpy==2.5.3
-          python3 hardware/mechanical/check_refit.py
+        run: python3 hardware/mechanical/check_refit.py
 
   # The Doxygen comments of the C sources (CONTRIBUTING.md, "Comments").
   # Fails on a warning tools/doc_check_baseline.txt does not hold, on a
@@ -712,6 +778,16 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 10
     steps:
+      # A required check fails on a label other than `ci`: skipped, it
+      # would count as passed (the comment at `on:` above).
+      - name: The run was started by the label ci
+        if: github.event_name == 'pull_request' && github.event.label.name != 'ci'
+        env:
+          LABEL: ${{ github.event.label.name }}
+        run: |
+          echo "::error::the label '$LABEL' starts no CI run; take the label ci off and add it again"
+          exit 1
+
       - uses: actions/checkout@v6
         with:
           # The base branch has to be here to diff against.
@@ -746,7 +822,9 @@ jobs:
   # a survivor: the job fails only when the tool cannot run.  The run is bounded at 2700s by the tool's defaults.
   mutation:
     name: Mutation check of the changed lines (advisory)
-    if: github.event_name == 'pull_request' || (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
+    if: >-
+      (github.event_name == 'pull_request' && github.event.label.name == 'ci') ||
+      (github.event_name == 'workflow_dispatch' && github.ref != 'refs/heads/main')
     runs-on: ubuntu-26.04
     timeout-minutes: 60
     steps:
@@ -770,16 +848,28 @@ jobs:
           if-no-files-found: warn
 
   panel:
-    # The name is the status check the branch ruleset requires, and it
-    # stays "ESP-IDF v5.5.5" until the ruleset's required check is renamed
-    # to the same text as this name (tools/check_docs.py, PANEL_CHECK_NAME).
+    # The name is the status check the branch ruleset requires: the two
+    # change together (tools/check_docs.py, PANEL_CHECK_NAME).
     name: Panel (ESP-IDF v6.1, ESP32-P4)
     # The build carries the IOmcu and C6 images of this commit, and the
     # Dial's and the nodes' images, as the release does.
     needs: [iomcu, c6, dial, node]
+    # Also when a job above failed, was cancelled or was skipped: a skipped
+    # required check counts as passed, so this job runs and fails in its
+    # first step in place of being skipped.
+    if: ${{ always() }}
     runs-on: ubuntu-26.04
     timeout-minutes: 45
     steps:
+      - name: The IOmcu, C6, Dial and node builds succeeded
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "results: $RESULTS"
+          for r in $RESULTS; do
+            [ "$r" = success ] || { echo "::error::an image job ended as $r"; exit 1; }
+          done
+
       - uses: actions/checkout@v6
 
       # Inside firmware/panel, the directory the build runs in, so the
@@ -980,13 +1070,17 @@ jobs:
           if-no-files-found: error
 
   c6:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     uses: ./.github/workflows/c6.yml
 
   # The sensor nodes' firmware (node.yml): the power and balance nodes' images.
   node:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     uses: ./.github/workflows/node.yml
+
   # The M5Stack Dial's firmware, the wireless knob (dial.yml).
   dial:
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     uses: ./.github/workflows/dial.yml
 
   iomcu:
@@ -997,6 +1091,16 @@ jobs:
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
+      # A required check fails on a label other than `ci`: skipped, it
+      # would count as passed (the comment at `on:` above).
+      - name: The run was started by the label ci
+        if: github.event_name == 'pull_request' && github.event.label.name != 'ci'
+        env:
+          LABEL: ${{ github.event.label.name }}
+        run: |
+          echo "::error::the label '$LABEL' starts no CI run; take the label ci off and add it again"
+          exit 1
+
       - uses: actions/checkout@v6
 
       # The .deb files are cached because the Azure mirror serves at about
@@ -1148,6 +1252,7 @@ jobs:
     # A test-bench tool (testbench/touch-injector), built so it keeps
     # building.  Its UF2 is not uploaded and no release carries it.
     name: Touch injector (pico-sdk 2.3.0)
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     steps:
@@ -1204,6 +1309,7 @@ jobs:
     # Python needs its standard library only; the browser test is
     # test/web, on the Playwright version the configurator's tests use.
     name: Web file manager browser test
+    if: github.event_name != 'pull_request' || github.event.label.name == 'ci'
     runs-on: ubuntu-26.04
     timeout-minutes: 30
     defaults:
