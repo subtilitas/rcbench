@@ -136,15 +136,15 @@ TEST_CASE(the_row_names_the_first_reason_in_order)
     CHECK_EQ(fw_c6_row(NULL, NULL), FW_C6_ROW_NO_IMAGE);
     fw_c6_feed_t f = ready_feed();
     f.armed = f.supply = f.run = f.drawing = f.iomcu = f.installing = true;
-    f.radio_up = f.ble_starting = f.device = f.ending = true;
+    f.radio_up = f.ble_starting = f.device = f.prog = f.ending = true;
     static const fw_c6_why_t order[] = {
         FW_C6_WHY_ARMED, FW_C6_WHY_SUPPLY, FW_C6_WHY_RUN, FW_C6_WHY_DRAWING,
         FW_C6_WHY_IOMCU, FW_C6_WHY_INSTALL, FW_C6_WHY_RADIO, FW_C6_WHY_BLE,
-        FW_C6_WHY_DEVICE, FW_C6_WHY_ENDING,
+        FW_C6_WHY_DEVICE, FW_C6_WHY_PROG, FW_C6_WHY_ENDING,
     };
     bool *flags[] = { &f.armed, &f.supply, &f.run, &f.drawing, &f.iomcu,
                       &f.installing, &f.radio_up, &f.ble_starting,
-                      &f.device, &f.ending };
+                      &f.device, &f.prog, &f.ending };
     for (size_t i = 0; i < sizeof(order) / sizeof(order[0]); ++i) {
         fw_c6_why_t why = FW_C6_WHY_NONE;
         CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);
@@ -609,6 +609,112 @@ TEST_CASE(the_row_is_blocked_from_a_success_to_the_restart)
     CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_UPDATING);
 }
 
+/* D3: no update starts while a programmer holds a port. */
+TEST_CASE(a_programmer_on_a_port_blocks_the_update)
+{
+    fw_c6_feed_t f = ready_feed();
+    fw_c6_why_t why = FW_C6_WHY_NONE;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_READY);
+    f.prog = true;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);
+    CHECK_EQ(why, FW_C6_WHY_PROG);
+    /* The reinstall the same. */
+    f.known = true;
+    f.running = k_carried;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_BLOCKED);
+    CHECK_EQ(why, FW_C6_WHY_PROG);
+    f.prog = false;
+    CHECK_EQ(fw_c6_row(&f, &why), FW_C6_ROW_REINSTALL);
+}
+
+TEST_CASE(a_claimed_start_counts_as_a_held_port_for_2000ms_or_until_taken)
+{
+    fw_c6_prog_t c;
+    memset(&c, 0, sizeof(c));
+    CHECK(!fw_c6_prog_open(&c, false, 0u));
+    CHECK(fw_c6_prog_open(&c, true, 0u));
+    CHECK(!fw_c6_prog_open(&c, false, 1u));
+    /* Claimed: held before the link's status says so. */
+    const uint32_t t0 = 0xFFFFFFFFu - 500u;    /* across the wrap */
+    fw_c6_prog_claim(&c, t0);
+    CHECK(fw_c6_prog_open(&c, false, t0));
+    CHECK(fw_c6_prog_open(&c, false, t0 + FW_C6_PROG_CLAIM_MS - 1u));
+    CHECK(!fw_c6_prog_open(&c, false, t0 + FW_C6_PROG_CLAIM_MS));
+    /* Run out: an earlier clock does not bring it back. */
+    CHECK(!fw_c6_prog_open(&c, false, t0 + 1u));
+    /* The port reads taken: the status decides alone from there. */
+    fw_c6_prog_claim(&c, 100u);
+    CHECK(fw_c6_prog_open(&c, true, 105u));
+    CHECK(!fw_c6_prog_open(&c, false, 110u));
+    /* A refused start gives the claim back at once. */
+    fw_c6_prog_claim(&c, 200u);
+    fw_c6_prog_release(&c);
+    CHECK(!fw_c6_prog_open(&c, false, 200u));
+    CHECK(FW_C6_PROG_CLAIM_MS > 1000u);        /* LINK_HOST_TIMEOUT_MS */
+}
+
+/*
+ * A session's start on the control task against the update's hold on the
+ * render side, in every order of their four steps.  Each side publishes its
+ * flag (P) and then reads the other's (R): control Pc Rc, render Pr Rr.
+ * The side that reads before the other published starts; of two that both
+ * published, the first to read is refused and withdraws.  Never do both
+ * start, in any order.
+ */
+TEST_CASE(a_session_start_and_an_update_start_never_both_pass)
+{
+    /* The six interleavings that keep each side's P before its R:
+     * 'c' a control step, 'r' a render step. */
+    static const char *const orders[] = { "ccrr", "crcr", "crrc",
+                                          "rccr", "rcrc", "rrcc" };
+    unsigned session_won = 0u, update_won = 0u;
+    for (size_t i = 0; i < sizeof(orders) / sizeof(orders[0]); ++i) {
+        bool busy = false;            /* render's flag: panel_c6_busy() */
+        bool open = false;            /* control's flag: s_prog_open    */
+        fw_c6_prog_t claim;
+        memset(&claim, 0, sizeof(claim));
+        unsigned cs = 0u, rs = 0u;
+        bool session = false, update = false;
+        for (const char *p = orders[i]; *p != '\0'; ++p) {
+            if (*p == 'c' && cs++ == 0u) {
+                fw_c6_prog_claim(&claim, 10u);
+                open = fw_c6_prog_open(&claim, false, 10u);
+            } else if (*p == 'c') {
+                session = !fw_c6_refuses(busy, FW_C6_ASK_SESSION);
+                if (!session) {
+                    fw_c6_prog_release(&claim);
+                    open = fw_c6_prog_open(&claim, false, 10u);
+                }
+            } else if (rs++ == 0u) {
+                busy = true;
+            } else {
+                fw_c6_feed_t f = ready_feed();
+                f.prog = open;
+                update = fw_c6_row(&f, NULL) == FW_C6_ROW_READY;
+                busy = update;
+            }
+        }
+        CHECK(!(session && update));
+        session_won += session ? 1u : 0u;
+        update_won += update ? 1u : 0u;
+    }
+    /* The session in the orders where the control task reads last or
+     * before the render side publishes (ccrr, crrc, rcrc); the update in
+     * the other three. */
+    CHECK_EQ(session_won, 3u);
+    CHECK_EQ(update_won, 3u);
+    /* And with the flag left up after a refusal, as the firmware leaves
+     * s_prog_open until its next look: both refused, never both started. */
+    bool busy = true;                       /* render published        */
+    fw_c6_prog_t claim;
+    fw_c6_prog_claim(&claim, 10u);          /* control published       */
+    const bool open = true;
+    CHECK(fw_c6_refuses(busy, FW_C6_ASK_SESSION));
+    fw_c6_feed_t f = ready_feed();
+    f.prog = open;
+    CHECK_EQ(fw_c6_row(&f, NULL), FW_C6_ROW_BLOCKED);
+}
+
 TEST_CASE(a_quiet_bench_gets_the_note_at_once_and_the_restart_after_3000ms)
 {
     fw_c6_restart_t r;
@@ -721,6 +827,9 @@ int main(void)
     RUN(an_image_one_byte_short_of_a_run_is_one_short_write);
     RUN(arm_supply_on_prog5v_on_and_a_session_are_refused_while_busy);
     RUN(the_row_is_blocked_from_a_success_to_the_restart);
+    RUN(a_programmer_on_a_port_blocks_the_update);
+    RUN(a_claimed_start_counts_as_a_held_port_for_2000ms_or_until_taken);
+    RUN(a_session_start_and_an_update_start_never_both_pass);
     RUN(a_quiet_bench_gets_the_note_at_once_and_the_restart_after_3000ms);
     RUN(the_note_and_the_restart_wait_for_a_quiet_bench);
     RUN(a_bench_that_stops_being_quiet_inside_the_3000ms_holds_the_restart);

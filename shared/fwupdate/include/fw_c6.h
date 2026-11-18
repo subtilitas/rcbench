@@ -115,6 +115,8 @@ typedef enum {
     FW_C6_WHY_RADIO,       /**< Wi-Fi is on, or a session asks for it     */
     FW_C6_WHY_BLE,         /**< Bluetooth LE's start (blestart) runs      */
     FW_C6_WHY_DEVICE,      /**< a wireless device's update runs on the C6 */
+    FW_C6_WHY_PROG,        /**< a servo or ESC programmer holds a port, or
+                                a session's start is claimed              */
     FW_C6_WHY_ENDING,      /**< a step of an ended update is still in a call,
                                 or the restart after a success is due     */
 } fw_c6_why_t;
@@ -140,6 +142,8 @@ typedef struct {
     bool         radio_up;    /**< !wifi_access_down()                    */
     bool         ble_starting; /**< panel_ble_state() is STARTING         */
     bool         device;      /**< a wireless device's update runs        */
+    bool         prog;        /**< fw_c6_prog_open(): a programmer holds a
+                                   port or a session's start is claimed   */
 } fw_c6_feed_t;
 
 /**
@@ -326,6 +330,65 @@ typedef enum {
  * @return true when the ask is refused; the caller says why
  */
 bool fw_c6_refuses(bool busy, fw_c6_ask_t ask);
+
+/* ----------------------------------- a programmer session and the update */
+
+/** @brief How long a session's start counts as a held port before the
+ *         link's status shows the port taken, ms: above one unanswered
+ *         exchange of LINK_HOST_TIMEOUT_MS (1000ms) and the status read
+ *         after it. */
+#define FW_C6_PROG_CLAIM_MS 2000u
+
+/**
+ * @brief A programmer session's start, claimed before the port reads taken.
+ *
+ * The update and a session exclude each other, and they start on two tasks.
+ * Each side first publishes its own flag and then reads the other's:
+ *
+ * - the control task, on a session's start: fw_c6_prog_claim() and the
+ *   published fw_c6_prog_open(), then fw_c6_refuses(busy,
+ *   FW_C6_ASK_SESSION);
+ * - the render side, on the update's hold: busy published, then
+ *   fw_c6_row() with fw_c6_feed_t.prog.
+ *
+ * The side that publishes and reads before the other publishes starts, and
+ * the other is refused.  When both publish before either reads, the first
+ * to read is refused; the second starts only if the first has withdrawn its
+ * flag by then.  Never do both start.
+ */
+typedef struct {
+    bool     on;        /**< a start is claimed                            */
+    uint32_t since_ms;  /**< when                                          */
+} fw_c6_prog_t;
+
+/**
+ * @brief A session's start is about to be judged: counts as a held port
+ *        from here.
+ * @param c      the claim
+ * @param now_ms now
+ */
+void fw_c6_prog_claim(fw_c6_prog_t *c, uint32_t now_ms);
+
+/**
+ * @brief The start was refused: the claim ends.
+ * @param c the claim
+ */
+void fw_c6_prog_release(fw_c6_prog_t *c);
+
+/**
+ * @brief Whether a programmer counts as holding a port for the update's
+ *        gates: the link says a port is taken, or a start was claimed less
+ *        than FW_C6_PROG_CLAIM_MS ago.
+ *
+ * A port that reads taken ends the claim: from there the link's status
+ * decides alone.
+ *
+ * @param c      the claim
+ * @param taken  the link's status says a programmer holds a port
+ * @param now_ms now
+ * @return true while a port is held or a start is claimed
+ */
+bool fw_c6_prog_open(fw_c6_prog_t *c, bool taken, uint32_t now_ms);
 
 /* ------------------------------------------- the restart after a success */
 

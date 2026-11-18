@@ -7742,7 +7742,8 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet, bis das WLAN des Panels aus ist.` | Eine Prüfung, ein Download oder WI-FI hat den Funk an. |
 | `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
 | `Das C6-Update wartet auf das Ende des Funkgeräte-Updates.` | Das Update eines Dial läuft oder wurde angefordert ([Das Dial](#das-dial)). |
-| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
+| `Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.` | Eine KST-, Hitec- oder ESC-Programmierung belegt einen Port, oder eine Sitzung startet. |
+| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück, oder das Update ist beendet und der Neustart des Panels steht an. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
 angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die

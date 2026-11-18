@@ -8771,6 +8771,9 @@ UI_TEXT(C6_WHY_BLE, 94,
 UI_TEXT(C6_WHY_DEVICE, 94,
     "The C6 update waits for the wireless device update to finish.",
     "Das C6-Update wartet auf das Ende des Funkgeräte-Updates.")
+UI_TEXT(C6_WHY_PROG, 94,
+    "The C6 update requires the servo and ESC programmers closed. Select LEAVE there first.",
+    "Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.")
 UI_TEXT(C6_WHY_ENDING, 94,
     "The C6 update waits for the C6 radio's last answer.",
     "Das C6-Update wartet auf die letzte Antwort des C6-Funks.")

@@ -7130,7 +7130,8 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on. |
 | `The C6 update waits: Bluetooth is starting.` | Bluetooth LE's start task `blestart` runs. |
 | `The C6 update waits for the wireless device update to finish.` | A Dial's update runs or was asked for ([The Dial](#the-dial)). |
-| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
+| `The C6 update requires the servo and ESC programmers closed. Select LEAVE there first.` | A KST, Hitec or ESC programmer holds a port, or a session starts. |
+| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call, or the update ended and the panel's restart is due. |
 
 A C6 that reports no version, as the shipped one does, is offered the
 update. A C6 that reports the carried version is offered the reinstall:

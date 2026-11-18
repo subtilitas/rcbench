@@ -20,7 +20,8 @@
  * IOmcu's update wait.  An update that ends FW_C6_RES_UPDATED restarts the
  * panel, so the host side and the C6 start their link afresh: 3s later at
  * the earliest, and only on a bench that is SAFE with the supply and the
- * PROG ports' 5V off and no programmer holding a port.  The update run's
+ * PROG ports' 5V off and no programmer holding a port; no update starts
+ * while a programmer holds one (FW_C6_WHY_PROG).  The update run's
  * note, a flash write, waits for the same bench (fw_c6_restart_step()).
  * Every other end leaves the panel running,
  * the C6 on the firmware it ran, and Wi-Fi usable (except after a failed
@@ -332,6 +333,9 @@ static fw_c6_feed_t feed_now(bool armed)
     f.ble_starting = panel_ble_state() == PANEL_BLE_STARTING;
     /* A wireless device's update runs on the C6's controller. */
     f.device = panel_devupd_busy();
+    /* A programmer on a port, or a session's start claimed: the restart
+     * would end its session.  Read after s_busy is set (start_update()). */
+    f.prog = atomic_load(&s_prog_open);
     return f;
 }
 

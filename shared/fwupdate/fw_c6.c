@@ -55,6 +55,9 @@ static fw_c6_why_t bench_why(const fw_c6_feed_t *f)
     if (f->device) {
         return FW_C6_WHY_DEVICE;
     }
+    if (f->prog) {
+        return FW_C6_WHY_PROG;
+    }
     return f->ending ? FW_C6_WHY_ENDING : FW_C6_WHY_NONE;
 }
 
@@ -95,6 +98,29 @@ fw_c6_row_t fw_c6_row(const fw_c6_feed_t *f, fw_c6_why_t *why)
 bool fw_c6_refuses(bool busy, fw_c6_ask_t ask)
 {
     return busy && ask != FW_C6_ASK_OFF;
+}
+
+void fw_c6_prog_claim(fw_c6_prog_t *c, uint32_t now_ms)
+{
+    c->on = true;
+    c->since_ms = now_ms;
+}
+
+void fw_c6_prog_release(fw_c6_prog_t *c)
+{
+    c->on = false;
+}
+
+bool fw_c6_prog_open(fw_c6_prog_t *c, bool taken, uint32_t now_ms)
+{
+    if (taken) {
+        c->on = false;
+        return true;
+    }
+    if (c->on && (uint32_t)(now_ms - c->since_ms) >= FW_C6_PROG_CLAIM_MS) {
+        c->on = false;
+    }
+    return c->on;
 }
 
 void fw_c6_restart_due(fw_c6_restart_t *r, uint32_t now_ms)

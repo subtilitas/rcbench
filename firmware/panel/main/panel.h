@@ -1759,9 +1759,18 @@ extern atomic_uint s_arms_sent;
  *         (arms_taken_publish()); send_cmd() counts an ARM a full queue
  *         dropped. */
 extern atomic_uint s_arms_taken;
-/** @brief A servo or ESC programmer holds a port (s_prog_taken), for the
- *         render side; control task writes, in kst_port_look(). */
+/** @brief A servo or ESC programmer holds a port (s_prog_taken) or a
+ *         session's start is claimed (fw_c6_prog_open()), for the render
+ *         side; control task writes, in kst_port_look() and
+ *         prog_start_refused_c6(). */
 extern atomic_bool s_prog_open;
+/**
+ * @brief A programmer session's start, judged against the C6 radio's
+ *        update: claims the start for the update's gate, then refuses it
+ *        with the band's alert while the update is busy.  Control task.
+ * @return true when the start is refused: the caller answers BUSY
+ */
+bool prog_start_refused_c6(void);
 /**
  * @brief Whether the supply's output is on, stored by the control task when
  *        it switches.

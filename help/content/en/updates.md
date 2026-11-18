@@ -215,7 +215,7 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 
 Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and Bluetooth: `C6 radio: not reported. Included: 2.13.0.` The first version is the one the C6 named at the first Wi-Fi start since the panel started; the shipped C6 names none. HOLD 2s TO UPDATE THE C6 RADIO sends the carried image over the board's SDIO (Secure Digital input/output) link; the button then reads `C6 UPDATE 37%`.
 
-The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, and Wi-Fi off. On a C6 that reports the carried version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
+The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, no servo or ESC programmer holding a port, and Wi-Fi off. On a C6 that reports the carried version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
 
 While the update runs, ARM, the supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused, and Wi-Fi stays off. It ends with one alert:
 

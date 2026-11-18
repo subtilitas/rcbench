@@ -153,7 +153,8 @@ zum C6 nicht ausgefallen ist, die Bench SAFE ist und kein ARM wartet, der
 Netzteilausgang aus ist, kein Aufzeichnungslauf offen ist, keine
 Platinenzeichnung geladen wird, weder das IOmcu-Update noch Download oder
 Installation des Panels laufen, das WLAN aus ist, die Start-Task `blestart`
-von Bluetooth LE nicht läuft und kein Update eines Funkgeräts läuft
+von Bluetooth LE nicht läuft, kein Update eines Funkgeräts läuft und keine
+Servo- oder ESC-Programmierung einen Port belegt
 ([Bildschirme: Die Funkgeräte](Screens-de.md#die-funkgeräte)). Ein Tippen auf das graue Halten zeigt den Grund
 im Alarmband. Das Update läuft auf der Task `c6upd` (Kern 0, Priorität 2, Stack
 4 096 Bytes, beim ersten Update angelegt), ein Schritt nach dem anderen:
@@ -197,9 +198,14 @@ einem Alarm abgelehnt:
 | Start einer Programmierung: KST CONNECT, Hitec öffnen, ESC über die Signalleitung öffnen und betreten | `Programmierung nicht gestartet: Das C6-Funk-Update läuft.` |
 
 AUS, DISARM, STOP und das VERLASSEN einer Programmierung werden nie abgelehnt.
-Eine Programmierung, die vor dem Start des Updates offen ist, beendet das
-Update nicht; der Neustart wartet auf ihr VERLASSEN. Die Dauer eines Updates ist
-nicht gemessen.
+Kein Update startet, solange eine Programmierung einen Port belegt: Das
+Halten ist grau mit `Das C6-Update erfordert geschlossene Servo- und
+ESC-Programmierung. Wähle dort VERLASSEN.`. Start einer Programmierung und
+Halten des Updates im selben 5-ms-Durchlauf der Control-Task starten nie
+beide: Jede Task veröffentlicht ihr Flag, bevor sie das der anderen liest,
+also wird mindestens einer der beiden abgelehnt. Eine gestartete
+Programmierung zählt 2 000ms lang als belegter Port, oder bis der IOmcu den
+Port als belegt meldet. Die Dauer eines Updates ist nicht gemessen.
 
 Konsolenzeilen, Tag `rcbench`:
 

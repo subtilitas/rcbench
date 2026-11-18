@@ -22,7 +22,6 @@
 #include "arming.h"
 #include "esc_link.h"
 #include "esc_prog.h"
-#include "fw_c6.h"
 #include "link_host.h"
 #include "link_pages.h"
 #include "outputs.h"
@@ -65,9 +64,7 @@ static void esc_command(const esc_prog_cmd_t *c)
         return;
     }
     if ((c->kind == ESC_PROG_CMD_OPEN || c->kind == ESC_PROG_CMD_ENTER)
-        && fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_SESSION)) {
-        /* The C6 radio's update ends in a restart of the panel. */
-        control_alert(TR(ALERT_PROG_C6));
+        && prog_start_refused_c6()) {
         s_esc_answer = (uint8_t)ESC_LINK_START_BUSY;
         s_esc_answer_id = c->id;
         return;

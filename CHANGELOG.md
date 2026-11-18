@@ -120,6 +120,22 @@ history is in git.
 
 ### Fixed
 
+- C6 radio update: from its start to the panel's restart the supply's
+  OUTPUT ON, PROG 5V ON and a programmer session's start are refused with
+  an alert, as ARM is. No update starts while a servo or ESC programmer
+  holds a port. After a success the update run's note and the restart wait
+  for a bench that is SAFE with the supply output and PROG 5V off and no
+  programmer on a port; the band reads `C6 radio updated to <version>. The
+  panel restarts once SAFE with all outputs off.`. From the success to the
+  restart the C6 step shows no live hold.
+- Panel flash writes: an ARM queued earlier in a frame holds back that
+  frame's settings save, Wi-Fi settings write, run note erase and trial
+  keep.
+- Panel install: the wait for the control task is 1500ms, above one
+  unanswered link exchange of 1000ms. A wait that runs out ends the
+  install with `install of <version> failed: the control task did not stand still` on
+  the console, with nothing written.
+
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,
