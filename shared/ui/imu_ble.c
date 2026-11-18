@@ -90,8 +90,17 @@ bool imu_ble_scan(imu_ble_t *l, uint32_t now_ms)
     l->hidden = 0u;
     l->op_err = IMU_ERR_NONE;
     l->op_code = 0u;
+    l->scan_cut = false;
     l->scan_open = bleu_scan(&l->b, now_ms);
     return l->scan_open;
+}
+
+void imu_ble_scan_stop(imu_ble_t *l, uint32_t now_ms)
+{
+    if (l->b.scanning) {
+        bleu_scan_stop(&l->b, now_ms);
+        l->scan_cut = true;
+    }
 }
 
 bool imu_ble_bind(imu_ble_t *l, uint8_t i, uint32_t now_ms,
@@ -147,7 +156,7 @@ static void take_scan(imu_ble_t *l)
     if (l->b.scan_status != 0u) {
         l->op_err = IMU_ERR_SCAN;
         l->op_code = l->b.scan_status;
-    } else if (l->found_n == 0u) {
+    } else if (l->found_n == 0u && !l->scan_cut) {
         l->op_err = IMU_ERR_NONE_FOUND;
     }
 }

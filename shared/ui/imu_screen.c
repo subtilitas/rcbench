@@ -123,7 +123,8 @@ static void post(imu_cmd_kind_t kind, uint8_t arg);
 /**
  * @brief A search's SCAN, owed since Bluetooth LE was not running: queued
  *        once it runs and nothing scans or calibrates; dropped by IMU OFF,
- *        a C6 that failed or a scan that runs anyway.
+ *        a C6 that failed, Bluetooth without sync with the C6, a bench
+ *        that is ARMED or a scan that runs anyway.
  */
 static void search_follow(void)
 {
@@ -131,8 +132,10 @@ static void search_follow(void)
         return;
     }
     if (!settings_get_bool(SET_IMU_EN) || ims.v.link == IMU_LINK_C6_FAILED
-        || ims.v.link == IMU_LINK_SCANNING) {
+        || ims.v.link == IMU_LINK_NO_BT || ims.v.link == IMU_LINK_SCANNING
+        || ui_router_status()->armed) {
         ims.scan_owed = false;
+        touched();
         return;
     }
     if (at_free()) {
@@ -222,6 +225,11 @@ bool imu_view_bound_linked(const imu_view_t *v)
 
 bool imu_screen_search(void)
 {
+    if (ui_router_status()->armed) {
+        /* As the Dial's and the node's scans: none while ARMED. */
+        ui_router_set_alert(TR(IMU_SCAN_ARMED));
+        return false;
+    }
     if (ims.v.link == IMU_LINK_C6_FAILED || ims.v.link == IMU_LINK_NO_BT
         || ims.v.link == IMU_LINK_SCANNING) {
         return false;
@@ -525,12 +533,16 @@ static void act(int hit)
     case IMS_ROW_RESCAN:
         /* With the IMU off it is switched on, and the scan waits for
          * Bluetooth LE to run. */
-        (void)imu_screen_search();
-        ims.list = true;
+        if (imu_screen_search() || !ui_router_status()->armed) {
+            ims.list = true;
+        }
         break;
     case IMS_ROW_ZERO:   post(IMU_CMD_ZERO, 0u);   break;
     case IMS_ROW_UNZERO: post(IMU_CMD_UNZERO, 0u); break;
-    case IMS_ROW_CLOSE:  ims.list = false;         break;
+    case IMS_ROW_CLOSE:
+        ims.list = false;
+        ims.scan_owed = false;      /* the search ends with its list */
+        break;
     case IMS_ROW_SETTINGS:
         /* SETUP's home tag comes back here (ui_router_parent()). */
         ui_router_goto(SCREEN_SETUP);

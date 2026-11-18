@@ -292,9 +292,9 @@ TEST_CASE(imu_off_fails_the_calibration_and_counts_a_kept_zero)
     s.out_n = 0u;
     imu_sensor_off(&s);
     CHECK_EQ(s.cal, IMU_CAL_FAILED);
-    CHECK_EQ(s.out_n, 3u);
-    CHECK(is_cmd(s.out[(s.out_head + 1u) % IMU_OUTBOX], WIT_REG_CALSW,
-                 WIT_CAL_EXIT));
+    /* The exit is due at the next connection, not held across the link. */
+    CHECK_EQ(s.out_n, 0u);
+    CHECK(s.exit_due);
     CHECK_EQ(s.zero_gen, 2u);
     CHECK(!s.m.r.valid);
     CHECK(!s.m.r.zeroed);
@@ -363,8 +363,6 @@ TEST_CASE(a_failed_write_brings_back_its_group_at_the_next_connection)
     CHECK(!s.exit_due);
     CHECK(!s.held);
     CHECK_EQ(s.out_n, 3u);                            /* the exit queued */
-    imu_sensor_off(&s);                               /* nothing more */
-    CHECK_EQ(s.out_n, 3u);
     CHECK(imu_sensor_next(&s, 1000u, c));             /* its unlock goes */
     imu_sensor_values(&s, WIT_RATE_20HZ, true, true); /* RATE due */
     imu_sensor_flush(&s);                             /* the unlock failed */
