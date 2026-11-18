@@ -587,8 +587,9 @@ to dismiss it earlier. The hint fits on one line of at most 97 characters.
 
 A short tap is not a fault, so the hint is a notice. Alerts take priority:
 while an alert is visible, one notice waits, the latest, and shows for its
-own 4s once the alert has cleared. An arriving alert replaces a visible
-hint.
+own 4s once the alert has cleared. A notice that has waited 30s
+(`UI_NOTICE_WAIT_S`) is dropped, and so is one that waits when the screen
+changes. An arriving alert replaces a visible hint.
 
 - The hint appears only when the finger lifts while still on the button. It does
   not show when the finger left the button first (the hold is abandoned),
@@ -3749,7 +3750,10 @@ the header's unit, in brackets or after an underscore (`time_ms`, `t_us`,
 `elapsed_s`), else a guess from the span of its values. A rising first
 column named as a counter (`step`, `row`, `index`, `sample`, `count`, `n`,
 `#`) is not a time column: `RUDDRnnn.CSV`, which starts with `step`, plots
-against the row index, and the cursor reads the row.
+against the row index, and the cursor reads the row. The plot's header
+line gives the name, the rows, the duration and the sample rate
+(`MOTOR001.CSV   400 ROWS   4.00s   100Hz`); for a file without a time
+column it gives the name and the rows (`RUDDR012.CSV   6 ROWS`).
 
 SETUP > PANEL > One finger pans, off by default, allows single-finger
 panning when zoomed in. Moving more than 10px from the starting point
@@ -8195,7 +8199,9 @@ PIN and leave the card up. A second finger on the card takes the press; one
 off the card closes it. For 400ms after MOVE PIN or CANCEL closes the card,
 a press inside the card's former box is spent in both views: the second tap
 of a double tap ticks no key or cell under the card (`test_pin_take`,
-`test_pin_take_grid`). STOP stays live on the band. In the board view the
+`test_pin_take_grid`). A press on PORT PWM OFF with the pulse on is not
+spent: it stops the pulse inside the box as outside. STOP stays live on the
+band. In the board view the
 Dial lists MOVE PIN and CANCEL while the card is up, starting on CANCEL.
 
 The IOmcu refuses a slot change on an ARMED bank and a binding write while

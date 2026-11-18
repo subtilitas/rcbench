@@ -14,6 +14,7 @@
  * - the_grid_card_fits_in_both_languages
  * - a_refused_tap_on_the_grid_shows_its_own_reason
  * - a_second_tap_on_move_pin_binds_no_cell_under_the_card
+ * - port_pwm_off_acts_inside_the_grid_cards_closed_box
  *
  * SPDX-License-Identifier: MIT
  */
@@ -23,6 +24,7 @@
 #include "outputs_screen_rig.h"
 
 #include "pin_take.h"
+#include "port_view.h"
 #include "ui_board.h"
 
 /* outputs_screen_int.h's, whose layout macros the rig's mirror: which
@@ -377,6 +379,64 @@ TEST_CASE(a_second_tap_on_move_pin_binds_no_cell_under_the_card)
     CHECK_EQ(s_applied, 1);
 }
 
+/** @brief One touch event of contact 0 at (@p x, @p y). */
+static void ev(touch_event_type_t type, int x, int y)
+{
+    touch_event_t e = { type, { 0u, (int16_t)x, (int16_t)y, 40 }, 0u };
+    scr()->event(&e);
+}
+
+/* PORT PWM OFF is a stop: its press acts inside the box of a card closed
+ * less than 400ms ago, and the tap on ON beside it is spent.  The grid's
+ * card lies over the cells and a pick of a port's entry ends the wait:
+ * the case opens the card over the column with pin_take_tap() itself. */
+TEST_CASE(port_pwm_off_acts_inside_the_grid_cards_closed_box)
+{
+    const outbind_t b = three();
+    grid(&b, "SERVO PWM");
+    const uint8_t pins[4] = { 13u, OUTPUTS_NO_PIN, OUTPUTS_NO_PIN,
+                              OUTPUTS_NO_PIN };
+    outputs_screen_set_prog_ports(1u, pins);
+    port_view_t v;
+    port_view_unknown(&v);
+    v.count = 1u;
+    v.has_func = true;
+    v.pin[0] = 13u;
+    v.func[0] = (uint8_t)LINK_PG_FN_SERVO_PWM;
+    port_view_set(&v);
+    outputs_screen_select_port(0u);
+    CHECK_EQ(outputs_screen_port_shown(), 0);
+    settings_set(SET_SERVO_TARGET, 1.0f);
+    settings_set(SET_SERVO_PORT_PWM, 1.0f);
+
+    const outbind_take_ctx_t ctx = bare_ctx();
+    const gfx_rect_t box = gfx_rect_make(0, 0, SCREEN_W, OU_FOOT);
+    CHECK(pin_take_tap(PIN_TAKE_GRID, &b, idx(1), &ctx, box));
+    CHECK(pin_take_open_in(PIN_TAKE_GRID));
+    tap_at(pin_take_button(PIN_TAKE_BTN_CANCEL));
+    CHECK(!pin_take_is_open());
+    touch_event_t down = { TOUCH_EVENT_DOWN,
+                           { 0u, (int16_t)OU_SEG_X(1), (int16_t)OU_PWM_Y,
+                             40 }, 0u };
+    CHECK(pin_take_spends(PIN_TAKE_GRID, &down));
+
+    ev(TOUCH_EVENT_DOWN, OU_SEG_X(1), OU_PWM_Y);
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    ev(TOUCH_EVENT_UP, OU_SEG_X(1), OU_PWM_Y);
+    /* ON starts the pulse and is no stop: its tap in the box is spent. */
+    tap(OU_SEG_X(0), OU_PWM_Y);
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    scr()->tick(0.4f);
+    tap(OU_SEG_X(0), OU_PWM_Y);
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK_EQ(s_applied, 0);
+
+    port_view_unknown(&v);
+    port_view_set(&v);
+    outputs_screen_set_prog_ports(OUTPUTS_PORTS_UNKNOWN, NULL);
+    settings_init();
+}
+
 int main(void)
 {
     RUN(a_tap_on_a_held_cell_asks_beside_it);
@@ -388,5 +448,6 @@ int main(void)
     RUN(the_grid_card_fits_in_both_languages);
     RUN(a_refused_tap_on_the_grid_shows_its_own_reason);
     RUN(a_second_tap_on_move_pin_binds_no_cell_under_the_card);
+    RUN(port_pwm_off_acts_inside_the_grid_cards_closed_box);
     return test_summary("pin_take_grid");
 }

@@ -632,7 +632,9 @@ passt in eine Zeile mit höchstens 97 Zeichen.
 Ein kurzer Tipp ist keine Störung; der Hinweis ist deshalb eine Mitteilung.
 Alarme haben Vorrang: Solange ein Alarm sichtbar ist, wartet eine
 Mitteilung, die jüngste, und erscheint für ihre eigenen 4s, sobald der Alarm
-gelöscht ist. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
+gelöscht ist. Eine Mitteilung, die 30s gewartet hat (`UI_NOTICE_WAIT_S`),
+entfällt, ebenso eine wartende bei einem Wechsel des Bildschirms. Ein
+eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 
 - Der Hinweis erscheint nur, wenn du den Finger auf der Taste loslässt.
   Er erscheint nicht nach dem Herausgleiten, bei verlorener Berührung,
@@ -1670,7 +1672,7 @@ Herstellerliste zeigt dasselbe Kennzeichen in ihrer Kopfzeile rechts von
 | Kennzeichen | Steht, solange |
 | --- | --- |
 | `START BRAUCHT PD MINI` | das Netzteil das Modell des Panels ist |
-| `GAS-PIN NICHT GELESEN` | die Ausgangszuordnung nicht gelesen ist |
+| `PIN NICHT AUSGELESEN` | die Ausgangszuordnung nicht ausgelesen ist |
 | `KEIN GAS-PIN` | kein Pin als Gas zugeordnet ist |
 | `KEINE PIEPTONQUELLE` | weder der Phasenabgriff läuft noch ein INA3221-Kanal auf NETZTEIL liest |
 
@@ -4060,7 +4062,10 @@ Unterstrich (`time_ms`, `t_us`, `elapsed_s`), sonst eine Schätzung aus der
 Spanne ihrer Werte. Eine steigende erste Spalte mit dem Namen eines Zählers
 (`step`, `row`, `index`, `sample`, `count`, `n`, `#`) ist keine Zeitspalte:
 `RUDDRnnn.CSV` beginnt mit `step`, wird über dem Zeilenindex gezeichnet,
-und der Cursor zeigt die Zeile.
+und der Cursor zeigt die Zeile. Die Kopfzeile des Diagramms nennt Name,
+Zeilen, Dauer und Abtastrate (`MOTOR001.CSV   400 ZEILEN   4.00s   100Hz`);
+bei einer Datei ohne Zeitspalte nennt sie Name und Zeilen
+(`RUDDR012.CSV   6 ZEILEN`).
 
 SETUP > PANEL > Ein Finger schiebt ist standardmäßig aus. Eingeschaltet
 erlaubt es das Verschieben vergrößerter Ausschnitte mit einem Finger.
@@ -8857,7 +8862,9 @@ zweiter Finger auf der Karte übernimmt den Druck, einer neben der Karte
 schließt sie. 400ms lang, nachdem PIN VERSCHIEBEN oder ABBRECHEN die Karte
 geschlossen hat, ist ein Druck in der früheren Fläche der Karte in beiden
 Ansichten verbraucht: der zweite Tipp eines Doppeltipps wählt keine Taste
-und keine Zelle unter der Karte (`test_pin_take`, `test_pin_take_grid`). STOP im Band bleibt wirksam. In der Platinenansicht führt das
+und keine Zelle unter der Karte (`test_pin_take`, `test_pin_take_grid`).
+Ein Druck auf PORT-PWM AUS bei eingeschaltetem Puls ist nicht verbraucht:
+er beendet den Puls in der Fläche wie außerhalb. STOP im Band bleibt wirksam. In der Platinenansicht führt das
 Dial PIN VERSCHIEBEN und ABBRECHEN, solange die Karte offen ist, beginnend
 bei ABBRECHEN.
 

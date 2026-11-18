@@ -21,6 +21,8 @@
  * - the_latest_notice_waits_and_shows_once
  * - a_notice_waits_behind_a_held_alert_and_a_passing_one
  * - stop_and_a_switch_to_safe_drop_the_waiting_notice
+ * - a_screen_change_drops_the_waiting_notice
+ * - a_notice_that_waited_30_s_is_dropped
  * - a_tap_on_the_alert_clears_it_and_reaches_no_screen
  * - a_lift_clears_only_the_alert_it_was_pressed_on
  * - a_press_on_an_alert_that_expires_stays_off_the_screen
@@ -643,6 +645,77 @@ TEST_CASE(stop_and_a_switch_to_safe_drop_the_waiting_notice)
     ui_router_set_status(&st);
 }
 
+/* A notice that waits answers a tap on the screen it was raised on: a
+ * change of screen drops it, behind a held alert and behind a passing one.
+ * A notice that shows stays over the change. */
+TEST_CASE(a_screen_change_drops_the_waiting_notice)
+{
+    fresh();
+    to_overview();
+    ui_router_hold_alert("touch did not answer -- the bench will not arm");
+    ui_action_refused("OPTIONS open on a SAFE bench only.");
+    ui_router_goto(SCREEN_MOTOR);
+    ui_router_hold_alert(NULL);
+    CHECK(ui_router_alert() == NULL);
+
+    to_overview();
+    ui_router_set_alert("PD mini output would not switch");
+    ui_router_set_notice("Stored 5min, steps of 5min.");
+    ui_router_goto(SCREEN_MOTOR);
+    CHECK_STR_EQ(ui_router_alert(), "PD mini output would not switch");
+    ui_router_set_alert(NULL);
+    CHECK(ui_router_alert() == NULL);
+
+    /* A screen that is not left keeps it; one that shows crosses. */
+    ui_router_set_alert("PD mini output would not switch");
+    ui_router_set_notice("Stored 5min, steps of 5min.");
+    ui_router_goto(SCREEN_MOTOR);
+    ui_router_set_alert(NULL);
+    CHECK(ui_router_alert_is_notice());
+    to_overview();
+    CHECK(ui_router_alert_is_notice());
+    ui_router_set_alert(NULL);
+}
+
+/* A notice waits UI_NOTICE_WAIT_S at most: behind a held alert it is
+ * dropped after 30s, and one queued again starts its own 30s.  The frame
+ * it arrives in does not count. */
+TEST_CASE(a_notice_that_waited_30_s_is_dropped)
+{
+    fresh();
+    to_overview();
+    ui_router_hold_alert("touch did not answer -- the bench will not arm");
+    ui_action_refused("OPTIONS open on a SAFE bench only.");
+    ui_router_tick(1.0f);                       /* its first frame */
+    ui_router_tick(UI_NOTICE_WAIT_S - 0.5f);
+    ui_router_hold_alert(NULL);
+    CHECK(ui_router_alert_is_notice());
+    ui_router_set_alert(NULL);
+
+    ui_router_hold_alert("touch did not answer -- the bench will not arm");
+    ui_action_refused("OPTIONS open on a SAFE bench only.");
+    ui_router_tick(1.0f);
+    ui_router_tick(UI_NOTICE_WAIT_S - 0.5f);
+    ui_router_set_notice("Hold 2s to switch to ARMED.");
+    ui_router_tick(1.0f);
+    ui_router_tick(UI_NOTICE_WAIT_S - 0.5f);
+    ui_router_tick(0.5f);
+    ui_router_hold_alert(NULL);
+    CHECK(ui_router_alert() == NULL);
+    for (int i = 0; i < 3600; ++i) {
+        ui_router_tick(1.0f);
+    }
+    CHECK(ui_router_alert() == NULL);
+
+    /* An alert and a notice of one frame: the alert's 30s end first. */
+    ui_router_set_alert("PD mini output would not switch");
+    ui_router_set_notice("Stored 5min, steps of 5min.");
+    ui_router_tick(1.0f);
+    ui_router_tick(UI_ALERT_SHOW_S);
+    CHECK(ui_router_alert_is_notice());
+    ui_router_set_alert(NULL);
+}
+
 /* The mode chip says what drives the outputs, and the link chip beside it
  * says whether the link is up: the mode never repeats the link's word.
  * Mode names, so the same in German. */
@@ -677,6 +750,8 @@ int main(void)
     RUN(the_latest_notice_waits_and_shows_once);
     RUN(a_notice_waits_behind_a_held_alert_and_a_passing_one);
     RUN(stop_and_a_switch_to_safe_drop_the_waiting_notice);
+    RUN(a_screen_change_drops_the_waiting_notice);
+    RUN(a_notice_that_waited_30_s_is_dropped);
     RUN(a_tap_on_the_alert_clears_it_and_reaches_no_screen);
     RUN(a_lift_clears_only_the_alert_it_was_pressed_on);
     RUN(a_press_on_an_alert_that_expires_stays_off_the_screen);

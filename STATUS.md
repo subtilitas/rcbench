@@ -964,7 +964,7 @@ MOVE PIN writes the binding `outbind_take_check()` returns once, CANCEL, the hom
 off the card, a binding read that fails or changes, a pick and a view switch write nothing; a
 port's, an interface's or OFF's tap gives a reason line, which names the tap made last; for
 400ms after MOVE PIN or CANCEL closes the card a press in its former box is spent
-(`test_pin_take`, 23 cases, and `test_pin_take_grid`, 9 cases, the grid and the rbmod
+(`test_pin_take`, 23 cases, and `test_pin_take_grid`, 10 cases, the grid and the rbmod
 carrier). A write the IOmcu refuses reads its cause from BIND's `WHY` register (protocol
 4.38) and shows it on the reason line (`test_bind_link`, `test_outputs_screen_draw`).
 

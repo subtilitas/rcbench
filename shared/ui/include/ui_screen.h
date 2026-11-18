@@ -553,6 +553,10 @@ bool ui_router_take_stop(void);
 /** @brief How long a notice shows before it clears itself, in seconds. */
 #define UI_NOTICE_SHOW_S 4.0f
 
+/** @brief How long a notice waits behind an alert before it is dropped, in
+ *         seconds. */
+#define UI_NOTICE_WAIT_S 30.0f
+
 /**
  * @brief Show @p text in a 34px band across the bottom of every screen, or
  *        NULL to clear it.
@@ -579,7 +583,11 @@ void ui_router_set_alert(const char *text);
  * takes priority: while ui_router_set_alert() or ui_router_hold_alert() has
  * one up, one notice waits, the latest, and shows for its own
  * UI_NOTICE_SHOW_S once the alert has cleared by its time, a tap or its
- * owner. An alert set while a notice shows replaces it. A notice replaces
+ * owner. A notice that has waited UI_NOTICE_WAIT_S is dropped, and so is
+ * one that waits when ui_router_goto() changes the screen: a notice
+ * answers the last action on the screen it was raised on. A notice that
+ * shows stays over a screen change. An alert set while a notice shows
+ * replaces it. A notice replaces
  * another notice. A DOWN on STOP, a fault bit that comes up in
  * ui_router_set_status() and a switch from ARMED to SAFE clear a notice at
  * once, the waiting one too.

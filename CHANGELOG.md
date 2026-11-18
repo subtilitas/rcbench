@@ -352,6 +352,20 @@ history is in git.
   inside the card's former box is spent. On the grid view of a learned
   board with 15 or more pins, the second tap of a double tap on MOVE PIN
   bound the cell under the button.
+- OUTPUTS: a press on PORT PWM OFF with the pulse on is not spent by the
+  400ms box of a closed MOVE PIN card. The pulse stops on the press.
+- Alert band: a notice that waits behind an alert is dropped after 30s
+  (`UI_NOTICE_WAIT_S`) and on a change of screen. Behind a held alert the
+  reason of a refused tap showed after any time, on any screen.
+- LOGS: the plot's header line of a file without a time column gives the
+  name and the rows (`RUDDR012.CSV   6 ROWS`). It gave a duration and a
+  rate counted from the row index (`5.00s   1Hz`).
+- German texts: `2s HALTEN ZUM AUSLESEN` on the ESC signal-wire session's
+  READ AGAIN hold and `PIN NICHT AUSGELESEN` on ESC STICK's tag follow the
+  glossary of `docs/Language-de.md`.
+- SERVO limit run: the line `%s LEFT %u RIGHT %u` declares 34 cells, the
+  longest phase name with two 16-bit values; `test_text_formats` measures
+  it with those arguments.
 - IOmcu: a channel whose role changes reads its new rest on the CHANNELS
   page; the register kept the command written under the old role.
 - IOmcu: a stored OUTPUTS slot with a driver number above 4 or a pin above
