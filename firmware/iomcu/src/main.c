@@ -386,7 +386,8 @@ static void loop_watch_feed(void)
  * @brief The watchdog's feed point before a flash window
  *        (out_store_before_window()): loop_watch_window() decides,
  *        host-tested.  The window starts with the whole period ahead of
- *        it, so a reset does not fall into an erase or a program.
+ *        it, so a reset does not fall into an erase or a program; past
+ *        LOOP_WATCH_WINDOWS_MAX windows in one pass nothing is fed.
  */
 static void loop_watch_feed_window(void)
 {

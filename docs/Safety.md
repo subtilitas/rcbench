@@ -42,7 +42,7 @@ feed. The rules are in
 
 | | |
 | --- | --- |
-| Feed points | the top of a pass of the main loop, once a pass, and right before every flash window (an erase or a program of the output store or of the update), so a reset does not fall into a write; nowhere else |
+| Feed points | the top of a pass of the main loop, once a pass, and right before every flash window (an erase or a program of the output store or of the update), so a reset does not fall into a write; nowhere else. Only the first 6 windows of a pass are fed, the most a pass holds: a loop that keeps opening windows gets no further feed and is reset 500ms after the sixth |
 | Enabled | at the first pass, after the boot path |
 | Not enabled | while the image runs on trial after an update, until its BUY: the boot ROM owns the watchdog for 16.7s then. Never in the bench console build (`IOMCU_CONSOLE=ON`) |
 | A debugger | a core halted by a debugger pauses the count |

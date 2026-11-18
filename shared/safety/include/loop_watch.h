@@ -25,6 +25,11 @@
  *   does not end is a pass that does not end.  The feed before a window
  *   keeps the reset out of an erase or a program: a reset inside one
  *   leaves a store sector or a sector of the update half-written.
+ * - Only the first LOOP_WATCH_WINDOWS_MAX (6) windows of a pass are fed:
+ *   the most a pass holds by the code's own rules, counted below.  A pass
+ *   that enters more is a fault -- a loop that keeps opening windows --
+ *   and gets no feed for them, so the period runs out and the chip is
+ *   reset 500ms after the sixth window's feed.
  * - The watchdog is enabled at the first pass, after the boot path:
  *   supply_boot_off() takes up to 3,500ms and the boot's store reclaims a
  *   flash window each, before any output can be driven.  The boot path
@@ -75,10 +80,12 @@
  * LOOP_WATCH_PERIOD_MS (500ms) is 4.6 times that.  A window may take
  * 433,750us before the watchdog resets inside it, 10 times the part's
  * maximum; the W25Q16JV's 400ms sector erase maximum (datasheet revision
- * I, tSE) is under it as well.  A pass holds 6 windows at most: 2 calls
- * of can_service(), each with one update request of a sector erase and a
- * 4KiB program, the update's owed erase, and the output store's save or
- * reclaim.  No pass with all of them was measured; the longest pass
+ * I, tSE) is under it as well.  A pass holds 6 windows at most
+ * (LOOP_WATCH_WINDOWS_MAX): 2 calls of can_service(), each with one update
+ * request of a sector erase and a 4KiB program (the panel sends one
+ * request an exchange and waits for its answer), the update's owed erase
+ * in update_hw_poll(), and the output store's save or reclaim, one window
+ * a pass.  No pass with all of them was measured; the longest pass
  * measured outside a flash window is 250us.
  *
  * A restart by this watchdog reads as RESET_CAUSE_LOOP_WATCHDOG
@@ -119,8 +126,10 @@ extern "C" {
 #define LOOP_WATCH_WINDOW_MAX_US                                          \
     (LOOP_WATCH_PROGRAM_PAGES * LOOP_WATCH_PAGE_MAX_US                    \
      + LOOP_WATCH_WINDOW_ENTRY_US)
-/** @brief The flash windows one pass can hold. */
-#define LOOP_WATCH_WINDOWS 6u
+/** @brief The flash windows one pass can hold, and the most that are fed
+ *         in one pass: 4 of the update's requests in 2 can_service()
+ *         calls, 1 owed erase, 1 of the output store. */
+#define LOOP_WATCH_WINDOWS_MAX 6u
 /** @brief A window's wait for core 1, us, on the way in and on the way
  *         out: OUT_STORE_LOCKOUT_MS. */
 #define LOOP_WATCH_LOCKOUT_US 10000u
@@ -164,6 +173,8 @@ typedef struct {
     bool enabled;   /**< the firmware enabled the watchdog this boot      */
     bool restarted; /**< this start followed a restart by the watchdog,
                          and no CLEAR has been taken since                */
+    uint8_t windows; /**< flash windows fed since the feed at the top of
+                          the pass, LOOP_WATCH_WINDOWS_MAX at most        */
 } loop_watch_t;
 
 /**
@@ -182,7 +193,8 @@ void loop_watch_init(loop_watch_t *w, bool console, reset_cause_t cause);
  * NONE in the console build and while the image waits for its BUY with the
  * watchdog not yet enabled; ENABLE once, at the first pass that is neither;
  * FEED at every pass after it.  A watchdog that is enabled is fed whatever
- * @p on_trial says: nothing here disables it.
+ * @p on_trial says: nothing here disables it.  Each call starts the count
+ * of the pass's flash windows again (loop_watch_window()).
  *
  * @param w         The watch; NONE for NULL.
  * @param on_trial  The running image waits for its BUY: the boot ROM owns
@@ -195,15 +207,18 @@ loop_watch_act_t loop_watch_pass(loop_watch_t *w, bool on_trial);
  * @brief The feed point right before a flash window: an erase or a
  *        program, with interrupts off and core 1 parked for its length.
  *
- * FEED while the watchdog is enabled: the window starts with the whole
- * period ahead of it.  NONE otherwise, and never ENABLE: before the first
- * pass (the boot's reclaims), on trial (the BUY's window) and in the
- * console build the watchdog is not this firmware's.
+ * FEED while the watchdog is enabled, for the first
+ * LOOP_WATCH_WINDOWS_MAX windows since the feed at the top of the pass: the
+ * window starts with the whole period ahead of it.  NONE for every window
+ * after them, until loop_watch_pass() is called again: a loop that keeps
+ * opening windows does not keep the watchdog fed.  NONE as well, and never
+ * ENABLE, before the first pass (the boot's reclaims), on trial (the BUY's
+ * window) and in the console build: the watchdog is not this firmware's.
  *
  * @param w  The watch; NONE for NULL.
  * @return LOOP_WATCH_FEED or LOOP_WATCH_NONE.
  */
-loop_watch_act_t loop_watch_window(const loop_watch_t *w);
+loop_watch_act_t loop_watch_window(loop_watch_t *w);
 
 /**
  * @brief Whether SCRATCH0 is zeroed before a restart the firmware asks for

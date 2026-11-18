@@ -42,7 +42,7 @@ letzten Nachladen zurück. Die Regeln stehen in
 
 | | |
 | --- | --- |
-| Nachladen | am Anfang eines Durchlaufs der Hauptschleife, einmal je Durchlauf, und direkt vor jedem Flash-Fenster (einem Löschen oder Programmieren des Output-Store oder des Updates), damit kein Zurücksetzen in einen Schreibvorgang fällt; nirgends sonst |
+| Nachladen | am Anfang eines Durchlaufs der Hauptschleife, einmal je Durchlauf, und direkt vor jedem Flash-Fenster (einem Löschen oder Programmieren des Output-Store oder des Updates), damit kein Zurücksetzen in einen Schreibvorgang fällt; nirgends sonst. Nur die ersten 6 Fenster eines Durchlaufs laden nach, mehr enthält ein Durchlauf nicht: Eine Schleife, die immer weitere Fenster öffnet, bekommt kein weiteres Nachladen und wird 500ms nach dem sechsten zurückgesetzt |
 | Eingeschaltet | beim ersten Durchlauf, nach dem Startpfad |
 | Nicht eingeschaltet | solange das Image nach einem Update auf Probe läuft, bis zu seinem BUY: Dann gehört der Watchdog 16,7s lang dem Boot-ROM. Nie im Bench-Konsolen-Build (`IOMCU_CONSOLE=ON`) |
 | Ein Debugger | ein vom Debugger angehaltener Core hält den Zähler an |

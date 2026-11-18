@@ -248,12 +248,14 @@ static void model_pass(feeds_t *f, unsigned windows, uint32_t window_us)
     f->now_us += LOOP_WATCH_REST_US;
 }
 
-/* Passes with 0 to 64 windows of the flash part's datasheet maximum each,
- * back to back: the time between two feeds never passes the period, and
- * never the sum the header states.  The code allows 6 windows a pass. */
+/* Passes with 0 to 6 windows of the flash part's datasheet maximum each,
+ * back to back: every window is fed, and the time between two feeds never
+ * passes the period, and never the sum the header states.  6 is the most
+ * a pass holds (LOOP_WATCH_WINDOWS_MAX). */
 TEST_CASE(windows_at_the_datasheet_maximum_never_reach_the_period)
 {
-    for (unsigned n = 0; n <= 64u; ++n) {
+    CHECK_EQ(LOOP_WATCH_WINDOWS_MAX, 6u);
+    for (unsigned n = 0; n <= LOOP_WATCH_WINDOWS_MAX; ++n) {
         loop_watch_init(&w, false, RESET_CAUSE_POR);
         feeds_t f = { 0u, 0u, 0u, 0u };
         for (int pass = 0; pass < 4; ++pass) {
@@ -270,6 +272,62 @@ TEST_CASE(windows_at_the_datasheet_maximum_never_reach_the_period)
             CHECK_EQ(f.gap_us, LOOP_WATCH_WORST_GAP_US);
         }
     }
+}
+
+/* One window more than a pass holds is a fault: it gets no feed, and
+ * neither does any window after it until the top of the next pass.  A
+ * loop that keeps opening windows runs into the period; a pass that comes
+ * back to its top is fed there and counts from 0 again. */
+TEST_CASE(a_window_past_the_legal_count_is_not_fed_and_the_period_runs_out)
+{
+    loop_watch_init(&w, false, RESET_CAUSE_POR);
+    feeds_t f = { 0u, 0u, 0u, 0u };
+    fed(&f, loop_watch_pass(&w, false));               /* the enable */
+    for (unsigned i = 0; i < LOOP_WATCH_WINDOWS_MAX; ++i) {
+        CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_FEED);
+        fed(&f, LOOP_WATCH_FEED);
+        f.now_us += LOOP_WATCH_WINDOW_SPAN_US;
+    }
+    CHECK_EQ(f.feeds, 1u + LOOP_WATCH_WINDOWS_MAX);
+    CHECK(f.gap_us < LOOP_WATCH_PERIOD_MS * 1000u);
+
+    /* The seventh window and every one after it: no feed.  The loop never
+     * comes back to the top of a pass, and the model's clock passes the
+     * period since the last feed. */
+    unsigned unfed = 0u;
+    while (f.now_us - f.last_us < LOOP_WATCH_PERIOD_MS * 1000u) {
+        CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_NONE);
+        fed(&f, LOOP_WATCH_NONE);
+        f.now_us += LOOP_WATCH_WINDOW_SPAN_US;
+        ++unfed;
+        CHECK(unfed < 100u);
+    }
+    CHECK_EQ(f.feeds, 1u + LOOP_WATCH_WINDOWS_MAX);
+    CHECK(f.now_us - f.last_us >= LOOP_WATCH_PERIOD_MS * 1000u);
+    /* The sixth window itself and 8 more of the longest kind: the reset
+     * comes 500ms after the sixth window's feed. */
+    CHECK_EQ(unfed, 8u);
+
+    /* A pass that does come back: fed at its top, and its windows are
+     * counted from 0. */
+    CHECK_EQ(loop_watch_pass(&w, false), LOOP_WATCH_FEED);
+    for (unsigned i = 0; i < LOOP_WATCH_WINDOWS_MAX; ++i) {
+        CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_FEED);
+    }
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_NONE);
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_NONE);
+
+    /* A watch that is not enabled counts nothing: the boot's windows and a
+     * trial's do not use up the first pass's. */
+    loop_watch_init(&w, false, RESET_CAUSE_POR);
+    for (unsigned i = 0; i < 3u * LOOP_WATCH_WINDOWS_MAX; ++i) {
+        CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_NONE);
+    }
+    CHECK_EQ(loop_watch_pass(&w, false), LOOP_WATCH_ENABLE);
+    for (unsigned i = 0; i < LOOP_WATCH_WINDOWS_MAX; ++i) {
+        CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_FEED);
+    }
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_NONE);
 }
 
 /* A pass without a window has its one feed, at its top. */
@@ -292,7 +350,7 @@ TEST_CASE(a_pass_without_a_window_has_its_single_feed)
  * with 8.  The feed is what makes the count of windows not matter. */
 TEST_CASE(without_the_window_feed_the_count_of_windows_would_matter)
 {
-    const uint32_t six = LOOP_WATCH_WINDOWS * LOOP_WATCH_WINDOW_SPAN_US
+    const uint32_t six = LOOP_WATCH_WINDOWS_MAX * LOOP_WATCH_WINDOW_SPAN_US
                          + LOOP_WATCH_REST_US;
     CHECK_EQ(six, 418250u);
     CHECK(six < LOOP_WATCH_PERIOD_MS * 1000u);
@@ -346,6 +404,7 @@ int main(void)
     RUN(the_panels_clear_ends_the_bit_and_no_other_write_does);
     RUN(a_flash_window_feeds_an_enabled_watchdog_and_enables_none);
     RUN(windows_at_the_datasheet_maximum_never_reach_the_period);
+    RUN(a_window_past_the_legal_count_is_not_fed_and_the_period_runs_out);
     RUN(a_pass_without_a_window_has_its_single_feed);
     RUN(without_the_window_feed_the_count_of_windows_would_matter);
     RUN(the_period_is_over_twice_the_longest_time_between_feeds);

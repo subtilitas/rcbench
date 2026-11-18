@@ -21,6 +21,12 @@ _Static_assert(LOOP_WATCH_WORST_GAP_US == 108250u,
                "loop_watch.h: the sum in the comment differs");
 _Static_assert(2u * LOOP_WATCH_WORST_GAP_US < LOOP_WATCH_PERIOD_MS * 1000u,
                "the watchdog's period is under 2 of the longest gaps");
+/* 2 can_service() calls of an erase and a program each, the update's owed
+ * erase and the store's one window: the count the header's comment gives. */
+_Static_assert(LOOP_WATCH_WINDOWS_MAX == 2u * 2u + 1u + 1u,
+               "loop_watch.h: the windows of a pass in the comment differ");
+_Static_assert(LOOP_WATCH_WINDOWS_MAX <= 255u,
+               "the count of fed windows does not fit its field");
 
 void loop_watch_init(loop_watch_t *w, bool console, reset_cause_t cause)
 {
@@ -30,6 +36,7 @@ void loop_watch_init(loop_watch_t *w, bool console, reset_cause_t cause)
     w->console   = console;
     w->enabled   = false;
     w->restarted = cause == RESET_CAUSE_LOOP_WATCHDOG;
+    w->windows   = 0u;
 }
 
 loop_watch_act_t loop_watch_pass(loop_watch_t *w, bool on_trial)
@@ -37,6 +44,7 @@ loop_watch_act_t loop_watch_pass(loop_watch_t *w, bool on_trial)
     if (w == NULL || w->console) {
         return LOOP_WATCH_NONE;
     }
+    w->windows = 0u;
     if (w->enabled) {
         return LOOP_WATCH_FEED;
     }
@@ -47,9 +55,17 @@ loop_watch_act_t loop_watch_pass(loop_watch_t *w, bool on_trial)
     return LOOP_WATCH_ENABLE;
 }
 
-loop_watch_act_t loop_watch_window(const loop_watch_t *w)
+loop_watch_act_t loop_watch_window(loop_watch_t *w)
 {
-    return (w != NULL && w->enabled) ? LOOP_WATCH_FEED : LOOP_WATCH_NONE;
+    if (w == NULL || !w->enabled) {
+        return LOOP_WATCH_NONE;
+    }
+    /* Past the most a pass holds: a fault, and no feed for it. */
+    if (w->windows >= LOOP_WATCH_WINDOWS_MAX) {
+        return LOOP_WATCH_NONE;
+    }
+    ++w->windows;
+    return LOOP_WATCH_FEED;
 }
 
 bool loop_watch_handover(const loop_watch_t *w)
