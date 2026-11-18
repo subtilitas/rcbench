@@ -15,6 +15,7 @@
 
 #include "imu_rig.h"
 #include "sensors_rows.h"
+#include "servo_settle.h"
 
 TEST_CASE(the_imu_entry_shows_its_rows_under_on)
 {
@@ -29,14 +30,15 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
     CHECK_EQ(rows[0].id, SET_IMU_EN);
     CHECK_EQ(rows[1].id, SET_ANGLE_SOURCE);
     settings_set(SET_IMU_EN, 1.0f);
-    /* ON: ANGLE SOURCE second, AXIS, SIGN, RATE, ALGORITHM and FILTER
-     * under it. */
+    /* ON: ANGLE SOURCE second, AXIS, SIGN, RATE, ALGORITHM, FILTER,
+     * SETTLING TIME and PRECISION under it. */
     static const setting_id_t want[] = { SET_IMU_EN, SET_ANGLE_SOURCE,
                                          SET_IMU_AXIS, SET_IMU_SIGN,
                                          SET_IMU_RATE, SET_IMU_ALGO,
-                                         SET_IMU_FILTER };
-    CHECK_EQ(wireless_pane_rows(WL_ENTRY_IMU, rows, WL_ENTRY_ROWS_MAX), 7);
-    for (int i = 0; i < 7; ++i) {
+                                         SET_IMU_FILTER, SET_IMU_SETTLE,
+                                         SET_IMU_PREC };
+    CHECK_EQ(wireless_pane_rows(WL_ENTRY_IMU, rows, WL_ENTRY_ROWS_MAX), 9);
+    for (int i = 0; i < 9; ++i) {
         CHECK_EQ(rows[i].id, want[i]);
         CHECK(rows[i].custom == NULL);
         CHECK_EQ(wireless_pane_entry_of(want[i]), WL_ENTRY_IMU);
@@ -51,6 +53,15 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
     CHECK_EQ(settings_get_int(SET_IMU_RATE), 2);
     CHECK_EQ(settings_get_int(SET_IMU_ALGO), 0);
     CHECK_EQ(settings_get_int(SET_IMU_FILTER), (int)IMU_FILTER_DEFAULT);
+    /* The settle rule's defaults are servo_settle.h's. */
+    CHECK_EQ(lroundf(settings_get(SET_IMU_SETTLE) * 1000.0f),
+             (long)SERVO_SETTLE_WIN_DEFAULT_MS);
+    CHECK(fabsf(settings_get(SET_IMU_PREC) - SERVO_SETTLE_BAND_DEFAULT_DEG)
+          < 1e-6f);
+    CHECK_EQ(lroundf(settings_def(SET_IMU_SETTLE)->max * 1000.0f),
+             (long)SERVO_SETTLE_WIN_MAX_MS);
+    CHECK_STR_EQ(settings_def(SET_IMU_SETTLE)->key, "imu_settle_s");
+    CHECK_STR_EQ(settings_def(SET_IMU_PREC)->key, "imu_prec");
     CHECK_EQ(imu_ctl_rate_code(settings_get_int(SET_IMU_RATE)), WIT_RATE_50HZ);
     CHECK_STR_EQ(settings_text(SET_TEXT_IMU_ADDR), "");
     CHECK_STR_EQ(settings_text(SET_TEXT_IMU_NAME), "");
@@ -62,7 +73,7 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
     open_wireless(SET_IMU_EN);
     CHECK_EQ(settings_screen_category(), SET_CAT_WIRELESS);
     CHECK_EQ(wireless_pane_selected(), WL_ENTRY_IMU);
-    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 7);
+    CHECK_EQ(settings_screen_rows(SET_CAT_WIRELESS), 9);
     setting_id_t ids[96];
     const int n = settings_in_category(SET_CAT_WIRELESS, ids, 96);
     for (int i = 0; i < n; ++i) {
@@ -70,9 +81,9 @@ TEST_CASE(the_imu_entry_shows_its_rows_under_on)
             CHECK(settings_screen_row_of(SET_CAT_WIRELESS, i) >= 0);
         }
     }
-    /* The IMU's 7, the Dial's 3, the power node's 2 and the balance
+    /* The IMU's 9, the Dial's 3, the power node's 2 and the balance
      * node's 2. */
-    CHECK_EQ(n, 14);
+    CHECK_EQ(n, 16);
     /* SENSORS holds no IMU row: 65 less the IMU's 7. */
     CHECK_EQ(settings_in_category(SET_CAT_SENSORS, ids, 96), 58);
 }

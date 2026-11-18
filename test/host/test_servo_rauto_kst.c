@@ -82,6 +82,10 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
         CHECK(fabsf(fabsf(horn - 1500.0f) * DEG_PER_US - 22.0f) <= 0.5f);
     }
     CHECK_EQ(g_rig.fc.saves, 1u);
+    /* The supply's OFF asked at the end decision, before the report's
+     * first file opens. */
+    CHECK(ra.open_seen);
+    CHECK(ra.off_at_open);
     /* The read, two writes, and the LEAVE after each write: five
      * power-ups at least. */
     CHECK(g_rig.sim.power_ups >= 5u);
@@ -92,6 +96,12 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK(ra.offs >= 1u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "REPORT RUDDR007.TXT");
+    /* The verify pass on the fourth line: each end from its goal, the
+     * center from the zero. */
+    CHECK(strncmp(rauto_line(3, b, sizeof(b)), "VERIFY 1000us ", 14) == 0);
+    CHECK(strstr(b, ", CENTER ") != NULL);
+    CHECK(strstr(b, "-0.00") == NULL);
+    CHECK(strstr(ra.report, "VERIFY (pulse, measured, goal") != NULL);
     /* KST's raw values, as the KST page shows them, named raw. */
     snprintf(want, sizeof(want), TR(RA_SET), 150u,
              (unsigned)servo(KST_F_LEFT_ANGLE), 150u,
@@ -108,9 +118,10 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
 
 /* The same run on the IMU at 10Hz through IMU FILTER 10: AUTO waits for
  * the filtered angle to settle, 3000ms plus the 78 frames at 150ms of the
- * allowance at the rate measured, passes, and lands both end points on
- * the 22° goal within the tolerance; the settle the IMU gives does not
- * reach a run on the AS5600. */
+ * allowance at the rate measured, plus SERVO_RAUTO_CREEP_MS and IMU
+ * SETTLING TIME's default 3.0s, passes, and lands both end points on the
+ * 22° goal within the tolerance; the settle the IMU gives does not reach
+ * a run on the AS5600. */
 TEST_CASE(auto_on_the_filtered_imu_waits_for_its_settle_and_passes)
 {
     ra_setup_on(true, true, true);
@@ -123,8 +134,11 @@ TEST_CASE(auto_on_the_filtered_imu_waits_for_its_settle_and_passes)
     CHECK(strstr(ra.report, "IMU X+") != NULL);
     char want[96];
     snprintf(want, sizeof(want), "within %ums of the command",
-             (unsigned)(SERVO_RAUTO_MOVE_MS + 78u * 150u));
+             (unsigned)(SERVO_RAUTO_MOVE_MS + 78u * 150u
+                        + SERVO_RAUTO_CREEP_MS
+                        + SERVO_SETTLE_WIN_DEFAULT_MS));
     CHECK(strstr(ra.report, want) != NULL);
+    CHECK(strstr(ra.report, "its span at most 0.10° over 3.0s") != NULL);
     for (int k = 0; k < 2; ++k) {
         const float horn = sim_horn_us(g_rig.sim.acting,
                                        k == 0 ? 1000u : 2000u, 4.0f, false);
@@ -710,6 +724,9 @@ TEST_CASE(writes_that_do_not_move_the_2000us_side_end_auto_after_two)
     CHECK(!g_rig.sup_on);
     CHECK(ra.offs >= 1u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
+    /* After a FAIL as after a PASS: the OFF before the report. */
+    CHECK(ra.open_seen);
+    CHECK(ra.off_at_open);
 }
 
 int main(void)

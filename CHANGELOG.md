@@ -20,6 +20,22 @@ history is in git.
   layout, a corrupt one or one that names another version than the
   running build (a rollback) is erased and is no run; otherwise the start
   spends one of 2 openings. No screen reads it.
+- SETUP > WIRELESS > IMU: IMU settling time (`imu_settle_s`, 0.5 to
+  10.0s, default 3.0s) and IMU precision (`imu_prec`, 0.05 to 1.00°,
+  default 0.10°), the settle rule of a RUDDER AUTO measure on the IMU.
+- RUDDER AUTO: the approach. Every measure first drives the servo to the
+  pulse it comes from and waits there by the same rule (phase APPROACH):
+  each end, in the main pass and in the verify pass, from PULSE CENTER,
+  the verify pass's center from 2000us. The same servo value read up to
+  0.33° apart by the side it was reached from.
+- RUDDER AUTO: the verify pass. A run that wrote measures 1000us, 2000us
+  and PULSE CENTER once more with the same rule and ends at the center;
+  each end within TOLERANCE of its goal and the center within TOLERANCE
+  of ZERO pass, one outside ends the run as FAIL (`1000us outside the
+  tolerance at verify`, `2000us ...`, `center outside the tolerance at
+  verify`). The box's fourth line shows the three, the report a VERIFY
+  section, the CSV three rows with `V` in the write column. A run that
+  wrote nothing does not verify.
 
 ### Changed
 
@@ -62,6 +78,19 @@ history is in git.
   grey while any update runs as well. The panel hands the card the IOmcu's,
   the C6's and each device's last failure and whether an update run stands
   after a restart.
+
+### Fixed
+
+- RUDDER AUTO on the IMU took the angle while the sensor still crept
+  after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
+  to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,
+  so a run passed with ends 0.63° and 1.04° off the goal at a 0.5°
+  tolerance. A measure on the IMU also waits until the readings over
+  the last IMU settling time span IMU precision or less: with the defaults
+  the angle lies within 0.07° of the settled value, taken 6.5s to 10.4s
+  after the surface arrives. The measure's wait grows by 10,000ms plus the
+  settling time, 16,000ms with the defaults; `surface not settled in
+  time` replaces `surface not still within 3s`.
 
 ## 0.23.14 - 2026-11-15
 
