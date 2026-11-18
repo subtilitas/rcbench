@@ -2549,7 +2549,7 @@ Stellzeit und sucht die Spannung, bei der die Bewegung endet.
 Das 600 x 136px große Feld AUTOMATISCHER TEST enthält Laufname, eine
 Zusammenfassung wie `4.8V, 6.0V, BROWN-OUT, JE 60s` oder
 `..., JE 20 BEWEGUNGEN`, Zustandszeile, letztes Ergebnis mit Dateien und
-den Hinweis zu BLOCKIERT AB. Ein Ergebnis lautet etwa
+den Hinweis zur Blockierschwelle. Ein Ergebnis lautet etwa
 `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`; ein Abbruch zeigt den Grund in
 Warnfarbe, etwa `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
 
@@ -2581,12 +2581,12 @@ Ein roter Text, länger als die 20 Zellen der Zeile, zeigt eine Kurzform:
 `TEST LÄUFT`, `SCHREIBT BERICHT`. Das Alarmband nennt den ganzen Text
 ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
 
-Der Hinweis zu BLOCKIERT AB nennt unerreichbare Schwellen:
-`BLOCKIERT AB 2.00A muss unter Strombegrenzung 2.00A sein`, wenn BLOCKIERT AB
+Der Hinweis zur Blockierschwelle nennt unerreichbare Schwellen:
+`Blockierschwelle 2.00A: muss unter Strombegrenzung 2.00A`, wenn Blockierschwelle
 mindestens so hoch wie SET A von SUPPLY ist. Andernfalls,
 bei INA3221 als Messgerät und einer Schwelle mindestens in Höhe seines
 Messbereichs, erscheint
-`BLOCKIERT AB 2.00A muss unter INA3221-Bereich 1.638A sein`.
+`Blockierschwelle 2.00A: muss unter INA3221-Bereich 1.638A`.
 Der Hinweis lehnt das Halten nicht ab; siehe
 [Blockieren und Konstantstrom](Servo-de.md#blockieren-und-konstantstrom).
 
@@ -2959,7 +2959,7 @@ Die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken:
 SPANNUNGSSTUFEN die Stufen eines Laufs oder `KEINE STUFE GEWÄHLT` in
 Warnfarbe; BROWN-OUT den Lauf am geltenden Netzteil,
 `Ab 5.00V abwärts in 0.20V-Schritten bis 3.30V, 10 Spannungen`; GRENZWERTE
-ein BLOCKIERT AB, das kein Messwert erreicht, in Warnfarbe; BEREICH die
+eine Blockierschwelle, die kein Messwert erreicht, in Warnfarbe; BEREICH die
 Enden des Laufs, `1100-1900us`, in Warnfarbe, solange sie nicht beiderseits
 von PULS MITTE liegen. AUSGANG unter BEREICH zeigt das Profil wie die
 Typzeile, `STANDARD PWM  50Hz  1000-2000`; ein Tippen öffnet das Profil.

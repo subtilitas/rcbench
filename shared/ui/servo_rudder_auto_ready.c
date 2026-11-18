@@ -65,6 +65,8 @@ enum {
     CK_5V,          /**< the carrier's PROG 5V off                     */
     CK_PWM,         /**< the port's pulse off, or a session holding it */
     CK_RANGE,       /**< PULSE MIN to MAX short of 1000 to 2000us      */
+    CK_GOALS,       /**< a goal under 2 x TOLERANCE; no row's, the
+                         card's first line names it                    */
     CK_PROG,        /**< the programmer, and the supply it switches    */
     CK_PD_5V,       /**< the PD mini's caps leave out the run's 5.0V
                          (servo_run_supply.c)                           */
@@ -133,6 +135,16 @@ static const char *check(int k)
         return (s.min_us > 1000u || s.max_us < 2000u
                 || !(s.center_us > 1000u && s.center_us < 2000u))
                    ? TR(RA_RANGE) : NULL;
+    case CK_GOALS: {
+        /* A goal the tolerance swallows: a surface that never moves, or
+         * both ends on one side, would pass (servo_rauto_goals_ok()). */
+        const float t[2] = { settings_get(SET_RUDDER_DEFL_LO),
+                             settings_get(SET_RUDDER_DEFL_HI) };
+        return !servo_rauto_goals_ok(
+                   t, (uint8_t)settings_get_int(SET_RUDDER_MARGIN),
+                   (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f))
+                   ? TR(RA_GOALS_TOL) : NULL;
+    }
     case CK_PROG:
         /* The programmer free, and a written value able to act: a PD
          * mini, or the carrier's PROG 5V, switches the servo off and on. */

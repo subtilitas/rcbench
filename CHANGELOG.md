@@ -48,6 +48,19 @@ history is in git.
 
 ### Changed
 
+- Servo test: the stall limit has one name, the OPTIONS row's `Stall
+  threshold`, German `Blockierschwelle`. The abort reason reads `above
+  Stall threshold for 1s` (`1s über Blockierschwelle`), the report line
+  `Stall threshold  highest 0.077A, limit 2.00A: PASS`
+  (`Blockierschwelle Höchstwert 0.077A, Grenze 2.00A: ...`), the note on
+  the AUTOMATIC TEST card and in the report `Stall threshold 2.00A must be
+  below current limit 2.00A` and `Stall threshold 2.00A must be below
+  INA3221 range 1.638A` (`Blockierschwelle 2.00A: muss unter
+  Strombegrenzung 2.00A`, `Blockierschwelle 2.00A: muss unter
+  INA3221-Bereich 1.638A`). `STALL AT` and `BLOCKIERT AB` are gone.
+- RUDDER AUTO's report: the programming head reads `PROGRAMMING (end
+  points)`, German `PROGRAMMIEREN (Endpoints)`; each line below names its
+  unit, `(counts)` on a Hitec D series servo, `(raw value)` else.
 - IOmcu update: the question on the menu is gone. An IOmcu that runs
   another build opens UPDATES at step 2 (IOMCU), once per offer, on the
   menu with the bench SAFE, the supply output off, Wi-Fi off and no panel
@@ -120,6 +133,17 @@ history is in git.
 
 ### Fixed
 
+- RUDDER AUTO refuses the start while a goal, TARGET x (1 + MARGIN), does
+  not exceed 2 x TOLERANCE: `GOALS MUST EXCEED 2 x TOLERANCE` on the
+  card's first line and the alert band, before a part is switched. With a
+  goal of TOLERANCE or less a servo that never moved ended PASS, and with
+  a goal under 2 x TOLERANCE two end pulses deflecting to one side did.
+- SERVO: the Dial's 1s hold ends a test, a LIMIT RUN and a RUDDER AUTO
+  run in every phase. The hold did nothing while the run held the bench
+  SAFE for its programmer session, in its ARM phase, or ended only the
+  supplies between the run's SAFE request and its read-back; the run then
+  armed again by itself. The hold also takes back an ARM that is on its
+  way.
 - C6 radio update: from its start to the panel's restart the supply's
   OUTPUT ON, PROG 5V ON and a programmer session's start are refused with
   an alert, as ARM is. No update starts while a servo or ESC programmer

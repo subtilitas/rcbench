@@ -10429,8 +10429,8 @@ UI_SERVO_TEXT(SERVO_STR_AB_CAP,
     "step above the voltage cap",
     "Stufe über Spannungsgrenze")
 UI_SERVO_TEXT(SERVO_STR_AB_STALL,
-    "above STALL AT for 1s",
-    "1s über BLOCKIERT AB")
+    "above Stall threshold for 1s",
+    "1s über Blockierschwelle")
 /* The run's reasons are also a line of the SERVO screen's result box:
  * 31 characters at most. */
 UI_SERVO_TEXT(SERVO_STR_AB_CC,
@@ -10788,10 +10788,10 @@ UI_SERVO_TEXT(SERVO_STR_R_LIM_TRAVEL_NONE,
     "Stellzeit        längste --, Grenze %s: nicht "
     "gemessen, keine Bewegung erreichte das Ziel")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL,
-    "Stall threshold  highest %.3fA, STALL "
-    "AT %.2fA: %s",
+    "Stall threshold  highest %.3fA, limit "
+    "%.2fA: %s",
     "Blockierschwelle Höchstwert %.3fA, "
-    "BLOCKIERT AB %.2fA: %s")
+    "Grenze %.2fA: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_LATE,
     "Moves arrived    %u late: %s",
     "Verspätet        %u Bewegungen: %s")
@@ -11021,15 +11021,15 @@ UI_SERVO_TEXT(SERVO_STR_R_NEGATIVE,
     "Strom in Ruhe negativ: Richtung des "
     "Shunts")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL_LIMIT,
-    "STALL AT %.2fA must be below "
+    "Stall threshold %.2fA must be below "
     "current limit %.2fA",
-    "BLOCKIERT AB %.2fA muss unter "
-    "Strombegrenzung %.2fA sein")
+    "Blockierschwelle %.2fA: muss unter "
+    "Strombegrenzung %.2fA")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL_RANGE,
-    "STALL AT %.2fA must be below "
+    "Stall threshold %.2fA must be below "
     "INA3221 range %.3fA",
-    "BLOCKIERT AB %.2fA muss unter "
-    "INA3221-Bereich %.3fA sein")
+    "Blockierschwelle %.2fA: muss unter "
+    "INA3221-Bereich %.3fA")
 UI_SERVO_TEXT(SERVO_STR_R_UNM_POSITION_INA,
     "Position: the horn position is not "
     "measured. All results are based on current "
@@ -11756,8 +11756,8 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_GAPS,
     "Angle gaps:     %lu, the longest %lums",
     "Winkellücken:    %lu, die längste %lums")
 UI_SERVO_TEXT(SERVO_STR_RA_R_PROG_HEAD,
-    "PROGRAMMING (end points, unit not known)",
-    "PROGRAMMIEREN (Endpoints, Einheit unbekannt)")
+    "PROGRAMMING (end points)",
+    "PROGRAMMIEREN (Endpoints)")
 UI_SERVO_TEXT(SERVO_STR_RA_R_SIDE_LO,
     "moves the 1000us side",
     "bewegt die 1000us-Seite")
@@ -11892,6 +11892,9 @@ UI_TEXT(RA_RANGE, 48,
 UI_TEXT(RA_PROG_PORT, 48,
     "AUTO PROGRAMS A SERVO ON THE PROG PORT",
     "AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT")
+UI_TEXT(RA_GOALS_TOL, 48,
+    "GOALS MUST EXCEED 2 x TOLERANCE",
+    "SOLL MUSS ÜBER 2 x TOLERANZ LIEGEN")
 UI_TEXT(RA_REFUSED, 48,
     "TARGET, MARGIN OR TOLERANCE OUT OF RANGE",
     "SOLL, RESERVE ODER TOLERANZ UNZULÄSSIG")

@@ -399,7 +399,7 @@ TEST_CASE(a_full_run_on_the_ina3221_through_the_chain)
         CHECK(strstr(bench.out.report, "Current:        INA3221 0x41 CH2, shunt "
                                    "100.0mΩ, range 1.638A\n") != NULL);
         CHECK(strstr(bench.out.report, "Result:         PASS\n") != NULL);
-        CHECK(strstr(bench.out.report, "STALL AT 1.50A must be below")
+        CHECK(strstr(bench.out.report, "Stall threshold 1.50A must be below")
               == NULL);
     }
 }
@@ -459,7 +459,7 @@ TEST_CASE(windows_that_arrive_together_keep_their_own_times)
     CHECK(s->travel_max_ms >= 667u);
     CHECK(s->travel_max_ms <= 667u + 2u * SERVO_TEST_WIN_MS + 150u + PASS_MS);
 
-    /* A servo on a stop: 20 windows over STALL AT in a row. */
+    /* A servo on a stop: 20 windows over Stall threshold in a row. */
     b_fresh(5000u);
     bench.poll_every = 150u / PASS_MS;
     bench.servo.cfg.stop_hi_us = 1850u;
@@ -588,10 +588,10 @@ TEST_CASE(the_link_going_ends_a_run_on_the_ina3221)
 
 /* A servo on a stop, on a bench whose supply limit is above what it
  * draws there.  The model's 2.4A is over the 0.1Ohm shunt's 1.638A:
- * every sample clips and the windows read 1.638A.  With STALL AT under
- * that the run ends on STALL AT.  With STALL AT at its default, 2.00A,
+ * every sample clips and the windows read 1.638A.  With Stall threshold under
+ * that the run ends on Stall threshold.  With Stall threshold at its default, 2.00A,
  * no reading passes it: the run goes on to its end, counts the clipped
- * windows and says STALL AT cannot be reached -- the shunt decides what
+ * windows and says Stall threshold cannot be reached -- the shunt decides what
  * this meter can show. */
 TEST_CASE(a_servo_on_a_stop_reads_the_range_and_is_judged_on_that)
 {
@@ -606,7 +606,7 @@ TEST_CASE(a_servo_on_a_stop_reads_the_range_and_is_judged_on_that)
     CHECK(bench.t.clipped >= 19u);
     CHECK(bench.t.stalled);
     b_check_ended(SERVO_TEST_AB_STALL);
-    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638A, STALL AT "
+    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638A, limit "
                                "1.50A: FAIL\n") != NULL);
     CHECK(strstr(bench.out.report, "Clipped:        ") != NULL);
     CHECK(rows_with(bench.out.csv, COL_CLIPPED, "50") >= 15u);
@@ -624,9 +624,9 @@ TEST_CASE(a_servo_on_a_stop_reads_the_range_and_is_judged_on_that)
     CHECK(bench.t.clipped > 40u);
     CHECK_EQ(bench.t.cc_readings, 0u);
     CHECK_NEAR(bench.t.stall_peak_a, 1.638f, 0.001f);
-    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638A, STALL AT "
+    CHECK(strstr(bench.out.report, "Stall threshold  highest 1.638A, limit "
                                "2.00A: PASS\n") != NULL);
-    CHECK(strstr(bench.out.report, "STALL AT 2.00A must be below INA3221 "
+    CHECK(strstr(bench.out.report, "Stall threshold 2.00A must be below INA3221 "
                                "range 1.638A\n") != NULL);
     char want[96];
     snprintf(want, sizeof(want), "Clipped:        %lu windows hold a sample "
@@ -635,7 +635,7 @@ TEST_CASE(a_servo_on_a_stop_reads_the_range_and_is_judged_on_that)
 }
 
 /* The same servo against a supply that holds 1.00A: the INA3221 reads
- * the limit, under STALL AT, and the supply's constant current ends the
+ * the limit, under Stall threshold, and the supply's constant current ends the
  * run a second after it begins. */
 TEST_CASE(a_servo_on_a_stop_against_the_limit_ends_on_constant_current)
 {
@@ -654,9 +654,9 @@ TEST_CASE(a_servo_on_a_stop_against_the_limit_ends_on_constant_current)
     CHECK(bench.t.cc_longest_ms >= 1000u && bench.t.cc_longest_ms < 1000u + PD_MS);
     CHECK_NEAR(bench.t.stall_peak_a, 1.0f, 0.002f);
     b_check_ended(SERVO_TEST_AB_CC);
-    CHECK(strstr(bench.out.report, "STALL AT 2.00A must be below current "
+    CHECK(strstr(bench.out.report, "Stall threshold 2.00A must be below current "
                                "limit 1.00A\n") != NULL);
-    CHECK(strstr(bench.out.report, "STALL AT 2.00A must be below INA3221 "
+    CHECK(strstr(bench.out.report, "Stall threshold 2.00A must be below INA3221 "
                                "range 1.638A\n") != NULL);
 }
 

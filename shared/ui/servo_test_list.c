@@ -8,7 +8,7 @@
  *     take a press with HV SERVO on only;
  *   - BROWN-OUT, its line the walk a run takes on this supply: BROWN-OUT,
  *     its lowest voltage and its step;
- *   - PASS/FAIL LIMITS, its line a STALL AT no reading can pass: STALL AT,
+ *   - PASS/FAIL LIMITS, its line a Stall threshold no reading can pass: Stall threshold,
  *     the idle and holding current, the travel time;
  *   - LENGTH AND TIMING: LENGTH BY, TEST TIME (by time only), MOVEMENTS
  *     (by moves only), DWELL TIME and SETTLING TIME;
@@ -95,7 +95,7 @@ static void walk_line(char *out, size_t n)
 }
 
 /**
- * @brief PASS/FAIL LIMITS' line: a STALL AT the run's readings cannot
+ * @brief PASS/FAIL LIMITS' line: a Stall threshold the run's readings cannot
  *        pass, or nothing.
  * @param out takes it
  * @param n its size
