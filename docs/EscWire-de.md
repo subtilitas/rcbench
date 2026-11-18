@@ -95,6 +95,8 @@ Nimm den Propeller ab. Schließe nur Signal und Masse an: Ein BEC (Battery Elimi
 
 IDENTITÄT zeigt Firmware, Version, Layout oder Revision, Signatur oder Name sowie `SCHREIBBAR` oder `NUR LESEN` mit Begründung. Die anderen Reiter enthalten die Einstellungsfelder. Tippe auf eine Zahl, um das Tastenfeld zu öffnen, oder auf eine Auswahl, um ihre Liste zu öffnen. Jeder Editor zeigt die Hilfezeile des Felds. Änderungen betreffen zunächst nur den Entwurf auf dem Panel; geänderte Felder sind am Namen markiert. Erst SCHREIBEN überträgt sie zum ESC.
 
+NEU AUSLESEN liest die Einstellungen aus dem ESC und ersetzt den Entwurf damit. Ohne Änderung im Entwurf liest ein Tippen sofort. Mit 1 oder mehr nicht geschriebenen Änderungen öffnet das Tippen eine Seite mit `Nicht geschriebene Änderungen gehen verloren.`; rotes Halten für 2s liest aus, ABBRECHEN behält den Entwurf.
+
 ![AM32 Identität](img/de/motor-wire-am.png)
 
 ![AM32 Motor](img/de/motor-wire-am-motor.png)
@@ -145,8 +147,8 @@ n WERTE SCHREIBEN öffnet eine Liste der Änderungen. Sicherheitskritische Felde
 
 Die Bestätigungsseite hält eine eigene Kopie des Entwurfs. Durch Halten bestätigst du daher genau die aufgelisteten Änderungen. Bis zum Ergebnis des Schreibens nimmt die Sitzung dann nur ABBRECHEN und STOP an. ABBRECHEN während eines Kartenzugriffs bricht den Schreibvorgang ab; der ESC bleibt unverändert. SCHREIBEN wartet, solange eine Datei von der Karte gelesen wird. Trifft die Datei bei offener Bestätigungsseite ein, wird sie nicht geladen. Die Seite meldet dies.
 
-1. Der erste Schreibvorgang einer Sitzung speichert ihr Backup unter `BENCH/ESCW/CONF`, als `ESCW001-AM32.TXT` bis `ESCW999-AM32.TXT` (siehe [Namen der Backups](#namen-der-backups)). Fehlt die Karte oder schlägt das Speichern fehl, fragt die Seite nach einer Bestätigung. Durch erneutes Halten für 2s setzt du den Vorgang ohne Backup fort.
-2. Der Vermerk `BENCH/ESCW/CONF/ESCW.TXT` enthält die geänderten Felder und die aus dem ESC ausgelesenen Einstellungen. Schlägt dieses Speichern fehl, fragt die Seite nach derselben Bestätigung.
+1. Der erste Schreibvorgang einer Sitzung speichert ihr Backup unter `BENCH/ESCW/CONF`, als `ESCW001-AM32.TXT` bis `ESCW999-AM32.TXT` (siehe [Namen der Backups](#namen-der-backups)). Fehlt die Karte oder schlägt das Speichern fehl, fragt die Seite nach einer Bestätigung. Durch erneutes Halten für 2s setzt du den Vorgang ohne Backup fort. Das Halten gilt nur für diesen Schreibvorgang: Der nächste Schreibvorgang der Sitzung speichert zuerst das Backup und fragt erneut, wenn die Karte wieder ablehnt.
+2. Der Vermerk `BENCH/ESCW/CONF/ESCW.TXT` enthält die geänderten Felder und die aus dem ESC ausgelesenen Einstellungen. Schlägt dieses Speichern fehl, fragt die Seite nach derselben Bestätigung. Jeder Schreibvorgang speichert seinen eigenen Vermerk; das Halten von 2s HALTEN: OHNE BACKUP lässt einen Schreibvorgang ohne ihn zu.
 3. Die Sitzung liest erneut aus, schreibt, liest zurück und meldet das Ergebnis in Worten. Ein Schreibvorgang auf BLHeli_S oder Bluejay dauert etwa 3848ms.
 
 Eine gelöschte Einstellungsseite kann nicht als Backup dienen. Die Sitzung verwendet die ersten ausgelesenen, nicht gelöschten Einstellungen. Nach dem Zurückspielen eines Backups sind dies die anschließend ausgelesenen Werte. Enthält eine `music`-Zeile ein Byte außerhalb 0x20 bis 0x7E, wird keine Datei erstellt. Die Sitzung schreibt nichts und nennt den Grund.
@@ -175,9 +177,61 @@ Der Name eines Backups ist `ESCW`, eine Nummer von 001 bis 999 und die Firmware:
 
 DATEI LÖSCHEN schaltet die Liste in den Löschmodus. Ein Tipp auf eine Datei öffnet die Bestätigung mit ihrem Namen. Halte die rote Taste 2s, um sie zu löschen. Anschließend wird die Liste erneut von der Karte gelesen. Backups, die diese Sitzung seit VERBINDEN gespeichert hat, lassen sich hier nicht löschen; die Seite erklärt dies. Verwende dafür LOGS > FILES. Schlägt das Löschen fehl, bleibt die Datei unverändert, und die Seite meldet den Fehler. Gelöscht wird nur auf der Karte, von der die Liste stammt. Hast du sie inzwischen gewechselt, wird nichts gelöscht, und die Seite nennt den Grund.
 
+### Ablehnungscodes
+
+Eine Datei, die nicht geladen wird, und ein Zurückspielen, das nicht startet, nennen den Grund in der Meldungszeile, mit einem Code und bei einer Datei mit der Zeile der Ablehnung:
+
+```
+Datei abgelehnt, Code 15, Zeile 4: kein Feld und keine Zeile hat diesen Namen.
+Zurückspielen abgelehnt, Code 10: die Datei gehört zu einem ESC mit anderem Namen.
+```
+
+Eine abgelehnte Datei ändert nichts am Entwurf. Ein abgelehntes Zurückspielen sendet nichts an den ESC. Die Zeilennummer zählt ab 1; eine Ablehnung, die zu keiner Zeile gehört, hat keine.
+
+Datei-Codes, aus `ew_file_err_t` (`protocols/escwire/include/ew_file.h`):
+
+| Code | Grund |
+| --- | --- |
+| 1 | es wurde kein Dateitext übergeben |
+| 2 | die Datei ist größer als 5280 Bytes |
+| 3 | Zeile 1 ist nicht der Kopf einer ESC-Einstellungsdatei |
+| 4 | die Formatversion ist keine Zahl von 1 bis 999 |
+| 5 | die Formatversion liegt über 1; der Prüfstand liest Version 1 |
+| 6 | die letzte Zeile ist weder `checksum` noch `edited` |
+| 7 | LF- und CR-LF-Zeilenenden sind gemischt |
+| 8 | die Zeile passt an dieser Stelle nicht zum Format |
+| 9 | das Format kennt diesen Firmware-Namen nicht |
+| 10 | die Byte-Anzahl passt nicht zur Firmware |
+| 11 | die Prüfsumme passt nicht: Die Datei ist beschädigt oder geändert |
+| 12 | nach der `checksum`-Zeile folgt Text |
+| 13 | die Kopfzeilen widersprechen der Seite oder einander |
+| 14 | der Name ist länger als 29 Zeichen |
+| 15 | kein Feld und keine Zeile hat diesen Namen |
+| 16 | diese Zeile steht doppelt in der Datei |
+| 17 | das Feld hat keinen Wert, der so lautet |
+| 18 | `Firmware` und `Layout` müssen vor den Feldern stehen |
+
+Codes des Zurückspielens, aus `ew_restore_t` im selben Header:
+
+| Code | Grund |
+| --- | --- |
+| 1 | es wurde kein Dateitext übergeben |
+| 2 | eine bearbeitete Datei hat keine Prüfsumme |
+| 3 | die Datei oder der ESC ist nicht AM32 |
+| 4 | die Einstellungen des ESC sind nicht gelöscht |
+| 5 | die Firmware des ESC ist ein CAN-Build (Controller Area Network) |
+| 6 | die Seite in der Datei ist keine Seite der Revision 3 oder 4 |
+| 7 | die Datei gehört zu einem anderen Pin-Code |
+| 8 | die Datei gehört zu einem anderen Flash-Code |
+| 9 | die Datei gehört zu einem anderen Bootloader-Protokoll |
+| 10 | die Datei gehört zu einem ESC mit anderem Namen |
+| 11 | die Datei enthält keinen Namen zum Vergleichen |
+
+Eine Datei einer anderen Firmware oder eines anderen Layouts und ein Wert, den sein Feld nicht annimmt, werden nach dem Lesen der Datei abgelehnt und haben eigene Zeilen ohne Code.
+
 ## Gelöschter AM32
 
-Liefert ein AM32 beim Auslesen seiner Einstellungen 0xFF, bietet er nur BACKUP ZURÜCKSPIELEN an und speichert kein Backup. Eine Datei wird nur angenommen, wenn ihre CRC-32-Prüfsumme gültig ist und Pin-Code, Flash-Code, Bootloader-Protokoll und Name mit denen des ESC übereinstimmen. Halte die rote Taste 2s, um das Backup zurückzuspielen.
+Liefert ein AM32 beim Auslesen seiner Einstellungen 0xFF, bietet er nur BACKUP ZURÜCKSPIELEN an und speichert kein Backup. Eine Datei wird nur angenommen, wenn ihre CRC-32-Prüfsumme gültig ist und Pin-Code, Flash-Code, Bootloader-Protokoll und Name mit denen des ESC übereinstimmen. Halte die rote Taste 2s, um das Backup zurückzuspielen. Eine abgelehnte Datei nennt ihren Grund und ihren Code ([Ablehnungscodes](#ablehnungscodes)).
 
 ![Gelöschter AM32](img/de/motor-wire-erased.png)
 

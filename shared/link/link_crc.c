@@ -20,8 +20,9 @@ uint16_t link_crc(uint16_t crc, const void *data, size_t len)
     for (size_t i = 0; i < len; ++i) {
         crc ^= (uint16_t)((uint16_t)p[i] << 8);
         for (int bit = 0; bit < 8; ++bit) {
-            crc = (crc & 0x8000u) ? (uint16_t)((uint16_t)(crc << 1) ^ 0x1021u)
-                                  : (uint16_t)(crc << 1);
+            const uint16_t poly = (crc & 0x8000u) != 0u ? 0x1021u : 0u;
+
+            crc = (uint16_t)((uint16_t)(crc << 1) ^ poly);
         }
     }
     return crc;

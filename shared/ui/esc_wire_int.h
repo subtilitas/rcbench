@@ -73,6 +73,7 @@ enum {
     EWP_PAGE_RELEASE,    /**< a pin another writer holds                      */
     EWP_PAGE_RESTORE,    /**< RESTORE FROM BACKUP                             */
     EWP_PAGE_DELETE,     /**< a file of the card goes                         */
+    EWP_PAGE_READ,       /**< READ AGAIN over edits not written               */
 };
 
 /** @brief What the choice list chooses. */
@@ -213,7 +214,8 @@ typedef struct {
     uint8_t    own_count; /**< entries of @c own                              */
     char       own[EWP_OWN_MAX][ESC_CARD_NAME_MAX]; /**< the backups this session
                                                         saved, newest last    */
-    bool       no_card_ok; /**< the operator goes without a card this session */
+    bool       backup_unsaved; /**< a write went without the session's backup
+                                    on the card: the next write saves it first */
     char       file_name[ESC_CARD_NAME_MAX]; /**< the file chosen             */
     uint16_t   files_first; /**< the list's first file                        */
     uint16_t   files_total; /**< the card's files                             */
@@ -390,6 +392,22 @@ const char *ewp_row_name(const ewp_row_t *r);
 void ewp_row_text(const ewp_row_t *r, char *out, size_t size);
 
 /**
+ * @brief A unit as the screen writes it: `deg` is ° and `C` is °C.  The map's
+ *        own spelling is the settings files', which hold ASCII.
+ * @param unit The map's unit.
+ * @return The unit to draw.
+ */
+const char *ewp_unit_shown(const char *unit);
+
+/**
+ * @brief A value's text with its unit as the screen writes it: a number
+ *        followed by `deg` ends in °, one followed by `C` in °C.
+ * @param text The text of ew_field_text() or ew_key_text(), changed in place.
+ * @param size Bytes at @p text.
+ */
+void ewp_units_shown(char *text, size_t size);
+
+/**
  * @brief Whether a row's draft differs from the read copy.
  * @param r The row.
  * @return true then.
@@ -543,11 +561,13 @@ const char *ewp_help_text(const ewp_row_t *r);
 
 /**
  * @brief The help line of a byte.
- * @param fw  An ew_fw_t.
- * @param off The byte.
+ * @param fw     An ew_fw_t.
+ * @param layout The layout or revision the page reports: a byte that holds
+ *               another field in another layout has that field's line.
+ * @param off    The byte.
  * @return The text; "" for none.
  */
-const char *esc_wire_help_field(uint8_t fw, uint8_t off);
+const char *esc_wire_help_field(uint8_t fw, uint8_t layout, uint8_t off);
 
 /**
  * @brief The help line of an ESCape32 key.

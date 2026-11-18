@@ -1312,6 +1312,15 @@ UI_TEXT(AN_SILENT, 11,
 UI_TEXT(AN_LIVE, 0,
     "LIVE",
     "LIVE")
+UI_TEXT(AN_FAILSAFE, 11,
+    "FAILSAFE",
+    "FAILSAFE")
+UI_TEXT(AN_FRAME_LOST, 11,
+    "FRAME LOST",
+    "FRAME LOST")
+UI_TEXT(AN_DIGITAL, 23,
+    "DIGITAL",
+    "DIGITAL")
 UI_TEXT(AN_WHY_SILENT, 0,
     "No signal on the wire.",
     "Kein Signal auf der Leitung.")
@@ -3368,6 +3377,9 @@ UI_TEXT(EW_HOLD_WRITE, 0,
 UI_TEXT(EW_HOLD_NO_BACKUP, 42,
     "HOLD 2s: NO BACKUP",
     "2s HALTEN: OHNE BACKUP")
+UI_TEXT(EW_HOLD_READ, 42,
+    "HOLD 2s TO READ",
+    "2s HALTEN: AUSLESEN")
 UI_TEXT(EW_HOLD_LEAVE, 0,
     "HOLD 2s TO LEAVE",
     "2s HALTEN ZUM VERLASSEN")
@@ -3440,6 +3452,9 @@ UI_TEXT(EW_HINT_RELEASE, 94,
 UI_TEXT(EW_HINT_RESTORE, 94,
     "Hold 2s to restore from the file.",
     "Halte 2s, um die Werte aus der Datei zurückzuspielen.")
+UI_TEXT(EW_HINT_READ, 94,
+    "Hold 2s to read again and drop the edits.",
+    "Halte 2s, um neu auszulesen und die Änderungen zu verwerfen.")
 UI_TEXT(EW_HINT_NO_BACKUP, 94,
     "Hold 2s to write without a backup.",
     "Halte 2s, um ohne Backup zu schreiben.")
@@ -3515,6 +3530,9 @@ UI_TEXT(EW_LEAVE_2, 100,
 UI_TEXT(EW_LEAVE_DRAFT, 100,
     "Edits not written are lost.",
     "Nicht geschriebene Änderungen gehen verloren.")
+UI_TEXT(EW_READ_1, 100,
+    "READ AGAIN reads the settings from the ESC and replaces the draft with them.",
+    "NEU AUSLESEN liest die Einstellungen aus dem ESC und ersetzt den Entwurf damit.")
 UI_TEXT(EW_LEAVE_E32, 100,
     "ESCape32 has no LEAVE: a power cycle ends its session.",
     "ESCape32 hat kein LEAVE: Aus- und Einschalten beendet die Sitzung.")
@@ -3809,6 +3827,99 @@ UI_TEXT(EW_MSG_FILE_REFUSED, 100,
 UI_TEXT(EW_MSG_RESTORE_REFUSED, 100,
     "Restore refused: code %u.",
     "Zurückspielen abgelehnt: Code %u.")
+UI_TEXT(EW_FILE_REFUSED_WHY, 100,
+    "File refused, code %u: %s",
+    "Datei abgelehnt, Code %u: %s")
+UI_TEXT(EW_FILE_REFUSED_LINE, 100,
+    "File refused, code %u, line %u: %s",
+    "Datei abgelehnt, Code %u, Zeile %u: %s")
+UI_TEXT(EW_RESTORE_REFUSED_WHY, 100,
+    "Restore refused, code %u: %s",
+    "Zurückspielen abgelehnt, Code %u: %s")
+UI_TEXT(EW_FE_ARG, 64,
+    "no file text was given.",
+    "es wurde kein Dateitext übergeben.")
+UI_TEXT(EW_FE_OVERSIZED, 64,
+    "the file is larger than 5280 bytes.",
+    "die Datei ist größer als 5280 Bytes.")
+UI_TEXT(EW_FE_NOT_ESC, 64,
+    "line 1 is not the header of an ESC settings file.",
+    "Zeile 1 ist nicht der Kopf einer ESC-Einstellungsdatei.")
+UI_TEXT(EW_FE_VERSION, 64,
+    "the format version is not a number from 1 to 999.",
+    "die Formatversion ist keine Zahl von 1 bis 999.")
+UI_TEXT(EW_FE_NEWER, 64,
+    "the format version is above 1, the one this bench reads.",
+    "die Formatversion liegt über 1; der Prüfstand liest Version 1.")
+UI_TEXT(EW_FE_TRUNCATED, 64,
+    "the last line is neither checksum nor edited.",
+    "die letzte Zeile ist weder checksum noch edited.")
+UI_TEXT(EW_FE_LINE_END, 64,
+    "LF and CR LF line ends are mixed.",
+    "LF- und CR-LF-Zeilenenden sind gemischt.")
+UI_TEXT(EW_FE_MALFORMED, 64,
+    "the line is not what the format has at this place.",
+    "die Zeile passt an dieser Stelle nicht zum Format.")
+UI_TEXT(EW_FE_FIRMWARE, 64,
+    "the format does not know this firmware name.",
+    "das Format kennt diesen Firmware-Namen nicht.")
+UI_TEXT(EW_FE_LENGTH, 64,
+    "the byte count does not fit the firmware.",
+    "die Byte-Anzahl passt nicht zur Firmware.")
+UI_TEXT(EW_FE_CHECKSUM, 64,
+    "the checksum does not fit: file damaged or changed.",
+    "die Prüfsumme passt nicht: Datei beschädigt oder geändert.")
+UI_TEXT(EW_FE_TRAILING, 64,
+    "text follows the checksum line.",
+    "nach der checksum-Zeile folgt Text.")
+UI_TEXT(EW_FE_MISMATCH, 64,
+    "the header lines contradict the page or each other.",
+    "die Kopfzeilen widersprechen der Seite oder einander.")
+UI_TEXT(EW_FE_NAME_LONG, 64,
+    "the name is longer than 29 characters.",
+    "der Name ist länger als 29 Zeichen.")
+UI_TEXT(EW_FE_FIELD, 64,
+    "no field or line has this name.",
+    "kein Feld und keine Zeile hat diesen Namen.")
+UI_TEXT(EW_FE_DUPLICATE, 64,
+    "this line is in the file twice.",
+    "diese Zeile steht doppelt in der Datei.")
+UI_TEXT(EW_FE_VALUE, 64,
+    "the field has no value that reads so.",
+    "das Feld hat keinen Wert, der so lautet.")
+UI_TEXT(EW_FE_NO_TARGET, 64,
+    "Firmware and Layout must stand before the fields.",
+    "Firmware und Layout müssen vor den Feldern stehen.")
+UI_TEXT(EW_RE_NOT_VERIFIED, 64,
+    "an edited file has no checksum.",
+    "eine bearbeitete Datei hat keine Prüfsumme.")
+UI_TEXT(EW_RE_FIRMWARE, 64,
+    "the file or the ESC is not AM32.",
+    "die Datei oder der ESC ist nicht AM32.")
+UI_TEXT(EW_RE_NOT_ERASED, 64,
+    "the settings of the ESC are not erased.",
+    "die Einstellungen des ESC sind nicht gelöscht.")
+UI_TEXT(EW_RE_CAN_BUILD, 64,
+    "the firmware of the ESC is a CAN build.",
+    "die Firmware des ESC ist ein CAN-Build.")
+UI_TEXT(EW_RE_BAD_PAGE, 64,
+    "the page in the file is not a revision 3 or 4 page.",
+    "die Seite in der Datei ist keine Seite der Revision 3 oder 4.")
+UI_TEXT(EW_RE_PIN_CODE, 64,
+    "the file is for another pin code.",
+    "die Datei gehört zu einem anderen Pin-Code.")
+UI_TEXT(EW_RE_FLASH_CODE, 64,
+    "the file is for another flash code.",
+    "die Datei gehört zu einem anderen Flash-Code.")
+UI_TEXT(EW_RE_PROTOCOL, 64,
+    "the file is for another bootloader protocol.",
+    "die Datei gehört zu einem anderen Bootloader-Protokoll.")
+UI_TEXT(EW_RE_NAME, 64,
+    "the file is for an ESC with another name.",
+    "die Datei gehört zu einem ESC mit anderem Namen.")
+UI_TEXT(EW_RE_NO_NAME, 64,
+    "the file holds no name to compare.",
+    "die Datei enthält keinen Namen zum Vergleichen.")
 UI_TEXT(EW_MSG_LOADED, 100,
     "%u values loaded from the file into the draft. WRITE sends them.",
     "%u Werte aus der Datei in den Entwurf geladen. SCHREIBEN sendet sie.")
@@ -3948,6 +4059,9 @@ UI_TEXT(EW_HS_28, 100,
 UI_TEXT(EW_HB_04, 100,
     "Minimum startup power, 0 to 255: throttle 1000 to 1125.",
     "Minimale Startleistung, 0 bis 255: Gas 1000 bis 1125.")
+UI_TEXT(EW_HB_04_BOOST, 100,
+    "Startup boost, 0 to 255, in layout 200.",
+    "Start-Boost, 0 bis 255, in Layout 200.")
 UI_TEXT(EW_HB_05, 100,
     "Startup sound: short beep or melody.",
     "Startton: kurzer Piepton oder Melodie.")
@@ -4105,8 +4219,8 @@ UI_TEXT(EW_HE_BRUSHED, 100,
     "Brushed motor mode: reconfigures the output stage.",
     "Modus für Bürstenmotor: stellt die Endstufe um.")
 UI_TEXT(EW_HE_TIMING, 100,
-    "Timing, 1 to 31 in steps of 0.9375°.",
-    "Timing, 1 bis 31 in Schritten von 0.9375°.")
+    "Timing, 0.9375° to 29.0625° in steps of 0.9375°.",
+    "Timing, 0.9375° bis 29.0625° in Schritten von 0.9375°.")
 UI_TEXT(EW_HE_SINE_RANGE, 100,
     "Sine range, 5 to 25%, or off.",
     "Sinus-Bereich, 5 bis 25%, oder aus.")

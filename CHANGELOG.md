@@ -243,6 +243,31 @@ history is in git.
   after the surface arrives. The measure's wait grows by 10,000ms plus the
   settling time, 16,000ms with the defaults; `surface not settled in
   time` replaces `surface not still within 3s`.
+- ESC signal-wire session: READ AGAIN with edits not written opens a page
+  with `Edits not written are lost.` and reads on a 2s hold; with no edit
+  the tap reads.
+- ESC signal-wire session: HOLD 2s: NO BACKUP stands for the write it
+  confirms. The next write saves the session's backup if the card has
+  none, then its record `ESCW.TXT`, and asks again when the card refuses.
+- ESC signal-wire session: a refused settings file and a refused restore
+  name the reason in words with the code and, for a file, the line:
+  `File refused, code 15, line 4: no field or line has this name.`
+  `docs/EscWire.md` lists the 18 file codes and the 11 restore codes.
+- ESC signal-wire session: timing and temperature rows, lists and the
+  keypad show `°` and `°C`; ESCape32's timing help line gives 0.9375° to
+  29.0625°. Bluejay's bytes 0x04 and 0x09 have the help line of the
+  layout's own field. CONNECT's TARGET row takes no tap while no throttle
+  slot and no DShot port is bound.
+- RECEIVER: RATE is the frames of a window of at least 1000ms divided by
+  its length and reads `---` for the first second and after a silence. A
+  dropout draws a line in all sixteen lanes. In NO SIGNAL the last values
+  are faint. FAILSAFE, FRAME LOST, DIGITAL and RAW DATA's counter names
+  come from the text table.
+- ESC link: a fetch of the read copy keeps the block count of the length
+  it started with, so a shorter length reported during the fetch copies
+  nothing past the image (64 bytes before). A STOP acknowledged in place
+  of a command the page never took ends the request as dropped, not as
+  done.
 
 - Bidirectional DShot: a slot is bound in the first PIO block, PIO2 down
   to PIO0, with two adjacent free state machines and 16 free instructions.

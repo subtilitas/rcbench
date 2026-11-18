@@ -321,6 +321,121 @@ TEST_CASE(the_rate_is_counted_per_second_across_the_tick_wrap)
     at_tick_0_and_before_the_wrap(a_stream_shows_its_rate, 1500u);
 }
 
+/*
+ * RATE is the frames of a window divided by the window's length.  The window
+ * starts at the first frame, so no rate shows for the first second, and a
+ * count from before a silence closes no window after it.
+ */
+TEST_CASE(the_rate_divides_by_its_window_and_starts_again_after_a_silence)
+{
+    unsigned hz = 99u;
+    uint32_t t = 60000u;
+
+    fresh();
+    CHECK(!analyser_screen_rate(&hz));
+    CHECK_EQ(hz, 0u);
+    /* The first frame, and half a second of a 100Hz stream: no window yet. */
+    for (int i = 0; i < 50; ++i, t += 10u) {
+        push_at(t, 1024, -1, 0, false, false);
+        CHECK(!analyser_screen_rate(NULL));
+    }
+    for (int i = 0; i < 200; ++i, t += 10u) {
+        push_at(t, 1024, -1, 0, false, false);
+    }
+    CHECK(analyser_screen_rate(&hz));
+    CHECK_EQ(hz, 100u);
+    /* 30 frames into the next window, then silence. */
+    analyser_screen_silent(t);
+    CHECK(!analyser_screen_rate(&hz));
+    CHECK_EQ(hz, 0u);
+    t += 5000u;
+    push_at(t, 1024, -1, 0, false, false);
+    CHECK(!analyser_screen_rate(NULL));
+    /* Frames 700ms apart are 1.43 a second: 1Hz, not the 3 frames counted. */
+    t += 700u;
+    push_at(t, 1024, -1, 0, false, false);
+    CHECK(!analyser_screen_rate(NULL));
+    t += 700u;
+    push_at(t, 1024, -1, 0, false, false);
+    CHECK(analyser_screen_rate(&hz));
+    CHECK_EQ(hz, 1u);
+}
+
+/* The trace's column @p back samples before the newest, in lane @p ch, 10px
+ * above the neutral line. */
+static gfx_color_t trace_px(int ch, int back, int dy)
+{
+    const int x = AN_COL_X(ch / 8) + 48 + 200 - 1 - back;
+    const int y = AN_LANE_TOP + (ch % 8) * AN_LANE_H + AN_LANE_H / 2 + dy;
+
+    return fb[y * W + x];
+}
+
+/*
+ * A dropout leaves a mark: one column over the trough's height in all
+ * sixteen lanes, at the sample where the receiver fell silent.  A second
+ * call in the same silence adds none.
+ */
+TEST_CASE(a_dropout_marks_every_lane_at_the_same_sample)
+{
+    const gfx_color_t mark = ui_theme_color(UI_C_TEXT_DIM);
+    uint32_t t = 10u;
+
+    fresh();
+    for (int i = 0; i < 20; ++i, t += 14u) {
+        push_at(t, 1024, -1, 0, false, false);
+    }
+    scr->render(&cv, 0);
+    for (int ch = 0; ch < 16; ++ch) {
+        for (int back = 0; back < 8; ++back) {
+            CHECK(trace_px(ch, back, -10) != mark);
+        }
+    }
+    analyser_screen_silent(t + 3000u);
+    analyser_screen_silent(t + 3100u);
+    t += 4000u;
+    for (int i = 0; i < 3; ++i, t += 14u) {
+        push_at(t, 1024, -1, 0, false, false);
+    }
+    scr->render(&cv, 0);
+    for (int ch = 0; ch < 16; ++ch) {
+        CHECK_EQ(trace_px(ch, 3, -10), mark);
+        CHECK_EQ(trace_px(ch, 3, 10), mark);
+        CHECK(trace_px(ch, 2, -10) != mark);
+        CHECK(trace_px(ch, 4, -10) != mark);
+    }
+}
+
+/* NO SIGNAL keeps the last values readable and takes them out of the live
+ * colour: trace, bar and number are faint. */
+TEST_CASE(no_signal_dims_the_last_values)
+{
+    const gfx_color_t accent = ui_theme_color(UI_C_ACCENT);
+    const gfx_color_t faint = ui_theme_color(UI_C_TEXT_FAINT);
+    uint32_t t = 10u;
+
+    fresh();
+    for (int i = 0; i < 20; ++i, t += 14u) {
+        push_at(t, 1024, 3, 1800, false, false);
+    }
+    scr->render(&cv, 0);
+    CHECK_EQ(trace_px(0, 0, 0), accent);
+    const int text = count_of(ui_theme_color(UI_C_TEXT));
+    const int was_faint = count_of(faint);
+
+    analyser_screen_silent(t + 3000u);
+    scr->render(&cv, 0);
+    /* The newest sample is the mark; the one before it is the trace. */
+    CHECK_EQ(trace_px(0, 1, 0), faint);
+    for (int ch = 0; ch < 16; ++ch) {
+        for (int back = 1; back < 20; ++back) {
+            CHECK(trace_px(ch, back, 0) != accent);
+        }
+    }
+    CHECK(count_of(ui_theme_color(UI_C_TEXT)) < text);
+    CHECK(count_of(faint) > was_faint);
+}
+
 int main(void)
 {
     RUN(a_failsafe_frame_is_not_drawn_like_a_live_one);
@@ -332,5 +447,8 @@ int main(void)
     RUN(a_cancelled_tab_press_does_not_switch_the_pane);
     RUN(a_cancelled_tab_press_already_drawn_is_redrawn_released);
     RUN(the_rate_is_counted_per_second_across_the_tick_wrap);
+    RUN(the_rate_divides_by_its_window_and_starts_again_after_a_silence);
+    RUN(a_dropout_marks_every_lane_at_the_same_sample);
+    RUN(no_signal_dims_the_last_values);
     return test_summary("analyser");
 }

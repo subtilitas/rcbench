@@ -104,7 +104,7 @@ TEST_CASE(every_bit_of_every_channel_lands_in_its_own_channel)
                 return;
             }
             for (unsigned k = 0; k < SBUS_CHANNELS; ++k) {
-                const uint16_t want = (k == c) ? (uint16_t)(1u << b) : 0u;
+                const uint16_t want = (uint16_t)((k == c) ? 1u << b : 0u);
                 if (f.channel[k] != want) {
                     T_FAIL("channel %u bit %u leaked into channel %u (%u)",
                            c, b, k, f.channel[k]);

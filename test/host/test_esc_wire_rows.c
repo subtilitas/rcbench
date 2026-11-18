@@ -219,6 +219,124 @@ TEST_CASE(the_controls_stay_above_the_alert_band)
     }
 }
 
+/**
+ * @brief The row of a field's byte, in any tab.
+ * @param off The byte.
+ * @param out Takes the row.
+ * @return true when a tab has it.
+ */
+static bool row_of(uint8_t off, ewp_row_t *out)
+{
+    for (int tab = 1; tab < ewp_s.tab_count; ++tab) {
+        for (int i = 0; ewp_row(tab, i, out); ++i) {
+            if (out->f != NULL && out->f->off == off) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/* A byte that holds another field in another layout has that field's help
+ * line: Bluejay's 0x04 and 0x09 change at layout 201. */
+TEST_CASE(a_help_line_is_the_one_of_the_layouts_field)
+{
+    ewp_row_t r;
+
+    read_as(EW_FW_BJ, 208u);
+    CHECK(row_of(0x04u, &r));
+    CHECK_STR_EQ(r.f->name, "MIN STARTUP POWER");
+    CHECK_STR_EQ(ewp_help_text(&r), TR(EW_HB_04));
+    CHECK(row_of(0x09u, &r));
+    CHECK_STR_EQ(r.f->name, "POWER SLOPE");
+    CHECK_STR_EQ(ewp_help_text(&r), TR(EW_HB_09));
+    read_as(EW_FW_BJ, 200u);
+    CHECK(row_of(0x04u, &r));
+    CHECK_STR_EQ(r.f->name, "STARTUP BOOST");
+    CHECK_STR_EQ(ewp_help_text(&r), TR(EW_HB_04_BOOST));
+    CHECK(row_of(0x09u, &r));
+    CHECK_STR_EQ(r.f->name, "STARTUP POWER");
+    CHECK_STR_EQ(ewp_help_text(&r), TR(EW_HS_09));
+    read_as(EW_FW_BJ, 33u);
+    CHECK(!row_of(0x04u, &r));
+    CHECK(row_of(0x09u, &r));
+    CHECK_STR_EQ(ewp_help_text(&r), TR(EW_HS_09));
+}
+
+/* The screen writes ° and °C where the maps, whose spelling the ASCII settings
+ * files keep, write deg and C: on the row, in the keypad and in the list. */
+TEST_CASE(degrees_are_shown_with_their_sign)
+{
+    char text[32];
+    ewp_row_t r = { 0 };
+
+    read_as(EW_FW_AM, 4u);
+    CHECK(row_of(0x17u, &r));
+    ewp_s.draft[0x17] = 26u;
+    ewp_row_text(&r, text, sizeof(text));
+    CHECK_STR_EQ(text, "15°");
+    (void)ew_field_text(r.f, 26u, text, sizeof(text));
+    CHECK_STR_EQ(text, "15deg");
+    ewp_edit_open(&r);
+    CHECK(esc_wire_panel_keypad()->open);
+    CHECK_STR_EQ(esc_wire_panel_keypad()->unit, "°");
+    esc_wire_pages.back();
+    CHECK(row_of(0x2Bu, &r));
+    ewp_s.draft[0x2B] = 90u;
+    ewp_row_text(&r, text, sizeof(text));
+    CHECK_STR_EQ(text, "90°C");
+    /* BLHeli_S names its temperatures in the list. */
+    read_as(EW_FW_S, 33u);
+    CHECK(row_of(0x23u, &r));
+    ewp_s.draft[0x23] = 7u;
+    ewp_row_text(&r, text, sizeof(text));
+    CHECK_STR_EQ(text, "140°C");
+    /* A text that only ends like a unit keeps its letters. */
+    snprintf(text, sizeof(text), "DISC");
+    ewp_units_shown(text, sizeof(text));
+    CHECK_STR_EQ(text, "DISC");
+    CHECK_STR_EQ(ewp_unit_shown("%"), "%");
+}
+
+/* ESCape32's timing: the row, the keypad's range and the help line name the
+ * same degrees, 0.9375° to 29.0625°. */
+TEST_CASE(escape32_timing_reads_in_degrees_everywhere)
+{
+    char text[32];
+    ewp_row_t r = { 0 };
+    bool got = false;
+
+    read_as(EW_FW_E32, 17u);
+    for (int tab = 1; tab < ewp_s.tab_count && !got; ++tab) {
+        for (int i = 0; !got && ewp_row(tab, i, &r); ++i) {
+            got = r.k != NULL && strcmp(r.k->key, "timing") == 0;
+        }
+    }
+    CHECK(got);
+    ew_e32_put(ewp_s.draft, r.slot, 1);
+    ewp_row_text(&r, text, sizeof(text));
+    CHECK_STR_EQ(text, "0.9375°");
+    ew_e32_put(ewp_s.draft, r.slot, 31);
+    ewp_row_text(&r, text, sizeof(text));
+    CHECK_STR_EQ(text, "29.0625°");
+    ewp_edit_open(&r);
+    const ui_keypad_t *k = esc_wire_panel_keypad();
+
+    CHECK(k->open);
+    CHECK_STR_EQ(k->unit, "°");
+    CHECK(k->min > 0.937f && k->min < 0.938f);
+    CHECK(k->max > 29.062f && k->max < 29.063f);
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
+        CHECK(strstr(ewp_help_text(&r), "0.9375° ") != NULL);
+        CHECK(strstr(ewp_help_text(&r), " 29.0625° ") != NULL);
+        CHECK(strstr(ewp_help_text(&r), "1 to 31") == NULL);
+        CHECK(strstr(ewp_help_text(&r), "1 bis 31") == NULL);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    esc_wire_pages.back();
+}
+
 int main(void)
 {
     RUN(every_field_of_a_written_layout_is_in_one_tab);
@@ -227,5 +345,8 @@ int main(void)
     RUN(a_layout_with_no_field_names_shows_bytes);
     RUN(the_warning_page_has_room_for_every_second_look_field);
     RUN(the_controls_stay_above_the_alert_band);
+    RUN(a_help_line_is_the_one_of_the_layouts_field);
+    RUN(degrees_are_shown_with_their_sign);
+    RUN(escape32_timing_reads_in_degrees_everywhere);
     return test_summary("esc_wire_rows");
 }

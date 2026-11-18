@@ -9,6 +9,7 @@
 #include <string.h>
 
 #include "esc_wire_int.h"
+#include "ew_file.h"
 #include "ew_id.h"
 #include "ew_session.h"
 #include "link_pages.h"
@@ -101,6 +102,63 @@ static ui_text_id_t session_result(uint16_t ses)
     }
 }
 
+/**
+ * @brief Why a settings file is refused, in words.
+ * @param e An ew_file_err_t.
+ * @return The text; TX_COUNT for a code without one.
+ */
+static ui_text_id_t file_reason(uint16_t e)
+{
+    static const ui_text_id_t k_why[] = {
+        [EW_FILE_ERR_ARG] = TX_EW_FE_ARG,
+        [EW_FILE_ERR_OVERSIZED] = TX_EW_FE_OVERSIZED,
+        [EW_FILE_ERR_NOT_ESC] = TX_EW_FE_NOT_ESC,
+        [EW_FILE_ERR_VERSION] = TX_EW_FE_VERSION,
+        [EW_FILE_ERR_NEWER] = TX_EW_FE_NEWER,
+        [EW_FILE_ERR_TRUNCATED] = TX_EW_FE_TRUNCATED,
+        [EW_FILE_ERR_LINE_END] = TX_EW_FE_LINE_END,
+        [EW_FILE_ERR_MALFORMED] = TX_EW_FE_MALFORMED,
+        [EW_FILE_ERR_FIRMWARE] = TX_EW_FE_FIRMWARE,
+        [EW_FILE_ERR_LENGTH] = TX_EW_FE_LENGTH,
+        [EW_FILE_ERR_CHECKSUM] = TX_EW_FE_CHECKSUM,
+        [EW_FILE_ERR_TRAILING] = TX_EW_FE_TRAILING,
+        [EW_FILE_ERR_MISMATCH] = TX_EW_FE_MISMATCH,
+        [EW_FILE_ERR_NAME_LONG] = TX_EW_FE_NAME_LONG,
+        [EW_FILE_ERR_FIELD] = TX_EW_FE_FIELD,
+        [EW_FILE_ERR_DUPLICATE] = TX_EW_FE_DUPLICATE,
+        [EW_FILE_ERR_VALUE] = TX_EW_FE_VALUE,
+        [EW_FILE_ERR_NO_TARGET] = TX_EW_FE_NO_TARGET,
+    };
+
+    return e >= (uint16_t)EW_FILE_ERR_ARG && e < sizeof(k_why) / sizeof(k_why[0])
+               ? k_why[e] : TX_COUNT;
+}
+
+/**
+ * @brief Why a restore is refused, in words.
+ * @param r An ew_restore_t.
+ * @return The text; TX_COUNT for a code without one.
+ */
+static ui_text_id_t restore_reason(uint16_t r)
+{
+    static const ui_text_id_t k_why[] = {
+        [EW_RESTORE_ARG] = TX_EW_FE_ARG,
+        [EW_RESTORE_NOT_VERIFIED] = TX_EW_RE_NOT_VERIFIED,
+        [EW_RESTORE_FIRMWARE] = TX_EW_RE_FIRMWARE,
+        [EW_RESTORE_NOT_ERASED] = TX_EW_RE_NOT_ERASED,
+        [EW_RESTORE_CAN_BUILD] = TX_EW_RE_CAN_BUILD,
+        [EW_RESTORE_BAD_PAGE] = TX_EW_RE_BAD_PAGE,
+        [EW_RESTORE_PIN_CODE] = TX_EW_RE_PIN_CODE,
+        [EW_RESTORE_FLASH_CODE] = TX_EW_RE_FLASH_CODE,
+        [EW_RESTORE_PROTOCOL] = TX_EW_RE_PROTOCOL,
+        [EW_RESTORE_NAME] = TX_EW_RE_NAME,
+        [EW_RESTORE_NO_NAME] = TX_EW_RE_NO_NAME,
+    };
+
+    return r >= (uint16_t)EW_RESTORE_ARG && r < sizeof(k_why) / sizeof(k_why[0])
+               ? k_why[r] : TX_COUNT;
+}
+
 const char *ewp_message_text(void)
 {
     uint16_t d = 0u;
@@ -173,18 +231,38 @@ const char *ewp_message_text(void)
         return TR(EW_MSG_LEFT);
     case ESC_PROG_MSG_CLEARED:
         return TR(EW_MSG_CLEARED);
-    case ESC_PROG_MSG_FILE_REFUSED:
-        snprintf(s_msg, sizeof(s_msg), TR(EW_MSG_FILE_REFUSED), (unsigned)d);
+    case ESC_PROG_MSG_FILE_REFUSED: {
+        const ui_text_id_t why = file_reason(d);
+        const unsigned line = esc_prog_file_line(&ewp_s.prog);
+
+        if (why == TX_COUNT) {
+            snprintf(s_msg, sizeof(s_msg), TR(EW_MSG_FILE_REFUSED), (unsigned)d);
+        } else if (line != 0u) {
+            snprintf(s_msg, sizeof(s_msg), TR(EW_FILE_REFUSED_LINE), (unsigned)d,
+                     line, ui_tr(why));
+        } else {
+            snprintf(s_msg, sizeof(s_msg), TR(EW_FILE_REFUSED_WHY), (unsigned)d,
+                     ui_tr(why));
+        }
         return s_msg;
+    }
     case ESC_PROG_MSG_LOAD_REFUSED:
         return d == (uint16_t)EW_LOAD_FIRMWARE ? TR(EW_LOAD_FIRMWARE)
              : d == (uint16_t)EW_LOAD_LAYOUT   ? TR(EW_LOAD_LAYOUT)
              : d == (uint16_t)EW_LOAD_ERASED   ? TR(EW_MSG_ERASED)
              : d == (uint16_t)EW_LOAD_READ_ONLY ? TR(EW_MSG_READ_ONLY)
                                                 : TR(EW_LOAD_VALUE);
-    case ESC_PROG_MSG_RESTORE_REFUSED:
-        snprintf(s_msg, sizeof(s_msg), TR(EW_MSG_RESTORE_REFUSED), (unsigned)d);
+    case ESC_PROG_MSG_RESTORE_REFUSED: {
+        const ui_text_id_t why = restore_reason(d);
+
+        if (why == TX_COUNT) {
+            snprintf(s_msg, sizeof(s_msg), TR(EW_MSG_RESTORE_REFUSED), (unsigned)d);
+        } else {
+            snprintf(s_msg, sizeof(s_msg), TR(EW_RESTORE_REFUSED_WHY), (unsigned)d,
+                     ui_tr(why));
+        }
         return s_msg;
+    }
     case ESC_PROG_MSG_LOADED:
         snprintf(s_msg, sizeof(s_msg), TR(EW_MSG_LOADED), (unsigned)d);
         return s_msg;
@@ -306,5 +384,7 @@ const char *ewp_help_text(const ewp_row_t *r)
     if (r->k != NULL) {
         return r->slot < EW_E32_KEYS ? esc_wire_help_key(r->slot) : "";
     }
-    return r->f != NULL ? esc_wire_help_field(ewp_s.prog.f.rd.fw, r->f->off) : "";
+    return r->f != NULL ? esc_wire_help_field(ewp_s.prog.f.rd.fw,
+                                              ewp_s.prog.f.rd.layout, r->f->off)
+                        : "";
 }

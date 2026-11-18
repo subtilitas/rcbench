@@ -1183,8 +1183,8 @@ TEST_CASE(the_commit_crc_is_ccitt_false_over_low_byte_first)
     /* 128 zero bytes from seed 0xFFFF, by the bitwise definition. */
     uint16_t crc = 0xFFFFu;
     for (unsigned i = 0; i < 128u * 8u; ++i) {
-        crc = (crc & 0x8000u) ? (uint16_t)((uint16_t)(crc << 1) ^ 0x1021u)
-                              : (uint16_t)(crc << 1);
+        crc = (uint16_t)((uint16_t)(crc << 1)
+                         ^ ((crc & 0x8000u) != 0u ? 0x1021u : 0u));
     }
     CHECK_EQ(out_stage_crc(cfg, slots), crc);
 
@@ -1198,8 +1198,8 @@ TEST_CASE(the_commit_crc_is_ccitt_false_over_low_byte_first)
     cfg[4] = (uint16_t)digits[8];
     crc = 0x29B1u;
     for (unsigned i = 0; i < 119u * 8u; ++i) {
-        crc = (crc & 0x8000u) ? (uint16_t)((uint16_t)(crc << 1) ^ 0x1021u)
-                              : (uint16_t)(crc << 1);
+        crc = (uint16_t)((uint16_t)(crc << 1)
+                         ^ ((crc & 0x8000u) != 0u ? 0x1021u : 0u));
     }
     CHECK_EQ(out_stage_crc(cfg, slots), crc);
 

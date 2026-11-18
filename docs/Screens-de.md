@@ -3683,8 +3683,17 @@ Spuren. Jede enthält Kanalname in 10 x 20, Verlauf, einen 56px breiten
 Balken für den aktuellen Wert und Mikrosekunden in 8 x 16. Der Verlauf
 fasst 200 Werte, einen pro Pixel: etwa 2,8s bei 71 Frames pro Sekunde,
 also einem S.BUS-Frame alle 14ms. CH17 und CH18 sind digitale Kanäle.
-Ein Glitch erscheint als Spitze einer Spur, ein Signalausfall als
-zeitgleiche Kerbe durch alle sechzehn.
+Ein Glitch erscheint als Spitze einer Spur. Ein Signalausfall setzt einen
+Lückenwert in jede Spur: eine 1px breite Linie über die 30px hohe Mulde
+der Spur, in allen sechzehn beim selben Wert, mit unterbrochener Spur auf
+beiden Seiten.
+
+RATE ist die Zahl der Frames eines Fensters von mindestens 1000ms geteilt
+durch die Länge des Fensters, gerundet auf 1Hz. Das Fenster beginnt beim
+ersten Frame und beim ersten Frame nach einer Stille; RATE zeigt `---`,
+bis ein Fenster geschlossen ist. Bei KEIN SIGNAL bleiben Spuren, Balken
+und Werte des letzten Frames in der blassen Farbe (`UI_C_TEXT_FAINT`)
+stehen.
 
 Das 260px breite Zustandsfeld rechts zeigt den Zustand in 20 x 36 und
 bis zu drei Erklärungszeilen in 12 x 24. BUS, RATE, FRAMES, RESYNC und

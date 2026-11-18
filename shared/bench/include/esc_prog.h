@@ -190,6 +190,8 @@ typedef struct {
     uint8_t  aborted;        /**< ABORT went: the outcome it cuts is its own  */
     esc_prog_msg_t msg;      /**< the last message                            */
     uint16_t detail;         /**< its code                                    */
+    uint16_t file_line;      /**< ESC_PROG_MSG_FILE_REFUSED: the line of the
+                                  file the refusal is at, from 1; 0 for none  */
     uint8_t  backup_state;   /**< an esc_prog_backup_t                        */
     uint32_t backup_gen;     /**< the image it was taken from                 */
     ew_file_t file;          /**< the session's backup                        */
@@ -442,6 +444,14 @@ size_t esc_prog_record_text(const esc_prog_t *p, const uint8_t *draft, char *out
  */
 esc_prog_msg_t esc_prog_file_load(esc_prog_t *p, const char *text, size_t len,
                                   unsigned *line);
+
+/**
+ * @brief The line of the file the last ESC_PROG_MSG_FILE_REFUSED is at, from
+ *        esc_prog_file_load() or esc_prog_file_restore().
+ * @param p The model.
+ * @return The line, from 1; 0 when the refusal has none.
+ */
+unsigned esc_prog_file_line(const esc_prog_t *p);
 
 /**
  * @brief The draft of the last esc_prog_file_load() that was LOADED.

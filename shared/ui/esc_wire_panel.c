@@ -191,10 +191,6 @@ void ewp_write_go(void)
 {
     const esc_prog_t *m = &ewp_s.prog;
 
-    if (ewp_s.no_card_ok) {
-        write_now();
-        return;
-    }
     ewp_s.card.len = esc_prog_record_text(m, ewp_s.w_draft, ewp_s.card.text,
                                           sizeof(ewp_s.card.text));
     if (ewp_s.card.len == 0u) {
@@ -302,6 +298,7 @@ static void saved(const esc_card_done_t *d)
         char line[EWP_LINE];
 
         esc_prog_backup_settled(&ewp_s.prog);
+        ewp_s.backup_unsaved = false;
         snprintf(line, sizeof(line), TR(EW_BACKUP_SAVED), d->name);
         ewp_note(line, false);
         if (ewp_s.w_step == EWP_W_BACKUP) {
@@ -575,7 +572,7 @@ static void connect_now(void)
     }
     ewp_connect_values(&c);
     ewp_s.note[0] = '\0';
-    ewp_s.no_card_ok = false;
+    ewp_s.backup_unsaved = false;
     ewp_s.own_count = 0u;
     ewp_s.own_from = ewp_s.card_id;
     write_give_up();
@@ -591,7 +588,7 @@ static void enter_again_now(void)
 
     ewp_connect_values(&c);
     ewp_s.note[0] = '\0';
-    ewp_s.no_card_ok = false;
+    ewp_s.backup_unsaved = false;
     write_give_up();
     (void)esc_prog_enter_again(&ewp_s.prog, &c);
 }
@@ -616,7 +613,9 @@ void ewp_hold_apply(void)
     case EWP_PAGE_WRITE:
         if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_NONE) {
             ewp_note(ewp_no_backup_text(), true);
-        } else if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_OWED) {
+        } else if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_OWED
+                   || ewp_s.backup_unsaved) {
+            /* Owed, or a write went without it: the card is asked again. */
             if (backup_ask()) {
                 ewp_s.w_step = EWP_W_BACKUP;
             } else {
@@ -627,9 +626,16 @@ void ewp_hold_apply(void)
         }
         break;
     case EWP_PAGE_NO_BACKUP:
-        ewp_s.no_card_ok = true;
+        /* The hold stands for this write alone: it goes without the card,
+         * and the next write asks the card again. */
+        if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_OWED) {
+            ewp_s.backup_unsaved = true;
+        }
         esc_prog_backup_settled(m);
-        ewp_write_go();
+        write_now();
+        break;
+    case EWP_PAGE_READ:
+        (void)esc_prog_read(m);
         break;
     case EWP_PAGE_LEAVE:
         write_give_up();
@@ -710,7 +716,7 @@ void esc_wire_panel_feed(const esc_prog_feed_t *f)
         ++ewp_s.rev;
     }
     if (esc_prog_backup_state(m) == ESC_PROG_BACKUP_NONE) {
-        ewp_s.no_card_ok = false;
+        ewp_s.backup_unsaved = false;
     }
     if (!ewp_s.supply_typed) {
         /* SUPPLY's values, never a default of this session's. */

@@ -54,7 +54,7 @@ static int link_xchg(void *ctx, const esc_link_xfer_t *x, uint16_t *regs)
         }
     } else {
         esc_port_data_read(&g_p, x->off, x->n, regs);
-        g_blocks |= 1ul << (reg(LINK_EW_BLOCK) & 31u);
+        g_blocks |= (uint32_t)1u << (reg(LINK_EW_BLOCK) & 31u);
         if (g_corrupt != 0u && reg(LINK_EW_BLOCK) < LINK_ED_DRAFT) {
             regs[0] ^= 0x0101u;
         }
