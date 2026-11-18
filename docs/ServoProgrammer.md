@@ -375,7 +375,7 @@ reserved for the port while it is out of PWM. The
 IOmcu refuses every change of the voltage and of the current limit
 and every ON; it takes an OFF. The SUPPLY screen shows the same: the set
 points, the sliders, the steps and **OUTPUT ON** are dimmed and take no
-press, **OUTPUT OFF** and **RESET PEAKS** work, a tap on the READY card's
+press, **OUTPUT OFF** and **RESET PEAKS** work, a press on the READY card's
 PD MINI row while it reads ON switches the output off, and the MODE card of the SUPPLY screen reads
 `Servo programmer.`. The limits of the SUPPLY screen's settings stay
 editable; a limit lowered under a set point reaches the set point when the

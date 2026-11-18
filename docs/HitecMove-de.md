@@ -84,7 +84,7 @@ an.
 
 ![Ein Ruderhorn an einem Anschlag](img/de/servo-hitec-move-blocked.png)
 
-Das Ende, nach einem Tippen auf EIN, einem Reiterwechsel, dem
+Das Ende, nach einem Druck auf EIN, einem Reiterwechsel, dem
 Home-Feld, einem Bildschirmwechsel, einem ABBRECHEN oder einer Blockierung:
 der laufende Durchlauf endet, 0x1E = 3000, das Servo startet neu
 (0x46 = 1) mit 1000ms, die 21 Register und 0x1E, 0x50, 0x52 und 0x56
@@ -161,19 +161,22 @@ Bearbeiten mit `-` und `+`: das Halten von SERVO BEWEGEN hat sie
 bestätigt. n WERTE SCHREIBEN schreibt sie nach AUS.
 
 Eine Blockierung auf dem Weg zu NEUTRAL ist eine Blockierung von SERVO
-BEWEGEN: das Ruderhorn fährt zurück, und die Schleife endet. Ein Tippen
+BEWEGEN: das Ruderhorn fährt zurück, und die Schleife endet. Ein Druck
 auf EIN, ein Reiterwechsel, das Home-Feld, ein
 Bildschirmwechsel und ein ABBRECHEN beenden die Suche mit dem Ende der
 Schleife. STOP, ein Schalten auf SAFE am Prüfstand, die Versorgung aus und
 die anderen harten Enden bleiben harte Enden. Eine Blockierung der Suche
 ist kein Fehler: die Versorgung bleibt an.
 
-Ein Stopp zählt, was auch immer andere Finger halten. Hält ein Finger einen
-Druck im Overlay, eine Taste `-` oder `+` oder einen Reiter, beendet ein
-weiterer Finger auf EIN die Schleife und einer auf der Taste, deren Seite
-sucht, die Suche, jeweils beim Aufsetzen. Ein Finger, der auf einer der
-beiden Zeilen liegt, verliert mit diesem Stopp sein Tippen: Sein Abheben
-startet nichts wieder. Ein einzelner Finger beendet beide mit einem Tippen.
+Ein Stopp wirkt beim Aufsetzen. Ein Finger, der auf EIN aufsetzt, beendet
+die Schleife, und einer auf der Taste, deren Seite sucht, die Suche, bevor
+er abhebt. Ein Finger, der vom Bedienelement rutscht, und ein Touch-Signal,
+das unter dem Druck abreißt, haben bereits gestoppt; das Abheben startet
+nichts wieder. Ein Stopp zählt, was auch immer andere Finger halten: Hält
+ein Finger einen Druck im Overlay, eine Taste `-` oder `+` oder einen
+Reiter, stoppt ein weiterer Finger auf einem der beiden Bedienelemente
+beim Aufsetzen, und ein Finger, der auf einer der beiden Zeilen liegt,
+verliert mit diesem Stopp sein Tippen.
 
 ## Bekannte Grenzen
 

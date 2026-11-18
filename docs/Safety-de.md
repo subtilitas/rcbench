@@ -921,15 +921,16 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   gehaltene Druck wird verworfen, wie ein Touch-Verlust ihn verwirft. Nicht
   am Panel gemessen: ob der GT911 einem einzelnen Finger bei
   aufeinanderfolgenden Berührungen dieselbe Track-ID gibt.
-- Ein Stopp zählt, was auch immer andere Finger halten. Ein zweiter,
-  dritter oder weiterer Kontakt auf einem Stopp wirkt beim Aufsetzen, während
-  andere Kontakte eigene Drücke halten: DISARM, STOP TEST, ARM + START
-  während eines Laufs oder seiner Schritte, ABORT, die Versorgungszeile von
-  KST und Hitec, solange sie EIN zeigt, und auf SUPPLY AUSGANG AUS und
-  PROG 5V AUS, die ein einzelner Finger mit einem Tippen ausschaltet. Im
-  Overlay des Hitec-Programmers beenden EIN von SERVO BEWEGEN und die Taste
-  von ANSCHLAG SUCHEN, deren Seite sucht, die Schleife oder die Suche bei
-  einem solchen Druck. Ein Abheben schaltet nie ein, was ein Stopp
+- Ein Stopp wirkt beim Aufsetzen und zählt, was auch immer andere Finger
+  halten. Der erste Kontakt, und ein zweiter, dritter oder weiterer,
+  während andere Kontakte eigene Drücke halten, wirkt beim Aufsetzen:
+  DISARM, STOP TEST, ARM + START während eines Laufs oder seiner Schritte,
+  ABORT eines Stick-Laufs, die Versorgungszeile von KST und Hitec, solange
+  sie EIN zeigt, auf SUPPLY AUSGANG AUS und PROG 5V AUS und im Overlay des
+  Hitec-Programmers EIN von SERVO BEWEGEN und die Taste von ANSCHLAG
+  SUCHEN, deren Seite sucht. Ein Finger, der vom Bedienelement rutscht, und
+  ein Touch-Signal, das unter dem Druck abreißt, haben bereits gestoppt.
+  Ein Abheben schaltet nie ein, was ein Stopp
   ausgeschaltet hat: Ein Finger auf dieser Hitec-Zeile verliert sein
   Tippen, und ein Halten auf AUSGANG EIN oder PROG 5V EIN endet, sobald das
   AUS zurückgemeldet ist.

@@ -45,13 +45,90 @@ static void let_go(void)
     hp.pressed = P_NONE;
 }
 
+/** @brief What a press stops: nothing, MOVE SERVO's loop, a FIND STOP
+ *         search. */
+enum { STOP_NONE = 0, STOP_MOVE, STOP_FIND };
+
 /**
- * @brief A DOWN: the control under it takes the press.
+ * @brief The control that stops the servo under (@p x, @p y): MOVE SERVO's
+ *        value while the loop is on, and the FIND STOP key whose side
+ *        searches.  None while the page, the keypad, the keyboard or a
+ *        list covers the rows.
+ * @param x the column, px
+ * @param y the line, px
+ * @return STOP_MOVE, STOP_FIND or STOP_NONE
+ */
+static int stop_at(int x, int y)
+{
+    const hitec_prog_t *p = &hp.prog;
+
+    if (!hp.open || hp.page.open || hp.kp.open || hp.tk.open || hp.ch.open) {
+        return STOP_NONE;
+    }
+    for (int i = 0; i < HP_ROW_COUNT; ++i) {
+        const hpn_row_t *r = &hpn_rows[i];
+
+        if (r->kind != K_ACT || r->page != hp.tabs.selected
+            || !hpn_row_shown(r) || !hpn_row_live(r)) {
+            continue;
+        }
+        if (r->what == A_MOVE && hitec_prog_move_on(p)
+            && gfx_rect_contains(hpn_value_rect(r), x, y)) {
+            return STOP_MOVE;
+        }
+        if (r->what == A_FIND && hitec_prog_find_side(p) >= 0
+            && gfx_rect_contains(
+                   hpn_find_rect(r, hitec_prog_find_side(p)
+                                        == (int)HITEC_FIND_RIGHT), x, y)) {
+            return STOP_FIND;
+        }
+    }
+    return STOP_NONE;
+}
+
+bool hitec_panel_safe_at(int x, int y)
+{
+    return stop_at(x, y) != STOP_NONE;
+}
+
+/**
+ * @brief Stops what the control under (@p x, @p y) stops: MOVE SERVO's
+ *        loop, or the search of the FIND STOP key there.
+ * @param x the column, px
+ * @param y the line, px
+ * @return true when the press was on such a control and stopped it
+ */
+static bool stop_act(int x, int y)
+{
+    switch (stop_at(x, y)) {
+    case STOP_MOVE:
+        hitec_prog_move_stop(&hp.prog);
+        return true;
+    case STOP_FIND:
+        hpn_find_act(hitec_prog_find_side(&hp.prog)
+                     == (int)HITEC_FIND_RIGHT);
+        return true;
+    default:
+        return false;
+    }
+}
+
+/**
+ * @brief A DOWN: the control under it takes the press.  A control that
+ *        stops the servo acts on it at once, and the press it keeps taps
+ *        nothing on its release: a finger that slides off, or a touch
+ *        that is lost, has stopped already.
  * @param evt the event
  */
 static void down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
+
+    if (stop_act(x, y)) {
+        take(evt, P_NONE, -1);
+        hpn_moved();
+        return;
+    }
 
     if (hp.page.open) {
         if (gfx_rect_contains(hitec_panel_apply_rect(), x, y)) {
@@ -378,46 +455,18 @@ static void stop_taken(void)
 
 /**
  * @brief A DOWN while another contact holds the press: the controls that
- *        stop the servo act on it at once, as a stop counts on the press
- *        whatever other fingers hold.  MOVE SERVO while it is on ends the
- *        loop; the FIND STOP key whose side searches ends the search.  A
- *        press held on another control stays its contact's, one held on a
- *        row loses its tap (stop_taken()), and any other DOWN takes
- *        nothing.
+ *        stop the servo act on it at once, as on the first contact's press
+ *        (down()): a stop counts on the press whatever other fingers hold.
+ *        MOVE SERVO while it is on ends the loop; the FIND STOP key whose
+ *        side searches ends the search.  A press held on another control
+ *        stays its contact's, one held on a row loses its tap
+ *        (stop_taken()), and any other DOWN takes nothing.
  * @param evt the DOWN
  */
 static void stop_down(const touch_event_t *evt)
 {
-    hitec_prog_t *p = &hp.prog;
-    const int x = evt->point.x, y = evt->point.y;
-
-    /* The page, the keypad, the keyboard and a list cover the rows. */
-    if (hp.page.open || hp.kp.open || hp.tk.open || hp.ch.open) {
-        return;
-    }
-    for (int i = 0; i < HP_ROW_COUNT; ++i) {
-        const hpn_row_t *r = &hpn_rows[i];
-
-        if (r->kind != K_ACT || r->page != hp.tabs.selected
-            || !hpn_row_shown(r) || !hpn_row_live(r)) {
-            continue;
-        }
-        if (r->what == A_MOVE && hitec_prog_move_on(p)
-            && gfx_rect_contains(hpn_value_rect(r), x, y)) {
-            hitec_prog_move_stop(p);
-            stop_taken();
-            return;
-        }
-        if (r->what == A_FIND && hitec_prog_find_side(p) >= 0) {
-            const bool right =
-                hitec_prog_find_side(p) == (int)HITEC_FIND_RIGHT;
-
-            if (gfx_rect_contains(hpn_find_rect(r, right), x, y)) {
-                hpn_find_act(right);
-                stop_taken();
-                return;
-            }
-        }
+    if (stop_act(evt->point.x, evt->point.y)) {
+        stop_taken();
     }
 }
 

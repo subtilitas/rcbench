@@ -144,8 +144,8 @@ setting.
 The KST and Hitec programmers switch GPIO 21 on and off for a session,
 through the PROG_SUPPLY page (link 4.32). The PROG 5V box on SUPPLY's
 LIVE task switches it by hand: PROG 5V ON is a
-2s hold, PROG 5V OFF a tap, taken with the bench SAFE or ARMED, as the PD
-mini's OUTPUT ON is. The box names the pin, `PROG PORTS 5V, GPIO 21: OFF`,
+2s hold, PROG 5V OFF acts on the press, taken with the bench SAFE or
+ARMED, as the PD mini's OUTPUT ON and OUTPUT OFF are. The box names the pin, `PROG PORTS 5V, GPIO 21: OFF`,
 and shows the last 50ms window of 0x40 CH3 with its power,
 `5.02V  0.120A  0.60W`, and right of it a 72 x 20px plot of the windows
 ([The current monitor](#the-current-monitor)). While a programmer's
@@ -207,9 +207,9 @@ covers that case. Rev 1 has no other reading of the input
 ### The PROG 5V box
 
 The PROG 5V box on SUPPLY switches the 5V by hand: PROG 5V ON is a 2s
-hold, PROG 5V OFF a tap. SERVO has no box: ARM on LIVE, SWEEP and RUDDER
+hold, PROG 5V OFF acts on the press. SERVO has no box: ARM on LIVE, SWEEP and RUDDER
 and ARM + START on LIMIT RUN and RUDDER AUTO switch the 5V on, and on KST
-and HITEC a tap on the READY card's supply row switches it off. The panel judges the ON as it judges the PD
+and HITEC a press on the READY card's supply row switches it off. The panel judges the ON as it judges the PD
 mini's OUTPUT ON:
 
 - It is taken with the bench SAFE or ARMED; no switch to ARMED is asked.

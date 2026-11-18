@@ -128,16 +128,25 @@ static void down(const touch_event_t *evt)
 
     /* The output and the peaks work whatever covers the left column. */
     if (gfx_rect_contains(s.out_rect, x, y)) {
-        /* Off is always taken; on is not while a port holds the supply. */
-        if (!s.on && s.port_held) {
+        if (s.on) {
+            /* OUTPUT OFF acts on the press, whoever holds the supply: a
+             * stop waits for no lift, and a finger that slides off or a
+             * touch that is lost has switched off already.  The press
+             * stays the contact's and its release asks nothing. */
+            sup_post_off();
+            sup_take(evt, P_OUTPUT);
+            s.press_on = true;
+            ++s.out_rev;
+            return;
+        }
+        /* On is not taken while a port holds the supply. */
+        if (s.port_held) {
             held_refused();
             return;
         }
         sup_take(evt, P_OUTPUT);
-        s.press_on = s.on;
-        if (!s.on) {
-            ui_hold_begin(&s.hold, TX_HOLD_HINT_OUTPUT_ON);
-        }
+        s.press_on = false;
+        ui_hold_begin(&s.hold, TX_HOLD_HINT_OUTPUT_ON);
         ++s.out_rev;
         return;
     }
@@ -326,9 +335,9 @@ static void released(int was, int x, int y)
 
 /*
  * The press this screen holds ends without its release.  Every gesture is
- * dropped, which asks for nothing, except a tap on OUTPUT OFF: switching off
- * is a press, so a release that never came is an OFF the operator made, and
- * it is sent.  An ON this screen has posted and the application has not
+ * dropped, which asks for nothing.  A press on OUTPUT OFF asked its OFF as
+ * it came down (down()), so a release that never came loses none.  An ON
+ * this screen has posted and the application has not
  * collected is dropped: the hold that posted it may have completed on a
  * contact that had gone.  An ON already collected stays asked, with its
  * owner, until the application reports what became of it; a leave switches
@@ -337,9 +346,6 @@ static void released(int was, int x, int y)
  */
 void sup_drop_press(void)
 {
-    if (s.on && s.pressed == P_OUTPUT && s.press_on) {
-        sup_post_off();
-    }
     if (s.pending.on) {
         s.pending.on = false;
         s.on_asked   = false;
@@ -365,8 +371,8 @@ void sup_drop_press(void)
 
 /**
  * @brief A DOWN while another contact holds the press: OUTPUT OFF and
- *        PROG 5V OFF switch off at once, as a stop counts on the press
- *        whatever other fingers hold.  The press held stays its contact's,
+ *        PROG 5V OFF switch off at once, as the first contact's press does
+ *        (down()): a stop counts on the press whatever other fingers hold.  The press held stays its contact's,
  *        and any other DOWN takes nothing.  A drag on a V or A track under
  *        OUTPUT OFF ends there, as sup_drop_press() ends one: the set point
  *        keeps what the drag gave the supply live, and the drag's later
@@ -431,7 +437,8 @@ void sup_event(const touch_event_t *evt)
      * holds OUTPUT OFF would otherwise move the set point of a live output,
      * and on a button it would take over the record of the first press and
      * lose its release.  A stop is the exception: OUTPUT OFF and PROG 5V
-     * OFF act on a further contact's DOWN (stop_down()).
+     * OFF act on every contact's DOWN, the first's in down() and a
+     * further one's in stop_down().
      */
     if (evt->type == TOUCH_EVENT_DOWN) {
         /* A contact comes down once between two releases, so a DOWN with
@@ -519,16 +526,12 @@ void sup_event(const touch_event_t *evt)
             return;
         }
         {
-            const bool fired = ui_hold_end(&s.hold, evt, s.out_rect);
+            (void)ui_hold_end(&s.hold, evt, s.out_rect);
             ++s.out_rev;
-            /* Off is a tap; on is a hold that has already sent its command
-             * by the time the finger lifts.  Which one is the press's: an
-             * earlier ON reported during a second hold does not make its
-             * release an OFF. */
-            if (s.press_on && s.on && !fired
-                && gfx_rect_contains(s.out_rect, x, y)) {
-                sup_post_off();
-            }
+            /* Off acted on its press (down()); on is a hold that has
+             * already sent its command by the time the finger lifts.  The
+             * release asks nothing: an ON reported during a hold does not
+             * make its release an OFF. */
             sup_let_go();
         }
         return;

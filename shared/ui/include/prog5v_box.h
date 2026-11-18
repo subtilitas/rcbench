@@ -293,7 +293,8 @@ bool prog5v_box_live(void);
 
 /**
  * @brief A contact came down on the button (the screen routed it here):
- *        the hold begins while the supply reads OFF.
+ *        while the supply reads ON the press asks OFF at once, while it
+ *        reads OFF the hold begins.
  * @param b the box
  * @return true when the box took the press; false while the button takes
  *         none, and the press is the screen's to drop
@@ -311,10 +312,10 @@ bool prog5v_box_press(prog5v_box_t *b);
 bool prog5v_box_drag(prog5v_box_t *b, int x, int y);
 
 /**
- * @brief The press lifted: a tap on PROG 5V OFF, still on the button, asks
- *        OFF; a hold that completed asks nothing more; a hold let go
- *        before UI_HOLD_S shows HOLD_HINT_PROG5V on the band
- *        (ui_hold_end()).
+ * @brief The press lifted: a press on PROG 5V OFF asked OFF as it came
+ *        down and its release asks nothing; a hold that completed asks
+ *        nothing more; a hold let go before UI_HOLD_S shows
+ *        HOLD_HINT_PROG5V on the band (ui_hold_end()).
  * @param b  the box
  * @param up the UP that ended the press, in screen coordinates; NULL for a
  *           press dropped without one, which asks nothing

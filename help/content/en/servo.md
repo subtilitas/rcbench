@@ -76,7 +76,7 @@ A READY row's dot and state are green when met, amber when ARM does it or it nee
 3. Lifting the finger does not let go: the screen repeats the last position, so the servo stays where it was put.
 4. Tap DISARM, press STOP or leave the screen to switch to SAFE. On LIVE, SWEEP and RUDDER, DISARM and STOP also switch PROG 5V and the PD mini's output off. A leave switches the PD mini off; PROG 5V stays on between SERVO screens.
 
-While ARM's steps run the button reads the step in amber, for example `START, STEP 3 OF 5: READ-BACK`. A tap on it stops them with every output off. A step that fails switches every output off and names itself in the band, for example `PROG 5V FAILED: NO READ-BACK IN 1000ms`.
+While ARM's steps run the button reads the step in amber, for example `START, STEP 3 OF 5: READ-BACK`. A press on it stops them with every output off. A step that fails switches every output off and names itself in the band, for example `PROG 5V FAILED: NO READ-BACK IN 1000ms`.
 
 ARM never switches the PD mini on past 6.0V: the SUPPLY row then reads `TAP: HV WARNING` in red, and a tap opens HV SERVOS ONLY. ARM also leaves the PD mini off when an INA3221 reads the rail at 3.0V or more with the PD mini off. Without an INA3221 window on the rail nothing reads it, and ARM switches the PD mini on.
 

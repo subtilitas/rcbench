@@ -520,15 +520,6 @@ uint8_t hitec_panel_pin(void)
     return pin == HITEC_PROG_NO_PIN ? (uint8_t)PROG_REG_NO_PIN : pin;
 }
 
-bool hitec_panel_safe_at(int x, int y)
-{
-    /* Programming and an armed bench are exclusive, and ABORT here ends
-     * the wire's transaction, not a drive. */
-    (void)x;
-    (void)y;
-    return false;
-}
-
 uint32_t hitec_panel_revision(void)
 {
     return hp.rev + hp.kp.revision + hp.tk.revision;

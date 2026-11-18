@@ -76,7 +76,7 @@ Punkt und Zustand einer Zeile von BEREIT sind grün, wenn erfüllt, gelb, wenn A
 3. Beim Loslassen bleibt die Position aktiv. Die Seite wiederholt den letzten Befehl; das Servo hält seine Stellung.
 4. Tippe auf DISARM, drücke STOP oder verlasse die Seite, um auf SAFE zu schalten. Auf LIVE, SWEEP und RUDER schalten DISARM und STOP auch PROG 5V und den Ausgang des PD mini aus. Ein Verlassen schaltet den PD mini aus; PROG 5V bleibt zwischen den SERVO-Seiten an.
 
-Solange die Schritte von ARM laufen, zeigt die Taste den Schritt in Gelb, etwa `START, SCHRITT 3 VON 5: RÜCKMELDUNG`. Ein Tipp darauf beendet sie mit allen Ausgängen aus. Ein Schritt, der scheitert, schaltet alle Ausgänge aus und nennt sich im Band, etwa `PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`.
+Solange die Schritte von ARM laufen, zeigt die Taste den Schritt in Gelb, etwa `START, SCHRITT 3 VON 5: RÜCKMELDUNG`. Ein Druck darauf beendet sie mit allen Ausgängen aus. Ein Schritt, der scheitert, schaltet alle Ausgänge aus und nennt sich im Band, etwa `PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`.
 
 ARM schaltet den PD mini nie über 6,0V ein: die Zeile VERSORGUNG zeigt dann `TIPPEN: HV-WARNUNG` in Rot, und ein Tipp öffnet NUR HV-SERVOS. ARM lässt den PD mini auch aus, wenn ein INA3221 die Schiene bei PD mini aus mit 3,0V oder mehr misst. Ohne INA3221-Fenster auf der Schiene misst sie nichts, und ARM schaltet den PD mini ein.
 

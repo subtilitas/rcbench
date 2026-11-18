@@ -187,5 +187,5 @@ DELETE on FILES and LOGS and `NOT SAVED` on SETUP are neutral with the label in 
 
 - A touch that comes down on the band stays the band's. Sliding it into the screen moves nothing there.
 - A touch that comes down on the screen and slides up into the band is released at its last point on the screen. A slider or the SERVO dial keeps the value it had there. A hold on ARM or OUTPUT ON is abandoned.
-- OUTPUT OFF still acts on such a release, because it stops something. DISARM and STOP TEST in TEST's footer have acted on their press already.
+- OUTPUT OFF, PROG 5V OFF, DISARM and STOP TEST in TEST's footer have acted on their press already: the slide and the release change nothing.
 - A press on the band, on STOP or on the alert band ends a drag another finger makes on a slider or the SERVO dial.

@@ -120,6 +120,14 @@ history is in git.
 
 ### Fixed
 
+- SUPPLY's OUTPUT OFF and PROG 5V OFF, and on the HITEC session MOVE
+  SERVO's ON and the FIND STOP key whose side searches, stopped under a
+  lone finger only when it lifted inside the control: a finger that slid
+  off stopped nothing, and on HITEC neither did a touch loss under the
+  press. Each acts on the press of every contact, the first included; the
+  release asks nothing. The HITEC session names both controls to the
+  router, so a press on one under the alert band or the help box stops,
+  and SERVO hands it through a press held on WRITE or on a panel.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,

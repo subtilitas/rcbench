@@ -1,12 +1,21 @@
 /**
  * @file test_supply_stop_fingers.c
- * @brief SUPPLY's stops count whatever other fingers hold: OUTPUT OFF and
- *        PROG 5V OFF, pressed by a further contact while one contact holds
- *        the screen's press and others rest on the glass, switch off on
- *        that press.  The press held stays its contact's; a drag on a
- *        set point's track under OUTPUT OFF ends there.
+ * @brief SUPPLY's stops act on the press, whatever other fingers hold:
+ *        OUTPUT OFF and PROG 5V OFF switch off as the contact comes down,
+ *        the only contact on the glass with track id 1, 2 or 3, or a
+ *        further one while one contact holds the screen's press and
+ *        others rest on the glass.  A slide off the button and a touch
+ *        loss ask nothing more and take nothing back.  The press held
+ *        stays its contact's; a drag on a set point's track under OUTPUT
+ *        OFF ends there.
  *
  * Cases:
+ * - output_off_acts_on_the_press_of_a_lone_contact_1_2_or_3
+ * - output_off_pressed_then_slid_off_has_switched_off
+ * - output_off_pressed_then_touch_lost_has_switched_off
+ * - prog5v_off_acts_on_the_press_of_a_lone_contact_1_2_or_3
+ * - prog5v_off_pressed_then_slid_off_has_switched_off
+ * - prog5v_off_pressed_then_touch_lost_has_switched_off
  * - output_off_under_two_other_contacts_switches_off
  * - output_off_under_three_other_contacts_switches_off
  * - prog5v_off_under_two_and_three_other_contacts_switches_off
@@ -49,6 +58,110 @@ static bool p5_asked_off(void)
 {
     prog5v_cmd_t c;
     return prog5v_box_poll_cmd(&c) && c.off && !c.on;
+}
+
+/** @brief SUPPLY fresh with PROG 5V read ON and no command waiting. */
+static void fresh_p5_on(void)
+{
+    prog5v_box_reset();
+    ui_text_set_language(UI_LANG_EN);
+    prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
+    fresh();
+    scr->tick(TICK_S);
+    while (prog5v_box_poll_cmd(NULL)) { }
+}
+
+/* The only contact on the glass, with track id 1, 2 or 3: OUTPUT OFF is
+ * asked on its DOWN, before any tick, move or lift; its lift on the button
+ * asks nothing more. */
+TEST_CASE(output_off_acts_on_the_press_of_a_lone_contact_1_2_or_3)
+{
+    for (uint8_t id = 1; id <= 3; ++id) {
+        fresh_on();
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, id);
+        CHECK(asked_off());
+        tick_for(HOLD_TICKS);
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, id);
+        tick_for(HOLD_TICKS);
+        CHECK(!supply_screen_poll_cmd(NULL));
+    }
+}
+
+/* The finger slides off OUTPUT OFF and lifts outside it: the OFF of the
+ * press stands, with the output still reported on throughout, and neither
+ * the move nor the lift asks an ON. */
+TEST_CASE(output_off_pressed_then_slid_off_has_switched_off)
+{
+    for (uint8_t id = 1; id <= 3; ++id) {
+        fresh_on();
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, id);
+        ev(OFF_X, OFF_Y, TOUCH_EVENT_MOVE, id);
+        ev(OFF_X, OFF_Y, TOUCH_EVENT_UP, id);
+        CHECK(asked_off());
+        tick_for(2 * HOLD_TICKS);
+        CHECK(!supply_screen_poll_cmd(NULL));
+    }
+}
+
+/* The touch stream breaks under the press: the OFF was asked on the DOWN,
+ * the loss asks no second one, and the screen takes the next press. */
+TEST_CASE(output_off_pressed_then_touch_lost_has_switched_off)
+{
+    for (uint8_t id = 1; id <= 3; ++id) {
+        fresh_on();
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, id);
+        scr->cancel();
+        CHECK(asked_off());
+        tick_for(2 * HOLD_TICKS);
+        CHECK(!supply_screen_poll_cmd(NULL));
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, id);
+        CHECK(asked_off());
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, id);
+    }
+}
+
+/* PROG 5V reads ON: the only contact, id 1, 2 or 3, asks OFF on its DOWN;
+ * its lift on the button asks nothing more. */
+TEST_CASE(prog5v_off_acts_on_the_press_of_a_lone_contact_1_2_or_3)
+{
+    for (uint8_t id = 1; id <= 3; ++id) {
+        fresh_p5_on();
+        ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, id);
+        CHECK(p5_asked_off());
+        tick_for(HOLD_TICKS);
+        ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_UP, id);
+        tick_for(HOLD_TICKS);
+        CHECK(!prog5v_box_poll_cmd(NULL));
+    }
+}
+
+/* The finger slides off PROG 5V OFF and lifts outside it: the OFF of the
+ * press stands and no ON follows. */
+TEST_CASE(prog5v_off_pressed_then_slid_off_has_switched_off)
+{
+    for (uint8_t id = 1; id <= 3; ++id) {
+        fresh_p5_on();
+        ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, id);
+        ev(OFF_X, OFF_Y, TOUCH_EVENT_MOVE, id);
+        ev(OFF_X, OFF_Y, TOUCH_EVENT_UP, id);
+        CHECK(p5_asked_off());
+        tick_for(2 * HOLD_TICKS);
+        CHECK(!prog5v_box_poll_cmd(NULL));
+    }
+}
+
+/* The touch stream breaks under the press on PROG 5V OFF: the OFF asked on
+ * the DOWN stays asked, and no ON follows. */
+TEST_CASE(prog5v_off_pressed_then_touch_lost_has_switched_off)
+{
+    for (uint8_t id = 1; id <= 3; ++id) {
+        fresh_p5_on();
+        ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, id);
+        scr->cancel();
+        CHECK(p5_asked_off());
+        tick_for(2 * HOLD_TICKS);
+        CHECK(!prog5v_box_poll_cmd(NULL));
+    }
 }
 
 /* Contact 1 holds RESET PEAKS, contact 2 rests on the voltage's track; a
@@ -194,6 +307,12 @@ TEST_CASE(a_drag_under_output_off_ends_and_its_lift_sets_nothing)
 
 int main(void)
 {
+    RUN(output_off_acts_on_the_press_of_a_lone_contact_1_2_or_3);
+    RUN(output_off_pressed_then_slid_off_has_switched_off);
+    RUN(output_off_pressed_then_touch_lost_has_switched_off);
+    RUN(prog5v_off_acts_on_the_press_of_a_lone_contact_1_2_or_3);
+    RUN(prog5v_off_pressed_then_slid_off_has_switched_off);
+    RUN(prog5v_off_pressed_then_touch_lost_has_switched_off);
     RUN(output_off_under_two_other_contacts_switches_off);
     RUN(output_off_under_three_other_contacts_switches_off);
     RUN(prog5v_off_under_two_and_three_other_contacts_switches_off);

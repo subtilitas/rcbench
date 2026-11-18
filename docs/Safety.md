@@ -830,13 +830,14 @@ reads the state and shows the alert, is not in the coverage figure.
   says that contact has gone, and the held press is dropped as a touch loss
   drops it. Not measured on a panel: whether the GT911 gives a lone finger
   the same track id on successive touches.
-- A stop counts whatever other fingers hold. A second, third or further
-  contact on a stop acts on its press while other contacts hold presses of
-  their own: DISARM, STOP TEST, ARM + START while a run or its steps are
-  under way, ABORT, the KST and Hitec supply row while it reads ON, and on
-  SUPPLY OUTPUT OFF and PROG 5V OFF, which a lone finger switches off with a
-  tap. On the Hitec programmer's overlay MOVE SERVO's ON and the FIND STOP
-  key whose side searches end the loop or the search on such a press. A
+- A stop acts on the press and counts whatever other fingers hold. The
+  first contact, and a second, third or further one while other contacts
+  hold presses of their own, acts as it comes down: DISARM, STOP TEST, ARM
+  + START while a run or its steps are under way, a stick run's ABORT, the
+  KST and Hitec supply row while it reads ON, on SUPPLY OUTPUT OFF and PROG
+  5V OFF, and on the Hitec programmer's overlay MOVE SERVO's ON and the
+  FIND STOP key whose side searches. A finger that slides off the control
+  and a touch stream that breaks under the press have stopped already. A
   release never switches on what a stop switched off: a finger held on that
   Hitec row loses its tap, and a hold on OUTPUT ON or PROG 5V ON ends when
   the OFF reads back.

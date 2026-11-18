@@ -251,7 +251,11 @@ bool prog5v_box_press(prog5v_box_t *b)
     b->pressed  = true;
     b->press_on = prog5v_box_on();
     b->cuts     = atomic_load(&p5.cuts);
-    if (!b->press_on) {
+    if (b->press_on) {
+        /* PROG 5V OFF acts on the press: a stop waits for no lift, so a
+         * finger that slides off or a touch that is lost has asked it. */
+        post(false, b->by, 0u);
+    } else {
         ui_hold_begin(&b->hold, TX_HOLD_HINT_PROG5V);
     }
     ++b->rev;
@@ -280,17 +284,10 @@ void prog5v_box_release(prog5v_box_t *b, const touch_event_t *up)
     const gfx_rect_t btn = prog5v_box_button(b);
     /* A hold let go early shows its hint on the band. */
     (void)ui_hold_end(&b->hold, up, btn);
-    const bool tap = up != NULL && touch_event_is_tap_up(up);
-    const int  x   = (up != NULL) ? up->point.x : -1;
-    const int  y   = (up != NULL) ? up->point.y : -1;
-    /* Off is a tap; on is a hold that has sent its command by the time the
-     * finger lifts.  Which one is the press's (press_on): an ON reported
-     * during a hold does not make its release an OFF. */
-    if (tap && b->press_on && prog5v_box_on()
-        && held() == PROG5V_HELD_NONE
-        && gfx_rect_contains(btn, x, y)) {
-        post(false, b->by, 0u);
-    }
+    /* Off asked on its press (prog5v_box_press()); on is a hold that has
+     * sent its command by the time the finger lifts.  The release asks
+     * nothing: an ON reported during a hold does not make its release an
+     * OFF. */
     b->pressed = false;
     ++b->rev;
 }

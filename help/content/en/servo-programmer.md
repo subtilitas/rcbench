@@ -33,7 +33,7 @@ The right card is the READY card, with three rows on KST, four on HITEC, and the
 
 - PORT: the port the session works on. Red with `NO PROG PORT` while the tester drives OUTPUTS. A tap opens the PORT list; while the session holds the port, the list stays shut and the alert band names the lock.
 - SERIES, on HITEC only: D SERIES or CLASSIC, the series the next CONNECT enters. A tap opens the two over the left column; a pick is saved and is the SERVO tab's SERIES too. While the session holds the port the row shows the session's series, and a tap names `Tap LEAVE first: the session keeps its series.` in the alert band.
-- The supply CONNECT switches: PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off. A red dot and `ON` while on; a tap then switches it off, as OUTPUT OFF does. Without a supply the bench switches: amber `OFF, ON BY HAND`.
+- The supply CONNECT switches: PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off. A red dot and `ON` while on; a press then switches it off, as OUTPUT OFF does. Without a supply the bench switches: amber `OFF, ON BY HAND`.
 - SERVO: `NOT CONNECTED` before CONNECT, `NOT READ` with the port held, then the servo's type, `V6?` while it is 20k_sel's guess.
 
 A tap on a row that is not met names it in the alert band. The footer's middle slot is the session's WRITE n VALUES from any tab, the same as the session's own button. It is grey before CONNECT and the read, with no value changed and while a page is open; a tap names why. KST has no ARM. OPTIONS opens KST EXPERT MODE's page; it is grey while the session holds the port.
@@ -266,7 +266,7 @@ MOVE SERVO on the Hitec programmer's TRAVEL tab moves a D series servo's horn to
 - The horn moves 2.0° at most a pass and stays inside the reach of the stored end points, 2606 to 13743 on a factory D485HW.
 - A horn that lags more than 2.0° on 2 passes, a current at 80% of the current limit for 0.4s, or an AS5600 angle that does not follow moves the horn back 1.0° and ends the loop: `Servo blocked at 6000. Moved back to 6167.`
 - While it is on, the band's arm chip reads `SAFE MOVE` in amber.
-- A tap on ON, a tab change or the home tag ends it: target 3000, a restart of the servo, and a read held against the start, about 2.6s in the host model. `MOVE SERVO is OFF. The stored values read back unchanged.`
+- A press on ON, a tab change or the home tag ends it: target 3000, a restart of the servo, and a read held against the start, about 2.6s in the host model. `MOVE SERVO is OFF. The stored values read back unchanged.`
 - STOP, a switch to SAFE at the bench, a lost link, the supply going off and a failed read end it at once with every output off.
 
 ### FIND STOP

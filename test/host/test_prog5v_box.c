@@ -168,25 +168,32 @@ TEST_CASE(a_hold_let_go_or_slid_off_asks_nothing)
     CHECK(asked_on());
 }
 
-TEST_CASE(off_is_a_tap_that_lifts_on_the_button)
+TEST_CASE(off_is_asked_on_the_press)
 {
     fresh(ST_ON);
+    /* The press asks OFF at once; no hold, and the lift asks nothing. */
     CHECK(prog5v_box_press(&b));
-    tick_n(12, 0.25f);                        /* no hold on OFF */
-    CHECK(!prog5v_box_poll_cmd(NULL));
-    lift(&b, bx(), by_(), true);
     CHECK(asked_off());
-    /* Lifted off the button, or an UP that is no tap: nothing. */
+    tick_n(12, 0.25f);
+    lift(&b, bx(), by_(), true);
+    CHECK(!prog5v_box_poll_cmd(NULL));
+    /* Lifted off the button, or an UP that is no tap: the OFF of the
+     * press stands. */
     CHECK(prog5v_box_press(&b));
     lift(&b, bx(), by_() + PROG5V_BOX_H, true);
+    CHECK(asked_off());
     CHECK(prog5v_box_press(&b));
     lift(&b, bx(), by_(), false);
-    CHECK(!prog5v_box_poll_cmd(NULL));
-    /* A port that took the supply after the last tick: the tap asks
-     * nothing, the session's own LEAVE switches it. */
+    CHECK(asked_off());
+    /* Slid off the button before the lift: the same. */
     CHECK(prog5v_box_press(&b));
+    (void)prog5v_box_drag(&b, bx(), by_() + PROG5V_BOX_H);
+    lift(&b, bx(), by_() + PROG5V_BOX_H, true);
+    CHECK(asked_off());
+    /* A port that holds the supply: the press is not taken and asks
+     * nothing, the session's own LEAVE switches it. */
     prog5v_box_publish(ST_ON, 21u, 1u);
-    lift(&b, bx(), by_(), true);
+    CHECK(!prog5v_box_press(&b));
     CHECK(!prog5v_box_poll_cmd(NULL));
     prog5v_box_publish(ST_ON, 21u, (uint8_t)PROG5V_HELD_NONE);
     /* An OFF asked stands over an ON in the same poll. */
@@ -232,9 +239,10 @@ TEST_CASE(the_button_is_locked_while_not_read_or_held)
     CHECK(!b.pressed);
     CHECK(!prog5v_box_poll_cmd(NULL));
     /* The supply going off under the finger (an error, a lost heartbeat)
-     * ends the press of an OFF. */
+     * ends the press of an OFF, whose OFF went on the press. */
     fresh(ST_ON);
     CHECK(prog5v_box_press(&b));
+    CHECK(asked_off());
     prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_tick(&b, 0.02f);
     lift(&b, bx(), by_(), true);
@@ -515,9 +523,11 @@ TEST_CASE(nothing_happens_without_a_box)
     prog5v_box_init(NULL, BOX_R, PROG5V_BY_SERVO);
     CHECK_EQ(prog5v_box_button(NULL).w, 0);
     CHECK(!prog5v_box_poll_cmd(NULL));
-    /* A press dropped without its UP asks nothing either. */
+    /* A press on OFF dropped without its UP: the OFF went on the press,
+     * and the drop asks nothing more. */
     fresh(ST_ON);
     CHECK(prog5v_box_press(&b));
+    CHECK(asked_off());
     prog5v_box_release(&b, NULL);
     CHECK(!prog5v_box_poll_cmd(NULL));
 }
@@ -569,7 +579,7 @@ int main(void)
     RUN(no_box_without_the_switch);
     RUN(on_is_a_hold_of_2000ms_not_1999ms);
     RUN(a_hold_let_go_or_slid_off_asks_nothing);
-    RUN(off_is_a_tap_that_lifts_on_the_button);
+    RUN(off_is_asked_on_the_press);
     RUN(the_button_is_locked_while_not_read_or_held);
     RUN(leaving_the_screen_that_switched_it_on_switches_it_off);
     RUN(the_lines_name_the_pin_and_the_reading);

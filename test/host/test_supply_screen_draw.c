@@ -23,7 +23,7 @@
  * - stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply
  * - a_question_asked_after_a_stop_stands_on_supply
  * - a_press_that_lost_its_release_gives_way_to_the_next_press
- * - a_lost_release_on_output_off_is_sent_at_the_next_press
+ * - a_lost_release_on_output_off_loses_no_off
  * - an_on_posted_by_a_hold_that_lost_its_release_is_dropped
  * - a_second_contact_does_not_end_a_press_that_is_held
  * - a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off
@@ -589,23 +589,26 @@ TEST_CASE(a_press_that_lost_its_release_gives_way_to_the_next_press)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
-/* On a live output the press that went missing was a tap on OUTPUT OFF: an
- * OFF the operator made, sent when the next press shows it is over. */
-TEST_CASE(a_lost_release_on_output_off_is_sent_at_the_next_press)
+/* On a live output a press on OUTPUT OFF asks OFF as it comes down: its
+ * release going missing loses nothing, and the next press, which shows the
+ * first is over, asks nothing more. */
+TEST_CASE(a_lost_release_on_output_off_loses_no_off)
 {
     fed();
     supply_screen_set_output(true);
     drain();
     finger(FEED_LONE, OUT_X, P(OUT_Y));
+    supply_cmd_t c = { 0 };
+    const bool posted = supply_screen_poll_cmd(&c);
+    CHECK(posted && c.off && !c.on);
     feed_lose_next(1);
     lift(FEED_LONE);
     CHECK(!supply_screen_poll_cmd(NULL));
 
     finger(FEED_LONE, OFF_X, P(OFF_Y));
-    supply_cmd_t c = { 0 };
-    const bool posted = supply_screen_poll_cmd(&c);
+    CHECK(!supply_screen_poll_cmd(NULL));
     lift(FEED_LONE);
-    CHECK(posted && c.off);
+    CHECK(!supply_screen_poll_cmd(NULL));
 }
 
 /*
@@ -830,7 +833,7 @@ int main(void)
     RUN(stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply);
     RUN(a_question_asked_after_a_stop_stands_on_supply);
     RUN(a_press_that_lost_its_release_gives_way_to_the_next_press);
-    RUN(a_lost_release_on_output_off_is_sent_at_the_next_press);
+    RUN(a_lost_release_on_output_off_loses_no_off);
     RUN(an_on_posted_by_a_hold_that_lost_its_release_is_dropped);
     RUN(a_second_contact_does_not_end_a_press_that_is_held);
     RUN(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off);
