@@ -621,8 +621,9 @@ Gefahrenfarbe. Tippe auf das Band, um ihn früher zu löschen. Der Hinweis
 passt in eine Zeile mit höchstens 97 Zeichen.
 
 Ein kurzer Tipp ist keine Störung; der Hinweis ist deshalb eine Mitteilung.
-Alarme haben Vorrang: Solange ein Alarm sichtbar ist, bleibt der Hinweis
-ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
+Alarme haben Vorrang: Solange ein Alarm sichtbar ist, wartet eine
+Mitteilung, die jüngste, und erscheint für ihre eigenen 4s, sobald der Alarm
+gelöscht ist. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 
 - Der Hinweis erscheint nur, wenn du den Finger auf der Taste loslässt.
   Er erscheint nicht nach dem Herausgleiten, bei verlorener Berührung,
@@ -2749,7 +2750,7 @@ Der Rahmen von KST und HITEC um die Sitzung:
 | Taste PORT | was der Tester ansteuert; ein Tippen öffnet die Liste PORT, gesperrt, solange die Sitzung den Port hält |
 | BEREIT, PORT | die Portzeile; rot mit `KEIN PROG-PORT` bei OUTPUTS, ein Tippen öffnet die Liste PORT; ein roter Punkt, solange die Sitzung den Port hält |
 | BEREIT, Versorgung | PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus; ein roter Punkt und `EIN`, solange an, dann schaltet ein Tippen sie aus wie AUSGANG AUS (PROG 5V nicht, solange ein Port sie hält). KST ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`. Hitec D-Serie ohne: `UNVERÄNDERT` |
-| BEREIT, SERVO | grau `NICHT VERBUNDEN` vor VERBINDEN, gelb `LÄUFT`, solange ein Schritt läuft, gelb `NICHT GELESEN` bei gehaltenem Port ohne gelesenes Servo, nach dem Lesen das Modell (Hitec) oder der Typ (KST, `V6?` für die Vermutung aus 20k_sel) |
+| BEREIT, SERVO | grau `NICHT VERBUNDEN` vor VERBINDEN, gelb `LÄUFT`, solange ein Schritt läuft, gelb `NICHT AUSGELESEN` bei gehaltenem Port ohne gelesenes Servo, nach dem Lesen das Modell (Hitec) oder der Typ (KST, `V6?` für die Vermutung aus 20k_sel) |
 | Schienenzeile | Volt und Ampere des Messgeräts, unter den Zeilen |
 | Fußleiste, Mitte | WERTE SCHREIBEN der Sitzung, von jeder Registerkarte aus: dasselbe 2s-Halten wie auf der Taste der Sitzung, von Grün nach Bernstein; ein Tippen zeigt `Halte 2s, um zu schreiben.` und sendet nichts. Solange ein Finger darauf liegt, nimmt die Sitzung keinen Druck an: `Ein Finger hält noch ein anderes Element. Lass es erst los.` Grau, ein Tippen nennt den Grund: vor VERBINDEN und Lesen, ohne geänderten Wert, solange ein Schritt läuft und solange eine Seite der Sitzung oder von SERVO offen ist |
 | Fußleiste, rechts | OPTIONEN: die Seite KST EXPERT MODE, bei HITEC Hitec-Serie und Hitec-D-Empfang; grau, solange die Sitzung den Port hält |
@@ -6761,7 +6762,7 @@ Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
 | --- | --- | --- | --- |
 | Leistungsknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie ohne Fehler |
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
-| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
 | Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Leistungsknoten der letzten Suche, `rcbench-pwr-3456  -58dBm`, bis zu 6, der gebundene markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ein Auswuchtknoten wird nicht gelistet. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`; eine Wahl, abgelehnt, weil sich die Liste änderte, zeigt `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN` |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
 
@@ -7117,7 +7118,7 @@ eine Zahl, wird nur die Spalte neu gezeichnet.
 Hat der IOmcu 1000ms lang jede Abfrage beantwortet (`BUSFAULT_BACK_MS`, das
 LINK des Bands), bietet der Bildschirm NEUVERBINDEN an:
 
-- Der Balken wird grün und zeigt `LINK WIEDER DA`.
+- Der Balken wird grün und zeigt `VERBINDUNG WIEDER DA`.
 - Die Überschrift lautet `Die Verbindung antwortet wieder.`
 - `verbunden` zählt anstelle von `getrennt` die Sekunden seit der ersten
   Antwort.

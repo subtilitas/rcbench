@@ -130,7 +130,7 @@ returns to its first row whenever the search changes.
   it JAZZ 55 LV alone.
 - An empty search shows every maker and every model. The search holds up
   to 16 characters, and is the same on both levels.
-- The count says what was found: `1-1 of 1 makers found, 1 can run`. With
+- The count says what was found: `1-1 of 1 found, 1 can run`. With
   nothing found the list says `No matching profiles found.`
 
 OK closes the keyboard with the search kept, CANCEL goes back to the search

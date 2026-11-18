@@ -1602,7 +1602,7 @@ tap on the row names the whole text in the alert band:
 | ANGLE | `ANGLE SOURCE: NO READING` | `NO READING` |
 | ZERO | `SET ZERO WITH THE SURFACE AT NEUTRAL` | `ZERO NOT SET` |
 | ARM | `Cannot switch to ARMED: a port is in use by the servo programmer.`, the pin of the ESC programmer | `SERVO PROGRAMMING`, `ESC PROGRAMMING` |
-| PORT | `PINS NOT READ`, in German `PINS NICHT AUSGELESEN`, 21 cells | the line; in German `PINS NICHT GELESEN` |
+| PORT | `PINS NOT READ`, in German `PINS NICHT AUSGELESEN`, 21 cells | the line; in German `NICHT AUSGELESEN` |
 
 ### SET V, SET A and the plot
 
@@ -1796,9 +1796,9 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   the first run; then the report's file, or `RESTORE IN KST` (a Hitec
   servo: `LOAD HITEC001 IN FILES`) after a FAIL or an abort that wrote, or
   that cut off a write on its way, which may have landed; the verify pass,
-  once its first measure is in, `VERIFY 1000us +0.03°, 2000us -0.02°,
-  CENTER +0.05°`: each end from its goal, the center from the zero, `-`
-  for one not measured yet. It turns red at the first one outside the
+  once its first measure is in, `VERIFY +0.03°, -0.02°, CENTER +0.05°`:
+  1000us, 2000us and the center, each end from its goal, the center from
+  the zero, `-` for one not measured yet. It turns red at the first one outside the
   tolerance and green once all three are within.
 - The servo is the SERVO row: RUDDER AUTO's own saved setting
   (`rauto_family`), KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, apart

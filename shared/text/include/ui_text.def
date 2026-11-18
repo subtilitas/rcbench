@@ -28,16 +28,20 @@
  *
  * cells is the width of the field a UI_TEXT string is drawn into, in cells
  * of its face, for a string no screenshot reaches: test_text holds every
- * language's entry to it.  0 means a rendered screen shows the string and
- * `tools/render_ui.py --fit` measures it there.  The fit check fails on an
- * ID that is neither.
+ * language's entry to it, and test_text_formats a format string as
+ * formatted with the widest arguments its caller passes.  A string drawn
+ * by a wrap declares the cells of all its rows.  0 means a rendered screen
+ * shows the string and `tools/render_ui.py --fit` measures it there.  The
+ * fit check fails on an ID that is neither, and on one with 0 that views
+ * look up and none draws.
  *
  * A format string's conversions are part of its contract: a translation
  * converts the same arguments in the same order (test_text checks).
  *
- * The text faces hold printable ASCII (0x20 to 0x7E), the degree sign °
- * and the German letters Ä Ö Ü ä ö ü ß; any other code point draws as
- * '?'.  test_text holds every string the panel draws to that set.  Text is UTF-8.
+ * The text faces hold printable ASCII (0x20 to 0x7E), the degree sign °,
+ * the ohm sign Ω and the German letters Ä Ö Ü ä ö ü ß; any other code
+ * point draws as '?'.  test_text holds every string the panel draws to
+ * that set.  Text is UTF-8.
  *
  * What stays English in every language is not in the table and is written
  * where it is drawn: ARM, DISARM, STOP, the screen titles, protocol and
@@ -686,7 +690,7 @@ UI_TEXT(BF_TITLE_FAULT, 0,
     "CAN-BUS-FEHLER")
 UI_TEXT(BF_TITLE_BACK, 0,
     "LINK BACK",
-    "LINK WIEDER DA")
+    "VERBINDUNG WIEDER DA")
 UI_TEXT(BF_BACK_TEXT, 0,
     "The link answers again.",
     "Die Verbindung antwortet wieder.")
@@ -1960,7 +1964,7 @@ UI_TEXT(SUP_PROG5V_OFF, 0,
     "OFF",
     "AUS")
 UI_TEXT(SUP_PROG5V_UNKNOWN, 11,
-    "NOT READ",
+    "UNKNOWN",
     "UNBEKANNT")
 /* The PROG 5V box (prog5v_box.h): its switch, and the line while a
  * programming port holds the supply. */
@@ -2379,20 +2383,22 @@ UI_TEXT(HG_IM_OPTIONS, 0,
 UI_TEXT(LOG_NO_SOURCE, 36,
     "No file source available.",
     "Keine Dateiquelle verfügbar.")
-UI_TEXT(LOG_CANNOT_OPEN, 28,
+/* The five messages that name a file are drawn in the footer on two rows
+ * of 37 cells, broken at a space (log_viewer_draw.c): 74 is both rows. */
+UI_TEXT(LOG_CANNOT_OPEN, 74,
     "Cannot open %s.",
     "%s lässt sich nicht öffnen.")
-UI_TEXT(LOG_IS_FOLDER, 26,
+UI_TEXT(LOG_IS_FOLDER, 74,
     "%s is a folder.",
     "%s ist ein Ordner.")
 /* OPEN on a file over LOG_VIEWER_OPEN_MAX, 2GiB less 1 byte. */
-UI_TEXT(LOG_TOO_BIG, 44,
+UI_TEXT(LOG_TOO_BIG, 74,
     "%s is 2GB or larger. Not opened.",
     "%s ist 2GB oder größer. Nicht geöffnet.")
-UI_TEXT(LOG_CANNOT_DELETE, 28,
+UI_TEXT(LOG_CANNOT_DELETE, 74,
     "Cannot delete %s.",
     "%s lässt sich nicht löschen.")
-UI_TEXT(LOG_DELETED, 26,
+UI_TEXT(LOG_DELETED, 74,
     "%s deleted.",
     "%s gelöscht.")
 UI_TEXT(LOG_ERR_OK, 64,
@@ -2996,8 +3002,9 @@ UI_TEXT(FM_RULE_FAULT, 62,
 UI_TEXT(FM_RULE_BUSY, 62,
     "The logger writes it: INFO only.",
     "Wird aufgezeichnet: nur INFO.")
-/* The keyboard's title for a name. */
-UI_TEXT(FM_TK_FOLDER, 0,
+/* The keyboard's title for a name.  NEW FOLDER's keyboard is in no view:
+ * its width is the title row's, 47 cells (ui_textkey_t's title). */
+UI_TEXT(FM_TK_FOLDER, 47,
     "NEW FOLDER",
     "NEUER ORDNER")
 UI_TEXT(FM_TK_FILE, 0,
@@ -3247,7 +3254,7 @@ UI_TEXT(EW_RESTORE_BTN, 0,
 UI_TEXT(EW_HAND_DONE, 100,
     "POWER IS ON",
     "VERSORGUNG EIN")
-UI_TEXT(EW_TYPE_NUMBER, 0,
+UI_TEXT(EW_TYPE_NUMBER, 49,
     "TYPE A NUMBER",
     "ZAHL EINGEBEN")
 UI_TEXT(EW_CONNECT_TITLE, 0,
@@ -3309,25 +3316,25 @@ UI_TEXT(EW_WARN_SIMONK, 0,
     "SimonK wird nicht unterstützt.")
 UI_TEXT(EW_HOLD_CONNECT_BTN, 0,
     "HOLD 2s TO CONNECT",
-    "2s HALTEN: VERBINDEN")
+    "2s HALTEN ZUM VERBINDEN")
 UI_TEXT(EW_HOLD_CONNECT, 94,
     "Hold 2s to connect.",
     "Halte 2s, um zu verbinden.")
 UI_TEXT(EW_HOLD_WRITE, 0,
     "HOLD 2s TO WRITE",
-    "2s HALTEN: SCHREIBEN")
+    "2s HALTEN ZUM SCHREIBEN")
 UI_TEXT(EW_HOLD_NO_BACKUP, 42,
     "HOLD 2s: NO BACKUP",
     "2s HALTEN: OHNE BACKUP")
 UI_TEXT(EW_HOLD_LEAVE, 0,
     "HOLD 2s TO LEAVE",
-    "2s HALTEN: VERLASSEN")
+    "2s HALTEN ZUM VERLASSEN")
 UI_TEXT(EW_HOLD_RELEASE, 42,
     "HOLD 2s TO RELEASE",
-    "2s HALTEN: FREIGEBEN")
+    "2s HALTEN ZUM FREIGEBEN")
 UI_TEXT(EW_HOLD_RESTORE, 42,
     "HOLD 2s TO RESTORE",
-    "2s HALTEN: ZURÜCKSPIELEN")
+    "2s HALTEN ZUM ZURÜCKSPIELEN")
 UI_TEXT(EW_PAGE_WRITE, 0,
     "WRITE TO THE ESC",
     "IN DEN ESC SCHREIBEN")
@@ -3345,7 +3352,7 @@ UI_TEXT(EW_PAGE_DELETE, 56,
     "DATEI LÖSCHEN")
 UI_TEXT(EW_HOLD_DELETE, 42,
     "HOLD 2s TO DELETE",
-    "2s HALTEN: LÖSCHEN")
+    "2s HALTEN ZUM LÖSCHEN")
 UI_TEXT(EW_HINT_DELETE, 94,
     "Hold 2s to delete the file.",
     "Halte 2s, um die Datei zu löschen.")
@@ -3384,7 +3391,7 @@ UI_TEXT(EW_HELD_AFTER_STOP, 100,
     "Ein Stopp oder Fehler beendete die Sitzung: PIN ZURÜCK, dann VERBINDEN.")
 UI_TEXT(EW_STOP_PIN_BACK, 100,
     "The bench STOP is latched: hold STOP 2s to reset it.",
-    "STOP ist eingerastet: Halte STOP 2s, um ihn zurückzusetzen.")
+    "STOP ist eingerastet: Halte STOP 2s, um ihn zu lösen.")
 UI_TEXT(EW_HINT_RELEASE, 94,
     "Hold 2s to release the pin.",
     "Halte 2s, um den Pin freizugeben.")
@@ -3402,7 +3409,7 @@ UI_TEXT(EW_HELD_1, 49,
     "Der Pin bleibt belegt. Keine ESC-Sitzung läuft.")
 UI_TEXT(EW_HOLD_ENTER_BTN, 0,
     "HOLD 2s TO ENTER AGAIN",
-    "2s HALTEN: NEU STARTEN")
+    "2s HALTEN ZUM NEUSTART")
 UI_TEXT(EW_HOLD_ENTER, 94,
     "Hold 2s to enter again.",
     "Halte 2s, um neu zu starten.")
@@ -3684,7 +3691,7 @@ UI_TEXT(EW_MSG_ARMED, 100,
     "Der Prüfstand ist ARMED: zuerst DISARM.")
 UI_TEXT(EW_MSG_STOPPED, 100,
     "STOP is latched: hold STOP 2s to reset it.",
-    "STOP ist eingerastet: Halte STOP 2s, um ihn zurückzusetzen.")
+    "STOP ist eingerastet: Halte STOP 2s, um ihn zu lösen.")
 UI_TEXT(EW_MSG_NO_LINK, 100,
     "No response from the IOmcu.",
     "Kein IOmcu antwortet.")
@@ -3753,7 +3760,7 @@ UI_TEXT(EW_MSG_LEFT, 100,
     "ESC-Sitzung beendet. Pin wieder dem Ausgang zugeordnet.")
 UI_TEXT(EW_MSG_CLEARED, 100,
     "STOP reset.",
-    "STOP zurückgesetzt.")
+    "STOP gelöst.")
 UI_TEXT(EW_MSG_FILE_REFUSED, 100,
     "File refused: code %u.",
     "Datei abgelehnt: Code %u.")
@@ -4284,8 +4291,8 @@ UI_TEXT(SP_MAKERS_COUNT, 0,
     "%d-%d of %d makers, %d can run",
     "%d-%d/%d Hersteller, %d ausführbar")
 UI_TEXT(SP_MAKERS_FOUND, 0,
-    "%d-%d of %d makers found, %d can run",
-    "%d-%d/%d Hersteller, %d ausführbar")
+    "%d-%d of %d found, %d can run",
+    "%d-%d/%d gefunden, %d ausführbar")
 UI_TEXT(SP_MAKER_MODELS, 0,
     "%u OF %u CAN RUN",
     "%u VON %u AUSFÜHRBAR")
@@ -4643,7 +4650,7 @@ UI_TEXT(SP_TIMING_TITLE, 0,
 /* Beside TIMING AND DETECTION on ESC STICK's SETTINGS list. */
 UI_TEXT(SP_TIMING_NOTE, 0,
     "Defaults, not measured. Measured lengths in a profile win.",
-    "Vorgaben, nicht gemessen. Gemessene Längen im Profil gehen vor.")
+    "Vorgaben, nicht gemessen. Gemessene Längen im Profil gelten.")
 UI_TEXT(SP_CHANGE, 0,
     "CHANGE",
     "ÄNDERN")
@@ -5029,12 +5036,6 @@ UI_TEXT(SV_ROW_BROWNOUT, 0,
 UI_TEXT(SV_BO_NOTE_WALK, 0,
     "From %.2fV down in %.2fV steps to %.2fV, %u voltages",
     "Ab %.2fV abwärts in %.2fV-Schritten bis %.2fV, %u Spannungen")
-UI_TEXT(SV_ROW_NAME, 16,
-    "NAME",
-    "NAME")
-UI_TEXT(SV_ROW_REPORT, 16,
-    "REPORT",
-    "BERICHT")
 UI_TEXT(SV_ROW_ENC_CENTER, 16,
     "ENC CENTER",
     "SENSOR-MITTE")
@@ -5165,14 +5166,14 @@ UI_TEXT(SV_IN_FORCE_PWM_OFF, 58,
 UI_TEXT(SV_IN_FORCE_SURFACES_1, 58,
     "Active: all PWM control surfaces run at %uHz.",
     "Aktiv: Alle PWM-Ruder laufen mit %uHz.")
-UI_TEXT(SV_IN_FORCE_2, 0,
+UI_TEXT(SV_IN_FORCE_2, 58,
     "PPM outputs keep their own frame rate.",
     "PPM-Ausgänge behalten ihre eigene Pulsrate.")
 UI_TEXT(SV_REFUSED_1, 58,
     "Refused: a pulse is longer than the frame, or a pin",
     "Abgelehnt: Puls länger als die Periode oder ein Pin")
-UI_TEXT(SV_REFUSED_2, 0,
-    "shares a PWM slice at a different rate. Settings unchanged.",
+UI_TEXT(SV_REFUSED_2, 58,
+    "shares a PWM slice at another rate. Settings unchanged.",
     "teilt einen PWM-Slice mit anderer Pulsrate. Werte bleiben.")
 UI_TEXT(SV_UNSUPPORTED_1, 0,
     "This IOmcu cannot set the frame rate.",
@@ -5218,9 +5219,6 @@ UI_TEXT(SV_LIM_STOP, 15,
 UI_TEXT(SV_LIM_LINE, 0,
     "OUTPUT %s, CURRENT %s",
     "AUSGANG %s, STROM %s")
-UI_TEXT(SV_LIM_RUNNING, 58,
-    "RUNNING: %s",
-    "LÄUFT: %s")
 UI_TEXT(SV_LIM_INA_SETUP, 58,
     "SERVO CURRENT METER (INA3221) NOT SET UP",
     "SERVOSTROMMESSER (INA3221) NICHT EINGERICHTET")
@@ -5301,9 +5299,6 @@ UI_TEXT(SV_LIM_VALUES, 31,
 UI_TEXT(SV_LIM_VERDICT, 0,
     "LIMITS %s",
     "ENDLAGEN %s")
-UI_TEXT(SV_LIM_ENDS, 31,
-    "LOW %s  HIGH %s",
-    "UNTEN %s  OBEN %s")
 UI_TEXT(SV_LIM_SET, 0,
     "LEFT %u>%u  RIGHT %u>%u",
     "LINKS %u>%u  RECHTS %u>%u")
@@ -5313,15 +5308,6 @@ UI_TEXT(SV_LIM_RESTORE, 31,
 UI_TEXT(SV_LIM_RANGE, 31,
     "%u-%u NOT IN %u-%uus",
     "%u-%u NICHT IN %u-%uus")
-UI_TEXT(SV_DUT_NOTE, 58,
-    "This name appears at the top of every test report.",
-    "Dieser Name steht oben auf jedem Testbericht.")
-UI_TEXT(SV_ENC_NOTE_1, 58,
-    "AS5600 ON OR OFF: OPEN SENSORS",
-    "AS5600 EIN ODER AUS: SENSORS ÖFFNEN")
-UI_TEXT(SV_ENC_NOTE_2, 58,
-    "Center the servo, then tap ENC CENTER.",
-    "Stelle das Servo auf Mitte und tippe auf SENSOR-MITTE.")
 /* TEST's run cards: a summary of the run's settings, the last result with
  * its file, and SUPPLY's caps on the button that opens their home. */
 UI_TEXT(SV_SUM_TIME, 0,
@@ -5478,9 +5464,6 @@ UI_TEXT(HG_SV_START, 0,
 UI_TEXT(HG_SV_CAPS, 0,
     "SUPPLY's voltage and current caps, which the test's steps keep to. A tap opens SUPPLY.",
     "Spannungs- und Stromgrenze von SUPPLY, die die Teststufen einhalten. Tippen öffnet SUPPLY.")
-UI_TEXT(HG_SV_FIND, 115,
-    "Narrows the list to the names typed on the keyboard. ^ and v scroll it.",
-    "Grenzt die Liste auf die eingetippten Namen ein. ^ und v blättern.")
 UI_TEXT(HG_SV_RUD_LEN, 0,
     "Hinge line to trailing edge, 0 or 10 to 500mm. TRAILING EDGE turns the deflection into mm with it.",
     "Scharnierlinie bis Hinterkante, 0 oder 10 bis 500mm. Damit rechnet HINTERKANTE den Ausschlag in mm um.")
@@ -5534,7 +5517,7 @@ UI_TEXT(HG_SV_BUTTONS, 0,
     "Bei ARMED: ZENTRIEREN auf PULS MITTE plus TRIMMUNG, SWEEP fährt die Kurve. FREIGEBEN geht in Ruhe.")
 UI_TEXT(HG_SV_SETTINGS, 0,
     "How this screen runs its function. Opens on a SAFE bench only.",
-    "Wie dieser Bildschirm seine Funktion ausführt. Öffnet nur bei SAFE.")
+    "Wie diese Seite ihre Funktion ausführt. Öffnet nur bei SAFE.")
 UI_TEXT(HG_SV_TITLE_LIMRUN, 0,
     "SERVO: LIMIT RUN",
     "SERVO: ENDLAGENLAUF")
@@ -5620,7 +5603,7 @@ UI_TEXT(HG_SVH_TILE_NAME, 0,
     "KACHEL")
 UI_TEXT(HG_SVH_TILE, 0,
     "Opens its screen. Grey: the IOmcu lacks it; a tap says why.",
-    "Öffnet seinen Bildschirm. Grau: dem IOmcu fehlt es; ein Tippen sagt warum.")
+    "Öffnet seine Seite. Grau: dem IOmcu fehlt es; ein Tippen sagt warum.")
 UI_TEXT(HG_SVH_PORT, 0,
     "What the tester drives. Each function screen's PORT button changes it.",
     "Was der Tester ansteuert. Die PORT-Taste jedes Funktionsbildschirms ändert es.")
@@ -5870,7 +5853,7 @@ UI_TEXT(ALERT_TOUCH_STOPPED, 94,
  * of the action's own reason (panel_arm.c, panel_supply.c). */
 UI_TEXT(ALERT_STOP_HELD, 94,
     "STOP pressed: hold STOP 2s to reset.",
-    "STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.")
+    "STOP gedrückt: Halte STOP 2s, um ihn zu lösen.")
 /* The reset's hold completed and the IOmcu did not confirm within
  * STOP_LATCH_CONFIRM_MS (stop_latch.h): the latch stands. */
 UI_TEXT(ALERT_STOP_NO_CONFIRM, 94,
@@ -5880,7 +5863,7 @@ UI_TEXT(ALERT_STOP_NO_CONFIRM, 94,
  * ARMED bench or under a live supply output; shown once it draws again. */
 UI_TEXT(ALERT_SCREEN_STALLED, 94,
     "Screen stopped updating for 1s. Switched to SAFE, output off.",
-    "Bildschirm 1s ohne Aktualisierung. Auf SAFE geschaltet, Ausgang aus.")
+    "Anzeige 1s ohne Aktualisierung. Auf SAFE geschaltet, Ausgang aus.")
 UI_TEXT(ALERT_SERVO_NOT_RELEASED, 94,
     "Servo output not released. Hold ARM again.",
     "Servoausgang nicht freigegeben. Halte ARM erneut.")
@@ -6768,7 +6751,7 @@ UI_TEXT(PRR_BUSY, 0,
     "LÄUFT")
 UI_TEXT(PRR_NOT_READ, 0,
     "NOT READ",
-    "NICHT GELESEN")
+    "NICHT AUSGELESEN")
 UI_TEXT(PRR_NOT_CONN, 0,
     "NOT CONNECTED",
     "NICHT VERBUNDEN")
@@ -7431,7 +7414,7 @@ UI_TEXT(KP_M_STOPPED, 116,
     "STOP: Der Vorgang wurde abgebrochen.")
 UI_TEXT(KP_M_STOP_LATCHED, 116,
     "A STOP is latched. Hold STOP 2s to reset it.",
-    "Ein STOP ist gesetzt. Halte STOP 2s, um ihn zurückzusetzen.")
+    "Ein STOP ist gesetzt. Halte STOP 2s, um ihn zu lösen.")
 UI_TEXT(KP_M_TIMEOUT, 116,
     "No result from the IOmcu. Tap READ ALL.",
     "Kein Ergebnis vom IOmcu. Tippe auf ALLES AUSLESEN.")
@@ -7816,9 +7799,6 @@ UI_TEXT(HP_SOFTSTART, 32,
 UI_TEXT(HP_RESOLUTION, 32,
     "RESOLUTION",
     "AUFLÖSUNG")
-UI_TEXT(HP_NEUTRAL, 32,
-    "NEUTRAL",
-    "NEUTRAL")
 UI_TEXT(HP_END_L, 32,
     "LEFT END",
     "ENDE LINKS")
@@ -7913,7 +7893,7 @@ UI_TEXT(HP_ST_STOPPED, 116,
     "Gestoppt. Der Pin ist frei. Tippe auf AUFHEBEN zum Fortsetzen oder auf VERLASSEN.")
 UI_TEXT(HP_ST_STOP_LATCHED, 116,
     "Stopped. The pin is released. Hold STOP 2s to reset the STOP.",
-    "Gestoppt. Der Pin ist frei. Halte STOP 2s, um den STOP zurückzusetzen.")
+    "Gestoppt. Der Pin ist frei. Halte STOP 2s, um den STOP zu lösen.")
 UI_TEXT(HP_ST_NOT_IN_MODE, 116,
     "Port %u is held. The servo is not in programming mode: LEAVE and CONNECT again.",
     "Port %u belegt. Servo nicht im Programmiermodus. VERLASSEN und erneut VERBINDEN.")
@@ -7940,7 +7920,7 @@ UI_TEXT(HP_V_CAPPED, 116,
     "Hitec-Programmierung läuft mit höchstens 6.0V.")
 UI_TEXT(HP_STOP_LATCHED, 116,
     "A STOP is latched. Hold STOP 2s to reset it.",
-    "Ein STOP ist gesetzt. Halte STOP 2s, um ihn zurückzusetzen.")
+    "Ein STOP ist gesetzt. Halte STOP 2s, um ihn zu lösen.")
 UI_TEXT(HP_NOT_IN_MODE, 116,
     "The servo is not in programming mode. LEAVE and CONNECT again.",
     "Servo nicht im Programmiermodus. VERLASSEN und erneut VERBINDEN.")
@@ -8283,13 +8263,13 @@ UI_TEXT(HP_MOVE_DONE, 116,
 UI_TEXT(HP_LIVE_POS, 0,
     "POSITION %u (%s)",
     "POSITION %u (%s)")
-UI_TEXT(HP_LIVE_NOTE, 0,
+UI_TEXT(HP_LIVE_NOTE, 116,
     "Tap - or + to move the horn. It follows the row whose label is in the accent colour.",
     "Tippe - oder +, um das Ruderhorn zu bewegen. Es folgt der Zeile mit dem Namen in der Akzentfarbe.")
-UI_TEXT(HP_LIVE_END, 0,
+UI_TEXT(HP_LIVE_END, 116,
     "%s: the horn stands where %uus puts it. At %uus it stops at %u%% of that side.",
     "%s: Das Ruderhorn steht, wo %uus es hinstellt. Bei %uus hält es bei %u%% dieser Seite.")
-UI_TEXT(HP_LIVE_REACH, 0,
+UI_TEXT(HP_LIVE_REACH, 116,
     "Reach without a write: %u to %u. The horn stops at its edge.",
     "Reichweite ohne Schreiben: %u bis %u. Das Ruderhorn hält an ihrem Rand.")
 UI_TEXT(HP_LIVE_BLOCKED, 0,
@@ -8321,9 +8301,9 @@ UI_TEXT(HP_LIVE_ENDING, 116,
 UI_TEXT(HP_FIND, 0,
     "FIND STOP",
     "ANSCHLAG SUCHEN")
-UI_TEXT(HP_FIND_RUN, 0,
+UI_TEXT(HP_FIND_RUN, 116,
     "FIND STOP toward %s: %u counts every %u passes from NEUTRAL, at most %us. Tap it again to stop.",
-    "ANSCHLAG SUCHEN Richtung %s: %u Zählwerte alle %u Durchläufe ab NEUTRAL, höchstens %us. Tippe erneut zum Anhalten.")
+    "ANSCHLAG SUCHEN Richtung %s: %u Zählwerte alle %u Durchläufe ab NEUTRAL, max. %us. Erneut tippen hält an.")
 UI_TEXT(HP_FIND_FOUND, 116,
     "Stop at %u. %s set to %u in the edits.",
     "Anschlag bei %u. %s in den Änderungen auf %u gesetzt.")
@@ -8658,7 +8638,7 @@ UI_TEXT(UPD_CHECK, 0,
 UI_TEXT(UPD_HOLD_DL, 0,
     "HOLD 2s TO DOWNLOAD & INSTALL",
     "2s HALTEN: LADEN & INSTALLIEREN")
-UI_TEXT(UPD_KEEP_NET, 0,
+UI_TEXT(UPD_KEEP_NET, 74,
     "Save a network on WI-FI.",
     "Speichere ein Netzwerk unter WI-FI.")
 UI_TEXT(UPD_OPEN_WIFI, 0,
@@ -9051,7 +9031,8 @@ UI_TEXT(UPD_ABOUT_3, 0,
 /* UPDATES' card with the panel's release line capped at 0.22
  * (fw_release.h FW_REL_LINE_*, fw_release_line_capped()): the last line in
  * place of UPD_ABOUT_3, and the line's end above the card's foot. */
-UI_TEXT(UPD_ABOUT_3_LINE, 0,
+/* A paragraph of the card that gives way first, on two rows of 41 cells. */
+UI_TEXT(UPD_ABOUT_3_LINE, 82,
     "TESTING also offers test releases. Both offer only 0.22.x.",
     "TESTING bietet auch Testversionen. Beide bieten nur 0.22.x an.")
 UI_TEXT(UPD_LAST_LINE, 0,
@@ -11878,16 +11859,18 @@ UI_TEXT(RA_LAST, 50,
 UI_TEXT(RA_SET, 50,
     "PASS: %u>%u, %u>%u %s",
     "BESTANDEN: %u>%u, %u>%u %s")
+/* The errors in the order of the GOALS line: 1000us, 2000us, center.  Each
+ * is "%+.2f°", 8 cells at ±180.00°, so the line stays one row of 50. */
 UI_TEXT(RA_VERIFY, 50,
-    "VERIFY 1000us %s, 2000us %s, CENTER %s",
-    "NACHMESSEN 1000us %s, 2000us %s, MITTE %s")
+    "VERIFY %s, %s, CENTER %s",
+    "NACHMESSEN %s, %s, MITTE %s")
 UI_TEXT(RA_FILE, 50,
     "REPORT %s",
     "BERICHT %s")
 UI_TEXT(RA_BINDS_AT, 48,
     "surface binds at %s°",
     "Ruder klemmt bei %s°")
-UI_TEXT(RA_NO_ANGLE, 0,
+UI_TEXT(RA_NO_ANGLE, 48,
     "ANGLE SOURCE: NO READING",
     "WINKELQUELLE: KEIN MESSWERT")
 UI_TEXT(RA_IMU_YAW, 48,
@@ -12134,7 +12117,7 @@ UI_TEXT(RDY_TAG_NO_ZERO, 20,
     "NICHT GESETZT")
 UI_TEXT(RDY_TAG_PINS_UNREAD, 20,
     "PINS NOT READ",
-    "PINS NICHT GELESEN")
+    "NICHT AUSGELESEN")
 UI_TEXT(RDY_TAG_BELOW_3V, 20,
     "BELOW 3.0V",
     "UNTER 3.0V")
@@ -12604,7 +12587,7 @@ UI_TEXT(DIAL_BIND_SCANNING, 94,
  * rows: a new scan. */
 UI_TEXT(WL_SCAN_AGAIN, 40,
     "SCAN AGAIN",
-    "ERNEUT SUCHEN")
+    "AKTUALISIEREN")
 /* BOUND NODE tapped with no list to pick from, on POWER NODE and BALANCE
  * NODE. */
 UI_TEXT(NODE_BIND_EMPTY, 94,
@@ -12717,10 +12700,10 @@ UI_TEXT(PNODE_BAT_UNKNOWN, 18,
  * NODE. */
 UI_TEXT(PNODE_SCAN_ARMED, 94,
     "NO NODE SCAN WHILE ARMED: SWITCH TO SAFE FIRST",
-    "KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN")
+    "KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN")
 UI_TEXT(PNODE_SCAN_OFF, 94,
     "BLUETOOTH IS NOT READY: NO NODE SCAN",
-    "BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE")
+    "BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE")
 UI_TEXT(PNODE_STALE, 94,
     "POWER NODE: NO READING FOR 300ms",
     "LEISTUNGSKNOTEN: 300ms KEIN MESSWERT")
@@ -13112,7 +13095,7 @@ UI_DIAL_TEXT(DIAL_MOVES_NOTHING,
     "DREHEN BEWEGT NICHTS")
 UI_DIAL_TEXT(DIAL_LINK_LOST,
     "LINK LOST",
-    "LINK VERLOREN")
+    "VERBINDUNG VERLOREN")
 UI_DIAL_TEXT(DIAL_BENCH_SAFE,
     "THE BENCH IS SAFE",
     "DER PRÜFSTAND IST SAFE")

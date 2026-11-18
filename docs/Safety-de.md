@@ -48,7 +48,7 @@ Stopp des Prüfstands selbst, auf dem Weg, den STOP nimmt:
 - der Heartbeat fällt im selben Durchlauf weg, und der IOmcu geht
   innerhalb von 150ms in den sicheren Zustand;
 - der Ausgang des Netzteils schaltet im selben Durchlauf ab;
-- der Hinweis `Bildschirm 1s ohne Aktualisierung. Auf SAFE geschaltet,
+- der Hinweis `Anzeige 1s ohne Aktualisierung. Auf SAFE geschaltet,
   Ausgang aus.` erscheint, sobald die Render-Schleife wieder zeichnet. Eine
   Schleife, die nie wieder zeichnet, zeigt nichts Neues.
 

@@ -548,6 +548,8 @@ typedef struct {
     char              drawn_label[40]; /**< the label, cut to fit       */
     int   hint;        /**< ui_text_id_t of the band's hint for a release
                             before UI_HOLD_S                              */
+    uint32_t nav;      /**< ui_router_navigations() at the press: a change
+                            of screen ends a running hold                 */
 } ui_hold_t;
 
 /**
@@ -643,6 +645,10 @@ int ui_key_repeat(float *held_s, float dt_s);
  * that changes its label or a page that closes on it still flashes where
  * it was drawn (ui_hold_button()).  The screen steps the flash with
  * ui_hold_flash_step() every frame.
+ *
+ * A running hold whose press was made before the last ui_router_goto()
+ * ends here and counts no time: a change of screen ends every hold in
+ * progress, whatever the old screen's leave() does.
  * @param h     The hold.
  * @param dt_s  The frame's time, in seconds, credited by ui_hold_credit().
  * @return True on the one frame the hold completes, and never again until

@@ -159,7 +159,7 @@ TEST_CASE(the_link_decides_the_face_before_the_screen)
     CHECK_STR_EQ(s.hint[0].text, "ARM ON THE PANEL");
     dial_model(&m, DM_LINK_LOST, DK_LANG_DE);
     dial_scene_build(&s, &m.face, &m.view, DK_LANG_DE);
-    CHECK_STR_EQ(s.block[0].text, "LINK VERLOREN");
+    CHECK_STR_EQ(s.block[0].text, "VERBINDUNG VERLOREN");
     CHECK_STR_EQ(s.block[1].text, "KEINE DREHUNG GESENDET");
     CHECK_STR_EQ(s.block[2].text, "PRÜFSTAND WIRD SAFE");
     CHECK_STR_EQ(s.hint[0].text, "ARM AM PANEL");

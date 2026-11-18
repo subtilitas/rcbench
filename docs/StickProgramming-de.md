@@ -146,7 +146,7 @@ sobald sich die Suche ändert.
   Kontronik und darin nur JAZZ 55 LV.
 - Eine leere Suche zeigt jeden Hersteller und jedes Modell. Die Suche
   fasst bis zu 16 Zeichen und gilt auf beiden Ebenen.
-- Die Zählung sagt, was gefunden wurde: `1-1/1 Hersteller, 1 ausführbar`.
+- Die Zählung sagt, was gefunden wurde: `1-1/1 gefunden, 1 ausführbar`.
   Ohne Treffer sagt die Liste `Keine passenden Profile gefunden.`
 
 OK schließt die Tastatur und übernimmt die Suche. ABBRECHEN stellt den

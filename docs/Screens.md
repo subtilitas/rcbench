@@ -578,8 +578,9 @@ PROG 5V OFF, DISARM, STOP or ABORT, takes a tap. Instead, the alert band shows a
 to dismiss it earlier. The hint fits on one line of at most 97 characters.
 
 A short tap is not a fault, so the hint is a notice. Alerts take priority:
-a hint stays hidden while an alert is visible, and an arriving alert
-replaces a visible hint.
+while an alert is visible, one notice waits, the latest, and shows for its
+own 4s once the alert has cleared. An arriving alert replaces a visible
+hint.
 
 - The hint appears only when the finger lifts while still on the button. It does
   not show when the finger left the button first (the hold is abandoned),
@@ -3168,7 +3169,7 @@ PROG 5V OFF: a stop switches off on that finger's press.
 
 On the [rbmod carrier](Carrier.md#power), a line below OUTPUT names the
 programming ports' separate 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
-`NOT READ` after an unanswered read, at the foot of the CONTROL card. ON
+`UNKNOWN` after an unanswered read, at the foot of the CONTROL card. ON
 uses the accent colour. KST and Hitec programmers switch this supply. The
 PROG 5V box to the right of PLOT and TABLE allows manual switching and
 shows its INA3221 reading, as on [SERVO](#servo).

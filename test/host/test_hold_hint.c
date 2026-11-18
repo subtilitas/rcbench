@@ -317,7 +317,7 @@ TEST_CASE(an_alert_that_arrives_replaces_the_hint)
     CHECK(ui_router_alert() == NULL);
 }
 
-TEST_CASE(a_hint_does_not_show_while_an_alert_is_up)
+TEST_CASE(a_hint_waits_while_an_alert_is_up)
 {
     router_on(SCREEN_MOTOR);
     ui_router_set_alert("Touch signal lost.");
@@ -325,6 +325,9 @@ TEST_CASE(a_hint_does_not_show_while_an_alert_is_up)
     CHECK(ui_router_alert() != NULL
           && strcmp(ui_router_alert(), "Touch signal lost.") == 0);
     CHECK(!ui_router_alert_is_notice());
+    ui_router_set_alert(NULL);
+    CHECK(hint_shows(TX_HOLD_HINT_ARM));
+    CHECK(ui_router_alert_is_notice());
 
     router_on(SCREEN_MOTOR);
     ui_router_hold_alert("Touchscreen not responding.");
@@ -333,6 +336,44 @@ TEST_CASE(a_hint_does_not_show_while_an_alert_is_up)
           && strcmp(ui_router_alert(), "Touchscreen not responding.") == 0);
     CHECK(!ui_router_alert_is_notice());
     ui_router_hold_alert(NULL);
+    CHECK(hint_shows(TX_HOLD_HINT_ARM));
+}
+
+/* A change of screen ends a hold in progress, whether or not the screen's
+ * leave() reset it: back on the screen, the old press counts no time, fires
+ * nothing and shows no hint. */
+TEST_CASE(a_change_of_screen_ends_a_running_hold)
+{
+    router_on(SCREEN_MOTOR);
+    ui_hold_t h;
+    ui_hold_reset(&h);
+    ui_hold_begin(&h, TX_HOLD_HINT_ARM);
+    for (int i = 0; i < 7; ++i) {
+        CHECK(!ui_hold_tick(&h, Q));
+    }
+    ui_router_goto(SCREEN_OVERVIEW);
+    ui_router_goto(SCREEN_MOTOR);
+    bool fired = false;
+    for (int i = 0; i < 9; ++i) {
+        fired = fired || ui_hold_tick(&h, Q);
+    }
+    CHECK(!fired);
+    CHECK(!h.down);
+    CHECK(h.held_s == 0.0f);
+    const touch_event_t up = up_at(150, 130, 0);
+    CHECK(!ui_hold_end(&h, &up, BTN));
+    CHECK(ui_router_alert() == NULL);
+
+    /* A press made on the screen as it stands runs its 2s. */
+    ui_hold_begin(&h, TX_HOLD_HINT_ARM);
+    for (int i = 0; i < 7; ++i) {
+        CHECK(!ui_hold_tick(&h, Q));
+    }
+    CHECK(ui_hold_tick(&h, Q));
+
+    /* A hold that fired waits for its release across the change. */
+    ui_router_goto(SCREEN_OVERVIEW);
+    CHECK(ui_hold_end(&h, &up, BTN));
 }
 
 TEST_CASE(a_tap_on_the_band_clears_the_hint)
@@ -585,7 +626,8 @@ int main(void)
     RUN(the_hint_is_there_at_3999ms_and_gone_at_4000ms);
     RUN(the_hint_is_amber_and_an_alert_is_the_danger_colour);
     RUN(an_alert_that_arrives_replaces_the_hint);
-    RUN(a_hint_does_not_show_while_an_alert_is_up);
+    RUN(a_hint_waits_while_an_alert_is_up);
+    RUN(a_change_of_screen_ends_a_running_hold);
     RUN(a_tap_on_the_band_clears_the_hint);
     RUN(stop_clears_the_hint_in_the_next_frame);
     RUN(a_switch_to_safe_or_a_new_fault_clears_the_hint);

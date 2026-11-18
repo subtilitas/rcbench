@@ -314,7 +314,7 @@ TEST_CASE(the_lines_name_the_pin_and_the_reading)
                  "PROG PORTS 5V, GPIO 21: ON");
     prog5v_box_publish(ST_UNKNOWN, 21u, (uint8_t)PROG5V_HELD_NONE);
     CHECK_STR_EQ(prog5v_box_text(0, buf, sizeof(buf)),
-                 "PROG PORTS 5V, GPIO 21: NOT READ");
+                 "PROG PORTS 5V, GPIO 21: UNKNOWN");
     ui_text_set_language(UI_LANG_DE);
     prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
     CHECK_STR_EQ(prog5v_box_text(0, buf, sizeof(buf)),
