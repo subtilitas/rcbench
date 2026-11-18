@@ -50,9 +50,9 @@ static void draw_arm(gfx_canvas_t *c)
 {
     /* Green while it will arm, fading to the red of ARMED across the hold,
      * so the fade previews the colour the button is about to hold. */
-    ui_hold_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM",
-                   ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
-                                               : UI_ACTION_AVAILABLE),
+    ui_hold_button(c, s.arm_rect, mo_arm_stops() ? "DISARM" : "ARM",
+                   ui_action_fill(mo_arm_stops() ? UI_ACTION_ACTIVE
+                                                 : UI_ACTION_AVAILABLE),
                    ui_action_fill(UI_ACTION_ACTIVE), &s.arm, s.pressed == 1,
                    !mo_arm_locked(), MO_FONT_LABEL);
 }

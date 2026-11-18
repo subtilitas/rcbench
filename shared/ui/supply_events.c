@@ -128,11 +128,13 @@ static void down(const touch_event_t *evt)
 
     /* The output and the peaks work whatever covers the left column. */
     if (gfx_rect_contains(s.out_rect, x, y)) {
-        if (s.on) {
+        if (supply_screen_output_live()) {
             /* OUTPUT OFF acts on the press, whoever holds the supply: a
              * stop waits for no lift, and a finger that slides off or a
-             * touch that is lost has switched off already.  The press
-             * stays the contact's and its release asks nothing. */
+             * touch that is lost has switched off already.  An ON asked
+             * and not reported counts as on: the press takes it back.
+             * The press stays the contact's and its release asks
+             * nothing. */
             sup_post_off();
             sup_take(evt, P_OUTPUT);
             s.press_on = true;
@@ -384,7 +386,8 @@ static void stop_down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
 
-    if (s.on && gfx_rect_contains(s.out_rect, x, y)) {
+    if (supply_screen_output_live()
+        && gfx_rect_contains(s.out_rect, x, y)) {
         sup_post_off();
         if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER) {
             ui_slider_release(&s.v_slider);
@@ -411,7 +414,8 @@ static void stop_down(const touch_event_t *evt)
  * PROG 5V ON are none. */
 bool sup_safe_at(int x, int y)
 {
-    if (s.on && gfx_rect_contains(s.out_rect, x, y)) {
+    if (supply_screen_output_live()
+        && gfx_rect_contains(s.out_rect, x, y)) {
         return true;
     }
     return sup_p5_shown() && prog5v_box_on()

@@ -925,10 +925,14 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   halten. Der erste Kontakt, und ein zweiter, dritter oder weiterer,
   während andere Kontakte eigene Drücke halten, wirkt beim Aufsetzen:
   DISARM, STOP TEST, ARM + START während eines Laufs oder seiner Schritte,
-  ABORT eines Stick-Laufs, die Versorgungszeile von KST und Hitec, solange
-  sie EIN zeigt, auf SUPPLY AUSGANG AUS und PROG 5V AUS und im Overlay des
+  ABORT eines Stick-Laufs und der ESC-, KST- und Hitec-Sitzung, die
+  Versorgungszeile von KST und Hitec, solange sie EIN zeigt, auf SUPPLY
+  AUSGANG AUS und PROG 5V AUS, auf OUTPUTS PORT-PWM AUS und im Overlay des
   Hitec-Programmers EIN von SERVO BEWEGEN und die Taste von ANSCHLAG
-  SUCHEN, deren Seite sucht. Ein Finger, der vom Bedienelement rutscht, und
+  SUCHEN, deren Seite sucht. Ein EIN oder ein ARM, das ein Halten angefragt
+  hat und das nicht beantwortet ist, zählt als eingeschaltet: Die Taste
+  zeigt AUSGANG AUS oder DISARM, und ein Druck nimmt das EIN oder das ARM
+  zurück. Ein Finger, der vom Bedienelement rutscht, und
   ein Touch-Signal, das unter dem Druck abreißt, haben bereits gestoppt.
   Ein Abheben schaltet nie ein, was ein Stopp
   ausgeschaltet hat: Ein Finger auf dieser Hitec-Zeile verliert sein

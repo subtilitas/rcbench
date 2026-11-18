@@ -173,7 +173,7 @@ The open protocol list has a second column with one PROG PORT entry for each rep
 | FUNCTION | what the pin carries while no programming session holds it; a tap on its face opens the list over the column. SERVO PWM is the servo pulse on a PWM pin; NONE leaves the pin an input with its pull-down, on any free pin; DSHOT150, DSHOT300 and DSHOT600 (IOmcu 0.22.0 or later) send DShot from MOTOR & ESC's throttle, a frame every 1ms while ARMED for the throttle, on any free pin |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS or PORT n: what the [SERVO](servo.md) tester drives. SERVO's PORT button sets the same value |
-| PORT PWM | ON or OFF: the pulse of the port that is the tester's target |
+| PORT PWM | ON or OFF: the pulse of the port that is the tester's target. ON takes a tap; OFF acts on the press |
 
 The IOmcu stores each port's pin and function in flash alongside the output bindings, so they stay with the board. Port 1 defaults to SERVO PWM on GPIO 13; ports 2 to 4 default to NONE with no pin. Selecting a FUNCTION or pin requests a change. The panel writes it when the bench is at rest, and the amber line reports its status.
 

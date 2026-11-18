@@ -695,11 +695,13 @@ TEST_CASE(a_refusal_after_a_stop_changes_nothing_and_keeps_the_latch)
 
 /* A late refusal of an older ask while a newer one waits leaves the newer
  * one waiting; its own refusal ends it.  Passed every frame, the stamp
- * already met changes nothing. */
+ * already met changes nothing.  The older ask is taken back by a press on
+ * the button, DISARM while an ARM waits, before the newer hold. */
 TEST_CASE(a_late_refusal_of_an_older_ask_leaves_the_newer_one_waiting)
 {
     fresh(SCREEN_MOTOR);
     const uint32_t first = motor_hold();
+    feed_tap(FEED_LONE, MO_ARM_PX, MO_ARM_PY);
     const uint32_t second = motor_hold();
     CHECK(first != 0u);
     CHECK(second != 0u && second != first);
@@ -717,6 +719,7 @@ TEST_CASE(a_late_refusal_of_an_older_ask_leaves_the_newer_one_waiting)
 
     fresh(SCREEN_SERVO_LIVE);
     const uint32_t s1 = servo_hold();
+    feed_tap(FEED_LONE, SV_ARM_PX, SV_ARM_PY);
     const uint32_t s2 = servo_hold();
     CHECK(s2 != s1);
     frame_after(s1);

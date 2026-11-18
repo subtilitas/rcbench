@@ -595,8 +595,9 @@ bool drive_arm_press(const touch_event_t *evt)
         ++s.arm_rev;
         return true;
     }
-    if (s.gate.armed) {
-        /* DISARM acts on the press and switches every output off: the
+    if (s.gate.armed || s.gate.arm_asked) {
+        /* DISARM acts on the press and switches every output off; an ARM
+         * asked and not answered counts as armed.  The
          * press takes no hold, so a finger left on the button arms
          * nothing when it reads ARM again. */
         svs_all_off();
@@ -714,7 +715,7 @@ void drive_draw_arm(gfx_canvas_t *c)
     }
     /* The fade runs to the red of ARMED, or to the amber of the steps
      * where the hold switches a part on first. */
-    const bool armed = s.gate.armed;
+    const bool armed = s.gate.armed || s.gate.arm_asked;
     ui_hold_button(c, s.arm_btn, armed ? "DISARM" : "ARM",
                    ui_action_fill(armed ? UI_ACTION_ACTIVE
                                         : UI_ACTION_AVAILABLE),

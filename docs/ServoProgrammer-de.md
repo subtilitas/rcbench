@@ -257,7 +257,7 @@ laufendes Halten, mit der Eingangsspannung im Text
 ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
 Für ein Servo, das der Bediener einschaltet, ohne PD mini, schaltet
 **VERBINDEN** nichts ein und nimmt ein Tippen, das den Einstieg sofort
-sendet. **ABBRECHEN** und **VERLASSEN** nehmen ein Tippen.
+sendet. **VERLASSEN** nimmt ein Tippen; **ABBRECHEN** wirkt beim Aufsetzen.
 
 ![Ein laufender Vorgang](img/de/servo-kst-working.png)
 

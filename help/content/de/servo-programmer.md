@@ -56,7 +56,7 @@ Fehlt eine Voraussetzung, sind alle Bedienelemente gesperrt. Der Reiter nennt de
 
 Der Port arbeitet entweder mit PWM (Pulsweitenmodulation) oder im Programmiermodus. VERBINDEN beendet PWM, stellt bei antwortendem PD mini die Versorgung ein, führt die Einstiegsfolge aus und liest alle 32 Register aus. Danach heißt die Taste VERLASSEN, während eines Vorgangs ABBRECHEN.
 
-Wo die Sitzung die Servoversorgung schaltet, PROG 5V am Carrier oder einen antwortenden PD mini, schaltet VERBINDEN sie ein und ist eine Halte-Taste von 2s. Die Sitzung beginnt, wenn das Halten vollständig ist. Loslassen vor 2s sendet nichts und zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` Für ein Servo, das du von Hand einschaltest, nimmt VERBINDEN ein Tippen. VERLASSEN und ABBRECHEN nehmen ein Tippen.
+Wo die Sitzung die Servoversorgung schaltet, PROG 5V am Carrier oder einen antwortenden PD mini, schaltet VERBINDEN sie ein und ist eine Halte-Taste von 2s. Die Sitzung beginnt, wenn das Halten vollständig ist. Loslassen vor 2s sendet nichts und zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` Für ein Servo, das du von Hand einschaltest, nimmt VERBINDEN ein Tippen. VERLASSEN nimmt ein Tippen; ABBRECHEN wirkt beim Aufsetzen.
 
 ![Was VERBINDEN stellt](view:servo-kst-options)
 

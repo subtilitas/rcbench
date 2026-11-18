@@ -118,8 +118,8 @@ Das Feld ist 640px breit und fasst 60 Zeichen pro Zeile in der Schrift
   Das Hilfefeld bleibt für die Aufnahme sichtbar und schließt sich danach.
 - STOP schließt das Feld und stoppt sofort, wie bei geschlossenem Hilfefeld.
 - Auch Bedienelemente zum Anhalten wirken mit demselben Druck: DISARM,
-  AUSGANG AUS, PROG 5V AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN,
-  LAUF BEENDEN, 2s HALTEN: ARM + START auf RUDER AUTO, TEST und
+  AUSGANG AUS, PROG 5V AUS, ABBRECHEN eines Stick-Laufs und der ESC-, KST-
+  und HITEC-Sitzung, TEST BEENDEN, LAUF BEENDEN, 2s HALTEN: ARM + START auf RUDER AUTO, TEST und
   ENDLAGENLAUF während seiner Startschritte oder seines Laufs sowie auf
   HITEC EIN von SERVO BEWEGEN und die Taste von ANSCHLAG SUCHEN, deren
   Seite sucht.
@@ -616,9 +616,12 @@ Bedienelemente zum Anhalten des Prüfstands enden darüber.
 Eine Halte-Taste wirkt nach 2s Berührung (`UI_HOLD_S`). Jede Taste, die
 eine Spannung, eine Versorgung oder einen Ausgang einschaltet, ist eine
 Halte-Taste; eine, die anhält, was der Prüfstand treibt, etwa AUSGANG AUS,
-PROG 5V AUS, DISARM, STOP oder ABBRECHEN eines Stick-Laufs, wirkt beim
+PROG 5V AUS, PORT-PWM AUS, DISARM, STOP oder ABBRECHEN, wirkt beim
 Aufsetzen: Der Befehl geht, sobald der Finger aufsetzt, und ein Finger,
-der abrutscht, oder ein verlorenes Touch-Signal hat bereits gestoppt.
+der abrutscht, oder ein verlorenes Touch-Signal hat bereits gestoppt. Ab
+dem Moment, in dem ein Halten EIN oder ARM angefragt hat, zeigt die Taste
+AUSGANG AUS oder DISARM, bevor Netzteil oder Prüfstand antworten: Ein
+Druck in dieser Zeit nimmt das EIN oder das ARM zurück.
 Loslassen einer Halte-Taste vor 2s
 sendet keinen Befehl. Stattdessen erscheint ihr Hinweis für 4s im Alarmband:
 in Bernsteinfarbe (`UI_C_WARN`) mit dunkler Schrift statt der
@@ -8165,7 +8168,7 @@ Zeilen:
 | FUNKTION | ein Auswahlfeld mit dem, was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen öffnet die Liste über den Zeilen darunter: SERVO PWM, KEINE, und bei einem IOmcu ab Protokoll 4.28 DSHOT150, DSHOT300 und DSHOT600. Ein Tippen auf einen Eintrag erbittet ihn beim IOmcu und schließt die Liste; ein Druck neben die Liste schließt sie und erreicht nichts darunter. Das Feld ist vertieft und matt gezeichnet und nimmt kein Tippen an, solange die Zeile gesperrt ist |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSORS überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`: der niedrigste Kanal mit Shunt auf einem bestückten Baustein; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS \| PORT n: das Ziel des Testers ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
-| PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist |
+| PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist. EIN nimmt ein Tippen; AUS wirkt beim Aufsetzen, was auch immer andere Finger halten |
 
 In der Platinenansicht stehen die Zeilen links neben der Platine. Ihre
 Tasten wählen den Port-Pin. In der Rasteransicht stehen die Zeilen unter

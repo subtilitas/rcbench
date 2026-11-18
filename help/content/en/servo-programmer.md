@@ -56,7 +56,7 @@ If a requirement is unmet, all controls are disabled and the tab explains why. T
 
 The port runs either PWM (pulse-width modulation) or programming. CONNECT stops PWM, sets the supply if a PD mini responds, performs the entry sequence and reads all 32 registers. The button then becomes LEAVE, or ABORT while an operation is running.
 
-Where the session switches the servo's supply, PROG 5V on the carrier or a PD mini that answers, CONNECT switches it on and is a 2s hold. The session starts when the hold completes. A release before 2s sends nothing and shows `Hold 2s to connect and switch the port's supply on.` For a servo you power by hand, CONNECT takes a tap. LEAVE and ABORT take a tap.
+Where the session switches the servo's supply, PROG 5V on the carrier or a PD mini that answers, CONNECT switches it on and is a 2s hold. The session starts when the hold completes. A release before 2s sends nothing and shows `Hold 2s to connect and switch the port's supply on.` For a servo you power by hand, CONNECT takes a tap. LEAVE takes a tap; ABORT acts on the press.
 
 ![What CONNECT sets](view:servo-kst-options)
 

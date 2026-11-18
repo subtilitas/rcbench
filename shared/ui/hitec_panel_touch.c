@@ -46,17 +46,37 @@ static void let_go(void)
 }
 
 /** @brief What a press stops: nothing, MOVE SERVO's loop, a FIND STOP
- *         search. */
-enum { STOP_NONE = 0, STOP_MOVE, STOP_FIND };
+ *         search, the operation the PORT row's ABORT ends. */
+enum { STOP_NONE = 0, STOP_MOVE, STOP_FIND, STOP_ABORT };
 
 /**
- * @brief The control that stops the servo under (@p x, @p y): MOVE SERVO's
- *        value while the loop is on, and the FIND STOP key whose side
- *        searches.  None while the page, the keypad, the keyboard or a
- *        list covers the rows.
+ * @brief Whether the PORT row's button reads ABORT: the entry, a read or
+ *        a write is under way (act_value() in hitec_panel_text.c).
+ * @return true while it does
+ */
+static bool abort_shows(void)
+{
+    switch (hitec_prog_state(&hp.prog)) {
+    case HITEC_PROG_OPENING:
+    case HITEC_PROG_ENTERING:
+    case HITEC_PROG_READING:
+    case HITEC_PROG_RECORDING:
+    case HITEC_PROG_BACKUP:
+    case HITEC_PROG_WRITING:
+        return true;
+    default:
+        return false;
+    }
+}
+
+/**
+ * @brief The control that stops under (@p x, @p y): MOVE SERVO's value
+ *        while the loop is on, the FIND STOP key whose side searches, and
+ *        the PORT row's button while it reads ABORT.  None while the page,
+ *        the keypad, the keyboard or a list covers the rows.
  * @param x the column, px
  * @param y the line, px
- * @return STOP_MOVE, STOP_FIND or STOP_NONE
+ * @return STOP_MOVE, STOP_FIND, STOP_ABORT or STOP_NONE
  */
 static int stop_at(int x, int y)
 {
@@ -76,6 +96,10 @@ static int stop_at(int x, int y)
             && gfx_rect_contains(hpn_value_rect(r), x, y)) {
             return STOP_MOVE;
         }
+        if (r->what == A_PORT && abort_shows()
+            && gfx_rect_contains(hpn_value_rect(r), x, y)) {
+            return STOP_ABORT;
+        }
         if (r->what == A_FIND && hitec_prog_find_side(p) >= 0
             && gfx_rect_contains(
                    hpn_find_rect(r, hitec_prog_find_side(p)
@@ -93,7 +117,8 @@ bool hitec_panel_safe_at(int x, int y)
 
 /**
  * @brief Stops what the control under (@p x, @p y) stops: MOVE SERVO's
- *        loop, or the search of the FIND STOP key there.
+ *        loop, the search of the FIND STOP key there, or the operation
+ *        under way where the PORT row reads ABORT.
  * @param x the column, px
  * @param y the line, px
  * @return true when the press was on such a control and stopped it
@@ -107,6 +132,9 @@ static bool stop_act(int x, int y)
     case STOP_FIND:
         hpn_find_act(hitec_prog_find_side(&hp.prog)
                      == (int)HITEC_FIND_RIGHT);
+        return true;
+    case STOP_ABORT:
+        hitec_prog_abort(&hp.prog);
         return true;
     default:
         return false;

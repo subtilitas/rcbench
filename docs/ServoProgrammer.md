@@ -229,8 +229,8 @@ back. On the rbmod carrier an input
 supply under 13.5V refuses the press and ends a running hold, with the
 input named ([Carrier, The input supply](Carrier.md#the-input-supply)).
 For a servo the operator powers, with no PD mini, **CONNECT** switches
-nothing on and takes a tap, which sends the entry at once. **ABORT** and
-**LEAVE** take a tap.
+nothing on and takes a tap, which sends the entry at once. **LEAVE**
+takes a tap; **ABORT** acts on the press.
 
 ![An operation running](img/servo-kst-working.png)
 

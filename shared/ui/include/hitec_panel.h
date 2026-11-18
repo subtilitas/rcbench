@@ -108,10 +108,9 @@ bool hitec_panel_files_shown(void);
 uint8_t hitec_panel_pin(void);
 /**
  * @brief Whether a press at (@p x, @p y) lands on a control of the session
- *        that stops the servo and acts on that press: MOVE SERVO's value
- *        while the loop is on, or the FIND STOP key whose side searches
- *        (prog_page_set_t's safe_at).  ABORT ends the wire's transaction,
- *        not a drive, and is none.
+ *        that stops and acts on that press: MOVE SERVO's value while the
+ *        loop is on, the FIND STOP key whose side searches, or the PORT
+ *        row's button while it reads ABORT (prog_page_set_t's safe_at).
  * @param x the column, px
  * @param y the row, px
  * @return true on such a control

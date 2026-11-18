@@ -80,7 +80,8 @@ bool svs_safe_at(int x, int y)
             return false;
         }
     }
-    if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
+    if ((s.gate.armed || s.gate.arm_asked)
+        && gfx_rect_contains(s.arm_btn, x, y)) {
         return true;
     }
     if (modal_open()) {

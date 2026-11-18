@@ -15,7 +15,7 @@
  * - each_framebuffer_is_updated_independently
  * - a_set_point_moved_offline_repaints_the_cards_in_both_buffers
  * - a_screen_without_a_sample_draws
- * - an_on_reported_during_a_second_hold_is_not_an_off
+ * - a_press_while_an_on_is_on_its_way_takes_it_back
  * - a_question_for_an_on_that_was_dropped_goes
  * - an_apply_held_as_its_on_is_dropped_applies_nothing
  * - a_dropped_question_lets_go_of_its_apply
@@ -437,20 +437,22 @@ TEST_CASE(reset_pd_mini_is_offered_only_for_the_module)
     CHECK(!c.on);
 }
 
-/* A second hold on OUTPUT ON while the first one's ON is on its way: the
- * output reporting on during it does not make its release an OFF. */
-TEST_CASE(an_on_reported_during_a_second_hold_is_not_an_off)
+/* A second press on OUTPUT while the first hold's ON is on its way takes
+ * the ON back on the DOWN.  The output reporting on during the press makes
+ * its release nothing more: one OFF, no ON. */
+TEST_CASE(a_press_while_an_on_is_on_its_way_takes_it_back)
 {
     fresh();
     hold_on();
     drain();
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    supply_cmd_t c = { 0 };
+    CHECK(supply_screen_poll_cmd(&c) && c.off && !c.on);
     tick_for(4);
     supply_screen_set_output(true);
     tick_for(1);
     ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
-    supply_cmd_t c;
-    CHECK(!supply_screen_poll_cmd(&c) || !c.off);
+    CHECK(!supply_screen_poll_cmd(&c));
 }
 
 /* The question asked while an ON was on its way goes when that ON is
@@ -825,7 +827,7 @@ int main(void)
     RUN(a_set_point_moved_offline_repaints_the_cards_in_both_buffers);
     RUN(a_sample_leaves_the_tabs_and_the_heading_row_alone);
     RUN(a_screen_without_a_sample_draws);
-    RUN(an_on_reported_during_a_second_hold_is_not_an_off);
+    RUN(a_press_while_an_on_is_on_its_way_takes_it_back);
     RUN(a_question_for_an_on_that_was_dropped_goes);
     RUN(an_apply_held_as_its_on_is_dropped_applies_nothing);
     RUN(a_dropped_question_lets_go_of_its_apply);

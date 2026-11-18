@@ -16,6 +16,7 @@
  * - prog5v_off_acts_on_the_press_of_a_lone_contact_1_2_or_3
  * - prog5v_off_pressed_then_slid_off_has_switched_off
  * - prog5v_off_pressed_then_touch_lost_has_switched_off
+ * - output_pressed_while_on_is_asked_takes_the_on_back
  * - output_off_under_two_other_contacts_switches_off
  * - output_off_under_three_other_contacts_switches_off
  * - prog5v_off_under_two_and_three_other_contacts_switches_off
@@ -161,6 +162,34 @@ TEST_CASE(prog5v_off_pressed_then_touch_lost_has_switched_off)
         CHECK(p5_asked_off());
         tick_for(2 * HOLD_TICKS);
         CHECK(!prog5v_box_poll_cmd(NULL));
+    }
+}
+
+/* OUTPUT ON's hold has asked ON and the supply has not reported it: the
+ * button is OUTPUT OFF.  A press there, by contact 1, 2 or 3, takes the ON
+ * back on the DOWN, whether the ON still waits to be collected or went
+ * out, and a finger left on it asks no ON. */
+TEST_CASE(output_pressed_while_on_is_asked_takes_the_on_back)
+{
+    for (int collected = 0; collected < 2; ++collected) {
+        for (uint8_t id = 1; id <= 3; ++id) {
+            supply_cmd_t c = { 0 };
+
+            fresh();
+            hold_on();
+            if (collected) {
+                CHECK(supply_screen_poll_cmd(&c) && c.on);
+            }
+            CHECK(supply_screen_output_live());
+            ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, id);
+            CHECK(asked_off());
+            CHECK(!supply_screen_output_live());
+            tick_for(2 * HOLD_TICKS);
+            ev(OFF_X, OFF_Y, TOUCH_EVENT_MOVE, id);
+            ev(OFF_X, OFF_Y, TOUCH_EVENT_UP, id);
+            tick_for(HOLD_TICKS);
+            CHECK(!supply_screen_poll_cmd(NULL));
+        }
     }
 }
 
@@ -313,6 +342,7 @@ int main(void)
     RUN(prog5v_off_acts_on_the_press_of_a_lone_contact_1_2_or_3);
     RUN(prog5v_off_pressed_then_slid_off_has_switched_off);
     RUN(prog5v_off_pressed_then_touch_lost_has_switched_off);
+    RUN(output_pressed_while_on_is_asked_takes_the_on_back);
     RUN(output_off_under_two_other_contacts_switches_off);
     RUN(output_off_under_three_other_contacts_switches_off);
     RUN(prog5v_off_under_two_and_three_other_contacts_switches_off);

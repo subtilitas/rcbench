@@ -15,6 +15,8 @@
  * - the_searching_key_pressed_then_slid_off_or_lost_stays_ended
  * - the_overlay_names_its_stops_to_the_router
  * - the_servo_screen_hands_the_press_on_a_stop_to_the_overlay
+ * - abort_ends_a_read_on_the_press_of_a_lone_contact_1_2_or_3
+ * - abort_ends_a_read_under_two_other_contacts
  * - move_servo_on_ends_under_two_other_contacts
  * - move_servo_on_ends_under_three_other_contacts
  * - the_searching_find_key_ends_under_two_and_three_other_contacts
@@ -245,6 +247,73 @@ TEST_CASE(the_servo_screen_hands_the_press_on_a_stop_to_the_overlay)
     CHECK_EQ(hitec_panel_editor(), 0);
 }
 
+/* A read under way, the PORT row's button reading ABORT. */
+static void reading(void)
+{
+    open_at(SUPPLY_ON, UI_LANG_EN);
+    servo_d485();
+    g_drv.dreg[0x32] = 3u;
+    tap_connect();
+    tap(val(HITEC_PANEL_SERVO, 1, 1));            /* READ ALL */
+    CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_READING);
+    prun(200u);
+    show();
+}
+
+/* ABORT acts on the press: the read ends on the DOWN of contact 1, 2 or 3,
+ * lifted on the button, slid off it or lost.  The overlay names ABORT to
+ * the router while it shows. */
+TEST_CASE(abort_ends_a_read_on_the_press_of_a_lone_contact_1_2_or_3)
+{
+    for (int end = 0; end < 3; ++end) {
+        for (uint8_t id = 1; id <= 3; ++id) {
+            reading();
+            const gfx_rect_t ab = val(HITEC_PANEL_SERVO, 0, 0);
+            const gfx_rect_t tab = hitec_panel_tab_rect(HITEC_PANEL_TRAVEL);
+
+            CHECK(hitec_panel_safe_at(cx(ab), cy(ab)));
+            evi(cx(ab), cy(ab), TOUCH_EVENT_DOWN, id);
+            if (end == 1) {
+                evi(cx(tab), cy(tab), TOUCH_EVENT_MOVE, id);
+                evi(cx(tab), cy(tab), TOUCH_EVENT_UP, id);
+            } else if (end == 2) {
+                hitec_panel_cancel();
+            }
+            until(HITEC_PROG_HELD);
+            show();
+            CHECK_EQ(msg(), HITEC_PROG_MSG_ABORTED);
+            CHECK(!hitec_panel_safe_at(cx(ab), cy(ab)));
+            if (end == 0) {
+                /* The lift on the button, now LEAVE, opens no page. */
+                evi(cx(ab), cy(ab), TOUCH_EVENT_UP, id);
+                show();
+                CHECK_EQ(hitec_panel_editor(), 0);
+            }
+            CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_HELD);
+        }
+    }
+}
+
+/* Contact 1 holds the TRAVEL tab, contact 2 rests on a value; a third on
+ * ABORT ends the read on its press. */
+TEST_CASE(abort_ends_a_read_under_two_other_contacts)
+{
+    reading();
+    const gfx_rect_t ab = val(HITEC_PANEL_SERVO, 0, 0);
+    const gfx_rect_t tab = hitec_panel_tab_rect(HITEC_PANEL_SERVO);
+    const gfx_rect_t rd = val(HITEC_PANEL_SERVO, 1, 1);
+
+    evi(cx(tab), cy(tab), TOUCH_EVENT_DOWN, 1);
+    evi(cx(rd), cy(rd), TOUCH_EVENT_DOWN, 2);
+    CHECK_EQ(hitec_prog_state(model()), HITEC_PROG_READING);
+    evi(cx(ab), cy(ab), TOUCH_EVENT_DOWN, 3);
+    until(HITEC_PROG_HELD);
+    CHECK_EQ(msg(), HITEC_PROG_MSG_ABORTED);
+    for (uint8_t id = 3; id >= 1; --id) {
+        evi(cx(ab), cy(ab), TOUCH_EVENT_UP, id);
+    }
+}
+
 /* Contact 1 holds LEFT END's + key, whose repeat moves the horn; contact 2
  * rests on LEFT END's value.  A third on MOVE SERVO's ON ends the loop on
  * its press. */
@@ -391,6 +460,8 @@ int main(void)
     RUN(the_searching_key_pressed_then_slid_off_or_lost_stays_ended);
     RUN(the_overlay_names_its_stops_to_the_router);
     RUN(the_servo_screen_hands_the_press_on_a_stop_to_the_overlay);
+    RUN(abort_ends_a_read_on_the_press_of_a_lone_contact_1_2_or_3);
+    RUN(abort_ends_a_read_under_two_other_contacts);
     RUN(move_servo_on_ends_under_two_other_contacts);
     RUN(move_servo_on_ends_under_three_other_contacts);
     RUN(the_searching_find_key_ends_under_two_and_three_other_contacts);

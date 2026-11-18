@@ -856,6 +856,29 @@ TEST_CASE(the_applications_hook_is_not_a_control)
     CHECK_EQ(motor_screen_throttle(), 64.0f);
 }
 
+/* Between the hold's ask and the bench's answer the button is DISARM: a
+ * press there takes the ARM back on the DOWN, whether the ARM still waits
+ * to be taken or went out, and a finger left on it asks no ARM. */
+TEST_CASE(a_press_while_the_arm_is_asked_takes_it_back)
+{
+    for (int taken = 0; taken < 2; ++taken) {
+        fresh();
+        finger(FEED_LONE, ARM_X, ARM_Y);
+        frames((int)(2.3f / 0.026f));
+        lift(FEED_LONE);
+        if (taken) {
+            CHECK_EQ(took().kind, MOTOR_CMD_ARM);
+        }
+        finger(FEED_LONE, ARM_X, ARM_Y);
+        CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
+        frames((int)(2.5f / 0.026f));
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+        lift(FEED_LONE);
+        frames(4);
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    }
+}
+
 int main(void)
 {
     RUN(no_throttle_control_moves_the_value_before_the_first_arm);
@@ -880,5 +903,6 @@ int main(void)
     RUN(a_hold_of_arm_ends_when_the_port_is_taken);
     RUN(arm_reset_peaks_and_the_tabs_work_while_disarmed);
     RUN(the_applications_hook_is_not_a_control);
+    RUN(a_press_while_the_arm_is_asked_takes_it_back);
     return test_summary("motor_arm");
 }

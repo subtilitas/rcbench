@@ -107,10 +107,10 @@ or the alert band, so STOP remains visible.
 - STOP is the exception: a press on STOP closes the box and stops at once,
   as with no box.
 - So is a control that stops what the bench drives: DISARM, OUTPUT OFF,
-  PROG 5V OFF, a stick run's ABORT, STOP TEST and STOP RUN, HOLD 2s: ARM +
-  START on RUDDER AUTO, TEST and LIMIT RUN while its start steps or its
-  run are under way, and on HITEC MOVE SERVO's ON and the FIND STOP key
-  whose side searches. A press on one closes the box and acts, as with no
+  PROG 5V OFF, ABORT of a stick run and of the ESC, KST and HITEC
+  sessions, STOP TEST and STOP RUN, HOLD 2s: ARM + START on RUDDER AUTO,
+  TEST and LIMIT RUN while its start steps or its run are under way, and
+  on HITEC MOVE SERVO's ON and the FIND STOP key whose side searches. A press on one closes the box and acts, as with no
   box. ARM and OUTPUT ON are not among them: a press there closes
   the box and starts no hold.
 - Leaving the screen closes it.
@@ -573,10 +573,12 @@ end above it.
 
 A hold button acts after 2s of contact (`UI_HOLD_S`). Every control that
 switches a voltage, a supply or an output on is a hold button; one that
-stops what the bench drives, such as OUTPUT OFF, PROG 5V OFF, DISARM, STOP
-or a stick run's ABORT, acts on the press: the command goes as the finger
-comes down, and a finger that slides off or a touch that is lost has
-stopped already. Releasing a hold button earlier
+stops what the bench drives, such as OUTPUT OFF, PROG 5V OFF, PORT PWM
+OFF, DISARM, STOP or ABORT, acts on the press: the command goes as the
+finger comes down, and a finger that slides off or a touch that is lost
+has stopped already. From the moment a hold has asked ON or ARM the
+button reads OUTPUT OFF or DISARM, before the supply or the bench
+answers: a press in that time takes the ON or the ARM back. Releasing a hold button earlier
 sends no command. Instead, the alert band shows a hint for 4s: amber
 (`UI_C_WARN`) with dark text, rather than the danger colour. Tap the band
 to dismiss it earlier. The hint fits on one line of at most 97 characters.
@@ -7532,7 +7534,7 @@ output of its own kind, no slot and no protocol
 | FUNCTION | a choice face with what the pin carries while no programming session holds it. A tap opens the list over the rows under it: SERVO PWM, NONE, and on an IOmcu of protocol 4.28 or later DSHOT150, DSHOT300 and DSHOT600. A tap on an entry asks the IOmcu for it and shuts the list; a press beside the list shuts it and reaches nothing under it. The face is drawn sunk and dim, and takes no tap, while the row is locked |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`: the lowest channel with a shunt on a fitted part; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS \| PORT n: the tester's target ([the target](ServoProgrammer.md#the-target)) |
-| PORT PWM | ON \| OFF: the pulse of the port that is the tester's target |
+| PORT PWM | ON \| OFF: the pulse of the port that is the tester's target. ON takes a tap; OFF acts on the press, whatever other fingers hold |
 
 In the board view the rows stand in the column left of the board and the
 keys set the port's pin. In the grid view the rows stand under the list, the

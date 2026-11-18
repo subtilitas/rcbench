@@ -1237,6 +1237,33 @@ TEST_CASE(the_programmer_sees_an_arm_for_the_motor)
     CHECK(!kst_panel_model()->armed);
 }
 
+/* Between the hold's ask and the bench's answer the button is DISARM: a
+ * press there takes the ARM back on the DOWN, whether the ARM still waits
+ * to be taken or went out, and a finger left on it asks no ARM. */
+TEST_CASE(a_press_while_the_arm_is_asked_takes_it_back)
+{
+    for (int taken = 0; taken < 2; ++taken) {
+        bool rearmed = false;
+
+        fresh();
+        finger(FEED_LONE, ARM_X, ARM_Y);
+        frames((int)(2.3f / 0.026f));
+        lift(FEED_LONE);
+        if (taken) {
+            CHECK_EQ(took().kind, SERVO_CMD_ARM);
+        }
+        finger(FEED_LONE, ARM_X, ARM_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+        frames((int)(2.5f / 0.026f));
+        lift(FEED_LONE);
+        frames(4);
+        for (servo_cmd_t c = took(); c.kind != SERVO_CMD_NONE; c = took()) {
+            rearmed = rearmed || c.kind == SERVO_CMD_ARM;
+        }
+        CHECK(!rearmed);
+    }
+}
+
 int main(void)
 {
     RUN(no_position_control_moves_the_value_before_the_first_arm);
@@ -1275,5 +1302,6 @@ int main(void)
     RUN(release_moves_no_value_on_a_bench_that_is_not_armed);
     RUN(a_press_on_the_dial_drives_a_released_servo_again);
     RUN(the_programmer_sees_an_arm_for_the_motor);
+    RUN(a_press_while_the_arm_is_asked_takes_it_back);
     return test_summary("servo_arm");
 }

@@ -6853,8 +6853,8 @@ UI_TEXT(HG_KST_LEAVE, 0,
     "Its page's 2s hold gives the port back to PWM. The supply stays; one the bench switches is off 1s after a write.",
     "2s Halten auf seiner Seite gibt den Port an PWM. Versorgung bleibt; vom Prüfstand nach Schreiben 1s aus.")
 UI_TEXT(HG_KST_ABORT, 0,
-    "A tap ends the entry, a read, a write or a wait to leave. The notes say where the port is then.",
-    "Tippen beendet Einstieg, Lesen, Schreiben oder das Warten beim Verlassen. Die Hinweise nennen den Stand.")
+    "A press ends the entry, a read, a write or a wait to leave. The notes say where the port is then.",
+    "Druck beendet Einstieg, Lesen, Schreiben oder das Warten beim Verlassen. Die Hinweise nennen den Stand.")
 UI_TEXT(HG_KST_RESTORE, 0,
     "Writes a backup back: the session's first read, or the values before an interrupted write.",
     "Spielt eine Sicherung zurück: den ersten Lesestand oder die Werte vor einem abgebrochenen Schreiben.")
@@ -6880,8 +6880,8 @@ UI_TEXT(HG_HT_LEAVE, 0,
     "Its page's 2s hold gives the port back to PWM. The supply stays; on CLASSIC it is off for about 760ms.",
     "2s Halten auf seiner Seite gibt den Port an PWM zurück. Versorgung bleibt, bei CLASSIC etwa 760ms aus.")
 UI_TEXT(HG_HT_ABORT, 0,
-    "A tap ends the entry, a read or a write under way. The notes say where the port is then.",
-    "Tippen beendet Einstieg, Lesen oder Schreiben. Die Hinweise nennen den Stand des Ports.")
+    "A press ends the entry, a read or a write under way. The notes say where the port is then.",
+    "Druck beendet Einstieg, Lesen oder Schreiben. Die Hinweise nennen den Stand des Ports.")
 UI_TEXT(HG_HT_WAIT, 0,
     "The port is leaving, being released, going on after a stop or moving the horn. It takes no tap.",
     "Der Port wird verlassen, freigegeben, setzt nach einem Stopp fort oder bewegt das Horn. Kein Tippen nötig.")

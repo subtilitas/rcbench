@@ -25,6 +25,8 @@
  * - a_list_over_the_session_leaves_the_guide_its_ready_page
  * - the_guide_gives_leave_its_own_text
  * - the_guide_gives_abort_its_own_text
+ * - abort_acts_on_the_press_of_a_lone_contact_1_2_or_3
+ * - abort_counts_under_a_finger_held_on_write
  *
  * SPDX-License-Identifier: MIT
  */
@@ -971,6 +973,70 @@ TEST_CASE(the_guide_gives_abort_its_own_text)
     CHECK_EQ(p.item[1].text, TX_HG_KST_ABORT);
 }
 
+/* KST's screen with CONNECT's entry under way: PORT reads ABORT. */
+static void entering(void)
+{
+    fresh_screen();
+    link_up();
+    program_open();
+    hold_connect();
+    for (int i = 0; i < 2000 && kst_prog_state(M) != KST_PROG_ENTERING
+                    && kst_prog_state(M) != KST_PROG_WORKING;
+         ++i) {
+        rig_frame();
+        tick(0.001f);
+    }
+    show();
+    CHECK_STR_EQ(kst_panel_button(0, 0, 0), TR(KP_ABORT));
+}
+
+/* ABORT acts on the press: the entry is cut on the DOWN of contact 1, 2 or
+ * 3, lifted on the button, slid off it or lost, and the port never reaches
+ * programming.  The screen names ABORT to the router while it shows. */
+TEST_CASE(abort_acts_on_the_press_of_a_lone_contact_1_2_or_3)
+{
+    for (int end = 0; end < 3; ++end) {
+        for (uint8_t id = 1; id <= 3; ++id) {
+            entering();
+            const gfx_rect_t ab = val(PG_SERVO, 0, 0);
+
+            CHECK(scr->safe_at(cx(ab), cy(ab)));
+            ev(cx(ab), cy(ab), TOUCH_EVENT_DOWN, id);
+            if (end == 1) {
+                ev(cx(ab), cy(ab) + 200, TOUCH_EVENT_MOVE, id);
+                ev(cx(ab), cy(ab) + 200, TOUCH_EVENT_UP, id);
+            } else if (end == 2) {
+                scr->cancel();
+            }
+            settle();
+            CHECK(kst_prog_state(M) != KST_PROG_PROGRAMMING);
+            CHECK(kst_prog_state(M) != KST_PROG_ENTERING);
+            CHECK(msg() != KST_PROG_MSG_NONE);
+            CHECK(!scr->safe_at(cx(ab), cy(ab)));
+            if (end == 0) {
+                ev(cx(ab), cy(ab), TOUCH_EVENT_UP, id);
+            }
+        }
+    }
+}
+
+/* Contact 1 holds the footer's WRITE, which refuses every other press on
+ * the session; contact 2 on ABORT still cuts the entry on its press. */
+TEST_CASE(abort_counts_under_a_finger_held_on_write)
+{
+    entering();
+    const gfx_rect_t ab = val(PG_SERVO, 0, 0);
+
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_DOWN, 1);
+    ev(cx(ab), cy(ab), TOUCH_EVENT_DOWN, 2);
+    settle();
+    CHECK(kst_prog_state(M) != KST_PROG_PROGRAMMING);
+    CHECK(kst_prog_state(M) != KST_PROG_ENTERING);
+    CHECK(msg() != KST_PROG_MSG_NONE);
+    ev(cx(ab), cy(ab), TOUCH_EVENT_UP, 2);
+    ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
+}
+
 int main(void)
 {
     RUN(the_supplys_controls_are_held_for_as_long_as_the_port);
@@ -995,5 +1061,7 @@ int main(void)
     RUN(a_list_over_the_session_leaves_the_guide_its_ready_page);
     RUN(the_guide_gives_leave_its_own_text);
     RUN(the_guide_gives_abort_its_own_text);
+    RUN(abort_acts_on_the_press_of_a_lone_contact_1_2_or_3);
+    RUN(abort_counts_under_a_finger_held_on_write);
     return test_summary("kst_panel_screen");
 }
