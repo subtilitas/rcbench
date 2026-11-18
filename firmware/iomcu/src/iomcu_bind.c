@@ -98,7 +98,10 @@ static void stage_put_cfg(void *ctx, const uint16_t *prev)
     /* The commit has put the bank's channels back, each command with its
      * role; the page and the silicon follow it here. */
     iomcu_state_t *s = (iomcu_state_t *)ctx;
+    uint16_t was[LINK_CC_COUNT];
+    memcpy(was, s->chan_cfg, sizeof(was));
     memcpy(s->chan_cfg, prev, sizeof(s->chan_cfg));
+    outputs_channels_follow_roles(&s_outputs, was, s->chan_cfg, s->channels);
     hw_apply_only(s_stage_bound);
 }
 

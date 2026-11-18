@@ -307,8 +307,13 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
                                      servo_page_slots_hz(&s_servo)) != 0u) {
         return LINK_NACK_BAD_VALUE;
     }
+    uint16_t was[LINK_CC_COUNT];
+    memcpy(was, s->chan_cfg, sizeof(was));
     memcpy(s->chan_cfg, next, sizeof(s->chan_cfg));
     outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
+    /* A channel whose role moved sits at its new rest: the CHANNELS page
+     * reads that, not the command written under the old role. */
+    outputs_channels_follow_roles(&s_outputs, was, s->chan_cfg, s->channels);
     /* A channel that became a surface, or stopped being one, moves to or
      * from the SERVO page's rate. */
     hw_apply();

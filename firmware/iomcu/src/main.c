@@ -430,6 +430,9 @@ int main(void)
     const bool have_ifaces = have_saved || roles != NULL;
     if (have_saved) {
         memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
+        /* A stored slot an OUTPUTS write refuses by value (a driver number
+         * the page does not know, a pin above GPIO 63) starts unbound. */
+        (void)outputs_slots_free_unwritable(s_state.slots);
         /* A kept slew above LINK_CC_SLEW_MAX starts as that maximum, here
          * and in BIND_CFG, which is seeded from this below. */
         outputs_chan_cfg_restore(s_state.chan_cfg, saved.chan_cfg);
