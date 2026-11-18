@@ -201,6 +201,12 @@ typedef struct {
      * by it.  May be NULL: the name alone tells cards apart.
      */
     unsigned (*mounts)(void *ctx);
+    /**
+     * @brief Whether the logger has a file open: a run, a test's CSV or a report
+     * (fm_logging()).  DELETE is refused while it says true, as FILES
+     * refuses every write.  May be NULL: no logger.
+     */
+    bool (*logging)(void *ctx);
     void *ctx;  /**< handed to every hook */
 } log_viewer_io_t;
 

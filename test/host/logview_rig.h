@@ -316,6 +316,16 @@ static inline unsigned fake_mounts(void *ctx)
     return g_mounts;
 }
 
+/** @brief Whether the fake logger has a file open. */
+static bool g_logging __attribute__((unused));
+
+/** @brief Logging hook: the fake logger's open file. */
+static inline bool fake_logging(void *ctx)
+{
+    (void)ctx;
+    return g_logging;
+}
+
 static const log_viewer_io_t k_io __attribute__((unused)) = {
     .list = fake_list_late,
     .open = fake_open,
@@ -324,6 +334,7 @@ static const log_viewer_io_t k_io __attribute__((unused)) = {
     .remove = fake_remove,
     .card = fake_card,
     .mounts = fake_mounts,
+    .logging = fake_logging,
     .ctx = NULL,
 };
 
@@ -375,6 +386,7 @@ static inline void fresh(void)
     g_big_index = -1;
     g_big_size = 0u;
     g_open_calls = 0;
+    g_logging = false;
     g_long[0] = '\0';
     if (s_fb == NULL) {
         s_fb = calloc((size_t)W * H, sizeof(gfx_color_t));

@@ -3688,6 +3688,14 @@ reported times, without wider gaps on the plot. Current ARMED-run files
 use elapsed wall time. Files from firmware 0.15.0 or earlier understate
 run duration (see Motor & ESC, the CSV file).
 
+The time column is a column named as time, then one with `time`, `zeit` or
+`elapsed` in its header, then a first column that only rises. Its unit is
+the header's unit, in brackets or after an underscore (`time_ms`, `t_us`,
+`elapsed_s`), else a guess from the span of its values. A rising first
+column named as a counter (`step`, `row`, `index`, `sample`, `count`, `n`,
+`#`) is not a time column: `RUDDRnnn.CSV`, which starts with `step`, plots
+against the row index, and the cursor reads the row.
+
 SETUP > PANEL > One finger pans, off by default, allows single-finger
 panning when zoomed in. Moving more than 10px from the starting point
 drags the view sideways while keeping the sample under the finger.
@@ -3704,7 +3712,12 @@ presses; a second finger does nothing.
 DELETE asks before removing the selected file. Its dialog names the file
 and size; only pressing and releasing DELETE within that dialog confirms.
 CANCEL or leaving closes it without deletion. An open logger file cannot
-be deleted. Deleting a file also drops it from open import or plot views.
+be deleted. While the bench is ARMED or a run is being logged, DELETE is
+grey and deletes nothing, as every write in FILES: a tap on it shows
+`Bench ARMED. The card is read-only.` or
+`A run is being logged. The card is read-only.` in the footer. A switch to
+ARMED or a run that starts while the dialog is open refuses its DELETE with
+the same line. Deleting a file also drops it from open import or plot views.
 
 The logger scans numbering at the first run after startup and after a
 run file cannot be opened, otherwise continuing its remembered sequence.
@@ -3833,8 +3846,10 @@ A larger file stays in the list, including a FAT32 file of 2GiB to 4GiB
 minus 1 byte; OPEN reports
 `BENCH001.CSV is 2GB or larger. Not opened.`
 
-List sizes use binary units: 1kB is 1,024 bytes, 1MB is 1,024kB and 1GB is
-1,024MB. [WI-FI](#wi-fi) lists and downloads files of any size the card
+Sizes on the panel and on the Wi-Fi page use binary units: 1kB is 1,024
+bytes, 1MB is 1,024kB and 1GB is 1,024MB. This holds for the list sizes and
+for the limits in the messages: `1MB` there is 1MiB (1,048,576 bytes), `2GB`
+is 2GiB and `4kB` is 4KiB (4,096 bytes). [WI-FI](#wi-fi) lists and downloads files of any size the card
 supports.
 
 ## Files
@@ -3889,7 +3904,7 @@ Below the name are the entry's kind and state:
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
+| FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
 | LOCKED | the programmers' records, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` and `BENCH/ESCW/CONF/ESCW.TXT`, plus their `KST.NEW`, `HITEC.NEW` and `ESCW.NEW` files while being written. Only INFO is available |
 | WRITING | a file open in the logger. Only INFO is available |
 
@@ -4127,7 +4142,11 @@ CRC-32 (cyclic redundancy check) after loading and after each successful
 save. This is also the ETag used by the Wi-Fi page's
 [file API](#the-file-api). Before opening `.NEW`, the same save job
 rereads the file on the card and calculates its checksum. Saving 1MiB
-therefore first reads 1MiB; that read's duration is not measured.
+therefore first reads 1MiB; that read's duration is not measured. In the
+step that removes the old file, the job compares the file's size with the
+bytes it summed: a file that grew meanwhile, such as `BALANCE.CSV` with a
+row the balance node's solve appended, is a changed file, stays as it is
+and `.NEW` is removed.
 
 If the file has changed or been removed, for example by the Wi-Fi editor
 or an upload ([Browser writes](#browser-writes)), SAVE refuses to write.
@@ -6279,7 +6298,7 @@ in force unchanged, and the line right of the title says why:
 | more than 2 folders | `A/B/C` (`A/B` is taken) | `At most 2 folder levels` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a device name of Windows: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Reserved for the bench's files` |
+| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Reserved for the bench's files` |
 
 Every folder name accepted by the panel is a FAT (File Allocation Table)
 8.3 short name, identical on every computer. The longest folder is 17 characters,
@@ -6401,7 +6420,9 @@ does not carry frames looks exactly like an IOmcu that is not fitted, and
 both look like a bench that shows no numbers. The heading shows the verdict, the list orders checks from least effort
 to most, and the right column shows counters from both ends.
 
-The screen fills the panel. A red bar of 64px holds the title, and the
+The screen fills the panel. A red bar of 64px holds the title,
+`CAN BUS FAULT` for a start-up test that failed and `LINK LOST` for a link
+that stopped (German: `CAN-BUS-FEHLER`, `VERBINDUNG VERLOREN`), and the
 verdict stands under it, both in the 20 x 36px face. The left column,
 712px, holds the meaning in at most two lines and the list of checks in
 the 12 x 24px face: a row of 32px per check, and 28px more for each line
