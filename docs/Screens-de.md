@@ -8409,7 +8409,9 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
 
 - Das Raster hat vier Zellen: PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1,
   oben der Name, darunter der GPIO. Ein Tipp gibt dem Ausgang das gewählte
-  Protokoll. Slot n treibt PWM0(n+1); PWM01 ist Kanal 0.
+  Protokoll. Die zugeordneten Ausgänge belegen Slots und Kanäle in der
+  Reihenfolge PWM01 bis PWM04, ein nicht zugeordneter Ausgang belegt keinen:
+  ist nur PWM03 zugeordnet, ist PWM03 Kanal 0.
 - Ein Protokoll belegt höchstens die 4 Ausgänge: `SERVO PWM BELEGT 4 PINS`.
 - PWM02 und PWM03 sind PWM-Slice 2 und teilen eine Framerate. Ein
   Flächenprotokoll und ein Gasprotokoll auf beiden zusammen werden

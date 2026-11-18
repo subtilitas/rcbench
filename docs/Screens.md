@@ -7784,7 +7784,9 @@ on the IOmcu's link (board 2).
 
 - The grid has four cells: PWM01 to PWM04 on GPIO 2, 4, 5 and 1, the
   name on top and the GPIO under it. A tap gives the selected protocol to
-  the output. Slot n drives PWM0(n+1); PWM01 is channel 0.
+  the output. The bound outputs take slots and channels in the order
+  PWM01 to PWM04, and an unbound output takes none: with only PWM03 bound,
+  PWM03 is channel 0.
 - A protocol takes at most the 4 outputs: `SERVO PWM USES 4 PINS`.
 - PWM02 and PWM03 are PWM slice 2 and share one frame rate. A surface
   protocol and a throttle protocol on the two together are refused. The
