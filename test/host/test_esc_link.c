@@ -9,6 +9,8 @@
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stddef.h>
+
 #include "esc_link_rig.h"
 #include "esc_prog.h"
 
@@ -695,6 +697,98 @@ TEST_CASE(the_copy_takes_the_page_blocks_and_stops_before_the_draft)
     CHECK((g_blocks & (1ul << (LINK_ED_READ + 3u))) != 0u);
 }
 
+/* One exchange of the link by hand: asked, made on the rig unless @p lose, and
+ * its answer given.  Returns the exchange. */
+static esc_link_xfer_t one_exchange(bool lose)
+{
+    static uint16_t regs[LINK_MAX_REGS];
+    esc_link_xfer_t x;
+
+    memset(&x, 0, sizeof(x));
+    run_ms(5u);
+    if (esc_link_next(&g_l, esc.now / 1000u, &x)) {
+        const int r = lose ? ESC_LINK_NO_ANSWER : link_xchg(NULL, &x, regs);
+
+        esc_link_done(&g_l, r, (!x.write && r == ESC_LINK_ACK) ? regs : NULL);
+    }
+    return x;
+}
+
+/* A fetch keeps the block count of the LEN it started with.  A read in the middle
+ * of it that shows a shorter page starts the copy again: the block on its way is
+ * not placed by the new length, behind MUSIC and past the module, and no copy is
+ * made up of two pages. */
+TEST_CASE(a_fetch_keeps_its_length_when_the_page_reports_another)
+{
+    static uint8_t tail[sizeof(g_l)];
+    const size_t behind = offsetof(esc_link_t, image) + sizeof(g_l.image);
+    esc_link_outcome_t o;
+    const esc_link_image_t *im = esc_link_image(&g_l);
+
+    up_am_rig();
+    link_up();
+    link_ready(2u);
+    CHECK_EQ(esc_link_read(&g_l, 5u), ESC_LINK_START_OK);
+    CHECK(link_wait(&o, 20000u));
+    /* 3 page blocks, NAME, 2 INFO and 2 of MUSIC are in; the third is chosen. */
+    for (int i = 0; i < 400 && !(g_l.fetching && g_l.fetch_at == 8u
+                                 && g_l.block_set); ++i) {
+        (void)one_exchange(false);
+    }
+    CHECK(g_l.fetching);
+    CHECK_EQ(g_l.fetch_at, 8u);
+    memcpy(tail, (const uint8_t *)&g_l + behind, sizeof(g_l) - behind);
+    g_len_over = 10u;
+    g_blocks = 0u;
+    esc_link_stop(&g_l);
+    for (int i = 0; i < 6; ++i) {
+        (void)one_exchange(false);
+        CHECK_EQ(memcmp(tail, (const uint8_t *)&g_l + behind,
+                        sizeof(g_l) - behind), 0);
+    }
+    link_run(500u);
+    CHECK_EQ(g_blocks >> LINK_ED_BACKUP, 0u);
+    CHECK_EQ(im->gen, 0u);
+    CHECK(esc_link_phase(&g_l) != ESC_LINK_FETCHING);
+}
+
+/* A command frame lost, the read after the STOP lost as well: the STOP goes with
+ * the command's SEQ and the page takes it.  The page took a SEQ once, so it never
+ * saw the command, and the request ends as dropped, not as done. */
+TEST_CASE(a_stop_taken_in_place_of_a_lost_command_drops_the_request)
+{
+    esc_link_outcome_t o;
+    esc_link_xfer_t x;
+
+    up_am_rig();
+    link_up();
+    CHECK_EQ(esc_link_open(&g_l, 2u, 1u), ESC_LINK_START_OK);
+    for (int i = 0; i < 8; ++i) {
+        const uint32_t t = esc.now / 1000u;
+
+        CHECK(esc_link_next(&g_l, t, &x));
+        if (x.off == 0u) {
+            esc_link_done(&g_l, ESC_LINK_NO_ANSWER, NULL);
+            break;
+        }
+        esc_link_done(&g_l, link_xchg(NULL, &x, NULL), NULL);
+    }
+    const int cmds = g_commands;
+
+    esc_link_stop(&g_l);
+    x = one_exchange(true);
+    CHECK(!x.write);
+    x = one_exchange(false);
+    CHECK(x.write);
+    CHECK_EQ(x.regs[LINK_EW_W_CMD], LINK_ESC_OP_STOP);
+    CHECK_EQ(g_commands, cmds + 1);
+    CHECK(link_wait(&o, 500u));
+    CHECK_EQ(o.kind, ESC_LINK_OUT_DROPPED);
+    CHECK_EQ(o.op, LINK_ESC_OP_OPEN);
+    CHECK(!o.taken);
+    CHECK_EQ(esc_port_state(&g_p), LINK_ESC_FREE);
+}
+
 /* `ours` goes with a free page: a hold another writer takes after it is not this
  * panel's. */
 TEST_CASE(a_free_read_ends_ours)
@@ -809,6 +903,8 @@ int main(void)
     RUN(errors_count_on_their_edge);
     RUN(a_stop_with_a_command_unanswered);
     RUN(the_copy_takes_the_page_blocks_and_stops_before_the_draft);
+    RUN(a_fetch_keeps_its_length_when_the_page_reports_another);
+    RUN(a_stop_taken_in_place_of_a_lost_command_drops_the_request);
     RUN(a_free_read_ends_ours);
     RUN(the_readout_says_why_a_page_is_not_written);
     RUN(failed_reads_over_a_hold_are_an_error_and_a_stop);
