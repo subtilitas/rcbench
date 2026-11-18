@@ -78,9 +78,9 @@ static bool to_phase(bool (*running)(void), int (*phase)(void), int safe,
 static void hold_ends_it(bool (*running)(void), ui_screen_id_t route)
 {
     const unsigned arms = ra.arms;
-    const dial_input_t hold = { .holds = 1u };
+    const dial_input_t in = { .holds = 1u };
     CHECK(running());
-    CHECK(dial_gestures(route, &hold, false));
+    CHECK(dial_gestures(route, &in, false));
     CHECK(!running());
     ra_ms(8000u);
     CHECK(!running());

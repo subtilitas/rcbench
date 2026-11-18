@@ -659,7 +659,7 @@ void servo_screen_test_summary(char *out, size_t size)
 }
 
 /**
- * @brief A STALL AT the run's readings cannot pass, in the warning colour:
+ * @brief A Stall threshold the run's readings cannot pass, in the warning colour:
  *        the current limit first, then the meter's range.  Nothing when it
  *        can.
  * @param c the canvas
@@ -715,7 +715,7 @@ static bool test_state_line(char *line, size_t n)
  * @brief The AUTOMATIC TEST card's lines: the steps and the length of
  *        each, then what the run does now or why it cannot start, the last
  *        result and its file or, for an aborted run, its reason, and a
- *        STALL AT no reading can pass.
+ *        Stall threshold no reading can pass.
  * @param c the canvas
  */
 void draw_test_lines(gfx_canvas_t *c)

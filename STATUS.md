@@ -582,7 +582,7 @@ being the meter or no window arrives for 200ms (`SERVO_TEST_WIN_STALE_MS`, 199, 
 201ms and the millis wrap in `test_servo_test_win`), and never goes on with the PD mini.
 
 Currents are compared by magnitude in whole mA; the supply in constant current for 1000ms
-ends a run whatever STALL AT is, and a STALL AT at or above the current limit or the
+ends a run whatever Stall threshold is, and a Stall threshold at or above the current limit or the
 INA3221's range is said on the automatic test's card and in the report. Movement is a
 reading max(0.020A, 3 x the idle readings' standard deviation) from the level before the
 command; a move with none is unseen, neither timed nor late, and a run with unseen moves and

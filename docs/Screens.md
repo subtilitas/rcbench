@@ -2359,7 +2359,7 @@ the method and files.
 The 600 x 136px AUTOMATIC TEST card contains the run name; a summary such
 as `4.8V, 6.0V, BROWN-OUT, 60s EACH` or `..., 20 MOVEMENTS EACH`; the
 state line; the last result and files, such as
-`LAST: PASS ATEST004.CSV + .TXT`; and the STALL AT note. An aborted
+`LAST: PASS ATEST004.CSV + .TXT`; and the Stall threshold note. An aborted
 result shows its reason in the warning colour, for example
 `LAST: ABORTED - link lost`.
 
@@ -2389,11 +2389,11 @@ OFF: DISARM`, `SERVO PROGRAMMING`, `TEST RUNNING`, `WRITING REPORT`. The
 alert band names the whole text
 ([Servo: AUTO end points](Servo.md#auto-end-points)).
 
-The STALL AT note identifies thresholds no reading can exceed. It shows
-`STALL AT 2.00A must be below current limit 2.00A` when STALL AT is at
+The Stall threshold note identifies thresholds no reading can exceed. It shows
+`Stall threshold 2.00A must be below current limit 2.00A` when Stall threshold is at
 or above SUPPLY's SET A. Otherwise, with the INA3221 as meter and
-STALL AT at or above its range, it shows
-`STALL AT 2.00A must be below INA3221 range 1.638A`. The note does not
+Stall threshold at or above its range, it shows
+`Stall threshold 2.00A must be below INA3221 range 1.638A`. The note does not
 refuse the hold; see
 [Stall and constant current](Servo.md#stall-and-constant-current).
 
@@ -2739,7 +2739,7 @@ The automatic test's list has 21 rows under six headings. Each heading's
 line names what its rows give: VOLTAGE STEPS the steps a run takes, or
 `NO STEP CHOSEN` in the warning colour; BROWN-OUT the walk on the supply
 in force, `From 5.00V down in 0.20V steps to 3.30V, 10 voltages`;
-PASS/FAIL LIMITS a STALL AT no reading can pass, in the warning colour;
+PASS/FAIL LIMITS a Stall threshold no reading can pass, in the warning colour;
 RANGE the run's ends, `1100-1900us`, in the warning colour while they are
 not either side of PULSE CENTER. OUTPUT under RANGE reads the profile as
 the type pill does, `STANDARD PWM  50Hz  1000-2000`; a tap opens the

@@ -856,7 +856,7 @@ threshold.
 | `SERVO_TEST_SET_TOL_V` | 0.05V | a set point read back |
 | `SERVO_TEST_SET_TIMEOUT_MS` | 3000ms | for the set point, and for the output to come on |
 | `SERVO_TEST_STALE_MS` | 1500ms | no new reading ends the run |
-| `SERVO_TEST_STALL_ABORT_MS` | 1000ms | above STALL AT this long ends the run |
+| `SERVO_TEST_STALL_ABORT_MS` | 1000ms | above Stall threshold this long ends the run |
 | `SERVO_TEST_CC_ABORT_MS` | 1000ms | the supply in constant current this long ends the run |
 | `SERVO_TEST_WIN_STALE_MS` | 200ms | a run on the INA3221: no window this long ends it; 4 windows of 50ms. The limit run shares it |
 | `SERVO_TEST_WIN_MS` | 50ms | one window of the INA3221 |
@@ -956,7 +956,7 @@ the run.
   ms`, `it reset itself`, `it has worked for less than 1s`, or `the supply
   is the panel's model`.
 - **Signed current.** A negative current is a reading. IDLE CURRENT, HOLD
-  CURRENT, STALL AT and the peak take its magnitude, and the CSV and the
+  CURRENT, Stall threshold and the peak take its magnitude, and the CSV and the
   report keep the sign. A run whose idle current at any step is below
   -0.020A (`SERVO_TEST_NEG_IDLE_A`) has the report line `Current reads
   negative at rest: shunt direction`.
@@ -978,31 +978,31 @@ the run.
 
 | Rule | Condition | Effect |
 | --- | --- | --- |
-| STALL AT | a reading after SETTLING TIME on a voltage step whose magnitude is above STALL AT | FAIL |
-| STALL AT for 1s | readings above STALL AT for 1000ms (`SERVO_TEST_STALL_ABORT_MS`) without one at or under it, in any phase and in the brown-out walk | the run ends, `above STALL AT for 1s` |
-| Constant current for 1s | the supply reports constant current (CC) in every reading for 1000ms (`SERVO_TEST_CC_ABORT_MS`) from the first | the run ends, `constant current for 1s`, whatever STALL AT is |
+| Stall threshold | a reading after SETTLING TIME on a voltage step whose magnitude is above Stall threshold | FAIL |
+| Stall threshold for 1s | readings above Stall threshold for 1000ms (`SERVO_TEST_STALL_ABORT_MS`) without one at or under it, in any phase and in the brown-out walk | the run ends, `above Stall threshold for 1s` |
+| Constant current for 1s | the supply reports constant current (CC) in every reading for 1000ms (`SERVO_TEST_CC_ABORT_MS`) from the first | the run ends, `constant current for 1s`, whatever Stall threshold is |
 | Constant current for less than 1s | | nothing ends and nothing fails; the report's `Const. current` line gives the number of such readings and the longest stretch from a first to a last |
-| STALL AT at or above the current limit | at the run's start | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 3.00A must be below current limit 2.00A` |
-| STALL AT at or above the INA3221's range | at the run's start with the INA3221 as the meter | the run starts. The AUTOMATIC TEST card and the report say `STALL AT 2.00A must be below INA3221 range 1.638A` |
+| Stall threshold at or above the current limit | at the run's start | the run starts. The AUTOMATIC TEST card and the report say `Stall threshold 3.00A must be below current limit 2.00A` |
+| Stall threshold at or above the INA3221's range | at the run's start with the INA3221 as the meter | the run starts. The AUTOMATIC TEST card and the report say `Stall threshold 2.00A must be below INA3221 range 1.638A` |
 
-- Every comparison of a current with IDLE CURRENT, HOLDING CURRENT and STALL AT
+- Every comparison of a current with IDLE CURRENT, HOLDING CURRENT and Stall threshold
   is made in whole mA, in the verdict and in the report alike: a reading of
   0.050A against a limit of 0.05A passes, and 0.051A fails.
-- On the PD mini the 1000ms count from the first reading above STALL AT:
+- On the PD mini the 1000ms count from the first reading above Stall threshold:
   a reading 999ms later leaves the run running, one 1000ms later ends it.
 - On the INA3221 the reading is the window's mean, whatever its highest
   sample is, and the 1000ms count from the start of the first window above
-  STALL AT: 20 windows in a row end the run.
+  Stall threshold: 20 windows in a row end the run.
 - A supply in constant current holds its current limit, so no reading lies
-  above a STALL AT at or above that limit. STALL AT and the supply's start
+  above a Stall threshold at or above that limit. Stall threshold and the supply's start
   current both default to 2.00A. The constant-current rule ends such a
   run: a servo on a stop that draws the limit ends it 1.0 to 1.1s after
   the supply reports constant current.
-- With the INA3221 on its 0.1Ω shunt and STALL AT at its default 2.00A,
-  STALL AT cannot be reached. A servo on a stop that draws less than the
+- With the INA3221 on its 0.1Ω shunt and Stall threshold at its default 2.00A,
+  Stall threshold cannot be reached. A servo on a stop that draws less than the
   supply's limit and more than 1.638A reads 1.638A for the whole run; the
   report then has the `Clipped` line and the `must be below` line.
-  STALL AT at 1.60A or lower, or a shunt of 0.05Ω, puts STALL AT inside
+  Stall threshold at 1.60A or lower, or a shunt of 0.05Ω, puts Stall threshold inside
   the range.
 
 Not measured: what the PD mini reports with a servo on a stop (constant
@@ -1147,7 +1147,7 @@ it once more while it is plugged in leaves no "not responding" over an
 encoder that answers.
 
 The allowance is for the angle only. A reading a protection depends on ends
-a run at its first loss: the INA3221's windows feed STALL AT's stop
+a run at its first loss: the INA3221's windows feed Stall threshold's stop
 ([What ends a run](#what-ends-a-run)), the supply's readings its trips. An
 INA3221 that stops answering while a gap of the AS5600 is open ends the run
 at once with the INA3221's reason.
@@ -1240,7 +1240,7 @@ TEST card (`LAST: ABORTED - STOP`), which then names the reason in place of
 the files. An error switches the
 bench to SAFE in place of the release: the supply not answering or tripped,
 no new reading, an output that did not come on, a set point not read back, a
-step above the cap, STALL AT, constant current, every INA3221 reason and
+step above the cap, Stall threshold, constant current, every INA3221 reason and
 both AS5600 reasons ([Safety, Errors](Safety.md#errors)). The bench also switches to SAFE for a
 switch to SAFE, STOP or leaving the screen. It stays ARMED, the servo at the
 rest, for the operator's endings: a finger on the controls, a settings
@@ -1274,7 +1274,7 @@ left as they are.
 | `supply output did not come on` | not on 3000ms after the ON |
 | `set point not read back in 3s` | the supply did not take a step's voltage |
 | `step above the voltage cap` | a step above the cap in force: VOLTAGE MAX, or the input voltage of the PD mini less 0.7V |
-| `above STALL AT for 1s` | `SERVO_TEST_STALL_ABORT_MS` |
+| `above Stall threshold for 1s` | `SERVO_TEST_STALL_ABORT_MS` |
 | `constant current for 1s` | the supply reported constant current for `SERVO_TEST_CC_ABORT_MS` |
 | `no INA3221 window for 0.2s` | a run on the INA3221: `SERVO_TEST_WIN_STALE_MS` without a window that holds current and voltage. A pass 199ms after the last window leaves the run running, one at 200ms ends it |
 | `INA3221 reset itself` | a run on the INA3221: the part's reset count moved |
@@ -1289,7 +1289,7 @@ left as they are.
 
 The six reasons of a run on the INA3221 are the conditions under which the
 INA3221 is the rail's meter. Each ends the run at the first poll that finds
-it: the INA3221's windows feed STALL AT's stop, which a run always has (0.1A
+it: the INA3221's windows feed Stall threshold's stop, which a run always has (0.1A
 to 5.0A, no OFF), so a run on the INA3221 gets no allowance for a gap of
 its windows. The supply's reasons hold on either meter: its
 state is read in every run.
@@ -1307,7 +1307,7 @@ when one of these holds:
 - the highest holding current is above HOLDING CURRENT;
 - the longest travel time is above TRAVEL TIME, where the current's meter
   times travel (not the PD mini, and not the INA3221's windows);
-- a reading after SETTLING TIME is above STALL AT;
+- a reading after SETTLING TIME is above Stall threshold;
 - a counted move was late: movement seen, no arrival within the window,
   3000ms plus the meter's lag.
 
@@ -1324,7 +1324,7 @@ MEASURABLE, not FAIL. With no move arrived there is no longest travel time,
 and the `Travel time` line reads `longest --` and `not measured, no move
 arrived`, on any meter.
 
-A pass/fail limit of 0 is not checked; STALL AT always is. A current is
+A pass/fail limit of 0 is not checked; Stall threshold always is. A current is
 compared by its magnitude and in whole mA: see
 [Stall and constant current](#stall-and-constant-current).
 
@@ -1442,8 +1442,8 @@ AGAINST THE PASS/FAIL LIMITS
 Idle current     highest 0.004A, limit OFF: not checked
 Holding current  highest 0.001A, limit OFF: not checked
 Travel time      longest 989ms, limit 800ms: upper bound, not checked against the limit
-Stall threshold  highest 0.077A, STALL AT 2.00A: PASS
-STALL AT 2.00A must be below current limit 2.00A
+Stall threshold  highest 0.077A, limit 2.00A: PASS
+Stall threshold 2.00A must be below current limit 2.00A
 Moves arrived    0 late: PASS
 Moves seen       0 unseen: PASS
 Brown-out start  movement seen at 5.00V: PASS
@@ -1748,6 +1748,13 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   hub's, User logs SETUP > SD CARD's; the READY card has no room for a LOG
   row.
 - The goal of a side is its target x (1 + MARGIN): 20.0° at 10% is 22.0°.
+- Each goal must exceed 2 x TOLERANCE, by 0.001° or more: a measure within
+  TOLERANCE of such a goal lies at least TOLERANCE from the zero and gives
+  its side a direction. With a smaller goal the hold is refused before a
+  part is switched, and the card's first line and the alert band read
+  `GOALS MUST EXCEED 2 x TOLERANCE`. No READY row is red for it. TARGET
+  1.0° at MARGIN 0% against TOLERANCE 0.5° is refused; TOLERANCE 0.4°
+  starts.
 - The READY card in the output card's place, 380 x 374px: one row per
   check of the start, 30px each, a dot, the label and the state. Green:
   met. Red: refuses the hold, or an output is live through it (PROG 5V ON,

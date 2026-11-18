@@ -212,7 +212,7 @@ static inline void h_fresh(uint32_t tick0)
     h.set_i    = 2.0f;
 }
 
-/* One step at 4.80V, two counted moves, STALL AT 1.00A under a limit of
+/* One step at 4.80V, two counted moves, Stall threshold 1.00A under a limit of
  * 2.00A, read by @p ina the INA3221 on 0.1Ohm or the PD mini. */
 static inline void h_cfg(servo_test_cfg_t *c, bool ina)
 {
