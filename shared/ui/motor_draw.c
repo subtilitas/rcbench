@@ -804,13 +804,17 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
      */
     const bool ctrl_moved = (s.drawn_ctrl[buf] != s.ctrl_rev);
     const bool thr_moved  = (s.drawn_thr[buf] != s.thr_rev);
-    const bool arm_moved  = (s.drawn_arm[buf] != s.arm_rev);
+    /* ARM reads DISARM while an arm is asked; an ask dropped without a
+     * change of arm_rev turns it back (mo_arm_stops()). */
+    const bool arm_moved  = (s.drawn_arm[buf] != s.arm_rev
+                             || s.drawn_stops[buf] != mo_arm_stops());
     if (!ctrl_moved && !thr_moved && !arm_moved) {
         return;
     }
     s.drawn_ctrl[buf] = s.ctrl_rev;
     s.drawn_thr[buf]  = s.thr_rev;
     s.drawn_arm[buf]  = s.arm_rev;
+    s.drawn_stops[buf] = mo_arm_stops();
 
     /* ARM animating on its own repaints its own button and nothing else. */
     if (arm_moved && !ctrl_moved && !thr_moved) {

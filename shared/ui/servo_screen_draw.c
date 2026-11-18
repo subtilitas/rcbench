@@ -792,10 +792,15 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
     if (s.drawn_fp[buf] != fsig) {
         s.drawn_fp[buf] = fsig;
         s.drawn_arm[buf] = s.arm_rev;
+        s.drawn_stops[buf] = s.gate.armed || s.gate.arm_asked;
         draw_footer(c);
     }
-    if (s.drawn_arm[buf] != s.arm_rev) {
+    /* ARM reads DISARM while an arm is asked; an ask dropped without a
+     * change of arm_rev turns it back. */
+    const bool stops = s.gate.armed || s.gate.arm_asked;
+    if (s.drawn_arm[buf] != s.arm_rev || s.drawn_stops[buf] != stops) {
         s.drawn_arm[buf] = s.arm_rev;
+        s.drawn_stops[buf] = stops;
         clipped(c, s.arm_btn, draw_arm);
     }
     if (ready_shown() || drive_shown() || prog_ready_shown()) {

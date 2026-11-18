@@ -191,6 +191,7 @@ typedef struct {
     /* ARM animates, so it gets a third counter and repaints its own rect. */
     uint32_t      arm_rev;              /**< revision of the ARM button, which animates */
     uint32_t      drawn_arm[2];         /**< arm_rev last painted into each frame buffer */
+    bool          drawn_stops[2];       /**< mo_arm_stops() as each buffer drew ARM */
     int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
     /* The GPIOs bound as throttle (bit n is GPIO n) and whether a binding
      * was read: what the throttle panel names as its target. */

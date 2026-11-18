@@ -446,6 +446,7 @@ typedef struct {
     int        arm_id;     /**< which contact it is                   */
     uint32_t   arm_rev;  /**< a count of ARM's look */
     uint32_t   drawn_arm[2];  /**< arm_rev as each buffer drew it */
+    bool       drawn_stops[2]; /**< armed or arm asked as each buffer drew ARM */
 
     gfx_rect_t arm_btn;          /**< ARM / DISARM                     */
     gfx_rect_t center_btn;       /**< CENTER; empty off LIVE           */

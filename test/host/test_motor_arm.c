@@ -879,6 +879,25 @@ TEST_CASE(a_press_while_the_arm_is_asked_takes_it_back)
     }
 }
 
+/* An ARM asked, unanswered, and dropped by a stop after the flash has
+ * ended: ARM is drawn again, so it no longer reads DISARM (Codex P2 on
+ * #888). */
+TEST_CASE(an_arm_ask_dropped_redraws_the_arm_button)
+{
+    fresh();
+    finger(FEED_LONE, ARM_X, ARM_Y);
+    frames((int)(2.3f / 0.026f));
+    lift(FEED_LONE);
+    CHECK_EQ(took().kind, MOTOR_CMD_ARM);
+    settle();                                 /* the flash has ended */
+    motor_screen_cancel_arm();
+    ui_router_tick(0.026f);
+    ui_router_render(&cv, 0);                 /* only what changed */
+    memcpy(fb_was, fb, (size_t)W * H * sizeof(gfx_color_t));
+    picture(fb);                              /* everything */
+    CHECK(memcmp(fb, fb_was, (size_t)W * H * sizeof(gfx_color_t)) == 0);
+}
+
 /* One contact's hold on ARM has completed and asked ARM; still down, the
  * other contact presses the button, now DISARM.  The DISARM is asked and
  * the first contact, held on and then lifted, asks no second ARM.  With
@@ -929,5 +948,6 @@ int main(void)
     RUN(the_applications_hook_is_not_a_control);
     RUN(a_press_while_the_arm_is_asked_takes_it_back);
     RUN(a_completed_arm_hold_under_a_disarm_asks_no_second_arm);
+    RUN(an_arm_ask_dropped_redraws_the_arm_button);
     return test_summary("motor_arm");
 }
