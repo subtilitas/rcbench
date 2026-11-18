@@ -1167,6 +1167,12 @@ FIT_ONLY = {
     "updates-wiz-absent-c":   (None, "updates", "dark"),
     "updates-wiz-absent-d":   (None, "updates", "dark"),
     "updates-wiz-capped":     (None, "updates", "dark"),
+    # The last card's headings and lines: a Dial OFF on WIRELESS, every
+    # step current, no check since the start, a failed install.
+    "updates-wiz-off":        (None, "updates", "dark"),
+    "updates-wiz-all-current": (None, "updates", "dark"),
+    "updates-wiz-no-check":   (None, "updates", "dark"),
+    "updates-wiz-inst-failed": (None, "updates", "dark"),
     "upd-remind-blocked": (None, "upd-remind", "dark"),
     # The warning on leaving SETUP with a save refused and the bench ARMED.
     "setup-leave-armed": (None, "setup", "dark"),

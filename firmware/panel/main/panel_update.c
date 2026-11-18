@@ -676,14 +676,18 @@ static void update_frame(update_state_t st, const char *version,
  * restart.  Nothing touches the flash before the control task stands still
  * and the radio is off.  A failure before the first erase changes nothing;
  * one after it leaves the running build as the one that starts.
+ *
+ * @return false when no staged image waits: nothing ran and no screen
+ *         changed; true after an install that failed (a successful one
+ *         restarts the panel)
  */
-static void fw_install_run(void)
+static bool fw_install_run(void)
 {
     const uint8_t  *img = NULL;
     uint32_t        bytes = 0u;
     fw_image_info_t info;
     if (!wifi_access_take(&img, &bytes, &info)) {
-        return;
+        return false;
     }
     /* Before the gate is read: see s_fw_installing. */
     atomic_store(&s_fw_installing, true);
@@ -744,6 +748,7 @@ static void fw_install_run(void)
     atomic_store(&s_fw_installing, false);
     wifi_access_release();
     update_frame(UPDATE_FAILED, info.version_text, in.done, bytes);
+    return true;
 }
 
 /**
@@ -855,7 +860,7 @@ void wifi_service(bool armed, uint32_t stops_now)
     }
     if ((req & WIFI_REQ_INSTALL) != 0u) {
         s_update_back = ui_router_parent(SCREEN_WIFI);
-        fw_install_run();
+        (void)fw_install_run();
     }
     if (update_screen_take_close()) {
         ui_router_goto(s_update_back);
@@ -957,11 +962,18 @@ static wa_why_t why_of_fw_gate(fw_gate_t g)
 
 /**
  * @brief The reason UPDATES' check may not run now, WA_WHY_NONE when it may.
+ *
+ * A wireless device's update holds the gate as the IOmcu's and the C6's
+ * do: a check under it would take the card from the device's ask and
+ * join Wi-Fi on the C6 while its Bluetooth LE controller carries the
+ * transfer.  CHECK FOR UPDATES is grey for its length and the start-up
+ * check waits.
  */
 static wa_why_t upd_check_gate(bool armed)
 {
     return wa_fetch_gate(armed, supplies_live_or_coming(), run_open_now(),
-                         atomic_load(&s_cu_busy) || panel_c6_busy(),
+                         atomic_load(&s_cu_busy) || panel_c6_busy()
+                             || panel_devupd_busy(),
                          atomic_load(&s_fw_installing));
 }
 
@@ -1163,7 +1175,13 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
          * the IOmcu's again. */
         atomic_store(&s_fw_installing, false);
         ESP_LOGI(TAG, "GitHub: %s downloaded and checked", v.found);
-        fw_install_run();
+        if (!fw_install_run()) {
+            /* The staged image is gone: the job ends INSTALL as after a
+             * failed write, and PANEL UPDATE says the firmware stays. */
+            ESP_LOGE(TAG, "GitHub: %s staged, no image to install", v.found);
+            wifi_access_release();
+            update_frame(UPDATE_FAILED, v.found, 0u, f.total);
+        }
         return;
     }
     atomic_store(&s_fw_installing, false);

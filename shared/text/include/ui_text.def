@@ -8952,12 +8952,23 @@ UI_TEXT(UPD_WIZ_T_NOT_CONNECTED, 0,
 UI_TEXT(UPD_WIZ_T_NOT_BOUND, 0,
     "NOT BOUND",
     "NICHT GEBUNDEN")
+UI_TEXT(UPD_WIZ_T_OFF, 0,
+    "OFF",
+    "AUS")
 UI_TEXT(UPD_WIZ_HEAD, 0,
     "STEP %u OF %u: %s",
     "SCHRITT %u VON %u: %s")
 UI_TEXT(UPD_WIZ_DONE_HEAD, 0,
     "All firmware is current.",
     "Alle Firmware ist aktuell.")
+/* The last card's other two headings (upd_wiz_end()): a step skipped or
+ * without an update here, and PANEL not checked with the rest current. */
+UI_TEXT(UPD_WIZ_END_NONE_OPEN, 0,
+    "No step is open.",
+    "Kein Schritt offen.")
+UI_TEXT(UPD_WIZ_END_NO_CHECK, 0,
+    "Not checked for a panel release.",
+    "Nicht nach einem Panel-Release gesucht.")
 UI_TEXT(UPD_WIZ_DO_PANEL, 0,
     "The panel restarts into %s. The steps for the IOmcu and the devices follow after the restart.",
     "Das Panel startet mit %s neu. Die Schritte für IOmcu und Geräte folgen nach dem Neustart.")
@@ -9042,6 +9053,14 @@ UI_TEXT(UPD_LATEST, 0,
 UI_TEXT(UPD_STAGED, 81,
     "Download checked. Installing now.",
     "Download geprüft. Installation läuft.")
+/* A download ended STAGED and the install after it wrote no new firmware
+ * (wa_fetch_install_failed()): the result line and the retry under it. */
+UI_TEXT(UPD_FAIL_INSTALL, 0,
+    "The installation failed. The panel firmware is unchanged.",
+    "Installation fehlgeschlagen. Die Panel-Firmware ist unverändert.")
+UI_TEXT(UPD_FAIL_INSTALL_2, 0,
+    "CHECK FOR UPDATES offers the release again.",
+    "NACH UPDATES SUCHEN bietet das Release erneut an.")
 UI_TEXT(UPD_WAIT_COPROC, 67,
     "Waiting for the IOmcu update to finish.",
     "Wartet auf das Ende des IOmcu-Updates.")

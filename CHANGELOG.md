@@ -120,6 +120,29 @@ history is in git.
 
 ### Fixed
 
+- UPDATES: a check that started beside a wireless device's transfer took
+  the card, the device's ask and CANCEL UPDATE away for up to 30s. The
+  check's gate counts a wireless device's update, as the IOmcu's and the
+  C6 radio's: CHECK FOR UPDATES is grey with
+  `Waiting for the wireless device update to finish.`, the start-up check
+  waits, and a check under way ends when such an update starts. In the
+  step model an update outranks PANEL's check as the current step.
+- UPDATES: the last card's heading follows the steps. `All firmware is
+  current.` shows only with PANEL checked and `CURRENT` and every other
+  step `CURRENT` or `NOT BOUND`; `Not checked for a panel release.` with
+  PANEL `NOT CHECKED` or `FAILED` and the rest so; `No step is open.` with
+  a step skipped or without an update here.
+- UPDATES: a bound Dial, power node or balance node whose switch on
+  WIRELESS is OFF no longer waits in an update run with `Switch the Dial
+  on and keep it within range.` Its row reads `OFF`, the step is passed
+  and the last card names it.
+- UPDATES: after an install that failed behind a checked download, step 1
+  stayed on `UPDATING` with `Download checked. Installing now.` and
+  OPTIONS grey until the next check. The download's result becomes a
+  failed install (`WA_GOT_INSTALL`): PANEL reads `FAILED`, the card says
+  `The installation failed. The panel firmware is unchanged.` and
+  `CHECK FOR UPDATES offers the release again.`, and OPTIONS and the later
+  steps are live.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,

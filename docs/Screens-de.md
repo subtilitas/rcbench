@@ -7256,7 +7256,7 @@ Updates der OPTIONEN öffnet ([Einzelne Updates](#einzelne-updates)).
 
 | Bedienelement | Wirkung |
 | --- | --- |
-| `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. In der Akzentfarbe nur, solange kein Schritt aktuell ist. |
+| `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. In der Akzentfarbe nur, solange kein Schritt aktuell ist. Grau, solange ein Update des IOmcu, des C6-Funks oder eines Funkgeräts läuft. |
 | Das Bedienelement des aktuellen Schritts | 2s Halten startet das Update des Schritts ([Die Schritte](#die-schritte)). Grau, solange eine Sperre den Schritt hält; ein Druck beliebiger Länge zeigt dann den Grund im Meldeband. |
 | `SCHRITT ÜBERSPRINGEN` | Ein Tippen übergeht den aktuellen Schritt bis zum Neustart des Panels; der nächste sperrende Schritt wird aktuell. |
 | `ÜBERSPRUNGENE SCHRITTE ZEIGEN` | Auf der letzten Karte, solange ein Schritt übersprungen ist. Ein Tippen holt jeden übersprungenen Schritt zurück. |
@@ -7292,16 +7292,23 @@ das gespeicherte Heimnetz. Suche und Download brauchen:
   offenen Aufzeichnungslauf.
   Sonst ist die Taste grau, und die Karte sagt
   `WLAN benötigt SAFE und einen ausgeschalteten Netzteilausgang.` und `Es darf kein Aufzeichnungslauf offen sein.`;
-- kein laufendes Update des IOmcu und keine Panel-Installation im
-  Gang.
+- kein laufendes Update des IOmcu, des C6-Funks oder eines Funkgeräts und
+  keine Panel-Installation im Gang. Während der Übertragung eines Geräts
+  ist die Taste grau, und die Karte sagt
+  `Wartet auf das Ende des Funkgeräte-Updates.`; die Suche beim Start
+  wartet ebenso, und eine laufende Suche endet, wenn ein solches Update
+  startet.
 
 Der Download braucht wie eine Installation außerdem, dass keine
 Platinenzeichnung geladen oder gespeichert wird.
 
 ### Die Schritte
 
-Aktuell ist der Schritt, dessen Update läuft; läuft keines, der Schritt
-mit der kleinsten Nummer, der sperrt. Schrittliste und Karte entstehen in
+Aktuell ist der Schritt, dessen Update läuft; läuft kein Update, PANEL,
+solange seine Suche läuft; sonst der Schritt mit der kleinsten Nummer, der
+sperrt. Ein Update geht der Suche vor: Die Aufforderung eines Geräts und
+UPDATE ABBRECHEN bleiben auf der Karte, was auch immer die Suche tut.
+Schrittliste und Karte entstehen in
 jedem Bild aus dem, was das Panel weiß: Keine Schrittposition wird
 gespeichert, darum zeigen ein Neustart, eine verlorene Verbindung oder ein
 fehlgeschlagener Schritt den richtigen Schritt ohne Wiederherstellung. Ein
@@ -7319,9 +7326,14 @@ die die späteren Schritte senden.
 | 6 AUSWUCHTKNOTEN | der verbundene Auswuchtknoten eine andere Version ausführt | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` |
 
 Eine Suche, die nichts Neueres fand oder fehlschlug, sperrt nie; ebenso
-wenig ein Download, der fehlschlug oder gestoppt wurde. PANEL zeigt dann
+wenig ein Download, der fehlschlug oder gestoppt wurde, oder ein Download,
+dessen Installation fehlschlug. PANEL zeigt dann
 `AKTUELL`, `NICHT GESUCHT` oder `FEHLGESCHLAGEN`, die Karte zeigt das
-Ergebnis, und NACH UPDATES SUCHEN ist der Weg zurück. Ein Schritt, dessen
+Ergebnis, und NACH UPDATES SUCHEN ist der Weg zurück. Nach einer
+fehlgeschlagenen Installation sagt die Karte
+`Installation fehlgeschlagen. Die Panel-Firmware ist unverändert.` und
+`NACH UPDATES SUCHEN bietet das Release erneut an.`; OPTIONEN und die
+Bedienelemente der späteren Schritte sind aktiv. Ein Schritt, dessen
 Update seit dem Start des Panels lief und fehlschlug, bleibt aktuell:
 Seine Zeile zeigt `FEHLGESCHLAGEN`, die Karte die Zeile der Meldung in der
 Warnfarbe, und das Halten ist der neue Versuch.
@@ -7339,6 +7351,7 @@ Warnfarbe, und das Halten ist der neue Versuch.
 | `NICHT GESUCHT` | PANEL: kein Suchergebnis seit diesem Start |
 | `OHNE VERBINDUNG`, `NICHT VERBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden |
 | `NICHT GEBUNDEN` | kein Gerät der Art ist auf WIRELESS gebunden |
+| `AUS` | ein Gerät ist gebunden, und sein Schalter auf WIRELESS steht auf AUS: Das Panel hält keine Verbindung zu ihm |
 | `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | nichts zu tun: Das Panel bringt kein Image mit, das mitgebrachte Image besteht seine Prüfung nicht, die Build-Prüfung des IOmcu gab keine Antwort, der IOmcu nimmt kein Update über CAN an, die Verbindung zum C6 schlug fehl, der C6 nannte keine Version |
 
 Ein Schritt, bei dem nichts zu tun ist, wird übergangen. Steht nach einem
@@ -7348,7 +7361,9 @@ ein gebundenes, nicht verbundenes Gerät: Die Karte sagt
 `Schalte das Dial ein und halte es in Reichweite.`, mit SCHRITT
 ÜBERSPRINGEN, und der Schritt geht von selbst weiter, sobald sich das Ziel
 verbindet. Außerhalb eines Laufs werden sie übergangen und auf der letzten
-Karte genannt.
+Karte genannt. Ein gebundenes Gerät, dessen Schalter auf WIRELESS auf AUS
+steht, wartet nie, weder in einem Lauf noch außerhalb: Seine Zeile zeigt
+`AUS`, und die letzte Karte nennt es.
 
 ![Ein Schritt, gesperrt bei ARMED](img/de/updates-held.png)
 
@@ -7382,10 +7397,19 @@ außerdem das Angebot des IOmcu ab, das UPDATES gezeigt hat: Weder das
 ([IOmcu-Update](#iomcu-update)). Ein neues Angebot holt den Schritt
 zurück. Ein laufendes Update wird nie übersprungen.
 
-Ist kein Schritt aktuell, sagt die Karte `Alle Firmware ist aktuell.`,
+Ist kein Schritt aktuell, zeigt die Karte eine von drei Überschriften:
+
+| Überschrift | Gezeigt, solange |
+| --- | --- |
+| `Alle Firmware ist aktuell.` | PANEL nach einer Suche `AKTUELL` zeigt und jeder andere Schritt `AKTUELL` oder `NICHT GEBUNDEN` |
+| `Nicht nach einem Panel-Release gesucht.` | PANEL `NICHT GESUCHT` oder `FEHLGESCHLAGEN` zeigt und jeder andere Schritt `AKTUELL` oder `NICHT GEBUNDEN` |
+| `Kein Schritt offen.` | ein Schritt übersprungen ist oder aus einem anderen Grund als `NICHT GEBUNDEN` nichts zu tun hat |
+
+Unter der Überschrift stehen
 die laufende Version, das Heimnetz, das Ergebnis der letzten Suche und
 die übergangenen Schritte: `Nicht verbunden: LEISTUNGSKNOTEN.`,
-`Kein Update hier: C6-FUNK. Die Liste nennt den Grund.` und
+`Kein Update hier: C6-FUNK. Die Liste nennt den Grund.` (darunter ein
+Gerät, das `AUS` zeigt) und
 `Übersprungen: DIAL.`, danach die Hinweise zur Erinnerung und zu
 RELEASES. ÜBERSPRUNGENE SCHRITTE ZEIGEN steht darunter, solange ein
 Schritt übersprungen ist. NACH UPDATES SUCHEN ist in der Akzentfarbe

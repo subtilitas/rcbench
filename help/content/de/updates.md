@@ -14,7 +14,7 @@ Die Schrittliste links zeigt je Schritt Nummer, Namen, die Version seines Ziels 
 
 | Bedienelement | Wirkung |
 |---|---|
-| NACH UPDATES SUCHEN | Fragt GitHub einmal ab. Während der Suche heißt die Taste ABBRECHEN. |
+| NACH UPDATES SUCHEN | Fragt GitHub einmal ab. Während der Suche heißt die Taste ABBRECHEN. Grau, solange ein Update des IOmcu, des C6-Funks oder eines Funkgeräts läuft. |
 | das Bedienelement des aktuellen Schritts | Auf der Karte; 2s Halten startet das Update des Schritts, siehe [Die Schritte](#die-schritte). Grau, solange etwas es sperrt; ein Druck zeigt den Grund im Meldeband. |
 | SCHRITT ÜBERSPRINGEN | Auf der Karte; ein Tippen übergeht den Schritt bis zum Neustart des Panels, der nächste Schritt wird aktuell. |
 | ÜBERSPRUNGENE SCHRITTE ZEIGEN | Auf der letzten Karte, solange ein Schritt übersprungen ist; holt die übersprungenen Schritte zurück. |
@@ -36,7 +36,7 @@ Updates und Neuinstallationen außerhalb der Reihe stehen auf der Seite EINZELNE
 | 5 LEISTUNGSKNOTEN | der verbundene Leistungsknoten eine andere Version ausführt | 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE, siehe [Die Sensorknoten](#die-sensorknoten) |
 | 6 AUSWUCHTKNOTEN | der verbundene Auswuchtknoten eine andere Version ausführt | 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE |
 
-Das Panel-Image bringt jedes andere Image mit, darum kommt PANEL zuerst. Ein neueres Release, das gefunden wird, während ein späterer Schritt aktuell ist, macht PANEL wieder aktuell. Eine Suche, die nichts Neueres fand oder fehlschlug, sperrt nie, ebenso wenig ein fehlgeschlagener oder gestoppter Download: NACH UPDATES SUCHEN ist der Weg zurück.
+Das Panel-Image bringt jedes andere Image mit, darum kommt PANEL zuerst. Ein neueres Release, das gefunden wird, während ein späterer Schritt aktuell ist, macht PANEL wieder aktuell. Eine Suche, die nichts Neueres fand oder fehlschlug, sperrt nie, ebenso wenig ein fehlgeschlagener oder gestoppter Download oder eine fehlgeschlagene Installation: NACH UPDATES SUCHEN ist der Weg zurück. Nach einer fehlgeschlagenen Installation zeigt die Karte `Installation fehlgeschlagen. Die Panel-Firmware ist unverändert.` und `NACH UPDATES SUCHEN bietet das Release erneut an.` Eine Suche nimmt einem laufenden Update nie die Karte: Die Aufforderung eines Geräts zum Annehmen und UPDATE ABBRECHEN bleiben.
 
 | Etikett | Bedeutung |
 |---|---|
@@ -48,6 +48,7 @@ Das Panel-Image bringt jedes andere Image mit, darum kommt PANEL zuerst. Ein neu
 | `ÜBERSPRUNGEN` | SCHRITT ÜBERSPRINGEN wurde seit dem Start des Panels getippt |
 | `NICHT GESUCHT` | PANEL: keine Suche seit dem Start |
 | `OHNE VERBINDUNG`, `NICHT VERBUNDEN`, `NICHT GEBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden; kein Gerät der Art ist gebunden |
+| `AUS` | ein gebundenes Gerät ist auf WIRELESS ausgeschaltet; sein Schritt wartet nie, und die letzte Karte nennt es |
 | `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | hier nichts zu aktualisieren; die letzte Karte nennt diese Schritte |
 
 ![Ein Schritt, gesperrt bei ARMED](view:updates-held)
@@ -64,7 +65,7 @@ Nach einem Neustart in einem Update-Lauf wartet ein Schritt, dessen IOmcu oder G
 
 ![Der Schritt des Dial wartet nach einem Neustart](view:updates-step-waiting)
 
-Ist kein Schritt mehr übrig, sagt die Karte `Alle Firmware ist aktuell.` und nennt die Schritte, die nicht verbunden, hier nicht aktualisierbar oder übersprungen sind.
+Ist kein Schritt mehr übrig, nennt die Karte die Schritte, die nicht verbunden, hier nicht aktualisierbar oder übersprungen sind, unter einer von drei Überschriften: `Alle Firmware ist aktuell.`, wenn eine Suche nichts Neueres fand und jeder andere Schritt `AKTUELL` oder `NICHT GEBUNDEN` zeigt; `Nicht nach einem Panel-Release gesucht.`, wenn PANEL `NICHT GESUCHT` oder `FEHLGESCHLAGEN` zeigt und der Rest aktuell ist; `Kein Schritt offen.`, wenn ein Schritt übersprungen wurde oder hier kein Update hat.
 
 ![Die letzte Karte mit übersprungenem Dial](view:updates-done)
 

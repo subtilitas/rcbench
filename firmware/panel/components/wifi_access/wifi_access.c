@@ -2151,6 +2151,8 @@ void wifi_access_release(void)
 {
     lock();
     s.taken = false;
+    /* A download that ended STAGED says the install runs: it did not. */
+    wa_fetch_install_failed(&s.f);
     unlock();
     wifi_access_discard();
 }
