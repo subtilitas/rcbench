@@ -7358,7 +7358,17 @@ das gespeicherte Heimnetz. Suche und Download brauchen:
   ist die Taste grau, und die Karte sagt
   `Wartet auf das Ende des Funkgeräte-Updates.`; die Suche beim Start
   wartet ebenso, und eine laufende Suche endet, wenn ein solches Update
-  startet.
+  startet. Die Zeile nennt das Update, das die Taste sperrt:
+  `Wartet auf das Ende des IOmcu-Updates.`, solange der Schritt des IOmcu
+  `UPDATE LÄUFT` zeigt, `Wartet auf das Ende des C6-Updates.` vom Start
+  des C6-Updates bis zum Neustart danach, und
+  `Wartet: Eine Prüfung oder Installation läuft bereits.`, wenn kein
+  Schritt das sperrende Update zeigt.
+
+Vom Ende eines C6-Updates bis zum Neustart danach (3.000ms bei SAFE und
+ausgeschalteten Ausgängen, sonst bis dahin) zeigt C6-FUNK `WIRD GEPRÜFT` und ist
+der aktuelle Schritt, auch auf der enthaltenen Version: Die letzte Karte
+erscheint in dieser Zeit nicht.
 
 Der Download braucht wie eine Installation außerdem, dass keine
 Platinenzeichnung geladen oder gespeichert wird.
@@ -7486,7 +7496,8 @@ Speicher) hält fest, dass ein Lauf steht
 ([Installieren: PANEL UPDATE](#installieren-panel-update)); die Schritte
 werden nach dem Neustart neu aus dem entschieden, was das Panel weiß.
 
-Steht ein Lauf, öffnet sich UPDATES einmal je Start von selbst: im Menü,
+Steht ein Lauf und ist ein Schritt offen, öffnet sich UPDATES einmal je
+Start von selbst: im Menü,
 nach dem Splash, bei SAFE, ohne wartendes ARM, mit Netzteilausgang aus,
 ganz ausgeschaltetem Funk des Panels und ohne laufende
 Panel-Installation, also unter den Bedingungen, unter denen ein Angebot
@@ -7522,7 +7533,9 @@ und die Notiz wird gelöscht, wenn:
   zuerst diese und beendet nichts;
 - kein Schritt mehr sperrt, sobald der Bluetooth-LE-Client die Zeilen der
   Funkgeräte veröffentlicht hat: Vorher gilt jedes Gerät als nicht
-  gebunden.
+  gebunden. Dieses Ende kommt vor dem Öffnen: Ein Start, der keinen
+  offenen Schritt findet, beendet den Lauf, ohne UPDATES zu öffnen, etwa
+  nach einer Neuinstallation des C6 mit allen Schritten aktuell.
 
 Das Löschen ist ein Schreiben in den Flash, und ein Schreiben in den Flash
 hält beide Kerne an, darunter die Steuer-Task mit Heartbeat und STOP. Ein

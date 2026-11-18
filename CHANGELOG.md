@@ -373,6 +373,15 @@ history is in git.
   and bound another GPIO.
 - Help and comments: on the rbmod carrier the bound outputs take slots and
   channels in the order PWM01 to PWM04; the texts said slot n is PWM0(n+1).
+- UPDATES: from the end of a C6 radio update to the restart after it, a
+  C6 on the carried version (a reinstall) read `CURRENT`, so the last card
+  showed `All firmware is current.` with the amber line `Waiting for the
+  IOmcu update to finish.` beside an IOmcu step that read `CURRENT`. C6
+  RADIO now reads `CHECKING` and stays the current step until the restart.
+  The line under a grey CHECK FOR UPDATES names the update that holds it
+  (`upd_c6_holds()`, the IOmcu's section, a device's row) and reads
+  `Waiting: a check or installation is already running.` when no step
+  shows one. The gate itself is unchanged.
 
 ## 0.23.14 - 2026-11-15
 

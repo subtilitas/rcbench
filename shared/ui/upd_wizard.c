@@ -272,7 +272,10 @@ static void c6_blocked(upd_wiz_step_t *st, fw_c6_why_t why)
 /**
  * @brief C6 RADIO from its row.  The step is OPEN only while the C6
  *        reports a version other than the carried one; REINSTALL, and a
- *        blocked row on the carried version, are DONE.
+ *        blocked row on the carried version, are DONE.  A row whose own
+ *        update still ends (FW_C6_WHY_ENDING: its last step out, or the
+ *        restart after a success owed) is PENDING on any version: the
+ *        update's gate holds until the panel restarts.
  * @param st the step
  * @param v  the row, or NULL
  */
@@ -309,7 +312,9 @@ static void c6_step(upd_wiz_step_t *st, const upd_c6_view_t *v)
     default: /* READY, BLOCKED */
         break;
     }
-    if (!v->known) {
+    if (v->row == FW_C6_ROW_BLOCKED && v->why == FW_C6_WHY_ENDING) {
+        c6_blocked(st, v->why);
+    } else if (!v->known) {
         set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_NOT_REPORTED, UPD_WIZ_WHY_NONE);
     } else if (!v->have_image) {
         set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_NO_IMAGE, UPD_WIZ_WHY_NONE);

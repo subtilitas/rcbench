@@ -118,6 +118,14 @@ const char *upd_c6_reason(const upd_c6_view_t *v)
     }
 }
 
+bool upd_c6_holds(const upd_c6_view_t *v)
+{
+    return v != NULL
+           && (v->row == FW_C6_ROW_UPDATING
+               || (v->row == FW_C6_ROW_BLOCKED
+                   && v->why == FW_C6_WHY_ENDING));
+}
+
 /**
  * @brief A version as text, or @p none's text.
  * @param out  the text
