@@ -837,8 +837,8 @@ reads the state and shows the alert, is not in the coverage figure.
   reads ON, OUTPUT OFF, PROG 5V OFF, PORT PWM OFF, and Hitec's MOVE SERVO
   ON and searching FIND STOP key. A slide off the control or a touch loss
   under the press has stopped already. An ON or ARM asked by a hold and not
-  answered counts as on: the button reads OUTPUT OFF or DISARM, and a press
-  takes it back. A release never switches on what a stop switched off: a
+  answered counts as on: the button reads OUTPUT OFF, PROG 5V OFF or DISARM,
+  and a press takes it back. A release never switches on what a stop switched off: a
   finger held on that Hitec row loses its tap, and a hold on OUTPUT ON or
   PROG 5V ON ends when the OFF reads back.
 - The control task tests STOP's rectangle on every press itself,

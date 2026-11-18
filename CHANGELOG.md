@@ -131,9 +131,10 @@ history is in git.
 - ABORT on the KST and HITEC sessions' PORT row and PORT PWM OFF on
   OUTPUTS acted on a completed tap. Both act on the press of every
   contact, as the ESC session's ABORT does.
-- A press on OUTPUT, or on ARM on MOTOR & ESC and SERVO, between the
-  hold's ask and the answer started a second hold. The button reads OUTPUT
-  OFF or DISARM from the ask on, and a press takes the ON or the ARM back.
+- A press on OUTPUT, on PROG 5V, or on ARM on MOTOR & ESC and SERVO,
+  between the hold's ask and the answer started a second hold. The button
+  reads OUTPUT OFF, PROG 5V OFF or DISARM from the ask on, and a press
+  takes the ON or the ARM back.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,

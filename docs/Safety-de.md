@@ -931,8 +931,8 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Hitec-Programmers EIN von SERVO BEWEGEN und die Taste von ANSCHLAG
   SUCHEN, deren Seite sucht. Ein EIN oder ein ARM, das ein Halten angefragt
   hat und das nicht beantwortet ist, zählt als eingeschaltet: Die Taste
-  zeigt AUSGANG AUS oder DISARM, und ein Druck nimmt das EIN oder das ARM
-  zurück. Ein Finger, der vom Bedienelement rutscht, und
+  zeigt AUSGANG AUS, PROG 5V AUS oder DISARM, und ein Druck nimmt das EIN
+  oder das ARM zurück. Ein Finger, der vom Bedienelement rutscht, und
   ein Touch-Signal, das unter dem Druck abreißt, haben bereits gestoppt.
   Ein Abheben schaltet nie ein, was ein Stopp
   ausgeschaltet hat: Ein Finger auf dieser Hitec-Zeile verliert sein

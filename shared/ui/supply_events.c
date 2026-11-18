@@ -408,8 +408,11 @@ static void stop_down(const touch_event_t *evt)
         }
         ++s.out_rev;
         ++s.ctrl_rev;
-    } else if (sup_p5_shown() && prog5v_box_live() && prog5v_box_on()
+    } else if (sup_p5_shown() && prog5v_box_live() && prog5v_box_stops()
                && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
+        /* A hold on PROG 5V ON another contact began ends with the stop:
+         * it would complete after it and ask ON again. */
+        prog5v_box_cancel(&s.p5);
         prog5v_box_ask_off(PROG5V_BY_SUPPLY);
         ++s.p5.rev;
     }
@@ -425,7 +428,7 @@ bool sup_safe_at(int x, int y)
         && gfx_rect_contains(s.out_rect, x, y)) {
         return true;
     }
-    return sup_p5_shown() && prog5v_box_on()
+    return sup_p5_shown() && prog5v_box_stops()
            && gfx_rect_contains(prog5v_box_button(&s.p5), x, y);
 }
 

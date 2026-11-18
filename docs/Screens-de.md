@@ -620,8 +620,8 @@ PROG 5V AUS, PORT-PWM AUS, DISARM, STOP oder ABBRECHEN, wirkt beim
 Aufsetzen: Der Befehl geht, sobald der Finger aufsetzt, und ein Finger,
 der abrutscht, oder ein verlorenes Touch-Signal hat bereits gestoppt. Ab
 dem Moment, in dem ein Halten EIN oder ARM angefragt hat, zeigt die Taste
-AUSGANG AUS oder DISARM, bevor Netzteil oder Prüfstand antworten: Ein
-Druck in dieser Zeit nimmt das EIN oder das ARM zurück.
+AUSGANG AUS, PROG 5V AUS oder DISARM, bevor Netzteil, Port oder Prüfstand
+antworten: Ein Druck in dieser Zeit nimmt das EIN oder das ARM zurück.
 Loslassen einer Halte-Taste vor 2s
 sendet keinen Befehl. Stattdessen erscheint ihr Hinweis für 4s im Alarmband:
 in Bernsteinfarbe (`UI_C_WARN`) mit dunkler Schrift statt der

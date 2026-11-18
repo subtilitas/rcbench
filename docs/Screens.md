@@ -577,8 +577,9 @@ stops what the bench drives, such as OUTPUT OFF, PROG 5V OFF, PORT PWM
 OFF, DISARM, STOP or ABORT, acts on the press: the command goes as the
 finger comes down, and a finger that slides off or a touch that is lost
 has stopped already. From the moment a hold has asked ON or ARM the
-button reads OUTPUT OFF or DISARM, before the supply or the bench
-answers: a press in that time takes the ON or the ARM back. Releasing a hold button earlier
+button reads OUTPUT OFF, PROG 5V OFF or DISARM, before the supply, the
+port or the bench answers: a press in that time takes the ON or the ARM
+back. Releasing a hold button earlier
 sends no command. Instead, the alert band shows a hint for 4s: amber
 (`UI_C_WARN`) with dark text, rather than the danger colour. Tap the band
 to dismiss it earlier. The hint fits on one line of at most 97 characters.

@@ -19,6 +19,8 @@
  * - output_pressed_while_on_is_asked_takes_the_on_back
  * - a_hold_on_output_on_ends_with_the_stop_of_an_on_asked_elsewhere
  * - a_completed_hold_under_a_stop_asks_no_second_on
+ * - prog5v_pressed_while_on_is_asked_takes_the_on_back
+ * - a_hold_on_prog5v_on_ends_with_the_stop_of_an_asked_on
  * - output_off_under_two_other_contacts_switches_off
  * - output_off_under_three_other_contacts_switches_off
  * - prog5v_off_under_two_and_three_other_contacts_switches_off
@@ -244,6 +246,82 @@ TEST_CASE(a_completed_hold_under_a_stop_asks_no_second_on)
     }
 }
 
+/** @brief SUPPLY fresh with PROG 5V read OFF and no command waiting. */
+static void fresh_p5_off(void)
+{
+    prog5v_box_reset();
+    ui_text_set_language(UI_LANG_EN);
+    prog5v_box_publish(ST_OFF, 21u, (uint8_t)PROG5V_HELD_NONE);
+    fresh();
+    scr->tick(TICK_S);
+    while (prog5v_box_poll_cmd(NULL)) { }
+}
+
+/* PROG 5V ON's hold has asked ON and the port has not reported it: the
+ * button is PROG 5V OFF (prog5v_box_stops()).  A press there, by contact
+ * 1, 2 or 3, takes the ON back on the DOWN, whether the ON still waits to
+ * be collected or went out and the application says it is coming, and a
+ * finger left on it asks no ON. */
+TEST_CASE(prog5v_pressed_while_on_is_asked_takes_the_on_back)
+{
+    for (int collected = 0; collected < 2; ++collected) {
+        for (uint8_t id = 1; id <= 3; ++id) {
+            prog5v_cmd_t c;
+
+            fresh_p5_off();
+            CHECK(!prog5v_box_stops());
+            ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, 1);
+            tick_for(HOLD_TICKS);
+            ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_UP, 1);
+            if (collected) {
+                CHECK(prog5v_box_poll_cmd(&c) && c.on);
+                prog5v_box_set_on_coming(true);
+            }
+            CHECK(prog5v_box_stops());
+            ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, id);
+            CHECK(p5_asked_off());
+            CHECK(!prog5v_box_stops());
+            tick_for(2 * HOLD_TICKS);
+            ev(OFF_X, OFF_Y, TOUCH_EVENT_MOVE, id);
+            ev(OFF_X, OFF_Y, TOUCH_EVENT_UP, id);
+            tick_for(HOLD_TICKS);
+            CHECK(!prog5v_box_poll_cmd(NULL));
+        }
+    }
+}
+
+/* One contact holds PROG 5V ON, 1s in; SERVO asks ON meanwhile, so the
+ * button reads PROG 5V OFF, and the other contact presses it.  The OFF is
+ * asked and the first contact's hold ends there: held on for 4s more and
+ * then lifted, it asks no ON.  And with the first contact's own hold
+ * completed and still down.  With the track ids either way round. */
+TEST_CASE(a_hold_on_prog5v_on_ends_with_the_stop_of_an_asked_on)
+{
+    for (int own = 0; own < 2; ++own) {
+        for (int swap = 0; swap < 2; ++swap) {
+            const uint8_t a = swap ? 2 : 1, b = swap ? 1 : 2;
+
+            fresh_p5_off();
+            ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, a);
+            if (own) {
+                tick_for(HOLD_TICKS);
+            } else {
+                tick_for(HOLD_TICKS / 2);
+                prog5v_box_ask_on(PROG5V_BY_SERVO);
+            }
+            CHECK(prog5v_box_stops());
+            ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_DOWN, b);
+            CHECK(p5_asked_off());
+            tick_for(2 * HOLD_TICKS);
+            CHECK(!prog5v_box_poll_cmd(NULL));
+            ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_UP, b);
+            ev(P5_BTN_X, P5_BTN_Y, TOUCH_EVENT_UP, a);
+            tick_for(HOLD_TICKS);
+            CHECK(!prog5v_box_poll_cmd(NULL));
+        }
+    }
+}
+
 /* Contact 1 holds RESET PEAKS, contact 2 rests on the voltage's track; a
  * third on OUTPUT OFF switches it off on its press.  RESET PEAKS keeps its
  * release: its tap resets the peaks. */
@@ -396,6 +474,8 @@ int main(void)
     RUN(output_pressed_while_on_is_asked_takes_the_on_back);
     RUN(a_hold_on_output_on_ends_with_the_stop_of_an_on_asked_elsewhere);
     RUN(a_completed_hold_under_a_stop_asks_no_second_on);
+    RUN(prog5v_pressed_while_on_is_asked_takes_the_on_back);
+    RUN(a_hold_on_prog5v_on_ends_with_the_stop_of_an_asked_on);
     RUN(output_off_under_two_other_contacts_switches_off);
     RUN(output_off_under_three_other_contacts_switches_off);
     RUN(prog5v_off_under_two_and_three_other_contacts_switches_off);

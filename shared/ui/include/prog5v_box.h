@@ -232,6 +232,21 @@ bool prog5v_box_shown(void);
 bool prog5v_box_on(void);
 
 /**
+ * @brief The application's word on an ON the box's poll gave it: on its
+ *        way to the port and not reported yet, or no longer (reported,
+ *        refused or dropped).  Each frame, after the poll.
+ * @param coming true while an ON is on its way or the supply is live
+ */
+void prog5v_box_set_on_coming(bool coming);
+
+/**
+ * @brief Whether the button is PROG 5V OFF: the supply reads ON, or an ON
+ *        is asked and not reported yet.  A press on it then asks OFF.
+ * @return true while the button stops
+ */
+bool prog5v_box_stops(void);
+
+/**
  * @brief The last reading of the channel that watches the ports' 5V, as
  *        published: SERVO's plot of the PROG 5V on the rbmod carrier's
  *        programming port takes a point each time @p window moves.
