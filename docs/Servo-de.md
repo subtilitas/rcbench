@@ -179,7 +179,7 @@ Tippen auf die Zeile nennen den ganzen Text
 | PROG 5V | `PROG 5V AUS: START SCHALTET ES EIN` | `PROG 5V AUS` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und PROG 5V aus. Vor `ZUERST ARM` genannt: der Puls des Ports braucht PROG 5V und kommt nur bei SAFE ([Carrier](Carrier-de.md#der-programmierport)). Gelb: das Halten schaltet es ein |
 | ARM | `ZUERST ARM` | der Text | der Prüfstand ist SAFE. Gelb: `START SCHALTET ARMED` |
 | ARM | `BERICHT WIRD NOCH GESCHRIEBEN` | `SCHREIBT BERICHT` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
-| PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | der Text, `PINS NICHT GELESEN` | PORT auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Taste PORT. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
+| PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | der Text, `NICHT AUSGELESEN` | PORT auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Taste PORT. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
 | MESSGERÄT | `SERVOSTROMMESSER (INA3221) NICHT EINGERICHTET` | `NICHT EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | MESSGERÄT | `INA3221 NICHT ERREICHBAR` | `NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
 | MESSGERÄT | `NOCH KEINE INA3221-MESSFENSTER` | `NOCH KEINE FENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
@@ -1663,7 +1663,7 @@ Alarmband:
 | WINKEL | `WINKELQUELLE: KEIN MESSWERT` | `KEIN MESSWERT` |
 | NULLPUNKT | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` | `NICHT GESETZT` |
 | ARM | `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.`, der Pin der ESC-Programmierung | `SERVOPROGRAMMIERUNG`, `ESC-PROGRAMMIERUNG` |
-| PORT | `PINS NICHT AUSGELESEN`, 21 Zellen | `PINS NICHT GELESEN` |
+| PORT | `PINS NICHT AUSGELESEN`, 21 Zellen | `NICHT AUSGELESEN` |
 
 ### SET V, SET A und die Grafik
 
@@ -1875,9 +1875,9 @@ Bluetooth-IMU).
   `ZURÜCKSPIELEN IN KST` (an einem Hitec-Servo `HITEC001 IN DATEIEN
   LADEN`) nach einem NICHT BESTANDEN oder einem Abbruch, der geschrieben
   hat oder ein Schreiben unterwegs abbrach, das angekommen sein kann; das
-  Nachmessen, sobald seine erste Messung vorliegt, `NACHMESSEN 1000us
-  +0.03°, 2000us -0.02°, MITTE +0.05°`: jedes Ende ab seinem Sollwert, die
-  Mitte ab dem Nullpunkt, `-` für eine noch nicht gemessene. Die Zeile wird
+  Nachmessen, sobald seine erste Messung vorliegt, `NACHMESSEN +0.03°,
+  -0.02°, MITTE +0.05°`: 1000us, 2000us und die Mitte, jedes Ende ab seinem
+  Sollwert, die Mitte ab dem Nullpunkt, `-` für eine noch nicht gemessene. Die Zeile wird
   rot bei der ersten außerhalb der Toleranz und grün, sobald alle drei
   innerhalb liegen.
 - Das Servo ist die Zeile SERVO: die eigene gespeicherte Einstellung von

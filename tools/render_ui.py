@@ -29,6 +29,7 @@ from __future__ import annotations
 
 import argparse
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -1602,6 +1603,54 @@ def judge(findings, known, views):
     return judged, stale
 
 
+#: A conversion of a table string, as printf() reads it.
+CONVERSION = re.compile(
+    r"%[-+ 0#]*(?:\d+|\*)?(?:\.(?:\d+|\*))?(?:hh|h|ll|l|z)?[sdiuxXcf]")
+
+
+def literal_part(text: str) -> str:
+    """The longest run of a table string that no conversion changes.
+
+    Args:
+        text: The string as the table holds it.
+
+    Returns:
+        The longest part between its conversions, a "%%" read as "%",
+        its white space folded to single spaces; "" for a string of
+        conversions only.
+    """
+    parts = [" ".join(p.replace("%%", "%").split())
+             for p in CONVERSION.split(text)]
+    return max(parts, key=len) if parts else ""
+
+
+def undrawn(texts, used_in, drawn_in):
+    """The looked-up strings that no view draws.
+
+    A view that formats a string and never draws the result looks the
+    string up as one that draws it does, so the lookup alone measures
+    nothing.  A string counts as drawn when its literal_part() stands in
+    the text of a view that looks it up, the view's strings joined by
+    spaces in drawing order, which joins the rows of a wrapped string
+    again.
+
+    Args:
+        texts: {ID: string} in the language.
+        used_in: {view: IDs looked up}.
+        drawn_in: {view: its drawn strings joined by spaces}.
+
+    Returns:
+        The IDs some view looks up and none draws, sorted.
+    """
+    looked_up, found = set(), set()
+    for view, used in used_in.items():
+        looked_up |= used
+        text = drawn_in[view]
+        found |= {n for n in used - found
+                  if n in texts and literal_part(texts[n]) in text}
+    return sorted(n for n in looked_up - found if n in texts)
+
+
 def fit(views, langs) -> int:
     """Render every view in every language and report overflowing strings.
 
@@ -1609,7 +1658,8 @@ def fit(views, langs) -> int:
     every string that overflows.  An overflow fails in either language,
     except the English ones in KNOWN_OVERFLOWS and their German copies.  A
     table string with no declared width has to be drawn by some view, or
-    nothing measures it.
+    nothing measures it: one that no view looks up fails, and so does one
+    that views look up and none draws (undrawn()).
     """
     failed = False
     with tempfile.TemporaryDirectory() as td:
@@ -1622,20 +1672,34 @@ def fit(views, langs) -> int:
             _, name, cells = line.split()
             ids[name] = int(cells)
         seen = {lang: set() for lang in langs}
+        drawn = {lang: set() for lang in langs}
         findings = []
         for lang in sorted(langs, key=lambda x: x != "en"):
+            texts = {}
+            out = subprocess.run([str(exe), "--texts", lang], check=True,
+                                 capture_output=True, text=True).stdout
+            for line in out.splitlines():
+                _, name, text = line.split(" ", 2)
+                texts[name] = text
+            used_in, drawn_in = {}, {}
             for name in views:
                 filename, screen, theme = {**SCREENS, **FIT_ONLY}[name]
                 trace = tmp / f"{name}-{lang}.trace"
                 render_one(exe, tmp, name, screen, theme, lang, trace)
                 items, used = read_trace(trace)
                 seen[lang] |= used
+                used_in[name] = used
+                drawn_in[name] = " ".join(
+                    " ".join(i[4].split()) for i in items if i[0] == "T")
                 found = fit_problems(items, name in OVERLAY_VIEWS,
                                      name in GUIDE_VIEWS)
                 if name.startswith("help-"):
                     found += badge_problems(items)
                 for s, why in found:
                     findings.append((lang, name, s, why))
+            drawn[lang] = set(undrawn(
+                {n: s for n, s in texts.items() if ids.get(n) == 0},
+                used_in, drawn_in))
         judged, stale = judge(findings, KNOWN_OVERFLOWS, set(views))
         for tag, lang, name, s, why in judged:
             print(f"{tag} {lang} {name}: {s!r} {why}")
@@ -1653,6 +1717,11 @@ def fit(views, langs) -> int:
             for n in unmeasured:
                 print(f"FAIL {lang}: {n} has no declared width and no view "
                       "draws it")
+                failed = True
+        for lang in langs:
+            for n in sorted(drawn[lang]):
+                print(f"FAIL {lang}: {n} has no declared width; a view "
+                      "looks it up and none draws it")
                 failed = True
     if not failed:
         known = sum(1 for tag, *_ in judged if tag == "known")

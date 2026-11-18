@@ -3156,7 +3156,7 @@ PROG 5V OFF: a stop switches off on that finger's press.
 
 On the [rbmod carrier](Carrier.md#power), a line below OUTPUT names the
 programming ports' separate 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
-`NOT READ` after an unanswered read, at the foot of the CONTROL card. ON
+`UNKNOWN` after an unanswered read, at the foot of the CONTROL card. ON
 uses the accent colour. KST and Hitec programmers switch this supply. The
 PROG 5V box to the right of PLOT and TABLE allows manual switching and
 shows its INA3221 reading, as on [SERVO](#servo).

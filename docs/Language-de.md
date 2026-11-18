@@ -113,6 +113,11 @@ Ein deutsches Wort je englischem Begriff, auf jeder Seite und im Bericht.
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |
+| HOLD 2s TO … (die Beschriftung einer Halte-Taste) | `2s HALTEN ZUM` und ein Verb (`2s HALTEN ZUM SCHREIBEN`); `2s HALTEN:` vor einer Wendung aus mehreren Wörtern (`2s HALTEN: OHNE SCHREIBEN VERLASSEN`) |
+| reset (ein eingerasteter STOP) | lösen: `2s HALTEN ZUM LÖSEN` füllt die 19 Zellen der STOP-Taste |
+| NOT READ | NICHT AUSGELESEN |
+| SCAN AGAIN | AKTUALISIEREN |
+| node scan | Knotensuche |
 | press, hold (die Bildschirmtaste des Dial) | DRÜCKEN, HALTEN (`DRÜCKEN: ÖFFNEN`, `HALTEN: ZURÜCK`) |
 | refused | abgelehnt |
 | screen (eine Seite der Oberfläche) | Seite |
@@ -289,7 +294,12 @@ nicht. Ein deutscher Eintrag `NULL` zeigt auch dort sein Englisch
 1. Lege einen Eintrag im Abschnitt der Seite an, die ihn zeichnet, Englisch
    zuerst: `UI_TEXT(ID, cells, "English", "Deutsch")`. `cells` ist die
    Breite des Feldes in Zellen seines Fonts, wo kein Screenshot den Text
-   zeigt, und 0, wo eine gerenderte Ansicht ihn zeigt.
+   zeigt, und 0, wo eine gerenderte Ansicht ihn zeigt. Ein Formatstring
+   mit angegebener Breite wird formatiert an ihr gemessen:
+   `test_text_formats` füllt jede Umwandlung mit ihrem breitesten Argument,
+   8 Zellen für `%s` und 4 Ziffern für `%u`, oder mit den Argumenten, die
+   seine Tabelle `k_args` für den Eintrag nennt. Ein umbrochen gezeichneter
+   Text gibt die Zellen aller seiner Zeilen an.
 2. Zeichne ihn mit `TR(ID)`. Name und Hilfetext einer Einstellung sind ein
    Eintrag `UI_SETTING_LABEL` und ein Eintrag `UI_SETTING_HELP` für ihre
    ID `SET_`; eine Optionsliste ist ein Block `UI_OPTIONS`, den
@@ -355,7 +365,10 @@ Dasselbe gilt für einen wortgleichen deutschen Befund zum selben Text an
 derselben Stelle. Fehlt ein gelisteter Überlauf im Ergebnis, schlägt die
 Prüfung fehl, bis der Eintrag entfernt wird. Sie schlägt auch fehl, wenn
 ein Text keine angegebene Breite hat und von keiner Ansicht gezeichnet
-wird.
+wird: einer, den keine Ansicht nachschlägt, und einer, den Ansichten
+nachschlagen, ohne ihn zu zeichnen. Ein Text gilt als gezeichnet, wenn der
+längste Teil zwischen seinen Umwandlungen im Text einer Ansicht steht, die
+ihn nachschlägt.
 
 ```bash
 python3 tools/check_formats.py
@@ -385,7 +398,7 @@ ein Wort mit einer Beschriftung der Oberfläche teilen.
 
 ## Eine Sprache hinzufügen
 
-Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.985
+Eine Sprache ist eine weitere Spalte in jedem Eintrag der Tabelle: 3.976
 Einträge mit ID und 115 Optionen, 10 davon mit leerem Englisch.
 
 1. Ergänze die Spalte in jedem Eintrag von `shared/text/include/ui_text.def`

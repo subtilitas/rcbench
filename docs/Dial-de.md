@@ -63,7 +63,7 @@ das Panel wendet sie an ([Das Panel](#das-panel)):
   kein EVENT gesendet hat, während das Panel den Dienst sucht, ist kein
   Verlust.
 - Der Verlust gilt in beide Richtungen. Bleiben die Pakete des Panels aus,
-  zeigt das Dial nach 500ms LINK VERLOREN und sendet ab dann kein EVENT
+  zeigt das Dial nach 500ms VERBINDUNG VERLOREN und sendet ab dann kein EVENT
   mehr. Das Panel sieht LOST 1.000ms nach dem letzten EVENT, und ein
   Prüfstand im Zustand ARMED geht auf SAFE. Nach weiteren 500ms beendet das
   Dial den Link und sendet nichts mehr, bis es wieder verbunden ist und das
@@ -281,7 +281,7 @@ läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Eine bei SAFE
 gestartete Suche endet beim Schalten auf ARMED, und DIAL SUCHEN zeigt
 `DURCH ARM BEENDET`. Ein Tippen auf GEBUNDENES DIAL, oder auf DIAL SUCHEN,
 solange es `n GEFUNDEN` zeigt, listet die Dials der letzten Suche, bis zu
-6, und zuletzt `ERNEUT SUCHEN`, das eine neue Suche mit denselben
+6, und zuletzt `AKTUALISIEREN`, das eine neue Suche mit denselben
 Ablehnungen startet. Ein Tippen auf ein Dial bindet es: Das Panel behält Adresse
 und Namen in SETUP (`dial_ble`, `dial_name`) und fragt nach dem Speichern.
 Es ist immer ein Dial gebunden oder keins. Das Panel verbindet sich über
@@ -599,8 +599,8 @@ Hinweise im SET-Modus: `DRÜCKEN: BEHALTEN`, `HALTEN: ZURÜCK`; davor:
 
 ### Der Link und das Binden
 
-![LINK VERLOREN, verbunden](img/de/dial-link-lost.png)
-![LINK VERLOREN, der Link ist beendet](img/de/dial-link-ended.png)
+![VERBINDUNG VERLOREN, verbunden](img/de/dial-link-lost.png)
+![VERBINDUNG VERLOREN, der Link ist beendet](img/de/dial-link-ended.png)
 ![Warten auf das Panel](img/de/dial-waiting.png)
 ![Ohne Panel](img/de/dial-bind.png)
 ![Ein Bildschirm, auf dem der Knopf nichts tut](img/de/dial-other.png)
@@ -609,10 +609,10 @@ Hinweise im SET-Modus: `DRÜCKEN: BEHALTEN`, `HALTEN: ZURÜCK`; davor:
 das Dial kein EVENT und kein Keepalive mehr. Die Uhr des Panels zählt ab dem
 letzten EVENT: Das Panel sieht DEGRADED 500ms und LOST 1.000ms nach dem
 letzten EVENT und schaltet einen Prüfstand im Zustand ARMED bei LOST auf
-SAFE. Ab diesen 500ms zeigt das Face `LINK VERLOREN`,
+SAFE. Ab diesen 500ms zeigt das Face `VERBINDUNG VERLOREN`,
 `KEINE DREHUNG GESENDET`, `PRÜFSTAND WIRD SAFE` und `ARM AM PANEL` in
 einem gestrichelten roten Rand, der Titel gedimmt. Das Dial beendet den
-Link 500ms später; dann zeigt das Face `LINK VERLOREN`,
+Link 500ms später; dann zeigt das Face `VERBINDUNG VERLOREN`,
 `DER PRÜFSTAND IST SAFE`, `ALLE AUSGÄNGE AUS` und `ARM AM PANEL`. Verbunden
 ohne Paket vom Panel oder gebunden und nicht verbunden zeigt es
 `WARTE AUF DAS PANEL` und `DREHEN BEWEGT NICHTS`, mit dem Namen des Dial auf

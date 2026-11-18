@@ -308,7 +308,7 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   Without a PD mini reading only the check after the ON applies.
 
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
-or `NOT READ` when the last read went unanswered. The core is
+or `UNKNOWN` when the last read went unanswered. The core is
 `shared/outputs/prog_supply.c` under `test_prog_supply`; the panel's end
 is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`, the
 box `shared/ui/prog5v_box.c` under `test_prog5v_box`.

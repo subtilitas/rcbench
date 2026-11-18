@@ -101,7 +101,7 @@ Der Leistungsknoten ist ein ESP32-C6 mit eigener Zelle, der einen INA228 am XT60
 |---|---|---|---|
 | Leistungsknoten | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Knoten; AUS beendet die Verbindung ohne Fehler |
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu ([Sensoren](setup-sensors.md)); NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle auf WIRED zurück kann |
-| Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
+| Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
 | Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen listet die Knoten der letzten Suche mit ihrem Signal in dBm; Tippen auf einen bindet ihn und fragt nach dem Speichern. Zurücksetzen behält den gebundenen Knoten |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zelle des Knotens aus seinem Status jede 1s; `SCHWACH` unter 3.5V |
 

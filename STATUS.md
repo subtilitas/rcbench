@@ -1681,7 +1681,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1740,7 +1740,7 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
 `test_picker_tags`, `test_pin_take`, `test_pin_take_grid`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
-`test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
+`test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_text_formats`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
 `test_esc_stick_entry`, `test_esc_stick_tap`, `test_esc_stick_profile_timing`, `test_esc_stick_marker`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
