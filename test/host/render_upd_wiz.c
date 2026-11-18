@@ -11,6 +11,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include "render_upd_wiz.h"
+#include "render_versions.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -60,20 +61,37 @@ static void body_tap(int x, int y)
     ui_router_event(&e);
 }
 
+/** @brief An example version as the IOmcu's. */
+static cu_version_t cu_ex(ex_ver_t which)
+{
+    const ex_version_t v = ex_version(which);
+    return (cu_version_t){ (uint16_t)v.n[0], (uint16_t)v.n[1],
+                           (uint16_t)v.n[2] };
+}
+
+/** @brief An example version as a wireless device's. */
+static fw_version_t fw_ex(ex_ver_t which)
+{
+    const ex_version_t v = ex_version(which);
+    return (fw_version_t){ (uint16_t)v.n[0], (uint16_t)v.n[1],
+                           (uint16_t)v.n[2] };
+}
+
 /** @brief Every step current, as the file comment says. */
 static void base(wiz_pose_t *w)
 {
     memset(w, 0, sizeof(*w));
     w->p.have_net = true;
     strcpy(w->p.net, "Workshop 2.4");
-    strcpy(w->p.running, "0.22.0");
+    strcpy(w->p.running, ex_version(EX_VER_RUNNING).text);
     w->p.job = UPD_JOB_CHECK;
     w->p.phase = UPD_PH_ENDED;
     w->p.got = UPD_GOT_CURRENT;
-    strcpy(w->p.found, "0.22.0");
+    strcpy(w->p.found, ex_version(EX_VER_RUNNING).text);
     w->cu = (upd_cu_view_t){ .sec = CU_SEC_SAME, .known = true,
-                             .have_image = true, .running = { 0, 22, 0 },
-                             .carried = { 0, 22, 0 } };
+                             .have_image = true,
+                             .running = cu_ex(EX_VER_RUNNING),
+                             .carried = cu_ex(EX_VER_RUNNING) };
     w->c6 = (upd_c6_view_t){ .row = FW_C6_ROW_REINSTALL, .known = true,
                              .have_image = true,
                              .running = { 2u, 13u, 0u },
@@ -81,7 +99,7 @@ static void base(wiz_pose_t *w)
     for (unsigned i = 0u; i < UPD_DEV_COUNT; ++i) {
         upd_dev_view_t *d = &w->d[i];
         d->have_image = true;
-        d->carried = (fw_version_t){ 0u, 22u, 0u };
+        d->carried = fw_ex(EX_VER_RUNNING);
         d->row = DEVUPD_ROW_NOT_LINKED;
     }
     upd_dev_view_t *dial = &w->d[UPD_DEV_DIAL];
@@ -97,7 +115,8 @@ static void dial_behind(wiz_pose_t *w)
 {
     upd_dev_view_t *dial = &w->d[UPD_DEV_DIAL];
     dial->row = DEVUPD_ROW_READY;
-    dial->running = (fw_version_t){ 0u, 21u, 0u };
+    dial->running = ex_versions_set() ? fw_ex(EX_VER_OLDER)
+                    : (fw_version_t){ 0u, 21u, 0u };
 }
 
 /** @brief The power node connected on 0.21.0: its step OPEN. */
@@ -106,14 +125,15 @@ static void pnode_behind(wiz_pose_t *w)
     upd_dev_view_t *pn = &w->d[UPD_DEV_PNODE];
     pn->row = DEVUPD_ROW_READY;
     pn->known = true;
-    pn->running = (fw_version_t){ 0u, 21u, 0u };
+    pn->running = ex_versions_set() ? fw_ex(EX_VER_OLDER)
+                  : (fw_version_t){ 0u, 21u, 0u };
 }
 
 /** @brief The IOmcu on 0.21.2 in @p sec. */
 static void cu_behind(wiz_pose_t *w, cu_sec_t sec)
 {
     w->cu.sec = sec;
-    w->cu.running = (cu_version_t){ 0, 21, 2 };
+    w->cu.running = cu_ex(EX_VER_OLDER);
 }
 
 /**
@@ -195,7 +215,7 @@ static void fit_views(const char *view, wiz_pose_t *w)
         dial_behind(w);
     } else if (strcmp(view, "updates-wiz-older") == 0) {
         w->cu.sec = CU_SEC_READY;
-        w->cu.running = (cu_version_t){ 0, 22, 1 };
+        w->cu.running = cu_ex(EX_VER_NEWER);
     } else if (strcmp(view, "updates-wiz-cu-busy") == 0) {
         cu_behind(w, CU_SEC_BUSY);
     } else if (strcmp(view, "updates-wiz-pending") == 0) {
@@ -207,7 +227,7 @@ static void fit_views(const char *view, wiz_pose_t *w)
         w->c6.percent = 37u;
     } else if (strcmp(view, "updates-wiz-dl-held") == 0) {
         w->p.got = UPD_GOT_NEWER;
-        strcpy(w->p.found, "0.22.1");
+        strcpy(w->p.found, ex_version(EX_VER_NEWER).text);
         w->p.dl_block = UPD_WHY_ARMED;
     } else if (strcmp(view, "updates-wiz-absent-a") == 0) {
         w->cu = (upd_cu_view_t){ .sec = CU_SEC_NO_IMAGE };
@@ -251,7 +271,7 @@ static void fit_views(const char *view, wiz_pose_t *w)
         w->d[UPD_DEV_PNODE].bound = false;
         w->p.job = UPD_JOB_DOWNLOAD;
         w->p.got = UPD_GOT_INSTALL;
-        strcpy(w->p.found, "0.22.1");
+        strcpy(w->p.found, ex_version(EX_VER_NEWER).text);
     }
 }
 

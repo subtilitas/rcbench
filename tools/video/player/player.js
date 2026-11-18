@@ -60,6 +60,7 @@ for (const sc of sb.scenes) {
       a += st.dur;
       if (st.card) continue;
       st.shot = st.lang ? `${st.view}@${st.lang}` : st.view;
+      if (st.versions) st.shot += '~' + st.versions.join('-');
       need.add(st.shot);
     }
     sc.dur = a;

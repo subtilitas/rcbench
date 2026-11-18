@@ -49,6 +49,7 @@ import functools
 import http.server
 import json
 import pathlib
+import re
 import shutil
 import subprocess
 import sys
@@ -471,6 +472,14 @@ def _check_tour(scene: dict, steps: int, where: str, errors: list) -> None:
             errors.append(f"{at}: dur must be at least {least}s")
         if step.get("lang", "en") not in ("en", "de"):
             errors.append(f"{at}: lang must be en or de")
+        versions = step.get("versions")
+        if versions is not None and not (
+                isinstance(versions, list) and len(versions) == 3
+                and all(isinstance(v, str)
+                        and re.fullmatch(r"\d{1,3}\.\d{1,3}\.\d{1,3}", v)
+                        for v in versions)):
+            errors.append(f"{at}: versions must be three of the form "
+                          "X.Y.Z: running, newer, older")
         focus = step.get("focus")
         if focus is not None and not (
                 isinstance(focus, list) and len(focus) == 4
@@ -561,8 +570,10 @@ def views(board: dict) -> dict:
 
     Returns:
         The shots by file name without suffix, the view name with @de or
-        @en where a step sets its own language.  Each holds the view, the
-        screen name the storyboard gives or None, and the language.
+        @en where a step sets its own language and with ~ and the versions
+        where a step sets them.  Each holds the view, the screen name the
+        storyboard gives or None, the language and, where a step sets them, its
+        versions.
     """
     found = {}
     for scene in board["scenes"]:
@@ -583,9 +594,13 @@ def views(board: dict) -> dict:
                     continue
                 lang = step.get("lang")
                 name = f"{step['view']}@{lang}" if lang else step["view"]
+                versions = step.get("versions")
+                if versions:
+                    name += "~" + "-".join(versions)
                 found[name] = (step["view"],
                                step.get("screen", scene.get("screen")),
-                               lang or board["lang"])
+                               lang or board["lang"],
+                               *([versions] if versions else []))
     return found
 
 
@@ -819,7 +834,8 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
         known = {**render_ui.SCREENS, **render_ui.FIT_ONLY}
 
         def draw(item):
-            n, (name, (view, screen, lang)) = item
+            n, (name, (view, screen, lang, *rest)) = item
+            versions = rest[0] if rest else None
             # A view of render_ui.py's tables brings its screen and theme;
             # any other is a pose of the screen the storyboard names.
             theme = "dark"
@@ -831,8 +847,10 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
             own = tmp / f"view-{n}"
             own.mkdir()
             try:
-                image = render_ui.render_one(exe, own, view, screen, theme,
-                                             lang)
+                image = render_ui.render_one(
+                    exe, own, view, screen, theme, lang,
+                    env={"RCBENCH_VIDEO_VERSIONS": ",".join(versions)}
+                    if versions else None)
             except subprocess.CalledProcessError:
                 return (f"the renderer does not draw view {view!r} of "
                         f"screen {screen!r}")

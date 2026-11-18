@@ -434,6 +434,11 @@
      "title": "The start-up check",
      "text": "LINK OK and IOMCU OK: both boards run and talk at 1 Mbit/s.",
      "say": "The start-up check lists board, display, touch, storage and settings. Link OK and I O M C U OK mean that both boards run and talk to each other.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ],
      "marks": [
       {
        "at": [
@@ -465,7 +470,12 @@
      ],
      "title": "The carrier's outputs",
      "text": "SETUP > OUTPUTS shows the pins of the rbmod carrier.",
-     "say": "Setup, outputs shows the pins of the R B mod carrier. The bench is ready to use."
+     "say": "Setup, outputs shows the pins of the R B mod carrier. The bench is ready to use.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ]
     },
     {
      "dur": 3.0,
@@ -488,6 +498,11 @@
      "title": "A home network, once",
      "text": "CHOOSE HOME NETWORK scans for WPA2 and WPA3 networks.",
      "say": "The panel needs a home network, once. Open setup, Wi-Fi, and tap choose home network.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ],
      "focus": [
       16,
       212,
@@ -507,7 +522,12 @@
      ],
      "title": "Pick the network",
      "text": "Up to 16 networks, strongest first.",
-     "say": "The panel lists the networks it finds. Tap yours."
+     "say": "The panel lists the networks it finds. Tap yours.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ]
     },
     {
      "view": "wifi-key-pass",
@@ -521,7 +541,12 @@
      ],
      "title": "Type the password",
      "text": "8 to 63 characters. The panel joins the network and keeps it.",
-     "say": "Type its password. The panel joins the network and keeps it."
+     "say": "Type its password. The panel joins the network and keeps it.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ]
     },
     {
      "view": "updates",
@@ -536,6 +561,11 @@
      "title": "CHECK FOR UPDATES",
      "text": "The check needs the bench SAFE and the supply output off.",
      "say": "Open setup, updates, and tap check for updates. The bench has to be safe, with the supply output off.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ],
      "focus": [
       16,
       76,
@@ -555,7 +585,12 @@
      ],
      "title": "The panel asks GitHub",
      "text": "Wi-Fi goes on for the check and off again.",
-     "say": "The panel switches Wi-Fi on and asks GitHub for the newest release."
+     "say": "The panel switches Wi-Fi on and asks GitHub for the newest release.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ]
     },
     {
      "view": "updates-newer",
@@ -570,6 +605,11 @@
      "title": "Step 1: PANEL",
      "text": "A newer release is offered with a 2 s hold.",
      "say": "A newer release makes step 1, panel, the current step. Hold the button for 2 seconds to download and install.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ],
      "focus": [
       500,
       352,
@@ -589,7 +629,12 @@
      ],
      "title": "Download",
      "text": "The firmware is checked before a byte is written.",
-     "say": "The panel downloads the firmware and checks it before it writes anything."
+     "say": "The panel downloads the firmware and checks it before it writes anything.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ]
     },
     {
      "view": "panel-update",
@@ -603,7 +648,12 @@
      ],
      "title": "Writing",
      "text": "The firmware goes into the slot that is not running.",
-     "say": "It writes the firmware into the slot that is not running. Leave the panel switched on."
+     "say": "It writes the firmware into the slot that is not running. Leave the panel switched on.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ]
     },
     {
      "view": "panel-update-done",
@@ -617,7 +667,12 @@
      ],
      "title": "Written and checked",
      "text": "The panel restarts into the new version.",
-     "say": "The firmware is read back and checked. Then the panel restarts into the new version."
+     "say": "The firmware is read back and checked. Then the panel restarts into the new version.",
+     "versions": [
+      "0.24.0",
+      "0.24.1",
+      "0.23.2"
+     ]
     },
     {
      "view": "updates-run-iomcu",
@@ -632,6 +687,11 @@
      "title": "Step 2: IOMCU",
      "text": "The panel carries the IOmcu's firmware.",
      "say": "After the restart, updates opens on step 2. The panel carries the firmware of the I O M C U. Hold the button for 2 seconds.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ],
      "focus": [
       500,
       352,
@@ -651,7 +711,12 @@
      ],
      "title": "Over the CAN bus",
      "text": "Outputs stay off until the update ends.",
-     "say": "The panel sends the firmware over the CAN bus. The outputs stay off until the update ends."
+     "say": "The panel sends the firmware over the CAN bus. The outputs stay off until the update ends.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ]
     },
     {
      "view": "updates-step-c6",
@@ -665,7 +730,12 @@
      ],
      "title": "Step 3: C6 RADIO",
      "text": "The ESP32-C6 carries Wi-Fi and Bluetooth.",
-     "say": "Step 3 updates the panel's radio, the E S P 32 C 6, with the same hold. The panel restarts after it."
+     "say": "Step 3 updates the panel's radio, the E S P 32 C 6, with the same hold. The panel restarts after it.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ]
     },
     {
      "view": "updates-current",
@@ -679,7 +749,12 @@
      ],
      "title": "Up to date",
      "text": "With the reminder on, the panel checks GitHub at each start.",
-     "say": "With every step current, the bench is up to date. With the reminder on, the panel checks GitHub at each start."
+     "say": "With every step current, the bench is up to date. With the reminder on, the panel checks GitHub at each start.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ]
     },
     {
      "dur": 3.0,
@@ -702,6 +777,11 @@
      "title": "ACCESS POINT",
      "text": "The panel opens its own WPA2 network.",
      "say": "The second way needs no home network. Open setup, Wi-Fi, and tap access point.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ],
      "focus": [
       16,
       76,
@@ -722,6 +802,11 @@
      "title": "Join and open the page",
      "text": "Network, password, address and access code are on the screen.",
      "say": "The screen shows a network name, a password, an address and an access code. Join the network with a phone or a computer and open the address.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ],
      "marks": [
       {
        "at": [
@@ -762,6 +847,11 @@
      "title": "Upload the panel file",
      "text": "<b>rcbench-panel-p4-vX.Y.Z.bin</b>, the release's file for updates.",
      "say": "Enter the access code. Under panel firmware, pick the release's panel file that ends in dot bin, and tap upload.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ],
      "focus": [
       8,
       380,
@@ -782,6 +872,11 @@
      "title": "INSTALL PANEL FIRMWARE?",
      "text": "The installation starts on the panel only.",
      "say": "The panel checks the file and shows both versions. Hold install for 2 seconds. Only this hold on the panel starts the installation.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ],
      "focus": [
       540,
       465,
@@ -801,7 +896,12 @@
      ],
      "title": "Writing",
      "text": "Written, read back, checked, restarted.",
-     "say": "The panel writes the firmware, checks it and restarts."
+     "say": "The panel writes the firmware, checks it and restarts.",
+     "versions": [
+      "0.24.1",
+      "0.24.2",
+      "0.24.0"
+     ]
     },
     {
      "view": "updates-offer",
@@ -815,7 +915,12 @@
      ],
      "title": "Then the IOmcu",
      "text": "The band names the next step.",
-     "say": "The update of the I O M C U follows on updates, as before."
+     "say": "The update of the I O M C U follows on updates, as before.",
+     "versions": [
+      "0.24.2",
+      "0.24.3",
+      "0.24.1"
+     ]
     }
    ]
   },

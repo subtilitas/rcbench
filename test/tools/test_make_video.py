@@ -626,3 +626,32 @@ def test_the_feature_walk_of_the_mini_names_every_menu_row():
                  "servo-supply", "prog-chooser-switched", "rx-chooser",
                  "tools-chooser", "log-ready", "settings"):
         assert f"mini-{name}" in shown, name
+
+
+def test_a_step_can_set_its_versions():
+    """A tour step with versions is a shot of its own."""
+    versions = ["0.24.1", "0.24.2", "0.24.0"]
+    board = {"lang": "en", "steps": 1, "scenes": [{"type": "tour", "steps": [
+        {"view": "updates", "dur": 3, "n": 1, "title": "x",
+         "versions": versions},
+        {"view": "updates", "dur": 3, "n": 1, "title": "x"}]}]}
+    assert make_video.check(board) == []
+    found = make_video.views(board)
+    assert found["updates~0.24.1-0.24.2-0.24.0"] == (
+        "updates", None, "en", versions)
+    assert found["updates"] == ("updates", None, "en")
+    board["scenes"][0]["steps"][0]["versions"] = ["0.24", "0.24.2", "0.24.0"]
+    assert any("versions" in e for e in make_video.check(board))
+
+
+def test_the_first_programming_video_tells_one_version_sequence():
+    """rbmod-first-program shows 0.24.0, then 0.24.1, then 0.24.2."""
+    path = make_video.VIDEO / "storyboards" / "rbmod-first-program.json"
+    board = json.loads(path.read_text(encoding="utf-8"))
+    assert make_video.check(board) == []
+    assert len(board["chapters"]) == board["steps"] == 6
+    steps = [s for scene in board["scenes"] if scene["type"] == "tour"
+             for s in scene["steps"] if "view" in s]
+    running = [s["versions"][0] for s in steps]
+    assert running == sorted(running)
+    assert running[0] == "0.24.0" and running[-1] == "0.24.2"

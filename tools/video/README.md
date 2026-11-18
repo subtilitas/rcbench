@@ -229,6 +229,7 @@ A `tour` scene has `steps`:
 | `card` | `{title, text}`: a chapter card in place of a screen; the step then has only `dur` (at least 2.0) and `n` |
 | `view` | the renderer's view name |
 | `lang` | optional `en` or `de`: this step's screen in another language than the storyboard's |
+| `versions` | optional list of three versions of the form `X.Y.Z`: the running, the newer and the older one. The views of WI-FI, UPDATES, PANEL UPDATE and the IOmcu update show them in place of 0.22.0, 0.22.1 and 0.21.2; the start-up check shows the running one, a wireless device that is behind the older one. The renderer reads them from `RCBENCH_VIDEO_VERSIONS` |
 | `dur` | length in s: at least 1.5, 2.5 with a spotlight, 1.9 plus 0.38 a mark |
 | `n` | the chapter |
 | `kicker`, `title`, `text` | the caption; the title's words rise in one after another, the kicker stays while consecutive steps share it |
