@@ -281,8 +281,14 @@ static void send_cmd(const panel_cmd_t *in)
     }
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
+        /* A lost ARM or ON is one the control task never takes: counted
+         * here, so no flash gate waits on it until a restart. */
         if (panel_cmd_arms(pc)) {
             atomic_fetch_add(&s_arms_taken, 1u);
+        } else if (pc->kind == PANEL_CMD_SUPPLY && pc->supply.on) {
+            atomic_fetch_add(&s_supply_ons_taken, 1u);
+        } else if (pc->kind == PANEL_CMD_PROG5V && pc->prog5v.on) {
+            atomic_fetch_add(&s_psup_ons_taken, 1u);
         }
     }
 }
