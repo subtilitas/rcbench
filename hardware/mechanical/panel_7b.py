@@ -55,7 +55,7 @@ and board; the one under the touch cable is drawn cut back to clear it.
 The print on the board, tracks, vias, solder and pads are not modelled.
 No dimension is verified with a caliper on a board.
 
-Model frame: the origin is the centre of the view area on the glass's
+Model frame: the origin is the center of the view area on the glass's
 front face; z = 0 is that face, +z towards the viewer; x to the right
 and y up seen from the front with the USB sockets on the left. The
 parts are listed in E's frame, as the rear shows them: x and y from the
@@ -127,9 +127,9 @@ TOUCH_PARTS = (
 CABLE_T = 0.15
 # From P: the shield can over the ESP32-P4 and the coin-cell holder.
 SHIELD = (47.7, 37.2, 69.0, 54.2, 1.9)
-HOLDER = (17.9, 85.7, 15.4, 3.8)        # centre, diameter, height
+HOLDER = (17.9, 85.7, 15.4, 3.8)        # center, diameter, height
 P4_H = 0.9              # height of the ESP32-P4's package (N); E draws 2.0
-# From P: the wire sockets, 2.0 pitch, top entry: pins, centre of the
+# From P: the wire sockets, 2.0 pitch, top entry: pins, center of the
 # housing, turn (the solder leads point to +y at turn 0), and the shift
 # of the row of pins along the housing. The 4 at the left edge are 14.9
 # apart (D).
@@ -144,7 +144,7 @@ WIRE_SOCKETS = (
 )
 
 
-def _centre(found):
+def _center(found):
     x0, y0, _z0, x1, y1, _z1 = found
     return (x0 + x1) / 2, (y0 + y1) / 2
 
@@ -285,7 +285,7 @@ def connectors():
     out = []
 
     def put(shapes, found, turn=0.0):
-        x, y = _centre(found)
+        x, y = _center(found)
         return place(shapes, x, y, turn=turn)
 
     for pins, x, y, turn, shift in WIRE_SOCKETS:

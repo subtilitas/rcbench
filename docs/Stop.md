@@ -24,7 +24,10 @@ host-tested in `test_stop_latch` and `test_stop_hold`.
   clear this stop.
 - **Reset hold.** A press that lands on a latched STOP is a STOP as well,
   and starts the reset's hold: the fill fades from red to the frame's
-  yellow across 2s. The hold completes only on one unbroken contact on
+  yellow across 2s. The 2s count from the second frame after the press:
+  the frame that dispatches the press and the one after it add nothing, so
+  a frame that runs long at the press does not end the hold before 2s.
+  The hold completes only on one unbroken contact on
   STOP for 2s, with the touch controller answering throughout. Each of
   the following cancels the hold without requesting a reset: a release before 2s, which shows
   `Hold 2s to reset the STOP.`; a slide off STOP; a second contact on the

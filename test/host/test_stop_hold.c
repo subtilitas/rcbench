@@ -13,6 +13,8 @@
  * - a_second_contact_that_takes_the_band_ends_the_hold
  * - a_stop_or_a_loss_before_the_request_is_taken_drops_it
  * - a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once
+ * - the_two_frames_around_the_press_credit_nothing
+ * - a_slow_frame_at_the_press_ends_no_hold_before_the_latch_takes_it
  * - an_early_release_shows_the_hint_and_asks_nothing
  * - a_press_that_slides_off_stop_asks_nothing
  * - a_touch_loss_during_the_hold_asks_nothing
@@ -35,6 +37,7 @@
 #include "settings.h"
 #include "splash_screen.h"
 #include "stop_hold.h"
+#include "stop_latch.h"
 #include "ui_band.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -91,15 +94,25 @@ static void touch(int x, int y, touch_event_type_t type, uint8_t flags)
 }
 
 /** @brief A DOWN on STOP the control task marked: a stop latched before it. */
+static void press_only(void);
+
+/** @brief press_only() and the two frames around it, which credit nothing. */
 static void press_latched(void);
 
 /** @brief The middle of STOP. */
 static int sx(void) { return ui_band_stop_rect().x + ui_band_stop_rect().w / 2; }
 static int sy(void) { return ui_band_stop_rect().y + ui_band_stop_rect().h / 2; }
 
-static void press_latched(void)
+static void press_only(void)
 {
     touch(sx(), sy(), TOUCH_EVENT_DOWN, TOUCH_FLAG_STOP_LATCHED);
+}
+
+static void press_latched(void)
+{
+    press_only();
+    ui_router_tick(0.016f);
+    ui_router_tick(0.016f);
 }
 
 /** @brief A hold of 7 frames of 0.25s and 0.249s more: 1,999ms. */
@@ -221,6 +234,75 @@ TEST_CASE(a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once)
     touch(sx(), sy(), TOUCH_EVENT_UP, 0);
     CHECK(!stop_hold_take_reset());
     CHECK(ui_router_alert() == NULL);
+}
+
+TEST_CASE(the_two_frames_around_the_press_credit_nothing)
+{
+    /* The frame that dispatches the press and the one after it carry an
+     * interval that began before the press. */
+    router_on(true);
+    press_only();
+    ui_router_tick(Q);
+    ui_router_tick(Q);
+    CHECK(stop_hold_held_s() == 0.0f);
+    hold_1999();
+    CHECK(!stop_hold_take_reset());
+    ui_router_tick(0.001f);
+    CHECK(stop_hold_take_reset());
+    touch(sx(), sy(), TOUCH_EVENT_UP, 0);
+    /* Each press starts the count again. */
+    press_only();
+    ui_router_tick(Q);
+    ui_router_tick(Q);
+    CHECK(stop_hold_held_s() == 0.0f);
+    ui_router_tick(Q);
+    CHECK(stop_hold_held_s() == Q);
+}
+
+/**
+ * @brief The panel's frames around one hold, on a clock in ms: the control
+ *        task applies the press at @p press_ms, the frame whose top is at
+ *        @p top_ms dispatches it, and 16ms frames follow.  The frame after
+ *        the one the hold fires in takes the request, as panel_frame.c does.
+ * @param press_ms when the control task applied the press
+ * @param top_ms   the top of the frame that dispatches it
+ * @param before_s the time that frame is credited with, s
+ * @param after_ms the top of the frame after it, from @p top_ms
+ * @return the time from the press to the request's stamp, ms
+ */
+static unsigned hold_span_ms(unsigned press_ms, unsigned top_ms,
+                             float before_s, unsigned after_ms)
+{
+    router_on(true);
+    press_only();
+    ui_router_tick(before_s);
+    unsigned now = top_ms + after_ms;
+    ui_router_tick((float)after_ms / 1000.0f);
+    for (int i = 0; i < 1000; ++i) {
+        now += 16u;
+        if (stop_hold_take_reset()) {
+            touch(sx(), sy(), TOUCH_EVENT_UP, 0);
+            return now - press_ms;
+        }
+        ui_router_tick(0.016f);
+    }
+    return 0u;
+}
+
+TEST_CASE(a_slow_frame_at_the_press_ends_no_hold_before_the_latch_takes_it)
+{
+    /* The control task refuses a hold stamped less than 1900ms after the
+     * press it applied (stop_latch.c). */
+    /* A 250ms frame, the press 1ms before the next frame's top. */
+    CHECK(hold_span_ms(999u, 1000u, Q, 16u) >= STOP_LATCH_HOLD_SEEN_MS);
+    /* A 1s stall, the same. */
+    CHECK(hold_span_ms(999u, 1000u, 1.0f, 16u) >= STOP_LATCH_HOLD_SEEN_MS);
+    /* The dispatching frame itself takes 250ms, the press at its end. */
+    CHECK(hold_span_ms(1249u, 1000u, 0.016f, 250u)
+          >= STOP_LATCH_HOLD_SEEN_MS);
+    /* Even frames: the hold is 2s and the two frames. */
+    CHECK(hold_span_ms(1000u, 1000u, 0.016f, 16u) >= 2000u);
+    CHECK(hold_span_ms(1000u, 1000u, 0.016f, 16u) <= 2064u);
 }
 
 TEST_CASE(an_early_release_shows_the_hint_and_asks_nothing)
@@ -413,6 +495,8 @@ int main(void)
     RUN(a_second_contact_that_takes_the_band_ends_the_hold);
     RUN(a_stop_or_a_loss_before_the_request_is_taken_drops_it);
     RUN(a_hold_of_1999ms_asks_nothing_and_2000ms_asks_once);
+    RUN(the_two_frames_around_the_press_credit_nothing);
+    RUN(a_slow_frame_at_the_press_ends_no_hold_before_the_latch_takes_it);
     RUN(an_early_release_shows_the_hint_and_asks_nothing);
     RUN(a_press_that_slides_off_stop_asks_nothing);
     RUN(a_touch_loss_during_the_hold_asks_nothing);

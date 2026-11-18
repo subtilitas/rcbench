@@ -1080,6 +1080,12 @@ Die Hitec-Page (`HITEC`, 0x34) hat [eine eigene Seite](LinkHitec-de.md):
 Eintritt in den Programmiermodus und Verlassen des Modus, Transaktionen,
 POWER, die Auswirkungen eines Stopps auf den Port und die Register.
 
+### Die Pages für ESC-Einstellungen
+
+ESC_WIRE (0x3A) und ESC_DATA (0x3B) haben [eine eigene Seite](LinkEsc-de.md):
+Wahl des Pins, Eintritt in den Programmiermodus und Verlassen des Modus, die
+Auswirkungen der Ereignisse auf Leitung und Versorgung und die Register.
+
 ### Die INA3221-Map und ihre Fenster
 
 SENSE_MAP (0x35), SENSE_LIMIT (0x36), SENSE_WIN_A (0x37) und SENSE_WIN_B

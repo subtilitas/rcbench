@@ -7,7 +7,7 @@ the 6 holes, the chip, the inductor, the capacitors and resistors, the
 black letters.
 
 Sources: two owner photos on 5mm squared paper (top side, underside;
-not in the repository). Positions are in mm from the board's centre,
+not in the repository). Positions are in mm from the board's center,
 within about 0.2mm. The camera stands 171 over the paper and 26 from
 the board, so a part's top lies 0.155 further from the camera per mm
 of height; the inductor and the chip are set back by that. The print's

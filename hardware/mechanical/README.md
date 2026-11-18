@@ -17,7 +17,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
-| `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's centre |
+| `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
 | `_trace_ina228_print.py` | traces the INA228 module's printed legends from the top photo into `_ina228_print.py` |
@@ -154,7 +154,7 @@ Positions in the model frame, seen from the front:
 | Power terminal, 2 pins, 2.54mm | +y; cut-out 7.8 x 9.03mm, 10.15 to 19.18mm from the axis |
 | PORT.A (HY2.0-4P, red) | -x; cut-out 5.2 x 10.2mm, 14.5 to 19.7mm from the axis |
 | PORT.B (HY2.0-4P, black) | +x; the mirror of PORT.A |
-| USB-C | -y; the shell's opening 18.45mm from the axis, its centre at z = -12.13mm |
+| USB-C | -y; the shell's opening 18.45mm from the axis, its center at z = -12.13mm |
 | Notch of the body around USB-C | from z = -7.2mm to the rear face |
 
 The mesh agrees with M5Stack's drawing: 14.62mm against 14.6mm from the
@@ -250,7 +250,7 @@ measured.
 | Dial's hole | 45.2 in a plate 2.0 thick; the dial takes 45.0 +/- 0.2 and a panel of 0 to 6 |
 | Room for the ring nut | 4.2 between the nut, 50.82 across, and the wall; 0.6 to each boss |
 | Room under the dial | the dial's screw heads end 17.7 below the top; the cell's top is 20.1 below it |
-| USB opening | 13.4 x 7.6 with corners rounded 1.5 at -y, centre 12.13 below the top, on the dial's USB socket, whose opening lies 18.45 from the axis |
+| USB opening | 13.4 x 7.6 with corners rounded 1.5 at -y, center 12.13 below the top, on the dial's USB socket, whose opening lies 18.45 from the axis |
 | Guide tube | the opening runs on as a tube with a wall of 1.0 from the outer wall in to 24.5 from the axis, 10.7 long and 6.05 short of the socket, 2.5 off the dial's thread; beyond 26.5 from the axis a block ties it to the top plate; its top is 0.33 under the ring nut |
 | Cell pocket | 42.9 x 26.0 between 4 rails 1.4 thick and 6.0 high, open at the 4 corners: 1.2 free at each end of the cell and 0.5 at each side; the cell's length lies across the `^` mark, its wires towards +y, the side away from the USB opening |
 | Foam pad | 2 thick, about 20 x 30, between the cell and the dial, in the 2.4 between them; it holds the cell and leaves it room to swell |
@@ -310,7 +310,7 @@ file.
 
 | File | Content | Origin |
 | --- | --- | --- |
-| `panel_7b.step` | glass, display, board, 4 standoffs, 2 flat cables and every part on the board; 1497 solids, 7.5MB | the centre of the view area on the glass's front face; +z to the viewer; seen from the front, x to the right and y up with the USB sockets on the left |
+| `panel_7b.step` | glass, display, board, 4 standoffs, 2 flat cables and every part on the board; 1497 solids, 7.5MB | the center of the view area on the glass's front face; +z to the viewer; seen from the front, x to the right and y up with the USB sockets on the left |
 
 | Part | Size, mm | From |
 | --- | --- | --- |
@@ -389,7 +389,7 @@ Limits:
   2 buttons, the flat cables' paths through the board's slots, the display as
   a steel back 0.3mm thick with a black panel in it.
 - The row of pins of the two 12-pin sockets lies 0.5mm off the housing's
-  centre in P; the model draws it so.
+  center in P; the model draws it so.
 - E has two spacers 20mm x 96mm between display and board. The one under the
   touch panel's cable is drawn cut back to clear the cable.
 - Not modelled: the print on the board, tracks, vias, solder, pads, the

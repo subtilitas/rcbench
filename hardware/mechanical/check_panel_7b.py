@@ -3,7 +3,7 @@
 
 The file is the one _measure_step.py reads; it is not in this
 repository. Its solids are grouped into components as _measure_step.py
-groups them. For each component the shapes of panel_7b.py whose centre
+groups them. For each component the shapes of panel_7b.py whose center
 lies in the component's box are taken together, and the box round them
 is compared with the component's box, side by side.
 
@@ -82,7 +82,7 @@ def compare(path):
             kind = "leaded"
         else:
             kind = "box"
-        # A shape answers the component when its centre lies in the
+        # A shape answers the component when its center lies in the
         # component's box and it is no more than REACH larger: the
         # shield can over the ESP32-P4 is not the ESP32-P4.
         inside = [b for b in boxes if all(

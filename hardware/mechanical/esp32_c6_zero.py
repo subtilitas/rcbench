@@ -16,7 +16,7 @@ Sources:
     4.1 x 2.5 and 1.4 high, their caps 1.5 square and 1.75 high; the
     antenna is 1.0 high.
     P: two owner photos on 5mm squared paper (top side, underside; not
-    in the repository). Positions are in mm from the board's centre,
+    in the repository). Positions are in mm from the board's center,
     seen from the top side with the USB socket up, within about 0.3
     for the chip parts. The camera stands 171 over the paper and 63
     from the board, so a part's top lies 0.37 further from the camera

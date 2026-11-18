@@ -9,7 +9,7 @@ Sources:
     D: the maker's dimension drawing ESP32-C6-Zero-Diagram-2 and pin
     drawing ESP32-C6-Zero_Pin (waveshare.com/wiki/ESP32-C6-Zero; not
     in the repository): board 18.00 x 23.50mm, corner radius 1.00mm;
-    hole centres 1.38mm from the long edges, the first 1.59mm from the
+    hole centers 1.38mm from the long edges, the first 1.59mm from the
     USB edge, 2.54mm apart; underside pads 3.63mm from one long edge,
     1.60mm apart, the last 5.15mm from the antenna edge.
     P: two owner photos on 5mm squared paper (top side, underside; not

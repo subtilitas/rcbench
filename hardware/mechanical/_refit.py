@@ -9,7 +9,7 @@ hardware/kicad/tools/step_gen.py's ``("brep", ...)`` solid takes it.
 Surfaces. A triangle proposes surfaces: its own plane, and about every
 axis it may belong to a cone or cylinder (a straight profile) and a
 torus (a circular profile). An axis is the z axis of the frame, or the
-centre line of circular arcs on the mesh's edges that lie in planes at
+center line of circular arcs on the mesh's edges that lie in planes at
 right angles to x, y or z; about x and y only cylinders are looked for.
 Where the mesh's edges run along helices of one pitch about z, the
 triangle also proposes a thread's flank (a line turned and lifted along
@@ -95,8 +95,8 @@ def _circle_about(frame, pts, surfaces):
                      for s in surfaces for out in (rad, side)))
     if not exact:
         x = [rho, z]
-    centre = tuple(frame.o[k] + x[1] * frame.d[k] for k in range(3))
-    return centre, frame.d, x[0]
+    center = tuple(frame.o[k] + x[1] * frame.d[k] for k in range(3))
+    return center, frame.d, x[0]
 
 
 def _circle_fit(pts):
@@ -113,15 +113,15 @@ def _circle_fit(pts):
             abs(math.hypot(x - fit[0], y - fit[1]) - fit[2]) > EPS
             for x, y in flat):
         return None
-    centre = tuple(c[k] + fit[0] * u[k] + fit[1] * v[k] for k in range(3))
-    return centre, n, fit[2]
+    center = tuple(c[k] + fit[0] * u[k] + fit[1] * v[k] for k in range(3))
+    return center, n, fit[2]
 
 
-def _turn(centre, axis, pts):
+def _turn(center, axis, pts):
     """The signed angle the points turn about the axis, radians."""
     total = 0.0
     for p, q in zip(pts, pts[1:], strict=False):
-        a, b = _sub(p, centre), _sub(q, centre)
+        a, b = _sub(p, center), _sub(q, center)
         total += math.atan2(_dot(_cross(a, b), axis), _dot(a, b))
     return total
 
@@ -294,7 +294,7 @@ def _edge_curve(pts, closed, surfaces, ends):
         ends: The edge's two vertices, where its faces' surfaces meet.
 
     Returns:
-        ("line",), ("circle", centre, axis, radius) or ("bspline", ...):
+        ("line",), ("circle", center, axis, radius) or ("bspline", ...):
         a helix as cubic pieces, any other curve as a polyline.
     """
     a, b = pts[0], pts[-1]
@@ -327,9 +327,9 @@ def _edge_curve(pts, closed, surfaces, ends):
     if found is None and len(ring) >= 3:
         found = _circle_fit(ring)
     if found:
-        centre, axis, radius = found
-        turn = _turn(centre, axis, pts)
-        size = sorted(abs(_turn(centre, axis, pair))
+        center, axis, radius = found
+        turn = _turn(center, axis, pts)
+        size = sorted(abs(_turn(center, axis, pair))
                       for pair in zip(pts, pts[1:], strict=False))
         if (closed and abs(abs(turn) - 2 * math.pi) > 0.5) \
                 or size[-1] > math.radians(CHORD_DEG) \
@@ -338,7 +338,7 @@ def _edge_curve(pts, closed, surfaces, ends):
         elif turn < 0:
             axis = (-axis[0], -axis[1], -axis[2])
     if found:
-        return ("circle", centre, axis, radius)
+        return ("circle", center, axis, radius)
     if cut:
         return _cut_curve(surfaces[0], pts, ends)
     if len(pts) == 2:
@@ -480,7 +480,7 @@ def _step_surface(s, sense, at):
 
 def _unwound(part, frame, members):
     """A face's points and their angles about the axis, without jumps."""
-    angle, _centre = _unwind(part, frame, members)
+    angle, _center = _unwind(part, frame, members)
     verts = sorted(angle)
     return [part.pts[v] for v in verts], [angle[v] for v in verts]
 

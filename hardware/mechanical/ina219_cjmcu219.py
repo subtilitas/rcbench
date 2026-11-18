@@ -6,7 +6,7 @@ plating of the holes, the shunt, the chip, the 5 chip parts, the pads
 of the 2 address bridges and the print of both sides.
 
 Sources: two owner photos on 5mm squared paper (top side, underside;
-not in the repository). Positions are in mm from the board's centre,
+not in the repository). Positions are in mm from the board's center,
 within about 0.2mm. The print's letters are the font of _font.py set
 to the height and width each line has in the photos, not traced.
 
@@ -43,7 +43,7 @@ CAPACITOR = (-9.05, 3.5)
 PULL_UPS = ((-6.35, 3.5), (-3.95, 3.5))
 ADDRESS = ((5.6, 2.1), (5.6, 4.55))
 BRIDGES = ((8.65, 2.05), (10.1, 2.05), (8.65, 4.6), (10.1, 4.6))
-# Print: text, x, y of the line's centre, letter height, width, turn.
+# Print: text, x, y of the line's center, letter height, width, turn.
 TOP_PRINT = (
     ("Vin-", -5.85, -10.05, 0.95, 3.3), ("Vin+", 5.95, -10.05, 0.95, 3.5),
     ("INA219 DC", -8.15, -4.75, 0.95, 7.7),

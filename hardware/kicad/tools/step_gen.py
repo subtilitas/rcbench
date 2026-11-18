@@ -337,12 +337,12 @@ def _brep_curve(st, curve, pa):
     """The curve entity of an edge that starts at the point ``pa``."""
     kind = curve[0]
     if kind == "circle":
-        _kind, centre, axis, radius = curve
-        out = [pa[k] - centre[k] for k in range(3)]
+        _kind, center, axis, radius = curve
+        out = [pa[k] - center[k] for k in range(3)]
         dot = sum(out[k] * axis[k] for k in range(3))
         out = [out[k] - dot * axis[k] for k in range(3)]
         ref = _unit(out) if sum(c * c for c in out) > 1e-18 else _perp(axis)
-        return st.add(f"CIRCLE('',{st.placement(centre, axis, ref)},"
+        return st.add(f"CIRCLE('',{st.placement(center, axis, ref)},"
                       f"{_r(radius)})")
     if kind == "bspline":
         _kind, degree, points, knots, mults = curve
@@ -395,7 +395,7 @@ def _brep(st, points, edges, faces):
     """A closed shell of faces on planes and curved surfaces.
 
     ``points`` are the vertices. An edge is (start, end, curve): indices
-    into ``points`` and ("line",), ("circle", centre, axis, radius), which
+    into ``points`` and ("line",), ("circle", center, axis, radius), which
     runs counter-clockwise about ``axis`` from start to end, or
     ("bspline", degree, control points, knots, multiplicities). A closed
     edge has start equal to end. A face is (surface, same_sense, loops):

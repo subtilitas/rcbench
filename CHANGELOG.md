@@ -308,6 +308,12 @@ history is in git.
   after the surface arrives. The measure's wait grows by 10,000ms plus the
   settling time, 16,000ms with the defaults; `surface not settled in
   time` replaces `surface not still within 3s`.
+- STOP's reset: a frame longer than 100ms at the press let the 2s hold
+  complete up to 250ms early on the panel's frame clock, and the control
+  task refused it (less than 1900ms after the press) with the fill full
+  and no reset. The frame that dispatches the press and the frame after
+  it add nothing to the hold, so it completes 2000ms or more after the
+  press, 2 frames later than before at an even frame rate.
 - ESC signal-wire session: READ AGAIN with edits not written opens a page
   with `Edits not written are lost.` and reads on a 2s hold; with no edit
   the tap reads.
@@ -2428,7 +2434,7 @@ The entries below cover the 4 pull requests merged since v0.23.5: #632 and
 
 ### Added
 
-- rbmod carrier: PROG 5V lost is an error. While the panel's PROG 5V ON stands (the PROG_SUPPLY page reads it on or acknowledged it, no programming port holds it, the heartbeat runs), two new INA3221 windows in a row under 3000mV on the channel watching PROG 5V, both read 500ms or more after the ON, put the bench SAFE with every output off and the PROG_SUPPLY OFF written. The band reads `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.`, the console one line with both windows and the time since the ON. One error an ON. M7's controller latches off above about 6.0V for 20us or below 3.25V for 200us and restarts only on an EN toggle, which the next PROG 5V ON gives; the known cause is a braking servo feeding energy back into PROG 5V. Rev 1 rework item 3, a 5.6V 1W zener from VCC_PROGPORT_DCDC to GND, absorbs the feedback; the firmware does not rely on it. No watch without a channel watching PROG 5V or while a programmer session holds the 5V ([Carrier, PROG 5V lost](docs/Carrier.md#prog-5v-lost)). `sense_win_link_last()` also hands out the window's number.
+- rbmod carrier: PROG 5V lost is an error. While the panel's PROG 5V ON stands (the PROG_SUPPLY page reads it on or acknowledged it, no programming port holds it, the heartbeat runs), two new INA3221 windows in a row under 3000mV on the channel watching PROG 5V, both read 500ms or more after the ON, put the bench SAFE with every output off and the PROG_SUPPLY OFF written. The band reads `PROG 5V lost: INA3221 0x40 CH3 read 0.12V while ON. All outputs off.`, the console one line with both windows and the time since the ON. One error an ON. M7's controller latches off above about 6.0V for 20us or below 3.25V for 200us and restarts only on an EN toggle, which the next PROG 5V ON gives; the known cause is a braking servo feeding energy back into PROG 5V. Rev 1 rework item 3, a 5.6V 1W zener from VCC_PROGPORT_DCDC to GND, absorbs the feedback; the firmware does not rely on it. No watch without a channel watching PROG 5V or while a programmer session holds the 5V ([Carrier, PROG 5V lost](docs/Carrier.md#prog-5v-missing-or-lost)). `sense_win_link_last()` also hands out the window's number.
 
 ### Changed
 
@@ -3656,7 +3662,7 @@ mode are not documented for this release.
   taps. `tools/gen_cats.py` draws the cats and writes them as run-length
   encoded RGB565 (red, green, blue in 5, 6 and 5 bits) with 4-bit alpha,
   117579 bytes for the 8; CI (continuous integration) checks the table
-  with `--check` ([Screens](docs/Screens.md#pick-a-pin)).
+  with `--check` ([Screens](docs/Screens.md)).
 - The panel sets its clock by NTP (Network Time Protocol). Each join of
   the home network, the release check at start included, asks
   `pool.ntp.org` once, for at most 30000ms, and logs
@@ -4224,7 +4230,7 @@ setting and reads the same. The steps for each release are in
    0.22.1.`.
 
 The SD card layout is unchanged from 0.22.0; a card from 0.21.0 or older needs the migration that
-[From 0.21.0](docs/FirstRun.md#from-0210) describes. The settings and the
+[From 0.21.0](docs/FirstRun.md#the-sd-card-of-0210-and-older) describes. The settings and the
 Wi-Fi settings are kept. The IOmcu's store record is kept; an IOmcu older
 than 0.22.0 writes record version 8 at its first save. The release line is
 unchanged: a panel on 0.22.1 is offered 0.22.x patch releases only.
@@ -4290,8 +4296,8 @@ setting and reads the same. The steps for each release are in
    0.22.0.`.
 
 The INA3221 rows of SETUP > INTERFACES seed SETUP > SENSORS at the first
-start ([From 0.21.2](docs/FirstRun.md#from-0212)). Manually migrate a card from 0.21.0 or
-older as [From 0.21.0](docs/FirstRun.md#from-0210) describes.
+start ([From 0.21.2](docs/FirstRun.md)). Manually migrate a card from 0.21.0 or
+older as [From 0.21.0](docs/FirstRun.md#the-sd-card-of-0210-and-older) describes.
 The IOmcu's store record becomes version 8 at its first save; an IOmcu
 image older than 0.22.0 reads no version 8 record. 0.20.0 to 0.21.2 run
 link protocol 4.22 or 4.23, the same major as 4.28, so both boards link
@@ -4564,14 +4570,14 @@ RX never share a pin; Backlight leaves SETUP > PANEL.
 A panel on 0.21.0 or 0.21.1 is offered 0.21.2 with RELEASES: TESTING on
 SETUP > UPDATES only; RELEASES: STABLE reads `releases/latest`, which names
 v0.20.0. The steps from 0.21.1 are in
-[First run, §1](docs/FirstRun.md#from-0211):
+[First run, §1](docs/FirstRun.md#1-flash-both-boards):
 
 1. SETUP > UPDATES, `RELEASES: TESTING`, `CHECK FOR UPDATES`, with a home
    network kept, the bench SAFE, the supply output off and no log run open.
    0.21.0 and 0.21.1 read only an answer that states its size: a panel that
    says `Unexpected answer from GitHub.` gets the cached answer, which
    does, with `CHECK FOR UPDATES` pressed again at once
-   ([the check on 0.21.0 and 0.21.1](docs/FirstRun.md#the-check-on-0210-and-0211)).
+   ([the check on 0.21.0 and 0.21.1](docs/FirstRun.md)).
 2. Hold `HOLD 2 s: DOWNLOAD & INSTALL`. The panel restarts and keeps 0.21.2
    once the display and touch are up.
 3. At link-up the panel offers to update the IOmcu over CAN (Controller Area
@@ -4581,7 +4587,7 @@ v0.20.0. The steps from 0.21.1 are in
    with this step.
 
 The SD card layout is unchanged from 0.21.1; a card from 0.21.0 or older needs the migration that
-[From 0.21.0](docs/FirstRun.md#from-0210) describes. The card holds a FAT32,
+[From 0.21.0](docs/FirstRun.md#the-sd-card-of-0210-and-older) describes. The card holds a FAT32,
 FAT16, FAT12 or exFAT volume; 0.21.1 does not read exFAT. 0.21.2 does not
 read NTFS (New Technology File System), a card with a GPT (GUID partition
 table) or a volume over 2 TiB, and formats no card ([The SD card's
@@ -4737,7 +4743,7 @@ tab of LOGS.
 A panel on 0.21.0 is offered 0.21.1 with RELEASES: TESTING on SETUP >
 UPDATES only. Its other value reads USABLE on 0.21.0 and STABLE from 0.21.1
 on; it reads `releases/latest`, which names v0.20.0. The steps are in
-[First run, §1](docs/FirstRun.md#from-0210):
+[First run, §1](docs/FirstRun.md#1-flash-both-boards):
 
 1. Switch the panel off. On a computer, move the files from `/ESC/` to
    `/BENCH/ESC/CONF/` and from `/KST/` to `/BENCH/KST/CONF/`.
@@ -4752,7 +4758,7 @@ on; it reads `releases/latest`, which names v0.20.0. The steps are in
 
 Without a home network, upload the image through the panel's browser
 page. A bench on 0.20.0 loads as for 0.21.0, with the files of 0.21.1
-([From 0.20.0](docs/FirstRun.md#from-0200)). The link protocol is 4.23;
+([From 0.20.0](docs/FirstRun.md#1-flash-both-boards)). The link protocol is 4.23;
 0.19.0, 0.20.0 and 0.21.0 run 4.22, the same major, so both boards link
 before and after the IOmcu's update. Download and CAN update durations are not measured.
 
@@ -4917,7 +4923,7 @@ upload. JOIN HOME NETWORK can report `Join failed: password refused.` even with
 a correct password; ACCESS POINT joins no network. A panel with Rotary
 knob ON saved blanks at the knob's first poll after each start, takes CAN
 off the link and can hold the touch controller in reset, so update that panel over
-USB. The steps are in [First run, §1](docs/FirstRun.md#from-0200):
+USB. The steps are in [First run, §1](docs/FirstRun.md#1-flash-both-boards):
 
 1. `sha256sum -c SHA256SUMS` prints `OK` for each of the three files.
 2. SETUP > APPLICATION, Language `DEUTSCH`, not saved; a panel in German
@@ -6505,7 +6511,7 @@ not stated.
   and `raw/main/<path>` for an image, with the anchor, the title, angle
   brackets around the target and spaces inside the parentheses kept.
   A target is a directory when it ends in `/` or names a directory of the
-  repository, so `[x](..)` and `[x](../protocols/kst)` open the tree view.
+  repository, so a link to `..` or to `../protocols/kst` opens the tree view.
   The legal-notice link on the servo programmer pages and the KST link on
   the Link pages open the repository instead of a missing wiki page.
   `tools/wiki_links.py` exits 1 on a link that still leaves `docs/`, and the

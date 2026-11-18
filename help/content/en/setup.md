@@ -162,7 +162,7 @@ The sensor is an MT6701 in its I2C mode, MODE pin high, at 0x06. Nothing else of
 | Setting | Range | Default | What it does |
 |---|---|---|---|
 | Auto logs | ON, OFF | ON | a log of each ARMED and supply run in Auto log folder: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
-| User logs | ON, OFF | ON | the AUTOMATIC TEST's `ATESTnnn.CSV` and report and the LIMIT RUN's `LIMITnnn.TXT` in User log folder |
+| User logs | ON, OFF | ON | the AUTOMATIC TEST's `ATESTnnn.CSV` and report, the LIMIT RUN's `LIMITnnn.TXT` and RUDDER AUTO's `RUDDRnnn.CSV` and report in User log folder |
 | Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | what WI-FI's browser page needs to change the card: [Wi-Fi](wifi.md#browser-writes) |
 | Auto log folder | a folder | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder | `USER/LOGS` | where User logs writes |

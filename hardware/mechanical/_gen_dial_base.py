@@ -20,7 +20,7 @@ splits level at the belly into two printed parts:
                             dial's socket
     dial_base_bottom.step   the floor with a pocket for the lithium
                             polymer cell 102540 (25 x 40.5 x 10), a
-                            rim that centres it in the top part and 4
+                            rim that centers it in the top part and 4
                             columns the screws pass through
 
 Frame: the dial's (hardware/mechanical/m5dial.py). z = 0 is the top
@@ -130,7 +130,7 @@ LEDGE = 1.5             # height of the ledge's upright side under the rim
 # reaches up to.
 SCREW_R, SCREW_AT = 29.0, (45.0, 135.0, 225.0, 315.0)
 BOSS, PILOT, CLEAR, HEAD, SEAT, DEPTH = 6.0, 2.6, 3.4, 6.2, -24.5, -9.0
-# USB opening at -y: width, height, z of its centre, corner radius.
+# USB opening at -y: width, height, z of its center, corner radius.
 USB = (13.4, 7.6, -12.13, 1.5)
 # Guide tube round the opening: its wall, the distance of its inner end
 # from the axis, and the distance from the axis beyond which a block
@@ -143,18 +143,18 @@ CELL = (40.5, 25.0, 1.2, 0.5, 1.4, 6.0)
 GROOVE = 0.4            # shadow gap at the joint
 
 
-def _arc(centre, radius, a0, a1):
+def _arc(center, radius, a0, a1):
     """An arc in the x-z plane (radius, z) from angle a0 to a1, degrees."""
     def at(a):
-        return gp_Pnt(centre[0] + radius * math.cos(math.radians(a)), 0.0,
-                      centre[1] + radius * math.sin(math.radians(a)))
+        return gp_Pnt(center[0] + radius * math.cos(math.radians(a)), 0.0,
+                      center[1] + radius * math.sin(math.radians(a)))
     return BRepBuilderAPI_MakeEdge(GC_MakeArcOfCircle(
         at(a0), at((a0 + a1) / 2), at(a1)).Value()).Edge()
 
 
-def _on(centre, radius, a):
-    return (centre[0] + radius * math.cos(math.radians(a)),
-            centre[1] + radius * math.sin(math.radians(a)))
+def _on(center, radius, a):
+    return (center[0] + radius * math.cos(math.radians(a)),
+            center[1] + radius * math.sin(math.radians(a)))
 
 
 def _revolve(edges):
@@ -194,10 +194,10 @@ def _profile(inset, top):
         # The top's edge, rounded: tangent to the top and to the side.
         reach = math.sqrt((side - EDGE) ** 2
                           - (top - EDGE - SIDE_AT[1]) ** 2)
-        centre = (SIDE_AT[0] + reach, top - EDGE)
-        angle = math.degrees(math.atan2(centre[1] - SIDE_AT[1], reach))
-        edges = [_line((0.0, top), (centre[0], top)),
-                 _arc(centre, EDGE, 90.0, angle)]
+        center = (SIDE_AT[0] + reach, top - EDGE)
+        angle = math.degrees(math.atan2(center[1] - SIDE_AT[1], reach))
+        edges = [_line((0.0, top), (center[0], top)),
+                 _arc(center, EDGE, 90.0, angle)]
     end = _on(low, under, -TURN)
     slope = math.tan(math.radians(TURN))
     foot = (end[0] - (end[1] - floor[1]) * slope, floor[1])
