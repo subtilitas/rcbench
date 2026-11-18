@@ -120,6 +120,12 @@ history is in git.
 
 ### Fixed
 
+- SERVO: the Dial's 1s hold ends a test, a LIMIT RUN and a RUDDER AUTO
+  run in every phase. The hold did nothing while the run held the bench
+  SAFE for its programmer session, in its ARM phase, or ended only the
+  supplies between the run's SAFE request and its read-back; the run then
+  armed again by itself. The hold also takes back an ARM that is on its
+  way.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,
