@@ -343,6 +343,13 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
         b->seen_in   = in;
         ++b->rev;
     }
+    /* An ON asked and then dropped turns the button from PROG 5V OFF back
+     * to ON without a change of the published state. */
+    const bool stops = prog5v_box_stops();
+    if (stops != b->was_stops) {
+        b->was_stops = stops;
+        ++b->rev;
+    }
     const bool on = prog5v_box_on();
     if (on != b->was_on) {
         b->was_on = on;

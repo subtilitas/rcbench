@@ -455,6 +455,32 @@ TEST_CASE(a_press_while_an_on_is_on_its_way_takes_it_back)
     CHECK(!supply_screen_poll_cmd(&c));
 }
 
+/* An ON dropped after the hold's flash has ended: the OUTPUT button is
+ * drawn again, so it no longer reads OUTPUT OFF over an output that stays
+ * off (Codex P2 on #888). */
+TEST_CASE(an_on_dropped_after_the_flash_redraws_the_output_button)
+{
+    fresh();
+    hold_on();
+    drain();
+    supply_screen_set_on_coming(true);
+    tick_for(60);                       /* the flash has ended */
+    scr->render(&cv, 0);
+    scr->render(&cv, 0);
+    supply_screen_set_on_coming(false); /* the ON was dropped */
+    scr->render(&cv, 0);                /* only what changed */
+    memcpy(fb2, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_invalidate();
+    scr->render(&cv, 0);                /* everything */
+    int differ = 0;
+    for (int y = OUT_Y - 20; y < OUT_Y + 20; ++y) {
+        for (int x = OUT_X - 60; x < OUT_X + 60; ++x) {
+            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    CHECK_EQ(differ, 0);
+}
+
 /* The question asked while an ON was on its way goes when that ON is
  * dropped -- a STOP -- though the output never reported on. */
 TEST_CASE(a_question_for_an_on_that_was_dropped_goes)
@@ -828,6 +854,7 @@ int main(void)
     RUN(a_sample_leaves_the_tabs_and_the_heading_row_alone);
     RUN(a_screen_without_a_sample_draws);
     RUN(a_press_while_an_on_is_on_its_way_takes_it_back);
+    RUN(an_on_dropped_after_the_flash_redraws_the_output_button);
     RUN(a_question_for_an_on_that_was_dropped_goes);
     RUN(an_apply_held_as_its_on_is_dropped_applies_nothing);
     RUN(a_dropped_question_lets_go_of_its_apply);

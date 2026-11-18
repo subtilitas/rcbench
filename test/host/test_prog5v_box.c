@@ -68,6 +68,22 @@ static void tick_n(int n, float s)
     }
 }
 
+/* An ON asked and then dropped: the button turns from PROG 5V OFF back to
+ * ON, and the box's picture moves with it (Codex P2 on #888). */
+TEST_CASE(an_on_dropped_redraws_the_button)
+{
+    fresh(ST_OFF);
+    tick_n(1, 0.02f);
+    prog5v_box_set_on_coming(true);
+    tick_n(1, 0.02f);
+    CHECK(prog5v_box_stops());
+    const uint32_t rev = b.rev;
+    prog5v_box_set_on_coming(false);
+    tick_n(1, 0.02f);
+    CHECK(!prog5v_box_stops());
+    CHECK(b.rev != rev);
+}
+
 /* Whether the boxes asked ON (and nothing else) since the last poll. */
 static bool asked_on(void)
 {
@@ -579,6 +595,7 @@ int main(void)
     RUN(no_box_without_the_switch);
     RUN(on_is_a_hold_of_2000ms_not_1999ms);
     RUN(a_hold_let_go_or_slid_off_asks_nothing);
+    RUN(an_on_dropped_redraws_the_button);
     RUN(off_is_asked_on_the_press);
     RUN(the_button_is_locked_while_not_read_or_held);
     RUN(leaving_the_screen_that_switched_it_on_switches_it_off);

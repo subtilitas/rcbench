@@ -123,6 +123,7 @@ typedef struct {
     bool        press_on;  /**< the supply read ON when it began        */
     bool        was_on;    /**< ON as last seen, for the hold's reach   */
     uint32_t    rev;       /**< moves with anything the box shows       */
+    bool        was_stops; /**< prog5v_box_stops() at the last tick      */
     uint32_t    seen;      /**< the published state word, last seen     */
     uint32_t    seen_read; /**< the published reading word, last seen   */
     uint32_t    seen_in;   /**< the low input, last seen                */
