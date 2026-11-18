@@ -69,7 +69,7 @@ python3 tools/check_formats.py        # every translated format against its call
 python3 tools/check_units.py --check  # a number and its unit without a space
 python3 tools/check_prose.py --check  # the writing rules, exceptions in check_prose_allow.txt
 python3 tools/render_ui.py --fit      # every string fits where it is drawn
-python3 tools/help_site.py --check    # the help pages agree in both languages
+python3 tools/help_site.py --check    # the help pages: headings, screenshots and links in both languages
 python3 -m pytest test/tools          # the tools' own tests
 python3 tools/doc_check.py --check --base origin/main  # Doxygen comments, see Comments
 python3 tools/mutate.py               # what the suite misses in the changed lines
@@ -228,14 +228,19 @@ pull request and puts the survivors in the job summary; a survivor does not
 fail the job. Answer each survivor of a change with a test, or say in the
 pull request why the two lines behave the same.
 
-`mutation.yml` runs every mutant of every line of `shared/safety` and
-`shared/outputs` (6400 mutants in 81 files) each Sunday at 03:17 UTC and on demand. It has
-no mutant limit and runs in 6 shards of files (file i of the sorted list goes
-to shard i mod 6). A shard starts no mutant after 18000s, stops one build or
-suite run after 600s and ends within 21000s; the mutants left are reported as
-not run. The share of mutants that run within the budget on a hosted runner is
-not measured. A survivor does not fail the job. The result is the job summaries
-and the artifacts `mutation-full-0` to `mutation-full-5`.
+`mutation.yml` runs the mutants of every line of `shared/safety` and
+`shared/outputs` (6598 mutants in 83 files) each Sunday at 03:17 UTC and on
+demand. It has no mutant limit and runs in 6 shards. `shared/safety` leads the
+list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and
+`prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i
+(`--first`, `--shard i/6`). A shard starts no mutant after 18000s, stops one
+build or suite run after 600s and ends within 21000s. At 42s a mutant on a
+hosted runner a shard runs about 428 mutants: the 600 mutants of
+`shared/safety` run every week, and about 1,970 of the 5998 of
+`shared/outputs`. A shard that leaves mutants unrun says so in a warning
+annotation and in its summary, with the count for each file. Neither a
+survivor nor a mutant left fails the job. The result is the job summaries and
+the artifacts `mutation-full-0` to `mutation-full-5`.
 
 ## Where code goes
 
@@ -510,4 +515,4 @@ open work and settled decisions. `CHANGELOG.md` records version history;
 
 ## Pull requests
 
-One change per pull request, with CI green. A push to a pull request starts no CI run. A maintainer adds the label `ci` once the head's reviews are clean, and that starts the run; a later head needs the label taken off and added again. Only such a pull request run counts for the branch rules' required checks: a run started with `gh workflow run ci.yml --ref <branch>` reports its checks on the commit, and the pull request does not take them. A pull request from a fork runs the same way, with GitHub's read-only token and no secrets. State the change and its effect.
+One change per pull request, with CI green. A push to a pull request starts no CI run. A maintainer adds the label `ci` once the head's reviews are clean, and that starts the run; a later head needs the label taken off and added again. The four required checks that are single jobs fail on any other label within 2min, the two that join other jobs fail on their skipped needs, and nothing is built: a skipped required check would count as passed. After another label the head needs `ci` taken off and added again. Only such a pull request run counts for the branch rules' required checks: a run started with `gh workflow run ci.yml --ref <branch>` reports its checks on the commit, and the pull request does not take them. A pull request from a fork runs the same way, with GitHub's read-only token and no secrets. State the change and its effect.

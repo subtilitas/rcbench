@@ -557,9 +557,10 @@ page gives at most 2.9 pt for the widest picture. The swap is 1 line in
 
 ## Workflow
 
-`.github/workflows/pages.yml` runs on a pull request and on a push to `main`
-that touch `configurator/`, the workflow file, or the panel's web help
-(`help/`, `docs/img/`, `tools/help_site.py`).
+`.github/workflows/pages.yml` runs when the label `ci` is added to a pull
+request and on a push to `main`, each when it touches `configurator/`, the
+workflow file, or the panel's web help (`help/`, `docs/img/`,
+`tools/help_site.py`). A push to a pull request starts no run.
 
 | Job | Does |
 |---|---|
