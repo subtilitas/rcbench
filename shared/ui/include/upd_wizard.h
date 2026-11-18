@@ -16,7 +16,10 @@
  * or a failed step gives the right step from the facts alone.
  *
  * The current step is the step whose update runs, whatever its number;
- * with none running, the lowest-numbered step that blocks.  RUNNING, OPEN,
+ * with no update running, PANEL while its check runs; else the
+ * lowest-numbered step that blocks.  An update outranks PANEL's check: a
+ * device's ask and CANCEL UPDATE stay on the card while a check runs
+ * beside its transfer.  RUNNING, OPEN,
  * HELD, PENDING, WAITING and FAILED block; DONE, ABSENT and SKIPPED pass.  A
  * newer panel release found while a later step is current therefore makes
  * PANEL current again: its image replaces the images the later steps send.
@@ -24,7 +27,8 @@
  * ABSENT becomes WAITING, and blocks, only in a run and only for a target
  * that comes up by itself after a start: the IOmcu without a link
  * (CU_SEC_NO_LINK) and a bound device that is not connected.  A device
- * that is not bound, and a step without an image, never wait.
+ * that is not bound, a bound device whose switch on WIRELESS is OFF (the
+ * panel runs no link to it) and a step without an image never wait.
  *
  * The step's state is its own; its tag is the word its row shows.  A step
  * after the current one that is OPEN, HELD or FAILED reads LATER.  While
@@ -114,7 +118,19 @@ typedef enum {
     UPD_WIZ_TAG_NOT_REPORTED,    /**< the C6 named no version              */
     UPD_WIZ_TAG_NOT_CONNECTED,   /**< a bound device is not connected      */
     UPD_WIZ_TAG_NOT_BOUND,       /**< no device of the kind is bound       */
+    UPD_WIZ_TAG_OFF,             /**< a bound device is OFF on WIRELESS    */
 } upd_wiz_tag_t;
+
+/** @brief The last card's heading, while no step is current. */
+typedef enum {
+    UPD_WIZ_END_CURRENT = 0, /**< every step runs its newest version: PANEL
+                                  checked and CURRENT, each other step
+                                  CURRENT or without a bound device       */
+    UPD_WIZ_END_NO_CHECK,    /**< PANEL is NOT CHECKED or FAILED; each other
+                                  step as for CURRENT                     */
+    UPD_WIZ_END_NONE_OPEN,   /**< a step is SKIPPED, or ABSENT with a device
+                                  or a target the panel knows of          */
+} upd_wiz_end_t;
 
 /** @brief Why a step is HELD or PENDING. */
 typedef enum {
@@ -203,6 +219,15 @@ void upd_wizard_eval(const upd_wiz_in_t *in, upd_wiz_t *out);
  * @return true for OPEN, HELD, RUNNING, PENDING, WAITING and FAILED
  */
 bool upd_wiz_blocks(upd_wiz_state_t s);
+
+/**
+ * @brief The last card's heading from the steps.  A step counts as current
+ *        when it is DONE with the tag CURRENT, or ABSENT with NOT BOUND:
+ *        no device of the kind exists.
+ * @param w the model's answer; NULL is UPD_WIZ_END_NONE_OPEN
+ * @return which heading holds; meaningful while w->current is UPD_WIZ_NONE
+ */
+upd_wiz_end_t upd_wiz_end(const upd_wiz_t *w);
 
 #ifdef __cplusplus
 }

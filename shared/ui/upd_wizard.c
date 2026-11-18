@@ -110,7 +110,8 @@ static upd_wiz_why_t panel_why(upd_why_t w)
 
 /**
  * @brief PANEL from UPDATES' view.  A check that found no newer release,
- *        or failed, never blocks; a failed download neither: the hold
+ *        or failed, never blocks; a failed download neither, nor a
+ *        download whose install failed (UPD_GOT_INSTALL): the hold
  *        takes a check that found a newer release, so the retry is CHECK.
  * @param st the step
  * @param v  the view, or NULL
@@ -326,7 +327,8 @@ static void c6_step(upd_wiz_step_t *st, const upd_c6_view_t *v)
 /**
  * @brief A device's step from its row.  A device that is not connected is
  *        ABSENT whatever the row's gate says, and WAITING in a run when it
- *        is bound.
+ *        is bound and its switch on WIRELESS is ON.  With the switch OFF
+ *        the panel runs no link to it: it never waits and reads OFF.
  * @param st  the step
  * @param v   the row, or NULL
  * @param run an update run stands
@@ -354,6 +356,8 @@ static void dev_step(upd_wiz_step_t *st, const upd_dev_view_t *v, bool run)
     } else if (!v->bound && !v->known) {
         /* A device that reported its version is bound. */
         set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_NOT_BOUND, UPD_WIZ_WHY_NONE);
+    } else if (v->off && !v->known) {
+        set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_OFF, UPD_WIZ_WHY_NONE);
     } else if (!v->known || v->row == DEVUPD_ROW_NOT_LINKED) {
         set(st, run ? UPD_WIZ_WAITING : UPD_WIZ_ABSENT,
             UPD_WIZ_TAG_NOT_CONNECTED, UPD_WIZ_WHY_NONE);
@@ -374,13 +378,21 @@ static void dev_step(upd_wiz_step_t *st, const upd_dev_view_t *v, bool run)
 /* ------------------------------------------------------------- the steps */
 
 /**
- * @brief The current step: the lowest whose update runs, else the lowest
- *        that blocks.
+ * @brief The current step: the lowest whose update runs, else PANEL while
+ *        its check runs, else the lowest that blocks.
  * @param w the steps
  * @return the step, or UPD_WIZ_NONE
  */
 static unsigned current_of(const upd_wiz_t *w)
 {
+    /* An update before PANEL's check: the check takes no card from a
+     * device's ask and no CANCEL UPDATE from the footer. */
+    for (unsigned i = 0u; i < UPD_WIZ_STEPS; ++i) {
+        if (w->step[i].state == UPD_WIZ_RUNNING
+            && w->step[i].tag == UPD_WIZ_TAG_UPDATING) {
+            return i;
+        }
+    }
     for (unsigned i = 0u; i < UPD_WIZ_STEPS; ++i) {
         if (w->step[i].state == UPD_WIZ_RUNNING) {
             return i;
@@ -462,6 +474,29 @@ static void controls(upd_wiz_t *w)
     }
     w->can_skip = s == UPD_WIZ_OPEN || s == UPD_WIZ_HELD
                   || s == UPD_WIZ_FAILED || s == UPD_WIZ_WAITING;
+}
+
+upd_wiz_end_t upd_wiz_end(const upd_wiz_t *w)
+{
+    if (w == NULL) {
+        return UPD_WIZ_END_NONE_OPEN;
+    }
+    for (unsigned i = UPD_WIZ_IOMCU; i < UPD_WIZ_STEPS; ++i) {
+        const upd_wiz_step_t *st = &w->step[i];
+        const bool current = st->state == UPD_WIZ_DONE
+                             && st->tag == UPD_WIZ_TAG_CURRENT;
+        const bool none = st->state == UPD_WIZ_ABSENT
+                          && st->tag == UPD_WIZ_TAG_NOT_BOUND;
+        if (!current && !none) {
+            return UPD_WIZ_END_NONE_OPEN;
+        }
+    }
+    const upd_wiz_step_t *p = &w->step[UPD_WIZ_PANEL];
+    if (p->state != UPD_WIZ_DONE) {
+        return UPD_WIZ_END_NONE_OPEN;
+    }
+    return p->tag == UPD_WIZ_TAG_CURRENT ? UPD_WIZ_END_CURRENT
+                                         : UPD_WIZ_END_NO_CHECK;
 }
 
 void upd_wizard_eval(const upd_wiz_in_t *in, upd_wiz_t *out)

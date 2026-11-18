@@ -6689,7 +6689,7 @@ UPDATES, a page that OPTIONS' row Single updates opens
 
 | Control | Action |
 | --- | --- |
-| `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. Drawn in the accent colour only while no step is current. |
+| `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. Drawn in the accent colour only while no step is current. Grey while an update of the IOmcu, the C6 radio or a wireless device runs. |
 | The current step's control | A 2s hold that starts the step's update ([The steps](#the-steps)). Grey while a gate holds the step; a press of any length then puts the reason in the alert band. |
 | `SKIP THIS STEP` | A tap passes the current step until the panel restarts; the next blocking step becomes current. |
 | `SHOW SKIPPED STEPS` | On the last card while a step is skipped. A tap brings every skipped step back. |
@@ -6724,15 +6724,21 @@ home network. Both the check and the download need:
 - the bench SAFE, the supply output off and no log run open. Otherwise the
   key is grey and the card says `Wi-Fi requires SAFE, the supply output off,` and
   `and no open recording session.`;
-- no update of the IOmcu running and no panel install under way.
+- no update of the IOmcu, the C6 radio or a wireless device running and
+  no panel install under way. During a device's transfer the key is grey
+  and the card says `Waiting for the wireless device update to finish.`;
+  the check at start waits the same way, and a check under way ends when
+  such an update starts.
 
 Downloading, like installing, also requires that no board drawing is being
 fetched or saved.
 
 ### The steps
 
-The current step is the step whose update runs; with none running, the
-lowest-numbered step that blocks. The step list and the card are decided
+The current step is the step whose update runs; with no update running,
+PANEL while its check runs; else the lowest-numbered step that blocks. An
+update outranks the check: a device's ask and CANCEL UPDATE stay on the
+card whatever the check does. The step list and the card are decided
 every frame from what the panel knows: no step position is kept, so a
 restart, a lost link or a failed step shows the right step without a
 recovery path. A newer panel release found while a later step is current
@@ -6749,9 +6755,12 @@ send.
 | 6 BALANCE NODE | the connected balance node runs another version | `HOLD 2s TO UPDATE THE BALANCE NODE` |
 
 A check that found nothing newer, or failed, never blocks; nor does a
-download that failed or was stopped. PANEL then reads `CURRENT`,
-`NOT CHECKED` or `FAILED`, the card shows the result, and CHECK FOR
-UPDATES is the way back. A step whose update ran and failed since the
+download that failed or was stopped, nor a download whose install failed.
+PANEL then reads `CURRENT`, `NOT CHECKED` or `FAILED`, the card shows the
+result, and CHECK FOR UPDATES is the way back. After a failed install the
+card says `The installation failed. The panel firmware is unchanged.` and
+`CHECK FOR UPDATES offers the release again.`; OPTIONS and the later
+steps' controls are live. A step whose update ran and failed since the
 panel's start stays current: its row reads `FAILED`, the card shows the
 alert's line in the warning colour, and the hold is the retry.
 
@@ -6768,6 +6777,7 @@ alert's line in the warning colour, and the hold is the retry.
 | `NOT CHECKED` | PANEL: no check result at this start |
 | `NO LINK`, `NOT CONNECTED` | no IOmcu answers; a bound device is not connected |
 | `NOT BOUND` | no device of the kind is bound on WIRELESS |
+| `OFF` | a device is bound and its switch on WIRELESS is OFF: the panel runs no link to it |
 | `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to act on: the panel carries no image, the carried image fails its check, the IOmcu's build check gave no answer, the IOmcu takes no update over CAN, the C6 failed its link, the C6 named no version |
 
 A step with nothing to act on is passed. While an update run stands after
@@ -6775,7 +6785,9 @@ a restart, the IOmcu without a link and a bound device that is not
 connected wait instead: the card says `Waiting for the IOmcu to answer.`
 or `Switch the Dial on and keep it within range.`, with SKIP THIS STEP,
 and the step goes on by itself once the target links. Outside a run they
-are passed and named on the last card.
+are passed and named on the last card. A bound device whose switch on
+WIRELESS is OFF never waits, in a run or outside one: its row reads `OFF`
+and the last card names it.
 
 ![A step held while ARMED](img/updates-held.png)
 
@@ -6807,10 +6819,19 @@ the opening nor its band line comes again for that offer
 ([IOmcu update](#iomcu-update)). A new offer brings the step back. An
 update that runs is never skipped.
 
-With no step current the card reads `All firmware is current.`, the
+With no step current the card shows one of three headings:
+
+| Heading | Shown while |
+| --- | --- |
+| `All firmware is current.` | PANEL reads `CURRENT` after a check, and every other step reads `CURRENT` or `NOT BOUND` |
+| `Not checked for a panel release.` | PANEL reads `NOT CHECKED` or `FAILED`, and every other step reads `CURRENT` or `NOT BOUND` |
+| `No step is open.` | a step is skipped, or has nothing to act on for another reason than `NOT BOUND` |
+
+Under the heading: the
 running version, the home network, the last check's result, and the steps
 that were passed: `Not connected: POWER NODE.`,
-`No update here: C6 RADIO. The list names the reason.` and
+`No update here: C6 RADIO. The list names the reason.` (a device that
+reads `OFF` among them) and
 `Skipped: DIAL.`, then the notes on the reminder and RELEASES. SHOW
 SKIPPED STEPS stands under them while a step is skipped. CHECK FOR
 UPDATES is drawn in the accent colour.

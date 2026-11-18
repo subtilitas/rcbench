@@ -88,6 +88,13 @@ bool panel_dial_blec_target(bleu_addr_t *addr, bool *linked,
                             uint8_t version[3], bool *down);
 
 /**
+ * @brief Whether Dial is OFF on WIRELESS, as SETUP's values say: an
+ *        update's hold on the link does not count.  `blec` task only.
+ * @return true while the Dial's switch is OFF
+ */
+bool panel_dial_blec_off(void);
+
+/**
  * @brief A value changed: SET_DIAL_* go to the task.
  * @param id The setting.
  */
