@@ -1184,6 +1184,59 @@ UI_TEXT(PK_TAG_PD, 5,
 UI_TEXT(PK_TAG_TAP, 5,
     "TAP",
     "PHASE")
+/* The question a tap on a pin another protocol holds asks (pin_take.c),
+ * on a card over the board or beside the tapped cell: the pin and its
+ * holder, the move, what the holder keeps, the channel's new role when it
+ * changes, the lead on the pad in amber, and MOVE PIN beside CANCEL.  The
+ * card wraps each line in its width and falls back to 8 x 16 where the
+ * lines need it (test_pin_take holds the worst case). */
+UI_TEXT(PK_TAKE_TITLE, 0,
+    "GPIO %u: %s",
+    "GPIO %u: %s")
+UI_TEXT(PK_TAKE_ASK, 0,
+    "REMOVE GPIO %u FROM %s AND GIVE IT TO %s?",
+    "GPIO %u AUS %s ENTFERNEN UND %s ZUWEISEN?")
+UI_TEXT(PK_TAKE_KEEPS, 0,
+    "%s KEEPS %u PINS.",
+    "%s BEHÄLT %u PINS.")
+UI_TEXT(PK_TAKE_KEEPS_1, 0,
+    "%s KEEPS 1 PIN.",
+    "%s BEHÄLT 1 PIN.")
+UI_TEXT(PK_TAKE_KEEPS_NONE, 0,
+    "%s KEEPS NO PIN.",
+    "%s BEHÄLT KEINEN PIN.")
+UI_TEXT(PK_TAKE_TO_SERVO, 0,
+    "CH%u BECOMES A SERVO CHANNEL: IT CENTERS AT REST.",
+    "CH%u WIRD ZUM SERVOKANAL: IN RUHE MITTE.")
+UI_TEXT(PK_TAKE_TO_MOTOR, 0,
+    "CH%u BECOMES A MOTOR CHANNEL: IT STOPS AT REST.",
+    "CH%u WIRD ZUM MOTORKANAL: IN RUHE AUS.")
+/* The place is "PAD 17", a soldered output's name ("PWM02") or "GPIO 5"
+ * on a board that prints no pad number. */
+UI_TEXT(PK_TAKE_LEAD, 0,
+    "THE LEAD ON %s GETS %s FROM THE NEXT ARM.",
+    "DIE LEITUNG AN %s BEKOMMT AB DEM NÄCHSTEN ARM %s.")
+UI_TEXT(PK_TAKE_MOVE, 0,
+    "MOVE PIN",
+    "PIN VERSCHIEBEN")
+/* Why a tap on a held pin asks nothing: the line under the count, 35
+ * cells and 17 on the board view, two lines of 30 on the grid
+ * (test_pin_take holds the longest pin, port and protocol names). */
+UI_TEXT(PK_TAKE_WHY_PORT, 52,
+    "GPIO %u: %s. FREE IT ON ITS ENTRY",
+    "GPIO %u: %s. GIB IHN IM EINTRAG FREI")
+UI_TEXT(PK_TAKE_WHY_SENSE, 52,
+    "GPIO %u: SENSOR BUS, SET ON SENSORS",
+    "GPIO %u: SENSORBUS, IN SENSORS")
+UI_TEXT(PK_TAKE_WHY_PDMINI, 52,
+    "GPIO %u: PD MINI, SET ON SUPPLY",
+    "GPIO %u: PD MINI, IN SUPPLY")
+UI_TEXT(PK_TAKE_WHY_TAP, 52,
+    "GPIO %u: PHASE TAP, SET ON SENSORS",
+    "GPIO %u: PHASENABGRIFF, IN SENSORS")
+UI_TEXT(PK_TAKE_WHY_OFF, 52,
+    "GPIO %u: %s. PICK A PROTOCOL FIRST",
+    "GPIO %u: %s. WÄHLE ERST EIN PROTOKOLL")
 
 /* ------------------------------------------------------------ analyser */
 UI_TEXT(AN_TAB_CHANNELS, 0,

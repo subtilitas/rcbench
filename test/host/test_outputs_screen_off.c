@@ -415,6 +415,8 @@ TEST_CASE(off_shows_the_protocol_of_every_bound_pin)
 /*
  * With OFF selected no pin can be ticked or unticked: a tap changes nothing
  * and calls nothing, and the line under the protocol says what OFF is for.
+ * A tap on a bound pin asks nothing either; the line names its protocol
+ * and says to pick one first.  A tap on a free pin leaves the line.
  */
 TEST_CASE(a_tap_on_a_pin_does_nothing_while_off_is_selected)
 {
@@ -424,14 +426,27 @@ TEST_CASE(a_tap_on_a_pin_does_nothing_while_off_is_selected)
     for (uint8_t g = 0; g < 29u; ++g) {
         if (idx(g) < outbind_pin_count(OUTBIND_BOARD_PICO_HEADER)) {
             tap_pin(g);
+            CHECK(!scr()->covered());           /* no card on OFF */
         }
     }
     CHECK_EQ(s_applied, 0);
     CHECK(memcmp(&before, outputs_screen_binding(), sizeof(before)) == 0);
+    CHECK_STR_EQ(reason(), "GPIO 13: SERVO PWM. PICK A PROTOCOL FIRST");
+    tap_pin(1);
+    CHECK_STR_EQ(reason(), "GPIO 1: MOTOR PWM. PICK A PROTOCOL FIRST");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(reason(), "GPIO 1: MOTOR PWM. WÄHLE ERST EIN PROTOKOLL");
+    ui_text_set_language(UI_LANG_EN);
+
+    /* Picked again, OFF says what it is for until the next tap. */
+    choose_named("SERVO PWM");
+    choose_named("OFF");
+    tap_pin(4);                                 /* free */
     CHECK_STR_EQ(reason(), "CHOOSE A PROTOCOL, THEN TAP PINS");
     ui_text_set_language(UI_LANG_DE);
     CHECK_STR_EQ(reason(), "WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS");
     ui_text_set_language(UI_LANG_EN);
+    CHECK_EQ(s_applied, 0);
 }
 
 /*

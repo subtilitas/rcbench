@@ -150,6 +150,7 @@ set(SRCS
     ui_cats_art.c
     picker_port.c
     picker_tag.c
+    pin_take.c
     board_drawing.c
     busfault_screen.c
     wifi_screen.c

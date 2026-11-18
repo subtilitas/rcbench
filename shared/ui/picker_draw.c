@@ -19,6 +19,7 @@
 #include "outputs_screen_int.h"
 #include "picker_port.h"
 #include "picker_screen.h"
+#include "pin_take.h"
 #include "port_view.h"
 #include "ui_pinlist.h"
 #include "ui_text.h"
@@ -160,84 +161,100 @@ static void draw_pads_that_are_not_pins(gfx_canvas_t *c)
     }
 }
 
-/** @brief Draws the pin buttons of both tiers, the picked ones lit. */
-static void draw_buttons(gfx_canvas_t *c)
+/**
+ * @brief Draws the key of catalogue entry @p i with its trace to the pad,
+ *        or the red cross of a reserved pin.
+ * @param c      the canvas
+ * @param i      the entry
+ * @param asked  the key the card asks about: drawn again over the card,
+ *               without its trace, with an accent edge as if pressed
+ */
+static void draw_key(gfx_canvas_t *c, int i, bool asked)
 {
-    const uint16_t board = s.bind.board;
-    const outbind_pin_t *pins = outbind_pins(board);
-    const uint8_t n = outbind_pin_count(board);
+    const outbind_pin_t *pins = outbind_pins(s.bind.board);
+    int px, py;
+    if (pins == NULL || !pk_pad_xy(pins[i].pad, &px, &py)) { return; }
 
-    for (int i = 0; i < (int)n; ++i) {
-        int px, py;
-        if (!pk_pad_xy(pins[i].pad, &px, &py)) { continue; }
+    const picker_pin_t st = picker_screen_pin((uint8_t)i, NULL, 0);
+    if (st == PICKER_PIN_RESERVED) {
+        cross(c, px, py, UI_DANGER, 8, 3);
+        return;
+    }
 
-        const picker_pin_t st = picker_screen_pin((uint8_t)i, NULL, 0);
-        if (st == PICKER_PIN_RESERVED) {
-            cross(c, px, py, UI_DANGER, 8, 3);
-            continue;
-        }
+    gfx_rect_t r;
+    int tier = 0;
+    if (!pk_button_at(i, &r, &tier)) { return; }
 
-        gfx_rect_t r;
-        int tier = 0;
-        if (!pk_button_at(i, &r, &tier)) { continue; }
+    const bool on   = (st == PICKER_PIN_TICKED);
+    const bool grey = !on && st != PICKER_PIN_FREE;
+    const bool down = (s.hit_kind == HIT_BUTTON && s.hit == i);
 
-        const bool on   = (st == PICKER_PIN_TICKED);
-        const bool grey = !on && st != PICKER_PIN_FREE;
-        const bool down = (s.hit_kind == HIT_BUTTON && s.hit == i);
-
-        const gfx_color_t wire = grey ? GFX_RGB(104, 108, 116)
-                                 : (on ? UI_ACCENT : GFX_RGB(214, 218, 226));
-        const bool top = pk_pad_is_top(pins[i].pad);
-        const int meet = top ? (r.y + r.h) : r.y;
+    const gfx_color_t wire = grey ? GFX_RGB(104, 108, 116)
+                             : (on ? UI_ACCENT : GFX_RGB(214, 218, 226));
+    const bool top = pk_pad_is_top(pins[i].pad);
+    const int meet = top ? (r.y + r.h) : r.y;
+    if (!asked) {
         trace(c, px, py, meet, wire);
         gfx_fill_circle(c, px, py, 5, HALO);
         gfx_fill_circle(c, px, py, 3, wire);
+    }
 
-        /*
-         * A free pin is a key: ivory in the row nearer the board, ebony in
-         * the one beyond it, so neighbouring keys differ in colour as well
-         * as in height and a finger counts along them like a keyboard.
-         */
-        gfx_color_t face, ink, edge;
-        if (grey) {
-            face = GFX_RGB(52, 55, 62);
-            ink  = GFX_RGB(132, 136, 144);
-            edge = GFX_RGB(78, 82, 90);
-        } else if (on) {
-            face = UI_ACCENT;
-            ink  = GFX_RGB(6, 30, 36);
-            edge = GFX_RGB(6, 40, 48);
-        } else if (down) {
-            face = UI_PANEL_HI;
-            ink  = UI_TEXT;
-            edge = UI_EDGE_HI;
-        } else {
-            face = (tier == 0) ? IVORY : EBONY;
-            ink  = (tier == 0) ? EBONY : IVORY;
-            edge = UI_EDGE_HI;
-        }
-        gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 8, 8, 8, face);
-        gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 8, 8, 8, edge);
+    /*
+     * A free pin is a key: ivory in the row nearer the board, ebony in
+     * the one beyond it, so neighbouring keys differ in colour as well
+     * as in height and a finger counts along them like a keyboard.
+     */
+    gfx_color_t face, ink, edge;
+    if (grey) {
+        face = GFX_RGB(52, 55, 62);
+        ink  = GFX_RGB(132, 136, 144);
+        edge = GFX_RGB(78, 82, 90);
+    } else if (on) {
+        face = UI_ACCENT;
+        ink  = GFX_RGB(6, 30, 36);
+        edge = GFX_RGB(6, 40, 48);
+    } else if (down) {
+        face = UI_PANEL_HI;
+        ink  = UI_TEXT;
+        edge = UI_EDGE_HI;
+    } else {
+        face = (tier == 0) ? IVORY : EBONY;
+        ink  = (tier == 0) ? EBONY : IVORY;
+        edge = UI_EDGE_HI;
+    }
+    if (asked) {
+        edge = UI_ACCENT;
+    }
+    gfx_fill_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 8, 8, 8, face);
+    gfx_draw_chamfer_rect_ex(c, r.x, r.y, r.w, r.h, 8, 8, 8, 8, edge);
 
-        char nm[6];
-        snprintf(nm, sizeof(nm), "%u", (unsigned)pins[i].gpio);
-        char tag[8];
-        if (grey && picker_screen_pin_tag((uint8_t)i, tag, sizeof(tag))) {
-            /* What holds the pin, under a smaller number: the number in
-             * 16 x 28 from 5px down, the tag in 8 x 16 2px under it, 5px
-             * above the foot, where the 8px chamfer cuts 3px in. */
-            const int nw = gfx_text_width(PK_FONT_PIN, nm, 1);
-            gfx_text(c, r.x + (r.w - nw) / 2, r.y + KEY_NUM_Y, nm,
-                     PK_FONT_PIN, ink, 1);
-            const int tw = gfx_text_width(PK_FONT_FINE, tag, 1);
-            gfx_text(c, r.x + (r.w - tw) / 2, r.y + KEY_TAG_Y, tag,
-                     PK_FONT_FINE, ink, 1);
-            continue;
-        }
-        const int lw = gfx_text_width(PK_FONT_HEAD, nm, 1);
-        gfx_text(c, r.x + (r.w - lw) / 2,
-                 r.y + (r.h - gfx_text_height(PK_FONT_HEAD, 1)) / 2, nm,
-                 PK_FONT_HEAD, ink, 1);
+    char nm[6];
+    snprintf(nm, sizeof(nm), "%u", (unsigned)pins[i].gpio);
+    char tag[8];
+    if (grey && picker_screen_pin_tag((uint8_t)i, tag, sizeof(tag))) {
+        /* What holds the pin, under a smaller number: the number in
+         * 16 x 28 from 5px down, the tag in 8 x 16 2px under it, 5px
+         * above the foot, where the 8px chamfer cuts 3px in. */
+        const int nw = gfx_text_width(PK_FONT_PIN, nm, 1);
+        gfx_text(c, r.x + (r.w - nw) / 2, r.y + KEY_NUM_Y, nm,
+                 PK_FONT_PIN, ink, 1);
+        const int tw = gfx_text_width(PK_FONT_FINE, tag, 1);
+        gfx_text(c, r.x + (r.w - tw) / 2, r.y + KEY_TAG_Y, tag,
+                 PK_FONT_FINE, ink, 1);
+        return;
+    }
+    const int lw = gfx_text_width(PK_FONT_HEAD, nm, 1);
+    gfx_text(c, r.x + (r.w - lw) / 2,
+             r.y + (r.h - gfx_text_height(PK_FONT_HEAD, 1)) / 2, nm,
+             PK_FONT_HEAD, ink, 1);
+}
+
+/** @brief Draws the pin buttons of both tiers, the picked ones lit. */
+static void draw_buttons(gfx_canvas_t *c)
+{
+    const uint8_t n = outbind_pin_count(s.bind.board);
+    for (int i = 0; i < (int)n; ++i) {
+        draw_key(c, i, false);
     }
 }
 
@@ -613,6 +630,20 @@ void pk_render(gfx_canvas_t *c, int buffer_index)
         outputs_port_draw_list(c);
         if (s.open) {
             draw_list(c);
+        }
+        /* The card, and the key it asks about with an accent edge.  The
+         * card stands clear of that key (card_box() in picker_screen.c);
+         * a key that met MOVE PIN or CANCEL is not drawn over them. */
+        if (pin_take_open_in(PIN_TAKE_BOARD)) {
+            pin_take_draw(c);
+            gfx_rect_t k;
+            if (pk_button_at(pin_take_index(), &k, NULL)
+                && !gfx_rect_intersect(k, pin_take_button(PIN_TAKE_BTN_MOVE),
+                                       NULL)
+                && !gfx_rect_intersect(k, pin_take_button(PIN_TAKE_BTN_CANCEL),
+                                       NULL)) {
+                draw_key(c, pin_take_index(), true);
+            }
         }
     }
     /* Last, so the fit check sees a string under it as painted over. */

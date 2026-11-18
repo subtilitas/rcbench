@@ -323,6 +323,9 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 
 ![Die Hilfe von OUTPUTS auf Seite 1](img/de/help-outputs.png)
 
+Solange die [Frage-Karte](#einen-pin-zwischen-protokollen-verschieben) von
+OUTPUTS offen ist, zeigt die Hilfe keine Seite, wie bei einer offenen Liste.
+
 ![Die Hilfe von LOGS auf Seite 1](img/de/help-logs.png)
 
 ![Die Hilfe von FILES auf Seite 1](img/de/help-files.png)
@@ -8297,9 +8300,15 @@ zweiten Spalte mit denselben Zeilen daneben; mit 4 Einträgen ist die Liste
 Ein Pin, den ein anderes Protokoll hält, wird mit grau gefülltem Kästchen
 gezeichnet und mit dem Namen dieses Protokolls darunter, in voller Schrift in
 der Ansicht jedes Protokolls, wo ein freier Pin seine Pad-Nummer zeigt; bei
-unbestätigter Bindung ist der Name gedimmt. Diese Bindung lässt sich unter dem zugehörigen Protokoll lösen. Ein
-reservierter Pin ist dagegen rot und durchgestrichen, weil seine feste
-Verdrahtung keine Auswahl erlaubt.
+unbestätigter Bindung ist der Name gedimmt. Das ist eine Wahl: ein Tippen
+auf die Zelle fragt, ob der Pin zum gewählten Protokoll wechselt, auf einer
+Karte neben der Zelle
+([Einen Pin zwischen Protokollen verschieben](#einen-pin-zwischen-protokollen-verschieben)).
+Ein reservierter Pin ist dagegen rot und durchgestrichen, weil seine feste
+Verdrahtung keine Auswahl erlaubt. Ein Tippen auf eine Zelle, die ein
+Programmierport oder eine Schnittstelle hält, setzt den Grund unter die
+Zählung, `GPIO 13: PROG-PORT. GIB IHN IM EINTRAG FREI` oder `GPIO 16:
+SENSORBUS, IN SENSORS`.
 
 Jede Zelle zeigt damit einen von vier Zuständen: in diesem Protokoll angehakt, von einem anderen gehalten und benannt,
 reserviert und durchgestrichen, oder frei und mit seiner Pad-Nummer.
@@ -8323,6 +8332,13 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
   einer Zustandsmaschine des PIO (Programmable Input/Output) und wird
   neben beiden angeboten.
 - Die Zeile unter dem Protokoll zählt gegen 4.
+- Ein Tippen auf einen Ausgang, den ein anderes Protokoll hält, fragt
+  nach dem Verschieben, auf einer Karte über den Spalten 2 und 3; die
+  Karte nennt den Ausgang, `DIE LEITUNG AN PWM01 BEKOMMT AB DEM NÄCHSTEN
+  ARM DSHOT300.`. Ein Verschieben, das die Regel für Slice 2 bricht, wird
+  mit der Zeile oben abgelehnt.
+
+![PWM01 von SERVO PWM unter DSHOT300 angetippt](img/de/outputs-rbmod-take.png)
 
 ![Ein Eintrag PROG PORT auf dem Carrier](img/de/outputs-rbmod-port.png)
 
@@ -8373,9 +8389,12 @@ Eintrag der Liste und bindet nichts: er nimmt 0 Pins, darum steht unter ihm
 keine Pin-Zählung. Mit AUS gewählt zeigt jeder gebundene Pin den
 Namen des Protokolls, das ihn hält, in voller Helligkeit; die ganze Bindung
 und jeder Pin, den der IOmcu treibt, stehen also auf einem Bildschirm.
-Kein Pin lässt sich anhaken oder lösen: ein Tippen auf einen Pin bewirkt
-nichts und schreibt nichts, und die Zeile unter der Liste sagt
-`WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. Das Öffnen des Bildschirms schreibt
+Kein Pin lässt sich anhaken oder lösen, und die Zeile unter der Liste sagt
+`WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. Ein Tippen auf einen freien Pin
+bewirkt nichts. Ein Tippen auf einen gebundenen Pin schreibt nichts und
+fragt nichts; die Zeile nennt dann das Protokoll des Pins,
+`GPIO 7: DSHOT600. WÄHLE ERST EIN PROTOKOLL`, bis zur nächsten Wahl oder
+zum nächsten Tippen. Das Öffnen des Bildschirms schreibt
 nichts. Ein Protokoll in der Liste zu wählen verlässt die Übersicht, AUS zu
 wählen kehrt zu ihr zurück; keines von beiden schreibt etwas oder löst eine
 Bindung.
@@ -8497,7 +8516,7 @@ Die Tastenfarbe zeigt die Wirkung eines Tipps:
 | --- | --- | --- |
 | Elfenbein (Reihe näher an der Platine) oder Ebenholz (Reihe dahinter) | frei | bindet ihn an das gewählte Protokoll |
 | Akzentfarbe | im gewählten Protokoll gebunden | gibt ihn zurück |
-| grau, die Nummer in 16 x 28 über einem Tag in 8 x 16 | ein anderes Protokoll, ein Programmierport oder eine Schnittstelle hält ihn; der Tag nennt den Halter | ändert nichts |
+| grau, die Nummer in 16 x 28 über einem Tag in 8 x 16 | ein anderes Protokoll, ein Programmierport oder eine Schnittstelle hält ihn; der Tag nennt den Halter | der Pin eines anderen Protokolls: fragt nach dem Verschieben ([Einen Pin zwischen Protokollen verschieben](#einen-pin-zwischen-protokollen-verschieben)); der eines Ports oder einer Schnittstelle: ändert nichts und setzt den Grund unter die Zählung |
 | grau, nur die Nummer in 20 x 36 | der Pin teilt einen PWM-Slice oder ein Compare-Register mit einem gebundenen Pin oder dem Pin eines Ports, das gewählte Protokoll kann keinen Pin mehr nehmen, oder die Bindung ist nicht bestätigt | ändert nichts; ein Tippen auf einen geteilten Slice oder ein geteiltes Register setzt den Grund unter die Zählung |
 | keine, rotes Kreuz auf dem Pad | vom IOmcu reserviert: GPIO 3 Heartbeat, GPIO 8 bis GPIO 12 CAN | — |
 
@@ -8550,6 +8569,9 @@ Bernstein der Grund, warum keine Taste hinzukommen kann:
 | `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` | die Pages beschreiben keine Bindung |
 
 Diese Zeile erklärt, warum eine vollständig graue Platine keine Auswahl erlaubt.
+Ein Tippen auf eine gehaltene Taste, das nichts fragt, setzt seinen eigenen
+Grund zuerst dorthin, bis zur nächsten Wahl oder zum nächsten Tippen
+([Einen Pin zwischen Protokollen verschieben](#einen-pin-zwischen-protokollen-verschieben)).
 
 ![Acht von acht Slots belegt](img/de/outputs-full.png)
 
@@ -8563,7 +8585,8 @@ jeden gebundenen Pin.
 
 Der Pin des Programmierports des IOmcu, ab Werk GPIO 13 (Pad 17), ist grau
 mit dem Tag `PORT` gezeichnet, solange kein Protokoll ihn hält, ein Tippen auf ihn ändert
-nichts, und BELEGT führt ihn als ersten unter `PROG-PORT`, ohne Kanal.
+nichts und setzt `GPIO 13: PROG-PORT 1. GIB IHN IM EINTRAG FREI` unter die
+Zählung (`PROG-PORT` bei einem Prüfstand mit einem Port), und BELEGT führt ihn als ersten unter `PROG-PORT`, ohne Kanal.
 Jeder Port, den der IOmcu meldet, höchstens 4, hält seinen Pin so, jeder
 einmal unter dem einen Namen `PROG-PORT` geführt, und die Slice-Regel
 unten wird gegen jeden geprüft. Ein
@@ -8597,7 +8620,9 @@ Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
 ![GPIO 13 beim Programmierport](img/de/outputs-prog.png)
 
 Ein Pin, den SETUP > SENSORS oder der Abschnitt PD MINI der SUPPLY-Optionen hält, ist ebenso grau, mit dem Tag `BUS`, `PD`
-oder `PHASE`, solange kein Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
+oder `PHASE`, solange kein Protokoll ihn hält, ein Tippen darauf ändert nichts und nennt unter der
+Zählung den Bildschirm, der ihn einstellt (`GPIO 16: SENSORBUS, IN SENSORS`,
+`GPIO 18: PD MINI, IN SUPPLY`, `GPIO 22: PHASENABGRIFF, IN SENSORS`), und BELEGT führt ihn
 nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`
 in Rot, ohne Kanal. Welche Pins das sind und wann, steht in der Tabelle
 unter [Outputs](#outputs). Nach einer Änderung unter SETUP sowie nach einer Annahme oder Ablehnung
@@ -8684,6 +8709,104 @@ ist, weil sie dort nicht hineinpassen — eine Page hat 32 Register, und eine
 Platine mit 40 Pads hat zwischen beiden mehr Pads als das. Bedient eine Platine diese Page nicht, bleiben Masse und Versorgung auf
 dem Bildschirm unmarkiert. Richte dich dann beim Anschließen nach der
 Beschriftung der Platine.
+
+### Einen Pin zwischen Protokollen verschieben
+
+![Die Frage-Karte über der Platine](img/de/outputs-take.png)
+
+Ein Tippen auf eine Taste, die ein anderes Protokoll hält, fragt, ob der Pin
+zum gewählten Protokoll wechselt. Jedes Protokoll nimmt von jedem anderen,
+auch PPM. Die Karte deckt das Feld der höchsten Platine ab, 600 x 240px bei
+Körper-x 212 bis 812, y 126 bis 366. Auf einer Platine, die niedriger als
+240px gezeichnet ist, kann eine Taste in diesem Feld stehen; für eine solche
+Taste rückt die Karte so, dass sie 6px darüber endet oder 6px darunter
+beginnt, damit Karte und Tasten die angetippte Taste nie berühren. Diese
+Taste behält einen Rand in Akzentfarbe, und ein zweites Tippen auf sie ist
+ein Druck neben die Karte. In der
+Rasteransicht nimmt die Karte die zwei Spalten fern der angetippten Zelle
+ein, 342 x 480px ab Körper-y 8: über den Spalten 2 und 3 für eine Zelle in
+Spalte 0 oder 1, sonst über den Spalten 0 und 1. Sie deckt die angetippte
+Zelle nie ab; deren Rand wird zur Akzentfarbe.
+
+| Zeile | Schrift | Beispiel |
+| --- | --- | --- |
+| der Pin und sein Halter | 16 x 28; 12 x 24, wo 16 x 28 breiter als die Karte ist | `GPIO 7: DSHOT600` |
+| die Frage | 10 x 20, umbrochen | `GPIO 7 AUS DSHOT600 ENTFERNEN UND SERVO PWM ZUWEISEN?` |
+| was der Halter behält, gedimmt | 10 x 20 | `DSHOT600 BEHÄLT 1 PIN.`, `SERVO PWM BEHÄLT 2 PINS.`, `SERVO PWM BEHÄLT KEINEN PIN.` |
+| die neue Rolle des Kanals, nur wenn sie wechselt | 10 x 20 | `CH4 WIRD ZUM SERVOKANAL: IN RUHE MITTE.`, `CH0 WIRD ZUM MOTORKANAL: IN RUHE AUS.` |
+| die Leitung, in Bernstein | 10 x 20 | `DIE LEITUNG AN PAD 10 BEKOMMT AB DEM NÄCHSTEN ARM SERVO PWM.`; der Carrier nennt seinen Ausgang, `PWM01`; eine Platine ohne Pad-Nummern den GPIO |
+| PIN VERSCHIEBEN, ABBRECHEN | 12 x 24 | 240 x 56px nebeneinander auf der Karte der Platine; volle Breite und übereinander, ABBRECHEN unten, auf der Karte des Rasters |
+
+Der Text endet 6px über den Tasten. Wo 10 x 20 darüber hinausläuft, gehen
+Rolle und Leitung auf 8 x 16, danach jede Zeile. Der schwierigste deutsche
+Fall, DSHOT600 BIDIR gibt GPIO 28 an SERVO PWM ab, zeichnet Rolle und
+Leitung auf der Karte der Platine in 8 x 16 (`test_pin_take`).
+
+![Der letzte Pin von SERVO PWM unter DSHOT600 BIDIR angetippt](img/de/outputs-take-last.png)
+
+PIN VERSCHIEBEN ist ein Tippen, kein Halten: das Verschieben schaltet
+nichts ein, und das ARM, das das neue Signal treibt, ist ein Halten. PIN
+VERSCHIEBEN prüft das Verschieben noch einmal an der Bindung zum Zeitpunkt
+des Tippens. Sind Pin, Halter, Protokoll und Platine dieselben und gilt das
+Verschieben noch, schreibt es die Bindung einmal, über denselben Weg wie
+ein Anhaken: der Pin verlässt seinen Halter und kommt zum gewählten
+Protokoll. Kanäle folgen den Pins, also bleibt jede Kanalnummer; nur
+Treiber und Rate des verschobenen Slots und die Rolle seines Kanals
+wechseln. Ein PPM-Pin, der wechselt, gibt 7 seiner 8 Kanäle frei. Den Pin
+zurückzunehmen stellt die Bindung Bit für Bit wieder her: das Verschieben
+zurück ist das Rückgängigmachen, eine Taste UNDO gibt es nicht. Jedes
+Schreiben einer Bindung setzt jeden PWM-Slot auf seine eigene Rate zurück,
+50Hz für ein Servo, auch dieses; das Verschieben zurück stellt keine auf
+SERVO gesetzte Framerate wieder her.
+
+ABBRECHEN, der Home-Tag oder ein Druck irgendwo neben der Karte schließt sie
+und schreibt nichts; der Druck ist damit verbraucht. Die Karte schließt
+auch ohne Schreiben, wenn ein Lesen die Bindung unbestätigt lässt (ein Lesen
+schlug fehl, die Verbindung brach ab), ein Zurücklesen einen Pin ändert,
+ein anderes Protokoll oder ein Eintrag PROG-PORT gewählt wird, die Platine
+wechselt, die Ansicht zwischen Platine und Raster wechselt oder der
+Bildschirm verlassen wird. Zwischen zwei Frames verlorene Touch-Ereignisse
+lassen einen Druck auf PIN VERSCHIEBEN fallen; die Karte bleibt offen. Ein
+zweiter Finger auf der Karte übernimmt den Druck, einer neben der Karte
+schließt sie. STOP im Band bleibt wirksam. In der Platinenansicht führt das
+Dial PIN VERSCHIEBEN und ABBRECHEN, solange die Karte offen ist, beginnend
+bei ABBRECHEN.
+
+Der IOmcu lehnt jede Slot-Änderung an einer ARMED-Bank ab und ein
+Schreiben der Bindung, solange die ESC-Draht-Sitzung die Versorgung hält:
+LETZTER SCHREIBVORGANG zeigt `ABGELEHNT`, und das Zurücklesen zeigt den
+Pin bei seinem Halter. Wer MOTOR & ESC oder SERVO für OUTPUTS verlässt,
+schaltet den Prüfstand auf SAFE.
+
+Ab dem nächsten ARM bekommt die Leitung am verschobenen Pin das neue
+Signal. Ein dort gelassener ESC bekommt beim ARM auf SERVO die
+1500us-Mitte von SERVO PWM; ein dort gelassenes Servo bekommt beim ARM auf
+MOTOR & ESC DShot-Frames oder den Idle-Puls von MOTOR PWM. Was ein ESC mit
+1500us beim ARM macht, ist nicht gemessen, ebenso wenig, was ein Servo mit
+DShot-Frames macht.
+
+Ein Tippen auf einen gehaltenen Pin, das nichts fragt, sagt unter der
+Zählung, warum, bis zur nächsten Wahl oder zum nächsten Tippen:
+
+| Zeile | Tippen |
+| --- | --- |
+| `GPIO 7: DSHOT600. WÄHLE ERST EIN PROTOKOLL` | ein gebundener Pin bei gewähltem AUS |
+| `GPIO 13: PROG-PORT 1. GIB IHN IM EINTRAG FREI` | der Pin eines Programmierports; `PROG-PORT` bei einem Prüfstand mit einem Port |
+| `GPIO 16: SENSORBUS, IN SENSORS` | ein Pin des Sensorbusses |
+| `GPIO 18: PD MINI, IN SUPPLY` | ein Pin des PD mini |
+| `GPIO 22: PHASENABGRIFF, IN SENSORS` | der Pin des Phasenabgriffs |
+| `BENÖTIGT 8 KANÄLE, 4 FREI` | PPM gewählt, während andere Pins gebunden bleiben |
+| `SERVO PWM BELEGT 8 PINS`, `ALLE 8 SLOTS BELEGT` | das gewählte Protokoll nimmt keinen Pin mehr |
+| `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` | SERVO PWM oder MOTOR PWM auf einem Pin, dessen Compare-Register ein PWM-Pin nutzt |
+| `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` | SERVO PWM oder MOTOR PWM auf dem PWM-Slice eines Programmierports |
+| `PWM03 GPIO 5: GLEICHER PWM-SLICE WIE PWM02 GPIO 4` | die Regel für Slice 2 des Carriers |
+
+Ein Eintrag PROG-PORT fragt auf dem Pin eines Protokolls nichts; seine
+Taste bleibt grau mit ihrem Tag.
+
+![GPIO 16 des Sensorbusses unter SERVO PWM angetippt](img/de/outputs-take-why.png)
+
+![Die Karte neben dem Raster](img/de/outputs-grid-take.png)
 
 ### Der IOmcu hält sie, nicht das Panel
 

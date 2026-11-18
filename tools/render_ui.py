@@ -68,6 +68,8 @@ SOURCES = [
     "test/host/render_help.c",
     # SERVO's RUDDER task: its tab tapped, the angle fed, ZERO taken.
     "test/host/render_rudder.c",
+    # OUTPUTS' question card: a held pin tapped on the board and the grid.
+    "test/host/render_outputs.c",
     # The Bluetooth IMU: its screen handed a view, SCAN tapped; SENSORS on
     # the IMU entry.
     "test/host/render_imu.c",
@@ -734,6 +736,15 @@ SCREENS = {
     # slice 2, PROG PORT 1 on its soldered pin.
     "outputs-rbmod": ("outputs-rbmod.png", "outputs", "dark"),
     "outputs-rbmod-port": ("outputs-rbmod-port.png", "outputs", "dark"),
+    # The question card: GPIO 7 of DSHOT600 tapped under SERVO PWM over the
+    # board; GPIO 28, SERVO PWM's last pin, tapped under DSHOT600 BIDIR;
+    # GPIO 16 of the sensor bus tapped, no card and the reason; a held cell
+    # tapped on the grid and on the carrier, the card beside it.
+    "outputs-take": ("outputs-take.png", "outputs", "dark"),
+    "outputs-take-last": ("outputs-take-last.png", "outputs", "dark"),
+    "outputs-take-why": ("outputs-take-why.png", "outputs", "dark"),
+    "outputs-grid-take": ("outputs-grid-take.png", "outputs", "dark"),
+    "outputs-rbmod-take": ("outputs-rbmod-take.png", "outputs", "dark"),
     "busfault": ("busfault.png", "busfault", "dark"),
     "supply": ("supply.png", "supply", "dark"),
     "supply-settings": ("supply-settings.png", "supply", "dark"),
@@ -1320,7 +1331,9 @@ FIT_ONLY.update({f"outputs-cat-{i}": (None, "outputs", "dark")
 # text editor's question or its see-through keyboard over the screen: the
 # list, the bubble, the band, the box or the keys cover the labels under it
 # by design, so a fill drawn over a string is not a finding there.
-OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot",
+OVERLAY_VIEWS = {"outputs-protocol", "outputs-port-dshot", "outputs-take",
+                 "outputs-take-last", "outputs-grid-take",
+                 "outputs-rbmod-take",
                  "overview-alert", "hold-hint-arm", "hold-hint-output",
                  "setup-dim-stored",
                  "setup-folder", "servo-name", "files-new",

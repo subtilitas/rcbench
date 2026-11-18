@@ -17,6 +17,7 @@
 #include "outputs_screen.h"
 #include "outputs_screen_int.h"
 #include "picker_port.h"
+#include "pin_take.h"
 #include "port_view.h"
 #include "ui_text.h"
 
@@ -59,6 +60,8 @@ void picker_screen_set_binding(const outbind_t *b)
          * rather than trusted to mean something on this board. */
         outbind_trim(&s.bind);
         pk_touched();
+        /* A card asking about a pin of the binding before closes. */
+        pin_take_follow(PIN_TAKE_BOARD, &s.bind, !s.unread);
         /*
          * Another board: its drawing is asked for now.  A drawing published
          * for it before this binding arrived was refused then, because the
@@ -86,6 +89,7 @@ void picker_screen_follow(uint8_t proto, bool editable)
     if (port != s.port) {
         s.port = port;
         s.refused = -1;
+        pin_take_close();       /* a port's entry asks nothing */
         pk_touched();
     }
     if (unread != s.unread) {
@@ -98,6 +102,8 @@ void picker_screen_follow(uint8_t proto, bool editable)
         }
         pk_touched();
     }
+    /* A card asks about one protocol's move on one binding read. */
+    pin_take_follow(PIN_TAKE_BOARD, &s.bind, !s.unread);
 }
 
 bool picker_screen_editable(void) { return !s.unread; }
@@ -401,13 +407,79 @@ bool picker_screen_reason(char *buf, size_t cap)
         return picker_port_reason(&s.bind, (uint8_t)s.port, s.refused, buf,
                                   cap);
     }
-    return outputs_reason_of(&s.bind, buf, cap)
+    /* Why the pin tapped last is not one to ask about comes first: it
+     * answers the tap. */
+    outbind_take_ctx_t ctx;
+    pk_take_ctx(&ctx);
+    return pin_take_reason(PIN_TAKE_BOARD, &s.bind, &ctx, buf, cap)
+           || outputs_reason_of(&s.bind, buf, cap)
            || outputs_clash_reason(&s.bind, s.refused,
                                    outputs_pwm_pins(s.prog_pins),
                                    LINK_PG_PORTS_MAX, buf, cap);
 }
 
+void pk_take_ctx(outbind_take_ctx_t *ctx)
+{
+    static uint64_t iface[OUTPUTS_IFACE_COUNT];
+    outputs_iface_read(iface);
+    *ctx = (outbind_take_ctx_t){
+        .read        = !s.unread,
+        .ports       = s.prog_pins,
+        .pwm_ports   = outputs_pwm_pins(s.prog_pins),
+        .port_count  = LINK_PG_PORTS_MAX,
+        .ifaces      = iface,
+        .iface_count = OUTPUTS_IFACE_COUNT,
+    };
+}
+
 /* ----------------------------------------------------------------- input */
+
+/**
+ * @brief Where the card goes for a tap on key @p index: the box of the
+ *        tallest board, 600 x 240px, where that leaves the key clear;
+ *        else ending 6px above the key, else starting 6px below it.
+ *
+ * A board drawn shorter than 240px has keys inside the tallest board's
+ * box, and a key under MOVE PIN or CANCEL would take a press meant for
+ * the card.  Above or below the key one of the two always fits: the keys
+ * of a board centered between body y 0 and FOOT stand at most 186px from
+ * the body's middle.
+ *
+ * @param index the key's catalogue entry
+ * @return the card's box
+ */
+static gfx_rect_t card_box(int index)
+{
+    gfx_rect_t box = gfx_rect_make((SCREEN_W - BOARD_W) / 2,
+                                   (FOOT - BOARD_MAX_H) / 2, BOARD_W,
+                                   BOARD_MAX_H);
+    gfx_rect_t k;
+    if (!pk_button_at(index, &k, NULL) || !gfx_rect_intersect(box, k, NULL)) {
+        return box;
+    }
+    const int above = k.y - 6 - BOARD_MAX_H;
+    const int below = k.y + k.h + 6;
+    if (above >= 4) {
+        box.y = (int16_t)above;
+    } else if (below + BOARD_MAX_H <= FOOT) {
+        box.y = (int16_t)below;
+    }
+    return box;
+}
+
+/**
+ * @brief MOVE PIN on the card: the binding after the move is the one shown
+ *        and goes out at once, as a tick's does.
+ * @param after the binding pin_take_event() returned
+ */
+static void write_move(const outbind_t *after)
+{
+    s.bind = *after;
+    s.refused = -1;
+    if (s.apply != NULL) {
+        s.apply(&s.bind);
+    }
+}
 
 /**
  * @brief The key under a point.
@@ -438,6 +510,7 @@ static void pick(uint8_t proto)
 {
     outbind_set_proto(&s.bind, proto);
     s.refused = -1;
+    pin_take_forget_why();
     s.port = -1;
     if (s.select != NULL) {
         s.select(proto);
@@ -456,6 +529,7 @@ static void pick_port(uint8_t port)
     }
     outbind_set_proto(&s.bind, 0u);
     s.refused = -1;
+    pin_take_forget_why();
     outputs_screen_select_port(port);
     s.port = outputs_screen_port_shown();
 }
@@ -472,6 +546,19 @@ static void event(const touch_event_t *evt)
         return;
     }
     const int x = evt->point.x, y = evt->point.y;
+
+    /* The card takes every press while it is up: over the entry's rows,
+     * UNBIND ALL PINS and the keys alike. */
+    if (pin_take_open_in(PIN_TAKE_BOARD)) {
+        outbind_take_ctx_t ctx;
+        outbind_t after;
+        pk_take_ctx(&ctx);
+        if (pin_take_event(evt, &s.bind, &ctx, &after) == PIN_TAKE_MOVE) {
+            write_move(&after);
+        }
+        pk_touched();
+        return;
+    }
 
     /* The entry's rows, its open FUNCTION list and UNBIND ALL PINS first:
      * each takes the press it is under, and nothing under it sees it.  A key
@@ -511,13 +598,15 @@ static void event(const touch_event_t *evt)
             pk_touched();
             return;
         }
-        /* A binding that is not confirmed takes no press on a key, and
-         * neither does OFF, which binds none, as on the Outputs screen.
-         * OFF's keys are grey, and a grey key draws no pressed face. */
+        /* A binding that is not confirmed takes no press on a key.  OFF,
+         * which binds none, takes one on a held key only, to say why it
+         * moves nothing.  A grey key draws no pressed face. */
         const bool off = outbind_protos()[pk_proto_shown()].max_pins == 0u
                          && s.port < 0;
-        const int b = (s.unread || off) ? -1 : button_under(x, y);
-        if (b >= 0) {
+        const int b = s.unread ? -1 : button_under(x, y);
+        if (b >= 0
+            && (!off || picker_screen_pin((uint8_t)b, NULL, 0)
+                            == PICKER_PIN_HELD)) {
             s.hit_kind = HIT_BUTTON;
             s.hit = b;
             pk_touched();
@@ -568,6 +657,17 @@ static void event(const touch_event_t *evt)
         (void)picker_port_tap(&s.bind, (uint8_t)was, (uint8_t)s.port, st);
         return;
     }
+    /* A pin another protocol, a port or an interface holds: the card asks
+     * to move it, or the reason line says why it cannot. */
+    if (st == PICKER_PIN_HELD) {
+        outbind_take_ctx_t ctx;
+        pk_take_ctx(&ctx);
+        const gfx_rect_t card = card_box(was);
+        if (pin_take_tap(PIN_TAKE_BOARD, &s.bind, (uint8_t)was, &ctx, card)) {
+            s.refused = -1;
+            return;
+        }
+    }
     if (st != PICKER_PIN_FREE && st != PICKER_PIN_TICKED) {
         if (st == PICKER_PIN_HELD
             && outbind_pwm_clash_ports(&s.bind, (uint8_t)was,
@@ -575,11 +675,13 @@ static void event(const touch_event_t *evt)
                                        LINK_PG_PORTS_MAX, NULL)
                    != OUTBIND_CLASH_NONE) {
             s.refused = was;
+            pin_take_forget_why();
         }
         return;
     }
     if (outbind_toggle(&s.bind, (uint8_t)was)) {
         s.refused = -1;
+        pin_take_forget_why();
         if (s.apply != NULL) {
             s.apply(&s.bind);
         }
@@ -595,6 +697,7 @@ static void reset(void)
     memset(&s, 0, sizeof(s));
     memcpy(s.prog_pins, pins, sizeof(pins));
     outbind_init(&s.bind);
+    pin_take_reset();
     s.hit = -1;
     s.refused = -1;
     s.port = -1;
@@ -638,15 +741,21 @@ static void leave(void)
     s.hit_kind = HIT_NONE;
     s.hit = -1;
     s.open = false;
+    pin_take_close();
 }
 
 /**
- * @brief The home tag closes an open protocol or FUNCTION list without
- *        choosing; with none open it leaves the screen.
- * @return true when it closed a list
+ * @brief The home tag closes the card or an open protocol or FUNCTION list
+ *        without choosing; with none open it leaves the screen.
+ * @return true when it closed one
  */
 static bool back(void)
 {
+    if (pin_take_open_in(PIN_TAKE_BOARD)) {
+        pin_take_close();
+        pk_touched();
+        return true;
+    }
     if (!s.open) {
         return outputs_port_back();
     }
@@ -665,6 +774,7 @@ static bool back(void)
  */
 static void cancel(void)
 {
+    pin_take_cancel();          /* a press on the card's buttons, too */
     if (s.hit_kind != HIT_NONE) {
         s.hit_kind = HIT_NONE;
         s.hit = -1;
@@ -673,10 +783,15 @@ static void cancel(void)
 }
 
 /**
- * @brief ui_screen_t's covered: the protocol list or the FUNCTION list.
+ * @brief ui_screen_t's covered: the protocol list, the FUNCTION list or
+ *        the card.
  * @return true while one is up
  */
-static bool covered(void) { return s.open || outputs_port_fn_open(); }
+static bool covered(void)
+{
+    return s.open || outputs_port_fn_open()
+           || pin_take_open_in(PIN_TAKE_BOARD);
+}
 
 /** @brief The screen's hooks for the router. */
 static const ui_screen_t s_screen = {
@@ -702,6 +817,9 @@ bool picker_screen_focus(ui_focus_list_t *out)
 {
     if (out == NULL || !picker_screen_can_draw()) {
         return false;
+    }
+    if (pin_take_open_in(PIN_TAKE_BOARD)) {
+        return pin_take_focus(out);   /* MOVE PIN and CANCEL */
     }
     if (s.open) {
         /* The list: a row a protocol, then a row a PROG PORT entry. */

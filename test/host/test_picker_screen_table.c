@@ -213,10 +213,15 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
         CHECK(!picker_screen_in_use(0u, NULL));
 
         interfaces_on(16);
-        static const struct { uint8_t gp; ui_text_id_t name; } held[5] = {
-            { 16u, TX_OUT_IFACE_SENSE }, { 17u, TX_OUT_IFACE_SENSE },
-            { 18u, TX_OUT_IFACE_PDMINI }, { 19u, TX_OUT_IFACE_PDMINI },
-            { 22u, TX_OUT_IFACE_TAP },
+        /* A tap asks nothing: the line names the interface and the
+         * screen that sets it. */
+        static const struct { uint8_t gp; ui_text_id_t name;
+                              ui_text_id_t why; } held[5] = {
+            { 16u, TX_OUT_IFACE_SENSE, TX_PK_TAKE_WHY_SENSE },
+            { 17u, TX_OUT_IFACE_SENSE, TX_PK_TAKE_WHY_SENSE },
+            { 18u, TX_OUT_IFACE_PDMINI, TX_PK_TAKE_WHY_PDMINI },
+            { 19u, TX_OUT_IFACE_PDMINI, TX_PK_TAKE_WHY_PDMINI },
+            { 22u, TX_OUT_IFACE_TAP, TX_PK_TAKE_WHY_TAP },
         };
         for (int i = 0; i < 5; ++i) {
             CHECK_EQ(picker_screen_pin(idx(held[i].gp), who, sizeof(who)),
@@ -225,9 +230,16 @@ TEST_CASE(an_interface_pin_is_held_named_in_use_and_takes_no_tap)
             gfx_rect_t r;
             CHECK(picker_screen_button_rect(idx(held[i].gp), &r));
             tap_rect(r);
+            CHECK(!scr()->covered());
+            char want[64];
+            snprintf(want, sizeof(want), ui_tr(held[i].why),
+                     (unsigned)held[i].gp);
+            CHECK_STR_EQ(reason(), want);
         }
         CHECK_EQ(s_applied, 0);
         CHECK_EQ(outbind_chosen(picker_screen_binding()), 0);
+        /* A pick forgets the line. */
+        pick("SERVO PWM");
         CHECK_STR_EQ(reason(), "");
 
         /* IN USE: SENSOR BUS GP16 GP17, PD MINI GP18 GP19, PHASE TAP GP22. */

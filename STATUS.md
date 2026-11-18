@@ -949,7 +949,12 @@ protocol list, the count `N OF 8 SLOTS IN USE` with the refusal reason, a PAD co
 shows the programming port's pin (GPIO 13 by default) held under `PROG PORT`. A held key
 names its holder in a tag of at most 5 cells under its number: `ESC`, `SERVO`, `PPM`, `PORT`
 or `PORT1` to `PORT4`, `BUS`, `PD`, `TAP` (`test_picker_screen`, `test_picker_screen_hold`,
-`test_picker_screen_table` and `test_picker_tags`, 56 cases).
+`test_picker_screen_table` and `test_picker_tags`, 56 cases). A tap on a key or a cell
+another protocol holds asks to move the pin on a card over the board or beside the cell;
+MOVE PIN writes the binding `outbind_take_check()` returns once, CANCEL, the home tag, a press
+off the card, a binding read that fails or changes, a pick and a view switch write nothing; a
+port's, an interface's or OFF's tap gives a reason line (`test_pin_take`, 21 cases, and
+`test_pin_take_grid`, 7 cases, the grid and the rbmod carrier).
 
 ### Output binding in the IOmcu's flash
 
@@ -1676,7 +1681,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 599 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1734,7 +1739,7 @@ The host suite is 599 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_outputs_screen_off`, `test_outputs_screen_port`, `test_outputs_screen_carrier`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
-`test_picker_tags`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
+`test_picker_tags`, `test_pin_take`, `test_pin_take_grid`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
 `test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
@@ -2303,7 +2308,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1006 committed screenshots to the current render, 503 in English and the same 503 in German, and `render_ui.py --fit` fails on a string that
+1016 committed screenshots to the current render, 508 in English and the same 508 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2468,19 +2473,20 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
-| `shared/ui/outputs_screen.c` | 560 | 555 | 99.1% |
+| `shared/ui/outputs_screen.c` | 610 | 605 | 99.2% |
 | `shared/ui/outputs_view.c` | 58 | 58 | 100.0% |
 | `shared/ui/outputs_port.c` | 199 | 197 | 99.0% |
 | `shared/ui/outputs_port_entry.c` | 410 | 403 | 98.3% |
 | `shared/ui/port_view.c` | 97 | 97 | 100.0% |
 | `shared/ui/port_mail.c` | 103 | 103 | 100.0% |
-| `shared/ui/picker_screen.c` | 358 | 353 | 98.6% |
+| `shared/ui/picker_screen.c` | 414 | 409 | 98.8% |
 | `shared/ui/picker_geometry.c` | 155 | 151 | 97.4% |
-| `shared/ui/picker_draw.c` | 334 | 332 | 99.4% |
+| `shared/ui/picker_draw.c` | 344 | 342 | 99.4% |
 | `shared/ui/picker_cat.c` | 94 | 93 | 98.9% |
 | `shared/ui/ui_cats.c` | 65 | 64 | 98.5% |
 | `shared/ui/picker_port.c` | 122 | 115 | 94.3% |
 | `shared/ui/picker_tag.c` | 56 | 56 | 100.0% |
+| `shared/ui/pin_take.c` | 280 | 265 | 94.6% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 453 | 452 | 99.8% |
 | `shared/ui/wifi_screen.c` | 629 | 622 | 98.9% |
@@ -2778,7 +2784,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **101694** | **99561** | **97.9%** |
+| **total** | **102090** | **99942** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

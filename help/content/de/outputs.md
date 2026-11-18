@@ -22,7 +22,7 @@ Pads sind weniger als 40px breit und damit kleiner als eine Fingerkuppe. Jedes e
 |---|---|---|
 | elfenbein- oder ebenholzfarben | frei | ordnet ihn dem gewählten Protokoll zu |
 | Akzentfarbe | dem gewählten Protokoll zugeordnet | gibt ihn frei |
-| grau, die Nummer in 16 x 28 über einem Tag | belegt: der Tag nennt, was den Pin hält, in höchstens 5 Zellen zu 8 x 16 (Tabelle unten) | keine Änderung |
+| grau, die Nummer in 16 x 28 über einem Tag | belegt: der Tag nennt, was den Pin hält, in höchstens 5 Zellen zu 8 x 16 (Tabelle unten) | Pin eines anderen Protokolls: fragt nach dem [Verschieben](#einen-pin-zwischen-protokollen-verschieben); Pin eines Ports oder einer Schnittstelle: nennt den Grund unter der Anzahl |
 | grau, nur die Nummer | der Pin teilt einen PWM-Slice oder ein Compare-Register mit einem zugeordneten Pin oder dem Pin eines Ports, das Protokoll ist voll, oder die Zuordnung ist unbestätigt | keine Änderung; ein Tipp auf einen geteilten Slice oder ein geteiltes Register nennt den Grund unter der Anzahl |
 | keine Taste, rotes Kreuz auf dem Pad | reserviert: GPIO 3 für Heartbeat, GPIO 8 bis GPIO 12 für CAN (Controller Area Network) | keine |
 
@@ -54,10 +54,11 @@ Die Platine markiert auch die anderen Adern eines Servokabels:
 
 ## Pins binden
 
-1. Wähle ein Protokoll in der Liste. Vorher haben Pin-Tasten keine Wirkung.
+1. Wähle ein Protokoll in der Liste. Vorher binden Pin-Tasten nichts.
 2. Tippe auf eine Taste. Der Pin wird sofort zugeordnet; eine zusätzliche Übernahmetaste gibt es nicht.
 3. Tippe auf eine hervorgehobene Taste, um den Pin freizugeben.
-4. Wähle AUS für die Übersicht.
+4. Tippe auf eine graue Taste mit Tag, die ein anderes Protokoll hält, um ihren Pin zum gewählten Protokoll zu [verschieben](#einen-pin-zwischen-protokollen-verschieben). Eine Karte fragt vorher.
+5. Wähle AUS für die Übersicht.
 
 Ein Pin kann höchstens einem Protokoll zugeordnet sein. Mehrere Protokolle können gleichzeitig Pins belegen.
 
@@ -106,6 +107,11 @@ Unter der Liste zählt `4 VON 8 SLOTS BELEGT` die belegten Slots aller Protokoll
 | `KEINE GÜLTIGE ZUORDNUNG IN DEN PAGES` | die Pages enthalten keine Zuordnung; jede Taste ist grau |
 | `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` | ein Tipp auf GPIO 28 unter SERVO PWM oder MOTOR PWM, solange der Programmierport GPIO 13 hält: ein PWM-Slice; die Taste ist grau |
 | `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` | ein Tipp auf GPIO 16 unter SERVO PWM oder MOTOR PWM bei GPIO 0 als PWM zugeordnet: ein PWM-Compare-Register; die Taste ist grau |
+| `GPIO 7: DSHOT600. WÄHLE ERST EIN PROTOKOLL` | ein Tipp auf einen zugeordneten Pin bei AUS |
+| `GPIO 13: PROG-PORT 1. GIB IHN IM EINTRAG FREI` | ein Tipp auf den Pin eines Programmierports |
+| `GPIO 16: SENSORBUS, IN SENSORS` | ein Tipp auf einen Pin des Sensorbusses; ebenso `GPIO 18: PD MINI, IN SUPPLY` und `GPIO 22: PHASENABGRIFF, IN SENSORS` |
+
+Eine Zeile aus einem Tipp bleibt bis zur nächsten Wahl oder zum nächsten Tipp.
 
 ![Acht von acht Slots belegt](view:outputs-full)
 
@@ -115,13 +121,45 @@ PINS links listet die Pins des gewählten Protokolls nach Kanalnummer, ergänzt 
 
 ![GPIO 13 vom Programmierport gehalten](view:outputs-prog)
 
-Der Programmierport belegt standardmäßig GPIO 13 (Pad 17). Ist der Pin keinem Protokoll zugeordnet, erscheint er grau mit dem Tag `PORT` und zuerst unter `PROG-PORT` in BELEGT. Weitere vom IOmcu gemeldete Ports belegen ihre Pins ebenso und stehen unter derselben Überschrift; bei 2 bis 4 Ports lauten die Tags `PORT1` bis `PORT4`.
+Der Programmierport belegt standardmäßig GPIO 13 (Pad 17). Ist der Pin keinem Protokoll zugeordnet, erscheint er grau mit dem Tag `PORT` und zuerst unter `PROG-PORT` in BELEGT. Ein Tipp darauf verschiebt nichts: sein Pin wird im [Eintrag PROG-PORT](#der-eintrag-prog-port) gesetzt. Weitere vom IOmcu gemeldete Ports belegen ihre Pins ebenso und stehen unter derselben Überschrift; bei 2 bis 4 Ports lauten die Tags `PORT1` bis `PORT4`.
 
 ![Die Pins der Anschlüsse gehalten und unter BELEGT genannt](view:outputs-iface)
 
 Auch durch [SETUP > SENSORS](setup-sensors.md) oder [SUPPLY > PD MINI](supply.md#zeilen-des-pd-mini) belegte Pins sind grau, mit dem Tag `BUS`, `PD` oder `PHASE`. BELEGT listet sie nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`. Passt eine Tabelle nicht vollständig, nennt `+N` die Anzahl ausgelassener Zeilen.
 
 ![AUS gewählt: jeder gebundene Pin unter BELEGT](view:outputs-off)
+
+## Einen Pin zwischen Protokollen verschieben
+
+![Die Frage-Karte über der Platine](view:outputs-take)
+
+Ein Tipp auf eine Taste, die ein anderes Protokoll hält, fragt, ob der Pin zum gewählten Protokoll wechselt. Jedes Protokoll nimmt von jedem anderen, auch PPM. Die Karte deckt die Platine ab oder rückt auf einer niedrigen Platine über oder unter die angetippte Taste; diese behält einen Rand in Akzentfarbe und bleibt frei von der Karte.
+
+| Zeile | Beispiel |
+|---|---|
+| der Pin und sein Halter | `GPIO 7: DSHOT600` |
+| die Frage | `GPIO 7 AUS DSHOT600 ENTFERNEN UND SERVO PWM ZUWEISEN?` |
+| was der Halter behält | `DSHOT600 BEHÄLT 1 PIN.`, `... BEHÄLT KEINEN PIN.` |
+| die neue Rolle des Kanals, wenn sie wechselt | `CH4 WIRD ZUM SERVOKANAL: IN RUHE MITTE.` |
+| die Leitung, in Bernstein | `DIE LEITUNG AN PAD 10 BEKOMMT AB DEM NÄCHSTEN ARM SERVO PWM.` |
+
+1. Tippe auf PIN VERSCHIEBEN. Ein Tipp genügt: das Verschieben schaltet nichts ein.
+2. Die Zuordnung wird einmal geschrieben, mit dem verschobenen Pin. [LETZTER SCHREIBVORGANG](#letzter-schreibvorgang) zeigt das Ergebnis.
+3. Zum Rückgängigmachen wähle das alte Protokoll und verschiebe den Pin zurück. Kanäle folgen den Pins, also ist die Zuordnung wieder dieselbe.
+
+ABBRECHEN, das Home-Feld oder ein Druck irgendwo neben der Karte schließt sie und schreibt nichts. Die Karte schließt auch ohne Schreiben, wenn ein Lesen die Zuordnung unbestätigt lässt, ein Zurücklesen einen Pin ändert, ein anderes Protokoll gewählt wird, die Platine wechselt oder die Seite verlassen wird. PIN VERSCHIEBEN prüft das Verschieben vorher noch einmal und schreibt nichts, wenn der Pin inzwischen gewechselt hat.
+
+![Der letzte Pin von SERVO PWM unter DSHOT600 BIDIR](view:outputs-take-last)
+
+Das Verschieben wird im Ruhezustand geschrieben. An einer ARMED-Bank lehnt der IOmcu es ab: LETZTER SCHREIBVORGANG zeigt `ABGELEHNT`, und der Pin bleibt bei seinem Halter. Ab dem nächsten ARM bekommt die Leitung am Pin das neue Signal: ein dort gelassener ESC bekommt beim ARM auf SERVO die 1500us-Mitte von SERVO PWM. Was ein ESC mit diesem Puls beim ARM macht, ist nicht gemessen; stecke die Leitung deshalb um, wie die Zeile in Bernstein sagt.
+
+Ein Tipp, der nichts fragt, nennt stattdessen den Grund unter der Anzahl: der Pin eines Programmierports, gesetzt in dessen Eintrag; ein Pin von SENSORS oder des PD mini, gesetzt auf dieser Seite; AUS gewählt; ein volles Protokoll; eine PWM-Regel, die das Verschieben bricht.
+
+![GPIO 16 des Sensorbusses angetippt](view:outputs-take-why)
+
+Die [Rasteransicht](#die-rasteransicht) und der [rbmod-Carrier](#auf-dem-rbmod-carrier) fragen auf einer Karte neben der angetippten Zelle.
+
+![Die Karte neben dem Raster](view:outputs-grid-take)
 
 ## Der Eintrag PROG-PORT
 
@@ -172,10 +210,10 @@ Ohne Platinenzeichnung oder Formbeschreibung zeigt OUTPUTS ein Raster aus 4 Spal
 | Zelle | Bedeutung | Ein Tipp |
 |---|---|---|
 | abgehakt, `PAD 6` | im gewählten Protokoll zugeordnet; die auf der Platine gedruckte Pad-Nummer | gibt ihn frei |
-| der Name des anderen Protokolls in voller Schrift, Kästchen grau gefüllt | von einem anderen Protokoll gehalten; gedimmt bei unbestätigter Zuordnung | tut nichts |
+| der Name des anderen Protokolls in voller Schrift, Kästchen grau gefüllt | von einem anderen Protokoll gehalten; gedimmt bei unbestätigter Zuordnung | fragt nach dem [Verschieben](#einen-pin-zwischen-protokollen-verschieben) |
 | rot, durchgestrichen | reserviert: GPIO 3 trägt den Sicherheits-Heartbeat, GPIO 8 bis GPIO 12 den CAN-Controller (Controller Area Network) | tut nichts |
-| `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GPIO 13 | tut nichts |
-| rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder der [Abschnitt PD MINI der SUPPLY-Optionen](supply.md#zeilen-des-pd-mini) hält: Sensor-SDA und -SCL, solange INA228 oder AS5600 EIN ist oder ein INA3221 unter [SETUP > SENSORS](setup-sensors.md) bestückt ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | tut nichts |
+| `PROG-PORT` | der Pin des Programmierports des IOmcu, ab Werk GPIO 13 | nennt `GPIO 13: PROG-PORT. GIB IHN IM EINTRAG FREI` unter der Zahl |
+| rot, `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF` | ein Pin, den [SETUP > SENSORS](setup-sensors.md) oder der [Abschnitt PD MINI der SUPPLY-Optionen](supply.md#zeilen-des-pd-mini) hält: Sensor-SDA und -SCL, solange INA228 oder AS5600 EIN ist oder ein INA3221 unter [SETUP > SENSORS](setup-sensors.md) bestückt ist; PD mini TX und RX, solange der PD mini EIN ist und beide Pins gesetzt sind; der Abgriff-Pin, solange der Phasenabgriff EIN ist. Die Zelle folgt diesen Einstellungen | nennt unter der Zahl die Seite, die ihn setzt, `GPIO 16: SENSORBUS, IN SENSORS` |
 | ausgegraut, `SLICE VON GPIO 13` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich einen PWM-Slice mit dem Pin eines Programmierports, jedes Ports, den der IOmcu meldet; GPIO 28 und GPIO 13 sind Slice 6 | tut nichts; `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13` unter der Zahl |
 | ausgegraut, `KANAL VON GPIO 0` | unter SERVO PWM und MOTOR PWM: der Pin teilt sich ein PWM-Compare-Register mit einem als PWM zugeordneten Pin (GPIO 0 und GPIO 16, GPIO 1 und GPIO 17, GPIO 2 und GPIO 18, GPIO 4 und GPIO 20, GPIO 5 und GPIO 21, GPIO 6 und GPIO 22) | tut nichts; `GPIO 16: GLEICHER PWM-KANAL WIE GPIO 0` unter der Zahl |
 | frei, `PAD 7` | nicht zugeordnet | ordnet ihn zu |
@@ -192,6 +230,10 @@ Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) s
 
 PWM02 und PWM03 teilen sich einen PWM-Slice und damit eine Pulsrate. SERVO PWM und MOTOR PWM lassen sich dort nicht miteinander kombinieren. Die Zelle zeigt `SLICE VON PWM02`; ein Tipp meldet `PWM03 GPIO 5: GLEICHER PWM-SLICE WIE PWM02 GPIO 4`. DShot verwendet eine eigene Zustandsmaschine und lässt sich mit beiden kombinieren.
 
+![PWM01 unter DSHOT300 angetippt](view:outputs-rbmod-take)
+
+Ein Tipp auf einen Ausgang, den ein anderes Protokoll hält, fragt nach dem Verschieben, wie auf der Platine. Die Karte nennt den Ausgang, `DIE LEITUNG AN PWM01 BEKOMMT AB DEM NÄCHSTEN ARM DSHOT300.`
+
 ![PROG PORT 1 auf dem Carrier](view:outputs-rbmod-port)
 
 PROG-PORT-Einträge nennen den festen Stecker und Pin, etwa `PROGP01 AUF GPIO 13`. PIN und FUNKTION lassen sich nicht direkt ändern. FUNKTION zeigt SERVO PWM, wenn der Port den Tester bedient, sonst PROGRAMMIERUNG.
@@ -202,7 +244,7 @@ Ab IOmcu-Protokoll 4.36 sind SERVO-TESTER und PORT-PWM verfügbar. Die Portwahl 
 
 ![AUS zeigt das Protokoll jedes gebundenen Pins](view:outputs-off)
 
-Von SETUP aus öffnet OUTPUTS immer mit AUS. Diese Auswahl ändert keine Zuordnung. BELEGT gruppiert alle zugeordneten Pins nach Protokoll; Pin-Tasten haben keine Wirkung. Der Hinweis lautet `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. Beim Öffnen wird nichts an den IOmcu geschrieben.
+Von SETUP aus öffnet OUTPUTS immer mit AUS. Diese Auswahl ändert keine Zuordnung. BELEGT gruppiert alle zugeordneten Pins nach Protokoll. Der Hinweis lautet `WÄHLE EIN PROTOKOLL, DANN TIPPE AUF PINS`. Ein Tipp auf einen freien Pin bewirkt nichts; ein Tipp auf einen zugeordneten Pin verschiebt nichts und nennt sein Protokoll, `GPIO 7: DSHOT600. WÄHLE ERST EIN PROTOKOLL`. Beim Öffnen wird nichts an den IOmcu geschrieben.
 
 AUS bleibt bis zur Protokollwahl ausgewählt, auch nach Verlassen der Seite. Ein Platinenwechsel wählt ebenfalls AUS, etwa wenn ein IOmcu erstmals während des Besuchs antwortet oder ersetzt wird. So geht eine vorherige Protokollauswahl nicht auf eine andere Platine über. Wähle ein Protokoll zum Ändern seiner Pins und AUS für die Übersicht.
 
