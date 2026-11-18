@@ -30,14 +30,15 @@ static const char *TAG = "ota";
 /** @brief One write to flash at most, bytes. */
 #define WRITE_MAX 1024u
 
-/** @brief The service's UUIDs. @{ */
+/** @brief The update service's UUID. */
 static const ble_uuid128_t s_uuid_svc =
     BLE_UUID128_INIT(BLEOTA_UUID_LE(BLEOTA_UUID_SVC));
+/** @brief The UUID of the service's control characteristic. */
 static const ble_uuid128_t s_uuid_ctrl =
     BLE_UUID128_INIT(BLEOTA_UUID_LE(BLEOTA_UUID_CTRL));
+/** @brief The UUID of the service's data characteristic. */
 static const ble_uuid128_t s_uuid_data =
     BLE_UUID128_INIT(BLEOTA_UUID_LE(BLEOTA_UUID_DATA));
-/** @} */
 
 /** @brief The value handles, written by NimBLE at registration. @{ */
 static uint16_t s_h_ctrl;
