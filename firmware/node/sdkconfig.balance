@@ -1,3 +1,6 @@
 # The balance node: appended to sdkconfig.defaults with
 #   idf.py -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.balance" build
+# The role is a choice: the member sdkconfig.defaults leaves selected is
+# named off, so tools/check_sdkconfig.py reads the two files as one list.
+CONFIG_RCNODE_ROLE_POWER=n
 CONFIG_RCNODE_ROLE_BALANCE=y

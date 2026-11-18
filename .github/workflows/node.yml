@@ -71,6 +71,20 @@ jobs:
             && idf.py -B build-display merge-bin
             -o rcbench-node-display-merged.bin
 
+      # Each generated sdkconfig holds every setting of the defaults files
+      # its build names: a misspelled option, or one whose dependencies are
+      # off, fails here.
+      - name: Each generated sdkconfig holds its defaults files
+        run: |
+          python3 tools/check_sdkconfig.py --check --project firmware/node \
+            --sdkconfig firmware/node/build-pwr/sdkconfig
+          python3 tools/check_sdkconfig.py --check --project firmware/node \
+            --defaults sdkconfig.defaults --defaults sdkconfig.balance \
+            --sdkconfig firmware/node/build-bal/sdkconfig
+          python3 tools/check_sdkconfig.py --check --project firmware/node \
+            --defaults sdkconfig.defaults --defaults sdkconfig.s3_es3c28p \
+            --sdkconfig firmware/node/build-display/sdkconfig
+
       - name: Name the images for their version
         run: |
           ver=$(sed -n 's/^#define RCBENCH_VERSION_\(MAJOR\|MINOR\|PATCH\) \([0-9]*\).*/\2/p' \

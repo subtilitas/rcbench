@@ -24,8 +24,10 @@ CONFIG_BT_NIMBLE_50_FEATURE_SUPPORT=n
 CONFIG_BT_NIMBLE_ATT_PREFERRED_MTU=247
 CONFIG_BT_NIMBLE_LOG_LEVEL_WARNING=y
 
-# No Wi-Fi.
-CONFIG_ESP_WIFI_ENABLED=n
+# Wi-Fi: no setting.  CONFIG_ESP_WIFI_ENABLED has no prompt in ESP-IDF
+# v6.1 and is y on every chip with the radio, whatever a defaults file
+# says.  The node calls no esp_wifi function, so the radio's Wi-Fi side
+# never starts.
 
 # A timer wake from deep sleep loads the image without checking it again,
 # for a shorter wake.  Secure boot is not used.
