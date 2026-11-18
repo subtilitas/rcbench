@@ -1,0 +1,838 @@
+{
+ "name": "rbmod-first-program",
+ "lang": "en",
+ "brand": "First programming",
+ "steps": 6,
+ "chapters": [
+  "Download",
+  "Panel over USB",
+  "IOmcu over USB",
+  "First start",
+  "Updates from GitHub",
+  "Update from a browser"
+ ],
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "scenes": [
+  {
+   "type": "board",
+   "board": "p4-7b-back",
+   "dur": 76.68,
+   "camera": [
+    [
+     0,
+     [
+      83,
+      48.5
+     ],
+     190
+    ],
+    [
+     43.36,
+     [
+      83,
+      48.5
+     ],
+     190
+    ],
+    [
+     45.76,
+     [
+      128,
+      74
+     ],
+     100
+    ],
+    [
+     76.68,
+     [
+      128,
+      74
+     ],
+     100
+    ]
+   ],
+   "title": {
+    "from": 0.3,
+    "to": 18.52,
+    "kicker": "rcbench · rbmod carrier",
+    "heading": "First<br>programming",
+    "text": "Panel and IOmcu over USB.<br>Later updates from GitHub and over Wi-Fi."
+   },
+   "chips": [
+    {
+     "from": 19.52,
+     "to": 43.26,
+     "n": 1,
+     "text": "Download the release"
+    },
+    {
+     "from": 43.76,
+     "to": 76.68,
+     "n": 2,
+     "text": "The panel: ESP Web Tool"
+    }
+   ],
+   "labels": [
+    {
+     "from": 19.72,
+     "to": 32.48,
+     "anchor": [
+      83,
+      48
+     ],
+     "at": [
+      560,
+      250
+     ],
+     "side": "b",
+     "n": 1,
+     "title": "github.com/subtilitas/rcbench/releases",
+     "text": "<b>rcbench-panel-p4-vX.Y.Z.zip</b><br><b>rcbench-iomcu-rbmod-vX.Y.Z.zip</b><br><b>SHA256SUMS</b>"
+    },
+    {
+     "from": 33.68,
+     "to": 42.76,
+     "anchor": [
+      83,
+      48
+     ],
+     "at": [
+      560,
+      250
+     ],
+     "side": "b",
+     "n": 1,
+     "title": "The two files to load",
+     "text": "Panel: <b>rcbench-panel-merged.bin</b><br>IOmcu: <b>rcbench-iomcu-rbmod-install.uf2</b><br><b>sha256sum -c SHA256SUMS</b> prints OK for each download."
+    },
+    {
+     "from": 43.96,
+     "to": 50.16,
+     "anchor": [
+      157.3,
+      67.7
+     ],
+     "at": [
+      110,
+      300
+     ],
+     "side": "r",
+     "n": 2,
+     "title": "The panel over USB",
+     "text": "The 7 inch ESP32-P4 display board, seen from the back. Either USB-C socket takes the cable."
+    },
+    {
+     "from": 51.36,
+     "to": 55.56,
+     "anchor": [
+      157.3,
+      67.7
+     ],
+     "at": [
+      110,
+      300
+     ],
+     "side": "r",
+     "n": 2,
+     "title": "1 · Open the ESP Web Tool",
+     "text": "<b>esptool.spacehuhn.com</b><br>Chrome or Edge on a computer: the tool uses the browser's serial port."
+    },
+    {
+     "from": 56.76,
+     "to": 60.32,
+     "anchor": [
+      157.3,
+      67.7
+     ],
+     "at": [
+      110,
+      300
+     ],
+     "side": "r",
+     "n": 2,
+     "title": "2 · Connect",
+     "text": "Click <b>Connect</b>. The browser lists the serial ports. Pick the panel's and confirm."
+    },
+    {
+     "from": 61.52,
+     "to": 65.88,
+     "anchor": [
+      157.3,
+      67.7
+     ],
+     "at": [
+      110,
+      300
+     ],
+     "side": "r",
+     "n": 2,
+     "title": "3 · Add the image at 0x0",
+     "text": "File: <b>rcbench-panel-merged.bin</b><br>Address: <b>0x0</b>. One file holds the bootloader, the partition table and the application."
+    },
+    {
+     "from": 67.08,
+     "to": 75.68,
+     "anchor": [
+      157.3,
+      67.7
+     ],
+     "at": [
+      110,
+      300
+     ],
+     "side": "r",
+     "n": 2,
+     "style": "ok",
+     "title": "4 · Program",
+     "text": "Click <b>Program</b> and wait for the tool's last line. The panel starts on its default settings."
+    }
+   ],
+   "tags": [],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "This video loads the firmware onto a new R C bench with the R B mod carrier: the panel from a browser, the I O M C U from a U S B drive. Then it shows the two ways to update later: from GitHub, and from a browser over Wi-Fi."
+    },
+    {
+     "at": 19.52,
+     "text": "Step 1. Download three files from the releases page on GitHub: the panel's zip file, the zip file of the I O M C U for the R B mod carrier, and the checksum file."
+    },
+    {
+     "at": 33.48,
+     "text": "Unpack both zip files. Two files in them are needed: the merged panel image, and the install image of the I O M C U."
+    },
+    {
+     "at": 43.76,
+     "text": "Step 2. The panel. Connect one of the panel's two U S B C sockets to a computer."
+    },
+    {
+     "at": 51.16,
+     "text": "Open the E-S-P web tool by Spacehuhn in Chrome or Edge."
+    },
+    {
+     "at": 56.56,
+     "text": "Click Connect and pick the panel's serial port."
+    },
+    {
+     "at": 61.32,
+     "text": "Add the merged panel image and leave its address at zero."
+    },
+    {
+     "at": 66.88,
+     "text": "Click Program. When the tool reports the end, the panel holds its firmware and starts on its default settings."
+    }
+   ]
+  },
+  {
+   "type": "board",
+   "board": "rbmod-rev1",
+   "dur": 38.0,
+   "camera": [
+    [
+     0,
+     [
+      44.5,
+      40
+     ],
+     172
+    ],
+    [
+     6.3999999999999995,
+     [
+      44.5,
+      40
+     ],
+     172
+    ],
+    [
+     8.8,
+     [
+      72,
+      13
+     ],
+     52
+    ],
+    [
+     38.0,
+     [
+      72,
+      13
+     ],
+     52
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 38.0,
+     "n": 3,
+     "text": "The IOmcu: USB drive"
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 5.8,
+     "anchor": [
+      70,
+      26
+     ],
+     "at": [
+      1240,
+      430
+     ],
+     "n": 3,
+     "title": "RP2350-CAN on the rbmod carrier",
+     "text": "The IOmcu drives every output. Its USB-C socket is at the module's end."
+    },
+    {
+     "from": 7.0,
+     "to": 14.08,
+     "at": [
+      1240,
+      330
+     ],
+     "n": 3,
+     "anchor": [
+      64.15,
+      12.35
+     ],
+     "style": "warn",
+     "title": "1 · Hold BOOT, plug in",
+     "text": "Hold <b>BOOT</b> while the USB cable goes in. Release it once the cable is in."
+    },
+    {
+     "from": 15.28,
+     "to": 18.52,
+     "at": [
+      1240,
+      330
+     ],
+     "n": 3,
+     "anchor": [
+      69.86,
+      2.6
+     ],
+     "title": "2 · The drive RP2350",
+     "text": "The module appears as a USB drive named <b>RP2350</b>."
+    },
+    {
+     "from": 19.72,
+     "to": 26.8,
+     "at": [
+      1240,
+      330
+     ],
+     "n": 3,
+     "anchor": [
+      69.86,
+      2.6
+     ],
+     "title": "3 · Copy the install image",
+     "text": "<b>rcbench-iomcu-rbmod-install.uf2</b><br>The drive disappears and the module restarts into slot A."
+    },
+    {
+     "from": 28.0,
+     "to": 37.0,
+     "at": [
+      1240,
+      330
+     ],
+     "n": 3,
+     "anchor": [
+      70,
+      23.5
+     ],
+     "style": "ok",
+     "title": "USB once, CAN afterwards",
+     "text": "The partition table gives the IOmcu two slots. The panel writes the slot that is not running."
+    }
+   ],
+   "tags": [
+    {
+     "from": 7.1,
+     "to": 14.08,
+     "at": [
+      69.86,
+      2.6
+     ],
+     "text": "USB-C → computer",
+     "side": "t"
+    },
+    {
+     "from": 15.38,
+     "to": 18.52,
+     "at": [
+      69.86,
+      2.6
+     ],
+     "text": "USB-C → computer",
+     "side": "t"
+    },
+    {
+     "from": 19.82,
+     "to": 26.8,
+     "at": [
+      69.86,
+      2.6
+     ],
+     "text": "USB-C → computer",
+     "side": "t"
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Step 3. The I O M C U. It is the R P 23 50 module on the carrier."
+    },
+    {
+     "at": 6.8,
+     "text": "Hold the boot button on the module, plug its U S B C socket into the computer, then let go."
+    },
+    {
+     "at": 15.08,
+     "text": "The computer shows a drive named R P 23 50."
+    },
+    {
+     "at": 19.52,
+     "text": "Copy the install image onto the drive. The module restarts by itself and runs the firmware."
+    },
+    {
+     "at": 27.8,
+     "text": "The install image also writes a partition table. With it, every later update comes from the panel over the CAN bus."
+    }
+   ]
+  },
+  {
+   "type": "tour",
+   "steps": [
+    {
+     "dur": 3.0,
+     "n": 4,
+     "card": {
+      "title": "First start",
+      "text": "Power both boards with the link wired."
+     }
+    },
+    {
+     "view": "splash",
+     "dur": 4.4,
+     "n": 4,
+     "kicker": "04 · First start",
+     "path": [
+      "START"
+     ],
+     "title": "The start-up check",
+     "text": "LINK OK and IOMCU OK: both boards run and talk at 1 Mbit/s.",
+     "say": "The start-up check lists board, display, touch, storage and settings. Link OK and I O M C U OK mean that both boards run and talk to each other.",
+     "marks": [
+      {
+       "at": [
+        575,
+        418
+       ],
+       "text": "The CAN link",
+       "side": "r"
+      },
+      {
+       "at": [
+        815,
+        458
+       ],
+       "text": "IOmcu firmware",
+       "side": "r"
+      }
+     ]
+    },
+    {
+     "view": "outputs-rbmod",
+     "dur": 4.4,
+     "n": 4,
+     "kicker": "04 · First start",
+     "path": [
+      "HOME",
+      "SETUP",
+      "OUTPUTS"
+     ],
+     "title": "The carrier's outputs",
+     "text": "SETUP > OUTPUTS shows the pins of the rbmod carrier.",
+     "say": "Setup, outputs shows the pins of the R B mod carrier. The bench is ready to use."
+    },
+    {
+     "dur": 3.0,
+     "n": 5,
+     "card": {
+      "title": "Updates from GitHub",
+      "text": "The panel downloads a release and installs it."
+     }
+    },
+    {
+     "view": "wifi",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "A home network, once",
+     "text": "CHOOSE HOME NETWORK scans for WPA2 and WPA3 networks.",
+     "say": "The panel needs a home network, once. Open setup, Wi-Fi, and tap choose home network.",
+     "focus": [
+      16,
+      212,
+      460,
+      60
+     ]
+    },
+    {
+     "view": "wifi-scan",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "Pick the network",
+     "text": "Up to 16 networks, strongest first.",
+     "say": "The panel lists the networks it finds. Tap yours."
+    },
+    {
+     "view": "wifi-key-pass",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "Type the password",
+     "text": "8 to 63 characters. The panel joins the network and keeps it.",
+     "say": "Type its password. The panel joins the network and keeps it."
+    },
+    {
+     "view": "updates",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "CHECK FOR UPDATES",
+     "text": "The check needs the bench SAFE and the supply output off.",
+     "say": "Open setup, updates, and tap check for updates. The bench has to be safe, with the supply output off.",
+     "focus": [
+      16,
+      76,
+      460,
+      56
+     ]
+    },
+    {
+     "view": "updates-checking",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "The panel asks GitHub",
+     "text": "Wi-Fi goes on for the check and off again.",
+     "say": "The panel switches Wi-Fi on and asks GitHub for the newest release."
+    },
+    {
+     "view": "updates-newer",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Step 1: PANEL",
+     "text": "A newer release is offered with a 2 s hold.",
+     "say": "A newer release makes step 1, panel, the current step. Hold the button for 2 seconds to download and install.",
+     "focus": [
+      500,
+      352,
+      500,
+      64
+     ]
+    },
+    {
+     "view": "panel-download",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Download",
+     "text": "The firmware is checked before a byte is written.",
+     "say": "The panel downloads the firmware and checks it before it writes anything."
+    },
+    {
+     "view": "panel-update",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Writing",
+     "text": "The firmware goes into the slot that is not running.",
+     "say": "It writes the firmware into the slot that is not running. Leave the panel switched on."
+    },
+    {
+     "view": "panel-update-done",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Written and checked",
+     "text": "The panel restarts into the new version.",
+     "say": "The firmware is read back and checked. Then the panel restarts into the new version."
+    },
+    {
+     "view": "updates-run-iomcu",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Step 2: IOMCU",
+     "text": "The panel carries the IOmcu's firmware.",
+     "say": "After the restart, updates opens on step 2. The panel carries the firmware of the I O M C U. Hold the button for 2 seconds.",
+     "focus": [
+      500,
+      352,
+      500,
+      64
+     ]
+    },
+    {
+     "view": "coproc-update-progress",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Over the CAN bus",
+     "text": "Outputs stay off until the update ends.",
+     "say": "The panel sends the firmware over the CAN bus. The outputs stay off until the update ends."
+    },
+    {
+     "view": "updates-step-c6",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Step 3: C6 RADIO",
+     "text": "The ESP32-C6 carries Wi-Fi and Bluetooth.",
+     "say": "Step 3 updates the panel's radio, the E S P 32 C 6, with the same hold. The panel restarts after it."
+    },
+    {
+     "view": "updates-current",
+     "dur": 4.4,
+     "n": 5,
+     "kicker": "05 · Updates from GitHub",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Up to date",
+     "text": "With the reminder on, the panel checks GitHub at each start.",
+     "say": "With every step current, the bench is up to date. With the reminder on, the panel checks GitHub at each start."
+    },
+    {
+     "dur": 3.0,
+     "n": 6,
+     "card": {
+      "title": "Update from a browser",
+      "text": "The panel opens its own network and takes a file."
+     }
+    },
+    {
+     "view": "wifi",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Update from a browser",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "ACCESS POINT",
+     "text": "The panel opens its own WPA2 network.",
+     "say": "The second way needs no home network. Open setup, Wi-Fi, and tap access point.",
+     "focus": [
+      16,
+      76,
+      460,
+      60
+     ]
+    },
+    {
+     "view": "wifi-ap",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Update from a browser",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "Join and open the page",
+     "text": "Network, password, address and access code are on the screen.",
+     "say": "The screen shows a network name, a password, an address and an access code. Join the network with a phone or a computer and open the address.",
+     "marks": [
+      {
+       "at": [
+        520,
+        104
+       ],
+       "text": "Network",
+       "side": "r"
+      },
+      {
+       "at": [
+        660,
+        216
+       ],
+       "text": "Address",
+       "side": "r"
+      },
+      {
+       "at": [
+        440,
+        272
+       ],
+       "text": "Access code",
+       "side": "r"
+      }
+     ]
+    },
+    {
+     "view": "wifi-ap",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Update from a browser",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "Upload the panel file",
+     "text": "<b>rcbench-panel-p4-vX.Y.Z.bin</b>, the release's file for updates.",
+     "say": "Enter the access code. Under panel firmware, pick the release's panel file that ends in dot bin, and tap upload.",
+     "focus": [
+      8,
+      380,
+      520,
+      44
+     ]
+    },
+    {
+     "view": "wifi-question",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Update from a browser",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "INSTALL PANEL FIRMWARE?",
+     "text": "The installation starts on the panel only.",
+     "say": "The panel checks the file and shows both versions. Hold install for 2 seconds. Only this hold on the panel starts the installation.",
+     "focus": [
+      540,
+      465,
+      468,
+      72
+     ]
+    },
+    {
+     "view": "panel-update",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Update from a browser",
+     "path": [
+      "HOME",
+      "SETUP",
+      "WI-FI"
+     ],
+     "title": "Writing",
+     "text": "Written, read back, checked, restarted.",
+     "say": "The panel writes the firmware, checks it and restarts."
+    },
+    {
+     "view": "updates-offer",
+     "dur": 4.4,
+     "n": 6,
+     "kicker": "06 · Update from a browser",
+     "path": [
+      "HOME",
+      "SETUP",
+      "UPDATES"
+     ],
+     "title": "Then the IOmcu",
+     "text": "The band names the next step.",
+     "say": "The update of the I O M C U follows on updates, as before."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 9,
+   "heading": "Firmware loaded",
+   "items": [
+    "Download the release from GitHub",
+    "Panel: ESP Web Tool, merged image at 0x0",
+    "IOmcu: hold BOOT, copy the install image to RP2350",
+    "First start: LINK OK, IOMCU OK",
+    "Later: SETUP › UPDATES, 2 s hold",
+    "Or: WI-FI › ACCESS POINT, upload, 2 s hold"
+   ],
+   "say": "Both boards are loaded. From here on, the bench updates itself from GitHub, or takes a file from a browser.",
+   "note": "Reference: docs/FirstRun.md, docs/Screens.md."
+  }
+ ]
+}
