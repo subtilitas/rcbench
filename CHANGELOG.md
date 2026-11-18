@@ -144,6 +144,42 @@ history is in git.
   supplies between the run's SAFE request and its read-back; the run then
   armed again by itself. The hold also takes back an ARM that is on its
   way.
+- C6 radio update: from its start to the panel's restart the supply's
+  OUTPUT ON, PROG 5V ON and a programmer session's start are refused with
+  an alert, as ARM is. No update starts while a servo or ESC programmer
+  holds a port. After a success the update run's note and the restart wait
+  for a bench that is SAFE with the supply output and PROG 5V off and no
+  programmer on a port; the band reads `C6 radio updated to <version>. The
+  panel restarts once SAFE with all outputs off.`. From the success to the
+  restart the C6 step shows no live hold.
+- Panel flash writes: an ARM queued earlier in a frame holds back that
+  frame's settings save, Wi-Fi settings write, run note erase and trial
+  keep.
+- Panel install: the wait for the control task is 1500ms, above one
+  unanswered link exchange of 1000ms. A wait that runs out ends the
+  install with `install of <version> failed: the control task did not stand still` on
+  the console, with nothing written.
+
+- LOGS: a rising first column named as a counter (`step`, `row`, `index`,
+  `sample`, `count`, `n`, `#`) is no time axis. `RUDDRnnn.CSV` plots
+  against the row index; its header showed `5.00s   1Hz` for 6 steps.
+- LOGS: a time unit after an underscore in the header is read (`time_ms`,
+  `t_us`, `elapsed_s`). 4s of rows under `time_ms` opened as 4,000s.
+- LOGS: DELETE is refused while the bench is ARMED or a run is being
+  logged, as every write in FILES, with `Bench ARMED. The card is
+  read-only.` or `A run is being logged. The card is read-only.` An ARM or
+  a run that starts while the question is open refuses its DELETE.
+- LOGS: the USER tab's line and the help name `RUDDRnnn.CSV`.
+- FILES: a COPY blocked by a leftover `<name>.NEW` names `<name>.NEW` in
+  `... already exists there.`
+- FILES and SETUP > SD CARD: `BENCH/BALANCE` is a FIXED folder (no RENAME,
+  no MOVE) and is refused as a log folder, as the other bench folders.
+- FILES: a SAVE over a file that grew after its checksum was read is
+  refused as changed. A row the balance node's solve appended to
+  `BALANCE.CSV` during the save is kept.
+- Bus fault screen: the German titles are `CAN-BUS-FEHLER` and
+  `VERBINDUNG VERLOREN`.
+- BATTERY: a cell count outside 1 to 14 is taken as no pack.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,

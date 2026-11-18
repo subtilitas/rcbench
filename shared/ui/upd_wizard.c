@@ -250,6 +250,9 @@ static void c6_blocked(upd_wiz_step_t *st, fw_c6_why_t why)
     case FW_C6_WHY_DRAWING:
         set(st, UPD_WIZ_HELD, UPD_WIZ_TAG_NEXT, UPD_WIZ_WHY_DRAWING);
         break;
+    case FW_C6_WHY_PROG:
+        set(st, UPD_WIZ_HELD, UPD_WIZ_TAG_NEXT, UPD_WIZ_WHY_PROG);
+        break;
     case FW_C6_WHY_BLE:
         set(st, UPD_WIZ_PENDING, UPD_WIZ_TAG_CHECKING, UPD_WIZ_WHY_BLE);
         break;

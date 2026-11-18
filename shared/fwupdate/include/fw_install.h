@@ -42,6 +42,16 @@ extern "C" {
 /** @brief Bytes per write step: one 64kB block, erased as the write reaches it. */
 #define FW_WRITE_CHUNK (64u * 1024u)
 
+/**
+ * @brief How long the install waits for the control task to stand still, ms.
+ *
+ * The control task looks at the request at the top of a pass.  A pass with
+ * no IOmcu answering waits LINK_HOST_TIMEOUT_MS (1000ms, link_host.h) inside
+ * one exchange, so the acknowledgement can come that much later plus the
+ * rest of the pass; 500ms are the margin over it.
+ */
+#define FW_INSTALL_QUIET_WAIT_MS 1500u
+
 /* ---------------------------------------------------------------- the gate */
 
 /** @brief Whether the bench lets the panel write its own flash for an update. */
@@ -182,6 +192,20 @@ fw_err_t fw_install_begin(fw_install_t *in, const fw_flash_t *f,
  * @return Where the installer stands after the step.
  */
 fw_install_status_t fw_install_step(fw_install_t *in, bool quiet);
+
+/**
+ * @brief Ends an install whose control task did not stand still within
+ *        FW_INSTALL_QUIET_WAIT_MS: no flash is touched, the boot slot stays.
+ *
+ * Only before the first flash operation.  An install that is not busy, or
+ * one that has touched the flash, is left as it is.
+ *
+ * @param in  The installer.
+ * @return FW_INSTALL_FAILED with fw_install_t.err FW_ERR_QUIET; else where
+ *         the installer stands: IDLE when not busy, RUNNING when the flash
+ *         was touched.
+ */
+fw_install_status_t fw_install_not_quiet(fw_install_t *in);
 
 /**
  * @brief Whether every byte is written and only the finish is left.

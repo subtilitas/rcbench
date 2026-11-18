@@ -16,6 +16,9 @@
  * - deleting_the_open_file_drops_what_was_read_from_it
  * - deleting_another_file_keeps_the_open_one
  * - a_refused_delete_keeps_the_file_listed
+ * - delete_is_refused_while_armed_with_the_reason
+ * - delete_is_refused_while_a_run_is_logged
+ * - an_arm_while_the_question_is_open_refuses_the_delete
  * - a_rescan_or_leaving_the_screen_closes_the_question
  * - the_question_leaves_no_stale_pixels
  * - the_footer_message_follows_the_language
@@ -218,6 +221,69 @@ TEST_CASE(a_refused_delete_keeps_the_file_listed)
     CHECK_STR_EQ(g_removed_name, "BENCH_01.CSV");
 }
 
+/** @brief The band's status: SAFE or ARMED, the link up. */
+static void set_armed(bool armed)
+{
+    ui_bench_status_t st = { .link_up = true, .armed = armed };
+    ui_router_set_status(&st);
+}
+
+TEST_CASE(delete_is_refused_while_armed_with_the_reason)
+{
+    fresh();
+    set_armed(true);
+    ask_to_delete(0);
+    draw();
+    /* No question, FILES' reason in the footer, the file kept. */
+    CHECK(!log_viewer_screen()->covered());
+    CHECK_STR_EQ(log_viewer_message(), ui_tr(TX_FM_GATE_ARMED));
+    CHECK_EQ(g_remove_calls, 0);
+
+    /* SAFE again: the same file is asked about and deleted. */
+    set_armed(false);
+    screen()->tick(0.02f);
+    tap(DELETE_X, FOOT_CY);
+    CHECK(log_viewer_screen()->covered());
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 1);
+    CHECK_STR_EQ(g_removed_name, "BENCH_01.CSV");
+}
+
+TEST_CASE(delete_is_refused_while_a_run_is_logged)
+{
+    fresh();
+    g_logging = true;
+    ask_to_delete(0);
+    CHECK(!log_viewer_screen()->covered());
+    CHECK_STR_EQ(log_viewer_message(), ui_tr(TX_FM_GATE_LOGGING));
+    CHECK_EQ(g_remove_calls, 0);
+    /* OPEN reads; the gate holds writes alone. */
+    tap(OPEN_X, FOOT_CY);
+    CHECK(log_viewer_analysis() != NULL);
+    g_logging = false;
+}
+
+TEST_CASE(an_arm_while_the_question_is_open_refuses_the_delete)
+{
+    fresh();
+    ask_to_delete(0);
+    CHECK(log_viewer_screen()->covered());
+    set_armed(true);
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 0);
+    CHECK(!log_viewer_screen()->covered());
+    CHECK_STR_EQ(log_viewer_message(), ui_tr(TX_FM_GATE_ARMED));
+    set_armed(false);
+
+    fresh();
+    ask_to_delete(0);
+    g_logging = true;
+    tap(DQ_DELETE_X, DQ_CY);
+    CHECK_EQ(g_remove_calls, 0);
+    CHECK_STR_EQ(log_viewer_message(), ui_tr(TX_FM_GATE_LOGGING));
+    g_logging = false;
+}
+
 TEST_CASE(a_rescan_or_leaving_the_screen_closes_the_question)
 {
     /* A re-read can be of another card, where the same name is another
@@ -394,6 +460,9 @@ int main(void)
     RUN(deleting_the_open_file_drops_what_was_read_from_it);
     RUN(deleting_another_file_keeps_the_open_one);
     RUN(a_refused_delete_keeps_the_file_listed);
+    RUN(delete_is_refused_while_armed_with_the_reason);
+    RUN(delete_is_refused_while_a_run_is_logged);
+    RUN(an_arm_while_the_question_is_open_refuses_the_delete);
     RUN(a_rescan_or_leaving_the_screen_closes_the_question);
     RUN(the_question_leaves_no_stale_pixels);
     RUN(the_footer_message_follows_the_language);

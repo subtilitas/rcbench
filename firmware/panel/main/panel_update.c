@@ -703,12 +703,8 @@ static void fw_install_run(void)
     static fw_install_t in;
     fw_image_info_t running;
     (void)fw_ota_running(&running);
-    bool armed;
-    snap_lock();
-    armed = s_snap.arm_wanted || s_snap.armed;
-    snap_unlock();
     fw_err_t e = FW_ERR_BUSY;
-    if (down && fw_gate_now(armed) == FW_GATE_OPEN) {
+    if (down && fw_gate_now(arm_live_or_coming()) == FW_GATE_OPEN) {
         e = fw_install_begin(&in, fw_ota_flash(), img, bytes,
                              fw_ota_slot_bytes(), &running);
     }
@@ -717,16 +713,21 @@ static void fw_install_run(void)
         atomic_store(&s_fw_quiet_req, true);
         const uint32_t t1 = now_ms();
         while (!atomic_load(&s_fw_quiet_ack)
-               && (uint32_t)(now_ms() - t1) < 1000u) {
+               && (uint32_t)(now_ms() - t1) < FW_INSTALL_QUIET_WAIT_MS) {
             vTaskDelay(pdMS_TO_TICKS(CONTROL_PERIOD_MS));
         }
-        const bool quiet = atomic_load(&s_fw_quiet_ack);
-        ESP_LOGI(TAG, "writing %s, %lu bytes", info.version_text,
-                 (unsigned long)bytes);
-        do {
-            st = fw_install_step(&in, quiet);
-            update_frame(UPDATE_WRITING, info.version_text, in.done, bytes);
-        } while (st == FW_INSTALL_RUNNING);
+        if (!atomic_load(&s_fw_quiet_ack)) {
+            /* No flash is touched: the install ends FW_ERR_QUIET. */
+            st = fw_install_not_quiet(&in);
+        } else {
+            ESP_LOGI(TAG, "writing %s, %lu bytes", info.version_text,
+                     (unsigned long)bytes);
+            do {
+                st = fw_install_step(&in, true);
+                update_frame(UPDATE_WRITING, info.version_text, in.done,
+                             bytes);
+            } while (st == FW_INSTALL_RUNNING);
+        }
         /* Only an image written whole and checked notes the update run:
          * a power cut before this line leaves no run. */
         (void)fw_ota_run_installed(st, info.version_text);

@@ -765,7 +765,9 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   also hält jedes Löschen und Schreiben beide Kerne des Panels an, die
   Control-Task mit Heartbeat, STOP, OUTPUT OFF und den Abschaltungen des
   Netzteils eingeschlossen. Die Regel ist `flash_gate_open()` in
-  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Sie hält das
+  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Ein ARM, das ein
+  Bildschirm eingereiht und die Control-Task noch nicht übernommen hat,
+  zählt als wartendes Schalten auf ARMED (`flash_gate_arm()`). Sie hält das
   Speichern der Einstellungen und das Ablegen der Zeichnung der Platine zurück.
   Das Schalten auf ARMED und das Netzteil werden für einen Schreibvorgang nie
   verweigert: der Schreibvorgang wartet. Das Ablegen (2 Löschvorgänge zu 4kB
@@ -831,7 +833,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Grund ihren eigenen Vermerk eines STOP-Drucks bei einem Verlust im
   Treiber: Sie besitzt diesen Druck unabhängig von den Seiten.
 - Jedes Bedienelement mit einem gespeicherten Zustand zwischen Drücken
-  und Loslassen bricht seine laufende Geste ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
+  und Loslassen bricht seine laufende Geste ab. MOTOR & ESC, SERVO und CAN-BUS-FEHLER haben eine Geste, die auf einem
   Timer fertig wird, ohne diesen Abbruch würde ein verlorenes Release dort von selbst
   auf ARMED schalten oder quittieren; die Kacheln der Übersicht, die Zellen auf OUTPUTS
   und in der Auswahl, die Tasten des Einstellungs-Bildschirms, die

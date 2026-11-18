@@ -18,6 +18,7 @@
 
 #include "card_tree.h"
 #include "esc_profile.h"
+#include "fm_rules.h"
 #include "kst_card.h"
 #include "kst_files.h"
 #include "kst_panel.h"
@@ -621,6 +622,20 @@ static bool card_remove(const char *name, void *ctx)
     return true;
 }
 
+/**
+ * @brief log_viewer_io_t's logging hook: whether the logger has a run, a
+ *        test's CSV or a report open, in any folder.
+ */
+static bool card_logging(void *ctx)
+{
+    (void)ctx;
+    log_marks_t marks;
+    char run_dir[CARD_DIR_MAX];
+    char test_dir[CARD_DIR_MAX];
+    log_open_marks(&marks, run_dir, test_dir);
+    return fm_logging(&marks);
+}
+
 const log_viewer_io_t k_card_io = {
     .list   = card_list,
     .open   = card_open,
@@ -631,6 +646,7 @@ const log_viewer_io_t k_card_io = {
     .written = card_written,
     .card   = card_state,
     .mounts = card_mounts,
+    .logging = card_logging,
     .ctx    = NULL,
 };
 

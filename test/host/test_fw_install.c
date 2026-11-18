@@ -24,6 +24,7 @@
 #include "fw_fixture.h"
 #include "fw_boot.h"
 #include "fw_install.h"
+#include "link_host.h"
 
 #define SLOT 0x3E0000u
 
@@ -152,6 +153,47 @@ TEST_CASE(nothing_is_written_while_the_bench_is_not_quiet)
         }
     }
     CHECK(g_boot_switched);
+}
+
+/*
+ * R10-3: the control task did not stand still in time.  The install ends
+ * with its own reason and nothing written, not as "ok".
+ */
+TEST_CASE(an_install_whose_control_task_did_not_stand_still_ends_not_quiet)
+{
+    fresh();
+    const fw_image_info_t r = fw_fix_running("0.18.9", 0x11);
+    fw_install_t in;
+    CHECK_EQ(fw_install_begin(&in, &k_flash, g_img, g_len, SLOT, &r), FW_OK);
+    /* As before the change: a step that is not quiet leaves no reason. */
+    CHECK_EQ(fw_install_step(&in, false), FW_INSTALL_WAITING);
+    CHECK_EQ(in.err, FW_OK);
+    CHECK_EQ(fw_install_not_quiet(&in), FW_INSTALL_FAILED);
+    CHECK_EQ(in.err, FW_ERR_QUIET);
+    CHECK(strcmp(fw_err_str(in.err), "ok") != 0);
+    CHECK_STR_EQ(fw_err_str(FW_ERR_QUIET),
+                 "the control task did not stand still");
+    CHECK_EQ(ops(), 0u);
+    CHECK(!g_boot_switched);
+    /* Ended: nothing more happens, and a second call changes nothing. */
+    CHECK_EQ(fw_install_step(&in, true), FW_INSTALL_IDLE);
+    CHECK_EQ(fw_install_not_quiet(&in), FW_INSTALL_IDLE);
+    CHECK_EQ(in.err, FW_ERR_QUIET);
+    CHECK_EQ(ops(), 0u);
+    /* An install that has touched the flash is not ended this way. */
+    fresh();
+    CHECK_EQ(fw_install_begin(&in, &k_flash, g_img, g_len, SLOT, &r), FW_OK);
+    CHECK_EQ(fw_install_step(&in, true), FW_INSTALL_RUNNING);
+    CHECK_EQ(fw_install_not_quiet(&in), FW_INSTALL_RUNNING);
+    CHECK_EQ(run(&in), FW_INSTALL_DONE);
+    CHECK(g_boot_switched);
+}
+
+/* The wait covers one unanswered link exchange and the rest of a pass. */
+TEST_CASE(the_wait_for_the_control_task_is_longer_than_one_link_timeout)
+{
+    CHECK_EQ(FW_INSTALL_QUIET_WAIT_MS, 1500u);
+    CHECK(FW_INSTALL_QUIET_WAIT_MS >= LINK_HOST_TIMEOUT_MS + 500u);
 }
 
 TEST_CASE(every_refused_image_is_refused_before_the_flash)
@@ -754,6 +796,8 @@ int main(void)
     REQUIRE_ALLOC(g_slot);
     RUN(a_checked_image_is_written_whole_and_starts_next);
     RUN(nothing_is_written_while_the_bench_is_not_quiet);
+    RUN(an_install_whose_control_task_did_not_stand_still_ends_not_quiet);
+    RUN(the_wait_for_the_control_task_is_longer_than_one_link_timeout);
     RUN(every_refused_image_is_refused_before_the_flash);
     RUN(the_running_build_is_not_written_over_itself);
     RUN(an_older_release_and_another_build_are_installed_when_asked);
