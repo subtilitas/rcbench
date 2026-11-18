@@ -212,9 +212,9 @@ static bool every_control_is_refused(void)
 TEST_CASE(no_throttle_control_moves_the_value_before_the_first_arm)
 {
     fresh();
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK(every_control_is_refused());
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 }
 
 /* Disarmed after a run at 24%: the throttle is 0%, whatever is pressed,
@@ -226,9 +226,9 @@ TEST_CASE(no_throttle_control_moves_the_value_after_a_disarm)
     drag(28, 100);
     CHECK_NEAR(took().value, 100.0f * PX_PCT, 0.01f);
     CHECK(disarm());
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK(every_control_is_refused());
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 }
 
 /* Between the hold's ask and the bench's answer the bench is not armed. */
@@ -242,12 +242,12 @@ TEST_CASE(no_throttle_control_moves_the_value_before_the_bench_answers)
     drag(28, 100);
     feed_tap(FEED_LONE, UP_X, TRACK_Y);
     knob(0.1f);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(took().kind, MOTOR_CMD_ARM);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
     CHECK(every_control_is_refused());
     motor_screen_set_armed(true);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
 }
 
@@ -265,11 +265,11 @@ TEST_CASE(nothing_moves_the_throttle_under_a_disarm_not_yet_taken)
     feed_tap(FEED_LONE, UP_X, TRACK_Y);
     feed_tap(FEED_LONE, DOWN_X, TRACK_Y);
     knob(0.2f);
-    CHECK_EQ(motor_screen_throttle(), driven);
+    CHECK_FEQ(motor_screen_throttle(), driven);
     CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
     motor_screen_set_armed(false);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 }
 
 /*
@@ -302,10 +302,10 @@ TEST_CASE(nothing_moves_the_throttle_between_a_disarm_and_its_answer)
             feed_tap(FEED_LONE, DOWN_X, TRACK_Y);
             knob(0.2f);
             CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-            CHECK_EQ(motor_screen_throttle(), driven);
+            CHECK_FEQ(motor_screen_throttle(), driven);
         }
         motor_screen_set_armed(false);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         CHECK(every_control_is_refused());
         CHECK(arm());
         feed_tap(FEED_LONE, UP_X, TRACK_Y);
@@ -325,7 +325,7 @@ TEST_CASE(a_drag_ends_where_the_disarm_is_asked)
     CHECK_NEAR(driven, 100.0f * PX_PCT, 0.01f);
     feed_tap(2, ARM_X, ARM_Y);
     glide(1, TRACK_X + 228, TRACK_Y, 8);
-    CHECK_EQ(motor_screen_throttle(), driven);
+    CHECK_FEQ(motor_screen_throttle(), driven);
     CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
     /* Armed again under the same finger, the drag is not taken up. */
@@ -333,7 +333,7 @@ TEST_CASE(a_drag_ends_where_the_disarm_is_asked)
     motor_screen_set_armed(true);
     glide(1, TRACK_X + 300, TRACK_Y, 8);
     lift(1);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
 }
 
@@ -350,7 +350,7 @@ TEST_CASE(a_press_on_the_disarmed_track_is_no_drag_after_the_arm)
     motor_screen_set_armed(true);
     glide(1, TRACK_X + 228, TRACK_Y, 8);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     lift(1);
     lift(2);
     drain();
@@ -372,7 +372,7 @@ TEST_CASE(the_first_input_after_an_arm_starts_from_zero)
         CHECK(took().value > 60.0f);
         CHECK(disarm());
         CHECK(arm());
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         CHECK_EQ(took().kind, MOTOR_CMD_NONE);
         float want = 0.0f;
         switch (input) {
@@ -406,9 +406,9 @@ TEST_CASE(knob_turns_on_a_disarmed_bench_are_not_accumulated)
         ui_router_tick(0.026f);
     }
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK(arm());
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
     knob(0.01f);
     CHECK_NEAR(took().value, 1.0f, 0.001f);
@@ -418,7 +418,7 @@ TEST_CASE(knob_turns_on_a_disarmed_bench_are_not_accumulated)
     for (int i = 0; i < 50; ++i) {
         knob(0.01f);
     }
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK(arm());
     knob(0.02f);
     CHECK_NEAR(took().value, 2.0f, 0.001f);
@@ -433,9 +433,9 @@ TEST_CASE(a_disarm_returns_every_throttle_to_zero)
         fresh();
         CHECK(arm());
         motor_screen_set_throttle(from[i]);
-        CHECK_EQ(motor_screen_throttle(), from[i]);
+        CHECK_FEQ(motor_screen_throttle(), from[i]);
         motor_screen_set_armed(false);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         CHECK_EQ(took().kind, MOTOR_CMD_NONE);
     }
 }
@@ -463,7 +463,7 @@ TEST_CASE(a_throttle_not_yet_sent_is_dropped_by_a_disarm_and_by_a_stop)
             motor_screen_set_armed(false);
             motor_screen_knob_cancel();
             CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-            CHECK_EQ(motor_screen_throttle(), 0.0f);
+            CHECK_FEQ(motor_screen_throttle(), 0.0f);
         }
     }
 }
@@ -479,25 +479,25 @@ TEST_CASE(arm_drive_disarm_drag_arm_stop_drag_arm)
     drag(28, 100);
     CHECK_NEAR(took().value, 100.0f * PX_PCT, 0.01f);
     CHECK(disarm());
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     drag(28, 250);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 
     CHECK(arm());
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
     drag(28, 60);
     CHECK_NEAR(took().value, 60.0f * PX_PCT, 0.01f);
     CHECK(stop());
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     drag(28, 250);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 
     CHECK(arm());
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
     drag(28, 40);
     CHECK_NEAR(took().value, 40.0f * PX_PCT, 0.01f);
@@ -513,7 +513,7 @@ TEST_CASE(disarm_stop_link_loss_and_leaving_each_end_at_zero)
     fresh();
     for (int way = 0; way < 4; ++way) {
         CHECK(arm());
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         CHECK_EQ(took().kind, MOTOR_CMD_NONE);
         feed_tap(FEED_LONE, UP_X, TRACK_Y);
         CHECK_NEAR(took().value, 1.0f, 0.001f);
@@ -543,12 +543,12 @@ TEST_CASE(disarm_stop_link_loss_and_leaving_each_end_at_zero)
             break;
         }
         CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         CHECK(every_control_is_refused());
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
     }
     CHECK(arm());
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 }
 
 /* Left with a finger on the track: the drag does not come back with the
@@ -566,12 +566,12 @@ TEST_CASE(a_drag_does_not_cross_leaving_the_screen)
     ui_router_goto(SCREEN_MOTOR);
     glide(1, TRACK_X + 228, TRACK_Y, 8);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     motor_screen_set_armed(true);
     glide(1, TRACK_X + 300, TRACK_Y, 8);
     lift(1);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 }
 
 /* ---------------------------------------------------------- the picture */
@@ -850,10 +850,10 @@ TEST_CASE(the_applications_hook_is_not_a_control)
 {
     fresh();
     motor_screen_set_throttle(64.0f);
-    CHECK_EQ(motor_screen_throttle(), 64.0f);
+    CHECK_FEQ(motor_screen_throttle(), 64.0f);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
     CHECK(every_control_is_refused());
-    CHECK_EQ(motor_screen_throttle(), 64.0f);
+    CHECK_FEQ(motor_screen_throttle(), 64.0f);
 }
 
 /* Between the hold's ask and the bench's answer the button is DISARM: a

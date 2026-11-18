@@ -107,18 +107,18 @@ TEST_CASE(the_trailing_edge_sits_at_0_45_and_90_degrees_either_side)
  * that is no number lies on the neutral line. */
 TEST_CASE(an_angle_past_90_degrees_is_drawn_at_90)
 {
-    CHECK_EQ(rudder_flap_clamp(90.0f), 90.0f);
-    CHECK_EQ(rudder_flap_clamp(90.1f), 90.0f);
-    CHECK_EQ(rudder_flap_clamp(135.0f), 90.0f);
-    CHECK_EQ(rudder_flap_clamp(180.0f), 90.0f);
-    CHECK_EQ(rudder_flap_clamp(-90.0f), -90.0f);
-    CHECK_EQ(rudder_flap_clamp(-90.1f), -90.0f);
-    CHECK_EQ(rudder_flap_clamp(-179.9f), -90.0f);
-    CHECK_EQ(rudder_flap_clamp(89.9f), 89.9f);
-    CHECK_EQ(rudder_flap_clamp(-0.1f), -0.1f);
-    CHECK_EQ(rudder_flap_clamp(NAN), 0.0f);
-    CHECK_EQ(rudder_flap_clamp(INFINITY), 90.0f);
-    CHECK_EQ(rudder_flap_clamp(-INFINITY), -90.0f);
+    CHECK_FEQ(rudder_flap_clamp(90.0f), 90.0f);
+    CHECK_FEQ(rudder_flap_clamp(90.1f), 90.0f);
+    CHECK_FEQ(rudder_flap_clamp(135.0f), 90.0f);
+    CHECK_FEQ(rudder_flap_clamp(180.0f), 90.0f);
+    CHECK_FEQ(rudder_flap_clamp(-90.0f), -90.0f);
+    CHECK_FEQ(rudder_flap_clamp(-90.1f), -90.0f);
+    CHECK_FEQ(rudder_flap_clamp(-179.9f), -90.0f);
+    CHECK_FEQ(rudder_flap_clamp(89.9f), 89.9f);
+    CHECK_FEQ(rudder_flap_clamp(-0.1f), -0.1f);
+    CHECK_FEQ(rudder_flap_clamp(NAN), 0.0f);
+    CHECK_FEQ(rudder_flap_clamp(INFINITY), 90.0f);
+    CHECK_FEQ(rudder_flap_clamp(-INFINITY), -90.0f);
 
     const rudder_flap_t f = rudder_flap_layout(k_area);
     float x0, y0, x1, y1;
@@ -171,8 +171,8 @@ TEST_CASE(a_small_area_gives_no_negative_length)
     CHECK(f.flap_len >= 0.0f);
     CHECK(f.fixed_len >= 0.0f);
     const rudder_flap_t z = rudder_flap_layout((gfx_rect_t){ 0, 0, 0, 0 });
-    CHECK_EQ(z.flap_len, 0.0f);
-    CHECK_EQ(z.fixed_len, 0.0f);
+    CHECK_FEQ(z.flap_len, 0.0f);
+    CHECK_FEQ(z.fixed_len, 0.0f);
     fresh();
     rudder_flap_draw(&s_c, (gfx_rect_t){ 10, 10, 0, 0 }, NULL);
     CHECK_EQ(px_at(10, 10), 0x1234u);

@@ -51,7 +51,7 @@ TEST_CASE(angle_frames_make_the_reading_valid_and_stale_after_300ms)
         CHECK(!imu_reading(&m, &r));
         imu_tick(&m, t0 + 301u);
         CHECK(!imu_reading(&m, &r));
-        CHECK_EQ(imu_deg(&r, IMU_AXIS_X, false), 0.0f);
+        CHECK_FEQ(imu_deg(&r, IMU_AXIS_X, false), 0.0f);
         /* A frame again makes it valid again. */
         rig_feed_angle(&m, 11.0f, 0.0f, 0.0f, t0 + 400u);
         CHECK(imu_reading(&m, &r));
@@ -91,14 +91,14 @@ TEST_CASE(the_zero_is_subtracted_and_wrapped_at_180)
     (void)imu_reading(&m, &r);
     CHECK(!r.zeroed);
     r.angle[0] = 180.0f;
-    CHECK_EQ(imu_deg(&r, IMU_AXIS_X, false), -180.0f);
-    CHECK_EQ(imu_deg(&r, IMU_AXIS_X, true), -180.0f);
+    CHECK_FEQ(imu_deg(&r, IMU_AXIS_X, false), -180.0f);
+    CHECK_FEQ(imu_deg(&r, IMU_AXIS_X, true), -180.0f);
     r.angle[0] = 179.0f;
     CHECK(fabsf(imu_deg(&r, IMU_AXIS_X, true) + 179.0f) < 1e-4f);
     /* An axis out of range reads 0, as no reading does. */
-    CHECK_EQ(imu_deg(&r, (imu_axis_t)3, false), 0.0f);
-    CHECK_EQ(imu_deg(&r, (imu_axis_t)-1, false), 0.0f);
-    CHECK_EQ(imu_deg(NULL, IMU_AXIS_X, false), 0.0f);
+    CHECK_FEQ(imu_deg(&r, (imu_axis_t)3, false), 0.0f);
+    CHECK_FEQ(imu_deg(&r, (imu_axis_t)-1, false), 0.0f);
+    CHECK_FEQ(imu_deg(NULL, IMU_AXIS_X, false), 0.0f);
 }
 
 /** @brief Check the still time of roll, pitch and yaw in @p r, ms. */

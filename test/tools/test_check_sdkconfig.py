@@ -108,3 +108,82 @@ def test_the_panels_defaults_read_without_a_problem():
     lines = [line.strip() for line in path.read_text().splitlines()]
     settings = [line for line in lines if line and not line.startswith("#")]
     assert len(cs.read_config(path)) == len(settings)
+
+
+OVERLAY = """\
+# A second role: the choice member of the first file is named off.
+CONFIG_BT_ENABLED=n
+CONFIG_HTTPD_MAX_URI_LEN=2048
+CONFIG_ROLE_B=y
+"""
+
+# What ESP-IDF writes from DEFAULTS then OVERLAY.
+GENERATED_OVERLAY = """\
+CONFIG_IDF_TARGET="esp32p4"
+CONFIG_HTTPD_MAX_URI_LEN=2048
+CONFIG_PARTITION_TABLE_OFFSET=0xc000
+# CONFIG_BT_ENABLED is not set
+CONFIG_ROLE_B=y
+"""
+
+LIST = ["--defaults", "sdkconfig.defaults", "--defaults", "sdkconfig.role_b"]
+
+
+def test_a_named_list_of_defaults_is_read_in_its_order(tmp_path, capsys):
+    """The build's SDKCONFIG_DEFAULTS list: a later file wins."""
+    args = project(tmp_path, config=GENERATED_OVERLAY)
+    (tmp_path / "sdkconfig.role_b").write_text(OVERLAY)
+    assert cs.main(args + LIST) == 0
+    assert "sdkconfig.defaults, sdkconfig.role_b" in capsys.readouterr().out
+
+
+def test_an_overlay_setting_without_effect_fails(tmp_path, capsys):
+    """A misspelled option of the overlay is not in the sdkconfig."""
+    args = project(tmp_path, config=GENERATED_OVERLAY)
+    (tmp_path / "sdkconfig.role_b").write_text(
+        OVERLAY.replace("CONFIG_ROLE_B", "CONFIG_ROLLE_B"))
+    assert cs.main(args + LIST) == 1
+    assert ("CONFIG_ROLLE_B: defaults y, not in the sdkconfig"
+            in capsys.readouterr().out)
+
+
+def test_the_overlay_is_not_read_unless_named(tmp_path, capsys):
+    """Without --defaults the list is sdkconfig.defaults alone."""
+    args = project(tmp_path, config=GENERATED_OVERLAY)
+    (tmp_path / "sdkconfig.role_b").write_text(OVERLAY)
+    assert cs.main(args) == 1
+    assert ("CONFIG_HTTPD_MAX_URI_LEN: defaults 1280, sdkconfig 2048"
+            in capsys.readouterr().out)
+
+
+def test_a_named_defaults_file_that_is_missing_fails(tmp_path, capsys):
+    """A list that names a file the project lacks checks nothing."""
+    args = project(tmp_path, config=GENERATED_OVERLAY)
+    assert cs.main(args + LIST) == 1
+    assert "no defaults file" in capsys.readouterr().err
+
+
+def test_a_named_file_takes_its_target_file_after_it(tmp_path, capsys):
+    """<file>.<target> follows each file of the list, as in ESP-IDF."""
+    args = project(tmp_path, config=GENERATED_OVERLAY)
+    (tmp_path / "sdkconfig.role_b").write_text(OVERLAY)
+    (tmp_path / "sdkconfig.role_b.esp32p4").write_text(
+        "CONFIG_HTTPD_MAX_URI_LEN=4096\n")
+    assert cs.main(args + LIST) == 1
+    assert ("CONFIG_HTTPD_MAX_URI_LEN: defaults 4096, sdkconfig 2048"
+            in capsys.readouterr().out)
+
+
+def test_the_node_overlays_name_the_choice_member_they_replace():
+    """A y of sdkconfig.defaults that an overlay's choice turns off is n.
+
+    The tool does not read Kconfig: a choice member the first file selects
+    and the overlay replaces would otherwise be reported as missing.
+    """
+    node = cs.REPO / "firmware" / "node"
+    balance = cs.read_config(node / "sdkconfig.balance")
+    display = cs.read_config(node / "sdkconfig.s3_es3c28p")
+    assert balance["CONFIG_RCNODE_ROLE_POWER"] == "n"
+    assert balance["CONFIG_RCNODE_ROLE_BALANCE"] == "y"
+    assert display["CONFIG_ESPTOOLPY_FLASHSIZE_4MB"] == "n"
+    assert display["CONFIG_ESPTOOLPY_FLASHSIZE_16MB"] == "y"

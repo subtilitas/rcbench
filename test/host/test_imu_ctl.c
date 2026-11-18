@@ -931,11 +931,11 @@ TEST_CASE(the_handout_angle_takes_the_still_time_of_its_axis)
     memset(&in, 0, sizeof in);
     CHECK(imu_handout_angle(&rd, IMU_AXIS_Z, false, &in));
     CHECK(in.valid);
-    CHECK_EQ(in.deg, 50.5f);
+    CHECK_FEQ(in.deg, 50.5f);
     CHECK_EQ(in.still_ms, 2400u);
     CHECK_EQ(in.taken_ms, 4321u);
     CHECK(imu_handout_angle(&rd, IMU_AXIS_Y, true, &in));
-    CHECK_EQ(in.deg, 2.5f);
+    CHECK_FEQ(in.deg, 2.5f);
     CHECK_EQ(in.still_ms, 0u);
     rd.valid = false;
     in.taken_ms = 77u;

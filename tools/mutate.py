@@ -12,6 +12,8 @@ survived: no test tells the changed line from the original.
     python3 tools/mutate.py --files shared/safety/heartbeat.c
                                                # every line of these files
     python3 tools/mutate.py --list             # the mutants, without a run
+    python3 tools/mutate.py --files A B --first shared/safety/ --shard 2/6
+                                               # one part of a large run
 
 The lines are those the working tree changes against the merge base of
 HEAD and --base, in the C files and headers under shared/ and protocols/.
@@ -31,6 +33,13 @@ left alone.  The same tree and arguments give the same mutants in the same
 order: there is no random choice.  Above --max-mutants (60) the tool takes
 every k-th mutant of the sorted list.
 
+A run too large for one machine is split with --shard I/N: of the ordered
+list, shard I takes the mutants at the places I, I + N, I + 2N and so on,
+so the N shards hold every mutant once and each holds its share of every
+file.  --first PREFIX puts the mutants of the paths that start with PREFIX
+at the head of the list, several prefixes in the order given, so a budget
+that ends early has run those files first.
+
 The working tree is never written.  The tool copies shared/, protocols/,
 test/host, firmware/iomcu, firmware/panel/components/storage,
 firmware/node/main, testbench/touch-injector/core and
@@ -43,7 +52,11 @@ at most --timeout (300s) each.  No mutant starts after --budget (1200s)
 of mutants, and one mutant's build and suite run are stopped after
 --timeout each, so a run ends within the budget plus five timeouts: 2700s
 with the defaults.  A mutant whose suite run is stopped counts as killed:
-it hangs.  The mutants left when the budget ends are reported as not run.
+it hangs.  The mutants left when the budget ends are reported as not run:
+the last line of the output, the JSON (`not_run`, and `not_run_files` with
+the count for each file) and the summary state the number, the summary
+with a table of the files, and a line `::warning::` makes it an
+annotation of a GitHub Actions run.
 
 The exit code is 0 whatever survives: the result is a report.  With
 --max-survivors N it is 1 when more than N survive.  It is 2 when the tool
@@ -293,6 +306,61 @@ def file_mutants(path: str, text: str,
     return sorted(out)
 
 
+def put_first(mutants: list[Mutant], prefixes: list[str]) -> list[Mutant]:
+    """Order mutants so that the paths under the prefixes come first.
+
+    Args:
+        mutants: The mutants, sorted.
+        prefixes: Path prefixes, the most urgent first.
+
+    Returns:
+        The mutants of the first prefix, then of the second and so on,
+        then the rest; within each group the order of `mutants`.  A path
+        that starts with two prefixes belongs to the earlier one.
+    """
+    def rank(mutant: Mutant) -> int:
+        for n, prefix in enumerate(prefixes):
+            if mutant.path.startswith(prefix):
+                return n
+        return len(prefixes)
+
+    return sorted(mutants, key=rank)
+
+
+def parse_shard(text: str) -> tuple[int, int]:
+    """Read a shard argument.
+
+    Args:
+        text: `I/N` with 0 <= I < N.
+
+    Returns:
+        (I, N).
+
+    Raises:
+        Stop: The text is not such a pair.
+    """
+    m = re.fullmatch(r"(\d+)/(\d+)", text)
+    if not m or not int(m.group(1)) < int(m.group(2)):
+        raise Stop(f"--shard {text}: want I/N with 0 <= I < N")
+    return int(m.group(1)), int(m.group(2))
+
+
+def take_shard(mutants: list[Mutant], index: int, count: int
+               ) -> list[Mutant]:
+    """Take one shard of an ordered list of mutants.
+
+    Args:
+        mutants: The ordered mutants.
+        index: The shard, from 0.
+        count: The number of shards.
+
+    Returns:
+        The mutants at the places index, index + count, index + 2 * count
+        and so on.
+    """
+    return mutants[index::count]
+
+
 def pick(mutants: list[Mutant], limit: int) -> list[Mutant]:
     """At most @p limit of @p mutants, evenly spaced over the list."""
     if limit <= 0 or len(mutants) <= limit:
@@ -455,14 +523,53 @@ def candidates(base: str, files: list[str]) -> list[Mutant]:
     return sorted(out)
 
 
-def summary(results: list[dict], not_run: int, seconds: float) -> str:
-    """The result as Markdown, for a pull request's job summary."""
+def not_run_files(chosen: list[Mutant], ran: int) -> dict[str, int]:
+    """Count the mutants the budget left, file by file.
+
+    Args:
+        chosen: The mutants of the run, in its order.
+        ran: How many of them ran, from the head of the list.
+
+    Returns:
+        {path: mutants not run}, the files in the order of the list.
+    """
+    left: dict[str, int] = {}
+    for mutant in chosen[ran:]:
+        left[mutant.path] = left.get(mutant.path, 0) + 1
+    return left
+
+
+def summary(results: list[dict], not_run: int, seconds: float,
+            left: dict[str, int] | None = None) -> str:
+    """Write the result as Markdown, for a job summary.
+
+    Args:
+        results: One dict per mutant that ran.
+        not_run: The number of mutants that did not run.
+        seconds: The time the mutants took.
+        left: {path: mutants the budget left}; None or empty for none.
+
+    Returns:
+        The text: the counts, a table of the files with mutants the budget
+        left, a table of the survivors.
+    """
     count = {k: sum(1 for r in results if r["result"] == k)
              for k in ("killed", "survived", "nobuild")}
     lines = ["## Mutation check", "",
              f"{len(results)} mutants in {seconds:.0f} s: "
              f"{count['killed']} killed, {count['survived']} survived, "
              f"{count['nobuild']} did not build, {not_run} not run.", ""]
+    if left:
+        ran: dict[str, int] = {}
+        for r in results:
+            ran[r["path"]] = ran.get(r["path"], 0) + 1
+        lines += [f"Not every mutant ran: the budget ended with "
+                  f"{sum(left.values())} mutants of {len(left)} file(s) "
+                  f"left.", "",
+                  "| File | Run | Not run |", "| --- | ---: | ---: |"]
+        for path, n in left.items():
+            lines.append(f"| `{path}` | {ran.get(path, 0)} | {n} |")
+        lines.append("")
     survivors = [r for r in results if r["result"] == "survived"]
     if survivors:
         lines += ["Survivors: the host suite passes with each of these "
@@ -486,6 +593,12 @@ def main(argv: list[str] | None = None) -> int:
     ap.add_argument("--files", nargs="+", default=[], metavar="FILE",
                     help="mutate all lines in these files, not only changed "
                          "lines")
+    ap.add_argument("--first", nargs="+", default=[], metavar="PREFIX",
+                    help="run the mutants of the paths that start with "
+                         "these prefixes before the others, in this order")
+    ap.add_argument("--shard", metavar="I/N",
+                    help="of the ordered list, take the mutants at the "
+                         "places I, I + N, I + 2N and so on")
     ap.add_argument("--list", action="store_true",
                     help="print the mutants and stop")
     ap.add_argument("--max-mutants", type=int, default=DEFAULT_MAX,
@@ -508,13 +621,17 @@ def main(argv: list[str] | None = None) -> int:
     args = ap.parse_args(argv)
 
     try:
-        every = candidates(args.base, args.files)
+        every = put_first(candidates(args.base, args.files), args.first)
+        if args.shard:
+            every = take_shard(every, *parse_shard(args.shard))
     except Stop as stop:
         print(f"mutate: {stop}", file=sys.stderr)
         return 2
     chosen = pick(every, args.max_mutants)
     what = (f"{len(args.files)} file(s)" if args.files
             else f"the lines changed since {args.base}")
+    if args.shard:
+        what += f", shard {args.shard}"
     print(f"mutate: {len(every)} mutants in {what}"
           + (f", running {len(chosen)}" if len(chosen) != len(every) else ""))
     if args.list:
@@ -569,16 +686,23 @@ def main(argv: list[str] | None = None) -> int:
     survived = sum(1 for r in results if r["result"] == "survived")
     killed = sum(1 for r in results if r["result"] == "killed")
     nobuild = sum(1 for r in results if r["result"] == "nobuild")
+    left = not_run_files(chosen, len(results))
     print(f"mutate: {len(results)} run in {seconds:.0f} s: {killed} killed, "
           f"{survived} survived, {nobuild} did not build, {not_run} not run")
+    if left:
+        print(f"::warning::the budget of {args.budget:.0f}s ended with "
+              f"{sum(left.values())} mutants of {len(left)} file(s) not "
+              f"run, the first of them in {next(iter(left))}")
     if args.json:
         args.json.write_text(json.dumps(
-            {"base": args.base, "files": args.files, "seconds":
-             round(seconds, 1), "not_run": not_run, "results": results},
+            {"base": args.base, "files": args.files, "first": args.first,
+             "shard": args.shard, "seconds": round(seconds, 1),
+             "not_run": not_run, "not_run_files": left,
+             "results": results},
             indent=2) + "\n")
     if args.summary:
         with open(args.summary, "a", encoding="utf-8") as fh:
-            fh.write(summary(results, not_run, seconds) + "\n")
+            fh.write(summary(results, not_run, seconds, left) + "\n")
     if args.max_survivors is not None and survived > args.max_survivors:
         print(f"mutate: {survived} survivors, over the ceiling of "
               f"{args.max_survivors}", file=sys.stderr)

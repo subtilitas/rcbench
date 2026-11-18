@@ -61,7 +61,7 @@ TEST_CASE(a_10s_dial_press_on_arm_leaves_the_bench_safe)
     }
     CHECK_EQ(arms, 0u);
     CHECK_EQ(throttles, 0u);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(r.c.in.holds, 0u);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
@@ -78,19 +78,19 @@ TEST_CASE(turns_while_safe_move_nothing_and_are_not_kept)
         frame(&r, NULL, &throttles);
     }
     CHECK_EQ(throttles, 0u);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     /* ARMED: the turns before it are gone; 5 detents at 1% are 5%. */
     motor_screen_set_armed(true);
     (void)last_cmd();
     frame(&r, NULL, &throttles);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     drig_event(&r, 15, 0u, DK_G_NONE);
     frame(&r, NULL, &throttles);
     CHECK_NEAR(motor_screen_throttle(), 5.0f, 0.001f);
     CHECK_EQ(throttles, 1u);
     /* At 5% a detent is 5%. */
     CHECK_NEAR(dial_span(SCREEN_MOTOR, 1, 50u, 10u), 0.05f, 1e-6f);
-    CHECK_EQ(dial_span(SCREEN_SETUP, 5, 10u, 10u), 0.0f);
+    CHECK_FEQ(dial_span(SCREEN_SETUP, 5, 10u, 10u), 0.0f);
 }
 
 TEST_CASE(a_press_sets_0_percent_and_a_hold_disarms)
@@ -105,8 +105,8 @@ TEST_CASE(a_press_sets_0_percent_and_a_hold_disarms)
     dial_gestures(SCREEN_MOTOR, &in, true);
     motor_cmd_t c = last_cmd();
     CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
-    CHECK_EQ(c.value, 0.0f);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(c.value, 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     /* At 0% already: nothing. */
     CHECK(!motor_screen_dial_press());
     /* Not in a frame whose turn is dropped. */
@@ -260,7 +260,7 @@ TEST_CASE(live_motor_carries_each_reading_with_its_flag_only)
     dial_model_build(NULL, &in, &m);
     CHECK_EQ(m.face, 99u);
     /* No turn, no span; the servo's without a travel is none. */
-    CHECK_EQ(dial_span(SCREEN_MOTOR, 0, 10u, 10u), 0.0f);
+    CHECK_FEQ(dial_span(SCREEN_MOTOR, 0, 10u, 10u), 0.0f);
 }
 
 TEST_CASE(a_hold_while_an_arm_is_on_its_way_disarms)

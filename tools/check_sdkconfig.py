@@ -16,15 +16,22 @@ give and compares it with the sdkconfig.
                                                   writes it
     --project DIR                                 another ESP-IDF project
                                                   (default firmware/panel)
+    --defaults FILE [--defaults FILE ...]         the list a build names
+                                                  with SDKCONFIG_DEFAULTS,
+                                                  in its order, each
+                                                  relative to the project
 
-The defaults files are `sdkconfig.defaults` and, when the sdkconfig names
-its target, `sdkconfig.defaults.<target>`; a later file overrides an earlier
-one, as in ESP-IDF.  A boolean set to `n` matches `# CONFIG_X is not set`
-and a missing line: Kconfig leaves out an option whose dependencies are
-off.  Any other value has to be there and equal; hex numbers compare by
-value.  Options the defaults do not name are not compared: their values
-come from the Kconfig files of the ESP-IDF release, which this tool does
-not read.
+The defaults files are `sdkconfig.defaults`, or the files --defaults names
+in place of it, and, when the sdkconfig names its target, each file's
+`<file>.<target>` after it; a later file overrides an earlier one, as in
+ESP-IDF.  A file --defaults names has to exist.  A boolean set to `n`
+matches `# CONFIG_X is not set` and a missing line: Kconfig leaves out an
+option whose dependencies are off.  A choice member an earlier file sets
+to `y` and a later file replaces is named `n` in the later file: the tool
+does not read Kconfig and takes every `y` as wanted.  Any other value has
+to be there and equal; hex numbers compare by value.  Options the defaults
+do not name are not compared: their values come from the Kconfig files of
+the ESP-IDF release, which this tool does not read.
 
 Exit status: 0 when every setting matches, or when the project holds no
 sdkconfig and none is named; 1 when a setting differs or is missing, or a
@@ -71,24 +78,37 @@ def read_config(path: pathlib.Path) -> dict[str, str]:
     return settings
 
 
-def defaults_files(project: pathlib.Path, target: str | None
-                   ) -> list[pathlib.Path]:
+def defaults_files(project: pathlib.Path, target: str | None,
+                   named: list[str] | None = None) -> list[pathlib.Path]:
     """Find the defaults files ESP-IDF reads for a project.
 
     Args:
         project: The project folder.
         target: The chip, as CONFIG_IDF_TARGET names it, or None.
+        named: The files of the build's SDKCONFIG_DEFAULTS list, relative
+            to the project, in its order; None or empty for
+            `sdkconfig.defaults` alone.
 
     Returns:
-        `sdkconfig.defaults`, then `sdkconfig.defaults.<target>` where it
-        exists.
+        Each file followed by its `<file>.<target>` where that exists.
+        Without `named`, a missing `sdkconfig.defaults` is left out.
+
+    Raises:
+        FileNotFoundError: A file of `named` does not exist.
     """
-    files = [project / "sdkconfig.defaults"]
-    if target:
-        extra = project / f"sdkconfig.defaults.{target}"
-        if extra.is_file():
-            files.append(extra)
-    return [f for f in files if f.is_file()]
+    files = []
+    for name in named or ["sdkconfig.defaults"]:
+        base = project / name
+        if not base.is_file():
+            if named:
+                raise FileNotFoundError(str(base))
+            continue
+        files.append(base)
+        if target:
+            extra = base.with_name(f"{base.name}.{target}")
+            if extra.is_file():
+                files.append(extra)
+    return files
 
 
 def same_value(want: str, have: str) -> bool:
@@ -149,6 +169,11 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--sdkconfig", type=pathlib.Path,
                         help="the sdkconfig to compare (default: the "
                              "project's own)")
+    parser.add_argument("--defaults", action="append", metavar="FILE",
+                        help="a file of the build's SDKCONFIG_DEFAULTS "
+                             "list, relative to the project; repeat in "
+                             "the list's order (default: "
+                             "sdkconfig.defaults)")
     args = parser.parse_args(argv)
     project = args.project.resolve()
     sdkconfig = args.sdkconfig or project / "sdkconfig"
@@ -162,7 +187,11 @@ def main(argv: list[str] | None = None) -> int:
         return 0
     config = read_config(sdkconfig)
     target = config.get("CONFIG_IDF_TARGET", "").strip('"') or None
-    files = defaults_files(project, target)
+    try:
+        files = defaults_files(project, target, args.defaults)
+    except FileNotFoundError as err:
+        print(f"check_sdkconfig: no defaults file {err}", file=sys.stderr)
+        return 1
     if not files:
         print(f"check_sdkconfig: no sdkconfig.defaults in {project}",
               file=sys.stderr)

@@ -256,6 +256,10 @@ static void node_loop(void)
     }
 }
 
+/**
+ * @brief The node's entry: the timer wake's quick check, or a full start
+ *        that ends in the `node` task's loop.
+ */
 void app_main(void)
 {
     node_bat_init();

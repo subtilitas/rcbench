@@ -111,7 +111,7 @@ TEST_CASE(a_value_outside_the_range_is_refused_and_the_keypad_stays)
     CHECK_EQ(press(UI_KEY_OK, &v), UI_KEYPAD_NONE);
     CHECK(kp.open);
     CHECK(kp.refused);
-    CHECK_EQ(v, -1.0f);
+    CHECK_FEQ(v, -1.0f);
     type("1");                       /* typing again clears the refusal */
     CHECK(!kp.refused);
     (void)press(UI_KEY_CLR, NULL);
@@ -132,11 +132,11 @@ TEST_CASE(ok_on_nothing_typed_and_cancel_leave_the_value)
     open_v();
     CHECK_EQ(press(UI_KEY_OK, &v), UI_KEYPAD_CANCEL);
     CHECK(!kp.open);
-    CHECK_EQ(v, -1.0f);
+    CHECK_FEQ(v, -1.0f);
     open_v();
     type("7");
     CHECK_EQ(press(UI_KEY_CANCEL, &v), UI_KEYPAD_CANCEL);
-    CHECK_EQ(v, -1.0f);
+    CHECK_FEQ(v, -1.0f);
 }
 
 TEST_CASE(a_key_acts_on_its_own_release_only)

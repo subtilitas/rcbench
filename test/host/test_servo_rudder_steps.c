@@ -410,7 +410,7 @@ TEST_CASE(the_shared_repeat_steps_at_0_45s_then_8hz_then_30hz)
     CHECK_EQ(ui_key_repeat(NULL, 0.1f), 0);
     held = 0.0f;
     CHECK_EQ(ui_key_repeat(&held, -1.0f), 0);
-    CHECK_EQ(held, 0.0f);
+    CHECK_FEQ(held, 0.0f);
 }
 
 /* ---------------------------------------------------- second fingers */

@@ -77,19 +77,19 @@ TEST_CASE(the_ring_holds_its_history_and_wraps)
 {
     ui_plot_t p;
     ui_plot_init(&p, k_series, 2, 24.0f);
-    CHECK_EQ(ui_plot_sample(&p, 0, 0), 0.0f);   /* nothing pushed yet */
+    CHECK_FEQ(ui_plot_sample(&p, 0, 0), 0.0f);   /* nothing pushed yet */
 
     for (int i = 0; i < UI_PLOT_HISTORY + 50; ++i) {
         push(&p, (float)i, 0.0f);
     }
     CHECK_EQ(p.filled, UI_PLOT_HISTORY);
     /* Newest is back = 0, and the ring wrapped without shuffling anything. */
-    CHECK_EQ(ui_plot_sample(&p, 0, 0), (float)(UI_PLOT_HISTORY + 49));
-    CHECK_EQ(ui_plot_sample(&p, 0, 1), (float)(UI_PLOT_HISTORY + 48));
-    CHECK_EQ(ui_plot_sample(&p, 0, UI_PLOT_HISTORY - 1), 50.0f);
+    CHECK_FEQ(ui_plot_sample(&p, 0, 0), (float)(UI_PLOT_HISTORY + 49));
+    CHECK_FEQ(ui_plot_sample(&p, 0, 1), (float)(UI_PLOT_HISTORY + 48));
+    CHECK_FEQ(ui_plot_sample(&p, 0, UI_PLOT_HISTORY - 1), 50.0f);
     /* Past the end reads zero rather than reading somebody else's memory. */
-    CHECK_EQ(ui_plot_sample(&p, 0, UI_PLOT_HISTORY), 0.0f);
-    CHECK_EQ(ui_plot_sample(&p, 5, 0), 0.0f);
+    CHECK_FEQ(ui_plot_sample(&p, 0, UI_PLOT_HISTORY), 0.0f);
+    CHECK_FEQ(ui_plot_sample(&p, 5, 0), 0.0f);
 }
 
 /* A non-finite reading must not poison the scale or freeze the loop that owns
@@ -163,7 +163,7 @@ TEST_CASE(the_scale_grows_at_once_and_shrinks_slowly)
     /* Push the spike out of the window; the scale must hold for a while. */
     for (int i = 0; i < 200; ++i) { push(&p, 10.0f, 1.0f); }
     ui_plot_update_scales(&p, 100);
-    CHECK_EQ(p.scale[0], grown);
+    CHECK_FEQ(p.scale[0], grown);
 
     int updates = 1;
     while (p.scale[0] == grown && updates < 500) {
@@ -252,8 +252,8 @@ TEST_CASE(a_stopped_plot_does_not_advance)
         push(&p, 99.0f, 99.0f);
     }
     CHECK_EQ(p.filled, 5);
-    CHECK_EQ(ui_plot_sample(&p, 0, 0), 5.0f);   /* still the last live one */
-    CHECK_EQ(ui_plot_sample(&p, 0, 5), 0.0f);   /* and nothing beyond it   */
+    CHECK_FEQ(ui_plot_sample(&p, 0, 0), 5.0f);   /* still the last live one */
+    CHECK_FEQ(ui_plot_sample(&p, 0, 5), 0.0f);   /* and nothing beyond it   */
 }
 
 /*
@@ -282,7 +282,7 @@ TEST_CASE(a_stopped_plot_keeps_its_scales)
     for (int i = 0; i < 5; ++i) {           /* well short of SHRINK_HOLD */
         ui_plot_update_scales(&p, 10);
     }
-    CHECK_EQ(p.scale[0], grown);
+    CHECK_FEQ(p.scale[0], grown);
 
     /*
      * Now the run ends.  The ring is frozen, so the picture cannot change --
@@ -295,7 +295,7 @@ TEST_CASE(a_stopped_plot_keeps_its_scales)
         push(&p, 1.0f, 0.0f);
         ui_plot_update_scales(&p, 10);
     }
-    CHECK_EQ(p.scale[0], grown);
+    CHECK_FEQ(p.scale[0], grown);
 }
 
 /* The call is counted whether or not the sample is taken, and the picture's
@@ -341,11 +341,11 @@ TEST_CASE(clearing_empties_the_plot_and_the_scales)
 
     ui_plot_clear(&p);
     CHECK_EQ(p.filled, 0);
-    CHECK_EQ(ui_plot_sample(&p, 0, 0), 0.0f);
-    CHECK_EQ(p.scale[0], k_series[0].floor);
-    CHECK_EQ(p.scale[1], k_series[1].floor);
+    CHECK_FEQ(ui_plot_sample(&p, 0, 0), 0.0f);
+    CHECK_FEQ(p.scale[0], k_series[0].floor);
+    CHECK_FEQ(p.scale[1], k_series[1].floor);
     CHECK_EQ(p.focus, 1);                     /* not a property of the run */
-    CHECK_EQ(p.span_s, 24.0f);
+    CHECK_FEQ(p.span_s, 24.0f);
     CHECK(p.running);                         /* clearing does not stop it */
 }
 
@@ -603,16 +603,16 @@ TEST_CASE(a_press_on_the_track_commands_nothing)
     fresh_slider();
     ui_slider_set(&sl, 0.0f);
     CHECK(!ev(300, 120, TOUCH_EVENT_DOWN, 1));
-    CHECK_EQ(sl.value, 0.0f);
+    CHECK_FEQ(sl.value, 0.0f);
     (void)ev(300, 120, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(sl.value, 0.0f);
+    CHECK_FEQ(sl.value, 0.0f);
 
     /* The far end is the case that matters. */
     fresh_slider();
     ui_slider_set(&sl, 0.0f);
     CHECK(!ev(499, 120, TOUCH_EVENT_DOWN, 1));
     (void)ev(499, 120, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(sl.value, 0.0f);
+    CHECK_FEQ(sl.value, 0.0f);
 }
 
 /*
@@ -625,7 +625,7 @@ TEST_CASE(tap_to_set_is_off_unless_a_slider_asks_for_it)
     fresh_slider();
     ui_slider_set(&sl, 0.0f);
     CHECK(!ev(300, 120, TOUCH_EVENT_DOWN, 1));
-    CHECK_EQ(sl.value, 0.0f);
+    CHECK_FEQ(sl.value, 0.0f);
     (void)ev(300, 120, TOUCH_EVENT_UP, 1);
 
     ui_slider_set_tap_to_set(&sl, true);
@@ -646,7 +646,7 @@ TEST_CASE(tap_to_set_is_off_unless_a_slider_asks_for_it)
         .type = TOUCH_EVENT_DOWN,
         .point = { .id = 1, .x = 10, .y = 15, .strength = 40 } };
     CHECK(!ui_slider_event(&narrow, &down));
-    CHECK_EQ(narrow.value, 0.0f);
+    CHECK_FEQ(narrow.value, 0.0f);
 }
 
 /*
@@ -668,7 +668,7 @@ TEST_CASE(a_drag_without_a_release_cannot_be_resumed_by_a_later_touch)
     CHECK(!sl.dragging);
     /* That press is off the track, so nothing it does may move the value. */
     CHECK(!ev(480, 120, TOUCH_EVENT_MOVE, 1));
-    CHECK_EQ(sl.value, mid);
+    CHECK_FEQ(sl.value, mid);
 
     /* And ui_slider_release() ends one explicitly. */
     fresh_slider();
@@ -732,7 +732,7 @@ TEST_CASE(a_press_from_outside_never_becomes_a_drag)
     (void)ev(700, 400, TOUCH_EVENT_DOWN, 1);
     CHECK(!ev(300, 120, TOUCH_EVENT_MOVE, 1));
     CHECK(!ev(300, 120, TOUCH_EVENT_UP, 1));
-    CHECK_EQ(sl.value, 10.0f);
+    CHECK_FEQ(sl.value, 10.0f);
 }
 
 /*
@@ -768,7 +768,7 @@ TEST_CASE(a_preset_sets_its_value_and_a_slip_does_not)
     const gfx_rect_t r = sl.presets[2];   /* the 50 */
     (void)ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_DOWN, 1);
     CHECK(ev(r.x + r.w / 2, r.y + r.h / 2, TOUCH_EVENT_UP, 1));
-    CHECK_EQ(sl.value, 50.0f);
+    CHECK_FEQ(sl.value, 50.0f);
 
     /*
      * Down on one preset, up somewhere else: nothing.  The preset pressed
@@ -778,7 +778,7 @@ TEST_CASE(a_preset_sets_its_value_and_a_slip_does_not)
     const gfx_rect_t zero = sl.presets[0];
     (void)ev(zero.x + zero.w / 2, zero.y + zero.h / 2, TOUCH_EVENT_DOWN, 1);
     CHECK(!ev(700, 400, TOUCH_EVENT_UP, 1));
-    CHECK_EQ(sl.value, 50.0f);
+    CHECK_FEQ(sl.value, 50.0f);
 }
 
 TEST_CASE(a_second_contact_cannot_steal_the_slider)
@@ -787,7 +787,7 @@ TEST_CASE(a_second_contact_cannot_steal_the_slider)
     (void)ev(150, 120, TOUCH_EVENT_DOWN, 1);
     const float held = sl.value;
     CHECK(!ev(450, 120, TOUCH_EVENT_MOVE, 2));   /* another finger */
-    CHECK_EQ(sl.value, held);
+    CHECK_FEQ(sl.value, held);
     CHECK(ev(450, 120, TOUCH_EVENT_MOVE, 1));    /* ours */
     CHECK(sl.value > held);
 }
@@ -882,10 +882,10 @@ TEST_CASE(a_release_the_tracker_makes_for_a_jump_picks_no_tab_and_no_preset)
     finger(FEED_LONE, fifty.x + fifty.w / 2,
            fifty.y + fifty.h / 2 + 200);
     lift(FEED_LONE);
-    CHECK_EQ(sl.value, 10.0f);
+    CHECK_FEQ(sl.value, 10.0f);
     CHECK(!s_jump_changed);
     feed_tap(FEED_LONE, fifty.x + fifty.w / 2, fifty.y + fifty.h / 2);
-    CHECK_EQ(sl.value, 50.0f);
+    CHECK_FEQ(sl.value, 50.0f);
 }
 
 /*

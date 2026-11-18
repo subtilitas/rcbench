@@ -4,6 +4,9 @@
 #   idf.py -D IDF_TARGET=esp32s3 \
 #     -D SDKCONFIG_DEFAULTS="sdkconfig.defaults;sdkconfig.s3_es3c28p" build
 CONFIG_IDF_TARGET="esp32s3"
+# The flash size is a choice: the 4MB of sdkconfig.defaults is named off,
+# so tools/check_sdkconfig.py reads the two files as one list.
+CONFIG_ESPTOOLPY_FLASHSIZE_4MB=n
 CONFIG_ESPTOOLPY_FLASHSIZE_16MB=y
 CONFIG_RCNODE_ROLE_POWER=y
 CONFIG_RCNODE_BOARD_ES3C28P=y

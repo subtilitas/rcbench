@@ -59,3 +59,29 @@ def skip_or_fail(reason):
     if os.environ.get("CI"):
         pytest.fail(f"{reason} (CI is set: a missing tool fails)")
     pytest.skip(reason)
+
+
+def import_or_fail(name, reason):
+    """Import a module a case needs; skip without it.
+
+    Fail when CI is set, as skip_or_fail does.  At module level the skip or
+    the failure takes the whole file.
+
+    Args:
+        name: The module to import.
+        reason: What is missing, for the report.
+
+    Returns:
+        The module.
+    """
+    import importlib
+    import os
+
+    import pytest
+    try:
+        return importlib.import_module(name)
+    except ImportError:
+        if os.environ.get("CI"):
+            pytest.fail(f"{reason} (CI is set: a missing module fails)",
+                        pytrace=False)
+        pytest.skip(reason, allow_module_level=True)

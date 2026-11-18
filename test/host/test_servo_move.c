@@ -52,16 +52,16 @@ static servo_move_state_t feed(servo_move_t *m, uint32_t t0, const float *a,
 
 TEST_CASE(the_threshold_is_three_noises_or_twenty_milliamps)
 {
-    CHECK_EQ(servo_move_noise_a(0u, 0.0f, 0.0f), 0.0f);
+    CHECK_FEQ(servo_move_noise_a(0u, 0.0f, 0.0f), 0.0f);
     /* Ten readings of 0.10A: no noise, the smallest threshold. */
     CHECK_NEAR(servo_move_noise_a(10u, 1.0f, 0.1f), 0.0f, 1e-4f);
-    CHECK_EQ(servo_move_threshold_a(0.0f), SERVO_MOVE_MIN_A);
+    CHECK_FEQ(servo_move_threshold_a(0.0f), SERVO_MOVE_MIN_A);
     /* 0.09 and 0.11A in turn: 0.010A, a threshold of 0.030A. */
     const float n = servo_move_noise_a(2u, 0.20f, 0.09f * 0.09f + 0.11f * 0.11f);
     CHECK_NEAR(n, 0.010f, 1e-5f);
     CHECK_NEAR(servo_move_threshold_a(n), 0.030f, 1e-5f);
     /* A variance below zero from rounding is no noise. */
-    CHECK_EQ(servo_move_noise_a(1u, 1.0f, 0.5f), 0.0f);
+    CHECK_FEQ(servo_move_noise_a(1u, 1.0f, 0.5f), 0.0f);
     CHECK_EQ(servo_move_window_ms(0u), 3000u);
     CHECK_EQ(servo_move_window_ms(300u), 3300u);
 }
@@ -138,7 +138,7 @@ TEST_CASE(the_peak_of_samples_below_zero_is_the_highest_of_them)
 {
     servo_move_t m;
     pd_move(&m, 0.10f, 0.10f, 0.020f);
-    CHECK_EQ(m.peak, 0.0f);
+    CHECK_FEQ(m.peak, 0.0f);
     const float a[] = { -0.30f, -0.20f, -0.25f };
     CHECK_EQ(feed(&m, 1000u, a, 3u), SERVO_MOVE_MOVING);
     CHECK_EQ(m.n, 3u);
@@ -288,7 +288,7 @@ TEST_CASE(a_clipped_sample_decides_only_what_its_bound_decides)
              SERVO_MOVE_MOVING);
     CHECK(m.left);
     CHECK_EQ(m.n, 0u);
-    CHECK_EQ(m.peak, 0.0f);
+    CHECK_FEQ(m.peak, 0.0f);
     CHECK_EQ(servo_move_sample(&m, 1200u, 0.40f, SERVO_MOVE_CLIP_NONE),
              SERVO_MOVE_MOVING);
     CHECK_EQ(servo_move_sample(&m, 1300u, 0.11f, SERVO_MOVE_CLIP_NONE),

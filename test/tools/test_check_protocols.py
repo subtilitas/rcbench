@@ -10,6 +10,7 @@ import subprocess
 import threading
 
 import pytest
+from conftest import skip_or_fail
 
 import check_protocols as cp
 
@@ -1705,10 +1706,11 @@ def test_the_check_agrees_with_the_compilers(tmp_path, kind, text):
 
 
 @needs_gcc
-@pytest.mark.skipif(PIOASM is None, reason="no pioasm (set PIOASM)")
 @pytest.mark.parametrize("text", DIFF_PIO)
 def test_the_check_agrees_with_pioasm(tmp_path, text):
     """The check agrees with pioasm."""
+    if PIOASM is None:
+        skip_or_fail("no pioasm (set PIOASM)")
     src = tmp_path / "d" / "case.pio"
     src.parent.mkdir()
     src.write_bytes(text.encode())

@@ -77,7 +77,7 @@ TEST_CASE(arming_returns_the_throttle_to_zero)
     CHECK_NEAR(motor_screen_throttle(), 60.5f, 0.05f);
 
     motor_screen_set_armed(true);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 
     feed_tap(FEED_LONE, UP_X, P(TRACK_Y));
@@ -89,7 +89,7 @@ TEST_CASE(arming_returns_the_throttle_to_zero)
     CHECK_EQ(c.kind, MOTOR_CMD_THROTTLE);
     CHECK_NEAR(c.value, 0.0f, 0.001f);
     feed_tap(FEED_LONE, DOWN_X, P(TRACK_Y));
-    CHECK_EQ(motor_screen_throttle(), 0.0f);    /* and no lower */
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);    /* and no lower */
 
     /* The knob goes on from zero as well. */
     (void)last_cmd();
@@ -106,9 +106,9 @@ TEST_CASE(arming_returns_every_throttle_to_zero)
     for (size_t i = 0; i < sizeof(from) / sizeof(from[0]); ++i) {
         fed();
         motor_screen_set_throttle(from[i]);
-        CHECK_EQ(motor_screen_throttle(), from[i]);
+        CHECK_FEQ(motor_screen_throttle(), from[i]);
         motor_screen_set_armed(true);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
     }
 }
 
@@ -148,13 +148,13 @@ TEST_CASE(the_hold_that_asks_for_the_arm_returns_the_throttle_to_zero)
     tick_for(HOLD_TICKS - 10);
     CHECK_NEAR(motor_screen_throttle(), 60.5f, 0.05f);   /* not yet asked */
     tick_for(10);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     lift(FEED_LONE);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
 
     feed_tap(FEED_LONE, UP_X, P(TRACK_Y));
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 }
 
 /*
@@ -169,17 +169,17 @@ TEST_CASE(a_throttle_set_after_the_ask_stays_when_the_bench_answers)
     tick_for(HOLD_TICKS);
     lift(FEED_LONE);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 
     finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
     glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
     lift(FEED_LONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 
     motor_screen_set_throttle(24.0f);
     motor_screen_set_armed(true);
-    CHECK_EQ(motor_screen_throttle(), 24.0f);
+    CHECK_FEQ(motor_screen_throttle(), 24.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
@@ -205,7 +205,7 @@ TEST_CASE(an_arm_after_a_dropped_ask_returns_the_throttle_to_zero)
 
         motor_screen_set_throttle(24.0f);
         motor_screen_set_armed(true);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
     }
 }
 
@@ -220,9 +220,9 @@ TEST_CASE(every_ask_returns_the_throttle_to_zero)
         tick_for(HOLD_TICKS);
         lift(FEED_LONE);
         CHECK_EQ(last_cmd().kind, MOTOR_CMD_ARM);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         motor_screen_set_armed(true);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         motor_screen_set_throttle(0.0f);
         motor_screen_set_armed(false);
         (void)last_cmd();
@@ -238,7 +238,7 @@ TEST_CASE(a_hold_that_does_not_arm_leaves_the_throttle_alone)
     tick_for(HOLD_TICKS / 2);
     lift(FEED_LONE);
     tick_for(HOLD_TICKS);
-    CHECK_EQ(motor_screen_throttle(), before);
+    CHECK_FEQ(motor_screen_throttle(), before);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
@@ -254,7 +254,7 @@ TEST_CASE(a_throttle_waiting_at_the_disarm_is_dropped)
     CHECK(motor_screen_throttle() > 20.0f);
     motor_screen_set_armed(false);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
 }
 
 /* And a knob command waiting at the disarm: withdrawing it afterwards puts
@@ -271,11 +271,11 @@ TEST_CASE(a_knob_command_waiting_at_the_disarm_is_not_put_back)
     CHECK_NEAR(motor_screen_throttle(), 40.0f, 0.01f);
     motor_screen_set_armed(false);
     motor_screen_knob_cancel();
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     motor_screen_set_armed(true);
     motor_screen_knob_cancel();
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
@@ -312,16 +312,16 @@ TEST_CASE(a_press_on_the_disarmed_track_is_no_drag_after_the_arm)
     fed();
     finger(0, TRACK_X + 28, P(TRACK_Y));
     glide(0, TRACK_X + 228, P(TRACK_Y), 8);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 
     motor_screen_set_armed(true);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     glide(0, TRACK_X + 236, P(TRACK_Y), 8);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     lift(0);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 
     finger(0, TRACK_X + 236, P(TRACK_Y));
@@ -344,7 +344,7 @@ TEST_CASE(a_drag_under_way_ends_at_the_disarm)
     motor_screen_set_armed(false);
     glide(FEED_LONE, TRACK_X + 236, P(TRACK_Y), 8);
     lift(FEED_LONE);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
 }
 
@@ -382,7 +382,7 @@ TEST_CASE(every_arm_starts_from_zero)
     fed();
     for (int run = 0; run < 3; ++run) {
         motor_screen_set_armed(true);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
         glide(FEED_LONE, TRACK_X + 128, P(TRACK_Y), 8);
         lift(FEED_LONE);
@@ -394,7 +394,7 @@ TEST_CASE(every_arm_starts_from_zero)
         finger(FEED_LONE, TRACK_X + 28, P(TRACK_Y));
         glide(FEED_LONE, TRACK_X + 228, P(TRACK_Y), 8);
         lift(FEED_LONE);
-        CHECK_EQ(motor_screen_throttle(), 0.0f);
+        CHECK_FEQ(motor_screen_throttle(), 0.0f);
         CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     }
 }

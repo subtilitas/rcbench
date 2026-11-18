@@ -67,7 +67,7 @@ TEST_CASE(a_second_finger_leaves_a_drag_running)
     CHECK(!ev(400, 120, TOUCH_EVENT_DOWN, 3));
     CHECK(!ev(460, 120, TOUCH_EVENT_MOVE, 3));
     CHECK(!ev(460, 120, TOUCH_EVENT_UP, 3));
-    CHECK_EQ(sl.value, mid);
+    CHECK_FEQ(sl.value, mid);
     CHECK(sl.dragging);
     CHECK(ev(280, 120, TOUCH_EVENT_MOVE, 1));
     CHECK(sl.value > mid + 9.0f && sl.value < mid + 11.0f);

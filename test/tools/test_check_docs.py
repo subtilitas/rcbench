@@ -543,3 +543,37 @@ def test_the_view_count_is_what_the_renderer_draws():
     literal = cd.render_ui_views()
     assert literal == len({**render_ui.SCREENS, **render_ui.FIT_ONLY})
     assert literal > 422 + 114
+
+
+def test_the_german_web_help_is_among_the_quoted_label_pages():
+    """docs/*-de.md, README-de.md and every page of help/content/de."""
+    names = [name for _, name in cd.german_pages()]
+    help_de = sorted(p.name for p in
+                     (cd.REPO / "help" / "content" / "de").glob("*.md"))
+    assert help_de
+    assert [n for n in names if n.startswith("help/")] == [
+        f"help/content/de/{name}" for name in help_de]
+    assert "README-de.md" in names and "Building-de.md" in names
+    assert "Building.md" not in names
+
+
+def test_an_english_label_quoted_in_the_german_help_fails(tree, monkeypatch):
+    """A German help page that quotes the English of a label is reported."""
+    monkeypatch.setattr(cd, "DOCS", tree / "docs")
+    monkeypatch.setattr(cd, "string_pairs",
+                        lambda: [("SUPPLY ON", "SPANNUNG EIN")])
+    (tree / "docs").mkdir(exist_ok=True)
+    (tree / "README-de.md").write_text("Die Bench.\n", encoding="utf-8")
+    help_de = tree / "help" / "content" / "de"
+    help_de.mkdir(parents=True)
+    (help_de / "supply.md").write_text(
+        "Taste `SUPPLY ON` 2s halten.\n\nDann `SPANNUNG EIN`.\n",
+        encoding="utf-8")
+    (tree / "help" / "content" / "en").mkdir()
+    (tree / "help" / "content" / "en" / "supply.md").write_text(
+        "Hold `SUPPLY ON` for 2s.\n", encoding="utf-8")
+    problems = []
+    cd.check_quoted_labels(problems)
+    assert problems == [
+        "help/content/de/supply.md:1: quotes `SUPPLY ON`, which the screen "
+        "shows as `SPANNUNG EIN`"]

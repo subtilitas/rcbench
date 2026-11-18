@@ -243,7 +243,7 @@ TEST_CASE(the_zone_survives_a_save_and_a_restart)
     CHECK_EQ(s_last_observed, SET_TIME_ZONE);
     CHECK(settings_dirty());
     CHECK(settings_save());
-    CHECK_EQ(s_saved[SET_TIME_ZONE], 7.0f);
+    CHECK_FEQ(s_saved[SET_TIME_ZONE], 7.0f);
 
     /* The restart: defaults, then the store; the panel then hands the zone
      * to the C library before the card mounts (panel_boot.c). */

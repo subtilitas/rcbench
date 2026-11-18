@@ -14,6 +14,7 @@ from collections import Counter
 from pathlib import Path
 
 import pytest
+from conftest import import_or_fail
 
 ROOT = Path(__file__).resolve().parents[2]
 sys.path.insert(0, str(ROOT / "hardware" / "mechanical"))
@@ -163,7 +164,7 @@ def test_print_lies_on_the_board():
 
 def test_grid_fit_finds_a_drawn_grid():
     """A drawn grid seen at an angle is found to within 0.1mm."""
-    cv2 = pytest.importorskip("cv2", reason="needs OpenCV")
+    cv2 = import_or_fail("cv2", "needs OpenCV")
     import numpy as np
 
     import _photo_grid

@@ -114,7 +114,7 @@ TEST_CASE(two_runs_weak_no_effect_and_bad_input)
              VIBE_SOLVE_WEAK);
     CHECK(s.mass > 0.0f);
     CHECK_EQ(vibe_solve_two_run(base, base, 0.5f, 0.0f, &s), VIBE_SOLVE_NO_EFFECT);
-    CHECK_EQ(s.mass, 0);
+    CHECK_FEQ(s.mass, 0);
     CHECK_EQ(vibe_solve_two_run(base, base, 0.0f, 0.0f, &s), VIBE_SOLVE_BAD_INPUT);
     CHECK_EQ(vibe_solve_two_run(base, (vibe_polar_t){ -1.0f, 0.0f }, 0.5f, 0.0f, &s),
              VIBE_SOLVE_BAD_INPUT);
@@ -124,7 +124,7 @@ TEST_CASE(two_runs_weak_no_effect_and_bad_input)
     CHECK_EQ(vibe_solve_two_run((vibe_polar_t){ 0.0f, 0.0f },
                                 (vibe_polar_t){ 0.3f, 10.0f }, 0.5f, 0.0f, &s),
              VIBE_SOLVE_OK);
-    CHECK_EQ(s.mass, 0);
+    CHECK_FEQ(s.mass, 0);
 }
 
 /** The four magnitudes of a rotor with sensitivity t per trial, baseline
@@ -212,14 +212,14 @@ TEST_CASE(four_runs_without_effect_inconsistent_or_bad)
      * adds to 0.1g to make 2g at all three places. */
     CHECK_EQ(vibe_solve_four_run(0.1f, 2.0f, 0.3f, 2.0f, 0.5f, &s),
              VIBE_SOLVE_INCONSISTENT);
-    CHECK_EQ(s.mass, 0);
+    CHECK_FEQ(s.mass, 0);
     CHECK(s.residual > 0.1f);
     /* Three equal trials, all twice the baseline: they differ from it,
      * so the trial had an effect, but no rotor gives one of a single
      * size at all three places with this baseline. */
     CHECK_EQ(vibe_solve_four_run(1.0f, 2.0f, 2.0f, 2.0f, 1.0f, &s),
              VIBE_SOLVE_INCONSISTENT);
-    CHECK_EQ(s.mass, 0);
+    CHECK_FEQ(s.mass, 0);
     CHECK_EQ(vibe_solve_four_run(0.4f, 0.5f, 0.3f, 0.2f, -1.0f, &s),
              VIBE_SOLVE_BAD_INPUT);
     CHECK_EQ(vibe_solve_four_run(0.4f, -0.5f, 0.3f, 0.2f, 1.0f, &s),
@@ -240,7 +240,7 @@ TEST_CASE(an_angle_wraps_into_0_to_360)
     CHECK_NEAR(vibe_wrap_deg(-10.0f), 350.0, 1e-4);
     CHECK_NEAR(vibe_wrap_deg(720.0f), 0.0, 1e-4);
     CHECK(vibe_wrap_deg(-1e-9f) < 360.0f);
-    CHECK_EQ(vibe_wrap_deg(NAN), 0);
+    CHECK_FEQ(vibe_wrap_deg(NAN), 0);
 }
 
 /**

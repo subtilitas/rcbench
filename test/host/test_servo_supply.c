@@ -407,7 +407,7 @@ TEST_CASE(a_hold_on_supplys_output_on_holds_the_restore_back)
     CHECK(!supply_screen_output_held());
     bench_frames_on(600u, true, &on_v);
     CHECK(fabsf(supply_screen_set_v() - 5.5f) < 1e-4f);
-    CHECK_EQ(on_v, 0.0f);
+    CHECK_FEQ(on_v, 0.0f);
 }
 
 /* A second finger on SETTINGS while ARM's 2s hold fills on SWEEP, whose

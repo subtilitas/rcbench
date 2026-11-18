@@ -1122,9 +1122,9 @@ static void p_service_arming(void)
             ++p_arm_expired;
             break;
         }
-        const uint16_t magic = LINK_CLEAR_MAGIC;
+        const uint16_t magic[1] = { LINK_CLEAR_MAGIC };
         ++p_clear_sent;
-        if (!(xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1, &magic,
+        if (!(xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1, magic,
                    &ack)
               && ack.op == LINK_OP_ACK)) {
             p_quiet_clear += w_unanswered != quiet;
@@ -1318,9 +1318,9 @@ static void r_clear(void *ctx)
 {
     (void)ctx;
     ++p_reset_clears;
-    const uint16_t magic = LINK_CLEAR_MAGIC;
+    const uint16_t magic[1] = { LINK_CLEAR_MAGIC };
     link_msg_t ack;
-    (void)xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1, &magic,
+    (void)xchg(LINK_OP_WRITE, LINK_PAGE_CONTROL, LINK_CT_CLEAR, 1, magic,
                &ack);
 }
 

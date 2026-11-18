@@ -57,13 +57,13 @@ TEST_CASE(a_filter_of_1_passes_every_frame_through)
     uint32_t t = 1000u;
     for (size_t i = 0; i < sizeof k_v / sizeof k_v[0]; ++i) {
         feed3(&m, k_v[i], -k_v[i], k_v[i] / 2.0f, t);
-        CHECK_EQ(m.r.angle[0], word_of(k_v[i]));
-        CHECK_EQ(m.r.angle[1], word_of(-k_v[i]));
-        CHECK_EQ(m.r.angle[2], word_of(k_v[i] / 2.0f));
+        CHECK_FEQ(m.r.angle[0], word_of(k_v[i]));
+        CHECK_FEQ(m.r.angle[1], word_of(-k_v[i]));
+        CHECK_FEQ(m.r.angle[2], word_of(k_v[i] / 2.0f));
         t += 100u;
     }
-    CHECK_EQ(imu_filter_step(12.0f, -150.0f, 1), -150.0f);
-    CHECK_EQ(imu_filter_step(12.0f, 33.3f, 0), 33.3f);
+    CHECK_FEQ(imu_filter_step(12.0f, -150.0f, 1), -150.0f);
+    CHECK_FEQ(imu_filter_step(12.0f, 33.3f, 0), 33.3f);
 }
 
 /* From 0 to a step of 10°: after n frames the angle is 10 (1 - (1-1/k)^n)
@@ -79,7 +79,7 @@ TEST_CASE(the_step_response_moves_one_kth_of_the_rest_each_frame)
         imu_set_filter(&m, k);
         uint32_t t = 500u;
         feed(&m, 0.0f, t);
-        CHECK_EQ(m.r.angle[0], 0.0f);
+        CHECK_FEQ(m.r.angle[0], 0.0f);
         const float step = word_of(10.0f);
         float want = 0.0f;
         for (int32_t n = 1; n <= 3 * k; ++n) {
@@ -108,13 +108,13 @@ TEST_CASE(the_first_frame_seeds_the_filter_after_init_reseed_and_stale)
     imu_init(&m);
     imu_set_filter(&m, 10);
     feed(&m, 40.0f, 1000u);
-    CHECK_EQ(m.r.angle[0], word_of(40.0f));
+    CHECK_FEQ(m.r.angle[0], word_of(40.0f));
     feed(&m, 50.0f, 1100u);
     CHECK_NEAR(m.r.angle[0], word_of(40.0f) + 1.0f, 1e-3f);
     /* A reseed while valid: the next frame is the angle. */
     imu_reseed(&m);
     feed(&m, 60.0f, 1200u);
-    CHECK_EQ(m.r.angle[0], word_of(60.0f));
+    CHECK_FEQ(m.r.angle[0], word_of(60.0f));
     feed(&m, 70.0f, 1300u);
     CHECK_NEAR(m.r.angle[0], word_of(60.0f) + 1.0f, 1e-3f);
     /* Stale at 300ms: the next frame seeds; at 299ms it does not. */
@@ -123,16 +123,16 @@ TEST_CASE(the_first_frame_seeds_the_filter_after_init_reseed_and_stale)
     imu_tick(&m, 1899u);
     CHECK(!m.r.valid);
     feed(&m, -20.0f, 1950u);
-    CHECK_EQ(m.r.angle[0], word_of(-20.0f));
+    CHECK_FEQ(m.r.angle[0], word_of(-20.0f));
     /* A frame 300ms after the last, with no tick past the deadline in
      * between, seeds as well: the tick at 295ms left the reading valid. */
     feed(&m, 0.0f, 3000u);
-    CHECK_EQ(m.r.angle[0], word_of(0.0f));
+    CHECK_FEQ(m.r.angle[0], word_of(0.0f));
     imu_tick(&m, 3295u);
     CHECK(m.r.valid);
     feed(&m, 90.0f, 3300u);
     CHECK(m.r.valid);
-    CHECK_EQ(m.r.angle[0], word_of(90.0f));
+    CHECK_FEQ(m.r.angle[0], word_of(90.0f));
     CHECK_EQ(m.r.still_ms[IMU_AXIS_X], 0u);
     /* NULL does nothing. */
     imu_reseed(NULL);
@@ -154,7 +154,7 @@ TEST_CASE(a_connect_a_reconnect_and_a_bind_seed_the_filter)
     imu_sensor_tick(&s, ++t, true);             /* connected */
     wit_angle_frame(f, 40.0f, 0.0f, 0.0f);
     imu_sensor_feed(&s, f, sizeof f, t += 20u);
-    CHECK_EQ(s.m.r.angle[0], word_of(40.0f));
+    CHECK_FEQ(s.m.r.angle[0], word_of(40.0f));
     wit_angle_frame(f, 50.0f, 0.0f, 0.0f);
     imu_sensor_feed(&s, f, sizeof f, t += 100u);
     imu_sensor_tick(&s, t, true);
@@ -166,7 +166,7 @@ TEST_CASE(a_connect_a_reconnect_and_a_bind_seed_the_filter)
     imu_sensor_tick(&s, t += 50u, true);
     wit_angle_frame(f, -30.0f, 0.0f, 0.0f);
     imu_sensor_feed(&s, f, sizeof f, t += 10u);
-    CHECK_EQ(s.m.r.angle[0], word_of(-30.0f));
+    CHECK_FEQ(s.m.r.angle[0], word_of(-30.0f));
     /* A link that stays up does not seed again. */
     imu_sensor_tick(&s, t += 10u, true);
     wit_angle_frame(f, -20.0f, 0.0f, 0.0f);
@@ -176,7 +176,7 @@ TEST_CASE(a_connect_a_reconnect_and_a_bind_seed_the_filter)
     imu_sensor_rebind(&s);
     wit_angle_frame(f, 5.0f, 0.0f, 0.0f);
     imu_sensor_feed(&s, f, sizeof f, t += 100u);
-    CHECK_EQ(s.m.r.angle[0], word_of(5.0f));
+    CHECK_FEQ(s.m.r.angle[0], word_of(5.0f));
     /* IMU OFF keeps the filter: after it, the second frame moves 1/10. */
     imu_sensor_off(&s);
     CHECK_EQ(s.m.filter, 10u);
@@ -253,7 +253,7 @@ TEST_CASE(the_limits_1_and_50_hold_and_out_of_range_values_are_clamped)
     CHECK_NEAR(imu_filter_step(0.0f, 50.0f, 50), 1.0f, 1e-6f);
     CHECK_NEAR(imu_filter_step(0.0f, 50.0f, 51), 1.0f, 1e-6f);
     CHECK_NEAR(imu_filter_step(0.0f, 50.0f, 1000), 1.0f, 1e-6f);
-    CHECK_EQ(imu_filter_step(0.0f, 50.0f, -3), 50.0f);
+    CHECK_FEQ(imu_filter_step(0.0f, 50.0f, -3), 50.0f);
     /* The sensor side holds a stored value the same way. */
     imu_sensor_t s;
     imu_sensor_init(&s);

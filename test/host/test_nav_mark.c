@@ -668,10 +668,10 @@ TEST_CASE(a_stored_demo_mode_loads)
     /* A save writes it with the other PANEL rows and a load reads it back. */
     settings_set(SET_DEMO_MODE, 0.0f);
     CHECK(settings_save());
-    CHECK_EQ(s_demo_stored[SET_DEMO_MODE], 0.0f);
+    CHECK_FEQ(s_demo_stored[SET_DEMO_MODE], 0.0f);
     settings_set(SET_DEMO_MODE, 1.0f);
     CHECK(settings_save());
-    CHECK_EQ(s_demo_stored[SET_DEMO_MODE], 1.0f);
+    CHECK_FEQ(s_demo_stored[SET_DEMO_MODE], 1.0f);
     settings_set_store(NULL);
     settings_init();
     CHECK(!settings_get_bool(SET_DEMO_MODE));

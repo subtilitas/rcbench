@@ -347,12 +347,12 @@ TEST_CASE(a_tab_switch_ends_a_drag_and_the_throttle_is_out_of_reach)
     glide(1, TRACK_X + 260, TRACK_Y, 8);
     lift(1);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), at);
+    CHECK_FEQ(motor_screen_throttle(), at);
     /* The knob moves the throttle on LIVE only. */
     motor_screen_knob_frame();
     motor_screen_knob(0.1f);
     CHECK_EQ(took().kind, MOTOR_CMD_NONE);
-    CHECK_EQ(motor_screen_throttle(), at);
+    CHECK_FEQ(motor_screen_throttle(), at);
     open_live();
     motor_screen_knob_frame();
     motor_screen_knob(0.1f);
@@ -595,7 +595,7 @@ TEST_CASE(a_typed_value_lands_on_its_step_and_save_asks_the_write)
     CHECK(!settings_save_tick(false));        /* not on a busy bench */
     CHECK(settings_save_tick(true));
     CHECK_EQ(s_saves, 1);
-    CHECK_EQ(s_saved[SET_PACK_MAH], 4300.0f);
+    CHECK_FEQ(s_saved[SET_PACK_MAH], 4300.0f);
     CHECK(!settings_dirty());
 
     /* The range's ends are taken; past them the keypad stays open. */
@@ -650,8 +650,8 @@ TEST_CASE(the_lists_save_takes_setups_pending_changes)
     feed_tap(FEED_LONE, SAVE_X, STRIP_Y);
     CHECK(settings_save_asked());
     CHECK(settings_save_tick(true));
-    CHECK_EQ(s_saved[SET_PACK_CELLS], 4.0f);
-    CHECK_EQ(s_saved[SET_DIM_AFTER], 30.0f);
+    CHECK_FEQ(s_saved[SET_PACK_CELLS], 4.0f);
+    CHECK_FEQ(s_saved[SET_DIM_AFTER], 30.0f);
     CHECK(!settings_dirty());
     home_tag();
     CHECK(!motor_screen_settings_shown());

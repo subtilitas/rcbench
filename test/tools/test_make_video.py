@@ -6,7 +6,7 @@ SPDX-License-Identifier: MIT
 import copy
 import json
 
-import pytest
+from conftest import import_or_fail
 
 import make_video
 import video_audio
@@ -569,7 +569,7 @@ def test_a_silent_bed_keeps_the_narration(tmp_path, monkeypatch):
     monkeypatch.setattr(video_audio, "events", lambda board: [])
     import wave
 
-    np = pytest.importorskip("numpy", reason="needs numpy")
+    np = import_or_fail("numpy", "needs numpy")
 
     board = {"lang": "en", "steps": 0, "music_gain": 0, "scenes": [
         {"type": "end", "dur": 4, "title": "x"}]}

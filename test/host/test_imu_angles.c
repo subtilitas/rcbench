@@ -25,10 +25,6 @@
  * 7.8Hz. */
 #define PERIOD_MS 128u
 
-/* CHECK_EQ compares as long: a float is held equal through CHECK_NEAR
- * with no tolerance. */
-#define CHECK_FEQ(a, b) CHECK_NEAR((a), (b), 0.0)
-
 /** Feed @p m roll @p x, pitch 0 and yaw 0 at @p t. */
 static void feed_x(imu_t *m, float x, uint32_t t)
 {
