@@ -6268,7 +6268,7 @@ reads `ROLE r, PROTOCOL p` and its reports are not taken.
 | Setting | Range | Default | Writes |
 | --- | --- | --- | --- |
 | Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in Auto log folder: a log of each ARMED and supply run |
-| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, and `LIMITnnn.TXT`, in User log folder: the AUTOMATIC TEST and the LIMIT RUN |
+| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, `LIMITnnn.TXT`, and `RUDDRnnn.CSV` with its `RUDDRnnn.TXT`, in User log folder: the AUTOMATIC TEST, the LIMIT RUN and RUDDER AUTO, each as the setting stands at the run's start |
 | Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | nothing itself: what a browser needs to change the card through WI-FI's page ([Browser writes](#browser-writes)) |
 | Auto log folder | a folder, see below | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder, see below | `USER/LOGS` | where User logs writes |

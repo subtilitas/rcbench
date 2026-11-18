@@ -6788,7 +6788,7 @@ und seine Berichte werden nicht übernommen.
 | Einstellung | Bereich | Vorgabe | Schreibt |
 | --- | --- | --- | --- |
 | Auto-Aufzeichnungen | AUS, EIN | EIN | `SERVOnnn.CSV`, `MOTORnnn.CSV` und `SUPPLnnn.CSV` in Ordner Auto-Aufzeichnungen: eine Aufzeichnung je ARMED- und Netzteil-Lauf |
-| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT` und `LIMITnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST und den ENDLAGENLAUF |
+| Testaufzeichnungen | AUS, EIN | EIN | `ATESTnnn.CSV` mit seiner `ATESTnnn.TXT`, `LIMITnnn.TXT` und `RUDDRnnn.CSV` mit seiner `RUDDRnnn.TXT` in Ordner Testaufzeichnungen: den AUTOMATISCHEN TEST, den ENDLAGENLAUF und RUDER AUTO, jeweils wie die Einstellung beim Start des Laufs steht |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | selbst nichts: was ein Browser braucht, um die Karte über die Seite von WI-FI zu ändern ([Schreiben per Browser](#schreiben-per-browser)) |
 | Ordner Auto-Aufzeichnungen | ein Ordner, siehe unten | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
 | Ordner Testaufzeichnungen | ein Ordner, siehe unten | `USER/LOGS` | wohin Testaufzeichnungen schreibt |

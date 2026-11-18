@@ -162,7 +162,7 @@ Der MT6701 arbeitet im I2C-Modus mit MODE auf High unter Adresse 0x06. Sein Bus 
 | Einstellung | Bereich | Vorgabe | Was sie tut |
 |---|---|---|---|
 | Auto-Aufzeichnungen | EIN, AUS | EIN | eine Aufzeichnung je ARMED- und Netzteillauf in Ordner Auto-Aufzeichnungen: `SERVOnnn.CSV`, `MOTORnnn.CSV`, `SUPPLnnn.CSV` |
-| Testaufzeichnungen | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS und `LIMITnnn.TXT` des ENDLAGENLAUFS in Ordner Testaufzeichnungen |
+| Testaufzeichnungen | EIN, AUS | EIN | `ATESTnnn.CSV` und Bericht des AUTOMATISCHEN TESTS, `LIMITnnn.TXT` des ENDLAGENLAUFS und `RUDDRnnn.CSV` und Bericht von RUDER AUTO in Ordner Testaufzeichnungen |
 | Schreiben per Browser | OFFEN, ZUGANGSCODE, HALTEN, AUS | OFFEN | was die Browserseite von WI-FI braucht, um die Karte zu ändern: [WLAN](wifi.md#schreiben-per-browser) |
 | Ordner Auto-Aufzeichnungen | ein Ordner | `BENCH/LOGS` | wohin Auto-Aufzeichnungen schreibt |
 | Ordner Testaufzeichnungen | ein Ordner | `USER/LOGS` | wohin Testaufzeichnungen schreibt |

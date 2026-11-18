@@ -257,7 +257,7 @@ every other SERVO screen opens KST again until **LEAVE**.
 | `The supply cannot provide this voltage or current limit.` | the voltage is above 8.4V, the current limit outside 50 to 3000mA, or the voltage the session runs at less than 0.7V under the input voltage of the PD mini; the supply is not changed |
 | `Supply below 4.8V. Programming requires at least 4.8V.` | the programming voltage, or the voltage of an output that is on, is under 4.8V; the supply is not changed. With an output that is on and set under 4.8V the panel sends nothing to the IOmcu |
 | `The supply did not switch within 3000ms. Check the supply.` | the PD mini did not read as asked; the port is back in PWM, and an output this **CONNECT** switched on is off again |
-| `The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to clear it.` | the IOmcu does not trust the heartbeat (the band shows FAULT 10), or the link was silent for 200ms and the failsafe latched (FAULT 01). Only the CLEAR an ARM writes lifts it; an IOmcu restart can leave FAULT 01 latched |
+| `The IOmcu refused: its failsafe is latched. Hold ARM, then DISARM, to clear it.` | the IOmcu does not trust the heartbeat (the band shows FAULT 10), or the link was silent for 200ms and the failsafe latched (FAULT 01). A write of CLEAR lifts FAULT 01, and the panel writes it in three places: the switch to ARMED, STOP's reset and FAILSAFE CLEAR on SERVO ([Arm latch](Safety.md#arm-latch)). FAULT 10 clears when the heartbeat line edges again. An IOmcu restart can leave FAULT 01 latched |
 
 ![A port without a pin](img/servo-kst-nopin.png)
 
