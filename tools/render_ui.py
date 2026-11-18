@@ -745,11 +745,7 @@ SCREENS = {
     "busfault-lost": ("busfault-lost.png", "busfault", "dark"),
     # The link answering again for 3s: RECONNECT offered.
     "busfault-back": ("busfault-back.png", "busfault", "dark"),
-    # The IOmcu update: the question a link-up poses, the same with
-    # an image older than the one running, and the progress half way.
-    "coproc-update": ("coproc-update.png", "coproc-update", "dark"),
-    "coproc-update-older": ("coproc-update-older.png", "coproc-update",
-                            "dark"),
+    # The IOmcu update's progress half way.
     "coproc-update-progress": ("coproc-update-progress.png",
                                "coproc-update", "dark"),
     "setup-light":("setup-light.png","setup",      "light"),
@@ -825,8 +821,10 @@ SCREENS = {
     # skipped and the power node not connected.
     "updates-step-iomcu": ("updates-step-iomcu.png", "updates", "dark"),
     # The same step opened by the update run after the panel's restart,
-    # with the start's band line.
+    # with the start's band line, and opened by a link-up's offer, with
+    # the offer's band line.
     "updates-run-iomcu": ("updates-run-iomcu.png", "updates", "dark"),
+    "updates-offer": ("updates-offer.png", "updates", "dark"),
     "updates-held": ("updates-held.png", "updates", "dark"),
     "updates-step-c6": ("updates-step-c6.png", "updates", "dark"),
     "updates-step-dial": ("updates-step-dial.png", "updates", "dark"),

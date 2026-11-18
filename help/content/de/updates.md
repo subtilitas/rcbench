@@ -176,7 +176,7 @@ EINZELNE UPDATES startet ein Update oder eine Neuinstallation zur Zeit: des IOmc
 
 | Bedienelement | Wirkung |
 |---|---|
-| 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung der Verbindungsrückfrage, siehe [Der IOmcu](#der-iomcu). |
+| 2s HALTEN ZUM IOMCU-UPDATE | Startet das [IOmcu-Update](coproc_update.md) aus dem mitgelieferten Image, auch nach Ablehnung des Angebots, siehe [Der IOmcu](#der-iomcu). |
 | 2s HALTEN ZUM C6-FUNK-UPDATE | Sendet das mitgelieferte Image des C6-Funks an den ESP32-C6 des Boards, siehe [Der C6-Funk](#der-c6-funk). |
 | 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN | Dasselbe, solange der C6 die mitgelieferte Version meldet. |
 | FIRMWARE DER FUNKGERÄTE | Öffnet die Seite mit den Firmware-Zeilen des Dial und der Sensorknoten, siehe [Funkgeräte](#funkgeräte); während ein Update läuft, zeigt sie die Beschriftung dieser Zeile. |
@@ -188,9 +188,9 @@ Ein Finger zur Zeit: Ein zweiter Finger auf einem anderen Bedienelement startet 
 
 ![Ein anderer Build auf dem IOmcu](view:updates-coproc)
 
-In der linken Spalte von EINZELNE UPDATES nennt die Seite die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie die Rückfrage beim Verbindungsaufbau. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
+In der linken Spalte von EINZELNE UPDATES nennt die Seite die laufende IOmcu-Version (`Läuft: 0.21.2`) und das mitgelieferte Image (`Auf diesem Panel: 0.22.0`). 2s HALTEN ZUM IOMCU-UPDATE öffnet denselben Updateablauf mit Fortschrittsanzeige wie Schritt 2 auf UPDATES. Nach Updateende oder Ablauf der START-Anfrage kehrt die Seite zu UPDATES zurück.
 
-Für das Halten gelten dieselben Voraussetzungen wie für die Rückfrage: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund; ein Tippen oder Halten auf die graue Taste zeigt dieselbe Zeile auf dem Alarmband:
+Für das Halten gelten dieselben Voraussetzungen wie für Schritt 2: ein IOmcu mit abweichendem Build, SAFE, Netzteilausgang aus, WLAN vollständig aus und keine laufende Panel-Installation. Andernfalls ist die Taste grau. Darüber steht der erste zutreffende Grund; ein Tippen oder Halten auf die graue Taste zeigt dieselbe Zeile auf dem Alarmband:
 
 | Zeile | Bedingung |
 |---|---|

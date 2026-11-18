@@ -7,7 +7,7 @@
  * an update run: by the install once the image is written whole and
  * checked, and by the C6 radio's update on success.  Each start reads it
  * once in fw_ota_boot_check() and spends one of its 2 openings.  This
- * file asks upd_run_drive() once a frame, before the IOmcu's question is
+ * file asks upd_run_drive() once a frame, before the IOmcu's offer is
  * served, and ends the run (fw_ota_run_end(): the note is erased) when it
  * says so, once the bench is SAFE with no arm waiting and the supply off:
  * the erase is a flash write.  UPDATES' steps read the run flag from
@@ -45,7 +45,7 @@ void updrun_fed(bool dev_known)
     s_fed_run = fw_ota_run_active();
 }
 
-void updrun_service(bool unsafe)
+bool updrun_service(bool unsafe)
 {
     static upd_run_t drv;     /* zeroed at the start: once per start */
     const upd_run_feed_t f = {
@@ -74,9 +74,13 @@ void updrun_service(bool unsafe)
                                          : "no step left",
                  unsafe ? "; the note waits for SAFE" : "");
     }
-    if (!end_due || unsafe) {
-        return;
+    if (!end_due) {
+        return upd_run_waits(&drv, &f);
+    }
+    if (unsafe) {
+        return false;     /* ended: the band and the opening are free */
     }
     end_due = false;
     fw_ota_run_end();
+    return false;
 }

@@ -351,6 +351,23 @@ void upd_wiz_drop(void)
     upd_screen_invalidate();
 }
 
+void upd_wiz_drop_step(unsigned step)
+{
+    if (z.have && z.hit == WP_ACT && z.step == step) {
+        drop_press();
+        ui_hold_reset(&z.hold);
+        upd_screen_invalidate();
+    }
+}
+
+void upd_wiz_unskip(unsigned step)
+{
+    if (step < UPD_WIZ_STEPS && (z.skip & UPD_WIZ_BIT(step)) != 0u) {
+        z.skip &= ~UPD_WIZ_BIT(step);
+        upd_screen_invalidate();
+    }
+}
+
 void upd_wiz_reset(void)
 {
     memset(&z, 0, sizeof(z));

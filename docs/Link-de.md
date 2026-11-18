@@ -1820,18 +1820,20 @@ gelesen, mit HASH_RUNNING des IOmcu über dieselbe Zahl von Bytes.
 | Ergebnis | Panel |
 | --- | --- |
 | gleich | nichts |
-| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.` oder die Zeile, die nennt, was die Frage zurückhält ([Bildschirme](Screens-de.md#iomcu-update)); die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
+| verschieden | der Alarm `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.` oder die Zeile, die nennt, was das Öffnen zurückhält ([Bildschirme](Screens-de.md#iomcu-update)); UPDATES öffnet sich auf dem Menü mit Schritt 2 (IOMCU), solange der Prüfstand SAFE ist, der Ausgang der Versorgung aus, der Funk des Panels ganz aus und keine Panel-Installation im Gang |
 | ein Image auf Probe | schreibt sofort BUY und meldet `Neue IOmcu-Firmware dauerhaft übernommen.` |
 | BAD_PAGE oder keine Slots | der Alarm `IOmcu kann nicht über CAN aktualisiert werden. Installiere die Firmware einmal über USB.` |
 
 Die Prüfung läuft auch bei einer abweichenden Protokoll-Major: die
 Identitätsregister und die Update-Pages antworten über Majors hinweg, und das
-Update bringt den IOmcu auf die Major des Panels. CANCEL oder das Home-Feld
-blendet die Frage für diese IOmcu-Version bis zum nächsten Panel-Neustart aus.
-Verdeckt der Busfehler-Bildschirm nach einem Linkverlust die Frage, bleibt sie
-unbeantwortet und erscheint beim nächsten Link-Aufbau erneut. Ein älteres
-mitgebrachtes Image wird ebenfalls angeboten; die Frage sagt das dann.
-[Screens](Screens-de.md#iomcu-update) zeigt Frage und Fortschritt.
+Update bringt den IOmcu auf die Major des Panels. SCHRITT ÜBERSPRINGEN in
+Schritt 2 oder das Home-Feld, das UPDATES verlässt, lehnt das Angebot für
+diese IOmcu-Version bis zum nächsten Panel-Neustart ab. Verdeckt der
+Busfehler-Bildschirm nach einem Linkverlust UPDATES, bleibt das Angebot
+unbeantwortet und kommt beim nächsten Link-Aufbau erneut. Ein älteres
+mitgebrachtes Image wird ebenfalls angeboten; die Karte von Schritt 2 sagt
+das dann. [Screens](Screens-de.md#iomcu-update) zeigt Angebot und
+Fortschritt.
 
 Ein Panel, das ohne `RCBENCH_IOMCU_BIN` gebaut ist, bringt kein Image mit,
 prüft nichts und bietet nichts an.

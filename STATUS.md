@@ -308,7 +308,7 @@ Built and host-tested (`shared/fwupdate/`, `shared/webaccess/`, `test_wifi_scree
 `test_wifi_kept`, `test_wifi_layout`); the panel side is
 `firmware/panel/components/wifi_access/` and `fw_ota/`. A panel install and the IOmcu's
 update exclude each other (`fw_gate()`, `fw_coproc_may_start()`, `test_fw_install`): the
-install waits while the IOmcu's update or BUY runs, and the IOmcu's question opens and its
+install waits while the IOmcu's update or BUY runs, and an IOmcu offer opens UPDATES and its
 START is taken only with the radio wholly off and no install under way. A new build's first
 start is kept once every task has run a pass and a frame is on the display, or 30s after the
 start with the screen loop running (`fw_trial.h`, `test_fw_trial`); a reset before that goes
@@ -317,8 +317,8 @@ back to the build before it, which reports it from the restart note the install 
 not host-tested). Beside it the run note keeps an update run across a restart: written after a
 complete install and after a C6 update, read once per start, 2 openings at most, erased on a
 version mismatch or a corrupt entry (`fw_run.h`, `test_fw_run`). While a run stands UPDATES
-opens by itself once per start under the IOmcu question's conditions, the band names what holds
-it back, the start-up check waits, and the run ends on the home tag or with no step left, not
+opens by itself once per start under the conditions an IOmcu offer opens it under, once when
+both are due, the band names what holds it back with one line per frame, the start-up check waits, and the run ends on the home tag or with no step left, not
 while the C6's restart is due (`upd_run.h`, `test_upd_run`: both restarts over a store in
 memory, a power cut before step 2, a rollback; `panel_updrun.c` feeds it on the panel).
 
@@ -881,9 +881,10 @@ a question that takes the 2s hold. `test_link_update` runs both ends over the li
 against a simulated flash and boot ROM. Which slot runs, which one the update writes, the
 trial, where a write lands and when a BUY counts are `fw_slots.h` (`test_fw_slots`); the boot
 ROM's calls in `firmware/iomcu/src/update_hw.c` are not host-tested.
-`test_coproc_update_screen` runs the question and the progress, with CANCEL and the home tag as the only declines and a forced screen over the
-question declining nothing; `test_upd_coproc` SETUP > UPDATES > SINGLE UPDATES' IOmcu section, whose 2s hold
-starts the same update, also after a declined question.
+`test_coproc_update_screen` runs the progress and the offer's driver, with a forced screen over
+UPDATES declining nothing; `test_upd_coproc` the offer that opens UPDATES at step 2 once per
+offer, SKIP THIS STEP and the home tag as the only declines, and SINGLE UPDATES' IOmcu section,
+whose 2s hold starts the same update, also after a declined offer.
 
 The transfer time is not measured; the bus time for the 0.18 image is 7.1 to 8.6s. An IOmcu
 loaded before the table takes one USB load of `rcbench-iomcu-install.uf2`.
@@ -2300,7 +2301,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1008 committed screenshots to the current render, 504 in English and the same 504 in German, and `render_ui.py --fit` fails on a string that
+1006 committed screenshots to the current render, 503 in English and the same 503 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.
@@ -2352,7 +2353,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 438 | 436 | 99.5% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 653 | 642 | 98.3% |
+| `shared/ui/ui_router.c` | 651 | 640 | 98.3% |
 | `shared/ui/ui_router_alert.c` | 15 | 15 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
@@ -2483,16 +2484,16 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_kept.c` | 31 | 31 | 100.0% |
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
-| `shared/ui/coproc_update_screen.c` | 335 | 335 | 100.0% |
-| `shared/ui/upd_screen.c` | 350 | 331 | 94.6% |
+| `shared/ui/coproc_update_screen.c` | 212 | 212 | 100.0% |
+| `shared/ui/upd_screen.c` | 356 | 337 | 94.7% |
 | `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
 | `shared/ui/upd_single.c` | 166 | 164 | 98.8% |
 | `shared/ui/upd_settings.c` | 57 | 53 | 93.0% |
 | `shared/ui/upd_c6.c` | 119 | 117 | 98.3% |
 | `shared/ui/upd_dev.c` | 292 | 286 | 98.0% |
 | `shared/ui/upd_wizard.c` | 278 | 278 | 100.0% |
-| `shared/ui/upd_run.c` | 39 | 39 | 100.0% |
-| `shared/ui/upd_wiz_view.c` | 311 | 299 | 96.1% |
+| `shared/ui/upd_run.c` | 44 | 44 | 100.0% |
+| `shared/ui/upd_wiz_view.c` | 322 | 310 | 96.3% |
 | `shared/ui/upd_wiz_card.c` | 193 | 191 | 99.0% |
 | `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
 | `shared/ui/imu_ble.c` | 135 | 134 | 99.3% |
@@ -2774,7 +2775,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **101726** | **99593** | **97.9%** |
+| **total** | **101623** | **99490** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

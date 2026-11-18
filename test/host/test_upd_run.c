@@ -10,7 +10,9 @@
  * the targets have reported, or under the C6's restart and erases the note
  * that restart needs; a screen forced over UPDATES taken for the
  * operator's "not now"; the start-up check switching the radio on during
- * a run; a waiting step that does not advance when its device links.
+ * a run; a waiting step that does not advance when its device links; the
+ * run and an IOmcu offer opening UPDATES twice, or both speaking on the
+ * band in one frame.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -628,6 +630,132 @@ TEST_CASE(a_declined_step_in_a_run_goes_to_the_next_and_the_end_card_names_it)
     CHECK(card_has(skipped));
 }
 
+/* ------------------------------------------------ the run and the offer */
+
+static cu_driver_t g_cu_drv;    /* panel_update.c's cu_render_service() */
+static cu_feed_t   g_cu_feed;
+
+/* The IOmcu behind, offered: what the control task publishes after the
+ * link-up's check, matching iomcu_behind(). */
+static void cu_offered(void)
+{
+    memset(&g_cu_drv, 0, sizeof(g_cu_drv));
+    memset(&g_cu_feed, 0, sizeof(g_cu_feed));
+    g_cu_feed.have_image = true;
+    g_cu_feed.reachable = true;
+    g_cu_feed.check = CU_CHECK_DIFFERENT;
+    g_cu_feed.running = (cu_version_t){ 0, 23, 14 };
+    g_cu_feed.carried = (cu_version_t){ 0, 23, 15 };
+    g_cu_feed.offered = true;
+    g_cu_feed.offer_gen = 1u;
+}
+
+/* One frame of both, in panel_frame.c's order: the run first, then the
+ * offer, told whether the run waits to open UPDATES. */
+static cu_hand_t both(void)
+{
+    const upd_run_end_t e = frame();
+    g_cu_feed.radio_up = g_feed.radio_up;
+    g_cu_feed.installing = g_feed.installing;
+    g_cu_feed.run_waits = e == UPD_RUN_GOES_ON
+                          && upd_run_waits(&g_drv, &g_feed);
+    cu_hand_t h;
+    coproc_update_drive(&g_cu_drv, &g_cu_feed, g_feed.unsafe, &h);
+    return h;
+}
+
+/* A run and an offer both due: UPDATES opens once, by the run, and the
+ * offer counts as shown there.  On a trial start the run is read after
+ * the offer opened UPDATES: the run's opening is spent, and after a home
+ * tag before the read it does not open UPDATES a second time. */
+TEST_CASE(a_run_and_an_offer_due_together_open_updates_once)
+{
+    after_install();
+    cu_offered();
+    cu_hand_t h = both();
+    CHECK(!h.decline);
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+    CHECK(g_drv.opened);
+    CHECK(!coproc_update_opened());       /* the run's opening */
+    CHECK_EQ(g_cu_drv.shown_gen, 1u);
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_IOMCU);
+    ui_router_goto(SCREEN_OVERVIEW);      /* forced away, not left */
+    for (int i = 0; i < 5; ++i) {
+        h = both();
+        CHECK(!h.decline);
+        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    }
+
+    /* The trial start: the note is read once the build is kept, after
+     * the offer opened UPDATES and the home tag declined it. */
+    after_install();
+    const fw_run_t kept = g_run;
+    memset(&g_run, 0, sizeof(g_run));     /* not read yet */
+    cu_offered();
+    (void)both();
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+    CHECK(coproc_update_opened());
+    home_tag();
+    h = both();
+    CHECK(h.decline);
+    CHECK(ui_router_current() != SCREEN_UPDATES);
+    g_cu_feed.offered = false;            /* the decline taken */
+    ui_router_goto(SCREEN_OVERVIEW);
+    g_run = kept;                         /* kept: the note read */
+    for (int i = 0; i < 5; ++i) {
+        CHECK_EQ(both().starts, 0u);
+        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    }
+    CHECK(g_drv.opened);
+    CHECK(g_run.active);
+
+    /* Read while the offer's UPDATES shows: spent the same way. */
+    after_install();
+    memset(&g_run, 0, sizeof(g_run));
+    cu_offered();
+    (void)both();
+    g_run = kept;
+    (void)both();
+    CHECK(g_drv.opened);
+    ui_router_goto(SCREEN_OVERVIEW);
+    (void)both();
+    CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+}
+
+/* Both held back: the band carries the run's line only, in every wait, and
+ * the offer's line is not said after the run has opened UPDATES. */
+TEST_CASE(one_line_on_the_band_per_frame_while_both_wait)
+{
+    static const ui_text_id_t k_run[] = {
+        TX_ALERT_RUN_WAIT_SAFE, TX_ALERT_RUN_WAIT_WIFI,
+        TX_ALERT_RUN_WAIT_INSTALL,
+    };
+    after_install();
+    cu_offered();
+    for (int w = 0; w < 3; ++w) {
+        g_feed.unsafe = w == 0;
+        g_feed.radio_up = w == 1;
+        g_feed.installing = w == 2;
+        (void)both();
+        CHECK(band_says(k_run[w]));
+        CHECK_EQ(ui_router_current(), SCREEN_OVERVIEW);
+    }
+    g_feed.installing = false;
+    ui_router_set_alert(NULL);
+    (void)both();
+    CHECK_EQ(ui_router_current(), SCREEN_UPDATES);
+    CHECK(ui_router_alert() == NULL);
+    CHECK_EQ(g_cu_drv.shown_gen, 1u);
+
+    /* Without a run the offer's own line names the wait. */
+    after_install();
+    (void)fw_run_end(&k_ops, &g_run);
+    cu_offered();
+    g_feed.unsafe = true;
+    (void)both();
+    CHECK(band_says(TX_ALERT_CU_OFFER_SAFE));
+}
+
 int main(void)
 {
     RUN(a_run_opens_updates_once_on_overview_and_never_on_another_screen);
@@ -644,5 +772,7 @@ int main(void)
     RUN(a_rolled_back_panel_image_opens_nothing_and_keeps_the_rollback_alert);
     RUN(the_link_lost_while_step_2_waits_keeps_the_run_and_the_skip);
     RUN(a_declined_step_in_a_run_goes_to_the_next_and_the_end_card_names_it);
+    RUN(a_run_and_an_offer_due_together_open_updates_once);
+    RUN(one_line_on_the_band_per_frame_while_both_wait);
     return test_summary("upd_run");
 }

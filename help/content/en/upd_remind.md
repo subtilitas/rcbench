@@ -20,7 +20,7 @@ The reminder announces a newer panel firmware release on GitHub. It opens on the
 
 With the reminder enabled and a saved home network, the panel checks once after each startup. It waits until the splash has closed, the bench is SAFE, the supply output is off, no log run is open, WI-FI is closed, and no IOmcu update is offered or running. If these conditions are not met within 10min of startup, the check is skipped for that startup.
 
-The reminder waits while the bench is ARMED or an arm request is pending, the supply output is on, or an IOmcu update question or progress screen is open. It opens when these conditions have cleared and the menu is visible.
+The reminder waits while the bench is ARMED or an arm request is pending, the supply output is on, or an IOmcu update is offered or runs. It opens when these conditions have cleared and the menu is visible.
 
 If the check fails or finds no newer release, no reminder appears. Its result is available on [Updates](updates.md).
 

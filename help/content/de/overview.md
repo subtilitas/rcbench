@@ -71,4 +71,4 @@ Beim Einschalten zeigt der Splash den Start der Teilsysteme: PLATINE, DISPLAY, T
 ## Verwandte Seiten
 
 - [Statusband und STOP](band.md)
-- [IOmcu-Update](coproc_update.md): die Rückfrage im Menü, wenn der IOmcu einen anderen Build verwendet.
+- [IOmcu-Update](coproc_update.md): das Angebot, das UPDATES beim Schritt des IOmcu öffnet, wenn der IOmcu einen anderen Build verwendet, und der Fortschritt des Updates.

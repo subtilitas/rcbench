@@ -2,21 +2,24 @@
  * @file
  * @brief The IOmcu's firmware update, as the panel offers and shows it.
  *
- * Two views.  The question: which version the IOmcu runs, which one
- * this panel carries, whether that one is older, CANCEL and START.  START
- * takes the 2s hold (UI_HOLD_S), the ARM gesture.  The progress: a full
- * screen without the band, like the bus-fault screen, with the step under
- * way and the blocks sent.  The bench cannot be armed while it shows: the
- * IOmcu refuses ARM for the whole update session.
+ * The offer: a link-up's build check that finds another build opens
+ * SETUP > UPDATES, whose step 2 (IOMCU) holds the update's 2s hold
+ * (UI_HOLD_S), the ARM gesture.  SKIP THIS STEP there, or the home tag
+ * that leaves UPDATES, declines it.  The progress: a full screen without
+ * the band, like the bus-fault screen, with the step under way and the
+ * blocks sent.  The bench cannot be armed while it shows: the IOmcu
+ * refuses ARM for the whole update session.  It returns to UPDATES.
  *
  * The screen decides nothing about the update.  The application offers it,
- * takes START or CANCEL from the latches, reports the step, and moves the
- * router away when the update has ended.
+ * takes the START and the decline coproc_update_drive() hands over,
+ * reports the step, and the driver moves the router away when the update
+ * has ended.
  *
- * SETUP > UPDATES starts the same update from its IOmcu section,
- * offered or declined: coproc_update_section() says whether it may and why
- * not, and coproc_update_drive() hands UPDATES that answer every frame,
- * takes its hold, opens the progress and returns to UPDATES at the end.
+ * UPDATES' IOmcu step and SINGLE UPDATES' IOmcu section start the same
+ * update, offered or declined: coproc_update_section() says whether it
+ * may and why not, and coproc_update_drive() hands UPDATES that answer
+ * every frame, takes its hold, opens the progress and returns to UPDATES
+ * at the end.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -33,12 +36,6 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-/** @brief The views of the screen: the question and the progress. */
-typedef enum {
-    CU_VIEW_QUESTION = 0,
-    CU_VIEW_PROGRESS,
-} cu_view_t;
 
 /** The step the progress view names. */
 typedef enum {
@@ -57,8 +54,8 @@ typedef struct {
 } cu_version_t;
 
 /**
- * @brief Whether @p carried is older than @p running: the question then says so,
- * and START still takes it after the hold.
+ * @brief Whether @p carried is older than @p running: UPDATES' IOmcu step
+ * then says so in the warning colour, and its hold still takes it.
  *
  * @param running the version the IOmcu runs
  * @param carried the version this panel carries
@@ -67,13 +64,15 @@ typedef struct {
 bool coproc_update_older(cu_version_t running, cu_version_t carried);
 
 /**
- * @brief Offer the update: the question view, with the version the IOmcu
- * runs and the one this panel carries.  Clears both latches.
+ * @brief The versions the progress names: the one the IOmcu runs and the
+ *        one this panel carries.  coproc_update_drive() sets them at the
+ *        start; the renderer and the tests set them here.
  *
  * @param running the version the IOmcu runs
  * @param carried the version this panel carries
  */
-void coproc_update_screen_offer(cu_version_t running, cu_version_t carried);
+void coproc_update_screen_versions(cu_version_t running,
+                                   cu_version_t carried);
 
 /**
  * @brief The step under way and the blocks committed of @p blocks.
@@ -85,28 +84,18 @@ void coproc_update_screen_offer(cu_version_t running, cu_version_t carried);
 void coproc_update_screen_progress(cu_step_t step, uint16_t block,
                                    uint16_t blocks);
 
-/**
- * @brief Gives the view shown.
- *
- * @return the view
- */
-cu_view_t coproc_update_screen_view(void);
-
-/**
- * @brief True once after START's hold completed; the view is then PROGRESS.
- *
- * @return true once per START
- */
-bool coproc_update_screen_take_start(void);
-
-/**
- * @brief Take the latch of an operator's decline.
- * @return True once after CANCEL or the home tag on the question.
- */
-bool coproc_update_screen_take_cancel(void);
-
 /** @brief Marks the whole screen to be drawn again. */
 void coproc_update_screen_invalidate(void);
+
+/**
+ * @brief Whether an offer has opened UPDATES since the panel's start: the
+ *        update run's own opening (upd_run.h) is then spent, so UPDATES
+ *        opens once when both are due.
+ *
+ * @return true after the first opening for an offer, until the router's
+ *         reset at the next start
+ */
+bool coproc_update_opened(void);
 
 /** The control task's last look at the IOmcu's build. */
 typedef enum {
@@ -145,17 +134,18 @@ typedef enum {
 
 /** The update as the application knows it, once a frame. */
 typedef struct {
-    bool         offered;       /**< the question waits for START or CANCEL */
+    bool         offered;       /**< the offer waits for a START or a
+                                     decline                                */
     uint32_t     offer_gen;     /**< grows with each new offer              */
     bool         active;        /**< an update runs                         */
     cu_step_t    step;          /**< while active: the step and the blocks  */
-    uint16_t     block;  /**< the blocks committed */
-    uint16_t     blocks;  /**< the blocks the update has */
+    uint16_t     block;         /**< the blocks committed                   */
+    uint16_t     blocks;        /**< the blocks the update has              */
     uint32_t     starts_taken;  /**< STARTs the update side has taken      */
-    cu_version_t running;       /**< the version the IOmcu runs       */
+    cu_version_t running;       /**< the version the IOmcu runs             */
     cu_version_t carried;       /**< the version this panel carries         */
-    /* What UPDATES' section and the question's gate read.  All false is a
-     * panel that may start an update and knows nothing of the IOmcu. */
+    /* What UPDATES' IOmcu step and the offer's opening read.  All false is
+     * a panel that may start an update and knows nothing of the IOmcu. */
     bool         have_image;    /**< this build carries an IOmcu image */
     bool         reachable;     /**< an IOmcu answers: the link is up,
                                      or one of another protocol major
@@ -163,10 +153,14 @@ typedef struct {
     cu_check_t   check;         /**< the control task's last build check    */
     bool         radio_up;      /**< the panel's radio is not wholly off    */
     bool         installing;    /**< an install of a panel image under way  */
+    bool         run_waits;     /**< an update run waits to open UPDATES
+                                     (upd_run.h): the band line is the
+                                     run's, and the offer neither speaks
+                                     nor opens                              */
 } cu_feed_t;
 
-/** @brief What keeps the question from opening on an offer, in the order
- *         of cu_sec_t's reasons. */
+/** @brief What keeps an offer from opening UPDATES, in the order of
+ *         cu_sec_t's reasons. */
 typedef enum {
     CU_WAIT_NONE = 0,  /**< nothing: it opens on the menu              */
     CU_WAIT_UNSAFE,    /**< ARMED, an arm waiting, the supply on        */
@@ -176,16 +170,15 @@ typedef enum {
 
 /** What the driver keeps between frames. */
 typedef struct {
-    uint32_t shown_gen;         /**< the offer the question opened for      */
+    uint32_t shown_gen;         /**< the offer UPDATES showed: opened for
+                                     it, or current while it stood         */
     uint32_t starts_sent;       /**< STARTs handed to the update side       */
-    bool     from_updates;      /**< the last update started from UPDATES;
-                                     the question's opening clears it      */
     uint32_t said_gen;          /**< the offer the band line was said for   */
     uint8_t  said_wait;         /**< the cu_wait_t it named                 */
 } cu_driver_t;
 
 /**
- * @brief What keeps the question from opening on @p f's offer now.
+ * @brief What keeps @p f's offer from opening UPDATES now.
  * @param f      The update as the application knows it this frame.
  * @param unsafe ARMED, an arm waiting, or the supply's output on or coming.
  * @return The first reason that holds, CU_WAIT_NONE for none.
@@ -194,7 +187,7 @@ cu_wait_t coproc_update_wait(const cu_feed_t *f, bool unsafe);
 
 /**
  * @brief The band line of an offer: that the IOmcu runs another build, and
- *        what the question waits for.
+ *        what the opening of UPDATES waits for.
  * @param w What it waits for.
  * @return The alert's text ID: ALERT_CU_OFFER for CU_WAIT_NONE.
  */
@@ -202,8 +195,8 @@ ui_text_id_t coproc_update_offer_text(cu_wait_t w);
 
 /** What one frame hands to the update side. */
 typedef struct {
-    unsigned starts;            /**< STARTs given on the question           */
-    bool     decline;           /**< the question was declined              */
+    unsigned starts;            /**< STARTs given by UPDATES' holds         */
+    bool     decline;           /**< the offer UPDATES showed was declined  */
 } cu_hand_t;
 
 /**
@@ -212,12 +205,12 @@ typedef struct {
  * waiting, or the supply's output on or coming.  A START handed over and
  * not yet taken (@p d's starts_sent against @p f's starts_taken) is BUSY.
  *
- * The hold asks for what the question asks for: an IOmcu that runs
- * another build (CU_CHECK_DIFFERENT; the same version number with another
- * build is one), offered or declined, a bench that is not @p unsafe, the
- * radio wholly off and no panel install.  An older image is READY, as the
- * question offers it too.  One that runs the carried build is SAME: the
- * check found nothing to send, and the link-up offers nothing either.
+ * The hold asks for another build (CU_CHECK_DIFFERENT; the same version
+ * number with another build is one), offered or declined, a bench that is
+ * not @p unsafe, the radio wholly off and no panel install: the
+ * conditions under which an offer opens UPDATES.  An older image is
+ * READY.  One that runs the carried build is SAME: the check found
+ * nothing to send, and the link-up offers nothing either.
  *
  * @param d the update side's state
  * @param f the control task's feed
@@ -230,35 +223,38 @@ cu_sec_t coproc_update_section(const cu_driver_t *d, const cu_feed_t *f,
 
 /**
  * @brief The screen's half of the update, once a frame, whichever screen is
- *        current: moves the router to the question, the progress and back,
- *        and drains both latches.
+ *        current: opens UPDATES for an offer, moves the router to the
+ *        progress and back, and drains UPDATES' latches.
  *
- * Only an operator's act declines: CANCEL, or the HOME tag, which latches
- * CANCEL as the router leaves the question.  The latch is drained here on the
- * next frame and handed over as a decline while the offer the question
- * showed stands.  A screen the panel forces over the question (the fault
- * screen of a lost link, PANEL UPDATE's download) declines nothing: the offer
- * stands, and a new offer opens the question again.  STOP leaves the question
- * on screen and declines nothing.  The question opens once per offer, on the
- * overview of a bench that is not @p unsafe, with the radio wholly off and no
- * panel install under way.  Its offer replaced while it shows (another
- * offer_gen, the withdrawal between two frames), it takes the new versions and
- * clears both latches.
+ * An offer opens UPDATES once, on the overview of a bench that is not
+ * @p unsafe, with the radio wholly off and no panel install under way,
+ * and not while an update run waits to open it (cu_feed_t.run_waits).
+ * UPDATES current while an offer stands shows it as well: it does not
+ * open UPDATES again later.  A new offer brings back an IOmcu step that
+ * was skipped, and a new offer while UPDATES shows ends a hold under way
+ * on that step: its versions may have changed.
  *
- * The band line of an offer: once per offer, on the first frame a screen
- * with a band shows, ALERT_CU_OFFER, or the line that names what the
- * question waits for (coproc_update_offer_text()); again each time it waits
- * for something else, never for the opening itself.
+ * Only an operator's act declines: SKIP THIS STEP on UPDATES' IOmcu step
+ * (upd_screen_take_skip_coproc()), or the home tag that leaves UPDATES
+ * (upd_screen_take_left_cu()).  Either is drained here on the next frame
+ * and handed over as a decline while the offer UPDATES showed stands; one
+ * given for an offer replaced since (another offer_gen, the withdrawal
+ * between two frames) declines nothing.  A screen the panel forces over
+ * UPDATES (the fault screen of a lost link, PANEL UPDATE's download)
+ * declines nothing: the offer stands, and a new offer opens UPDATES
+ * again.  STOP declines nothing.
  *
- * And UPDATES' section: its state (coproc_update_section()) and the two
+ * The band line of an offer UPDATES has not shown: once per offer, on the
+ * first frame a screen with a band shows, ALERT_CU_OFFER, or the line that
+ * names what the opening waits for (coproc_update_offer_text()); again
+ * each time it waits for something else.  While an update run waits to
+ * open UPDATES its own line stands, and the offer's counts as said.
+ *
+ * And UPDATES' IOmcu step: its state (coproc_update_section()) and the two
  * versions go to upd_screen_set_coproc() every frame, and a completed hold
  * (upd_screen_take_coproc()) on a section still READY opens the progress
- * and hands over a START as the question's does.  That progress returns to
- * UPDATES when the update ends or its START was spent; the question's
- * returns to the menu.  SKIP THIS STEP on UPDATES' IOmcu step
- * (upd_screen_take_skip_coproc()) is handed over as a decline while an
- * offer stands, and the question and its band line do not come for that
- * offer.
+ * and hands over a START.  The progress returns to UPDATES when the
+ * update ends or its START was spent.
  *
  * @param d      What the driver keeps between frames.
  * @param f      The update as the application knows it this frame.

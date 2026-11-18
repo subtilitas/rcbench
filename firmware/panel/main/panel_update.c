@@ -173,8 +173,8 @@ static bool cu_any_image(void)
 typedef enum {
     CU_IDLE = 0,
     CU_CHECKING,    /* does it run the carried build: link_uph_check()   */
-    CU_OFFERED,     /* it does not; the question waits for START         */
-    CU_DECLINED,    /* CANCEL, until the panel restarts (s_cu_declined)  */
+    CU_OFFERED,     /* it does not; UPDATES' IOmcu step waits for START  */
+    CU_DECLINED,    /* skipped or left, until the panel restarts         */
     CU_UPDATING,    /* link_uph_update(): the link is the update's       */
     CU_CONFIRMING,  /* an image found on trial is bought                 */
 } cu_state_t;
@@ -188,19 +188,21 @@ static bool       s_cu_took_down;  /**< the update has taken the link down */
 /** @brief STARTs the control task has taken. */
 static uint32_t   s_cu_starts_taken;
 /**
- * @brief CANCEL holds for the version it was given for, until the panel
+ * @brief A decline (SKIP THIS STEP, or the home tag that left UPDATES)
+ *        holds for the version it was given for, until the panel
  *        restarts.
  */
 static bool         s_cu_declined;
 /** @brief The version the decline was given for. */
 static cu_version_t s_cu_declined_for;
 /**
- * @brief Render side -> control task: STARTs given on the question, and the
- *        offer the question was declined for (its offer_gen; 0 none).
+ * @brief Render side -> control task: STARTs given by UPDATES' holds, and
+ *        the offer UPDATES showed that was declined (its offer_gen; 0
+ *        none).
  */
 static atomic_uint s_cu_starts;
 /**
- * @brief The offer the question was declined for, its offer_gen; 0 for none.
+ * @brief The offer that was declined, its offer_gen; 0 for none.
  */
 static atomic_uint s_cu_declined_gen;
 /** @brief Control task: the offer_gen of the offer published last. */
@@ -420,7 +422,8 @@ static void cu_checked(void)
                  (unsigned)RCBENCH_VERSION_PATCH);
         cu_enter(CU_OFFERED);
         /* The band line is the frame's (coproc_update_drive()): it names
-         * what the question waits for, which this task does not know. */
+         * what the opening of UPDATES waits for, which this task does not
+         * know. */
         cu_publish_offer(true);
         break;
     case LINK_UPH_TRIAL:
@@ -554,9 +557,10 @@ bool cu_service(bool *link_up, bench_state_t *bench,
         }
         if (!cu_may_start()) {
             /* The panel's radio is up or an install of the panel has
-             * begun: the START is spent and the offer made again, so the
-             * question opens once both have ended.  A declined one stays
-             * declined: UPDATES says why its hold is grey. */
+             * begun: the START is spent and the offer made again, so
+             * UPDATES' IOmcu step takes it once both have ended.  A
+             * declined one stays declined: UPDATES says why its hold is
+             * grey. */
             ESP_LOGW(TAG, "IOmcu update refused: the radio is on or "
                           "the panel installs");
             atomic_store(&s_cu_busy, false);
@@ -994,8 +998,8 @@ static upd_feed_t upd_feed_now(bool armed, bool unsafe, const cu_snap_t *cs,
 }
 
 /*
- * The reminder, before the IOmcu's question is served: it yields to
- * that question in the same frame the question may open.
+ * The reminder, before the IOmcu's offer is served: it yields to that
+ * offer in the same frame the offer may open UPDATES.
  */
 void upd_remind_service(bool armed, bool unsafe, const cu_snap_t *cs)
 {
@@ -1170,12 +1174,14 @@ void upd_service(bool armed, bool unsafe, uint32_t stops_now,
 }
 
 /*
- * The IOmcu update's screen, once a frame on the render side:
- * coproc_update_drive() moves the router and drains the screen's latches,
- * and its STARTs and decline go to the control task.
+ * The IOmcu update's offer and progress, once a frame on the render side:
+ * coproc_update_drive() moves the router and drains UPDATES' latches, and
+ * its STARTs and decline go to the control task.
  * @p unsafe: armed, an arm waiting, or the supply's output on or coming.
+ * @p run_waits: an update run waits to open UPDATES (updrun_service()).
  */
-void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs)
+void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs,
+                       bool run_waits)
 {
     static cu_driver_t driver;
 
@@ -1194,6 +1200,7 @@ void cu_render_service(bool unsafe, bool link_up, const cu_snap_t *cs)
         .check        = (cu_check_t)cs->check,
         .radio_up     = s_wifi_ok && !wifi_access_down(),
         .installing   = atomic_load(&s_fw_installing),
+        .run_waits    = run_waits,
     };
     /* The last failure on UPDATES' IOmcu step, as the band said it. */
     if (cs->fail[0] != '\0') {

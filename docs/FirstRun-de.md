@@ -194,16 +194,16 @@ sich beide Platinen vor und nach dem Update.
    vergleicht das Panel das laufende Image des IOmcu per SHA-256 mit dem
    Image, das es trägt, findet einen anderen Build, und das Band meldet
    `IOmcu nutzt einen anderen Build. Aktualisiere ihn auf UPDATES.`.
-2. Die Frage öffnet sich auf dem Menü, solange der Prüfstand SAFE, der
-   Netzteil-Ausgang ausgeschaltet und das WLAN des Panels aus ist. Hält
-   eines davon sie zurück, nennt die Zeile im Band es, etwa `IOmcu nutzt
-   einen anderen Build. Die Update-Frage öffnet, sobald das WLAN des Panels
-   aus ist.`. Sie nennt die
-   Version auf dem IOmcu und die Version im Panel. Halte START 2s. Nach
-   ABBRECHEN kannst du stattdessen `2s HALTEN ZUM IOMCU-UPDATE` auf
-   SETUP > UPDATES halten. Der
+2. UPDATES öffnet sich auf dem Menü mit Schritt 2 (IOMCU), solange der
+   Prüfstand SAFE, der Netzteil-Ausgang ausgeschaltet und das WLAN des
+   Panels aus ist. Hält eines davon das Öffnen zurück, nennt die Zeile im
+   Band es, etwa `IOmcu nutzt einen anderen Build. UPDATES öffnet, sobald
+   das WLAN des Panels aus ist.`. Die Karte des Schritts nennt die Version
+   auf dem IOmcu und die Version im Panel. Halte
+   `2s HALTEN ZUM IOMCU-UPDATE` 2s. Nach SCHRITT ÜBERSPRINGEN steht
+   dasselbe Halten auf SETUP > UPDATES > OPTIONEN > Einzelne Updates. Der
    Fortschritt füllt den Bildschirm ([Bildschirme:
-   IOmcu-Update](Screens-de.md#iomcu-update)), und zurück auf dem Menü
+   IOmcu-Update](Screens-de.md#iomcu-update)), und zurück auf UPDATES
    meldet das Band `IOmcu auf X.Y.Z aktualisiert.`.
 
 Das Update schreibt den Slot, aus dem der IOmcu nicht läuft. Seine
