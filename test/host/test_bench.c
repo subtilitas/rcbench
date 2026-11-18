@@ -94,7 +94,7 @@ TEST_CASE(an_out_of_range_value_clamps_rather_than_wraps)
     CHECK(out.voltage > 600.0f);
     CHECK(out.current > 600.0f);
     CHECK(out.temp_esc > 3000.0f);
-    CHECK_EQ(out.rpm, 0.0f);
+    CHECK_FEQ(out.rpm, 0.0f);
 }
 
 /*
@@ -114,7 +114,7 @@ TEST_CASE(a_partial_page_leaves_the_rest_alone)
 
     CHECK_NEAR(b.voltage, 24.31f, 0.01f);
     CHECK_NEAR(b.rpm, 13581.0f, 1.0f);
-    CHECK_EQ(b.rpm_max, 9999.0f);      /* untouched */
+    CHECK_FEQ(b.rpm_max, 9999.0f);      /* untouched */
     CHECK_NEAR(b.energy_wh, 12.5f, 0.01f);
 }
 
@@ -128,9 +128,9 @@ TEST_CASE(resetting_peaks_does_not_invent_a_collapsed_pack)
     b.current = 3.0f;  b.current_max = 70.0f;
 
     bench_state_reset_peaks(&b);
-    CHECK_EQ(b.voltage_min, 24.0f);
-    CHECK_EQ(b.current_max, 3.0f);
-    CHECK_EQ(b.voltage, 24.0f);   /* the live reading is not disturbed */
+    CHECK_FEQ(b.voltage_min, 24.0f);
+    CHECK_FEQ(b.current_max, 3.0f);
+    CHECK_FEQ(b.voltage, 24.0f);   /* the live reading is not disturbed */
 }
 
 /*
@@ -152,23 +152,23 @@ TEST_CASE(a_run_that_starts_before_the_first_voltage_still_finds_its_floor)
     bench_state_reset_peaks(&b);
     CHECK(!b.sag_seeded);
     bench_state_track_peaks(&b);
-    CHECK_EQ(b.voltage_min, 0.0f);   /* still nothing to say */
+    CHECK_FEQ(b.voltage_min, 0.0f);   /* still nothing to say */
 
     /* The first voltage arrives.  It is the floor, not a reading above it. */
     b.voltage = 24.0f;
     b.flags  |= (uint16_t)LINK_BN_VOLTAGE_OK;
     bench_state_track_peaks(&b);
-    CHECK_EQ(b.voltage_min, 24.0f);
+    CHECK_FEQ(b.voltage_min, 24.0f);
     CHECK(b.sag_seeded);
 
     /* And it sags from there. */
     b.voltage = 21.5f;
     bench_state_track_peaks(&b);
-    CHECK_EQ(b.voltage_min, 21.5f);
+    CHECK_FEQ(b.voltage_min, 21.5f);
 
     b.voltage = 23.0f;
     bench_state_track_peaks(&b);
-    CHECK_EQ(b.voltage_min, 21.5f);   /* a recovery is not a new floor */
+    CHECK_FEQ(b.voltage_min, 21.5f);   /* a recovery is not a new floor */
 }
 
 /*
@@ -188,15 +188,15 @@ TEST_CASE(peaks_ignore_the_fields_nothing_answered_for)
      * though the live field reads high. */
     b.current = 55.0f;
     bench_state_track_peaks(&b);
-    CHECK_EQ(b.current_max, 0.0f);
+    CHECK_FEQ(b.current_max, 0.0f);
 
     b.flags |= (uint16_t)LINK_BN_CURRENT_OK;
     bench_state_track_peaks(&b);
-    CHECK_EQ(b.current_max, 55.0f);
+    CHECK_FEQ(b.current_max, 55.0f);
 
     /* And the voltage floor was a measurement from the start, because the
      * reset happened with a valid reading in hand. */
-    CHECK_EQ(b.voltage_min, 24.0f);
+    CHECK_FEQ(b.voltage_min, 24.0f);
 
     /*
      * Power and speed carry no valid bit of their own.  Power is a product
@@ -206,14 +206,14 @@ TEST_CASE(peaks_ignore_the_fields_nothing_answered_for)
     b.power = 1320.0f;
     b.rpm   = 24500.0f;
     bench_state_track_peaks(&b);
-    CHECK_EQ(b.power_max, 1320.0f);
-    CHECK_EQ(b.rpm_max, 24500.0f);
+    CHECK_FEQ(b.power_max, 1320.0f);
+    CHECK_FEQ(b.rpm_max, 24500.0f);
 
     b.power = 900.0f;
     b.rpm   = 10000.0f;
     bench_state_track_peaks(&b);
-    CHECK_EQ(b.power_max, 1320.0f);   /* a peak is not the live reading */
-    CHECK_EQ(b.rpm_max, 24500.0f);
+    CHECK_FEQ(b.power_max, 1320.0f);   /* a peak is not the live reading */
+    CHECK_FEQ(b.rpm_max, 24500.0f);
 
     bench_state_track_peaks(NULL);    /* refused rather than dereferenced */
 }
@@ -318,8 +318,8 @@ TEST_CASE(the_simulator_accumulates_peaks_like_the_coprocessor_would)
     for (int i = 0; i < 40; ++i) { telemetry_sim_step(&s, 0.0f, 0.05f, &b); }
     CHECK(b.current < 5.0f);
     CHECK(sag_v < b.voltage);          /* lower than the present reading */
-    CHECK_EQ(b.current_max, peak_a);   /* and both are held */
-    CHECK_EQ(b.voltage_min, sag_v);
+    CHECK_FEQ(b.current_max, peak_a);   /* and both are held */
+    CHECK_FEQ(b.voltage_min, sag_v);
 }
 
 TEST_CASE(charge_and_energy_only_accumulate)
@@ -374,19 +374,19 @@ TEST_CASE(nothing_is_counted_while_disarmed_or_unmeasured)
     bench_state_t b = measured(16.0f, 36.0f,
                                LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
     bench_totals_count(&t, &b, 1.0f, false);
-    CHECK_EQ(t.mah, 0.0f);
+    CHECK_FEQ(t.mah, 0.0f);
     CHECK_EQ(t.counted, 0u);
 
     /* A voltage with no current counts neither; a current with no voltage
      * counts charge and not energy. */
     b = measured(16.0f, 36.0f, LINK_BN_VOLTAGE_OK);
     bench_totals_count(&t, &b, 1.0f, true);
-    CHECK_EQ(t.mah, 0.0f);
+    CHECK_FEQ(t.mah, 0.0f);
     CHECK_EQ(t.counted, 0u);
     b = measured(16.0f, 36.0f, LINK_BN_CURRENT_OK);
     bench_totals_count(&t, &b, 1.0f, true);
     CHECK_NEAR(t.mah, 10.0f, 0.01f);
-    CHECK_EQ(t.wh, 0.0f);
+    CHECK_FEQ(t.wh, 0.0f);
     CHECK_EQ(t.counted, BENCH_COUNTED_CHARGE);
 }
 
@@ -432,7 +432,7 @@ TEST_CASE(the_totals_outlast_the_run_and_reset_at_the_next)
 
     bench_totals_reset(&t);
     bench_totals_show(&t, &empty);
-    CHECK_EQ(empty.charge_mah, 0.0f);
+    CHECK_FEQ(empty.charge_mah, 0.0f);
     CHECK_EQ(empty.counted, 0u);
 }
 
@@ -531,8 +531,8 @@ TEST_CASE(a_run_start_takes_the_last_runs_totals_off_the_page)
             CHECK_EQ(regs[i], before[i]);
         }
     }
-    CHECK_EQ(b.charge_mah, 0.0f);
-    CHECK_EQ(b.energy_wh, 0.0f);
+    CHECK_FEQ(b.charge_mah, 0.0f);
+    CHECK_FEQ(b.energy_wh, 0.0f);
     CHECK_EQ(b.flags & LINK_BN_TOTALS_OK, 0u);
     CHECK_NEAR(b.voltage, 24.0f, 0.001f);
 
@@ -565,7 +565,7 @@ TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
     b.charge_mah = 123.0f;
     b.energy_wh  = 2.9f;
     bench_state_fine_totals(&b, 51200, 1904u);
-    CHECK_EQ(b.charge_mah, 123.0f);
+    CHECK_FEQ(b.charge_mah, 123.0f);
     CHECK_NEAR(b.energy_wh, 2.9f, 0.001f);
 
     /* A run that gave back more than it took: BENCH holds 0, SENSE the
@@ -578,7 +578,7 @@ TEST_CASE(the_finer_totals_replace_benchs_where_they_agree)
     b = measured(0.0f, 0.0f, LINK_BN_SENSED);
     b.charge_mah = 7.0f;
     bench_state_fine_totals(&b, 700, 0u);
-    CHECK_EQ(b.charge_mah, 7.0f);
+    CHECK_FEQ(b.charge_mah, 7.0f);
     bench_state_fine_totals(NULL, 0, 0u);
 }
 
@@ -685,7 +685,7 @@ TEST_CASE(the_totals_go_on_past_benchs_bounds)
     t.run_s = BENCH_TOTALS_SETTLE_S;
     bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
     bench_totals_count(&t, &b, 0.05f, true);
-    CHECK_EQ(t.mah, 0.0f);
+    CHECK_FEQ(t.mah, 0.0f);
 }
 
 TEST_CASE(the_escs_figures_come_from_whichever_page_carries_them)
@@ -713,7 +713,7 @@ TEST_CASE(the_escs_figures_come_from_whichever_page_carries_them)
     CHECK(bench_state_ina_current(&b, &a));
     CHECK_NEAR(v, 24.0f, 0.001f);
     CHECK_NEAR(a, 30.0f, 0.001f);
-    CHECK_EQ(b.esc_current, 0.0f);
+    CHECK_FEQ(b.esc_current, 0.0f);
 
     /* The panel's model, with the link down mid-run, is no ESC: its
      * current stays BENCH's and is not the ESC's. */

@@ -442,7 +442,7 @@ TEST_CASE(the_setting_is_kept_by_its_key_and_starts_off)
     CHECK(strlen(d->key) <= 15u);
     CHECK_EQ(d->type, SET_TYPE_BOOL);
     CHECK_EQ(d->cat, SET_CAT_APP);
-    CHECK_EQ(d->def, 0.0f);
+    CHECK_FEQ(d->def, 0.0f);
     for (int i = 0; i < SETTING_COUNT; ++i) {
         if (i != SET_HW_STOP) {
             CHECK(strcmp(settings_def((setting_id_t)i)->key, d->key) != 0);

@@ -38,7 +38,7 @@ TEST_CASE(the_model_holds_its_voltage_until_the_load_reaches_the_limit)
 
     supply_sim_step(&m, 0.05f, &st);          /* off */
     CHECK_EQ(st.mode, SUPPLY_MODE_OFF);
-    CHECK_EQ(st.v, 0.0f);
+    CHECK_FEQ(st.v, 0.0f);
     CHECK(st.online);
     /* A reading a step, counted. */
     const uint16_t first = st.samples;
@@ -93,7 +93,7 @@ TEST_CASE(a_run_counts_only_while_the_output_is_on)
     st.v = 6.0f; st.i = 1.8f; st.p = st.v * st.i;
 
     supply_count_totals(&st, 1.0f);           /* output off */
-    CHECK_EQ(st.charge_mah, 0.0f);
+    CHECK_FEQ(st.charge_mah, 0.0f);
     CHECK_EQ(st.counted, 0u);
 
     st.output = true;
@@ -108,7 +108,7 @@ TEST_CASE(a_run_counts_only_while_the_output_is_on)
     CHECK_NEAR(st.charge_mah, 50.5f, 0.1f);
 
     supply_reset_totals(&st);
-    CHECK_EQ(st.charge_mah, 0.0f);
+    CHECK_FEQ(st.charge_mah, 0.0f);
     CHECK_EQ(st.counted, 0u);
     supply_count_totals(NULL, 1.0f);
     supply_reset_totals(NULL);
@@ -128,7 +128,7 @@ TEST_CASE(the_extremes_take_only_what_arrived)
     st.output = true;
     supply_reset_peaks(&st);
     CHECK(st.sag_seeded);
-    CHECK_EQ(st.v_min, 0.0f);
+    CHECK_FEQ(st.v_min, 0.0f);
 
     st.v = 6.0f; st.i = 1.0f; st.p = 6.0f;
     supply_reset_peaks(&st);
@@ -152,8 +152,8 @@ TEST_CASE(the_extremes_take_only_what_arrived)
     st.i = 9.0f; st.p = 54.0f;
     st.ok = SUPPLY_OK_VOLTAGE;
     supply_reset_peaks(&st);
-    CHECK_EQ(st.i_max, 0.0f);
-    CHECK_EQ(st.p_max, 0.0f);
+    CHECK_FEQ(st.i_max, 0.0f);
+    CHECK_FEQ(st.p_max, 0.0f);
     st.ok = SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT;
     st.i = 1.5f; st.p = 9.0f;
     supply_track_peaks(&st);
@@ -211,7 +211,7 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_NONE);
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 0.05f), SUPPLY_TRIP_CURRENT);
     /* Fired, the count starts again. */
-    CHECK_EQ(t.over_i_s, 0.0f);
+    CHECK_FEQ(t.over_i_s, 0.0f);
     CHECK(!t.i_over);
 
     /* A reading back under starts the count again. */
@@ -260,7 +260,7 @@ TEST_CASE(a_trip_fires_once_a_reading_has_been_over_for_its_time)
     /* Nothing counts while the output is off, and a long stall counts 1s. */
     st.output = false;
     CHECK_EQ(supply_trip_step(&t, &lim, &st, 5.0f), SUPPLY_TRIP_NONE);
-    CHECK_EQ(t.over_i_s, 0.0f);
+    CHECK_FEQ(t.over_i_s, 0.0f);
     st.output = true;
     const supply_limits_t slow = { 21.0f, 5.0f, 2.5f, 0.0f, 1.5f };
     CHECK_EQ(supply_trip_step(&t, &slow, &st, 0.05f), SUPPLY_TRIP_NONE);

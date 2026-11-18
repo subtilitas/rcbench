@@ -426,7 +426,7 @@ TEST_CASE(a_shunt_between_off_and_five_milliohm_is_refused)
     type("0");                                     /* off */
     key(UI_KEY_OK);
     CHECK(!settings_screen_keypad()->open);
-    CHECK_EQ(settings_get(id), 0.0f);
+    CHECK_FEQ(settings_get(id), 0.0f);
     open_on(id);
     type("5");
     key(UI_KEY_OK);

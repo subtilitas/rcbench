@@ -438,17 +438,17 @@ TEST_CASE(length_takes_0_or_10_to_500mm_and_refuses_the_gap)
     keys("5");
     CHECK(k->open);
     CHECK_STR_EQ(k->reason, "0 or 10 to 500mm");
-    CHECK_EQ(settings_get(SET_RUDDER_LEN_MM), 0.0f);
+    CHECK_FEQ(settings_get(SET_RUDDER_LEN_MM), 0.0f);
     key(UI_KEY_CLR);
     keys("120");
     CHECK(!k->open);
-    CHECK_EQ(settings_get(SET_RUDDER_LEN_MM), 120.0f);
+    CHECK_FEQ(settings_get(SET_RUDDER_LEN_MM), 120.0f);
     CHECK(settings_save_asked());
     press(RUD_C_LENGTH);
     key(UI_KEY_CLR);
     keys("0");
     CHECK(!k->open);
-    CHECK_EQ(settings_get(SET_RUDDER_LEN_MM), 0.0f);
+    CHECK_FEQ(settings_get(SET_RUDDER_LEN_MM), 0.0f);
     scr->render(&cv, 0);
 }
 

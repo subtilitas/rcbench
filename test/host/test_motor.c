@@ -652,7 +652,7 @@ TEST_CASE(the_knob_never_arms)
         motor_screen_knob(0.05f);
         CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     }
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     motor_screen_set_armed(true);
     for (int i = 0; i < 40; ++i) {
         motor_screen_knob(0.05f);
@@ -802,9 +802,9 @@ TEST_CASE(the_knob_goes_on_from_zero_after_a_disarm)
     motor_screen_knob(0.6f);
     (void)last_cmd();
     motor_screen_set_armed(false);
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     motor_screen_knob(0.1f);            /* refused: not armed */
-    CHECK_EQ(motor_screen_throttle(), 0.0f);
+    CHECK_FEQ(motor_screen_throttle(), 0.0f);
     CHECK_EQ(last_cmd().kind, MOTOR_CMD_NONE);
     motor_screen_set_armed(true);
     motor_screen_knob(0.1f);

@@ -30,10 +30,10 @@ TEST_CASE(mm_is_l_sin_theta_at_0_30_90_and_minus_30)
     CHECK_NEAR(servo_rudder_mm(30.0f, SERVO_RUDDER_LEN_MAX_MM), 250.0f, 1e-2f);
     /* 10mm is the shortest length taken; 9.99mm and 0 read 0. */
     CHECK_NEAR(servo_rudder_mm(30.0f, SERVO_RUDDER_LEN_MIN_MM), 5.0f, 1e-4f);
-    CHECK_EQ(servo_rudder_mm(30.0f, 9.99f), 0.0f);
-    CHECK_EQ(servo_rudder_mm(30.0f, 0.0f), 0.0f);
-    CHECK_EQ(servo_rudder_mm(30.0f, -100.0f), 0.0f);
-    CHECK_EQ(servo_rudder_mm(30.0f, NAN), 0.0f);
+    CHECK_FEQ(servo_rudder_mm(30.0f, 9.99f), 0.0f);
+    CHECK_FEQ(servo_rudder_mm(30.0f, 0.0f), 0.0f);
+    CHECK_FEQ(servo_rudder_mm(30.0f, -100.0f), 0.0f);
+    CHECK_FEQ(servo_rudder_mm(30.0f, NAN), 0.0f);
 }
 
 /* asin(mm / L): the edges of the range taken, one past them refused with
@@ -61,7 +61,7 @@ TEST_CASE(deg_of_mm_refuses_mm_past_l_and_a_short_length)
     CHECK(!servo_rudder_deg_of_mm(0.0f, 0.0f, &deg));
     CHECK(!servo_rudder_deg_of_mm(NAN, 100.0f, &deg));
     CHECK(!servo_rudder_deg_of_mm(5.0f, NAN, &deg));
-    CHECK_EQ(deg, 7.0f);
+    CHECK_FEQ(deg, 7.0f);
     CHECK(!servo_rudder_deg_of_mm(5.0f, 100.0f, NULL));
 
     /* And back: the mm of the angle found is the mm asked for. */
@@ -79,13 +79,13 @@ TEST_CASE(zero_makes_the_deflection_zero_and_wraps_at_180)
     servo_rudder_init(&r);
     CHECK(!r.zeroed);
     CHECK(!r.have[0] && !r.have[1]);
-    CHECK_EQ(servo_rudder_defl(&r, 37.0f), 37.0f);
-    CHECK_EQ(servo_rudder_defl(&r, 200.0f), 200.0f);
-    CHECK_EQ(servo_rudder_defl(NULL, 12.5f), 12.5f);
+    CHECK_FEQ(servo_rudder_defl(&r, 37.0f), 37.0f);
+    CHECK_FEQ(servo_rudder_defl(&r, 200.0f), 200.0f);
+    CHECK_FEQ(servo_rudder_defl(NULL, 12.5f), 12.5f);
 
     servo_rudder_zero(&r, 170.0f);
     CHECK(r.zeroed);
-    CHECK_EQ(r.zero_deg, 170.0f);
+    CHECK_FEQ(r.zero_deg, 170.0f);
     CHECK_NEAR(servo_rudder_defl(&r, 170.0f), 0.0f, 1e-4f);
     CHECK_NEAR(servo_rudder_defl(&r, 160.0f), -10.0f, 1e-4f);
     CHECK_NEAR(servo_rudder_defl(&r, -170.0f), 20.0f, 1e-4f);
@@ -109,8 +109,8 @@ TEST_CASE(zero_makes_the_deflection_zero_and_wraps_at_180)
     CHECK(r.have[0] && r.have[1]);
     servo_rudder_zero(&r, 5.0f);
     CHECK(!r.have[0] && !r.have[1]);
-    CHECK_EQ(r.max_deg[0], 0.0f);
-    CHECK_EQ(r.max_deg[1], 0.0f);
+    CHECK_FEQ(r.max_deg[0], 0.0f);
+    CHECK_FEQ(r.max_deg[1], 0.0f);
 
     servo_rudder_zero(NULL, 1.0f);
     servo_rudder_init(NULL);
@@ -128,32 +128,32 @@ TEST_CASE(max_holds_the_largest_each_side_until_reset)
 
     servo_rudder_track(&r, 5.0f);
     CHECK(r.have[1] && !r.have[0]);
-    CHECK_EQ(r.max_deg[1], 5.0f);
+    CHECK_FEQ(r.max_deg[1], 5.0f);
     servo_rudder_track(&r, -3.0f);
     CHECK(r.have[0]);
-    CHECK_EQ(r.max_deg[0], 3.0f);
+    CHECK_FEQ(r.max_deg[0], 3.0f);
     servo_rudder_track(&r, 12.0f);
     servo_rudder_track(&r, 11.9f);
     servo_rudder_track(&r, -1.0f);
     servo_rudder_track(&r, 0.0f);
-    CHECK_EQ(r.max_deg[1], 12.0f);
-    CHECK_EQ(r.max_deg[0], 3.0f);
+    CHECK_FEQ(r.max_deg[1], 12.0f);
+    CHECK_FEQ(r.max_deg[0], 3.0f);
     /* The same magnitude again changes nothing; a larger one each side. */
     servo_rudder_track(&r, -3.0f);
-    CHECK_EQ(r.max_deg[0], 3.0f);
+    CHECK_FEQ(r.max_deg[0], 3.0f);
     servo_rudder_track(&r, -3.01f);
     CHECK_NEAR(r.max_deg[0], 3.01f, 1e-6f);
     servo_rudder_track(&r, 180.0f);
-    CHECK_EQ(r.max_deg[1], 180.0f);
+    CHECK_FEQ(r.max_deg[1], 180.0f);
     /* The zero stays through a RESET. */
     servo_rudder_zero(&r, 2.0f);
     servo_rudder_track(&r, 4.0f);
     servo_rudder_reset_max(&r);
     CHECK(!r.have[0] && !r.have[1]);
-    CHECK_EQ(r.max_deg[0], 0.0f);
-    CHECK_EQ(r.max_deg[1], 0.0f);
+    CHECK_FEQ(r.max_deg[0], 0.0f);
+    CHECK_FEQ(r.max_deg[1], 0.0f);
     CHECK(r.zeroed);
-    CHECK_EQ(r.zero_deg, 2.0f);
+    CHECK_FEQ(r.zero_deg, 2.0f);
     /* A side's first value is kept even when small. */
     servo_rudder_track(&r, -0.1f);
     CHECK(r.have[0]);

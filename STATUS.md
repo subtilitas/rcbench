@@ -1681,7 +1681,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1810,9 +1810,13 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
 `test_bleota`, `test_bleota_dev`, `test_devupd`, `test_devupd_client`, `test_upd_dev`,
-`test_upd_wizard`, `test_upd_wizard_map` and `test_upd_wiz_view`.
+`test_upd_wizard`, `test_upd_wizard_map`, `test_upd_wiz_view` and `test_harness`.
 
-The harness is `test/host/greatest.h`, written for this project. `test/host/touch_feed.h`
+The harness is `test/host/greatest.h`, written for this project. `CHECK_EQ` compares
+integers and pointers as `long` and does not compile on a floating operand; `CHECK_FEQ`
+compares floating values exactly, `CHECK_NEAR` within a tolerance (`test_harness`, and the
+ctest `harness_check_eq_refuses_float`, which passes when the compiler stops at the
+static assertion). `test/host/touch_feed.h`
 feeds the router, one screen or one widget frames of contacts through
 `touch_tracker_update()`, as the panel does, so a touch case cannot use an event sequence
 the tracker does not emit. `test/host/tick_wrap.h` runs a case with the clock started at

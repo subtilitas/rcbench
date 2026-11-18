@@ -141,7 +141,7 @@ TEST_CASE(a_reading_is_stale_after_300ms_and_offline_windows_are_none)
     b = bench_of(NULL, &m, 1301u);
     CHECK_EQ(b.flags & (LINK_BN_CURRENT_OK | LINK_BN_VOLTAGE_OK), 0u);
     CHECK((b.flags & LINK_BN_SENSED) != 0u);
-    CHECK_EQ(b.current, 0.0f);
+    CHECK_FEQ(b.current, 0.0f);
     /* A window without the INA228 online is no reading. */
     const uint32_t n = m.r.win_n;
     win(&m, 1400u, 0u, 0, RCNODE_I_NONE, 0u, RCNODE_V_NONE);
@@ -292,7 +292,7 @@ TEST_CASE(the_totals_are_differences_of_the_accumulators_since_the_arm)
     (void)pnode_meter_step(&m, 1000u, true, false, true);
     bench_state_t b = bench_of(NULL, &m, 1001u);
     CHECK((b.flags & LINK_BN_TOTALS_OK) != 0u);
-    CHECK_EQ(b.charge_mah, 0.0f);
+    CHECK_FEQ(b.charge_mah, 0.0f);
     /* +9216 CHARGE steps (-10 to 9206) and +180000 ENERGY steps. */
     acc(&m, 1400u, 1u, 9206u, 181000u, BOTH);
     CHECK_EQ(m.q_steps, 9216);
@@ -315,7 +315,7 @@ TEST_CASE(the_totals_are_differences_of_the_accumulators_since_the_arm)
     CHECK((b.flags & LINK_BN_TOTALS_OK) != 0u);
     b = bench_of(NULL, &m, 2401u + PNODE_ACC_STALE_MS);
     CHECK_EQ(b.flags & LINK_BN_TOTALS_OK, 0u);
-    CHECK_EQ(b.charge_mah, 0.0f);
+    CHECK_FEQ(b.charge_mah, 0.0f);
 }
 
 TEST_CASE(a_restart_adds_the_new_counts_from_zero)

@@ -73,7 +73,7 @@ TEST_CASE(an_edit_back_to_the_stored_value_is_no_change)
     CHECK(settings_dirty());
     CHECK(settings_differs(SET_PACK_CELLS));
     CHECK_EQ(settings_changes(), 1);
-    CHECK_EQ(settings_stored(SET_PACK_CELLS), 6.0f);
+    CHECK_FEQ(settings_stored(SET_PACK_CELLS), 6.0f);
     settings_request_save();
     CHECK(settings_save_asked());
     settings_set(SET_PACK_CELLS, 6.0f);
@@ -95,7 +95,7 @@ TEST_CASE(an_edit_back_to_the_stored_value_is_no_change)
     CHECK(!settings_differs(SETTING_COUNT));
     CHECK(!settings_text_differs((setting_text_id_t)-1));
     CHECK(!settings_text_differs(SETTING_TEXT_COUNT));
-    CHECK_EQ(settings_stored(SETTING_COUNT), 0.0f);
+    CHECK_FEQ(settings_stored(SETTING_COUNT), 0.0f);
     CHECK_STR_EQ(settings_stored_text(SETTING_TEXT_COUNT), "");
 }
 
@@ -112,14 +112,14 @@ TEST_CASE(the_stored_copy_follows_a_successful_save_only)
     settings_set_store(&s_mem_store);
     settings_set(SET_PACK_CELLS, 4.0f);
     CHECK(settings_save());
-    CHECK_EQ(settings_stored(SET_PACK_CELLS), 4.0f);
+    CHECK_FEQ(settings_stored(SET_PACK_CELLS), 4.0f);
     CHECK_EQ(settings_changes(), 0);
 
     settings_set_store(&s_refusing_store);
     settings_set(SET_PACK_CELLS, 5.0f);
     CHECK(!settings_save());
     CHECK(settings_save_failed());
-    CHECK_EQ(settings_stored(SET_PACK_CELLS), 4.0f);
+    CHECK_FEQ(settings_stored(SET_PACK_CELLS), 4.0f);
     settings_set(SET_PACK_CELLS, 4.0f);
     CHECK_EQ(settings_changes(), 0);
     CHECK(settings_dirty());             /* the medium is not known */
@@ -134,7 +134,7 @@ TEST_CASE(the_stored_copy_follows_a_successful_save_only)
 
     /* A load is the copy too. */
     settings_init();
-    CHECK_EQ(settings_stored(SET_PACK_CELLS), 4.0f);
+    CHECK_FEQ(settings_stored(SET_PACK_CELLS), 4.0f);
     CHECK(!settings_dirty());
     settings_set_store(NULL);
 }
@@ -509,7 +509,7 @@ TEST_CASE(save_on_the_warning_asks_and_leaves)
     CHECK_EQ(s_save_calls, 0);
     CHECK(settings_save_tick(true));
     CHECK_EQ(s_save_calls, 1);
-    CHECK_EQ(settings_stored(SET_PACK_CELLS), 4.0f);
+    CHECK_FEQ(settings_stored(SET_PACK_CELLS), 4.0f);
     settings_set_store(NULL);
 }
 

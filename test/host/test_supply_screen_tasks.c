@@ -298,7 +298,7 @@ TEST_CASE(a_switch_in_the_list_flips_on_its_key)
     CHECK_NEAR(supply_screen_limits().trip_i, 2.5f, 1e-4f);
     tap_value(SET_SUPPLY_TRIP_I);
     list_keys("0");
-    CHECK_EQ(supply_screen_limits().trip_i, 0.0f);
+    CHECK_FEQ(supply_screen_limits().trip_i, 0.0f);
 }
 
 TEST_CASE(a_start_value_read_over_its_cap_is_corrected_and_kept)

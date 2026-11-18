@@ -89,12 +89,36 @@ static void t_install_crash_handler(void)
         }                                                                     \
     } while (0)
 
+/* 1 when @p x is an integer, a pointer or a bool; 0 for float, double and
+ * long double. */
+#define T_NOT_FLOATING(x)                                                     \
+    _Generic((x), float: 0, double: 0, long double: 0, default: 1)
+
+/* Integers and pointers.  Both sides are compared as long, which would cut a
+ * fraction off: a floating operand does not compile.  CHECK_FEQ compares
+ * those exactly, CHECK_NEAR within a tolerance. */
 #define CHECK_EQ(a, b)                                                        \
     do {                                                                      \
+        _Static_assert(T_NOT_FLOATING(a) && T_NOT_FLOATING(b),                \
+                       "CHECK_EQ cuts a float to long: use CHECK_FEQ or "     \
+                       "CHECK_NEAR");                                         \
         long _a = (long)(a);                                                  \
         long _b = (long)(b);                                                  \
         if (_a != _b) {                                                       \
             T_FAIL("%s == %s: got %ld, want %ld", #a, #b, _a, _b);            \
+        }                                                                     \
+    } while (0)
+
+/* Floating values, compared exactly as double: 90.9 against 90.0 fails.  A
+ * float against a double literal that has no exact float (33.3) fails too;
+ * write the literal with the f suffix.  NaN equals nothing, itself
+ * included: test it with isnan(). */
+#define CHECK_FEQ(a, b)                                                       \
+    do {                                                                      \
+        double _a = (double)(a);                                              \
+        double _b = (double)(b);                                              \
+        if (!(_a == _b)) {                                                    \
+            T_FAIL("%s == %s: got %.9g, want %.9g", #a, #b, _a, _b);          \
         }                                                                     \
     } while (0)
 

@@ -462,11 +462,11 @@ TEST_CASE(a_question_for_an_on_that_was_dropped_goes)
     const float was = supply_screen_set_v();
     tap(CARD_X, CARD_V_Y);
     keys("7");
-    CHECK_EQ(supply_screen_set_v(), was);       /* waiting for APPLY */
+    CHECK_FEQ(supply_screen_set_v(), was);       /* waiting for APPLY */
     supply_screen_cancel_on();
     tick_for(1);
     tap(APPLY_X, ASK_Y);                        /* nothing there now */
-    CHECK_EQ(supply_screen_set_v(), was);
+    CHECK_FEQ(supply_screen_set_v(), was);
 }
 
 /* APPLY pressed on a question about a coming ON, then STOP drops the ON
@@ -481,7 +481,7 @@ TEST_CASE(an_apply_held_as_its_on_is_dropped_applies_nothing)
     ev(APPLY_X, ASK_Y, TOUCH_EVENT_DOWN, 1);
     supply_screen_cancel_on();
     ev(APPLY_X, ASK_Y, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(supply_screen_set_v(), was);
+    CHECK_FEQ(supply_screen_set_v(), was);
 }
 
 /* The same, with the frame's tick between: the question goes, and takes
@@ -497,7 +497,7 @@ TEST_CASE(a_dropped_question_lets_go_of_its_apply)
     supply_screen_cancel_on();
     tick_for(1);
     ev(APPLY_X, ASK_Y, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(supply_screen_set_v(), was);
+    CHECK_FEQ(supply_screen_set_v(), was);
 }
 
 /* The same on SUPPLY with the output already on: STOP lets go of APPLY. */
@@ -511,7 +511,7 @@ TEST_CASE(stop_lets_go_of_supplys_apply)
     ev(APPLY_X, ASK_Y, TOUCH_EVENT_DOWN, 1);
     supply_screen_cancel_on();
     ev(APPLY_X, ASK_Y, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(supply_screen_set_v(), was);
+    CHECK_FEQ(supply_screen_set_v(), was);
 }
 
 /* STOP and a whole APPLY tap in one frame on SUPPLY: the stop is seen
@@ -527,10 +527,10 @@ TEST_CASE(stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply)
     supply_screen_cancel_on();
     ev(APPLY_X, ASK_Y, TOUCH_EVENT_DOWN, 1);
     ev(APPLY_X, ASK_Y, TOUCH_EVENT_UP, 1);
-    CHECK_EQ(supply_screen_set_v(), was);
+    CHECK_FEQ(supply_screen_set_v(), was);
     tick_for(1);
     tap(APPLY_X, ASK_Y);                        /* nothing there now */
-    CHECK_EQ(supply_screen_set_v(), was);
+    CHECK_FEQ(supply_screen_set_v(), was);
 }
 
 /* A question asked after a stop, the output still on, stands. */
@@ -543,7 +543,7 @@ TEST_CASE(a_question_asked_after_a_stop_stands_on_supply)
     tap(CARD_X, CARD_V_Y);
     keys("7");
     tap(APPLY_X, ASK_Y);
-    CHECK_EQ(supply_screen_set_v(), 7.0f);
+    CHECK_FEQ(supply_screen_set_v(), 7.0f);
 }
 
 /* ------------------------------------------- a press that lost its release */

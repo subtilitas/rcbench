@@ -193,7 +193,7 @@ TEST_CASE(a_store_holding_a_retired_key_loads_and_ignores_it)
      * values, none of them the retired one's. */
     settings_set(SET_BRIGHTNESS, 50);
     CHECK(settings_save());
-    CHECK_EQ(s_saved[SET_BRIGHTNESS], 50.0f);
+    CHECK_FEQ(s_saved[SET_BRIGHTNESS], 50.0f);
     settings_set_store(NULL);
 }
 
@@ -344,7 +344,7 @@ TEST_CASE(units_keep_their_stored_value_and_show_no_row)
     CHECK_EQ(settings_get_int(SET_UNITS), 1);
     settings_set(SET_THEME, 1.0f);
     CHECK(settings_save());
-    CHECK_EQ(s_saved[SET_UNITS], 1.0f);
+    CHECK_FEQ(s_saved[SET_UNITS], 1.0f);
     settings_set_store(NULL);
 }
 
@@ -476,7 +476,7 @@ TEST_CASE(browser_writes_is_open_by_default_and_kept_by_its_index)
         settings_set_store(&s_mem_store);
         settings_set(SET_WEB_WRITES, (float)stored);
         settings_save();
-        CHECK_EQ(s_saved[SET_WEB_WRITES], (float)stored);
+        CHECK_FEQ(s_saved[SET_WEB_WRITES], (float)stored);
         settings_set(SET_WEB_WRITES, 0.0f);
         settings_init();
         CHECK_EQ(settings_get_int(SET_WEB_WRITES), stored);
@@ -890,7 +890,7 @@ TEST_CASE(the_card_switches_are_on_kept_and_on_after_an_update)
     CHECK(settings_get_bool(SET_LOG_USER));
     s_saved[SET_LOG_AUTO] = 7.0f;
     settings_init();
-    CHECK_EQ(settings_get(SET_LOG_AUTO), 1.0f);
+    CHECK_FEQ(settings_get(SET_LOG_AUTO), 1.0f);
 
     /* An older build's store: both ON, the rest as stored. */
     for (int i = 0; i < SETTING_COUNT; ++i) {
@@ -1095,7 +1095,7 @@ TEST_CASE(screen_rotation_survives_a_save_and_a_restart)
     CHECK_EQ(s_last_observed, SET_SCREEN_ROT);
     CHECK(settings_dirty());
     CHECK(settings_save());
-    CHECK_EQ(s_saved[SET_SCREEN_ROT], 1.0f);
+    CHECK_FEQ(s_saved[SET_SCREEN_ROT], 1.0f);
 
     /* The restart: defaults, then the store, then every id to the
      * observer, which is where the panel turns display and touch before

@@ -361,14 +361,14 @@ TEST_CASE(motor_an_input_is_taken_only_in_live)
             } else {
                 CHECK_EQ(kinds, (st == ST_LEAVING_POSTED)
                                     ? M_BIT(MOTOR_CMD_DISARM) : 0u);
-                CHECK_EQ(motor_screen_throttle(), before);
+                CHECK_FEQ(motor_screen_throttle(), before);
                 CHECK(picture_unchanged());
                 CHECK(m_drawn_refused());
             }
             /* The bench's answer to what was asked: LEAVING ends at 0%. */
             if (is_leaving(st)) {
                 motor_screen_set_armed(false);
-                CHECK_EQ(motor_screen_throttle(), 0.0f);
+                CHECK_FEQ(motor_screen_throttle(), 0.0f);
                 CHECK_EQ(m_kinds(NULL), 0u);
             }
         }
@@ -421,7 +421,7 @@ TEST_CASE(motor_the_edge_out_of_live_ends_an_active_control)
             }
             CHECK_EQ(m_kinds(NULL), want);
             const float left = (edge == EDGE_REPORT_OFF) ? 0.0f : at_edge;
-            CHECK_EQ(motor_screen_throttle(), left);
+            CHECK_FEQ(motor_screen_throttle(), left);
             if (edge != EDGE_REPORT_OFF) {
                 motor_screen_set_armed(true);   /* not yet answered */
             }
@@ -433,10 +433,10 @@ TEST_CASE(motor_the_edge_out_of_live_ends_an_active_control)
             m_knob(0.1f);
             frames(4);
             CHECK_EQ(m_kinds(NULL), 0u);
-            CHECK_EQ(motor_screen_throttle(), left);
+            CHECK_FEQ(motor_screen_throttle(), left);
             CHECK(m_drawn_refused());
             motor_screen_set_armed(false);
-            CHECK_EQ(motor_screen_throttle(), 0.0f);
+            CHECK_FEQ(motor_screen_throttle(), 0.0f);
             CHECK_EQ(m_kinds(NULL), 0u);
         }
     }
@@ -461,11 +461,11 @@ TEST_CASE(motor_an_edge_under_a_refused_press_starts_nothing)
             CHECK_EQ(m_kinds(NULL), kept);
             /* OFF and ARMING arm; LEAVING is answered. */
             motor_screen_set_armed(!is_leaving(st));
-            CHECK_EQ(motor_screen_throttle(), 0.0f);
+            CHECK_FEQ(motor_screen_throttle(), 0.0f);
             glide(1, x + 80, M_TRACK_Y, 8);
             lift(1);
             CHECK_EQ(m_kinds(NULL), 0u);
-            CHECK_EQ(motor_screen_throttle(), 0.0f);
+            CHECK_FEQ(motor_screen_throttle(), 0.0f);
             if (!is_leaving(st)) {
                 /* Live: the next press is taken, from 0%. */
                 CHECK(m_drawn_live());
@@ -492,7 +492,7 @@ TEST_CASE(motor_a_late_callback_changes_nothing)
         motor_screen_set_armed(st >= ST_LIVE);
         motor_screen_knob_cancel();
         frames(4);
-        CHECK_EQ(motor_screen_throttle(), before);
+        CHECK_FEQ(motor_screen_throttle(), before);
         CHECK_EQ(m_kinds(NULL), 0u);
     }
 }

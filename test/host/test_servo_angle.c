@@ -90,7 +90,7 @@ TEST_CASE(the_degrees_as_read_come_with_the_counts)
     servo_test_enc_t e;
     CHECK(!servo_angle_enc(&lost, &e));
     CHECK(!e.exact);
-    CHECK_EQ(e.deg, 0.0f);
+    CHECK_FEQ(e.deg, 0.0f);
 }
 
 TEST_CASE(a_reading_not_valid_keeps_its_time_and_gap)
