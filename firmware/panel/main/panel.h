@@ -1636,8 +1636,12 @@ typedef struct {
     uint32_t         consumed_seq;
 } panel_cmd_t;
 
-/** @brief What became of the last output-page write. */
+/** @brief What became of the last output-page write: an outputs_result_t in
+ *         bits 7 to 0 and, for a refusal, its link_bind_why_t in bits 15 to
+ *         8 (OUTPUTS_RESULT_PACK()). */
 extern atomic_int s_outputs_result;
+/** @brief A result and its cause as s_outputs_result holds them. */
+#define OUTPUTS_RESULT_PACK(res, why) ((int)(res) | ((int)(why) << 8))
 
 /* The queues between the two tasks, and their items; see main.c. */
 /**

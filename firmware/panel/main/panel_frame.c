@@ -556,8 +556,9 @@ void panel_frame_loop(void)
         /* A drawing a link-up edge published or withdrew, shown now and not
          * on the picker's next visit. */
         drawing_follow();
-        outputs_screen_set_result(
-            (outputs_result_t)atomic_load(&s_outputs_result));
+        const int last_write = atomic_load(&s_outputs_result);
+        outputs_screen_set_result((outputs_result_t)(last_write & 0xFF));
+        outputs_screen_set_why((uint8_t)(last_write >> 8));
 
         flush_screen_commands(stops_now);
         test_lines_service();

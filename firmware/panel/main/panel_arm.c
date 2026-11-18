@@ -585,7 +585,13 @@ static bool write_output_binding(const outbind_t *bind)
      * it could not: the rate this end holds the far end to follows it. */
     servo_link_rate_reset_note(rate != BIND_RATE_NOT_SENT,
                                rate == BIND_RATE_LANDED);
-    atomic_store(&s_outputs_result, (int)res);
+    /* A refusal of the binding itself has a cause on a 4.38 IOmcu; a
+     * refused rate reset left the register at an earlier one. */
+    uint8_t why = (uint8_t)LINK_BW_NONE;
+    if (res == OUTPUTS_REFUSED && rate != BIND_RATE_REFUSED) {
+        why = bind_link_why(&s_host, &k_port, s_far_minor);
+    }
+    atomic_store(&s_outputs_result, OUTPUTS_RESULT_PACK(res, why));
     return rate == BIND_RATE_NOT_SENT || rate == BIND_RATE_LANDED;
 }
 

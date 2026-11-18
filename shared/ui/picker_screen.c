@@ -415,7 +415,8 @@ bool picker_screen_reason(char *buf, size_t cap)
            || outputs_reason_of(&s.bind, buf, cap)
            || outputs_clash_reason(&s.bind, s.refused,
                                    outputs_pwm_pins(s.prog_pins),
-                                   LINK_PG_PORTS_MAX, buf, cap);
+                                   LINK_PG_PORTS_MAX, buf, cap)
+           || outputs_write_reason(buf, cap);
 }
 
 void pk_take_ctx(outbind_take_ctx_t *ctx)

@@ -153,6 +153,17 @@ typedef enum {
  */
 void outputs_screen_set_result(outputs_result_t r);
 
+/**
+ * @brief Tells the screen why the IOmcu refused the last write.
+ *
+ * While the last write reads REFUSED and no other line stands, the reason
+ * line of both views gives the cause (`REFUSED: NO PIO OR PWM SLICE FREE`).
+ *
+ * @param why a link_bind_why_t; LINK_BW_NONE, or a number this build has
+ *            no text for, shows no line
+ */
+void outputs_screen_set_why(uint8_t why);
+
 /** What a pin's cell shows. */
 typedef enum {
     OUTPUTS_CELL_NONE = 0,  /**< no such pin on this board                  */

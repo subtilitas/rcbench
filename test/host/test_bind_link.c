@@ -52,6 +52,7 @@ typedef struct {
     bool     armed;
     bool     refuse_rate;               /* SERVO's FRAME_HZ is refused  */
     bool     refuse_slots;              /* the silicon binds no page    */
+    uint16_t why;                       /* BIND's WHY register (4.38)   */
     uint64_t resync;                    /* reserved pins, as the OUTPUTS
                                          * page's take finds them       */
     unsigned takes;                     /* pages put in force           */
@@ -133,10 +134,12 @@ static uint8_t take_slots(void *ctx, const uint16_t *next)
         return outputs_slots_armed_check(f->slots, next, true);
     }
     if (f->refuse_slots) {
+        f->why = LINK_BW_SILICON;
         return LINK_NACK_BAD_VALUE;
     }
     memcpy(f->slots, next, sizeof(f->slots));
     far_changed();
+    f->why = LINK_BW_NONE;
     return 0u;
 }
 
@@ -194,9 +197,11 @@ static uint8_t bout_write(void *ctx, uint8_t off, uint8_t n,
 }
 static void bind_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
 {
-    (void)off;
-    (void)n;
-    out[0] = out_stage_held_crc(&((far_t *)ctx)->stage);
+    for (uint8_t i = 0; i < n; ++i) {
+        out[i] = (off + i == LINK_BD_COMMIT)
+                     ? out_stage_held_crc(&((far_t *)ctx)->stage)
+                     : ((far_t *)ctx)->why;
+    }
 }
 static uint8_t bind_write(void *ctx, uint8_t off, uint8_t n,
                           const uint16_t *in)
@@ -225,8 +230,9 @@ static uint8_t servo_write(void *ctx, uint8_t off, uint8_t n,
     return 0u;
 }
 
-/* A 4.10 IOmcu serves all six; a 4.9 one the first three. */
-static const link_page_t k_pages[] = {
+/* A 4.10 IOmcu serves all six; a 4.9 one the first three.  BIND has
+ * LINK_BD_COUNT registers from 4.38 and 1 before it (fresh_at()). */
+static link_page_t k_pages[] = {
     { LINK_PAGE_SERVO,    LINK_SV_COUNT, servo_read, servo_write },
     { LINK_PAGE_CHAN_CFG, LINK_CC_COUNT, cfg_read,   cfg_write },
     { LINK_PAGE_OUTPUTS,  LINK_OS_COUNT, slots_read, slots_write },
@@ -483,6 +489,7 @@ static void fresh_at(uint16_t minor, uint32_t ms0)
     outputs_init(&s_bank, now_ms());
     outputs_chan_cfg_apply(&s_bank, far.cfg);
 
+    k_pages[5].count = (minor >= LINK_MINOR_BIND_WHY) ? LINK_BD_COUNT : 1u;
     link_dev_init(&dev, k_pages,
                   (minor >= LINK_MINOR_BIND) ? 6u : 3u, &far, now_ms());
     link_host_init(&host, now_ms());
@@ -2118,6 +2125,45 @@ TEST_CASE(opening_the_outputs_overview_sends_nothing)
     picker_screen_set_select(NULL);
 }
 
+/* A 4.38 IOmcu says why it refused a binding: one exchange on BIND's
+ * register 1.  An older one has 1 register there and is not asked; asked
+ * all the same, it refuses the read and the cause is none.  The commit
+ * writes register 0 alone on both. */
+TEST_CASE(a_refused_binding_names_its_cause_from_4_38)
+{
+    fresh(38u);
+    far.refuse_slots = true;
+    CHECK_EQ(write_new(38u), BIND_REFUSED);
+    unsigned sent = bus.exchanges;
+    CHECK_EQ(bind_link_why(&host, &k_port, 38u), LINK_BW_SILICON);
+    CHECK_EQ(bus.exchanges, sent + 1u);
+    far.refuse_slots = false;
+    CHECK_EQ(write_new(38u), BIND_WRITTEN);
+    CHECK(far_holds(&s_new));
+    CHECK_EQ(bind_link_why(&host, &k_port, 38u), LINK_BW_NONE);
+    /* A number a later protocol adds comes through; one over 8 bits is
+     * no cause. */
+    far.why = 200u;
+    CHECK_EQ(bind_link_why(&host, &k_port, 38u), 200u);
+    far.why = 0x0102u;
+    CHECK_EQ(bind_link_why(&host, &k_port, 38u), LINK_BW_NONE);
+
+    fresh(37u);
+    far.refuse_slots = true;
+    CHECK_EQ(write_new(37u), BIND_REFUSED);
+    sent = bus.exchanges;
+    CHECK_EQ(bind_link_why(&host, &k_port, 37u), LINK_BW_NONE);
+    CHECK_EQ(bus.exchanges, sent);
+    CHECK_EQ(bind_link_why(&host, &k_port, 38u), LINK_BW_NONE);
+    CHECK_EQ(bus.exchanges, sent + 1u);
+    far.refuse_slots = false;
+    CHECK_EQ(write_new(37u), BIND_WRITTEN);
+    CHECK(far_holds(&s_new));
+
+    CHECK_EQ(bind_link_why(NULL, &k_port, 38u), LINK_BW_NONE);
+    CHECK_EQ(bind_link_why(&host, NULL, 38u), LINK_BW_NONE);
+}
+
 int main(void)
 {
     RUN(a_wide_write_goes_out_one_frame_per_exchange);
@@ -2154,5 +2200,6 @@ int main(void)
     RUN(the_pin_picker_writes_through_the_same_sequence);
     RUN(the_pin_picker_follows_a_pick_that_wrote_nothing);
     RUN(opening_the_outputs_overview_sends_nothing);
+    RUN(a_refused_binding_names_its_cause_from_4_38);
     return test_summary("bind_link");
 }

@@ -259,6 +259,22 @@ Pin-Änderungen werden sofort geschrieben. LETZTER SCHREIBVORGANG steht neben de
 | `KEINE VERBINDUNG` | ein Austausch bekam binnen 1000ms keine Antwort, oder die Verbindung ist unterbrochen |
 | `ABGELEHNT` | der IOmcu hat abgelehnt: ein Pin, den er nicht zuordnen kann, eine Änderung bei ARMED oder eine Pulsrate, die er nicht zurücksetzen konnte |
 
+Ein IOmcu mit Link-Protokoll 4.38 oder neuer nennt die Ursache eines abgelehnten Schreibens. Die Zeile unter dem Protokoll zeigt sie, solange LETZTER SCHREIBVORGANG `ABGELEHNT` zeigt und dort keine andere Zeile steht:
+
+| Zeile | Ursache |
+|---|---|
+| `ABGELEHNT: NICHT BEI ARMED` | eine Rolle, ein Throttle-Kanal oder ein Slot ändert sich bei ARMED |
+| `ABGELEHNT: KEIN PIO ODER PWM-SLICE FREI` | der IOmcu hat für einen Ausgang keine freie PIO-State-Machine, keinen PIO-Instruktionsspeicher oder keinen PWM-Slice, oder der Pin hat den Treiber abgewiesen |
+| `ABGELEHNT: LÄSST DEM PD MINI KEIN PIO` | die Ausgänge würden den PIO-Block belegen, auf den der UART des PD mini wartet |
+| `ABGELEHNT: PIN ODER PWM-SLICE EINES PROG-PORTS` | ein Programmierport hält den Pin, dessen Kanal oder dessen PWM-Slice |
+| `ABGELEHNT: PIN DES PD MINI` | SUPPLY hält den Pin; `ABGELEHNT: PIN DES SENSORBUS` und `ABGELEHNT: PIN DES PHASENABGRIFFS` ebenso für SENSORS |
+| `ABGELEHNT: PWM-SLICE MIT ANDERER PULSRATE` | der Ausgang teilt einen PWM-Slice mit einem Servoausgang anderer Pulsrate |
+| `ABGELEHNT: PULS LÄNGER ALS SEIN FRAME` | der Puls-Endpunkt eines Kanals ist länger als der Frame seines PWM-Ausgangs |
+| `ABGELEHNT: KEIN SERVOAUSGANG DER PLATINE` | auf einer Platine mit gelöteten Pins ein Pin, der keiner ihrer Servoausgänge ist |
+| `ABGELEHNT: ESC-PROGRAMMIERUNG HÄLT AUSGANG` | eine ESC-Programmierung hält einen Ausgang |
+| `ABGELEHNT: WERT AUSSERHALB DES BEREICHS` | ein Registerwert außerhalb des Bereichs seiner Page |
+| `ABGELEHNT: DIE PAGES KAMEN VERÄNDERT AN` | der IOmcu hält andere Pages, als das Panel gesendet hat; das nächste Schreiben sendet sie erneut |
+
 Ab Version 0.15.0 übernimmt der IOmcu die Zuordnung vollständig oder gar nicht. Bei `KEINE VERBINDUNG` oder `ABGELEHNT` bleibt die bisherige Zuordnung aktiv.
 
 ## Die Platinenzeichnung

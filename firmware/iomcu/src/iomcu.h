@@ -847,6 +847,20 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
  * @return 0 to accept, or a link_nack_t to refuse.
  */
 uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save);
+/**
+ * @brief Records why a binding write is refused, for LINK_BD_WHY.
+ *
+ * @param why   The cause, a link_bind_why_t; LINK_BW_NONE after a write
+ *              that is taken.
+ * @param nack  The answer of the write.
+ * @return @p nack.
+ */
+uint8_t bind_refuse(uint8_t why, uint8_t nack);
+/**
+ * @brief The cause of the last refused binding write.
+ * @return A link_bind_why_t, LINK_BW_NONE when none stands.
+ */
+uint8_t bind_why(void);
 
 /* iomcu_kst.c: the port's hardware, which main() hands to kst_port_init() */
 /**

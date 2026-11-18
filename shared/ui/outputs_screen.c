@@ -762,8 +762,6 @@ static void event(const touch_event_t *evt)
                    && outbind_toggle(&s.bind, (uint8_t)index)) {
             s.refused = -1;
             changed();
-        } else {
-            touched();
         }
     } else {
         touched();
@@ -884,6 +882,8 @@ const char *outputs_result_text(void)
     }
 }
 
+outputs_result_t outputs_screen_result(void) { return s.result; }
+
 gfx_color_t outputs_result_color(void)
 {
     switch (s.result) {
@@ -962,7 +962,8 @@ bool outputs_screen_reason(char *buf, size_t cap)
     return pin_take_reason(PIN_TAKE_GRID, &s.bind, &ctx, buf, cap)
            || outputs_reason_of(&s.bind, buf, cap)
            || outputs_clash_reason(&s.bind, s.refused, outputs_port_pins(),
-                                   LINK_PG_PORTS_MAX, buf, cap);
+                                   LINK_PG_PORTS_MAX, buf, cap)
+           || outputs_write_reason(buf, cap);
 }
 
 bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap)

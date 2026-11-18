@@ -259,6 +259,22 @@ Pin-key changes are written immediately. LAST WRITE appears beside the protocol 
 | `NO LINK` | an exchange got no answer within 1000ms, or the link is down |
 | `REFUSED` | the IOmcu refused: a pin it cannot bind, a change while ARMED, or a frame rate it could not put back |
 
+An IOmcu with link protocol 4.38 or later gives the cause of a refused write. The line under the protocol shows it while LAST WRITE reads `REFUSED` and no other line stands there:
+
+| Line | Cause |
+|---|---|
+| `REFUSED: NOT WHILE ARMED` | a role, a throttle channel or a slot changes while ARMED |
+| `REFUSED: NO PIO OR PWM SLICE FREE` | the IOmcu has no free PIO state machine, PIO instruction memory or PWM slice for an output, or its pin refused the driver |
+| `REFUSED: LEAVES THE PD MINI NO PIO` | the outputs would take the PIO block the PD mini's UART waits for |
+| `REFUSED: PIN OR PWM SLICE OF A PROG PORT` | a programming port holds the pin, its channel or its PWM slice |
+| `REFUSED: PIN OF THE PD MINI` | SUPPLY holds the pin; `REFUSED: PIN OF THE SENSOR BUS` and `REFUSED: PIN OF THE PHASE TAP` likewise for SENSORS |
+| `REFUSED: PWM SLICE AT ANOTHER FRAME RATE` | the output shares a PWM slice with a servo output at another frame rate |
+| `REFUSED: PULSE LONGER THAN ITS FRAME` | a channel's pulse endpoint is longer than the frame of its PWM output |
+| `REFUSED: NOT A SERVO OUTPUT OF THE BOARD` | on a board with soldered pins, a pin that is not one of its servo outputs |
+| `REFUSED: ESC PROGRAMMING HOLDS AN OUTPUT` | an ESC programming session holds an output |
+| `REFUSED: A VALUE OUT OF RANGE` | a register value outside its page's range |
+| `REFUSED: THE PAGES ARRIVED CHANGED` | the IOmcu holds other pages than the panel sent; the next write sends them again |
+
 An IOmcu of 0.15.0 or later takes the binding whole: `NO LINK` and `REFUSED` leave the binding in force as it was.
 
 ## The board drawing

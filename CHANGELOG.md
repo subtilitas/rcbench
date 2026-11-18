@@ -46,6 +46,14 @@ history is in git.
   section, the CSV three rows with `V` in the write column. A run that
   wrote nothing does not verify.
 
+- OUTPUTS: a write the IOmcu refuses says why. The link protocol is 4.38:
+  BIND (0x30) has register 1, `WHY`, the cause of the last refused write
+  to CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND, 13 causes. The panel
+  reads it after a refused write from a 4.38 or later IOmcu, and the
+  reason line of both views shows it while LAST WRITE reads `REFUSED` and
+  no other line stands, for example `REFUSED: NO PIO OR PWM SLICE FREE`.
+  An older IOmcu gives `REFUSED` without a cause.
+
 ### Changed
 
 - IOmcu update: the question on the menu is gone. An IOmcu that runs
@@ -130,6 +138,26 @@ history is in git.
   after the surface arrives. The measure's wait grows by 10,000ms plus the
   settling time, 16,000ms with the defaults; `surface not settled in
   time` replaces `surface not still within 3s`.
+
+- Bidirectional DShot: a slot is bound in the first PIO block, PIO2 down
+  to PIO0, with two adjacent free state machines and 16 free instructions.
+  The slot orders DSHOT, bidirectional, bidirectional and three DSHOT then
+  one bidirectional were refused with 2 blocks empty, and the whole
+  OUTPUTS write with them.
+- OUTPUTS: the reason line names the tap made last. A refused tap on a
+  free key kept the line of the tap before it (`GPIO 13: PROG PORT 1. FREE
+  IT ON ITS ENTRY` over `PPM USES 1 PIN`).
+- OUTPUTS: for 400ms after MOVE PIN or CANCEL closes the card, a press
+  inside the card's former box is spent. On the grid view of a learned
+  board with 15 or more pins, the second tap of a double tap on MOVE PIN
+  bound the cell under the button.
+- IOmcu: a channel whose role changes reads its new rest on the CHANNELS
+  page; the register kept the command written under the old role.
+- IOmcu: a stored OUTPUTS slot with a driver number above 4 or a pin above
+  GPIO 63 starts unbound. A pin register above 255 was narrowed to 8 bits
+  and bound another GPIO.
+- Help and comments: on the rbmod carrier the bound outputs take slots and
+  channels in the order PWM01 to PWM04; the texts said slot n is PWM0(n+1).
 
 ## 0.23.14 - 2026-11-15
 

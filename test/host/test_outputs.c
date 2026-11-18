@@ -1158,7 +1158,7 @@ TEST_CASE(a_role_change_takes_the_channels_register_to_the_new_rest)
     outputs_chan_cfg_apply(&o, chan_cfg);
     CHECK_EQ(outputs_command(&o, 0), OUT_SPAN / 2u);
     CHECK_EQ(chans[0], 300u);                   /* stale before the follow */
-   outputs_channels_follow_roles(&o, was, chan_cfg, chans);
+    outputs_channels_follow_roles(&o, was, chan_cfg, chans);
     CHECK_EQ(chans[0], OUT_SPAN / 2u);
     CHECK_EQ(chans[1], 800u);
     CHECK_EQ(outputs_command(&o, 1), 800u);
@@ -1167,13 +1167,13 @@ TEST_CASE(a_role_change_takes_the_channels_register_to_the_new_rest)
     memcpy(was, chan_cfg, sizeof(was));
     chan_cfg[LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
     outputs_chan_cfg_apply(&o, chan_cfg);
-   outputs_channels_follow_roles(&o, was, chan_cfg, chans);
+    outputs_channels_follow_roles(&o, was, chan_cfg, chans);
     CHECK_EQ(chans[0], 0u);
 
-   outputs_channels_follow_roles(NULL, was, chan_cfg, chans);
-   outputs_channels_follow_roles(&o, NULL, chan_cfg, chans);
-   outputs_channels_follow_roles(&o, was, NULL, chans);
-   outputs_channels_follow_roles(&o, was, chan_cfg, NULL);
+    outputs_channels_follow_roles(NULL, was, chan_cfg, chans);
+    outputs_channels_follow_roles(&o, NULL, chan_cfg, chans);
+    outputs_channels_follow_roles(&o, was, NULL, chans);
+    outputs_channels_follow_roles(&o, was, chan_cfg, NULL);
     CHECK_EQ(chans[1], 800u);
 }
 
@@ -1201,12 +1201,12 @@ TEST_CASE(a_stored_slot_with_a_pin_past_the_top_starts_unbound)
     CHECK_EQ(o.slot[1].pin, 9);
     CHECK_EQ(o.slot[2].driver, OUT_DRIVER_NONE);
 
-    //X CHECK_EQ(outputs_slots_free_unwritable(slots), 2u);
+    CHECK_EQ(outputs_slots_free_unwritable(slots), 2u);
     CHECK_EQ(slots[LINK_OS_DRIVER], 0u);
     CHECK_EQ(one[LINK_OS_DRIVER], LINK_DRIVER_PWM);
     CHECK_EQ(two[LINK_OS_DRIVER], 0u);
-    //X CHECK_EQ(outputs_slots_free_unwritable(slots), 0u);
-    //X CHECK_EQ(outputs_slots_free_unwritable(NULL), 0u);
+    CHECK_EQ(outputs_slots_free_unwritable(slots), 0u);
+    CHECK_EQ(outputs_slots_free_unwritable(NULL), 0u);
 }
 
 /* Neither argument is trusted. */

@@ -47,7 +47,7 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.37. A request whose answer is lost is sent once more after 50ms.
+4.38. A request whose answer is lost is sent once more after 50ms.
 [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
@@ -953,8 +953,11 @@ or `PORT1` to `PORT4`, `BUS`, `PD`, `TAP` (`test_picker_screen`, `test_picker_sc
 another protocol holds asks to move the pin on a card over the board or beside the cell;
 MOVE PIN writes the binding `outbind_take_check()` returns once, CANCEL, the home tag, a press
 off the card, a binding read that fails or changes, a pick and a view switch write nothing; a
-port's, an interface's or OFF's tap gives a reason line (`test_pin_take`, 21 cases, and
-`test_pin_take_grid`, 7 cases, the grid and the rbmod carrier).
+port's, an interface's or OFF's tap gives a reason line, which names the tap made last; for
+400ms after MOVE PIN or CANCEL closes the card a press in its former box is spent
+(`test_pin_take`, 23 cases, and `test_pin_take_grid`, 9 cases, the grid and the rbmod
+carrier). A write the IOmcu refuses reads its cause from BIND's `WHY` register (protocol
+4.38) and shows it on the reason line (`test_bind_link`, `test_outputs_screen_draw`).
 
 ### Output binding in the IOmcu's flash
 
