@@ -566,6 +566,22 @@ def quoted_spans(page: pathlib.Path):
         yield line, quote, console
 
 
+def german_pages() -> list[tuple[pathlib.Path, str]]:
+    """List the German pages whose quotes are held to the screen's German.
+
+    Returns:
+        (page, the name a problem and ENGLISH_QUOTES call it by): the
+        `-de.md` pages of docs/ and README-de.md by file name, the pages of
+        the web help under help/content/de by their path in the repository.
+    """
+    found = [(page, page.name) for page in pages() + [REPO / "README-de.md"]
+             if page.name.endswith(DE_SUFFIX)]
+    help_de = REPO / "help" / "content" / "de"
+    found += [(page, page.relative_to(REPO).as_posix())
+              for page in sorted(help_de.glob("*.md"))]
+    return found
+
+
 def check_quoted_labels(problems: list[str]) -> None:
     """A German page quotes the German of a translated interface string.
 
@@ -574,7 +590,8 @@ def check_quoted_labels(problems: list[str]) -> None:
     its output.  Only backtick quotes are held to it: prose also names
     protocol pages, supply commands and board markings that share a word
     with a label.  A quote right after "Konsole: " is the console's, which
-    stays English.
+    stays English.  The pages are german_pages(): docs/, README-de.md and
+    the German web help.
     """
     literal: dict[str, str] = {}
     formats: list[tuple[re.Pattern[str], re.Pattern[str] | None, str]] = []
@@ -584,11 +601,9 @@ def check_quoted_labels(problems: list[str]) -> None:
             formats.append((pattern, format_pattern(german), german))
         elif CONVERSION.search(english) is None:
             literal.setdefault(english, german)
-    for page in pages() + [REPO / "README-de.md"]:
-        if not page.name.endswith(DE_SUFFIX):
-            continue
+    for page, name in german_pages():
         for no, quote, console in quoted_spans(page):
-            if console or (page.name, quote) in ENGLISH_QUOTES:
+            if console or (name, quote) in ENGLISH_QUOTES:
                 continue
             shown = literal.get(quote)
             if shown is None:
@@ -599,7 +614,7 @@ def check_quoted_labels(problems: list[str]) -> None:
                         break
             if shown is not None:
                 problems.append(
-                    f"{page.name}:{no}: quotes `{quote}`, which the screen "
+                    f"{name}:{no}: quotes `{quote}`, which the screen "
                     f"shows as `{shown}`")
 
 
@@ -1590,10 +1605,14 @@ SPDX_DIRS = (
 
 
 def check_spdx(problems: list[str]) -> None:
-    """Check that every source file and tool script carries an SPDX line.
+    """Check that the C sources and tool scripts carry an SPDX line.
 
-    SPDX is Software Package Data Exchange.  A new file without the licence
-    line fails the build.  The walk skips build trees, tool caches and the
+    SPDX is Software Package Data Exchange.  The walk is SPDX_DIRS: the C
+    files and headers of shared/, protocols/, firmware/ and test/, and the
+    Python, shell and JavaScript files of tools/ and test/tools/.  The
+    configurator's TypeScript, .github/, hardware/ and testbench/ are not
+    walked.  A new file of the walk without the licence line fails the
+    build.  The walk skips build trees, tool caches and the
     registry components a panel build fetches.
 
     Args:
