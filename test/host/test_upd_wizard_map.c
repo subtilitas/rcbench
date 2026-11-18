@@ -85,6 +85,8 @@ static want_t c6_blocked_want(fw_c6_why_t why)
     case FW_C6_WHY_DRAWING:
         return (want_t){ UPD_WIZ_HELD, UPD_WIZ_TAG_NEXT,
                          UPD_WIZ_WHY_DRAWING };
+    case FW_C6_WHY_PROG:
+        return (want_t){ UPD_WIZ_HELD, UPD_WIZ_TAG_NEXT, UPD_WIZ_WHY_PROG };
     case FW_C6_WHY_BLE:
         return (want_t){ UPD_WIZ_PENDING, UPD_WIZ_TAG_CHECKING,
                          UPD_WIZ_WHY_BLE };
@@ -102,7 +104,7 @@ static want_t c6_blocked_want(fw_c6_why_t why)
 TEST_CASE(every_c6_row_and_why_maps_to_one_step_state)
 {
     CHECK_EQ(FW_C6_ROW_BLOCKED + 1, 7);
-    CHECK_EQ(FW_C6_WHY_ENDING + 1, 11);
+    CHECK_EQ(FW_C6_WHY_ENDING + 1, 12);
     for (unsigned row = 0u; row <= (unsigned)FW_C6_ROW_BLOCKED; ++row) {
         for (unsigned why = 0u; why <= (unsigned)FW_C6_WHY_ENDING; ++why) {
             want_t want;

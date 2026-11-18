@@ -7764,7 +7764,8 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet, bis das WLAN des Panels aus ist.` | Eine Prüfung, ein Download oder WI-FI hat den Funk an. |
 | `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
 | `Das C6-Update wartet auf das Ende des Funkgeräte-Updates.` | Das Update eines Dial läuft oder wurde angefordert ([Das Dial](#das-dial)). |
-| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
+| `Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.` | Eine KST-, Hitec- oder ESC-Programmierung belegt einen Port, oder eine Sitzung startet. |
+| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück, oder das Update ist beendet und der Neustart des Panels steht an. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
 angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
@@ -7777,13 +7778,18 @@ Alarmband sagt, wie ein Update endete:
 | Alarm | Bedeutung |
 | --- | --- |
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu, und der Update-Lauf geht danach weiter ([Nach einem Neustart](#nach-einem-neustart)). |
+| `C6-Funk auf 2.13.0 aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.` | Der Neustart wartet: Der Prüfstand ist ARMED, ein Ausgang ist an oder eine Programmierung belegt einen Port ([Der ESP32-C6-Funk](C6-de.md)). |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Der Funk über den ESP32-C6: Wiederherstellung über Header H4](C6-de.md#wiederherstellung-über-header-h4)). |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
 | `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |
 
-Während das Update läuft, wird ARM mit `ARMED gesperrt: Das C6-Funk-Update
-läuft.` abgelehnt, das WLAN startet nicht, und Installation des Panels,
-GitHub-Prüfung und IOmcu-Update warten.
+Vom Start des Updates bis zum Neustart wird ARM mit `ARMED gesperrt: Das
+C6-Funk-Update läuft.` abgelehnt, AUSGANG EIN von SUPPLY mit `Netzteilausgang
+nicht eingeschaltet: Das C6-Funk-Update läuft.`, PROG 5V EIN mit `PROG-Ports
+5V nicht eingeschaltet: Das C6-Funk-Update läuft.` und der Start einer
+Programmierung mit `Programmierung nicht gestartet: Das C6-Funk-Update
+läuft.`. Das WLAN startet nicht, und Installation des Panels, GitHub-Prüfung
+und IOmcu-Update warten.
 
 ### Die Funkgeräte
 

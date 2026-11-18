@@ -703,7 +703,9 @@ reads the state and shows the alert, is not in the coverage figure.
   auto-suspend is off, so each erase or write stalls both of the panel's
   cores, the control task with its heartbeat, STOP, OUTPUT OFF and the
   supply trips included. The rule is `flash_gate_open()` in
-  `shared/safety/flash_gate.c`, under `test_flash_gate`. It holds back the
+  `shared/safety/flash_gate.c`, under `test_flash_gate`. An ARM queued by
+  a screen and not yet taken by the control task counts as a switch to
+  ARMED waiting (`flash_gate_arm()`). It holds back the
   settings save and the board drawing's keep. Switching to ARMED and the supply are
   never refused for a write: the write waits. The keep (2 erases of 4kB and
   2 writes for the RP2350-CAN's 1,560-byte drawing) runs one sector per 5ms

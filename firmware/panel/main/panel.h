@@ -560,7 +560,7 @@ void updrun_fed(bool dev_known);
 /**
  * @brief SETUP > UPDATES' C6 RADIO row and the C6 radio's update, once a
  *        frame on app_main, after upd_service().
- * @param armed ARMED, or an arm waiting
+ * @param armed ARMED, an arm waiting or an ARM queued (arm_live_or_coming())
  */
 void c6_service(bool armed);
 
@@ -1636,6 +1636,18 @@ typedef struct {
     uint32_t         consumed_seq;
 } panel_cmd_t;
 
+/**
+ * @brief Whether a command is an ARM, MOTOR & ESC's or SERVO's.
+ * @param pc the command
+ * @return true for an ARM
+ */
+static inline bool panel_cmd_arms(const panel_cmd_t *pc)
+{
+    return (pc->kind == PANEL_CMD_MOTOR && pc->motor.kind == MOTOR_CMD_ARM)
+           || (pc->kind == PANEL_CMD_SERVO
+               && pc->servo.kind == SERVO_CMD_ARM);
+}
+
 /** @brief What became of the last output-page write. */
 extern atomic_int s_outputs_result;
 
@@ -1738,6 +1750,27 @@ extern atomic_uint s_psup_gen;
 /** @brief The newest PROG 5V ON a whole frame has seen on; render side
  *         writes, see prog_supply_watch_service(). */
 extern atomic_uint s_psup_ack;
+/** @brief The ARMs the render side has queued, counted before each is
+ *         queued; with s_arms_taken the flash gates count an ARM still in
+ *         the queue (arm_live_or_coming()). */
+extern atomic_uint s_arms_sent;
+/** @brief The ARMs the control task has dealt with, taken or refused,
+ *         counted after the snapshot that shows what became of them
+ *         (arms_taken_publish()); send_cmd() counts an ARM a full queue
+ *         dropped. */
+extern atomic_uint s_arms_taken;
+/** @brief A servo or ESC programmer holds a port (s_prog_taken) or a
+ *         session's start is claimed (fw_c6_prog_open()), for the render
+ *         side; control task writes, in kst_port_look() and
+ *         prog_start_refused_c6(). */
+extern atomic_bool s_prog_open;
+/**
+ * @brief A programmer session's start, judged against the C6 radio's
+ *        update: claims the start for the update's gate, then refuses it
+ *        with the band's alert while the update is busy.  Control task.
+ * @return true when the start is refused: the caller answers BUSY
+ */
+bool prog_start_refused_c6(void);
 /**
  * @brief Whether the supply's output is on, stored by the control task when
  *        it switches.
@@ -2032,6 +2065,11 @@ bool disarm_here(bool link_up);
  * @param bench the bench sample
  */
 void drain_commands(bool link_up, bench_state_t *bench);
+/**
+ * @brief Count the ARMs drain_commands() dealt with in this pass as taken;
+ *        control task, after publish_snapshot().
+ */
+void arms_taken_publish(void);
 
 /* ---------------------------------------------------------- panel_render.c */
 
@@ -2060,6 +2098,14 @@ extern unsigned s_tq_lost;  /**< Touch events lost from s_touch_q, counted. */
  * @return true while the output is on or an ON waits in the queue
  */
 bool supply_live_or_coming(void);
+/**
+ * @brief Whether the bench is ARMED, an arm waits for the line to settle,
+ *        or an ARM is queued and not yet dealt with (flash_gate_arm()):
+ *        flash_gate_open()'s armed, read at the moment it is asked.  Render
+ *        side only.
+ * @return true while armed or an arm is under way
+ */
+bool arm_live_or_coming(void);
 /** @brief supply_live_or_coming(), or the programming ports' own supply
  *         live (s_psup_live): what the install, update and flash gates
  *         wait on.

@@ -18,6 +18,7 @@
 #include "error_sites.h"
 #include "esc_profile.h"
 #include "esc_sim.h"
+#include "fw_c6.h"
 #include "link_host.h"
 #include "link_pages.h"
 #include "outputs.h"
@@ -489,6 +490,10 @@ void apply_supply_cmd(const panel_cmd_t *pc)
         if (arming_held(&s_arm)) {
             /* A pressed STOP stands: no ON until its reset. */
             s_stop_alert = control_alert_kept(TR(ALERT_STOP_HELD));
+        } else if (fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_SUPPLY_ON)) {
+            /* The C6 radio's update ends in a restart of the panel, which
+             * would cut the output: no ON from its start to that restart. */
+            control_alert(TR(ALERT_SUPPLY_C6));
         } else if (!supply_link_session_blocks(s_prog_taken, ports_own_supply())
             && pc->stops == arming_stop_count(&s_arm)
             && pc->resets == atomic_load(&s_stop_resets)
@@ -532,6 +537,10 @@ void apply_prog5v_cmd(const panel_cmd_t *pc)
     if (arming_held(&s_arm)) {
         /* A pressed STOP stands: no ON until its reset. */
         s_stop_alert = control_alert_kept(TR(ALERT_STOP_HELD));
+    } else if (fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_PROG5V_ON)) {
+        /* As the supply's ON: no 5V from the update's start to the
+         * restart. */
+        control_alert(TR(ALERT_P5_C6));
     } else if (low != 0u) {
         /* The carrier's input went low after the box or the steps asked:
          * M7 makes no 5V from it.  Nothing is written. */

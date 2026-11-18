@@ -5920,6 +5920,17 @@ UI_TEXT(ALERT_ARM_PROG, 94,
 UI_TEXT(ALERT_ARM_C6, 94,
     "Cannot switch to ARMED: the C6 radio update is running.",
     "ARMED gesperrt: Das C6-Funk-Update läuft.")
+/* The supply's ON, the PROG ports' 5V ON and a programmer session's start
+ * refused under the C6 radio's update, as ARM is (fw_c6_refuses()). */
+UI_TEXT(ALERT_SUPPLY_C6, 94,
+    "Supply output not switched on: the C6 radio update is running.",
+    "Netzteilausgang nicht eingeschaltet: Das C6-Funk-Update läuft.")
+UI_TEXT(ALERT_P5_C6, 94,
+    "PROG ports 5V not switched on: the C6 radio update is running.",
+    "PROG-Ports 5V nicht eingeschaltet: Das C6-Funk-Update läuft.")
+UI_TEXT(ALERT_PROG_C6, 94,
+    "Programmer not started: the C6 radio update is running.",
+    "Programmierung nicht gestartet: Das C6-Funk-Update läuft.")
 UI_TEXT(ALERT_ARM_DEVUPD, 94,
     "Cannot switch to ARMED: a wireless device update is running.",
     "ARMED gesperrt: Ein Update eines Funkgeräts läuft.")
@@ -6134,6 +6145,11 @@ UI_TEXT(CU_WHY_NOT_STARTED, 36,
 UI_TEXT(ALERT_C6_DONE, 94,
     "C6 radio updated to %s. The panel restarts.",
     "C6-Funk auf %s aktualisiert. Das Panel startet neu.")
+/* The restart after a success waits for the bench
+ * (fw_c6_restart_step()). */
+UI_TEXT(ALERT_C6_WAITS, 94,
+    "C6 radio updated to %s. The panel restarts once SAFE with all outputs off.",
+    "C6-Funk auf %s aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.")
 UI_TEXT(ALERT_C6_NO_OTA, 94,
     "The C6 radio takes no update over SDIO. Flash it over header H4.",
     "Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.")
@@ -8761,6 +8777,9 @@ UI_TEXT(C6_WHY_BLE, 94,
 UI_TEXT(C6_WHY_DEVICE, 94,
     "The C6 update waits for the wireless device update to finish.",
     "Das C6-Update wartet auf das Ende des Funkgeräte-Updates.")
+UI_TEXT(C6_WHY_PROG, 94,
+    "The C6 update requires the servo and ESC programmers closed. Select LEAVE there first.",
+    "Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.")
 UI_TEXT(C6_WHY_ENDING, 94,
     "The C6 update waits for the C6 radio's last answer.",
     "Das C6-Update wartet auf die letzte Antwort des C6-Funks.")
