@@ -2444,7 +2444,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/kst_panel_touch.c` | 334 | 332 | 99.4% |
 | `shared/ui/kst_panel_run.c` | 154 | 148 | 96.1% |
 | `shared/ui/kst_panel_draw.c` | 565 | 563 | 99.7% |
-| `shared/ui/esc_wire_panel.c` | 575 | 546 | 95.0% |
+| `shared/ui/esc_wire_panel.c` | 578 | 549 | 95.0% |
 | `shared/ui/hitec_panel.c` | 284 | 283 | 99.7% |
 | `shared/ui/hitec_panel_text.c` | 505 | 500 | 99.0% |
 | `shared/ui/hitec_panel_edit.c` | 432 | 427 | 98.8% |
@@ -2454,7 +2454,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/hitec_panel_file.c` | 237 | 236 | 99.6% |
 | `shared/ui/hitec_panel_run.c` | 107 | 107 | 100.0% |
 | `shared/ui/hitec_panel_move.c` | 210 | 205 | 97.6% |
-| `shared/ui/analyser_screen.c` | 258 | 257 | 99.6% |
+| `shared/ui/analyser_screen.c` | 287 | 286 | 99.7% |
 | `shared/ui/balance_screen.c` | 470 | 468 | 99.6% |
 | `shared/ui/battery_screen.c` | 226 | 221 | 97.8% |
 | `shared/ui/esc_stick_pages.c` | 117 | 112 | 95.7% |
@@ -2487,20 +2487,20 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
-| `shared/ui/outputs_screen.c` | 610 | 605 | 99.2% |
-| `shared/ui/outputs_view.c` | 58 | 58 | 100.0% |
+| `shared/ui/outputs_screen.c` | 614 | 609 | 99.2% |
+| `shared/ui/outputs_view.c` | 73 | 72 | 98.6% |
 | `shared/ui/outputs_port.c` | 199 | 197 | 99.0% |
 | `shared/ui/outputs_port_entry.c` | 410 | 403 | 98.3% |
 | `shared/ui/port_view.c` | 97 | 97 | 100.0% |
 | `shared/ui/port_mail.c` | 103 | 103 | 100.0% |
-| `shared/ui/picker_screen.c` | 414 | 409 | 98.8% |
+| `shared/ui/picker_screen.c` | 416 | 411 | 98.8% |
 | `shared/ui/picker_geometry.c` | 155 | 151 | 97.4% |
 | `shared/ui/picker_draw.c` | 344 | 342 | 99.4% |
 | `shared/ui/picker_cat.c` | 94 | 93 | 98.9% |
 | `shared/ui/ui_cats.c` | 65 | 64 | 98.5% |
 | `shared/ui/picker_port.c` | 122 | 115 | 94.3% |
 | `shared/ui/picker_tag.c` | 56 | 56 | 100.0% |
-| `shared/ui/pin_take.c` | 280 | 265 | 94.6% |
+| `shared/ui/pin_take.c` | 296 | 281 | 94.9% |
 | `shared/ui/board_drawing.c` | 88 | 85 | 96.6% |
 | `shared/ui/busfault_screen.c` | 453 | 452 | 99.8% |
 | `shared/ui/wifi_screen.c` | 629 | 622 | 98.9% |
@@ -2539,7 +2539,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/node_balance.c` | 346 | 339 | 98.0% |
 | `shared/ui/wireless_bal.c` | 199 | 195 | 98.0% |
 | `shared/ui/motor_balance.c` | 184 | 181 | 98.4% |
-| `shared/settings/settings.c` | 424 | 417 | 98.3% |
+| `shared/settings/settings.c` | 427 | 420 | 98.4% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
 | `shared/logfile/log_numbers.c` | 396 | 374 | 94.4% |
@@ -2562,7 +2562,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/files/fm_crc.c` | 6 | 6 | 100.0% |
 | `shared/files/png_enc.c` | 217 | 217 | 100.0% |
 | `shared/files/shot_file.c` | 133 | 133 | 100.0% |
-| `shared/safety/heartbeat.c` | 56 | 56 | 100.0% |
+| `shared/safety/heartbeat.c` | 69 | 69 | 100.0% |
 | `shared/safety/arming.c` | 273 | 268 | 98.2% |
 | `shared/safety/safety_gate.c` | 69 | 69 | 100.0% |
 | `shared/safety/flash_gate.c` | 6 | 6 | 100.0% |
@@ -2573,7 +2573,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/safety/error_stop.c` | 14 | 14 | 100.0% |
 | `shared/safety/error_sites.c` | 87 | 87 | 100.0% |
 | `shared/safety/prog5v_lost.c` | 110 | 110 | 100.0% |
-| `shared/safety/stop_latch.c` | 145 | 143 | 98.6% |
+| `shared/safety/stop_latch.c` | 158 | 158 | 100.0% |
 | `shared/servo/servo_limit.c` | 141 | 135 | 95.7% |
 | `shared/servo/servo_sync.c` | 181 | 175 | 96.7% |
 | `shared/servo/servo_sweep.c` | 118 | 114 | 96.6% |
@@ -2593,7 +2593,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_settle.c` | 63 | 63 | 100.0% |
 | `shared/servo/servo_limrun_family.c` | 29 | 29 | 100.0% |
 | `shared/servo/servo_start_seq.c` | 205 | 198 | 96.6% |
-| `protocols/openyge/openyge_frame.c` | 172 | 169 | 98.3% |
+| `protocols/openyge/openyge_frame.c` | 173 | 170 | 98.3% |
 | `protocols/openyge/openyge_status.c` | 39 | 39 | 100.0% |
 | `protocols/openyge/openyge_params.c` | 66 | 66 | 100.0% |
 | `shared/esc/esc_json.c` | 625 | 583 | 93.3% |
@@ -2659,15 +2659,15 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/page_console.c` | 585 | 561 | 95.9% |
 | `shared/outputs/prog_port.c` | 460 | 460 | 100.0% |
 | `shared/bench/kst_link.c` | 450 | 448 | 99.6% |
-| `shared/bench/esc_link.c` | 545 | 528 | 96.9% |
+| `shared/bench/esc_link.c` | 560 | 540 | 96.4% |
 | `shared/bench/esc_prog.c` | 371 | 346 | 93.3% |
-| `shared/bench/esc_prog_file.c` | 165 | 150 | 90.9% |
+| `shared/bench/esc_prog_file.c` | 173 | 158 | 91.3% |
 | `shared/bench/esc_card.c` | 121 | 114 | 94.2% |
-| `shared/ui/esc_wire_edit.c` | 371 | 361 | 97.3% |
-| `shared/ui/esc_wire_touch.c` | 349 | 330 | 94.6% |
-| `shared/ui/esc_wire_draw.c` | 445 | 438 | 98.4% |
-| `shared/ui/esc_wire_text.c` | 233 | 229 | 98.3% |
-| `shared/ui/esc_wire_help.c` | 19 | 19 | 100.0% |
+| `shared/ui/esc_wire_edit.c` | 391 | 382 | 97.7% |
+| `shared/ui/esc_wire_touch.c` | 357 | 340 | 95.2% |
+| `shared/ui/esc_wire_draw.c` | 449 | 438 | 97.5% |
+| `shared/ui/esc_wire_text.c` | 250 | 245 | 98.0% |
+| `shared/ui/esc_wire_help.c` | 21 | 21 | 100.0% |
 | `shared/bench/hitec_link.c` | 529 | 529 | 100.0% |
 | `shared/bench/hitec_prog.c` | 677 | 677 | 100.0% |
 | `shared/bench/hitec_prog_write.c` | 568 | 567 | 99.8% |
@@ -2688,7 +2688,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/can/can_txq.c` | 67 | 67 | 100.0% |
 | `shared/link/link_bringup.c` | 163 | 163 | 100.0% |
 | `shared/link/link_can.c` | 112 | 111 | 99.1% |
-| `shared/link/link_crc.c` | 13 | 13 | 100.0% |
+| `shared/link/link_crc.c` | 14 | 14 | 100.0% |
 | `shared/link/link_dev.c` | 168 | 164 | 97.6% |
 | `shared/link/link_host.c` | 169 | 165 | 97.6% |
 | `shared/link/link_artxfer.c` | 94 | 93 | 98.9% |
@@ -2704,7 +2704,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
 | `shared/bench/bench_state.c` | 251 | 247 | 98.4% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
-| `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
+| `shared/outputs/outputs_pages.c` | 334 | 325 | 97.3% |
 | `shared/outputs/out_bind.c` | 562 | 549 | 97.7% |
 | `shared/outputs/out_bind_take.c` | 100 | 99 | 99.0% |
 | `shared/outputs/board_fix.c` | 98 | 98 | 100.0% |
@@ -2717,7 +2717,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/outputs/out_store_rec.c` | 72 | 72 | 100.0% |
 | `shared/outputs/out_stage.c` | 66 | 66 | 100.0% |
 | `shared/outputs/out_render.c` | 282 | 279 | 98.9% |
-| `shared/outputs/bind_link.c` | 72 | 72 | 100.0% |
+| `shared/outputs/bind_link.c` | 78 | 78 | 100.0% |
 | `shared/outputs/servo_cmd.c` | 22 | 22 | 100.0% |
 | `shared/outputs/servo_link.c` | 563 | 530 | 94.1% |
 | `shared/outputs/sense_page.c` | 514 | 514 | 100.0% |
@@ -2798,7 +2798,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **102410** | **100261** | **97.9%** |
+| **total** | **102612** | **100459** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
