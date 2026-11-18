@@ -8148,10 +8148,11 @@ traffic. Writing flash stops the IOmcu with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178us, against a CAN
 frame of about 130us and two frames of buffer in the controller. The figure is one
-measurement: 1 sample, taken on the bring-up module, with the flash part not
-identified. The erase and the page program have not been timed apart from
-each other. The window is not checked against the flash part's datasheet maximum
-(part unidentified). The panel sends one request
+measurement: 1 sample, taken on the bring-up module. The erase and the page
+program have not been timed apart from each other. Waveshare names the
+module's flash as a Puya P25Q32SH, whose datasheet maxima are 30ms for a
+sector erase and 2.5ms for a page program
+([Safety](Safety.md#iomcu-loop-watchdog)). The panel sends one request
 frame per exchange and waits for its answer before it sends the next, so at
 most one request frame waits in the controller's two buffers. A window delays
 that request by up to its length, about 19ms against the panel's 1000ms wait,

@@ -69,9 +69,11 @@ does ([STOP as an emergency stop](docs/Stop.md), `test_stop_latch`,
 IOmcu whose core 0 does not pass its main loop for 500ms: the reset releases
 every pad, the start after it switches a PD mini left on off, and STATUS
 fault bit 7 reports it to the panel, which shows `IOMCU RESTARTED
-(WATCHDOG)`. The watchdog is fed at the top of a pass only, enabled at the
-first pass, after the BUY on a trial boot, and never in the bench console
-build; the longest pass the code allows sums to 281,318us (`loop_watch.h`,
+(WATCHDOG)`. The watchdog is fed at the top of a pass and right before
+every flash window, enabled at the first pass, after the BUY on a trial
+boot, and never in the bench console build; with the datasheet maxima of
+the module's flash (Puya P25Q32SH: 30ms a sector erase, 2.5ms a page) the
+longest time between two feeds sums to 108,250us (`loop_watch.h`,
 `test_loop_watch`, `test_reset_cause`). [Reference](docs/Safety.md).
 
 **Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
@@ -3028,7 +3030,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1512 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1800 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 261 calls through a register are not followed. The
+holds them. The depth is a lower bound: 262 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

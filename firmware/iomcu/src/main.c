@@ -109,7 +109,8 @@ uint32_t        s_now_ms;
 pass_stats_t    s_pass;
 loop_watch_t    s_loop_watch;
 
-/* The figures loop_watch.h sums into the longest pass are the firmware's. */
+/* The figures loop_watch.h sums into the longest time between two feeds
+ * are the firmware's. */
 _Static_assert(LOOP_WATCH_LOCKOUT_US == OUT_STORE_LOCKOUT_MS * 1000u,
                "loop_watch.h: the flash lock-out wait differs");
 _Static_assert(LOOP_WATCH_TONE_US == TONE_CORE1_WAIT_US,
@@ -382,6 +383,19 @@ static void loop_watch_feed(void)
 }
 
 /**
+ * @brief The watchdog's feed point before a flash window
+ *        (out_store_before_window()): loop_watch_window() decides,
+ *        host-tested.  The window starts with the whole period ahead of
+ *        it, so a reset does not fall into an erase or a program.
+ */
+static void loop_watch_feed_window(void)
+{
+    if (loop_watch_window(&s_loop_watch) == LOOP_WATCH_FEED) {
+        watchdog_update();
+    }
+}
+
+/**
  * @brief Before the update's restart: the queued CAN frames out
  *        (can_drain()), and the watchdog's mark taken back, so the start
  *        after reboot() is not read as the watchdog's.  reboot() loads the
@@ -414,6 +428,7 @@ int main(void)
      * the loop's watchdog goes to STATUS as LINK_FAULT_WATCHDOG.  The bench
      * console build never enables that watchdog. */
     loop_watch_init(&s_loop_watch, IOMCU_CONSOLE != 0, reset_start());
+    out_store_before_window(loop_watch_feed_window);
 
     s_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     s_state.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
@@ -747,14 +762,16 @@ int main(void)
 
     for (;;) {
         /*
-         * The watchdog's one feed point.  The first pass enables it, after
+         * The watchdog's feed point of a pass; the other is before each
+         * flash window (loop_watch_feed_window()).  The first pass enables it, after
          * the whole boot path above: supply_boot_off() (3,500ms at most)
          * and the boot's flash windows are over, and a module left on is
          * off.  An image on trial leaves the watchdog to the boot ROM until
          * its BUY.  From then on a pass that does not come back here within
          * LOOP_WATCH_PERIOD_MS (500ms) resets the chip: every pad is
          * released, and the start after it reports LOOP_WATCHDOG.
-         * loop_watch.h sums the longest pass the code allows, 281,318us.
+         * loop_watch.h sums the longest time between two feeds, 108,250us,
+         * from the flash part's datasheet maxima.
          */
         loop_watch_feed();
         /* The pass before this one ends here: its length into the

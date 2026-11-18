@@ -42,7 +42,7 @@ letzten Nachladen zurück. Die Regeln stehen in
 
 | | |
 | --- | --- |
-| Nachladen | am Anfang eines Durchlaufs der Hauptschleife, einmal je Durchlauf, und nirgends sonst |
+| Nachladen | am Anfang eines Durchlaufs der Hauptschleife, einmal je Durchlauf, und direkt vor jedem Flash-Fenster (einem Löschen oder Programmieren des Output-Store oder des Updates), damit kein Zurücksetzen in einen Schreibvorgang fällt; nirgends sonst |
 | Eingeschaltet | beim ersten Durchlauf, nach dem Startpfad |
 | Nicht eingeschaltet | solange das Image nach einem Update auf Probe läuft, bis zu seinem BUY: Dann gehört der Watchdog 16,7s lang dem Boot-ROM. Nie im Bench-Konsolen-Build (`IOMCU_CONSOLE=ON`) |
 | Ein Debugger | ein vom Debugger angehaltener Core hält den Zähler an |
@@ -60,22 +60,33 @@ Was das Zurücksetzen an den Ausgängen bewirkt:
 Vom Stillstand des Core 0 bis zur Freigabe der Pins vergehen höchstens
 500ms.
 
-Die Periode gegen den längsten Durchlauf, den der Code zulässt, 281.318µs:
+Beide Platinen, auf denen die Firmware läuft, tragen das Modul Waveshare
+RP2350-CAN. Die [Produktseite](https://www.waveshare.com/rp2350-can.htm)
+von Waveshare nennt als Flash den P25Q32SH-UXH-IR; die Firmware liest den
+Baustein nicht aus. Das Datenblatt des Puya P25Q32SH, V1.8 vom 2023-10-27,
+Tabelle 5-4, nennt für das Löschen eines Sektors 16ms typisch und 30ms
+maximal und für das Programmieren einer Page 1,6ms typisch und 2,5ms
+maximal. Das längste Fenster ist der 4KiB-Sektor des Updates, 16 Pages:
+40.000µs, dazu 2.000µs als Annahme für den Weg in den Kommandomodus des
+Flash und zurück.
 
-| Teil eines Durchlaufs | µs |
+Die Periode gegen die längste Zeit zwischen zwei Nachladungen, 108.250µs:
+
+| Vom Nachladen vor einem Flash-Fenster bis zum Anfang des nächsten Durchlaufs | µs |
 | --- | --- |
-| 6 Flash-Fenster von 19.178µs (ein Löschen und ein Programmieren in einem Fenster, 1 Messung auf dem Bring-up-Modul): 2 Aufrufe von `can_service()` mit je einem Sektor-Löschen und einem Programmieren von 4KiB, das geschuldete Löschen des Updates, das Speichern oder Aufräumen des Output-Store | 115.068 |
-| ihre 12 Wartezeiten auf Core 1, je `OUT_STORE_LOCKOUT_MS` (10ms) | 120.000 |
+| das Warten des Fensters, bis Core 1 steht, `OUT_STORE_LOCKOUT_MS` | 10.000 |
+| das Fenster beim Maximum des Bausteins | 42.000 |
+| sein Warten, bis Core 1 wieder läuft | 10.000 |
 | 2 Umverdrahtungen von TONE, je `TONE_CORE1_WAIT_US` | 10.000 |
 | `can_drain()` vor dem Neustart des Updates | 35.000 |
 | die Konsolenzeile des Store | 1.000 |
 | der Rest eines Durchlaufs, gemessenes Maximum | 250 |
 
-500ms sind das 1,78-Fache dieser Summe. Ein Durchlauf mit allen Teilen
-wurde nicht gemessen. Das Datenblatt-Maximum des Flash-Bausteins für ein
-Löschen ist nicht geprüft: Ein Flash-Fenster, das 218.682µs länger dauert
-als gemessen, startet den IOmcu neu, und die 200ms Stille des Links setzen
-seinen Failsafe schon davor.
+500ms sind das 4,6-Fache dieser Summe. Ein Fenster darf 433.750µs dauern,
+bevor das Zurücksetzen hineinfällt, das 10-Fache des Maximums des
+Bausteins. Auf dem Inbetriebnahme-Modul wurde ein Fenster mit 19.178µs gemessen (ein
+Löschen und ein Programmieren einer Page, 1 Messung). Ein Durchlauf enthält
+höchstens 6 Fenster; ein Durchlauf mit allen wurde nicht gemessen.
 
 Ein Neustart durch diesen Watchdog druckt `reset LOOP_WATCHDOG` auf der
 Konsole des IOmcu ([Inbetriebnahme des Links](Bringup-de.md)) und setzt

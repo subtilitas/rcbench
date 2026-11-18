@@ -42,7 +42,7 @@ feed. The rules are in
 
 | | |
 | --- | --- |
-| Feed point | the top of a pass of the main loop, once a pass, and nowhere else |
+| Feed points | the top of a pass of the main loop, once a pass, and right before every flash window (an erase or a program of the output store or of the update), so a reset does not fall into a write; nowhere else |
 | Enabled | at the first pass, after the boot path |
 | Not enabled | while the image runs on trial after an update, until its BUY: the boot ROM owns the watchdog for 16.7s then. Never in the bench console build (`IOMCU_CONSOLE=ON`) |
 | A debugger | a core halted by a debugger pauses the count |
@@ -59,21 +59,31 @@ What the reset does to the outputs:
 
 The longest time from the stop of core 0 to the pads' release is 500ms.
 
-The period against the longest pass the code allows, 281,318µs:
+Both boards the firmware runs on carry the Waveshare RP2350-CAN module.
+Waveshare's [product page](https://www.waveshare.com/rp2350-can.htm) names
+its flash as P25Q32SH-UXH-IR; the firmware does not read the part out. The
+Puya P25Q32SH datasheet, V1.8 of 2023-10-27, table 5-4, gives a sector
+erase of 16ms typical and 30ms maximum and a page program of 1.6ms typical
+and 2.5ms maximum. The longest window is the update's 4KiB sector, 16
+pages: 40,000µs, and 2,000µs taken for the way into and out of the flash's
+command mode.
 
-| Part of one pass | µs |
+The period against the longest time between two feeds, 108,250µs:
+
+| From the feed before a flash window to the top of the next pass | µs |
 | --- | --- |
-| 6 flash windows of 19,178µs (an erase and a program in one window, 1 sample on the bring-up module): 2 calls of `can_service()` with a sector erase and a 4KiB program each, the update's owed erase, the output store's save or reclaim | 115,068 |
-| their 12 waits for core 1, `OUT_STORE_LOCKOUT_MS` (10ms) each | 120,000 |
+| the window's wait for core 1 to stop, `OUT_STORE_LOCKOUT_MS` | 10,000 |
+| the window at the part's maximum | 42,000 |
+| its wait for core 1 to start again | 10,000 |
 | 2 TONE rewires, `TONE_CORE1_WAIT_US` each | 10,000 |
 | `can_drain()` before the update's restart | 35,000 |
 | the store's console line | 1,000 |
 | the rest of a pass, measured maximum | 250 |
 
-500ms is 1.78 times that sum. No pass with all parts in it was measured. The
-flash part's datasheet maximum for an erase is not checked: one flash window
-that takes 218,682µs longer than measured restarts the IOmcu, and the link's
-200ms silence latches its failsafe before that.
+500ms is 4.6 times that sum. One window may take 433,750µs before the
+reset falls into it, 10 times the part's maximum. A window measured
+19,178µs on the bring-up module (an erase and a page program, 1 sample). A
+pass holds 6 windows at most; no pass with all of them was measured.
 
 A restart by this watchdog prints `reset LOOP_WATCHDOG` on the IOmcu's
 console ([Bringing up the link](Bringup.md)) and sets STATUS fault bit 7

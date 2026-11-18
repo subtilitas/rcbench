@@ -13,10 +13,13 @@ history is in git.
   fault, a `panic()`, a loop that does not end) is reset: every pad is
   released, so PWM and PPM stop, and the start after it drives the
   programming ports' 5V low and switches a PD mini left on off within
-  3,500ms. The watchdog is fed once at the top of a pass, enabled at the
-  first pass, on a trial boot after the BUY, and never in the bench console
-  build (`IOMCU_CONSOLE=ON`). The longest pass the code allows sums to
-  281,318us. The console's reset line reads `LOOP_WATCHDOG` after such a
+  3,500ms. The watchdog is fed once at the top of a pass and right before
+  every flash window, so a reset does not fall into an erase or a program.
+  It is enabled at the first pass, on a trial boot after the BUY, and never
+  in the bench console build (`IOMCU_CONSOLE=ON`). With the datasheet
+  maxima of the module's flash (Puya P25Q32SH: 30ms a sector erase, 2.5ms
+  a page program) the longest time between two feeds sums to 108,250us.
+  The console's reset line reads `LOOP_WATCHDOG` after such a
   restart.
 - Link protocol 4.38: STATUS fault bit 7, `LINK_FAULT_WATCHDOG`, set from
   the start after a restart by the IOmcu's watchdog until a CLEAR. The

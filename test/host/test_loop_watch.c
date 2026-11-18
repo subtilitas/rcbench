@@ -8,7 +8,9 @@
  * console build never enables it; the mark is handed back before the
  * update's restart only when it was written; the fault bit stands from a
  * start after a watchdog restart until a CLEAR is taken, through the real
- * CONTROL page rules; and the period against the longest pass.
+ * CONTROL page rules; the feed before a flash window; and the period
+ * against the longest time between two feeds, with the flash part's
+ * datasheet maxima.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -179,24 +181,155 @@ TEST_CASE(the_panels_clear_ends_the_bit_and_no_other_write_does)
     CHECK_EQ(loop_watch_fault(&w), 0u);
 }
 
+/* ------------------------------------------------- the flash windows */
+
+/* The feed before a flash window: only a watchdog this firmware enabled is
+ * fed, and a window never enables one. */
+TEST_CASE(a_flash_window_feeds_an_enabled_watchdog_and_enables_none)
+{
+    /* Before the first pass: the boot's store reclaims. */
+    loop_watch_init(&w, false, RESET_CAUSE_POR);
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_NONE);
+    CHECK(!loop_watch_handover(&w));
+    CHECK_EQ(loop_watch_pass(&w, false), LOOP_WATCH_ENABLE);
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_FEED);
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_FEED);
+
+    /* On trial: the BUY's own window leaves the boot ROM's count alone. */
+    loop_watch_init(&w, false, RESET_CAUSE_FLASH_UPDATE);
+    CHECK_EQ(loop_watch_pass(&w, true), LOOP_WATCH_NONE);
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_NONE);
+    CHECK_EQ(loop_watch_pass(&w, false), LOOP_WATCH_ENABLE);
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_FEED);
+
+    /* The console build. */
+    loop_watch_init(&w, true, RESET_CAUSE_POR);
+    CHECK_EQ(loop_watch_pass(&w, false), LOOP_WATCH_NONE);
+    CHECK_EQ(loop_watch_window(&w), LOOP_WATCH_NONE);
+    CHECK_EQ(loop_watch_window(NULL), LOOP_WATCH_NONE);
+}
+
+/** @brief The feeds of one model run: their count and the longest time
+ *         between two of them. */
+typedef struct {
+    uint32_t now_us;   /**< the model's clock                      */
+    uint32_t last_us;  /**< the last feed, or the enable           */
+    uint32_t gap_us;   /**< the longest time between two feeds     */
+    unsigned feeds;    /**< feeds and enables counted              */
+} feeds_t;
+
+/** @brief Counts @p act as a feed when it is one. */
+static void fed(feeds_t *f, loop_watch_act_t act)
+{
+    if (act == LOOP_WATCH_NONE) {
+        return;
+    }
+    const uint32_t gap = f->now_us - f->last_us;
+    if (gap > f->gap_us) {
+        f->gap_us = gap;
+    }
+    f->last_us = f->now_us;
+    ++f->feeds;
+}
+
+/**
+ * @brief One pass as the main loop runs it: the feed at its top, then
+ *        @p windows flash windows, each fed before its wait for core 1 and
+ *        lasting @p window_us with a full wait either side, then
+ *        everything else a pass may hold (LOOP_WATCH_REST_US).
+ */
+static void model_pass(feeds_t *f, unsigned windows, uint32_t window_us)
+{
+    fed(f, loop_watch_pass(&w, false));
+    for (unsigned i = 0; i < windows; ++i) {
+        fed(f, loop_watch_window(&w));
+        f->now_us += window_us + 2u * LOOP_WATCH_LOCKOUT_US;
+    }
+    f->now_us += LOOP_WATCH_REST_US;
+}
+
+/* Passes with 0 to 64 windows of the flash part's datasheet maximum each,
+ * back to back: the time between two feeds never passes the period, and
+ * never the sum the header states.  The code allows 6 windows a pass. */
+TEST_CASE(windows_at_the_datasheet_maximum_never_reach_the_period)
+{
+    for (unsigned n = 0; n <= 64u; ++n) {
+        loop_watch_init(&w, false, RESET_CAUSE_POR);
+        feeds_t f = { 0u, 0u, 0u, 0u };
+        for (int pass = 0; pass < 4; ++pass) {
+            model_pass(&f, n, LOOP_WATCH_WINDOW_MAX_US);
+        }
+        /* The feed that closes the last pass. */
+        fed(&f, loop_watch_pass(&w, false));
+        CHECK_EQ(f.feeds, 4u * (1u + n) + 1u);
+        CHECK(f.gap_us < LOOP_WATCH_PERIOD_MS * 1000u);
+        CHECK(f.gap_us <= LOOP_WATCH_WORST_GAP_US);
+        if (n == 0u) {
+            CHECK_EQ(f.gap_us, LOOP_WATCH_REST_US);
+        } else {
+            CHECK_EQ(f.gap_us, LOOP_WATCH_WORST_GAP_US);
+        }
+    }
+}
+
+/* A pass without a window has its one feed, at its top. */
+TEST_CASE(a_pass_without_a_window_has_its_single_feed)
+{
+    loop_watch_init(&w, false, RESET_CAUSE_POR);
+    feeds_t f = { 0u, 0u, 0u, 0u };
+    model_pass(&f, 0u, 0u);
+    CHECK_EQ(f.feeds, 1u);                     /* the enable */
+    for (int pass = 0; pass < 10; ++pass) {
+        const unsigned before = f.feeds;
+        model_pass(&f, 0u, 0u);
+        CHECK_EQ(f.feeds, before + 1u);
+    }
+    CHECK_EQ(f.gap_us, LOOP_WATCH_REST_US);
+}
+
+/* Without the feed before a window, 6 windows at the maximum and the rest
+ * of a pass come to 418,250us: under the period by 81,750us, and over it
+ * with 8.  The feed is what makes the count of windows not matter. */
+TEST_CASE(without_the_window_feed_the_count_of_windows_would_matter)
+{
+    const uint32_t six = LOOP_WATCH_WINDOWS * LOOP_WATCH_WINDOW_SPAN_US
+                         + LOOP_WATCH_REST_US;
+    CHECK_EQ(six, 418250u);
+    CHECK(six < LOOP_WATCH_PERIOD_MS * 1000u);
+    CHECK(8u * LOOP_WATCH_WINDOW_SPAN_US + LOOP_WATCH_REST_US
+          > LOOP_WATCH_PERIOD_MS * 1000u);
+}
+
 /* ---------------------------------------------------------- the period */
 
-/* The longest pass the code allows, summed from its parts, and the period
- * 1.5 times that at least: the figures the header's comment states. */
-TEST_CASE(the_period_covers_the_longest_pass_with_half_of_it_to_spare)
+/* The flash part's maxima (Puya P25Q32SH V1.8, table 5-4), the longest
+ * window and the longest time between two feeds, as the header's comment
+ * states them. */
+TEST_CASE(the_period_is_over_twice_the_longest_time_between_feeds)
 {
-    const uint32_t windows = 6u * (19178u + 2u * 10000u);
-    CHECK_EQ(windows, 235068u);
-    CHECK_EQ(LOOP_WATCH_WORST_PASS_US,
-             windows + 2u * 5000u + 35000u + 1000u + 250u);
-    CHECK_EQ(LOOP_WATCH_WORST_PASS_US, 281318u);
+    CHECK_EQ(LOOP_WATCH_ERASE_MAX_US, 30000u);
+    CHECK_EQ(LOOP_WATCH_PAGE_MAX_US, 2500u);
+    /* The update's sector: 4096 bytes in pages of 256. */
+    CHECK_EQ(LOOP_WATCH_PROGRAM_PAGES, 4096u / 256u);
+    CHECK_EQ(LOOP_WATCH_WINDOW_MAX_US, 16u * 2500u + 2000u);
+    CHECK(LOOP_WATCH_ERASE_MAX_US + LOOP_WATCH_WINDOW_ENTRY_US
+          <= LOOP_WATCH_WINDOW_MAX_US);
+    /* The window measured on the bring-up module is under the maximum. */
+    CHECK(19178u < LOOP_WATCH_ERASE_MAX_US + LOOP_WATCH_PAGE_MAX_US
+                       + LOOP_WATCH_WINDOW_ENTRY_US);
+    CHECK_EQ(LOOP_WATCH_REST_US, 2u * 5000u + 35000u + 1000u + 250u);
+    CHECK_EQ(LOOP_WATCH_WINDOW_SPAN_US, 62000u);
+    CHECK_EQ(LOOP_WATCH_WORST_GAP_US, 108250u);
     CHECK_EQ(LOOP_WATCH_PERIOD_MS, 500u);
-    CHECK(LOOP_WATCH_WORST_PASS_US * 3u / 2u < LOOP_WATCH_PERIOD_MS * 1000u);
-    /* What one flash window may take over its measured figure. */
-    CHECK_EQ(LOOP_WATCH_PERIOD_MS * 1000u - LOOP_WATCH_WORST_PASS_US,
-             218682u);
-    /* Under the link's silence timeout it is not: the IOmcu's own
-     * failsafe (200ms) acts first on a pass that long. */
+    CHECK(2u * LOOP_WATCH_WORST_GAP_US < LOOP_WATCH_PERIOD_MS * 1000u);
+    /* What one window may take before the reset falls into it. */
+    CHECK_EQ(LOOP_WATCH_PERIOD_MS * 1000u - 2u * LOOP_WATCH_LOCKOUT_US
+                 - LOOP_WATCH_REST_US,
+             433750u);
+    /* A W25Q16JV's 400ms sector erase stays under that as well. */
+    CHECK(400000u < 433750u);
+    /* The link's silence timeout (200ms) is shorter than the period: the
+     * IOmcu's own failsafe acts first on a pass that long. */
     CHECK(LOOP_WATCH_PERIOD_MS > LINK_DEV_SILENCE_MS);
     /* The RP2350's watchdog counts 24 bits of microseconds. */
     CHECK(LOOP_WATCH_PERIOD_MS * 1000u <= 0x00FFFFFFu);
@@ -211,6 +344,10 @@ int main(void)
     RUN(only_a_loop_watchdog_restart_sets_the_fault_bit);
     RUN(a_stored_window_over_clear_takes_the_bit_away);
     RUN(the_panels_clear_ends_the_bit_and_no_other_write_does);
-    RUN(the_period_covers_the_longest_pass_with_half_of_it_to_spare);
+    RUN(a_flash_window_feeds_an_enabled_watchdog_and_enables_none);
+    RUN(windows_at_the_datasheet_maximum_never_reach_the_period);
+    RUN(a_pass_without_a_window_has_its_single_feed);
+    RUN(without_the_window_feed_the_count_of_windows_would_matter);
+    RUN(the_period_is_over_twice_the_longest_time_between_feeds);
     return test_summary("loop_watch");
 }

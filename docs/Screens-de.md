@@ -8829,10 +8829,11 @@ auf eine Lücke im Busverkehr. Während des Flash-Schreibens hält der IOmcu
 bei abgeschalteten Interrupts an und beantwortet keine Anfragen: Auf dem
 Inbetriebnahme-Modul wurde ein Speichervorgang mit Löschen und Programmieren
 in einem Fenster mit 19.178us gemessen, gegen einen CAN-Frame von etwa
-130us und zwei Frames Puffer im Controller. Der Wert beruht auf 1 Probe am Inbetriebnahme-Modul. Das Flash-Bauteil ist
-nicht bestimmt; Löschen und Page Program sind nicht getrennt
-voneinander gemessen. Das Zeitfenster ist nicht gegen das Datenblattmaximum
-des Bauteils geprüft (Bauteil unbekannt). Das Panel schickt je Austausch einen
+130us und zwei Frames Puffer im Controller. Der Wert beruht auf 1 Probe am Inbetriebnahme-Modul. Löschen und
+Page Program sind nicht getrennt voneinander gemessen. Waveshare nennt als
+Flash des Moduls einen Puya P25Q32SH, dessen Datenblattmaxima 30ms für das
+Löschen eines Sektors und 2,5ms für ein Page Program sind
+([Sicherheit](Safety-de.md#schleifen-watchdog-des-iomcu)). Das Panel schickt je Austausch einen
 Request-Frame und wartet auf dessen Antwort, bevor es den nächsten schickt;
 in den zwei Puffern des Controllers wartet also höchstens ein Request-Frame.
 Ein Fenster verzögert diesen Request um höchstens seine Länge, etwa 19ms gegen

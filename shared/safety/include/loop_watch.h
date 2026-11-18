@@ -19,9 +19,12 @@
  * The decisions are here and host-tested (test_loop_watch); the firmware
  * makes the hardware calls (firmware/iomcu/src/main.c):
  *
- * - The feed point is the top of a pass, one feed a pass, and nowhere
- *   else: a loop inside a pass that does not end is a pass that does not
- *   end.
+ * - The feed points are two: the top of a pass, one feed a pass
+ *   (loop_watch_pass()), and right before a flash window
+ *   (loop_watch_window()), and nowhere else.  A loop inside a pass that
+ *   does not end is a pass that does not end.  The feed before a window
+ *   keeps the reset out of an erase or a program: a reset inside one
+ *   leaves a store sector or a sector of the update half-written.
  * - The watchdog is enabled at the first pass, after the boot path:
  *   supply_boot_off() takes up to 3,500ms and the boot's store reclaims a
  *   flash window each, before any output can be driven.  The boot path
@@ -29,37 +32,54 @@
  * - Not while the image runs on trial after an update: the boot ROM owns
  *   the watchdog for 16.7s then, and an image that does not BUY in that
  *   time is replaced by the slot it came from.  Enabling it would reload
- *   the ROM's count.  The first pass after the BUY enables it.
+ *   the ROM's count.  The first pass after the BUY enables it.  A window
+ *   before that pass, the BUY's own included, feeds nothing.
  * - Never in the bench console build (IOMCU_CONSOLE=ON, not released):
  *   its driver test sleeps inside a command.
  * - Core 1 reads the sensor bus and is not watched.
  *
- * The period against the longest pass the code allows, in microseconds.
- * A flash window is 19,178us: an erase and a program in one window, 1
- * sample on the bring-up module (firmware/iomcu/src/out_store.h); a window
- * with one of the two is taken at the same figure.  The flash part's
- * datasheet maximum is not checked.  Each window waits up to
- * OUT_STORE_LOCKOUT_MS (10ms) for core 1 to stop and up to 10ms for it to
- * start again.
+ * The flash part.  Both boards this firmware runs on carry the Waveshare
+ * RP2350-CAN module, the rbmod carrier as a plug-in; Waveshare's product
+ * page (https://www.waveshare.com/rp2350-can.htm, "What's On Board") names
+ * its flash as P25Q32SH-UXH-IR, 4MB.  The part on a given module is not
+ * read out by the firmware.  Puya P25Q32SH datasheet V1.8 (2023-10-27),
+ * table 5-4, 2.3V to 3.6V, -40 to +85 degrees C:
  *
- *   6 flash windows:  2 calls of can_service(), each one
- *                     update request with a sector erase and a
- *                     4KiB program; the update's owed erase;
- *                     the output store's save or reclaim        115,068
- *   their 12 lock-out waits of 10,000us                         120,000
+ *   tSE  sector erase, 4KiB       16ms typical   30ms maximum
+ *   tPP  page program, 256 bytes  1.6ms typical  2.5ms maximum
+ *
+ * One window holds one sector erase (30,000us) or one program: 2 pages of
+ * a store record (5,000us) or the 16 pages of the update's 4KiB sector
+ * (40,000us).  The SDK's way into and out of the flash's command mode is
+ * taken as 2,000us: the 19,178us measured for an erase and a page program
+ * on the bring-up module (firmware/iomcu/src/out_store.h, 1 sample) is
+ * 1,578us over the two typical figures.  So LOOP_WATCH_WINDOW_MAX_US is
+ * 42,000.
+ *
+ * The longest time between two feeds, in microseconds: the feed before a
+ * window, the window, and everything else a pass may hold before the feed
+ * at the top of the next pass.
+ *
+ *   the window's wait for core 1 to stop,
+ *   OUT_STORE_LOCKOUT_MS                                         10,000
+ *   the window, LOOP_WATCH_WINDOW_MAX_US                         42,000
+ *   its wait for core 1 to start again                           10,000
  *   2 TONE rewires, TONE_CORE1_WAIT_US (5,000us) each            10,000
  *   can_drain() before the update's restart, 7 batches of
  *   CAN_TXQ_STUCK_US (5,000us)                                   35,000
  *   the store's line, PICO_STDIO_USB_STDOUT_TIMEOUT_US            1,000
  *   the rest of a pass, measured maximum                            250
  *                                                               -------
- *   LOOP_WATCH_WORST_PASS_US                                    281,318
+ *   LOOP_WATCH_WORST_GAP_US                                     108,250
  *
- * LOOP_WATCH_PERIOD_MS (500ms) is 1.78 times that.  No pass was measured
- * with all of them in it; the longest pass measured outside a flash window
- * is 250us.  One flash window longer than 218,682us over the figure above
- * restarts the IOmcu; the link's 200ms silence latches its failsafe
- * before that.
+ * LOOP_WATCH_PERIOD_MS (500ms) is 4.6 times that.  A window may take
+ * 433,750us before the watchdog resets inside it, 10 times the part's
+ * maximum; the W25Q16JV's 400ms sector erase maximum (datasheet revision
+ * I, tSE) is under it as well.  A pass holds 6 windows at most: 2 calls
+ * of can_service(), each with one update request of a sector erase and a
+ * 4KiB program, the update's owed erase, and the output store's save or
+ * reclaim.  No pass with all of them was measured; the longest pass
+ * measured outside a flash window is 250us.
  *
  * A restart by this watchdog reads as RESET_CAUSE_LOOP_WATCHDOG
  * (reset_cause.h) and sets STATUS fault bit 7, LINK_FAULT_WATCHDOG, until
@@ -85,8 +105,20 @@ extern "C" {
 /** @brief The watchdog's period: a reset this long after the last feed. */
 #define LOOP_WATCH_PERIOD_MS 500u
 
-/** @brief One flash window, us: erase and program, measured once. */
-#define LOOP_WATCH_WINDOW_US 19178u
+/** @brief The flash part's sector erase, us: P25Q32SH tSE maximum. */
+#define LOOP_WATCH_ERASE_MAX_US 30000u
+/** @brief The flash part's page program, us: P25Q32SH tPP maximum. */
+#define LOOP_WATCH_PAGE_MAX_US 2500u
+/** @brief The pages of the longest program in one window: the update's
+ *         4KiB sector, 16 pages of 256 bytes. */
+#define LOOP_WATCH_PROGRAM_PAGES 16u
+/** @brief The SDK's way into and out of the flash's command mode around
+ *         one erase or program, us: taken, not from a datasheet. */
+#define LOOP_WATCH_WINDOW_ENTRY_US 2000u
+/** @brief The longest flash window, us: the 16-page program, 42,000. */
+#define LOOP_WATCH_WINDOW_MAX_US                                          \
+    (LOOP_WATCH_PROGRAM_PAGES * LOOP_WATCH_PAGE_MAX_US                    \
+     + LOOP_WATCH_WINDOW_ENTRY_US)
 /** @brief The flash windows one pass can hold. */
 #define LOOP_WATCH_WINDOWS 6u
 /** @brief A window's wait for core 1, us, on the way in and on the way
@@ -105,13 +137,20 @@ extern "C" {
 /** @brief The longest pass measured outside a flash window, us. */
 #define LOOP_WATCH_PASS_US 250u
 
-/** @brief The longest pass the code allows, us: 281,318. */
-#define LOOP_WATCH_WORST_PASS_US                                          \
-    (LOOP_WATCH_WINDOWS * (LOOP_WATCH_WINDOW_US + 2u * LOOP_WATCH_LOCKOUT_US) \
-     + LOOP_WATCH_TONES * LOOP_WATCH_TONE_US + LOOP_WATCH_DRAIN_US        \
+/** @brief What a pass may hold outside its flash windows, us: 46,250. */
+#define LOOP_WATCH_REST_US                                                \
+    (LOOP_WATCH_TONES * LOOP_WATCH_TONE_US + LOOP_WATCH_DRAIN_US          \
      + LOOP_WATCH_PRINT_US + LOOP_WATCH_PASS_US)
 
-/** @brief What the firmware does with the watchdog at the feed point. */
+/** @brief One window with its two waits for core 1, us: 62,000. */
+#define LOOP_WATCH_WINDOW_SPAN_US                                         \
+    (LOOP_WATCH_WINDOW_MAX_US + 2u * LOOP_WATCH_LOCKOUT_US)
+
+/** @brief The longest time between two feeds, us: 108,250. */
+#define LOOP_WATCH_WORST_GAP_US                                           \
+    (LOOP_WATCH_WINDOW_SPAN_US + LOOP_WATCH_REST_US)
+
+/** @brief What the firmware does with the watchdog at a feed point. */
 typedef enum {
     LOOP_WATCH_NONE = 0, /**< nothing: the watchdog is not this firmware's */
     LOOP_WATCH_ENABLE,   /**< write RESET_WD_LOOP_MARK to SCRATCH0 and
@@ -137,7 +176,8 @@ typedef struct {
 void loop_watch_init(loop_watch_t *w, bool console, reset_cause_t cause);
 
 /**
- * @brief The feed point: once at the top of every pass of the main loop.
+ * @brief The feed point of a pass: once at the top of every pass of the
+ *        main loop.
  *
  * NONE in the console build and while the image waits for its BUY with the
  * watchdog not yet enabled; ENABLE once, at the first pass that is neither;
@@ -150,6 +190,20 @@ void loop_watch_init(loop_watch_t *w, bool console, reset_cause_t cause);
  * @return What the firmware does now.
  */
 loop_watch_act_t loop_watch_pass(loop_watch_t *w, bool on_trial);
+
+/**
+ * @brief The feed point right before a flash window: an erase or a
+ *        program, with interrupts off and core 1 parked for its length.
+ *
+ * FEED while the watchdog is enabled: the window starts with the whole
+ * period ahead of it.  NONE otherwise, and never ENABLE: before the first
+ * pass (the boot's reclaims), on trial (the BUY's window) and in the
+ * console build the watchdog is not this firmware's.
+ *
+ * @param w  The watch; NONE for NULL.
+ * @return LOOP_WATCH_FEED or LOOP_WATCH_NONE.
+ */
+loop_watch_act_t loop_watch_window(const loop_watch_t *w);
 
 /**
  * @brief Whether SCRATCH0 is zeroed before a restart the firmware asks for
