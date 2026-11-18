@@ -134,6 +134,12 @@ typedef struct {
      * to ask about, and "how" narrows a fault far faster than "not alive". */
     uint32_t rejected_fast; /**< intervals under the floor  -- noise */
     uint32_t rejected_slow; /**< intervals over the ceiling -- a stall */
+    /** @brief An announced window the next sample closes, ms; 0 for none
+     *         (heartbeat_mon_window()). */
+    uint32_t window_ms;
+    /** @brief How far the stamp of the last edge can be off, ms: the window
+     *         its sample closed, 0 for an edge sampled on time. */
+    uint32_t stamp_off_ms;
 } heartbeat_mon_t;
 
 /**
@@ -142,6 +148,38 @@ typedef struct {
  * @param m Monitor state to initialise.
  */
 void heartbeat_mon_init(heartbeat_mon_t *m);
+
+/**
+ * @brief Announce a window in which the line was not sampled, before the
+ *        first sample after it.
+ *
+ * A caller that samples the line in a loop stops sampling while it writes
+ * flash: an erase holds the IOmcu's core for 17 to 25ms.  An edge that
+ * falls into the window is seen at the first sample after it and stamped up
+ * to the window's length away from where it happened, and the interval
+ * beside it reads short by as much: under HEARTBEAT_MIN_GAP_MS for an edge
+ * in the first milliseconds of a 19ms window.  That is the sampler's pause
+ * and not a fast line, so it is not counted against the line.
+ *
+ * The rule: an edge recorded by the first heartbeat_mon_edge() after this
+ * call, with no heartbeat_mon_alive() between, carries @p window_ms of
+ * doubt in its stamp.  The interval that edge closes and the interval it
+ * opens are judged against the floor with the doubt added to their length.
+ * A first sample without an edge ends the announcement
+ * (heartbeat_mon_alive()): every later edge is stamped when it happens and
+ * judged as always.  The ceiling is never widened: an interval over
+ * HEARTBEAT_MAX_GAP_MS, or that long without an edge, loses the line with
+ * or without a window, and a window is taken as HEARTBEAT_MAX_GAP_MS at
+ * most.  Two windows before one sample count as the longer of them.
+ *
+ * What the doubt costs: of a line that turns fast in the same pass a window
+ * ends, the first short interval passes and the second is rejected.
+ *
+ * @param m         Monitor state; nothing for NULL.
+ * @param window_ms How long the line went without a sample, in
+ *                  milliseconds, the time to this sample included.
+ */
+void heartbeat_mon_window(heartbeat_mon_t *m, uint32_t window_ms);
 
 /**
  * @brief Record an edge on the safety line.
@@ -161,6 +199,10 @@ void heartbeat_mon_edge(heartbeat_mon_t *m, uint32_t now_ms);
  * Must be called even when no edges are arriving: silence is the failure this
  * exists to catch, and silence generates no events. Calling it is what
  * notices that nothing has happened.
+ *
+ * Called once per sample of the line, after that sample's
+ * heartbeat_mon_edge() where the level changed: it ends a window
+ * announced by heartbeat_mon_window().
  *
  * @param m Monitor state.
  * @param now_ms Current time, in milliseconds.

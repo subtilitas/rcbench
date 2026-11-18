@@ -355,6 +355,14 @@ static bool refusing(void)
     return s_refused;
 }
 
+/** @brief Windows opened since boot; see out_store_windows(). */
+static uint32_t s_windows;
+
+uint32_t out_store_windows(void)
+{
+    return s_windows;
+}
+
 /**
  * @brief True when the operation ran.
  *
@@ -373,10 +381,14 @@ static bool flash_window(flash_op_t *op)
         const uint32_t irq = save_and_disable_interrupts();
         flash_op_run(op);
         restore_interrupts(irq);
+        ++s_windows;
         return op->done;
     }
     case STORE_PARKABLE:
         (void)flash_safe_execute(flash_op_run, op, OUT_STORE_LOCKOUT_MS);
+        /* Counted whether or not the operation ran: a refused window held
+         * this core for up to OUT_STORE_LOCKOUT_MS as well. */
+        ++s_windows;
         if (!op->done) {
             s_refused    = true;
             s_refused_ms = clock_ms();
