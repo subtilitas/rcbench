@@ -701,12 +701,12 @@ TEST_CASE(the_copy_takes_the_page_blocks_and_stops_before_the_draft)
  * its answer given.  Returns the exchange. */
 static esc_link_xfer_t one_exchange(bool lose)
 {
-    static uint16_t regs[LINK_MAX_REGS];
     esc_link_xfer_t x;
 
     memset(&x, 0, sizeof(x));
     run_ms(5u);
     if (esc_link_next(&g_l, esc.now / 1000u, &x)) {
+        static uint16_t regs[LINK_MAX_REGS];
         const int r = lose ? ESC_LINK_NO_ANSWER : link_xchg(NULL, &x, regs);
 
         esc_link_done(&g_l, r, (!x.write && r == ESC_LINK_ACK) ? regs : NULL);

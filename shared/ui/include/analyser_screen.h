@@ -45,10 +45,21 @@ void analyser_screen_push(const sbus_frame_t *frame,
 
 /**
  * @brief No frame has arrived for long enough that the link is presumed
- *        dead.
+ *        dead.  The first call after a frame puts one gap sample into every
+ *        lane and ends the rate's window.
  * @param now_ms The time, ms.
  */
 void analyser_screen_silent(uint32_t now_ms);
+
+/**
+ * @brief The frame rate RATE shows: the frames of a window of at least
+ *        1000ms divided by the window's length, rounded to 1Hz.  The window
+ *        starts at the first frame and at the first frame after a silence.
+ * @param hz Takes the rate, Hz; 0 while none is known; may be NULL.
+ * @return false until a window has closed since the last silence: RATE
+ *         shows `---`.
+ */
+bool analyser_screen_rate(unsigned *hz);
 
 /**
  * @brief The lines a state's line takes on the state card, in the 12 x 24

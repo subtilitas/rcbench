@@ -3373,7 +3373,15 @@ lane shows its channel name in 10 x 20, history, a 56px bar for the current
 value and microseconds in 8 x 16. History contains 200 samples, one pixel
 each: about 2.8s at 71 frames per second (one S.BUS frame every 14ms).
 CH17 and CH18 are digital channels. A glitch appears as a spike in one
-lane; a dropout as a simultaneous notch across all sixteen.
+lane. A dropout puts one gap sample into every lane: a 1px line over the
+lane's 30px trough in all sixteen at the same sample, with the trace
+broken on both sides.
+
+RATE is the frames of a window of at least 1000ms divided by the window's
+length, rounded to 1Hz. The window starts at the first frame and at the
+first frame after a silence; RATE reads `---` until one window has closed.
+In NO SIGNAL the traces, bars and values of the last frame stay in the
+faint colour (`UI_C_TEXT_FAINT`).
 
 The 260px state card on the right shows the state in 20 x 36, followed
 by up to three lines of 12 x 24 explanation. BUS, RATE, FRAMES, RESYNC

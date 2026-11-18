@@ -24,17 +24,19 @@ With `BY HAND`, connect the ESC's power when asked, and tap `POWER IS ON` within
 
 Tap a number to open the keypad or a choice to open its list. Each editor shows a help line. Edits remain on the panel until you use `WRITE n VALUES`.
 
+`READ AGAIN` reads the settings from the ESC and replaces the draft. With edits not written it asks first: hold 2s to read, or `CANCEL` to keep the edits.
+
 `READ ONLY` explains why writing is unavailable. Its rows are dimmed.
 
 ## Write
 
-The write page lists the changes, with hazardous fields first, marked `CHECK` beside their new values. Use `NEXT` and `PREV` for a long list. The hold control becomes available after the last page has been shown. Hold it for 2s. Until writing finishes, only `ABORT` and `STOP` are active. The first write in a session saves a backup before writing; an erased page cannot serve as a backup. Without a card, the page asks for confirmation.
+The write page lists the changes, with hazardous fields first, marked `CHECK` beside their new values. Use `NEXT` and `PREV` for a long list. The hold control becomes available after the last page has been shown. Hold it for 2s. Until writing finishes, only `ABORT` and `STOP` are active. The first write in a session saves a backup before writing; an erased page cannot serve as a backup. Without a card, the page asks for confirmation. `HOLD 2s: NO BACKUP` stands for that write only; the next write asks the card again.
 
 A write on BLHeli_S or Bluejay takes about 3848ms. Keep the power on.
 
 ## Files
 
-`FILES` lists `ESCW001` to `ESCW999` on the card. Loading a file copies its values into the draft and requires matching firmware and layout. If an AM32 reads as erased, only `RESTORE FROM BACKUP` is offered.
+`FILES` lists `ESCW001` to `ESCW999` on the card. Loading a file copies its values into the draft and requires matching firmware and layout. A refused file says why, with a code and the line, for example `File refused, code 15, line 4: no field or line has this name.` If an AM32 reads as erased, only `RESTORE FROM BACKUP` is offered.
 
 ## Leave
 
