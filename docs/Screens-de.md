@@ -1329,7 +1329,12 @@ es derselbe Wert:
 - Eine Zeile, die nur ein Fenster hält, hat die Zelle leer.
 
 `rpm` enthält `>65535` in einer Zeile, deren Drehzahl über 65.535rpm liegt,
-der Obergrenze des Registers im IOmcu. LOGS liest die Zelle als keine Zahl.
+der Obergrenze des Registers im IOmcu. Die Datei behält die Markierung,
+damit ein Leser außerhalb der Bench eine Grenze von einem Messwert
+unterscheidet. LOGS liest eine Zelle, die mit `>` beginnt, als die Zahl
+dahinter: Die Spalte bleibt eine Zahlenspalte, und die Kurve läuft in
+diesen Zeilen bei 65.535rpm. LOGS zeichnet für solche Zeilen keine
+Markierung an die Kurve oder in den Bereich der Spalte.
 
 Eine MOTOR-Datei ohne `throttle` hat `esc` direkt nach `rpm`, und LOGS
 liest sie. In beiden Formen wählt LOGS die ersten 4 Zahlenspalten. Mit

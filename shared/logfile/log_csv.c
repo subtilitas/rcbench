@@ -666,12 +666,16 @@ static log_err_t scan_columns(log_source_t *src, char delimiter,
             col->non_empty++;
 
             log_value_t parts;
-            if (log_split_value(cell, &parts)) {
+            const bool split = log_split_value(cell, &parts);
+            if (split) {
                 log_unit_tally_add(&s_work.tally[c], parts.unit);
             }
 
             double v;
             if (log_parse_with(cell, out->convention, &v, NULL, 0)) {
+                if (split && parts.bound) {
+                    col->bounds++;
+                }
                 if (col->parsed == 0) {
                     col->first = v;
                     col->min = v;

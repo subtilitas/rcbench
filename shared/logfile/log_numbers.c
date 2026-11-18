@@ -220,6 +220,10 @@ bool log_split_value(const char *raw, log_value_t *out)
     out->sign = 1;
 
     const char *p = skip_space(raw);
+    if (*p == '>') {
+        out->bound = true;      /* ">65535": the number is a lower bound */
+        p = skip_space(p + 1);
+    }
     if (*p == '+' || *p == '-') {
         out->sign = (*p == '-') ? -1 : 1;
         ++p;
