@@ -2759,6 +2759,30 @@ APPLY and CANCEL buttons ending 8px above the card floor.
 ![The hub's list, the servo profile](img/servo-settings.png)
 ![SWEEP's list](img/servo-sweep-page.png)
 
+| Where | Setting | What it does |
+| --- | --- | --- |
+| the hub's list | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
+| the hub's list | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
+| the hub's list | PULSE MIN, PULSE CENTER, PULSE MAX | the pulse widths the travel maps onto, 400 to 2500us: -90° is MIN, 0 is CENTER, +90° is MAX, and RELEASE rests at CENTER. An end lies no further from CENTER than CENTER lies from 400us or 2500us |
+| the hub's list | TRIM | added to the center, 5us a step, up to 200us either way; `-` and `+` step it, a tap on the value opens the signed keypad |
+| the hub's list | TRAVEL | how far the horn may go each way, 10 to 90° |
+| the hub's list | REVERSE | the direction the horn's angle maps onto the pulse |
+| SWEEP's list | CURVE, SPEED, Range | the movement of SWEEP: square, sine or triangle, 0.05 to 5Hz, 10 to 100% of the travel. The automatic test moves in steps between the ends Range gives |
+| TEST's list, VOLTAGE STEPS | Step 4.8V, Step 6.0V, Step 7.4V, Step 8.4V | the supply steps; 7.4V and 8.4V take a press only with HV SERVO on |
+| TEST's list, VOLTAGE STEPS | HV SERVO | adds the 7.4V and 8.4V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
+| TEST's list, BROWN-OUT | Brown-out, Brown-out minimum voltage, Brown-out step | the walk from 5.0V down, on or off; its floor, 2.0 to 4.8V, 3.0V by default; its step, 0.1 to 1.0V, 0.2V by default. The heading's line names the walk on the supply in force and how many voltages it asks for |
+| TEST's list, PASS/FAIL LIMITS | Stall threshold | above this current the servo counts as stalled |
+| TEST's list, PASS/FAIL LIMITS | Idle current max, Holding current max, Travel time max | pass/fail limits; 0 is not checked |
+| TEST's list, LENGTH AND TIMING | Length by, Test time, Movements | how long each supply step runs: a time, or a number of movements; Test time takes a press only at TIME, Movements only at MOVES |
+| TEST's list, LENGTH AND TIMING | Dwell time, Settling time | held at each end, by the test and by SWEEP; waited after a supply step before measuring |
+| LIMIT RUN > OPTIONS | MODE | SEARCH ONLY or SEARCH + PROGRAM; locked on the bench's outputs with `On a PROG PORT only: choose one with PORT`. For the session |
+| LIMIT RUN > OPTIONS | SERVO | KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC; the programmer the run's sessions go to. The limit run's own stored setting, the same as the READY card's SERVO row |
+| LIMIT RUN > OPTIONS | SERVO PULSES | KEEP or 1000-2000; locked while PORT is not on a PROG PORT or SERVO is on a HITEC entry. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
+| the hub's list | NAME | the device under test, up to 23 characters, for the report |
+| the hub's list | REPORT | a text report beside each test's log |
+| RUDDER's list | ENC CENTER | a tap takes the live count as the center, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 center |
+| SERVO > KST > OPTIONS | KST EXPERT MODE | whether the [KST and Chaservo programmer](ServoProgrammer.md#expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold (a shorter press shows the hint on the band), OFF with a tap. Kept across restarts |
+
 TRIM is the only keypad accepting a sign. Its `+/-` key, between the
 point and OK, adds or removes a leading minus before or after digits are
 entered. OK accepts -200 to +200us and rounds to the nearest 5us step:
