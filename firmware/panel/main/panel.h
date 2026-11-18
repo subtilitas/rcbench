@@ -2115,6 +2115,12 @@ bool supply_live_or_coming(void);
  * @return true while armed or an arm is under way
  */
 bool arm_live_or_coming(void);
+
+/** @brief Whether the programming ports' own supply is live (s_psup_live)
+ *         or an ON for it waits in the queue: what the PROG 5V box reads
+ *         as an ON on its way (prog5v_box_set_on_coming()).
+ *  @return true while the ports' 5V is on, owed or coming */
+bool prog5v_live_or_coming(void);
 /** @brief supply_live_or_coming(), or the programming ports' own supply
  *         live (s_psup_live): what the install, update and flash gates
  *         wait on.

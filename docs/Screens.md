@@ -106,11 +106,12 @@ or the alert band, so STOP remains visible.
   the box stays for the picture and closes after it.
 - STOP is the exception: a press on STOP closes the box and stops at once,
   as with no box.
-- So is a control that stops what the bench drives: DISARM, OUTPUT OFF, a
-  stick run's ABORT, STOP TEST and STOP RUN, and HOLD 2s: ARM + START on
-  RUDDER AUTO, TEST and LIMIT RUN while its start steps or its run are
-  under way. A press on one closes the box and acts,
-  as with no box. ARM and OUTPUT ON are not among them: a press there closes
+- So is a control that stops what the bench drives: DISARM, OUTPUT OFF,
+  PROG 5V OFF, ABORT of a stick run and of the ESC, KST and HITEC
+  sessions, STOP TEST and STOP RUN, HOLD 2s: ARM + START on RUDDER AUTO,
+  TEST and LIMIT RUN while its start steps or its run are under way, and
+  on HITEC MOVE SERVO's ON and the FIND STOP key whose side searches. A press on one closes the box and acts, as with no
+  box. ARM and OUTPUT ON are not among them: a press there closes
   the box and starts no hold.
 - Leaving the screen closes it.
 - A finger dragging on the screen when a second finger opens a box is
@@ -571,10 +572,16 @@ end above it.
 
 ## Hold buttons
 
-A hold button acts after 2s of contact (`UI_HOLD_S`). Releasing it earlier
-sends no command. Every control that switches a voltage, a supply or an
-output on is a hold button; one that switches it off, such as OUTPUT OFF,
-PROG 5V OFF, DISARM, STOP or ABORT, takes a tap. Instead, the alert band shows a hint for 4s: amber
+A hold button acts after 2s of contact (`UI_HOLD_S`). Every control that
+switches a voltage, a supply or an output on is a hold button; one that
+stops what the bench drives, such as OUTPUT OFF, PROG 5V OFF, PORT PWM
+OFF, DISARM, STOP or ABORT, acts on the press: the command goes as the
+finger comes down, and a finger that slides off or a touch that is lost
+has stopped already. From the moment a hold has asked ON or ARM the
+button reads OUTPUT OFF, PROG 5V OFF or DISARM, before the supply, the
+port or the bench answers: a press in that time takes the ON or the ARM
+back. Releasing a hold button earlier
+sends no command. Instead, the alert band shows a hint for 4s: amber
 (`UI_C_WARN`) with dark text, rather than the danger colour. Tap the band
 to dismiss it earlier. The hint fits on one line of at most 97 characters.
 
@@ -2244,7 +2251,7 @@ screens use the same values; changing either screen updates the other.
   OFF ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
   No other end of a port's hold asks.
 
-- OUTPUT ON requires a 2s hold; OUTPUT OFF takes a tap, as on SUPPLY.
+- OUTPUT ON requires a 2s hold; OUTPUT OFF acts on the press, as on SUPPLY.
   STOP cancels a hold. Above a 6.0V set point, wherever it was entered,
   OUTPUT ON opens HV SERVOS ONLY with the voltage. Only a completed HOLD
   2s TO APPLY switches on; the switch's original hold or a tap on APPLY
@@ -2545,7 +2552,7 @@ KST's and HITEC's frame around the session:
 | --- | --- |
 | PORT button | what the tester drives; a tap opens the PORT list, locked while the session holds the port |
 | READY card, PORT | the port line; red with `NO PROG PORT` on OUTPUTS, a tap opens the PORT list; a red dot while the session holds the port |
-| READY card, supply | PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off; a red dot and `ON` while on, and then a tap switches it off as OUTPUT OFF does (PROG 5V not while a port holds it). KST with no supply the bench switches: amber `OFF, ON BY HAND`. Hitec D series with none: `UNCHANGED` |
+| READY card, supply | PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off; a red dot and `ON` while on, and then a press switches it off as OUTPUT OFF does (PROG 5V not while a port holds it). KST with no supply the bench switches: amber `OFF, ON BY HAND`. Hitec D series with none: `UNCHANGED` |
 | READY card, SERVO | grey `NOT CONNECTED` before CONNECT, amber `IN PROGRESS` while a step runs, amber `NOT READ` with the port held and no servo read, the servo's model (Hitec) or type (KST, `V6?` for 20k_sel's guess) once read |
 | rail line | the meter's volts and amps, under the rows |
 | footer, middle | the session's WRITE n VALUES, from any tab: the same 2s hold as the session's own button, fading from green to amber; a tap shows `Hold 2s to write.` and sends nothing. While a finger is on it the session takes no press: `A finger is still on another control. Lift it first.` Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
@@ -2588,7 +2595,7 @@ shows `---`, because the tester sends no pulse to the held port.
 In PWM with a responding PD mini, the PORT row shows the voltage and
 current limit CONNECT will set: `PORT  5.0V  1000mA`. While the port is
 held, the set points and OUTPUT ON are locked on SUPPLY and on SERVO's
-other screens; OUTPUT OFF and a tap on KST's or HITEC's PD MINI row while
+other screens; OUTPUT OFF and a press on KST's or HITEC's PD MINI row while
 it reads ON still work. On the rbmod carrier, the ports have
 separate 5V and those supply controls remain active
 ([Carrier, Power](Carrier.md#power)). Leaving programming does not cycle
@@ -2667,7 +2674,7 @@ RIGHT END show 56 x 48px `-` and `+` keys around a 148px value; a key steps
 8 counts on the press and repeats after 0.45s at 8Hz, at 30Hz from 2.25s.
 The label of the followed row is in the accent colour. The notes show the
 port and its GPIO, `POSITION 3344 (-65.1°)` with the AS5600 angle and the
-supply current, the reach and the end point's note. A tap on ON, a tab
+supply current, the reach and the end point's note. A press on ON, a tab
 change, CLOSE and the home tag switch it off; the button reads WAIT until
 the servo has restarted.
 
@@ -3058,7 +3065,8 @@ for the slider and keypad.
 ![The question](img/supply-confirm.png)
 
 **OUTPUT ON requires a 2s hold**, using ARM's gesture and colour fade.
-OUTPUT OFF takes a tap. STOP switches the output off from every screen.
+OUTPUT OFF acts on the press: a finger that slides off the button or a
+touch that is lost has switched off. STOP switches the output off from every screen.
 Other bench stops also switch it off: an unresponsive touch controller,
 lost touch events during ON before a full frame has seen the output on,
 an IOmcu that refuses to remain ARMED, an unresponsive supply or a trip.
@@ -3166,7 +3174,7 @@ OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the
 keypad and the question. The settings list opens with the output off only,
 so OUTPUT OFF is never under it. One finger at a time: while one holds a control, a
 second finger does nothing anywhere on the screen, except on OUTPUT OFF and
-PROG 5V OFF: a stop switches off on that finger's press.
+PROG 5V OFF: a stop switches off on every finger's press.
 
 On the [rbmod carrier](Carrier.md#power), a line below OUTPUT names the
 programming ports' separate 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
@@ -7598,7 +7606,7 @@ output of its own kind, no slot and no protocol
 | FUNCTION | a choice face with what the pin carries while no programming session holds it. A tap opens the list over the rows under it: SERVO PWM, NONE, and on an IOmcu of protocol 4.28 or later DSHOT150, DSHOT300 and DSHOT600. A tap on an entry asks the IOmcu for it and shuts the list; a press beside the list shuts it and reaches nothing under it. The face is drawn sunk and dim, and takes no tap, while the row is locked |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`: the lowest channel with a shunt on a fitted part; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS \| PORT n: the tester's target ([the target](ServoProgrammer.md#the-target)) |
-| PORT PWM | ON \| OFF: the pulse of the port that is the tester's target |
+| PORT PWM | ON \| OFF: the pulse of the port that is the tester's target. ON takes a tap; OFF acts on the press, whatever other fingers hold |
 
 In the board view the rows stand in the column left of the board and the
 keys set the port's pin. In the grid view the rows stand under the list, the

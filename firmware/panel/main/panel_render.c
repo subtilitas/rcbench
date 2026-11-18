@@ -329,14 +329,18 @@ bool arm_live_or_coming(void)
     return flash_gate_arm(armed, waits, atomic_load(&s_arms_sent), taken);
 }
 
-bool supplies_live_or_coming(void)
+bool prog5v_live_or_coming(void)
 {
     /* The counters before the flag, as above: the control task publishes
      * s_psup_live before it counts an ON taken. */
     const bool psup_coming = atomic_load(&s_psup_ons_taken)
                              != atomic_load(&s_psup_ons_sent);
-    return supply_live_or_coming() || psup_coming
-           || atomic_load(&s_psup_live);
+    return psup_coming || atomic_load(&s_psup_live);
+}
+
+bool supplies_live_or_coming(void)
+{
+    return supply_live_or_coming() || prog5v_live_or_coming();
 }
 
 /*

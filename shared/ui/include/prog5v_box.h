@@ -123,6 +123,7 @@ typedef struct {
     bool        press_on;  /**< the supply read ON when it began        */
     bool        was_on;    /**< ON as last seen, for the hold's reach   */
     uint32_t    rev;       /**< moves with anything the box shows       */
+    bool        was_stops; /**< prog5v_box_stops() at the last tick      */
     uint32_t    seen;      /**< the published state word, last seen     */
     uint32_t    seen_read; /**< the published reading word, last seen   */
     uint32_t    seen_in;   /**< the low input, last seen                */
@@ -232,6 +233,21 @@ bool prog5v_box_shown(void);
 bool prog5v_box_on(void);
 
 /**
+ * @brief The application's word on an ON the box's poll gave it: on its
+ *        way to the port and not reported yet, or no longer (reported,
+ *        refused or dropped).  Each frame, after the poll.
+ * @param coming true while an ON is on its way or the supply is live
+ */
+void prog5v_box_set_on_coming(bool coming);
+
+/**
+ * @brief Whether the button is PROG 5V OFF: the supply reads ON, or an ON
+ *        is asked and not reported yet.  A press on it then asks OFF.
+ * @return true while the button stops
+ */
+bool prog5v_box_stops(void);
+
+/**
  * @brief The last reading of the channel that watches the ports' 5V, as
  *        published: SERVO's plot of the PROG 5V on the rbmod carrier's
  *        programming port takes a point each time @p window moves.
@@ -293,7 +309,8 @@ bool prog5v_box_live(void);
 
 /**
  * @brief A contact came down on the button (the screen routed it here):
- *        the hold begins while the supply reads OFF.
+ *        while the supply reads ON the press asks OFF at once, while it
+ *        reads OFF the hold begins.
  * @param b the box
  * @return true when the box took the press; false while the button takes
  *         none, and the press is the screen's to drop
@@ -311,10 +328,10 @@ bool prog5v_box_press(prog5v_box_t *b);
 bool prog5v_box_drag(prog5v_box_t *b, int x, int y);
 
 /**
- * @brief The press lifted: a tap on PROG 5V OFF, still on the button, asks
- *        OFF; a hold that completed asks nothing more; a hold let go
- *        before UI_HOLD_S shows HOLD_HINT_PROG5V on the band
- *        (ui_hold_end()).
+ * @brief The press lifted: a press on PROG 5V OFF asked OFF as it came
+ *        down and its release asks nothing; a hold that completed asks
+ *        nothing more; a hold let go before UI_HOLD_S shows
+ *        HOLD_HINT_PROG5V on the band (ui_hold_end()).
  * @param b  the box
  * @param up the UP that ended the press, in screen coordinates; NULL for a
  *           press dropped without one, which asks nothing

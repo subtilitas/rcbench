@@ -24,7 +24,7 @@ Die Fußleiste unten hat drei Felder:
 | Feld | Was es tut |
 |---|---|
 | MOTOR & ESC | der Name der Seite; darunter Protokoll und Pins des Gases, `KEIN MOTOR-PIN` in der Warnfarbe ohne Pin |
-| ARM / DISARM | 2s halten für ARMED, tippen für SAFE ([Ein Lauf](#ein-lauf)) |
+| ARM / DISARM | 2s halten für ARMED, drücken für SAFE ([Ein Lauf](#ein-lauf)) |
 | OPTIONEN | öffnet die [Motor-Optionen](motor-settings.md): Akku, Motor und Gasausgang; grau, solange der Prüfstand nicht SAFE ist |
 
 Das Home-Feld oben links führt jeweils eine Ebene zurück:
@@ -99,7 +99,7 @@ Bei ARMED lautet die Beschriftung der Grafik `TELEMETRIE LIVE`; am rechten Rand 
 | Balken | gesperrt und gedimmt | bewegt den Gasregler um den Weg des Fingers |
 | `-1`, `+1` | gesperrt und gedimmt | ändern den Wert um einen Prozentpunkt |
 | Drehknopf | gesperrt; Drehungen werden verworfen | ändert Gas ausgehend vom aktuellen Wert |
-| ARM | schaltet nach 2s Halten auf ARMED | DISARM: schaltet bei einem Tipp auf SAFE |
+| ARM | schaltet nach 2s Halten auf ARMED | DISARM: schaltet beim Aufsetzen auf SAFE |
 | SPITZENWERTE ZURÜCKSETZEN | löscht die Spitzenmarken | löscht die Spitzenmarken |
 | GRAFIK, TABELLE, WUCHTEN | wechseln die Ansicht von LIVE | wechseln die Ansicht von LIVE |
 

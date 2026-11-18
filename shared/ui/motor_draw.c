@@ -51,9 +51,9 @@ static void draw_arm(gfx_canvas_t *c)
 {
     /* Green while it will arm, fading to the red of ARMED across the hold,
      * so the fade previews the colour the button is about to hold. */
-    ui_hold_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM",
-                   ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
-                                               : UI_ACTION_AVAILABLE),
+    ui_hold_button(c, s.arm_rect, mo_arm_stops() ? "DISARM" : "ARM",
+                   ui_action_fill(mo_arm_stops() ? UI_ACTION_ACTIVE
+                                                 : UI_ACTION_AVAILABLE),
                    ui_action_fill(UI_ACTION_ACTIVE), &s.arm, s.pressed == 1,
                    !mo_arm_locked(), MO_FONT_LABEL);
 }
@@ -838,13 +838,17 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
      */
     const bool ctrl_moved = (s.drawn_ctrl[buf] != s.ctrl_rev);
     const bool thr_moved  = (s.drawn_thr[buf] != s.thr_rev);
-    const bool arm_moved  = (s.drawn_arm[buf] != s.arm_rev);
+    /* ARM reads DISARM while an arm is asked; an ask dropped without a
+     * change of arm_rev turns it back (mo_arm_stops()). */
+    const bool arm_moved  = (s.drawn_arm[buf] != s.arm_rev
+                             || s.drawn_stops[buf] != mo_arm_stops());
     if (!ctrl_moved && !thr_moved && !arm_moved) {
         return;
     }
     s.drawn_ctrl[buf] = s.ctrl_rev;
     s.drawn_thr[buf]  = s.thr_rev;
     s.drawn_arm[buf]  = s.arm_rev;
+    s.drawn_stops[buf] = mo_arm_stops();
 
     /* ARM animating on its own repaints its own button and nothing else. */
     if (arm_moved && !ctrl_moved && !thr_moved) {

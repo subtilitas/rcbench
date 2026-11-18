@@ -38,8 +38,9 @@ bool svs_arm_locked(void)
  * STOP TEST in TEST's result box while its run is under way, ARM + START
  * on RUDDER AUTO, TEST and LIMIT RUN while its sequence or its run is
  * under way (a tap there stops it), ARM on LIVE, SWEEP and RUDDER while
- * its steps run, and the supply row of KST's and HITEC's READY card while
- * it reads ON.
+ * its steps run, the supply row of KST's and HITEC's READY card while
+ * it reads ON, and HITEC's MOVE SERVO while it reads ON and its FIND STOP
+ * key whose side searches.
  * The router hands a press on one of them through the alert band and the
  * band's help bubble (ui_screen_t's safe_at); everything else under those
  * stays theirs, ARM included.  The order of the checks is svs_event_body()'s.
@@ -79,11 +80,20 @@ bool svs_safe_at(int x, int y)
             return false;
         }
     }
-    if (s.gate.armed && gfx_rect_contains(s.arm_btn, x, y)) {
+    if ((s.gate.armed || s.gate.arm_asked)
+        && gfx_rect_contains(s.arm_btn, x, y)) {
         return true;
     }
-    if (prog_shown_set() != NULL || modal_open()) {
+    if (modal_open()) {
         return false;
+    }
+    if (prog_shown_set() != NULL) {
+        /* The session's own stops: HITEC's MOVE SERVO while it reads ON
+         * and the FIND STOP key whose side searches.  A page of rows
+         * covers the session. */
+        return rows_page() < 0
+               && gfx_rect_contains(overlay_area(), x, y)
+               && prog_ps_safe_at(prog_shown_set(), x, y);
     }
     if (!drive_shown() && prog5v_box_shown() && prog5v_box_on()
         && gfx_rect_contains(prog5v_box_button(&s.p5), x, y)) {
@@ -459,11 +469,15 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         if (ps != NULL && gfx_rect_contains(overlay_area(), px, py)) {
-            if (prog_write_pressed()) {
+            /* A stop of the session acts on the press, whatever other
+             * fingers hold: WRITE's hold and a press held on a panel
+             * refuse every other press here, not this one. */
+            const bool stop = prog_ps_safe_at(ps, px, py);
+            if (!stop && prog_write_pressed()) {
                 /* The footer's WRITE writes the draft its hold began
                  * with: nothing in the session changes under it. */
                 ui_action_refused(TR(FOOT_PRESS_HELD));
-            } else if (!s.ov_have) {
+            } else if (stop || !s.ov_have) {
                 prog_ps_event(ps, evt);
             }
             return;

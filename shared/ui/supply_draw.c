@@ -41,13 +41,15 @@
 static void draw_out_button(gfx_canvas_t *c)
 {
     /* Off is the green the hold fades from; on is the red, so the fade
-     * previews the colour the switch is about to hold. */
+     * previews the colour the switch is about to hold.  An ON asked and
+     * not reported reads OUTPUT OFF: a press there takes it back. */
+    const bool live = supply_screen_output_live();
     ui_hold_button(c, s.out_rect,
-                   s.on ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
-                   ui_action_fill(s.on ? UI_ACTION_ACTIVE
+                   live ? TR(SUP_OUTPUT_OFF) : TR(SUP_OUTPUT_ON),
+                   ui_action_fill(live ? UI_ACTION_ACTIVE
                                        : UI_ACTION_AVAILABLE),
                    ui_action_fill(UI_ACTION_ACTIVE), &s.hold,
-                   s.pressed == P_OUTPUT, s.on || !s.port_held,
+                   s.pressed == P_OUTPUT, live || !s.port_held,
                    SU_FONT_LABEL);
 }
 

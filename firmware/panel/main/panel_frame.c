@@ -565,6 +565,9 @@ void panel_frame_loop(void)
         /* An ON the supply screen sent and the control task dropped -- stale,
          * or lost to a full queue -- stops counting as live there. */
         supply_screen_set_on_coming(supply_live_or_coming());
+        /* The same for the PROG 5V box: its button reads PROG 5V OFF
+         * while an ON it asked is on its way. */
+        prog5v_box_set_on_coming(prog5v_live_or_coming());
         /* A servo test's end and the set points it put back, whichever
          * screen is up: after this frame's OFF went and its samples. */
         servo_screen_service();

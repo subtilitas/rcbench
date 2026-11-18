@@ -8,6 +8,8 @@
  * - a_prog_port_entry_lights_its_pin_and_takes_no_tick
  * - the_next_entry_opens_on_the_entry_asked_for_once
  * - the_port_segments_set_the_tester_and_say_why_they_are_locked
+ * - port_pwm_off_acts_on_the_press
+ * - an_on_press_held_under_port_pwm_off_switches_nothing_on
  *
  * SPDX-License-Identifier: MIT
  */
@@ -377,11 +379,91 @@ TEST_CASE(the_port_segments_set_the_tester_and_say_why_they_are_locked)
     ports_back();
 }
 
+/** @brief Hands the screen an event of contact @p id. */
+static void evi(int x, int y, touch_event_type_t t, uint8_t id)
+{
+    touch_event_t e = { t, { id, (int16_t)x, (int16_t)y, 40 }, 0u };
+    scr()->event(&e);
+}
+
+/*
+ * PORT PWM OFF ends the port's pulse and acts on the press: the setting is
+ * off on the DOWN of contact 1, 2 or 3, before any lift.  A slide to ON
+ * and a lost touch leave it off.  A further contact on OFF counts while
+ * another holds SERVO TESTER's segment.  ON still takes a tap: its DOWN
+ * sets nothing.
+ */
+TEST_CASE(port_pwm_off_acts_on_the_press)
+{
+    fresh_port();
+    choose_port(0);
+    tap(SEG_X(1), SEG_TESTER_Y);                 /* PORT 1 */
+    for (uint8_t id = 1; id <= 3; ++id) {
+        for (int end = 0; end < 3; ++end) {
+            settings_set(SET_SERVO_PORT_PWM, 1.0f);
+            evi(SEG_X(1), SEG_PWM_Y, TOUCH_EVENT_DOWN, id);
+            CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+            if (end == 0) {
+                evi(SEG_X(1), SEG_PWM_Y, TOUCH_EVENT_UP, id);
+            } else if (end == 1) {
+                evi(SEG_X(0), SEG_PWM_Y, TOUCH_EVENT_MOVE, id);
+                evi(SEG_X(0), SEG_PWM_Y, TOUCH_EVENT_UP, id);
+            } else {
+                scr()->cancel();
+            }
+            CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+        }
+    }
+    /* ON is a tap. */
+    evi(SEG_X(0), SEG_PWM_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    evi(SEG_X(0), SEG_PWM_Y, TOUCH_EVENT_UP, 1);
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    /* Contact 1 holds SERVO TESTER's segment; contact 2 presses OFF. */
+    evi(SEG_X(1), SEG_TESTER_Y, TOUCH_EVENT_DOWN, 1);
+    evi(SEG_X(1), SEG_PWM_Y, TOUCH_EVENT_DOWN, 2);
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    evi(SEG_X(1), SEG_PWM_Y, TOUCH_EVENT_UP, 2);
+    evi(SEG_X(1), SEG_TESTER_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    CHECK_EQ(settings_get_int(SET_SERVO_TARGET), 1);
+}
+
+/*
+ * PORT PWM is on.  One contact presses ON and holds it; the other presses
+ * OFF, which switches the pulse off.  The first contact's release on ON is
+ * no tap any more: the pulse stays off until a new press on ON.  With the
+ * track ids either way round.
+ */
+TEST_CASE(an_on_press_held_under_port_pwm_off_switches_nothing_on)
+{
+    fresh_port();
+    choose_port(0);
+    tap(SEG_X(1), SEG_TESTER_Y);                 /* PORT 1 */
+    for (int swap = 0; swap < 2; ++swap) {
+        const uint8_t a = swap ? 2 : 1, b = swap ? 1 : 2;
+
+        settings_set(SET_SERVO_PORT_PWM, 1.0f);
+        evi(SEG_X(0), SEG_PWM_Y, TOUCH_EVENT_DOWN, a);
+        evi(SEG_X(1), SEG_PWM_Y, TOUCH_EVENT_DOWN, b);
+        CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+        evi(SEG_X(0), SEG_PWM_Y, TOUCH_EVENT_UP, a);
+        CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+        evi(SEG_X(1), SEG_PWM_Y, TOUCH_EVENT_UP, b);
+        CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+        /* A new tap on ON switches it on. */
+        tap(SEG_X(0), SEG_PWM_Y);
+        CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    }
+}
+
 int main(void)
 {
     RUN(the_list_ends_in_one_prog_port_entry_per_port_reported);
     RUN(a_prog_port_entry_lights_its_pin_and_takes_no_tick);
     RUN(the_next_entry_opens_on_the_entry_asked_for_once);
     RUN(the_port_segments_set_the_tester_and_say_why_they_are_locked);
+    RUN(port_pwm_off_acts_on_the_press);
+    RUN(an_on_press_held_under_port_pwm_off_switches_nothing_on);
     return test_summary("outputs_screen_port");
 }

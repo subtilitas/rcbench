@@ -1078,8 +1078,10 @@ void supply_screen_limits_changed(void)
 
 void supply_screen_set_on_coming(bool coming)
 {
-    if (!coming && !s.pending.on) {
+    if (!coming && !s.pending.on && s.on_asked) {
+        /* The button read OUTPUT OFF for the ON; it reads ON again. */
         s.on_asked = false;
+        ++s.out_rev;
     }
     sup_owner_settle();
 }

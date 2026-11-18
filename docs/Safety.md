@@ -902,16 +902,17 @@ reads the state and shows the alert, is not in the coverage figure.
   says that contact has gone, and the held press is dropped as a touch loss
   drops it. Not measured on a panel: whether the GT911 gives a lone finger
   the same track id on successive touches.
-- A stop counts whatever other fingers hold. A second, third or further
-  contact on a stop acts on its press while other contacts hold presses of
-  their own: DISARM, STOP TEST, ARM + START while a run or its steps are
-  under way, ABORT, the KST and Hitec supply row while it reads ON, and on
-  SUPPLY OUTPUT OFF and PROG 5V OFF, which a lone finger switches off with a
-  tap. On the Hitec programmer's overlay MOVE SERVO's ON and the FIND STOP
-  key whose side searches end the loop or the search on such a press. A
-  release never switches on what a stop switched off: a finger held on that
-  Hitec row loses its tap, and a hold on OUTPUT ON or PROG 5V ON ends when
-  the OFF reads back.
+- A stop acts on the press and counts whatever other fingers hold: the
+  first contact, and each further one while others hold presses of their
+  own. The stops are DISARM, STOP TEST, ARM + START while a run or its
+  steps are under way, every ABORT, the KST and Hitec supply row while it
+  reads ON, OUTPUT OFF, PROG 5V OFF, PORT PWM OFF, and Hitec's MOVE SERVO
+  ON and searching FIND STOP key. A slide off the control or a touch loss
+  under the press has stopped already. An ON or ARM asked by a hold and not
+  answered counts as on: the button reads OUTPUT OFF, PROG 5V OFF or DISARM,
+  and a press takes it back. A release never switches on what a stop switched off: a
+  finger held on that Hitec row loses its tap, and a hold on OUTPUT ON or
+  PROG 5V ON ends when the OFF reads back.
 - The control task tests STOP's rectangle on every press itself,
   independently of the screens and of the frame, and stops the bench at the
   press: the heartbeat drops in the same pass and the IOmcu fails safe within

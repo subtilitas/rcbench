@@ -310,6 +310,11 @@ bool mo_arm_locked(void)
     return (prog_reg_servo_holds() || mo_no_motor_pin()) && !s.gate.armed;
 }
 
+bool mo_arm_stops(void)
+{
+    return s.gate.armed || s.gate.arm_asked;
+}
+
 void motor_screen_cancel_arm(void)
 {
     /* A stop latched; see the servo screen's own for why the command is

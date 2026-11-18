@@ -173,7 +173,7 @@ Die offene Protokollliste enthält eine zweite Spalte mit einem PROG-PORT-Eintra
 | FUNKTION | Signal außerhalb einer Programmiersitzung. Ein Tipp öffnet die Auswahl. SERVO PWM gibt Servopulse an einem PWM-Pin aus. KEINE setzt einen beliebigen freien Pin als Eingang mit Pull-down. DSHOT150, DSHOT300 und DSHOT600 ab IOmcu 0.22.0 senden Gas von MOTOR & ESC: alle 1ms ein Frame bei ARMED für Gas, an einem beliebigen freien Pin. |
 | ÜBERWACHT VON | INA3221-Kanal aus SETUP > SENSORS, etwa `ÜBERWACHT VON INA3221 0x41 CH2`, oder `VON KEINEM STROMKANAL ÜBERWACHT`. |
 | SERVO-TESTER | OUTPUTS oder PORT n als Ziel von [SERVO](servo.md). Die Taste PORT auf SERVO setzt denselben Wert. |
-| PORT-PWM | EIN oder AUS für den Puls am Testerziel-Port. |
+| PORT-PWM | EIN oder AUS für den Puls am Testerziel-Port. EIN nimmt ein Tippen; AUS wirkt beim Aufsetzen. |
 
 Der IOmcu speichert Pin und Funktion jedes Ports zusammen mit den Ausgangszuordnungen im Flash. Sie gehören damit zur Platine. Port 1 beginnt mit SERVO PWM auf GPIO 13, Ports 2 bis 4 mit KEINE ohne Pin. Die Wahl einer FUNKTION oder Pin-Taste fordert eine Änderung an. Das Panel schreibt sie bei ruhendem Prüfstand; die bernsteinfarbene Zeile zeigt ihren Status.
 

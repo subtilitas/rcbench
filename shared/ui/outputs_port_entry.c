@@ -590,6 +590,21 @@ bool outputs_port_event(const touch_event_t *evt)
         }
         return true;
     }
+    /* PORT PWM OFF ends the port's pulse: it acts on the press, whatever
+     * other fingers hold, so a finger that slides off the segment or a
+     * touch that is lost has switched off.  A press another contact holds
+     * on the row ends here: its release on ON would switch the pulse on
+     * again with no new gesture.  The segment then takes this press below;
+     * its release finds OFF selected and sets nothing. */
+    if (evt->type == TOUCH_EVENT_DOWN && !pwm_locked()
+        && settings_get_bool(SET_SERVO_PORT_PWM)
+        && gfx_rect_contains(p.pwm.rect[1], evt->point.x, evt->point.y)) {
+        settings_set(SET_SERVO_PORT_PWM, 0.0f);
+        settings_request_save();
+        ui_tabs_cancel(&p.pwm);
+        sync_tabs();
+        outputs_port_touched();
+    }
     i = seg_event(&p.pwm, evt, pwm_locked(), &took);
     if (took) {
         /* On the carrier ON is taken with the PROG 5V box off: the pulse

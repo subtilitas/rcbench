@@ -163,6 +163,21 @@ history is in git.
 
 ### Fixed
 
+- SUPPLY's OUTPUT OFF and PROG 5V OFF, and on the HITEC session MOVE
+  SERVO's ON and the FIND STOP key whose side searches, stopped under a
+  lone finger only when it lifted inside the control: a finger that slid
+  off stopped nothing, and on HITEC neither did a touch loss under the
+  press. Each acts on the press of every contact, the first included; the
+  release asks nothing. The HITEC session names both controls to the
+  router, so a press on one under the alert band or the help box stops,
+  and SERVO hands it through a press held on WRITE or on a panel.
+- ABORT on the KST and HITEC sessions' PORT row and PORT PWM OFF on
+  OUTPUTS acted on a completed tap. Both act on the press of every
+  contact, as the ESC session's ABORT does.
+- A press on OUTPUT, on PROG 5V, or on ARM on MOTOR & ESC and SERVO,
+  between the hold's ask and the answer started a second hold. The button
+  reads OUTPUT OFF, PROG 5V OFF or DISARM from the ask on, and a press
+  takes the ON or the ARM back.
 - PD mini pin driver: `pd_uart_send()` waits for nothing. It writes a
   request into the transmit FIFO's 8 entries whole, or sends none of it
   when the entries free are fewer than its bytes (`pdmini_tx_fits()`); it

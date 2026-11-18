@@ -257,7 +257,7 @@ laufendes Halten, mit der Eingangsspannung im Text
 ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
 Für ein Servo, das der Bediener einschaltet, ohne PD mini, schaltet
 **VERBINDEN** nichts ein und nimmt ein Tippen, das den Einstieg sofort
-sendet. **ABBRECHEN** und **VERLASSEN** nehmen ein Tippen.
+sendet. **VERLASSEN** nimmt ein Tippen; **ABBRECHEN** wirkt beim Aufsetzen.
 
 ![Ein laufender Vorgang](img/de/servo-kst-working.png)
 
@@ -411,7 +411,7 @@ Sollwerte für den Port reserviert, solange dieser nicht in PWM ist. Der IOmcu l
 und jedes Einschalten ab; ein Ausschalten nimmt er an. Der
 SUPPLY-Bildschirm zeigt dasselbe: die Sollwerte, die Schieber, die
 Schritte und **AUSGANG EIN** sind gedimmt und nehmen keinen Druck,
-**AUSGANG AUS** und **SPITZENWERTE ZURÜCKSETZEN** arbeiten, ein Tippen auf
+**AUSGANG AUS** und **SPITZENWERTE ZURÜCKSETZEN** arbeiten, ein Druck auf
 die Zeile PD MINI der Karte BEREIT, solange sie EIN liest, schaltet den
 Ausgang aus,
 und die Karte MODUS des SUPPLY-Bildschirms zeigt `Servoprogrammierung.`. Die

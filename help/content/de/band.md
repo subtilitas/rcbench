@@ -190,5 +190,5 @@ LÖSCHEN auf FILES und LOGS und `NICHT GESPEICHERT` auf SETUP sind neutral mit r
 
 - Eine auf dem Band begonnene Berührung bleibt dem Band zugeordnet. Ziehst du den Finger in die Seite darunter, bewegt er dort nichts.
 - Ziehst du eine auf der Seite begonnene Berührung nach oben ins Band, gilt sie an der letzten Position innerhalb der Seite als losgelassen. Ein Schieberegler oder das SERVO-Drehrad behält den dortigen Wert. Eine Haltegeste auf ARM oder AUSGANG EIN wird abgebrochen.
-- AUSGANG AUS reagiert auf dieses Loslassen, da es den Ausgang anhält. DISARM und TEST BEENDEN in der Fußleiste von TEST wirken bereits beim Aufsetzen.
+- AUSGANG AUS, PROG 5V AUS, DISARM und TEST BEENDEN in der Fußleiste von TEST wirken bereits beim Aufsetzen: Ziehen und Loslassen ändern nichts.
 - Ein Druck auf das Statusband, STOP oder Alarmband beendet die Ziehbewegung eines anderen Fingers an einem Schieberegler oder am SERVO-Drehrad.

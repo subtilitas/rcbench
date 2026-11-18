@@ -118,9 +118,11 @@ Das Feld ist 640px breit und fasst 60 Zeichen pro Zeile in der Schrift
   Das Hilfefeld bleibt für die Aufnahme sichtbar und schließt sich danach.
 - STOP schließt das Feld und stoppt sofort, wie bei geschlossenem Hilfefeld.
 - Auch Bedienelemente zum Anhalten wirken mit demselben Druck: DISARM,
-  AUSGANG AUS, ABBRECHEN eines Stick-Laufs, TEST BEENDEN, LAUF BEENDEN sowie
-  2s HALTEN: ARM + START auf RUDER AUTO, TEST und ENDLAGENLAUF während
-  seiner Startschritte oder seines Laufs.
+  AUSGANG AUS, PROG 5V AUS, ABBRECHEN eines Stick-Laufs und der ESC-, KST-
+  und HITEC-Sitzung, TEST BEENDEN, LAUF BEENDEN, 2s HALTEN: ARM + START auf RUDER AUTO, TEST und
+  ENDLAGENLAUF während seiner Startschritte oder seines Laufs sowie auf
+  HITEC EIN von SERVO BEWEGEN und die Taste von ANSCHLAG SUCHEN, deren
+  Seite sucht.
   ARM und AUSGANG EIN schließen dagegen nur das Feld; die Haltegeste beginnt
   nicht.
 - Ein Seitenwechsel schließt das Hilfefeld.
@@ -612,11 +614,17 @@ Bedienelemente zum Anhalten des Prüfstands enden darüber.
 
 ## Halte-Tasten
 
-Eine Halte-Taste wirkt nach 2s Berührung (`UI_HOLD_S`). Loslassen vor 2s
-sendet keinen Befehl. Jede Taste, die eine Spannung, eine Versorgung oder
-einen Ausgang einschaltet, ist eine Halte-Taste; eine, die sie ausschaltet,
-etwa AUSGANG AUS, PROG 5V AUS, DISARM, STOP oder ABBRECHEN, nimmt ein
-Tippen. Stattdessen erscheint ihr Hinweis für 4s im Alarmband:
+Eine Halte-Taste wirkt nach 2s Berührung (`UI_HOLD_S`). Jede Taste, die
+eine Spannung, eine Versorgung oder einen Ausgang einschaltet, ist eine
+Halte-Taste; eine, die anhält, was der Prüfstand treibt, etwa AUSGANG AUS,
+PROG 5V AUS, PORT-PWM AUS, DISARM, STOP oder ABBRECHEN, wirkt beim
+Aufsetzen: Der Befehl geht, sobald der Finger aufsetzt, und ein Finger,
+der abrutscht, oder ein verlorenes Touch-Signal hat bereits gestoppt. Ab
+dem Moment, in dem ein Halten EIN oder ARM angefragt hat, zeigt die Taste
+AUSGANG AUS, PROG 5V AUS oder DISARM, bevor Netzteil, Port oder Prüfstand
+antworten: Ein Druck in dieser Zeit nimmt das EIN oder das ARM zurück.
+Loslassen einer Halte-Taste vor 2s
+sendet keinen Befehl. Stattdessen erscheint ihr Hinweis für 4s im Alarmband:
 in Bernsteinfarbe (`UI_C_WARN`) mit dunkler Schrift statt der
 Gefahrenfarbe. Tippe auf das Band, um ihn früher zu löschen. Der Hinweis
 passt in eine Zeile mit höchstens 97 Zeichen.
@@ -2426,7 +2434,7 @@ sofort auf beiden.
   ([Servoprogrammierung, Die Versorgung](ServoProgrammer-de.md#die-versorgung)).
   Andere Arten der Portfreigabe lösen diese Rückfrage nicht aus.
 
-- AUSGANG EIN erfordert 2s Halten; AUSGANG AUS einen Tipp, wie auf SUPPLY.
+- AUSGANG EIN erfordert 2s Halten; AUSGANG AUS wirkt beim Aufsetzen, wie auf SUPPLY.
   STOP beendet die Haltegeste. Bei einem Spannungssollwert über 6,0V,
   unabhängig vom Eingabeort, öffnet AUSGANG EIN NUR HV-SERVOS mit der
   Spannung. Nur das vollständige Halten von 2s HALTEN ZUM ÜBERNEHMEN
@@ -2750,7 +2758,7 @@ Der Rahmen von KST und HITEC um die Sitzung:
 | --- | --- |
 | Taste PORT | was der Tester ansteuert; ein Tippen öffnet die Liste PORT, gesperrt, solange die Sitzung den Port hält |
 | BEREIT, PORT | die Portzeile; rot mit `KEIN PROG-PORT` bei OUTPUTS, ein Tippen öffnet die Liste PORT; ein roter Punkt, solange die Sitzung den Port hält |
-| BEREIT, Versorgung | PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus; ein roter Punkt und `EIN`, solange an, dann schaltet ein Tippen sie aus wie AUSGANG AUS (PROG 5V nicht, solange ein Port sie hält). KST ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`. Hitec D-Serie ohne: `UNVERÄNDERT` |
+| BEREIT, Versorgung | PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus; ein roter Punkt und `EIN`, solange an, dann schaltet ein Druck sie aus wie AUSGANG AUS (PROG 5V nicht, solange ein Port sie hält). KST ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`. Hitec D-Serie ohne: `UNVERÄNDERT` |
 | BEREIT, SERVO | grau `NICHT VERBUNDEN` vor VERBINDEN, gelb `LÄUFT`, solange ein Schritt läuft, gelb `NICHT AUSGELESEN` bei gehaltenem Port ohne gelesenes Servo, nach dem Lesen das Modell (Hitec) oder der Typ (KST, `V6?` für die Vermutung aus 20k_sel) |
 | Schienenzeile | Volt und Ampere des Messgeräts, unter den Zeilen |
 | Fußleiste, Mitte | WERTE SCHREIBEN der Sitzung, von jeder Registerkarte aus: dasselbe 2s-Halten wie auf der Taste der Sitzung, von Grün nach Bernstein; ein Tippen zeigt `Halte 2s, um zu schreiben.` und sendet nichts. Solange ein Finger darauf liegt, nimmt die Sitzung keinen Druck an: `Ein Finger hält noch ein anderes Element. Lass es erst los.` Grau, ein Tippen nennt den Grund: vor VERBINDEN und Lesen, ohne geänderten Wert, solange ein Schritt läuft und solange eine Seite der Sitzung oder von SERVO offen ist |
@@ -2795,7 +2803,7 @@ weil der Tester keine Pulse an den gehaltenen Port sendet.
 In PWM mit antwortendem PD mini nennt PORT die von VERBINDEN eingestellte
 Spannung und Strombegrenzung: `PORT  5.0V  1000mA`. Während der
 Portbelegung sind die Sollwerte und AUSGANG EIN auf SUPPLY und den anderen
-SERVO-Bildschirmen gesperrt; AUSGANG AUS und ein Tippen auf die Zeile PD
+SERVO-Bildschirmen gesperrt; AUSGANG AUS und ein Druck auf die Zeile PD
 MINI von KST oder HITEC, solange sie EIN liest, bleiben aktiv. Am rbmod-Carrier haben die Ports
 eigene 5V, deshalb bleiben diese Netzteilbedienelemente aktiv
 ([Carrier, Versorgung](Carrier-de.md#versorgung)). Das Verlassen des
@@ -2884,7 +2892,7 @@ Drücken um 8 Zählwerte und wiederholt nach 0.45s mit 8Hz, ab 2.25s mit
 30Hz. Der Name der verfolgten Zeile steht in der Akzentfarbe. Die
 Hinweise zeigen Port und GPIO, `POSITION 3344 (-65.1°)` mit dem
 AS5600-Winkel und dem Versorgungsstrom, die Reichweite und den Hinweis zur
-Endlage. Ein Tippen auf EIN, ein Wechsel der Registerkarte und das
+Endlage. Ein Druck auf EIN, ein Wechsel der Registerkarte und das
 Home-Feld schalten es aus; die Taste zeigt WARTEN, bis das Servo neu
 gestartet ist.
 
@@ -3325,7 +3333,8 @@ Bestätigung für Regler und Tastenfeld getrennt ausschalten.
 ![Die Frage](img/de/supply-confirm.png)
 
 **AUSGANG EIN benötigt 2s Halten**, mit derselben Geste und demselben
-Farbwechsel wie ARM. AUSGANG AUS reagiert auf einen Tipp. STOP schaltet
+Farbwechsel wie ARM. AUSGANG AUS wirkt beim Aufsetzen: Ein Finger, der
+von der Taste rutscht, oder ein verlorenes Touch-Signal hat ausgeschaltet. STOP schaltet
 den Ausgang auf jeder Seite aus. Dasselbe gilt für andere Stopps:
 einen nicht antwortenden Touch-Controller, verlorene Touch-Ereignisse
 beim Einschalten, bevor ein ganzer Frame EIN gesehen hat, einen IOmcu,
@@ -3443,7 +3452,7 @@ unter Tastenfeld und Rückfrage aktiv. Die Optionsliste öffnet nur bei
 ausgeschaltetem Ausgang, AUSGANG AUS liegt also nie darunter. Jeweils nur ein Finger
 bedient die Seite: Hält einer ein Bedienelement, hat ein zweiter Finger
 auf der Seite keine Wirkung, außer auf AUSGANG AUS und PROG 5V AUS: Ein
-Stopp schaltet beim Aufsetzen dieses Fingers aus.
+Stopp schaltet beim Aufsetzen jedes Fingers aus.
 
 Auf dem [rbmod-Carrier](Carrier-de.md#versorgung) nennt eine Zeile am Fuß
 von STEUERUNG die getrennten 5V der Programmierports:
@@ -8236,7 +8245,7 @@ Zeilen:
 | FUNKTION | ein Auswahlfeld mit dem, was der Pin trägt, solange keine Programmiersitzung ihn hält. Ein Tippen öffnet die Liste über den Zeilen darunter: SERVO PWM, KEINE, und bei einem IOmcu ab Protokoll 4.28 DSHOT150, DSHOT300 und DSHOT600. Ein Tippen auf einen Eintrag erbittet ihn beim IOmcu und schließt die Liste; ein Druck neben die Liste schließt sie und erreicht nichts darunter. Das Feld ist vertieft und matt gezeichnet und nimmt kein Tippen an, solange die Zeile gesperrt ist |
 | ÜBERWACHT VON | der INA3221-Kanal, der den Port in SETUP > SENSORS überwacht, `ÜBERWACHT VON INA3221 0x41 CH2`: der niedrigste Kanal mit Shunt auf einem bestückten Baustein; `VON KEINEM STROMKANAL ÜBERWACHT`, solange keiner es tut |
 | SERVO-TESTER | OUTPUTS \| PORT n: das Ziel des Testers ([das Ziel](ServoProgrammer-de.md#das-ziel)) |
-| PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist |
+| PORT-PWM | EIN \| AUS: der Puls des Ports, der das Ziel des Testers ist. EIN nimmt ein Tippen; AUS wirkt beim Aufsetzen, was auch immer andere Finger halten |
 
 In der Platinenansicht stehen die Zeilen links neben der Platine. Ihre
 Tasten wählen den Port-Pin. In der Rasteransicht stehen die Zeilen unter
