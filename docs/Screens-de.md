@@ -7964,7 +7964,7 @@ gemessen.
 ### Die Sensorknoten
 
 Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die
-Firmware eines Knotens: `Knoten: 0.23.13. Im Panel: 0.23.14.`, die
+Firmware eines Knotens: `Knoten: 0.23.14. Im Panel: 0.23.15.`, die
 Version, die das STATUS-Paket des Knotens auf der laufenden Verbindung
 genannt hat, oder `nicht verbunden`, und die Version des Knoten-Images,
 das dieses Panel mitbringt, oder `keine`. Die Images der beiden Rollen
@@ -8006,7 +8006,7 @@ an, bis der Knoten zurück ist. Endet das Update, verbindet sich der Client
 des Knotens wieder aus den Werten von SETUP, und die Version der Zeile
 kommt aus dem ersten STATUS-Paket auf der neuen Verbindung.
 
-Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.14
+Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.15
 aktualisiert. Verbindet sich von selbst neu.`, `Auswuchtknoten-Update
 abgebrochen: <Grund>. Vorherige Firmware läuft.`, `Leistungsknoten hat
 sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Die

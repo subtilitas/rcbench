@@ -268,12 +268,12 @@ Das Image trägt keine Signatur: Das Dial nimmt jedes Dial-Image an, das ein Ger
 
 ![Der Leistungsknoten fragt nach seiner BOOT-Taste](view:updates-node)
 
-Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die Version des Knotens, aus seinem STATUS-Paket auf der laufenden Verbindung, und die Version des mitgelieferten Images dieser Rolle: `Knoten: 0.23.13. Im Panel: 0.23.14.` Das Halten braucht den Prüfstand in SAFE, den Knoten gebunden und verbunden mit gelesener Version und kein anderes laufendes Update.
+Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die Version des Knotens, aus seinem STATUS-Paket auf der laufenden Verbindung, und die Version des mitgelieferten Images dieser Rolle: `Knoten: 0.23.14. Im Panel: 0.23.15.` Das Halten braucht den Prüfstand in SAFE, den Knoten gebunden und verbunden mit gelesener Version und kein anderes laufendes Update.
 
 1. Das Halten beendet den eigenen Link des Knotens; WIRELESS zeigt den Knoten AUS, bis das Update endet. Die Taste zeigt `LEISTUNGSKNOTEN-UPDATE: VERBINDET`.
 2. Der Knoten wartet 30s auf seine BOOT-Taste, 1s gehalten; die Taste zeigt `BOOT AM KNOTEN 1s HALTEN: 27s` und das Band `Halte innerhalb von 30s die BOOT-Taste am Knoten 1s, um das Update anzunehmen.` Kein Halten lehnt ab. Vor dem Halten wird nichts gelöscht.
 3. Der Knoten schreibt das Image; die Taste zeigt `LEISTUNGSKNOTEN-UPDATE 37%`.
-4. Der Knoten prüft das Image, installiert es und startet neu. Der Alarm lautet `Leistungsknoten auf 0.23.14 aktualisiert. Verbindet sich von selbst neu.` Der Link des Knotens verbindet sich wieder aus den Werten von SETUP, und die Zeile liest die neue Version aus dem ersten STATUS-Paket des Knotens.
+4. Der Knoten prüft das Image, installiert es und startet neu. Der Alarm lautet `Leistungsknoten auf 0.23.15 aktualisiert. Verbindet sich von selbst neu.` Der Link des Knotens verbindet sich wieder aus den Werten von SETUP, und die Zeile liest die neue Version aus dem ersten STATUS-Paket des Knotens.
 
 Die Messwerte eines Leistungsknotens und die Messungen eines Auswuchtknotens ruhen vom Halten an, bis der Knoten zurück ist. Diese Lücke ist kein Verlust: Das Band zeigt kein `LEISTUNGSKNOTEN VERLOREN`. Jedes andere Ende lautet `Auswuchtknoten-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` mit den Gründen des Dial, und der Knoten behält die Firmware, mit der er lief. Ein Knoten lehnt das Image der anderen Rolle ab, bevor er etwas schreibt.
 

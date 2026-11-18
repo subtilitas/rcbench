@@ -6,6 +6,38 @@ history is in git.
 
 ## Unreleased
 
+## 0.23.15 - 2026-11-18
+
+0.23.15 is a testing release. It adds a watchdog on the IOmcu's main loop
+(500ms), the cause of a refused OUTPUTS write, an UPDATES screen that leads
+through the updates as steps and goes on after a restart, and an approach and
+a verify pass to RUDDER AUTO. The stop controls of SUPPLY, PROG 5V and the
+KST and HITEC sessions act on the press. Its minor number, 23, is odd. GitHub
+publishes it as a pre-release and does not mark it as latest. It runs on the
+ESP32-P4 panel, as 0.23.14 does; an ESP32-S3 panel stays on the 0.22 line and
+is not offered it. The link protocol is 4.39, up from 4.37 in 0.23.14. The
+assets are
+`rcbench-panel-p4-v0.23.15.zip`, `rcbench-panel-p4-v0.23.15.bin`,
+`rcbench-iomcu-v0.23.15.zip`, `rcbench-iomcu-rbmod-v0.23.15.zip`,
+`rcbench-c6-2.13.0.bin`, `rcbench-c6-merged-2.13.0.bin`,
+`rcbench-node-pwr-0.23.15.bin`, `rcbench-node-pwr-merged-0.23.15.bin`,
+`rcbench-node-bal-0.23.15.bin`, `rcbench-node-bal-merged-0.23.15.bin`,
+`rcbench-node-display-merged-0.23.15.bin`, `rcbench-dial-0.23.15.bin`,
+`rcbench-dial-merged-0.23.15.bin` and `SHA256SUMS`.
+
+A bench on 0.23.14 gets 0.23.15 over Wi-Fi: SETUP > UPDATES, RELEASES: TESTING,
+CHECK FOR UPDATES, then hold the install button for 2s. With RELEASES: STABLE the
+check reads `releases/latest`, which names 0.22.1, and offers nothing. At
+link-up the panel offers to update the IOmcu over CAN (Controller Area Network)
+when the IOmcu runs a different build. The panel carries the images of the
+Dial and of the power and balance nodes and sends them over Bluetooth LE from
+SETUP > UPDATES; the display node's image is loaded over USB (Universal Serial
+Bus). To set up a new bench, load both boards over USB as
+[First run, §1](docs/FirstRun.md#1-flash-both-boards) describes.
+
+The entries below cover the 26 pull requests merged since v0.23.14: #865 to
+#890.
+
 ### Added
 
 - IOmcu: the RP2350's watchdog on core 0's main loop, 500ms
