@@ -208,6 +208,130 @@ def test_the_summary_lists_the_survivors():
     assert "shared/a.c:4" not in text
 
 
+def _m(path, line):
+    """A flip mutant of one line of a file."""
+    return mu.Mutant(path, line, 0, "flip", "<", "<=", "")
+
+
+def test_the_paths_named_first_lead_the_list_in_the_order_given():
+    """--first: its prefixes in order, then the rest, each group sorted."""
+    all_ = sorted([_m("shared/outputs/a.c", 1), _m("shared/outputs/a.c", 2),
+                   _m("shared/safety/arming.c", 7),
+                   _m("shared/safety/heartbeat.c", 3),
+                   _m("shared/safety/include/arming.h", 9)])
+    first = mu.put_first(all_, ["shared/safety/heartbeat.c",
+                                "shared/safety/"])
+    assert [(m.path, m.line) for m in first] == [
+        ("shared/safety/heartbeat.c", 3),
+        ("shared/safety/arming.c", 7),
+        ("shared/safety/include/arming.h", 9),
+        ("shared/outputs/a.c", 1),
+        ("shared/outputs/a.c", 2)]
+    assert mu.put_first(all_, []) == all_
+
+
+def test_the_shards_hold_every_mutant_once_and_a_share_of_each_file():
+    """--shard I/N takes every N-th mutant from place I."""
+    all_ = ([_m("shared/safety/a.c", n) for n in range(7)]
+            + [_m("shared/outputs/b.c", n) for n in range(5)])
+    shards = [mu.take_shard(all_, i, 3) for i in range(3)]
+    assert sorted(m for shard in shards for m in shard) == sorted(all_)
+    assert [len(shard) for shard in shards] == [4, 4, 4]
+    for shard in shards:
+        # The files named first lead every shard.
+        assert shard[0].path == "shared/safety/a.c"
+        assert sum(m.path == "shared/safety/a.c" for m in shard) in (2, 3)
+
+
+@pytest.mark.parametrize("text", ["6/6", "7/6", "a/6", "1", "1/0", "1/6/2"])
+def test_a_shard_argument_that_names_no_shard_stops_the_tool(text, capsys):
+    """I/N needs 0 <= I < N."""
+    with pytest.raises(mu.Stop):
+        mu.parse_shard(text)
+    assert mu.main(["--files", "tools/mutate.py", "--shard", text,
+                    "--list"]) == 2
+    assert "--shard" in capsys.readouterr().err
+
+
+def test_a_shard_argument_is_read():
+    """0/6 and 5/6 are the first and the last of 6."""
+    assert mu.parse_shard("0/6") == (0, 6)
+    assert mu.parse_shard("5/6") == (5, 6)
+
+
+def test_the_summary_names_the_files_the_budget_left():
+    """A run that leaves mutants says so, file by file."""
+    results = [{"path": "shared/a.c", "line": 3, "kind": "flip",
+                "before": "<", "after": "<=", "result": "killed"}]
+    chosen = [_m("shared/a.c", 3), _m("shared/a.c", 4), _m("shared/b.c", 1),
+              _m("shared/b.c", 2)]
+    left = mu.not_run_files(chosen, 1)
+    assert left == {"shared/a.c": 1, "shared/b.c": 2}
+    text = mu.summary(results, 3, 5.0, left)
+    assert "Not every mutant ran: the budget ended with 3 mutants of " \
+           "2 file(s) left." in text
+    assert "| `shared/a.c` | 1 | 1 |" in text
+    assert "| `shared/b.c` | 0 | 2 |" in text
+
+
+def test_a_summary_of_a_whole_run_has_no_such_table():
+    """Nothing left: no sentence and no table."""
+    assert mu.not_run_files([_m("shared/a.c", 3)], 1) == {}
+    assert "Not every mutant ran" not in mu.summary([], 0, 1.0, {})
+    assert "Not every mutant ran" not in mu.summary([], 4, 1.0)
+
+
+# The weekly run (.github/workflows/mutation.yml).
+SAFETY_FIRST = ["shared/safety/arming.c", "shared/safety/heartbeat.c",
+                "shared/safety/stop_latch.c", "shared/safety/touch_loss.c",
+                "shared/safety/prog5v_lost.c", "shared/safety/"]
+SHARDS = 6
+BUDGET_S = 18000
+# One mutant on the runner: 103,014s for 2,440 mutants in the run of
+# 2026-11-15, rounded up.
+MUTANT_S = 43
+
+
+def weekly_step():
+    """The run step of mutation.yml that calls the tool."""
+    text = (mu.REPO / ".github" / "workflows" / "mutation.yml").read_text()
+    step = text[text.index("python3 tools/mutate.py"):]
+    return " ".join(step.replace("\\\n", " ").split())
+
+
+def test_the_weekly_run_orders_the_safety_files_first():
+    """mutation.yml passes the order and the shard this file holds."""
+    step = weekly_step()
+    assert "--first " + " ".join(SAFETY_FIRST) + " --" in step
+    assert f'--shard "$SHARD/{SHARDS}"' in step
+    assert f"--budget {BUDGET_S} " in step
+    # xargs appends the files: --files is the last argument.
+    assert '--summary "$GITHUB_STEP_SUMMARY" --files' in step
+
+
+def test_every_shard_of_the_weekly_run_reaches_all_of_shared_safety():
+    """The mutants of shared/safety fit every shard's budget.
+
+    They lead each shard's list, so a shard that spends its budget has run
+    them all.
+    """
+    files = sorted(str(p.relative_to(mu.REPO)) for d in ("safety", "outputs")
+                   for p in (mu.REPO / "shared" / d).rglob("*.[ch]"))
+    wanted = [f for f in files if "/rp2350/" not in f]
+    every = mu.put_first(mu.candidates("unused", [
+        str(mu.REPO / f) for f in wanted]), SAFETY_FIRST)
+    for name in SAFETY_FIRST[:5]:
+        assert any(m.path == name for m in every), name
+    for index in range(SHARDS):
+        shard = mu.take_shard(every, index, SHARDS)
+        safety = [m for m in shard if m.path.startswith("shared/safety/")]
+        # The safety mutants are the head of the list, the five named
+        # files before the rest of the folder.
+        assert shard[:len(safety)] == safety
+        assert shard[0].path == "shared/safety/arming.c"
+        assert len(safety) * MUTANT_S <= BUDGET_S, (index, len(safety))
+
+
 # ------------------------------------------------ a run, end to end --
 
 CMAKE = """\
@@ -317,6 +441,39 @@ def test_a_run_kills_reports_and_leaves_no_trace(tiny, capsys):
     assert "3 survived" in capsys.readouterr().out
     assert "| `shared/limit/limit.c:14` | drop |" in (
         repo.parent / "summary.md").read_text()
+
+
+def test_a_run_the_budget_ends_says_what_it_left(tiny, capsys):
+    """Mutants left by the budget are in the output, JSON and summary."""
+    repo, scratch, git = tiny
+    out = repo.parent / "out.json"
+    note = repo.parent / "summary.md"
+    assert mu.main(["--files", "shared/limit/limit.c", "--budget", "-1",
+                    "--json", str(out), "--summary", str(note)]) == 0
+    import json
+    data = json.loads(out.read_text())
+    assert data["not_run"] == 8 and data["results"] == []
+    assert data["not_run_files"] == {"shared/limit/limit.c": 8}
+    printed = capsys.readouterr().out
+    assert "0 killed, 0 survived, 0 did not build, 8 not run" in printed
+    assert ("::warning::the budget of -1s ended with 8 mutants of 1 file(s) "
+            "not run, the first of them in shared/limit/limit.c") in printed
+    assert "| `shared/limit/limit.c` | 0 | 8 |" in note.read_text()
+
+
+def test_a_whole_run_prints_no_warning(tiny, capsys):
+    """Every mutant ran: no annotation."""
+    assert mu.main(["--files", "shared/limit/limit.c"]) == 0
+    assert "::warning::" not in capsys.readouterr().out
+
+
+def test_a_shard_of_a_run_takes_its_share(tiny, capsys):
+    """--shard 1/2 lists the 2nd, 4th, 6th and 8th mutant."""
+    assert mu.main(["--files", "shared/limit/limit.c", "--shard", "1/2",
+                    "--list"]) == 0
+    listed = capsys.readouterr().out
+    assert "4 mutants in 1 file(s), shard 1/2" in listed
+    assert listed.count("limit.c:") == 4
 
 
 def test_a_ceiling_on_survivors_sets_the_exit_code(tiny):
