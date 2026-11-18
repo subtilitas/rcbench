@@ -438,9 +438,9 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 784 | 2 368 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 816 | 2 336 |
 | `control` | `control_task` | 6 144 | 3 680 | 1 424 |
-| `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
+| `runlog` | `log_task` | 6 656 | 3 856 | 1 760 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
 | `blec` | `blec_task`, die Verbindung jedes Bluetooth-LE-Clients über den Hub: die Werte der IMU, des Dial und beider Sensorknoten aus SETUP, die Events des Hosts und die Aktionen an NimBLE (`panel_blec.c`, die Seite der IMU in `panel_imu.c`, die des Dial in `panel_dial.c`, die des Leistungsknotens in `panel_pnode.c`, die des Auswuchtknotens in `panel_bal.c`, das Update der Funkgeräte in `panel_devupd.c`) | 4 096 | 1 808 | 1 248 |
 | `blestart` | `ble_start_task`, die Verbindung zum C6, seine Controller-Anfragen, der Start des Hosts und das Warten auf seinen Sync, dann weg (`panel_ble.c`) | 4 096 | 1 200 | 1 856 |
