@@ -26,6 +26,7 @@
  */
 
 #include "outputs_screen_rig.h"
+#include "picker_screen.h"
 #include "text_mask.h"
 #include "ui_pinlist.h"
 #include "ui_widgets.h"
@@ -528,6 +529,19 @@ TEST_CASE(every_two_line_string_of_the_column_breaks_into_two)
         { TX_OUT_REFUSED, 300, true, 2 },
         { TX_OUT_NOT_WRITTEN, 300, true, 2 },
         { TX_OUT_NO_LINK, 300, true, 2 },
+        { TX_OUT_WHY_VALUE, 300, false, 2 },
+        { TX_OUT_WHY_PREPARED, 300, false, 2 },
+        { TX_OUT_WHY_ESC_WIRE, 300, false, 2 },
+        { TX_OUT_WHY_ARMED, 300, false, 2 },
+        { TX_OUT_WHY_BOARD, 300, false, 2 },
+        { TX_OUT_WHY_PORT, 300, false, 2 },
+        { TX_OUT_WHY_SUPPLY, 300, false, 2 },
+        { TX_OUT_WHY_SENSE, 300, false, 2 },
+        { TX_OUT_WHY_TONE, 300, false, 2 },
+        { TX_OUT_WHY_RATE, 300, false, 2 },
+        { TX_OUT_WHY_PULSE, 300, false, 2 },
+        { TX_OUT_WHY_SILICON, 300, false, 2 },
+        { TX_OUT_WHY_PD_UART, 300, false, 2 },
         { TX_OUT_PORT_HELD, 300, false, 3 },
         { TX_OUT_PORT_HELD_ESC, 300, false, 3 },
         { TX_OUT_PORT_HELD_HITEC, 300, false, 3 },
@@ -749,6 +763,75 @@ TEST_CASE(a_held_cells_holder_line_is_full_ink_in_every_protocol_view)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/*
+ * A write the IOmcu refused with a cause says it on the reason line of
+ * both views, in both languages, while the result reads REFUSED and no
+ * other line stands.  No cause (an IOmcu before 4.38) and a number this
+ * build has no text for say nothing.  On the board view every cause wraps
+ * into 35 cells and 17 (350px and 170px of 10 x 20).
+ */
+TEST_CASE(a_refused_write_says_its_cause_on_the_reason_line)
+{
+    char pk[96];
+    fresh();
+    ui_text_set_language(UI_LANG_EN);
+    choose_named("SERVO PWM");
+    picker_screen_set_binding(outputs_screen_binding());
+    picker_screen_follow(outputs_screen_binding()->proto, true);
+    CHECK_STR_EQ(reason(), "");
+    outputs_screen_set_result(OUTPUTS_REFUSED);
+    outputs_screen_set_why(LINK_BW_NONE);
+    CHECK_STR_EQ(reason(), "");
+    outputs_screen_set_why(LINK_BW_SILICON);
+    CHECK_STR_EQ(reason(), "REFUSED: NO PIO OR PWM SLICE FREE");
+    CHECK(picker_screen_reason(pk, sizeof(pk)));
+    CHECK_STR_EQ(pk, "REFUSED: NO PIO OR PWM SLICE FREE");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(reason(), "ABGELEHNT: KEIN PIO ODER PWM-SLICE FREI");
+    ui_text_set_language(UI_LANG_EN);
+
+    /* Another line stands first, and the cause goes with the result. */
+    choose_named("OFF");
+    CHECK_STR_EQ(reason(), "CHOOSE A PROTOCOL, THEN TAP PINS");
+    choose_named("SERVO PWM");
+    outputs_screen_set_result(OUTPUTS_OK);
+    CHECK_STR_EQ(reason(), "");
+    outputs_screen_set_result(OUTPUTS_REFUSED);
+    outputs_screen_set_why((uint8_t)LINK_BW_COUNT);
+    CHECK_STR_EQ(reason(), "");
+    outputs_screen_set_why(200u);
+    CHECK_STR_EQ(reason(), "");
+
+    for (int l = 0; l < (int)UI_LANG_COUNT; ++l) {
+        ui_text_set_language((ui_lang_t)l);
+        for (uint8_t w = 1u; w < (uint8_t)LINK_BW_COUNT; ++w) {
+            static gfx_color_t px[720 * 48];
+            gfx_canvas_t c = { px, 720, 48, 720, { 0, 0, 720, 48 } };
+            memset(px, 0, sizeof(px));
+            outputs_screen_set_why(w);
+            if (reason()[0] == '\0') {
+                T_FAIL("language %d: cause %u has no text", l, (unsigned)w);
+            }
+            (void)outputs_wrap(&c, gfx_rect_make(0, 0, 350, 20), 22,
+                               reason(), 2, &gfx_font_10x20,
+                               GFX_RGB(255, 255, 255), false);
+            for (int y = 0; y < 48; ++y) {
+                for (int x = (y < 22) ? 350 : 170; x < 720; ++x) {
+                    if (px[y * 720 + x] != 0) {
+                        T_FAIL("language %d: \"%s\" leaves its room", l,
+                               reason());
+                        y = 48;
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    outputs_screen_set_why(LINK_BW_NONE);
+    outputs_screen_set_result(OUTPUTS_IDLE);
+}
+
 int main(void)
 {
     RUN(the_longest_protocol_name_fits_the_list_and_a_cell);
@@ -768,5 +851,6 @@ int main(void)
     RUN(a_number_goes_down_with_the_word_before_it);
     RUN(a_cell_names_its_pin_gpio_and_its_number);
     RUN(a_held_cells_holder_line_is_full_ink_in_every_protocol_view);
+    RUN(a_refused_write_says_its_cause_on_the_reason_line);
     return test_summary("outputs_screen_draw");
 }

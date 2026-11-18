@@ -58,9 +58,10 @@ extern "C" {
  * @p bidirectional inverts the line and claims a second state machine, which
  * has to be the one above the transmitter's in the same block: the two
  * rendezvous on a flag relative to their own numbers, so an ESC on one block
- * cannot start another's receiver.  A bind that cannot get that pair is
- * refused rather than falling back to a one-way output that would look like
- * an ESC with no telemetry.
+ * cannot start another's receiver.  The driver looks for a free pair and
+ * 16 free instructions in each PIO block that reaches the pin, PIO2 first.
+ * A bind that gets the pair in no block is refused rather than falling back
+ * to a one-way output that would look like an ESC with no telemetry.
  *
  * A pin that is already bound with the same rate and mode stays as it is and
  * the call returns true.  With a different rate or mode it returns false and

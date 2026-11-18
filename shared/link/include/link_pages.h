@@ -166,9 +166,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 37, numbered exchanges and the
- *         answered repeat (LINK_MINOR_REPEAT). */
-#define LINK_PROTOCOL_MINOR 37u
+/** @brief The minor this build speaks: 38, the cause of a refused binding
+ *         write (LINK_MINOR_BIND_WHY). */
+#define LINK_PROTOCOL_MINOR 38u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -396,6 +396,16 @@ typedef enum {
  * 4.37 or later IOmcu only.
  */
 #define LINK_MINOR_REPEAT 37u
+
+/**
+ * @brief The first minor whose BIND page has LINK_BD_WHY, the cause of the
+ *        last refused CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND write.
+ *
+ * An older minor's BIND page has 1 register and refuses a read of
+ * register 1 with LINK_NACK_BAD_RANGE, so the panel reads the cause from a
+ * 4.38 or later IOmcu only and shows a refusal without one otherwise.
+ */
+#define LINK_MINOR_BIND_WHY 38u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -905,11 +915,43 @@ typedef enum {
  *
  * What is prepared starts as the pages in force at boot and is not kept in
  * flash.  CHAN_CFG and OUTPUTS stay writable, one entry a frame.
+ *
+ * LINK_BD_WHY (protocol 4.38) is read only: a link_bind_why_t, the cause of
+ * the last write to CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND that was
+ * refused, and LINK_BW_NONE once a later CHAN_CFG, OUTPUTS or BIND write is
+ * taken.  A write to it is refused with LINK_NACK_BAD_RANGE.
  */
 enum {
     LINK_BD_COMMIT = 0, /**< write: the prepared pages' CRC; read: the same */
-    LINK_BD_COUNT  = 1,
+    LINK_BD_WHY    = 1, /**< read: a link_bind_why_t (4.38)                 */
+    LINK_BD_COUNT  = 2,
 };
+
+/** @brief Why the IOmcu refused a binding write (LINK_BD_WHY). */
+typedef enum {
+    LINK_BW_NONE     = 0,  /**< no refusal stands                           */
+    LINK_BW_VALUE    = 1,  /**< a register value outside its page's rules   */
+    LINK_BW_PREPARED = 2,  /**< COMMIT's CRC is not the prepared pages'     */
+    LINK_BW_ESC_WIRE = 3,  /**< the ESC_WIRE page holds an output           */
+    LINK_BW_ARMED    = 4,  /**< a role, a throttle channel or a slot changes
+                                while ARMED                                 */
+    LINK_BW_BOARD    = 5,  /**< soldered pins: a slot off the servo outputs */
+    LINK_BW_PORT     = 6,  /**< a programming port's pin, bank channel or
+                                PWM slice                                   */
+    LINK_BW_SUPPLY   = 7,  /**< a pin the supply's PD mini holds            */
+    LINK_BW_SENSE    = 8,  /**< a pin the sensor bus holds                  */
+    LINK_BW_TONE     = 9,  /**< the phase tap's pin                         */
+    LINK_BW_RATE     = 10, /**< a PWM slice shared with a surface at
+                                another frame rate                          */
+    LINK_BW_PULSE    = 11, /**< a channel's endpoint longer than its PWM
+                                slot's frame                                */
+    LINK_BW_SILICON  = 12, /**< a driver did not bind: no PIO state machine,
+                                instruction memory, DMA channel or PWM slice
+                                free, or the pin refused                    */
+    LINK_BW_PD_UART  = 13, /**< the slots leave the supply's UART no PIO
+                                block                                       */
+    LINK_BW_COUNT    = 14,
+} link_bind_why_t;
 
 /* ---------------------------------------------------------------- identity */
 /** @brief Registers of the IDENTITY page. */

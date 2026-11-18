@@ -27,6 +27,8 @@
  * - the_tapped_key_stays_visible_on_every_built_in_board
  * - the_card_and_its_buttons_clear_the_key_on_every_drawable_board
  * - each_card_starts_the_dial_on_cancel
+ * - a_refused_tap_shows_its_own_reason
+ * - a_press_in_the_closed_cards_box_is_spent_for_400ms
  *
  * SPDX-License-Identifier: MIT
  */
@@ -1130,6 +1132,69 @@ TEST_CASE(each_card_starts_the_dial_on_cancel)
     ui_router_goto(SCREEN_OVERVIEW);
 }
 
+/* The reason line names the tap made last: a refusal of the tap before
+ * does not stand over the reason of a free key the protocol cannot take. */
+TEST_CASE(a_refused_tap_shows_its_own_reason)
+{
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, BOARD);
+    outbind_set_proto(&b, proto_named("PPM"));
+    CHECK(outbind_toggle(&b, idx(4u)));
+    visit(&b);
+    tap_key(13u);
+    CHECK_STR_EQ(reason(), "GPIO 13: PROG PORT 1. FREE IT ON ITS ENTRY");
+    tap_key(6u);
+    CHECK_STR_EQ(reason(), "PPM USES 1 PIN");
+    CHECK_EQ(s_applied, 0);
+}
+
+/* After CANCEL or MOVE PIN closes the card, a press inside its former box
+ * is spent for 400ms: the second tap of a double tap ticks no key under
+ * the card.  A later tap acts.  On the 60 x 6mm learned board, 20 pads a
+ * row, the card of GPIO 0 covers free keys. */
+TEST_CASE(a_press_in_the_closed_cards_box_is_spent_for_400ms)
+{
+    uint8_t n = 0u;
+    gfx_rect_t held, k = gfx_rect_make(0, 0, 0, 0);
+    int under = -1;
+    CHECK(learned_visit(6000u, 600u, 20u, LINK_SH_BOTTOM_LEFT, 0u, &n));
+    CHECK(picker_screen_button_rect(outbind_index_of(4300u, 0u), &held));
+    tap_at(held);
+    CHECK(pin_take_open_in(PIN_TAKE_BOARD));
+    for (uint8_t g = 1u; g < n && under < 0; ++g) {
+        const uint8_t i = outbind_index_of(4300u, g);
+        if (picker_screen_button_rect(i, &k)
+            && gfx_rect_contains(pin_take_rect(), k.x + k.w / 2,
+                                 k.y + k.h / 2)) {
+            under = (int)i;
+        }
+    }
+    CHECK(under >= 0);
+    tap_btn(PIN_TAKE_BTN_CANCEL);
+    CHECK(!pin_take_is_open());
+    tap_at(k);
+    view()->tick(0.2f);
+    tap_at(k);
+    CHECK_EQ(s_applied, 0);
+    CHECK_EQ(outbind_group_of(picker_screen_binding(), (uint8_t)under), 0);
+    view()->tick(0.2f);
+    tap_at(k);
+    CHECK_EQ(s_applied, 1);
+    CHECK_EQ(outbind_group_of(&s_last, (uint8_t)under),
+             proto_named("SERVO PWM"));
+
+    /* MOVE PIN: the write of the move, and none from the tap after it. */
+    CHECK(learned_visit(6000u, 600u, 20u, LINK_SH_BOTTOM_LEFT, 0u, &n));
+    tap_at(held);
+    tap_btn(PIN_TAKE_BTN_MOVE);
+    CHECK_EQ(s_applied, 1);
+    tap_at(k);
+    CHECK_EQ(s_applied, 1);
+    CHECK_EQ(outbind_group_of(picker_screen_binding(), (uint8_t)under), 0);
+    outbind_forget_learned();
+}
+
 int main(void)
 {
     RUN(a_tap_on_an_esc_pin_under_servo_pwm_asks_and_writes_nothing);
@@ -1153,5 +1218,7 @@ int main(void)
     RUN(the_tapped_key_stays_visible_on_every_built_in_board);
     RUN(the_card_and_its_buttons_clear_the_key_on_every_drawable_board);
     RUN(each_card_starts_the_dial_on_cancel);
+    RUN(a_refused_tap_shows_its_own_reason);
+    RUN(a_press_in_the_closed_cards_box_is_spent_for_400ms);
     return test_summary("pin_take");
 }

@@ -97,7 +97,7 @@ nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Getippte Zeilen stehen hier nach `> `; die Konsole gibt keinen Prompt aus.
-Die erste Zeile liest die Protokollversion, 4.37. Die zweite ist das
+Die erste Zeile liest die Protokollversion, 4.38. Die zweite ist das
 Einschalten von SUPPLY mit 5000mV und 1000mA, abgewiesen, weil kein Panel
 einen Heartbeat sendet. Mit laufendem Panel wird dieselbe Zeile angenommen:
 

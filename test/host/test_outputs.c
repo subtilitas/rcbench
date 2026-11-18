@@ -1139,6 +1139,76 @@ TEST_CASE(the_mirror_leaves_a_throttle_at_zero)
     CHECK_EQ(outputs_command(&o, 0), 0u);
 }
 
+/* A role change puts the bank's command at the new rest, and the CHANNELS
+ * page reads it: the register written under the old role goes.  A channel
+ * whose role stays keeps its register. */
+TEST_CASE(a_role_change_takes_the_channels_register_to_the_new_rest)
+{
+    fresh_pages();
+    uint16_t was[LINK_CC_COUNT];
+    chan_cfg[LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
+    chan_cfg[LINK_CC_STRIDE + LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    const uint16_t in[2] = { 300u, 800u };
+    CHECK_EQ(outputs_channels_write(chans, 0, 2, in), 0);
+    outputs_channels_apply_n(&o, chans, 0, 2, 100u);
+
+    memcpy(was, chan_cfg, sizeof(was));
+    chan_cfg[LINK_CC_ROLE] = LINK_CC_ROLE_SURFACE;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    CHECK_EQ(outputs_command(&o, 0), OUT_SPAN / 2u);
+    CHECK_EQ(chans[0], 300u);                   /* stale before the follow */
+    outputs_channels_follow_roles(&o, was, chan_cfg, chans);
+    CHECK_EQ(chans[0], OUT_SPAN / 2u);
+    CHECK_EQ(chans[1], 800u);
+    CHECK_EQ(outputs_command(&o, 1), 800u);
+
+    /* And back to a throttle: zero. */
+    memcpy(was, chan_cfg, sizeof(was));
+    chan_cfg[LINK_CC_ROLE] = LINK_CC_ROLE_THROTTLE;
+    outputs_chan_cfg_apply(&o, chan_cfg);
+    outputs_channels_follow_roles(&o, was, chan_cfg, chans);
+    CHECK_EQ(chans[0], 0u);
+
+    outputs_channels_follow_roles(NULL, was, chan_cfg, chans);
+    outputs_channels_follow_roles(&o, NULL, chan_cfg, chans);
+    outputs_channels_follow_roles(&o, was, NULL, chans);
+    outputs_channels_follow_roles(&o, was, chan_cfg, NULL);
+    CHECK_EQ(chans[1], 800u);
+}
+
+/* A stored page is not one a write took: a pin register above 63 is no pin.
+ * Narrowed to 8 bits, 258 would bind GPIO 2.  The apply leaves the slot
+ * cleared, and the restore sets its driver to 0 with an unknown driver's. */
+TEST_CASE(a_stored_slot_with_a_pin_past_the_top_starts_unbound)
+{
+    fresh_pages();
+    slots[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+    slots[LINK_OS_PIN]     = 258u;
+    slots[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(0, 1);
+    slots[LINK_OS_RATE_HZ] = 50u;
+    uint16_t *one = &slots[LINK_OS_STRIDE];
+    one[LINK_OS_DRIVER]  = LINK_DRIVER_PWM;
+    one[LINK_OS_PIN]     = 9u;
+    one[LINK_OS_RANGE]   = LINK_OS_RANGE_OF(1, 1);
+    one[LINK_OS_RATE_HZ] = 50u;
+    uint16_t *two = &slots[2 * LINK_OS_STRIDE];
+    two[LINK_OS_DRIVER]  = 77u;
+    two[LINK_OS_PIN]     = 10u;
+    outputs_slots_apply(&o, slots);
+    CHECK_EQ(o.slot[0].driver, OUT_DRIVER_NONE);
+    CHECK_EQ(o.slot[1].driver, OUT_DRIVER_PWM);
+    CHECK_EQ(o.slot[1].pin, 9);
+    CHECK_EQ(o.slot[2].driver, OUT_DRIVER_NONE);
+
+    CHECK_EQ(outputs_slots_free_unwritable(slots), 2u);
+    CHECK_EQ(slots[LINK_OS_DRIVER], 0u);
+    CHECK_EQ(one[LINK_OS_DRIVER], LINK_DRIVER_PWM);
+    CHECK_EQ(two[LINK_OS_DRIVER], 0u);
+    CHECK_EQ(outputs_slots_free_unwritable(slots), 0u);
+    CHECK_EQ(outputs_slots_free_unwritable(NULL), 0u);
+}
+
 /* Neither argument is trusted. */
 TEST_CASE(the_mirror_refuses_a_null_side)
 {
@@ -2059,6 +2129,8 @@ int main(void)
     RUN(a_failsafe_leaves_an_uncommanded_surface_reading_its_center);
     RUN(a_zero_page_applied_as_commands_reaches_the_endpoint);
     RUN(the_mirror_leaves_a_throttle_at_zero);
+    RUN(a_role_change_takes_the_channels_register_to_the_new_rest);
+    RUN(a_stored_slot_with_a_pin_past_the_top_starts_unbound);
     RUN(the_mirror_refuses_a_null_side);
     RUN(the_pwm_fold_puts_each_pin_on_a_named_slice_and_channel);
     RUN(two_header_pins_sixteen_apart_are_one_compare_register);
