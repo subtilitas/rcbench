@@ -9,6 +9,7 @@
  *
  * Cases:
  * - copy_puts_the_file_into_the_other_panes_folder
+ * - copy_blocked_by_a_leftover_new_names_the_new
  * - copy_into_the_folder_it_is_in_is_refused
  * - writes_are_refused_while_armed_and_reads_are_not
  * - a_run_being_logged_shuts_the_gate_too
@@ -66,6 +67,27 @@ TEST_CASE(copy_puts_the_file_into_the_other_panes_folder)
     CHECK_EQ(files_screen_pane(1)->selected, r);
     CHECK_EQ(g_h.card.holds, 0);
     draw();
+}
+
+TEST_CASE(copy_blocked_by_a_leftover_new_names_the_new)
+{
+    fresh();
+    fk_file(&g_h.card, "USER/LOGS/NOTES.TXT.NEW", NULL, 7u);
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK(pick(0, "NOTES.TXT"));
+    tap_foot(FS_SPOT_COPY);
+    CHECK_STR_EQ(files_screen_message(), msg(TX_FM_E_EXISTS, "NOTES.TXT.NEW"));
+    /* The leftover stays as it was, and no copy is made. */
+    CHECK(fk_get(&g_h.card, "USER/LOGS/NOTES.TXT.NEW") != NULL);
+    CHECK(fk_get(&g_h.card, "USER/LOGS/NOTES.TXT") == NULL);
+
+    /* The file itself in the way is still named as the file. */
+    fresh();
+    fk_file(&g_h.card, "USER/LOGS/NOTES.TXT", NULL, 7u);
+    tap_foot(FS_SPOT_RESCAN);
+    CHECK(pick(0, "NOTES.TXT"));
+    tap_foot(FS_SPOT_COPY);
+    CHECK_STR_EQ(files_screen_message(), msg(TX_FM_E_EXISTS, "NOTES.TXT"));
 }
 
 TEST_CASE(copy_into_the_folder_it_is_in_is_refused)
@@ -752,6 +774,7 @@ TEST_CASE(an_existing_name_is_never_overwritten)
 int main(void)
 {
     RUN(copy_puts_the_file_into_the_other_panes_folder);
+    RUN(copy_blocked_by_a_leftover_new_names_the_new);
     RUN(copy_into_the_folder_it_is_in_is_refused);
     RUN(writes_are_refused_while_armed_and_reads_are_not);
     RUN(a_run_being_logged_shuts_the_gate_too);

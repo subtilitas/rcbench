@@ -120,6 +120,26 @@ history is in git.
 
 ### Fixed
 
+- LOGS: a rising first column named as a counter (`step`, `row`, `index`,
+  `sample`, `count`, `n`, `#`) is no time axis. `RUDDRnnn.CSV` plots
+  against the row index; its header showed `5.00s   1Hz` for 6 steps.
+- LOGS: a time unit after an underscore in the header is read (`time_ms`,
+  `t_us`, `elapsed_s`). 4s of rows under `time_ms` opened as 4,000s.
+- LOGS: DELETE is refused while the bench is ARMED or a run is being
+  logged, as every write in FILES, with `Bench ARMED. The card is
+  read-only.` or `A run is being logged. The card is read-only.` An ARM or
+  a run that starts while the question is open refuses its DELETE.
+- LOGS: the USER tab's line and the help name `RUDDRnnn.CSV`.
+- FILES: a COPY blocked by a leftover `<name>.NEW` names `<name>.NEW` in
+  `... already exists there.`
+- FILES and SETUP > SD CARD: `BENCH/BALANCE` is a FIXED folder (no RENAME,
+  no MOVE) and is refused as a log folder, as the other bench folders.
+- FILES: a SAVE over a file that grew after its checksum was read is
+  refused as changed. A row the balance node's solve appended to
+  `BALANCE.CSV` during the save is kept.
+- Bus fault screen: the German titles are `CAN-BUS-FEHLER` and
+  `VERBINDUNG VERLOREN`.
+- BATTERY: a cell count outside 1 to 14 is taken as no pack.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,

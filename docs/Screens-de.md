@@ -3326,7 +3326,7 @@ ESC-Läufe verwenden eine eigene Stromquelle.
 
 Ein von einer anderen Seite eingeschalteter Ausgang bleibt beim
 Verlassen von SUPPLY unverändert. Tastenfelder, Rückfragen und die
-Optionsliste zählen nicht als Verlassen. LINK LOST,
+Optionsliste zählen nicht als Verlassen. VERBINDUNG VERLOREN,
 das kein STOP hat, öffnet sich bei eingeschaltetem Ausgang nicht.
 
 **Das Home-Feld führt eine Ebene zurück.** Das Schließen eines Dialogs
@@ -4019,6 +4019,15 @@ Aktuelle Dateien von ARMED-Läufen verwenden verstrichene Echtzeit.
 Dateien aus Firmware 0.15.0 oder älter unterschätzen die Laufdauer
 (siehe Motor & ESC, die CSV-Datei).
 
+Die Zeitspalte ist eine als Zeit benannte Spalte, dann eine mit `time`,
+`zeit` oder `elapsed` im Spaltenkopf, dann eine erste Spalte, die nur
+steigt. Ihre Einheit ist die des Spaltenkopfs, in Klammern oder nach einem
+Unterstrich (`time_ms`, `t_us`, `elapsed_s`), sonst eine Schätzung aus der
+Spanne ihrer Werte. Eine steigende erste Spalte mit dem Namen eines Zählers
+(`step`, `row`, `index`, `sample`, `count`, `n`, `#`) ist keine Zeitspalte:
+`RUDDRnnn.CSV` beginnt mit `step`, wird über dem Zeilenindex gezeichnet,
+und der Cursor zeigt die Zeile.
+
 SETUP > PANEL > Ein Finger schiebt ist standardmäßig aus. Eingeschaltet
 erlaubt es das Verschieben vergrößerter Ausschnitte mit einem Finger.
 Mehr als 10px Bewegung vom Aufsetzpunkt zieht den Ausschnitt seitlich;
@@ -4036,7 +4045,13 @@ jeweils nur einen Finger an; ein zweiter hat keine Wirkung.
 LÖSCHEN fragt vor dem Entfernen der gewählten Datei nach. Der Dialog nennt
 Name und Größe. Erst Drücken und Loslassen von LÖSCHEN in diesem Dialog
 bestätigt. ABBRECHEN oder Verlassen schließt ohne Löschung. Eine vom
-Logger offene Datei kann nicht gelöscht werden. Eine gelöschte Datei
+Logger offene Datei kann nicht gelöscht werden. Solange der Prüfstand
+ARMED ist oder ein Lauf aufgezeichnet wird, ist LÖSCHEN grau und löscht
+nichts, wie jeder Schreibvorgang in FILES: Ein Tipp darauf zeigt in der
+Fußzeile `Prüfstand ARMED. Die Karte ist nur lesbar.` oder
+`Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.` Ein Wechsel auf
+ARMED oder ein Lauf, der bei offenem Dialog startet, verweigert dessen
+LÖSCHEN mit derselben Zeile. Eine gelöschte Datei
 verschwindet auch aus offenen Import- und Grafikansichten.
 
 Der Logger prüft die Nummern beim ersten Lauf nach dem Start und nach
@@ -4175,8 +4190,11 @@ daher mit ihrer Größe, etwa `8.00GB`. ÖFFNEN liest Dateien bis 2GiB minus
 2GiB bis 4GiB minus 1 Byte. ÖFFNEN meldet dann
 `BENCH001.CSV ist 2GB oder größer. Nicht geöffnet.`
 
-Die Größenangaben verwenden binäre Einheiten: 1kB sind 1024 Bytes,
-1MB sind 1024kB und 1GB sind 1024MB. [WLAN](#wlan) listet Dateien jeder
+Die Größenangaben auf dem Panel und auf der WLAN-Seite verwenden binäre
+Einheiten: 1kB sind 1024 Bytes, 1MB sind 1024kB und 1GB sind 1024MB. Das
+gilt für die Größen in den Listen und für die Grenzen in den Meldungen:
+`1MB` dort ist 1MiB (1.048.576 Bytes), `2GB` sind 2GiB und `4kB` sind 4KiB
+(4.096 Bytes). [WLAN](#wlan) listet Dateien jeder
 Größe, die die Karte unterstützt, und lädt sie herunter.
 
 ## Files
@@ -4238,7 +4256,7 @@ Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
+| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
 | GESPERRT | die Vermerke der Programmierungen, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` und `BENCH/ESCW/CONF/ESCW.TXT`, sowie ihre Dateien `KST.NEW`, `HITEC.NEW` und `ESCW.NEW` während des Schreibens. Nur INFO ist verfügbar |
 | WIRD GESCHRIEBEN | eine im Logger offene Datei. Nur INFO ist verfügbar |
 
@@ -4497,7 +4515,11 @@ jedem erfolgreichen Speichern. Sie dient auch als ETag der
 [Datei-API](#die-datei-api) der WLAN-Seite. Vor dem Öffnen von `.NEW` liest
 derselbe Speicherauftrag die Kartendatei erneut und berechnet ihre
 Prüfsumme. Für 1MiB zu speichernden Text werden daher zuerst 1MiB gelesen;
-die Dauer dieses Lesens ist nicht gemessen.
+die Dauer dieses Lesens ist nicht gemessen. Im Schritt, der die alte Datei
+entfernt, vergleicht der Auftrag ihre Größe mit den summierten Bytes: Eine
+inzwischen gewachsene Datei, etwa `BALANCE.CSV` mit einer Zeile, die eine
+Lösung der Auswuchtung angehängt hat, gilt als geändert, bleibt bestehen,
+und `.NEW` wird entfernt.
 
 Wurde die Datei inzwischen geändert oder entfernt, etwa durch den
 WLAN-Editor oder einen Upload ([Schreiben per Browser](#schreiben-per-browser)),
@@ -6827,7 +6849,7 @@ Ordner gilt weiter; rechts vom Titel steht der Grund:
 | mehr als 2 Ordner | `A/B/C` (`A/B` wird genommen) | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
+| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
 
 Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
 Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17

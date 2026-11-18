@@ -678,6 +678,12 @@ UI_TEXT(BF_NOIO_MEANS, 0,
 UI_TEXT(BF_NOIO_HEAD, 0,
     "IF AN IOMCU IS CONNECTED, CHECK IN THIS ORDER",
     "IST EIN IOMCU ANGESCHLOSSEN, PRÜFE IN DIESER REIHENFOLGE")
+UI_TEXT(BF_TITLE_LOST, 0,
+    "LINK LOST",
+    "VERBINDUNG VERLOREN")
+UI_TEXT(BF_TITLE_FAULT, 0,
+    "CAN BUS FAULT",
+    "CAN-BUS-FEHLER")
 UI_TEXT(BF_TITLE_BACK, 0,
     "LINK BACK",
     "LINK WIEDER DA")
@@ -2459,8 +2465,8 @@ UI_TEXT(LOG_RUNS_HERE, 64,
     "Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.",
     "Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.")
 UI_TEXT(LOG_TESTS_HERE, 64,
-    "Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.",
-    "Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.")
+    "Tests are saved as ATESTnnn, RUDDRnnn.CSV and LIMITnnn.TXT.",
+    "Tests heißen ATESTnnn, RUDDRnnn.CSV und LIMITnnn.TXT.")
 UI_TEXT(LOG_ROOT_HERE, 64,
     "Runs of firmware 0.21.0 and older.",
     "Läufe von Firmware 0.21.0 und älter.")
