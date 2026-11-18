@@ -11,7 +11,7 @@ Solids whose boxes touch form one component. A component is written as
 one of four kinds, all in the file's frame, mm: x and y from the
 board's corner, z = 0 on the board's component side.
 
-- A chip part, when its box is one of CHIP_SIZES: kind, centre and
+- A chip part, when its box is one of CHIP_SIZES: kind, center and
   turn.
 - A named part, when its box is one of NAMED: its box, for the drawing
   panel_7b.py holds of that part. The parts in WRONG are left out: the

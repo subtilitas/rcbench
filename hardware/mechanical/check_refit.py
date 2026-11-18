@@ -5,9 +5,9 @@ m5dial.py fits surfaces to the 9 parts of vendor/m5stack_dial/Dial.stl.
 This reads the written STEP files back with OpenCASCADE, meshes each of
 the 9 solids to 0.02mm and holds it against its mesh part:
 
-- every node and triangle centre of the solid's mesh lies within
+- every node and triangle center of the solid's mesh lies within
   REFIT_TO_MESH of the part: no face stands off or reaches past it;
-- every vertex and triangle centre of the part lies within
+- every vertex and triangle center of the part lies within
   MESH_TO_REFIT of the solid's mesh: no face is missing;
 - the two volumes agree within VOLUME.
 

@@ -67,7 +67,7 @@ def strip(path, t):
     """The outline of a band of thickness t along a polyline.
 
     Args:
-        path: The corners of the band's centre line, (u, v).
+        path: The corners of the band's center line, (u, v).
         t: The band's thickness.
 
     Returns:
@@ -110,7 +110,7 @@ def pipe(path, radius, rgb, frame=Z):
     """A shape: a round rod along a path in the frame's (u, v) plane.
 
     Args:
-        path: The corners of the rod's centre line, open; a corner is
+        path: The corners of the rod's center line, open; a corner is
             (u, v) for a straight piece to the next corner or
             (u, v, (cu, cv, turn)) for an arc to it. Each piece starts
             in the direction the one before it ends in.
