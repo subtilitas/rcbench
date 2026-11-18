@@ -872,9 +872,9 @@ test('src: a repository anchor names a text, and the line at the tag holds it', 
     doc.splice(532, 0, '| INA3221 power | 3V3 (pad 36), GND | INA3221 VS, GND |');
   });
   const found = checkSrc(CATALOGUE, shifted).findings;
-  reports(found, 'wire.26', /FirstRun\.md:588 does not hold "\| SDA \| GPIO 16 \(pad 21\) \|"/);
-  reports(found, 'wire.27', /FirstRun\.md:589 does not hold/);
-  reports(found, 'check.ina3221-pullups', /FirstRun\.md:590 does not hold/);
+  reports(found, 'wire.26', /FirstRun\.md:589 does not hold "\| SDA \| GPIO 16 \(pad 21\) \|"/);
+  reports(found, 'wire.27', /FirstRun\.md:590 does not hold/);
+  reports(found, 'check.ina3221-pullups', /FirstRun\.md:591 does not hold/);
 });
 
 test('src: every repository anchor of the data names a text of its own', () => {
@@ -885,14 +885,14 @@ test('src: every repository anchor of the data names a text of its own', () => {
     assert.ok(text.has.trim().length >= ANCHOR_TEXT_MIN, `${text.path}:${text.line}`);
     assert.ok(Object.isFrozen(text));
   }
-  // The sensor bus rows of docs/FirstRun.md at the tag: 588 SDA, 589 SCL,
-  // 590 the pull-ups.
+  // The sensor bus rows of docs/FirstRun.md at the tag: 589 SDA, 590 SCL,
+  // 591 the pull-ups.
   const sda = CATALOGUE.wires.find((w) => w.n === 26)?.src;
   const scl = CATALOGUE.wires.find((w) => w.n === 27)?.src;
-  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 588, tag: TAG });
-  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 589, tag: TAG });
+  assert.deepEqual(sda, { kind: 'repo', path: 'docs/FirstRun.md', line: 589, tag: TAG });
+  assert.deepEqual(scl, { kind: 'repo', path: 'docs/FirstRun.md', line: 590, tag: TAG });
   const pullups = CATALOGUE.checks.find((k) => k.id === 'ina3221-pullups')?.src;
-  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 590, tag: TAG });
+  assert.deepEqual(pullups, { kind: 'repo', path: 'docs/FirstRun.md', line: 591, tag: TAG });
   // The AS5600 board's OUT and GPO have no repository source at the tag:
   // docs/Building.md describes the panel's knob, an MT6701, since 0.21.0.
   const as5600 = CATALOGUE.parts.find((p) => p.id === 'as5600');
