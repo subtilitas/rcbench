@@ -157,8 +157,14 @@ static void drop_hold_if_gone(void)
 
 void imu_screen_set(const imu_view_t *v)
 {
+    if (v == NULL) {
+        return;
+    }
     /* NOLINTNEXTLINE(bugprone-suspicious-memory-comparison) */
-    if (v == NULL || memcmp(v, &ims.v, sizeof(ims.v)) == 0) {
+    if (memcmp(v, &ims.v, sizeof(ims.v)) == 0) {
+        /* The same view, every frame: the bench's switch to ARMED still
+         * ends a search that waits for Bluetooth LE. */
+        search_follow();
         return;
     }
     if (v->r.taken_ms != ims.v.r.taken_ms || !v->r.valid) {

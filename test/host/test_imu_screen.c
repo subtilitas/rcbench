@@ -322,8 +322,9 @@ TEST_CASE(a_scan_owed_is_dropped_by_armed_and_by_close)
     settings_set(SET_IMU_EN, 1.0f);
     tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
     CHECK(imu_screen_search_owed());
+    /* The view is the same while Bluetooth LE starts: the frame's set
+     * alone ends the search. */
     set_armed(true);
-    v.r.taken_ms += 20u;
     imu_screen_set(&v);
     CHECK(!imu_screen_search_owed());
     set_armed(false);
