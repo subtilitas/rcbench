@@ -531,7 +531,9 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
         }
         const uint16_t need = k_cols[i].flag;
         if (need == (uint16_t)LINK_BN_RPM_OK && bench_state_rpm_over(b)) {
-            /* Above the register's ceiling: the bound, marked as one. */
+            /* Above the register's ceiling: the bound, marked as one.  A
+             * reader takes the cell as 65535 (log_split_value()), so the
+             * column stays numeric. */
             const int m = snprintf(line + n, cap - (size_t)n, "%s",
                                    BENCH_RPM_OVER_TEXT);
             if (m > 0 && (size_t)m < cap - (size_t)n) {

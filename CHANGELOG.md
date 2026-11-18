@@ -140,7 +140,8 @@ history is in git.
 - A speed above 65,535rpm read 65535 as a valid reading. The IOmcu clears
   the rpm valid bit and the register holds 65535; MOTOR & ESC shows
   `>65535` for the speed and for a peak of 65,535rpm or more, and the
-  log's `rpm` cell holds `>65535`.
+  log's `rpm` cell holds `>65535`. LOGS reads a cell that begins with `>`
+  as the number after it, so the column stays numeric.
 - IMU: a link that ended in the 50ms between two commands of a group
   (unlock, register writes, SAVE) left the rest in the outbox. At the next
   connection the register write and SAVE went without their unlock, and

@@ -1230,7 +1230,11 @@ written to 0.1%. It is the same figure for PWM and DShot outputs:
 - A row that holds only a window has it empty.
 
 `rpm` holds `>65535` on a row whose speed is above 65,535rpm, the ceiling
-of the IOmcu's register. LOGS reads the cell as no number.
+of the IOmcu's register. The file keeps the mark, so a reader outside
+the bench can tell a bound from a reading. LOGS reads a cell that begins
+with `>` as the number after it: the column stays numeric and the trace
+runs at 65,535rpm on those rows. LOGS draws no mark on the trace or in
+the column's range for such rows.
 
 A MOTOR file without `throttle` has `esc` after `rpm`, and LOGS reads it.
 In both forms LOGS selects the first 4 numeric columns. With `rpm`
