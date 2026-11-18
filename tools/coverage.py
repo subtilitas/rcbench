@@ -286,6 +286,7 @@ TRACKED = [
     "shared/safety/boot_diag.c",
     "shared/safety/touch_loss.c",
     "shared/safety/frame_watch.c",
+    "shared/safety/loop_watch.c",
     "shared/safety/error_stop.c",
     "shared/safety/error_sites.c",
     "shared/safety/prog5v_lost.c",

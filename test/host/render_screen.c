@@ -2885,12 +2885,12 @@ static void band_view(const char *view, ui_bench_status_t *st)
         st->link_refused = UINT32_MAX;
     }
     if (strncmp(view, "band-fault", 10) == 0) {
-        st->faults = (strcmp(view, "band-fault-all") == 0) ? 0xFFu : 0x51u;
+        st->faults = (strcmp(view, "band-fault-all") == 0) ? 0x1FFu : 0x51u;
         chip = UI_BAND_CHIP_FAULT;
     } else if (strncmp(view, "band-hwstop", 11) == 0) {
         /* SETUP > PANEL > Hardware stop ON and the heartbeat bit: HWSTOP
          * in FAULT's place; -all with every other bit in its box. */
-        st->faults = (strcmp(view, "band-hwstop-all") == 0) ? 0xFFu : 0x10u;
+        st->faults = (strcmp(view, "band-hwstop-all") == 0) ? 0x1FFu : 0x10u;
         chip = UI_BAND_CHIP_HWSTOP;
     } else if (strcmp(view, "band-bench") == 0
                || strcmp(view, "band-sim") == 0) {

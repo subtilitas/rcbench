@@ -14,12 +14,17 @@ fails on each of these in a place the table ALLOWED does not name:
   (`time_us_32()`, `time_us_64()`, `get_absolute_time()`,
   `to_ms_since_boot()`, `to_us_since_boot()`) in its condition or body;
 - sleep: a call of `busy_wait_*()` or `sleep_*()`;
+- block: a call of a function with `_blocking` in its name
+  (`pio_sm_put_blocking()`, `spi_write_blocking()`,
+  `spin_lock_blocking()`, `uart_read_blocking()`): each waits for a FIFO,
+  a bus or the other core, with no bound of its own;
 - print: a call of `printf()`, `vprintf()`, `puts()`, `fputs()` or
   `putchar()`, or of a macro defined as one of them.
 
 An entry names a file, a function, a kind and, for a print, the start of
-the call's first string literal, or, for a spin or a clock loop, the start
-of the loop's keyword and condition with white space dropped ("for(;;)").
+the call's first string literal, for a spin or a clock loop, the start
+of the loop's keyword and condition with white space dropped ("for(;;)"),
+or, for a block, the start of the called function's name.
 An entry that matches nothing fails, so the table names only what is in
 the tree.
 
@@ -46,6 +51,7 @@ PRINTS = ("printf", "vprintf", "puts", "fputs", "putchar")
 CLOCK = re.compile(r"\b(time_us_32|time_us_64|get_absolute_time"
                    r"|to_ms_since_boot|to_us_since_boot)\s*\(")
 SLEEP = re.compile(r"\b(busy_wait_\w+|sleep_\w+)\s*\(")
+BLOCK = re.compile(r"\b(\w*_blocking\w*)\s*\(")
 LITERAL = re.compile(r'"(?:[^"\\\n]|\\.)*"')
 DEFINE_PRINT = re.compile(
     r"^[ \t]*#[ \t]*define[ \t]+(\w+)[ \t]+(" + "|".join(PRINTS)
@@ -55,6 +61,12 @@ _CORE1 = "core 1's code; the main loop runs on core 0"
 _STORE = ("the store's line; a flash window of about 19ms comes before it, "
           "and flash_gate_busy() holds the window back while anything "
           "drives")
+_SPI = ("the CAN controller's SPI at 10MHz (IOMCU_CAN_SPI_HZ), this end the "
+        "master: a transfer clocks its own bytes and waits for no peer; the "
+        "longest is 2 bytes of header and 13 of a frame, 12us of clock")
+_LOCK = ("the hand-over's spin lock between the two cores: each holder "
+         "copies one structure with interrupts off and waits for nothing "
+         "inside it, so a flash window never parks core 1 with the lock held")
 _CONSOLE = ("the bench console build's driver test (IOMCU_CONSOLE=ON, never "
             "released): the operator's command drives the wire bit by bit")
 
@@ -97,6 +109,32 @@ ALLOWED = (
     ("firmware/iomcu/src/xl2515.c", "xl2515_init", "sleep", None,
      "boot: the controller's reset and mode change, 11ms, before the main "
      "loop"),
+    ("firmware/iomcu/src/xl2515.c", "xl2515_init", "block",
+     "spi_write_blocking", "boot: the controller's reset command, 1 byte"),
+    ("firmware/iomcu/src/xl2515.c", "write_regs", "block",
+     "spi_write_blocking", _SPI),
+    ("firmware/iomcu/src/xl2515.c", "read_regs", "block", "spi_", _SPI),
+    ("firmware/iomcu/src/xl2515.c", "bit_modify", "block",
+     "spi_write_blocking", _SPI),
+    ("firmware/iomcu/src/xl2515.c", "xl2515_status", "block", "spi_", _SPI),
+    ("firmware/iomcu/src/xl2515.c", "xl2515_request", "block",
+     "spi_write_blocking", _SPI),
+    ("firmware/iomcu/src/sense_core1.c", "core1_main", "block",
+     "spin_lock_blocking", _CORE1),
+    ("firmware/iomcu/src/sense_core1.c", "sense_core1_order", "block",
+     "spin_lock_blocking", _LOCK),
+    ("firmware/iomcu/src/sense_core1.c", "sense_core1_snapshot", "block",
+     "spin_lock_blocking", _LOCK),
+    ("firmware/iomcu/src/tone_core1.c", "tone_core1_order", "block",
+     "spin_lock_blocking", _LOCK),
+    ("firmware/iomcu/src/tone_core1.c", "tone_core1_quiesce", "block",
+     "spin_lock_blocking", _LOCK),
+    ("firmware/iomcu/src/tone_core1.c", "tone_core1_sync", "block",
+     "spin_lock_blocking", _LOCK),
+    ("firmware/iomcu/src/tone_core1.c", "pass", "block",
+     "spin_lock_blocking", _CORE1),
+    ("firmware/iomcu/src/tone_core1.c", "tone_core1_step", "block",
+     "spin_lock_blocking", _CORE1),
     ("firmware/iomcu/src/ewline_console.c", "feed_byte", "sleep", None,
      _CONSOLE),
     ("firmware/iomcu/src/ewline_console.c", "feed_answer", "sleep", None,
@@ -367,7 +405,7 @@ def findings(text):
     Returns:
         A sorted list of (line, function, kind, text): text is a print's
         first literal, a spin or clock loop's keyword and condition with
-        white space dropped, or None.
+        white space dropped, a block's called function, or None.
     """
     src = Source(text)
     code = src.code
@@ -393,6 +431,10 @@ def findings(text):
         if src.function(m.start()):
             out.add((src.line(m.start()), src.function(m.start()), "sleep",
                      None))
+    for m in BLOCK.finditer(code):
+        if src.function(m.start()):
+            out.add((src.line(m.start()), src.function(m.start()), "block",
+                     m.group(1)))
     names = set(PRINTS) | {a for a, _ in DEFINE_PRINT.findall(src.literals)}
     call = re.compile(r"\b(" + "|".join(sorted(names)) + r")\s*\(")
     for m in call.finditer(code):
@@ -432,9 +474,9 @@ def allowed(table, path, fname, kind, first):
         table: The allow list.
         path: The file, relative to the repository.
         fname: The function.
-        kind: "wait", "spin", "clock", "sleep" or "print".
-        first: A print's first literal, a loop's keyword and condition, or
-            None.
+        kind: "wait", "spin", "clock", "sleep", "block" or "print".
+        first: A print's first literal, a loop's keyword and condition, a
+            block's called function, or None.
 
     Returns:
         The entry, or None.
@@ -453,6 +495,7 @@ WHAT = {
     "spin": "a loop with an empty body",
     "clock": "a loop that reads the clock",
     "sleep": "a busy_wait_*() or sleep_*() call",
+    "block": "a *_blocking() call",
 }
 
 
@@ -477,6 +520,9 @@ def check(files=None, table=ALLOWED, root=ROOT):
                 used.add(entry)
                 continue
             what = WHAT.get(kind) or f'a print "{first or ""}"'
+            if kind == "block":
+                what = f"a call of {first}()"
+
             problems.append(f"{rel}:{line}: {what} in {fname}()")
     for e in table:
         if e not in used:

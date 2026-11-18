@@ -14,6 +14,7 @@ verifiziert.
 | --- | --- | --- |
 | Der Heartbeat bleibt aus | das Panel hängt, wird zurückgesetzt, hat einen Brown-out oder ist abgesteckt; STOP ist gedrückt | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des IOmcu, 200ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
+| Schleifen-Watchdog des IOmcu, 500ms | Core 0 des IOmcu bleibt in seiner Hauptschleife stehen: ein Fault, ein `panic()`, eine Schleife ohne Ende | gebaut; die Entscheidungen sind auf dem Host getestet (`test_loop_watch`, `test_reset_cause`) |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
 | Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist, der Ausgang des Netzteils an ist oder die 5V der Programmierports auf dem Carrier an sind | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
 
@@ -26,6 +27,77 @@ IOmcu den Heartbeat als vertrauenswürdig meldet. Dann schreibt es CLEAR
 Frame. Beantwortet der IOmcu einen der beiden Schreibvorgänge mit NACK
 (negative Quittung), bleibt das Panel SAFE.
 
+
+### Schleifen-Watchdog des IOmcu
+
+Jede Sicherung des IOmcu wird aus der Hauptschleife seines Core 0
+abgefragt: die Heartbeat-Überwachung, die 200ms Stille des Links, der
+Schritt der Ausgänge und der Durchlauf des Netzteils. Ein PWM-Ausgang und
+ein PPM-Frame wiederholen sich ohne den Prozessor, und der Ausgang des PD
+mini und die 5V der Programmierports bleiben, wie sie zuletzt gesetzt
+wurden. Der Watchdog des RP2350 beendet einen Core 0, der in der Schleife
+stehen bleibt: Er setzt den Chip 500ms (`LOOP_WATCH_PERIOD_MS`) nach dem
+letzten Nachladen zurück. Die Regeln stehen in
+[`loop_watch.h`](https://github.com/subtilitas/rcbench/blob/main/shared/safety/include/loop_watch.h).
+
+| | |
+| --- | --- |
+| Nachladen | am Anfang eines Durchlaufs der Hauptschleife, einmal je Durchlauf, und direkt vor jedem Flash-Fenster (einem Löschen oder Programmieren des Output-Store oder des Updates), damit kein Zurücksetzen in einen Schreibvorgang fällt; nirgends sonst. Nur die ersten 6 Fenster eines Durchlaufs laden nach, mehr enthält ein Durchlauf nicht: Eine Schleife, die immer weitere Fenster öffnet, bekommt kein weiteres Nachladen und wird 500ms nach dem sechsten zurückgesetzt |
+| Eingeschaltet | beim ersten Durchlauf, nach dem Startpfad |
+| Nicht eingeschaltet | solange das Image nach einem Update auf Probe läuft, bis zu seinem BUY: Dann gehört der Watchdog 16,7s lang dem Boot-ROM. Nie im Bench-Konsolen-Build (`IOMCU_CONSOLE=ON`) |
+| Ein Debugger | ein vom Debugger angehaltener Core hält den Zähler an |
+| Nicht überwacht | der Startpfad vor dem ersten Durchlauf, höchstens 3.500ms für das Ausschalten des PD mini; Core 1, der den Sensorbus liest |
+
+Was das Zurücksetzen an den Ausgängen bewirkt:
+
+| Ausgang | Nach dem Zurücksetzen |
+| --- | --- |
+| PWM, PPM, DShot und die Leitungen der Programmierports | jeder Pin wird beim Zurücksetzen freigegeben: kein Puls, kein Frame. Ein ESC (Electronic Speed Controller) stoppt nach seinem eigenen Signal-Timeout, ein Servo hält keine Position |
+| 5V der Programmierports (rbmod-Carrier, GPIO 21) | beim Zurücksetzen freigegeben, als erste Handlung des Starts auf Low getrieben |
+| Ausgang des PD mini | bleibt über das Zurücksetzen an; der Start schaltet ihn binnen 3.500ms (`SUPPLY_PAGE_BOOT_OFF_MS`) aus, wenn seine Anschlüsse gespeichert sind |
+| Arm-Latch | vom Start an gesetzt, bis ein CLEAR kommt: Nichts treibt, bevor der Bediener ARM hält |
+
+Vom Stillstand des Core 0 bis zur Freigabe der Pins vergehen höchstens
+500ms.
+
+Beide Platinen, auf denen die Firmware läuft, tragen das Modul Waveshare
+RP2350-CAN. Die [Produktseite](https://www.waveshare.com/rp2350-can.htm)
+von Waveshare nennt als Flash den P25Q32SH-UXH-IR; die Firmware liest den
+Baustein nicht aus. Das Datenblatt des Puya P25Q32SH, V1.8 vom 2023-10-27,
+Tabelle 5-4, nennt für das Löschen eines Sektors 16ms typisch und 30ms
+maximal und für das Programmieren einer Page 1,6ms typisch und 2,5ms
+maximal. Das längste Fenster ist der 4KiB-Sektor des Updates, 16 Pages:
+40.000µs, dazu 2.000µs als Annahme für den Weg in den Kommandomodus des
+Flash und zurück.
+
+Die Periode gegen die längste Zeit zwischen zwei Nachladungen, 108.250µs:
+
+| Vom Nachladen vor einem Flash-Fenster bis zum Anfang des nächsten Durchlaufs | µs |
+| --- | --- |
+| das Warten des Fensters, bis Core 1 steht, `OUT_STORE_LOCKOUT_MS` | 10.000 |
+| das Fenster beim Maximum des Bausteins | 42.000 |
+| sein Warten, bis Core 1 wieder läuft | 10.000 |
+| 2 Umverdrahtungen von TONE, je `TONE_CORE1_WAIT_US` | 10.000 |
+| `can_drain()` vor dem Neustart des Updates | 35.000 |
+| die Konsolenzeile des Store | 1.000 |
+| der Rest eines Durchlaufs, gemessenes Maximum | 250 |
+
+500ms sind das 4,6-Fache dieser Summe. Ein Fenster darf 433.750µs dauern,
+bevor das Zurücksetzen hineinfällt, das 10-Fache des Maximums des
+Bausteins. Auf dem Inbetriebnahme-Modul wurde ein Fenster mit 19.178µs gemessen (ein
+Löschen und ein Programmieren einer Page, 1 Messung). Ein Durchlauf enthält
+höchstens 6 Fenster; ein Durchlauf mit allen wurde nicht gemessen.
+
+Ein Neustart durch diesen Watchdog druckt `reset LOOP_WATCHDOG` auf der
+Konsole des IOmcu ([Inbetriebnahme des Links](Bringup-de.md)) und setzt
+das STATUS-Fault-Bit 7 (`LINK_FAULT_WATCHDOG`, Link-Protokoll 4.39) bis zu
+einem CLEAR. Das Panel behandelt das Bit beim ersten Lesen, das es zeigt,
+als Fehler: Der Prüfstand geht auf SAFE und der Ausgang des Netzteils aus,
+die Leiste zeigt `FEHLER 80` und das Alarmband
+`IOMCU NEU GESTARTET (WATCHDOG)`. Das Bit geht mit dem nächsten ARM, mit
+FAILSAFE LÖSEN von ARM + START oder mit dem Zurücksetzen von STOP. Der
+16,7s-Timer des Boot-ROM bei einem nicht gekauften Update und ein über USB
+angeforderter Neustart setzen es nicht.
 
 ### Watchdog der Render-Schleife
 
@@ -439,12 +511,16 @@ den mittleren Fall ab:
 | | Direkte Leitung und Firmware | Mit Monoflop |
 |---|---|---|
 | Das Panel sendet keinen Heartbeat mehr, der IOmcu läuft fehlerfrei | schaltet auf SAFE nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
-| Das Panel sendet keinen Heartbeat mehr und der IOmcu kann nicht handeln (hängt, oder bedient seinen Monitor nicht) | nichts schaltet auf SAFE, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
-| Das Panel läuft fehlerfrei und der IOmcu verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel sendet weiter den Heartbeat, das Monoflop bleibt bestromt |
+| Das Panel sendet keinen Heartbeat mehr und der IOmcu kann nicht handeln (hängt, oder bedient seinen Monitor nicht) | der Schleifen-Watchdog des IOmcu setzt ihn 500ms nach seinem letzten Durchlauf zurück: Jeder Pin wird freigegeben, der PD mini geht binnen 3.500ms nach dem Start aus | die Ausgänge fallen trotzdem weg, ohne die 500ms |
+| Das Panel läuft fehlerfrei und der IOmcu verhält sich falsch | einen Core 0, der in seiner Schleife stehen bleibt, setzt der Schleifen-Watchdog zurück; für einen, der sie durchläuft und falsch treibt, bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel sendet weiter den Heartbeat, das Monoflop bleibt bestromt |
 
-Die dritte Zeile ist kein Fall, für den das Monoflop da ist, und keine
-Hardware in diesem Entwurf deckt sie ab. Solange das Bauteil fehlt, ist auch
-die zweite Zeile unabgedeckt, und die Firmware an beiden Enden ist die gesamte
+Die dritte Zeile ist kein Fall, für den das Monoflop da ist. Der
+[Schleifen-Watchdog des IOmcu](#schleifen-watchdog-des-iomcu) deckt den
+stehenden Core in den Zeilen zwei und drei ab; er ist ein Teil desselben
+Chips und läuft an demselben Takt und derselben Versorgung, also ist er kein
+zweiter Kanal. Einen IOmcu, der seine Schleife durchläuft und falsch treibt,
+deckt keine Hardware in diesem Entwurf ab. Solange das Monoflop fehlt, sind
+die Firmware an beiden Enden und der Watchdog des Chips die gesamte
 Verriegelung.
 
 ## Heartbeat-Überwachung

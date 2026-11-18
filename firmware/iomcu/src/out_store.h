@@ -23,8 +23,9 @@
  * by up to its length, against the panel's LINK_HOST_TIMEOUT_MS (1000ms) wait,
  * and not lost.  That measurement is the two operations inside one window;
  * neither half of it was timed on its own.  It is 1 sample on the bring-up
- * module, with the flash part not yet identified; the window is to be argued
- * again against the part's datasheet maximum once the part is known.  For its
+ * module.  Waveshare names the module's flash as a Puya P25Q32SH, whose
+ * datasheet maxima are 30ms for a sector erase and 2.5ms for a page
+ * program (loop_watch.h has the source and the sums).  For its
  * length this end steps no output and answers nothing, and a window that grew
  * past LINK_DEV_SILENCE_MS (200ms) would latch this end's failsafe: the length
  * of these windows stays a safety number rather than a performance one.
@@ -300,6 +301,15 @@ uint8_t out_store_last_record(void);
  * holds this core for its length; the panel waits for the answer to the
  * COMMIT that caused it, so no request is in flight to be lost.
  */
+
+/**
+ * @brief A call made right before every flash window, the store's and the
+ *        update's: before the wait for core 1 and the erase, program or
+ *        boot ROM call.  main() feeds the watchdog there (loop_watch.h).
+ *
+ * @param fn  The call; NULL for none.
+ */
+void out_store_before_window(void (*fn)(void));
 
 /**
  * @brief How many flash windows have held this core since boot: every

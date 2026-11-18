@@ -355,6 +355,14 @@ static bool refusing(void)
     return s_refused;
 }
 
+/** @brief Called before every window; NULL for nothing. */
+static void (*s_before_window)(void);
+
+void out_store_before_window(void (*fn)(void))
+{
+    s_before_window = fn;
+}
+
 /** @brief Windows opened since boot; see out_store_windows(). */
 static uint32_t s_windows;
 
@@ -376,6 +384,11 @@ uint32_t out_store_windows(void)
 static bool flash_window(flash_op_t *op)
 {
     op->done = false;
+    /* The watchdog fed before the wait for core 1 and the window: a reset
+     * never falls into an erase or a program (loop_watch.h). */
+    if (s_before_window != NULL && s_mode != STORE_OFF) {
+        s_before_window();
+    }
     switch (s_mode) {
     case STORE_ALONE: {
         const uint32_t irq = save_and_disable_interrupts();

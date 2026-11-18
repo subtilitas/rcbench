@@ -118,7 +118,11 @@ bool pd_uart_getc(uint8_t *b);
 ```
 
 `pd_uart_attach`, `pd_uart_detach` and `pd_uart_send` are the three
-callbacks of `pdmini_io_t`.
+callbacks of `pdmini_io_t`. `pd_uart_send` waits for nothing: it writes a
+request of up to `PDMINI_REQ_MAX` (8) bytes into the 8 entries of the
+transmit FIFO whole, or sends none of it when fewer entries are free
+(`pdmini_tx_fits()`). `pd_uart_attach` empties the FIFO, so the one request
+of a transaction always goes out.
 
 ## Use in another pico-sdk project
 

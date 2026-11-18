@@ -68,6 +68,55 @@ void can_service(uint32_t now)
                                         ("can_service", "wait")]
 
 
+def test_a_blocking_call_is_found_and_named_by_its_function():
+    """pd_uart_send() as it waited on the transmit FIFO, and its fix."""
+    text = """
+void pd_uart_send(void *ctx, const uint8_t *p, size_t n)
+{
+    for (size_t i = 0; i < n; ++i) {
+        pio_sm_put_blocking(s.tx_pio, s.tx_sm, p[i]);
+    }
+}
+static void lock(void) { irq = spin_lock_blocking (s_lock); }
+static void spi(void) { spi_write_read_blocking(spi0, a, b, 2); }
+static void fixed(void) { pio_sm_put(s.tx_pio, s.tx_sm, p[i]); }
+static void word(void) { blocking = nonblocking(x); }
+/* pio_sm_get_blocking(pio, sm) in a comment */
+static const char *k = "uart_read_blocking(";
+"""
+    found = clw.findings(text)
+    assert [(f, k, h) for _, f, k, h in found] == [
+        ("pd_uart_send", "block", "pio_sm_put_blocking"),
+        ("lock", "block", "spin_lock_blocking"),
+        ("spi", "block", "spi_write_read_blocking")]
+    # An entry names the called function by its start; another call in the
+    # same function is not covered by it.
+    table = (("m.c", "spi", "block", "spi_", "the master's own clock"),)
+    assert clw.allowed(table, "m.c", "spi", "block",
+                       "spi_write_read_blocking")
+    assert not clw.allowed(table, "m.c", "spi", "block",
+                           "pio_sm_put_blocking")
+    assert not clw.allowed(table, "m.c", "lock", "block",
+                           "spi_write_blocking")
+
+
+def test_a_blocking_call_outside_the_allow_list_fails(tmp_path):
+    """check() names the file, the line and the called function."""
+    src = tmp_path / "drv.c"
+    src.write_text("void send(void)\n{\n"
+                   "    pio_sm_put_blocking(p, s, 1);\n}\n")
+    assert clw.check([src], table=(), root=tmp_path) == [
+        "drv.c:3: a call of pio_sm_put_blocking() in send()"]
+    table = (("drv.c", "send", "block", "pio_sm_put_blocking", "why"),)
+    assert clw.check([src], table=table, root=tmp_path) == []
+
+
+def test_the_pd_mini_send_waits_for_no_fifo():
+    """The PD mini's pin driver holds no *_blocking() call."""
+    path = clw.ROOT / "protocols" / "pdmini" / "rp2350" / "pd_uart.c"
+    assert [f for f in clw.findings(path.read_text()) if f[2] == "block"] == []
+
+
 def test_a_wait_in_any_loop_is_found():
     """A while, a do and a for block, and loops without braces."""
     text = """

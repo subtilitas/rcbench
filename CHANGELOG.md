@@ -8,6 +8,28 @@ history is in git.
 
 ### Added
 
+- IOmcu: the RP2350's watchdog on core 0's main loop, 500ms
+  (`shared/safety/loop_watch.c`). A core 0 that stops passing the loop (a
+  fault, a `panic()`, a loop that does not end) is reset: every pad is
+  released, so PWM and PPM stop, and the start after it drives the
+  programming ports' 5V low and switches a PD mini left on off within
+  3,500ms. The watchdog is fed once at the top of a pass and right before
+  every flash window, so a reset does not fall into an erase or a program.
+  It is enabled at the first pass, on a trial boot after the BUY, and never
+  in the bench console build (`IOMCU_CONSOLE=ON`). With the datasheet
+  maxima of the module's flash (Puya P25Q32SH: 30ms a sector erase, 2.5ms
+  a page program) the longest time between two feeds sums to 108,250us.
+  The console's reset line reads `LOOP_WATCHDOG` after such a
+  restart.
+- Link protocol 4.39: STATUS fault bit 7, `LINK_FAULT_WATCHDOG`, set from
+  the start after a restart by the IOmcu's watchdog until a CLEAR. The
+  panel takes the bit as an error (bench SAFE, supply output off), shows
+  `FAULT 80`, the alert `IOMCU RESTARTED (WATCHDOG)` (German `IOMCU NEU
+  GESTARTET (WATCHDOG)`) and a line of its own in the FAULT box.
+- `tools/check_loop_waits.py` reads calls of functions with `_blocking` in
+  their name as a sixth kind of finding, `block`; the allow list names the CAN
+  controller's SPI transfers and the spin lock between the two cores.
+
 - UPDATES: a step model (`shared/ui/upd_wizard.c`) puts the updates in the
   order PANEL, IOMCU, C6 RADIO, DIAL, POWER NODE, BALANCE NODE. From the
   live state of each it names every step's state, the current step and its
@@ -141,6 +163,10 @@ history is in git.
 
 ### Fixed
 
+- PD mini pin driver: `pd_uart_send()` waits for nothing. It writes a
+  request into the transmit FIFO's 8 entries whole, or sends none of it
+  when the entries free are fewer than its bytes (`pdmini_tx_fits()`); it
+  called `pio_sm_put_blocking()` from the IOmcu's main loop.
 - STOP reset: a STOP pressed 24.86 days (2^31ms) or more after the previous
   STOP or contact break is reset by its own 2s hold, and a STOP that stands
   that long is reset by one hold. The reset machine forgets the latest STOP

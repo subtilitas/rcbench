@@ -47,7 +47,7 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.38. A request whose answer is lost is sent once more after 50ms.
+4.39. A request whose answer is lost is sent once more after 50ms.
 [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
@@ -65,7 +65,16 @@ on one unbroken contact resets it once the IOmcu reports everything off;
 the bench stays SAFE. One state machine carries the reset out, host-tested
 on its own and over the wire with an IOmcu that confirms and one that never
 does ([STOP as an emergency stop](docs/Stop.md), `test_stop_latch`,
-`test_stop_hold`, `test_safety_gate`). [Reference](docs/Safety.md).
+`test_stop_hold`, `test_safety_gate`). The RP2350's watchdog resets an
+IOmcu whose core 0 does not pass its main loop for 500ms: the reset releases
+every pad, the start after it switches a PD mini left on off, and STATUS
+fault bit 7 reports it to the panel, which shows `IOMCU RESTARTED
+(WATCHDOG)`. The watchdog is fed at the top of a pass and right before
+every flash window, enabled at the first pass, after the BUY on a trial
+boot, and never in the bench console build; with the datasheet maxima of
+the module's flash (Puya P25Q32SH: 30ms a sector erase, 2.5ms a page) the
+longest time between two feeds sums to 108,250us (`loop_watch.h`,
+`test_loop_watch`, `test_reset_cause`). [Reference](docs/Safety.md).
 
 **Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
 role (throttle or surface) rendered by a driver from a table (PWM (pulse-width
@@ -1686,7 +1695,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 605 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 606 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1728,7 +1737,7 @@ The host suite is 605 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_outputs_hw_ports`, `test_out_render`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_can_txq`, `test_link_reply_order`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
-`test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
+`test_frame_watch`, `test_loop_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
 `test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
 `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_brownout`,
@@ -2557,10 +2566,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/safety/arming.c` | 273 | 268 | 98.2% |
 | `shared/safety/safety_gate.c` | 69 | 69 | 100.0% |
 | `shared/safety/flash_gate.c` | 6 | 6 | 100.0% |
-| `shared/safety/reset_cause.c` | 61 | 61 | 100.0% |
+| `shared/safety/reset_cause.c` | 65 | 65 | 100.0% |
 | `shared/safety/boot_diag.c` | 34 | 34 | 100.0% |
 | `shared/safety/touch_loss.c` | 89 | 89 | 100.0% |
 | `shared/safety/frame_watch.c` | 21 | 21 | 100.0% |
+| `shared/safety/loop_watch.c` | 34 | 34 | 100.0% |
 | `shared/safety/error_stop.c` | 14 | 14 | 100.0% |
 | `shared/safety/error_sites.c` | 87 | 87 | 100.0% |
 | `shared/safety/prog5v_lost.c` | 110 | 110 | 100.0% |
@@ -2718,11 +2728,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/telemetry_sim.c` | 49 | 46 | 93.9% |
 | `shared/bench/supply.c` | 170 | 168 | 98.8% |
 | `protocols/pdmini/pdmini.c` | 296 | 292 | 98.7% |
-| `protocols/pdmini/pdmini_codec.c` | 41 | 39 | 95.1% |
+| `protocols/pdmini/pdmini_codec.c` | 44 | 42 | 95.5% |
 | `protocols/pdmini/pdmini_jobs.c` | 255 | 253 | 99.2% |
 | `shared/bench/supply_link.c` | 388 | 372 | 95.9% |
 | `shared/bench/prog_supply_link.c` | 100 | 100 | 100.0% |
-| `shared/bench/sense_link.c` | 607 | 593 | 97.7% |
+| `shared/bench/sense_link.c` | 611 | 598 | 97.9% |
 | `shared/bench/sense_link_view.c` | 268 | 264 | 98.5% |
 | `shared/bench/sense_map_link.c` | 343 | 331 | 96.5% |
 | `shared/bench/sense_win_link.c` | 184 | 184 | 100.0% |
@@ -2789,7 +2799,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **102612** | **100459** | **97.9%** |
+| **total** | **102657** | **100505** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -3026,7 +3036,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1512 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1800 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 261 calls through a register are not followed. The
+holds them. The depth is a lower bound: 262 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

@@ -45,6 +45,7 @@
 #include "kst_port.h"
 #include "link_dev.h"
 #include "link_pages.h"
+#include "loop_watch.h"
 #include "out_stage.h"
 #include "out_store.h"
 #include "outputs.h"
@@ -268,6 +269,13 @@ extern uint32_t s_now_ms;
  * figures every 3s.
  */
 extern pass_stats_t s_pass;
+
+/**
+ * @brief The watchdog on the main loop (loop_watch.h): main() feeds it at
+ * the top of each pass, STATUS reads its fault bit, and a CLEAR on the
+ * CONTROL page takes the bit away.
+ */
+extern loop_watch_t s_loop_watch;
 
 /**
  * @brief The heartbeat line's level at the last sample; see iomcu_can.c.
@@ -1096,13 +1104,16 @@ void can_report(uint32_t now);
  * @brief Reads why this start happened, once at boot, and prints it with
  *        the flash's read set-up.
  *
- * Reads POWMAN CHIP_RESET, WATCHDOG REASON, SCRATCH2 and SCRATCH3 and the
- * boot ROM's boot info, then zeroes SCRATCH2 and SCRATCH3 (reset_cause.h).
+ * Reads POWMAN CHIP_RESET, WATCHDOG REASON, SCRATCH0, SCRATCH2 and SCRATCH3,
+ * the SDK's mark of a watchdog_enable() and the boot ROM's boot info, then
+ * zeroes SCRATCH0, SCRATCH2 and SCRATCH3 (reset_cause.h).
  * The SDK's start-up code writes none of them.  The flash line is QMI
  * M0's RCMD, RFMT and TIMING, and M1's when they differ from their reset
  * values.  can_report() repeats the lines every 3s.
+ *
+ * @return The cause of this start (reset_cause_decode()).
  */
-void reset_start(void);
+reset_cause_t reset_start(void);
 #if IOMCU_CONSOLE
 /**
  * @brief reset_start()'s lines through the console's output, once it exists:
@@ -1118,6 +1129,7 @@ void reset_say(void);
  *
  * The state and the link and heartbeat
  * bits are the gate's (safety_gate_status()); the arm latch is on neither.
+ * STORE_OFF is the flash store's and WATCHDOG the loop watch's.
  *
  * @param s  The state whose STATUS registers are updated.
  */
@@ -1129,6 +1141,8 @@ static inline void status_gate(iomcu_state_t *s)
     if (out_store_is_off()) {
         faults |= (uint16_t)LINK_FAULT_STORE_OFF;
     }
+    /* A restart by the loop's watchdog, until a CLEAR (loop_watch.h). */
+    faults |= loop_watch_fault(&s_loop_watch);
     s->status[LINK_ST_FAULTS] = faults;
 }
 

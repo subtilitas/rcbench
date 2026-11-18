@@ -636,6 +636,8 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      */
     const uint8_t nack = safety_gate_control_write(s->control, off, n, in,
                                                    &s_beat, &s_dev);
+    /* A CLEAR that was taken ends STATUS's WATCHDOG bit as well. */
+    loop_watch_control(&s_loop_watch, off, n, nack);
     if (nack != 0u) {
         return nack;
     }

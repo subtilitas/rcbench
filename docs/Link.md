@@ -136,7 +136,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 The protocol uses pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.38. The
+IOmcu transmits only in answer to a request. Protocol version 4.39. The
 major version is register 0 of page 0. The major version changes when a register
 changes meaning or a page is renumbered. The minor version changes when a page or
 register is added at the end, where an older panel can ignore it.
@@ -1087,7 +1087,12 @@ Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
 bit 3 stall, bit 4 heartbeat stopped, bit 5 protocol version mismatch, bit 6
 the IOmcu's flash store is off for this boot (since 4.7): its second
 core did not register for the flash lock-out, so nothing is saved and
-set-ups written over the link run from RAM until a restart. Faults
+set-ups written over the link run from RAM until a restart, bit 7 the
+IOmcu's own watchdog restarted it (since 4.39): core 0 did not pass its
+main loop for 500ms, the restart released every output, and the bit is set
+from the start after it until a CLEAR
+([Safety](Safety.md#iomcu-loop-watchdog)). An older IOmcu has no such
+watchdog and never sets bit 7. Faults
 are sticky until read and cleared; bit 6 stays set until a restart. Bit 0 needs the link to have carried at
 least one request before it can be set: the IOmcu is awake before the
 panel polls, and the wait for the first one is not silence.
@@ -1643,7 +1648,8 @@ first in each register. Nothing on either page is kept over a restart.
 6. ACTIVATE: the IOmcu writes the first sector last, reads it back,
    answers, and 20ms later restarts as a flash update boot of the new slot.
 7. The boot ROM checks the image's SHA-256 and starts it on trial under its
-   16.7s watchdog. The panel waits 500ms, reads IDENTITY until the new
+   16.7s watchdog; the IOmcu leaves its own 500ms loop watchdog off until
+   the BUY ([Safety](Safety.md#iomcu-loop-watchdog)). The panel waits 500ms, reads IDENTITY until the new
    image answers, and writes BUY. The boot ROM clears the TBYB flag in flash.
    The IOmcu then erases the first sector of the slot it came from, so
    the boot ROM has one image to choose at the next start. The BUY is

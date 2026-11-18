@@ -153,7 +153,9 @@ typedef enum {
  * supply off on an error from 4.31 only, and sets the bit from 4.31 only.
  * From 4.32 PROG_SUPPLY (0x39) switches the programming ports' own supply
  * on a board that has one; an older IOmcu refuses it with
- * LINK_NACK_BAD_PAGE.
+ * LINK_NACK_BAD_PAGE.  From 4.39 STATUS sets fault bit 7
+ * (LINK_FAULT_WATCHDOG) after a restart by the IOmcu's own watchdog; an
+ * older IOmcu has no such watchdog and never sets it.
  * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -166,9 +168,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 38, the cause of a refused binding
- *         write (LINK_MINOR_BIND_WHY). */
-#define LINK_PROTOCOL_MINOR 38u
+/** @brief The minor this build speaks: 39, STATUS fault bit 7
+ *         (LINK_MINOR_WATCHDOG). */
+#define LINK_PROTOCOL_MINOR 39u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -406,6 +408,15 @@ typedef enum {
  * 4.38 or later IOmcu only and shows a refusal without one otherwise.
  */
 #define LINK_MINOR_BIND_WHY 38u
+
+/**
+ * @brief The first minor whose STATUS page sets fault bit 7,
+ *        LINK_FAULT_WATCHDOG, after a restart by the IOmcu's own watchdog.
+ *
+ * An older IOmcu has no watchdog on its main loop and never sets the bit;
+ * an older panel shows the bit as one it has no name for.
+ */
+#define LINK_MINOR_WATCHDOG 39u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1040,6 +1051,14 @@ typedef enum {
      * the next restart.  Set while it lasts, which is until a restart.
      */
     LINK_FAULT_STORE_OFF     = 1u << 6,
+    /**
+     * @brief The IOmcu's watchdog restarted it (protocol 4.39): core 0 did
+     * not pass its main loop for 500ms (loop_watch.h).
+     *
+     * The restart released every output.  Set from the start after that
+     * restart until a CLEAR is taken.
+     */
+    LINK_FAULT_WATCHDOG      = 1u << 7,
 } link_fault_t;
 
 /**

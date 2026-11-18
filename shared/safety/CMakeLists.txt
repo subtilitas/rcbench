@@ -14,9 +14,12 @@
 # an error.  prog5v_lost.c finds one: the rbmod carrier's programming-port
 # 5V collapsed under the panel's ON.  stop_latch.c is the reset of the
 # panel's STOP: from a hold of STOP to the heartbeat sent again.
+# loop_watch.c is the IOmcu's watchdog on its own main loop: when the
+# chip's watchdog is enabled, where it is fed, and the fault bit a restart
+# by it sets.
 set(SRCS heartbeat.c arming.c touch_loss.c safety_gate.c flash_gate.c
          reset_cause.c boot_diag.c frame_watch.c error_stop.c error_sites.c prog5v_lost.c
-         stop_latch.c)
+         stop_latch.c loop_watch.c)
 
 if(ESP_PLATFORM)
     idf_component_register(SRCS ${SRCS} INCLUDE_DIRS include REQUIRES link
