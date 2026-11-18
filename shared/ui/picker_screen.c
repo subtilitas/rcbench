@@ -559,6 +559,9 @@ static void event(const touch_event_t *evt)
         pk_touched();
         return;
     }
+    if (pin_take_spends(PIN_TAKE_BOARD, evt)) {
+        return;              /* the second tap of a double tap on the card */
+    }
 
     /* The entry's rows, its open FUNCTION list and UNBIND ALL PINS first:
      * each takes the press it is under, and nothing under it sees it.  A key
@@ -646,6 +649,9 @@ static void event(const touch_event_t *evt)
     if (button_under(x, y) != was) {
         return;              /* the finger left the button it pressed */
     }
+    /* The reason line names this tap or nothing: a refusal the tap before
+     * left goes first. */
+    pin_take_forget_why();
     /* Only a button that is offered acts.  A refused one is not silent: the
      * reason is printed under the protocol list. */
     const picker_pin_t st = picker_screen_pin((uint8_t)was, NULL, 0);
@@ -675,13 +681,11 @@ static void event(const touch_event_t *evt)
                                        LINK_PG_PORTS_MAX, NULL)
                    != OUTBIND_CLASH_NONE) {
             s.refused = was;
-            pin_take_forget_why();
         }
         return;
     }
     if (outbind_toggle(&s.bind, (uint8_t)was)) {
         s.refused = -1;
-        pin_take_forget_why();
         if (s.apply != NULL) {
             s.apply(&s.bind);
         }

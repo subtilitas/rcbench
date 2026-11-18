@@ -8768,7 +8768,10 @@ wechselt, die Ansicht zwischen Platine und Raster wechselt oder der
 Bildschirm verlassen wird. Zwischen zwei Frames verlorene Touch-Ereignisse
 lassen einen Druck auf PIN VERSCHIEBEN fallen; die Karte bleibt offen. Ein
 zweiter Finger auf der Karte übernimmt den Druck, einer neben der Karte
-schließt sie. STOP im Band bleibt wirksam. In der Platinenansicht führt das
+schließt sie. 400ms lang, nachdem PIN VERSCHIEBEN oder ABBRECHEN die Karte
+geschlossen hat, ist ein Druck in der früheren Fläche der Karte in beiden
+Ansichten verbraucht: der zweite Tipp eines Doppeltipps wählt keine Taste
+und keine Zelle unter der Karte (`test_pin_take`, `test_pin_take_grid`). STOP im Band bleibt wirksam. In der Platinenansicht führt das
 Dial PIN VERSCHIEBEN und ABBRECHEN, solange die Karte offen ist, beginnend
 bei ABBRECHEN.
 

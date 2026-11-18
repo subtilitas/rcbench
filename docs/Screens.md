@@ -8089,7 +8089,10 @@ a read-back changes any pin, another protocol or a PROG PORT entry is
 picked, the board changes, the view switches between board and grid, or the
 screen is left. Touch events lost between two frames drop a press on MOVE
 PIN and leave the card up. A second finger on the card takes the press; one
-off the card closes it. STOP stays live on the band. In the board view the
+off the card closes it. For 400ms after MOVE PIN or CANCEL closes the card,
+a press inside the card's former box is spent in both views: the second tap
+of a double tap ticks no key or cell under the card (`test_pin_take`,
+`test_pin_take_grid`). STOP stays live on the band. In the board view the
 Dial lists MOVE PIN and CANCEL while the card is up, starting on CANCEL.
 
 The IOmcu refuses a slot change on an ARMED bank and a binding write while

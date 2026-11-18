@@ -147,7 +147,7 @@ A tap on a key another protocol holds asks to move the pin to the protocol selec
 2. The binding is written once, with the pin moved. [LAST WRITE](#last-write) says what became of it.
 3. To undo, select the old protocol and move the pin back. Channels follow pins, so the binding is the same as before.
 
-CANCEL, the home tag or a press anywhere off the card closes it and writes nothing. The card also closes, writing nothing, when a read leaves the binding unconfirmed, a read-back changes a pin, another protocol is picked, the board changes or the screen is left. MOVE PIN checks the move again first and writes nothing when the pin moved since.
+CANCEL, the home tag or a press anywhere off the card closes it and writes nothing. The card also closes, writing nothing, when a read leaves the binding unconfirmed, a read-back changes a pin, another protocol is picked, the board changes or the screen is left. MOVE PIN checks the move again first and writes nothing when the pin moved since. For 400ms after MOVE PIN or CANCEL closes the card, a press inside the box the card had is ignored, so the second tap of a double tap picks no pin under it.
 
 ![SERVO PWM's last pin under DSHOT600 BIDIR](view:outputs-take-last)
 
@@ -226,7 +226,7 @@ A stored binding that holds GPIO 13 keeps it: the programming port then has no p
 
 ![PWM01 to PWM04, PWM03 refused for slice 2](view:outputs-rbmod)
 
-The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) has fixed wiring, so you choose protocols rather than pins. Its grid shows PWM01 to PWM04 on GPIO 2, 4, 5 and 1, with each GPIO below its connector name. Tap an output to assign the selected protocol. Slot n corresponds to PWM0(n+1), so PWM01 is channel 0. Each protocol can use at most these 4 outputs: `SERVO PWM USES 4 PINS`.
+The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) has fixed wiring, so you choose protocols rather than pins. Its grid shows PWM01 to PWM04 on GPIO 2, 4, 5 and 1, with each GPIO below its connector name. Tap an output to assign the selected protocol. The bound outputs take slots and channels in the order PWM01 to PWM04, and an unbound output takes none: PWM01 is channel 0 while it is bound, and with only PWM03 bound PWM03 is channel 0. Each protocol can use at most these 4 outputs: `SERVO PWM USES 4 PINS`.
 
 PWM02 and PWM03 are one PWM slice and run at one frame rate. A surface protocol (SERVO PWM) and a throttle protocol (MOTOR PWM) are not offered on the two together: the cell reads `SLICE OF PWM02` and a tap on it `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on its own state machine and is offered beside either.
 

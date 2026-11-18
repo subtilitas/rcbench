@@ -147,7 +147,7 @@ Ein Tipp auf eine Taste, die ein anderes Protokoll hält, fragt, ob der Pin zum 
 2. Die Zuordnung wird einmal geschrieben, mit dem verschobenen Pin. [LETZTER SCHREIBVORGANG](#letzter-schreibvorgang) zeigt das Ergebnis.
 3. Zum Rückgängigmachen wähle das alte Protokoll und verschiebe den Pin zurück. Kanäle folgen den Pins, also ist die Zuordnung wieder dieselbe.
 
-ABBRECHEN, das Home-Feld oder ein Druck irgendwo neben der Karte schließt sie und schreibt nichts. Die Karte schließt auch ohne Schreiben, wenn ein Lesen die Zuordnung unbestätigt lässt, ein Zurücklesen einen Pin ändert, ein anderes Protokoll gewählt wird, die Platine wechselt oder die Seite verlassen wird. PIN VERSCHIEBEN prüft das Verschieben vorher noch einmal und schreibt nichts, wenn der Pin inzwischen gewechselt hat.
+ABBRECHEN, das Home-Feld oder ein Druck irgendwo neben der Karte schließt sie und schreibt nichts. Die Karte schließt auch ohne Schreiben, wenn ein Lesen die Zuordnung unbestätigt lässt, ein Zurücklesen einen Pin ändert, ein anderes Protokoll gewählt wird, die Platine wechselt oder die Seite verlassen wird. PIN VERSCHIEBEN prüft das Verschieben vorher noch einmal und schreibt nichts, wenn der Pin inzwischen gewechselt hat. 400ms lang, nachdem PIN VERSCHIEBEN oder ABBRECHEN die Karte geschlossen hat, wird ein Druck in der Fläche der Karte ignoriert; der zweite Tipp eines Doppeltipps wählt so keinen Pin darunter.
 
 ![Der letzte Pin von SERVO PWM unter DSHOT600 BIDIR](view:outputs-take-last)
 
@@ -226,7 +226,7 @@ Eine gespeicherte Ausgangszuordnung für GPIO 13 behält den Pin. Der Programmie
 
 ![PWM01 bis PWM04, PWM03 wegen Slice 2 abgelehnt](view:outputs-rbmod)
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) sind alle Leitungen fest verdrahtet. Du wählst daher Protokolle statt Pins. Das Raster zeigt PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1 mit dem jeweiligen GPIO unter dem Steckernamen. Tippe auf einen Ausgang, um das Protokoll zuzuordnen. Slot n entspricht PWM0(n+1); PWM01 ist Kanal 0. Ein Protokoll nutzt höchstens diese 4 Ausgänge: `SERVO PWM BELEGT 4 PINS`.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) sind alle Leitungen fest verdrahtet. Du wählst daher Protokolle statt Pins. Das Raster zeigt PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1 mit dem jeweiligen GPIO unter dem Steckernamen. Tippe auf einen Ausgang, um das Protokoll zuzuordnen. Die zugeordneten Ausgänge belegen Slots und Kanäle in der Reihenfolge PWM01 bis PWM04, ein nicht zugeordneter Ausgang belegt keinen: PWM01 ist Kanal 0, solange er zugeordnet ist, und ist nur PWM03 zugeordnet, ist PWM03 Kanal 0. Ein Protokoll nutzt höchstens diese 4 Ausgänge: `SERVO PWM BELEGT 4 PINS`.
 
 PWM02 und PWM03 teilen sich einen PWM-Slice und damit eine Pulsrate. SERVO PWM und MOTOR PWM lassen sich dort nicht miteinander kombinieren. Die Zelle zeigt `SLICE VON PWM02`; ein Tipp meldet `PWM03 GPIO 5: GLEICHER PWM-SLICE WIE PWM02 GPIO 4`. DShot verwendet eine eigene Zustandsmaschine und lässt sich mit beiden kombinieren.
 
