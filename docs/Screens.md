@@ -587,8 +587,9 @@ to dismiss it earlier. The hint fits on one line of at most 97 characters.
 
 A short tap is not a fault, so the hint is a notice. Alerts take priority:
 while an alert is visible, one notice waits, the latest, and shows for its
-own 4s once the alert has cleared. An arriving alert replaces a visible
-hint.
+own 4s once the alert has cleared. A notice that has waited 30s
+(`UI_NOTICE_WAIT_S`) is dropped, and so is one that waits when the screen
+changes. An arriving alert replaces a visible hint.
 
 - The hint appears only when the finger lifts while still on the button. It does
   not show when the finger left the button first (the hold is abandoned),
@@ -3749,7 +3750,10 @@ the header's unit, in brackets or after an underscore (`time_ms`, `t_us`,
 `elapsed_s`), else a guess from the span of its values. A rising first
 column named as a counter (`step`, `row`, `index`, `sample`, `count`, `n`,
 `#`) is not a time column: `RUDDRnnn.CSV`, which starts with `step`, plots
-against the row index, and the cursor reads the row.
+against the row index, and the cursor reads the row. The plot's header
+line gives the name, the rows, the duration and the sample rate
+(`MOTOR001.CSV   400 ROWS   4.00s   100Hz`); for a file without a time
+column it gives the name and the rows (`RUDDR012.CSV   6 ROWS`).
 
 SETUP > PANEL > One finger pans, off by default, allows single-finger
 panning when zoomed in. Moving more than 10px from the starting point
@@ -6783,7 +6787,17 @@ home network. Both the check and the download need:
   no panel install under way. During a device's transfer the key is grey
   and the card says `Waiting for the wireless device update to finish.`;
   the check at start waits the same way, and a check under way ends when
-  such an update starts.
+  such an update starts. The line names the update that holds the key:
+  `Waiting for the IOmcu update to finish.` while the IOmcu's step reads
+  `UPDATING`, `Waiting for the C6 radio update to finish.` from the C6
+  update's start to the restart after it, and
+  `Waiting: a check or installation is already running.` when no step
+  shows the update that holds it.
+
+From the end of a C6 update to the restart after it (3,000ms on a SAFE
+bench with the outputs off, else until it is) C6 RADIO reads `CHECKING`
+and is the current step, on the carried version too: the last card does
+not show in that time.
 
 Downloading, like installing, also requires that no board drawing is being
 fetched or saved.
@@ -6900,7 +6914,8 @@ after the C6 radio's update. The run note in NVS (non-volatile storage)
 keeps the fact that a run stands ([Installing: PANEL UPDATE](#installing-panel-update));
 the steps are decided again from what the panel knows after the restart.
 
-While a run stands, UPDATES opens by itself once per start, on the menu,
+While a run stands and a step is left, UPDATES opens by itself once per
+start, on the menu,
 past the splash, with the bench SAFE, no arm waiting, the supply output
 off, the panel's radio wholly off and no panel install under way: the
 conditions under which an IOmcu offer opens it. UPDATES opens once when
@@ -6935,6 +6950,9 @@ erased, when:
   nothing;
 - no step blocks any more, once the wireless devices' rows were published
   by the Bluetooth LE client: before that every device reads as not bound.
+  This end comes before the opening: a start that finds no step left ends
+  the run without opening UPDATES, as after a C6 reinstall with every step
+  current.
 
 The erase is a flash write, and a flash write stalls both cores, the
 control task with its heartbeat and STOP among them. A run that ends
@@ -8195,7 +8213,9 @@ PIN and leave the card up. A second finger on the card takes the press; one
 off the card closes it. For 400ms after MOVE PIN or CANCEL closes the card,
 a press inside the card's former box is spent in both views: the second tap
 of a double tap ticks no key or cell under the card (`test_pin_take`,
-`test_pin_take_grid`). STOP stays live on the band. In the board view the
+`test_pin_take_grid`). A press on PORT PWM OFF with the pulse on is not
+spent: it stops the pulse inside the box as outside. STOP stays live on the
+band. In the board view the
 Dial lists MOVE PIN and CANCEL while the card is up, starting on CANCEL.
 
 The IOmcu refuses a slot change on an ARMED bank and a binding write while

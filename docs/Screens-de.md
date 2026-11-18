@@ -632,7 +632,9 @@ passt in eine Zeile mit höchstens 97 Zeichen.
 Ein kurzer Tipp ist keine Störung; der Hinweis ist deshalb eine Mitteilung.
 Alarme haben Vorrang: Solange ein Alarm sichtbar ist, wartet eine
 Mitteilung, die jüngste, und erscheint für ihre eigenen 4s, sobald der Alarm
-gelöscht ist. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
+gelöscht ist. Eine Mitteilung, die 30s gewartet hat (`UI_NOTICE_WAIT_S`),
+entfällt, ebenso eine wartende bei einem Wechsel des Bildschirms. Ein
+eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 
 - Der Hinweis erscheint nur, wenn du den Finger auf der Taste loslässt.
   Er erscheint nicht nach dem Herausgleiten, bei verlorener Berührung,
@@ -1670,7 +1672,7 @@ Herstellerliste zeigt dasselbe Kennzeichen in ihrer Kopfzeile rechts von
 | Kennzeichen | Steht, solange |
 | --- | --- |
 | `START BRAUCHT PD MINI` | das Netzteil das Modell des Panels ist |
-| `GAS-PIN NICHT GELESEN` | die Ausgangszuordnung nicht gelesen ist |
+| `PIN NICHT AUSGELESEN` | die Ausgangszuordnung nicht ausgelesen ist |
 | `KEIN GAS-PIN` | kein Pin als Gas zugeordnet ist |
 | `KEINE PIEPTONQUELLE` | weder der Phasenabgriff läuft noch ein INA3221-Kanal auf NETZTEIL liest |
 
@@ -4060,7 +4062,10 @@ Unterstrich (`time_ms`, `t_us`, `elapsed_s`), sonst eine Schätzung aus der
 Spanne ihrer Werte. Eine steigende erste Spalte mit dem Namen eines Zählers
 (`step`, `row`, `index`, `sample`, `count`, `n`, `#`) ist keine Zeitspalte:
 `RUDDRnnn.CSV` beginnt mit `step`, wird über dem Zeilenindex gezeichnet,
-und der Cursor zeigt die Zeile.
+und der Cursor zeigt die Zeile. Die Kopfzeile des Diagramms nennt Name,
+Zeilen, Dauer und Abtastrate (`MOTOR001.CSV   400 ZEILEN   4.00s   100Hz`);
+bei einer Datei ohne Zeitspalte nennt sie Name und Zeilen
+(`RUDDR012.CSV   6 ZEILEN`).
 
 SETUP > PANEL > Ein Finger schiebt ist standardmäßig aus. Eingeschaltet
 erlaubt es das Verschieben vergrößerter Ausschnitte mit einem Finger.
@@ -7353,7 +7358,17 @@ das gespeicherte Heimnetz. Suche und Download brauchen:
   ist die Taste grau, und die Karte sagt
   `Wartet auf das Ende des Funkgeräte-Updates.`; die Suche beim Start
   wartet ebenso, und eine laufende Suche endet, wenn ein solches Update
-  startet.
+  startet. Die Zeile nennt das Update, das die Taste sperrt:
+  `Wartet auf das Ende des IOmcu-Updates.`, solange der Schritt des IOmcu
+  `UPDATE LÄUFT` zeigt, `Wartet auf das Ende des C6-Updates.` vom Start
+  des C6-Updates bis zum Neustart danach, und
+  `Wartet: Eine Prüfung oder Installation läuft bereits.`, wenn kein
+  Schritt das sperrende Update zeigt.
+
+Vom Ende eines C6-Updates bis zum Neustart danach (3.000ms bei SAFE und
+ausgeschalteten Ausgängen, sonst bis dahin) zeigt C6-FUNK `WIRD GEPRÜFT` und ist
+der aktuelle Schritt, auch auf der enthaltenen Version: Die letzte Karte
+erscheint in dieser Zeit nicht.
 
 Der Download braucht wie eine Installation außerdem, dass keine
 Platinenzeichnung geladen oder gespeichert wird.
@@ -7481,7 +7496,8 @@ Speicher) hält fest, dass ein Lauf steht
 ([Installieren: PANEL UPDATE](#installieren-panel-update)); die Schritte
 werden nach dem Neustart neu aus dem entschieden, was das Panel weiß.
 
-Steht ein Lauf, öffnet sich UPDATES einmal je Start von selbst: im Menü,
+Steht ein Lauf und ist ein Schritt offen, öffnet sich UPDATES einmal je
+Start von selbst: im Menü,
 nach dem Splash, bei SAFE, ohne wartendes ARM, mit Netzteilausgang aus,
 ganz ausgeschaltetem Funk des Panels und ohne laufende
 Panel-Installation, also unter den Bedingungen, unter denen ein Angebot
@@ -7517,7 +7533,9 @@ und die Notiz wird gelöscht, wenn:
   zuerst diese und beendet nichts;
 - kein Schritt mehr sperrt, sobald der Bluetooth-LE-Client die Zeilen der
   Funkgeräte veröffentlicht hat: Vorher gilt jedes Gerät als nicht
-  gebunden.
+  gebunden. Dieses Ende kommt vor dem Öffnen: Ein Start, der keinen
+  offenen Schritt findet, beendet den Lauf, ohne UPDATES zu öffnen, etwa
+  nach einer Neuinstallation des C6 mit allen Schritten aktuell.
 
 Das Löschen ist ein Schreiben in den Flash, und ein Schreiben in den Flash
 hält beide Kerne an, darunter die Steuer-Task mit Heartbeat und STOP. Ein
@@ -8857,7 +8875,9 @@ zweiter Finger auf der Karte übernimmt den Druck, einer neben der Karte
 schließt sie. 400ms lang, nachdem PIN VERSCHIEBEN oder ABBRECHEN die Karte
 geschlossen hat, ist ein Druck in der früheren Fläche der Karte in beiden
 Ansichten verbraucht: der zweite Tipp eines Doppeltipps wählt keine Taste
-und keine Zelle unter der Karte (`test_pin_take`, `test_pin_take_grid`). STOP im Band bleibt wirksam. In der Platinenansicht führt das
+und keine Zelle unter der Karte (`test_pin_take`, `test_pin_take_grid`).
+Ein Druck auf PORT-PWM AUS bei eingeschaltetem Puls ist nicht verbraucht:
+er beendet den Puls in der Fläche wie außerhalb. STOP im Band bleibt wirksam. In der Platinenansicht führt das
 Dial PIN VERSCHIEBEN und ABBRECHEN, solange die Karte offen ist, beginnend
 bei ABBRECHEN.
 

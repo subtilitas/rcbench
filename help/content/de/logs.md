@@ -139,7 +139,7 @@ Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 | TRENNZEICHEN | SEMIKOLON, KOMMA, TAB oder SENKRECHTER STRICH |
 | ZAHLENFORMAT | ENGLISCH (Dezimalpunkt) oder DEUTSCH (Dezimalkomma) |
 | ZEILEN, SPALTEN | die gefundenen Datenzeilen und Spalten |
-| ZEITACHSE | die Spalte, die als Zeit gilt, oder ZEILENINDEX. Eine Einheit nach einem Unterstrich im Spaltenkopf wird gelesen (`time_ms`, `t_us`). Eine erste Spalte mit dem Namen eines Zählers (`step`, `row`, `index`, `sample`, `n`) ist keine Zeit: `RUDDRnnn.CSV` wird über dem Zeilenindex gezeichnet |
+| ZEITACHSE | die Spalte, die als Zeit gilt, oder ZEILENINDEX. Eine Einheit nach einem Unterstrich im Spaltenkopf wird gelesen (`time_ms`, `t_us`). Eine erste Spalte mit dem Namen eines Zählers (`step`, `row`, `index`, `sample`, `n`) ist keine Zeit: `RUDDRnnn.CSV` wird über dem Zeilenindex gezeichnet, und die Kopfzeile des Diagramms nennt seine Zeilen ohne Dauer und Abtastrate |
 | UNGLEICHE ZEILEN | Zeilen mit einer anderen Zellenzahl als die Kopfzeile |
 | BELEGE | die Zellen, die Deutsch, Englisch oder keins von beiden belegt haben |
 

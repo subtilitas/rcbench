@@ -159,7 +159,8 @@ void pin_take_tick(float dt_s);
  *        closed in view @p view less than PIN_TAKE_GUARD_MS ago.
  * @param view the view the event is for
  * @param evt  the event
- * @return true for a DOWN inside that box; the view drops it
+ * @return true for a DOWN inside that box; the view drops it, unless it
+ *         stops an output (outputs_port_stop_press())
  */
 bool pin_take_spends(pin_take_view_t view, const touch_event_t *evt);
 

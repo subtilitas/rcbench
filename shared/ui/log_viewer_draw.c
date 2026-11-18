@@ -598,6 +598,25 @@ static int cursor_x(void)
                         (s.win_n - 1));
 }
 
+void log_viewer_summary(char *out, size_t n)
+{
+    if (out == NULL || n == 0u) {
+        return;
+    }
+    out[0] = '\0';
+    if (!s.have_data) {
+        return;
+    }
+    if (s.data.time_name[0] != '\0') {
+        snprintf(out, n, TR(LOG_SUMMARY), s.name, s.data.count,
+                 s.data.duration_s, s.data.rate_hz);
+    } else {
+        /* No time column: a duration and a rate would come from the row
+         * index. */
+        snprintf(out, n, TR(LOG_SUMMARY_ROWS), s.name, s.data.count);
+    }
+}
+
 /**
  * @brief Draws the plot view: the summary, the series' chips, the traces in
  *        bands, the time axis and the footer.
@@ -617,8 +636,7 @@ static void render_plot(gfx_canvas_t *c)
         return;
     }
 
-    snprintf(line, sizeof(line), TR(LOG_SUMMARY), s.name,
-             s.data.count, s.data.duration_s, s.data.rate_hz);
+    log_viewer_summary(line, sizeof(line));
     gfx_text_in(c, gfx_rect_make(LV_L + 4, PV_SUM_Y, LV_W - 8, 20), line,
                 LV_FONT_LABEL, UI_TEXT_DIM, 1, GFX_ALIGN_LEFT);
 

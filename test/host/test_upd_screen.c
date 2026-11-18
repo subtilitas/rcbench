@@ -356,11 +356,30 @@ TEST_CASE(the_wait_names_the_c6_while_its_update_runs)
     CHECK_STR_EQ(a, "Wartet auf das Ende des C6-Updates.");
     ui_text_set_language(UI_LANG_EN);
 
-    /* With the C6 idle the same gate is the IOmcu's. */
+    /* The restart owed after the C6's update holds the gate as the
+     * update does. */
+    c6.row = FW_C6_ROW_BLOCKED;
+    c6.why = FW_C6_WHY_ENDING;
+    upd_c6_set(&c6);
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Waiting for the C6 radio update to finish.");
+
+    /* With the C6 idle the same gate is the IOmcu's while its section
+     * reads busy, and names no update once it does not. */
+    upd_cu_view_t cu;
+    memset(&cu, 0, sizeof(cu));
+    cu.sec = CU_SEC_BUSY;
+    cu.have_image = true;
+    upd_screen_set_coproc(&cu);
     c6.row = FW_C6_ROW_READY;
+    c6.why = FW_C6_WHY_NONE;
     upd_c6_set(&c6);
     upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
     CHECK_STR_EQ(a, "Waiting for the IOmcu update to finish.");
+    cu.sec = CU_SEC_SAME;
+    upd_screen_set_coproc(&cu);
+    upd_result_text(&g_v, a, sizeof(a), b, sizeof(b));
+    CHECK_STR_EQ(a, "Waiting: a check or installation is already running.");
     upd_c6_drop();
 }
 

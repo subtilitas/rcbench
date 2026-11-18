@@ -89,6 +89,15 @@ void upd_c6_fire(void);
 const char *upd_c6_reason(const upd_c6_view_t *v);
 
 /**
+ * @brief Whether the C6's own update holds the update gate: it runs, its
+ *        last step is out, or the restart after a success is owed.
+ * @param v the view; NULL is none
+ * @return true for FW_C6_ROW_UPDATING and for FW_C6_ROW_BLOCKED with
+ *         FW_C6_WHY_ENDING
+ */
+bool upd_c6_holds(const upd_c6_view_t *v);
+
+/**
  * @brief The versions' line.
  * @param v   the view
  * @param out the line

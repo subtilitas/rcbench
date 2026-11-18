@@ -319,6 +319,18 @@ void log_viewer_window(int *first, int *count);
 void log_viewer_browse_title(char *out, size_t n);
 
 /**
+ * @brief The plot view's summary line: the file's name and its rows, then
+ *        the duration and the sample rate for a file with a time column,
+ *        "MOTOR001.CSV   400 ROWS   4.00s   100Hz".  A file without one is
+ *        plotted against the row number and has neither:
+ *        "RUDDR012.CSV   6 ROWS".  Empty while no file is loaded.  The
+ *        plot draws this text.
+ * @param out takes the line
+ * @param n   bytes at @p out
+ */
+void log_viewer_summary(char *out, size_t n);
+
+/**
  * @brief The colour series @p k is drawn in.
  *
  * @param k the series

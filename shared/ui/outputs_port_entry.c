@@ -563,6 +563,29 @@ static bool fn_event(const touch_event_t *evt)
     return true;
 }
 
+/**
+ * @brief Whether @p evt is a press on PORT PWM OFF with the pulse on and
+ *        the segment free: the press that ends the port's pulse.
+ * @param evt the touch event
+ * @return true for that press
+ */
+static bool pwm_off_press(const touch_event_t *evt)
+{
+    return evt->type == TOUCH_EVENT_DOWN && !pwm_locked()
+           && settings_get_bool(SET_SERVO_PORT_PWM)
+           && gfx_rect_contains(p.pwm.rect[1], evt->point.x, evt->point.y);
+}
+
+bool outputs_port_stop_press(const touch_event_t *evt)
+{
+    if (evt == NULL || p.port < 0 || p.fn_open
+        || (soldered() && !carrier_tester())) {
+        return false;
+    }
+    sync_tabs();
+    return pwm_off_press(evt);
+}
+
 bool outputs_port_event(const touch_event_t *evt)
 {
     if (evt == NULL || p.port < 0) {
@@ -596,9 +619,7 @@ bool outputs_port_event(const touch_event_t *evt)
      * on the row ends here: its release on ON would switch the pulse on
      * again with no new gesture.  The segment then takes this press below;
      * its release finds OFF selected and sets nothing. */
-    if (evt->type == TOUCH_EVENT_DOWN && !pwm_locked()
-        && settings_get_bool(SET_SERVO_PORT_PWM)
-        && gfx_rect_contains(p.pwm.rect[1], evt->point.x, evt->point.y)) {
+    if (pwm_off_press(evt)) {
         settings_set(SET_SERVO_PORT_PWM, 0.0f);
         settings_request_save();
         ui_tabs_cancel(&p.pwm);

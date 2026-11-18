@@ -147,7 +147,7 @@ A tap on a key another protocol holds asks to move the pin to the protocol selec
 2. The binding is written once, with the pin moved. [LAST WRITE](#last-write) says what became of it.
 3. To undo, select the old protocol and move the pin back. Channels follow pins, so the binding is the same as before.
 
-CANCEL, the home tag or a press anywhere off the card closes it and writes nothing. The card also closes, writing nothing, when a read leaves the binding unconfirmed, a read-back changes a pin, another protocol is picked, the board changes or the screen is left. MOVE PIN checks the move again first and writes nothing when the pin moved since. For 400ms after MOVE PIN or CANCEL closes the card, a press inside the box the card had is ignored, so the second tap of a double tap picks no pin under it.
+CANCEL, the home tag or a press anywhere off the card closes it and writes nothing. The card also closes, writing nothing, when a read leaves the binding unconfirmed, a read-back changes a pin, another protocol is picked, the board changes or the screen is left. MOVE PIN checks the move again first and writes nothing when the pin moved since. For 400ms after MOVE PIN or CANCEL closes the card, a press inside the box the card had is ignored, so the second tap of a double tap picks no pin under it. A press on PORT PWM OFF is never ignored.
 
 ![SERVO PWM's last pin under DSHOT600 BIDIR](view:outputs-take-last)
 
