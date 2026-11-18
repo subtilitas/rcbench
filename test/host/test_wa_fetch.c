@@ -988,6 +988,70 @@ TEST_CASE(the_session_going_off_ends_the_job_with_its_reason)
     CHECK_EQ(f.why, WA_WHY_FILES);
 }
 
+/* A download that ended STAGED says the install runs.  After an install
+ * that returned it ends INSTALL: not busy, no release offered, the
+ * release still named; no other job state changes. */
+TEST_CASE(a_failed_install_ends_a_staged_download_as_install)
+{
+    wa_fetch_t f;
+    wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
+    const wa_t w = joined();
+    (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true,
+                         WA_WHY_NONE, 0u);
+    wa_fetch_tick(&f, 100u, WA_WHY_NONE, &w);
+    /* Under way: nothing to fail. */
+    wa_fetch_install_failed(&f);
+    CHECK(wa_fetch_busy(&f));
+    CHECK_EQ(f.got, WA_GOT_NONE);
+    const wa_fetch_res_t staged = { .got = WA_GOT_STAGED, .found = V20 };
+    wa_fetch_on_end(&f, f.gen, &staged);
+    CHECK_EQ(f.phase, WA_PH_ENDED);
+    CHECK_EQ(f.got, WA_GOT_STAGED);
+    const uint32_t gen = f.gen;
+    wa_fetch_install_failed(&f);
+    CHECK_EQ(f.job, WA_JOB_DOWNLOAD);
+    CHECK_EQ(f.phase, WA_PH_ENDED);
+    CHECK_EQ(f.got, WA_GOT_INSTALL);
+    CHECK_EQ(f.gen, gen);
+    CHECK(!wa_fetch_busy(&f));
+    CHECK(!wa_fetch_offers(&f, WA_CH_STABLE));
+    CHECK(wa_fetch_has_found(&f));
+    CHECK_EQ(f.found.minor, 20u);
+    /* Twice changes nothing more; a new check starts. */
+    wa_fetch_install_failed(&f);
+    CHECK_EQ(f.got, WA_GOT_INSTALL);
+    CHECK_EQ(wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true,
+                            WA_WHY_NONE, 500u), WA_GOT_NONE);
+
+    /* A failed download, a check's result and no job stay as they are. */
+    static const wa_got_t k_other[] = { WA_GOT_HASH, WA_GOT_ABORTED,
+                                        WA_GOT_TIMEOUT };
+    for (unsigned i = 0u; i < 3u; ++i) {
+        wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
+        (void)wa_fetch_start(&f, WA_JOB_DOWNLOAD, V20, WA_CH_STABLE, true,
+                             WA_WHY_NONE, 0u);
+        wa_fetch_tick(&f, 100u, WA_WHY_NONE, &w);
+        const wa_fetch_res_t r = { .got = k_other[i] };
+        wa_fetch_on_end(&f, f.gen, &r);
+        wa_fetch_install_failed(&f);
+        CHECK_EQ(f.got, k_other[i]);
+    }
+    wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
+    (void)wa_fetch_start(&f, WA_JOB_CHECK, V20, WA_CH_STABLE, true,
+                         WA_WHY_NONE, 0u);
+    wa_fetch_tick(&f, 100u, WA_WHY_NONE, &w);
+    const wa_fetch_res_t newer = { .got = WA_GOT_NEWER, .found = V20 };
+    wa_fetch_on_end(&f, f.gen, &newer);
+    wa_fetch_install_failed(&f);
+    CHECK_EQ(f.got, WA_GOT_NEWER);
+    CHECK(wa_fetch_offers(&f, WA_CH_STABLE));
+    wa_fetch_init(&f, (fw_version_t){ 0u, 19u, 0u });
+    wa_fetch_install_failed(&f);
+    CHECK_EQ(f.phase, WA_PH_IDLE);
+    CHECK_EQ(f.got, WA_GOT_NONE);
+    wa_fetch_install_failed(NULL);
+}
+
 TEST_CASE(a_report_for_an_earlier_job_is_dropped)
 {
     wa_fetch_t f;
@@ -1053,6 +1117,7 @@ int main(void)
     RUN(the_download_budgets_hold_across_the_wrap);
     RUN(an_abort_ends_the_job_at_each_phase);
     RUN(the_session_going_off_ends_the_job_with_its_reason);
+    RUN(a_failed_install_ends_a_staged_download_as_install);
     RUN(a_report_for_an_earlier_job_is_dropped);
     free(g_img);
     free(g.alloc_buf);

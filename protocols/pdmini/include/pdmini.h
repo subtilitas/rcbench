@@ -257,11 +257,31 @@ typedef enum {
  */
 pdmini_frame_t pdmini_reply_frame(uint8_t cmd, const uint8_t *buf, size_t n);
 
+/** @brief The longest request, bytes: a command, 5 of payload, the CRC,
+ *         and one spare. */
+#define PDMINI_REQ_MAX 8u
+
+/**
+ * @brief Whether a request goes into a transmit FIFO whole, now.
+ *
+ * A `send` that writes a FIFO sends a request whole or not at all and
+ * waits for nothing: a request cut short is a frame the module reads
+ * wrongly, and a request not sent is a transaction that ends at its
+ * deadline and is tried again.
+ *
+ * @param n      Bytes of the request.
+ * @param level  Entries the FIFO holds now.
+ * @param depth  Entries the FIFO takes.
+ * @return true when @p n is 1 to PDMINI_REQ_MAX and @p level + @p n is at
+ *         most @p depth.
+ */
+bool pdmini_tx_fits(size_t n, size_t level, size_t depth);
+
 /** @brief What the driver needs from the hardware. */
 typedef struct {
     void (*attach)(void *ctx);                       /**< UART onto the pins */
     void (*detach)(void *ctx);                       /**< pins pulled down   */
-    void (*send)(void *ctx, const uint8_t *p, size_t n);  /**< sends n bytes at p */
+    void (*send)(void *ctx, const uint8_t *p, size_t n);  /**< sends n bytes at p, whole or not at all, without waiting */
     void *ctx;                          /**< the context passed to each function */
 } pdmini_io_t;
 
@@ -343,7 +363,7 @@ typedef struct {
 
     /* The transaction under way. */
     enum { PD_IDLE, PD_ATTACH, PD_WAIT, PD_GAP } phase;   /**< where the transaction stands */
-    uint8_t  req[8];         /**< the request */
+    uint8_t  req[PDMINI_REQ_MAX]; /**< the request */
     size_t   req_n;          /**< its length, bytes */
     uint8_t  cmd;            /**< its command byte */
     bool     write;          /**< answered by nothing                     */

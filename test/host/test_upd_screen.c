@@ -44,6 +44,7 @@ TEST_CASE(the_enums_mirror_the_fetch_and_the_release_parser)
     CHECK_EQ((int)UPD_GOT_LIMIT, (int)WA_GOT_LIMIT);
     CHECK_EQ((int)UPD_GOT_UNVERSIONED, (int)WA_GOT_UNVERSIONED);
     CHECK_EQ((int)UPD_GOT_PAST_LINE, (int)WA_GOT_PAST_LINE);
+    CHECK_EQ((int)UPD_GOT_INSTALL, (int)WA_GOT_INSTALL);
 
     CHECK_EQ((int)UPD_WHY_NONE, (int)WA_WHY_NONE);
     CHECK_EQ((int)UPD_WHY_ARMED, (int)WA_WHY_ARMED);

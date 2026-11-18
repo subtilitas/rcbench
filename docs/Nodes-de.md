@@ -610,7 +610,7 @@ Panels. Der Auswuchtknoten ist der vierte Client, Owner 3
   Herstellerdaten kamen). Ein Auswuchtknoten wird nicht gelistet, mit oder
   ohne Namen. GEBUNDENER KNOTEN, oder KNOTEN SUCHEN, solange es
   `n GEFUNDEN` zeigt, öffnet die Liste, bis zu 6 Knoten und zuletzt
-  `ERNEUT SUCHEN`. Tippen bindet einen über seine Adresse, in SETUP
+  `AKTUALISIEREN`. Tippen bindet einen über seine Adresse, in SETUP
   gehalten (`pnode_ble`, `pnode_name`), und sein erster Connect nimmt den
   nächsten Zug des Hubs nach einem laufenden Versuch. GEBUNDENER KNOTEN
   ohne Liste sagt auf dem Band, warum. Ein gebundener Knoten wird nach

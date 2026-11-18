@@ -109,7 +109,7 @@ und mit ihr sein RAM eingeschlossen ([Sicherheit, Fehler](Safety-de.md#fehler)).
 
 | Ereignis | Zeile |
 | --- | --- |
-| STOP, gedrückt oder vom Prüfstand selbst | `Gestoppt. Der Pin ist frei. Halte STOP 2s, um den STOP zurückzusetzen.` |
+| STOP, gedrückt oder vom Prüfstand selbst | `Gestoppt. Der Pin ist frei. Halte STOP 2s, um den STOP zu lösen.` |
 | Ein Schalten auf SAFE am Prüfstand | `Gestoppt. Der Pin ist frei. Tippe auf AUFHEBEN zum Fortsetzen oder auf VERLASSEN.` |
 | Die Verbindung verstummt | wie bei einer verlorenen Verbindung ([STOP, SAFE und eine verlorene Verbindung](HitecProgrammer-de.md#stop-safe-und-eine-verlorene-verbindung)) |
 | Der Ausgang des PD mini liest aus oder liefert keinen Messwert | `Die Servoversorgung ist aus. SERVO BEWEGEN ist beendet.` |

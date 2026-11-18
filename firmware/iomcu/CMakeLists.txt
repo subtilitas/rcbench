@@ -242,6 +242,8 @@ target_link_libraries(rcbench-iomcu
     hardware_flash
     hardware_sync
     hardware_i2c
+    # The watchdog on core 0's main loop (shared/safety/loop_watch.h).
+    hardware_watchdog
     # Core 1 runs the sensor bus; flash_safe_execute() parks it for the
     # store's windows through the multicore lock-out.
     pico_multicore

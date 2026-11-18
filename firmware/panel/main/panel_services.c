@@ -16,6 +16,7 @@
 #include "freertos/queue.h"
 
 #include "arming.h"
+#include "fw_c6.h"
 #include "kst_link.h"
 #include "kst_prog.h"
 #include "link_host.h"
@@ -110,11 +111,35 @@ kst_prog_gate_t s_kst_gate;
 
 atomic_uint s_prog_band = PROG5V_HELD_NONE;
 
+/** @brief A session's start claimed before its port reads taken
+ *         (fw_c6.h); control task only. */
+static fw_c6_prog_t s_c6_prog;
+
+bool prog_start_refused_c6(void)
+{
+    /* The claim published before the update's flag is read: the render
+     * side publishes its flag before it reads this one, so the two never
+     * both start (fw_c6_prog_t). */
+    fw_c6_prog_claim(&s_c6_prog, now_ms());
+    atomic_store(&s_prog_open, true);
+    if (!fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_SESSION)) {
+        return false;
+    }
+    /* The C6 radio's update ends in a restart of the panel.  s_prog_open
+     * follows at the next kst_port_look(). */
+    fw_c6_prog_release(&s_c6_prog);
+    control_alert(TR(ALERT_PROG_C6));
+    return true;
+}
+
 __attribute__((noinline)) void kst_port_look(void)
 {
     kst_link_readout_t rd;
     kst_link_readout(&s_kst_link, &rd);
     s_prog_taken = kst_prog_port_taken(&rd) || hitec_taken() || esc_taken();
+    /* With a start claimed and not yet read back as a held port. */
+    atomic_store(&s_prog_open,
+                 fw_c6_prog_open(&s_c6_prog, s_prog_taken, now_ms()));
     /* The port the band's SAFE chip names: the KST session's, else the
      * Hitec page's, else some port while a HITEC hold has no number. */
     atomic_store(&s_prog_band,
@@ -224,6 +249,9 @@ void sense_link_alerts(void)
     char line[ALERT_MAX];
     if ((ev & SENSE_LINK_EV_STORE_OFF) != 0u) {
         s_sense_alert_gen = control_alert_numbered(TR(ALERT_STORE_OFF));
+    }
+    if ((ev & SENSE_LINK_EV_WATCHDOG) != 0u) {
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_IOMCU_WATCHDOG));
     }
     if ((ev & SENSE_LINK_EV_I3221_CLIPPED) != 0u) {
         /* The full scale in hundredths of an ampere, rounded: 1638mA on
@@ -675,9 +703,10 @@ __attribute__((noinline)) void kst_commands(void)
         if (cmd.kind == KST_PROG_CMD_START) {
             /* No port is taken on an armed bench: nothing is sent.  A
              * REBOOT is the CONNECT that switches the supply off first. */
-            s_kst_answer    = ((cmd.req.op == LINK_KST_OP_ENTER
-                                || cmd.req.op == LINK_KST_OP_REBOOT)
-                               && outputs_armed(&s_out))
+            const bool takes = cmd.req.op == LINK_KST_OP_ENTER
+                               || cmd.req.op == LINK_KST_OP_REBOOT;
+            const bool c6 = takes && prog_start_refused_c6();
+            s_kst_answer    = ((takes && outputs_armed(&s_out)) || c6)
                                   ? KST_LINK_START_BUSY
                                   : kst_link_start(&s_kst_link, &cmd.req);
             s_kst_answer_id = cmd.id;

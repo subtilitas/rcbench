@@ -75,8 +75,8 @@ void supply_reset_totals(supply_state_t *s)
     if (s == NULL) {
         return;
     }
-    s->charge_mah = 0.0f;
-    s->energy_wh  = 0.0f;
+    s->charge_mah = 0.0;
+    s->energy_wh  = 0.0;
     s->counted    = 0u;
 }
 
@@ -92,12 +92,12 @@ void supply_count_totals(supply_state_t *s, float dt_s)
         dt = BENCH_TOTALS_MAX_STEP_S;
     }
     if ((s->ok & SUPPLY_OK_CURRENT) != 0u) {
-        s->charge_mah += s->i * dt * (1000.0f / 3600.0f);
+        s->charge_mah += (double)s->i * (double)dt * (1000.0 / 3600.0);
         s->counted |= BENCH_COUNTED_CHARGE;
     }
     const uint8_t both = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
     if ((s->ok & both) == both) {
-        s->energy_wh += s->p * dt * (1.0f / 3600.0f);
+        s->energy_wh += (double)s->p * (double)dt * (1.0 / 3600.0);
         s->counted |= BENCH_COUNTED_ENERGY;
     }
 }

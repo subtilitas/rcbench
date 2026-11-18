@@ -147,7 +147,7 @@ A tap on a key another protocol holds asks to move the pin to the protocol selec
 2. The binding is written once, with the pin moved. [LAST WRITE](#last-write) says what became of it.
 3. To undo, select the old protocol and move the pin back. Channels follow pins, so the binding is the same as before.
 
-CANCEL, the home tag or a press anywhere off the card closes it and writes nothing. The card also closes, writing nothing, when a read leaves the binding unconfirmed, a read-back changes a pin, another protocol is picked, the board changes or the screen is left. MOVE PIN checks the move again first and writes nothing when the pin moved since.
+CANCEL, the home tag or a press anywhere off the card closes it and writes nothing. The card also closes, writing nothing, when a read leaves the binding unconfirmed, a read-back changes a pin, another protocol is picked, the board changes or the screen is left. MOVE PIN checks the move again first and writes nothing when the pin moved since. For 400ms after MOVE PIN or CANCEL closes the card, a press inside the box the card had is ignored, so the second tap of a double tap picks no pin under it.
 
 ![SERVO PWM's last pin under DSHOT600 BIDIR](view:outputs-take-last)
 
@@ -226,7 +226,7 @@ A stored binding that holds GPIO 13 keeps it: the programming port then has no p
 
 ![PWM01 to PWM04, PWM03 refused for slice 2](view:outputs-rbmod)
 
-The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) has fixed wiring, so you choose protocols rather than pins. Its grid shows PWM01 to PWM04 on GPIO 2, 4, 5 and 1, with each GPIO below its connector name. Tap an output to assign the selected protocol. Slot n corresponds to PWM0(n+1), so PWM01 is channel 0. Each protocol can use at most these 4 outputs: `SERVO PWM USES 4 PINS`.
+The [rbmod carrier](https://github.com/subtilitas/rcbench/wiki/Carrier) has fixed wiring, so you choose protocols rather than pins. Its grid shows PWM01 to PWM04 on GPIO 2, 4, 5 and 1, with each GPIO below its connector name. Tap an output to assign the selected protocol. The bound outputs take slots and channels in the order PWM01 to PWM04, and an unbound output takes none: PWM01 is channel 0 while it is bound, and with only PWM03 bound PWM03 is channel 0. Each protocol can use at most these 4 outputs: `SERVO PWM USES 4 PINS`.
 
 PWM02 and PWM03 are one PWM slice and run at one frame rate. A surface protocol (SERVO PWM) and a throttle protocol (MOTOR PWM) are not offered on the two together: the cell reads `SLICE OF PWM02` and a tap on it `PWM03 GPIO 5: SAME PWM SLICE AS PWM02 GPIO 4`. DShot runs on its own state machine and is offered beside either.
 
@@ -258,6 +258,22 @@ Pin-key changes are written immediately. LAST WRITE appears beside the protocol 
 | `WRITTEN` | the IOmcu acknowledged the write |
 | `NO LINK` | an exchange got no answer within 1000ms, or the link is down |
 | `REFUSED` | the IOmcu refused: a pin it cannot bind, a change while ARMED, or a frame rate it could not put back |
+
+An IOmcu with link protocol 4.38 or later gives the cause of a refused write. The line under the protocol shows it while LAST WRITE reads `REFUSED` and no other line stands there:
+
+| Line | Cause |
+|---|---|
+| `REFUSED: NOT WHILE ARMED` | a role, a throttle channel or a slot changes while ARMED |
+| `REFUSED: NO PIO OR PWM SLICE FREE` | the IOmcu has no free PIO state machine, PIO instruction memory or PWM slice for an output, or its pin refused the driver |
+| `REFUSED: LEAVES THE PD MINI NO PIO` | the outputs would take the PIO block the PD mini's UART waits for |
+| `REFUSED: PIN OR PWM SLICE OF A PROG PORT` | a programming port holds the pin, its channel or its PWM slice |
+| `REFUSED: PIN OF THE PD MINI` | SUPPLY holds the pin; `REFUSED: PIN OF THE SENSOR BUS` and `REFUSED: PIN OF THE PHASE TAP` likewise for SENSORS |
+| `REFUSED: PWM SLICE AT ANOTHER FRAME RATE` | the output shares a PWM slice with a servo output at another frame rate |
+| `REFUSED: PULSE LONGER THAN ITS FRAME` | a channel's pulse endpoint is longer than the frame of its PWM output |
+| `REFUSED: NOT A SERVO OUTPUT OF THE BOARD` | on a board with soldered pins, a pin that is not one of its servo outputs |
+| `REFUSED: ESC PROGRAMMING HOLDS AN OUTPUT` | an ESC programming session holds an output |
+| `REFUSED: A VALUE OUT OF RANGE` | a register value outside its page's range |
+| `REFUSED: THE PAGES ARRIVED CHANGED` | the IOmcu holds other pages than the panel sent; the next write sends them again |
 
 An IOmcu of 0.15.0 or later takes the binding whole: `NO LINK` and `REFUSED` leave the binding in force as it was.
 

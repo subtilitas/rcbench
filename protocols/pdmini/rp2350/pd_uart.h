@@ -65,7 +65,12 @@ void pd_uart_attach(void *ctx);
  */
 void pd_uart_detach(void *ctx);
 /**
- * @brief Send bytes on the attached UART.
+ * @brief Send bytes on the attached UART, whole or not at all, without
+ *        waiting.
+ *
+ * At most PDMINI_REQ_MAX (8) bytes, which the transmit FIFO takes after an
+ * attach.  Bytes that do not fit the FIFO's free entries are not sent, none
+ * of them (pdmini_tx_fits()).
  *
  * @param ctx  Unused; passed by the driver's callback table.
  * @param p    Bytes to send.

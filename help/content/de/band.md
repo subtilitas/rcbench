@@ -43,9 +43,10 @@ STOP wirkt auf jeder Seite mit Statusband. Ein Druck schaltet den Prüfstand sof
 
 ![Ein eingerastetes STOP und sein Kasten](view:band-stop)
 
-- Bei eingerastetem Stopp bleibt STOP rot mit gelbem Rahmen. Die Taste zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden mit `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.` abgelehnt. Diese Meldung verschwindet im Frame nach dem abgeschlossenen Lösen aus dem Band.
+- Bei eingerastetem Stopp bleibt STOP rot mit gelbem Rahmen. Die Taste zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden mit `STOP gedrückt: Halte STOP 2s, um ihn zu lösen.` abgelehnt. Diese Meldung verschwindet im Frame nach dem abgeschlossenen Lösen aus dem Band.
 - Halte STOP 2s, um den eingerasteten Stopp zu lösen. Die Füllung wechselt dabei von Rot nach Gelb. Das Panel wartet anschließend, bis der IOmcu SAFE und alle Ausgänge als aus meldet, frühestens 500ms nach dem letzten STOP. Dann sendet es wieder den Heartbeat. Der Prüfstand bleibt SAFE. Zum Einschalten jedes Ausgangs musst du dessen Taste erneut halten.
 - Antwortet der IOmcu nicht innerhalb von 2s, bleibt der Stopp eingerastet. Das Alarmband meldet `STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.` Halte STOP erneut.
+- Ein Halten, in das eine zweite Berührung von STOP oder ein Touch-Aussetzer fällt, löst nichts. Das Alarmband meldet `STOP nicht gelöst: Zweite Berührung oder Touch-Aussetzer im Halten. Halte STOP 2s erneut.`
 - Jeder Druck auf das eingerastete STOP löst ebenfalls STOP aus. Zum Zurücksetzen muss ein Finger die vollen 2s auf STOP bleiben. Loslassen vor 2s zeigt `Halte 2s, um den STOP zu lösen.`. Abgleiten von STOP, ein zweiter Finger auf dem Band, ein Seitenwechsel, verlorene Touch-Ereignisse oder ein 100ms lang nicht antwortender Touch-Controller verhindern das Zurücksetzen.
 - Ein Neustart des Panels löst den Stopp. Das Panel startet SAFE mit ausgeschalteten Ausgängen.
 
@@ -81,6 +82,7 @@ Das Hilfefeld von FEHLER ist 1008px breit und erstreckt sich über das Panel. Je
 | 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht, obwohl das Panel sie treibt: bei gedrücktem Not-Aus oder offener Heartbeat-Leitung; ein eingerastetes STOP zeigt stattdessen STOP |
 | 20 | VERSION | nie |
 | 40 | STORE_OFF | der IOmcu kann in diesem Start nicht in seinen Flash schreiben; Einstellungen, die er bekommt, gelten bis zu seinem Neustart |
+| 80 | WATCHDOG | der Watchdog des IOmcu hat ihn neu gestartet, nachdem seine Hauptschleife 500ms stand; alle Ausgänge des IOmcu sind aus, und das Alarmband zeigt `IOMCU NEU GESTARTET (WATCHDOG)`; bleibt bis zum nächsten ARM |
 
 Bei einem Bit, das dieses Release nicht setzt, fordert das Hilfefeld dazu auf, beide Platinen mit demselben Release zu flashen.
 

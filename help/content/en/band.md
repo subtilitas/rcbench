@@ -46,6 +46,7 @@ STOP works on every screen with a status band. Pressing it immediately switches 
 - While it is latched, STOP stays red inside a yellow frame and reads `STOPPED` over `HOLD 2s TO RESET`, and the arm chip reads STOP. ARM, OUTPUT ON, PROG 5V ON, CONNECT and the start of a test or a run are refused, with `STOP pressed: hold STOP 2s to reset.` That alert leaves the band in the frame after the reset completes.
 - Hold the latched STOP for 2s to reset it. The fill turns from red to yellow across the 2s. The panel then waits until the IOmcu reports SAFE and every output off, at least 500ms after the last STOP, and sends the heartbeat again. The bench stays SAFE: each output needs its own hold to switch on again.
 - Without the IOmcu's answer within 2s, the stop stays latched and the alert band says `STOP not reset: the IOmcu did not report every output off within 2s.` Hold STOP again.
+- A hold completed across a second touch on STOP or a touch dropout resets nothing, and the alert band says `STOP not reset: a second touch or a touch dropout broke the hold. Hold STOP 2s again.`
 - A press on a latched STOP is a STOP too. The hold counts only while one finger stays on STOP for the whole 2s. A release before 2s shows `Hold 2s to reset the STOP.`; a finger that slides off STOP, a second finger on the band, a screen change, lost touch events or a touch controller that stops answering for 100ms resets nothing.
 - A restart of the panel clears the latch: the panel starts SAFE with every output off.
 - STOP acts on a press that lands on it, at the press. A finger that slides onto STOP from the screen stops nothing. A finger that lands on STOP and slides off stops all the same.
@@ -80,6 +81,7 @@ The FAULT box spans the panel, 1008px, with one paragraph per set bit:
 | 10 | HEARTBEAT | the safety line from the panel stopped while the panel sends it: a pressed emergency stop or an open heartbeat wire; a latched STOP shows STOP instead |
 | 20 | VERSION | never |
 | 40 | STORE_OFF | the IOmcu cannot write its flash this boot; set-ups sent to it last until it restarts |
+| 80 | WATCHDOG | the IOmcu's watchdog restarted it after its main loop stood still for 500ms; every IOmcu output is off and the alert band shows `IOMCU RESTARTED (WATCHDOG)`; stays until the next arm |
 
 For a bit this release never sets, the box says to flash both boards from one release.
 

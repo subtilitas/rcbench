@@ -219,6 +219,11 @@ bool panel_bal_blec_target(bleu_addr_t *addr, bool *linked,
     return s_q != NULL && bal_ctl_target(&s_ctl, addr, linked, version, down);
 }
 
+bool panel_bal_blec_off(void)
+{
+    return !s_ctl.cfg.en;
+}
+
 void panel_bal_blec_event(const bleu_evt_t *e, uint32_t now)
 {
     if (s_q != NULL) {

@@ -47,7 +47,7 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.37. A request whose answer is lost is sent once more after 50ms.
+4.39. A request whose answer is lost is sent once more after 50ms.
 [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
@@ -65,7 +65,16 @@ on one unbroken contact resets it once the IOmcu reports everything off;
 the bench stays SAFE. One state machine carries the reset out, host-tested
 on its own and over the wire with an IOmcu that confirms and one that never
 does ([STOP as an emergency stop](docs/Stop.md), `test_stop_latch`,
-`test_stop_hold`, `test_safety_gate`). [Reference](docs/Safety.md).
+`test_stop_hold`, `test_safety_gate`). The RP2350's watchdog resets an
+IOmcu whose core 0 does not pass its main loop for 500ms: the reset releases
+every pad, the start after it switches a PD mini left on off, and STATUS
+fault bit 7 reports it to the panel, which shows `IOMCU RESTARTED
+(WATCHDOG)`. The watchdog is fed at the top of a pass and right before
+every flash window, enabled at the first pass, after the BUY on a trial
+boot, and never in the bench console build; with the datasheet maxima of
+the module's flash (Puya P25Q32SH: 30ms a sector erase, 2.5ms a page) the
+longest time between two feeds sums to 108,250us (`loop_watch.h`,
+`test_loop_watch`, `test_reset_cause`). [Reference](docs/Safety.md).
 
 **Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
 role (throttle or surface) rendered by a driver from a table (PWM (pulse-width
@@ -582,7 +591,7 @@ being the meter or no window arrives for 200ms (`SERVO_TEST_WIN_STALE_MS`, 199, 
 201ms and the millis wrap in `test_servo_test_win`), and never goes on with the PD mini.
 
 Currents are compared by magnitude in whole mA; the supply in constant current for 1000ms
-ends a run whatever STALL AT is, and a STALL AT at or above the current limit or the
+ends a run whatever Stall threshold is, and a Stall threshold at or above the current limit or the
 INA3221's range is said on the automatic test's card and in the report. Movement is a
 reading max(0.020A, 3 x the idle readings' standard deviation) from the level before the
 command; a move with none is unseen, neither timed nor late, and a run with unseen moves and
@@ -953,8 +962,11 @@ or `PORT1` to `PORT4`, `BUS`, `PD`, `TAP` (`test_picker_screen`, `test_picker_sc
 another protocol holds asks to move the pin on a card over the board or beside the cell;
 MOVE PIN writes the binding `outbind_take_check()` returns once, CANCEL, the home tag, a press
 off the card, a binding read that fails or changes, a pick and a view switch write nothing; a
-port's, an interface's or OFF's tap gives a reason line (`test_pin_take`, 21 cases, and
-`test_pin_take_grid`, 7 cases, the grid and the rbmod carrier).
+port's, an interface's or OFF's tap gives a reason line, which names the tap made last; for
+400ms after MOVE PIN or CANCEL closes the card a press in its former box is spent
+(`test_pin_take`, 23 cases, and `test_pin_take_grid`, 9 cases, the grid and the rbmod
+carrier). A write the IOmcu refuses reads its cause from BIND's `WHY` register (protocol
+4.38) and shows it on the reason line (`test_bind_link`, `test_outputs_screen_draw`).
 
 ### Output binding in the IOmcu's flash
 
@@ -1273,7 +1285,9 @@ that hand on nothing), the stream of the screen model with its rates and
 SCALE (`shared/ui/dial_stream.c`, `test_dial_stream`), the frame's paths
 into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
 `test_dial_servo`: a 10s Dial press on ARM's place arms nothing, turns while
-SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
+SAFE move nothing, PRESS and HOLD; `test_servo_dial_runs`: the HOLD ends
+RUDDER AUTO and a limit run in each phase, the phases that hold the bench
+SAFE included, and takes back an ARM on its way), SETUP > WIRELESS > DIAL
 (`shared/ui/wireless_pane.c`, `test_wireless_pane`; `test_dial_bind` from
 the tap on SCAN FOR DIAL and BOUND DIAL, the found list with SCAN AGAIN,
 through a model of the frame and `blec` glue, the controller and the hub
@@ -1681,7 +1695,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 606 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1715,7 +1729,7 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`, `test_settings_pins_hub`,
 `test_settings_carrier`, `test_sensors_carrier`, `test_sensors_pane`, `test_settings_leave`,
 `test_settings_folders`, `test_settings_sensors`, `test_settings_keypad`,
-`test_settings_rows`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
+`test_settings_rows`, `test_settings_grid`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
 `test_log_csv`, `test_link_crc`, `test_link_pages`, `test_link_watchdog`,
 `test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
@@ -1723,7 +1737,7 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_outputs_hw_ports`, `test_out_render`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_can_txq`, `test_link_reply_order`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
-`test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
+`test_frame_watch`, `test_loop_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
 `test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
 `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_brownout`,
@@ -1740,7 +1754,7 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
 `test_picker_tags`, `test_pin_take`, `test_pin_take_grid`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
-`test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
+`test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_text_formats`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
 `test_esc_stick_entry`, `test_esc_stick_tap`, `test_esc_stick_profile_timing`, `test_esc_stick_marker`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
@@ -1802,10 +1816,10 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`, `test_dial_button`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
-`test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
+`test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
-`test_servo_limrun_ready`, `test_servo_limrun_seq`,
+`test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
@@ -3021,7 +3035,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1512 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1800 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 261 calls through a register are not followed. The
+holds them. The depth is a lower bound: 262 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

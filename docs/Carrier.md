@@ -202,7 +202,7 @@ covers that case. Rev 1 has no other reading of the input
 | a port holds the 5V (BAD_VALUE) | `PROG ports 5V not switched on: a programming port holds it.` |
 | no answer; the OFF follows | `PROG ports 5V ON not confirmed. Check the link.` |
 | taken across lost touch events; the bench goes SAFE | `Touch signal lost while switching on. PROG ports 5V off.` |
-| a press while a port holds the 5V or the page reads NOT READ | `PROG ports 5V: held by a programming port, or not read.` |
+| a press while a port holds the 5V or the page reads UNKNOWN | `PROG ports 5V: held by a programming port, or not read.` |
 
 ### The PROG 5V box
 

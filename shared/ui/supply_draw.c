@@ -544,7 +544,7 @@ static uint8_t output_tag(void)
 
 /**
  * @brief The programming ports' own supply under OUTPUT, on a board that
- *        switches one: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or `NOT READ`;
+ *        switches one: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or `UNKNOWN`;
  *        nothing on any other board.
  * @param c the canvas
  */

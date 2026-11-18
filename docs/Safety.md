@@ -14,6 +14,7 @@ hardware.
 | --- | --- | --- |
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
 | IOmcu silence watchdog, 200ms | the link is dead in either direction | built and tested |
+| IOmcu loop watchdog, 500ms | core 0 of the IOmcu stops passing its main loop: a fault, a `panic()`, a loop that does not end | built; the decisions are host-tested (`test_loop_watch`, `test_reset_cause`) |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written |
 | Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED, the supply output is on or the carrier's programming-port 5V is live | built; the decision is host-tested (`test_frame_watch`) |
 
@@ -27,6 +28,71 @@ acknowledge) from the IOmcu to either leaves the panel SAFE.
 
 STOP works as an emergency stop button: one touch latches it, a hold of
 2s resets it ([STOP as an emergency stop](Stop.md)).
+
+### IOmcu loop watchdog
+
+Every fail-safe of the IOmcu is polled from the main loop of its core 0:
+the heartbeat monitor, the link's 200ms silence, the step of the outputs
+and the supply's pass. A PWM output and a PPM frame repeat without the
+processor, and the PD mini's output and the programming ports' 5V stay as
+last commanded. The RP2350's watchdog ends a core 0 that stops passing the
+loop: it resets the chip 500ms (`LOOP_WATCH_PERIOD_MS`) after the last
+feed. The rules are in
+[`loop_watch.h`](https://github.com/subtilitas/rcbench/blob/main/shared/safety/include/loop_watch.h).
+
+| | |
+| --- | --- |
+| Feed points | the top of a pass of the main loop, once a pass, and right before every flash window (an erase or a program of the output store or of the update), so a reset does not fall into a write; nowhere else. Only the first 6 windows of a pass are fed, the most a pass holds: a loop that keeps opening windows gets no further feed and is reset 500ms after the sixth |
+| Enabled | at the first pass, after the boot path |
+| Not enabled | while the image runs on trial after an update, until its BUY: the boot ROM owns the watchdog for 16.7s then. Never in the bench console build (`IOMCU_CONSOLE=ON`) |
+| A debugger | a core halted by a debugger pauses the count |
+| Not watched | the boot path before the first pass, 3,500ms at most for the PD mini's switch-off; core 1, which reads the sensor bus |
+
+What the reset does to the outputs:
+
+| Output | After the reset |
+| --- | --- |
+| PWM, PPM, DShot and the programming ports' lines | every pad is released at the reset: no pulse, no frame. An ESC (electronic speed controller) stops on its own signal timeout, a servo holds no position |
+| Programming ports' 5V (rbmod carrier, GPIO 21) | released at the reset, driven low as the first act of the start |
+| PD mini output | stays on through the reset; the start switches it off within 3,500ms (`SUPPLY_PAGE_BOOT_OFF_MS`) when its wiring is saved |
+| Arm latch | set from the start until a CLEAR: nothing drives before the operator holds ARM |
+
+The longest time from the stop of core 0 to the pads' release is 500ms.
+
+Both boards the firmware runs on carry the Waveshare RP2350-CAN module.
+Waveshare's [product page](https://www.waveshare.com/rp2350-can.htm) names
+its flash as P25Q32SH-UXH-IR; the firmware does not read the part out. The
+Puya P25Q32SH datasheet, V1.8 of 2023-10-27, table 5-4, gives a sector
+erase of 16ms typical and 30ms maximum and a page program of 1.6ms typical
+and 2.5ms maximum. The longest window is the update's 4KiB sector, 16
+pages: 40,000µs, and 2,000µs taken for the way into and out of the flash's
+command mode.
+
+The period against the longest time between two feeds, 108,250µs:
+
+| From the feed before a flash window to the top of the next pass | µs |
+| --- | --- |
+| the window's wait for core 1 to stop, `OUT_STORE_LOCKOUT_MS` | 10,000 |
+| the window at the part's maximum | 42,000 |
+| its wait for core 1 to start again | 10,000 |
+| 2 TONE rewires, `TONE_CORE1_WAIT_US` each | 10,000 |
+| `can_drain()` before the update's restart | 35,000 |
+| the store's console line | 1,000 |
+| the rest of a pass, measured maximum | 250 |
+
+500ms is 4.6 times that sum. One window may take 433,750µs before the
+reset falls into it, 10 times the part's maximum. A window measured
+19,178µs on the bring-up module (an erase and a page program, 1 sample). A
+pass holds 6 windows at most; no pass with all of them was measured.
+
+A restart by this watchdog prints `reset LOOP_WATCHDOG` on the IOmcu's
+console ([Bringing up the link](Bringup.md)) and sets STATUS fault bit 7
+(`LINK_FAULT_WATCHDOG`, link protocol 4.39) until a CLEAR. The panel treats
+the bit as an error at the read that first shows it: the bench goes to SAFE
+and the supply's output off, the band shows `FAULT 80` and the alert
+`IOMCU RESTARTED (WATCHDOG)`. The bit goes with the next ARM, ARM + START's
+FAILSAFE CLEAR or STOP's reset. The boot ROM's own 16.7s timer on an update
+that is not bought, and a restart asked over USB, do not set it.
 
 ### Render-loop watchdog
 
@@ -125,7 +191,7 @@ either goes.
 | The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, the IOmcu for the write |
 | An INA3221 channel over its limit | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, at the 200ms read of `OVER`, with one console line a channel ([Screens](Screens.md#sensors-the-ina3221-parts)); the IOmcu for the write |
 | The carrier's programming-port 5V missing or lost under an ON, the panel's or a session's: no INA3221 window of 4750mV or more by 200ms after the ON, or 2 new windows under 3000mV 500ms or more after it ([Carrier, PROG 5V missing or lost](Carrier.md#prog-5v-missing-or-lost)) | SAFE | the session's 5V off, after a write that runs; under a session the finding waits for a page read that still reads GPIO 21 on | off | the panel, with one alert and one console line; the IOmcu for the PROG_SUPPLY OFF |
-| A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
+| A run's current limit: Stall threshold, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
 | A step of SERVO's start sequence fails on LIVE, SWEEP, RUDDER or RUDDER AUTO: PORT PWM, PROG 5V or the PD mini not read back within 1000ms, not ARMED within 500ms, a tap on the hold, a STOP ([Servo: AUTO end points](Servo.md#auto-end-points)) | SAFE | none open: ARM is refused while a session holds a port | off; PROG 5V off as well | the SERVO screen (`svs_all_off()`) |
 | The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | the port's supply off, after a write that runs | off where it can be switched: the module's protection and a sagging input at once, a write included; the rest after a port's write, 10000ms at most | the IOmcu's driver for the output, the panel for SAFE |
 | A KST or Hitec operation ends in a fault of the servo or the wire (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), or the ESC_WIRE page reports `FAULT` or reaches `NOT_BACK` (`esc_link_faults()`) | SAFE already: a session runs on a SAFE bench | the port's supply off; the operation has ended | off | the panel (`prog_faults_follow()`) |
@@ -308,7 +374,7 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   Without a PD mini reading only the check after the ON applies.
 
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
-or `NOT READ` when the last read went unanswered. The core is
+or `UNKNOWN` when the last read went unanswered. The core is
 `shared/outputs/prog_supply.c` under `test_prog_supply`; the panel's end
 is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`, the
 box `shared/ui/prog5v_box.c` under `test_prog5v_box`.
@@ -406,12 +472,16 @@ the gap:
 | | Direct wire and firmware | With the monostable |
 |---|---|---|
 | The panel stops beating, the IOmcu is healthy | switches to SAFE after HEARTBEAT_MAX_GAP_MS | the same, and sooner or later by its own timing |
-| The panel stops beating and the IOmcu cannot act (wedged, or not servicing its monitor) | nothing switches to SAFE; the bank goes on driving | the outputs are removed anyway |
-| The panel is healthy and the IOmcu misbehaves | the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
+| The panel stops beating and the IOmcu cannot act (wedged, or not servicing its monitor) | the IOmcu's loop watchdog resets it 500ms after its last pass: every pad is released, the PD mini goes off within 3,500ms of the start | the outputs are removed anyway, without the 500ms |
+| The panel is healthy and the IOmcu misbehaves | a core 0 that stops passing its loop is reset by the loop watchdog; for one that passes the loop and drives wrongly, the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
 
-The third row is not a case the monostable is for, and no hardware in this
-design covers it. Until the part is fitted, the second row is uncovered too,
-and firmware at both ends is the whole of the interlock.
+The third row is not a case the monostable is for. The
+[IOmcu loop watchdog](#iomcu-loop-watchdog) covers the stopped core in rows
+two and three; it is a part of the same chip and runs on the same clock and
+supply, so it is no second channel. An IOmcu that passes its loop and
+drives wrongly is covered by no hardware in this design. Until the
+monostable is fitted, firmware at both ends and the chip's watchdog are the
+whole of the interlock.
 
 ## Heartbeat monitor
 
@@ -429,6 +499,8 @@ The check is asymmetric: four good intervals before the line is trusted, one
 bad interval or one silent window to distrust it. The IOmcu refuses to
 switch to ARMED while the line is not trusted, and switches its outputs to SAFE and sets its arm
 latch when it stops.
+
+A flash window (17 to 25ms) stops the loop that samples the line. The loop tells the monitor each window's length (`heartbeat_mon_window()`); the monitor adds it to the two intervals beside the edge sampled next before the 4ms comparison. The line stays trusted: no FAULT 10, no arm latch, no refused ARM or supply ON. The 150ms ceiling stays.
 
 The heartbeat is generated by the control task, which owns STOP and runs
 every 5ms on core 1, the core that does not draw. It is not generated by a
@@ -491,7 +563,7 @@ holds.
 | --- | --- |
 | An IOmcu start | power-on, a reset, the RUN pin, a reflash |
 | Link silence | 200ms without a request, together with the link failsafe |
-| The heartbeat is distrusted | one interval under 4ms or over 150ms, or 150ms without an edge |
+| The heartbeat stops being trusted | on a trusted line: one interval under 4ms or over 150ms, or 150ms without an edge. A line that is not trusted sets no latch when an interval is rejected |
 | A refused ARM | an ARM answered NOT_ARMED, so a CLEAR followed by a refused ARM leaves the latch set |
 
 One thing clears it: a write of 0x5AFE to CLEAR on the control page. The
@@ -703,7 +775,9 @@ reads the state and shows the alert, is not in the coverage figure.
   auto-suspend is off, so each erase or write stalls both of the panel's
   cores, the control task with its heartbeat, STOP, OUTPUT OFF and the
   supply trips included. The rule is `flash_gate_open()` in
-  `shared/safety/flash_gate.c`, under `test_flash_gate`. It holds back the
+  `shared/safety/flash_gate.c`, under `test_flash_gate`. An ARM queued by
+  a screen and not yet taken by the control task counts as a switch to
+  ARMED waiting (`flash_gate_arm()`). It holds back the
   settings save and the board drawing's keep. Switching to ARMED and the supply are
   never refused for a write: the write waits. The keep (2 erases of 4kB and
   2 writes for the RP2350-CAN's 1,560-byte drawing) runs one sector per 5ms

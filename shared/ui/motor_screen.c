@@ -263,6 +263,9 @@ void motor_screen_push(const bench_state_t *b)
             s.pk_ok[i] = true;
         }
     }
+    if (b->valid && bench_state_rpm_over(b)) {
+        s.pk_ok[S_RPM] = true;      /* a speed above the ceiling is a peak */
+    }
     const float v[S_COUNT] = { b->voltage, b->current, b->power, b->rpm };
     ui_plot_push(&s.plot, v);
     ui_plot_update_scales(&s.plot, PLOT_W);

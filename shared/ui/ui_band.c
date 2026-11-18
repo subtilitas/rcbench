@@ -353,8 +353,9 @@ static bubble_buf_t s_bubble;
 
 /* The link_fault_t bits by name.  `never` marks a bit no firmware of this
  * release sets: STATUS's bitmap is written in one place on the
- * IOmcu, from safety_gate_status() and the flash store, which set
- * LINK_SILENT, HEARTBEAT and STORE_OFF and nothing else. */
+ * IOmcu, from safety_gate_status(), the flash store and the loop's
+ * watchdog (loop_watch_fault()), which set LINK_SILENT, HEARTBEAT,
+ * STORE_OFF and WATCHDOG and nothing else. */
 static const struct {
     uint16_t     bit;  /**< the fault bit */
     const char  *name;  /**< the bit's name */
@@ -368,6 +369,7 @@ static const struct {
     { LINK_FAULT_HEARTBEAT,   "HEARTBEAT",   TX_BH_F_HEARTBEAT,   false },
     { LINK_FAULT_VERSION,     "VERSION",     TX_BH_F_VERSION,     true  },
     { LINK_FAULT_STORE_OFF,   "STORE_OFF",   TX_BH_F_STORE_OFF,   false },
+    { LINK_FAULT_WATCHDOG,    "WATCHDOG",    TX_BH_F_WATCHDOG,    false },
 };  /**< the link_fault_t bits by name, in bit order */
 
 /**

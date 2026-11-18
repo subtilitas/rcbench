@@ -10,8 +10,11 @@
  * offer UPDATES shows; a newer release moves the current step back to
  * PANEL; CANCEL UPDATE stands only while a device's transfer runs and is
  * grey from END; a device's phases on the hold's face; a failed attempt's
- * reason on the card with the hold live; the last card names the steps
- * not connected, not updatable and skipped; the WI-FI button only while no
+ * reason on the card with the hold live; a check started beside a device's
+ * transfer leaves the device's ask and CANCEL UPDATE on the card; a failed
+ * install on the card with its retry and OPTIONS live; the last card names
+ * the steps not connected, not updatable (a device OFF on WIRELESS among
+ * them) and skipped under one of its three headings; the WI-FI button only while no
  * step blocks; OPTIONS grey while a check or an update runs; STOP and
  * ARMED during each step; a second finger starts nothing and STOP is not
  * shadowed; every state inside its canvas in both languages; the rows'
@@ -574,6 +577,35 @@ TEST_CASE(cancel_update_stands_only_while_a_device_transfer_runs)
     }
 }
 
+/* A check that starts while a device's transfer runs: the device's step
+ * stays current, its card keeps the ask, CANCEL UPDATE stays in the footer
+ * and still cancels; PANEL's row reads CHECKING. */
+TEST_CASE(a_check_under_a_device_transfer_keeps_the_ask_and_cancel_update)
+{
+    const gfx_rect_t cr = ui_footer_rect(UI_FOOTER_HOLD);
+    for (unsigned d = 0u; d < UPD_DEV_COUNT; ++d) {
+        on_step(UPD_WIZ_DIAL + d);
+        g_d[d].row = DEVUPD_ROW_UPDATING;
+        g_d[d].phase = DEVUPD_CONFIRM;
+        g_d[d].secs = 27u;
+        hand();
+        CHECK_EQ(wiz().current, UPD_WIZ_DIAL + d);
+        CHECK(wiz().cancel);
+        g_v.job = UPD_JOB_CHECK;           /* the application's check */
+        g_v.phase = UPD_PH_JOINING;
+        g_v.got = UPD_GOT_NONE;
+        hand();
+        const upd_wiz_t w = wiz();
+        CHECK_EQ(w.step[UPD_WIZ_PANEL].tag, UPD_WIZ_TAG_CHECKING);
+        CHECK_EQ(w.current, UPD_WIZ_DIAL + d);
+        CHECK(w.cancel);
+        CHECK(card_has(d == UPD_DEV_DIAL ? TR(UPD_WIZ_ASK_DIAL)
+                                         : TR(UPD_WIZ_ASK_NODE)));
+        tap(upd(), cr.x + cr.w / 2, cr.y + cr.h / 2);
+        CHECK_EQ(drain(), (unsigned)F_CANCEL);
+    }
+}
+
 /* The device's transfer on the hold's face: connecting, the ask with the
  * seconds the device gave, the share it took; the card says how to
  * accept; the hold takes no press then. */
@@ -686,7 +718,130 @@ TEST_CASE(a_failed_download_blocks_nothing_and_check_is_the_way_back)
     }
 }
 
-/* The last card: all firmware current, the IOmcu without a link and a
+/* A download that ended STAGED and an install that failed after it: PANEL
+ * reads FAILED and blocks nothing, the card says so with the retry under
+ * it, OPTIONS is live, CHECK is the way back, and the IOmcu's step behind
+ * it is current with its hold. */
+TEST_CASE(a_failed_install_shows_on_the_card_and_blocks_nothing)
+{
+    on_step(UPD_WIZ_PANEL);
+    g_v.job = UPD_JOB_DOWNLOAD;
+    g_v.got = UPD_GOT_STAGED;
+    hand();
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_PANEL);  /* installing */
+    tap(upd(), UP_SET_X, UP_SET_Y);
+    CHECK(!upd()->covered());
+    g_v.got = UPD_GOT_INSTALL;
+    hand();
+    upd_wiz_t w = wiz();
+    CHECK_EQ(w.current, (unsigned)UPD_WIZ_NONE);
+    CHECK_EQ(w.step[UPD_WIZ_PANEL].tag, UPD_WIZ_TAG_FAILED);
+    CHECK(card_has(TR(UPD_FAIL_INSTALL)));
+    CHECK(card_has(TR(UPD_FAIL_INSTALL_2)));
+    CHECK(!card_has(TR(UPD_STAGED)));
+    CHECK(card_has(TR(UPD_WIZ_END_NO_CHECK)));
+    tap(upd(), UP_BTN_X, UP_CHECK_Y);
+    CHECK_EQ(drain(), (unsigned)F_CHECK);
+    tap(upd(), UP_SET_X, UP_SET_Y);
+    CHECK(upd()->covered());                           /* OPTIONS opens */
+    list_back();
+
+    g_cu.sec = CU_SEC_READY;
+    g_cu.running = (cu_version_t){ 0, 18, 0 };
+    hand();
+    w = wiz();
+    CHECK_EQ(w.current, (unsigned)UPD_WIZ_IOMCU);
+    CHECK(w.act_live);
+}
+
+/* The last card's heading: all firmware current only with every step
+ * current; not checked for a panel release with PANEL NOT CHECKED or
+ * FAILED and the rest current; else no step open.  One heading at a
+ * time. */
+TEST_CASE(the_end_card_heading_follows_the_steps)
+{
+    const char *const all = TR(UPD_WIZ_DONE_HEAD);
+    const char *const none = TR(UPD_WIZ_END_NONE_OPEN);
+    const char *const nochk = TR(UPD_WIZ_END_NO_CHECK);
+    fresh();
+    ui_router_goto(SCREEN_UPDATES);
+    all_current();
+    hand();
+    CHECK(card_has(all) && !card_has(none) && !card_has(nochk));
+
+    /* No check since the start; a check that failed. */
+    g_v.phase = UPD_PH_IDLE;
+    g_v.got = UPD_GOT_NONE;
+    hand();
+    CHECK(!card_has(all) && !card_has(none) && card_has(nochk));
+    g_v.phase = UPD_PH_ENDED;
+    g_v.got = UPD_GOT_TIMEOUT;
+    hand();
+    CHECK(!card_has(all) && !card_has(none) && card_has(nochk));
+
+    /* A newer release skipped. */
+    on_step(UPD_WIZ_PANEL);
+    tap(upd(), UP_ACT_X, UP_SKIP_Y);
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_NONE);
+    CHECK(!card_has(all) && card_has(none) && !card_has(nochk));
+
+    /* Nothing known: no check, no IOmcu link, no C6 version. */
+    fresh();
+    ui_router_goto(SCREEN_UPDATES);
+    all_current();
+    g_v.phase = UPD_PH_IDLE;
+    g_v.got = UPD_GOT_NONE;
+    g_cu.sec = CU_SEC_NO_LINK;
+    g_c6.known = false;
+    g_c6.row = FW_C6_ROW_READY;
+    hand();
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_NONE);
+    CHECK(!card_has(all) && card_has(none) && !card_has(nochk));
+
+    /* No device of any kind bound: still current. */
+    all_current();
+    for (unsigned d = 0u; d < UPD_DEV_COUNT; ++d) {
+        g_d[d].row = DEVUPD_ROW_NOT_LINKED;
+        g_d[d].bound = false;
+        g_d[d].known = false;
+    }
+    hand();
+    CHECK(card_has(all) && !card_has(none) && !card_has(nochk));
+}
+
+/* A bound device OFF on WIRELESS in a run: its step does not wait, the
+ * card does not ask to switch it on, and the last card's "No update here"
+ * line names it; the same device ON waits. */
+TEST_CASE(a_device_off_on_wireless_does_not_wait_in_a_run)
+{
+    for (unsigned d = 0u; d < UPD_DEV_COUNT; ++d) {
+        fresh();
+        ui_router_goto(SCREEN_UPDATES);
+        all_current();
+        upd_screen_set_run(true);
+        g_d[d].row = DEVUPD_ROW_NOT_LINKED;
+        g_d[d].known = false;
+        hand();
+        CHECK_EQ(wiz().current, UPD_WIZ_DIAL + d);       /* ON: it waits */
+        CHECK(card_has(d == UPD_DEV_DIAL ? TR(UPD_WIZ_WAIT_DIAL)
+                                         : TR(UPD_WIZ_WAIT_NODE)));
+        g_d[d].off = true;
+        hand();
+        const upd_wiz_t w = wiz();
+        CHECK_EQ(w.current, (unsigned)UPD_WIZ_NONE);
+        CHECK_EQ(w.step[UPD_WIZ_DIAL + d].tag, UPD_WIZ_TAG_OFF);
+        CHECK(!card_has(TR(UPD_WIZ_WAIT_DIAL)));
+        CHECK(!card_has(TR(UPD_WIZ_WAIT_NODE)));
+        char line[96];
+        snprintf(line, sizeof(line), TR(UPD_WIZ_END_OTHER),
+                 upd_wiz_name(UPD_WIZ_DIAL + d));
+        CHECK(card_has(line));
+        CHECK(card_has(TR(UPD_WIZ_END_NONE_OPEN)));
+        upd_screen_set_run(false);
+    }
+}
+
+/* The last card: no step open, the IOmcu without a link and a
  * device not connected named, a step without firmware named, a skipped
  * step named; a device not bound named nowhere. */
 TEST_CASE(the_end_card_names_skipped_and_absent_steps)
@@ -702,7 +857,8 @@ TEST_CASE(the_end_card_names_skipped_and_absent_steps)
     tap(upd(), UP_ACT_X, UP_SKIP_Y);
     const upd_wiz_t w = wiz();
     CHECK_EQ(w.current, (unsigned)UPD_WIZ_NONE);
-    CHECK(card_has(TR(UPD_WIZ_DONE_HEAD)));
+    CHECK(card_has(TR(UPD_WIZ_END_NONE_OPEN)));
+    CHECK(!card_has(TR(UPD_WIZ_DONE_HEAD)));
     char line[96], names[64];
     snprintf(names, sizeof(names), "%s, %s", upd_wiz_name(UPD_WIZ_IOMCU),
              upd_wiz_name(UPD_WIZ_PNODE));
@@ -902,10 +1058,14 @@ int main(void)
     RUN(skip_advances_and_show_skipped_returns);
     RUN(skip_on_the_iomcu_step_hands_over_the_decline_while_an_offer_stands);
     RUN(cancel_update_stands_only_while_a_device_transfer_runs);
+    RUN(a_check_under_a_device_transfer_keeps_the_ask_and_cancel_update);
     RUN(the_device_step_shows_connecting_the_ask_with_seconds_and_the_share);
     RUN(a_held_c6_retry_keeps_the_failure_reason_on_the_card);
     RUN(a_failed_attempt_shows_its_reason_and_keeps_the_hold);
     RUN(a_failed_download_blocks_nothing_and_check_is_the_way_back);
+    RUN(a_failed_install_shows_on_the_card_and_blocks_nothing);
+    RUN(the_end_card_heading_follows_the_steps);
+    RUN(a_device_off_on_wireless_does_not_wait_in_a_run);
     RUN(the_end_card_names_skipped_and_absent_steps);
     RUN(no_home_network_shows_the_wifi_button_only_while_no_step_blocks);
     RUN(options_is_grey_while_any_update_or_check_runs);

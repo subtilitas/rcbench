@@ -25,11 +25,11 @@ Der Host-Renderer liefert die Frames für die Bilder in diesem Abschnitt. Die Bi
 | CH01 bis CH16 | eine Spur je Kanal: etwa 2,8s Verlauf bei 71 Frames je Sekunde, 200 Werte, ein Balken für den aktuellen Wert und der Wert in us |
 | Zustandsblock | KEIN SIGNAL, FRAME LOST, FAILSAFE oder LIVE, mit einer Zeile darunter |
 | BUS | `S.BUS` |
-| RATE | Frames pro Sekunde, in Hz |
+| RATE | Frames pro Sekunde, in Hz: die Frames eines Fensters von mindestens 1000ms geteilt durch seine Länge; `---` in der ersten Sekunde und nach einer Stille |
 | FRAMES, RESYNC, BAD TAIL | dekodierte Frames, Neusynchronisierungen, Frames mit einem Abschluss, den der Decoder ablehnt |
 | DIGITAL | CH17 und CH18 als Leuchten: Der Punkt leuchtet, solange der Kanal gesetzt ist. Die Leuchten reagieren nicht auf Antippen. |
 
-Ein Störimpuls ist eine Spitze in einer Spur. Ein Aussetzer ist eine Kerbe quer über alle sechzehn Spuren im selben Moment.
+Ein Störimpuls ist eine Spitze in einer Spur. Ein Aussetzer ist eine Linie über die Höhe der Spur in allen sechzehn Spuren beim selben Wert; die Spur ist auf beiden Seiten unterbrochen. Bei KEIN SIGNAL bleiben die letzten Werte in der blassen Farbe stehen.
 
 | Zustand | Zeile | Bedeutung |
 |---|---|---|
@@ -44,7 +44,7 @@ Im Zustand FAILSAFE ist jede Spur rot. Der Empfänger sendet sechzehn formal gü
 
 ## ROHDATEN
 
-ROHDATEN zeigt den letzten Frame als hexadezimale Bytes, 8 je Zeile. Kopf- und Abschlussbyte erscheinen in der Akzentfarbe. Darunter stehen die Bytezahl und die Pause zur Trennung der Frames, `25 Bytes; 2000us Pause zwischen den Frames`, gefolgt von den Zählern für Resync und Bad tail. Mit KANÄLE und ROHDATEN wechselst du die linke Ansicht.
+ROHDATEN zeigt den letzten Frame als hexadezimale Bytes, 8 je Zeile. Kopf- und Abschlussbyte erscheinen in der Akzentfarbe. Darunter stehen die Bytezahl und die Pause zur Trennung der Frames, `25 Bytes; 2000us Pause zwischen den Frames`, gefolgt von den Zählern RESYNC und BAD TAIL. Mit KANÄLE und ROHDATEN wechselst du die linke Ansicht.
 
 ## Verwandte Seiten
 

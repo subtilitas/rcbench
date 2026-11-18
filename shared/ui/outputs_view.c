@@ -19,6 +19,11 @@
 #include "picker_screen.h"
 #include "ui_board.h"
 
+#include <stdio.h>
+
+#include "link_pages.h"
+#include "ui_text.h"
+
 #include "outputs_screen_int.h"
 
 /** @brief The board view is the one drawn. */
@@ -47,6 +52,47 @@ static void view_sync(void)
         outputs_screen_invalidate();
         picker_screen_invalidate();
     }
+}
+
+/** @brief Why the IOmcu refused the last write, a link_bind_why_t. */
+static uint8_t s_why;
+
+void outputs_screen_set_why(uint8_t why)
+{
+    if (why != s_why) {
+        s_why = why;
+        outputs_screen_invalidate();
+        picker_screen_invalidate();
+    }
+}
+
+bool outputs_write_reason(char *buf, size_t cap)
+{
+    static const ui_text_id_t k_why[LINK_BW_COUNT] = {
+        [LINK_BW_VALUE]    = TX_OUT_WHY_VALUE,
+        [LINK_BW_PREPARED] = TX_OUT_WHY_PREPARED,
+        [LINK_BW_ESC_WIRE] = TX_OUT_WHY_ESC_WIRE,
+        [LINK_BW_ARMED]    = TX_OUT_WHY_ARMED,
+        [LINK_BW_BOARD]    = TX_OUT_WHY_BOARD,
+        [LINK_BW_PORT]     = TX_OUT_WHY_PORT,
+        [LINK_BW_SUPPLY]   = TX_OUT_WHY_SUPPLY,
+        [LINK_BW_SENSE]    = TX_OUT_WHY_SENSE,
+        [LINK_BW_TONE]     = TX_OUT_WHY_TONE,
+        [LINK_BW_RATE]     = TX_OUT_WHY_RATE,
+        [LINK_BW_PULSE]    = TX_OUT_WHY_PULSE,
+        [LINK_BW_SILICON]  = TX_OUT_WHY_SILICON,
+        [LINK_BW_PD_UART]  = TX_OUT_WHY_PD_UART,
+    };
+    if (buf == NULL || cap == 0u) {
+        return false;
+    }
+    buf[0] = '\0';
+    if (outputs_screen_result() != OUTPUTS_REFUSED
+        || s_why == (uint8_t)LINK_BW_NONE || s_why >= (uint8_t)LINK_BW_COUNT) {
+        return false;
+    }
+    snprintf(buf, cap, "%s", ui_tr(k_why[s_why]));
+    return true;
 }
 
 bool outputs_view_is_board(void)

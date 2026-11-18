@@ -576,11 +576,13 @@ void ui_router_set_alert(const char *text);
  *        button released early.
  *
  * A notice clears after UI_NOTICE_SHOW_S or at a tap on the band. An alert
- * takes priority: a notice is not shown while ui_router_set_alert() or
- * ui_router_hold_alert() has one up, and an alert set while a notice shows
- * replaces it. A notice replaces another notice. A DOWN on STOP, a fault
- * bit that comes up in ui_router_set_status() and a switch from ARMED to
- * SAFE clear a notice at once.
+ * takes priority: while ui_router_set_alert() or ui_router_hold_alert() has
+ * one up, one notice waits, the latest, and shows for its own
+ * UI_NOTICE_SHOW_S once the alert has cleared by its time, a tap or its
+ * owner. An alert set while a notice shows replaces it. A notice replaces
+ * another notice. A DOWN on STOP, a fault bit that comes up in
+ * ui_router_set_status() and a switch from ARMED to SAFE clear a notice at
+ * once, the waiting one too.
  * @param text The notice; NULL does nothing.
  */
 void ui_router_set_notice(const char *text);

@@ -126,6 +126,12 @@ void bench_state_to_regs(const bench_state_t *b, uint16_t *regs)
     regs[LINK_BN_POWER_MAX_W] = to_u16(b->power_max, 1.0f);
     regs[LINK_BN_RPM_MAX]     = to_u16(b->rpm_max, 1.0f);
     regs[LINK_BN_FLAGS]       = b->flags;
+    /* Above the register's ceiling the speed is a bound, not a reading: the
+     * valid bit goes, and 65535 without it says which way. */
+    if ((b->flags & (uint16_t)LINK_BN_RPM_OK) != 0u
+        && b->rpm > BENCH_RPM_REG_MAX) {
+        regs[LINK_BN_FLAGS] &= (uint16_t)~(uint16_t)LINK_BN_RPM_OK;
+    }
 }
 
 void bench_state_run_starts(bench_state_t *b, uint16_t *regs)
@@ -230,8 +236,8 @@ void bench_state_reset_peaks(bench_state_t *b)
 void bench_totals_reset(bench_totals_t *t)
 {
     if (t != NULL) {
-        t->mah     = 0.0f;
-        t->wh      = 0.0f;
+        t->mah     = 0.0;
+        t->wh      = 0.0;
         t->counted = 0u;
         t->run_s   = 0.0f;
     }
@@ -263,24 +269,25 @@ void bench_totals_count(bench_totals_t *t, const bench_state_t *b,
          * reading and is taken, up or down.  Energy has no floor to pass:
          * the INA228 accumulates unsigned power. */
         const bool past_ceiling = b->charge_mah == BENCH_CHARGE_MAH_MAX
-                                  && t->mah > b->charge_mah;
-        const bool past_floor = b->charge_mah == 0.0f && t->mah < 0.0f;
+                                  && t->mah > (double)b->charge_mah;
+        const bool past_floor = b->charge_mah == 0.0f && t->mah < 0.0;
         if (!past_ceiling && !past_floor) {
-            t->mah = b->charge_mah;
+            t->mah = (double)b->charge_mah;
         }
-        if (!(b->energy_wh == BENCH_ENERGY_WH_MAX && t->wh > b->energy_wh)) {
-            t->wh = b->energy_wh;
+        if (!(b->energy_wh == BENCH_ENERGY_WH_MAX
+              && t->wh > (double)b->energy_wh)) {
+            t->wh = (double)b->energy_wh;
         }
         t->counted |= (uint8_t)(BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY);
         return;
     }
     const uint16_t both = (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
     if ((b->flags & (uint16_t)LINK_BN_CURRENT_OK) != 0u) {
-        t->mah += b->current * dt * (1000.0f / 3600.0f);
+        t->mah += (double)b->current * (double)dt * (1000.0 / 3600.0);
         t->counted |= BENCH_COUNTED_CHARGE;
     }
     if ((b->flags & both) == both) {
-        t->wh += b->power * dt * (1.0f / 3600.0f);
+        t->wh += (double)b->power * (double)dt * (1.0 / 3600.0);
         t->counted |= BENCH_COUNTED_ENERGY;
     }
 }
@@ -290,8 +297,8 @@ void bench_totals_show(const bench_totals_t *t, bench_state_t *b)
     if (t == NULL || b == NULL) {
         return;
     }
-    b->charge_mah = t->mah;
-    b->energy_wh  = t->wh;
+    b->charge_mah = (float)t->mah;
+    b->energy_wh  = (float)t->wh;
     b->counted    = t->counted;
 }
 

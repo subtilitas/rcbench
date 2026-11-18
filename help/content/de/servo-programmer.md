@@ -34,7 +34,7 @@ Die rechte Karte ist die Karte BEREIT mit drei Zeilen auf KST, vier auf HITEC, u
 - PORT: der Port, an dem die Sitzung arbeitet. Rot mit `KEIN PROG-PORT`, solange der Tester OUTPUTS ansteuert. Ein Tippen öffnet die Liste PORT; hält die Sitzung den Port, bleibt die Liste zu und das Alarmband nennt die Sperre.
 - SERIE, nur auf HITEC: D-SERIE oder KLASSISCH, die Serie, mit der das nächste VERBINDEN arbeitet. Ein Tippen öffnet die beiden über der linken Spalte; eine Wahl wird gespeichert und ist auch die SERIE des Reiters SERVO. Hält die Sitzung den Port, zeigt die Zeile die Serie der Sitzung, und ein Tippen nennt `Tippe zuerst auf VERLASSEN: die Sitzung behält ihre Serie.` im Alarmband.
 - Die Versorgung, die VERBINDEN schaltet: PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus. Ein roter Punkt und `EIN`, solange an; dann schaltet ein Druck sie aus wie AUSGANG AUS. Ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`.
-- SERVO: `NICHT VERBUNDEN` vor VERBINDEN, `NICHT GELESEN` bei gehaltenem Port, danach der Typ des Servos, `V6?`, solange er die Vermutung aus 20k_sel ist.
+- SERVO: `NICHT VERBUNDEN` vor VERBINDEN, `NICHT AUSGELESEN` bei gehaltenem Port, danach der Typ des Servos, `V6?`, solange er die Vermutung aus 20k_sel ist.
 
 Ein Tippen auf eine nicht erfüllte Zeile nennt sie im Alarmband. Die Mitte der Fußleiste ist WERTE SCHREIBEN der Sitzung, von jeder Registerkarte aus, wie die Taste der Sitzung. Sie ist grau vor VERBINDEN und Lesen, ohne geänderten Wert und solange eine Seite offen ist; ein Tippen nennt den Grund. KST hat kein ARM. OPTIONEN öffnet die Seite KST EXPERT MODE; es ist grau, solange die Sitzung den Port hält.
 

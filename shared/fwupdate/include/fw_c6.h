@@ -115,7 +115,10 @@ typedef enum {
     FW_C6_WHY_RADIO,       /**< Wi-Fi is on, or a session asks for it     */
     FW_C6_WHY_BLE,         /**< Bluetooth LE's start (blestart) runs      */
     FW_C6_WHY_DEVICE,      /**< a wireless device's update runs on the C6 */
-    FW_C6_WHY_ENDING,      /**< a step of an ended update is still in a call */
+    FW_C6_WHY_PROG,        /**< a servo or ESC programmer holds a port, or
+                                a session's start is claimed              */
+    FW_C6_WHY_ENDING,      /**< a step of an ended update is still in a call,
+                                or the restart after a success is due     */
 } fw_c6_why_t;
 
 /** @brief What the application knows for the row, once a frame. */
@@ -128,6 +131,8 @@ typedef struct {
     bool         link_failed; /**< c6_link_failed()                       */
     bool         updating;    /**< fw_c6_ota_active()                     */
     bool         ending;      /**< the step task is still in a call       */
+    bool         restarting;  /**< fw_c6_restart_pending(): the update
+                                   ended UPDATED, the panel restarts      */
     bool         armed;       /**< ARMED or an arm waiting                */
     bool         supply;      /**< the supply's output on or coming       */
     bool         run;         /**< a log run open                         */
@@ -137,13 +142,19 @@ typedef struct {
     bool         radio_up;    /**< !wifi_access_down()                    */
     bool         ble_starting; /**< panel_ble_state() is STARTING         */
     bool         device;      /**< a wireless device's update runs        */
+    bool         prog;        /**< fw_c6_prog_open(): a programmer holds a
+                                   port or a session's start is claimed   */
 } fw_c6_feed_t;
 
 /**
  * @brief The row's state, in this order: no image, a bad image, an update
- *        running, a failed link, then the bench's reasons in fw_c6_why_t's
- *        order; else REINSTALL when the C6 reports the carried version,
- *        else READY.
+ *        running, a restart due (BLOCKED, FW_C6_WHY_ENDING), a failed link,
+ *        then the bench's reasons in fw_c6_why_t's order; else REINSTALL
+ *        when the C6 reports the carried version, else READY.
+ *
+ * From an update's end UPDATED to the restart the C6 still reports the
+ * version it ran before: the row is BLOCKED for that time, so no hold starts
+ * a second transfer the restart would cut.
  *
  * A C6 that reported no version is offered the update: the shipped
  * firmware does not answer the version request.
@@ -290,6 +301,158 @@ bool fw_c6_ota_active(const fw_c6_ota_t *o);
  * @return 0 to 100
  */
 unsigned fw_c6_ota_percent(const fw_c6_ota_t *o);
+
+/* ------------------------------------------ what the bench may not start */
+
+/** @brief What is asked of the bench while a C6 update may be running. */
+typedef enum {
+    FW_C6_ASK_OFF = 0,     /**< an OFF, a DISARM, a STOP, a session's
+                                LEAVE, CLEAR or CLOSE                      */
+    FW_C6_ASK_ARM,         /**< a switch to ARMED                          */
+    FW_C6_ASK_SUPPLY_ON,   /**< the supply's OUTPUT ON                     */
+    FW_C6_ASK_PROG5V_ON,   /**< the PROG ports' 5V ON                      */
+    FW_C6_ASK_SESSION,     /**< a programmer session's start: a port taken
+                                or powered (KST, Hitec, ESC)               */
+} fw_c6_ask_t;
+
+/**
+ * @brief Whether @p ask is refused because of the C6 radio's update.
+ *
+ * A successful update ends in a restart of the panel: the heartbeat stops
+ * and the IOmcu switches every output off.  So from the update's start to
+ * that restart (@p busy) nothing that arms, powers an output or takes a
+ * programming port is started.  What switches off or gives a port back is
+ * never refused.
+ *
+ * @param busy the update runs, a step of it is still in a call, or its
+ *             restart is due
+ * @param ask  what is asked
+ * @return true when the ask is refused; the caller says why
+ */
+bool fw_c6_refuses(bool busy, fw_c6_ask_t ask);
+
+/* ----------------------------------- a programmer session and the update */
+
+/** @brief How long a session's start counts as a held port before the
+ *         link's status shows the port taken, ms: above one unanswered
+ *         exchange of LINK_HOST_TIMEOUT_MS (1000ms) and the status read
+ *         after it. */
+#define FW_C6_PROG_CLAIM_MS 2000u
+
+/**
+ * @brief A programmer session's start, claimed before the port reads taken.
+ *
+ * The update and a session exclude each other, and they start on two tasks.
+ * Each side first publishes its own flag and then reads the other's:
+ *
+ * - the control task, on a session's start: fw_c6_prog_claim() and the
+ *   published fw_c6_prog_open(), then fw_c6_refuses(busy,
+ *   FW_C6_ASK_SESSION);
+ * - the render side, on the update's hold: busy published, then
+ *   fw_c6_row() with fw_c6_feed_t.prog.
+ *
+ * The side that publishes and reads before the other publishes starts, and
+ * the other is refused.  When both publish before either reads, the first
+ * to read is refused; the second starts only if the first has withdrawn its
+ * flag by then.  Never do both start.
+ */
+typedef struct {
+    bool     on;        /**< a start is claimed                            */
+    uint32_t since_ms;  /**< when                                          */
+} fw_c6_prog_t;
+
+/**
+ * @brief A session's start is about to be judged: counts as a held port
+ *        from here.
+ * @param c      the claim
+ * @param now_ms now
+ */
+void fw_c6_prog_claim(fw_c6_prog_t *c, uint32_t now_ms);
+
+/**
+ * @brief The start was refused: the claim ends.
+ * @param c the claim
+ */
+void fw_c6_prog_release(fw_c6_prog_t *c);
+
+/**
+ * @brief Whether a programmer counts as holding a port for the update's
+ *        gates: the link says a port is taken, or a start was claimed less
+ *        than FW_C6_PROG_CLAIM_MS ago.
+ *
+ * A port that reads taken ends the claim: from there the link's status
+ * decides alone.
+ *
+ * @param c      the claim
+ * @param taken  the link's status says a programmer holds a port
+ * @param now_ms now
+ * @return true while a port is held or a start is claimed
+ */
+bool fw_c6_prog_open(fw_c6_prog_t *c, bool taken, uint32_t now_ms);
+
+/* ------------------------------------------- the restart after a success */
+
+/** @brief From an update's end UPDATED to the restart at the earliest, ms:
+ *         the alert shows that long. */
+#define FW_C6_RESTART_MS 3000u
+/** @brief While the restart waits for the bench: the alert that says so is
+ *         posted again after this long, ms. */
+#define FW_C6_RESTART_TELL_MS 30000u
+
+/** @brief The restart after an update that ended UPDATED. */
+typedef struct {
+    bool     due;      /**< an update ended UPDATED: a restart is owed     */
+    bool     noted;    /**< the run note is written                        */
+    bool     shown;    /**< FW_C6_RESTART_MS have passed since the end     */
+    bool     told;     /**< the alert "the restart waits" was posted       */
+    uint32_t since_ms; /**< the update's end                               */
+    uint32_t told_ms;  /**< when the alert was last posted                 */
+} fw_c6_restart_t;
+
+/** @brief What fw_c6_restart_step() asks of the caller in this frame. */
+typedef enum {
+    FW_C6_RST_IDLE = 0,  /**< no restart is owed                           */
+    FW_C6_RST_NOTE,      /**< write the update run's note now, once        */
+    FW_C6_RST_SHOWING,   /**< the bench is quiet; the alert still shows    */
+    FW_C6_RST_TELL,      /**< the bench is not quiet: post the alert that
+                              the restart waits                            */
+    FW_C6_RST_WAITING,   /**< the bench is not quiet; nothing to do        */
+    FW_C6_RST_GO,        /**< restart the panel now                        */
+} fw_c6_rst_t;
+
+/**
+ * @brief An update ended UPDATED at @p now_ms: the note and the restart are
+ *        owed from here.
+ * @param r      the restart
+ * @param now_ms now
+ */
+void fw_c6_restart_due(fw_c6_restart_t *r, uint32_t now_ms);
+
+/**
+ * @brief Whether a restart is owed.
+ * @param r the restart; NULL is false
+ * @return true from fw_c6_restart_due() on
+ */
+bool fw_c6_restart_pending(const fw_c6_restart_t *r);
+
+/**
+ * @brief One frame of the wait for the restart.
+ *
+ * The run note is a write to the panel's flash and the restart stops the
+ * heartbeat, so neither happens while the bench is not @p quiet.  The note
+ * is asked for in the first quiet frame, once.  The restart is asked for in
+ * a quiet frame after the note, FW_C6_RESTART_MS after the update's end at
+ * the earliest.  A frame that is not quiet asks for the alert once, and
+ * again every FW_C6_RESTART_TELL_MS.
+ *
+ * @param r      the restart
+ * @param quiet  flash_gate_open() holds, no other flash writer runs and no
+ *               programmer holds a port
+ * @param now_ms now
+ * @return what the caller does in this frame
+ */
+fw_c6_rst_t fw_c6_restart_step(fw_c6_restart_t *r, bool quiet,
+                               uint32_t now_ms);
 
 /**
  * @brief Whether the C6 running @p v has the activate call (2.6.0 or later).

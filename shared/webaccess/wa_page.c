@@ -240,6 +240,7 @@ void wa_page_upload_result(wa_out_t *o, bool de, fw_err_t e,
     case FW_ERR_MEMORY:    t = P_UP_MEMORY;    break;
     case FW_ERR_RUNNING:
     case FW_ERR_FLASH:
+    case FW_ERR_QUIET:
     case FW_ERR_COUNT:
     default:               t = P_UP_OTHER;     break;
     }

@@ -386,8 +386,12 @@ const char *ready_refusal(char *buf, size_t n)
         return NULL;
     }
     rdy_row_t r;
-    const char *label = (ready_row(row, &r)) ? r.label : "";
-    snprintf(buf, n, TR(RDY_BAND), label, why);
+    if (!ready_row(row, &r)) {
+        /* A refusal of no row (RUDDER AUTO's goals): the text alone. */
+        snprintf(buf, n, "%s", why);
+        return buf;
+    }
+    snprintf(buf, n, TR(RDY_BAND), r.label, why);
     return buf;
 }
 

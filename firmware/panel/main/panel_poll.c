@@ -603,8 +603,14 @@ static void read_status_counters(void)
          * on, is set here. */
         && link_bringup_take_status(&s_bring, &st, &s_dev_faults)) {
         /* The band shows the bitmap as a code; a store that keeps nothing
-         * this boot is said in words, once per link-up. */
-        sense_link_faults(&s_sense_link, s_dev_faults);
+         * this boot and a restart by the IOmcu's watchdog are said in
+         * words, once per link-up.  The restart is an error: the IOmcu
+         * came back with every output off, and the panel follows whatever
+         * it still reads of the bench (bench_error_stop()). */
+        const uint16_t rose = sense_link_faults(&s_sense_link, s_dev_faults);
+        if ((rose & (uint16_t)LINK_FAULT_WATCHDOG) != 0u) {
+            bench_error_stop();
+        }
         sense_link_alerts();
     }
 }

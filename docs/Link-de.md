@@ -151,7 +151,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Das Protokoll verwendet Pages mit bis zu 32 Registern zu je sechzehn Bit.
 Gelesen und geschrieben wird in Registerfenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.37. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.39. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -274,6 +274,11 @@ keine Wahl des Ports an. Ab 4.37 nimmt der IOmcu nummerierte Anfragen und
 beantwortet eine Wiederholung aus seiner Kopie ([Eine verlorene
 Antwort](#eine-verlorene-antwort)); das Panel nummeriert seine Anfragen nur
 an einen IOmcu ab 4.37, weil ein älterer einen nummerierten Frame abweist.
+Ab 4.38 hat BIND (0x30) Register 1, `WHY`: die Ursache des letzten
+abgelehnten Schreibens einer Zuordnung. Die BIND-Page eines älteren IOmcu
+hat 1 Register und lehnt ein Lesen von Register 1 mit BAD_RANGE ab; das
+Panel liest `WHY` nur von einem IOmcu ab 4.38 und zeigt sonst `ABGELEHNT`
+ohne Ursache.
 Der IOmcu liest die Minor des Panels nicht. Ein älteres Panel schreibt
 keine Page, die es nicht kennt.
 
@@ -468,7 +473,7 @@ Pages ermöglichen die Übernahme als einen Schritt:
 | --- | --- | --- |
 | BIND_CFG | 32, wie CHAN_CFG | eine CHAN_CFG-Page, die nicht gilt. Ein Frame wird nach den Wertregeln von CHAN_CFG geprüft (Rolle 0 oder 1, Slew 0 bis 3000, Endpunkte 400 bis 2500µs) und bei einem Verstoß mit BAD_VALUE abgelehnt, ohne etwas zu speichern. Kein Ausgang ändert sich |
 | BIND_OUT | 32, wie OUTPUTS | eine OUTPUTS-Page, die nicht gilt. Ein Frame wird nach den Wertregeln von OUTPUTS geprüft (ein Treiber 0 bis 4, eine Pin-Nummer bis 63) und bei einem Verstoß mit BAD_VALUE abgelehnt. Kein Ausgang ändert sich |
-| BIND | 1: `COMMIT` | ein Schreiben trägt die CRC (Cyclic Redundancy Check) der 64 vorbereiteten Register. Liest die CRC dessen, was vorbereitet ist |
+| BIND | 2: `COMMIT`, `WHY` | ein Schreiben von `COMMIT` trägt die CRC (Cyclic Redundancy Check) der 64 vorbereiteten Register. `COMMIT` liest die CRC dessen, was vorbereitet ist. `WHY` (ab 4.38) liest die Ursache des letzten abgelehnten Schreibens einer Zuordnung, nummeriert in der [Page Map](#page-map) |
 
 Die CRC ist CRC-16/CCITT-FALSE: Polynom 0x1021, Startwert 0xFFFF, keine
 Spiegelung, kein abschließendes XOR, über die 32 Register von BIND_CFG und
@@ -1056,7 +1061,11 @@ bis zu 12. Zwei bidirektionale Slots, zwei DShot-Ports und eine
 Hitec-Leitung mit Precharge brauchen 8 von 12 State Machines und 81 von 96
 Instruktionen; diese Belegung ist nicht an Hardware geprüft. Ein Block
 erreicht GPIO 0 bis GPIO 31 oder GPIO 16 bis GPIO 47, ein Pin über GPIO 31 kann also
-früher abgewiesen werden.
+früher abgewiesen werden. Ein bidirektionaler Pin braucht seine 2 State
+Machines nebeneinander in einem Block, n und (n + 1) modulo 4. Der Treiber
+nimmt den ersten Block, PIO2 abwärts bis PIO0, der den Pin erreicht und ein
+solches freies Paar und 16 freie Instruktionen hat; 3 Blöcke tragen so 6
+bidirektionale Pins in jeder Reihenfolge des Bindens (`test_out_dshot`).
 
 ### Der Programmierport für Servos von KST und Chaservo
 
@@ -1139,7 +1148,7 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x10 | CONTROL | lesen, schreiben | ARM (0 schaltet auf SAFE; 1 schaltet jeden Ausgang auf ARMED; ab 4.18 schaltet 0x0002 die Throttle-Kanäle, 0x0004 die Surfaces und die SERVO-PWM-Programmierports, 0x0006 beide auf ARMED; ein DShot-Programmierport ist ein Throttle (seit 4.28); jeder andere Wert wird mit BAD_VALUE abgewiesen, [Ein Arm für eine Rolle](#ein-arm-für-eine-rolle)), THROTTLE (0..10000, Hundertstel Prozent, und kommandiert jeden Kanal, den CHAN_CFG als Throttle führt, und seit 4.28 jeden DShot-Programmierport), MOTOR_POLES, CLEAR (0x5AFE schreiben, um das Failsafe zu verlassen). Register 0 bis 2 sind der Frame, der auf ARMED schaltet |
 | 0x11 | LIMITS | | deklariert, nicht bedient |
 | 0x12 | FAILSAFE | | deklariert, nicht bedient |
-| 0x13 | CHANNELS | lesen, schreiben | ein Kommando je Ausgangskanal, 0..1000 des Kanalwegs; acht Kanäle |
+| 0x13 | CHANNELS | lesen, schreiben | ein Kommando je Ausgangskanal, 0..1000 des Kanalwegs; acht Kanäle. Ein Lesen gibt das zuletzt geschriebene Kommando, oder was die Bank nach dem Start, nach einem Failsafe und für einen Kanal mit geänderter Rolle hält: die Ruhelage der Rolle, 0 für Throttle und 500 für eine Ruderfläche |
 | 0x20 | BENCH | lesen | Spannung (10mV), Strom (10mA), Leistung (W), Drehzahl (min⁻¹), Temperatur des ESC (Electronic Speed Controller, Motorregler) und des Motors (0,1°C, vorzeichenbehaftet), Ladung (mAh), Energie (0,1Wh), Minimalspannung, Maximalstrom, Maximalleistung, Maximaldrehzahl, Flags |
 | 0x21 | reserviert | | nicht vergeben; nicht wiederzuverwenden |
 | 0x22 | OUTPUTS | lesen, schreiben | je Slot: Treiber (0 keiner, 1 PWM (Pulsweitenmodulation), 2 PPM (Pulspositionsmodulation), 3 DShot, 4 bidirektionales DShot), Pin, erster Kanal und Kanalzahl in einem Register, Rate in Hz (kbit/s für beide DShot-Treiber); acht Slots zu vier Registern |
@@ -1156,7 +1165,7 @@ den eine Page als anderweitig gehalten ablehnt, eines je Angebot alle 5s.
 | 0x2D | TONE | lesen, schreiben | die Beeps eines ESC, gehört an einer Motorphase über einen Vorwiderstand und eine Z-Dioden-Klemme an einem GPIO des IOmcu, gestempelt von einer PIO-State-Machine mit 26,7ns (seit 4.8). Register 0 bis 3, ein Frame: Freigabe (Bit 0), der GPIO (Standard 22, Pad 29), der tiefste gehörte Ton in Hz (50 bis 2000, Standard 400) und der höchste (über dem tiefsten, bis 6900, Standard 6500). Register 4 bis 7, ein Frame: die Tonhöhenänderung in Prozent, die ohne Stille einen neuen Beep beginnt (0 trennt nur an Stille, höchstens 50, Standard 8), die Stille, die einen Beep beendet, in ms (1 bis 100 und mindestens die Periode des tiefsten Tons, Standard 3), die Tonperioden, die einen Beep ausmachen (1 bis 64, Standard 3), und Register 7 reserviert. Das reservierte Register liest 0 und nimmt nur 0. Mit BAD_VALUE abgewiesen: ein Wert außerhalb seines Bereichs, eine Kombination, die der Detektor ablehnt (eine Stille, die kürzer ist als die Periode des tiefsten Tons), und, solange der Tap freigegeben ist, ein GPIO hinter der Bank (63), von der Platine reserviert oder ein ADC-Pin (ADC: Analog-Digital-Wandler): GPIO 26 bis GPIO 29 des RP2350A und GPIO 40 bis GPIO 47 des RP2354B, die nicht fehlertolerant sind, sowie jeder GPIO an einem IOmcu, dessen Core 1 beim Booten nicht gestartet ist (bis zu einem Neustart läuft keine Erfassung). Mit BUSY abgewiesen (seit 4.17; davor BAD_VALUE), solange der Tap freigegeben ist: ein GPIO, der an einen Ausgang gebunden oder von SENSE, SUPPLY oder einem Programmierport gehalten ist, und eine Erfassung, die der IOmcu vorerst nicht starten kann (Core 1 in einem Durchlauf, oder keine PIO-State-Machine und kein DMA-Kanal übrig neben den Ausgängen und der Versorgung) ([Ein belegter Pin am Phasenabgriff](#ein-belegter-pin-am-phasenabgriff)). Der GPIO gehört keinem Ausgang, solange der Tap freigegeben ist, und ein Schreiben auf OUTPUTS, SENSE oder SUPPLY, das ihn nimmt, wird abgewiesen. Eine Änderung wird in ARMED wie in SAFE angenommen: der Tap ist ein Eingang und treibt nichts. Register 8 bis 12, nur lesen: Flags (Bit 0 die Erfassung läuft, Bit 1 der Tap ist freigegeben und sein Pin konnte nicht genommen werden, Bit 2 der Erfassungsring oder die FIFO der State Machine ist seit Beginn der Erfassung übergelaufen, Bit 3 eine Folge von Bursts läuft, Bit 4 das letzte Fenster enthielt einen Ton), die Fensternummer modulo 65536 (Fenster zu 8ms), der Ton des letzten Fensters in 0,1Hz (0 für keinen) und die Tonperioden darin, und die Nummer des neuesten Beeps. Der IOmcu hält die letzten 64 Beeps und nummeriert sie von 1 bis 65535, dann wieder ab 1; die neueste Nummer ist vor dem ersten Beep 0. Register 13, EVT_SEL, ist das einzige beschreibbare Register nach Register 7 und wird nicht gespeichert: die Nummer des Beeps, den die Register 14 bis 21 zeigen. Ein Lesen verbraucht keinen Beep, eine auf dem Link verlorene Antwort verliert also nichts. Register 14 bis 21, nur lesen: noch einmal EVT_SEL, solange dieser Beep unter den 64 ist, sonst 0, wobei Register 15 bis 21 0 lesen; der erste Anstieg des Beeps in ms seit Beginn der Erfassung (32 Bit, Register 15 und 16, niederwertiges zuerst); seine Länge bis zur letzten Flanke in 0,1ms; seine mittlere Tonhöhe in 0,1Hz; seine Bursts; der Träger, mit dem er zerhackt war, in 100-Hz-Schritten (0 nicht zerhackt); Flags (Bit 0 er begann bei einer Tonhöhenänderung ohne Stille davor, Bit 1 er endete bei einer). Register 22 und 23, nur lesen: verlorene Beeps und Lows unter 500ns, die der Detektor ignoriert hat, je modulo 65536. Der 8-µs-Hold-off der Erfassung entfernt jedes Low unter 8µs, bevor der Detektor es sieht; Register 23 liest deshalb am Tap 0. Die Erfassung beginnt, wenn der Tap freigegeben wird oder sein Pin wechselt, und leert dann die 64. Register 0 bis 6 werden im Flash des IOmcu gehalten, und der Tap startet beim Booten. Solange der Tap gesperrt ist, ist der Pin ein Eingang mit eingeschaltetem Pull-down (32 bis 86kΩ), und der bleibt an, solange der Tap läuft. Auf dem Stepping A2 des RP2350 hält der interne Pull-down einen offenen Pin nicht auf Low (Erratum RP2350-E9, etwa 2,2V); der externe Pull-down von 8,2kΩ des Abgriffs nach GND hält ihn |
 | 0x2E | BIND_CFG | lesen, schreiben | eine vorbereitete CHAN_CFG-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von CHAN_CFG. [Eine Bindung als Ganzes](#eine-bindung-als-ganzes) beschreibt die drei Pages |
 | 0x2F | BIND_OUT | lesen, schreiben | eine vorbereitete OUTPUTS-Page, die nicht gilt (ab 4.10): die Register und die Wertregeln von OUTPUTS |
-| 0x30 | BIND | lesen, schreiben | Register 0 `COMMIT` (ab 4.10): ein Schreiben der CRC-16 der 64 vorbereiteten Register setzt beide vorbereiteten Pages in Kraft oder keine; abgelehnt mit BAD_VALUE für einen anderen Wert und für eine Page, die ihre eigenen Regeln ablehnen. Liest die CRC dessen, was vorbereitet ist |
+| 0x30 | BIND | lesen, schreiben | Register 0 `COMMIT` (ab 4.10): ein Schreiben der CRC-16 der 64 vorbereiteten Register setzt beide vorbereiteten Pages in Kraft oder keine; abgelehnt mit BAD_VALUE für einen anderen Wert und für eine Page, die ihre eigenen Regeln ablehnen. Liest die CRC dessen, was vorbereitet ist. Register 1 `WHY` (ab 4.38), nur lesbar: die Ursache des letzten abgelehnten Schreibens an CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT oder BIND, und 0, sobald ein späteres Schreiben an CHAN_CFG, OUTPUTS oder BIND angenommen ist. 1 ein Registerwert außerhalb der Regeln seiner Page; 2 ein `COMMIT`, der nicht die CRC der vorbereiteten Pages nennt; 3 die ESC_WIRE-Page hält einen Ausgang; 4 eine Rolle, ein Throttle-Kanal oder ein Slot ändert sich bei ARMED; 5 auf einer Platine mit gelöteten Pins ein Slot neben den Servoausgängen; 6 Pin, Bank-Kanal oder PWM-Slice eines Programmierports; 7 ein Pin des PD mini der Versorgung; 8 ein Pin des Sensorbus; 9 der Pin des Phasenabgriffs; 10 ein PWM-Slice, den eine Ruderfläche mit anderer Pulsrate teilt; 11 ein Endpunkt länger als der Frame seines PWM-Slots; 12 ein Treiber wurde nicht gebunden (keine PIO-State-Machine, kein Instruktionsspeicher, kein DMA-Kanal oder PWM-Slice frei, oder der Pin abgewiesen); 13 die Slots lassen dem UART der Versorgung keinen PIO-Block. Ein Schreiben darauf wird mit BAD_RANGE abgelehnt |
 | 0x31 | SERVO_WIN | lesen | die letzten 4 vollständigen 50-ms-Fenster von INA3221 CH1, das neueste zuerst (seit 4.11). Register 0: die Nummer des neuesten Fensters modulo 65536. Register 1: Bit 0 ein Fenster hat sich geschlossen, Bit 7 das Bit der Messung der Bewegung für eine Messung am Ende des Bereichs. Register 2 und 3: Zustand und Zähler der Messung von SERVO_SENSE. Dann 4 Einträge zu 6 Registern, Eintrag k ab Register 4 + 6 k für Fensternummer Register 0 - k: mittlerer, höchster und niedrigster Strom (mA, vorzeichenbehaftet), mittlere und niedrigste Busspannung (mV) und Flags (Bit 15 mit dieser Nummer hat sich ein Fenster geschlossen, Bit 8 Strommessungen, Bit 9 Spannungsmessungen, Bit 10 eine Messung am oberen Ende des Bereichs, Bit 11 eine am unteren, Bits 0 bis 7 die Messungen an einem Ende, bei 255 gehalten). Eine Messung am Ende des Bereichs zählt mit dem Ende des Bereichs. Jedes Schreiben wird mit READ_ONLY abgewiesen. [Der Fenster-Ring](#der-fenster-ring) nennt die Regeln. Nichts wird gehalten |
 | 0x32 | `KST` | lesen, schreiben | die Servo-Programmier-Page: das Programmierprotokoll für KST- und Chaservo-Servos auf einem Programmierport (seit 4.12; ein Port und die Versorgung seit 4.13). Ein Lesen gibt 32 Register: Zustand, Flags und Port, `SEQ`, Operation und Frames, Ergebnis und Abweisung, das fehlerhafte Register, 4 Registermasken, den Fingerprint, die gemessene Halbzelle und Antwortverzögerung und das Servo-Image in 16 Registern. Die Schreibseite umfasst 29 Register: das Kommando in 0 bis 3, gesendet als ein Frame; das bereitgestellte Image, die Unlock-Menge und die Start-Prüfsumme in 4 bis 24; die Auswahl der Image-Ansicht in 25; Versorgungsspannung und -strom eines ENTER in 26 und 27; und die Wartezeit LEAVE_MS in 28. [Der Programmierport für Servos von KST und Chaservo](LinkKST-de.md) nennt die Regeln. Nichts wird gehalten |
 | 0x33 | PROG | lesen, schreiben | die Programmierports (seit 4.13): 28 Register, vor 4.26 24. Die Zahl der Ports, Flags, der Pulsschalter und das Ziel des Servotesters in den Registern 0 bis 3, dann 5 Register je Port für 4 Ports: Pin, Kommando, Slew und die zwei Endpunkte, dann die FUNC jedes Ports in 24 bis 27 (seit 4.26). [Die Programmierports](#die-programmierports) nennt die Regeln. Pin, Slew, Endpunkte und FUNC werden im Flash des IOmcu gehalten |
@@ -1177,7 +1186,12 @@ Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend,
 Bit 6 der Flash-Speicher des IOmcu ist für diesen Start aus (seit
 4.7): sein zweiter Core hat sich nicht für die Flash-Sperre angemeldet,
 also wird nichts gespeichert, und über den Link geschriebene
-Konfigurationen laufen bis zu einem Neustart aus dem RAM.
+Konfigurationen laufen bis zu einem Neustart aus dem RAM, Bit 7 der
+eigene Watchdog des IOmcu hat ihn neu gestartet (seit 4.39): Core 0 hat
+seine Hauptschleife 500ms nicht durchlaufen, der Neustart hat jeden Ausgang
+freigegeben, und das Bit ist vom Start danach bis zu einem CLEAR gesetzt
+([Sicherheit](Safety-de.md#schleifen-watchdog-des-iomcu)). Ein älterer
+IOmcu hat keinen solchen Watchdog und setzt Bit 7 nie.
 Faults bleiben gesetzt, bis sie gelesen und gelöscht werden; Bit 6 bleibt
 bis zu einem Neustart gesetzt. Bit 0 setzt
 voraus, dass über den Link mindestens eine Anfrage gelaufen ist: der
@@ -1196,6 +1210,14 @@ Servostrommessung. Nach einem Schreiben auf SENSE liest das Panel die
 Fähigkeiten erneut. Ob ein Bauteil antwortet, melden die FLAGS von SENSE und
 BENCH-Bit 5, die das Panel regelmäßig abfragt. Die
 Page TONE fügt kein Bit hinzu.
+
+Das rpm-Register trägt 0 bis 65.535rpm. Bei einer Drehzahl über 65.535rpm
+steht 65535 darin und Flag-Bit 2 ist gelöscht: eine Grenze, kein Messwert.
+Eine Drehzahl, die nichts gemessen hat, steht als 0 mit gelöschtem Bit 2
+darin. Das Register der höchsten rpm hat kein Gültig-Bit: 65535 steht für
+eine Spitze von 65.535rpm oder mehr. Das Panel zeigt und protokolliert beide
+Grenzen als `>65535`. Ein IOmcu mit Firmware 0.23.14 oder älter meldet eine
+Drehzahl über 65.535rpm als 65535 mit gesetztem Bit 2.
 
 BENCH-Flags: Bit 0 Spannung gültig, Bit 1 Strom gültig, Bit 2 Drehzahl
 gültig, Bit 3 Temperatur des ESC gültig, Bit 4 Temperatur des Motors gültig,
@@ -1254,7 +1276,10 @@ OUTPUTS- und der SUPPLY-Page gleichermaßen. Ein OUTPUTS-Schreibzugriff wird mit
 abgewiesen, wenn die Hardware einen Slot nicht binden kann: wegen eines
 solchen Pins oder weil der Phasenabgriff oder der UART der Versorgung die
 benötigte PIO-State-Machine, den Instruktionsspeicher oder einen DMA-Kanal belegt;
-die geltenden Slots bleiben, und nichts wird gespeichert. [DShot und die
+die geltenden Slots bleiben, und nichts wird gespeichert. Ab 4.38 liest
+das Register `WHY` von BIND die Ursache, 12 für einen Slot, den die Hardware
+nicht binden kann, und OUTPUTS zeigt sie in seiner Begründungszeile
+(`ABGELEHNT: KEIN PIO ODER PWM-SLICE FREI`). [DShot und die
 Output-Treiber](DShot-de.md) hat den Rest.
 
 Einträge in CHAN_CFG und OUTPUTS werden ganz geschrieben, vier Register auf
@@ -1766,7 +1791,9 @@ einen Neustart.
    zurück, antwortet und startet 20ms später als Flash-Update-Boot in den
    neuen Slot.
 7. Das Boot-ROM prüft den SHA-256 des Images und startet es auf Probe unter
-   seinem Watchdog von 16,7s. Das Panel wartet 500ms, liest IDENTITY, bis
+   seinem Watchdog von 16,7s; der IOmcu lässt seinen eigenen
+   Schleifen-Watchdog von 500ms bis zum BUY aus
+   ([Sicherheit](Safety-de.md#schleifen-watchdog-des-iomcu)). Das Panel wartet 500ms, liest IDENTITY, bis
    das neue Image antwortet, und schreibt BUY. Das Boot-ROM löscht das
    TBYB-Flag im Flash. Danach löscht der IOmcu den ersten Sektor des
    Slots, aus dem er kam, sodass das Boot-ROM beim nächsten Start ein Image

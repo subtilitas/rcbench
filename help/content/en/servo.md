@@ -174,7 +174,7 @@ The summary line shows the voltage steps and duration, such as `4.8V, 6.0V, BROW
 
 TEST remains visible when the run begins, with the current step on its status line. A box under the card shows step and phase. Beside its STOP TEST it identifies the meter: `PD mini`, an INA channel such as `INA 0x41 CH2`, or `SIMULATION`.
 
-The run ends early with the output off and servo released on STOP TEST (the footer's slot during the run, or the run's box), STOP, SAFE, link loss, leaving the screen, touching the dial, CENTER, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the STALL AT protection, so the run cannot continue through that gap.
+The run ends early with the output off and servo released on STOP TEST (the footer's slot during the run, or the run's box), STOP, SAFE, link loss, leaving the screen, touching the dial, CENTER, SWEEP, RELEASE, tapping a set point or changing servo settings. An INA3221 run also ends if that sensor ceases to be the meter or no window containing both current and voltage arrives for 200ms (4 windows of 50ms): `no INA3221 window for 0.2s`. Those windows supply the Stall threshold protection, so the run cannot continue through that gap.
 
 When the AS5600 is used from the start, the run tolerates one encoder outage of up to 300ms within 10s. High-current motor or ESC runs, or plugging a part in during a run, can disturb the sensor bus. Angles are not evaluated during the gap. The report records it, for example `AS5600 gaps: 1, longest 120ms. ...`, and the CSV column `angle gap (ms)` gives its duration.
 

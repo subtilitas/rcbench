@@ -14,6 +14,7 @@
 #include "link_artxfer.h"
 #include "out_bind.h"
 #include "out_stage.h"
+#include "outputs_pages.h"
 
 /* ---------------------------------------------------------------- BIND */
 
@@ -44,7 +45,8 @@ uint8_t bind_cfg_write(void *ctx, uint8_t off, uint8_t n,
                               const uint16_t *in)
 {
     (void)ctx;
-    return out_stage_cfg_write(&s_stage, off, n, in);
+    const uint8_t nack = out_stage_cfg_write(&s_stage, off, n, in);
+    return (nack != 0u) ? bind_refuse(LINK_BW_VALUE, nack) : 0u;
 }
 
 void bind_out_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
@@ -57,7 +59,8 @@ uint8_t bind_out_write(void *ctx, uint8_t off, uint8_t n,
                               const uint16_t *in)
 {
     (void)ctx;
-    return out_stage_slots_write(&s_stage, off, n, in);
+    const uint8_t nack = out_stage_slots_write(&s_stage, off, n, in);
+    return (nack != 0u) ? bind_refuse(LINK_BW_VALUE, nack) : 0u;
 }
 
 /**
@@ -98,7 +101,10 @@ static void stage_put_cfg(void *ctx, const uint16_t *prev)
     /* The commit has put the bank's channels back, each command with its
      * role; the page and the silicon follow it here. */
     iomcu_state_t *s = (iomcu_state_t *)ctx;
+    uint16_t was[LINK_CC_COUNT];
+    memcpy(was, s->chan_cfg, sizeof(was));
     memcpy(s->chan_cfg, prev, sizeof(s->chan_cfg));
+    outputs_channels_follow_roles(&s_outputs, was, s->chan_cfg, s->channels);
     hw_apply_only(s_stage_bound);
 }
 
@@ -124,7 +130,7 @@ void bind_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     (void)ctx;
     for (uint8_t i = 0; i < n; ++i) {
         out[i] = ((uint8_t)(off + i) == (uint8_t)LINK_BD_COMMIT)
-                     ? out_stage_held_crc(&s_stage) : 0u;
+                     ? out_stage_held_crc(&s_stage) : bind_why();
     }
 }
 
@@ -137,9 +143,17 @@ uint8_t bind_write(void *ctx, uint8_t off, uint8_t n,
     }
     /* The output the ESC_WIRE page holds gets back what it had. */
     if (esc_port_supply_hold(&s_esc)) {
-        return LINK_NACK_BUSY;
+        return bind_refuse(LINK_BW_ESC_WIRE, LINK_NACK_BUSY);
     }
-    return out_stage_commit(&s_stage, in[0], s->chan_cfg, &k_stage_ops, s);
+    /* A commit refused before either page is judged leaves no cause: the
+     * CRC written is not the prepared pages'. */
+    (void)bind_refuse(LINK_BW_NONE, 0u);
+    const uint8_t nack = out_stage_commit(&s_stage, in[0], s->chan_cfg,
+                                          &k_stage_ops, s);
+    if (nack != 0u && bind_why() == LINK_BW_NONE) {
+        return bind_refuse(LINK_BW_PREPARED, nack);
+    }
+    return nack;
 }
 
 /*

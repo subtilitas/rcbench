@@ -34,9 +34,9 @@
 #include "servo_bench_rig.h"
 #include "servo_rig.h"
 
-/** @brief The stall note a STALL AT of 2.00A at a limit of 2.00A gives. */
+/** @brief The stall note a Stall threshold of 2.00A at a limit of 2.00A gives. */
 #define STALL_NOTE_SHIPPED \
-    "STALL AT 2.00A must be below current limit 2.00A"
+    "Stall threshold 2.00A must be below current limit 2.00A"
 
 /** @brief A fresh bench on TEST with its SETTINGS list open (the bench is
  *         put to SAFE for it). */
@@ -205,7 +205,7 @@ TEST_CASE(the_hubs_test_tile_names_the_steps_test_takes)
     ui_text_set_language(UI_LANG_EN);
 }
 
-/* STALL AT at 1.95A is under the 2.00A limit: the note and its colour go
+/* Stall threshold at 1.95A is under the 2.00A limit: the note and its colour go
  * and come back with the edit. */
 TEST_CASE(the_stall_line_goes_with_the_edit_that_answers_it)
 {

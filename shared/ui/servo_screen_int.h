@@ -1187,7 +1187,7 @@ void test_end_now(servo_test_abort_t why);
  *         the highest: its 2s hold arms and starts (test_hold_fired()). */
 void ask_hv_test(void);
 void draw_test_lines(gfx_canvas_t *c);
-/* A STALL AT no reading can pass, at (@p x, @p y), or nothing. */
+/* A Stall threshold no reading can pass, at (@p x, @p y), or nothing. */
 void draw_test_stall(gfx_canvas_t *c, int x, int y);
 
 /* The run against the meter in force (test_meter_follow()); every frame

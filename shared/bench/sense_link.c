@@ -948,16 +948,23 @@ void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
     }
 }
 
-void sense_link_faults(sense_link_t *s, uint16_t faults)
+uint16_t sense_link_faults(sense_link_t *s, uint16_t faults)
 {
     if (s == NULL) {
-        return;
+        return 0u;
     }
-    if ((faults & LINK_FAULT_STORE_OFF) != 0u
-        && (s->was_faults & LINK_FAULT_STORE_OFF) == 0u) {
+    const uint16_t told = (uint16_t)(LINK_FAULT_STORE_OFF
+                                     | LINK_FAULT_WATCHDOG);
+    const uint16_t rose = (uint16_t)(faults & (uint16_t)~s->was_faults
+                                     & told);
+    if ((rose & LINK_FAULT_STORE_OFF) != 0u) {
         s->events |= SENSE_LINK_EV_STORE_OFF;
     }
+    if ((rose & LINK_FAULT_WATCHDOG) != 0u) {
+        s->events |= SENSE_LINK_EV_WATCHDOG;
+    }
     s->was_faults = faults;
+    return rose;
 }
 
 uint32_t sense_link_events(sense_link_t *s)
@@ -1013,9 +1020,11 @@ bool sense_link_event_stands(const sense_link_t *s, uint32_t ev)
 
 uint32_t sense_link_event(sense_link_t *s, uint32_t now_ms)
 {
-    /* Most pressing first: what stops the monitors being read at all, then
-     * what makes a reading absent or wrong, then what makes it a bound. */
+    /* Most pressing first: the IOmcu's restart by its watchdog, then what
+     * stops the monitors being read at all, then what makes a reading
+     * absent or wrong, then what makes it a bound. */
     static const uint32_t k_order[] = {
+        SENSE_LINK_EV_WATCHDOG,
         SENSE_LINK_EV_NO_PAGE,      SENSE_LINK_EV_PINS_UNSET,
         SENSE_LINK_EV_SAME_ADDR,    SENSE_LINK_EV_BUS_REFUSED,
         SENSE_LINK_EV_KEPT,

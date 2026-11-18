@@ -61,6 +61,8 @@ typedef struct {
     imu_radio_t radio;          /**< the panel's Bluetooth */
     char        version[IMU_VERSION_MAX]; /**< the C6's, "" unknown */
     bool        scan_open;      /**< a scan started, its end unread */
+    bool        scan_cut;       /**< that scan was stopped: an empty list
+                                     is no error */
     imu_dev_t   found[IMU_FOUND_MAX]; /**< the last scan's sensors */
     uint8_t     found_n;        /**< their count */
     uint16_t    hidden;         /**< other devices the last scan heard */
@@ -112,6 +114,14 @@ bool imu_ble_bound(const imu_ble_t *l);
  *  @param l The link, not NULL.  @param now_ms The clock.
  *  @return Whether it started. */
 bool imu_ble_scan(imu_ble_t *l, uint32_t now_ms);
+
+/**
+ * @brief Stop a running scan: the bench switched to ARMED.  What it heard
+ *        so far is the list; an empty list is no error.
+ * @param l      The link, not NULL.
+ * @param now_ms The clock.
+ */
+void imu_ble_scan_stop(imu_ble_t *l, uint32_t now_ms);
 
 /**
  * @brief Bind sensor @p i of the last scan, at once.
