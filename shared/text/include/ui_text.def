@@ -2236,7 +2236,7 @@ UI_TEXT(HG_SU_RESET, 0,
     "Löscht Minimum, Spitzen sowie mAh und Wh neben STEUERUNG.")
 UI_TEXT(HG_SU_OUTPUT, 0,
     "OUTPUT ON is a 2s hold, OUTPUT OFF a press. Leaving SUPPLY switches off an output it switched on.",
-    "AUSGANG EIN: 2s halten, AUSGANG AUS: drücken. Verlassen von SUPPLY schaltet einen hier eingeschalteten aus.")
+    "AUSGANG EIN: 2s halten, AUSGANG AUS: Druck. Verlassen von SUPPLY schaltet einen hier eingeschalteten aus.")
 /* MOTOR & ESC's, ESC STICK's and the IMU screen's guides (motor_guide.c,
  * esc_stick_guide.c, imu_guide.c), as SERVO's. */
 UI_TEXT(HG_MO_TITLE_LIVE, 0,
