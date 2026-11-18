@@ -7,16 +7,16 @@ that has to fit its cell, on solid ink the cell cuts.
 SPDX-License-Identifier: MIT
 """
 
-import importlib.util
 import pathlib
 import re
 
 import pytest
 
-from conftest import REPO, skip_or_fail
+from conftest import REPO, import_or_fail, skip_or_fail
 
-if importlib.util.find_spec("PIL") is None:
-    skip_or_fail("Pillow is not installed")
+# gen_font.py imports Pillow at its top: without it the whole file skips,
+# and fails when CI is set.
+import_or_fail("PIL", "Pillow is not installed")
 
 import gen_font as gf  # noqa: E402
 
