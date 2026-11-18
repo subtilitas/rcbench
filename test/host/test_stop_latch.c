@@ -24,6 +24,8 @@
  * - a_confirmation_at_the_bound_resets_and_a_late_one_gives_up
  * - no_confirmation_keeps_the_latch_and_the_line_withheld
  * - the_floor_counts_from_the_pass_that_saw_the_stop
+ * - the_floor_starts_again_with_a_later_stop
+ * - a_stop_the_count_did_not_show_latches_and_starts_the_floor
  * - an_error_sends_a_reset_back_and_changes_nothing_latched
  * - clear_is_written_once_per_reset_after_the_heartbeat
  * - the_heartbeat_resumes_only_after_the_confirmation
@@ -69,6 +71,7 @@ static stop_latch_t l;
 static struct {
     uint32_t t;             /**< the clock, ms                            */
     uint32_t press_ms;      /**< when the latest STOP was applied         */
+    uint32_t press_hidden;  /**< STOPs the count does not show            */
     uint32_t breaks;        /**< contact breaks counted                   */
     uint32_t break_ms;      /**< when the latest was counted              */
     bool     link_up;       /**< the link answers                         */
@@ -90,7 +93,7 @@ static struct {
 static void read_in(stop_latch_in_t *in)
 {
     in->now_ms      = w.t;
-    in->pressed     = arming_pressed_count(&a);
+    in->pressed     = arming_pressed_count(&a) - w.press_hidden;
     in->press_ms    = w.press_ms;
     in->breaks      = w.breaks;
     in->break_ms    = w.break_ms;
@@ -222,6 +225,14 @@ static uint32_t stop_and_hold(uint32_t t)
     touch_stop(t);
     (void)pass_hold(t + 2000u, t + 2000u);
     return t + 2000u;
+}
+
+/** @brief Passes every 5ms from @p from to @p to, both included. */
+static void passes(uint32_t from, uint32_t to)
+{
+    for (uint32_t t = from; t != to + 5u; t += 5u) {
+        (void)pass(t);
+    }
 }
 
 TEST_CASE(a_touch_latches_and_withholds_the_heartbeat)
@@ -552,6 +563,49 @@ TEST_CASE(the_floor_counts_from_the_pass_that_saw_the_stop)
     CHECK_EQ(stop_latch_state(&l), STOP_LATCH_CONFIRMED);
 }
 
+/* The floor starts again with each STOP: one the machine first saw
+ * 6800ms after its start, long after the start's own 500ms, still holds
+ * the heartbeat until 7300ms. */
+TEST_CASE(the_floor_starts_again_with_a_later_stop)
+{
+    start(0u);
+    passes(5u, 4000u);
+    w.t = 5000u;
+    stop_now();
+    (void)pass(6800u);
+    CHECK_EQ(pass_hold(6900u, 6900u), STOP_LATCH_NONE);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_HOLD_DONE);
+    for (uint32_t t = 7000u; t < 6800u + STOP_LATCH_FLOOR_MS; ++t) {
+        (void)pass(t);
+        CHECK(stop_latch_state(&l) <= STOP_LATCH_ASKING);
+        CHECK(!arming_heartbeat(&a, t));
+    }
+    (void)pass(6800u + STOP_LATCH_FLOOR_MS);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_CONFIRMED);
+}
+
+/* A STOP that stands without the count showing it latches the machine in
+ * the pass that finds it, and the floor counts from that pass. */
+TEST_CASE(a_stop_the_count_did_not_show_latches_and_starts_the_floor)
+{
+    start(0u);
+    passes(5u, 4000u);
+    w.t = 5000u;
+    stop_now();
+    w.press_hidden = 1u;
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_UNLATCHED);
+    (void)pass(5000u);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_LATCHED);
+    CHECK_EQ(pass_hold(5005u, 5005u), STOP_LATCH_NONE);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_HOLD_DONE);
+    for (uint32_t t = 5105u; t < 5000u + STOP_LATCH_FLOOR_MS; t += 5u) {
+        (void)pass(t);
+        CHECK(stop_latch_state(&l) <= STOP_LATCH_ASKING);
+    }
+    (void)pass(5000u + STOP_LATCH_FLOOR_MS);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_CONFIRMED);
+}
+
 TEST_CASE(an_error_sends_a_reset_back_and_changes_nothing_latched)
 {
     const stop_latch_state_t states[] = {
@@ -728,14 +782,6 @@ TEST_CASE(the_hold_and_the_bound_hold_across_the_millisecond_wrap)
     (void)pass(t0 + 5100u);
     CHECK_EQ(pass(t0 + 5100u + STOP_LATCH_CONFIRM_MS), STOP_LATCH_NONE);
     CHECK_EQ(pass(t0 + 5101u + STOP_LATCH_CONFIRM_MS), STOP_LATCH_GIVE_UP);
-}
-
-/** @brief Passes every 5ms from @p from to @p to, both included. */
-static void passes(uint32_t from, uint32_t to)
-{
-    for (uint32_t t = from; t != to + 5u; t += 5u) {
-        (void)pass(t);
-    }
 }
 
 /*
@@ -1062,6 +1108,8 @@ int main(void)
     RUN(a_confirmation_at_the_bound_resets_and_a_late_one_gives_up);
     RUN(no_confirmation_keeps_the_latch_and_the_line_withheld);
     RUN(the_floor_counts_from_the_pass_that_saw_the_stop);
+    RUN(the_floor_starts_again_with_a_later_stop);
+    RUN(a_stop_the_count_did_not_show_latches_and_starts_the_floor);
     RUN(an_error_sends_a_reset_back_and_changes_nothing_latched);
     RUN(clear_is_written_once_per_reset_after_the_heartbeat);
     RUN(the_heartbeat_resumes_only_after_the_confirmation);
