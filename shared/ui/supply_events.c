@@ -389,6 +389,13 @@ static void stop_down(const touch_event_t *evt)
     if (supply_screen_output_live()
         && gfx_rect_contains(s.out_rect, x, y)) {
         sup_post_off();
+        if (s.pressed == P_OUTPUT && !s.press_on) {
+            /* A hold on OUTPUT ON another contact began ends with the
+             * stop: it would complete after it and ask ON again.  The
+             * contact keeps the press, which now asks nothing. */
+            ui_hold_reset(&s.hold);
+            s.press_on = true;
+        }
         if (s.pressed == P_V_SLIDER || s.pressed == P_I_SLIDER) {
             ui_slider_release(&s.v_slider);
             ui_slider_release(&s.i_slider);

@@ -17,6 +17,7 @@
  * - the_servo_screen_hands_the_press_on_a_stop_to_the_overlay
  * - abort_ends_a_read_on_the_press_of_a_lone_contact_1_2_or_3
  * - abort_ends_a_read_under_two_other_contacts
+ * - a_completed_connect_hold_under_abort_connects_nothing_again
  * - move_servo_on_ends_under_two_other_contacts
  * - move_servo_on_ends_under_three_other_contacts
  * - the_searching_find_key_ends_under_two_and_three_other_contacts
@@ -314,6 +315,55 @@ TEST_CASE(abort_ends_a_read_under_two_other_contacts)
     }
 }
 
+/* One contact's hold on CONNECT has completed and the entry runs, the
+ * button reading ABORT; still down, the other contact presses it.  The
+ * entry is cut, and the first contact, held on for 3s more and then
+ * lifted, connects nothing again.  With the track ids either way round. */
+TEST_CASE(a_completed_connect_hold_under_abort_connects_nothing_again)
+{
+    for (int swap = 0; swap < 2; ++swap) {
+        const uint8_t a = swap ? 2 : 1, b = swap ? 1 : 2;
+        bool again = false;
+
+        open_at(SUPPLY_ON, UI_LANG_EN);
+        servo_d485();
+        const gfx_rect_t port = val(HITEC_PANEL_SERVO, 0, 0);
+
+        evi(cx(port), cy(port), TOUCH_EVENT_DOWN, a);
+        for (int i = 0; i < 400 && !hitec_panel_safe_at(cx(port), cy(port));
+             ++i) {
+            hitec_panel_tick(0.02f);
+            prun(20u);
+        }
+        CHECK(hitec_panel_safe_at(cx(port), cy(port)));
+        evi(cx(port), cy(port), TOUCH_EVENT_DOWN, b);
+        /* Cut in OPEN the port is the tester's again, cut in the entry
+         * it stays held. */
+        for (unsigned i = 0; i < 60000u
+                             && hitec_prog_state(model()) != HITEC_PROG_HELD
+                             && hitec_prog_state(model()) != HITEC_PROG_PWM;
+             ++i) {
+            pms();
+        }
+        const hitec_prog_state_t cut = hitec_prog_state(model());
+
+        CHECK(cut == HITEC_PROG_HELD || cut == HITEC_PROG_PWM);
+        for (int i = 0; i < 150; ++i) {
+            hitec_panel_tick(0.02f);
+            prun(20u);
+            again = again || hitec_prog_state(model()) == HITEC_PROG_OPENING
+                    || hitec_prog_state(model()) == HITEC_PROG_ENTERING;
+        }
+        evi(cx(port), cy(port), TOUCH_EVENT_UP, a);
+        evi(cx(port), cy(port), TOUCH_EVENT_UP, b);
+        prun(500u);
+        show();
+        CHECK(!again);
+        CHECK_EQ(hitec_prog_state(model()), cut);
+        CHECK_EQ(hitec_panel_editor(), 0);
+    }
+}
+
 /* Contact 1 holds LEFT END's + key, whose repeat moves the horn; contact 2
  * rests on LEFT END's value.  A third on MOVE SERVO's ON ends the loop on
  * its press. */
@@ -462,6 +512,7 @@ int main(void)
     RUN(the_servo_screen_hands_the_press_on_a_stop_to_the_overlay);
     RUN(abort_ends_a_read_on_the_press_of_a_lone_contact_1_2_or_3);
     RUN(abort_ends_a_read_under_two_other_contacts);
+    RUN(a_completed_connect_hold_under_abort_connects_nothing_again);
     RUN(move_servo_on_ends_under_two_other_contacts);
     RUN(move_servo_on_ends_under_three_other_contacts);
     RUN(the_searching_find_key_ends_under_two_and_three_other_contacts);

@@ -17,6 +17,8 @@
  * - prog5v_off_pressed_then_slid_off_has_switched_off
  * - prog5v_off_pressed_then_touch_lost_has_switched_off
  * - output_pressed_while_on_is_asked_takes_the_on_back
+ * - a_hold_on_output_on_ends_with_the_stop_of_an_on_asked_elsewhere
+ * - a_completed_hold_under_a_stop_asks_no_second_on
  * - output_off_under_two_other_contacts_switches_off
  * - output_off_under_three_other_contacts_switches_off
  * - prog5v_off_under_two_and_three_other_contacts_switches_off
@@ -193,6 +195,55 @@ TEST_CASE(output_pressed_while_on_is_asked_takes_the_on_back)
     }
 }
 
+/* One contact holds OUTPUT ON, 1s in; SERVO asks ON meanwhile, so the
+ * button reads OUTPUT OFF, and the other contact presses it.  The OFF is
+ * asked and the first contact's hold ends there: held on for 4s more and
+ * then lifted, it asks no ON.  With the track ids either way round. */
+TEST_CASE(a_hold_on_output_on_ends_with_the_stop_of_an_on_asked_elsewhere)
+{
+    for (int swap = 0; swap < 2; ++swap) {
+        const uint8_t a = swap ? 2 : 1, b = swap ? 1 : 2;
+
+        fresh();
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, a);
+        tick_for(HOLD_TICKS / 2);
+        supply_screen_ask_on(SUPPLY_BY_SERVO);
+        CHECK(supply_screen_output_live());
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, b);
+        CHECK(asked_off());
+        tick_for(2 * HOLD_TICKS);
+        CHECK(!supply_screen_poll_cmd(NULL));
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, b);
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, a);
+        tick_for(HOLD_TICKS);
+        CHECK(!supply_screen_poll_cmd(NULL));
+    }
+}
+
+/* One contact's hold on OUTPUT ON has completed and asked ON; still down,
+ * the other contact presses the button, now OUTPUT OFF.  The OFF is asked
+ * and the first contact, held on and then lifted, asks no second ON. */
+TEST_CASE(a_completed_hold_under_a_stop_asks_no_second_on)
+{
+    for (int swap = 0; swap < 2; ++swap) {
+        const uint8_t a = swap ? 2 : 1, b = swap ? 1 : 2;
+        supply_cmd_t c = { 0 };
+
+        fresh();
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, a);
+        tick_for(HOLD_TICKS);
+        CHECK(supply_screen_poll_cmd(&c) && c.on);
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, b);
+        CHECK(asked_off());
+        tick_for(2 * HOLD_TICKS);
+        CHECK(!supply_screen_poll_cmd(NULL));
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, a);
+        ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, b);
+        tick_for(HOLD_TICKS);
+        CHECK(!supply_screen_poll_cmd(NULL));
+    }
+}
+
 /* Contact 1 holds RESET PEAKS, contact 2 rests on the voltage's track; a
  * third on OUTPUT OFF switches it off on its press.  RESET PEAKS keeps its
  * release: its tap resets the peaks. */
@@ -343,6 +394,8 @@ int main(void)
     RUN(prog5v_off_pressed_then_slid_off_has_switched_off);
     RUN(prog5v_off_pressed_then_touch_lost_has_switched_off);
     RUN(output_pressed_while_on_is_asked_takes_the_on_back);
+    RUN(a_hold_on_output_on_ends_with_the_stop_of_an_on_asked_elsewhere);
+    RUN(a_completed_hold_under_a_stop_asks_no_second_on);
     RUN(output_off_under_two_other_contacts_switches_off);
     RUN(output_off_under_three_other_contacts_switches_off);
     RUN(prog5v_off_under_two_and_three_other_contacts_switches_off);

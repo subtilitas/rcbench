@@ -27,6 +27,7 @@
  * - the_guide_gives_abort_its_own_text
  * - abort_acts_on_the_press_of_a_lone_contact_1_2_or_3
  * - abort_counts_under_a_finger_held_on_write
+ * - a_completed_connect_hold_under_abort_connects_nothing_again
  *
  * SPDX-License-Identifier: MIT
  */
@@ -1037,6 +1038,47 @@ TEST_CASE(abort_counts_under_a_finger_held_on_write)
     ev(ARM_X, ARM_Y, TOUCH_EVENT_UP, 1);
 }
 
+/* One contact's hold on CONNECT has completed and the entry runs, the
+ * button reading ABORT; still down, the other contact presses it.  The
+ * entry is cut, and the first contact, held on for 3s more and then
+ * lifted, starts no second entry.  With the track ids either way round. */
+TEST_CASE(a_completed_connect_hold_under_abort_connects_nothing_again)
+{
+    for (int swap = 0; swap < 2; ++swap) {
+        const uint8_t a = swap ? 2 : 1, b = swap ? 1 : 2;
+
+        fresh_screen();
+        g_rig.rail = true;      /* a rail to switch: CONNECT is a hold */
+        link_up();
+        program_open();
+        CHECK(connect_holds());
+        const gfx_rect_t port = val(PG_SERVO, 0, 0);
+
+        ev(cx(port), cy(port), TOUCH_EVENT_DOWN, a);
+        ticks(2.5f);
+        for (int i = 0; i < 2000 && !scr->safe_at(cx(port), cy(port)); ++i) {
+            rig_frame();
+            tick(0.001f);
+        }
+        show();
+        CHECK(scr->safe_at(cx(port), cy(port)));
+        const int starts = g_rig.starts;
+
+        ev(cx(port), cy(port), TOUCH_EVENT_DOWN, b);
+        settle();
+        ticks(3.0f);
+        settle();
+        CHECK_EQ(g_rig.starts, starts);
+        CHECK(kst_prog_state(M) != KST_PROG_PROGRAMMING);
+        CHECK(kst_prog_state(M) != KST_PROG_ENTERING);
+        ev(cx(port), cy(port), TOUCH_EVENT_UP, a);
+        ev(cx(port), cy(port), TOUCH_EVENT_UP, b);
+        settle();
+        CHECK_EQ(g_rig.starts, starts);
+        CHECK(kst_prog_state(M) != KST_PROG_PROGRAMMING);
+    }
+}
+
 int main(void)
 {
     RUN(the_supplys_controls_are_held_for_as_long_as_the_port);
@@ -1063,5 +1105,6 @@ int main(void)
     RUN(the_guide_gives_abort_its_own_text);
     RUN(abort_acts_on_the_press_of_a_lone_contact_1_2_or_3);
     RUN(abort_counts_under_a_finger_held_on_write);
+    RUN(a_completed_connect_hold_under_abort_connects_nothing_again);
     return test_summary("kst_panel_screen");
 }

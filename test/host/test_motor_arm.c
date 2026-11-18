@@ -879,6 +879,30 @@ TEST_CASE(a_press_while_the_arm_is_asked_takes_it_back)
     }
 }
 
+/* One contact's hold on ARM has completed and asked ARM; still down, the
+ * other contact presses the button, now DISARM.  The DISARM is asked and
+ * the first contact, held on and then lifted, asks no second ARM.  With
+ * the track ids either way round. */
+TEST_CASE(a_completed_arm_hold_under_a_disarm_asks_no_second_arm)
+{
+    for (int swap = 0; swap < 2; ++swap) {
+        const uint8_t a = (uint8_t)(swap ? 1 : 0), b = (uint8_t)(swap ? 0 : 1);
+
+        fresh();
+        finger(a, ARM_X, ARM_Y);
+        frames((int)(2.3f / 0.026f));
+        CHECK_EQ(took().kind, MOTOR_CMD_ARM);
+        finger(b, ARM_X, ARM_Y);
+        CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
+        frames((int)(2.5f / 0.026f));
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+        lift(a);
+        lift(b);
+        frames(4);
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    }
+}
+
 int main(void)
 {
     RUN(no_throttle_control_moves_the_value_before_the_first_arm);
@@ -904,5 +928,6 @@ int main(void)
     RUN(arm_reset_peaks_and_the_tabs_work_while_disarmed);
     RUN(the_applications_hook_is_not_a_control);
     RUN(a_press_while_the_arm_is_asked_takes_it_back);
+    RUN(a_completed_arm_hold_under_a_disarm_asks_no_second_arm);
     return test_summary("motor_arm");
 }
