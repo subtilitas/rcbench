@@ -7381,7 +7381,7 @@ gap is no loss error. The transfer time is not measured.
 ### The sensor nodes
 
 The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show a node's
-firmware: `Node: 0.23.13. Included: 0.23.14.`, the version the node's
+firmware: `Node: 0.23.14. Included: 0.23.15.`, the version the node's
 STATUS packet named on the current link, or `not connected`, and the
 version of the node image this panel carries, or `none`. The two roles'
 images differ: the power node's row sends the power image, the balance
@@ -7418,7 +7418,7 @@ back. Once the update ends the node's client connects again from SETUP's
 values, and the row's version comes from the first STATUS packet on the
 new link.
 
-The alert band's lines name the node: `Power node updated to 0.23.14.
+The alert band's lines name the node: `Power node updated to 0.23.15.
 It connects again by itself.`, `Balance node update stopped: <reason>.
 Previous firmware is running.`, `Power node did not report after its
 update. Check its version on UPDATES.` The reasons are the Dial's;
@@ -7802,7 +7802,9 @@ on the IOmcu's link (board 2).
 
 - The grid has four cells: PWM01 to PWM04 on GPIO 2, 4, 5 and 1, the
   name on top and the GPIO under it. A tap gives the selected protocol to
-  the output. Slot n drives PWM0(n+1); PWM01 is channel 0.
+  the output. The bound outputs take slots and channels in the order
+  PWM01 to PWM04, and an unbound output takes none: with only PWM03 bound,
+  PWM03 is channel 0.
 - A protocol takes at most the 4 outputs: `SERVO PWM USES 4 PINS`.
 - PWM02 and PWM03 are PWM slice 2 and share one frame rate. A surface
   protocol and a throttle protocol on the two together are refused. The

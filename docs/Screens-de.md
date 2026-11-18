@@ -7982,7 +7982,7 @@ gemessen.
 ### Die Sensorknoten
 
 Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die
-Firmware eines Knotens: `Knoten: 0.23.13. Im Panel: 0.23.14.`, die
+Firmware eines Knotens: `Knoten: 0.23.14. Im Panel: 0.23.15.`, die
 Version, die das STATUS-Paket des Knotens auf der laufenden Verbindung
 genannt hat, oder `nicht verbunden`, und die Version des Knoten-Images,
 das dieses Panel mitbringt, oder `keine`. Die Images der beiden Rollen
@@ -8024,7 +8024,7 @@ an, bis der Knoten zurück ist. Endet das Update, verbindet sich der Client
 des Knotens wieder aus den Werten von SETUP, und die Version der Zeile
 kommt aus dem ersten STATUS-Paket auf der neuen Verbindung.
 
-Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.14
+Die Zeilen des Alarmbands nennen den Knoten: `Leistungsknoten auf 0.23.15
 aktualisiert. Verbindet sich von selbst neu.`, `Auswuchtknoten-Update
 abgebrochen: <Grund>. Vorherige Firmware läuft.`, `Leistungsknoten hat
 sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Die
@@ -8427,7 +8427,9 @@ IDENTITY-Register 5 am Link des IOmcu (Board 2).
 
 - Das Raster hat vier Zellen: PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1,
   oben der Name, darunter der GPIO. Ein Tipp gibt dem Ausgang das gewählte
-  Protokoll. Slot n treibt PWM0(n+1); PWM01 ist Kanal 0.
+  Protokoll. Die zugeordneten Ausgänge belegen Slots und Kanäle in der
+  Reihenfolge PWM01 bis PWM04, ein nicht zugeordneter Ausgang belegt keinen:
+  ist nur PWM03 zugeordnet, ist PWM03 Kanal 0.
 - Ein Protokoll belegt höchstens die 4 Ausgänge: `SERVO PWM BELEGT 4 PINS`.
 - PWM02 und PWM03 sind PWM-Slice 2 und teilen eine Framerate. Ein
   Flächenprotokoll und ein Gasprotokoll auf beiden zusammen werden

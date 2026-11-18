@@ -1056,9 +1056,9 @@ PIO-Budget. Der RP2350 hat 3 PIO-Blöcke mit je 4 State Machines und 32
 Instruktionen. Das pico-sdk lädt für jeden Pin eine eigene Kopie eines
 Programms. Nach den erzeugten Programmlängen braucht ein einfacher
 DShot-Pin 1 State Machine und 4 Instruktionen, ein bidirektionaler 2 und
-16, eine Hitec-Leitung 1 und 29 und ihr Precharge-Sampler 1 weitere und
+16, eine Hitec-Leitung 1 und 30 und ihr Precharge-Sampler 1 weitere und
 bis zu 12. Zwei bidirektionale Slots, zwei DShot-Ports und eine
-Hitec-Leitung mit Precharge brauchen 8 von 12 State Machines und 81 von 96
+Hitec-Leitung mit Precharge brauchen 8 von 12 State Machines und 82 von 96
 Instruktionen; diese Belegung ist nicht an Hardware geprüft. Ein Block
 erreicht GPIO 0 bis GPIO 31 oder GPIO 16 bis GPIO 47, ein Pin über GPIO 31 kann also
 früher abgewiesen werden. Ein bidirektionaler Pin braucht seine 2 State

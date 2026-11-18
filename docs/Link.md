@@ -955,10 +955,10 @@ has been measured on hardware.
 PIO budget. The RP2350 has 3 PIO blocks of 4 state machines and 32
 instructions. The pico-sdk loads one copy of a program for each pin. By
 the generated program lengths, a plain DShot pin takes 1 state machine
-and 4 instructions, a bidirectional one 2 and 16, a Hitec line 1 and 29
+and 4 instructions, a bidirectional one 2 and 16, a Hitec line 1 and 30
 and its precharge sampler 1 more and up to 12. Two bidirectional slots,
 two DShot ports and a Hitec line with precharge take 8 of 12 state
-machines and 81 of 96 instructions; the arithmetic is not run on
+machines and 82 of 96 instructions; the arithmetic is not run on
 hardware. A block reaches GPIO 0 to GPIO 31 or GPIO 16 to GPIO 47, so a pin above
 GPIO 31 can be refused earlier. A bidirectional pin needs its 2 state
 machines adjacent in one block, n and (n + 1) modulo 4. The driver takes
