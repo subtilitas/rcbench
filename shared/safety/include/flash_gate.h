@@ -39,14 +39,39 @@ extern "C" {
  *
  * True only when both @p armed and @p supply are false.
  *
- * @param armed true when the bank is armed, or an arm is waiting for the line
- *        to settle (arming_link_needed()): a stall inside the settle can cost
- *        the far end's trust in the heartbeat and so the arm.
+ * @param armed true when the bank is armed, an arm is waiting for the line
+ *        to settle (arming_link_needed()), or an ARM is queued and not yet
+ *        taken (flash_gate_arm()): a stall inside the settle can cost the
+ *        far end's trust in the heartbeat and so the arm.
  * @param supply true when the supply's output is on, or an ON for it is queued
  *        and not yet taken.
  * @return true when a flash operation may start.
  */
 bool flash_gate_open(bool armed, bool supply);
+
+/**
+ * @brief flash_gate_open()'s @p armed for a writer on another task than the
+ *        one that arms.
+ *
+ * The panel's screens queue an ARM for the control task.  The sender counts
+ * the ARM in @p arms_sent before it queues it.  The control task counts it
+ * in @p arms_taken once it has dealt with it, taken, refused or lost, and
+ * only after it has published what became of it (@p armed, @p arm_waits).
+ * A reader that loads @p arms_taken before @p armed and @p arm_waits never
+ * finds both saying nothing is coming while an arm is under way.
+ *
+ * The counters are free-running; only their equality is read, so a wrap of
+ * the 32-bit count changes nothing.
+ *
+ * @param armed      true when the bank is armed.
+ * @param arm_waits  true when an arm is waiting for the line to settle.
+ * @param arms_sent  ARMs counted when queued.
+ * @param arms_taken ARMs counted when dealt with.
+ * @return true when armed, an arm waits, or an ARM is queued and not yet
+ *         dealt with.
+ */
+bool flash_gate_arm(bool armed, bool arm_waits, unsigned arms_sent,
+                    unsigned arms_taken);
 
 /**
  * @brief Whether the IOmcu's flash may not be written now, for the store and

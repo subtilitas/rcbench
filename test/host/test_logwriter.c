@@ -209,6 +209,51 @@ TEST_CASE(a_column_nothing_measured_is_empty_rather_than_zero)
     CHECK_STR_EQ(got, "1.000;;;;11419;;46.3;;;;;;;;;;;;;;;;;measured");
 }
 
+/*
+ * A speed above the register's ceiling of 65,535rpm is written as the bound
+ * it is, not as a reading of 65535 and not as an empty cell.
+ */
+TEST_CASE(a_speed_above_the_ceiling_is_written_as_a_bound)
+{
+    fresh(-1);
+    log_writer_t w = writer();
+
+    bench_state_t in;
+    memset(&in, 0, sizeof(in));
+    in.flags = (uint16_t)LINK_BN_RPM_OK;
+    in.rpm = 90000.0f;
+    uint16_t regs[LINK_BN_COUNT];
+    bench_state_to_regs(&in, regs);
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    bench_state_from_regs(&b, regs, 0, LINK_BN_COUNT);
+    CHECK(log_writer_row(&w, 1.0f, &b));
+    in.rpm = 65535.0f;
+    bench_state_to_regs(&in, regs);
+    bench_state_from_regs(&b, regs, 0, LINK_BN_COUNT);
+    CHECK(log_writer_row(&w, 2.0f, &b));
+
+    const char *p = strchr(g_mem.buf, '\n');
+    CHECK(p != NULL);
+    ++p;
+    CHECK(strncmp(p, "1.000;;;;>65535;;;;;;;;;;;;;;;;;;;measured\n", 42) == 0);
+    p = strchr(p, '\n');
+    CHECK(p != NULL);
+    ++p;
+    CHECK(strncmp(p, "2.000;;;;65535;;;;;;;;;;;;;;;;;;;measured\n", 41) == 0);
+
+    /* The file still reads: the bound is a cell with no number. */
+    log_source_t src;
+    log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, g_mem.buf, g_mem.len);
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    log_analysis_t an;
+    CHECK_EQ(log_csv_analyse(&src, &opts, &an), LOG_OK);
+    CHECK_EQ(an.row_count, 2);
+    CHECK_EQ(an.ragged_rows, 0);
+}
+
 TEST_CASE(charge_and_energy_are_written_only_when_counted)
 {
     /* A current with no voltage beside it: the run counted charge and could
@@ -1427,6 +1472,7 @@ int main(void)
     RUN(a_reader_takes_a_file_with_and_without_the_source_column);
     RUN(the_header_carries_the_units_and_no_row_is_wasted);
     RUN(a_column_nothing_measured_is_empty_rather_than_zero);
+    RUN(a_speed_above_the_ceiling_is_written_as_a_bound);
     RUN(charge_and_energy_are_written_only_when_counted);
     RUN(the_values_survive_the_round_trip);
     RUN(the_sources_survive_the_round_trip);

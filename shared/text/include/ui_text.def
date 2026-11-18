@@ -682,6 +682,12 @@ UI_TEXT(BF_NOIO_MEANS, 0,
 UI_TEXT(BF_NOIO_HEAD, 0,
     "IF AN IOMCU IS CONNECTED, CHECK IN THIS ORDER",
     "IST EIN IOMCU ANGESCHLOSSEN, PRÜFE IN DIESER REIHENFOLGE")
+UI_TEXT(BF_TITLE_LOST, 0,
+    "LINK LOST",
+    "VERBINDUNG VERLOREN")
+UI_TEXT(BF_TITLE_FAULT, 0,
+    "CAN BUS FAULT",
+    "CAN-BUS-FEHLER")
 UI_TEXT(BF_TITLE_BACK, 0,
     "LINK BACK",
     "VERBINDUNG WIEDER DA")
@@ -2465,8 +2471,8 @@ UI_TEXT(LOG_RUNS_HERE, 64,
     "Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.",
     "Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.")
 UI_TEXT(LOG_TESTS_HERE, 64,
-    "Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.",
-    "Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.")
+    "Tests are saved as ATESTnnn, RUDDRnnn.CSV and LIMITnnn.TXT.",
+    "Tests heißen ATESTnnn, RUDDRnnn.CSV und LIMITnnn.TXT.")
 UI_TEXT(LOG_ROOT_HERE, 64,
     "Runs of firmware 0.21.0 and older.",
     "Läufe von Firmware 0.21.0 und älter.")
@@ -5897,6 +5903,17 @@ UI_TEXT(ALERT_ARM_PROG, 94,
 UI_TEXT(ALERT_ARM_C6, 94,
     "Cannot switch to ARMED: the C6 radio update is running.",
     "ARMED gesperrt: Das C6-Funk-Update läuft.")
+/* The supply's ON, the PROG ports' 5V ON and a programmer session's start
+ * refused under the C6 radio's update, as ARM is (fw_c6_refuses()). */
+UI_TEXT(ALERT_SUPPLY_C6, 94,
+    "Supply output not switched on: the C6 radio update is running.",
+    "Netzteilausgang nicht eingeschaltet: Das C6-Funk-Update läuft.")
+UI_TEXT(ALERT_P5_C6, 94,
+    "PROG ports 5V not switched on: the C6 radio update is running.",
+    "PROG-Ports 5V nicht eingeschaltet: Das C6-Funk-Update läuft.")
+UI_TEXT(ALERT_PROG_C6, 94,
+    "Programmer not started: the C6 radio update is running.",
+    "Programmierung nicht gestartet: Das C6-Funk-Update läuft.")
 UI_TEXT(ALERT_ARM_DEVUPD, 94,
     "Cannot switch to ARMED: a wireless device update is running.",
     "ARMED gesperrt: Ein Update eines Funkgeräts läuft.")
@@ -6111,6 +6128,11 @@ UI_TEXT(CU_WHY_NOT_STARTED, 36,
 UI_TEXT(ALERT_C6_DONE, 94,
     "C6 radio updated to %s. The panel restarts.",
     "C6-Funk auf %s aktualisiert. Das Panel startet neu.")
+/* The restart after a success waits for the bench
+ * (fw_c6_restart_step()). */
+UI_TEXT(ALERT_C6_WAITS, 94,
+    "C6 radio updated to %s. The panel restarts once SAFE with all outputs off.",
+    "C6-Funk auf %s aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.")
 UI_TEXT(ALERT_C6_NO_OTA, 94,
     "The C6 radio takes no update over SDIO. Flash it over header H4.",
     "Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.")
@@ -8735,6 +8757,9 @@ UI_TEXT(C6_WHY_BLE, 94,
 UI_TEXT(C6_WHY_DEVICE, 94,
     "The C6 update waits for the wireless device update to finish.",
     "Das C6-Update wartet auf das Ende des Funkgeräte-Updates.")
+UI_TEXT(C6_WHY_PROG, 94,
+    "The C6 update requires the servo and ESC programmers closed. Select LEAVE there first.",
+    "Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.")
 UI_TEXT(C6_WHY_ENDING, 94,
     "The C6 update waits for the C6 radio's last answer.",
     "Das C6-Update wartet auf die letzte Antwort des C6-Funks.")
@@ -8932,12 +8957,23 @@ UI_TEXT(UPD_WIZ_T_NOT_CONNECTED, 0,
 UI_TEXT(UPD_WIZ_T_NOT_BOUND, 0,
     "NOT BOUND",
     "NICHT GEBUNDEN")
+UI_TEXT(UPD_WIZ_T_OFF, 0,
+    "OFF",
+    "AUS")
 UI_TEXT(UPD_WIZ_HEAD, 0,
     "STEP %u OF %u: %s",
     "SCHRITT %u VON %u: %s")
 UI_TEXT(UPD_WIZ_DONE_HEAD, 0,
     "All firmware is current.",
     "Alle Firmware ist aktuell.")
+/* The last card's other two headings (upd_wiz_end()): a step skipped or
+ * without an update here, and PANEL not checked with the rest current. */
+UI_TEXT(UPD_WIZ_END_NONE_OPEN, 0,
+    "No step is open.",
+    "Kein Schritt offen.")
+UI_TEXT(UPD_WIZ_END_NO_CHECK, 0,
+    "Not checked for a panel release.",
+    "Nicht nach einem Panel-Release gesucht.")
 UI_TEXT(UPD_WIZ_DO_PANEL, 0,
     "The panel restarts into %s. The steps for the IOmcu and the devices follow after the restart.",
     "Das Panel startet mit %s neu. Die Schritte für IOmcu und Geräte folgen nach dem Neustart.")
@@ -9023,6 +9059,14 @@ UI_TEXT(UPD_LATEST, 0,
 UI_TEXT(UPD_STAGED, 81,
     "Download checked. Installing now.",
     "Download geprüft. Installation läuft.")
+/* A download ended STAGED and the install after it wrote no new firmware
+ * (wa_fetch_install_failed()): the result line and the retry under it. */
+UI_TEXT(UPD_FAIL_INSTALL, 0,
+    "The installation failed. The panel firmware is unchanged.",
+    "Installation fehlgeschlagen. Die Panel-Firmware ist unverändert.")
+UI_TEXT(UPD_FAIL_INSTALL_2, 0,
+    "CHECK FOR UPDATES offers the release again.",
+    "NACH UPDATES SUCHEN bietet das Release erneut an.")
 UI_TEXT(UPD_WAIT_COPROC, 67,
     "Waiting for the IOmcu update to finish.",
     "Wartet auf das Ende des IOmcu-Updates.")
@@ -10385,8 +10429,8 @@ UI_SERVO_TEXT(SERVO_STR_AB_CAP,
     "step above the voltage cap",
     "Stufe über Spannungsgrenze")
 UI_SERVO_TEXT(SERVO_STR_AB_STALL,
-    "above STALL AT for 1s",
-    "1s über BLOCKIERT AB")
+    "above Stall threshold for 1s",
+    "1s über Blockierschwelle")
 /* The run's reasons are also a line of the SERVO screen's result box:
  * 31 characters at most. */
 UI_SERVO_TEXT(SERVO_STR_AB_CC,
@@ -10744,10 +10788,10 @@ UI_SERVO_TEXT(SERVO_STR_R_LIM_TRAVEL_NONE,
     "Stellzeit        längste --, Grenze %s: nicht "
     "gemessen, keine Bewegung erreichte das Ziel")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL,
-    "Stall threshold  highest %.3fA, STALL "
-    "AT %.2fA: %s",
+    "Stall threshold  highest %.3fA, limit "
+    "%.2fA: %s",
     "Blockierschwelle Höchstwert %.3fA, "
-    "BLOCKIERT AB %.2fA: %s")
+    "Grenze %.2fA: %s")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_LATE,
     "Moves arrived    %u late: %s",
     "Verspätet        %u Bewegungen: %s")
@@ -10977,15 +11021,15 @@ UI_SERVO_TEXT(SERVO_STR_R_NEGATIVE,
     "Strom in Ruhe negativ: Richtung des "
     "Shunts")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL_LIMIT,
-    "STALL AT %.2fA must be below "
+    "Stall threshold %.2fA must be below "
     "current limit %.2fA",
-    "BLOCKIERT AB %.2fA muss unter "
-    "Strombegrenzung %.2fA sein")
+    "Blockierschwelle %.2fA: muss unter "
+    "Strombegrenzung %.2fA")
 UI_SERVO_TEXT(SERVO_STR_R_LIM_STALL_RANGE,
-    "STALL AT %.2fA must be below "
+    "Stall threshold %.2fA must be below "
     "INA3221 range %.3fA",
-    "BLOCKIERT AB %.2fA muss unter "
-    "INA3221-Bereich %.3fA sein")
+    "Blockierschwelle %.2fA: muss unter "
+    "INA3221-Bereich %.3fA")
 UI_SERVO_TEXT(SERVO_STR_R_UNM_POSITION_INA,
     "Position: the horn position is not "
     "measured. All results are based on current "
@@ -11712,8 +11756,8 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_GAPS,
     "Angle gaps:     %lu, the longest %lums",
     "Winkellücken:    %lu, die längste %lums")
 UI_SERVO_TEXT(SERVO_STR_RA_R_PROG_HEAD,
-    "PROGRAMMING (end points, unit not known)",
-    "PROGRAMMIEREN (Endpoints, Einheit unbekannt)")
+    "PROGRAMMING (end points)",
+    "PROGRAMMIEREN (Endpoints)")
 UI_SERVO_TEXT(SERVO_STR_RA_R_SIDE_LO,
     "moves the 1000us side",
     "bewegt die 1000us-Seite")
@@ -11850,6 +11894,9 @@ UI_TEXT(RA_RANGE, 48,
 UI_TEXT(RA_PROG_PORT, 48,
     "AUTO PROGRAMS A SERVO ON THE PROG PORT",
     "AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT")
+UI_TEXT(RA_GOALS_TOL, 48,
+    "GOALS MUST EXCEED 2 x TOLERANCE",
+    "SOLL MUSS ÜBER 2 x TOLERANZ LIEGEN")
 UI_TEXT(RA_REFUSED, 48,
     "TARGET, MARGIN OR TOLERANCE OUT OF RANGE",
     "SOLL, RESERVE ODER TOLERANZ UNZULÄSSIG")
@@ -12414,6 +12461,9 @@ UI_TEXT(IMU_ERR_NOT_WIT, 53,
 UI_TEXT(IMU_ERR_WRITE, 53,
     "THE SENSOR DID NOT TAKE THE COMMAND",
     "DER SENSOR HAT DEN BEFEHL NICHT ANGENOMMEN")
+UI_TEXT(IMU_SCAN_ARMED, 94,
+    "NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST",
+    "KEINE IMU-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN")
 UI_TEXT(IMU_ERR_NONE_FOUND, 53,
     "NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?",
     "KEIN SENSOR GEFUNDEN: IST ER AN, KEIN HANDY DRAN?")

@@ -246,6 +246,14 @@ bool wa_fetch_has_found(const wa_fetch_t *f)
     return f != NULL && (f->job == WA_JOB_DOWNLOAD || got_found(f->got));
 }
 
+void wa_fetch_install_failed(wa_fetch_t *f)
+{
+    if (f != NULL && f->job == WA_JOB_DOWNLOAD && f->phase == WA_PH_ENDED
+        && f->got == WA_GOT_STAGED) {
+        f->got = WA_GOT_INSTALL;
+    }
+}
+
 void wa_fetch_on_end(wa_fetch_t *f, uint32_t gen, const wa_fetch_res_t *r)
 {
     if (!mine(f, gen)) {

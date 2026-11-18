@@ -257,6 +257,93 @@ TEST_CASE(scan_with_the_imu_off_switches_it_on_and_scans_once_bluetooth_runs)
     CHECK(!ims_row_enabled(IMS_ROW_SCAN));
 }
 
+/* The band's status with the bench ARMED or SAFE. */
+static void set_armed(bool armed)
+{
+    ui_bench_status_t st;
+    memset(&st, 0, sizeof st);
+    st.armed = armed;
+    ui_router_set_status(&st);
+}
+
+/* While ARMED, SCAN queues nothing, opens no list and says why on the
+ * band, as the Dial's and the node's scans do; SAFE again, it scans. */
+TEST_CASE(a_scan_while_armed_is_refused_with_a_band_text)
+{
+    imu_view_t v = view_connected();
+    on_imu(&v);
+    set_armed(true);
+    tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+    CHECK(!imu_screen()->covered());
+    CHECK(!imu_screen_search_owed());
+    CHECK(hint_shows(TX_IMU_SCAN_ARMED));
+    CHECK(!imu_screen_search());
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+    set_armed(false);
+    tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
+    CHECK_EQ(took().kind, IMU_CMD_SCAN);
+}
+
+/* A scan owed while Bluetooth LE starts ends when the start ends in NO
+ * BLUETOOTH ON C6: the sync that comes back 1h later, the screen left,
+ * starts no scan. */
+TEST_CASE(a_scan_owed_since_no_bluetooth_is_dropped)
+{
+    imu_view_t v;
+    memset(&v, 0, sizeof v);
+    v.link = IMU_LINK_STARTING;
+    on_imu(&v);
+    settings_set(SET_IMU_EN, 1.0f);
+    CHECK(imu_screen_search());
+    CHECK(imu_screen_search_owed());
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+    v.link = IMU_LINK_NO_BT;
+    imu_screen_set(&v);
+    CHECK(!imu_screen_search_owed());
+    tap_home();
+    for (int i = 0; i < 3600; ++i) {
+        v.r.taken_ms += 1000u;          /* a view that differs each second */
+        imu_screen_set(&v);
+    }
+    v.link = IMU_LINK_READY;
+    imu_screen_set(&v);
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+}
+
+/* A scan owed while Bluetooth LE starts ends at the switch to ARMED and
+ * when its list closes: Bluetooth running later starts no scan. */
+TEST_CASE(a_scan_owed_is_dropped_by_armed_and_by_close)
+{
+    imu_view_t v;
+    memset(&v, 0, sizeof v);
+    v.link = IMU_LINK_STARTING;
+    on_imu(&v);
+    settings_set(SET_IMU_EN, 1.0f);
+    tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
+    CHECK(imu_screen_search_owed());
+    set_armed(true);
+    v.r.taken_ms += 20u;
+    imu_screen_set(&v);
+    CHECK(!imu_screen_search_owed());
+    set_armed(false);
+    v.link = IMU_LINK_READY;
+    imu_screen_set(&v);
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+
+    v.link = IMU_LINK_STARTING;
+    imu_screen_set(&v);
+    tap_rect(imu_screen_row_rect(IMS_ROW_CLOSE));
+    tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
+    CHECK(imu_screen_search_owed());
+    tap_rect(imu_screen_row_rect(IMS_ROW_CLOSE));
+    CHECK(!imu_screen()->covered());
+    CHECK(!imu_screen_search_owed());
+    v.link = IMU_LINK_READY;
+    imu_screen_set(&v);
+    CHECK_EQ(took().kind, IMU_CMD_NONE);
+}
+
 TEST_CASE(a_tap_on_a_device_posts_bind_with_its_index)
 {
     imu_view_t v = view_connected();
@@ -652,6 +739,9 @@ int main(void)
     RUN(the_hold_and_settings_sit_in_the_footer_over_nothing_else);
     RUN(scan_posts_the_command_and_the_list_shows_the_found_devices);
     RUN(scan_with_the_imu_off_switches_it_on_and_scans_once_bluetooth_runs);
+    RUN(a_scan_while_armed_is_refused_with_a_band_text);
+    RUN(a_scan_owed_since_no_bluetooth_is_dropped);
+    RUN(a_scan_owed_is_dropped_by_armed_and_by_close);
     RUN(a_tap_on_a_device_posts_bind_with_its_index);
     RUN(a_scan_error_reads_in_the_list_and_on_the_main_view);
     RUN(calibrate_needs_a_2s_hold_and_the_band_hint_on_a_short_press);

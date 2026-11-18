@@ -83,6 +83,13 @@ bool panel_bal_blec_target(bleu_addr_t *addr, bool *linked,
                           uint8_t version[3], bool *down);
 
 /**
+ * @brief Whether BALANCE NODE is OFF on WIRELESS: an update's hold on the
+ *        link does not count.  `blec` task only.
+ * @return true while the node's switch is OFF
+ */
+bool panel_bal_blec_off(void);
+
+/**
  * @brief A setting changed: SET_BNODE_EN goes to the controller.
  * @param id The setting.
  */

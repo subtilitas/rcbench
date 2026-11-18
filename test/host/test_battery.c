@@ -112,6 +112,32 @@ TEST_CASE(no_pack_is_not_a_flat_pack)
     CHECK(count_of(ui_theme_color(UI_C_TEXT_FAINT)) > 0);
 }
 
+/* A cell count the arrays cannot hold is no pack, not a read past them. */
+TEST_CASE(a_cell_count_outside_the_arrays_is_no_pack)
+{
+    static const int k_counts[] = { BATTERY_CELLS_MAX + 1, 16, 1000, 0, -3 };
+    for (size_t i = 0u; i < sizeof(k_counts) / sizeof(k_counts[0]); ++i) {
+        fresh();
+        battery_state_t b;
+        memset(&b, 0, sizeof(b));
+        b.valid = true;
+        b.cells = k_counts[i];
+        for (int c = 0; c < BATTERY_CELLS_MAX; ++c) {
+            b.volts[c] = 3.80f + 0.01f * (float)c;
+        }
+        battery_screen_set(&b);
+        CHECK_NEAR(battery_screen_spread_mv(), 0.0, 1e-6);
+        scr->render(&cv, 0);
+        CHECK_EQ(count_of(ui_theme_color(UI_C_DANGER)), 0);
+        CHECK_EQ(count_of(ui_theme_color(UI_C_OK)), 0);
+        CHECK(count_of(ui_theme_color(UI_C_TEXT_FAINT)) > 0);
+    }
+    /* The largest pack is taken whole. */
+    fresh();
+    pack(BATTERY_CELLS_MAX, 3.80f, 0.030f);
+    CHECK_NEAR(battery_screen_spread_mv(), 30.0, 0.5);
+}
+
 /*
  * The scale follows the pack.  A fixed scale draws a 10mV spread and a
  * 20mV spread as the same picture, so the two renders differ.
@@ -184,6 +210,7 @@ int main(void)
     RUN(spread_is_between_cells_not_from_nominal);
     RUN(the_verdict_follows_the_spread);
     RUN(no_pack_is_not_a_flat_pack);
+    RUN(a_cell_count_outside_the_arrays_is_no_pack);
     RUN(the_scale_follows_the_pack);
     RUN(every_cell_count_draws);
     return test_summary("battery");

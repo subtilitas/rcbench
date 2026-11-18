@@ -17,6 +17,7 @@
 #include "arming.h"
 #include "bench_state.h"
 #include "bind_link.h"
+#include "fw_c6.h"
 #include "heartbeat.h"
 #include "esc_link.h"
 #include "hitec_link.h"
@@ -703,10 +704,27 @@ static void apply_clear_cmd(const panel_cmd_t *pc, bool link_up)
  * because most of these write to the far end, and the flag that says whether
  * that is possible is the control loop's.
  */
+/** @brief ARMs drain_commands() has dealt with and arms_taken_publish()
+ *         has not yet counted; control task only. */
+static unsigned s_arms_drained;
+
+void arms_taken_publish(void)
+{
+    if (s_arms_drained != 0u) {
+        atomic_fetch_add(&s_arms_taken, s_arms_drained);
+        s_arms_drained = 0u;
+    }
+}
+
 void drain_commands(bool link_up, bench_state_t *bench)
 {
     panel_cmd_t pc;
     while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
+        if (panel_cmd_arms(&pc)) {
+            /* Taken or refused below; counted for the flash gates once
+             * this pass's snapshot shows which (arms_taken_publish()). */
+            ++s_arms_drained;
+        }
         /*
          * Between entries, because a backlog of positions is seconds of
          * exchanges and a disarm asked for during it must not wait them out.
@@ -759,10 +777,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
          * again, finds a stamp that is not its waiting one and changes
          * nothing.
          */
-        const bool arms = (pc.kind == PANEL_CMD_MOTOR
-                           && pc.motor.kind == MOTOR_CMD_ARM)
-                          || (pc.kind == PANEL_CMD_SERVO
-                              && pc.servo.kind == SERVO_CMD_ARM);
+        const bool arms = panel_cmd_arms(&pc);
         const uint32_t ask = !arms ? 0u
                              : (pc.kind == PANEL_CMD_MOTOR) ? pc.motor.ask
                                                             : pc.servo.ask;
@@ -807,7 +822,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
             arming_refuse_ask(&s_arm, ask);
             continue;
         }
-        if (arms && panel_c6_busy()) {
+        if (arms && fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_ARM)) {
             /* The C6 radio's update ends in a restart of the panel. */
             control_alert(TR(ALERT_ARM_C6));
             arming_refuse_ask(&s_arm, ask);

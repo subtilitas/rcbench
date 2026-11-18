@@ -42,6 +42,11 @@ static imu_link_t s_link;
  */
 static void show(imu_link_t link)
 {
+    /* SAFE: the help check leaves the band's status ARMED, and an ARMED
+     * bench takes no scan. */
+    ui_bench_status_t st;
+    memset(&st, 0, sizeof st);
+    ui_router_set_status(&st);
     imu_screen()->reset();
     imu_screen()->enter();
     imu_view_t v;

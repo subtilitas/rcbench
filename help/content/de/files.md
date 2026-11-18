@@ -18,7 +18,7 @@ Die Taste über jeder Spalte zeigt den Ordnerpfad. Tippe darauf, um einen Ordner
 
 ![Die zweite Seite eines Ordners mit 120 Einträgen](view:files-paged)
 
-Jede Zeile zeigt den Namen, die Größe (`512B`, `14kB`, `7.0MB`; 1kB sind 1.024 Bytes), die Art und ein Zustandswort:
+Jede Zeile zeigt den Namen, die Größe (`512B`, `14kB`, `7.0MB`; 1kB sind 1.024 Bytes und 1MB sind 1.024kB, in den Listen und in den Meldungen: `1MB` ist 1MiB), die Art und ein Zustandswort:
 
 | Zustand | Bedeutung |
 |---|---|

@@ -201,6 +201,11 @@ bool panel_pnode_blec_target(bleu_addr_t *addr, bool *linked,
            && pnode_ctl_target(&s_ctl, addr, linked, version, down);
 }
 
+bool panel_pnode_blec_off(void)
+{
+    return !s_ctl.cfg.en;
+}
+
 bool panel_pnode_blec_other_board(void)
 {
     return s_q != NULL && pnode_ctl_other_board(&s_ctl);

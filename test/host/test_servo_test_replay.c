@@ -406,7 +406,7 @@ TEST_CASE(a_servo_moving_under_the_threshold_is_not_failed)
 /* The MS24's whole recording.  Its two spells of constant current, 0.43s
  * each during a move, end nothing and fail nothing: the run passes as it
  * did on the bench, and the report counts them.  The recorded LIMITS page
- * had STALL AT at 3.00A over a current limit of 2.00A, which the report
+ * had Stall threshold at 3.00A over a current limit of 2.00A, which the report
  * says cannot be reached. */
 TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
 {
@@ -460,9 +460,9 @@ TEST_CASE(a_recorded_run_with_spells_of_constant_current_passes)
              "longest stretch 425ms\n", (unsigned long)g_rp.cc_readings);
     CHECK(strstr(g_rp_report, want) != NULL);
     CHECK(strstr(g_rp_report, "Result:         PASS\n") != NULL);
-    CHECK(strstr(g_rp_report, "Stall threshold  highest 0.390A, STALL AT "
+    CHECK(strstr(g_rp_report, "Stall threshold  highest 0.390A, limit "
                               "3.00A: PASS\n") != NULL);
-    CHECK(strstr(g_rp_report, "STALL AT 3.00A must be below current "
+    CHECK(strstr(g_rp_report, "Stall threshold 3.00A must be below current "
                               "limit 2.00A\n") != NULL);
 }
 

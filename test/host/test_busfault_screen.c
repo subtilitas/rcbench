@@ -405,6 +405,32 @@ TEST_CASE(the_two_faults_do_not_share_a_heading)
     CHECK(heading_face() != selftest);
 }
 
+TEST_CASE(the_fault_headings_follow_the_language)
+{
+    /* The table holds both titles; the German bar is not the English one. */
+    CHECK_STR_EQ(ui_tr_in(UI_LANG_EN, TX_BF_TITLE_LOST), "LINK LOST");
+    CHECK_STR_EQ(ui_tr_in(UI_LANG_DE, TX_BF_TITLE_LOST),
+                 "VERBINDUNG VERLOREN");
+    CHECK_STR_EQ(ui_tr_in(UI_LANG_EN, TX_BF_TITLE_FAULT), "CAN BUS FAULT");
+    CHECK_STR_EQ(ui_tr_in(UI_LANG_DE, TX_BF_TITLE_FAULT), "CAN-BUS-FEHLER");
+
+    static const busfault_report_t k_reports[] = {
+        { .kind = BUSFAULT_SELFTEST, .verdict = CAN_SELFTEST_SILENT,
+          .sent = 1000 },
+        { .kind = BUSFAULT_LINK_LOST, .bus = BUSFAULT_BUS_OFF, .down_s = 12 },
+    };
+    for (size_t i = 0u; i < sizeof(k_reports) / sizeof(k_reports[0]); ++i) {
+        fresh();
+        busfault_screen_set(&k_reports[i]);
+        const unsigned en = heading_face();
+        ui_text_set_language(UI_LANG_DE);
+        busfault_screen_set(&k_reports[i]);
+        const unsigned de = heading_face();
+        ui_text_set_language(UI_LANG_EN);
+        CHECK(de != en);
+    }
+}
+
 TEST_CASE(the_button_fills_towards_the_colour_it_settles_on)
 {
     /*
@@ -617,6 +643,7 @@ int main(void)
     RUN(a_lost_link_renders_every_controller_state);
     RUN(a_lost_link_is_acknowledged_the_same_way);
     RUN(the_two_faults_do_not_share_a_heading);
+    RUN(the_fault_headings_follow_the_language);
     RUN(the_button_fills_towards_the_colour_it_settles_on);
     RUN(the_acknowledgement_flashes_for_300_ms);
     RUN(one_late_frame_cannot_acknowledge_a_fault);

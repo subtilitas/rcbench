@@ -81,6 +81,59 @@ TEST_CASE(a_write_may_start_only_disarmed_with_the_supply_off)
     CHECK(!flash_gate_open(true, true));
 }
 
+/*
+ * R10-2: an ARM queued earlier in a frame.  The frame began SAFE, so the
+ * snapshot says neither armed nor waiting; the ARM is counted sent and the
+ * control task has not dealt with it.  The gate is shut from the count
+ * alone, and stays shut until the control task has published what became
+ * of the ARM and counted it taken.
+ */
+TEST_CASE(an_arm_queued_and_not_yet_taken_shuts_the_gate)
+{
+    unsigned sent = 0u, taken = 0u;
+    bool armed = false, waits = false;
+    CHECK(!flash_gate_arm(armed, waits, sent, taken));
+    CHECK(flash_gate_open(flash_gate_arm(armed, waits, sent, taken), false));
+    /* The hold completes: counted, then queued. */
+    ++sent;
+    CHECK(flash_gate_arm(armed, waits, sent, taken));
+    CHECK(!flash_gate_open(flash_gate_arm(armed, waits, sent, taken), false));
+    /* The control task takes it: the settle waits, published, then
+     * counted. */
+    waits = true;
+    CHECK(flash_gate_arm(armed, waits, sent, taken));
+    ++taken;
+    CHECK(flash_gate_arm(armed, waits, sent, taken));
+    /* Armed. */
+    waits = false;
+    armed = true;
+    CHECK(flash_gate_arm(armed, waits, sent, taken));
+    /* Disarmed: open again. */
+    armed = false;
+    CHECK(!flash_gate_arm(armed, waits, sent, taken));
+    /* An ARM the control task refuses: shut until it is counted. */
+    ++sent;
+    CHECK(flash_gate_arm(armed, waits, sent, taken));
+    ++taken;
+    CHECK(!flash_gate_arm(armed, waits, sent, taken));
+    /* Two queued, one dealt with. */
+    sent += 2u;
+    ++taken;
+    CHECK(flash_gate_arm(armed, waits, sent, taken));
+    ++taken;
+    CHECK(!flash_gate_arm(armed, waits, sent, taken));
+}
+
+TEST_CASE(the_arm_counters_wrap_without_opening_or_shutting_the_gate)
+{
+    const unsigned top = ~0u;
+    CHECK(!flash_gate_arm(false, false, top, top));
+    /* Sent wrapped to 0, taken still at the top: one under way. */
+    CHECK(flash_gate_arm(false, false, top + 1u, top));
+    CHECK(!flash_gate_arm(false, false, top + 1u, top + 1u));
+    CHECK_EQ(top + 1u, 0u);
+}
+
 /* ------------------------------------------------- the keep under the rule */
 
 static arming_t      g_arm;
@@ -298,6 +351,8 @@ TEST_CASE(the_coprocessor_flash_is_busy_while_any_input_holds)
 int main(void)
 {
     RUN(a_write_may_start_only_disarmed_with_the_supply_off);
+    RUN(an_arm_queued_and_not_yet_taken_shuts_the_gate);
+    RUN(the_arm_counters_wrap_without_opening_or_shutting_the_gate);
     RUN(an_arm_asked_for_during_the_keep_stops_it_before_the_next_sector);
     RUN(a_keep_handed_over_on_an_armed_bench_starts_at_the_disarm);
     RUN(the_supply_coming_on_pauses_the_keep_and_going_off_resumes_it);

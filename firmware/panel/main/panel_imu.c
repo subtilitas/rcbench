@@ -15,6 +15,7 @@
  */
 #include "panel_imu.h"
 
+#include <stdatomic.h>
 #include <stdio.h>
 #include <string.h>
 
@@ -78,6 +79,9 @@ static imu_link_t    s_was = IMU_LINK_OFF;
 static imu_pub_t     s_seen;
 /** @brief The binds the frame task kept in SETUP. */
 static uint32_t      s_kept_seq;
+/** @brief ARMED or an arm waiting, from the control task
+ *         (panel_imu_set_live()), read by the `blec` task. */
+static atomic_bool   s_live;
 
 /**
  * @brief SETUP's values as the controller takes them.
@@ -176,6 +180,9 @@ void panel_imu_blec_poll(uint32_t now)
     if (s_q == NULL) {
         return;
     }
+    /* Before the commands: a SCAN queued at the switch to ARMED is
+     * refused. */
+    imu_ctl_live(&s_ctl, atomic_load(&s_live));
     imu_msg_t m;
     while (xQueueReceive(s_q, &m, 0) == pdTRUE) {
         if (m.is_cfg) {
@@ -191,6 +198,11 @@ void panel_imu_blec_poll(uint32_t now)
     char ver[IMU_VERSION_MAX];
     const imu_radio_t radio = radio_now(ver, sizeof(ver));
     imu_ctl_radio(&s_ctl, radio, ver, now);
+}
+
+void panel_imu_set_live(bool live)
+{
+    atomic_store(&s_live, live);
 }
 
 void panel_imu_blec_event(const bleu_evt_t *e, uint32_t now)

@@ -94,7 +94,7 @@ Die linke Karte hält Anzeige, Sollwerte, RESERVE und TOLERANZ, NULLPUNKT und MA
 |---|---|
 | 1000us, 2000us | Soll-Ausschlag je Seite, 0,5 bis 90,0°, Vorgabe 20,0°. Bei gesetzter LÄNGE stehen daneben die mm an der Hinterkante. |
 | RESERVE | Anteil über dem Soll-Ausschlag, 0 bis 50%, Vorgabe 10%: 20,0° bei 10% ergeben einen Zielwert von 22,0°. |
-| TOLERANZ | Zulässige Abweichung vom Zielwert, 0,1 bis 5,0°, Vorgabe 0,5°. |
+| TOLERANZ | Zulässige Abweichung vom Zielwert, 0,1 bis 5,0°, Vorgabe 0,5°. Jeder Zielwert muss über 2 x TOLERANZ liegen; sonst wird das Halten verweigert, und die erste Statuszeile zeigt `SOLL MUSS ÜBER 2 x TOLERANZ LIEGEN`. |
 
 ### BEREIT
 

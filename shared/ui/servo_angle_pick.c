@@ -372,7 +372,7 @@ void angle_pick_open(void)
      * bound sensor is not scanned under: the user's SEARCH does that. */
     const imu_view_t *v = imu_screen_view();
     if (v->link == IMU_LINK_READY && v->found_n == 0u
-        && v->err == IMU_ERR_NONE) {
+        && v->err == IMU_ERR_NONE && !ui_router_status()->armed) {
         (void)imu_screen_search();
     }
     build();
