@@ -163,6 +163,7 @@ set(SRCS
     upd_c6.c
     upd_dev.c
     upd_wizard.c
+    upd_run.c
     upd_wiz_view.c
     upd_wiz_card.c
     files_screen.c

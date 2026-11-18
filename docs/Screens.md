@@ -5153,7 +5153,8 @@ written. The install writes it once the image is written whole and
 checked, before the restart note. The C6 radio's update writes it on
 success, with the running version. A power cut before the write leaves no
 run. A version text over 16 bytes is not written, and a note that stands
-is erased.
+is erased. What a run does after the restart is in
+[Updates: After a restart](#after-a-restart).
 
 Each start reads the note once, after its start check:
 
@@ -5176,9 +5177,6 @@ Current limitations:
 - An install whose NVS write fails says so on the console
   (`restart note not kept`), and a start of its build that goes back shows
   no line on the band.
-- The run note opens no screen: after a restart UPDATES does not open by
-  itself, and a run ends only when its 2 openings are spent or another
-  version runs.
 - A trial start that stops before the screen loop runs, in a card mount
   that does not return for example, is not kept and not reset either: the
   task watchdog reports and does not restart (CONFIG_ESP_TASK_WDT_PANIC is
@@ -6783,6 +6781,75 @@ UPDATES is drawn in the accent colour.
 
 ![The last card with the Dial skipped](img/updates-done.png)
 
+### After a restart
+
+An update run has two restarts inside it: after the panel's install and
+after the C6 radio's update. The run note in NVS (non-volatile storage)
+keeps the fact that a run stands ([Installing: PANEL UPDATE](#installing-panel-update));
+the steps are decided again from what the panel knows after the restart.
+
+While a run stands, UPDATES opens by itself once per start, on the menu,
+past the splash, with the bench SAFE, no arm waiting, the supply output
+off, the panel's radio wholly off and no panel install under way: the
+conditions of the IOmcu's question. In the same frame UPDATES comes
+first, and the IOmcu's question does not open over it; its step 2 holds
+the same 2s hold. A start that runs a run spends one of the note's 2
+openings, so a run opens UPDATES at 2 starts at most, a power cut between
+them included.
+
+![Step 2 after the panel's restart](img/updates-run-iomcu.png)
+
+While a condition holds the opening back, the alert band names it once,
+and again when the reason changes:
+
+| Band | Condition |
+| --- | --- |
+| `Update run: UPDATES opens once SAFE with the supply off.` | ARMED, an arm waiting, or the supply output on or switching on |
+| `Update run: UPDATES opens once the panel's Wi-Fi is off.` | a check, a download or the WI-FI screen has the radio on |
+| `Update run: UPDATES opens after the panel firmware install.` | a panel download or install runs |
+
+On another screen it waits without a line. The start-up check
+([The check](#the-check)) does not run during a run, nor before the
+start has read the run note: it switches the radio on and holds the
+IOmcu's step.
+
+During a run the IOmcu without a link and a bound device that is not
+connected wait ([The steps](#the-steps)). The run ends, and the note is
+erased, when:
+
+- the home tag leaves UPDATES. The home tag over the OPTIONS
+  list, SINGLE UPDATES or the devices' page closes that first and ends
+  nothing;
+- no step blocks any more, once the wireless devices' rows were published
+  by the Bluetooth LE client: before that every device reads as not bound.
+
+The erase is a flash write, and a flash write stalls both cores, the
+control task with its heartbeat and STOP among them. A run that ends
+while the bench is ARMED, has an arm waiting or has a supply output on or
+switching on keeps its note until the bench is SAFE with the outputs off.
+
+Neither ends the run while a C6 update runs or its restart is due: the
+note that update wrote for the start after it stands. A screen the panel
+opens over UPDATES ends nothing: PANEL UPDATE, the IOmcu's progress, the
+bus-fault screen. A build that went back finds the note naming another
+version and erases it; its start opens nothing, and the band keeps the
+`failed to start` line. The console says each opening and each end:
+
+    I (…) rcbench: update run: UPDATES opened
+    I (…) rcbench: update run: ends, UPDATES left by the home tag
+    I (…) rcbench: update run: ends, no step left
+    I (…) fw_ota: run note: erased; the update run ends
+
+Current limitations:
+
+- A panel whose Bluetooth LE client is not set up publishes no device
+  row and ends no run by itself: the home tag ends it, or the second
+  start's opening is the last.
+- On a trial start the note is read once the build is kept, up to 30s
+  after the start. The IOmcu's question can open on the menu before
+  that; its progress returns to the menu, and UPDATES opens after it.
+- Time from the panel's start to a linked Dial or node: not measured.
+
 ### The check
 
 Releases are numbered by kind. An odd minor number is a testing release,
@@ -7057,7 +7124,7 @@ The alert band says how an update ended:
 
 | Alert | Meaning |
 | --- | --- |
-| `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later. |
+| `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later, and the update run goes on after it ([After a restart](#after-a-restart)). |
 | `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([The ESP32-C6 radio: Recovery over header H4](C6.md#recovery-over-header-h4)). |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | The link to the C6 failed. |
 | `C6 update stopped: <reason>. Previous firmware is running.` | A write, the C6's image check or the activate call failed (`a write failed`, `the C6's image check failed`, `activation failed`), or a step went unanswered past its limit (`no response`). |

@@ -58,6 +58,8 @@ ARMED, der Netzteilausgang an, ein offener Aufzeichnungslauf, WLAN an oder eine 
 
 Während die Übertragung eines Geräts läuft, zeigt das Bedienelement ihre Phase, zum Beispiel `AM DIAL DRÜCKEN ZUM ANNEHMEN: 27s`, und UPDATE ABBRECHEN steht in der Fußleiste.
 
+Nach der Installation des Panels und nach dem Update des C6-Funks startet das Panel neu, und der Update-Lauf geht weiter: UPDATES öffnet sich einmal je Start von selbst im Menü, bei SAFE, Netzteilausgang aus, WLAN aus und ohne laufende Installation. Bis dahin nennt das Meldeband, worauf es wartet, zum Beispiel `Update-Lauf: UPDATES öffnet bei SAFE und Netzteilausgang aus.` Die Suche beim Start läuft während eines Laufs nicht. Das Home-Tag auf UPDATES beendet den Lauf, ebenso der letzte erledigte Schritt. Ein Lauf öffnet UPDATES bei höchstens 2 Starts.
+
 Nach einem Neustart in einem Update-Lauf wartet ein Schritt, dessen IOmcu oder Gerät noch nicht verbunden ist, mit SCHRITT ÜBERSPRINGEN und geht weiter, sobald es sich verbindet.
 
 ![Der Schritt des Dial wartet nach einem Neustart](view:updates-step-waiting)

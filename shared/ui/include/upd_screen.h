@@ -308,6 +308,15 @@ void upd_screen_set_result(unsigned step, const char *text);
  */
 bool upd_screen_take_skip_coproc(void);
 
+/**
+ * @brief Whether the home tag left UPDATES since the last call, once: no
+ *        list, SINGLE UPDATES or devices' page covered it.  A screen the
+ *        application opens over UPDATES does not count.  The update run
+ *        ends on it (upd_run.h).
+ * @return true once after the home tag left UPDATES
+ */
+bool upd_screen_take_left(void);
+
 /** Repaint on the next frame. */
 void upd_screen_invalidate(void);
 
@@ -352,6 +361,8 @@ typedef struct {
     bool     coproc;       /**< the IOmcu's update is offered or runs */
     bool     unsafe;       /**< ARMED, an arm waiting, the supply on        */
     bool     newer;        /**< the start-up check found a newer release   */
+    bool     run;          /**< an update run stands, or the start's run
+                                note is not read yet: no start-up check   */
 } upd_feed_t;
 
 /** @brief What the reminder driver keeps between frames. */
@@ -365,7 +376,8 @@ typedef struct {
 /**
  * @brief Whether the start-up check starts now: once per start, with the reminder
  * on, a home network kept, Wi-Fi available, the gate open, FILES & UPDATE
- * closed, the IOmcu's update neither offered nor running, the router
+ * closed, the IOmcu's update neither offered nor running, no update run
+ * (it would switch the radio on and hold the IOmcu's step), the router
  * past the splash, and within UPD_START_WAIT_MS of the first drive.  True
  * once; the caller starts the check.
  *

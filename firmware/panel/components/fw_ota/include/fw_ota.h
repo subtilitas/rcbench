@@ -95,6 +95,16 @@ bool fw_ota_run_installed(fw_install_status_t st, const char *version);
 bool fw_ota_run_active(void);
 
 /**
+ * @brief Whether this start has read its run note (fw_run_settle()): at
+ *        once on a start that is no trial, when the trial is kept on one
+ *        that is (up to FW_TRIAL_BOUND_MS, 30s, after the start).  Until
+ *        then fw_ota_run_active() is false although a run may stand, and
+ *        the start-up check waits.  app_main's task only.
+ * @return True once the note was read.
+ */
+bool fw_ota_run_settled(void);
+
+/**
  * @brief End the update run: fw_ota_run_active() is false for the rest of
  *        this start, and the note is erased (fw_run_end()).  A refused
  *        erase is a console warning; the note left then spends its

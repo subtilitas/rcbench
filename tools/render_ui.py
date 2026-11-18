@@ -824,6 +824,9 @@ SCREENS = {
     # waiting in a run after a restart, and the last card with the Dial
     # skipped and the power node not connected.
     "updates-step-iomcu": ("updates-step-iomcu.png", "updates", "dark"),
+    # The same step opened by the update run after the panel's restart,
+    # with the start's band line.
+    "updates-run-iomcu": ("updates-run-iomcu.png", "updates", "dark"),
     "updates-held": ("updates-held.png", "updates", "dark"),
     "updates-step-c6": ("updates-step-c6.png", "updates", "dark"),
     "updates-step-dial": ("updates-step-dial.png", "updates", "dark"),

@@ -19,6 +19,15 @@ history is in git.
   radio's update on success. Each start reads it once: a note of another
   layout, a corrupt one or one that names another version than the
   running build (a rollback) is erased and is no run; otherwise the start
+  spends one of 2 openings.
+- UPDATES after a restart: while an update run stands, UPDATES opens by
+  itself once per start on the menu, with the bench SAFE, the supply output
+  off, Wi-Fi off and no install under way; the alert band names what holds
+  it back (`Update run: UPDATES opens once SAFE with the supply off.`). A
+  step whose IOmcu or bound device is not connected yet waits and goes on
+  once it links. The run ends on the home tag or when no step is left, and
+  a run opens UPDATES at 2 starts at most. The start-up check does not run
+  during a run.
   spends one of 2 openings. No screen reads it.
 - SETUP > WIRELESS > IMU: IMU settling time (`imu_settle_s`, 0.5 to
   10.0s, default 3.0s) and IMU precision (`imu_prec`, 0.05 to 1.00°,

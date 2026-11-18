@@ -986,6 +986,10 @@ static upd_feed_t upd_feed_now(bool armed, bool unsafe, const cu_snap_t *cs,
         .unsafe     = unsafe,
         .newer      = s_upd_boot_gen != 0u && f->gen == s_upd_boot_gen
                       && wa_fetch_offers(f, upd_channel()),
+        /* An update run, or a start that has not read its note yet: the
+         * start-up check would switch the radio on and hold the IOmcu's
+         * step. */
+        .run        = fw_ota_run_active() || !fw_ota_run_settled(),
     };
 }
 
