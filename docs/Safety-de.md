@@ -463,9 +463,7 @@ Die Prüfung ist asymmetrisch: vier gute Abstände, bevor der Leitung vertraut
 wird; ein schlechter Abstand oder ein stilles Fenster, und das Vertrauen ist
 weg. Der IOmcu verweigert das Schalten auf ARMED, solange der Leitung nicht
 vertraut wird, und schaltet seine Ausgänge auf SAFE und setzt seinen Arm-Latch,
-sobald sie ausbleibt.
-
-Ein Flash-Fenster (17 bis 25ms) hält die Schleife an, die die Leitung abtastet. Die Schleife meldet dem Monitor die Länge jedes Fensters (`heartbeat_mon_window()`); der Monitor rechnet sie den beiden Abständen neben der als Nächstes abgetasteten Flanke zu, bevor er mit 4ms vergleicht. Das Vertrauen in die Leitung bleibt: kein FAULT 10, kein Arm-Latch, kein abgewiesenes ARM oder Einschalten der Versorgung. Die Obergrenze von 150ms bleibt.
+sobald sie ausbleibt. Ein Flash-Fenster (17 bis 25ms) hält die Schleife an, die die Leitung abtastet. Die Schleife meldet dem Monitor die Länge jedes Fensters (`heartbeat_mon_window()`); der Monitor rechnet sie den beiden Abständen neben der als Nächstes abgetasteten Flanke zu, bevor er mit 4ms vergleicht. Das Vertrauen in die Leitung bleibt: kein FAULT 10, kein Arm-Latch, kein abgewiesenes ARM oder Einschalten der Versorgung. Die Obergrenze von 150ms bleibt.
 
 Der Heartbeat wird von der Control-Task erzeugt, die STOP besitzt und alle 5ms
 auf Kern 1 läuft, dem Kern, der nicht zeichnet. Er kommt nicht von einem
