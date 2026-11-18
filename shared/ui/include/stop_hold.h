@@ -62,7 +62,9 @@ void stop_hold_cancel(void);
 /**
  * @brief Time passed.  The hold fires at 2s and asks for the reset once; a
  *        stop that is no longer latched under a hold that fired flashes it.
- *        A running hold whose contact is gone ends without asking.
+ *        A running hold whose contact is gone ends without asking.  The
+ *        first 2 calls after a press add nothing to the hold: their time
+ *        began before the press.
  * @param dt_s    the frame's time, s
  * @param latched the stop is latched now
  * @param contact the router still owns the press on STOP

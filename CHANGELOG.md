@@ -130,6 +130,12 @@ history is in git.
   after the surface arrives. The measure's wait grows by 10,000ms plus the
   settling time, 16,000ms with the defaults; `surface not settled in
   time` replaces `surface not still within 3s`.
+- STOP's reset: a frame longer than 100ms at the press let the 2s hold
+  complete up to 250ms early on the panel's frame clock, and the control
+  task refused it (less than 1900ms after the press) with the fill full
+  and no reset. The frame that dispatches the press and the frame after
+  it add nothing to the hold, so it completes 2000ms or more after the
+  press, 2 frames later than before at an even frame rate.
 
 ## 0.23.14 - 2026-11-15
 

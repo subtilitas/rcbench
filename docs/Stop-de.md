@@ -25,7 +25,10 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   ihrer Stopp-Zeile ab. Ein ARM hebt diesen Stopp nicht auf.
 - **Halten zum Lösen.** Ein Druck auf ein eingerastetes STOP ist ebenfalls
   ein STOP und beginnt das Halten zum Lösen: die Füllung geht in 2s von Rot
-  zum Gelb des Rahmens über. Das Halten zählt nur bei einer ununterbrochenen
+  zum Gelb des Rahmens über. Die 2s zählen ab dem zweiten Frame nach dem
+  Druck: der Frame, der den Druck verteilt, und der Frame danach zählen
+  nichts, sodass ein langer Frame beim Druck das Halten nicht vor 2s beendet.
+  Das Halten zählt nur bei einer ununterbrochenen
   Berührung auf STOP über 2s, während der Touch-Controller durchgehend
   antwortet. Folgendes bricht das Halten ab, ohne das Lösen anzufordern: ein Loslassen
   vor 2s, das `Halte 2s, um den STOP zu lösen.` zeigt; ein Abgleiten von
