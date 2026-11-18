@@ -1233,6 +1233,12 @@ also nichts.
 TABELLE zeigt vier Kanäle mit je einem Extremwert. Ein Kanal ohne Messwert
 zeigt `--`.
 
+Die Drehzahl reicht bis 65.535rpm, die Obergrenze des Registers im IOmcu.
+Eine Drehzahl darüber steht als `>65535` auf der Karte und in TABELLE. Eine
+Spitze von 65.535rpm oder mehr steht als `>65535`. Der Plot zeichnet eine
+solche Drehzahl bei 65.535rpm. rpm/V und das Dial zeigen keine Drehzahl,
+solange sie über der Obergrenze liegt, und der Auswuchtknoten bekommt keine.
+
 Ist der INA228 unter SETUP > SENSORS eingeschaltet und antwortet er
 (BENCH-Flag Bit 5), liefert er Spannung, Strom und Leistung. Angezeigt
 werden die Mittelwerte des letzten 50ms-Fensters des IOmcu, ausgelesen mit
@@ -1320,6 +1326,9 @@ es derselbe Wert:
   Befehl nach der Rampengrenze.
 - Solange der Motor nicht ARMED ist, steht 0.0 darin.
 - Eine Zeile, die nur ein Fenster hält, hat die Zelle leer.
+
+`rpm` enthält `>65535` in einer Zeile, deren Drehzahl über 65.535rpm liegt,
+der Obergrenze des Registers im IOmcu. LOGS liest die Zelle als keine Zahl.
 
 Eine MOTOR-Datei ohne `throttle` hat `esc` direkt nach `rpm`, und LOGS
 liest sie. In beiden Formen wählt LOGS die ersten 4 Zahlenspalten. Mit

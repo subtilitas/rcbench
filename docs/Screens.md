@@ -1144,6 +1144,12 @@ changes nothing on a real bench.
 TABLE lists four channels, each with its extreme value. A channel with no
 reading shows `--`.
 
+The speed reads up to 65,535rpm, the ceiling of the IOmcu's register. A
+speed above it shows `>65535` on the card and in TABLE. A peak of 65,535rpm
+or more shows `>65535`. The plot draws such a speed at 65,535rpm. rpm/V and
+the Dial show no speed while it is above the ceiling, and the balance node
+gets none.
+
 When the INA228 is enabled under SETUP > SENSORS and answers (BENCH flag
 bit 5), it supplies voltage, current and power. These are the means of the
 IOmcu's last 50ms window, read at 20Hz; run peaks come from its 500Hz samples.
@@ -1222,6 +1228,9 @@ written to 0.1%. It is the same figure for PWM and DShot outputs:
   Ramp limit.
 - It is 0.0 while the motor is not ARMED.
 - A row that holds only a window has it empty.
+
+`rpm` holds `>65535` on a row whose speed is above 65,535rpm, the ceiling
+of the IOmcu's register. LOGS reads the cell as no number.
 
 A MOTOR file without `throttle` has `esc` after `rpm`, and LOGS reads it.
 In both forms LOGS selects the first 4 numeric columns. With `rpm`
