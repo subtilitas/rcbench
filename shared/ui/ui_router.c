@@ -72,10 +72,6 @@ static struct {
      * it and, once cleared, shows it again. */
     char              held[UI_ALERT_MAX];
     bool              has_held;  /**< a held alert is set */
-    /** @brief The one notice that waits behind an alert: set while a passing
-     * or a held alert is up, shown once neither is. */
-    char              pending[UI_ALERT_MAX];
-    bool              has_pending;  /**< a notice waits */
     bool              stop_latched;  /**< an operator's STOP was pressed and not yet taken */
     bool              demo_seen;      /**< Demo mode as the last frame saw it;
                                            a flip repaints every screen    */
@@ -267,6 +263,7 @@ __attribute__((noinline)) const char *ui_router_title(ui_screen_id_t id)
 void ui_router_init(void)
 {
     memset(&s, 0, sizeof(s));
+    ui_router_wait_drop();
     s.opener = SCREEN_COUNT;
     s.leaving_to = SCREEN_COUNT;
     for (int id = 0; id < SCREEN_COUNT; ++id) {
@@ -313,6 +310,7 @@ void ui_router_goto(ui_screen_id_t id)
     s.band_press = false;
     s.help = UI_BAND_CHIP_NONE;
     guide_close();                  /* and forgets the old screen's badges */
+    ui_router_wait_drop();          /* the waiting notice was the old screen's */
     s.alert_press = false;
     shot_hold_end();
     memset(s.alert_ids, 0, sizeof(s.alert_ids));
@@ -408,12 +406,12 @@ bool ui_router_shot_gap(gfx_rect_t *out)
  */
 static void show_pending(void)
 {
-    if (!s.has_pending || s.has_alert || s.has_held) {
-        return;
+    const char *text = (s.has_alert || s.has_held) ? NULL
+                                                   : ui_router_wait_take();
+    if (text != NULL) {
+        ui_router_set_alert(text);
+        s.alert_notice = true;
     }
-    s.has_pending = false;
-    ui_router_set_alert(s.pending);
-    s.alert_notice = true;
 }
 
 /** @brief Clears the passing alert; a notice that waited behind it shows. */
@@ -439,7 +437,7 @@ static void clear_alert(void)
  */
 static void drop_notice(void)
 {
-    s.has_pending = false;
+    ui_router_wait_drop();
     if (s.has_alert && s.alert_notice) {
         clear_alert();
     }
@@ -511,6 +509,7 @@ void ui_router_tick(float dt_s)
             clear_alert();
         }
     }
+    ui_router_wait_tick(dt_s);  /* after the alert: one that ends shows it */
     shot_hold_tick(dt_s);
     /* The hold counts only while the router owns the press on STOP: a
      * screen change or a press that took the band dropped it. */
@@ -1250,8 +1249,7 @@ void ui_router_set_notice(const char *text)
     }
     if (s.has_held || (s.has_alert && !s.alert_notice)) {
         /* One notice waits; a later one takes its place. */
-        (void)snprintf(s.pending, sizeof(s.pending), "%s", text);
-        s.has_pending = true;
+        ui_router_wait_set(text);
         return;
     }
     ui_router_set_alert(text);

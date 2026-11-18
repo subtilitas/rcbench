@@ -9,6 +9,8 @@
 
 #include "ui_router_int.h"
 
+#include <stdio.h>
+
 #include "ui_layout.h"
 #include "ui_screen.h"
 #include "ui_text.h"
@@ -32,6 +34,49 @@
 #define ALERT_PITCH  20
 /** @brief The alert's face: 10 x 20px. */
 #define ALERT_FONT   UI_FONT_BAND
+
+/** @brief The one notice that waits behind an alert: set while a passing
+ *         or a held alert is up, shown once neither is. */
+static struct {
+    char  text[UI_ALERT_MAX];   /**< the notice                      */
+    bool  waits;                /**< one waits                       */
+    bool  fresh;                /**< queued since the last tick      */
+    float age_s;                /**< how long it has waited, s       */
+} w;    /**< The waiting notice. */
+
+void ui_router_wait_set(const char *text)
+{
+    (void)snprintf(w.text, sizeof(w.text), "%s", text);
+    w.waits = true;
+    w.fresh = true;
+    w.age_s = 0.0f;
+}
+
+void ui_router_wait_drop(void) { w.waits = false; }
+
+const char *ui_router_wait_take(void)
+{
+    if (!w.waits) {
+        return NULL;
+    }
+    w.waits = false;
+    return w.text;
+}
+
+void ui_router_wait_tick(float dt_s)
+{
+    if (!w.waits) {
+        return;
+    }
+    if (w.fresh) {
+        w.fresh = false;
+    } else if (dt_s > 0.0f) {
+        w.age_s += dt_s;
+        if (w.age_s >= UI_NOTICE_WAIT_S) {
+            w.waits = false;
+        }
+    }
+}
 
 int ui_router_alert_rows(const char *text)
 {

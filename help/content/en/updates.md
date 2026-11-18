@@ -59,7 +59,7 @@ ARMED, the supply output on, an open log run, Wi-Fi on or a board drawing being 
 
 While a device's transfer runs, the control shows its phase, for example `PRESS THE DIAL TO ACCEPT: 27s`, and CANCEL UPDATE stands in the footer.
 
-After the panel's install and after the C6 radio's update the panel restarts, and the update run goes on: UPDATES opens by itself once per start on the menu, with the bench SAFE, the supply output off, Wi-Fi off and no install under way. Until then the alert band names what it waits for, for example `Update run: UPDATES opens once SAFE with the supply off.` The check at start does not run during a run. The home tag on UPDATES ends the run; so does the last step done. A run opens UPDATES at 2 starts at most.
+After the panel's install and after the C6 radio's update the panel restarts, and the update run goes on: UPDATES opens by itself once per start on the menu, with the bench SAFE, the supply output off, Wi-Fi off and no install under way. Until then the alert band names what it waits for, for example `Update run: UPDATES opens once SAFE with the supply off.` The check at start does not run during a run. The home tag on UPDATES ends the run; so does the last step done. A start that finds no step left ends the run without opening UPDATES. A run opens UPDATES at 2 starts at most.
 
 After a restart during an update run, a step whose IOmcu or device is not connected yet waits with SKIP THIS STEP and goes on once it connects.
 

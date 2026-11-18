@@ -560,8 +560,11 @@ static void event(const touch_event_t *evt)
         pk_touched();
         return;
     }
-    if (pin_take_spends(PIN_TAKE_BOARD, evt)) {
-        return;              /* the second tap of a double tap on the card */
+    /* The second tap of a double tap on the card is spent.  A press that
+     * stops an output is not: PORT PWM OFF acts in the box as outside. */
+    if (pin_take_spends(PIN_TAKE_BOARD, evt)
+        && !(s.port >= 0 && outputs_port_stop_press(evt))) {
+        return;
     }
 
     /* The entry's rows, its open FUNCTION list and UNBIND ALL PINS first:

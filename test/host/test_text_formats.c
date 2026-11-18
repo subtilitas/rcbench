@@ -54,12 +54,17 @@ static const format_args_t k_args[] = {
     { TX_LOG_TOO_BIG,       { "ATEST001.CSV" } },
     { TX_LOG_CANNOT_DELETE, { "ATEST001.CSV" } },
     { TX_LOG_DELETED,       { "ATEST001.CSV" } },
+    /* The plot's header line of a log without a time column: its name. */
+    { TX_LOG_SUMMARY_ROWS,  { "RUDDR001.CSV" } },
     /* RUDDER AUTO: an error of "%+.2f°" at its widest; the longest phase
      * name, a pulse of 4 digits, SERVO_RAUTO_WRITES_MAX (8) writes and 99
      * sessions. */
     { TX_RA_VERIFY, { "+180.00\xc2\xb0", "-180.00\xc2\xb0",
                       "+180.00\xc2\xb0" } },
     { TX_RA_STEP,   { "SERVO AUSLESEN", "2000", "8", "8", "99" } },
+    /* The limit run's line: the longest phase name, then the two
+     * registers the servo holds, 16 bits each. */
+    { TX_SV_LIM_VALUES, { "VERLASSEN", "65535", "65535" } },
     /* The password's least length, UI_TEXTKEY_PASS_MIN. */
     { TX_TEXTKEY_SHORT, { "63" } },
     /* Pins, ports and role names. */

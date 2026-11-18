@@ -139,7 +139,7 @@ OPEN reads the file and previews the detected format before plotting it.
 | SEPARATOR | SEMICOLON, COMMA, TAB or PIPE |
 | NUMBER FORMAT | ENGLISH (decimal point) or GERMAN (decimal comma) |
 | ROWS, COLUMNS | the data rows and columns found |
-| TIME AXIS | the column taken as time, or ROW INDEX. A unit after an underscore in the header is read (`time_ms`, `t_us`). A first column named as a counter (`step`, `row`, `index`, `sample`, `n`) is no time: `RUDDRnnn.CSV` plots against the row index |
+| TIME AXIS | the column taken as time, or ROW INDEX. A unit after an underscore in the header is read (`time_ms`, `t_us`). A first column named as a counter (`step`, `row`, `index`, `sample`, `n`) is no time: `RUDDRnnn.CSV` plots against the row index, and the plot's header line gives its rows without a duration or a rate |
 | UNEVEN ROWS | rows with another cell count than the header |
 | EVIDENCE | the cells that proved German, English or neither |
 
