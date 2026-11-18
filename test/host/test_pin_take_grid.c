@@ -12,6 +12,8 @@
  * - the_carrier_moves_an_output_between_esc_and_servo
  * - the_carrier_refuses_a_move_that_breaks_slice_2
  * - the_grid_card_fits_in_both_languages
+ * - a_refused_tap_on_the_grid_shows_its_own_reason
+ * - a_second_tap_on_move_pin_binds_no_cell_under_the_card
  *
  * SPDX-License-Identifier: MIT
  */
@@ -319,6 +321,62 @@ TEST_CASE(the_grid_card_fits_in_both_languages)
     CHECK(asked > 40);
 }
 
+/* The reason line names the tap made last: the sensor bus pin's line does
+ * not stand over the reason of a free cell PPM cannot take. */
+TEST_CASE(a_refused_tap_on_the_grid_shows_its_own_reason)
+{
+    outbind_t b;
+    outbind_init(&b);
+    outbind_set_board(&b, PICO);
+    outbind_set_proto(&b, (uint8_t)proto_row("PPM"));
+    CHECK(outbind_toggle(&b, idx(4)));
+    grid(&b, "PPM");
+    settings_set(SET_INA228_EN, 1.0f);
+    settings_set(SET_SENSE_SDA, 16.0f);
+    tap_pin(16);
+    CHECK_STR_EQ(reason(), "GPIO 16: SENSOR BUS, SET ON SENSORS");
+    tap_pin(6);
+    CHECK_STR_EQ(reason(), "PPM USES 1 PIN");
+    CHECK_EQ(s_applied, 0);
+    settings_init();
+}
+
+/* A double tap on MOVE PIN: the first tap moves the pin and closes the
+ * card, the second lands on the cell that was under the button and is
+ * spent.  400ms later the cell takes a tap. */
+TEST_CASE(a_second_tap_on_move_pin_binds_no_cell_under_the_card)
+{
+    const outbind_t b = three();
+    grid(&b, "SERVO PWM");
+    tap_pin(0);
+    const gfx_rect_t mv = pin_take_button(PIN_TAKE_BTN_MOVE);
+    tap(mv.x + 40, mv.y + mv.h / 2);
+    CHECK_EQ(s_applied, 1);
+    const outbind_t moved = *outputs_screen_binding();
+    tap(mv.x + 40, mv.y + mv.h / 2);
+    CHECK_EQ(s_applied, 1);
+    CHECK(memcmp(outputs_screen_binding()->pins, moved.pins,
+                 sizeof(moved.pins)) == 0);
+    scr()->tick(0.39f);
+    tap(mv.x + 40, mv.y + mv.h / 2);
+    CHECK_EQ(s_applied, 1);
+    scr()->tick(0.02f);
+    tap(mv.x + 40, mv.y + mv.h / 2);
+    CHECK_EQ(s_applied, 2);
+
+    /* CANCEL starts the same wait; a cell off the card's box does not
+     * wait. */
+    grid(&b, "SERVO PWM");
+    tap_pin(0);
+    const gfx_rect_t cn = pin_take_button(PIN_TAKE_BTN_CANCEL);
+    tap(cn.x + 40, cn.y + cn.h / 2);
+    CHECK(!pin_take_is_open());
+    tap(cn.x + 40, cn.y + cn.h / 2);
+    CHECK_EQ(s_applied, 0);
+    tap_pin(4);
+    CHECK_EQ(s_applied, 1);
+}
+
 int main(void)
 {
     RUN(a_tap_on_a_held_cell_asks_beside_it);
@@ -328,5 +386,7 @@ int main(void)
     RUN(the_carrier_moves_an_output_between_esc_and_servo);
     RUN(the_carrier_refuses_a_move_that_breaks_slice_2);
     RUN(the_grid_card_fits_in_both_languages);
+    RUN(a_refused_tap_on_the_grid_shows_its_own_reason);
+    RUN(a_second_tap_on_move_pin_binds_no_cell_under_the_card);
     return test_summary("pin_take_grid");
 }

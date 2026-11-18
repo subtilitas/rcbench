@@ -255,7 +255,7 @@ ESCape32 hat keinen LEAVE-Befehl über die Signalleitung. Die Sitzung endet durc
 
 STOP im Band stoppt die Sitzung; ein laufender Schreibvorgang wird jedoch erst nach dem Zurücklesen beendet. ABBRECHEN auf der Seite wirkt sofort beim Drücken, auch während eines Schreibvorgangs. Bei einem Stopp oder beim Verlust der Stromversorgung oder der Verbindung werden offene Editoren und Bestätigungsseiten geschlossen. Die Anzeige meldet, was geschehen ist.
 
-Nach einem Stopp oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK an. STOP LÖSCHEN hebt den Stopp auf, behält aber den Pin. Ist der STOP des Panels eingerastet, erscheint nur PIN ZURÜCK mit `STOP ist eingerastet: Halte STOP 2s, um ihn zurückzusetzen.` STOP LÖSCHEN benötigt den Heartbeat, den der eingerastete STOP unterbindet. Nach dem Zurücksetzen von STOP erscheint STOP LÖSCHEN wieder.
+Nach einem Stopp oder Fehler bietet die Seite STOP LÖSCHEN und PIN ZURÜCK an. STOP LÖSCHEN hebt den Stopp auf, behält aber den Pin. Ist der STOP des Panels eingerastet, erscheint nur PIN ZURÜCK mit `STOP ist eingerastet: Halte STOP 2s, um ihn zu lösen.` STOP LÖSCHEN benötigt den Heartbeat, den der eingerastete STOP unterbindet. Nach dem Zurücksetzen von STOP erscheint STOP LÖSCHEN wieder.
 
 Nach einem Stopp oder Fehler bleibt SUPPLY OFF auf der Seite SUPPLY eingerastet, bis der Pin freigegeben ist. Solange die Sitzung den Pin hält, kann das Netzteil daher nicht wieder einschalten. Die Seite PIN GEHALTEN bietet dann nur PIN ZURÜCK an, mit `Ein Stopp oder Fehler beendete die Sitzung: PIN ZURÜCK, dann VERBINDEN.` ENTER wird in diesem Zustand mit `SUPPLY_OFF` abgelehnt, bevor sich etwas bewegt. Eine Ablehnung mit SUPPLY OFF unter PIN GEHALTEN ohne Stopp oder Fehler zeigt nur die Ablehnungsmeldung.
 

@@ -48,7 +48,7 @@ Stopp des Prüfstands selbst, auf dem Weg, den STOP nimmt:
 - der Heartbeat fällt im selben Durchlauf weg, und der IOmcu geht
   innerhalb von 150ms in den sicheren Zustand;
 - der Ausgang des Netzteils schaltet im selben Durchlauf ab;
-- der Hinweis `Bildschirm 1s ohne Aktualisierung. Auf SAFE geschaltet,
+- der Hinweis `Anzeige 1s ohne Aktualisierung. Auf SAFE geschaltet,
   Ausgang aus.` erscheint, sobald die Render-Schleife wieder zeichnet. Eine
   Schleife, die nie wieder zeichnet, zeigt nichts Neues.
 
@@ -135,7 +135,7 @@ wenn einer der beiden ausfällt.
 | Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, der IOmcu für das Schreiben |
 | Ein INA3221-Kanal über seiner Grenze | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, beim Lesen von `OVER` alle 200ms, mit einer Konsolenzeile je Kanal ([Bildschirme](Screens-de.md#sensors-die-ina3221-bausteine)); der IOmcu für das Schreiben |
 | Die 5V der Programmierports auf dem Carrier fehlen oder fallen unter einem ON aus, dem des Panels oder einer Sitzung: kein INA3221-Fenster mit 4750mV oder mehr bis 200ms nach dem ON, oder 2 neue Fenster unter 3000mV 500ms oder mehr danach ([Carrier, PROG 5V fehlt oder ausgefallen](Carrier-de.md#prog-5v-fehlt-oder-ausgefallen)) | SAFE | die 5V der Sitzung aus, nach einem laufenden Schreiben; unter einer Sitzung wartet der Befund auf ein Lesen der Page, das GPIO 21 noch als ein liest | aus | das Panel, mit einer Warnung und einer Konsolenzeile; der IOmcu für das OFF von PROG_SUPPLY |
-| Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
+| Eine Stromgrenze eines Laufs: Blockierschwelle, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
 | Ein Schritt der Startfolge von SERVO scheitert auf LIVE, SWEEP, RUDER oder RUDER AUTO: PORT-PWM, PROG 5V oder der PD mini ohne Rückmeldung in 1000ms, nicht ARMED in 500ms, ein Tippen auf das Halten, ein STOP ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)) | SAFE | keine offen: ARM ist gesperrt, solange eine Sitzung einen Port hält | aus; PROG 5V ebenfalls aus | der SERVO-Bildschirm (`svs_all_off()`) |
 | Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus, wo er sich schalten lässt: der Schutz des Moduls und ein absinkender Eingang sofort, auch während eines Schreibens; der Rest nach dem Schreiben eines Ports, höchstens 10000ms | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
 | Ein KST- oder Hitec-Vorgang endet in einer Störung des Servos oder der Leitung (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), oder die ESC_WIRE-Page meldet `FAULT` oder erreicht `NOT_BACK` (`esc_link_faults()`) | schon SAFE: eine Sitzung läuft auf einem Prüfstand in SAFE | die Versorgung des Ports aus; der Vorgang ist zu Ende | aus | das Panel (`prog_faults_follow()`) |
@@ -765,7 +765,9 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   also hält jedes Löschen und Schreiben beide Kerne des Panels an, die
   Control-Task mit Heartbeat, STOP, OUTPUT OFF und den Abschaltungen des
   Netzteils eingeschlossen. Die Regel ist `flash_gate_open()` in
-  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Sie hält das
+  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Ein ARM, das ein
+  Bildschirm eingereiht und die Control-Task noch nicht übernommen hat,
+  zählt als wartendes Schalten auf ARMED (`flash_gate_arm()`). Sie hält das
   Speichern der Einstellungen und das Ablegen der Zeichnung der Platine zurück.
   Das Schalten auf ARMED und das Netzteil werden für einen Schreibvorgang nie
   verweigert: der Schreibvorgang wartet. Das Ablegen (2 Löschvorgänge zu 4kB
@@ -831,7 +833,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Grund ihren eigenen Vermerk eines STOP-Drucks bei einem Verlust im
   Treiber: Sie besitzt diesen Druck unabhängig von den Seiten.
 - Jedes Bedienelement mit einem gespeicherten Zustand zwischen Drücken
-  und Loslassen bricht seine laufende Geste ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
+  und Loslassen bricht seine laufende Geste ab. MOTOR & ESC, SERVO und CAN-BUS-FEHLER haben eine Geste, die auf einem
   Timer fertig wird, ohne diesen Abbruch würde ein verlorenes Release dort von selbst
   auf ARMED schalten oder quittieren; die Kacheln der Übersicht, die Zellen auf OUTPUTS
   und in der Auswahl, die Tasten des Einstellungs-Bildschirms, die

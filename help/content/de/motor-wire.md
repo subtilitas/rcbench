@@ -16,7 +16,7 @@ SimonK wird nicht unterstützt.
 2. Schließe nur Signal und Masse an. Lass die Mittelader des ESC getrennt: Ein BEC (Battery Eliminator Circuit) würde die Versorgungsschiene des Prüfstands speisen.
 3. Stecke die Servos ab.
 4. Prüfe `ZIEL`, `VERSORGUNG`, `SPANNUNG` und `STROMBEGRENZUNG`. `SPANNUNG` und `STROMBEGRENZUNG` folgen SUPPLY, bis du andere Werte eingibst.
-5. Halte `2s HALTEN: VERBINDEN` für 2s.
+5. Halte `2s HALTEN ZUM VERBINDEN` für 2s.
 
 Schließe bei `BY HAND` die ESC-Versorgung an, sobald du dazu aufgefordert wirst. Tippe innerhalb von 60s auf `VERSORGUNG EIN`.
 

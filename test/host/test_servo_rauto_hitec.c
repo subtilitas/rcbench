@@ -107,6 +107,9 @@ TEST_CASE(auto_lands_a_d_series_servo_within_tolerance)
     CHECK(strstr(hl.report, "LEFT END (0xB2): 3351 before") != NULL);
     CHECK(strstr(hl.report, "RIGHT END (0xB0): 13003 before") != NULL);
     CHECK(strstr(hl.report, "after (counts); moves the 1000us side") != NULL);
+    /* The head names no unit: each line carries its own. */
+    CHECK(strstr(hl.report, "\nPROGRAMMING (end points)\n") != NULL);
+    CHECK(strstr(hl.report, "unit not known") == NULL);
     {
         char line[96];
         snprintf(line, sizeof(line), "%s: 3351>%u, 13003>%u counts",

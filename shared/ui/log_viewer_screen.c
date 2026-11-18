@@ -419,12 +419,49 @@ void lv_drop_data(void)
     s.panning = false;
 }
 
-/* DELETE is offered for a file the list has selected, and only when the I/O
- * can delete at all. */
-bool lv_can_delete(void)
+/* The write gate of FILES (fm_gate()), asked for DELETE: shut while the
+ * bench is ARMED and while the logger has a file open. */
+bool lv_delete_shut(ui_text_id_t *why)
+{
+    const ui_bench_status_t *st = ui_router_status();
+    ui_text_id_t id = TX_FM_GATE_ARMED;
+    bool shut = (st != NULL && st->armed);
+    if (!shut && s.io.logging != NULL && s.io.logging(s.io.ctx)) {
+        id = TX_FM_GATE_LOGGING;
+        shut = true;
+    }
+    if (shut && why != NULL) {
+        *why = id;
+    }
+    return shut;
+}
+
+/* A file the list has selected, and an I/O that can delete at all. */
+bool lv_delete_target(void)
 {
     return s.io.remove != NULL && s.sel >= 0 && s.sel < s.n_files
            && !s.files[s.sel].is_dir;
+}
+
+/* DELETE is offered for that file while the write gate is open. */
+bool lv_can_delete(void)
+{
+    return lv_delete_target() && !lv_delete_shut(NULL);
+}
+
+/**
+ * @brief ui_screen_t's tick: DELETE is drawn again when the write gate
+ *        opens or shuts.
+ * @param dt_s  the frame's time, s; unused
+ */
+static void tick(float dt_s)
+{
+    (void)dt_s;
+    const bool shut = lv_delete_shut(NULL);
+    if (shut != s.gate_shut) {
+        s.gate_shut = shut;
+        log_viewer_invalidate();
+    }
 }
 
 void lv_bar_thumb_of(int total, int visible, int scroll, int *y, int *h)
@@ -738,7 +775,7 @@ static const ui_screen_t s_screen = {
     .reset = reset,
     .enter = enter,
     .leave = NULL,
-    .tick = NULL,
+    .tick = tick,
     .event = lv_event,
     .cancel = cancel,
     .render = lv_render,

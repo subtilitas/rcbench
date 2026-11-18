@@ -138,6 +138,39 @@ TEST_CASE(scan_lists_the_sensor_hides_the_rest_and_bind_keeps_its_address)
     CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_NO_FRAMES);
 }
 
+/* While the bench is ARMED a SCAN is refused and counted; a scan started
+ * while SAFE stops at the switch to ARMED, and its empty list is no error. */
+TEST_CASE(a_scan_is_refused_while_armed_and_a_running_one_stops)
+{
+    rig_t r;
+    on_with_sensor(&r, "");
+    rig_run(&r, 10u);
+    const imu_cmd_t scan = { IMU_CMD_SCAN, 0u };
+    imu_ctl_live(&r.c, true);
+    CHECK(!imu_ctl_command(&r.c, &scan, r.t));
+    CHECK_EQ(r.c.refused, 1u);
+    rig_run(&r, 50u);
+    CHECK_EQ(r.scans, 0u);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_READY);
+
+    imu_ctl_live(&r.c, false);
+    CHECK(imu_ctl_command(&r.c, &scan, r.t));
+    rig_run(&r, 100u);                  /* the sensor advertises at 200ms */
+    CHECK_EQ(r.scans, 1u);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_SCANNING);
+    imu_ctl_live(&r.c, true);
+    rig_run(&r, 2u);
+    CHECK_EQ(imu_ctl_link(&r.c), IMU_LINK_READY);
+    CHECK(bsim_last(&r.sim, BLEU_ACT_SCAN_STOP) != NULL);
+    imu_view_t v;
+    imu_ctl_view(&r.c, &v);
+    CHECK_EQ(v.found_n, 0u);
+    CHECK_EQ(v.err, IMU_ERR_NONE);
+    rig_run(&r, BLEU_SCAN_MS);
+    CHECK_EQ(r.scans, 1u);
+    imu_ctl_live(NULL, true);
+}
+
 /* A scan that hears no sensor says so; a scan the host stack refuses
  * gives its status; the next scan clears both. */
 TEST_CASE(a_scan_without_a_sensor_or_refused_says_why)
@@ -330,7 +363,8 @@ TEST_CASE(calibrate_with_the_frames_lost_ends_failed)
     const unsigned off = r.nsent;
     rig_run(&r, 300u);
     CHECK_EQ(r.nsent, off);
-    CHECK_EQ(r.c.sensor.out_n, 3u);
+    CHECK_EQ(r.c.sensor.out_n, 0u);     /* nothing held across the link */
+    CHECK(r.c.sensor.exit_due);
     rig_cfg(&r, true, RIG_ADDR, 2, true);
     (void)rig_settle(&r, 2000u);
     rig_run(&r, 300u);
@@ -978,6 +1012,7 @@ int main(void)
 {
     RUN(the_link_waits_for_bluetooth_and_reads_its_state);
     RUN(scan_lists_the_sensor_hides_the_rest_and_bind_keeps_its_address);
+    RUN(a_scan_is_refused_while_armed_and_a_running_one_stops);
     RUN(a_scan_without_a_sensor_or_refused_says_why);
     RUN(the_stream_reaches_the_reading_once_subscribed);
     RUN(a_device_without_the_service_is_not_a_witmotion_sensor);

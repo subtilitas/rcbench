@@ -120,16 +120,20 @@ typedef struct {
     /** @brief The device runs a board whose image the panel does not
      *         carry (panel_pnode_blec_other_board()); NULL: never. */
     bool (*other_board)(void);
+    /** @brief The device's switch on WIRELESS is OFF
+     *         (panel_dial_blec_off()). */
+    bool (*off)(void);
 } dev_hooks_t;
 
 /** @brief The devices, by BLEOTA_KIND_* - 1, as s_img. */
 static const dev_hooks_t k_dev[DEV_N] = {
     { TX_DEV_NAME_DIAL, TX_ALERT_DIAL_ASK, panel_dial_blec_hold,
-      panel_dial_blec_target, NULL },
+      panel_dial_blec_target, NULL, panel_dial_blec_off },
     { TX_DEV_NAME_PNODE, TX_ALERT_NODE_ASK, panel_pnode_blec_hold,
-      panel_pnode_blec_target, panel_pnode_blec_other_board },
+      panel_pnode_blec_target, panel_pnode_blec_other_board,
+      panel_pnode_blec_off },
     { TX_DEV_NAME_BAL, TX_ALERT_NODE_ASK, panel_bal_blec_hold,
-      panel_bal_blec_target, NULL },
+      panel_bal_blec_target, NULL, panel_bal_blec_off },
 };
 
 /** @brief Where the `blec` task's update stands. */
@@ -147,6 +151,7 @@ typedef struct {
     bool         img_ok;    /**< it passed */
     fw_version_t carried;   /**< its version */
     bool         bound;     /**< a device of the kind is bound */
+    bool         off;       /**< bound, its switch on WIRELESS OFF */
     bool         linked;    /**< the device is connected, its version read */
     fw_version_t running;   /**< that version */
 } dev_pub_t;
@@ -562,6 +567,7 @@ void panel_devupd_blec_poll(uint32_t now)
         d->img_ok = g->st == IMG_READY && !t[i].other;
         d->carried = g->info.version;
         d->bound = t[i].bound;
+        d->off = t[i].bound && k_dev[i].off();
         d->linked = t[i].bound && t[i].linked;
         d->running = (fw_version_t){ t[i].ver[0], t[i].ver[1], t[i].ver[2] };
     }
@@ -677,7 +683,8 @@ void devupd_service(bool armed)
             .other = other || (busy && !mine), .busy = mine,
         };
         const upd_dev_view_t v = {
-            .row = devupd_row(&in), .bound = d->bound, .known = d->linked,
+            .row = devupd_row(&in), .bound = d->bound, .off = d->off,
+            .known = d->linked,
             .running = d->running, .have_image = d->img_ok,
             .carried = d->carried, .phase = mine ? p.phase : 0u,
             .percent = mine ? p.percent : 0u, .secs = mine ? p.secs : 0u,

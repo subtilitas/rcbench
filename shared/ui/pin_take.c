@@ -53,6 +53,10 @@ static struct {
     uint8_t             why_taker; /**< and that protocol              */
     uint16_t            why_board; /**< on that board                  */
 
+    float               guard_s;  /**< a closed card's box spends presses */
+    pin_take_view_t     guard_view; /**< in that view                  */
+    gfx_rect_t          guard_rect; /**< the box                       */
+
     uint32_t            rev;      /**< bumped by every change drawn    */
     uint32_t            opened;   /**< cards opened, for the Dial's list */
 } t = { .press = BTN_NONE };  /**< The card's state. */
@@ -83,6 +87,31 @@ void pin_take_reset(void)
 {
     pin_take_close();
     pin_take_forget_why();
+    t.guard_s = 0.0f;
+}
+
+void pin_take_tick(float dt_s)
+{
+    if (t.guard_s > 0.0f) {
+        t.guard_s = (dt_s < t.guard_s) ? t.guard_s - dt_s : 0.0f;
+    }
+}
+
+bool pin_take_spends(pin_take_view_t view, const touch_event_t *evt)
+{
+    return evt != NULL && evt->type == TOUCH_EVENT_DOWN && t.guard_s > 0.0f
+           && t.guard_view == view
+           && gfx_rect_contains(t.guard_rect, evt->point.x, evt->point.y);
+}
+
+/** @brief MOVE PIN or CANCEL closes the card: its box spends the presses
+ *         of the next PIN_TAKE_GUARD_MS. */
+static void close_by_button(void)
+{
+    t.guard_s    = (float)PIN_TAKE_GUARD_MS / 1000.0f;
+    t.guard_view = t.view;
+    t.guard_rect = t.rect;
+    pin_take_close();
 }
 
 bool pin_take_is_open(void) { return t.open; }
@@ -156,6 +185,7 @@ bool pin_take_tap(pin_take_view_t view, const outbind_t *b, uint8_t index,
         t.info  = info;
         t.press = BTN_NONE;
         t.why   = false;
+        t.guard_s = 0.0f;
         ++t.opened;
         touched();
         return true;
@@ -293,11 +323,11 @@ pin_take_act_t pin_take_event(const touch_event_t *evt, const outbind_t *b,
                                    for the tracker */
     }
     if (was == PIN_TAKE_BTN_CANCEL) {
-        pin_take_close();
+        close_by_button();
         return PIN_TAKE_TAKEN;
     }
     const bool stands = move_stands(b, ctx, out);
-    pin_take_close();
+    close_by_button();
     return stands ? PIN_TAKE_MOVE : PIN_TAKE_TAKEN;
 }
 

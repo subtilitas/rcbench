@@ -196,6 +196,9 @@ typedef struct {
     char sample[LOG_SAMPLES][LOG_SAMPLE_MAX];  /**< first cells, as written */
     int non_empty;                   /**< cells that are not empty         */
     int parsed;                      /**< cells that parsed as numbers     */
+    int bounds;                      /**< of those, cells written as a lower
+                                          bound (`>65535`), read as the
+                                          number                           */
     bool unit_from_values;           /**< the unit came from the cells     */
     bool mixed_units;                /**< the cells carry more than one unit */
     bool numeric; /**< at least 80% of its non-empty cells parsed */

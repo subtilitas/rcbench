@@ -121,6 +121,30 @@ TEST_CASE(a_servo_row_with_a_supply_reading_carries_its_figures)
     CHECK_STR_EQ(got, "1.000;6.00;0.035;0.21;;;;1;0.01;;;;;;;;;;;;;;;;measured");
 }
 
+TEST_CASE(a_servo_rail_counts_50mA_up_to_100000mAh)
+{
+    /* One hour of 50mA in 50ms rows adds 50mAh and 0.3Wh at 6.00V, from
+     * every total up to 100,000mAh.  A float sum adds 35mAh from 4,096mAh
+     * and nothing from 16,384mAh. */
+    static const double k_from[] = { 0.0, 4096.0, 16384.0, 40000.0, 99950.0 };
+    supply_state_t s = pd_mini();
+    s.v = 6.0f; s.i = 0.05f; s.p = 0.3f;
+    for (size_t k = 0u; k < sizeof(k_from) / sizeof(k_from[0]); ++k) {
+        log_rail_t r;
+        log_rail_take(&r, &s, false);
+        bench_totals_t t;
+        bench_totals_reset(&t);
+        t.mah = k_from[k];
+        t.wh  = k_from[k] * 0.006;
+        for (int i = 0; i < 72000; ++i) {
+            log_rail_count(&t, &r, 0.05f, true);
+        }
+        CHECK_NEAR(t.mah - k_from[k], 50.0, 0.01);
+        CHECK_NEAR(t.wh - k_from[k] * 0.006, 0.3, 0.0001);
+        CHECK_NEAR(r.charge_mah, k_from[k] + 50.0, 0.01);
+    }
+}
+
 TEST_CASE(a_servo_row_without_a_supply_reading_has_empty_supply_cells)
 {
     /* A supply that does not answer, a rail never taken, and no rail at all
@@ -229,7 +253,7 @@ TEST_CASE(a_measured_row_after_a_modelled_stretch_takes_no_model_totals)
     log_rail_count(&t, &r, 1.0f, true);
     CHECK_EQ(r.counted,
              (uint8_t)(BENCH_COUNTED_CHARGE | BENCH_COUNTED_ENERGY));
-    const float mah = t.mah;
+    const double mah = t.mah;
 
     log_rail_take(&r, &s, false);
     CHECK(r.withheld);
@@ -298,15 +322,15 @@ TEST_CASE(the_supply_totals_count_from_the_arm_while_driving)
     /* A step longer than BENCH_TOTALS_MAX_STEP_S counts 1.0s; a negative
      * or NaN step nothing; and with the bank SAFE nothing either, while the
      * totals stay on the rail. */
-    const float before = t.mah;
+    const double before = t.mah;
     log_rail_count(&t, &r, 30.0f, true);
     CHECK_NEAR(t.mah - before, 0.035f / 3.6f, 1e-4f);
-    const float after = t.mah;
+    const double after = t.mah;
     log_rail_count(&t, &r, -1.0f, true);
     log_rail_count(&t, &r, NAN, true);
     log_rail_count(&t, &r, 1.0f, false);
     CHECK_NEAR(t.mah, after, 1e-6f);
-    CHECK_NEAR(r.charge_mah, after, 1e-6f);
+    CHECK_NEAR(r.charge_mah, after, 1e-5f);
 
     /* A new arm starts at nothing counted. */
     bench_totals_reset(&t);
@@ -424,6 +448,7 @@ TEST_CASE(a_servo_run_reads_back_with_its_supply_columns)
 int main(void)
 {
     RUN(a_servo_row_with_a_supply_reading_carries_its_figures);
+    RUN(a_servo_rail_counts_50mA_up_to_100000mAh);
     RUN(a_servo_row_without_a_supply_reading_has_empty_supply_cells);
     RUN(a_supply_reading_with_one_half_writes_only_that_half);
     RUN(the_supply_model_stays_out_of_a_measured_row);

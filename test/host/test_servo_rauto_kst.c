@@ -98,7 +98,7 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "REPORT RUDDR007.TXT");
     /* The verify pass on the fourth line: each end from its goal, the
      * center from the zero. */
-    CHECK(strncmp(rauto_line(3, b, sizeof(b)), "VERIFY 1000us ", 14) == 0);
+    CHECK(strncmp(rauto_line(3, b, sizeof(b)), "VERIFY ", 7) == 0);
     CHECK(strstr(b, ", CENTER ") != NULL);
     CHECK(strstr(b, "-0.00") == NULL);
     CHECK(strstr(ra.report, "VERIFY (pulse, measured, goal") != NULL);

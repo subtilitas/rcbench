@@ -262,6 +262,9 @@ static void render_browse(gfx_canvas_t *c)
      * screen there says when Wi-Fi may not start. */
     ui_button_font(c, BR_WIFI, TR(LOG_WIFI), UI_PANEL_HI, s.press_btn == 3,
                    true, LV_FONT_LABEL);
+    /* The write gate as DELETE is drawn: tick() repaints only when it
+     * changes after this. */
+    s.gate_shut = lv_delete_shut(NULL);
     int msg_end = BR_OPEN.x;
     if (s.n_files > 0) {
         ui_button_font(c, BR_OPEN, TR(LOG_OPEN), UI_PANEL_HI,

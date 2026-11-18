@@ -237,6 +237,100 @@ static const char *const k_time_names[] = {
 };
 
 /**
+ * @brief The column names taken for a counter, in lower case.
+ *
+ * A rising first column under one of these counts rows or steps (the
+ * bench's RUDDRnnn.CSV starts with "step"); it is not a time axis.
+ */
+static const char *const k_counter_names[] = {
+    "step", "steps", "schritt", "row", "zeile", "index", "idx", "n", "nr",
+    "no", "#", "sample", "count",
+};
+
+/**
+ * @brief Whether a column name is a counter's.
+ *
+ * @param name  The column name, without its unit.
+ * @return True for a name in k_counter_names.
+ */
+static bool counter_name(const char *name)
+{
+    for (size_t k = 0;
+         k < sizeof(k_counter_names) / sizeof(k_counter_names[0]); ++k) {
+        if (ci_equal(name, k_counter_names[k])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
+ * @brief The time unit a header carries after its last underscore.
+ *
+ * "time_ms", "t_us" and "elapsed_s" name their unit this way.
+ *
+ * @param header    The raw header cell.
+ * @param stem      Receives the header before the underscore, or NULL.
+ * @param stem_size Size of @p stem, bytes.
+ * @return "s", "ms", "us" or "ns"; NULL when the header ends in none.
+ */
+static const char *time_suffix(const char *header, char *stem, size_t stem_size)
+{
+    static const char *const units[] = { "s", "ms", "us", "ns" };
+    while (isspace((unsigned char)*header)) {
+        ++header;
+    }
+    const char *bar = strrchr(header, '_');
+    if (bar == NULL || bar == header) {
+        return NULL;
+    }
+    size_t len = strlen(bar + 1);
+    while (len > 0u && isspace((unsigned char)bar[len])) {
+        --len;
+    }
+    for (size_t k = 0; k < sizeof(units) / sizeof(units[0]); ++k) {
+        if (strlen(units[k]) != len) {
+            continue;
+        }
+        bool same = true;
+        for (size_t i = 0; i < len; ++i) {
+            if (tolower((unsigned char)bar[1u + i]) != units[k][i]) {
+                same = false;
+            }
+        }
+        if (!same) {
+            continue;
+        }
+        if (stem != NULL && stem_size > 0u) {
+            size_t n = (size_t)(bar - header);
+            if (n >= stem_size) {
+                n = stem_size - 1u;
+            }
+            memcpy(stem, header, n);
+            stem[n] = '\0';
+        }
+        return units[k];
+    }
+    return NULL;
+}
+
+/**
+ * @brief Whether a name is one of the time column names.
+ *
+ * @param name  The name.
+ * @return True for a name in k_time_names.
+ */
+static bool time_name(const char *name)
+{
+    for (size_t k = 0; k < sizeof(k_time_names) / sizeof(k_time_names[0]); ++k) {
+        if (ci_equal(name, k_time_names[k])) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @brief Guess the unit of a time column.
  *
  * @param col       The time column.
@@ -257,6 +351,11 @@ static void guess_time_unit(const log_column_t *col, char *out, size_t out_size)
 
     if (log_time_unit_scale(u) > 0.0) {
         copy_str(out, out_size, u);
+        return;
+    }
+    const char *suffix = time_suffix(col->raw_header, NULL, 0u);
+    if (suffix != NULL) {
+        copy_str(out, out_size, suffix);
         return;
     }
     if (ci_contains(col->raw_header, "millis")) {
@@ -567,12 +666,16 @@ static log_err_t scan_columns(log_source_t *src, char delimiter,
             col->non_empty++;
 
             log_value_t parts;
-            if (log_split_value(cell, &parts)) {
+            const bool split = log_split_value(cell, &parts);
+            if (split) {
                 log_unit_tally_add(&s_work.tally[c], parts.unit);
             }
 
             double v;
             if (log_parse_with(cell, out->convention, &v, NULL, 0)) {
+                if (split && parts.bound) {
+                    col->bounds++;
+                }
                 if (col->parsed == 0) {
                     col->first = v;
                     col->min = v;
@@ -650,12 +753,12 @@ static void pick_time_column(const log_csv_opts_t *opts, log_analysis_t *out)
             if (!out->columns[c].numeric) {
                 continue;
             }
-            for (size_t k = 0;
-                 k < sizeof(k_time_names) / sizeof(k_time_names[0]); ++k) {
-                if (ci_equal(out->columns[c].name, k_time_names[k])) {
-                    out->time_index = c;
-                    break;
-                }
+            char stem[LOG_NAME_MAX];
+            if (time_name(out->columns[c].name) ||
+                (time_suffix(out->columns[c].raw_header, stem, sizeof(stem)) !=
+                     NULL &&
+                 time_name(stem))) {
+                out->time_index = c;
             }
         }
         for (int c = 0; c < out->n_columns && out->time_index < 0; ++c) {
@@ -666,9 +769,11 @@ static void pick_time_column(const log_csv_opts_t *opts, log_analysis_t *out)
                 out->time_index = c;
             }
         }
-        /* A first column that only ever increases is very likely a time axis. */
+        /* A first column that only ever increases is very likely a time
+         * axis, unless its name says it counts rows or steps. */
         if (out->time_index < 0 && out->n_columns > 0 &&
-            out->columns[0].numeric && out->columns[0].monotonic) {
+            out->columns[0].numeric && out->columns[0].monotonic &&
+            !counter_name(out->columns[0].name)) {
             out->time_index = 0;
         }
     }

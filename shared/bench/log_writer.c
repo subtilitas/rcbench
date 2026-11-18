@@ -383,9 +383,9 @@ bool log_writer_supply_row(log_writer_t *w, float t_s,
         && cell(line, cap, &n, (s->ok & both) == both, s->p, 2)
         && text_cell(line, cap, &n, s->online ? mode : "")
         && cell(line, cap, &n, (s->counted & BENCH_COUNTED_CHARGE) != 0u,
-                s->charge_mah, 0)
+                (float)s->charge_mah, 0)
         && cell(line, cap, &n, (s->counted & BENCH_COUNTED_ENERGY) != 0u,
-                s->energy_wh, 2)
+                (float)s->energy_wh, 2)
         && text_cell(line, cap, &n, source_word(s->modelled));
     if (!fits || (size_t)n + 2u >= cap) {
         w->failed = true;
@@ -530,6 +530,17 @@ static bool bench_row(log_writer_t *w, float t_s, const bench_state_t *b,
             continue;               /* no throttle on this row */
         }
         const uint16_t need = k_cols[i].flag;
+        if (need == (uint16_t)LINK_BN_RPM_OK && bench_state_rpm_over(b)) {
+            /* Above the register's ceiling: the bound, marked as one.  A
+             * reader takes the cell as 65535 (log_split_value()), so the
+             * column stays numeric. */
+            const int m = snprintf(line + n, cap - (size_t)n, "%s",
+                                   BENCH_RPM_OVER_TEXT);
+            if (m > 0 && (size_t)m < cap - (size_t)n) {
+                n += m;
+            }
+            continue;
+        }
         if (need != 0u && (b->flags & need) != need) {
             continue;               /* nothing measured it: an empty cell */
         }
@@ -719,15 +730,15 @@ void log_rail_count(bench_totals_t *t, log_rail_t *r, float dt_s,
         const uint8_t both = (uint8_t)(SUPPLY_OK_VOLTAGE | SUPPLY_OK_CURRENT);
         t->run_s += dt;
         if ((r->ok & SUPPLY_OK_CURRENT) != 0u) {
-            t->mah += r->i * dt * (1000.0f / 3600.0f);
+            t->mah += (double)r->i * (double)dt * (1000.0 / 3600.0);
             t->counted |= BENCH_COUNTED_CHARGE;
         }
         if ((r->ok & both) == both) {
-            t->wh += r->p * dt * (1.0f / 3600.0f);
+            t->wh += (double)r->p * (double)dt * (1.0 / 3600.0);
             t->counted |= BENCH_COUNTED_ENERGY;
         }
     }
-    r->charge_mah = t->mah;
-    r->energy_wh  = t->wh;
+    r->charge_mah = (float)t->mah;
+    r->energy_wh  = (float)t->wh;
     r->counted    = t->counted;
 }
