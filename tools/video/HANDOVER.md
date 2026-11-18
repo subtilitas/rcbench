@@ -34,6 +34,7 @@ a new session needs beyond it.
 | `storyboards/rbmod-build.json` | the build of a rev 1 carrier and the panel's wiring in 13 steps, 347.32s, narrated in the voice of `features`, bed `pachelbel-canon` at half level |
 | `storyboards/dial.json` | the M5Stack Dial going into its printed base and coming into use in 7 steps, 295.69s, narrated, bed `pachelbel-canon` at half level; `dial_base` puts the Dial into its printed hand-held base, and step 1 assembles it |
 | `storyboards/minircbench-build.json`, `player/mini3d.js`, `boards/minircbench-wiring.json`, `stills/` | the build of a MiniRcBench in 10 steps, 505.57s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; `tools/video_cad.py --parts` converts its assembly |
+| `storyboards/minircbench-features.json`, `stills/` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters, 1000.70s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 81 stills of that project's host suite at its commit 2cdf044 on the display of the `mini` model seen from the front |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `test/tools/test_make_video.py` | 35 cases; the storyboard check, the script, the freezes |
 
@@ -76,8 +77,13 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
 - A narration change alters step lengths. To keep the picture, set the
   changed step's `dur` to its length before the change, as the
   signal-wire step of `features` does (18.65).
-- `RCBENCH_VIDEO_GL` selects a GPU renderer. It is untested; the server's
-  7 MI50 cards were not used.
+- `RCBENCH_VIDEO_GL` selects a GPU renderer. On the server's MI50 cards
+  its pixels differ from SwiftShader's by 0.031 of 255 on average on
+  the Dial video. `minircbench-features`, 30,021 frames, takes 531s
+  there with `--jobs 47` and empty caches.
+- Video texts carry no statement of a feature's test state: narration,
+  labels, notes, chapter cards and `README.md` say what a feature
+  does (owner's rule, 2026-11-15).
 - The server session "RCBench 261111" has a worktree with everything
   installed and has rendered `features` three times.
 

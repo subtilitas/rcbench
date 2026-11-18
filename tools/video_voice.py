@@ -221,20 +221,83 @@ def model_dir() -> pathlib.Path:
     return pathlib.Path(os.environ.get("RCBENCH_TTS_DIR", here))
 
 
-def narrate(board: dict) -> tuple:
+_SPEAKER = None
+
+
+def _start(files: list, threads: int) -> None:
+    """Load the model in a worker process.
+
+    Args:
+        files: The model and the voices file.
+        threads: The threads one worker's model runs on.
+    """
+    global _SPEAKER
+    import onnxruntime
+    from kokoro_onnx import Kokoro
+
+    options = onnxruntime.SessionOptions()
+    options.intra_op_num_threads = threads
+    options.inter_op_num_threads = 1
+    session = onnxruntime.InferenceSession(
+        str(files[0]), options, providers=["CPUExecutionProvider"])
+    _SPEAKER = Kokoro.from_session(session, str(files[1]))
+
+
+def _speak(job: tuple):
+    """Speak one line at RATE.
+
+    Args:
+        job: (text, voice) with the storyboard's "voice" object.
+
+    Returns:
+        The samples as a numpy array, peak 1.
+    """
+    import numpy as np
+
+    text, voice = job
+    # A blend is the weighted mean of the voices' style vectors.
+    style = voice.get("name")
+    if "blend" in voice:
+        whole = sum(voice["blend"].values())
+        style = sum(_SPEAKER.get_voice_style(name) * (part / whole)
+                    for name, part in voice["blend"].items())
+    raw, rate = _SPEAKER.create(text, voice=style,
+                                speed=voice.get("speed", 1.0),
+                                lang=voice.get("lang", "en-us"))
+    raw = np.asarray(raw, dtype=float)
+    # To RATE by padding the spectrum: no filter to design.
+    size = int(round(len(raw) * RATE / rate))
+    spec = np.fft.rfft(raw)
+    wide = np.zeros(size // 2 + 1, dtype=complex)
+    wide[: len(spec)] = spec[: len(wide)]
+    out = np.fft.irfft(wide, size) * (size / len(raw))
+    return out / max(1e-9, float(np.max(np.abs(out))))
+
+
+def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
     """Speak a storyboard and make room for each line.
+
+    Lines are spoken in parallel worker processes.  With @p cache, each
+    spoken line is kept there as a .npy file named by a hash of its
+    text, the voice, the model files' sizes and this module's source,
+    and a later run reads it back instead of speaking it.
 
     Args:
         board: A storyboard that passed make_video.check(), with "voice".
+        cache: The directory that keeps the spoken lines, or None.
 
     Returns:
         The storyboard with each step and end scene long enough for its
         line, and the clips: (seconds from the video's start, samples at
         RATE as a numpy array) per line.
     """
+    import concurrent.futures
+    import hashlib
+    import json
+
     try:
         import numpy as np
-        from kokoro_onnx import Kokoro
+        import kokoro_onnx  # noqa: F401
     except ImportError:
         sys.exit("the narration needs numpy and kokoro-onnx: "
                  "pip install numpy kokoro-onnx")
@@ -244,30 +307,40 @@ def narrate(board: dict) -> tuple:
             sys.exit(f"{path} is missing; tools/video_voice.py names the "
                      "release that holds it")
     voice = board["voice"]
-    speaker = Kokoro(str(files[0]), str(files[1]))
+    lines = script(board)
+    source = pathlib.Path(__file__).read_text(encoding="utf-8")
+    sizes = [path.stat().st_size for path in files]
 
-    # A blend is the weighted mean of the voices' style vectors.
-    style = voice.get("name")
-    if "blend" in voice:
-        whole = sum(voice["blend"].values())
-        style = sum(speaker.get_voice_style(name) * (part / whole)
-                    for name, part in voice["blend"].items())
+    def kept(text) -> pathlib.Path | None:
+        if cache is None:
+            return None
+        key = hashlib.sha256(json.dumps(
+            [text, voice, RATE, sizes, source]).encode()).hexdigest()[:20]
+        return cache / f"{key}.npy"
 
-    def say(text):
-        raw, rate = speaker.create(text, voice=style,
-                                   speed=voice.get("speed", 1.0),
-                                   lang=voice.get("lang", "en-us"))
-        raw = np.asarray(raw, dtype=float)
-        # To RATE by padding the spectrum: no filter to design.
-        size = int(round(len(raw) * RATE / rate))
-        spec = np.fft.rfft(raw)
-        wide = np.zeros(size // 2 + 1, dtype=complex)
-        wide[: len(spec)] = spec[: len(wide)]
-        out = np.fft.irfft(wide, size) * (size / len(raw))
-        return out / max(1e-9, float(np.max(np.abs(out))))
+    spoken = {}
+    for _, _, _, text in lines:
+        path = kept(text)
+        if path is not None and path.is_file():
+            spoken[text] = np.load(path)
+    todo = sorted({text for _, _, _, text in lines} - set(spoken))
+    if todo:
+        cpus = os.cpu_count() or 1
+        workers = max(1, min(len(todo), cpus // 4, 12))
+        with concurrent.futures.ProcessPoolExecutor(
+                workers, initializer=_start,
+                initargs=(files, max(1, cpus // workers))) as pool:
+            for text, clip in zip(todo, pool.map(
+                    _speak, [(text, voice) for text in todo]), strict=True):
+                spoken[text] = clip
+                path = kept(text)
+                if path is not None:
+                    path.parent.mkdir(parents=True, exist_ok=True)
+                    np.save(path.with_suffix(".tmp.npy"), clip)
+                    path.with_suffix(".tmp.npy").replace(path)
 
     board = copy.deepcopy(board)
-    spoken_lines = [(i, j, at, say(text)) for i, j, at, text in script(board)]
+    spoken_lines = [(i, j, at, spoken[text]) for i, j, at, text in lines]
     for i, j, at, clip in spoken_lines:
         scene, need = board["scenes"][i], at + len(clip) / RATE + TAIL_S
         if j is not None:
