@@ -127,6 +127,12 @@ void battery_screen_set(const battery_state_t *b)
         return;
     }
     s.b = *b;
+    /* volts[] and milliohms[] hold BATTERY_CELLS_MAX cells: a count outside
+     * 1 to that is no pack, and no loop runs past the arrays. */
+    if (s.b.cells < 1 || s.b.cells > BATTERY_CELLS_MAX) {
+        s.b.cells = 0;
+        s.b.valid = false;
+    }
     ++s.rev;
 }
 

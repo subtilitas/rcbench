@@ -2549,7 +2549,7 @@ Stellzeit und sucht die Spannung, bei der die Bewegung endet.
 Das 600 x 136px große Feld AUTOMATISCHER TEST enthält Laufname, eine
 Zusammenfassung wie `4.8V, 6.0V, BROWN-OUT, JE 60s` oder
 `..., JE 20 BEWEGUNGEN`, Zustandszeile, letztes Ergebnis mit Dateien und
-den Hinweis zu BLOCKIERT AB. Ein Ergebnis lautet etwa
+den Hinweis zur Blockierschwelle. Ein Ergebnis lautet etwa
 `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`; ein Abbruch zeigt den Grund in
 Warnfarbe, etwa `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
 
@@ -2581,12 +2581,12 @@ Ein roter Text, länger als die 20 Zellen der Zeile, zeigt eine Kurzform:
 `TEST LÄUFT`, `SCHREIBT BERICHT`. Das Alarmband nennt den ganzen Text
 ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
 
-Der Hinweis zu BLOCKIERT AB nennt unerreichbare Schwellen:
-`BLOCKIERT AB 2.00A muss unter Strombegrenzung 2.00A sein`, wenn BLOCKIERT AB
+Der Hinweis zur Blockierschwelle nennt unerreichbare Schwellen:
+`Blockierschwelle 2.00A: muss unter Strombegrenzung 2.00A`, wenn Blockierschwelle
 mindestens so hoch wie SET A von SUPPLY ist. Andernfalls,
 bei INA3221 als Messgerät und einer Schwelle mindestens in Höhe seines
 Messbereichs, erscheint
-`BLOCKIERT AB 2.00A muss unter INA3221-Bereich 1.638A sein`.
+`Blockierschwelle 2.00A: muss unter INA3221-Bereich 1.638A`.
 Der Hinweis lehnt das Halten nicht ab; siehe
 [Blockieren und Konstantstrom](Servo-de.md#blockieren-und-konstantstrom).
 
@@ -2959,7 +2959,7 @@ Die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken:
 SPANNUNGSSTUFEN die Stufen eines Laufs oder `KEINE STUFE GEWÄHLT` in
 Warnfarbe; BROWN-OUT den Lauf am geltenden Netzteil,
 `Ab 5.00V abwärts in 0.20V-Schritten bis 3.30V, 10 Spannungen`; GRENZWERTE
-ein BLOCKIERT AB, das kein Messwert erreicht, in Warnfarbe; BEREICH die
+eine Blockierschwelle, die kein Messwert erreicht, in Warnfarbe; BEREICH die
 Enden des Laufs, `1100-1900us`, in Warnfarbe, solange sie nicht beiderseits
 von PULS MITTE liegen. AUSGANG unter BEREICH zeigt das Profil wie die
 Typzeile, `STANDARD PWM  50Hz  1000-2000`; ein Tippen öffnet das Profil.
@@ -3326,7 +3326,7 @@ ESC-Läufe verwenden eine eigene Stromquelle.
 
 Ein von einer anderen Seite eingeschalteter Ausgang bleibt beim
 Verlassen von SUPPLY unverändert. Tastenfelder, Rückfragen und die
-Optionsliste zählen nicht als Verlassen. LINK LOST,
+Optionsliste zählen nicht als Verlassen. VERBINDUNG VERLOREN,
 das kein STOP hat, öffnet sich bei eingeschaltetem Ausgang nicht.
 
 **Das Home-Feld führt eine Ebene zurück.** Das Schließen eines Dialogs
@@ -4019,6 +4019,15 @@ Aktuelle Dateien von ARMED-Läufen verwenden verstrichene Echtzeit.
 Dateien aus Firmware 0.15.0 oder älter unterschätzen die Laufdauer
 (siehe Motor & ESC, die CSV-Datei).
 
+Die Zeitspalte ist eine als Zeit benannte Spalte, dann eine mit `time`,
+`zeit` oder `elapsed` im Spaltenkopf, dann eine erste Spalte, die nur
+steigt. Ihre Einheit ist die des Spaltenkopfs, in Klammern oder nach einem
+Unterstrich (`time_ms`, `t_us`, `elapsed_s`), sonst eine Schätzung aus der
+Spanne ihrer Werte. Eine steigende erste Spalte mit dem Namen eines Zählers
+(`step`, `row`, `index`, `sample`, `count`, `n`, `#`) ist keine Zeitspalte:
+`RUDDRnnn.CSV` beginnt mit `step`, wird über dem Zeilenindex gezeichnet,
+und der Cursor zeigt die Zeile.
+
 SETUP > PANEL > Ein Finger schiebt ist standardmäßig aus. Eingeschaltet
 erlaubt es das Verschieben vergrößerter Ausschnitte mit einem Finger.
 Mehr als 10px Bewegung vom Aufsetzpunkt zieht den Ausschnitt seitlich;
@@ -4036,7 +4045,13 @@ jeweils nur einen Finger an; ein zweiter hat keine Wirkung.
 LÖSCHEN fragt vor dem Entfernen der gewählten Datei nach. Der Dialog nennt
 Name und Größe. Erst Drücken und Loslassen von LÖSCHEN in diesem Dialog
 bestätigt. ABBRECHEN oder Verlassen schließt ohne Löschung. Eine vom
-Logger offene Datei kann nicht gelöscht werden. Eine gelöschte Datei
+Logger offene Datei kann nicht gelöscht werden. Solange der Prüfstand
+ARMED ist oder ein Lauf aufgezeichnet wird, ist LÖSCHEN grau und löscht
+nichts, wie jeder Schreibvorgang in FILES: Ein Tipp darauf zeigt in der
+Fußzeile `Prüfstand ARMED. Die Karte ist nur lesbar.` oder
+`Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.` Ein Wechsel auf
+ARMED oder ein Lauf, der bei offenem Dialog startet, verweigert dessen
+LÖSCHEN mit derselben Zeile. Eine gelöschte Datei
 verschwindet auch aus offenen Import- und Grafikansichten.
 
 Der Logger prüft die Nummern beim ersten Lauf nach dem Start und nach
@@ -4175,8 +4190,11 @@ daher mit ihrer Größe, etwa `8.00GB`. ÖFFNEN liest Dateien bis 2GiB minus
 2GiB bis 4GiB minus 1 Byte. ÖFFNEN meldet dann
 `BENCH001.CSV ist 2GB oder größer. Nicht geöffnet.`
 
-Die Größenangaben verwenden binäre Einheiten: 1kB sind 1024 Bytes,
-1MB sind 1024kB und 1GB sind 1024MB. [WLAN](#wlan) listet Dateien jeder
+Die Größenangaben auf dem Panel und auf der WLAN-Seite verwenden binäre
+Einheiten: 1kB sind 1024 Bytes, 1MB sind 1024kB und 1GB sind 1024MB. Das
+gilt für die Größen in den Listen und für die Grenzen in den Meldungen:
+`1MB` dort ist 1MiB (1.048.576 Bytes), `2GB` sind 2GiB und `4kB` sind 4KiB
+(4.096 Bytes). [WLAN](#wlan) listet Dateien jeder
 Größe, die die Karte unterstützt, und lädt sie herunter.
 
 ## Files
@@ -4238,7 +4256,7 @@ Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
+| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
 | GESPERRT | die Vermerke der Programmierungen, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` und `BENCH/ESCW/CONF/ESCW.TXT`, sowie ihre Dateien `KST.NEW`, `HITEC.NEW` und `ESCW.NEW` während des Schreibens. Nur INFO ist verfügbar |
 | WIRD GESCHRIEBEN | eine im Logger offene Datei. Nur INFO ist verfügbar |
 
@@ -4497,7 +4515,11 @@ jedem erfolgreichen Speichern. Sie dient auch als ETag der
 [Datei-API](#die-datei-api) der WLAN-Seite. Vor dem Öffnen von `.NEW` liest
 derselbe Speicherauftrag die Kartendatei erneut und berechnet ihre
 Prüfsumme. Für 1MiB zu speichernden Text werden daher zuerst 1MiB gelesen;
-die Dauer dieses Lesens ist nicht gemessen.
+die Dauer dieses Lesens ist nicht gemessen. Im Schritt, der die alte Datei
+entfernt, vergleicht der Auftrag ihre Größe mit den summierten Bytes: Eine
+inzwischen gewachsene Datei, etwa `BALANCE.CSV` mit einer Zeile, die eine
+Lösung der Auswuchtung angehängt hat, gilt als geändert, bleibt bestehen,
+und `.NEW` wird entfernt.
 
 Wurde die Datei inzwischen geändert oder entfernt, etwa durch den
 WLAN-Editor oder einen Upload ([Schreiben per Browser](#schreiben-per-browser)),
@@ -6827,7 +6849,7 @@ Ordner gilt weiter; rechts vom Titel steht der Grund:
 | mehr als 2 Ordner | `A/B/C` (`A/B` wird genommen) | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
+| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
 
 Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
 Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17
@@ -7766,7 +7788,8 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet, bis das WLAN des Panels aus ist.` | Eine Prüfung, ein Download oder WI-FI hat den Funk an. |
 | `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
 | `Das C6-Update wartet auf das Ende des Funkgeräte-Updates.` | Das Update eines Dial läuft oder wurde angefordert ([Das Dial](#das-dial)). |
-| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
+| `Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.` | Eine KST-, Hitec- oder ESC-Programmierung belegt einen Port, oder eine Sitzung startet. |
+| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück, oder das Update ist beendet und der Neustart des Panels steht an. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
 angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
@@ -7779,13 +7802,18 @@ Alarmband sagt, wie ein Update endete:
 | Alarm | Bedeutung |
 | --- | --- |
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu, und der Update-Lauf geht danach weiter ([Nach einem Neustart](#nach-einem-neustart)). |
+| `C6-Funk auf 2.13.0 aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.` | Der Neustart wartet: Der Prüfstand ist ARMED, ein Ausgang ist an oder eine Programmierung belegt einen Port ([Der ESP32-C6-Funk](C6-de.md)). |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Der Funk über den ESP32-C6: Wiederherstellung über Header H4](C6-de.md#wiederherstellung-über-header-h4)). |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
 | `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |
 
-Während das Update läuft, wird ARM mit `ARMED gesperrt: Das C6-Funk-Update
-läuft.` abgelehnt, das WLAN startet nicht, und Installation des Panels,
-GitHub-Prüfung und IOmcu-Update warten.
+Vom Start des Updates bis zum Neustart wird ARM mit `ARMED gesperrt: Das
+C6-Funk-Update läuft.` abgelehnt, AUSGANG EIN von SUPPLY mit `Netzteilausgang
+nicht eingeschaltet: Das C6-Funk-Update läuft.`, PROG 5V EIN mit `PROG-Ports
+5V nicht eingeschaltet: Das C6-Funk-Update läuft.` und der Start einer
+Programmierung mit `Programmierung nicht gestartet: Das C6-Funk-Update
+läuft.`. Das WLAN startet nicht, und Installation des Panels, GitHub-Prüfung
+und IOmcu-Update warten.
 
 ### Die Funkgeräte
 

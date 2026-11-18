@@ -70,6 +70,10 @@ das Panel wendet sie an ([Das Panel](#das-panel)):
   erste Paket des Panels kam.
 - Die Bildschirmtaste im Zustand ARMED: Ein Tippen setzt das Gas auf MOTOR
   auf 0% und auf SERVO auf CENTER; ein Halten von 1s macht DISARM.
+- Ein Halten der Bildschirmtaste von 1s beendet einen Servotest, einen
+  LIMIT RUN und einen Lauf von RUDDER AUTO in jeder Phase, auch solange der
+  Lauf den Prüfstand für seine Programmiersitzung auf SAFE hält, und nimmt ein
+  ARM zurück, das unterwegs ist.
 - Kein BLE-Scan im Zustand ARMED: Die Funkzeit eines Scans würde dem Link
   fehlen, der den Knopf trägt.
 - Navigation nur bei SAFE: Ein SELECT ist ein Tippen von einem Frame, es

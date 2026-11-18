@@ -108,6 +108,19 @@ extern "C" {
 #define CARD_BALANCE     "BENCH/BALANCE"
 
 /**
+ * @brief The deepest folder of bench area @p i: the 4 CONF folders above
+ *        and CARD_BALANCE.
+ *
+ * The one list of the bench's own areas.  card_folder_check() refuses a log
+ * folder in an area; fm_rules.c holds each folder of the list and every
+ * folder above it FIXED.
+ *
+ * @param i  The index, from 0.
+ * @return The folder's path, or NULL past the last.
+ */
+const char *card_bench_dir(size_t i);
+
+/**
  * @brief The fault log: a line every 5s while the link to the IOmcu is down.
  */
 #define CARD_FAULT_LOG   "BENCH/RCBENCH.LOG"
@@ -186,7 +199,8 @@ typedef enum {
     CARD_FOLDER_RESERVED,  /**< a device name: CON, PRN, AUX, NUL, COM1 to
                                 COM9, LPT1 to LPT9                         */
     CARD_FOLDER_BENCH,     /**< the bench's own: BENCH/ESC, BENCH/KST,
-                                BENCH/HITEC, BENCH/ESCW and below                     */
+                                BENCH/HITEC, BENCH/ESCW, BENCH/BALANCE and
+                                below                                      */
 } card_folder_t;
 
 /**

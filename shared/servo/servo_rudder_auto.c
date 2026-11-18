@@ -722,6 +722,22 @@ uint32_t servo_rauto_wait_ms(const servo_rauto_t *r)
 
 /* ------------------------------------------------------------- inputs */
 
+bool servo_rauto_goals_ok(const float target_deg[2], uint8_t margin_pct,
+                          uint16_t tol_ddeg)
+{
+    if (target_deg == NULL) {
+        return false;
+    }
+    const float need = 2.0f * (float)tol_ddeg / 10.0f + 2.0f * RAUTO_EPS_DEG;
+    for (int s = 0; s < 2; ++s) {
+        const float goal = target_deg[s] * (1.0f + (float)margin_pct / 100.0f);
+        if (!(goal >= need)) {
+            return false;
+        }
+    }
+    return true;
+}
+
 bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
                        uint32_t now_ms)
 {
@@ -740,6 +756,10 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
         if (!(cfg->target_deg[s] >= 0.0999f && cfg->target_deg[s] <= 90.0f)) {
             return false;
         }
+    }
+    if (!servo_rauto_goals_ok(cfg->target_deg, cfg->margin_pct,
+                              cfg->tol_ddeg)) {
+        return false;
     }
     memset(r, 0, sizeof(*r));
     r->cfg         = *cfg;

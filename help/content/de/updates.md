@@ -216,13 +216,14 @@ Bei verfügbarer Haltetaste steht `Ausgänge bleiben aus. ARMED ist bis zum Ende
 
 Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE sendet das mitgelieferte Image über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
 
-Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft und das WLAN aus ist. Bei einem C6, der die mitgelieferte Version meldet, heißt es 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
+Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft, keine Servo- oder ESC-Programmierung einen Port belegt und das WLAN aus ist. Bei einem C6, der die mitgelieferte Version meldet, heißt es 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
 
-Während das Update läuft, wird ARM abgelehnt, und das WLAN bleibt aus. Es endet mit einem Alarm:
+Während das Update läuft, werden ARM, AUSGANG EIN des Netzteils, PROG 5V EIN und der Start einer Programmierung abgelehnt, und das WLAN bleibt aus. Es endet mit einem Alarm:
 
 | Alarm | Bedeutung |
 |---|---|
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | fertig; das Panel startet 3s später neu |
+| `C6-Funk auf 2.13.0 aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.` | fertig; der Neustart wartet, bis der Prüfstand SAFE ist, Netzteilausgang und PROG 5V aus sind und keine Programmierung einen Port belegt |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | die Firmware des C6 hat das Update abgelehnt; die alte Firmware läuft |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | die Verbindung zum C6 ist ausgefallen |
 | `C6-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | ein Schritt blieb ohne Antwort; `Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen` und `Aktivierung fehlgeschlagen` lauten ebenso |

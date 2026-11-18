@@ -67,6 +67,9 @@ panel applies them ([The panel](#the-panel)):
   is connected again and the panel's first packet came.
 - The screen button while ARMED: a tap sets the throttle to 0% on MOTOR and
   CENTER on SERVO; a 1s hold DISARMs.
+- A 1s hold of the screen button ends a servo test, a LIMIT RUN and a
+  RUDDER AUTO run in every phase, also while the run holds the bench SAFE
+  for its programmer session, and takes back an ARM that is on its way.
 - No BLE scan while ARMED: a scan's radio time would starve the link that
   carries the knob.
 - Navigation only while SAFE: a SELECT is a tap of one frame, so it

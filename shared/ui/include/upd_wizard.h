@@ -145,6 +145,7 @@ typedef enum {
     UPD_WIZ_WHY_INSTALL, /**< a panel download or install runs             */
     UPD_WIZ_WHY_NETWORK, /**< no home network is kept                      */
     UPD_WIZ_WHY_BLE,     /**< Bluetooth LE's start runs                    */
+    UPD_WIZ_WHY_PROG,    /**< a servo or ESC programmer holds a port       */
     UPD_WIZ_WHY_BUSY,    /**< another update runs or ends                  */
 } upd_wiz_why_t;
 

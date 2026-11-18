@@ -582,7 +582,7 @@ being the meter or no window arrives for 200ms (`SERVO_TEST_WIN_STALE_MS`, 199, 
 201ms and the millis wrap in `test_servo_test_win`), and never goes on with the PD mini.
 
 Currents are compared by magnitude in whole mA; the supply in constant current for 1000ms
-ends a run whatever STALL AT is, and a STALL AT at or above the current limit or the
+ends a run whatever Stall threshold is, and a Stall threshold at or above the current limit or the
 INA3221's range is said on the automatic test's card and in the report. Movement is a
 reading max(0.020A, 3 x the idle readings' standard deviation) from the level before the
 command; a move with none is unseen, neither timed nor late, and a run with unseen moves and
@@ -1273,7 +1273,9 @@ that hand on nothing), the stream of the screen model with its rates and
 SCALE (`shared/ui/dial_stream.c`, `test_dial_stream`), the frame's paths
 into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
 `test_dial_servo`: a 10s Dial press on ARM's place arms nothing, turns while
-SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
+SAFE move nothing, PRESS and HOLD; `test_servo_dial_runs`: the HOLD ends
+RUDDER AUTO and a limit run in each phase, the phases that hold the bench
+SAFE included, and takes back an ARM on its way), SETUP > WIRELESS > DIAL
 (`shared/ui/wireless_pane.c`, `test_wireless_pane`; `test_dial_bind` from
 the tap on SCAN FOR DIAL and BOUND DIAL, the found list with SCAN AGAIN,
 through a model of the frame and `blec` glue, the controller and the hub
@@ -1681,7 +1683,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1805,7 +1807,7 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
-`test_servo_limrun_ready`, `test_servo_limrun_seq`,
+`test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
