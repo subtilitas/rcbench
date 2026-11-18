@@ -82,7 +82,6 @@ The entries below cover the 26 pull requests merged since v0.23.14: #865 to
   once it links. The run ends on the home tag or when no step is left, and
   a run opens UPDATES at 2 starts at most. The start-up check does not run
   during a run.
-  spends one of 2 openings. No screen reads it.
 - SETUP > WIRELESS > IMU: IMU settling time (`imu_settle_s`, 0.5 to
   10.0s, default 3.0s) and IMU precision (`imu_prec`, 0.05 to 1.00°,
   default 0.10°), the settle rule of a RUDDER AUTO measure on the IMU.
