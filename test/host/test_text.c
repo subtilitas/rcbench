@@ -557,9 +557,40 @@ static int cells_of(const char *s)
 }
 
 /* A run's reason is a line of the SERVO screen's result box, 250px for
- * 31 cells, and the two lines that say STALL AT cannot be reached go
+ * 31 cells, and the two lines that say Stall threshold cannot be reached go
  * across the settings card under START TEST, 468px for 58 cells with
  * their numbers in: in every language. */
+/* The servo test's stall limit has one name: the OPTIONS row's label,
+ * `Stall threshold` and `Blockierschwelle`.  The abort reason, the report's
+ * line and the two notes of the AUTOMATIC TEST card carry it, in every
+ * language, and none says STALL AT or BLOCKIERT AB. */
+TEST_CASE(the_stall_limit_has_the_rows_name_in_every_text)
+{
+    static const servo_str_t k_txt[] = {
+        SERVO_STR_AB_STALL, SERVO_STR_R_LIM_STALL,
+        SERVO_STR_R_LIM_STALL_LIMIT, SERVO_STR_R_LIM_STALL_RANGE,
+    };
+    for (int l = 0; l < UI_LANG_COUNT; ++l) {
+        const ui_language_t *t = ui_text_table((ui_lang_t)l);
+        const char *const *table = (t != NULL) ? t->servo : NULL;
+        ui_text_set_language((ui_lang_t)l);
+        const char *row = ui_setting_label(SET_SERVO_STALL_A);
+        CHECK(row != NULL && row[0] != '\0');
+        for (size_t k = 0; k < sizeof(k_txt) / sizeof(k_txt[0]); ++k) {
+            const char *s = servo_str_in(table, k_txt[k]);
+            if (strstr(s, row) == NULL || strstr(s, "STALL AT") != NULL
+                || strstr(s, "BLOCKIERT AB") != NULL) {
+                T_FAIL("language %d: \"%s\" does not name the row \"%s\"",
+                       l, s, row);
+            }
+        }
+    }
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(ui_setting_label(SET_SERVO_STALL_A), "Blockierschwelle");
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(ui_setting_label(SET_SERVO_STALL_A), "Stall threshold");
+}
+
 TEST_CASE(a_runs_reasons_fit_where_the_screen_draws_them)
 {
     for (int l = 0; l < UI_LANG_COUNT; ++l) {
@@ -1032,6 +1063,7 @@ int main(void)
     RUN(a_padded_label_is_as_wide_as_the_longest);
     RUN(the_report_is_translated_and_the_csv_is_not);
     RUN(a_runs_reasons_fit_where_the_screen_draws_them);
+    RUN(the_stall_limit_has_the_rows_name_in_every_text);
     RUN(the_report_labels_line_up);
     RUN(every_stick_refusal_is_translated);
     RUN(every_bus_verdict_has_a_heading);

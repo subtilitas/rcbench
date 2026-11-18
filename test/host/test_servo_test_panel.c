@@ -698,9 +698,9 @@ TEST_CASE(a_run_started_under_the_ina3221_reads_its_windows)
      * reading is: 20 rows a second, not 10 or 30. */
     CHECK(bench.csv - 1u <= bench.wins - wins0);
     CHECK(bench.csv - 1u + 40u >= bench.wins - wins0);
-    /* The default STALL AT, 2.00A, is at the supply's 2.00A limit and
+    /* The default Stall threshold, 2.00A, is at the supply's 2.00A limit and
      * under this shunt's range. */
-    CHECK(strstr(bench.report, "STALL AT 2.00A must be below current "
+    CHECK(strstr(bench.report, "Stall threshold 2.00A must be below current "
                            "limit 2.00A\n") != NULL);
     CHECK(strstr(bench.report, "INA3221 range") == NULL);
 }
@@ -949,7 +949,7 @@ TEST_CASE(a_run_on_the_ina3221_ends_when_its_windows_stop)
 }
 
 /* A servo on a stop against a supply at its limit, through the screen
- * with the shipped LIMITS page: STALL AT 2.00A at a current limit of
+ * with the shipped LIMITS page: Stall threshold 2.00A at a current limit of
  * 2.00A.  The supply reads constant current and the run ends on that, on
  * either meter. */
 TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
@@ -978,15 +978,15 @@ TEST_CASE(a_stalled_servo_at_the_shipped_limits_ends_the_run)
         CHECK(bench.released);
         CHECK(strstr(bench.report, "Result:         ABORTED - constant current "
                                "for 1s\n") != NULL);
-        CHECK(strstr(bench.report, "STALL AT 2.00A must be below current "
+        CHECK(strstr(bench.report, "Stall threshold 2.00A must be below current "
                                "limit 2.00A\n") != NULL);
     }
 }
 
-/* On the AUTOMATIC TEST card: a STALL AT that no reading can pass is
+/* On the AUTOMATIC TEST card: a Stall threshold that no reading can pass is
  * said, in the warning colour, and ARM + START stays open.  It goes with
  * the edit that answers it and comes with the meter whose range is under
- * STALL AT. */
+ * Stall threshold. */
 TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
 {
     bench_fresh();
@@ -997,7 +997,7 @@ TEST_CASE(a_stall_at_out_of_reach_is_said_under_start_test)
     const int y = SV_RUN_CARD_Y + SV_TEST_LINE_DY + 44;
     /* As shipped: 2.00A at a limit of 2.00A. */
     CHECK(ink_in_row(y, UI_C_WARN) > 100u);
-    /* One step of STALL AT's 0.05A under the limit. */
+    /* One step of Stall threshold's 0.05A under the limit. */
     settings_set(SET_SERVO_STALL_A, 1.95f);
     servo_invalidate();
     CHECK_EQ(ink_in_row(y, UI_C_WARN), 0u);

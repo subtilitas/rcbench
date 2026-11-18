@@ -224,8 +224,8 @@ TEST_CASE(an_imu_pick_binds_it_switches_the_imu_on_and_sets_the_source)
 }
 
 /* SEARCH FOR IMU with the IMU off: IMU ON in SETUP, the list open with
- * the entry waiting while Bluetooth LE starts, and the SCAN queued once it
- * runs; SCANNING while the scan runs. */
+ * the entry waiting while Bluetooth LE starts; NO BLUETOOTH ON C6 ends the
+ * search, and the next SEARCH FOR IMU scans; SCANNING while the scan runs. */
 TEST_CASE(search_switches_the_imu_on_and_scans_once_bluetooth_runs)
 {
     safe_on(SERVO_FN_RUDDER, IMU_LINK_OFF);
@@ -246,13 +246,19 @@ TEST_CASE(search_switches_the_imu_on_and_scans_once_bluetooth_runs)
     view_now();
     frame();
     CHECK_STR_EQ(entry(1, NULL), TR(IMU_ST_NO_BT));
+    /* NO BLUETOOTH ON C6 ends the search: a sync that comes later starts
+     * no scan by itself. */
+    CHECK(!imu_screen_search_owed());
     g_v.link = IMU_LINK_READY;
     view_now();
-    CHECK_EQ(imu_took().kind, IMU_CMD_SCAN);
     CHECK_EQ(imu_took().kind, IMU_CMD_NONE);
     frame();
     CHECK_STR_EQ(entry(1, &refused), TR(SV_ANG_SEARCH));
     CHECK(!refused);
+    /* SEARCH FOR IMU again, Bluetooth LE running: the SCAN goes at once. */
+    tap_entry(1);
+    CHECK_EQ(imu_took().kind, IMU_CMD_SCAN);
+    CHECK_EQ(imu_took().kind, IMU_CMD_NONE);
     g_v.link = IMU_LINK_SCANNING;
     view_now();
     frame();

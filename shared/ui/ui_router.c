@@ -72,6 +72,10 @@ static struct {
      * it and, once cleared, shows it again. */
     char              held[UI_ALERT_MAX];
     bool              has_held;  /**< a held alert is set */
+    /** @brief The one notice that waits behind an alert: set while a passing
+     * or a held alert is up, shown once neither is. */
+    char              pending[UI_ALERT_MAX];
+    bool              has_pending;  /**< a notice waits */
     bool              stop_latched;  /**< an operator's STOP was pressed and not yet taken */
     bool              demo_seen;      /**< Demo mode as the last frame saw it;
                                            a flip repaints every screen    */
@@ -398,7 +402,21 @@ bool ui_router_shot_gap(gfx_rect_t *out)
     return true;
 }
 
-/** @brief Clears the passing alert. */
+/**
+ * @brief Show the waiting notice, if one waits and no alert is up: it
+ *        gets its own UI_NOTICE_SHOW_S from here.
+ */
+static void show_pending(void)
+{
+    if (!s.has_pending || s.has_alert || s.has_held) {
+        return;
+    }
+    s.has_pending = false;
+    ui_router_set_alert(s.pending);
+    s.alert_notice = true;
+}
+
+/** @brief Clears the passing alert; a notice that waited behind it shows. */
 static void clear_alert(void)
 {
     if (s.has_alert) {
@@ -411,14 +429,17 @@ static void clear_alert(void)
     s.alert_fresh = false;
     s.alert_age_s = 0.0f;
     s.alert[0]    = '\0';
+    show_pending();
 }
 
 /**
- * @brief Clear the band's notice, if one shows: for a STOP and a switch to
- *        SAFE, which outrank a hold button's hint.  An alert stays.
+ * @brief Clear the band's notice, the one showing and the one waiting
+ *        behind an alert: for a STOP and a switch to SAFE, which outrank a
+ *        hold button's hint.  An alert stays.
  */
 static void drop_notice(void)
 {
+    s.has_pending = false;
     if (s.has_alert && s.alert_notice) {
         clear_alert();
     }
@@ -1224,7 +1245,13 @@ void ui_router_set_alert(const char *text)
 
 void ui_router_set_notice(const char *text)
 {
-    if (text == NULL || s.has_held || (s.has_alert && !s.alert_notice)) {
+    if (text == NULL) {
+        return;
+    }
+    if (s.has_held || (s.has_alert && !s.alert_notice)) {
+        /* One notice waits; a later one takes its place. */
+        (void)snprintf(s.pending, sizeof(s.pending), "%s", text);
+        s.has_pending = true;
         return;
     }
     ui_router_set_alert(text);
@@ -1260,6 +1287,7 @@ void ui_router_hold_alert(const char *text)
     }
     s.has_held = (text != NULL);
     (void)snprintf(s.held, sizeof(s.held), "%s", s.has_held ? text : "");
+    show_pending();
 }
 
 const char *ui_router_alert(void)

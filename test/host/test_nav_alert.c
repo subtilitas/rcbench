@@ -16,6 +16,11 @@
  * - a_slot_number_is_never_0
  * - a_second_contact_cannot_take_the_alert
  * - a_held_alert_returns_after_a_passing_one
+ * - a_notice_waits_for_the_tap_that_clears_the_alert_it_met
+ * - a_notice_waits_out_the_alerts_30_s_and_shows_for_its_own_4_s
+ * - the_latest_notice_waits_and_shows_once
+ * - a_notice_waits_behind_a_held_alert_and_a_passing_one
+ * - stop_and_a_switch_to_safe_drop_the_waiting_notice
  * - a_tap_on_the_alert_clears_it_and_reaches_no_screen
  * - a_lift_clears_only_the_alert_it_was_pressed_on
  * - a_press_on_an_alert_that_expires_stays_off_the_screen
@@ -515,6 +520,129 @@ TEST_CASE(the_band_shows_what_is_wrong)
     CHECK_EQ(ui_router_status()->faults, 0x11);
 }
 
+/* A notice raised while an alert shows -- the reason of a refused tap --
+ * is kept, and shows when the operator taps the alert away. */
+TEST_CASE(a_notice_waits_for_the_tap_that_clears_the_alert_it_met)
+{
+    fresh();
+    to_overview();
+    ui_router_set_alert("No card: the run is not recorded.");
+    ui_router_tick(0.02f);
+    ui_router_tick(5.0f);
+    ui_action_refused("OPTIONS open on a SAFE bench only.");
+    CHECK_STR_EQ(ui_router_alert(), "No card: the run is not recorded.");
+    CHECK(!ui_router_alert_is_notice());
+    tap(400, ALERT_TAP_Y);
+    CHECK(ui_router_alert() != NULL);
+    if (ui_router_alert() != NULL) {
+        CHECK_STR_EQ(ui_router_alert(), "OPTIONS open on a SAFE bench only.");
+    }
+    CHECK(ui_router_alert_is_notice());
+    /* The notice takes a tap of its own, and nothing waits behind it. */
+    tap(400, ALERT_TAP_Y);
+    CHECK(ui_router_alert() == NULL);
+}
+
+/* The alert's 30s do not use up the notice's time: it shows for
+ * UI_NOTICE_SHOW_S from the frame the alert clears in. */
+TEST_CASE(a_notice_waits_out_the_alerts_30_s_and_shows_for_its_own_4_s)
+{
+    fresh();
+    to_overview();
+    ui_router_set_alert("PD mini output would not switch");
+    ui_router_tick(0.0f);
+    ui_router_set_notice("Stored 5min, steps of 5min.");
+    ui_router_tick(UI_ALERT_SHOW_S - 0.5f);
+    CHECK_STR_EQ(ui_router_alert(), "PD mini output would not switch");
+    ui_router_tick(0.5f);
+    CHECK(ui_router_alert_is_notice());
+    CHECK(ui_router_alert_number() != 0u);
+    ui_router_tick(UI_NOTICE_SHOW_S - 0.5f);    /* its first frame: no time */
+    ui_router_tick(UI_NOTICE_SHOW_S - 0.5f);
+    CHECK(ui_router_alert_is_notice());
+    ui_router_tick(0.5f);
+    CHECK(ui_router_alert() == NULL);
+}
+
+/* One notice waits: a later one takes its place, and a second alert in
+ * between keeps it waiting. */
+TEST_CASE(the_latest_notice_waits_and_shows_once)
+{
+    fresh();
+    to_overview();
+    ui_router_set_alert("first alert");
+    ui_router_set_notice("first notice");
+    ui_router_set_notice("second notice");
+    ui_router_set_alert("second alert");
+    CHECK_STR_EQ(ui_router_alert(), "second alert");
+    ui_router_set_alert(NULL);
+    CHECK(ui_router_alert_is_notice());
+    if (ui_router_alert() != NULL) {
+        CHECK_STR_EQ(ui_router_alert(), "second notice");
+    }
+    expire_alert();
+    CHECK(ui_router_alert() == NULL);
+    /* An alert after it finds nothing waiting. */
+    ui_router_set_alert("third alert");
+    ui_router_set_alert(NULL);
+    CHECK(ui_router_alert() == NULL);
+}
+
+/* Behind a held alert the notice waits until the held alert is taken
+ * back, and a passing alert over the held one keeps it waiting too. */
+TEST_CASE(a_notice_waits_behind_a_held_alert_and_a_passing_one)
+{
+    fresh();
+    to_overview();
+    ui_router_hold_alert("touch did not answer -- the bench will not arm");
+    ui_router_set_notice("Screenshot saved.");
+    CHECK(!ui_router_alert_is_notice());
+    ui_router_set_alert("protocol mismatch -- will not arm");
+    tap(400, ALERT_TAP_Y);
+    CHECK_STR_EQ(ui_router_alert(),
+                 "touch did not answer -- the bench will not arm");
+    CHECK(!ui_router_alert_is_notice());
+    ui_router_hold_alert(NULL);
+    CHECK(ui_router_alert_is_notice());
+    if (ui_router_alert() != NULL) {
+        CHECK_STR_EQ(ui_router_alert(), "Screenshot saved.");
+    }
+}
+
+/* What clears a notice at once clears the waiting one: a press on STOP, a
+ * fault bit that comes up, a switch from ARMED to SAFE. */
+TEST_CASE(stop_and_a_switch_to_safe_drop_the_waiting_notice)
+{
+    fresh();
+    to_overview();
+    gfx_rect_t stop = ui_band_stop_rect();
+    ui_router_set_alert("PD mini output would not switch");
+    ui_router_set_notice("Hold 2s to switch to ARMED.");
+    touch(stop.x + stop.w / 2, stop.y + stop.h / 2, TOUCH_EVENT_DOWN, 1);
+    touch(stop.x + stop.w / 2, stop.y + stop.h / 2, TOUCH_EVENT_UP, 1);
+    (void)ui_router_take_stop();
+    ui_router_set_alert(NULL);
+    CHECK(ui_router_alert() == NULL);
+
+    ui_bench_status_t st = { .armed = true };
+    ui_router_set_status(&st);
+    ui_router_set_alert("PD mini output would not switch");
+    ui_router_set_notice("Hold 2s to switch to ARMED.");
+    st.armed = false;
+    ui_router_set_status(&st);
+    ui_router_set_alert(NULL);
+    CHECK(ui_router_alert() == NULL);
+
+    ui_router_set_alert("PD mini output would not switch");
+    ui_router_set_notice("Hold 2s to switch to ARMED.");
+    st.faults = 1u;
+    ui_router_set_status(&st);
+    ui_router_set_alert(NULL);
+    CHECK(ui_router_alert() == NULL);
+    st.faults = 0u;
+    ui_router_set_status(&st);
+}
+
 /* The mode chip says what drives the outputs, and the link chip beside it
  * says whether the link is up: the mode never repeats the link's word.
  * Mode names, so the same in German. */
@@ -544,6 +672,11 @@ int main(void)
     RUN(a_slot_number_is_never_0);
     RUN(a_second_contact_cannot_take_the_alert);
     RUN(a_held_alert_returns_after_a_passing_one);
+    RUN(a_notice_waits_for_the_tap_that_clears_the_alert_it_met);
+    RUN(a_notice_waits_out_the_alerts_30_s_and_shows_for_its_own_4_s);
+    RUN(the_latest_notice_waits_and_shows_once);
+    RUN(a_notice_waits_behind_a_held_alert_and_a_passing_one);
+    RUN(stop_and_a_switch_to_safe_drop_the_waiting_notice);
     RUN(a_tap_on_the_alert_clears_it_and_reaches_no_screen);
     RUN(a_lift_clears_only_the_alert_it_was_pressed_on);
     RUN(a_press_on_an_alert_that_expires_stays_off_the_screen);

@@ -313,6 +313,27 @@ TEST_CASE(the_current_in_the_live_line_repaints_with_the_horn_at_rest)
     g_out_ma = 41u;
 }
 
+/* The current is rounded once to 10mA: 995mA to 999mA read 1.00A and
+ * 1,996mA reads 2.00A, with the whole amperes carried; 1,994mA reads
+ * 1.99A. */
+TEST_CASE(the_current_in_the_live_line_rounds_into_the_whole_amperes)
+{
+    static const struct { uint16_t ma; const char *text; } k[] = {
+        { 994u, "  0.99A" },  { 995u, "  1.00A" },  { 999u, "  1.00A" },
+        { 1994u, "  1.99A" }, { 1996u, "  2.00A" }, { 2004u, "  2.00A" },
+        { 65535u, "  65.54A" },
+    };
+    travel();
+    move_on();
+    for (size_t i = 0u; i < sizeof(k) / sizeof(k[0]); ++i) {
+        g_out_ma = k[i].ma;
+        prun(300u);
+        show();
+        CHECK(strstr(hitec_panel_note(1), k[i].text) != NULL);
+    }
+    g_out_ma = 41u;
+}
+
 TEST_CASE(a_tab_change_switches_it_off_and_the_end_runs)
 {
     unsigned reboots;
@@ -436,6 +457,7 @@ int main(void)
     RUN(the_live_lines_name_the_port_the_loop_drives_and_the_position);
     RUN(the_as5600_angle_shows_in_the_live_line);
     RUN(the_current_in_the_live_line_repaints_with_the_horn_at_rest);
+    RUN(the_current_in_the_live_line_rounds_into_the_whole_amperes);
     RUN(a_tab_change_switches_it_off_and_the_end_runs);
     RUN(close_switches_it_off_first_and_leaves_after_the_end);
     RUN(a_screen_change_switches_it_off);

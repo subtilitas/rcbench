@@ -126,6 +126,9 @@ typedef enum {
                             running build and past the panel's release
                             line (fw_release_in_line()): not offered;
                             wa_fetch_t.found                            */
+    WA_GOT_INSTALL,    /**< DOWNLOAD: the image was staged and the install
+                            after it ended without new firmware
+                            (wa_fetch_install_failed())                 */
 } wa_got_t;
 
 /** Why a job did not start, or was ended from outside. */
@@ -259,6 +262,19 @@ bool wa_fetch_stale(const wa_fetch_t *f, wa_channel_t now);
  * @return true while a job runs.
  */
 bool wa_fetch_busy(const wa_fetch_t *f);
+
+/**
+ * @brief The install of a staged download ended without new firmware: a
+ *        DOWNLOAD that ended STAGED ends INSTALL.
+ *
+ * STAGED says the install runs and the panel restarts.  After an install
+ * that returned, the image is discarded and the job says so, as a failed
+ * download does: the next CHECK offers the release again.  Any other job
+ * state stays as it is.
+ *
+ * @param f the job; NULL does nothing
+ */
+void wa_fetch_install_failed(wa_fetch_t *f);
 
 /**
  * @brief Whether the last job names a release in wa_fetch_t.found.

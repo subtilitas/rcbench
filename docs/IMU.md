@@ -80,7 +80,16 @@ With the IMU off, SCAN FOR SENSORS switches IMU ON in SETUP (saved) and
 opens the list; its heading reads `STARTING BLUETOOTH` until Bluetooth LE
 runs, and the scan starts then. Without sync with the C6 (`NO BLUETOOTH ON
 C6`) and on a failed C6, SCAN takes no press. The card's state line reads
-`IMU OFF: SCAN SWITCHES IT ON` while the IMU is off.
+`IMU OFF: SCAN SWITCHES IT ON` while the IMU is off. A scan that waits
+for Bluetooth LE ends without scanning when the start ends in `NO
+BLUETOOTH ON C6`, when the list is closed and when the bench switches to
+ARMED.
+
+While the bench is ARMED, SCAN FOR SENSORS, SCAN AGAIN and SERVO's SEARCH
+FOR IMU start no scan and the band reads `NO IMU SCAN WHILE ARMED: SWITCH
+TO SAFE FIRST`. A scan that runs at the switch to ARMED is stopped; the
+list keeps what it heard until then. The Dial's and the nodes' scans
+follow the same rule ([Dial](Dial.md)).
 
 A tap on a row binds that sensor at once. SETUP keeps its address with the
 address type, `00:0C:BF:08:19:29 P` (public) or `... R` (random), as
@@ -209,7 +218,11 @@ TAKE THE COMMAND`. What the group was for is due again at the next
 connection: a calibration's exit (unlock, CALSW 0, SAVE), an RSW, a RATE
 or an ALGORITHM, with the SETUP values of then. IMU OFF fails a write in flight
 the same way, so a calibration ended by IMU OFF still sends CALSW 0 and
-SAVE once the sensor is connected again. A refused unlock or CALSW 1 at
+SAVE once the sensor is connected again. A group is sent whole on one
+connection or not at all: a link that ends between two commands of a
+group, in a 50ms gap, drops the rest, and the whole group, from its
+unlock, is due again at the next connection. A link that ends between the
+unlock and CALSW 1 of a calibration's start fails the calibration. A refused unlock or CALSW 1 at
 the calibration's start fails the calibration at once, and its exit goes
 as after any end. A RATE or ALGORITHM change made while the sensor is not
 connected waits until its frames arrive. A change made during calibration

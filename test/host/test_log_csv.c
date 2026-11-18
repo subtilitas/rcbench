@@ -475,6 +475,87 @@ TEST_CASE(a_time_unit_is_guessed_from_the_name_then_the_magnitude)
     CHECK_STR_EQ(a.time_unit, "ms");
 }
 
+TEST_CASE(a_time_unit_after_an_underscore_is_read)
+{
+    log_analysis_t a;
+
+    /* 4s of rows in milliseconds: the span alone (4,000) says seconds. */
+    CHECK_EQ(analyse_text("time_ms,current\n0,1\n2000,2\n4000,3\n", NULL, &a),
+             LOG_OK);
+    CHECK_EQ(a.time_index, 0);
+    CHECK_STR_EQ(a.time_unit, "ms");
+
+    CHECK_EQ(analyse_text("time_us,v\n0,1\n400,2\n750,3\n", NULL, &a), LOG_OK);
+    CHECK_STR_EQ(a.time_unit, "us");
+    CHECK_EQ(analyse_text("Elapsed_S,v\n0,1\n4000,2\n9000,3\n", NULL, &a),
+             LOG_OK);
+    CHECK_STR_EQ(a.time_unit, "s");
+
+    /* "t_ms" is a time name in any column, not only a rising first one. */
+    CHECK_EQ(analyse_text("v,t_ms\n5,0\n3,750\n9,1500\n", NULL, &a), LOG_OK);
+    CHECK_EQ(a.time_index, 1);
+    CHECK_STR_EQ(a.time_unit, "ms");
+
+    /* A unit in brackets still wins over the suffix. */
+    CHECK_EQ(analyse_text("time_ms (s),v\n0,1\n1,2\n2,3\n", NULL, &a), LOG_OK);
+    CHECK_STR_EQ(a.time_unit, "s");
+
+    /* A suffix on a name that is no time name makes no time column. */
+    CHECK_EQ(analyse_text("v,pulse_us\n5,1000\n3,1500\n9,2000\n", NULL, &a),
+             LOG_OK);
+    CHECK_EQ(a.time_index, -1);
+
+    static const char text[] = "time_ms,current\n0,1\n2000,2\n4000,3\n";
+    static log_source_t src;
+    static log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, text, strlen(text));
+    CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
+    log_data_t d;
+    CHECK_EQ(log_csv_build(&src, &a, NULL, 0, &d), LOG_OK);
+    CHECK_NEAR(d.time[2], 4.0, 1e-6);
+    log_data_free(&d);
+}
+
+TEST_CASE(a_rising_counter_column_is_not_a_time_axis)
+{
+    /* RUDDRnnn.CSV as servo_rudder_auto_report.c writes it: the first
+     * column counts the steps. */
+    static const char text[] =
+        "step;side (us);write;value;measured (deg);goal (deg);"
+        "measured (mm);goal (mm);within\n"
+        "1;1000;0;0;-29.80;-30.00;;;1\n"
+        "2;2000;0;0;30.10;30.00;;;1\n"
+        "3;1000;1;1020;-30.00;-30.00;;;1\n"
+        "4;2000;1;1985;30.00;30.00;;;1\n";
+    static log_source_t src;
+    static log_mem_ctx_t ctx;
+    log_source_memory(&src, &ctx, text, strlen(text));
+
+    log_analysis_t a;
+    CHECK_EQ(log_csv_analyse(&src, NULL, &a), LOG_OK);
+    CHECK_EQ(a.time_index, -1);
+
+    log_data_t d;
+    CHECK_EQ(log_csv_build(&src, &a, NULL, 0, &d), LOG_OK);
+    CHECK_EQ(d.count, 4);
+    CHECK_STR_EQ(d.time_name, "");
+    CHECK_NEAR(d.time[3], 3.0, 1e-9);
+    log_data_free(&d);
+
+    /* A counter name in a later column and a rising first column under any
+     * other name keep the earlier reading. */
+    CHECK_EQ(analyse_text("Sample,v\n1,5\n2,3\n3,9\n", NULL, &a), LOG_OK);
+    CHECK_EQ(a.time_index, -1);
+    CHECK_EQ(analyse_text("x,v\n1,5\n2,3\n3,9\n", NULL, &a), LOG_OK);
+    CHECK_EQ(a.time_index, 0);
+    /* A forced column stays forced. */
+    log_csv_opts_t opts;
+    log_csv_opts_default(&opts);
+    opts.time_index = 0;
+    CHECK_EQ(analyse_text("step,v\n1,5\n2,3\n3,9\n", &opts, &a), LOG_OK);
+    CHECK_EQ(a.time_index, 0);
+}
+
 TEST_CASE(a_time_axis_that_runs_backwards_falls_back_to_the_row_number)
 {
     /* The column was forced, and it descends.  Plotting it would draw the run
@@ -724,6 +805,8 @@ int main(void)
     RUN(an_empty_header_cell_still_names_its_column);
     RUN(the_time_column_and_its_unit_can_be_forced);
     RUN(a_time_unit_is_guessed_from_the_name_then_the_magnitude);
+    RUN(a_time_unit_after_an_underscore_is_read);
+    RUN(a_rising_counter_column_is_not_a_time_axis);
     RUN(a_time_axis_that_runs_backwards_falls_back_to_the_row_number);
     RUN(a_missing_time_cell_holds_the_clock_rather_than_jumping_to_zero);
     RUN(blackbox_column_names_keep_their_grouping_through_a_csv);

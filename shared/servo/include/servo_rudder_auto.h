@@ -71,7 +71,9 @@
  *     were taken after the last change.
  *   - A side's direction is the sign of its first measure, which must lie
  *     at least the tolerance from the zero unless it is within the
- *     tolerance of the goal; the two sides of opposite signs.  Otherwise,
+ *     tolerance of the goal; the two sides of opposite signs.  A goal is
+ *     more than 2 x the tolerance (servo_rauto_goals_ok()), so a measure
+ *     within the tolerance of it gives a direction too.  Otherwise,
  *     or a later measure at or past the zero, the run ends as FAIL
  *     (SERVO_RAUTO_WHY_MAPPING).  The measured deflection of a side is
  *     taken along its direction, so it is positive.
@@ -443,12 +445,30 @@ typedef struct {
  */
 void servo_rauto_init(servo_rauto_t *r);
 /**
+ * @brief Whether both goals, target x (1 + margin), are large enough for
+ *        the tolerance: each more than 2 x tolerance, by 0.001° or more.
+ *
+ * A measure within the tolerance of such a goal lies at least the
+ * tolerance from the zero, so it gives its side a direction.  Under it a
+ * surface that stays at the zero is within a goal of the tolerance or
+ * less, and one side can be within without a direction, which lets two
+ * end pulses on one side of the zero pass.
+ *
+ * @param target_deg The two targets, 1000us and 2000us, °.
+ * @param margin_pct The margin, %.
+ * @param tol_ddeg   The tolerance, 0.1°.
+ * @return true when both goals are large enough; false for NULL.
+ */
+bool servo_rauto_goals_ok(const float target_deg[2], uint8_t margin_pct,
+                          uint16_t tol_ddeg);
+/**
  * @brief Start at @p now_ms.
  * @param r      Run state, cleared before the run starts.
  * @param cfg    What the run is asked.
  * @param now_ms Start time, ms.
  * @return false for a target outside 0.1 to 90°, a margin above the
- *          maximum, a tolerance outside its range, a settling window above
+ *          maximum, a tolerance outside its range, a goal too small for
+ *          the tolerance (servo_rauto_goals_ok()), a settling window above
  *          SERVO_SETTLE_WIN_MAX_MS or one without a band above 0, or
  *          RUNNING; also for
  *          NULL, a family not in servo_rauto_family_t, and a center not

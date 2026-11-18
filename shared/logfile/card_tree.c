@@ -39,17 +39,25 @@ card_dir_t card_make_dirs(const char *dir, card_make_fn make, void *ctx)
 }
 
 /**
- * @brief The folders the bench keeps its own files in: the parent of each
- *        programmer's CONF folder.
+ * @brief The deepest folder of each area the bench keeps its own files in
+ *        (card_bench_dir()): the programmers' CONF folders and the balance
+ *        node's folder.
  *
- * A log folder there, or below, is refused.
+ * A log folder in an area (BENCH/KST, BENCH/BALANCE) or below is refused.
  */
-static const char *const k_bench_conf[] = {
+static const char *const k_bench_own[] = {
     CARD_ESC_CONF,
     CARD_KST_CONF,
     CARD_HITEC_CONF,
     CARD_ESCW_CONF,
+    CARD_BALANCE,
 };
+
+const char *card_bench_dir(size_t i)
+{
+    return (i < sizeof(k_bench_own) / sizeof(k_bench_own[0])) ? k_bench_own[i]
+                                                              : NULL;
+}
 
 /**
  * @brief The names FAT (File Allocation Table) volumes on Windows take for a
@@ -91,18 +99,21 @@ static bool is_device(const char *name, size_t len)
 /**
  * @brief Whether @p path is a bench area folder or one below it.
  *
+ * An area is the first 2 folders of a card_bench_dir() path.
+ *
  * @param path  The upper-case path, folders separated by "/".
- * @return true for BENCH/ESC, BENCH/KST, BENCH/HITEC, BENCH/ESCW and below.
+ * @return true for BENCH/ESC, BENCH/KST, BENCH/HITEC, BENCH/ESCW,
+ *         BENCH/BALANCE and below.
  */
 static bool is_bench(const char *path)
 {
-    for (size_t i = 0u; i < sizeof(k_bench_conf) / sizeof(k_bench_conf[0]);
-         ++i) {
-        const char *conf = k_bench_conf[i];
-        const char *slash = strrchr(conf, '/');
-        const size_t area = (slash != NULL) ? (size_t)(slash - conf)
-                                            : strlen(conf);
-        if (strncmp(path, conf, area) == 0
+    const char *own;
+    for (size_t i = 0u; (own = card_bench_dir(i)) != NULL; ++i) {
+        const char *slash = strchr(own, '/');
+        slash = (slash != NULL) ? strchr(slash + 1, '/') : NULL;
+        const size_t area = (slash != NULL) ? (size_t)(slash - own)
+                                            : strlen(own);
+        if (strncmp(path, own, area) == 0
             && (path[area] == '\0' || path[area] == '/')) {
             return true;
         }

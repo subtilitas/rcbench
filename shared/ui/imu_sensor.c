@@ -53,7 +53,7 @@ static void queue_unlock(imu_sensor_t *s, uint8_t why)
 static void queue_save(imu_sensor_t *s, uint8_t why)
 {
     uint8_t b[WIT_CMD_LEN] = { 0 };
-    queue(s, b, wit_cmd_save(b), why);
+    queue(s, b, wit_cmd_save(b), (uint8_t)(why | IMU_OUT_LAST));
 }
 
 /** @brief Queue CALSW @p mode. @param s The sensor. @param mode wit_cal_t.
@@ -86,6 +86,36 @@ static void cal_end(imu_sensor_t *s, bool ok)
     s->cal_left_ms = 0u;
 }
 
+/**
+ * @brief The stream stopped: drop the commands held and make their groups
+ *        due again, so that none goes at the next connection without its
+ *        unlock.  A group cut between two of its commands counts as held.
+ *        A calibration whose start is cut fails; its exit is due.
+ * @param s The sensor.
+ */
+static void drop_groups(imu_sensor_t *s)
+{
+    uint8_t why = s->mid_group ? s->sent_for : 0u;
+    for (uint8_t i = 0u; i < s->out_n; ++i) {
+        why |= s->out_for[(s->out_head + i) % IMU_OUTBOX];
+    }
+    why &= (uint8_t)~IMU_OUT_LAST;
+    s->out_n = 0u;
+    s->out_head = 0u;
+    s->mid_group = false;
+    if ((why & IMU_OUT_CAL) != 0u) {
+        if (s->cal == IMU_CAL_RUNNING) {
+            s->cal = IMU_CAL_FAILED;
+            s->cal_left_ms = 0u;
+        }
+        s->exit_due = true;
+    }
+    s->exit_due = s->exit_due || (why & IMU_OUT_EXIT) != 0u;
+    s->rate_due = s->rate_due || (why & IMU_OUT_RATE) != 0u;
+    s->algo_due = s->algo_due || (why & IMU_OUT_ALGO) != 0u;
+    s->rsw_due = s->rsw_due || (why & IMU_OUT_RSW) != 0u;
+}
+
 void imu_sensor_values(imu_sensor_t *s, uint8_t rate_code, bool six,
                        bool send)
 {
@@ -104,6 +134,7 @@ void imu_sensor_off(imu_sensor_t *s)
     if (s->cal == IMU_CAL_RUNNING) {
         cal_end(s, false);
     }
+    drop_groups(s);     /* the link ends: every group goes whole later */
     if (s->m.r.zeroed) {
         ++s->zero_gen;        /* the zero goes with the reading */
     }
@@ -154,6 +185,9 @@ void imu_sensor_tick(imu_sensor_t *s, uint32_t now_ms, bool link_up)
         imu_reseed(&s->m);
         rsw_recheck(s);
         s->held = false;    /* what a failed write dropped goes now */
+    }
+    if (!link_up && s->link_was_up) {
+        drop_groups(s);
     }
     s->link_was_up = link_up;
     /* The stream is RSW's read-back: frames of other types, or no 0x52,
@@ -225,7 +259,8 @@ bool imu_sensor_next(imu_sensor_t *s, uint32_t now_ms,
         return false;
     }
     memcpy(out, s->out[s->out_head], WIT_CMD_LEN);
-    s->sent_for = s->out_for[s->out_head];
+    s->sent_for = (uint8_t)(s->out_for[s->out_head] & ~IMU_OUT_LAST);
+    s->mid_group = (s->out_for[s->out_head] & IMU_OUT_LAST) == 0u;
     s->out_head = (uint8_t)((s->out_head + 1u) % IMU_OUTBOX);
     --s->out_n;
     s->out_ms = now_ms;
@@ -239,7 +274,7 @@ bool imu_sensor_calibrate(imu_sensor_t *s, bool link_up, uint32_t now_ms)
         return false;
     }
     queue_unlock(s, IMU_OUT_CAL);
-    queue_calsw(s, WIT_CAL_ACC, IMU_OUT_CAL);
+    queue_calsw(s, WIT_CAL_ACC, (uint8_t)(IMU_OUT_CAL | IMU_OUT_LAST));
     s->cal = IMU_CAL_RUNNING;
     s->cal_from_ms = now_ms;
     s->cal_lost = false;
@@ -273,9 +308,11 @@ void imu_sensor_flush(imu_sensor_t *s)
     for (uint8_t i = 0u; i < s->out_n; ++i) {
         why |= s->out_for[(s->out_head + i) % IMU_OUTBOX];
     }
+    why &= (uint8_t)~IMU_OUT_LAST;
     s->out_n = 0u;
     s->out_head = 0u;
     s->sent_for = 0u;
+    s->mid_group = false;
     /* A start the sensor did not take never calibrated: the calibration
      * fails now, and its exit goes as after any end. */
     if ((why & IMU_OUT_CAL) != 0u && s->cal == IMU_CAL_RUNNING) {

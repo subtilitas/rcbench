@@ -253,9 +253,10 @@ static void live_line(const hitec_move_view_t *v, char *out, size_t n)
         len = strlen(out);
     }
     if (v->has_ma && len < n) {
-        snprintf(out + len, n - len, "  %u.%02uA", v->ma / 1000u,
-                 (v->ma % 1000u + 5u) / 10u > 99u ? 99u
-                                                  : (v->ma % 1000u + 5u) / 10u);
+        /* Rounded once to 10mA, so that 1,996mA reads 2.00A. */
+        const unsigned ca = ((unsigned)v->ma + 5u) / 10u;
+
+        snprintf(out + len, n - len, "  %u.%02uA", ca / 100u, ca % 100u);
     }
 }
 

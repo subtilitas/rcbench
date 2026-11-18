@@ -70,7 +70,7 @@ Das Panel verbindet sich über die Adresse mit dem gebundenen Dial, ohne Suche, 
 Auf den Prüfstandsbildschirmen:
 
 - Eine Drehung bewegt nichts, solange der Prüfstand SAFE ist, und Drehungen bei SAFE werden nicht für das ARM aufgehoben. Das erste EVENT nach dem Verbinden, ein EVENT mehr als 300ms nach dem letzten und ein Sprung um mehr als 16 Rasten bewegen nichts.
-- Ein Druck auf die Bildschirmtaste des Dials bei ARMED setzt das Gas auf MOTOR & ESC auf 0% und das Horn auf SERVO auf CENTER. 1s Halten schaltet DISARM, auch solange ein ARM unterwegs ist, und beendet einen ESC-STICK-Lauf wie ABORT.
+- Ein Druck auf die Bildschirmtaste des Dials bei ARMED setzt das Gas auf MOTOR & ESC auf 0% und das Horn auf SERVO auf CENTER. 1s Halten schaltet DISARM, auch solange ein ARM unterwegs ist, und beendet einen ESC-STICK-Lauf wie ABORT. Auf SERVO beendet es einen Test, einen LIMIT RUN und einen Lauf von RUDDER AUTO in jeder Phase, auch solange der Lauf den Prüfstand für seine Programmiersitzung auf SAFE hält.
 - Ein Dial, das bei ARMED verloren geht, ist ein Fehler: 1000ms ohne EVENT oder die Trennung schalten den Prüfstand auf SAFE mit allen Ausgängen aus, und das Band zeigt `DIAL BEI ARMED VERLOREN: AUF SAFE GESCHALTET, ALLE AUSGÄNGE AUS`. 500ms ohne EVENT zeigen `DIAL: 500ms KEIN EREIGNIS`. Die Uhr läuft ab dem ersten EVENT einer Verbindung, ein Verbinden ohne EVENT ist also kein Verlust.
 - Bei SAFE navigiert das Dial das Menü, SETUP, die Kacheln von SERVO mit ihren SETTINGS, die Platine von OUTPUTS und jede Auswahlliste: Ein Rahmen in der Akzentfarbe markiert den Eintrag im Fokus, eine Drehung bewegt ihn, ein Druck tippt ihn an und ein Halten von 1s geht zurück wie das Home-Tag. Ein Druck auf eine Zahl öffnet ihr Ziffernfeld; eine Drehung stellt dann den Wert ein, ein Druck ist OK und ein Halten CANCEL. Ein Druck auf eine Zeile mit Ein/Aus oder Optionen stellt sie durch Drehen ein: Ein Druck behält, ein Halten stellt zurück. Kein 2s-Halten am Panel wird vom Dial aus vollendet.
 - Andere Bildschirme nehmen keine Drehung des Dials an. Das Dial zeigt ihren Titel und den Zustand des Prüfstands.
@@ -101,7 +101,7 @@ Der Leistungsknoten ist ein ESP32-C6 mit eigener Zelle, der einen INA228 am XT60
 |---|---|---|---|
 | Leistungsknoten | EIN, AUS | AUS | Bluetooth LE und die Verbindung zum gebundenen Knoten; AUS beendet die Verbindung ohne Fehler |
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu ([Sensoren](setup-sensors.md)); NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle auf WIRED zurück kann |
-| Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
+| Knoten suchen | `SUCHEN` | | Tippen sucht 10s lang und listet die Leistungsknoten in Reichweite; das Schalten auf ARMED beendet die Suche, `DURCH ARM BEENDET`; bei ARMED abgelehnt, mit `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` im Band |
 | Gebundener Knoten | `KEINS` oder der Name des Knotens | `KEINS` | Tippen listet die Knoten der letzten Suche mit ihrem Signal in dBm; Tippen auf einen bindet ihn und fragt nach dem Speichern. Zurücksetzen behält den gebundenen Knoten |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zelle des Knotens aus seinem Status jede 1s; `SCHWACH` unter 3.5V |
 

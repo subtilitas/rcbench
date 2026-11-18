@@ -1103,6 +1103,13 @@ capability. The panel reads the capabilities again after writing SENSE.
 SENSE's FLAGS and BENCH bit 5, which the panel polls, report whether a part answers. The TONE page
 adds no bit.
 
+The rpm register carries 0 to 65,535rpm. For a speed above 65,535rpm it
+reads 65535 with flag bit 2 clear: a bound, not a reading. A speed nothing
+measured reads 0 with bit 2 clear. The maximum rpm register has no valid
+bit: 65535 stands for a peak of 65,535rpm or more. The panel shows and logs
+both bounds as `>65535`. An IOmcu with firmware 0.23.14 or older reports a
+speed above 65,535rpm as 65535 with bit 2 set.
+
 BENCH flags: bit 0 voltage valid, bit 1 current valid, bit 2: rpm valid, bit 3
 the ESC's temperature valid, bit 4 the motor's temperature valid, bit 5 the
 voltage, current and power are the INA228's and not the ESC's telemetry

@@ -182,7 +182,9 @@ void wifi_access_discard(void);
  */
 bool wifi_access_take(const uint8_t **img, uint32_t *bytes,
                       fw_image_info_t *info);
-/** After a write that failed: the image is dropped. */
+/** @brief After an install that ended without a restart: the image is
+ *         dropped, and a download that ended STAGED ends INSTALL
+ *         (wa_fetch_install_failed()). */
 void wifi_access_release(void);
 
 /**

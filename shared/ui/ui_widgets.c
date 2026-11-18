@@ -569,6 +569,21 @@ int ui_key_repeat(float *held_s, float dt_s)
     return (fired_now > fired_before) ? fired_now - fired_before : 0;
 }
 
+/**
+ * @brief End a running hold whose press was made before the last change of
+ *        screen (ui_router_goto()): the contact is nobody's from there on,
+ *        whether or not the screen's leave() reset the hold.  A hold that
+ *        fired keeps waiting for its release.
+ * @param h The hold, not NULL.
+ */
+static void hold_drop_stale(ui_hold_t *h)
+{
+    if (h->down && !h->fired && h->nav != ui_router_navigations()) {
+        h->down = false;
+        h->held_s = 0.0f;
+    }
+}
+
 void ui_hold_begin(ui_hold_t *h, int hint)
 {
     if (h == NULL) {
@@ -577,6 +592,7 @@ void ui_hold_begin(ui_hold_t *h, int hint)
     h->down = true;
     h->held_s = 0.0f;
     h->hint = hint;
+    h->nav = ui_router_navigations();
     /* A fresh press is a fresh gesture: its firing flashes. */
     h->flashed = false;
 }
@@ -599,6 +615,7 @@ bool ui_hold_end(ui_hold_t *h, const touch_event_t *up, gfx_rect_t rect)
         return false;
     }
     const bool fired = h->fired;
+    hold_drop_stale(h);
     /* A press still on the control that lifted before it completed.  The
      * band is the router's: a screen without one shows no alert, and an
      * alert set there would show once the next screen has it. */
@@ -615,7 +632,11 @@ bool ui_hold_end(ui_hold_t *h, const touch_event_t *up, gfx_rect_t rect)
 
 bool ui_hold_tick(ui_hold_t *h, float dt_s)
 {
-    if (h == NULL || !h->down || h->fired) {
+    if (h == NULL) {
+        return false;
+    }
+    hold_drop_stale(h);
+    if (!h->down || h->fired) {
         return false;
     }
     h->held_s += ui_hold_credit(dt_s);

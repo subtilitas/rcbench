@@ -15,6 +15,12 @@ bool flash_gate_open(bool armed, bool supply)
     return !armed && !supply;
 }
 
+bool flash_gate_arm(bool armed, bool arm_waits, unsigned arms_sent,
+                    unsigned arms_taken)
+{
+    return armed || arm_waits || arms_sent != arms_taken;
+}
+
 bool flash_gate_busy(bool driving, bool supply_on, bool pd_on,
                      bool kst_session)
 {

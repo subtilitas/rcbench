@@ -396,6 +396,7 @@ typedef struct {
     /** @brief Whether the contact that counts is down on the question */
     bool q_down;
     uint8_t q_id;                       /**< touch id of that contact */
+    bool gate_shut;                     /**< lv_delete_shut() as DELETE was last drawn */
 
     log_analysis_t an;                  /**< the import's analysis of the open file */
     bool have_analysis;                 /**< whether an holds an analysis */
@@ -539,9 +540,25 @@ bool lv_can_next(void);
 /** @brief Frees the plot's samples and clears the cursor. */
 void lv_drop_data(void);
 /**
- * @brief Returns whether DELETE is offered: the I/O can delete and a file is
- *        selected.
- * @return true when DELETE is enabled
+ * @brief Returns whether the write gate is shut for DELETE: the bench is
+ *        ARMED, or the logger has a file open (log_viewer_io_t logging()).
+ *        FILES refuses the same delete (fm_gate()).
+ * @param why  takes FM_GATE_ARMED or FM_GATE_LOGGING when shut; may be NULL
+ * @return true while DELETE is refused
+ */
+bool lv_delete_shut(ui_text_id_t *why);
+
+/**
+ * @brief Returns whether DELETE has a file to ask about: the I/O can delete
+ *        and a file is selected.
+ * @return true with a file selected and a remove hook
+ */
+bool lv_delete_target(void);
+
+/**
+ * @brief Returns whether DELETE is offered: lv_delete_target() and the
+ *        write gate open (lv_delete_shut()).
+ * @return true while DELETE takes a tap
  */
 bool lv_can_delete(void);
 void lv_bar_thumb(int *y, int *h);

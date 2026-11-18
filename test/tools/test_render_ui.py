@@ -156,3 +156,51 @@ def test_a_string_hidden_by_a_later_fill_is_not_under_the_badge():
     fill = ("B", ui.Rect(590, 90, 100, 40), ui.Rect(0, 0, 1024, 600))
     assert ui.badge_problems([text(600, 60, 496, 528, "VOLT"), fill,
                               dock_line(24), badge(604, 96)]) == []
+
+
+def test_the_literal_part_is_the_longest_run_between_conversions():
+    """The longest run no conversion changes, white space folded."""
+    assert ui.literal_part("FIND STOP toward %s: %u counts") == \
+        "FIND STOP toward"
+    assert ui.literal_part("%s: %.*f%s stored,  steps of %.*f") == \
+        "stored, steps of"
+    assert ui.literal_part("stops at %u%% of that side.") == \
+        "% of that side."
+    assert ui.literal_part("%s: %s") == ":"
+    assert ui.literal_part("PLAIN") == "PLAIN"
+
+
+def test_a_string_looked_up_and_drawn_by_no_view_is_named():
+    """A lookup without a drawing measures nothing: the ID fails."""
+    texts = {"SV_REFUSED_2": "shares a PWM slice. Settings unchanged.",
+             "SV_REFUSED_1": "Refused: a pulse is longer than the frame"}
+    used = {"servo-rate-refused": {"SV_REFUSED_1", "SV_REFUSED_2"}}
+    drawn = {"servo-rate-refused":
+             "SERVO Refused: a pulse is longer than the frame STOP"}
+    assert ui.undrawn(texts, used, drawn) == ["SV_REFUSED_2"]
+
+
+def test_a_string_drawn_by_one_of_its_views_passes():
+    """One view that draws the string measures it for all of them."""
+    texts = {"FM_TK_FOLDER": "NEW FOLDER"}
+    used = {"files-made": {"FM_TK_FOLDER"}, "files-new": {"FM_TK_FOLDER"}}
+    drawn = {"files-made": "FILES sweeps 2 created.",
+             "files-new": "NEW FOLDER q w e r t y"}
+    assert ui.undrawn(texts, used, drawn) == []
+
+
+def test_a_wrapped_string_is_found_across_its_rows():
+    """The rows of a wrapped string join again in the view's text."""
+    texts = {"HP_NOTE": "Tap - or + to move the horn. It follows %s."}
+    used = {"move": {"HP_NOTE"}}
+    drawn = {"move": "ON Tap - or + to move the horn. It follows the row."}
+    assert ui.undrawn(texts, used, drawn) == []
+
+
+def test_a_string_drawn_only_where_no_view_looks_it_up_is_named():
+    """The words of another string in another view do not count."""
+    texts = {"UPD_KEEP_NET": "Save a network on WI-FI."}
+    used = {"updates-nonet": {"UPD_KEEP_NET"}, "wifi": set()}
+    drawn = {"updates-nonet": "No home network saved.",
+             "wifi": "Save a network on WI-FI."}
+    assert ui.undrawn(texts, used, drawn) == ["UPD_KEEP_NET"]
