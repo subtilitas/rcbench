@@ -22,8 +22,22 @@ Pads are less than 40px across, smaller than a fingertip. Each therefore has a 5
 |---|---|---|
 | ivory or ebony | free | binds it to the selected protocol |
 | accent colour | bound in the selected protocol | gives it back |
-| grey | held by another protocol or the programming port, the protocol is full, or the binding is not confirmed | changes nothing |
+| grey, the number in 16 x 28 over a tag | held: the tag names what holds it, in at most 5 cells of 8 x 16 (table below) | changes nothing |
+| grey, the number alone | the pin shares a PWM slice or compare register with a bound pin or a port's pin, the protocol is full, or the binding is not confirmed | changes nothing; a tap on a shared slice or register prints the reason under the count |
 | no key, red cross on the pad | reserved: GPIO 3 heartbeat, GPIO 8 to GPIO 12 CAN (Controller Area Network) | none |
+
+| Tag | Held by |
+|---|---|
+| `ESC` | MOTOR PWM, DSHOT300, DSHOT600, DSHOT300 BIDIR or DSHOT600 BIDIR |
+| `SERVO` | SERVO PWM |
+| `PPM` | PPM |
+| `PORT` | the programming port, on a bench with 1 port |
+| `PORT1` to `PORT4` | that programming port, on a bench with 2 to 4 ports |
+| `BUS` | SENSOR BUS |
+| `PD` | PD MINI |
+| `TAP` | PHASE TAP |
+
+The tag names the role; IN USE names the exact protocol. A tagged key keeps its tag on OFF, on a PROG PORT entry and while the binding is not confirmed. The Dial (M5Stack knob) names a tagged key with its tag, `GPIO 7 ESC`.
 
 A tap on a key writes the binding at once; [LAST WRITE](#last-write) says what became of it.
 
@@ -101,11 +115,11 @@ PINS on the left lists the selected protocol's pins in channel order, with the p
 
 ![GPIO 13 held by the programming port](view:outputs-prog)
 
-The programming port's pin, GPIO 13 (pad 17) by default, is grey while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name.
+The programming port's pin, GPIO 13 (pad 17) by default, is grey with the tag `PORT` while no protocol holds it, and IN USE lists it first under `PROG PORT`. Each further port the IOmcu reports holds its pin the same way, listed under the same name; with 2 to 4 ports the tags are `PORT1` to `PORT4`.
 
 ![The interfaces' pins held and named under IN USE](view:outputs-iface)
 
-A pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD mini settings](supply.md#pd-mini-rows) holds is grey the same way, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.
+A pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD mini settings](supply.md#pd-mini-rows) holds is grey the same way, tagged `BUS`, `PD` or `TAP`, and IN USE lists it after the programming port under `SENSOR BUS`, `PD MINI` or `PHASE TAP`. A table with more lines than fit ends in `+N`, N the lines left out.
 
 ![OFF selected: every bound pin under IN USE](view:outputs-off)
 
@@ -145,7 +159,7 @@ The IOmcu stores each port's pin and function in flash alongside the output bind
 
 Opening a port entry writes nothing, and the entry does not show LAST WRITE. The two tester settings are stored on the panel and sent to the IOmcu when the bench is at rest. When multiple ports are available, entries are named `PROG PORT 1` to `PROG PORT 4`.
 
-Another port's pin, a protocol's and an interface's stay grey. A NONE port takes any free key. Before the IOmcu's ports are read every key is grey.
+Another port's pin, a protocol's and an interface's stay grey with their tags. A NONE port takes any free key. Before the IOmcu's ports are read every key is grey.
 
 ![PROG PORT 3, a port without a pin](view:outputs-port3)
 
@@ -158,7 +172,7 @@ Without a board drawing or shape, OUTPUTS uses a grid of 4 columns and 7 rows in
 | Cell | Meaning | A tap |
 |---|---|---|
 | ticked, `PAD 6` | bound in the selected protocol; the pad number printed on the board | gives it back |
-| greyed, the other protocol's name | held by another protocol | does nothing |
+| the other protocol's name in full ink, box filled grey | held by another protocol; dim while the binding is not confirmed | does nothing |
 | red, struck through | reserved: GPIO 3 carries the safety heartbeat, GPIO 8 to GPIO 12 the CAN (Controller Area Network) controller | does nothing |
 | `PROG PORT` | the pin of the IOmcu's programming port, GPIO 13 by default | does nothing |
 | red, `SENSOR BUS`, `PD MINI` or `PHASE TAP` | a pin [SETUP > SENSORS](setup-sensors.md) or [SUPPLY's PD mini settings](supply.md#pd-mini-rows) holds: Sensor SDA and SCL while the INA228 or AS5600 is ON or an INA3221 is fitted on [SETUP > SENSORS](setup-sensors.md); PD mini TX and RX while the PD mini is ON with both pins set; the tap pin while the phase tap is ON. The cell follows those settings | does nothing |

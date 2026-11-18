@@ -9,6 +9,7 @@
  * - test_picker_screen.c
  * - test_picker_screen_hold.c
  * - test_picker_screen_table.c
+ * - test_picker_tags.c
  *
  * SPDX-License-Identifier: MIT
  */

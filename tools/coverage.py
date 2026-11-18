@@ -215,6 +215,7 @@ TRACKED = [
     "shared/ui/picker_cat.c",
     "shared/ui/ui_cats.c",
     "shared/ui/picker_port.c",
+    "shared/ui/picker_tag.c",
     "shared/ui/board_drawing.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",

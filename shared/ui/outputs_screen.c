@@ -1134,10 +1134,10 @@ static void draw_cell(gfx_canvas_t *c, int i)
     switch (outputs_screen_cell((uint8_t)i, label, sizeof(label))) {
     case OUTPUTS_CELL_RESERVED: lc = port_lit ? UI_TEXT : UI_DANGER; break;
     case OUTPUTS_CELL_HELD:
-        /* The overview (OFF) edits no protocol, so what holds each bound
-         * pin is the thing it shows: in full ink, apart from free pins and
-         * PWM clashes.  Dim again while the binding is not confirmed. */
-        lc = (live && proto == 0u && held != 0u) ? UI_TEXT : UI_TEXT_DIM;
+        /* What holds a pin another protocol has, in full ink in every
+         * protocol's view and on the overview (OFF); a PWM clash's line
+         * stays dim.  Dim again while the binding is not confirmed. */
+        lc = (live && elsewhere) ? UI_TEXT : UI_TEXT_DIM;
         break;
     default:
         break;

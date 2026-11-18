@@ -20,6 +20,7 @@
  * - every_two_line_string_of_the_column_breaks_into_two
  * - a_number_goes_down_with_the_word_before_it
  * - a_cell_names_its_pin_gpio_and_its_number
+ * - a_held_cells_holder_line_is_full_ink_in_every_protocol_view
  *
  * SPDX-License-Identifier: MIT
  */
@@ -665,6 +666,89 @@ TEST_CASE(a_cell_names_its_pin_gpio_and_its_number)
     ui_text_set_language(UI_LANG_EN);
 }
 
+/* Whether the line under GP@p gpio's name, 18 cells of 8 x 16, has a pixel
+ * of @p ink. */
+static bool holder_inked(const gfx_canvas_t *c, uint8_t gpio, gfx_color_t ink)
+{
+    int x, y;
+    cell_center(gpio, &x, &y);
+    const int x0 = x - CELL_W / 2 + OU_CELL_PAD;
+    const int y0 = y - CELL_H / 2 + OU_CELL_LABEL_Y;
+    for (int yy = y0; yy < y0 + 16; ++yy) {
+        for (int xx = x0; xx < x0 + 144; ++xx) {
+            if (c->pixels[yy * c->stride + xx] == ink) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+/*
+ * A pin another protocol holds names its holder in full ink in every
+ * protocol's view, OFF's included, in both languages: GP0 DSHOT600 and GP2
+ * SERVO PWM.  A PWM clash's line (GP18 under SERVO PWM: GP2's compare
+ * register) stays dim, and so does every holder's line while the binding
+ * is not confirmed.
+ */
+TEST_CASE(a_held_cells_holder_line_is_full_ink_in_every_protocol_view)
+{
+    static gfx_color_t px[SCREEN_W * SCREEN_H];
+    gfx_canvas_t c = { px, SCREEN_W, SCREEN_H, SCREEN_W,
+                       { 0, 0, SCREEN_W, SCREEN_H } };
+    const uint8_t d600 = (uint8_t)proto_row("DSHOT600");
+    const uint8_t servo = (uint8_t)proto_row("SERVO PWM");
+    for (int l = 0; l < 2; ++l) {
+        ui_text_set_language(l == 0 ? UI_LANG_EN : UI_LANG_DE);
+        fresh();
+        outbind_t b;
+        outbind_init(&b);
+        outbind_set_board(&b, OUTBIND_BOARD_PICO_HEADER);
+        outbind_set_proto(&b, d600);
+        CHECK(outbind_toggle(&b, idx(0)));
+        outbind_set_proto(&b, servo);
+        CHECK(outbind_toggle(&b, idx(2)));
+        bind_reading_t r;
+        read_back(&b, &r);
+        outputs_screen_set_reading(&r);
+        CHECK(outputs_screen_editable());
+        for (uint8_t p = 0; p < OUTBIND_PROTOS; ++p) {
+            outputs_screen_select(p);
+            outputs_screen_invalidate();
+            scr()->render(&c, 0);
+            if (p != d600 && !holder_inked(&c, 0, UI_TEXT)) {
+                T_FAIL("language %d, protocol %u: GP0's DSHOT600 is dim", l,
+                       (unsigned)p);
+            }
+            if (p != servo && !holder_inked(&c, 2, UI_TEXT)) {
+                T_FAIL("language %d, protocol %u: GP2's SERVO PWM is dim", l,
+                       (unsigned)p);
+            }
+            /* A free pin's pad number stays faint. */
+            CHECK(!holder_inked(&c, 4, UI_TEXT));
+        }
+        outputs_screen_select(servo);
+        outputs_screen_invalidate();
+        scr()->render(&c, 0);
+        char line[32];
+        CHECK_EQ(outputs_screen_cell(idx(18), line, sizeof(line)),
+                 OUTPUTS_CELL_HELD);
+        CHECK(!holder_inked(&c, 18, UI_TEXT));
+        CHECK(holder_inked(&c, 18, UI_TEXT_DIM));
+        /* The binding not confirmed: dim. */
+        outputs_screen_select(servo);
+        bind_reading_t none;
+        (void)bind_link_classify(&none, OUTBIND_BOARD_PICO_HEADER, NULL, NULL);
+        outputs_screen_set_reading(&none);
+        CHECK(!outputs_screen_editable());
+        outputs_screen_invalidate();
+        scr()->render(&c, 0);
+        CHECK(!holder_inked(&c, 0, UI_TEXT));
+        CHECK(holder_inked(&c, 0, UI_TEXT_DIM));
+    }
+    ui_text_set_language(UI_LANG_EN);
+}
+
 int main(void)
 {
     RUN(the_longest_protocol_name_fits_the_list_and_a_cell);
@@ -683,5 +767,6 @@ int main(void)
     RUN(every_two_line_string_of_the_column_breaks_into_two);
     RUN(a_number_goes_down_with_the_word_before_it);
     RUN(a_cell_names_its_pin_gpio_and_its_number);
+    RUN(a_held_cells_holder_line_is_full_ink_in_every_protocol_view);
     return test_summary("outputs_screen_draw");
 }

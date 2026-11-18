@@ -1158,6 +1158,32 @@ UI_TEXT(PK_NONE, 17,
 UI_TEXT(PK_NOT_READ, 35,
     "NOT READ",
     "NICHT AUSGELESEN")
+/* The tag under a grey key's number that names what holds the pin
+ * (picker_screen_pin_tag()): 5 cells of 8 x 16 on a 50px key.  A role
+ * word, not the protocol: IN USE names the protocol. */
+UI_TEXT(PK_TAG_ESC, 5,
+    "ESC",
+    "ESC")
+UI_TEXT(PK_TAG_SERVO, 5,
+    "SERVO",
+    "SERVO")
+UI_TEXT(PK_TAG_PPM, 5,
+    "PPM",
+    "PPM")
+/* A PROG PORT's pin.  On a bench with more than one port the port's
+ * number, one digit, follows it: 4 cells and the digit make 5. */
+UI_TEXT(PK_TAG_PORT, 4,
+    "PORT",
+    "PORT")
+UI_TEXT(PK_TAG_BUS, 5,
+    "BUS",
+    "BUS")
+UI_TEXT(PK_TAG_PD, 5,
+    "PD",
+    "PD")
+UI_TEXT(PK_TAG_TAP, 5,
+    "TAP",
+    "PHASE")
 
 /* ------------------------------------------------------------ analyser */
 UI_TEXT(AN_TAB_CHANNELS, 0,

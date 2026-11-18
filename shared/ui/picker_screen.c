@@ -737,9 +737,16 @@ bool picker_screen_focus(ui_focus_list_t *out)
         if (!pk_button_at(i, &r, NULL)) {
             continue;
         }
-        char name[16];
-        snprintf(name, sizeof(name), "GPIO %u",
-                 (pins != NULL) ? (unsigned)pins[i].gpio : (unsigned)i);
+        /* "GPIO 28 ESC": the key's tag after its number, as drawn. */
+        char tag[8];
+        char name[24];
+        const unsigned gpio = (pins != NULL) ? (unsigned)pins[i].gpio
+                                             : (unsigned)i;
+        if (picker_screen_pin_tag(i, tag, sizeof(tag))) {
+            snprintf(name, sizeof(name), "GPIO %u %s", gpio, tag);
+        } else {
+            snprintf(name, sizeof(name), "GPIO %u", gpio);
+        }
         (void)ui_focus_add(out, r, name);
     }
     return true;

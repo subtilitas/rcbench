@@ -196,6 +196,7 @@ SOURCES = [
     "shared/ui/ui_cats.c",
     "shared/ui/ui_cats_art.c",
     "shared/ui/picker_port.c",
+    "shared/ui/picker_tag.c",
     "shared/ui/busfault_screen.c",
     "shared/ui/wifi_screen.c",
     "shared/ui/wifi_kept.c",

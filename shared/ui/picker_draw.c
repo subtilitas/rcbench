@@ -221,6 +221,19 @@ static void draw_buttons(gfx_canvas_t *c)
 
         char nm[6];
         snprintf(nm, sizeof(nm), "%u", (unsigned)pins[i].gpio);
+        char tag[8];
+        if (grey && picker_screen_pin_tag((uint8_t)i, tag, sizeof(tag))) {
+            /* What holds the pin, under a smaller number: the number in
+             * 16 x 28 from 5px down, the tag in 8 x 16 2px under it, 5px
+             * above the foot, where the 8px chamfer cuts 3px in. */
+            const int nw = gfx_text_width(PK_FONT_PIN, nm, 1);
+            gfx_text(c, r.x + (r.w - nw) / 2, r.y + KEY_NUM_Y, nm,
+                     PK_FONT_PIN, ink, 1);
+            const int tw = gfx_text_width(PK_FONT_FINE, tag, 1);
+            gfx_text(c, r.x + (r.w - tw) / 2, r.y + KEY_TAG_Y, tag,
+                     PK_FONT_FINE, ink, 1);
+            continue;
+        }
         const int lw = gfx_text_width(PK_FONT_HEAD, nm, 1);
         gfx_text(c, r.x + (r.w - lw) / 2,
                  r.y + (r.h - gfx_text_height(PK_FONT_HEAD, 1)) / 2, nm,

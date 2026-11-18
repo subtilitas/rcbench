@@ -45,9 +45,10 @@
  * PK_FONT_LABEL (10 x 20) for the count, the reason, the PAD head, a
  * channel, a pad number, a name in IN USE and a pin there in the 20px
  * rows; PK_FONT_FINE (8 x 16) for a rail's voltage, BY OTHERS and the
- * 16px rows of IN USE; PK_FONT_PIN (16 x 28) for a ground's G and a pin
- * in IN USE's 28px rows and a pin name under PINS; PK_FONT_HEAD (20 x
- * 36) for PINS, IN USE and a key's GPIO number.
+ * 16px rows of IN USE and a grey key's tag; PK_FONT_PIN (16 x 28) for a
+ * ground's G, a pin in IN USE's 28px rows, a pin name under PINS and the
+ * number of a key with a tag; PK_FONT_HEAD (20 x 36) for PINS, IN USE and
+ * every other key's GPIO number.
  */
 #define PK_FONT_LABEL (&gfx_font_10x20)
 #define PK_FONT_FINE  (&gfx_font_8x16)    /**< 8 x 16: rails, 16px rows. */
@@ -79,6 +80,19 @@
 #define BTNW  50              /**< A key's width, px. */
 #define KEY_H UI_BTN_H_TALL   /**< A key's height, px. */
 #define GAP   6         /**< Board edge to the nearer tier, px. */
+
+/**
+ * @brief A grey key with a tag (picker_screen_pin_tag()): its number's top
+ *        in 16 x 28 and its tag's in 8 x 16, px below the key's top.  The
+ *        number ends at 33, the tag at 51, 5px above the key's foot, where
+ *        the 8px chamfer cuts 3px in and a 5-cell tag starts 5px in.
+ */
+#define KEY_NUM_Y 5
+#define KEY_TAG_Y 35    /**< The tag's top in the key, px. */
+
+_Static_assert(KEY_NUM_Y + 28 + 2 <= KEY_TAG_Y && KEY_TAG_Y + 16 + 5 <= KEY_H,
+               "the number and the tag stack inside a key");
+_Static_assert(5 * 8 + 2 * 5 <= BTNW, "a 5-cell tag sits 5px in from each side");
 
 _Static_assert((FOOT - BOARD_MAX_H) / 2 >= TIERS * KEY_H + TGAP + GAP,
                "two tiers of keys fit above and below the tallest board");

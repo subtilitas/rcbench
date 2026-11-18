@@ -86,6 +86,16 @@ bool picker_port_reason(const outbind_t *b, uint8_t port, int refused,
 bool picker_port_row(const outbind_t *b, uint8_t k, picker_row_t *out);
 
 /**
+ * @brief The port other than @p port whose PIN register holds @p gpio: one
+ *  the IOmcu refused the pin to does not hold it.
+ *
+ * @param gpio the GPIO
+ * @param port the port picked
+ * @return the other port, from 0, or -1 for none
+ */
+int picker_port_other(uint8_t gpio, uint8_t port);
+
+/**
  * @brief Whether catalogue entry @p index is the pin of port @p port (-1 for
  *  none picked): listed under PINS, not IN USE.
  *

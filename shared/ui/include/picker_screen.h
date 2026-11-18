@@ -188,6 +188,23 @@ typedef enum {
 picker_pin_t picker_screen_pin(uint8_t index, char *holder, size_t cap);
 
 /**
+ * @brief The tag a grey key draws under its number: what holds the pin.
+ *
+ * Only a PICKER_PIN_HELD pin with a holder has one, in every view of the
+ * board: a protocol's role word (ESC for MOTOR PWM and the DShot entries,
+ * SERVO, PPM), a programming port's (PORT on a bench with one port, PORT1
+ * to PORT4 on one with more) and an interface's (BUS, PD, TAP).  A pin
+ * held for a PWM clash, a free, ticked, refused, locked or reserved pin
+ * has none.  At most 5 cells of the 8 x 16 face (picker_tag.c).
+ *
+ * @param index the pin's catalogue entry
+ * @param buf   takes the tag, or an empty string
+ * @param cap   bytes at @p buf; 8 hold every tag
+ * @return true when the key carries a tag
+ */
+bool picker_screen_pin_tag(uint8_t index, char *buf, size_t cap);
+
+/**
  * @brief The rectangle of the button of catalogue entry @p index; false for a pin
  *  with none.
  *

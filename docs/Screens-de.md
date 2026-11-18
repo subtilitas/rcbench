@@ -8294,8 +8294,10 @@ Protokoll-Liste hält die 8 Protokolle in einer Spalte mit Zeilen von 48px
 zweiten Spalte mit denselben Zeilen daneben; mit 4 Einträgen ist die Liste
 600 x 392px groß und endet bei Körper-y 436. Darauf wird keine Katze gezeichnet.
 
-Ein Pin, den ein anderes Protokoll hält, wird grau gezeichnet, mit dem Namen
-dieses Protokolls darunter, wo ein freier Pin seine Pad-Nummer zeigt. Diese Bindung lässt sich unter dem zugehörigen Protokoll lösen. Ein
+Ein Pin, den ein anderes Protokoll hält, wird mit grau gefülltem Kästchen
+gezeichnet und mit dem Namen dieses Protokolls darunter, in voller Schrift in
+der Ansicht jedes Protokolls, wo ein freier Pin seine Pad-Nummer zeigt; bei
+unbestätigter Bindung ist der Name gedimmt. Diese Bindung lässt sich unter dem zugehörigen Protokoll lösen. Ein
 reservierter Pin ist dagegen rot und durchgestrichen, weil seine feste
 Verdrahtung keine Auswahl erlaubt.
 
@@ -8495,8 +8497,29 @@ Die Tastenfarbe zeigt die Wirkung eines Tipps:
 | --- | --- | --- |
 | Elfenbein (Reihe näher an der Platine) oder Ebenholz (Reihe dahinter) | frei | bindet ihn an das gewählte Protokoll |
 | Akzentfarbe | im gewählten Protokoll gebunden | gibt ihn zurück |
-| grau | ein anderes Protokoll hält ihn, der Programmierport hat ihn, das gewählte Protokoll kann keinen Pin mehr nehmen, oder die Bindung ist nicht bestätigt | ändert nichts |
+| grau, die Nummer in 16 x 28 über einem Tag in 8 x 16 | ein anderes Protokoll, ein Programmierport oder eine Schnittstelle hält ihn; der Tag nennt den Halter | ändert nichts |
+| grau, nur die Nummer in 20 x 36 | der Pin teilt einen PWM-Slice oder ein Compare-Register mit einem gebundenen Pin oder dem Pin eines Ports, das gewählte Protokoll kann keinen Pin mehr nehmen, oder die Bindung ist nicht bestätigt | ändert nichts; ein Tippen auf einen geteilten Slice oder ein geteiltes Register setzt den Grund unter die Zählung |
 | keine, rotes Kreuz auf dem Pad | vom IOmcu reserviert: GPIO 3 Heartbeat, GPIO 8 bis GPIO 12 CAN | — |
+
+Der Tag ist ein Rollenwort von höchstens 5 Zellen, 40px der 50px breiten
+Taste: die Nummer endet 33px unter der Oberkante, der Tag reicht von 35px bis
+51px, 5px über dem Fuß, wo die 8px-Fase 3px einschneidet. Das Dial
+(M5Stack-Drehknopf) nennt die Taste samt Tag, `GPIO 7 ESC`.
+
+| Tag | Halter |
+| --- | --- |
+| `ESC` | MOTOR PWM, DSHOT300, DSHOT600, DSHOT300 BIDIR, DSHOT600 BIDIR |
+| `SERVO` | SERVO PWM |
+| `PPM` | PPM |
+| `PORT` | der Programmierport, bei einem Prüfstand mit 1 Port oder solange die Anzahl unbekannt ist |
+| `PORT1` bis `PORT4` | dieser Programmierport, bei einem Prüfstand mit 2 bis 4 Ports |
+| `BUS` | SENSORBUS |
+| `PD` | PD MINI |
+| `PHASE` | PHASENABGRIFF |
+
+Eine gehaltene Taste trägt ihren Tag in der Ansicht jedes Protokolls, bei
+AUS, in einem PROG-PORT-Eintrag und bei unbestätigter Bindung. BELEGT nennt
+das genaue Protokoll.
 
 Benachbarte Tasten unterscheiden sich in Höhe und Farbe, wie die Tasten einer
 Klaviatur. Reservierte Pins haben keine Taste, damit sie nicht als wählbar erscheinen.
@@ -8539,7 +8562,7 @@ hält keinen Pin; die Slot-Zählung und BELEGT bleiben, und BELEGT führt dann
 jeden gebundenen Pin.
 
 Der Pin des Programmierports des IOmcu, ab Werk GPIO 13 (Pad 17), ist grau
-gezeichnet, solange kein Protokoll ihn hält, ein Tippen auf ihn ändert
+mit dem Tag `PORT` gezeichnet, solange kein Protokoll ihn hält, ein Tippen auf ihn ändert
 nichts, und BELEGT führt ihn als ersten unter `PROG-PORT`, ohne Kanal.
 Jeder Port, den der IOmcu meldet, höchstens 4, hält seinen Pin so, jeder
 einmal unter dem einen Namen `PROG-PORT` geführt, und die Slice-Regel
@@ -8555,7 +8578,7 @@ die Tasten den Pin dieses Ports:
 | --- | --- |
 | der Pin des Ports, hervorgehoben | erbittet keinen Pin |
 | eine freie Taste | erbittet diesen Pin |
-| grau, unter dem Namen eines anderen Ports (`PROG-PORT 2`), eines Protokolls oder einer Schnittstelle | ändert nichts |
+| grau mit Tag, unter dem Namen eines anderen Ports (`PROG-PORT 2`, Tag `PORT2`), eines Protokolls oder einer Schnittstelle | ändert nichts |
 | grau, `SLICE VON GPIO 4` oder `KANAL VON GPIO 12`, auf einem SERVO-PWM-Port | ändert nichts; die Zeile sagt `GPIO 5: TEILT PWM-SLICE MIT AUSGANG GPIO 4` oder `GPIO 28: GLEICHER PWM-KANAL WIE GPIO 12` |
 
 Für einen Port mit KEINE lässt sich jeder freie Pin wählen. Die Anforderung
@@ -8573,8 +8596,8 @@ Zählung: `GPIO 28: TEILT PWM-SLICE MIT PROG-PORT GPIO 13`,
 
 ![GPIO 13 beim Programmierport](img/de/outputs-prog.png)
 
-Ein Pin, den SETUP > SENSORS oder der Abschnitt PD MINI der SUPPLY-Optionen hält, ist ebenso grau, solange kein
-Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
+Ein Pin, den SETUP > SENSORS oder der Abschnitt PD MINI der SUPPLY-Optionen hält, ist ebenso grau, mit dem Tag `BUS`, `PD`
+oder `PHASE`, solange kein Protokoll ihn hält, ein Tippen darauf ändert nichts, und BELEGT führt ihn
 nach dem Programmierport unter `SENSORBUS`, `PD MINI` oder `PHASENABGRIFF`
 in Rot, ohne Kanal. Welche Pins das sind und wann, steht in der Tabelle
 unter [Outputs](#outputs). Nach einer Änderung unter SETUP sowie nach einer Annahme oder Ablehnung
@@ -8599,7 +8622,8 @@ N die ausgelassenen Zeilen.
 Ein Tippen auf eine Taste schreibt die Bindung sofort, und LETZTER
 SCHREIBVORGANG sagt, was daraus wurde. Solange die
 Bindung nicht bestätigt ist — ein Lesen schlug fehl, oder die Pages
-beschreiben keine Bindung — ist jede Taste grau, der Grund steht unter
+beschreiben keine Bindung — ist jede Taste grau, eine gehaltene Taste behält
+ihren Tag, der Grund steht unter
 der Zählung, und ein Tippen auf eine Taste ändert nichts und schreibt nichts.
 Die Protokollliste bleibt bedienbar.
 

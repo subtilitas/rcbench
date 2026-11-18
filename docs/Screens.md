@@ -7653,8 +7653,10 @@ a column of 48px rows (7.2mm) from the face's top and the PROG PORT
 entries in a second column of the same rows beside it; with 4 entries the
 list is 600 x 392px and ends at body y 436. No cat is drawn on it.
 
-A pin another protocol holds is drawn greyed, with that protocol's name under
-it where a free pin shows its pad number. That is a choice, undone by going to
+A pin another protocol holds is drawn with its tick box filled grey and that
+protocol's name under it, in full ink in every protocol's view, where a free
+pin shows its pad number; the name is dim while the binding is not confirmed.
+That is a choice, undone by going to
 that protocol and unticking it there — unlike a reserved pin, which is drawn
 red and struck through because it is the wiring rather than a choice.
 
@@ -7838,8 +7840,29 @@ A key's colour says what a tap on it does:
 | --- | --- | --- |
 | ivory (row nearer the board) or ebony (row beyond it) | free | binds it to the selected protocol |
 | accent | bound in the selected protocol | gives it back |
-| grey | another protocol holds it, the programming port has it, the selected protocol can take no more pins, or the binding is not confirmed | changes nothing |
+| grey, the number in 16 x 28 over a tag in 8 x 16 | another protocol, a programming port or an interface holds it; the tag names the holder | changes nothing |
+| grey, the number alone in 20 x 36 | the pin shares a PWM slice or compare register with a bound pin or a port's pin, the selected protocol can take no more pins, or the binding is not confirmed | changes nothing; a tap on a shared slice or register puts the reason under the count |
 | none, red cross on the pad | reserved by the IOmcu: GPIO 3 heartbeat, GPIO 8 to GPIO 12 CAN | — |
+
+The tag is a role word of at most 5 cells, 40px of the key's 50px: its
+number ends 33px down the key, the tag runs from 35px to 51px, 5px above
+the foot, where the 8px chamfer cuts 3px in. The Dial (M5Stack knob) names
+the key with its tag, `GPIO 7 ESC`.
+
+| Tag | Holder |
+| --- | --- |
+| `ESC` | MOTOR PWM, DSHOT300, DSHOT600, DSHOT300 BIDIR, DSHOT600 BIDIR |
+| `SERVO` | SERVO PWM |
+| `PPM` | PPM |
+| `PORT` | the programming port, on a bench with 1 port or while the count is not known |
+| `PORT1` to `PORT4` | that programming port, on a bench with 2 to 4 ports |
+| `BUS` | SENSOR BUS |
+| `PD` | PD MINI |
+| `TAP` | PHASE TAP |
+
+A held key carries its tag in every protocol's view, on OFF, on a PROG PORT
+entry and while the binding is not confirmed. IN USE names the exact
+protocol.
 
 Neighbouring keys differ in height and in colour, like the keys of a
 keyboard. Reserved pins have no keys, so they do not appear selectable.
@@ -7880,7 +7903,7 @@ selected the PINS table is not drawn, because OFF holds no pin; the slot
 count and IN USE stay, and IN USE then lists every bound pin.
 
 The pin of the IOmcu's programming port, GPIO 13 (pad 17) by default, is
-drawn grey while no protocol holds it, a tap on it changes nothing, and IN
+drawn grey with its `PORT` tag while no protocol holds it, a tap on it changes nothing, and IN
 USE lists it first under `PROG PORT`, without a channel. Every port the
 IOmcu reports, at most 4, holds its pin so, each listed once under the
 one `PROG PORT` name, and the slice rule below is checked against each.
@@ -7894,7 +7917,7 @@ port's pin:
 | --- | --- |
 | the port's pin, accented | asks for no pin |
 | a free key | asks for that pin |
-| grey, under another port's name (`PROG PORT 2`), a protocol's or an interface's | changes nothing |
+| grey with a tag, under another port's name (`PROG PORT 2`, tag `PORT2`), a protocol's or an interface's | changes nothing |
 | grey, `SLICE OF GPIO 4` or `PWM CH OF GPIO 12`, on a SERVO PWM port | changes nothing; the line says `GPIO 5: SHARES PWM SLICE WITH OUTPUT GPIO 4` or `GPIO 28: SAME PWM CHANNEL AS GPIO 12` |
 
 A NONE port accepts any free pin. The request waits until the bench is at
@@ -7911,8 +7934,8 @@ nothing and puts the reason under the count:
 
 ![GPIO 13 held by the programming port](img/outputs-prog.png)
 
-A pin SETUP > SENSORS or SUPPLY's PD mini settings holds is grey the same way while no protocol holds
-it, a tap on it changes nothing, and IN USE lists it after the programming
+A pin SETUP > SENSORS or SUPPLY's PD mini settings holds is grey the same way, tagged `BUS`, `PD` or
+`TAP`, while no protocol holds it, a tap on it changes nothing, and IN USE lists it after the programming
 port, under `SENSOR BUS`, `PD MINI` or `PHASE TAP` in red, without a
 channel. Which pins those are, and when, is in the table under
 [Outputs](#outputs). A row stepped on SETUP, or the IOmcu taking or
@@ -7934,7 +7957,7 @@ the foot holds the lines that fit and ends in `+N`, N the lines left out.
 
 A tap on a key writes the binding at once and LAST WRITE says what became of
 it. While the binding is not confirmed — a
-read failed, or the pages describe no binding — every key is grey, the reason
+read failed, or the pages describe no binding — every key is grey, a held key keeps its tag, the reason
 stands under the count, and a tap on a key changes nothing and writes
 nothing. The protocol list still selects.
 
