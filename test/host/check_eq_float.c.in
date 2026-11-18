@@ -1,7 +1,7 @@
 /**
- * @file check_eq_float.c
+ * @file check_eq_float.c.in
  * @brief A CHECK_EQ on a float.  The ctest `harness_check_eq_refuses_float`
- *        compiles this file and passes when the compiler stops at the
+ *        compiles this file as C and passes when the compiler stops at the
  *        static assertion of greatest.h; no target builds it.
  *
  * SPDX-License-Identifier: MIT

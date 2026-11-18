@@ -468,9 +468,9 @@ if(CMAKE_CXX_COMPILER)
     add_test(NAME i2c_txq_headers_cxx COMMAND i2c_txq_headers_cxx)
 elseif(DEFINED ENV{CI})
     message(FATAL_ERROR
-        "No C++ compiler and CI is set: the KST, Hitec and I2C queue headers cannot be checked")
+        "No C++ compiler and CI is set: the KST, Hitec, ESC wire and I2C queue headers cannot be checked")
 else()
-    message(STATUS "No C++ compiler: the KST, Hitec and I2C queue headers are not checked as C++")
+    message(STATUS "No C++ compiler: the KST, Hitec, ESC wire and I2C queue headers are not checked as C++")
 endif()
 
 # tools/sense_trace.py, the host side of the IOmcu's SENSE_TRACE
@@ -502,11 +502,12 @@ endif()
 
 # CHECK_EQ compares as long and refuses a floating operand at compile time.
 # The compiler has to stop at that static assertion: the test passes on its
-# message and fails when check_eq_float.c compiles.
+# message and fails when check_eq_float.c.in compiles.  The file is C under
+# a name no build, clang-tidy or cppcheck list of *.c takes.
 add_test(NAME harness_check_eq_refuses_float
-    COMMAND ${CMAKE_C_COMPILER} -std=c11 -fsyntax-only
+    COMMAND ${CMAKE_C_COMPILER} -std=c11 -fsyntax-only -x c
             "-I${CMAKE_CURRENT_SOURCE_DIR}"
-            "${CMAKE_CURRENT_SOURCE_DIR}/check_eq_float.c")
+            "${CMAKE_CURRENT_SOURCE_DIR}/check_eq_float.c.in")
 set_tests_properties(harness_check_eq_refuses_float PROPERTIES
     PASS_REGULAR_EXPRESSION "CHECK_EQ cuts a float to long")
 

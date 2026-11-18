@@ -3,7 +3,7 @@
  * @brief The asserts of greatest.h: CHECK_FEQ tells floats apart that differ
  *        by less than 1, CHECK_EQ compares integers and pointers.  That
  *        CHECK_EQ does not compile on a floating operand is the ctest
- *        `harness_check_eq_refuses_float` (check_eq_float.c).
+ *        `harness_check_eq_refuses_float` (check_eq_float.c.in).
  *
  * Cases:
  * - check_feq_fails_on_a_difference_below_one
