@@ -14,6 +14,7 @@ verifiziert.
 | --- | --- | --- |
 | Der Heartbeat bleibt aus | das Panel hängt, wird zurückgesetzt, hat einen Brown-out oder ist abgesteckt; STOP ist gedrückt | an beiden Enden erzeugt und überwacht; das Monoflop, das er steuert, ist nicht bestückt |
 | Stille-Watchdog des IOmcu, 200ms | der Link ist in einer der beiden Richtungen tot | gebaut und getestet |
+| Schleifen-Watchdog des IOmcu, 500ms | Core 0 des IOmcu bleibt in seiner Hauptschleife stehen: ein Fault, ein `panic()`, eine Schleife ohne Ende | gebaut; die Entscheidungen sind auf dem Host getestet (`test_loop_watch`, `test_reset_cause`) |
 | STOP-Kommando über den Link | ein bewusster Stopp, quittiert und gemeldet | geschrieben |
 | Watchdog der Render-Schleife, 1000ms | die Render-Schleife des Panels bleibt stehen, während der Prüfstand ARMED ist, der Ausgang des Netzteils an ist oder die 5V der Programmierports auf dem Carrier an sind | gebaut; die Entscheidung ist auf dem Host getestet (`test_frame_watch`) |
 
@@ -26,6 +27,77 @@ IOmcu den Heartbeat als vertrauenswürdig meldet. Dann schreibt es CLEAR
 Frame. Beantwortet der IOmcu einen der beiden Schreibvorgänge mit NACK
 (negative Quittung), bleibt das Panel SAFE.
 
+
+### Schleifen-Watchdog des IOmcu
+
+Jede Sicherung des IOmcu wird aus der Hauptschleife seines Core 0
+abgefragt: die Heartbeat-Überwachung, die 200ms Stille des Links, der
+Schritt der Ausgänge und der Durchlauf des Netzteils. Ein PWM-Ausgang und
+ein PPM-Frame wiederholen sich ohne den Prozessor, und der Ausgang des PD
+mini und die 5V der Programmierports bleiben, wie sie zuletzt gesetzt
+wurden. Der Watchdog des RP2350 beendet einen Core 0, der in der Schleife
+stehen bleibt: Er setzt den Chip 500ms (`LOOP_WATCH_PERIOD_MS`) nach dem
+letzten Nachladen zurück. Die Regeln stehen in
+[`loop_watch.h`](https://github.com/subtilitas/rcbench/blob/main/shared/safety/include/loop_watch.h).
+
+| | |
+| --- | --- |
+| Nachladen | am Anfang eines Durchlaufs der Hauptschleife, einmal je Durchlauf, und direkt vor jedem Flash-Fenster (einem Löschen oder Programmieren des Output-Store oder des Updates), damit kein Zurücksetzen in einen Schreibvorgang fällt; nirgends sonst. Nur die ersten 6 Fenster eines Durchlaufs laden nach, mehr enthält ein Durchlauf nicht: Eine Schleife, die immer weitere Fenster öffnet, bekommt kein weiteres Nachladen und wird 500ms nach dem sechsten zurückgesetzt |
+| Eingeschaltet | beim ersten Durchlauf, nach dem Startpfad |
+| Nicht eingeschaltet | solange das Image nach einem Update auf Probe läuft, bis zu seinem BUY: Dann gehört der Watchdog 16,7s lang dem Boot-ROM. Nie im Bench-Konsolen-Build (`IOMCU_CONSOLE=ON`) |
+| Ein Debugger | ein vom Debugger angehaltener Core hält den Zähler an |
+| Nicht überwacht | der Startpfad vor dem ersten Durchlauf, höchstens 3.500ms für das Ausschalten des PD mini; Core 1, der den Sensorbus liest |
+
+Was das Zurücksetzen an den Ausgängen bewirkt:
+
+| Ausgang | Nach dem Zurücksetzen |
+| --- | --- |
+| PWM, PPM, DShot und die Leitungen der Programmierports | jeder Pin wird beim Zurücksetzen freigegeben: kein Puls, kein Frame. Ein ESC (Electronic Speed Controller) stoppt nach seinem eigenen Signal-Timeout, ein Servo hält keine Position |
+| 5V der Programmierports (rbmod-Carrier, GPIO 21) | beim Zurücksetzen freigegeben, als erste Handlung des Starts auf Low getrieben |
+| Ausgang des PD mini | bleibt über das Zurücksetzen an; der Start schaltet ihn binnen 3.500ms (`SUPPLY_PAGE_BOOT_OFF_MS`) aus, wenn seine Anschlüsse gespeichert sind |
+| Arm-Latch | vom Start an gesetzt, bis ein CLEAR kommt: Nichts treibt, bevor der Bediener ARM hält |
+
+Vom Stillstand des Core 0 bis zur Freigabe der Pins vergehen höchstens
+500ms.
+
+Beide Platinen, auf denen die Firmware läuft, tragen das Modul Waveshare
+RP2350-CAN. Die [Produktseite](https://www.waveshare.com/rp2350-can.htm)
+von Waveshare nennt als Flash den P25Q32SH-UXH-IR; die Firmware liest den
+Baustein nicht aus. Das Datenblatt des Puya P25Q32SH, V1.8 vom 2023-10-27,
+Tabelle 5-4, nennt für das Löschen eines Sektors 16ms typisch und 30ms
+maximal und für das Programmieren einer Page 1,6ms typisch und 2,5ms
+maximal. Das längste Fenster ist der 4KiB-Sektor des Updates, 16 Pages:
+40.000µs, dazu 2.000µs als Annahme für den Weg in den Kommandomodus des
+Flash und zurück.
+
+Die Periode gegen die längste Zeit zwischen zwei Nachladungen, 108.250µs:
+
+| Vom Nachladen vor einem Flash-Fenster bis zum Anfang des nächsten Durchlaufs | µs |
+| --- | --- |
+| das Warten des Fensters, bis Core 1 steht, `OUT_STORE_LOCKOUT_MS` | 10.000 |
+| das Fenster beim Maximum des Bausteins | 42.000 |
+| sein Warten, bis Core 1 wieder läuft | 10.000 |
+| 2 Umverdrahtungen von TONE, je `TONE_CORE1_WAIT_US` | 10.000 |
+| `can_drain()` vor dem Neustart des Updates | 35.000 |
+| die Konsolenzeile des Store | 1.000 |
+| der Rest eines Durchlaufs, gemessenes Maximum | 250 |
+
+500ms sind das 4,6-Fache dieser Summe. Ein Fenster darf 433.750µs dauern,
+bevor das Zurücksetzen hineinfällt, das 10-Fache des Maximums des
+Bausteins. Auf dem Inbetriebnahme-Modul wurde ein Fenster mit 19.178µs gemessen (ein
+Löschen und ein Programmieren einer Page, 1 Messung). Ein Durchlauf enthält
+höchstens 6 Fenster; ein Durchlauf mit allen wurde nicht gemessen.
+
+Ein Neustart durch diesen Watchdog druckt `reset LOOP_WATCHDOG` auf der
+Konsole des IOmcu ([Inbetriebnahme des Links](Bringup-de.md)) und setzt
+das STATUS-Fault-Bit 7 (`LINK_FAULT_WATCHDOG`, Link-Protokoll 4.39) bis zu
+einem CLEAR. Das Panel behandelt das Bit beim ersten Lesen, das es zeigt,
+als Fehler: Der Prüfstand geht auf SAFE und der Ausgang des Netzteils aus,
+die Leiste zeigt `FEHLER 80` und das Alarmband
+`IOMCU NEU GESTARTET (WATCHDOG)`. Das Bit geht mit dem nächsten ARM, mit
+FAILSAFE LÖSEN von ARM + START oder mit dem Zurücksetzen von STOP. Der
+16,7s-Timer des Boot-ROM bei einem nicht gekauften Update und ein über USB
+angeforderter Neustart setzen es nicht.
 
 ### Watchdog der Render-Schleife
 
@@ -48,7 +120,7 @@ Stopp des Prüfstands selbst, auf dem Weg, den STOP nimmt:
 - der Heartbeat fällt im selben Durchlauf weg, und der IOmcu geht
   innerhalb von 150ms in den sicheren Zustand;
 - der Ausgang des Netzteils schaltet im selben Durchlauf ab;
-- der Hinweis `Bildschirm 1s ohne Aktualisierung. Auf SAFE geschaltet,
+- der Hinweis `Anzeige 1s ohne Aktualisierung. Auf SAFE geschaltet,
   Ausgang aus.` erscheint, sobald die Render-Schleife wieder zeichnet. Eine
   Schleife, die nie wieder zeichnet, zeigt nichts Neues.
 
@@ -135,7 +207,7 @@ wenn einer der beiden ausfällt.
 | Die Abschaltschwelle des Panels für das Netzteil (ÜBERSTROM oder ÜBERSPANNUNG auf SUPPLY) | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, der IOmcu für das Schreiben |
 | Ein INA3221-Kanal über seiner Grenze | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus; die eines Ports nach seinem Schreiben, höchstens 10000ms | das Panel, beim Lesen von `OVER` alle 200ms, mit einer Konsolenzeile je Kanal ([Bildschirme](Screens-de.md#sensors-die-ina3221-bausteine)); der IOmcu für das Schreiben |
 | Die 5V der Programmierports auf dem Carrier fehlen oder fallen unter einem ON aus, dem des Panels oder einer Sitzung: kein INA3221-Fenster mit 4750mV oder mehr bis 200ms nach dem ON, oder 2 neue Fenster unter 3000mV 500ms oder mehr danach ([Carrier, PROG 5V fehlt oder ausgefallen](Carrier-de.md#prog-5v-fehlt-oder-ausgefallen)) | SAFE | die 5V der Sitzung aus, nach einem laufenden Schreiben; unter einer Sitzung wartet der Befund auf ein Lesen der Page, das GPIO 21 noch als ein liest | aus | das Panel, mit einer Warnung und einer Konsolenzeile; der IOmcu für das OFF von PROG_SUPPLY |
-| Eine Stromgrenze eines Laufs: BLOCKIERT AB, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
+| Eine Stromgrenze eines Laufs: Blockierschwelle, Konstantstrom, 3,0A, 1,0A für 400ms | SAFE | keine offen: eine Suche ist ARMED | aus | der SERVO-Bildschirm |
 | Ein Schritt der Startfolge von SERVO scheitert auf LIVE, SWEEP, RUDER oder RUDER AUTO: PORT-PWM, PROG 5V oder der PD mini ohne Rückmeldung in 1000ms, nicht ARMED in 500ms, ein Tippen auf das Halten, ein STOP ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)) | SAFE | keine offen: ARM ist gesperrt, solange eine Sitzung einen Port hält | aus; PROG 5V ebenfalls aus | der SERVO-Bildschirm (`svs_all_off()`) |
 | Der eigene Schutz des PD mini, sein absinkender Eingang, keine Antwort, kein Messwert, ein abgewiesenes oder losgelassenes ON, ein Ausgang oder Sollwert, der nicht übernommen wird, ein ON über verlorene Touch-Ereignisse hinweg | SAFE | die Versorgung des Ports aus, nach einem laufenden Schreiben | aus, wo er sich schalten lässt: der Schutz des Moduls und ein absinkender Eingang sofort, auch während eines Schreibens; der Rest nach dem Schreiben eines Ports, höchstens 10000ms | der Treiber des IOmcu für den Ausgang, das Panel für SAFE |
 | Ein KST- oder Hitec-Vorgang endet in einer Störung des Servos oder der Leitung (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), oder die ESC_WIRE-Page meldet `FAULT` oder erreicht `NOT_BACK` (`esc_link_faults()`) | schon SAFE: eine Sitzung läuft auf einem Prüfstand in SAFE | die Versorgung des Ports aus; der Vorgang ist zu Ende | aus | das Panel (`prog_faults_follow()`) |
@@ -441,12 +513,16 @@ den mittleren Fall ab:
 | | Direkte Leitung und Firmware | Mit Monoflop |
 |---|---|---|
 | Das Panel sendet keinen Heartbeat mehr, der IOmcu läuft fehlerfrei | schaltet auf SAFE nach HEARTBEAT_MAX_GAP_MS | dasselbe, nach seiner eigenen Zeit |
-| Das Panel sendet keinen Heartbeat mehr und der IOmcu kann nicht handeln (hängt, oder bedient seinen Monitor nicht) | nichts schaltet auf SAFE, die Bank treibt weiter | die Ausgänge fallen trotzdem weg |
-| Das Panel läuft fehlerfrei und der IOmcu verhält sich falsch | es bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel sendet weiter den Heartbeat, das Monoflop bleibt bestromt |
+| Das Panel sendet keinen Heartbeat mehr und der IOmcu kann nicht handeln (hängt, oder bedient seinen Monitor nicht) | der Schleifen-Watchdog des IOmcu setzt ihn 500ms nach seinem letzten Durchlauf zurück: Jeder Pin wird freigegeben, der PD mini geht binnen 3.500ms nach dem Start aus | die Ausgänge fallen trotzdem weg, ohne die 500ms |
+| Das Panel läuft fehlerfrei und der IOmcu verhält sich falsch | einen Core 0, der in seiner Schleife stehen bleibt, setzt der Schleifen-Watchdog zurück; für einen, der sie durchläuft und falsch treibt, bleiben STOP am Panel und der Link-Watchdog | **keine Hilfe**: das Panel sendet weiter den Heartbeat, das Monoflop bleibt bestromt |
 
-Die dritte Zeile ist kein Fall, für den das Monoflop da ist, und keine
-Hardware in diesem Entwurf deckt sie ab. Solange das Bauteil fehlt, ist auch
-die zweite Zeile unabgedeckt, und die Firmware an beiden Enden ist die gesamte
+Die dritte Zeile ist kein Fall, für den das Monoflop da ist. Der
+[Schleifen-Watchdog des IOmcu](#schleifen-watchdog-des-iomcu) deckt den
+stehenden Core in den Zeilen zwei und drei ab; er ist ein Teil desselben
+Chips und läuft an demselben Takt und derselben Versorgung, also ist er kein
+zweiter Kanal. Einen IOmcu, der seine Schleife durchläuft und falsch treibt,
+deckt keine Hardware in diesem Entwurf ab. Solange das Monoflop fehlt, sind
+die Firmware an beiden Enden und der Watchdog des Chips die gesamte
 Verriegelung.
 
 ## Heartbeat-Überwachung
@@ -466,6 +542,8 @@ wird; ein schlechter Abstand oder ein stilles Fenster, und das Vertrauen ist
 weg. Der IOmcu verweigert das Schalten auf ARMED, solange der Leitung nicht
 vertraut wird, und schaltet seine Ausgänge auf SAFE und setzt seinen Arm-Latch,
 sobald sie ausbleibt.
+
+Ein Flash-Fenster (17 bis 25ms) hält die Schleife an, die die Leitung abtastet. Die Schleife meldet dem Monitor die Länge jedes Fensters (`heartbeat_mon_window()`); der Monitor rechnet sie den beiden Abständen neben der als Nächstes abgetasteten Flanke zu, bevor er mit 4ms vergleicht. Das Vertrauen in die Leitung bleibt: kein FAULT 10, kein Arm-Latch, kein abgewiesenes ARM oder Einschalten der Versorgung. Die Obergrenze von 150ms bleibt.
 
 Der Heartbeat wird von der Control-Task erzeugt, die STOP besitzt und alle 5ms
 auf Kern 1 läuft, dem Kern, der nicht zeichnet. Er kommt nicht von einem
@@ -532,7 +610,7 @@ was immer im Register ARM steht.
 | --- | --- |
 | Ein Start des IOmcu | Einschalten, ein Reset, der RUN-Pin, ein Neuflashen |
 | Stille auf dem Link | 200ms ohne Anfrage, zusammen mit dem Link-Failsafe |
-| Dem Heartbeat wird nicht vertraut | ein Abstand unter 4ms oder über 150ms, oder 150ms ohne Flanke |
+| Der Heartbeat verliert das Vertrauen | auf einer Leitung, der vertraut wird: ein Abstand unter 4ms oder über 150ms, oder 150ms ohne Flanke. Eine Leitung, der nicht vertraut wird, setzt bei einem verworfenen Abstand keinen Latch |
 | Ein abgewiesenes ARM | ein ARM, das mit NOT_ARMED beantwortet wurde; ein CLEAR mit anschließend abgewiesenem ARM lässt den Latch also gesetzt |
 
 Eines löscht ihn: das Schreiben von 0x5AFE in CLEAR auf der Control-Page.
@@ -767,7 +845,9 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   also hält jedes Löschen und Schreiben beide Kerne des Panels an, die
   Control-Task mit Heartbeat, STOP, OUTPUT OFF und den Abschaltungen des
   Netzteils eingeschlossen. Die Regel ist `flash_gate_open()` in
-  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Sie hält das
+  `shared/safety/flash_gate.c`, unter `test_flash_gate`. Ein ARM, das ein
+  Bildschirm eingereiht und die Control-Task noch nicht übernommen hat,
+  zählt als wartendes Schalten auf ARMED (`flash_gate_arm()`). Sie hält das
   Speichern der Einstellungen und das Ablegen der Zeichnung der Platine zurück.
   Das Schalten auf ARMED und das Netzteil werden für einen Schreibvorgang nie
   verweigert: der Schreibvorgang wartet. Das Ablegen (2 Löschvorgänge zu 4kB
@@ -833,7 +913,7 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   Grund ihren eigenen Vermerk eines STOP-Drucks bei einem Verlust im
   Treiber: Sie besitzt diesen Druck unabhängig von den Seiten.
 - Jedes Bedienelement mit einem gespeicherten Zustand zwischen Drücken
-  und Loslassen bricht seine laufende Geste ab. MOTOR & ESC, SERVO und CAN BUS FAULT haben eine Geste, die auf einem
+  und Loslassen bricht seine laufende Geste ab. MOTOR & ESC, SERVO und CAN-BUS-FEHLER haben eine Geste, die auf einem
   Timer fertig wird, ohne diesen Abbruch würde ein verlorenes Release dort von selbst
   auf ARMED schalten oder quittieren; die Kacheln der Übersicht, die Zellen auf OUTPUTS
   und in der Auswahl, die Tasten des Einstellungs-Bildschirms, die
@@ -923,15 +1003,20 @@ den Hinweis zeigt, ist nicht in der Coverage-Zahl.
   gehaltene Druck wird verworfen, wie ein Touch-Verlust ihn verwirft. Nicht
   am Panel gemessen: ob der GT911 einem einzelnen Finger bei
   aufeinanderfolgenden Berührungen dieselbe Track-ID gibt.
-- Ein Stopp zählt, was auch immer andere Finger halten. Ein zweiter,
-  dritter oder weiterer Kontakt auf einem Stopp wirkt beim Aufsetzen, während
-  andere Kontakte eigene Drücke halten: DISARM, STOP TEST, ARM + START
-  während eines Laufs oder seiner Schritte, ABORT, die Versorgungszeile von
-  KST und Hitec, solange sie EIN zeigt, und auf SUPPLY AUSGANG AUS und
-  PROG 5V AUS, die ein einzelner Finger mit einem Tippen ausschaltet. Im
-  Overlay des Hitec-Programmers beenden EIN von SERVO BEWEGEN und die Taste
-  von ANSCHLAG SUCHEN, deren Seite sucht, die Schleife oder die Suche bei
-  einem solchen Druck. Ein Abheben schaltet nie ein, was ein Stopp
+- Ein Stopp wirkt beim Aufsetzen und zählt, was auch immer andere Finger
+  halten. Der erste Kontakt, und ein zweiter, dritter oder weiterer,
+  während andere Kontakte eigene Drücke halten, wirkt beim Aufsetzen:
+  DISARM, STOP TEST, ARM + START während eines Laufs oder seiner Schritte,
+  ABORT eines Stick-Laufs und der ESC-, KST- und Hitec-Sitzung, die
+  Versorgungszeile von KST und Hitec, solange sie EIN zeigt, auf SUPPLY
+  AUSGANG AUS und PROG 5V AUS, auf OUTPUTS PORT-PWM AUS und im Overlay des
+  Hitec-Programmers EIN von SERVO BEWEGEN und die Taste von ANSCHLAG
+  SUCHEN, deren Seite sucht. Ein EIN oder ein ARM, das ein Halten angefragt
+  hat und das nicht beantwortet ist, zählt als eingeschaltet: Die Taste
+  zeigt AUSGANG AUS, PROG 5V AUS oder DISARM, und ein Druck nimmt das EIN
+  oder das ARM zurück. Ein Finger, der vom Bedienelement rutscht, und
+  ein Touch-Signal, das unter dem Druck abreißt, haben bereits gestoppt.
+  Ein Abheben schaltet nie ein, was ein Stopp
   ausgeschaltet hat: Ein Finger auf dieser Hitec-Zeile verliert sein
   Tippen, und ein Halten auf AUSGANG EIN oder PROG 5V EIN endet, sobald das
   AUS zurückgemeldet ist.

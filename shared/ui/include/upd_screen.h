@@ -103,6 +103,7 @@ typedef enum {
     UPD_GOT_LIMIT,
     UPD_GOT_UNVERSIONED,
     UPD_GOT_PAST_LINE,
+    UPD_GOT_INSTALL,
 } upd_got_t;
 
 /** wa_why_t */

@@ -438,7 +438,7 @@ einer Task ihren Stack abzüglich 1024 Bytes überschreitet.
 
 | Task | Einstieg | Stack (Bytes) | Tiefste Kette (Bytes) | Reserve unter der Marge (Bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 768 | 2 384 |
+| `main` | `main_task`, ruft `app_main` und betreibt die UI | 8 192 | 4 784 | 2 368 |
 | `control` | `control_task` | 6 144 | 3 680 | 1 424 |
 | `runlog` | `log_task` | 6 656 | 3 840 | 1 776 |
 | `knob` | `knob_task`, der Leser des Drehknopfs | 3 072 | 1 168 | 864 |
@@ -533,7 +533,7 @@ oben ist deshalb eine Untergrenze:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  384
+  385
   solche Aufrufe sind von `main_task` aus erreichbar, die meisten in den
   Speicher- und Display-Treibern von ESP-IDF;
 - Sprünge über ein Register: eine Sprungtabelle, die in ihrer Funktion
@@ -697,7 +697,7 @@ Jede Tiefe ist eine Untergrenze:
 
 - Aufrufe über ein Register werden nicht verfolgt, außer dem Lese- und dem
   Schreib-Handler einer Page, die das Werkzeug aus der Page-Tabelle des
-  Links liest: 261 solche Aufrufe sind von `main` aus erreichbar, im Image,
+  Links liest: 262 solche Aufrufe sind von `main` aus erreichbar, im Image,
   das CI baut (arm-none-eabi-gcc 14.2.1);
 - der Frame von 1 088 Bytes von `two_way_long_needle()` der newlib bleibt
   außen vor. `strstr()` ruft sie für ein Suchmuster ab 255 Zeichen auf, und

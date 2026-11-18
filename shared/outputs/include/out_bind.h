@@ -181,7 +181,7 @@ typedef struct {
  * (shared/outputs/board_fix.h); the panel names each pin by its role.
  */
 typedef struct {
-    uint8_t out[OUTBIND_FIXED_OUTS];   /**< the servo outputs: OUTPUTS slot n */
+    uint8_t out[OUTBIND_FIXED_OUTS];   /**< the servo outputs, PWM01 first    */
     uint8_t prog[OUTBIND_FIXED_PROGS]; /**< the programming ports, port n    */
     uint8_t sda;          /**< the sensor bus: SDA                          */
     uint8_t scl;          /**< and SCL                                      */
@@ -490,7 +490,9 @@ uint8_t outbind_cell_count(uint16_t board);
  * @brief The catalogue index cell @p cell shows.
  *
  * Cell order is slot order: catalogue (GPIO) order, or on a board with roles
- * PWM01 first, so slot n is output n + 1 there.
+ * PWM01 first.  outbind_to_slots() fills slots and channels over the bound
+ * cells only, so slot n is output n + 1 there while every lower output is
+ * bound; with only PWM03 bound, PWM03 is slot 0 and channel 0.
  *
  * @param board  Identity of the board, as for outbind_board().
  * @param cell   Cell, 0 to outbind_cell_count() - 1.

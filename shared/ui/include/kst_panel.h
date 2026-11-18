@@ -121,12 +121,13 @@ bool kst_panel_holds_port(void);
 uint8_t kst_panel_pin(void);
 
 /**
- * @brief None of the session's controls stops what the bench drives: it works
- *  on a SAFE bench only (prog_page_set_t's safe_at).  Always false.
+ * @brief Whether a press at (@p x, @p y) lands on the PORT row's button
+ *  while it reads ABORT, which acts on that press (prog_page_set_t's
+ *  safe_at).
  *
  * @param x the touch's x
  * @param y the touch's y
- * @return always false
+ * @return true on ABORT
  */
 bool kst_panel_safe_at(int x, int y);
 

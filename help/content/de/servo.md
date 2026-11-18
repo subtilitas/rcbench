@@ -76,7 +76,7 @@ Punkt und Zustand einer Zeile von BEREIT sind grün, wenn erfüllt, gelb, wenn A
 3. Beim Loslassen bleibt die Position aktiv. Die Seite wiederholt den letzten Befehl; das Servo hält seine Stellung.
 4. Tippe auf DISARM, drücke STOP oder verlasse die Seite, um auf SAFE zu schalten. Auf LIVE, SWEEP und RUDER schalten DISARM und STOP auch PROG 5V und den Ausgang des PD mini aus. Ein Verlassen schaltet den PD mini aus; PROG 5V bleibt zwischen den SERVO-Seiten an.
 
-Solange die Schritte von ARM laufen, zeigt die Taste den Schritt in Gelb, etwa `START, SCHRITT 3 VON 5: RÜCKMELDUNG`. Ein Tipp darauf beendet sie mit allen Ausgängen aus. Ein Schritt, der scheitert, schaltet alle Ausgänge aus und nennt sich im Band, etwa `PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`.
+Solange die Schritte von ARM laufen, zeigt die Taste den Schritt in Gelb, etwa `START, SCHRITT 3 VON 5: RÜCKMELDUNG`. Ein Druck darauf beendet sie mit allen Ausgängen aus. Ein Schritt, der scheitert, schaltet alle Ausgänge aus und nennt sich im Band, etwa `PROG 5V FEHLGESCHLAGEN: KEINE RÜCKMELDUNG IN 1000ms`.
 
 ARM schaltet den PD mini nie über 6,0V ein: die Zeile VERSORGUNG zeigt dann `TIPPEN: HV-WARNUNG` in Rot, und ein Tipp öffnet NUR HV-SERVOS. ARM lässt den PD mini auch aus, wenn ein INA3221 die Schiene bei PD mini aus mit 3,0V oder mehr misst. Ohne INA3221-Fenster auf der Schiene misst sie nichts, und ARM schaltet den PD mini ein.
 
@@ -174,7 +174,7 @@ Die Zusammenfassung nennt Stufen und Dauer, etwa `4.8V, 6.0V, BROWN-OUT, JE 60s`
 
 Beim Laufstart bleibt TEST sichtbar; die Statuszeile nennt die aktuelle Stufe. Ein Feld unter der Karte zeigt Stufe und Phase. Neben seinem TEST BEENDEN steht das Messgerät: `PD mini`, ein INA-Kanal wie `INA 0x41 CH2` oder `SIMULATION`.
 
-TEST BEENDEN, STOP, SAFE, Verbindungsverlust, Verlassen der Seite, Berühren des Zifferblatts, ZENTRIEREN, SWEEP, FREIGEBEN, Tippen auf einen Sollwert oder Ändern der Servo-Optionen beendet den Lauf vorzeitig. Dabei schaltet der Ausgang aus und das Servo wird freigegeben. Ein INA3221-Lauf endet außerdem beim Wechsel des Messgeräts oder nach 200ms ohne Fenster mit Strom und Spannung (4 Fenster zu 50ms): `0.2s kein INA3221-Fenster`. Diese Fenster versorgen die Schutzfunktion BLOCKIERT AB; bei dieser Lücke kann der Lauf nicht fortgesetzt werden.
+TEST BEENDEN, STOP, SAFE, Verbindungsverlust, Verlassen der Seite, Berühren des Zifferblatts, ZENTRIEREN, SWEEP, FREIGEBEN, Tippen auf einen Sollwert oder Ändern der Servo-Optionen beendet den Lauf vorzeitig. Dabei schaltet der Ausgang aus und das Servo wird freigegeben. Ein INA3221-Lauf endet außerdem beim Wechsel des Messgeräts oder nach 200ms ohne Fenster mit Strom und Spannung (4 Fenster zu 50ms): `0.2s kein INA3221-Fenster`. Diese Fenster versorgen die Schutzfunktion Blockierschwelle; bei dieser Lücke kann der Lauf nicht fortgesetzt werden.
 
 Wird der AS5600 von Beginn an genutzt, toleriert der Lauf einmal innerhalb von 10s einen Ausfall bis 300ms. Hohe Motor- oder ESC-Ströme sowie das Einstecken eines Bausteins können den Sensorbus stören. Während der Lücke werden keine Winkel bewertet. Der Bericht nennt sie, etwa `AS5600-Aussetzer: 1, längster 120ms. ...`; die CSV-Spalte `angle gap (ms)` enthält die Dauer.
 

@@ -185,8 +185,12 @@ typedef struct {
     fm_sum_fn sum;           /**< FM_MATCH_SUM: the sum                 */
     uint32_t want;           /**< FM_MATCH_SUM: the old file's sum      */
     uint32_t got;            /**< FM_MATCH_SUM: the sum read so far     */
+    uint64_t seen;           /**< FM_MATCH_SUM: the bytes summed, the old
+                                  file's size as the sum was read        */
     bool found;              /**< FM_MATCH_SUM: refused with got the sum
                                   of the whole file there                */
+    bool tmp_taken;          /**< COPY, SAVE: FM_ERR_EXISTS names the
+                                  ".NEW" in @p tmp, not @p dst           */
     bool check_only;         /**< fm_job_check_only(): ends after the
                                   checks, nothing written                */
     fm_sum_fn data_fn;       /**< fm_job_sum(): the sum, or NULL        */

@@ -231,6 +231,27 @@ static void fit_views(const char *view, wiz_pose_t *w)
         w->p.phase = UPD_PH_IDLE;
         w->p.got = UPD_GOT_NONE;
         w->p.line_capped = true;
+    } else if (strcmp(view, "updates-wiz-off") == 0) {
+        /* The Dial bound and OFF on WIRELESS: the tag OFF, named on the
+         * last card. */
+        w->d[UPD_DEV_DIAL].row = DEVUPD_ROW_NOT_LINKED;
+        w->d[UPD_DEV_DIAL].known = false;
+        w->d[UPD_DEV_DIAL].off = true;
+    } else if (strcmp(view, "updates-wiz-all-current") == 0) {
+        /* No power node bound: every step current. */
+        w->d[UPD_DEV_PNODE].bound = false;
+    } else if (strcmp(view, "updates-wiz-no-check") == 0) {
+        /* The same without a check since the start. */
+        w->d[UPD_DEV_PNODE].bound = false;
+        w->p.phase = UPD_PH_IDLE;
+        w->p.got = UPD_GOT_NONE;
+        w->p.found[0] = '\0';
+    } else if (strcmp(view, "updates-wiz-inst-failed") == 0) {
+        /* A download staged, its install failed. */
+        w->d[UPD_DEV_PNODE].bound = false;
+        w->p.job = UPD_JOB_DOWNLOAD;
+        w->p.got = UPD_GOT_INSTALL;
+        strcpy(w->p.found, "0.22.1");
     }
 }
 

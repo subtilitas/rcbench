@@ -156,6 +156,61 @@ TEST_CASE(tbyb_timer_reads_watchdog)
     }
 }
 
+/* The firmware's own watchdog on its main loop (loop_watch.h): the timer,
+ * a NORMAL boot, the firmware's mark in SCRATCH0 and the SDK's mark of a
+ * watchdog_enable().  Each of the four missing reads as something else. */
+TEST_CASE(the_loop_watchdog_reads_loop_watchdog_with_both_marks_only)
+{
+    reset_regs_t r = watchdog(RESET_WD_REASON_TIMER, RESET_BOOT_TYPE_NORMAL,
+                              0u, 0u);
+    r.chip_reset = RESET_CHIP_HAD_POR;     /* sticky from the power-up */
+    r.wd_scratch0 = RESET_WD_LOOP_MARK;
+    r.wd_enabled = true;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_LOOP_WATCHDOG);
+    CHECK_STR_EQ(reset_cause_word(RESET_CAUSE_LOOP_WATCHDOG),
+                 "LOOP_WATCHDOG");
+
+    /* The SDK's watchdog_reboot() with a delay, as a restart asked over
+     * USB: it takes the SDK's mark away. */
+    r.wd_enabled = false;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_WATCHDOG);
+    r.wd_enabled = true;
+
+    /* A trial that was not bought: the firmware zeroed SCRATCH0 at its
+     * start and never enabled the watchdog. */
+    r.wd_scratch0 = 0u;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_WATCHDOG);
+    r.wd_scratch0 = RESET_WD_LOOP_MARK + 1u;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_WATCHDOG);
+    r.wd_scratch0 = RESET_WD_LOOP_MARK - 1u;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_WATCHDOG);
+    r.wd_scratch0 = RESET_WD_LOOP_MARK;
+
+    /* A forced trigger is the SDK's watchdog_reboot() with no delay. */
+    r.wd_reason = RESET_WD_REASON_FORCE;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_SW_RESET);
+    r.wd_reason = RESET_WD_REASON_TIMER;
+
+    /* A vector reboot is not a NORMAL boot: the plain word. */
+    r.boot_word = boot_word(0u, 1, RESET_BOOT_TYPE_PC_SP);
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_WATCHDOG);
+
+    /* The update's reboot() and picotool's reboot out of BOOTSEL keep
+     * their words, marks or not. */
+    r.boot_word = boot_word(0x01u, 1, RESET_BOOT_TYPE_FLASH_UPDATE);
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_FLASH_UPDATE);
+    r.boot_word = boot_word(0u, 1, RESET_BOOT_TYPE_NORMAL);
+    r.wd_scratch2 = RESET_PICOTOOL_P0;
+    r.wd_scratch3 = RESET_PICOTOOL_P1;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_BOOTSEL_REBOOT);
+
+    /* No watchdog trigger: the marks alone name nothing. */
+    r = chip_only(RESET_CHIP_HAD_POR);
+    r.wd_scratch0 = RESET_WD_LOOP_MARK;
+    r.wd_enabled = true;
+    CHECK_EQ(reset_cause_decode(&r), RESET_CAUSE_POR);
+}
+
 TEST_CASE(forced_watchdog_reads_sw_reset)
 {
     const reset_regs_t r = watchdog(RESET_WD_REASON_FORCE,
@@ -318,6 +373,7 @@ int main(void)
     RUN(watchdog_after_a_bootsel_session_reads_bootsel_reboot);
     RUN(flash_update_reboot_reads_flash_update);
     RUN(tbyb_timer_reads_watchdog);
+    RUN(the_loop_watchdog_reads_loop_watchdog_with_both_marks_only);
     RUN(forced_watchdog_reads_sw_reset);
     RUN(nothing_set_reads_unknown);
     RUN(two_bits_at_once_take_the_first_in_order);

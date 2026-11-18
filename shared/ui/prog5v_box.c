@@ -37,6 +37,9 @@ typedef struct {
     prog5v_cmd_t cmd;
     /** @brief The screen whose box switched the supply on.  app_main only */
     prog5v_by_t  owner;
+    /** @brief An ON polled and not reported yet
+     *         (prog5v_box_set_on_coming()).  app_main only */
+    bool         on_coming;
 } p5_state_t;
 
 /** @brief The box's one instance. */
@@ -107,6 +110,14 @@ static unsigned held(void) { return atomic_load(&p5.state) & 0xFFu; }
 bool prog5v_box_shown(void) { return st() != ST_NONE; }
 
 bool prog5v_box_on(void) { return st() == ST_ON; }
+
+void prog5v_box_set_on_coming(bool coming) { p5.on_coming = coming; }
+
+bool prog5v_box_stops(void)
+{
+    return prog5v_box_shown() && (prog5v_box_on() || p5.cmd.on
+                                  || p5.on_coming);
+}
 
 uint16_t prog5v_box_input_low_mv(void)
 {
@@ -236,6 +247,8 @@ static void post(bool on, prog5v_by_t by, uint32_t cuts)
     p5.cmd.on  = false;
     p5.cmd.by  = by;
     p5.owner   = PROG5V_BY_NONE;
+    /* The ON on its way is taken back with this OFF. */
+    p5.on_coming = false;
 }
 
 bool prog5v_box_press(prog5v_box_t *b)
@@ -243,15 +256,21 @@ bool prog5v_box_press(prog5v_box_t *b)
     if (b == NULL || !prog5v_box_live()) {
         return false;
     }
-    if (!prog5v_box_on() && prog5v_box_input_low_mv() != 0u) {
+    if (!prog5v_box_stops() && prog5v_box_input_low_mv() != 0u) {
         /* M7 makes no 5V from a low input: no hold, the reason said. */
         ui_action_refused(prog5v_box_input_why());
         return true;
     }
     b->pressed  = true;
-    b->press_on = prog5v_box_on();
+    b->press_on = prog5v_box_stops();
     b->cuts     = atomic_load(&p5.cuts);
-    if (!b->press_on) {
+    if (b->press_on) {
+        /* PROG 5V OFF acts on the press: a stop waits for no lift, so a
+         * finger that slides off or a touch that is lost has asked it.
+         * An ON asked and not reported counts as on: the press takes it
+         * back. */
+        post(false, b->by, 0u);
+    } else {
         ui_hold_begin(&b->hold, TX_HOLD_HINT_PROG5V);
     }
     ++b->rev;
@@ -280,17 +299,10 @@ void prog5v_box_release(prog5v_box_t *b, const touch_event_t *up)
     const gfx_rect_t btn = prog5v_box_button(b);
     /* A hold let go early shows its hint on the band. */
     (void)ui_hold_end(&b->hold, up, btn);
-    const bool tap = up != NULL && touch_event_is_tap_up(up);
-    const int  x   = (up != NULL) ? up->point.x : -1;
-    const int  y   = (up != NULL) ? up->point.y : -1;
-    /* Off is a tap; on is a hold that has sent its command by the time the
-     * finger lifts.  Which one is the press's (press_on): an ON reported
-     * during a hold does not make its release an OFF. */
-    if (tap && b->press_on && prog5v_box_on()
-        && held() == PROG5V_HELD_NONE
-        && gfx_rect_contains(btn, x, y)) {
-        post(false, b->by, 0u);
-    }
+    /* Off asked on its press (prog5v_box_press()); on is a hold that has
+     * sent its command by the time the finger lifts.  The release asks
+     * nothing: an ON reported during a hold does not make its release an
+     * OFF. */
     b->pressed = false;
     ++b->rev;
 }
@@ -329,6 +341,13 @@ void prog5v_box_tick(prog5v_box_t *b, float dt_s)
         b->seen      = now;
         b->seen_read = rd;
         b->seen_in   = in;
+        ++b->rev;
+    }
+    /* An ON asked and then dropped turns the button from PROG 5V OFF back
+     * to ON without a change of the published state. */
+    const bool stops = prog5v_box_stops();
+    if (stops != b->was_stops) {
+        b->was_stops = stops;
         ++b->rev;
     }
     const bool on = prog5v_box_on();
@@ -461,9 +480,9 @@ void prog5v_box_render(const prog5v_box_t *b, gfx_canvas_t *c)
      * hold draws it: nothing is kept for a ghost. */
     ui_hold_t hold = b->hold;
     ui_hold_button(c, prog5v_box_button(b),
-                   (s == ST_ON) ? TR(P5_OFF) : TR(P5_ON),
-                   ui_action_fill(prog5v_box_on() ? UI_ACTION_ACTIVE
-                                                  : UI_ACTION_AVAILABLE),
+                   prog5v_box_stops() ? TR(P5_OFF) : TR(P5_ON),
+                   ui_action_fill(prog5v_box_stops() ? UI_ACTION_ACTIVE
+                                                     : UI_ACTION_AVAILABLE),
                    ui_action_fill(UI_ACTION_ACTIVE), &hold, b->pressed,
                    prog5v_box_live(), &gfx_font_10x20);
 }
@@ -510,6 +529,7 @@ void prog5v_box_reset(void)
 {
     memset(&p5.cmd, 0, sizeof(p5.cmd));
     p5.owner = PROG5V_BY_NONE;
+    p5.on_coming = false;
     prog5v_box_publish(0u, 0u, (uint8_t)PROG5V_HELD_NONE);
     prog5v_box_reading(false, 0u, 0, 0u);
     prog5v_box_publish_cuts(0u);

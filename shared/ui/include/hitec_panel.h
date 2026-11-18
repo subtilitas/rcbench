@@ -107,11 +107,13 @@ bool hitec_panel_files_shown(void);
  */
 uint8_t hitec_panel_pin(void);
 /**
- * @brief None of the session's controls stops what the bench drives: it
- *        works on a SAFE bench only.  Always false.
+ * @brief Whether a press at (@p x, @p y) lands on a control of the session
+ *        that stops and acts on that press: MOVE SERVO's value while the
+ *        loop is on, the FIND STOP key whose side searches, or the PORT
+ *        row's button while it reads ABORT (prog_page_set_t's safe_at).
  * @param x the column, px
  * @param y the row, px
- * @return false
+ * @return true on such a control
  */
 bool hitec_panel_safe_at(int x, int y);
 /** @brief The session's hooks for its row on SERVO > PROGRAM. */

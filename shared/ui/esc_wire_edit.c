@@ -231,6 +231,34 @@ const char *ewp_row_name(const ewp_row_t *r)
     return r->f != NULL ? r->f->name : r->k->key;
 }
 
+const char *ewp_unit_shown(const char *unit)
+{
+    if (strcmp(unit, "deg") == 0) {
+        return "°";
+    }
+    return strcmp(unit, "C") == 0 ? "°C" : unit;
+}
+
+void ewp_units_shown(char *text, size_t size)
+{
+    static const struct {
+        const char *from; /**< the map's unit behind a digit */
+        const char *to;   /**< the screen's                  */
+    } k_units[] = { { "deg", "°" }, { "C", "°C" } };
+    const size_t len = strlen(text);
+
+    for (size_t i = 0u; i < sizeof(k_units) / sizeof(k_units[0]); ++i) {
+        const size_t n = strlen(k_units[i].from);
+
+        if (len > n && strcmp(text + len - n, k_units[i].from) == 0
+            && text[len - n - 1u] >= '0' && text[len - n - 1u] <= '9'
+            && len - n + strlen(k_units[i].to) < size) {
+            snprintf(text + len - n, size - (len - n), "%s", k_units[i].to);
+            return;
+        }
+    }
+}
+
 void ewp_row_text(const ewp_row_t *r, char *out, size_t size)
 {
     if (r->f != NULL) {
@@ -238,6 +266,7 @@ void ewp_row_text(const ewp_row_t *r, char *out, size_t size)
     } else {
         (void)ew_key_text(r->k, ew_e32_get(ewp_s.draft, r->slot), out, size);
     }
+    ewp_units_shown(out, size);
 }
 
 bool ewp_row_changed(const ewp_row_t *r)
@@ -342,7 +371,7 @@ static void keypad_for_row(void)
         const ew_field_t *f = r->f;
         const int dec = f->dec < 3u ? (int)f->dec : 3;
 
-        snprintf(s_unit, sizeof(s_unit), "%s", f->unit);
+        snprintf(s_unit, sizeof(s_unit), "%s", ewp_unit_shown(f->unit));
         ui_keypad_open(&ewp_s.kp, area, f->name, s_unit,
                        field_value(f, ewp_s.draft[f->off]), field_value(f, f->lo),
                        field_value(f, f->hi), f->div != 0u ? 1 : dec);
@@ -353,7 +382,7 @@ static void keypad_for_row(void)
     const float scale = (float)mul / tens(k->dec);
     const float now = (float)ew_e32_get(ewp_s.draft, r->slot) * scale;
 
-    snprintf(s_unit, sizeof(s_unit), "%s", k->unit);
+    snprintf(s_unit, sizeof(s_unit), "%s", ewp_unit_shown(k->unit));
     if (k->lo < 0) {
         ui_keypad_open_signed(&ewp_s.kp, area, k->key, s_unit, now,
                               (float)k->lo * scale, (float)k->hi * scale,
@@ -377,6 +406,7 @@ void ewp_edit_open(const ewp_row_t *r)
             ewp_s.ch_what = EWP_CH_FIELD;
             for (unsigned v = f->lo; v <= f->hi; ++v) {
                 (void)ew_field_text(f, (uint8_t)v, text, sizeof(text));
+                ewp_units_shown(text, sizeof(text));
                 ewp_choice_add(text, (int)v);
             }
             return;
@@ -396,6 +426,7 @@ void ewp_edit_open(const ewp_row_t *r)
         ewp_s.ch_what = EWP_CH_FIELD;
         for (int v = k->lo; v <= k->hi; ++v) {
             (void)ew_key_text(k, (int16_t)v, text, sizeof(text));
+            ewp_units_shown(text, sizeof(text));
             ewp_choice_add(text, v);
         }
         return;
@@ -662,6 +693,8 @@ static void write_walk(write_walk_t *w)
                 if (a != b && warns_on(k->flags, b) == want) {
                     (void)ew_key_text(k, a, from, sizeof(from));
                     (void)ew_key_text(k, b, to, sizeof(to));
+                    ewp_units_shown(from, sizeof(from));
+                    ewp_units_shown(to, sizeof(to));
                     write_line(w, k->key, from, to, want);
                 }
             }
@@ -675,6 +708,8 @@ static void write_walk(write_walk_t *w)
                 if (a != b && warns_on(f->flags, b) == want) {
                     (void)ew_field_text(f, a, from, sizeof(from));
                     (void)ew_field_text(f, b, to, sizeof(to));
+                    ewp_units_shown(from, sizeof(from));
+                    ewp_units_shown(to, sizeof(to));
                     write_line(w, f->name, from, to, want);
                 }
             }

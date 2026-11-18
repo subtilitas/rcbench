@@ -223,12 +223,12 @@ TEST_CASE(arm_beside_the_alert_holds_as_without_one)
 }
 
 /*
- * An ARM asked for and not yet answered -- refused by the IOmcu, or still
- * on its way -- leaves the button reading ARM, and a tap there is ARM's: a
- * tap is no hold, and there is nothing to disarm.  An answer that arrives
- * later makes the next press a DISARM.
+ * An ARM asked for and not yet answered -- still on its way -- makes the
+ * button DISARM: a press there with an alert showing is the screen's and
+ * takes the ARM back.  With the bench armed the next press is a DISARM as
+ * well.
  */
-TEST_CASE(an_arm_not_answered_is_no_disarm)
+TEST_CASE(an_arm_not_answered_is_a_disarm)
 {
     sv_fresh();
     finger(FEED_LONE, SV_ARM_X, SV_ARM_MY);
@@ -237,9 +237,8 @@ TEST_CASE(an_arm_not_answered_is_no_disarm)
     lift(FEED_LONE);
     alert();
     feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_MY);
-    CHECK_EQ(sv_took(), SERVO_CMD_NONE);
-    CHECK(alert_shows());
-    servo_screen_set_armed(true);            /* the answer, late */
+    CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
+    servo_screen_set_armed(true);
     sv_drain();
     feed_tap(FEED_LONE, SV_ARM_X, SV_ARM_MY);
     CHECK_EQ(sv_took(), SERVO_CMD_DISARM);
@@ -615,7 +614,7 @@ int main(void)
     RUN(disarm_at_the_alerts_edges);
     RUN(an_alert_arriving_under_the_press_does_not_take_its_release);
     RUN(arm_beside_the_alert_holds_as_without_one);
-    RUN(an_arm_not_answered_is_no_disarm);
+    RUN(an_arm_not_answered_is_a_disarm);
     RUN(a_tap_on_the_alert_only_closes_it);
     RUN(a_disarm_press_beside_the_alert_slides_as_without_one);
     RUN(touch_lost_under_a_disarm_press_disarms);

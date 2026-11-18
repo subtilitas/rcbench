@@ -338,6 +338,7 @@ wins:
 | `RAM_IMAGE` | boot type 3 | an image loaded into SRAM |
 | `BOOTSEL_REBOOT` | boot type 2; or reason non-zero, boot type 0, scratch 0xFFFFFFFF 0x00000000 | back from BOOTSEL through `picotool reboot`, which picotool also sends after every command run with `-f`. The way into BOOTSEL is the 1200 baud request or picotool's reset request over USB |
 | `SW_RESET` | reason 0x2 | the watchdog triggered at once by software |
+| `LOOP_WATCHDOG` | reason 0x1, boot type 0, the firmware's mark in WATCHDOG SCRATCH0 (0x4C4F4F50) and the SDK's mark of `watchdog_enable()` | the firmware's own watchdog: core 0 did not pass its main loop for 500ms ([Safety](Safety.md#iomcu-loop-watchdog)). The line prints neither mark; the firmware zeroes SCRATCH0 at every start |
 | `WATCHDOG` | reason 0x1 | the watchdog counted down: the boot ROM's 16.7s TBYB (try before you buy) timer after an update the panel did not buy, or a reboot with other parameters |
 | `POR` | reason 0, HAD_POR (bit 16) | power applied |
 | `BOR` | reason 0, HAD_BOR (bit 17) | brown-out detector |

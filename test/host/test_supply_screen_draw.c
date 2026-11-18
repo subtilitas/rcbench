@@ -15,7 +15,7 @@
  * - each_framebuffer_is_updated_independently
  * - a_set_point_moved_offline_repaints_the_cards_in_both_buffers
  * - a_screen_without_a_sample_draws
- * - an_on_reported_during_a_second_hold_is_not_an_off
+ * - a_press_while_an_on_is_on_its_way_takes_it_back
  * - a_question_for_an_on_that_was_dropped_goes
  * - an_apply_held_as_its_on_is_dropped_applies_nothing
  * - a_dropped_question_lets_go_of_its_apply
@@ -23,7 +23,7 @@
  * - stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply
  * - a_question_asked_after_a_stop_stands_on_supply
  * - a_press_that_lost_its_release_gives_way_to_the_next_press
- * - a_lost_release_on_output_off_is_sent_at_the_next_press
+ * - a_lost_release_on_output_off_loses_no_off
  * - an_on_posted_by_a_hold_that_lost_its_release_is_dropped
  * - a_second_contact_does_not_end_a_press_that_is_held
  * - a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off
@@ -437,20 +437,48 @@ TEST_CASE(reset_pd_mini_is_offered_only_for_the_module)
     CHECK(!c.on);
 }
 
-/* A second hold on OUTPUT ON while the first one's ON is on its way: the
- * output reporting on during it does not make its release an OFF. */
-TEST_CASE(an_on_reported_during_a_second_hold_is_not_an_off)
+/* A second press on OUTPUT while the first hold's ON is on its way takes
+ * the ON back on the DOWN.  The output reporting on during the press makes
+ * its release nothing more: one OFF, no ON. */
+TEST_CASE(a_press_while_an_on_is_on_its_way_takes_it_back)
 {
     fresh();
     hold_on();
     drain();
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    supply_cmd_t c = { 0 };
+    CHECK(supply_screen_poll_cmd(&c) && c.off && !c.on);
     tick_for(4);
     supply_screen_set_output(true);
     tick_for(1);
     ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
-    supply_cmd_t c;
-    CHECK(!supply_screen_poll_cmd(&c) || !c.off);
+    CHECK(!supply_screen_poll_cmd(&c));
+}
+
+/* An ON dropped after the hold's flash has ended: the OUTPUT button is
+ * drawn again, so it no longer reads OUTPUT OFF over an output that stays
+ * off (Codex P2 on #888). */
+TEST_CASE(an_on_dropped_after_the_flash_redraws_the_output_button)
+{
+    fresh();
+    hold_on();
+    drain();
+    supply_screen_set_on_coming(true);
+    tick_for(60);                       /* the flash has ended */
+    scr->render(&cv, 0);
+    scr->render(&cv, 0);
+    supply_screen_set_on_coming(false); /* the ON was dropped */
+    scr->render(&cv, 0);                /* only what changed */
+    memcpy(fb2, fb, (size_t)W * H * sizeof(gfx_color_t));
+    supply_invalidate();
+    scr->render(&cv, 0);                /* everything */
+    int differ = 0;
+    for (int y = OUT_Y - 20; y < OUT_Y + 20; ++y) {
+        for (int x = OUT_X - 60; x < OUT_X + 60; ++x) {
+            differ += (fb[y * W + x] != fb2[y * W + x]) ? 1 : 0;
+        }
+    }
+    CHECK_EQ(differ, 0);
 }
 
 /* The question asked while an ON was on its way goes when that ON is
@@ -589,23 +617,26 @@ TEST_CASE(a_press_that_lost_its_release_gives_way_to_the_next_press)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
-/* On a live output the press that went missing was a tap on OUTPUT OFF: an
- * OFF the operator made, sent when the next press shows it is over. */
-TEST_CASE(a_lost_release_on_output_off_is_sent_at_the_next_press)
+/* On a live output a press on OUTPUT OFF asks OFF as it comes down: its
+ * release going missing loses nothing, and the next press, which shows the
+ * first is over, asks nothing more. */
+TEST_CASE(a_lost_release_on_output_off_loses_no_off)
 {
     fed();
     supply_screen_set_output(true);
     drain();
     finger(FEED_LONE, OUT_X, P(OUT_Y));
+    supply_cmd_t c = { 0 };
+    const bool posted = supply_screen_poll_cmd(&c);
+    CHECK(posted && c.off && !c.on);
     feed_lose_next(1);
     lift(FEED_LONE);
     CHECK(!supply_screen_poll_cmd(NULL));
 
     finger(FEED_LONE, OFF_X, P(OFF_Y));
-    supply_cmd_t c = { 0 };
-    const bool posted = supply_screen_poll_cmd(&c);
+    CHECK(!supply_screen_poll_cmd(NULL));
     lift(FEED_LONE);
-    CHECK(posted && c.off);
+    CHECK(!supply_screen_poll_cmd(NULL));
 }
 
 /*
@@ -822,7 +853,8 @@ int main(void)
     RUN(a_set_point_moved_offline_repaints_the_cards_in_both_buffers);
     RUN(a_sample_leaves_the_tabs_and_the_heading_row_alone);
     RUN(a_screen_without_a_sample_draws);
-    RUN(an_on_reported_during_a_second_hold_is_not_an_off);
+    RUN(a_press_while_an_on_is_on_its_way_takes_it_back);
+    RUN(an_on_dropped_after_the_flash_redraws_the_output_button);
     RUN(a_question_for_an_on_that_was_dropped_goes);
     RUN(an_apply_held_as_its_on_is_dropped_applies_nothing);
     RUN(a_dropped_question_lets_go_of_its_apply);
@@ -830,7 +862,7 @@ int main(void)
     RUN(stop_and_an_apply_tap_in_one_frame_apply_nothing_on_supply);
     RUN(a_question_asked_after_a_stop_stands_on_supply);
     RUN(a_press_that_lost_its_release_gives_way_to_the_next_press);
-    RUN(a_lost_release_on_output_off_is_sent_at_the_next_press);
+    RUN(a_lost_release_on_output_off_loses_no_off);
     RUN(an_on_posted_by_a_hold_that_lost_its_release_is_dropped);
     RUN(a_second_contact_does_not_end_a_press_that_is_held);
     RUN(a_release_the_tracker_makes_for_a_jump_presses_nothing_but_off);

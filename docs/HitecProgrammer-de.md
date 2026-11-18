@@ -69,7 +69,7 @@ und von je 1 HS-5645MG, HS-7955TG und HS-5955TG (18.10. bis 20.10.2026)
   rbmod-Carrier](ServoProgrammer-de.md#der-port-auf-dem-rbmod-carrier)).
 - Der Prüfstand ist SAFE. VERBINDEN wird abgelehnt bei ARMED, bei einem
   angeforderten Schalten auf ARMED und mit einem Finger auf ARM: `Tippe zuerst auf DISARM. Bei ARMED kann der Port nicht übernommen werden.` Ein
-  gesetzter STOP lehnt es ebenfalls ab: `Ein STOP ist gesetzt. Halte STOP 2s, um ihn zurückzusetzen.`
+  gesetzter STOP lehnt es ebenfalls ab: `Ein STOP ist gesetzt. Halte STOP 2s, um ihn zu lösen.`
 - Ein klassisches Servo geht nur beim Einschalten in den Programmiermodus.
   Der Prüfstand muss seine Versorgung deshalb aus- und einschalten können.
   VERBINDEN für KLASSISCH braucht entweder einen antwortenden PD mini oder
@@ -118,7 +118,7 @@ KST-Servoprogrammierung ([Seiten](Screens-de.md#programmierer)).
 VERBINDEN ist eine Halte-Taste von 2s, wo die Sitzung die Servoversorgung schaltet: PROG 5V des Carriers, ein
 antwortender PD mini oder KLASSISCH ([Servo-Programmierer, Der Port](ServoProgrammer-de.md#der-port)). Die Schritte
 unten beginnen mit dem vollständigen Halten; ein vom Bediener versorgtes Servo der D-Serie nimmt ein Tippen. Loslassen
-vor 2s zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` FREIGEBEN, VERLASSEN und ABBRECHEN nehmen ein Tippen.
+vor 2s zeigt `Halte 2s, um zu verbinden und die Versorgung des Ports einzuschalten.` FREIGEBEN und VERLASSEN nehmen ein Tippen; ABBRECHEN wirkt beim Aufsetzen.
 
 1. OPEN: Der IOmcu beendet PWM am Port. Nach 50ms ohne Pulse übernimmt der
    Leitungstreiber die freigegebene Leitung.
@@ -959,7 +959,7 @@ unbeantwortet, wenn SERVO verlassen wird, ist sie weg, wie bei NEIN.
 
 | Ereignis | Der Port | Was der Bediener tut |
 | --- | --- | --- |
-| STOP, gedrückt oder vom Prüfstand selbst | Der IOmcu bricht die Transaktion nach dem Frame auf der Leitung ab, behält den Port mit losgelassenem Pin und setzt STOPPED. Das Panel setzt den Stopp und hält den Heartbeat zurück | `Gestoppt. Der Pin ist frei. Halte STOP 2s, um den STOP zurückzusetzen.`, und keine Zeile bietet AUFHEBEN an. AUFHEBEN und ALLES AUSLESEN werden bei gesetztem STOP abgelehnt: der IOmcu würde das CLEAR als UNSAFE ablehnen. Halte STOP 2s und schließe das Zurücksetzen ab. Danach setzt AUFHEBEN fort oder VERLASSEN beendet die Sitzung |
+| STOP, gedrückt oder vom Prüfstand selbst | Der IOmcu bricht die Transaktion nach dem Frame auf der Leitung ab, behält den Port mit losgelassenem Pin und setzt STOPPED. Das Panel setzt den Stopp und hält den Heartbeat zurück | `Gestoppt. Der Pin ist frei. Halte STOP 2s, um den STOP zu lösen.`, und keine Zeile bietet AUFHEBEN an. AUFHEBEN und ALLES AUSLESEN werden bei gesetztem STOP abgelehnt: der IOmcu würde das CLEAR als UNSAFE ablehnen. Halte STOP 2s und schließe das Zurücksetzen ab. Danach setzt AUFHEBEN fort oder VERLASSEN beendet die Sitzung |
 | Ein Schalten auf SAFE am Prüfstand allein | STOPPED, kein gesetzter Stopp | `Gestoppt. Der Pin ist frei. Tippe auf AUFHEBEN zum Fortsetzen oder auf VERLASSEN.` AUFHEBEN setzt das Auslesen fort |
 | ABBRECHEN | Der Vorgang endet; der Port bleibt gehalten | ALLES AUSLESEN erneut, oder VERLASSEN |
 | Die Verbindung verstummt | Der Failsafe des IOmcu löst aus, und der Port bleibt gehalten; das Modul des Panels zählt ihn nicht als seinen | Sobald die Verbindung zurück ist, sagt die Programmierung `Port von einer anderen Hitec-Sitzung belegt.` und bietet PORT FREIGEBEN an |

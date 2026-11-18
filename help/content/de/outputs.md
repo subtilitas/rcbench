@@ -147,7 +147,7 @@ Ein Tipp auf eine Taste, die ein anderes Protokoll hält, fragt, ob der Pin zum 
 2. Die Zuordnung wird einmal geschrieben, mit dem verschobenen Pin. [LETZTER SCHREIBVORGANG](#letzter-schreibvorgang) zeigt das Ergebnis.
 3. Zum Rückgängigmachen wähle das alte Protokoll und verschiebe den Pin zurück. Kanäle folgen den Pins, also ist die Zuordnung wieder dieselbe.
 
-ABBRECHEN, das Home-Feld oder ein Druck irgendwo neben der Karte schließt sie und schreibt nichts. Die Karte schließt auch ohne Schreiben, wenn ein Lesen die Zuordnung unbestätigt lässt, ein Zurücklesen einen Pin ändert, ein anderes Protokoll gewählt wird, die Platine wechselt oder die Seite verlassen wird. PIN VERSCHIEBEN prüft das Verschieben vorher noch einmal und schreibt nichts, wenn der Pin inzwischen gewechselt hat.
+ABBRECHEN, das Home-Feld oder ein Druck irgendwo neben der Karte schließt sie und schreibt nichts. Die Karte schließt auch ohne Schreiben, wenn ein Lesen die Zuordnung unbestätigt lässt, ein Zurücklesen einen Pin ändert, ein anderes Protokoll gewählt wird, die Platine wechselt oder die Seite verlassen wird. PIN VERSCHIEBEN prüft das Verschieben vorher noch einmal und schreibt nichts, wenn der Pin inzwischen gewechselt hat. 400ms lang, nachdem PIN VERSCHIEBEN oder ABBRECHEN die Karte geschlossen hat, wird ein Druck in der Fläche der Karte ignoriert; der zweite Tipp eines Doppeltipps wählt so keinen Pin darunter.
 
 ![Der letzte Pin von SERVO PWM unter DSHOT600 BIDIR](view:outputs-take-last)
 
@@ -173,7 +173,7 @@ Die offene Protokollliste enthält eine zweite Spalte mit einem PROG-PORT-Eintra
 | FUNKTION | Signal außerhalb einer Programmiersitzung. Ein Tipp öffnet die Auswahl. SERVO PWM gibt Servopulse an einem PWM-Pin aus. KEINE setzt einen beliebigen freien Pin als Eingang mit Pull-down. DSHOT150, DSHOT300 und DSHOT600 ab IOmcu 0.22.0 senden Gas von MOTOR & ESC: alle 1ms ein Frame bei ARMED für Gas, an einem beliebigen freien Pin. |
 | ÜBERWACHT VON | INA3221-Kanal aus SETUP > SENSORS, etwa `ÜBERWACHT VON INA3221 0x41 CH2`, oder `VON KEINEM STROMKANAL ÜBERWACHT`. |
 | SERVO-TESTER | OUTPUTS oder PORT n als Ziel von [SERVO](servo.md). Die Taste PORT auf SERVO setzt denselben Wert. |
-| PORT-PWM | EIN oder AUS für den Puls am Testerziel-Port. |
+| PORT-PWM | EIN oder AUS für den Puls am Testerziel-Port. EIN nimmt ein Tippen; AUS wirkt beim Aufsetzen. |
 
 Der IOmcu speichert Pin und Funktion jedes Ports zusammen mit den Ausgangszuordnungen im Flash. Sie gehören damit zur Platine. Port 1 beginnt mit SERVO PWM auf GPIO 13, Ports 2 bis 4 mit KEINE ohne Pin. Die Wahl einer FUNKTION oder Pin-Taste fordert eine Änderung an. Das Panel schreibt sie bei ruhendem Prüfstand; die bernsteinfarbene Zeile zeigt ihren Status.
 
@@ -226,7 +226,7 @@ Eine gespeicherte Ausgangszuordnung für GPIO 13 behält den Pin. Der Programmie
 
 ![PWM01 bis PWM04, PWM03 wegen Slice 2 abgelehnt](view:outputs-rbmod)
 
-Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) sind alle Leitungen fest verdrahtet. Du wählst daher Protokolle statt Pins. Das Raster zeigt PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1 mit dem jeweiligen GPIO unter dem Steckernamen. Tippe auf einen Ausgang, um das Protokoll zuzuordnen. Slot n entspricht PWM0(n+1); PWM01 ist Kanal 0. Ein Protokoll nutzt höchstens diese 4 Ausgänge: `SERVO PWM BELEGT 4 PINS`.
+Auf dem [rbmod-Carrier](https://github.com/subtilitas/rcbench/wiki/Carrier-de) sind alle Leitungen fest verdrahtet. Du wählst daher Protokolle statt Pins. Das Raster zeigt PWM01 bis PWM04 auf GPIO 2, 4, 5 und 1 mit dem jeweiligen GPIO unter dem Steckernamen. Tippe auf einen Ausgang, um das Protokoll zuzuordnen. Die zugeordneten Ausgänge belegen Slots und Kanäle in der Reihenfolge PWM01 bis PWM04, ein nicht zugeordneter Ausgang belegt keinen: PWM01 ist Kanal 0, solange er zugeordnet ist, und ist nur PWM03 zugeordnet, ist PWM03 Kanal 0. Ein Protokoll nutzt höchstens diese 4 Ausgänge: `SERVO PWM BELEGT 4 PINS`.
 
 PWM02 und PWM03 teilen sich einen PWM-Slice und damit eine Pulsrate. SERVO PWM und MOTOR PWM lassen sich dort nicht miteinander kombinieren. Die Zelle zeigt `SLICE VON PWM02`; ein Tipp meldet `PWM03 GPIO 5: GLEICHER PWM-SLICE WIE PWM02 GPIO 4`. DShot verwendet eine eigene Zustandsmaschine und lässt sich mit beiden kombinieren.
 
@@ -258,6 +258,22 @@ Pin-Änderungen werden sofort geschrieben. LETZTER SCHREIBVORGANG steht neben de
 | `GESCHRIEBEN` | der IOmcu hat das Schreiben bestätigt |
 | `KEINE VERBINDUNG` | ein Austausch bekam binnen 1000ms keine Antwort, oder die Verbindung ist unterbrochen |
 | `ABGELEHNT` | der IOmcu hat abgelehnt: ein Pin, den er nicht zuordnen kann, eine Änderung bei ARMED oder eine Pulsrate, die er nicht zurücksetzen konnte |
+
+Ein IOmcu mit Link-Protokoll 4.38 oder neuer nennt die Ursache eines abgelehnten Schreibens. Die Zeile unter dem Protokoll zeigt sie, solange LETZTER SCHREIBVORGANG `ABGELEHNT` zeigt und dort keine andere Zeile steht:
+
+| Zeile | Ursache |
+|---|---|
+| `ABGELEHNT: NICHT BEI ARMED` | eine Rolle, ein Throttle-Kanal oder ein Slot ändert sich bei ARMED |
+| `ABGELEHNT: KEIN PIO ODER PWM-SLICE FREI` | der IOmcu hat für einen Ausgang keine freie PIO-State-Machine, keinen PIO-Instruktionsspeicher oder keinen PWM-Slice, oder der Pin hat den Treiber abgewiesen |
+| `ABGELEHNT: LÄSST DEM PD MINI KEIN PIO` | die Ausgänge würden den PIO-Block belegen, auf den der UART des PD mini wartet |
+| `ABGELEHNT: PIN ODER PWM-SLICE EINES PROG-PORTS` | ein Programmierport hält den Pin, dessen Kanal oder dessen PWM-Slice |
+| `ABGELEHNT: PIN DES PD MINI` | SUPPLY hält den Pin; `ABGELEHNT: PIN DES SENSORBUS` und `ABGELEHNT: PIN DES PHASENABGRIFFS` ebenso für SENSORS |
+| `ABGELEHNT: PWM-SLICE MIT ANDERER PULSRATE` | der Ausgang teilt einen PWM-Slice mit einem Servoausgang anderer Pulsrate |
+| `ABGELEHNT: PULS LÄNGER ALS SEIN FRAME` | der Puls-Endpunkt eines Kanals ist länger als der Frame seines PWM-Ausgangs |
+| `ABGELEHNT: KEIN SERVOAUSGANG DER PLATINE` | auf einer Platine mit gelöteten Pins ein Pin, der keiner ihrer Servoausgänge ist |
+| `ABGELEHNT: ESC-PROGRAMMIERUNG HÄLT AUSGANG` | eine ESC-Programmierung hält einen Ausgang |
+| `ABGELEHNT: WERT AUSSERHALB DES BEREICHS` | ein Registerwert außerhalb des Bereichs seiner Page |
+| `ABGELEHNT: DIE PAGES KAMEN VERÄNDERT AN` | der IOmcu hält andere Pages, als das Panel gesendet hat; das nächste Schreiben sendet sie erneut |
 
 Ab Version 0.15.0 übernimmt der IOmcu die Zuordnung vollständig oder gar nicht. Bei `KEINE VERBINDUNG` oder `ABGELEHNT` bleibt die bisherige Zuordnung aktiv.
 

@@ -106,7 +106,7 @@ static void open_outputs(void)
 /*
  * The controls whose press stops what the bench drives, where mo_event() hands
  * a DOWN at (x, y) to them now: a session's own (a stick run's ABORT), or
- * DISARM on the rail while the button reads DISARM.  The router hands a
+ * DISARM on the rail while the button reads DISARM (mo_arm_stops()).  The router hands a
  * press on one through the alert band and the band's help bubble
  * (ui_screen_t's safe_at); ARM is none.
  */
@@ -119,7 +119,7 @@ bool mo_safe_at(int x, int y)
     if (msp_shown() || mln_shown()) {
         return false;           /* the list or the keyboard covers DISARM */
     }
-    return s.gate.armed && gfx_rect_contains(s.arm_rect, x, y);
+    return mo_arm_stops() && gfx_rect_contains(s.arm_rect, x, y);
 }
 
 void mo_event(const touch_event_t *evt)
@@ -242,10 +242,12 @@ void mo_event(const touch_event_t *evt)
             return;
         }
         if (gfx_rect_contains(s.arm_rect, x, y)) {
-            if (s.gate.armed) {
+            if (mo_arm_stops()) {
                 /* DISARM acts on the press: a stop never waits for a lift
-                 * that may not come.  The press takes no hold, so a finger
-                 * left on the button arms nothing when it reads ARM again. */
+                 * that may not come.  An ARM asked and not answered counts
+                 * as armed: the press takes it back.  The press takes no
+                 * hold, so a finger left on the button arms nothing when
+                 * it reads ARM again. */
                 mo_post(MOTOR_CMD_DISARM, 0.0f);
                 ++s.arm_rev;
                 ++s.ctrl_rev;

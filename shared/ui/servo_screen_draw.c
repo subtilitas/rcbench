@@ -402,9 +402,10 @@ void draw_arm(gfx_canvas_t *c)
         drive_draw_arm(c);          /* ARM that switches the supply */
         return;
     }
-    ui_hold_button(c, s.arm_btn, s.gate.armed ? "DISARM" : "ARM",
-                   ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
-                                               : UI_ACTION_AVAILABLE),
+    const bool armed = s.gate.armed || s.gate.arm_asked;
+    ui_hold_button(c, s.arm_btn, armed ? "DISARM" : "ARM",
+                   ui_action_fill(armed ? UI_ACTION_ACTIVE
+                                        : UI_ACTION_AVAILABLE),
                    ui_action_fill(UI_ACTION_ACTIVE), &s.arm, s.arm_down,
                    !svs_arm_locked(), SV_FONT_LABEL);
 }
@@ -791,10 +792,15 @@ static void render_body(gfx_canvas_t *c, int buffer_index)
     if (s.drawn_fp[buf] != fsig) {
         s.drawn_fp[buf] = fsig;
         s.drawn_arm[buf] = s.arm_rev;
+        s.drawn_stops[buf] = s.gate.armed || s.gate.arm_asked;
         draw_footer(c);
     }
-    if (s.drawn_arm[buf] != s.arm_rev) {
+    /* ARM reads DISARM while an arm is asked; an ask dropped without a
+     * change of arm_rev turns it back. */
+    const bool stops = s.gate.armed || s.gate.arm_asked;
+    if (s.drawn_arm[buf] != s.arm_rev || s.drawn_stops[buf] != stops) {
         s.drawn_arm[buf] = s.arm_rev;
+        s.drawn_stops[buf] = stops;
         clipped(c, s.arm_btn, draw_arm);
     }
     if (ready_shown() || drive_shown() || prog_ready_shown()) {

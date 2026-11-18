@@ -117,7 +117,7 @@ uint16_t kst_field_raw_max(kst_field_id_t id)
 {
     const kst_field_t *f = kst_field(id);
 
-    return f == NULL ? 0u : (uint16_t)((1u << width(f)) - 1u);
+    return (uint16_t)(f == NULL ? 0u : (1u << width(f)) - 1u);
 }
 
 uint8_t kst_field_reg_mask(kst_field_id_t id, uint8_t reg)

@@ -95,6 +95,15 @@ extern "C" {
 #define RESET_PICOTOOL_P1 0x00000000u
 
 /**
+ * @brief SCRATCH0 while the firmware's own watchdog runs (loop_watch.h):
+ *        the ASCII of "LOOP".
+ *
+ * The boot ROM's reboot() and the SDK use SCRATCH2 to SCRATCH7 and leave
+ * SCRATCH0 to the application.  A chip-level reset clears it.
+ */
+#define RESET_WD_LOOP_MARK 0x4C4F4F50u
+
+/**
  * @brief The raw values, as read at boot.
  */
 typedef struct {
@@ -106,6 +115,10 @@ typedef struct {
     uint32_t boot_word;        /**< boot_info_t.boot_word, 0xttppbbdd */
     uint32_t boot_diagnostic;  /**< boot_info_t.boot_diagnostic (boot_diag.h) */
     uint32_t reboot_params[2]; /**< boot_info_t.reboot_params */
+    uint32_t wd_scratch0;      /**< WATCHDOG SCRATCH0: RESET_WD_LOOP_MARK
+                                    while the firmware's own watchdog runs */
+    bool     wd_enabled;       /**< the SDK's watchdog_enable() mark stands
+                                    (watchdog_enable_caused_reboot())      */
 } reset_regs_t;
 
 /**
@@ -124,6 +137,8 @@ typedef enum {
     RESET_CAUSE_BOOTSEL_REBOOT, /**< back from BOOTSEL by picotool */
     RESET_CAUSE_SW_RESET,      /**< watchdog triggered at once */
     RESET_CAUSE_WATCHDOG,      /**< watchdog counted down, NORMAL boot */
+    RESET_CAUSE_LOOP_WATCHDOG, /**< the firmware's own watchdog on its main
+                                    loop counted down (loop_watch.h)      */
     RESET_CAUSE_COUNT
 } reset_cause_t;
 
@@ -143,7 +158,14 @@ typedef enum {
  *    flags and p1 = the activity LED pin (0xFFFFFFFF for none); the reboot
  *    out of BOOTSEL overwrites both.  The firmware zeroes both registers
  *    after it reads them.  Else FORCE: SW_RESET (the SDK's
- *    watchdog_reboot() with no delay).  Else WATCHDOG: the boot ROM's 16.7s
+ *    watchdog_reboot() with no delay).  Else TIMER with a NORMAL boot,
+ *    SCRATCH0 at RESET_WD_LOOP_MARK and the SDK's watchdog_enable() mark
+ *    standing: LOOP_WATCHDOG, the firmware's own 500ms watchdog on its
+ *    main loop (loop_watch.h).  The firmware writes SCRATCH0 when it
+ *    enables that watchdog, and zeroes it at every start and before the
+ *    update's restart; the SDK's watchdog_reboot() takes its own mark
+ *    away, so a restart asked over USB does not read as this one.  Else
+ *    WATCHDOG: the boot ROM's 16.7s
  *    TBYB (try before you buy) timer after an update that was not bought, a
  *    reboot() with type NORMAL and other parameters, or the SDK's
  *    watchdog_reboot() with a delay.
@@ -165,7 +187,7 @@ reset_cause_t reset_cause_decode(const reset_regs_t *r);
 /**
  * @brief The fixed word for a cause: POR, BOR, RUN_PIN, GLITCH, DEBUGGER,
  *        POWER_DOWN, FLASH_UPDATE, RAM_IMAGE, BOOTSEL_REBOOT, SW_RESET,
- *        WATCHDOG or UNKNOWN.
+ *        WATCHDOG, LOOP_WATCHDOG or UNKNOWN.
  *
  * @param c  The cause; a value out of range reads as UNKNOWN.
  * @return The word, a static string of at most 14 characters.

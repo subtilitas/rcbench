@@ -149,8 +149,8 @@ Spannung oder Strom an.
 
 Die Servoprogrammierung für KST und Hitec schaltet GPIO 21 während einer
 Sitzung über die Page PROG_SUPPLY ein und aus (Link 4.32). Manuell
-schaltest du sie im Feld PROG 5V unter LIVE auf SUPPLY: Halte PROG 5V EIN für 2s oder tippe auf
-PROG 5V AUS. Das ist bei SAFE und ARMED möglich, wie AUSGANG EIN
+schaltest du sie im Feld PROG 5V unter LIVE auf SUPPLY: Halte PROG 5V EIN für 2s oder drücke
+PROG 5V AUS, das beim Aufsetzen wirkt. Das ist bei SAFE und ARMED möglich, wie AUSGANG EIN
 des PD mini. Das Feld nennt den Pin,
 `PROG-PORTS 5V, GPIO 21: AUS`, und zeigt das letzte Fenster von 50ms an
 0x40 CH3 mit seiner Leistung, `5.02V  0.120A  0.60W`, und rechts davon
@@ -215,9 +215,9 @@ hat keinen anderen Messwert des Eingangs ([Nacharbeit Rev 1](#nacharbeit-rev-1))
 ### Das Feld PROG 5V
 
 Das Feld PROG 5V auf SUPPLY schaltet die 5V von Hand: PROG 5V EIN ist ein
-Halten von 2s, PROG 5V AUS ein Tipp. SERVO hat kein Feld: ARM auf LIVE,
+Halten von 2s, PROG 5V AUS wirkt beim Aufsetzen. SERVO hat kein Feld: ARM auf LIVE,
 SWEEP und RUDER und ARM + START auf ENDLAGENLAUF und RUDER AUTO schalten
-die 5V ein, und auf KST und HITEC schaltet ein Tippen auf die Zeile der
+die 5V ein, und auf KST und HITEC schaltet ein Druck auf die Zeile der
 Versorgung in der Karte BEREIT sie aus. Das Panel beurteilt das ON,
 wie es AUSGANG EIN des PD mini beurteilt:
 

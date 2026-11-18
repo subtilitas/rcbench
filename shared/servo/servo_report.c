@@ -803,7 +803,7 @@ static bool brownout_lines(const servo_test_t *t, cursor_t *c)
 }
 
 /**
- * @brief STALL AT against the current limit, or against the meter's range.
+ * @brief Stall threshold against the current limit, or against the meter's range.
  *
  * @param c        Cursor; buf receives the line.
  * @param g        Configuration of the run.
@@ -907,7 +907,7 @@ static bool limit_lines(const servo_test_t *t, cursor_t *c)
                  (double)g->stall_a, t->stalled ? S(FAIL) : S(PASS));
         return true;
     }
-    /* A STALL AT no reading can pass, said beside its line. */
+    /* A Stall threshold no reading can pass, said beside its line. */
     bool by_limit = false, by_range = false;
     (void)servo_test_stall_unreachable(g, &by_limit, &by_range);
     if (by_limit && here(c)) {

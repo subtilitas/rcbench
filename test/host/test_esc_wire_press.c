@@ -288,6 +288,41 @@ TEST_CASE(the_connect_hold_flashes_as_it_fires)
     touch(TOUCH_EVENT_UP, b, 0u);
 }
 
+/* CONNECT's TARGET row with no throttle slot and no DShot port bound is drawn
+ * dimmed and takes no tap: no empty list opens over the page. */
+TEST_CASE(the_target_row_with_no_target_takes_no_tap)
+{
+    static const esc_wire_target_t k_t[1] = { { 2u, 5u } };
+
+    session_up(up_am_rig);
+    esc_wire_panel_set_targets(NULL, 0u, true);
+    bench_run(10u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_CONNECT);
+    keep();
+    const touch_event_t e = { .type = TOUCH_EVENT_DOWN,
+                              .point = { .id = 1,
+                                         .x = (int16_t)(ewp_value_rect(0).x + 20),
+                                         .y = (int16_t)(ewp_value_rect(0).y + 20),
+                                         .strength = 40 } };
+
+    esc_wire_pages.event(&e);
+    CHECK(!ewp_s.have);
+    draw();
+    CHECK_EQ(changed(ewp_value_rect(0), true), 0);
+    ew_tap(ewp_value_rect(0));
+    CHECK_EQ(ewp_s.ch_what, EWP_CH_NONE);
+    /* POWER below it still opens its list. */
+    ew_tap(ewp_value_rect(1));
+    CHECK_EQ(ewp_s.ch_what, EWP_CH_POWER);
+    esc_wire_pages.back();
+    /* With a target the row opens the list of them. */
+    esc_wire_panel_set_targets(k_t, 1u, true);
+    bench_run(10u);
+    ew_tap(ewp_value_rect(0));
+    CHECK_EQ(ewp_s.ch_what, EWP_CH_TARGET);
+    CHECK_EQ(ewp_s.ch_count, 1);
+}
+
 int main(void)
 {
     RUN(every_button_of_connect_and_a_session_shows_its_press);
@@ -296,5 +331,6 @@ int main(void)
     RUN(every_button_of_a_page_and_a_list_shows_its_press);
     RUN(every_hold_fills_its_button_and_nothing_else);
     RUN(the_connect_hold_flashes_as_it_fires);
+    RUN(the_target_row_with_no_target_takes_no_tap);
     return test_summary("esc_wire_press");
 }

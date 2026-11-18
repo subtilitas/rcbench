@@ -62,7 +62,7 @@ Dieselben Zählerstände werden auf der SD-Karte (Secure Digital) in `BENCH/RCBE
 
 ![Die Verbindung antwortet wieder](view:busfault-back)
 
-Die Zähler rechts folgen der Verbindung, solange die Seite sichtbar ist. Hat der IOmcu 1s lang jede Anfrage beantwortet, wird der Balken grün und zeigt LINK WIEDER DA, und `verbunden` zählt die Sekunden seit der ersten Antwort. Die Seite des Starttests verhält sich ebenso und behält rechts die Zähler des Tests.
+Die Zähler rechts folgen der Verbindung, solange die Seite sichtbar ist. Hat der IOmcu 1s lang jede Anfrage beantwortet, wird der Balken grün und zeigt VERBINDUNG WIEDER DA, und `verbunden` zählt die Sekunden seit der ersten Antwort. Die Seite des Starttests verhält sich ebenso und behält rechts die Zähler des Tests.
 
 - 2s HALTEN ZUM NEUVERBINDEN ersetzt 2s HALTEN ZUM BESTÄTIGEN. Es öffnet das Menü am echten Prüfstand, SAFE.
 - Eine einzige unbeantwortete Anfrage nimmt NEUVERBINDEN sofort zurück. Die nächste 1s Antworten bietet es wieder an.

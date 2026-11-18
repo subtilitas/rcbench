@@ -222,6 +222,11 @@ bool panel_dial_blec_target(bleu_addr_t *addr, bool *linked,
     return true;
 }
 
+bool panel_dial_blec_off(void)
+{
+    return !s_cfg_in.en;
+}
+
 void panel_dial_blec_event(const bleu_evt_t *e, uint32_t now)
 {
     if (s_q != NULL) {

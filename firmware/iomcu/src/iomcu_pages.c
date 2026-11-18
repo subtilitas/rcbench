@@ -277,6 +277,17 @@ void chan_cfg_read(void *ctx, uint8_t off, uint8_t n, uint16_t *out)
     }
 }
 
+/** @brief Why the last binding write was refused, a link_bind_why_t. */
+static uint8_t s_bind_why;
+
+uint8_t bind_refuse(uint8_t why, uint8_t nack)
+{
+    s_bind_why = why;
+    return nack;
+}
+
+uint8_t bind_why(void) { return s_bind_why; }
+
 /*
  * A whole CHAN_CFG page, judged and put in force: 0, or the reason with the
  * page in force unchanged.  A CHAN_CFG write is the page with one window
@@ -292,30 +303,35 @@ uint8_t chan_cfg_take(iomcu_state_t *s, const uint16_t *next,
      * register only after the link is served. */
     if (outputs_chan_cfg_armed_check(s->chan_cfg, next, bank_armed(s))
         != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_ARMED, LINK_NACK_BAD_VALUE);
     }
     /* Not a role change that would split a PWM slice under the SERVO
      * page's rate: refused whole, rather than taken with an output left
      * unbound. */
     if (outputs_chan_cfg_rate_check(&s_outputs, next,
                                     servo_page_slots_hz(&s_servo)) != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_RATE, LINK_NACK_BAD_VALUE);
     }
     /* Nor an endpoint longer than the frame of the PWM output that renders
      * it, judged with the slots a commit puts in force beside it. */
     if (outputs_chan_cfg_pulse_check(&s_outputs, next, slots,
                                      servo_page_slots_hz(&s_servo)) != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_PULSE, LINK_NACK_BAD_VALUE);
     }
+    uint16_t was[LINK_CC_COUNT];
+    memcpy(was, s->chan_cfg, sizeof(was));
     memcpy(s->chan_cfg, next, sizeof(s->chan_cfg));
     outputs_chan_cfg_apply(&s_outputs, s->chan_cfg);
+    /* A channel whose role moved sits at its new rest: the CHANNELS page
+     * reads that, not the command written under the old role. */
+    outputs_channels_follow_roles(&s_outputs, was, s->chan_cfg, s->channels);
     /* A channel that became a surface, or stopped being one, moves to or
      * from the SERVO page's rate. */
     hw_apply();
     if (save) {
         save_outputs(s);
     }
-    return 0u;
+    return bind_refuse(LINK_BW_NONE, 0u);
 }
 
 uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
@@ -326,12 +342,12 @@ uint8_t chan_cfg_write(void *ctx, uint8_t off, uint8_t n,
 
     /* The output the ESC_WIRE page holds gets back what it had. */
     if (esc_port_supply_hold(&s_esc)) {
-        return LINK_NACK_BUSY;
+        return bind_refuse(LINK_BW_ESC_WIRE, LINK_NACK_BUSY);
     }
     memcpy(next, s->chan_cfg, sizeof(next));
     const uint8_t nack = outputs_chan_cfg_write(next, off, n, in);
     if (nack != 0u) {
-        return nack;
+        return bind_refuse(LINK_BW_VALUE, nack);
     }
     return chan_cfg_take(s, next, NULL, true);
 }
@@ -469,12 +485,13 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
     /* On a board with soldered pins a driven slot sits on a servo output,
      * armed or not. */
     if (!board_fix_slots_ok(outbind_roles(IOMCU_BOARD_ID), next)) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_BOARD, LINK_NACK_BAD_VALUE);
     }
     /* No slot changes under an armed bank, and the binding in force,
      * written again, is taken without binding anything anew. */
     if (bank_armed(s)) {
-        return outputs_slots_armed_check(s->slots, next, true);
+        const uint8_t nack = outputs_slots_armed_check(s->slots, next, true);
+        return bind_refuse((nack != 0u) ? LINK_BW_ARMED : LINK_BW_NONE, nack);
     }
     /* Nor a slot on a programming port's pin, or a PWM slot beside one in
      * the silicon: a port is no standard servo port and lends no pin.  On
@@ -486,32 +503,32 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
                                           & ~ports_wire())
                               : 0u;
     if (prog_port_slots_check_yield(&s_prog, next, yield) != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_PORT, LINK_NACK_BAD_VALUE);
     }
     /* Nor one on a pin the supply holds: the bank would leave it unbound,
      * and a restart would drive it on the module's pin. */
     if (supply_page_slots_check(&s_supply, next) != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_SUPPLY, LINK_NACK_BAD_VALUE);
     }
     /* Nor on one the sensor bus holds, for the same reason: its set-up's
      * pins, and the ones core 1 has not let go of yet. */
     if (sense_page_slots_check(&s_sense, next) != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_SENSE, LINK_NACK_BAD_VALUE);
     }
     /* Nor on the phase tap's pin while the tap runs. */
     if (tone_page_slots_check(&s_tone, next) != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_TONE, LINK_NACK_BAD_VALUE);
     }
     /* Nor a slot bound beside a surface at another rate. */
     if (outputs_slots_rate_check(&s_outputs, next,
                                  servo_page_slots_hz(&s_servo)) != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_RATE, LINK_NACK_BAD_VALUE);
     }
     /* Nor a PWM slot at a rate whose frame is shorter than its channel's
      * endpoint. */
     if (outputs_slots_pulse_check(&s_outputs, next,
                                   servo_page_slots_hz(&s_servo)) != 0u) {
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(LINK_BW_PULSE, LINK_NACK_BAD_VALUE);
     }
     prog_port_yield_t yielded;
     const uint16_t servo_hz = servo_page_hz(&s_servo);
@@ -541,6 +558,7 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
         watch = 0xFFu;   /* the UART holds two state machines: every slot */
     }
     bool refused = outputs_bind_check(&s_outputs, watch, bound_slots()) != 0u;
+    uint8_t why = LINK_BW_SILICON;
     if (!refused && !s_pd_open && s_supply_attach) {
         /* The supply's UART waits for its save: the slots must leave it a
          * PIO block, tried now, or the attach would fail unseen. */
@@ -548,6 +566,7 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
                                 supply_page_rx(&s_supply),
                                 supply_page_uart_baud(&s_supply));
         pd_uart_close();
+        why = LINK_BW_PD_UART;
     }
     if (refused) {
         /* The bank as it was, and the silicon bound exactly as before: a
@@ -563,12 +582,12 @@ uint8_t slots_take(iomcu_state_t *s, const uint16_t *next, bool save)
             servo_page_restore_hz(&s_servo, servo_hz);
         }
         hw_apply_only(bound_before);
-        return LINK_NACK_BAD_VALUE;
+        return bind_refuse(why, LINK_NACK_BAD_VALUE);
     }
     if (save) {
         save_outputs(s);
     }
-    return 0u;
+    return bind_refuse(LINK_BW_NONE, 0u);
 }
 
 uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
@@ -579,12 +598,12 @@ uint8_t slots_write(void *ctx, uint8_t off, uint8_t n,
 
     /* The output the ESC_WIRE page holds gets back what it had. */
     if (esc_port_supply_hold(&s_esc)) {
-        return LINK_NACK_BUSY;
+        return bind_refuse(LINK_BW_ESC_WIRE, LINK_NACK_BUSY);
     }
     memcpy(next, s->slots, sizeof(next));
     const uint8_t nack = outputs_slots_write(next, off, n, in);
     if (nack != 0u) {
-        return nack;
+        return bind_refuse(LINK_BW_VALUE, nack);
     }
     return slots_take(s, next, true);
 }
@@ -617,6 +636,8 @@ uint8_t control_write(void *ctx, uint8_t off, uint8_t n,
      */
     const uint8_t nack = safety_gate_control_write(s->control, off, n, in,
                                                    &s_beat, &s_dev);
+    /* A CLEAR that was taken ends STATUS's WATCHDOG bit as well. */
+    loop_watch_control(&s_loop_watch, off, n, nack);
     if (nack != 0u) {
         return nack;
     }

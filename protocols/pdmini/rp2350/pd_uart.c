@@ -13,6 +13,7 @@
 #include "hardware/clocks.h"
 #include "hardware/pio.h"
 #include "pd_uart.pio.h"
+#include "pdmini.h"
 
 /** @brief Driver state of the UART: the claimed machines and the pins. */
 static struct {
@@ -147,15 +148,32 @@ void pd_uart_detach(void *ctx)
     s.attached = false;
 }
 
+/** @brief Entries of the transmit FIFO, joined (PIO_FIFO_JOIN_TX in
+ *         pd_uart.pio): the longest request goes in whole. */
+#define PD_UART_TX_FIFO 8u
+_Static_assert(PDMINI_REQ_MAX <= PD_UART_TX_FIFO,
+               "a request is longer than the transmit FIFO");
+
 void pd_uart_send(void *ctx, const uint8_t *p, size_t n)
 {
     (void)ctx;
     if (!s.attached || p == NULL) {
         return;
     }
-    /* A request is at most eight bytes and the joined FIFO holds eight. */
+    /*
+     * Whole or not at all, and no wait: the caller is a main loop.
+     * pd_uart_attach() empties the FIFO, so the one request of a
+     * transaction finds 8 entries free.  A second send into a FIFO that
+     * still holds bytes sends nothing when it does not fit
+     * (pdmini_tx_fits()); the machine only takes entries out meanwhile, so
+     * the room read here is the least there is.
+     */
+    if (!pdmini_tx_fits(n, pio_sm_get_tx_fifo_level(s.tx_pio, s.tx_sm),
+                        PD_UART_TX_FIFO)) {
+        return;
+    }
     for (size_t i = 0; i < n; ++i) {
-        pio_sm_put_blocking(s.tx_pio, s.tx_sm, p[i]);
+        pio_sm_put(s.tx_pio, s.tx_sm, p[i]);
     }
 }
 

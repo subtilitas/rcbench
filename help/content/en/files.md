@@ -18,7 +18,7 @@ The button above each pane shows its folder path; tap it to go up one folder. PR
 
 ![The second page of a folder of 120 entries](view:files-paged)
 
-Each row shows the name, the size (`512B`, `14kB`, `7.0MB`; 1kB is 1,024 bytes), the kind and a state word:
+Each row shows the name, the size (`512B`, `14kB`, `7.0MB`; 1kB is 1,024 bytes and 1MB is 1,024kB, in the lists and in the messages: `1MB` is 1MiB), the kind and a state word:
 
 | State | Meaning |
 |---|---|

@@ -49,6 +49,12 @@ static size_t fixed_len(uint8_t cmd)
     }
 }
 
+bool pdmini_tx_fits(size_t n, size_t level, size_t depth)
+{
+    return n >= 1u && n <= PDMINI_REQ_MAX && level <= depth
+           && n <= depth - level;
+}
+
 pdmini_frame_t pdmini_reply_frame(uint8_t cmd, const uint8_t *buf, size_t n)
 {
     if (buf == NULL || n == 0u) {

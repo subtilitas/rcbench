@@ -332,6 +332,28 @@ TEST_CASE(the_crc_matches_every_value_the_sheet_prints)
     }
 }
 
+/* The pin driver's send (pd_uart_send()) asks this before it writes the
+ * transmit FIFO: a request goes in whole or not at all, and nothing waits
+ * for room. */
+TEST_CASE(a_request_goes_into_the_fifo_whole_or_not_at_all)
+{
+    /* The joined FIFO of the RP2350 driver: 8 entries, empty after an
+     * attach. */
+    CHECK(pdmini_tx_fits(1u, 0u, 8u));
+    CHECK(pdmini_tx_fits(PDMINI_REQ_MAX, 0u, 8u));
+    CHECK(!pdmini_tx_fits(PDMINI_REQ_MAX + 1u, 0u, 16u));
+    CHECK(!pdmini_tx_fits(0u, 0u, 8u));
+    /* Bytes still waiting: the room left is what counts. */
+    CHECK(pdmini_tx_fits(3u, 5u, 8u));
+    CHECK(!pdmini_tx_fits(4u, 5u, 8u));
+    CHECK(!pdmini_tx_fits(1u, 8u, 8u));
+    /* A level past the depth is no room, not a wrapped difference. */
+    CHECK(!pdmini_tx_fits(1u, 9u, 8u));
+    CHECK(!pdmini_tx_fits(1u, 0u, 0u));
+    /* The longest request this core builds, with its CRC. */
+    CHECK(sizeof(((pdmini_t *)0)->req) == PDMINI_REQ_MAX);
+}
+
 TEST_CASE(a_reply_is_whole_only_with_its_length_and_its_check)
 {
     uint8_t r[8] = { PDMINI_READ_DISPLAY, 0xB0, 0x36, 0xE8, 0x03, 0 };
@@ -2910,6 +2932,7 @@ TEST_CASE(a_session_is_the_same_wherever_the_tick_wraps_in_it)
 int main(void)
 {
     RUN(the_crc_matches_every_value_the_sheet_prints);
+    RUN(a_request_goes_into_the_fifo_whole_or_not_at_all);
     RUN(a_reply_is_whole_only_with_its_length_and_its_check);
     RUN(the_module_is_identified_then_read_with_the_pins_at_rest_between);
     RUN(an_output_and_its_set_points_are_written_and_read_back);

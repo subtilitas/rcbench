@@ -187,7 +187,7 @@ An invalid folder leaves the keyboard open and the setting unchanged. The line b
 | over 2 folders | `A/B/C`; `A/B` is taken | `At most 2 folder levels` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a Windows device name: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC` or `BENCH/ESCW`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Reserved for the bench's files` |
+| `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` or `BENCH/BALANCE`, the bench's own files | `BENCH/KST`; `BENCH/KSTX` is taken | `Reserved for the bench's files` |
 
 ## SENSORS
 

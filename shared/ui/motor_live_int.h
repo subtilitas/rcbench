@@ -191,6 +191,7 @@ typedef struct {
     /* ARM animates, so it gets a third counter and repaints its own rect. */
     uint32_t      arm_rev;              /**< revision of the ARM button, which animates */
     uint32_t      drawn_arm[2];         /**< arm_rev last painted into each frame buffer */
+    bool          drawn_stops[2];       /**< mo_arm_stops() as each buffer drew ARM */
     int           esc_kv;        /**< as reported by the ESC, 0 if it does not */
     /* The GPIOs bound as throttle (bit n is GPIO n) and whether a binding
      * was read: what the throttle panel names as its target. */
@@ -280,6 +281,12 @@ void mo_end_drag(void);
  */
 void mo_post(motor_cmd_kind_t kind, float value);
 bool mo_arm_locked(void);
+/**
+ * @brief Whether the rail's button is DISARM: the bench is ARMED, or an ARM
+ *        is asked and not answered.  A press on it then acts as DISARM.
+ * @return true while the button stops
+ */
+bool mo_arm_stops(void);
 bool mo_no_motor_pin(void);
 /**
  * @brief Puts the slider, the readout and the step keys at 0% across an arm or

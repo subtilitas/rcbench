@@ -430,6 +430,45 @@ TEST_CASE(the_store_off_is_said_once_per_link)
     CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_STORE_OFF);
 }
 
+/* STATUS fault bit 7, the IOmcu's restart by its watchdog: the read that
+ * first shows it returns it, so the caller stops the bench at once, and
+ * its event goes out before every other. */
+TEST_CASE(the_watchdog_restart_is_returned_once_and_said_first)
+{
+    fresh(7u);
+    CHECK_EQ(sense_link_faults(&sl, 0u), 0u);
+    CHECK_EQ(sense_link_faults(NULL, LINK_FAULT_WATCHDOG), 0u);
+    CHECK_EQ(sense_link_faults(&sl, LINK_FAULT_WATCHDOG
+                                        | LINK_FAULT_STORE_OFF
+                                        | LINK_FAULT_LINK_SILENT),
+             LINK_FAULT_WATCHDOG | LINK_FAULT_STORE_OFF);
+    /* Standing bits are not returned again, and raise nothing more. */
+    CHECK_EQ(sense_link_faults(&sl, LINK_FAULT_WATCHDOG
+                                        | LINK_FAULT_STORE_OFF), 0u);
+    CHECK_EQ(sense_link_event(&sl, now), SENSE_LINK_EV_WATCHDOG);
+    CHECK_EQ(sense_link_event(&sl, now + SENSE_LINK_EVENT_GAP_MS),
+             SENSE_LINK_EV_STORE_OFF);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+
+    /* The bit goes with the CLEAR and comes back with another restart. */
+    CHECK_EQ(sense_link_faults(&sl, 0u), 0u);
+    CHECK_EQ(sense_link_faults(&sl, LINK_FAULT_WATCHDOG),
+             LINK_FAULT_WATCHDOG);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_WATCHDOG);
+
+    /* A bit that still stands is said again after a link-up. */
+    (void)sense_link_faults(&sl, LINK_FAULT_WATCHDOG);
+    sense_link_lost(&sl);
+    sense_link_came_up(&sl, 7u, now);
+    CHECK_EQ(sense_link_faults(&sl, LINK_FAULT_WATCHDOG),
+             LINK_FAULT_WATCHDOG);
+    CHECK_EQ(sense_link_events(&sl), SENSE_LINK_EV_WATCHDOG);
+    /* The heartbeat's bit is the band's alone. */
+    CHECK_EQ(sense_link_faults(&sl, LINK_FAULT_WATCHDOG
+                                        | LINK_FAULT_HEARTBEAT), 0u);
+    CHECK_EQ(sense_link_events(&sl), 0u);
+}
+
 TEST_CASE(the_esc_figures_and_the_totals_come_from_the_last_read)
 {
     fresh(7u);
@@ -1120,6 +1159,7 @@ int main(void)
     RUN(a_row_is_unheld_for_the_same_time_across_the_tick_wrap);
     RUN(a_bus_refused_for_a_held_pin_goes_through_once_it_is_free);
     RUN(the_store_off_is_said_once_per_link);
+    RUN(the_watchdog_restart_is_returned_once_and_said_first);
     RUN(the_esc_figures_and_the_totals_come_from_the_last_read);
     RUN(a_status_read_is_fresh_for_its_time_across_the_tick_wrap);
     RUN(an_angle_is_fresh_for_its_time_across_the_tick_wrap);

@@ -668,6 +668,10 @@ static void draw_page(gfx_canvas_t *c)
         title = TR(EW_PAGE_DELETE);
         apply = TR(EW_HOLD_DELETE);
         break;
+    case EWP_PAGE_READ:
+        title = TR(EW_READ);
+        apply = TR(EW_HOLD_READ);
+        break;
     default:
         title = TR(EW_RESTORE_BTN);
         apply = TR(EW_HOLD_RESTORE);

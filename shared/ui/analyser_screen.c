@@ -72,7 +72,9 @@
  *
  * A lane keeps the last 200 samples, so the channel that moved is the one
  * with a step in its trace.  A glitch is a spike in one lane; a dropout is a
- * notch across all sixteen at the same instant.
+ * mark across all sixteen at the same instant: the silence puts one HIST_GAP
+ * sample into every lane, drawn as a line over the trough's height with the
+ * trace broken on both sides.
  *
  * A lane is history, then the current value: the trace answers which
  * channel moved, the bar answers how far it is from neutral.
@@ -81,6 +83,10 @@
  *         frames 14ms apart. */
 #define HIST      200
 #define PITCH     1                  /**< Pixels a sample. */
+/** @brief A sample that is no position: the receiver fell silent here. */
+#define HIST_GAP  INT16_MIN
+/** @brief The rate's window: frames are counted over at least this, ms. */
+#define RATE_WINDOW_MS 1000u
 
 /* Eight rows of two. */
 #define COLS      2                  /**< Lane columns. */
@@ -157,8 +163,9 @@ static struct {
 
     uint32_t last_ms;  /**< when the newest frame came, ms */
     uint32_t window_ms;  /**< when the rate window began, ms */
-    unsigned window_frames;  /**< the frames in the rate window */
+    unsigned window_frames;  /**< the frames since the window's first */
     unsigned rate_hz;  /**< the frames a second, Hz */
+    bool     rate_known;  /**< a window closed since the last silence */
 
     uint32_t rev;  /**< a count of the screen's look */
     uint32_t drawn[2];  /**< rev as each buffer drew it */
@@ -186,6 +193,21 @@ static void reset(void)
                       (gfx_rect_t){ TAB_X, TAB_Y, TAB_ROW_W, TAB_H });
 }
 
+/**
+ * @brief A channel's position in the newest frame, in tenths of a percent
+ *        of travel.
+ * @param ch The channel, 0 to 15.
+ * @return -1000 to 1000.
+ */
+static int16_t position(unsigned ch)
+{
+    float f = ((float)sbus_to_us(s.frame.channel[ch]) - 1500.0f) / 500.0f;
+
+    if (f < -1.0f) { f = -1.0f; }
+    if (f >  1.0f) { f =  1.0f; }
+    return (int16_t)(f * 1000.0f);
+}
+
 void analyser_screen_push(const sbus_frame_t *frame,
                           const sbus_decoder_t *dec,
                           const uint8_t *raw, unsigned raw_len,
@@ -194,6 +216,8 @@ void analyser_screen_push(const sbus_frame_t *frame,
     if (frame == NULL || dec == NULL) {
         return;
     }
+    const bool first = s.silent;
+
     s.frame  = *frame;
     s.dec    = *dec;
     s.have   = true;
@@ -204,20 +228,27 @@ void analyser_screen_push(const sbus_frame_t *frame,
         memcpy(s.raw, raw, s.raw_len);
     }
 
-    /* A whole second of frames, then divide: timing the gap between two
-     * frames reports the jitter of one pair as if it were the rate. */
-    ++s.window_frames;
-    if ((uint32_t)(now_ms - s.window_ms) >= 1000u) {
-        s.rate_hz = s.window_frames;
-        s.window_frames = 0;
+    /* A whole second of frames, then divide by the window's own length:
+     * timing the gap between two frames reports the jitter of one pair as if
+     * it were the rate.  The window starts at the first frame after a
+     * silence, so no count from before the silence closes it. */
+    if (first) {
         s.window_ms = now_ms;
+        s.window_frames = 0;
+    } else {
+        const uint32_t elapsed = (uint32_t)(now_ms - s.window_ms);
+
+        ++s.window_frames;
+        if (elapsed >= RATE_WINDOW_MS) {
+            s.rate_hz = (unsigned)(((uint64_t)s.window_frames * 1000u
+                                    + elapsed / 2u) / elapsed);
+            s.rate_known = true;
+            s.window_frames = 0;
+            s.window_ms = now_ms;
+        }
     }
     for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
-        const float us = (float)sbus_to_us(s.frame.channel[i]);
-        float f = (us - 1500.0f) / 500.0f;
-        if (f < -1.0f) { f = -1.0f; }
-        if (f >  1.0f) { f =  1.0f; }
-        s.hist[i][s.head] = (int16_t)(f * 1000.0f);
+        s.hist[i][s.head] = position(i);
     }
     s.head = (s.head + 1u) % HIST;
     if (s.filled < HIST) {
@@ -234,8 +265,26 @@ void analyser_screen_silent(uint32_t now_ms)
     if (!s.silent) {
         s.silent = true;
         s.rate_hz = 0;
+        s.rate_known = false;
+        s.window_frames = 0;
+        /* The dropout's mark, in every lane at the same sample. */
+        for (unsigned i = 0; i < SBUS_CHANNELS; ++i) {
+            s.hist[i][s.head] = HIST_GAP;
+        }
+        s.head = (s.head + 1u) % HIST;
+        if (s.filled < HIST) {
+            ++s.filled;
+        }
         ++s.rev;
     }
+}
+
+bool analyser_screen_rate(unsigned *hz)
+{
+    if (hz != NULL) {
+        *hz = s.rate_known ? s.rate_hz : 0u;
+    }
+    return s.rate_known;
 }
 
 /**
@@ -252,11 +301,15 @@ static void event(const touch_event_t *evt)
 /* ----------------------------------------------------------------- drawing */
 
 /**
- * @brief The traces' colour: danger in failsafe, the accent otherwise.
+ * @brief The traces' colour: faint while the receiver is silent, danger in
+ *        failsafe, the accent otherwise.
  * @return The colour.
  */
 static gfx_color_t live(void)
 {
+    if (s.silent) {
+        return ui_theme_color(UI_C_TEXT_FAINT);
+    }
     return (s.have && s.frame.failsafe) ? ui_theme_color(UI_C_DANGER)
                                         : ui_theme_color(UI_C_ACCENT);
 }
@@ -329,14 +382,24 @@ static void draw_lane(gfx_canvas_t *c, int ch)
              * the edge you are already looking at and walks away from it.
              */
             int prev_y = 0;
+            bool joined = false;
             for (unsigned i = 0; i < n; ++i) {
                 const unsigned idx = (s.head + HIST - n + i) % HIST;
                 const int v  = s.hist[ch][idx];
-                const int py = mid - (v * half) / 1000;
                 const int px = tx + TRACE_W - PITCH
                                - (int)((n - 1u - i) * PITCH);
-                if (i == 0u) {
+                if (v == HIST_GAP) {
+                    /* The dropout: the trough's height, and no span joins
+                     * the samples on its two sides. */
+                    gfx_fill_rect(c, px, mid - gh / 2, PITCH, gh,
+                                  ui_theme_color(UI_C_TEXT_DIM));
+                    joined = false;
+                    continue;
+                }
+                const int py = mid - (v * half) / 1000;
+                if (!joined) {
                     prev_y = py;
+                    joined = true;
                 }
                 const int top = (py < prev_y) ? py : prev_y;
                 const int bot = (py < prev_y) ? prev_y : py;
@@ -358,7 +421,7 @@ static void draw_lane(gfx_canvas_t *c, int ch)
     if (s.have) {
         const int bmid  = bx + BAR_W / 2;
         const int reach = BAR_W / 2 - 3;
-        const int v     = s.hist[ch][(s.head + HIST - 1u) % HIST];
+        const int v     = position((unsigned)ch);
         int span = (v * reach) / 1000;
         if (span >= 0) {
             gfx_fill_round_rect(c, bmid, mid - bh / 2 + 2,
@@ -380,8 +443,8 @@ static void draw_lane(gfx_canvas_t *c, int ch)
     gfx_text_in(c, (gfx_rect_t){ (int16_t)vx, (int16_t)(mid - 8),
                                  (int16_t)VAL_W, 16 },
                 val, AN_FONT_FINE,
-                s.have ? ui_theme_color(UI_C_TEXT)
-                       : ui_theme_color(UI_C_TEXT_FAINT), 1,
+                (s.have && !s.silent) ? ui_theme_color(UI_C_TEXT)
+                                      : ui_theme_color(UI_C_TEXT_FAINT), 1,
                 GFX_ALIGN_RIGHT);
 }
 
@@ -433,8 +496,9 @@ static void draw_raw(gfx_canvas_t *c)
              s.raw_len, (unsigned)SBUS_GAP_US);
     gfx_text(c, x, y, line, AN_FONT_FINE,
              ui_theme_color(UI_C_TEXT_DIM), 1);
-    snprintf(line, sizeof(line), "resyncs %u   bad tail %u",
-             (unsigned)s.dec.resyncs, (unsigned)s.dec.bad_footer);
+    snprintf(line, sizeof(line), "%s %u   %s %u",
+             TR(AN_STAT_RESYNC), (unsigned)s.dec.resyncs,
+             TR(AN_STAT_BAD_TAIL), (unsigned)s.dec.bad_footer);
     gfx_text(c, x, y + 24, line, AN_FONT_FINE,
              ui_theme_color(UI_C_TEXT_FAINT), 1);
 }
@@ -521,9 +585,9 @@ static void draw_state(gfx_canvas_t *c)
     if (s.silent || !s.have) {
         word = TR(AN_SILENT); tone = ui_theme_color(UI_C_TEXT_FAINT);
     } else if (s.frame.failsafe) {
-        word = "FAILSAFE";   tone = ui_theme_color(UI_C_DANGER);
+        word = TR(AN_FAILSAFE); tone = ui_theme_color(UI_C_DANGER);
     } else if (s.frame.frame_lost) {
-        word = "FRAME LOST"; tone = ui_theme_color(UI_C_WARN);
+        word = TR(AN_FRAME_LOST); tone = ui_theme_color(UI_C_WARN);
     } else {
         word = TR(AN_LIVE);  tone = ui_theme_color(UI_C_OK);
     }
@@ -585,7 +649,7 @@ static void draw_right(gfx_canvas_t *c)
     char buf[24];
     stat_row(c, 0, TR(AN_STAT_BUS), "S.BUS");
     snprintf(buf, sizeof(buf), "%uHz", s.rate_hz);
-    stat_row(c, 1, TR(AN_STAT_RATE), s.have ? buf : "---");
+    stat_row(c, 1, TR(AN_STAT_RATE), s.rate_known ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.frames);
     stat_row(c, 2, TR(AN_STAT_FRAMES), s.have ? buf : "---");
     snprintf(buf, sizeof(buf), "%u", (unsigned)s.dec.resyncs);
@@ -594,7 +658,7 @@ static void draw_right(gfx_canvas_t *c)
     stat_row(c, 4, TR(AN_STAT_BAD_TAIL), s.have ? buf : "---");
 
     gfx_hline(c, x, RULE2_Y, w, ui_theme_color(UI_C_EDGE));
-    gfx_text(c, x, DIG_Y, "DIGITAL", AN_FONT_LABEL,
+    gfx_text(c, x, DIG_Y, TR(AN_DIGITAL), AN_FONT_LABEL,
              ui_theme_color(UI_C_TEXT_DIM), 1);
     /* Stacked, so the card stays 260px wide and the width goes to the
      * traces.  Lamps, not keys: a pill whose dot lights while the channel

@@ -273,7 +273,7 @@ static inline gfx_rect_t run_close_rect(void)
 
 /**
  * @brief The save line of a page of rows, 20px tall, under the run's
- *        name, left of CLOSE, as the rows and the STALL AT note fill the
+ *        name, left of CLOSE, as the rows and the Stall threshold note fill the
  *        page down to the card's floor.  The German "not saved" line is
  *        37 cells, 370px.
  * @return the line

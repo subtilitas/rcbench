@@ -39,6 +39,24 @@ _Static_assert(LINK_ED_NAME + 1u == LINK_ED_INFO
 /* --- the status ---------------------------------------------------------- */
 
 /**
+ * @brief A fetch of the read copy starts: its READS, CRC and LEN are taken
+ *        from @p regs once, and every step of it uses them.
+ * @param l    the module
+ * @param regs the registers of the read that asks for it
+ */
+static void fetch_start(esc_link_t *l, const uint16_t *regs)
+{
+    l->fetching = 1u;
+    l->fetch_at = 0u;
+    l->block_set = 0u;
+    l->fetch_tries = 0u;
+    l->fetch_given_up = 0u;
+    l->fetch_reads = regs[LINK_EW_READS];
+    l->fetch_crc = regs[LINK_EW_READ_CRC];
+    l->fetch_len = regs[LINK_EW_LEN];
+}
+
+/**
  * @brief Whether the page runs something: an outcome waits for its end.
  * @param state a link_esc_state_t
  * @return true for the states that move by themselves
@@ -160,13 +178,18 @@ static void absorb(esc_link_t *l, const uint16_t *regs)
             || l->image.read_crc != regs[LINK_EW_READ_CRC])
         && (!l->fetch_given_up || l->fetch_reads != regs[LINK_EW_READS]
             || l->fetch_crc != regs[LINK_EW_READ_CRC])) {
-        l->fetching = 1u;
-        l->fetch_at = 0u;
-        l->block_set = 0u;
-        l->fetch_tries = 0u;
-        l->fetch_given_up = 0u;
-        l->fetch_reads = regs[LINK_EW_READS];
-        l->fetch_crc = regs[LINK_EW_READ_CRC];
+        fetch_start(l, regs);
+    } else if (l->fetching
+               && (l->fetch_reads != regs[LINK_EW_READS]
+                   || l->fetch_crc != regs[LINK_EW_READ_CRC]
+                   || l->fetch_len != regs[LINK_EW_LEN])) {
+        /* Another read copy under the fetch: the blocks taken so far belong
+         * to no page.  From the first block again, or not at all. */
+        if (state == (uint16_t)LINK_ESC_READY) {
+            fetch_start(l, regs);
+        } else {
+            l->fetching = 0u;
+        }
     }
 }
 
@@ -530,13 +553,14 @@ static bool frame_at(const esc_link_t *l, esc_link_xfer_t *x)
 }
 
 /**
- * @brief The blocks of the page, as LINK_EW_LEN says, 4 at most.
+ * @brief The blocks of the page a fetch reads, by the LINK_EW_LEN the fetch
+ *        started with, 4 at most.
  * @param l the module
  * @return the blocks
  */
 static unsigned page_blocks(const esc_link_t *l)
 {
-    const unsigned n = ((unsigned)l->status[LINK_EW_LEN]
+    const unsigned n = ((unsigned)l->fetch_len
                         + LINK_ED_BLOCK_BYTES - 1u) / LINK_ED_BLOCK_BYTES;
 
     return n < 4u ? n : 4u;
@@ -597,7 +621,7 @@ static void fetch_took(esc_link_t *l, const uint16_t *regs)
     } else if (block < (uint16_t)LINK_ED_MUSIC) {
         memcpy(&im->info[(size_t)(block - LINK_ED_INFO) * LINK_ED_BLOCK_BYTES], b,
                sizeof(b));
-    } else {
+    } else if (block < (uint16_t)LINK_ED_BACKUP) {
         memcpy(&im->music[(size_t)(block - LINK_ED_MUSIC) * LINK_ED_BLOCK_BYTES], b,
                sizeof(b));
     }
@@ -607,8 +631,7 @@ static void fetch_took(esc_link_t *l, const uint16_t *regs)
         return;
     }
     /* The whole copy, as the page says it is. */
-    const uint16_t len = l->status[LINK_EW_LEN] <= ESC_LINK_PAGE_MAX
-                             ? l->status[LINK_EW_LEN] : 0u;
+    const uint16_t len = l->fetch_len <= ESC_LINK_PAGE_MAX ? l->fetch_len : 0u;
 
     im->name[sizeof(im->name) - 1u] = '\0';
     im->music[sizeof(im->music) - 1u] = '\0';
@@ -770,12 +793,19 @@ void esc_link_done(esc_link_t *l, int result, const uint16_t *regs)
         if (result == ESC_LINK_ACK) {
             l->urgent = 0u;
             l->poll_now = 1u;
-            /* The page's SEQ is this one's now: a request running goes on
-             * under it. */
-            if (l->active) {
+            if (l->active && l->doubt) {
+                /* No read was answered since the command went, so this frame
+                 * carried the command's SEQ, and the page takes a SEQ once:
+                 * it never saw the command. */
+                finish(l, ESC_LINK_OUT_DROPPED, 0u);
+            } else if (l->active) {
+                /* The page's SEQ is this one's now: a request running goes on
+                 * under it. */
                 l->verdict = 0u;
-                l->doubt = 0u;
-                l->taken = 1u;
+                if (!l->taken) {
+                    l->taken = 1u;
+                    l->taken_ms = l->now_ms;
+                }
             }
         } else if (result != ESC_LINK_NO_ANSWER) {
             /* Another writer moved the SEQ: read it, and again. */

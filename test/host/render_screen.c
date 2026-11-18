@@ -2885,12 +2885,12 @@ static void band_view(const char *view, ui_bench_status_t *st)
         st->link_refused = UINT32_MAX;
     }
     if (strncmp(view, "band-fault", 10) == 0) {
-        st->faults = (strcmp(view, "band-fault-all") == 0) ? 0xFFu : 0x51u;
+        st->faults = (strcmp(view, "band-fault-all") == 0) ? 0x1FFu : 0x51u;
         chip = UI_BAND_CHIP_FAULT;
     } else if (strncmp(view, "band-hwstop", 11) == 0) {
         /* SETUP > PANEL > Hardware stop ON and the heartbeat bit: HWSTOP
          * in FAULT's place; -all with every other bit in its box. */
-        st->faults = (strcmp(view, "band-hwstop-all") == 0) ? 0xFFu : 0x10u;
+        st->faults = (strcmp(view, "band-hwstop-all") == 0) ? 0x1FFu : 0x10u;
         chip = UI_BAND_CHIP_HWSTOP;
     } else if (strcmp(view, "band-bench") == 0
                || strcmp(view, "band-sim") == 0) {
@@ -5049,6 +5049,22 @@ int main(int argc, char **argv)
         for (int i = 0; i < TX_COUNT; ++i) {
             printf("I %s %d\n", ui_text_name((ui_text_id_t)i),
                    ui_text_cells((ui_text_id_t)i));
+        }
+        return 0;
+    }
+    if (argc == 3 && strcmp(argv[1], "--texts") == 0) {
+        /* The table's strings in a language, one a line, a line feed
+         * inside one written as a space: the fit check looks for each in
+         * what the views draw. */
+        const ui_lang_t lang = (strcmp(argv[2], "de") == 0) ? UI_LANG_DE
+                                                            : UI_LANG_EN;
+        for (int i = 0; i < TX_COUNT; ++i) {
+            printf("X %s ", ui_text_name((ui_text_id_t)i));
+            for (const char *c = ui_tr_in(lang, (ui_text_id_t)i); *c != '\0';
+                 ++c) {
+                putchar(*c == '\n' ? ' ' : *c);
+            }
+            putchar('\n');
         }
         return 0;
     }

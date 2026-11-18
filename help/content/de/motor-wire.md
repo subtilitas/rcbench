@@ -16,7 +16,7 @@ SimonK wird nicht unterstützt.
 2. Schließe nur Signal und Masse an. Lass die Mittelader des ESC getrennt: Ein BEC (Battery Eliminator Circuit) würde die Versorgungsschiene des Prüfstands speisen.
 3. Stecke die Servos ab.
 4. Prüfe `ZIEL`, `VERSORGUNG`, `SPANNUNG` und `STROMBEGRENZUNG`. `SPANNUNG` und `STROMBEGRENZUNG` folgen SUPPLY, bis du andere Werte eingibst.
-5. Halte `2s HALTEN: VERBINDEN` für 2s.
+5. Halte `2s HALTEN ZUM VERBINDEN` für 2s.
 
 Schließe bei `BY HAND` die ESC-Versorgung an, sobald du dazu aufgefordert wirst. Tippe innerhalb von 60s auf `VERSORGUNG EIN`.
 
@@ -24,17 +24,19 @@ Schließe bei `BY HAND` die ESC-Versorgung an, sobald du dazu aufgefordert wirst
 
 Tippe auf eine Zahl, um das Tastenfeld zu öffnen, oder auf eine Auswahl, um ihre Liste zu öffnen. Jeder Editor zeigt eine Hilfezeile. Änderungen bleiben auf dem Panel, bis du `n WERTE SCHREIBEN` verwendest.
 
+`NEU AUSLESEN` liest die Einstellungen aus dem ESC und ersetzt den Entwurf. Bei nicht geschriebenen Änderungen fragt die Seite zuerst: Halte 2s, um auszulesen, oder tippe `ABBRECHEN`, um die Änderungen zu behalten.
+
 `NUR LESEN` erklärt, warum Schreiben nicht verfügbar ist. Die Zeilen sind abgeblendet.
 
 ## Schreiben
 
-Die Schreibseite listet die Änderungen auf. Sicherheitskritische Felder stehen zuerst, mit `PRÜFE` neben dem neuen Wert. Eine lange Liste blätterst du mit `WEITER` und `ZURÜCK` durch. Erst nach Anzeige der letzten Seite wird die Haltefunktion verfügbar. Halte 2s. Bis zum Ende des Schreibvorgangs sind anschließend nur `ABBRECHEN` und `STOP` aktiv. Vor dem ersten Schreiben einer Sitzung wird ein Backup gespeichert; eine gelöschte Seite kann nicht als Backup dienen. Ohne Karte erscheint eine Rückfrage.
+Die Schreibseite listet die Änderungen auf. Sicherheitskritische Felder stehen zuerst, mit `PRÜFE` neben dem neuen Wert. Eine lange Liste blätterst du mit `WEITER` und `ZURÜCK` durch. Erst nach Anzeige der letzten Seite wird die Haltefunktion verfügbar. Halte 2s. Bis zum Ende des Schreibvorgangs sind anschließend nur `ABBRECHEN` und `STOP` aktiv. Vor dem ersten Schreiben einer Sitzung wird ein Backup gespeichert; eine gelöschte Seite kann nicht als Backup dienen. Ohne Karte erscheint eine Rückfrage. `2s HALTEN: OHNE BACKUP` gilt nur für diesen Schreibvorgang; der nächste fragt die Karte erneut.
 
 Ein Schreibvorgang auf BLHeli_S oder Bluejay dauert etwa 3848ms. Lass die Versorgung eingeschaltet.
 
 ## Dateien
 
-`DATEIEN` listet `ESCW001` bis `ESCW999` auf der Karte. Beim Laden werden die Werte in den Entwurf übernommen; Firmware und Layout müssen übereinstimmen. Wird ein AM32 als gelöscht ausgelesen, ist nur `BACKUP ZURÜCKSPIELEN` verfügbar.
+`DATEIEN` listet `ESCW001` bis `ESCW999` auf der Karte. Beim Laden werden die Werte in den Entwurf übernommen; Firmware und Layout müssen übereinstimmen. Eine abgelehnte Datei nennt den Grund mit Code und Zeile, zum Beispiel `Datei abgelehnt, Code 15, Zeile 4: kein Feld und keine Zeile hat diesen Namen.` Wird ein AM32 als gelöscht ausgelesen, ist nur `BACKUP ZURÜCKSPIELEN` verfügbar.
 
 ## Verlassen
 

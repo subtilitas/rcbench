@@ -16,7 +16,7 @@
  * - a_touch_loss_ends_a_dial_drag
  * - a_set_point_drag_that_leaves_by_the_band_ends_at_the_edge
  * - output_off_answers_the_first_tap_after_a_drag_left_by_the_band
- * - an_output_off_press_that_leaves_by_the_band_asks_for_nothing
+ * - an_output_off_press_that_leaves_by_the_band_has_switched_off
  * - an_output_on_hold_that_leaves_by_the_band_switches_nothing_on
  * - leaving_or_a_touch_loss_ends_a_set_point_drag
  * - a_release_made_for_the_finger_activates_nothing_but_stop
@@ -386,14 +386,18 @@ TEST_CASE(output_off_answers_the_first_tap_after_a_drag_left_by_the_band)
     CHECK_NEAR(supply_screen_set_v(), set, 0.001f);
 }
 
-/* A press on OUTPUT OFF that slides up and leaves by the band is a press
- * that left its button: no OFF, and the next tap switches off. */
-TEST_CASE(an_output_off_press_that_leaves_by_the_band_asks_for_nothing)
+/* A press on OUTPUT OFF switches off as it comes down: sliding up and
+ * leaving by the band takes nothing back and asks nothing more, and the
+ * next press switches off again. */
+TEST_CASE(an_output_off_press_that_leaves_by_the_band_has_switched_off)
 {
     on_screen(SCREEN_SUPPLY);
     supply_screen_set_output(true);
 
     finger(FEED_LONE, SU_OUT_P_X, SU_OUT_P_Y);
+    supply_cmd_t c0 = { 0 };
+    const bool p0 = supply_screen_poll_cmd(&c0);
+    CHECK(p0 && c0.off && !c0.on);
     glide(FEED_LONE, SU_OUT_P_X, 30, 8);
     lift(FEED_LONE);
     CHECK(!supply_screen_poll_cmd(NULL));
@@ -610,7 +614,7 @@ int main(void)
     RUN(a_touch_loss_ends_a_dial_drag);
     RUN(a_set_point_drag_that_leaves_by_the_band_ends_at_the_edge);
     RUN(output_off_answers_the_first_tap_after_a_drag_left_by_the_band);
-    RUN(an_output_off_press_that_leaves_by_the_band_asks_for_nothing);
+    RUN(an_output_off_press_that_leaves_by_the_band_has_switched_off);
     RUN(an_output_on_hold_that_leaves_by_the_band_switches_nothing_on);
     RUN(leaving_or_a_touch_loss_ends_a_set_point_drag);
     RUN(a_release_made_for_the_finger_activates_nothing_but_stop);

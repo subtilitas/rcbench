@@ -12,6 +12,7 @@
 #include <math.h>
 #include <stdio.h>
 #include <stdint.h>
+#include <string.h>
 
 #include "esc_stick_panel.h"
 #include "motor_screen.h"
@@ -50,9 +51,9 @@ static void draw_arm(gfx_canvas_t *c)
 {
     /* Green while it will arm, fading to the red of ARMED across the hold,
      * so the fade previews the colour the button is about to hold. */
-    ui_hold_button(c, s.arm_rect, s.gate.armed ? "DISARM" : "ARM",
-                   ui_action_fill(s.gate.armed ? UI_ACTION_ACTIVE
-                                               : UI_ACTION_AVAILABLE),
+    ui_hold_button(c, s.arm_rect, mo_arm_stops() ? "DISARM" : "ARM",
+                   ui_action_fill(mo_arm_stops() ? UI_ACTION_ACTIVE
+                                                 : UI_ACTION_AVAILABLE),
                    ui_action_fill(UI_ACTION_ACTIVE), &s.arm, s.pressed == 1,
                    !mo_arm_locked(), MO_FONT_LABEL);
 }
@@ -232,6 +233,28 @@ _Static_assert(ESC_ROW_Y(1) + 20 <= UP_Y + UP_H - 4,
                "the ESC's second row ends inside the telemetry card");
 
 /**
+ * @brief The speed's texts for a speed above the register's ceiling of
+ *        65,535rpm: BENCH_RPM_OVER_TEXT in place of the live value while
+ *        the speed is above it, and in place of the peak once it was.
+ * @param now the live value's text, replaced while the speed is a bound
+ * @param now_n its size
+ * @param peak the peak's text, replaced when the peak is a bound
+ * @param peak_n its size
+ */
+static void rpm_over_text(char *now, size_t now_n, char *peak, size_t peak_n)
+{
+    if (!s.bench.valid) {
+        return;
+    }
+    if (bench_state_rpm_over(&s.bench)) {
+        snprintf(now, now_n, "%s", BENCH_RPM_OVER_TEXT);
+    }
+    if (s.pk_ok[S_RPM] && bench_state_rpm_max_over(&s.bench)) {
+        snprintf(peak, peak_n, "%s", BENCH_RPM_OVER_TEXT);
+    }
+}
+
+/**
  * @brief What the ESC says beside what the INA228 measures, while the INA228 is
  *        BENCH's source: the ESC's own telemetry voltage and current from the
  *        SENSE page, and how far each is from the INA228's, the ESC's less the
@@ -320,6 +343,9 @@ static void draw_table(gfx_canvas_t *c)
         ui_fmt(v, sizeof(v), ok ? now[i] : NAN, mo_series[i].decimals);
         ui_fmt(p, sizeof(p), s.pk_ok[i] ? pk[i] : NAN,
                mo_series[i].decimals);
+        if (i == S_RPM) {
+            rpm_over_text(v, sizeof(v), p, sizeof(p));
+        }
         gfx_text(c, PLOT_X, y, ui_tr(rows[i]), MO_FONT_LABEL,
                  s.plot.series[i].color, 1);
         gfx_text(c, PLOT_X + TBL_VAL_DX, y, v, MO_FONT_LABEL,
@@ -353,7 +379,8 @@ static int num_text(gfx_canvas_t *c, int right, int y, int w, const char *t,
     const gfx_font_t *f = MO_FONT_NUM;
     int tw = gfx_text_width(f, t, 1);
     int dy = 0;
-    if (tw > w) {
+    /* The numeral face has no '>': a bound goes in the full face. */
+    if (tw > w || strchr(t, '>') != NULL) {
         f = MO_FONT_HEAD;
         tw = gfx_text_width(f, t, 1);
         dy = 4;
@@ -371,9 +398,12 @@ static int num_text(gfx_canvas_t *c, int right, int y, int w, const char *t,
  * @param def the channel's name, unit, colour and decimals
  * @param value the live value, NAN for none
  * @param peak the extreme, NAN for none
+ * @param rpm true for the speed's card, which shows a speed above the
+ *        register's ceiling as BENCH_RPM_OVER_TEXT
  */
 static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
-                           const ui_hero_def_t *def, float value, float peak)
+                           const ui_hero_def_t *def, float value, float peak,
+                           bool rpm)
 {
     ui_card(c, r, ui_theme_color(UI_C_PANEL));
     gfx_hline(c, r.x + UI_R_CARD, r.y + 1, r.w - 2 * UI_R_CARD, def->color);
@@ -382,9 +412,19 @@ static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
     gfx_text(c, r.x + 20, r.y + 6, def->label, MO_FONT_LABEL,
              ui_theme_color(UI_C_TEXT), 1);
 
+    char number[24];
+    char pk[24];
+    ui_fmt(pk, sizeof(pk), peak, def->decimals);
+    if (isfinite(value)) {
+        ui_fmt(number, sizeof(number), value, def->decimals);
+    } else {
+        snprintf(number, sizeof(number), "---");
+    }
+    if (rpm) {
+        rpm_over_text(number, sizeof(number), pk, sizeof(pk));
+    }
     if (isfinite(peak)) {
-        char pk[24], line[32];
-        ui_fmt(pk, sizeof(pk), peak, def->decimals);
+        char line[32];
         snprintf(line, sizeof(line), "%s %s",
                  (def->extreme_label != NULL) ? def->extreme_label
                                               : TR(HERO_PEAK), pk);
@@ -392,12 +432,6 @@ static void draw_rail_card(gfx_canvas_t *c, gfx_rect_t r,
                  ui_theme_color(UI_C_TEXT_FAINT), 1);
     }
 
-    char number[24];
-    if (isfinite(value)) {
-        ui_fmt(number, sizeof(number), value, def->decimals);
-    } else {
-        snprintf(number, sizeof(number), "---");
-    }
     /* The unit at the card's right, the numerals right of the name and the
      * extreme: those are 12 cells at most ("max 120000"). */
     const int uw = gfx_text_width(MO_FONT_LABEL, def->unit, 1);
@@ -429,7 +463,7 @@ static void draw_heroes(gfx_canvas_t *c)
         const bool ok = s.bench.valid
                         && (s.bench.flags & mo_ok[i]) == mo_ok[i];
         draw_rail_card(c, r, &def, ok ? now[i] : NAN,
-                       s.pk_ok[i] ? pk[i] : NAN);
+                       s.pk_ok[i] ? pk[i] : NAN, i == S_RPM);
     }
 }
 
@@ -804,13 +838,17 @@ static void render_body(gfx_canvas_t *c, unsigned bit, int buf)
      */
     const bool ctrl_moved = (s.drawn_ctrl[buf] != s.ctrl_rev);
     const bool thr_moved  = (s.drawn_thr[buf] != s.thr_rev);
-    const bool arm_moved  = (s.drawn_arm[buf] != s.arm_rev);
+    /* ARM reads DISARM while an arm is asked; an ask dropped without a
+     * change of arm_rev turns it back (mo_arm_stops()). */
+    const bool arm_moved  = (s.drawn_arm[buf] != s.arm_rev
+                             || s.drawn_stops[buf] != mo_arm_stops());
     if (!ctrl_moved && !thr_moved && !arm_moved) {
         return;
     }
     s.drawn_ctrl[buf] = s.ctrl_rev;
     s.drawn_thr[buf]  = s.thr_rev;
     s.drawn_arm[buf]  = s.arm_rev;
+    s.drawn_stops[buf] = mo_arm_stops();
 
     /* ARM animating on its own repaints its own button and nothing else. */
     if (arm_moved && !ctrl_moved && !thr_moved) {

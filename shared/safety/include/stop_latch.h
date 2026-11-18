@@ -54,6 +54,13 @@
  * (150ms) and sets its arm latch on that edge.  A heartbeat sent again
  * before 500ms would be one the far end may never have stopped trusting.
  *
+ * The clock is 32 bits of milliseconds and reads a stamp 2^31ms (24.86
+ * days) old as lying ahead.  No stamp is compared at that age:
+ * stop_latch_run() forgets the latest STOP or contact break
+ * STOP_LATCH_EVENT_AGE_MS after it, keeps the floor as a flag from the pass
+ * that first finds it passed, and ends the grace at the pass that first
+ * finds it over.  The caller runs the machine at least once in every 2^31ms.
+ *
  * Nothing persists: a panel that restarts starts unlatched, with every
  * output off and the bench SAFE, as at any start.
  *
@@ -79,6 +86,13 @@ extern "C" {
  * task applies at the press; the 100ms spare covers the pass that sees it.
  */
 #define STOP_LATCH_HOLD_SEEN_MS 1900u
+
+/**
+ * @brief How long the latest STOP or contact break is kept for the hold's
+ *        check: 60000ms.  An older one lies before any hold that completes
+ *        now, and is forgotten.
+ */
+#define STOP_LATCH_EVENT_AGE_MS 60000u
 
 /**
  * @brief How long the touch controller may go unanswered before it counts
@@ -127,6 +141,9 @@ typedef enum {
     STOP_LATCH_GIVE_UP,
     /** @brief The reset is done: UNLATCHED, the bench SAFE. */
     STOP_LATCH_DONE,
+    /** @brief A completed hold was refused: a STOP or a contact break lay
+     *         inside it.  The latch stands, and the operator is told. */
+    STOP_LATCH_REFUSED,
 } stop_latch_act_t;
 
 /** @brief The control task's inputs, read once a pass and again after every
@@ -171,14 +188,15 @@ typedef struct {
     uint32_t pressed_seen; /**< stop_latch_in_t.pressed at the last look  */
     uint32_t breaks_seen;  /**< stop_latch_in_t.breaks at the last look   */
     uint32_t seen_ms;      /**< when the machine saw the latest STOP      */
+    bool     floor_passed; /**< STOP_LATCH_FLOOR_MS have passed since     */
     uint32_t event_ms;     /**< when the latest STOP or break happened    */
-    bool     event_known;  /**< a STOP or a break was seen since init     */
+    bool     event_known;  /**< one was seen within STOP_LATCH_EVENT_AGE_MS */
     uint32_t ask_ms;       /**< when ASKING began                         */
     uint32_t hold_ms;      /**< when the hold the reset runs on completed */
     bool     read_any;     /**< a reading was made in this reset          */
     uint32_t read_ms;      /**< when the last one was made                */
     bool     read_off;     /**< the last reading confirmed all off        */
-    bool     grace;        /**< grace_ms means something                  */
+    bool     grace;        /**< within STOP_LATCH_GRACE_MS of grace_ms    */
     uint32_t grace_ms;     /**< when the last reset was done              */
     uint32_t resets;       /**< resets done                               */
     uint32_t refused;      /**< holds refused                             */
@@ -199,7 +217,9 @@ void stop_latch_init(stop_latch_t *l, const stop_latch_in_t *in);
  * @param in The pass's inputs; io.refresh() updates them.
  * @param io What the machine does through the caller; a NULL member is
  *           skipped, and a NULL read answers nothing.
- * @return What the caller does; STOP_LATCH_NONE for NULL arguments.
+ * @return What the caller does: STOP_LATCH_REFUSED in the pass that refuses
+ *         a hold, STOP_LATCH_GIVE_UP and STOP_LATCH_DONE in the pass that
+ *         ends a reset; STOP_LATCH_NONE otherwise and for NULL arguments.
  */
 stop_latch_act_t stop_latch_run(stop_latch_t *l, stop_latch_in_t *in,
                                 const stop_latch_io_t *io);

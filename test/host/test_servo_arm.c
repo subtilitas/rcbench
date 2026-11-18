@@ -1237,6 +1237,60 @@ TEST_CASE(the_programmer_sees_an_arm_for_the_motor)
     CHECK(!kst_panel_model()->armed);
 }
 
+/* Between the hold's ask and the bench's answer the button is DISARM: a
+ * press there takes the ARM back on the DOWN, whether the ARM still waits
+ * to be taken or went out, and a finger left on it asks no ARM. */
+TEST_CASE(a_press_while_the_arm_is_asked_takes_it_back)
+{
+    for (int taken = 0; taken < 2; ++taken) {
+        bool rearmed = false;
+
+        fresh();
+        finger(FEED_LONE, ARM_X, ARM_Y);
+        frames((int)(2.3f / 0.026f));
+        lift(FEED_LONE);
+        if (taken) {
+            CHECK_EQ(took().kind, SERVO_CMD_ARM);
+        }
+        finger(FEED_LONE, ARM_X, ARM_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+        frames((int)(2.5f / 0.026f));
+        lift(FEED_LONE);
+        frames(4);
+        for (servo_cmd_t c = took(); c.kind != SERVO_CMD_NONE; c = took()) {
+            rearmed = rearmed || c.kind == SERVO_CMD_ARM;
+        }
+        CHECK(!rearmed);
+    }
+}
+
+/* One contact's hold on ARM has completed and asked ARM; still down, the
+ * other contact presses the button, now DISARM.  The DISARM is asked and
+ * the first contact, held on and then lifted, asks no second ARM.  With
+ * the track ids either way round. */
+TEST_CASE(a_completed_arm_hold_under_a_disarm_asks_no_second_arm)
+{
+    for (int swap = 0; swap < 2; ++swap) {
+        const uint8_t a = (uint8_t)(swap ? 1 : 0), b = (uint8_t)(swap ? 0 : 1);
+        bool rearmed = false;
+
+        fresh();
+        finger(a, ARM_X, ARM_Y);
+        frames((int)(2.3f / 0.026f));
+        CHECK_EQ(took().kind, SERVO_CMD_ARM);
+        finger(b, ARM_X, ARM_Y);
+        CHECK_EQ(took().kind, SERVO_CMD_DISARM);
+        frames((int)(2.5f / 0.026f));
+        lift(a);
+        lift(b);
+        frames(4);
+        for (servo_cmd_t c = took(); c.kind != SERVO_CMD_NONE; c = took()) {
+            rearmed = rearmed || c.kind == SERVO_CMD_ARM;
+        }
+        CHECK(!rearmed);
+    }
+}
+
 int main(void)
 {
     RUN(no_position_control_moves_the_value_before_the_first_arm);
@@ -1275,5 +1329,7 @@ int main(void)
     RUN(release_moves_no_value_on_a_bench_that_is_not_armed);
     RUN(a_press_on_the_dial_drives_a_released_servo_again);
     RUN(the_programmer_sees_an_arm_for_the_motor);
+    RUN(a_press_while_the_arm_is_asked_takes_it_back);
+    RUN(a_completed_arm_hold_under_a_disarm_asks_no_second_arm);
     return test_summary("servo_arm");
 }
