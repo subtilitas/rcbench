@@ -23,87 +23,181 @@
  },
  "scenes": [
   {
-   "type": "board",
-   "board": "p4-7b-back",
-   "dur": 79.74,
-   "tilt": [
-    15,
-    -15
-   ],
-   "enter": {
-    "t": [
-     0.2,
-     3.6
+   "type": "case",
+   "model": "part",
+   "part": "panel_7b",
+   "dur": 78.84,
+   "spin": [
+    [
+     0,
+     -150
+    ],
+    [
+     3.8,
+     0
     ]
-   },
+   ],
+   "flip": [
+    [
+     0,
+     0
+    ],
+    [
+     1.6,
+     0
+    ],
+    [
+     3.8,
+     180
+    ]
+   ],
    "camera": [
     [
      0,
      [
-      83,
-      48.5
+      0,
+      600,
+      420
      ],
-     250
+     [
+      0,
+      50.1,
+      0
+     ]
     ],
     [
-     20.08,
+     3.4,
      [
-      83,
-      48.5
+      0,
+      470,
+      330
      ],
-     250
+     [
+      0,
+      50.1,
+      0
+     ]
+    ],
+    [
+     4.6,
+     [
+      -120,
+      470,
+      330
+     ],
+     [
+      -120,
+      50.1,
+      0
+     ]
+    ],
+    [
+     19.479999999999997,
+     [
+      -120,
+      470,
+      330
+     ],
+     [
+      -120,
+      50.1,
+      0
+     ]
+    ],
+    [
+     20.479999999999997,
+     [
+      0,
+      470,
+      330
+     ],
+     [
+      0,
+      50.1,
+      0
+     ]
     ],
     [
      22.279999999999998,
      [
-      190,
-      40
+      150,
+      520,
+      420
      ],
-     330
+     [
+      150,
+      70.1,
+      0
+     ]
     ],
     [
      44.72,
      [
-      190,
-      40
+      150,
+      520,
+      420
      ],
-     330
+     [
+      150,
+      70.1,
+      0
+     ]
     ],
     [
      47.12,
      [
-      83,
-      48.5
+      0,
+      470,
+      330
      ],
-     250
+     [
+      0,
+      50.1,
+      0
+     ]
     ],
     [
      52.12,
      [
-      83,
-      48.5
+      0,
+      470,
+      330
      ],
-     250
+     [
+      0,
+      50.1,
+      0
+     ]
     ],
     [
-     54.32,
+     54.519999999999996,
      [
-      100,
-      68
+      -190,
+      250,
+      210
      ],
-     150
+     [
+      -10,
+      36.1,
+      6
+     ]
     ],
     [
-     79.74,
+     78.84,
      [
-      100,
-      68
+      -190,
+      250,
+      210
      ],
-     150
+     [
+      -10,
+      36.1,
+      6
+     ]
     ]
    ],
    "title": {
-    "from": 3.4,
+    "from": 3.9,
     "to": 20.08,
     "kicker": "rcbench · rbmod carrier",
     "heading": "First<br>programming",
@@ -118,28 +212,62 @@
     },
     {
      "from": 45.32,
-     "to": 79.74,
+     "to": 78.84,
      "n": 2,
      "text": "The panel: ESP Web Tool"
     }
    ],
    "labels": [
     {
+     "from": 35.24,
+     "to": 44.32,
+     "anchor": [
+      0,
+      0,
+      0
+     ],
+     "at": [
+      1180,
+      380
+     ],
+     "n": 1,
+     "title": "The two files to load",
+     "text": "From rcbench-panel-p4-v0.23.14.zip:<br><b>rcbench-panel-merged.bin</b><br><br>From rcbench-iomcu-rbmod-v0.23.14.zip:<br><b>rcbench-iomcu-rbmod-install.uf2</b>"
+    },
+    {
      "from": 45.52,
      "to": 51.72,
      "anchor": [
-      58,
-      50
+      10,
+      -6,
+      0
      ],
      "at": [
-      90,
-      720
+      1240,
+      640
      ],
-     "side": "t",
      "n": 2,
      "size": "sm",
      "title": "The panel from the back",
      "text": "The 7 inch ESP32-P4 display board. Either USB-C socket takes the cable."
+    },
+    {
+     "from": 59.62,
+     "to": 61.88,
+     "anchor": [
+      -80.8,
+      -3,
+      19.2
+     ],
+     "at": [
+      120,
+      720
+     ],
+     "side": "t",
+     "size": "sm",
+     "n": 2,
+     "title": "The browser asks for the port",
+     "text": "Pick the panel's serial port in the browser's list and confirm."
     }
    ],
    "tags": [
@@ -147,22 +275,36 @@
      "from": 45.62,
      "to": 51.72,
      "at": [
-      157.3,
-      67.7
+      -80.8,
+      -3,
+      19.2
      ],
-     "text": "USB-C → computer",
-     "side": "t",
-     "d": 90
+     "text": "USB-C",
+     "side": "l",
+     "d": 70
     },
     {
-     "from": 54.519999999999996,
-     "to": 79.74,
+     "from": 45.62,
+     "to": 51.72,
      "at": [
-      157.3,
-      67.7
+      -80.8,
+      -3,
+      34.4
+     ],
+     "text": "USB-C",
+     "side": "l",
+     "d": 70
+    },
+    {
+     "from": 54.72,
+     "to": 78.84,
+     "at": [
+      -80.8,
+      -3,
+      19.2
      ],
      "text": "USB-C → computer",
-     "side": "t",
+     "side": "b",
      "d": 60
     }
    ],
@@ -197,7 +339,7 @@
     },
     {
      "at": 68.44,
-     "text": "Click Program. When the tool reports the end, the panel holds its firmware and starts on its default settings."
+     "text": "Click Program and confirm. When the tool says done, restart the panel. It starts on its default settings."
     }
    ],
    "windows": [
@@ -205,184 +347,138 @@
      "from": 21.68,
      "to": 34.44,
      "at": [
-      800,
-      170
+      790,
+      150
      ],
-     "w": 1050,
+     "w": 1080,
      "kind": "browser",
-     "url": "github.com/subtilitas/rcbench/releases",
-     "body": [
-      {
-       "h": "rcbench 0.24.0"
-      },
-      {
-       "p": "Assets"
-      },
-      {
-       "file": "rcbench-panel-p4-v0.24.0.zip",
-       "id": "f1",
-       "note": "zip",
-       "get": [
-        24.479999999999997,
-        27.479999999999997
+     "url": "github.com/subtilitas/rcbench/releases/tag/v0.23.14",
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "web-github-assets"
        ]
-      },
-      {
-       "file": "rcbench-iomcu-rbmod-v0.24.0.zip",
-       "id": "f2",
-       "note": "zip",
-       "get": [
-        27.68,
-        30.279999999999998
-       ]
-      },
-      {
-       "file": "SHA256SUMS",
-       "id": "f3",
-       "note": "text",
-       "get": [
-        31.68,
-        32.68
-       ]
-      },
-      {
-       "p": "<b>3 downloads</b> in the folder Downloads",
-       "from": 32.879999999999995
-      }
-     ],
+      ]
+     },
      "pointer": [
       [
-       24.279999999999998,
-       "f1",
+       24.479999999999997,
+       [
+        196,
+        647
+       ],
        "click"
       ],
       [
-       27.479999999999997,
-       "f2",
+       27.68,
+       [
+        211,
+        295
+       ],
        "click"
       ],
       [
-       31.479999999999997,
-       "f3",
+       31.68,
+       [
+        139,
+        691
+       ],
        "click"
       ]
      ]
     },
     {
-     "from": 35.339999999999996,
-     "to": 44.72,
-     "at": [
-      800,
-      170
-     ],
-     "w": 1050,
-     "kind": "folder",
-     "title": "Downloads",
-     "body": [
-      {
-       "p": "rcbench-panel-p4-v0.24.0"
-      },
-      {
-       "file": "rcbench-panel-merged.bin",
-       "id": "bin",
-       "note": "for the panel",
-       "from": 36.64
-      },
-      {
-       "p": "rcbench-iomcu-rbmod-v0.24.0",
-       "from": 38.24
-      },
-      {
-       "file": "rcbench-iomcu-rbmod-install.uf2",
-       "id": "uf2",
-       "note": "for the IOmcu",
-       "from": 39.64
-      },
-      {
-       "log": "sha256sum -c SHA256SUMS: OK",
-       "from": 41.44
-      }
-     ]
-    },
-    {
      "from": 53.019999999999996,
-     "to": 79.44,
+     "to": 78.54,
      "at": [
-      60,
+      840,
       150
      ],
      "w": 1040,
      "kind": "browser",
      "url": "esptool.spacehuhn.com",
-     "body": [
-      {
-       "h": "ESP Web Tool"
-      },
-      {
-       "p": "1. Click on Connect &nbsp; 2. Select the port &nbsp; 3. Add the .bin and set the address &nbsp; 4. Click Program"
-      },
-      {
-       "button": "Connect",
-       "id": "connect",
-       "style": "ok"
-      },
-      {
-       "dialog": "esptool.spacehuhn.com wants to connect to a serial port",
-       "rows": [
-        {
-         "text": "USB serial port of the panel",
-         "id": "port"
-        }
+     "page": {
+      "w": 1280,
+      "shots": [
+       [
+        0,
+        "web-esptool-home"
        ],
-       "from": 59.62,
-       "to": 61.62
-      },
-      {
-       "log": "Connected to ESP32-P4",
-       "from": 61.72
-      },
-      {
-       "file": "rcbench-panel-merged.bin",
-       "id": "image",
-       "note": "0x 0",
-       "from": 64.28,
-       "get": [
-        69.84,
-        73.74
+       [
+        60.519999999999996,
+        "web-esptool-connected"
        ],
-       "done": "written"
-      },
-      {
-       "button": "Program",
-       "id": "program",
-       "style": "go",
-       "on": 64.28,
-       "from": 61.72
-      },
-      {
-       "log": "Done. The panel restarts.",
-       "from": 73.94
-      }
-     ],
+       [
+        64.48,
+        "web-esptool-file"
+       ],
+       [
+        69.64,
+        "web-esptool-confirm"
+       ],
+       [
+        71.03999999999999,
+        "web-esptool-write-0"
+       ],
+       [
+        71.64,
+        "web-esptool-write-20"
+       ],
+       [
+        72.24,
+        "web-esptool-write-40"
+       ],
+       [
+        72.84,
+        "web-esptool-write-60"
+       ],
+       [
+        73.44,
+        "web-esptool-write-80"
+       ],
+       [
+        74.03999999999999,
+        "web-esptool-write-100"
+       ],
+       [
+        74.64,
+        "web-esptool-done"
+       ]
+      ]
+     },
      "pointer": [
       [
        59.419999999999995,
-       "connect",
+       [
+        640,
+        201
+       ],
        "click"
       ],
       [
-       61.32,
-       "port",
+       64.18,
+       [
+        667,
+        179
+       ],
        "click"
       ],
       [
-       64.08,
-       "image",
+       69.44,
+       [
+        795,
+        417
+       ],
        "click"
       ],
       [
-       69.64,
-       "program",
+       70.84,
+       [
+        818,
+        454
+       ],
        "click"
       ]
      ]
@@ -390,51 +486,52 @@
    ]
   },
   {
-   "type": "board",
-   "board": "rbmod-rev1",
-   "dur": 39.0,
-   "tilt": [
-    15,
-    -15
+   "type": "case",
+   "model": "part",
+   "part": "rbmod",
+   "dur": 6.6,
+   "spin": [
+    [
+     0,
+     -40
+    ],
+    [
+     6.6,
+     10
+    ]
    ],
    "camera": [
     [
      0,
      [
-      44.5,
-      40
+      -40,
+      330,
+      250
      ],
-     200
+     [
+      0,
+      60,
+      0
+     ]
     ],
     [
-     6.3999999999999995,
+     6.6,
      [
-      44.5,
-      40
+      -30,
+      300,
+      220
      ],
-     200
-    ],
-    [
-     8.8,
      [
-      44,
-      14
-     ],
-     70
-    ],
-    [
-     39.0,
-     [
-      44,
-      14
-     ],
-     70
+      0,
+      60,
+      0
+     ]
     ]
    ],
    "chips": [
     {
      "from": 0,
-     "to": 39.0,
+     "to": 6.6,
      "n": 3,
      "text": "The IOmcu: USB drive"
     }
@@ -444,46 +541,113 @@
      "from": 0.8,
      "to": 5.8,
      "anchor": [
-      70,
-      26
+      0,
+      6,
+      -28
      ],
      "at": [
       1240,
-      430
+      300
      ],
      "n": 3,
      "title": "RP2350-CAN on the rbmod carrier",
      "text": "The IOmcu drives every output. Its USB-C socket is at the module's end."
-    },
+    }
+   ],
+   "tags": [],
+   "say": [
     {
-     "from": 7.0,
-     "to": 14.08,
+     "at": 0.6,
+     "text": "Step 3. The I O M C U. It is the R P 23 50 module on the carrier."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "part",
+   "part": "rp2350_can",
+   "dur": 32.8,
+   "camera": [
+    [
+     0,
+     [
+      -130,
+      150,
+      -108
+     ],
+     [
+      -26,
+      30,
+      8
+     ]
+    ],
+    [
+     2.5,
+     [
+      -100,
+      100,
+      -66
+     ],
+     [
+      -26,
+      30,
+      8
+     ]
+    ],
+    [
+     32.8,
+     [
+      -96,
+      98,
+      -70
+     ],
+     [
+      -26,
+      30,
+      8
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 32.8,
+     "n": 3,
+     "text": "The IOmcu: USB drive"
+    }
+   ],
+   "labels": [
+    {
+     "from": 0.8,
+     "to": 7.88,
      "at": [
-      600,
-      640
+      110,
+      220
      ],
      "n": 3,
      "side": "r",
      "anchor": [
-      64.15,
-      12.35
+      -5.9,
+      3.1,
+      -12.6
      ],
      "style": "warn",
      "title": "Hold BOOT, plug in",
      "text": "Hold <b>BOOT</b> while the USB cable goes in. Release it once the cable is in."
     },
     {
-     "from": 29.0,
-     "to": 38.0,
+     "from": 22.8,
+     "to": 31.8,
      "at": [
-      600,
-      640
+      110,
+      220
      ],
      "n": 3,
      "side": "r",
      "anchor": [
-      70,
-      23.5
+      0,
+      3,
+      -1
      ],
      "style": "ok",
      "title": "USB once, CAN afterwards",
@@ -492,70 +656,69 @@
    ],
    "tags": [
     {
-     "from": 7.1,
-     "to": 14.08,
+     "from": 0.9,
+     "to": 7.88,
      "at": [
-      66,
-      3.2
+      -0.2,
+      3.2,
+      -24
      ],
      "text": "USB-C → computer",
-     "side": "l",
-     "d": 60
+     "side": "t",
+     "d": 70
     },
     {
-     "from": 15.38,
-     "to": 18.52,
+     "from": 9.18,
+     "to": 12.32,
      "at": [
-      66,
-      3.2
+      -0.2,
+      3.2,
+      -24
      ],
      "text": "USB-C → computer",
-     "side": "l",
-     "d": 60
+     "side": "t",
+     "d": 70
     },
     {
-     "from": 19.82,
-     "to": 27.8,
+     "from": 13.62,
+     "to": 21.6,
      "at": [
-      66,
-      3.2
+      -0.2,
+      3.2,
+      -24
      ],
      "text": "USB-C → computer",
-     "side": "l",
-     "d": 60
+     "side": "t",
+     "d": 70
     }
    ],
    "say": [
     {
      "at": 0.6,
-     "text": "Step 3. The I O M C U. It is the R P 23 50 module on the carrier."
-    },
-    {
-     "at": 6.8,
      "text": "Hold the boot button on the module, plug its U S B C socket into the computer, then let go."
     },
     {
-     "at": 15.08,
+     "at": 8.88,
      "text": "The computer shows a drive named R P 23 50."
     },
     {
-     "at": 19.52,
+     "at": 13.32,
      "text": "Copy the install image onto the drive. The module restarts by itself and runs the firmware."
     },
     {
-     "at": 28.8,
+     "at": 22.6,
      "text": "The install image also writes a partition table. With it, every later update comes from the panel over the CAN bus."
     }
    ],
    "windows": [
     {
-     "from": 14.88,
-     "to": 29.0,
+     "from": 8.680000000000001,
+     "to": 22.8,
      "at": [
       50,
-      540
+      640
      ],
-     "w": 1120,
+     "w": 1060,
      "kind": "folder",
      "title": "Downloads",
      "side": [
@@ -570,37 +733,33 @@
        "drive": "RP2350",
        "id": "drive",
        "note": "USB",
-       "from": 15.98,
-       "to": 25.119999999999997
+       "from": 9.780000000000001,
+       "to": 18.92
       }
      ],
      "body": [
       {
-       "p": "rcbench-iomcu-rbmod-v0.24.0"
+       "p": "rcbench-iomcu-rbmod-v0.23.14"
       },
       {
        "file": "rcbench-iomcu-rbmod-install.uf2",
        "id": "uf2",
        "note": "UF2",
        "get": [
-        21.919999999999998,
-        24.52
+        15.72,
+        18.32
        ],
        "done": "copied"
-      },
-      {
-       "log": "RP2350 restarts into slot A",
-       "from": 25.32
       }
      ],
      "pointer": [
       [
-       20.419999999999998,
+       14.22,
        "uf2",
        "grab"
       ],
       [
-       21.82,
+       15.620000000000001,
        "drive",
        "drop"
       ]

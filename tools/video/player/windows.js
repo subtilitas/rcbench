@@ -9,7 +9,11 @@
 //   {bar: [t0, t1], text}                    a progress bar with its percent
 //   {drive: name, note}                      a drive of a folder's side pane
 //   {dialog: title, rows: [{text, id}]}      a list laid over the window
-// each with an optional "id", "from" and "to".  A timed item keeps its
+// each with an optional "id", "from" and "to".  A window with "page",
+// {w, shots: [[t, name], ...]}, shows captures of a real web page in
+// place of items: the picture "name" from t on, cross-faded over 0.2s; its
+// pointer keys take a place [x, y] on the page, w CSS pixels wide, where
+// an item's id stands.  A timed item keeps its
 // place while hidden, so the page does not jump.  "pointer" is a list of
 // keys [t, id] or [t, id, op]: the pointer is on the item "id" at t; op is
 // "click", "grab" or "drop".  Times are seconds from the scene's start.
@@ -73,7 +77,7 @@ function item(it, lt, clicks) {
 
 // Draw the windows of scene sc at its time lt into the layer "into"; the
 // pointer goes into the SVG overlay "ov".  a is the scene's opacity.
-export function drawWindows(sc, lt, a, into, ov) {
+export function drawWindows(sc, lt, a, into, ov, imgs = {}) {
   for (const w of sc.windows || []) {
     const o = Math.min(ss((lt - w.from) / .45), ss((w.to - lt) / .35)) * a;
     if (o <= 0) continue;
@@ -90,16 +94,30 @@ export function drawWindows(sc, lt, a, into, ov) {
     const side = w.side
       ? `<div class="side">${w.side.map(it => item(it, lt, clicks)).join('')
         }</div>` : '';
+    let inner = `<div class="in">${side}<div class="body">${body}</div></div>`;
+    if (w.page) {
+      const k = w.page.shots;
+      let n = 0;
+      while (n < k.length - 1 && lt >= k[n + 1][0]) n++;
+      const mix = n ? ss((lt - k[n][0]) / .2) : 1;
+      inner = `<div class="page"><img src="${
+        imgs[k[Math.max(0, n - 1)][1]].src}" alt=""><img src="${
+        imgs[k[n][1]].src}" alt="" style="opacity:${mix}"></div>`;
+    }
     el.innerHTML = `<div class="top"><i></i><i></i><i></i>${
       w.url ? `<span class="url">${esc(w.url)}</span>`
-        : `<b>${esc(w.title || '')}</b>`}</div>
-      <div class="in">${side}<div class="body">${body}</div></div>`;
+        : `<b>${esc(w.title || '')}</b>`}</div>${inner}`;
     into.appendChild(el);
     if (!keys.length || lt < keys[0][0] - .5 || lt > keys.at(-1)[0] + .9) {
       continue;
     }
     // The pointer: on an item's centre at its key, eased between keys.
     const centre = id => {
+      if (Array.isArray(id)) {
+        const r = el.querySelector('.page').getBoundingClientRect();
+        const f = r.width / w.page.w;
+        return [r.left + id[0] * f, r.top + id[1] * f];
+      }
       const t = id && el.querySelector(`[data-id="${id}"]`);
       const r = (t || el).getBoundingClientRect();
       return [r.left + r.width / 2, r.top + r.height * (t ? .5 : .3)];

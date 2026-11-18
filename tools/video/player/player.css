@@ -118,3 +118,6 @@ svg#ov{position:absolute;inset:0;width:1920px;height:1080px;pointer-events:none}
 .win .dlg{position:absolute;left:50%;top:96px;width:620px;margin-left:-310px;padding:21.8px 21.8px 16.3px;border-radius:14px;background:#1c2538;border:1px solid rgba(255,255,255,.2);box-shadow:0 24px 70px rgba(0,0,0,.7);z-index:2}
 .win .dlg b{display:block;font-size:25.2px;font-weight:650;color:#c9d3e4;margin-bottom:10px}
 .win .dlg .row{padding:13.6px 16.3px;margin:4px 0;border-radius:8px;border:1px solid transparent;font-size:25.8px;background:rgba(255,255,255,.05)}
+.win .page{position:relative;line-height:0;background:#fff}
+.win .page img{display:block;width:100%}
+.win .page img+img{position:absolute;left:0;top:0}

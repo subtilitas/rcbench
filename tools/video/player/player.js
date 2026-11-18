@@ -12,6 +12,7 @@ import {buildCase, CONNECTORS, WIRE_COLORS} from './case3d.js';
 import {buildCadCase, loadCad} from './case_cad.js';
 import {buildBoard} from './board.js';
 import {drawWindows} from './windows.js';
+import {buildPart} from './part3d.js';
 import {buildDial} from './dial3d.js';
 import {buildDuo} from './duo3d.js';
 import {buildMini} from './mini3d.js';
@@ -76,6 +77,9 @@ for (const sc of sb.scenes) {
   }
   if (sc.type === 'case' && sc.display) need.add(sc.display.view);
   if (sc.type === 'board' && sc.enter?.view) need.add(sc.enter.view);
+  for (const w of sc.windows || []) {
+    for (const [, name] of w.page?.shots || []) need.add(name);
+  }
   // A dial scene shows faces of the Dial: the shots dial-NAME.
   for (const [, face] of (sc.type === 'case' && sc.faces) || []) {
     need.add('dial-' + face);
@@ -123,6 +127,8 @@ for (const sc of sb.scenes) {
                                     dialBase)
     : sc.model === 'mini'
       ? buildMini(await loadCad('/cad/minircbench.glb'))
+    : sc.model === 'part'
+      ? buildPart(await loadCad(`/cad/${sc.part}.glb`))
     : buildCase(shown);
   if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
@@ -220,6 +226,7 @@ function drawCase(sc, lt, a, pulse, ui) {
   }
   if (sc.turn && m.setTurn) m.setTurn(track(sc.turn, lt));
   if (sc.flip && m.setFlip) m.setFlip(track(sc.flip, lt));
+  if (sc.spin && m.setSpin) m.setSpin(track(sc.spin, lt));
   if (sc.panel && m.setScreen) {
     // The case's display shows the panel's screen of this time.
     let n = 0;
@@ -262,8 +269,12 @@ function drawCase(sc, lt, a, pulse, ui) {
     const q = new THREE.Vector3(...p).project(m.cam);
     return [(q.x + 1) * 960 + shift, (1 - q.y) * 540];
   };
-  drawNotes(sc, lt, a, pulse, ui, p => proj(
-    typeof p === 'string' ? m.anchors[p]() : p));
+  // A point of a part moves with it.
+  const spot = p => proj(typeof p === 'string' ? m.anchors[p]()
+    : m.point ? m.point(p) : p);
+  drawNotes(sc, lt, a, pulse, ui, spot);
+  drawWindows(sc, lt, a, bubs, ov, imgs);
+  drawTags(sc, lt, a, spot);
   if (sc.pinout) {
     const p = sc.pinout, pa = win(lt, p.from, p.to) * a, e = $('#pin');
     if (pa > 0 && e.dataset.for !== sc.t + p.connector) {
@@ -484,7 +495,7 @@ function drawBoard(sc, lt, a, pulse, ui) {
     };
   }
   drawNotes(sc, lt, a, pulse, ui, proj);
-  drawWindows(sc, lt, a, bubs, ov);
+  drawWindows(sc, lt, a, bubs, ov, imgs);
   // Insets: a cross-section of a solder joint, in a card.
   for (const n of sc.insets || []) {
     const o = win(lt, n.from, n.to) * a;
@@ -499,7 +510,11 @@ function drawBoard(sc, lt, a, pulse, ui) {
       + section(n) + (n.text ? `<p>${n.text}</p>` : '');
     bubs.appendChild(e);
   }
-  // Tags: a pad's name beside it, on a short line.
+  drawTags(sc, lt, a, proj);
+}
+
+// Tags: a point's name beside it, on a short line.
+function drawTags(sc, lt, a, proj) {
   for (const m of sc.tags || []) {
     const o = win(lt, m.from, m.to, .3) * a;
     if (o <= 0) continue;

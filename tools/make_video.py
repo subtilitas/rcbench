@@ -161,11 +161,18 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         return
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
     if scene.get("model", "mockup") not in ("mockup", "cad", "dial", "duo",
-                                            "mini"):
-        errors.append(f"{where}: model must be mockup, cad, dial, duo "
-                      "or mini")
+                                            "mini", "part"):
+        errors.append(f"{where}: model must be mockup, cad, dial, duo, "
+                      "mini or part")
+    if scene.get("model") == "part" and not (
+            isinstance(scene.get("part"), str) and scene["part"]
+            and all(c.isalnum() or c in "-_" for c in scene["part"])):
+        errors.append(f"{where}: part names a model under tools/video/cad/, "
+                      "without its suffix")
+    for n, window in enumerate(scene.get("windows", [])):
+        _check_window(window, dur, f"{where} window {n + 1}", errors)
     mini = scene.get("model") == "mini"
-    for name in ("faces", "turn", "flip"):
+    for name in ("faces", "turn", "flip", "spin"):
         if name in scene:
             _keys(scene[name], 2, f"{where} {name}", errors)
     for key in scene.get("faces", []):
@@ -365,6 +372,20 @@ def _check_window(window: dict, dur: float, where: str,
                       "[x, y], w from 200 to 1920, kind browser or folder, "
                       "and a url or a title")
         return
+    page = window.get("page")
+    if page is not None:
+        shots = page.get("shots") if isinstance(page, dict) else None
+        if not (_number(page.get("w") if isinstance(page, dict) else None)
+                and isinstance(shots, list) and shots and all(
+                    isinstance(k, list) and len(k) == 2 and _number(k[0])
+                    and isinstance(k[1], str) for k in shots)):
+            errors.append(f"{where}: page needs w, the page's width, and "
+                          "shots, keys [t, name]")
+            return
+        for key in shots:
+            if not (STILLS / f"{key[1]}.png").is_file():
+                errors.append(f"{where}: no still tools/video/stills/"
+                              f"{key[1]}.png")
     ids = set()
     for item in window.get("side", []) + window.get("body", []):
         kinds = [k for k in WINDOW_ITEMS if isinstance(item, dict)
@@ -392,7 +413,9 @@ def _check_window(window: dict, dur: float, where: str,
     for key in window.get("pointer", []):
         if not (isinstance(key, list) and len(key) in (2, 3)
                 and _number(key[0]) and last <= key[0] <= dur
-                and key[1] in ids
+                and (isinstance(key[1], list) and page is not None
+                     and _place(key[1])
+                     or isinstance(key[1], str) and key[1] in ids)
                 and (len(key) == 2 or key[2] in ("click", "grab", "drop"))):
             errors.append(f"{where} pointer: a key is [t, id] or [t, id, "
                           "op] with rising t, an item's id and op click, "
@@ -897,6 +920,10 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
 
     # The MiniRcBench's screens are stills: frames of its own host suite.
     for scene in board["scenes"]:
+        # A window's page is a capture of a web page, a still as well.
+        for window in scene.get("windows", []):
+            for key in window.get("page", {}).get("shots", []):
+                shutil.copy(STILLS / f"{key[1]}.png", shots / f"{key[1]}.png")
         if scene.get("model") == "mini":
             for key in scene.get("panel", []):
                 shutil.copy(STILLS / f"{key[1]}.png", shots / f"{key[1]}.png")
