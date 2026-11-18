@@ -247,10 +247,16 @@ esc_prog_msg_t esc_prog_file_load(esc_prog_t *p, const char *text, size_t len,
     if (p == NULL || text == NULL) {
         return ESC_PROG_MSG_FILE_REFUSED;
     }
-    p->load.len = 0u;
-    const ew_file_err_t e = ew_file_parse(text, len, &p->loaded, line);
+    unsigned at = 0u;
 
+    p->load.len = 0u;
+    const ew_file_err_t e = ew_file_parse(text, len, &p->loaded, &at);
+
+    if (line != NULL) {
+        *line = at;
+    }
     if (e != EW_FILE_OK) {
+        p->file_line = (uint16_t)at;
         return esc_prog_say(p, ESC_PROG_MSG_FILE_REFUSED, (uint16_t)e);
     }
     if (p->f.image.gen == 0u || p->f.image.reads != p->f.rd.reads) {
@@ -266,6 +272,11 @@ esc_prog_msg_t esc_prog_file_load(esc_prog_t *p, const char *text, size_t len,
         return esc_prog_say(p, ESC_PROG_MSG_LOAD_REFUSED, (uint16_t)l);
     }
     return esc_prog_say(p, ESC_PROG_MSG_LOADED, p->load.changed);
+}
+
+unsigned esc_prog_file_line(const esc_prog_t *p)
+{
+    return p != NULL ? p->file_line : 0u;
 }
 
 const uint8_t *esc_prog_file_draft(const esc_prog_t *p, uint16_t *len)
@@ -284,9 +295,11 @@ esc_prog_msg_t esc_prog_file_restore(esc_prog_t *p, const char *text, size_t len
     if (p == NULL || text == NULL) {
         return ESC_PROG_MSG_FILE_REFUSED;
     }
-    const ew_file_err_t e = ew_file_parse(text, len, &p->loaded, NULL);
+    unsigned at = 0u;
+    const ew_file_err_t e = ew_file_parse(text, len, &p->loaded, &at);
 
     if (e != EW_FILE_OK) {
+        p->file_line = (uint16_t)at;
         return esc_prog_say(p, ESC_PROG_MSG_FILE_REFUSED, (uint16_t)e);
     }
     if (p->f.rd.phase != ESC_LINK_READY || p->flow != ESC_PROG_FLOW_NONE || p->wait_id != 0u

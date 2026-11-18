@@ -206,6 +206,21 @@ const char *outputs_result_text(void);
  */
 gfx_color_t outputs_result_color(void);
 
+/**
+ * @brief What became of the last write.
+ * @return the result outputs_screen_set_result() gave
+ */
+outputs_result_t outputs_screen_result(void);
+
+/**
+ * @brief The reason line for a write the IOmcu refused with a cause
+ *        (outputs_screen_set_why()), the last of a view's reasons.
+ * @param buf takes the line, or an empty string
+ * @param cap bytes at @p buf
+ * @return true when there is a line
+ */
+bool outputs_write_reason(char *buf, size_t cap);
+
 /* The entry's state laid out and dropped, as the screen's reset() does:
  * no entry shown. */
 void outputs_port_reset(void);

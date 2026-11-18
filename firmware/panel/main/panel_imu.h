@@ -82,6 +82,13 @@ void panel_imu_settings_changed(setting_id_t id);
 void panel_imu_text_changed(setting_text_id_t id);
 
 /**
+ * @brief Control task: ARMED or an arm waiting.  While it is, the IMU's
+ *        scan is refused and a running one is stopped.
+ * @param live The bench is live.
+ */
+void panel_imu_set_live(bool live);
+
+/**
  * @brief The frame task's turn: the view to the IMU screen and to SETUP >
  *        SENSORS, the screen's commands to the task, and a bind that ended
  *        into SETUP's strings with a save asked.

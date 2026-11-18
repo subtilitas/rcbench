@@ -381,6 +381,24 @@ unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots)
     return n;
 }
 
+unsigned outputs_slots_free_unwritable(uint16_t *slots)
+{
+    if (slots == NULL) {
+        return 0u;
+    }
+    unsigned n = 0u;
+    for (unsigned i = 0; i < LINK_OUT_SLOTS; ++i) {
+        uint16_t *r = &slots[(size_t)i * LINK_OS_STRIDE];
+        if (r[LINK_OS_DRIVER] != 0u
+            && (!known_driver(r[LINK_OS_DRIVER])
+                || r[LINK_OS_PIN] > OUT_MAX_PIN)) {
+            r[LINK_OS_DRIVER] = 0u;
+            ++n;
+        }
+    }
+    return n;
+}
+
 uint8_t outputs_slots_changed(const uint16_t *prev, const uint16_t *next)
 {
     uint8_t mask = 0u;
@@ -475,6 +493,11 @@ void outputs_slots_apply(outputs_t *o, const uint16_t *regs)
         if (driver_of(r[LINK_OS_DRIVER]) == OUT_DRIVER_NONE) {
             continue;
         }
+        /* A pin register above the top is no pin: narrowed to 8 bits it
+         * would name another GPIO.  The slot is left cleared. */
+        if (r[LINK_OS_PIN] > OUT_MAX_PIN) {
+            continue;
+        }
         const out_slot_t cfg = {
             .driver        = driver_of(r[LINK_OS_DRIVER]),
             .first_channel = LINK_OS_FIRST(r[LINK_OS_RANGE]),
@@ -509,6 +532,21 @@ void outputs_channels_from_bank(const outputs_t *o, uint16_t *regs)
     }
     for (unsigned c = 0; c < LINK_CH_COUNT; ++c) {
         regs[c] = outputs_command(o, (uint8_t)c);
+    }
+}
+
+void outputs_channels_follow_roles(const outputs_t *o, const uint16_t *was,
+                                   const uint16_t *now, uint16_t *regs)
+{
+    if (o == NULL || was == NULL || now == NULL || regs == NULL) {
+        return;
+    }
+    for (unsigned c = 0; c < LINK_OUT_CHANNELS && c < LINK_CH_COUNT; ++c) {
+        const size_t r = (size_t)c * LINK_CC_STRIDE + LINK_CC_ROLE;
+        if ((was[r] == LINK_CC_ROLE_THROTTLE)
+            != (now[r] == LINK_CC_ROLE_THROTTLE)) {
+            regs[c] = outputs_command(o, (uint8_t)c);
+        }
     }
 }
 

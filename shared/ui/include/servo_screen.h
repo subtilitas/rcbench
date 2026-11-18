@@ -201,10 +201,13 @@ float servo_screen_commanded_deg(void);
 bool servo_screen_dial_press(void);
 
 /**
- * @brief The Dial's button held 1s: on an ARMED bench DISARM and every
- *        output off, as DISARM's press; a start sequence under way ends.
- *        Nothing on a SAFE bench.  It never arms.
- * @return Whether it disarmed or ended a sequence.
+ * @brief The Dial's button held 1s: on an ARMED bench, or one with ARM
+ *        asked, DISARM and every output off, as DISARM's press; a start
+ *        sequence under way ends; a test, a limit run or an AUTO run ends
+ *        as the operator's stop in every phase, the phases in which the
+ *        run itself holds the bench SAFE included.  Nothing on a SAFE bench
+ *        with no run and no ARM asked.  It never arms.
+ * @return Whether it disarmed or ended a sequence or a run.
  */
 bool servo_screen_dial_hold(void);
 

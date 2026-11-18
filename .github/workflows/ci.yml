@@ -236,6 +236,12 @@ jobs:
       - name: The files over 1,000 code lines are the listed ones
         run: python3 tools/check_sizes.py --check
 
+      # Each English page and its German twin (docs/, the README,
+      # help/content) have the same heading levels in the same order and
+      # the same number of rows in every table under each heading.
+      - name: The English and German pages have the same structure
+        run: python3 tools/check_twins.py --check
+
       # Links, anchors, the sidebar, the translations, the list of test
       # binaries, the module tree and the compile table.
       - name: The docs agree with the tree

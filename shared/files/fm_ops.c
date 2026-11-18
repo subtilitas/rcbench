@@ -611,7 +611,10 @@ static fm_err_t open_new(fm_job_t *job, const fm_io_t *io)
  */
 static fm_err_t new_ready(fm_job_t *job, const fm_io_t *io)
 {
-    return job->check_only ? free_name(io, job->tmp) : open_new(job, io);
+    const fm_err_t err = job->check_only ? free_name(io, job->tmp)
+                                         : open_new(job, io);
+    job->tmp_taken = (err == FM_ERR_EXISTS);
+    return err;
 }
 
 /**
@@ -661,6 +664,7 @@ static fm_err_t match_chunk(fm_job_t *job, const fm_io_t *io, uint8_t *chunk,
     }
     if (got > 0u) {
         job->got = job->sum(job->got, chunk, got);
+        job->seen += got;
         return FM_OK;
     }
     (void)io->close(io->ctx, job->in);
@@ -933,6 +937,23 @@ static fm_job_state_t data_step(fm_job_t *job, const fm_io_t *io,
             return (err != FM_OK)
                        ? finish(job, io, FM_JOB_FAILED, err, false)
                        : finish(job, io, FM_JOB_DONE, FM_OK, false);
+        }
+        if (job->match == FM_MATCH_SUM) {
+            /* Another writer can append between two steps (the balance
+             * node's rows in BALANCE.CSV): the file as it was summed is
+             * the one replaced, in the step that removes it.  A file of
+             * another size, or gone, stands as it is; the text stays in
+             * the editor. */
+            fm_stat_t now;
+            err = io->stat(io->ctx, job->dst, &now);
+            if (err == FM_ERR_NOT_FOUND
+                || (err == FM_OK
+                    && (now.is_dir || now.size != job->seen))) {
+                err = FM_ERR_CHANGED;
+            }
+            if (err != FM_OK) {
+                return finish(job, io, FM_JOB_FAILED, err, true);
+            }
         }
         err = io->unlink(io->ctx, job->dst);
         if (err != FM_OK && err != FM_ERR_NOT_FOUND) {

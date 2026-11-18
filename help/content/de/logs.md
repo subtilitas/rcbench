@@ -18,7 +18,7 @@ Das Home-Feld führt wie ZURÜCK jeweils eine Ebene zurück: von der Grafik zur 
 
 Ohne eingebundene Karte zeigt der Bereich `KEINE AUFZEICHNUNGEN` und `Keine Karte. Setze eine Karte ein und tippe auf AKTUALISIEREN.` Bei einem leeren oder noch nicht angelegten Ordner erscheint `Keine .csv-Dateien in BENCH/LOGS.` oder `Keine .csv-Dateien in USER/LOGS.`, im Stammverzeichnis `Keine .csv-Dateien im Hauptverzeichnis.`
 
-Die Zeile darunter beschreibt den Reiter: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests werden als ATESTnnn.CSV und LIMITnnn.TXT gespeichert.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, zeigt BENCH beziehungsweise USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.`
+Die Zeile darunter beschreibt den Reiter: `Läufe heißen SERVOnnn, MOTORnnn oder SUPPLnnn.CSV.`, `Tests heißen ATESTnnn, RUDDRnnn.CSV und LIMITnnn.TXT.` oder `Läufe von Firmware 0.21.0 und älter.` Sind AUTO-AUFZEICHNUNGEN oder TESTAUFZEICHNUNGEN unter [SETUP > SD CARD](setup.md) ausgeschaltet, zeigt BENCH beziehungsweise USER stattdessen `AUTO-AUFZEICHNUNGEN AUS unter SD CARD.` oder `TESTAUFZEICHNUNGEN AUS unter SD CARD.`
 
 AKTUALISIEREN liest die Karte erneut. Die Reiter funktionieren auch ohne Karte; jeder Tipp prüft erneut, ob eine eingesetzt wurde.
 
@@ -50,7 +50,7 @@ WI-FI in der Tastenzeile öffnet [WLAN](wifi.md) für Downloads im Browser. Das 
 |---|---|
 | AKTUALISIEREN | liest die gezeigte Seite erneut und wählt ihren neuesten Lauf |
 | VORIGE, NÄCHSTE | die Seite davor und danach; sichtbar mit mehr als 48 Dateien auf der Karte |
-| LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist |
+| LÖSCHEN | fragt nach und entfernt dann die gewählte Datei; grau, solange nichts gewählt ist, bei ARMED und während ein Lauf aufgezeichnet wird |
 | ÖFFNEN | öffnet die gewählte CSV-Datei in der Importansicht, einen Bericht im Textbetrachter; grau, solange nichts gewählt ist |
 
 Die Fußleiste unter der Liste nennt den Bildschirm, LOGS. OPTIONEN rechts öffnet die Liste SD CARD von [SETUP](setup.md#sd-card): die Aufzeichnungsschalter und die beiden Aufzeichnungsordner. Deren Home-Feld führt hierher zurück.
@@ -80,6 +80,7 @@ Jede Datei enthält einen Lauf und liegt im Ordner seiner Art. Der Name kennzeic
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | ein Einschalten des SUPPLY-Ausgangs, solange der Prüfstand SAFE ist |
 | `USER/LOGS` | `ATESTnnn.CSV` | ein AUTOMATISCHER TEST; sein Bericht ist `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.TXT` | der Bericht eines ENDLAGENLAUFS, ohne CSV daneben |
+| `USER/LOGS` | `RUDDRnnn.CSV` | ein Lauf von RUDER AUTO, eine Zeile je Messung; sein Bericht ist `RUDDRnnn.TXT` |
 | Stammverzeichnis | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | Läufe von Firmware 0.21.0 und älter; im Stammverzeichnis ist `SERVOnnn` ein Servotest |
 | Stammverzeichnis | `SERVOnnn.TXT` allein | ein Endlagenlauf von Firmware 0.21.0 und älter |
 
@@ -138,7 +139,7 @@ Berichte lassen sich auch über [WLAN](wifi.md) herunterladen.
 | TRENNZEICHEN | SEMIKOLON, KOMMA, TAB oder SENKRECHTER STRICH |
 | ZAHLENFORMAT | ENGLISCH (Dezimalpunkt) oder DEUTSCH (Dezimalkomma) |
 | ZEILEN, SPALTEN | die gefundenen Datenzeilen und Spalten |
-| ZEITACHSE | die Spalte, die als Zeit gilt, oder ZEILENINDEX |
+| ZEITACHSE | die Spalte, die als Zeit gilt, oder ZEILENINDEX. Eine Einheit nach einem Unterstrich im Spaltenkopf wird gelesen (`time_ms`, `t_us`). Eine erste Spalte mit dem Namen eines Zählers (`step`, `row`, `index`, `sample`, `n`) ist keine Zeit: `RUDDRnnn.CSV` wird über dem Zeilenindex gezeichnet |
 | UNGLEICHE ZEILEN | Zeilen mit einer anderen Zellenzahl als die Kopfzeile |
 | BELEGE | die Zellen, die Deutsch, Englisch oder keins von beiden belegt haben |
 
@@ -165,7 +166,7 @@ Die Grafik verteilt Datenzeilen gleichmäßig nach Zeilennummer. Ihre Beschriftu
 
 ![Die Rückfrage von LÖSCHEN](view:logs-delete)
 
-LÖSCHEN fragt nach und nennt Dateiname und Größe. Drücke und löse LÖSCHEN innerhalb dieses Dialogs, um die Datei zu entfernen. ABBRECHEN oder das Verlassen der Seite behält sie. Eine noch geöffnete Aufzeichnung lässt sich nicht löschen.
+LÖSCHEN fragt nach und nennt Dateiname und Größe. Drücke und löse LÖSCHEN innerhalb dieses Dialogs, um die Datei zu entfernen. ABBRECHEN oder das Verlassen der Seite behält sie. Eine noch geöffnete Aufzeichnung lässt sich nicht löschen. Solange der Prüfstand ARMED ist oder ein Lauf aufgezeichnet wird, ist LÖSCHEN grau; ein Tipp darauf zeigt `Prüfstand ARMED. Die Karte ist nur lesbar.` oder `Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.`
 
 ## Kartenformate
 
@@ -173,7 +174,7 @@ Das Panel liest FAT12, FAT16, FAT32 und exFAT (extended File Allocation Table). 
 
 - Nicht unterstützt werden GPT-Partitionierung (GUID Partition Table; GUID: Globally Unique Identifier), Volumes über 2TiB sowie NTFS, ext4, HFS+ und APFS. Solche Karten lassen sich nicht einbinden. Das Panel formatiert keine Karten.
 - Verwende zum Formatieren den SD Memory Card Formatter der SD Association oder formatiere am Computer mit FAT32 oder exFAT auf MBR. Unter macOS heißt das Schema `Master Boot Record`.
-- Dateien ab 4GiB auf exFAT erscheinen mit ihrer Größe, etwa `8.00GB`. ÖFFNEN liest bis zu 2GiB minus 1 Byte. Größere Dateien bleiben in der Liste, mit der Meldung `BENCH001.CSV ist 2GB oder größer. Nicht geöffnet.` Über [WLAN](wifi.md) lassen sie sich herunterladen.
+- Dateien ab 4GiB auf exFAT erscheinen mit ihrer Größe, etwa `8.00GB`. ÖFFNEN liest bis zu 2GiB minus 1 Byte. Größere Dateien bleiben in der Liste, mit der Meldung `BENCH001.CSV ist 2GB oder größer. Nicht geöffnet.` Das Panel schreibt kB, MB und GB für Vielfache von 1.024: `2GB` sind 2GiB. Über [WLAN](wifi.md) lassen sie sich herunterladen.
 
 ## Verwandte Seiten
 

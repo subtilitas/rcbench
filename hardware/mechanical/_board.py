@@ -1,6 +1,6 @@
 """A module's board for the specs: the plate and where its parts go.
 
-A spec gives positions on the board in mm from the board's centre, x
+A spec gives positions on the board in mm from the board's center, x
 to the right and y down as seen from the top side, the way they are
 read off a photo. ``Board`` turns them into the model's frame, which is
 the frame of the module's KiCad model: the origin at the footprint's
@@ -49,7 +49,7 @@ class Board:
         self.t = thick
 
     def at(self, x, y):
-        """The model's (x, y) of a place given from the board's centre."""
+        """The model's (x, y) of a place given from the board's center."""
         return (self.w / 2 + x - self.ox, self.oy - self.h / 2 - y)
 
     def outline(self, radius):
@@ -86,7 +86,7 @@ class Board:
 
         Args:
             lines: (text, x, y, height, width) or (text, x, y, height,
-                width, turn) of each line, (x, y) its centre.
+                width, turn) of each line, (x, y) its center.
             under: Whether the print is on the underside.
             rgb: The print's colour.
             z: The print's height over the board's surface.

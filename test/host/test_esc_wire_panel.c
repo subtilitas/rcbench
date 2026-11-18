@@ -712,6 +712,125 @@ TEST_CASE(the_gate_outlives_a_start_of_the_screens)
     CHECK(esc_wire_panel_model()->gate == &g_gate);
 }
 
+/** @brief The card's one file, chosen from FILES. */
+static void load_text(const char *text)
+{
+    snprintf(g_names[0], sizeof(g_names[0]), "ESCW005.TXT");
+    snprintf(g_texts[0], sizeof(g_texts[0]), "%s", text);
+    g_card_files = 1;
+    ew_tap(esc_wire_panel_action_rect(1));
+    bench_run(10u);
+    ew_tap(esc_wire_panel_choice_rect(2));
+    bench_run(10u);
+}
+
+/* A settings file that is refused says why in words, with the code of the
+ * table in docs/EscWire.md and the line the refusal is at, in both languages. */
+TEST_CASE(a_refused_file_names_its_reason_and_its_line)
+{
+    char want[EWP_LINE];
+
+    session_up(up_am_rig);
+    connected();
+    /* A field name no AM32 has, on line 4. */
+    load_text("ESC settings backup, format 1\nFirmware: AM32\nLayout: 4\n"
+              "POWER RAMPP = 123\nedited\n");
+    CHECK_EQ(ewp_changed_count(), 0);
+    CHECK_EQ(esc_prog_file_line(esc_wire_panel_model()), 4u);
+    CHECK_STR_EQ(esc_wire_panel_message(),
+                 "File refused, code 15, line 4: no field or line has this name.");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(esc_wire_panel_message(),
+                 "Datei abgelehnt, Code 15, Zeile 4: "
+                 "kein Feld und keine Zeile hat diesen Namen.");
+    ui_text_set_language(UI_LANG_EN);
+    /* A value the field does not take, on line 5. */
+    load_text("ESC settings backup, format 1\nFirmware: AM32\nLayout: 4\n"
+              "POWER RAMP = 123\nREVERSED = SIDEWAYS\nedited\n");
+    snprintf(want, sizeof(want), TR(EW_FILE_REFUSED_LINE),
+             (unsigned)EW_FILE_ERR_VALUE, 5u, TR(EW_FE_VALUE));
+    CHECK_STR_EQ(esc_wire_panel_message(), want);
+    CHECK_EQ(ewp_changed_count(), 0);
+}
+
+/* Every refusal code of a file and of a restore has words in both languages,
+ * and the longest message fits the line. */
+TEST_CASE(every_file_and_restore_refusal_has_words)
+{
+    session_up(up_am_rig);
+    connected();
+    esc_prog_t *m = esc_wire_panel_model();
+
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang == 0 ? UI_LANG_EN : UI_LANG_DE);
+        for (unsigned e = EW_FILE_ERR_ARG; e <= EW_FILE_ERR_NO_TARGET; ++e) {
+            char code[16];
+
+            m->file_line = 80u;
+            m->msg = ESC_PROG_MSG_FILE_REFUSED;
+            m->detail = (uint16_t)e;
+            const char *s = esc_wire_panel_message();
+
+            snprintf(code, sizeof(code), "ode %u, ", e);
+            CHECK(strstr(s, code) != NULL);
+            CHECK(strstr(s, ": ") != NULL && strstr(s, ": ")[2] != '\0');
+            CHECK(gfx_text_cells(s) <= EWP_LINE - 1);
+        }
+        for (unsigned r = EW_RESTORE_ARG; r <= EW_RESTORE_NO_NAME; ++r) {
+            char code[16];
+
+            m->msg = ESC_PROG_MSG_RESTORE_REFUSED;
+            m->detail = (uint16_t)r;
+            const char *s = esc_wire_panel_message();
+
+            snprintf(code, sizeof(code), "ode %u: ", r);
+            CHECK(strstr(s, code) != NULL);
+            CHECK(strstr(s, ": ")[2] != '\0');
+            CHECK(gfx_text_cells(s) <= EWP_LINE - 1);
+        }
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* A code this build has no words for keeps its number. */
+    m->msg = ESC_PROG_MSG_RESTORE_REFUSED;
+    m->detail = 99u;
+    CHECK_STR_EQ(esc_wire_panel_message(), "Restore refused: code 99.");
+}
+
+/* An erased AM32 offered the backup of a sister ESC: the restore is refused
+ * with the reason in words. */
+TEST_CASE(a_restore_from_another_escs_backup_says_why)
+{
+    static char s_file[EW_FILE_MAX];
+
+    session_up(up_am_rig);
+    connected();
+    size_t n = esc_prog_backup_text(esc_wire_panel_model(), s_file, sizeof(s_file));
+
+    CHECK(n > 0u);
+    ew_tap(esc_wire_panel_back_rect());
+    ew_hold(2.2f);
+    bench_run(2000u);
+    CHECK_EQ(esc_wire_panel_stage(), ESC_WIRE_CONNECT);
+    /* This ESC has another name than the file's. */
+    memset(esc.am, 0xFF, sizeof(esc.am));
+    esc.am_name[0] = 'X';
+    snprintf(g_names[0], sizeof(g_names[0]), "ESCW001.TXT");
+    memcpy(g_texts[0], s_file, n);
+    g_texts[0][n] = '\0';
+    g_card_files = 1;
+    connected();
+    ew_tap(esc_wire_panel_action_rect(0));
+    bench_run(10u);
+    ew_tap(esc_wire_panel_choice_rect(0));
+    bench_run(10u);
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_RESTORE);
+    ew_hold(2.2f);
+    bench_run(50u);
+    CHECK_EQ(esc.am[0], 0xFFu);
+    CHECK_STR_EQ(esc_wire_panel_message(),
+                 "Restore refused, code 10: the file is for an ESC with another name.");
+}
+
 int main(void)
 {
     RUN(connect_shows_what_it_will_drive_and_takes_a_hold);
@@ -741,5 +860,8 @@ int main(void)
     RUN(a_save_answered_late_is_still_the_sessions_own);
     RUN(power_keeps_its_last_choice_over_a_restart);
     RUN(the_gate_outlives_a_start_of_the_screens);
+    RUN(a_refused_file_names_its_reason_and_its_line);
+    RUN(every_file_and_restore_refusal_has_words);
+    RUN(a_restore_from_another_escs_backup_says_why);
     return test_summary("esc_wire_panel");
 }

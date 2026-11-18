@@ -1,7 +1,7 @@
 """Electronic parts as shapes for _solid.py.
 
 Every function returns shapes in the part's own frame: the origin is
-the centre of the part's footprint on the board, z = 0 is the board's
+the center of the part's footprint on the board, z = 0 is the board's
 surface and +z points away from it. All sizes are mm. Package sizes are
 the packages' nominal ones, not measured on a board.
 
@@ -37,7 +37,7 @@ PAD = 0.035             # thickness of a board's copper
 
 
 def rows(n, pitch):
-    """Positions of n things at ``pitch``, centred on 0."""
+    """Positions of n things at ``pitch``, centered on 0."""
     return [(i - (n - 1) / 2) * pitch for i in range(n)]
 
 
@@ -174,7 +174,7 @@ def socket(pins, pitch, width, depth, height, lead_len, rear, wing=0.0,
            wing_height=0.0, wing_depth=0.0, rgb=CREAM):
     """A side-entry wire-to-board socket; the plug enters from -y.
 
-    The origin is the centre of the socket's box, leads included.
+    The origin is the center of the socket's box, leads included.
 
     Args:
         pins: Number of pins.
@@ -214,7 +214,7 @@ def socket(pins, pitch, width, depth, height, lead_len, rear, wing=0.0,
 def usb_c(pin_len=0.93):
     """A USB Type-C receptacle, 16 pins, the plug enters from -y.
 
-    The origin is the centre of the shell's rear end on the board. The
+    The origin is the center of the shell's rear end on the board. The
     shell is 8.94 wide and 3.16 high, 0.09 above the board, 7.35 long.
 
     Args:
@@ -240,7 +240,7 @@ def usb_c(pin_len=0.93):
 def side_button():
     """A side-push button; the plunger points to -x.
 
-    The origin is the centre of the body's footprint: 2.3 x 4.55, 1.8
+    The origin is the center of the body's footprint: 2.3 x 4.55, 1.8
     high. The plunger is 1.1 long, 1.6 wide and 1.0 high.
     """
     return [
@@ -272,7 +272,7 @@ def trimmer(size, height, rotor):
 def flat_cable_socket(width, body, latch, ear, ear_len, height):
     """A flat-cable socket: the cable enters from -y, the latch is at +y.
 
-    The origin is the centre of the housing's front edge on the board.
+    The origin is the center of the housing's front edge on the board.
 
     Args:
         width: Overall width along x.
@@ -294,7 +294,7 @@ def flat_cable_socket(width, body, latch, ear, ear_len, height):
 def micro_sd():
     """A push-push microSD card slot; the card enters from -x.
 
-    The origin is the centre of the slot's footprint: 11.25 x 11.35,
+    The origin is the center of the slot's footprint: 11.25 x 11.35,
     1.32 high. The shield's top has a finger notch at the card's end
     and 8 openings over the contacts, 1.1 apart.
     """
@@ -320,7 +320,7 @@ def micro_sd():
 def ph_top(pins, pin_shift=0.0):
     """A top-entry wire socket of 2.0 pitch; the plug enters from +z.
 
-    The origin is the centre of the housing's footprint, which is
+    The origin is the center of the housing's footprint, which is
     2 x (pins - 1) + 5.9 wide and 5.8 deep; the solder leads reach 2.2
     past it at +y. The housing is 5.5 high: a floor 0.8 thick and four
     walls 1.0 thick round the upright pins. The wall at -y is 2.0 high
@@ -330,7 +330,7 @@ def ph_top(pins, pin_shift=0.0):
     Args:
         pins: Number of pins.
         pin_shift: Distance along x of the row of pins from the
-            housing's centre.
+            housing's center.
     """
     half, front, back, height = pins - 1 + 2.95, -2.9, 2.9, 5.5
     key = 0.6 * (half - 1.0)
@@ -358,7 +358,7 @@ def ph_top(pins, pin_shift=0.0):
 def top_socket(pins, pitch, width, depth, height):
     """A top-entry wire-to-board socket; the plug enters from +z.
 
-    The origin is the centre of the socket's footprint.
+    The origin is the center of the socket's footprint.
 
     Args:
         pins: Number of pins.
@@ -380,7 +380,7 @@ def top_socket(pins, pitch, width, depth, height):
 def usb_a():
     """A USB Type-A receptacle lying on the board; the plug enters from +x.
 
-    The origin is the centre of the shell's rear end on the board. The
+    The origin is the center of the shell's rear end on the board. The
     shell is 12.2 wide and 5.7 high, 0.6 above the board, 10.0 long; the
     tongue is in its upper half. Four leads 2.3 long and two side tabs.
     """
@@ -402,7 +402,7 @@ def usb_a():
 def card_tray(width, depth, height):
     """A microSD card slot under a steel shield; the card enters from -y.
 
-    The origin is the centre of the slot's footprint. The shield is a
+    The origin is the center of the slot's footprint. The shield is a
     lid 0.2 thick on two side walls and a rear wall over a black base
     0.8 high.
 
@@ -424,7 +424,7 @@ def card_tray(width, depth, height):
 def push_button(depth, length, height, plunger):
     """A side-push button; the plunger points to -x.
 
-    The origin is the centre of the button's box, plunger included.
+    The origin is the center of the button's box, plunger included.
 
     Args:
         depth: The body's size along x.
@@ -443,7 +443,7 @@ def push_button(depth, length, height, plunger):
 def slide_switch(depth, length, height, lever):
     """A slide switch; the lever points to +x. Three leads at -x.
 
-    The origin is the centre of the body's footprint.
+    The origin is the center of the body's footprint.
 
     Args:
         depth: The body's size along x.
@@ -462,7 +462,7 @@ def slide_switch(depth, length, height, lever):
 def can_capacitor(diameter, length):
     """An aluminium capacitor lying on the board, its axis along y.
 
-    The origin is the centre of the can's footprint.
+    The origin is the center of the can's footprint.
 
     Args:
         diameter: The can's diameter.
@@ -478,7 +478,7 @@ def can_capacitor(diameter, length):
 def shield(width, depth, height):
     """A shield can: a lid 0.2 thick on four walls 0.2 thick.
 
-    The origin is the centre of the can's footprint.
+    The origin is the center of the can's footprint.
 
     Args:
         width: Width along x.
@@ -496,7 +496,7 @@ def shield(width, depth, height):
 def coin_holder(diameter, height):
     """A coin-cell holder: a ring with a floor and a clip across it.
 
-    The origin is the centre of the ring. The clip runs along y and ends
+    The origin is the center of the ring. The clip runs along y and ends
     in a solder tab 3.0 long outside the ring at each end.
 
     Args:
@@ -517,7 +517,7 @@ def coin_holder(diameter, height):
 def pin_header(pins, below=3.0, above=6.1):
     """A straight 2.54 pitch pin header, one row along x.
 
-    The origin is the centre of the row on the board. The plastic is
+    The origin is the center of the row on the board. The plastic is
     2.5 high and 2.5 deep; each 0.64 square pin reaches ``below`` under
     the board's surface and ``above`` over the plastic.
     """
@@ -565,7 +565,7 @@ def vssop10():
 # tails' diameter and bend radius (both scaled from the drawing), the
 # tails' and pegs' length under the housing, the rear plate (length,
 # width, thickness), the pegs' distance from the tails (socket half,
-# pin half) and from the centre line.
+# pin half) and from the center line.
 XT90_PITCH = 10.9
 XT90_PIN = 4.5
 XT90_TAIL = 3.5
@@ -627,7 +627,7 @@ def _xt90_rear(top, peg, under):
 def xt90pw_f(bevel=1, under=XT90_UNDER):
     """XT90PW-F, the socket half, lying on the board; it mates at +x.
 
-    The origin is the centre of the housing's rear edge on the board.
+    The origin is the center of the housing's rear edge on the board.
     Collar 20.8 wide, 9.9 high and 7.8 long, nose 19.2 x 8.3 and 11.2
     long, a rear plate 5.0 long: 24.0 in all. The two tails end 3.8
     behind the housing; the two pegs are 8.9 in front of the tails.
@@ -653,7 +653,7 @@ def xt90pw_f(bevel=1, under=XT90_UNDER):
 def xt90pw_m(bevel=1, under=XT90_UNDER):
     """XT90PW-M, the pin half, lying on the board; it mates at +x.
 
-    The origin is the centre of the housing's rear edge on the board.
+    The origin is the center of the housing's rear edge on the board.
     Housing 20.8 wide, 9.9 high and 20.7 long with a shroud 12.5 deep
     round the two 4.5 pins; a rear plate 5.0 long: 25.7 in all. Tails
     as XT90PW-F; the pegs are 9.4 in front of the tails.
@@ -676,7 +676,7 @@ def xt90pw_m(bevel=1, under=XT90_UNDER):
 def text(string, height, rgb=WHITE, width=None, thick=PRINT):
     """A line of board print, the letters of _font.py.
 
-    The origin is the centre of the line's box; the line reads along x
+    The origin is the center of the line's box; the line reads along x
     and stands on z = 0.
 
     Args:
@@ -712,7 +712,7 @@ def frame(x0, y0, x1, y1, line=0.15, rgb=WHITE, thick=PRINT):
 def hole_pad(drill, size, board, rgb=GOLD, square=False, long=None):
     """The copper of a plated hole: a pad on each side and the barrel.
 
-    The origin is the hole's centre on the board's underside.
+    The origin is the hole's center on the board's underside.
 
     Args:
         drill: The hole's diameter; the barrel is PAD thick inside it.

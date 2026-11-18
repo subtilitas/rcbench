@@ -14,9 +14,24 @@
 #include "ui_text.h"
 #include "ui_widgets.h"
 
+/**
+ * @brief The ticks after a press that credit the hold nothing: 2.
+ *
+ * A frame's time is measured at its top and covers the interval before it.
+ * The frame that dispatches the press and the frame after it both carry an
+ * interval that began before the press, so crediting either counts time the
+ * finger was not down.  The control task refuses a hold that ends less than
+ * STOP_LATCH_HOLD_SEEN_MS (1900ms) after the press it applied; with these
+ * two frames left out, the hold never ends earlier than UI_HOLD_S (2000ms)
+ * after that press, however long a frame around the press takes.
+ */
+#define STOP_HOLD_SKIP_TICKS 2u
+
 /** @brief The hold on STOP, one instance per image. */
 typedef struct {
     ui_hold_t hold;     /**< the hold on STOP */
+    /** @brief Ticks left that credit the hold nothing */
+    unsigned  skip;
     /** @brief A fired hold whose reset has not been seen done yet */
     bool      waiting;
     /** @brief The reset the hold asked for and nobody has taken */
@@ -29,6 +44,7 @@ static stop_hold_state_t sh;
 void stop_hold_reset(void)
 {
     ui_hold_reset(&sh.hold);
+    sh.skip    = 0u;
     sh.waiting = false;
     sh.asked   = false;
 }
@@ -42,6 +58,7 @@ void stop_hold_press(bool latched)
      * on does not undo it. */
     if (latched) {
         ui_hold_begin(&sh.hold, (int)TX_HOLD_HINT_STOP_RESET);
+        sh.skip = STOP_HOLD_SKIP_TICKS;
     } else {
         ui_hold_reset(&sh.hold);
     }
@@ -87,7 +104,13 @@ bool stop_hold_tick(float dt_s, bool latched, bool contact)
         (void)ui_hold_leave(&sh.hold);
         return false;
     }
-    if (!ui_hold_tick(&sh.hold, dt_s)) {
+    /* The intervals that began before the press are not hold time. */
+    float credit_s = dt_s;
+    if (sh.skip > 0u) {
+        --sh.skip;
+        credit_s = 0.0f;
+    }
+    if (!ui_hold_tick(&sh.hold, credit_s)) {
         return false;
     }
     sh.asked   = true;

@@ -61,6 +61,7 @@ extern "C" {
 #define IMU_OUT_CAL   0x08u  /**< the calibration's start: a failure
                                   fails it, nothing comes back */
 #define IMU_OUT_RSW   0x10u  /**< an RSW write */
+#define IMU_OUT_LAST  0x80u  /**< on a held command: the last of its group */
 /** @} */
 
 /** @brief The sensor side.  Its members are private but for the tests. */
@@ -88,6 +89,8 @@ typedef struct {
     bool         out_sent;       /**< out_ms holds a time */
     uint8_t      out_for[IMU_OUTBOX]; /**< IMU_OUT_* of each held command */
     uint8_t      sent_for;       /**< IMU_OUT_* of the last command sent */
+    bool         mid_group;      /**< the last command sent was not the last
+                                      of its group: the rest is held */
     bool         exit_due;       /**< the calibration's exit to queue again */
     bool         held;           /**< a write failed: what it dropped waits
                                       for the next connection */
@@ -124,9 +127,10 @@ void imu_sensor_values(imu_sensor_t *s, uint8_t rate_code, bool six,
                        bool send);
 
 /**
- * @brief IMU OFF: a running calibration ends FAILED with its exit queued,
+ * @brief IMU OFF: a running calibration ends FAILED with its exit due,
  *        a zero kept counts a new zero generation, the reading is
- *        forgotten.  The outbox keeps what it holds.
+ *        forgotten.  The outbox is emptied: what its groups were for is
+ *        due again at the next connection, each group whole.
  * @param s The sensor, not NULL.
  */
 void imu_sensor_off(imu_sensor_t *s);
@@ -155,7 +159,11 @@ void imu_sensor_feed(imu_sensor_t *s, const uint8_t *b, size_t n,
  *        calibration runs.  A stream that flows again after it stopped
  *        (a connect or a reconnect) seeds the filter with its next angle
  *        frame and counts its frame types again: once IMU_RSW_FRAMES good
- *        frames came, types other than IMU_RSW's make RSW due.
+ *        frames came, types other than IMU_RSW's make RSW due.  A stream
+ *        that stops drops the commands held: a group cut between two of
+ *        its commands and every group not begun are due again and go
+ *        whole, from the unlock, at the next connection; a calibration
+ *        whose start is cut fails.
  * @param s       The sensor, not NULL.
  * @param now_ms  The clock.
  * @param link_up The sensor's stream flows.

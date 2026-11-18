@@ -856,6 +856,72 @@ TEST_CASE(the_applications_hook_is_not_a_control)
     CHECK_FEQ(motor_screen_throttle(), 64.0f);
 }
 
+/* Between the hold's ask and the bench's answer the button is DISARM: a
+ * press there takes the ARM back on the DOWN, whether the ARM still waits
+ * to be taken or went out, and a finger left on it asks no ARM. */
+TEST_CASE(a_press_while_the_arm_is_asked_takes_it_back)
+{
+    for (int taken = 0; taken < 2; ++taken) {
+        fresh();
+        finger(FEED_LONE, ARM_X, ARM_Y);
+        frames((int)(2.3f / 0.026f));
+        lift(FEED_LONE);
+        if (taken) {
+            CHECK_EQ(took().kind, MOTOR_CMD_ARM);
+        }
+        finger(FEED_LONE, ARM_X, ARM_Y);
+        CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
+        frames((int)(2.5f / 0.026f));
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+        lift(FEED_LONE);
+        frames(4);
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    }
+}
+
+/* An ARM asked, unanswered, and dropped by a stop after the flash has
+ * ended: ARM is drawn again, so it no longer reads DISARM (Codex P2 on
+ * #888). */
+TEST_CASE(an_arm_ask_dropped_redraws_the_arm_button)
+{
+    fresh();
+    finger(FEED_LONE, ARM_X, ARM_Y);
+    frames((int)(2.3f / 0.026f));
+    lift(FEED_LONE);
+    CHECK_EQ(took().kind, MOTOR_CMD_ARM);
+    settle();                                 /* the flash has ended */
+    motor_screen_cancel_arm();
+    ui_router_tick(0.026f);
+    ui_router_render(&cv, 0);                 /* only what changed */
+    memcpy(fb_was, fb, (size_t)W * H * sizeof(gfx_color_t));
+    picture(fb);                              /* everything */
+    CHECK(memcmp(fb, fb_was, (size_t)W * H * sizeof(gfx_color_t)) == 0);
+}
+
+/* One contact's hold on ARM has completed and asked ARM; still down, the
+ * other contact presses the button, now DISARM.  The DISARM is asked and
+ * the first contact, held on and then lifted, asks no second ARM.  With
+ * the track ids either way round. */
+TEST_CASE(a_completed_arm_hold_under_a_disarm_asks_no_second_arm)
+{
+    for (int swap = 0; swap < 2; ++swap) {
+        const uint8_t a = (uint8_t)(swap ? 1 : 0), b = (uint8_t)(swap ? 0 : 1);
+
+        fresh();
+        finger(a, ARM_X, ARM_Y);
+        frames((int)(2.3f / 0.026f));
+        CHECK_EQ(took().kind, MOTOR_CMD_ARM);
+        finger(b, ARM_X, ARM_Y);
+        CHECK_EQ(took().kind, MOTOR_CMD_DISARM);
+        frames((int)(2.5f / 0.026f));
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+        lift(a);
+        lift(b);
+        frames(4);
+        CHECK_EQ(took().kind, MOTOR_CMD_NONE);
+    }
+}
+
 int main(void)
 {
     RUN(no_throttle_control_moves_the_value_before_the_first_arm);
@@ -880,5 +946,8 @@ int main(void)
     RUN(a_hold_of_arm_ends_when_the_port_is_taken);
     RUN(arm_reset_peaks_and_the_tabs_work_while_disarmed);
     RUN(the_applications_hook_is_not_a_control);
+    RUN(a_press_while_the_arm_is_asked_takes_it_back);
+    RUN(a_completed_arm_hold_under_a_disarm_asks_no_second_arm);
+    RUN(an_arm_ask_dropped_redraws_the_arm_button);
     return test_summary("motor_arm");
 }

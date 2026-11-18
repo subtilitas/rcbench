@@ -917,7 +917,7 @@ static void measure(servo_test_t *t, const sample_t *m)
             t->stall_peak_a = i;
         }
     }
-    /* STALL AT, wherever the run is: counted on a characterisation step,
+    /* Stall threshold, wherever the run is: counted on a characterisation step,
      * and ending the run once it lasts.  The time counts from the start of
      * the first reading above it, so a window counts its 50ms. */
     if (servo_test_over_a(i, t->cfg.stall_a)) {
@@ -1059,7 +1059,7 @@ void servo_test_reading(servo_test_t *t, const servo_test_reading_t *r,
 
     /* Constant current: the supply holds its limit, and the voltage the
      * step names is not at the servo.  Counted, and ending the run once it
-     * lasts, whatever STALL AT is. */
+     * lasts, whatever Stall threshold is. */
     if (r->mode == 2u) {
         ++t->cc_readings;
         if (!t->cc_on) {

@@ -11,7 +11,7 @@
  * - the_output_comes_on_with_a_hold_and_only_once
  * - a_short_press_on_output_on_does_nothing
  * - a_finger_that_leaves_the_switch_switches_nothing
- * - the_output_goes_off_with_a_tap
+ * - the_output_goes_off_on_the_press
  * - the_release_that_ends_the_hold_does_not_switch_off
  * - an_off_outranks_an_on_in_the_same_poll
  * - a_second_contact_cannot_steal_the_release
@@ -80,19 +80,26 @@ TEST_CASE(a_finger_that_leaves_the_switch_switches_nothing)
     CHECK(!supply_screen_poll_cmd(NULL));
 }
 
-TEST_CASE(the_output_goes_off_with_a_tap)
+TEST_CASE(the_output_goes_off_on_the_press)
 {
     fresh();
     supply_screen_set_output(true);
     supply_cmd_t c;
-    tap(OUT_X, OUT_Y);
+    /* The press asks OFF; the release asks nothing more. */
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
     CHECK(supply_screen_poll_cmd(&c));
     CHECK(c.off);
     CHECK(!c.on);
+    ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
+    CHECK(!supply_screen_poll_cmd(&c));
 
-    /* A press that slides off before lifting is not a tap. */
+    /* A press that slides off before lifting has switched off. */
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    ev(OFF_X, OFF_Y, TOUCH_EVENT_MOVE, 1);
     ev(OFF_X, OFF_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_screen_poll_cmd(&c));
+    CHECK(c.off);
+    CHECK(!c.on);
     CHECK(!supply_screen_poll_cmd(&c));
 }
 
@@ -143,12 +150,20 @@ TEST_CASE(a_second_contact_cannot_steal_the_release)
 {
     fresh();
     supply_screen_set_output(true);
+    supply_cmd_t c;
+    /* OUTPUT OFF acted on the press; neither release asks anything. */
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK(supply_screen_poll_cmd(&c) && c.off);
     ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 2);
     CHECK(!supply_screen_poll_cmd(NULL));
     ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
-    supply_cmd_t c;
-    CHECK(supply_screen_poll_cmd(&c) && c.off);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    /* RESET PEAKS, a tap: contact 2's release is not contact 1's. */
+    ev(RESET_X, RESET_Y, TOUCH_EVENT_DOWN, 1);
+    ev(RESET_X, RESET_Y, TOUCH_EVENT_UP, 2);
+    CHECK(!supply_screen_poll_cmd(NULL));
+    ev(RESET_X, RESET_Y, TOUCH_EVENT_UP, 1);
+    CHECK(supply_screen_poll_cmd(&c) && c.reset);
 }
 
 TEST_CASE(a_second_contact_on_another_button_cannot_steal_the_off)
@@ -190,11 +205,13 @@ TEST_CASE(a_stop_abandons_the_hold_and_drops_a_posted_on)
 
 TEST_CASE(a_stop_while_the_output_reports_off_strands_no_press)
 {
-    /* The output goes off under a finger on OUTPUT OFF: the press neither
-     * switches it back on nor waits to. */
+    /* The output goes off under a finger on OUTPUT OFF: the press, whose
+     * OFF went on the DOWN, neither switches it back on nor waits to. */
     fresh();
     supply_screen_set_output(true);
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
+    supply_cmd_t c;
+    CHECK(supply_screen_poll_cmd(&c) && c.off && !c.on);
     supply_screen_set_output(false);
     tick_for(HOLD_TICKS);
     ev(OUT_X, OUT_Y, TOUCH_EVENT_UP, 1);
@@ -217,7 +234,8 @@ TEST_CASE(a_touch_loss_drops_an_on_and_keeps_an_off)
     tick_for(HOLD_TICKS);
     CHECK(!supply_screen_poll_cmd(&c));
 
-    /* A press on OUTPUT OFF whose release went missing is an OFF made. */
+    /* A press on OUTPUT OFF asked OFF as it came down: the OFF waits
+     * through the loss. */
     fresh();
     supply_screen_set_output(true);
     ev(OUT_X, OUT_Y, TOUCH_EVENT_DOWN, 1);
@@ -745,7 +763,7 @@ int main(void)
     RUN(the_output_comes_on_with_a_hold_and_only_once);
     RUN(a_short_press_on_output_on_does_nothing);
     RUN(a_finger_that_leaves_the_switch_switches_nothing);
-    RUN(the_output_goes_off_with_a_tap);
+    RUN(the_output_goes_off_on_the_press);
     RUN(the_release_that_ends_the_hold_does_not_switch_off);
     RUN(an_off_outranks_an_on_in_the_same_poll);
     RUN(a_second_contact_cannot_steal_the_release);

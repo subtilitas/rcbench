@@ -466,6 +466,50 @@ TEST_CASE(the_stop_mark_follows_the_wrap)
     CHECK(stop_mark_keeps(0xFFFFFFFFu, 0xFFFFFFFEu, false));
 }
 
+/*
+ * The half range in numbers.  A number 0x7FFFFFFF ahead is the furthest
+ * one that still counts as ahead; 0x80000000 ahead is read as behind.
+ * Each of the four comparisons at both sides of that line.
+ */
+TEST_CASE(the_half_range_is_2_to_the_31_on_every_comparison)
+{
+    /* touch_seq_take(): missed = seq - next. */
+    touch_seq_rx_t rx = { .next = 1u };
+    CHECK_EQ(touch_seq_take(&rx, 0x80000000u), 0x7FFFFFFFu);
+    CHECK_EQ(rx.next, 0x80000001u);
+    rx.next = 1u;
+    CHECK_EQ(touch_seq_take(&rx, 0x80000001u), 0u);
+    CHECK_EQ(rx.next, 1u);
+    rx.next = 1u;
+    CHECK_EQ(touch_seq_take(&rx, 0x80000002u), 0u);
+    CHECK_EQ(rx.next, 1u);
+
+    /* touch_seq_tail(): missed = published - (next - 1). */
+    rx.next = 1u;
+    CHECK_EQ(touch_seq_tail(&rx, 0x7FFFFFFFu), 0x7FFFFFFFu);
+    CHECK_EQ(rx.next, 0x80000000u);
+    rx.next = 1u;
+    CHECK_EQ(touch_seq_tail(&rx, 0x80000000u), 0u);
+    CHECK_EQ(rx.next, 1u);
+    rx.next = 1u;
+    CHECK_EQ(touch_seq_tail(&rx, 0x80000001u), 0u);
+    CHECK_EQ(rx.next, 1u);
+
+    /* arm_watch_take_ok(): ahead = notice - consumed. */
+    CHECK(!arm_watch_take_ok(3u, 3u, 0x7FFFFFFFu, 0u));
+    CHECK(arm_watch_take_ok(3u, 3u, 0x80000000u, 0u));
+    CHECK(arm_watch_take_ok(3u, 3u, 0x80000001u, 0u));
+    CHECK(!arm_watch_take_ok(3u, 3u, 0x7FFFFFFEu, 0u));
+
+    /* stop_mark_keeps(): ahead = mark - cur. */
+    CHECK(stop_mark_keeps(0x7FFFFFFFu, 0u, true));
+    CHECK(stop_mark_keeps(0x7FFFFFFEu, 0u, true));
+    CHECK(!stop_mark_keeps(0x80000000u, 0u, true));
+    CHECK(!stop_mark_keeps(0x80000001u, 0u, true));
+    CHECK(stop_mark_keeps(0x80000006u, 7u, false));
+    CHECK(!stop_mark_keeps(0x80000007u, 7u, false));
+}
+
 int main(void)
 {
     RUN(an_unbroken_stream_reports_nothing);
@@ -491,5 +535,6 @@ int main(void)
     RUN(the_stop_mark_stays_for_a_press_still_to_come);
     RUN(the_stop_mark_goes_for_a_press_taken_or_lost);
     RUN(the_stop_mark_follows_the_wrap);
+    RUN(the_half_range_is_2_to_the_31_on_every_comparison);
     return test_summary("touch_loss");
 }

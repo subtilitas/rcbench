@@ -257,7 +257,7 @@ laufendes Halten, mit der Eingangsspannung im Text
 ([Carrier, Die Eingangsversorgung](Carrier-de.md#die-eingangsversorgung)).
 Für ein Servo, das der Bediener einschaltet, ohne PD mini, schaltet
 **VERBINDEN** nichts ein und nimmt ein Tippen, das den Einstieg sofort
-sendet. **ABBRECHEN** und **VERLASSEN** nehmen ein Tippen.
+sendet. **VERLASSEN** nimmt ein Tippen; **ABBRECHEN** wirkt beim Aufsetzen.
 
 ![Ein laufender Vorgang](img/de/servo-kst-working.png)
 
@@ -287,7 +287,7 @@ wieder KST.
 | `Das Netzteil unterstützt diese Spannung oder Strombegrenzung nicht.` | die Spannung liegt über 8,4V, die Stromgrenze außerhalb 50 bis 3000mA, oder die Spannung, mit der die Session läuft, liegt weniger als 0,7V unter der Eingangsspannung des PD mini; die Versorgung wird nicht geändert |
 | `Versorgung unter 4.8V. Programmieren benötigt mindestens 4.8V.` | die Programmierspannung oder die Spannung eines Ausgangs, der ein ist, liegt unter 4,8V; die Versorgung wird nicht geändert. Bei einem Ausgang, der ein ist und unter 4,8V gesetzt ist, sendet das Panel nichts an den IOmcu |
 | `Die Versorgung hat nicht innerhalb von 3000ms geschaltet. Prüfe die Versorgung.` | der PD mini las nicht wie angefragt; der Port ist wieder in PWM, und ein Ausgang, den dieses **VERBINDEN** eingeschaltet hat, ist wieder aus |
-| `Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst. Halte ARM, dann tippe auf DISARM, um ihn aufzuheben.` | der IOmcu vertraut dem Heartbeat nicht (das Band zeigt FEHLER 10), oder der Link war 200ms still und der Failsafe hat ausgelöst (FEHLER 01). Nur das CLEAR, das ein ARM schreibt, hebt ihn auf; ein Neustart des IOmcu kann FEHLER 01 ausgelöst lassen |
+| `Vom IOmcu abgelehnt: Sein Failsafe ist ausgelöst. Halte ARM, dann tippe auf DISARM, um ihn aufzuheben.` | der IOmcu vertraut dem Heartbeat nicht (das Band zeigt FEHLER 10), oder der Link war 200ms still und der Failsafe hat ausgelöst (FEHLER 01). Ein Schreiben von CLEAR hebt FEHLER 01 auf, und das Panel schreibt es an drei Stellen: beim Schalten auf ARMED, beim Zurücksetzen von STOP und bei FAILSAFE LÖSEN auf SERVO ([Arm-Latch](Safety-de.md#arm-latch)). FEHLER 10 endet, sobald die Heartbeat-Leitung wieder Flanken zeigt. Ein Neustart des IOmcu kann FEHLER 01 ausgelöst lassen |
 
 ![Ein Port ohne Pin](img/de/servo-kst-nopin.png)
 
@@ -411,7 +411,7 @@ Sollwerte für den Port reserviert, solange dieser nicht in PWM ist. Der IOmcu l
 und jedes Einschalten ab; ein Ausschalten nimmt er an. Der
 SUPPLY-Bildschirm zeigt dasselbe: die Sollwerte, die Schieber, die
 Schritte und **AUSGANG EIN** sind gedimmt und nehmen keinen Druck,
-**AUSGANG AUS** und **SPITZENWERTE ZURÜCKSETZEN** arbeiten, ein Tippen auf
+**AUSGANG AUS** und **SPITZENWERTE ZURÜCKSETZEN** arbeiten, ein Druck auf
 die Zeile PD MINI der Karte BEREIT, solange sie EIN liest, schaltet den
 Ausgang aus,
 und die Karte MODUS des SUPPLY-Bildschirms zeigt `Servoprogrammierung.`. Die

@@ -10,7 +10,9 @@
  * of the zero is MAPPING; the KST pulse write comes before any end pulse,
  * Hitec gets none; the report lists every measure and the CSV one row a
  * measure; RESTORE cleared by a later read with the values back or
- * changed; start refuses what lies outside its ranges; the 32-bit ms wrap
+ * changed; start refuses what lies outside its ranges, and a goal that is
+ * not more than 2 x the tolerance: a servo that never moves and one whose
+ * end pulses both deflect to one side get no run; the 32-bit ms wrap
  * inside a settle.
  *
  * The rig is servo_rauto_rig.h.
@@ -360,8 +362,14 @@ TEST_CASE(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_
     CHECK(!servo_rauto_start(&r, NULL, 0u));
     servo_rauto_init(NULL);
 
+    /* The smallest target is 0.1°; its goal is under 2 x the smallest
+     * tolerance, so the start that takes the range's ends is 0.2° at
+     * 10% and 0.1°. */
     c.target_deg[0] = 0.1f;
     c.target_deg[1] = 90.0f;
+    c.tol_ddeg = SERVO_RAUTO_TOL_MIN_DDEG;
+    CHECK(!servo_rauto_start(&r, &c, 0u));
+    c.target_deg[0] = 0.2f;
     CHECK(servo_rauto_start(&r, &c, 0u));
     /* RUNNING: a second start is refused. */
     CHECK(!servo_rauto_start(&r, &c, 0u));
@@ -409,6 +417,73 @@ TEST_CASE(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_
     c.center_us = 1999u;
     CHECK(servo_rauto_start(&r, &c, 0u));
     CHECK(!servo_rauto_running(NULL));
+}
+
+/* A goal of the tolerance or less: a surface that stays at the zero is
+ * within it on both sides.  Target 0.5°, margin 0, tolerance 0.5°, a servo
+ * that does not move: the start is refused, on either side's goal. */
+TEST_CASE(a_goal_within_the_tolerance_is_refused_at_the_start)
+{
+    for (int s = 0; s < 2; ++s) {
+        rig_init(0u);
+        g.gain = 0.0f;                  /* the surface stays at the zero */
+        g.cfg.target_deg[s] = 0.5f;
+        g.cfg.margin_pct = 0u;
+        g.cfg.tol_ddeg = 5u;
+        CHECK(!start());
+        CHECK(!servo_rauto_running(&g.run));
+        run_for(2000u);
+        CHECK_EQ(g.arms, 0u);
+        CHECK(!g.commanded);
+    }
+}
+
+/* A goal under 2 x the tolerance: a side can be within it while under the
+ * tolerance from the zero, so without a direction.  Both end pulses to the
+ * + side, 1000us at 1.1° and 2000us at 2.5°, targets 2.0°, tolerance 1.2°:
+ * the start is refused.  At tolerance 0.9° the run starts, the 1000us side
+ * takes its direction at its first measure and the run ends MAPPING. */
+TEST_CASE(both_ends_on_one_side_under_twice_the_tolerance_do_not_pass)
+{
+    for (int k = 0; k < 2; ++k) {
+        rig_init(0u);
+        g.dir[0] = 1.0f;
+        g.dir[1] = 1.0f;
+        g.gain = 0.01f;
+        g.v[0] = 110u;                  /* 1.1° */
+        g.v[1] = 250u;                  /* 2.5° */
+        g.cfg.target_deg[0] = 2.0f;
+        g.cfg.target_deg[1] = 2.0f;
+        g.cfg.margin_pct = 0u;
+        g.cfg.tol_ddeg = k == 0 ? 12u : 9u;
+        if (k == 0) {
+            CHECK(!start());
+            CHECK(!servo_rauto_running(&g.run));
+            continue;
+        }
+        CHECK(start());
+        run_for(RAUTO_MS);
+        CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
+        CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_MAPPING);
+    }
+}
+
+/* The edge: a goal of 2 x the tolerance is refused, one 0.1° above it
+ * starts; the margin counts into the goal. */
+TEST_CASE(the_goal_must_exceed_twice_the_tolerance)
+{
+    const float t10[2] = { 1.0f, 1.0f }, t11[2] = { 1.1f, 1.0f },
+                t11b[2] = { 1.1f, 1.1f }, t5[2] = { 0.5f, 0.5f };
+    CHECK(!servo_rauto_goals_ok(NULL, 0u, 5u));
+    CHECK(!servo_rauto_goals_ok(t10, 0u, 5u));      /* 1.0° = 2 x 0.5° */
+    CHECK(!servo_rauto_goals_ok(t11, 0u, 5u));      /* one side at 1.0° */
+    CHECK(servo_rauto_goals_ok(t11b, 0u, 5u));
+    CHECK(servo_rauto_goals_ok(t10, 10u, 5u));      /* 1.1° goals */
+    CHECK(!servo_rauto_goals_ok(t5, 50u, 5u));      /* 0.75° goals */
+    CHECK(servo_rauto_goals_ok(t5, 0u, 2u));        /* 0.5° over 0.4° */
+    const float def[2] = { 20.0f, 20.0f };
+    CHECK(servo_rauto_goals_ok(def, 10u, 5u));      /* the defaults */
+    CHECK(servo_rauto_goals_ok(def, 10u, 50u));     /* 22° over 10° */
 }
 
 TEST_CASE(the_clock_wrap_inside_a_settle_does_not_end_it)
@@ -622,6 +697,9 @@ int main(void)
     RUN(the_pulse_write_comes_first_on_kst_and_hitec_gets_none);
     RUN(the_report_lists_every_step_and_the_csv_one_row_a_step);
     RUN(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_outside);
+    RUN(a_goal_within_the_tolerance_is_refused_at_the_start);
+    RUN(both_ends_on_one_side_under_twice_the_tolerance_do_not_pass);
+    RUN(the_goal_must_exceed_twice_the_tolerance);
     RUN(the_clock_wrap_inside_a_settle_does_not_end_it);
     return test_summary("servo_rauto");
 }

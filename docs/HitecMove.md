@@ -74,7 +74,7 @@ error: the supply stays on.
 
 ![A horn held at a block](img/servo-hitec-move-blocked.png)
 
-The end, after a tap on ON, a tab change, the home tag, a change of
+The end, after a press on ON, a tab change, the home tag, a change of
 screen, an ABORT or a bind: the pass under way ends, 0x1E = 3000, the
 servo restarts (0x46 = 1) with 1000ms, the 21 registers and 0x1E, 0x50,
 0x52 and 0x56 are read. The loop's set, 0x1E, 0x50, 0x52, 0x54, 0x56,
@@ -142,16 +142,19 @@ with `-` and `+` does: the hold of MOVE SERVO confirmed it. WRITE n VALUES
 writes it after MOVE OFF.
 
 A bind on the way to NEUTRAL is MOVE SERVO's bind: the horn moves back and
-the loop ends. A tap on ON, a tab change, the home tag, a change of
+the loop ends. A press on ON, a tab change, the home tag, a change of
 screen and an ABORT end the search with the loop's end. STOP, a switch to
 SAFE at the bench, the supply off and the other hard ends stay hard ends.
 A bind of the search is no error: the supply stays on.
 
-A stop counts whatever other fingers hold. While one finger holds a press
-on the overlay, a `-` or `+` key or a tab, a further finger on ON ends the
-loop, and one on the key whose side searches ends the search, on its press.
-A finger held on either row loses its tap with that stop: its release
-starts nothing again. A lone finger ends either with a tap.
+A stop acts on the press. A finger that comes down on ON ends the loop,
+and one on the key whose side searches ends the search, before it lifts. A
+finger that slides off the control, and a touch stream that breaks under
+the press, have stopped already; the release starts nothing again. A stop
+counts whatever other fingers hold: while one finger holds a press on the
+overlay, a `-` or `+` key or a tab, a further finger on either control
+stops on its press, and a finger held on either row loses its tap with
+that stop.
 
 ## Current limitations
 

@@ -136,7 +136,7 @@ started, which is a different diagnosis from a bus with no errors.
 ## Protocol
 
 The protocol uses pages of up to 32 sixteen-bit registers, read and written in windows. The
-IOmcu transmits only in answer to a request. Protocol version 4.37. The
+IOmcu transmits only in answer to a request. Protocol version 4.39. The
 major version is register 0 of page 0. The major version changes when a register
 changes meaning or a page is renumbered. The minor version changes when a page or
 register is added at the end, where an older panel can ignore it.
@@ -250,6 +250,10 @@ panel offers no choice of port to it. From 4.37 the IOmcu takes numbered
 requests and answers a repeat from its copy
 ([A lost answer](#a-lost-answer)); the panel numbers its requests to a
 4.37 or later IOmcu only, because an older one refuses a numbered frame.
+From 4.38 BIND (0x30) has register 1, `WHY`: the cause of the last refused
+binding write. An older IOmcu's BIND page has 1 register and refuses a read
+of register 1 with BAD_RANGE; the panel reads `WHY` from a 4.38 or later
+IOmcu only and shows `REFUSED` without a cause otherwise.
 The IOmcu never reads the panel's minor; a page
 an older panel does not know is a page it never writes.
 
@@ -431,7 +435,7 @@ rest of another. The three pages make the change one step:
 | --- | --- | --- |
 | BIND_CFG | 32, as CHAN_CFG | a CHAN_CFG page that is not in force. A frame is checked by CHAN_CFG's value rules (role 0 or 1, slew 0 to 3000, endpoints 400 to 2500µs) and refused with BAD_VALUE, storing nothing, on a breach. No output changes |
 | BIND_OUT | 32, as OUTPUTS | an OUTPUTS page that is not in force. A frame is checked by OUTPUTS' value rules (a driver 0 to 4, a pin number up to 63) and refused with BAD_VALUE on a breach. No output changes |
-| BIND | 1: `COMMIT` | a write carries the CRC (cyclic redundancy check) of the 64 prepared registers. Reads the CRC of what is prepared |
+| BIND | 2: `COMMIT`, `WHY` | a write of `COMMIT` carries the CRC (cyclic redundancy check) of the 64 prepared registers. `COMMIT` reads the CRC of what is prepared. `WHY` (since 4.38) reads the cause of the last refused binding write, numbered in the [page map](#page-map) |
 
 The CRC is CRC-16/CCITT-FALSE: polynomial 0x1021, seed 0xFFFF, no
 reflection, no final XOR, over the 32 BIND_CFG registers and then the 32
@@ -956,7 +960,11 @@ and its precharge sampler 1 more and up to 12. Two bidirectional slots,
 two DShot ports and a Hitec line with precharge take 8 of 12 state
 machines and 81 of 96 instructions; the arithmetic is not run on
 hardware. A block reaches GPIO 0 to GPIO 31 or GPIO 16 to GPIO 47, so a pin above
-GPIO 31 can be refused earlier.
+GPIO 31 can be refused earlier. A bidirectional pin needs its 2 state
+machines adjacent in one block, n and (n + 1) modulo 4. The driver takes
+the first block, PIO2 down to PIO0, that reaches the pin and has such a
+free pair and 16 free instructions, so 3 blocks hold 6 bidirectional pins
+in any order of binding (`test_out_dshot`).
 
 ### The programming port for KST and Chaservo servos
 
@@ -1042,7 +1050,7 @@ per 5s offer.
 | 0x10 | CONTROL | read, write | ARM (0 switches to SAFE; 1 switches every output to ARMED; from 4.18 0x0002 switches the throttle channels to ARMED, 0x0004 the surfaces and the SERVO PWM programming ports, 0x0006 both; a DShot programming port is a throttle (since 4.28); any other value is refused with BAD_VALUE, [An arm for one role](#an-arm-for-one-role)), THROTTLE (0..10000, hundredths of a percent, and it commands every channel CHAN_CFG marks a throttle and every DShot programming port, since 4.28), MOTOR_POLES, CLEAR (write 0x5AFE to leave failsafe). Registers 0 to 2 are the frame that switches to ARMED |
 | 0x11 | LIMITS | | declared, not served |
 | 0x12 | FAILSAFE | | declared, not served |
-| 0x13 | CHANNELS | read, write | one command per output channel, 0..1000 of the channel's travel; eight channels |
+| 0x13 | CHANNELS | read, write | one command per output channel, 0..1000 of the channel's travel; eight channels. A read gives the command last written, or what the bank holds after boot, after a failsafe and for a channel whose role changed: the role's rest, 0 for a throttle and 500 for a surface |
 | 0x20 | BENCH | read | voltage (10mV), current (10mA), power (W), rpm (revolutions per minute), ESC (electronic speed controller) temperature and motor temperature (0.1°C, signed), charge (mAh), energy (0.1Wh), minimum voltage, maximum current, maximum power, maximum rpm, flags |
 | 0x21 | reserved | | not assigned; not to be reused |
 | 0x22 | OUTPUTS | read, write | per slot: driver (0 none, 1 PWM (pulse-width modulation), 2 PPM (pulse-position modulation), 3 DShot, 4 bidirectional DShot), pin, first channel and channel count in one register, rate in Hz (kbit/s for both DShot drivers); eight slots of four registers |
@@ -1059,7 +1067,7 @@ per 5s offer.
 | 0x2D | TONE | read, write | the beeps of an ESC heard on one motor phase, through a series resistor and a zener clamp on one IOmcu GPIO, stamped by a PIO state machine at 26.7ns (since 4.8). Registers 0 to 3, one frame: enable (bit 0), the GPIO (default 22, pad 29), the lowest tone heard in Hz (50 to 2000, default 400) and the highest (above the lowest, to 6900, default 6500). Registers 4 to 7, one frame: the pitch change in percent that starts a new beep without a silence (0 splits on silence only, 50 at most, default 8), the silence that ends a beep in ms (1 to 100 and at least the period of the lowest tone, default 3), the tone periods that make a beep (1 to 64, default 3), and register 7 reserved. The reserved register reads 0 and takes only 0. Refused with BAD_VALUE: a value out of range, a combination the detector refuses (a silence shorter than the lowest tone's period), and, while the tap is enabled, a GPIO past the bank (63), reserved by the board, or an ADC (analog-to-digital converter) pin: GPIO 26 to GPIO 29 of the RP2350A and GPIO 40 to GPIO 47 of the RP2354B, which are not fault tolerant, and any GPIO on an IOmcu whose core 1 did not start at boot (no capture runs before a restart). Refused with BUSY (since 4.17; BAD_VALUE before it), while the tap is enabled: a GPIO bound to an output or held by SENSE, SUPPLY or a programming port, and a capture the IOmcu cannot start (core 1 in a pass, or no PIO state machine or DMA channel left by the outputs and the supply) ([A busy pin on the phase tap](#a-busy-pin-on-the-phase-tap)). The GPIO is no output's while the tap is enabled, and an OUTPUTS, SENSE or SUPPLY write that takes it is refused. A change is taken armed or not: the tap is an input and drives nothing. Registers 8 to 12, read only: flags (bit 0 the capture runs, bit 1 the tap is enabled and its pin could not be taken, bit 2 the capture ring or the state machine's FIFO overran since the capture started, bit 3 a run of bursts is under way, bit 4 the last window held a tone), the window number modulo 65536 (windows of 8ms), the last window's tone in 0.1Hz (0 for none) and the tone periods in it, and the number of the newest beep. The IOmcu keeps the last 64 beeps and numbers them 1 to 65535, then from 1 again; the newest number is 0 before the first beep. Register 13, EVT_SEL, is the one writable register after register 7 and is not kept: the number of the beep that registers 14 to 21 show. A read consumes no beep, so a reply lost on the link loses nothing. Registers 14 to 21, read only: EVT_SEL again while that beep is among the 64, else 0 with registers 15 to 21 reading 0; the beep's first rise in ms since the capture started (32 bit, registers 15 and 16, low first); its length to its last edge in 0.1ms; its mean pitch in 0.1Hz; its bursts; the carrier it was chopped at in 100Hz steps (0 unchopped); flags (bit 0 it began at a pitch change with no silence before it, bit 1 it ended at one). Registers 22 and 23, read only: beeps lost, and lows shorter than 500ns that the detector ignored, each modulo 65536. The capture's 8µs hold-off removes every low shorter than 8µs before the detector sees it, so register 23 reads 0 on the tap. The capture starts when the tap is enabled or its pin changes, and then empties the 64. Registers 0 to 6 are kept in the IOmcu's flash and the tap starts at boot. While the tap is disabled the pin is an input with its pull-down on (32 to 86kΩ), and it stays on while the tap runs. On the A2 stepping of the RP2350 the internal pull-down does not hold an open pin low (erratum RP2350-E9, about 2.2V); the tap's external 8.2kΩ pull-down to GND does |
 | 0x2E | BIND_CFG | read, write | a CHAN_CFG page prepared and not in force (since 4.10): the registers and the value rules of CHAN_CFG. [A binding taken whole](#a-binding-taken-whole) has the three pages |
 | 0x2F | BIND_OUT | read, write | an OUTPUTS page prepared and not in force (since 4.10): the registers and the value rules of OUTPUTS |
-| 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers puts both prepared pages in force or neither; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared |
+| 0x30 | BIND | read, write | register 0 `COMMIT` (since 4.10): a write of the CRC-16 of the 64 prepared registers puts both prepared pages in force or neither; refused with BAD_VALUE for another value and for a page its own rules refuse. Reads the CRC of what is prepared. Register 1 `WHY` (since 4.38), read only: the cause of the last refused write to CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND, and 0 once a later CHAN_CFG, OUTPUTS or BIND write is taken. 1 a register value outside its page's rules; 2 a `COMMIT` that does not name the CRC of the prepared pages; 3 the ESC_WIRE page holds an output; 4 a role, a throttle channel or a slot changes while ARMED; 5 on a board with soldered pins, a slot off the servo outputs; 6 a programming port's pin, bank channel or PWM slice; 7 a pin of the supply's PD mini; 8 a pin of the sensor bus; 9 the phase tap's pin; 10 a PWM slice shared with a surface at another frame rate; 11 an endpoint longer than its PWM slot's frame; 12 a driver did not bind (no PIO state machine, instruction memory, DMA channel or PWM slice free, or the pin refused); 13 the slots leave the supply's UART no PIO block. A write to it is refused with BAD_RANGE |
 | 0x31 | SERVO_WIN | read | the last 4 complete 50ms windows of INA3221 CH1, newest first (since 4.11). Register 0: the newest window's number modulo 65536. Register 1: bit 0 a window has closed, bit 7 the capture's clipped bit. Registers 2 and 3: SERVO_SENSE's capture state and count. Then 4 entries of 6 registers, entry k from register 4 + 6 k for window number register 0 - k: mean, highest and lowest current (mA, signed), mean and lowest bus voltage (mV), and flags (bit 15 a window closed with this number, bit 8 current samples, bit 9 voltage samples, bit 10 a sample at the top of the range, bit 11 one at the bottom, bits 0 to 7 the samples at an end, held at 255). A clipped sample counts at the end of the range. Every write is refused with READ_ONLY. [The window ring](#the-window-ring) has the rules. Nothing is kept |
 | 0x32 | `KST` | read, write | the servo programming page: the programming protocol for KST and Chaservo servos on a programming port (since 4.12; a port and the supply since 4.13). A read gives 32 registers: state, flags and port, `SEQ`, operation and frames, result and refusal, the failing register, 4 register masks, the fingerprint, the measured half-cell and reply delay, and the servo image in 16 registers. The write page has 29 registers: the command in 0 to 3, sent as one frame; the staged image, unlock set and start check in 4 to 24; the image-view selector in 25; the supply voltage and current of an ENTER in 26 and 27; and the LEAVE_MS wait in 28. [The programming port for KST and Chaservo servos](LinkKST.md) has the rules. Nothing is kept |
 | 0x33 | PROG | read, write | the programming ports (since 4.13): 28 registers, 24 before 4.26. The port count, flags, the pulse switch and the servo tester's target in registers 0 to 3, then 5 registers a port for 4 ports: pin, command, slew and the two endpoints, then each port's FUNC in 24 to 27 (since 4.26). [The programming ports](#the-programming-ports) has the rules. Pin, slew, endpoints and FUNC are kept in the IOmcu's flash |
@@ -1079,7 +1087,12 @@ Faults bitmap: bit 0 link silent, bit 1 overcurrent, bit 2 over-temperature,
 bit 3 stall, bit 4 heartbeat stopped, bit 5 protocol version mismatch, bit 6
 the IOmcu's flash store is off for this boot (since 4.7): its second
 core did not register for the flash lock-out, so nothing is saved and
-set-ups written over the link run from RAM until a restart. Faults
+set-ups written over the link run from RAM until a restart, bit 7 the
+IOmcu's own watchdog restarted it (since 4.39): core 0 did not pass its
+main loop for 500ms, the restart released every output, and the bit is set
+from the start after it until a CLEAR
+([Safety](Safety.md#iomcu-loop-watchdog)). An older IOmcu has no such
+watchdog and never sets bit 7. Faults
 are sticky until read and cleared; bit 6 stays set until a restart. Bit 0 needs the link to have carried at
 least one request before it can be set: the IOmcu is awake before the
 panel polls, and the wait for the first one is not silence.
@@ -1094,6 +1107,13 @@ SENSE_MAP is in force, its watched channels determine the servo-sense
 capability. The panel reads the capabilities again after writing SENSE.
 SENSE's FLAGS and BENCH bit 5, which the panel polls, report whether a part answers. The TONE page
 adds no bit.
+
+The rpm register carries 0 to 65,535rpm. For a speed above 65,535rpm it
+reads 65535 with flag bit 2 clear: a bound, not a reading. A speed nothing
+measured reads 0 with bit 2 clear. The maximum rpm register has no valid
+bit: 65535 stands for a peak of 65,535rpm or more. The panel shows and logs
+both bounds as `>65535`. An IOmcu with firmware 0.23.14 or older reports a
+speed above 65,535rpm as 65535 with bit 2 set.
 
 BENCH flags: bit 0 voltage valid, bit 1 current valid, bit 2: rpm valid, bit 3
 the ESC's temperature valid, bit 4 the motor's temperature valid, bit 5 the
@@ -1148,7 +1168,9 @@ out) and any number above GPIO 29, on the OUTPUTS and SUPPLY pages alike. An
 OUTPUTS write with a slot the silicon cannot bind (such a pin, or a PIO state
 machine, instruction memory or DMA channel that the phase tap or the supply's
 UART holds) is refused with BAD_VALUE, the slots in force stay, and nothing
-is saved. [DShot and the output drivers](DShot.md) has the rest.
+is saved. From 4.38 BIND's `WHY` register reads the cause, 12 for a slot the
+silicon cannot bind, and OUTPUTS shows it on its reason line
+(`REFUSED: NO PIO OR PWM SLICE FREE`). [DShot and the output drivers](DShot.md) has the rest.
 
 CHAN_CFG and OUTPUTS entries are written whole, four registers at a time. A
 channel's pulse range defaults to 1000..2000µs; endpoints outside 400..2500µs
@@ -1626,7 +1648,8 @@ first in each register. Nothing on either page is kept over a restart.
 6. ACTIVATE: the IOmcu writes the first sector last, reads it back,
    answers, and 20ms later restarts as a flash update boot of the new slot.
 7. The boot ROM checks the image's SHA-256 and starts it on trial under its
-   16.7s watchdog. The panel waits 500ms, reads IDENTITY until the new
+   16.7s watchdog; the IOmcu leaves its own 500ms loop watchdog off until
+   the BUY ([Safety](Safety.md#iomcu-loop-watchdog)). The panel waits 500ms, reads IDENTITY until the new
    image answers, and writes BUY. The boot ROM clears the TBYB flag in flash.
    The IOmcu then erases the first sector of the slot it came from, so
    the boot ROM has one image to choose at the next start. The BUY is

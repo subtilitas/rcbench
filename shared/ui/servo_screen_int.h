@@ -446,6 +446,7 @@ typedef struct {
     int        arm_id;     /**< which contact it is                   */
     uint32_t   arm_rev;  /**< a count of ARM's look */
     uint32_t   drawn_arm[2];  /**< arm_rev as each buffer drew it */
+    bool       drawn_stops[2]; /**< armed or arm asked as each buffer drew ARM */
 
     gfx_rect_t arm_btn;          /**< ARM / DISARM                     */
     gfx_rect_t center_btn;       /**< CENTER; empty off LIVE           */
@@ -1186,7 +1187,7 @@ void test_end_now(servo_test_abort_t why);
  *         the highest: its 2s hold arms and starts (test_hold_fired()). */
 void ask_hv_test(void);
 void draw_test_lines(gfx_canvas_t *c);
-/* A STALL AT no reading can pass, at (@p x, @p y), or nothing. */
+/* A Stall threshold no reading can pass, at (@p x, @p y), or nothing. */
 void draw_test_stall(gfx_canvas_t *c, int x, int y);
 
 /* The run against the meter in force (test_meter_follow()); every frame

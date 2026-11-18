@@ -26,6 +26,7 @@
 #include "hardware/structs/watchdog.h"
 #include "hardware/structs/xip.h"
 #include "hardware/timer.h"
+#include "hardware/watchdog.h"
 #include "pico/bootrom.h"
 #include "pico/stdio.h"
 #include "pico/stdio_usb.h"
@@ -189,7 +190,7 @@ static size_t flash_say_line(char line[REPORT_LINE_MAX])
     return report_line(&q, REPORT_L_FLASH, line, REPORT_LINE_MAX);
 }
 
-void reset_start(void)
+reset_cause_t reset_start(void)
 {
     /* CHIP_RESET's HAD_* bits are RO (datasheet table 489) and change only
      * at a chip-level reset, so they are read and not cleared; reason
@@ -203,6 +204,13 @@ void reset_start(void)
      * neither is not read as picotool's again. */
     watchdog_hw->scratch[2] = 0u;
     watchdog_hw->scratch[3] = 0u;
+    /* The loop watchdog's mark (loop_watch.h): SCRATCH0 as the last boot
+     * left it, with the SDK's own mark of a watchdog_enable().  Zeroed, so
+     * a later restart with the watchdog not enabled -- a trial that is
+     * not bought -- is not read as the loop's. */
+    s_reset.wd_scratch0 = watchdog_hw->scratch[0];
+    s_reset.wd_enabled  = watchdog_enable_caused_reboot();
+    watchdog_hw->scratch[0] = 0u;
     boot_info_t info;
     memset(&info, 0, sizeof(info));
     s_reset.boot_ok = rom_get_boot_info(&info) != 0;
@@ -221,6 +229,7 @@ void reset_start(void)
     if (flash_say_line(line) > 0u) {
         printf("%s", line);
     }
+    return reset_cause_decode(&s_reset);
 }
 
 #if IOMCU_CONSOLE

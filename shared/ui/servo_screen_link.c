@@ -528,7 +528,7 @@ static bool source_take(servo_source_id_t id, uint32_t changes)
     const bool now_ina = (id == SERVO_SOURCE_INA3221);
     s.source = id;
     if (was_ina != now_ina && wb_task() != UI_WB_LIVE) {
-        ++s.ctrl_rev;           /* the STALL AT line names a range */
+        ++s.ctrl_rev;           /* the Stall threshold line names a range */
     }
     if (was_ina != now_ina || skipped) {
         /* The two meters do not agree, and the label names one of them:

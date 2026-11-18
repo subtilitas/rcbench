@@ -34,6 +34,7 @@
  * - a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run
  * - a_read_that_finds_no_servo_ends_with_the_pd_mini_off
  * - the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe
+ * - a_goal_under_twice_the_tolerance_refuses_the_hold_and_says_why
  * - set_a_names_the_rudder_auto_run_under_the_steps_and_the_run
  *
  * SPDX-License-Identifier: MIT
@@ -865,6 +866,52 @@ TEST_CASE(the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe)
 /* On the carrier with no PD mini the start steps name the run, not the
  * missing PD mini; behind a PD mini SET A applies, and the run names itself
  * too.  Under neither does rcur_edit() open the keypad. */
+/* A goal the tolerance swallows, TARGET 0.5° at MARGIN 0% against
+ * TOLERANCE 0.5°: the hold is refused before a part is switched, the
+ * card's first line and the band name it, no row is red for it; with the
+ * tolerance at 0.2° the hold is offered again. */
+TEST_CASE(a_goal_under_twice_the_tolerance_refuses_the_hold_and_says_why)
+{
+    carrier_safe_off(40u);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    settings_set(SET_RUDDER_DEFL_LO, 0.5f);
+    settings_set(SET_RUDDER_MARGIN, 0.0f);
+    settings_set(SET_RUDDER_TOL, 0.5f);
+    ra_ms(40u);
+    rauto_row_t row = RAR_PORT;
+    CHECK(rauto_hold_blocked(&row) == TR(RA_GOALS_TOL));
+    CHECK_EQ(row, RAR_COUNT);
+    char b[96];
+    CHECK_STR_EQ(rauto_line(0, b, sizeof(b)), TR(RA_GOALS_TOL));
+    CHECK_STR_EQ(ready_refusal(b, sizeof(b)), TR(RA_GOALS_TOL));
+    for (int i = 0; i < (int)RAR_COUNT; ++i) {
+        const rdy_row_t r = row_now(i);
+        CHECK(r.st != (uint8_t)RDY_BAD);
+        CHECK(r.why != TR(RA_GOALS_TOL));
+    }
+    ra_hold_start();
+    ra_ms(2000u);
+    CHECK(!servo_screen_rauto_running());
+    CHECK(!svs_seq_busy());
+    CHECK_EQ(ra.arms, 0u);
+    CHECK_EQ(ra.p5_ons, 0u);
+    CHECK(!prog5v_box_on());
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    /* German: the same line. */
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(rauto_line(0, b, sizeof(b)),
+                 "SOLL MUSS ÜBER 2 x TOLERANZ LIEGEN");
+    ui_text_set_language(UI_LANG_EN);
+    settings_set(SET_RUDDER_TOL, 0.2f);
+    ra_ms(40u);
+    CHECK(rauto_hold_blocked(NULL) == NULL);
+    settings_set(SET_RUDDER_DEFL_LO, settings_def(SET_RUDDER_DEFL_LO)->def);
+    settings_set(SET_RUDDER_MARGIN, settings_def(SET_RUDDER_MARGIN)->def);
+    settings_set(SET_RUDDER_TOL, settings_def(SET_RUDDER_TOL)->def);
+    ra.p5_task = false;
+    carrier_done();
+}
+
 TEST_CASE(set_a_names_the_rudder_auto_run_under_the_steps_and_the_run)
 {
     carrier_safe_off(800u);
@@ -926,6 +973,7 @@ int main(void)
     RUN(a_run_under_way_keeps_the_angle_row_on_its_source_without_a_reading);
     RUN(a_latched_failsafe_is_cleared_and_the_hold_reaches_the_run);
     RUN(a_read_that_finds_no_servo_ends_with_the_pd_mini_off);
+    RUN(a_goal_under_twice_the_tolerance_refuses_the_hold_and_says_why);
     RUN(the_arm_row_reads_safe_while_the_read_session_holds_the_bench_safe);
     RUN(set_a_names_the_rudder_auto_run_under_the_steps_and_the_run);
     return test_summary("servo_rauto_seq");

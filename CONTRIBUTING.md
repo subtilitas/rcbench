@@ -63,9 +63,10 @@ python3 tools/gen_esc_profiles.py --check
 python3 tools/check_sizes.py --check  # every file over 1,000 code lines is in tools/check_sizes.txt
 python3 tools/check_sanitizers.py --check  # the sanitizer build's flags, on every file
 python3 tools/check_protocols.py --check   # every module under protocols/ stands alone
-python3 tools/check_loop_waits.py --check  # no busy wait, sleep or blocking print in the IOmcu's code
+python3 tools/check_loop_waits.py --check  # no busy wait, sleep, blocking call or blocking print in the IOmcu's code
 python3 tools/security_parsers.py --check  # the parser table in SECURITY.md
 python3 tools/check_formats.py        # every translated format against its call
+python3 tools/check_twins.py --check  # EN and DE pages: same headings and table rows
 python3 tools/check_units.py --check  # a number and its unit without a space
 python3 tools/check_prose.py --check  # the writing rules, exceptions in check_prose_allow.txt
 python3 tools/render_ui.py --fit      # every string fits where it is drawn

@@ -47,7 +47,7 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.37. A request whose answer is lost is sent once more after 50ms.
+4.39. A request whose answer is lost is sent once more after 50ms.
 [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
@@ -65,7 +65,16 @@ on one unbroken contact resets it once the IOmcu reports everything off;
 the bench stays SAFE. One state machine carries the reset out, host-tested
 on its own and over the wire with an IOmcu that confirms and one that never
 does ([STOP as an emergency stop](docs/Stop.md), `test_stop_latch`,
-`test_stop_hold`, `test_safety_gate`). [Reference](docs/Safety.md).
+`test_stop_hold`, `test_safety_gate`). The RP2350's watchdog resets an
+IOmcu whose core 0 does not pass its main loop for 500ms: the reset releases
+every pad, the start after it switches a PD mini left on off, and STATUS
+fault bit 7 reports it to the panel, which shows `IOMCU RESTARTED
+(WATCHDOG)`. The watchdog is fed at the top of a pass and right before
+every flash window, enabled at the first pass, after the BUY on a trial
+boot, and never in the bench console build; with the datasheet maxima of
+the module's flash (Puya P25Q32SH: 30ms a sector erase, 2.5ms a page) the
+longest time between two feeds sums to 108,250us (`loop_watch.h`,
+`test_loop_watch`, `test_reset_cause`). [Reference](docs/Safety.md).
 
 **Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
 role (throttle or surface) rendered by a driver from a table (PWM (pulse-width
@@ -582,7 +591,7 @@ being the meter or no window arrives for 200ms (`SERVO_TEST_WIN_STALE_MS`, 199, 
 201ms and the millis wrap in `test_servo_test_win`), and never goes on with the PD mini.
 
 Currents are compared by magnitude in whole mA; the supply in constant current for 1000ms
-ends a run whatever STALL AT is, and a STALL AT at or above the current limit or the
+ends a run whatever Stall threshold is, and a Stall threshold at or above the current limit or the
 INA3221's range is said on the automatic test's card and in the report. Movement is a
 reading max(0.020A, 3 x the idle readings' standard deviation) from the level before the
 command; a move with none is unseen, neither timed nor late, and a run with unseen moves and
@@ -953,8 +962,11 @@ or `PORT1` to `PORT4`, `BUS`, `PD`, `TAP` (`test_picker_screen`, `test_picker_sc
 another protocol holds asks to move the pin on a card over the board or beside the cell;
 MOVE PIN writes the binding `outbind_take_check()` returns once, CANCEL, the home tag, a press
 off the card, a binding read that fails or changes, a pick and a view switch write nothing; a
-port's, an interface's or OFF's tap gives a reason line (`test_pin_take`, 21 cases, and
-`test_pin_take_grid`, 7 cases, the grid and the rbmod carrier).
+port's, an interface's or OFF's tap gives a reason line, which names the tap made last; for
+400ms after MOVE PIN or CANCEL closes the card a press in its former box is spent
+(`test_pin_take`, 23 cases, and `test_pin_take_grid`, 9 cases, the grid and the rbmod
+carrier). A write the IOmcu refuses reads its cause from BIND's `WHY` register (protocol
+4.38) and shows it on the reason line (`test_bind_link`, `test_outputs_screen_draw`).
 
 ### Output binding in the IOmcu's flash
 
@@ -1273,7 +1285,9 @@ that hand on nothing), the stream of the screen model with its rates and
 SCALE (`shared/ui/dial_stream.c`, `test_dial_stream`), the frame's paths
 into MOTOR & ESC and SERVO LIVE (`shared/ui/dial_panel.c`, `test_dial_motor`,
 `test_dial_servo`: a 10s Dial press on ARM's place arms nothing, turns while
-SAFE move nothing, PRESS and HOLD), SETUP > WIRELESS > DIAL
+SAFE move nothing, PRESS and HOLD; `test_servo_dial_runs`: the HOLD ends
+RUDDER AUTO and a limit run in each phase, the phases that hold the bench
+SAFE included, and takes back an ARM on its way), SETUP > WIRELESS > DIAL
 (`shared/ui/wireless_pane.c`, `test_wireless_pane`; `test_dial_bind` from
 the tap on SCAN FOR DIAL and BOUND DIAL, the found list with SCAN AGAIN,
 through a model of the frame and `blec` glue, the controller and the hub
@@ -1681,7 +1695,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 607 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1715,7 +1729,7 @@ The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`, `test_settings_pins_hub`,
 `test_settings_carrier`, `test_sensors_carrier`, `test_sensors_pane`, `test_settings_leave`,
 `test_settings_folders`, `test_settings_sensors`, `test_settings_keypad`,
-`test_settings_rows`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
+`test_settings_rows`, `test_settings_grid`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
 `test_log_csv`, `test_link_crc`, `test_link_pages`, `test_link_watchdog`,
 `test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,
@@ -1723,7 +1737,7 @@ The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_outputs_hw_ports`, `test_out_render`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_can_txq`, `test_link_reply_order`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
-`test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
+`test_frame_watch`, `test_loop_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
 `test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
 `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_brownout`,
@@ -1740,7 +1754,7 @@ The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_prog_choice`, `test_layout_screen`, `test_outputs_layout`, `test_outputs_view`,
 `test_picker_screen`, `test_picker_screen_hold`, `test_picker_screen_table`,
 `test_picker_tags`, `test_pin_take`, `test_pin_take_grid`, `test_picker_layout`, `test_picker_cat`, `test_board_drawing`, `test_busfault_screen`, `test_busfault_reconnect`,
-`test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`,
+`test_coproc_update_screen`, `test_upd_coproc`, `test_upd_layout`, `test_text`, `test_text_formats`,
 `test_openyge_frame`, `test_openyge_status`, `test_openyge_params`, `test_esc_profiles`, `test_esc_profile_family`,
 `test_esc_det`, `test_esc_stick_rules`, `test_esc_stick`, `test_esc_stick_hand`,
 `test_esc_stick_entry`, `test_esc_stick_tap`, `test_esc_stick_profile_timing`, `test_esc_stick_marker`, `test_ina228`, `test_ina3221`, `test_as5600`, `test_sense_sched`,
@@ -1802,10 +1816,10 @@ The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`, `test_dial_button`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
-`test_imu_sensor`, `test_imu_ctl`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
+`test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
 `test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
-`test_servo_limrun_ready`, `test_servo_limrun_seq`,
+`test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,
 `test_vibe`, `test_vibe_frame`, `test_vibe_solve`, `test_rcnode`, `test_node_policy`, `test_node_view`,
@@ -2346,7 +2360,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/touch/touch_map.c` | 128 | 128 | 100.0% |
 | `shared/touch/touch_merge.c` | 165 | 165 | 100.0% |
 | `shared/ui/ui_theme.c` | 47 | 46 | 97.9% |
-| `shared/ui/ui_widgets.c` | 422 | 414 | 98.1% |
+| `shared/ui/ui_widgets.c` | 432 | 424 | 98.2% |
 | `shared/ui/ui_icons.c` | 199 | 199 | 100.0% |
 | `shared/ui/ui_band.c` | 385 | 372 | 96.6% |
 | `shared/ui/ui_help.c` | 384 | 372 | 96.9% |
@@ -2364,15 +2378,15 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 438 | 436 | 99.5% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 651 | 640 | 98.3% |
+| `shared/ui/ui_router.c` | 664 | 652 | 98.2% |
 | `shared/ui/ui_router_alert.c` | 15 | 15 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
 | `shared/ui/overview_screen.c` | 149 | 144 | 96.6% |
-| `shared/ui/motor_screen.c` | 322 | 314 | 97.5% |
+| `shared/ui/motor_screen.c` | 324 | 316 | 97.5% |
 | `shared/ui/motor_events.c` | 219 | 215 | 98.2% |
-| `shared/ui/motor_draw.c` | 384 | 372 | 96.9% |
+| `shared/ui/motor_draw.c` | 395 | 385 | 97.5% |
 | `shared/ui/motor_workbench.c` | 172 | 166 | 96.5% |
 | `shared/ui/motor_settings_page.c` | 88 | 88 | 100.0% |
 | `shared/ui/motor_program_page.c` | 193 | 185 | 95.8% |
@@ -2413,11 +2427,11 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/servo_workbench.c` | 178 | 174 | 97.8% |
 | `shared/ui/servo_rudder_panel.c` | 479 | 474 | 99.0% |
 | `shared/ui/servo_rudder_auto_panel.c` | 613 | 558 | 91.0% |
-| `shared/ui/servo_rudder_auto_ready.c` | 287 | 282 | 98.3% |
-| `shared/ui/servo_ready.c` | 549 | 533 | 97.1% |
+| `shared/ui/servo_rudder_auto_ready.c` | 294 | 289 | 98.3% |
+| `shared/ui/servo_ready.c` | 551 | 535 | 97.1% |
 | `shared/ui/servo_power_view.c` | 95 | 89 | 93.7% |
 | `shared/ui/servo_prog_ready.c` | 247 | 242 | 98.0% |
-| `shared/ui/servo_drive_ready.c` | 459 | 435 | 94.8% |
+| `shared/ui/servo_drive_ready.c` | 467 | 443 | 94.9% |
 | `shared/ui/servo_rudder_flap.c` | 101 | 99 | 98.0% |
 | `shared/ui/servo_guide.c` | 309 | 304 | 98.4% |
 | `shared/ui/servo_fn.c` | 85 | 84 | 98.8% |
@@ -2443,10 +2457,10 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/hitec_panel_draw.c` | 304 | 303 | 99.7% |
 | `shared/ui/hitec_panel_file.c` | 237 | 236 | 99.6% |
 | `shared/ui/hitec_panel_run.c` | 107 | 107 | 100.0% |
-| `shared/ui/hitec_panel_move.c` | 211 | 206 | 97.6% |
+| `shared/ui/hitec_panel_move.c` | 210 | 205 | 97.6% |
 | `shared/ui/analyser_screen.c` | 258 | 257 | 99.6% |
 | `shared/ui/balance_screen.c` | 470 | 468 | 99.6% |
-| `shared/ui/battery_screen.c` | 223 | 218 | 97.8% |
+| `shared/ui/battery_screen.c` | 226 | 221 | 97.8% |
 | `shared/ui/esc_stick_pages.c` | 117 | 112 | 95.7% |
 | `shared/ui/esc_stick_panel.c` | 601 | 581 | 96.7% |
 | `shared/ui/esc_stick_list.c` | 299 | 286 | 95.7% |
@@ -2455,13 +2469,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/esc_stick_draw.c` | 446 | 434 | 97.3% |
 | `shared/ui/esc_stick_draw_run.c` | 595 | 551 | 92.6% |
 | `shared/ui/esc_stick_guide.c` | 72 | 71 | 98.6% |
-| `shared/ui/log_viewer_screen.c` | 325 | 316 | 97.2% |
+| `shared/ui/log_viewer_screen.c` | 343 | 334 | 97.4% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
-| `shared/ui/log_viewer_draw.c` | 420 | 407 | 96.9% |
-| `shared/ui/log_viewer_events.c` | 451 | 439 | 97.3% |
+| `shared/ui/log_viewer_draw.c` | 421 | 408 | 96.9% |
+| `shared/ui/log_viewer_events.c` | 457 | 445 | 97.4% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
-| `shared/ui/files_screen.c` | 700 | 678 | 96.9% |
+| `shared/ui/files_screen.c` | 703 | 681 | 96.9% |
 | `shared/ui/layout_screen.c` | 141 | 140 | 99.3% |
 | `shared/ui/files_draw.c` | 341 | 330 | 96.8% |
 | `shared/ui/files_events.c` | 228 | 227 | 99.6% |
@@ -2498,20 +2512,20 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 212 | 212 | 100.0% |
-| `shared/ui/upd_screen.c` | 356 | 337 | 94.7% |
+| `shared/ui/upd_screen.c` | 360 | 341 | 94.7% |
 | `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
 | `shared/ui/upd_single.c` | 166 | 164 | 98.8% |
 | `shared/ui/upd_settings.c` | 57 | 53 | 93.0% |
-| `shared/ui/upd_c6.c` | 119 | 117 | 98.3% |
+| `shared/ui/upd_c6.c` | 120 | 118 | 98.3% |
 | `shared/ui/upd_dev.c` | 292 | 286 | 98.0% |
-| `shared/ui/upd_wizard.c` | 278 | 278 | 100.0% |
+| `shared/ui/upd_wizard.c` | 303 | 303 | 100.0% |
 | `shared/ui/upd_run.c` | 44 | 44 | 100.0% |
 | `shared/ui/upd_wiz_view.c` | 322 | 310 | 96.3% |
-| `shared/ui/upd_wiz_card.c` | 193 | 191 | 99.0% |
-| `shared/ui/imu_ctl.c` | 98 | 98 | 100.0% |
-| `shared/ui/imu_ble.c` | 135 | 134 | 99.3% |
-| `shared/ui/imu_sensor.c` | 210 | 210 | 100.0% |
-| `shared/ui/imu_screen.c` | 354 | 346 | 97.7% |
+| `shared/ui/upd_wiz_card.c` | 205 | 204 | 99.5% |
+| `shared/ui/imu_ctl.c` | 107 | 107 | 100.0% |
+| `shared/ui/imu_ble.c` | 141 | 140 | 99.3% |
+| `shared/ui/imu_sensor.c` | 234 | 234 | 100.0% |
+| `shared/ui/imu_screen.c` | 365 | 356 | 97.5% |
 | `shared/ui/imu_screen_draw.c` | 132 | 131 | 99.2% |
 | `shared/ui/imu_guide.c` | 33 | 32 | 97.0% |
 | `shared/ui/dial_ctl.c` | 254 | 238 | 93.7% |
@@ -2532,21 +2546,21 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/settings/settings.c` | 424 | 417 | 98.3% |
 | `shared/settings/settings_sensors.c` | 150 | 149 | 99.3% |
 | `shared/settings/settings_text.c` | 14 | 13 | 92.9% |
-| `shared/logfile/log_numbers.c` | 393 | 371 | 94.4% |
-| `shared/logfile/log_csv.c` | 469 | 445 | 94.9% |
+| `shared/logfile/log_numbers.c` | 396 | 374 | 94.4% |
+| `shared/logfile/log_csv.c` | 514 | 488 | 94.9% |
 | `shared/logfile/log_reader.c` | 212 | 201 | 94.8% |
 | `shared/logfile/log_fields.c` | 72 | 71 | 98.6% |
 | `shared/logfile/log_name.c` | 171 | 171 | 100.0% |
 | `shared/logfile/log_take.c` | 96 | 95 | 99.0% |
-| `shared/logfile/card_tree.c` | 76 | 76 | 100.0% |
+| `shared/logfile/card_tree.c` | 77 | 77 | 100.0% |
 | `shared/logfile/fault_log.c` | 58 | 58 | 100.0% |
 | `shared/files/text_buf.c` | 494 | 493 | 99.8% |
 | `shared/files/text_hl.c` | 340 | 340 | 100.0% |
 | `shared/files/fm_name.c` | 138 | 138 | 100.0% |
 | `shared/files/fm_select.c` | 76 | 76 | 100.0% |
-| `shared/files/fm_rules.c` | 180 | 179 | 99.4% |
+| `shared/files/fm_rules.c` | 182 | 181 | 99.5% |
 | `shared/files/fm_tree.c` | 229 | 225 | 98.2% |
-| `shared/files/fm_ops.c` | 499 | 493 | 98.8% |
+| `shared/files/fm_ops.c` | 511 | 505 | 98.8% |
 | `shared/files/fm_logname.c` | 26 | 24 | 92.3% |
 | `shared/files/fm_req.c` | 89 | 88 | 98.9% |
 | `shared/files/fm_crc.c` | 6 | 6 | 100.0% |
@@ -2555,7 +2569,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/safety/heartbeat.c` | 56 | 56 | 100.0% |
 | `shared/safety/arming.c` | 273 | 268 | 98.2% |
 | `shared/safety/safety_gate.c` | 69 | 69 | 100.0% |
-| `shared/safety/flash_gate.c` | 4 | 4 | 100.0% |
+| `shared/safety/flash_gate.c` | 6 | 6 | 100.0% |
 | `shared/safety/reset_cause.c` | 61 | 61 | 100.0% |
 | `shared/safety/boot_diag.c` | 34 | 34 | 100.0% |
 | `shared/safety/touch_loss.c` | 89 | 89 | 100.0% |
@@ -2577,7 +2591,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/servo/servo_limrun_report.c` | 316 | 313 | 99.0% |
 | `shared/servo/servo_gap.c` | 33 | 33 | 100.0% |
 | `shared/servo/servo_angle.c` | 33 | 33 | 100.0% |
-| `shared/servo/servo_rudder_auto.c` | 599 | 585 | 97.7% |
+| `shared/servo/servo_rudder_auto.c` | 611 | 597 | 97.7% |
 | `shared/servo/servo_rudder_auto_report.c` | 293 | 292 | 99.7% |
 | `shared/servo/servo_rudder_auto_verify.c` | 31 | 30 | 96.8% |
 | `shared/servo/servo_settle.c` | 63 | 63 | 100.0% |
@@ -2692,7 +2706,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/link/link_update_host.c` | 444 | 441 | 99.3% |
 | `shared/artwork/art_store.c` | 193 | 187 | 96.9% |
 | `shared/artwork/art_fetch.c` | 81 | 81 | 100.0% |
-| `shared/bench/bench_state.c` | 247 | 243 | 98.4% |
+| `shared/bench/bench_state.c` | 251 | 247 | 98.4% |
 | `shared/outputs/outputs.c` | 230 | 227 | 98.7% |
 | `shared/outputs/outputs_pages.c` | 312 | 303 | 97.1% |
 | `shared/outputs/out_bind.c` | 562 | 549 | 97.7% |
@@ -2733,7 +2747,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/bench/hitec_rx_link.c` | 57 | 57 | 100.0% |
 | `shared/bench/knob.c` | 47 | 47 | 100.0% |
 | `shared/bench/panel_i2c.c` | 10 | 10 | 100.0% |
-| `shared/bench/log_writer.c` | 312 | 300 | 96.2% |
+| `shared/bench/log_writer.c` | 317 | 305 | 96.2% |
 | `shared/bench/log_cols.c` | 53 | 53 | 100.0% |
 | `shared/bench/log_cadence.c` | 50 | 50 | 100.0% |
 | `shared/bench/perf_watch.c` | 68 | 68 | 100.0% |
@@ -2764,19 +2778,19 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `protocols/phase_tap/edge_ring.c` | 43 | 43 | 100.0% |
 | `protocols/phase_tap/tone_svc.c` | 109 | 109 | 100.0% |
 | `shared/fwupdate/fw_sha256.c` | 83 | 83 | 100.0% |
-| `shared/fwupdate/fw_image.c` | 135 | 134 | 99.3% |
+| `shared/fwupdate/fw_image.c` | 136 | 135 | 99.3% |
 | `shared/fwupdate/fw_upload.c` | 74 | 74 | 100.0% |
 | `shared/fwupdate/fw_release.c` | 430 | 430 | 100.0% |
-| `shared/fwupdate/fw_install.c` | 68 | 68 | 100.0% |
+| `shared/fwupdate/fw_install.c` | 76 | 76 | 100.0% |
 | `shared/fwupdate/fw_boot.c` | 53 | 53 | 100.0% |
 | `shared/fwupdate/fw_run.c` | 85 | 85 | 100.0% |
 | `shared/fwupdate/fw_trial.c` | 29 | 29 | 100.0% |
-| `shared/fwupdate/fw_c6.c` | 158 | 158 | 100.0% |
+| `shared/fwupdate/fw_c6.c` | 203 | 203 | 100.0% |
 | `shared/fwupdate/fw_slots.c` | 47 | 47 | 100.0% |
 | `shared/devupd/devupd.c` | 283 | 271 | 95.8% |
 | `shared/devupd/devupd_client.c` | 90 | 81 | 90.0% |
 | `shared/webaccess/wa_session.c` | 432 | 430 | 99.5% |
-| `shared/webaccess/wa_fetch.c` | 427 | 415 | 97.2% |
+| `shared/webaccess/wa_fetch.c` | 432 | 420 | 97.2% |
 | `shared/webaccess/wa_text.c` | 343 | 341 | 99.4% |
 | `shared/webaccess/wa_walk.c` | 96 | 91 | 94.8% |
 | `shared/webaccess/wa_send.c` | 102 | 102 | 100.0% |
@@ -2788,7 +2802,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **102090** | **99942** | **97.9%** |
+| **total** | **102410** | **100261** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->
@@ -3025,7 +3039,7 @@ stop, a pulled cable, the input lowered under a live set point in 0.5V steps.
 `stack_check.py --iomcu` measures 1512 bytes for the deepest chain and 528 for one interrupt
 on the 4096-byte stack, 1800 bytes above the 256-byte margin. The figures are those of the
 image CI builds with arm-none-eabi-gcc 14.2.1, and `stack_check.py --iomcu --check-doc`
-holds them. The depth is a lower bound: 261 calls through a register are not followed. The
+holds them. The depth is a lower bound: 262 calls through a register are not followed. The
 stack has no guard (`PICO_USE_STACK_GUARDS` is off). Not measured on hardware. An image
 built with another option set is measured only when CI builds it.
 

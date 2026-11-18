@@ -405,8 +405,8 @@ class _Refit:
         for r, (s, _sense) in enumerate(self.surfaces):
             if s[0] == "plane":
                 continue
-            _angle, centre = _unwind(part, s[1], self.members[r])
-            if max(centre.values()) - min(centre.values()) \
+            _angle, center = _unwind(part, s[1], self.members[r])
+            if max(center.values()) - min(center.values()) \
                     > 2 * math.pi + math.radians(WOUND_DEG):
                 wound.append(r)
         if not wound:

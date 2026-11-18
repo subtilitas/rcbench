@@ -349,6 +349,51 @@ TEST_CASE(the_hwstop_box_names_the_button_the_cable_and_the_other_bits)
 }
 
 /*
+ * STATUS fault bit 7, the IOmcu's restart by its own watchdog
+ * (loop_watch.h): FAULT 80 on the band, a paragraph of its own in the FAULT
+ * box in both languages, and the alert's fixed text.  A bit the panel has
+ * no name for gets the two paragraphs BH_F_OTHER and BH_F_FLASH instead.
+ */
+TEST_CASE(a_watchdog_restart_has_its_own_fault_text)
+{
+    hw_stop(false);
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(ui_tr(TX_ALERT_IOMCU_WATCHDOG),
+                 "IOMCU RESTARTED (WATCHDOG)");
+    CHECK(strstr(ui_tr(TX_BH_F_WATCHDOG), "500ms") != NULL);
+    CHECK(strstr(ui_tr(TX_BH_F_WATCHDOG), "outputs off") != NULL);
+    ui_text_set_language(UI_LANG_DE);
+    CHECK_STR_EQ(ui_tr(TX_ALERT_IOMCU_WATCHDOG),
+                 "IOMCU NEU GESTARTET (WATCHDOG)");
+    CHECK(strstr(ui_tr(TX_BH_F_WATCHDOG), "500ms") != NULL);
+    CHECK(strstr(ui_tr(TX_BH_F_WATCHDOG), "Watchdog") != NULL);
+    ui_text_set_language(UI_LANG_EN);
+
+    ui_bench_status_t st = k_band;
+    st.faults = (uint16_t)LINK_FAULT_WATCHDOG;
+    CHECK_EQ(st.faults, 0x80u);
+    CHECK(ui_band_chip_rect(&st, UI_BAND_CHIP_FAULT, NULL));
+    CHECK(!ui_band_chip_rect(&st, UI_BAND_CHIP_HWSTOP, NULL));
+    gfx_rect_t named, unnamed, with_silent, silent;
+    REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_FAULT, &named));
+    /* Bit 8 has no name: its box holds two paragraphs, BH_F_OTHER and
+     * BH_F_FLASH, against the named bit's one line. */
+    st.faults = 0x0100u;
+    REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_FAULT, &unnamed));
+    CHECK(named.h < unnamed.h);
+    /* Beside LINK_SILENT the box holds both paragraphs. */
+    st.faults = (uint16_t)LINK_FAULT_LINK_SILENT;
+    REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_FAULT, &silent));
+    st.faults = (uint16_t)(LINK_FAULT_LINK_SILENT | LINK_FAULT_WATCHDOG);
+    REQUIRE(ui_band_help_rect(&st, UI_BAND_CHIP_FAULT, &with_silent));
+    CHECK(with_silent.h > silent.h);
+    CHECK(with_silent.h > named.h);
+    /* An ARM refused with the bit standing names a fault, as any bit. */
+    CHECK_EQ(ui_band_arm_refused((uint16_t)LINK_FAULT_WATCHDOG, false),
+             TX_ALERT_ARM_REFUSED_FAULT);
+}
+
+/*
  * While an operator's STOP stands, while its reset runs and for
  * STOP_LATCH_GRACE_MS after it, the panel withholds the line itself: the
  * bitmap the band gets has no heartbeat bit, so neither FAULT 10 nor HWSTOP
@@ -885,6 +930,7 @@ int main(void)
     RUN(hwstop_is_red_and_reads_at_4_5_to_1_in_both_themes);
     RUN(the_chip_comes_and_goes_with_the_bit);
     RUN(the_hwstop_box_names_the_button_the_cable_and_the_other_bits);
+    RUN(a_watchdog_restart_has_its_own_fault_text);
     RUN(the_stop_latch_grace_hides_hwstop_as_it_hides_fault_10);
     RUN(the_setting_is_kept_by_its_key_and_starts_off);
     RUN(the_setting_is_a_panel_row);

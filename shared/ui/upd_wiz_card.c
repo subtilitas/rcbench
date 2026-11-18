@@ -2,10 +2,10 @@
  * @file upd_wiz_card.c
  * @brief UPDATES' card: the current step's heading, its versions, what
  *        its update does, why it waits and how its last attempt ended; or,
- *        with no step current, the last card: all firmware is current, the
- *        running version, the home network, the last check's result and
- *        the steps not connected, not updatable here or skipped.  See
- *        upd_wiz_view.h.
+ *        with no step current, the last card: one of three headings
+ *        (upd_wiz_end()), the running version, the home network, the last
+ *        check's result and the steps not connected, not updatable here
+ *        or skipped.  See upd_wiz_view.h.
  *
  * The card's text is 12 x 24, 41 cells to the line, 28px apart, from
  * body y 32.  It ends 8px over the card's control when the card has one,
@@ -315,10 +315,10 @@ static void names_of(const upd_wiz_t *w, const upd_wiz_tag_t *tags,
 }
 
 /**
- * @brief The last card: all firmware is current, the running version,
- *        the home network, the last job's result, the steps not
- *        connected, not updatable here and skipped, and the notes on the
- *        reminder and RELEASES.
+ * @brief The last card under its heading: the running version, the home
+ *        network, the last job's result, the steps not connected, not
+ *        updatable here (a device OFF on WIRELESS among them) and skipped,
+ *        and the notes on the reminder and RELEASES.
  * @param w the steps
  */
 static void end_card(const upd_wiz_t *w)
@@ -330,6 +330,7 @@ static void end_card(const upd_wiz_t *w)
         UPD_WIZ_TAG_NO_IMAGE, UPD_WIZ_TAG_BAD_IMAGE,
         UPD_WIZ_TAG_CHECK_FAILED, UPD_WIZ_TAG_USB_ONLY,
         UPD_WIZ_TAG_LINK_FAILED, UPD_WIZ_TAG_NOT_REPORTED,
+        UPD_WIZ_TAG_OFF,
     };
     static const upd_wiz_tag_t k_skipped[] = { UPD_WIZ_TAG_SKIPPED };
     const upd_view_t *v = upd_screen_view();
@@ -379,6 +380,27 @@ static void end_card(const upd_wiz_t *w)
 }
 
 /**
+ * @brief The last card's heading: all firmware is current only when every
+ *        step is; no panel release was looked for when only PANEL's check
+ *        is missing or failed; else no step is open.
+ * @param w the steps
+ */
+static void end_head(const upd_wiz_t *w)
+{
+    switch (upd_wiz_end(w)) {
+    case UPD_WIZ_END_CURRENT:
+        add(TR(UPD_WIZ_DONE_HEAD), UI_OK, 0, true);
+        break;
+    case UPD_WIZ_END_NO_CHECK:
+        add(TR(UPD_WIZ_END_NO_CHECK), UI_TEXT, 0, true);
+        break;
+    default:
+        add(TR(UPD_WIZ_END_NONE_OPEN), UI_TEXT, 0, true);
+        break;
+    }
+}
+
+/**
  * @brief The lowest y the card's text reaches: 8px over its control, else
  *        over SKIP, else 12px over its foot.
  * @param w the steps
@@ -399,7 +421,7 @@ int upd_wiz_card_build(const upd_wiz_t *w)
 {
     s_card.n = 0;
     if (w->current >= UPD_WIZ_STEPS) {
-        add(TR(UPD_WIZ_DONE_HEAD), UI_OK, 0, true);
+        end_head(w);
         end_card(w);
     } else {
         (void)snprintf(s_line, sizeof(s_line), TR(UPD_WIZ_HEAD),

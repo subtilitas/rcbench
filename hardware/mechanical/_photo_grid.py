@@ -96,8 +96,8 @@ def crossings(image, pitch):
                               np.ones((run, 1), np.uint8))
     wide = np.ones((5, 5), np.uint8)
     both = cv2.dilate(along, wide) & cv2.dilate(across, wide)
-    count, _labels, stats, centres = cv2.connectedComponentsWithStats(both)
-    return np.array([centres[k] for k in range(1, count)
+    count, _labels, stats, centers = cv2.connectedComponentsWithStats(both)
+    return np.array([centers[k] for k in range(1, count)
                      if 9 <= stats[k, 4] <= (pitch * 0.3) ** 2])
 
 

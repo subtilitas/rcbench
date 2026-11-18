@@ -119,7 +119,13 @@ static void clamp_scroll(int *scroll, int total, int visible)
  */
 static void ask_delete(void)
 {
-    if (!lv_can_delete()) {
+    if (!lv_delete_target()) {
+        return;
+    }
+    ui_text_id_t why;
+    if (lv_delete_shut(&why)) {
+        /* FILES' reason, in the footer: nothing is asked. */
+        lv_say(why, NULL);
         return;
     }
     snprintf(s.doomed, sizeof(s.doomed), "%s", s.files[s.sel].name);
@@ -142,6 +148,13 @@ static void delete_doomed(void)
     snprintf(name, sizeof(name), "%s", s.doomed);
     s.doomed[0] = '\0';
 
+    /* The bench can switch to ARMED, and a run can start, while the
+     * question is open. */
+    ui_text_id_t why;
+    if (lv_delete_shut(&why)) {
+        lv_say(why, NULL);
+        return;
+    }
     lv_point(s.tab);
     if (s.io.remove == NULL || !s.io.remove(name, s.io.ctx)) {
         /* The list stays as it was, selection included: the file is still

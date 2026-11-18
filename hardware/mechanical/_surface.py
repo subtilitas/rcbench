@@ -15,11 +15,11 @@ import math
 # A vertex is on a surface within EPS mm. A triangle is a chord of the
 # surface: the surface's normal turns by at most CHORD_DEG degrees
 # between its vertices, and its own normal is within NORMAL_DEG plus
-# NORMAL_SHARE of that turn of the surface's normal at its centre. A
+# NORMAL_SHARE of that turn of the surface's normal at its center. A
 # flat face whose corners lie on a curved surface fails this.
 EPS = 6e-4
 NORMAL_DEG, NORMAL_SHARE = 10.0, 0.6
-# A triangle's centre is within SAG mm of the surface it is a chord of.
+# A triangle's center is within SAG mm of the surface it is a chord of.
 SAG = 0.1
 # A face of 1 or 2 triangles joins a face beside it whose surface holds
 # its vertices within GATHER times EPS.
@@ -51,7 +51,7 @@ HELIX_NEAR = 0.02
 # the axis. A cut that is not straight is a polyline within EPS / 2 of
 # the surface.
 WOUND_DEG, SECTOR_DEG = 20.0, 120.0
-# A fitted axis stays within AXIS_STAY mm of the arcs' centre, and a
+# A fitted axis stays within AXIS_STAY mm of the arcs' center, and a
 # surface about it holds SUPPORT vertices more than it has parameters.
 AXIS_STAY, SUPPORT = 0.03, 4
 # A triangle lower than THIN mm over its longest edge has no usable
@@ -62,11 +62,11 @@ THIN = 2e-3
 MOVE_MAX = 3e-3
 # One mesh edge is an arc of at most CHORD_DEG degrees.
 CHORD_DEG = 61.0
-# Radii, centres and offsets within SNAP_TOL of a multiple of SNAP mm
+# Radii, centers and offsets within SNAP_TOL of a multiple of SNAP mm
 # take that value when the surface still holds its vertices.
 SNAP, SNAP_TOL = 1e-3, 4e-4
 # Arcs on the mesh's edges that give an axis: at least ARC_MIN vertices
-# over ARC_SPAN degrees, within ARC_TOL mm of their circle. Centres
+# over ARC_SPAN degrees, within ARC_TOL mm of their circle. Centers
 # within AXIS_MERGE mm are one axis.
 ARC_MIN, ARC_SPAN, ARC_TOL, AXIS_MERGE = 4, 30.0, 4e-4, 1e-2
 LEVEL_TOL = 1e-4
@@ -659,13 +659,13 @@ def _unwind(part, frame, members):
     one turn.
 
     Returns:
-        (angle of each vertex, angle of each triangle's centre).
+        (angle of each vertex, angle of each triangle's center).
     """
     inside = set(members)
     first = part.tris[members[0]][0]
     rad = frame.polar(part.pts[first])[2]
     angle = {first: math.atan2(_dot(rad, frame.v), _dot(rad, frame.u))}
-    centre = {}
+    center = {}
     # Breadth first: the angle reaches each triangle by a short way, so
     # a closed band comes out one turn wide and no wider.
     seen, stack, at = {members[0]}, [members[0]], 0
@@ -681,9 +681,9 @@ def _unwind(part, frame, members):
             total += step
             if v not in angle:
                 angle[v] = angle[known] + step
-        centre[t] = angle[known] + total / 3
+        center[t] = angle[known] + total / 3
         for o in part.around(t):
             if o in inside and o not in seen:
                 seen.add(o)
                 stack.append(o)
-    return angle, centre
+    return angle, center

@@ -290,6 +290,7 @@ typedef struct {
     uint8_t  fetch_given_up; /**< of the READS and CRC of fetch_reads, _crc   */
     uint16_t fetch_reads; /**< LINK_EW_READS it was asked for                 */
     uint16_t fetch_crc;  /**< LINK_EW_READ_CRC it was asked for               */
+    uint16_t fetch_len;  /**< LINK_EW_LEN it was asked for: its block count   */
     uint8_t  block_set;  /**< LINK_EW_W_BLOCK has fetch_at's block            */
     esc_link_image_t image; /**< the copy                                     */
 

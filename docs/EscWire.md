@@ -95,6 +95,8 @@ Take the propeller off. Connect signal and ground only: a BEC (battery eliminato
 
 IDENTITY names the firmware, the version, the layout or revision, the signature or name, and `WRITABLE` or `READ ONLY` with the reason. The other tabs hold the fields. A tap on a number opens the keypad, a tap on a choice opens its list, and each editor shows the field's help line. An edit changes a draft on the panel and marks the field's name; nothing goes to the ESC until WRITE.
 
+READ AGAIN reads the settings from the ESC and replaces the draft with them. With no edit in the draft a tap reads. With 1 or more edits not written, the tap opens a page that says `Edits not written are lost.`; a red 2s hold reads, CANCEL keeps the draft.
+
 ![AM32 identity](img/motor-wire-am.png)
 
 ![AM32 motor](img/motor-wire-am-motor.png)
@@ -145,8 +147,8 @@ WRITE n VALUES opens a list of changes. Hazardous fields remain editable and app
 
 The confirmation page keeps its own copy of the draft, so the hold writes exactly the changes listed. From the hold until the write's outcome, the session accepts only ABORT and STOP. ABORT during card activity abandons the write and leaves the ESC unchanged. WRITE waits while a file is being read from the card. If that file arrives while a confirmation page is open, it is not loaded; the page reports this.
 
-1. The first write of a session saves the session's backup to `BENCH/ESCW/CONF`, as `ESCW001-AM32.TXT` to `ESCW999-AM32.TXT` (see [Backup names](#backup-names)). If the card is missing or the save fails, the page asks for confirmation. A second 2s hold continues without the backup.
-2. The record `BENCH/ESCW/CONF/ESCW.TXT` stores the changed fields and the settings read from the ESC. If this save fails, the page asks for the same confirmation.
+1. The first write of a session saves the session's backup to `BENCH/ESCW/CONF`, as `ESCW001-AM32.TXT` to `ESCW999-AM32.TXT` (see [Backup names](#backup-names)). If the card is missing or the save fails, the page asks for confirmation. A second 2s hold continues without the backup. The hold stands for that write only: the next write of the session saves the backup first and asks again if the card refuses again.
+2. The record `BENCH/ESCW/CONF/ESCW.TXT` stores the changed fields and the settings read from the ESC. If this save fails, the page asks for the same confirmation. Each write saves its own record; a hold on HOLD 2s: NO BACKUP lets one write go without it.
 3. The session re-reads, writes, reads back and reports the result in words. A BLHeli_S or Bluejay write takes about 3848ms.
 
 An erased settings page cannot serve as a backup. The session uses its first non-erased read; after a RESTORE, this is the read that follows the restore. If a `music` line contains a byte outside 0x20 to 0x7E, no file is created. The session writes nothing and explains why.
@@ -175,9 +177,61 @@ A backup's name is `ESCW`, a number from 001 to 999 and the firmware: `ESCW001-A
 
 DELETE A FILE switches the list to deletion mode. Tapping a file opens a confirmation that names the file and requires a red 2s hold. After deletion, the list is read from the card again. Backups saved in this session since CONNECT cannot be deleted here; the page explains this. Use LOGS > FILES to delete them. If deletion fails, the file remains unchanged and the page reports the failure. Deletion applies only to the card from which the list was read. If you have since changed the card, nothing is deleted and the page explains why.
 
+### Refusal codes
+
+A file that is not loaded and a restore that does not start say why on the message line, with a code and, for a file, the line the refusal is at:
+
+```
+File refused, code 15, line 4: no field or line has this name.
+Restore refused, code 10: the file is for an ESC with another name.
+```
+
+A refused file changes nothing in the draft. A refused restore sends nothing to the ESC. The line number counts from 1; a refusal that belongs to no line has none.
+
+File codes, from `ew_file_err_t` (`protocols/escwire/include/ew_file.h`):
+
+| Code | Reason |
+| --- | --- |
+| 1 | no file text was given |
+| 2 | the file is larger than 5280 bytes |
+| 3 | line 1 is not the header of an ESC settings file |
+| 4 | the format version is not a number from 1 to 999 |
+| 5 | the format version is above 1, the one this bench reads |
+| 6 | the last line is neither `checksum` nor `edited` |
+| 7 | LF and CR LF line ends are mixed |
+| 8 | the line is not what the format has at this place |
+| 9 | the format does not know this firmware name |
+| 10 | the byte count does not fit the firmware |
+| 11 | the checksum does not fit: the file is damaged or changed |
+| 12 | text follows the `checksum` line |
+| 13 | the header lines contradict the page or each other |
+| 14 | the name is longer than 29 characters |
+| 15 | no field or line has this name |
+| 16 | this line is in the file twice |
+| 17 | the field has no value that reads so |
+| 18 | `Firmware` and `Layout` must stand before the fields |
+
+Restore codes, from `ew_restore_t` in the same header:
+
+| Code | Reason |
+| --- | --- |
+| 1 | no file text was given |
+| 2 | an edited file has no checksum |
+| 3 | the file or the ESC is not AM32 |
+| 4 | the settings of the ESC are not erased |
+| 5 | the firmware of the ESC is a CAN (Controller Area Network) build |
+| 6 | the page in the file is not a revision 3 or 4 page |
+| 7 | the file is for another pin code |
+| 8 | the file is for another flash code |
+| 9 | the file is for another bootloader protocol |
+| 10 | the file is for an ESC with another name |
+| 11 | the file holds no name to compare |
+
+A file of another firmware or layout, and a value its field does not take, are refused after the file is read and have their own lines without a code.
+
 ## Erased AM32
 
-An AM32 whose settings read 0xFF offers only RESTORE FROM BACKUP and saves no backup. A file is accepted only if its CRC-32 checksum is valid and its pin code, flash code, bootloader protocol and name match the ESC's. Restoring requires a red 2s hold.
+An AM32 whose settings read 0xFF offers only RESTORE FROM BACKUP and saves no backup. A file is accepted only if its CRC-32 checksum is valid and its pin code, flash code, bootloader protocol and name match the ESC's. Restoring requires a red 2s hold. A file that is refused names its reason and its code ([Refusal codes](#refusal-codes)).
 
 ![Erased AM32](img/motor-wire-erased.png)
 

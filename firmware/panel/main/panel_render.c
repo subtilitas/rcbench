@@ -17,6 +17,7 @@
 
 #include "board.h"
 #include "esc_wire_panel.h"
+#include "flash_gate.h"
 #include "hitec_panel.h"
 #include "knob.h"
 #include "knob_task.h"
@@ -256,12 +257,21 @@ static void send_cmd(const panel_cmd_t *in)
         atomic_store(&s_prog5v_off_request, true);
     }
 
+    if (panel_cmd_arms(pc)) {
+        /* Counted before it is queued: the flash gates see it coming
+         * (arm_live_or_coming()). */
+        atomic_fetch_add(&s_arms_sent, 1u);
+    }
+
     if (xQueueSend(s_cmd_q, pc, pdMS_TO_TICKS(5)) == pdTRUE) {
         return;
     }
     panel_cmd_t stale;
     if (xQueueReceive(s_cmd_q, &stale, 0) != pdTRUE) {
         /* nothing taken out */
+    } else if (panel_cmd_arms(&stale)) {
+        /* An ARM the control task never sees is dealt with here. */
+        atomic_fetch_add(&s_arms_taken, 1u);
     } else if (stale.kind == PANEL_CMD_SUPPLY && stale.supply.on) {
         /* An ON the control task will never see is one it will never take
          * either; counted here, so nothing waits on it for ever. */
@@ -271,6 +281,15 @@ static void send_cmd(const panel_cmd_t *in)
     }
     if (xQueueSend(s_cmd_q, pc, 0) != pdTRUE) {
         ESP_LOGW(TAG, "control queue full; a command was lost");
+        /* A lost ARM or ON is one the control task never takes: counted
+         * here, so no flash gate waits on it until a restart. */
+        if (panel_cmd_arms(pc)) {
+            atomic_fetch_add(&s_arms_taken, 1u);
+        } else if (pc->kind == PANEL_CMD_SUPPLY && pc->supply.on) {
+            atomic_fetch_add(&s_supply_ons_taken, 1u);
+        } else if (pc->kind == PANEL_CMD_PROG5V && pc->prog5v.on) {
+            atomic_fetch_add(&s_psup_ons_taken, 1u);
+        }
     }
 }
 
@@ -296,14 +315,32 @@ bool supply_live_or_coming(void)
     return coming || atomic_load(&s_supply_live);
 }
 
-bool supplies_live_or_coming(void)
+bool arm_live_or_coming(void)
+{
+    /* The count taken before the snapshot.  The control task publishes the
+     * snapshot before it counts an ARM taken, so read in this order there
+     * is no moment at which both say no arm is under way while one is.
+     * s_arms_sent is this task's own. */
+    const unsigned taken = atomic_load(&s_arms_taken);
+    snap_lock();
+    const bool armed = s_snap.armed;
+    const bool waits = s_snap.arm_wanted;
+    snap_unlock();
+    return flash_gate_arm(armed, waits, atomic_load(&s_arms_sent), taken);
+}
+
+bool prog5v_live_or_coming(void)
 {
     /* The counters before the flag, as above: the control task publishes
      * s_psup_live before it counts an ON taken. */
     const bool psup_coming = atomic_load(&s_psup_ons_taken)
                              != atomic_load(&s_psup_ons_sent);
-    return supply_live_or_coming() || psup_coming
-           || atomic_load(&s_psup_live);
+    return psup_coming || atomic_load(&s_psup_live);
+}
+
+bool supplies_live_or_coming(void)
+{
+    return supply_live_or_coming() || prog5v_live_or_coming();
 }
 
 /*

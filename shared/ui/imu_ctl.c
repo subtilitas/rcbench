@@ -77,6 +77,13 @@ void imu_ctl_radio(imu_ctl_t *c, imu_radio_t radio, const char *version,
     }
 }
 
+void imu_ctl_live(imu_ctl_t *c, bool armed)
+{
+    if (c != NULL) {
+        c->armed = armed;
+    }
+}
+
 bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
 {
     if (c == NULL || cmd == NULL || !c->cfg.en) {
@@ -84,6 +91,10 @@ bool imu_ctl_command(imu_ctl_t *c, const imu_cmd_t *cmd, uint32_t now_ms)
     }
     switch (cmd->kind) {
     case IMU_CMD_SCAN:
+        if (c->armed) {
+            ++c->refused;
+            return false;
+        }
         return imu_ble_scan(&c->ble, now_ms);
     case IMU_CMD_BIND: {
         imu_bound_t b;
@@ -128,6 +139,10 @@ bool imu_ctl_step(imu_ctl_t *c, uint32_t now_ms, bleu_act_t *out)
 {
     if (c == NULL || out == NULL) {
         return false;
+    }
+    /* No scan while ARMED: one started while SAFE ends at the switch. */
+    if (c->armed) {
+        imu_ble_scan_stop(&c->ble, now_ms);
     }
     if (imu_ble_act(&c->ble, now_ms, out)) {
         return true;

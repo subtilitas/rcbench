@@ -411,9 +411,9 @@ its stack less 1024 bytes.
 
 | Task | Entry | Stack (bytes) | Deepest chain (bytes) | Spare below the margin (bytes) |
 | --- | --- | ---: | ---: | ---: |
-| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,768 | 2,384 |
+| `main` | `main_task`, which calls `app_main` and runs the UI | 8,192 | 4,816 | 2,336 |
 | `control` | `control_task` | 6,144 | 3,680 | 1,424 |
-| `runlog` | `log_task` | 6,656 | 3,840 | 1,776 |
+| `runlog` | `log_task` | 6,656 | 3,856 | 1,760 |
 | `knob` | `knob_task`, the rotary knob's reader | 3,072 | 1,168 | 864 |
 | `blec` | `blec_task`, every Bluetooth LE client's link through the hub: the IMU's, the Dial's and both sensor nodes' SETUP values, the host stack's events and the actions to NimBLE (`panel_blec.c`, the IMU's side in `panel_imu.c`, the Dial's in `panel_dial.c`, the power node's in `panel_pnode.c`, the balance node's in `panel_bal.c`, the wireless devices' update in `panel_devupd.c`) | 4,096 | 1,808 | 1,248 |
 | `blestart` | `ble_start_task`, the C6's link, its controller requests, the host's start and the wait for its sync, then gone (`panel_ble.c`) | 4,096 | 1,200 | 1,856 |
@@ -498,7 +498,7 @@ the tool cannot see, and each depth above is a lower bound for that reason:
   (`PORT_CALLS`, `FLASH_CALLS`, `BOOT_CALLS`, `SERVO_CALLS`,
   `PROG_CALLS`, `UI_HOOK_CALLS`, `TAKE_CALLS`, `CARD_CALLS`, `FAULT_CALLS`,
   `SERVO_STORE_CALLS`):
-  384 such
+  385 such
   calls are reachable from `main_task`, most of them in ESP-IDF's storage
   and display drivers;
 - jumps through a register: a switch table, which stays inside its
@@ -651,7 +651,7 @@ ones are counted as `tx_drop`.
 Each depth is a lower bound:
 
 - calls through a register are not followed, except a page's read and write
-  handler, which the tool reads out of the link's page table: 261 such calls
+  handler, which the tool reads out of the link's page table: 262 such calls
   are reachable from `main` in the image CI builds (arm-none-eabi-gcc
   14.2.1);
 - the 1,088-byte frame of newlib's `two_way_long_needle()` is left out.

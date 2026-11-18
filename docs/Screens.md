@@ -106,11 +106,12 @@ or the alert band, so STOP remains visible.
   the box stays for the picture and closes after it.
 - STOP is the exception: a press on STOP closes the box and stops at once,
   as with no box.
-- So is a control that stops what the bench drives: DISARM, OUTPUT OFF, a
-  stick run's ABORT, STOP TEST and STOP RUN, and HOLD 2s: ARM + START on
-  RUDDER AUTO, TEST and LIMIT RUN while its start steps or its run are
-  under way. A press on one closes the box and acts,
-  as with no box. ARM and OUTPUT ON are not among them: a press there closes
+- So is a control that stops what the bench drives: DISARM, OUTPUT OFF,
+  PROG 5V OFF, ABORT of a stick run and of the ESC, KST and HITEC
+  sessions, STOP TEST and STOP RUN, HOLD 2s: ARM + START on RUDDER AUTO,
+  TEST and LIMIT RUN while its start steps or its run are under way, and
+  on HITEC MOVE SERVO's ON and the FIND STOP key whose side searches. A press on one closes the box and acts, as with no
+  box. ARM and OUTPUT ON are not among them: a press there closes
   the box and starts no hold.
 - Leaving the screen closes it.
 - A finger dragging on the screen when a second finger opens a box is
@@ -133,6 +134,7 @@ The FAULT box names each bit, its code and what it means:
 | 10 | HEARTBEAT | the safety line from the panel stopped while the panel sends it: a pressed emergency stop or an open heartbeat wire; a latched STOP shows STOP instead |
 | 20 | VERSION | never |
 | 40 | STORE_OFF | the IOmcu cannot write its flash this boot |
+| 80 | WATCHDOG | the IOmcu's watchdog restarted it after its main loop stood still for 500ms; its outputs are off; the alert band shows `IOMCU RESTARTED (WATCHDOG)`; stays until the next arm, ARM + START's FAILSAFE CLEAR or STOP's reset |
 
 For a bit this release never sets, or one the panel has no name for, the box
 says to flash both boards from one release.
@@ -570,16 +572,23 @@ end above it.
 
 ## Hold buttons
 
-A hold button acts after 2s of contact (`UI_HOLD_S`). Releasing it earlier
-sends no command. Every control that switches a voltage, a supply or an
-output on is a hold button; one that switches it off, such as OUTPUT OFF,
-PROG 5V OFF, DISARM, STOP or ABORT, takes a tap. Instead, the alert band shows a hint for 4s: amber
+A hold button acts after 2s of contact (`UI_HOLD_S`). Every control that
+switches a voltage, a supply or an output on is a hold button; one that
+stops what the bench drives, such as OUTPUT OFF, PROG 5V OFF, PORT PWM
+OFF, DISARM, STOP or ABORT, acts on the press: the command goes as the
+finger comes down, and a finger that slides off or a touch that is lost
+has stopped already. From the moment a hold has asked ON or ARM the
+button reads OUTPUT OFF, PROG 5V OFF or DISARM, before the supply, the
+port or the bench answers: a press in that time takes the ON or the ARM
+back. Releasing a hold button earlier
+sends no command. Instead, the alert band shows a hint for 4s: amber
 (`UI_C_WARN`) with dark text, rather than the danger colour. Tap the band
 to dismiss it earlier. The hint fits on one line of at most 97 characters.
 
 A short tap is not a fault, so the hint is a notice. Alerts take priority:
-a hint stays hidden while an alert is visible, and an arriving alert
-replaces a visible hint.
+while an alert is visible, one notice waits, the latest, and shows for its
+own 4s once the alert has cleared. An arriving alert replaces a visible
+hint.
 
 - The hint appears only when the finger lifts while still on the button. It does
   not show when the finger left the button first (the hold is abandoned),
@@ -1144,6 +1153,12 @@ changes nothing on a real bench.
 TABLE lists four channels, each with its extreme value. A channel with no
 reading shows `--`.
 
+The speed reads up to 65,535rpm, the ceiling of the IOmcu's register. A
+speed above it shows `>65535` on the card and in TABLE. A peak of 65,535rpm
+or more shows `>65535`. The plot draws such a speed at 65,535rpm. rpm/V and
+the Dial show no speed while it is above the ceiling, and the balance node
+gets none.
+
 When the INA228 is enabled under SETUP > SENSORS and answers (BENCH flag
 bit 5), it supplies voltage, current and power. These are the means of the
 IOmcu's last 50ms window, read at 20Hz; run peaks come from its 500Hz samples.
@@ -1222,6 +1237,13 @@ written to 0.1%. It is the same figure for PWM and DShot outputs:
   Ramp limit.
 - It is 0.0 while the motor is not ARMED.
 - A row that holds only a window has it empty.
+
+`rpm` holds `>65535` on a row whose speed is above 65,535rpm, the ceiling
+of the IOmcu's register. The file keeps the mark, so a reader outside
+the bench can tell a bound from a reading. LOGS reads a cell that begins
+with `>` as the number after it: the column stays numeric and the trace
+runs at 65,535rpm on those rows. LOGS draws no mark on the trace or in
+the column's range for such rows.
 
 A MOTOR file without `throttle` has `esc` after `rpm`, and LOGS reads it.
 In both forms LOGS selects the first 4 numeric columns. With `rpm`
@@ -2229,7 +2251,7 @@ screens use the same values; changing either screen updates the other.
   OFF ([Servo programmer, The supply](ServoProgrammer.md#the-supply)).
   No other end of a port's hold asks.
 
-- OUTPUT ON requires a 2s hold; OUTPUT OFF takes a tap, as on SUPPLY.
+- OUTPUT ON requires a 2s hold; OUTPUT OFF acts on the press, as on SUPPLY.
   STOP cancels a hold. Above a 6.0V set point, wherever it was entered,
   OUTPUT ON opens HV SERVOS ONLY with the voltage. Only a completed HOLD
   2s TO APPLY switches on; the switch's original hold or a tap on APPLY
@@ -2359,7 +2381,7 @@ the method and files.
 The 600 x 136px AUTOMATIC TEST card contains the run name; a summary such
 as `4.8V, 6.0V, BROWN-OUT, 60s EACH` or `..., 20 MOVEMENTS EACH`; the
 state line; the last result and files, such as
-`LAST: PASS ATEST004.CSV + .TXT`; and the STALL AT note. An aborted
+`LAST: PASS ATEST004.CSV + .TXT`; and the Stall threshold note. An aborted
 result shows its reason in the warning colour, for example
 `LAST: ABORTED - link lost`.
 
@@ -2389,11 +2411,11 @@ OFF: DISARM`, `SERVO PROGRAMMING`, `TEST RUNNING`, `WRITING REPORT`. The
 alert band names the whole text
 ([Servo: AUTO end points](Servo.md#auto-end-points)).
 
-The STALL AT note identifies thresholds no reading can exceed. It shows
-`STALL AT 2.00A must be below current limit 2.00A` when STALL AT is at
+The Stall threshold note identifies thresholds no reading can exceed. It shows
+`Stall threshold 2.00A must be below current limit 2.00A` when Stall threshold is at
 or above SUPPLY's SET A. Otherwise, with the INA3221 as meter and
-STALL AT at or above its range, it shows
-`STALL AT 2.00A must be below INA3221 range 1.638A`. The note does not
+Stall threshold at or above its range, it shows
+`Stall threshold 2.00A must be below INA3221 range 1.638A`. The note does not
 refuse the hold; see
 [Stall and constant current](Servo.md#stall-and-constant-current).
 
@@ -2530,7 +2552,7 @@ KST's and HITEC's frame around the session:
 | --- | --- |
 | PORT button | what the tester drives; a tap opens the PORT list, locked while the session holds the port |
 | READY card, PORT | the port line; red with `NO PROG PORT` on OUTPUTS, a tap opens the PORT list; a red dot while the session holds the port |
-| READY card, supply | PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off; a red dot and `ON` while on, and then a tap switches it off as OUTPUT OFF does (PROG 5V not while a port holds it). KST with no supply the bench switches: amber `OFF, ON BY HAND`. Hitec D series with none: `UNCHANGED` |
+| READY card, supply | PROG 5V on the rbmod carrier, PD MINI where one answers, SUPPLY otherwise. Amber `ON AT CONNECT` while off; a red dot and `ON` while on, and then a press switches it off as OUTPUT OFF does (PROG 5V not while a port holds it). KST with no supply the bench switches: amber `OFF, ON BY HAND`. Hitec D series with none: `UNCHANGED` |
 | READY card, SERVO | grey `NOT CONNECTED` before CONNECT, amber `IN PROGRESS` while a step runs, amber `NOT READ` with the port held and no servo read, the servo's model (Hitec) or type (KST, `V6?` for 20k_sel's guess) once read |
 | rail line | the meter's volts and amps, under the rows |
 | footer, middle | the session's WRITE n VALUES, from any tab: the same 2s hold as the session's own button, fading from green to amber; a tap shows `Hold 2s to write.` and sends nothing. While a finger is on it the session takes no press: `A finger is still on another control. Lift it first.` Grey, naming why on a tap, before CONNECT and the read, with no value changed, while a step runs, and while a page of the session or of SERVO is open |
@@ -2573,7 +2595,7 @@ shows `---`, because the tester sends no pulse to the held port.
 In PWM with a responding PD mini, the PORT row shows the voltage and
 current limit CONNECT will set: `PORT  5.0V  1000mA`. While the port is
 held, the set points and OUTPUT ON are locked on SUPPLY and on SERVO's
-other screens; OUTPUT OFF and a tap on KST's or HITEC's PD MINI row while
+other screens; OUTPUT OFF and a press on KST's or HITEC's PD MINI row while
 it reads ON still work. On the rbmod carrier, the ports have
 separate 5V and those supply controls remain active
 ([Carrier, Power](Carrier.md#power)). Leaving programming does not cycle
@@ -2652,7 +2674,7 @@ RIGHT END show 56 x 48px `-` and `+` keys around a 148px value; a key steps
 8 counts on the press and repeats after 0.45s at 8Hz, at 30Hz from 2.25s.
 The label of the followed row is in the accent colour. The notes show the
 port and its GPIO, `POSITION 3344 (-65.1°)` with the AS5600 angle and the
-supply current, the reach and the end point's note. A tap on ON, a tab
+supply current, the reach and the end point's note. A press on ON, a tab
 change, CLOSE and the home tag switch it off; the button reads WAIT until
 the servo has restarted.
 
@@ -2739,7 +2761,7 @@ The automatic test's list has 21 rows under six headings. Each heading's
 line names what its rows give: VOLTAGE STEPS the steps a run takes, or
 `NO STEP CHOSEN` in the warning colour; BROWN-OUT the walk on the supply
 in force, `From 5.00V down in 0.20V steps to 3.30V, 10 voltages`;
-PASS/FAIL LIMITS a STALL AT no reading can pass, in the warning colour;
+PASS/FAIL LIMITS a Stall threshold no reading can pass, in the warning colour;
 RANGE the run's ends, `1100-1900us`, in the warning colour while they are
 not either side of PULSE CENTER. OUTPUT under RANGE reads the profile as
 the type pill does, `STANDARD PWM  50Hz  1000-2000`; a tap opens the
@@ -2758,6 +2780,30 @@ APPLY and CANCEL buttons ending 8px above the card floor.
 
 ![The hub's list, the servo profile](img/servo-settings.png)
 ![SWEEP's list](img/servo-sweep-page.png)
+
+| Where | Setting | What it does |
+| --- | --- | --- |
+| the hub's list | TYPE | the servo profile: STANDARD PWM, NARROW 760, WIDE, HELI CYCLIC or HELI TAIL 760 |
+| the hub's list | FRAME RATE | how often a pulse is sent; the type's list, or CUSTOM on the keypad |
+| the hub's list | PULSE MIN, PULSE CENTER, PULSE MAX | the pulse widths the travel maps onto, 400 to 2500us: -90° is MIN, 0 is CENTER, +90° is MAX, and RELEASE rests at CENTER. An end lies no further from CENTER than CENTER lies from 400us or 2500us |
+| the hub's list | TRIM | added to the center, 5us a step, up to 200us either way; `-` and `+` step it, a tap on the value opens the signed keypad |
+| the hub's list | TRAVEL | how far the horn may go each way, 10 to 90° |
+| the hub's list | REVERSE | the direction the horn's angle maps onto the pulse |
+| SWEEP's list | CURVE, SPEED, Range | the movement of SWEEP: square, sine or triangle, 0.05 to 5Hz, 10 to 100% of the travel. The automatic test moves in steps between the ends Range gives |
+| TEST's list, VOLTAGE STEPS | Step 4.8V, Step 6.0V, Step 7.4V, Step 8.4V | the supply steps; 7.4V and 8.4V take a press only with HV SERVO on |
+| TEST's list, VOLTAGE STEPS | HV SERVO | adds the 7.4V and 8.4V steps, off by default and at every restart; a run with them starts only through HV SERVOS ONLY |
+| TEST's list, BROWN-OUT | Brown-out, Brown-out minimum voltage, Brown-out step | the walk from 5.0V down, on or off; its floor, 2.0 to 4.8V, 3.0V by default; its step, 0.1 to 1.0V, 0.2V by default. The heading's line names the walk on the supply in force and how many voltages it asks for |
+| TEST's list, PASS/FAIL LIMITS | Stall threshold | above this current the servo counts as stalled |
+| TEST's list, PASS/FAIL LIMITS | Idle current max, Holding current max, Travel time max | pass/fail limits; 0 is not checked |
+| TEST's list, LENGTH AND TIMING | Length by, Test time, Movements | how long each supply step runs: a time, or a number of movements; Test time takes a press only at TIME, Movements only at MOVES |
+| TEST's list, LENGTH AND TIMING | Dwell time, Settling time | held at each end, by the test and by SWEEP; waited after a supply step before measuring |
+| LIMIT RUN > OPTIONS | MODE | SEARCH ONLY or SEARCH + PROGRAM; locked on the bench's outputs with `On a PROG PORT only: choose one with PORT`. For the session |
+| LIMIT RUN > OPTIONS | SERVO | KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC; the programmer the run's sessions go to. The limit run's own stored setting, the same as the READY card's SERVO row |
+| LIMIT RUN > OPTIONS | SERVO PULSES | KEEP or 1000-2000; locked while PORT is not on a PROG PORT or SERVO is on a HITEC entry. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
+| the hub's list | NAME | the device under test, up to 23 characters, for the report |
+| the hub's list | REPORT | a text report beside each test's log |
+| RUDDER's list | ENC CENTER | a tap takes the live count as the center, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 center |
+| SERVO > KST > OPTIONS | KST EXPERT MODE | whether the [KST and Chaservo programmer](ServoProgrammer.md#expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold (a shorter press shows the hint on the band), OFF with a tap. Kept across restarts |
 
 TRIM is the only keypad accepting a sign. Its `+/-` key, between the
 point and OK, adds or removes a leading minus before or after digits are
@@ -3043,7 +3089,8 @@ for the slider and keypad.
 ![The question](img/supply-confirm.png)
 
 **OUTPUT ON requires a 2s hold**, using ARM's gesture and colour fade.
-OUTPUT OFF takes a tap. STOP switches the output off from every screen.
+OUTPUT OFF acts on the press: a finger that slides off the button or a
+touch that is lost has switched off. STOP switches the output off from every screen.
 Other bench stops also switch it off: an unresponsive touch controller,
 lost touch events during ON before a full frame has seen the output on,
 an IOmcu that refuses to remain ARMED, an unresponsive supply or a trip.
@@ -3151,11 +3198,11 @@ OUTPUT ON and OFF, RESET PEAKS and the readings stay live under the
 keypad and the question. The settings list opens with the output off only,
 so OUTPUT OFF is never under it. One finger at a time: while one holds a control, a
 second finger does nothing anywhere on the screen, except on OUTPUT OFF and
-PROG 5V OFF: a stop switches off on that finger's press.
+PROG 5V OFF: a stop switches off on every finger's press.
 
 On the [rbmod carrier](Carrier.md#power), a line below OUTPUT names the
 programming ports' separate 5V: `PROG PORTS 5V, GPIO 21: ON`, `OFF` or
-`NOT READ` after an unanswered read, at the foot of the CONTROL card. ON
+`UNKNOWN` after an unanswered read, at the foot of the CONTROL card. ON
 uses the accent colour. KST and Hitec programmers switch this supply. The
 PROG 5V box to the right of PLOT and TABLE allows manual switching and
 shows its INA3221 reading, as on [SERVO](#servo).
@@ -3373,7 +3420,15 @@ lane shows its channel name in 10 x 20, history, a 56px bar for the current
 value and microseconds in 8 x 16. History contains 200 samples, one pixel
 each: about 2.8s at 71 frames per second (one S.BUS frame every 14ms).
 CH17 and CH18 are digital channels. A glitch appears as a spike in one
-lane; a dropout as a simultaneous notch across all sixteen.
+lane. A dropout puts one gap sample into every lane: a 1px line over the
+lane's 30px trough in all sixteen at the same sample, with the trace
+broken on both sides.
+
+RATE is the frames of a window of at least 1000ms divided by the window's
+length, rounded to 1Hz. The window starts at the first frame and at the
+first frame after a silence; RATE reads `---` until one window has closed.
+In NO SIGNAL the traces, bars and values of the last frame stay in the
+faint colour (`UI_C_TEXT_FAINT`).
 
 The 260px state card on the right shows the state in 20 x 36, followed
 by up to three lines of 12 x 24 explanation. BUS, RATE, FRAMES, RESYNC
@@ -3688,6 +3743,14 @@ reported times, without wider gaps on the plot. Current ARMED-run files
 use elapsed wall time. Files from firmware 0.15.0 or earlier understate
 run duration (see Motor & ESC, the CSV file).
 
+The time column is a column named as time, then one with `time`, `zeit` or
+`elapsed` in its header, then a first column that only rises. Its unit is
+the header's unit, in brackets or after an underscore (`time_ms`, `t_us`,
+`elapsed_s`), else a guess from the span of its values. A rising first
+column named as a counter (`step`, `row`, `index`, `sample`, `count`, `n`,
+`#`) is not a time column: `RUDDRnnn.CSV`, which starts with `step`, plots
+against the row index, and the cursor reads the row.
+
 SETUP > PANEL > One finger pans, off by default, allows single-finger
 panning when zoomed in. Moving more than 10px from the starting point
 drags the view sideways while keeping the sample under the finger.
@@ -3704,7 +3767,12 @@ presses; a second finger does nothing.
 DELETE asks before removing the selected file. Its dialog names the file
 and size; only pressing and releasing DELETE within that dialog confirms.
 CANCEL or leaving closes it without deletion. An open logger file cannot
-be deleted. Deleting a file also drops it from open import or plot views.
+be deleted. While the bench is ARMED or a run is being logged, DELETE is
+grey and deletes nothing, as every write in FILES: a tap on it shows
+`Bench ARMED. The card is read-only.` or
+`A run is being logged. The card is read-only.` in the footer. A switch to
+ARMED or a run that starts while the dialog is open refuses its DELETE with
+the same line. Deleting a file also drops it from open import or plot views.
 
 The logger scans numbering at the first run after startup and after a
 run file cannot be opened, otherwise continuing its remembered sequence.
@@ -3833,8 +3901,10 @@ A larger file stays in the list, including a FAT32 file of 2GiB to 4GiB
 minus 1 byte; OPEN reports
 `BENCH001.CSV is 2GB or larger. Not opened.`
 
-List sizes use binary units: 1kB is 1,024 bytes, 1MB is 1,024kB and 1GB is
-1,024MB. [WI-FI](#wi-fi) lists and downloads files of any size the card
+Sizes on the panel and on the Wi-Fi page use binary units: 1kB is 1,024
+bytes, 1MB is 1,024kB and 1GB is 1,024MB. This holds for the list sizes and
+for the limits in the messages: `1MB` there is 1MiB (1,048,576 bytes), `2GB`
+is 2GiB and `4kB` is 4KiB (4,096 bytes). [WI-FI](#wi-fi) lists and downloads files of any size the card
 supports.
 
 ## Files
@@ -3889,7 +3959,7 @@ Below the name are the entry's kind and state:
 
 | State | Meaning |
 |---|---|
-| FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
+| FIXED | a folder used by the bench: the two log folders, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` and their parent folders, including `BENCH` and `USER`. RENAME and MOVE are unavailable because they would move its contents away from the expected path. NEW can create these folders; DELETE can remove an empty one. Each writer recreates its folder before writing, and readers treat a missing folder as they would on a new card |
 | LOCKED | the programmers' records, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` and `BENCH/ESCW/CONF/ESCW.TXT`, plus their `KST.NEW`, `HITEC.NEW` and `ESCW.NEW` files while being written. Only INFO is available |
 | WRITING | a file open in the logger. Only INFO is available |
 
@@ -4127,7 +4197,11 @@ CRC-32 (cyclic redundancy check) after loading and after each successful
 save. This is also the ETag used by the Wi-Fi page's
 [file API](#the-file-api). Before opening `.NEW`, the same save job
 rereads the file on the card and calculates its checksum. Saving 1MiB
-therefore first reads 1MiB; that read's duration is not measured.
+therefore first reads 1MiB; that read's duration is not measured. In the
+step that removes the old file, the job compares the file's size with the
+bytes it summed: a file that grew meanwhile, such as `BALANCE.CSV` with a
+row the balance node's solve appended, is a changed file, stays as it is
+and `.NEW` is removed.
 
 If the file has changed or been removed, for example by the Wi-Fi editor
 or an upload ([Browser writes](#browser-writes)), SAVE refuses to write.
@@ -6244,7 +6318,7 @@ reads `ROLE r, PROTOCOL p` and its reports are not taken.
 | Setting | Range | Default | Writes |
 | --- | --- | --- | --- |
 | Auto logs | OFF, ON | ON | `SERVOnnn.CSV`, `MOTORnnn.CSV` and `SUPPLnnn.CSV` in Auto log folder: a log of each ARMED and supply run |
-| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, and `LIMITnnn.TXT`, in User log folder: the AUTOMATIC TEST and the LIMIT RUN |
+| User logs | OFF, ON | ON | `ATESTnnn.CSV` with its `ATESTnnn.TXT`, `LIMITnnn.TXT`, and `RUDDRnnn.CSV` with its `RUDDRnnn.TXT`, in User log folder: the AUTOMATIC TEST, the LIMIT RUN and RUDDER AUTO, each as the setting stands at the run's start |
 | Browser writes | OPEN, ACCESS CODE, HOLD, OFF | OPEN | nothing itself: what a browser needs to change the card through WI-FI's page ([Browser writes](#browser-writes)) |
 | Auto log folder | a folder, see below | `BENCH/LOGS` | where Auto logs writes |
 | User log folder | a folder, see below | `USER/LOGS` | where User logs writes |
@@ -6279,7 +6353,7 @@ in force unchanged, and the line right of the title says why:
 | more than 2 folders | `A/B/C` (`A/B` is taken) | `At most 2 folder levels` |
 | a character other than A-Z, 0-9, `_` and `-` | `MY LOGS` | `A-Z, 0-9, _ and - only` |
 | a device name of Windows: CON, PRN, AUX, NUL, COM1 to COM9, LPT1 to LPT9 | `AUX/LOGS` | `Reserved name` |
-| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Reserved for the bench's files` |
+| a folder of the bench's own files: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` is taken) | `Reserved for the bench's files` |
 
 Every folder name accepted by the panel is a FAT (File Allocation Table)
 8.3 short name, identical on every computer. The longest folder is 17 characters,
@@ -6401,7 +6475,9 @@ does not carry frames looks exactly like an IOmcu that is not fitted, and
 both look like a bench that shows no numbers. The heading shows the verdict, the list orders checks from least effort
 to most, and the right column shows counters from both ends.
 
-The screen fills the panel. A red bar of 64px holds the title, and the
+The screen fills the panel. A red bar of 64px holds the title,
+`CAN BUS FAULT` for a start-up test that failed and `LINK LOST` for a link
+that stopped (German: `CAN-BUS-FEHLER`, `VERBINDUNG VERLOREN`), and the
 verdict stands under it, both in the 20 x 36px face. The left column,
 712px, holds the meaning in at most two lines and the list of checks in
 the 12 x 24px face: a row of 32px per check, and 28px more for each line
@@ -6668,7 +6744,7 @@ UPDATES, a page that OPTIONS' row Single updates opens
 
 | Control | Action |
 | --- | --- |
-| `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. Drawn in the accent colour only while no step is current. |
+| `CHECK FOR UPDATES` | Asks GitHub once. `CANCEL` on the same key while the check runs. Drawn in the accent colour only while no step is current. Grey while an update of the IOmcu, the C6 radio or a wireless device runs. |
 | The current step's control | A 2s hold that starts the step's update ([The steps](#the-steps)). Grey while a gate holds the step; a press of any length then puts the reason in the alert band. |
 | `SKIP THIS STEP` | A tap passes the current step until the panel restarts; the next blocking step becomes current. |
 | `SHOW SKIPPED STEPS` | On the last card while a step is skipped. A tap brings every skipped step back. |
@@ -6703,15 +6779,21 @@ home network. Both the check and the download need:
 - the bench SAFE, the supply output off and no log run open. Otherwise the
   key is grey and the card says `Wi-Fi requires SAFE, the supply output off,` and
   `and no open recording session.`;
-- no update of the IOmcu running and no panel install under way.
+- no update of the IOmcu, the C6 radio or a wireless device running and
+  no panel install under way. During a device's transfer the key is grey
+  and the card says `Waiting for the wireless device update to finish.`;
+  the check at start waits the same way, and a check under way ends when
+  such an update starts.
 
 Downloading, like installing, also requires that no board drawing is being
 fetched or saved.
 
 ### The steps
 
-The current step is the step whose update runs; with none running, the
-lowest-numbered step that blocks. The step list and the card are decided
+The current step is the step whose update runs; with no update running,
+PANEL while its check runs; else the lowest-numbered step that blocks. An
+update outranks the check: a device's ask and CANCEL UPDATE stay on the
+card whatever the check does. The step list and the card are decided
 every frame from what the panel knows: no step position is kept, so a
 restart, a lost link or a failed step shows the right step without a
 recovery path. A newer panel release found while a later step is current
@@ -6728,9 +6810,12 @@ send.
 | 6 BALANCE NODE | the connected balance node runs another version | `HOLD 2s TO UPDATE THE BALANCE NODE` |
 
 A check that found nothing newer, or failed, never blocks; nor does a
-download that failed or was stopped. PANEL then reads `CURRENT`,
-`NOT CHECKED` or `FAILED`, the card shows the result, and CHECK FOR
-UPDATES is the way back. A step whose update ran and failed since the
+download that failed or was stopped, nor a download whose install failed.
+PANEL then reads `CURRENT`, `NOT CHECKED` or `FAILED`, the card shows the
+result, and CHECK FOR UPDATES is the way back. After a failed install the
+card says `The installation failed. The panel firmware is unchanged.` and
+`CHECK FOR UPDATES offers the release again.`; OPTIONS and the later
+steps' controls are live. A step whose update ran and failed since the
 panel's start stays current: its row reads `FAILED`, the card shows the
 alert's line in the warning colour, and the hold is the retry.
 
@@ -6747,6 +6832,7 @@ alert's line in the warning colour, and the hold is the retry.
 | `NOT CHECKED` | PANEL: no check result at this start |
 | `NO LINK`, `NOT CONNECTED` | no IOmcu answers; a bound device is not connected |
 | `NOT BOUND` | no device of the kind is bound on WIRELESS |
+| `OFF` | a device is bound and its switch on WIRELESS is OFF: the panel runs no link to it |
 | `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to act on: the panel carries no image, the carried image fails its check, the IOmcu's build check gave no answer, the IOmcu takes no update over CAN, the C6 failed its link, the C6 named no version |
 
 A step with nothing to act on is passed. While an update run stands after
@@ -6754,7 +6840,9 @@ a restart, the IOmcu without a link and a bound device that is not
 connected wait instead: the card says `Waiting for the IOmcu to answer.`
 or `Switch the Dial on and keep it within range.`, with SKIP THIS STEP,
 and the step goes on by itself once the target links. Outside a run they
-are passed and named on the last card.
+are passed and named on the last card. A bound device whose switch on
+WIRELESS is OFF never waits, in a run or outside one: its row reads `OFF`
+and the last card names it.
 
 ![A step held while ARMED](img/updates-held.png)
 
@@ -6786,10 +6874,19 @@ the opening nor its band line comes again for that offer
 ([IOmcu update](#iomcu-update)). A new offer brings the step back. An
 update that runs is never skipped.
 
-With no step current the card reads `All firmware is current.`, the
+With no step current the card shows one of three headings:
+
+| Heading | Shown while |
+| --- | --- |
+| `All firmware is current.` | PANEL reads `CURRENT` after a check, and every other step reads `CURRENT` or `NOT BOUND` |
+| `Not checked for a panel release.` | PANEL reads `NOT CHECKED` or `FAILED`, and every other step reads `CURRENT` or `NOT BOUND` |
+| `No step is open.` | a step is skipped, or has nothing to act on for another reason than `NOT BOUND` |
+
+Under the heading: the
 running version, the home network, the last check's result, and the steps
 that were passed: `Not connected: POWER NODE.`,
-`No update here: C6 RADIO. The list names the reason.` and
+`No update here: C6 RADIO. The list names the reason.` (a device that
+reads `OFF` among them) and
 `Skipped: DIAL.`, then the notes on the reminder and RELEASES. SHOW
 SKIPPED STEPS stands under them while a step is skipped. CHECK FOR
 UPDATES is drawn in the accent colour.
@@ -7130,7 +7227,8 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits for the panel's Wi-Fi to switch off.` | A check, a download or the WI-FI screen has the radio on. |
 | `The C6 update waits: Bluetooth is starting.` | Bluetooth LE's start task `blestart` runs. |
 | `The C6 update waits for the wireless device update to finish.` | A Dial's update runs or was asked for ([The Dial](#the-dial)). |
-| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
+| `The C6 update requires the servo and ESC programmers closed. Select LEAVE there first.` | A KST, Hitec or ESC programmer holds a port, or a session starts. |
+| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call, or the update ended and the panel's restart is due. |
 
 A C6 that reports no version, as the shipped one does, is offered the
 update. A C6 that reports the carried version is offered the reinstall:
@@ -7142,13 +7240,18 @@ The alert band says how an update ended:
 | Alert | Meaning |
 | --- | --- |
 | `C6 radio updated to 2.13.0. The panel restarts.` | The C6 took and checked the image; the panel restarts 3s later, and the update run goes on after it ([After a restart](#after-a-restart)). |
+| `C6 radio updated to 2.13.0. The panel restarts once SAFE with all outputs off.` | The restart waits: the bench is ARMED, an output is on or a programmer holds a port ([The ESP32-C6 radio](C6.md)). |
 | `The C6 radio takes no update over SDIO. Flash it over header H4.` | The begin call failed or ran out: the C6's firmware has no update over SDIO ([The ESP32-C6 radio: Recovery over header H4](C6.md#recovery-over-header-h4)). |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | The link to the C6 failed. |
 | `C6 update stopped: <reason>. Previous firmware is running.` | A write, the C6's image check or the activate call failed (`a write failed`, `the C6's image check failed`, `activation failed`), or a step went unanswered past its limit (`no response`). |
 
-While the update runs, ARM is refused with `Cannot switch to ARMED: the C6
-radio update is running.`, Wi-Fi does not start, and the panel's install,
-the GitHub check and the IOmcu's update wait.
+From the update's start to the restart, ARM is refused with `Cannot switch
+to ARMED: the C6 radio update is running.`, SUPPLY's OUTPUT ON with `Supply
+output not switched on: the C6 radio update is running.`, PROG 5V ON with
+`PROG ports 5V not switched on: the C6 radio update is running.` and a
+programmer session's start with `Programmer not started: the C6 radio
+update is running.`. Wi-Fi does not start, and the panel's install, the
+GitHub check and the IOmcu's update wait.
 
 ### The wireless devices
 
@@ -7527,7 +7630,7 @@ output of its own kind, no slot and no protocol
 | FUNCTION | a choice face with what the pin carries while no programming session holds it. A tap opens the list over the rows under it: SERVO PWM, NONE, and on an IOmcu of protocol 4.28 or later DSHOT150, DSHOT300 and DSHOT600. A tap on an entry asks the IOmcu for it and shuts the list; a press beside the list shuts it and reaches nothing under it. The face is drawn sunk and dim, and takes no tap, while the row is locked |
 | WATCHED BY | the INA3221 channel that watches the port in SETUP > SENSORS, `WATCHED BY INA3221 0x41 CH2`: the lowest channel with a shunt on a fitted part; `WATCHED BY NO CURRENT CHANNEL` while none does |
 | SERVO TESTER | OUTPUTS \| PORT n: the tester's target ([the target](ServoProgrammer.md#the-target)) |
-| PORT PWM | ON \| OFF: the pulse of the port that is the tester's target |
+| PORT PWM | ON \| OFF: the pulse of the port that is the tester's target. ON takes a tap; OFF acts on the press, whatever other fingers hold |
 
 In the board view the rows stand in the column left of the board and the
 keys set the port's pin. In the grid view the rows stand under the list, the
@@ -8089,7 +8192,10 @@ a read-back changes any pin, another protocol or a PROG PORT entry is
 picked, the board changes, the view switches between board and grid, or the
 screen is left. Touch events lost between two frames drop a press on MOVE
 PIN and leave the card up. A second finger on the card takes the press; one
-off the card closes it. STOP stays live on the band. In the board view the
+off the card closes it. For 400ms after MOVE PIN or CANCEL closes the card,
+a press inside the card's former box is spent in both views: the second tap
+of a double tap ticks no key or cell under the card (`test_pin_take`,
+`test_pin_take_grid`). STOP stays live on the band. In the board view the
 Dial lists MOVE PIN and CANCEL while the card is up, starting on CANCEL.
 
 The IOmcu refuses a slot change on an ARMED bank and a binding write while
@@ -8147,10 +8253,11 @@ traffic. Writing flash stops the IOmcu with interrupts off, and it
 answers nothing while it is stopped: on the bring-up module a save that
 erased and programmed inside one window measured 19,178us, against a CAN
 frame of about 130us and two frames of buffer in the controller. The figure is one
-measurement: 1 sample, taken on the bring-up module, with the flash part not
-identified. The erase and the page program have not been timed apart from
-each other. The window is not checked against the flash part's datasheet maximum
-(part unidentified). The panel sends one request
+measurement: 1 sample, taken on the bring-up module. The erase and the page
+program have not been timed apart from each other. Waveshare names the
+module's flash as a Puya P25Q32SH, whose datasheet maxima are 30ms for a
+sector erase and 2.5ms for a page program
+([Safety](Safety.md#iomcu-loop-watchdog)). The panel sends one request
 frame per exchange and waits for its answer before it sends the next, so at
 most one request frame waits in the controller's two buffers. A window delays
 that request by up to its length, about 19ms against the panel's 1000ms wait,

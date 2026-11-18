@@ -46,11 +46,52 @@ static void let_go(void)
 }
 
 /**
+ * @brief Whether a press at (@p x, @p y) is on the PORT row's button while
+ *        it reads ABORT: the entry, an operation or the wait to leave is
+ *        under way (act_value() in kst_panel_draw.c).  Not while the
+ *        warning, the keypad, the keyboard or a list covers the rows.
+ * @param x the column, px
+ * @param y the line, px
+ * @return true on ABORT
+ */
+static bool abort_at(int x, int y)
+{
+    const kst_prog_t *p = &k.prog;
+    const kst_prog_state_t st = kst_prog_state(p);
+
+    if (!k.open || k.warn.open || k.kp.open || k.tk.open || k.ch.open) {
+        return false;
+    }
+    if (st != KST_PROG_ENTERING && st != KST_PROG_WORKING
+        && !kpn_leave_waits(p)) {
+        return false;
+    }
+    for (int i = 0; i < ROW_COUNT; ++i) {
+        const row_t *r = &kpn_rows[i];
+
+        if (r->kind == K_ACT && r->what == A_PORT && r->page == kpn_page()
+            && kpn_row_live(r)
+            && gfx_rect_contains(kpn_value_rect(r), x, y)) {
+            return true;
+        }
+    }
+    return false;
+}
+
+/**
  * @brief Takes a DOWN event: finds the control under it and takes the press.
+ *        ABORT acts on it at once, and the press it keeps taps nothing on
+ *        its release.
  */
 static void down(const touch_event_t *evt)
 {
     const int x = evt->point.x, y = evt->point.y;
+
+    if (abort_at(x, y)) {
+        kst_prog_abort(&k.prog);
+        take(evt, P_NONE, -1);
+        return;
+    }
 
     if (k.warn.open) {
         if (gfx_rect_contains(kst_panel_apply_rect(), x, y)) {
@@ -176,11 +217,7 @@ void kst_panel_back(void)
 
 bool kst_panel_safe_at(int x, int y)
 {
-    /* Programming and an armed bench are exclusive, and ABORT here ends
-     * the wire's session, not a drive. */
-    (void)x;
-    (void)y;
-    return false;
+    return abort_at(x, y);
 }
 
 uint8_t kst_panel_pin(void)
@@ -382,6 +419,15 @@ void kst_panel_event(const touch_event_t *evt)
     } else if (evt->type == TOUCH_EVENT_DOWN && !k.have) {
         /* One press at a time in the overlay. */
         down(evt);
+    } else if (evt->type == TOUCH_EVENT_DOWN
+               && abort_at(evt->point.x, evt->point.y)) {
+        /* ABORT counts on the press whatever other fingers hold.  A press
+         * held on a row loses its tap: its release would act on what the
+         * row reads after the abort. */
+        kst_prog_abort(&k.prog);
+        if (k.pressed == P_ROW) {
+            let_go();
+        }
     }
     kpn_supply_sync();
     ++k.rev;

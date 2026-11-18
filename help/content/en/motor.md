@@ -24,7 +24,7 @@ The footer at the bottom has three slots:
 | Slot | What it does |
 |---|---|
 | MOTOR & ESC | the screen's name; under it the protocol and pins the throttle drives, `NO MOTOR PIN` in the warning colour with none |
-| ARM / DISARM | the 2s hold to ARMED, a tap to SAFE ([A run](#a-run)) |
+| ARM / DISARM | the 2s hold to ARMED, a press to SAFE ([A run](#a-run)) |
 | OPTIONS | opens [Motor settings](motor-settings.md): the pack, the motor and the throttle output; grey unless the bench is SAFE |
 
 The home tag at the top left moves up one level at a time:
@@ -99,7 +99,7 @@ While ARMED the panel tag reads `LIVE TELEMETRY` and the plot's right edge reads
 | The track | refused; drawn dimmed | moves the throttle by the finger's travel |
 | `-1`, `+1` | refused; drawn dimmed | step one percentage point |
 | Rotary knob | refused; the turn is not kept | moves the throttle from its value |
-| ARM | switches to ARMED after a 2s hold | DISARM: switches to SAFE on a tap |
+| ARM | switches to ARMED after a 2s hold | DISARM: switches to SAFE on the press |
 | RESET PEAKS | clears the peak markers | clears the peak markers |
 | PLOT, TABLE, BALANCE | switch the view of LIVE | switch the view of LIVE |
 

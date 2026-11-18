@@ -640,7 +640,7 @@ void gfx_fill_rect_gradient(gfx_canvas_t *c, int x, int y, int w, int h,
         return;
     }
     for (int row = 0; row < h; ++row) {
-        uint8_t t = (h > 1) ? (uint8_t)((row * 255) / (h - 1)) : 0;
+        const uint8_t t = (uint8_t)((h > 1) ? (row * 255) / (h - 1) : 0);
         gfx_hline(c, x, y + row, w, gfx_lerp(a, b, t));
     }
 }

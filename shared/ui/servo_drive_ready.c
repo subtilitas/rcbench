@@ -595,8 +595,9 @@ bool drive_arm_press(const touch_event_t *evt)
         ++s.arm_rev;
         return true;
     }
-    if (s.gate.armed) {
-        /* DISARM acts on the press and switches every output off: the
+    if (s.gate.armed || s.gate.arm_asked) {
+        /* DISARM acts on the press and switches every output off; an ARM
+         * asked and not answered counts as armed.  The
          * press takes no hold, so a finger left on the button arms
          * nothing when it reads ARM again. */
         svs_all_off();
@@ -632,8 +633,22 @@ bool servo_screen_dial_hold(void)
         ++s.arm_rev;
         return true;
     }
-    if (!s.gate.armed) {
-        return false;
+    /* A test, a limit run or an AUTO run ends as the operator's stop, in
+     * every phase: in its programmer session the run holds the bench SAFE
+     * and would arm again, and a DISARM while it switches the bench counts
+     * as its own (lim_end_now(), rauto_end_now()). */
+    const bool run = servo_test_running(&s.test)
+                     || servo_limrun_running(&s.lim)
+                     || servo_rauto_running(&s.ra.run);
+    if (run) {
+        test_end_now(SERVO_TEST_AB_OPERATOR);
+    }
+    if (!s.gate.armed && !s.gate.arm_asked
+        && s.pending.kind != SERVO_CMD_ARM) {
+        if (run) {
+            ++s.arm_rev;
+        }
+        return run;
     }
     svs_all_off();
     ++s.arm_rev;
@@ -714,7 +729,7 @@ void drive_draw_arm(gfx_canvas_t *c)
     }
     /* The fade runs to the red of ARMED, or to the amber of the steps
      * where the hold switches a part on first. */
-    const bool armed = s.gate.armed;
+    const bool armed = s.gate.armed || s.gate.arm_asked;
     ui_hold_button(c, s.arm_btn, armed ? "DISARM" : "ARM",
                    ui_action_fill(armed ? UI_ACTION_ACTIVE
                                         : UI_ACTION_AVAILABLE),

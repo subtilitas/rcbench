@@ -7,7 +7,7 @@ the capacitors and resistors, the enable pad, the print of both sides
 and the underside's white field, which carries no print.
 
 Sources: two owner photos on 5mm squared paper (top side, underside;
-not in the repository). Positions are in mm from the board's centre,
+not in the repository). Positions are in mm from the board's center,
 within about 0.2mm. The camera stands 171 over the paper and 63 from
 the board, so a part's top lies 0.36 further from the camera per mm of
 height; the inductor, the diodes, the chip and the capacitors are set

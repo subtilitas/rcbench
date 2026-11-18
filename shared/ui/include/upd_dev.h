@@ -90,6 +90,9 @@ typedef struct {
     devupd_row_t row;        /**< devupd_row()                            */
     bool         bound;      /**< a device of the kind is bound, linked or
                                   not                                     */
+    bool         off;        /**< bound, and the device's switch on
+                                  WIRELESS is OFF: the panel runs no link
+                                  to it                                   */
     bool         known;      /**< the device is connected and reported its
                                   version                                 */
     fw_version_t running;    /**< that version                            */

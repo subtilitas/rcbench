@@ -359,6 +359,7 @@ wählt das Wort; die erste passende Zeile gilt:
 | `RAM_IMAGE` | Boot-Typ 3 | ein in den SRAM geladenes Image |
 | `BOOTSEL_REBOOT` | Boot-Typ 2; oder reason ungleich 0, Boot-Typ 0, scratch 0xFFFFFFFF 0x00000000 | zurück aus BOOTSEL über `picotool reboot`, das picotool auch nach jedem mit `-f` ausgeführten Befehl sendet. Der Weg in BOOTSEL ist die 1200-Baud-Anfrage oder die Reset-Anfrage von picotool über USB |
 | `SW_RESET` | reason 0x2 | der Watchdog sofort von Software ausgelöst |
+| `LOOP_WATCHDOG` | reason 0x1, Boot-Typ 0, die Marke der Firmware in WATCHDOG SCRATCH0 (0x4C4F4F50) und die Marke des SDK für `watchdog_enable()` | der eigene Watchdog der Firmware: Core 0 hat seine Hauptschleife 500ms nicht durchlaufen ([Sicherheit](Safety-de.md#schleifen-watchdog-des-iomcu)). Die Zeile druckt keine der beiden Marken; die Firmware setzt SCRATCH0 bei jedem Start auf 0 |
 | `WATCHDOG` | reason 0x1 | der Watchdog ist abgelaufen: der 16,7-s-TBYB-Timer (Try Before You Buy) des Boot-ROM nach einem Update, das das Panel nicht gekauft hat, oder ein Reboot mit anderen Parametern |
 | `POR` | reason 0, HAD_POR (Bit 16) | Spannung angelegt |
 | `BOR` | reason 0, HAD_BOR (Bit 17) | Brown-out-Detektor |

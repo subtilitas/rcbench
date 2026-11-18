@@ -79,7 +79,7 @@ T = 1.6
 OX, OY = kicad.FOOTPRINT["origin"]
 BLUE = (0.05, 0.22, 0.55)
 
-# The two halves: x of the housing's rear edge, the row's centre y.
+# The two halves: x of the housing's rear edge, the row's center y.
 PLUG_X, SOCKET_X, ROW_Y = kicad.PLUG[0][2], kicad.SOCKET[1][0], 24.65
 TAIL_X = (PLUG_X + p.XT90_BEND, SOCKET_X - p.XT90_BEND)
 TAIL_Y = (ROW_Y - p.XT90_PITCH / 2, ROW_Y + p.XT90_PITCH / 2)
@@ -239,14 +239,14 @@ def board():
     return out
 
 
-def bar_end(x, y0, y1, centre, radius, side):
+def bar_end(x, y0, y1, center, radius, side):
     """One end of a bar's outline where solder or a tail stands.
 
     Args:
         x: The end's x, model frame.
         y0: The bar's lower edge, model frame.
         y1: The bar's upper edge, model frame.
-        centre: The (x, y) of the round thing in the end, model frame.
+        center: The (x, y) of the round thing in the end, model frame.
         radius: Its radius.
         side: -1 for the bar's left end, 1 for its right end.
 
@@ -254,7 +254,7 @@ def bar_end(x, y0, y1, centre, radius, side):
         The end's corners from the lower edge to the upper one at a
         right end, from the upper to the lower one at a left end.
     """
-    cx, cy = centre
+    cx, cy = center
     arc = (cx, cy, -1)
     reach = math.sqrt(max(radius * radius - (x - cx) ** 2, 0.0))
     if cy - reach > y0 and cy + reach < y1:
@@ -289,11 +289,11 @@ def bar(x0, y0, x1, y1, z0, z1, radius, round_left, round_right):
     """
     (ax, ay), (bx, by) = at(x0, y1), at(x1, y0)
     outline = []
-    for x, centre, side in ((bx, round_right, 1), (ax, round_left, -1)):
-        if centre is None:
+    for x, center, side in ((bx, round_right, 1), (ax, round_left, -1)):
+        if center is None:
             outline += [(x, ay), (x, by)] if side > 0 else [(x, by), (x, ay)]
         else:
-            outline += bar_end(x, ay, by, at(*centre), radius, side)
+            outline += bar_end(x, ay, by, at(*center), radius, side)
     return s.ext(outline, z0, z1, p.TIN)
 
 
@@ -343,9 +343,9 @@ def underside():
     left, right = (TAIL_X[0], TAIL_Y[0]), (TAIL_X[1], TAIL_Y[0])
     out.append(bar(*UNDER_PLUS, -SOLDER, 0.0, radius, left, right))
     for (strip, block), tail in zip(UNDER_MINUS, (0, 1), strict=True):
-        centre = (TAIL_X[tail], TAIL_Y[1])
+        center = (TAIL_X[tail], TAIL_Y[1])
         out.append(bar(*strip, -SOLDER, 0.0, radius,
-                       None if tail else centre, centre if tail else None))
+                       None if tail else center, center if tail else None))
         out.append(box(*block, -SOLDER, 0.0, p.TIN))
     radius, height = SMALL_JOINT
     for x, y in pegs():
@@ -428,7 +428,7 @@ def pocket(a, b, radius):
         radius: The standoffs' radius about the screw holes.
 
     Returns:
-        The outline about the board's centre, counter-clockwise.
+        The outline about the board's center, counter-clockwise.
     """
     (x0, y0), (x1, _), (_, y1), _ = kicad.HOLES
     hx, hy = (x1 - x0) / 2, (y1 - y0) / 2
@@ -441,8 +441,8 @@ def pocket(a, b, radius):
         pts = [(sx * x, sy * y) for x, y in corner]
         if sx * sy < 0:
             pts.reverse()
-        centre = (sx * hx, sy * hy, -1)
-        out += [(*pts[0], centre), (*pts[1], centre), pts[2]]
+        center = (sx * hx, sy * hy, -1)
+        out += [(*pts[0], center), (*pts[1], center), pts[2]]
     return out
 
 
@@ -458,7 +458,7 @@ def rim(a, b, r, wall, y_cut, side):
         side: 1 for the half at +y, -1 for the one at -y.
 
     Returns:
-        The outline about the board's centre.
+        The outline about the board's center.
     """
     big_a, big_b, big_r = a + wall, b + wall, r + wall
     pts = [
