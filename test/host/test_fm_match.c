@@ -13,6 +13,7 @@
  * Cases:
  * - a_matching_sum_replaces_the_file
  * - a_different_sum_fails_changed_and_writes_nothing
+ * - a_file_appended_to_during_the_save_fails_changed_and_keeps_the_row
  * - a_refusal_gives_the_sum_it_found
  * - a_file_gone_since_its_sum_fails_changed
  * - absent_refuses_a_taken_name_and_makes_a_free_one
@@ -28,6 +29,7 @@
  * SPDX-License-Identifier: MIT
  */
 #include <stdbool.h>
+#include <stdlib.h>
 #include <string.h>
 
 #include "greatest.h"
@@ -214,6 +216,80 @@ TEST_CASE(a_different_sum_fails_changed_and_writes_nothing)
     CHECK_EQ(g_job.err, FM_ERR_CHANGED);
     CHECK(clean());
     /* Without the check the same save replaces it. */
+    fresh();
+    fk_file(&g_card, "D/NOTE.TXT", NULL, OLD_SIZE);
+    save();
+    CHECK_EQ(run(), FM_JOB_DONE);
+    CHECK(holds_text());
+}
+
+/*
+ * A row appended to the old file while the save writes its ".NEW" (the
+ * balance node's BALANCE.CSV): the save is refused in the step that would
+ * remove the file, and the row stays.
+ */
+TEST_CASE(a_file_appended_to_during_the_save_fails_changed_and_keeps_the_row)
+{
+    static uint8_t grown[OLD_SIZE + 9u];
+    fresh();
+    fk_file(&g_card, "D/NOTE.TXT", NULL, OLD_SIZE);
+    save();
+    CHECK_EQ(fm_job_match(&g_job, FM_MATCH_SUM, sum31, sum_of("D/NOTE.TXT")),
+             FM_OK);
+    /* Up to the ".NEW" written and synced: the next step removes the file. */
+    int n = 0;
+    while (g_card.calls[FK_SYNC] == 0 && n < 100) {
+        CHECK_EQ(step(), FM_JOB_RUNNING);
+        ++n;
+    }
+    CHECK_EQ(g_card.calls[FK_UNLINK], 0);
+    fk_node_t *old = (fk_node_t *)fk_get(&g_card, "D/NOTE.TXT");
+    memcpy(grown, old->data, OLD_SIZE);
+    memcpy(grown + OLD_SIZE, "1;2;3;4\r\n", 9u);
+    uint8_t *room = realloc(old->data, sizeof(grown) + 1u);
+    if (room == NULL) {
+        abort();
+    }
+    memcpy(room, grown, sizeof(grown));
+    old->data = room;
+    old->size = sizeof(grown);
+    old->cap = sizeof(grown) + 1u;
+
+    CHECK_EQ(run(), FM_JOB_FAILED);
+    CHECK_EQ(g_job.err, FM_ERR_CHANGED);
+    uint32_t found = 0u;
+    CHECK(!fm_job_found(&g_job, &found));
+    const fk_node_t *kept = fk_get(&g_card, "D/NOTE.TXT");
+    CHECK(kept != NULL && kept->size == sizeof(grown)
+          && memcmp(kept->data, grown, sizeof(grown)) == 0);
+    CHECK(fk_get(&g_card, "D/NOTE.TXT.NEW") == NULL);
+    CHECK(clean());
+
+    /* The file deleted meanwhile: refused too, nothing takes its name. */
+    fresh();
+    fk_file(&g_card, "D/NOTE.TXT", NULL, OLD_SIZE);
+    fk_file(&g_card, "D/GROWN.TXT", grown, sizeof(grown));
+    save();
+    CHECK_EQ(fm_job_match(&g_job, FM_MATCH_SUM, sum31, sum_of("D/NOTE.TXT")),
+             FM_OK);
+    n = 0;
+    while (g_card.calls[FK_SYNC] == 0 && n < 100) {
+        CHECK_EQ(step(), FM_JOB_RUNNING);
+        ++n;
+    }
+    fm_job_t gone;
+    CHECK_EQ(fm_job_delete(&gone, &g_bench, 1u, "D", "NOTE.TXT", false),
+             FM_OK);
+    while (fm_job_step(&gone, &g_io, &g_bench, NULL, 0u) == FM_JOB_RUNNING) {
+    }
+    CHECK(fk_get(&g_card, "D/NOTE.TXT") == NULL);
+    CHECK_EQ(run(), FM_JOB_FAILED);
+    CHECK_EQ(g_job.err, FM_ERR_CHANGED);
+    CHECK(fk_get(&g_card, "D/NOTE.TXT") == NULL);
+    CHECK(fk_get(&g_card, "D/NOTE.TXT.NEW") == NULL);
+    CHECK(clean());
+
+    /* A save without the check replaces the file as before. */
     fresh();
     fk_file(&g_card, "D/NOTE.TXT", NULL, OLD_SIZE);
     save();
@@ -603,6 +679,7 @@ TEST_CASE(what_new_can_make_delete_can_remove_every_fixed_folder)
         { "BENCH/ESC", "CONF" }, { "BENCH", "KST" }, { "BENCH/KST", "CONF" },
         { "BENCH", "HITEC" }, { "BENCH/HITEC", "CONF" },
         { "BENCH", "ESCW" }, { "BENCH/ESCW", "CONF" },
+        { "BENCH", "BALANCE" },
         { "", "USER" }, { "USER", "LOGS" },
     };
     const size_t n = sizeof(k_rows) / sizeof(k_rows[0]);
@@ -639,6 +716,7 @@ int main(void)
 {
     RUN(a_matching_sum_replaces_the_file);
     RUN(a_different_sum_fails_changed_and_writes_nothing);
+    RUN(a_file_appended_to_during_the_save_fails_changed_and_keeps_the_row);
     RUN(a_refusal_gives_the_sum_it_found);
     RUN(a_file_gone_since_its_sum_fails_changed);
     RUN(absent_refuses_a_taken_name_and_makes_a_free_one);
