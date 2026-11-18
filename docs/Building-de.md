@@ -476,6 +476,7 @@ Option bietet diesem Gerät kein Update an.
 | `tools/wiki_links.py` | schreibt die Links einer Kopie von `docs/` für das Wiki um, das Seiten über ihren Titel adressiert: `Page.md` wird zu `Page`, ein Ziel oberhalb von `docs/` zu einer Repository-URL (`blob`, `tree`, `raw` für ein Bild); vergleicht jede Seite über markdown-it-py 3.0.0 mit ihrer Umschreibung und endet bei jeder anderen Abweichung mit 1, mit Seite und Zeile; `--check` ändert nichts; `--verify` schlägt bei einer umgeschriebenen Seite fehl, deren Links ein Wiki nicht öffnen kann |
 | `tools/check_formats.py` | kompiliert `shared/` mit jedem Aufruf von `TR()` und jedem Wort des Berichts durch sein englisches Literal ersetzt, unter `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, und schlägt bei jeder Warnung fehl: jedes englische Format gegen die Argumente seines Aufrufs ([Sprache](Language-de.md)) |
 | `tools/check_units.py` | hält Zahl und Einheit ohne Leerzeichen dazwischen (`40s`, `6.00V`, `%ums`, eine Zellenzahl `6S`) in den Dokumenten, den Texten und Berichten der Oberfläche (`ui_text.def` und die String-Literale von `shared/ui/` und der Berichtsschreiber) und den Kommentaren des Codes; `--check` schlägt fehl bei Zahl, Leerzeichen und Einheitenzeichen, bei einer Einheit in Großbuchstaben nach einer Zahl in den Texten, die das Panel zeigt (`500MS`, `50 HZ`; S allein ist die Zellenzahl), und bei einem Eintrag in `tools/check_units_allow.txt`, der nichts trifft, `--fix` entfernt das Leerzeichen; Log- und Konsolenzeilen, CSV-Kopfzeilen, Datendateien außer den Panel-Texten der ESC-Profile und veröffentlichte Abschnitte des CHANGELOG gelten nicht |
+| `tools/check_twins.py` | vergleicht jede englische Seite mit ihrem deutschen Gegenstück nach der Struktur: `docs/X.md` mit `docs/X-de.md`, `README.md` mit `README-de.md`, `help/content/en/X.md` mit `help/content/de/X.md`; `--check` schlägt fehl bei einer Überschriftenebene, die in der Folge der Überschriften abweicht, und bei einer Tabelle unter einer Überschrift mit anderer Zeilenzahl; Text in einem Codeblock wird übersprungen; Wörter, Zahlen, Bilder und Links werden nicht verglichen |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | bringen die Wörter der Oberfläche aus der Form in mehreren Dateien (Englisch in `ui_text.def` und im Schema, Deutsch in `ui_text_de.c`) in die eine Tabelle, `shared/text/include/ui_text.def`; `merge BASE THEIRS` übernimmt beim Merge die Textänderungen eines Branches, der noch die alte Form hat, in die Tabelle ([Sprache der Oberfläche](Language-de.md#einen-text-hinzufügen)) |
 | `tools/gen_font.py` | erzeugt die acht eingebetteten Fonts aus DejaVu Sans Mono neu, die sechs Text-Fonts mit den deutschen Buchstaben; `--check` schlägt fehl, wenn die eingecheckten Tabellen abweichen |
 | `tools/render_ui.py` | rendert jeden Bildschirm mit dem Code, den das Panel ausführt, als PNG (Portable Network Graphics), auf Englisch nach `docs/img/` und auf Deutsch nach `docs/img/de/`; `--check` vergleicht mit den eingecheckten Bildern; `--fit` schlägt fehl, wenn ein Text in einer der beiden Sprachen dort überläuft, wo er gezeichnet wird, außer den englischen Überläufen, die das Werkzeug als bekannt führt ([Sprache](Language-de.md)) |
@@ -500,7 +501,7 @@ Option bietet diesem Gerät kein Update an.
 | `tools/jlc_stock.py` | liest den Bestand jedes Teils aus `hardware/docs/Parts.md` über die Schnittstellen von JLCPCB und Digi-Key; `--check N` endet mit 1 bei einem durchfallenden Teil für N Platinen |
 | `tools/ci_gate.py` | wartet auf den CI-Lauf eines Commits und schlägt fehl, wenn keiner bestanden hat; der erste Schritt von `docs.yml` und `release.yml` |
 | `tools/release_kind.py` | liest einen Release-Tag und gibt seine Art aus, `testing` für eine ungerade Minor-Nummer und `stable` für eine gerade, mit den Flags `prerelease` und `latest`, nach denen `release.yml` veröffentlicht; mit den Tags der vollen Releases auf GitHub dahinter ist `latest` `false` für einen stabilen Tag, der älter als einer davon ist; Exit-Code 1 bei einem Tag außerhalb der Form ([Releases](#releases)) |
-| `tools/doc_check.py`, `Doxyfile` | lässt Doxygen 1.18.0 mit dem `Doxyfile` über den C-Code von `shared/`, `protocols/`, `firmware/panel/`, `firmware/iomcu/` und `testbench/touch-injector/core/` laufen, ohne die erzeugten Tabellen, und vergleicht seine Warnungen, als Datei, Meldung und Text der genannten Zeile ohne Zeilennummer, mit `tools/doc_check_baseline.txt`; ergänzt eine Warnung für eine C-Datei ohne `@file`-Block oder ohne dessen `@brief`; `--check` schlägt fehl bei einer Warnung, die nicht in der Baseline steht, und bei einer Zeile der Baseline, die der Baum nicht erzeugt, mit `--base REF` außerdem bei jeder Warnung in einer C-Datei, die seit der Merge-Base mit `REF` hinzugekommen ist, auf einer geänderten Zeile oder deren Kommentarblock bei einem fehlenden `@file`-Block in einer geänderten Datei und bei einem Kommentarblock ohne `@brief`, den die Änderung hinzufügt oder bearbeitet; eine umbenannte Datei gilt als neu; `--update` schreibt die Baseline neu. Das HTML in `build/doxygen/html/` ist die [C-API-Referenz](https://subtilitas.github.io/rcbench/api/) (API: Application Programming Interface) |
+| `tools/doc_check.py`, `Doxyfile` | lässt Doxygen 1.18.0 mit dem `Doxyfile` über den C-Code von `shared/`, `protocols/`, `firmware/panel/`, `firmware/iomcu/`, `firmware/dial/`, `firmware/node/`, `firmware/devota/` und `testbench/touch-injector/core/` laufen, ohne die erzeugten Tabellen, und vergleicht seine Warnungen, als Datei, Meldung und Text der genannten Zeile ohne Zeilennummer, mit `tools/doc_check_baseline.txt`; ergänzt eine Warnung für eine C-Datei ohne `@file`-Block oder ohne dessen `@brief`; `--check` schlägt fehl bei einer Warnung, die nicht in der Baseline steht, und bei einer Zeile der Baseline, die der Baum nicht erzeugt, mit `--base REF` außerdem bei jeder Warnung in einer C-Datei, die seit der Merge-Base mit `REF` hinzugekommen ist, auf einer geänderten Zeile oder deren Kommentarblock bei einem fehlenden `@file`-Block in einer geänderten Datei und bei einem Kommentarblock ohne `@brief`, den die Änderung hinzufügt oder bearbeitet; eine umbenannte Datei gilt als neu; `--update` schreibt die Baseline neu. Das HTML in `build/doxygen/html/` ist die [C-API-Referenz](https://subtilitas.github.io/rcbench/api/) (API: Application Programming Interface) |
 | `tools/pages_changes.py` | entscheidet, ob ein Lauf von `pages.yml` ein vollständiger ist, mit den Tests und Browser-Tests des Configurators, oder nur die Seite des Configurators, die Hilfe und die API-Referenz baut: vollständig, wenn ein geänderter Pfad unter `configurator/`, `help/` oder `docs/img/` liegt oder `pages.yml`, `rcbench_version.h`, `ui_screen.h`, `tools/help_site.py` oder `tools/render_ui.py` ist; ein Push zählt seine Änderungen ab dem neuesten erfolgreichen Push-Lauf von `pages.yml` auf `main` und ist vollständig, wenn es keinen gibt |
 | `test/tools/` | pytest-Fälle für die Werkzeuge oben und für den Mock-Server des Dateimanagers: `python3 -m pytest test/tools` |
 | `test/host/wa_page_dump.c`, `test/host/wa_mock_server.py`, `test/web/` | der Browser-Test des Dateimanagers der Wi-Fi-Seite, unten |
@@ -528,10 +529,10 @@ kein Netz.
 | --- | --- |
 | `test/host/wa_page_dump.c` | ein Host-Programm, das CMake-Target `wa_page_dump`: schreibt die Seite, die `wa_page_main()` baut, auf Englisch und Deutsch, mit den Hervorhebungswörtern und -farben des Panels, dazu die Berichte des Servotests, wie das Panel sie schreibt, mit den Spans, die `text_hl_line()` jeder ihrer Zeilen gibt |
 | `test/host/wa_mock_server.py` | liefert die geschriebene Seite Byte für Byte und beantwortet `/api/status`, `/api/list`, `/api/info`, `/api/file`, `PUT /api/file`, `/api/mkdir`, `/api/rename`, `/api/delete` und `/card/PATH` aus einer Karte im Speicher, mit dem JSON, den Headern, Statuscodes und Ablehnungen von `wa_api.c`, `If-Match` und `If-None-Match` mit 412 und 409 und dem Request-Guard von `wa_guard.c` (Host 421, Origin und `X-Rcbench-Upload` 403, Body-Grenzen von 1MiB für ein PUT und 1.024B für ein Formular 413). Eine Anfrage nach der anderen. Die Reason-Wörter und ihre Status liest er aus `wa_api.c`, die Sätze aus `ui_text.def`. Nur die Python-Standardbibliothek |
-| `test/web/` | Playwright 1.64.0, die Version des Configurators, ein Worker, Chromium: `files.spec.ts` führt 18 Tests auf Englisch und auf Deutsch aus |
+| `test/web/` | Playwright 1.64.0, die Version des Configurators, ein Worker, Chromium: `files.spec.ts` führt 19 Tests auf Englisch und auf Deutsch aus |
 | `test/tools/test_wa_mock_server.py` | pytest-Fälle des Vertrags des Mocks: der Guard, die Statuscodes, die PUT-Prüfungen, das Blättern, die Regeln für Rename, Move und Delete |
 
-Die 18 Tests: Die Seite öffnet auf dem Wurzelordner der Karte und dem User-
+Die 19 Tests: Die Seite öffnet auf dem Wurzelordner der Karte und dem User-
 Log-Ordner; ein Ordner mit 49 Einträgen blättert als 48 und 1; ein Bericht
 wird angezeigt und jede Zeile trägt die Klassen von `text_hl_line()`; eine
 Änderung wird mit `If-Match` gespeichert; ein Speichern über eine geänderte
@@ -539,6 +540,7 @@ Datei bekommt 412 und die Frage nach den ungespeicherten Änderungen, STAY
 behält die Änderung und READ AGAIN verwirft sie; das 2s-Halten von OVERWRITE
 speichert mit dem ETag der Ablehnung; Upload, Upload über einen vorhandenen
 Namen mit der Frage, neuer Ordner, Rename, Move und Delete (auch abgebrochen,
+ein Lauf mit Label samt seinem Bericht ohne Label,
 und ein Ordner, der eine Datei enthält); DOWNLOAD und INFO; die
 Schreib-Buttons bei ARMED, bei Browser writes OFF und bei HOLD. Jeder Test
 schlägt außerdem bei einem nicht abgefangenen Skriptfehler der Seite fehl.
@@ -552,8 +554,8 @@ npx playwright install chromium
 WA_PAGE_DUMP=../host/build/wa_page_dump npm run e2e
 ```
 
-Der Test braucht Node.js 24. `E2E_PORT` nennt einen anderen Port als 4180. Die
-36 Läufe dauern 29s auf dem Entwicklungsrechner; die Zeit des Jobs auf dem
+Der Test braucht Node.js 24. `E2E_PORT` nennt einen anderen Port als 4180. Der
+Test macht 38 Läufe; 36 davon dauern 29s auf dem Entwicklungsrechner; die Zeit des Jobs auf dem
 CI-Runner ist nicht gemessen.
 
 Was der Mock nicht tut: den Zugangscode (Browser writes CODE), das ZIP der
@@ -645,7 +647,7 @@ den Wert in `ci.yml` und bricht bei Abweichung ab; der Build wird nach Version
 und Hash gecacht). Das cppcheck der Distribution ist älter (2.13 unter Ubuntu
 24.04) und meldet anders; lokal 2.17.1 mit `tools/install_cppcheck.sh 2.17.1
 <SHA-256 aus ci.yml> ~/cppcheck-2.17.1` oder aus einem Distributionspaket von
-2.17.1 installieren. Jeder Job hat ein `timeout-minutes`-Limit: 100min für die Jobs, die mit `tools/ci_gate.py` auf CI warten (bis zu 5400s, 90min), 10 bis 60min für die übrigen. ctest
+2.17.1 installieren. Jeder Job hat ein `timeout-minutes`-Limit: 100min für die Jobs, die mit `tools/ci_gate.py` auf CI warten (bis zu 5400s, 90min), 360min für den wöchentlichen Mutationslauf von `mutation.yml`, 5 bis 60min für die übrigen. ctest
 bricht einen Test nach 120s ab. Ist die Umgebungsvariable `CI` gesetzt,
 lässt ein fehlender C++-Compiler den CMake-Configure-Schritt der Host-Suite
 fehlschlagen, und ein fehlendes `git`, `cmake` oder `cc` lässt die

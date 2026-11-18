@@ -456,6 +456,7 @@ offers no update to that device.
 | `tools/wiki_links.py` | rewrites the links of a copy of `docs/` for the wiki, where pages are addressed by title: `Page.md` becomes `Page`, a target above `docs/` a repository URL (`blob`, `tree`, `raw` for an image); compares each page with its rewrite through markdown-it-py 3.0.0 and exits 1 on any other difference, with page and line; `--check` changes nothing; `--verify` fails on a converted page whose links a wiki cannot open |
 | `tools/check_formats.py` | compiles `shared/` with every `TR()` lookup and report word replaced by its English literal, under `-Wformat=2 -Wformat-nonliteral -Wformat-signedness`, and fails on any warning: each English format against the arguments of its call ([Language](Language.md)) |
 | `tools/check_units.py` | holds a number and its unit to no space between (`40s`, `6.00V`, `%ums`, a cell count `6S`) in the docs, the interface's texts and reports (`ui_text.def` and the string literals of `shared/ui/` and the report writers) and the code's comments; `--check` fails on a number, a space and a unit symbol, on a unit in capitals after a number in the texts the panel shows (`500MS`, `50 HZ`; S alone is the cell count) and on an entry of `tools/check_units_allow.txt` that matches nothing, `--fix` removes the space; log and console lines, CSV headers, data files other than the ESC profiles' panel texts and released CHANGELOG sections are not covered |
+| `tools/check_twins.py` | compares each English page with its German twin by structure: `docs/X.md` with `docs/X-de.md`, `README.md` with `README-de.md`, `help/content/en/X.md` with `help/content/de/X.md`; `--check` fails on a heading level that differs in the sequence of headings and on a table under a heading whose number of rows differs; text inside a fenced code block is skipped; words, numbers, images and links are not compared |
 | `tools/merge_texts.py`, `tools/old_texts.py`, `tools/c_tables.py` | move the interface's words from the per-file form (English in `ui_text.def` and the schema, German in `ui_text_de.c`) into the one table, `shared/text/include/ui_text.def`; `merge BASE THEIRS` carries the text changes of a branch still in the per-file form into the table during a merge ([Interface language](Language.md#adding-a-text)) |
 | `tools/gen_font.py` | regenerates the eight embedded fonts from DejaVu Sans Mono, the six text faces with the German letters; `--check` fails if the committed tables differ |
 | `tools/render_ui.py` | renders every screen to PNG (Portable Network Graphics) with the code the panel runs, in English into `docs/img/` and in German into `docs/img/de/`; `--check` compares with the committed images; `--fit` fails when a string overflows where it is drawn, in either language, except the English overflows the tool lists as known ([Language](Language.md)) |
@@ -480,7 +481,7 @@ offers no update to that device.
 | `tools/jlc_stock.py` | reads the stock of every part in `hardware/docs/Parts.md` from JLCPCB's and Digi-Key's interfaces; `--check N` exits 1 on a failing part for a build of N boards |
 | `tools/ci_gate.py` | waits for the CI run on a commit and fails unless one passed; the first step of `docs.yml` and `release.yml` |
 | `tools/release_kind.py` | reads a release tag and prints its kind, `testing` for an odd minor number and `stable` for an even one, with the `prerelease` and `latest` flags `release.yml` publishes by; with the tags of the full releases on GitHub after it, `latest` is `false` for a stable tag older than one of them; exits 1 on a tag out of form ([Releases](#releases)) |
-| `tools/doc_check.py`, `Doxyfile` | runs Doxygen 1.18.0 with the `Doxyfile` over the C of `shared/`, `protocols/`, `firmware/panel/`, `firmware/iomcu/` and `testbench/touch-injector/core/`, without the generated tables, and compares its warnings, as file, message and the text of the line they name, without the line number, with `tools/doc_check_baseline.txt`; adds a warning for a C file without a `@file` block or without its `@brief`; `--check` fails on a warning not in the baseline and on a baseline line the tree does not produce, and with `--base REF` on any warning in a C file added since the merge base with `REF`, on a changed line or its comment block, for a missing `@file` block in a changed file, and on a comment block without `@brief` that the change adds or edits; a renamed file counts as new; `--update` rewrites the baseline. The HTML in `build/doxygen/html/` is the [C API (application programming interface) reference](https://subtilitas.github.io/rcbench/api/) |
+| `tools/doc_check.py`, `Doxyfile` | runs Doxygen 1.18.0 with the `Doxyfile` over the C of `shared/`, `protocols/`, `firmware/panel/`, `firmware/iomcu/`, `firmware/dial/`, `firmware/node/`, `firmware/devota/` and `testbench/touch-injector/core/`, without the generated tables, and compares its warnings, as file, message and the text of the line they name, without the line number, with `tools/doc_check_baseline.txt`; adds a warning for a C file without a `@file` block or without its `@brief`; `--check` fails on a warning not in the baseline and on a baseline line the tree does not produce, and with `--base REF` on any warning in a C file added since the merge base with `REF`, on a changed line or its comment block, for a missing `@file` block in a changed file, and on a comment block without `@brief` that the change adds or edits; a renamed file counts as new; `--update` rewrites the baseline. The HTML in `build/doxygen/html/` is the [C API (application programming interface) reference](https://subtilitas.github.io/rcbench/api/) |
 | `tools/pages_changes.py` | decides whether a run of `pages.yml` is a full one, with the configurator's tests and browser tests, or builds the configurator page, the help and the API reference only: full when a changed path is under `configurator/`, `help/` or `docs/img/`, or is `pages.yml`, `rcbench_version.h`, `ui_screen.h`, `tools/help_site.py` or `tools/render_ui.py`; a push counts its changes from the newest successful push run of `pages.yml` on `main`, and is full when there is none |
 | `test/tools/` | pytest cases for the tools above and for the file manager's mock server: `python3 -m pytest test/tools` |
 | `test/host/wa_page_dump.c`, `test/host/wa_mock_server.py`, `test/web/` | the browser test of the Wi-Fi page's file manager, below |
@@ -506,17 +507,17 @@ against a mock of the panel. The test needs no panel, no card and no network.
 | --- | --- |
 | `test/host/wa_page_dump.c` | a host program, the CMake target `wa_page_dump`: writes the page `wa_page_main()` builds, in English and German, with the panel's highlighter words and colours, and the servo test's reports as the panel writes them, with the spans `text_hl_line()` gives each of their lines |
 | `test/host/wa_mock_server.py` | serves the dumped page byte for byte and answers `/api/status`, `/api/list`, `/api/info`, `/api/file`, `PUT /api/file`, `/api/mkdir`, `/api/rename`, `/api/delete` and `/card/PATH` from a card in memory, with the JSON, headers, status codes and refusals of `wa_api.c`, `If-Match` and `If-None-Match` with 412 and 409, and the request guard of `wa_guard.c` (Host 421, Origin and `X-Rcbench-Upload` 403, body limits of 1MiB for a PUT and 1,024B for a form 413). One request at a time. The reason words and their statuses are read from `wa_api.c`, the sentences from `ui_text.def`. Python standard library only |
-| `test/web/` | Playwright 1.64.0, the configurator's version, one worker, Chromium: `files.spec.ts` runs 18 tests in English and in German |
+| `test/web/` | Playwright 1.64.0, the configurator's version, one worker, Chromium: `files.spec.ts` runs 19 tests in English and in German |
 | `test/tools/test_wa_mock_server.py` | pytest cases of the mock's contract: the guard, the status codes, the PUT checks, paging, the rules of rename, move and delete |
 
-The 18 tests: the page opens on the card's root and the User log folder;
+The 19 tests: the page opens on the card's root and the User log folder;
 a folder of 49 entries pages as 48 and 1; a report is viewed and every line
 carries the classes of `text_hl_line()`; an edit is saved with `If-Match`;
 a save over a changed file gets 412 and the unsaved question, STAY keeps the
 edit and READ AGAIN drops it; the 2s hold on OVERWRITE saves with the ETag
 of the refusal; upload, upload over an existing name with the question,
-new folder, rename, move and delete (also cancelled, and a folder that
-holds a file); DOWNLOAD and INFO; the write buttons while the bench is ARMED,
+new folder, rename, move and delete (also cancelled, a labelled run with
+its plain report, and a folder that holds a file); DOWNLOAD and INFO; the write buttons while the bench is ARMED,
 with Browser writes OFF and with HOLD. Each test also fails on an uncaught
 script error of the page.
 
@@ -530,7 +531,7 @@ WA_PAGE_DUMP=../host/build/wa_page_dump npm run e2e
 ```
 
 The test needs Node.js 24. `E2E_PORT` names another port than 4180. The
-36 runs take 29s on the development machine; the job's time on the CI
+test makes 38 runs; 36 of them take 29s on the development machine; the job's time on the CI
 runner is not measured.
 
 What the mock does not do: the access code (Browser writes CODE), the ZIP
@@ -614,7 +615,7 @@ the tag (`tools/install_cppcheck.sh` checks its SHA-256 against the value in
 `ci.yml` and fails on a mismatch; the build is cached on version and hash). The
 distribution's cppcheck is older (2.13 on Ubuntu 24.04) and reports differently;
 install 2.17.1 locally with `tools/install_cppcheck.sh 2.17.1 <SHA-256 from
-ci.yml> ~/cppcheck-2.17.1` or from a distribution package of 2.17.1. Every job has a `timeout-minutes` limit: 100min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400s, 90min), 10 to 60min for the others. ctest stops a
+ci.yml> ~/cppcheck-2.17.1` or from a distribution package of 2.17.1. Every job has a `timeout-minutes` limit: 100min for the jobs that wait for CI with `tools/ci_gate.py` (up to 5400s, 90min), 360min for the weekly mutation run of `mutation.yml`, 5 to 60min for the others. ctest stops a
 test after 120s. With the environment variable `CI` set, a missing C++
 compiler fails the CMake configure step of the host suite, and a missing `git`, `cmake` or `cc`
 fails the end-to-end cases of `tools/mutate.py`. `tools/check_docs.py` holds
