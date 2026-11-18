@@ -312,13 +312,15 @@ static void c6_step(upd_wiz_step_t *st, const upd_c6_view_t *v)
     default: /* READY, BLOCKED */
         break;
     }
-    if (v->row == FW_C6_ROW_BLOCKED && v->why == FW_C6_WHY_ENDING) {
-        c6_blocked(st, v->why);
-    } else if (!v->known) {
+    /* A row whose own update still ends is blocked on any version: the
+     * update's gate holds until the panel restarts. */
+    const bool ending = v->row == FW_C6_ROW_BLOCKED
+                        && v->why == FW_C6_WHY_ENDING;
+    if (!ending && !v->known) {
         set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_NOT_REPORTED, UPD_WIZ_WHY_NONE);
-    } else if (!v->have_image) {
+    } else if (!ending && !v->have_image) {
         set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_NO_IMAGE, UPD_WIZ_WHY_NONE);
-    } else if (ver_cmp(v->running, v->carried) == 0) {
+    } else if (!ending && ver_cmp(v->running, v->carried) == 0) {
         set(st, UPD_WIZ_DONE, UPD_WIZ_TAG_CURRENT, UPD_WIZ_WHY_NONE);
     } else if (v->row == FW_C6_ROW_READY) {
         set(st, UPD_WIZ_OPEN, UPD_WIZ_TAG_NEXT, UPD_WIZ_WHY_NONE);
