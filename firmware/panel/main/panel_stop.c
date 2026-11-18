@@ -140,8 +140,17 @@ void stop_reset_service(bool link_up)
     read_inputs(&in);
     in.hold_done = atomic_exchange(&s_stop_reset_request, false);
     in.hold_ms   = (uint32_t)atomic_load(&s_stop_reset_ms);
-    if (stop_latch_run(&s_stop_latch, &in, &k_io) == STOP_LATCH_GIVE_UP) {
+    switch (stop_latch_run(&s_stop_latch, &in, &k_io)) {
+    case STOP_LATCH_GIVE_UP:
         control_alert(TR(ALERT_STOP_NO_CONFIRM));
+        break;
+    case STOP_LATCH_REFUSED:
+        control_alert(TR(ALERT_STOP_HOLD_BROKEN));
+        break;
+    case STOP_LATCH_NONE:
+    case STOP_LATCH_DONE:
+    default:
+        break;
     }
     /* The STOP's alert goes with the STOP: once the reset is through and
      * nothing holds the bench, the band clears it at the next frame. */

@@ -31,7 +31,10 @@ host-tested in `test_stop_latch` and `test_stop_hold`.
   band; lost touch events; a screen change; a touch controller unanswered
   for 100ms (`STOP_LATCH_FRESH_MS`), which the control task counts as a
   contact break. A STOP or a break less than 1900ms (`STOP_LATCH_HOLD_SEEN_MS`)
-  before the hold's end, or after it, refuses the request.
+  before the hold's end, or after it, refuses the request, and the alert
+  says `STOP not reset: a second touch or a touch dropout broke the hold.
+  Hold STOP 2s again.` A STOP or a break older than 60000ms
+  (`STOP_LATCH_EVENT_AGE_MS`) refuses no hold.
 - **Reset.** A state machine in the control task performs the reset,
   advancing one step per pass:
 

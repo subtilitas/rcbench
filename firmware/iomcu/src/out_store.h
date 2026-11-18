@@ -302,6 +302,19 @@ uint8_t out_store_last_record(void);
  */
 
 /**
+ * @brief How many flash windows have held this core since boot: every
+ * erase, program and call of the store and of the firmware update, and
+ * every window core 1 refused after the lock-out wait.
+ *
+ * The main loop compares it from pass to pass and tells the heartbeat
+ * monitor that the line went unsampled (heartbeat_mon_window()).  The
+ * count wraps.
+ *
+ * @return The count.
+ */
+uint32_t out_store_windows(void);
+
+/**
  * @brief Whether a window may open now: the store is not off, no save is
  * waiting, and core 1 did not refuse the last one.
  *

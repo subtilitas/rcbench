@@ -349,19 +349,10 @@ void control_pump(void)
      * -- here, inside every exchange's wait, and not only once a pass.  The
      * pass that applied the arm can block for seconds on a backlog of servo
      * exchanges, and a loss in that time would leave the arm driving until
-     * the pass ended.  Undone the way a STOP is undone from here, because a
-     * disarm writes the far end and this runs inside an exchange:
-     * arming_stop() drops the heartbeat now, the IOmcu fails safe
-     * within HEARTBEAT_MAX_GAP_MS (150ms) whatever this task is waiting
-     * for, and service_arming() lets go of the rest when the loop is free.
-     * A queued drive command carries the old stop count and is dropped.
+     * the pass ended.  The answer is a stop, here and at the end of a pass
+     * (arm_watch_look()).
      */
-    if (outputs_armed(&s_out)
-        && arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
-                          atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
-        arming_stop(&s_arm);
-        control_alert(TR(ALERT_TOUCH_LOST_ARMING));
-    }
+    arm_watch_look();
     /* And a render loop that has stopped, before the supply's pump, so the
      * stop it counts switches the output off in this pass. */
     render_watch();
@@ -539,7 +530,7 @@ void control_task(void *arg)
         arms_taken_publish();
         /* And only now the look at the touch stream for an arm the render
          * side has not seen yet; see arm_watch_service(). */
-        arm_watch_service(link_up);
+        arm_watch_service();
 
         /* --- last, after every arm and ON this pass applied: a sector of
          * the drawing's keep, on a safe bench only ---------------------- */
