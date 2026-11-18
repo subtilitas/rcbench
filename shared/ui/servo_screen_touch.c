@@ -469,16 +469,15 @@ void svs_event_body(const touch_event_t *evt)
             return;
         }
         if (ps != NULL && gfx_rect_contains(overlay_area(), px, py)) {
-            if (prog_ps_safe_at(ps, px, py)) {
-                /* A stop of the session acts on the press, whatever
-                 * other fingers hold: WRITE's hold and a press held on
-                 * a panel refuse every other press here, not this one. */
-                prog_ps_event(ps, evt);
-            } else if (prog_write_pressed()) {
+            /* A stop of the session acts on the press, whatever other
+             * fingers hold: WRITE's hold and a press held on a panel
+             * refuse every other press here, not this one. */
+            const bool stop = prog_ps_safe_at(ps, px, py);
+            if (!stop && prog_write_pressed()) {
                 /* The footer's WRITE writes the draft its hold began
                  * with: nothing in the session changes under it. */
                 ui_action_refused(TR(FOOT_PRESS_HELD));
-            } else if (!s.ov_have) {
+            } else if (stop || !s.ov_have) {
                 prog_ps_event(ps, evt);
             }
             return;
