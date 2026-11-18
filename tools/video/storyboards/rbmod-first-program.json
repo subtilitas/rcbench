@@ -25,7 +25,7 @@
   {
    "type": "board",
    "board": "p4-7b-back",
-   "dur": 76.68,
+   "dur": 77.64,
    "camera": [
     [
      0,
@@ -36,7 +36,7 @@
      190
     ],
     [
-     43.36,
+     44.32,
      [
       83,
       48.5
@@ -44,7 +44,7 @@
      190
     ],
     [
-     45.76,
+     46.72,
      [
       128,
       74
@@ -52,7 +52,7 @@
      100
     ],
     [
-     76.68,
+     77.64,
      [
       128,
       74
@@ -62,29 +62,29 @@
    ],
    "title": {
     "from": 0.3,
-    "to": 18.52,
+    "to": 19.48,
     "kicker": "rcbench · rbmod carrier",
     "heading": "First<br>programming",
     "text": "Panel and IOmcu over USB.<br>Later updates from GitHub and over Wi-Fi."
    },
    "chips": [
     {
-     "from": 19.52,
-     "to": 43.26,
+     "from": 20.48,
+     "to": 44.22,
      "n": 1,
      "text": "Download the release"
     },
     {
-     "from": 43.76,
-     "to": 76.68,
+     "from": 44.72,
+     "to": 77.64,
      "n": 2,
      "text": "The panel: ESP Web Tool"
     }
    ],
    "labels": [
     {
-     "from": 19.72,
-     "to": 32.48,
+     "from": 20.68,
+     "to": 33.44,
      "anchor": [
       83,
       48
@@ -99,8 +99,8 @@
      "text": "<b>rcbench-panel-p4-vX.Y.Z.zip</b><br><b>rcbench-iomcu-rbmod-vX.Y.Z.zip</b><br><b>SHA256SUMS</b>"
     },
     {
-     "from": 33.68,
-     "to": 42.76,
+     "from": 34.64,
+     "to": 43.72,
      "anchor": [
       83,
       48
@@ -115,8 +115,8 @@
      "text": "Panel: <b>rcbench-panel-merged.bin</b><br>IOmcu: <b>rcbench-iomcu-rbmod-install.uf2</b><br><b>sha256sum -c SHA256SUMS</b> prints OK for each download."
     },
     {
-     "from": 43.96,
-     "to": 50.16,
+     "from": 44.92,
+     "to": 51.12,
      "anchor": [
       157.3,
       67.7
@@ -131,8 +131,8 @@
      "text": "The 7 inch ESP32-P4 display board, seen from the back. Either USB-C socket takes the cable."
     },
     {
-     "from": 51.36,
-     "to": 55.56,
+     "from": 52.32,
+     "to": 56.52,
      "anchor": [
       157.3,
       67.7
@@ -147,8 +147,8 @@
      "text": "<b>esptool.spacehuhn.com</b><br>Chrome or Edge on a computer: the tool uses the browser's serial port."
     },
     {
-     "from": 56.76,
-     "to": 60.32,
+     "from": 57.72,
+     "to": 61.28,
      "anchor": [
       157.3,
       67.7
@@ -163,8 +163,8 @@
      "text": "Click <b>Connect</b>. The browser lists the serial ports. Pick the panel's and confirm."
     },
     {
-     "from": 61.52,
-     "to": 65.88,
+     "from": 62.48,
+     "to": 66.84,
      "anchor": [
       157.3,
       67.7
@@ -179,8 +179,8 @@
      "text": "File: <b>rcbench-panel-merged.bin</b><br>Address: <b>0x0</b>. One file holds the bootloader, the partition table and the application."
     },
     {
-     "from": 67.08,
-     "to": 75.68,
+     "from": 68.04,
+     "to": 76.64,
      "anchor": [
       157.3,
       67.7
@@ -200,34 +200,34 @@
    "say": [
     {
      "at": 0.6,
-     "text": "This video loads the firmware onto a new R C bench with the R B mod carrier: the panel from a browser, the I O M C U from a U S B drive. Then it shows the two ways to update later: from GitHub, and from a browser over Wi-Fi."
+     "text": "This video shows how to load the firmware onto a new R C bench with the R B mod carrier: the panel from a browser, the I O M C U from a U S B drive. Then it shows the two ways to update later: from GitHub, and from a browser over Wi-Fi."
     },
     {
-     "at": 19.52,
+     "at": 20.48,
      "text": "Step 1. Download three files from the releases page on GitHub: the panel's zip file, the zip file of the I O M C U for the R B mod carrier, and the checksum file."
     },
     {
-     "at": 33.48,
+     "at": 34.44,
      "text": "Unpack both zip files. Two files in them are needed: the merged panel image, and the install image of the I O M C U."
     },
     {
-     "at": 43.76,
+     "at": 44.72,
      "text": "Step 2. The panel. Connect one of the panel's two U S B C sockets to a computer."
     },
     {
-     "at": 51.16,
+     "at": 52.12,
      "text": "Open the E-S-P web tool by Spacehuhn in Chrome or Edge."
     },
     {
-     "at": 56.56,
+     "at": 57.52,
      "text": "Click Connect and pick the panel's serial port."
     },
     {
-     "at": 61.32,
+     "at": 62.28,
      "text": "Add the merged panel image and leave its address at zero."
     },
     {
-     "at": 66.88,
+     "at": 67.84,
      "text": "Click Program. When the tool reports the end, the panel holds its firmware and starts on its default settings."
     }
    ]
