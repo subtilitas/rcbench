@@ -501,6 +501,9 @@ int main(void)
     const bool have_ifaces = have_saved || roles != NULL;
     if (have_saved) {
         memcpy(s_state.slots, saved.slots, sizeof(s_state.slots));
+        /* A stored slot an OUTPUTS write refuses by value (a driver number
+         * the page does not know, a pin above GPIO 63) starts unbound. */
+        (void)outputs_slots_free_unwritable(s_state.slots);
         /* A kept slew above LINK_CC_SLEW_MAX starts as that maximum, here
          * and in BIND_CFG, which is seeded from this below. */
         outputs_chan_cfg_restore(s_state.chan_cfg, saved.chan_cfg);
@@ -760,6 +763,10 @@ int main(void)
     memset(&s_bench, 0, sizeof(s_bench));
 
     uint32_t last_sample = (uint32_t)to_ms_since_boot(get_absolute_time());
+    /* The heartbeat line's last sample, and the flash windows counted at
+     * it: the start-up's windows are before the first sample. */
+    uint32_t beat_sample_ms = last_sample;
+    uint32_t beat_windows   = out_store_windows();
 
     for (;;) {
         /*
@@ -822,6 +829,20 @@ int main(void)
          * safety_gate_step() is the decision, host-tested: either edge
          * sets the arm latch, and only a CLEAR releases it.
          */
+        /* A flash window since the last sample of the line: the monitor
+         * is told how long the line went unsampled, and does not count the
+         * short interval beside an edge stamped late or early for it
+         * (heartbeat_mon_window()).  The span is read from the clock here
+         * and used as a length only; `now` stays the pass's one stamp. */
+        const uint32_t beat_ms =
+            (uint32_t)to_ms_since_boot(get_absolute_time());
+        const uint32_t windows = out_store_windows();
+        if (windows != beat_windows) {
+            beat_windows = windows;
+            heartbeat_mon_window(&s_beat,
+                                 (uint32_t)(beat_ms - beat_sample_ms) + 1u);
+        }
+        beat_sample_ms = beat_ms;
         const safety_gate_t gate =
             safety_gate_step(&s_beat, heartbeat_edge(), &s_dev,
                              s_state.control, now);
@@ -965,11 +986,13 @@ int main(void)
          * HEARTBEAT_PERIOD_MS (20ms) and is sampled by this loop, so an edge
          * inside a 19ms window is timestamped when the loop resumes rather
          * than lost, and the stretched interval stays far under
-         * HEARTBEAT_MAX_GAP_MS (150ms).  The interval after it can read short
-         * instead: under HEARTBEAT_MIN_GAP_MS (4ms) the monitor rejects it and
-         * drops the line until HEARTBEAT_GOOD_RUN (4) good intervals have run,
-         * about 80ms.  That is derived from the periods, not measured
-         * on hardware.
+         * HEARTBEAT_MAX_GAP_MS (150ms).  The interval after it reads short
+         * instead, under HEARTBEAT_MIN_GAP_MS (4ms) for an edge in the
+         * window's first 3ms.  The monitor is told about the window before
+         * the next sample (out_store_windows(), heartbeat_mon_window()) and
+         * does not count that interval against the line: the line stays
+         * trusted, STATUS carries no LINK_FAULT_HEARTBEAT and no ARM or
+         * supply ON is refused for it.
          *
          * The save also waits for the pages to stop arriving, so CHAN_CFG and
          * OUTPUTS are saved as the pair they are.  How long since a frame

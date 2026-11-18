@@ -622,8 +622,9 @@ Gefahrenfarbe. Tippe auf das Band, um ihn früher zu löschen. Der Hinweis
 passt in eine Zeile mit höchstens 97 Zeichen.
 
 Ein kurzer Tipp ist keine Störung; der Hinweis ist deshalb eine Mitteilung.
-Alarme haben Vorrang: Solange ein Alarm sichtbar ist, bleibt der Hinweis
-ausgeblendet. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
+Alarme haben Vorrang: Solange ein Alarm sichtbar ist, wartet eine
+Mitteilung, die jüngste, und erscheint für ihre eigenen 4s, sobald der Alarm
+gelöscht ist. Ein eintreffender Alarm ersetzt einen sichtbaren Hinweis.
 
 - Der Hinweis erscheint nur, wenn du den Finger auf der Taste loslässt.
   Er erscheint nicht nach dem Herausgleiten, bei verlorener Berührung,
@@ -1234,6 +1235,12 @@ also nichts.
 TABELLE zeigt vier Kanäle mit je einem Extremwert. Ein Kanal ohne Messwert
 zeigt `--`.
 
+Die Drehzahl reicht bis 65.535rpm, die Obergrenze des Registers im IOmcu.
+Eine Drehzahl darüber steht als `>65535` auf der Karte und in TABELLE. Eine
+Spitze von 65.535rpm oder mehr steht als `>65535`. Der Plot zeichnet eine
+solche Drehzahl bei 65.535rpm. rpm/V und das Dial zeigen keine Drehzahl,
+solange sie über der Obergrenze liegt, und der Auswuchtknoten bekommt keine.
+
 Ist der INA228 unter SETUP > SENSORS eingeschaltet und antwortet er
 (BENCH-Flag Bit 5), liefert er Spannung, Strom und Leistung. Angezeigt
 werden die Mittelwerte des letzten 50ms-Fensters des IOmcu, ausgelesen mit
@@ -1321,6 +1328,14 @@ es derselbe Wert:
   Befehl nach der Rampengrenze.
 - Solange der Motor nicht ARMED ist, steht 0.0 darin.
 - Eine Zeile, die nur ein Fenster hält, hat die Zelle leer.
+
+`rpm` enthält `>65535` in einer Zeile, deren Drehzahl über 65.535rpm liegt,
+der Obergrenze des Registers im IOmcu. Die Datei behält die Markierung,
+damit ein Leser außerhalb der Bench eine Grenze von einem Messwert
+unterscheidet. LOGS liest eine Zelle, die mit `>` beginnt, als die Zahl
+dahinter: Die Spalte bleibt eine Zahlenspalte, und die Kurve läuft in
+diesen Zeilen bei 65.535rpm. LOGS zeichnet für solche Zeilen keine
+Markierung an die Kurve oder in den Bereich der Spalte.
 
 Eine MOTOR-Datei ohne `throttle` hat `esc` direkt nach `rpm`, und LOGS
 liest sie. In beiden Formen wählt LOGS die ersten 4 Zahlenspalten. Mit
@@ -2550,7 +2565,7 @@ Stellzeit und sucht die Spannung, bei der die Bewegung endet.
 Das 600 x 136px große Feld AUTOMATISCHER TEST enthält Laufname, eine
 Zusammenfassung wie `4.8V, 6.0V, BROWN-OUT, JE 60s` oder
 `..., JE 20 BEWEGUNGEN`, Zustandszeile, letztes Ergebnis mit Dateien und
-den Hinweis zu BLOCKIERT AB. Ein Ergebnis lautet etwa
+den Hinweis zur Blockierschwelle. Ein Ergebnis lautet etwa
 `ZULETZT: BESTANDEN ATEST004.CSV + .TXT`; ein Abbruch zeigt den Grund in
 Warnfarbe, etwa `ZULETZT: ABGEBROCHEN - Verbindung verloren`.
 
@@ -2582,12 +2597,12 @@ Ein roter Text, länger als die 20 Zellen der Zeile, zeigt eine Kurzform:
 `TEST LÄUFT`, `SCHREIBT BERICHT`. Das Alarmband nennt den ganzen Text
 ([Servo: AUTO-Endpoints](Servo-de.md#auto-endpoints)).
 
-Der Hinweis zu BLOCKIERT AB nennt unerreichbare Schwellen:
-`BLOCKIERT AB 2.00A muss unter Strombegrenzung 2.00A sein`, wenn BLOCKIERT AB
+Der Hinweis zur Blockierschwelle nennt unerreichbare Schwellen:
+`Blockierschwelle 2.00A: muss unter Strombegrenzung 2.00A`, wenn Blockierschwelle
 mindestens so hoch wie SET A von SUPPLY ist. Andernfalls,
 bei INA3221 als Messgerät und einer Schwelle mindestens in Höhe seines
 Messbereichs, erscheint
-`BLOCKIERT AB 2.00A muss unter INA3221-Bereich 1.638A sein`.
+`Blockierschwelle 2.00A: muss unter INA3221-Bereich 1.638A`.
 Der Hinweis lehnt das Halten nicht ab; siehe
 [Blockieren und Konstantstrom](Servo-de.md#blockieren-und-konstantstrom).
 
@@ -2736,7 +2751,7 @@ Der Rahmen von KST und HITEC um die Sitzung:
 | Taste PORT | was der Tester ansteuert; ein Tippen öffnet die Liste PORT, gesperrt, solange die Sitzung den Port hält |
 | BEREIT, PORT | die Portzeile; rot mit `KEIN PROG-PORT` bei OUTPUTS, ein Tippen öffnet die Liste PORT; ein roter Punkt, solange die Sitzung den Port hält |
 | BEREIT, Versorgung | PROG 5V am rbmod-Carrier, PD MINI, wo einer antwortet, sonst VERSORGUNG. Gelb `EIN BEI VERBINDEN`, solange aus; ein roter Punkt und `EIN`, solange an, dann schaltet ein Tippen sie aus wie AUSGANG AUS (PROG 5V nicht, solange ein Port sie hält). KST ohne Versorgung, die der Prüfstand schaltet: gelb `AUS, EIN VON HAND`. Hitec D-Serie ohne: `UNVERÄNDERT` |
-| BEREIT, SERVO | grau `NICHT VERBUNDEN` vor VERBINDEN, gelb `LÄUFT`, solange ein Schritt läuft, gelb `NICHT GELESEN` bei gehaltenem Port ohne gelesenes Servo, nach dem Lesen das Modell (Hitec) oder der Typ (KST, `V6?` für die Vermutung aus 20k_sel) |
+| BEREIT, SERVO | grau `NICHT VERBUNDEN` vor VERBINDEN, gelb `LÄUFT`, solange ein Schritt läuft, gelb `NICHT AUSGELESEN` bei gehaltenem Port ohne gelesenes Servo, nach dem Lesen das Modell (Hitec) oder der Typ (KST, `V6?` für die Vermutung aus 20k_sel) |
 | Schienenzeile | Volt und Ampere des Messgeräts, unter den Zeilen |
 | Fußleiste, Mitte | WERTE SCHREIBEN der Sitzung, von jeder Registerkarte aus: dasselbe 2s-Halten wie auf der Taste der Sitzung, von Grün nach Bernstein; ein Tippen zeigt `Halte 2s, um zu schreiben.` und sendet nichts. Solange ein Finger darauf liegt, nimmt die Sitzung keinen Druck an: `Ein Finger hält noch ein anderes Element. Lass es erst los.` Grau, ein Tippen nennt den Grund: vor VERBINDEN und Lesen, ohne geänderten Wert, solange ein Schritt läuft und solange eine Seite der Sitzung oder von SERVO offen ist |
 | Fußleiste, rechts | OPTIONEN: die Seite KST EXPERT MODE, bei HITEC Hitec-Serie und Hitec-D-Empfang; grau, solange die Sitzung den Port hält |
@@ -2960,7 +2975,7 @@ Die Zeile jeder Überschrift sagt, was ihre Zeilen gerade bewirken:
 SPANNUNGSSTUFEN die Stufen eines Laufs oder `KEINE STUFE GEWÄHLT` in
 Warnfarbe; BROWN-OUT den Lauf am geltenden Netzteil,
 `Ab 5.00V abwärts in 0.20V-Schritten bis 3.30V, 10 Spannungen`; GRENZWERTE
-ein BLOCKIERT AB, das kein Messwert erreicht, in Warnfarbe; BEREICH die
+eine Blockierschwelle, die kein Messwert erreicht, in Warnfarbe; BEREICH die
 Enden des Laufs, `1100-1900us`, in Warnfarbe, solange sie nicht beiderseits
 von PULS MITTE liegen. AUSGANG unter BEREICH zeigt das Profil wie die
 Typzeile, `STANDARD PWM  50Hz  1000-2000`; ein Tippen öffnet das Profil.
@@ -3327,7 +3342,7 @@ ESC-Läufe verwenden eine eigene Stromquelle.
 
 Ein von einer anderen Seite eingeschalteter Ausgang bleibt beim
 Verlassen von SUPPLY unverändert. Tastenfelder, Rückfragen und die
-Optionsliste zählen nicht als Verlassen. LINK LOST,
+Optionsliste zählen nicht als Verlassen. VERBINDUNG VERLOREN,
 das kein STOP hat, öffnet sich bei eingeschaltetem Ausgang nicht.
 
 **Das Home-Feld führt eine Ebene zurück.** Das Schließen eines Dialogs
@@ -3669,8 +3684,17 @@ Spuren. Jede enthält Kanalname in 10 x 20, Verlauf, einen 56px breiten
 Balken für den aktuellen Wert und Mikrosekunden in 8 x 16. Der Verlauf
 fasst 200 Werte, einen pro Pixel: etwa 2,8s bei 71 Frames pro Sekunde,
 also einem S.BUS-Frame alle 14ms. CH17 und CH18 sind digitale Kanäle.
-Ein Glitch erscheint als Spitze einer Spur, ein Signalausfall als
-zeitgleiche Kerbe durch alle sechzehn.
+Ein Glitch erscheint als Spitze einer Spur. Ein Signalausfall setzt einen
+Lückenwert in jede Spur: eine 1px breite Linie über die 30px hohe Mulde
+der Spur, in allen sechzehn beim selben Wert, mit unterbrochener Spur auf
+beiden Seiten.
+
+RATE ist die Zahl der Frames eines Fensters von mindestens 1000ms geteilt
+durch die Länge des Fensters, gerundet auf 1Hz. Das Fenster beginnt beim
+ersten Frame und beim ersten Frame nach einer Stille; RATE zeigt `---`,
+bis ein Fenster geschlossen ist. Bei KEIN SIGNAL bleiben Spuren, Balken
+und Werte des letzten Frames in der blassen Farbe (`UI_C_TEXT_FAINT`)
+stehen.
 
 Das 260px breite Zustandsfeld rechts zeigt den Zustand in 20 x 36 und
 bis zu drei Erklärungszeilen in 12 x 24. BUS, RATE, FRAMES, RESYNC und
@@ -4020,6 +4044,15 @@ Aktuelle Dateien von ARMED-Läufen verwenden verstrichene Echtzeit.
 Dateien aus Firmware 0.15.0 oder älter unterschätzen die Laufdauer
 (siehe Motor & ESC, die CSV-Datei).
 
+Die Zeitspalte ist eine als Zeit benannte Spalte, dann eine mit `time`,
+`zeit` oder `elapsed` im Spaltenkopf, dann eine erste Spalte, die nur
+steigt. Ihre Einheit ist die des Spaltenkopfs, in Klammern oder nach einem
+Unterstrich (`time_ms`, `t_us`, `elapsed_s`), sonst eine Schätzung aus der
+Spanne ihrer Werte. Eine steigende erste Spalte mit dem Namen eines Zählers
+(`step`, `row`, `index`, `sample`, `count`, `n`, `#`) ist keine Zeitspalte:
+`RUDDRnnn.CSV` beginnt mit `step`, wird über dem Zeilenindex gezeichnet,
+und der Cursor zeigt die Zeile.
+
 SETUP > PANEL > Ein Finger schiebt ist standardmäßig aus. Eingeschaltet
 erlaubt es das Verschieben vergrößerter Ausschnitte mit einem Finger.
 Mehr als 10px Bewegung vom Aufsetzpunkt zieht den Ausschnitt seitlich;
@@ -4037,7 +4070,13 @@ jeweils nur einen Finger an; ein zweiter hat keine Wirkung.
 LÖSCHEN fragt vor dem Entfernen der gewählten Datei nach. Der Dialog nennt
 Name und Größe. Erst Drücken und Loslassen von LÖSCHEN in diesem Dialog
 bestätigt. ABBRECHEN oder Verlassen schließt ohne Löschung. Eine vom
-Logger offene Datei kann nicht gelöscht werden. Eine gelöschte Datei
+Logger offene Datei kann nicht gelöscht werden. Solange der Prüfstand
+ARMED ist oder ein Lauf aufgezeichnet wird, ist LÖSCHEN grau und löscht
+nichts, wie jeder Schreibvorgang in FILES: Ein Tipp darauf zeigt in der
+Fußzeile `Prüfstand ARMED. Die Karte ist nur lesbar.` oder
+`Ein Lauf wird aufgezeichnet. Die Karte ist nur lesbar.` Ein Wechsel auf
+ARMED oder ein Lauf, der bei offenem Dialog startet, verweigert dessen
+LÖSCHEN mit derselben Zeile. Eine gelöschte Datei
 verschwindet auch aus offenen Import- und Grafikansichten.
 
 Der Logger prüft die Nummern beim ersten Lauf nach dem Start und nach
@@ -4176,8 +4215,11 @@ daher mit ihrer Größe, etwa `8.00GB`. ÖFFNEN liest Dateien bis 2GiB minus
 2GiB bis 4GiB minus 1 Byte. ÖFFNEN meldet dann
 `BENCH001.CSV ist 2GB oder größer. Nicht geöffnet.`
 
-Die Größenangaben verwenden binäre Einheiten: 1kB sind 1024 Bytes,
-1MB sind 1024kB und 1GB sind 1024MB. [WLAN](#wlan) listet Dateien jeder
+Die Größenangaben auf dem Panel und auf der WLAN-Seite verwenden binäre
+Einheiten: 1kB sind 1024 Bytes, 1MB sind 1024kB und 1GB sind 1024MB. Das
+gilt für die Größen in den Listen und für die Grenzen in den Meldungen:
+`1MB` dort ist 1MiB (1.048.576 Bytes), `2GB` sind 2GiB und `4kB` sind 4KiB
+(4.096 Bytes). [WLAN](#wlan) listet Dateien jeder
 Größe, die die Karte unterstützt, und lädt sie herunter.
 
 ## Files
@@ -4239,7 +4281,7 @@ Jede Zeile zeigt ein Symbol, den Namen und rechtsbündig die Größe
 
 | Zustand | Bedeutung |
 |---|---|
-| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
+| FEST | ein vom Prüfstand verwendeter Ordner: die beiden Aufzeichnungsordner, `BENCH/ESC/CONF`, `BENCH/KST/CONF`, `BENCH/HITEC/CONF`, `BENCH/ESCW/CONF`, `BENCH/BALANCE` und ihre übergeordneten Ordner, darunter `BENCH` und `USER`. UMBENENNEN und VERSCHIEBEN sind gesperrt, weil der Inhalt dadurch vom erwarteten Pfad verschoben würde. NEU kann diese Ordner anlegen; LÖSCHEN kann einen leeren entfernen. Jeder Schreiber legt seinen Ordner vor dem Schreiben erneut an. Leser behandeln einen fehlenden Ordner wie auf einer neuen Karte |
 | GESPERRT | die Vermerke der Programmierungen, `BENCH/KST/CONF/KST.TXT`, `BENCH/HITEC/CONF/HITEC.TXT` und `BENCH/ESCW/CONF/ESCW.TXT`, sowie ihre Dateien `KST.NEW`, `HITEC.NEW` und `ESCW.NEW` während des Schreibens. Nur INFO ist verfügbar |
 | WIRD GESCHRIEBEN | eine im Logger offene Datei. Nur INFO ist verfügbar |
 
@@ -4498,7 +4540,11 @@ jedem erfolgreichen Speichern. Sie dient auch als ETag der
 [Datei-API](#die-datei-api) der WLAN-Seite. Vor dem Öffnen von `.NEW` liest
 derselbe Speicherauftrag die Kartendatei erneut und berechnet ihre
 Prüfsumme. Für 1MiB zu speichernden Text werden daher zuerst 1MiB gelesen;
-die Dauer dieses Lesens ist nicht gemessen.
+die Dauer dieses Lesens ist nicht gemessen. Im Schritt, der die alte Datei
+entfernt, vergleicht der Auftrag ihre Größe mit den summierten Bytes: Eine
+inzwischen gewachsene Datei, etwa `BALANCE.CSV` mit einer Zeile, die eine
+Lösung der Auswuchtung angehängt hat, gilt als geändert, bleibt bestehen,
+und `.NEW` wird entfernt.
 
 Wurde die Datei inzwischen geändert oder entfernt, etwa durch den
 WLAN-Editor oder einen Upload ([Schreiben per Browser](#schreiben-per-browser)),
@@ -6726,7 +6772,7 @@ Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
 | --- | --- | --- | --- |
 | Leistungsknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie ohne Fehler |
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
-| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTEN-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTEN-SUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
 | Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Leistungsknoten der letzten Suche, `rcbench-pwr-3456  -58dBm`, bis zu 6, der gebundene markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ein Auswuchtknoten wird nicht gelistet. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`; eine Wahl, abgelehnt, weil sich die Liste änderte, zeigt `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN` |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
 
@@ -6828,7 +6874,7 @@ Ordner gilt weiter; rechts vom Titel steht der Grund:
 | mehr als 2 Ordner | `A/B/C` (`A/B` wird genommen) | `Höchstens 2 Ordnerebenen` |
 | ein Zeichen außer A-Z, 0-9, `_` und `-` | `MY LOGS` | `Nur A-Z, 0-9, _ und -` |
 | ein Gerätename von Windows: CON, PRN, AUX, NUL, COM1 bis COM9, LPT1 bis LPT9 | `AUX/LOGS` | `Reservierter Name` |
-| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
+| ein Ordner der eigenen Dateien des Prüfstands: `BENCH/ESC`, `BENCH/KST`, `BENCH/HITEC`, `BENCH/ESCW`, `BENCH/BALANCE` | `BENCH/KST` (`BENCH/KSTX` wird genommen) | `Für Prüfstand-Dateien reserviert` |
 
 Jeder Ordnername, den das Panel nimmt, ist ein kurzer 8.3-Name von FAT (File
 Allocation Table), auf jedem Computer derselbe. Der längste Ordner hat 17
@@ -7082,7 +7128,7 @@ eine Zahl, wird nur die Spalte neu gezeichnet.
 Hat der IOmcu 1000ms lang jede Abfrage beantwortet (`BUSFAULT_BACK_MS`, das
 LINK des Bands), bietet der Bildschirm NEUVERBINDEN an:
 
-- Der Balken wird grün und zeigt `LINK WIEDER DA`.
+- Der Balken wird grün und zeigt `VERBINDUNG WIEDER DA`.
 - Die Überschrift lautet `Die Verbindung antwortet wieder.`
 - `verbunden` zählt anstelle von `getrennt` die Sekunden seit der ersten
   Antwort.
@@ -7257,7 +7303,7 @@ Updates der OPTIONEN öffnet ([Einzelne Updates](#einzelne-updates)).
 
 | Bedienelement | Wirkung |
 | --- | --- |
-| `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. In der Akzentfarbe nur, solange kein Schritt aktuell ist. |
+| `NACH UPDATES SUCHEN` | Fragt GitHub einmal. `ABBRECHEN` auf derselben Taste, solange die Suche läuft. In der Akzentfarbe nur, solange kein Schritt aktuell ist. Grau, solange ein Update des IOmcu, des C6-Funks oder eines Funkgeräts läuft. |
 | Das Bedienelement des aktuellen Schritts | 2s Halten startet das Update des Schritts ([Die Schritte](#die-schritte)). Grau, solange eine Sperre den Schritt hält; ein Druck beliebiger Länge zeigt dann den Grund im Meldeband. |
 | `SCHRITT ÜBERSPRINGEN` | Ein Tippen übergeht den aktuellen Schritt bis zum Neustart des Panels; der nächste sperrende Schritt wird aktuell. |
 | `ÜBERSPRUNGENE SCHRITTE ZEIGEN` | Auf der letzten Karte, solange ein Schritt übersprungen ist. Ein Tippen holt jeden übersprungenen Schritt zurück. |
@@ -7293,16 +7339,23 @@ das gespeicherte Heimnetz. Suche und Download brauchen:
   offenen Aufzeichnungslauf.
   Sonst ist die Taste grau, und die Karte sagt
   `WLAN benötigt SAFE und einen ausgeschalteten Netzteilausgang.` und `Es darf kein Aufzeichnungslauf offen sein.`;
-- kein laufendes Update des IOmcu und keine Panel-Installation im
-  Gang.
+- kein laufendes Update des IOmcu, des C6-Funks oder eines Funkgeräts und
+  keine Panel-Installation im Gang. Während der Übertragung eines Geräts
+  ist die Taste grau, und die Karte sagt
+  `Wartet auf das Ende des Funkgeräte-Updates.`; die Suche beim Start
+  wartet ebenso, und eine laufende Suche endet, wenn ein solches Update
+  startet.
 
 Der Download braucht wie eine Installation außerdem, dass keine
 Platinenzeichnung geladen oder gespeichert wird.
 
 ### Die Schritte
 
-Aktuell ist der Schritt, dessen Update läuft; läuft keines, der Schritt
-mit der kleinsten Nummer, der sperrt. Schrittliste und Karte entstehen in
+Aktuell ist der Schritt, dessen Update läuft; läuft kein Update, PANEL,
+solange seine Suche läuft; sonst der Schritt mit der kleinsten Nummer, der
+sperrt. Ein Update geht der Suche vor: Die Aufforderung eines Geräts und
+UPDATE ABBRECHEN bleiben auf der Karte, was auch immer die Suche tut.
+Schrittliste und Karte entstehen in
 jedem Bild aus dem, was das Panel weiß: Keine Schrittposition wird
 gespeichert, darum zeigen ein Neustart, eine verlorene Verbindung oder ein
 fehlgeschlagener Schritt den richtigen Schritt ohne Wiederherstellung. Ein
@@ -7320,9 +7373,14 @@ die die späteren Schritte senden.
 | 6 AUSWUCHTKNOTEN | der verbundene Auswuchtknoten eine andere Version ausführt | `2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE` |
 
 Eine Suche, die nichts Neueres fand oder fehlschlug, sperrt nie; ebenso
-wenig ein Download, der fehlschlug oder gestoppt wurde. PANEL zeigt dann
+wenig ein Download, der fehlschlug oder gestoppt wurde, oder ein Download,
+dessen Installation fehlschlug. PANEL zeigt dann
 `AKTUELL`, `NICHT GESUCHT` oder `FEHLGESCHLAGEN`, die Karte zeigt das
-Ergebnis, und NACH UPDATES SUCHEN ist der Weg zurück. Ein Schritt, dessen
+Ergebnis, und NACH UPDATES SUCHEN ist der Weg zurück. Nach einer
+fehlgeschlagenen Installation sagt die Karte
+`Installation fehlgeschlagen. Die Panel-Firmware ist unverändert.` und
+`NACH UPDATES SUCHEN bietet das Release erneut an.`; OPTIONEN und die
+Bedienelemente der späteren Schritte sind aktiv. Ein Schritt, dessen
 Update seit dem Start des Panels lief und fehlschlug, bleibt aktuell:
 Seine Zeile zeigt `FEHLGESCHLAGEN`, die Karte die Zeile der Meldung in der
 Warnfarbe, und das Halten ist der neue Versuch.
@@ -7340,6 +7398,7 @@ Warnfarbe, und das Halten ist der neue Versuch.
 | `NICHT GESUCHT` | PANEL: kein Suchergebnis seit diesem Start |
 | `OHNE VERBINDUNG`, `NICHT VERBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden |
 | `NICHT GEBUNDEN` | kein Gerät der Art ist auf WIRELESS gebunden |
+| `AUS` | ein Gerät ist gebunden, und sein Schalter auf WIRELESS steht auf AUS: Das Panel hält keine Verbindung zu ihm |
 | `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | nichts zu tun: Das Panel bringt kein Image mit, das mitgebrachte Image besteht seine Prüfung nicht, die Build-Prüfung des IOmcu gab keine Antwort, der IOmcu nimmt kein Update über CAN an, die Verbindung zum C6 schlug fehl, der C6 nannte keine Version |
 
 Ein Schritt, bei dem nichts zu tun ist, wird übergangen. Steht nach einem
@@ -7349,7 +7408,9 @@ ein gebundenes, nicht verbundenes Gerät: Die Karte sagt
 `Schalte das Dial ein und halte es in Reichweite.`, mit SCHRITT
 ÜBERSPRINGEN, und der Schritt geht von selbst weiter, sobald sich das Ziel
 verbindet. Außerhalb eines Laufs werden sie übergangen und auf der letzten
-Karte genannt.
+Karte genannt. Ein gebundenes Gerät, dessen Schalter auf WIRELESS auf AUS
+steht, wartet nie, weder in einem Lauf noch außerhalb: Seine Zeile zeigt
+`AUS`, und die letzte Karte nennt es.
 
 ![Ein Schritt, gesperrt bei ARMED](img/de/updates-held.png)
 
@@ -7383,10 +7444,19 @@ außerdem das Angebot des IOmcu ab, das UPDATES gezeigt hat: Weder das
 ([IOmcu-Update](#iomcu-update)). Ein neues Angebot holt den Schritt
 zurück. Ein laufendes Update wird nie übersprungen.
 
-Ist kein Schritt aktuell, sagt die Karte `Alle Firmware ist aktuell.`,
+Ist kein Schritt aktuell, zeigt die Karte eine von drei Überschriften:
+
+| Überschrift | Gezeigt, solange |
+| --- | --- |
+| `Alle Firmware ist aktuell.` | PANEL nach einer Suche `AKTUELL` zeigt und jeder andere Schritt `AKTUELL` oder `NICHT GEBUNDEN` |
+| `Nicht nach einem Panel-Release gesucht.` | PANEL `NICHT GESUCHT` oder `FEHLGESCHLAGEN` zeigt und jeder andere Schritt `AKTUELL` oder `NICHT GEBUNDEN` |
+| `Kein Schritt offen.` | ein Schritt übersprungen ist oder aus einem anderen Grund als `NICHT GEBUNDEN` nichts zu tun hat |
+
+Unter der Überschrift stehen
 die laufende Version, das Heimnetz, das Ergebnis der letzten Suche und
 die übergangenen Schritte: `Nicht verbunden: LEISTUNGSKNOTEN.`,
-`Kein Update hier: C6-FUNK. Die Liste nennt den Grund.` und
+`Kein Update hier: C6-FUNK. Die Liste nennt den Grund.` (darunter ein
+Gerät, das `AUS` zeigt) und
 `Übersprungen: DIAL.`, danach die Hinweise zur Erinnerung und zu
 RELEASES. ÜBERSPRUNGENE SCHRITTE ZEIGEN steht darunter, solange ein
 Schritt übersprungen ist. NACH UPDATES SUCHEN ist in der Akzentfarbe
@@ -7743,7 +7813,8 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet, bis das WLAN des Panels aus ist.` | Eine Prüfung, ein Download oder WI-FI hat den Funk an. |
 | `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
 | `Das C6-Update wartet auf das Ende des Funkgeräte-Updates.` | Das Update eines Dial läuft oder wurde angefordert ([Das Dial](#das-dial)). |
-| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
+| `Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.` | Eine KST-, Hitec- oder ESC-Programmierung belegt einen Port, oder eine Sitzung startet. |
+| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück, oder das Update ist beendet und der Neustart des Panels steht an. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
 angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
@@ -7756,13 +7827,18 @@ Alarmband sagt, wie ein Update endete:
 | Alarm | Bedeutung |
 | --- | --- |
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | Der C6 hat das Image angenommen und geprüft; das Panel startet 3s später neu, und der Update-Lauf geht danach weiter ([Nach einem Neustart](#nach-einem-neustart)). |
+| `C6-Funk auf 2.13.0 aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.` | Der Neustart wartet: Der Prüfstand ist ARMED, ein Ausgang ist an oder eine Programmierung belegt einen Port ([Der ESP32-C6-Funk](C6-de.md)). |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | Der Beginn-Aufruf ist fehlgeschlagen oder abgelaufen: die Firmware des C6 hat kein Update über SDIO ([Der Funk über den ESP32-C6: Wiederherstellung über Header H4](C6-de.md#wiederherstellung-über-header-h4)). |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | Die Verbindung zum C6 ist ausgefallen. |
 | `C6-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` | Ein Schreiben, die Prüfung im C6 oder das Aktivieren ist fehlgeschlagen (`Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen`, `Aktivierung fehlgeschlagen`), oder ein Schritt blieb über seine Grenze ohne Antwort (`keine Antwort`). |
 
-Während das Update läuft, wird ARM mit `ARMED gesperrt: Das C6-Funk-Update
-läuft.` abgelehnt, das WLAN startet nicht, und Installation des Panels,
-GitHub-Prüfung und IOmcu-Update warten.
+Vom Start des Updates bis zum Neustart wird ARM mit `ARMED gesperrt: Das
+C6-Funk-Update läuft.` abgelehnt, AUSGANG EIN von SUPPLY mit `Netzteilausgang
+nicht eingeschaltet: Das C6-Funk-Update läuft.`, PROG 5V EIN mit `PROG-Ports
+5V nicht eingeschaltet: Das C6-Funk-Update läuft.` und der Start einer
+Programmierung mit `Programmierung nicht gestartet: Das C6-Funk-Update
+läuft.`. Das WLAN startet nicht, und Installation des Panels, GitHub-Prüfung
+und IOmcu-Update warten.
 
 ### Die Funkgeräte
 
@@ -8769,7 +8845,10 @@ wechselt, die Ansicht zwischen Platine und Raster wechselt oder der
 Bildschirm verlassen wird. Zwischen zwei Frames verlorene Touch-Ereignisse
 lassen einen Druck auf PIN VERSCHIEBEN fallen; die Karte bleibt offen. Ein
 zweiter Finger auf der Karte übernimmt den Druck, einer neben der Karte
-schließt sie. STOP im Band bleibt wirksam. In der Platinenansicht führt das
+schließt sie. 400ms lang, nachdem PIN VERSCHIEBEN oder ABBRECHEN die Karte
+geschlossen hat, ist ein Druck in der früheren Fläche der Karte in beiden
+Ansichten verbraucht: der zweite Tipp eines Doppeltipps wählt keine Taste
+und keine Zelle unter der Karte (`test_pin_take`, `test_pin_take_grid`). STOP im Band bleibt wirksam. In der Platinenansicht führt das
 Dial PIN VERSCHIEBEN und ABBRECHEN, solange die Karte offen ist, beginnend
 bei ABBRECHEN.
 

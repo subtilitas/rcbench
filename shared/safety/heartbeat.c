@@ -62,24 +62,46 @@ void heartbeat_mon_init(heartbeat_mon_t *m)
     }
 }
 
+void heartbeat_mon_window(heartbeat_mon_t *m, uint32_t window_ms)
+{
+    if (m == NULL) {
+        return;
+    }
+    if (window_ms > HEARTBEAT_MAX_GAP_MS) {
+        window_ms = HEARTBEAT_MAX_GAP_MS;
+    }
+    if (window_ms > m->window_ms) {
+        m->window_ms = window_ms;
+    }
+}
+
 void heartbeat_mon_edge(heartbeat_mon_t *m, uint32_t now_ms)
 {
     if (m == NULL) {
         return;
     }
 
+    /* This edge is the first sample after an announced window: its stamp
+     * is off by up to the window, either way. */
+    const uint32_t off = m->window_ms;
+    m->window_ms = 0u;
+
     if (!m->have_edge) {
         /* One edge is not an interval, and intervals are what is judged.
          * Take the timestamp and wait for the next. */
         m->have_edge    = true;
         m->last_edge_ms = now_ms;
+        m->stamp_off_ms = off;
         return;
     }
 
     const uint32_t gap = (uint32_t)(now_ms - m->last_edge_ms);
+    /* What the two stamps of this interval can have cut from it. */
+    const uint32_t cut = m->stamp_off_ms + off;
     m->last_edge_ms = now_ms;
+    m->stamp_off_ms = off;
 
-    if (gap < HEARTBEAT_MIN_GAP_MS) {
+    if (gap + cut < HEARTBEAT_MIN_GAP_MS) {
         /*
          * Too fast to be a render loop: the case the monostable cannot see,
          * because whatever does this retriggers it and it holds the outputs
@@ -128,5 +150,8 @@ bool heartbeat_mon_alive(heartbeat_mon_t *m, uint32_t now_ms)
         m->good_run = 0;
         m->alive    = false;
     }
+    /* The sample after an announced window is this one: an edge later than
+     * it is stamped when it happens. */
+    m->window_ms = 0u;
     return m->alive;
 }

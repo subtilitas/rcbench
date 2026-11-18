@@ -459,6 +459,157 @@ TEST_CASE(music_shows_on_the_identity_tab)
     CHECK_STR_EQ(esc_wire_panel_music_line(), "MUSIC --");
 }
 
+/* READ AGAIN replaces the draft with the read copy.  With edits not written it
+ * asks first, as LEAVE does: the tap reads nothing, CANCEL keeps the edits, and
+ * the 2s hold reads.  With no edit the tap reads. */
+TEST_CASE(read_again_over_edits_asks_and_reads_on_the_hold)
+{
+    session_up(up_am_rig);
+    connected();
+    const uint16_t reads = esc_wire_panel_model()->f.rd.reads;
+
+    /* No edit: the tap reads. */
+    ew_tap(esc_wire_panel_action_rect(0));
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_NONE);
+    bench_run(50u);
+    wait_idle();
+    CHECK(esc_wire_panel_model()->f.rd.reads != reads);
+    const uint16_t reads_2 = esc_wire_panel_model()->f.rd.reads;
+
+    edit_reversed();
+    CHECK_EQ(ewp_changed_count(), 1);
+    ew_tap(esc_wire_panel_action_rect(0));
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_READ);
+    CHECK_STR_EQ(esc_wire_panel_page_line(0), TR(EW_READ_1));
+    CHECK_STR_EQ(esc_wire_panel_page_line(1), TR(EW_LEAVE_DRAFT));
+    bench_run(500u);
+    CHECK_EQ(esc_wire_panel_model()->f.rd.reads, reads_2);
+    CHECK_EQ(ewp_changed_count(), 1);
+    /* A hold let go before 2s reads nothing. */
+    ew_hold(1.0f);
+    bench_run(500u);
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_READ);
+    CHECK_EQ(esc_wire_panel_model()->f.rd.reads, reads_2);
+    ew_tap(esc_wire_panel_cancel_rect());
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_NONE);
+    bench_run(500u);
+    CHECK_EQ(esc_wire_panel_model()->f.rd.reads, reads_2);
+    CHECK_EQ(ewp_changed_count(), 1);
+    CHECK_EQ(ewp_s.draft[0x11], 0u);
+    /* The hold reads, and the draft is the ESC's again. */
+    ew_tap(esc_wire_panel_action_rect(0));
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_READ);
+    ew_hold(2.2f);
+    bench_run(50u);
+    wait_idle();
+    bench_run(200u);
+    CHECK(esc_wire_panel_model()->f.rd.reads != reads_2);
+    CHECK_EQ(ewp_changed_count(), 0);
+    CHECK_EQ(ewp_s.draft[0x11], 1u);
+    CHECK_STR_EQ(esc_wire_panel_message(), TR(EW_MSG_READ_DONE));
+}
+
+/** @brief POWER RAMP typed as @p text: an AM32's byte 0x05. */
+static void edit_ramp(const char *text)
+{
+    ew_tap(esc_wire_panel_tab_rect(1));
+    ew_tap(esc_wire_panel_value_rect(0));
+    kp_type(text);
+}
+
+/* HOLD 2s: NO BACKUP stands for the write it confirmed.  The next write of the
+ * session asks the card for its record again, and asks the operator again when
+ * the card refuses again. */
+TEST_CASE(the_no_backup_hold_stands_for_one_write)
+{
+    session_up(up_am_rig);
+    connected();
+    /* The session's backup by hand: the card has it. */
+    ew_tap(esc_wire_panel_action_rect(1));
+    bench_run(10u);
+    ew_tap(esc_wire_panel_choice_rect(0));
+    bench_run(10u);
+    CHECK_EQ(g_card_files, 1);
+    /* Write 1: the record refused, the question, the hold. */
+    edit_reversed();
+    g_card_refuses = true;
+    ew_tap(esc_wire_panel_action_rect(2));
+    ew_hold(2.2f);
+    bench_run(20u);
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_NO_BACKUP);
+    ew_hold(2.2f);
+    bench_run(50u);
+    wait_idle();
+    CHECK_EQ(esc.am[0x11], 0u);
+    CHECK_EQ(g_record_len, 0u);
+    /* Write 2, the card still refusing: asked again, nothing written. */
+    edit_ramp("77");
+    int before = g_card_requests;
+
+    ew_tap(esc_wire_panel_action_rect(2));
+    ew_hold(2.2f);
+    bench_run(20u);
+    CHECK(g_card_requests > before);
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_NO_BACKUP);
+    CHECK(esc.am[0x05] != 77u);
+    ew_tap(esc_wire_panel_cancel_rect());
+    /* The card takes files again: the write has its record. */
+    g_card_refuses = false;
+    before = g_card_requests;
+    ew_tap(esc_wire_panel_action_rect(2));
+    ew_hold(2.2f);
+    bench_run(50u);
+    wait_idle();
+    CHECK(g_card_requests > before);
+    CHECK_EQ(esc.am[0x05], 77u);
+    CHECK(strstr(g_record, "POWER RAMP") != NULL);
+    CHECK_EQ(g_card_files, 1);
+}
+
+/* A write that went without the session's backup leaves it owed to the card:
+ * the next write saves the backup of the first read, then its record. */
+TEST_CASE(a_backup_gone_without_is_saved_before_the_next_write)
+{
+    static char s_first[EW_FILE_MAX];
+
+    session_up(up_am_rig);
+    connected();
+    const size_t n = esc_prog_backup_text(esc_wire_panel_model(), s_first,
+                                          sizeof(s_first));
+
+    CHECK(n > 0u);
+    g_card_in = false;
+    edit_reversed();
+    ew_tap(esc_wire_panel_action_rect(2));
+    ew_hold(2.2f);
+    bench_run(20u);
+    CHECK_EQ(esc_wire_panel_page(), EWP_PAGE_NO_BACKUP);
+    ew_hold(2.2f);
+    bench_run(50u);
+    wait_idle();
+    CHECK_EQ(esc.am[0x11], 0u);
+    CHECK_EQ(g_card_files, 0);
+    g_card_in = true;
+    edit_ramp("77");
+    ew_tap(esc_wire_panel_action_rect(2));
+    ew_hold(2.2f);
+    bench_run(50u);
+    wait_idle();
+    CHECK_EQ(esc.am[0x05], 77u);
+    CHECK_EQ(g_card_files, 1);
+    CHECK_EQ(strlen(g_texts[0]), n);
+    CHECK(memcmp(g_texts[0], s_first, n) == 0);
+    CHECK(strstr(g_record, "POWER RAMP") != NULL);
+    /* Saved: a third write asks for the record alone. */
+    edit_ramp("78");
+    ew_tap(esc_wire_panel_action_rect(2));
+    ew_hold(2.2f);
+    bench_run(50u);
+    wait_idle();
+    CHECK_EQ(esc.am[0x05], 78u);
+    CHECK_EQ(g_card_files, 1);
+}
+
 int main(void)
 {
     RUN(an_edit_after_the_hold_is_not_taken_and_the_hold_writes_the_page);
@@ -477,5 +628,8 @@ int main(void)
     RUN(a_page_of_ff_only_is_no_backup_without_the_flag);
     RUN(music_with_a_byte_the_format_has_not_refuses_and_says_why);
     RUN(music_shows_on_the_identity_tab);
+    RUN(read_again_over_edits_asks_and_reads_on_the_hold);
+    RUN(the_no_backup_hold_stands_for_one_write);
+    RUN(a_backup_gone_without_is_saved_before_the_next_write);
     return test_summary("esc_wire_write");
 }

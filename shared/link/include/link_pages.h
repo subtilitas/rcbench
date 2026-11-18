@@ -153,7 +153,7 @@ typedef enum {
  * supply off on an error from 4.31 only, and sets the bit from 4.31 only.
  * From 4.32 PROG_SUPPLY (0x39) switches the programming ports' own supply
  * on a board that has one; an older IOmcu refuses it with
- * LINK_NACK_BAD_PAGE.  From 4.38 STATUS sets fault bit 7
+ * LINK_NACK_BAD_PAGE.  From 4.39 STATUS sets fault bit 7
  * (LINK_FAULT_WATCHDOG) after a restart by the IOmcu's own watchdog; an
  * older IOmcu has no such watchdog and never sets it.
  * An IOmcu never asks the panel's minor; a page an older panel does not
@@ -168,9 +168,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 38, STATUS fault bit 7
+/** @brief The minor this build speaks: 39, STATUS fault bit 7
  *         (LINK_MINOR_WATCHDOG). */
-#define LINK_PROTOCOL_MINOR 38u
+#define LINK_PROTOCOL_MINOR 39u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -400,13 +400,23 @@ typedef enum {
 #define LINK_MINOR_REPEAT 37u
 
 /**
+ * @brief The first minor whose BIND page has LINK_BD_WHY, the cause of the
+ *        last refused CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND write.
+ *
+ * An older minor's BIND page has 1 register and refuses a read of
+ * register 1 with LINK_NACK_BAD_RANGE, so the panel reads the cause from a
+ * 4.38 or later IOmcu only and shows a refusal without one otherwise.
+ */
+#define LINK_MINOR_BIND_WHY 38u
+
+/**
  * @brief The first minor whose STATUS page sets fault bit 7,
  *        LINK_FAULT_WATCHDOG, after a restart by the IOmcu's own watchdog.
  *
  * An older IOmcu has no watchdog on its main loop and never sets the bit;
  * an older panel shows the bit as one it has no name for.
  */
-#define LINK_MINOR_WATCHDOG 38u
+#define LINK_MINOR_WATCHDOG 39u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -916,11 +926,43 @@ typedef enum {
  *
  * What is prepared starts as the pages in force at boot and is not kept in
  * flash.  CHAN_CFG and OUTPUTS stay writable, one entry a frame.
+ *
+ * LINK_BD_WHY (protocol 4.38) is read only: a link_bind_why_t, the cause of
+ * the last write to CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND that was
+ * refused, and LINK_BW_NONE once a later CHAN_CFG, OUTPUTS or BIND write is
+ * taken.  A write to it is refused with LINK_NACK_BAD_RANGE.
  */
 enum {
     LINK_BD_COMMIT = 0, /**< write: the prepared pages' CRC; read: the same */
-    LINK_BD_COUNT  = 1,
+    LINK_BD_WHY    = 1, /**< read: a link_bind_why_t (4.38)                 */
+    LINK_BD_COUNT  = 2,
 };
+
+/** @brief Why the IOmcu refused a binding write (LINK_BD_WHY). */
+typedef enum {
+    LINK_BW_NONE     = 0,  /**< no refusal stands                           */
+    LINK_BW_VALUE    = 1,  /**< a register value outside its page's rules   */
+    LINK_BW_PREPARED = 2,  /**< COMMIT's CRC is not the prepared pages'     */
+    LINK_BW_ESC_WIRE = 3,  /**< the ESC_WIRE page holds an output           */
+    LINK_BW_ARMED    = 4,  /**< a role, a throttle channel or a slot changes
+                                while ARMED                                 */
+    LINK_BW_BOARD    = 5,  /**< soldered pins: a slot off the servo outputs */
+    LINK_BW_PORT     = 6,  /**< a programming port's pin, bank channel or
+                                PWM slice                                   */
+    LINK_BW_SUPPLY   = 7,  /**< a pin the supply's PD mini holds            */
+    LINK_BW_SENSE    = 8,  /**< a pin the sensor bus holds                  */
+    LINK_BW_TONE     = 9,  /**< the phase tap's pin                         */
+    LINK_BW_RATE     = 10, /**< a PWM slice shared with a surface at
+                                another frame rate                          */
+    LINK_BW_PULSE    = 11, /**< a channel's endpoint longer than its PWM
+                                slot's frame                                */
+    LINK_BW_SILICON  = 12, /**< a driver did not bind: no PIO state machine,
+                                instruction memory, DMA channel or PWM slice
+                                free, or the pin refused                    */
+    LINK_BW_PD_UART  = 13, /**< the slots leave the supply's UART no PIO
+                                block                                       */
+    LINK_BW_COUNT    = 14,
+} link_bind_why_t;
 
 /* ---------------------------------------------------------------- identity */
 /** @brief Registers of the IDENTITY page. */
@@ -1010,7 +1052,7 @@ typedef enum {
      */
     LINK_FAULT_STORE_OFF     = 1u << 6,
     /**
-     * @brief The IOmcu's watchdog restarted it (protocol 4.38): core 0 did
+     * @brief The IOmcu's watchdog restarted it (protocol 4.39): core 0 did
      * not pass its main loop for 500ms (loop_watch.h).
      *
      * The restart released every output.  Set from the start after that

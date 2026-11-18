@@ -19,7 +19,7 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
 - **Eingerastet.** STOP bleibt rot in einem gelben Rahmen von 3px und zeigt
   `GESTOPPT` über `2s HALTEN ZUM LÖSEN`. Das Feld für den ARM-Zustand im Band zeigt STOP
   statt SAFE oder ARMED. ARM, AUSGANG EIN, PROG 5V EIN, der Start eines Tests oder Endlagenlaufs werden
-  mit der Meldung `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.` abgelehnt. Die
+  mit der Meldung `STOP gedrückt: Halte STOP 2s, um ihn zu lösen.` abgelehnt. Die
   Meldung verschwindet im Frame nach dem abgeschlossenen Lösen aus dem Band. Die
   Programmierungen für KST, Hitec und die ESC-Leitung lehnen VERBINDEN mit
   ihrer Stopp-Zeile ab. Ein ARM hebt diesen Stopp nicht auf.
@@ -34,7 +34,10 @@ und `shared/ui/stop_hold.c`, auf dem Host getestet in `test_stop_latch` und
   (`STOP_LATCH_FRESH_MS`) nicht antwortet, was die Control-Task als
   Kontaktabbruch zählt. Ein STOP oder ein Abbruch weniger als 1900ms
   (`STOP_LATCH_HOLD_SEEN_MS`) vor dem Ende des Haltens, oder danach, lehnt
-  die Anforderung ab.
+  die Anforderung ab, und die Meldung lautet `STOP nicht gelöst: Zweite
+  Berührung oder Touch-Aussetzer im Halten. Halte STOP 2s erneut.` Ein STOP
+  oder ein Abbruch, der älter als 60000ms (`STOP_LATCH_EVENT_AGE_MS`) ist,
+  lehnt kein Halten ab.
 - **Lösen.** Eine Zustandsmaschine in der Control-Task führt das Lösen aus,
   ein Schritt pro Durchlauf:
 

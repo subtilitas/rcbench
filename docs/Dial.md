@@ -67,8 +67,12 @@ panel applies them ([The panel](#the-panel)):
   is connected again and the panel's first packet came.
 - The screen button while ARMED: a tap sets the throttle to 0% on MOTOR and
   CENTER on SERVO; a 1s hold DISARMs.
+- A 1s hold of the screen button ends a servo test, a LIMIT RUN and a
+  RUDDER AUTO run in every phase, also while the run holds the bench SAFE
+  for its programmer session, and takes back an ARM that is on its way.
 - No BLE scan while ARMED: a scan's radio time would starve the link that
-  carries the knob.
+  carries the knob. The rule holds for the Dial's, the nodes' and the IMU's
+  scan. A scan that runs at the switch to ARMED is stopped.
 - Navigation only while SAFE: a SELECT is a tap of one frame, so it
   completes no 2s hold, and while ARMED the Dial moves no focus away from
   the output it drives ([Navigation and SET](#navigation-and-set)).
@@ -677,8 +681,6 @@ documentation and by M5Unified; GPIO1 is the pin by number either way.
 - LIVE_SERVO carries no reading of a feedback servo's position or current.
 - A servo rail fed by PROG 5V has no full scale in SCALE: 0, its rings show
   their track only.
-- An IMU scan (SETUP > IMU, or SEARCH FOR IMU on SERVO) is not refused while
-  ARMED. Its effect on a linked Dial's packets is not measured.
 - The panel has no console command that injects a Dial turn or press; the
   Dial's test build does that from the Dial's side.
 - The battery's voltage is unknown: no source names the pin it reaches.

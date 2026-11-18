@@ -61,7 +61,8 @@ manual beside the bench.
   PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
   BATTERY, BALANCE, OUTPUTS, SENSORS, SD CARD, WI-FI, FILES, UPDATES, UPDATE,
-  CAN BUS FAULT, LINK LOST, PANEL UPDATE. A tile, a tab of LOGS' strip and the
+  PANEL UPDATE. The titles of the bus fault screen are translated:
+  CAN BUS FAULT is CAN-BUS-FEHLER and LINK LOST is VERBINDUNG VERLOREN. A tile, a tab of LOGS' strip and the
   band of the screen it opens carry the same word. A note that names a screen names it by its
   title: "der Seite SUPPLY".
 - Protocol and mode names: DShot, PWM (pulse-width modulation), PPM
@@ -111,6 +112,11 @@ One German word per English concept, on every screen and in the report.
 | save, reset, apply, close | speichern, zurücksetzen, übernehmen, schließen |
 | cancel, abort | abbrechen |
 | hold to … | … halten |
+| HOLD 2s TO … (a hold button's label) | `2s HALTEN ZUM` and one verb (`2s HALTEN ZUM SCHREIBEN`); `2s HALTEN:` before a phrase of more than one word (`2s HALTEN: OHNE SCHREIBEN VERLASSEN`) |
+| reset (a latched STOP) | lösen: `2s HALTEN ZUM LÖSEN` fills the 19 cells of the STOP button |
+| NOT READ | NICHT AUSGELESEN |
+| SCAN AGAIN | AKTUALISIEREN |
+| node scan | Knotensuche |
 | press, hold (the Dial's screen button: `PRESS: OPEN`, `HOLD: BACK`) | DRÜCKEN, HALTEN (`DRÜCKEN: ÖFFNEN`, `HALTEN: ZURÜCK`) |
 | refused | abgelehnt |
 | screen (a page of the interface) | Seite |
@@ -279,7 +285,11 @@ UTF-8. The Wi-Fi page is drawn by the browser and is not held to it; a
 1. Add an entry in the section of the screen that draws it, English first:
    `UI_TEXT(ID, cells, "English", "Deutsch")`. `cells` is the field's width
    in cells of its face where no screenshot shows the string, and 0 where a
-   rendered view does.
+   rendered view does. A format string with a declared width is held to it
+   as formatted: `test_text_formats` fills each conversion with its widest
+   argument, 8 cells for `%s` and 4 digits for `%u`, or with the arguments
+   its `k_args` table lists for the entry. A string drawn by a wrap declares
+   the cells of all its rows.
 2. Draw it with `TR(ID)`. A setting's label and help line are a
    `UI_SETTING_LABEL` and a `UI_SETTING_HELP` entry for its `SET_` ID; an
    option list is a `UI_OPTIONS` block, bound to its setting by
@@ -316,7 +326,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 746 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 750 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -340,7 +350,9 @@ is printed as `known` and does not fail the check. An identical German
 finding for the same string in the same place is also accepted. If a
 listed overflow is absent from the results, the check fails until the entry is
 removed. It also fails if a string has no declared width and no view draws
-it.
+it: one that no view looks up, and one that views look up without drawing
+it. A string counts as drawn when the longest part between its conversions
+stands in the text of a view that looks it up.
 
 ```bash
 python3 tools/check_formats.py
@@ -367,7 +379,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,987 entries
+A language is one more column in every entry of the table: 4,042 entries
 with an ID and 115 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

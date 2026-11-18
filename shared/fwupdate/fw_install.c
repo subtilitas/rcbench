@@ -90,6 +90,19 @@ static fw_install_status_t fail(fw_install_t *in)
     return FW_INSTALL_FAILED;
 }
 
+fw_install_status_t fw_install_not_quiet(fw_install_t *in)
+{
+    if (!in->busy) {
+        return FW_INSTALL_IDLE;
+    }
+    if (in->touched) {
+        return FW_INSTALL_RUNNING;
+    }
+    in->busy = false;
+    in->err  = FW_ERR_QUIET;
+    return FW_INSTALL_FAILED;
+}
+
 fw_install_status_t fw_install_step(fw_install_t *in, bool quiet)
 {
     if (!in->busy) {

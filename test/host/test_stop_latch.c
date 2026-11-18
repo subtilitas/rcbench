@@ -24,6 +24,8 @@
  * - a_confirmation_at_the_bound_resets_and_a_late_one_gives_up
  * - no_confirmation_keeps_the_latch_and_the_line_withheld
  * - the_floor_counts_from_the_pass_that_saw_the_stop
+ * - the_floor_starts_again_with_a_later_stop
+ * - a_stop_the_count_did_not_show_latches_and_starts_the_floor
  * - an_error_sends_a_reset_back_and_changes_nothing_latched
  * - clear_is_written_once_per_reset_after_the_heartbeat
  * - the_heartbeat_resumes_only_after_the_confirmation
@@ -32,6 +34,12 @@
  * - nothing_switches_on_after_the_reset
  * - the_heartbeat_fault_is_hidden_while_latched_and_after_the_reset
  * - the_hold_and_the_bound_hold_across_the_millisecond_wrap
+ * - a_stop_24_86_days_after_the_last_is_reset_by_its_hold
+ * - a_contact_break_24_86_days_back_refuses_no_hold
+ * - an_event_is_kept_for_60000_ms
+ * - a_stop_standing_24_86_days_is_reset_by_one_hold
+ * - the_heartbeat_fault_shows_again_for_good_after_the_grace
+ * - a_refused_hold_is_reported_in_its_pass
  * - a_restart_comes_up_unlatched
  * - null_is_harmless
  * - the_confirmation_is_read_every_50ms_while_asking
@@ -63,6 +71,7 @@ static stop_latch_t l;
 static struct {
     uint32_t t;             /**< the clock, ms                            */
     uint32_t press_ms;      /**< when the latest STOP was applied         */
+    uint32_t press_hidden;  /**< STOPs the count does not show            */
     uint32_t breaks;        /**< contact breaks counted                   */
     uint32_t break_ms;      /**< when the latest was counted              */
     bool     link_up;       /**< the link answers                         */
@@ -84,7 +93,7 @@ static struct {
 static void read_in(stop_latch_in_t *in)
 {
     in->now_ms      = w.t;
-    in->pressed     = arming_pressed_count(&a);
+    in->pressed     = arming_pressed_count(&a) - w.press_hidden;
     in->press_ms    = w.press_ms;
     in->breaks      = w.breaks;
     in->break_ms    = w.break_ms;
@@ -216,6 +225,14 @@ static uint32_t stop_and_hold(uint32_t t)
     touch_stop(t);
     (void)pass_hold(t + 2000u, t + 2000u);
     return t + 2000u;
+}
+
+/** @brief Passes every 5ms from @p from to @p to, both included. */
+static void passes(uint32_t from, uint32_t to)
+{
+    for (uint32_t t = from; t != to + 5u; t += 5u) {
+        (void)pass(t);
+    }
 }
 
 TEST_CASE(a_touch_latches_and_withholds_the_heartbeat)
@@ -546,6 +563,49 @@ TEST_CASE(the_floor_counts_from_the_pass_that_saw_the_stop)
     CHECK_EQ(stop_latch_state(&l), STOP_LATCH_CONFIRMED);
 }
 
+/* The floor starts again with each STOP: one the machine first saw
+ * 6800ms after its start, long after the start's own 500ms, still holds
+ * the heartbeat until 7300ms. */
+TEST_CASE(the_floor_starts_again_with_a_later_stop)
+{
+    start(0u);
+    passes(5u, 4000u);
+    w.t = 5000u;
+    stop_now();
+    (void)pass(6800u);
+    CHECK_EQ(pass_hold(6900u, 6900u), STOP_LATCH_NONE);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_HOLD_DONE);
+    for (uint32_t t = 7000u; t < 6800u + STOP_LATCH_FLOOR_MS; ++t) {
+        (void)pass(t);
+        CHECK(stop_latch_state(&l) <= STOP_LATCH_ASKING);
+        CHECK(!arming_heartbeat(&a, t));
+    }
+    (void)pass(6800u + STOP_LATCH_FLOOR_MS);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_CONFIRMED);
+}
+
+/* A STOP that stands without the count showing it latches the machine in
+ * the pass that finds it, and the floor counts from that pass. */
+TEST_CASE(a_stop_the_count_did_not_show_latches_and_starts_the_floor)
+{
+    start(0u);
+    passes(5u, 4000u);
+    w.t = 5000u;
+    stop_now();
+    w.press_hidden = 1u;
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_UNLATCHED);
+    (void)pass(5000u);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_LATCHED);
+    CHECK_EQ(pass_hold(5005u, 5005u), STOP_LATCH_NONE);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_HOLD_DONE);
+    for (uint32_t t = 5105u; t < 5000u + STOP_LATCH_FLOOR_MS; t += 5u) {
+        (void)pass(t);
+        CHECK(stop_latch_state(&l) <= STOP_LATCH_ASKING);
+    }
+    (void)pass(5000u + STOP_LATCH_FLOOR_MS);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_CONFIRMED);
+}
+
 TEST_CASE(an_error_sends_a_reset_back_and_changes_nothing_latched)
 {
     const stop_latch_state_t states[] = {
@@ -722,6 +782,139 @@ TEST_CASE(the_hold_and_the_bound_hold_across_the_millisecond_wrap)
     (void)pass(t0 + 5100u);
     CHECK_EQ(pass(t0 + 5100u + STOP_LATCH_CONFIRM_MS), STOP_LATCH_NONE);
     CHECK_EQ(pass(t0 + 5101u + STOP_LATCH_CONFIRM_MS), STOP_LATCH_GIVE_UP);
+}
+
+/*
+ * The clock reads a stamp 2^31ms (24.86 days) old as lying ahead.  A STOP
+ * pressed that long after the one before is reset by its own hold: the
+ * older STOP was forgotten STOP_LATCH_EVENT_AGE_MS after it.
+ */
+TEST_CASE(a_stop_24_86_days_after_the_last_is_reset_by_its_hold)
+{
+    start(0u);
+    const uint32_t done = run_to(stop_and_hold(10000u), STOP_LATCH_UNLATCHED);
+    CHECK_EQ(stop_latch_resets(&l), 1u);
+    passes(done + 5u, done + 70000u);
+    for (uint32_t later = 0u; later < 2u; ++later) {
+        const uint32_t t = 10000u + 0x80000000u + 1000u + later * 86400000u;
+        (void)pass(t - 5u);
+        touch_stop(t);
+        CHECK_EQ(pass_hold(t + 2000u, t + 2000u), STOP_LATCH_NONE);
+        CHECK_EQ(stop_latch_state(&l), STOP_LATCH_HOLD_DONE);
+        (void)run_to(t + 2005u, STOP_LATCH_UNLATCHED);
+        CHECK_EQ(stop_latch_state(&l), STOP_LATCH_UNLATCHED);
+        CHECK(!arming_held(&a));
+        CHECK_EQ(stop_latch_resets(&l), 2u + later);
+        passes(w.t + 5u, w.t + 70000u);
+    }
+    CHECK_EQ(stop_latch_refused(&l), 0u);
+}
+
+/* A contact break is forgotten the same way. */
+TEST_CASE(a_contact_break_24_86_days_back_refuses_no_hold)
+{
+    start(0u);
+    w.breaks   = 1u;
+    w.break_ms = 5000u;
+    passes(5000u, 70000u);
+    const uint32_t t = 5000u + 0x80000000u + 1000u;
+    (void)pass(t - 5u);
+    touch_stop(t);
+    CHECK_EQ(pass_hold(t + 2000u, t + 2000u), STOP_LATCH_NONE);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_HOLD_DONE);
+}
+
+/* The latest event counts for 60000ms and not 1ms longer: a hold stamped
+ * inside the event's 1900ms is refused at 59999ms and taken at 60000ms. */
+TEST_CASE(an_event_is_kept_for_60000_ms)
+{
+    start(0u);
+    touch_stop(1000u);
+    CHECK_EQ(pass_hold(1000u + 59999u, 1000u + 1899u), STOP_LATCH_REFUSED);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_LATCHED);
+    CHECK_EQ(pass_hold(1000u + 60000u, 1000u + 1899u), STOP_LATCH_NONE);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_HOLD_DONE);
+}
+
+/* A STOP that stands for 24.86 days is reset like one that stands for 1s:
+ * the floor passed 500ms after the STOP and stays passed. */
+TEST_CASE(a_stop_standing_24_86_days_is_reset_by_one_hold)
+{
+    start(0u);
+    touch_stop(10000u);
+    passes(10005u, 80000u);
+    const uint32_t t = 10000u + 0x80000000u;
+    for (uint32_t d = 0u; d < 3u; ++d) {
+        (void)pass(t - 1000u + d * 500u);
+        CHECK_EQ(stop_latch_state(&l), STOP_LATCH_LATCHED);
+    }
+    CHECK_EQ(pass_hold(t + 2000u, t + 2000u), STOP_LATCH_NONE);
+    uint32_t at = t + 2005u;
+    for (; at != t + 5000u && stop_latch_state(&l) != STOP_LATCH_UNLATCHED;
+         at += 5u) {
+        CHECK(pass(at) != STOP_LATCH_GIVE_UP);
+    }
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_UNLATCHED);
+    CHECK_EQ(stop_latch_resets(&l), 1u);
+}
+
+/* The grace ends 1000ms after the reset and does not come back: FAULT 10
+ * shows from then on, 24.86 days later and up to the wrap as well. */
+TEST_CASE(the_heartbeat_fault_shows_again_for_good_after_the_grace)
+{
+    const uint16_t beat = (uint16_t)LINK_FAULT_HEARTBEAT;
+    start(0u);
+    const uint32_t done = run_to(stop_and_hold(10000u), STOP_LATCH_UNLATCHED);
+    passes(done + 5u, done + STOP_LATCH_GRACE_MS);
+    CHECK_EQ(stop_latch_faults(&l, done + STOP_LATCH_GRACE_MS, false, beat),
+             0u);
+    (void)pass(done + STOP_LATCH_GRACE_MS + 5u);
+    static const uint32_t later[] = {
+        STOP_LATCH_GRACE_MS + 5u, 3600000u, 0x7FFFFFFFu, 0x80000000u,
+        0x80000000u + STOP_LATCH_GRACE_MS + 1u, 0xC0000000u, 0xFFFFFF00u,
+        0xFFFFFFFFu,
+    };
+    for (unsigned i = 0u; i < sizeof(later) / sizeof(later[0]); ++i) {
+        if (stop_latch_faults(&l, done + later[i], false, beat) != beat) {
+            T_FAIL("FAULT 10 hidden %lums after the reset",
+                   (unsigned long)later[i]);
+        }
+    }
+    /* The next reset has its own grace. */
+    const uint32_t again =
+        run_to(stop_and_hold(done + 100000u), STOP_LATCH_UNLATCHED);
+    CHECK_EQ(stop_latch_resets(&l), 2u);
+    CHECK_EQ(stop_latch_faults(&l, again + 1u, false, beat), 0u);
+}
+
+/* A refused hold is reported in the pass that refuses it, once: the panel
+ * posts ALERT_STOP_HOLD_BROKEN for it.  A hold that is taken, and a pass
+ * with no hold, report nothing. */
+TEST_CASE(a_refused_hold_is_reported_in_its_pass)
+{
+    start(0u);
+    touch_stop(1000u);
+    /* A second finger on STOP 500ms into the hold. */
+    touch_stop(1500u);
+    CHECK_EQ(pass_hold(3000u, 3000u), STOP_LATCH_REFUSED);
+    CHECK_EQ(stop_latch_refused(&l), 1u);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_LATCHED);
+    CHECK(arming_held(&a));
+    CHECK_EQ(pass(3005u), STOP_LATCH_NONE);
+    /* A contact break inside the next hold. */
+    w.breaks   = 1u;
+    w.break_ms = 4000u;
+    CHECK_EQ(pass_hold(5500u, 5500u), STOP_LATCH_REFUSED);
+    CHECK_EQ(stop_latch_refused(&l), 2u);
+    /* A whole hold. */
+    CHECK_EQ(pass_hold(8000u, 8000u), STOP_LATCH_NONE);
+    CHECK_EQ(stop_latch_state(&l), STOP_LATCH_HOLD_DONE);
+    CHECK_EQ(stop_latch_refused(&l), 2u);
+    /* The text the panel shows for it names the next step. */
+    CHECK(strstr(ui_tr_in(UI_LANG_EN, TX_ALERT_STOP_HOLD_BROKEN),
+                 "Hold STOP 2s again") != NULL);
+    CHECK(strstr(ui_tr_in(UI_LANG_DE, TX_ALERT_STOP_HOLD_BROKEN),
+                 "Halte STOP 2s erneut") != NULL);
 }
 
 TEST_CASE(a_restart_comes_up_unlatched)
@@ -915,6 +1108,8 @@ int main(void)
     RUN(a_confirmation_at_the_bound_resets_and_a_late_one_gives_up);
     RUN(no_confirmation_keeps_the_latch_and_the_line_withheld);
     RUN(the_floor_counts_from_the_pass_that_saw_the_stop);
+    RUN(the_floor_starts_again_with_a_later_stop);
+    RUN(a_stop_the_count_did_not_show_latches_and_starts_the_floor);
     RUN(an_error_sends_a_reset_back_and_changes_nothing_latched);
     RUN(clear_is_written_once_per_reset_after_the_heartbeat);
     RUN(the_heartbeat_resumes_only_after_the_confirmation);
@@ -923,6 +1118,12 @@ int main(void)
     RUN(nothing_switches_on_after_the_reset);
     RUN(the_heartbeat_fault_is_hidden_while_latched_and_after_the_reset);
     RUN(the_hold_and_the_bound_hold_across_the_millisecond_wrap);
+    RUN(a_stop_24_86_days_after_the_last_is_reset_by_its_hold);
+    RUN(a_contact_break_24_86_days_back_refuses_no_hold);
+    RUN(an_event_is_kept_for_60000_ms);
+    RUN(a_stop_standing_24_86_days_is_reset_by_one_hold);
+    RUN(the_heartbeat_fault_shows_again_for_good_after_the_grace);
+    RUN(a_refused_hold_is_reported_in_its_pass);
     RUN(a_restart_comes_up_unlatched);
     RUN(null_is_harmless);
     RUN(the_confirmation_is_read_every_50ms_while_asking);

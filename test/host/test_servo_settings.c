@@ -351,7 +351,7 @@ TEST_CASE(the_sweep_and_run_settings_are_kept)
     sl_part(TL_IDLE, UI_SL_PART_VALUE);        /* IDLE CURRENT */
     sl_keys("0.3");
     CHECK_NEAR(settings_get(SET_SERVO_IDLE_MAX), 0.3f, 1e-4f);
-    sl_part(TL_STALL, UI_SL_PART_VALUE);       /* STALL AT */
+    sl_part(TL_STALL, UI_SL_PART_VALUE);       /* Stall threshold */
     sl_keys("1.5");
     CHECK_NEAR(settings_get(SET_SERVO_STALL_A), 1.5f, 1e-4f);
     CHECK_NEAR(settings_get(SET_SUPPLY_V_MAX), 21.0f, 1e-4f);

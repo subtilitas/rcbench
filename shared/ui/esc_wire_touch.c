@@ -112,7 +112,15 @@ static void action(int i)
             }
         } else if (i == 0) {
             ewp_s.note[0] = '\0';
-            (void)esc_prog_read(m);
+            if (ewp_changed_count() > 0) {
+                /* The read copy takes the draft's place: asked first, as LEAVE
+                 * asks. */
+                ewp_page_open(EWP_PAGE_READ);
+                ewp_page_add(TR(EW_READ_1));
+                ewp_page_add(TR(EW_LEAVE_DRAFT));
+            } else {
+                (void)esc_prog_read(m);
+            }
         } else if (i == 1) {
             ewp_s.files_first = 0u;
             ewp_files_open(false);
@@ -216,6 +224,10 @@ static void down_rows(const touch_event_t *evt)
             if (hand && (i == 2 || i == 3 || i == 5)) {
                 continue;
             }
+            /* TARGET with nothing to choose is drawn dimmed and takes no tap. */
+            if (i == 0 && ewp_s.target_count == 0u) {
+                continue;
+            }
             if (gfx_rect_contains(ewp_value_rect(i), x, y)) {
                 take(evt, EWP_P_CONNECT_ROW, i);
                 return;
@@ -263,6 +275,8 @@ static ui_text_id_t hold_hint(void)
         return TX_EW_HINT_NO_BACKUP;
     case EWP_PAGE_DELETE:
         return TX_EW_HINT_DELETE;
+    case EWP_PAGE_READ:
+        return TX_EW_HINT_READ;
     default:
         return ewp_stage() == ESC_WIRE_PIN_HELD ? TX_EW_HOLD_ENTER : TX_EW_HOLD_CONNECT;
     }

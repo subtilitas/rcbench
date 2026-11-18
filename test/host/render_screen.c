@@ -5052,6 +5052,22 @@ int main(int argc, char **argv)
         }
         return 0;
     }
+    if (argc == 3 && strcmp(argv[1], "--texts") == 0) {
+        /* The table's strings in a language, one a line, a line feed
+         * inside one written as a space: the fit check looks for each in
+         * what the views draw. */
+        const ui_lang_t lang = (strcmp(argv[2], "de") == 0) ? UI_LANG_DE
+                                                            : UI_LANG_EN;
+        for (int i = 0; i < TX_COUNT; ++i) {
+            printf("X %s ", ui_text_name((ui_text_id_t)i));
+            for (const char *c = ui_tr_in(lang, (ui_text_id_t)i); *c != '\0';
+                 ++c) {
+                putchar(*c == '\n' ? ' ' : *c);
+            }
+            putchar('\n');
+        }
+        return 0;
+    }
     if (argc < 3) {
         fprintf(stderr, "usage: render_screen OUT.ppm SCREEN [theme] [view] "
                         "[en|de] [TRACE]\n");

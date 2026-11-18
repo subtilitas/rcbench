@@ -9,7 +9,10 @@
  * first send after the rest releases the line and sends nothing; the
  * inversion survives a stop and a wake; a released pin is a plain input that
  * stop, wake and send leave alone, which is what a programmer holding the
- * pin needs; a bind that cannot invert or pair is refused with a plain input.
+ * pin needs; a bind that cannot invert or pair is refused with a plain input;
+ * a bidirectional bind takes the first block, PIO2 down, with two adjacent
+ * free state machines and 16 free instructions, whatever order the binds
+ * come in.
  *
  * Not tested here: the chip and the program's timing.  The fake runs a frame
  * as one step: the line driven at its active level, then left as the
@@ -40,11 +43,15 @@ typedef enum {
 
 io_bank0_hw_t fake_io_bank0;
 
-const pio_program_t dshot_tx_program       = { 1 };
-const pio_program_t dshot_bidir_tx_program = { 2 };
-const pio_program_t dshot_rx_program       = { 3 };
+/* The lengths dshot.pio assembles to. */
+const pio_program_t dshot_tx_program       = { 4u };
+const pio_program_t dshot_bidir_tx_program = { 11u };
+const pio_program_t dshot_rx_program       = { 5u };
 
-static pio_hw_t g_block;
+/* Instructions in one block. */
+#define BLOCK_ROOM 32u
+
+static pio_hw_t g_block[NUM_PIOS] = { { 0 }, { 1 }, { 2 } };
 
 static struct {
     /* the pad of PIN */
@@ -55,10 +62,12 @@ static struct {
     /* the PIO block's latch and direction for PIN */
     bool latch;
     bool oe;
-    /* the block */
-    unsigned claimed;              /* bit per state machine */
-    const pio_program_t *prog[NUM_PIO_STATE_MACHINES];
-    bool enabled[NUM_PIO_STATE_MACHINES];
+    /* the blocks */
+    unsigned claimed[NUM_PIOS];    /* bit per state machine */
+    unsigned used[NUM_PIOS];       /* instructions loaded */
+    unsigned base[NUM_PIOS];       /* first GPIO of the block's window */
+    const pio_program_t *prog[NUM_PIOS][NUM_PIO_STATE_MACHINES];
+    bool enabled[NUM_PIOS][NUM_PIO_STATE_MACHINES];
     unsigned programs;             /* loaded, less removed */
     /* knobs */
     bool claim_refused;
@@ -177,61 +186,84 @@ void gpio_put(uint gpio, bool value)
     observe(gpio);
 }
 
+PIO pio_get_instance(uint instance) { return &g_block[instance]; }
+uint pio_get_gpio_base(PIO pio) { return g.base[pio->block]; }
+/* As the SDK's: refused while a program is loaded in the block. */
+int pio_set_gpio_base(PIO pio, uint gpio_base)
+{
+    if (g.used[pio->block] != 0u) {
+        return -1;
+    }
+    g.base[pio->block] = gpio_base;
+    return PICO_OK;
+}
 bool pio_sm_is_claimed(PIO pio, uint sm)
 {
-    (void)pio;
-    return (g.claimed & (1u << sm)) != 0u;
+    return (g.claimed[pio->block] & (1u << sm)) != 0u;
 }
 bool pio_can_add_program(PIO pio, const pio_program_t *program)
 {
-    (void)pio;
-    (void)program;
-    return !g.no_room;
+    return !g.no_room
+           && g.used[pio->block] + program->length <= BLOCK_ROOM;
 }
 void pio_sm_claim(PIO pio, uint sm)
 {
-    (void)pio;
-    g.claimed |= 1u << sm;
+    g.claimed[pio->block] |= 1u << sm;
 }
 void pio_sm_unclaim(PIO pio, uint sm)
 {
-    (void)pio;
-    g.claimed &= ~(1u << sm);
-    g.prog[sm] = NULL;
+    g.claimed[pio->block] &= ~(1u << sm);
+    g.prog[pio->block][sm] = NULL;
 }
 int pio_add_program(PIO pio, const pio_program_t *program)
 {
-    (void)pio;
-    (void)program;
+    g.used[pio->block] += program->length;
     g.programs++;
     return 16;
 }
 void pio_remove_program(PIO pio, const pio_program_t *program, uint offset)
 {
-    (void)pio;
-    (void)program;
     (void)offset;
+    g.used[pio->block] -= program->length;
     g.programs--;
 }
+static bool reaches(unsigned block, uint gpio)
+{
+    return gpio >= g.base[block] && gpio - g.base[block] < 32u;
+}
+/* As pico-sdk 2.3.0's (hardware_pio/pio.c): PIO2 down to PIO0, the lowest
+ * free state machine of a block, and the next block when the program does
+ * not fit or the window misses the pin; then a second pass that moves the
+ * window of a block with no state machine claimed. */
 bool pio_claim_free_sm_and_add_program_for_gpio_range(
     const pio_program_t *program, PIO *pio, uint *sm, uint *offset,
     uint gpio_base, uint gpio_count, bool set_gpio_base)
 {
-    (void)gpio_base;
     (void)gpio_count;
-    (void)set_gpio_base;
     if (g.claim_refused) {
         return false;
     }
-    for (uint i = 0; i < NUM_PIO_STATE_MACHINES; ++i) {
-        if ((g.claimed & (1u << i)) == 0u) {
-            g.claimed |= 1u << i;
-            g.prog[i] = program;
-            g.programs++;
-            *pio = &g_block;
-            *sm = i;
-            *offset = 0u;
-            return true;
+    for (unsigned pass = 0u; pass < (set_gpio_base ? 2u : 1u); ++pass) {
+        for (unsigned n = NUM_PIOS; n-- > 0u;) {
+            if (pass != 0u && g.claimed[n] == 0u && g.used[n] == 0u) {
+                g.base[n] = gpio_base >= 32u ? 16u : 0u;
+            }
+            if (!reaches(n, gpio_base)
+                || g.used[n] + program->length > BLOCK_ROOM) {
+                continue;
+            }
+            for (uint i = 0; i < NUM_PIO_STATE_MACHINES; ++i) {
+                if ((g.claimed[n] & (1u << i)) == 0u) {
+                    g.claimed[n] |= 1u << i;
+                    g.used[n] += program->length;
+                    g.prog[n][i] = program;
+                    g.programs++;
+                    *pio = &g_block[n];
+                    *sm = i;
+                    *offset = 0u;
+                    return true;
+                }
+            }
         }
     }
     return false;
@@ -244,20 +276,19 @@ void pio_gpio_init(PIO pio, uint pin)
 }
 /* A transmitter's every instruction side-sets: the first one sets the latch
  * to 0, the line's idle through the inverter or plain DShot's low. */
-static void side_set_0(uint sm)
+static void side_set_0(PIO pio, uint sm)
 {
-    if (g.prog[sm] == &dshot_tx_program
-        || g.prog[sm] == &dshot_bidir_tx_program) {
+    if (g.prog[pio->block][sm] == &dshot_tx_program
+        || g.prog[pio->block][sm] == &dshot_bidir_tx_program) {
         g.latch = false;
         observe(PIN);
     }
 }
 void pio_sm_set_enabled(PIO pio, uint sm, bool enabled)
 {
-    (void)pio;
-    g.enabled[sm] = enabled;
+    g.enabled[pio->block][sm] = enabled;
     if (enabled) {
-        side_set_0(sm);
+        side_set_0(pio, sm);
     }
 }
 void pio_sm_clear_fifos(PIO pio, uint sm)
@@ -300,9 +331,8 @@ void pio_sm_clkdiv_restart(PIO pio, uint sm)
 /* Only jumps are executed here, and on a transmitter they side-set too. */
 void pio_sm_exec(PIO pio, uint sm, uint instr)
 {
-    (void)pio;
     (void)instr;
-    side_set_0(sm);
+    side_set_0(pio, sm);
 }
 uint pio_encode_jmp(uint addr) { return addr; }
 bool pio_sm_is_tx_fifo_full(PIO pio, uint sm)
@@ -314,12 +344,11 @@ bool pio_sm_is_tx_fifo_full(PIO pio, uint sm)
 /* A frame queued on a running transmitter goes out in this one step. */
 void pio_sm_put(PIO pio, uint sm, uint32_t data)
 {
-    (void)pio;
     (void)data;
-    if (!g.enabled[sm]) {
+    if (!g.enabled[pio->block][sm]) {
         return;
     }
-    if (g.prog[sm] == &dshot_bidir_tx_program) {
+    if (g.prog[pio->block][sm] == &dshot_bidir_tx_program) {
         if (!is_high(level())) {
             g.frames_from_low++;
         }
@@ -329,7 +358,7 @@ void pio_sm_put(PIO pio, uint sm, uint32_t data)
         g.frames++;
         g.oe = false;            /* set pindirs, 0: let go for the reply */
         observe(PIN);
-    } else if (g.prog[sm] == &dshot_tx_program) {
+    } else if (g.prog[pio->block][sm] == &dshot_tx_program) {
         g.frames++;
         g.latch = false;         /* the out stalls with the side-set low */
         observe(PIN);
@@ -366,6 +395,7 @@ void dshot_tx_program_init(PIO pio, uint sm, uint offset, uint pin,
                            uint32_t bits_per_second)
 {
     (void)bits_per_second;
+    g.prog[pio->block][sm] = &dshot_tx_program;
     pio_gpio_init(pio, pin);
     (void)pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, true);
     pio_sm_exec(pio, sm, pio_encode_jmp(offset));
@@ -374,6 +404,7 @@ void dshot_bidir_tx_program_init(PIO pio, uint sm, uint offset, uint pin,
                                  uint32_t bits_per_second)
 {
     (void)bits_per_second;
+    g.prog[pio->block][sm] = &dshot_bidir_tx_program;
     (void)pio_sm_set_consecutive_pindirs(pio, sm, pin, 1, false);
     pio_gpio_init(pio, pin);
     pio_sm_exec(pio, sm, pio_encode_jmp(offset));
@@ -381,19 +412,19 @@ void dshot_bidir_tx_program_init(PIO pio, uint sm, uint offset, uint pin,
 void dshot_rx_program_init(PIO pio, uint sm, uint offset, uint pin,
                            uint32_t bits_per_second)
 {
-    (void)pio;
-    (void)sm;
     (void)offset;
     (void)pin;
     (void)bits_per_second;
+    g.prog[pio->block][sm] = &dshot_rx_program;
 }
 
 /* Nothing bound, and the pad as the chip leaves it at reset: no function, a
  * pull-down.  @p latch is what another program left in the block. */
 static void fresh(bool latch)
 {
-    out_dshot_release(PIN);
-    out_dshot_release(OTHER);
+    for (uint pin = 0u; pin < NUM_BANK0_GPIOS; ++pin) {
+        out_dshot_release((uint8_t)pin);
+    }
     memset(&g, 0, sizeof(g));
     memset(&fake_io_bank0, 0, sizeof(fake_io_bank0));
     fake_io_bank0.io[PIN].ctrl = (uint32_t)GPIO_FUNC_NULL;
@@ -401,6 +432,12 @@ static void fresh(bool latch)
     g.latch = latch;
     g.oe = latch;
     settle();
+}
+
+/* The state machines claimed, a hex digit per block: PIO2, PIO1, PIO0. */
+static unsigned claimed_all(void)
+{
+    return (g.claimed[2] << 8) | (g.claimed[1] << 4) | g.claimed[0];
 }
 
 /* ------------------------------------------------------------- the cases */
@@ -511,8 +548,8 @@ TEST_CASE(a_stopped_bidirectional_pin_is_driven_low_and_stays_low)
     out_dshot_stop(PIN);
     CHECK_EQ(level(), LVL_DRIVEN_LOW);
     CHECK_EQ(g.rises, 0u);
-    CHECK(!g.enabled[0]);
-    CHECK(!g.enabled[1]);
+    CHECK(!g.enabled[2][0]);
+    CHECK(!g.enabled[2][1]);
 }
 
 /* The inversion is set once, at the bind, and nothing after it wipes it: a
@@ -567,7 +604,7 @@ TEST_CASE(a_released_pin_is_a_plain_input_the_driver_leaves_alone)
     out_dshot_release(PIN);
     CHECK_EQ(level(), LVL_FLOATING);
     CHECK_EQ(outover(), (uint32_t)GPIO_OVERRIDE_NORMAL);
-    CHECK_EQ(g.claimed, 0u);
+    CHECK_EQ(claimed_all(), 0u);
     CHECK_EQ(g.programs, 0u);
     g.pull_up = true;                            /* the programmer's idle */
     const unsigned writes = g.pad_writes;
@@ -579,32 +616,48 @@ TEST_CASE(a_released_pin_is_a_plain_input_the_driver_leaves_alone)
     CHECK_EQ(level(), LVL_PULLED_UP);
 }
 
-/* A bind that would go out non-inverted, or that cannot pair its receiver,
- * is refused and leaves a plain input: never a driven line, never the low
- * rest of a pin the driver does not hold. */
+/* A bind that would go out non-inverted is refused and leaves a plain
+ * input: never a driven line, never the low rest of a pin the driver does
+ * not hold.  A bind that finds no pair, no room or no state machine is
+ * refused before the pad is written. */
 TEST_CASE(a_bind_that_cannot_invert_or_pair_is_refused_with_a_plain_input)
 {
     fresh(false);
     g.outover_lost = true;
     CHECK(!out_dshot_bind(PIN, 600u, true));
     CHECK_EQ(level(), LVL_FLOATING);
-    CHECK_EQ(g.claimed, 0u);
+    CHECK_EQ(claimed_all(), 0u);
+    CHECK_EQ(g.programs, 0u);
     CHECK(!out_dshot_wake(PIN));
 
+    /* No two adjacent state machines free in any block. */
     fresh(false);
-    g.claimed = 1u << 1;                         /* the receiver's machine */
+    g.claimed[0] = g.claimed[1] = g.claimed[2] = 0x5u;
     CHECK(!out_dshot_bind(PIN, 600u, true));
-    CHECK_EQ(level(), LVL_FLOATING);
-    CHECK_EQ(g.claimed, 1u << 1);
+    CHECK_EQ(g.pad_writes, 0u);
+    CHECK_EQ(claimed_all(), 0x555u);
+    CHECK_EQ(g.programs, 0u);
+    CHECK(!out_dshot_wake(PIN));
+
+    /* The pair free, and room for the transmitter without the receiver. */
+    fresh(false);
+    g.used[0] = g.used[1] = g.used[2] = BLOCK_ROOM - 15u;
+    CHECK(!out_dshot_bind(PIN, 600u, true));
+    CHECK_EQ(g.pad_writes, 0u);
+    CHECK_EQ(claimed_all(), 0u);
+    CHECK_EQ(g.programs, 0u);
+    CHECK_EQ(g.used[2], BLOCK_ROOM - 15u);
 
     fresh(false);
     g.no_room = true;
     CHECK(!out_dshot_bind(PIN, 600u, true));
-    CHECK_EQ(level(), LVL_FLOATING);
+    CHECK_EQ(g.pad_writes, 0u);
+    CHECK_EQ(claimed_all(), 0u);
 
     fresh(false);
     g.claim_refused = true;
-    CHECK(!out_dshot_bind(PIN, 600u, true));
+    CHECK(!out_dshot_bind(PIN, 600u, false));
+    CHECK_EQ(g.pad_writes, 0u);
     CHECK(!out_dshot_bind(PIN, 0u, true));
 }
 
@@ -622,6 +675,86 @@ TEST_CASE(binding_again_the_same_way_moves_nothing)
     CHECK_EQ(level(), LVL_DRIVEN_LOW);
 }
 
+/* The bidirectional slot bound last gets its pair in the next block when
+ * the first block's free state machine has none above it: the three slot
+ * orders that leave PIO2 with machine 3 alone, or with no room. */
+TEST_CASE(a_bidirectional_bind_takes_the_next_block_for_its_pair)
+{
+    /* plain, bidirectional, bidirectional */
+    fresh(false);
+    CHECK(out_dshot_bind(0u, 600u, false));
+    CHECK(out_dshot_bind(1u, 600u, true));
+    CHECK_EQ(claimed_all(), 0x700u);
+    CHECK(out_dshot_bind(2u, 600u, true));
+    CHECK_EQ(claimed_all(), 0x730u);
+    CHECK_EQ(g.used[2], 20u);
+    CHECK_EQ(g.used[1], 16u);
+
+    /* three plain, then one bidirectional */
+    fresh(false);
+    CHECK(out_dshot_bind(0u, 600u, false));
+    CHECK(out_dshot_bind(1u, 600u, false));
+    CHECK(out_dshot_bind(2u, 600u, false));
+    CHECK(out_dshot_bind(3u, 600u, true));
+    CHECK_EQ(claimed_all(), 0x730u);
+    CHECK_EQ(g.used[2], 12u);
+
+    /* bidirectional, plain, bidirectional */
+    fresh(false);
+    CHECK(out_dshot_bind(0u, 600u, true));
+    CHECK(out_dshot_bind(1u, 600u, false));
+    CHECK(out_dshot_bind(2u, 600u, true));
+    CHECK_EQ(claimed_all(), 0x730u);
+
+    /* The pair wraps: machines 3 and 0 of one block. */
+    fresh(false);
+    g.claimed[2] = 0x6u;
+    CHECK(out_dshot_bind(PIN, 600u, true));
+    CHECK_EQ(claimed_all(), 0xf00u);
+    out_dshot_release(PIN);
+    CHECK_EQ(claimed_all(), 0x600u);
+    CHECK_EQ(g.programs, 0u);
+
+    /* Six bidirectional pins fill the three blocks; a seventh is refused
+     * and takes nothing. */
+    fresh(false);
+    for (uint8_t pin = 0u; pin < 6u; ++pin) {
+        CHECK(out_dshot_bind(pin, 600u, true));
+    }
+    CHECK_EQ(claimed_all(), 0xfffu);
+    CHECK(!out_dshot_bind(7u, 600u, true));
+    CHECK_EQ(g.programs, 12u);
+}
+
+/* A block reaches 32 GPIOs from GPIO 0 or GPIO 16.  A bidirectional pin
+ * above GPIO 31 takes a block whose window holds it, and moves the window
+ * of a block only when nothing uses that block. */
+TEST_CASE(a_bidirectional_bind_keeps_to_a_block_that_reaches_the_pin)
+{
+    fresh(false);
+    CHECK(out_dshot_bind(40u, 600u, true));
+    CHECK_EQ(claimed_all(), 0x300u);
+    CHECK_EQ(g.base[2], 16u);
+    /* GPIO 2 is outside PIO2's window: PIO1. */
+    CHECK(out_dshot_bind(2u, 600u, true));
+    CHECK_EQ(claimed_all(), 0x330u);
+    CHECK_EQ(g.base[1], 0u);
+    /* GPIO 41 goes back to PIO2 and leaves PIO0's window alone. */
+    CHECK(out_dshot_bind(41u, 600u, true));
+    CHECK_EQ(claimed_all(), 0xf30u);
+    CHECK_EQ(g.base[0], 0u);
+
+    /* A block in use is not moved: its state machines claimed, or a
+     * program loaded. */
+    fresh(false);
+    g.claimed[2] = 0x1u;
+    g.used[1] = 4u;
+    g.claimed[0] = 0x8u;
+    CHECK(!out_dshot_bind(40u, 600u, true));
+    CHECK_EQ(g.base[2] | g.base[1] | g.base[0], 0u);
+    CHECK_EQ(claimed_all(), 0x108u);
+}
+
 int main(void)
 {
     RUN(a_bidirectional_pin_is_driven_low_from_the_bind_with_no_high_on_the_way);
@@ -634,5 +767,7 @@ int main(void)
     RUN(a_released_pin_is_a_plain_input_the_driver_leaves_alone);
     RUN(a_bind_that_cannot_invert_or_pair_is_refused_with_a_plain_input);
     RUN(binding_again_the_same_way_moves_nothing);
+    RUN(a_bidirectional_bind_takes_the_next_block_for_its_pair);
+    RUN(a_bidirectional_bind_keeps_to_a_block_that_reaches_the_pin);
     return test_summary("out_dshot");
 }

@@ -17,6 +17,7 @@
 #include "arming.h"
 #include "bench_state.h"
 #include "bind_link.h"
+#include "fw_c6.h"
 #include "heartbeat.h"
 #include "esc_link.h"
 #include "hitec_link.h"
@@ -161,11 +162,9 @@ static void arm_applied(void)
     arm_watch_begin(&s_arm_watch, s_arm_take_gen, s_arm_take_drv, s_arm_gen);
 }
 
-/*
- * The look at the touch stream for an arm still being handed over, once
- * per pass and after the snapshot is published.  control_pump() looks too,
- * inside every exchange's wait, and stops rather than disarms there; this
- * is the look that also ends the watch once the bench is no longer armed.
+/**
+ * @brief A touch loss before the render side has seen an arm: the one answer
+ *        to it, from every place that looks.
  *
  * Until the render side has seen the bench armed, a loss there is answered
  * by cancelling screens that still believe the bench is disarmed, which
@@ -173,25 +172,43 @@ static void arm_applied(void)
  * frame, so a frame can begin before this arm was published and find a loss
  * after.  So a loss of either kind between the taking and that
  * acknowledgement -- the render side dropping gestures, or a gap this task
- * found in the driver's stream -- undoes the arm here.  After it, a loss is
- * seen by the render side against an armed bench and answered there.  The
- * operator repeats the hold.
+ * found in the driver's stream -- is a stop here.  After the
+ * acknowledgement a loss is seen by the render side against an armed bench
+ * and answered there.
+ *
+ * A stop and not a disarm, because control_pump() looks inside every
+ * exchange's wait, where a disarm cannot write the far end:
+ * arming_stop() drops the heartbeat now, the IOmcu fails safe within
+ * HEARTBEAT_MAX_GAP_MS (150ms) whatever this task is waiting for, and the
+ * next service_arming() disarms the bank and the far end and switches the
+ * supply's output off (supply_follow_stops()).  A queued drive command
+ * carries the old stop count and is dropped.  The heartbeat stays withheld
+ * until the next arm; the operator repeats the hold.
  */
-void arm_watch_service(bool link_up)
+void arm_watch_look(void)
+{
+    if (outputs_armed(&s_out)
+        && arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
+                          atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
+        arming_stop(&s_arm);
+        control_alert(TR(ALERT_TOUCH_LOST_ARMING));
+    }
+}
+
+/*
+ * The look at the touch stream for an arm still being handed over, once
+ * per pass and after the snapshot is published.  control_pump() looks too,
+ * inside every exchange's wait, with the same answer (arm_watch_look());
+ * this is the look that also ends the watch once the bench is no longer
+ * armed.
+ */
+void arm_watch_service(void)
 {
     if (!outputs_armed(&s_out)) {
         arm_watch_end(&s_arm_watch);
         return;
     }
-    if (arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
-                       atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
-        (void)disarm_here(link_up);
-        /* A disarm counts no stop, so the supply is cut here as well: an
-         * arm the watch undid is a stop to the supply wherever it is found
-         * (control_pump() finds it by arming_stop()). */
-        supply_switch(false);
-        control_alert(TR(ALERT_TOUCH_ARM_AGAIN));
-    }
+    arm_watch_look();
 }
 
 /*
@@ -585,7 +602,13 @@ static bool write_output_binding(const outbind_t *bind)
      * it could not: the rate this end holds the far end to follows it. */
     servo_link_rate_reset_note(rate != BIND_RATE_NOT_SENT,
                                rate == BIND_RATE_LANDED);
-    atomic_store(&s_outputs_result, (int)res);
+    /* A refusal of the binding itself has a cause on a 4.38 IOmcu; a
+     * refused rate reset left the register at an earlier one. */
+    uint8_t why = (uint8_t)LINK_BW_NONE;
+    if (res == OUTPUTS_REFUSED && rate != BIND_RATE_REFUSED) {
+        why = bind_link_why(&s_host, &k_port, s_far_minor);
+    }
+    atomic_store(&s_outputs_result, OUTPUTS_RESULT_PACK(res, why));
     return rate == BIND_RATE_NOT_SENT || rate == BIND_RATE_LANDED;
 }
 
@@ -703,10 +726,27 @@ static void apply_clear_cmd(const panel_cmd_t *pc, bool link_up)
  * because most of these write to the far end, and the flag that says whether
  * that is possible is the control loop's.
  */
+/** @brief ARMs drain_commands() has dealt with and arms_taken_publish()
+ *         has not yet counted; control task only. */
+static unsigned s_arms_drained;
+
+void arms_taken_publish(void)
+{
+    if (s_arms_drained != 0u) {
+        atomic_fetch_add(&s_arms_taken, s_arms_drained);
+        s_arms_drained = 0u;
+    }
+}
+
 void drain_commands(bool link_up, bench_state_t *bench)
 {
     panel_cmd_t pc;
     while (xQueueReceive(s_cmd_q, &pc, 0) == pdTRUE) {
+        if (panel_cmd_arms(&pc)) {
+            /* Taken or refused below; counted for the flash gates once
+             * this pass's snapshot shows which (arms_taken_publish()). */
+            ++s_arms_drained;
+        }
         /*
          * Between entries, because a backlog of positions is seconds of
          * exchanges and a disarm asked for during it must not wait them out.
@@ -759,10 +799,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
          * again, finds a stamp that is not its waiting one and changes
          * nothing.
          */
-        const bool arms = (pc.kind == PANEL_CMD_MOTOR
-                           && pc.motor.kind == MOTOR_CMD_ARM)
-                          || (pc.kind == PANEL_CMD_SERVO
-                              && pc.servo.kind == SERVO_CMD_ARM);
+        const bool arms = panel_cmd_arms(&pc);
         const uint32_t ask = !arms ? 0u
                              : (pc.kind == PANEL_CMD_MOTOR) ? pc.motor.ask
                                                             : pc.servo.ask;
@@ -807,7 +844,7 @@ void drain_commands(bool link_up, bench_state_t *bench)
             arming_refuse_ask(&s_arm, ask);
             continue;
         }
-        if (arms && panel_c6_busy()) {
+        if (arms && fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_ARM)) {
             /* The C6 radio's update ends in a restart of the panel. */
             control_alert(TR(ALERT_ARM_C6));
             arming_refuse_ask(&s_arm, ask);

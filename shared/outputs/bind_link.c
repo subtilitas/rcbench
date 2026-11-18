@@ -14,6 +14,8 @@
 
 #include "out_stage.h"
 
+/** @brief The commit writes register 0 alone. */
+_Static_assert(LINK_BD_COMMIT == 0, "the commit writes register 0");
 /** @brief page_written() writes from register 0. */
 _Static_assert(LINK_SV_FRAME_HZ == 0, "the rate reset writes register 0");
 
@@ -97,8 +99,21 @@ bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
         return res;
     }
     const uint16_t crc = out_stage_crc(cfg, slots);
-    (void)page_written(h, port, LINK_PAGE_BIND, LINK_BD_COUNT, &crc, &res);
+    (void)page_written(h, port, LINK_PAGE_BIND, 1u, &crc, &res);
     return res;
+}
+
+uint8_t bind_link_why(link_host_t *h, const link_port_t *port,
+                      uint16_t minor)
+{
+    link_msg_t reply;
+    if (h == NULL || port == NULL || minor < LINK_MINOR_BIND_WHY
+        || !link_read_window(h, port, LINK_PAGE_BIND, LINK_BD_WHY, 1u,
+                             &reply)
+        || reply.op != LINK_OP_DATA || reply.regs[0] > 0xFFu) {
+        return (uint8_t)LINK_BW_NONE;
+    }
+    return (uint8_t)reply.regs[0];
 }
 
 bool bind_link_may_write(bind_read_t last, uint16_t board,

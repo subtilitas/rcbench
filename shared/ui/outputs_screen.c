@@ -595,6 +595,7 @@ static void unbind_all(void)
 static void tick(float dt_s)
 {
     outputs_port_tick();
+    pin_take_tick(dt_s);
     if (ui_hold_flashing(&s.clear)) {
         ui_hold_flash_step(&s.clear, dt_s);
         touched();      /* the flash's frames */
@@ -686,6 +687,9 @@ static void event(const touch_event_t *evt)
         touched();
         return;
     }
+    if (pin_take_spends(PIN_TAKE_GRID, evt)) {
+        return;         /* the second tap of a double tap on the card */
+    }
 
     if (!s.open && (outputs_port_event(evt) || outputs_unbind_event(evt))) {
         return;
@@ -742,7 +746,9 @@ static void event(const touch_event_t *evt)
         /* A refused tick is not silent: the cell flashes nothing, but the
          * count under the protocol does not move and the reason is printed
          * in the cell or under the protocol.  A PWM clash names the pin
-         * tapped there. */
+         * tapped there.  The reason line names this tap or nothing: a
+         * refusal the tap before left goes first. */
+        pin_take_forget_why();
         if (!outputs_screen_editable()) {
             touched();
         } else if (take_tap(index)) {
@@ -750,13 +756,11 @@ static void event(const touch_event_t *evt)
             touched();
         } else if (clashes((uint8_t)index)) {
             s.refused = index;
-            pin_take_forget_why();
             touched();
         } else if (!prog_taken((uint8_t)index)
                    && iface_taken((uint8_t)index) == OUTPUTS_IFACE_NONE
                    && outbind_toggle(&s.bind, (uint8_t)index)) {
             s.refused = -1;
-            pin_take_forget_why();
             changed();
         }
     } else {
@@ -878,6 +882,8 @@ const char *outputs_result_text(void)
     }
 }
 
+outputs_result_t outputs_screen_result(void) { return s.result; }
+
 gfx_color_t outputs_result_color(void)
 {
     switch (s.result) {
@@ -956,7 +962,8 @@ bool outputs_screen_reason(char *buf, size_t cap)
     return pin_take_reason(PIN_TAKE_GRID, &s.bind, &ctx, buf, cap)
            || outputs_reason_of(&s.bind, buf, cap)
            || outputs_clash_reason(&s.bind, s.refused, outputs_port_pins(),
-                                   LINK_PG_PORTS_MAX, buf, cap);
+                                   LINK_PG_PORTS_MAX, buf, cap)
+           || outputs_write_reason(buf, cap);
 }
 
 bool outputs_reason_of(const outbind_t *b, char *buf, size_t cap)

@@ -497,6 +497,214 @@ TEST_CASE(the_generator_edges_at_the_period_and_not_1_ms_before)
     at_tick_0_and_before_the_wrap(period_case, HEARTBEAT_PERIOD_MS + 2u);
 }
 
+/* The floor in numbers, not in the header's name: an interval of 4ms is a
+ * heartbeat and one of 3ms is noise. */
+TEST_CASE(the_floor_is_4_ms)
+{
+    heartbeat_mon_t m;
+    one_edge_after(&m, 1000u, 4u);
+    CHECK(heartbeat_mon_alive(&m, 1004u));
+    CHECK_EQ(m.rejected_fast, 0);
+    one_edge_after(&m, 1000u, 3u);
+    CHECK(!heartbeat_mon_alive(&m, 1003u));
+    CHECK_EQ(m.rejected_fast, 1);
+}
+
+/* ------------------------------------------------------ a flash window */
+
+/* The IOmcu's loop around a flash window, in 1ms passes for 1000ms: the
+ * panel's line turns every 20ms, the loop samples it once a pass and hands
+ * the monitor an edge and then the poll, as safety_gate_step() does.  One
+ * window of @p window_ms opens at 500ms + @p phase.  With @p early the
+ * window lies between the pass's clock and its sample (a sector written
+ * under can_service()), so the edge is stamped before it happened; without,
+ * the window follows the sample (out_store_tick()) and the edge is stamped
+ * late.  @p told is whether the loop announces the window.  Returns the
+ * monitor. */
+static heartbeat_mon_t window_run(uint32_t t0, uint32_t window_ms,
+                                  uint32_t phase, bool early, bool told)
+{
+    heartbeat_mon_t m;
+    trusted_at(&m, t0);
+    bool     seen      = false;      /* the level at t0 */
+    bool     owed      = false;      /* a window since the last sample */
+    uint32_t sample_at = 0u;         /* real time of the last sample */
+    uint32_t real      = 1u;         /* ms since t0 */
+    while (real < 1000u) {
+        const uint32_t stamp = (uint32_t)(t0 + real);
+        const bool opens = real == 500u + phase;
+        if (opens && early) {
+            real += window_ms;
+            owed = true;
+        }
+        if (owed && told) {
+            heartbeat_mon_window(&m, real - sample_at + 1u);
+        }
+        owed      = false;
+        sample_at = real;
+        const bool level = ((real / HEARTBEAT_PERIOD_MS) & 1u) != 0u;
+        if (level != seen) {
+            seen = level;
+            heartbeat_mon_edge(&m, stamp);
+        }
+        (void)heartbeat_mon_alive(&m, stamp);
+        if (opens && !early) {
+            real += window_ms;
+            owed = true;
+        }
+        ++real;
+    }
+    return m;
+}
+
+static void window_case(uint32_t t0)
+{
+    for (uint32_t w = 17u; w <= 25u; ++w) {
+        for (uint32_t phase = 0u; phase < 2u * HEARTBEAT_PERIOD_MS; ++phase) {
+            for (int early = 0; early < 2; ++early) {
+                const heartbeat_mon_t m =
+                    window_run(t0, w, phase, early != 0, true);
+                if (!m.alive || m.rejected_fast != 0u
+                    || m.rejected_slow != 0u) {
+                    T_FAIL("window %ums at phase %u, %s stamp: alive %d, "
+                           "fast %u, slow %u", (unsigned)w, (unsigned)phase,
+                           early ? "early" : "late", (int)m.alive,
+                           (unsigned)m.rejected_fast,
+                           (unsigned)m.rejected_slow);
+                }
+            }
+        }
+    }
+}
+
+/* Every phase of a 17 to 25ms window against the line, stamped late and
+ * stamped early, at tick 0 and across the wrap: the line stays trusted and
+ * no interval is counted against it. */
+TEST_CASE(an_announced_flash_window_costs_the_line_nothing_at_any_phase)
+{
+    at_tick_0_and_before_the_wrap(window_case, 600u);
+}
+
+/* The same windows with nobody telling the monitor: a 19ms window loses
+ * the line at some phases, which is what the announcement is for. */
+TEST_CASE(a_window_nobody_announced_is_judged_as_a_fast_line)
+{
+    unsigned lost = 0u;
+    for (uint32_t phase = 0u; phase < 2u * HEARTBEAT_PERIOD_MS; ++phase) {
+        const heartbeat_mon_t m = window_run(0u, 19u, phase, false, false);
+        lost += (m.rejected_fast != 0u) ? 1u : 0u;
+    }
+    CHECK(lost > 0u);
+}
+
+/* The doubt lies on the two intervals beside the first sample's edge and
+ * nowhere else. */
+TEST_CASE(a_window_excuses_the_intervals_beside_its_own_edge_only)
+{
+    heartbeat_mon_t m;
+
+    /* The edge stamped early: 1ms after the last, with a 19ms window. */
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 19u);
+    heartbeat_mon_edge(&m, 1001u);
+    CHECK(heartbeat_mon_alive(&m, 1001u));
+    CHECK_EQ(m.rejected_fast, 0);
+    /* The interval it opens, read short by the late stamp: taken. */
+    heartbeat_mon_edge(&m, 1002u);
+    CHECK(heartbeat_mon_alive(&m, 1002u));
+    CHECK_EQ(m.rejected_fast, 0);
+    /* The one after has no doubt left: a fast line is lost at its second
+     * short interval. */
+    heartbeat_mon_edge(&m, 1003u);
+    CHECK(!heartbeat_mon_alive(&m, 1003u));
+    CHECK_EQ(m.rejected_fast, 1);
+
+    /* A first sample without an edge ends the announcement. */
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 19u);
+    CHECK(heartbeat_mon_alive(&m, 1001u));
+    heartbeat_mon_edge(&m, 1002u);
+    CHECK(!heartbeat_mon_alive(&m, 1002u));
+    CHECK_EQ(m.rejected_fast, 1);
+
+    /* The doubt is the window's length and no more: 2ms of interval and
+     * 2ms of window reach the 4ms floor, 2ms and 1ms do not. */
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 2u);
+    heartbeat_mon_edge(&m, 1002u);
+    CHECK(heartbeat_mon_alive(&m, 1002u));
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 1u);
+    heartbeat_mon_edge(&m, 1002u);
+    CHECK(!heartbeat_mon_alive(&m, 1002u));
+    CHECK_EQ(m.rejected_fast, 1);
+    /* On the interval the edge opens as well: 3ms and 1ms reach it, 2ms
+     * and 1ms do not. */
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 1u);
+    heartbeat_mon_edge(&m, 1020u);
+    heartbeat_mon_edge(&m, 1023u);
+    CHECK(heartbeat_mon_alive(&m, 1023u));
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 1u);
+    heartbeat_mon_edge(&m, 1020u);
+    heartbeat_mon_edge(&m, 1022u);
+    CHECK(!heartbeat_mon_alive(&m, 1022u));
+
+    /* Two windows before one sample count as the longer. */
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 2u);
+    heartbeat_mon_window(&m, 1u);
+    heartbeat_mon_edge(&m, 1002u);
+    CHECK(heartbeat_mon_alive(&m, 1002u));
+
+    /* The first edge a monitor ever sees carries its window too. */
+    heartbeat_mon_init(&m);
+    heartbeat_mon_window(&m, 19u);
+    heartbeat_mon_edge(&m, 1000u);
+    heartbeat_mon_edge(&m, 1001u);
+    CHECK_EQ(m.rejected_fast, 0);
+    heartbeat_mon_edge(&m, 1002u);
+    CHECK_EQ(m.rejected_fast, 1);
+
+    heartbeat_mon_window(NULL, 19u);
+}
+
+/* The ceiling is not widened: with a window announced, an interval of
+ * 150ms is taken and one of 151ms is a stall, and 150ms without an edge
+ * loses the line.  A window counts as 150ms at most. */
+TEST_CASE(a_window_widens_no_ceiling_and_counts_150_ms_at_most)
+{
+    heartbeat_mon_t m;
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 25u);
+    heartbeat_mon_edge(&m, 1150u);
+    CHECK(m.alive);
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 25u);
+    heartbeat_mon_edge(&m, 1151u);
+    CHECK(!m.alive);
+    CHECK_EQ(m.rejected_slow, 1);
+
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, 25u);
+    CHECK(heartbeat_mon_alive(&m, 1149u));
+    heartbeat_mon_window(&m, 25u);
+    CHECK(!heartbeat_mon_alive(&m, 1150u));
+
+    /* A length no clock gives: clamped, so the sum cannot wrap to under
+     * the floor. */
+    trusted_at(&m, 1000u);
+    heartbeat_mon_window(&m, UINT32_MAX);
+    CHECK_EQ(m.window_ms, 150u);
+    heartbeat_mon_edge(&m, 1002u);
+    CHECK(m.alive);
+    heartbeat_mon_window(&m, 151u);
+    CHECK_EQ(m.window_ms, 150u);
+    heartbeat_mon_window(&m, 149u);
+    CHECK_EQ(m.window_ms, 150u);
+}
+
 /* Null arguments are a programming error, but a safety module that faults on
  * one has turned a mistake into an outage. */
 TEST_CASE(null_arguments_are_refused_rather_than_dereferenced)
@@ -528,6 +736,11 @@ int main(void)
     RUN(a_silence_is_counted_once_and_a_line_never_seen_not_at_all);
     RUN(a_stop_while_the_line_is_high_resumes_low);
     RUN(the_generator_edges_at_the_period_and_not_1_ms_before);
+    RUN(the_floor_is_4_ms);
+    RUN(an_announced_flash_window_costs_the_line_nothing_at_any_phase);
+    RUN(a_window_nobody_announced_is_judged_as_a_fast_line);
+    RUN(a_window_excuses_the_intervals_beside_its_own_edge_only);
+    RUN(a_window_widens_no_ceiling_and_counts_150_ms_at_most);
     RUN(null_arguments_are_refused_rather_than_dereferenced);
     return test_summary("heartbeat");
 }

@@ -89,7 +89,7 @@ nack page=0x2A off=4: NOT_ARMED (5)
 ```
 
 Lines typed are shown here after `> `; the console prints no prompt. The
-first line reads the protocol version, 4.38. The second is SUPPLY's ON at
+first line reads the protocol version, 4.39. The second is SUPPLY's ON at
 5000mV and 1000mA, refused because no panel sends a heartbeat. With a
 panel running, the same line is taken:
 

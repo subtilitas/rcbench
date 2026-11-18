@@ -221,6 +221,82 @@ TEST_CASE(a_distrusted_heartbeat_latches_until_clear)
     CHECK(gate_run(700, 760).arm);
 }
 
+/*
+ * The latch is set on the edge out of trust, and a line that is not trusted
+ * has no such edge: after STOP's reset the panel writes CLEAR 100 to 125ms
+ * before the monitor trusts the line, and an interval under the floor or
+ * 150ms without an edge in that time sets no latch.  Nothing arms from
+ * it: an ARM needs a trusted line.
+ */
+TEST_CASE(a_line_not_yet_trusted_sets_no_latch_when_it_is_rejected)
+{
+    gate_init(0);
+    (void)safety_gate_step(&g_beat, true, &g_dev, g_control, 100u);
+    g_dev.last_request_ms = 105u;
+    g_dev.heard = true;
+    CHECK_EQ(gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC), 0);
+    CHECK(!link_dev_arm_latched(&g_dev));
+    g_dev.last_request_ms = 120u;
+    (void)safety_gate_step(&g_beat, true, &g_dev, g_control, 120u);
+    CHECK(!g_beat.alive);
+    /* One interval of 2ms. */
+    g_dev.last_request_ms = 122u;
+    safety_gate_t g =
+        safety_gate_step(&g_beat, true, &g_dev, g_control, 122u);
+    CHECK_EQ(g_beat.rejected_fast, 1);
+    CHECK(!g.off);
+    CHECK(!link_dev_arm_latched(&g_dev));
+    /* Then 200ms without an edge, the link kept talking. */
+    for (uint32_t t = 123u; t <= 322u; ++t) {
+        g_dev.last_request_ms = t;
+        g = safety_gate_step(&g_beat, false, &g_dev, g_control, t);
+        CHECK(!g.off);
+    }
+    CHECK(!g_beat.alive);
+    CHECK(!link_dev_arm_latched(&g_dev));
+    /* And no arm comes of the open latch: the line is not trusted. */
+    CHECK_EQ(gate_write(LINK_CT_ARM, 1u), LINK_NACK_NOT_ARMED);
+    CHECK(link_dev_arm_latched(&g_dev));
+}
+
+/*
+ * A flash window the loop announces: an edge sampled 19ms late and the 1ms
+ * interval after it switch nothing off, set no latch, refuse no supply ON
+ * and put no fault into STATUS.  The same edges with no announcement do
+ * all four.
+ */
+TEST_CASE(an_announced_flash_window_latches_nothing_and_refuses_nothing)
+{
+    for (int told = 1; told >= 0; --told) {
+        gate_init(0);
+        (void)gate_run(1, 200);
+        (void)gate_write(LINK_CT_CLEAR, LINK_CLEAR_MAGIC);
+        CHECK_EQ(gate_write(LINK_CT_ARM, 1u), 0);
+        CHECK(gate_run(200, 301).arm);       /* the last edge at 300 */
+        /* The window: 301 to 319.  The edge due at 320 fell at 301 on a
+         * line 1ms ahead of this clock; it is sampled at 320. */
+        g_dev.last_request_ms = 320u;
+        if (told) {
+            heartbeat_mon_window(&g_beat, 20u);
+        }
+        safety_gate_t g =
+            safety_gate_step(&g_beat, true, &g_dev, g_control, 320u);
+        CHECK(g.arm);
+        /* The next edge, 20ms after the one in the window: 1ms on. */
+        g_dev.last_request_ms = 321u;
+        g = safety_gate_step(&g_beat, true, &g_dev, g_control, 321u);
+        uint16_t state = 0u, faults = 0u;
+        safety_gate_status(&g_beat, &g_dev, g_control, &state, &faults);
+        CHECK_EQ(g.off, told == 0);
+        CHECK_EQ(g.arm, told != 0);
+        CHECK_EQ(link_dev_arm_latched(&g_dev), told == 0);
+        CHECK_EQ(safety_gate_supply_ok(&g_beat, &g_dev), told != 0);
+        CHECK_EQ(faults, told ? 0u : (uint16_t)LINK_FAULT_HEARTBEAT);
+        CHECK_EQ(state, told ? (uint16_t)LINK_STATE_ARMED
+                             : (uint16_t)LINK_STATE_FAILSAFE);
+    }
+}
+
 TEST_CASE(a_silent_line_latches_at_the_ceiling_and_not_before)
 {
     /* The last edge at 300ms: trusted for 149ms of silence, and not at
@@ -2227,6 +2303,8 @@ int main(void)
     RUN(a_clear_written_while_the_line_was_never_alive_releases_the_latch);
     RUN(an_arm_written_while_the_line_was_never_alive_is_refused_and_latches);
     RUN(a_distrusted_heartbeat_latches_until_clear);
+    RUN(a_line_not_yet_trusted_sets_no_latch_when_it_is_rejected);
+    RUN(an_announced_flash_window_latches_nothing_and_refuses_nothing);
     RUN(a_silent_line_latches_at_the_ceiling_and_not_before);
     RUN(link_silence_latches_at_200_ms_across_the_wrap);
     RUN(a_refused_arm_leaves_the_latch_set);

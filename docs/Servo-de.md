@@ -179,7 +179,7 @@ Tippen auf die Zeile nennen den ganzen Text
 | PROG 5V | `PROG 5V AUS: START SCHALTET ES EIN` | `PROG 5V AUS` | SAFE auf dem rbmod-Carrier mit PORT auf einem Programmierport und PROG 5V aus. Vor `ZUERST ARM` genannt: der Puls des Ports braucht PROG 5V und kommt nur bei SAFE ([Carrier](Carrier-de.md#der-programmierport)). Gelb: das Halten schaltet es ein |
 | ARM | `ZUERST ARM` | der Text | der Prüfstand ist SAFE. Gelb: `START SCHALTET ARMED` |
 | ARM | `BERICHT WIRD NOCH GESCHRIEBEN` | `SCHREIBT BERICHT` | ein automatischer Test oder ein Endlagenlauf läuft, oder sein Bericht geht noch auf die Karte |
-| PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | der Text, `PINS NICHT GELESEN` | PORT auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Taste PORT. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
+| PORT | `KEIN SERVO-PWM-PIN`, `PINS NICHT AUSGELESEN` | der Text, `NICHT AUSGELESEN` | PORT auf den Ausgängen des Prüfstands, ohne einen SERVO PWM zugeordneten Ausgang oder mit noch nicht ausgelesener Zuordnung: die Worte der Taste PORT. Vor dem Messgerät genannt: auf dem rbmod-Carrier überwacht ein Kanal eine Schiene, und die Ausgänge liegen erst auf einer Schiene, wenn einer zugeordnet ist ([Carrier: Der Strommonitor](Carrier-de.md#der-strommonitor)) |
 | MESSGERÄT | `SERVOSTROMMESSER (INA3221) NICHT EINGERICHTET` | `NICHT EINGERICHTET` | kein Kanal eines bestückten INA3221 überwacht in SETUP > SENSORS das Ziel des Testers, an einem IOmcu älter als 4.25 überwacht CH2 oder CH3 es, ein IOmcu älter als Protokoll 4.11, oder eine SENSE-Page, die die Einrichtung nicht hält |
 | MESSGERÄT | `INA3221 NICHT ERREICHBAR` | `NICHT ERREICHBAR` | kein Link, das Bauteil antwortet nicht, oder sein Reset-Zähler hat sich geändert |
 | MESSGERÄT | `NOCH KEINE INA3221-MESSFENSTER` | `NOCH KEINE FENSTER` | der INA3221 ist noch nicht das Messgerät der Servoschiene: seine Einrichtung ist seit weniger als 1000ms bestätigt, oder kein Fenster mit Strom in den letzten 200ms |
@@ -943,7 +943,7 @@ unter der Schwelle bewegen.
 | `SERVO_TEST_SET_TOL_V` | 0,05V | ein zurückgelesener Sollwert |
 | `SERVO_TEST_SET_TIMEOUT_MS` | 3000ms | für den Sollwert und für das Einschalten |
 | `SERVO_TEST_STALE_MS` | 1500ms | kein neuer Messwert beendet den Lauf |
-| `SERVO_TEST_STALL_ABORT_MS` | 1000ms | so lange über BLOCKIERT AB beendet den Lauf |
+| `SERVO_TEST_STALL_ABORT_MS` | 1000ms | so lange über Blockierschwelle beendet den Lauf |
 | `SERVO_TEST_CC_ABORT_MS` | 1000ms | so lange Netzteil im Konstantstrom beendet den Lauf |
 | `SERVO_TEST_WIN_STALE_MS` | 200ms | ein Lauf am INA3221: so lange kein Fenster beendet ihn; 4 Fenster von 50ms. Der Endlagenlauf teilt den Wert |
 | `SERVO_TEST_WIN_MS` | 50ms | ein Fenster des INA3221 |
@@ -1049,7 +1049,7 @@ PWM-Frame misst, verwendet der Lauf nicht.
   seine Einstellung nicht`, `er antwortet nicht`, `kein Fenster mit Strommesswert in den letzten 200ms`, `er hat sich zurückgesetzt`, `er arbeitet seit weniger
   als 1s` oder `das Netzteil ist vom Panel simuliert`.
 - **Strom mit Vorzeichen.** Ein negativer Strom ist ein Messwert.
-  RUHESTROM, HALTESTROM, BLOCKIERT AB und die Spitze nehmen seinen Betrag,
+  RUHESTROM, HALTESTROM, Blockierschwelle und die Spitze nehmen seinen Betrag,
   CSV und Bericht behalten das Vorzeichen. Ein Lauf, dessen Ruhestrom in
   einer Stufe unter -0,020A liegt (`SERVO_TEST_NEG_IDLE_A`), hat die
   Berichtszeile `Strom in Ruhe negativ: Richtung des Shunts`.
@@ -1072,34 +1072,34 @@ PWM-Frame misst, verwendet der Lauf nicht.
 
 | Regel | Bedingung | Wirkung |
 | --- | --- | --- |
-| BLOCKIERT AB | ein Messwert nach EINSCHWINGZEIT in einer Spannungsstufe, dessen Betrag über BLOCKIERT AB liegt | NICHT BESTANDEN |
-| 1s über BLOCKIERT AB | Messwerte über BLOCKIERT AB über 1000ms (`SERVO_TEST_STALL_ABORT_MS`) ohne einen bei oder unter dem Wert, in jeder Phase und im Brown-out-Lauf | der Lauf endet, `1s über BLOCKIERT AB` |
-| 1s Konstantstrom | das Netzteil meldet in jedem Messwert Konstantstrom (CC, constant current), 1000ms (`SERVO_TEST_CC_ABORT_MS`) ab dem ersten | der Lauf endet, `1s im Konstantstrom`, gleich wie BLOCKIERT AB steht |
+| Blockierschwelle | ein Messwert nach EINSCHWINGZEIT in einer Spannungsstufe, dessen Betrag über Blockierschwelle liegt | NICHT BESTANDEN |
+| 1s über Blockierschwelle | Messwerte über Blockierschwelle über 1000ms (`SERVO_TEST_STALL_ABORT_MS`) ohne einen bei oder unter dem Wert, in jeder Phase und im Brown-out-Lauf | der Lauf endet, `1s über Blockierschwelle` |
+| 1s Konstantstrom | das Netzteil meldet in jedem Messwert Konstantstrom (CC, constant current), 1000ms (`SERVO_TEST_CC_ABORT_MS`) ab dem ersten | der Lauf endet, `1s im Konstantstrom`, gleich wie Blockierschwelle steht |
 | Konstantstrom unter 1s | | nichts endet und nichts fällt durch; die Berichtszeile `Konstantstrom` nennt die Zahl solcher Messwerte und die längste Folge vom ersten bis zum letzten |
-| BLOCKIERT AB bei oder über der Strombegrenzung | beim Start des Laufs | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 3.00A muss unter Strombegrenzung 2.00A sein` |
-| BLOCKIERT AB bei oder über dem Bereich des INA3221 | beim Start des Laufs mit dem INA3221 als Messgerät | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `BLOCKIERT AB 2.00A muss unter INA3221-Bereich 1.638A sein` |
+| Blockierschwelle bei oder über der Strombegrenzung | beim Start des Laufs | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `Blockierschwelle 3.00A: muss unter Strombegrenzung 2.00A` |
+| Blockierschwelle bei oder über dem Bereich des INA3221 | beim Start des Laufs mit dem INA3221 als Messgerät | der Lauf startet. Die Karte AUTOMATISCHER TEST und der Bericht sagen `Blockierschwelle 2.00A: muss unter INA3221-Bereich 1.638A` |
 
-- Jeder Vergleich eines Stroms mit RUHESTROM, HALTESTROM und BLOCKIERT AB
+- Jeder Vergleich eines Stroms mit RUHESTROM, HALTESTROM und Blockierschwelle
   geschieht in ganzen mA, im Urteil wie im Bericht: ein Messwert von 0,050A
   gegen eine Grenze von 0,05A besteht, 0,051A nicht.
-- Am PD mini zählen die 1000ms ab dem ersten Messwert über BLOCKIERT AB:
+- Am PD mini zählen die 1000ms ab dem ersten Messwert über Blockierschwelle:
   ein Messwert 999ms später lässt den Lauf laufen, einer 1000ms später
   beendet ihn.
 - Am INA3221 ist der Messwert das Mittel des Fensters, gleich wie hoch sein
   höchster Messwert ist, und die 1000ms zählen ab dem Beginn des ersten
-  Fensters über BLOCKIERT AB: 20 Fenster in Folge beenden den Lauf.
+  Fensters über Blockierschwelle: 20 Fenster in Folge beenden den Lauf.
 - Ein Netzteil im Konstantstrom hält seine Strombegrenzung; kein Messwert
-  liegt also über einem BLOCKIERT AB bei oder über dieser Grenze. BLOCKIERT
-  AB und der Startstrom des Netzteils stehen beide ab Werk auf 2,00A. Die
+  liegt also über einer Blockierschwelle bei oder über dieser Grenze.
+  Blockierschwelle und der Startstrom des Netzteils stehen beide ab Werk auf 2,00A. Die
   Konstantstrom-Regel beendet einen solchen Lauf: ein Servo am Anschlag,
   das die Grenze zieht, beendet ihn 1,0 bis 1,1s, nachdem das Netzteil
   Konstantstrom meldet.
-- Mit dem INA3221 an seinem 0,1-Ω-Shunt und BLOCKIERT AB auf dem Werkswert
-  2,00A ist BLOCKIERT AB unerreichbar. Ein Servo am Anschlag, das weniger
+- Mit dem INA3221 an seinem 0,1-Ω-Shunt und Blockierschwelle auf dem Werkswert
+  2,00A ist Blockierschwelle unerreichbar. Ein Servo am Anschlag, das weniger
   zieht als die Grenze des Netzteils und mehr als 1,638A, liest sich den
   ganzen Lauf als 1,638A; der Bericht hat dann die Zeile `Übersteuert` und
-  die Zeile `muss unter`. BLOCKIERT AB auf 1,60A oder tiefer oder ein
-  Shunt von 0,05Ω legt BLOCKIERT AB in den Bereich.
+  die Zeile `muss unter`. Blockierschwelle auf 1,60A oder tiefer oder ein
+  Shunt von 0,05Ω legt Blockierschwelle in den Bereich.
 
 Nicht gemessen: was der PD mini mit einem Servo am Anschlag meldet
 (Konstantstrom oder Überstrom, und ob er selbst abschaltet) und wie lange er
@@ -1254,7 +1254,7 @@ beim Einstecken noch einmal verlieren, hinterlässt kein "antwortet nicht"
 
 Diese Toleranzzeit gilt nur für die Winkelmessung. Ein Messwert, von dem ein Schutz abhängt,
 beendet einen Lauf bei seinem ersten Ausfall: die Fenster des INA3221
-speisen den Stopp von BLOCKIERT AB ([Was einen Lauf
+speisen den Stopp von Blockierschwelle ([Was einen Lauf
 beendet](#was-einen-lauf-beendet)), die Messwerte des Netzteils seine
 Abschaltungen. Ein INA3221, der verstummt, während eine Lücke des AS5600
 offen ist, beendet den Lauf sofort mit dem Grund des INA3221.
@@ -1353,7 +1353,7 @@ STOP`), die dann den Grund statt der Dateien nennt. Ein
 Fehler schaltet den Prüfstand statt der Freigabe auf SAFE: ein Netzteil, das
 nicht antwortet oder abgeschaltet hat, kein neuer Messwert, ein Ausgang, der
 nicht anging, ein nicht bestätigter Sollwert, eine Stufe über der Grenze,
-BLOCKIERT AB, Konstantstrom, jeder Grund des INA3221 und beide Gründe des
+Blockierschwelle, Konstantstrom, jeder Grund des INA3221 und beide Gründe des
 AS5600 ([Sicherheit, Fehler](Safety-de.md#fehler)). Auf SAFE schalten auch DISARM,
 STOP und das Verlassen der Seite. Bei manuellen Eingriffen bleibt der Prüfstand ARMED und die Sollposition
 kehrt zur Ruhelage zurück: Berühren der Bedienelemente, Ändern der
@@ -1387,7 +1387,7 @@ wird. Sollwerte, die du nach dem Lauf geändert hast, bleiben erhalten.
 | `Netzteilausgang blieb aus` | 3000ms nach dem ON nicht an |
 | `Sollwert 3s nicht bestätigt` | das Netzteil hat die Spannung einer Stufe nicht übernommen |
 | `Stufe über Spannungsgrenze` | eine Stufe über der geltenden Grenze: SPANNUNG MAX oder die Eingangsspannung des PD mini abzüglich 0,7V |
-| `1s über BLOCKIERT AB` | `SERVO_TEST_STALL_ABORT_MS` |
+| `1s über Blockierschwelle` | `SERVO_TEST_STALL_ABORT_MS` |
 | `1s im Konstantstrom` | das Netzteil meldete `SERVO_TEST_CC_ABORT_MS` lang Konstantstrom |
 | `0.2s kein INA3221-Fenster` | ein Lauf am INA3221: `SERVO_TEST_WIN_STALE_MS` ohne ein Fenster mit Strom und Spannung. Ein Durchlauf 199ms nach dem letzten Fenster lässt den Lauf laufen, einer bei 200ms beendet ihn |
 | `INA3221 setzte sich zurück` | ein Lauf am INA3221: der Reset-Zähler des Bausteins hat sich geändert |
@@ -1403,7 +1403,7 @@ wird. Sollwerte, die du nach dem Lauf geändert hast, bleiben erhalten.
 Die sechs Gründe eines Laufs am INA3221 sind die Bedingungen, unter denen der
 INA3221 das Messgerät der Schiene ist. Jeder beendet den Lauf in der ersten
 Abfrage, die ihn findet: die Fenster des INA3221 speisen den Stopp von
-BLOCKIERT AB, der immer aktiv ist (0,1A bis 5,0A, kein AUS). Für fehlende
+Blockierschwelle, der immer aktiv ist (0,1A bis 5,0A, kein AUS). Für fehlende
 INA3221-Fenster gibt es deshalb keine zusätzliche Toleranzzeit. Die Gründe
 des Netzteils gelten an beiden Messgeräten: sein Zustand wird in jedem Lauf
 gelesen.
@@ -1422,7 +1422,7 @@ aber nicht gegen diese Grenzen bewertet:
 - der höchste Haltestrom liegt über HALTESTROM;
 - die längste Stellzeit liegt über STELLZEIT, wo der Strommesser
   Stellzeiten misst (nicht der PD mini und nicht die Fenster des INA3221);
-- ein Messwert nach EINSCHWINGZEIT liegt über BLOCKIERT AB;
+- ein Messwert nach EINSCHWINGZEIT liegt über Blockierschwelle;
 - eine gezählte Bewegung war verspätet: Bewegung erkannt, keine Ankunft
   binnen des Fensters, 3000ms plus der Verzögerung des Strommessers.
 
@@ -1441,7 +1441,7 @@ MESSBAR, nicht NICHT BESTANDEN. Kam keine Bewegung an, gibt es keine
 längste Stellzeit, und die Zeile `Stellzeit` lautet `längste --` und
 `nicht gemessen, keine Bewegung erreichte das Ziel`, an jedem Strommesser.
 
-Eine Bestehensgrenze von 0 ist ausgeschaltet. BLOCKIERT AB wird dagegen
+Eine Bestehensgrenze von 0 ist ausgeschaltet. Blockierschwelle wird dagegen
 immer geprüft. Ein
 Strom wird mit seinem Betrag und in ganzen mA verglichen: siehe
 [Blockieren und Konstantstrom](#blockieren-und-konstantstrom).
@@ -1663,7 +1663,7 @@ Alarmband:
 | WINKEL | `WINKELQUELLE: KEIN MESSWERT` | `KEIN MESSWERT` |
 | NULLPUNKT | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` | `NICHT GESETZT` |
 | ARM | `ARMED gesperrt: Die Servoprogrammierung belegt einen Port.`, der Pin der ESC-Programmierung | `SERVOPROGRAMMIERUNG`, `ESC-PROGRAMMIERUNG` |
-| PORT | `PINS NICHT AUSGELESEN`, 21 Zellen | `PINS NICHT GELESEN` |
+| PORT | `PINS NICHT AUSGELESEN`, 21 Zellen | `NICHT AUSGELESEN` |
 
 ### SET V, SET A und die Grafik
 
@@ -1829,6 +1829,14 @@ Bluetooth-IMU).
   die Karte BEREIT hat keinen Platz für eine Zeile LOG.
 - Der Zielwert einer Seite ist der eingegebene Ausschlag x (1 + RESERVE):
   20,0° bei 10% ergeben 22,0°.
+- Jeder Zielwert muss über 2 x TOLERANZ liegen, um 0,001° oder mehr: Ein
+  Messwert innerhalb der TOLERANZ eines solchen Zielwerts liegt mindestens
+  die TOLERANZ vom Nullpunkt entfernt und gibt seiner Seite eine Richtung.
+  Bei einem kleineren Zielwert wird das Halten verweigert, bevor etwas
+  geschaltet wird, und die erste Zeile der Karte und das Alarmband
+  zeigen `SOLL MUSS ÜBER 2 x TOLERANZ LIEGEN`. Keine Zeile von BEREIT ist
+  dafür rot. Ein Soll von 1,0° bei RESERVE 0% gegen TOLERANZ 0,5° wird
+  verweigert; TOLERANZ 0,4° startet.
 - Die Karte BEREIT an der Stelle der Ausgangskarte, 380 x 374px: eine
   Zeile je Prüfung des Starts, je 30px, ein Punkt, die Bezeichnung und der
   Zustand. Grün: erfüllt. Rot: sperrt das Halten, oder ein Ausgang ist
@@ -1875,9 +1883,9 @@ Bluetooth-IMU).
   `ZURÜCKSPIELEN IN KST` (an einem Hitec-Servo `HITEC001 IN DATEIEN
   LADEN`) nach einem NICHT BESTANDEN oder einem Abbruch, der geschrieben
   hat oder ein Schreiben unterwegs abbrach, das angekommen sein kann; das
-  Nachmessen, sobald seine erste Messung vorliegt, `NACHMESSEN 1000us
-  +0.03°, 2000us -0.02°, MITTE +0.05°`: jedes Ende ab seinem Sollwert, die
-  Mitte ab dem Nullpunkt, `-` für eine noch nicht gemessene. Die Zeile wird
+  Nachmessen, sobald seine erste Messung vorliegt, `NACHMESSEN +0.03°,
+  -0.02°, MITTE +0.05°`: 1000us, 2000us und die Mitte, jedes Ende ab seinem
+  Sollwert, die Mitte ab dem Nullpunkt, `-` für eine noch nicht gemessene. Die Zeile wird
   rot bei der ersten außerhalb der Toleranz und grün, sobald alle drei
   innerhalb liegen.
 - Das Servo ist die Zeile SERVO: die eigene gespeicherte Einstellung von

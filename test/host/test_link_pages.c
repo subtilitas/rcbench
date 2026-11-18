@@ -1335,7 +1335,7 @@ TEST_CASE(a_4_7_panel_links_and_arms_on_a_4_8_coprocessor)
     CHECK(tone_page_enabled(&s_tone));
 }
 
-/* The fault bits are one bit each; 4.7's store-off bit is bit 6 and 4.38's
+/* The fault bits are one bit each; 4.7's store-off bit is bit 6 and 4.39's
  * watchdog bit is bit 7, and neither moves any of the others. */
 TEST_CASE(the_fault_bits_are_one_bit_each)
 {
@@ -1700,8 +1700,11 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 38u);
-    CHECK_EQ(LINK_MINOR_WATCHDOG, 38u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 39u);
+    CHECK_EQ(LINK_MINOR_WATCHDOG, 39u);
+    CHECK_EQ(LINK_MINOR_BIND_WHY, 38u);
+    CHECK_EQ(LINK_BD_COMMIT, 0);
+    CHECK_EQ(LINK_BD_WHY, 1);
     CHECK_EQ(LINK_MINOR_CARRIER_PWM, 36u);
     CHECK_EQ(LINK_MINOR_READ_HELD, 35u);
     CHECK_EQ(LINK_OP_READ_HELD, 0x06);

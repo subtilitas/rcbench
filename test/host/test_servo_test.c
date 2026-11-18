@@ -374,7 +374,7 @@ TEST_CASE(each_limit_fails_the_run)
     run_out(60000u);
     CHECK_EQ(servo_test_verdict(&g.t), SERVO_TEST_FAIL);
 
-    /* STALL AT under the moving current: counted, though nothing lasts a
+    /* Stall threshold under the moving current: counted, though nothing lasts a
      * second above it. */
     rig_fresh();
     cfg_defaults(&c);
@@ -387,7 +387,7 @@ TEST_CASE(each_limit_fails_the_run)
 }
 
 /* An end past the linkage's stop: the servo pushes there, its holding
- * current is high, and above STALL AT for a second the run ends. */
+ * current is high, and above Stall threshold for a second the run ends. */
 TEST_CASE(a_servo_pushing_on_a_stop_ends_the_run)
 {
     rig_fresh();
@@ -402,9 +402,9 @@ TEST_CASE(a_servo_pushing_on_a_stop_ends_the_run)
     CHECK_EQ(g.t.why, SERVO_TEST_AB_STALL);
     CHECK(g.off_asked);
     CHECK(g.released);
-    CHECK(strstr(g.report, "Result:         ABORTED - above STALL AT") != NULL);
+    CHECK(strstr(g.report, "Result:         ABORTED - above Stall threshold") != NULL);
 
-    /* Under STALL AT the run goes on, and the high end's holding current
+    /* Under Stall threshold the run goes on, and the high end's holding current
      * fails it. */
     rig_fresh();
     g.servo.cfg.stop_hi_us = 1880u;
