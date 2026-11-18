@@ -94,7 +94,7 @@ The left card holds the readout, the targets, MARGIN and TOLERANCE, ZERO and RES
 |---|---|
 | 1000us, 2000us | the target deflection of that side, 0.5 to 90.0°, 20.0°; with LENGTH set the mm at the trailing edge beside it |
 | MARGIN | programmed past the target by this share, 0 to 50%, 10%: 20.0° at 10% is a goal of 22.0° |
-| TOLERANCE | how near the goal a measure has to be, 0.1 to 5.0°, 0.5° |
+| TOLERANCE | how near the goal a measure has to be, 0.1 to 5.0°, 0.5°. Each goal must exceed 2 x TOLERANCE; otherwise the hold is refused and the first state line reads `GOALS MUST EXCEED 2 x TOLERANCE` |
 
 ### READY
 

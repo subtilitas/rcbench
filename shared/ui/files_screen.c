@@ -422,6 +422,11 @@ static void take_job(void)
         fs_say(false, TX_FM_E_STOP_ARMED, NULL, NULL);
     } else if (j->state == FM_JOB_STOPPED && j->err == FM_ERR_LOGGING) {
         fs_say(false, TX_FM_E_STOP_LOGGING, NULL, NULL);
+    } else if (j->kind == FM_JOB_COPY && s.req.err == FM_ERR_EXISTS &&
+               j->tmp_taken) {
+        /* A copy cut short left "<name>.NEW" there: that is the entry in
+         * the way, not the file. */
+        fs_say_err(s.req.err, fm_path_base(j->tmp));
     } else {
         fs_say_err(s.req.err, from);
     }

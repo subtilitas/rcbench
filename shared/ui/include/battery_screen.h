@@ -37,7 +37,8 @@ const ui_screen_t *battery_screen(void);
 /**
  * @brief What the balance lead says.  NULL, or valid false, means nothing
  *        is on.
- * @param b The pack, copied; NULL clears it.
+ * @param b The pack, copied; NULL clears it.  A cell count outside 1 to
+ *          BATTERY_CELLS_MAX is taken as no pack.
  */
 void battery_screen_set(const battery_state_t *b);
 

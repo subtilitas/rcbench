@@ -32,7 +32,7 @@
  * TRAVEL TIME is not checked.
  *
  * Signed current.  A negative current is a reading.  The limits, the peak
- * and STALL AT compare its magnitude, in whole mA (servo_test_over_a()),
+ * and Stall threshold compare its magnitude, in whole mA (servo_test_over_a()),
  * and the CSV keeps the sign.  A clipped window -- a 1ms sample at an end
  * of the INA3221's range -- is a reading as well: its figures are the
  * values the part gave, a lower bound, and the report counts such windows.
@@ -172,7 +172,7 @@
  * servo_test_abort()), and by the supply (here): it stops answering, trips,
  * its output goes off, no new reading arrives for SERVO_TEST_STALE_MS, a
  * set point is not read back, a step above the voltage cap in force, a
- * current above STALL AT for SERVO_TEST_STALL_ABORT_MS, or the supply in
+ * current above Stall threshold for SERVO_TEST_STALL_ABORT_MS, or the supply in
  * constant current for SERVO_TEST_CC_ABORT_MS.  A run on the INA3221 also
  * ends when no window arrives for SERVO_TEST_WIN_STALE_MS and when the
  * INA3221 stops being the servo rail's meter (servo_test_meter_now()): it
@@ -181,14 +181,14 @@
  * with its reason and what it measured so far, and nothing fed to it after
  * its end changes either.
  *
- * Stall.  A reading whose magnitude is above STALL AT on a
+ * Stall.  A reading whose magnitude is above Stall threshold on a
  * characterisation step fails the run, and readings above it for
  * SERVO_TEST_STALL_ABORT_MS without one at or under it end the run.  On
  * the INA3221 the reading is the window's mean and the time counts from
  * the window's start, so 20 windows in a row end it.  A supply in constant
- * current holds its current limit: with STALL AT at or above the limit no
- * reading is above STALL AT, and the constant-current rule ends the run
- * instead, whatever STALL AT is.  Constant current for less than
+ * current holds its current limit: with Stall threshold at or above the limit no
+ * reading is above Stall threshold, and the constant-current rule ends the run
+ * instead, whatever Stall threshold is.  Constant current for less than
  * SERVO_TEST_CC_ABORT_MS fails nothing: the report counts those readings.
  *
  * A state machine fed readings and stepped with the time, so the host suite
@@ -273,7 +273,7 @@ extern "C" {
 #define SERVO_TEST_SET_TIMEOUT_MS    3000u  /**< a set point not taken in this long ends the run, ms */
 /** @brief No new reading for this long ends the run: SUPPLY_LINK_STALE_MS. */
 #define SERVO_TEST_STALE_MS          1500u
-/** @brief Above STALL AT for this long ends the run. */
+/** @brief Above Stall threshold for this long ends the run. */
 #define SERVO_TEST_STALL_ABORT_MS    1000u
 /** @brief The supply in constant current for this long ends the run. */
 #define SERVO_TEST_CC_ABORT_MS       1000u
@@ -387,7 +387,7 @@ void servo_test_meter_ina3221(servo_test_meter_t *m, uint16_t shunt_dmohm);
 /**
  * @brief Whether @p a is above @p limit_a: both in whole mA, @p a by its
  *        magnitude.  The one comparison the verdict and the report make of a
- *        current against IDLE CURRENT, HOLD CURRENT and STALL AT.
+ *        current against IDLE CURRENT, HOLD CURRENT and Stall threshold.
  *
  * @param a       Current, A.
  * @param limit_a Limit, A.
@@ -425,7 +425,7 @@ typedef struct {
     uint16_t time_s;  /**< seconds a step lasts without by_moves */
 
     /**
-     * @brief The pass/fail limits; 0 is not checked, and STALL AT always is.
+     * @brief The pass/fail limits; 0 is not checked, and Stall threshold always is.
      */
     float idle_max_a,                       /**< the idle current's pass limit, A       */
           hold_max_a;                       /**< the holding current's pass limit, A    */
@@ -701,9 +701,9 @@ typedef struct {
                                  more than one between two samples       */
     uint32_t clipped;       /**< windows with a sample at an end of the
                                  INA3221's range                         */
-    bool     stalling;  /**< the current is above STALL AT */
+    bool     stalling;  /**< the current is above Stall threshold */
     uint32_t stall_since_ms;  /**< since when, ms */
-    bool     stalled;       /**< a characterisation reading over STALL AT */
+    bool     stalled;       /**< a characterisation reading over Stall threshold */
     float    stall_peak_a;  /**< the characterisation reading of the
                                  largest magnitude                       */
     float    move_peak_now; /**< the 1ms sample of the largest magnitude
@@ -1047,16 +1047,16 @@ bool servo_test_brownout(const servo_test_t *t, float *moved_v,
 bool servo_test_negative_at_rest(const servo_test_t *t);
 
 /**
- * @brief Whether STALL AT cannot be reached in a run of @p cfg: at or above the
+ * @brief Whether Stall threshold cannot be reached in a run of @p cfg: at or above the
  *        current limit, where the supply holds the current (@p by_limit), or at
  *        or above the end of the meter's range (@p by_range).
  *
  * Either may be NULL.  Compared in whole mA.
  *
  * @param cfg      Configuration of the run. NULL gives false.
- * @param by_limit Out: true when STALL AT is at or above the current limit.
+ * @param by_limit Out: true when Stall threshold is at or above the current limit.
  *                 NULL to skip.
- * @param by_range Out: true when the meter is the INA3221 and STALL AT is at
+ * @param by_range Out: true when the meter is the INA3221 and Stall threshold is at
  *                 or above its range. NULL to skip.
  * @return true when either holds.
  */
@@ -1215,11 +1215,11 @@ const char *servo_test_meter_word(uint8_t kind);
 /* ------------------------------------------------- report (servo_report.c) */
 
 /**
- * @brief The line that says STALL AT cannot be reached in a run of @p cfg, in
+ * @brief The line that says Stall threshold cannot be reached in a run of @p cfg, in
  *        the language of @p cfg->text, into @p buf: against the current limit
  *        where that is the reason, else against the meter's range
  *        (servo_test_stall_unreachable()).  False, and @p buf empty, when a
- *        reading can pass STALL AT.
+ *        reading can pass Stall threshold.
  *
  * @param cfg Configuration of the run.
  * @param buf Out: the line.

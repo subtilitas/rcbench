@@ -30,13 +30,10 @@
 #define ESCW_NEW "ESCW" FM_NEW_SUFFIX
 
 /**
- * @brief The bench's deepest folders: each of them and every folder above
- *        it is FIXED (card_tree.h).
+ * @brief The two default log folders: each of them and the folder above it
+ *        is FIXED (card_tree.h), as are the folders of card_bench_dir().
  */
-static const char *const k_bench_dirs[] = {
-    CARD_AUTO_LOGS, CARD_USER_LOGS, CARD_ESC_CONF, CARD_KST_CONF,
-    CARD_HITEC_CONF, CARD_ESCW_CONF,
-};
+static const char *const k_log_dirs[] = { CARD_AUTO_LOGS, CARD_USER_LOGS };
 
 /** @brief The fault log's three names (fault_log.h). */
 static const char *const k_fault[] = {
@@ -194,9 +191,14 @@ static bool fixed_dir(const fm_bench_t *bench, const char *path)
     if (path[0] == '\0') {
         return false;
     }
-    for (size_t i = 0u; i < sizeof(k_bench_dirs) / sizeof(k_bench_dirs[0]);
-         ++i) {
-        if (fm_path_within(path, k_bench_dirs[i])) {
+    for (size_t i = 0u; i < sizeof(k_log_dirs) / sizeof(k_log_dirs[0]); ++i) {
+        if (fm_path_within(path, k_log_dirs[i])) {
+            return true;
+        }
+    }
+    const char *own;
+    for (size_t i = 0u; (own = card_bench_dir(i)) != NULL; ++i) {
+        if (fm_path_within(path, own)) {
             return true;
         }
     }

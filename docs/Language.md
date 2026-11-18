@@ -61,7 +61,8 @@ manual beside the bench.
   PAUSE, the control, stays English.
 - The screen titles: MOTOR & ESC, SERVO, SUPPLY, RECEIVER, LOGS, SETUP,
   BATTERY, BALANCE, OUTPUTS, SENSORS, SD CARD, WI-FI, FILES, UPDATES, UPDATE,
-  CAN BUS FAULT, LINK LOST, PANEL UPDATE. A tile, a tab of LOGS' strip and the
+  PANEL UPDATE. The titles of the bus fault screen are translated:
+  CAN BUS FAULT is CAN-BUS-FEHLER and LINK LOST is VERBINDUNG VERLOREN. A tile, a tab of LOGS' strip and the
   band of the screen it opens carry the same word. A note that names a screen names it by its
   title: "der Seite SUPPLY".
 - Protocol and mode names: DShot, PWM (pulse-width modulation), PPM
@@ -316,7 +317,7 @@ lines is left with conflict markers.
 python3 tools/render_ui.py --fit
 ```
 
-builds the renderer with `GFX_TEXT_TRACE`, draws all 746 views in English and
+builds the renderer with `GFX_TEXT_TRACE`, draws all 750 views in English and
 in German, and fails when a string in either language
 
 - is wider than the box `gfx_text_in()` was given,
@@ -367,7 +368,7 @@ pages, supply commands and board markings that share a word with a label.
 
 ## Adding a language
 
-A language is one more column in every entry of the table: 3,986 entries
+A language is one more column in every entry of the table: 3,999 entries
 with an ID and 115 options, 10 of them with an empty English.
 
 1. Add the column to every entry of `shared/text/include/ui_text.def`, and

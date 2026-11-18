@@ -825,7 +825,7 @@ static void draw_bar(gfx_canvas_t *c, bool lost)
     gfx_text(c, COL_X, (BAR_H - hh) / 2,
              s.back ? TR(BF_TITLE_BACK)
              : noio ? TR(BF_NOIO_TITLE)
-             : lost ? "LINK LOST" : "CAN BUS FAULT",
+             : lost ? TR(BF_TITLE_LOST) : TR(BF_TITLE_FAULT),
              BF_FONT_HEAD,
              (s.back || noio) ? ui_theme_color(UI_C_TEXT_ON_LIGHT)
                               : GFX_WHITE, 1);

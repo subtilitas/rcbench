@@ -8,11 +8,11 @@
  * Under test: a run on the INA3221 ended, never moved to the PD mini, when
  * no window arrives for 200ms (at 199, 200 and 201ms), windows without
  * both quantities do not hold off that end, no supply reading arrives for
- * 1500ms, or an idle has no reading on the PD mini; STALL AT on the
+ * 1500ms, or an idle has no reading on the PD mini; Stall threshold on the
  * window's mean at 1mA under, at and 1mA over, its abort at 999, 1000
  * and 1001ms and 20 windows in a row; constant current for 999 and 1000
  * ms on either meter, and a spell of it shorter than that counted and
- * failing nothing; STALL AT under, at and over the current limit and the
+ * failing nothing; Stall threshold under, at and over the current limit and the
  * INA3221's range; every ending with the output asked off once, the servo
  * let go, the report marked, and nothing fed to the run afterwards
  * changing its verdict, its report or its file; every timer across the
@@ -188,8 +188,8 @@ TEST_CASE(an_idle_without_a_reading_ends_a_run_on_the_pd_mini)
 
 /* ------------------------------------------------------------- stall */
 
-/* STALL AT is judged on the window's mean, in whole mA: a mean 1mA under
- * STALL AT and one at it are no stall, one 1mA over is, whatever the
+/* Stall threshold is judged on the window's mean, in whole mA: a mean 1mA under
+ * Stall threshold and one at it are no stall, one 1mA over is, whatever the
  * window's highest sample.  Negative means count by their magnitude. */
 TEST_CASE(stall_at_is_judged_on_the_windows_mean)
 {
@@ -205,7 +205,7 @@ TEST_CASE(stall_at_is_judged_on_the_windows_mean)
         h_cfg(&c, true);
         h_idle_by_hand(5000u, &c);
         /* The highest sample of this window is 50mA above its mean: over
-         * STALL AT in every case, and no part of the rule. */
+         * Stall threshold in every case, and no part of the rule. */
         h_win_at(h.now + 50u, k_case[k].ma);
         CHECK_EQ(h.t.stalled, k_case[k].stall);
         CHECK_EQ(h.t.stalling, k_case[k].stall);
@@ -227,7 +227,7 @@ TEST_CASE(stall_at_is_judged_on_the_windows_mean)
     CHECK(!servo_test_over_a(1.0f, INFINITY));
 }
 
-/* Windows over STALL AT end the run 1000ms after the first one began: a
+/* Windows over Stall threshold end the run 1000ms after the first one began: a
  * window taken 999ms after that leaves it running, one at 1000 and one at
  * 1001ms end it, and at 50ms a window the twentieth in a row does.  At
  * tick 5000 and with the second across the wrap. */
@@ -272,12 +272,12 @@ TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_windows)
             CHECK_EQ(h.t.end_ms, at);
             h_check_ended(SERVO_TEST_AB_STALL);
             CHECK(strstr(h.out.report, "Stall threshold  highest 1.001A, "
-                                       "STALL AT 1.00A: FAIL\n") != NULL);
+                                       "limit 1.00A: FAIL\n") != NULL);
         }
     }
 }
 
-/* On the PD mini the second counts from the first reading over STALL AT:
+/* On the PD mini the second counts from the first reading over Stall threshold:
  * a reading 999ms after it leaves the run running, one at 1000 and one at
  * 1001ms end it.  At tick 5000 and across the wrap. */
 TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_pd_mini)
@@ -311,7 +311,7 @@ TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_pd_mini)
             h_check_ended(SERVO_TEST_AB_STALL);
         }
     }
-    /* A reading at STALL AT is none over it, and one under it between two
+    /* A reading at Stall threshold is none over it, and one under it between two
      * over it starts the second again. */
     h_idle_by_hand(5000u, &c);
     h.pd_a = 1.0f;
@@ -332,7 +332,7 @@ TEST_CASE(a_second_over_stall_at_ends_the_run_on_the_pd_mini)
 /* ------------------------------------------------- constant current */
 
 /* The supply in constant current for 1000ms ends a run, whichever meter
- * it reads and whatever STALL AT is: a reading 999ms after the first in
+ * it reads and whatever Stall threshold is: a reading 999ms after the first in
  * constant current leaves it running, one at 1000ms ends it.  At tick
  * 5000 and across the wrap. */
 TEST_CASE(constant_current_for_a_second_ends_the_run)
@@ -426,7 +426,7 @@ TEST_CASE(a_spell_of_constant_current_is_counted_and_fails_nothing)
     }
 }
 
-/* STALL AT against the current limit and the meter's range, in whole mA:
+/* Stall threshold against the current limit and the meter's range, in whole mA:
  * at or above the limit no reading passes it, because the supply holds the
  * current; at or above the range none does, because the part reads no
  * more.  The run starts all the same, and its report says so. */
@@ -462,11 +462,11 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
         h_out();
         CHECK_EQ(h.t.why, SERVO_TEST_AB_NONE);
         char want[96];
-        snprintf(want, sizeof(want), "STALL AT %.2fA must be below "
+        snprintf(want, sizeof(want), "Stall threshold %.2fA must be below "
                  "current limit %.2fA\n", (double)k_case[k].stall,
                  (double)k_case[k].limit);
         CHECK_EQ(strstr(h.out.report, want) != NULL, k_case[k].by_limit);
-        snprintf(want, sizeof(want), "STALL AT %.2fA must be below "
+        snprintf(want, sizeof(want), "Stall threshold %.2fA must be below "
                  "INA3221 range 1.638A\n", (double)k_case[k].stall);
         CHECK_EQ(strstr(h.out.report, want) != NULL, k_case[k].by_range);
         CHECK_EQ(strstr(h.out.report, "must be below") != NULL,
@@ -475,7 +475,7 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
     CHECK(!servo_test_stall_unreachable(NULL, NULL, NULL));
 
     /* The line the SERVO screen shows under START TEST: the limit where
-     * that is a reason, else the range, and nothing while STALL AT can be
+     * that is a reason, else the range, and nothing while Stall threshold can be
      * reached. */
     servo_test_cfg_t c;
     char note[96] = "x";
@@ -484,11 +484,11 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
     CHECK_STR_EQ(note, "");
     c.stall_a = 1.65f;
     CHECK(servo_test_stall_note(&c, note, sizeof(note)));
-    CHECK_STR_EQ(note, "STALL AT 1.65A must be below INA3221 range "
+    CHECK_STR_EQ(note, "Stall threshold 1.65A must be below INA3221 range "
                        "1.638A");
     c.stall_a = 2.0f;
     CHECK(servo_test_stall_note(&c, note, sizeof(note)));
-    CHECK_STR_EQ(note, "STALL AT 2.00A must be below current limit "
+    CHECK_STR_EQ(note, "Stall threshold 2.00A must be below current limit "
                        "2.00A");
     CHECK(!servo_test_stall_note(&c, NULL, 0u));
     CHECK(!servo_test_stall_note(&c, note, 0u));
@@ -496,7 +496,7 @@ TEST_CASE(a_stall_at_no_reading_can_pass_is_said_and_not_refused)
 
 /* A servo on a stop against a supply that holds its limit, on the
  * INA3221: the windows read the limit, 2.000A on a 0.05Ohm shunt.  One
- * step under the limit STALL AT ends the run; at the limit and above it
+ * step under the limit Stall threshold ends the run; at the limit and above it
  * the constant-current rule does, a second after the supply reports it. */
 TEST_CASE(a_servo_held_at_the_limit_ends_the_run_on_either_rule)
 {

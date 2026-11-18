@@ -1,7 +1,9 @@
 /*
  * SETUP > UPDATES' step model (upd_wizard.c), the order of the steps: the
  * current step as the lowest that blocks and a running update as current
- * whatever its number; a newer panel release making PANEL current again
+ * whatever its number, PANEL's check under it included; a bound device OFF
+ * on WIRELESS never waiting; a failed install leaving PANEL FAILED; the
+ * last card's three headings; a newer panel release making PANEL current again
  * from step 4 and reading LATER on the linked steps; PENDING blocking;
  * ABSENT waiting only in a run; SKIP passing a step until the mask
  * clears; a failed attempt keeping its step current with its result; the
@@ -580,13 +582,231 @@ TEST_CASE(one_running_update_is_the_current_step_whatever_its_number)
     CHECK(!w.cancel);
     CHECK(!w.can_skip);
 
+    /* A panel download and a device's update: the lower step. */
     all_open(&f);
-    f.p.phase = UPD_PH_JOINING;
+    f.p.job = UPD_JOB_DOWNLOAD;
+    f.p.phase = UPD_PH_IMAGE;
     f.d[UPD_DEV_BAL].row = DEVUPD_ROW_UPDATING;
     w = eval(&f);
     CHECK_EQ(w.current, UPD_WIZ_PANEL);
     CHECK_EQ(w.act, UPD_WIZ_ACT_NONE);
     CHECK(!w.cancel);
+}
+
+/* PANEL's check beside an update: the update's step stays current with
+ * its control and CANCEL UPDATE; the check's row reads CHECKING.  With no
+ * update running the check is current. */
+TEST_CASE(an_update_outranks_panels_check_as_the_current_step)
+{
+    fx_t f;
+    static const upd_phase_t k_ph[] = { UPD_PH_JOINING, UPD_PH_ASKING };
+    for (unsigned p = 0u; p < 2u; ++p) {
+        for (unsigned d = 0u; d < UPD_DEV_COUNT; ++d) {
+            all_open(&f);
+            f.p.phase = k_ph[p];
+            f.d[d].row = DEVUPD_ROW_UPDATING;
+            f.d[d].phase = DEVUPD_CONFIRM;
+            f.d[d].secs = 27u;
+            const upd_wiz_t w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_PANEL, UPD_WIZ_RUNNING,
+                       UPD_WIZ_TAG_CHECKING);
+            CHECK_EQ(w.current, UPD_WIZ_DIAL + d);
+            CHECK_EQ(w.act, UPD_WIZ_ACT_DIAL + d);
+            CHECK(w.cancel);
+            CHECK(!w.can_skip);
+        }
+        all_open(&f);
+        f.p.phase = k_ph[p];
+        f.c6.row = FW_C6_ROW_UPDATING;
+        upd_wiz_t w = eval(&f);
+        CHECK_EQ(w.current, UPD_WIZ_C6);
+        CHECK_EQ(w.act, UPD_WIZ_ACT_C6);
+        all_open(&f);
+        f.p.phase = k_ph[p];
+        f.cu.sec = CU_SEC_BUSY;
+        w = eval(&f);
+        CHECK_EQ(w.current, UPD_WIZ_IOMCU);
+        all_open(&f);
+        f.p.phase = k_ph[p];
+        w = eval(&f);
+        CHECK_EQ(w.current, UPD_WIZ_PANEL);
+        CHECK_STEP(w, UPD_WIZ_PANEL, UPD_WIZ_RUNNING, UPD_WIZ_TAG_CHECKING);
+        CHECK(!w.cancel);
+    }
+}
+
+/* A bound device whose switch on WIRELESS is OFF: ABSENT with the tag OFF,
+ * in a run too; switched ON it waits in a run as any bound device; not
+ * bound it reads NOT BOUND whatever the switch; an update that holds its
+ * link is RUNNING. */
+TEST_CASE(a_bound_device_off_on_wireless_is_absent_and_never_waits)
+{
+    fx_t f;
+    for (unsigned d = 0u; d < UPD_DEV_COUNT; ++d) {
+        for (unsigned run = 0u; run < 2u; ++run) {
+            all_current(&f);
+            f.in.run = run != 0u;
+            f.d[d] = dev_of(DEVUPD_ROW_NOT_LINKED, true, false, K_OLD);
+            f.d[d].off = true;
+            upd_wiz_t w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d, UPD_WIZ_ABSENT, UPD_WIZ_TAG_OFF);
+            CHECK_EQ(w.current, UPD_WIZ_NONE);
+            CHECK(!w.can_skip);
+
+            f.d[d].off = false;
+            w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d,
+                       run != 0u ? UPD_WIZ_WAITING : UPD_WIZ_ABSENT,
+                       UPD_WIZ_TAG_NOT_CONNECTED);
+            CHECK_EQ(w.current,
+                     run != 0u ? UPD_WIZ_DIAL + d : (unsigned)UPD_WIZ_NONE);
+
+            f.d[d].off = true;
+            f.d[d].bound = false;
+            w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d, UPD_WIZ_ABSENT,
+                       UPD_WIZ_TAG_NOT_BOUND);
+
+            f.d[d] = dev_of(DEVUPD_ROW_UPDATING, true, false, K_OLD);
+            f.d[d].off = true;
+            w = eval(&f);
+            CHECK_STEP(w, UPD_WIZ_DIAL + d, UPD_WIZ_RUNNING,
+                       UPD_WIZ_TAG_UPDATING);
+        }
+    }
+}
+
+/* A download that ended STAGED is the install running; the same download
+ * after an install that failed (UPD_GOT_INSTALL) reads FAILED, blocks
+ * nothing and leaves the next step current with its hold. */
+TEST_CASE(a_failed_install_leaves_panel_failed_and_the_next_step_current)
+{
+    fx_t f;
+    all_current(&f);
+    f.cu.sec = CU_SEC_READY;
+    f.cu.running = K_CU_OLD;
+    f.p.job = UPD_JOB_DOWNLOAD;
+    f.p.phase = UPD_PH_ENDED;
+    f.p.got = UPD_GOT_STAGED;
+    (void)snprintf(f.p.found, sizeof(f.p.found), "0.23.16");
+    upd_wiz_t w = eval(&f);
+    CHECK_STEP(w, UPD_WIZ_PANEL, UPD_WIZ_RUNNING, UPD_WIZ_TAG_UPDATING);
+    CHECK_EQ(w.current, UPD_WIZ_PANEL);
+
+    f.p.got = UPD_GOT_INSTALL;
+    w = eval(&f);
+    CHECK_STEP(w, UPD_WIZ_PANEL, UPD_WIZ_DONE, UPD_WIZ_TAG_FAILED);
+    CHECK_STR_EQ(w.step[UPD_WIZ_PANEL].next, "0.23.16");
+    CHECK_EQ(w.current, UPD_WIZ_IOMCU);
+    CHECK_EQ(w.act, UPD_WIZ_ACT_IOMCU);
+    CHECK(w.act_live);
+}
+
+/* The last card's heading: CURRENT only with PANEL checked and every
+ * other step CURRENT or without a bound device; NO_CHECK with PANEL NOT
+ * CHECKED or FAILED and the rest so; NONE_OPEN with any step skipped or
+ * absent for another reason. */
+TEST_CASE(the_end_heading_follows_the_steps)
+{
+    fx_t f;
+    all_current(&f);
+    upd_wiz_t w = eval(&f);
+    CHECK_EQ(w.current, UPD_WIZ_NONE);
+    CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NO_CHECK);     /* no check yet */
+    static const upd_got_t k_cur[] = { UPD_GOT_CURRENT, UPD_GOT_PAST_LINE,
+                                       UPD_GOT_UNVERSIONED };
+    for (unsigned i = 0u; i < 3u; ++i) {
+        panel_ended(&f, k_cur[i], "0.23.15");
+        w = eval(&f);
+        CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_CURRENT);
+    }
+    static const upd_got_t k_no[] = { UPD_GOT_TIMEOUT, UPD_GOT_JOIN,
+                                      UPD_GOT_ABORTED, UPD_GOT_NO_NET };
+    for (unsigned i = 0u; i < 4u; ++i) {
+        panel_ended(&f, k_no[i], "");
+        w = eval(&f);
+        CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NO_CHECK);
+    }
+    /* A failed download, a failed install: FAILED. */
+    f.p.job = UPD_JOB_DOWNLOAD;
+    f.p.got = UPD_GOT_HASH;
+    w = eval(&f);
+    CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NO_CHECK);
+    f.p.got = UPD_GOT_INSTALL;
+    w = eval(&f);
+    CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NO_CHECK);
+
+    /* No device of a kind bound: the rest decides. */
+    all_current(&f);
+    panel_ended(&f, UPD_GOT_CURRENT, "0.23.15");
+    for (unsigned d = 0u; d < UPD_DEV_COUNT; ++d) {
+        f.d[d] = dev_of(DEVUPD_ROW_NOT_LINKED, false, false, K_OLD);
+    }
+    w = eval(&f);
+    CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_CURRENT);
+    f.p.phase = UPD_PH_IDLE;
+    f.p.got = UPD_GOT_NONE;
+    w = eval(&f);
+    CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NO_CHECK);
+
+    /* A skipped newer release; a skipped later step. */
+    all_open(&f);
+    f.in.skip = UPD_WIZ_ALL;
+    w = eval(&f);
+    CHECK_EQ(w.current, UPD_WIZ_NONE);
+    CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NONE_OPEN);
+    all_current(&f);
+    panel_ended(&f, UPD_GOT_NEWER, "0.23.16");
+    f.in.skip = UPD_WIZ_BIT(UPD_WIZ_PANEL);
+    w = eval(&f);
+    CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NONE_OPEN);
+    all_current(&f);
+    panel_ended(&f, UPD_GOT_CURRENT, "0.23.15");
+    f.d[UPD_DEV_DIAL] = dev_of(DEVUPD_ROW_READY, true, true, K_OLD);
+    f.in.skip = UPD_WIZ_BIT(UPD_WIZ_DIAL);
+    w = eval(&f);
+    CHECK_EQ(upd_wiz_end(&w), UPD_WIZ_END_NONE_OPEN);
+
+    /* Each step absent for a reason other than no bound device, with
+     * PANEL checked and without a check. */
+    for (unsigned chk = 0u; chk < 2u; ++chk) {
+        for (unsigned k = 0u; k < 12u; ++k) {
+            all_current(&f);
+            if (chk != 0u) {
+                panel_ended(&f, UPD_GOT_CURRENT, "0.23.15");
+            }
+            switch (k) {
+            case 0u: f.cu.sec = CU_SEC_NO_LINK; break;
+            case 1u: f.cu.sec = CU_SEC_FAILED; break;
+            case 2u: f.cu.sec = CU_SEC_USB; break;
+            case 3u: f.cu.sec = CU_SEC_NO_IMAGE; break;
+            case 4u: f.c6.row = FW_C6_ROW_NO_IMAGE; break;
+            case 5u: f.c6.row = FW_C6_ROW_BAD_IMAGE; break;
+            case 6u: f.c6.row = FW_C6_ROW_LINK_FAILED; break;
+            case 7u: f.c6.row = FW_C6_ROW_READY; f.c6.known = false; break;
+            case 8u:
+                f.d[0] = dev_of(DEVUPD_ROW_NOT_LINKED, true, false, K_OLD);
+                break;
+            case 9u:
+                f.d[1] = dev_of(DEVUPD_ROW_NOT_LINKED, true, false, K_OLD);
+                f.d[1].off = true;
+                break;
+            case 10u:
+                f.d[2] = dev_of(DEVUPD_ROW_NO_IMAGE, true, true, K_OLD);
+                break;
+            default:
+                f.d[2] = dev_of(DEVUPD_ROW_BAD_IMAGE, true, true, K_OLD);
+                break;
+            }
+            w = eval(&f);
+            CHECK_EQ(w.current, UPD_WIZ_NONE);
+            if (upd_wiz_end(&w) != UPD_WIZ_END_NONE_OPEN) {
+                T_FAIL("absent case %u, check %u: heading %d", k, chk,
+                       (int)upd_wiz_end(&w));
+            }
+        }
+    }
+    CHECK_EQ(upd_wiz_end(NULL), UPD_WIZ_END_NONE_OPEN);
 }
 
 TEST_CASE(null_and_zeroed_inputs_give_six_absent_steps)
@@ -663,6 +883,10 @@ int main(void)
     RUN(a_failed_step_stays_current_with_its_result);
     RUN(an_older_carried_iomcu_image_is_open_with_the_warning);
     RUN(one_running_update_is_the_current_step_whatever_its_number);
+    RUN(an_update_outranks_panels_check_as_the_current_step);
+    RUN(a_bound_device_off_on_wireless_is_absent_and_never_waits);
+    RUN(a_failed_install_leaves_panel_failed_and_the_next_step_current);
+    RUN(the_end_heading_follows_the_steps);
     RUN(null_and_zeroed_inputs_give_six_absent_steps);
     return test_summary("upd_wizard");
 }

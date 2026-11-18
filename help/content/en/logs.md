@@ -18,7 +18,7 @@ The home tag works like BACK, returning one level at a time: plot to import view
 
 Without a mounted card, the box shows `NO RECORDINGS` and `No card. Insert one and tap RESCAN.` An empty or uncreated folder shows `No .csv files in BENCH/LOGS.` or `No .csv files in USER/LOGS.` At the root, it shows `No .csv files in the top-level folder.`
 
-The line below describes the selected tab: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` When AUTO LOGS or USER LOGS is off under [SETUP > SD CARD](setup.md), BENCH or USER instead shows `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.`
+The line below describes the selected tab: `Runs are saved as SERVOnnn, MOTORnnn or SUPPLnnn.CSV.`, `Tests are saved as ATESTnnn, RUDDRnnn.CSV and LIMITnnn.TXT.` or `Runs of firmware 0.21.0 and older.` When AUTO LOGS or USER LOGS is off under [SETUP > SD CARD](setup.md), BENCH or USER instead shows `AUTO LOGS OFF on SD CARD.` or `USER LOGS OFF on SD CARD.`
 
 RESCAN reads the card again. Tabs remain usable without a card; each tab press also checks for an inserted card.
 
@@ -50,7 +50,7 @@ WI-FI in the row of buttons opens [Wi-Fi](wifi.md) for browser downloads; its ho
 |---|---|
 | RESCAN | reads the page on screen again and selects its newest run |
 | PREV, NEXT | the page before and after; shown with more than 48 files on the card |
-| DELETE | asks, then removes the selected file; grey with nothing selected |
+| DELETE | asks, then removes the selected file; grey with nothing selected, while ARMED and while a run is being logged |
 | OPEN | opens the selected CSV file in the import view, a report in the text viewer; grey with nothing selected |
 
 The footer under the list names the screen, LOGS. OPTIONS at its right opens the SD CARD list of [SETUP](setup.md#sd-card): the log switches and the two log folders. Its home tag returns here.
@@ -80,6 +80,7 @@ One file is one run, in the folder of its kind. Its name says what started it:
 | `BENCH/LOGS` | `SUPPLnnn.CSV` | one switch-on of the SUPPLY output while the bench is SAFE |
 | `USER/LOGS` | `ATESTnnn.CSV` | one AUTOMATIC TEST; its report is `ATESTnnn.TXT` |
 | `USER/LOGS` | `LIMITnnn.TXT` | one LIMIT RUN's report, with no CSV beside it |
+| `USER/LOGS` | `RUDDRnnn.CSV` | one AUTO end points run on RUDDER, a row a measure; its report is `RUDDRnnn.TXT` |
 | root | `BENCHnnn.CSV`, `ESCnnn.CSV`, `SERVOnnn.CSV` | runs of firmware 0.21.0 and older; in the root, `SERVOnnn` is a servo test |
 | root | `SERVOnnn.TXT` alone | a limit run of firmware 0.21.0 and older |
 
@@ -138,7 +139,7 @@ OPEN reads the file and previews the detected format before plotting it.
 | SEPARATOR | SEMICOLON, COMMA, TAB or PIPE |
 | NUMBER FORMAT | ENGLISH (decimal point) or GERMAN (decimal comma) |
 | ROWS, COLUMNS | the data rows and columns found |
-| TIME AXIS | the column taken as time, or ROW INDEX |
+| TIME AXIS | the column taken as time, or ROW INDEX. A unit after an underscore in the header is read (`time_ms`, `t_us`). A first column named as a counter (`step`, `row`, `index`, `sample`, `n`) is no time: `RUDDRnnn.CSV` plots against the row index |
 | UNEVEN ROWS | rows with another cell count than the header |
 | EVIDENCE | the cells that proved German, English or neither |
 
@@ -165,7 +166,7 @@ The rows are spaced evenly by row number. The labels under the plot are the file
 
 ![The DELETE question](view:logs-delete)
 
-DELETE asks for confirmation and shows the filename and size. To remove the file, press and release DELETE within that dialog. CANCEL or leaving the screen keeps the file. A run still open for logging cannot be deleted.
+DELETE asks for confirmation and shows the filename and size. To remove the file, press and release DELETE within that dialog. CANCEL or leaving the screen keeps the file. A run still open for logging cannot be deleted. While the bench is ARMED or a run is being logged, DELETE is grey; a tap on it shows `Bench ARMED. The card is read-only.` or `A run is being logged. The card is read-only.`
 
 ## Card formats
 
@@ -173,7 +174,7 @@ The panel reads cards formatted FAT12, FAT16, FAT32 or exFAT (extended File Allo
 
 - Not supported: GPT (GUID Partition Table; GUID: globally unique identifier) partitioning, volumes over 2TiB, NTFS, ext4, HFS+ and APFS. Such a card does not mount. The panel never formats a card.
 - To format a card, use the SD Association's SD Memory Card Formatter, or on a computer FAT32 or exFAT on an MBR (on macOS: Scheme `Master Boot Record`).
-- A file of 4GiB and more on an exFAT card is listed with its size, for example `8.00GB`. OPEN reads files up to 2GiB less 1 byte; a larger one stays on the list and OPEN says `BENCH001.CSV is 2GB or larger. Not opened.` [Wi-Fi](wifi.md) downloads it.
+- A file of 4GiB and more on an exFAT card is listed with its size, for example `8.00GB`. OPEN reads files up to 2GiB less 1 byte; a larger one stays on the list and OPEN says `BENCH001.CSV is 2GB or larger. Not opened.` The panel writes kB, MB and GB for multiples of 1,024: `2GB` is 2GiB. [Wi-Fi](wifi.md) downloads it.
 
 ## Related pages
 

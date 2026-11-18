@@ -14,7 +14,7 @@ Die Schrittliste links zeigt je Schritt Nummer, Namen, die Version seines Ziels 
 
 | Bedienelement | Wirkung |
 |---|---|
-| NACH UPDATES SUCHEN | Fragt GitHub einmal ab. Während der Suche heißt die Taste ABBRECHEN. |
+| NACH UPDATES SUCHEN | Fragt GitHub einmal ab. Während der Suche heißt die Taste ABBRECHEN. Grau, solange ein Update des IOmcu, des C6-Funks oder eines Funkgeräts läuft. |
 | das Bedienelement des aktuellen Schritts | Auf der Karte; 2s Halten startet das Update des Schritts, siehe [Die Schritte](#die-schritte). Grau, solange etwas es sperrt; ein Druck zeigt den Grund im Meldeband. |
 | SCHRITT ÜBERSPRINGEN | Auf der Karte; ein Tippen übergeht den Schritt bis zum Neustart des Panels, der nächste Schritt wird aktuell. |
 | ÜBERSPRUNGENE SCHRITTE ZEIGEN | Auf der letzten Karte, solange ein Schritt übersprungen ist; holt die übersprungenen Schritte zurück. |
@@ -36,7 +36,7 @@ Updates und Neuinstallationen außerhalb der Reihe stehen auf der Seite EINZELNE
 | 5 LEISTUNGSKNOTEN | der verbundene Leistungsknoten eine andere Version ausführt | 2s HALTEN ZUM LEISTUNGSKNOTEN-UPDATE, siehe [Die Sensorknoten](#die-sensorknoten) |
 | 6 AUSWUCHTKNOTEN | der verbundene Auswuchtknoten eine andere Version ausführt | 2s HALTEN ZUM AUSWUCHTKNOTEN-UPDATE |
 
-Das Panel-Image bringt jedes andere Image mit, darum kommt PANEL zuerst. Ein neueres Release, das gefunden wird, während ein späterer Schritt aktuell ist, macht PANEL wieder aktuell. Eine Suche, die nichts Neueres fand oder fehlschlug, sperrt nie, ebenso wenig ein fehlgeschlagener oder gestoppter Download: NACH UPDATES SUCHEN ist der Weg zurück.
+Das Panel-Image bringt jedes andere Image mit, darum kommt PANEL zuerst. Ein neueres Release, das gefunden wird, während ein späterer Schritt aktuell ist, macht PANEL wieder aktuell. Eine Suche, die nichts Neueres fand oder fehlschlug, sperrt nie, ebenso wenig ein fehlgeschlagener oder gestoppter Download oder eine fehlgeschlagene Installation: NACH UPDATES SUCHEN ist der Weg zurück. Nach einer fehlgeschlagenen Installation zeigt die Karte `Installation fehlgeschlagen. Die Panel-Firmware ist unverändert.` und `NACH UPDATES SUCHEN bietet das Release erneut an.` Eine Suche nimmt einem laufenden Update nie die Karte: Die Aufforderung eines Geräts zum Annehmen und UPDATE ABBRECHEN bleiben.
 
 | Etikett | Bedeutung |
 |---|---|
@@ -48,6 +48,7 @@ Das Panel-Image bringt jedes andere Image mit, darum kommt PANEL zuerst. Ein neu
 | `ÜBERSPRUNGEN` | SCHRITT ÜBERSPRINGEN wurde seit dem Start des Panels getippt |
 | `NICHT GESUCHT` | PANEL: keine Suche seit dem Start |
 | `OHNE VERBINDUNG`, `NICHT VERBUNDEN`, `NICHT GEBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden; kein Gerät der Art ist gebunden |
+| `AUS` | ein gebundenes Gerät ist auf WIRELESS ausgeschaltet; sein Schritt wartet nie, und die letzte Karte nennt es |
 | `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | hier nichts zu aktualisieren; die letzte Karte nennt diese Schritte |
 
 ![Ein Schritt, gesperrt bei ARMED](view:updates-held)
@@ -64,7 +65,7 @@ Nach einem Neustart in einem Update-Lauf wartet ein Schritt, dessen IOmcu oder G
 
 ![Der Schritt des Dial wartet nach einem Neustart](view:updates-step-waiting)
 
-Ist kein Schritt mehr übrig, sagt die Karte `Alle Firmware ist aktuell.` und nennt die Schritte, die nicht verbunden, hier nicht aktualisierbar oder übersprungen sind.
+Ist kein Schritt mehr übrig, nennt die Karte die Schritte, die nicht verbunden, hier nicht aktualisierbar oder übersprungen sind, unter einer von drei Überschriften: `Alle Firmware ist aktuell.`, wenn eine Suche nichts Neueres fand und jeder andere Schritt `AKTUELL` oder `NICHT GEBUNDEN` zeigt; `Nicht nach einem Panel-Release gesucht.`, wenn PANEL `NICHT GESUCHT` oder `FEHLGESCHLAGEN` zeigt und der Rest aktuell ist; `Kein Schritt offen.`, wenn ein Schritt übersprungen wurde oder hier kein Update hat.
 
 ![Die letzte Karte mit übersprungenem Dial](view:updates-done)
 
@@ -215,13 +216,14 @@ Bei verfügbarer Haltetaste steht `Ausgänge bleiben aus. ARMED ist bis zum Ende
 
 Unter der Überschrift zeigt EINZELNE UPDATES den ESP32-C6 des Boards, der Wi-Fi und Bluetooth trägt: `C6-Funk: nicht gemeldet. Auf diesem Panel: 2.13.0.` Die erste Version ist die, die der C6 beim ersten Wi-Fi-Start seit dem Panel-Start genannt hat; der ausgelieferte C6 nennt keine. 2s HALTEN ZUM C6-FUNK-UPDATE sendet das mitgelieferte Image über die SDIO-Verbindung (Secure Digital Input/Output) des Boards; die Taste zeigt dann `C6-UPDATE 37%`.
 
-Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft und das WLAN aus ist. Bei einem C6, der die mitgelieferte Version meldet, heißt es 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
+Das Halten ist aktiv, wenn der Prüfstand SAFE ist, kein ARM wartet, der Netzteilausgang aus ist, kein Log-Lauf offen ist, keine Platinenzeichnung geholt wird, kein anderes Update läuft, keine Servo- oder ESC-Programmierung einen Port belegt und das WLAN aus ist. Bei einem C6, der die mitgelieferte Version meldet, heißt es 2s HALTEN: C6-FIRMWARE DES PANELS NEU INSTALLIEREN: Ein Image derselben Version kann andere Einstellungen tragen, etwa 3 Bluetooth-Verbindungen statt 5. Ein Tippen auf das graue Halten zeigt den Grund im Alarmband, zum Beispiel `Das C6-Update wartet, bis das WLAN des Panels aus ist.`
 
-Während das Update läuft, wird ARM abgelehnt, und das WLAN bleibt aus. Es endet mit einem Alarm:
+Während das Update läuft, werden ARM, AUSGANG EIN des Netzteils, PROG 5V EIN und der Start einer Programmierung abgelehnt, und das WLAN bleibt aus. Es endet mit einem Alarm:
 
 | Alarm | Bedeutung |
 |---|---|
 | `C6-Funk auf 2.13.0 aktualisiert. Das Panel startet neu.` | fertig; das Panel startet 3s später neu |
+| `C6-Funk auf 2.13.0 aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.` | fertig; der Neustart wartet, bis der Prüfstand SAFE ist, Netzteilausgang und PROG 5V aus sind und keine Programmierung einen Port belegt |
 | `Der C6-Funk nimmt kein Update über SDIO an. Flashe ihn über Header H4.` | die Firmware des C6 hat das Update abgelehnt; die alte Firmware läuft |
 | `Der C6-Funk hat nicht geantwortet. WLAN ist bis zum Neustart des Panels aus.` | die Verbindung zum C6 ist ausgefallen |
 | `C6-Update abgebrochen: keine Antwort. Vorherige Firmware läuft.` | ein Schritt blieb ohne Antwort; `Schreiben fehlgeschlagen`, `Prüfung im C6 fehlgeschlagen` und `Aktivierung fehlgeschlagen` lauten ebenso |

@@ -9,7 +9,7 @@
  * already on; a repeated sample; the caps it never exceeds; the outbox;
  * the CSV read back by the log viewer's parser; a reading at the move's
  * deadline; a servo held at the current limit; a reading equal to a limit
- * or to STALL AT; a count step of half the range; and a run ended before
+ * or to Stall threshold; a count step of half the range; and a run ended before
  * its first step.
  *
  * The rig is servo_test_rig.h.
@@ -559,7 +559,7 @@ static float limit_held(unsigned ma)
 }
 
 /* A servo binding at its high end against a supply whose current limit is
- * STALL AT, both 2.00A as shipped: no reading is above STALL AT, the
+ * Stall threshold, both 2.00A as shipped: no reading is above Stall threshold, the
  * supply reads constant current, and the run ends on that. */
 TEST_CASE(a_servo_held_at_the_current_limit_ends_the_run)
 {
@@ -665,8 +665,8 @@ TEST_CASE(a_reading_equal_to_a_limit_passes_it)
     }
 }
 
-/* One reading of the same number of mA as STALL AT is not a stall, for
- * each of the 99 values STALL AT takes, 0.10 to 5.00A in steps of 0.05A,
+/* One reading of the same number of mA as Stall threshold is not a stall, for
+ * each of the 99 values Stall threshold takes, 0.10 to 5.00A in steps of 0.05A,
  * as settings.c holds them; 1mA more is. */
 TEST_CASE(a_reading_equal_to_stall_at_is_not_a_stall)
 {
