@@ -11,6 +11,9 @@
  * the view's apply hook; CANCEL, the home tag or a press anywhere off the
  * card closes it and writes nothing.  A tap MOVE PIN confirms: the move
  * switches nothing on, and the ARM that drives the new signal is a hold.
+ * For PIN_TAKE_GUARD_MS after MOVE PIN or CANCEL closes the card, a press
+ * inside the card's former box is spent and reaches no key or cell under
+ * it: the second tap of a double tap picks nothing.
  *
  * A tap the card does not ask about says why on the view's reason line: a
  * programming port's pin, an interface's pin (SENSOR BUS, PD MINI, PHASE
@@ -47,6 +50,10 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/** @brief How long a press inside the box of a card MOVE PIN or CANCEL
+ *         closed is spent, ms. */
+#define PIN_TAKE_GUARD_MS 400
 
 /** @brief The view a card or a reason belongs to. */
 typedef enum {
@@ -134,9 +141,27 @@ void pin_take_close(void);
 
 /**
  * @brief Forget the last refusal, so the reason line no longer names it: a
- *        pick, a tick or another tap.
+ *        pick, a tick or another tap.  Each view calls it for every tap on
+ *        a key or cell before pin_take_tap(), so the line names the tap
+ *        made last or nothing.
  */
 void pin_take_forget_why(void);
+
+/**
+ * @brief Once a frame: runs down the time a closed card's box spends
+ *        presses.
+ * @param dt_s seconds since the last call
+ */
+void pin_take_tick(float dt_s);
+
+/**
+ * @brief Whether a press is spent on the box of a card MOVE PIN or CANCEL
+ *        closed in view @p view less than PIN_TAKE_GUARD_MS ago.
+ * @param view the view the event is for
+ * @param evt  the event
+ * @return true for a DOWN inside that box; the view drops it
+ */
+bool pin_take_spends(pin_take_view_t view, const touch_event_t *evt);
 
 /** @brief Drop a press on the card's buttons: touch events were lost.  The
  *         card stays open. */
@@ -161,6 +186,7 @@ void pin_take_follow(pin_take_view_t view, const outbind_t *b, bool read);
  * closes; MOVE PIN checks the move again on @p b and fills @p out with the
  * binding to write when the pin, its holder, the taker and the board are
  * the same and the move still stands, and closes the card either way.
+ * Both start the time of pin_take_spends().
  *
  * @param evt The event.
  * @param b   The view's binding as it stands.

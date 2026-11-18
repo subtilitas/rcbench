@@ -1,8 +1,9 @@
 /*
  * The part of the pico-sdk protocols/dshot/rp2350/out_dshot.c calls, for
  * test_out_dshot.c: types, constants and declarations.  The test defines the
- * functions and keeps one pad and one PIO block, so it can see the level the
- * driver leaves on the pin at each step.  It says nothing about the chip.
+ * functions and keeps one pad and three PIO blocks, so it can see the level
+ * the driver leaves on the pin at each step and which state machines a bind
+ * takes.  It says nothing about the chip.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -14,7 +15,9 @@
 
 typedef unsigned int uint;
 
+#define NUM_PIOS               3u
 #define NUM_PIO_STATE_MACHINES 4u
+#define PICO_OK                0
 #define NUM_BANK0_GPIOS        48u
 
 #define GPIO_IN  false
@@ -54,7 +57,7 @@ typedef struct {
 typedef pio_hw_t *PIO;
 
 typedef struct {
-    int which;
+    unsigned length;             /* instructions */
 } pio_program_t;
 
 void gpio_set_function(uint gpio, gpio_function_t fn);
@@ -64,6 +67,9 @@ void gpio_pull_up(uint gpio);
 void gpio_set_dir(uint gpio, bool out);
 void gpio_put(uint gpio, bool value);
 
+PIO  pio_get_instance(uint instance);
+uint pio_get_gpio_base(PIO pio);
+int  pio_set_gpio_base(PIO pio, uint gpio_base);
 bool pio_sm_is_claimed(PIO pio, uint sm);
 bool pio_can_add_program(PIO pio, const pio_program_t *program);
 void pio_sm_claim(PIO pio, uint sm);

@@ -223,6 +223,21 @@ uint8_t outputs_slots_pulse_check(const outputs_t *o, const uint16_t *slots,
 unsigned outputs_slots_free_long(const outputs_t *o, uint16_t *slots);
 
 /**
+ * @brief A stored OUTPUTS page held to outputs_slots_write()'s value rules:
+ *        every slot with a driver number the page does not know, or a pin
+ *        above OUT_MAX_PIN (63), gets driver 0 in @p slots.
+ *
+ * A record that passes its CRC is not a page a write would have taken.
+ * outputs_slots_apply() narrows the pin register to 8 bits, so pin 258
+ * would bind GPIO 2.  The slot starts unbound and the page reads back
+ * driver 0 for it.
+ *
+ * @param slots The OUTPUTS page, LINK_OS_COUNT registers. Changed in place.
+ * @return The number of slots whose driver was set to 0. 0 for NULL.
+ */
+unsigned outputs_slots_free_unwritable(uint16_t *slots);
+
+/**
  * @brief The slots, one bit each, whose four OUTPUTS registers differ between
  * @p prev and @p next.
  *
@@ -479,6 +494,23 @@ void    outputs_channels_defaults(uint16_t *regs);
  * @param regs Receives LINK_CH_COUNT commands, each outputs_command().
  */
 void    outputs_channels_from_bank(const outputs_t *o, uint16_t *regs);
+
+/**
+ * @brief The page after a CHAN_CFG page went in force: each channel whose
+ *        role differs between @p was and @p now reads the bank's command.
+ *
+ * A role change on a bank that is not armed puts the channel's command at
+ * its new role's rest (outputs_set_role()), so the register written before
+ * it names a command the bank no longer holds.  The other channels keep
+ * their registers.
+ *
+ * @param o    The bank, with @p now applied. Nothing is done when NULL.
+ * @param was  The CHAN_CFG page before, LINK_CC_COUNT registers.
+ * @param now  The CHAN_CFG page in force, LINK_CC_COUNT registers.
+ * @param regs The CHANNELS page, LINK_CH_COUNT registers.
+ */
+void    outputs_channels_follow_roles(const outputs_t *o, const uint16_t *was,
+                                      const uint16_t *now, uint16_t *regs);
 
 /**
  * @brief Stores a window of the CHANNELS page, clamping each command to

@@ -556,8 +556,9 @@ void panel_frame_loop(void)
         /* A drawing a link-up edge published or withdrew, shown now and not
          * on the picker's next visit. */
         drawing_follow();
-        outputs_screen_set_result(
-            (outputs_result_t)atomic_load(&s_outputs_result));
+        const int last_write = atomic_load(&s_outputs_result);
+        outputs_screen_set_result((outputs_result_t)(last_write & 0xFF));
+        outputs_screen_set_why((uint8_t)(last_write >> 8));
 
         flush_screen_commands(stops_now);
         test_lines_service();
@@ -750,17 +751,17 @@ void panel_frame_loop(void)
          */
         /* The release reminder first: it yields to the IOmcu's offer,
          * which comes first. */
-        upd_remind_service(armed || arm_wanted_now,
-                           armed || arm_wanted_now || supply_now
+        upd_remind_service(armed || arm_live_or_coming(),
+                           armed || arm_live_or_coming() || supply_now
                                || supplies_live_or_coming(),
                            &cu);
         /* An update run after a restart opens UPDATES before an IOmcu
          * offer can, and while it waits the band line is its own: UPDATES
          * opens once when both are due. */
         const bool run_waits =
-            updrun_service(armed || arm_wanted_now || supply_now
+            updrun_service(armed || arm_live_or_coming() || supply_now
                            || supplies_live_or_coming());
-        cu_render_service(armed || arm_wanted_now || supply_now
+        cu_render_service(armed || arm_live_or_coming() || supply_now
                               || supplies_live_or_coming(),
                           link_up, &cu, run_waits);
 
@@ -836,14 +837,17 @@ void panel_frame_loop(void)
         backlight_service(&idle_facts);
         ui_router_tick(dt_s);
         knob_apply(&knob_turn, frame_lost, &idle_facts);
-        wifi_service(arm_wanted_now || armed_now, stops_now);
-        upd_service(arm_wanted_now || armed_now,
-                    arm_wanted_now || armed_now || supply_now
-                        || supplies_live_or_coming(),
+        /* The arm as it stands now, not as the frame began: an ARM this
+         * frame's touch queued counts for every flash writer below
+         * (arm_live_or_coming()). */
+        const bool arm_any = arm_live_or_coming();
+        wifi_service(arm_any, stops_now);
+        upd_service(arm_any,
+                    arm_any || supply_now || supplies_live_or_coming(),
                     stops_now, &cu);
-        c6_service(arm_wanted_now || armed_now);
+        c6_service(arm_any);
         const bool dev_known = panel_devupd_known();
-        devupd_service(arm_wanted_now || armed_now);
+        devupd_service(arm_any);
         updrun_fed(dev_known);
 
         /*
@@ -874,7 +878,8 @@ void panel_frame_loop(void)
          * part disables the cache: neither core runs code that is not in
          * IRAM for its duration.  Taken here it costs a frame.  When it may
          * happen is flash_gate_open()'s rule, the one the drawing's keep
-         * asks too: not while the bench is armed or an arm waits -- the
+         * asks too: not while the bench is armed, an arm waits or an ARM
+         * is queued (arm_live_or_coming()) -- the
          * control task beats the safety line and its ceiling is
          * HEARTBEAT_MAX_GAP_MS (150ms) -- and not while the supply's output
          * is on or an ON is queued: OUTPUT OFF, STOP and the trips are the
@@ -887,7 +892,7 @@ void panel_frame_loop(void)
          * -- the next frame is one.
          */
         const bool quiet =
-            flash_gate_open(arm_wanted_now, supplies_live_or_coming());
+            flash_gate_open(arm_live_or_coming(), supplies_live_or_coming());
         (void)settings_save_tick(quiet && !s_artbusy
                                  && !atomic_load(&s_keeping));
         /* And the ramp, from the task that owns the values, for the control

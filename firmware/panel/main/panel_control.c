@@ -525,6 +525,9 @@ void control_task(void *arg)
 
         /* --- hand the screen what it draws -------------------------------- */
         publish_snapshot(&bench, link_up, new_sample);
+        /* The ARMs of this pass, counted taken only now: the snapshot
+         * above shows what became of them (arm_live_or_coming()). */
+        arms_taken_publish();
         /* And only now the look at the touch stream for an arm the render
          * side has not seen yet; see arm_watch_service(). */
         arm_watch_service();

@@ -89,31 +89,109 @@ static const pio_program_t *tx_program(bool bidir)
 /* ---------------------------------------------------------------- binding */
 
 /**
- * @brief The receiver has to sit on the state machine one above its
- *        transmitter, in the same block: the transmitter raises a flag relative
- *        to its own number and the receiver waits on the flag one below its
- *        own, so the pairing is what keeps two ESCs on one block from starting
- *        each other's receivers.
+ * @brief Whether a block can drive a pin, moving the block's window when
+ *        nothing uses the block.
  *
- * @param s  Binding with its transmitter already loaded.
- * @return   true when the receiver is claimed and loaded; false when that
- *           state machine is taken or the program does not fit.
+ * A block reaches 32 GPIOs from its base, GPIO 0 or GPIO 16.
+ *
+ * @param pio   PIO block.
+ * @param pin   GPIO number.
+ * @param move  false: true for a block whose window holds @p pin.  true:
+ *              only the other blocks count, and one with no state machine
+ *              claimed and no program loaded has its window moved to
+ *              @p pin.
+ * @return      true when the block reaches @p pin.
  */
-static bool claim_receiver(dshot_out_t *s)
+static bool block_reaches(PIO pio, uint8_t pin, bool move)
 {
-    const uint want = (s->tx_sm + 1u) % (uint)NUM_PIO_STATE_MACHINES;
-    if (pio_sm_is_claimed(s->pio, want)) {
+    const uint base = pio_get_gpio_base(pio);
+    if (pin >= base && (uint)pin - base < 32u) {
+        return !move;
+    }
+    if (!move) {
         return false;
     }
-    if (!pio_can_add_program(s->pio, &dshot_rx_program)) {
-        return false;
+    for (uint sm = 0u; sm < (uint)NUM_PIO_STATE_MACHINES; ++sm) {
+        if (pio_sm_is_claimed(pio, sm)) {
+            return false;
+        }
     }
-    pio_sm_claim(s->pio, want);
-    s->rx_sm     = want;
-    s->rx_offset = (uint)pio_add_program(s->pio, &dshot_rx_program);
-    dshot_rx_program_init(s->pio, s->rx_sm, s->rx_offset, s->pin,
-                          s->bits_per_second);
-    return true;
+    /* Refused by the SDK while a program is loaded in the block. */
+    return pio_set_gpio_base(pio, base == 0u ? 16u : 0u) == PICO_OK;
+}
+
+/**
+ * @brief Claim a transmitter and its receiver in one block and load both
+ *        programs.
+ *
+ * The receiver has to sit on the state machine one above its transmitter,
+ * modulo 4, in the same block: the transmitter raises a flag relative to
+ * its own number and the receiver waits on the flag one below its own, so
+ * the pairing is what keeps two ESCs on one block from starting each
+ * other's receivers.
+ *
+ * @param pio  PIO block.
+ * @param s    Binding; its block, state machines and offsets are set on
+ *             success.
+ * @return     true when both are claimed and loaded; false, with the block
+ *             as it was, when no two free state machines are adjacent or
+ *             the 16 instructions do not fit.
+ */
+static bool pair_in_block(PIO pio, dshot_out_t *s)
+{
+    for (uint tx = 0u; tx < (uint)NUM_PIO_STATE_MACHINES; ++tx) {
+        const uint rx = (tx + 1u) % (uint)NUM_PIO_STATE_MACHINES;
+        if (pio_sm_is_claimed(pio, tx) || pio_sm_is_claimed(pio, rx)) {
+            continue;
+        }
+        if (!pio_can_add_program(pio, &dshot_bidir_tx_program)) {
+            return false;
+        }
+        const uint tx_offset =
+            (uint)pio_add_program(pio, &dshot_bidir_tx_program);
+        if (!pio_can_add_program(pio, &dshot_rx_program)) {
+            pio_remove_program(pio, &dshot_bidir_tx_program, tx_offset);
+            return false;
+        }
+        s->pio       = pio;
+        s->tx_sm     = tx;
+        s->tx_offset = tx_offset;
+        s->rx_sm     = rx;
+        s->rx_offset = (uint)pio_add_program(pio, &dshot_rx_program);
+        pio_sm_claim(pio, tx);
+        pio_sm_claim(pio, rx);
+        return true;
+    }
+    return false;
+}
+
+/**
+ * @brief Find a block for a bidirectional pin: PIO2 down to PIO0, the first
+ *        with a free adjacent pair of state machines and room for both
+ *        programs.
+ *
+ * The SDK's own search returns the lowest free state machine of the first
+ * block with one, whatever sits above it, and does not go on to the next
+ * block when the receiver's place is taken.  The blocks whose window holds
+ * the pin come first; an unused block is moved to the pin only after them.
+ *
+ * @param s  Binding with its pin set.
+ * @return   true when the pair is claimed and loaded; false, with nothing
+ *           taken, when no block has the pair and the room.
+ */
+static bool claim_pair(dshot_out_t *s)
+{
+    for (unsigned pass = 0u; pass < 2u; ++pass) {
+        for (uint b = (uint)NUM_PIOS; b-- > 0u;) {
+            PIO pio = pio_get_instance(b);
+            if (block_reaches(pio, s->pin, pass != 0u)
+                && pair_in_block(pio, s)) {
+                return true;
+            }
+        }
+    }
+    s->pio = NULL;
+    return false;
 }
 
 /**
@@ -227,9 +305,13 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
     s->bidir           = bidirectional;
     s->bits_per_second = (uint32_t)rate_kbit * 1000u;
 
-    if (!pio_claim_free_sm_and_add_program_for_gpio_range(
-            tx_program(bidirectional), &s->pio, &s->tx_sm, &s->tx_offset,
-            pin, 1, true)) {
+    if (bidirectional) {
+        if (!claim_pair(s)) {
+            return false;
+        }
+    } else if (!pio_claim_free_sm_and_add_program_for_gpio_range(
+                   &dshot_tx_program, &s->pio, &s->tx_sm, &s->tx_offset,
+                   pin, 1, true)) {
         s->pio = NULL;
         return false;
     }
@@ -267,22 +349,14 @@ bool out_dshot_bind(uint8_t pin, uint16_t rate_kbit, bool bidirectional)
         if ((io_bank0_hw->io[pin].ctrl & IO_BANK0_GPIO0_CTRL_OUTOVER_BITS)
             != ((uint32_t)GPIO_OVERRIDE_INVERT
                 << IO_BANK0_GPIO0_CTRL_OUTOVER_LSB)) {
-            pio_remove_program(s->pio, tx_program(true), s->tx_offset);
-            pio_sm_unclaim(s->pio, s->tx_sm);
-            memset(s, 0, sizeof(*s));
-            release_pad(pin);
-            return false;
-        }
-        if (!claim_receiver(s)) {
             /* The transmitter's program_init has already muxed the pad to
              * the block, so the pad is put back with everything else this
              * failed bind took. */
-            pio_remove_program(s->pio, tx_program(true), s->tx_offset);
-            pio_sm_unclaim(s->pio, s->tx_sm);
-            memset(s, 0, sizeof(*s));
-            release_pad(pin);
+            teardown(s);
             return false;
         }
+        dshot_rx_program_init(s->pio, s->rx_sm, s->rx_offset, pin,
+                              s->bits_per_second);
         /* Low before the pull-up goes on, so the pad does not rise between
          * the two; the pull-up is the idle out_dshot_wake() releases to. */
         rest_low(s);

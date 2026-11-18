@@ -161,6 +161,41 @@ static inline bool bench_state_simulated(const bench_state_t *b)
     return b != NULL && (b->flags & LINK_BN_SIMULATED) != 0;
 }
 
+/** @brief The highest speed LINK_BN_RPM and LINK_BN_RPM_MAX carry, rpm. */
+#define BENCH_RPM_REG_MAX 65535.0f
+
+/** @brief What a screen and a log row show for a speed above the ceiling. */
+#define BENCH_RPM_OVER_TEXT ">65535"
+
+/**
+ * @brief True when the speed is above the register's ceiling of 65,535rpm.
+ *
+ * bench_state_to_regs() encodes such a speed as LINK_BN_RPM 65535 with
+ * LINK_BN_RPM_OK clear.  A speed nothing measured has LINK_BN_RPM 0, and a
+ * speed of exactly 65,535rpm keeps the bit.
+ *
+ * @param b The state to test.
+ * @return true when the speed is a bound, not a reading.
+ */
+static inline bool bench_state_rpm_over(const bench_state_t *b)
+{
+    return b != NULL && (b->flags & LINK_BN_RPM_OK) == 0
+           && b->rpm >= BENCH_RPM_REG_MAX;
+}
+
+/**
+ * @brief True when the peak speed is at the register's ceiling.
+ *
+ * LINK_BN_RPM_MAX has no valid bit: 65535 stands for 65,535rpm or more.
+ *
+ * @param b The state to test.
+ * @return true when the peak is a bound, not a reading.
+ */
+static inline bool bench_state_rpm_max_over(const bench_state_t *b)
+{
+    return b != NULL && b->rpm_max >= BENCH_RPM_REG_MAX;
+}
+
 /**
  * @brief Decode a BENCH page into @p b.
  *
@@ -178,6 +213,9 @@ void bench_state_from_regs(bench_state_t *b, const uint16_t *regs,
 
 /**
  * @brief Encode into a BENCH page, for the IOmcu and for round-trip tests.
+ *
+ * A speed above 65,535rpm goes as LINK_BN_RPM 65535 with LINK_BN_RPM_OK
+ * clear (bench_state_rpm_over()); a peak above it as LINK_BN_RPM_MAX 65535.
  *
  * @param b    The state to encode.
  * @param regs The page to fill, LINK_BN_COUNT registers.
@@ -408,13 +446,18 @@ void bench_state_fine_totals(bench_state_t *b, int32_t charge_cmah,
  * total the part gave, from the readings shown, so it neither restarts nor
  * goes back.
  *
+ * The sums are double.  One 50ms step at 50mA adds 0.00069mAh; a float
+ * between 8,192 and 16,384 resolves 0.00098, so a float sum miscounts from
+ * 4,096mAh and stands still from 16,384mAh.  A double resolves 1.5e-11 at
+ * 100,000mAh.  Rows and screens take the sums as float.
+ *
  * The totals are only as good as the current.  An ESC that reports a
  * current without measuring one -- no current sensor, an input left
  * floating -- is counted as faithfully as one that measures it.
  */
 typedef struct {
-    float   mah;  /**< charge, mAh */
-    float   wh;  /**< energy, Wh */
+    double  mah;  /**< charge, mAh; double, see below */
+    double  wh;  /**< energy, Wh; double, see below */
     uint8_t counted;   /**< BENCH_COUNTED_* */
     float   run_s;     /**< driving time counted since the reset */
 } bench_totals_t;

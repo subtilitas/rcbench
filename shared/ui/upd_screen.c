@@ -356,6 +356,10 @@ void upd_result_text(const upd_view_t *v, char *out, size_t n, char *second,
         snprintf(out, n, "%s", TR(UPD_UNVERSIONED));
         snprintf(second, n2, TR(UPD_LATEST), v->found);
         break;
+    case UPD_GOT_INSTALL:
+        snprintf(out, n, "%s", TR(UPD_FAIL_INSTALL));
+        snprintf(second, n2, "%s", TR(UPD_FAIL_INSTALL_2));
+        break;
     case UPD_GOT_NONE:
     default:
         break;

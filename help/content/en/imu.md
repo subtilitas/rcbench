@@ -51,6 +51,7 @@ A scan takes 10s. It lists the devices that advertise the WitMotion sensor's ser
 | `NO SENSOR FOUND: IS IT ON, NO PHONE ON IT?` | the scan listed no sensor |
 | `NO OTHER SENSOR FOUND: THE BOUND ONE IS LINKED` | the scan listed no sensor while the bound one is connected; a connected sensor does not advertise |
 | `THE SCAN DID NOT START: CODE <n>` | Bluetooth refused the scan with that code |
+| `NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST` | in the alert band: the bench is ARMED, and SCAN FOR SENSORS and SCAN AGAIN start no scan; a scan that runs at the switch to ARMED stops |
 
 ## Related pages
 

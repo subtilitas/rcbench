@@ -74,9 +74,10 @@ void prog_link_hitec_read(prog_link_t *p, const uint16_t *state)
         return;
     }
     const uint8_t port = LINK_HT_PORT_OF(*state);
-    p->hitec_held = (LINK_HT_STATE_OF(*state) == (uint8_t)LINK_HITEC_FREE
-                     || port >= LINK_PG_PORTS_MAX)
-                        ? 0u : (uint8_t)(1u << port);
+    p->hitec_held = (uint8_t)((LINK_HT_STATE_OF(*state)
+                                   == (uint8_t)LINK_HITEC_FREE
+                               || port >= LINK_PG_PORTS_MAX)
+                                  ? 0u : 1u << port);
 }
 
 uint8_t prog_link_hitec_held(const prog_link_t *p)

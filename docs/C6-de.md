@@ -153,7 +153,8 @@ zum C6 nicht ausgefallen ist, die Bench SAFE ist und kein ARM wartet, der
 Netzteilausgang aus ist, kein Aufzeichnungslauf offen ist, keine
 Platinenzeichnung geladen wird, weder das IOmcu-Update noch Download oder
 Installation des Panels laufen, das WLAN aus ist, die Start-Task `blestart`
-von Bluetooth LE nicht läuft und kein Update eines Funkgeräts läuft
+von Bluetooth LE nicht läuft, kein Update eines Funkgeräts läuft und keine
+Servo- oder ESC-Programmierung einen Port belegt
 ([Bildschirme: Die Funkgeräte](Screens-de.md#die-funkgeräte)). Ein Tippen auf das graue Halten zeigt den Grund
 im Alarmband. Das Update läuft auf der Task `c6upd` (Kern 0, Priorität 2, Stack
 4 096 Bytes, beim ersten Update angelegt), ein Schritt nach dem anderen:
@@ -175,11 +176,36 @@ bis zum Aktivieren (C6-Firmware ab 2.6.0) oder bis zum Ende-Aufruf (ältere
 Firmware und ein C6, der keine Version meldet: er bekommt keinen
 Aktivieren-Aufruf). Nach einem Erfolg lautet der Alarm `C6-Funk auf 2.13.0
 aktualisiert. Das Panel startet neu.`, und das Panel startet 3s später neu,
-damit Host und C6 ihre Verbindung neu aufbauen. Solange das Update läuft und
-bis ein Schritt über seiner Grenze zurückkehrt, startet kein WLAN, ARM wird
-abgelehnt (`ARMED gesperrt: Das C6-Funk-Update läuft.`), und Installation des
-Panels, GitHub-Prüfung und IOmcu-Update warten. Die Dauer eines Updates ist
-nicht gemessen.
+damit Host und C6 ihre Verbindung neu aufbauen. Der Neustart beendet den
+Heartbeat, und die Notiz des Update-Laufs ist ein Schreibvorgang im Flash
+des Panels. Beide warten auf einen Prüfstand in SAFE ohne wartendes ARM, mit
+Netzteilausgang und 5V der PROG-Ports aus, ohne Holen oder Ablegen einer
+Platinenzeichnung und ohne Programmierung, die einen Port belegt. Solange sie
+warten, lautet der Alarm `C6-Funk auf 2.13.0 aktualisiert. Neustart, sobald
+SAFE und alle Ausgänge aus sind.`, alle 30s erneut, und das Halten der Zeile
+bleibt grau.
+
+Vom Start des Updates bis zu diesem Neustart, und bis ein Schritt über seiner
+Grenze zurückkehrt, startet kein WLAN, Installation des Panels,
+GitHub-Prüfung und IOmcu-Update warten, und vier Anforderungen werden mit
+einem Alarm abgelehnt:
+
+| Anforderung | Alarm |
+| --- | --- |
+| ARM | `ARMED gesperrt: Das C6-Funk-Update läuft.` |
+| AUSGANG EIN von SUPPLY | `Netzteilausgang nicht eingeschaltet: Das C6-Funk-Update läuft.` |
+| PROG 5V EIN | `PROG-Ports 5V nicht eingeschaltet: Das C6-Funk-Update läuft.` |
+| Start einer Programmierung: KST CONNECT, Hitec öffnen, ESC über die Signalleitung öffnen und betreten | `Programmierung nicht gestartet: Das C6-Funk-Update läuft.` |
+
+AUS, DISARM, STOP und das VERLASSEN einer Programmierung werden nie abgelehnt.
+Kein Update startet, solange eine Programmierung einen Port belegt: Das
+Halten ist grau mit `Das C6-Update erfordert geschlossene Servo- und
+ESC-Programmierung. Wähle dort VERLASSEN.`. Start einer Programmierung und
+Halten des Updates im selben 5-ms-Durchlauf der Control-Task starten nie
+beide: Jede Task veröffentlicht ihr Flag, bevor sie das der anderen liest,
+also wird mindestens einer der beiden abgelehnt. Eine gestartete
+Programmierung zählt 2 000ms lang als belegter Port, oder bis der IOmcu den
+Port als belegt meldet. Die Dauer eines Updates ist nicht gemessen.
 
 Konsolenzeilen, Tag `rcbench`:
 
@@ -187,6 +213,7 @@ Konsolenzeilen, Tag `rcbench`:
 I (…) rcbench: C6: carries esp_hosted 2.13.0, 1283616 bytes
 I (…) rcbench: C6 update: esp_hosted 2.13.0, 1283616 bytes
 I (…) rcbench: C6: updated to esp_hosted 2.13.0, 1283616 bytes; restarting in 3000ms
+W (…) rcbench: C6: the restart waits for SAFE with all outputs off
 E (…) rcbench: C6 update: begin refused, error 0x<e>; the C6 takes no update over SDIO
 E (…) rcbench: C6 update ended <result> in phase <phase>, error 0x<e>, <n> of 1283616 bytes; the C6 keeps its firmware
 W (…) rcbench: C6 update refused: row <row>, reason <why>

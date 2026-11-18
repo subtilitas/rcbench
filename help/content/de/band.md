@@ -43,7 +43,7 @@ STOP wirkt auf jeder Seite mit Statusband. Ein Druck schaltet den Prüfstand sof
 
 ![Ein eingerastetes STOP und sein Kasten](view:band-stop)
 
-- Bei eingerastetem Stopp bleibt STOP rot mit gelbem Rahmen. Die Taste zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden mit `STOP gedrückt: Halte STOP 2s, um ihn zurückzusetzen.` abgelehnt. Diese Meldung verschwindet im Frame nach dem abgeschlossenen Lösen aus dem Band.
+- Bei eingerastetem Stopp bleibt STOP rot mit gelbem Rahmen. Die Taste zeigt `GESTOPPT` über `2s HALTEN ZUM LÖSEN`, der Arm-Chip zeigt STOP. ARM, AUSGANG EIN, PROG 5V EIN, VERBINDEN und der Start eines Tests oder Laufs werden mit `STOP gedrückt: Halte STOP 2s, um ihn zu lösen.` abgelehnt. Diese Meldung verschwindet im Frame nach dem abgeschlossenen Lösen aus dem Band.
 - Halte STOP 2s, um den eingerasteten Stopp zu lösen. Die Füllung wechselt dabei von Rot nach Gelb. Das Panel wartet anschließend, bis der IOmcu SAFE und alle Ausgänge als aus meldet, frühestens 500ms nach dem letzten STOP. Dann sendet es wieder den Heartbeat. Der Prüfstand bleibt SAFE. Zum Einschalten jedes Ausgangs musst du dessen Taste erneut halten.
 - Antwortet der IOmcu nicht innerhalb von 2s, bleibt der Stopp eingerastet. Das Alarmband meldet `STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.` Halte STOP erneut.
 - Ein Halten, in das eine zweite Berührung von STOP oder ein Touch-Aussetzer fällt, löst nichts. Das Alarmband meldet `STOP nicht gelöst: Zweite Berührung oder Touch-Aussetzer im Halten. Halte STOP 2s erneut.`

@@ -436,6 +436,71 @@ TEST_CASE(the_totals_outlast_the_run_and_reset_at_the_next)
     CHECK_EQ(empty.counted, 0u);
 }
 
+TEST_CASE(a_speed_above_65535rpm_loses_its_valid_bit)
+{
+    /* 90,000rpm does not fit LINK_BN_RPM: the register holds 65535 and
+     * LINK_BN_RPM_OK is clear, so the panel has a bound and no reading. */
+    bench_state_t in;
+    memset(&in, 0, sizeof(in));
+    in.rpm     = 90000.0f;
+    in.rpm_max = 90000.0f;
+    in.flags   = LINK_BN_RPM_OK | LINK_BN_VOLTAGE_OK;
+    uint16_t regs[LINK_BN_COUNT];
+    bench_state_to_regs(&in, regs);
+    CHECK_EQ(regs[LINK_BN_RPM], 65535u);
+    CHECK_EQ(regs[LINK_BN_RPM_MAX], 65535u);
+    CHECK_EQ(regs[LINK_BN_FLAGS], (uint16_t)LINK_BN_VOLTAGE_OK);
+    bench_state_t out;
+    memset(&out, 0, sizeof(out));
+    bench_state_from_regs(&out, regs, 0, LINK_BN_COUNT);
+    CHECK(bench_state_rpm_over(&out));
+    CHECK(bench_state_rpm_max_over(&out));
+
+    /* 65,536rpm is the first speed above it; 65,535rpm is a reading. */
+    in.rpm = 65536.0f;
+    bench_state_to_regs(&in, regs);
+    CHECK_EQ(regs[LINK_BN_FLAGS] & LINK_BN_RPM_OK, 0u);
+    in.rpm = 65535.0f;
+    in.rpm_max = 65534.0f;
+    bench_state_to_regs(&in, regs);
+    CHECK_EQ(regs[LINK_BN_RPM], 65535u);
+    CHECK((regs[LINK_BN_FLAGS] & LINK_BN_RPM_OK) != 0u);
+    bench_state_from_regs(&out, regs, 0, LINK_BN_COUNT);
+    CHECK(!bench_state_rpm_over(&out));
+    CHECK(!bench_state_rpm_max_over(&out));
+
+    /* A speed nothing measured is no bound, whatever the field holds. */
+    in.rpm = 90000.0f;
+    in.flags = LINK_BN_VOLTAGE_OK;
+    bench_state_to_regs(&in, regs);
+    CHECK_EQ(regs[LINK_BN_FLAGS], (uint16_t)LINK_BN_VOLTAGE_OK);
+    memset(&out, 0, sizeof(out));
+    CHECK(!bench_state_rpm_over(&out));
+    CHECK(!bench_state_rpm_over(NULL));
+    CHECK(!bench_state_rpm_max_over(NULL));
+}
+
+TEST_CASE(the_panel_counts_50mA_up_to_100000mAh)
+{
+    /* Without the INA228's totals: one hour of 50mA at 6.00V in 50ms steps
+     * adds 50mAh and 0.3Wh, from every total up to 100,000mAh.  A float
+     * sum adds 35mAh from 4,096mAh and nothing from 16,384mAh. */
+    static const double k_from[] = { 0.0, 4096.0, 16384.0, 40000.0, 99950.0 };
+    const bench_state_t b = measured(6.0f, 0.05f,
+                                     LINK_BN_VOLTAGE_OK | LINK_BN_CURRENT_OK);
+    for (size_t k = 0u; k < sizeof(k_from) / sizeof(k_from[0]); ++k) {
+        bench_totals_t t;
+        bench_totals_reset(&t);
+        t.mah = k_from[k];
+        t.wh  = k_from[k] * 0.006;
+        for (int i = 0; i < 72000; ++i) {
+            bench_totals_count(&t, &b, 0.05f, true);
+        }
+        CHECK_NEAR(t.mah - k_from[k], 50.0, 0.01);
+        CHECK_NEAR(t.wh - k_from[k] * 0.006, 0.3, 0.0001);
+    }
+}
+
 TEST_CASE(a_stalled_loop_counts_at_most_one_step)
 {
     bench_totals_t t;
@@ -1013,6 +1078,8 @@ int main(void)
     RUN(nothing_is_counted_while_disarmed_or_unmeasured);
     RUN(one_count_runs_through_a_change_of_source);
     RUN(the_totals_outlast_the_run_and_reset_at_the_next);
+    RUN(a_speed_above_65535rpm_loses_its_valid_bit);
+    RUN(the_panel_counts_50mA_up_to_100000mAh);
     RUN(a_stalled_loop_counts_at_most_one_step);
     RUN(the_ina228_counts_while_its_totals_are_the_runs);
     RUN(a_run_start_takes_the_last_runs_totals_off_the_page);

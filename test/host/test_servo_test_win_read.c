@@ -264,7 +264,7 @@ TEST_CASE(a_window_without_both_quantities_is_no_reading)
 /* ----------------------------------------------------- signed, clipped */
 
 /* A shunt fitted the other way round: every current negative.  The CSV
- * keeps the sign, the limits and STALL AT compare the magnitude, and the
+ * keeps the sign, the limits and Stall threshold compare the magnitude, and the
  * report says the direction. */
 TEST_CASE(a_current_negative_at_rest_is_reported_and_judged_by_magnitude)
 {
@@ -300,7 +300,7 @@ TEST_CASE(a_current_negative_at_rest_is_reported_and_judged_by_magnitude)
                     "FAIL\n") != NULL);
     CHECK(strstr(r, "Holding current  highest -0.120A, limit 0.20A: "
                     "PASS\n") != NULL);
-    CHECK(strstr(r, "Stall threshold  highest -0.600A, STALL AT 1.00A: "
+    CHECK(strstr(r, "Stall threshold  highest -0.600A, limit 1.00A: "
                     "PASS\n") != NULL);
 
     /* -0.020A at rest is not said, -0.021A is; and a stall the other

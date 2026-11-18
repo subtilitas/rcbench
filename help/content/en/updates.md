@@ -14,7 +14,7 @@ The step list on the left shows each step's number, name, the version its target
 
 | Control | What it does |
 |---|---|
-| CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs |
+| CHECK FOR UPDATES | asks GitHub once; the same key reads CANCEL while the check runs; grey while an update of the IOmcu, the C6 radio or a wireless device runs |
 | the current step's control | on the card; a 2s hold starts the step's update, see [The steps](#the-steps); grey while something blocks it, and a press shows the reason on the alert band |
 | SKIP THIS STEP | on the card; a tap passes the step until the panel restarts, and the next step becomes current |
 | SHOW SKIPPED STEPS | on the last card while a step is skipped; brings the skipped steps back |
@@ -36,7 +36,7 @@ Updates and reinstalls outside the order are on the page SINGLE UPDATES, see [Si
 | 5 POWER NODE | the connected power node runs another version | HOLD 2s TO UPDATE THE POWER NODE, see [The sensor nodes](#the-sensor-nodes) |
 | 6 BALANCE NODE | the connected balance node runs another version | HOLD 2s TO UPDATE THE BALANCE NODE |
 
-The panel image carries every other image, so PANEL comes first. A newer release found while a later step is current makes PANEL current again. A check that found nothing newer or failed never blocks, nor does a failed or stopped download: CHECK FOR UPDATES is the way back.
+The panel image carries every other image, so PANEL comes first. A newer release found while a later step is current makes PANEL current again. A check that found nothing newer or failed never blocks, nor does a failed or stopped download or a failed install: CHECK FOR UPDATES is the way back. After a failed install the card shows `The installation failed. The panel firmware is unchanged.` and `CHECK FOR UPDATES offers the release again.` A check never takes the card from a running update: a device's request to accept and CANCEL UPDATE stay.
 
 | Tag | Meaning |
 |---|---|
@@ -48,6 +48,7 @@ The panel image carries every other image, so PANEL comes first. A newer release
 | `SKIPPED` | SKIP THIS STEP was tapped since the panel's start |
 | `NOT CHECKED` | PANEL: no check since the start |
 | `NO LINK`, `NOT CONNECTED`, `NOT BOUND` | no IOmcu answers; a bound device is not connected; no device of the kind is bound |
+| `OFF` | a bound device is switched OFF on WIRELESS; its step never waits, and the last card lists it |
 | `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to update here; the card of the last step lists these steps |
 
 ![A step held while ARMED](view:updates-held)
@@ -64,7 +65,7 @@ After a restart during an update run, a step whose IOmcu or device is not connec
 
 ![The Dial's step waiting after a restart](view:updates-step-waiting)
 
-With no step left the card reads `All firmware is current.` and names the steps not connected, not updatable here and skipped.
+With no step left the card names the steps not connected, not updatable here and skipped under one of three headings: `All firmware is current.` when a check found nothing newer and every other step reads `CURRENT` or `NOT BOUND`; `Not checked for a panel release.` when PANEL reads `NOT CHECKED` or `FAILED` and the rest is current; `No step is open.` when a step was skipped or has no update here.
 
 ![The last card with the Dial skipped](view:updates-done)
 
@@ -215,13 +216,14 @@ With the hold live the line reads `Outputs stay off. ARMED is blocked until the 
 
 Under the heading, SINGLE UPDATES shows the board's ESP32-C6, which carries Wi-Fi and Bluetooth: `C6 radio: not reported. Included: 2.13.0.` The first version is the one the C6 named at the first Wi-Fi start since the panel started; the shipped C6 names none. HOLD 2s TO UPDATE THE C6 RADIO sends the carried image over the board's SDIO (Secure Digital input/output) link; the button then reads `C6 UPDATE 37%`.
 
-The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, and Wi-Fi off. On a C6 that reports the carried version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
+The hold is live with the bench SAFE, no arm waiting, the supply output off, no open log run, no board drawing being fetched, no other update running, no servo or ESC programmer holding a port, and Wi-Fi off. On a C6 that reports the carried version it reads HOLD 2s TO REINSTALL THIS PANEL'S C6 FIRMWARE: an image of the same version can carry other settings, such as 3 Bluetooth links in place of 5. A tap on the grey hold shows the reason on the alert band, for example `The C6 update waits for the panel's Wi-Fi to switch off.`
 
-While the update runs, ARM is refused and Wi-Fi stays off. It ends with one alert:
+While the update runs, ARM, the supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused, and Wi-Fi stays off. It ends with one alert:
 
 | Alert | Meaning |
 |---|---|
 | `C6 radio updated to 2.13.0. The panel restarts.` | done; the panel restarts 3s later |
+| `C6 radio updated to 2.13.0. The panel restarts once SAFE with all outputs off.` | done; the restart waits until the bench is SAFE, the supply output and PROG 5V are off and no programmer holds a port |
 | `The C6 radio takes no update over SDIO. Flash it over header H4.` | the C6's firmware refused the update; the old firmware runs |
 | `The C6 radio did not answer. Wi-Fi is off until the panel restarts.` | the link to the C6 failed |
 | `C6 update stopped: no response. Previous firmware is running.` | a step went unanswered; `a write failed`, `the C6's image check failed` and `activation failed` read the same way |

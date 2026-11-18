@@ -78,7 +78,7 @@ uint32_t sense_i3221_full_scale_ma(uint16_t shunt_dmohm)
         return 0u;
     }
     /* uV / (0.1mOhm) = 10mA a step, so uV * 10 / dmOhm is mA. */
-    return (I3221_FULL_SCALE_UV * 10u) / shunt_dmohm;
+    return (uint32_t)((I3221_FULL_SCALE_UV * 10u) / shunt_dmohm);
 }
 
 bool sense_page_enabled(const sense_page_t *p)

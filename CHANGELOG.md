@@ -46,8 +46,29 @@ history is in git.
   section, the CSV three rows with `V` in the write column. A run that
   wrote nothing does not verify.
 
+- OUTPUTS: a write the IOmcu refuses says why. The link protocol is 4.38:
+  BIND (0x30) has register 1, `WHY`, the cause of the last refused write
+  to CHAN_CFG, OUTPUTS, BIND_CFG, BIND_OUT or BIND, 13 causes. The panel
+  reads it after a refused write from a 4.38 or later IOmcu, and the
+  reason line of both views shows it while LAST WRITE reads `REFUSED` and
+  no other line stands, for example `REFUSED: NO PIO OR PWM SLICE FREE`.
+  An older IOmcu gives `REFUSED` without a cause.
+
 ### Changed
 
+- Servo test: the stall limit has one name, the OPTIONS row's `Stall
+  threshold`, German `Blockierschwelle`. The abort reason reads `above
+  Stall threshold for 1s` (`1s über Blockierschwelle`), the report line
+  `Stall threshold  highest 0.077A, limit 2.00A: PASS`
+  (`Blockierschwelle Höchstwert 0.077A, Grenze 2.00A: ...`), the note on
+  the AUTOMATIC TEST card and in the report `Stall threshold 2.00A must be
+  below current limit 2.00A` and `Stall threshold 2.00A must be below
+  INA3221 range 1.638A` (`Blockierschwelle 2.00A: muss unter
+  Strombegrenzung 2.00A`, `Blockierschwelle 2.00A: muss unter
+  INA3221-Bereich 1.638A`). `STALL AT` and `BLOCKIERT AB` are gone.
+- RUDDER AUTO's report: the programming head reads `PROGRAMMING (end
+  points)`, German `PROGRAMMIEREN (Endpoints)`; each line below names its
+  unit, `(counts)` on a Hitec D series servo, `(raw value)` else.
 - IOmcu update: the question on the menu is gone. An IOmcu that runs
   another build opens UPDATES at step 2 (IOMCU), once per offer, on the
   menu with the bench SAFE, the supply output off, Wi-Fi off and no panel
@@ -144,6 +165,98 @@ history is in git.
   ARM, bank SAFE, supply output off) with `Touch signal lost while switching
   to ARMED. Stopped.` The texts `ALERT_TOUCH_ARM_AGAIN` and
   `ALERT_TOUCH_LOST_STOP` are removed.
+- Charge and energy totals: the running sums of SUPPLY, of a SERVO run's
+  rail and of BENCH without the INA228's totals are double. A float sum
+  of 50mA in 50ms steps added 35mAh an hour from 4,096mAh and nothing
+  from 16,384mAh.
+- A speed above 65,535rpm read 65535 as a valid reading. The IOmcu clears
+  the rpm valid bit and the register holds 65535; MOTOR & ESC shows
+  `>65535` for the speed and for a peak of 65,535rpm or more, and the
+  log's `rpm` cell holds `>65535`. LOGS reads a cell that begins with `>`
+  as the number after it, so the column stays numeric.
+- IMU: a link that ended in the 50ms between two commands of a group
+  (unlock, register writes, SAVE) left the rest in the outbox. At the next
+  connection the register write and SAVE went without their unlock, and
+  the write was not due again. The rest is dropped, and the whole group is
+  sent again at the next connection. A calibration's exit is covered the
+  same way.
+- IMU: SCAN FOR SENSORS, SCAN AGAIN and SERVO's SEARCH FOR IMU start no
+  scan while ARMED (`NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST`), and
+  a running scan stops at the switch to ARMED, as the Dial's and the
+  nodes' scans do. A scan that waits for Bluetooth LE is dropped by `NO
+  BLUETOOTH ON C6`, by CLOSE and by ARMED.
+- Hitec MOVE SERVO: the live line showed 995mA to 999mA of each ampere as
+  x.99A. The current is rounded once to 10mA: 1,996mA reads `2.00A`.
+- UPDATES: a check that started beside a wireless device's transfer took
+  the card, the device's ask and CANCEL UPDATE away for up to 30s. The
+  check's gate counts a wireless device's update, as the IOmcu's and the
+  C6 radio's: CHECK FOR UPDATES is grey with
+  `Waiting for the wireless device update to finish.`, the start-up check
+  waits, and a check under way ends when such an update starts. In the
+  step model an update outranks PANEL's check as the current step.
+- UPDATES: the last card's heading follows the steps. `All firmware is
+  current.` shows only with PANEL checked and `CURRENT` and every other
+  step `CURRENT` or `NOT BOUND`; `Not checked for a panel release.` with
+  PANEL `NOT CHECKED` or `FAILED` and the rest so; `No step is open.` with
+  a step skipped or without an update here.
+- UPDATES: a bound Dial, power node or balance node whose switch on
+  WIRELESS is OFF no longer waits in an update run with `Switch the Dial
+  on and keep it within range.` Its row reads `OFF`, the step is passed
+  and the last card names it.
+- UPDATES: after an install that failed behind a checked download, step 1
+  stayed on `UPDATING` with `Download checked. Installing now.` and
+  OPTIONS grey until the next check. The download's result becomes a
+  failed install (`WA_GOT_INSTALL`): PANEL reads `FAILED`, the card says
+  `The installation failed. The panel firmware is unchanged.` and
+  `CHECK FOR UPDATES offers the release again.`, and OPTIONS and the later
+  steps are live.
+- RUDDER AUTO refuses the start while a goal, TARGET x (1 + MARGIN), does
+  not exceed 2 x TOLERANCE: `GOALS MUST EXCEED 2 x TOLERANCE` on the
+  card's first line and the alert band, before a part is switched. With a
+  goal of TOLERANCE or less a servo that never moved ended PASS, and with
+  a goal under 2 x TOLERANCE two end pulses deflecting to one side did.
+- SERVO: the Dial's 1s hold ends a test, a LIMIT RUN and a RUDDER AUTO
+  run in every phase. The hold did nothing while the run held the bench
+  SAFE for its programmer session, in its ARM phase, or ended only the
+  supplies between the run's SAFE request and its read-back; the run then
+  armed again by itself. The hold also takes back an ARM that is on its
+  way.
+- C6 radio update: from its start to the panel's restart the supply's
+  OUTPUT ON, PROG 5V ON and a programmer session's start are refused with
+  an alert, as ARM is. No update starts while a servo or ESC programmer
+  holds a port. After a success the update run's note and the restart wait
+  for a bench that is SAFE with the supply output and PROG 5V off and no
+  programmer on a port; the band reads `C6 radio updated to <version>. The
+  panel restarts once SAFE with all outputs off.`. From the success to the
+  restart the C6 step shows no live hold.
+- Panel flash writes: an ARM queued earlier in a frame holds back that
+  frame's settings save, Wi-Fi settings write, run note erase and trial
+  keep.
+- Panel install: the wait for the control task is 1500ms, above one
+  unanswered link exchange of 1000ms. A wait that runs out ends the
+  install with `install of <version> failed: the control task did not stand still` on
+  the console, with nothing written.
+
+- LOGS: a rising first column named as a counter (`step`, `row`, `index`,
+  `sample`, `count`, `n`, `#`) is no time axis. `RUDDRnnn.CSV` plots
+  against the row index; its header showed `5.00s   1Hz` for 6 steps.
+- LOGS: a time unit after an underscore in the header is read (`time_ms`,
+  `t_us`, `elapsed_s`). 4s of rows under `time_ms` opened as 4,000s.
+- LOGS: DELETE is refused while the bench is ARMED or a run is being
+  logged, as every write in FILES, with `Bench ARMED. The card is
+  read-only.` or `A run is being logged. The card is read-only.` An ARM or
+  a run that starts while the question is open refuses its DELETE.
+- LOGS: the USER tab's line and the help name `RUDDRnnn.CSV`.
+- FILES: a COPY blocked by a leftover `<name>.NEW` names `<name>.NEW` in
+  `... already exists there.`
+- FILES and SETUP > SD CARD: `BENCH/BALANCE` is a FIXED folder (no RENAME,
+  no MOVE) and is refused as a log folder, as the other bench folders.
+- FILES: a SAVE over a file that grew after its checksum was read is
+  refused as changed. A row the balance node's solve appended to
+  `BALANCE.CSV` during the save is kept.
+- Bus fault screen: the German titles are `CAN-BUS-FEHLER` and
+  `VERBINDUNG VERLOREN`.
+- BATTERY: a cell count outside 1 to 14 is taken as no pack.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,
@@ -154,6 +267,51 @@ history is in git.
   after the surface arrives. The measure's wait grows by 10,000ms plus the
   settling time, 16,000ms with the defaults; `surface not settled in
   time` replaces `surface not still within 3s`.
+- ESC signal-wire session: READ AGAIN with edits not written opens a page
+  with `Edits not written are lost.` and reads on a 2s hold; with no edit
+  the tap reads.
+- ESC signal-wire session: HOLD 2s: NO BACKUP stands for the write it
+  confirms. The next write saves the session's backup if the card has
+  none, then its record `ESCW.TXT`, and asks again when the card refuses.
+- ESC signal-wire session: a refused settings file and a refused restore
+  name the reason in words with the code and, for a file, the line:
+  `File refused, code 15, line 4: no field or line has this name.`
+  `docs/EscWire.md` lists the 18 file codes and the 11 restore codes.
+- ESC signal-wire session: timing and temperature rows, lists and the
+  keypad show `°` and `°C`; ESCape32's timing help line gives 0.9375° to
+  29.0625°. Bluejay's bytes 0x04 and 0x09 have the help line of the
+  layout's own field. CONNECT's TARGET row takes no tap while no throttle
+  slot and no DShot port is bound.
+- RECEIVER: RATE is the frames of a window of at least 1000ms divided by
+  its length and reads `---` for the first second and after a silence. A
+  dropout draws a line in all sixteen lanes. In NO SIGNAL the last values
+  are faint. FAILSAFE, FRAME LOST, DIGITAL and RAW DATA's counter names
+  come from the text table.
+- ESC link: a fetch of the read copy keeps the block count of the length
+  it started with, so a shorter length reported during the fetch copies
+  nothing past the image (64 bytes before). A STOP acknowledged in place
+  of a command the page never took ends the request as dropped, not as
+  done.
+
+- Bidirectional DShot: a slot is bound in the first PIO block, PIO2 down
+  to PIO0, with two adjacent free state machines and 16 free instructions.
+  The slot orders DSHOT, bidirectional, bidirectional and three DSHOT then
+  one bidirectional were refused with 2 blocks empty, and the whole
+  OUTPUTS write with them.
+- OUTPUTS: the reason line names the tap made last. A refused tap on a
+  free key kept the line of the tap before it (`GPIO 13: PROG PORT 1. FREE
+  IT ON ITS ENTRY` over `PPM USES 1 PIN`).
+- OUTPUTS: for 400ms after MOVE PIN or CANCEL closes the card, a press
+  inside the card's former box is spent. On the grid view of a learned
+  board with 15 or more pins, the second tap of a double tap on MOVE PIN
+  bound the cell under the button.
+- IOmcu: a channel whose role changes reads its new rest on the CHANNELS
+  page; the register kept the command written under the old role.
+- IOmcu: a stored OUTPUTS slot with a driver number above 4 or a pin above
+  GPIO 63 starts unbound. A pin register above 255 was narrowed to 8 bits
+  and bound another GPIO.
+- Help and comments: on the rbmod carrier the bound outputs take slots and
+  channels in the order PWM01 to PWM04; the texts said slot n is PWM0(n+1).
 
 ## 0.23.14 - 2026-11-15
 

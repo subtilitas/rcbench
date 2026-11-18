@@ -81,6 +81,23 @@ bind_write_t bind_link_write(link_host_t *h, const link_port_t *port,
                              uint16_t minor, const uint16_t *cfg,
                              const uint16_t *slots, bind_rate_t *rate);
 
+/**
+ * @brief Why the IOmcu refused the binding write just made: BIND's
+ *        LINK_BD_WHY, one exchange.
+ *
+ * Read after bind_link_write() ends BIND_REFUSED with the SERVO rate reset
+ * landed; a refused rate reset leaves the register at an earlier cause.
+ *
+ * @param h The link host to read through.
+ * @param port The link port the IOmcu answers on.
+ * @param minor The IOmcu's protocol minor.
+ * @return A link_bind_why_t, or a number a later protocol adds.
+ *         LINK_BW_NONE when @p minor is below LINK_MINOR_BIND_WHY (38),
+ *         the read is unanswered or refused, or @p h or @p port is NULL.
+ */
+uint8_t bind_link_why(link_host_t *h, const link_port_t *port,
+                      uint16_t minor);
+
 /** @brief What a read of the two pages gave. */
 typedef enum {
     /** @brief Both pages read and the binding model describes them; a page with

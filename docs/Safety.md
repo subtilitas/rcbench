@@ -125,7 +125,7 @@ either goes.
 | The panel's supply trip (CURRENT TRIP or VOLTAGE TRIP on SUPPLY) | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, the IOmcu for the write |
 | An INA3221 channel over its limit | SAFE | the port's supply off, after a write that runs | off; a port's after its write, 10000ms at most | the panel, at the 200ms read of `OVER`, with one console line a channel ([Screens](Screens.md#sensors-the-ina3221-parts)); the IOmcu for the write |
 | The carrier's programming-port 5V missing or lost under an ON, the panel's or a session's: no INA3221 window of 4750mV or more by 200ms after the ON, or 2 new windows under 3000mV 500ms or more after it ([Carrier, PROG 5V missing or lost](Carrier.md#prog-5v-missing-or-lost)) | SAFE | the session's 5V off, after a write that runs; under a session the finding waits for a page read that still reads GPIO 21 on | off | the panel, with one alert and one console line; the IOmcu for the PROG_SUPPLY OFF |
-| A run's current limit: STALL AT, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
+| A run's current limit: Stall threshold, constant current, 3.0A, 1.0A for 400ms | SAFE | none open: a search is ARMED | off | the SERVO screen |
 | A step of SERVO's start sequence fails on LIVE, SWEEP, RUDDER or RUDDER AUTO: PORT PWM, PROG 5V or the PD mini not read back within 1000ms, not ARMED within 500ms, a tap on the hold, a STOP ([Servo: AUTO end points](Servo.md#auto-end-points)) | SAFE | none open: ARM is refused while a session holds a port | off; PROG 5V off as well | the SERVO screen (`svs_all_off()`) |
 | The PD mini's own protection, its input sagging, no answer, no reading, an ON refused or let go, an output or set point that would not take, an ON taken across lost touch events | SAFE | the port's supply off, after a write that runs | off where it can be switched: the module's protection and a sagging input at once, a write included; the rest after a port's write, 10000ms at most | the IOmcu's driver for the output, the panel for SAFE |
 | A KST or Hitec operation ends in a fault of the servo or the wire (`kst_link_outcome_fault()`, `hitec_prog_ses_fault()`), or the ESC_WIRE page reports `FAULT` or reaches `NOT_BACK` (`esc_link_faults()`) | SAFE already: a session runs on a SAFE bench | the port's supply off; the operation has ended | off | the panel (`prog_faults_follow()`) |
@@ -308,7 +308,7 @@ the servo up. The page follows the SUPPLY page's rules for a port:
   Without a PD mini reading only the check after the ON applies.
 
 SUPPLY shows its state under OUTPUT: `PROG PORTS 5V, GPIO 21: ON`, `OFF`,
-or `NOT READ` when the last read went unanswered. The core is
+or `UNKNOWN` when the last read went unanswered. The core is
 `shared/outputs/prog_supply.c` under `test_prog_supply`; the panel's end
 is `shared/bench/prog_supply_link.c` under `test_prog_supply_link`, the
 box `shared/ui/prog5v_box.c` under `test_prog5v_box`.
@@ -705,7 +705,9 @@ reads the state and shows the alert, is not in the coverage figure.
   auto-suspend is off, so each erase or write stalls both of the panel's
   cores, the control task with its heartbeat, STOP, OUTPUT OFF and the
   supply trips included. The rule is `flash_gate_open()` in
-  `shared/safety/flash_gate.c`, under `test_flash_gate`. It holds back the
+  `shared/safety/flash_gate.c`, under `test_flash_gate`. An ARM queued by
+  a screen and not yet taken by the control task counts as a switch to
+  ARMED waiting (`flash_gate_arm()`). It holds back the
   settings save and the board drawing's keep. Switching to ARMED and the supply are
   never refused for a write: the write waits. The keep (2 erases of 4kB and
   2 writes for the RP2350-CAN's 1,560-byte drawing) runs one sector per 5ms
