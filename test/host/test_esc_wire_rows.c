@@ -268,7 +268,7 @@ TEST_CASE(a_help_line_is_the_one_of_the_layouts_field)
 TEST_CASE(degrees_are_shown_with_their_sign)
 {
     char text[32];
-    ewp_row_t r;
+    ewp_row_t r = { 0 };
 
     read_as(EW_FW_AM, 4u);
     CHECK(row_of(0x17u, &r));
@@ -303,7 +303,7 @@ TEST_CASE(degrees_are_shown_with_their_sign)
 TEST_CASE(escape32_timing_reads_in_degrees_everywhere)
 {
     char text[32];
-    ewp_row_t r;
+    ewp_row_t r = { 0 };
     bool got = false;
 
     read_as(EW_FW_E32, 17u);
