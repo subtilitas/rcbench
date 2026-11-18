@@ -13,7 +13,16 @@
 // {w, shots: [[t, name], ...]}, shows captures of a real web page in
 // place of items: the picture "name" from t on, cross-faded over 0.2s; its
 // pointer keys take a place [x, y] on the page, w CSS pixels wide, where
-// an item's id stands.  A timed item keeps its
+// an item's id stands.
+//
+// The kind "desktop" is a Windows desktop, {from, to, at, w, h}: wallpaper
+// and a taskbar, drawn under the windows that follow it.  The kind
+// "explorer" is a File Explorer window on it: {title, path, nav, rows, h,
+// copy}.  "path" is the list of the address bar's names, "nav" the side
+// pane's entries {text, kind, on}, "rows" the files {file, date, type,
+// size, id, from, to}, and "copy" {t: [t0, t1], text} the copy dialog with
+// its bar.  A pointer's ids are looked up in every window of the scene, so
+// a file is carried from one window into another.  A timed item keeps its
 // place while hidden, so the page does not jump.  "pointer" is a list of
 // keys [t, id] or [t, id, op]: the pointer is on the item "id" at t; op is
 // "click", "grab" or "drop".  Times are seconds from the scene's start.
@@ -77,8 +86,63 @@ function item(it, lt, clicks) {
 
 // Draw the windows of scene sc at its time lt into the layer "into"; the
 // pointer goes into the SVG overlay "ov".  a is the scene's opacity.
+const ICON = {
+  folder: '<i class="ic fo"></i>', drive: '<i class="ic dr"></i>',
+  pc: '<i class="ic pc"></i>', file: '<i class="ic fi"></i>',
+  web: '<i class="ic we"></i>', text: '<i class="ic tx"></i>',
+};
+
+// A File Explorer window's inside.
+function explorer(w, lt, clicks) {
+  const shown = it => lt >= (it.from ?? -1e9) && lt < (it.to ?? 1e9);
+  const nav = (w.nav || []).map(n => `<div class="nv${n.on ? ' on' : ''}"
+    style="${shown(n) ? '' : 'visibility:hidden'}">${
+    ICON[n.kind || 'folder']}<span>${esc(n.text)}</span></div>`).join('');
+  const rows = (w.rows || []).map(r => `<div class="rw${
+    clicks.some(c => c[1] === r.id && lt >= c[0] && lt < c[0] + .5)
+      ? ' on' : ''}" data-id="${esc(r.id || '')}"
+    style="${shown(r) ? '' : 'visibility:hidden'}">${ICON[r.kind || 'file']}
+    <span>${esc(r.file)}</span><em>${esc(r.date || '')}</em>
+    <em>${esc(r.type || '')}</em><em class="sz">${esc(r.size || '')}</em>
+    </div>`).join('');
+  const c = w.copy;
+  const k = c ? cl((lt - c.t[0]) / (c.t[1] - c.t[0])) : 0;
+  const dlg = c && lt >= c.t[0] && lt < c.t[1] + .3
+    ? `<div class="cp"><b>${Math.round(k * 100)}% complete</b>
+       <p>${c.text}</p><u><s style="width:${k * 100}%"></s></u></div>` : '';
+  const count = (w.rows || []).filter(shown).length;
+  return `<div class="xt"><div class="tab">${ICON[w.icon || 'folder']}
+      <span>${esc(w.title)}</span><b>✕</b></div><span class="plus">+</span>
+      <span class="ctl">–</span><span class="ctl">☐</span>
+      <span class="ctl">✕</span></div>
+    <div class="xa"><span class="ar">← → ↑ ⟳</span><div class="crumb">${
+      (w.path || []).map(esc).join(' <i>›</i> ')}</div>
+      <div class="find">Search ${esc(w.title)}</div></div>
+    <div class="xb">⊕ New ⌄ &nbsp;│&nbsp; ✂ &nbsp; ⧉ &nbsp; ⎘ &nbsp; ✎
+      &nbsp; 🗑 &nbsp;│&nbsp; ↑↓ Sort ⌄ &nbsp; ☰ View ⌄ &nbsp; ···</div>
+    <div class="xm" style="height:${w.h || 300}px"><div class="xn">${nav}
+      </div><div class="xl" data-id="${esc(w.id || '')}"><div class="hd">
+      <span>Name</span><em>Date modified</em><em>Type</em>
+      <em class="sz">Size</em></div>${rows}${dlg}</div></div>
+    <div class="xs">${count} item${count === 1 ? '' : 's'}</div>`;
+}
+
 export function drawWindows(sc, lt, a, into, ov, imgs = {}) {
   for (const w of sc.windows || []) {
+    if (w.kind === 'desktop') {
+      const o = Math.min(ss((lt - w.from) / .45), ss((w.to - lt) / .35)) * a;
+      if (o <= 0) continue;
+      const el = document.createElement('div');
+      el.className = 'desk';
+      Object.assign(el.style, {left: w.at[0] + 'px', top: w.at[1] + 'px',
+                               width: w.w + 'px', height: w.h + 'px',
+                               opacity: o});
+      el.innerHTML = `<div class="tb"><i class="st"></i><span>🔍 Search
+        </span>${ICON.folder}<i class="ap a1"></i><i class="ap a2"></i>
+        <em>${esc(w.clock || '21:40')}</em></div>`;
+      into.appendChild(el);
+      continue;
+    }
     const o = Math.min(ss((lt - w.from) / .45), ss((w.to - lt) / .35)) * a;
     if (o <= 0) continue;
     const keys = w.pointer || [];
@@ -95,6 +159,7 @@ export function drawWindows(sc, lt, a, into, ov, imgs = {}) {
       ? `<div class="side">${w.side.map(it => item(it, lt, clicks)).join('')
         }</div>` : '';
     let inner = `<div class="in">${side}<div class="body">${body}</div></div>`;
+    if (w.kind === 'explorer') inner = explorer(w, lt, clicks);
     if (w.page) {
       const k = w.page.shots;
       let n = 0;
@@ -104,7 +169,8 @@ export function drawWindows(sc, lt, a, into, ov, imgs = {}) {
         imgs[k[Math.max(0, n - 1)][1]].src}" alt=""><img src="${
         imgs[k[n][1]].src}" alt="" style="opacity:${mix}"></div>`;
     }
-    el.innerHTML = `<div class="top"><i></i><i></i><i></i>${
+    el.innerHTML = w.kind === 'explorer' ? inner
+      : `<div class="top"><i></i><i></i><i></i>${
       w.url ? `<span class="url">${esc(w.url)}</span>`
         : `<b>${esc(w.title || '')}</b>`}</div>${inner}`;
     into.appendChild(el);
@@ -118,7 +184,8 @@ export function drawWindows(sc, lt, a, into, ov, imgs = {}) {
         const f = r.width / w.page.w;
         return [r.left + id[0] * f, r.top + id[1] * f];
       }
-      const t = id && el.querySelector(`[data-id="${id}"]`);
+      const t = id && (el.querySelector(`[data-id="${id}"]`)
+                       || into.querySelector(`[data-id="${id}"]`));
       const r = (t || el).getBoundingClientRect();
       return [r.left + r.width / 2, r.top + r.height * (t ? .5 : .3)];
     };
@@ -142,7 +209,9 @@ export function drawWindows(sc, lt, a, into, ov, imgs = {}) {
     const held = keys.findLast(k => lt >= k[0] && (k[2] === 'grab'
                                                     || k[2] === 'drop'));
     if (held && held[2] === 'grab') {
-      const name = (w.body || []).find(it => it.id === held[1])?.file || '';
+      const name = (sc.windows || []).flatMap(x => [
+        ...(x.body || []), ...(x.rows || [])]).find(
+        it => it.id === held[1])?.file || '';
       g += `<g transform="translate(${x + 18} ${y + 22})"><rect width="${
         name.length * 13.4 + 56}" height="52" rx="11" fill="#1b2740"
         stroke="#00e5ff" stroke-opacity=".7"/><text x="42" y="34"

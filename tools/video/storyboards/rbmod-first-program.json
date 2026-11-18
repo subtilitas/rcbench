@@ -666,30 +666,6 @@
      "text": "USB-C → computer",
      "side": "t",
      "d": 70
-    },
-    {
-     "from": 9.18,
-     "to": 12.32,
-     "at": [
-      -0.2,
-      3.2,
-      -24
-     ],
-     "text": "USB-C → computer",
-     "side": "t",
-     "d": 70
-    },
-    {
-     "from": 13.62,
-     "to": 21.6,
-     "at": [
-      -0.2,
-      3.2,
-      -24
-     ],
-     "text": "USB-C → computer",
-     "side": "t",
-     "d": 70
     }
    ],
    "say": [
@@ -712,46 +688,140 @@
    ],
    "windows": [
     {
-     "from": 8.680000000000001,
+     "kind": "desktop",
+     "from": 8.58,
+     "to": 22.900000000000002,
+     "at": [
+      60,
+      130
+     ],
+     "w": 1800,
+     "h": 900
+    },
+    {
+     "kind": "explorer",
+     "from": 8.780000000000001,
      "to": 22.8,
      "at": [
-      50,
-      640
+      110,
+      170
      ],
-     "w": 1060,
-     "kind": "folder",
-     "title": "Downloads",
-     "side": [
+     "w": 980,
+     "h": 290,
+     "title": "rcbench-iomcu-rbmod-v0.23.14",
+     "path": [
+      "Downloads",
+      "rcbench-iomcu-rbmod-v0.23.14"
+     ],
+     "nav": [
       {
-       "p": "This computer"
+       "text": "Home",
+       "kind": "pc"
       },
       {
-       "drive": "Downloads",
-       "id": "dl"
+       "text": "Desktop"
       },
       {
-       "drive": "RP2350",
-       "id": "drive",
-       "note": "USB",
+       "text": "Downloads",
+       "on": true
+      },
+      {
+       "text": "Documents"
+      },
+      {
+       "text": "This PC",
+       "kind": "pc"
+      },
+      {
+       "text": "RP2350 (E:)",
+       "kind": "drive",
        "from": 9.780000000000001,
-       "to": 18.92
+       "to": 19.12
       }
      ],
-     "body": [
+     "rows": [
       {
-       "p": "rcbench-iomcu-rbmod-v0.23.14"
+       "file": "rcbench-iomcu-rbmod.bin",
+       "type": "BIN File"
+      },
+      {
+       "file": "rcbench-iomcu-rbmod.elf",
+       "type": "ELF File"
+      },
+      {
+       "file": "rcbench-iomcu-rbmod.uf2",
+       "type": "UF2 File"
       },
       {
        "file": "rcbench-iomcu-rbmod-install.uf2",
-       "id": "uf2",
-       "note": "UF2",
-       "get": [
-        15.72,
-        18.32
-       ],
-       "done": "copied"
+       "type": "UF2 File",
+       "id": "uf2"
+      },
+      {
+       "file": "rcbench-iomcu-rbmod-pt.uf2",
+       "type": "UF2 File"
+      }
+     ]
+    },
+    {
+     "kind": "explorer",
+     "from": 9.780000000000001,
+     "to": 19.12,
+     "at": [
+      840,
+      440
+     ],
+     "w": 960,
+     "h": 250,
+     "title": "RP2350 (E:)",
+     "icon": "drive",
+     "id": "rp",
+     "path": [
+      "This PC",
+      "RP2350 (E:)"
+     ],
+     "nav": [
+      {
+       "text": "Home",
+       "kind": "pc"
+      },
+      {
+       "text": "Downloads"
+      },
+      {
+       "text": "This PC",
+       "kind": "pc"
+      },
+      {
+       "text": "RP2350 (E:)",
+       "kind": "drive",
+       "on": true
       }
      ],
+     "rows": [
+      {
+       "file": "INDEX.HTM",
+       "type": "HTM File",
+       "kind": "web"
+      },
+      {
+       "file": "INFO_UF2.TXT",
+       "type": "Text Document",
+       "kind": "text"
+      },
+      {
+       "file": "rcbench-iomcu-rbmod-install.uf2",
+       "type": "UF2 File",
+       "from": 18.22
+      }
+     ],
+     "copy": {
+      "t": [
+       15.82,
+       18.22
+      ],
+      "text": "Copying 1 item from <b>Downloads</b> to <b>RP2350 (E:)</b>"
+     },
      "pointer": [
       [
        14.22,
@@ -760,7 +830,7 @@
       ],
       [
        15.620000000000001,
-       "drive",
+       "rp",
        "drop"
       ]
      ]

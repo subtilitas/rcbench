@@ -169,8 +169,9 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
             and all(c.isalnum() or c in "-_" for c in scene["part"])):
         errors.append(f"{where}: part names a model under tools/video/cad/, "
                       "without its suffix")
+    known = set()
     for n, window in enumerate(scene.get("windows", [])):
-        _check_window(window, dur, f"{where} window {n + 1}", errors)
+        _check_window(window, dur, f"{where} window {n + 1}", errors, known)
     mini = scene.get("model") == "mini"
     for name in ("faces", "turn", "flip", "spin"):
         if name in scene:
@@ -347,8 +348,9 @@ def _check_board(scene: dict, where: str, errors: list) -> None:
             and isinstance(enter.get("view", ""), str)):
         errors.append(f"{where}: enter needs t, [t0, t1] within the scene, "
                       "and takes a view")
+    known = set()
     for n, window in enumerate(scene.get("windows", [])):
-        _check_window(window, dur, f"{where} window {n + 1}", errors)
+        _check_window(window, dur, f"{where} window {n + 1}", errors, known)
 
 
 def _within(value, dur: float) -> bool:
@@ -361,15 +363,24 @@ WINDOW_ITEMS = ("h", "p", "log", "file", "button", "bar", "drive", "dialog")
 
 
 def _check_window(window: dict, dur: float, where: str,
-                  errors: list) -> None:
+                  errors: list, known: set) -> None:
+    if isinstance(window, dict) and window.get("kind") == "desktop":
+        if not (_within([window.get("from"), window.get("to")], dur)
+                and _place(window.get("at")) and all(
+                    _number(window.get(k)) and window[k] > 0
+                    for k in ("w", "h"))):
+            errors.append(f"{where}: a desktop needs from, to, at, w and h")
+        return
     if not (isinstance(window, dict)
             and _within([window.get("from"), window.get("to")], dur)
             and _place(window.get("at")) and isinstance(window["at"], list)
             and _number(window.get("w")) and 200 <= window["w"] <= 1920
-            and window.get("kind", "browser") in ("browser", "folder")
+            and window.get("kind", "browser") in ("browser", "folder",
+                                                  "explorer")
             and isinstance(window.get("url") or window.get("title"), str)):
         errors.append(f"{where}: needs from and to within the scene, at, "
-                      "[x, y], w from 200 to 1920, kind browser or folder, "
+                      "[x, y], w from 200 to 1920, kind browser, folder or "
+                      "explorer, "
                       "and a url or a title")
         return
     page = window.get("page")
@@ -386,7 +397,11 @@ def _check_window(window: dict, dur: float, where: str,
             if not (STILLS / f"{key[1]}.png").is_file():
                 errors.append(f"{where}: no still tools/video/stills/"
                               f"{key[1]}.png")
-    ids = set()
+    ids = set(known) | {r["id"] for r in window.get("rows", [])
+                        if isinstance(r, dict) and "id" in r}
+    if "id" in window:
+        ids.add(window["id"])
+    known.update(ids)
     for item in window.get("side", []) + window.get("body", []):
         kinds = [k for k in WINDOW_ITEMS if isinstance(item, dict)
                  and k in item]
@@ -396,6 +411,7 @@ def _check_window(window: dict, dur: float, where: str,
             continue
         if "id" in item:
             ids.add(item["id"])
+            known.add(item["id"])
         for key in ("get", "bar"):
             if key in item and not _within(item[key], dur):
                 errors.append(f"{where}: {key} is [t0, t1] within the "
