@@ -5742,9 +5742,6 @@ UI_TEXT(SV_KST_EXPERT_NOTE, 0,
     "EIN nach 2s Halten, AUS per Tippen. EIN zeigt LOCKED.")
 
 /* --------------- the alert band: the panel's control task raises these */
-UI_TEXT(ALERT_TOUCH_LOST_STOP, 94,
-    "Touch signal lost while holding STOP. Stopped.",
-    "Touch-Signal beim Halten von STOP verloren. Gestoppt.")
 UI_TEXT(ALERT_TOUCH_LOST_ARMING, 94,
     "Touch signal lost while switching to ARMED. Stopped.",
     "Touch-Signal beim Wechsel zu ARMED verloren. Gestoppt.")
@@ -5854,9 +5851,6 @@ UI_TEXT(ALERT_SUPPLY_NO_READING, 94,
 UI_TEXT(ALERT_SUPPLY_TRIP, 94,
     "Supply exceeded %u.%02u%s. Output off.",
     "Netzteil hat %u.%02u%s überschritten. Ausgang aus.")
-UI_TEXT(ALERT_TOUCH_ARM_AGAIN, 94,
-    "Touch signal lost while switching to ARMED. Hold ARM again.",
-    "Touch-Signal beim Wechsel zu ARMED verloren. Halte ARM erneut.")
 UI_TEXT(ALERT_TOUCH_STOPPED, 94,
     "Touchscreen stopped responding. Switched to SAFE.",
     "Touchscreen antwortet nicht mehr. Auf SAFE geschaltet.")
@@ -5870,6 +5864,11 @@ UI_TEXT(ALERT_STOP_HELD, 94,
 UI_TEXT(ALERT_STOP_NO_CONFIRM, 94,
     "STOP not reset: the IOmcu did not report every output off within 2s.",
     "STOP nicht gelöst: Der IOmcu meldete nicht binnen 2s alle Ausgänge aus.")
+/* The reset's hold completed and was refused: a STOP or a contact break lay
+ * inside it (stop_latch.h, STOP_LATCH_REFUSED): the latch stands. */
+UI_TEXT(ALERT_STOP_HOLD_BROKEN, 94,
+    "STOP not reset: a second touch or a touch dropout broke the hold. Hold STOP 2s again.",
+    "STOP nicht gelöst: Zweite Berührung oder Touch-Aussetzer im Halten. Halte STOP 2s erneut.")
 /* The render loop stood still for FRAME_WATCH_MS (frame_watch.h) on an
  * ARMED bench or under a live supply output; shown once it draws again. */
 UI_TEXT(ALERT_SCREEN_STALLED, 94,

@@ -40,6 +40,31 @@ void stop_latch_init(stop_latch_t *l, const stop_latch_in_t *in)
 }
 
 /**
+ * @brief Turn each kept stamp into a fact before the 32-bit clock can read
+ *        it as lying ahead, 2^31ms (24.86 days) after it was taken.
+ *
+ * Once a pass: an event older than STOP_LATCH_EVENT_AGE_MS refuses no hold
+ * and is forgotten, the floor is kept as passed from the pass that first
+ * finds it passed, and the grace ends at the pass that first finds it over.
+ * @param l      State.
+ * @param now_ms Current time, in milliseconds.
+ */
+static void age(stop_latch_t *l, uint32_t now_ms)
+{
+    if (l->event_known
+        && mstime_elapsed(now_ms, l->event_ms, STOP_LATCH_EVENT_AGE_MS)) {
+        l->event_known = false;
+    }
+    if (!l->floor_passed
+        && mstime_elapsed(now_ms, l->seen_ms, STOP_LATCH_FLOOR_MS)) {
+        l->floor_passed = true;
+    }
+    if (l->grace && mstime_past(now_ms, l->grace_ms + STOP_LATCH_GRACE_MS)) {
+        l->grace = false;
+    }
+}
+
+/**
  * @brief Take in the STOPs and contact breaks counted since the last look.
  *
  * A STOP sends the machine back to LATCHED from any state.  A break whose
@@ -72,6 +97,7 @@ static bool follow(stop_latch_t *l, const stop_latch_in_t *in)
     if (in->pressed != l->pressed_seen) {
         l->pressed_seen = in->pressed;
         l->seen_ms      = in->now_ms;
+        l->floor_passed = false;
         if (!l->event_known || mstime_reached(in->press_ms, l->event_ms)) {
             l->event_ms = in->press_ms;
         }
@@ -175,19 +201,21 @@ static stop_latch_act_t done(stop_latch_t *l, const stop_latch_in_t *in)
  *        STOP and the latest contact break.
  * @param l  State.
  * @param in The inputs.
+ * @return true when the hold was taken, false when it was refused.
  */
-static void take_hold(stop_latch_t *l, const stop_latch_in_t *in)
+static bool take_hold(stop_latch_t *l, const stop_latch_in_t *in)
 {
     if (l->event_known
         && !mstime_reached(in->hold_ms,
                            l->event_ms + STOP_LATCH_HOLD_SEEN_MS)) {
         ++l->refused;
-        return;
+        return false;
     }
     l->state    = STOP_LATCH_HOLD_DONE;
     l->hold_ms  = in->hold_ms;
     l->read_any = false;
     l->read_off = false;
+    return true;
 }
 
 stop_latch_act_t stop_latch_run(stop_latch_t *l, stop_latch_in_t *in,
@@ -197,19 +225,21 @@ stop_latch_act_t stop_latch_run(stop_latch_t *l, stop_latch_in_t *in,
         return STOP_LATCH_NONE;
     }
     (void)follow(l, in);
+    age(l, in->now_ms);
     switch (l->state) {
     case STOP_LATCH_UNLATCHED:
         if (in->held) {
             /* A STOP the count did not show: latched from now. */
-            l->state   = STOP_LATCH_LATCHED;
-            l->seen_ms = in->now_ms;
+            l->state        = STOP_LATCH_LATCHED;
+            l->seen_ms      = in->now_ms;
+            l->floor_passed = false;
         }
         break;
     case STOP_LATCH_LATCHED:
         if (!in->held) {
             l->state = STOP_LATCH_UNLATCHED;   /* released some other way */
-        } else if (in->hold_done) {
-            take_hold(l, in);
+        } else if (in->hold_done && !take_hold(l, in)) {
+            return STOP_LATCH_REFUSED;
         }
         break;
     case STOP_LATCH_HOLD_DONE:
@@ -230,8 +260,7 @@ stop_latch_act_t stop_latch_run(stop_latch_t *l, stop_latch_in_t *in,
             l->state = STOP_LATCH_LATCHED;
             return STOP_LATCH_GIVE_UP;
         }
-        if (l->read_off
-            && mstime_reached(in->now_ms, l->seen_ms + STOP_LATCH_FLOOR_MS)) {
+        if (l->read_off && l->floor_passed) {
             l->state = STOP_LATCH_CONFIRMED;
         } else if (mstime_reached(in->now_ms, l->read_ms + STOP_LATCH_ASK_MS)) {
             ask(l, in, io);

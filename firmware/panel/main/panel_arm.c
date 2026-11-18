@@ -161,11 +161,9 @@ static void arm_applied(void)
     arm_watch_begin(&s_arm_watch, s_arm_take_gen, s_arm_take_drv, s_arm_gen);
 }
 
-/*
- * The look at the touch stream for an arm still being handed over, once
- * per pass and after the snapshot is published.  control_pump() looks too,
- * inside every exchange's wait, and stops rather than disarms there; this
- * is the look that also ends the watch once the bench is no longer armed.
+/**
+ * @brief A touch loss before the render side has seen an arm: the one answer
+ *        to it, from every place that looks.
  *
  * Until the render side has seen the bench armed, a loss there is answered
  * by cancelling screens that still believe the bench is disarmed, which
@@ -173,25 +171,43 @@ static void arm_applied(void)
  * frame, so a frame can begin before this arm was published and find a loss
  * after.  So a loss of either kind between the taking and that
  * acknowledgement -- the render side dropping gestures, or a gap this task
- * found in the driver's stream -- undoes the arm here.  After it, a loss is
- * seen by the render side against an armed bench and answered there.  The
- * operator repeats the hold.
+ * found in the driver's stream -- is a stop here.  After the
+ * acknowledgement a loss is seen by the render side against an armed bench
+ * and answered there.
+ *
+ * A stop and not a disarm, because control_pump() looks inside every
+ * exchange's wait, where a disarm cannot write the far end:
+ * arming_stop() drops the heartbeat now, the IOmcu fails safe within
+ * HEARTBEAT_MAX_GAP_MS (150ms) whatever this task is waiting for, and the
+ * next service_arming() disarms the bank and the far end and switches the
+ * supply's output off (supply_follow_stops()).  A queued drive command
+ * carries the old stop count and is dropped.  The heartbeat stays withheld
+ * until the next arm; the operator repeats the hold.
  */
-void arm_watch_service(bool link_up)
+void arm_watch_look(void)
+{
+    if (outputs_armed(&s_out)
+        && arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
+                          atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
+        arming_stop(&s_arm);
+        control_alert(TR(ALERT_TOUCH_LOST_ARMING));
+    }
+}
+
+/*
+ * The look at the touch stream for an arm still being handed over, once
+ * per pass and after the snapshot is published.  control_pump() looks too,
+ * inside every exchange's wait, with the same answer (arm_watch_look());
+ * this is the look that also ends the watch once the bench is no longer
+ * armed.
+ */
+void arm_watch_service(void)
 {
     if (!outputs_armed(&s_out)) {
         arm_watch_end(&s_arm_watch);
         return;
     }
-    if (arm_watch_lost(&s_arm_watch, atomic_load(&s_loss_gen),
-                       atomic_load(&s_drv_gaps), atomic_load(&s_arm_ack))) {
-        (void)disarm_here(link_up);
-        /* A disarm counts no stop, so the supply is cut here as well: an
-         * arm the watch undid is a stop to the supply wherever it is found
-         * (control_pump() finds it by arming_stop()). */
-        supply_switch(false);
-        control_alert(TR(ALERT_TOUCH_ARM_AGAIN));
-    }
+    arm_watch_look();
 }
 
 /*

@@ -120,6 +120,30 @@ history is in git.
 
 ### Fixed
 
+- STOP reset: a STOP pressed 24.86 days (2^31ms) or more after the previous
+  STOP or contact break is reset by its own 2s hold, and a STOP that stands
+  that long is reset by one hold. The reset machine forgets the latest STOP
+  or break after 60000ms and keeps the 500ms floor as a flag.
+- FAULT 10 and the HWSTOP chip show again from 1000ms after a STOP reset for
+  the rest of the uptime; the grace hid them from 24.86 to 49.71 days after
+  a reset.
+- A reset hold of STOP that is refused (a second touch on STOP or a contact
+  break inside the hold) raises the alert `STOP not reset: a second touch or
+  a touch dropout broke the hold. Hold STOP 2s again.`
+- IOmcu: a flash window of 17 to 25ms (an erase of the output store, a
+  sector of an IOmcu update) no longer makes the heartbeat monitor reject
+  the line for 80ms. The loop tells the monitor the window's length and the
+  monitor adds it to the two intervals beside the edge sampled after it:
+  no FAULT 10, no arm latch, no refused ARM or supply ON.
+- Settings: the number grid is counted in decimal. `sup_v_max` and
+  `sup_v_start` reach 21.00V in 885 steps from 3.30V (point 885 was
+  20.999998 and took one more step that changed no digit), and the defaults
+  of `rud_zero` and `bal_trial_g` are grid points.
+- A touch loss while an ARM is handed to the screen has one answer from
+  both places that look for it: a stop (heartbeat withheld until the next
+  ARM, bank SAFE, supply output off) with `Touch signal lost while switching
+  to ARMED. Stopped.` The texts `ALERT_TOUCH_ARM_AGAIN` and
+  `ALERT_TOUCH_LOST_STOP` are removed.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,

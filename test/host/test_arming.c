@@ -1942,6 +1942,9 @@ TEST_CASE(an_arm_carries_the_roles_it_was_asked_for)
     t = arm_by(t + 100);
     CHECK(a.armed);
     CHECK_EQ(arming_roles(&a), ARMING_ROLES_ALL);
+    /* Every role is all eight bits, in numbers. */
+    CHECK_EQ(arming_roles(&a), 0xFFu);
+    CHECK_EQ(ARMING_ROLES_ALL, 0xFFu);
 
     /* No role is no request, and NULL answers none. */
     arming_request_disarm(&a);

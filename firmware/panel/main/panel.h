@@ -2013,11 +2013,16 @@ extern bench_totals_t s_rail_totals;
  *         read by the control task. */
 extern atomic_uint    s_servo_log;
 /**
- * @brief Look at the touch stream for an arm being handed over, once a pass
- *        after the snapshot.
- * @param link_up whether the link to the IOmcu answers
+ * @brief A touch loss before the render side has seen an arm: arming_stop()
+ *        and ALERT_TOUCH_LOST_ARMING.  Control task only; called inside
+ *        every exchange's wait and once a pass.
  */
-void arm_watch_service(bool link_up);
+void arm_watch_look(void);
+/**
+ * @brief Look at the touch stream for an arm being handed over, once a pass
+ *        after the snapshot, and end the watch on a bench that is not armed.
+ */
+void arm_watch_service(void);
 /* The latched stop, and the act the arming policy asks for. */
 void service_arming(bool link_up);
 /**
