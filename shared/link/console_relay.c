@@ -24,6 +24,11 @@ enum {
 /** @brief The registers of a read that holds @p bytes of a window. */
 #define WINDOW_REGS(bytes) ((uint8_t)(LINK_CN_DATA + ((bytes) + 1u) / 2u))
 
+/* The ring's counters run free and wrap at 2^32; their remainder is the
+ * same index across that wrap only for a size that divides 2^32. */
+_Static_assert((CONSOLE_RELAY_OUT_MAX & (CONSOLE_RELAY_OUT_MAX - 1u)) == 0u,
+               "the output ring's size is a power of two");
+
 /**
  * @brief Bytes into the output ring.  Control task only.
  * @param r the relay
