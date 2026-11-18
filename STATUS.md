@@ -1681,7 +1681,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1715,7 +1715,7 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_settings`, `test_settings_screen`, `test_settings_gesture`, `test_settings_pins_hub`,
 `test_settings_carrier`, `test_sensors_carrier`, `test_sensors_pane`, `test_settings_leave`,
 `test_settings_folders`, `test_settings_sensors`, `test_settings_keypad`,
-`test_settings_rows`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
+`test_settings_rows`, `test_settings_grid`, `test_setting_keypad_eq`, `test_log_numbers`, `test_log_reader`,
 `test_log_csv`, `test_link_crc`, `test_link_pages`, `test_link_watchdog`,
 `test_link_loopback`, `test_link_bringup`, `test_link_read_split`, `test_link_retry`, `test_link_can`,
 `test_link_sha256`, `test_link_update`, `test_link_artxfer`, `test_link_drawing`,

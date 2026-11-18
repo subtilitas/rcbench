@@ -225,19 +225,36 @@ const char *settings_category_name(setting_cat_t cat)
     return (cat >= 0 && cat < SET_CAT_COUNT) ? k_cat_names[cat] : "";
 }
 
+/** @brief What a row's min and step are whole multiples of: 0.0001, one
+ *         digit past the finest step (0.001A). */
+#define GRID_DECIMAL 10000.0
+
 /**
  * @brief Snap a value to the grid its row declares.
  *
  * A value that arrives off the grid (a stale NVS word, a schema whose step
  * differs) otherwise stays off it: settings_adjust() adds step to whatever is
  * already there.
+ *
+ * @param d The row.
+ * @param v The value.
+ * @return The grid point nearest @p v, counted in steps from the row's min.
  */
 static float snap_to_step(const setting_def_t *d, float v)
 {
     if (d->step <= 0.0f) {
         return v;
     }
-    return d->min + roundf((v - d->min) / d->step) * d->step;
+    /* In decimal: 3.3f and 0.02f are the floats nearest 3.3 and 0.02, and
+     * min + n * step in float misses the grid point by a rounding at some
+     * n (3.3 + 885 * 0.02 gives 20.999998, -15 + 150 * 0.1 gives not 0).
+     * The point is counted from min and step as the schema writes them, to
+     * GRID_DECIMAL, and the result is the float nearest it: the float the
+     * row's max and default are written as. */
+    const double min  = round((double)d->min * GRID_DECIMAL) / GRID_DECIMAL;
+    const double step = round((double)d->step * GRID_DECIMAL) / GRID_DECIMAL;
+    const double n    = round(((double)v - min) / step);
+    return (float)(round((min + n * step) * GRID_DECIMAL) / GRID_DECIMAL);
 }
 
 bool settings_sense_sda_valid(int gpio)
