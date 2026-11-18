@@ -274,6 +274,12 @@ UI_TEXT(BH_F_VERSION, 0,
 UI_TEXT(BH_F_STORE_OFF, 0,
     "The IOmcu cannot write to flash during this boot. Sent settings take effect in RAM but are lost at restart. Restart it to try again. Whether that clears the fault bit has not been tested.",
     "Der IOmcu kann seit diesem Start nicht in den Flash schreiben. Übertragene Einstellungen gelten nur im RAM und gehen beim Neustart verloren. Starte ihn neu und versuche es erneut. Ob das Fehlerbit dadurch verschwindet, wurde nicht geprüft.")
+/* One line of the box, after its name: with every bit set the German box
+ * has room for one line more above the alert strip, and no second
+ * (test_nav_bubble). */
+UI_TEXT(BH_F_WATCHDOG, 0,
+    "The IOmcu's loop stood still for 500ms. Its watchdog restarted it, outputs off.",
+    "Die IOmcu-Schleife stand 500ms. Der Watchdog startete ihn neu, Ausgänge aus.")
 UI_TEXT(BH_F_NEVER, 0,
     "This release never sets this bit.",
     "Dieses Release setzt dieses Bit nie.")
@@ -6058,6 +6064,12 @@ UI_TEXT(ALERT_ENC_STRONG, 94,
 UI_TEXT(ALERT_STORE_OFF, 94,
     "IOmcu storage unavailable. Settings will be lost at restart.",
     "IOmcu-Speicher nicht verfügbar. Einstellungen gehen beim Neustart verloren.")
+/* STATUS fault bit 7 (LINK_FAULT_WATCHDOG), once per link-up: the IOmcu's
+ * own watchdog restarted it (loop_watch.h).  The band's FAULT box has the
+ * rest (BH_F_WATCHDOG). */
+UI_TEXT(ALERT_IOMCU_WATCHDOG, 94,
+    "IOMCU RESTARTED (WATCHDOG)",
+    "IOMCU NEU GESTARTET (WATCHDOG)")
 UI_TEXT(ALERT_NO_TONE_PAGE, 94,
     "Phase tap not read: the IOmcu has no TONE page.",
     "Phasenabgriff nicht ausgelesen: Der IOmcu hat keine TONE-Page.")

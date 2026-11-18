@@ -225,6 +225,9 @@ void sense_link_alerts(void)
     if ((ev & SENSE_LINK_EV_STORE_OFF) != 0u) {
         s_sense_alert_gen = control_alert_numbered(TR(ALERT_STORE_OFF));
     }
+    if ((ev & SENSE_LINK_EV_WATCHDOG) != 0u) {
+        s_sense_alert_gen = control_alert_numbered(TR(ALERT_IOMCU_WATCHDOG));
+    }
     if ((ev & SENSE_LINK_EV_I3221_CLIPPED) != 0u) {
         /* The full scale in hundredths of an ampere, rounded: 1638mA on
          * the DAOKAI's 0.1Ohm reads 1.64A.  With a map the clipped

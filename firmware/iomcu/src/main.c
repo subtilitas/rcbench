@@ -25,6 +25,9 @@
 
 #include "pico/stdlib.h"
 
+#include "hardware/structs/watchdog.h"
+#include "hardware/watchdog.h"
+
 #include "iomcu.h"
 
 #include "iomcu_pins.h"
@@ -32,6 +35,7 @@
 #include "board_fix.h"
 #include "dshot.h"
 #include "flash_gate.h"
+#include "loop_watch.h"
 #include "out_bind.h"
 #include "rcbench_version.h"
 #include "out_stage.h"
@@ -103,6 +107,17 @@ uint32_t        s_frames;
 uint32_t        s_refused;
 uint32_t        s_now_ms;
 pass_stats_t    s_pass;
+loop_watch_t    s_loop_watch;
+
+/* The figures loop_watch.h sums into the longest pass are the firmware's. */
+_Static_assert(LOOP_WATCH_LOCKOUT_US == OUT_STORE_LOCKOUT_MS * 1000u,
+               "loop_watch.h: the flash lock-out wait differs");
+_Static_assert(LOOP_WATCH_TONE_US == TONE_CORE1_WAIT_US,
+               "loop_watch.h: the TONE rewire's wait differs");
+_Static_assert(LOOP_WATCH_DRAIN_US == 7u * CAN_TXQ_STUCK_US,
+               "loop_watch.h: can_drain()'s bound differs");
+_Static_assert(LOOP_WATCH_PRINT_US == PICO_STDIO_USB_STDOUT_TIMEOUT_US,
+               "loop_watch.h: the print's wait differs");
 
 /**
  * @brief The bank was driving on the last pass: the edge into driving
@@ -343,6 +358,44 @@ static void prog_5v_off(const outbind_roles_t *r)
 }
 
 /**
+ * @brief The watchdog's feed point, at the top of every pass:
+ *        loop_watch_pass() decides, host-tested, and this makes the call.
+ *
+ * Enabled with the debugger's pause: a core halted by a debugger stops the
+ * count.  The mark in SCRATCH0 is what names a restart by this watchdog at
+ * the next start (reset_cause.h).
+ */
+static void loop_watch_feed(void)
+{
+    switch (loop_watch_pass(&s_loop_watch, update_hw_on_trial())) {
+    case LOOP_WATCH_ENABLE:
+        watchdog_hw->scratch[0] = RESET_WD_LOOP_MARK;
+        watchdog_enable(LOOP_WATCH_PERIOD_MS, true);
+        break;
+    case LOOP_WATCH_FEED:
+        watchdog_update();
+        break;
+    case LOOP_WATCH_NONE:
+    default:
+        break;
+    }
+}
+
+/**
+ * @brief Before the update's restart: the queued CAN frames out
+ *        (can_drain()), and the watchdog's mark taken back, so the start
+ *        after reboot() is not read as the watchdog's.  reboot() loads the
+ *        watchdog with its own 10ms.
+ */
+static void restart_prepare(void)
+{
+    can_drain();
+    if (loop_watch_handover(&s_loop_watch)) {
+        watchdog_hw->scratch[0] = 0u;
+    }
+}
+
+/**
  * @brief Boots the IOmcu, then runs the main loop.
  *
  * @return Does not return.
@@ -357,8 +410,10 @@ int main(void)
     prog_5v_off(outbind_roles(IOMCU_BOARD_ID));
     psup_init();
     stdio_init_all();
-    /* Why this start happened, before anything else runs. */
-    reset_start();
+    /* Why this start happened, before anything else runs; a restart by
+     * the loop's watchdog goes to STATUS as LINK_FAULT_WATCHDOG.  The bench
+     * console build never enables that watchdog. */
+    loop_watch_init(&s_loop_watch, IOMCU_CONSOLE != 0, reset_start());
 
     s_state.identity[LINK_ID_PROTOCOL_MAJOR] = LINK_PROTOCOL_MAJOR;
     s_state.identity[LINK_ID_PROTOCOL_MINOR] = LINK_PROTOCOL_MINOR;
@@ -609,7 +664,7 @@ int main(void)
     capabilities_update();
     /* Which slot runs and whether it waits for BUY, before the first
      * request can ask. */
-    update_hw_init(flash_busy, can_drain);
+    update_hw_init(flash_busy, restart_prepare);
     link_dev_init(&s_dev, k_pages, count_of(k_pages), &s_state, now0);
 #if IOMCU_CONSOLE
     /* The bench console on the same pages, through link_dev_apply(): it
@@ -691,6 +746,17 @@ int main(void)
     uint32_t last_sample = (uint32_t)to_ms_since_boot(get_absolute_time());
 
     for (;;) {
+        /*
+         * The watchdog's one feed point.  The first pass enables it, after
+         * the whole boot path above: supply_boot_off() (3,500ms at most)
+         * and the boot's flash windows are over, and a module left on is
+         * off.  An image on trial leaves the watchdog to the boot ROM until
+         * its BUY.  From then on a pass that does not come back here within
+         * LOOP_WATCH_PERIOD_MS (500ms) resets the chip: every pad is
+         * released, and the start after it reports LOOP_WATCHDOG.
+         * loop_watch.h sums the longest pass the code allows, 281,318us.
+         */
+        loop_watch_feed();
         /* The pass before this one ends here: its length into the
          * report's loop line (pass_stats.h). */
         pass_stats_pass(&s_pass, time_us_32());

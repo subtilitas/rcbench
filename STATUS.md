@@ -47,7 +47,7 @@ output signals.
 page, offset and count; a frame carries up to four registers; the transport
 does no reassembly; the IOmcu transmits only when asked. Worst-case
 payload 52kB/s against 12 to 30kB/s of expected traffic. Protocol version
-4.37. A request whose answer is lost is sent once more after 50ms.
+4.38. A request whose answer is lost is sent once more after 50ms.
 [Reference](docs/Link.md).
 
 **Safety.** The panel's control task drives GPIO28 (`PANEL_HEARTBEAT_PIN`, IO28 of header P3) from the core that does
@@ -65,7 +65,14 @@ on one unbroken contact resets it once the IOmcu reports everything off;
 the bench stays SAFE. One state machine carries the reset out, host-tested
 on its own and over the wire with an IOmcu that confirms and one that never
 does ([STOP as an emergency stop](docs/Stop.md), `test_stop_latch`,
-`test_stop_hold`, `test_safety_gate`). [Reference](docs/Safety.md).
+`test_stop_hold`, `test_safety_gate`). The RP2350's watchdog resets an
+IOmcu whose core 0 does not pass its main loop for 500ms: the reset releases
+every pad, the start after it switches a PD mini left on off, and STATUS
+fault bit 7 reports it to the panel, which shows `IOMCU RESTARTED
+(WATCHDOG)`. The watchdog is fed at the top of a pass only, enabled at the
+first pass, after the BUY on a trial boot, and never in the bench console
+build; the longest pass the code allows sums to 281,318us (`loop_watch.h`,
+`test_loop_watch`, `test_reset_cause`). [Reference](docs/Safety.md).
 
 **Outputs.** Every output is a channel (0 to 1000 of its own travel) with a
 role (throttle or surface) rendered by a driver from a table (PWM (pulse-width
@@ -1681,7 +1688,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 602 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1723,7 +1730,7 @@ The host suite is 601 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_outputs_hw_ports`, `test_out_render`, `test_outstore`, `test_outstore_range`, `test_can_timing`, `test_can_selftest`,
 `test_mcp2515`, `test_can_txq`, `test_link_reply_order`, `test_heartbeat`, `test_arming`, `test_stop_latch`, `test_stop_hold`,
 `test_safety_gate`, `test_flash_gate`, `test_reset_cause`, `test_boot_diag`, `test_touch_loss`,
-`test_frame_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
+`test_frame_watch`, `test_loop_watch`, `test_error_stop`, `test_error_sites`, `test_error_steps`, `test_servo_limit`,
 `test_servo_limrun`, `test_servo_limrun_gaps`, `test_servo_limrun_abort`,
 `test_servo_limrun_error`, `test_servo_limrun_report`, `test_servo_sync`,
 `test_servo_sweep`, `test_servo_move`, `test_servo_test`, `test_servo_brownout`,

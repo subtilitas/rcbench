@@ -14,6 +14,7 @@ hardware.
 | --- | --- | --- |
 | Heartbeat stops | the panel is wedged, reset, browned out or unplugged; a pressed STOP | generated and monitored at both ends; the monostable it gates is not fitted |
 | IOmcu silence watchdog, 200ms | the link is dead in either direction | built and tested |
+| IOmcu loop watchdog, 500ms | core 0 of the IOmcu stops passing its main loop: a fault, a `panic()`, a loop that does not end | built; the decisions are host-tested (`test_loop_watch`, `test_reset_cause`) |
 | STOP command over the link | a deliberate stop, acknowledged and reported | written |
 | Render-loop watchdog, 1000ms | the panel's render loop stops passing while the bench is ARMED, the supply output is on or the carrier's programming-port 5V is live | built; the decision is host-tested (`test_frame_watch`) |
 
@@ -27,6 +28,61 @@ acknowledge) from the IOmcu to either leaves the panel SAFE.
 
 STOP works as an emergency stop button: one touch latches it, a hold of
 2s resets it ([STOP as an emergency stop](Stop.md)).
+
+### IOmcu loop watchdog
+
+Every fail-safe of the IOmcu is polled from the main loop of its core 0:
+the heartbeat monitor, the link's 200ms silence, the step of the outputs
+and the supply's pass. A PWM output and a PPM frame repeat without the
+processor, and the PD mini's output and the programming ports' 5V stay as
+last commanded. The RP2350's watchdog ends a core 0 that stops passing the
+loop: it resets the chip 500ms (`LOOP_WATCH_PERIOD_MS`) after the last
+feed. The rules are in
+[`loop_watch.h`](https://github.com/subtilitas/rcbench/blob/main/shared/safety/include/loop_watch.h).
+
+| | |
+| --- | --- |
+| Feed point | the top of a pass of the main loop, once a pass, and nowhere else |
+| Enabled | at the first pass, after the boot path |
+| Not enabled | while the image runs on trial after an update, until its BUY: the boot ROM owns the watchdog for 16.7s then. Never in the bench console build (`IOMCU_CONSOLE=ON`) |
+| A debugger | a core halted by a debugger pauses the count |
+| Not watched | the boot path before the first pass, 3,500ms at most for the PD mini's switch-off; core 1, which reads the sensor bus |
+
+What the reset does to the outputs:
+
+| Output | After the reset |
+| --- | --- |
+| PWM, PPM, DShot and the programming ports' lines | every pad is released at the reset: no pulse, no frame. An ESC (electronic speed controller) stops on its own signal timeout, a servo holds no position |
+| Programming ports' 5V (rbmod carrier, GPIO 21) | released at the reset, driven low as the first act of the start |
+| PD mini output | stays on through the reset; the start switches it off within 3,500ms (`SUPPLY_PAGE_BOOT_OFF_MS`) when its wiring is saved |
+| Arm latch | set from the start until a CLEAR: nothing drives before the operator holds ARM |
+
+The longest time from the stop of core 0 to the pads' release is 500ms.
+
+The period against the longest pass the code allows, 281,318µs:
+
+| Part of one pass | µs |
+| --- | --- |
+| 6 flash windows of 19,178µs (an erase and a program in one window, 1 sample on the bring-up module): 2 calls of `can_service()` with a sector erase and a 4KiB program each, the update's owed erase, the output store's save or reclaim | 115,068 |
+| their 12 waits for core 1, `OUT_STORE_LOCKOUT_MS` (10ms) each | 120,000 |
+| 2 TONE rewires, `TONE_CORE1_WAIT_US` each | 10,000 |
+| `can_drain()` before the update's restart | 35,000 |
+| the store's console line | 1,000 |
+| the rest of a pass, measured maximum | 250 |
+
+500ms is 1.78 times that sum. No pass with all parts in it was measured. The
+flash part's datasheet maximum for an erase is not checked: one flash window
+that takes 218,682µs longer than measured restarts the IOmcu, and the link's
+200ms silence latches its failsafe before that.
+
+A restart by this watchdog prints `reset LOOP_WATCHDOG` on the IOmcu's
+console ([Bringing up the link](Bringup.md)) and sets STATUS fault bit 7
+(`LINK_FAULT_WATCHDOG`, link protocol 4.38) until a CLEAR. The panel treats
+the bit as an error at the read that first shows it: the bench goes to SAFE
+and the supply's output off, the band shows `FAULT 80` and the alert
+`IOMCU RESTARTED (WATCHDOG)`. The bit goes with the next ARM, ARM + START's
+FAILSAFE CLEAR or STOP's reset. The boot ROM's own 16.7s timer on an update
+that is not bought, and a restart asked over USB, do not set it.
 
 ### Render-loop watchdog
 
@@ -406,12 +462,16 @@ the gap:
 | | Direct wire and firmware | With the monostable |
 |---|---|---|
 | The panel stops beating, the IOmcu is healthy | switches to SAFE after HEARTBEAT_MAX_GAP_MS | the same, and sooner or later by its own timing |
-| The panel stops beating and the IOmcu cannot act (wedged, or not servicing its monitor) | nothing switches to SAFE; the bank goes on driving | the outputs are removed anyway |
-| The panel is healthy and the IOmcu misbehaves | the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
+| The panel stops beating and the IOmcu cannot act (wedged, or not servicing its monitor) | the IOmcu's loop watchdog resets it 500ms after its last pass: every pad is released, the PD mini goes off within 3,500ms of the start | the outputs are removed anyway, without the 500ms |
+| The panel is healthy and the IOmcu misbehaves | a core 0 that stops passing its loop is reset by the loop watchdog; for one that passes the loop and drives wrongly, the panel's STOP and the link watchdog are what is left | **no help**: the panel is still beating, so the monostable stays energised |
 
-The third row is not a case the monostable is for, and no hardware in this
-design covers it. Until the part is fitted, the second row is uncovered too,
-and firmware at both ends is the whole of the interlock.
+The third row is not a case the monostable is for. The
+[IOmcu loop watchdog](#iomcu-loop-watchdog) covers the stopped core in rows
+two and three; it is a part of the same chip and runs on the same clock and
+supply, so it is no second channel. An IOmcu that passes its loop and
+drives wrongly is covered by no hardware in this design. Until the
+monostable is fitted, firmware at both ends and the chip's watchdog are the
+whole of the interlock.
 
 ## Heartbeat monitor
 

@@ -145,6 +145,7 @@ Das Hilfefeld von FEHLER nennt jedes Bit, seinen Code und seine Bedeutung:
 | 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht, obwohl das Panel sie treibt: bei gedrücktem Not-Aus oder offener Heartbeat-Leitung; ein eingerastetes STOP zeigt stattdessen STOP |
 | 20 | VERSION | nie |
 | 40 | STORE_OFF | der IOmcu kann bis zu seinem nächsten Start nicht in seinen Flash schreiben |
+| 80 | WATCHDOG | der Watchdog des IOmcu hat ihn neu gestartet, nachdem seine Hauptschleife 500ms stand; seine Ausgänge sind aus; das Alarmband zeigt `IOMCU NEU GESTARTET (WATCHDOG)`; bleibt bis zum nächsten ARM, bis FAILSAFE LÖSEN von ARM + START oder bis zum Zurücksetzen von STOP |
 
 Bei einem Bit, das dieses Release nicht setzt oder das dem Panel unbekannt
 ist, fordert das Hilfefeld dazu auf, beide Platinen mit demselben Release

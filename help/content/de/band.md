@@ -81,6 +81,7 @@ Das Hilfefeld von FEHLER ist 1008px breit und erstreckt sich über das Panel. Je
 | 10 | HEARTBEAT | die Sicherheitsleitung vom Panel steht, obwohl das Panel sie treibt: bei gedrücktem Not-Aus oder offener Heartbeat-Leitung; ein eingerastetes STOP zeigt stattdessen STOP |
 | 20 | VERSION | nie |
 | 40 | STORE_OFF | der IOmcu kann in diesem Start nicht in seinen Flash schreiben; Einstellungen, die er bekommt, gelten bis zu seinem Neustart |
+| 80 | WATCHDOG | der Watchdog des IOmcu hat ihn neu gestartet, nachdem seine Hauptschleife 500ms stand; alle Ausgänge des IOmcu sind aus, und das Alarmband zeigt `IOMCU NEU GESTARTET (WATCHDOG)`; bleibt bis zum nächsten ARM |
 
 Bei einem Bit, das dieses Release nicht setzt, fordert das Hilfefeld dazu auf, beide Platinen mit demselben Release zu flashen.
 

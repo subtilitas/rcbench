@@ -8,6 +8,25 @@ history is in git.
 
 ### Added
 
+- IOmcu: the RP2350's watchdog on core 0's main loop, 500ms
+  (`shared/safety/loop_watch.c`). A core 0 that stops passing the loop (a
+  fault, a `panic()`, a loop that does not end) is reset: every pad is
+  released, so PWM and PPM stop, and the start after it drives the
+  programming ports' 5V low and switches a PD mini left on off within
+  3,500ms. The watchdog is fed once at the top of a pass, enabled at the
+  first pass, on a trial boot after the BUY, and never in the bench console
+  build (`IOMCU_CONSOLE=ON`). The longest pass the code allows sums to
+  281,318us. The console's reset line reads `LOOP_WATCHDOG` after such a
+  restart.
+- Link protocol 4.38: STATUS fault bit 7, `LINK_FAULT_WATCHDOG`, set from
+  the start after a restart by the IOmcu's watchdog until a CLEAR. The
+  panel takes the bit as an error (bench SAFE, supply output off), shows
+  `FAULT 80`, the alert `IOMCU RESTARTED (WATCHDOG)` (German `IOMCU NEU
+  GESTARTET (WATCHDOG)`) and a line of its own in the FAULT box.
+- `tools/check_loop_waits.py` reads calls of functions with `_blocking` in
+  their name as a sixth kind of finding, `block`; the allow list names the CAN
+  controller's SPI transfers and the spin lock between the two cores.
+
 - UPDATES: a step model (`shared/ui/upd_wizard.c`) puts the updates in the
   order PANEL, IOMCU, C6 RADIO, DIAL, POWER NODE, BALANCE NODE. From the
   live state of each it names every step's state, the current step and its
@@ -120,6 +139,10 @@ history is in git.
 
 ### Fixed
 
+- PD mini pin driver: `pd_uart_send()` waits for nothing. It writes a
+  request into the transmit FIFO's 8 entries whole, or sends none of it
+  when the entries free are fewer than its bytes (`pdmini_tx_fits()`); it
+  called `pio_sm_put_blocking()` from the IOmcu's main loop.
 - RUDDER AUTO on the IMU took the angle while the sensor still crept
   after the step: the BWT901CL in 6-AXIS passes the 500ms still test 0.6s
   to 2.3s after the surface arrives, 0.8° to 0.9° from where it settles,

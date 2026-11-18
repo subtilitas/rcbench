@@ -288,6 +288,11 @@ enum {
      *        waits for the next edit.
      */
     SENSE_LINK_EV_KEPT          = 0x20000,
+    /**
+     * @brief STATUS fault bit 7: the IOmcu's watchdog restarted it
+     *        (loop_watch.h).  Said once per link-up while the bit stands.
+     */
+    SENSE_LINK_EV_WATCHDOG      = 0x40000,
 };
 
 /**
@@ -582,10 +587,18 @@ void sense_link_done(sense_link_t *s, int result, const uint16_t *regs,
 /**
  * @brief STATUS's faults word, as the caller last read it.
  *
+ * A bit this state tells in words (LINK_FAULT_STORE_OFF,
+ * LINK_FAULT_WATCHDOG) raises its event on the read that first shows it
+ * set since the link came up.
+ *
  * @param s      The link state.
  * @param faults The STATUS faults word.
+ * @return The bits of those two that this read shows set for the first
+ *         time; 0 for NULL.  LINK_FAULT_WATCHDOG among them is an error
+ *         the caller acts on at once: the IOmcu restarted and holds every
+ *         output off.
  */
-void sense_link_faults(sense_link_t *s, uint16_t faults);
+uint16_t sense_link_faults(sense_link_t *s, uint16_t faults);
 
 /**
  * @brief The events since the last call, SENSE_LINK_EV_*, and cleared.

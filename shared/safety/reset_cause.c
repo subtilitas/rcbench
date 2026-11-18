@@ -22,6 +22,7 @@ static const char *const k_words[RESET_CAUSE_COUNT] = {
     [RESET_CAUSE_BOOTSEL_REBOOT] = "BOOTSEL_REBOOT",
     [RESET_CAUSE_SW_RESET]       = "SW_RESET",
     [RESET_CAUSE_WATCHDOG]       = "WATCHDOG",
+    [RESET_CAUSE_LOOP_WATCHDOG]  = "LOOP_WATCHDOG",
 };
 
 int reset_cause_boot_type(const reset_regs_t *r)
@@ -60,8 +61,15 @@ reset_cause_t reset_cause_decode(const reset_regs_t *r)
             && r->wd_scratch3 == RESET_PICOTOOL_P1) {
             return RESET_CAUSE_BOOTSEL_REBOOT;
         }
-        return (why & RESET_WD_REASON_FORCE) != 0u ? RESET_CAUSE_SW_RESET
-                                                   : RESET_CAUSE_WATCHDOG;
+        if ((why & RESET_WD_REASON_FORCE) != 0u) {
+            return RESET_CAUSE_SW_RESET;
+        }
+        /* The firmware's own watchdog: its mark and the SDK's both stand. */
+        if (type == (int)RESET_BOOT_TYPE_NORMAL
+            && r->wd_scratch0 == RESET_WD_LOOP_MARK && r->wd_enabled) {
+            return RESET_CAUSE_LOOP_WATCHDOG;
+        }
+        return RESET_CAUSE_WATCHDOG;
     }
     /* REASON 0: a chip-level reset reset the watchdog, and CHIP_RESET
      * names it. */

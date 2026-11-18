@@ -80,6 +80,7 @@ The FAULT box spans the panel, 1008px, with one paragraph per set bit:
 | 10 | HEARTBEAT | the safety line from the panel stopped while the panel sends it: a pressed emergency stop or an open heartbeat wire; a latched STOP shows STOP instead |
 | 20 | VERSION | never |
 | 40 | STORE_OFF | the IOmcu cannot write its flash this boot; set-ups sent to it last until it restarts |
+| 80 | WATCHDOG | the IOmcu's watchdog restarted it after its main loop stood still for 500ms; every IOmcu output is off and the alert band shows `IOMCU RESTARTED (WATCHDOG)`; stays until the next arm |
 
 For a bit this release never sets, the box says to flash both boards from one release.
 

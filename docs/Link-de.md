@@ -151,7 +151,7 @@ gestartet — das ist eine andere Diagnose als ein Bus ohne Fehler.
 
 Das Protokoll verwendet Pages mit bis zu 32 Registern zu je sechzehn Bit.
 Gelesen und geschrieben wird in Registerfenstern. Der IOmcu sendet nur als Antwort auf eine Anfrage.
-Protokollversion 4.37. Die Major-Version ist Register 0 der Page 0. Die Major
+Protokollversion 4.38. Die Major-Version ist Register 0 der Page 0. Die Major
 ändert sich, wenn ein Register seine Bedeutung wechselt oder eine Page
 umnummeriert wird; die Minor, wenn eine Page oder ein Register am Ende
 hinzukommt, was ein älteres Panel ignorieren kann.
@@ -1177,7 +1177,12 @@ Stall, Bit 4 Heartbeat ausgeblieben, Bit 5 Protokollversion abweichend,
 Bit 6 der Flash-Speicher des IOmcu ist für diesen Start aus (seit
 4.7): sein zweiter Core hat sich nicht für die Flash-Sperre angemeldet,
 also wird nichts gespeichert, und über den Link geschriebene
-Konfigurationen laufen bis zu einem Neustart aus dem RAM.
+Konfigurationen laufen bis zu einem Neustart aus dem RAM, Bit 7 der
+eigene Watchdog des IOmcu hat ihn neu gestartet (seit 4.38): Core 0 hat
+seine Hauptschleife 500ms nicht durchlaufen, der Neustart hat jeden Ausgang
+freigegeben, und das Bit ist vom Start danach bis zu einem CLEAR gesetzt
+([Sicherheit](Safety-de.md#schleifen-watchdog-des-iomcu)). Ein älterer
+IOmcu hat keinen solchen Watchdog und setzt Bit 7 nie.
 Faults bleiben gesetzt, bis sie gelesen und gelöscht werden; Bit 6 bleibt
 bis zu einem Neustart gesetzt. Bit 0 setzt
 voraus, dass über den Link mindestens eine Anfrage gelaufen ist: der
@@ -1766,7 +1771,9 @@ einen Neustart.
    zurück, antwortet und startet 20ms später als Flash-Update-Boot in den
    neuen Slot.
 7. Das Boot-ROM prüft den SHA-256 des Images und startet es auf Probe unter
-   seinem Watchdog von 16,7s. Das Panel wartet 500ms, liest IDENTITY, bis
+   seinem Watchdog von 16,7s; der IOmcu lässt seinen eigenen
+   Schleifen-Watchdog von 500ms bis zum BUY aus
+   ([Sicherheit](Safety-de.md#schleifen-watchdog-des-iomcu)). Das Panel wartet 500ms, liest IDENTITY, bis
    das neue Image antwortet, und schreibt BUY. Das Boot-ROM löscht das
    TBYB-Flag im Flash. Danach löscht der IOmcu den ersten Sektor des
    Slots, aus dem er kam, sodass das Boot-ROM beim nächsten Start ein Image
