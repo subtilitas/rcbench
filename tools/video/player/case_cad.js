@@ -126,6 +126,8 @@ export function buildCadCase(displayImage, gltf) {
     const unit = units[UNITS.find(([, re]) => re.test(path))[0]];
     unit.box.union(g.boundingBox);
     if (/estop_m16/.test(path)) {
+      // The mushroom head is the assembly's part 2, 25mm across.
+      g.userData.head = /estop_m16_assembly_2(\/|$)/.test(path);
       stop.push(g);
     } else {
       (unit.looks[look.join()] ||= {look, list: []}).list.push(g);
@@ -137,11 +139,14 @@ export function buildCadCase(displayImage, gltf) {
       (boxes[k] ||= new THREE.Box3()).union(g.boundingBox);
     }
   });
-  // The emergency stop's parts carry numbers, not names: the two that
-  // stand furthest out of the wall are the red head.
+  // The emergency stop's head is red, its ring, body and pins metal.  A
+  // model that does not name the head's part has it in the two solids
+  // that stand furthest out of the wall.
+  const named = stop.some(g => g.userData.head);
   const out = g => g.boundingBox.getCenter(new THREE.Vector3()).z;
   stop.sort((a, b) => out(a) - out(b)).forEach((g, n) => {
-    const look = n < 2 ? [0xd0122a, .35, .2] : [0x8d939d, .4, .7];
+    const red = named ? g.userData.head : n < 2;
+    const look = red ? [0xd0122a, .35, .2] : [0x8d939d, .4, .7];
     (units.estop.looks[look.join()] ||= {look, list: []}).list.push(g);
   });
   // Each component is a group at its box's centre, so that it turns about
