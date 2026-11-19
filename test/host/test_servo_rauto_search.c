@@ -3,7 +3,8 @@
  * run (servo_rudder_auto_search.c).
  *
  * Under test: the search runs after the read session and before any other
- * pulse, out to the margin's range on both sides; its 1000us and 2000us
+ * pulse, out to the margin's range on both sides, scaled from the read's
+ * NEUTRAL; its 1000us and 2000us
  * angles are the run's first measures; an end inside the end pulse is held
  * for its angle: short of TARGET less TOLERANCE it fails STOP AT <n>us
  * BEFORE TARGET with no write of a value, the other side not searched
@@ -300,6 +301,30 @@ TEST_CASE(the_rows_fit_at_a_margin_of_50_percent)
     CHECK(strstr(g.csv, ";2250;S;150;30.00;;;;\n") != NULL);
 }
 
+TEST_CASE(the_search_reaches_the_range_scaled_from_the_neutral)
+{
+    /* NEUTRAL 1640.0us at 10%: PULSE LOWER 1000us - 64us, PULSE UPPER
+     * 2000us + 36us; the search reaches 936us and 2036us, both free. */
+    rig_init(0u);
+    g.cfg.margin_pct = 10u;
+    g.pulses[0] = 16400u;
+    CHECK(start());
+    to_searched();
+    CHECK(servo_rauto_running(&g.run));
+    CHECK(!g.run.ends[0].bound && !g.run.ends[1].bound);
+    CHECK_EQ(g.run.ends[0].end_us, 936u);
+    CHECK_EQ(g.run.ends[1].end_us, 2036u);
+    CHECK_EQ(g.cmd_lo, 936u);
+    CHECK_EQ(g.cmd_hi, 2036u);
+    CHECK_EQ(g.run.s_steps, g.run.s_plan);
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK_EQ(g.cmd_lo, 936u);
+    CHECK_EQ(g.cmd_hi, 2036u);
+    CHECK(in_report("Low end:        free to 936us"));
+    CHECK(in_report("High end:       free to 2036us"));
+}
+
 TEST_CASE(a_center_off_the_10us_grid_holds_1000us_and_2000us_too)
 {
     /* PULSE CENTER 1505us at 10%: the steps land on 1005us and 995us,
@@ -344,6 +369,7 @@ int main(void)
     RUN(a_pulse_past_a_found_end_ends_the_run);
     RUN(stop_run_and_the_current_ceiling_end_the_search);
     RUN(the_rows_fit_at_a_margin_of_50_percent);
+    RUN(the_search_reaches_the_range_scaled_from_the_neutral);
     RUN(a_center_off_the_10us_grid_holds_1000us_and_2000us_too);
     return test_summary("servo_rauto_search");
 }

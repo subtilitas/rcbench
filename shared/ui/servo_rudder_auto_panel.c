@@ -951,11 +951,12 @@ const char *rauto_line(int i, char *buf, size_t n)
             snprintf(buf, n, "%s", why);
         } else {
             /* The pulse range the run leaves the servo with, its ends by
-             * the linear map: target x (1 + margin). */
+             * the linear map: target x (1 + margin); before the read
+             * from the nominal NEUTRAL, 1500.0us. */
             const uint8_t m = rauto_margin_now();
             const float k = 1.0f + (float)m / 100.0f;
             uint16_t us[2];
-            servo_rauto_pulse_range(m, us);
+            servo_rauto_pulse_range(m, 0u, us);
             snprintf(buf, n, TR(RA_GOALS), (unsigned)us[0], (unsigned)us[1],
                      (double)(settings_get(SET_RUDDER_DEFL_LO) * k),
                      (double)(settings_get(SET_RUDDER_DEFL_HI) * k));

@@ -3,8 +3,9 @@
  * @brief AUTO end points: a run that drives a servo to 1000us and 2000us,
  *        measures the surface's deflection on the angle source, and
  *        programs the servo's end points so that each side reaches its
- *        target there.  On KST the margin lies in the pulse length: the
- *        servo's pulse range runs 5us a % past 1000us and 2000us, so a
+ *        target there.  On KST the margin lies in the pulse length: each
+ *        end of the servo's pulse range lies past 1000us and 2000us by the
+ *        margin's % of that side's span from the servo's NEUTRAL, so a
  *        radio's trim past 2000us still moves the surface.  Pure: fed the
  *        angle, the meter's windows, the programmer's answers and the
  *        clock, it asks the caller to move, write and switch, as
@@ -12,7 +13,9 @@
  *
  * Steps: the servo's read (CONNECT, LEAVE); the pulse range (KST: PULSE
  * LOWER and PULSE UPPER set to the margin's range,
- * servo_rauto_kst_pulses(), 1000.0us to 2000.0us at margin 0; Hitec:
+ * servo_rauto_kst_pulses(), 1000.0us to 2000.0us at margin 0, a NEUTRAL
+ * outside SERVO_RAUTO_NEUTRAL_MIN_DUS..SERVO_RAUTO_NEUTRAL_MAX_DUS refused
+ * at the read (SERVO_RAUTO_WHY_NEUTRAL); Hitec:
  * nothing and margin 0, the D series takes 1000us as 76.9% of the way to
  * 0xB2, hitec_live.h); the limit search (phase SEARCH, below), which
  * takes the first measure of each side on its way out; then
@@ -45,14 +48,19 @@
  *     range where they are narrower (servo_rauto_widen()); only the
  *     search drives the extended ends.  A read that is no
  *     servo, or whose values lie outside its own lo..hi, ends the run as
- *     FAIL (SERVO_RAUTO_WHY_NO_SERVO) with LEAVE asked.
+ *     FAIL (SERVO_RAUTO_WHY_NO_SERVO) with LEAVE asked; a KST read whose
+ *     NEUTRAL lies outside 1360.0us to 1640.0us as FAIL
+ *     (SERVO_RAUTO_WHY_NEUTRAL).  The pulse write's read back holds the
+ *     read's NEUTRAL and the margin's pulses, else the run ends as
+ *     ABORTED (SERVO_RAUTO_WHY_WRITE).
  *   - The limit search (phase SEARCH, servo_rudder_auto_search.c): after
  *     the read session, before anything else is driven, LIMIT RUN's search
  *     (servo_limit.h: 10us steps out from PULSE CENTER, each 120ms settled
  *     and 80ms measured, bound at 1.8 x the free current and 0.15A over
  *     it, the end the last free pulse backed off 25us) on the 1000us side,
- *     then on the 2000us side, each out to the margin's range
- *     (servo_rauto_pulse_range()) and from PULSE CENTER held for
+ *     then on the 2000us side, each out to the margin's range from the
+ *     read's NEUTRAL (servo_rauto_pulse_range(); 1000us and 2000us on
+ *     Hitec) and from PULSE CENTER held for
  *     SERVO_LIMRUN_RETURN_MS.  It programs nothing.  Every position judged
  *     is a row of the report and the CSV (pulse, current, angle; at most
  *     SERVO_RAUTO_SEARCH_MAX).  It is the first measure: once the
@@ -262,9 +270,15 @@ extern "C" {
 #define SERVO_RAUTO_VERIFY_N    3u
 /** @brief The largest margin, %. */
 #define SERVO_RAUTO_MARGIN_MAX  50u      /**< % */
-/** @brief How far each end of the pulse range lies past 1000us and 2000us
- *         a % of margin: 1% of the 500us from the center, us. */
-#define SERVO_RAUTO_MARGIN_US   5u
+/** @brief The NEUTRAL a KST servo may hold, 0.1us: 1360.0us to 1640.0us,
+ *         KST_NEUTRAL_RAW_MIN and KST_NEUTRAL_RAW_MAX (kst_limits.h).
+ *         Within it the margin's pulses at 50% lie in 680.0us to 2320.0us,
+ *         inside PULSE LOWER's and PULSE UPPER's 500us to 2500us
+ *         (KST_PULSE_RAW_MIN, KST_PULSE_RAW_MAX). */
+#define SERVO_RAUTO_NEUTRAL_MIN_DUS 13600u   /**< 1360.0us */
+#define SERVO_RAUTO_NEUTRAL_MAX_DUS 16400u   /**< 1640.0us */
+/** @brief The NEUTRAL the margin's range assumes before a read, 0.1us. */
+#define SERVO_RAUTO_NEUTRAL_DUS     15000u
 /** @brief The KST's pulse step: PULSE LOWER and PULSE UPPER hold whole
  *         0.8us (kst_reg.h, CONV_PULSE), 0.1us. */
 #define SERVO_RAUTO_KST_STEP_DUS 8u
@@ -376,6 +390,7 @@ typedef enum {
     SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_SUPPLY,
     SERVO_RAUTO_WHY_NO_EFFECT, SERVO_RAUTO_WHY_CAP, SERVO_RAUTO_WHY_VERIFY,
     SERVO_RAUTO_WHY_STOP,
+    SERVO_RAUTO_WHY_NEUTRAL,
     SERVO_RAUTO_WHY_COUNT,
 } servo_rauto_why_t;
 
@@ -564,25 +579,40 @@ void servo_rauto_init(servo_rauto_t *r);
  */
 bool servo_rauto_goals_ok(const float target_deg[2], uint16_t tol_ddeg);
 /**
- * @brief The margin's pulse range: 1000 - 5 x margin to 2000 + 5 x margin
- *        us, 950 to 2050us at 10%.  By the linear map from a center of
- *        1500us its ends reach target x (1 + margin).
- * @param margin_pct The margin, %; above SERVO_RAUTO_MARGIN_MAX as that.
- * @param us         Out: the lower and the upper end, us; NULL does
- *                   nothing.
+ * @brief The margin's pulse range in whole us: servo_rauto_kst_pulses()'
+ *        PULSE LOWER floored and PULSE UPPER ceiled, so the range holds
+ *        the servo's, by less than 1us an end.  By the linear map from N
+ *        each end reaches target x (1 + margin) within that.  At N
+ *        1500.0us 950 to 2050us at 10%; at N 1640.0us and 50% 680 to
+ *        2180us.
+ * @param margin_pct  The margin, %; above SERVO_RAUTO_MARGIN_MAX as that.
+ * @param neutral_dus The servo's NEUTRAL, 0.1us; 0 as
+ *                    SERVO_RAUTO_NEUTRAL_DUS (before a read); outside
+ *                    SERVO_RAUTO_NEUTRAL_MIN_DUS..SERVO_RAUTO_NEUTRAL_MAX_DUS
+ *                    as the nearer bound.
+ * @param us          Out: the lower and the upper end, us; NULL does
+ *                    nothing.
  */
-void servo_rauto_pulse_range(uint8_t margin_pct, uint16_t us[2]);
+void servo_rauto_pulse_range(uint8_t margin_pct, uint16_t neutral_dus,
+                             uint16_t us[2]);
 /**
  * @brief PULSE LOWER and PULSE UPPER the run writes to a KST servo: the
- *        margin's range on the KST's 0.8us step, each end rounded toward
- *        the center, so the bench's PULSE MIN and MAX at the margin's
- *        range hold them.  At 10% 950.4us and 2049.6us; at 0% 1000.0us and
- *        2000.0us.
- * @param margin_pct The margin, %; above SERVO_RAUTO_MARGIN_MAX as that.
- * @param dus        Out: PULSE LOWER and PULSE UPPER, 0.1us; NULL does
- *                   nothing.
+ *        margin's range from the servo's NEUTRAL N, each side extended by
+ *        the margin's % of its own span from N, lower 1000us - (N -
+ *        1000us) x margin, upper 2000us + (2000us - N) x margin, on the
+ *        KST's 0.8us step, each end rounded toward the center.  At N
+ *        1500.0us and 10% 950.4us and 2049.6us; at N 1640.0us and 50%
+ *        680.0us and 2180.0us; at 0% 1000.0us and 2000.0us at any N.
+ * @param margin_pct  The margin, %; above SERVO_RAUTO_MARGIN_MAX as that.
+ * @param neutral_dus The servo's NEUTRAL, 0.1us; 0 as
+ *                    SERVO_RAUTO_NEUTRAL_DUS (before a read); outside
+ *                    SERVO_RAUTO_NEUTRAL_MIN_DUS..SERVO_RAUTO_NEUTRAL_MAX_DUS
+ *                    as the nearer bound.
+ * @param dus         Out: PULSE LOWER and PULSE UPPER, 0.1us; NULL does
+ *                    nothing.
  */
-void servo_rauto_kst_pulses(uint8_t margin_pct, uint16_t dus[2]);
+void servo_rauto_kst_pulses(uint8_t margin_pct, uint16_t neutral_dus,
+                            uint16_t dus[2]);
 /**
  * @brief Whether the bench's PULSE MIN and PULSE MAX are to widen: the run
  *        left a KST servo holding the margin's pulses, read so or read

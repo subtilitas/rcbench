@@ -52,7 +52,11 @@ static uint16_t steps_of(uint16_t travel_us, uint16_t end_us)
 void rauto_search_begin(servo_rauto_t *r, uint8_t side, uint32_t now_ms)
 {
     uint16_t us[2];
-    servo_rauto_pulse_range(r->cfg.margin_pct, us);
+    /* The margin's range from the read's NEUTRAL on KST; Hitec holds no
+     * NEUTRAL in 0.1us and runs at margin 0, 1000us to 2000us. */
+    const uint16_t n = r->cfg.family == SERVO_RAUTO_FAM_KST
+                           ? r->servo.pulse_dus[0] : 0u;
+    servo_rauto_pulse_range(r->cfg.margin_pct, n, us);
     const uint16_t c = r->cfg.center_us;
     const uint16_t travel = side == 0u ? (uint16_t)(c - us[0])
                                        : (uint16_t)(us[1] - c);

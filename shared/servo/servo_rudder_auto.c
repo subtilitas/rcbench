@@ -814,29 +814,54 @@ bool servo_rauto_goals_ok(const float target_deg[2], uint16_t tol_ddeg)
     return true;
 }
 
-void servo_rauto_pulse_range(uint8_t margin_pct, uint16_t us[2])
+/**
+ * @brief The margin's range from NEUTRAL, exact, ns (0.001us): each side
+ *        extends by margin % of its own span from N, with N and the ends
+ *        in 0.1us (N - 10000) x p ns below 1000us and (20000 - N) x p ns
+ *        above 2000us.
+ * @param margin_pct  The margin, %; above SERVO_RAUTO_MARGIN_MAX as that.
+ * @param neutral_dus NEUTRAL, 0.1us; 0 as SERVO_RAUTO_NEUTRAL_DUS, else
+ *                    held to SERVO_RAUTO_NEUTRAL_MIN_DUS..MAX_DUS.
+ * @param ns          Out: the lower and the upper end, ns.
+ */
+static void margin_ns(uint8_t margin_pct, uint16_t neutral_dus,
+                      uint32_t ns[2])
 {
-    if (us == NULL) {
-        return;
-    }
-    const unsigned p = margin_pct > SERVO_RAUTO_MARGIN_MAX
+    const uint32_t p = margin_pct > SERVO_RAUTO_MARGIN_MAX
                            ? SERVO_RAUTO_MARGIN_MAX : margin_pct;
-    us[0] = (uint16_t)(k_end_us[0] - SERVO_RAUTO_MARGIN_US * p);
-    us[1] = (uint16_t)(k_end_us[1] + SERVO_RAUTO_MARGIN_US * p);
+    uint32_t n = neutral_dus == 0u ? SERVO_RAUTO_NEUTRAL_DUS : neutral_dus;
+    n = n < SERVO_RAUTO_NEUTRAL_MIN_DUS ? SERVO_RAUTO_NEUTRAL_MIN_DUS
+      : n > SERVO_RAUTO_NEUTRAL_MAX_DUS ? SERVO_RAUTO_NEUTRAL_MAX_DUS : n;
+    const uint32_t lo_dus = 10u * k_end_us[0], hi_dus = 10u * k_end_us[1];
+    ns[0] = 1000u * k_end_us[0] - (n - lo_dus) * p;
+    ns[1] = 1000u * k_end_us[1] + (hi_dus - n) * p;
 }
 
-void servo_rauto_kst_pulses(uint8_t margin_pct, uint16_t dus[2])
+void servo_rauto_kst_pulses(uint8_t margin_pct, uint16_t neutral_dus,
+                            uint16_t dus[2])
 {
     if (dus == NULL) {
         return;
     }
-    uint16_t us[2];
-    servo_rauto_pulse_range(margin_pct, us);
-    const unsigned k = SERVO_RAUTO_KST_STEP_DUS;
-    const unsigned lo = 10u * us[0], hi = 10u * us[1];
+    uint32_t ns[2];
+    margin_ns(margin_pct, neutral_dus, ns);
+    const uint32_t k = 100u * SERVO_RAUTO_KST_STEP_DUS;  /* ns */
     /* Toward the center: the servo's range inside the margin's. */
-    dus[0] = (uint16_t)((lo + k - 1u) / k * k);
-    dus[1] = (uint16_t)(hi / k * k);
+    dus[0] = (uint16_t)((ns[0] + k - 1u) / k * SERVO_RAUTO_KST_STEP_DUS);
+    dus[1] = (uint16_t)(ns[1] / k * SERVO_RAUTO_KST_STEP_DUS);
+}
+
+void servo_rauto_pulse_range(uint8_t margin_pct, uint16_t neutral_dus,
+                             uint16_t us[2])
+{
+    if (us == NULL) {
+        return;
+    }
+    uint16_t dus[2];
+    servo_rauto_kst_pulses(margin_pct, neutral_dus, dus);
+    /* Outward: the range holds the servo's, by less than 1us an end. */
+    us[0] = (uint16_t)(dus[0] / 10u);
+    us[1] = (uint16_t)((dus[1] + 9u) / 10u);
 }
 
 bool servo_rauto_widen(const servo_rauto_t *r, uint16_t prof_us[2])
@@ -845,7 +870,7 @@ bool servo_rauto_widen(const servo_rauto_t *r, uint16_t prof_us[2])
         return false;
     }
     uint16_t us[2];
-    servo_rauto_pulse_range(r->cfg.margin_pct, us);
+    servo_rauto_pulse_range(r->cfg.margin_pct, r->servo.pulse_dus[0], us);
     /* Each side only where the bench's is narrower. */
     const bool wide_lo = us[0] < r->cfg.min_us;
     const bool wide_hi = us[1] > r->cfg.max_us;
@@ -1029,6 +1054,15 @@ static void first_read(servo_rauto_t *r, const servo_rauto_servo_t *sv,
         fail(r, SERVO_RAUTO_WHY_NO_SERVO, now_ms);
         return;
     }
+    if (r->cfg.family == SERVO_RAUTO_FAM_KST
+        && (sv->pulse_dus[0] < SERVO_RAUTO_NEUTRAL_MIN_DUS
+            || sv->pulse_dus[0] > SERVO_RAUTO_NEUTRAL_MAX_DUS)) {
+        /* The margin's range is taken from NEUTRAL, which the KST holds
+         * in 1360.0us to 1640.0us; outside it the range would not be the
+         * servo's. */
+        fail(r, SERVO_RAUTO_WHY_NEUTRAL, now_ms);
+        return;
+    }
     r->read_once = true;
     r->servo     = *sv;
     if (r->cfg.family == SERVO_RAUTO_FAM_HITEC_D && !sv->reversion) {
@@ -1042,7 +1076,7 @@ static void first_read(servo_rauto_t *r, const servo_rauto_servo_t *sv,
     memcpy(r->pulse_now, sv->pulse_dus, sizeof(r->pulse_now));
     if (r->cfg.family == SERVO_RAUTO_FAM_KST) {
         uint16_t p[2];
-        servo_rauto_kst_pulses(r->cfg.margin_pct, p);
+        servo_rauto_kst_pulses(r->cfg.margin_pct, sv->pulse_dus[0], p);
         if (sv->pulse_dus[1] != p[0] || sv->pulse_dus[2] != p[1]) {
             r->pulse_op = true;
             r->phase    = SERVO_RAUTO_PH_WRITE;
@@ -1142,8 +1176,11 @@ void servo_rauto_pulsed(servo_rauto_t *r, bool ok, const uint16_t *pulse_dus,
     mark_programmed(r);
     r->pulse_op = false;
     uint16_t p[2];
-    servo_rauto_kst_pulses(r->cfg.margin_pct, p);
-    if (pulse_dus[1] != p[0] || pulse_dus[2] != p[1]) {
+    servo_rauto_kst_pulses(r->cfg.margin_pct, r->servo.pulse_dus[0], p);
+    /* The range is the read NEUTRAL's: a NEUTRAL moved by the write
+     * leaves it wrong. */
+    if (pulse_dus[0] != r->servo.pulse_dus[0] || pulse_dus[1] != p[0]
+        || pulse_dus[2] != p[1]) {
         abort_why(r, SERVO_RAUTO_WHY_WRITE, now_ms);
         return;
     }

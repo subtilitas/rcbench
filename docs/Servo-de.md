@@ -1840,28 +1840,50 @@ Bluetooth-IMU).
 - Der Zielwert einer Seite, bei 1000us und 2000us, ist ihr Soll: Soll
   20,0° wird bei 2000us als 20,0° gemessen und programmiert, was RESERVE
   auch zeigt.
-- RESERVE p% weitet den Pulsbereich des Servos an jedem Ende um p% der
-  500us ab der Mitte: PULSE LOWER 1000us - 5us x p, PULSE UPPER 2000us +
-  5us x p, 750 bis 1000us und 2000 bis 2250us über 0 bis 50%. Bei 10% reicht
-  der Bereich von 950 bis 2050us. Der KST hält seine Pulse in Schritten
-  von 0,8us (`kst_reg.c`, CONV_PULSE), daher schreibt der Lauf jedes Ende
-  zur Mitte hin gerundet: 950,4us und 2049,6us bei 10%, 750,4us und
-  2249,6us bei 50%, 1000,0us und 2000,0us bei 0%
-  (`servo_rauto_kst_pulses()`). Nach der linearen Abbildung ab einem
-  NEUTRAL von 1500us erreicht 2050us dann Soll x (1 + RESERVE): 22,0° für
-  20,0° bei 10%. Der Lauf fährt nur 1000us, 2000us und PULS MITTE an; die
-  erweiterten Enden werden weder angefahren noch gemessen.
+- RESERVE p% weitet jede Seite des Pulsbereichs des Servos um p% der
+  Spanne dieser Seite ab dem NEUTRAL N des Servos, wie die Lesesitzung es
+  liest:
+
+  ```text
+  PULSE LOWER = 1000us - (N - 1000us) x p/100
+  PULSE UPPER = 2000us + (2000us - N) x p/100
+  ```
+
+  Nach der linearen Abbildung ab N erreicht jedes Ende dann Soll x (1 +
+  RESERVE): 22,0° für 20,0° bei 10%. Bei N 1500us reicht der Bereich bei
+  10% von 950 bis 2050us und bei 50% von 750 bis 2250us. Bei N 1640us,
+  dem höchsten NEUTRAL des KST, sind es 936 bis 2036us bei 10% und 680
+  bis 2180us bei 50%; bei N 1360us, dem niedrigsten, 964 bis 2064us bei
+  10% und 820 bis 2320us bei 50%. Über N 1360 bis 1640us und RESERVE 0
+  bis 50% bleiben PULSE LOWER und PULSE UPPER in 680 bis 2320us, innerhalb
+  der 500 bis 2500us der Register (`kst_limits.h`, KST_PULSE_RAW_MIN,
+  KST_PULSE_RAW_MAX). Ein gelesenes NEUTRAL außerhalb von 1360 bis
+  1640us, dem eigenen NEUTRAL-Bereich des KST (KST_NEUTRAL_RAW_MIN,
+  KST_NEUTRAL_RAW_MAX), beendet den Lauf beim Auslesen als FAIL mit
+  `NEUTRAL außerhalb 1360-1640us`, vor jedem Schreiben. Der KST hält
+  seine Pulse in Schritten von 0,8us (`kst_reg.c`, CONV_PULSE), daher
+  schreibt der Lauf jedes Ende zur Mitte hin gerundet: 950,4us und
+  2049,6us bei N 1500us und 10%, 750,4us und 2249,6us bei 50%, 1000,0us
+  und 2000,0us bei 0% bei jedem N (`servo_rauto_kst_pulses()`). Die
+  Endlagensuche fährt das Servo bis zum Bereich der Reserve ab dem
+  gelesenen NEUTRAL, 950us und 2050us bei N 1500us und 10%, 936us und
+  2036us bei N 1640us, und zeichnet den Winkel unterwegs auf; jede Messung
+  danach fährt nur 1000us, 2000us und PULS MITTE an. Die erweiterten Enden
+  werden nicht gegen ein Soll beurteilt.
 - SERVOPULSE ist eine Einstellung des Endlagenlaufs und wirkt nicht auf
   AUTO. AUTO schreibt an einem KST- oder Chaservo-Servo den Bereich der
   Reserve, was SERVOPULSE auch zeigt: bei RESERVE 0% sind das 1000,0 bis
   2000,0us, der Bereich von SERVOPULSE auf 1000-2000; bei RESERVE p%
-  1000-2000, an jedem Ende um 5us x p geweitet.
+  1000-2000, jede Seite um p% ihrer Spanne ab NEUTRAL geweitet.
 - PULS MIN und PULS MAX des Prüfstands: Wo sie enger sind als der Bereich
   der Reserve, weitet der Lauf sie darauf, sobald das Servo die Pulse der
   Reserve hält, so in der Lesesitzung gelesen oder nach dem Pulsschreiben
-  zurückgelesen. Er engt sie nie ein: Eine Seite, die schon weiter ist,
-  behält ihren Wert. PULS MIN und MAX 1000 bis 2000us werden bei 10% zu
-  950 bis 2050us; 900 bis 2000us werden zu 900 bis 2050us. Die Änderung
+  zurückgelesen. Der Bereich der Reserve sind die Pulse des Servos in
+  ganzen us, PULSE LOWER abgerundet und PULSE UPPER aufgerundet. Er engt
+  sie nie ein: Eine Seite, die schon weiter ist, behält ihren Wert. PULS
+  MIN und MAX 1000 bis 2000us werden bei N 1500us und 10% zu 950 bis
+  2050us; 900 bis 2000us werden zu 900 bis 2050us; bei N 1640us und 50%
+  werden 1000 bis 2000us zu 680 bis 2180us. Die Änderung
   tritt mit dem Ende des Laufs in Kraft, bei SAFE, und gilt für die
   Sitzung wie jede Änderung des Servoprofils: Das Profil steht nicht im
   NVS (nichtflüchtiger Speicher), ein Neustart setzt STANDARD PWM, 1000
@@ -1870,18 +1892,20 @@ Bluetooth-IMU).
   Zustandszeile nach dem Lauf mit dem Bereich, der gilt, `BERICHT
   RUDDR007.TXT, MIN/MAX 950-2050us`, eine Zeile von 40 Zeichen auf
   Englisch und Deutsch. Ein Pulsschreiben, das ein Ende abbricht, oder
-  eines, das andere Pulse zurückliest, weitet nichts. Mit dem weiteren
+  eines, das andere Pulse oder ein anderes NEUTRAL als das gelesene
+  zurückliest, beendet den Lauf und weitet nichts. Mit dem weiteren
   Bereich nimmt der Endlagenlauf bei BEHALTEN die Pulse des Servos an
   (sonst verweigert er mit `Servopulse außerhalb MIN/MAX`), und LIVE fährt
   bis 2050us.
 - Was ein KST- oder Chaservo-Servo mit einem Puls außerhalb von PULSE
   LOWER bis PULSE UPPER macht, ist nicht dokumentiert und nicht gemessen.
   In diesem Lauf liegen nur die äußersten Schritte der Suche, 950us und
-  2050us bei 10%, durch die Rundung unten darüber. Der zur Mitte gerundete
-  Bereich des Servos liegt höchstens 0,6us an jedem Ende innerhalb der
-  geweiteten PULS MIN und MAX (0,4us bei 10%), daher sendet LIVE auf PULS
-  MIN oder MAX einen Puls bis so weit jenseits von PULSE LOWER oder PULSE
-  UPPER, weniger als der Schritt des KST von 0,8us.
+  2050us bei N 1500us und 10%, durch die Rundung unten darüber. Der zur
+  Mitte gerundete
+  Bereich des Servos liegt höchstens 0,8us an jedem Ende innerhalb der
+  geweiteten PULS MIN und MAX (0,4us bei N 1500us und 10%), daher sendet
+  LIVE auf PULS MIN oder MAX einen Puls bis so weit jenseits von PULSE
+  LOWER oder PULSE UPPER, höchstens der Schritt des KST von 0,8us.
 - An einem Hitec-Servo (HITEC D-SERIE, HITEC KLASSISCH) ist RESERVE 0%:
   Das Servo hat keine Pulsregister, und der Lauf setzt nur LEFT END und
   RIGHT END. Mit SERVO auf einem Hitec-Eintrag zeigt RESERVE auf der Karte
@@ -2050,16 +2074,19 @@ angefragt ist).
 
 - Die Lesesitzung hält das Servo 1000ms auf PULS MITTE und fordert SAFE
   an. VERBINDEN liest das Servo aus. Nur bei KST/Chaservo werden
-  PULSE LOWER und PULSE UPPER auf den Bereich der Reserve geschrieben,
-  wenn sie davon abweichen, 950,4us und 2049,6us bei 10%. Danach folgen
+  PULSE LOWER und PULSE UPPER auf den Bereich der Reserve ab dem
+  gelesenen NEUTRAL geschrieben, wenn sie davon abweichen, 950,4us und
+  2049,6us bei N 1500us und 10%. Danach folgen
   VERLASSEN und die Anforderung von ARMED.
 - Die Endlagensuche (Phase SUCHE,
   `shared/servo/servo_rudder_auto_search.c`), in jedem Lauf, vor jedem
   anderen Puls: die Suche des Endlagenlaufs (`shared/servo/servo_limit.c`)
   auf der Seite 1000us, dann auf der Seite 2000us. Jede Seite beginnt auf
   PULS MITTE, 1000ms gehalten, und geht in Schritten von 10us nach außen
-  bis zum Bereich der Reserve: 950us und 2050us bei 10%, 1000us und
-  2000us bei 0% und an Hitec. Je Schritt wartet sie 120ms und mittelt die
+  bis zum Bereich der Reserve ab dem gelesenen NEUTRAL
+  (`servo_rauto_pulse_range()`): 950us und 2050us bei N 1500us und 10%,
+  936us und 2036us bei N 1640us und 10%, 1000us und 2000us bei 0% und an
+  Hitec. Je Schritt wartet sie 120ms und mittelt die
   Fenster des INA3221 über 80ms. Das Mittel der ersten 3 Schritte ist der
   Freistrom. Eine Stellung mit mehr als 1,8 x dem Freistrom und mehr als
   0,15A darüber ist blockiert; das Ende der Seite ist die letzte freie
@@ -2291,7 +2318,9 @@ und das Messgerät, eingegebene Ausschläge und Toleranz, die Reserve mit
 den geschriebenen Pulsen und den erweiterten Enden nach dem linearen
 Modell (`Reserve:         10%: Servopulse 950.4-2049.6us; nach dem
 linearen Modell erreicht 950us 22.0°, 2050us 22.0°; nur in der Suche
-angefahren`), das
+angefahren`;
+bei einem NEUTRAL außer 1500,0us nennt die Zeile es, `Reserve:
+10% ab NEUTRAL 1640.0us: Servopulse 936.0-2036.0us; ...`), das
 Pulsschreiben und PULS MIN und MAX des Prüfstands, wo der Lauf sie
 geweitet hat, die Endpoints davor und
 danach mit der Seite, die jeder bewegt, die Schreibvorgänge und Sitzungen,

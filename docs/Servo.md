@@ -1755,29 +1755,46 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   row.
 - The goal of a side, at 1000us and 2000us, is its target: TARGET 20.0°
   is measured and programmed as 20.0° at 2000us, whatever MARGIN reads.
-- MARGIN p% widens the servo's pulse range by p% of the 500us from the
-  center at each end: PULSE LOWER 1000us - 5us x p, PULSE UPPER 2000us +
-  5us x p, 750 to 1000us and 2000 to 2250us over 0 to 50%. At 10% the range is
-  950 to 2050us. The KST holds its pulses in 0.8us steps
-  (`kst_reg.c`, CONV_PULSE), so the run writes each end rounded toward the
-  center: 950.4us and 2049.6us at 10%, 750.4us and 2249.6us at 50%,
-  1000.0us and 2000.0us at 0% (`servo_rauto_kst_pulses()`). By the linear
-  map from a NEUTRAL of 1500us, 2050us then reaches TARGET x (1 + MARGIN):
-  22.0° for 20.0° at 10%. The limit search drives the servo out to the
-  margin's range, 950us and 2050us at 10%, and records the angle on the
-  way; every measure after it drives 1000us, 2000us and PULSE CENTER only.
-  The extended ends are not judged against a goal.
+- MARGIN p% widens each side of the servo's pulse range by p% of that
+  side's span from the servo's NEUTRAL N, as read in the read session:
+
+  ```text
+  PULSE LOWER = 1000us - (N - 1000us) x p/100
+  PULSE UPPER = 2000us + (2000us - N) x p/100
+  ```
+
+  By the linear map from N each end then reaches TARGET x (1 + MARGIN):
+  22.0° for 20.0° at 10%. At N 1500us the range is 950 to 2050us at 10%
+  and 750 to 2250us at 50%. At N 1640us, the KST's highest NEUTRAL, it is
+  936 to 2036us at 10% and 680 to 2180us at 50%; at N 1360us, the lowest,
+  964 to 2064us at 10% and 820 to 2320us at 50%. Over N 1360 to 1640us
+  and MARGIN 0 to 50% PULSE LOWER and PULSE UPPER stay within 680 to
+  2320us, inside the registers' 500 to 2500us (`kst_limits.h`,
+  KST_PULSE_RAW_MIN, KST_PULSE_RAW_MAX). A read NEUTRAL outside 1360 to
+  1640us, the KST's own NEUTRAL range (KST_NEUTRAL_RAW_MIN,
+  KST_NEUTRAL_RAW_MAX), ends the run at the read as FAIL with `NEUTRAL
+  outside 1360-1640us`, before any write. The KST holds its pulses in
+  0.8us steps (`kst_reg.c`, CONV_PULSE), so the run writes each end
+  rounded toward the center: 950.4us and 2049.6us at N 1500us and 10%,
+  750.4us and 2249.6us at 50%, 1000.0us and 2000.0us at 0% at any N
+  (`servo_rauto_kst_pulses()`). The limit search drives the servo out to
+  the margin's range from the read NEUTRAL, 950us and 2050us at N 1500us
+  and 10%, 936us and 2036us at N 1640us, and records the angle on the way;
+  every measure after it drives 1000us, 2000us and PULSE CENTER only. The
+  extended ends are not judged against a goal.
 - SERVO PULSES is LIMIT RUN's setting and has no effect on AUTO. AUTO
   writes the margin's range on a KST or Chaservo servo whatever SERVO
   PULSES reads: at MARGIN 0% that is 1000.0 to 2000.0us, the range of
-  SERVO PULSES at 1000-2000; at MARGIN p% it is 1000-2000 widened by
-  5us x p at each end.
+  SERVO PULSES at 1000-2000; at MARGIN p% it is 1000-2000 with each side
+  widened by p% of its span from NEUTRAL.
 - The bench's PULSE MIN and PULSE MAX: where they are narrower than the
   margin's range, the run widens them to it once the servo holds the
   margin's pulses, read so in the read session or read back after the
-  pulse write. It never narrows them: a side already wider keeps its
-  value. PULSE MIN and MAX 1000 to 2000us at 10% become 950 to 2050us; 900
-  to 2000us become 900 to 2050us. The change goes into force when the run
+  pulse write. The margin's range is the servo's pulses in whole us,
+  PULSE LOWER floored and PULSE UPPER ceiled. It never narrows them: a
+  side already wider keeps its value. PULSE MIN and MAX 1000 to 2000us at
+  N 1500us and 10% become 950 to 2050us; 900 to 2000us become 900 to
+  2050us; at N 1640us and 50% 1000 to 2000us become 680 to 2180us. The change goes into force when the run
   ends, with the bench SAFE, and lasts for the session as every change of
   the servo profile does: the profile is not kept in NVS (non-volatile
   storage), and a restart sets STANDARD PWM, 1000 to 2000us. The report
@@ -1786,16 +1803,17 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   session`), and so does the third state line after the run with the
   range in force, `REPORT RUDDR007.TXT, MIN/MAX 950-2050us`, one row of
   40 cells in English and German. A pulse write cut
-  off by an end, or read back with other pulses, widens nothing. With the
+  off by an end, or read back with other pulses or another NEUTRAL than
+  the read's, ends the run and widens nothing. With the
   wider range LIMIT RUN at KEEP takes the servo's pulses (`servo pulses
   outside MIN/MAX` is the refusal otherwise), and LIVE drives up to 2050us.
 - What a KST or Chaservo servo does with a pulse outside its PULSE LOWER to
   PULSE UPPER is not documented and not measured. In this run only the
-  search's outermost steps, 950us and 2050us at 10%, lie past them, by the
-  rounding below. The servo's range, rounded toward the center, lies inside the
-  widened PULSE MIN and MAX by at most 0.6us at each end (0.4us at 10%),
-  so LIVE at PULSE MIN or MAX sends a pulse up to that far past PULSE LOWER
-  or PULSE UPPER, less than the KST's 0.8us step.
+  search's outermost steps, 950us and 2050us at N 1500us and 10%, lie past
+  them, by the rounding below. The servo's range, rounded toward the center, lies inside the
+  widened PULSE MIN and MAX by at most 0.8us at each end (0.4us at N
+  1500us and 10%), so LIVE at PULSE MIN or MAX sends a pulse up to that
+  far past PULSE LOWER or PULSE UPPER, at most the KST's 0.8us step.
 - On a Hitec servo (HITEC D SERIES, HITEC CLASSIC) MARGIN is 0%: the servo
   has no pulse registers, and the run sets LEFT END and RIGHT END only.
   With SERVO at a Hitec entry the card's MARGIN reads `MARGIN 0%`, drawn
@@ -1945,14 +1963,17 @@ ARMED is asked).
 
 - The read session: the servo held at PULSE CENTER for 1000ms, SAFE asked,
   CONNECT and the read; for KST/Chaservo only, PULSE LOWER and PULSE UPPER
-  are set to the margin's range if they differ, 950.4us and 2049.6us at
-  10%; then LEAVE and a request for ARMED.
+  are set to the margin's range from the read NEUTRAL if they differ,
+  950.4us and 2049.6us at N 1500us and 10%; then LEAVE and a request for
+  ARMED.
 - The limit search (phase SEARCH,
   `shared/servo/servo_rudder_auto_search.c`), in every run, before any
   other pulse: LIMIT RUN's search (`shared/servo/servo_limit.c`) on the
   1000us side, then on the 2000us side. Each side starts at PULSE CENTER,
-  held 1000ms, and steps out 10us at a time to the margin's range: 950us
-  and 2050us at 10%, 1000us and 2000us at 0% and on Hitec. At each step it
+  held 1000ms, and steps out 10us at a time to the margin's range from
+  the read NEUTRAL (`servo_rauto_pulse_range()`): 950us and 2050us at N
+  1500us and 10%, 936us and 2036us at N 1640us and 10%, 1000us and 2000us
+  at 0% and on Hitec. At each step it
   waits 120ms and averages the INA3221's windows over 80ms. The mean of
   the first 3 steps is the free current. A position that draws more than
   1.8 x the free current and more than 0.15A over it is bound; the side's
@@ -2157,7 +2178,9 @@ The report names the servo, the output, the angle source and the meter,
 the targets and tolerance, the margin with the pulses written and the
 extended ends by the linear model (`Margin:         10%: servo pulses
 950.4-2049.6us; by the linear model 950us reaches 22.0°, 2050us 22.0°;
-driven in the search only`), the measure's rule (`Measure: angle
+driven in the search only`; with a NEUTRAL other than 1500.0us the line names it, `Margin:
+        10% from NEUTRAL 1640.0us: servo pulses 936.0-2036.0us; ...`), the
+measure's rule (`Measure: angle
 stable for 500ms, its span at most 0.10° over 3.0s, within 16000ms of the
 command` on the IMU), the pulse write and the bench's PULSE MIN and MAX
 where the run widened them, the end points before and after with the side

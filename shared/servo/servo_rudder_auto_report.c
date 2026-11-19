@@ -169,7 +169,8 @@ static const char *family_name(uint8_t f)
 
 /**
  * @brief The margin's line: on KST the servo's pulse range as written and
- *        the extended ends by the linear model; on Hitec its lock at 0%.
+ *        the extended ends by the linear model, from the NEUTRAL read,
+ *        named where it is not 1500.0us; on Hitec its lock at 0%.
  * @param r Run state.
  * @param c Cursor, at the line asked for.
  */
@@ -180,13 +181,21 @@ static void margin_line(const servo_rauto_t *r, cur_t *c)
         snprintf(c->buf, c->n, "%s", LS(RA_R_MARGIN_HITEC));
         return;
     }
+    const uint16_t n = r->servo.pulse_dus[0];
     uint16_t us[2], dus[2];
-    servo_rauto_pulse_range(g->margin_pct, us);
-    servo_rauto_kst_pulses(g->margin_pct, dus);
+    servo_rauto_pulse_range(g->margin_pct, n, us);
+    servo_rauto_kst_pulses(g->margin_pct, n, dus);
     const double k = 1.0 + (double)g->margin_pct / 100.0;
-    snprintf(c->buf, c->n, LS(RA_R_MARGIN), (unsigned)g->margin_pct,
-             (double)dus[0] / 10.0, (double)dus[1] / 10.0, (unsigned)us[0],
-             (double)g->target_deg[0] * k, (unsigned)us[1],
+    if (n == 0u || n == SERVO_RAUTO_NEUTRAL_DUS) {
+        snprintf(c->buf, c->n, LS(RA_R_MARGIN), (unsigned)g->margin_pct,
+                 (double)dus[0] / 10.0, (double)dus[1] / 10.0,
+                 (unsigned)us[0], (double)g->target_deg[0] * k,
+                 (unsigned)us[1], (double)g->target_deg[1] * k);
+        return;
+    }
+    snprintf(c->buf, c->n, LS(RA_R_MARGIN_N), (unsigned)g->margin_pct,
+             (double)n / 10.0, (double)dus[0] / 10.0, (double)dus[1] / 10.0,
+             (unsigned)us[0], (double)g->target_deg[0] * k, (unsigned)us[1],
              (double)g->target_deg[1] * k);
 }
 
@@ -728,6 +737,7 @@ servo_str_t servo_rauto_why_str(const servo_rauto_t *r)
     case SERVO_RAUTO_WHY_BENCH:     return SERVO_STR_L_WHY_BENCH;
     case SERVO_RAUTO_WHY_SUPPLY:    return SERVO_STR_L_WHY_SUPPLY;
     case SERVO_RAUTO_WHY_CAP:       return SERVO_STR_RA_WHY_CAP;
+    case SERVO_RAUTO_WHY_NEUTRAL:   return SERVO_STR_RA_WHY_NEUTRAL;
     case SERVO_RAUTO_WHY_NO_EFFECT: return r->side == 0u
                                                ? SERVO_STR_RA_WHY_NO_EFFECT_LO
                                                : SERVO_STR_RA_WHY_NO_EFFECT_HI;
