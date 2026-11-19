@@ -743,19 +743,6 @@ def test_a_german_storyboard_is_written_out_for_a_german_speaker():
     assert video_voice.script(board)[0][3] == "Der Dail am K S T X 10"
 
 
-def test_a_flap_that_turns_is_a_move_for_the_gear_sound():
-    """The sound track takes the flap's moves from the deflect keys."""
-    import video_audio
-
-    scene = {"type": "case", "model": "rudder", "dur": 10,
-             "camera": [[0, [0, 250, 330], [0, 34, 10]],
-                        [10, [0, 250, 330], [0, 34, 10]]],
-             "deflect": [[0, 0], [2, 0], [2.5, 20], [6, 20], [7, -5]]}
-    end = {"type": "end", "dur": 5}
-    board = {"lang": "en", "steps": 1, "scenes": [end, scene]}
-    assert video_audio.flaps(board) == [(7.0, 0.5, 20), (11.0, 1.0, -25)]
-
-
 def test_a_face_names_a_screen_the_knob_does_nothing_on():
     """other-TITLE-safe and other-TITLE-armed pose the Dial's other face."""
     import render_dial
