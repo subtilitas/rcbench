@@ -49,6 +49,30 @@
  * included after it may meet. */
 #include "servo_screen_core_int.h"
 
+/** @brief The gate's frame-rate text, MARGIN NEEDS 301Hz OR LESS, and its
+ *         rate: kept here so a row and its tag know it by its address. */
+typedef struct {
+    char     why[64];   /**< the text */
+    unsigned hz;        /**< the highest rate that fits, Hz */
+} ck_rate_t;
+
+/** @brief The one instance. */
+static ck_rate_t s_rate;
+
+bool rauto_rate_nums(const char *why, unsigned v[2])
+{
+    if (why == NULL || why != s_rate.why) {
+        return false;
+    }
+    v[0] = s_rate.hz;
+    v[1] = 0u;
+    return true;
+}
+
+_Static_assert(SERVO_RAUTO_CMD_FLOOR_US == LINK_CC_FLOOR_US
+                   && SERVO_RAUTO_CMD_CEILING_US == LINK_CC_CEILING_US,
+               "the run's command range checked against the link's bounds");
+
 /* ------------------------------------------------------------ the checks */
 
 /** @brief The gate's checks, in rauto_blocked()'s order. */
@@ -130,11 +154,33 @@ static const char *check(int k)
          * why no pulse runs, whatever the setting says. */
         return (!s.drive_pwm || prog_reg_servo_holds()) ? lim_pwm_why()
                                                         : NULL;
-    case CK_RANGE:
+    case CK_RANGE: {
         /* The end pulses lie inside the bench's own range. */
-        return (s.min_us > 1000u || s.max_us < 2000u
-                || !(s.center_us > 1000u && s.center_us < 2000u))
-                   ? TR(RA_RANGE) : NULL;
+        if (s.min_us > 1000u || s.max_us < 2000u
+            || !(s.center_us > 1000u && s.center_us < 2000u)) {
+            return TR(RA_RANGE);
+        }
+        /* And the range the search's commands carry is one a command can
+         * name, for every NEUTRAL: never a range the link drops for the
+         * standard one. */
+        uint16_t us[2];
+        if (!servo_rauto_cmd_range(rauto_margin_now(), s.center_us, s.min_us,
+                                   s.max_us, us)) {
+            return us[1] > SERVO_RAUTO_CMD_CEILING_US ? TR(RA_RANGE_HIGH)
+                                                      : TR(RA_RANGE_LOW);
+        }
+        /* And the frame rate leaves the profile's pause after the longest
+         * of those pulses (max_rate_for(), the rule apply_profile()
+         * clamps by): the rate is not changed under the run. */
+        const uint16_t top = max_rate_for(s.type, us[1]);
+        if (s.frame_hz > top) {
+            s_rate.hz = top;
+            snprintf(s_rate.why, sizeof(s_rate.why), TR(RA_RATE),
+                     (unsigned)top);
+            return s_rate.why;
+        }
+        return NULL;
+    }
     case CK_GOALS: {
         /* A target the tolerance swallows: a surface that never moves, or
          * both ends on one side, would pass (servo_rauto_goals_ok()). */
@@ -231,7 +277,8 @@ rauto_row_t rauto_row_of(const char *why)
     if (why == TR(RA_NO_ZERO)) {
         return RAR_ZERO;
     }
-    if (why == TR(RA_RANGE)) {
+    if (why == TR(RA_RANGE) || why == TR(RA_RANGE_HIGH)
+        || why == TR(RA_RANGE_LOW) || why == s_rate.why) {
         return RAR_RANGE;
     }
     return RAR_COUNT;

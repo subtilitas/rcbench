@@ -60,7 +60,7 @@
 
 _Static_assert(2 * RA_HALF_W + RA_GAP == RA_W, "two halves fill the column");
 _Static_assert(RA_LINES_H >= RA_LINES * 20 + (RA_LINES - 1) * RA_LINE_GAP,
-               "four lines of one row each fit above the footer");
+               "five lines of one row each fit above the footer");
 _Static_assert(RA_PLOT_Y + UI_TAP_MIN <= RA_LINE_Y - 4,
                "the plot ends above the side view and the lines");
 
@@ -277,6 +277,20 @@ static bool ra_apply(const servo_rauto_do_t *d)
     return !again;
 }
 
+/** @brief The range the run's commands carry, from its search's start to
+ *         its end; none once it ended, early or not, so the bench's own
+ *         range is in force again. */
+static void ra_drive_range(void)
+{
+    uint16_t us[2];
+    if (servo_rauto_drive_range(&s.ra.run, us)) {
+        s.ra.drive_lo = us[0];
+        s.ra.drive_hi = us[1];
+    } else {
+        s.ra.drive_lo = s.ra.drive_hi = 0u;
+    }
+}
+
 /** @brief The run's step against the clock, and what it asks done: twice
  *         where a refusal ended it in the first. */
 static void ra_step(void)
@@ -301,6 +315,7 @@ static void ra_step(void)
         servo_rauto_do_t d;
         servo_rauto_step(&s.ra.run, test_now(), &in, &d);
         test_tell();
+        ra_drive_range();
         if (ra_apply(&d)) {
             break;
         }
@@ -799,6 +814,8 @@ static void why_text(char *b, size_t n)
         char deg[12];
         snprintf(b, n, TR(RA_BINDS_AT),
                  svs_angle_text(deg, sizeof(deg), r->bind_deg, false));
+    } else if (r->why == SERVO_RAUTO_WHY_STOP) {
+        snprintf(b, n, TR(RA_STOP_AT), (unsigned)r->stop_us);
     } else {
         snprintf(b, n, "%s", ui_servo_str(servo_rauto_why_str(r)));
     }
@@ -868,6 +885,34 @@ static void verify_line(char *b, size_t n, const servo_rauto_t *r)
 }
 
 /**
+ * @brief The limit search's two ends once the run searched: LOW END and
+ *        HIGH END in us, FREE where the side reached the margin's end
+ *        without a stop, "-" for a side not searched yet.
+ * @param b where it goes
+ * @param n its size
+ * @param r the run
+ */
+static void ends_line(char *b, size_t n, const servo_rauto_t *r)
+{
+    if (!r->ends[0].done && !(servo_rauto_running(r)
+                              && r->phase == SERVO_RAUTO_PH_SEARCH)) {
+        return;
+    }
+    char e[2][12];
+    for (unsigned k = 0; k < 2u; ++k) {
+        const servo_rauto_end_t *p = &r->ends[k];
+        if (!p->done) {
+            snprintf(e[k], sizeof(e[k]), "-");
+        } else if (p->bound) {
+            snprintf(e[k], sizeof(e[k]), "%uus", (unsigned)p->end_us);
+        } else {
+            snprintf(e[k], sizeof(e[k]), "%s", TR(RDY_FREE));
+        }
+    }
+    snprintf(b, n, TR(RA_ENDS), TR(LR_LOW_END), e[0], TR(LR_HIGH_END), e[1]);
+}
+
+/**
  * @brief Why no run is under way, as the first line gives it: the last
  *        sequence's failure, a start the run refused, or the first row
  *        that refuses the hold.
@@ -891,6 +936,14 @@ const char *rauto_line(int i, char *buf, size_t n)
     const bool running = servo_rauto_running(r);
     switch (i) {
     case 0: {
+        if (running && r->phase == SERVO_RAUTO_PH_SEARCH) {
+            /* The search's position, its step of both sides'. */
+            snprintf(buf, n, TR(RA_SEARCH),
+                     ui_servo_str(servo_rauto_phase_str(r->phase)),
+                     (unsigned)r->cmd_us, (unsigned)r->s_steps,
+                     (unsigned)r->s_plan);
+            break;
+        }
         if (running) {
             /* An approach and the verify pass name the pulse commanded,
              * every other phase the side. */
@@ -899,7 +952,7 @@ const char *rauto_line(int i, char *buf, size_t n)
             snprintf(buf, n, TR(RA_STEP),
                      ui_servo_str(servo_rauto_phase_str(r->phase)),
                      cmd ? (unsigned)r->cmd_us
-                         : r->side == 0u ? 1000u : 2000u,
+                         : (unsigned)servo_rauto_side_us(r, r->side),
                      (unsigned)r->writes[r->side],
                      (unsigned)SERVO_RAUTO_WRITES_MAX, r->sessions);
             break;
@@ -962,9 +1015,8 @@ const char *rauto_line(int i, char *buf, size_t n)
             if (servo_rauto_widen(r, prof)) {
                 /* The bench's range the run widened, after the file. */
                 char w[48];
-                snprintf(w, sizeof(w), TR(RA_WIDENED),
-                         (unsigned)r->cfg.min_us, (unsigned)r->cfg.max_us,
-                         (unsigned)prof[0], (unsigned)prof[1]);
+                snprintf(w, sizeof(w), TR(RA_WIDENED), (unsigned)prof[0],
+                         (unsigned)prof[1]);
                 snprintf(buf, n, "%s, %s", t, w);
             } else {
                 snprintf(buf, n, "%s", t);
@@ -972,6 +1024,9 @@ const char *rauto_line(int i, char *buf, size_t n)
         }
         break;
     case 3:
+        ends_line(buf, n, r);
+        break;
+    case 4:
         verify_line(buf, n, r);
         break;
     default:
@@ -1053,7 +1108,7 @@ void rauto_render(gfx_canvas_t *c)
                 (i == 0 && !running && !svs_seq_busy() && idle_why() != NULL)
                 || (i == 2 && servo_rauto_restore(r));
             gfx_color_t col = ui_theme_color(warn ? UI_C_WARN : UI_C_TEXT_DIM);
-            if (i == 3) {
+            if (i == 4) {
                 /* Red at the first one outside, green once all three are
                  * within. */
                 bool out = false;
@@ -1159,7 +1214,8 @@ uint32_t rauto_sig(void)
     const uint32_t v[] = {
         s.ra.view ? 1u : 0u, (uint32_t)r->state, (uint32_t)r->phase,
         (uint32_t)r->side, (uint32_t)r->writes[0], (uint32_t)r->writes[1],
-        (uint32_t)r->vstep, (uint32_t)r->vn,
+        (uint32_t)r->vstep, (uint32_t)r->vn, (uint32_t)r->s_steps,
+        (uint32_t)r->ends[0].done + 2u * (uint32_t)r->ends[1].done,
         r->sessions, (uint32_t)r->verdict, (uint32_t)r->why,
         (uint32_t)(s.ra.file + 2), s.ra.off ? 1u : 0u, s.ra.pressed,
         servo_rauto_restore(r) ? 1u : 0u,

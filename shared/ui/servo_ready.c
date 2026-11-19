@@ -108,6 +108,17 @@ static void hitec_tag(char *b, size_t n, const unsigned v[2])
     snprintf(b, n, TR(RDY_TAG_HITEC_RANGE), v[0], v[1]);
 }
 
+/**
+ * @brief RUDDER AUTO's frame-rate tag: `NEEDS 301Hz`.
+ * @param b receives it
+ * @param n its size
+ * @param v the rate, Hz, and 0
+ */
+static void rate_tag(char *b, size_t n, const unsigned v[2])
+{
+    snprintf(b, n, TR(RDY_TAG_RATE), v[0]);
+}
+
 /** @brief A UI_TEXT gate text and its tag. */
 #define TAG_UI(full, tag) \
     { RDY_TXT_UI, TX_##full, TX_##tag, { 0, 0 }, NULL, NULL }
@@ -140,6 +151,8 @@ static const rdy_tag_t k_tags[] = {
     TAG_UI(SV_LIM_PWM_OFF, RDY_TAG_PWM_OFF),
     TAG_UI(SV_LIM_PWM_OFF_ARMED, RDY_TAG_PWM_DISARM),
     TAG_UI(RA_RANGE, RDY_TAG_RANGE),
+    TAG_UI(RA_RANGE_HIGH, RDY_TAG_RANGE_HIGH),
+    TAG_UI(RA_RANGE_LOW, RDY_TAG_RANGE_LOW),
     TAG_UI(SV_LIM_REFUSED, RDY_TAG_CENTER),
     TAG_UI(SV_LIM_PROG_BUSY, RDY_TAG_NOT_PWM),
     TAG_UI(HP_NEED_PD_C, RDY_TAG_NEEDS_PD),
@@ -158,6 +171,8 @@ static const rdy_tag_t k_tags[] = {
      * under PROG5V_INPUT_MIN_MV. */
     { RDY_TXT_FMT, TX_SV_LIM_HITEC_RANGE, TX_RDY_TAG_HITEC_RANGE,
       { 6553u, 6553u }, lim_hitec_nums, hitec_tag },
+    { RDY_TXT_FMT, TX_RA_RATE, TX_RDY_TAG_RATE, { 9999u, 0u },
+      rauto_rate_nums, rate_tag },
     { RDY_TXT_FMT, TX_P5_IN_WHY, TX_P5_IN_TAG,
       { PROG5V_INPUT_MIN_MV / 1000u, 9u }, p5_in_nums, p5_in_tag },
 };

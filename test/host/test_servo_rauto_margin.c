@@ -6,8 +6,9 @@
  * PULSE UPPER on the KST's 0.8us step rounded toward the center, at N
  * 1500.0us, 1360.0us and 1640.0us and 0%, 10% and 50%; a NEUTRAL outside
  * 1360.0us to 1640.0us refused at the read; the pulse write's read back
- * checked against the read's NEUTRAL; the run writes them, drives 1000us and
- * 2000us only and holds both ends and the verify pass to the target; the
+ * checked against the read's NEUTRAL; the run writes them, its search
+ * drives the margin's range, every measure after it 1000us and 2000us
+ * only, and it holds both ends and the verify pass to the target; the
  * bench's PULSE MIN and PULSE MAX widen where narrower than the margin's
  * range, never narrow, and the report names it; a servo that holds the
  * margin's pulses already needs no pulse write and still widens; an
@@ -85,8 +86,9 @@ TEST_CASE(the_margin_sets_the_pulse_range_on_the_kst_step)
 }
 
 /* 10%: PULSE LOWER and PULSE UPPER 950.4us and 2049.6us, written before
- * any end pulse; the run drives 1000us, 2000us and the center only; the
- * goals and the verify pass are the target, 27.5°. */
+ * any end pulse; the search reaches 950us and 2050us, every measure after
+ * it drives 1000us, 2000us and the center only; the goals and the verify
+ * pass are the target, 27.5°. */
 TEST_CASE(at_10_percent_the_run_writes_the_pulses_and_aims_at_the_target)
 {
     rig_init(0u);
@@ -100,8 +102,11 @@ TEST_CASE(at_10_percent_the_run_writes_the_pulses_and_aims_at_the_target)
     CHECK(g.pulses_before_drive);
     CHECK_EQ(g.pulses[1], 9504u);
     CHECK_EQ(g.pulses[2], 20496u);
-    CHECK_EQ(g.cmd_lo, 1000u);
-    CHECK_EQ(g.cmd_hi, 2000u);
+    CHECK_EQ(g.cmd_lo, 950u);
+    CHECK_EQ(g.cmd_hi, 2050u);
+    CHECK(!g.run.ends[0].bound && !g.run.ends[1].bound);
+    CHECK_EQ(g.run.ends[0].end_us, 950u);
+    CHECK_EQ(g.run.ends[1].end_us, 2050u);
     /* 150 counts give 30°; 27.5° takes 138. */
     CHECK_EQ(g.v[0], 138u);
     CHECK_EQ(g.v[1], 138u);
@@ -112,7 +117,7 @@ TEST_CASE(at_10_percent_the_run_writes_the_pulses_and_aims_at_the_target)
         CHECK(fabsf(g.run.vdeg[k] - 27.5f) <= 0.5f);
     }
     CHECK(in_report("Targets:        1000us 27.5°, 2000us 27.5°, tolerance 0.5°"));
-    CHECK(in_report("Margin:         10%: servo pulses 950.4-2049.6us; by the linear model 950us reaches 30.3°, 2050us 30.3°; not driven"));
+    CHECK(in_report("Margin:         10%: servo pulses 950.4-2049.6us; by the linear model 950us reaches 30.3°, 2050us 30.3°; driven in the search only"));
     CHECK(in_report("Pulse write:    PULSE LOWER 900.0 -> 950.4us, PULSE UPPER 2100.0 -> 2049.6us"));
     CHECK(in_report("goal 27.50°  within"));
     CHECK(in_report("Bench pulses:   PULSE MIN/MAX 1000-2000 -> 950-2050us, for the session"));
@@ -293,7 +298,7 @@ TEST_CASE(an_off_center_neutral_scales_each_side_from_neutral)
         CHECK_EQ(prof[1], k[i].prof[1]);
         CHECK(in_report("Margin:         ") && in_report("% from NEUTRAL "));
     }
-    CHECK(in_report("Margin:         10% from NEUTRAL 1640.0us: servo pulses 936.0-2036.0us; by the linear model 936us reaches 30.3°, 2036us 30.3°; not driven"));
+    CHECK(in_report("Margin:         10% from NEUTRAL 1640.0us: servo pulses 936.0-2036.0us; by the linear model 936us reaches 30.3°, 2036us 30.3°; driven in the search only"));
     CHECK(in_report("Bench pulses:   PULSE MIN/MAX 1000-2000 -> 936-2036us, for the session"));
 }
 

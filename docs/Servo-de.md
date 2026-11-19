@@ -1817,7 +1817,7 @@ Bluetooth-IMU).
 
 - Die linke Karte hält die Anzeige, Soll bei 1000us und bei 2000us,
   RESERVE und TOLERANZ, NULLPUNKT und MAX LÖSCHEN, die Seitenansicht und
-  vier Zustandszeilen. Die Seitenansicht zeigt zusätzlich das Soll bei
+  fünf Zustandszeilen. Die Seitenansicht zeigt zusätzlich das Soll bei
   1000us auf der negativen und das bei 2000us auf der positiven Seite,
   jedes auf der Seite, auf der der letzte Lauf es gemessen hat. Solange
   der Lauf läuft, sind NULLPUNKT und MAX LÖSCHEN abgelehnt und gedimmt,
@@ -1864,9 +1864,12 @@ Bluetooth-IMU).
   seine Pulse in Schritten von 0,8us (`kst_reg.c`, CONV_PULSE), daher
   schreibt der Lauf jedes Ende zur Mitte hin gerundet: 950,4us und
   2049,6us bei N 1500us und 10%, 750,4us und 2249,6us bei 50%, 1000,0us
-  und 2000,0us bei 0% bei jedem N (`servo_rauto_kst_pulses()`). Der Lauf
-  fährt nur 1000us, 2000us und PULS MITTE an; die erweiterten Enden
-  werden weder angefahren noch gemessen.
+  und 2000,0us bei 0% bei jedem N (`servo_rauto_kst_pulses()`). Die
+  Endlagensuche fährt das Servo bis zum Bereich der Reserve ab dem
+  gelesenen NEUTRAL, 950us und 2050us bei N 1500us und 10%, 936us und
+  2036us bei N 1640us, und zeichnet den Winkel unterwegs auf; jede Messung
+  danach fährt nur 1000us, 2000us und PULS MITTE an. Die erweiterten Enden
+  werden nicht gegen ein Soll beurteilt.
 - SERVOPULSE ist eine Einstellung des Endlagenlaufs und wirkt nicht auf
   AUTO. AUTO schreibt an einem KST- oder Chaservo-Servo den Bereich der
   Reserve, was SERVOPULSE auch zeigt: bei RESERVE 0% sind das 1000,0 bis
@@ -1886,8 +1889,9 @@ Bluetooth-IMU).
   NVS (nichtflüchtiger Speicher), ein Neustart setzt STANDARD PWM, 1000
   bis 2000us. Der Bericht nennt sie (`Prüfstandspulse: PULS MIN/MAX
   1000-2000 -> 950-2050us, für die Sitzung`), ebenso die dritte
-  Zustandszeile nach dem Lauf, `BERICHT RUDDR007.TXT, PULS MIN/MAX
-  1000-2000 -> 950-2050us`. Ein Pulsschreiben, das ein Ende abbricht, oder
+  Zustandszeile nach dem Lauf mit dem Bereich, der gilt, `BERICHT
+  RUDDR007.TXT, MIN/MAX 950-2050us`, eine Zeile von 40 Zeichen auf
+  Englisch und Deutsch. Ein Pulsschreiben, das ein Ende abbricht, oder
   eines, das andere Pulse oder ein anderes NEUTRAL als das gelesene
   zurückliest, beendet den Lauf und weitet nichts. Mit dem weiteren
   Bereich nimmt der Endlagenlauf bei BEHALTEN die Pulse des Servos an
@@ -1895,7 +1899,9 @@ Bluetooth-IMU).
   bis 2050us.
 - Was ein KST- oder Chaservo-Servo mit einem Puls außerhalb von PULSE
   LOWER bis PULSE UPPER macht, ist nicht dokumentiert und nicht gemessen.
-  Der Prüfstand sendet in diesem Lauf keinen. Der zur Mitte gerundete
+  In diesem Lauf liegen nur die äußersten Schritte der Suche, 950us und
+  2050us bei N 1500us und 10%, durch die Rundung unten darüber. Der zur
+  Mitte gerundete
   Bereich des Servos liegt höchstens 0,8us an jedem Ende innerhalb der
   geweiteten PULS MIN und MAX (0,4us bei N 1500us und 10%), daher sendet
   LIVE auf PULS MIN oder MAX einen Puls bis so weit jenseits von PULSE
@@ -1953,8 +1959,10 @@ Bluetooth-IMU).
   (`shared/servo/servo_start_seq.c`, gemeinsam mit dem Endlagenlauf und
   dem automatischen Test). Das Halten blendet von grün nach gelb über und
   blinkt 300ms, wenn es auslöst.
-- Die vier Zeilen: der Schritt der Startfolge, etwa `START, SCHRITT 3 VON
-  5: RÜCKMELDUNG`, oder der Schritt des Laufs, etwa `EINSCHWINGEN 2000us:
+- Die fünf Zeilen: der Schritt der Startfolge, etwa `START, SCHRITT 3 VON
+  5: RÜCKMELDUNG`, oder der Puls der Endlagensuche und ihr Schritt beider
+  Seiten, etwa `SUCHE 1230us: SCHRITT 28 VON 100`, oder der Schritt des
+  Laufs, etwa `EINSCHWINGEN 2000us:
   SCHREIBEN 1/8, SITZUNGEN 2`, oder der Fehler der letzten Startfolge,
   oder der Grund der ersten roten Zeile, oder der Pulsbereich, mit dem
   der Lauf das Servo zurücklässt, und seine Enden nach der linearen
@@ -1967,7 +1975,10 @@ Bluetooth-IMU).
   `ZURÜCKSPIELEN IN KST` (an einem Hitec-Servo `HITEC001 IN DATEIEN
   LADEN`) nach einem NICHT BESTANDEN oder einem Abbruch, der geschrieben
   hat oder ein Schreiben unterwegs abbrach, das angekommen sein kann,
-  danach PULS MIN und MAX des Prüfstands, wo der Lauf sie geweitet hat; das
+  danach PULS MIN und MAX des Prüfstands, wo der Lauf sie geweitet hat; die
+  Enden der Endlagensuche ab ihrem Beginn, `UNTERES ENDE 995us, OBERES
+  ENDE FREI`: das Ende in us, wo die Seite blockiert, FREI, wo sie das Ende
+  der Reserve frei erreicht, `-` für eine noch nicht gesuchte Seite; das
   Nachmessen, sobald seine erste Messung vorliegt, `NACHMESSEN +0.03°,
   -0.02°, MITTE +0.05°`: 1000us, 2000us und die Mitte, jedes Ende ab seinem
   Sollwert, die Mitte ab dem Nullpunkt, `-` für eine noch nicht gemessene. Die Zeile wird
@@ -2041,6 +2052,8 @@ Halten grau, solange:
 | PROG 5V, PD MINI, VERSORGUNG | ARMED mit PROG 5V aus, ein Port hält es; eine Schiene unter 4.8V ohne PD mini; kein PD mini und kein PROG 5V, um die Versorgung eines KST/Chaservo- oder klassischen Hitec-Servos aus- und einzuschalten; ein erlaubter Bereich von SUPPLY ohne die 5.0V des Laufs | die Zeile des Endlagenlaufs; `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` für den Bereich, wobei ein Tippen auf die Zeile die Einstellungen von SUPPLY bei AUSGANGSGRENZEN öffnet. START stellt das PD mini auf 5.0V ([Die 5,0V des Laufs](#die-50v-des-laufs)). PROG 5V ist fest 5V und hat keinen Sollwert | die Kurzform des Endlagenlaufs; `5.0V NICHT ERLAUBT` |
 | PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | `PORT-PWM AUS: DISARM`, `WARTET AUF SAFE` |
 | BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` | `BRAUCHT 1000-2000us` |
+| BEREICH | der Bereich, den die Befehle der Suche tragen, PULS MIN bis MAX auf den der Reserve für jedes NEUTRAL von 1360us bis 1640us geweitet und symmetrisch um PULS MITTE (`servo_rauto_cmd_range()`), reicht über 2500us oder unter 400us, die Grenzen, die ein Befehl nennen kann (LINK_CC_CEILING_US, LINK_CC_FLOOR_US). PULS MITTE 1750us bei RESERVE 10% ergibt 936-2564us | `RESERVE-BEREICH ÜBER 2500us`, `RESERVE-BEREICH UNTER 400us` | `ÜBER 2500us`, `UNTER 400us` |
+| BEREICH | die PULSRATE des Profils lässt nach dem höchsten Puls dieses Bereichs weniger als seine Pause: 1000us bei STANDARD PWM, NARROW 760 und WIDE, 500us bei den Heli-Profilen, die Regel, an die die PULSRATE gebunden ist (`max_rate_for()`). STANDARD PWM bei 333Hz und RESERVE 50%: 2320us bei einem NEUTRAL von 1360us, 301Hz oder weniger. Die Rate wird nicht geändert; der Lauf lässt sie, wie sie gesetzt ist | `RESERVE BRAUCHT 301Hz ODER WENIGER` | `BRAUCHT 301Hz` |
 | WINKEL | die IMU-Achse Z (Gieren) gewählt ist, in 6-AXIS und in 9-AXIS: an einer BWT901CL driftet das Gieren in 6-AXIS 2,4° in 100s und bleibt in 9-AXIS 38° daneben stehen, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`, für einen um 90° gedrehten Sensor, dessen Achse X oder Y das Scharnier ist; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` | `GIEREN GESPERRT` |
 | WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` | `KEIN MESSWERT` |
 | NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` | `NICHT GESETZT` |
@@ -2067,13 +2080,98 @@ angefragt ist).
   gelesenen NEUTRAL geschrieben, wenn sie davon abweichen, 950,4us und
   2049,6us bei N 1500us und 10%. Danach folgen
   VERLASSEN und die Anforderung von ARMED.
-- Die Anfahrt: jede Messung fährt das Servo zuerst auf den Puls, von dem
+- Die Endlagensuche (Phase SUCHE,
+  `shared/servo/servo_rudder_auto_search.c`), in jedem Lauf, vor jedem
+  anderen Puls: die Suche des Endlagenlaufs (`shared/servo/servo_limit.c`)
+  auf der Seite 1000us, dann auf der Seite 2000us. Jede Seite beginnt auf
+  PULS MITTE, 1000ms gehalten, und geht in Schritten von 10us nach außen
+  bis zum Bereich der Reserve ab dem gelesenen NEUTRAL
+  (`servo_rauto_pulse_range()`): 950us und 2050us bei N 1500us und 10%,
+  936us und 2036us bei N 1640us und 10%, 1000us und 2000us bei 0% und an
+  Hitec. Je Schritt wartet sie 120ms und mittelt die
+  Fenster des INA3221 über 80ms. Das Mittel der ersten 3 Schritte ist der
+  Freistrom. Eine Stellung mit mehr als 1,8 x dem Freistrom und mehr als
+  0,15A darüber ist blockiert; das Ende der Seite ist die letzte freie
+  Stellung, 25us zurück zur Mitte. Eine Seite, die bis zum Ende der
+  Reserve frei ist, hat dieses Ende. Die Suche programmiert nichts. Ihr
+  Schutz ist der des Endlagenlaufs, 3,0A sofort und über 1,0A für 400ms,
+  neben dem des Laufs unten. Vom Beginn der Suche bis zum Ende des Laufs
+  tragen die eigenen Befehle des Laufs den Bereich der Reserve als den
+  Bereich eines Befehls (`servo_rauto_drive_range()`), daher erreicht der
+  Pin 950us und 2050us bei 10% mit PULS MIN und MAX auf 1000 bis 2000us;
+  die Ausgabeschicht hält einen Puls auf dem Bereich seines Befehls
+  (`shared/outputs/servo_link.c`). PULS MIN und MAX selbst ändern sich nur
+  durch das Weiten am Ende des Laufs; jeder Befehl nach dem Ende, auch
+  einem frühen, trägt den Bereich des Prüfstands. Der Start wird
+  verweigert, wo dieser Bereich nicht zu nennen ist (die Zeile BEREICH
+  unten), daher verwirft die Ausgabeschicht ihn nie für die üblichen
+  1000-2000us. Eine Strecke über 1,0A, die vor einem Halten auf 1000us
+  oder 2000us begann, endet mit dem Halten: der Sucher nimmt währenddessen
+  keinen Messwert, und der eigene Schutz des Laufs überwacht den Strom.
+- Die erste Messung ist die der Suche. Sobald die Suche 1000us (2000us)
+  oder eine Stellung dahinter frei gefunden hat, hält sie das Servo auf
+  1000us (2000us) und nimmt dort den Winkel nach der Regel der Messung
+  unten, gezählt ab dem Befehl von 1000us (2000us); dann geht sie weiter.
+  Eine Seite, die vor 1000us (2000us) blockiert, hat ihre erste Messung
+  stattdessen an ihrem gefundenen Ende (unten).
+  Die Schritte von 10us lassen wenig Kriechen, und der Winkel gilt nach
+  derselben Regel als eingeschwungen wie bei jeder Messung: 500ms ruhig
+  und an der IMU mit den Vorgaben innerhalb 0,10° über 3,0s, spätestens
+  16 000ms nach dem Befehl. Liegt PULS MITTE neben dem 10us-Raster, 1505us,
+  landen die Schritte auf 1005us und 995us; sobald 995us frei gefunden ist,
+  fährt das Servo auf PULS MITTE, wartet dort nach der Regel der Messung
+  und fährt dann für die erste Messung auf 1000us. 1000us wird so von der
+  Seite der Mitte erreicht, wie bei jeder späteren Messung (die Anfahrt
+  unten). Ein blockiertes 995us beendet die Seite wie jede Blockade,
+  1000us wird nie gehalten. Sind
+  beide Seiten gesucht, gelten die zwei ersten Messungen wie jede Messung,
+  die Seite 1000us zuerst, und der Lauf schreibt die erste Seite außerhalb
+  der Toleranz, misst nach oder besteht.
+- UNTERES ENDE und OBERES ENDE begrenzen jeden Puls, den der Lauf nach der
+  Suche fährt; ein Puls darüber beendet den Lauf wie unten.
+- Ein Ende innerhalb des Endpulses, UNTERES ENDE über 1000us oder OBERES
+  ENDE unter 2000us, wird für seinen Winkel nach der Regel der Messung
+  gehalten. Das Servo steht an der Blockade, hinter dem Ende, und fährt
+  daher zuerst auf PULS MITTE und wartet dort wie bei einer Anfahrt.
+  Schwingt er bis zur Wartezeit der Messung nicht ein, gilt der
+  Winkel, den die Suche am letzten freien Schritt der Seite aufgezeichnet
+  hat, und der Bericht nennt das. Dieser Winkel steht nach der linearen
+  Abbildung ab dem Puls, an dem er genommen wurde, für das Ende: 3,0° bei
+  1450us, 50us von einer PULS MITTE von 1500us, sind 1,5° an einem Ende von
+  1475us. Der Winkel, wie das Ende ihn liest, entscheidet, nach einem
+  Rückgriff der skalierte:
+  - Unter SOLL - TOLERANZ hält das Gestänge das Ruder vor dem Soll an, und
+    der Lauf endet mit NICHT BESTANDEN, `ANSCHLAG BEI 1225us VOR DEM SOLL`
+    in der Box: kein Wert geschrieben, scheitert die Seite 1000us, bleibt
+    die Seite 2000us ungesucht, jeder Ausgang aus.
+  - Ab SOLL - TOLERANZ, die Grenze eingeschlossen, liegt der Anschlag
+    hinter dem Soll. Die Messungen der Seite, im Hauptdurchgang wie beim
+    Nachmessen, fahren das Ende statt 1000us (2000us) an, und dieser Winkel
+    ist ihre erste Messung. Jeder dort gemessene Winkel steht nach der
+    linearen Abbildung ab PULS MITTE für den Endpuls: x 500 / (1500 -
+    1075) = x 1,176 bei einem Ende von 1075us. Das Schreiben und das
+    Nachmessen beurteilen diesen Wert gegen das SOLL wie jede Messung, das
+    Schreiben verkürzt also den Weg. Die Schritt- und Nachmesszeilen des
+    Berichts nennen den Puls des Endes und diesen Wert. Beispiel: SOLL
+    20,0°, Blockade bei 1040us, das Ende 1075us bei 25,5°: 30,0° bei
+    1000us nach der Abbildung, 150 Zählwerte auf 100 geschrieben, beim
+    Nachmessen 17,0° bei 1075us, 20,0° nach der Abbildung
+    (`test_servo_rauto_search`).
+  Das Ende liegt 25us vor der Blockade: bei 10% endet ein Servo, das bei
+  970us blockiert und bei 980us frei ist, bei 1005us, innerhalb von
+  1000us; eines, das bei 960us blockiert, endet bei 995us, außerhalb, und
+  wird bei 1000us gemessen.
+- Jede Stellung, die die Suche beurteilt hat, ist eine Zeile des
+  Berichts, `1230us  0.152A  -16.20°`, und eine Zeile der CSV, höchstens
+  160 (152 bei RESERVE 50%).
+- Die Anfahrt: jede Messung nach der Suche fährt das Servo zuerst auf den Puls, von dem
   sie kommt, wartet dort nach ihrer eigenen Regel und fordert dann ihren
   Puls an (Phase ANFAHRT, die erste Zeile `ANFAHRT 1500us: ...`). Jedes
   Ende, im Hauptdurchgang wie beim Nachmessen, kommt von PULS MITTE; die
   Mitte des Nachmessens kommt von 2000us, wo ihre Messung davor den Winkel
-  nahm, ohne eigene Anfahrt. Ein Puls wird so immer von derselben Seite
-  erreicht: am Prüfstand am 2026-11-18 las ein Servowert 46,86° von der
+  nahm, ohne eigene Anfahrt. Das Halten der Suche für eine erste Messung
+  kommt ebenfalls von PULS MITTE, wo das Servo hinter seinem Puls steht
+  (oben). Ein Puls wird so immer von derselben Seite erreicht: am Prüfstand am 2026-11-18 las ein Servowert 46,86° von der
   Mitte und 46,58° von 2000us, die Mitte +0,02° von 2000us und +0,35° von
   1000us. Eine Anfahrt nimmt keinen Winkel und beendet den Lauf wie eine
   Messung, wenn sie nicht ruhig wird.
@@ -2193,8 +2291,9 @@ angefragt ist).
   (`test_servo_rauto_settle`): 6,8s bis 10,6s vom Befehl einer Messung bis
   zu ihrem Winkel; eine Anfahrt 3,0s, wo das Servo schon in der Mitte
   steht, bis so lang wie eine Messung, wo es von einem Ende kommt; das
-  Nachmessen 34s bis 53s; der ganze Lauf 100s bis 153s, davon die
-  Anfahrten 41s bis 63s.
+  Nachmessen 34s bis 53s; die Endlagensuche 42s bis 49s bei RESERVE 0%,
+  ihre zwei ersten Messungen eingeschlossen; der ganze Lauf 130s bis
+  187s.
 - NICHT BESTANDEN endet wie jedes Ende mit losgelassenem Servo, dem
   Prüfstand in SAFE und den Versorgungen aus (siehe Schutz). Nach einem
   Lauf mit NICHT BESTANDEN oder ABGEBROCHEN, der einen Wert geändert hat,
@@ -2221,6 +2320,7 @@ Der des Endlagenlaufs, in jeder Phase:
 | 200ms kein Fenster | ABGEBROCHEN |
 | der Winkel über 300ms verloren oder eine zweite Lücke binnen 10s | ABGEBROCHEN, `Winkelquelle ausgefallen` |
 | eine abgelehnte Sitzung oder ein Rücklesen, das vom Schreiben abweicht | ABGEBROCHEN |
+| ein Ende, das die Suche innerhalb von 1000us oder 2000us findet, mit dem Ruder dort unter SOLL - TOLERANZ, oder ein Puls über UNTERES ENDE oder OBERES ENDE nach der Suche | NICHT BESTANDEN, `ANSCHLAG BEI 1225us VOR DEM SOLL` |
 | WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen geändert: der Nullpunkt wird verworfen | ABGEBROCHEN |
 | STOP, DISARM, SERVO verlassen, Messgerät oder Versorgung geändert | ABGEBROCHEN |
 
@@ -2243,19 +2343,28 @@ und 3 Ziffern. Der Bericht nennt das Servo, den Ausgang, die Winkelquelle
 und das Messgerät, eingegebene Ausschläge und Toleranz, die Reserve mit
 den geschriebenen Pulsen und den erweiterten Enden nach dem linearen
 Modell (`Reserve:         10%: Servopulse 950.4-2049.6us; nach dem
-linearen Modell erreicht 950us 22.0°, 2050us 22.0°; nicht angefahren`;
+linearen Modell erreicht 950us 22.0°, 2050us 22.0°; nur in der Suche
+angefahren`;
 bei einem NEUTRAL außer 1500,0us nennt die Zeile es, `Reserve:
 10% ab NEUTRAL 1640.0us: Servopulse 936.0-2036.0us; ...`), das
 Pulsschreiben und PULS MIN und MAX des Prüfstands, wo der Lauf sie
 geweitet hat, die Endpoints davor und
 danach mit der Seite, die jeder bewegt, die Schreibvorgänge und Sitzungen,
-die Backup-Datei, die Regel der Messung (`Messung: Winkel 500ms stabil,
+die Backup-Datei, die Endlagensuche (ihre Regel, `Schritte:        10us
+ab 1500us nach außen, ...`, UNTERES ENDE und OBERES ENDE, `Unteres Ende:
+blockiert bei 960us, Endpunkt 995us; frei 0.150A, blockiert 1.500A`,
+`Oberes Ende:     frei bis 2050us; frei 0.150A` oder `nicht gesucht`,
+für ein Ende innerhalb des Endpulses sein Winkel, `-25.50° am Ende
+1075us; die Seite dort gemessen, ihre Winkel auf 1000us skaliert nach der
+linearen Abbildung (x 1.176)`, dann eine Zeile je beurteilter Stellung), die Regel der Messung (`Messung: Winkel 500ms stabil,
 Spanne höchstens 0.10° über 3.0s, spätestens 16000ms nach dem Befehl` an
 der IMU), jede Messung mit Registerwert, Winkel und der Angabe, ob sie
 innerhalb der Toleranz liegt, und das Nachmessen: eine Zeile je Messung,
 `1500us  gemessen 0.05°  Soll 0.00°  innerhalb`, oder `Kein Schreiben:
 Die Messungen oben gelten.` Die CSV führt die Messungen des Nachmessens
-nach den Schritten, `V` in der Spalte write und die Spalte value leer.
+nach den Schritten, `V` in der Spalte write und die Spalte value leer,
+und danach die Stellungen der Suche, `S` in der Spalte write, der Strom
+in mA in der Spalte value und der Winkel in der Spalte measured.
 
 Endpoints erscheinen so, wie die Programmierseite sie zeigt, mit der
 Einheit in den Registerzeilen des Berichts (`(Zählwerte)`, `(Rohwert)`) und

@@ -17,7 +17,8 @@
  * outside SERVO_RAUTO_NEUTRAL_MIN_DUS..SERVO_RAUTO_NEUTRAL_MAX_DUS refused
  * at the read (SERVO_RAUTO_WHY_NEUTRAL); Hitec:
  * nothing and margin 0, the D series takes 1000us as 76.9% of the way to
- * 0xB2, hitec_live.h); then
+ * 0xB2, hitec_live.h); the limit search (phase SEARCH, below), which
+ * takes the first measure of each side on its way out; then
  * per side, at most SERVO_RAUTO_WRITES_MAX times: move to the end pulse,
  * wait for still (SERVO_RAUTO_STILL_MS within IMU_STILL_DEG on the axis
  * read, on the IMU the settle rule of servo_settle.h too, at most
@@ -44,14 +45,52 @@
  *     not the margin's (servo_rauto_kst_pulses()), LEAVE, ARMED asked.
  *     Once the servo holds the margin's pulses, read so or read back, the
  *     bench's PULSE MIN and PULSE MAX are due to widen to the margin's
- *     range where they are narrower (servo_rauto_widen()); the extended
- *     ends are never driven.  A read that is no
+ *     range where they are narrower (servo_rauto_widen()); only the
+ *     search drives the extended ends.  A read that is no
  *     servo, or whose values lie outside its own lo..hi, ends the run as
  *     FAIL (SERVO_RAUTO_WHY_NO_SERVO) with LEAVE asked; a KST read whose
  *     NEUTRAL lies outside 1360.0us to 1640.0us as FAIL
  *     (SERVO_RAUTO_WHY_NEUTRAL).  The pulse write's read back holds the
  *     read's NEUTRAL and the margin's pulses, else the run ends as
  *     ABORTED (SERVO_RAUTO_WHY_WRITE).
+ *   - The limit search (phase SEARCH, servo_rudder_auto_search.c): after
+ *     the read session, before anything else is driven, LIMIT RUN's search
+ *     (servo_limit.h: 10us steps out from PULSE CENTER, each 120ms settled
+ *     and 80ms measured, bound at 1.8 x the free current and 0.15A over
+ *     it, the end the last free pulse backed off 25us) on the 1000us side,
+ *     then on the 2000us side, each out to the margin's range from the
+ *     read's NEUTRAL (servo_rauto_pulse_range(); 1000us and 2000us on
+ *     Hitec) and from PULSE CENTER held for
+ *     SERVO_LIMRUN_RETURN_MS; the run's commands carry that range from
+ *     here to its end (servo_rauto_drive_range()), whatever the bench's
+ *     PULSE MIN and PULSE MAX read.  It programs nothing.  Every position judged
+ *     is a row of the report and the CSV (pulse, current, angle; at most
+ *     SERVO_RAUTO_SEARCH_MAX).  It is the first measure: once the
+ *     finder judged the end pulse, or a position past it, free on its way,
+ *     the servo is held at the end pulse (1000us or 2000us), and the angle is
+ *     taken there by the measure's rule below, counted from the end
+ *     pulse's command; where the servo stands past the end pulse (PULSE
+ *     CENTER off the 10us grid), it goes to PULSE CENTER first and waits
+ *     there by that rule, as an approach does (below), so every measure
+ *     of a side comes from the center side; then the search goes on from
+ *     where it stood (servo_limit_resume()).  The found end of a side
+ *     (LOW END, HIGH END: the end found, or the margin's end where the
+ *     side is free) caps every pulse driven after the search.  An end
+ *     inside the end pulse, LOW END above 1000us or HIGH END below
+ *     2000us, is reached from PULSE CENTER as above, the servo standing
+ *     at the bind past it, and held for its angle by the measure's rule
+ *     (the last free step's where it does not
+ *     settle, scaled to the end from its own pulse): short of the goal by more than the tolerance it ends the
+ *     run as FAIL (SERVO_RAUTO_WHY_STOP, STOP AT 1225us BEFORE TARGET)
+ *     with no value written, a 1000us side that fails leaving the 2000us
+ *     side not searched; else every measure of that side drives the end
+ *     (servo_rauto_side_us()), that angle its first, each angle scaled to
+ *     the end pulse by the linear map from PULSE CENTER.  A finder's
+ *     overcurrent or stall ends the run as HARD or STALL.  With both
+ *     sides searched the two first measures are
+ *     judged as a measure is, the 1000us side first, and the run goes on
+ *     with the first side outside the tolerance, or with the verify pass
+ *     or PASS where both lie within.
  *   - A measure: the end pulse commanded (phase MOVE), the surface judged
  *     from SERVO_RAUTO_STILL_MS after the command on (phase SETTLE): the
  *     first step with a valid angle still for SERVO_RAUTO_STILL_MS takes
@@ -188,6 +227,7 @@
 
 #include "servo_angle.h"
 #include "servo_gap.h"
+#include "servo_limit.h"
 #include "servo_limrun.h"
 #include "servo_settle.h"
 #include "servo_test.h"
@@ -229,6 +269,10 @@ extern "C" {
  *        that.
  */
 #define SERVO_RAUTO_CREEP_MS    10000u
+/** @brief The search's rows: positions judged on both sides.  The margin's
+ *         range spans at most 1500us, 150 steps of 10us, and each side's
+ *         last step can be short. */
+#define SERVO_RAUTO_SEARCH_MAX  160u
 /** @brief The verify pass's measures: 1000us, 2000us and PULSE CENTER. */
 #define SERVO_RAUTO_VERIFY_N    3u
 /** @brief The largest margin, %. */
@@ -340,6 +384,7 @@ typedef enum {
     SERVO_RAUTO_PH_SETTLE, SERVO_RAUTO_PH_SAFE, SERVO_RAUTO_PH_CONNECT,
     SERVO_RAUTO_PH_WRITE, SERVO_RAUTO_PH_LEAVE, SERVO_RAUTO_PH_ARM,
     SERVO_RAUTO_PH_CHECK, SERVO_RAUTO_PH_VERIFY, SERVO_RAUTO_PH_APPROACH,
+    SERVO_RAUTO_PH_SEARCH,
 } servo_rauto_phase_t;
 /** @brief How a run ended. */
 typedef enum { SERVO_RAUTO_PASS = 0, SERVO_RAUTO_FAIL, SERVO_RAUTO_ABORTED } servo_rauto_verdict_t;
@@ -351,6 +396,7 @@ typedef enum {
     SERVO_RAUTO_WHY_WRITE, SERVO_RAUTO_WHY_MAPPING, SERVO_RAUTO_WHY_LIMIT,
     SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_SUPPLY,
     SERVO_RAUTO_WHY_NO_EFFECT, SERVO_RAUTO_WHY_CAP, SERVO_RAUTO_WHY_VERIFY,
+    SERVO_RAUTO_WHY_STOP,
     SERVO_RAUTO_WHY_NEUTRAL,
     SERVO_RAUTO_WHY_COUNT,
 } servo_rauto_why_t;
@@ -366,6 +412,33 @@ typedef struct {
     float    goal_deg;        /**< the side's target */
     bool     within;          /**< within the tolerance of the goal */
 } servo_rauto_step_t;
+
+/** @brief One position the limit search judged. */
+typedef struct {
+    uint16_t us;              /**< the pulse, us */
+    uint16_t ma;              /**< the mean current over its 80ms, mA */
+    float    deg;             /**< the angle when judged, signed, ° */
+    bool     valid;           /**< deg holds an angle */
+    uint8_t  side;            /**< 0 the 1000us side, 1 the 2000us side */
+} servo_rauto_srow_t;
+
+/** @brief A side's result of the limit search. */
+typedef struct {
+    bool     done;            /**< searched */
+    bool     bound;           /**< a stop found; else free to the range */
+    uint16_t end_us;          /**< LOW END or HIGH END, us: the cap */
+    uint16_t bind_us;         /**< the pulse judged bound, us */
+    float    free_a,          /**< the free current, A */
+             bound_a;         /**< the current judged bound, A */
+    bool     deg_taken;       /**< an end inside the end pulse: its angle
+                                   taken */
+    float    deg;             /**< that angle, signed, ° */
+    bool     fallback;        /**< the end did not settle: deg is the last
+                                   free step's */
+    uint16_t deg_us;          /**< where deg was taken, us */
+    bool     at_end;          /**< the side is measured at end_us, its
+                                   angles scaled to the end pulse */
+} servo_rauto_end_t;
 
 /** @brief A run's state.  The members after pend are the run's own. */
 typedef struct {
@@ -472,6 +545,27 @@ typedef struct {
                                            later read holds the values
                                            before the run, or values the
                                            run did not leave */
+    /* The limit search (servo_rudder_auto_search.c). */
+    servo_limit_t lf;                 /**< the side's finder */
+    servo_rauto_end_t ends[2];        /**< LOW END and HIGH END */
+    bool     searched;                /**< both sides searched */
+    bool     s_hold;                  /**< held at the end pulse for the
+                                           first measure */
+    bool     s_endhold;               /**< the hold is at a found end
+                                           inside the end pulse */
+    bool     s_via;                   /**< the hold's pulse next, from
+                                           PULSE CENTER once still there */
+    uint16_t s_via_us;                /**< that pulse, us */
+    bool     s_begun;                 /**< the search started */
+    uint16_t s_next_us;               /**< the finder's command after it */
+    uint32_t s_from_ms;               /**< the side's start, ms */
+    bool     s_took[2];               /**< the side's first measure taken */
+    float    s_deg[2];                /**< its angle, signed, ° */
+    uint16_t s_steps,                 /**< positions commanded, both sides */
+             s_plan;                  /**< positions planned, both sides */
+    uint16_t stop_us;                 /**< SERVO_RAUTO_WHY_STOP: the end */
+    servo_rauto_srow_t srow[SERVO_RAUTO_SEARCH_MAX]; /**< positions judged */
+    uint16_t srow_n;                  /**< rows recorded */
 } servo_rauto_t;
 
 /**
@@ -774,10 +868,52 @@ bool servo_rauto_in_cap(uint16_t value0, float goal_deg, float first_deg,
  *        a current guard, the meter, or the angle source.
  * @param why      The run's reason.
  * @param test_why For SERVO_RAUTO_WHY_TEST, the caller's.
- * @return true for HARD, STALL, BINDS, ANGLE and a WHY_TEST that
+ * @return true for HARD, STALL, BINDS, STOP, ANGLE and a WHY_TEST that
  *         servo_test_abort_error() calls an error.
  */
 bool servo_rauto_why_error(servo_rauto_why_t why, servo_test_abort_t test_why);
+/** @brief The lowest and the highest pulse a command may carry, us: the
+ *         link's LINK_CC_FLOOR_US and LINK_CC_CEILING_US (link_pages.h). */
+#define SERVO_RAUTO_CMD_FLOOR_US    400u
+#define SERVO_RAUTO_CMD_CEILING_US 2500u   /**< see SERVO_RAUTO_CMD_FLOOR_US */
+
+/**
+ * @brief The range the run's commands carry at most: the bench's PULSE MIN
+ *        to PULSE MAX widened to the margin's range for every NEUTRAL a KST
+ *        may hold (SERVO_RAUTO_NEUTRAL_MIN_DUS..MAX_DUS), symmetric about
+ *        PULSE CENTER as a command's range is.
+ * @param margin_pct The margin, %; 0 for Hitec.
+ * @param center_us  PULSE CENTER, us.
+ * @param min_us     PULSE MIN, us.
+ * @param max_us     PULSE MAX, us.
+ * @param us         Out: the lower and the upper end, us; the lower held at
+ *                   0.
+ * @return true when both lie within SERVO_RAUTO_CMD_FLOOR_US to
+ *         SERVO_RAUTO_CMD_CEILING_US; false past them or for NULL.
+ */
+bool servo_rauto_cmd_range(uint8_t margin_pct, uint16_t center_us,
+                           uint16_t min_us, uint16_t max_us, uint16_t us[2]);
+/**
+ * @brief The pulse range the run's own commands carry from the search's
+ *        start to the run's end: the margin's range from the read's NEUTRAL
+ *        (1000us to 2000us on Hitec), so the search drives the extended
+ *        ends whatever the bench's PULSE MIN and PULSE MAX read.  The
+ *        bench's range is not changed by it (servo_rauto_widen()).
+ * @param r  Run state.
+ * @param us Out: the lower and the upper end, us; untouched on false.
+ * @return true while it applies; false before the search and once the run
+ *         ended, for NULL arguments too.
+ */
+bool servo_rauto_drive_range(const servo_rauto_t *r, uint16_t us[2]);
+/**
+ * @brief The pulse a side's measures drive: 1000us or 2000us, or the found
+ *        end where the search found it inside them and the surface reaches
+ *        TARGET there (servo_rudder_auto_search.c).
+ * @param r Run state; NULL gives the end pulse.
+ * @param s The side: 0 the 1000us side, 1 the 2000us side.
+ * @return the pulse, us.
+ */
+uint16_t servo_rauto_side_us(const servo_rauto_t *r, uint8_t s);
 /**
  * @brief The table entry the screen and the report name the reason by.
  * @param r Run state; NULL gives the NONE entry.

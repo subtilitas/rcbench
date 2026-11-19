@@ -6,10 +6,14 @@
  * is linear in the register that moves that side (map[]), dir[] giving
  * each side's sign, frozen[] a side no write moves, drift[] an offset
  * that appears after a number of writes, as an IMU's drift does; between the end pulses and PULSE CENTER the deflection
- * is linear in the pulse.  The surface travels at 200°/s and is still once
+ * is linear in the pulse, the zero at zero_us, 1500us unless a test moves
+ * it.  The surface travels at 200°/s and is still once
  * it moved less than 0.5° for a time, as the IMU path counts still_ms.  A
  * bind on a side holds the surface at that deflection and the servo then
- * draws 1500mA.  The INA3221 as 50ms windows, the angle source read every
+ * draws 1500mA; a stop at a pulse (stop_us[]) does the same for every
+ * pulse past it, the surface held where that pulse puts it.  A pulse
+ * reached on the way in, toward PULSE CENTER, reads back_deg less, as the
+ * bench of 2026-11-18 read up to 0.33° apart by the side.  The INA3221 as 50ms windows, the angle source read every
  * 20ms, a bench that switches to SAFE and ARMED when asked, and a
  * programmer that answers CONNECT with the registers, stores a write of
  * the values or of the pulses and reads it back, and gives the port back.
@@ -47,6 +51,7 @@ typedef struct {
     float    resp;               /* a write moves this share of the
                                     linear change: 1 linear               */
     float    bind[2];            /* a bind at this deflection, 0 none     */
+    uint16_t stop_us[2];         /* a stop past this pulse, us; 0 none    */
     bool     frozen[2];          /* the side keeps its start deflection
                                     whatever is written                   */
     float    drift[2];           /* added along the side's direction once
@@ -55,6 +60,9 @@ typedef struct {
     bool     reversion;          /* the servo's REVERSION (Hitec: CCW)    */
     bool     no_mid;             /* a D series read without NEUTRAL       */
     bool     jitter;             /* the surface never still               */
+    float    back_deg;           /* read less on the way in, °            */
+    bool     inward;             /* the last command moved toward center  */
+    uint16_t zero_us;            /* the pulse of the surface's zero, us   */
     float    angle;              /* the surface now, °                    */
     float    still_ref;
     uint32_t still_from;
@@ -129,10 +137,11 @@ static inline float rig_target(uint16_t us)
     if (us >= 2000u) {
         return e[1];
     }
-    if (us <= RCENTER) {
-        return e[0] * (float)(RCENTER - us) / (float)(RCENTER - 1000u);
+    const uint16_t z = g.zero_us;
+    if (us <= z) {
+        return e[0] * (float)(z - us) / (float)(z - 1000u);
     }
-    return e[1] * (float)(us - RCENTER) / (float)(2000u - RCENTER);
+    return e[1] * (float)(us - z) / (float)(2000u - z);
 }
 
 static inline void rig_init(uint32_t t0)
@@ -152,6 +161,7 @@ static inline void rig_init(uint32_t t0)
     g.gain = 0.2f;               /* 150 counts: 30° */
     g.resp = 1.0f;
     g.cmd = RCENTER;
+    g.zero_us = RCENTER;
     g.live = true;
     g.bench_to = -1;
     g.bench_ms = 20u;
@@ -306,12 +316,23 @@ static inline int surface(void)
     }
     float want = rig_target(g.cmd);
     bool bound = false;
+    if (g.stop_us[0] != 0u && g.cmd < g.stop_us[0]) {
+        want = rig_target(g.stop_us[0]);
+        bound = true;
+    }
+    if (g.stop_us[1] != 0u && g.cmd > g.stop_us[1]) {
+        want = rig_target(g.stop_us[1]);
+        bound = true;
+    }
     for (int s = 0; s < 2; ++s) {
         const float b = g.bind[s] * g.dir[s];
         if (g.bind[s] > 0.0f && want * g.dir[s] > g.bind[s]) {
             want = b;
             bound = true;
         }
+    }
+    if (g.inward && fabsf(want) > g.back_deg) {
+        want -= want > 0.0f ? g.back_deg : -g.back_deg;
     }
     const float d = want - g.angle;
     const bool moving = fabsf(d) > 0.2f;
@@ -379,6 +400,10 @@ static inline uint16_t still_ms(void)
 static inline void take(const servo_rauto_do_t *d)
 {
     if (d->command) {
+        if (d->cmd_us != g.cmd) {
+            g.inward = abs((int)d->cmd_us - (int)g.zero_us)
+                       < abs((int)g.cmd - (int)g.zero_us);
+        }
         g.cmd = d->cmd_us;
         if (g.cmd != RCENTER && !g.driven) {
             g.driven = true;
