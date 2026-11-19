@@ -3,13 +3,21 @@
  * @brief AUTO end points: a run that drives a servo to 1000us and 2000us,
  *        measures the surface's deflection on the angle source, and
  *        programs the servo's end points so that each side reaches its
- *        target times (1 + margin).  Pure: fed the angle, the meter's
- *        windows, the programmer's answers and the clock, it asks the
- *        caller to move, write and switch, as servo_limrun does.
+ *        target there.  On KST the margin lies in the pulse length: each
+ *        end of the servo's pulse range lies past 1000us and 2000us by the
+ *        margin's % of that side's span from the servo's NEUTRAL, so a
+ *        radio's trim past 2000us still moves the surface.  Pure: fed the
+ *        angle, the meter's windows, the programmer's answers and the
+ *        clock, it asks the caller to move, write and switch, as
+ *        servo_limrun does.
  *
- * Steps: the servo's read (CONNECT, LEAVE); the pulse range 1000 to 2000us
- * (KST: PULSE LOWER and PULSE UPPER, as SERVO PULSES; Hitec: nothing, the
- * D series takes 1000us as 76.9% of the way to 0xB2, hitec_live.h); then
+ * Steps: the servo's read (CONNECT, LEAVE); the pulse range (KST: PULSE
+ * LOWER and PULSE UPPER set to the margin's range,
+ * servo_rauto_kst_pulses(), 1000.0us to 2000.0us at margin 0, a NEUTRAL
+ * outside SERVO_RAUTO_NEUTRAL_MIN_DUS..SERVO_RAUTO_NEUTRAL_MAX_DUS refused
+ * at the read (SERVO_RAUTO_WHY_NEUTRAL); Hitec:
+ * nothing and margin 0, the D series takes 1000us as 76.9% of the way to
+ * 0xB2, hitec_live.h); then
  * per side, at most SERVO_RAUTO_WRITES_MAX times: move to the end pulse,
  * wait for still (SERVO_RAUTO_STILL_MS within IMU_STILL_DEG on the axis
  * read, on the IMU the settle rule of servo_settle.h too, at most
@@ -33,9 +41,17 @@
  *   - The read session: the servo held at the bench's PULSE CENTER for
  *     SERVO_LIMRUN_RETURN_MS, SAFE asked, CONNECT with its read (phase
  *     READ), for KST the pulse write when PULSE LOWER and PULSE UPPER are
- *     not 1000.0us and 2000.0us, LEAVE, ARMED asked.  A read that is no
+ *     not the margin's (servo_rauto_kst_pulses()), LEAVE, ARMED asked.
+ *     Once the servo holds the margin's pulses, read so or read back, the
+ *     bench's PULSE MIN and PULSE MAX are due to widen to the margin's
+ *     range where they are narrower (servo_rauto_widen()); the extended
+ *     ends are never driven.  A read that is no
  *     servo, or whose values lie outside its own lo..hi, ends the run as
- *     FAIL (SERVO_RAUTO_WHY_NO_SERVO) with LEAVE asked.
+ *     FAIL (SERVO_RAUTO_WHY_NO_SERVO) with LEAVE asked; a KST read whose
+ *     NEUTRAL lies outside 1360.0us to 1640.0us as FAIL
+ *     (SERVO_RAUTO_WHY_NEUTRAL).  The pulse write's read back holds the
+ *     read's NEUTRAL and the margin's pulses, else the run ends as
+ *     ABORTED (SERVO_RAUTO_WHY_WRITE).
  *   - A measure: the end pulse commanded (phase MOVE), the surface judged
  *     from SERVO_RAUTO_STILL_MS after the command on (phase SETTLE): the
  *     first step with a valid angle still for SERVO_RAUTO_STILL_MS takes
@@ -71,8 +87,9 @@
  *     were taken after the last change.
  *   - A side's direction is the sign of its first measure, which must lie
  *     at least the tolerance from the zero unless it is within the
- *     tolerance of the goal; the two sides of opposite signs.  A goal is
- *     more than 2 x the tolerance (servo_rauto_goals_ok()), so a measure
+ *     tolerance of the goal; the two sides of opposite signs.  A side's
+ *     goal is its target, which is more than 2 x the tolerance
+ *     (servo_rauto_goals_ok()), so a measure
  *     within the tolerance of it gives a direction too.  Otherwise,
  *     or a later measure at or past the zero, the run ends as FAIL
  *     (SERVO_RAUTO_WHY_MAPPING).  The measured deflection of a side is
@@ -216,6 +233,18 @@ extern "C" {
 #define SERVO_RAUTO_VERIFY_N    3u
 /** @brief The largest margin, %. */
 #define SERVO_RAUTO_MARGIN_MAX  50u      /**< % */
+/** @brief The NEUTRAL a KST servo may hold, 0.1us: 1360.0us to 1640.0us,
+ *         KST_NEUTRAL_RAW_MIN and KST_NEUTRAL_RAW_MAX (kst_limits.h).
+ *         Within it the margin's pulses at 50% lie in 680.0us to 2320.0us,
+ *         inside PULSE LOWER's and PULSE UPPER's 500us to 2500us
+ *         (KST_PULSE_RAW_MIN, KST_PULSE_RAW_MAX). */
+#define SERVO_RAUTO_NEUTRAL_MIN_DUS 13600u   /**< 1360.0us */
+#define SERVO_RAUTO_NEUTRAL_MAX_DUS 16400u   /**< 1640.0us */
+/** @brief The NEUTRAL the margin's range assumes before a read, 0.1us. */
+#define SERVO_RAUTO_NEUTRAL_DUS     15000u
+/** @brief The KST's pulse step: PULSE LOWER and PULSE UPPER hold whole
+ *         0.8us (kst_reg.h, CONV_PULSE), 0.1us. */
+#define SERVO_RAUTO_KST_STEP_DUS 8u
 /** @brief The tolerance's range, 0.1°. */
 #define SERVO_RAUTO_TOL_MIN_DDEG 1u      /**< 0.1° */
 #define SERVO_RAUTO_TOL_MAX_DDEG 50u     /**< 5.0° */
@@ -232,10 +261,13 @@ typedef enum {
 /** @brief What the run is asked. */
 typedef struct {
     float    target_deg[2];   /**< at 1000us (0) and 2000us (1), magnitudes */
-    uint8_t  margin_pct;      /**< 0 to SERVO_RAUTO_MARGIN_MAX */
+    uint8_t  margin_pct;      /**< 0 to SERVO_RAUTO_MARGIN_MAX on KST, 0 on
+                                   Hitec: the pulse range's extension */
     uint16_t tol_ddeg;        /**< 0.1° */
     uint8_t  family;          /**< servo_rauto_family_t */
     uint16_t center_us;       /**< the bench's PULSE CENTER */
+    uint16_t min_us,          /**< the bench's PULSE MIN, at most 1000us */
+             max_us;          /**< its PULSE MAX, at least 2000us */
     float    len_mm;          /**< 0 for none: the report in ° only */
     uint16_t settle_win_ms;   /**< IMU SETTLING TIME, ms, at most
                                    SERVO_SETTLE_WIN_MAX_MS; 0 no window:
@@ -319,6 +351,7 @@ typedef enum {
     SERVO_RAUTO_WHY_WRITE, SERVO_RAUTO_WHY_MAPPING, SERVO_RAUTO_WHY_LIMIT,
     SERVO_RAUTO_WHY_WRITE_CAP, SERVO_RAUTO_WHY_BENCH, SERVO_RAUTO_WHY_SUPPLY,
     SERVO_RAUTO_WHY_NO_EFFECT, SERVO_RAUTO_WHY_CAP, SERVO_RAUTO_WHY_VERIFY,
+    SERVO_RAUTO_WHY_NEUTRAL,
     SERVO_RAUTO_WHY_COUNT,
 } servo_rauto_why_t;
 
@@ -330,7 +363,7 @@ typedef struct {
     uint8_t  reg;             /**< the register value belongs to; 0xFF
                                    none */
     float    measured_deg;    /**< along the side's direction */
-    float    goal_deg;        /**< target x (1 + margin) */
+    float    goal_deg;        /**< the side's target */
     bool     within;          /**< within the tolerance of the goal */
 } servo_rauto_step_t;
 
@@ -351,7 +384,7 @@ typedef struct {
     uint8_t  side;                    /**< the side measured or written */
     uint8_t  writes[2];               /**< writes by side */
     unsigned sessions;                /**< CONNECTs answered */
-    float    goal_deg[2],             /**< target x (1 + margin), ° */
+    float    goal_deg[2],             /**< each side's target, ° */
              measured_deg[2];         /**< each side's last measure, ° */
     float    bind_deg;                /**< the angle at a bind */
     uint32_t settle_ms;               /**< the largest settle_ms a step had */
@@ -391,7 +424,9 @@ typedef struct {
     bool     safe_asked;              /**< PH_SAFE: SAFE asked */
     bool     read_once;               /**< the read session read the servo */
     bool     pulse_op;                /**< the write under way is the pulses */
-    bool     pulses_landed;           /**< 1000.0us and 2000.0us read back */
+    bool     pulses_landed;           /**< the margin's pulses read back */
+    bool     pulses_held;             /**< KST: the servo holds the margin's
+                                           pulses, read so or read back */
     bool     in_flight;               /**< a write or the pulse write handed
                                            out, its answer not in: an end now
                                            may leave it landed */
@@ -445,8 +480,9 @@ typedef struct {
  */
 void servo_rauto_init(servo_rauto_t *r);
 /**
- * @brief Whether both goals, target x (1 + margin), are large enough for
- *        the tolerance: each more than 2 x tolerance, by 0.001° or more.
+ * @brief Whether both targets, the goals at 1000us and 2000us, are large
+ *        enough for the tolerance: each more than 2 x tolerance, by 0.001°
+ *        or more.  The margin does not count: it lies in the pulse length.
  *
  * A measure within the tolerance of such a goal lies at least the
  * tolerance from the zero, so it gives its side a direction.  Under it a
@@ -455,20 +491,66 @@ void servo_rauto_init(servo_rauto_t *r);
  * end pulses on one side of the zero pass.
  *
  * @param target_deg The two targets, 1000us and 2000us, °.
- * @param margin_pct The margin, %.
  * @param tol_ddeg   The tolerance, 0.1°.
- * @return true when both goals are large enough; false for NULL.
+ * @return true when both targets are large enough; false for NULL.
  */
-bool servo_rauto_goals_ok(const float target_deg[2], uint8_t margin_pct,
-                          uint16_t tol_ddeg);
+bool servo_rauto_goals_ok(const float target_deg[2], uint16_t tol_ddeg);
+/**
+ * @brief The margin's pulse range in whole us: servo_rauto_kst_pulses()'
+ *        PULSE LOWER floored and PULSE UPPER ceiled, so the range holds
+ *        the servo's, by less than 1us an end.  By the linear map from N
+ *        each end reaches target x (1 + margin) within that.  At N
+ *        1500.0us 950 to 2050us at 10%; at N 1640.0us and 50% 680 to
+ *        2180us.
+ * @param margin_pct  The margin, %; above SERVO_RAUTO_MARGIN_MAX as that.
+ * @param neutral_dus The servo's NEUTRAL, 0.1us; 0 as
+ *                    SERVO_RAUTO_NEUTRAL_DUS (before a read); outside
+ *                    SERVO_RAUTO_NEUTRAL_MIN_DUS..SERVO_RAUTO_NEUTRAL_MAX_DUS
+ *                    as the nearer bound.
+ * @param us          Out: the lower and the upper end, us; NULL does
+ *                    nothing.
+ */
+void servo_rauto_pulse_range(uint8_t margin_pct, uint16_t neutral_dus,
+                             uint16_t us[2]);
+/**
+ * @brief PULSE LOWER and PULSE UPPER the run writes to a KST servo: the
+ *        margin's range from the servo's NEUTRAL N, each side extended by
+ *        the margin's % of its own span from N, lower 1000us - (N -
+ *        1000us) x margin, upper 2000us + (2000us - N) x margin, on the
+ *        KST's 0.8us step, each end rounded toward the center.  At N
+ *        1500.0us and 10% 950.4us and 2049.6us; at N 1640.0us and 50%
+ *        680.0us and 2180.0us; at 0% 1000.0us and 2000.0us at any N.
+ * @param margin_pct  The margin, %; above SERVO_RAUTO_MARGIN_MAX as that.
+ * @param neutral_dus The servo's NEUTRAL, 0.1us; 0 as
+ *                    SERVO_RAUTO_NEUTRAL_DUS (before a read); outside
+ *                    SERVO_RAUTO_NEUTRAL_MIN_DUS..SERVO_RAUTO_NEUTRAL_MAX_DUS
+ *                    as the nearer bound.
+ * @param dus         Out: PULSE LOWER and PULSE UPPER, 0.1us; NULL does
+ *                    nothing.
+ */
+void servo_rauto_kst_pulses(uint8_t margin_pct, uint16_t neutral_dus,
+                            uint16_t dus[2]);
+/**
+ * @brief Whether the bench's PULSE MIN and PULSE MAX are to widen: the run
+ *        left a KST servo holding the margin's pulses, read so or read
+ *        back, and the bench's range at the start (cfg.min_us, cfg.max_us)
+ *        is narrower than the margin's range on either side.  Never
+ *        narrower: a side already wider keeps its value.
+ * @param r       Run state.
+ * @param prof_us Out: PULSE MIN and PULSE MAX widened, us; NULL to skip.
+ * @return true when either changes; false for NULL.
+ */
+bool servo_rauto_widen(const servo_rauto_t *r, uint16_t prof_us[2]);
 /**
  * @brief Start at @p now_ms.
  * @param r      Run state, cleared before the run starts.
  * @param cfg    What the run is asked.
  * @param now_ms Start time, ms.
  * @return false for a target outside 0.1 to 90°, a margin above the
- *          maximum, a tolerance outside its range, a goal too small for
- *          the tolerance (servo_rauto_goals_ok()), a settling window above
+ *          maximum or above 0 on a Hitec family, a tolerance outside its
+ *          range, a target too small for the tolerance
+ *          (servo_rauto_goals_ok()), PULSE MIN above 1000us or PULSE MAX
+ *          below 2000us, a settling window above
  *          SERVO_SETTLE_WIN_MAX_MS or one without a band above 0, or
  *          RUNNING; also for
  *          NULL, a family not in servo_rauto_family_t, and a center not

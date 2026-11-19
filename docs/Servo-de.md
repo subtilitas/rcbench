@@ -1800,7 +1800,10 @@ AUTO, auf der eigenen Seite RUDER AUTO, programmiert die
 Endpoints eines KST-, Chaservo- oder Hitec-Servos so, dass 1000us und 2000us den je
 Seite eingegebenen Ausschlag erreichen, gemessen an der Winkelquelle. Es
 schließt den Regelkreis über den Winkel der Fläche statt über einen nach
-Augenmaß eingestellten Weg am Sender. Der Lauf steht in
+Augenmaß eingestellten Weg am Sender. An einem KST- oder Chaservo-Servo
+liegt RESERVE in der Pulslänge: Der Pulsbereich des Servos reicht über
+1000us und 2000us hinaus, so dass ein Sender bei vollem Knüppel plus
+Trimmung, über 2000us, die Fläche noch bewegt. Der Lauf steht in
 `shared/servo/servo_rudder_auto.c`, der Bildschirm in
 `shared/ui/servo_rudder_auto_panel.c`, seine Karte BEREIT in
 `shared/ui/servo_rudder_auto_ready.c` und `shared/ui/servo_ready.c`. AUTO vertraut der Winkelquelle: Mit
@@ -1824,7 +1827,8 @@ Bluetooth-IMU).
   soll, 0,5 bis 90,0° in Schritten von 0,5°, vorgegeben 20,0°
   (Einstellungen `rud_defl_lo`, `rud_defl_hi`). Mit gesetzter LÄNGE zeigt
   die Zeile die mm an der Hinterkante neben den Grad. RESERVE: 0 bis 50%,
-  10% (`rud_margin`). TOLERANZ: 0,1 bis 5,0°, vorgegeben 0,5°
+  10% (`rud_margin`), nur KST/Chaservo (unten). TOLERANZ: 0,1 bis 5,0°,
+  vorgegeben 0,5°
   (`rud_tol`). Ein Tippen öffnet das Tastenfeld. Dieselben vier, SERVO,
   SERVO-PULSE, WINKELQUELLE, STROM, Warten vor PWM, der Name des
   Prüflings und die Testaufzeichnungen stehen in OPTIONEN. STROM ist SET A
@@ -1833,16 +1837,87 @@ Bluetooth-IMU).
   Wartezeit des KST-Programmierers, die VERLASSEN des Laufs sendet. Der
   Name ist der des Hubs, die Testaufzeichnungen die von SETUP > SD CARD;
   die Karte BEREIT hat keinen Platz für eine Zeile LOG.
-- Der Zielwert einer Seite ist der eingegebene Ausschlag x (1 + RESERVE):
-  20,0° bei 10% ergeben 22,0°.
-- Jeder Zielwert muss über 2 x TOLERANZ liegen, um 0,001° oder mehr: Ein
+- Der Zielwert einer Seite, bei 1000us und 2000us, ist ihr Soll: Soll
+  20,0° wird bei 2000us als 20,0° gemessen und programmiert, was RESERVE
+  auch zeigt.
+- RESERVE p% weitet jede Seite des Pulsbereichs des Servos um p% der
+  Spanne dieser Seite ab dem NEUTRAL N des Servos, wie die Lesesitzung es
+  liest:
+
+  ```text
+  PULSE LOWER = 1000us - (N - 1000us) x p/100
+  PULSE UPPER = 2000us + (2000us - N) x p/100
+  ```
+
+  Nach der linearen Abbildung ab N erreicht jedes Ende dann Soll x (1 +
+  RESERVE): 22,0° für 20,0° bei 10%. Bei N 1500us reicht der Bereich bei
+  10% von 950 bis 2050us und bei 50% von 750 bis 2250us. Bei N 1640us,
+  dem höchsten NEUTRAL des KST, sind es 936 bis 2036us bei 10% und 680
+  bis 2180us bei 50%; bei N 1360us, dem niedrigsten, 964 bis 2064us bei
+  10% und 820 bis 2320us bei 50%. Über N 1360 bis 1640us und RESERVE 0
+  bis 50% bleiben PULSE LOWER und PULSE UPPER in 680 bis 2320us, innerhalb
+  der 500 bis 2500us der Register (`kst_limits.h`, KST_PULSE_RAW_MIN,
+  KST_PULSE_RAW_MAX). Ein gelesenes NEUTRAL außerhalb von 1360 bis
+  1640us, dem eigenen NEUTRAL-Bereich des KST (KST_NEUTRAL_RAW_MIN,
+  KST_NEUTRAL_RAW_MAX), beendet den Lauf beim Auslesen als FAIL mit
+  `NEUTRAL außerhalb 1360-1640us`, vor jedem Schreiben. Der KST hält
+  seine Pulse in Schritten von 0,8us (`kst_reg.c`, CONV_PULSE), daher
+  schreibt der Lauf jedes Ende zur Mitte hin gerundet: 950,4us und
+  2049,6us bei N 1500us und 10%, 750,4us und 2249,6us bei 50%, 1000,0us
+  und 2000,0us bei 0% bei jedem N (`servo_rauto_kst_pulses()`). Der Lauf
+  fährt nur 1000us, 2000us und PULS MITTE an; die erweiterten Enden
+  werden weder angefahren noch gemessen.
+- SERVOPULSE ist eine Einstellung des Endlagenlaufs und wirkt nicht auf
+  AUTO. AUTO schreibt an einem KST- oder Chaservo-Servo den Bereich der
+  Reserve, was SERVOPULSE auch zeigt: bei RESERVE 0% sind das 1000,0 bis
+  2000,0us, der Bereich von SERVOPULSE auf 1000-2000; bei RESERVE p%
+  1000-2000, jede Seite um p% ihrer Spanne ab NEUTRAL geweitet.
+- PULS MIN und PULS MAX des Prüfstands: Wo sie enger sind als der Bereich
+  der Reserve, weitet der Lauf sie darauf, sobald das Servo die Pulse der
+  Reserve hält, so in der Lesesitzung gelesen oder nach dem Pulsschreiben
+  zurückgelesen. Der Bereich der Reserve sind die Pulse des Servos in
+  ganzen us, PULSE LOWER abgerundet und PULSE UPPER aufgerundet. Er engt
+  sie nie ein: Eine Seite, die schon weiter ist, behält ihren Wert. PULS
+  MIN und MAX 1000 bis 2000us werden bei N 1500us und 10% zu 950 bis
+  2050us; 900 bis 2000us werden zu 900 bis 2050us; bei N 1640us und 50%
+  werden 1000 bis 2000us zu 680 bis 2180us. Die Änderung
+  tritt mit dem Ende des Laufs in Kraft, bei SAFE, und gilt für die
+  Sitzung wie jede Änderung des Servoprofils: Das Profil steht nicht im
+  NVS (nichtflüchtiger Speicher), ein Neustart setzt STANDARD PWM, 1000
+  bis 2000us. Der Bericht nennt sie (`Prüfstandspulse: PULS MIN/MAX
+  1000-2000 -> 950-2050us, für die Sitzung`), ebenso die dritte
+  Zustandszeile nach dem Lauf, `BERICHT RUDDR007.TXT, PULS MIN/MAX
+  1000-2000 -> 950-2050us`. Ein Pulsschreiben, das ein Ende abbricht, oder
+  eines, das andere Pulse oder ein anderes NEUTRAL als das gelesene
+  zurückliest, beendet den Lauf und weitet nichts. Mit dem weiteren
+  Bereich nimmt der Endlagenlauf bei BEHALTEN die Pulse des Servos an
+  (sonst verweigert er mit `Servopulse außerhalb MIN/MAX`), und LIVE fährt
+  bis 2050us.
+- Was ein KST- oder Chaservo-Servo mit einem Puls außerhalb von PULSE
+  LOWER bis PULSE UPPER macht, ist nicht dokumentiert und nicht gemessen.
+  Der Prüfstand sendet in diesem Lauf keinen. Der zur Mitte gerundete
+  Bereich des Servos liegt höchstens 0,8us an jedem Ende innerhalb der
+  geweiteten PULS MIN und MAX (0,4us bei N 1500us und 10%), daher sendet
+  LIVE auf PULS MIN oder MAX einen Puls bis so weit jenseits von PULSE
+  LOWER oder PULSE UPPER, höchstens der Schritt des KST von 0,8us.
+- An einem Hitec-Servo (HITEC D-SERIE, HITEC KLASSISCH) ist RESERVE 0%:
+  Das Servo hat keine Pulsregister, und der Lauf setzt nur LEFT END und
+  RIGHT END. Mit SERVO auf einem Hitec-Eintrag zeigt RESERVE auf der Karte
+  `RESERVE 0%`, gedimmt; ein Tippen nennt `RESERVE: NUR KST/CHASERVO` im
+  Alarmband und öffnet kein Tastenfeld. Die Zeile RESERVE der OPTIONEN
+  zeigt 0% und ist mit `Nur KST- und Chaservo-Servos` gesperrt. Das
+  gespeicherte `rud_margin` bleibt wie gesetzt und gilt wieder mit SERVO
+  auf KST/CHASERVO. Der Lauf richtet 1000us und 2000us auf das Soll, und
+  der Bericht zeigt `Reserve:         0%: nur KST/Chaservo, ein
+  Hitec-Servo hat keine Pulsregister`.
+- Jedes Soll muss über 2 x TOLERANZ liegen, um 0,001° oder mehr: Ein
   Messwert innerhalb der TOLERANZ eines solchen Zielwerts liegt mindestens
   die TOLERANZ vom Nullpunkt entfernt und gibt seiner Seite eine Richtung.
-  Bei einem kleineren Zielwert wird das Halten verweigert, bevor etwas
-  geschaltet wird, und die erste Zeile der Karte und das Alarmband
-  zeigen `SOLL MUSS ÜBER 2 x TOLERANZ LIEGEN`. Keine Zeile von BEREIT ist
-  dafür rot. Ein Soll von 1,0° bei RESERVE 0% gegen TOLERANZ 0,5° wird
-  verweigert; TOLERANZ 0,4° startet.
+  RESERVE zählt nicht. Bei einem kleineren Soll wird das Halten
+  verweigert, bevor etwas geschaltet wird, und die erste Zeile der Karte
+  und das Alarmband zeigen `SOLL MUSS ÜBER 2 x TOLERANZ LIEGEN`. Keine
+  Zeile von BEREIT ist dafür rot. Ein Soll von 1,0° gegen TOLERANZ 0,5°
+  wird bei jeder RESERVE verweigert; TOLERANZ 0,4° startet.
 - Die Karte BEREIT an der Stelle der Ausgangskarte, 380 x 374px: eine
   Zeile je Prüfung des Starts, je 30px, ein Punkt, die Bezeichnung und der
   Zustand. Grün: erfüllt. Rot: sperrt das Halten, oder ein Ausgang ist
@@ -1881,14 +1956,18 @@ Bluetooth-IMU).
 - Die vier Zeilen: der Schritt der Startfolge, etwa `START, SCHRITT 3 VON
   5: RÜCKMELDUNG`, oder der Schritt des Laufs, etwa `EINSCHWINGEN 2000us:
   SCHREIBEN 1/8, SITZUNGEN 2`, oder der Fehler der letzten Startfolge,
-  oder der Grund der ersten roten Zeile, oder die Sollwerte; das
+  oder der Grund der ersten roten Zeile, oder der Pulsbereich, mit dem
+  der Lauf das Servo zurücklässt, und seine Enden nach der linearen
+  Abbildung, `PULS 950-2050us: 22.0°, 22.0°`, 950us zuerst (Hitec: `PULS
+  1000-2000us: 20.0°, 20.0°`); das
   Ergebnis, `BESTANDEN: 150>92, 150>92` mit dem Wert jedes Endpoints davor
   und danach, oder `NICHT BESTANDEN: Grund`; das Servo, das der Lauf
   programmiert, `SERVO KST/CHASERVO` oder `SERVO HITEC D-SERIE`, während
   er läuft und vor dem ersten Lauf; danach die Datei des Berichts, oder
   `ZURÜCKSPIELEN IN KST` (an einem Hitec-Servo `HITEC001 IN DATEIEN
   LADEN`) nach einem NICHT BESTANDEN oder einem Abbruch, der geschrieben
-  hat oder ein Schreiben unterwegs abbrach, das angekommen sein kann; das
+  hat oder ein Schreiben unterwegs abbrach, das angekommen sein kann,
+  danach PULS MIN und MAX des Prüfstands, wo der Lauf sie geweitet hat; das
   Nachmessen, sobald seine erste Messung vorliegt, `NACHMESSEN +0.03°,
   -0.02°, MITTE +0.05°`: 1000us, 2000us und die Mitte, jedes Ende ab seinem
   Sollwert, die Mitte ab dem Nullpunkt, `-` für eine noch nicht gemessene. Die Zeile wird
@@ -1984,8 +2063,10 @@ angefragt ist).
 
 - Die Lesesitzung hält das Servo 1000ms auf PULS MITTE und fordert SAFE
   an. VERBINDEN liest das Servo aus. Nur bei KST/Chaservo werden
-  PULSE LOWER und PULSE UPPER bei Bedarf auf 1000,0us und 2000,0us
-  geschrieben. Danach folgen VERLASSEN und die Anforderung von ARMED.
+  PULSE LOWER und PULSE UPPER auf den Bereich der Reserve ab dem
+  gelesenen NEUTRAL geschrieben, wenn sie davon abweichen, 950,4us und
+  2049,6us bei N 1500us und 10%. Danach folgen
+  VERLASSEN und die Anforderung von ARMED.
 - Die Anfahrt: jede Messung fährt das Servo zuerst auf den Puls, von dem
   sie kommt, wartet dort nach ihrer eigenen Regel und fordert dann ihren
   Puls an (Phase ANFAHRT, die erste Zeile `ANFAHRT 1500us: ...`). Jedes
@@ -2096,8 +2177,9 @@ angefragt ist).
   `shared/servo/servo_rudder_auto_verify.c`): ein Lauf, der Werte oder
   Pulse des Servos geändert hat, misst 1000us, 2000us und PULS MITTE noch
   einmal, jede eine Messung mit der Einschwingregel, und endet auf PULS
-  MITTE. Jedes Ende gilt gegen seinen Sollwert, die Mitte gegen den
-  Nullpunkt, innerhalb der Toleranz. Alle drei werden gemessen; eine
+  MITTE. Jedes Ende gilt gegen sein Soll, die Mitte gegen den
+  Nullpunkt, innerhalb der Toleranz. Die erweiterten Enden der Reserve
+  werden nicht gemessen. Alle drei werden gemessen; eine
   außerhalb beendet den Lauf mit NICHT BESTANDEN, `1000us beim
   Nachmessen außer Toleranz`, `2000us ...` oder `Mitte beim Nachmessen
   außer Toleranz`, genannt wird die erste außerhalb. Die Werte bleiben
@@ -2158,7 +2240,14 @@ Hitec-Servoprogrammierung und schreibst sie mit n WERTE SCHREIBEN.
 Der Bericht RUDDRnnn.TXT und die CSV RUDDRnnn.CSV, eine Zeile je Messung,
 gehen nach USER/LOGS. RUDDR, nicht RUDDER: ein 8.3-Name fasst 5 Buchstaben
 und 3 Ziffern. Der Bericht nennt das Servo, den Ausgang, die Winkelquelle
-und das Messgerät, eingegebene Ausschläge, Zielwerte und Toleranz, die Endpoints davor und
+und das Messgerät, eingegebene Ausschläge und Toleranz, die Reserve mit
+den geschriebenen Pulsen und den erweiterten Enden nach dem linearen
+Modell (`Reserve:         10%: Servopulse 950.4-2049.6us; nach dem
+linearen Modell erreicht 950us 22.0°, 2050us 22.0°; nicht angefahren`;
+bei einem NEUTRAL außer 1500,0us nennt die Zeile es, `Reserve:
+10% ab NEUTRAL 1640.0us: Servopulse 936.0-2036.0us; ...`), das
+Pulsschreiben und PULS MIN und MAX des Prüfstands, wo der Lauf sie
+geweitet hat, die Endpoints davor und
 danach mit der Seite, die jeder bewegt, die Schreibvorgänge und Sitzungen,
 die Backup-Datei, die Regel der Messung (`Messung: Winkel 500ms stabil,
 Spanne höchstens 0.10° über 3.0s, spätestens 16000ms nach dem Befehl` an

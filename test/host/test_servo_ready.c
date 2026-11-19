@@ -41,6 +41,7 @@
 #include "servo_rudder_auto_int.h"
 #include "servo_ready_int.h"
 #include "servo_rudder_int.h"
+#include "splash_screen.h"
 #include "ui_text.h"
 #include "ui_widgets.h"
 
@@ -953,6 +954,40 @@ TEST_CASE(a_finger_on_a_ready_row_keeps_the_list_shut)
     CHECK(servo_screen_list()->open);
 }
 
+/* A tap on MARGIN with SERVO at HITEC D SERIES or HITEC CLASSIC names
+ * the lock in the band and opens no keypad; with KST/CHASERVO it opens
+ * MARGIN's keypad. */
+TEST_CASE(a_tap_on_margin_on_hitec_names_the_lock)
+{
+    const gfx_rect_t mr = rauto_rect(RA_C_MARGIN);
+    /* The band shows a notice on a screen that has one. */
+    ui_router_init();
+    for (int i = 0; i < SPLASH_STEP_COUNT; ++i) {
+        splash_screen_set((splash_step_t)i, SPLASH_OK, "");
+    }
+    ui_router_tick(2.0f);
+    ui_router_goto(SCREEN_SERVO_LIVE);
+    for (int f = 1; f <= 2; ++f) {
+        to_auto(false);
+        settings_set(SET_RAUTO_FAMILY, (float)f);
+        ui_router_set_alert(NULL);
+        tap(mr.x + mr.w / 2, mr.y + mr.h / 2);
+        CHECK_STR_EQ(alert(), "MARGIN: KST/CHASERVO ONLY");
+        CHECK(!servo_screen_keypad()->open);
+    }
+    ui_text_set_language(UI_LANG_DE);
+    ui_router_set_alert(NULL);
+    tap(mr.x + mr.w / 2, mr.y + mr.h / 2);
+    CHECK_STR_EQ(alert(), "RESERVE: NUR KST/CHASERVO");
+    ui_text_set_language(UI_LANG_EN);
+    settings_set(SET_RAUTO_FAMILY, (float)SERVO_RAUTO_FAM_KST);
+    ui_router_set_alert(NULL);
+    tap(mr.x + mr.w / 2, mr.y + mr.h / 2);
+    CHECK_STR_EQ(alert(), "");
+    CHECK(servo_screen_keypad()->open);
+    ui_router_goto(SCREEN_OVERVIEW);
+}
+
 int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
@@ -974,5 +1009,6 @@ int main(void)
     RUN(a_read_back_that_runs_out_names_its_part_and_switches_off);
     RUN(a_stop_or_a_leave_ends_the_sequence_as_each_must);
     RUN(a_finger_on_a_ready_row_keeps_the_list_shut);
+    RUN(a_tap_on_margin_on_hitec_names_the_lock);
     return test_summary("servo_ready");
 }

@@ -281,8 +281,10 @@ TEST_CASE(settings_edited_after_entry_are_the_ones_the_run_takes)
     ra_ms(2000u);
     CHECK(!servo_screen_rauto_running());
     snprintf(want, sizeof(want), ui_servo_str(SERVO_STR_RA_R_TARGETS), 12.5,
-             20.0, 0u);
+             20.0, 0.5);
     CHECK(strstr(ra.report, want) != NULL);
+    CHECK(strstr(ra.report, "Margin:         0%: servo pulses 1000.0-"
+                            "2000.0us") != NULL);
     settings_set(SET_RUDDER_MARGIN, 10.0f);
     settings_set(SET_RUDDER_DEFL_LO, 20.0f);
     ra.p5_task = false;
@@ -366,8 +368,11 @@ TEST_CASE(the_run_takes_the_settings_the_hold_fired_on)
     ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
     ra_ms(2000u);
     snprintf(want, sizeof(want), ui_servo_str(SERVO_STR_RA_R_TARGETS), 20.0,
-             20.0, 0u);
+             20.0, 0.5);
     CHECK(strstr(ra.report, want) != NULL);
+    /* MARGIN as the hold fired, 0%, not the 25% set after it. */
+    CHECK(strstr(ra.report, "Margin:         0%: servo pulses 1000.0-"
+                            "2000.0us") != NULL);
     settings_set(SET_RUDDER_MARGIN, 10.0f);
     ra.p5_task = false;
     carrier_done();

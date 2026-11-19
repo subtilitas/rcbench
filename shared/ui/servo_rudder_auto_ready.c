@@ -136,13 +136,12 @@ static const char *check(int k)
                 || !(s.center_us > 1000u && s.center_us < 2000u))
                    ? TR(RA_RANGE) : NULL;
     case CK_GOALS: {
-        /* A goal the tolerance swallows: a surface that never moves, or
+        /* A target the tolerance swallows: a surface that never moves, or
          * both ends on one side, would pass (servo_rauto_goals_ok()). */
         const float t[2] = { settings_get(SET_RUDDER_DEFL_LO),
                              settings_get(SET_RUDDER_DEFL_HI) };
         return !servo_rauto_goals_ok(
-                   t, (uint8_t)settings_get_int(SET_RUDDER_MARGIN),
-                   (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f))
+                   t, (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f))
                    ? TR(RA_GOALS_TOL) : NULL;
     }
     case CK_PROG:

@@ -53,7 +53,7 @@ typedef enum {
     RA_C_COUNT      /**< the count, RA_C_NONE included     */
 } rauto_ctl_t;
 
-/** @brief The lines the box draws: the step or the goals, the result,
+/** @brief The lines the box draws: the step or the pulse range, the result,
  *         the servo or the report, and the verify pass after programming. */
 #define RA_LINES 4
 
@@ -145,6 +145,13 @@ const gfx_font_t *rauto_lines_face(const char *const t[RA_LINES], int *pitch);
  * @return false for NULL
  */
 bool rauto_targets(float deg[2]);
+/**
+ * @brief The margin a run started now takes: MARGIN (`rud_margin`) with
+ *        SERVO at KST/CHASERVO, 0 on a Hitec servo, which has no pulse
+ *        registers.  The setting itself stays as it is.
+ * @return the margin, %
+ */
+uint8_t rauto_margin_now(void);
 /** @brief One number for what the box shows.  @return the number */
 uint32_t rauto_sig(void);
 /** @brief START's hold against the clock and the run every frame.

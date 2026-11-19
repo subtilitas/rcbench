@@ -567,8 +567,8 @@ TEST_CASE(a_read_that_is_no_servo_fails_and_gives_the_port_back)
     rig_init(0u);
     g.v[0] = 50u;
     g.v[1] = 255u;
-    g.cfg.target_deg[0] = 10.0f / 1.1f;
-    g.cfg.target_deg[1] = 51.0f / 1.1f;
+    g.cfg.target_deg[0] = 10.0f;
+    g.cfg.target_deg[1] = 51.0f;
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
@@ -588,7 +588,7 @@ TEST_CASE(the_words_name_every_reason_and_phase)
         SERVO_STR_RA_WHY_LIMIT, SERVO_STR_RA_WHY_WRITE_CAP,
         SERVO_STR_L_WHY_BENCH, SERVO_STR_L_WHY_SUPPLY,
         SERVO_STR_RA_WHY_NO_EFFECT_LO, SERVO_STR_RA_WHY_CAP,
-        SERVO_STR_RA_WHY_VERIFY_LO,
+        SERVO_STR_RA_WHY_VERIFY_LO, SERVO_STR_RA_WHY_NEUTRAL,
     };
     r.test_why = SERVO_TEST_AB_STOP;
     for (int k = 0; k < (int)SERVO_RAUTO_WHY_COUNT; ++k) {
