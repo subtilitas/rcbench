@@ -730,7 +730,7 @@ def test_a_3d_scene_takes_touches_on_the_panel_and_the_dial():
 
 
 def test_a_german_storyboard_is_written_out_for_a_german_speaker():
-    """A board in German takes SPELL_DE: units and names as German says them."""
+    """A German board takes SPELL_DE: units and names as German says."""
     import video_voice
 
     said = video_voice.spoken("RESERVE 10%: 950 bis 2050us, 22.0° am IMU",

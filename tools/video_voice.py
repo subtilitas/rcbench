@@ -151,6 +151,7 @@ def spoken(text: str, lang: str = "en") -> str:
 
     Args:
         text: A title, a text or a "say" of a storyboard.
+        lang: The storyboard's language, "en" or "de".
 
     Returns:
         The text with markup removed, units and names written as they
