@@ -873,7 +873,7 @@
   {
    "type": "case",
    "model": "rudder",
-   "dur": 134.82,
+   "dur": 178.33,
    "faces": [
     [
      0,
@@ -881,8 +881,8 @@
     ]
    ],
    "rauto": {
-    "at": 58.52,
-    "speed": 2.0
+    "at": 61.0,
+    "speed": 1.5
    },
    "panel": [
     [
@@ -925,7 +925,7 @@
      ]
     ],
     [
-     63.62,
+     67.8,
      [
       40,
       150,
@@ -938,7 +938,7 @@
      ]
     ],
     [
-     64.87,
+     69.47,
      [
       150,
       115,
@@ -951,7 +951,7 @@
      ]
     ],
     [
-     125.37,
+     168.13,
      [
       150,
       115,
@@ -964,7 +964,7 @@
      ]
     ],
     [
-     126.62,
+     169.8,
      [
       40,
       150,
@@ -977,7 +977,7 @@
      ]
     ],
     [
-     134.82,
+     178.33,
      [
       40,
       150,
@@ -992,7 +992,7 @@
    ],
    "touches": [
     {
-     "at": 55.48,
+     "at": 57.96,
      "on": "panel",
      "xy": [
       98,
@@ -1013,19 +1013,19 @@
    "chips": [
     {
      "from": 0,
-     "to": 60.52,
+     "to": 63.0,
      "n": 4,
      "text": "RUDDER AUTO"
     },
     {
-     "from": 60.52,
-     "to": 126.37,
+     "from": 63.0,
+     "to": 169.8,
      "n": 4,
-     "text": "The run, at twice its speed"
+     "text": "The run, at 1.5 times its speed"
     },
     {
-     "from": 126.37,
-     "to": 134.82,
+     "from": 169.8,
+     "to": 178.33,
      "n": 4,
      "text": "PASS"
     }
@@ -1033,7 +1033,7 @@
    "labels": [
     {
      "from": 10.92,
-     "to": 29.2,
+     "to": 26.88,
      "anchor": {
       "pixel": [
        340,
@@ -1046,12 +1046,12 @@
      ],
      "n": 4,
      "size": "sm",
-     "title": "Target 20°, goal 22°",
-     "text": "Goal = target x (1 + MARGIN): 20.0° x 1.10 = 22.0° at 1000 and 2000us. The radio's travel sets the 20.0°; the 2.0° above are headroom for the trim."
+     "title": "MARGIN 10%: trim headroom",
+     "text": "PULSES 950-2050us: 22.0°, 22.0°. The target of 20.0° lies at 1000 and 2000us; a pulse out to 950 or 2050us reaches 22.0°."
     },
     {
-     "from": 30.4,
-     "to": 53.08,
+     "from": 28.08,
+     "to": 55.56,
      "anchor": {
       "pixel": [
        680,
@@ -1065,11 +1065,11 @@
      "n": 4,
      "size": "sm",
      "title": "SERVO: KST/CHASERVO or HITEC",
-     "text": "KST/Chaservo: LEFT ANGLE, RIGHT ANGLE, raw values; applied after a power cycle of the PROG 5V. Hitec D series: LEFT END, RIGHT END in counts, 74.5 a degree; restarts itself. Hitec classic: raw cells 0 to 255; the supply is cycled for every session."
+     "text": "KST/Chaservo: LEFT ANGLE, RIGHT ANGLE, raw values; applied after a power cycle of the PROG 5V. Hitec D series: LEFT END, RIGHT END in counts, 74.5 a degree; restarts itself. Hitec classic: raw cells 0 to 255; the supply is cycled for every session. Hitec: MARGIN 0%."
     },
     {
-     "from": 75.37,
-     "to": 82.12,
+     "from": 69.52,
+     "to": 78.28,
      "anchor": "imu",
      "at": [
       1400,
@@ -1078,8 +1078,22 @@
      "side": "t",
      "n": 4,
      "size": "sm",
-     "title": "Measured against the goal",
-     "text": "22.0°, within the tolerance of 0.5°."
+     "title": "Search and first measure",
+     "text": "10us a step. A stop before the target ends the run: STOP AT ...us BEFORE TARGET."
+    },
+    {
+     "from": 103.47,
+     "to": 108.13,
+     "anchor": "imu",
+     "at": [
+      1400,
+      760
+     ],
+     "side": "t",
+     "n": 4,
+     "size": "sm",
+     "title": "Measured against the target",
+     "text": "20.0° at 1000us, within the tolerance of 0.5°."
     }
    ],
    "say": [
@@ -1089,43 +1103,51 @@
     },
     {
      "at": 10.72,
-     "text": "The bench aims past that target by the margin, here 10 percent. So the goal of each end is 22 degrees, and the screen's first line says so. The radio's travel sets the 20 degrees. The 2 degrees above them are headroom for the trim."
+     "text": "The margin, here 10 percent, widens the servo's pulse range to 950 to 2050 microseconds. 1000 and 2000 microseconds give the 20 degrees. The range beyond them is headroom for the trim, up to 22 degrees."
     },
     {
-     "at": 30.2,
-     "text": "The servo row names the make, because the end points are stored differently. A K S T or Chaservo servo holds them as two angle values, and takes new ones after its supply was off and on. The bench switches it. A Hitec D series servo holds them as position counts and restarts by itself."
+     "at": 27.88,
+     "text": "The servo row names the make, because the end points are stored differently. A K S T or Chaservo servo holds them as two angle values, and takes new ones after its supply was off and on. The bench switches it. A Hitec D series servo holds them as position counts and restarts by itself. A Hitec servo stores no pulse range, so its margin is zero."
     },
     {
-     "at": 54.08,
+     "at": 56.56,
      "text": "With the surface at neutral, tap zero."
     },
     {
-     "at": 58.12,
+     "at": 60.6,
      "text": "Then hold arm and start for 2 seconds."
     },
     {
-     "at": 62.22,
-     "text": "The bench switches the supply on, arms, and reads the servo."
+     "at": 64.64,
+     "text": "The bench powers the servo, arms and reads it."
     },
     {
-     "at": 68.02,
-     "text": "It drives the 1000 microsecond end and waits until the sensor's angle is still: 36 degrees."
+     "at": 69.32,
+     "text": "First it searches for a stop: outward from the center in steps of 10 microseconds, watching the servo's current."
     },
     {
-     "at": 76.3,
-     "text": "Too far. It writes a smaller end point into the servo and measures again: 22 degrees."
+     "at": 79.28,
+     "text": "At 1000 microseconds it waits for a still angle. That is the first measure: 33 degrees."
     },
     {
-     "at": 84.12,
-     "text": "The other end goes the same way: measure, write, measure."
+     "at": 87.24,
+     "text": "The high side goes the same way. Both ends are free."
     },
     {
-     "at": 100.12,
-     "text": "A verify pass then measures both ends and the center once more, each from the same side."
+     "at": 97.13,
+     "text": "Now it writes a smaller end point into the servo and measures 1000 microseconds again: 20 degrees."
     },
     {
-     "at": 126.62,
-     "text": "Pass. Both ends are within half a degree of their goal, and the report is on the S D card."
+     "at": 114.13,
+     "text": "The other end follows: measure, write, measure."
+    },
+    {
+     "at": 143.13,
+     "text": "A verify pass then measures both ends and the center once more."
+    },
+    {
+     "at": 170.13,
+     "text": "Pass. Both ends are within half a degree of the target, and the report is on the S D card."
     }
    ]
   },
@@ -1138,6 +1160,7 @@
     "IMU › scan, RUDDER › ANGLE: the sensor",
     "Dial: arm, turn, check both sides",
     "RUDDER AUTO: targets, ZERO, hold ARM + START",
+    "The run: search, measure, write, verify",
     "PASS, report RUDDRnnn.TXT"
    ],
    "say": "The end points are in the servo. 1000 and 2000 microseconds now give the same throw on both sides.",
