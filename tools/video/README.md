@@ -182,7 +182,7 @@ A `case` scene:
 | `say` | optional list of `{at, text}`: what the narrator says in this scene and when; a line that runs into the next is an error |
 | `servo` | optional `{connector, position, appear, plug: [t0, t1]}`: a servo whose plug moves 46mm into the position |
 
-`anchor` is `[x, y, z]` in mm or a name: `display`, `rbmod`, `pdmini`,
+`anchor` is `[x, y, z]` in mm, `{"pixel": [x, y]}`, a pixel of the 1024 x 600 display on the models `mockup`, `cad`, `duo` and `rudder`, or a name: `display`, `rbmod`, `pdmini`,
 `J1`, `J2`, `xt60`, `usbc`, `estop`, `side`, `plug`, and on the `cad`
 model also `panel`, `case`, `mcu`, `ina`, `buck` and
 `trigger`, and on the `dial` model `display`, `knob`, `bezel`, `usb`, `power`, `portA`, `portB` and `body`, on the `duo` model the case's and `dial`, `knob` and `bezel`, on the `mini` model `display`, `glass`, `board`, `keys`, `usbc`, `card`, `buttons`, `shell`, `back`, `ports`, `esc`, `tmt`, `plugs`, `screws`, `cell`, `boost` and `ina`. An anchor follows its component while it moves. A label's

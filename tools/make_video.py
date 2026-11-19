@@ -260,10 +260,18 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         at = f"{where} label {n + 1}"
         _span(label, dur, at, errors)
         anchor = label.get("anchor")
-        if not (anchor in ANCHORS or (isinstance(anchor, list)
-                                      and len(anchor) == 3)):
-            errors.append(f"{at}: anchor must be [x, y, z] in mm or one "
-                          f"of {', '.join(ANCHORS)}")
+        pixel = (isinstance(anchor, dict) and list(anchor) == ["pixel"]
+                 and isinstance(anchor["pixel"], list)
+                 and len(anchor["pixel"]) == 2
+                 and all(map(_number, anchor["pixel"]))
+                 and 0 <= anchor["pixel"][0] <= 1024
+                 and 0 <= anchor["pixel"][1] <= 600
+                 and scene.get("model", "mockup") in TOUCH_ON["panel"][1])
+        if not (pixel or (isinstance(anchor, str) and anchor in ANCHORS)
+                or (isinstance(anchor, list) and len(anchor) == 3)):
+            errors.append(f"{at}: anchor must be [x, y, z] in mm, "
+                          "{pixel: [x, y]} of the 1024 x 600 display or "
+                          f"one of {', '.join(ANCHORS)}")
         pos = label.get("at")
         if not (isinstance(pos, list) and len(pos) == 2
                 and 0 <= pos[0] < FRAME[0] and 0 <= pos[1] < FRAME[1]):

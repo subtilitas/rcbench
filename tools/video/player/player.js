@@ -286,8 +286,9 @@ function drawCase(sc, lt, a, pulse, ui) {
     return [(q.x + 1) * 960 + shift, (1 - q.y) * 540];
   };
   // A point of a part moves with it.
+  // {pixel: [x, y]} is a pixel of the display's screen.
   const spot = p => proj(typeof p === 'string' ? m.anchors[p]()
-    : m.point ? m.point(p) : p);
+    : p.pixel ? m.pixel(...p.pixel) : m.point ? m.point(p) : p);
   drawNotes(sc, lt, a, pulse, ui, spot);
   drawWindows(sc, lt, a, bubs, ov, imgs);
   drawTags(sc, lt, a, spot);

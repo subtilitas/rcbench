@@ -347,14 +347,14 @@
   {
    "type": "case",
    "model": "rudder",
-   "dur": 18.36,
+   "dur": 29.6,
    "faces": [
     [
      0,
      "other-imu-safe"
     ],
     [
-     9.879999999999999,
+     21.12,
      "other-rudder-safe"
     ]
    ],
@@ -368,7 +368,11 @@
      "imu-scan"
     ],
     [
-     9.879999999999999,
+     7.4,
+     "imu-connected"
+    ],
+    [
+     21.12,
      "servo-rudder-angle"
     ]
    ],
@@ -400,7 +404,7 @@
      ]
     ],
     [
-     18.36,
+     29.6,
      [
       0,
       300,
@@ -433,7 +437,7 @@
      "action": "tap"
     },
     {
-     "at": 14.68,
+     "at": 25.92,
      "on": "panel",
      "xy": [
       316,
@@ -445,12 +449,31 @@
    "chips": [
     {
      "from": 0,
-     "to": 18.36,
+     "to": 29.6,
      "n": 2,
      "text": "Connect the sensor"
     }
    ],
-   "labels": [],
+   "labels": [
+    {
+     "from": 9.88,
+     "to": 19.92,
+     "anchor": {
+      "pixel": [
+       770,
+       104
+      ]
+     },
+     "at": [
+      1420,
+      300
+     ],
+     "n": 2,
+     "size": "sm",
+     "title": "Bound once",
+     "text": "The bench stores the sensor's address. After a restart, or after a dropped link, it connects to that sensor again without a scan."
+    }
+   ],
    "say": [
     {
      "at": 0.6,
@@ -458,6 +481,10 @@
     },
     {
      "at": 9.68,
+     "text": "The bench keeps this bind. From now on it is enough to switch the sensor on: the bench connects to it by itself, without a scan."
+    },
+    {
+     "at": 20.92,
      "text": "On rudder, tap the angle row. The list offers the sensors found. Pick yours as the angle source."
     }
    ]
@@ -1007,7 +1034,12 @@
     {
      "from": 10.92,
      "to": 29.2,
-     "anchor": "display",
+     "anchor": {
+      "pixel": [
+       340,
+       368
+      ]
+     },
      "at": [
       1420,
       300
@@ -1020,7 +1052,12 @@
     {
      "from": 30.4,
      "to": 53.08,
-     "anchor": "display",
+     "anchor": {
+      "pixel": [
+       680,
+       200
+      ]
+     },
      "at": [
       1420,
       300
