@@ -1980,7 +1980,14 @@ ARMED is asked).
   end is the last free position, 25us back toward the center. A side free
   to the margin's end has that end. The search programs nothing. Its
   guards are LIMIT RUN's, 3.0A at once and above 1.0A for 400ms, besides
-  the run's own below.
+  the run's own below. From the search's start to the run's end the run's
+  own commands carry the margin's range as the range a command carries
+  (`servo_rauto_drive_range()`), so the pin reaches 950us and 2050us at
+  10% with PULSE MIN and MAX at 1000 to 2000us; the outputs layer holds a
+  pulse to the range its command carries (`shared/outputs/servo_link.c`).
+  PULSE MIN and MAX themselves change only by the widening at the run's
+  end; every command after the end, an early one included, carries the
+  bench's range.
 - The first measure is the search's. Once the search has judged 1000us
   (2000us) free, or a position past it, it holds the servo at 1000us
   (2000us) and takes the angle there by the measure's rule below, counted
@@ -1990,8 +1997,10 @@ ARMED is asked).
   leave little creep, and the angle counts as settled by the same rule as
   every measure: still 500ms and, on the IMU with the defaults, within
   0.10° over 3.0s, at most 16,000ms after the command. With PULSE CENTER
-  off the 10us grid, 1505us, 1000us is commanded between the steps 1005us
-  and 995us. With both sides searched the two first measures are judged as
+  off the 10us grid, 1505us, the steps land on 1005us and 995us; once 995us
+  is judged free the servo goes back to 1000us for the first measure,
+  reached from 5us outside. A 995us judged bound ends the side as any
+  bind, 1000us never held. With both sides searched the two first measures are judged as
   any measure, the 1000us side first, and the run writes the first side
   outside the tolerance, or verifies, or passes.
 - LOW END and HIGH END cap every pulse the run drives after the search; a
@@ -1999,7 +2008,10 @@ ARMED is asked).
 - An end inside the end pulse, LOW END above 1000us or HIGH END below
   2000us, is held for its angle by the measure's rule. Where that does not
   settle by the measure's wait, the angle is the one the search recorded
-  at the side's last free step, and the report says so. The angle decides:
+  at the side's last free step, and the report says so. That angle stands
+  for the end by the linear map from the pulse it was taken at: 3.0° at
+  1450us, 50us from a PULSE CENTER of 1500us, is 1.5° at an end of 1475us.
+  The angle decides:
   - Below TARGET - TOLERANCE, the linkage stops the surface short of the
     target, and the run ends as FAIL, `STOP AT 1225us BEFORE TARGET` on the
     box: no value written, a 1000us side that fails leaves the 2000us side

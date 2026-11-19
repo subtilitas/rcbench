@@ -73,16 +73,21 @@ history is in git.
   1500us and 10%, 936us and 2036us at NEUTRAL 1640us, 1000us and 2000us on
   Hitec),
   the 1000us side first, bound at 1.8 x the free current and 0.15A over
-  it, each end 25us back from the bind. It programs nothing. It holds the
-  servo at 1000us and 2000us on the way and takes the first measure of
-  each side there by the measure's settle rule; the run drives no separate
-  first measure. LOW END and HIGH END cap every later pulse. An end inside
+  it, each end 25us back from the bind. It programs nothing. The run's own
+  commands carry that range from the search's start to the run's end, so
+  the pin reaches it whatever PULSE MIN and PULSE MAX read; PULSE MIN and
+  MAX change only by the widening at the end. It holds the servo at 1000us
+  and 2000us on the way, each once it or a step past it is judged free,
+  and takes the first measure of each side there by the measure's settle
+  rule; the run drives no separate first measure. LOW END and HIGH END cap every later pulse. An end inside
   1000us or 2000us is held for its angle: short of TARGET by more than
   TOLERANCE the run ends as FAIL, `STOP AT 1225us BEFORE TARGET`, with no
   value written and every output off; at TARGET - TOLERANCE or past it the
   side is measured at the end from then on, each angle scaled to the end
   pulse by the linear map, and the writes take the throw shorter, nothing
-  driven past the end. The first state line reads
+  driven past the end. An end that does not settle takes the angle of the
+  last free step, scaled from the pulse it was taken at. The first state
+  line reads
   `SEARCH 1230us: STEP 28 OF 100` during the search, a new fourth line the
   ends, `LOW END 995us, HIGH END FREE`, and the verify pass moves to the
   fifth. The report gains a LIMIT SEARCH section with the rule, both ends

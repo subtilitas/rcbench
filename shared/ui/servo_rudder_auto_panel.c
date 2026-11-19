@@ -277,6 +277,20 @@ static bool ra_apply(const servo_rauto_do_t *d)
     return !again;
 }
 
+/** @brief The range the run's commands carry, from its search's start to
+ *         its end; none once it ended, early or not, so the bench's own
+ *         range is in force again. */
+static void ra_drive_range(void)
+{
+    uint16_t us[2];
+    if (servo_rauto_drive_range(&s.ra.run, us)) {
+        s.ra.drive_lo = us[0];
+        s.ra.drive_hi = us[1];
+    } else {
+        s.ra.drive_lo = s.ra.drive_hi = 0u;
+    }
+}
+
 /** @brief The run's step against the clock, and what it asks done: twice
  *         where a refusal ended it in the first. */
 static void ra_step(void)
@@ -301,6 +315,7 @@ static void ra_step(void)
         servo_rauto_do_t d;
         servo_rauto_step(&s.ra.run, test_now(), &in, &d);
         test_tell();
+        ra_drive_range();
         if (ra_apply(&d)) {
             break;
         }

@@ -11,8 +11,9 @@
  * where it is the first, and every output off; at or past it, the
  * boundary included, the side is measured at the end, written shorter and
  * verified there, nothing driven past it; an end that does not settle
- * takes the last free step's angle; an end at 995us lies outside the end
- * pulse; the found ends cap every later pulse; a STOP RUN, a current above the ceiling and a reading that
+ * takes the last free step's angle, scaled from the pulse it was taken at;
+ * an end pulse off the 10us grid is held only once it, or a step past it,
+ * is judged free; an end at 995us lies outside the end pulse; the found ends cap every later pulse; a STOP RUN, a current above the ceiling and a reading that
  * does not settle at the end pulse end the run in the search as in any
  * phase; the rows stay within SERVO_RAUTO_SEARCH_MAX at a margin of 50%;
  * the CSV and the report carry one row a position.
@@ -237,6 +238,95 @@ TEST_CASE(an_end_that_does_not_settle_takes_the_last_free_step)
     CHECK(in_report("                -27.00° at the last free step 1050us, the end not settled; the side measured there"));
 }
 
+TEST_CASE(a_fallback_angle_is_scaled_from_the_pulse_it_was_taken_at)
+{
+    /* PULSE CENTER 1500us, a stop past 1450us: 1440us binds, the end
+     * 1475us.  TARGET 1.5°, TOLERANCE 0.1°, the register down to 1.  The
+     * end does not settle: the last free step's 3.0° at 1450us, 50us from
+     * the center, stands for 30.0° at 1000us (x 500 / 50), not 60.0°
+     * (x 500 / 25, the end's).  150 counts x 1.5 / 30.0 is 7.5: the write
+     * takes 8, as a settled end gives, and the run passes. */
+    rig_init(0u);
+    g.cfg.target_deg[0] = 1.5f;
+    g.cfg.target_deg[1] = 1.5f;
+    g.cfg.tol_ddeg = 1u;
+    g.lo = 1u;
+    g.stop_us[0] = 1450u;
+    CHECK(start());
+    while (servo_rauto_running(&g.run) && !g.run.s_endhold) {
+        tick();
+    }
+    CHECK_EQ(g.cmd, 1475u);
+    g.jitter = true;
+    while (servo_rauto_running(&g.run) && g.run.s_endhold) {
+        tick();
+    }
+    g.jitter = false;
+    CHECK(g.run.ends[0].fallback && g.run.ends[0].at_end);
+    CHECK_EQ(g.run.ends[0].deg_us, 1450u);
+    CHECK_NEAR(g.run.ends[0].deg, -3.0f, 0.01f);
+    /* As the end reads it by the linear map: 1.5°. */
+    CHECK_NEAR(g.run.s_deg[0], -1.5f, 0.01f);
+    to_searched();
+    CHECK_NEAR(g.run.steps[0].measured_deg, 30.0f, 0.01f);
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK(g.run.why != SERVO_RAUTO_WHY_CAP);
+    CHECK_EQ(g.v[0], 8u);
+
+    /* The same with the end settled: 1.5° at 1475us, 8 counts too. */
+    rig_init(0u);
+    g.cfg.target_deg[0] = 1.5f;
+    g.cfg.target_deg[1] = 1.5f;
+    g.cfg.tol_ddeg = 1u;
+    g.lo = 1u;
+    g.stop_us[0] = 1450u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK(!g.run.ends[0].fallback);
+    CHECK_EQ(g.v[0], 8u);
+}
+
+TEST_CASE(an_end_pulse_off_the_grid_is_held_only_once_judged_free)
+{
+    /* PULSE CENTER 1505us at 10%, a stop past 1002us: the steps land on
+     * 1005us, free, and 995us, bound.  1000us lies past the stop and is
+     * never held: the end is 1030us, 25us back from 1005us, measured
+     * there; no stall.  With PULSE CENTER 1500us the step 1000us binds and
+     * the end is 1035us. */
+    rig_init(0u);
+    g.cfg.margin_pct = 10u;
+    g.cfg.center_us = 1505u;
+    g.cfg.target_deg[0] = 20.0f;
+    g.cfg.target_deg[1] = 20.0f;
+    g.stop_us[0] = 1002u;
+    CHECK(start());
+    bool held_1000 = false;
+    while (servo_rauto_running(&g.run) && !g.run.searched) {
+        tick();
+        held_1000 = held_1000 || (g.run.s_hold && g.cmd == 1000u);
+    }
+    CHECK(!held_1000);
+    CHECK(g.run.ends[0].bound);
+    CHECK_EQ(g.run.ends[0].bind_us, 995u);
+    CHECK_EQ(g.run.ends[0].end_us, 1030u);
+    CHECK(g.run.ends[0].at_end);
+    run_for(RAUTO_MS);
+    CHECK(g.run.why != SERVO_RAUTO_WHY_STALL);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+
+    rig_init(0u);
+    g.cfg.margin_pct = 10u;
+    g.cfg.target_deg[0] = 20.0f;
+    g.cfg.target_deg[1] = 20.0f;
+    g.stop_us[0] = 1002u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.ends[0].end_us, 1035u);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+}
+
 TEST_CASE(a_pulse_past_a_found_end_ends_the_run)
 {
     /* Ends that move inward after the search: the next 1000us command
@@ -256,14 +346,27 @@ TEST_CASE(a_pulse_past_a_found_end_ends_the_run)
 
 TEST_CASE(stop_run_and_the_current_ceiling_end_the_search)
 {
-    /* STOP RUN 2s into the search: ABORTED, every output off. */
+    /* STOP RUN 2s into the search: ABORTED, every output off.  The run's
+     * own command range applies from the search's start to its end. */
     rig_init(0u);
+    g.cfg.margin_pct = 10u;
+    uint16_t us[2] = { 0u, 0u };
+    CHECK(!servo_rauto_drive_range(&g.run, us));
     CHECK(start());
+    CHECK(!servo_rauto_drive_range(&g.run, us));
     CHECK(run_to(SERVO_RAUTO_PH_SEARCH, RAUTO_MS));
+    CHECK(servo_rauto_drive_range(&g.run, us));
+    CHECK_EQ(us[0], 950u);
+    CHECK_EQ(us[1], 2050u);
+    CHECK(!servo_rauto_drive_range(NULL, us));
+    CHECK(!servo_rauto_drive_range(&g.run, NULL));
     idle_for(2000u);
     CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_SEARCH);
     servo_rauto_abort(&g.run, SERVO_TEST_AB_STOP, g.now);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_ABORTED);
+    us[0] = us[1] = 0u;
+    CHECK(!servo_rauto_drive_range(&g.run, us));
+    CHECK_EQ(us[0], 0u);
     run_for(100u);
     CHECK(ended_safe());
     CHECK(in_report("Low end:        not searched"));
@@ -366,6 +469,8 @@ int main(void)
     RUN(an_end_5us_inside_goes_on_there_and_995us_is_outside);
     RUN(an_end_inside_2000us_is_measured_there);
     RUN(an_end_that_does_not_settle_takes_the_last_free_step);
+    RUN(a_fallback_angle_is_scaled_from_the_pulse_it_was_taken_at);
+    RUN(an_end_pulse_off_the_grid_is_held_only_once_judged_free);
     RUN(a_pulse_past_a_found_end_ends_the_run);
     RUN(stop_run_and_the_current_ceiling_end_the_search);
     RUN(the_rows_fit_at_a_margin_of_50_percent);

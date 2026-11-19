@@ -6,7 +6,7 @@
  * LIMIT RUN's finder (servo_limit.h) steps each side out from PULSE CENTER
  * to the margin's range on the INA3221's windows.  The run records every
  * position the finder judges, holds the servo at the end pulse once the
- * finder judged a position at or past it free, takes the side's first
+ * finder judged it or a position past it free, takes the side's first
  * angle there by the measure's rule, and lets the finder go on.  The found
  * ends cap the run's later pulses.  An end inside the end pulse is held for
  * its angle: short of TARGET less TOLERANCE it ends the run, else that
@@ -49,14 +49,34 @@ static uint16_t steps_of(uint16_t travel_us, uint16_t end_us)
     return (uint16_t)((travel_us + 9u) / 10u + (between ? 1u : 0u));
 }
 
-void rauto_search_begin(servo_rauto_t *r, uint8_t side, uint32_t now_ms)
+/**
+ * @brief The margin's range the search reaches: from the read's NEUTRAL on
+ *        KST; Hitec holds no NEUTRAL in 0.1us and runs at margin 0, 1000us
+ *        to 2000us.
+ * @param r  Run state.
+ * @param us Out: the lower and the upper end, us.
+ */
+static void search_range(const servo_rauto_t *r, uint16_t us[2])
 {
-    uint16_t us[2];
-    /* The margin's range from the read's NEUTRAL on KST; Hitec holds no
-     * NEUTRAL in 0.1us and runs at margin 0, 1000us to 2000us. */
     const uint16_t n = r->cfg.family == SERVO_RAUTO_FAM_KST
                            ? r->servo.pulse_dus[0] : 0u;
     servo_rauto_pulse_range(r->cfg.margin_pct, n, us);
+}
+
+bool servo_rauto_drive_range(const servo_rauto_t *r, uint16_t us[2])
+{
+    if (r == NULL || us == NULL || !servo_rauto_running(r) || !r->s_begun) {
+        return false;
+    }
+    search_range(r, us);
+    return true;
+}
+
+void rauto_search_begin(servo_rauto_t *r, uint8_t side, uint32_t now_ms)
+{
+    uint16_t us[2];
+    search_range(r, us);
+    r->s_begun = true;
     const uint16_t c = r->cfg.center_us;
     const uint16_t travel = side == 0u ? (uint16_t)(c - us[0])
                                        : (uint16_t)(us[1] - c);
@@ -178,7 +198,11 @@ static void end_judged(servo_rauto_t *r, float deg, uint16_t at_us,
      * every measure of the side drives the end, not the end pulse. */
     e->at_end    = true;
     r->s_took[s] = true;
-    r->s_deg[s]  = deg;
+    /* As the end would read it by the linear map: an angle of the last
+     * free step lies further out than the end. */
+    const int c = (int)r->cfg.center_us;
+    const int at = abs((int)at_us - c), end = abs((int)e->end_us - c);
+    r->s_deg[s] = at > 0 && at != end ? deg * (float)end / (float)at : deg;
     side_next(r, now_ms);
 }
 
@@ -243,19 +267,14 @@ static bool last_free_deg(const servo_rauto_t *r, float *deg)
 }
 
 /**
- * @brief Whether the finder's next pulse lies past the side's end pulse,
- *        with its first measure still to take.
- * @param r  Run state.
- * @param us The finder's next pulse, us.
- * @return true when the servo is to hold at the end pulse first.
+ * @brief Whether a position lies at the side's end pulse or past it.
+ * @param s  The side.
+ * @param us The position, us.
+ * @return true at or past 1000us (2000us).
  */
-static bool past_end(const servo_rauto_t *r, uint16_t us)
+static bool at_or_past(uint8_t s, uint16_t us)
 {
-    const uint8_t s = r->side;
-    if (r->s_took[s]) {
-        return false;
-    }
-    return s == 0u ? us < k_end[0] : us > k_end[1];
+    return s == 0u ? us <= k_end[0] : us >= k_end[1];
 }
 
 void rauto_search_window(servo_rauto_t *r, uint16_t ma, uint32_t at_ms)
@@ -274,21 +293,18 @@ void rauto_search_window(servo_rauto_t *r, uint16_t ma, uint32_t at_ms)
     add_row(r, before);
     const uint8_t s = r->side;
     if (!r->s_took[s] && r->lf.last_free_us == before
-        && before == k_end[s]) {
-        /* The end pulse itself judged free: held there for the angle. */
+        && at_or_past(s, before)) {
+        /* The end pulse, or a position past it, judged free: the servo
+         * held at the end pulse for the angle. */
         r->s_hold    = true;
         r->s_next_us = cmd;
+        if (before != k_end[s]) {
+            go_to(r, k_end[s], at_ms);
+        }
         return;
     }
     if (ended) {
         side_done(r, before, at_ms);
-        return;
-    }
-    if (past_end(r, cmd)) {
-        /* The next step passes the end pulse: the end pulse first. */
-        r->s_hold    = true;
-        r->s_next_us = cmd;
-        go_to(r, k_end[s], at_ms);
         return;
     }
     go_to(r, cmd, at_ms);

@@ -2093,7 +2093,14 @@ angefragt ist).
   Stellung, 25us zurück zur Mitte. Eine Seite, die bis zum Ende der
   Reserve frei ist, hat dieses Ende. Die Suche programmiert nichts. Ihr
   Schutz ist der des Endlagenlaufs, 3,0A sofort und über 1,0A für 400ms,
-  neben dem des Laufs unten.
+  neben dem des Laufs unten. Vom Beginn der Suche bis zum Ende des Laufs
+  tragen die eigenen Befehle des Laufs den Bereich der Reserve als den
+  Bereich eines Befehls (`servo_rauto_drive_range()`), daher erreicht der
+  Pin 950us und 2050us bei 10% mit PULS MIN und MAX auf 1000 bis 2000us;
+  die Ausgabeschicht hält einen Puls auf dem Bereich seines Befehls
+  (`shared/outputs/servo_link.c`). PULS MIN und MAX selbst ändern sich nur
+  durch das Weiten am Ende des Laufs; jeder Befehl nach dem Ende, auch
+  einem frühen, trägt den Bereich des Prüfstands.
 - Die erste Messung ist die der Suche. Sobald die Suche 1000us (2000us)
   oder eine Stellung dahinter frei gefunden hat, hält sie das Servo auf
   1000us (2000us) und nimmt dort den Winkel nach der Regel der Messung
@@ -2104,7 +2111,10 @@ angefragt ist).
   derselben Regel als eingeschwungen wie bei jeder Messung: 500ms ruhig
   und an der IMU mit den Vorgaben innerhalb 0,10° über 3,0s, spätestens
   16 000ms nach dem Befehl. Liegt PULS MITTE neben dem 10us-Raster, 1505us,
-  wird 1000us zwischen den Schritten 1005us und 995us angefordert. Sind
+  landen die Schritte auf 1005us und 995us; sobald 995us frei gefunden ist,
+  fährt das Servo für die erste Messung zurück auf 1000us, von 5us außen
+  erreicht. Ein blockiertes 995us beendet die Seite wie jede Blockade,
+  1000us wird nie gehalten. Sind
   beide Seiten gesucht, gelten die zwei ersten Messungen wie jede Messung,
   die Seite 1000us zuerst, und der Lauf schreibt die erste Seite außerhalb
   der Toleranz, misst nach oder besteht.
@@ -2114,7 +2124,10 @@ angefragt ist).
   ENDE unter 2000us, wird für seinen Winkel nach der Regel der Messung
   gehalten. Schwingt er bis zur Wartezeit der Messung nicht ein, gilt der
   Winkel, den die Suche am letzten freien Schritt der Seite aufgezeichnet
-  hat, und der Bericht nennt das. Der Winkel entscheidet:
+  hat, und der Bericht nennt das. Dieser Winkel steht nach der linearen
+  Abbildung ab dem Puls, an dem er genommen wurde, für das Ende: 3,0° bei
+  1450us, 50us von einer PULS MITTE von 1500us, sind 1,5° an einem Ende von
+  1475us. Der Winkel entscheidet:
   - Unter SOLL - TOLERANZ hält das Gestänge das Ruder vor dem Soll an, und
     der Lauf endet mit NICHT BESTANDEN, `ANSCHLAG BEI 1225us VOR DEM SOLL`
     in der Box: kein Wert geschrieben, scheitert die Seite 1000us, bleibt

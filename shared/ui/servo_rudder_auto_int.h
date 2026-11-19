@@ -86,6 +86,11 @@ typedef struct {
     bool      sup_out;      /**< its output was on                      */
     float     sup_v,        /**< its voltage set point, V               */
               sup_i;        /**< its current limit, A                   */
+    /* The range the run's own commands carry (servo_rauto_drive_range()),
+     * 0 and 0 while none: cmd_range() takes it in beside PULSE MIN and
+     * PULSE MAX, which stay as they are. */
+    uint16_t  drive_lo,     /**< its lower end, us                      */
+              drive_hi;     /**< its upper end, us                      */
 } rauto_ui_t;
 
 /** @brief The box at the screen's start: no run, MANUAL. */

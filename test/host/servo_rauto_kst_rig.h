@@ -41,6 +41,7 @@ static struct {
     servo_sim_t sv;
     uint16_t cmd;
     uint16_t cmd_lo, cmd_hi;  /* the extremes a position command sent */
+    uint16_t rng_lo, rng_hi;  /* the range the last command carried */
     bool armed;
     unsigned offs;          /* the supply's OFF taken */
     uint32_t win_end, win_no;
@@ -182,13 +183,23 @@ static inline void ra_commands(void)
     }
     servo_cmd_t c;
     while (servo_screen_take(&c)) {
+        ra.rng_lo = c.min_us;
+        ra.rng_hi = c.max_us;
         if (c.kind == SERVO_CMD_POSITION) {
-            ra.cmd = c.value_us;
-            if (ra.cmd_lo == 0u || c.value_us < ra.cmd_lo) {
-                ra.cmd_lo = c.value_us;
+            /* The pulse as shared/outputs/servo_link.c puts it on the
+             * pin: held to the range the command carries, 1000us to
+             * 2000us for one that names none. */
+            const bool named = c.max_us > c.min_us;
+            const uint16_t lo = named ? c.min_us : 1000u;
+            const uint16_t hi = named ? c.max_us : 2000u;
+            const uint16_t v = c.value_us < lo ? lo
+                               : c.value_us > hi ? hi : c.value_us;
+            ra.cmd = v;
+            if (ra.cmd_lo == 0u || v < ra.cmd_lo) {
+                ra.cmd_lo = v;
             }
-            if (c.value_us > ra.cmd_hi) {
-                ra.cmd_hi = c.value_us;
+            if (v > ra.cmd_hi) {
+                ra.cmd_hi = v;
             }
         } else if (c.kind == SERVO_CMD_RELEASE) {
             ra.cmd = 1500u;

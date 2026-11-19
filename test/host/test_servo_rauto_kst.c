@@ -286,6 +286,47 @@ TEST_CASE(a_tap_on_stop_run_ends_auto_at_once)
     CHECK(strstr(ra.report, "ABORTED") != NULL);
 }
 
+/* The search's pulses through the range its commands carry, held to it as
+ * shared/outputs/servo_link.c does: with PULSE MIN and MAX at 1000 to
+ * 2000us and MARGIN 10% they reach 950us and 2050us, the commands carrying
+ * 950 to 2050us, while PULSE MIN and MAX stay 1000 to 2000us.  A STOP in
+ * the search: the commands of the end carry the bench's 1000 to 2000us,
+ * the run's range gone; then the end widens PULSE MIN and MAX to 950 to
+ * 2050us, as the servo holds the margin's pulses written in the read
+ * session (servo_rauto_widen()). */
+TEST_CASE(the_search_drives_the_margins_range_and_a_stop_leaves_the_bench_range)
+{
+    ra_setup(true, true);
+    uint16_t lo = 0u, hi = 0u;
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 1000u);
+    CHECK_EQ(hi, 2000u);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    for (int i = 0; i < 400000 && servo_screen_rauto_running()
+                    && ra.cmd_hi < 2050u; ++i) {
+        ra_ms(1u);
+    }
+    CHECK_EQ(servo_screen_rauto_phase(), SERVO_RAUTO_PH_SEARCH);
+    CHECK_EQ(ra.cmd_lo, 950u);
+    CHECK_EQ(ra.cmd_hi, 2050u);
+    CHECK_EQ(ra.rng_lo, 950u);
+    CHECK_EQ(ra.rng_hi, 2050u);
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 1000u);
+    CHECK_EQ(hi, 2000u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK(!servo_screen_rauto_running());
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(3000u);
+    CHECK(strstr(ra.report, "ABORTED") != NULL);
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 950u);
+    CHECK_EQ(hi, 2050u);
+    CHECK_EQ(ra.rng_lo, 1000u);
+    CHECK_EQ(ra.rng_hi, 2000u);
+}
+
 /* ZERO and RESET MAX tapped while AUTO's search holds the 1000us side at
  * about -36°: refused, the run measures from the zero it started with and
  * programs both end points alike. */
@@ -853,6 +894,9 @@ TEST_CASE(an_off_center_neutral_takes_the_margin_from_neutral)
     CHECK_EQ(d, 20360);
     CHECK(kst_field_display(KST_F_NEUTRAL, servo(KST_F_NEUTRAL), &d));
     CHECK_EQ(d, 16400);
+    /* The search reached the range from NEUTRAL on the pin. */
+    CHECK_EQ(ra.cmd_lo, 936u);
+    CHECK_EQ(ra.cmd_hi, 2036u);
     uint16_t lo = 0u, hi = 0u;
     servo_screen_pulse_ends(&lo, &hi);
     CHECK_EQ(lo, 936u);
@@ -870,6 +914,7 @@ int main(void)
     RUN(a_stop_during_auto_ends_it_with_every_output_off);
     RUN(auto_without_a_pd_mini_or_a_zero_is_refused_and_says_why);
     RUN(a_tap_on_stop_run_ends_auto_at_once);
+    RUN(the_search_drives_the_margins_range_and_a_stop_leaves_the_bench_range);
     RUN(zero_and_reset_max_are_refused_while_auto_runs);
     RUN(a_supply_set_anew_outside_a_session_ends_auto);
     RUN(with_user_logs_off_auto_hands_the_logger_nothing);

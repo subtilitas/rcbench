@@ -61,7 +61,9 @@
  *     then on the 2000us side, each out to the margin's range from the
  *     read's NEUTRAL (servo_rauto_pulse_range(); 1000us and 2000us on
  *     Hitec) and from PULSE CENTER held for
- *     SERVO_LIMRUN_RETURN_MS.  It programs nothing.  Every position judged
+ *     SERVO_LIMRUN_RETURN_MS; the run's commands carry that range from
+ *     here to its end (servo_rauto_drive_range()), whatever the bench's
+ *     PULSE MIN and PULSE MAX read.  It programs nothing.  Every position judged
  *     is a row of the report and the CSV (pulse, current, angle; at most
  *     SERVO_RAUTO_SEARCH_MAX).  It is the first measure: once the
  *     finder judged the end pulse, or a position past it, free on its way,
@@ -73,7 +75,7 @@
  *     every pulse driven after the search.  An end inside the end pulse,
  *     LOW END above 1000us or HIGH END below 2000us, is held for its
  *     angle by the measure's rule (the last free step's where it does not
- *     settle): short of the goal by more than the tolerance it ends the
+ *     settle, scaled to the end from its own pulse): short of the goal by more than the tolerance it ends the
  *     run as FAIL (SERVO_RAUTO_WHY_STOP, STOP AT 1225us BEFORE TARGET)
  *     with no value written, a 1000us side that fails leaving the 2000us
  *     side not searched; else every measure of that side drives the end
@@ -546,6 +548,7 @@ typedef struct {
                                            first measure */
     bool     s_endhold;               /**< the hold is at a found end
                                            inside the end pulse */
+    bool     s_begun;                 /**< the search started */
     uint16_t s_next_us;               /**< the finder's command after it */
     uint32_t s_from_ms;               /**< the side's start, ms */
     bool     s_took[2];               /**< the side's first measure taken */
@@ -861,6 +864,18 @@ bool servo_rauto_in_cap(uint16_t value0, float goal_deg, float first_deg,
  *         servo_test_abort_error() calls an error.
  */
 bool servo_rauto_why_error(servo_rauto_why_t why, servo_test_abort_t test_why);
+/**
+ * @brief The pulse range the run's own commands carry from the search's
+ *        start to the run's end: the margin's range from the read's NEUTRAL
+ *        (1000us to 2000us on Hitec), so the search drives the extended
+ *        ends whatever the bench's PULSE MIN and PULSE MAX read.  The
+ *        bench's range is not changed by it (servo_rauto_widen()).
+ * @param r  Run state.
+ * @param us Out: the lower and the upper end, us; untouched on false.
+ * @return true while it applies; false before the search and once the run
+ *         ended, for NULL arguments too.
+ */
+bool servo_rauto_drive_range(const servo_rauto_t *r, uint16_t us[2]);
 /**
  * @brief The pulse a side's measures drive: 1000us or 2000us, or the found
  *        end where the search found it inside them and the surface reaches
