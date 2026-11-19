@@ -49,8 +49,8 @@ history is in git.
   p us, each on the KST's 0.8us step rounded toward the center: 950.4us
   and 2049.6us at 10%, up to 750.4us and 2249.6us at 50%. By the linear
   map 2050us then reaches TARGET x (1 + MARGIN), 22.0°, so a radio's trim
-  past 2000us still moves the surface. The run drives 1000us, 2000us and
-  PULSE CENTER only, and the verify pass holds each end to TARGET.
+  past 2000us still moves the surface. Every measure drives 1000us, 2000us
+  and PULSE CENTER only, and the verify pass holds each end to TARGET.
   SERVO PULSES, LIMIT RUN's setting, does not change what AUTO writes.
   Where the bench's PULSE MIN and PULSE MAX are narrower than MARGIN's
   range, the run widens them to it at its end, for the session, and never
@@ -61,6 +61,23 @@ history is in git.
   KST/CHASERVO ONLY`), and the stored `rud_margin` stays for KST. The
   start gate reads `TARGETS MUST EXCEED 2 x TOLERANCE` and holds each
   TARGET to more than 2 x TOLERANCE, whatever MARGIN reads
+  ([AUTO end points](docs/Servo.md#auto-end-points)).
+- RUDDER AUTO: every run starts with LIMIT RUN's search, after the read
+  session and before any other pulse: 10us steps out from PULSE CENTER to
+  MARGIN's range (950us and 2050us at 10%, 1000us and 2000us on Hitec),
+  the 1000us side first, bound at 1.8 x the free current and 0.15A over
+  it, each end 25us back from the bind. It programs nothing. It holds the
+  servo at 1000us and 2000us on the way and takes the first measure of
+  each side there by the measure's settle rule; the run drives no separate
+  first measure. LOW END and HIGH END cap every later pulse. An end inside
+  1000us or 2000us ends the run as FAIL, `STOP AT 1225us BEFORE TARGET`,
+  with no value written and every output off. The first state line reads
+  `SEARCH 1230us: STEP 28 OF 100` during the search, a new fourth line the
+  ends, `LOW END 995us, HIGH END FREE`, and the verify pass moves to the
+  fifth. The report gains a LIMIT SEARCH section with the rule, both ends
+  and one line a position (pulse, current, angle); the CSV gains one `S`
+  row a position. A run with one write a side takes 130s to 187s on the
+  settle tests' curves, the search 42s to 49s of it
   ([AUTO end points](docs/Servo.md#auto-end-points)).
 
 ## 0.23.15 - 2026-11-18

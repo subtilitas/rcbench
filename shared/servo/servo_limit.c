@@ -284,6 +284,16 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms)
     return lf->cmd_us;
 }
 
+void servo_limit_resume(servo_limit_t *lf, uint32_t now_ms)
+{
+    if (lf == NULL || lf->state != SERVO_LIMIT_RUNNING) {
+        return;
+    }
+    lf->started        = true;
+    lf->measuring      = false;
+    lf->phase_start_ms = now_ms;
+}
+
 float servo_limit_progress(const servo_limit_t *lf)
 {
     if (lf == NULL) {

@@ -97,9 +97,12 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
                                        k == 0 ? 950u : 2050u, 4.0f, false);
         CHECK(fabsf(fabsf(past - 1500.0f) * DEG_PER_US - 22.0f) <= 0.6f);
     }
-    /* The run drove 1000us and 2000us, never past them. */
-    CHECK(ra.cmd_lo >= 1000u);
-    CHECK(ra.cmd_hi <= 2000u);
+    /* The search drove the margin's range, 950us to 2050us, never past
+     * it; the rig's stops at 700us and 2300us leave both sides free. */
+    CHECK_EQ(ra.cmd_lo, 950u);
+    CHECK_EQ(ra.cmd_hi, 2050u);
+    CHECK(strstr(ra.report, "Low end:        free to 950us") != NULL);
+    CHECK(strstr(ra.report, "High end:       free to 2050us") != NULL);
     /* The bench's range widened to the margin's, named on the report. */
     servo_screen_pulse_ends(&lo, &hi);
     CHECK_EQ(lo, 950u);
@@ -108,7 +111,7 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
                             "950-2050us, for the session") != NULL);
     CHECK(strstr(ra.report, "Margin:         10%: servo pulses 950.4-"
                             "2049.6us; by the linear model 950us reaches "
-                            "22.0°, 2050us 22.0°; not driven") != NULL);
+                            "22.0°, 2050us 22.0°; driven in the search only") != NULL);
     CHECK_EQ(g_rig.fc.saves, 1u);
     /* The supply's OFF asked at the end decision, before the report's
      * first file opens. */
@@ -127,7 +130,7 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
                  "REPORT RUDDR007.TXT, PULSE MIN/MAX 1000-2000 -> 950-2050us");
     /* The verify pass on the fourth line: each end from its goal, the
      * center from the zero. */
-    CHECK(strncmp(rauto_line(3, b, sizeof(b)), "VERIFY ", 7) == 0);
+    CHECK(strncmp(rauto_line(4, b, sizeof(b)), "VERIFY ", 7) == 0);
     CHECK(strstr(b, ", CENTER ") != NULL);
     CHECK(strstr(b, "-0.00") == NULL);
     CHECK(strstr(ra.report, "VERIFY (pulse, measured, goal") != NULL);
@@ -267,8 +270,8 @@ TEST_CASE(a_tap_on_stop_run_ends_auto_at_once)
     CHECK(strstr(ra.report, "ABORTED") != NULL);
 }
 
-/* ZERO and RESET MAX tapped while AUTO holds the 1000us side at about
- * -36°: refused, the run measures from the zero it started with and
+/* ZERO and RESET MAX tapped while AUTO's search holds the 1000us side at
+ * about -36°: refused, the run measures from the zero it started with and
  * programs both end points alike. */
 TEST_CASE(zero_and_reset_max_are_refused_while_auto_runs)
 {
@@ -278,8 +281,8 @@ TEST_CASE(zero_and_reset_max_are_refused_while_auto_runs)
     bool there = false;
     for (int i = 0; i < 400000 && servo_screen_rauto_running(); ++i) {
         ra_ms(1u);
-        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_SETTLE
-            && ra.sv.position_us < 1100.0f) {
+        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_SEARCH
+            && ra.sv.position_us < 1001.0f) {
             there = true;
             break;
         }

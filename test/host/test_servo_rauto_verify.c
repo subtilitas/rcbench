@@ -168,10 +168,11 @@ TEST_CASE(a_run_that_writes_nothing_does_not_verify)
 }
 
 /*
- * The approach: every end the run measures, in the main pass and in the
- * verify pass, is commanded from PULSE CENTER after the servo held still
- * there SERVO_RAUTO_STILL_MS; the verify pass's center is commanded from
- * 2000us, where its measure before took its angle, with no approach.
+ * The approach: every end the run measures after the search, in the main
+ * pass and in the verify pass, is commanded from PULSE CENTER after the
+ * servo held still there SERVO_RAUTO_STILL_MS; the verify pass's center is
+ * commanded from 2000us, where its measure before took its angle, with no
+ * approach.  The search reaches each end from its 10us step before it.
  */
 TEST_CASE(every_end_comes_from_the_center_and_the_center_from_2000us)
 {
@@ -194,6 +195,11 @@ TEST_CASE(every_end_comes_from_the_center_and_the_center_from_2000us)
         if (g.cmd == last) {
             continue;
         }
+        if (g.run.phase == SERVO_RAUTO_PH_SEARCH || !g.run.searched) {
+            last = g.cmd;
+            since = g.now;
+            continue;
+        }
         if (g.cmd == 1000u || g.cmd == 2000u) {
             ++ends;
             CHECK_EQ(last, RCENTER);
@@ -209,10 +215,11 @@ TEST_CASE(every_end_comes_from_the_center_and_the_center_from_2000us)
     }
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
     CHECK(center_seen);
-    /* The main pass's 5 measures and the verify pass's 2 ends. */
-    CHECK_EQ(ends, 5u + 2u);
+    /* The main pass's 4 measures after the search's 2 and the verify
+     * pass's 2 ends. */
+    CHECK_EQ(ends, 4u + 2u);
     CHECK_EQ(approaches, ends);
-    CHECK_EQ(g.run.step_n, 5u);
+    CHECK_EQ(g.run.step_n, 6u);
 }
 
 int main(void)

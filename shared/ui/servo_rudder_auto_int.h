@@ -54,8 +54,9 @@ typedef enum {
 } rauto_ctl_t;
 
 /** @brief The lines the box draws: the step or the pulse range, the result,
- *         the servo or the report, and the verify pass after programming. */
-#define RA_LINES 4
+ *         the servo or the report, the limit search's two ends, and the
+ *         verify pass after programming. */
+#define RA_LINES 5
 
 /** @brief The box's state, the member `ra` of the screen's state. */
 typedef struct {

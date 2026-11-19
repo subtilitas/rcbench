@@ -69,6 +69,57 @@ void rauto_measure_via(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
 void rauto_verify_begin(servo_rauto_t *r, uint8_t step, uint32_t now_ms);
 
 /**
+ * @brief Whether a measure may take its angle now: SERVO_RAUTO_STILL_MS after
+ *        its command, a valid angle still that long, on the IMU held within
+ *        the settle rule, and no gap open (servo_rudder_auto.h, "A
+ *        measure").
+ * @param r      Run state.
+ * @param now_ms Time, ms.
+ * @param in     What the caller knows.
+ * @return true when the angle is taken now.
+ */
+bool rauto_still(const servo_rauto_t *r, uint32_t now_ms,
+                 const servo_rauto_in_t *in);
+
+/**
+ * @brief The limit search of side @p side next (servo_rudder_auto_search.c):
+ *        the servo to PULSE CENTER, the finder stepping out once it had
+ *        SERVO_LIMRUN_RETURN_MS there.
+ * @param r      Run state.
+ * @param side   0 the 1000us side, 1 the 2000us side.
+ * @param now_ms Time, ms.
+ */
+void rauto_search_begin(servo_rauto_t *r, uint8_t side, uint32_t now_ms);
+
+/**
+ * @brief One INA3221 window in phase SEARCH: the finder stepped, its
+ *        position recorded once judged, the hold at the end pulse begun.
+ * @param r     Run state.
+ * @param ma    The window's mean current, its magnitude, mA.
+ * @param at_ms The window's time, ms.
+ */
+void rauto_search_window(servo_rauto_t *r, uint16_t ma, uint32_t at_ms);
+
+/**
+ * @brief Phase SEARCH's own step: the first measure at the end pulse taken
+ *        by the measure's rule while the search holds there.
+ * @param r      Run state.
+ * @param now_ms Time, ms.
+ * @param in     What the caller knows.
+ */
+void rauto_search_step(servo_rauto_t *r, uint32_t now_ms,
+                       const servo_rauto_in_t *in);
+
+/**
+ * @brief Both sides searched: their first measures judged, the 1000us side
+ *        first, then the first side outside the tolerance written, or the
+ *        verify pass, or PASS (servo_rudder_auto.c).
+ * @param r      Run state.
+ * @param now_ms Time, ms.
+ */
+void rauto_searched(servo_rauto_t *r, uint32_t now_ms);
+
+/**
  * @brief The angle the verify pass's measure took: recorded, then the next
  *        measure, or the end once all three are in.
  * @param r      Run state.

@@ -11916,14 +11916,14 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_TARGETS,
     "Ziele:           1000us %.1f°, 2000us %.1f°, "
     "Toleranz %.1f°")
 /* KST: the margin's pulse range, PULSE LOWER and PULSE UPPER as written,
- * and the extended ends by the linear map, which the run does not drive. */
+ * and the extended ends by the linear map, which only the search drives. */
 UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN,
     "Margin:         %u%%: servo pulses %.1f-"
     "%.1fus; by the linear model %uus reaches "
-    "%.1f°, %uus %.1f°; not driven",
+    "%.1f°, %uus %.1f°; driven in the search only",
     "Reserve:         %u%%: Servopulse %.1f-"
     "%.1fus; nach dem linearen Modell erreicht "
-    "%uus %.1f°, %uus %.1f°; nicht angefahren")
+    "%uus %.1f°, %uus %.1f°; nur in der Suche angefahren")
 UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN_HITEC,
     "Margin:         0%: KST/Chaservo only, a Hitec "
     "servo has no pulse registers",
@@ -12028,6 +12028,31 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_VERIFY_NO_WRITE,
 UI_SERVO_TEXT(SERVO_STR_RA_PH_APPROACH,
     "APPROACH",
     "ANFAHRT")
+/* The limit search that opens every AUTO run (servo_rudder_auto_search.c):
+ * an end found inside the end pulse, the report's section and its rows. */
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_STOP,
+    "stop before the target",
+    "Anschlag vor dem Soll")
+UI_SERVO_TEXT(SERVO_STR_RA_STOP_AT,
+    "STOP AT %uus BEFORE TARGET",
+    "ANSCHLAG BEI %uus VOR DEM SOLL")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SEARCH_HEAD,
+    "LIMIT SEARCH (pulse, current, angle)",
+    "ENDLAGENSUCHE (Puls, Strom, Winkel)")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SEARCH_RULE,
+    "Steps:          %uus out from %uus, each %ums "
+    "settled and %ums measured; bound at %.1f x the "
+    "free current and %.2fA over it, the end %uus "
+    "short of it; the first measure at 1000us and "
+    "2000us by the Measure rule",
+    "Schritte:        %uus ab %uus nach außen, je "
+    "%ums Einschwingen und %ums Messen; blockiert "
+    "bei %.1f x dem Freistrom und %.2fA darüber, das "
+    "Ende %uus davor; die erste Messung bei 1000us "
+    "und 2000us nach der Messregel")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SEARCH_ROW,
+    "%uus  %.3fA  %s",
+    "%uus  %.3fA  %s")
 /* AUTO's box on RUDDER (servo_rudder_auto_panel.c): the button that
  * shows it and the one back, its rows, its START, its lines and why a
  * START is refused. */
@@ -12072,6 +12097,17 @@ UI_TEXT(RA_VERIFY, 50,
 UI_TEXT(RA_FILE, 50,
     "REPORT %s",
     "BERICHT %s")
+/* The box's line for an end found inside the end pulse, the search's step
+ * on the first line, and the found ends on the fourth. */
+UI_TEXT(RA_STOP_AT, 48,
+    "STOP AT %uus BEFORE TARGET",
+    "ANSCHLAG BEI %uus VOR DEM SOLL")
+UI_TEXT(RA_SEARCH, 50,
+    "%s %uus: STEP %u OF %u",
+    "%s %uus: SCHRITT %u VON %u")
+UI_TEXT(RA_ENDS, 50,
+    "%s %s, %s %s",
+    "%s %s, %s %s")
 UI_TEXT(RA_BINDS_AT, 48,
     "surface binds at %s°",
     "Ruder klemmt bei %s°")

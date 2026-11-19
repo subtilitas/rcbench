@@ -122,6 +122,10 @@ TEST_CASE(auto_lands_a_d_series_servo_within_tolerance)
         CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), line);
     }
     CHECK(strstr(hl.report, "Pulse write") == NULL);
+    /* The search at margin 0: out to 1000us and 2000us, both free. */
+    CHECK(strstr(hl.report, "LIMIT SEARCH (pulse, current, angle)") != NULL);
+    CHECK(strstr(hl.report, "Low end:        free to 1000us") != NULL);
+    CHECK(strstr(hl.report, "High end:       free to 2000us") != NULL);
     /* Both ends within 0.5° of 22°, moved toward NEUTRAL in counts. */
     CHECK(fabsf(defl_at(1000u) - 22.0f) <= 0.5f);
     CHECK(fabsf(defl_at(2000u) - 22.0f) <= 0.5f);
