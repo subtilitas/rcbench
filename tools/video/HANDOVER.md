@@ -83,7 +83,7 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
   its pixels differ from SwiftShader's by 0.031 of 255 on average on
   the Dial video. `minircbench-features`, 30,021 frames, takes 531s
   there with `--jobs 47` and empty caches. `rbmod-first-program` takes
-  112s with 47 jobs, `auto-rudder` 123s with 30 jobs, 5 a card.
+  112s with 47 jobs, `auto-rudder` 235s with 30 jobs, 5 a card.
 - Chromium takes the first Vulkan device: 47 browsers with the full
   case model filled one card's 16GiB. A browser of a long scene with
   the full case needs about 0.4GB; the server spreads the jobs over its
