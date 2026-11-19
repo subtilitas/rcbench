@@ -281,6 +281,27 @@ def events(board: dict) -> list:
     return sorted(f for f in found if f[0] >= 0)
 
 
+def flaps(board: dict) -> list:
+    """List the moves of a rudder model's flap.
+
+    Args:
+        board: A storyboard that passed make_video.check().
+
+    Returns:
+        (seconds from the video's start, seconds, degrees) per pair of
+        "deflect" keys between which the flap turns: when the move
+        starts, how long it lasts and how far it goes, signed.
+    """
+    found = []
+    for scene, (start, _) in zip(board["scenes"], scene_times(board),
+                                 strict=True):
+        keys = scene.get("deflect", []) if scene["type"] == "case" else []
+        for a, b in zip(keys, keys[1:], strict=False):
+            if b[1] != a[1] and b[0] > a[0]:
+                found.append((start + a[0], b[0] - a[0], b[1] - a[1]))
+    return found
+
+
 def render(board: dict, path: pathlib.Path, clips=()) -> float:
     """Write the track as a 16-bit stereo WAV file.
 
@@ -569,6 +590,31 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
                 sig, tt = tone(hz(notes[idx] + 24), 1.2, bell)
                 sig *= np.exp(-tt / 0.3) * np.minimum(1.0, tt / 0.004)
                 put(fx, t + 0.09 * k, sig, 0.2, 0.09)
+
+    # The servo's gear train while the flap turns: a buzz whose pitch and
+    # level follow the flap's speed, a gear-mesh flutter on it and some
+    # hiss.  The speed is the moves' own, smoothed over 30ms, so a search
+    # step of half a degree is a short quiet blip and a move across the
+    # travel a whine.
+    rate = np.zeros(n)
+    for at, length, deg in flaps(board):
+        i, j = int(at * RATE), min(n, int((at + length) * RATE))
+        rate[i:j] = abs(deg) / length
+    if rate.any():
+        win = np.hanning(int(0.03 * RATE))
+        rate = np.convolve(rate, win / win.sum(), "same")
+        level = np.clip(rate / 40.0, 0.0, 1.0) ** 0.6
+        phase = 2 * np.pi * np.cumsum(240.0 + 6.5 * rate) / RATE
+        buzz = sum(np.sin(k * phase) / k for k in range(1, 7))
+        mesh = 2 * np.pi * np.cumsum(34.0 + 1.1 * rate) / RATE
+        hiss = rng.standard_normal(n)
+        hiss = np.fft.irfft(np.fft.rfft(hiss) * (
+            (np.fft.rfftfreq(n, 1.0 / RATE) > 1500.0)
+            & (np.fft.rfftfreq(n, 1.0 / RATE) < 5000.0)), n)
+        hiss /= max(1e-9, float(np.max(np.abs(hiss))))
+        gear = level * ((0.75 + 0.25 * np.sin(mesh)) * buzz / 1.6
+                        + 0.35 * hiss)
+        put(fx, 0.0, gear, -0.25, 0.06)
 
     # A room: 2.4s of decaying noise, convolved in one transform.
     ir_n = int(2.4 * RATE)
