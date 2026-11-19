@@ -32,6 +32,9 @@ const IMU_AT = [203, 16, 4.36], IMU_SLOPE = -.141;
 const PAD = 2;                      // the gel tape's thickness
 const WING_AT = [-150, 14, 215];    // the wing's nose in the scene
 const DIAL_AT = [140, 0, 150];
+// The bench standing: its lean and its turn in degrees, and where its
+// middle goes.  The Dial's tip towards the viewer, degrees.
+const STAND = [72, 14, -10, 54, 40], TIP = 48;
 
 const turned = (p, c, deg) => {
   const a = deg * Math.PI / 180, dx = p[0] - c[0], dz = p[1] - c[1];
@@ -138,6 +141,18 @@ function panelBench(gltf) {
 export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   const rig = caseGltf ? buildCadCase(null, caseGltf) : panelBench(panel);
   const {scene} = rig;
+  // The bench as one body: it lies flat at the origin, or stands on its
+  // long edge behind the wing, leaning back and turned to the viewer, so
+  // that its display is read while the flap moves in front of it.
+  const bench = new THREE.Group(), lean = new THREE.Group();
+  const cant = new THREE.Group();
+  for (const o of [...scene.children]) {
+    if (o.isLight || (o.isMesh && o.material.isShadowMaterial)) continue;
+    bench.add(o);
+  }
+  lean.add(bench);
+  cant.add(lean);
+  scene.add(cant);
 
   // The wing in its own frame: z up, y along the span.
   const frame = new THREE.Group();
@@ -195,47 +210,100 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
     }
   });
   const from = wires.getCenter(new THREE.Vector3());
-  let port = [34, 12, 58];
+  // The header the plug goes into, in the bench's own frame.
+  let socket = [34, 12, 58];
   try {
     const at = rig.anchors.J1();
-    if (at.every(Number.isFinite)) port = at;
+    if (at.every(Number.isFinite)) socket = at;
   } catch (e) { /* the case's shell alone has no header */ }
-  const way = new THREE.CatmullRomCurve3([
-    from, new THREE.Vector3(from.x, from.y - 2, 168),
-    new THREE.Vector3(from.x * .5 + port[0] * .5, 3, 128),
-    new THREE.Vector3(port[0], 3, 92),
-    new THREE.Vector3(port[0], port[1], port[2] + 6),
-    new THREE.Vector3(...port)]);
-  const leads = [0x7a4a1e, 0xd0122a, 0xe8731a].map((color, i) => {
-    const m = new THREE.Mesh(
-      new THREE.TubeGeometry(way, 160, .55, 8),
+  const WIRES = [0x7a4a1e, 0xd0122a, 0xe8731a];
+  const leads = WIRES.map(color => {
+    const m = new THREE.Mesh(new THREE.BufferGeometry(),
       new THREE.MeshStandardMaterial({color, roughness: .6}));
-    m.position.x = (i - 1) * 1.15;
     m.castShadow = true;
     scene.add(m);
     return m;
   });
+  // The lead's plug: a 3-pin servo connector, 7.6 x 2.6 x 14mm, black,
+  // its three contacts showing at the wires' end.
+  const plug = new THREE.Group();
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(7.8, 2.8, 14),
+    new THREE.MeshStandardMaterial({color: 0x15171c, roughness: .5}));
+  shell.castShadow = true;
+  plug.add(shell);
+  WIRES.forEach((color, i) => {
+    const eye = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, .4),
+      new THREE.MeshStandardMaterial({color: 0xd4ad38, metalness: .6,
+                                      roughness: .35}));
+    eye.position.set((i - 1) * 2.54, 0, 7.1);
+    plug.add(eye);
+    const tab = new THREE.Mesh(new THREE.BoxGeometry(1.7, .5, 5),
+      new THREE.MeshStandardMaterial({color, roughness: .6}));
+    tab.position.set((i - 1) * 2.54, 1.5, -3.5);
+    plug.add(tab);
+  });
+  scene.add(plug);
+  let way = null, wayKey = '';
+  // The lead from the servo to the plug, laid anew when the bench moves.
+  const lay = () => {
+    scene.updateMatrixWorld(true);
+    const port = bench.localToWorld(new THREE.Vector3(...socket));
+    // The way out of the header: the bench's connector wall faces +z.
+    const out = new THREE.Vector3(0, 0, 1).transformDirection(
+      bench.matrixWorld);
+    const key = port.toArray().concat(out.toArray()).map(
+      v => v.toFixed(2)).join();
+    if (key === wayKey) return;
+    wayKey = key;
+    const back = port.clone().addScaledVector(out, 14);
+    const clear = port.clone().addScaledVector(out, 40);
+    clear.y = Math.max(3, clear.y * .5);
+    way = new THREE.CatmullRomCurve3([
+      from, new THREE.Vector3(from.x, from.y - 2, 168),
+      new THREE.Vector3(from.x * .5 + clear.x * .5, 3,
+                        (168 + clear.z) / 2 + 10),
+      clear, back]);
+    leads.forEach((m, i) => {
+      m.geometry.dispose();
+      m.geometry = new THREE.TubeGeometry(way, 160, .55, 8);
+      m.position.set((i - 1) * 1.15, 0, 0);
+    });
+    plug.position.copy(port).addScaledVector(out, 7);
+    plug.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), out);
+  };
 
   const knob = makeDial(dial, bases);
-  knob.root.position.set(...DIAL_AT);
-  scene.add(knob.root);
+  // The Dial tips towards the viewer about its foot's front edge.
+  const tip = new THREE.Group();
+  tip.position.set(...DIAL_AT);
+  tip.add(knob.root);
+  scene.add(tip);
 
   // The skins that hide the servo: the wing's shell and its cover.
   const skins = [];
   frame.traverse(o => { if (o.isMesh && o.userData.skin) skins.push(o); });
-  const state = {imu: 0, tape: 0, skin: 1, lead: 0};
+  const state = {imu: 0, tape: 0, skin: 1, lead: 0, stand: 0, tip: 0};
   const place = () => {
     sensor.position.z = PAD + state.imu * 70;
     sensor.visible = state.imu < 1;
     tape.position.z = state.tape * 45;
     tapeMat.opacity = .75 * (1 - state.tape);
     tape.visible = state.tape < 1;
+    // The bench from flat at the origin to standing behind the wing.
+    const k = state.stand;
+    lean.rotation.x = k * STAND[0] * Math.PI / 180;
+    cant.rotation.y = k * STAND[1] * Math.PI / 180;
+    cant.position.set(k * STAND[2], k * STAND[3], k * STAND[4]);
+    tip.rotation.x = state.tip * TIP * Math.PI / 180;
+    tip.position.y = state.tip * 26;
+    lay();
     // The lead grows from the servo to the bench as it is plugged in.
     for (const m of leads) {
       m.visible = state.lead < 1;
       m.geometry.setDrawRange(
         0, Math.round(160 * (1 - state.lead)) * 8 * 6);
     }
+    plug.visible = state.lead < .04;
     for (const m of skins) {
       m.material.transparent = state.skin < 1;
       m.material.opacity = .18 + .82 * state.skin;
@@ -276,12 +344,13 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
       tape: onFlap(IMU_AT[0], IMU_AT[1] - 25, IMU_AT[2] + 1),
       horn: inWing(EYE[0], -5, EYE[1]),
       lead: () => way.getPoint(.62).toArray(),
-      port: () => port,
+      port: () => plug.position.toArray(),
     },
     setFace: knob.setFace, setTurn: knob.setTurn,
     // How far out the sensor stands, 1 to 0, its tape, 1 off to 0 on,
-    // the skins, 1 solid to 0 clear, and the servo's lead, 1 away to 0
-    // plugged in.
+    // the skins, 1 solid to 0 clear, the servo's lead, 1 away to 0
+    // plugged in, the bench, 0 flat to 1 standing, and the Dial, 0 level
+    // to 1 tipped towards the viewer.
     setParts: parts => { Object.assign(state, parts); place(); },
     setDeflect,
   };

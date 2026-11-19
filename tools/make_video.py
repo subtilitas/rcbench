@@ -235,7 +235,8 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
     for name, keys in scene.get("parts", {}).items():
         model = scene.get("model")
         known = MINI_UNITS if mini else DIAL_UNITS if model == "dial" else (
-            "imu", "tape", "skin", "lead") if model == "rudder" else UNITS
+            "imu", "tape", "skin", "lead", "stand", "tip") \
+            if model == "rudder" else UNITS
         if name not in known:
             errors.append(f"{where} parts: {name} is not one of "
                           f"{', '.join(known)}")
