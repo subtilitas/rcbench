@@ -61,7 +61,8 @@ VIDEO = REPO / "tools" / "video"
 CACHE = REPO / "build" / "video" / "cache"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
-ANCHORS = ("display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
+ANCHORS = ("wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
+           "horn", "display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
            "estop", "side", "plug", "panel", "case", "mcu",
            "ina", "buck", "trigger", "knob", "bezel", "usb", "power",
            "portA", "portB", "body", "dial", "glass", "board", "card",
@@ -161,9 +162,9 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
         return
     _keys(scene.get("camera"), 3, f"{where} camera", errors)
     if scene.get("model", "mockup") not in ("mockup", "cad", "dial", "duo",
-                                            "mini", "part"):
+                                            "mini", "part", "rudder"):
         errors.append(f"{where}: model must be mockup, cad, dial, duo, "
-                      "mini or part")
+                      "mini, part or rudder")
     if scene.get("model") == "part" and not (
             isinstance(scene.get("part"), str) and scene["part"]
             and all(c.isalnum() or c in "-_" for c in scene["part"])):
@@ -173,7 +174,7 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
     for n, window in enumerate(scene.get("windows", [])):
         _check_window(window, dur, f"{where} window {n + 1}", errors, known)
     mini = scene.get("model") == "mini"
-    for name in ("faces", "turn", "flip", "spin"):
+    for name in ("faces", "turn", "flip", "spin", "deflect"):
         if name in scene:
             _keys(scene[name], 2, f"{where} {name}", errors)
     for key in scene.get("faces", []):
@@ -224,7 +225,8 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
     for name, keys in scene.get("parts", {}).items():
         known = MINI_UNITS if mini else DIAL_UNITS if scene.get(
-            "model") == "dial" else UNITS
+            "model") == "dial" else ("imu", "tape") if scene.get(
+            "model") == "rudder" else UNITS
         if name not in known:
             errors.append(f"{where} parts: {name} is not one of "
                           f"{', '.join(known)}")

@@ -13,6 +13,7 @@ import {buildCadCase, loadCad} from './case_cad.js';
 import {buildBoard} from './board.js';
 import {drawWindows} from './windows.js';
 import {buildPart} from './part3d.js';
+import {buildRudder} from './rudder3d.js';
 import {buildDial} from './dial3d.js';
 import {buildDuo} from './duo3d.js';
 import {buildMini} from './mini3d.js';
@@ -109,6 +110,19 @@ const dialBase = sb.dial_base
   ? [await loadCad('/cad/dial_base_top.glb'),
      await loadCad('/cad/dial_base_bottom.glb')]
   : null;
+// The models of a rudder scene, loaded once.  The case's model is not in
+// the tree: without it the panel alone stands in as the bench.
+let rudderLoad = null;
+const rudderParts = () => rudderLoad || (rudderLoad = (async () => {
+  let caseGltf = null;
+  try { caseGltf = await loadCad('/cad/case.glb'); } catch (e) {}
+  return {
+    wing: await loadCad('/cad/flap_drive_assembly.glb'),
+    imu: await loadCad('/cad/wit_imu.glb'),
+    dial: await loadCad('/cad/m5dial.glb'), bases: dialBase, caseGltf,
+    panel: caseGltf ? null : await loadCad('/cad/panel_7b.glb'),
+  };
+})());
 for (const sc of sb.scenes) {
   if (sc.type === 'board') {
     sc.plan = await (await fetch(`/cad/${sc.board}.json`)).json();
@@ -129,6 +143,7 @@ for (const sc of sb.scenes) {
       ? buildMini(await loadCad('/cad/minircbench.glb'))
     : sc.model === 'part'
       ? buildPart(await loadCad(`/cad/${sc.part}.glb`))
+    : sc.model === 'rudder' ? buildRudder(await rudderParts())
     : buildCase(shown);
   if (sc.servo) sc.rig.setServoPort(sc.servo.connector, sc.servo.position);
 }
@@ -227,6 +242,7 @@ function drawCase(sc, lt, a, pulse, ui) {
   if (sc.turn && m.setTurn) m.setTurn(track(sc.turn, lt));
   if (sc.flip && m.setFlip) m.setFlip(track(sc.flip, lt));
   if (sc.spin && m.setSpin) m.setSpin(track(sc.spin, lt));
+  if (sc.deflect && m.setDeflect) m.setDeflect(track(sc.deflect, lt));
   if (sc.panel && m.setScreen) {
     // The case's display shows the panel's screen of this time.
     let n = 0;
