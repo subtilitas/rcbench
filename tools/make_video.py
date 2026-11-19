@@ -738,12 +738,17 @@ def faces(board: dict) -> list:
     Returns:
         The names of tools/render_dial.py's faces, sorted.
     """
-    return sorted({key[1] for scene in board["scenes"]
-                   if scene["type"] == "case"
-                   for key in scene.get("faces", [])
-                   if not key[1].startswith("live-")})
+    found = {key[1] for scene in board["scenes"]
+             if scene["type"] == "case"
+             for key in scene.get("faces", [])
+             if not key[1].startswith("live-")}
+    # A RUDDER AUTO run shows the Dial its title and the bench's state.
+    if any("rauto" in scene for scene in board["scenes"]):
+        found |= set(RAUTO_FACES)
+    return sorted(found)
 
 
+RAUTO_FACES = ("other-rudder-auto-safe", "other-rudder-auto-armed")
 RUN_HZ = 10
 DETENT_DEG = 22.5
 RUNS = ("motor", "servo", "nav")
@@ -1000,7 +1005,8 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
             import render_dial
 
             unknown = [name for name in wanted
-                       if name not in render_dial.FACES]
+                       if name not in render_dial.FACES
+                       and render_dial.other(name) is None]
             if unknown:
                 sys.exit(f"render_dial.py draws no face {unknown[0]!r}")
             dial = render_dial.build(tmp)
@@ -1050,8 +1056,12 @@ def rauto(board: dict, shots: pathlib.Path, tmp: pathlib.Path) -> None:
     for scene in scenes:
         at, speed = scene["rauto"]["at"], scene["rauto"].get("speed", 1)
         panel, deflect, frame = [], [], None
-        for n, (shot, ms, deg, _running, _armed) in enumerate(rows):
+        dial, state = [], None
+        for n, (shot, ms, deg, _running, armed) in enumerate(rows):
             t = round(at + (int(ms) - start) / 1000 / speed, 3)
+            if armed != state:
+                state = armed
+                dial.append([t, RAUTO_FACES[int(armed)]])
             if shot != frame:
                 frame = shot
                 panel.append([t, f"rauto-{int(shot):04d}"])
@@ -1060,6 +1070,9 @@ def rauto(board: dict, shots: pathlib.Path, tmp: pathlib.Path) -> None:
                 rows[n - 1][2] == deg == rows[n + 1][2])
             if edge:
                 deflect.append([t, float(deg)])
+        # The Dial's face follows the bench's state through the run.
+        scene["faces"] = sorted(
+            [key for key in scene.get("faces", []) if key[0] < at] + dial)
         scene["panel"] = sorted(scene.get("panel", []) + panel)
         scene["deflect"] = sorted(scene.get("deflect", []) + deflect)
 

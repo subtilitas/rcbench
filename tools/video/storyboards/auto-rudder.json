@@ -25,16 +25,23 @@
    "type": "case",
    "model": "rudder",
    "dur": 50.72,
-   "panel": [
-    [
-     0,
-     "overview"
+   "run": {
+    "kind": "nav",
+    "view": "overview",
+    "screen": "overview",
+    "from": 0.2,
+    "to": 50.519999999999996,
+    "ops": [
+     [
+      48.72,
+      "t1"
+     ]
     ]
-   ],
+   },
    "faces": [
     [
      0,
-     "navigation"
+     "waiting"
     ]
    ],
    "camera": [
@@ -344,7 +351,11 @@
    "faces": [
     [
      0,
-     "navigation"
+     "other-imu-safe"
+    ],
+    [
+     9.879999999999999,
+     "other-rudder-safe"
     ]
    ],
    "panel": [
@@ -799,7 +810,7 @@
    "faces": [
     [
      0,
-     "navigation"
+     "other-rudder-auto-safe"
     ]
    ],
    "rauto": {
