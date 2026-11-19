@@ -406,7 +406,9 @@ def test_a_dial_scene_shows_faces_and_turns_its_knob():
     assert any("faces" in e for e in make_video.check(board))
     for path in make_video.storyboards():
         made = json.loads(path.read_text(encoding="utf-8"))
-        assert set(make_video.faces(made)) <= set(render_dial.FACES)
+        assert all(name in render_dial.FACES
+                   or render_dial.other(name) is not None
+                   for name in make_video.faces(made))
 
 
 def _run_scene():
@@ -693,3 +695,12 @@ def test_a_rudder_scene_takes_a_run_of_rudder_auto():
     scene["rauto"]["at"] = 5
     scene["model"] = "duo"
     assert any("rauto" in e for e in make_video.check(board))
+
+
+def test_a_face_names_a_screen_the_knob_does_nothing_on():
+    """other-TITLE-safe and other-TITLE-armed pose the Dial's other face."""
+    assert render_dial.other("other-rudder-auto-armed") == "RUDDER AUTO:armed"
+    assert render_dial.other("other-imu-safe") == "IMU"
+    assert render_dial.other("other") is None
+    assert render_dial.other("other-rudder-auto") is None
+    assert render_dial.other("navigation") is None
