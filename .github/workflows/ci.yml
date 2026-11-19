@@ -767,6 +767,14 @@ jobs:
       - name: Dial base matches its spec and clears dial, nut and cell
         run: python3 hardware/mechanical/_gen_dial_base.py --check
 
+      # The KST X10's frame, its linkage and the slice of wing with the
+      # flap are built with OpenCASCADE round the servo's model: the
+      # files match their spec, each solid is valid and in one piece,
+      # and no two solids of the assembly share volume. Its tests are
+      # test/tools/test_flap_drive.py, in the pytest step above.
+      - name: Flap drive matches its spec and no two of its solids collide
+        run: python3 hardware/mechanical/_gen_flap_drive.py --check
+
       # The M5Stack Dial's solids are surfaces fitted to M5Stack's mesh.
       # OpenCASCADE meshes each solid again; the two meshes are within
       # 0.15mm of each other both ways and 1% in volume.

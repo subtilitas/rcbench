@@ -17,6 +17,11 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
+| `kst_x10.py` | spec of the KST X10 wing servo, from a dimension drawing and photos |
+| `_gen_flap_drive.py` | builds a frame with counter bearing for the KST X10, its linkage and a slice of wing with a flap with OpenCASCADE, checks that no two solids share volume |
+| `_rg15.py` | coordinates of the RG-15 airfoil |
+| `wit_imu.py` | spec of a WitMotion inertial sensor in its case, from a product picture with dimensions |
+| `servo_standard.py` | spec of a standard size servo with a round horn, from a dimensioned sketch |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
@@ -25,7 +30,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards or in a cell |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards, in a cell, in the standard servo, in the KST X10 or in the WitMotion sensor |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -44,6 +49,7 @@ python3 hardware/kicad/tools/step_check.py         # also checks models/
 python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
 python3 hardware/mechanical/check_overlap.py       # 1 minute
 python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
+python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 \
     --step hardware/mechanical/models/*.step
@@ -538,8 +544,8 @@ Limits:
 - Part sizes and heights are the packages' nominal ones, by the look of
   each part in the photo. The chips of the charger and the boost board are
   not identified.
-- The boost board's round pad is drawn as the enable input because it is
-  the only pad besides the 4 corner pads; the board does not name it.
+- The boost board's round pad is the enable input (owner, 2026-11-19); the
+  board does not name it.
 - Not modelled: tracks, vias, pads under parts, the frames printed round
   parts (bar those of the INA219 board), solder, the prints 1R0 and 2R2 on
   the inductors, 4 labels left of the charger's LEDs, the maker's name and
@@ -549,6 +555,136 @@ Limits:
 ```sh
 python3 hardware/mechanical/_gen_font.py     # rewrite _font.py; needs OpenCV
 ```
+
+## Standard servo
+
+A standard size servo with a round horn: black case of three shells, two
+ears with two open mounting holes each, white print "Standard Servo" on
+both long sides, white horn.
+
+![Standard servo](renders/servo_standard.png)
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `servo_standard.step` | case of 3 shells, 2 ears, boss, shaft hub, horn with 13 holes, print on 2 sides; 34 solids, 0.7MB | case 40.5 x 20.0 x 36.3; 54.9 over the ears; 44.1 over the horn; horn 21.0 across | on the shaft's axis, on the case's underside; x along the case, the long end to -x; z up |
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Mounting holes | 5.0mm across, 49.5mm apart along the case, 10.0mm across it | sketch |
+| Ears | 7.2mm long, 2.5mm thick, underside 26.3mm over the case's underside | sketch |
+| Shaft axis | 30.4mm from the case's long end, 10.1mm from the short end | sketch |
+| Horn | 2.0mm thick, underside 5.8mm over the case | sketch |
+| Horn diameter, boss, hub, seams, slots of the holes, corner radius, horn holes | see `servo_standard.py` | scaled from the sketch, not dimensioned |
+
+Source: an owner sketch with three dimensioned views, which is not in the
+repository and names neither maker nor type. The sketch gives 55mm over the
+ears and 7.2mm + 40.5mm + 7.2mm for its parts; the model is 54.9mm long. The
+cable, its plug, the horn's screw and the shaft's splines are not in the
+sketch and not drawn. No dimension is verified on a servo.
+
+## KST X10 with frame and flap drive
+
+A KST X10 wing servo on a frame with counter bearing, driving a flap
+through a pushrod, in a slice of wing. The servo follows a dimension
+drawing. The frame, the linkage and the wing are a reference layout:
+their kinds of parts and their look follow photos of such a frame, and
+every size is chosen in `_gen_flap_drive.py`. No part is measured, made
+or tried.
+
+![Servo, frame and linkage](renders/flap_drive_unit_2.png)
+
+| | |
+| --- | --- |
+| ![Section through wing and flap](renders/flap_drive_section.png) | ![Wing from below, cover off](renders/flap_drive_below.png) |
+| ![The unit from the rod's side](renders/flap_drive_unit.png) | ![Wing from above, skin clear](renders/flap_drive_above.png) |
+
+| File | Content | Frame |
+| --- | --- | --- |
+| `kst_x10.step` | the servo: case with red band, 2 ears, tab, shaft, print, 3 wires 15mm long; 25 solids | origin on the shaft's axis at the case's output end, z = 0 on the face the ears lie on; shaft to +y |
+| `flap_drive.step` | plate, 3 inserts, 3 washers, 3 screws, 2 blocks, strut, bush and its screw, double arm, pin, rod end, rod, fork, 2 horn plates, horn pin; 23 solids | the wing's: origin at the nose on the chord line, x to the trailing edge, y along the span, z up |
+| `flap_drive_wing.step` | wing shell, flap shell, cover of the servo's opening, spar web, rear web, the flap's nose wall; 6 solids | the wing's |
+| `flap_drive_assembly.step` | the two files above and the servo in its place; 54 solids, 3.5MB | the wing's |
+
+The layout:
+
+- The wing is a slice of 88mm span with the RG-15 airfoil on a chord of
+  230mm and skins of 0.8mm. The flap is hinged in the lower skin at 75%
+  of the chord.
+- The servo lies flat under the upper skin, its shaft along the span at
+  38% of the chord. A carbon plate of 2.0mm is bonded to the skin, turned
+  1.6 degrees to the skin's slope and 0.25mm under it at the nearest
+  point. The servo's 2 ears and its tab are screwed to brass inserts in
+  the plate with 3 M2.5 screws.
+- 2 blocks on the plate hold an arched strut of 2.0mm, 11mm in front of
+  the servo's output end. A brass bush in the strut, on the shaft's axis,
+  carries the outer end of the double arm.
+- The arm is 7.0mm from shaft to pin and points to the lower skin. With
+  the plate on the upper skin the shaft lies 7.0mm under the plate's
+  bonded face, which leaves an arm no room towards that skin.
+- The rod is 87.4mm from pin to eye and 3.0mm across. It rises through a
+  slot in the rear web and a slot of 7mm width in the upper skin to a fork
+  between 2 horn plates of 1.5mm. The plates stand on the flap's lower
+  skin and pass through its upper skin. Their eye lies 3.5mm over the
+  flap's upper surface and 1.0mm behind the hinge, 12.9mm over the hinge.
+- The servo comes out through an opening of 60mm x 69mm in the lower
+  skin, which a cover closes.
+
+Flap angle for an angle of the arm, from `travel()`:
+
+| Arm, degrees | -60 | -45 | -30 | -15 | 15 | 30 | 45 | 60 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Flap, degrees, positive down | -24.4 | -20.3 | -14.7 | -7.8 | 8.4 | 17.1 | 25.5 | 32.8 |
+
+Dimensions of the servo, mm:
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Case | 30.0 x 10.0 x 35.5 | drawing |
+| Over the ears | 42.0; ears 8.0 high, 1.8 thick | drawing |
+| Mounting holes | 3.0 across, 36.0 apart; a third in the tab | drawing; the tab's hole is estimated |
+| Shaft | 6.6 from the nearer side of the case, 3.3 out of the case | drawing |
+| Tab | 10.1 wide, 6.4 long, hole 3.7 past the case | width from the drawing; the rest is the drawing's 39.2 and 41.9 read against its lines, which the drawing does not state |
+| Band, slot, corner radii, shaft diameter, cable | see `kst_x10.py` | scaled from the drawing or estimated from photos |
+
+Sources: a dimension drawing of the KST X10, five photos of an X10 on a
+frame with counter bearing and one shop photo of such a frame's parts,
+none of which is in the repository; the RG-15 coordinates of the airfoil
+database of the University of Illinois at Urbana-Champaign.
+
+Limits:
+
+- The parts stand at neutral. The collision check covers that position
+  only; no deflected position is checked.
+- Threads, the servo's splines, the hinge's tape, the adhesive under the
+  plate, spar caps, ribs and a fairing over the rod's slot are not drawn.
+- The cable ends 15mm from the servo and has no plug.
+- Loads, stiffness and the bush's play are not calculated.
+
+## WitMotion inertial sensor
+
+A WitMotion inertial sensor in its black case: a base of 3.0mm with a
+slotted ear at each end, a square body, and a white label with blue print
+that shows the sensor's axes.
+
+![WitMotion sensor](renders/wit_imu.png)
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `wit_imu.step` | base with 2 slotted ears, body, label with its print; 51 solids | 36.1 x 51.5 x 15.0; base 3.0 thick | middle of the base's underside; x across the 36.1, y along the 51.5 towards the ear the label's X arrow points to, z up |
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Width, length over the ears, height, base | 36.1mm, 51.5mm, 15.0mm, 3.0mm | picture |
+| Body | 36.1mm x 36.1mm, corner radius 3.0mm | scaled from the picture's outline |
+| Slots | 14.7mm x 3.2mm, 44.5mm apart | scaled from the picture's outline |
+| Ears | 7.7mm long, 27.5mm wide at the body, 20.6mm at the end | scaled from the picture's outline |
+
+Source: one product picture with two dimensioned outlines, which is not in
+the repository. The picture does not name the sensor's type. The label's
+axes are drawn as the picture shows them: X to one ear, Y across, Z out of
+the face. The USB socket, the rounding of the body's upper edge and any
+lamp or switch are not in the picture and not drawn. The maker's logo is
+drawn as the letters "WIT". No dimension is verified on a sensor.
 
 ## Licence
 

@@ -1107,7 +1107,7 @@
 				)
 			)
 		)
-		(property "Description" "5V boost converter board with enable pad, 13.7 x 21.7mm. Corner pads with 1.3mm holes, seen from the top side with the inductor down: 3 OUT+ upper left, 4 OUT- upper right, 1 IN+ lower left, 2 IN- lower right. Pad 5 = round 1.4mm pad at the right edge next to R3, taken as enable, not named on the board. Measured from owner photos on squared paper, about 0.2mm."
+		(property "Description" "5V boost converter board with enable pad, 13.7 x 21.7mm. Corner pads with 1.3mm holes, seen from the top side with the inductor down: 3 OUT+ upper left, 4 OUT- upper right, 1 IN+ lower left, 2 IN- lower right. Pad 5 = round 1.4mm pad at the right edge next to R3, the enable input, not named on the board. Measured from owner photos on squared paper, about 0.2mm."
 			(at 0 0 0)
 			(show_name no)
 			(do_not_autoplace no)
