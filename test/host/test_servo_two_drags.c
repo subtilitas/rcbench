@@ -29,9 +29,9 @@
 #define ONTO_X   (SHAFT_X + 150)
 
 /* SPEED's track: where a drag on it starts, and 60px and 120px on. */
-#define SPD_X0 (SV_RC_X + 44)
-#define SPD_X1 (SV_RC_X + 104)
-#define SPD_X2 (SV_RC_X + 164)
+#define SPD_X0 (SV_SPEED_X + 44)
+#define SPD_X1 (SV_SPEED_X + 104)
+#define SPD_X2 (SV_SPEED_X + 164)
 
 /** @brief SERVO fed through the tracker, armed, nothing waiting. */
 static void fed_armed(void)

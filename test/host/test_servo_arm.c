@@ -600,7 +600,7 @@ TEST_CASE(the_first_dial_drag_after_an_arm_starts_from_the_rest)
     drain();
     frames(40);
     CHECK(disarm());
-    feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);  /* SPEED near its 10% end */
+    feed_tap(FEED_LONE, SV_SPEED_X + 5, SPEED_Y);  /* SPEED near its 10% end */
     CHECK(arm());
     CHECK_EQ(servo_screen_drawn(), 1500);
     int x, y;
@@ -863,7 +863,7 @@ TEST_CASE(a_held_position_is_not_said_again_after_a_disarm_tap)
     drain();
     feed_tap(FEED_LONE, ARM_X, ARM_Y);
     CHECK_EQ(took().kind, SERVO_CMD_DISARM);
-    feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);
+    feed_tap(FEED_LONE, SV_SPEED_X + 5, SPEED_Y);
     unsigned seen = kinds_over(4);
     open_settings();
     trim_up();
@@ -1062,7 +1062,7 @@ TEST_CASE(the_first_dial_drag_after_a_release_starts_from_the_rest)
     for (int profile = 0; profile < PROFILE_COUNT; ++profile) {
         const uint16_t driven = armed_and_driven(profile);
         CHECK(driven != 0u);
-        feed_tap(FEED_LONE, SV_RC_X + 5, SPEED_Y);  /* SPEED near its 10% end */
+        feed_tap(FEED_LONE, SV_SPEED_X + 5, SPEED_Y);  /* SPEED near its 10% end */
         drain();
         feed_tap(FEED_LONE, RELEASE_X, BTN_Y);
         CHECK_EQ(took().kind, SERVO_CMD_RELEASE);

@@ -670,11 +670,14 @@ and switches every output off (`test_servo_start_seq`, `test_servo_ready`,
 LIMIT RUN has the same READY card from `shared/ui/servo_limit_ready.c`, ten rows, nine from
 `lim_blocked()`'s checks and ANGLE, which names the angle source and refuses nothing, and the same hold; the run ends SAFE, the PROG 5V kept
 (`test_servo_limrun_ready`, `test_servo_limrun_seq`; host suite only).
-LIVE, SWEEP and RUDDER show READY rows in the output card's place (PORT, SUPPLY, ARM; ANGLE
-and ZERO on RUDDER), and their ARM runs the same steps where PORT PWM, PROG 5V or the PD
+LIVE, SWEEP and RUDDER show READY rows in the output card's place (PORT, SUPPLY, ARM; ZERO
+on LIVE, ANGLE and ZERO on RUDDER), and their ARM runs the same steps where PORT PWM, PROG 5V or the PD
 mini reads off: never the PD mini past 6.0V or beside a rail an INA3221 reads at 3.0V or
 more, DISARM and a failed step all off, PROG 5V kept between SERVO screens
 (`shared/ui/servo_drive_ready.c`, `test_servo_drive_ready`; host suite only).
+LIVE's ZERO sets the zero MEASURED reads from, ARMED or SAFE with a reading on show: ENC
+CENTER from the AS5600's count, saved, or the IMU's own ZERO; LIVE's OPTIONS list holds ENC
+CENTER under the profile (`test_servo_live_zero`, `test_servo_lists_rows`; host suite only).
 Under their rows a SET row holds SET V and SET A, which open SUPPLY's keypad inside its
 OUTPUT LIMITS through SUPPLY's question and the HV warning, refused while a programming
 port holds the PD mini, and the supply's plot; on the rbmod carrier's programming port the
@@ -1695,7 +1698,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 607 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 608 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1818,7 +1821,7 @@ The host suite is 607 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
-`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
+`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_live_zero`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,

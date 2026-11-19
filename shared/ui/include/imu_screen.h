@@ -129,6 +129,10 @@ const imu_view_t *imu_screen_view(void);
  *         scan and no calibration runs.
  */
 bool imu_screen_bind(uint8_t i);
+/** @brief ZERO, as the screen's ZERO button takes it: the current angles
+ *         as the IMU's zero.
+ *  @return Whether the ZERO was queued: the view holds a valid reading. */
+bool imu_screen_zero(void);
 /** @brief Whether a BIND is taken now: Bluetooth runs, no scan and no
  *         calibration runs (imu_screen_bind()).
  *  @return Whether it is. */

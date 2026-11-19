@@ -1954,17 +1954,21 @@ oder ein Lauf läuft, und nennt das beim Tippen im Alarmband. Auf LIVE
 
 LIVE, SWEEP und RUDER zeigen BEREIT unter der Taste PORT: Zeilen von 30px
 ab y 96, jede mit Punkt, Bezeichnung von 10 Zellen und Zustand von 20.
-LIVE und SWEEP haben PORT, VERSORGUNG und ARM; RUDER hat PORT, WINKEL,
-NULLPUNKT, VERSORGUNG und ARM. 4px unter der letzten Zeile folgt die
-SET-Zeile, y 190 bis 238 auf LIVE und SWEEP und y 250 bis 298 auf RUDER:
-SET V und SET A, je 80 x 48px, 8px Abstand, und die Grafik bis zum Ende
-der Spalte, 180 x 48px. Darunter haben LIVE und SWEEP TEMPO, die
-Bezeichnung bei y 244 und den Regler bei y 268 bis 308. Alle drei haben
-die Typzeile bei y 318 bis 350. Ein Tippen auf die Typzeile öffnet das
-Servoprofil, die Liste des Hubs, an der Stelle der OPTIONEN-Liste mit TYP
-im Blick; es öffnet nur bei SAFE und nennt sonst die Ablehnung im
-Alarmband, wie OPTIONEN. LIVE hat ZENTRIEREN und FREIGEBEN, SWEEP
-hat SWEEP und FREIGEBEN, je 174 x 48px bei y 356. Die Schienenzeile bei
+LIVE hat PORT, NULLPUNKT, VERSORGUNG und ARM; SWEEP hat PORT, VERSORGUNG
+und ARM; RUDER hat PORT, WINKEL, NULLPUNKT, VERSORGUNG und ARM. 4px unter
+der letzten Zeile folgt die SET-Zeile, y 220 bis 268 auf LIVE, y 190 bis
+238 auf SWEEP und y 250 bis 298 auf RUDER: SET V und SET A, je 80 x 48px,
+8px Abstand, und die Grafik bis zum Ende der Spalte, 180 x 48px.
+
+| Element | LIVE | SWEEP | RUDER |
+| --- | --- | --- | --- |
+| TEMPO | Regler x 716 bis 1004, y 274 bis 314 (288 x 40px); TEMPO über seinem Wert in den 60px links davon | Bezeichnung bei y 244, Regler bei y 268 bis 308 über die ganze Spalte (356 x 40px) | keines |
+| Typzeile, 356 x 32px | y 324 bis 356 | y 318 bis 350 | y 318 bis 350 |
+| Tasten, je 174 x 48px | ZENTRIEREN und FREIGEBEN, y 360 bis 408 | SWEEP und FREIGEBEN, y 356 bis 404 | keine |
+
+Ein Tippen auf die Typzeile öffnet das Servoprofil, die Liste des Hubs, an
+der Stelle der OPTIONEN-Liste mit TYP im Blick; es öffnet nur bei SAFE und
+nennt sonst die Ablehnung im Alarmband, wie OPTIONEN. Die Schienenzeile bei
 y 412 nennt das Messgerät dessen, was das Servo speist, und zeigt seine
 Volt und Ampere, `5.02V  0.120A`, ohne Messwert `--V  --A`; mit dem
 Netzteilmodell des Panels folgt SIMULIERT auf den Namen.
@@ -2013,6 +2017,7 @@ Werte des PD mini stehen nie für die PROG 5V.
 | --- | --- | --- | --- |
 | PORT | die Portzeile; auf einem Programmierport ist PORT-PWM an | auf einem Programmierport in SAFE mit PORT-PWM aus: ARM schaltet es ein. Ohne Ziel die Portzeile in der Warnfarbe | keiner |
 | WINKEL, RUDER | der Name der Winkelquelle | `WINKELQUELLE: KEIN MESSWERT`; ein Tippen öffnet die Optionen der Quelle | keiner |
+| NULLPUNKT, LIVE | `GESETZT` | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE`, Kurzform `NICHT GESETZT`; ein Tippen setzt den Nullpunkt, von dem GEMESSEN misst | keiner |
 | NULLPUNKT, RUDER | `GESETZT` | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE`; ein Tippen setzt den Nullpunkt | keiner |
 | VERSORGUNG | die Schiene hat 3.0V oder mehr ohne PD mini: `FREMD GESPEIST` | in SAFE und aus: `ARM SCHALTET EIN`. Eine Schiene mit 3.0V oder mehr bei PD mini aus: `FREMD GESPEIST`, und ARM lässt den PD mini aus. Kein PD mini antwortet: `EXTERN`. Ein Programmierport hält den PD mini | `EIN` für PROG 5V, `EIN 6.00V` für den PD mini, solange er das Servo speist. Ein Sollwert über 6.0V: `TIPPEN: HV-WARNUNG`; ein Tippen öffnet die HV-Warnung von AUSGANG EIN. PROG 5V nicht ausgelesen oder von einem Programmierport belegt |
 | ARM | keiner | `2s HALTEN`; `ARM ANGEFRAGT`, solange die Schritte des Haltens laufen | `ARMED`. Eine Servoprogrammierung, ein Endlagenlauf oder ein automatischer Test, der ARM sperrt, mit Namen |
@@ -2023,8 +2028,30 @@ VERSORGUNG, wo keiner antwortet. Ein Tippen auf eine Zeile nennt ihren
 Zustand im Alarmband, zum Beispiel `VERSORGUNG: Kein PD mini antwortet:
 der Prüfstand schaltet die Servoversorgung nicht.`, außer das Tippen
 behebt ihn. PORT öffnet die Portliste. Keine Zeile nimmt einen Druck an,
-solange ein anderer Druck gehalten wird, die Schritte von ARM laufen oder
-der Prüfstand nicht SAFE ist.
+solange ein anderer Druck gehalten wird oder die Schritte von ARM laufen.
+NULLPUNKT nimmt sein Tippen bei ARMED und bei SAFE: ein Nullpunkt treibt
+nichts an, und das Ruder steht in Neutrallage, während das Servo
+ZENTRIEREN hält.
+
+NULLPUNKT auf LIVE ist der Nullpunkt, von dem GEMESSEN misst; nach dem
+Tippen zeigt GEMESSEN an dieser Stellung +0.0°. Er gilt für beide
+Winkelquellen:
+
+| WINKELQUELLE | Ein Tippen mit Messwert | Zeigt GESETZT |
+| --- | --- | --- |
+| AS5600 | nimmt den aktuellen Zählerstand, 0 bis 4095, als SENSOR-MITTE und fordert ein Speichern an: dieselbe Einstellung wie SENSOR-MITTE in den Listen von LIVE und RUDER und SETUP > SENSORS > AS5600-Mitte | SENSOR-MITTE ist nicht 0, ihre Vorgabe, oder seit dem Start des Panels wurde ein Zählerstand übernommen; eine Mitte von vor einem Neustart zeigt GESETZT |
+| IMU | fordert den eigenen NULLPUNKT der IMU an, den der IMU-Seite: alle IMU-Winkel, Rollen, Nicken und Gieren, ab der Stellung jetzt. Er verwirft den Nullpunkt und MAX von RUDER auf der IMU, wie NULLPUNKT der IMU-Seite | die IMU meldet ihren Nullpunkt gesetzt; der Nullpunkt der IMU gilt bis zum Neustart |
+
+Ohne Messwert seit dem aktuellen Verbindungsaufbau, nach einem
+Verbindungsverlust bis ein neuer Messwert eintrifft, solange der AS5600
+keinen Magneten meldet oder ohne gültigen IMU-Messwert nimmt ein Tippen
+nichts und nennt den Zustand der Zeile im Alarmband: `SETZE DEN NULLPUNKT
+MIT DEM RUDER IN NEUTRALLAGE`, oder `WINKELQUELLE: KEIN MESSWERT` bei
+einer Zeile, die GESETZT zeigt. NULLPUNKT auf RUDER ist der eigene
+Ausschlag-Nullpunkt von RUDER ([Ruderausschlag](Servo-de.md#ruderausschlag))
+und ändert keine SENSOR-MITTE. Aktuelle Einschränkung: ein Zählerstand 0,
+als SENSOR-MITTE übernommen, zeigt bis zum Neustart GESETZT und danach
+`NICHT GESETZT`.
 
 Die Schritte von ARM prüfen die Schiene in jedem Frame neu, bis sie das
 EIN des PD mini anfordern. Eine Schiene, die bis dahin von anderswo
@@ -2390,7 +2417,9 @@ simuliertem Netzteil, das Modell
 
 GEMESSEN zeigt den Ruderhornwinkel aus der gewählten Quelle AS5600 oder
 IMU, in Zehntelgrad von -180,0° bis +179,9°. Der AS5600 wird 20-mal pro
-Sekunde ausgelesen; sein Winkel bezieht sich auf den Mittenwert. Er muss
+Sekunde ausgelesen; sein Winkel bezieht sich auf den Mittenwert,
+SENSOR-MITTE. Die Zeile NULLPUNKT auf LIVE setzt diese Mitte aus dem
+aktuellen Zählerstand, bei WINKELQUELLE IMU den Nullpunkt der IMU. Er muss
 unter SETUP > SENSORS eingeschaltet sein, antworten und seinen Magneten
 erkennen. Ohne Antwort oder Magnet (STATUS MD nicht gesetzt) erscheint
 `---`; der Zählerstand ist dann kein gültiger Winkel. Ein zu schwacher
@@ -2929,7 +2958,7 @@ Eine Änderung gilt bis SPEICHERN als nicht gespeichert.
 | Bildschirm | OPTIONEN öffnet |
 | --- | --- |
 | der Hub | das Servoprofil: AUSGANG mit TYP, PULSRATE, PULS MIN, PULS MITTE, PULS MAX, TRIMMUNG, WEG, UMKEHREN und HV-SERVO; PRÜFLING mit NAME und BERICHT |
-| LIVE | das Servoprofil, die Liste des Hubs |
+| LIVE | das Servoprofil, die Liste des Hubs; darunter WINKEL mit SENSOR-MITTE |
 | SWEEP | KURVE, TEMPO, Bereich und Haltezeit |
 | TEST | SPANNUNGSSTUFEN: Stufe 4.8V, Stufe 6.0V, HV-SERVO, Stufe 7.4V, Stufe 8.4V; BROWN-OUT: Brown-out, Brown-out Mindestspannung, Brown-out-Schritt; GRENZWERTE: Blockierschwelle, Ruhestrom max, Haltestrom max, Stellzeit max; DAUER UND ZEITEN: Länge nach, Testzeit, Bewegungen, Haltezeit, Einschwingzeit; BEREICH: Bereich, AUSGANG; PRÜFLING: Name des Prüflings, Bericht |
 | ENDLAGENLAUF | MODUS, SERVO, Hitec-D-Empfang (mit SERVO auf HITEC D-SERIE), SERVOPULSE, STROM, Warten vor PWM, Name des Prüflings und Testaufzeichnungen; ein Lauf programmiert mit 5,0V ([Servo](Servo-de.md#die-50v-des-laufs)). STROM ist SET A von SUPPLY, `SET A 2.00A`, ein Tipp sein Tastenfeld; `--` und gesperrt ohne PD mini ([Servo](Servo-de.md#die-strombegrenzung-des-laufs)) |
@@ -3028,7 +3057,7 @@ Die 56px hohen Tasten 2s HALTEN ZUM ÜBERNEHMEN und ABBRECHEN enden 8px
 | ENDLAGENLAUF > OPTIONEN | SERVOPULSE | BEHALTEN oder 1000-2000; gesperrt, solange PORT nicht auf PROG-PORT oder SERVO auf HITEC steht. 1000-2000 schreibt PULSE LOWER und PULSE UPPER des Servos in der Lesesitzung des Laufs, vor der Suche, auf 1000,0 und 2000,0us. Vorgabe BEHALTEN; für die Sitzung |
 | Liste des Hubs | NAME | der Prüfling, bis 23 Zeichen, für den Bericht |
 | Liste des Hubs | BERICHT | ein Textbericht neben der Aufzeichnung jedes Tests |
-| Liste von RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
+| Listen von LIVE und RUDER | SENSOR-MITTE | ein Tippen nimmt den aktuellen Zählerstand als Mitte, wenn das Servo in Neutral steht, und setzt nichts ohne einen Messwert seit dem aktuellen Verbindungsaufbau (keinen nach einem Verbindungsverlust, bis ein neuer eintrifft) und solange der Sensor keinen Magneten meldet; die Zeile zeigt den gespeicherten Zählerstand, 0 bis 4095, und ist bei ausgeschaltetem AS5600 gedimmt. Dieselbe Einstellung wie SETUP, SENSORS, AS5600-Mitte |
 | SERVO > KST > OPTIONEN | KST EXPERT MODE | ob der [Programmierer für KST- und Chaservo-Servos](ServoProgrammer-de.md#expertenmodus) DEAD BAND, BOOST, STRETCH, PAIRING LÖSEN und den Reiter GESPERRT zeigt; standardmäßig AUS, EIN nach 2s Halten (ein kürzerer Druck zeigt den Hinweis auf dem Band), AUS mit einem Tipp. Bleibt über einen Neustart erhalten |
 
 TRIMMUNG ist das einzige Tastenfeld mit Vorzeichen. `+/-` zwischen Punkt
@@ -3045,8 +3074,9 @@ Der Ausgangsencoder AS5600 wird nur unter SETUP > SENSORS ein- und
 ausgeschaltet ([der Ausgangsencoder](#sensors-der-ausgangsencoder)). Der
 Sensor ergänzt den Ruderhornwinkel unter GEMESSEN sowie in CSV und Bericht
 eines Laufs ([Servo](Servo-de.md#der-ausgangsencoder)). SENSOR-MITTE in
-der Liste von RUDER übernimmt den aktuellen Zählerstand als Mitte, mit
-dem Servo in Neutral; ohne Messwert sagt die Zeile
+den Listen von LIVE und RUDER und die Zeile NULLPUNKT auf LIVE übernehmen
+den aktuellen Zählerstand als Mitte, mit dem Servo in Neutral; ohne
+Messwert sagt die Listenzeile
 `Kein AS5600-Wert: richte ihn unter SENSORS ein`.
 
 ![Die Liste von RUDER mit eingeschaltetem Ausgangsencoder](img/de/servo-encoder.png)
@@ -6606,7 +6636,7 @@ Servos, am Sensorbus neben den Monitoren, an seiner festen Adresse 0x36
 | Einstellung | Bereich | Standard | |
 | --- | --- | --- | --- |
 | AS5600 | EIN, AUS | AUS | der Ausgangsencoder; er nimmt SDA und SCL des Sensorbusses oben, beide Pins müssen gesetzt sein |
-| AS5600-Mitte | 0 bis 4095, Schritt 1 | 0 | der 12-Bit-Zählerstand des Sensors, wenn das Servo in Neutral steht; 4096 Schritte je Umdrehung, 0,0879 Grad je Schritt. SENSOR-MITTE auf der Seite SERVO setzt ihn aus dem aktuellen Wert |
+| AS5600-Mitte | 0 bis 4095, Schritt 1 | 0 | der 12-Bit-Zählerstand des Sensors, wenn das Servo in Neutral steht; 4096 Schritte je Umdrehung, 0,0879 Grad je Schritt. SENSOR-MITTE auf der Seite SERVO und NULLPUNKT auf LIVE setzen ihn aus dem aktuellen Wert |
 
 Das Panel schreibt das Freigabe-Bit mit dem Rest des Bus-Frames, 500ms nach
 der letzten Änderung und nur bei einem Prüfstand in SAFE, an einen IOmcu,

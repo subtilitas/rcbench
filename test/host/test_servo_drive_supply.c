@@ -29,7 +29,8 @@
 /** @brief SET V's and SET A's middle row on @p fn. */
 static int set_y(servo_fn_t fn)
 {
-    return (fn == SERVO_FN_RUDDER) ? SV_SET_RUD_Y : SV_SET_Y;
+    return (fn == SERVO_FN_RUDDER) ? SV_SET_RUD_Y
+           : (fn == SERVO_FN_LIVE) ? SV_SET_LV_Y : SV_SET_Y;
 }
 
 /** @brief SERVO fresh on LIVE, SUPPLY's voltage cap at @p v_max, the PD
@@ -154,7 +155,7 @@ TEST_CASE(a_tap_on_set_v_or_set_a_opens_the_keypad_inside_supplys_limits)
 TEST_CASE(a_set_point_past_6v_waits_for_the_hv_hold)
 {
     fresh_pd(8.4f, false);
-    tap(SV_SET_V_X, SV_SET_Y);
+    tap(SV_SET_V_X, SV_SET_LV_Y);
     keys("7.2");
     CHECK(servo_screen_output_held());          /* the warning */
     CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
@@ -169,7 +170,7 @@ TEST_CASE(a_set_point_past_6v_waits_for_the_hv_hold)
     }
 
     fresh_pd(8.4f, false);
-    tap(SV_SET_V_X, SV_SET_Y);
+    tap(SV_SET_V_X, SV_SET_LV_Y);
     keys("6.5");
     CHECK(servo_screen_output_held());
     tap(WARN_CANCEL_X, WARN_Y);
@@ -187,21 +188,21 @@ TEST_CASE(on_a_live_output_a_typed_set_point_asks_supplys_question_armed_or_not)
         settings_set(SET_SUPPLY_CONFIRM_KEYS, 1.0f);
         servo_screen_set_armed(armed != 0);
         scr->tick(0.025f);
-        tap(SV_SET_V_X, SV_SET_Y);
+        tap(SV_SET_V_X, SV_SET_LV_Y);
         CHECK(servo_screen_keypad()->open);
         keys("5.6");
         CHECK(servo_screen_output_held());      /* the question */
         CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
         tap(WARN_CANCEL_X, WARN_Y);
         CHECK(fabsf(supply_screen_set_v() - 5.0f) < 1e-4f);
-        tap(SV_SET_V_X, SV_SET_Y);
+        tap(SV_SET_V_X, SV_SET_LV_Y);
         keys("5.6");
         tap(WARN_APPLY_X, WARN_Y);              /* APPLY, a tap */
         CHECK(!servo_screen_output_held());
         CHECK(fabsf(supply_screen_set_v() - 5.6f) < 1e-4f);
 
         settings_set(SET_SUPPLY_CONFIRM_KEYS, 0.0f);
-        tap(SV_SET_A_X, SV_SET_Y);
+        tap(SV_SET_A_X, SV_SET_LV_Y);
         keys("0.8");
         CHECK(!servo_screen_output_held());
         CHECK(fabsf(supply_screen_set_i() - 0.8f) < 1e-4f);
@@ -215,12 +216,12 @@ TEST_CASE(a_programming_port_holding_the_supply_refuses_set_and_names_it)
     fresh_pd(8.4f, false);
     supply_screen_set_port_held(true);
     scr->tick(0.025f);
-    tap(SV_SET_V_X, SV_SET_Y);
+    tap(SV_SET_V_X, SV_SET_LV_Y);
     CHECK(!servo_screen_keypad()->open);
     CHECK(ui_router_alert() != NULL);
     CHECK_STR_EQ(ui_router_alert(), TR(SUP_HELD_REFUSED));
     ui_router_set_alert(NULL);
-    tap(SV_SET_A_X, SV_SET_Y);
+    tap(SV_SET_A_X, SV_SET_LV_Y);
     CHECK(!servo_screen_keypad()->open);
     CHECK_STR_EQ(ui_router_alert(), TR(SUP_HELD_REFUSED));
     scr->render(&cv, 0);
@@ -228,7 +229,7 @@ TEST_CASE(a_programming_port_holding_the_supply_refuses_set_and_names_it)
     CHECK(has_color(drive_set_rect(0), ui_theme_color(UI_C_TEXT_FAINT)));
     supply_screen_set_port_held(false);
     scr->tick(0.025f);
-    tap(SV_SET_V_X, SV_SET_Y);
+    tap(SV_SET_V_X, SV_SET_LV_Y);
     CHECK(servo_screen_keypad()->open);
     key(UI_KEY_CANCEL);
 }
@@ -269,7 +270,7 @@ TEST_CASE(on_the_carrier_port_the_row_reads_5v_fixed_and_the_plot_the_prog_5v)
     CHECK(row_reads_fixed());
     ui_text_set_language(UI_LANG_EN);
     servo_invalidate();
-    tap(SV_SET_V_X, SV_SET_Y);
+    tap(SV_SET_V_X, SV_SET_LV_Y);
     CHECK(!servo_screen_keypad()->open);
     CHECK(ui_router_alert() == NULL);
 

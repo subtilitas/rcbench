@@ -13,6 +13,7 @@
  * - the_rate_list_marks_the_rate_in_force
  * - reset_on_the_hub_puts_the_profile_back
  * - enc_center_takes_the_live_count_of_an_as5600_only
+ * - lives_list_holds_enc_center_under_the_profile
  * - angle_source_names_the_source_in_force
  * - servo_family_is_picked_on_the_programming_port_only
  * - limit_run_picks_its_family_apart_from_rudder_auto
@@ -35,6 +36,7 @@
 #include "esc_wire_int.h"
 #include "kst_panel.h"
 #include "servo_limrun.h"
+#include "servo_ready_int.h"
 #include "servo_rudder_auto.h"
 
 /* servo_screen_int.h's current-limit helpers, which this suite does not
@@ -231,6 +233,36 @@ TEST_CASE(enc_center_takes_the_live_count_of_an_as5600_only)
     CHECK_EQ(settings_get_int(SET_ENC_CENTER), 2100);
     sl_tap(ENC);
     CHECK_EQ(settings_get_int(SET_ENC_CENTER), 2100);
+    settings_cancel_save();
+}
+
+/* LIVE's list is the profile with ANGLE and RUDDER's ENC CENTER under
+ * it: the same setting, taken from an AS5600 reading only, which LIVE's
+ * ZERO then reads SET. */
+TEST_CASE(lives_list_holds_enc_center_under_the_profile)
+{
+    enum { ANGLE = 13, ENC = 14 };
+    fresh();
+    settings_set(SET_ENC_EN, 1.0f);
+    settings_set(SET_ENC_CENTER, 0.0f);
+    encoder(-1);
+    go(SERVO_FN_LIVE);
+    tap_settings();
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    CHECK_EQ(sl->host->count(), ENC + 1);
+    CHECK_EQ(sl->host->row(ANGLE).kind, (uint8_t)UI_SL_HEADING);
+    CHECK_EQ(hooks(ENC)->label, TX_SV_ROW_ENC_CENTER);
+    CHECK_STR_EQ(value_of(ENC), "0");
+    CHECK_STR_EQ(why_of(ENC), ui_tr(TX_SVL_ENC_NO_READING));
+    CHECK(!drive_zero_set());
+    sl_tap(ENC);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 0);
+    encoder(1900);
+    CHECK_STR_EQ(why_of(ENC), "");
+    sl_tap(ENC);
+    CHECK_EQ(settings_get_int(SET_ENC_CENTER), 1900);
+    CHECK(drive_zero_set());
     settings_cancel_save();
 }
 
@@ -646,6 +678,7 @@ int main(void)
     RUN(the_rate_list_marks_the_rate_in_force);
     RUN(reset_on_the_hub_puts_the_profile_back);
     RUN(enc_center_takes_the_live_count_of_an_as5600_only);
+    RUN(lives_list_holds_enc_center_under_the_profile);
     RUN(angle_source_names_the_source_in_force);
     RUN(servo_family_is_picked_on_the_programming_port_only);
     RUN(limit_run_picks_its_family_apart_from_rudder_auto);

@@ -27,6 +27,8 @@
 TEST_CASE(the_encoders_angle_replaces_the_dashes_in_the_measured_row)
 {
     fresh();
+    /* ENC CENTER kept: LIVE's ZERO reads SET in every picture. */
+    settings_set(SET_ENC_CENTER, 3000.0f);
     scr->render(&cv, 0);
     gfx_color_t *none = malloc((size_t)W * H * sizeof(gfx_color_t));
     REQUIRE_ALLOC(none);

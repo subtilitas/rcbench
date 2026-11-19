@@ -392,7 +392,7 @@ static inline void acked(uint32_t age_ms, servo_sweep_from_t from,
 #define COL_W SV_RC_W
 /* ARM and DISARM in the footer's middle slot. */
 /* The SPEED track, mirrored from the screen: x, w and y of the slider. */
-#define SPEED_X_HALF (SV_RC_X + SV_RC_W / 2)
+#define SPEED_X_HALF (SV_SPEED_X + SV_SPEED_W / 2) /* inside SWEEP's too */
 #define SPEED_Y SV_SPEED_Y
 #define ARM_X SV_ARM_L
 #define ARM_W SV_ARM_W

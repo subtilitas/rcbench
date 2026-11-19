@@ -274,7 +274,8 @@ that reads the sensor afterwards, a phone app or a flight controller, gets
 IMU OFF during a
 calibration ends it FAILED; its CALSW 0 and SAVE go at the next connect.
 ZERO takes the current angles as zero on the panel; nothing goes to the
-sensor, and a restart forgets it.
+sensor, and a restart forgets it. SERVO LIVE's ZERO row with ANGLE SOURCE
+IMU asks the same ZERO.
 
 ## The filter
 
