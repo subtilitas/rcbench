@@ -1892,7 +1892,7 @@ LIVE's ZERO is the zero MEASURED reads from; after the tap MEASURED reads
 | ANGLE SOURCE | A tap with a reading on show | Reads SET |
 | --- | --- | --- |
 | AS5600 | takes the live count, 0 to 4095, as ENC CENTER and asks a save: the setting of ENC CENTER on LIVE's and RUDDER's lists and of SETUP > SENSORS > AS5600 center | ENC CENTER is not 0, its default, or a count was taken since the panel started; a center kept from before a restart reads SET |
-| IMU | asks the IMU's own ZERO, the IMU screen's: every IMU angle, roll, pitch and yaw, from the position now. It drops RUDDER's zero and MAX taken on the IMU, as the IMU screen's ZERO does | the IMU reports its zero taken; the IMU's zero lasts until the restart |
+| IMU | asks the IMU's own ZERO, the IMU screen's: every IMU angle, roll, pitch and yaw, from the current position. It drops RUDDER's zero and MAX taken on the IMU, as the IMU screen's ZERO does | the IMU reports its zero taken; the IMU's zero lasts until the restart |
 
 Without a reading from the current link, after a link loss until a new
 reading arrives, while the AS5600 reports no magnet, or without a valid

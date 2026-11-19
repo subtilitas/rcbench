@@ -2040,7 +2040,7 @@ Winkelquellen:
 | WINKELQUELLE | Ein Tippen mit Messwert | Zeigt GESETZT |
 | --- | --- | --- |
 | AS5600 | nimmt den aktuellen Zählerstand, 0 bis 4095, als SENSOR-MITTE und fordert ein Speichern an: dieselbe Einstellung wie SENSOR-MITTE in den Listen von LIVE und RUDER und SETUP > SENSORS > AS5600-Mitte | SENSOR-MITTE ist nicht 0, ihre Vorgabe, oder seit dem Start des Panels wurde ein Zählerstand übernommen; eine Mitte von vor einem Neustart zeigt GESETZT |
-| IMU | fordert den eigenen NULLPUNKT der IMU an, den der IMU-Seite: alle IMU-Winkel, Rollen, Nicken und Gieren, ab der Stellung jetzt. Er verwirft den Nullpunkt und MAX von RUDER auf der IMU, wie NULLPUNKT der IMU-Seite | die IMU meldet ihren Nullpunkt gesetzt; der Nullpunkt der IMU gilt bis zum Neustart |
+| IMU | fordert den eigenen NULLPUNKT der IMU an, den der IMU-Seite: alle IMU-Winkel, Rollen, Nicken und Gieren, ab der aktuellen Stellung. Er verwirft den Nullpunkt und MAX von RUDER auf der IMU, wie NULLPUNKT der IMU-Seite | die IMU meldet ihren Nullpunkt gesetzt; der Nullpunkt der IMU gilt bis zum Neustart |
 
 Ohne Messwert seit dem aktuellen Verbindungsaufbau, nach einem
 Verbindungsverlust bis ein neuer Messwert eintrifft, solange der AS5600
