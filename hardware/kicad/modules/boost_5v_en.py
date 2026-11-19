@@ -21,8 +21,8 @@ about 1.3mm. A round pad of 1.4mm without a hole lies at the right
 edge 8.05mm above the lower edge, next to R3. A hole of about 1.8mm
 without a pad lies at the left edge 7.9mm above the lower edge.
 
-The round pad is taken as the enable input: it is the board's only
-pad besides the 4 corner pads. The board does not name it.
+The round pad is the enable input (owner, 2026-11-19). The board does
+not name it.
 
 Unknown: the chip's type, the input voltage range, the output current,
 the level that enables the output. The board's thickness is not
@@ -38,7 +38,7 @@ DESC = ("5V boost converter board with enable pad, 13.7 x 21.7mm. "
         "Corner pads with 1.3mm holes, seen from the top side with the "
         "inductor down: 3 OUT+ upper left, 4 OUT- upper right, 1 IN+ "
         "lower left, 2 IN- lower right. Pad 5 = round 1.4mm pad at the "
-        "right edge next to R3, taken as enable, not named on the "
+        "right edge next to R3, the enable input, not named on the "
         "board. Measured from owner photos on squared paper, about "
         "0.2mm.")
 

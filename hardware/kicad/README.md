@@ -66,7 +66,7 @@ repository; each spec names them.
 | `INA219_MCU-219_25.4x21.5mm` | INA219 board with screw terminal | 8 (header 1-6, terminal 7-8) | vendor photo, rectified | about 0.2mm |
 | `INA219_CJMCU-219_24.2x21.9mm` | INA219 board, print CJMCU, terminal not fitted | 8 (header 1-6, terminal holes 7-8) | owner photos on 5mm squared paper | about 0.2mm |
 | `LiPo_Charger_Boost5V_15.2x24mm` | lithium polymer charger with 5V boost output, print "Charge & DisCharge" | 6 (OUT 5V, GND, BAT, GND, GND, VIN) | owner photos on 5mm squared paper | about 0.2mm |
-| `Boost_5V_EN_13.7x21.7mm` | 5V boost converter, 2R2 | 5 (IN+ IN- OUT+ OUT- EN) | owner photos on 5mm squared paper | about 0.2mm; the EN pad is not named on the board |
+| `Boost_5V_EN_13.7x21.7mm` | 5V boost converter, 2R2 | 5 (IN+ IN- OUT+ OUT- EN) | owner photos on 5mm squared paper | about 0.2mm; the EN pad is not named on the board (owner: it is the enable input) |
 | `ESP32-C6-Zero_Waveshare_18x23.5mm` | Waveshare ESP32-C6-Zero, 18.00 x 23.50mm | 25 (18 edge pads at 2.54mm, 7 underside pads at 1.6mm) | maker drawing; owner photos | pad grid exact; parts about 0.3mm |
 | `USBC_PD_Trigger_DIP3_30x20mm` | USB-C PD trigger, 3-way DIP switch | 2 (+, -) | vendor photo | about 0.2mm |
 | `DCDC_Buck_Mini_30x18mm_EN` | mini buck DC-DC, 4R7, input 6-20V | 5 (IN+ IN- EN OUT+ OUT-) | dimensions printed on the vendor photo | grid exact; EN pad 0.5mm |
@@ -153,8 +153,9 @@ The renders are not checked by CI; run the command after changing a
 - The ESP32-C6-Zero footprint is for the board soldered flat. Its 7
   underside pads are pads on the carrier's top side; with the board on
   headers they are not connected.
-- The boost board's pad 5 is taken as the enable input. The board does not
-  name it, and the level that enables the output is not known.
+- The boost board's pad 5 is the enable input (owner, 2026-11-19). The
+  board does not name it, and the level that enables the output is not
+  known.
 - The AS5600 footprint has THT pads under both rows. With the model's
   right-angle headers the pins do not reach them; the board is wired.
 - The MATEK and XT90 INA228 boards are wired, not soldered to a carrier;
