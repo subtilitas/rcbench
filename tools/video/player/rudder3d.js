@@ -159,6 +159,7 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   const flap = pivot(HINGE), arm = pivot(SHAFT), rod = pivot(PIN);
   meshesOf(wing, mm, (mesh, n) => {
     mesh.userData.skin = n === 0 || n === 1 || n === 2;
+    mesh.userData.wire = n >= 51;
     (FLAP.includes(n) ? flap.hold : ARM.includes(n) ? arm.hold
       : ROD.includes(n) ? rod.hold : frame).add(mesh);
   });
@@ -183,6 +184,38 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   tape.add(pad);
   seat.add(tape);
 
+  // The servo's lead: from the servo's three wires through the wing to
+  // the slice's end towards the bench, over the table and into the
+  // bench's connector wall.
+  const wires = new THREE.Box3();
+  frame.updateMatrixWorld(true);
+  frame.traverse(o => {
+    if (o.isMesh && o.userData.wire) {
+      wires.union(new THREE.Box3().setFromObject(o));
+    }
+  });
+  const from = wires.getCenter(new THREE.Vector3());
+  let port = [34, 12, 58];
+  try {
+    const at = rig.anchors.J1();
+    if (at.every(Number.isFinite)) port = at;
+  } catch (e) { /* the case's shell alone has no header */ }
+  const way = new THREE.CatmullRomCurve3([
+    from, new THREE.Vector3(from.x, from.y - 2, 168),
+    new THREE.Vector3(from.x * .5 + port[0] * .5, 3, 128),
+    new THREE.Vector3(port[0], 3, 92),
+    new THREE.Vector3(port[0], port[1], port[2] + 6),
+    new THREE.Vector3(...port)]);
+  const leads = [0x7a4a1e, 0xd0122a, 0xe8731a].map((color, i) => {
+    const m = new THREE.Mesh(
+      new THREE.TubeGeometry(way, 160, .55, 8),
+      new THREE.MeshStandardMaterial({color, roughness: .6}));
+    m.position.x = (i - 1) * 1.15;
+    m.castShadow = true;
+    scene.add(m);
+    return m;
+  });
+
   const knob = makeDial(dial, bases);
   knob.root.position.set(...DIAL_AT);
   scene.add(knob.root);
@@ -190,13 +223,19 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   // The skins that hide the servo: the wing's shell and its cover.
   const skins = [];
   frame.traverse(o => { if (o.isMesh && o.userData.skin) skins.push(o); });
-  const state = {imu: 0, tape: 0, skin: 1};
+  const state = {imu: 0, tape: 0, skin: 1, lead: 0};
   const place = () => {
     sensor.position.z = PAD + state.imu * 70;
     sensor.visible = state.imu < 1;
     tape.position.z = state.tape * 45;
     tapeMat.opacity = .75 * (1 - state.tape);
     tape.visible = state.tape < 1;
+    // The lead grows from the servo to the bench as it is plugged in.
+    for (const m of leads) {
+      m.visible = state.lead < 1;
+      m.geometry.setDrawRange(
+        0, Math.round(160 * (1 - state.lead)) * 8 * 6);
+    }
     for (const m of skins) {
       m.material.transparent = state.skin < 1;
       m.material.opacity = .18 + .82 * state.skin;
@@ -236,10 +275,13 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
       imu: onFlap(IMU_AT[0], IMU_AT[1], IMU_AT[2] + PAD + 15),
       tape: onFlap(IMU_AT[0], IMU_AT[1] - 25, IMU_AT[2] + 1),
       horn: inWing(EYE[0], -5, EYE[1]),
+      lead: () => way.getPoint(.62).toArray(),
+      port: () => port,
     },
     setFace: knob.setFace, setTurn: knob.setTurn,
     // How far out the sensor stands, 1 to 0, its tape, 1 off to 0 on,
-    // and the skins, 1 solid to 0 clear.
+    // the skins, 1 solid to 0 clear, and the servo's lead, 1 away to 0
+    // plugged in.
     setParts: parts => { Object.assign(state, parts); place(); },
     setDeflect,
   };

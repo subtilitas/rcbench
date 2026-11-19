@@ -62,7 +62,7 @@ CACHE = REPO / "build" / "video" / "cache"
 PANEL = (1024, 600)
 FRAME = (1920, 1080)
 ANCHORS = ("wing", "servo", "hinge", "rod", "flap", "edge", "imu", "tape",
-           "horn", "display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
+           "horn", "lead", "port", "display", "rbmod", "pdmini", "J1", "J2", "xt60", "usbc",
            "estop", "side", "plug", "panel", "case", "mcu",
            "ina", "buck", "trigger", "knob", "bezel", "usb", "power",
            "portA", "portB", "body", "dial", "glass", "board", "card",
@@ -233,7 +233,7 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
             errors.append(f"{at}: style must be one of {', '.join(STYLES)}")
     for name, keys in scene.get("parts", {}).items():
         known = MINI_UNITS if mini else DIAL_UNITS if scene.get(
-            "model") == "dial" else ("imu", "tape", "skin") if scene.get(
+            "model") == "dial" else ("imu", "tape", "skin", "lead") if scene.get(
             "model") == "rudder" else UNITS
         if name not in known:
             errors.append(f"{where} parts: {name} is not one of "
