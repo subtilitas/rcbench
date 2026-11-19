@@ -304,10 +304,10 @@
      "to": 49.72,
      "anchor": "lead",
      "at": [
-      1330,
-      640
+      150,
+      150
      ],
-     "side": "t",
+     "side": "r",
      "n": 1,
      "size": "sm",
      "title": "The servo's lead",

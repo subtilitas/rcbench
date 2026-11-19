@@ -111,9 +111,10 @@ takes about 60 min with 3 jobs on 4 cores and 43 min with 12 jobs on 48 cores.
 | `player/duo3d.js` | the case and the Dial in one scene: the case's display takes shots of the panel's screen, the Dial's display its faces |
 | `player/mini3d.js` | the MiniRcBench from its assembly: one group a component in its solids' colours, the case and its buttons coloured here, the two male servo connectors and the 4 screws drawn as plain solids, the display showing a still |
 | `player/board.js` | a board drawn flat as SVG, and the rework on it |
-| `player/rudder3d.js` | the `rudder` model: a slice of wing with its flap, the servo on its frame and the linkage, an inertial sensor on a pad of double-sided gel tape on the flap, the bench and the M5Stack Dial in one scene. `deflect`, keys `[t, degrees]`, turns the flap about its hinge, positive with the trailing edge up; the double arm and the rod follow from the generator's joints. `parts` takes `tape`, the pad of double-sided gel tape, 34 x 49 x 2mm, 1 over the flap to 0 on it, `imu`, 1 the sensor 70mm over the pad to 0 seated, `skin`, 1 the wing's skins solid to 0 clear, which shows the servo, and `lead`, 1 the servo's 3-wire lead away to 0 run from the servo through the wing and over the table into the bench's connector wall. It loads `flap_drive_assembly.glb`, `wit_imu.glb` and `m5dial.glb` from `cad/`, and `case.glb` for the bench; without `case.glb` the 7 inch panel of `panel_7b.glb` stands in, leaning back |
+| `player/rudder3d.js` | the `rudder` model: a slice of wing with its flap, the servo on its frame and the linkage, an inertial sensor on a pad of double-sided gel tape on the flap, the bench and the M5Stack Dial in one scene. `deflect`, keys `[t, degrees]`, turns the flap about its hinge, positive with the trailing edge up; the double arm and the rod follow from the generator's joints. `parts` takes `tape`, the pad of double-sided gel tape, 34 x 49 x 2mm, 1 over the flap to 0 on it, `imu`, 1 the sensor 70mm over the pad to 0 seated, `skin`, 1 the wing's skins solid to 0 clear, which shows the servo, and `lead`, 1 the servo's 3-wire lead away to 0 run from the servo through the wing and over the table into the bench's connector wall. It loads `flap_drive_assembly.glb`, `wit_imu.glb` and `m5dial.glb` from `cad/`, with `dial_base` also `dial_base_top.glb`, `dial_base_bottom.glb` and `m5dial_nut.glb`, and `case.glb` for the bench; without `case.glb` the 7 inch panel of `panel_7b.glb` stands in, leaning back |
 | `../../test/host/video_rauto.c` | a RUDDER AUTO run for a video: the run of the host suites on a KST servo with the IMU on the surface, from SAFE through the hold to PASS. It writes the panel's screen every 500ms and the surface's angle every 100ms. A `rudder` scene with `rauto`, `{at, speed}`, takes the frames as its display's shots from `at` on, `speed` times as fast as the run, and the angle as its `deflect` keys. `make_video.py` builds it with CMake in `build/video_host/` |
-| `storyboards/auto-rudder.json` | setting a rudder's end points with RUDDER AUTO in 4 steps: the sensor on a pad of double-sided gel tape on the flap, the sensor connected, the flap moved with the M5Stack Dial on SERVO LIVE, and the run at twice its speed with the flap following the run's own angle; narrated, Pachelbel's Canon at half level |
+| `storyboards/rbmod-first-program.json` | first programming of a bench with the rbmod carrier in 6 chapters: the release's files on GitHub, the panel through the ESP Web Tool with the merged image at 0x0, the IOmcu through its drive RP2350 on a Windows desktop, the first start, the update from GitHub on SETUP > UPDATES and the upload over the panel's access point; the panel, the carrier and the RP2350-CAN from their STEP models; narrated, 321.22s, Pachelbel's Canon at half level |
+| `storyboards/auto-rudder.json` | setting a rudder's end points with RUDDER AUTO in 4 steps: the sensor on a pad of double-sided gel tape on the flap, the sensor connected, the flap moved with the M5Stack Dial on SERVO LIVE, and the run at twice its speed with the flap following the run's own angle; narrated, 197.66s, Pachelbel's Canon at half level |
 | `player/part3d.js` | one part from its STEP model, turned and rolled over |
 | `web/capture.js` | captures the releases page of the repository on GitHub and the ESP Web Tool at esptool.spacehuhn.com into `stills/web-*.png`, 1280 x 800 CSS pixels at 2 device pixels each, and writes the places of their controls to `stills/web.json`. The ESP Web Tool is the page as served; its serial library is replaced by a stand-in that answers as an ESP32-P4, since no board is on the capturing computer |
 | `stills/web-*.png`, `stills/web.json` | 13 captures of those two pages and the places of the controls a pointer goes to |
@@ -436,4 +437,18 @@ An `end` scene has `dur`, `heading`, `items`, `note` and an optional
 - The sound and the narrator's voice have not been judged by ear.
 - RECEIVER, BATTERY and BALANCE are shown as in development, without
   their state of work, which the README's feature table holds.
+- A window of a board or case scene is HTML laid out by Chromium in the
+  fonts of the rendering machine: "Segoe UI", then Inter, then its
+  sans-serif. The File Explorer's icons are drawn as SVG and need no
+  font.
+- `rbmod-first-program` shows the releases page as captured on
+  2026-11-18, with v0.23.14 as its newest release. The Windows desktop
+  and its File Explorer windows are drawn, not captured; their Date
+  modified and Size columns are empty.
+- `auto-rudder` shows a run of the host suites' rig: a simulated KST
+  servo whose end points start at 150 counts, the IMU model at 10Hz. The
+  36.0° of the first measure and the 22.08° after the write are that
+  rig's. Its step 2 shows the angle source list with the AS5600 in
+  force, the list before the pick. Its step 3 runs on SERVO LIVE. The
+  servo's lead is a drawn tube, not a model.
 - The player draws 1920 x 1080 only.

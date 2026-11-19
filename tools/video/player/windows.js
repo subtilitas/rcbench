@@ -92,6 +92,23 @@ const ICON = {
   web: '<i class="ic we"></i>', text: '<i class="ic tx"></i>',
 };
 
+// The toolbar's icons as SVG: no font has to hold them.
+const svg = d => `<svg viewBox="0 0 16 16" width="18" height="18"
+  style="vertical-align:-3px;margin:0 7px" fill="none" stroke="#3a3f47"
+  stroke-width="1.3" stroke-linecap="round" stroke-linejoin="round">${d}
+  </svg>`;
+const TOOL = {
+  cut: svg('<circle cx="4" cy="12" r="2"/><circle cx="12" cy="12" r="2"/>'
+           + '<path d="M5.5 10.5L12 2M10.5 10.5L4 2"/>'),
+  copy: svg('<rect x="5" y="5" width="8" height="9" rx="1"/>'
+            + '<path d="M3 11V3a1 1 0 0 1 1-1h6"/>'),
+  paste: svg('<rect x="3" y="3" width="10" height="11" rx="1"/>'
+             + '<rect x="6" y="1.5" width="4" height="3" rx=".8"/>'),
+  rename: svg('<path d="M2 11h12M4 5h6M7 5v6M12 3v10"/>'),
+  bin: svg('<path d="M3 4h10M6 4V2.5h4V4M4.5 4l.6 9.5h5.8L11.5 4"/>'),
+  find: svg('<circle cx="7" cy="7" r="4"/><path d="M10 10l4 4"/>'),
+};
+
 // A File Explorer window's inside.
 function explorer(w, lt, clicks) {
   const shown = it => lt >= (it.from ?? -1e9) && lt < (it.to ?? 1e9);
@@ -112,14 +129,15 @@ function explorer(w, lt, clicks) {
        <p>${c.text}</p><u><s style="width:${k * 100}%"></s></u></div>` : '';
   const count = (w.rows || []).filter(shown).length;
   return `<div class="xt"><div class="tab">${ICON[w.icon || 'folder']}
-      <span>${esc(w.title)}</span><b>✕</b></div><span class="plus">+</span>
-      <span class="ctl">–</span><span class="ctl">☐</span>
-      <span class="ctl">✕</span></div>
-    <div class="xa"><span class="ar">← → ↑ ⟳</span><div class="crumb">${
-      (w.path || []).map(esc).join(' <i>›</i> ')}</div>
+      <span>${esc(w.title)}</span><b>x</b></div><span class="plus">+</span>
+      <span class="ctl">-</span><span class="ctl"><i class="box"></i></span>
+      <span class="ctl">x</span></div>
+    <div class="xa"><span class="ar">&lt; &gt; ^</span><div class="crumb">${
+      (w.path || []).map(esc).join(' <i>&gt;</i> ')}</div>
       <div class="find">Search ${esc(w.title)}</div></div>
-    <div class="xb">⊕ New ⌄ &nbsp;│&nbsp; ✂ &nbsp; ⧉ &nbsp; ⎘ &nbsp; ✎
-      &nbsp; 🗑 &nbsp;│&nbsp; ↑↓ Sort ⌄ &nbsp; ☰ View ⌄ &nbsp; ···</div>
+    <div class="xb">+ New &nbsp;|&nbsp; ${TOOL.cut}${TOOL.copy}${
+      TOOL.paste}${TOOL.rename}${TOOL.bin} &nbsp;|&nbsp; Sort &nbsp; View
+      &nbsp; ...</div>
     <div class="xm" style="height:${w.h || 300}px"><div class="xn">${nav}
       </div><div class="xl" data-id="${esc(w.id || '')}"><div class="hd">
       <span>Name</span><em>Date modified</em><em>Type</em>
@@ -137,7 +155,7 @@ export function drawWindows(sc, lt, a, into, ov, imgs = {}) {
       Object.assign(el.style, {left: w.at[0] + 'px', top: w.at[1] + 'px',
                                width: w.w + 'px', height: w.h + 'px',
                                opacity: o});
-      el.innerHTML = `<div class="tb"><i class="st"></i><span>🔍 Search
+      el.innerHTML = `<div class="tb"><i class="st"></i><span>${TOOL.find}Search
         </span>${ICON.folder}<i class="ap a1"></i><i class="ap a2"></i>
         <em>${esc(w.clock || '21:40')}</em></div>`;
       into.appendChild(el);
