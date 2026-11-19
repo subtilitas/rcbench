@@ -12175,6 +12175,11 @@ UI_TEXT(RA_RANGE_HIGH, 48,
 UI_TEXT(RA_RANGE_LOW, 48,
     "MARGIN RANGE BELOW 400us",
     "RESERVE-BEREICH UNTER 400us")
+/* The profile's frame rate past the highest that leaves its pause after the
+ * widest pulse the search's commands carry (max_rate_for()). */
+UI_TEXT(RA_RATE, 48,
+    "MARGIN NEEDS %uHz OR LESS",
+    "RESERVE BRAUCHT %uHz ODER WENIGER")
 UI_TEXT(RA_PROG_PORT, 48,
     "AUTO PROGRAMS A SERVO ON THE PROG PORT",
     "AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT")
@@ -12369,6 +12374,9 @@ UI_TEXT(RDY_TAG_PWM_DISARM, 20,
 UI_TEXT(RDY_TAG_RANGE, 20,
     "NEEDS 1000-2000us",
     "BRAUCHT 1000-2000us")
+UI_TEXT(RDY_TAG_RATE, 20,
+    "NEEDS %uHz",
+    "BRAUCHT %uHz")
 UI_TEXT(RDY_TAG_RANGE_HIGH, 20,
     "PAST 2500us",
     "ÜBER 2500us")

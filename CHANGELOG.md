@@ -79,7 +79,10 @@ history is in git.
   MAX change only by the widening at the end. The READY card's RANGE row
   refuses the start where that range, symmetric about PULSE CENTER for
   every NEUTRAL from 1360us to 1640us, reaches past 2500us or below 400us
-  (`MARGIN RANGE PAST 2500us`, `MARGIN RANGE BELOW 400us`). It holds the servo at 1000us
+  (`MARGIN RANGE PAST 2500us`, `MARGIN RANGE BELOW 400us`), and where the
+  profile's FRAME RATE leaves less than its pause after that range's
+  highest pulse (`MARGIN NEEDS 301Hz OR LESS` for STANDARD PWM at 333Hz and
+  MARGIN 50%); the rate itself is not changed. It holds the servo at 1000us
   and 2000us on the way, each once it or a step past it is judged free,
   and takes the first measure of each side there by the measure's settle
   rule; the run drives no separate first measure. LOW END and HIGH END cap every later pulse. An end inside

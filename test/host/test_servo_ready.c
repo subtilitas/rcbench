@@ -288,6 +288,54 @@ TEST_CASE(a_margin_range_past_2500us_is_refused_on_range)
                  TR(RDY_TAG_RANGE_LOW));
 }
 
+/** @brief FRAME RATE set on the hub's list: entry @p k of the rates, or
+ *         CUSTOM's keypad with @p custom; the warning held; back to AUTO. */
+static void rate_to(int k, const char *custom)
+{
+    open_settings();
+    sl_tap(HL_RATE);
+    tap(CH_X(k), CH_Y(k));
+    if (custom != NULL) {
+        keys(custom);
+    }
+    hold_apply(2.3f);
+    go(SERVO_FN_RAUTO);
+    frames(0.1f);
+}
+
+/* STANDARD PWM at 333Hz, 1000us after a 2000us pulse.  MARGIN 50% and a
+ * NEUTRAL of 1360us take the search's commands to 2320us: 1000us after it
+ * leaves 301Hz, so RANGE names MARGIN NEEDS 301Hz OR LESS and the rate
+ * stays 333Hz.  301Hz starts; MARGIN 0% starts at 333Hz. */
+TEST_CASE(a_frame_rate_the_margins_pulse_leaves_no_pause_for_is_refused)
+{
+    to_auto(false);
+    settings_set(SET_RUDDER_MARGIN, 50.0f);
+    rate_to(7, NULL);                          /* 333Hz, the last */
+    CHECK_EQ(servo_screen_frame_hz(), 333);
+    rdy_row_t r = row_of(RAR_RANGE);
+    CHECK_STR_EQ(r.why != NULL ? r.why : "", "MARGIN NEEDS 301Hz OR LESS");
+    char tag[24];
+    /* The row waits grey on this bench's red PORT; its tag when red: */
+    CHECK_STR_EQ(ready_tag(r.why, tag, sizeof(tag)), "NEEDS 301Hz");
+    CHECK(r.st != (uint8_t)RDY_OK);
+    CHECK_EQ(rauto_row_of(r.why), RAR_RANGE);
+    CHECK(card_holds_the_gate());
+    CHECK_EQ(servo_screen_frame_hz(), 333);
+    ui_text_set_language(UI_LANG_DE);
+    r = row_of(RAR_RANGE);
+    CHECK_STR_EQ(r.why != NULL ? r.why : "",
+                 "RESERVE BRAUCHT 301Hz ODER WENIGER");
+    CHECK_STR_EQ(ready_tag(r.why, tag, sizeof(tag)), "BRAUCHT 301Hz");
+    ui_text_set_language(UI_LANG_EN);
+    settings_set(SET_RUDDER_MARGIN, 0.0f);
+    CHECK(row_of(RAR_RANGE).why == NULL);
+    settings_set(SET_RUDDER_MARGIN, 50.0f);
+    rate_to(8, "301");                         /* CUSTOM */
+    CHECK_EQ(servo_screen_frame_hz(), 301);
+    CHECK(row_of(RAR_RANGE).why == NULL);
+}
+
 TEST_CASE(the_hold_refuses_on_the_first_red_row_and_names_it)
 {
     to_auto(false);
@@ -1039,6 +1087,7 @@ int main(void)
     RUN(every_gate_text_belongs_to_exactly_one_row);
     RUN(on_each_bench_the_gate_text_is_on_its_row_alone);
     RUN(a_margin_range_past_2500us_is_refused_on_range);
+    RUN(a_frame_rate_the_margins_pulse_leaves_no_pause_for_is_refused);
     RUN(the_hold_refuses_on_the_first_red_row_and_names_it);
     RUN(the_rows_the_hold_does_read_amber_only_while_safe);
     RUN(the_tags_share_the_left_edge_the_widest_state_needs);
