@@ -729,6 +729,20 @@ def test_a_3d_scene_takes_touches_on_the_panel_and_the_dial():
     assert any("touch 1" in e for e in make_video.check(board))
 
 
+def test_a_german_storyboard_is_written_out_for_a_german_speaker():
+    """A board in German takes SPELL_DE: units and names as German says them."""
+    import video_voice
+
+    said = video_voice.spoken("RESERVE 10%: 950 bis 2050us, 22.0° am IMU",
+                              "de")
+    assert said == ("Reserve 10 Prozent: 950 bis 2050 Mikrosekunden, "
+                    "22.0 Grad am I M U")
+    assert video_voice.spoken("hold 2 s", "en") == "hold 2 seconds"
+    board = {"lang": "de", "scenes": [{"type": "end", "dur": 5,
+                                       "say": "Der Dial am KST X10"}]}
+    assert video_voice.script(board)[0][3] == "Der Dail am K S T X 10"
+
+
 def test_a_face_names_a_screen_the_knob_does_nothing_on():
     """other-TITLE-safe and other-TITLE-armed pose the Dial's other face."""
     import render_dial

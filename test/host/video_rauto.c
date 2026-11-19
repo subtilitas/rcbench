@@ -8,6 +8,7 @@
  * frame on show, the time, the surface's angle and whether the run runs.
  *
  *   video_rauto DIR      writes DIR/rauto-NNNN.ppm and DIR/track.csv
+ *   video_rauto DIR de   the same with the screen in German
  *
  * tools/make_video.py does not build this; a video's generator runs it
  * and turns the frames into the stills its storyboard names.
@@ -26,6 +27,7 @@
 static const char *g_dir;
 static unsigned g_n;
 static FILE *g_track;
+static const char *g_title = "RUDDER AUTO";
 
 static void frame(void)
 {
@@ -41,7 +43,7 @@ static void frame(void)
         gfx_canvas_init(&body, fb + (size_t)W * UI_BAND_H, W, H - UI_BAND_H,
                         W);
         scr->render(&body, 0);
-        ui_band_render(&cv, "RUDDER AUTO", true, &st, NULL, false,
+        ui_band_render(&cv, g_title, true, &st, NULL, false,
                        UI_BAND_GUIDE_SHOWN);
         ++g_n;
         snprintf(path, sizeof(path), "%s/rauto-%04u.ppm", g_dir, g_n);
@@ -74,8 +76,9 @@ static void run_ms(uint32_t ms)
 int main(int argc, char **argv)
 {
     char path[512];
-    if (argc != 2) {
-        fprintf(stderr, "usage: video_rauto DIR\n");
+    const bool de = argc == 3 && strcmp(argv[2], "de") == 0;
+    if (argc != 2 && !de) {
+        fprintf(stderr, "usage: video_rauto DIR [de]\n");
         return 2;
     }
     t_install_crash_handler();
@@ -92,6 +95,12 @@ int main(int argc, char **argv)
     ra.armed = false;
     servo_screen_set_armed(false);
     ra_ms(200u);
+    if (de) {
+        /* The rig sets the screen up in English; the run is drawn in
+         * German from its first frame. */
+        ui_text_set_language(UI_LANG_DE);
+        g_title = ui_router_title(SCREEN_SERVO_RAUTO);
+    }
     /* A whole first frame: nothing of the set-up's drawing stays. */
     memset(fb, 0, (size_t)W * H * sizeof(gfx_color_t));
     scr->enter();
@@ -104,7 +113,8 @@ int main(int argc, char **argv)
     }
     run_ms(4000u);
     fclose(g_track);
-    printf("%u frames, %s\n", g_n,
-           strstr(ra.report, "PASS") != NULL ? "PASS" : "no PASS");
-    return test_summary("video_rauto") != 0 || strstr(ra.report, "PASS") == NULL;
+    /* The report names the verdict in the screen's language. */
+    const bool pass = strstr(ra.report, ui_servo_str(SERVO_STR_PASS)) != NULL;
+    printf("%u frames, %s\n", g_n, pass ? "PASS" : "no PASS");
+    return test_summary("video_rauto") != 0 || !pass;
 }

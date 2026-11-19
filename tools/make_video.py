@@ -792,11 +792,13 @@ def faces(board: dict) -> list:
              if not key[1].startswith("live-")}
     # A RUDDER AUTO run shows the Dial its title and the bench's state.
     if any("rauto" in scene for scene in board["scenes"]):
-        found |= set(RAUTO_FACES)
+        found |= set(RAUTO_FACES[board["lang"] == "de"])
     return sorted(found)
 
 
-RAUTO_FACES = ("other-rudder-auto-safe", "other-rudder-auto-armed")
+# The Dial's faces of a RUDDER AUTO run, SAFE and ARMED: English, German.
+RAUTO_FACES = (("other-rudder-auto-safe", "other-rudder-auto-armed"),
+               ("other-ruder-auto-safe", "other-ruder-auto-armed"))
 RUN_HZ = 10
 DETENT_DEG = 22.5
 RUNS = ("motor", "servo", "nav")
@@ -1095,7 +1097,9 @@ def rauto(board: dict, shots: pathlib.Path, tmp: pathlib.Path) -> None:
                     "video_rauto", "-j", str(os.cpu_count() or 1)], **quiet)
     out = tmp / "rauto"
     out.mkdir()
-    subprocess.run([str(build / "video_rauto"), str(out)], **quiet)
+    german = board["lang"] == "de"
+    subprocess.run([str(build / "video_rauto"), str(out)]
+                   + (["de"] if german else []), **quiet)
     for path in sorted(out.glob("rauto-*.ppm")):
         Image.open(path).convert("RGB").save(shots / f"{path.stem}.png")
     rows = [line.split(",") for line in (out / "track.csv").read_text(
@@ -1109,7 +1113,7 @@ def rauto(board: dict, shots: pathlib.Path, tmp: pathlib.Path) -> None:
             t = round(at + (int(ms) - start) / 1000 / speed, 3)
             if armed != state:
                 state = armed
-                dial.append([t, RAUTO_FACES[int(armed)]])
+                dial.append([t, RAUTO_FACES[german][int(armed)]])
             if shot != frame:
                 frame = shot
                 panel.append([t, f"rauto-{int(shot):04d}"])

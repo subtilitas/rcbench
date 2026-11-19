@@ -11,6 +11,17 @@ into tools/video/tts/, or the directory RCBENCH_TTS_DIR names:
 
 from github.com/thewh1teagle/kokoro-onnx, release model-files-v1.0.
 
+A "voice" with "engine": "piper" is spoken by Piper through the
+piper-tts package, by the voice its "name" names, de_DE-thorsten-high
+for German.  Its two files go into the same directory:
+
+    de_DE-thorsten-high.onnx        113,895,201 bytes
+    de_DE-thorsten-high.onnx.json         4,875 bytes
+
+from huggingface.co/rhasspy/piper-voices, de/de_DE/thorsten/high.  A
+storyboard with "lang": "de" is written out for a German speaker by
+SPELL_DE in place of SPELL.
+
 A storyboard with "voice" is spoken.  A step of a screen or tour scene
 says its "say", or its title and text; a chapter card its number, title
 and text.  A case scene says the cues of its "say" list at their times,
@@ -103,11 +114,39 @@ SPELL = (
     (r"\s+", " "),
 )
 
+# What a German speaker is given, as SPELL for an English one.
+SPELL_DE = (
+    (r"<[^>]+>", " "),
+    (r"(\d),(\d)", r"\1 Komma \2"),
+    (r"(\d) ?µs\b|(\d) ?us\b", r"\1\2 Mikrosekunden"),
+    (r"(\d) ?s\b", r"\1 Sekunden"),
+    (r"(\d) ?mm\b", r"\1 Millimeter"),
+    (r"(\d) ?V\b", r"\1 Volt"),
+    (r"(\d) ?%", r"\1 Prozent"),
+    (r"°", " Grad"),
+    (r" & ", " und "),
+    (r"\bIOmcu\b", "I O M C U"),
+    (r"\brcbench\b|\bRCBench\b", "R C Bench"),
+    (r"\bKST\b", "K S T"),
+    (r"\bChaservo\b", "Tscha-Servo"),
+    (r"\bHitec\b|\bHITEC\b", "Hai-Teck"),
+    (r"\bX10\b", "X 10"),
+    (r"\bM5Stack Dial\b", "M 5 Stack Dail"),
+    (r"\bDial\b", "Dail"),
+    (r"\bRUDER AUTO\b|\bRuder Auto\b", "Ruder Auto"),
+    (r"\bARM \+ START\b", "Arm und Start"),
+    (r"\bSETUP\b|\bSetup\b", "Sett-ap"),
+    (r"\bLIVE\b|\bLive\b", "Laif"),
+    (r"\b(IMU|PWM|SD|USB)\b", lambda m: " ".join(m.group(1))),
+    (r"[›·]", ","),
+    (r"\s+", " "),
+)
+
 # Words in capitals the speaker says letter by letter.
 LETTERS = ("INA",)
 
 
-def spoken(text: str) -> str:
+def spoken(text: str, lang: str = "en") -> str:
     """Turn a caption into what the speaker is given.
 
     Args:
@@ -118,7 +157,7 @@ def spoken(text: str) -> str:
         are said, and a word in capitals of 3 letters or more, a screen's
         name, in lower case with a capital.
     """
-    for pattern, said in SPELL:
+    for pattern, said in SPELL_DE if lang == "de" else SPELL:
         text = re.sub(pattern, said, text)
     text = re.sub(r"\b[A-Z]{3,}\b", lambda m: m.group(0) if m.group(0)
                   in LETTERS else m.group(0).capitalize(), text)
@@ -130,7 +169,8 @@ def _line(step: dict) -> str:
         return step["say"]
     if "card" in step:
         card = step["card"]
-        return f"Chapter {step['n']}. {card['title']}. {card.get('text', '')}"
+        word = "Kapitel" if step.get("lang") == "de" else "Chapter"
+        return f"{word} {step['n']}. {card['title']}. {card.get('text', '')}"
     title = step["title"].rstrip(".")
     return f"{title}. {step.get('text', '')}"
 
@@ -145,17 +185,18 @@ def script(board: dict) -> list:
         (scene index, step index or None, seconds from the scene's or
         the step's start, the text as spoken) per line, in order.
     """
-    lines = []
+    lines, lang = [], board.get("lang", "en")
     for i, scene in enumerate(board["scenes"]):
         if scene["type"] in ("case", "board"):
             for cue in scene.get("say", []):
-                lines.append((i, None, cue["at"], spoken(cue["text"])))
+                lines.append((i, None, cue["at"], spoken(cue["text"], lang)))
         elif scene["type"] == "end":
             if "say" in scene:
-                lines.append((i, None, 0.6, spoken(scene["say"])))
+                lines.append((i, None, 0.6, spoken(scene["say"], lang)))
         else:
             for j, step in enumerate(scene["steps"]):
-                lines.append((i, j, LEAD_S, spoken(_line(step))))
+                lines.append((i, j, LEAD_S, spoken(
+                    _line({**step, "lang": lang}), lang)))
     return lines
 
 
@@ -237,6 +278,11 @@ def _start(files: list, threads: int) -> None:
         threads: The threads one worker's model runs on.
     """
     global _SPEAKER
+    if files[0].name != "kokoro-v1.0.onnx":
+        from piper import PiperVoice
+
+        _SPEAKER = PiperVoice.load(str(files[0]), str(files[1]))
+        return
     import onnxruntime
     from kokoro_onnx import Kokoro
 
@@ -260,6 +306,15 @@ def _speak(job: tuple):
     import numpy as np
 
     text, voice = job
+    if voice.get("engine") == "piper":
+        from piper import SynthesisConfig
+
+        # A higher speed is a shorter length scale.
+        chunks = list(_SPEAKER.synthesize(text, SynthesisConfig(
+            length_scale=1.0 / voice.get("speed", 1.0))))
+        raw = np.concatenate([c.audio_int16_array for c in chunks]).astype(
+            float)
+        return _to_rate(raw, chunks[0].sample_rate)
     # A blend is the weighted mean of the voices' style vectors.
     style = voice.get("name")
     if "blend" in voice:
@@ -269,7 +324,21 @@ def _speak(job: tuple):
     raw, rate = _SPEAKER.create(text, voice=style,
                                 speed=voice.get("speed", 1.0),
                                 lang=voice.get("lang", "en-us"))
-    raw = np.asarray(raw, dtype=float)
+    return _to_rate(np.asarray(raw, dtype=float), rate)
+
+
+def _to_rate(raw, rate: int):
+    """Bring a clip to RATE.
+
+    Args:
+        raw: The samples as a numpy array of floats.
+        rate: Their samples per second.
+
+    Returns:
+        The samples at RATE, peak 1.
+    """
+    import numpy as np
+
     # To RATE by padding the spectrum: no filter to design.
     size = int(round(len(raw) * RATE / rate))
     spec = np.fft.rfft(raw)
@@ -300,13 +369,22 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
     import hashlib
     import json
 
+    piper = board["voice"].get("engine") == "piper"
     try:
         import numpy as np
-        import kokoro_onnx  # noqa: F401
+        if piper:
+            import piper as _piper  # noqa: F401
+        else:
+            import kokoro_onnx  # noqa: F401
     except ImportError:
-        sys.exit("the narration needs numpy and kokoro-onnx: "
-                 "pip install numpy kokoro-onnx")
+        sys.exit("the narration needs numpy and kokoro-onnx, or piper-tts "
+                 "for a voice of Piper: pip install numpy kokoro-onnx "
+                 "piper-tts")
     files = [model_dir() / "kokoro-v1.0.onnx", model_dir() / "voices-v1.0.bin"]
+    if piper:
+        name = board["voice"]["name"]
+        files = [model_dir() / f"{name}.onnx",
+                 model_dir() / f"{name}.onnx.json"]
     for path in files:
         if not path.is_file():
             sys.exit(f"{path} is missing; tools/video_voice.py names the "
