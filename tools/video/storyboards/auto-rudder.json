@@ -806,7 +806,7 @@
   {
    "type": "case",
    "model": "rudder",
-   "dur": 104.7,
+   "dur": 111.34,
    "faces": [
     [
      0,
@@ -814,7 +814,7 @@
     ]
    ],
    "rauto": {
-    "at": 28.4,
+    "at": 35.04,
     "speed": 2.0
    },
    "panel": [
@@ -858,7 +858,7 @@
      ]
     ],
     [
-     33.5,
+     40.14,
      [
       40,
       150,
@@ -871,7 +871,7 @@
      ]
     ],
     [
-     34.75,
+     41.39,
      [
       150,
       115,
@@ -884,7 +884,7 @@
      ]
     ],
     [
-     95.25,
+     101.89,
      [
       150,
       115,
@@ -897,7 +897,7 @@
      ]
     ],
     [
-     96.5,
+     103.14,
      [
       40,
       150,
@@ -910,7 +910,7 @@
      ]
     ],
     [
-     104.7,
+     111.34,
      [
       40,
       150,
@@ -926,19 +926,19 @@
    "chips": [
     {
      "from": 0,
-     "to": 30.4,
+     "to": 37.04,
      "n": 4,
      "text": "RUDDER AUTO"
     },
     {
-     "from": 30.4,
-     "to": 96.25,
+     "from": 37.04,
+     "to": 102.89,
      "n": 4,
      "text": "The run, at twice its speed"
     },
     {
-     "from": 96.25,
-     "to": 104.7,
+     "from": 102.89,
+     "to": 111.34,
      "n": 4,
      "text": "PASS"
     }
@@ -946,7 +946,7 @@
    "labels": [
     {
      "from": 10.92,
-     "to": 22.96,
+     "to": 29.6,
      "anchor": "display",
      "at": [
       1420,
@@ -955,11 +955,11 @@
      "n": 4,
      "size": "sm",
      "title": "Target 20°, goal 22°",
-     "text": "Goal = target x (1 + MARGIN): 20.0° x 1.10 = 22.0°. MARGIN is 0 to 50%; at 0% the goal is the target."
+     "text": "Goal = target x (1 + MARGIN): 20.0° x 1.10 = 22.0°. The 2.0° are headroom for the trim. MARGIN is 0 to 50%."
     },
     {
-     "from": 45.25,
-     "to": 52.0,
+     "from": 51.89,
+     "to": 58.64,
      "anchor": "imu",
      "at": [
       1400,
@@ -979,38 +979,38 @@
     },
     {
      "at": 10.72,
-     "text": "The bench aims past that target by the margin, here 10 percent, as a reserve. So the goal of each end is 22 degrees, and the screen's first line says so."
+     "text": "The bench aims past that target by the margin, here 10 percent. The margin is headroom for the trim: with the trim moved, each end still reaches the 20 degrees. So the goal of each end is 22 degrees, and the screen's first line says so."
     },
     {
-     "at": 23.96,
+     "at": 30.6,
      "text": "With the surface at neutral, tap zero."
     },
     {
-     "at": 28.0,
+     "at": 34.64,
      "text": "Then hold arm and start for 2 seconds."
     },
     {
-     "at": 32.1,
+     "at": 38.74,
      "text": "The bench switches the supply on, arms, and reads the servo."
     },
     {
-     "at": 37.9,
+     "at": 44.54,
      "text": "It drives the 1000 microsecond end and waits until the sensor's angle is still: 36 degrees."
     },
     {
-     "at": 46.18,
+     "at": 52.82,
      "text": "Too far. It writes a smaller end point into the servo and measures again: 22 degrees."
     },
     {
-     "at": 54.0,
+     "at": 60.64,
      "text": "The other end goes the same way: measure, write, measure."
     },
     {
-     "at": 70.0,
+     "at": 76.64,
      "text": "A verify pass then measures both ends and the center once more, each from the same side."
     },
     {
-     "at": 96.5,
+     "at": 103.14,
      "text": "Pass. Both ends are within half a degree of their goal, and the report is on the S D card."
     }
    ]
