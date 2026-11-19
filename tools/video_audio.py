@@ -302,55 +302,6 @@ def flaps(board: dict) -> list:
     return found
 
 
-def gears(moves: list, n: int, rng):
-    """Make the sound of a servo's gear train for a flap's moves.
-
-    A servo under way is mostly noise: the gear train's rattle between
-    1.2 and 6kHz and a rumble under 700Hz, chopped 150 times a second by
-    the teeth, over a motor's whine near 1kHz that rises a tenth as it
-    spins up.  The pitch does not follow the flap's speed; the level
-    does, from 0.45 for any move to 1 at 60 degrees a second.  A move
-    starts within 8ms and ends within 25ms.
-
-    Args:
-        moves: (seconds, seconds, degrees) per move, from flaps().
-        n: The track's length in samples.
-        rng: A numpy random generator.
-
-    Returns:
-        The sound as a numpy array of n samples with a peak of 1, or
-        None without a move.
-    """
-    import numpy as np
-
-    level = np.zeros(n)
-    for at, length, deg in moves:
-        i, j = int(at * RATE), min(n, int((at + length) * RATE))
-        level[i:j] = 0.45 + 0.55 * min(1.0, abs(deg) / length / 60.0)
-    if not level.any():
-        return None
-
-    def smooth(x, seconds):
-        win = np.hanning(max(3, int(seconds * RATE)))
-        return np.convolve(x, win / win.sum(), "same")
-
-    def band(low, high):
-        spec = np.fft.rfft(rng.standard_normal(n))
-        f = np.fft.rfftfreq(n, 1.0 / RATE)
-        out = np.fft.irfft(spec * ((f > low) & (f < high)), n)
-        return out / max(1e-9, float(np.max(np.abs(out))))
-
-    env = smooth(level, 0.02)
-    spin = smooth((level > 0).astype(float), 0.08)
-    t = np.arange(n) / RATE
-    teeth = 0.55 + 0.45 * np.abs(np.sin(2 * np.pi * 75.0 * t))
-    phase = 2 * np.pi * np.cumsum(940.0 * (0.9 + 0.1 * spin)) / RATE
-    whine = sum(np.sin(k * phase) / k ** 1.5 for k in (1, 2, 3, 5))
-    out = env * (teeth * (0.75 * band(1200.0, 6000.0)
-                          + 0.35 * band(220.0, 700.0)) + 0.16 * whine)
-    return out / max(1e-9, float(np.max(np.abs(out))))
-
-
 def render(board: dict, path: pathlib.Path, clips=()) -> float:
     """Write the track as a 16-bit stereo WAV file.
 
@@ -640,9 +591,30 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
                 sig *= np.exp(-tt / 0.3) * np.minimum(1.0, tt / 0.004)
                 put(fx, t + 0.09 * k, sig, 0.2, 0.09)
 
-    # The servo's gear train while the flap turns: close and dry, so it
-    # stays out of the room and is lowered under a line by 4dB only.
-    gear = gears(flaps(board), n, rng)
+    # The servo's gear train while the flap turns: a buzz whose pitch and
+    # level follow the flap's speed, a gear-mesh flutter on it and some
+    # hiss.  The speed is the moves' own, smoothed over 30ms, so a search
+    # step of half a degree is a short quiet blip and a move across the
+    # travel a whine.
+    rate = np.zeros(n)
+    for at, length, deg in flaps(board):
+        i, j = int(at * RATE), min(n, int((at + length) * RATE))
+        rate[i:j] = abs(deg) / length
+    if rate.any():
+        win = np.hanning(int(0.03 * RATE))
+        rate = np.convolve(rate, win / win.sum(), "same")
+        level = np.clip(rate / 40.0, 0.0, 1.0) ** 0.6
+        phase = 2 * np.pi * np.cumsum(240.0 + 6.5 * rate) / RATE
+        buzz = sum(np.sin(k * phase) / k for k in range(1, 7))
+        mesh = 2 * np.pi * np.cumsum(34.0 + 1.1 * rate) / RATE
+        hiss = rng.standard_normal(n)
+        hiss = np.fft.irfft(np.fft.rfft(hiss) * (
+            (np.fft.rfftfreq(n, 1.0 / RATE) > 1500.0)
+            & (np.fft.rfftfreq(n, 1.0 / RATE) < 5000.0)), n)
+        hiss /= max(1e-9, float(np.max(np.abs(hiss))))
+        gear = level * ((0.75 + 0.25 * np.sin(mesh)) * buzz / 1.6
+                        + 0.35 * hiss)
+        put(fx, 0.0, gear, -0.25, 0.06)
 
     # A room: 2.4s of decaying noise, convolved in one transform.
     ir_n = int(2.4 * RATE)
@@ -680,17 +652,9 @@ def render(board: dict, path: pathlib.Path, clips=()) -> float:
         off = (len(kern) - 1) // 2
         duck = np.clip(full[off:off + n], 0.0, 1.0)
         out *= 0.63 * (1.0 - 0.72 * duck)
-        if gear is not None:
-            gear = gear * (1.0 - 0.37 * duck)
         # The voice's level follows the bed's; a silent bed has none.
         peak = float(np.max(np.abs(out)))
         out += 0.9 * voice * (peak / 0.20 if peak > 0 else 1.0)
-    if gear is not None:
-        # At 0.7 of the track's peak, a little to the left: some 8dB
-        # under a line.
-        peak = max(1e-9, float(np.max(np.abs(out))))
-        out[0] += 0.72 * peak * gear
-        out[1] += 0.54 * peak * gear
     t = np.arange(n) / RATE
     out *= np.minimum(1.0, t / 1.5) * np.clip((total - t) / 3.5, 0.0, 1.0)
     # The level: the loudest sample at LEVEL of full scale, no limiter.
