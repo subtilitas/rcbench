@@ -120,9 +120,10 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
   (written `can, bus` for the speaker); "AM32" written `A-M 32`.
 - The narration states what a screen is for before what it shows.
 - The model leaves the assembly's power bank out.
-- German narration is parked. Piper (`thorsten`, `kerstin`) and
-  Chatterbox Multilingual were tried and rejected by ear; Chatterbox
-  also misread "XT60" and "74".
+- German narration has no voice in `tools/video_voice.py`. Piper
+  `thorsten` is acceptable to the owner ("bearable", 2026-11-19); Piper
+  `kerstin` and Chatterbox Multilingual were rejected by ear, and
+  Chatterbox also misread "XT60" and "74".
 
 ## The rbmod rework video
 
