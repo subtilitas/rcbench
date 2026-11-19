@@ -33,8 +33,9 @@
 #include "servo_rauto_kst_rig.h"
 #include "ui_setlist.h"
 
-/* LIVE's and SWEEP's rows, and RUDDER's, as the card orders them. */
-enum { LV_PORT = 0, LV_SUPPLY, LV_ARM };
+/* LIVE's rows, and RUDDER's, as the card orders them; SWEEP's are
+ * PORT, SUPPLY and ARM. */
+enum { LV_PORT = 0, LV_ZERO, LV_SUPPLY, LV_ARM };
 enum { RD_PORT = 0, RD_ANGLE, RD_ZERO, RD_SUPPLY, RD_ARM };
 
 /** @brief @p s, or "(null)": a check that fails prints, not crashes. */
@@ -79,16 +80,19 @@ static void pd_off_on_live(void)
     ra_ms(200u);
 }
 
-/* LIVE and SWEEP show PORT, SUPPLY and ARM, RUDDER PORT, ANGLE, ZERO,
- * SUPPLY and ARM, over the output card; OUTPUT ON and the PROG 5V box are
- * not there (the SET row is test_servo_drive_supply's).  Off on a SAFE bench, the PD mini's row reads ARM SWITCHES IT ON
+/* LIVE shows PORT, ZERO, SUPPLY and ARM, SWEEP PORT, SUPPLY and ARM,
+ * RUDDER PORT, ANGLE, ZERO, SUPPLY and ARM, over the output card; OUTPUT
+ * ON and the PROG 5V box are not there (the SET row is
+ * test_servo_drive_supply's, LIVE's ZERO test_servo_live_zero's).  Off on
+ * a SAFE bench, the PD mini's row reads ARM SWITCHES IT ON
  * in amber and ARM HOLD 2s; KST shows none of these rows and has no ARM
  * that switches the supply. */
 TEST_CASE(each_screen_names_its_rows_and_shows_no_supply_box)
 {
     pd_off_on_live();
     CHECK(drive_shown());
-    CHECK_EQ(ready_count(), 3);
+    CHECK_EQ(ready_count(), 4);
+    CHECK_STR_EQ(drow(LV_ZERO).label, TR(RDY_ZERO));
     CHECK_STR_EQ(drow(LV_PORT).label, TR(SVH_PORT));
     rdy_row_t r = drow(LV_SUPPLY);
     CHECK_STR_EQ(r.label, "PD MINI");

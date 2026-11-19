@@ -1034,8 +1034,8 @@ TEST_CASE(a_set_point_changed_on_supply_is_redrawn_here)
     for (int y = 0; y < H; ++y) {
         for (int x = 0; x < W; ++x) {
             if (fb[(size_t)y * W + x] != before[(size_t)y * W + x]) {
-                const bool row = y >= SV_DRV_ROW_Y(1) - 15
-                                 && y < SV_DRV_ROW_Y(1) + 15;
+                const bool row = y >= SV_DRV_ROW_Y(2) - 15
+                                 && y < SV_DRV_ROW_Y(2) + 15;
                 const bool v = SV_IN_SET_V(x, y);
                 CHECK(row || v);
                 ++changed;
@@ -1063,7 +1063,7 @@ TEST_CASE(a_pd_mini_past_6_v_goes_on_only_through_the_hv_hold)
     ev(SV_ARM_X, SV_FOOT_Y, TOUCH_EVENT_UP, 1);
     CHECK(!supply_cmd(NULL));                   /* ARM: refused */
 
-    tap(SV_RDY_X, SV_DRV_ROW_Y(1));             /* the PD MINI row */
+    tap(SV_RDY_X, SV_DRV_ROW_Y(2));             /* the PD MINI row */
     CHECK(servo_screen_output_held());          /* the warning */
     tap(WARN_APPLY_X, WARN_Y);                  /* a tap is not the hold */
     CHECK(!supply_cmd(NULL));
@@ -1088,7 +1088,7 @@ TEST_CASE(a_pd_mini_past_6_v_goes_on_only_through_the_hv_hold)
 
     /* CANCEL switches nothing on. */
     pd_on_live(8.4f, false);
-    tap(SV_RDY_X, SV_DRV_ROW_Y(1));
+    tap(SV_RDY_X, SV_DRV_ROW_Y(2));
     CHECK(servo_screen_output_held());
     tap(WARN_CANCEL_X, WARN_Y);
     for (int i = 0; i < 100; ++i) {
@@ -1150,7 +1150,7 @@ static int warn_px_in_the_prose(void)
 TEST_CASE(the_hv_warning_for_on_names_its_voltage_and_a_slid_off_hold_does_nothing)
 {
     pd_on_live(7.4f, false);
-    tap(SV_RDY_X, SV_DRV_ROW_Y(1));             /* the PD MINI row */
+    tap(SV_RDY_X, SV_DRV_ROW_Y(2));             /* the PD MINI row */
     CHECK(servo_screen_output_held());
     scr->tick(0.025f);
     scr->render(&cv, 0);

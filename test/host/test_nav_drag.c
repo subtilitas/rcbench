@@ -226,11 +226,11 @@ TEST_CASE(a_speed_drag_that_leaves_by_the_band_ends_at_the_edge)
     feed_tap(FEED_LONE, x, y);
     CHECK_EQ(servo_took().kind, SERVO_CMD_POSITION);
 
-    finger(FEED_LONE, SV_RC_X + 44, SV_SPEED_P_Y);
-    glide(FEED_LONE, SV_RC_X + 104, SV_SPEED_P_Y, 8);
+    finger(FEED_LONE, SV_SPEED_X + 44, SV_SPEED_P_Y);
+    glide(FEED_LONE, SV_SPEED_X + 104, SV_SPEED_P_Y, 8);
     const servo_cmd_t set = servo_took();
     CHECK_EQ(set.kind, SERVO_CMD_POSITION);
-    glide(FEED_LONE, SV_RC_X + 104, 30, 8);
+    glide(FEED_LONE, SV_SPEED_X + 104, 30, 8);
     lift(FEED_LONE);
     CHECK_EQ(servo_took().kind, SERVO_CMD_NONE);
 

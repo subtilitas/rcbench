@@ -180,21 +180,26 @@ static const ui_setlist_custom_t k_hv = {
     { (uint8_t)UI_SL_TEXT, (int8_t)SET_TEXT_DUT_NAME, (setting_id_t)0,       \
       TX_COUNT, NULL }
 
+/** @brief The profile's rows, then the device under test's: the hub's
+ *         list, and LIVE's first rows. */
+#define PROFILE_ROWS                                                         \
+    UI_SL_ROW_HEADING(TX_SV_PG_OUTPUT, &k_out_line),                         \
+    UI_SL_ROW_CUSTOM(&k_type),                                               \
+    UI_SL_ROW_CUSTOM(&k_rate),                                               \
+    UI_SL_ROW_CUSTOM(&k_min),                                                \
+    UI_SL_ROW_CUSTOM(&k_center),                                             \
+    UI_SL_ROW_CUSTOM(&k_max),                                                \
+    UI_SL_ROW_CUSTOM(&k_trim),                                               \
+    UI_SL_ROW_CUSTOM(&k_travel),                                             \
+    UI_SL_ROW_CUSTOM(&k_reverse),                                            \
+    UI_SL_ROW_CUSTOM(&k_hv),                                                 \
+    UI_SL_ROW_HEADING(TX_SV_PG_DUT, NULL),                                   \
+    ROW_DUT_NAME,                                                            \
+    UI_SL_ROW_SETTING(SET_SERVO_REPORT)
+
 /** @brief The hub's rows: the profile, then the device under test. */
 static const ui_setlist_row_t k_hub_rows[] = {
-    UI_SL_ROW_HEADING(TX_SV_PG_OUTPUT, &k_out_line),
-    UI_SL_ROW_CUSTOM(&k_type),
-    UI_SL_ROW_CUSTOM(&k_rate),
-    UI_SL_ROW_CUSTOM(&k_min),
-    UI_SL_ROW_CUSTOM(&k_center),
-    UI_SL_ROW_CUSTOM(&k_max),
-    UI_SL_ROW_CUSTOM(&k_trim),
-    UI_SL_ROW_CUSTOM(&k_travel),
-    UI_SL_ROW_CUSTOM(&k_reverse),
-    UI_SL_ROW_CUSTOM(&k_hv),
-    UI_SL_ROW_HEADING(TX_SV_PG_DUT, NULL),
-    ROW_DUT_NAME,
-    UI_SL_ROW_SETTING(SET_SERVO_REPORT),
+    PROFILE_ROWS,
 };
 
 _Static_assert(sizeof(k_hub_rows) / sizeof(k_hub_rows[0]) == SVS_PROF_ROWS,
@@ -209,11 +214,10 @@ static void enc_value(char *out, size_t n)
 }
 
 /** @brief A tap on ENC CENTER: the live count is the center.  An IMU's
- *         zero is taken on the IMU screen, not here. */
+ *         zero is taken on the IMU screen or by LIVE's ZERO, not here. */
 static void enc_tap(void)
 {
-    if (enc_shown() && enc_src() == SERVO_ANGLE_AS5600) {
-        settings_set(SET_ENC_CENTER, (float)s.enc_raw);
+    if (drive_enc_center_take()) {
         ++s.sl_rev;
     }
 }
@@ -299,7 +303,8 @@ static const char *mode_locked(void)
     return lim_reads() ? lim_write_why_held() : TR(SVL_PORT_ONLY);
 }
 
-/** @brief RUDDER's ENC CENTER row: a tap takes the live count. */
+/** @brief LIVE's and RUDDER's ENC CENTER row: a tap takes the live
+ *         count. */
 static const ui_setlist_custom_t k_enc = {
     .label = TX_SV_ROW_ENC_CENTER, .help = TX_SVL_ENC_HELP,
     .value_text = enc_value, .tap = enc_tap, .locked = enc_locked,
@@ -330,6 +335,18 @@ static const ui_setlist_row_t k_sweep_rows[] = {
     UI_SL_ROW_SETTING(SET_SERVO_TEST_RANGE),
     UI_SL_ROW_SETTING(SET_SERVO_DWELL_MS),
 };
+/** @brief LIVE's list: the profile, the hub's rows, then ANGLE with ENC
+ *         CENTER under them, so the profile's rows keep their places. */
+static const ui_setlist_row_t k_live_rows[] = {
+    PROFILE_ROWS,
+    UI_SL_ROW_HEADING(TX_RDY_ANGLE, NULL),
+    UI_SL_ROW_CUSTOM(&k_enc),
+};
+
+_Static_assert(sizeof(k_live_rows) / sizeof(k_live_rows[0])
+                   == SVS_PROF_ROWS + 2,
+               "LIVE's list is the hub's and ANGLE's two rows");
+
 /** @brief RUDDER's list: LENGTH, ENC CENTER and ANGLE SOURCE. */
 static const ui_setlist_row_t k_rudder_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_LEN_MM),
@@ -410,7 +427,7 @@ typedef struct {
  *         functions have none. */
 static const fn_rows_t k_rows_of[SERVO_FN_COUNT] = {
     [SERVO_FN_HUB]    = ROWS(k_hub_rows),
-    [SERVO_FN_LIVE]   = ROWS(k_hub_rows),
+    [SERVO_FN_LIVE]   = ROWS(k_live_rows),
     [SERVO_FN_SWEEP]  = ROWS(k_sweep_rows),
     [SERVO_FN_TEST]   = { svs_test_rows, SVS_TEST_ROWS },
     [SERVO_FN_RUDDER] = ROWS(k_rudder_rows),
@@ -443,6 +460,9 @@ static bool profile_shown(void)
  *         their SERVO is HITEC D SERIES.  @return the rows */
 static const fn_rows_t *rows_now(void)
 {
+    if (s.fn == SERVO_FN_LIVE) {
+        return &k_rows_of[SERVO_FN_LIVE];
+    }
     if (profile_shown()) {
         return &k_rows_of[SERVO_FN_HUB];
     }

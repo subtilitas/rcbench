@@ -222,6 +222,15 @@ bool imu_screen_bind(uint8_t i)
 
 bool imu_screen_bind_free(void) { return at_free(); }
 
+bool imu_screen_zero(void)
+{
+    if (!ims.v.r.valid) {
+        return false;
+    }
+    post(IMU_CMD_ZERO, 0u);
+    return true;
+}
+
 bool imu_view_bound_linked(const imu_view_t *v)
 {
     return v != NULL && v->bound_addr[0] != '\0'

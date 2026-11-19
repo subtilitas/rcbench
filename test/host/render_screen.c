@@ -4550,7 +4550,7 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
              * warning. */
             ui_router_goto(id);
             ui_router_tick(0.02f);
-            tap(SV_RDY_X, UI_BAND_H + SV_DRV_ROW_Y(1));
+            tap(SV_RDY_X, UI_BAND_H + SV_DRV_ROW_Y(2));
         } else if (strcmp(view, "servo-hv-live") == 0) {
             /* The HV warning with the output on: KST's LEAVE left the
              * output on at the session's 5.00V, SERVO offers the

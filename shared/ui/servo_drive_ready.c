@@ -7,18 +7,32 @@
  * The output card, in the screen's coordinates x 636 to 1016, y 62 to 436:
  *
  *   - READY and its rows, 30px each from y 96 (servo_ready.c draws them):
- *     PORT, SUPPLY and ARM on LIVE and SWEEP; PORT, ANGLE, ZERO, SUPPLY
- *     and ARM on RUDDER;
- *   - the SET row, 4px under the last row (y 190 to 238 on LIVE and
- *     SWEEP, 250 to 298 on RUDDER): SET V and SET A, 80 x 48px each, 8px
- *     apart, and the plot to the column's end, 180 x 48px;
- *   - on LIVE and SWEEP SPEED from y 244, its track at y 268 to 308;
- *   - the type pill, y 318 to 350: a tap opens the servo profile on TYPE
- *     in the SETTINGS list's place (drive_tag_down(), svs_profile_open());
- *   - on LIVE CENTER and RELEASE, on SWEEP SWEEP and RELEASE, y 356 to
- *     404, each half the column;
+ *     PORT, ZERO, SUPPLY and ARM on LIVE; PORT, SUPPLY and ARM on SWEEP;
+ *     PORT, ANGLE, ZERO, SUPPLY and ARM on RUDDER;
+ *   - the SET row, 4px under the last row (y 220 to 268 on LIVE, 190 to
+ *     238 on SWEEP, 250 to 298 on RUDDER): SET V and SET A, 80 x 48px
+ *     each, 8px apart, and the plot to the column's end, 180 x 48px;
+ *   - SPEED: on LIVE its track at y 274 to 314 from x 716 (288 x 40px),
+ *     SPEED over its value in the 60px left of it; on SWEEP its label
+ *     row from y 244 and its track at y 268 to 308 across the column;
+ *   - the type pill, 356 x 32px at y 324 on LIVE, 318 on SWEEP and
+ *     RUDDER: a tap opens the servo profile on TYPE in the SETTINGS
+ *     list's place (drive_tag_down(), svs_profile_open());
+ *   - on LIVE CENTER and RELEASE at y 360 to 408, on SWEEP SWEEP and
+ *     RELEASE at y 356 to 404, each 174 x 48px;
  *   - the rail line at y 412: the meter of what feeds the servo, its
  *     volts and amps.
+ *
+ * LIVE's ZERO is the zero MEASURED reads from.  With ANGLE SOURCE AS5600
+ * a tap takes the live count as ENC CENTER, the setting of RUDDER's and
+ * LIVE's ENC CENTER rows and SETUP > SENSORS > AS5600 center, and asks a
+ * save; with ANGLE SOURCE IMU it asks the IMU's own ZERO, the IMU
+ * screen's.  It takes a tap only with a reading from the current link on
+ * show, ARMED or SAFE as RUDDER's: a zero drives nothing, and the surface
+ * sits at neutral while the servo holds CENTER.  It reads SET with the
+ * IMU's zero taken, or with an ENC CENTER other than its default 0 or
+ * one taken since boot.  RUDDER's ZERO is its own deflection zero
+ * (servo_rudder_panel.c) and moves no ENC CENTER.
  *
  * SET V and SET A are SUPPLY's set points, not a copy.  A tap opens the
  * keypad inside SUPPLY's caps narrowed by its OUTPUT LIMITS
@@ -70,6 +84,7 @@
 #include <string.h>
 
 #include "esc_wire_panel.h"
+#include "imu_screen.h"
 #include "prog5v_box.h"
 #include "prog_choice.h"
 #include "prog_registry.h"
@@ -99,7 +114,7 @@
 /** @brief The plot, right of the two boxes to the column's end. */
 #define DRV_PLOT_X   (RC_X + 2 * (DRV_VAL_W + DRV_VAL_GAP))
 #define DRV_PLOT_W   (RC_X + RC_W - DRV_PLOT_X) /**< 180px: 9.0s at 20Hz. */
-/** @brief SPEED's label row under LIVE's and SWEEP's SET row. */
+/** @brief SPEED's label row under SWEEP's SET row. */
 #define DRV_SPEED_Y  (DRV_SET_Y(3) + DRV_SET_H + 6)
 #define DRV_SLIDER_Y (DRV_SPEED_Y + 24) /**< SPEED's track, px. */
 /** @brief The type pill, clear of SPEED's thumb and its shadow, which
@@ -111,6 +126,17 @@
 #define DRV_BTN_Y    (DRV_TAG_Y + DRV_TAG_H + 6) /**< The buttons' row. */
 /** @brief A button: half the column, 8px apart. */
 #define DRV_BTN_W    ((RC_W - BTN_GAP) / 2)
+/** @brief LIVE's SPEED track: 6px under its SET row, below four rows, with
+ *         SPEED's label and value stacked left of it. */
+#define DRV_LV_SLIDER_Y (DRV_SET_Y(4) + DRV_SET_H + 6)
+/** @brief LIVE's SPEED label column: SPEED, TEMPO and 100%, 5 cells. */
+#define DRV_LV_LABEL_W  60
+/** @brief LIVE's track, right of the label column and 8px clear of it. */
+#define DRV_LV_TRACK_X  (RC_X + DRV_LV_LABEL_W + 8)
+/** @brief LIVE's type pill, as far under its track as SWEEP's. */
+#define DRV_LV_TAG_Y    (DRV_LV_SLIDER_Y + SLIDER_H + UI_SLIDER_OVERHANG + 5)
+/** @brief LIVE's CENTER and RELEASE, 4px under the pill. */
+#define DRV_LV_BTN_Y    (DRV_LV_TAG_Y + DRV_TAG_H + 4)
 
 _Static_assert(DRV_SET_H >= UI_TAP_MIN && DRV_VAL_W >= UI_TAP_MIN,
                "SET V and SET A are a finger's size");
@@ -129,9 +155,18 @@ _Static_assert(DRV_RAIL_Y + 20 + 4 <= CARD_FLOOR,
                "the rail line ends inside the card");
 _Static_assert(DRV_BTN_Y + BTN_H <= STOP_FLOOR,
                "PAUSE ends above the alert band");
+_Static_assert(DRV_LV_SLIDER_Y - UI_SLIDER_OVERHANG > DRV_SET_Y(4) + DRV_SET_H,
+               "LIVE's thumb clears its SET row");
+_Static_assert(DRV_LV_BTN_Y + BTN_H + 4 <= DRV_RAIL_Y,
+               "LIVE's buttons end 4px above the rail line");
+_Static_assert(5 * SV_CELL <= DRV_LV_LABEL_W && 2 * 20 <= SLIDER_H,
+               "SPEED over its value fits the column beside the track");
 
-/** @brief LIVE's and SWEEP's rows, top to bottom. */
-static const uint8_t k_live_rows[] = { DRR_PORT, DRR_SUPPLY, DRR_ARM };
+/** @brief LIVE's rows, top to bottom. */
+static const uint8_t k_live_rows[] = { DRR_PORT, DRR_ZERO, DRR_SUPPLY,
+                                       DRR_ARM };
+/** @brief SWEEP's. */
+static const uint8_t k_sweep_rows[] = { DRR_PORT, DRR_SUPPLY, DRR_ARM };
 /** @brief RUDDER's. */
 static const uint8_t k_rudder_rows[] = { DRR_PORT, DRR_ANGLE, DRR_ZERO,
                                          DRR_SUPPLY, DRR_ARM };
@@ -159,9 +194,13 @@ static const uint8_t *rows_of(int *n)
         *n = (int)(sizeof(k_rudder_rows) / sizeof(k_rudder_rows[0]));
         return k_rudder_rows;
     }
-    if (dial_fn()) {
+    if (s.fn == SERVO_FN_LIVE) {
         *n = (int)(sizeof(k_live_rows) / sizeof(k_live_rows[0]));
         return k_live_rows;
+    }
+    if (s.fn == SERVO_FN_SWEEP) {
+        *n = (int)(sizeof(k_sweep_rows) / sizeof(k_sweep_rows[0]));
+        return k_sweep_rows;
     }
     *n = 0;
     return NULL;
@@ -187,17 +226,15 @@ void drive_layout(void)
         s.speed.track = none;
         return;
     }
-    const gfx_rect_t left  = { RC_X, DRV_BTN_Y, DRV_BTN_W, BTN_H };
-    const gfx_rect_t right = { (int16_t)(RC_X + DRV_BTN_W + BTN_GAP),
-                               DRV_BTN_Y,
+    const int16_t by = (s.fn == SERVO_FN_LIVE) ? DRV_LV_BTN_Y : DRV_BTN_Y;
+    const gfx_rect_t left  = { RC_X, by, DRV_BTN_W, BTN_H };
+    const gfx_rect_t right = { (int16_t)(RC_X + DRV_BTN_W + BTN_GAP), by,
                                (int16_t)(RC_W - DRV_BTN_W - BTN_GAP), BTN_H };
     s.center_btn  = (s.fn == SERVO_FN_LIVE) ? left : none;
     s.sweep_btn   = (s.fn == SERVO_FN_SWEEP) ? left : none;
     s.release_btn = dial_fn() ? right : none;
     s.out_btn     = none;
-    s.speed.track = dial_fn() ? (gfx_rect_t){ RC_X, DRV_SLIDER_Y, RC_W,
-                                              SLIDER_H }
-                              : none;
+    s.speed.track = drive_speed_rect();
 }
 
 /* ------------------------------------------------------------ the supply */
@@ -438,14 +475,65 @@ static void angle_row(rdy_row_t *r)
     ready_set_why(r, TR(RA_NO_ANGLE));
 }
 
+bool drive_enc_center_take(void)
+{
+    if (!enc_shown() || enc_src() != SERVO_ANGLE_AS5600) {
+        return false;
+    }
+    settings_set(SET_ENC_CENTER, (float)s.enc_raw);
+    s.enc_taken = true;
+    return true;
+}
+
+bool drive_zero_set(void)
+{
+    if (enc_src() == SERVO_ANGLE_IMU) {
+        return imu_screen_view()->r.zeroed;
+    }
+    return s.enc_taken || settings_get_int(SET_ENC_CENTER) != 0;
+}
+
 /**
- * @brief The ZERO row, RUDDER's: SET, or the zero to take.  A tap takes
- *        it with a reading on show.
+ * @brief LIVE's ZERO: the zero MEASURED reads from, taken at the reading
+ *        on show -- ENC CENTER from the AS5600's count, saved; the IMU's
+ *        own zero, as the IMU screen's ZERO takes it.
+ * @return whether it was taken
+ */
+static bool live_zero_take(void)
+{
+    if (!enc_shown()) {
+        return false;
+    }
+    if (enc_src() == SERVO_ANGLE_IMU) {
+        return imu_screen_zero();
+    }
+    if (!drive_enc_center_take()) {
+        return false;
+    }
+    settings_request_save();
+    return true;
+}
+
+/**
+ * @brief The ZERO row: SET, or the zero to take.  A tap takes it with a
+ *        reading on show; on LIVE again once SET.
  * @param r the row
  */
 static void zero_row(rdy_row_t *r)
 {
     r->label = TR(RDY_ZERO);
+    if (s.fn == SERVO_FN_LIVE) {
+        r->fix = enc_shown();
+        if (!drive_zero_set()) {
+            r->st = (uint8_t)RDY_WARN;
+            ready_set_why(r, TR(RA_NO_ZERO));
+            return;
+        }
+        r->st = (uint8_t)RDY_OK;
+        snprintf(r->value, sizeof(r->value), "%s", TR(RDY_SET));
+        r->why = r->fix ? NULL : TR(RA_NO_ANGLE);
+        return;
+    }
     if (s.rud.geo.zeroed) {
         r->st = (uint8_t)RDY_OK;
         snprintf(r->value, sizeof(r->value), "%s", TR(RDY_SET));
@@ -559,6 +647,13 @@ void drive_ready_tap(int i)
         angle_pick_open();
         return;
     case DRR_ZERO:
+        if (r.fix && s.fn == SERVO_FN_LIVE) {
+            if (live_zero_take()) {
+                ++s.ctrl_rev;
+                return;
+            }
+            break;
+        }
         if (r.fix) {
             rudder_zero();
             return;
@@ -749,12 +844,22 @@ void drive_render_card(gfx_canvas_t *c)
     gfx_fill_rect(c, RCARD_X + 1, RCARD_Y + 1, RCARD_W - 2, RCARD_H - 2,
                   ui_theme_color(UI_C_PANEL));
     ready_render(c);
-    if (dial_fn()) {
+    if (s.fn == SERVO_FN_LIVE) {
+        /* SPEED over its value, left of the track. */
+        char buf[24];
+        snprintf(buf, sizeof(buf), "%d%%", s.speed_pct);
+        gfx_text(c, RC_X, DRV_LV_SLIDER_Y, TR(SV_SPEED), SV_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT_DIM), 1);
+        gfx_text(c, RC_X, DRV_LV_SLIDER_Y + 20, buf, SV_FONT_LABEL,
+                 ui_theme_color(UI_C_TEXT), 1);
+        s.speed.color = ui_theme_color(UI_C_ACCENT);
+        ui_slider_render(&s.speed, c);
+    } else if (dial_fn()) {
         /* SPEED's row says when SPEED, not CURVE, decides how a sweep
          * moves: the curves then look alike. */
         char buf[24];
         snprintf(buf, sizeof(buf), "%d%%", s.speed_pct);
-        const bool limits = s.fn == SERVO_FN_SWEEP && svs_speed_limits_sweep();
+        const bool limits = svs_speed_limits_sweep();
         gfx_text(c, RC_X, DRV_SPEED_Y,
                  limits ? TR(SV_SPEED_LIMITS) : TR(SV_SPEED), SV_FONT_LABEL,
                  limits ? ui_theme_color(UI_C_WARN)
@@ -798,13 +903,21 @@ void drive_render_card(gfx_canvas_t *c)
 
 gfx_rect_t drive_speed_rect(void)
 {
+    if (s.fn == SERVO_FN_LIVE) {
+        return (gfx_rect_t){ DRV_LV_TRACK_X, DRV_LV_SLIDER_Y,
+                             (int16_t)(RC_X + RC_W - DRV_LV_TRACK_X),
+                             SLIDER_H };
+    }
     return dial_fn() ? (gfx_rect_t){ RC_X, DRV_SLIDER_Y, RC_W, SLIDER_H }
                      : (gfx_rect_t){ 0, 0, 0, 0 };
 }
 
 gfx_rect_t drive_tag_rect(void)
 {
-    return (gfx_rect_t){ RC_X, DRV_TAG_Y, RC_W, DRV_TAG_H };
+    return (gfx_rect_t){ RC_X,
+                         (int16_t)(s.fn == SERVO_FN_LIVE ? DRV_LV_TAG_Y
+                                                         : DRV_TAG_Y),
+                         RC_W, DRV_TAG_H };
 }
 
 /* ------------------------------------------------- the SET row and plot */

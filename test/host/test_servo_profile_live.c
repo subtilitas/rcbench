@@ -50,6 +50,20 @@ void svs_profile_open(int row);
 /** @brief The hub list's rows: OUTPUT to HV SERVO, DUT, NAME and REPORT. */
 #define HL_ROWS (HL_REPORT + 1)
 
+/** @brief Whether the open list holds the profile's rows: the hub's, or
+ *         LIVE's with ANGLE and ENC CENTER under them.
+ *  @param sl the list @return true then */
+static bool profile_rows(const ui_setlist_t *sl)
+{
+    const int n = sl->host->count();
+    if (n == HL_ROWS) {
+        return true;
+    }
+    const ui_setlist_row_t enc = sl->host->row(HL_ROWS + 1);
+    return n == HL_ROWS + 2 && enc.kind == (uint8_t)UI_SL_CUSTOM
+           && enc.custom->label == TX_SV_ROW_ENC_CENTER;
+}
+
 /** @brief The functions that open the profile in their list's place. */
 static const servo_fn_t k_openers[] = {
     SERVO_FN_LIVE, SERVO_FN_LIMRUN, SERVO_FN_RAUTO, SERVO_FN_TEST,
@@ -75,7 +89,7 @@ static bool profile_open(void)
 {
     const ui_setlist_t *sl = servo_screen_list();
     return sl->open && svs_profile_shown()
-           && sl->host->count() == HL_ROWS
+           && profile_rows(sl)
            && strcmp(sl->host->name(), ui_tr(TX_SVH_SERVO)) == 0;
 }
 

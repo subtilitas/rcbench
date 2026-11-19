@@ -44,6 +44,19 @@ history is in git.
   fails when a file differs from the script or two solids share volume;
   `travel()` gives the flap's angle for an angle of the arm
   ([Mechanical parts](hardware/mechanical/README.md#kst-x10-with-frame-and-flap-drive)).
+- SERVO LIVE: a ZERO row (NULLPUNKT) on the READY card between PORT and
+  SUPPLY, RUDDER's label and texts. It sets the zero MEASURED reads from:
+  with ANGLE SOURCE AS5600 a tap takes the live count as ENC CENTER and
+  asks a save, with ANGLE SOURCE IMU it asks the IMU's own ZERO. It takes
+  a tap ARMED or SAFE, only with a reading from the current link on show;
+  no magnet, a link loss or an IMU without a valid reading take nothing.
+  Amber `ZERO NOT SET` while no zero is set, green `SET` with an ENC
+  CENTER other than 0 or one taken since boot, or the IMU's zero taken.
+  LIVE's OPTIONS list gains ANGLE with ENC CENTER under the profile's rows.
+  LIVE's SET row moves to y 220 to 268, SPEED's track to x 716 to 1004, y
+  274 to 314, with SPEED over its value left of it, the type pill to y 324
+  and CENTER and RELEASE to y 360 to 408; every control keeps its height
+  ([Screens](docs/Screens.md#servo)).
 
 ## 0.23.15 - 2026-11-18
 

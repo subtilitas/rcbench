@@ -390,6 +390,7 @@ typedef struct {
     bool     enc_valid;  /**< the encoder's last reading is valid */
     bool     enc_no_magnet; /**< not valid: the sensor sees no magnet     */
     uint16_t enc_raw;  /**< the encoder's last raw count */
+    bool     enc_taken;    /**< ENC CENTER taken from a count since boot */
     bool     enc_exact;    /**< enc_deg holds the IMU's degrees as read   */
     float    enc_deg;      /**< those degrees, from count 0               */
     int      shown_q_enc;  /**< the angle as drawn, in hundredths         */
