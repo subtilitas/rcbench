@@ -1,7 +1,8 @@
 // A servo setting up a flap, in one scene: a slice of wing with its flap,
 // the servo on its frame and the linkage (flap_drive_assembly of
-// hardware/mechanical/_gen_flap_drive.py), an inertial sensor taped onto
-// the flap (wit_imu), the bench and the M5Stack Dial.  Units are mm; x
+// hardware/mechanical/_gen_flap_drive.py), an inertial sensor on a pad of
+// double-sided gel tape on the flap (wit_imu), the bench and the M5Stack
+// Dial.  Units are mm; x
 // runs right, y up, z towards the viewer.
 //
 // The flap turns about its hinge and the linkage follows: the double arm
@@ -28,6 +29,7 @@ const FLAP = [1, 5, 26, 27, 28], ARM = [21, 22], ROD = [23, 24, 25];
 // The sensor on the flap's upper skin: its middle along the chord and the
 // span, the skin's height there and its slope.
 const IMU_AT = [203, 16, 4.36], IMU_SLOPE = -.141;
+const PAD = 2;                      // the gel tape's thickness
 const WING_AT = [-150, 14, 215];    // the wing's nose in the scene
 const DIAL_AT = [140, 0, 150];
 
@@ -156,6 +158,7 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   };
   const flap = pivot(HINGE), arm = pivot(SHAFT), rod = pivot(PIN);
   meshesOf(wing, mm, (mesh, n) => {
+    mesh.userData.skin = n === 0 || n === 1 || n === 2;
     (FLAP.includes(n) ? flap.hold : ARM.includes(n) ? arm.hold
       : ROD.includes(n) ? rod.hold : frame).add(mesh);
   });
@@ -168,36 +171,38 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   const sensor = new THREE.Group();
   meshesOf(imu, mm, mesh => sensor.add(mesh));
   seat.add(sensor);
-  const tapeMat = new THREE.MeshStandardMaterial(
-    {color: 0xe9d38a, roughness: .7, transparent: true, opacity: 0});
+  // Double-sided gel tape between the sensor and the skin: a clear pad
+  // 2mm thick under the sensor's whole base.
+  const tapeMat = new THREE.MeshPhysicalMaterial(
+    {color: 0xbfe6ff, roughness: .15, transmission: .6, thickness: 2,
+     transparent: true, opacity: 0});
   const tape = new THREE.Group();
-  const strip = (x0, y0, z0, x1, y1, z1) => {
-    const m = new THREE.Mesh(
-      new THREE.BoxGeometry(x1 - x0, y1 - y0, z1 - z0), tapeMat);
-    m.position.set((x0 + x1) / 2, (y0 + y1) / 2, (z0 + z1) / 2);
-    tape.add(m);
-  };
-  // Two strips across the sensor, along the span: over its top, down
-  // both sides and 14mm onto the skin.
-  for (const x of [-10, 10]) {
-    strip(x - 6, -26.4, 15, x + 6, 26.4, 15.3);
-    strip(x - 6, -26.4, 0, x + 6, -26.1, 15.3);
-    strip(x - 6, 26.1, 0, x + 6, 26.4, 15.3);
-    strip(x - 6, -40, 0, x + 6, -26.1, .3);
-    strip(x - 6, 26.1, 0, x + 6, 40, .3);
-  }
+  const pad = new THREE.Mesh(
+    new THREE.BoxGeometry(34, 49, PAD), tapeMat);
+  pad.position.set(0, 0, PAD / 2);
+  tape.add(pad);
   seat.add(tape);
 
   const knob = makeDial(dial, bases);
   knob.root.position.set(...DIAL_AT);
   scene.add(knob.root);
 
-  const state = {imu: 0, tape: 1};
+  // The skins that hide the servo: the wing's shell and its cover.
+  const skins = [];
+  frame.traverse(o => { if (o.isMesh && o.userData.skin) skins.push(o); });
+  const state = {imu: 0, tape: 0, skin: 1};
   const place = () => {
-    sensor.position.z = state.imu * 70;
+    sensor.position.z = PAD + state.imu * 70;
     sensor.visible = state.imu < 1;
-    tapeMat.opacity = .92 * (1 - state.tape);
+    tape.position.z = state.tape * 45;
+    tapeMat.opacity = .75 * (1 - state.tape);
     tape.visible = state.tape < 1;
+    for (const m of skins) {
+      m.material.transparent = state.skin < 1;
+      m.material.opacity = .18 + .82 * state.skin;
+      m.material.depthWrite = state.skin > .5;
+      m.castShadow = state.skin > .5;
+    }
   };
   place();
   const setDeflect = deg => {
@@ -228,12 +233,13 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
       wing: inWing(60, 16, 12), servo: inWing(SHAFT[0] + 12, 2, 2),
       hinge: inWing(HINGE[0], -28, HINGE[1]), rod: inWing(130, -5, 6),
       flap: onFlap(222, -10, 1.6), edge: onFlap(229, 16, .3),
-      imu: onFlap(IMU_AT[0], IMU_AT[1], IMU_AT[2] + 15),
-      tape: onFlap(IMU_AT[0] + 10, IMU_AT[1] + 34, IMU_AT[2]),
+      imu: onFlap(IMU_AT[0], IMU_AT[1], IMU_AT[2] + PAD + 15),
+      tape: onFlap(IMU_AT[0], IMU_AT[1] - 25, IMU_AT[2] + 1),
       horn: inWing(EYE[0], -5, EYE[1]),
     },
     setFace: knob.setFace, setTurn: knob.setTurn,
-    // How far out the sensor stands, 1 to 0, and its tape, 1 off to 0 on.
+    // How far out the sensor stands, 1 to 0, its tape, 1 off to 0 on,
+    // and the skins, 1 solid to 0 clear.
     setParts: parts => { Object.assign(state, parts); place(); },
     setDeflect,
   };
