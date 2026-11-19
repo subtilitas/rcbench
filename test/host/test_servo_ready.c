@@ -71,6 +71,8 @@ static const gate_text_t k_gate[] = {
     { 0, TX_SV_LIM_PWM_OFF, RAR_PWM },
     { 0, TX_SV_LIM_PWM_OFF_ARMED, RAR_PWM },
     { 0, TX_RA_RANGE, RAR_RANGE },
+    { 0, TX_RA_RANGE_HIGH, RAR_RANGE },
+    { 0, TX_RA_RANGE_LOW, RAR_RANGE },
     { 0, TX_HP_NEED_PD_C, RAR_SUPPLY },
     { 0, TX_SV_LIM_PROG_PD_OFF, RAR_SUPPLY },
     { 0, TX_SV_RUN_PD_5V, RAR_SUPPLY },
@@ -242,6 +244,50 @@ TEST_CASE(on_each_bench_the_gate_text_is_on_its_row_alone)
 /* On OUTPUTS the PORT row is red: the hold refuses, its fill stays grey,
  * 2.5s held start nothing, and a tap names PORT and its text in the
  * band; the ARM row reads amber. */
+/* servo_lists.c's profile list and its BACK (servo_screen_int.h). */
+void svs_profile_open(int row);
+bool svs_list_back(void);
+
+/** @brief PULSE CENTER typed into the profile's keypad, the list closed. */
+static void center_to(const char *us)
+{
+    svs_profile_open(HL_CENTER);
+    sl_tap(HL_CENTER);
+    keys(us);
+    (void)svs_list_back();
+    frames(0.1f);
+}
+
+/* PULSE CENTER 1750us with PULSE MIN to MAX 1000-2000us: the command range
+ * 1000-2500us, which a command names; at MARGIN 10% the search's would
+ * reach 2564us for a NEUTRAL of 1640us, past the 2500us a command can
+ * carry: RANGE names MARGIN RANGE PAST 2500us, the gate's text on its
+ * row (grey here, as it waits on this bench's red PORT).  MARGIN 0% or
+ * CENTER 1500us clears it. */
+TEST_CASE(a_margin_range_past_2500us_is_refused_on_range)
+{
+    to_auto(false);
+    settings_set(SET_RUDDER_MARGIN, 10.0f);
+    CHECK(row_of(RAR_RANGE).why == NULL);
+    center_to("1750");
+    rdy_row_t r = row_of(RAR_RANGE);
+    CHECK(r.why == TR(RA_RANGE_HIGH));
+    CHECK(r.st == (uint8_t)RDY_BAD || r.st == (uint8_t)RDY_IDLE);
+    CHECK(r.st != (uint8_t)RDY_OK);
+    CHECK_EQ(rauto_row_of(TR(RA_RANGE_HIGH)), RAR_RANGE);
+    CHECK(card_holds_the_gate());
+    settings_set(SET_RUDDER_MARGIN, 0.0f);
+    CHECK(row_of(RAR_RANGE).why == NULL);
+    settings_set(SET_RUDDER_MARGIN, 10.0f);
+    center_to("1500");
+    CHECK(row_of(RAR_RANGE).why == NULL);
+    char tag[24];
+    CHECK_STR_EQ(ready_tag(TR(RA_RANGE_HIGH), tag, sizeof(tag)),
+                 TR(RDY_TAG_RANGE_HIGH));
+    CHECK_STR_EQ(ready_tag(TR(RA_RANGE_LOW), tag, sizeof(tag)),
+                 TR(RDY_TAG_RANGE_LOW));
+}
+
 TEST_CASE(the_hold_refuses_on_the_first_red_row_and_names_it)
 {
     to_auto(false);
@@ -992,6 +1038,7 @@ int main(void)
 {
     RUN(every_gate_text_belongs_to_exactly_one_row);
     RUN(on_each_bench_the_gate_text_is_on_its_row_alone);
+    RUN(a_margin_range_past_2500us_is_refused_on_range);
     RUN(the_hold_refuses_on_the_first_red_row_and_names_it);
     RUN(the_rows_the_hold_does_read_amber_only_while_safe);
     RUN(the_tags_share_the_left_edge_the_widest_state_needs);

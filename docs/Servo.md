@@ -1942,6 +1942,7 @@ while:
 | PROG 5V, PD MINI, SUPPLY | ARMED with the PROG 5V off, a port holding it; a rail under 4.8V without a PD mini; no PD mini or PROG 5V to cycle a KST/Chaservo or classic Hitec servo's supply; SUPPLY's permitted range leaving out the run's 5.0V | the limit run's line; `PD MINI: 5.0V OUTSIDE ITS LIMITS` for the range, where a tap on the row opens SUPPLY's settings at OUTPUT LIMITS. START sets the PD mini to 5.0V ([The run's 5.0V](#the-runs-50v)). PROG 5V is a fixed 5V and has no set point | the limit run's tag; `5.0V OUTSIDE LIMITS` |
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | `PORT PWM OFF: DISARM`, `WAITING FOR SAFE` |
 | RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` | `NEEDS 1000-2000us` |
+| RANGE | the range the search's commands carry, PULSE MIN to MAX widened to the margin's for every NEUTRAL from 1360us to 1640us and symmetric about PULSE CENTER (`servo_rauto_cmd_range()`), reaches past 2500us or below 400us, the bounds a command can name (LINK_CC_CEILING_US, LINK_CC_FLOOR_US). PULSE CENTER 1750us at MARGIN 10% gives 936-2564us | `MARGIN RANGE PAST 2500us`, `MARGIN RANGE BELOW 400us` | `PAST 2500us`, `BELOW 400us` |
 | ANGLE | the IMU's AXIS Z (yaw), in 6-AXIS and in 9-AXIS: on a BWT901CL yaw drifts 2.4° in 100s in 6-AXIS and settles 38° off in 9-AXIS, against the 0.5° tolerance. A tap opens the IMU YAW list, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`, for a sensor turned 90° so the hinge is its X or Y; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW REFUSED: HINGE ON X OR Y` | `YAW REFUSED` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` | `NO READING` |
 | ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` | `ZERO NOT SET` |
@@ -1987,7 +1988,11 @@ ARMED is asked).
   pulse to the range its command carries (`shared/outputs/servo_link.c`).
   PULSE MIN and MAX themselves change only by the widening at the run's
   end; every command after the end, an early one included, carries the
-  bench's range.
+  bench's range. The start is refused where that range cannot be named
+  (the RANGE row below), so the outputs layer never drops it for the
+  standard 1000-2000us. A stretch above 1.0A that began before a hold at
+  1000us or 2000us ends with the hold: the finder takes no reading during
+  it, and the run's own guard watches the current meanwhile.
 - The first measure is the search's. Once the search has judged 1000us
   (2000us) free, or a position past it, it holds the servo at 1000us
   (2000us) and takes the angle there by the measure's rule below, counted
@@ -2011,7 +2016,7 @@ ARMED is asked).
   at the side's last free step, and the report says so. That angle stands
   for the end by the linear map from the pulse it was taken at: 3.0° at
   1450us, 50us from a PULSE CENTER of 1500us, is 1.5° at an end of 1475us.
-  The angle decides:
+  The angle as the end reads it decides, the scaled one after a fallback:
   - Below TARGET - TOLERANCE, the linkage stops the surface short of the
     target, and the run ends as FAIL, `STOP AT 1225us BEFORE TARGET` on the
     box: no value written, a 1000us side that fails leaves the 2000us side

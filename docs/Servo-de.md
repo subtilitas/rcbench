@@ -2052,6 +2052,7 @@ Halten grau, solange:
 | PROG 5V, PD MINI, VERSORGUNG | ARMED mit PROG 5V aus, ein Port hält es; eine Schiene unter 4.8V ohne PD mini; kein PD mini und kein PROG 5V, um die Versorgung eines KST/Chaservo- oder klassischen Hitec-Servos aus- und einzuschalten; ein erlaubter Bereich von SUPPLY ohne die 5.0V des Laufs | die Zeile des Endlagenlaufs; `PD MINI: 5.0V AUSSERHALB SEINER GRENZEN` für den Bereich, wobei ein Tippen auf die Zeile die Einstellungen von SUPPLY bei AUSGANGSGRENZEN öffnet. START stellt das PD mini auf 5.0V ([Die 5,0V des Laufs](#die-50v-des-laufs)). PROG 5V ist fest 5V und hat keinen Sollwert | die Kurzform des Endlagenlaufs; `5.0V NICHT ERLAUBT` |
 | PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | `PORT-PWM AUS: DISARM`, `WARTET AUF SAFE` |
 | BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` | `BRAUCHT 1000-2000us` |
+| BEREICH | der Bereich, den die Befehle der Suche tragen, PULS MIN bis MAX auf den der Reserve für jedes NEUTRAL von 1360us bis 1640us geweitet und symmetrisch um PULS MITTE (`servo_rauto_cmd_range()`), reicht über 2500us oder unter 400us, die Grenzen, die ein Befehl nennen kann (LINK_CC_CEILING_US, LINK_CC_FLOOR_US). PULS MITTE 1750us bei RESERVE 10% ergibt 936-2564us | `RESERVE-BEREICH ÜBER 2500us`, `RESERVE-BEREICH UNTER 400us` | `ÜBER 2500us`, `UNTER 400us` |
 | WINKEL | die IMU-Achse Z (Gieren) gewählt ist, in 6-AXIS und in 9-AXIS: an einer BWT901CL driftet das Gieren in 6-AXIS 2,4° in 100s und bleibt in 9-AXIS 38° daneben stehen, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`, für einen um 90° gedrehten Sensor, dessen Achse X oder Y das Scharnier ist; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` | `GIEREN GESPERRT` |
 | WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` | `KEIN MESSWERT` |
 | NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` | `NICHT GESETZT` |
@@ -2100,7 +2101,12 @@ angefragt ist).
   die Ausgabeschicht hält einen Puls auf dem Bereich seines Befehls
   (`shared/outputs/servo_link.c`). PULS MIN und MAX selbst ändern sich nur
   durch das Weiten am Ende des Laufs; jeder Befehl nach dem Ende, auch
-  einem frühen, trägt den Bereich des Prüfstands.
+  einem frühen, trägt den Bereich des Prüfstands. Der Start wird
+  verweigert, wo dieser Bereich nicht zu nennen ist (die Zeile BEREICH
+  unten), daher verwirft die Ausgabeschicht ihn nie für die üblichen
+  1000-2000us. Eine Strecke über 1,0A, die vor einem Halten auf 1000us
+  oder 2000us begann, endet mit dem Halten: der Sucher nimmt währenddessen
+  keinen Messwert, und der eigene Schutz des Laufs überwacht den Strom.
 - Die erste Messung ist die der Suche. Sobald die Suche 1000us (2000us)
   oder eine Stellung dahinter frei gefunden hat, hält sie das Servo auf
   1000us (2000us) und nimmt dort den Winkel nach der Regel der Messung
@@ -2127,7 +2133,8 @@ angefragt ist).
   hat, und der Bericht nennt das. Dieser Winkel steht nach der linearen
   Abbildung ab dem Puls, an dem er genommen wurde, für das Ende: 3,0° bei
   1450us, 50us von einer PULS MITTE von 1500us, sind 1,5° an einem Ende von
-  1475us. Der Winkel entscheidet:
+  1475us. Der Winkel, wie das Ende ihn liest, entscheidet, nach einem
+  Rückgriff der skalierte:
   - Unter SOLL - TOLERANZ hält das Gestänge das Ruder vor dem Soll an, und
     der Lauf endet mit NICHT BESTANDEN, `ANSCHLAG BEI 1225us VOR DEM SOLL`
     in der Box: kein Wert geschrieben, scheitert die Seite 1000us, bleibt

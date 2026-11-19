@@ -292,6 +292,9 @@ void servo_limit_resume(servo_limit_t *lf, uint32_t now_ms)
     lf->started        = true;
     lf->measuring      = false;
     lf->phase_start_ms = now_ms;
+    /* The pause fed no reading: an elevated stretch before it is over, and
+     * the caller's own guard watched the current meanwhile. */
+    lf->elevated       = false;
 }
 
 float servo_limit_progress(const servo_limit_t *lf)

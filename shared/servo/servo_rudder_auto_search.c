@@ -63,6 +63,29 @@ static void search_range(const servo_rauto_t *r, uint16_t us[2])
     servo_rauto_pulse_range(r->cfg.margin_pct, n, us);
 }
 
+bool servo_rauto_cmd_range(uint8_t margin_pct, uint16_t center_us,
+                           uint16_t min_us, uint16_t max_us, uint16_t us[2])
+{
+    if (us == NULL) {
+        return false;
+    }
+    uint16_t a[2], b[2];
+    servo_rauto_pulse_range(margin_pct, SERVO_RAUTO_NEUTRAL_MIN_DUS, a);
+    servo_rauto_pulse_range(margin_pct, SERVO_RAUTO_NEUTRAL_MAX_DUS, b);
+    int mn = (int)min_us, mx = (int)max_us;
+    mn = (int)a[0] < mn ? (int)a[0] : mn;
+    mn = (int)b[0] < mn ? (int)b[0] : mn;
+    mx = (int)a[1] > mx ? (int)a[1] : mx;
+    mx = (int)b[1] > mx ? (int)b[1] : mx;
+    const int c = (int)center_us;
+    const int half = (c - mn) > (mx - c) ? (c - mn) : (mx - c);
+    const int lo = c - half, hi = c + half;
+    us[0] = (uint16_t)(lo < 0 ? 0 : lo);
+    us[1] = (uint16_t)(hi > 65535 ? 65535 : hi);
+    return lo >= (int)SERVO_RAUTO_CMD_FLOOR_US
+           && hi <= (int)SERVO_RAUTO_CMD_CEILING_US;
+}
+
 bool servo_rauto_drive_range(const servo_rauto_t *r, uint16_t us[2])
 {
     if (r == NULL || us == NULL || !servo_rauto_running(r) || !r->s_begun) {
@@ -170,10 +193,12 @@ static void side_next(servo_rauto_t *r, uint32_t now_ms)
 }
 
 /**
- * @brief The angle at a found end inside the end pulse, judged: below
- *        TARGET less TOLERANCE the linkage stops the surface short of the
- *        target and the run ends STOP; else the side is measured at the end
- *        from here on, this angle its first measure.
+ * @brief The angle at a found end inside the end pulse, judged as the end
+ *        reads it (an angle of the last free step scaled to the end by the
+ *        linear map): below TARGET less TOLERANCE the linkage stops the
+ *        surface short of the target and the run ends STOP; else the side
+ *        is measured at the end from here on, this angle its first
+ *        measure.
  * @param r      Run state.
  * @param deg    The angle, signed, °.
  * @param at_us  Where it was taken, us.
@@ -187,7 +212,13 @@ static void end_judged(servo_rauto_t *r, float deg, uint16_t at_us,
     e->deg_taken = true;
     e->deg       = deg;
     e->deg_us    = at_us;
-    if (fabsf(deg) + RAUTO_EPS_DEG < r->goal_deg[s] - rauto_tol_deg(r)) {
+    /* The angle as the end reads it by the linear map: the last free
+     * step's lies further out than the end and reads more. */
+    const int c = (int)r->cfg.center_us;
+    const int at = abs((int)at_us - c), end = abs((int)e->end_us - c);
+    const float at_end = at > 0 && at != end ? deg * (float)end / (float)at
+                                              : deg;
+    if (fabsf(at_end) + RAUTO_EPS_DEG < r->goal_deg[s] - rauto_tol_deg(r)) {
         /* The surface stops short of the target: that side gets no
          * write. */
         r->stop_us = e->end_us;
@@ -198,11 +229,7 @@ static void end_judged(servo_rauto_t *r, float deg, uint16_t at_us,
      * every measure of the side drives the end, not the end pulse. */
     e->at_end    = true;
     r->s_took[s] = true;
-    /* As the end would read it by the linear map: an angle of the last
-     * free step lies further out than the end. */
-    const int c = (int)r->cfg.center_us;
-    const int at = abs((int)at_us - c), end = abs((int)e->end_us - c);
-    r->s_deg[s] = at > 0 && at != end ? deg * (float)end / (float)at : deg;
+    r->s_deg[s]  = at_end;
     side_next(r, now_ms);
 }
 

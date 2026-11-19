@@ -76,7 +76,10 @@ history is in git.
   it, each end 25us back from the bind. It programs nothing. The run's own
   commands carry that range from the search's start to the run's end, so
   the pin reaches it whatever PULSE MIN and PULSE MAX read; PULSE MIN and
-  MAX change only by the widening at the end. It holds the servo at 1000us
+  MAX change only by the widening at the end. The READY card's RANGE row
+  refuses the start where that range, symmetric about PULSE CENTER for
+  every NEUTRAL from 1360us to 1640us, reaches past 2500us or below 400us
+  (`MARGIN RANGE PAST 2500us`, `MARGIN RANGE BELOW 400us`). It holds the servo at 1000us
   and 2000us on the way, each once it or a step past it is judged free,
   and takes the first measure of each side there by the measure's settle
   rule; the run drives no separate first measure. LOW END and HIGH END cap every later pulse. An end inside
@@ -86,7 +89,9 @@ history is in git.
   side is measured at the end from then on, each angle scaled to the end
   pulse by the linear map, and the writes take the throw shorter, nothing
   driven past the end. An end that does not settle takes the angle of the
-  last free step, scaled from the pulse it was taken at. The first state
+  last free step, scaled from the pulse it was taken at, for the STOP
+  test as for the measures. A stall stretch from before a hold at 1000us
+  or 2000us ends with the hold. The first state
   line reads
   `SEARCH 1230us: STEP 28 OF 100` during the search, a new fourth line the
   ends, `LOW END 995us, HIGH END FREE`, and the verify pass moves to the

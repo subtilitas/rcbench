@@ -864,6 +864,27 @@ bool servo_rauto_in_cap(uint16_t value0, float goal_deg, float first_deg,
  *         servo_test_abort_error() calls an error.
  */
 bool servo_rauto_why_error(servo_rauto_why_t why, servo_test_abort_t test_why);
+/** @brief The lowest and the highest pulse a command may carry, us: the
+ *         link's LINK_CC_FLOOR_US and LINK_CC_CEILING_US (link_pages.h). */
+#define SERVO_RAUTO_CMD_FLOOR_US    400u
+#define SERVO_RAUTO_CMD_CEILING_US 2500u   /**< see SERVO_RAUTO_CMD_FLOOR_US */
+
+/**
+ * @brief The range the run's commands carry at most: the bench's PULSE MIN
+ *        to PULSE MAX widened to the margin's range for every NEUTRAL a KST
+ *        may hold (SERVO_RAUTO_NEUTRAL_MIN_DUS..MAX_DUS), symmetric about
+ *        PULSE CENTER as a command's range is.
+ * @param margin_pct The margin, %; 0 for Hitec.
+ * @param center_us  PULSE CENTER, us.
+ * @param min_us     PULSE MIN, us.
+ * @param max_us     PULSE MAX, us.
+ * @param us         Out: the lower and the upper end, us; the lower held at
+ *                   0.
+ * @return true when both lie within SERVO_RAUTO_CMD_FLOOR_US to
+ *         SERVO_RAUTO_CMD_CEILING_US; false past them or for NULL.
+ */
+bool servo_rauto_cmd_range(uint8_t margin_pct, uint16_t center_us,
+                           uint16_t min_us, uint16_t max_us, uint16_t us[2]);
 /**
  * @brief The pulse range the run's own commands carry from the search's
  *        start to the run's end: the margin's range from the read's NEUTRAL

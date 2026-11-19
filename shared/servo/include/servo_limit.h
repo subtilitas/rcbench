@@ -169,7 +169,9 @@ uint16_t servo_limit_step(servo_limit_t *lf, float current_a, uint32_t now_ms);
 /**
  * @brief The search goes on at its command after a pause in which the caller
  *        held the servo elsewhere or fed it no reading: the settle and the
- *        measure of the position start anew at @p now_ms.
+ *        measure of the position start anew at @p now_ms, and the stall
+ *        guard's elevated stretch from before the pause is dropped, as the
+ *        pause fed it no reading.  LIMIT RUN never pauses.
  *
  * @param lf     Search state; nothing when NULL or not RUNNING.
  * @param now_ms Time the servo is commanded there again, ms.
