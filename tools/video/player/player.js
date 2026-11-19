@@ -591,8 +591,9 @@ function drawScreen(sc, lt, a, pulse, ui) {
 
 // A touch on a screen: the ring of a tap over 0.75s, or the ring of a
 // hold that fills in 2s, at a frame pixel, q seconds after its start and
-// k times the size it has on a flat screenshot.
-function touchMark(action, tx, ty, q, k) {
+// k times the size it has on a flat screenshot.  The hold's count stands
+// right of the ring, or over it.
+function touchMark(action, tx, ty, q, k, above = false) {
   if (q <= 0) return;
   if (action === 'tap') {
     const pr = ramp(q, 0, .2) - ramp(q, .3, .5), rp = cl((q - .28) / .45);
@@ -617,9 +618,12 @@ function touchMark(action, tx, ty, q, k) {
       stroke-width="${7 * k}" stroke-linecap="round" stroke-dasharray="${C}"
       stroke-dashoffset="${C * (1 - pr)}"
       transform="rotate(-90 ${tx} ${ty})"/>
-     <text x="${tx + R + 16}" y="${ty + 8}" font-family="Inter"
-      font-weight="800" font-size="24"
-      fill="#00f58c">${(pr * 2).toFixed(1)} s</text></g>`);
+     <text x="${above ? tx : tx + R + 16}"
+      y="${above ? ty - R - 14 : ty + 8}"
+      text-anchor="${above ? 'middle' : 'start'}" font-family="Inter"
+      font-weight="800" font-size="24" stroke="#05070b" stroke-width="5"
+      paint-order="stroke"
+      fill="#00f58c">${(pr * 2).toFixed(1)}s</text></g>`);
 }
 
 // The touches of a 3D scene: each {at, on, xy, action} is a tap or a
@@ -636,7 +640,8 @@ function drawTouches(sc, lt, m, proj) {
     const [ux, uy] = proj(px(x + (t.on === 'dial' ? 24 : 60), y));
     // 60 pixels of the panel, 24 of the Dial, are 75 frame pixels flat.
     const k = cl(Math.hypot(ux - tx, uy - ty) / 75, .45, 1.2);
-    touchMark(t.action, tx, ty, q, k);
+    // The count stands over the ring, clear of the button's own text.
+    touchMark(t.action, tx, ty, q, k, true);
   }
 }
 

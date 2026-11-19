@@ -36,7 +36,7 @@ a new session needs beyond it.
 | `storyboards/minircbench-build.json`, `player/mini3d.js`, `boards/minircbench-wiring.json`, `stills/` | the build of a MiniRcBench in 10 steps, 505.57s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; `tools/video_cad.py --parts` converts its assembly |
 | `storyboards/minircbench-features.json`, `stills/` | every screen of the MiniRcBench, firmware 0.1.0, in 12 chapters, 1000.70s, narrated in the voice of `features`, bed `pachelbel-canon` at half level; 81 stills of that project's host suite at its commit 2cdf044 on the display of the `mini` model seen from the front |
 | `storyboards/rbmod-first-program.json`, `player/part3d.js`, `player/windows.js`, `web/capture.js` | first programming of a bench with the rbmod carrier in 6 chapters, 321.22s, narrated, bed `pachelbel-canon` at half level; STEP models of the panel, the carrier and the RP2350-CAN, captures of the releases page and of the ESP Web Tool, a drawn Windows desktop for the drive RP2350 |
-| `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 197.66s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on gel tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
+| `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 298.47s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on gel tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
 | `test/tools/test_make_video.py` | 46 cases; the storyboard check, the script, the freezes |
 
@@ -83,7 +83,7 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
   its pixels differ from SwiftShader's by 0.031 of 255 on average on
   the Dial video. `minircbench-features`, 30,021 frames, takes 531s
   there with `--jobs 47` and empty caches. `rbmod-first-program` takes
-  112s with 47 jobs, `auto-rudder` 235s with 30 jobs, 5 a card.
+  112s with 47 jobs, `auto-rudder` 191s with 30 jobs, 5 a card.
 - Chromium takes the first Vulkan device: 47 browsers with the full
   case model filled one card's 16GiB. A browser of a long scene with
   the full case needs about 0.4GB; the server spreads the jobs over its
