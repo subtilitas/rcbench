@@ -212,18 +212,13 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   const from = wires.getCenter(new THREE.Vector3());
   // The header the plug goes into, in the bench's own frame.
   // J1, the header of the programming ports, is the one nearer the
-  // case's corner (docs/Carrier.md).  On the case's shell alone: the
-  // middle of its opening, at the wall's face.
-  let socket = [58, 12, 54], tips = 0;
-  try {
-    const at = rig.anchors.J1();
-    // A case without the carrier gives its origin: no header there.
-    if (at.every(Number.isFinite) && Math.hypot(...at) > 1) {
-      // The header's box ends at its pins' tips, 6mm before its body.
-      socket = at;
-      tips = 6;
-    }
-  } catch (e) { /* the case's shell alone has no header */ }
+  // case's corner (docs/Carrier.md).  PROGP01 is its position 2 of 4,
+  // counted from the left with the display up.  In the case's assembly,
+  // laid as case_cad.js lays it, that column's pins are at x 57.50, its
+  // middle row at y 11.13, and the header's body ends at z 47.38, 6mm
+  // behind the pins' tips and 6.71mm behind the wall's outer face.  The
+  // plug's face stands at the body, over the pins.
+  const socket = [57.5, 11.13, 47.38];
   const WIRES = [0x7a4a1e, 0xd0122a, 0xe8731a];
   const leads = WIRES.map(color => {
     const m = new THREE.Mesh(new THREE.BufferGeometry(),
@@ -257,11 +252,7 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   // The lead from the servo to the plug, laid anew when the bench moves.
   const lay = () => {
     scene.updateMatrixWorld(true);
-    // PROGP01 is J1's position 2 of 4, counted from the left with the
-    // display up, 2.54mm apart: 1.27mm left of the header's middle.  The
-    // plug's face stands at the header's body, over its pins.
-    const port = bench.localToWorld(new THREE.Vector3(
-      socket[0] - 1.27, socket[1], socket[2] - tips));
+    const port = bench.localToWorld(new THREE.Vector3(...socket));
     // The way out of the header: the bench's connector wall faces +z.
     const out = new THREE.Vector3(0, 0, 1).transformDirection(
       bench.matrixWorld);
