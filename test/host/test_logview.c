@@ -16,6 +16,7 @@
  * - a_file_that_proves_both_conventions_is_flagged
  * - a_ragged_file_is_flagged_without_a_convention_conflict
  * - a_file_with_no_time_column_plots_against_the_row_number
+ * - the_summary_of_a_file_without_a_time_column_has_no_duration_or_rate
  * - a_two_row_file_still_draws_a_trace
  * - no_card_says_so_and_stays_put
  * - an_empty_card_is_not_the_same_as_no_card
@@ -192,6 +193,54 @@ TEST_CASE(a_file_with_no_time_column_plots_against_the_row_number)
     }
     CHECK_STR_EQ(d->time_name, "");
     CHECK(d->unparsed_cells >= 1);
+}
+
+/* The plot's summary line gives a duration and a sample rate only for a
+ * file with a time column: without one both would come from the row
+ * index.  The row count stays, in English and in German. */
+TEST_CASE(the_summary_of_a_file_without_a_time_column_has_no_duration_or_rate)
+{
+    char line[160], want[160];
+    fresh();
+    open_file(4);
+    tap(PLOT_X, IM_BTN_CY);
+    draw();
+    const log_data_t *d = log_viewer_data();
+    if (d == NULL) {
+        T_FAIL("no data");
+        return;
+    }
+    CHECK_STR_EQ(d->time_name, "");
+    snprintf(want, sizeof(want), "%s   %d ROWS", log_viewer_open_name(),
+             d->count);
+    log_viewer_summary(line, sizeof(line));
+    CHECK_STR_EQ(line, want);
+    ui_text_set_language(UI_LANG_DE);
+    snprintf(want, sizeof(want), "%s   %d ZEILEN", log_viewer_open_name(),
+             d->count);
+    log_viewer_summary(line, sizeof(line));
+    CHECK_STR_EQ(line, want);
+    ui_text_set_language(UI_LANG_EN);
+
+    /* A file with a time column keeps both. */
+    fresh();
+    open_file(0);
+    tap(PLOT_X, IM_BTN_CY);
+    draw();
+    d = log_viewer_data();
+    if (d == NULL) {
+        T_FAIL("no data");
+        return;
+    }
+    snprintf(want, sizeof(want), "%s   4 ROWS   0.06s   50Hz",
+             log_viewer_open_name());
+    log_viewer_summary(line, sizeof(line));
+    CHECK_STR_EQ(line, want);
+
+    /* No file loaded: no line. */
+    fresh();
+    log_viewer_summary(line, sizeof(line));
+    CHECK_STR_EQ(line, "");
 }
 
 TEST_CASE(a_two_row_file_still_draws_a_trace)
@@ -658,6 +707,7 @@ int main(void)
     RUN(a_file_that_proves_both_conventions_is_flagged);
     RUN(a_ragged_file_is_flagged_without_a_convention_conflict);
     RUN(a_file_with_no_time_column_plots_against_the_row_number);
+    RUN(the_summary_of_a_file_without_a_time_column_has_no_duration_or_rate);
     RUN(a_two_row_file_still_draws_a_trace);
     RUN(no_card_says_so_and_stays_put);
     RUN(an_empty_card_is_not_the_same_as_no_card);

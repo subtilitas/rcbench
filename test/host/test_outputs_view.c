@@ -12,6 +12,7 @@
  * - a_target_opens_the_board_view_on_its_entry_and_home_returns_to_it
  * - the_port_rows_act_in_the_column
  * - a_locked_row_takes_the_press_and_does_nothing
+ * - port_pwm_off_acts_inside_a_closed_move_pin_cards_box
  * - a_key_asks_for_the_ports_pin_and_the_column_names_it
  * - a_key_over_the_function_face_takes_its_press
  * - the_column_holds_every_reason_and_meets_no_key
@@ -32,6 +33,7 @@
 #include "guard_canvas.h"
 #include "out_bind.h"
 #include "outputs_screen_int.h"
+#include "pin_take.h"
 #include "port_view.h"
 #include "servo_screen.h"
 #include "ui_board.h"
@@ -395,6 +397,50 @@ TEST_CASE(a_locked_row_takes_the_press_and_does_nothing)
     CHECK(!outputs_port_fn_open());
     frame();
     servo_screen_set_bench_armed(false);
+}
+
+/* PORT PWM OFF is a stop: its press acts inside the box of a MOVE PIN
+ * card closed less than 400ms ago, and the tap on ON beside it is spent.
+ * The views end the wait when a port's entry is picked, and the board
+ * view's card lies right of the entry's column: the case opens the card
+ * over the column with pin_take_tap() itself. */
+TEST_CASE(port_pwm_off_acts_inside_a_closed_move_pin_cards_box)
+{
+    visit_port(0u);
+    port_view_set_ask_state(port_view_ask_seq(), PROG_LINK_ASK_DONE);
+    press(TESTER_SEG(1));
+    press(PWM_SEG(0));
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+
+    const outbind_t b = bench();
+    static uint64_t ifc[OUTPUTS_IFACE_COUNT];
+    const uint8_t held[4] = { 13u, 14u, 0xFFu, 0xFFu };
+    outputs_iface_read(ifc);
+    const outbind_take_ctx_t ctx = {
+        .read = true, .ports = held, .pwm_ports = outputs_pwm_pins(held),
+        .port_count = 4u, .ifaces = ifc, .iface_count = OUTPUTS_IFACE_COUNT,
+    };
+    CHECK(pin_take_tap(PIN_TAKE_BOARD, &b, idx(6u), &ctx,
+                       gfx_rect_make(0, 0, SCREEN_W, PK_FOOT)));
+    CHECK(pin_take_open_in(PIN_TAKE_BOARD));
+    press(pin_take_button(PIN_TAKE_BTN_CANCEL));
+    CHECK(!pin_take_is_open());
+    const gfx_rect_t off = PWM_SEG(1);
+    touch_event_t down = { TOUCH_EVENT_DOWN,
+                           { 0, (int16_t)(off.x + off.w / 2),
+                             (int16_t)(off.y + off.h / 2), 40 }, 0u };
+    CHECK(pin_take_spends(PIN_TAKE_BOARD, &down));
+
+    send(TOUCH_EVENT_DOWN, off.x + off.w / 2, off.y + off.h / 2);
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    send(TOUCH_EVENT_UP, off.x + off.w / 2, off.y + off.h / 2);
+    /* ON starts the pulse and is no stop: its tap in the box is spent. */
+    press(PWM_SEG(0));
+    CHECK(!settings_get_bool(SET_SERVO_PORT_PWM));
+    view()->tick(0.4f);
+    press(PWM_SEG(0));
+    CHECK(settings_get_bool(SET_SERVO_PORT_PWM));
+    settings_set(SET_SERVO_PORT_PWM, 0.0f);
 }
 
 TEST_CASE(a_key_asks_for_the_ports_pin_and_the_column_names_it)
@@ -960,6 +1006,7 @@ int main(void)
     RUN(a_target_opens_the_board_view_on_its_entry_and_home_returns_to_it);
     RUN(the_port_rows_act_in_the_column);
     RUN(a_locked_row_takes_the_press_and_does_nothing);
+    RUN(port_pwm_off_acts_inside_a_closed_move_pin_cards_box);
     RUN(a_key_asks_for_the_ports_pin_and_the_column_names_it);
     RUN(a_key_over_the_function_face_takes_its_press);
     RUN(the_column_holds_every_reason_and_meets_no_key);

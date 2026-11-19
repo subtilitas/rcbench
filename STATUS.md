@@ -964,7 +964,7 @@ MOVE PIN writes the binding `outbind_take_check()` returns once, CANCEL, the hom
 off the card, a binding read that fails or changes, a pick and a view switch write nothing; a
 port's, an interface's or OFF's tap gives a reason line, which names the tap made last; for
 400ms after MOVE PIN or CANCEL closes the card a press in its former box is spent
-(`test_pin_take`, 23 cases, and `test_pin_take_grid`, 9 cases, the grid and the rbmod
+(`test_pin_take`, 23 cases, and `test_pin_take_grid`, 10 cases, the grid and the rbmod
 carrier). A write the IOmcu refuses reads its cause from BIND's `WHY` register (protocol
 4.38) and shows it on the reason line (`test_bind_link`, `test_outputs_screen_draw`).
 
@@ -1680,7 +1680,7 @@ CI (continuous integration) runs the workflows below on GitHub Actions.
 | --- | --- | --- |
 | `ci.yml` | push to `main`, the label `ci` added to a pull request, tag `v*`, manual | on Ubuntu 26.04: the host suite in five parallel jobs, joined by the job the branch ruleset requires; the same suite under ASan (AddressSanitizer) and UBSan (UndefinedBehaviorSanitizer); coverage `--check`; the Codecov upload in a job of its own that no required check needs, which fails when the upload fails; the font, screenshot, fit, translated-format, docs and wiki-link checks; `check_protocols.py --check`; clang-tidy 22.1.8 and cppcheck 2.17.1 over `shared/`, the cores under `protocols/` and `test/host/`, cppcheck's warning, performance and portability classes over `firmware/` and the pin drivers under `protocols/`, and ruff with its docstring (D) rules; the pytest cases of the tools (`test/tools/`); `tools/doc_check.py --check`, the Doxygen comments of the C sources against `tools/doc_check_baseline.txt`, which on a pull request also fails on any warning in a C file the pull request adds or on a line it changes, on a C file it changes that has no `@file` block with a `@brief`, and on a comment block without `@brief` it adds or edits; on a pull request `tools/mutate.py` on the changed lines of `shared/` and of the cores under `protocols/`, which reports survivors and does not fail on one; the panel build on ESP-IDF (Espressif Internet-of-Things Development Framework) v6.1 for the ESP32-P4, with the check of the generated sdkconfig against `sdkconfig.defaults`, of the image against its update slot, of the embedded IOmcu image, of the touch injector and of exFAT, and a second build without the injector; the pico-sdk build of the IOmcu with `pinmap_check.py` and the stack check of its two cores, a second build with `-DSENSE_TRACE=ON`, with the same stack check, that fails when the default image holds a trace symbol, and a third with `-DIOMCU_CONSOLE=ON`, with the same stack check, that fails when the default image holds a console symbol; firmware artifacts including a merged panel image for offset 0 |
 | `docs.yml` | push to `main` touching `docs/`, manual | waits for the CI run on the same commit (`tools/ci_gate.py`, at most 5400s) and publishes `docs/` to the GitHub wiki when it passed |
-| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (6598 mutants in 83 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 600 mutants of `shared/safety` run every week and about 1,970 of the 5998 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
+| `mutation.yml` | Sunday 03:17 UTC, manual | the mutants of the lines of `shared/safety` and `shared/outputs` (6743 mutants in 85 files) in 6 parallel shards, no mutant limit; `shared/safety` leads the list, `arming.c`, `heartbeat.c`, `stop_latch.c`, `touch_loss.c` and `prog5v_lost.c` at its head, and shard i takes every 6th mutant from place i; no mutant is started after 18000s in a shard, about 428 mutants at 42s each, so the 699 mutants of `shared/safety` run every week and about 1,871 of the 6044 of `shared/outputs`; a shard that leaves mutants unrun says so in a warning annotation and in its summary, with the count for each file; does not fail on a survivor or on mutants left; the result is the artifacts `mutation-full-0` to `mutation-full-5` and the job summaries |
 | `release.yml` | tag `v*`, manual for a tag | waits for the CI run on the tagged commit and, when it passed, builds both images, packages them with checksums, creates a release, a pre-release for an odd minor number (`tools/release_kind.py`); beside that, without holding the release back, runs the configurator data check (`configurator/core/tools/check-annotate.sh --warn-only`) and shows each warning, such as a release tag newer than the configurator data, as an annotation and in the run summary |
 | `dial.yml` | called by `ci.yml` and `release.yml` | the M5Stack Dial's image on ESP-IDF v6.1 for the ESP32-S3 and its test build with `RCBENCH_DIAL_HOOKS=ON`; the generated sdkconfig against `sdkconfig.defaults`, both images against their update slot, no hook in the released image; artifact `dial` |
 | `pages.yml` | the label `ci` added to a pull request, and a push to `main`, touching `configurator/`, `help/`, `docs/img/`, the help generator, the `Doxyfile` or `tools/install_doxygen.sh` (a push to a pull request starts no run); a push to `main` touching the C sources as well | type check, tests, data check, size budget and Playwright browser tests of the configurator; the web help; the C API (application programming interface) reference built by Doxygen 1.18.0; on a push to `main` it publishes the built page to GitHub Pages, with the help under `help/` and the API reference under `api/`. A run that changes only the C sources, the `Doxyfile` or `tools/install_doxygen.sh` builds the configurator page without its checks and runs no Playwright test |
@@ -2378,8 +2378,8 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_target_row.c` | 93 | 92 | 98.9% |
 | `shared/ui/prog_registry.c` | 438 | 436 | 99.5% |
 | `shared/ui/ui_text.c` | 140 | 139 | 99.3% |
-| `shared/ui/ui_router.c` | 664 | 652 | 98.2% |
-| `shared/ui/ui_router_alert.c` | 15 | 15 | 100.0% |
+| `shared/ui/ui_router.c` | 667 | 655 | 98.2% |
+| `shared/ui/ui_router_alert.c` | 36 | 36 | 100.0% |
 | `shared/ui/ui_alert_slot.c` | 39 | 39 | 100.0% |
 | `shared/ui/ui_value_ask.c` | 8 | 8 | 100.0% |
 | `shared/ui/splash_screen.c` | 72 | 69 | 95.8% |
@@ -2471,7 +2471,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/esc_stick_guide.c` | 72 | 71 | 98.6% |
 | `shared/ui/log_viewer_screen.c` | 343 | 334 | 97.4% |
 | `shared/ui/log_viewer_load.c` | 234 | 212 | 90.6% |
-| `shared/ui/log_viewer_draw.c` | 421 | 408 | 96.9% |
+| `shared/ui/log_viewer_draw.c` | 430 | 416 | 96.7% |
 | `shared/ui/log_viewer_events.c` | 457 | 445 | 97.4% |
 | `shared/ui/logs_strip.c` | 40 | 37 | 92.5% |
 | `shared/ui/log_select.c` | 56 | 56 | 100.0% |
@@ -2491,13 +2491,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/ui_footer.c` | 42 | 41 | 97.6% |
 | `shared/ui/sensors_pane.c` | 103 | 103 | 100.0% |
 | `shared/ui/sensors_rows.c` | 250 | 250 | 100.0% |
-| `shared/ui/outputs_screen.c` | 614 | 609 | 99.2% |
+| `shared/ui/outputs_screen.c` | 615 | 610 | 99.2% |
 | `shared/ui/outputs_view.c` | 73 | 72 | 98.6% |
 | `shared/ui/outputs_port.c` | 199 | 197 | 99.0% |
-| `shared/ui/outputs_port_entry.c` | 418 | 411 | 98.3% |
+| `shared/ui/outputs_port_entry.c` | 426 | 419 | 98.4% |
 | `shared/ui/port_view.c` | 97 | 97 | 100.0% |
 | `shared/ui/port_mail.c` | 103 | 103 | 100.0% |
-| `shared/ui/picker_screen.c` | 416 | 411 | 98.8% |
+| `shared/ui/picker_screen.c` | 417 | 412 | 98.8% |
 | `shared/ui/picker_geometry.c` | 155 | 151 | 97.4% |
 | `shared/ui/picker_draw.c` | 344 | 342 | 99.4% |
 | `shared/ui/picker_cat.c` | 94 | 93 | 98.9% |
@@ -2512,13 +2512,13 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/ui/wifi_view.c` | 15 | 15 | 100.0% |
 | `shared/ui/update_screen.c` | 105 | 105 | 100.0% |
 | `shared/ui/coproc_update_screen.c` | 212 | 212 | 100.0% |
-| `shared/ui/upd_screen.c` | 360 | 341 | 94.7% |
+| `shared/ui/upd_screen.c` | 362 | 343 | 94.8% |
 | `shared/ui/upd_remind.c` | 163 | 153 | 93.9% |
 | `shared/ui/upd_single.c` | 166 | 164 | 98.8% |
 | `shared/ui/upd_settings.c` | 57 | 53 | 93.0% |
-| `shared/ui/upd_c6.c` | 120 | 118 | 98.3% |
+| `shared/ui/upd_c6.c` | 124 | 122 | 98.4% |
 | `shared/ui/upd_dev.c` | 292 | 286 | 98.0% |
-| `shared/ui/upd_wizard.c` | 303 | 303 | 100.0% |
+| `shared/ui/upd_wizard.c` | 305 | 305 | 100.0% |
 | `shared/ui/upd_run.c` | 44 | 44 | 100.0% |
 | `shared/ui/upd_wiz_view.c` | 322 | 310 | 96.3% |
 | `shared/ui/upd_wiz_card.c` | 205 | 204 | 99.5% |
@@ -2803,7 +2803,7 @@ and the ESP-IDF and pico-sdk tags the pages state to the headers, the tools and 
 | `shared/webaccess/wa_api_write.c` | 232 | 230 | 99.1% |
 | `shared/webaccess/wa_app.c` | 111 | 111 | 100.0% |
 | `shared/clock/wall_clock.c` | 101 | 100 | 99.0% |
-| **total** | **102747** | **100588** | **97.9%** |
+| **total** | **102798** | **100638** | **97.9%** |
 
 _Generated by `tools/coverage.py`; CI runs `--check` and fails on drift._
 <!-- coverage:end -->

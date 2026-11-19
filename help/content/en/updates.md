@@ -59,7 +59,7 @@ ARMED, the supply output on, an open log run, Wi-Fi on or a board drawing being 
 
 While a device's transfer runs, the control shows its phase, for example `PRESS THE DIAL TO ACCEPT: 27s`, and CANCEL UPDATE stands in the footer.
 
-After the panel's install and after the C6 radio's update the panel restarts, and the update run goes on: UPDATES opens by itself once per start on the menu, with the bench SAFE, the supply output off, Wi-Fi off and no install under way. Until then the alert band names what it waits for, for example `Update run: UPDATES opens once SAFE with the supply off.` The check at start does not run during a run. The home tag on UPDATES ends the run; so does the last step done. A run opens UPDATES at 2 starts at most.
+After the panel's install and after the C6 radio's update the panel restarts, and the update run goes on: UPDATES opens by itself once per start on the menu, with the bench SAFE, the supply output off, Wi-Fi off and no install under way. Until then the alert band names what it waits for, for example `Update run: UPDATES opens once SAFE with the supply off.` The check at start does not run during a run. The home tag on UPDATES ends the run; so does the last step done. A start that finds no step left ends the run without opening UPDATES. A run opens UPDATES at 2 starts at most.
 
 After a restart during an update run, a step whose IOmcu or device is not connected yet waits with SKIP THIS STEP and goes on once it connects.
 
@@ -268,12 +268,12 @@ The image carries no signature: the Dial accepts any Dial image a nearby device 
 
 ![The power node asks for its BOOT key](view:updates-node)
 
-The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, from its STATUS packet on the current link, and the version of that role's image this panel carries: `Node: 0.23.13. Included: 0.23.14.` The hold needs the bench SAFE, the node bound and linked with its version read, and no other update running.
+The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, from its STATUS packet on the current link, and the version of that role's image this panel carries: `Node: 0.23.14. Included: 0.23.15.` The hold needs the bench SAFE, the node bound and linked with its version read, and no other update running.
 
 1. The hold ends the node's own link; WIRELESS shows the node OFF until the update ends. The button reads `POWER NODE UPDATE: CONNECTING`.
 2. The node waits 30s for its BOOT key held 1s; the button reads `HOLD BOOT 1s ON THE NODE: 27s` and the band `Hold the node's BOOT key 1s within 30s to accept the update.` No hold refuses. Nothing is erased before the hold.
 3. The node writes the image; the button reads `POWER NODE UPDATE 37%`.
-4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.14. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
+4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.15. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
 
 A power node's readings and a balance node's reports stop from the hold until the node is back. That gap is no loss: the band shows no `POWER NODE LOST`. Any other end reads `Balance node update stopped: <reason>. Previous firmware is running.` with the Dial's reasons, and the node keeps the firmware it ran. A node refuses the other role's image before writing anything.
 

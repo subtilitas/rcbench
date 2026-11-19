@@ -246,6 +246,18 @@ void outputs_port_cancel(void);
 bool outputs_port_event(const touch_event_t *evt);
 
 /**
+ * @brief Whether @p evt is a press that stops an output of the entry
+ *        shown: PORT PWM OFF with the pulse on, its row drawn, the
+ *        segment free and the FUNCTION list shut.  A view hands such a
+ *        press to outputs_port_event() whatever else would spend it: a
+ *        stop acts on its press.
+ *
+ * @param evt the touch event, or NULL
+ * @return true for that press
+ */
+bool outputs_port_stop_press(const touch_event_t *evt);
+
+/**
  * @brief Once a frame: what the settings and the SERVO screen's locks show is
  * compared with what was drawn.
  */

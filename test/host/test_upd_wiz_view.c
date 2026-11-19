@@ -14,7 +14,9 @@
  * transfer leaves the device's ask and CANCEL UPDATE on the card; a failed
  * install on the card with its retry and OPTIONS live; the last card names
  * the steps not connected, not updatable (a device OFF on WIRELESS among
- * them) and skipped under one of its three headings; the WI-FI button only while no
+ * them) and skipped under one of its three headings; the last card
+ * carries no wait for an IOmcu update that has ended, and the restart owed
+ * after a C6 reinstall keeps the C6's step current; the WI-FI button only while no
  * step blocks; OPTIONS grey while a check or an update runs; STOP and
  * ARMED during each step; a second finger starts nothing and STOP is not
  * shadowed; every state inside its canvas in both languages; the rows'
@@ -809,6 +811,58 @@ TEST_CASE(the_end_card_heading_follows_the_steps)
     CHECK(card_has(all) && !card_has(none) && !card_has(nochk));
 }
 
+/* The last card after the IOmcu's update in an update run: the IOmcu
+ * reads CURRENT, the run has no step left, and the card carries no line
+ * that waits for the IOmcu's update, whatever still holds the update
+ * gate.  The restart owed after a C6 reinstall holds it on the carried
+ * version: the C6's step stays current and the line names the C6. */
+TEST_CASE(the_last_card_waits_for_no_iomcu_update_that_has_ended)
+{
+    const char *const all = TR(UPD_WIZ_DONE_HEAD);
+    fresh();
+    ui_router_goto(SCREEN_UPDATES);
+    upd_screen_set_run(true);
+    open_only(UPD_WIZ_IOMCU);
+    hand();
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_IOMCU);
+
+    /* The update runs: the gate is the IOmcu's. */
+    g_cu.sec = CU_SEC_BUSY;
+    g_v.block = UPD_WHY_COPROC;
+    g_v.dl_block = UPD_WHY_COPROC;
+    hand();
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_IOMCU);
+    CHECK(card_has(TR(UPD_WAIT_COPROC)));
+
+    /* It ended and the IOmcu runs the carried build: no step is left, the
+     * run ends, the gate is open. */
+    g_cu.sec = CU_SEC_SAME;
+    g_cu.running = g_cu.carried;
+    g_v.block = UPD_WHY_NONE;
+    g_v.dl_block = UPD_WHY_NONE;
+    hand();
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_NONE);
+    upd_screen_set_run(false);
+    CHECK(card_has(all) && !card_has(TR(UPD_WAIT_COPROC)));
+
+    /* The gate held by an update no view shows: the line names none. */
+    g_v.block = UPD_WHY_COPROC;
+    hand();
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_NONE);
+    CHECK(card_has(all) && !card_has(TR(UPD_WAIT_COPROC)));
+    CHECK(card_has(TR(UPD_WAIT_BUSY)));
+
+    /* The gate held by the restart owed after a C6 reinstall: the C6's
+     * step is current, not the last card, and nothing names the IOmcu. */
+    g_c6.row = FW_C6_ROW_BLOCKED;
+    g_c6.why = FW_C6_WHY_ENDING;
+    hand();
+    CHECK_EQ(wiz().current, (unsigned)UPD_WIZ_C6);
+    CHECK(!card_has(all) && !card_has(TR(UPD_WAIT_COPROC)));
+    CHECK(card_has(TR(C6_WHY_ENDING)));
+    CHECK_EQ(wiz().step[UPD_WIZ_IOMCU].tag, UPD_WIZ_TAG_CURRENT);
+}
+
 /* A bound device OFF on WIRELESS in a run: its step does not wait, the
  * card does not ask to switch it on, and the last card's "No update here"
  * line names it; the same device ON waits. */
@@ -1065,6 +1119,7 @@ int main(void)
     RUN(a_failed_download_blocks_nothing_and_check_is_the_way_back);
     RUN(a_failed_install_shows_on_the_card_and_blocks_nothing);
     RUN(the_end_card_heading_follows_the_steps);
+    RUN(the_last_card_waits_for_no_iomcu_update_that_has_ended);
     RUN(a_device_off_on_wireless_does_not_wait_in_a_run);
     RUN(the_end_card_names_skipped_and_absent_steps);
     RUN(no_home_network_shows_the_wifi_button_only_while_no_step_blocks);

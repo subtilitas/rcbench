@@ -147,7 +147,7 @@ Ein Tipp auf eine Taste, die ein anderes Protokoll hält, fragt, ob der Pin zum 
 2. Die Zuordnung wird einmal geschrieben, mit dem verschobenen Pin. [LETZTER SCHREIBVORGANG](#letzter-schreibvorgang) zeigt das Ergebnis.
 3. Zum Rückgängigmachen wähle das alte Protokoll und verschiebe den Pin zurück. Kanäle folgen den Pins, also ist die Zuordnung wieder dieselbe.
 
-ABBRECHEN, das Home-Feld oder ein Druck irgendwo neben der Karte schließt sie und schreibt nichts. Die Karte schließt auch ohne Schreiben, wenn ein Lesen die Zuordnung unbestätigt lässt, ein Zurücklesen einen Pin ändert, ein anderes Protokoll gewählt wird, die Platine wechselt oder die Seite verlassen wird. PIN VERSCHIEBEN prüft das Verschieben vorher noch einmal und schreibt nichts, wenn der Pin inzwischen gewechselt hat. 400ms lang, nachdem PIN VERSCHIEBEN oder ABBRECHEN die Karte geschlossen hat, wird ein Druck in der Fläche der Karte ignoriert; der zweite Tipp eines Doppeltipps wählt so keinen Pin darunter.
+ABBRECHEN, das Home-Feld oder ein Druck irgendwo neben der Karte schließt sie und schreibt nichts. Die Karte schließt auch ohne Schreiben, wenn ein Lesen die Zuordnung unbestätigt lässt, ein Zurücklesen einen Pin ändert, ein anderes Protokoll gewählt wird, die Platine wechselt oder die Seite verlassen wird. PIN VERSCHIEBEN prüft das Verschieben vorher noch einmal und schreibt nichts, wenn der Pin inzwischen gewechselt hat. 400ms lang, nachdem PIN VERSCHIEBEN oder ABBRECHEN die Karte geschlossen hat, wird ein Druck in der Fläche der Karte ignoriert; der zweite Tipp eines Doppeltipps wählt so keinen Pin darunter. Ein Druck auf PORT-PWM AUS wird nie ignoriert.
 
 ![Der letzte Pin von SERVO PWM unter DSHOT600 BIDIR](view:outputs-take-last)
 

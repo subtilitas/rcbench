@@ -152,18 +152,23 @@ TEST_CASE(every_c6_row_and_why_maps_to_one_step_state)
             }
         }
     }
-    /* A gate on the carried version holds nothing back: DONE. */
+    /* A gate on the carried version holds nothing back: DONE.  The C6's
+     * own update ending is no such gate: after a reinstall the restart is
+     * owed on the carried version, and the step stays PENDING. */
     for (unsigned why = 0u; why <= (unsigned)FW_C6_WHY_ENDING; ++why) {
         fx_t f;
         all_current(&f);
         f.c6.row = FW_C6_ROW_BLOCKED;
         f.c6.why = (fw_c6_why_t)why;
         const upd_wiz_t w = eval(&f);
+        const bool ending = why == (unsigned)FW_C6_WHY_ENDING;
         check_want(&w.step[UPD_WIZ_C6],
-                   (want_t){ UPD_WIZ_DONE, UPD_WIZ_TAG_CURRENT,
-                             UPD_WIZ_WHY_NONE },
+                   ending ? c6_blocked_want(FW_C6_WHY_ENDING)
+                          : (want_t){ UPD_WIZ_DONE, UPD_WIZ_TAG_CURRENT,
+                                      UPD_WIZ_WHY_NONE },
                    "c6 same", FW_C6_ROW_BLOCKED, why);
-        CHECK_EQ(w.current, UPD_WIZ_NONE);
+        CHECK_EQ(w.current, ending ? (unsigned)UPD_WIZ_C6
+                                   : (unsigned)UPD_WIZ_NONE);
     }
 }
 
