@@ -178,6 +178,9 @@ def _stretch(scene: dict, old: list, new: list) -> None:
             key[0] = move(key[0])
     if "rauto" in scene:
         scene["rauto"]["at"] = move(scene["rauto"]["at"])
+    for touch in scene.get("touches", []):
+        if "at" in touch:
+            touch["at"] = move(touch["at"])
     if "run" in scene:
         run = scene["run"]
         for name in ("from", "arm", "to"):

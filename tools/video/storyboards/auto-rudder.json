@@ -413,6 +413,35 @@
      ]
     ]
    ],
+   "touches": [
+    {
+     "at": 4.2,
+     "on": "panel",
+     "xy": [
+      245,
+      103
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 7.0,
+     "on": "panel",
+     "xy": [
+      330,
+      128
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 14.68,
+     "on": "panel",
+     "xy": [
+      316,
+      202
+     ],
+     "action": "tap"
+    }
+   ],
    "chips": [
     {
      "from": 0,
@@ -764,6 +793,17 @@
      ]
     ]
    ],
+   "touches": [
+    {
+     "at": 6.8,
+     "on": "dial",
+     "xy": [
+      120,
+      120
+     ],
+     "action": "hold"
+    }
+   ],
    "chips": [
     {
      "from": 0,
@@ -922,6 +962,26 @@
       40
      ]
     ]
+   ],
+   "touches": [
+    {
+     "at": 55.48,
+     "on": "panel",
+     "xy": [
+      98,
+      324
+     ],
+     "action": "tap"
+    },
+    {
+     "run_ms": 2000,
+     "on": "panel",
+     "xy": [
+      512,
+      528
+     ],
+     "action": "hold"
+    }
    ],
    "chips": [
     {

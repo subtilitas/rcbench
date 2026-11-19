@@ -95,6 +95,11 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
 - Video texts carry no statement of a feature's test state: narration,
   labels, notes, chapter cards and `README.md` say what a feature
   does (owner's rule, 2026-11-15).
+- Every touch a video shows carries its ring animation: the tap ring or
+  the 2s hold ring of a `screen` or `tour` step, `touches` in a 3D
+  scene, a pointer's `click` in a window (owner's rule, 2026-11-19).
+  `auto-rudder` holds 6 touches. The 3D scenes of `dial`, `features`
+  and the other storyboards written before that date hold none.
 - The server session "RCBench 261111" has a worktree with everything
   installed and has rendered `features` three times.
 

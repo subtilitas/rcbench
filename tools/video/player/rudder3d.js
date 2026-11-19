@@ -122,6 +122,12 @@ function panelBench(gltf) {
   return {
     scene, cam,
     anchors: {display: on(0, 8, 0), panel: on(60, 8, -30)},
+    // A pixel of the display's 1024 x 600 screen, in the scene.
+    pixel: (x, y) => {
+      scene.updateMatrixWorld(true);
+      return glass.localToWorld(new THREE.Vector3(
+        (x / 1024 - .5) * 154.2, (.5 - y / 600) * 85.9, 0)).toArray();
+    },
     setScreen: image => {
       if (!image || image === shown) return;
       const tex = new THREE.Texture(image);
@@ -353,6 +359,7 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
       port: () => plug.position.toArray(),
     },
     setFace: knob.setFace, setTurn: knob.setTurn,
+    dialPixel: knob.pixel,
     // How far out the sensor stands, 1 to 0, its tape, 1 off to 0 on,
     // the skins, 1 solid to 0 clear, the servo's lead, 1 away to 0
     // plugged in, the bench, 0 flat to 1 standing, and the Dial, 0 level

@@ -157,6 +157,44 @@ def _check_run(scene: dict, dur: float, where: str, errors: list) -> None:
                       "and a throttle of 0 to 100")
 
 
+TOUCH_ON = {"panel": ((1024, 600), ("mockup", "cad", "duo", "rudder")),
+            "dial": ((240, 240), ("dial", "duo", "rudder"))}
+
+
+def _check_touch(scene: dict, touch, where: str, errors: list) -> None:
+    """Check one touch of a 3D scene.
+
+    Args:
+        scene: The case scene.
+        touch: {on, xy, action} with "at", seconds into the scene, or
+            "run_ms", milliseconds into the scene's rauto run.
+        where: The touch's name for a message.
+        errors: The list that takes the messages.
+    """
+    if not isinstance(touch, dict) or touch.get("on") not in TOUCH_ON:
+        errors.append(f"{where}: on must be panel or dial")
+        return
+    (w, h), models = TOUCH_ON[touch["on"]]
+    xy = touch.get("xy")
+    if scene.get("model", "mockup") not in models:
+        errors.append(f"{where}: the model shows no {touch['on']}")
+    if not (isinstance(xy, list) and len(xy) == 2 and all(map(_number, xy))
+            and 0 <= xy[0] <= w and 0 <= xy[1] <= h):
+        errors.append(f"{where}: xy is a pixel of the {w} x {h} screen")
+    if touch.get("action") not in ("tap", "hold"):
+        errors.append(f"{where}: action must be tap or hold")
+    if "run_ms" in touch:
+        if not (_number(touch["run_ms"]) and touch["run_ms"] >= 0
+                and "rauto" in scene and "at" not in touch):
+            errors.append(f"{where}: run_ms is a time of the scene's rauto "
+                          "run, in place of at")
+    elif not (_number(touch.get("at")) and 0 <= touch["at"] < scene["dur"]):
+        errors.append(f"{where}: at must lie within the scene")
+    if "for" in touch and not (_number(touch["for"]) and touch["for"] > 0
+                               and touch.get("action") == "hold"):
+        errors.append(f"{where}: for is a hold's time in s, above 0")
+
+
 def _check_case(scene: dict, where: str, errors: list) -> None:
     dur = scene.get("dur")
     if not (_number(dur) and dur > 0):
@@ -186,6 +224,8 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
     for name in ("faces", "turn", "flip", "spin", "deflect"):
         if name in scene:
             _keys(scene[name], 2, f"{where} {name}", errors)
+    for n, touch in enumerate(scene.get("touches", [])):
+        _check_touch(scene, touch, f"{where} touch {n + 1}", errors)
     for key in scene.get("faces", []):
         if not (isinstance(key, list) and len(key) == 2
                 and isinstance(key[1], str)):
@@ -1070,6 +1110,13 @@ def rauto(board: dict, shots: pathlib.Path, tmp: pathlib.Path) -> None:
                 rows[n - 1][2] == deg == rows[n + 1][2])
             if edge:
                 deflect.append([t, float(deg)])
+        # A touch of the run takes its time, and a hold its length.
+        for touch in scene.get("touches", []):
+            if "run_ms" in touch:
+                touch["at"] = round(at + touch.pop("run_ms") / 1000 / speed,
+                                    3)
+                if touch["action"] == "hold":
+                    touch["for"] = round(2 / speed, 3)
         # The Dial's face follows the bench's state through the run.
         scene["faces"] = sorted(
             [key for key in scene.get("faces", []) if key[0] < at] + dial)

@@ -697,6 +697,38 @@ def test_a_rudder_scene_takes_a_run_of_rudder_auto():
     assert any("rauto" in e for e in make_video.check(board))
 
 
+def test_a_3d_scene_takes_touches_on_the_panel_and_the_dial():
+    """A touch names a screen the model shows, a pixel of it and a time."""
+    scene = {"type": "case", "model": "rudder", "dur": 60,
+             "camera": [[0, [0, 250, 330], [0, 34, 10]],
+                        [60, [0, 250, 330], [0, 34, 10]]],
+             "rauto": {"at": 5, "speed": 2}, "labels": [],
+             "touches": [
+                 {"at": 2, "on": "panel", "xy": [98, 324], "action": "tap"},
+                 {"at": 3, "on": "dial", "xy": [120, 120], "action": "hold"},
+                 {"run_ms": 2000, "on": "panel", "xy": [512, 528],
+                  "action": "hold"}]}
+    board = {"lang": "en", "steps": 1, "scenes": [scene]}
+    assert make_video.check(board) == []
+    scene["touches"][0]["xy"] = [1100, 324]
+    assert any("touch 1" in e for e in make_video.check(board))
+    scene["touches"][0]["xy"] = [98, 324]
+    scene["touches"][1]["xy"] = [120, 300]
+    assert any("touch 2" in e for e in make_video.check(board))
+    scene["touches"][1]["xy"] = [120, 120]
+    scene["touches"][1]["action"] = "swipe"
+    assert any("touch 2" in e for e in make_video.check(board))
+    scene["touches"][1]["action"] = "hold"
+    scene["touches"][0]["at"] = 61
+    assert any("touch 1" in e for e in make_video.check(board))
+    scene["touches"][0]["at"] = 2
+    del scene["rauto"]
+    assert any("touch 3" in e for e in make_video.check(board))
+    del scene["touches"][2]
+    scene["model"] = "dial"
+    assert any("touch 1" in e for e in make_video.check(board))
+
+
 def test_a_face_names_a_screen_the_knob_does_nothing_on():
     """other-TITLE-safe and other-TITLE-armed pose the Dial's other face."""
     import render_dial

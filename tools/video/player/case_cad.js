@@ -246,6 +246,13 @@ export function buildCadCase(displayImage, gltf) {
   };
   return {
     scene, cam, anchors, setScreen,
+    // A pixel of the display's 1024 x 600 screen, in the scene.
+    pixel: (x, y) => {
+      scene.updateMatrixWorld(true);
+      return units.lid.group.localToWorld(new THREE.Vector3(
+        (x / 1024 - .5) * 154.2, TOP + .08, .5 + (y / 600 - .5) * 90.4)
+        .sub(units.lid.home)).toArray();
+    },
     setServoPort: () => {},
     setServo: () => {},
     // The storyboard's "lid" in mm: the display and its board rise out of

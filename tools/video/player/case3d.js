@@ -219,6 +219,9 @@ export function buildCase(displayImage) {
   };
   return {
     scene, cam, anchors, setServoPort,
+    // A pixel of the display's 1024 x 600 screen, in the scene.
+    pixel: (x, y) => lid.localToWorld(new THREE.Vector3(
+      (x / 1024 - .5) * 156, H + 4.06, (y / 600 - .5) * 91.4)).toArray(),
     setLid: mm => { lid.position.y = mm; },
     // alpha fades the servo in; out is how far the plug is pulled, in mm.
     setServo: (alpha, out) => {
