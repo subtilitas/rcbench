@@ -699,6 +699,8 @@ def test_a_rudder_scene_takes_a_run_of_rudder_auto():
 
 def test_a_face_names_a_screen_the_knob_does_nothing_on():
     """other-TITLE-safe and other-TITLE-armed pose the Dial's other face."""
+    import render_dial
+
     assert render_dial.other("other-rudder-auto-armed") == "RUDDER AUTO:armed"
     assert render_dial.other("other-imu-safe") == "IMU"
     assert render_dial.other("other") is None
