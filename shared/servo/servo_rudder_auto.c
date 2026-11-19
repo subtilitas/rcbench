@@ -722,20 +722,60 @@ uint32_t servo_rauto_wait_ms(const servo_rauto_t *r)
 
 /* ------------------------------------------------------------- inputs */
 
-bool servo_rauto_goals_ok(const float target_deg[2], uint8_t margin_pct,
-                          uint16_t tol_ddeg)
+bool servo_rauto_goals_ok(const float target_deg[2], uint16_t tol_ddeg)
 {
     if (target_deg == NULL) {
         return false;
     }
     const float need = 2.0f * (float)tol_ddeg / 10.0f + 2.0f * RAUTO_EPS_DEG;
     for (int s = 0; s < 2; ++s) {
-        const float goal = target_deg[s] * (1.0f + (float)margin_pct / 100.0f);
-        if (!(goal >= need)) {
+        if (!(target_deg[s] >= need)) {
             return false;
         }
     }
     return true;
+}
+
+void servo_rauto_pulse_range(uint8_t margin_pct, uint16_t us[2])
+{
+    if (us == NULL) {
+        return;
+    }
+    const unsigned p = margin_pct > SERVO_RAUTO_MARGIN_MAX
+                           ? SERVO_RAUTO_MARGIN_MAX : margin_pct;
+    us[0] = (uint16_t)(k_end_us[0] - SERVO_RAUTO_MARGIN_US * p);
+    us[1] = (uint16_t)(k_end_us[1] + SERVO_RAUTO_MARGIN_US * p);
+}
+
+void servo_rauto_kst_pulses(uint8_t margin_pct, uint16_t dus[2])
+{
+    if (dus == NULL) {
+        return;
+    }
+    uint16_t us[2];
+    servo_rauto_pulse_range(margin_pct, us);
+    const unsigned k = SERVO_RAUTO_KST_STEP_DUS;
+    const unsigned lo = 10u * us[0], hi = 10u * us[1];
+    /* Toward the center: the servo's range inside the margin's. */
+    dus[0] = (uint16_t)((lo + k - 1u) / k * k);
+    dus[1] = (uint16_t)(hi / k * k);
+}
+
+bool servo_rauto_widen(const servo_rauto_t *r, uint16_t prof_us[2])
+{
+    if (r == NULL || !r->pulses_held) {
+        return false;
+    }
+    uint16_t us[2];
+    servo_rauto_pulse_range(r->cfg.margin_pct, us);
+    /* Each side only where the bench's is narrower. */
+    const bool wide_lo = us[0] < r->cfg.min_us;
+    const bool wide_hi = us[1] > r->cfg.max_us;
+    if (prof_us != NULL) {
+        prof_us[0] = wide_lo ? us[0] : r->cfg.min_us;
+        prof_us[1] = wide_hi ? us[1] : r->cfg.max_us;
+    }
+    return wide_lo || wide_hi;
 }
 
 bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
@@ -743,6 +783,9 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
 {
     if (r == NULL || cfg == NULL || servo_rauto_running(r)
         || cfg->margin_pct > SERVO_RAUTO_MARGIN_MAX
+        || (cfg->family != (uint8_t)SERVO_RAUTO_FAM_KST
+            && cfg->margin_pct > 0u)
+        || cfg->min_us > k_end_us[0] || cfg->max_us < k_end_us[1]
         || cfg->tol_ddeg < SERVO_RAUTO_TOL_MIN_DDEG
         || cfg->tol_ddeg > SERVO_RAUTO_TOL_MAX_DDEG
         || cfg->family > (uint8_t)SERVO_RAUTO_FAM_HITEC_C
@@ -757,8 +800,7 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
             return false;
         }
     }
-    if (!servo_rauto_goals_ok(cfg->target_deg, cfg->margin_pct,
-                              cfg->tol_ddeg)) {
+    if (!servo_rauto_goals_ok(cfg->target_deg, cfg->tol_ddeg)) {
         return false;
     }
     memset(r, 0, sizeof(*r));
@@ -768,10 +810,10 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
     r->last_win_ms = now_ms;
     r->reg_side[0] = -1;
     r->reg_side[1] = -1;
-    for (int s = 0; s < 2; ++s) {
-        r->goal_deg[s] = cfg->target_deg[s]
-                         * (1.0f + (float)cfg->margin_pct / 100.0f);
-    }
+    /* The goal at 1000us and 2000us is the target: the margin lies in
+     * the pulse range (servo_rauto_kst_pulses()). */
+    r->goal_deg[0] = cfg->target_deg[0];
+    r->goal_deg[1] = cfg->target_deg[1];
     go_safe(r, now_ms);
     return true;
 }
@@ -915,16 +957,19 @@ static void first_read(servo_rauto_t *r, const servo_rauto_servo_t *sv,
     r->cur[0]    = sv->value[0];
     r->cur[1]    = sv->value[1];
     memcpy(r->pulse_now, sv->pulse_dus, sizeof(r->pulse_now));
-    if (r->cfg.family == SERVO_RAUTO_FAM_KST
-        && (sv->pulse_dus[1] != SERVO_LIMRUN_STD_LOWER_DUS
-            || sv->pulse_dus[2] != SERVO_LIMRUN_STD_UPPER_DUS)) {
-        r->pulse_op = true;
-        r->phase    = SERVO_RAUTO_PH_WRITE;
-        r->phase_ms = now_ms;
-        r->pend.pulses       = true;
-        r->pend.pulse_dus[0] = SERVO_LIMRUN_STD_LOWER_DUS;
-        r->pend.pulse_dus[1] = SERVO_LIMRUN_STD_UPPER_DUS;
-        return;
+    if (r->cfg.family == SERVO_RAUTO_FAM_KST) {
+        uint16_t p[2];
+        servo_rauto_kst_pulses(r->cfg.margin_pct, p);
+        if (sv->pulse_dus[1] != p[0] || sv->pulse_dus[2] != p[1]) {
+            r->pulse_op = true;
+            r->phase    = SERVO_RAUTO_PH_WRITE;
+            r->phase_ms = now_ms;
+            r->pend.pulses       = true;
+            r->pend.pulse_dus[0] = p[0];
+            r->pend.pulse_dus[1] = p[1];
+            return;
+        }
+        r->pulses_held = true;
     }
     ask_leave(r, now_ms);
 }
@@ -1013,12 +1058,14 @@ void servo_rauto_pulsed(servo_rauto_t *r, bool ok, const uint16_t *pulse_dus,
     memcpy(r->pulse_now, pulse_dus, sizeof(r->pulse_now));
     mark_programmed(r);
     r->pulse_op = false;
-    if (pulse_dus[1] != SERVO_LIMRUN_STD_LOWER_DUS
-        || pulse_dus[2] != SERVO_LIMRUN_STD_UPPER_DUS) {
+    uint16_t p[2];
+    servo_rauto_kst_pulses(r->cfg.margin_pct, p);
+    if (pulse_dus[1] != p[0] || pulse_dus[2] != p[1]) {
         abort_why(r, SERVO_RAUTO_WHY_WRITE, now_ms);
         return;
     }
     r->pulses_landed = true;
+    r->pulses_held   = true;
     ask_leave(r, now_ms);
 }
 

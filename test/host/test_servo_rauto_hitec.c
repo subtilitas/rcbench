@@ -8,8 +8,8 @@
  * both families, and the 5.0V every session asks.  The bench is
  * hitec_limit_panel_rig.h,
  * the surface on the AS5600 at 0.06° a us of the horn, the stops at 700
- * and 2300us outside the travel; the targets 20° with a 10% margin, 22°
- * goals.
+ * and 2300us outside the travel; the targets 22°, MARGIN stored at 10%
+ * and locked at 0% on a Hitec servo: 22° goals at 1000us and 2000us.
  *
  * SPDX-License-Identifier: MIT
  */
@@ -59,6 +59,10 @@ static void ha_setup(bool classic)
     /* RUDDER AUTO's own SERVO; the HITEC page stays at D SERIES and LIMIT
      * RUN at KST/CHASERVO. */
     hl_rauto_family(classic ? SERVO_RAUTO_FAM_HITEC_C : SERVO_RAUTO_FAM_HITEC_D);
+    /* The goals are the targets: MARGIN, stored at 10%, is 0% here. */
+    settings_set(SET_RUDDER_DEFL_LO, 22.0f);
+    settings_set(SET_RUDDER_DEFL_HI, 22.0f);
+    CHECK_EQ(settings_get_int(SET_RUDDER_MARGIN), 10);
     CHECK_EQ(settings_get_int(SET_HITEC_SERIES), (int)HITEC_D);
     CHECK_EQ(servo_screen_limit_family(), SERVO_LIMRUN_FAM_KST);
     (void)home_tag();
@@ -401,6 +405,35 @@ TEST_CASE(auto_programs_at_5v_whatever_prog_v_holds)
     settings_set(SET_SERVO_PROG_V, settings_def(SET_SERVO_PROG_V)->def);
 }
 
+/* MARGIN on the card with SERVO at a Hitec entry: it reads 0% (the
+ * value the button draws, rauto_margin_now()), a tap opens no keypad
+ * (test_servo_ready names the band's text), the stored 10% stays,
+ * the first line names 1000-2000us, and the run's report its 0%; back on
+ * KST/CHASERVO it reads 10% again. */
+TEST_CASE(margin_on_the_card_reads_0_and_refuses_a_tap_on_hitec)
+{
+    char b[96];
+    for (int k = 0; k < 2; ++k) {
+        ha_setup(k == 1);
+        CHECK_EQ(rauto_margin_now(), 0u);
+        const gfx_rect_t mr = rauto_rect(RA_C_MARGIN);
+        tap(mr.x + mr.w / 2, mr.y + mr.h / 2);
+        hl_ms(100u);
+        CHECK(!servo_screen_keypad()->open);
+        CHECK_EQ(settings_get_int(SET_RUDDER_MARGIN), 10);
+        CHECK_STR_EQ(rauto_line(0, b, sizeof(b)),
+                     "PULSES 1000-2000us: 22.0°, 22.0°");
+    }
+    ha_hold_start();
+    ha_run_out();
+    CHECK(strstr(hl.report, "PASS") != NULL);
+    CHECK(strstr(hl.report, "Margin:         0%: KST/Chaservo only") != NULL);
+    CHECK(strstr(hl.report, "Bench pulses:") == NULL);
+    CHECK_EQ(settings_get_int(SET_RUDDER_MARGIN), 10);
+    hl_rauto_family(SERVO_RAUTO_FAM_KST);
+    CHECK_EQ(rauto_margin_now(), 10u);
+}
+
 int main(void)
 {
     RUN(auto_lands_a_d_series_servo_within_tolerance);
@@ -411,5 +444,6 @@ int main(void)
     RUN(a_d_series_side_whose_writes_do_not_move_it_fails_after_two);
     RUN(a_d_series_servo_on_an_external_rail_reads_the_rail_voltage);
     RUN(auto_programs_at_5v_whatever_prog_v_holds);
+    RUN(margin_on_the_card_reads_0_and_refuses_a_tap_on_hitec);
     return test_summary("servo_rauto_hitec");
 }

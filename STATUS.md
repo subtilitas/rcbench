@@ -642,8 +642,10 @@ the AS5600 or the IMU in AS5600 counts from count 0 (`shared/servo/servo_angle.c
 `test_servo_angle`, `test_servo_source_angle`). RUDDER AUTO
 (`shared/servo/servo_rudder_auto.c`, `shared/ui/servo_rudder_auto_panel.c`) programs a KST
 or Chaservo servo's LEFT ANGLE and RIGHT ANGLE on the programming port until 1000us and
-2000us reach the target deflection x (1 + MARGIN) within TOLERANCE on the angle source: the
-pulse range written to 1000 to 2000us in the read session, at most 8 writes a side, each in
+2000us reach the target deflection within TOLERANCE on the angle source: the pulse range
+written to MARGIN's in the read session, 1000us - 5us x MARGIN to 2000us + 5us x MARGIN on the
+KST's 0.8us step (950.4 to 2049.6us at 10%), the bench's PULSE MIN and PULSE MAX widened to
+it where narrower, MARGIN 0% on a Hitec servo (`test_servo_rauto_margin`), at most 8 writes a side, each in
 a session with a power cycle of the PD mini or the carrier programming port's fixed 5V
 supply, the backup file before the first write, the limit run's current guard and a 300ms
 angle gap allowance throughout, SURFACE BINDS AT for a stall short of the goal, every end
@@ -1698,7 +1700,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 608 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 609 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1821,7 +1823,7 @@ The host suite is 608 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
 `test_imu_sensor`, `test_imu_ctl`, `test_imu_groups`, `test_imu_screen`, `test_imu_pane`, `test_servo_rauto`,
 `test_servo_rauto_guard`, `test_servo_rauto_filter`, `test_servo_rauto_effect`,
-`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_live_zero`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
+`test_servo_rauto_kst`, `test_servo_rauto_panel`, `test_servo_rauto_verify`, `test_servo_rauto_settle`, `test_servo_rauto_margin`, `test_servo_settle`, `test_servo_rauto_seq`, `test_servo_ready`, `test_servo_ready_tags`, `test_servo_drive_ready`, `test_servo_live_zero`, `test_servo_drive_supply`, `test_servo_power_view`, `test_servo_settings_rows`, `test_servo_profile_live`, `test_servo_angle_pick`, `test_servo_start_seq`,
 `test_servo_limrun_ready`, `test_servo_limrun_seq`, `test_servo_dial_runs`,
 `test_servo_limrun_hitec`, `test_servo_limit_hitec`, `test_servo_rauto_hitec`,
 `test_servo_family_pick`, `test_hitec_series_row`, `test_servo_rudder_flap`, `test_rudder_flap_view`,

@@ -276,6 +276,19 @@ static const char *pulses_locked(void)
     return lim_write_why_held();
 }
 
+/** @brief RUDDER AUTO's MARGIN on a Hitec servo: 0%, the run's. */
+static void margin_value(char *out, size_t n)
+{
+    snprintf(out, n, "%u%%", (unsigned)rauto_margin_now());
+}
+
+/** @brief Why MARGIN takes no press on a Hitec servo: no pulse registers.
+ *  The stored MARGIN stays for KST.  @return the reason */
+static const char *margin_locked(void)
+{
+    return TR(SVL_KST_ONLY);
+}
+
 /** @brief LIMIT RUN's MODE: SEARCH ONLY or SEARCH + PROGRAM, as chosen. */
 static void mode_value(char *out, size_t n)
 {
@@ -319,6 +332,13 @@ static const ui_setlist_custom_t k_pulses = {
     .label = TX_SV_ROW_LIM_PULSES, .help = TX_SVL_PULSES_HELP,
     .cycles = true, .value_text = pulses_value, .step = pulses_step,
     .locked = pulses_locked,
+};
+
+/** @brief RUDDER AUTO's MARGIN row with SERVO at a Hitec entry: 0%,
+ *         locked. */
+static const ui_setlist_custom_t k_margin_hitec = {
+    .label = TX_SVL_RA_MARGIN, .help = TX_SVL_RA_MARGIN_HELP,
+    .value_text = margin_value, .locked = margin_locked,
 };
 
 /** @brief LIMIT RUN's MODE row: SEARCH ONLY or SEARCH + PROGRAM. */
@@ -369,12 +389,27 @@ static const ui_setlist_row_t k_rauto_rows[] = {
     ROW_DUT_NAME,
     UI_SL_ROW_SETTING(SET_LOG_USER),
 };
-/** @brief RUDDER AUTO's list with its SERVO at HITEC D SERIES: D RECEIVE
- *         under SERVO. */
+/** @brief RUDDER AUTO's list with its SERVO at HITEC CLASSIC: MARGIN at
+ *         0% and locked. */
+static const ui_setlist_row_t k_rauto_c_rows[] = {
+    UI_SL_ROW_SETTING(SET_RUDDER_DEFL_LO),
+    UI_SL_ROW_SETTING(SET_RUDDER_DEFL_HI),
+    UI_SL_ROW_CUSTOM(&k_margin_hitec),
+    UI_SL_ROW_SETTING(SET_RUDDER_TOL),
+    UI_SL_ROW_CUSTOM(&svs_family_row),
+    UI_SL_ROW_CUSTOM(&k_pulses),
+    UI_SL_ROW_CUSTOM(&k_src),
+    UI_SL_ROW_CUSTOM(&rcur_row),
+    UI_SL_ROW_SETTING(SET_SERVO_PROG_WAIT),
+    ROW_DUT_NAME,
+    UI_SL_ROW_SETTING(SET_LOG_USER),
+};
+/** @brief RUDDER AUTO's list with its SERVO at HITEC D SERIES: MARGIN at
+ *         0% and locked, D RECEIVE under SERVO. */
 static const ui_setlist_row_t k_rauto_d_rows[] = {
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_LO),
     UI_SL_ROW_SETTING(SET_RUDDER_DEFL_HI),
-    UI_SL_ROW_SETTING(SET_RUDDER_MARGIN),
+    UI_SL_ROW_CUSTOM(&k_margin_hitec),
     UI_SL_ROW_SETTING(SET_RUDDER_TOL),
     UI_SL_ROW_CUSTOM(&svs_family_row),
     UI_SL_ROW_SETTING(SET_HITEC_RX),
@@ -442,6 +477,8 @@ static const fn_rows_t k_rows_of[SERVO_FN_COUNT] = {
 static const fn_rows_t k_limrun_d = ROWS(k_limrun_d_rows);
 /** @brief RUDDER AUTO's rows with D RECEIVE. */
 static const fn_rows_t k_rauto_d = ROWS(k_rauto_d_rows);
+/** @brief RUDDER AUTO's rows on a classic Hitec servo. */
+static const fn_rows_t k_rauto_c = ROWS(k_rauto_c_rows);
 
 /** @brief Whether a function screen shows the profile in its list's place:
  *         svs_profile_open() sets it, svs_list_open() and svs_list_close()
@@ -468,6 +505,10 @@ static const fn_rows_t *rows_now(void)
     }
     if (svs_family_d_receive()) {
         return s.fn == SERVO_FN_RAUTO ? &k_rauto_d : &k_limrun_d;
+    }
+    if (s.fn == SERVO_FN_RAUTO
+        && svs_family_of(SERVO_FN_RAUTO) == SERVO_RAUTO_FAM_HITEC_C) {
+        return &k_rauto_c;
     }
     return &k_rows_of[(s.fn < SERVO_FN_COUNT) ? s.fn : SERVO_FN_HUB];
 }

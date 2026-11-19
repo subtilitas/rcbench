@@ -132,9 +132,9 @@ static void creep_rig(float lo, float hi, uint16_t tol_ddeg,
     g.v[1] = (uint16_t)lroundf(hi * 100.0f);
     g.dir[0] = 1.0f;          /* 1000us on the positive side, as roll */
     g.dir[1] = -1.0f;
-    g.cfg.target_deg[0] = 45.0f;
-    g.cfg.target_deg[1] = 45.0f;
-    g.cfg.margin_pct = 5u;
+    g.cfg.target_deg[0] = 47.25f;
+    g.cfg.target_deg[1] = 47.25f;
+    g.cfg.margin_pct = 0u;
     g.cfg.tol_ddeg = tol_ddeg;
     if (rule) {
         g.cfg.settle_win_ms = (uint16_t)SERVO_SETTLE_WIN_DEFAULT_MS;

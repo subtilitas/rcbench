@@ -1722,7 +1722,9 @@ AUTO, on the RUDDER AUTO screen of its own, programs a KST, Chaservo or
 Hitec servo's end points so that 1000us and 2000us reach the deflection entered
 for each side, measured on the angle source. It closes the loop on the
 surface's angle in place of the throw a radio's end points are set to by
-eye. The run is `shared/servo/servo_rudder_auto.c`; the screen is
+eye. On a KST or Chaservo servo MARGIN lies in the pulse length: the
+servo's pulse range runs past 1000us and 2000us, so a radio at full stick
+plus trim, past 2000us, still moves the surface. The run is `shared/servo/servo_rudder_auto.c`; the screen is
 `shared/ui/servo_rudder_auto_panel.c`, its READY card
 `shared/ui/servo_rudder_auto_ready.c` and `shared/ui/servo_ready.c`. AUTO trusts the angle source: with
 ANGLE SOURCE IMU it takes the angles the Bluetooth link delivers, and that
@@ -1742,22 +1744,70 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
 - TARGET 1000us and TARGET 2000us: the deflection each side is to reach,
   0.5 to 90.0° in steps of 0.5°, 20.0° (settings `rud_defl_lo`,
   `rud_defl_hi`). With LENGTH set the row shows the trailing edge's mm
-  beside the degrees. MARGIN: 0 to 50%, 10% (`rud_margin`). TOLERANCE:
-  0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the keypad. The same four,
+  beside the degrees. MARGIN: 0 to 50%, 10% (`rud_margin`), KST/Chaservo
+  only (below). TOLERANCE: 0.1 to 5.0°, 0.5° (`rud_tol`). A tap opens the
+  keypad. The same four,
   SERVO, SERVO PULSES, ANGLE SOURCE, CURRENT, Wait before PWM, DUT name
   and User logs are in OPTIONS. CURRENT is SUPPLY's SET A, as on LIMIT
   RUN ([The run's current limit](#the-runs-current-limit)); Wait before
   PWM is the KST programmer's wait the run's LEAVE sends. DUT name is the
   hub's, User logs SETUP > SD CARD's; the READY card has no room for a LOG
   row.
-- The goal of a side is its target x (1 + MARGIN): 20.0° at 10% is 22.0°.
-- Each goal must exceed 2 x TOLERANCE, by 0.001° or more: a measure within
-  TOLERANCE of such a goal lies at least TOLERANCE from the zero and gives
-  its side a direction. With a smaller goal the hold is refused before a
-  part is switched, and the card's first line and the alert band read
-  `GOALS MUST EXCEED 2 x TOLERANCE`. No READY row is red for it. TARGET
-  1.0° at MARGIN 0% against TOLERANCE 0.5° is refused; TOLERANCE 0.4°
-  starts.
+- The goal of a side, at 1000us and 2000us, is its target: TARGET 20.0°
+  is measured and programmed as 20.0° at 2000us, whatever MARGIN reads.
+- MARGIN p% widens the servo's pulse range by p% of the 500us from the
+  center at each end: PULSE LOWER 1000us - 5us x p, PULSE UPPER 2000us +
+  5us x p, 750 to 1000us and 2000 to 2250us over 0 to 50%. At 10% the range is
+  950 to 2050us. The KST holds its pulses in 0.8us steps
+  (`kst_reg.c`, CONV_PULSE), so the run writes each end rounded toward the
+  center: 950.4us and 2049.6us at 10%, 750.4us and 2249.6us at 50%,
+  1000.0us and 2000.0us at 0% (`servo_rauto_kst_pulses()`). By the linear
+  map from a NEUTRAL of 1500us, 2050us then reaches TARGET x (1 + MARGIN):
+  22.0° for 20.0° at 10%. The run drives 1000us, 2000us and PULSE CENTER
+  only; the extended ends are not driven and not measured.
+- SERVO PULSES is LIMIT RUN's setting and has no effect on AUTO. AUTO
+  writes the margin's range on a KST or Chaservo servo whatever SERVO
+  PULSES reads: at MARGIN 0% that is 1000.0 to 2000.0us, the range of
+  SERVO PULSES at 1000-2000; at MARGIN p% it is 1000-2000 widened by
+  5us x p at each end.
+- The bench's PULSE MIN and PULSE MAX: where they are narrower than the
+  margin's range, the run widens them to it once the servo holds the
+  margin's pulses, read so in the read session or read back after the
+  pulse write. It never narrows them: a side already wider keeps its
+  value. PULSE MIN and MAX 1000 to 2000us at 10% become 950 to 2050us; 900
+  to 2000us become 900 to 2050us. The change goes into force when the run
+  ends, with the bench SAFE, and lasts for the session as every change of
+  the servo profile does: the profile is not kept in NVS (non-volatile
+  storage), and a restart sets STANDARD PWM, 1000 to 2000us. The report
+  names it
+  (`Bench pulses:   PULSE MIN/MAX 1000-2000 -> 950-2050us, for the
+  session`), and so does the third state line after the run, `REPORT
+  RUDDR007.TXT, PULSE MIN/MAX 1000-2000 -> 950-2050us`. A pulse write cut
+  off by an end, or read back with other pulses, widens nothing. With the
+  wider range LIMIT RUN at KEEP takes the servo's pulses (`servo pulses
+  outside MIN/MAX` is the refusal otherwise), and LIVE drives up to 2050us.
+- What a KST or Chaservo servo does with a pulse outside its PULSE LOWER to
+  PULSE UPPER is not documented and not measured. The bench sends none in
+  this run. The servo's range, rounded toward the center, lies inside the
+  widened PULSE MIN and MAX by at most 0.6us at each end (0.4us at 10%),
+  so LIVE at PULSE MIN or MAX sends a pulse up to that far past PULSE LOWER
+  or PULSE UPPER, less than the KST's 0.8us step.
+- On a Hitec servo (HITEC D SERIES, HITEC CLASSIC) MARGIN is 0%: the servo
+  has no pulse registers, and the run sets LEFT END and RIGHT END only.
+  With SERVO at a Hitec entry the card's MARGIN reads `MARGIN 0%`, drawn
+  dimmed; a tap names `MARGIN: KST/CHASERVO ONLY` in the alert band and
+  opens no keypad. The OPTIONS list's MARGIN row reads 0% and is locked
+  with `KST and Chaservo servos only`. The stored `rud_margin` stays as
+  set and applies again with SERVO at KST/CHASERVO. The run aims 1000us
+  and 2000us at the targets, and the report reads `Margin:         0%:
+  KST/Chaservo only, a Hitec servo has no pulse registers`.
+- Each target must exceed 2 x TOLERANCE, by 0.001° or more: a measure
+  within TOLERANCE of such a goal lies at least TOLERANCE from the zero
+  and gives its side a direction. MARGIN does not count. With a smaller
+  target the hold is refused before a part is switched, and the card's
+  first line and the alert band read `TARGETS MUST EXCEED 2 x TOLERANCE`.
+  No READY row is red for it. TARGET 1.0° against TOLERANCE 0.5° is
+  refused at every MARGIN; TOLERANCE 0.4° starts.
 - The READY card in the output card's place, 380 x 374px: one row per
   check of the start, 30px each, a dot, the label and the state. Green:
   met. Red: refuses the hold, or an output is live through it (PROG 5V ON,
@@ -1793,15 +1843,18 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
 - The four lines: the sequence's step, as `START, STEP 3 OF 5:
   READ-BACK`, or the run's step, as `SETTLE 2000us: WRITE 1/8, SESSIONS
   2`, or the failure of the last sequence, or the first red row's reason,
-  or the goals; the result, `PASS: 150>92, 150>92` with each end point's
+  or the pulse range the run leaves the servo with and its ends by the
+  linear map, `PULSES 950-2050us: 22.0°, 22.0°`, 950us first (Hitec:
+  `PULSES 1000-2000us: 20.0°, 20.0°`); the result, `PASS: 150>92, 150>92` with each end point's
   value before and after, or `FAIL: reason`; the servo the run programs,
   `SERVO KST/CHASERVO` or `SERVO HITEC D SERIES`, while it runs and before
   the first run; then the report's file, or `RESTORE IN KST` (a Hitec
   servo: `LOAD HITEC001 IN FILES`) after a FAIL or an abort that wrote, or
-  that cut off a write on its way, which may have landed; the verify pass,
+  that cut off a write on its way, which may have landed, followed by the
+  bench's PULSE MIN and MAX where the run widened them; the verify pass,
   once its first measure is in, `VERIFY +0.03°, -0.02°, CENTER +0.05°`:
-  1000us, 2000us and the center, each end from its goal, the center from
-  the zero, `-` for one not measured yet. It turns red at the first one outside the
+  1000us, 2000us and the center, each end from its target, the center
+  from the zero, `-` for one not measured yet. It turns red at the first one outside the
   tolerance and green once all three are within.
 - The servo is the SERVO row: RUDDER AUTO's own saved setting
   (`rauto_family`), KST/CHASERVO, HITEC D SERIES or HITEC CLASSIC, apart
@@ -1884,8 +1937,8 @@ ARMED is asked).
 
 - The read session: the servo held at PULSE CENTER for 1000ms, SAFE asked,
   CONNECT and the read; for KST/Chaservo only, PULSE LOWER and PULSE UPPER
-  are set to 1000.0us and 2000.0us if needed; then LEAVE and a request
-  for ARMED.
+  are set to the margin's range if they differ, 950.4us and 2049.6us at
+  10%; then LEAVE and a request for ARMED.
 - The approach: every measure first drives the servo to the pulse it
   comes from and waits there by the measure's own rule, then commands its
   pulse (phase APPROACH, the first line `APPROACH 1500us: ...`). Each end,
@@ -1983,8 +2036,9 @@ ARMED is asked).
 - The verify pass (phase VERIFY, `shared/servo/servo_rudder_auto_verify.c`):
   a run that changed the servo's values or pulses measures 1000us, 2000us
   and PULSE CENTER once more, each a measure with the settle rule, and
-  ends at PULSE CENTER. Each end is held to its goal, the center to the
-  zero, within the tolerance. All three are measured; one outside ends the
+  ends at PULSE CENTER. Each end is held to its target, the center to the
+  zero, within the tolerance. The extended ends of the margin are not
+  measured. All three are measured; one outside ends the
   run as FAIL, `1000us outside the tolerance at verify`, `2000us ...` or
   `center outside the tolerance at verify`, the first one outside named.
   The values stay written, and RESTORE is offered as after any FAIL. A run
@@ -2038,10 +2092,14 @@ WRITE n VALUES.
 The report RUDDRnnn.TXT and the CSV RUDDRnnn.CSV, one row a measure, go to
 USER/LOGS. RUDDR, not RUDDER: an 8.3 name holds 5 letters and 3 digits.
 The report names the servo, the output, the angle source and the meter,
-the targets, goals and tolerance, the measure's rule (`Measure: angle
+the targets and tolerance, the margin with the pulses written and the
+extended ends by the linear model (`Margin:         10%: servo pulses
+950.4-2049.6us; by the linear model 950us reaches 22.0°, 2050us 22.0°; not
+driven`), the measure's rule (`Measure: angle
 stable for 500ms, its span at most 0.10° over 3.0s, within 16000ms of the
-command` on the IMU), the end points before and after with the side each
-moves, the writes and sessions, the backup file, every measure with its
+command` on the IMU), the pulse write and the bench's PULSE MIN and MAX
+where the run widened them, the end points before and after with the side
+each moves, the writes and sessions, the backup file, every measure with its
 value, its angle and whether it lies within, and the verify pass: one
 line a measure, `1500us  measured 0.05°  goal 0.00°  within`, or `No
 write: the measurements above are the last.` The CSV carries the verify

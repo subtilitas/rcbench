@@ -165,12 +165,16 @@ static inline void rig_init(uint32_t t0)
     g.still_from = t0;
     servo_rauto_init(&g.run);
     memset(&g.cfg, 0, sizeof(g.cfg));
-    g.cfg.target_deg[0] = 25.0f;
-    g.cfg.target_deg[1] = 25.0f;
-    g.cfg.margin_pct = 10u;
+    /* The goal at 1000us and 2000us is the target: 27.5°.  Margin 0%:
+     * the pulses 1000.0 to 2000.0us; the tests of the margin set it. */
+    g.cfg.target_deg[0] = 27.5f;
+    g.cfg.target_deg[1] = 27.5f;
+    g.cfg.margin_pct = 0u;
     g.cfg.tol_ddeg = 5u;
     g.cfg.family = SERVO_RAUTO_FAM_KST;
     g.cfg.center_us = RCENTER;
+    g.cfg.min_us = 1000u;
+    g.cfg.max_us = 2000u;
     snprintf(g.cfg.dut, sizeof(g.cfg.dut), "%s", "AILERON L");
     snprintf(g.cfg.type, sizeof(g.cfg.type), "%s", "DIGITAL");
     snprintf(g.cfg.output, sizeof(g.cfg.output), "%s", "PROG PORT 1 GPIO 13");

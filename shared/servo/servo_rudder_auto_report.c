@@ -168,6 +168,29 @@ static const char *family_name(uint8_t f)
 }
 
 /**
+ * @brief The margin's line: on KST the servo's pulse range as written and
+ *        the extended ends by the linear model; on Hitec its lock at 0%.
+ * @param r Run state.
+ * @param c Cursor, at the line asked for.
+ */
+static void margin_line(const servo_rauto_t *r, cur_t *c)
+{
+    const servo_rauto_cfg_t *g = &r->cfg;
+    if (g->family != SERVO_RAUTO_FAM_KST) {
+        snprintf(c->buf, c->n, "%s", LS(RA_R_MARGIN_HITEC));
+        return;
+    }
+    uint16_t us[2], dus[2];
+    servo_rauto_pulse_range(g->margin_pct, us);
+    servo_rauto_kst_pulses(g->margin_pct, dus);
+    const double k = 1.0 + (double)g->margin_pct / 100.0;
+    snprintf(c->buf, c->n, LS(RA_R_MARGIN), (unsigned)g->margin_pct,
+             (double)dus[0] / 10.0, (double)dus[1] / 10.0, (unsigned)us[0],
+             (double)g->target_deg[0] * k, (unsigned)us[1],
+             (double)g->target_deg[1] * k);
+}
+
+/**
  * @brief The head: title, result, the servo, what it drives and reads, the
  *        protections, the targets and the settle rule, the duration and the
  *        angle source's gaps.
@@ -237,12 +260,11 @@ static bool head_lines(const servo_rauto_t *r, cur_t *c)
     }
     if (here(c)) {
         snprintf(c->buf, c->n, LS(RA_R_TARGETS), (double)g->target_deg[0],
-                 (double)g->target_deg[1], (unsigned)g->margin_pct);
+                 (double)g->target_deg[1], (double)g->tol_ddeg / 10.0);
         return true;
     }
     if (here(c)) {
-        snprintf(c->buf, c->n, LS(RA_R_GOALS), (double)r->goal_deg[0],
-                 (double)r->goal_deg[1], (double)g->tol_ddeg / 10.0);
+        margin_line(r, c);
         return true;
     }
     if (g->len_mm > 0.0f && here(c)) {
@@ -348,6 +370,13 @@ static bool prog_lines(const servo_rauto_t *r, cur_t *c)
             snprintf(c->buf, c->n, LS(L_R_PULSE_SET), (double)p0[1] / 10.0,
                      (double)r->pulse_now[1] / 10.0, (double)p0[2] / 10.0,
                      (double)r->pulse_now[2] / 10.0);
+            return true;
+        }
+        uint16_t prof[2];
+        if (servo_rauto_widen(r, prof) && here(c)) {
+            snprintf(c->buf, c->n, LS(RA_R_WIDEN), (unsigned)r->cfg.min_us,
+                     (unsigned)r->cfg.max_us, (unsigned)prof[0],
+                     (unsigned)prof[1]);
             return true;
         }
     }

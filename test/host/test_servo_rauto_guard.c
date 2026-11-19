@@ -567,8 +567,8 @@ TEST_CASE(a_read_that_is_no_servo_fails_and_gives_the_port_back)
     rig_init(0u);
     g.v[0] = 50u;
     g.v[1] = 255u;
-    g.cfg.target_deg[0] = 10.0f / 1.1f;
-    g.cfg.target_deg[1] = 51.0f / 1.1f;
+    g.cfg.target_deg[0] = 10.0f;
+    g.cfg.target_deg[1] = 51.0f;
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);

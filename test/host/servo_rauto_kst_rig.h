@@ -40,6 +40,7 @@
 static struct {
     servo_sim_t sv;
     uint16_t cmd;
+    uint16_t cmd_lo, cmd_hi;  /* the extremes a position command sent */
     bool armed;
     unsigned offs;          /* the supply's OFF taken */
     uint32_t win_end, win_no;
@@ -183,6 +184,12 @@ static inline void ra_commands(void)
     while (servo_screen_take(&c)) {
         if (c.kind == SERVO_CMD_POSITION) {
             ra.cmd = c.value_us;
+            if (ra.cmd_lo == 0u || c.value_us < ra.cmd_lo) {
+                ra.cmd_lo = c.value_us;
+            }
+            if (c.value_us > ra.cmd_hi) {
+                ra.cmd_hi = c.value_us;
+            }
         } else if (c.kind == SERVO_CMD_RELEASE) {
             ra.cmd = 1500u;
         } else if (c.kind == SERVO_CMD_DISARM) {
