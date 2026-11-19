@@ -17,6 +17,9 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
+| `kst_x10.py` | spec of the KST X10 wing servo, from a dimension drawing and photos |
+| `_gen_flap_drive.py` | builds a frame with counter bearing for the KST X10, its linkage and a slice of wing with a flap with OpenCASCADE, checks that no two solids share volume |
+| `_rg15.py` | coordinates of the RG-15 airfoil |
 | `servo_standard.py` | spec of a standard size servo with a round horn, from a dimensioned sketch |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
@@ -26,7 +29,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards, in a cell or in the standard servo |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards, in a cell, in the standard servo or in the KST X10 |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -45,6 +48,7 @@ python3 hardware/kicad/tools/step_check.py         # also checks models/
 python3 hardware/mechanical/check_refit.py         # needs numpy; 2 minutes
 python3 hardware/mechanical/check_overlap.py       # 1 minute
 python3 hardware/mechanical/_gen_dial_base.py --check   # 1 minute
+python3 hardware/mechanical/_gen_flap_drive.py --check  # 10 seconds
 xvfb-run -a python3 hardware/kicad/tools/step_render.py \
     hardware/mechanical/renders --size 640 480 \
     --step hardware/mechanical/models/*.step
@@ -576,6 +580,86 @@ repository and names neither maker nor type. The sketch gives 55mm over the
 ears and 7.2mm + 40.5mm + 7.2mm for its parts; the model is 54.9mm long. The
 cable, its plug, the horn's screw and the shaft's splines are not in the
 sketch and not drawn. No dimension is verified on a servo.
+
+## KST X10 with frame and flap drive
+
+A KST X10 wing servo on a frame with counter bearing, driving a flap
+through a pushrod, in a slice of wing. The servo follows a dimension
+drawing. The frame, the linkage and the wing are a reference layout:
+their kinds of parts and their look follow photos of such a frame, and
+every size is chosen in `_gen_flap_drive.py`. No part is measured, made
+or tried.
+
+![Servo, frame and linkage](renders/flap_drive_unit_2.png)
+
+| | |
+| --- | --- |
+| ![Section through wing and flap](renders/flap_drive_section.png) | ![Wing from below, cover off](renders/flap_drive_below.png) |
+| ![The unit from the rod's side](renders/flap_drive_unit.png) | ![Wing from above, skin clear](renders/flap_drive_above.png) |
+
+| File | Content | Frame |
+| --- | --- | --- |
+| `kst_x10.step` | the servo: case with red band, 2 ears, tab, shaft, print, 3 wires 15mm long; 25 solids | origin on the shaft's axis at the case's output end, z = 0 on the face the ears lie on; shaft to +y |
+| `flap_drive.step` | plate, 3 inserts, 3 washers, 3 screws, 2 blocks, strut, bush and its screw, double arm, pin, rod end, rod, fork, 2 horn plates, horn pin; 23 solids | the wing's: origin at the nose on the chord line, x to the trailing edge, y along the span, z up |
+| `flap_drive_wing.step` | wing shell, flap shell, cover of the servo's opening, spar web, rear web, the flap's nose wall; 6 solids | the wing's |
+| `flap_drive_assembly.step` | the two files above and the servo in its place; 54 solids, 3.5MB | the wing's |
+
+The layout:
+
+- The wing is a slice of 88mm span with the RG-15 airfoil on a chord of
+  230mm and skins of 0.8mm. The flap is hinged in the lower skin at 75%
+  of the chord.
+- The servo lies flat under the upper skin, its shaft along the span at
+  38% of the chord. A carbon plate of 2.0mm is bonded to the skin, turned
+  1.6 degrees to the skin's slope and 0.25mm under it at the nearest
+  point. The servo's 2 ears and its tab are screwed to brass inserts in
+  the plate with 3 M2.5 screws.
+- 2 blocks on the plate hold an arched strut of 2.0mm, 11mm in front of
+  the servo's output end. A brass bush in the strut, on the shaft's axis,
+  carries the outer end of the double arm.
+- The arm is 5.5mm from shaft to pin and points to the lower skin. With
+  the plate on the upper skin the shaft lies 7.0mm under the plate's
+  bonded face, which leaves an arm no room towards that skin.
+- The rod is 81.5mm from pin to eye and 3.0mm across. It runs through a
+  slot in the rear web to a fork between 2 horn plates of 1.5mm. The
+  plates are bonded into the flap's nose and reach forward into the wing;
+  their eye lies 6.0mm over the hinge and 4.0mm before it.
+- The servo comes out through an opening of 60mm x 69mm in the lower
+  skin, which a cover closes.
+
+Flap angle for an angle of the arm, from `travel()`:
+
+| Arm, degrees | -30 | -15 | 15 | 30 | 45 | 60 |
+| --- | --- | --- | --- | --- | --- | --- |
+| Flap, degrees, positive down | -32.7 | -14.2 | 12.5 | 23.7 | 33.3 | 40.9 |
+
+At -45 degrees of the arm the rod does not reach: the flap's upward
+travel ends between -30 and -45 degrees of the arm.
+
+Dimensions of the servo, mm:
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Case | 30.0 x 10.0 x 35.5 | drawing |
+| Over the ears | 42.0; ears 8.0 high, 1.8 thick | drawing |
+| Mounting holes | 3.0 across, 36.0 apart; a third in the tab | drawing; the tab's hole is estimated |
+| Shaft | 6.6 from the nearer side of the case, 3.3 out of the case | drawing |
+| Tab | 10.1 wide, 6.4 long, hole 3.7 past the case | width from the drawing; the rest is the drawing's 39.2 and 41.9 read against its lines, which the drawing does not state |
+| Band, slot, corner radii, shaft diameter, cable | see `kst_x10.py` | scaled from the drawing or estimated from photos |
+
+Sources: a dimension drawing of the KST X10, five photos of an X10 on a
+frame with counter bearing and one shop photo of such a frame's parts,
+none of which is in the repository; the RG-15 coordinates of the airfoil
+database of the University of Illinois at Urbana-Champaign.
+
+Limits:
+
+- The parts stand at neutral. The collision check covers that position
+  only; no deflected position is checked.
+- Threads, the servo's splines, the hinge's tape, the adhesive under the
+  plate, spar caps and ribs are not drawn.
+- The cable ends 15mm from the servo and has no plug.
+- Loads, stiffness and the bush's play are not calculated.
 
 ## Licence
 

@@ -55,6 +55,14 @@ the white print "Standard Servo", from an owner sketch with dimensions: case
 40.5mm x 20.0mm x 36.3mm, mounting holes 49.5mm x 10.0mm apart. The horn's
 diameter, the shaft's boss and the seams are scaled from the sketch; the cable
 is not drawn.
+It holds STEP models of the KST X10 wing servo, from a dimension drawing, and
+of a reference layout round it: a carbon frame with counter bearing, a double
+arm of 5.5mm, a pushrod and a horn of 2 plates, in an 88mm slice of wing with
+the RG-15 airfoil on a 230mm chord and a flap hinged in the lower skin. The
+layout's sizes are chosen, not measured; its look follows photos of such a
+frame. The parts stand at neutral, and only that position is checked for
+collisions. `travel()` gives 33.3 degrees of flap down for 45 degrees of the
+arm and -32.7 degrees for -30 degrees.
 It holds STEP models of the INA228 current sensor module with its two XT90PW
 connectors, 225 solids with the print, and of its printed case. The board is
 measured from three owner photos on 5mm squared paper: positions within about
