@@ -60,7 +60,7 @@
 
 _Static_assert(2 * RA_HALF_W + RA_GAP == RA_W, "two halves fill the column");
 _Static_assert(RA_LINES_H >= RA_LINES * 20 + (RA_LINES - 1) * RA_LINE_GAP,
-               "four lines of one row each fit above the footer");
+               "five lines of one row each fit above the footer");
 _Static_assert(RA_PLOT_Y + UI_TAP_MIN <= RA_LINE_Y - 4,
                "the plot ends above the side view and the lines");
 
@@ -937,7 +937,7 @@ const char *rauto_line(int i, char *buf, size_t n)
             snprintf(buf, n, TR(RA_STEP),
                      ui_servo_str(servo_rauto_phase_str(r->phase)),
                      cmd ? (unsigned)r->cmd_us
-                         : r->side == 0u ? 1000u : 2000u,
+                         : (unsigned)servo_rauto_side_us(r, r->side),
                      (unsigned)r->writes[r->side],
                      (unsigned)SERVO_RAUTO_WRITES_MAX, r->sessions);
             break;
@@ -999,9 +999,8 @@ const char *rauto_line(int i, char *buf, size_t n)
             if (servo_rauto_widen(r, prof)) {
                 /* The bench's range the run widened, after the file. */
                 char w[48];
-                snprintf(w, sizeof(w), TR(RA_WIDENED),
-                         (unsigned)r->cfg.min_us, (unsigned)r->cfg.max_us,
-                         (unsigned)prof[0], (unsigned)prof[1]);
+                snprintf(w, sizeof(w), TR(RA_WIDENED), (unsigned)prof[0],
+                         (unsigned)prof[1]);
                 snprintf(buf, n, "%s, %s", t, w);
             } else {
                 snprintf(buf, n, "%s", t);

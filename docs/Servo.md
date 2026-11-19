@@ -1783,8 +1783,9 @@ link is not authenticated (`SECURITY.md`, the Bluetooth IMU).
   storage), and a restart sets STANDARD PWM, 1000 to 2000us. The report
   names it
   (`Bench pulses:   PULSE MIN/MAX 1000-2000 -> 950-2050us, for the
-  session`), and so does the third state line after the run, `REPORT
-  RUDDR007.TXT, PULSE MIN/MAX 1000-2000 -> 950-2050us`. A pulse write cut
+  session`), and so does the third state line after the run with the
+  range in force, `REPORT RUDDR007.TXT, MIN/MAX 950-2050us`, one row of
+  40 cells in English and German. A pulse write cut
   off by an end, or read back with other pulses, widens nothing. With the
   wider range LIMIT RUN at KEEP takes the servo's pulses (`servo pulses
   outside MIN/MAX` is the refusal otherwise), and LIVE drives up to 2050us.
@@ -1962,7 +1963,9 @@ ARMED is asked).
 - The first measure is the search's. Once the search has judged 1000us
   (2000us) free, or a position past it, it holds the servo at 1000us
   (2000us) and takes the angle there by the measure's rule below, counted
-  from the command of 1000us (2000us); then it steps on. The 10us steps
+  from the command of 1000us (2000us); then it steps on. A side that binds
+  before 1000us (2000us) has its first measure at its found end instead
+  (below). The 10us steps
   leave little creep, and the angle counts as settled by the same rule as
   every measure: still 500ms and, on the IMU with the defaults, within
   0.10° over 3.0s, at most 16,000ms after the command. With PULSE CENTER
@@ -1971,13 +1974,29 @@ ARMED is asked).
   any measure, the 1000us side first, and the run writes the first side
   outside the tolerance, or verifies, or passes.
 - LOW END and HIGH END cap every pulse the run drives after the search; a
-  pulse past them ends the run as below. An end inside the end pulse, LOW
-  END above 1000us or HIGH END below 2000us, ends the run as FAIL, `STOP
-  AT 1225us BEFORE TARGET` on the box: no value written, a 1000us side
-  that fails leaves the 2000us side not searched, every output off. The
-  end lies 25us short of the bind, so a bind up to 25us past the end pulse
-  fails too: at 10%, a servo that binds at 970us and is free at 980us ends
-  at 1005us and fails; one that binds at 960us ends at 995us and goes on.
+  pulse past them ends the run as below.
+- An end inside the end pulse, LOW END above 1000us or HIGH END below
+  2000us, is held for its angle by the measure's rule. Where that does not
+  settle by the measure's wait, the angle is the one the search recorded
+  at the side's last free step, and the report says so. The angle decides:
+  - Below TARGET - TOLERANCE, the linkage stops the surface short of the
+    target, and the run ends as FAIL, `STOP AT 1225us BEFORE TARGET` on the
+    box: no value written, a 1000us side that fails leaves the 2000us side
+    not searched, every output off.
+  - At TARGET - TOLERANCE or above, the boundary included, the stop lies
+    past the target. The side's measures, of the main pass and of the
+    verify pass, drive the end in place of 1000us (2000us), and this angle
+    is its first measure. Each angle measured there stands for the end
+    pulse by the linear map from PULSE CENTER: x 500 / (1500 - 1075) =
+    x 1.176 at an end of 1075us. The writes and the verify pass judge that
+    figure against TARGET as any measure, so the write takes the throw
+    shorter. The report's step and verify lines name the end's pulse and
+    that figure. Example: TARGET 20.0°, a bind at 1040us, the end 1075us
+    at 25.5°: 30.0° at 1000us by the map, 150 counts written to 100, the
+    verify pass 17.0° at 1075us, 20.0° by the map (`test_servo_rauto_search`).
+  The end lies 25us short of the bind: at 10%, a servo that binds at 970us
+  and is free at 980us ends at 1005us, inside 1000us; one that binds at
+  960us ends at 995us, outside it, and is measured at 1000us.
 - Every position the search judged is a line of the report, `1230us
   0.152A  -16.20°`, and a CSV row, at most 160 (152 at MARGIN 50%).
 - The approach: every measure after the search first drives the servo to the pulse it
@@ -2117,7 +2136,7 @@ The limit run's, in every phase:
 | no window for 200ms | ABORTED |
 | the angle lost for more than 300ms, or a second gap within 10s | ABORTED, `angle source dropped out` |
 | a session refused, or a read-back that differs from the write | ABORTED |
-| an end the search finds inside 1000us or 2000us, or a pulse past LOW END or HIGH END after the search | FAIL, `STOP AT 1225us BEFORE TARGET` |
+| an end the search finds inside 1000us or 2000us with the surface there short of TARGET - TOLERANCE, or a pulse past LOW END or HIGH END after the search | FAIL, `STOP AT 1225us BEFORE TARGET` |
 | another ANGLE SOURCE, or the IMU's other AXIS or SIGN: the zero is dropped | ABORTED |
 | STOP, DISARM, leaving SERVO, the meter or the supply changed | ABORTED |
 
@@ -2146,7 +2165,10 @@ each moves, the writes and sessions, the backup file, the limit search (its
 rule, `Steps:          10us out from 1500us, each 120ms settled and 80ms
 measured; ...`, LOW END and HIGH END, `Low end:        bound at 960us,
 endpoint 995us; free 0.150A, bound 1.500A`, `High end:       free to
-2050us; free 0.150A` or `not searched`, then one line a position judged),
+2050us; free 0.150A` or `not searched`, for an end inside the end pulse
+its angle, `-25.50° at the end 1075us; the side measured there, its angles
+scaled to 1000us by the linear map (x 1.176)`, then one line a position
+judged),
 every measure with its
 value, its angle and whether it lies within, and the verify pass: one
 line a measure, `1500us  measured 0.05°  goal 0.00°  within`, or `No
@@ -2178,10 +2200,10 @@ report still names a D series end point by its distance from NEUTRAL.
   proportional to the end point's value from the surface's zero. A nonlinear servo may need more writes or fail to reach the goal.
   The run measures after every write.
 - Degrees are entered; a target in mm at the trailing edge is not.
-- The search runs on the end points the servo holds at the read. A servo
-  whose throw binds before 1000us or 2000us fails STOP, though a write
-  that shortens the throw could bring the stop outside the end pulse; the
-  run does not try one.
+- A side measured at its found end holds 1000us (2000us) to TARGET by the
+  linear map from the end, not by a measure at 1000us: the run never
+  drives past the found end. A servo that is not linear between the end
+  and the end pulse reaches another angle at 1000us.
 - The search's thresholds, 1.8 x the free current and 0.15A, are LIMIT
   RUN's. A stop that the servo meets with less current than that is not
   found.

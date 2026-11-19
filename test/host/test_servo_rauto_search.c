@@ -4,11 +4,14 @@
  *
  * Under test: the search runs after the read session and before any other
  * pulse, out to the margin's range on both sides; its 1000us and 2000us
- * angles are the run's first measures; an end inside the end pulse, by
- * 5us and at the end pulse itself, fails STOP AT n us BEFORE TARGET with
- * no write of a value, the other side not searched where it is the first,
- * and every output off; an end at 995us passes; the found ends cap every
- * later pulse; a STOP RUN, a current above the ceiling and a reading that
+ * angles are the run's first measures; an end inside the end pulse is held
+ * for its angle: short of TARGET less TOLERANCE it fails STOP AT <n>us
+ * BEFORE TARGET with no write of a value, the other side not searched
+ * where it is the first, and every output off; at or past it, the
+ * boundary included, the side is measured at the end, written shorter and
+ * verified there, nothing driven past it; an end that does not settle
+ * takes the last free step's angle; an end at 995us lies outside the end
+ * pulse; the found ends cap every later pulse; a STOP RUN, a current above the ceiling and a reading that
  * does not settle at the end pulse end the run in the search as in any
  * phase; the rows stay within SERVO_RAUTO_SEARCH_MAX at a margin of 50%;
  * the CSV and the report carry one row a position.
@@ -59,7 +62,8 @@ TEST_CASE(the_search_runs_first_and_takes_the_first_measures)
 
 TEST_CASE(an_end_inside_1000us_fails_stop_and_leaves_2000us_unsearched)
 {
-    /* 1190us binds, 1200us is free: the end 1225us. */
+    /* 1190us binds, 1200us is free: the end 1225us, where the surface
+     * stands at 16.5°, short of 27.5° less 0.5°. */
     rig_init(0u);
     g.stop_us[0] = 1200u;
     CHECK(start());
@@ -72,6 +76,9 @@ TEST_CASE(an_end_inside_1000us_fails_stop_and_leaves_2000us_unsearched)
     CHECK_EQ(g.run.ends[0].bind_us, 1190u);
     CHECK(!g.run.ends[1].done);
     CHECK(!g.run.s_took[0]);
+    CHECK(g.run.ends[0].deg_taken && !g.run.ends[0].at_end);
+    CHECK_NEAR(g.run.ends[0].deg, -16.5f, 0.01f);
+    CHECK_EQ(g.run.ends[0].deg_us, 1225u);
     CHECK_EQ(g.run.step_n, 0u);
     /* The pulse write of the read session only; no value written. */
     CHECK_EQ(g.write_ops, g.pulse_ops);
@@ -81,25 +88,87 @@ TEST_CASE(an_end_inside_1000us_fails_stop_and_leaves_2000us_unsearched)
     CHECK(in_report("Result:         FAIL - STOP AT 1225us BEFORE TARGET"));
     CHECK(in_report("Low end:        bound at 1190us, endpoint 1225us; free 0.150A, bound 1.500A"));
     CHECK(in_report("High end:       not searched"));
+    CHECK(in_report("                -16.50° at the end 1225us; short of the target 27.5° by more than the tolerance"));
     CHECK(in_report("1190us  1.500A  "));
 }
 
-TEST_CASE(an_end_5us_inside_the_target_fails_and_995us_passes)
+TEST_CASE(a_wide_throw_bound_past_the_target_is_written_shorter_at_its_end)
 {
-    /* At 10%: 970us binds, 980us free, the end 1005us, 5us inside. */
+    /* TARGET 20.0°: 1040us binds, 1050us is free, the end 1075us, where
+     * the surface stands at 25.5°, past the target.  The side is measured
+     * at 1075us, 25.5° standing for 30.0° at 1000us (x 500 / 425); the
+     * write takes 150 counts to 100, and the verify pass at 1075us reads
+     * 17.0°, 20.0° at 1000us. */
+    rig_init(0u);
+    g.cfg.target_deg[0] = 20.0f;
+    g.cfg.target_deg[1] = 20.0f;
+    g.stop_us[0] = 1050u;
+    CHECK(start());
+    to_searched();
+    CHECK(servo_rauto_running(&g.run));
+    CHECK(g.run.ends[0].at_end);
+    CHECK_EQ(g.run.ends[0].end_us, 1075u);
+    CHECK_EQ(servo_rauto_side_us(&g.run, 0u), 1075u);
+    CHECK_EQ(servo_rauto_side_us(&g.run, 1u), 2000u);
+    CHECK_NEAR(g.run.s_deg[0], -25.5f, 0.01f);
+    CHECK_NEAR(g.run.steps[0].measured_deg, 30.0f, 0.01f);
+    /* Nothing driven past 1075us after the search. */
+    g.cmd_lo = 0xFFFFu;
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK_EQ(g.cmd_lo, 1075u);
+    CHECK_EQ(g.v[0], 100u);
+    CHECK_EQ(g.run.vn, SERVO_RAUTO_VERIFY_N);
+    CHECK(g.run.vwithin[0]);
+    CHECK_NEAR(g.run.vdeg[0], 20.0f, 0.01f);
+    CHECK(in_report("                -25.50° at the end 1075us; the side measured there, its angles scaled to 1000us by the linear map (x 1.176)"));
+    CHECK(in_report("1075us  measured 20.00°  goal 20.00°  within"));
+    CHECK(in_report("1075us  write 0  value -  measured 30.00°  goal 20.00°  outside"));
+    CHECK(strstr(g.csv, "\n1;1075;0;;30.00;20.00;;;0\n") != NULL);
+    CHECK(ended_safe());
+}
+
+TEST_CASE(the_end_at_target_less_tolerance_passes_and_below_it_fails)
+{
+    /* The end 1075us at 25.5°: TARGET 26.0° less TOLERANCE 0.5° is 25.5°,
+     * at the boundary: the run goes on.  TARGET 26.1°: 0.1° short of it,
+     * STOP AT 1075us BEFORE TARGET. */
+    rig_init(0u);
+    g.cfg.target_deg[0] = 26.0f;
+    g.stop_us[0] = 1050u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK(g.run.ends[0].at_end);
+
+    rig_init(0u);
+    g.cfg.target_deg[0] = 26.1f;
+    g.stop_us[0] = 1050u;
+    CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_STOP);
+    CHECK_EQ(g.run.stop_us, 1075u);
+    CHECK(!g.run.ends[0].at_end);
+    CHECK_EQ(g.write_ops, g.pulse_ops);
+    CHECK(ended_safe());
+}
+
+TEST_CASE(an_end_5us_inside_goes_on_there_and_995us_is_outside)
+{
+    /* At 10%: 970us binds, 980us free, the end 1005us, 5us inside 1000us
+     * at 29.7°: measured and verified at 1005us. */
     rig_init(0u);
     g.cfg.margin_pct = 10u;
     g.stop_us[0] = 980u;
     CHECK(start());
+    to_searched();
+    CHECK(g.run.ends[0].at_end);
+    g.cmd_lo = 0xFFFFu;
     run_for(RAUTO_MS);
-    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_STOP);
-    CHECK_EQ(g.run.stop_us, 1005u);
-    /* 1000us passed free on the way: its angle taken, no write. */
-    CHECK(g.run.s_took[0]);
-    CHECK_EQ(g.write_ops, g.pulse_ops);
-    CHECK(ended_safe());
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK_EQ(g.cmd_lo, 1005u);
 
-    /* 960us binds, 970us free: the end 995us lies outside the target. */
+    /* 960us binds, 970us free: the end 995us lies outside 1000us. */
     rig_init(0u);
     g.cfg.margin_pct = 10u;
     g.stop_us[0] = 970u;
@@ -107,6 +176,7 @@ TEST_CASE(an_end_5us_inside_the_target_fails_and_995us_passes)
     to_searched();
     CHECK(servo_rauto_running(&g.run));
     CHECK(g.run.ends[0].bound);
+    CHECK(!g.run.ends[0].at_end && !g.run.ends[0].deg_taken);
     CHECK_EQ(g.run.ends[0].end_us, 995u);
     CHECK_EQ(g.run.ends[1].end_us, 2050u);
     /* Every pulse after the search within the found ends. */
@@ -120,20 +190,50 @@ TEST_CASE(an_end_5us_inside_the_target_fails_and_995us_passes)
     CHECK(in_report("High end:       free to 2050us"));
 }
 
-TEST_CASE(an_end_at_2000us_bound_fails_on_the_2000us_side)
+TEST_CASE(an_end_inside_2000us_is_measured_there)
 {
-    /* 2000us itself binds: 1990us free, the end 1965us. */
+    /* 2000us itself binds: 1990us free, the end 1965us at 27.9°. */
     rig_init(0u);
     g.stop_us[1] = 1995u;
     CHECK(start());
-    run_for(RAUTO_MS);
-    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_STOP);
-    CHECK_EQ(g.run.stop_us, 1965u);
+    to_searched();
     CHECK(g.run.ends[0].done && !g.run.ends[0].bound);
     CHECK_EQ(g.run.ends[1].bind_us, 2000u);
-    CHECK(g.run.s_took[0] && !g.run.s_took[1]);
-    CHECK_EQ(g.write_ops, g.pulse_ops);
+    CHECK(g.run.ends[1].at_end);
+    CHECK_EQ(servo_rauto_side_us(&g.run, 1u), 1965u);
+    CHECK_NEAR(g.run.s_deg[1], 27.9f, 0.01f);
+    g.cmd_hi = 0u;
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK_EQ(g.cmd_hi, 1965u);
     CHECK(ended_safe());
+}
+
+TEST_CASE(an_end_that_does_not_settle_takes_the_last_free_step)
+{
+    /* The reading jitters at the end 1075us: by the measure's wait the
+     * angle is the last free step's, 1050us at 27.0°, and the report says
+     * so; 27.0° lies past TARGET 20.0°. */
+    rig_init(0u);
+    g.cfg.target_deg[0] = 20.0f;
+    g.stop_us[0] = 1050u;
+    CHECK(start());
+    while (servo_rauto_running(&g.run) && !g.run.s_endhold) {
+        tick();
+    }
+    CHECK_EQ(g.cmd, 1075u);
+    g.jitter = true;
+    while (servo_rauto_running(&g.run) && g.run.s_endhold) {
+        tick();
+    }
+    g.jitter = false;
+    CHECK(servo_rauto_running(&g.run));
+    CHECK(g.run.ends[0].fallback && g.run.ends[0].at_end);
+    CHECK_EQ(g.run.ends[0].deg_us, 1050u);
+    CHECK_NEAR(g.run.ends[0].deg, -27.0f, 0.01f);
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK(in_report("                -27.00° at the last free step 1050us, the end not settled; the side measured there"));
 }
 
 TEST_CASE(a_pulse_past_a_found_end_ends_the_run)
@@ -236,8 +336,11 @@ int main(void)
 {
     RUN(the_search_runs_first_and_takes_the_first_measures);
     RUN(an_end_inside_1000us_fails_stop_and_leaves_2000us_unsearched);
-    RUN(an_end_5us_inside_the_target_fails_and_995us_passes);
-    RUN(an_end_at_2000us_bound_fails_on_the_2000us_side);
+    RUN(a_wide_throw_bound_past_the_target_is_written_shorter_at_its_end);
+    RUN(the_end_at_target_less_tolerance_passes_and_below_it_fails);
+    RUN(an_end_5us_inside_goes_on_there_and_995us_is_outside);
+    RUN(an_end_inside_2000us_is_measured_there);
+    RUN(an_end_that_does_not_settle_takes_the_last_free_step);
     RUN(a_pulse_past_a_found_end_ends_the_run);
     RUN(stop_run_and_the_current_ceiling_end_the_search);
     RUN(the_rows_fit_at_a_margin_of_50_percent);

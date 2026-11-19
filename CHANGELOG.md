@@ -55,7 +55,7 @@ history is in git.
   Where the bench's PULSE MIN and PULSE MAX are narrower than MARGIN's
   range, the run widens them to it at its end, for the session, and never
   narrows them; the report (`Bench pulses:`) and the third state line
-  (`PULSE MIN/MAX 1000-2000 -> 950-2050us`) name it. The first state line
+  (`MIN/MAX 950-2050us`) name it. The first state line
   reads the pulse range and its ends, `PULSES 950-2050us: 22.0°, 22.0°`. On HITEC D SERIES and HITEC CLASSIC MARGIN is 0%: the
   card and the OPTIONS row read 0% and refuse a change (`MARGIN:
   KST/CHASERVO ONLY`), and the stored `rud_margin` stays for KST. The
@@ -70,8 +70,12 @@ history is in git.
   servo at 1000us and 2000us on the way and takes the first measure of
   each side there by the measure's settle rule; the run drives no separate
   first measure. LOW END and HIGH END cap every later pulse. An end inside
-  1000us or 2000us ends the run as FAIL, `STOP AT 1225us BEFORE TARGET`,
-  with no value written and every output off. The first state line reads
+  1000us or 2000us is held for its angle: short of TARGET by more than
+  TOLERANCE the run ends as FAIL, `STOP AT 1225us BEFORE TARGET`, with no
+  value written and every output off; at TARGET - TOLERANCE or past it the
+  side is measured at the end from then on, each angle scaled to the end
+  pulse by the linear map, and the writes take the throw shorter, nothing
+  driven past the end. The first state line reads
   `SEARCH 1230us: STEP 28 OF 100` during the search, a new fourth line the
   ends, `LOW END 995us, HIGH END FREE`, and the verify pass moves to the
   fifth. The report gains a LIMIT SEARCH section with the rule, both ends

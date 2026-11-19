@@ -40,6 +40,8 @@
  */
 #include "servo_rauto_kst_rig.h"
 #include "ui_setlist.h"
+#include "servo_rudder_int.h"
+#include "ui_widgets.h"
 
 /* The run to its end on the rig: the margin's pulse range, 950.4 to
  * 2049.6us at 10%, written in the read session, the backup saved once
@@ -127,8 +129,19 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK(ra.offs >= 1u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)),
-                 "REPORT RUDDR007.TXT, PULSE MIN/MAX 1000-2000 -> 950-2050us");
-    /* The verify pass on the fourth line: each end from its goal, the
+                 "REPORT RUDDR007.TXT, MIN/MAX 950-2050us");
+    /* One row of the box's 400px in the label face, 10 x 20, in English
+     * and German: 39 and 40 cells. */
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        char l3[96];
+        (void)rauto_line(2, l3, sizeof(l3));
+        CHECK(strlen(l3) <= 40u);
+        CHECK_EQ(ui_text_wrap(NULL, gfx_rect_make(0, 0, RUD_SIDE_W, 20), 20,
+                              l3, &gfx_font_10x20, 0), 1);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* The verify pass on the fifth line: each end from its goal, the
      * center from the zero. */
     CHECK(strncmp(rauto_line(4, b, sizeof(b)), "VERIFY ", 7) == 0);
     CHECK(strstr(b, ", CENTER ") != NULL);
@@ -359,7 +372,7 @@ TEST_CASE(with_user_logs_off_auto_hands_the_logger_nothing)
     CHECK_EQ(ra.ends, 0u);
     CHECK_EQ(ra.len, 0u);
     char b[96], want[96];
-    snprintf(want, sizeof(want), "%s, PULSE MIN/MAX 1000-2000 -> 950-2050us",
+    snprintf(want, sizeof(want), "%s, MIN/MAX 950-2050us",
              TR(SV_USER_LOGS_OFF));
     CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), want);
 }
@@ -750,7 +763,7 @@ TEST_CASE(writes_that_do_not_move_the_2000us_side_end_auto_after_two)
     snprintf(want, sizeof(want), TR(RA_LAST), ui_servo_str(SERVO_STR_FAIL),
              ui_servo_str(SERVO_STR_RA_WHY_NO_EFFECT_HI));
     CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), want);
-    snprintf(want, sizeof(want), "%s, PULSE MIN/MAX 1000-2000 -> 950-2050us",
+    snprintf(want, sizeof(want), "%s, MIN/MAX 950-2050us",
              TR(SV_LIM_RESTORE));
     char kst[96];
     snprintf(kst, sizeof(kst), want, TR(SVH_KST));

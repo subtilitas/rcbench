@@ -308,7 +308,7 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     /* The search: both sides free to 1000us and 2000us, one row a
      * position, the first at the center. */
     CHECK(in_report("LIMIT SEARCH (pulse, current, angle)"));
-    CHECK(in_report("Steps:          10us out from 1500us, each 120ms settled and 80ms measured; bound at 1.8 x the free current and 0.15A over it, the end 25us short of it; the first measure at 1000us and 2000us by the Measure rule"));
+    CHECK(in_report("Steps:          10us out from 1500us, 120ms settle and 80ms measure each; bound at 1.8 x the free current and 0.15A over it, the end 25us short; first measure at 1000us and 2000us, or an end inside, by the Measure rule"));
     /* Every position commanded counted: 50 a side at margin 0. */
     CHECK_EQ(g.run.s_plan, 100u);
     CHECK_EQ(g.run.s_steps, 100u);

@@ -647,8 +647,9 @@ written to MARGIN's in the read session, 1000us - 5us x MARGIN to 2000us + 5us x
 KST's 0.8us step (950.4 to 2049.6us at 10%), the bench's PULSE MIN and PULSE MAX widened to
 it where narrower, MARGIN 0% on a Hitec servo (`test_servo_rauto_margin`), LIMIT RUN's search first
 in every run out to MARGIN's range, its 1000us and 2000us angles the first measures, its LOW END and
-HIGH END a cap on every later pulse and an end inside 1000us or 2000us a FAIL `STOP AT 1225us BEFORE
-TARGET` with no write (`shared/servo/servo_rudder_auto_search.c`, `test_servo_rauto_search`), at most 8 writes a side, each in
+HIGH END a cap on every later pulse, an end inside 1000us or 2000us a FAIL `STOP AT 1225us BEFORE
+TARGET` with no write where the surface there is short of TARGET - TOLERANCE, else that side measured at
+the end, scaled to the end pulse by the linear map (`shared/servo/servo_rudder_auto_search.c`, `test_servo_rauto_search`), at most 8 writes a side, each in
 a session with a power cycle of the PD mini or the carrier programming port's fixed 5V
 supply, the backup file before the first write, the limit run's current guard and a 300ms
 angle gap allowance throughout, SURFACE BINDS AT for a stall short of the goal, every end

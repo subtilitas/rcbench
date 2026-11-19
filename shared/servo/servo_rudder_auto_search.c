@@ -8,12 +8,17 @@
  * position the finder judges, holds the servo at the end pulse once the
  * finder judged a position at or past it free, takes the side's first
  * angle there by the measure's rule, and lets the finder go on.  The found
- * ends cap the run's later pulses; an end inside the end pulse ends it.
+ * ends cap the run's later pulses.  An end inside the end pulse is held for
+ * its angle: short of TARGET less TOLERANCE it ends the run, else that
+ * side's measures drive the end, their angles scaled to the end pulse.
  *
  * SPDX-License-Identifier: MIT
  */
 
 #include "servo_rudder_auto_int.h"
+
+#include <math.h>
+#include <stdlib.h>
 
 /** @brief The end pulse of each side, us. */
 static const uint16_t k_end[2] = { 1000u, 2000u };
@@ -101,9 +106,82 @@ static void go_to(servo_rauto_t *r, uint16_t us, uint32_t now_ms)
     rauto_command(r, SERVO_RAUTO_PH_SEARCH, us, now_ms);
 }
 
+uint16_t servo_rauto_side_us(const servo_rauto_t *r, uint8_t s)
+{
+    const unsigned k = s == 0u ? 0u : 1u;
+    if (r == NULL || !r->ends[k].at_end) {
+        return k_end[k];
+    }
+    return r->ends[k].end_us;
+}
+
+float rauto_at_side(const servo_rauto_t *r, uint8_t s, float deg)
+{
+    const unsigned k = s == 0u ? 0u : 1u;
+    const servo_rauto_end_t *e = &r->ends[k];
+    if (!e->at_end) {
+        return deg;
+    }
+    const int c = (int)r->cfg.center_us;
+    const int full = abs((int)k_end[k] - c);
+    const int here = abs((int)e->end_us - c);
+    return here > 0 ? deg * (float)full / (float)here : deg;
+}
+
 /**
- * @brief A side's search is over: its end recorded and held to the end
- *        pulse, then the other side, or the first measures judged.
+ * @brief A side's search is through: the other side next, or both first
+ *        measures judged after the return to the center.
+ * @param r      Run state.
+ * @param now_ms Time, ms.
+ */
+static void side_next(servo_rauto_t *r, uint32_t now_ms)
+{
+    if (r->side == 0u) {
+        rauto_search_begin(r, 1u, now_ms);
+        return;
+    }
+    rauto_command(r, SERVO_RAUTO_PH_SEARCH, r->cfg.center_us, now_ms);
+    r->searched = true;
+    rauto_searched(r, now_ms);
+}
+
+/**
+ * @brief The angle at a found end inside the end pulse, judged: below
+ *        TARGET less TOLERANCE the linkage stops the surface short of the
+ *        target and the run ends STOP; else the side is measured at the end
+ *        from here on, this angle its first measure.
+ * @param r      Run state.
+ * @param deg    The angle, signed, °.
+ * @param at_us  Where it was taken, us.
+ * @param now_ms Time, ms.
+ */
+static void end_judged(servo_rauto_t *r, float deg, uint16_t at_us,
+                       uint32_t now_ms)
+{
+    const uint8_t s = r->side;
+    servo_rauto_end_t *e = &r->ends[s];
+    e->deg_taken = true;
+    e->deg       = deg;
+    e->deg_us    = at_us;
+    if (fabsf(deg) + RAUTO_EPS_DEG < r->goal_deg[s] - rauto_tol_deg(r)) {
+        /* The surface stops short of the target: that side gets no
+         * write. */
+        r->stop_us = e->end_us;
+        rauto_end(r, SERVO_RAUTO_FAIL, SERVO_RAUTO_WHY_STOP, now_ms);
+        return;
+    }
+    /* The stop lies past the target: the writes shorten the throw, and
+     * every measure of the side drives the end, not the end pulse. */
+    e->at_end    = true;
+    r->s_took[s] = true;
+    r->s_deg[s]  = deg;
+    side_next(r, now_ms);
+}
+
+/**
+ * @brief A side's search is over: its end recorded, the found end held for
+ *        its angle where it lies inside the end pulse, then the other side
+ *        or the first measures judged.
  * @param r      Run state.
  * @param bind   The pulse the finder judged bound, us.
  * @param now_ms Time, ms.
@@ -130,21 +208,34 @@ static void side_done(servo_rauto_t *r, uint16_t bind, uint32_t now_ms)
     e->bound_a = e->bound ? r->lf.knee_a : 0.0f;
     const bool inside = s == 0u ? e->end_us > k_end[0]
                                 : e->end_us < k_end[1];
-    if (inside || !r->s_took[s]) {
-        /* The surface stops short of the pulse the target needs: that side
-         * gets no write. */
-        r->stop_us = e->end_us;
-        rauto_end(r, SERVO_RAUTO_FAIL, SERVO_RAUTO_WHY_STOP, now_ms);
+    if (inside) {
+        /* The end pulse lies past the stop: the angle at the found end
+         * decides, taken by the measure's rule. */
+        r->s_hold    = true;
+        r->s_endhold = true;
+        go_to(r, e->end_us, now_ms);
         return;
     }
-    if (s == 0u) {
-        rauto_search_begin(r, 1u, now_ms);
-        return;
+    side_next(r, now_ms);
+}
+
+/**
+ * @brief The angle of the last free step of the side, as the search
+ *        recorded it.
+ * @param r   Run state.
+ * @param deg Out: the angle, °.
+ * @return true when that step has an angle.
+ */
+static bool last_free_deg(const servo_rauto_t *r, float *deg)
+{
+    for (unsigned k = r->srow_n; k > 0u; --k) {
+        const servo_rauto_srow_t *p = &r->srow[k - 1u];
+        if (p->side == r->side && p->us == r->lf.last_free_us) {
+            *deg = p->deg;
+            return p->valid;
+        }
     }
-    /* Back to the center, then the first measures judged. */
-    rauto_command(r, SERVO_RAUTO_PH_SEARCH, r->cfg.center_us, now_ms);
-    r->searched = true;
-    rauto_searched(r, now_ms);
+    return false;
 }
 
 /**
@@ -203,6 +294,26 @@ void rauto_search_step(servo_rauto_t *r, uint32_t now_ms,
                        const servo_rauto_in_t *in)
 {
     if (!r->s_hold) {
+        return;
+    }
+    if (r->s_endhold) {
+        if (rauto_still(r, now_ms, in)) {
+            r->s_hold = r->s_endhold = false;
+            end_judged(r, in->angle_deg, r->cmd_us, now_ms);
+            return;
+        }
+        float deg = 0.0f;
+        if (!due(now_ms, r->move_ms, servo_rauto_wait_ms(r))) {
+            return;
+        }
+        r->s_hold = r->s_endhold = false;
+        if (!last_free_deg(r, &deg)) {
+            rauto_end(r, SERVO_RAUTO_FAIL, SERVO_RAUTO_WHY_NOT_STILL, now_ms);
+            return;
+        }
+        /* No settled angle at the end: the last free step's, named so. */
+        r->ends[r->side].fallback = true;
+        end_judged(r, deg, r->lf.last_free_us, now_ms);
         return;
     }
     if (rauto_still(r, now_ms, in)) {

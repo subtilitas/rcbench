@@ -1867,8 +1867,9 @@ Bluetooth-IMU).
   NVS (nichtflüchtiger Speicher), ein Neustart setzt STANDARD PWM, 1000
   bis 2000us. Der Bericht nennt sie (`Prüfstandspulse: PULS MIN/MAX
   1000-2000 -> 950-2050us, für die Sitzung`), ebenso die dritte
-  Zustandszeile nach dem Lauf, `BERICHT RUDDR007.TXT, PULS MIN/MAX
-  1000-2000 -> 950-2050us`. Ein Pulsschreiben, das ein Ende abbricht, oder
+  Zustandszeile nach dem Lauf mit dem Bereich, der gilt, `BERICHT
+  RUDDR007.TXT, MIN/MAX 950-2050us`, eine Zeile von 40 Zeichen auf
+  Englisch und Deutsch. Ein Pulsschreiben, das ein Ende abbricht, oder
   eines, das andere Pulse zurückliest, weitet nichts. Mit dem weiteren
   Bereich nimmt der Endlagenlauf bei BEHALTEN die Pulse des Servos an
   (sonst verweigert er mit `Servopulse außerhalb MIN/MAX`), und LIVE fährt
@@ -2070,6 +2071,8 @@ angefragt ist).
   oder eine Stellung dahinter frei gefunden hat, hält sie das Servo auf
   1000us (2000us) und nimmt dort den Winkel nach der Regel der Messung
   unten, gezählt ab dem Befehl von 1000us (2000us); dann geht sie weiter.
+  Eine Seite, die vor 1000us (2000us) blockiert, hat ihre erste Messung
+  stattdessen an ihrem gefundenen Ende (unten).
   Die Schritte von 10us lassen wenig Kriechen, und der Winkel gilt nach
   derselben Regel als eingeschwungen wie bei jeder Messung: 500ms ruhig
   und an der IMU mit den Vorgaben innerhalb 0,10° über 3,0s, spätestens
@@ -2079,15 +2082,33 @@ angefragt ist).
   die Seite 1000us zuerst, und der Lauf schreibt die erste Seite außerhalb
   der Toleranz, misst nach oder besteht.
 - UNTERES ENDE und OBERES ENDE begrenzen jeden Puls, den der Lauf nach der
-  Suche fährt; ein Puls darüber beendet den Lauf wie unten. Ein Ende
-  innerhalb des Endpulses, UNTERES ENDE über 1000us oder OBERES ENDE unter
-  2000us, beendet den Lauf mit NICHT BESTANDEN, `ANSCHLAG BEI 1225us VOR
-  DEM SOLL` in der Box: kein Wert geschrieben, scheitert die Seite 1000us,
-  bleibt die Seite 2000us ungesucht, jeder Ausgang aus. Das Ende liegt 25us
-  vor der Blockade, daher scheitert auch eine Blockade bis 25us hinter dem
-  Endpuls: bei 10% endet ein Servo, das bei 970us blockiert und bei 980us
-  frei ist, bei 1005us und scheitert; eines, das bei 960us blockiert,
-  endet bei 995us und läuft weiter.
+  Suche fährt; ein Puls darüber beendet den Lauf wie unten.
+- Ein Ende innerhalb des Endpulses, UNTERES ENDE über 1000us oder OBERES
+  ENDE unter 2000us, wird für seinen Winkel nach der Regel der Messung
+  gehalten. Schwingt er bis zur Wartezeit der Messung nicht ein, gilt der
+  Winkel, den die Suche am letzten freien Schritt der Seite aufgezeichnet
+  hat, und der Bericht nennt das. Der Winkel entscheidet:
+  - Unter SOLL - TOLERANZ hält das Gestänge das Ruder vor dem Soll an, und
+    der Lauf endet mit NICHT BESTANDEN, `ANSCHLAG BEI 1225us VOR DEM SOLL`
+    in der Box: kein Wert geschrieben, scheitert die Seite 1000us, bleibt
+    die Seite 2000us ungesucht, jeder Ausgang aus.
+  - Ab SOLL - TOLERANZ, die Grenze eingeschlossen, liegt der Anschlag
+    hinter dem Soll. Die Messungen der Seite, im Hauptdurchgang wie beim
+    Nachmessen, fahren das Ende statt 1000us (2000us) an, und dieser Winkel
+    ist ihre erste Messung. Jeder dort gemessene Winkel steht nach der
+    linearen Abbildung ab PULS MITTE für den Endpuls: x 500 / (1500 -
+    1075) = x 1,176 bei einem Ende von 1075us. Das Schreiben und das
+    Nachmessen beurteilen diesen Wert gegen das SOLL wie jede Messung, das
+    Schreiben verkürzt also den Weg. Die Schritt- und Nachmesszeilen des
+    Berichts nennen den Puls des Endes und diesen Wert. Beispiel: SOLL
+    20,0°, Blockade bei 1040us, das Ende 1075us bei 25,5°: 30,0° bei
+    1000us nach der Abbildung, 150 Zählwerte auf 100 geschrieben, beim
+    Nachmessen 17,0° bei 1075us, 20,0° nach der Abbildung
+    (`test_servo_rauto_search`).
+  Das Ende liegt 25us vor der Blockade: bei 10% endet ein Servo, das bei
+  970us blockiert und bei 980us frei ist, bei 1005us, innerhalb von
+  1000us; eines, das bei 960us blockiert, endet bei 995us, außerhalb, und
+  wird bei 1000us gemessen.
 - Jede Stellung, die die Suche beurteilt hat, ist eine Zeile des
   Berichts, `1230us  0.152A  -16.20°`, und eine Zeile der CSV, höchstens
   160 (152 bei RESERVE 50%).
@@ -2246,7 +2267,7 @@ Der des Endlagenlaufs, in jeder Phase:
 | 200ms kein Fenster | ABGEBROCHEN |
 | der Winkel über 300ms verloren oder eine zweite Lücke binnen 10s | ABGEBROCHEN, `Winkelquelle ausgefallen` |
 | eine abgelehnte Sitzung oder ein Rücklesen, das vom Schreiben abweicht | ABGEBROCHEN |
-| ein Ende, das die Suche innerhalb von 1000us oder 2000us findet, oder ein Puls über UNTERES ENDE oder OBERES ENDE nach der Suche | NICHT BESTANDEN, `ANSCHLAG BEI 1225us VOR DEM SOLL` |
+| ein Ende, das die Suche innerhalb von 1000us oder 2000us findet, mit dem Ruder dort unter SOLL - TOLERANZ, oder ein Puls über UNTERES ENDE oder OBERES ENDE nach der Suche | NICHT BESTANDEN, `ANSCHLAG BEI 1225us VOR DEM SOLL` |
 | WINKELQUELLE, IMU-Achse oder IMU-Vorzeichen geändert: der Nullpunkt wird verworfen | ABGEBROCHEN |
 | STOP, DISARM, SERVO verlassen, Messgerät oder Versorgung geändert | ABGEBROCHEN |
 
@@ -2278,7 +2299,9 @@ die Backup-Datei, die Endlagensuche (ihre Regel, `Schritte:        10us
 ab 1500us nach außen, ...`, UNTERES ENDE und OBERES ENDE, `Unteres Ende:
 blockiert bei 960us, Endpunkt 995us; frei 0.150A, blockiert 1.500A`,
 `Oberes Ende:     frei bis 2050us; frei 0.150A` oder `nicht gesucht`,
-dann eine Zeile je beurteilter Stellung), die Regel der Messung (`Messung: Winkel 500ms stabil,
+für ein Ende innerhalb des Endpulses sein Winkel, `-25.50° am Ende
+1075us; die Seite dort gemessen, ihre Winkel auf 1000us skaliert nach der
+linearen Abbildung (x 1.176)`, dann eine Zeile je beurteilter Stellung), die Regel der Messung (`Messung: Winkel 500ms stabil,
 Spanne höchstens 0.10° über 3.0s, spätestens 16000ms nach dem Befehl` an
 der IMU), jede Messung mit Registerwert, Winkel und der Angabe, ob sie
 innerhalb der Toleranz liegt, und das Nachmessen: eine Zeile je Messung,

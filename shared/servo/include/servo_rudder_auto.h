@@ -63,10 +63,16 @@
  *     (servo_limit_resume()).  The found end of a side (LOW END, HIGH END:
  *     the end found, or the margin's end where the side is free) caps
  *     every pulse driven after the search.  An end inside the end pulse,
- *     LOW END above 1000us or HIGH END below 2000us, ends the run as FAIL
- *     (SERVO_RAUTO_WHY_STOP, STOP AT 1225us BEFORE TARGET) with no value
- *     written, a 1000us side that fails leaving the 2000us side not
- *     searched; a finder's overcurrent or stall ends it as HARD or STALL.  With both sides searched the two first measures are
+ *     LOW END above 1000us or HIGH END below 2000us, is held for its
+ *     angle by the measure's rule (the last free step's where it does not
+ *     settle): short of the goal by more than the tolerance it ends the
+ *     run as FAIL (SERVO_RAUTO_WHY_STOP, STOP AT 1225us BEFORE TARGET)
+ *     with no value written, a 1000us side that fails leaving the 2000us
+ *     side not searched; else every measure of that side drives the end
+ *     (servo_rauto_side_us()), that angle its first, each angle scaled to
+ *     the end pulse by the linear map from PULSE CENTER.  A finder's
+ *     overcurrent or stall ends the run as HARD or STALL.  With both
+ *     sides searched the two first measures are
  *     judged as a measure is, the 1000us side first, and the run goes on
  *     with the first side outside the tolerance, or with the verify pass
  *     or PASS where both lie within.
@@ -402,6 +408,14 @@ typedef struct {
     uint16_t bind_us;         /**< the pulse judged bound, us */
     float    free_a,          /**< the free current, A */
              bound_a;         /**< the current judged bound, A */
+    bool     deg_taken;       /**< an end inside the end pulse: its angle
+                                   taken */
+    float    deg;             /**< that angle, signed, ° */
+    bool     fallback;        /**< the end did not settle: deg is the last
+                                   free step's */
+    uint16_t deg_us;          /**< where deg was taken, us */
+    bool     at_end;          /**< the side is measured at end_us, its
+                                   angles scaled to the end pulse */
 } servo_rauto_end_t;
 
 /** @brief A run's state.  The members after pend are the run's own. */
@@ -515,6 +529,8 @@ typedef struct {
     bool     searched;                /**< both sides searched */
     bool     s_hold;                  /**< held at the end pulse for the
                                            first measure */
+    bool     s_endhold;               /**< the hold is at a found end
+                                           inside the end pulse */
     uint16_t s_next_us;               /**< the finder's command after it */
     uint32_t s_from_ms;               /**< the side's start, ms */
     bool     s_took[2];               /**< the side's first measure taken */
@@ -815,6 +831,15 @@ bool servo_rauto_in_cap(uint16_t value0, float goal_deg, float first_deg,
  *         servo_test_abort_error() calls an error.
  */
 bool servo_rauto_why_error(servo_rauto_why_t why, servo_test_abort_t test_why);
+/**
+ * @brief The pulse a side's measures drive: 1000us or 2000us, or the found
+ *        end where the search found it inside them and the surface reaches
+ *        TARGET there (servo_rudder_auto_search.c).
+ * @param r Run state; NULL gives the end pulse.
+ * @param s The side: 0 the 1000us side, 1 the 2000us side.
+ * @return the pulse, us.
+ */
+uint16_t servo_rauto_side_us(const servo_rauto_t *r, uint8_t s);
 /**
  * @brief The table entry the screen and the report name the reason by.
  * @param r Run state; NULL gives the NONE entry.

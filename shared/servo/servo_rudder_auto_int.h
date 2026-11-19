@@ -111,6 +111,17 @@ void rauto_search_step(servo_rauto_t *r, uint32_t now_ms,
                        const servo_rauto_in_t *in);
 
 /**
+ * @brief An angle measured at the side's pulse as it stands for the end
+ *        pulse by the linear map from PULSE CENTER: unchanged at 1000us and
+ *        2000us, x (1500 - 1000) / (1500 - 1075) at an end of 1075us.
+ * @param r   Run state.
+ * @param s   The side.
+ * @param deg The angle measured, °.
+ * @return the angle at the end pulse, °.
+ */
+float rauto_at_side(const servo_rauto_t *r, uint8_t s, float deg);
+
+/**
  * @brief Both sides searched: their first measures judged, the 1000us side
  *        first, then the first side outside the tolerance written, or the
  *        verify pass, or PASS (servo_rudder_auto.c).

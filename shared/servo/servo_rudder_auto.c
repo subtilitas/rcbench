@@ -288,7 +288,7 @@ static void begin_measure(servo_rauto_t *r, uint8_t side, bool check,
 {
     r->side = side;
     rauto_measure_via(r, check ? SERVO_RAUTO_PH_CHECK : SERVO_RAUTO_PH_MOVE,
-                      k_end_us[side], r->cfg.center_us, now_ms);
+                      servo_rauto_side_us(r, side), r->cfg.center_us, now_ms);
 }
 
 void rauto_measure_via(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
@@ -714,7 +714,8 @@ void rauto_searched(servo_rauto_t *r, uint32_t now_ms)
     bool within[2] = { false, false };
     for (uint8_t s = 0; s < 2u; ++s) {
         r->side = s;
-        if (!assess(r, r->s_deg[s], &ms[s], &within[s], now_ms)) {
+        if (!assess(r, rauto_at_side(r, s, r->s_deg[s]), &ms[s], &within[s],
+                    now_ms)) {
             return;
         }
         r->verified[s]    = within[s];
@@ -772,9 +773,13 @@ static void measure_step(servo_rauto_t *r, uint32_t now_ms,
         r->held_ok = true;
         r->held_us = r->cmd_us;
         if (r->phase == SERVO_RAUTO_PH_VERIFY) {
-            rauto_verify_take(r, in->angle_deg, now_ms);
+            /* An end as it stands for its end pulse; the center as read. */
+            rauto_verify_take(r, r->vstep < 2u
+                                     ? rauto_at_side(r, r->vstep,
+                                                     in->angle_deg)
+                                     : in->angle_deg, now_ms);
         } else {
-            measured(r, in->angle_deg, now_ms);
+            measured(r, rauto_at_side(r, r->side, in->angle_deg), now_ms);
         }
     } else if (due(now_ms, r->move_ms, servo_rauto_wait_ms(r))) {
         fail(r, SERVO_RAUTO_WHY_NOT_STILL, now_ms);
