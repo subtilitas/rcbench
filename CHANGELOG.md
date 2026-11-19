@@ -6,6 +6,15 @@ history is in git.
 
 ## Unreleased
 
+### Added
+
+- `hardware/mechanical/`: `servo_standard.step`, a standard size servo with
+  a round horn, black with the white print "Standard Servo", from an owner
+  sketch with dimensions: case 40.5mm x 20.0mm x 36.3mm, 2 ears with 2 open
+  mounting holes each, 49.5mm x 10.0mm apart, horn 21.0mm across. The
+  overlap check covers it
+  ([Mechanical parts](hardware/mechanical/README.md#standard-servo)).
+
 ## 0.23.15 - 2026-11-18
 
 0.23.15 is a testing release. It adds a watchdog on the IOmcu's main loop

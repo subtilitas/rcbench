@@ -50,6 +50,11 @@ positions within about 0.2mm; the ESP32-C6-Zero's outline and pads follow
 Waveshare's drawing. Board thickness, inductor heights and the cells' wire
 length are estimated. The boost board does not name its enable pad; the one
 pad besides the 4 corner pads is taken as it.
+It holds a STEP model of a standard size servo with a round horn, black with
+the white print "Standard Servo", from an owner sketch with dimensions: case
+40.5mm x 20.0mm x 36.3mm, mounting holes 49.5mm x 10.0mm apart. The horn's
+diameter, the shaft's boss and the seams are scaled from the sketch; the cable
+is not drawn.
 It holds STEP models of the INA228 current sensor module with its two XT90PW
 connectors, 225 solids with the print, and of its printed case. The board is
 measured from three owner photos on 5mm squared paper: positions within about

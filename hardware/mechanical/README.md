@@ -17,6 +17,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `boost_5v_en.py` | spec of the 5V boost converter board with enable pad |
 | `esp32_c6_zero.py` | spec of the Waveshare ESP32-C6-Zero |
 | `lipo_cells.py` | spec of two lithium polymer cells, 702030 and 102540, with wires and plug |
+| `servo_standard.py` | spec of a standard size servo with a round horn, from a dimensioned sketch |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
 | `_photo_grid.py` | measures a board from a photo on squared paper: grid fit, camera height, the INA228 module's photos laid onto the board frame |
@@ -25,7 +26,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards or in a cell |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards, in a cell or in the standard servo |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -549,6 +550,32 @@ Limits:
 ```sh
 python3 hardware/mechanical/_gen_font.py     # rewrite _font.py; needs OpenCV
 ```
+
+## Standard servo
+
+A standard size servo with a round horn: black case of three shells, two
+ears with two open mounting holes each, white print "Standard Servo" on
+both long sides, white horn.
+
+![Standard servo](renders/servo_standard.png)
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `servo_standard.step` | case of 3 shells, 2 ears, boss, shaft hub, horn with 13 holes, print on 2 sides; 34 solids, 0.7MB | case 40.5 x 20.0 x 36.3; 54.9 over the ears; 44.1 over the horn; horn 21.0 across | on the shaft's axis, on the case's underside; x along the case, the long end to -x; z up |
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Mounting holes | 5.0mm across, 49.5mm apart along the case, 10.0mm across it | sketch |
+| Ears | 7.2mm long, 2.5mm thick, underside 26.3mm over the case's underside | sketch |
+| Shaft axis | 30.4mm from the case's long end, 10.1mm from the short end | sketch |
+| Horn | 2.0mm thick, underside 5.8mm over the case | sketch |
+| Horn diameter, boss, hub, seams, slots of the holes, corner radius, horn holes | see `servo_standard.py` | scaled from the sketch, not dimensioned |
+
+Source: an owner sketch with three dimensioned views, which is not in the
+repository and names neither maker nor type. The sketch gives 55mm over the
+ears and 7.2mm + 40.5mm + 7.2mm for its parts; the model is 54.9mm long. The
+cable, its plug, the horn's screw and the shaft's splines are not in the
+sketch and not drawn. No dimension is verified on a servo.
 
 ## Licence
 
