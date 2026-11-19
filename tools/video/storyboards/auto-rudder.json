@@ -24,16 +24,16 @@
   {
    "type": "case",
    "model": "rudder",
-   "dur": 50.72,
+   "dur": 51.12,
    "run": {
     "kind": "nav",
     "view": "overview",
     "screen": "overview",
     "from": 0.2,
-    "to": 50.519999999999996,
+    "to": 50.919999999999995,
     "ops": [
      [
-      48.72,
+      49.12,
       "t1"
      ]
     ]
@@ -59,7 +59,7 @@
      ]
     ],
     [
-     16.68,
+     17.08,
      [
       30,
       470,
@@ -72,7 +72,7 @@
      ]
     ],
     [
-     18.880000000000003,
+     19.28,
      [
       -60,
       210,
@@ -85,7 +85,7 @@
      ]
     ],
     [
-     29.52,
+     29.919999999999998,
      [
       -60,
       210,
@@ -98,7 +98,7 @@
      ]
     ],
     [
-     31.52,
+     31.919999999999998,
      [
       150,
       105,
@@ -111,7 +111,7 @@
      ]
     ],
     [
-     45.06,
+     45.46,
      [
       150,
       105,
@@ -124,7 +124,7 @@
      ]
     ],
     [
-     47.160000000000004,
+     47.56,
      [
       30,
       470,
@@ -137,7 +137,7 @@
      ]
     ],
     [
-     50.72,
+     51.12,
      [
       30,
       470,
@@ -157,19 +157,19 @@
       1
      ],
      [
-      17.28,
+      17.68,
       1
      ],
      [
-      18.48,
+      18.88,
       0
      ],
      [
-      28.720000000000002,
+      29.12,
       0
      ],
      [
-      29.92,
+      30.32,
       1
      ]
     ],
@@ -179,11 +179,11 @@
       1
      ],
      [
-      31.720000000000002,
+      32.12,
       1
      ],
      [
-      33.120000000000005,
+      33.519999999999996,
       0
      ]
     ],
@@ -193,11 +193,11 @@
       1
      ],
      [
-      36.24,
+      36.64,
       1
      ],
      [
-      37.84,
+      38.24,
       0
      ]
     ],
@@ -207,40 +207,40 @@
       1
      ],
      [
-      46.160000000000004,
+      46.56,
       1
      ],
      [
-      48.56,
+      48.96,
       0
      ]
     ]
    },
    "title": {
     "from": 0.4,
-    "to": 16.28,
+    "to": 16.68,
     "kicker": "rcbench · servo",
     "heading": "Auto rudder",
     "text": "The bench sets a servo's end points<br>to the throw of the surface."
    },
    "chips": [
     {
-     "from": 17.28,
-     "to": 30.12,
+     "from": 17.68,
+     "to": 30.52,
      "n": "i",
      "text": "The rudder and its servo"
     },
     {
-     "from": 30.12,
-     "to": 50.72,
+     "from": 30.52,
+     "to": 51.12,
      "n": 1,
      "text": "Mount the sensor"
     }
    ],
    "labels": [
     {
-     "from": 17.48,
-     "to": 29.12,
+     "from": 17.88,
+     "to": 29.52,
      "anchor": "servo",
      "at": [
       120,
@@ -253,8 +253,8 @@
      "text": "Under the upper skin, with a double arm."
     },
     {
-     "from": 17.48,
-     "to": 29.12,
+     "from": 17.88,
+     "to": 29.52,
      "anchor": "rod",
      "at": [
       1330,
@@ -266,8 +266,8 @@
      "text": "The rod leaves through a slot in the skin."
     },
     {
-     "from": 30.32,
-     "to": 34.84,
+     "from": 30.72,
+     "to": 35.24,
      "anchor": "tape",
      "at": [
       140,
@@ -279,8 +279,8 @@
      "text": "A pad under the sensor's whole base. It holds on the skin and comes off without a trace."
     },
     {
-     "from": 36.04,
-     "to": 44.56,
+     "from": 36.44,
+     "to": 44.96,
      "anchor": "imu",
      "at": [
       140,
@@ -292,8 +292,8 @@
      "text": "A WitMotion sensor. It rides on the flap and reports its angle over Bluetooth."
     },
     {
-     "from": 36.04,
-     "to": 44.56,
+     "from": 36.44,
+     "to": 44.96,
      "anchor": "hinge",
      "at": [
       1330,
@@ -307,8 +307,8 @@
      "text": "The sensor's X or Y axis lies along it."
     },
     {
-     "from": 45.76,
-     "to": 49.72,
+     "from": 46.16,
+     "to": 50.12,
      "anchor": "lead",
      "at": [
       150,
@@ -324,22 +324,22 @@
    "say": [
     {
      "at": 1.0,
-     "text": "This video sets the throws of a rudder with the R C bench. The bench drives the servo, measures the surface's angle with a sensor, and programs the servo's end points until both throws match."
+     "text": "This video shows how the R C bench sets the throws of a rudder. The bench drives the servo, measures the surface's angle with a sensor, and programs the servo's end points until both throws match."
     },
     {
-     "at": 17.28,
+     "at": 17.68,
      "text": "The example is a flap in a slice of wing. A K S T X 10 lies under the skin on a frame with a counter bearing, and moves the flap through a push rod."
     },
     {
-     "at": 30.12,
+     "at": 30.52,
      "text": "Step 1. Stick a pad of double sided gel tape onto the flap."
     },
     {
-     "at": 35.84,
+     "at": 36.24,
      "text": "Press the sensor onto the pad. Its X or Y axis has to run along the hinge line. The bench refuses the Z axis."
     },
     {
-     "at": 45.56,
+     "at": 45.96,
      "text": "Plug the servo into a programming port of the bench."
     }
    ]
@@ -1127,7 +1127,7 @@
     },
     {
      "at": 79.28,
-     "text": "At 1000 microseconds it waits for a still angle. That is the first measure: 33 degrees."
+     "text": "At 1000 microseconds it waits for a still angle. That is the first measure: 23 degrees."
     },
     {
      "at": 87.24,

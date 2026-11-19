@@ -30,8 +30,11 @@
 
 /** @brief The AS5600's center count. */
 #define CENTER_COUNT 2048
-/** @brief The surface's degrees per microsecond of the horn. */
+/** @brief The surface's degrees per microsecond of the horn.  A video's
+ *         run defines its own for the linkage it shows. */
+#ifndef DEG_PER_US
 #define DEG_PER_US 0.06f
+#endif
 /** @brief RUDDER's ZERO, AUTO and START (servo_spots.h). */
 #define ZERO_X 98
 /* RESET MAX, right of ZERO on its row (servo_rudder_int.h). */

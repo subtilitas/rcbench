@@ -95,6 +95,9 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
 - Video texts carry no statement of a feature's test state: narration,
   labels, notes, chapter cards and `README.md` say what a feature
   does (owner's rule, 2026-11-15).
+- A video does not do what it shows: the narration says "This video
+  shows how ...", never "This video sets ..." or "This video loads ..."
+  (owner's correction, twice, 2026-11-19).
 - Every touch a video shows carries its ring animation: the tap ring or
   the 2s hold ring of a `screen` or `tour` step, `touches` in a 3D
   scene, a pointer's `click` in a window (owner's rule, 2026-11-19).

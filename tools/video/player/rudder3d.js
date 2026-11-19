@@ -35,6 +35,8 @@ const DIAL_AT = [140, 0, 150];
 // The bench standing: its lean and its turn in degrees, and where its
 // middle goes.  The Dial's tip towards the viewer, degrees.
 const STAND = [72, 14, -10, 54, 40], TIP = 48;
+// The linkage's reach, degrees of the flap: the trailing edge up and down.
+const UP_MAX = 27, DOWN_MAX = 40;
 
 const turned = (p, c, deg) => {
   const a = deg * Math.PI / 180, dx = p[0] - c[0], dz = p[1] - c[1];
@@ -325,7 +327,9 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   };
   place();
   const setDeflect = deg => {
-    const f = -deg, a = armFor(f);
+    // The 7mm arm lifts the trailing edge 27 degrees at most and lowers
+    // it 40: past that the rod would leave the horn's eye.
+    const f = -Math.min(UP_MAX, Math.max(-DOWN_MAX, deg)), a = armFor(f);
     flap.turn.rotation.y = f * Math.PI / 180;
     arm.turn.rotation.y = -a * Math.PI / 180;
     const pin = turned(PIN, SHAFT, -a), eye = turned(EYE, HINGE, f);

@@ -14,6 +14,9 @@
  *
  * SPDX-License-Identifier: MIT
  */
+/* The linkage of tools/video/player/rudder3d.js lifts the trailing edge
+ * 27 degrees at most: 600us of the horn are 25.2 degrees here. */
+#define DEG_PER_US 0.042f
 #include "servo_rauto_kst_rig.h"
 #include "ui_band.h"
 
