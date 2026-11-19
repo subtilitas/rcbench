@@ -394,15 +394,15 @@
     ],
     [
      24.68,
-     "servo-hub-rbmod"
+     "servo-hub-rbmod-port"
     ],
     [
      25.88,
-     "servo-rudder"
+     "servo-rudder-rbmod"
     ],
     [
      27.68,
-     "servo-rudder-angle"
+     "servo-rudder-angle-rbmod"
     ]
    ],
    "camera": [
@@ -594,7 +594,7 @@
    "panel": [
     [
      0,
-     "servo-hub-rbmod"
+     "servo-hub-rbmod-port"
     ]
    ],
    "run": {
@@ -994,7 +994,7 @@
    "panel": [
     [
      0,
-     "servo-hub-rbmod"
+     "servo-hub-rbmod-port"
     ],
     [
      1.6,

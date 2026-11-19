@@ -982,6 +982,11 @@ MIN_SHAPE = 8
 # network and shut by the gate, and the reminder's hold shut.  The same
 # shape as SCREENS, with no committed file.
 FIT_ONLY = {
+    # tools/video's views of the SERVO hub, RUDDER and its ANGLE SOURCE
+    # list with the tester on the rbmod carrier's PROG PORT 1.
+    "servo-hub-rbmod-port": (None, "servo", "dark"),
+    "servo-rudder-rbmod": (None, "servo", "dark"),
+    "servo-rudder-angle-rbmod": (None, "servo", "dark"),
     # The menu's guide at pages 2 to 4, and MOTOR & ESC's band with the
     # widest row of chips: a clock of 10 hours, ARMED MOTOR, FAULT 7F,
     # BENCH and LINK.

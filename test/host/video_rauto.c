@@ -18,11 +18,79 @@
 /* The linkage of tools/video/player/rudder3d.js lifts the trailing edge
  * 27 degrees at most: 600us of the horn are 25.2 degrees here. */
 #define DEG_PER_US 0.042f
+/* The meter's readings as a servo on a 5V rail gives them, in place of
+ * the model's two levels: ra_video_amps() and ra_video_mv() below. */
+#define RA_VIDEO_METER
+#include <stdint.h>
+static float ra_video_amps(float amps);
+static uint16_t ra_video_mv(uint16_t mv, int ma);
 #include "servo_rauto_kst_rig.h"
 #include "ui_band.h"
 
 #define STEP_MS 100u
 #define FRAME_EVERY 5u
+
+/* ---------------------------------------------------- the meter's readings */
+
+/** @brief A number of -1 to 1 from a fixed sequence: the same run draws
+ *         the same frames.  @return the number */
+static float jitter(void)
+{
+    static uint32_t seed = 0x2F6E2B1u;
+    seed = seed * 1664525u + 1013904223u;
+    return (float)(seed >> 8) / 8388608.0f - 1.0f;
+}
+
+/**
+ * @brief The servo's current of this millisecond.
+ *
+ * The model gives 0.12A at rest and 0.95A while the horn travels, two
+ * levels that draw as a square wave.  Here the current is a smooth one:
+ * 28mA at rest, 4mA more a degree the surface is held out, 0.35A more
+ * while the horn travels, followed with a time constant of 250ms, so a
+ * search step of 10us shows as a ripple of some mA and a move across the
+ * travel as a rounded rise.  White noise of 1mA lies on it.  A rail that
+ * is off gives nothing, and a current the model raises against a stop is
+ * kept.
+ *
+ * @param amps the model's current, A
+ * @return the current drawn, A
+ */
+static float ra_video_amps(float amps)
+{
+    static float out;
+    if (!ra_rail_on()) {
+        out *= 0.95f;
+        return out;
+    }
+    const bool moving = amps > 0.9f && amps < 1.0f;
+    const bool bound = amps > 0.13f && !moving;
+    const float defl = fabsf(ra.sv.position_us - 1500.0f) * DEG_PER_US;
+    const float want = bound ? amps
+        : 0.028f + 0.004f * defl + (moving ? 0.35f : 0.0f);
+    out += (want - out) / 250.0f;
+    return out + 0.001f * jitter();
+}
+
+/**
+ * @brief The rail of a 50ms window.
+ *
+ * The model gives 6000mV or nothing.  The rail is the run's 5.0V: it
+ * rises and falls over some windows, sags 0.12V an ampere and carries
+ * white noise of 2mV.
+ *
+ * @param mv the model's rail, mV
+ * @param ma the window's mean current, mA
+ * @return the rail read, mV
+ */
+static uint16_t ra_video_mv(uint16_t mv, int ma)
+{
+    static float rail;
+    const float want = mv > 0u ? 5020.0f - 0.12f * (float)ma : 0.0f;
+    rail += (want - rail) * (want > rail ? 0.45f : 0.30f);
+    const float read = rail + (rail > 100.0f ? 2.0f * jitter() : 0.0f);
+    return (uint16_t)(read < 0.0f ? 0.0f : read + 0.5f);
+}
 
 static const char *g_dir;
 static unsigned g_n;

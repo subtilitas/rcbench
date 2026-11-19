@@ -4507,7 +4507,8 @@ static void pose_servo_views(ui_screen_id_t id, const char *view)
             settings_set(SET_SERVO_TARGET, 1.0f);
             servo_screen_set_drive(1u, 13u, true);
         }
-        if (strcmp(view, "servo-rbmod") == 0) {
+        if (strcmp(view, "servo-rbmod") == 0
+            || strcmp(view, "servo-hub-rbmod-port") == 0) {
             /* The carrier's PROG PORT 1 on GPIO 13, PORT PWM and the PROG
              * 5V off: ARM switches both on. */
             prog_choice_set_far_minor(LINK_MINOR_CARRIER_PWM);
