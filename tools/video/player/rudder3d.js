@@ -211,7 +211,7 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   });
   const from = wires.getCenter(new THREE.Vector3());
   // The header the plug goes into, in the bench's own frame.
-  let socket = [48, 12, 54];
+  let socket = [43, 12, 54];
   try {
     const at = rig.anchors.J1();
     // A case without the carrier gives its origin: no header there.
@@ -225,22 +225,23 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
     scene.add(m);
     return m;
   });
-  // The lead's plug: a 3-pin servo connector, 7.6 x 2.6 x 14mm, black,
-  // its three contacts showing at the wires' end.
+  // The lead's plug: a 3-pin servo connector, 2.6 x 7.6 x 14mm, black,
+  // standing on its narrow side: a header holds 4 plugs side by side,
+  // each with its 3 pins one over the other.
   const plug = new THREE.Group();
-  const shell = new THREE.Mesh(new THREE.BoxGeometry(7.8, 2.8, 14),
-    new THREE.MeshStandardMaterial({color: 0x15171c, roughness: .5}));
+  const shell = new THREE.Mesh(new THREE.BoxGeometry(2.6, 7.8, 14),
+    new THREE.MeshStandardMaterial({color: 0x3a3f4a, roughness: .45}));
   shell.castShadow = true;
   plug.add(shell);
   WIRES.forEach((color, i) => {
     const eye = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, .4),
       new THREE.MeshStandardMaterial({color: 0xd4ad38, metalness: .6,
                                       roughness: .35}));
-    eye.position.set((i - 1) * 2.54, 0, 7.1);
+    eye.position.set(0, (1 - i) * 2.54, 7.1);
     plug.add(eye);
-    const tab = new THREE.Mesh(new THREE.BoxGeometry(1.7, .5, 5),
+    const tab = new THREE.Mesh(new THREE.BoxGeometry(.5, 1.7, 5),
       new THREE.MeshStandardMaterial({color, roughness: .6}));
-    tab.position.set((i - 1) * 2.54, 1.5, -3.5);
+    tab.position.set(1.4, (1 - i) * 2.54, -3.5);
     plug.add(tab);
   });
   scene.add(plug);
@@ -248,7 +249,10 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   // The lead from the servo to the plug, laid anew when the bench moves.
   const lay = () => {
     scene.updateMatrixWorld(true);
-    const port = bench.localToWorld(new THREE.Vector3(...socket));
+    // One of the header's 4 places, 2.54mm apart: the second from its
+    // middle.
+    const port = bench.localToWorld(
+      new THREE.Vector3(socket[0] - 3.81, socket[1], socket[2]));
     // The way out of the header: the bench's connector wall faces +z.
     const out = new THREE.Vector3(0, 0, 1).transformDirection(
       bench.matrixWorld);
@@ -258,7 +262,7 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
     wayKey = key;
     const back = port.clone().addScaledVector(out, 14);
     const clear = port.clone().addScaledVector(out, 40);
-    clear.y = Math.max(3, clear.y * .5);
+    clear.y = Math.max(4, clear.y * .5);
     way = new THREE.CatmullRomCurve3([
       from, new THREE.Vector3(from.x, from.y - 2, 168),
       new THREE.Vector3(from.x * .5 + clear.x * .5, 3,
@@ -267,7 +271,8 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
     leads.forEach((m, i) => {
       m.geometry.dispose();
       m.geometry = new THREE.TubeGeometry(way, 160, .55, 8);
-      m.position.set((i - 1) * 1.15, 0, 0);
+      // The three wires one over the other, as they enter the plug.
+      m.position.set(0, (1 - i) * 1.15, 0);
     });
     plug.position.copy(port).addScaledVector(out, 7);
     plug.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, -1), out);
