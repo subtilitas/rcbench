@@ -49,10 +49,10 @@ LIVE's right card, from the top:
 | Row | Shows |
 |---|---|
 | PORT button | what the tester drives, `protocol pins`: `SERVO PWM GPIO 2`, `PROG PORT 1 GPIO 13`, or a warning; a tap opens the list where it is picked ([the PORT button](servo-settings.md#the-port-button)) |
-| READY | one row per check: PORT, SUPPLY and ARM; RUDDER adds ANGLE and ZERO |
+| READY | one row per check: PORT, ZERO, SUPPLY and ARM; SWEEP has no ZERO, RUDDER adds ANGLE. ZERO is the zero MEASURED reads from: a tap with a reading on show takes the AS5600's count as ENC CENTER, or the IMU's own ZERO with ANGLE SOURCE IMU, ARMED or SAFE |
 | SET V, SET A | the PD mini's set points; a tap opens SUPPLY's keypad. On the carrier's programming port `PROG 5V`, `5V FIXED` |
 | plot | volts, amps and watts of what feeds the servo over the last 9.0s, right of SET A, under a legend such as `5.02V  0.120A  0.60W` |
-| SPEED | the rate the bench may move the output, 100% passes the command straight through |
+| SPEED | the rate the bench may move the output, 100% passes the command straight through; SPEED and its value stand left of the track |
 | type pill | the servo type, frame rate and pulse range in force: `STANDARD PWM  50Hz  1000-2000`; a tap opens the [servo profile](servo-settings.md) on TYPE, on a SAFE bench |
 | CENTER, RELEASE | SWEEP shows SWEEP and RELEASE |
 | rail line | the meter of what feeds the servo on the left, its volts and amps on the right: `6.00V  0.120A` |

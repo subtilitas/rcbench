@@ -481,7 +481,7 @@ TEST_CASE(the_card_takes_the_output_cards_place_on_every_function)
     CHECK(ready_card_rect().h < 436 - 62);
     go(SERVO_FN_LIVE);
     CHECK(!ready_shown());
-    CHECK_EQ(ready_count(), 3);
+    CHECK_EQ(ready_count(), 4);            /* PORT, ZERO, SUPPLY, ARM */
     go(SERVO_FN_KST);
     CHECK(!ready_shown());
     CHECK(!drive_shown());

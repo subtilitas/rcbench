@@ -1023,8 +1023,9 @@ IOmcu holds AS5600 on: AS5600 switched on while ARMED gives a run
 without angle columns until the set-up has been taken in a SAFE state.
 
 The angle is the sensor's 12-bit count less the center count (AS5600 center,
-or ENC CENTER on RUDDER's OPTIONS list, which takes the live count with the servo at
-its neutral), in degrees from -180 to just under 180. The sensor counts up in
+or ENC CENTER on LIVE's and RUDDER's OPTIONS lists or LIVE's ZERO row, each
+of which takes the live count with the servo at its neutral), in degrees
+from -180 to just under 180. The sensor counts up in
 the direction its DIR pin is strapped for; the test assumes the angle rises
 with the pulse width, so a DIR strap that runs the other way shows as an
 angle error of twice the travel. Commanded angles are the screen's: -90
@@ -1157,7 +1158,7 @@ at once with the INA3221's reason.
 ANGLE SOURCE sets where the servo test, the LIMIT RUN and the SERVO run
 log take the horn's angle from: `AS5600`, the default, or `IMU`. With
 `IMU` the angle is the IMU's AXIS with its SIGN, from the zero the IMU
-screen takes (ZERO). The setting is the second row of SETUP > SENSORS >
+screen's ZERO or LIVE's ZERO row takes. The setting is the second row of SETUP > SENSORS >
 IMU, shown with the IMU off too, and in the ANGLE SOURCE list.
 
 The ANGLE SOURCE list opens over the left column from the READY row ANGLE
@@ -1207,7 +1208,9 @@ take those, and the screens show them to 0.01°. The IMU's angle passes
 its IMU filter first ([The Bluetooth IMU](IMU.md#the-filter)).
 The sensor's stated resolution is 0.05 to 0.2° on X and Y and 1° on Z,
 which needs the magnetometer (not measured on the bench). AS5600 center
-does not apply to the IMU, and ENC CENTER takes no count from it.
+does not apply to the IMU, and ENC CENTER takes no count from it. LIVE's
+ZERO row follows the source: ENC CENTER from the AS5600's count, the
+IMU's own ZERO with ANGLE SOURCE IMU ([Screens](Screens.md#servo)).
 
 | | AS5600 | IMU |
 | --- | --- | --- |
@@ -1569,8 +1572,8 @@ is not measured.
 ## ARM switches the supply on LIVE, SWEEP and RUDDER
 
 LIVE, SWEEP and RUDDER show READY rows in the output card's place: PORT,
-SUPPLY and ARM, and on RUDDER ANGLE and ZERO between PORT and SUPPLY
-([Screens](Screens.md#servo)). The rows are `shared/ui/servo_drive_ready.c`.
+SUPPLY and ARM, on LIVE ZERO and on RUDDER ANGLE and ZERO between PORT and
+SUPPLY ([Screens](Screens.md#servo)). The rows are `shared/ui/servo_drive_ready.c`.
 A tap on RUDDER's ANGLE row opens the [ANGLE SOURCE list](#angle-source)
 on a SAFE bench, with a reading or without.
 ARM's 2s hold switches on what the servo needs and reads off, then arms,

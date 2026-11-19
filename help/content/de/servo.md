@@ -49,10 +49,10 @@ Die rechte Karte von LIVE, von oben:
 | Zeile | Inhalt |
 |---|---|
 | Taste PORT | Angesteuerter Ausgang als `Protokoll Pins`, etwa `SERVO PWM GPIO 2`, `PROG-PORT 1 GPIO 13`, oder eine Warnung. Ein Tipp öffnet die Liste, in der er gewählt wird ([die Taste PORT](servo-settings.md#die-taste-port)). |
-| BEREIT | Eine Zeile je Prüfung: PORT, VERSORGUNG und ARM; RUDER zeigt dazu WINKEL und NULLPUNKT. |
+| BEREIT | Eine Zeile je Prüfung: PORT, NULLPUNKT, VERSORGUNG und ARM; SWEEP hat keinen NULLPUNKT, RUDER zeigt dazu WINKEL. NULLPUNKT ist der Nullpunkt, von dem GEMESSEN misst: ein Tippen mit Messwert übernimmt den Zählerstand des AS5600 als SENSOR-MITTE, bei WINKELQUELLE IMU den NULLPUNKT der IMU, bei ARMED oder SAFE. |
 | SET V, SET A | Sollwerte des PD mini; ein Tipp öffnet das Tastenfeld von SUPPLY. Am Programmierport des Carriers `PROG 5V`, `5V FEST`. |
 | Grafik | Volt, Ampere und Watt dessen, was das Servo speist, über die letzten 9.0s, rechts von SET A, unter einer Legende wie `5.02V  0.120A  0.60W`. |
-| TEMPO | Maximale Bewegungsgeschwindigkeit des Ausgangs; 100% gibt Befehle unverändert weiter. |
+| TEMPO | Maximale Bewegungsgeschwindigkeit des Ausgangs; 100% gibt Befehle unverändert weiter. TEMPO und sein Wert stehen links vom Regler. |
 | Typzeile | Aktiver Servotyp, Pulsrate und Pulsbereich, etwa `STANDARD PWM  50Hz  1000-2000`. Ein Tippen öffnet das [Servoprofil](servo-settings.md) bei TYP, nur bei SAFE. |
 | ZENTRIEREN, FREIGEBEN | SWEEP zeigt SWEEP und FREIGEBEN. |
 | Schienenzeile | Messgerät dessen, was das Servo speist, links, Volt und Ampere rechts, etwa `6.00V  0.120A`. |

@@ -145,7 +145,7 @@ TEST_CASE(leaving_servo_switches_off_an_on_a_run_or_the_hv_hold_asked)
     bench.out = false;
     bench_frames(200u);
     while (supply_cmd(&c)) { }
-    tap(SV_RDY_X, SV_DRV_ROW_Y(1));
+    tap(SV_RDY_X, SV_DRV_ROW_Y(2));
     CHECK(servo_screen_output_held());
     scr->tick(0.025f);
     hold_apply(2.3f);

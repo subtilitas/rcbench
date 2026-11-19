@@ -306,7 +306,8 @@ gehen beim nächsten Verbinden.
 
 NULLPUNKT übernimmt die aktuellen Winkel auf dem Panel als Nullpunkt. Dabei
 wird nichts an den Sensor gesendet. Der Nullpunkt geht beim Neustart
-verloren.
+verloren. Die Zeile NULLPUNKT auf SERVO LIVE fordert bei WINKELQUELLE IMU
+denselben NULLPUNKT an.
 
 ## Der Filter
 

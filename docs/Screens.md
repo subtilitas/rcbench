@@ -1812,17 +1812,22 @@ the alert band on a tap. On LIVE OPTIONS opens the servo profile, the
 hub's list ([Settings](#settings)).
 
 LIVE, SWEEP and RUDDER show READY under the PORT button: rows of 30px from
-y 96, each a dot, a label of 10 cells and a state of 20. LIVE and SWEEP
-have PORT, SUPPLY and ARM; RUDDER has PORT, ANGLE, ZERO, SUPPLY and ARM.
-The SET row follows 4px under the last row, y 190 to 238 on LIVE and
-SWEEP and y 250 to 298 on RUDDER: SET V and SET A, 80 x 48px each, 8px
-apart, and the plot to the column's end, 180 x 48px. Under it LIVE and
-SWEEP have SPEED, its label at y 244 and its track at y 268 to 308. All
-three have the type pill at y 318 to 350. A tap on the pill opens the
-servo profile, the hub's list, in the OPTIONS list's place with TYPE in
-view; it opens on a SAFE bench only and names the refusal in the alert
-band otherwise, as OPTIONS does. LIVE has CENTER and RELEASE,
-SWEEP has SWEEP and RELEASE, each 174 x 48px at y 356. The rail line at
+y 96, each a dot, a label of 10 cells and a state of 20. LIVE has PORT,
+ZERO, SUPPLY and ARM; SWEEP has PORT, SUPPLY and ARM; RUDDER has PORT,
+ANGLE, ZERO, SUPPLY and ARM. The SET row follows 4px under the last row,
+y 220 to 268 on LIVE, y 190 to 238 on SWEEP and y 250 to 298 on RUDDER:
+SET V and SET A, 80 x 48px each, 8px apart, and the plot to the column's
+end, 180 x 48px.
+
+| Control | LIVE | SWEEP | RUDDER |
+| --- | --- | --- | --- |
+| SPEED | track x 716 to 1004, y 274 to 314 (288 x 40px); SPEED over its value in the 60px left of it | label row y 244, track y 268 to 308 across the column (356 x 40px) | none |
+| type pill, 356 x 32px | y 324 to 356 | y 318 to 350 | y 318 to 350 |
+| buttons, 174 x 48px each | CENTER and RELEASE, y 360 to 408 | SWEEP and RELEASE, y 356 to 404 | none |
+
+A tap on the pill opens the servo profile, the hub's list, in the OPTIONS
+list's place with TYPE in view; it opens on a SAFE bench only and names
+the refusal in the alert band otherwise, as OPTIONS does. The rail line at
 y 412 names the meter of what feeds the servo and reads its volts and
 amps, `5.02V  0.120A`, or `--V  --A` without a reading; with the panel's
 model as the supply, SIMULATED follows the name.
@@ -1867,6 +1872,7 @@ mini's values never stand in for the PROG 5V.
 | --- | --- | --- | --- |
 | PORT | the port line; on a programming port PORT PWM reads on | on a programming port while SAFE with PORT PWM off: ARM switches it on. Without a target the port line in the warning colour | none |
 | ANGLE, RUDDER | the angle source's name | `ANGLE SOURCE: NO READING`; a tap opens the source's settings | none |
+| ZERO, LIVE | `SET` | `SET ZERO WITH THE SURFACE AT NEUTRAL`, tag `ZERO NOT SET`; a tap sets the zero MEASURED reads from | none |
 | ZERO, RUDDER | `SET` | `SET ZERO WITH THE SURFACE AT NEUTRAL`; a tap sets the zero | none |
 | SUPPLY | the rail reads 3.0V or more without a PD mini: `FED FROM ELSEWHERE` | while SAFE and off: `ARM SWITCHES IT ON`. A rail at 3.0V or more with the PD mini off: `FED FROM ELSEWHERE`, and ARM leaves the PD mini off. No PD mini answers: `EXTERNAL`. A programming port holds the PD mini | `ON` for PROG 5V, `ON 6.00V` for the PD mini, while it feeds the servo. A set point past 6.0V: `TAP: HV WARNING`; a tap opens OUTPUT ON's HV warning. PROG 5V not read or held by a programming port |
 | ARM | none | `HOLD 2s`; `ARM ASKED` while the hold's steps run | `ARMED`. A programmer, a limit run or an automatic test that keeps ARM from the bench, named |
@@ -1876,8 +1882,26 @@ programming port, PD MINI where a PD mini answers, SUPPLY where none does.
 A tap on a row names its state in the alert band, for example
 `SUPPLY: No PD mini answers: the bench does not switch the servo's
 supply.`, unless the tap fixes it. PORT opens the port list. No row takes a
-press while another press is held, while ARM's steps run, or while the
-bench is not SAFE.
+press while another press is held or while ARM's steps run. ZERO takes
+its tap ARMED and SAFE: a zero drives nothing, and the surface sits at
+neutral while the servo holds CENTER.
+
+LIVE's ZERO is the zero MEASURED reads from; after the tap MEASURED reads
++0.0° at that position. It works for both angle sources:
+
+| ANGLE SOURCE | A tap with a reading on show | Reads SET |
+| --- | --- | --- |
+| AS5600 | takes the live count, 0 to 4095, as ENC CENTER and asks a save: the setting of ENC CENTER on LIVE's and RUDDER's lists and of SETUP > SENSORS > AS5600 center | ENC CENTER is not 0, its default, or a count was taken since the panel started; a center kept from before a restart reads SET |
+| IMU | asks the IMU's own ZERO, the IMU screen's: every IMU angle, roll, pitch and yaw, from the current position. It drops RUDDER's zero and MAX taken on the IMU, as the IMU screen's ZERO does | the IMU reports its zero taken; the IMU's zero lasts until the restart |
+
+Without a reading from the current link, after a link loss until a new
+reading arrives, while the AS5600 reports no magnet, or without a valid
+IMU reading, a tap takes nothing and names the row's state in the alert
+band: `SET ZERO WITH THE SURFACE AT NEUTRAL`, or `ANGLE SOURCE: NO
+READING` on a row that reads SET. RUDDER's ZERO is RUDDER's own
+deflection zero ([Rudder deflection](Servo.md#rudder-deflection)) and
+changes no ENC CENTER. Current limitation: a count of 0 taken as ENC
+CENTER reads SET until the restart and `ZERO NOT SET` after it.
 
 ARM's steps judge the rail again on every frame until they ask the PD
 mini's ON. A rail fed from elsewhere by then ends them refused, every
@@ -2211,7 +2235,9 @@ with the supply modelled ([The meter](Servo.md#the-meter)).
 
 MEASURED shows the horn angle from the selected source, AS5600 or IMU,
 in tenths of a degree from -180.0° to +179.9°. The AS5600 angle is measured
-from its center count and read 20 times per second. It requires AS5600
+from its center count, ENC CENTER, and read 20 times per second. LIVE's
+ZERO row sets that center from the live count, the IMU's zero with ANGLE
+SOURCE IMU. It requires AS5600
 enabled under SETUP > SENSORS, a responding sensor and a detected magnet.
 No response or no magnet (STATUS MD clear) gives `---`; the count is then
 not a valid angle. A weak or strong magnet warning leaves the angle visible
@@ -2708,7 +2734,7 @@ until SAVE.
 | Screen | OPTIONS opens |
 | --- | --- |
 | the hub | the servo profile: OUTPUT with TYPE, FRAME RATE, PULSE MIN, PULSE CENTER, PULSE MAX, TRIM, TRAVEL, REVERSE and HV SERVO; DUT with NAME and REPORT |
-| LIVE | the servo profile, the hub's list |
+| LIVE | the servo profile, the hub's list; ANGLE with ENC CENTER under it |
 | SWEEP | CURVE, SPEED, Range and Dwell time |
 | TEST | VOLTAGE STEPS: Step 4.8V, Step 6.0V, HV SERVO, Step 7.4V, Step 8.4V; BROWN-OUT: Brown-out, Brown-out minimum voltage, Brown-out step; PASS/FAIL LIMITS: Stall threshold, Idle current max, Holding current max, Travel time max; LENGTH AND TIMING: Length by, Test time, Movements, Dwell time, Settling time; RANGE: Range, OUTPUT; DUT: DUT name, Report |
 | LIMIT RUN | MODE, SERVO, Hitec D receive (with SERVO at HITEC D SERIES), SERVO PULSES, CURRENT, Wait before PWM, DUT name and User logs; a run programs at 5.0V ([Servo](Servo.md#the-runs-50v)). CURRENT is SUPPLY's SET A, `SET A 2.00A`, a tap its keypad; `--` and locked without a PD mini ([Servo](Servo.md#the-runs-current-limit)) |
@@ -2803,7 +2829,7 @@ APPLY and CANCEL buttons ending 8px above the card floor.
 | LIMIT RUN > OPTIONS | SERVO PULSES | KEEP or 1000-2000; locked while PORT is not on a PROG PORT or SERVO is on a HITEC entry. 1000-2000 writes the servo's PULSE LOWER and PULSE UPPER to 1000.0 and 2000.0us in the run's read session, before the search. KEEP by default; for the session |
 | the hub's list | NAME | the device under test, up to 23 characters, for the report |
 | the hub's list | REPORT | a text report beside each test's log |
-| RUDDER's list | ENC CENTER | a tap takes the live count as the center, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 center |
+| LIVE's and RUDDER's lists | ENC CENTER | a tap takes the live count as the center, with the servo at its neutral, and sets nothing without a reading from the current link (none after a link loss until a new one arrives) or while the sensor reports no magnet; the row shows the stored count, 0 to 4095, and is dimmed while AS5600 is off. The same setting as SETUP, SENSORS, AS5600 center |
 | SERVO > KST > OPTIONS | KST EXPERT MODE | whether the [KST and Chaservo programmer](ServoProgrammer.md#expert-mode) shows DEAD BAND, BOOST, STRETCH, RELEASE PAIRING and the LOCKED tab; OFF by default, ON after a 2s hold (a shorter press shows the hint on the band), OFF with a tap. Kept across restarts |
 
 TRIM is the only keypad accepting a sign. Its `+/-` key, between the
@@ -2819,9 +2845,10 @@ their usual key positions.
 AS5600, the output encoder, is switched on and off on SETUP > SENSORS
 alone ([the output encoder](#sensors-the-output-encoder)). It adds the
 horn's angle to the MEASURED row and to a run's CSV and report
-([Servo](Servo.md#the-output-encoder)). ENC CENTER on RUDDER's list takes
-the live count as the center, with the servo at its neutral; without a
-reading its line says `No AS5600 reading: set it up on SENSORS`.
+([Servo](Servo.md#the-output-encoder)). ENC CENTER on LIVE's and RUDDER's
+lists, and LIVE's ZERO row, take the live count as the center, with the
+servo at its neutral; without a reading the list row's line says `No
+AS5600 reading: set it up on SENSORS`.
 
 ![RUDDER's list with the output encoder on](img/servo-encoder.png)
 
@@ -6083,7 +6110,7 @@ sensor bus beside the monitors, at its fixed address 0x36 (protocol 4.9):
 | Setting | Range | Default | |
 | --- | --- | --- | --- |
 | AS5600 | ON, OFF | OFF | the output encoder; it takes the sensor bus's SDA and SCL above, and needs both pins set |
-| AS5600 center | 0 to 4095, 1 count steps | 0 | the sensor's 12-bit count with the servo at its neutral; 4096 counts a turn, 0.0879 degrees a count. The SERVO screen's ENC CENTER sets it from the live reading |
+| AS5600 center | 0 to 4095, 1 count steps | 0 | the sensor's 12-bit count with the servo at its neutral; 4096 counts a turn, 0.0879 degrees a count. The SERVO screen's ENC CENTER and LIVE's ZERO set it from the live reading |
 
 The panel writes the enable bit with the rest of the bus frame, 500ms after
 the last edit and only while the bench is SAFE, to an IOmcu that

@@ -21,11 +21,13 @@
  *     apart from y 64; its CLOSE x 478 to 618, y 12 to 60;
  *   - the output card from SV_RCARD_X, y 62 to 436, its inner column SV_RC_X
  *     and SV_RC_W.  On LIVE, SWEEP and RUDDER: the READY rows, 30px from
- *     y 96; the SET row 4px under them, y 190 to 238 on LIVE and SWEEP,
- *     250 to 298 on RUDDER: SET V and SET A, 80px each from SV_RC_X, 8px
- *     apart, the plot to the column's end; on LIVE and SWEEP SPEED's track
- *     at y 268 to 308; the type pill at y 318 to 350; CENTER (LIVE) or
- *     SWEEP (SWEEP) and RELEASE, half of it each, y 356 to 404; the rail
+ *     y 96; the SET row 4px under them, y 220 to 268 on LIVE, 190 to 238
+ *     on SWEEP, 250 to 298 on RUDDER: SET V and SET A, 80px each from
+ *     SV_RC_X, 8px apart, the plot to the column's end; SPEED's track at
+ *     y 274 to 314 from SV_SPEED_X on LIVE, at y 268 to 308 across the
+ *     column on SWEEP; the type pill at y 324 to 356 on LIVE, 318 to 350
+ *     on SWEEP and RUDDER; CENTER (LIVE) or SWEEP (SWEEP) and RELEASE,
+ *     half of it each, y 360 to 408 on LIVE, 356 to 404 on SWEEP; the rail
  *     line at y 412.  SV_SUP_* name where the output card's SET row and
  *     OUTPUT ON once were, y 174 to 222: on LIVE the SET row's plot.
  *
@@ -114,18 +116,26 @@
 /** @brief A page of rows' row @p r, the middle of its value. */
 #define SV_LIST_ROW_Y(r)   (109 + 70 * (r))
 
-/** @brief SPEED's label row over its track on LIVE and SWEEP: y 244 to
- *         264. */
+/** @brief SPEED's label row over its track on SWEEP: y 244 to 264. */
 #define SV_SPEED_ROW_Y     244
-/** @brief SPEED's track, its middle row: y 268 to 308. */
+/** @brief SPEED's track, a row inside it on LIVE (y 274 to 314) and on
+ *         SWEEP (y 268 to 308). */
 #define SV_SPEED_Y         288
-/** @brief The type pill under the SET row, y 318 to 350. */
+/** @brief LIVE's SPEED track's left end: SPEED over its value takes the
+ *         column's first 60px, 8px clear of the track; 288px wide. */
+#define SV_SPEED_X         (SV_RC_X + 68)
+#define SV_SPEED_W         288                /**< LIVE's track's width. */
+/** @brief The type pill under SWEEP's SPEED and RUDDER's SET row, y 318
+ *         to 350. */
 #define SV_TAG_Y           318
+/** @brief The same under LIVE's SPEED, y 324 to 356. */
+#define SV_TAG_LV_Y        324
 #define SV_TAG_H           32                 /**< Its height. */
-/** @brief The SET row of LIVE, SWEEP and RUDDER (servo_drive_ready.c):
- *         its middle row under LIVE's and SWEEP's three READY rows, y 190
- *         to 238, and under RUDDER's five, y 250 to 298. */
+/** @brief The SET row of SWEEP (servo_drive_ready.c): its middle row
+ *         under three READY rows, y 190 to 238; LIVE's under four, y 220 to
+ *         268, and RUDDER's under five, y 250 to 298. */
 #define SV_SET_Y           214
+#define SV_SET_LV_Y        244                /**< The same on LIVE. */
 #define SV_SET_RUD_Y       274                /**< The same on RUDDER. */
 /** @brief SET V's box, x SV_RC_X to + 80, its middle. */
 #define SV_SET_V_X         (SV_RC_X + 40)
@@ -136,10 +146,12 @@
 #define SV_PLOT_X          (SV_RC_X + 176 + 90)
 /** @brief Whether (@p x, @p y) is on LIVE's plot. */
 #define SV_IN_PLOT(x, y)   ((x) >= SV_PLOT_X - 90 && (x) < SV_PLOT_X + 90 \
-                            && (y) >= SV_SET_Y - 24 && (y) < SV_SET_Y + 24)
+                            && (y) >= SV_SET_LV_Y - 24                    \
+                            && (y) < SV_SET_LV_Y + 24)
 /** @brief Whether (@p x, @p y) is on LIVE's SET V. */
 #define SV_IN_SET_V(x, y)  ((x) >= SV_SET_V_X - 40 && (x) < SV_SET_V_X + 40 \
-                            && (y) >= SV_SET_Y - 24 && (y) < SV_SET_Y + 24)
+                            && (y) >= SV_SET_LV_Y - 24                    \
+                            && (y) < SV_SET_LV_Y + 24)
 
 /** @brief The left column the keypad, the keyboard and the programmer
  *         cover: OV_X, OV_Y, OV_W and OV_H of servo_screen_int.h, down to
@@ -153,15 +165,17 @@
 #define SV_RC_X            (SV_RCARD_X + 12)  /**< The inner column. */
 #define SV_RC_W            (SV_RCARD_W - 24)  /**< Its width: 356. */
 /** @brief CENTER on LIVE, SWEEP on SWEEP, and RELEASE on both
- *         (servo_drive_ready.c), 174px each, 8px apart: their row and the
+ *         (servo_drive_ready.c), 174px each, 8px apart: a row inside both
+ *         rows, LIVE's y 360 to 408 and SWEEP's y 356 to 404, and the
  *         middle of each. */
 #define SV_BTN_Y           (356 + 24)
 #define SV_CENTER_X        (SV_RC_X + 87)            /**< CENTER, LIVE. */
 #define SV_SWEEP_X         (SV_RC_X + 87)            /**< SWEEP, SWEEP. */
 #define SV_RELEASE_X       (SV_RC_X + 182 + 87)      /**< RELEASE. */
 /** @brief The READY rows on LIVE, SWEEP and RUDDER: card row @p i, 30px
- *         from y 96, its middle.  LIVE and SWEEP: PORT 0, SUPPLY 1, ARM 2;
- *         RUDDER: PORT 0, ANGLE 1, ZERO 2, SUPPLY 3, ARM 4. */
+ *         from y 96, its middle.  LIVE: PORT 0, ZERO 1, SUPPLY 2, ARM 3;
+ *         SWEEP: PORT 0, SUPPLY 1, ARM 2; RUDDER: PORT 0, ANGLE 1, ZERO 2,
+ *         SUPPLY 3, ARM 4. */
 #define SV_DRV_ROW_Y(i)    (96 + 30 * (i) + 15)
 /** @brief ARM FIRST on LIVE's card, under the horn's angle: its line. */
 #define SV_HINT_X          24

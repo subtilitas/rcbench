@@ -507,6 +507,14 @@ servo_seq_need_t drive_seq_need(void);
 /** @brief A tap on card row @p i: its fix, or its reason in the alert
  *         band.  @param i the row */
 void drive_ready_tap(int i);
+/** @brief ENC CENTER: the AS5600's live count as its center, with ANGLE
+ *         SOURCE AS5600 and a reading from the current link on show.
+ *  @return whether it was taken */
+bool drive_enc_center_take(void);
+/** @brief Whether LIVE's ZERO reads SET: the IMU's own zero taken with
+ *         ANGLE SOURCE IMU; with the AS5600 an ENC CENTER other than 0,
+ *         or one taken since boot.  @return true then */
+bool drive_zero_set(void);
 /** @brief The output card's controls laid out for the function shown:
  *         SPEED, CENTER, SWEEP and RELEASE where it has them. */
 void drive_layout(void);

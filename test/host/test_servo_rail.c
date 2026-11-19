@@ -26,7 +26,7 @@
  * is 32 of the 35 cells the 356px pill holds, 32px tall on LIVE.  A typed end reaches the row
  * at once.
  */
-#define TAG_BOX_Y SV_TAG_Y
+#define TAG_BOX_Y SV_TAG_LV_Y
 
 #define TAG_BOX_H SV_TAG_H
 

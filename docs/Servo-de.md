@@ -1121,8 +1121,9 @@ Schaltest du AS5600 in ARMED ein, fehlen deshalb die Winkelspalten,
 bis die Einstellung in SAFE übernommen wurde.
 
 Der Winkel ist der 12-Bit-Zählerstand des Sensors minus der Mitte (AS5600-Mitte
-oder SENSOR-MITTE in den OPTIONEN von RUDER, die den aktuellen Zählerstand nimmt,
-wenn das Servo in Neutral steht), in Grad von -180 bis knapp unter 180. Der
+oder SENSOR-MITTE in den OPTIONEN von LIVE und RUDER oder die Zeile NULLPUNKT
+auf LIVE, die jeweils den aktuellen Zählerstand nehmen, wenn das Servo in
+Neutral steht), in Grad von -180 bis knapp unter 180. Der
 Sensor zählt in der Richtung hoch, auf die sein DIR-Pin gelegt ist; der Test
 nimmt an, dass der Winkel mit der Pulsbreite steigt, eine DIR-Beschaltung in
 die andere Richtung zeigt sich also als Winkelfehler vom Doppelten des Wegs.
@@ -1264,7 +1265,8 @@ offen ist, beendet den Lauf sofort mit dem Grund des INA3221.
 WINKELQUELLE legt fest, woher Servotest, ENDLAGENLAUF und
 SERVO-Aufzeichnung den Hornwinkel beziehen: `AS5600` als Vorgabe oder
 `IMU`. Bei `IMU` wird die gewählte IMU-Achse mit dem IMU-Vorzeichen
-verwendet, bezogen auf den auf der IMU-Seite gesetzten NULLPUNKT. Die
+verwendet, bezogen auf den NULLPUNKT, den die IMU-Seite oder die Zeile
+NULLPUNKT auf LIVE setzt. Die
 Einstellung ist die zweite Zeile unter SETUP > WIRELESS > IMU, auch bei
 ausgeschalteter IMU gezeigt, und steht in der Liste WINKELQUELLE.
 
@@ -1318,7 +1320,10 @@ sie auf 0,01°. Der Winkel der IMU durchläuft zuerst ihren IMU-Filter
 ([Die Bluetooth-IMU](IMU-de.md#der-filter)). Die angegebene Sensorauflösung beträgt 0,05 bis
 0,2° auf X und Y sowie 1° auf Z. Z benötigt das Magnetometer; dies ist
 am Prüfstand nicht gemessen. AS5600-Mitte gilt nicht für die IMU,
-und SENSOR-MITTE übernimmt keinen Zählerstand von ihr.
+und SENSOR-MITTE übernimmt keinen Zählerstand von ihr. Die Zeile
+NULLPUNKT auf LIVE folgt der Quelle: SENSOR-MITTE aus dem Zählerstand des
+AS5600, bei WINKELQUELLE IMU der eigene NULLPUNKT der IMU
+([Bildschirme](Screens-de.md#servo)).
 
 | | AS5600 | IMU |
 | --- | --- | --- |
@@ -1627,8 +1632,9 @@ gemessen.
 ## ARM schaltet die Versorgung auf LIVE, SWEEP und RUDER
 
 LIVE, SWEEP und RUDER zeigen Zeilen von BEREIT an der Stelle der
-Ausgangskarte: PORT, VERSORGUNG und ARM, auf RUDER dazu WINKEL und
-NULLPUNKT zwischen PORT und VERSORGUNG ([Bildschirme](Screens-de.md#servo)).
+Ausgangskarte: PORT, VERSORGUNG und ARM, auf LIVE dazu NULLPUNKT und auf
+RUDER WINKEL und NULLPUNKT zwischen PORT und VERSORGUNG
+([Bildschirme](Screens-de.md#servo)).
 Die Zeilen sind `shared/ui/servo_drive_ready.c`. Ein Tippen auf die Zeile
 WINKEL von RUDER öffnet bei SAFE die [Liste WINKELQUELLE](#winkelquelle),
 mit Messwert oder ohne. Das 2s-Halten von ARM
