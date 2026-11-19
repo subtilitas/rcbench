@@ -14,12 +14,16 @@ history is in git.
   mounting holes each, 49.5mm x 10.0mm apart, horn 21.0mm across. The
   overlap check covers it
   ([Mechanical parts](hardware/mechanical/README.md#standard-servo)).
+- `hardware/mechanical/`: `wit_imu.step`, a WitMotion inertial sensor in
+  its case with two slotted ears, 36.1mm x 51.5mm x 15.0mm, with the
+  label's print, from a product picture with dimensions
+  ([Mechanical parts](hardware/mechanical/README.md#witmotion-inertial-sensor)).
 - `hardware/mechanical/`: `kst_x10.step`, the KST X10 wing servo from a
   dimension drawing, and a reference layout round it built by
   `_gen_flap_drive.py`: `flap_drive.step` (carbon frame with counter
-  bearing, double arm, pushrod, horn), `flap_drive_wing.step` (an 88mm
-  slice of wing, RG-15 on a 230mm chord, with a flap hinged in the lower
-  skin) and `flap_drive_assembly.step`. The script's `--check`, run in CI,
+  bearing, double arm, pushrod, horn above the flap),
+  `flap_drive_wing.step` (an 88mm slice of wing, RG-15 on a 230mm chord,
+  with a flap hinged in the lower skin) and `flap_drive_assembly.step`. The script's `--check`, run in CI,
   fails when a file differs from the script or two solids share volume;
   `travel()` gives the flap's angle for an angle of the arm
   ([Mechanical parts](hardware/mechanical/README.md#kst-x10-with-frame-and-flap-drive)).

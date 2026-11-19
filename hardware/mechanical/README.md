@@ -20,6 +20,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `kst_x10.py` | spec of the KST X10 wing servo, from a dimension drawing and photos |
 | `_gen_flap_drive.py` | builds a frame with counter bearing for the KST X10, its linkage and a slice of wing with a flap with OpenCASCADE, checks that no two solids share volume |
 | `_rg15.py` | coordinates of the RG-15 airfoil |
+| `wit_imu.py` | spec of a WitMotion inertial sensor in its case, from a product picture with dimensions |
 | `servo_standard.py` | spec of a standard size servo with a round horn, from a dimensioned sketch |
 | `_board.py` | a module's board for the specs: the plate, and parts placed by their position from the board's center |
 | `_font.py` | outlines of the letters of board print, written by `_gen_font.py` from OpenCV's single-stroke font |
@@ -29,7 +30,7 @@ models from the specs with `hardware/kicad/tools/step_gen.py`.
 | `_measure_step.py` | measures Waveshare's STEP file of the panel board with OpenCASCADE |
 | `_solid.py` | profiles of straight sides and arcs pushed along an axis, and round rods along a path of lines and arcs, turned and moved, as solids with flat, cylindrical and toroidal faces |
 | `_parts.py` | shapes of electronic parts: chip parts, leaded packages, wire sockets, USB sockets, card slot, buttons, pin header, shunt, both halves of the XT90PW |
-| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards, in a cell, in the standard servo or in the KST X10 |
+| `check_overlap.py` | fails when two solids share volume in the panel board's model, in the INA228 module with its case, in one of the 4 module boards, in a cell, in the standard servo, in the KST X10 or in the WitMotion sensor |
 | `check_panel_7b.py` | holds the panel board's model against Waveshare's STEP file |
 | `gen_models.py` | writes `models/` from the specs; `--check` fails on drift |
 | `_stl.py` | reads a binary STL and splits it into its closed parts |
@@ -543,8 +544,8 @@ Limits:
 - Part sizes and heights are the packages' nominal ones, by the look of
   each part in the photo. The chips of the charger and the boost board are
   not identified.
-- The boost board's round pad is drawn as the enable input because it is
-  the only pad besides the 4 corner pads; the board does not name it.
+- The boost board's round pad is the enable input (owner, 2026-11-19); the
+  board does not name it.
 - Not modelled: tracks, vias, pads under parts, the frames printed round
   parts (bar those of the INA219 board), solder, the prints 1R0 and 2R2 on
   the inductors, 4 labels left of the charger's LEDs, the maker's name and
@@ -617,24 +618,22 @@ The layout:
 - 2 blocks on the plate hold an arched strut of 2.0mm, 11mm in front of
   the servo's output end. A brass bush in the strut, on the shaft's axis,
   carries the outer end of the double arm.
-- The arm is 5.5mm from shaft to pin and points to the lower skin. With
+- The arm is 7.0mm from shaft to pin and points to the lower skin. With
   the plate on the upper skin the shaft lies 7.0mm under the plate's
   bonded face, which leaves an arm no room towards that skin.
-- The rod is 81.5mm from pin to eye and 3.0mm across. It runs through a
-  slot in the rear web to a fork between 2 horn plates of 1.5mm. The
-  plates are bonded into the flap's nose and reach forward into the wing;
-  their eye lies 6.0mm over the hinge and 4.0mm before it.
+- The rod is 87.4mm from pin to eye and 3.0mm across. It rises through a
+  slot in the rear web and a slot of 7mm width in the upper skin to a fork
+  between 2 horn plates of 1.5mm. The plates stand on the flap's lower
+  skin and pass through its upper skin. Their eye lies 3.5mm over the
+  flap's upper surface and 1.0mm behind the hinge, 12.9mm over the hinge.
 - The servo comes out through an opening of 60mm x 69mm in the lower
   skin, which a cover closes.
 
 Flap angle for an angle of the arm, from `travel()`:
 
-| Arm, degrees | -30 | -15 | 15 | 30 | 45 | 60 |
-| --- | --- | --- | --- | --- | --- | --- |
-| Flap, degrees, positive down | -32.7 | -14.2 | 12.5 | 23.7 | 33.3 | 40.9 |
-
-At -45 degrees of the arm the rod does not reach: the flap's upward
-travel ends between -30 and -45 degrees of the arm.
+| Arm, degrees | -60 | -45 | -30 | -15 | 15 | 30 | 45 | 60 |
+| --- | --- | --- | --- | --- | --- | --- | --- | --- |
+| Flap, degrees, positive down | -24.4 | -20.3 | -14.7 | -7.8 | 8.4 | 17.1 | 25.5 | 32.8 |
 
 Dimensions of the servo, mm:
 
@@ -657,9 +656,35 @@ Limits:
 - The parts stand at neutral. The collision check covers that position
   only; no deflected position is checked.
 - Threads, the servo's splines, the hinge's tape, the adhesive under the
-  plate, spar caps and ribs are not drawn.
+  plate, spar caps, ribs and a fairing over the rod's slot are not drawn.
 - The cable ends 15mm from the servo and has no plug.
 - Loads, stiffness and the bush's play are not calculated.
+
+## WitMotion inertial sensor
+
+A WitMotion inertial sensor in its black case: a base of 3.0mm with a
+slotted ear at each end, a square body, and a white label with blue print
+that shows the sensor's axes.
+
+![WitMotion sensor](renders/wit_imu.png)
+
+| File | Content | Size, mm | Origin |
+| --- | --- | --- | --- |
+| `wit_imu.step` | base with 2 slotted ears, body, label with its print; 51 solids | 36.1 x 51.5 x 15.0; base 3.0 thick | middle of the base's underside; x across the 36.1, y along the 51.5 towards the ear the label's X arrow points to, z up |
+
+| Dimension | Value | Source |
+| --- | --- | --- |
+| Width, length over the ears, height, base | 36.1mm, 51.5mm, 15.0mm, 3.0mm | picture |
+| Body | 36.1mm x 36.1mm, corner radius 3.0mm | scaled from the picture's outline |
+| Slots | 14.7mm x 3.2mm, 44.5mm apart | scaled from the picture's outline |
+| Ears | 7.7mm long, 27.5mm wide at the body, 20.6mm at the end | scaled from the picture's outline |
+
+Source: one product picture with two dimensioned outlines, which is not in
+the repository. The picture does not name the sensor's type. The label's
+axes are drawn as the picture shows them: X to one ear, Y across, Z out of
+the face. The USB socket, the rounding of the body's upper edge and any
+lamp or switch are not in the picture and not drawn. The maker's logo is
+drawn as the letters "WIT". No dimension is verified on a sensor.
 
 ## Licence
 

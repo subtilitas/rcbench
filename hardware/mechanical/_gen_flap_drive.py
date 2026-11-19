@@ -11,10 +11,11 @@ the skin; the servo's two ears and its tab are screwed to it. Two
 blocks on the plate hold an arched strut in front of the servo's output
 end; a brass bush in the strut carries the outer end of the double arm.
 The arm points away from the plate, to the lower skin. A pushrod runs
-from the pin between the arm's two cheeks to a horn of two carbon
-plates, which are bonded into the flap's nose and reach forward into
-the wing; their eye lies over the hinge. The servo comes out through an
-opening in the lower skin, which a cover closes.
+from the pin between the arm's two cheeks up through a slot in the
+upper skin to a horn of two carbon plates. The plates stand in the
+flap, bonded to its lower skin, and pass through its upper skin; their
+eye lies above the flap's surface, over the hinge. The servo comes out
+through an opening in the lower skin, which a cover closes.
 
 Sources: five photos of an X10 on a frame with counter bearing and a
 double arm, one shop photo of such a frame's parts (not in the
@@ -23,16 +24,17 @@ its look; no part is measured, every size below is chosen here. The
 airfoil is _rg15.py.
 
 Chosen: chord 230, skins 0.8, hinge at 0.75 of the chord, shaft at
-0.38. Plate 2.0, strut 2.0, blocks 6 x 7 x 5. Arm 5.5 from shaft to
-pin, cheeks 2.2 thick and 4.0 apart. Horn eye 6.0 over the hinge and
-4.0 before it, plates 1.5 thick and 2.8 apart. Rod 3.0 across, screws
-M2.5 in brass inserts. The plate lies 0.25 under the skin at the
-nearest point, turned to the skin's slope; the gap is the adhesive's
-and is not drawn.
+0.38. Plate 2.0, strut 2.0, blocks 6 x 7 x 5. Arm 7.0 from shaft to
+pin, cheeks 2.2 thick and 4.0 apart. Horn eye 3.5 over the flap's upper
+surface and 1.0 behind the hinge, plates 1.5 thick and 2.8 apart. Rod
+3.0 across, screws M2.5 in brass inserts. The plate lies 0.25 under
+the skin at the nearest point, turned to the skin's slope; the gap is
+the adhesive's and is not drawn.
 
 Not drawn: threads, the servo's splines, the hinge's tape, adhesive,
-the spar's caps, ribs. The parts stand at neutral; ``travel`` gives the
-flap's angle for an angle of the arm from the same sizes.
+the spar's caps, ribs, a fairing over the rod's slot. The parts stand
+at neutral; ``travel`` gives the flap's angle for an angle of the arm
+from the same sizes.
 
 Frames. The frame's parts are drawn in the servo's frame (kst_x10.py:
 origin on the shaft's axis at the case's output end, z = 0 on the face
@@ -124,15 +126,18 @@ SCREW = (2.5, 4.5, 2.5, 5.5, 0.5, 3.6)  # thread, head, its height,
 #                                         washer, its thickness, insert
 # Arm: shaft to pin, hub radius, eye radius, inner cheek from and to,
 # outer cheek from and to, boss diameter and its end, barrel diameter.
-ARM = (5.5, 3.6, 2.4, 0.8, 3.0, 7.0, 9.2, 5.0, 10.8, 6.0)
+ARM = (7.0, 3.6, 2.4, 0.8, 3.0, 7.0, 9.2, 5.0, 10.8, 6.0)
 PIN = (2.0, 0.6, 9.4)
 ROD = 3.0
 # Rod end at the arm: thickness, half height, straight length, taper's
 # end, half height there, collar's end; collar diameter.
 END = (3.4, 2.2, 11.0, 17.0, 1.6, 21.0, 4.2)
-# Horn: eye over the hinge, eye before the hinge, plate thickness,
-# space between the plates, reach into the flap, eye radius, pin.
-HORN = (6.0, 4.0, 1.5, 2.8, 24.0, 2.2, 1.6)
+# Horn: eye over the flap's upper surface, eye behind the hinge, plate
+# thickness, space between the plates, reach into the flap, eye radius,
+# pin.
+HORN = (3.5, 1.0, 1.5, 2.8, 24.0, 2.2, 1.6)
+EXIT = (3.5, 6.0)               # the rod's slot in the upper skin: half
+#                                 width, length before the rod meets it
 FORK = (2.0, 7.0, 10.0)         # eye radius, straight length, collar's end
 
 X0, X1 = kst_x10.X0, kst_x10.X1
@@ -314,7 +319,8 @@ def joints():
     hinge = (HINGE, height(LOWER, HINGE) + SHELL / 2)
     return {"shaft": (shaft[0], shaft[2]), "pin": (pin[0], pin[2]),
             "hinge": hinge,
-            "eye": (hinge[0] - HORN[1], hinge[1] + HORN[0])}
+            "eye": (HINGE + HORN[1],
+                    height(UPPER, HINGE + HORN[1]) + HORN[0])}
 
 
 def travel(arm):
@@ -493,9 +499,9 @@ def linkage():
     rod = _cyl("x", y, pz, ROD / 2, px + END[5], px + length - collar)
     out.append(("rod", _along(pin, eye, rod), CARBON))
     reach, r = HORN[4], HORN[5]
-    low = (inside(hinge[0] + NOSE[0] - 0.5)[0] + 0.2,
-           inside(hinge[0] + reach)[0] + 0.2)
-    outline = [(ex - r, ez - 1.0), (hinge[0] + NOSE[0] - 0.5, low[0]),
+    front = hinge[0] + NOSE[0] + NOSE[1] + 1.0
+    low = inside(front)[0] + 0.2, inside(hinge[0] + reach)[0] + 0.2
+    outline = [(ex - r, ez - 1.0), (front, low[0]),
                (hinge[0] + reach, low[1]), (hinge[0] + reach, low[1] + 1.5),
                (ex + r, ez + r), (ex - r, ez + r)]
     for i, side in enumerate((-1, 1)):
@@ -533,7 +539,17 @@ def wing():
     shell = _cut(outer, hollow)
     main = _cut(shell, _box(HINGE - GAP / 2, y0 - 2, -50, CHORD + 5, y1 + 2,
                             50))
-    flap = _cut(shell, _box(-5, y0 - 2, -50, HINGE + GAP / 2, y1 + 2, 50))
+    plates = [shape for name, shape, _rgb in linkage()
+              if name.startswith("horn plate")]
+    flap = _cut(shell, _box(-5, y0 - 2, -50, HINGE + GAP / 2, y1 + 2, 50),
+                *plates)
+    j = joints()
+    rise = (j["eye"][1] - j["pin"][1]) / (j["eye"][0] - j["pin"][0])
+    meets = next(x for x in [j["pin"][0] + k * 0.5 for k in range(400)]
+                 if j["pin"][1] + rise * (x - j["pin"][0]) + END[6] / 2
+                 > inside(x)[1])
+    main = _cut(main, _box(meets - EXIT[1], -MID - EXIT[0], 2.0,
+                           HINGE + 1.0, -MID + EXIT[0], 50))
     move, _slope = setting()
     a, b = SHAFT - HATCH[0], SHAFT + HATCH[1]
     rear = -kst_x10.HEIGHT - kst_x10.TAB[1] - EDGE[1]
@@ -562,16 +578,7 @@ def wing():
         if name == "rear web":
             wall = _cut(wall, slot)
         if name == "nose wall":
-            eye = joints()["eye"]
-            tip = (HINGE + HORN[4], inside(HINGE + HORN[4])[0] + 1.7)
-            edge = (eye[0] + HORN[5], eye[1] + HORN[5])
-            top = 0.3 + edge[1] + (tip[1] - edge[1]) * (
-                x + thick - edge[0]) / (tip[0] - edge[0])
-            for side in (-1, 1):
-                c = y + side * (HORN[3] / 2 + HORN[2] / 2)
-                wall = _cut(wall, _box(x - 1, c - HORN[2] / 2 - 0.15, -50,
-                                       x + thick + 1, c + HORN[2] / 2
-                                       + 0.15, top))
+            wall = _cut(wall, *plates)
         walls.append((name, wall, rgb))
     return [("wing", main, SKIN), ("flap", flap, SKIN),
             ("cover", cover, SKIN)] + walls

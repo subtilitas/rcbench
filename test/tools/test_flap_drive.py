@@ -3,7 +3,8 @@
 The servo has the drawing's sizes. Every solid of the assembly is valid
 and no two share volume, the frame's screws meet the servo's holes, the
 strut's bush lies on the shaft's axis, the plate follows the upper
-skin, and the rod turns the flap both ways.
+skin, the horn's eye lies above the flap, and the rod turns the flap both
+ways.
 
 SPDX-License-Identifier: MIT
 """
@@ -72,6 +73,15 @@ def test_assembly_is_sound(built):
     assert len(built["flap_drive_wing"]) == 6
 
 
+def test_horn_stands_out_of_the_flap(built):
+    """The plates reach from the lower skin to above the upper surface."""
+    for i in (1, 2):
+        box = drive.extent(named(built["flap_drive"], f"horn plate {i}"))
+        assert box[2] == pytest.approx(
+            drive.inside(drive.HINGE + 5.5)[0] + 0.2, abs=0.05)
+        assert box[5] > drive.height(drive.UPPER, drive.HINGE) + 5.0
+
+
 def test_screws_meet_the_servos_holes():
     """Each screw's thread runs through a hole of the servo and the plate."""
     parts = drive.frame()
@@ -102,21 +112,21 @@ def test_plate_follows_the_upper_skin(built):
 
 
 def test_joints():
-    """Arm 5.5, the eye 6 over and 4 before the hinge, hinge in the skin."""
+    """Arm 7.0 down; the eye 3.5 over the flap, 1.0 behind the hinge."""
     j = drive.joints()
-    assert math.dist(j["shaft"], j["pin"]) == pytest.approx(5.5)
+    assert math.dist(j["shaft"], j["pin"]) == pytest.approx(7.0)
     assert j["pin"][1] < j["shaft"][1]
-    assert j["eye"] == pytest.approx((j["hinge"][0] - 4.0,
-                                      j["hinge"][1] + 6.0))
+    x = j["hinge"][0] + 1.0
+    assert j["eye"] == pytest.approx((x, drive.height(drive.UPPER, x) + 3.5))
+    assert j["eye"][1] - j["hinge"][1] == pytest.approx(12.9, abs=0.1)
     assert j["hinge"][0] == pytest.approx(0.75 * drive.CHORD)
 
 
 def test_travel():
     """The flap follows the arm: down for a push, up for a pull."""
     assert drive.travel(0.0) == 0.0
-    down, up = drive.travel(45.0), drive.travel(-30.0)
-    assert 30.0 < down < 36.0
-    assert -35.0 < up < -30.0
-    assert drive.travel(-45.0) is None
-    angles = [drive.travel(a) for a in range(-30, 61, 5)]
+    down, up = drive.travel(45.0), drive.travel(-45.0)
+    assert down == pytest.approx(25.5, abs=0.3)
+    assert up == pytest.approx(-20.3, abs=0.3)
+    angles = [drive.travel(a) for a in range(-60, 61, 5)]
     assert all(a < b for a, b in zip(angles, angles[1:], strict=False))
