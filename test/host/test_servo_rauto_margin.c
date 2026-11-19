@@ -1,9 +1,12 @@
 /*
  * AUTO end points (servo_rudder_auto.h): the margin in the pulse length.
  *
- * Under test: the margin's pulse range, 5us a % past 1000us and 2000us,
- * and PULSE LOWER and PULSE UPPER on the KST's 0.8us step rounded toward
- * the center, at 0%, 10% and 50%; the run writes them, drives 1000us and
+ * Under test: the margin's pulse range from the servo's NEUTRAL N, each
+ * side extended by the margin's % of its span from N, and PULSE LOWER and
+ * PULSE UPPER on the KST's 0.8us step rounded toward the center, at N
+ * 1500.0us, 1360.0us and 1640.0us and 0%, 10% and 50%; a NEUTRAL outside
+ * 1360.0us to 1640.0us refused at the read; the pulse write's read back
+ * checked against the read's NEUTRAL; the run writes them, drives 1000us and
  * 2000us only and holds both ends and the verify pass to the target; the
  * bench's PULSE MIN and PULSE MAX widen where narrower than the margin's
  * range, never narrow, and the report names it; a servo that holds the
@@ -25,22 +28,38 @@ static void run_out(void)
     drain();
 }
 
+/* LOWER 1000us - (N - 1000us) x p, UPPER 2000us + (2000us - N) x p: at N
+ * 1500.0us 950 to 2050us at 10%, at N 1640.0us and 50% 680 to 2180us.
+ * N 1501.3us gives 949.87us and 2049.87us, on the 0.8us step inward 950.4us
+ * and 2049.6us, in whole us outward 950 and 2050us; N 0 is 1500.0us;
+ * outside 1360.0us to 1640.0us N is held to the nearer bound. */
 TEST_CASE(the_margin_sets_the_pulse_range_on_the_kst_step)
 {
     static const struct {
+        uint16_t n;
         uint8_t  pct;
         uint16_t us[2], dus[2];
     } k[] = {
-        { 0u,  { 1000u, 2000u }, { 10000u, 20000u } },
-        { 4u,  { 980u, 2020u },  { 9800u, 20200u } },
-        { 10u, { 950u, 2050u },  { 9504u, 20496u } },
-        { 50u, { 750u, 2250u },  { 7504u, 22496u } },
-        { 51u, { 750u, 2250u },  { 7504u, 22496u } },   /* as 50% */
+        { 15000u, 0u,  { 1000u, 2000u }, { 10000u, 20000u } },
+        { 15000u, 4u,  { 980u, 2020u },  { 9800u, 20200u } },
+        { 15000u, 10u, { 950u, 2050u },  { 9504u, 20496u } },
+        { 15000u, 50u, { 750u, 2250u },  { 7504u, 22496u } },
+        { 15000u, 51u, { 750u, 2250u },  { 7504u, 22496u } },   /* as 50% */
+        { 13600u, 0u,  { 1000u, 2000u }, { 10000u, 20000u } },
+        { 13600u, 10u, { 964u, 2064u },  { 9640u, 20640u } },
+        { 13600u, 50u, { 820u, 2320u },  { 8200u, 23200u } },
+        { 16400u, 0u,  { 1000u, 2000u }, { 10000u, 20000u } },
+        { 16400u, 10u, { 936u, 2036u },  { 9360u, 20360u } },
+        { 16400u, 50u, { 680u, 2180u },  { 6800u, 21800u } },
+        { 15013u, 10u, { 950u, 2050u },  { 9504u, 20496u } },
+        { 0u,     10u, { 950u, 2050u },  { 9504u, 20496u } },
+        { 12000u, 50u, { 820u, 2320u },  { 8200u, 23200u } },  /* as 1360 */
+        { 20000u, 50u, { 680u, 2180u },  { 6800u, 21800u } },  /* as 1640 */
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         uint16_t us[2] = { 0u, 0u }, dus[2] = { 0u, 0u };
-        servo_rauto_pulse_range(k[i].pct, us);
-        servo_rauto_kst_pulses(k[i].pct, dus);
+        servo_rauto_pulse_range(k[i].pct, k[i].n, us);
+        servo_rauto_kst_pulses(k[i].pct, k[i].n, dus);
         CHECK_EQ(us[0], k[i].us[0]);
         CHECK_EQ(us[1], k[i].us[1]);
         CHECK_EQ(dus[0], k[i].dus[0]);
@@ -49,9 +68,19 @@ TEST_CASE(the_margin_sets_the_pulse_range_on_the_kst_step)
         CHECK_EQ(dus[0] % SERVO_RAUTO_KST_STEP_DUS, 0u);
         CHECK_EQ(dus[1] % SERVO_RAUTO_KST_STEP_DUS, 0u);
         CHECK(dus[0] >= 10u * us[0] && dus[1] <= 10u * us[1]);
+        /* Inside PULSE LOWER's and PULSE UPPER's 500us to 2500us. */
+        CHECK(dus[0] >= 5000u && dus[1] <= 25000u);
+        /* Each side's span from N grows by the margin, within a step. */
+        const float n = (float)(k[i].n == 0u ? 15000u
+                                : k[i].n < 13600u ? 13600u
+                                : k[i].n > 16400u ? 16400u : k[i].n);
+        const float m = 1.0f + (float)(k[i].pct > 50u ? 50u : k[i].pct)
+                                   / 100.0f;
+        CHECK(fabsf((n - (float)dus[0]) - (n - 10000.0f) * m) < 8.0f);
+        CHECK(fabsf(((float)dus[1] - n) - (20000.0f - n) * m) < 8.0f);
     }
-    servo_rauto_pulse_range(10u, NULL);
-    servo_rauto_kst_pulses(10u, NULL);
+    servo_rauto_pulse_range(10u, 15000u, NULL);
+    servo_rauto_kst_pulses(10u, 15000u, NULL);
     CHECK(!servo_rauto_widen(NULL, NULL));
 }
 
@@ -233,6 +262,102 @@ TEST_CASE(a_hitec_family_takes_margin_0_only_and_writes_no_pulses)
     }
 }
 
+/* NEUTRAL 1640.0us at 50%: each side extends by half its own span from
+ * NEUTRAL, PULSE LOWER 680.0us and PULSE UPPER 2180.0us, and the bench's
+ * PULSE MIN and PULSE MAX widen to 680-2180us; at 1360.0us and 10% 964.0us
+ * and 2064.0us, the bench to 964-2064us.  The report names the NEUTRAL. */
+TEST_CASE(an_off_center_neutral_scales_each_side_from_neutral)
+{
+    static const struct {
+        uint16_t n;
+        uint8_t  pct;
+        uint16_t dus[2], prof[2];
+    } k[] = {
+        { 16400u, 50u, { 6800u, 21800u }, { 680u, 2180u } },
+        { 13600u, 10u, { 9640u, 20640u }, { 964u, 2064u } },
+        { 16400u, 10u, { 9360u, 20360u }, { 936u, 2036u } },
+    };
+    for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
+        rig_init(0u);
+        g.cfg.margin_pct = k[i].pct;
+        g.pulses[0] = k[i].n;
+        CHECK(start());
+        run_out();
+        CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+        CHECK_EQ(g.pulse_ops, 1u);
+        CHECK_EQ(g.pulses[1], k[i].dus[0]);
+        CHECK_EQ(g.pulses[2], k[i].dus[1]);
+        uint16_t prof[2] = { 0u, 0u };
+        CHECK(servo_rauto_widen(&g.run, prof));
+        CHECK_EQ(prof[0], k[i].prof[0]);
+        CHECK_EQ(prof[1], k[i].prof[1]);
+        CHECK(in_report("Margin:         ") && in_report("% from NEUTRAL "));
+    }
+    CHECK(in_report("Margin:         10% from NEUTRAL 1640.0us: servo pulses 936.0-2036.0us; by the linear model 936us reaches 30.3°, 2036us 30.3°; not driven"));
+    CHECK(in_report("Bench pulses:   PULSE MIN/MAX 1000-2000 -> 936-2036us, for the session"));
+}
+
+/* NEUTRAL 1640.0us at 10%: a read back of the 1500.0us range, 950.4 to
+ * 2049.6us, or of a NEUTRAL the write moved, ends the run as ABORTED with
+ * WRITE, nothing widened. */
+TEST_CASE(the_read_back_check_takes_the_reads_neutral)
+{
+    static const uint16_t back[2][3] = {
+        { 16400u, 9504u, 20496u },     /* the 1500.0us range */
+        { 15000u, 9360u, 20360u },     /* NEUTRAL moved */
+    };
+    for (size_t i = 0; i < 2u; ++i) {
+        rig_init(0u);
+        g.cfg.margin_pct = 10u;
+        g.pulses[0] = 16400u;
+        CHECK(start());
+        while (servo_rauto_running(&g.run) && g.op != OP_PULSES) {
+            tick();
+        }
+        CHECK_EQ(g.op, OP_PULSES);
+        CHECK_EQ(g.want_p[0], 9360u);
+        CHECK_EQ(g.want_p[1], 20360u);
+        servo_rauto_pulsed(&g.run, true, back[i], g.now);
+        CHECK_EQ(g.run.verdict, SERVO_RAUTO_ABORTED);
+        CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_WRITE);
+        run_out();
+        CHECK(ended_safe());
+        CHECK(!servo_rauto_widen(&g.run, NULL));
+    }
+}
+
+/* A KST NEUTRAL outside 1360.0us to 1640.0us: FAIL at the read with
+ * NEUTRAL OUTSIDE, LEAVE asked, no pulse write, nothing driven, nothing
+ * widened; the bounds themselves run. */
+TEST_CASE(a_neutral_outside_the_kst_range_fails_at_the_read)
+{
+    static const uint16_t bad[] = { 13599u, 16401u, 0u };
+    for (size_t i = 0; i < sizeof(bad) / sizeof(bad[0]); ++i) {
+        rig_init(0u);
+        g.cfg.margin_pct = 10u;
+        g.pulses[0] = bad[i];
+        CHECK(start());
+        run_out();
+        CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
+        CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NEUTRAL);
+        CHECK_EQ(servo_rauto_why_str(&g.run), SERVO_STR_RA_WHY_NEUTRAL);
+        CHECK_EQ(g.pulse_ops, 0u);
+        CHECK_EQ(g.cmd_hi, RCENTER);
+        CHECK_EQ(g.leave_asks, 1u);   /* the port given back, as NO SERVO */
+        CHECK(!servo_rauto_widen(&g.run, NULL));
+        CHECK(in_report("NEUTRAL outside 1360-1640us"));
+    }
+    static const uint16_t edge[] = { 13600u, 16400u };
+    for (size_t i = 0; i < 2u; ++i) {
+        rig_init(0u);
+        g.cfg.margin_pct = 0u;
+        g.pulses[0] = edge[i];
+        CHECK(start());
+        run_out();
+        CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    }
+}
+
 int main(void)
 {
     RUN(the_margin_sets_the_pulse_range_on_the_kst_step);
@@ -242,5 +367,8 @@ int main(void)
     RUN(pulses_already_at_the_margin_need_no_write_and_still_widen);
     RUN(a_pulse_write_cut_off_or_read_back_otherwise_widens_nothing);
     RUN(a_hitec_family_takes_margin_0_only_and_writes_no_pulses);
+    RUN(an_off_center_neutral_scales_each_side_from_neutral);
+    RUN(the_read_back_check_takes_the_reads_neutral);
+    RUN(a_neutral_outside_the_kst_range_fails_at_the_read);
     return test_summary("servo_rauto_margin");
 }

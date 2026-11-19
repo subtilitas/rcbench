@@ -45,11 +45,16 @@ history is in git.
 
 - RUDDER AUTO: MARGIN lies in the pulse length. 1000us and 2000us aim at
   TARGET itself, 20.0° at TARGET 20.0°; MARGIN p% writes a KST or
-  Chaservo servo's PULSE LOWER 1000 - 5 x p us and PULSE UPPER 2000 + 5 x
-  p us, each on the KST's 0.8us step rounded toward the center: 950.4us
-  and 2049.6us at 10%, up to 750.4us and 2249.6us at 50%. By the linear
-  map 2050us then reaches TARGET x (1 + MARGIN), 22.0°, so a radio's trim
-  past 2000us still moves the surface. The run drives 1000us, 2000us and
+  Chaservo servo's PULSE LOWER 1000us - (N - 1000us) x p/100 and PULSE
+  UPPER 2000us + (2000us - N) x p/100 from the NEUTRAL N it reads, each on
+  the KST's 0.8us step rounded toward the center: 950.4us and 2049.6us at
+  N 1500us and 10%, 750.4us and 2249.6us at 50%, 680.0us and 2180.0us at
+  N 1640us and 50%. By the linear map from N each end then reaches TARGET
+  x (1 + MARGIN), 22.0° at 10%, so a radio's trim past 2000us still moves
+  the surface. A NEUTRAL outside 1360 to 1640us ends the run at the read
+  (`NEUTRAL outside 1360-1640us`); a pulse write read back with another
+  NEUTRAL ends it as a failed write. The report's margin line names a
+  NEUTRAL other than 1500.0us. The run drives 1000us, 2000us and
   PULSE CENTER only, and the verify pass holds each end to TARGET.
   SERVO PULSES, LIMIT RUN's setting, does not change what AUTO writes.
   Where the bench's PULSE MIN and PULSE MAX are narrower than MARGIN's

@@ -10,9 +10,10 @@
  * sim_horn_us(): LEFT ANGLE and RIGHT ANGLE the travel at 4us a count),
  * its stops at 700 and 2300us, outside the bench image's 150 counts.  The
  * AS5600 sits on the surface: 0.06° a microsecond of the horn, 600us of
- * travel 36°.  The targets are 20° with a 10% margin: 20° goals at 1000us
- * and 2000us, the servo's pulses 950.4 to 2049.6us, which the end points
- * reach at about 92 counts; 950us and 2050us then give 22°.
+ * travel 36°.  The servo's NEUTRAL reads 1500.2us.  The targets are 20°
+ * with a 10% margin: 20° goals at 1000us and 2000us, the servo's pulses
+ * 950.4 to 2049.6us, which the end points reach at about 92 counts; 950us
+ * and 2050us then give 22°.
  *
  * Cases:
  * - auto_programs_both_end_points_to_the_goal_and_ends_safe
@@ -35,6 +36,7 @@
  * - writes_that_do_not_move_the_2000us_side_end_auto_after_two
  * - imu_yaw_alone_refuses_auto_in_either_algorithm
  * - servo_pulses_keep_or_1000_2000_leave_the_margins_pulses
+ * - an_off_center_neutral_takes_the_margin_from_neutral
  *
  * SPDX-License-Identifier: MIT
  */
@@ -106,9 +108,10 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK_EQ(hi, 2050u);
     CHECK(strstr(ra.report, "Bench pulses:   PULSE MIN/MAX 1000-2000 -> "
                             "950-2050us, for the session") != NULL);
-    CHECK(strstr(ra.report, "Margin:         10%: servo pulses 950.4-"
-                            "2049.6us; by the linear model 950us reaches "
-                            "22.0°, 2050us 22.0°; not driven") != NULL);
+    CHECK(strstr(ra.report, "Margin:         10% from NEUTRAL 1500.2us: "
+                            "servo pulses 950.4-2049.6us; by the linear "
+                            "model 950us reaches 22.0°, 2050us 22.0°; not "
+                            "driven") != NULL);
     CHECK_EQ(g_rig.fc.saves, 1u);
     /* The supply's OFF asked at the end decision, before the report's
      * first file opens. */
@@ -809,6 +812,41 @@ TEST_CASE(servo_pulses_keep_or_1000_2000_leave_the_margins_pulses)
     settings_set(SET_RUDDER_MARGIN, 10.0f);
 }
 
+/* NEUTRAL 1640.0us on the KST at 10%: each side's span from NEUTRAL grows
+ * by 10%, PULSE LOWER 936.0us and PULSE UPPER 2036.0us; the bench's PULSE
+ * MIN and PULSE MAX widen to 936-2036us and the report names NEUTRAL. */
+TEST_CASE(an_off_center_neutral_takes_the_margin_from_neutral)
+{
+    ra_setup(true, true);
+    kst_image_t img = rig_servo();
+    CHECK(kst_field_set(&img, KST_F_NEUTRAL, 4156u));
+    int32_t d = 0;
+    CHECK(kst_field_display(KST_F_NEUTRAL, kst_field_get(&img, KST_F_NEUTRAL),
+                            &d));
+    CHECK_EQ(d, 16400);
+    memcpy(g_rig.sim.reg, img.r, sizeof(g_rig.sim.reg));
+    memcpy(g_rig.sim.acting, img.r, sizeof(g_rig.sim.acting));
+    ra_ms(100u);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    ra_run_out();
+    CHECK(!servo_screen_rauto_running());
+    CHECK(kst_field_display(KST_F_PULSE_LOWER, servo(KST_F_PULSE_LOWER), &d));
+    CHECK_EQ(d, 9360);
+    CHECK(kst_field_display(KST_F_PULSE_UPPER, servo(KST_F_PULSE_UPPER), &d));
+    CHECK_EQ(d, 20360);
+    CHECK(kst_field_display(KST_F_NEUTRAL, servo(KST_F_NEUTRAL), &d));
+    CHECK_EQ(d, 16400);
+    uint16_t lo = 0u, hi = 0u;
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 936u);
+    CHECK_EQ(hi, 2036u);
+    CHECK(strstr(ra.report, "Margin:         10% from NEUTRAL 1640.0us: "
+                            "servo pulses 936.0-2036.0us;") != NULL);
+    CHECK(strstr(ra.report, "Bench pulses:   PULSE MIN/MAX 1000-2000 -> "
+                            "936-2036us, for the session") != NULL);
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -831,5 +869,6 @@ int main(void)
     RUN(writes_that_do_not_move_the_2000us_side_end_auto_after_two);
     RUN(imu_yaw_alone_refuses_auto_in_either_algorithm);
     RUN(servo_pulses_keep_or_1000_2000_leave_the_margins_pulses);
+    RUN(an_off_center_neutral_takes_the_margin_from_neutral);
     return test_summary("servo_rauto_kst");
 }

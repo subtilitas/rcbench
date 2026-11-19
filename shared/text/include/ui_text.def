@@ -11916,7 +11916,9 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_TARGETS,
     "Ziele:           1000us %.1f°, 2000us %.1f°, "
     "Toleranz %.1f°")
 /* KST: the margin's pulse range, PULSE LOWER and PULSE UPPER as written,
- * and the extended ends by the linear map, which the run does not drive. */
+ * and the extended ends by the linear map, which the run does not drive.
+ * _N names the servo's NEUTRAL the range is taken from where it is not
+ * 1500.0us. */
 UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN,
     "Margin:         %u%%: servo pulses %.1f-"
     "%.1fus; by the linear model %uus reaches "
@@ -11924,6 +11926,13 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN,
     "Reserve:         %u%%: Servopulse %.1f-"
     "%.1fus; nach dem linearen Modell erreicht "
     "%uus %.1f°, %uus %.1f°; nicht angefahren")
+UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN_N,
+    "Margin:         %u%% from NEUTRAL %.1fus: servo "
+    "pulses %.1f-%.1fus; by the linear model %uus "
+    "reaches %.1f°, %uus %.1f°; not driven",
+    "Reserve:         %u%% ab NEUTRAL %.1fus: "
+    "Servopulse %.1f-%.1fus; nach dem linearen Modell "
+    "erreicht %uus %.1f°, %uus %.1f°; nicht angefahren")
 UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN_HITEC,
     "Margin:         0%: KST/Chaservo only, a Hitec "
     "servo has no pulse registers",
@@ -12006,6 +12015,11 @@ UI_SERVO_TEXT(SERVO_STR_RA_WHY_VERIFY_HI,
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_VERIFY_MID,
     "center outside the tolerance at verify",
     "Mitte beim Nachmessen außer Toleranz")
+/* KST: a NEUTRAL outside the servo's own 1360.0us to 1640.0us at the
+ * read; the margin's range is taken from it. */
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_NEUTRAL,
+    "NEUTRAL outside 1360-1640us",
+    "NEUTRAL außerhalb 1360-1640us")
 UI_SERVO_TEXT(SERVO_STR_RA_R_SETTLE_IMU,
     "Measure:        angle stable for %ums, its "
     "span at most %.2f° over %.1fs, within %ums "
