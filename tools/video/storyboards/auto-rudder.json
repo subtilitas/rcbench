@@ -806,7 +806,7 @@
   {
    "type": "case",
    "model": "rudder",
-   "dur": 110.94,
+   "dur": 134.82,
    "faces": [
     [
      0,
@@ -814,7 +814,7 @@
     ]
    ],
    "rauto": {
-    "at": 34.64,
+    "at": 58.52,
     "speed": 2.0
    },
    "panel": [
@@ -858,7 +858,7 @@
      ]
     ],
     [
-     39.74,
+     63.62,
      [
       40,
       150,
@@ -871,7 +871,7 @@
      ]
     ],
     [
-     40.99,
+     64.87,
      [
       150,
       115,
@@ -884,7 +884,7 @@
      ]
     ],
     [
-     101.49,
+     125.37,
      [
       150,
       115,
@@ -897,7 +897,7 @@
      ]
     ],
     [
-     102.74,
+     126.62,
      [
       40,
       150,
@@ -910,7 +910,7 @@
      ]
     ],
     [
-     110.94,
+     134.82,
      [
       40,
       150,
@@ -926,19 +926,19 @@
    "chips": [
     {
      "from": 0,
-     "to": 36.64,
+     "to": 60.52,
      "n": 4,
      "text": "RUDDER AUTO"
     },
     {
-     "from": 36.64,
-     "to": 102.49,
+     "from": 60.52,
+     "to": 126.37,
      "n": 4,
      "text": "The run, at twice its speed"
     },
     {
-     "from": 102.49,
-     "to": 110.94,
+     "from": 126.37,
+     "to": 134.82,
      "n": 4,
      "text": "PASS"
     }
@@ -958,8 +958,21 @@
      "text": "Goal = target x (1 + MARGIN): 20.0° x 1.10 = 22.0° at 1000 and 2000us. The radio's travel sets the 20.0°; the 2.0° above are headroom for the trim."
     },
     {
-     "from": 51.49,
-     "to": 58.24,
+     "from": 30.4,
+     "to": 53.08,
+     "anchor": "display",
+     "at": [
+      1420,
+      300
+     ],
+     "n": 4,
+     "size": "sm",
+     "title": "SERVO: KST/CHASERVO or HITEC",
+     "text": "KST/Chaservo: LEFT ANGLE, RIGHT ANGLE, raw values; applied after a power cycle of the PROG 5V. Hitec D series: LEFT END, RIGHT END in counts, 74.5 a degree; restarts itself. Hitec classic: raw cells 0 to 255; the supply is cycled for every session."
+    },
+    {
+     "from": 75.37,
+     "to": 82.12,
      "anchor": "imu",
      "at": [
       1400,
@@ -983,34 +996,38 @@
     },
     {
      "at": 30.2,
+     "text": "The servo row names the make, because the end points are stored differently. A K S T or Chaservo servo holds them as two angle values, and takes new ones after its supply was off and on. The bench switches it. A Hitec D series servo holds them as position counts and restarts by itself."
+    },
+    {
+     "at": 54.08,
      "text": "With the surface at neutral, tap zero."
     },
     {
-     "at": 34.24,
+     "at": 58.12,
      "text": "Then hold arm and start for 2 seconds."
     },
     {
-     "at": 38.34,
+     "at": 62.22,
      "text": "The bench switches the supply on, arms, and reads the servo."
     },
     {
-     "at": 44.14,
+     "at": 68.02,
      "text": "It drives the 1000 microsecond end and waits until the sensor's angle is still: 36 degrees."
     },
     {
-     "at": 52.42,
+     "at": 76.3,
      "text": "Too far. It writes a smaller end point into the servo and measures again: 22 degrees."
     },
     {
-     "at": 60.24,
+     "at": 84.12,
      "text": "The other end goes the same way: measure, write, measure."
     },
     {
-     "at": 76.24,
+     "at": 100.12,
      "text": "A verify pass then measures both ends and the center once more, each from the same side."
     },
     {
-     "at": 102.74,
+     "at": 126.62,
      "text": "Pass. Both ends are within half a degree of their goal, and the report is on the S D card."
     }
    ]
