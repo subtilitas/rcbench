@@ -98,6 +98,10 @@ python3 tools/make_video.py features --jobs 12 --keep build/video/parts \
 - A video does not do what it shows: the narration says "This video
   shows how ...", never "This video sets ..." or "This video loads ..."
   (owner's correction, twice, 2026-11-19).
+- The sound track has no servo sound. Two synthesized gear sounds for
+  the `rudder` model's flap were rejected by ear (owner, 2026-11-19): a
+  tone following the flap's speed squeaked, a noise rattle with a steady
+  whine was refused outright. A servo sound needs a recording.
 - Every touch a video shows carries its ring animation: the tap ring or
   the 2s hold ring of a `screen` or `tour` step, `touches` in a 3D
   scene, a pointer's `click` in a window (owner's rule, 2026-11-19).
