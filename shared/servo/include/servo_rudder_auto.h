@@ -69,12 +69,17 @@
  *     finder judged the end pulse, or a position past it, free on its way,
  *     the servo is held at the end pulse (1000us or 2000us), and the angle is
  *     taken there by the measure's rule below, counted from the end
- *     pulse's command; then the search goes on from where it stood
- *     (servo_limit_resume()).  The found end of a side (LOW END, HIGH END:
- *     the end found, or the margin's end where the side is free) caps
- *     every pulse driven after the search.  An end inside the end pulse,
- *     LOW END above 1000us or HIGH END below 2000us, is held for its
- *     angle by the measure's rule (the last free step's where it does not
+ *     pulse's command; where the servo stands past the end pulse (PULSE
+ *     CENTER off the 10us grid), it goes to PULSE CENTER first and waits
+ *     there by that rule, as an approach does (below), so every measure
+ *     of a side comes from the center side; then the search goes on from
+ *     where it stood (servo_limit_resume()).  The found end of a side
+ *     (LOW END, HIGH END: the end found, or the margin's end where the
+ *     side is free) caps every pulse driven after the search.  An end
+ *     inside the end pulse, LOW END above 1000us or HIGH END below
+ *     2000us, is reached from PULSE CENTER as above, the servo standing
+ *     at the bind past it, and held for its angle by the measure's rule
+ *     (the last free step's where it does not
  *     settle, scaled to the end from its own pulse): short of the goal by more than the tolerance it ends the
  *     run as FAIL (SERVO_RAUTO_WHY_STOP, STOP AT 1225us BEFORE TARGET)
  *     with no value written, a 1000us side that fails leaving the 2000us
@@ -548,6 +553,9 @@ typedef struct {
                                            first measure */
     bool     s_endhold;               /**< the hold is at a found end
                                            inside the end pulse */
+    bool     s_via;                   /**< the hold's pulse next, from
+                                           PULSE CENTER once still there */
+    uint16_t s_via_us;                /**< that pulse, us */
     bool     s_begun;                 /**< the search started */
     uint16_t s_next_us;               /**< the finder's command after it */
     uint32_t s_from_ms;               /**< the side's start, ms */

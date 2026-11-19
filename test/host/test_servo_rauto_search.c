@@ -15,7 +15,8 @@
  * for the STOP test too; a stall stretch from before the hold ends with
  * it; the command range is checked for every NEUTRAL;
  * an end pulse off the 10us grid is held only once it, or a step past it,
- * is judged free; an end at 995us lies outside the end pulse; the found ends cap every later pulse; a STOP RUN, a current above the ceiling and a reading that
+ * is judged free; every first measure, at the end pulse and at a found
+ * end, is reached from PULSE CENTER where the servo stands past it; an end at 995us lies outside the end pulse; the found ends cap every later pulse; a STOP RUN, a current above the ceiling and a reading that
  * does not settle at the end pulse end the run in the search as in any
  * phase; the rows stay within SERVO_RAUTO_SEARCH_MAX at a margin of 50%;
  * the CSV and the report carry one row a position.
@@ -222,7 +223,8 @@ TEST_CASE(an_end_that_does_not_settle_takes_the_last_free_step)
     g.cfg.target_deg[0] = 20.0f;
     g.stop_us[0] = 1050u;
     CHECK(start());
-    while (servo_rauto_running(&g.run) && !g.run.s_endhold) {
+    while (servo_rauto_running(&g.run)
+           && (!g.run.s_endhold || g.run.s_via)) {
         tick();
     }
     CHECK_EQ(g.cmd, 1075u);
@@ -255,7 +257,8 @@ TEST_CASE(a_fallback_angle_is_scaled_from_the_pulse_it_was_taken_at)
     g.lo = 1u;
     g.stop_us[0] = 1450u;
     CHECK(start());
-    while (servo_rauto_running(&g.run) && !g.run.s_endhold) {
+    while (servo_rauto_running(&g.run)
+           && (!g.run.s_endhold || g.run.s_via)) {
         tick();
     }
     CHECK_EQ(g.cmd, 1475u);
@@ -304,7 +307,8 @@ TEST_CASE(a_fallback_angle_is_judged_against_the_target_as_the_end_reads_it)
         g.lo = 1u;
         g.stop_us[0] = 1450u;
         CHECK(start());
-        while (servo_rauto_running(&g.run) && !g.run.s_endhold) {
+        while (servo_rauto_running(&g.run)
+               && (!g.run.s_endhold || g.run.s_via)) {
             tick();
         }
         g.jitter = jitter != 0;
@@ -432,6 +436,81 @@ TEST_CASE(an_end_pulse_off_the_grid_is_held_only_once_judged_free)
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.ends[0].end_us, 1035u);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+}
+
+/*
+ * A pulse reached on the way in reads 0.33° less than on the way out.
+ * PULSE CENTER 1505us at 10%, the servo holding the margin's pulses
+ * 950.4us and 2049.6us, TARGET 29.7°, TOLERANCE 0.1°: the steps land on
+ * 995us and 2005us, and 1000us and 2000us are reached from PULSE CENTER,
+ * as every later measure: 30.0°, outside, so the run writes.  Reached from
+ * 995us and 2005us they read 29.67°, within, and the run passed with no
+ * write.  A found end after a bind is reached so too: 1075us at 25.5°.
+ */
+TEST_CASE(every_first_measure_comes_from_the_center_side)
+{
+    rig_init(0u);
+    g.cfg.margin_pct = 10u;
+    g.cfg.center_us = 1505u;
+    g.zero_us = 1505u;
+    g.cfg.target_deg[0] = 29.7f;
+    g.cfg.target_deg[1] = 29.7f;
+    g.cfg.tol_ddeg = 1u;
+    g.pulses[1] = 9504u;
+    g.pulses[2] = 20496u;
+    g.back_deg = 0.33f;
+    CHECK(start());
+    uint16_t from[2] = { 0u, 0u }, last = g.cmd;
+    while (servo_rauto_running(&g.run) && !g.run.searched) {
+        tick();
+        if (g.cmd != last && (g.cmd == 1000u || g.cmd == 2000u)) {
+            from[g.cmd == 2000u ? 1 : 0] = last;
+        }
+        last = g.cmd;
+    }
+    CHECK_EQ(from[0], 1505u);
+    CHECK_EQ(from[1], 1505u);
+    CHECK_NEAR(g.run.s_deg[0], -30.0f, 0.01f);
+    CHECK_NEAR(g.run.s_deg[1], 30.0f, 0.01f);
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.pulse_ops, 0u);
+    CHECK(g.write_ops > 0u);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK(g.run.vn > 0u);
+
+    rig_init(0u);
+    g.cfg.target_deg[0] = 20.0f;
+    g.stop_us[0] = 1050u;
+    g.back_deg = 0.33f;
+    CHECK(start());
+    last = g.cmd;
+    uint16_t before_end = 0u;
+    while (servo_rauto_running(&g.run) && !g.run.ends[0].deg_taken) {
+        tick();
+        if (g.cmd != last && g.cmd == 1075u) {
+            before_end = last;
+        }
+        last = g.cmd;
+    }
+    CHECK_EQ(before_end, RCENTER);
+    CHECK_NEAR(g.run.ends[0].deg, -25.5f, 0.01f);
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+
+    /* Not still at PULSE CENTER on the way: NOT STILL, as an approach. */
+    rig_init(0u);
+    g.cfg.target_deg[0] = 20.0f;
+    g.stop_us[0] = 1050u;
+    CHECK(start());
+    while (servo_rauto_running(&g.run) && !g.run.s_via) {
+        tick();
+    }
+    CHECK_EQ(g.cmd, RCENTER);
+    g.jitter = true;
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NOT_STILL);
+    CHECK(!g.run.ends[0].deg_taken);
+    CHECK(ended_safe());
 }
 
 TEST_CASE(a_pulse_past_a_found_end_ends_the_run)
@@ -581,6 +660,7 @@ int main(void)
     RUN(a_stall_stretch_before_the_hold_does_not_count_after_it);
     RUN(the_command_range_is_checked_for_every_neutral);
     RUN(an_end_pulse_off_the_grid_is_held_only_once_judged_free);
+    RUN(every_first_measure_comes_from_the_center_side);
     RUN(a_pulse_past_a_found_end_ends_the_run);
     RUN(stop_run_and_the_current_ceiling_end_the_search);
     RUN(the_rows_fit_at_a_margin_of_50_percent);

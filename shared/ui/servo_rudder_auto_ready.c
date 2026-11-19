@@ -49,6 +49,26 @@
  * included after it may meet. */
 #include "servo_screen_core_int.h"
 
+/** @brief The gate's frame-rate text, MARGIN NEEDS 301Hz OR LESS, and its
+ *         rate: kept here so a row and its tag know it by its address. */
+typedef struct {
+    char     why[64];   /**< the text */
+    unsigned hz;        /**< the highest rate that fits, Hz */
+} ck_rate_t;
+
+/** @brief The one instance. */
+static ck_rate_t s_rate;
+
+bool rauto_rate_nums(const char *why, unsigned v[2])
+{
+    if (why == NULL || why != s_rate.why) {
+        return false;
+    }
+    v[0] = s_rate.hz;
+    v[1] = 0u;
+    return true;
+}
+
 _Static_assert(SERVO_RAUTO_CMD_FLOOR_US == LINK_CC_FLOOR_US
                    && SERVO_RAUTO_CMD_CEILING_US == LINK_CC_CEILING_US,
                "the run's command range checked against the link's bounds");
@@ -149,6 +169,16 @@ static const char *check(int k)
             return us[1] > SERVO_RAUTO_CMD_CEILING_US ? TR(RA_RANGE_HIGH)
                                                       : TR(RA_RANGE_LOW);
         }
+        /* And the frame rate leaves the profile's pause after the longest
+         * of those pulses (max_rate_for(), the rule apply_profile()
+         * clamps by): the rate is not changed under the run. */
+        const uint16_t top = max_rate_for(s.type, us[1]);
+        if (s.frame_hz > top) {
+            s_rate.hz = top;
+            snprintf(s_rate.why, sizeof(s_rate.why), TR(RA_RATE),
+                     (unsigned)top);
+            return s_rate.why;
+        }
         return NULL;
     }
     case CK_GOALS: {
@@ -248,7 +278,7 @@ rauto_row_t rauto_row_of(const char *why)
         return RAR_ZERO;
     }
     if (why == TR(RA_RANGE) || why == TR(RA_RANGE_HIGH)
-        || why == TR(RA_RANGE_LOW)) {
+        || why == TR(RA_RANGE_LOW) || why == s_rate.why) {
         return RAR_RANGE;
     }
     return RAR_COUNT;

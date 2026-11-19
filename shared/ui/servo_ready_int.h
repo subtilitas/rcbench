@@ -463,6 +463,12 @@ const char *lim_write_why_held(void);
  *  @param why a gate text  @param v receives the pulses, us
  *  @return true then */
 bool lim_hitec_nums(const char *why, unsigned v[2]);
+/** @brief Whether @p why is RUDDER AUTO's frame-rate text, the profile's rate
+ *         past the highest that leaves its pause after the widest pulse
+ *         the search's commands carry, and that rate.
+ *  @param why a gate text  @param v receives the rate, Hz, and 0
+ *  @return true then */
+bool rauto_rate_nums(const char *why, unsigned v[2]);
 
 /* --- servo_drive_ready.c: LIVE's, SWEEP's and RUDDER's rows -------------- */
 

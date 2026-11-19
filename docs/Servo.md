@@ -1943,6 +1943,7 @@ while:
 | PORT PWM | ARMED with the port's pulse off | `PORT PWM OFF: DISARM, SWITCH IT ON IN OUTPUTS`, `PORT PWM ON, WAITING FOR SAFE: DISARM, THEN ARM` | `PORT PWM OFF: DISARM`, `WAITING FOR SAFE` |
 | RANGE | PULSE MIN is above 1000us, PULSE MAX below 2000us, or PULSE CENTER is not strictly between 1000us and 2000us | `PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us` | `NEEDS 1000-2000us` |
 | RANGE | the range the search's commands carry, PULSE MIN to MAX widened to the margin's for every NEUTRAL from 1360us to 1640us and symmetric about PULSE CENTER (`servo_rauto_cmd_range()`), reaches past 2500us or below 400us, the bounds a command can name (LINK_CC_CEILING_US, LINK_CC_FLOOR_US). PULSE CENTER 1750us at MARGIN 10% gives 936-2564us | `MARGIN RANGE PAST 2500us`, `MARGIN RANGE BELOW 400us` | `PAST 2500us`, `BELOW 400us` |
+| RANGE | the profile's FRAME RATE leaves less than its pause after the highest pulse of that range: 1000us on STANDARD PWM, NARROW 760 and WIDE, 500us on the heli profiles, the rule FRAME RATE is held to (`max_rate_for()`). STANDARD PWM at 333Hz and MARGIN 50%: 2320us for a NEUTRAL of 1360us, 301Hz or less. The rate is not changed; the run leaves it as set | `MARGIN NEEDS 301Hz OR LESS` | `NEEDS 301Hz` |
 | ANGLE | the IMU's AXIS Z (yaw), in 6-AXIS and in 9-AXIS: on a BWT901CL yaw drifts 2.4° in 100s in 6-AXIS and settles 38° off in 9-AXIS, against the 0.5° tolerance. A tap opens the IMU YAW list, `USE IMU AXIS X (ROLL)`, `USE IMU AXIS Y (PITCH)`, for a sensor turned 90° so the hinge is its X or Y; a pick writes the setting and saves it ([IMU](IMU.md#the-link)) | `IMU YAW REFUSED: HINGE ON X OR Y` | `YAW REFUSED` |
 | ANGLE | the angle source gives no reading | `ANGLE SOURCE: NO READING` | `NO READING` |
 | ZERO | ZERO is not taken | `SET ZERO WITH THE SURFACE AT NEUTRAL` | `ZERO NOT SET` |
@@ -2003,15 +2004,19 @@ ARMED is asked).
   every measure: still 500ms and, on the IMU with the defaults, within
   0.10° over 3.0s, at most 16,000ms after the command. With PULSE CENTER
   off the 10us grid, 1505us, the steps land on 1005us and 995us; once 995us
-  is judged free the servo goes back to 1000us for the first measure,
-  reached from 5us outside. A 995us judged bound ends the side as any
+  is judged free the servo goes to PULSE CENTER, waits there by the
+  measure's rule, and then to 1000us for the first measure. 1000us is so
+  reached from the center side, as at every later measure (the approach
+  below). A 995us judged bound ends the side as any
   bind, 1000us never held. With both sides searched the two first measures are judged as
   any measure, the 1000us side first, and the run writes the first side
   outside the tolerance, or verifies, or passes.
 - LOW END and HIGH END cap every pulse the run drives after the search; a
   pulse past them ends the run as below.
 - An end inside the end pulse, LOW END above 1000us or HIGH END below
-  2000us, is held for its angle by the measure's rule. Where that does not
+  2000us, is held for its angle by the measure's rule. The servo stands
+  at the bind, past the end, so it goes to PULSE CENTER first and waits
+  there as an approach does. Where that does not
   settle by the measure's wait, the angle is the one the search recorded
   at the side's last free step, and the report says so. That angle stands
   for the end by the linear map from the pulse it was taken at: 3.0° at
@@ -2042,8 +2047,9 @@ ARMED is asked).
   pulse (phase APPROACH, the first line `APPROACH 1500us: ...`). Each end,
   in the main pass and in the verify pass, comes from PULSE CENTER; the
   verify pass's center comes from 2000us, where its measure before took
-  its angle, with no approach of its own. A pulse is so always reached
-  from the same side: on the bench of 2026-11-18 one servo value read
+  its angle, with no approach of its own. The search's holds for a first
+  measure come from PULSE CENTER too where the servo stands past their
+  pulse (above). A pulse is so always reached from the same side: on the bench of 2026-11-18 one servo value read
   46.86° from the center and 46.58° from 2000us, and the center +0.02°
   from 2000us and +0.35° from 1000us. An approach takes no angle and ends
   the run as a measure does when it does not settle.

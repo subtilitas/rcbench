@@ -2053,6 +2053,7 @@ Halten grau, solange:
 | PORT-PWM | ARMED mit dem Puls des Ports aus | `PORT-PWM AUS: DISARM, SCHALTE ES IN OUTPUTS EIN`, `PORT-PWM EIN, WARTET AUF SAFE: DISARM, DANN ARM` | `PORT-PWM AUS: DISARM`, `WARTET AUF SAFE` |
 | BEREICH | PULS MIN über 1000us, PULS MAX unter 2000us oder PULS MITTE nicht strikt zwischen 1000us und 2000us liegt | `PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN` | `BRAUCHT 1000-2000us` |
 | BEREICH | der Bereich, den die Befehle der Suche tragen, PULS MIN bis MAX auf den der Reserve für jedes NEUTRAL von 1360us bis 1640us geweitet und symmetrisch um PULS MITTE (`servo_rauto_cmd_range()`), reicht über 2500us oder unter 400us, die Grenzen, die ein Befehl nennen kann (LINK_CC_CEILING_US, LINK_CC_FLOOR_US). PULS MITTE 1750us bei RESERVE 10% ergibt 936-2564us | `RESERVE-BEREICH ÜBER 2500us`, `RESERVE-BEREICH UNTER 400us` | `ÜBER 2500us`, `UNTER 400us` |
+| BEREICH | die PULSRATE des Profils lässt nach dem höchsten Puls dieses Bereichs weniger als seine Pause: 1000us bei STANDARD PWM, NARROW 760 und WIDE, 500us bei den Heli-Profilen, die Regel, an die die PULSRATE gebunden ist (`max_rate_for()`). STANDARD PWM bei 333Hz und RESERVE 50%: 2320us bei einem NEUTRAL von 1360us, 301Hz oder weniger. Die Rate wird nicht geändert; der Lauf lässt sie, wie sie gesetzt ist | `RESERVE BRAUCHT 301Hz ODER WENIGER` | `BRAUCHT 301Hz` |
 | WINKEL | die IMU-Achse Z (Gieren) gewählt ist, in 6-AXIS und in 9-AXIS: an einer BWT901CL driftet das Gieren in 6-AXIS 2,4° in 100s und bleibt in 9-AXIS 38° daneben stehen, gegen 0,5° Toleranz. Ein Tippen öffnet die Liste IMU-GIEREN, `IMU-ACHSE X NEHMEN (ROLLEN)`, `IMU-ACHSE Y NEHMEN (NICKEN)`, für einen um 90° gedrehten Sensor, dessen Achse X oder Y das Scharnier ist; eine Wahl schreibt die Einstellung und speichert sie ([IMU](IMU-de.md#die-verbindung)) | `IMU-GIEREN GESPERRT: SCHARNIER AUF X ODER Y` | `GIEREN GESPERRT` |
 | WINKEL | die Winkelquelle keinen Messwert liefert | `WINKELQUELLE: KEIN MESSWERT` | `KEIN MESSWERT` |
 | NULLPUNKT | kein Nullpunkt gesetzt ist | `SETZE DEN NULLPUNKT MIT DEM RUDER IN NEUTRALLAGE` | `NICHT GESETZT` |
@@ -2118,8 +2119,10 @@ angefragt ist).
   und an der IMU mit den Vorgaben innerhalb 0,10° über 3,0s, spätestens
   16 000ms nach dem Befehl. Liegt PULS MITTE neben dem 10us-Raster, 1505us,
   landen die Schritte auf 1005us und 995us; sobald 995us frei gefunden ist,
-  fährt das Servo für die erste Messung zurück auf 1000us, von 5us außen
-  erreicht. Ein blockiertes 995us beendet die Seite wie jede Blockade,
+  fährt das Servo auf PULS MITTE, wartet dort nach der Regel der Messung
+  und fährt dann für die erste Messung auf 1000us. 1000us wird so von der
+  Seite der Mitte erreicht, wie bei jeder späteren Messung (die Anfahrt
+  unten). Ein blockiertes 995us beendet die Seite wie jede Blockade,
   1000us wird nie gehalten. Sind
   beide Seiten gesucht, gelten die zwei ersten Messungen wie jede Messung,
   die Seite 1000us zuerst, und der Lauf schreibt die erste Seite außerhalb
@@ -2128,7 +2131,9 @@ angefragt ist).
   Suche fährt; ein Puls darüber beendet den Lauf wie unten.
 - Ein Ende innerhalb des Endpulses, UNTERES ENDE über 1000us oder OBERES
   ENDE unter 2000us, wird für seinen Winkel nach der Regel der Messung
-  gehalten. Schwingt er bis zur Wartezeit der Messung nicht ein, gilt der
+  gehalten. Das Servo steht an der Blockade, hinter dem Ende, und fährt
+  daher zuerst auf PULS MITTE und wartet dort wie bei einer Anfahrt.
+  Schwingt er bis zur Wartezeit der Messung nicht ein, gilt der
   Winkel, den die Suche am letzten freien Schritt der Seite aufgezeichnet
   hat, und der Bericht nennt das. Dieser Winkel steht nach der linearen
   Abbildung ab dem Puls, an dem er genommen wurde, für das Ende: 3,0° bei
@@ -2164,8 +2169,9 @@ angefragt ist).
   Puls an (Phase ANFAHRT, die erste Zeile `ANFAHRT 1500us: ...`). Jedes
   Ende, im Hauptdurchgang wie beim Nachmessen, kommt von PULS MITTE; die
   Mitte des Nachmessens kommt von 2000us, wo ihre Messung davor den Winkel
-  nahm, ohne eigene Anfahrt. Ein Puls wird so immer von derselben Seite
-  erreicht: am Prüfstand am 2026-11-18 las ein Servowert 46,86° von der
+  nahm, ohne eigene Anfahrt. Das Halten der Suche für eine erste Messung
+  kommt ebenfalls von PULS MITTE, wo das Servo hinter seinem Puls steht
+  (oben). Ein Puls wird so immer von derselben Seite erreicht: am Prüfstand am 2026-11-18 las ein Servowert 46,86° von der
   Mitte und 46,58° von 2000us, die Mitte +0,02° von 2000us und +0,35° von
   1000us. Eine Anfahrt nimmt keinen Winkel und beendet den Lauf wie eine
   Messung, wenn sie nicht ruhig wird.
