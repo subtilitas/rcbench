@@ -347,32 +347,64 @@
   {
    "type": "case",
    "model": "rudder",
-   "dur": 29.6,
+   "dur": 33.6,
    "faces": [
     [
      0,
+     "navigation"
+    ],
+    [
+     4.6,
      "other-imu-safe"
     ],
     [
-     21.12,
+     22.48,
+     "navigation"
+    ],
+    [
+     25.88,
      "other-rudder-safe"
     ]
    ],
    "panel": [
     [
      0,
-     "imu"
+     "overview"
+    ],
+    [
+     3.2,
+     "setup"
     ],
     [
      4.6,
+     "imu"
+    ],
+    [
+     6.6,
      "imu-scan"
     ],
     [
-     7.4,
+     9.0,
      "imu-connected"
     ],
     [
-     21.12,
+     22.48,
+     "setup"
+    ],
+    [
+     23.48,
+     "overview"
+    ],
+    [
+     24.68,
+     "servo-hub-rbmod"
+    ],
+    [
+     25.88,
+     "servo-rudder"
+    ],
+    [
+     27.68,
      "servo-rudder-angle"
     ]
    ],
@@ -404,7 +436,7 @@
      ]
     ],
     [
-     29.6,
+     33.6,
      [
       0,
       300,
@@ -419,7 +451,25 @@
    ],
    "touches": [
     {
+     "at": 2.8,
+     "on": "panel",
+     "xy": [
+      890,
+      460
+     ],
+     "action": "tap"
+    },
+    {
      "at": 4.2,
+     "on": "panel",
+     "xy": [
+      174,
+      415
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 6.2,
      "on": "panel",
      "xy": [
       245,
@@ -428,7 +478,7 @@
      "action": "tap"
     },
     {
-     "at": 7.0,
+     "at": 8.6,
      "on": "panel",
      "xy": [
       330,
@@ -437,7 +487,52 @@
      "action": "tap"
     },
     {
-     "at": 25.92,
+     "at": 22.08,
+     "on": "panel",
+     "xy": [
+      60,
+      30
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 23.08,
+     "on": "panel",
+     "xy": [
+      75,
+      30
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 24.28,
+     "on": "panel",
+     "xy": [
+      384,
+      195
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 25.48,
+     "on": "panel",
+     "xy": [
+      512,
+      275
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 27.28,
+     "on": "panel",
+     "xy": [
+      880,
+      200
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 29.48,
      "on": "panel",
      "xy": [
       316,
@@ -449,15 +544,15 @@
    "chips": [
     {
      "from": 0,
-     "to": 29.6,
+     "to": 33.6,
      "n": 2,
      "text": "Connect the sensor"
     }
    ],
    "labels": [
     {
-     "from": 9.88,
-     "to": 19.92,
+     "from": 10.84,
+     "to": 20.88,
      "anchor": {
       "pixel": [
        770,
@@ -477,15 +572,15 @@
    "say": [
     {
      "at": 0.6,
-     "text": "Step 2. Connect the sensor. Open I M U on the bench, tap scan for sensors, and tap yours in the list."
+     "text": "Step 2. Connect the sensor. On the menu, open setup, then I M U. Tap scan for sensors, and tap yours in the list."
     },
     {
-     "at": 9.68,
+     "at": 10.64,
      "text": "The bench keeps this bind. From now on it is enough to switch the sensor on: the bench connects to it by itself, without a scan."
     },
     {
-     "at": 20.92,
-     "text": "On rudder, tap the angle row. The list offers the sensors found. Pick yours as the angle source."
+     "at": 21.88,
+     "text": "Go back to the menu and open servo, then rudder. Tap the angle row. The list offers the sensors found. Pick yours as the angle source."
     }
    ]
   },
@@ -499,9 +594,15 @@
      "navigation"
     ]
    ],
+   "panel": [
+    [
+     0,
+     "servo-hub-rbmod"
+    ]
+   ],
    "run": {
     "kind": "servo",
-    "from": 0.6,
+    "from": 1.4,
     "to": 24.360000000000003,
     "angle": [
      [
@@ -822,6 +923,15 @@
    ],
    "touches": [
     {
+     "at": 1.0,
+     "on": "panel",
+     "xy": [
+      176,
+      130
+     ],
+     "action": "tap"
+    },
+    {
      "at": 6.8,
      "on": "dial",
      "xy": [
@@ -873,7 +983,7 @@
   {
    "type": "case",
    "model": "rudder",
-   "dur": 178.33,
+   "dur": 179.45,
    "faces": [
     [
      0,
@@ -881,12 +991,16 @@
     ]
    ],
    "rauto": {
-    "at": 61.0,
+    "at": 62.12,
     "speed": 1.5
    },
    "panel": [
     [
      0,
+     "servo-hub-rbmod"
+    ],
+    [
+     1.6,
      "rauto-0001"
     ]
    ],
@@ -925,7 +1039,7 @@
      ]
     ],
     [
-     67.8,
+     68.92,
      [
       40,
       150,
@@ -938,7 +1052,7 @@
      ]
     ],
     [
-     69.47,
+     70.59,
      [
       150,
       115,
@@ -951,7 +1065,7 @@
      ]
     ],
     [
-     168.13,
+     169.25,
      [
       150,
       115,
@@ -964,7 +1078,7 @@
      ]
     ],
     [
-     169.8,
+     170.92,
      [
       40,
       150,
@@ -977,7 +1091,7 @@
      ]
     ],
     [
-     178.33,
+     179.45,
      [
       40,
       150,
@@ -992,7 +1106,16 @@
    ],
    "touches": [
     {
-     "at": 57.96,
+     "at": 1.2,
+     "on": "panel",
+     "xy": [
+      850,
+      275
+     ],
+     "action": "tap"
+    },
+    {
+     "at": 59.08,
      "on": "panel",
      "xy": [
       98,
@@ -1013,27 +1136,27 @@
    "chips": [
     {
      "from": 0,
-     "to": 63.0,
+     "to": 64.12,
      "n": 4,
      "text": "RUDDER AUTO"
     },
     {
-     "from": 63.0,
-     "to": 169.8,
+     "from": 64.12,
+     "to": 170.92,
      "n": 4,
      "text": "The run, at 1.5 times its speed"
     },
     {
-     "from": 169.8,
-     "to": 178.33,
+     "from": 170.92,
+     "to": 179.45,
      "n": 4,
      "text": "PASS"
     }
    ],
    "labels": [
     {
-     "from": 10.92,
-     "to": 26.88,
+     "from": 12.04,
+     "to": 28.0,
      "anchor": {
       "pixel": [
        340,
@@ -1050,8 +1173,8 @@
      "text": "PULSES 950-2050us: 22.0°, 22.0°. The target of 20.0° lies at 1000 and 2000us; a pulse out to 950 or 2050us reaches 22.0°."
     },
     {
-     "from": 28.08,
-     "to": 55.56,
+     "from": 29.2,
+     "to": 56.68,
      "anchor": {
       "pixel": [
        680,
@@ -1068,8 +1191,8 @@
      "text": "KST/Chaservo: LEFT ANGLE, RIGHT ANGLE, raw values; applied after a power cycle of the PROG 5V. Hitec D series: LEFT END, RIGHT END in counts, 74.5 a degree; restarts itself. Hitec classic: raw cells 0 to 255; the supply is cycled for every session. Hitec: MARGIN 0%."
     },
     {
-     "from": 69.52,
-     "to": 78.28,
+     "from": 70.64,
+     "to": 79.4,
      "anchor": "imu",
      "at": [
       1400,
@@ -1082,8 +1205,8 @@
      "text": "10us a step. A stop before the target ends the run: STOP AT ...us BEFORE TARGET."
     },
     {
-     "from": 103.47,
-     "to": 108.13,
+     "from": 104.59,
+     "to": 109.25,
      "anchor": "imu",
      "at": [
       1400,
@@ -1099,54 +1222,54 @@
    "say": [
     {
      "at": 0.6,
-     "text": "Step 4. Open rudder auto. Enter the throw each end should reach: here 20 degrees at 1000 and at 2000 microseconds."
+     "text": "Step 4. Open rudder auto. The two targets are the throw each end should reach: here 20 degrees at 1000 and at 2000 microseconds."
     },
     {
-     "at": 10.72,
+     "at": 11.84,
      "text": "The margin, here 10 percent, widens the servo's pulse range to 950 to 2050 microseconds. 1000 and 2000 microseconds give the 20 degrees. The range beyond them is headroom for the trim, up to 22 degrees."
     },
     {
-     "at": 27.88,
+     "at": 29.0,
      "text": "The servo row names the make, because the end points are stored differently. A K S T or Chaservo servo holds them as two angle values, and takes new ones after its supply was off and on. The bench switches it. A Hitec D series servo holds them as position counts and restarts by itself. A Hitec servo stores no pulse range, so its margin is zero."
     },
     {
-     "at": 56.56,
+     "at": 57.68,
      "text": "With the surface at neutral, tap zero."
     },
     {
-     "at": 60.6,
+     "at": 61.72,
      "text": "Then hold arm and start for 2 seconds."
     },
     {
-     "at": 64.64,
+     "at": 65.76,
      "text": "The bench powers the servo, arms and reads it."
     },
     {
-     "at": 69.32,
+     "at": 70.44,
      "text": "First it searches for a stop: outward from the center in steps of 10 microseconds, watching the servo's current."
     },
     {
-     "at": 79.28,
+     "at": 80.4,
      "text": "At 1000 microseconds it waits for a still angle. That is the first measure: 23 degrees."
     },
     {
-     "at": 87.24,
+     "at": 88.36,
      "text": "The high side goes the same way. Both ends are free."
     },
     {
-     "at": 97.13,
+     "at": 98.25,
      "text": "Now it writes a smaller end point into the servo and measures 1000 microseconds again: 20 degrees."
     },
     {
-     "at": 114.13,
+     "at": 115.25,
      "text": "The other end follows: measure, write, measure."
     },
     {
-     "at": 143.13,
+     "at": 144.25,
      "text": "A verify pass then measures both ends and the center once more."
     },
     {
-     "at": 170.13,
+     "at": 171.25,
      "text": "Pass. Both ends are within half a degree of the target, and the report is on the S D card."
     }
    ]
