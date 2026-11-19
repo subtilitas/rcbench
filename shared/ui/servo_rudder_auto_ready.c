@@ -49,6 +49,10 @@
  * included after it may meet. */
 #include "servo_screen_core_int.h"
 
+_Static_assert(SERVO_RAUTO_CMD_FLOOR_US == LINK_CC_FLOOR_US
+                   && SERVO_RAUTO_CMD_CEILING_US == LINK_CC_CEILING_US,
+               "the run's command range checked against the link's bounds");
+
 /* ------------------------------------------------------------ the checks */
 
 /** @brief The gate's checks, in rauto_blocked()'s order. */
@@ -130,19 +134,30 @@ static const char *check(int k)
          * why no pulse runs, whatever the setting says. */
         return (!s.drive_pwm || prog_reg_servo_holds()) ? lim_pwm_why()
                                                         : NULL;
-    case CK_RANGE:
+    case CK_RANGE: {
         /* The end pulses lie inside the bench's own range. */
-        return (s.min_us > 1000u || s.max_us < 2000u
-                || !(s.center_us > 1000u && s.center_us < 2000u))
-                   ? TR(RA_RANGE) : NULL;
+        if (s.min_us > 1000u || s.max_us < 2000u
+            || !(s.center_us > 1000u && s.center_us < 2000u)) {
+            return TR(RA_RANGE);
+        }
+        /* And the range the search's commands carry is one a command can
+         * name, for every NEUTRAL: never a range the link drops for the
+         * standard one. */
+        uint16_t us[2];
+        if (!servo_rauto_cmd_range(rauto_margin_now(), s.center_us, s.min_us,
+                                   s.max_us, us)) {
+            return us[1] > SERVO_RAUTO_CMD_CEILING_US ? TR(RA_RANGE_HIGH)
+                                                      : TR(RA_RANGE_LOW);
+        }
+        return NULL;
+    }
     case CK_GOALS: {
-        /* A goal the tolerance swallows: a surface that never moves, or
+        /* A target the tolerance swallows: a surface that never moves, or
          * both ends on one side, would pass (servo_rauto_goals_ok()). */
         const float t[2] = { settings_get(SET_RUDDER_DEFL_LO),
                              settings_get(SET_RUDDER_DEFL_HI) };
         return !servo_rauto_goals_ok(
-                   t, (uint8_t)settings_get_int(SET_RUDDER_MARGIN),
-                   (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f))
+                   t, (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f))
                    ? TR(RA_GOALS_TOL) : NULL;
     }
     case CK_PROG:
@@ -232,7 +247,8 @@ rauto_row_t rauto_row_of(const char *why)
     if (why == TR(RA_NO_ZERO)) {
         return RAR_ZERO;
     }
-    if (why == TR(RA_RANGE)) {
+    if (why == TR(RA_RANGE) || why == TR(RA_RANGE_HIGH)
+        || why == TR(RA_RANGE_LOW)) {
         return RAR_RANGE;
     }
     return RAR_COUNT;

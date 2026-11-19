@@ -53,9 +53,10 @@ typedef enum {
     RA_C_COUNT      /**< the count, RA_C_NONE included     */
 } rauto_ctl_t;
 
-/** @brief The lines the box draws: the step or the goals, the result,
- *         the servo or the report, and the verify pass after programming. */
-#define RA_LINES 4
+/** @brief The lines the box draws: the step or the pulse range, the result,
+ *         the servo or the report, the limit search's two ends, and the
+ *         verify pass after programming. */
+#define RA_LINES 5
 
 /** @brief The box's state, the member `ra` of the screen's state. */
 typedef struct {
@@ -85,6 +86,11 @@ typedef struct {
     bool      sup_out;      /**< its output was on                      */
     float     sup_v,        /**< its voltage set point, V               */
               sup_i;        /**< its current limit, A                   */
+    /* The range the run's own commands carry (servo_rauto_drive_range()),
+     * 0 and 0 while none: cmd_range() takes it in beside PULSE MIN and
+     * PULSE MAX, which stay as they are. */
+    uint16_t  drive_lo,     /**< its lower end, us                      */
+              drive_hi;     /**< its upper end, us                      */
 } rauto_ui_t;
 
 /** @brief The box at the screen's start: no run, MANUAL. */
@@ -145,6 +151,13 @@ const gfx_font_t *rauto_lines_face(const char *const t[RA_LINES], int *pitch);
  * @return false for NULL
  */
 bool rauto_targets(float deg[2]);
+/**
+ * @brief The margin a run started now takes: MARGIN (`rud_margin`) with
+ *        SERVO at KST/CHASERVO, 0 on a Hitec servo, which has no pulse
+ *        registers.  The setting itself stays as it is.
+ * @return the margin, %
+ */
+uint8_t rauto_margin_now(void);
 /** @brief One number for what the box shows.  @return the number */
 uint32_t rauto_sig(void);
 /** @brief START's hold against the clock and the run every frame.

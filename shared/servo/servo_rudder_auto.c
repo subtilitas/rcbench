@@ -65,7 +65,7 @@ static bool measuring(servo_rauto_phase_t ph)
 {
     return ph == SERVO_RAUTO_PH_MOVE || ph == SERVO_RAUTO_PH_SETTLE
         || ph == SERVO_RAUTO_PH_CHECK || ph == SERVO_RAUTO_PH_VERIFY
-        || ph == SERVO_RAUTO_PH_APPROACH;
+        || ph == SERVO_RAUTO_PH_APPROACH || ph == SERVO_RAUTO_PH_SEARCH;
 }
 
 bool servo_rauto_switching(const servo_rauto_t *r)
@@ -288,7 +288,7 @@ static void begin_measure(servo_rauto_t *r, uint8_t side, bool check,
 {
     r->side = side;
     rauto_measure_via(r, check ? SERVO_RAUTO_PH_CHECK : SERVO_RAUTO_PH_MOVE,
-                      k_end_us[side], r->cfg.center_us, now_ms);
+                      servo_rauto_side_us(r, side), r->cfg.center_us, now_ms);
 }
 
 void rauto_measure_via(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
@@ -306,6 +306,14 @@ void rauto_measure_via(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
 void rauto_command(servo_rauto_t *r, servo_rauto_phase_t ph, uint16_t us,
                    uint32_t now_ms)
 {
+    if (r->searched
+        && (us < r->ends[0].end_us || us > r->ends[1].end_us)) {
+        /* The found ends cap every pulse after the search. */
+        r->stop_us = us < r->ends[0].end_us ? r->ends[0].end_us
+                                            : r->ends[1].end_us;
+        finish(r, SERVO_RAUTO_FAIL, SERVO_RAUTO_WHY_STOP, now_ms);
+        return;
+    }
     r->phase    = ph;
     r->phase_ms = now_ms;
     r->move_ms  = now_ms;
@@ -614,8 +622,62 @@ static void record(servo_rauto_t *r, float ms, bool within)
 }
 
 /**
- * @brief The angle a measure took: the side's direction on its first
- *        measure, the step recorded, then done, a write, or the end.
+ * @brief The angle a measure took, judged: the side's direction on its
+ *        first measure, the measure along it, the step recorded, both end
+ *        pulses on one side of the zero ending the run.
+ * @param r      Run state; r->side the side measured.
+ * @param deg    The deflection from the zero, signed, °.
+ * @param ms     Out: the measure along the side's direction, °.
+ * @param within Out: within the tolerance of the goal.
+ * @param now_ms Time, ms.
+ * @return false when the run ended.
+ */
+static bool assess(servo_rauto_t *r, float deg, float *ms, bool *within,
+                   uint32_t now_ms)
+{
+    const uint8_t s = r->side;
+    const float tol = rauto_tol_deg(r);
+    if (r->sign[s] == 0 && fabsf(deg) >= tol) {
+        r->sign[s] = deg > 0.0f ? 1 : -1;
+    }
+    *ms = r->sign[s] != 0 ? deg * (float)r->sign[s] : fabsf(deg);
+    *within = fabsf(*ms - r->goal_deg[s]) <= tol + RAUTO_EPS_DEG;
+    r->measured_deg[s] = *ms;
+    if (!r->have_first[s]) {
+        r->have_first[s] = true;
+        r->first_deg[s]  = *ms;
+    }
+    record(r, *ms, *within);
+    if (r->sign[s] != 0 && r->sign[s] == r->sign[1u - s]) {
+        /* Both end pulses move the surface to the same side. */
+        fail(r, SERVO_RAUTO_WHY_MAPPING, now_ms);
+        return false;
+    }
+    return true;
+}
+
+/**
+ * @brief A side outside the tolerance: its write next, or the end where it
+ *        has no direction or lies on the other side of the zero.
+ * @param r      Run state.
+ * @param s      The side.
+ * @param ms     Its measure along its direction, °.
+ * @param now_ms Time, ms.
+ */
+static void outside(servo_rauto_t *r, uint8_t s, float ms, uint32_t now_ms)
+{
+    r->verified[s] = false;
+    if (r->sign[s] == 0 || !(ms > 0.0f)) {
+        /* Too close to the zero to give the side a direction, or on the
+         * other side of it. */
+        fail(r, SERVO_RAUTO_WHY_MAPPING, now_ms);
+        return;
+    }
+    plan_write(r, s, ms, now_ms);
+}
+
+/**
+ * @brief The angle a measure took: judged, then done, a write, or the end.
  * @param r      Run state.
  * @param deg    The deflection from the zero, signed, °.
  * @param now_ms Time, ms.
@@ -623,22 +685,9 @@ static void record(servo_rauto_t *r, float ms, bool within)
 static void measured(servo_rauto_t *r, float deg, uint32_t now_ms)
 {
     const uint8_t s = r->side;
-    const float goal = r->goal_deg[s];
-    const float tol = rauto_tol_deg(r);
-    if (r->sign[s] == 0 && fabsf(deg) >= tol) {
-        r->sign[s] = deg > 0.0f ? 1 : -1;
-    }
-    const float ms = r->sign[s] != 0 ? deg * (float)r->sign[s] : fabsf(deg);
-    const bool within = fabsf(ms - goal) <= tol + RAUTO_EPS_DEG;
-    r->measured_deg[s] = ms;
-    if (!r->have_first[s]) {
-        r->have_first[s] = true;
-        r->first_deg[s]  = ms;
-    }
-    record(r, ms, within);
-    if (r->sign[s] != 0 && r->sign[s] == r->sign[1u - s]) {
-        /* Both end pulses move the surface to the same side. */
-        fail(r, SERVO_RAUTO_WHY_MAPPING, now_ms);
+    float ms = 0.0f;
+    bool within = false;
+    if (!assess(r, deg, &ms, &within, now_ms)) {
         return;
     }
     if (r->map_open && !judge_map(r, ms, within, now_ms)) {
@@ -656,14 +705,45 @@ static void measured(servo_rauto_t *r, float deg, uint32_t now_ms)
         next_measure(r, now_ms);
         return;
     }
-    r->verified[s] = false;
-    if (r->sign[s] == 0 || !(ms > 0.0f)) {
-        /* Too close to the zero to give the side a direction, or on the
-         * other side of it. */
-        fail(r, SERVO_RAUTO_WHY_MAPPING, now_ms);
-        return;
+    outside(r, s, ms, now_ms);
+}
+
+void rauto_searched(servo_rauto_t *r, uint32_t now_ms)
+{
+    float ms[2] = { 0.0f, 0.0f };
+    bool within[2] = { false, false };
+    for (uint8_t s = 0; s < 2u; ++s) {
+        r->side = s;
+        if (!assess(r, rauto_at_side(r, s, r->s_deg[s]), &ms[s], &within[s],
+                    now_ms)) {
+            return;
+        }
+        r->verified[s]    = within[s];
+        r->verified_at[s] = r->total;
     }
-    plan_write(r, s, ms, now_ms);
+    for (uint8_t s = 0; s < 2u; ++s) {
+        if (!within[s]) {
+            r->side = s;
+            outside(r, s, ms[s], now_ms);
+            return;
+        }
+    }
+    next_measure(r, now_ms);
+}
+
+bool rauto_still(const servo_rauto_t *r, uint32_t now_ms,
+                 const servo_rauto_in_t *in)
+{
+    if (!due(now_ms, r->move_ms, SERVO_RAUTO_STILL_MS)) {
+        return false;
+    }
+    /* On the IMU the reading held within IMU PRECISION over IMU SETTLING
+     * TIME too: the sensor's creep after the step (servo_settle.h). */
+    const bool held = r->cfg.settle_win_ms == 0u
+                      || servo_settle_held(&r->hold, r->cfg.settle_win_ms,
+                                           r->cfg.settle_band_deg);
+    return in->angle_valid && in->still_ms >= SERVO_RAUTO_STILL_MS && held
+           && !r->gap.open;
 }
 
 /**
@@ -683,13 +763,7 @@ static void measure_step(servo_rauto_t *r, uint32_t now_ms,
         r->phase    = SERVO_RAUTO_PH_SETTLE;
         r->phase_ms = now_ms;
     }
-    /* On the IMU the reading held within IMU PRECISION over IMU SETTLING
-     * TIME too: the sensor's creep after the step (servo_settle.h). */
-    const bool held = r->cfg.settle_win_ms == 0u
-                      || servo_settle_held(&r->hold, r->cfg.settle_win_ms,
-                                           r->cfg.settle_band_deg);
-    if (in->angle_valid && in->still_ms >= SERVO_RAUTO_STILL_MS && held
-        && r->gap.open == false) {
+    if (rauto_still(r, now_ms, in)) {
         if (r->phase == SERVO_RAUTO_PH_APPROACH) {
             /* Settled where the measure comes from: its own pulse now. */
             rauto_command(r, r->next_ph, r->next_us, now_ms);
@@ -699,9 +773,13 @@ static void measure_step(servo_rauto_t *r, uint32_t now_ms,
         r->held_ok = true;
         r->held_us = r->cmd_us;
         if (r->phase == SERVO_RAUTO_PH_VERIFY) {
-            rauto_verify_take(r, in->angle_deg, now_ms);
+            /* An end as it stands for its end pulse; the center as read. */
+            rauto_verify_take(r, r->vstep < 2u
+                                     ? rauto_at_side(r, r->vstep,
+                                                     in->angle_deg)
+                                     : in->angle_deg, now_ms);
         } else {
-            measured(r, in->angle_deg, now_ms);
+            measured(r, rauto_at_side(r, r->side, in->angle_deg), now_ms);
         }
     } else if (due(now_ms, r->move_ms, servo_rauto_wait_ms(r))) {
         fail(r, SERVO_RAUTO_WHY_NOT_STILL, now_ms);
@@ -722,20 +800,85 @@ uint32_t servo_rauto_wait_ms(const servo_rauto_t *r)
 
 /* ------------------------------------------------------------- inputs */
 
-bool servo_rauto_goals_ok(const float target_deg[2], uint8_t margin_pct,
-                          uint16_t tol_ddeg)
+bool servo_rauto_goals_ok(const float target_deg[2], uint16_t tol_ddeg)
 {
     if (target_deg == NULL) {
         return false;
     }
     const float need = 2.0f * (float)tol_ddeg / 10.0f + 2.0f * RAUTO_EPS_DEG;
     for (int s = 0; s < 2; ++s) {
-        const float goal = target_deg[s] * (1.0f + (float)margin_pct / 100.0f);
-        if (!(goal >= need)) {
+        if (!(target_deg[s] >= need)) {
             return false;
         }
     }
     return true;
+}
+
+/**
+ * @brief The margin's range from NEUTRAL, exact, ns (0.001us): each side
+ *        extends by margin % of its own span from N, with N and the ends
+ *        in 0.1us (N - 10000) x p ns below 1000us and (20000 - N) x p ns
+ *        above 2000us.
+ * @param margin_pct  The margin, %; above SERVO_RAUTO_MARGIN_MAX as that.
+ * @param neutral_dus NEUTRAL, 0.1us; 0 as SERVO_RAUTO_NEUTRAL_DUS, else
+ *                    held to SERVO_RAUTO_NEUTRAL_MIN_DUS..MAX_DUS.
+ * @param ns          Out: the lower and the upper end, ns.
+ */
+static void margin_ns(uint8_t margin_pct, uint16_t neutral_dus,
+                      uint32_t ns[2])
+{
+    const uint32_t p = margin_pct > SERVO_RAUTO_MARGIN_MAX
+                           ? SERVO_RAUTO_MARGIN_MAX : margin_pct;
+    uint32_t n = neutral_dus == 0u ? SERVO_RAUTO_NEUTRAL_DUS : neutral_dus;
+    n = n < SERVO_RAUTO_NEUTRAL_MIN_DUS ? SERVO_RAUTO_NEUTRAL_MIN_DUS
+      : n > SERVO_RAUTO_NEUTRAL_MAX_DUS ? SERVO_RAUTO_NEUTRAL_MAX_DUS : n;
+    const uint32_t lo_dus = 10u * k_end_us[0], hi_dus = 10u * k_end_us[1];
+    ns[0] = 1000u * k_end_us[0] - (n - lo_dus) * p;
+    ns[1] = 1000u * k_end_us[1] + (hi_dus - n) * p;
+}
+
+void servo_rauto_kst_pulses(uint8_t margin_pct, uint16_t neutral_dus,
+                            uint16_t dus[2])
+{
+    if (dus == NULL) {
+        return;
+    }
+    uint32_t ns[2];
+    margin_ns(margin_pct, neutral_dus, ns);
+    const uint32_t k = 100u * SERVO_RAUTO_KST_STEP_DUS;  /* ns */
+    /* Toward the center: the servo's range inside the margin's. */
+    dus[0] = (uint16_t)((ns[0] + k - 1u) / k * SERVO_RAUTO_KST_STEP_DUS);
+    dus[1] = (uint16_t)(ns[1] / k * SERVO_RAUTO_KST_STEP_DUS);
+}
+
+void servo_rauto_pulse_range(uint8_t margin_pct, uint16_t neutral_dus,
+                             uint16_t us[2])
+{
+    if (us == NULL) {
+        return;
+    }
+    uint16_t dus[2];
+    servo_rauto_kst_pulses(margin_pct, neutral_dus, dus);
+    /* Outward: the range holds the servo's, by less than 1us an end. */
+    us[0] = (uint16_t)(dus[0] / 10u);
+    us[1] = (uint16_t)((dus[1] + 9u) / 10u);
+}
+
+bool servo_rauto_widen(const servo_rauto_t *r, uint16_t prof_us[2])
+{
+    if (r == NULL || !r->pulses_held) {
+        return false;
+    }
+    uint16_t us[2];
+    servo_rauto_pulse_range(r->cfg.margin_pct, r->servo.pulse_dus[0], us);
+    /* Each side only where the bench's is narrower. */
+    const bool wide_lo = us[0] < r->cfg.min_us;
+    const bool wide_hi = us[1] > r->cfg.max_us;
+    if (prof_us != NULL) {
+        prof_us[0] = wide_lo ? us[0] : r->cfg.min_us;
+        prof_us[1] = wide_hi ? us[1] : r->cfg.max_us;
+    }
+    return wide_lo || wide_hi;
 }
 
 bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
@@ -743,6 +886,9 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
 {
     if (r == NULL || cfg == NULL || servo_rauto_running(r)
         || cfg->margin_pct > SERVO_RAUTO_MARGIN_MAX
+        || (cfg->family != (uint8_t)SERVO_RAUTO_FAM_KST
+            && cfg->margin_pct > 0u)
+        || cfg->min_us > k_end_us[0] || cfg->max_us < k_end_us[1]
         || cfg->tol_ddeg < SERVO_RAUTO_TOL_MIN_DDEG
         || cfg->tol_ddeg > SERVO_RAUTO_TOL_MAX_DDEG
         || cfg->family > (uint8_t)SERVO_RAUTO_FAM_HITEC_C
@@ -757,8 +903,7 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
             return false;
         }
     }
-    if (!servo_rauto_goals_ok(cfg->target_deg, cfg->margin_pct,
-                              cfg->tol_ddeg)) {
+    if (!servo_rauto_goals_ok(cfg->target_deg, cfg->tol_ddeg)) {
         return false;
     }
     memset(r, 0, sizeof(*r));
@@ -768,10 +913,10 @@ bool servo_rauto_start(servo_rauto_t *r, const servo_rauto_cfg_t *cfg,
     r->last_win_ms = now_ms;
     r->reg_side[0] = -1;
     r->reg_side[1] = -1;
-    for (int s = 0; s < 2; ++s) {
-        r->goal_deg[s] = cfg->target_deg[s]
-                         * (1.0f + (float)cfg->margin_pct / 100.0f);
-    }
+    /* The goal at 1000us and 2000us is the target: the margin lies in
+     * the pulse range (servo_rauto_kst_pulses()). */
+    r->goal_deg[0] = cfg->target_deg[0];
+    r->goal_deg[1] = cfg->target_deg[1];
     go_safe(r, now_ms);
     return true;
 }
@@ -797,7 +942,8 @@ static void stalled(servo_rauto_t *r, uint32_t now_ms)
     /* The verify pass's center and an approach have no goal to bind
      * short of. */
     const bool no_goal = (r->phase == SERVO_RAUTO_PH_VERIFY && r->vstep >= 2u)
-                         || r->phase == SERVO_RAUTO_PH_APPROACH;
+                         || r->phase == SERVO_RAUTO_PH_APPROACH
+                         || r->phase == SERVO_RAUTO_PH_SEARCH;
     if (measuring(r->phase) && r->angle_valid && !no_goal) {
         const uint8_t s = r->side;
         const float along = r->sign[s] != 0
@@ -834,9 +980,13 @@ void servo_rauto_window(servo_rauto_t *r, const servo_test_win_t *w)
         }
         if (due(at, r->elevated_ms, SERVO_LIMRUN_STALL_MS)) {
             stalled(r, at);
+            return;
         }
     } else {
         r->elevated = false;
+    }
+    if (r->phase == SERVO_RAUTO_PH_SEARCH) {
+        rauto_search_window(r, (uint16_t)mag(w->mean_ma), at);
     }
 }
 
@@ -904,6 +1054,15 @@ static void first_read(servo_rauto_t *r, const servo_rauto_servo_t *sv,
         fail(r, SERVO_RAUTO_WHY_NO_SERVO, now_ms);
         return;
     }
+    if (r->cfg.family == SERVO_RAUTO_FAM_KST
+        && (sv->pulse_dus[0] < SERVO_RAUTO_NEUTRAL_MIN_DUS
+            || sv->pulse_dus[0] > SERVO_RAUTO_NEUTRAL_MAX_DUS)) {
+        /* The margin's range is taken from NEUTRAL, which the KST holds
+         * in 1360.0us to 1640.0us; outside it the range would not be the
+         * servo's. */
+        fail(r, SERVO_RAUTO_WHY_NEUTRAL, now_ms);
+        return;
+    }
     r->read_once = true;
     r->servo     = *sv;
     if (r->cfg.family == SERVO_RAUTO_FAM_HITEC_D && !sv->reversion) {
@@ -915,16 +1074,19 @@ static void first_read(servo_rauto_t *r, const servo_rauto_servo_t *sv,
     r->cur[0]    = sv->value[0];
     r->cur[1]    = sv->value[1];
     memcpy(r->pulse_now, sv->pulse_dus, sizeof(r->pulse_now));
-    if (r->cfg.family == SERVO_RAUTO_FAM_KST
-        && (sv->pulse_dus[1] != SERVO_LIMRUN_STD_LOWER_DUS
-            || sv->pulse_dus[2] != SERVO_LIMRUN_STD_UPPER_DUS)) {
-        r->pulse_op = true;
-        r->phase    = SERVO_RAUTO_PH_WRITE;
-        r->phase_ms = now_ms;
-        r->pend.pulses       = true;
-        r->pend.pulse_dus[0] = SERVO_LIMRUN_STD_LOWER_DUS;
-        r->pend.pulse_dus[1] = SERVO_LIMRUN_STD_UPPER_DUS;
-        return;
+    if (r->cfg.family == SERVO_RAUTO_FAM_KST) {
+        uint16_t p[2];
+        servo_rauto_kst_pulses(r->cfg.margin_pct, sv->pulse_dus[0], p);
+        if (sv->pulse_dus[1] != p[0] || sv->pulse_dus[2] != p[1]) {
+            r->pulse_op = true;
+            r->phase    = SERVO_RAUTO_PH_WRITE;
+            r->phase_ms = now_ms;
+            r->pend.pulses       = true;
+            r->pend.pulse_dus[0] = p[0];
+            r->pend.pulse_dus[1] = p[1];
+            return;
+        }
+        r->pulses_held = true;
     }
     ask_leave(r, now_ms);
 }
@@ -1013,12 +1175,17 @@ void servo_rauto_pulsed(servo_rauto_t *r, bool ok, const uint16_t *pulse_dus,
     memcpy(r->pulse_now, pulse_dus, sizeof(r->pulse_now));
     mark_programmed(r);
     r->pulse_op = false;
-    if (pulse_dus[1] != SERVO_LIMRUN_STD_LOWER_DUS
-        || pulse_dus[2] != SERVO_LIMRUN_STD_UPPER_DUS) {
+    uint16_t p[2];
+    servo_rauto_kst_pulses(r->cfg.margin_pct, r->servo.pulse_dus[0], p);
+    /* The range is the read NEUTRAL's: a NEUTRAL moved by the write
+     * leaves it wrong. */
+    if (pulse_dus[0] != r->servo.pulse_dus[0] || pulse_dus[1] != p[0]
+        || pulse_dus[2] != p[1]) {
         abort_why(r, SERVO_RAUTO_WHY_WRITE, now_ms);
         return;
     }
     r->pulses_landed = true;
+    r->pulses_held   = true;
     ask_leave(r, now_ms);
 }
 
@@ -1110,6 +1277,13 @@ static void phase_step(servo_rauto_t *r, uint32_t now_ms,
             measure_step(r, now_ms, in);
         }
         break;
+    case SERVO_RAUTO_PH_SEARCH:
+        if (!in->live) {
+            servo_rauto_abort(r, SERVO_TEST_AB_DISARMED, now_ms);
+        } else {
+            rauto_search_step(r, now_ms, in);
+        }
+        break;
     case SERVO_RAUTO_PH_SAFE:
         safe_step(r, now_ms, in);
         break;
@@ -1125,7 +1299,11 @@ static void phase_step(servo_rauto_t *r, uint32_t now_ms,
         if (in->live) {
             /* After the read session the first side; after a write the
              * side written. */
-            if (r->total == 0u && !r->map_open) {
+            if (r->total == 0u && !r->map_open && !r->searched) {
+                /* After the read session: the limit search, which takes
+                 * the first measures. */
+                rauto_search_begin(r, 0u, now_ms);
+            } else if (r->total == 0u && !r->map_open) {
                 next_measure(r, now_ms);
             } else {
                 begin_measure(r, r->side, false, now_ms);

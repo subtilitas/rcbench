@@ -10,7 +10,7 @@
  * SPDX-License-Identifier: MIT
  */
 
-#include "servo_rudder_auto.h"
+#include "servo_rudder_auto_int.h"
 
 #include <math.h>
 #include <stdio.h>
@@ -168,6 +168,38 @@ static const char *family_name(uint8_t f)
 }
 
 /**
+ * @brief The margin's line: on KST the servo's pulse range as written and
+ *        the extended ends by the linear model, from the NEUTRAL read,
+ *        named where it is not 1500.0us; on Hitec its lock at 0%.
+ * @param r Run state.
+ * @param c Cursor, at the line asked for.
+ */
+static void margin_line(const servo_rauto_t *r, cur_t *c)
+{
+    const servo_rauto_cfg_t *g = &r->cfg;
+    if (g->family != SERVO_RAUTO_FAM_KST) {
+        snprintf(c->buf, c->n, "%s", LS(RA_R_MARGIN_HITEC));
+        return;
+    }
+    const uint16_t n = r->servo.pulse_dus[0];
+    uint16_t us[2], dus[2];
+    servo_rauto_pulse_range(g->margin_pct, n, us);
+    servo_rauto_kst_pulses(g->margin_pct, n, dus);
+    const double k = 1.0 + (double)g->margin_pct / 100.0;
+    if (n == 0u || n == SERVO_RAUTO_NEUTRAL_DUS) {
+        snprintf(c->buf, c->n, LS(RA_R_MARGIN), (unsigned)g->margin_pct,
+                 (double)dus[0] / 10.0, (double)dus[1] / 10.0,
+                 (unsigned)us[0], (double)g->target_deg[0] * k,
+                 (unsigned)us[1], (double)g->target_deg[1] * k);
+        return;
+    }
+    snprintf(c->buf, c->n, LS(RA_R_MARGIN_N), (unsigned)g->margin_pct,
+             (double)n / 10.0, (double)dus[0] / 10.0, (double)dus[1] / 10.0,
+             (unsigned)us[0], (double)g->target_deg[0] * k, (unsigned)us[1],
+             (double)g->target_deg[1] * k);
+}
+
+/**
  * @brief The head: title, result, the servo, what it drives and reads, the
  *        protections, the targets and the settle rule, the duration and the
  *        angle source's gaps.
@@ -188,6 +220,8 @@ static bool head_lines(const servo_rauto_t *r, cur_t *c)
         char why[64];
         if (r->why == SERVO_RAUTO_WHY_BINDS) {
             snprintf(why, sizeof(why), LS(RA_BINDS_AT), (double)r->bind_deg);
+        } else if (r->why == SERVO_RAUTO_WHY_STOP) {
+            snprintf(why, sizeof(why), LS(RA_STOP_AT), (unsigned)r->stop_us);
         } else {
             snprintf(why, sizeof(why), "%s",
                      servo_str_in(c->text, servo_rauto_why_str(r)));
@@ -237,12 +271,11 @@ static bool head_lines(const servo_rauto_t *r, cur_t *c)
     }
     if (here(c)) {
         snprintf(c->buf, c->n, LS(RA_R_TARGETS), (double)g->target_deg[0],
-                 (double)g->target_deg[1], (unsigned)g->margin_pct);
+                 (double)g->target_deg[1], (double)g->tol_ddeg / 10.0);
         return true;
     }
     if (here(c)) {
-        snprintf(c->buf, c->n, LS(RA_R_GOALS), (double)r->goal_deg[0],
-                 (double)r->goal_deg[1], (double)g->tol_ddeg / 10.0);
+        margin_line(r, c);
         return true;
     }
     if (g->len_mm > 0.0f && here(c)) {
@@ -350,6 +383,13 @@ static bool prog_lines(const servo_rauto_t *r, cur_t *c)
                      (double)r->pulse_now[2] / 10.0);
             return true;
         }
+        uint16_t prof[2];
+        if (servo_rauto_widen(r, prof) && here(c)) {
+            snprintf(c->buf, c->n, LS(RA_R_WIDEN), (unsigned)r->cfg.min_us,
+                     (unsigned)r->cfg.max_us, (unsigned)prof[0],
+                     (unsigned)prof[1]);
+            return true;
+        }
     }
     if (reg_line(r, c, 0) || reg_line(r, c, 1)) {
         return true;
@@ -373,6 +413,121 @@ static bool prog_lines(const servo_rauto_t *r, cur_t *c)
            && text_line(c, r->cfg.family == SERVO_RAUTO_FAM_KST
                                ? SERVO_STR_RA_R_RESTORE
                                : SERVO_STR_L_R_RESTORE_HITEC);
+}
+
+/**
+ * @brief A search row's angle as printed: one that rounds to 0 is +0.
+ * @param p The row.
+ * @return the angle, °.
+ */
+static double srow_deg(const servo_rauto_srow_t *p)
+{
+    return fabs((double)p->deg) < 0.005 ? 0.0 : (double)p->deg;
+}
+
+/**
+ * @brief One side's end of the limit search: bound with its pulses and
+ *        currents, free to the margin's end, or not searched.
+ * @param r Run state.
+ * @param c Cursor.
+ * @param s The side: 0 LOW END, 1 HIGH END.
+ * @return true when it is the line asked for.
+ */
+static bool end_line(const servo_rauto_t *r, cur_t *c, unsigned s)
+{
+    if (!here(c)) {
+        return false;
+    }
+    const servo_rauto_end_t *e = &r->ends[s];
+    const char *head = s == 0u ? LS(L_R_LOW) : LS(L_R_HIGH);
+    if (!e->done) {
+        snprintf(c->buf, c->n, LS(L_R_END_NOT_RUN), head);
+    } else if (e->bound) {
+        snprintf(c->buf, c->n, LS(L_R_END_BOUND), head, (unsigned)e->bind_us,
+                 (unsigned)e->end_us, (double)e->free_a,
+                 (double)e->bound_a);
+    } else {
+        snprintf(c->buf, c->n, LS(L_R_END_FREE), head, (unsigned)e->end_us,
+                 (double)e->free_a);
+    }
+    return true;
+}
+
+/**
+ * @brief The angle at a side's found end inside the end pulse, where the
+ *        search took one: short of the target, or the side measured there
+ *        and its scale to the end pulse.
+ * @param r Run state.
+ * @param c Cursor.
+ * @param s The side.
+ * @return true when it is the line asked for.
+ */
+static bool end_deg_line(const servo_rauto_t *r, cur_t *c, unsigned s)
+{
+    const servo_rauto_end_t *e = &r->ends[s];
+    if (!e->deg_taken || !here(c)) {
+        return false;
+    }
+    const unsigned end_us = s == 0u ? 1000u : 2000u;
+    int len;
+    if (e->fallback) {
+        len = snprintf(c->buf, c->n, LS(RA_R_END_DEG_STEP), (double)e->deg,
+                       (unsigned)e->deg_us);
+    } else {
+        len = snprintf(c->buf, c->n, LS(RA_R_END_DEG), (double)e->deg,
+                       (unsigned)e->deg_us);
+    }
+    if (len < 0 || (size_t)len >= c->n) {
+        return true;
+    }
+    if (e->at_end) {
+        snprintf(c->buf + len, c->n - (size_t)len, LS(RA_R_END_THERE),
+                 end_us, (double)(rauto_at_side(r, (uint8_t)s, 1.0f)));
+    } else {
+        snprintf(c->buf + len, c->n - (size_t)len, LS(RA_R_END_SHORT),
+                 (double)r->goal_deg[s]);
+    }
+    return true;
+}
+
+/**
+ * @brief The limit search: its two ends, then one line a position judged.
+ * @param r Run state.
+ * @param c Cursor.
+ * @return true when the line asked for is in it.
+ */
+static bool search_lines(const servo_rauto_t *r, cur_t *c)
+{
+    if (blank(c) || text_line(c, SERVO_STR_RA_R_SEARCH_HEAD)) {
+        return true;
+    }
+    if (here(c)) {
+        servo_limit_cfg_t lc;
+        servo_limit_defaults(&lc, r->cfg.center_us, true);
+        snprintf(c->buf, c->n, LS(RA_R_SEARCH_RULE), (unsigned)lc.step_us,
+                 (unsigned)lc.center_us, (unsigned)lc.settle_ms,
+                 (unsigned)lc.measure_ms, (double)lc.knee_ratio,
+                 (double)lc.knee_margin_a, (unsigned)lc.backoff_us);
+        return true;
+    }
+    if (end_line(r, c, 0u) || end_deg_line(r, c, 0u) || end_line(r, c, 1u)
+        || end_deg_line(r, c, 1u)) {
+        return true;
+    }
+    for (unsigned k = 0; k < r->srow_n; ++k) {
+        if (!here(c)) {
+            continue;
+        }
+        const servo_rauto_srow_t *p = &r->srow[k];
+        char deg[16] = "-";
+        if (p->valid) {
+            snprintf(deg, sizeof(deg), "%.2f°", srow_deg(p));
+        }
+        snprintf(c->buf, c->n, LS(RA_R_SEARCH_ROW), (unsigned)p->us,
+                 (double)p->ma / 1000.0, deg);
+        return true;
+    }
+    return false;
 }
 
 /**
@@ -401,7 +556,8 @@ static bool step_lines(const servo_rauto_t *r, cur_t *c)
         } else {
             snprintf(v, sizeof(v), "-");
         }
-        snprintf(c->buf, c->n, LS(RA_R_STEP), p->side == 0u ? 1000u : 2000u,
+        snprintf(c->buf, c->n, LS(RA_R_STEP),
+                 (unsigned)servo_rauto_side_us(r, p->side),
                  (unsigned)p->n, v, (double)p->measured_deg,
                  (double)p->goal_deg,
                  p->within ? LS(RA_R_IN) : LS(RA_R_OUT));
@@ -418,7 +574,8 @@ static bool step_lines(const servo_rauto_t *r, cur_t *c)
  */
 static unsigned verify_us(const servo_rauto_t *r, unsigned k)
 {
-    return k == 0u ? 1000u : k == 1u ? 2000u : (unsigned)r->cfg.center_us;
+    return k < 2u ? (unsigned)servo_rauto_side_us(r, (uint8_t)k)
+                  : (unsigned)r->cfg.center_us;
 }
 
 /**
@@ -481,8 +638,8 @@ bool servo_rauto_report_line(const servo_rauto_t *r, unsigned idx, char *buf,
         return false;
     }
     cur_t c = { idx, 0u, buf, n, r->cfg.text };
-    return head_lines(r, &c) || prog_lines(r, &c) || step_lines(r, &c)
-        || verify_lines(r, &c) || blank(&c)
+    return head_lines(r, &c) || prog_lines(r, &c) || search_lines(r, &c)
+        || step_lines(r, &c) || verify_lines(r, &c) || blank(&c)
         || text_line(&c, SERVO_STR_RA_R_MODEL);
 }
 
@@ -493,12 +650,25 @@ static bool csv_line(const servo_rauto_t *r, unsigned idx, char *buf,
         snprintf(buf, n, "%s", RAUTO_CSV_HEAD);
         return true;
     }
+    if (idx > r->step_n + r->vn) {
+        /* The search's positions last, "S" in write, the current in mA in
+         * value and the angle in measured. */
+        const unsigned k = idx - 1u - r->step_n - r->vn;
+        if (k >= r->srow_n) {
+            return false;
+        }
+        const servo_rauto_srow_t *p = &r->srow[k];
+        char deg[16] = "";
+        if (p->valid) {
+            snprintf(deg, sizeof(deg), "%.2f", srow_deg(p));
+        }
+        snprintf(buf, n, "%u;%u;S;%u;%s;;;;", idx, (unsigned)p->us,
+                 (unsigned)p->ma, deg);
+        return true;
+    }
     if (idx > r->step_n) {
         /* The verify pass's measures after the steps, "V" in write. */
         const unsigned k = idx - 1u - r->step_n;
-        if (k >= r->vn) {
-            return false;
-        }
         char mm[16] = "", gm[16] = "";
         if (r->cfg.len_mm > 0.0f) {
             snprintf(mm, sizeof(mm), "%.2f",
@@ -525,7 +695,7 @@ static bool csv_line(const servo_rauto_t *r, unsigned idx, char *buf,
                  (double)mm_of(p->goal_deg, r->cfg.len_mm));
     }
     snprintf(buf, n, "%u;%u;%u;%s;%.2f;%.2f;%s;%s;%u", idx,
-             p->side == 0u ? 1000u : 2000u, (unsigned)p->n, v,
+             (unsigned)servo_rauto_side_us(r, p->side), (unsigned)p->n, v,
              (double)p->measured_deg, (double)p->goal_deg, mm, gm,
              p->within ? 1u : 0u);
     return true;
@@ -540,6 +710,7 @@ bool servo_rauto_why_error(servo_rauto_why_t why, servo_test_abort_t test_why)
     case SERVO_RAUTO_WHY_HARD:
     case SERVO_RAUTO_WHY_STALL:
     case SERVO_RAUTO_WHY_BINDS:
+    case SERVO_RAUTO_WHY_STOP:
     case SERVO_RAUTO_WHY_ANGLE: return true;
     default:                    return false;
     }
@@ -566,9 +737,11 @@ servo_str_t servo_rauto_why_str(const servo_rauto_t *r)
     case SERVO_RAUTO_WHY_BENCH:     return SERVO_STR_L_WHY_BENCH;
     case SERVO_RAUTO_WHY_SUPPLY:    return SERVO_STR_L_WHY_SUPPLY;
     case SERVO_RAUTO_WHY_CAP:       return SERVO_STR_RA_WHY_CAP;
+    case SERVO_RAUTO_WHY_NEUTRAL:   return SERVO_STR_RA_WHY_NEUTRAL;
     case SERVO_RAUTO_WHY_NO_EFFECT: return r->side == 0u
                                                ? SERVO_STR_RA_WHY_NO_EFFECT_LO
                                                : SERVO_STR_RA_WHY_NO_EFFECT_HI;
+    case SERVO_RAUTO_WHY_STOP:      return SERVO_STR_RA_WHY_STOP;
     case SERVO_RAUTO_WHY_VERIFY:    return r->vbad == 0u
                                                ? SERVO_STR_RA_WHY_VERIFY_LO
                                            : r->vbad == 1u
@@ -592,6 +765,7 @@ servo_str_t servo_rauto_phase_str(servo_rauto_phase_t ph)
     case SERVO_RAUTO_PH_CHECK:   return SERVO_STR_L_PH_CHECK;
     case SERVO_RAUTO_PH_VERIFY:  return SERVO_STR_RA_PH_VERIFY;
     case SERVO_RAUTO_PH_APPROACH: return SERVO_STR_RA_PH_APPROACH;
+    case SERVO_RAUTO_PH_SEARCH:  return SERVO_STR_L_PH_SEARCH;
     default:                     return SERVO_STR_PHASE_NONE;
     }
 }

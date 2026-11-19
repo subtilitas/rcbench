@@ -11,22 +11,20 @@
 
 #include <math.h>
 
-/** @brief The verify pass's pulses but the center, us. */
-static const uint16_t k_verify_us[2] = { 1000u, 2000u };
-
 void rauto_verify_begin(servo_rauto_t *r, uint8_t step, uint32_t now_ms)
 {
     r->vstep = step;
     if (step < 2u) {
         r->side = step;
         /* An end from PULSE CENTER, as the main pass reaches it. */
-        rauto_measure_via(r, SERVO_RAUTO_PH_VERIFY, k_verify_us[step],
-                          r->cfg.center_us, now_ms);
+        rauto_measure_via(r, SERVO_RAUTO_PH_VERIFY,
+                          servo_rauto_side_us(r, step), r->cfg.center_us,
+                          now_ms);
     } else {
         /* The center always from the 2000us side: the measure before
          * stands there. */
         rauto_measure_via(r, SERVO_RAUTO_PH_VERIFY, r->cfg.center_us,
-                          k_verify_us[1], now_ms);
+                          servo_rauto_side_us(r, 1u), now_ms);
     }
 }
 

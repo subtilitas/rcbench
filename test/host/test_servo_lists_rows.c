@@ -17,6 +17,7 @@
  * - angle_source_names_the_source_in_force
  * - servo_family_is_picked_on_the_programming_port_only
  * - limit_run_picks_its_family_apart_from_rudder_auto
+ * - rudder_auto_margin_reads_0_and_is_locked_on_hitec
  * - servo_pulses_name_their_reason_until_a_pd_mini_feeds
  * - a_finger_on_a_programmer_control_keeps_the_hubs_list_shut
  * - the_servos_name_takes_the_name_keyboard
@@ -38,6 +39,7 @@
 #include "servo_limrun.h"
 #include "servo_ready_int.h"
 #include "servo_rudder_auto.h"
+#include "servo_rudder_auto_int.h"
 
 /* servo_screen_int.h's current-limit helpers, which this suite does not
  * take in whole. */
@@ -319,6 +321,41 @@ TEST_CASE(servo_family_is_picked_on_the_programming_port_only)
     servo_screen_set_drive(0u, SERVO_SCREEN_NO_PIN, false);
     sl_choose(RAL_SERVO, 2);
     CHECK_EQ(servo_screen_rauto_family(), SERVO_RAUTO_FAM_KST);
+    settings_cancel_save();
+}
+
+/* RUDDER AUTO's MARGIN row: the setting's own row with KST/CHASERVO; with
+ * HITEC D SERIES or HITEC CLASSIC a row that reads 0% and takes no press,
+ * the stored 10% kept and back on KST/CHASERVO. */
+TEST_CASE(rudder_auto_margin_reads_0_and_is_locked_on_hitec)
+{
+    enum { MARGIN = 2 };
+    fresh();
+    servo_screen_set_drive(1u, 13u, true);
+    go(SERVO_FN_RAUTO);
+    tap_settings();
+    CHECK(servo_screen_list()->open);
+    settings_set(SET_RUDDER_MARGIN, 10.0f);
+    ui_setlist_row_t r = servo_screen_list()->host->row(MARGIN);
+    CHECK_EQ(r.kind, (uint8_t)UI_SL_SETTING);
+    CHECK_EQ(r.id, SET_RUDDER_MARGIN);
+    for (int f = 1; f <= 2; ++f) {
+        sl_choose(RAL_SERVO, f);
+        CHECK_EQ(servo_screen_rauto_family(),
+                 f == 1 ? SERVO_RAUTO_FAM_HITEC_D : SERVO_RAUTO_FAM_HITEC_C);
+        r = servo_screen_list()->host->row(MARGIN);
+        CHECK_EQ(r.kind, (uint8_t)UI_SL_CUSTOM);
+        CHECK_EQ(r.custom->label, TX_SVL_RA_MARGIN);
+        CHECK_STR_EQ(value_of(MARGIN), "0%");
+        CHECK_STR_EQ(why_of(MARGIN), ui_tr(TX_SVL_KST_ONLY));
+        CHECK(r.custom->step == NULL && r.custom->tap == NULL);
+        CHECK_EQ(rauto_margin_now(), 0u);
+        CHECK_EQ(settings_get_int(SET_RUDDER_MARGIN), 10);
+    }
+    sl_choose(RAL_SERVO, 0);
+    r = servo_screen_list()->host->row(MARGIN);
+    CHECK_EQ(r.id, SET_RUDDER_MARGIN);
+    CHECK_EQ(rauto_margin_now(), 10u);
     settings_cancel_save();
 }
 
@@ -682,6 +719,7 @@ int main(void)
     RUN(angle_source_names_the_source_in_force);
     RUN(servo_family_is_picked_on_the_programming_port_only);
     RUN(limit_run_picks_its_family_apart_from_rudder_auto);
+    RUN(rudder_auto_margin_reads_0_and_is_locked_on_hitec);
     RUN(servo_pulses_name_their_reason_until_a_pd_mini_feeds);
     RUN(a_finger_on_a_programmer_control_keeps_the_hubs_list_shut);
     RUN(the_servos_name_takes_the_name_keyboard);

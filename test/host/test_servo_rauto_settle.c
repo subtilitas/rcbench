@@ -91,6 +91,7 @@ static struct {
     float    first;      /* the first measure's |taken - surface| */
     uint32_t took_max;   /* the longest from arrival to a take, ms */
     uint8_t  steps, vn;  /* the measures looked at */
+    bool     took[2];    /* the search's first measures looked at */
 } f;
 
 /** @brief Error of curve @p c at @p t s after arrival, °. */
@@ -132,9 +133,9 @@ static void creep_rig(float lo, float hi, uint16_t tol_ddeg,
     g.v[1] = (uint16_t)lroundf(hi * 100.0f);
     g.dir[0] = 1.0f;          /* 1000us on the positive side, as roll */
     g.dir[1] = -1.0f;
-    g.cfg.target_deg[0] = 45.0f;
-    g.cfg.target_deg[1] = 45.0f;
-    g.cfg.margin_pct = 5u;
+    g.cfg.target_deg[0] = 47.25f;
+    g.cfg.target_deg[1] = 47.25f;
+    g.cfg.margin_pct = 0u;
     g.cfg.tol_ddeg = tol_ddeg;
     if (rule) {
         g.cfg.settle_win_ms = (uint16_t)SERVO_SETTLE_WIN_DEFAULT_MS;
@@ -176,7 +177,7 @@ static void judge(float taken)
 {
     const float e = fabsf(fabsf(taken) - fabsf(g.angle));
     f.worst = fmaxf(f.worst, e);
-    if (f.steps == 0u && f.vn == 0u) {
+    if (f.steps == 0u && f.vn == 0u && !f.took[1]) {
         f.first = e;
     }
     const uint32_t ms = g.now - f.arrived;
@@ -213,6 +214,17 @@ static void ctick(void)
     servo_rauto_step(&g.run, g.now, &in, &d);
     take(&d);
     drain();
+    /* The search's first measures when taken, the surface at the end
+     * pulse; their steps, the first two, are the same angles. */
+    for (int s = 0; s < 2; ++s) {
+        if (g.run.s_took[s] && !f.took[s]) {
+            f.took[s] = true;
+            judge(g.run.s_deg[s]);
+        }
+    }
+    if (f.steps < 2u && g.run.step_n >= 2u) {
+        f.steps = 2u;
+    }
     for (; f.steps < g.run.step_n; ++f.steps) {
         judge(g.run.steps[f.steps].measured_deg);
     }

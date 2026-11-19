@@ -10,8 +10,10 @@
  * sim_horn_us(): LEFT ANGLE and RIGHT ANGLE the travel at 4us a count),
  * its stops at 700 and 2300us, outside the bench image's 150 counts.  The
  * AS5600 sits on the surface: 0.06° a microsecond of the horn, 600us of
- * travel 36°.  The targets are 20° with a 10% margin: 22° goals, which
- * the end points reach at about 92 counts.
+ * travel 36°.  The servo's NEUTRAL reads 1500.2us.  The targets are 20°
+ * with a 10% margin: 20° goals at 1000us and 2000us, the servo's pulses
+ * 950.4 to 2049.6us, which the end points reach at about 92 counts; 950us
+ * and 2050us then give 22°.
  *
  * Cases:
  * - auto_programs_both_end_points_to_the_goal_and_ends_safe
@@ -33,14 +35,21 @@
  * - auto_enters_at_5v_whatever_the_kst_page_loaded
  * - writes_that_do_not_move_the_2000us_side_end_auto_after_two
  * - imu_yaw_alone_refuses_auto_in_either_algorithm
+ * - servo_pulses_keep_or_1000_2000_leave_the_margins_pulses
+ * - an_off_center_neutral_takes_the_margin_from_neutral
  *
  * SPDX-License-Identifier: MIT
  */
 #include "servo_rauto_kst_rig.h"
+#include "ui_setlist.h"
+#include "servo_rudder_int.h"
+#include "ui_widgets.h"
 
-/* The run to its end on the rig: the pulse range 1000 to 2000us written
- * in the read session, the backup saved once before it, both end points
- * lowered from 150 counts to the 22° goal's within the tolerance, each
+/* The run to its end on the rig: the margin's pulse range, 950.4 to
+ * 2049.6us at 10%, written in the read session, the backup saved once
+ * before it, both end points lowered from 150 counts to the 20° goal's
+ * within the tolerance at 1000us and 2000us, 22° at 950us and 2050us, the
+ * bench's PULSE MIN and PULSE MAX widened to 950-2050us, each
  * write its own session from a power-up, at most 8 writes a side; PASS in
  * RUDDRnnn's report, the CSV handed out first; and the end as every end:
  * the servo let go, DISARM asked and the supply's output off. */
@@ -50,13 +59,19 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     char b[96], want[96];
     ra_setup(true, true);
     CHECK(rauto_blocked() == NULL);
-    /* Nothing in the way: the first line gives the goals, 20° x 1.10. */
-    snprintf(want, sizeof(want), TR(RA_GOALS), 22.0, 22.0);
+    /* Nothing in the way: the first line gives the pulse range and its
+     * ends, 20° x 1.10. */
+    snprintf(want, sizeof(want), TR(RA_GOALS), 950u, 2050u, 22.0, 22.0);
     CHECK_STR_EQ(rauto_line(0, b, sizeof(b)), want);
+    CHECK_STR_EQ(b, "PULSES 950-2050us: 22.0°, 22.0°");
     settings_set(SET_RUDDER_MARGIN, 0.0f);
     settings_set(SET_RUDDER_DEFL_LO, 12.5f);
-    snprintf(want, sizeof(want), TR(RA_GOALS), 12.5, 20.0);
+    snprintf(want, sizeof(want), TR(RA_GOALS), 1000u, 2000u, 12.5, 20.0);
     CHECK_STR_EQ(rauto_line(0, b, sizeof(b)), want);
+    uint16_t lo = 0u, hi = 0u;
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 1000u);
+    CHECK_EQ(hi, 2000u);
     settings_set(SET_RUDDER_MARGIN, 10.0f);
     settings_set(SET_RUDDER_DEFL_LO, 20.0f);
     ra_hold_start();
@@ -69,18 +84,39 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK_EQ(ra.opens_csv, 1u);
     CHECK_EQ(ra.ends, 1u);
     CHECK(kst_field_display(KST_F_PULSE_LOWER, servo(KST_F_PULSE_LOWER), &d));
-    CHECK_EQ(d, 10000);
+    CHECK_EQ(d, 9504);
     CHECK(kst_field_display(KST_F_PULSE_UPPER, servo(KST_F_PULSE_UPPER), &d));
-    CHECK_EQ(d, 20000);
-    /* 22° is 366.7us of the horn, 91.7 counts; 0.5° either way 8.3us. */
+    CHECK_EQ(d, 20496);
+    /* 20° is 333.3us of the horn, at 1000us 91% of the way to PULSE LOWER:
+     * 91.6 counts; 0.5° either way 8.3us.  950us and 2050us, past the
+     * pulses driven, give 20° x 549.6 / 500, 22.0°. */
     for (int k = 0; k < 2; ++k) {
         const unsigned v = servo(k == 0 ? KST_F_LEFT_ANGLE
                                         : KST_F_RIGHT_ANGLE);
         CHECK(v >= 90u && v <= 94u);
         const float horn = sim_horn_us(g_rig.sim.acting,
                                        k == 0 ? 1000u : 2000u, 4.0f, false);
-        CHECK(fabsf(fabsf(horn - 1500.0f) * DEG_PER_US - 22.0f) <= 0.5f);
+        CHECK(fabsf(fabsf(horn - 1500.0f) * DEG_PER_US - 20.0f) <= 0.5f);
+        const float past = sim_horn_us(g_rig.sim.acting,
+                                       k == 0 ? 950u : 2050u, 4.0f, false);
+        CHECK(fabsf(fabsf(past - 1500.0f) * DEG_PER_US - 22.0f) <= 0.6f);
     }
+    /* The search drove the margin's range, 950us to 2050us, never past
+     * it; the rig's stops at 700us and 2300us leave both sides free. */
+    CHECK_EQ(ra.cmd_lo, 950u);
+    CHECK_EQ(ra.cmd_hi, 2050u);
+    CHECK(strstr(ra.report, "Low end:        free to 950us") != NULL);
+    CHECK(strstr(ra.report, "High end:       free to 2050us") != NULL);
+    /* The bench's range widened to the margin's, named on the report. */
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 950u);
+    CHECK_EQ(hi, 2050u);
+    CHECK(strstr(ra.report, "Bench pulses:   PULSE MIN/MAX 1000-2000 -> "
+                            "950-2050us, for the session") != NULL);
+    CHECK(strstr(ra.report, "Margin:         10% from NEUTRAL 1500.2us: "
+                            "servo pulses 950.4-2049.6us; by the linear "
+                            "model 950us reaches 22.0°, 2050us 22.0°; driven "
+                            "in the search only") != NULL);
     CHECK_EQ(g_rig.fc.saves, 1u);
     /* The supply's OFF asked at the end decision, before the report's
      * first file opens. */
@@ -95,10 +131,22 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
     CHECK(!g_rig.sup_on);
     CHECK(ra.offs >= 1u);
     CHECK_EQ(kst_prog_state(M), KST_PROG_PWM);
-    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), "REPORT RUDDR007.TXT");
-    /* The verify pass on the fourth line: each end from its goal, the
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)),
+                 "REPORT RUDDR007.TXT, MIN/MAX 950-2050us");
+    /* One row of the box's 400px in the label face, 10 x 20, in English
+     * and German: 39 and 40 cells. */
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language((ui_lang_t)lang);
+        char l3[96];
+        (void)rauto_line(2, l3, sizeof(l3));
+        CHECK(strlen(l3) <= 40u);
+        CHECK_EQ(ui_text_wrap(NULL, gfx_rect_make(0, 0, RUD_SIDE_W, 20), 20,
+                              l3, &gfx_font_10x20, 0), 1);
+    }
+    ui_text_set_language(UI_LANG_EN);
+    /* The verify pass on the fifth line: each end from its goal, the
      * center from the zero. */
-    CHECK(strncmp(rauto_line(3, b, sizeof(b)), "VERIFY ", 7) == 0);
+    CHECK(strncmp(rauto_line(4, b, sizeof(b)), "VERIFY ", 7) == 0);
     CHECK(strstr(b, ", CENTER ") != NULL);
     CHECK(strstr(b, "-0.00") == NULL);
     CHECK(strstr(ra.report, "VERIFY (pulse, measured, goal") != NULL);
@@ -120,7 +168,7 @@ TEST_CASE(auto_programs_both_end_points_to_the_goal_and_ends_safe)
  * the filtered angle to settle, 3000ms plus the 78 frames at 150ms of the
  * allowance at the rate measured, plus SERVO_RAUTO_CREEP_MS and IMU
  * SETTLING TIME's default 3.0s, passes, and lands both end points on the
- * 22° goal within the tolerance; the settle the IMU gives does not reach
+ * 20° goal within the tolerance; the settle the IMU gives does not reach
  * a run on the AS5600. */
 TEST_CASE(auto_on_the_filtered_imu_waits_for_its_settle_and_passes)
 {
@@ -142,7 +190,7 @@ TEST_CASE(auto_on_the_filtered_imu_waits_for_its_settle_and_passes)
     for (int k = 0; k < 2; ++k) {
         const float horn = sim_horn_us(g_rig.sim.acting,
                                        k == 0 ? 1000u : 2000u, 4.0f, false);
-        CHECK(fabsf(fabsf(horn - 1500.0f) * DEG_PER_US - 22.0f) <= 0.5f);
+        CHECK(fabsf(fabsf(horn - 1500.0f) * DEG_PER_US - 20.0f) <= 0.5f);
     }
     /* On the AS5600 the IMU's settle is no part of the wait. */
     ra_setup(true, true);
@@ -238,8 +286,49 @@ TEST_CASE(a_tap_on_stop_run_ends_auto_at_once)
     CHECK(strstr(ra.report, "ABORTED") != NULL);
 }
 
-/* ZERO and RESET MAX tapped while AUTO holds the 1000us side at about
- * -36°: refused, the run measures from the zero it started with and
+/* The search's pulses through the range its commands carry, held to it as
+ * shared/outputs/servo_link.c does: with PULSE MIN and MAX at 1000 to
+ * 2000us and MARGIN 10% they reach 950us and 2050us, the commands carrying
+ * 950 to 2050us, while PULSE MIN and MAX stay 1000 to 2000us.  A STOP in
+ * the search: the commands of the end carry the bench's 1000 to 2000us,
+ * the run's range gone; then the end widens PULSE MIN and MAX to 950 to
+ * 2050us, as the servo holds the margin's pulses written in the read
+ * session (servo_rauto_widen()). */
+TEST_CASE(the_search_drives_the_margins_range_and_a_stop_leaves_the_bench_range)
+{
+    ra_setup(true, true);
+    uint16_t lo = 0u, hi = 0u;
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 1000u);
+    CHECK_EQ(hi, 2000u);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    for (int i = 0; i < 400000 && servo_screen_rauto_running()
+                    && ra.cmd_hi < 2050u; ++i) {
+        ra_ms(1u);
+    }
+    CHECK_EQ(servo_screen_rauto_phase(), SERVO_RAUTO_PH_SEARCH);
+    CHECK_EQ(ra.cmd_lo, 950u);
+    CHECK_EQ(ra.cmd_hi, 2050u);
+    CHECK_EQ(ra.rng_lo, 950u);
+    CHECK_EQ(ra.rng_hi, 2050u);
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 1000u);
+    CHECK_EQ(hi, 2000u);
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_DOWN, 1);
+    CHECK(!servo_screen_rauto_running());
+    ev(SV_RA_START_X, SV_RA_START_Y, TOUCH_EVENT_UP, 1);
+    ra_ms(3000u);
+    CHECK(strstr(ra.report, "ABORTED") != NULL);
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 950u);
+    CHECK_EQ(hi, 2050u);
+    CHECK_EQ(ra.rng_lo, 1000u);
+    CHECK_EQ(ra.rng_hi, 2000u);
+}
+
+/* ZERO and RESET MAX tapped while AUTO's search holds the 1000us side at
+ * about -36°: refused, the run measures from the zero it started with and
  * programs both end points alike. */
 TEST_CASE(zero_and_reset_max_are_refused_while_auto_runs)
 {
@@ -249,8 +338,8 @@ TEST_CASE(zero_and_reset_max_are_refused_while_auto_runs)
     bool there = false;
     for (int i = 0; i < 400000 && servo_screen_rauto_running(); ++i) {
         ra_ms(1u);
-        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_SETTLE
-            && ra.sv.position_us < 1100.0f) {
+        if (servo_screen_rauto_phase() == SERVO_RAUTO_PH_SEARCH
+            && ra.sv.position_us < 1001.0f) {
             there = true;
             break;
         }
@@ -326,8 +415,10 @@ TEST_CASE(with_user_logs_off_auto_hands_the_logger_nothing)
     CHECK_EQ(ra.opens_csv, 0u);
     CHECK_EQ(ra.ends, 0u);
     CHECK_EQ(ra.len, 0u);
-    char b[96];
-    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), TR(SV_USER_LOGS_OFF));
+    char b[96], want[96];
+    snprintf(want, sizeof(want), "%s, MIN/MAX 950-2050us",
+             TR(SV_USER_LOGS_OFF));
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), want);
 }
 
 /* ANGLE SOURCE switched to the IMU in a measure: the zero AUTO measures
@@ -716,8 +807,11 @@ TEST_CASE(writes_that_do_not_move_the_2000us_side_end_auto_after_two)
     snprintf(want, sizeof(want), TR(RA_LAST), ui_servo_str(SERVO_STR_FAIL),
              ui_servo_str(SERVO_STR_RA_WHY_NO_EFFECT_HI));
     CHECK_STR_EQ(rauto_line(1, b, sizeof(b)), want);
-    snprintf(want, sizeof(want), TR(SV_LIM_RESTORE), TR(SVH_KST));
-    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), want);
+    snprintf(want, sizeof(want), "%s, MIN/MAX 950-2050us",
+             TR(SV_LIM_RESTORE));
+    char kst[96];
+    snprintf(kst, sizeof(kst), want, TR(SVH_KST));
+    CHECK_STR_EQ(rauto_line(2, b, sizeof(b)), kst);
     CHECK(strstr(ra.report, "RESTORE") != NULL);
     CHECK(!ra.armed);
     CHECK(ra.disarms >= 1u);
@@ -729,6 +823,90 @@ TEST_CASE(writes_that_do_not_move_the_2000us_side_end_auto_after_two)
     CHECK(ra.off_at_open);
 }
 
+/* SERVO PULSES is LIMIT RUN's: AUTO writes the margin's pulses whatever
+ * it reads.  At 1000-2000 and at KEEP, MARGIN 10% writes 950.4 to
+ * 2049.6us and MARGIN 0% 1000.0 to 2000.0us. */
+TEST_CASE(servo_pulses_keep_or_1000_2000_leave_the_margins_pulses)
+{
+    enum { PULSES = 5 };
+    for (int k = 0; k < 4; ++k) {
+        const bool std = (k & 1) != 0;
+        const bool margin = k < 2;
+        ra_setup(true, true);
+        settings_set(SET_RUDDER_MARGIN, margin ? 10.0f : 0.0f);
+        if (std != servo_screen_limit_pulses()) {
+            /* OPTIONS on a SAFE bench; one step of SERVO PULSES. */
+            ra.armed = false;
+            servo_screen_set_armed(false);
+            ra_ms(40u);
+            screen_tap(SV_FOOT_SET_X, SV_FOOT_Y);
+            ui_setlist_t *sl = (ui_setlist_t *)servo_screen_list();
+            CHECK(sl->open);
+            ui_setlist_scroll_to(sl, PULSES);
+            const gfx_rect_t r =
+                ui_setlist_row_part(sl, PULSES, UI_SL_PART_PLUS);
+            screen_tap(r.x + r.w / 2, r.y + r.h / 2);
+            CHECK_EQ(servo_screen_limit_pulses(), std);
+            go(SERVO_FN_RAUTO);
+            ra.armed = true;
+            servo_screen_set_armed(true);
+            ra_ms(100u);
+        }
+        CHECK_EQ(servo_screen_limit_pulses(), std);
+        CHECK(rauto_blocked() == NULL);
+        ra_hold_start();
+        CHECK(servo_screen_rauto_running());
+        ra_run_out();
+        CHECK(strstr(ra.report, "PASS") != NULL);
+        int32_t lo = 0, hi = 0;
+        CHECK(kst_field_display(KST_F_PULSE_LOWER, servo(KST_F_PULSE_LOWER),
+                                &lo));
+        CHECK(kst_field_display(KST_F_PULSE_UPPER, servo(KST_F_PULSE_UPPER),
+                                &hi));
+        CHECK_EQ(lo, margin ? 9504 : 10000);
+        CHECK_EQ(hi, margin ? 20496 : 20000);
+    }
+    settings_set(SET_RUDDER_MARGIN, 10.0f);
+}
+
+/* NEUTRAL 1640.0us on the KST at 10%: each side's span from NEUTRAL grows
+ * by 10%, PULSE LOWER 936.0us and PULSE UPPER 2036.0us; the bench's PULSE
+ * MIN and PULSE MAX widen to 936-2036us and the report names NEUTRAL. */
+TEST_CASE(an_off_center_neutral_takes_the_margin_from_neutral)
+{
+    ra_setup(true, true);
+    kst_image_t img = rig_servo();
+    CHECK(kst_field_set(&img, KST_F_NEUTRAL, 4156u));
+    int32_t d = 0;
+    CHECK(kst_field_display(KST_F_NEUTRAL, kst_field_get(&img, KST_F_NEUTRAL),
+                            &d));
+    CHECK_EQ(d, 16400);
+    memcpy(g_rig.sim.reg, img.r, sizeof(g_rig.sim.reg));
+    memcpy(g_rig.sim.acting, img.r, sizeof(g_rig.sim.acting));
+    ra_ms(100u);
+    ra_hold_start();
+    CHECK(servo_screen_rauto_running());
+    ra_run_out();
+    CHECK(!servo_screen_rauto_running());
+    CHECK(kst_field_display(KST_F_PULSE_LOWER, servo(KST_F_PULSE_LOWER), &d));
+    CHECK_EQ(d, 9360);
+    CHECK(kst_field_display(KST_F_PULSE_UPPER, servo(KST_F_PULSE_UPPER), &d));
+    CHECK_EQ(d, 20360);
+    CHECK(kst_field_display(KST_F_NEUTRAL, servo(KST_F_NEUTRAL), &d));
+    CHECK_EQ(d, 16400);
+    /* The search reached the range from NEUTRAL on the pin. */
+    CHECK_EQ(ra.cmd_lo, 936u);
+    CHECK_EQ(ra.cmd_hi, 2036u);
+    uint16_t lo = 0u, hi = 0u;
+    servo_screen_pulse_ends(&lo, &hi);
+    CHECK_EQ(lo, 936u);
+    CHECK_EQ(hi, 2036u);
+    CHECK(strstr(ra.report, "Margin:         10% from NEUTRAL 1640.0us: "
+                            "servo pulses 936.0-2036.0us;") != NULL);
+    CHECK(strstr(ra.report, "Bench pulses:   PULSE MIN/MAX 1000-2000 -> "
+                            "936-2036us, for the session") != NULL);
+}
+
 int main(void)
 {
     RUN(auto_programs_both_end_points_to_the_goal_and_ends_safe);
@@ -736,6 +914,7 @@ int main(void)
     RUN(a_stop_during_auto_ends_it_with_every_output_off);
     RUN(auto_without_a_pd_mini_or_a_zero_is_refused_and_says_why);
     RUN(a_tap_on_stop_run_ends_auto_at_once);
+    RUN(the_search_drives_the_margins_range_and_a_stop_leaves_the_bench_range);
     RUN(zero_and_reset_max_are_refused_while_auto_runs);
     RUN(a_supply_set_anew_outside_a_session_ends_auto);
     RUN(with_user_logs_off_auto_hands_the_logger_nothing);
@@ -750,5 +929,7 @@ int main(void)
     RUN(auto_enters_at_5v_whatever_the_kst_page_loaded);
     RUN(writes_that_do_not_move_the_2000us_side_end_auto_after_two);
     RUN(imu_yaw_alone_refuses_auto_in_either_algorithm);
+    RUN(servo_pulses_keep_or_1000_2000_leave_the_margins_pulses);
+    RUN(an_off_center_neutral_takes_the_margin_from_neutral);
     return test_summary("servo_rauto_kst");
 }

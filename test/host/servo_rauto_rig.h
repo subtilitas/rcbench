@@ -9,7 +9,8 @@
  * is linear in the pulse.  The surface travels at 200°/s and is still once
  * it moved less than 0.5° for a time, as the IMU path counts still_ms.  A
  * bind on a side holds the surface at that deflection and the servo then
- * draws 1500mA.  The INA3221 as 50ms windows, the angle source read every
+ * draws 1500mA; a stop at a pulse (stop_us[]) does the same for every
+ * pulse past it, the surface held where that pulse puts it.  The INA3221 as 50ms windows, the angle source read every
  * 20ms, a bench that switches to SAFE and ARMED when asked, and a
  * programmer that answers CONNECT with the registers, stores a write of
  * the values or of the pulses and reads it back, and gives the port back.
@@ -47,6 +48,7 @@ typedef struct {
     float    resp;               /* a write moves this share of the
                                     linear change: 1 linear               */
     float    bind[2];            /* a bind at this deflection, 0 none     */
+    uint16_t stop_us[2];         /* a stop past this pulse, us; 0 none    */
     bool     frozen[2];          /* the side keeps its start deflection
                                     whatever is written                   */
     float    drift[2];           /* added along the side's direction once
@@ -165,12 +167,16 @@ static inline void rig_init(uint32_t t0)
     g.still_from = t0;
     servo_rauto_init(&g.run);
     memset(&g.cfg, 0, sizeof(g.cfg));
-    g.cfg.target_deg[0] = 25.0f;
-    g.cfg.target_deg[1] = 25.0f;
-    g.cfg.margin_pct = 10u;
+    /* The goal at 1000us and 2000us is the target: 27.5°.  Margin 0%:
+     * the pulses 1000.0 to 2000.0us; the tests of the margin set it. */
+    g.cfg.target_deg[0] = 27.5f;
+    g.cfg.target_deg[1] = 27.5f;
+    g.cfg.margin_pct = 0u;
     g.cfg.tol_ddeg = 5u;
     g.cfg.family = SERVO_RAUTO_FAM_KST;
     g.cfg.center_us = RCENTER;
+    g.cfg.min_us = 1000u;
+    g.cfg.max_us = 2000u;
     snprintf(g.cfg.dut, sizeof(g.cfg.dut), "%s", "AILERON L");
     snprintf(g.cfg.type, sizeof(g.cfg.type), "%s", "DIGITAL");
     snprintf(g.cfg.output, sizeof(g.cfg.output), "%s", "PROG PORT 1 GPIO 13");
@@ -302,6 +308,14 @@ static inline int surface(void)
     }
     float want = rig_target(g.cmd);
     bool bound = false;
+    if (g.stop_us[0] != 0u && g.cmd < g.stop_us[0]) {
+        want = rig_target(g.stop_us[0]);
+        bound = true;
+    }
+    if (g.stop_us[1] != 0u && g.cmd > g.stop_us[1]) {
+        want = rig_target(g.stop_us[1]);
+        bound = true;
+    }
     for (int s = 0; s < 2; ++s) {
         const float b = g.bind[s] * g.dir[s];
         if (g.bind[s] > 0.0f && want * g.dir[s] > g.bind[s]) {

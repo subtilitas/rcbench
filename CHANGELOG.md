@@ -58,6 +58,66 @@ history is in git.
   and CENTER and RELEASE to y 360 to 408; every control keeps its height
   ([Screens](docs/Screens.md#servo)).
 
+### Changed
+
+- RUDDER AUTO: MARGIN lies in the pulse length. 1000us and 2000us aim at
+  TARGET itself, 20.0° at TARGET 20.0°; MARGIN p% writes a KST or
+  Chaservo servo's PULSE LOWER 1000us - (N - 1000us) x p/100 and PULSE
+  UPPER 2000us + (2000us - N) x p/100 from the NEUTRAL N it reads, each on
+  the KST's 0.8us step rounded toward the center: 950.4us and 2049.6us at
+  N 1500us and 10%, 750.4us and 2249.6us at 50%, 680.0us and 2180.0us at
+  N 1640us and 50%. By the linear map from N each end then reaches TARGET
+  x (1 + MARGIN), 22.0° at 10%, so a radio's trim past 2000us still moves
+  the surface. A NEUTRAL outside 1360 to 1640us ends the run at the read
+  (`NEUTRAL outside 1360-1640us`); a pulse write read back with another
+  NEUTRAL ends it as a failed write. The report's margin line names a
+  NEUTRAL other than 1500.0us. Every measure drives 1000us, 2000us
+  and PULSE CENTER only, and the verify pass holds each end to TARGET.
+  SERVO PULSES, LIMIT RUN's setting, does not change what AUTO writes.
+  Where the bench's PULSE MIN and PULSE MAX are narrower than MARGIN's
+  range, the run widens them to it at its end, for the session, and never
+  narrows them; the report (`Bench pulses:`) and the third state line
+  (`MIN/MAX 950-2050us`) name it. The first state line
+  reads the pulse range and its ends, `PULSES 950-2050us: 22.0°, 22.0°`. On HITEC D SERIES and HITEC CLASSIC MARGIN is 0%: the
+  card and the OPTIONS row read 0% and refuse a change (`MARGIN:
+  KST/CHASERVO ONLY`), and the stored `rud_margin` stays for KST. The
+  start gate reads `TARGETS MUST EXCEED 2 x TOLERANCE` and holds each
+  TARGET to more than 2 x TOLERANCE, whatever MARGIN reads
+  ([AUTO end points](docs/Servo.md#auto-end-points)).
+- RUDDER AUTO: every run starts with LIMIT RUN's search, after the read
+  session and before any other pulse: 10us steps out from PULSE CENTER to
+  MARGIN's range from the read NEUTRAL (950us and 2050us at NEUTRAL
+  1500us and 10%, 936us and 2036us at NEUTRAL 1640us, 1000us and 2000us on
+  Hitec),
+  the 1000us side first, bound at 1.8 x the free current and 0.15A over
+  it, each end 25us back from the bind. It programs nothing. The run's own
+  commands carry that range from the search's start to the run's end, so
+  the pin reaches it whatever PULSE MIN and PULSE MAX read; PULSE MIN and
+  MAX change only by the widening at the end. The READY card's RANGE row
+  refuses the start where that range, symmetric about PULSE CENTER for
+  every NEUTRAL from 1360us to 1640us, reaches past 2500us or below 400us
+  (`MARGIN RANGE PAST 2500us`, `MARGIN RANGE BELOW 400us`). It holds the servo at 1000us
+  and 2000us on the way, each once it or a step past it is judged free,
+  and takes the first measure of each side there by the measure's settle
+  rule; the run drives no separate first measure. LOW END and HIGH END cap every later pulse. An end inside
+  1000us or 2000us is held for its angle: short of TARGET by more than
+  TOLERANCE the run ends as FAIL, `STOP AT 1225us BEFORE TARGET`, with no
+  value written and every output off; at TARGET - TOLERANCE or past it the
+  side is measured at the end from then on, each angle scaled to the end
+  pulse by the linear map, and the writes take the throw shorter, nothing
+  driven past the end. An end that does not settle takes the angle of the
+  last free step, scaled from the pulse it was taken at, for the STOP
+  test as for the measures. A stall stretch from before a hold at 1000us
+  or 2000us ends with the hold. The first state
+  line reads
+  `SEARCH 1230us: STEP 28 OF 100` during the search, a new fourth line the
+  ends, `LOW END 995us, HIGH END FREE`, and the verify pass moves to the
+  fifth. The report gains a LIMIT SEARCH section with the rule, both ends
+  and one line a position (pulse, current, angle); the CSV gains one `S`
+  row a position. A run with one write a side takes 130s to 187s on the
+  settle tests' curves, the search 42s to 49s of it
+  ([AUTO end points](docs/Servo.md#auto-end-points)).
+
 ## 0.23.15 - 2026-11-18
 
 0.23.15 is a testing release. It adds a watchdog on the IOmcu's main loop

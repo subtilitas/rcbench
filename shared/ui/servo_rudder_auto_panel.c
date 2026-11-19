@@ -60,7 +60,7 @@
 
 _Static_assert(2 * RA_HALF_W + RA_GAP == RA_W, "two halves fill the column");
 _Static_assert(RA_LINES_H >= RA_LINES * 20 + (RA_LINES - 1) * RA_LINE_GAP,
-               "four lines of one row each fit above the footer");
+               "five lines of one row each fit above the footer");
 _Static_assert(RA_PLOT_Y + UI_TAP_MIN <= RA_LINE_Y - 4,
                "the plot ends above the side view and the lines");
 
@@ -142,6 +142,12 @@ int servo_screen_rauto_phase(void)
 
 /* --------------------------------------------------- what a run reads */
 
+uint8_t rauto_margin_now(void)
+{
+    return svs_family_of(SERVO_FN_RAUTO) == SERVO_RAUTO_FAM_KST
+               ? (uint8_t)settings_get_int(SET_RUDDER_MARGIN) : 0u;
+}
+
 /**
  * @brief The setting a row's keypad sets.
  * @param k the row
@@ -179,10 +185,12 @@ static void ra_cfg(servo_rauto_cfg_t *c)
     memset(c, 0, sizeof(*c));
     c->target_deg[0] = settings_get(SET_RUDDER_DEFL_LO);
     c->target_deg[1] = settings_get(SET_RUDDER_DEFL_HI);
-    c->margin_pct    = (uint8_t)settings_get_int(SET_RUDDER_MARGIN);
+    c->margin_pct    = rauto_margin_now();
     c->tol_ddeg = (uint16_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f);
     c->family    = svs_family_of(SERVO_FN_RAUTO);
     c->center_us = s.center_us;
+    c->min_us    = s.min_us;
+    c->max_us    = s.max_us;
     const float len = settings_get(SET_RUDDER_LEN_MM);
     c->len_mm = (len >= SERVO_RUDDER_LEN_MIN_MM) ? len : 0.0f;
     if (enc_src() == SERVO_ANGLE_IMU) {
@@ -269,6 +277,20 @@ static bool ra_apply(const servo_rauto_do_t *d)
     return !again;
 }
 
+/** @brief The range the run's commands carry, from its search's start to
+ *         its end; none once it ended, early or not, so the bench's own
+ *         range is in force again. */
+static void ra_drive_range(void)
+{
+    uint16_t us[2];
+    if (servo_rauto_drive_range(&s.ra.run, us)) {
+        s.ra.drive_lo = us[0];
+        s.ra.drive_hi = us[1];
+    } else {
+        s.ra.drive_lo = s.ra.drive_hi = 0u;
+    }
+}
+
 /** @brief The run's step against the clock, and what it asks done: twice
  *         where a refusal ended it in the first. */
 static void ra_step(void)
@@ -293,6 +315,7 @@ static void ra_step(void)
         servo_rauto_do_t d;
         servo_rauto_step(&s.ra.run, test_now(), &in, &d);
         test_tell();
+        ra_drive_range();
         if (ra_apply(&d)) {
             break;
         }
@@ -385,6 +408,27 @@ static void ra_seam_ended(void)
     }
 }
 
+/** @brief The bench's PULSE MIN and PULSE MAX widened to the margin's
+ *         range where the run left a KST servo holding its pulses and they
+ *         are narrower (servo_rauto_widen()); never narrowed.  Applied
+ *         once the run has ended, with SAFE asked: no drive takes the
+ *         wider range under the run. */
+static void ra_widen(void)
+{
+    uint16_t prof[2];
+    if (!servo_rauto_widen(&s.ra.run, prof)) {
+        return;
+    }
+    if (prof[0] < s.min_us) {
+        s.min_us = prof[0];
+    }
+    if (prof[1] > s.max_us) {
+        s.max_us = prof[1];
+    }
+    /* A frame rate the wider pulse no longer fits comes down. */
+    apply_profile(s.type, s.frame_hz);
+}
+
 /** @brief A run that was running is over: the programmer's own supply
  *         values come back once its port is. */
 static void ra_ended(void)
@@ -393,6 +437,7 @@ static void ra_ended(void)
         return;
     }
     s.ra.seen = false;
+    ra_widen();
     s.ra.off_due = s.ra.run.verdict == SERVO_RAUTO_FAIL;
     /* A run ended with its first write on its way: no answer handed the
      * file over, and the session's own backup, saved before that write,
@@ -608,6 +653,13 @@ void rauto_frame(float dt_s)
 
 /* -------------------------------------------------------- the presses */
 
+/** @brief Whether MARGIN takes no keypad: SERVO at a Hitec entry.
+ *  @return true then */
+static bool margin_locked(void)
+{
+    return svs_family_of(SERVO_FN_RAUTO) != SERVO_RAUTO_FAM_KST;
+}
+
 /**
  * @brief A row's keypad over the left column, its OK taken by the
  *        settings' keypad rule (keypad_done()).
@@ -703,7 +755,12 @@ bool rauto_rest(const touch_event_t *evt)
     }
     if (touch_event_is_tap_up(evt) && rauto_shown() && over
         && !servo_rauto_running(&s.ra.run) && !svs_seq_busy()) {
-        open_row(row_setting(k));
+        if (k == RA_C_MARGIN && margin_locked()) {
+            /* MARGIN lies in the pulse length: KST/CHASERVO only. */
+            ui_action_refused(TR(RA_MARGIN_KST));
+        } else {
+            open_row(row_setting(k));
+        }
     }
     return true;
 }
@@ -757,6 +814,8 @@ static void why_text(char *b, size_t n)
         char deg[12];
         snprintf(b, n, TR(RA_BINDS_AT),
                  svs_angle_text(deg, sizeof(deg), r->bind_deg, false));
+    } else if (r->why == SERVO_RAUTO_WHY_STOP) {
+        snprintf(b, n, TR(RA_STOP_AT), (unsigned)r->stop_us);
     } else {
         snprintf(b, n, "%s", ui_servo_str(servo_rauto_why_str(r)));
     }
@@ -826,6 +885,34 @@ static void verify_line(char *b, size_t n, const servo_rauto_t *r)
 }
 
 /**
+ * @brief The limit search's two ends once the run searched: LOW END and
+ *        HIGH END in us, FREE where the side reached the margin's end
+ *        without a stop, "-" for a side not searched yet.
+ * @param b where it goes
+ * @param n its size
+ * @param r the run
+ */
+static void ends_line(char *b, size_t n, const servo_rauto_t *r)
+{
+    if (!r->ends[0].done && !(servo_rauto_running(r)
+                              && r->phase == SERVO_RAUTO_PH_SEARCH)) {
+        return;
+    }
+    char e[2][12];
+    for (unsigned k = 0; k < 2u; ++k) {
+        const servo_rauto_end_t *p = &r->ends[k];
+        if (!p->done) {
+            snprintf(e[k], sizeof(e[k]), "-");
+        } else if (p->bound) {
+            snprintf(e[k], sizeof(e[k]), "%uus", (unsigned)p->end_us);
+        } else {
+            snprintf(e[k], sizeof(e[k]), "%s", TR(RDY_FREE));
+        }
+    }
+    snprintf(b, n, TR(RA_ENDS), TR(LR_LOW_END), e[0], TR(LR_HIGH_END), e[1]);
+}
+
+/**
  * @brief Why no run is under way, as the first line gives it: the last
  *        sequence's failure, a start the run refused, or the first row
  *        that refuses the hold.
@@ -849,6 +936,14 @@ const char *rauto_line(int i, char *buf, size_t n)
     const bool running = servo_rauto_running(r);
     switch (i) {
     case 0: {
+        if (running && r->phase == SERVO_RAUTO_PH_SEARCH) {
+            /* The search's position, its step of both sides'. */
+            snprintf(buf, n, TR(RA_SEARCH),
+                     ui_servo_str(servo_rauto_phase_str(r->phase)),
+                     (unsigned)r->cmd_us, (unsigned)r->s_steps,
+                     (unsigned)r->s_plan);
+            break;
+        }
         if (running) {
             /* An approach and the verify pass name the pulse commanded,
              * every other phase the side. */
@@ -857,7 +952,7 @@ const char *rauto_line(int i, char *buf, size_t n)
             snprintf(buf, n, TR(RA_STEP),
                      ui_servo_str(servo_rauto_phase_str(r->phase)),
                      cmd ? (unsigned)r->cmd_us
-                         : r->side == 0u ? 1000u : 2000u,
+                         : (unsigned)servo_rauto_side_us(r, r->side),
                      (unsigned)r->writes[r->side],
                      (unsigned)SERVO_RAUTO_WRITES_MAX, r->sessions);
             break;
@@ -870,9 +965,14 @@ const char *rauto_line(int i, char *buf, size_t n)
         if (why != NULL) {
             snprintf(buf, n, "%s", why);
         } else {
-            const float k = 1.0f + (float)settings_get_int(SET_RUDDER_MARGIN)
-                                   / 100.0f;
-            snprintf(buf, n, TR(RA_GOALS),
+            /* The pulse range the run leaves the servo with, its ends by
+             * the linear map: target x (1 + margin); before the read
+             * from the nominal NEUTRAL, 1500.0us. */
+            const uint8_t m = rauto_margin_now();
+            const float k = 1.0f + (float)m / 100.0f;
+            uint16_t us[2];
+            servo_rauto_pulse_range(m, 0u, us);
+            snprintf(buf, n, TR(RA_GOALS), (unsigned)us[0], (unsigned)us[1],
                      (double)(settings_get(SET_RUDDER_DEFL_LO) * k),
                      (double)(settings_get(SET_RUDDER_DEFL_HI) * k));
         }
@@ -904,13 +1004,29 @@ const char *rauto_line(int i, char *buf, size_t n)
             /* The servo the run programs, or one started now would. */
             servo_name(buf, n, running ? r->cfg.family
                                        : svs_family_of(SERVO_FN_RAUTO));
-        } else if (servo_rauto_restore(r)) {
-            restore_text(buf, n, r);
         } else {
-            file_name(buf, n);
+            char t[64];
+            if (servo_rauto_restore(r)) {
+                restore_text(t, sizeof(t), r);
+            } else {
+                file_name(t, sizeof(t));
+            }
+            uint16_t prof[2];
+            if (servo_rauto_widen(r, prof)) {
+                /* The bench's range the run widened, after the file. */
+                char w[48];
+                snprintf(w, sizeof(w), TR(RA_WIDENED), (unsigned)prof[0],
+                         (unsigned)prof[1]);
+                snprintf(buf, n, "%s, %s", t, w);
+            } else {
+                snprintf(buf, n, "%s", t);
+            }
         }
         break;
     case 3:
+        ends_line(buf, n, r);
+        break;
+    case 4:
         verify_line(buf, n, r);
         break;
     default:
@@ -944,8 +1060,8 @@ static void draw_row(gfx_canvas_t *c, rauto_ctl_t k)
         break;
     }
     case RA_C_MARGIN:
-        snprintf(t, sizeof(t), TR(RA_MARGIN),
-                 (unsigned)settings_get_int(SET_RUDDER_MARGIN));
+        /* 0% on a Hitec servo, drawn dimmed: no pulse registers. */
+        snprintf(t, sizeof(t), TR(RA_MARGIN), (unsigned)rauto_margin_now());
         break;
     default:
         snprintf(t, sizeof(t), TR(RA_TOL),
@@ -954,7 +1070,9 @@ static void draw_row(gfx_canvas_t *c, rauto_ctl_t k)
     }
     ui_button_font(c, rauto_rect(k), t, ui_theme_color(UI_C_PANEL_SUNK),
                    s.ra.pressed == (uint8_t)k,
-                   !servo_rauto_running(&s.ra.run), SV_FONT_LABEL);
+                   !servo_rauto_running(&s.ra.run)
+                       && !(k == RA_C_MARGIN && margin_locked()),
+                   SV_FONT_LABEL);
 }
 
 void rauto_render(gfx_canvas_t *c)
@@ -990,7 +1108,7 @@ void rauto_render(gfx_canvas_t *c)
                 (i == 0 && !running && !svs_seq_busy() && idle_why() != NULL)
                 || (i == 2 && servo_rauto_restore(r));
             gfx_color_t col = ui_theme_color(warn ? UI_C_WARN : UI_C_TEXT_DIM);
-            if (i == 3) {
+            if (i == 4) {
                 /* Red at the first one outside, green once all three are
                  * within. */
                 bool out = false;
@@ -1096,7 +1214,8 @@ uint32_t rauto_sig(void)
     const uint32_t v[] = {
         s.ra.view ? 1u : 0u, (uint32_t)r->state, (uint32_t)r->phase,
         (uint32_t)r->side, (uint32_t)r->writes[0], (uint32_t)r->writes[1],
-        (uint32_t)r->vstep, (uint32_t)r->vn,
+        (uint32_t)r->vstep, (uint32_t)r->vn, (uint32_t)r->s_steps,
+        (uint32_t)r->ends[0].done + 2u * (uint32_t)r->ends[1].done,
         r->sessions, (uint32_t)r->verdict, (uint32_t)r->why,
         (uint32_t)(s.ra.file + 2), s.ra.off ? 1u : 0u, s.ra.pressed,
         servo_rauto_restore(r) ? 1u : 0u,
@@ -1106,7 +1225,9 @@ uint32_t rauto_sig(void)
         (uint32_t)servo_seq_step_now(&s.rdy.seq),
         (uint32_t)lroundf(settings_get(SET_RUDDER_DEFL_LO) * 10.0f),
         (uint32_t)lroundf(settings_get(SET_RUDDER_DEFL_HI) * 10.0f),
-        (uint32_t)settings_get_int(SET_RUDDER_MARGIN),
+        (uint32_t)rauto_margin_now(),
+        (uint32_t)svs_family_of(SERVO_FN_RAUTO),
+        (uint32_t)s.min_us, (uint32_t)s.max_us,
         (uint32_t)lroundf(settings_get(SET_RUDDER_TOL) * 10.0f),
     };
     uint32_t h = 2166136261u;

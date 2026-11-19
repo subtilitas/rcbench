@@ -19,18 +19,47 @@
  */
 #include "servo_rauto_rig.h"
 
-/* A run started and in its first measure of the 1000us side. */
+/* A run started and in its first measure that is no search's: the 1000us
+ * side after its first write, both first measures taken. */
 static bool at_first_move(void)
 {
     rig_init(0u);
     return start() && run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS);
 }
 
+/* The run to the end of its limit search. */
+static void to_searched(void)
+{
+    while (servo_rauto_running(&g.run) && !g.run.searched) {
+        tick();
+    }
+}
+
 TEST_CASE(a_stall_before_the_goal_ends_binds_with_the_angle)
 {
+    /* A bind the search finds, at 20° on the 2000us side: 1840us binds,
+     * 1830us is free, the end 1805us lies inside 2000us.  FAIL STOP, no
+     * write, every output off. */
     rig_init(0u);
     g.bind[1] = 20.0f;
     CHECK(start());
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_STOP);
+    CHECK_EQ(g.run.stop_us, 1805u);
+    CHECK(g.run.ends[1].bound);
+    CHECK_EQ(g.run.ends[1].bind_us, 1840u);
+    CHECK_EQ(g.write_ops - g.pulse_ops, 0u);
+    CHECK(ended_safe());
+    CHECK(in_report("Result:         FAIL - STOP AT 1805us BEFORE TARGET"));
+    CHECK(in_report("High end:       bound at 1840us, endpoint 1805us"));
+    CHECK_EQ(servo_rauto_why_str(&g.run), SERVO_STR_RA_WHY_STOP);
+
+    /* A bind that comes after the search, short of the goal: BINDS. */
+    rig_init(0u);
+    CHECK(start());
+    to_searched();
+    g.bind[1] = 20.0f;
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_BINDS);
@@ -42,9 +71,10 @@ TEST_CASE(a_stall_before_the_goal_ends_binds_with_the_angle)
 
     /* Bound at the goal less the tolerance: the surface is not short. */
     rig_init(0u);
-    g.bind[1] = 27.5f - 0.2f;
     g.cfg.tol_ddeg = 2u;
     CHECK(start());
+    to_searched();
+    g.bind[1] = 27.5f - 0.2f;
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_ABORTED);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_STALL);
@@ -158,11 +188,29 @@ TEST_CASE(window_means_above_1000ma_end_the_run_at_400ms)
 
 TEST_CASE(not_still_within_3s_ends_not_still)
 {
-    /* An approach that never settles ends the run as a measure does,
-     * 3000ms after its command, with no angle taken. */
+    /* The search's hold at 1000us that never settles ends the run as a
+     * measure does, 3000ms after 1000us's command, with no angle taken. */
     rig_init(0u);
     g.jitter = true;
     CHECK(start());
+    while (servo_rauto_running(&g.run) && !g.run.s_hold) {
+        tick();
+    }
+    CHECK_EQ(g.run.cmd_us, 1000u);
+    const uint32_t held = g.run.move_ms;
+    run_for(RAUTO_MS);
+    CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NOT_STILL);
+    CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_SEARCH);
+    CHECK_EQ(g.run.end_ms - held, SERVO_RAUTO_MOVE_MS);
+    CHECK(!g.run.s_took[0]);
+    CHECK_EQ(g.run.step_n, 0u);
+    CHECK(ended_safe());
+
+    /* An approach that never settles, after the search. */
+    rig_init(0u);
+    CHECK(start());
+    to_searched();
+    g.jitter = true;
     CHECK(run_to(SERVO_RAUTO_PH_APPROACH, RAUTO_MS));
     const uint32_t from = g.run.move_ms;
     CHECK_EQ(g.run.cmd_us, RCENTER);
@@ -170,7 +218,7 @@ TEST_CASE(not_still_within_3s_ends_not_still)
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_NOT_STILL);
     CHECK_EQ(g.run.phase, SERVO_RAUTO_PH_APPROACH);
     CHECK_EQ(g.run.end_ms - from, SERVO_RAUTO_MOVE_MS);
-    CHECK_EQ(g.run.step_n, 0u);
+    CHECK_EQ(g.run.step_n, 2u);
     CHECK(ended_safe());
 
     /* The same in the measure: the surface never still after its
@@ -213,12 +261,12 @@ TEST_CASE(not_still_within_3s_ends_not_still)
     }
     CHECK(servo_rauto_running(&g.run));
     /* Still 499ms is not still. */
-    CHECK_EQ(g.run.step_n, 0u);
+    CHECK_EQ(g.run.step_n, 2u);
     in.still_ms = 500u;
     servo_rauto_step(&g.run, m + 3000u, &in, &d);
     CHECK(servo_rauto_running(&g.run));
-    CHECK_EQ(g.run.step_n, 1u);
-    CHECK_NEAR(g.run.steps[0].measured_deg, 30.0f, 1e-4f);
+    CHECK_EQ(g.run.step_n, 3u);
+    CHECK_NEAR(g.run.steps[2].measured_deg, 30.0f, 1e-4f);
 }
 
 /* The IMU filter's settle allowance: not still ends the run at 3000ms
@@ -334,7 +382,7 @@ TEST_CASE(the_angle_lost_for_301ms_ends_the_run_and_300ms_is_ridden_through)
     in.still_ms = 1000u;
     lost(g.run.move_ms + 400u);
     servo_rauto_step(&g.run, g.run.move_ms + 500u, &in, &d);
-    CHECK_EQ(g.run.step_n, 0u);
+    CHECK_EQ(g.run.step_n, 2u);
 }
 
 TEST_CASE(the_meter_and_the_bench_silent_end_the_run)
@@ -567,8 +615,8 @@ TEST_CASE(a_read_that_is_no_servo_fails_and_gives_the_port_back)
     rig_init(0u);
     g.v[0] = 50u;
     g.v[1] = 255u;
-    g.cfg.target_deg[0] = 10.0f / 1.1f;
-    g.cfg.target_deg[1] = 51.0f / 1.1f;
+    g.cfg.target_deg[0] = 10.0f;
+    g.cfg.target_deg[1] = 51.0f;
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
@@ -588,7 +636,8 @@ TEST_CASE(the_words_name_every_reason_and_phase)
         SERVO_STR_RA_WHY_LIMIT, SERVO_STR_RA_WHY_WRITE_CAP,
         SERVO_STR_L_WHY_BENCH, SERVO_STR_L_WHY_SUPPLY,
         SERVO_STR_RA_WHY_NO_EFFECT_LO, SERVO_STR_RA_WHY_CAP,
-        SERVO_STR_RA_WHY_VERIFY_LO,
+        SERVO_STR_RA_WHY_VERIFY_LO, SERVO_STR_RA_WHY_STOP,
+        SERVO_STR_RA_WHY_NEUTRAL,
     };
     r.test_why = SERVO_TEST_AB_STOP;
     for (int k = 0; k < (int)SERVO_RAUTO_WHY_COUNT; ++k) {
@@ -615,6 +664,7 @@ TEST_CASE(the_words_name_every_reason_and_phase)
         SERVO_STR_PHASE_SETTLE, SERVO_STR_L_PH_SAFE, SERVO_STR_L_PH_CONNECT,
         SERVO_STR_L_PH_WRITE, SERVO_STR_L_PH_LEAVE, SERVO_STR_L_PH_ARM,
         SERVO_STR_L_PH_CHECK, SERVO_STR_RA_PH_VERIFY,
+        SERVO_STR_RA_PH_APPROACH, SERVO_STR_L_PH_SEARCH,
     };
     for (int k = 0; k < (int)(sizeof(k_ph) / sizeof(k_ph[0])); ++k) {
         CHECK_EQ(servo_rauto_phase_str((servo_rauto_phase_t)k), k_ph[k]);
@@ -667,12 +717,14 @@ TEST_CASE(a_stop_with_a_write_on_its_way_offers_restore)
         CHECK(in_report("Restore:        RESTORE on the programming page"));
     }
     /* The pulses already 1000 to 2000us: no pulse write, and a STOP in
-     * the first measure leaves nothing to restore. */
+     * the search, the first measure, leaves nothing to restore. */
     rig_init(0u);
     g.pulses[1] = 10000u;
     g.pulses[2] = 20000u;
     CHECK(start());
-    CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
+    while (servo_rauto_running(&g.run) && !g.run.s_hold) {
+        tick();
+    }
     CHECK(!g.run.in_flight);
     servo_rauto_abort(&g.run, SERVO_TEST_AB_STOP, g.now);
     CHECK(!servo_rauto_restore(&g.run));

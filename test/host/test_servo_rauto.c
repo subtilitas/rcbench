@@ -3,7 +3,7 @@
  *
  * Under test: a linear servo lands within the tolerance in one write a
  * side; one whose writes move 95% of the linear change lands in two; the
- * goal is the target times 1 + margin; a value is clamped to lo and hi and
+ * goal is the target whatever the margin; a value is clamped to lo and hi and
  * the run fails LIMIT when the goal needs more; eight writes a side end in
  * WRITE_CAP; the first write finds the register of each side and a wrong
  * guess is swapped, twice not found is NO_EFFECT; both end pulses on one side
@@ -57,8 +57,8 @@ TEST_CASE(a_servo_five_percent_off_lands_in_two_writes)
 {
     rig_init(0u);
     g.resp = 0.95f;
-    g.cfg.target_deg[0] = 20.0f;
-    g.cfg.target_deg[1] = 20.0f;
+    g.cfg.target_deg[0] = 22.0f;
+    g.cfg.target_deg[1] = 22.0f;
     g.cfg.tol_ddeg = 2u;
     CHECK(start());
     run_for(RAUTO_MS);
@@ -69,11 +69,13 @@ TEST_CASE(a_servo_five_percent_off_lands_in_two_writes)
     CHECK(fabsf(g.run.measured_deg[1] - 22.0f) <= 0.2f);
 }
 
-TEST_CASE(the_goal_is_target_times_one_plus_margin)
+TEST_CASE(the_goal_is_the_target_whatever_the_margin)
 {
+    /* Margin 50%: the goals stay 30° and 36°; the margin lies in the
+     * pulses, 750.4 to 2249.6us. */
     rig_init(0u);
-    g.cfg.target_deg[0] = 20.0f;
-    g.cfg.target_deg[1] = 24.0f;
+    g.cfg.target_deg[0] = 30.0f;
+    g.cfg.target_deg[1] = 36.0f;
     g.cfg.margin_pct = 50u;
     CHECK(start());
     CHECK_NEAR(g.run.goal_deg[0], 30.0f, 1e-4f);
@@ -84,6 +86,8 @@ TEST_CASE(the_goal_is_target_times_one_plus_margin)
     CHECK_EQ(g.run.writes[0], 0u);
     CHECK_EQ(g.v[0], 150u);
     CHECK_EQ(g.v[1], 180u);
+    CHECK_EQ(g.pulses[1], 7504u);
+    CHECK_EQ(g.pulses[2], 22496u);
 
     rig_init(0u);
     g.cfg.margin_pct = 0u;
@@ -115,7 +119,7 @@ TEST_CASE(a_value_is_clamped_to_lo_and_hi_and_the_run_fails_limit_when_the_goal_
     rig_init(0u);
     g.hi = 160u;
     g.cfg.target_deg[0] = 25.0f;
-    g.cfg.target_deg[1] = 35.0f / 1.1f;
+    g.cfg.target_deg[1] = 35.0f;
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_FAIL);
@@ -129,7 +133,7 @@ TEST_CASE(a_value_is_clamped_to_lo_and_hi_and_the_run_fails_limit_when_the_goal_
     /* Already at hi: no write, LIMIT at once. */
     rig_init(0u);
     g.hi = 150u;
-    g.cfg.target_deg[1] = 35.0f / 1.1f;
+    g.cfg.target_deg[1] = 35.0f;
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_LIMIT);
@@ -142,13 +146,14 @@ TEST_CASE(a_value_is_clamped_to_lo_and_hi_and_the_run_fails_limit_when_the_goal_
     g.lo = 10u;
     g.hi = 60u;
     g.gain = 1.0f;
-    g.cfg.target_deg[0] = 30.4f / 1.1f;
-    g.cfg.target_deg[1] = 30.0f / 1.1f;
+    g.cfg.target_deg[0] = 30.4f;
+    g.cfg.target_deg[1] = 30.0f;
     g.cfg.tol_ddeg = 1u;
     CHECK(start());
     run_for(RAUTO_MS);
-    CHECK(g.run.step_n >= 2u);
-    CHECK_EQ(g.run.steps[1].value, 31u);
+    /* Both first measures, then the 1000us side after its write. */
+    CHECK(g.run.step_n >= 3u);
+    CHECK_EQ(g.run.steps[2].value, 31u);
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_WRITE_CAP);
 }
 
@@ -159,7 +164,7 @@ TEST_CASE(eight_writes_a_side_end_in_write_cap)
      * keeps every value within 50% of the first estimate, 140 counts. */
     rig_init(0u);
     g.resp = 1.9f;
-    g.cfg.target_deg[0] = 28.0f / 1.1f;
+    g.cfg.target_deg[0] = 28.0f;
     g.cfg.tol_ddeg = 1u;
     CHECK(start());
     run_for(RAUTO_MS);
@@ -167,8 +172,8 @@ TEST_CASE(eight_writes_a_side_end_in_write_cap)
     CHECK_EQ(g.run.why, SERVO_RAUTO_WHY_WRITE_CAP);
     CHECK_EQ(g.run.writes[0], SERVO_RAUTO_WRITES_MAX);
     CHECK_EQ(g.write_ops, 1u + SERVO_RAUTO_WRITES_MAX);
-    /* The first measure and one after each write. */
-    CHECK_EQ(g.run.step_n, 1u + SERVO_RAUTO_WRITES_MAX);
+    /* The two first measures and one after each write. */
+    CHECK_EQ(g.run.step_n, 2u + SERVO_RAUTO_WRITES_MAX);
     CHECK(ended_safe());
     CHECK(servo_rauto_restore(&g.run));
 }
@@ -277,9 +282,10 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
-    /* 1000us first, its write, 2000us, its write, the 1000us side's
-     * check after the second register's write. */
-    CHECK_EQ(g.run.step_n, 5u);
+    /* Both first measures from the search, the 1000us side after its
+     * write, the 2000us side again, after its write, and the 1000us
+     * side's check after the second register's write. */
+    CHECK_EQ(g.run.step_n, 6u);
     CHECK(in_report("RCBENCH RUDDER AUTO REPORT"));
     CHECK(in_report("Result:         PASS"));
     CHECK(in_report("Device:         AILERON L"));
@@ -287,9 +293,9 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(in_report("Angle:          IMU X+, deflection from zero"));
     CHECK(in_report("Current:        INA3221 0x41 CH1, 50ms windows"));
     CHECK(in_report("a sample at 3.0A, above 1.0A for 400ms"));
-    CHECK(in_report("Targets:        1000us 25.0°, 2000us 25.0°, margin 10%"));
-    CHECK(in_report("Goals:          1000us 27.50°, 2000us 27.50°, tolerance 0.5°"));
-    CHECK(in_report("Length:         100mm; goals 1000us 46.2mm"));
+    CHECK(in_report("Targets:        1000us 27.5°, 2000us 27.5°, tolerance 0.5°"));
+    CHECK(in_report("Margin:         0%: servo pulses 1000.0-2000.0us; by the linear model 1000us reaches 27.5°, 2000us 27.5°; driven in the search only"));
+    CHECK(in_report("Length:         100mm; targets 1000us 46.2mm"));
     CHECK(in_report("Pulse write:    PULSE LOWER 900.0 -> 1000.0us"));
     CHECK(in_report("LEFT ANGLE:     150 before, 138 after (raw value); moves the 1000us side"));
     CHECK(in_report("RIGHT ANGLE:    150 before, 138 after (raw value); moves the 2000us side"));
@@ -297,7 +303,21 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(in_report("Backup:         the panel's memory only"));
     CHECK(in_report("1000us  write 0  value -  measured 30.00°  goal 27.50°  outside"));
     CHECK(in_report("1000us  write 1  value 138  measured 27.60°  goal 27.50°  within"));
+    CHECK(in_report("2000us  write 0  value -  measured 30.00°"));
     CHECK(in_report("2000us  write 0  value 150  measured 30.00°"));
+    /* The search: both sides free to 1000us and 2000us, one row a
+     * position, the first at the center. */
+    CHECK(in_report("LIMIT SEARCH (pulse, current, angle)"));
+    CHECK(in_report("Steps:          10us out from 1500us, 120ms settle and 80ms measure each; bound at 1.8 x the free current and 0.15A over it, the end 25us short; first measure at 1000us and 2000us, or an end inside, by the Measure rule"));
+    /* Every position commanded counted: 50 a side at margin 0. */
+    CHECK_EQ(g.run.s_plan, 100u);
+    CHECK_EQ(g.run.s_steps, 100u);
+    CHECK(in_report("Low end:        free to 1000us; free 0.150A"));
+    CHECK(in_report("High end:       free to 2000us; free 0.150A"));
+    CHECK(in_report("1500us  0.150A  0.00°"));
+    CHECK(in_report("1000us  0.150A  -30.00°"));
+    CHECK(in_report("2000us  0.150A  30.00°"));
+    CHECK_EQ(g.run.srow_n, 102u);
     CHECK(in_report("Model: deflection"));
     CHECK(!in_report("Restore:"));
     CHECK(!in_report("Angle gaps"));
@@ -306,15 +326,18 @@ TEST_CASE(the_report_lists_every_step_and_the_csv_one_row_a_step)
     CHECK(in_report("1000us  measured 27.60°  goal 27.50°  within"));
     CHECK(in_report("1500us  measured 0.00°  goal 0.00°  within"));
     CHECK_EQ(g.run.vn, SERVO_RAUTO_VERIFY_N);
-    CHECK_EQ(g.rows, 1u + 5u + 3u);
+    CHECK_EQ(g.rows, 1u + 6u + 3u + 102u);
     static const char head[] = "step;side (us);write;value;measured (deg);"
                                "goal (deg);measured (mm);goal (mm);within\n";
     CHECK(strncmp(g.csv, head, sizeof(head) - 1u) == 0);
     CHECK(strstr(g.csv, "\n1;1000;0;;30.00;27.50;50.00;46.17;0\n") != NULL);
-    CHECK(strstr(g.csv, "\n2;1000;1;138;27.60;27.50;46.33;46.17;1\n") != NULL);
-    CHECK(strstr(g.csv, "\n5;1000;1;138;27.60;27.50;") != NULL);
-    CHECK(strstr(g.csv, "\n6;1000;V;;27.60;27.50;46.33;46.17;1\n") != NULL);
-    CHECK(strstr(g.csv, "\n8;1500;V;;0.00;0.00;0.00;0.00;1\n") != NULL);
+    CHECK(strstr(g.csv, "\n3;1000;1;138;27.60;27.50;46.33;46.17;1\n") != NULL);
+    CHECK(strstr(g.csv, "\n6;1000;1;138;27.60;27.50;") != NULL);
+    CHECK(strstr(g.csv, "\n7;1000;V;;27.60;27.50;46.33;46.17;1\n") != NULL);
+    CHECK(strstr(g.csv, "\n9;1500;V;;0.00;0.00;0.00;0.00;1\n") != NULL);
+    /* The search's positions last: S, the current in mA, the angle. */
+    CHECK(strstr(g.csv, "\n10;1500;S;150;0.00;;;;\n") != NULL);
+    CHECK(strstr(g.csv, ";1000;S;150;-30.00;;;;\n") != NULL);
 
     /* German, a backup named, no length: the mm columns empty. */
     static const char *de[SERVO_STR_COUNT];
@@ -362,14 +385,17 @@ TEST_CASE(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_
     CHECK(!servo_rauto_start(&r, NULL, 0u));
     servo_rauto_init(NULL);
 
-    /* The smallest target is 0.1°; its goal is under 2 x the smallest
-     * tolerance, so the start that takes the range's ends is 0.2° at
-     * 10% and 0.1°. */
+    /* The smallest target is 0.1°, under 2 x the smallest tolerance;
+     * 0.2° is 2 x 0.1° and refused too, whatever the margin; 0.3° starts
+     * with 90°. */
     c.target_deg[0] = 0.1f;
     c.target_deg[1] = 90.0f;
     c.tol_ddeg = SERVO_RAUTO_TOL_MIN_DDEG;
     CHECK(!servo_rauto_start(&r, &c, 0u));
     c.target_deg[0] = 0.2f;
+    c.margin_pct = 50u;
+    CHECK(!servo_rauto_start(&r, &c, 0u));
+    c.target_deg[0] = 0.3f;
     CHECK(servo_rauto_start(&r, &c, 0u));
     /* RUNNING: a second start is refused. */
     CHECK(!servo_rauto_start(&r, &c, 0u));
@@ -406,6 +432,18 @@ TEST_CASE(start_refuses_a_target_out_of_range_a_margin_above_50_and_a_tolerance_
     c = g.cfg;
     c.family = (uint8_t)SERVO_RAUTO_FAM_HITEC_C + 1u;
     CHECK(!servo_rauto_start(&r, &c, 0u));
+    /* The run's pulses lie inside the bench's PULSE MIN and PULSE MAX. */
+    c = g.cfg;
+    c.min_us = 1001u;
+    CHECK(!servo_rauto_start(&r, &c, 0u));
+    c = g.cfg;
+    c.max_us = 1999u;
+    CHECK(!servo_rauto_start(&r, &c, 0u));
+    c = g.cfg;
+    c.min_us = 900u;
+    c.max_us = 2100u;
+    CHECK(servo_rauto_start(&r, &c, 0u));
+    servo_rauto_init(&r);
     c = g.cfg;
     c.center_us = 1000u;
     CHECK(!servo_rauto_start(&r, &c, 0u));
@@ -468,40 +506,65 @@ TEST_CASE(both_ends_on_one_side_under_twice_the_tolerance_do_not_pass)
     }
 }
 
-/* The edge: a goal of 2 x the tolerance is refused, one 0.1° above it
- * starts; the margin counts into the goal. */
+/* The edge: a target of 2 x the tolerance is refused, one 0.1° above it
+ * starts; the margin does not count, it lies in the pulse length. */
 TEST_CASE(the_goal_must_exceed_twice_the_tolerance)
 {
     const float t10[2] = { 1.0f, 1.0f }, t11[2] = { 1.1f, 1.0f },
                 t11b[2] = { 1.1f, 1.1f }, t5[2] = { 0.5f, 0.5f };
-    CHECK(!servo_rauto_goals_ok(NULL, 0u, 5u));
-    CHECK(!servo_rauto_goals_ok(t10, 0u, 5u));      /* 1.0° = 2 x 0.5° */
-    CHECK(!servo_rauto_goals_ok(t11, 0u, 5u));      /* one side at 1.0° */
-    CHECK(servo_rauto_goals_ok(t11b, 0u, 5u));
-    CHECK(servo_rauto_goals_ok(t10, 10u, 5u));      /* 1.1° goals */
-    CHECK(!servo_rauto_goals_ok(t5, 50u, 5u));      /* 0.75° goals */
-    CHECK(servo_rauto_goals_ok(t5, 0u, 2u));        /* 0.5° over 0.4° */
+    CHECK(!servo_rauto_goals_ok(NULL, 5u));
+    CHECK(!servo_rauto_goals_ok(t10, 5u));          /* 1.0° = 2 x 0.5° */
+    CHECK(!servo_rauto_goals_ok(t11, 5u));          /* one side at 1.0° */
+    CHECK(servo_rauto_goals_ok(t11b, 5u));
+    CHECK(servo_rauto_goals_ok(t5, 2u));            /* 0.5° over 0.4° */
     const float def[2] = { 20.0f, 20.0f };
-    CHECK(servo_rauto_goals_ok(def, 10u, 5u));      /* the defaults */
-    CHECK(servo_rauto_goals_ok(def, 10u, 50u));     /* 22° over 10° */
+    CHECK(servo_rauto_goals_ok(def, 5u));           /* the defaults */
+    CHECK(servo_rauto_goals_ok(def, 50u));          /* 20° over 10° */
+    const float t100[2] = { 10.0f, 10.0f }, t101[2] = { 10.1f, 10.1f };
+    CHECK(!servo_rauto_goals_ok(t100, 50u));        /* 10° = 2 x 5.0° */
+    CHECK(servo_rauto_goals_ok(t101, 50u));
+
+    /* At the start: target 1.0° at tolerance 0.5° is refused at margin 0%,
+     * 10% and 50% alike, 1.1° starts at each. */
+    const uint8_t m[3] = { 0u, 10u, 50u };
+    for (int k = 0; k < 3; ++k) {
+        rig_init(0u);
+        g.cfg.margin_pct = m[k];
+        g.cfg.target_deg[0] = g.cfg.target_deg[1] = 1.0f;
+        CHECK(!start());
+        rig_init(0u);
+        g.cfg.margin_pct = m[k];
+        g.cfg.target_deg[0] = g.cfg.target_deg[1] = 1.1f;
+        CHECK(start());
+    }
 }
 
 TEST_CASE(the_clock_wrap_inside_a_settle_does_not_end_it)
 {
-    /* The first move's command lands about 1.9s after the start, after
-     * the approach's 500ms at PULSE CENTER: the clock wraps 2.1s in,
-     * inside that settle. */
-    rig_init(0xFFFFFFFFu - 2400u);
+    /* The search's hold at 1000us for the first measure, timed on a first
+     * run; the second run's clock wraps 100ms into that hold. */
+    rig_init(0u);
     CHECK(start());
-    CHECK(run_to(SERVO_RAUTO_PH_MOVE, RAUTO_MS));
-    const uint32_t at = g.run.move_ms;
-    CHECK(at > 0xFFFFF000u);
-    CHECK(run_to(SERVO_RAUTO_PH_SAFE, 5000u));
+    while (servo_rauto_running(&g.run) && !g.run.s_hold) {
+        tick();
+    }
+    const uint32_t t_hold = g.now - g.t0;
+    rig_init(0xFFFFFFFFu - t_hold - 99u);
+    CHECK(start());
+    while (servo_rauto_running(&g.run) && !g.run.s_hold) {
+        tick();
+    }
+    CHECK(g.run.s_hold);
+    CHECK(g.run.move_ms > 0xFFFFF000u);
+    while (servo_rauto_running(&g.run) && g.run.s_hold) {
+        tick();
+    }
     CHECK(g.now < 0x1000u);
-    CHECK_EQ(g.run.step_n, 1u);
-    CHECK(g.run.steps[0].measured_deg > 29.9f);
+    CHECK(g.run.s_took[0]);
+    CHECK(g.run.s_deg[0] < -29.9f);
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
+    CHECK(g.run.steps[0].measured_deg > 29.9f);
 }
 
 TEST_CASE(a_first_measure_at_the_tolerance_gives_the_side_its_direction)
@@ -524,10 +587,11 @@ TEST_CASE(a_found_register_is_not_tried_again_on_a_later_write)
      * of what a write asks: the register stays the one found. */
     rig_init(0u);
     g.resp = 0.95f;
-    g.cfg.target_deg[0] = 20.0f;
+    g.cfg.target_deg[0] = 22.0f;
     g.cfg.tol_ddeg = 2u;
     CHECK(start());
-    while (servo_rauto_running(&g.run) && g.run.step_n < 2u) {
+    /* Both first measures from the search, then the first write's. */
+    while (servo_rauto_running(&g.run) && g.run.step_n < 3u) {
         tick();
     }
     CHECK_EQ(g.run.reg_side[0], 0);
@@ -560,8 +624,8 @@ TEST_CASE(eight_writes_a_side_keep_every_measure_and_the_last_check)
 {
     rig_init(0u);
     g.resp = 1.35f;
-    g.cfg.target_deg[0] = 17.0f / 1.1f;
-    g.cfg.target_deg[1] = 17.0f / 1.1f;
+    g.cfg.target_deg[0] = 17.0f;
+    g.cfg.target_deg[1] = 17.0f;
     g.cfg.tol_ddeg = 1u;
     CHECK(start());
     run_for(RAUTO_MS);
@@ -589,8 +653,8 @@ TEST_CASE(an_unmapped_side_tries_the_second_register_before_limit)
     g.map[1] = 0;
     g.v[0] = 50u;
     g.v[1] = 150u;
-    g.cfg.target_deg[0] = 20.0f;
-    g.cfg.target_deg[1] = 20.0f;
+    g.cfg.target_deg[0] = 22.0f;
+    g.cfg.target_deg[1] = 22.0f;
     CHECK(start());
     run_for(RAUTO_MS);
     CHECK_EQ(g.run.verdict, SERVO_RAUTO_PASS);
@@ -689,7 +753,7 @@ int main(void)
     RUN(an_unmapped_side_tries_the_second_register_before_limit);
     RUN(a_linear_servo_lands_within_tolerance_in_one_write_a_side);
     RUN(a_servo_five_percent_off_lands_in_two_writes);
-    RUN(the_goal_is_target_times_one_plus_margin);
+    RUN(the_goal_is_the_target_whatever_the_margin);
     RUN(a_value_is_clamped_to_lo_and_hi_and_the_run_fails_limit_when_the_goal_needs_more);
     RUN(eight_writes_a_side_end_in_write_cap);
     RUN(the_first_write_finds_the_register_of_each_side_and_a_wrong_guess_is_swapped);

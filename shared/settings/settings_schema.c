@@ -548,8 +548,9 @@ const setting_def_t settings_schema[SETTING_COUNT] = {
         SET_CAT_WIRELESS, SET_TYPE_FLOAT, 0.05f, 1.0f, 0.05f, 0.1f, NULL, 0 },
     /*
      * AUTO on RUDDER (servo_rudder_auto.h): the deflection each end pulse
-     * is to reach, 1000us and 2000us, as a magnitude; the margin it is
-     * programmed past that by; and how near the goal a measure has to be.
+     * is to reach, 1000us and 2000us, as a magnitude; the margin, 5us a %
+     * the servo's pulse range runs past them (KST only); and how near the
+     * target a measure has to be.
      */
     [SET_RUDDER_DEFL_LO] = {
         "rud_defl_lo", "°",

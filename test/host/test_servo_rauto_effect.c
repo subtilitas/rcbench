@@ -228,8 +228,8 @@ TEST_CASE(a_write_past_50_percent_of_the_estimate_ends_the_run)
 {
     rig_init(0u);
     g.cfg.family = SERVO_RAUTO_FAM_HITEC_D;
-    g.cfg.target_deg[0] = 45.0f;
-    g.cfg.target_deg[1] = 45.0f;
+    g.cfg.target_deg[0] = 49.5f;
+    g.cfg.target_deg[1] = 49.5f;
     g.hi = 400u;
     g.resp = 0.3f;
     CHECK(start());

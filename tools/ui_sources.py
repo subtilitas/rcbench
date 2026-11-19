@@ -337,6 +337,7 @@ SOURCES = [
     "shared/servo/servo_rudder_auto.c",
     "shared/servo/servo_rudder_auto_report.c",
     "shared/servo/servo_rudder_auto_verify.c",
+    "shared/servo/servo_rudder_auto_search.c",
     "shared/servo/servo_settle.c",
     "shared/servo/servo_limrun_family.c",
     "shared/servo/servo_start_seq.c",

@@ -5660,8 +5660,8 @@ UI_TEXT(HG_SV_RA_TARGET, 0,
     "The deflection 1000us and 2000us are to give, 0.5 to 90.0°. A tap opens the keypad.",
     "Der Ausschlag bei 1000us und 2000us, 0.5 bis 90.0°. Tippen öffnet das Tastenfeld.")
 UI_TEXT(HG_SV_RA_MARGIN, 0,
-    "MARGIN aims past the target, 0 to 50%. TOLERANCE: how near the goal a measure counts, 0.1 to 5.0°.",
-    "RESERVE zielt über das Soll hinaus, 0 bis 50%. TOLERANZ: wie nah am Ziel ein Messwert zählt, 0.1 bis 5.0°.")
+    "MARGIN widens KST pulses past 1000/2000us, 5us a %. TOLERANCE: how near the target a measure counts.",
+    "RESERVE weitet KST-Pulse über 1000/2000us, 5us je %. TOLERANZ: wie nah am Soll ein Messwert zählt.")
 UI_TEXT(HG_SV_RA_START, 0,
     "Hold 2s: PORT PWM and the supply on, read back in 1000ms, ARM, then the run. A press stops it, all off.",
     "Halte 2s: PORT-PWM, Versorgung, Rückmeldung in 1000ms, ARM, dann der Lauf. Drücken stoppt, alles aus.")
@@ -5860,6 +5860,14 @@ UI_TEXT(SVL_PORT_ONLY, 60,
 UI_TEXT(SVL_KST_ONLY, 60,
     "KST and Chaservo servos only",
     "Nur KST- und Chaservo-Servos")
+/* RUDDER AUTO's MARGIN row with SERVO at a Hitec entry: it reads 0% and
+ * takes no press (rauto_margin_now()). */
+UI_TEXT(SVL_RA_MARGIN, 30,
+    "AUTO margin",
+    "AUTO-Reserve")
+UI_TEXT(SVL_RA_MARGIN_HELP, 60,
+    "KST and Chaservo only: Hitec has no pulse registers",
+    "Nur KST und Chaservo: Hitec hat keine Pulsregister")
 /* TEST's list (servo_test_list.c): its headings and why a row takes no
  * press; its READY card (servo_test_ready.c): the STEPS row's label and
  * the PD MINI row's refusal beside a rail fed from elsewhere (58 cells,
@@ -11904,16 +11912,40 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_PROTECT,
     "der Winkel über %ums oder 2x in %us verloren")
 UI_SERVO_TEXT(SERVO_STR_RA_R_TARGETS,
     "Targets:        1000us %.1f°, 2000us %.1f°, "
-    "margin %u%%",
-    "Ziele:           1000us %.1f°, 2000us %.1f°, "
-    "Reserve %u%%")
-UI_SERVO_TEXT(SERVO_STR_RA_R_GOALS,
-    "Goals:          1000us %.2f°, 2000us %.2f°, "
     "tolerance %.1f°",
-    "Sollwerte:       1000us %.2f°, 2000us %.2f°, "
+    "Ziele:           1000us %.1f°, 2000us %.1f°, "
     "Toleranz %.1f°")
+/* KST: the margin's pulse range, PULSE LOWER and PULSE UPPER as written,
+ * and the extended ends by the linear map, which only the search drives.
+ * _N names the servo's NEUTRAL the range is taken from where it is not
+ * 1500.0us. */
+UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN,
+    "Margin:         %u%%: servo pulses %.1f-"
+    "%.1fus; by the linear model %uus reaches "
+    "%.1f°, %uus %.1f°; driven in the search only",
+    "Reserve:         %u%%: Servopulse %.1f-"
+    "%.1fus; nach dem linearen Modell erreicht "
+    "%uus %.1f°, %uus %.1f°; nur in der Suche angefahren")
+UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN_N,
+    "Margin:         %u%% from NEUTRAL %.1fus: servo "
+    "pulses %.1f-%.1fus; by the linear model %uus "
+    "reaches %.1f°, %uus %.1f°; driven in the search only",
+    "Reserve:         %u%% ab NEUTRAL %.1fus: "
+    "Servopulse %.1f-%.1fus; nach dem linearen Modell "
+    "erreicht %uus %.1f°, %uus %.1f°; nur in der Suche angefahren")
+UI_SERVO_TEXT(SERVO_STR_RA_R_MARGIN_HITEC,
+    "Margin:         0%: KST/Chaservo only, a Hitec "
+    "servo has no pulse registers",
+    "Reserve:         0%: nur KST/Chaservo, ein "
+    "Hitec-Servo hat keine Pulsregister")
+/* The bench's PULSE MIN and PULSE MAX widened to the margin's range. */
+UI_SERVO_TEXT(SERVO_STR_RA_R_WIDEN,
+    "Bench pulses:   PULSE MIN/MAX %u-%u -> "
+    "%u-%uus, for the session",
+    "Prüfstandspulse: PULS MIN/MAX %u-%u -> "
+    "%u-%uus, für die Sitzung")
 UI_SERVO_TEXT(SERVO_STR_RA_R_LENGTH,
-    "Length:         %.0fmm; goals 1000us %.1fmm, "
+    "Length:         %.0fmm; targets 1000us %.1fmm, "
     "2000us %.1fmm at the trailing edge",
     "Länge:           %.0fmm; Sollwerte 1000us "
     "%.1fmm, 2000us %.1fmm an der Hinterkante")
@@ -11983,6 +12015,11 @@ UI_SERVO_TEXT(SERVO_STR_RA_WHY_VERIFY_HI,
 UI_SERVO_TEXT(SERVO_STR_RA_WHY_VERIFY_MID,
     "center outside the tolerance at verify",
     "Mitte beim Nachmessen außer Toleranz")
+/* KST: a NEUTRAL outside the servo's own 1360.0us to 1640.0us at the
+ * read; the margin's range is taken from it. */
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_NEUTRAL,
+    "NEUTRAL outside 1360-1640us",
+    "NEUTRAL außerhalb 1360-1640us")
 UI_SERVO_TEXT(SERVO_STR_RA_R_SETTLE_IMU,
     "Measure:        angle stable for %ums, its "
     "span at most %.2f° over %.1fs, within %ums "
@@ -12005,6 +12042,48 @@ UI_SERVO_TEXT(SERVO_STR_RA_R_VERIFY_NO_WRITE,
 UI_SERVO_TEXT(SERVO_STR_RA_PH_APPROACH,
     "APPROACH",
     "ANFAHRT")
+/* The limit search that opens every AUTO run (servo_rudder_auto_search.c):
+ * an end found inside the end pulse, the report's section and its rows. */
+UI_SERVO_TEXT(SERVO_STR_RA_WHY_STOP,
+    "stop before the target",
+    "Anschlag vor dem Soll")
+UI_SERVO_TEXT(SERVO_STR_RA_STOP_AT,
+    "STOP AT %uus BEFORE TARGET",
+    "ANSCHLAG BEI %uus VOR DEM SOLL")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SEARCH_HEAD,
+    "LIMIT SEARCH (pulse, current, angle)",
+    "ENDLAGENSUCHE (Puls, Strom, Winkel)")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SEARCH_RULE,
+    "Steps:          %uus out from %uus, %ums settle "
+    "and %ums measure each; bound at %.1f x the free "
+    "current and %.2fA over it, the end %uus short; "
+    "first measure at 1000us and 2000us, or an end "
+    "inside, by the Measure rule",
+    "Schritte:        %uus ab %uus, je %ums Einschwingen "
+    "und %ums Messen; blockiert bei %.1f x Freistrom "
+    "und %.2fA darüber, Ende %uus davor; erste Messung "
+    "bei 1000us und 2000us, oder einem Ende davor, "
+    "nach der Messregel")
+UI_SERVO_TEXT(SERVO_STR_RA_R_END_DEG,
+    "                %.2f° at the end %uus",
+    "                 %.2f° am Ende %uus")
+UI_SERVO_TEXT(SERVO_STR_RA_R_END_DEG_STEP,
+    "                %.2f° at the last free step %uus, "
+    "the end not settled",
+    "                 %.2f° am letzten freien Schritt %uus, "
+    "das Ende nicht eingeschwungen")
+UI_SERVO_TEXT(SERVO_STR_RA_R_END_SHORT,
+    "; short of the target %.1f° by more than the "
+    "tolerance",
+    "; um mehr als die Toleranz unter dem Soll %.1f°")
+UI_SERVO_TEXT(SERVO_STR_RA_R_END_THERE,
+    "; the side measured there, its angles scaled to "
+    "%uus by the linear map (x %.3f)",
+    "; die Seite dort gemessen, ihre Winkel auf %uus "
+    "skaliert nach der linearen Abbildung (x %.3f)")
+UI_SERVO_TEXT(SERVO_STR_RA_R_SEARCH_ROW,
+    "%uus  %.3fA  %s",
+    "%uus  %.3fA  %s")
 /* AUTO's box on RUDDER (servo_rudder_auto_panel.c): the button that
  * shows it and the one back, its rows, its START, its lines and why a
  * START is refused. */
@@ -12017,9 +12096,24 @@ UI_TEXT(RA_TOL, 0,
 UI_TEXT(RA_START, 0,
     "HOLD 2s: ARM + START",
     "2s HALTEN: ARM + START")
+/* The pulse range a run leaves the servo with and the deflection at its
+ * two ends by the linear map, target x (1 + margin): "PULSES 750-2250us:
+ * 135.0°, 135.0°" at the largest, 33 cells, one row of the box. */
 UI_TEXT(RA_GOALS, 50,
-    "GOALS 1000us %.1f°, 2000us %.1f°",
-    "SOLL 1000us %.1f°, 2000us %.1f°")
+    "PULSES %u-%uus: %.1f°, %.1f°",
+    "PULS %u-%uus: %.1f°, %.1f°")
+/* The bench's PULSE MIN and PULSE MAX the run widened, after the report's
+ * file on the third line: "BERICHT RUDDR007.TXT, MIN/MAX 950-2050us", 40
+ * cells, one row of the box's 400px.  A widened PULSE MIN lies below
+ * 1000us, so the line holds 40 cells at every margin; the range before is
+ * the report's. */
+UI_TEXT(RA_WIDENED, 19,
+    "MIN/MAX %u-%uus",
+    "MIN/MAX %u-%uus")
+/* A tap on MARGIN with SERVO at a Hitec entry: no pulse registers. */
+UI_TEXT(RA_MARGIN_KST, 48,
+    "MARGIN: KST/CHASERVO ONLY",
+    "RESERVE: NUR KST/CHASERVO")
 UI_TEXT(RA_STEP, 50,
     "%s %uus: WRITE %u/%u, SESSIONS %u",
     "%s %uus: SCHREIBEN %u/%u, SITZUNGEN %u")
@@ -12037,6 +12131,17 @@ UI_TEXT(RA_VERIFY, 50,
 UI_TEXT(RA_FILE, 50,
     "REPORT %s",
     "BERICHT %s")
+/* The box's line for an end found inside the end pulse, the search's step
+ * on the first line, and the found ends on the fourth. */
+UI_TEXT(RA_STOP_AT, 48,
+    "STOP AT %uus BEFORE TARGET",
+    "ANSCHLAG BEI %uus VOR DEM SOLL")
+UI_TEXT(RA_SEARCH, 50,
+    "%s %uus: STEP %u OF %u",
+    "%s %uus: SCHRITT %u VON %u")
+UI_TEXT(RA_ENDS, 50,
+    "%s %s, %s %s",
+    "%s %s, %s %s")
 UI_TEXT(RA_BINDS_AT, 48,
     "surface binds at %s°",
     "Ruder klemmt bei %s°")
@@ -12061,11 +12166,20 @@ UI_TEXT(RA_NO_ZERO, 48,
 UI_TEXT(RA_RANGE, 48,
     "PULSE MIN TO MAX MUST INCLUDE 1000 TO 2000us",
     "PULS MIN BIS MAX MUSS 1000 BIS 2000us ABDECKEN")
+/* The range RUDDER AUTO's search commands would carry, PULSE MIN to MAX
+ * widened to the margin's for every NEUTRAL, past what a command can name
+ * (SERVO_RAUTO_CMD_CEILING_US, SERVO_RAUTO_CMD_FLOOR_US). */
+UI_TEXT(RA_RANGE_HIGH, 48,
+    "MARGIN RANGE PAST 2500us",
+    "RESERVE-BEREICH ÜBER 2500us")
+UI_TEXT(RA_RANGE_LOW, 48,
+    "MARGIN RANGE BELOW 400us",
+    "RESERVE-BEREICH UNTER 400us")
 UI_TEXT(RA_PROG_PORT, 48,
     "AUTO PROGRAMS A SERVO ON THE PROG PORT",
     "AUTO PROGRAMMIERT EIN SERVO AM PROG-PORT")
 UI_TEXT(RA_GOALS_TOL, 48,
-    "GOALS MUST EXCEED 2 x TOLERANCE",
+    "TARGETS MUST EXCEED 2 x TOLERANCE",
     "SOLL MUSS ÜBER 2 x TOLERANZ LIEGEN")
 UI_TEXT(RA_REFUSED, 48,
     "TARGET, MARGIN OR TOLERANCE OUT OF RANGE",
@@ -12255,6 +12369,12 @@ UI_TEXT(RDY_TAG_PWM_DISARM, 20,
 UI_TEXT(RDY_TAG_RANGE, 20,
     "NEEDS 1000-2000us",
     "BRAUCHT 1000-2000us")
+UI_TEXT(RDY_TAG_RANGE_HIGH, 20,
+    "PAST 2500us",
+    "ÜBER 2500us")
+UI_TEXT(RDY_TAG_RANGE_LOW, 20,
+    "BELOW 400us",
+    "UNTER 400us")
 UI_TEXT(RDY_TAG_HITEC_RANGE, 20,
     "NEEDS %u-%uus",
     "BRAUCHT %u-%uus")
@@ -12346,13 +12466,13 @@ UI_SETTING_LABEL(SET_RUDDER_MARGIN,
     "AUTO margin",
     "AUTO-Reserve")
 UI_SETTING_HELP(SET_RUDDER_MARGIN,
-    "Amount programmed beyond the target, 0 to 50%",
-    "Anteil über dem Soll, der programmiert wird, 0 bis 50%")
+    "KST pulses past 1000/2000us, 5us a %, 0 to 50%",
+    "KST-Pulse über 1000/2000us, 5us je %, 0 bis 50%")
 UI_SETTING_LABEL(SET_RUDDER_TOL,
     "AUTO tolerance",
     "AUTO-Toleranz")
 UI_SETTING_HELP(SET_RUDDER_TOL,
-    "Allowed difference between measurement and goal, 0.1 to 5.0°",
+    "Allowed difference between measurement and target, 0.1 to 5.0°",
     "Zulässige Abweichung vom Soll, 0.1 bis 5.0°")
 UI_SETTING_LABEL(SET_RUDDER_ZERO_DEG,
     "RUDDER zero",

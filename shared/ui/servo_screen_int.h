@@ -1504,8 +1504,15 @@ static inline const servo_type_t *type(void) { return &k_types[s.type]; }
  */
 static inline void cmd_range(uint16_t *lo, uint16_t *hi)
 {
-    const unsigned below = (unsigned)s.center_us - (unsigned)s.min_us;
-    const unsigned above = (unsigned)s.max_us - (unsigned)s.center_us;
+    unsigned mn = s.min_us, mx = s.max_us;
+    if (s.ra.drive_hi > s.ra.drive_lo) {
+        /* A RUDDER AUTO run's search: the margin's range for its own
+         * commands, PULSE MIN and PULSE MAX left as they are. */
+        mn = s.ra.drive_lo < mn ? s.ra.drive_lo : mn;
+        mx = s.ra.drive_hi > mx ? s.ra.drive_hi : mx;
+    }
+    const unsigned below = (unsigned)s.center_us - mn;
+    const unsigned above = mx - (unsigned)s.center_us;
     const unsigned half  = (below > above) ? below : above;
     *lo = (uint16_t)((unsigned)s.center_us - half);
     *hi = (uint16_t)((unsigned)s.center_us + half);
