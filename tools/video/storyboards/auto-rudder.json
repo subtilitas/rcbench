@@ -1,0 +1,904 @@
+{
+ "name": "auto-rudder",
+ "lang": "en",
+ "brand": "Auto rudder",
+ "steps": 4,
+ "dial_base": true,
+ "chapters": [
+  "Mount the sensor",
+  "Connect it",
+  "The Dial",
+  "RUDDER AUTO"
+ ],
+ "music": "pachelbel-canon",
+ "music_gain": 0.5,
+ "voice": {
+  "blend": {
+   "af_heart": 0.6,
+   "af_nicole": 0.4
+  },
+  "lang": "en-us",
+  "speed": 0.94
+ },
+ "scenes": [
+  {
+   "type": "case",
+   "model": "rudder",
+   "dur": 50.72,
+   "panel": [
+    [
+     0,
+     "overview"
+    ]
+   ],
+   "faces": [
+    [
+     0,
+     "navigation"
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      30,
+      330,
+      660
+     ],
+     [
+      0,
+      30,
+      115
+     ]
+    ],
+    [
+     16.68,
+     [
+      30,
+      330,
+      660
+     ],
+     [
+      0,
+      30,
+      115
+     ]
+    ],
+    [
+     18.880000000000003,
+     [
+      -60,
+      210,
+      520
+     ],
+     [
+      -40,
+      16,
+      205
+     ]
+    ],
+    [
+     29.52,
+     [
+      -60,
+      210,
+      520
+     ],
+     [
+      -40,
+      16,
+      205
+     ]
+    ],
+    [
+     31.52,
+     [
+      150,
+      105,
+      400
+     ],
+     [
+      55,
+      20,
+      200
+     ]
+    ],
+    [
+     45.06,
+     [
+      150,
+      105,
+      400
+     ],
+     [
+      55,
+      20,
+      200
+     ]
+    ],
+    [
+     47.160000000000004,
+     [
+      30,
+      330,
+      660
+     ],
+     [
+      0,
+      30,
+      115
+     ]
+    ],
+    [
+     50.72,
+     [
+      30,
+      330,
+      660
+     ],
+     [
+      0,
+      30,
+      115
+     ]
+    ]
+   ],
+   "parts": {
+    "skin": [
+     [
+      0,
+      1
+     ],
+     [
+      17.28,
+      1
+     ],
+     [
+      18.48,
+      0
+     ],
+     [
+      28.720000000000002,
+      0
+     ],
+     [
+      29.92,
+      1
+     ]
+    ],
+    "tape": [
+     [
+      0,
+      1
+     ],
+     [
+      31.720000000000002,
+      1
+     ],
+     [
+      33.120000000000005,
+      0
+     ]
+    ],
+    "imu": [
+     [
+      0,
+      1
+     ],
+     [
+      36.24,
+      1
+     ],
+     [
+      37.84,
+      0
+     ]
+    ]
+   },
+   "title": {
+    "from": 0.4,
+    "to": 16.28,
+    "kicker": "rcbench · servo",
+    "heading": "Auto rudder",
+    "text": "The bench sets a servo's end points<br>to the throw of the surface."
+   },
+   "chips": [
+    {
+     "from": 17.28,
+     "to": 30.12,
+     "n": "i",
+     "text": "The rudder and its servo"
+    },
+    {
+     "from": 30.12,
+     "to": 50.72,
+     "n": 1,
+     "text": "Mount the sensor"
+    }
+   ],
+   "labels": [
+    {
+     "from": 17.48,
+     "to": 29.12,
+     "anchor": "servo",
+     "at": [
+      120,
+      250
+     ],
+     "side": "r",
+     "n": "i",
+     "size": "sm",
+     "title": "KST X10 on its frame",
+     "text": "Under the upper skin, with a double arm."
+    },
+    {
+     "from": 17.48,
+     "to": 29.12,
+     "anchor": "rod",
+     "at": [
+      1330,
+      300
+     ],
+     "n": "i",
+     "size": "sm",
+     "title": "Push rod and horn",
+     "text": "The rod leaves through a slot in the skin."
+    },
+    {
+     "from": 30.32,
+     "to": 34.84,
+     "anchor": "tape",
+     "at": [
+      140,
+      300
+     ],
+     "side": "r",
+     "n": 1,
+     "title": "Double-sided gel tape",
+     "text": "A pad under the sensor's whole base. It holds on the skin and comes off without a trace."
+    },
+    {
+     "from": 36.04,
+     "to": 44.56,
+     "anchor": "imu",
+     "at": [
+      140,
+      300
+     ],
+     "side": "r",
+     "n": 1,
+     "title": "IMU on the rudder",
+     "text": "A WitMotion sensor. It rides on the flap and reports its angle over Bluetooth."
+    },
+    {
+     "from": 36.04,
+     "to": 44.56,
+     "anchor": "hinge",
+     "at": [
+      1330,
+      650
+     ],
+     "side": "t",
+     "n": 1,
+     "size": "sm",
+     "style": "warn",
+     "title": "Hinge line",
+     "text": "The sensor's X or Y axis lies along it."
+    },
+    {
+     "from": 45.76,
+     "to": 49.72,
+     "anchor": "display",
+     "at": [
+      1300,
+      220
+     ],
+     "n": 1,
+     "size": "sm",
+     "title": "The bench",
+     "text": "The servo's lead goes into a programming port: PROG PORT 1 to 4."
+    }
+   ],
+   "say": [
+    {
+     "at": 1.0,
+     "text": "This video sets the throws of a rudder with the R C bench. The bench drives the servo, measures the surface's angle with a sensor, and programs the servo's end points until both throws match."
+    },
+    {
+     "at": 17.28,
+     "text": "The example is a flap in a slice of wing. A K S T X 10 lies under the skin on a frame with a counter bearing, and moves the flap through a push rod."
+    },
+    {
+     "at": 30.12,
+     "text": "Step 1. Stick a pad of double sided gel tape onto the flap."
+    },
+    {
+     "at": 35.84,
+     "text": "Press the sensor onto the pad. Its X or Y axis has to run along the hinge line. The bench refuses the Z axis."
+    },
+    {
+     "at": 45.56,
+     "text": "Plug the servo into a programming port of the bench."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "rudder",
+   "dur": 16.2,
+   "faces": [
+    [
+     0,
+     "navigation"
+    ]
+   ],
+   "panel": [
+    [
+     0,
+     "imu"
+    ],
+    [
+     4.6,
+     "imu-scan"
+    ],
+    [
+     9.879999999999999,
+     "servo-rudder-angle"
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      30,
+      330,
+      660
+     ],
+     [
+      0,
+      30,
+      115
+     ]
+    ],
+    [
+     1.6,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     16.2,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 16.2,
+     "n": 2,
+     "text": "Connect the sensor"
+    }
+   ],
+   "labels": [],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Step 2. Connect the sensor. Open I M U on the bench, tap scan for sensors, and tap yours in the list."
+    },
+    {
+     "at": 9.68,
+     "text": "On rudder, tap the angle row and pick the sensor as the angle source."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "rudder",
+   "dur": 24.76,
+   "faces": [
+    [
+     0,
+     "navigation"
+    ]
+   ],
+   "run": {
+    "kind": "servo",
+    "from": 0.6,
+    "to": 24.360000000000003,
+    "angle": [
+     [
+      10.04,
+      0
+     ],
+     [
+      12.84,
+      30
+     ],
+     [
+      14.64,
+      30
+     ],
+     [
+      17.08,
+      30
+     ],
+     [
+      20.28,
+      -30
+     ],
+     [
+      21.28,
+      -30
+     ],
+     [
+      22.88,
+      0
+     ]
+    ]
+   },
+   "deflect": [
+    [
+     10.04,
+     0.0
+    ],
+    [
+     12.84,
+     18.0
+    ],
+    [
+     14.64,
+     18.0
+    ],
+    [
+     17.08,
+     18.0
+    ],
+    [
+     20.28,
+     -18.0
+    ],
+    [
+     21.28,
+     -18.0
+    ],
+    [
+     22.88,
+     0.0
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     7.4399999999999995,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     10.44,
+     [
+      110,
+      190,
+      520
+     ],
+     [
+      60,
+      22,
+      150
+     ]
+    ],
+    [
+     16.68,
+     [
+      110,
+      190,
+      520
+     ],
+     [
+      60,
+      22,
+      150
+     ]
+    ],
+    [
+     18.28,
+     [
+      120,
+      60,
+      440
+     ],
+     [
+      40,
+      20,
+      200
+     ]
+    ],
+    [
+     24.76,
+     [
+      120,
+      60,
+      440
+     ],
+     [
+      40,
+      20,
+      200
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 24.76,
+     "n": 3,
+     "text": "Move the rudder with the Dial"
+    }
+   ],
+   "labels": [
+    {
+     "from": 9.64,
+     "to": 15.68,
+     "anchor": "knob",
+     "at": [
+      1380,
+      250
+     ],
+     "side": "b",
+     "n": 3,
+     "size": "sm",
+     "title": "M5Stack Dial",
+     "text": "A wireless knob. One detent is 1° at the servo."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Step 3. Move the rudder by hand with the dial. Open servo live and hold the dial's display to arm."
+    },
+    {
+     "at": 9.44,
+     "text": "Turn the knob. Each detent moves the servo one degree, and the rudder follows."
+    },
+    {
+     "at": 16.68,
+     "text": "Check that the surface runs free to both sides, then bring it back to the center."
+    }
+   ]
+  },
+  {
+   "type": "case",
+   "model": "rudder",
+   "dur": 91.46,
+   "faces": [
+    [
+     0,
+     "navigation"
+    ]
+   ],
+   "rauto": {
+    "at": 15.16,
+    "speed": 2.0
+   },
+   "panel": [
+    [
+     0,
+     "rauto-0001"
+    ]
+   ],
+   "deflect": [
+    [
+     0,
+     0
+    ]
+   ],
+   "camera": [
+    [
+     0,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     20.86,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     21.66,
+     [
+      120,
+      60,
+      440
+     ],
+     [
+      40,
+      20,
+      200
+     ]
+    ],
+    [
+     27.46,
+     [
+      120,
+      60,
+      440
+     ],
+     [
+      40,
+      20,
+      200
+     ]
+    ],
+    [
+     28.16,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     30.56,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     31.26,
+     [
+      120,
+      60,
+      440
+     ],
+     [
+      40,
+      20,
+      200
+     ]
+    ],
+    [
+     44.46,
+     [
+      120,
+      60,
+      440
+     ],
+     [
+      40,
+      20,
+      200
+     ]
+    ],
+    [
+     45.16,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     47.56,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     48.26,
+     [
+      120,
+      60,
+      440
+     ],
+     [
+      40,
+      20,
+      200
+     ]
+    ],
+    [
+     82.01,
+     [
+      120,
+      60,
+      440
+     ],
+     [
+      40,
+      20,
+      200
+     ]
+    ],
+    [
+     83.01,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ],
+    [
+     91.46,
+     [
+      0,
+      250,
+      330
+     ],
+     [
+      0,
+      34,
+      10
+     ]
+    ]
+   ],
+   "chips": [
+    {
+     "from": 0,
+     "to": 17.16,
+     "n": 4,
+     "text": "RUDDER AUTO"
+    },
+    {
+     "from": 17.16,
+     "to": 83.01,
+     "n": 4,
+     "text": "The run, at twice its speed"
+    },
+    {
+     "from": 83.01,
+     "to": 91.46,
+     "n": 4,
+     "text": "PASS"
+    }
+   ],
+   "labels": [
+    {
+     "from": 32.01,
+     "to": 38.76,
+     "anchor": "imu",
+     "at": [
+      150,
+      620
+     ],
+     "side": "r",
+     "n": 4,
+     "size": "sm",
+     "title": "Goal 22.0°",
+     "text": "The target of 20° plus the margin of 10%."
+    }
+   ],
+   "say": [
+    {
+     "at": 0.6,
+     "text": "Step 4. Open rudder auto. Enter the throw each end should reach: here 20 degrees at 1000 and at 2000 microseconds."
+    },
+    {
+     "at": 10.72,
+     "text": "With the surface at neutral, tap zero."
+    },
+    {
+     "at": 14.76,
+     "text": "Then hold arm and start for 2 seconds."
+    },
+    {
+     "at": 18.8,
+     "text": "The bench switches the supply on, arms, and reads the servo."
+    },
+    {
+     "at": 24.6,
+     "text": "It drives the 1000 microsecond end and waits until the sensor's angle is still: 36 degrees."
+    },
+    {
+     "at": 32.88,
+     "text": "Too far. It writes a smaller end point into the servo and measures again: 22 degrees."
+    },
+    {
+     "at": 40.76,
+     "text": "The other end goes the same way: measure, write, measure."
+    },
+    {
+     "at": 56.76,
+     "text": "A verify pass then measures both ends and the center once more, each from the same side."
+    },
+    {
+     "at": 83.26,
+     "text": "Pass. Both ends are within half a degree of their goal, and the report is on the S D card."
+    }
+   ]
+  },
+  {
+   "type": "end",
+   "dur": 9,
+   "heading": "Rudder set",
+   "items": [
+    "Gel tape and the sensor on the rudder",
+    "IMU › scan, RUDDER › ANGLE: the sensor",
+    "Dial: arm, turn, check both sides",
+    "RUDDER AUTO: targets, ZERO, hold ARM + START",
+    "PASS, report RUDDRnnn.TXT"
+   ],
+   "say": "The end points are in the servo. 1000 and 2000 microseconds now give the same throw on both sides.",
+   "note": "Reference: docs/Servo.md, AUTO end points."
+  }
+ ]
+}

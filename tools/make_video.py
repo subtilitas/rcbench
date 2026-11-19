@@ -119,9 +119,10 @@ def _check_say(scene: dict, dur: float, where: str, errors: list) -> None:
 def _check_run(scene: dict, dur: float, where: str, errors: list) -> None:
     run = scene["run"]
     kind = run.get("kind", "motor") if isinstance(run, dict) else None
-    if kind not in RUNS or scene.get("model") not in ("dial", "duo"):
-        errors.append(f"{where} run: needs the dial or duo model and a "
-                      f"kind, one of {', '.join(RUNS)}")
+    if kind not in RUNS or scene.get("model") not in ("dial", "duo",
+                                                      "rudder"):
+        errors.append(f"{where} run: needs the dial, duo or rudder model "
+                      f"and a kind, one of {', '.join(RUNS)}")
         return
     if not (_number(run.get("from")) and _number(run.get("to"))
             and 0 <= run["from"] < run["to"] <= dur):
@@ -174,6 +175,13 @@ def _check_case(scene: dict, where: str, errors: list) -> None:
     for n, window in enumerate(scene.get("windows", [])):
         _check_window(window, dur, f"{where} window {n + 1}", errors, known)
     mini = scene.get("model") == "mini"
+    auto = scene.get("rauto")
+    if auto is not None and not (
+            scene.get("model") == "rudder" and isinstance(auto, dict)
+            and _number(auto.get("at")) and 0 <= auto["at"] < dur
+            and _number(auto.get("speed", 1)) and auto.get("speed", 1) > 0):
+        errors.append(f"{where}: rauto needs the rudder model, at within "
+                      "the scene and a speed above 0")
     for name in ("faces", "turn", "flip", "spin", "deflect"):
         if name in scene:
             _keys(scene[name], 2, f"{where} {name}", errors)
@@ -699,7 +707,7 @@ def views(board: dict) -> dict:
         for key in scene.get("panel", []) if scene["type"] == "case" else []:
             # A run's shots are drawn by runs(), not from a view's name;
             # the mini model's are stills.
-            if not key[1].startswith("live-") \
+            if not key[1].startswith(("live-", "rauto-")) \
                     and scene.get("model") != "mini":
                 found[key[1]] = (key[1], key[2] if len(key) > 2 else None,
                                  board["lang"])
@@ -998,6 +1006,60 @@ def render_views(board: dict, shots: pathlib.Path) -> None:
                 render_dial.render(dial, tmp, name, board["lang"]).save(
                     shots / f"dial-{name}.png")
             runs(board, shots, tmp, exe, dial)
+        rauto(board, shots, tmp)
+
+
+def rauto(board: dict, shots: pathlib.Path, tmp: pathlib.Path) -> None:
+    """Draw a RUDDER AUTO run and give its scene the shots and the flap.
+
+    test/host/video_rauto.c runs the run of the host suites and writes
+    the panel's screen every 500ms and the surface's angle every 100ms.
+    A scene with "rauto", {at, speed}, takes the frames as shots of its
+    display from "at" on, "speed" times as fast as the run, and the
+    angle as its "deflect" keys.
+
+    Args:
+        board: The storyboard; its scenes with "rauto" gain "panel" and
+            "deflect" keys.
+        shots: The directory that takes the frames, rauto-NNNN.png.
+        tmp: A directory for the run's files.
+    """
+    import os
+
+    from PIL import Image
+
+    scenes = [scene for scene in board["scenes"] if "rauto" in scene]
+    if not scenes:
+        return
+    build = REPO / "build" / "video_host"
+    quiet = {"check": True, "stdout": subprocess.DEVNULL}
+    subprocess.run(["cmake", "-S", str(REPO / "test" / "host"), "-B",
+                    str(build), "-DCMAKE_BUILD_TYPE=Release"], **quiet)
+    subprocess.run(["cmake", "--build", str(build), "--target",
+                    "video_rauto", "-j", str(os.cpu_count() or 1)], **quiet)
+    out = tmp / "rauto"
+    out.mkdir()
+    subprocess.run([str(build / "video_rauto"), str(out)], **quiet)
+    for path in sorted(out.glob("rauto-*.ppm")):
+        Image.open(path).convert("RGB").save(shots / f"{path.stem}.png")
+    rows = [line.split(",") for line in (out / "track.csv").read_text(
+        encoding="utf-8").splitlines()[1:]]
+    start = int(rows[0][1])
+    for scene in scenes:
+        at, speed = scene["rauto"]["at"], scene["rauto"].get("speed", 1)
+        panel, deflect, frame = [], [], None
+        for n, (shot, ms, deg, _running, _armed) in enumerate(rows):
+            t = round(at + (int(ms) - start) / 1000 / speed, 3)
+            if shot != frame:
+                frame = shot
+                panel.append([t, f"rauto-{int(shot):04d}"])
+            # A key where the angle turns: the flap moves on lines.
+            edge = n in (0, len(rows) - 1) or not (
+                rows[n - 1][2] == deg == rows[n + 1][2])
+            if edge:
+                deflect.append([t, float(deg)])
+        scene["panel"] = sorted(scene.get("panel", []) + panel)
+        scene["deflect"] = sorted(scene.get("deflect", []) + deflect)
 
 
 def _views_key(board: dict) -> str:

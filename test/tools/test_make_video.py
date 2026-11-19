@@ -675,3 +675,21 @@ def test_a_board_scene_takes_a_tilt_an_entrance_and_windows():
     scene["windows"][0]["pointer"][0][1] = "go"
     scene["tilt"] = [80, 0]
     assert any("tilt" in e for e in make_video.check(board))
+
+
+def test_a_rudder_scene_takes_a_run_of_rudder_auto():
+    """A run of RUDDER AUTO belongs to the rudder model and its scene."""
+    scene = {"type": "case", "model": "rudder", "dur": 60,
+             "camera": [[0, [0, 250, 330], [0, 34, 10]],
+                        [60, [0, 250, 330], [0, 34, 10]]],
+             "rauto": {"at": 5, "speed": 2}, "labels": [],
+             "parts": {"imu": [[0, 1], [2, 0]], "tape": [[0, 1], [1, 0]]},
+             "deflect": [[0, 0], [5, 0]]}
+    board = {"lang": "en", "steps": 1, "scenes": [scene]}
+    assert make_video.check(board) == []
+    assert make_video.views(board) == {}
+    scene["rauto"]["at"] = 70
+    assert any("rauto" in e for e in make_video.check(board))
+    scene["rauto"]["at"] = 5
+    scene["model"] = "duo"
+    assert any("rauto" in e for e in make_video.check(board))
