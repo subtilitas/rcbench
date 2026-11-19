@@ -211,10 +211,11 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   });
   const from = wires.getCenter(new THREE.Vector3());
   // The header the plug goes into, in the bench's own frame.
-  let socket = [34, 12, 58];
+  let socket = [48, 12, 54];
   try {
     const at = rig.anchors.J1();
-    if (at.every(Number.isFinite)) socket = at;
+    // A case without the carrier gives its origin: no header there.
+    if (at.every(Number.isFinite) && Math.hypot(...at) > 1) socket = at;
   } catch (e) { /* the case's shell alone has no header */ }
   const WIRES = [0x7a4a1e, 0xd0122a, 0xe8731a];
   const leads = WIRES.map(color => {
@@ -262,7 +263,7 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
       from, new THREE.Vector3(from.x, from.y - 2, 168),
       new THREE.Vector3(from.x * .5 + clear.x * .5, 3,
                         (168 + clear.z) / 2 + 10),
-      clear, back]);
+      clear, back, port.clone().addScaledVector(out, 6)]);
     leads.forEach((m, i) => {
       m.geometry.dispose();
       m.geometry = new THREE.TubeGeometry(way, 160, .55, 8);
