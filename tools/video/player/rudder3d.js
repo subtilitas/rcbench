@@ -211,11 +211,18 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   });
   const from = wires.getCenter(new THREE.Vector3());
   // The header the plug goes into, in the bench's own frame.
-  let socket = [43, 12, 54];
+  // J1, the header of the programming ports, is the one nearer the
+  // case's corner (docs/Carrier.md).  On the case's shell alone: the
+  // middle of its opening, at the wall's face.
+  let socket = [58, 12, 54], tips = 0;
   try {
     const at = rig.anchors.J1();
     // A case without the carrier gives its origin: no header there.
-    if (at.every(Number.isFinite) && Math.hypot(...at) > 1) socket = at;
+    if (at.every(Number.isFinite) && Math.hypot(...at) > 1) {
+      // The header's box ends at its pins' tips, 6mm before its body.
+      socket = at;
+      tips = 6;
+    }
   } catch (e) { /* the case's shell alone has no header */ }
   const WIRES = [0x7a4a1e, 0xd0122a, 0xe8731a];
   const leads = WIRES.map(color => {
@@ -237,6 +244,7 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
     const eye = new THREE.Mesh(new THREE.BoxGeometry(1.5, 1.5, .4),
       new THREE.MeshStandardMaterial({color: 0xd4ad38, metalness: .6,
                                       roughness: .35}));
+    // J1's rows from the top: GND, +5V, signal.
     eye.position.set(0, (1 - i) * 2.54, 7.1);
     plug.add(eye);
     const tab = new THREE.Mesh(new THREE.BoxGeometry(.5, 1.7, 5),
@@ -249,10 +257,11 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
   // The lead from the servo to the plug, laid anew when the bench moves.
   const lay = () => {
     scene.updateMatrixWorld(true);
-    // One of the header's 4 places, 2.54mm apart: the second from its
-    // middle.
-    const port = bench.localToWorld(
-      new THREE.Vector3(socket[0] - 3.81, socket[1], socket[2]));
+    // PROGP01 is J1's position 2 of 4, counted from the left with the
+    // display up, 2.54mm apart: 1.27mm left of the header's middle.  The
+    // plug's face stands at the header's body, over its pins.
+    const port = bench.localToWorld(new THREE.Vector3(
+      socket[0] - 1.27, socket[1], socket[2] - tips));
     // The way out of the header: the bench's connector wall faces +z.
     const out = new THREE.Vector3(0, 0, 1).transformDirection(
       bench.matrixWorld);
@@ -260,14 +269,14 @@ export function buildRudder({wing, imu, dial, bases, caseGltf, panel}) {
       v => v.toFixed(2)).join();
     if (key === wayKey) return;
     wayKey = key;
-    const back = port.clone().addScaledVector(out, 14);
+    const back = port.clone().addScaledVector(out, 24);
     const clear = port.clone().addScaledVector(out, 40);
     clear.y = Math.max(4, clear.y * .5);
     way = new THREE.CatmullRomCurve3([
       from, new THREE.Vector3(from.x, from.y - 2, 168),
       new THREE.Vector3(from.x * .5 + clear.x * .5, 3,
                         (168 + clear.z) / 2 + 10),
-      clear, back, port.clone().addScaledVector(out, 6)]);
+      clear, back, port.clone().addScaledVector(out, 13)]);
     leads.forEach((m, i) => {
       m.geometry.dispose();
       m.geometry = new THREE.TubeGeometry(way, 160, .55, 8);
