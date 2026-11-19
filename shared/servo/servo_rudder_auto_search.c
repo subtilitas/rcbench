@@ -7,8 +7,9 @@
  * to the margin's range on the INA3221's windows.  The run records every
  * position the finder judges, holds the servo at the end pulse once the
  * finder judged it or a position past it free, takes the side's first
- * angle there by the measure's rule, and lets the finder go on.  The found
- * ends cap the run's later pulses.  An end inside the end pulse is held for
+ * angle there by the measure's rule, and lets the finder go on.  A hold
+ * the servo stands past comes from PULSE CENTER, as every measure does.
+ * The found ends cap the run's later pulses.  An end inside the end pulse is held for
  * its angle: short of TARGET less TOLERANCE it ends the run, else that
  * side's measures drive the end, their angles scaled to the end pulse.
  *
@@ -114,6 +115,7 @@ void rauto_search_begin(servo_rauto_t *r, uint8_t side, uint32_t now_ms)
     }
     r->side      = side;
     r->s_hold    = false;
+    r->s_via     = false;
     r->s_from_ms = now_ms;
     rauto_command(r, SERVO_RAUTO_PH_SEARCH, c, now_ms);
 }
@@ -151,6 +153,28 @@ static void go_to(servo_rauto_t *r, uint16_t us, uint32_t now_ms)
         ++r->s_steps;
     }
     rauto_command(r, SERVO_RAUTO_PH_SEARCH, us, now_ms);
+}
+
+/**
+ * @brief Hold the servo at a pulse for an angle, reached from the center
+ *        side as every measure is (servo_rudder_auto.h, "The approach"):
+ *        where it stands past that pulse, a step past the end pulse or the
+ *        bind outside a found end, it goes to PULSE CENTER first and on
+ *        once still there.
+ * @param r      Run state.
+ * @param us     The pulse, us.
+ * @param now_ms Time, ms.
+ */
+static void hold_at(servo_rauto_t *r, uint16_t us, uint32_t now_ms)
+{
+    r->s_hold = true;
+    if (r->cmd_us == us) {
+        /* Reached on the way out. */
+        return;
+    }
+    r->s_via    = true;
+    r->s_via_us = us;
+    go_to(r, r->cfg.center_us, now_ms);
 }
 
 uint16_t servo_rauto_side_us(const servo_rauto_t *r, uint8_t s)
@@ -266,9 +290,8 @@ static void side_done(servo_rauto_t *r, uint16_t bind, uint32_t now_ms)
     if (inside) {
         /* The end pulse lies past the stop: the angle at the found end
          * decides, taken by the measure's rule. */
-        r->s_hold    = true;
         r->s_endhold = true;
-        go_to(r, e->end_us, now_ms);
+        hold_at(r, e->end_us, now_ms);
         return;
     }
     side_next(r, now_ms);
@@ -323,11 +346,8 @@ void rauto_search_window(servo_rauto_t *r, uint16_t ma, uint32_t at_ms)
         && at_or_past(s, before)) {
         /* The end pulse, or a position past it, judged free: the servo
          * held at the end pulse for the angle. */
-        r->s_hold    = true;
         r->s_next_us = cmd;
-        if (before != k_end[s]) {
-            go_to(r, k_end[s], at_ms);
-        }
+        hold_at(r, k_end[s], at_ms);
         return;
     }
     if (ended) {
@@ -341,6 +361,16 @@ void rauto_search_step(servo_rauto_t *r, uint32_t now_ms,
                        const servo_rauto_in_t *in)
 {
     if (!r->s_hold) {
+        return;
+    }
+    if (r->s_via) {
+        /* At PULSE CENTER on the way to the hold: on once still. */
+        if (rauto_still(r, now_ms, in)) {
+            r->s_via = false;
+            go_to(r, r->s_via_us, now_ms);
+        } else if (due(now_ms, r->move_ms, servo_rauto_wait_ms(r))) {
+            rauto_end(r, SERVO_RAUTO_FAIL, SERVO_RAUTO_WHY_NOT_STILL, now_ms);
+        }
         return;
     }
     if (r->s_endhold) {

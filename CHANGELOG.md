@@ -85,7 +85,11 @@ history is in git.
   MARGIN 50%); the rate itself is not changed. It holds the servo at 1000us
   and 2000us on the way, each once it or a step past it is judged free,
   and takes the first measure of each side there by the measure's settle
-  rule; the run drives no separate first measure. LOW END and HIGH END cap every later pulse. An end inside
+  rule; the run drives no separate first measure. Where the servo stands
+  past the pulse it holds, a step past 1000us with PULSE CENTER at 1505us
+  or the bind outside a found end, it goes to PULSE CENTER first and waits
+  there, so every measure of a side reaches its pulse from the center side
+  (the servo and the IMU read up to 0.33° apart by the side). LOW END and HIGH END cap every later pulse. An end inside
   1000us or 2000us is held for its angle: short of TARGET by more than
   TOLERANCE the run ends as FAIL, `STOP AT 1225us BEFORE TARGET`, with no
   value written and every output off; at TARGET - TOLERANCE or past it the

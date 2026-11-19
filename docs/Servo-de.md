@@ -2119,8 +2119,10 @@ angefragt ist).
   und an der IMU mit den Vorgaben innerhalb 0,10° über 3,0s, spätestens
   16 000ms nach dem Befehl. Liegt PULS MITTE neben dem 10us-Raster, 1505us,
   landen die Schritte auf 1005us und 995us; sobald 995us frei gefunden ist,
-  fährt das Servo für die erste Messung zurück auf 1000us, von 5us außen
-  erreicht. Ein blockiertes 995us beendet die Seite wie jede Blockade,
+  fährt das Servo auf PULS MITTE, wartet dort nach der Regel der Messung
+  und fährt dann für die erste Messung auf 1000us. 1000us wird so von der
+  Seite der Mitte erreicht, wie bei jeder späteren Messung (die Anfahrt
+  unten). Ein blockiertes 995us beendet die Seite wie jede Blockade,
   1000us wird nie gehalten. Sind
   beide Seiten gesucht, gelten die zwei ersten Messungen wie jede Messung,
   die Seite 1000us zuerst, und der Lauf schreibt die erste Seite außerhalb
@@ -2129,7 +2131,9 @@ angefragt ist).
   Suche fährt; ein Puls darüber beendet den Lauf wie unten.
 - Ein Ende innerhalb des Endpulses, UNTERES ENDE über 1000us oder OBERES
   ENDE unter 2000us, wird für seinen Winkel nach der Regel der Messung
-  gehalten. Schwingt er bis zur Wartezeit der Messung nicht ein, gilt der
+  gehalten. Das Servo steht an der Blockade, hinter dem Ende, und fährt
+  daher zuerst auf PULS MITTE und wartet dort wie bei einer Anfahrt.
+  Schwingt er bis zur Wartezeit der Messung nicht ein, gilt der
   Winkel, den die Suche am letzten freien Schritt der Seite aufgezeichnet
   hat, und der Bericht nennt das. Dieser Winkel steht nach der linearen
   Abbildung ab dem Puls, an dem er genommen wurde, für das Ende: 3,0° bei
@@ -2165,8 +2169,9 @@ angefragt ist).
   Puls an (Phase ANFAHRT, die erste Zeile `ANFAHRT 1500us: ...`). Jedes
   Ende, im Hauptdurchgang wie beim Nachmessen, kommt von PULS MITTE; die
   Mitte des Nachmessens kommt von 2000us, wo ihre Messung davor den Winkel
-  nahm, ohne eigene Anfahrt. Ein Puls wird so immer von derselben Seite
-  erreicht: am Prüfstand am 2026-11-18 las ein Servowert 46,86° von der
+  nahm, ohne eigene Anfahrt. Das Halten der Suche für eine erste Messung
+  kommt ebenfalls von PULS MITTE, wo das Servo hinter seinem Puls steht
+  (oben). Ein Puls wird so immer von derselben Seite erreicht: am Prüfstand am 2026-11-18 las ein Servowert 46,86° von der
   Mitte und 46,58° von 2000us, die Mitte +0,02° von 2000us und +0,35° von
   1000us. Eine Anfahrt nimmt keinen Winkel und beendet den Lauf wie eine
   Messung, wenn sie nicht ruhig wird.
