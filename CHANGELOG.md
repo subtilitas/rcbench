@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `tools/check_mutants.py`: `--check` holds the weekly mutation run's
+  figures in `mutation.yml`, `STATUS.md`, `CONTRIBUTING.md` and
+  `docs/Building*.md` to the mutants of the tree, run in CI; `--update`
+  writes them. The run reaches about 1,869 mutants of `shared/outputs`,
+  2,568 in all (428 a shard).
+- `test_mutate.py` runs `mutate.py` with `mutation.yml`'s own arguments
+  and fails when the run no longer lists `shared/safety` first.
 - `hardware/mechanical/`: `servo_standard.step`, a standard size servo with
   a round horn, black with the white print "Standard Servo", from an owner
   sketch with dimensions: case 40.5mm x 20.0mm x 36.3mm, 2 ears with 2 open

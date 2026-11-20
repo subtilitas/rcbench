@@ -247,6 +247,13 @@ jobs:
       - name: The docs agree with the tree
         run: python3 tools/check_docs.py
 
+      # The weekly mutation run's figures (mutants, files, the count in
+      # shared/safety and in shared/outputs, the share a shard reaches) in
+      # mutation.yml, STATUS.md, CONTRIBUTING.md and docs/Building*.md
+      # against the mutants tools/mutate.py makes of the tree.
+      - name: The mutation run's figures match the tree
+        run: python3 tools/check_mutants.py --check
+
       # HOTSPOT PASSWORD and WEB CODE are named only in the sources the tool
       # lists, and no log or console call names one.
       - name: A kept Wi-Fi value stays out of logs and other sources
