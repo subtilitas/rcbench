@@ -46,6 +46,7 @@ SOURCES = [
     "shared/ui/ui_watermark.c",
     "shared/ui/ui_router.c",
     "shared/ui/ui_router_alert.c",
+    "shared/ui/ui_router_screens.c",
     "shared/ui/ui_help.c",
     "shared/ui/help_outputs.c",
     "shared/ui/help_setup.c",
@@ -236,6 +237,9 @@ SOURCES = [
     "shared/ui/settings_panes.c",
     # The power node's entry on WIRELESS.
     "shared/ui/wireless_pnode.c",
+    # SEARCH: the scan and bind screen of the Dial and the nodes.
+    "shared/ui/wl_search.c",
+    "shared/ui/wl_search_draw.c",
     "protocols/dialknob/dialknob.c",
     "protocols/dialknob/dk_track.c",
     "protocols/bleuart/bleuart_adv.c",

@@ -28,6 +28,7 @@ set(SRCS
     ui_board.c
     ui_router.c
     ui_router_alert.c
+    ui_router_screens.c
     ui_help.c
     help_outputs.c
     help_setup.c
@@ -134,6 +135,8 @@ set(SRCS
     sensors_pane.c
     wireless_pane.c
     wireless_pnode.c
+    wl_search.c
+    wl_search_draw.c
     settings_panes.c
     sensors_rows.c
     outputs_screen.c

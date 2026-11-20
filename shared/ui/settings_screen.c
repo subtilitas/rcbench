@@ -583,16 +583,25 @@ static void reset(void)
 
 /**
  * @brief SETUP shown: it opens on its tiles, from the menu and from a
- *        screen a tile opened alike.  The list keeps its category and its
- *        scroll; the keyboard and the keypad are closed.
+ *        screen a tile opened alike; after settings_screen_resume() on the
+ *        list as it was left.  The list keeps its category and its scroll;
+ *        the keyboard and the keypad are closed.
  */
 static void enter(void)
 {
     ui_setlist_drop(&s.sl);
-    s.sl.open = false;
-    s.opened = false;
+    if (!s.resume) {
+        s.sl.open = false;
+        s.opened = false;
+    }
+    s.resume = false;
     stg_clamp_scroll();
     settings_screen_invalidate();
+}
+
+void settings_screen_resume(void)
+{
+    s.resume = true;
 }
 
 /**

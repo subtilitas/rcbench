@@ -321,6 +321,7 @@ alle ihre Hilfeseiten auch in ARMED sichtbar.
 | UPDATES, OPTIONEN | 2 | wie eine Optionsliste |
 | UPDATES, EINZELNE UPDATES | 2 | der Abschnitt IOMCU, seine Haltetaste, der Eintrag FUNKGERÄTE; die Überschrift, die Haltetaste des C6-Funks, ZURÜCK |
 | UPDATES, die Seite der Funkgeräte | 1 | die drei Gerätezeilen, UPDATE ABBRECHEN während eines Updates, ZURÜCK |
+| SEARCH | 2 | die Fundliste; die Karte, AKTUALISIEREN |
 
 ![Die Hilfe von SETUP auf Seite 1](img/de/help-setup.png)
 
@@ -6805,8 +6806,8 @@ Die Zeilen des DIAL-Eintrags ([Das M5Stack Dial](Dial-de.md#das-panel)):
 | Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
 | Dial | EIN, AUS | AUS | die Verbindung zum gebundenen Dial; AUS beendet sie ohne Fehler |
-| Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundenes Dial; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während eine Suche läuft, startet Tippen keine, und das Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE` |
-| Gebundenes Dial | der Name des gebundenen Dials, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Dials der letzten Suche, `DIAL-3A10  -52dBm`, bis zu 6, das gebundene markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf ein Dial bindet es und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht wie Dial suchen. Ohne Liste zeigt das Band `KEIN DIAL GELISTET: ERST AUF DIAL SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN` |
+| Dial suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; während eine Suche läuft, startet Tippen keine, und das Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. SEARCH öffnet in jedem Fall |
+| Gebundenes Dial | der Name des gebundenen Dials, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
 | Dial-Schritt, Gas | 0.5%, 1%, 2%, 5% | 1% | das Gas, das eine Raste auf MOTOR & ESC verstellt |
 | Dial-Schritt, Servo | 0.5°, 1°, 2°, 5° | 1° | der Hornwinkel, den eine Raste auf SERVO verstellt |
 
@@ -6828,8 +6829,8 @@ Spannung, Strom, Leistung und Summen von MOTOR & ESC liefert.
 | --- | --- | --- | --- |
 | Leistungsknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie ohne Fehler |
 | INA228-Quelle | WIRED, NODE | WIRED | WIRED: der INA228 des IOmcu unter SENSORS; NODE: die Messwerte des Leistungsknotens. Auch bei ausgeschaltetem Knoten sichtbar, damit die Quelle ohne Einschalten des Knotens auf WIRED zurück kann |
-| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
-| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Leistungsknoten der letzten Suche, `rcbench-pwr-3456  -58dBm`, bis zu 6, der gebundene markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ein Auswuchtknoten wird nicht gelistet. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`; eine Wahl, abgelehnt, weil sich die Liste änderte, zeigt `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN` |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang nach Leistungsknoten; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`. SEARCH öffnet in jedem Fall. Ein Auswuchtknoten wird nicht gelistet |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
 | Knotenakku | `3.92V`, `SCHWACH 3.41V`, `KEINE ZELLE`, `LESEFEHLER`, `NICHT VERBUNDEN` | | die Zellspannung aus dem letzten STATUS des Knotens, alle 1000ms gesendet; `SCHWACH` unter 3.5V, `KEINE ZELLE` an USB allein |
 
 LEISTUNGSKNOTEN ZURÜCKSETZEN setzt Leistungsknoten auf AUS und
@@ -6874,8 +6875,8 @@ Die Zeilen des AUSWUCHTKNOTEN-Eintrags ([Auswuchten](Balance-de.md#messen-mit-de
 | Zeile | Werte | Vorgabe | Wirkung |
 | --- | --- | --- | --- |
 | Auswuchtknoten | EIN, AUS | AUS | die Verbindung zum gebundenen Knoten; AUS beendet sie, und sein Verlust ist kein Fehler: der Knoten misst und steuert nichts |
-| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | bei `n GEFUNDEN` öffnet Tippen die Liste von Gebundener Knoten; sonst sucht Tippen 10s lang nach Knoten, die die Rolle Auswuchten anzeigen, und das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
-| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen listet die Knoten der letzten Suche, `rcbench-bal-3456  -58dBm`, bis zu 6, den gebundenen markiert, und zuletzt `ERNEUT SUCHEN`; Tippen auf einen Knoten bindet ihn und fragt nach dem Speichern, `ERNEUT SUCHEN` sucht. Ohne Liste zeigt das Band `KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN`, während einer Suche `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`; eine Wahl, abgelehnt, weil sich die Liste änderte, zeigt `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN` |
+| Knoten suchen | `SUCHEN`, `SUCHE LÄUFT`, `n GEFUNDEN`, `KEINS GEFUNDEN`, `DURCH ARM BEENDET` | | Tippen öffnet SEARCH ([WIRELESS: SEARCH](#wireless-search)) und sucht 10s lang nach Knoten, die die Rolle Auswuchten anzeigen; das Schalten auf ARMED beendet die Suche; bei ARMED sucht es nicht, und das Band zeigt `KEINE KNOTENSUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE läuft, `BLUETOOTH NICHT BEREIT: KEINE KNOTENSUCHE`; während einer Suche `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`. SEARCH öffnet in jedem Fall |
+| Gebundener Knoten | der Name des gebundenen Knotens, sonst seine Adresse, sonst `KEINS` | `KEINS` | Tippen öffnet SEARCH mit der Liste der letzten Suche, ohne Suche |
 | Knotenakku | `3.91V`, `3.40V NIEDRIG` (unter 3.50V), `KEIN WERT`, `--` | | die Zelle des Knotens aus dem STATUS, den er auf STREAM neben seinen Berichten sendet; `--` vor dem ersten auf einer Verbindung |
 | Testmasse | 0.01g bis 20.00g in Schritten von 0.01g | 0.50g | die Masse, die für die Testläufe von MOTOR & ESC > WUCHTEN aufgeklebt wird |
 
@@ -6883,6 +6884,57 @@ AUSWUCHTKNOTEN ZURÜCKSETZEN setzt Auswuchtknoten auf AUS und Testmasse auf
 0.50g zurück; der gebundene Knoten bleibt. Ein Knoten, dessen INFO eine
 andere Rolle oder ein anderes Protokoll nennt, zeigt `ROLLE r, PROTOKOLL p`,
 und seine Berichte werden nicht übernommen.
+
+### WIRELESS: SEARCH
+
+![SEARCH beim Leistungsknoten, zwei Knoten gefunden](img/de/setup-wireless-search.png)
+
+SEARCH findet und bindet das Dial, den Leistungsknoten oder den
+Auswuchtknoten. Dial suchen und Knoten suchen öffnen es und fordern eine
+Suche von 10s an; Gebundenes Dial und Gebundener Knoten öffnen es mit der
+Liste der letzten Suche, ohne Suche. Eine Suche, die die Zeile ablehnt
+(ARMED, eine laufende Suche, Bluetooth nicht bereit), nennt den Grund im
+Band, und SEARCH öffnet mit der letzten Liste. Das Home-Feld
+führt zurück zu SETUP > WIRELESS auf den Eintrag des Geräts.
+
+| Teil | Wo, Koordinaten im Körper | Was er zeigt oder tut |
+| --- | --- | --- |
+| Zustandszeile | x 16, y 12 | `SUCHE LÄUFT: NOCH 7s` während einer Suche, von 10s abwärts gezählt; `n GEFUNDEN: ZUM BINDEN EINES ANTIPPEN`; `KEINS GEFUNDEN`; `DURCH ARM BEENDET`; `NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN` |
+| Fundliste | Zeilen von 640 x 48px im Abstand von 52px ab x 16, y 44 | die Geräte der letzten Suche, das stärkste zuerst, bis zu 8: der Name, sonst die Adresse, und der RSSI, `rcbench-pwr-3456  -58dBm`; das gebundene in der Akzentfarbe hervorgehoben. Der Controller leert die Liste beim Start einer Suche und füllt sie an ihrem Ende |
+| Karte | x 680, 328px breit, y 12 bis 136 | die Art des Geräts, seine Verbindung wie in der linken Liste, `GEBUNDEN` und der Name des gebundenen Geräts, sonst seine Adresse, sonst `KEINS` |
+| AKTUALISIEREN | 328 x 56px bei x 680, y 156 | eine neue Suche von 10s mit den Regeln von Dial suchen und Knoten suchen; grau während einer Suche, dort zeigt Tippen `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s` |
+
+![Die Bindungsfrage von SEARCH](img/de/setup-wireless-search-bind.png)
+
+Tippen auf ein gefundenes Gerät öffnet die Bindungsfrage anstelle der
+Liste, 700 x 280px bei x 162, y 100: `LEISTUNGSKNOTEN BINDEN?`
+(`DIAL BINDEN?`, `AUSWUCHTKNOTEN BINDEN?`), der Name des Geräts, seine
+Adresse und sein RSSI, das gebundene Gerät, das es ersetzt,
+`SETUP BEHÄLT DIE BINDUNG UND FORDERT SPEICHERN AN`, dann ABBRECHEN und
+BINDEN, je 300 x 56px. ABBRECHEN und das Home-Feld schließen sie und binden
+nichts. BINDEN fordert beim Controller die Bindung des Geräts an seinem
+Platz in der Liste an; die Frage schließt, und SEARCH bleibt. Karte und
+hervorgehobene Zeile folgen, sobald der Controller es gebunden hat, und
+das Panel behält Adresse und Name in SETUP und fordert Speichern an.
+
+BINDEN bindet nichts, schließt die Frage und nennt den Grund im Band:
+
+- während einer Suche: `SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN`,
+  beim Dial `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`;
+- wenn das angetippte Gerät nicht an seinem Platz in der Liste steht:
+  `KNOTEN NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, beim Dial
+  `DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`.
+
+Tippen auf ein Gerät während einer Suche öffnet keine Frage und zeigt den
+Text der Suche. Eine Bindung, die der Controller nach BINDEN ablehnt, hinter
+einer zuerst gestarteten Suche oder einer geänderten Liste, zeigt dieselben
+Texte.
+
+Eine Änderung der Sicht des Geräts, ein RSSI, die verbleibenden Sekunden
+oder der Zustand der Verbindung, zeichnet SEARCH neu. Sie schließt keine
+Frage und bricht kein Antippen ab.
+
+![SEARCH während einer Suche nach dem Dial](img/de/setup-wireless-search-scan.png)
 
 ### SD CARD: welche Logs geschrieben werden, und wohin
 

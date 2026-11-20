@@ -322,6 +322,18 @@ void bleu_scan_stop(bleu_t *b, uint32_t now_ms)
     }
 }
 
+uint32_t bleu_scan_left_ms(const bleu_t *b, uint32_t now_ms)
+{
+    if (b == NULL || !b->scanning) {
+        return 0u;
+    }
+    if (b->tok_scan == 0u) {
+        return BLEU_SCAN_MS;    /* not asked of the host stack yet */
+    }
+    const uint32_t ran = (uint32_t)(now_ms - b->t_scan);
+    return ran >= BLEU_SCAN_MS ? 0u : BLEU_SCAN_MS - ran;
+}
+
 void bleu_enable(bleu_t *b, bool on, uint32_t now_ms)
 {
     if (b == NULL || on == (b->st != BLEU_ST_OFF)) {

@@ -1,6 +1,7 @@
 /*
  * SETUP > WIRELESS > DIAL from the glass to the link: SCAN FOR DIAL and
- * BOUND DIAL tapped through the setlist's touch path, the pane's queue,
+ * BOUND DIAL tapped through the setlist's touch path, SEARCH's found list
+ * and its bind question (wl_search.h), the pane's queue,
  * the panel's frame and `blec` glue (a model of panel_dial.c's order), the
  * controller (dial_ctl.h) and the hub (bleuart_hub.h) against scripted
  * peers (ble_sim.h): the Dial, and an IMU and a power node that are bound
@@ -9,18 +10,19 @@
  * The failures this is about: a tap that does nothing and says nothing, a
  * bind the controller refuses without a word, a bind that a stale settings
  * post undoes, a Dial whose connect waits behind other clients' connects
- * for long, and a popup choice that is drawn where its tap does not land.
+ * for long, and a found Dial or a BIND whose tap does not land where it is
+ * drawn.
  *
  * Cases:
  * - a_pick_in_the_frame_found_shows_binds_and_connects
- * - the_scan_row_reading_found_opens_the_list_and_binds
- * - a_bound_dial_tap_with_no_list_says_why
- * - a_pick_while_a_second_scan_runs_says_so
+ * - the_scan_row_opens_search_and_binds
+ * - a_bound_dial_tap_with_no_list_shows_why
+ * - a_second_scan_lists_nothing_until_it_ends
  * - a_bind_the_controller_refuses_says_so
  * - a_settings_post_between_bind_and_write_back_keeps_the_bind
  * - a_pick_waits_for_one_running_attempt_at_most
  * - a_bind_drops_the_backoff_of_an_old_dial
- * - the_popup_choice_lands_on_index_0_at_1024x600
+ * - the_found_row_and_bind_land_on_index_0_at_1024x600
  *
  * SPDX-License-Identifier: MIT
  */
@@ -325,7 +327,7 @@ static void blec(void)
             hand_out();
         }
     }
-    dial_ctl_view(&g.c, &g.pub_v);
+    dial_ctl_view(&g.c, g.now, &g.pub_v);
     g.pub_seq = g.c.bind_seq;
 }
 
@@ -438,7 +440,7 @@ static void next_frame(void)
 #define up(x, y)            wbr_up((x), (y))
 #define custom_row(c)       wbr_row(WL_ENTRY_DIAL, (c))
 #define row_mid(c, x, y)    wbr_row_mid(WL_ENTRY_DIAL, (c), (x), (y))
-#define choice_rect(k, out) wbr_choice((k), (out))
+#define found_rect(k, out)  wbr_found((k), (out))
 #define band()              wbr_band()
 #define value_of(c)         wbr_value(c)
 
@@ -450,9 +452,27 @@ static void tap_at(int x, int y)
     up(x, y);
 }
 
-/** @brief A tap on the row of @p c. */
+/** @brief A tap in the middle of @p r, panel coordinates. */
+static void tap_rect(gfx_rect_t r)
+{
+    tap_at(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/** @brief SEARCH left for SETUP > WIRELESS by its home tag. */
+static void home(void)
+{
+    int x, y;
+    wbr_home_at(&x, &y);
+    tap_at(x, y);
+}
+
+/** @brief A tap on the row of @p c, SEARCH left by its home tag first. */
 static void tap_row(const ui_setlist_custom_t *c)
 {
+    if (ui_router_current() == SCREEN_WL_SEARCH) {
+        home();
+    }
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     int x, y;
     row_mid(c, &x, &y);
     tap_at(x, y);
@@ -537,12 +557,33 @@ static unsigned scan(void)
     return frames;
 }
 
-/** @brief The popup's choice @p k tapped in its middle. */
-static void pick(int k)
+/** @brief SEARCH's found Dial @p k tapped: the question opens. */
+static void ask(int k)
 {
     gfx_rect_t r;
-    CHECK(choice_rect(k, &r));
-    tap_at(r.x + r.w / 2, r.y + r.h / 2);
+    CHECK(found_rect(k, &r));
+    tap_rect(r);
+    CHECK(wl_search_asking());
+}
+
+/** @brief The question's BIND tapped. */
+static void bind_it(void)
+{
+    tap_rect(wbr_part(WLS_PART_BIND));
+    CHECK(!wl_search_asking());
+}
+
+/** @brief SEARCH's found Dial @p k tapped, then the question's BIND. */
+static void pick(int k)
+{
+    ask(k);
+    bind_it();
+}
+
+/** @brief SEARCH's SCAN AGAIN tapped. */
+static void again(void)
+{
+    tap_rect(wbr_part(WLS_PART_AGAIN));
 }
 
 /** @brief Run until the Dial is UP, at most @p ms; @return the ms. */
@@ -557,23 +598,22 @@ static uint32_t until_up(uint32_t ms)
 
 /* ---------------------------------------------------------------- cases */
 
-/* (a) BOUND DIAL tapped in the very frame FOUND 1 first shows, its popup's
- * choice tapped: bound, kept in SETUP, connected and UP. */
+/* (a) The Dial tapped on SEARCH in the very frame FOUND 1 first shows,
+ * the question's BIND tapped: bound, kept in SETUP, connected and UP. */
 TEST_CASE(a_pick_in_the_frame_found_shows_binds_and_connects)
 {
     start("", 0u, false);
     CHECK_STR_EQ(value_of(&wireless_pane_bind_row), TR(DIAL_BIND_NONE));
     (void)scan();
     CHECK_EQ(g.scan_lines, 1u);
-    /* The same frame: the DOWN at once, the popup on its UP. */
-    int x, y;
-    row_mid(&wireless_pane_bind_row, &x, &y);
-    down(x, y);
-    up(x, y);
+    /* The same frame: the DOWN at once, the question on its UP. */
     gfx_rect_t r;
-    CHECK(choice_rect(0, &r));
+    CHECK(found_rect(0, &r));
+    down(r.x + r.w / 2, r.y + r.h / 2);
+    up(r.x + r.w / 2, r.y + r.h / 2);
+    CHECK(wl_search_asking());
     const uint32_t t_pick = g.now;
-    pick(0);
+    bind_it();
     run(200u);
     CHECK_EQ(g.bound_lines, 1u);
     CHECK_EQ(g.refused_lines, 0u);
@@ -594,9 +634,10 @@ TEST_CASE(a_pick_in_the_frame_found_shows_binds_and_connects)
     CHECK_EQ(dial_ctl_link(&g.c), DIAL_LINK_UP);
     CHECK_STR_EQ(g.c.cfg.addr, DIAL_TEXT);
     CHECK_EQ(g.q_drops, 0u);
-    /* Picked again: the same Dial, no reconnect, no refusal. */
+    /* Picked again from BOUND DIAL's SEARCH: the same Dial, no reconnect,
+     * no refusal. */
     tap_row(&wireless_pane_bind_row);
-    CHECK(choice_rect(0, &r));
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
     pick(0);
     run(200u);
     CHECK_EQ(g.bound_lines, 2u);
@@ -604,28 +645,28 @@ TEST_CASE(a_pick_in_the_frame_found_shows_binds_and_connects)
     CHECK_EQ(g.dial_connects, 1u);
 }
 
-/* SCAN FOR DIAL reading FOUND 1, the row the owner took for the add
- * button: a tap opens the found list, the Dial and SCAN AGAIN, and a pick
- * binds and connects.  SCAN AGAIN from the same row then scans beside the
- * link, which stays up, and the row reads FOUND 1 again. */
-TEST_CASE(the_scan_row_reading_found_opens_the_list_and_binds)
+/* SCAN FOR DIAL, the row the owner took for the add button: a tap opens
+ * SEARCH and scans, the Dial is listed, and a pick binds and connects.
+ * SCAN AGAIN then scans beside the link, which stays up, and the row reads
+ * FOUND 1 again. */
+TEST_CASE(the_scan_row_opens_search_and_binds)
 {
     start("", 0u, false);
     (void)scan();
-    tap_row(&wireless_pane_scan_row);
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
     CHECK_EQ(g.scan_lines, 1u);
     gfx_rect_t r;
-    CHECK(choice_rect(1, &r));
-    CHECK(!choice_rect(2, &r));
+    CHECK(found_rect(0, &r));
+    CHECK(!found_rect(1, &r));
+    ask(0);
     const uint32_t t_pick = g.now;
-    pick(0);
+    bind_it();
     CHECK(until_up(2000u) < 2000u);
     CHECK_EQ(g.bound_lines, 1u);
     CHECK_EQ(g.scan_lines, 1u);
-    T_LOG("SCAN row pick to UP %ums", (unsigned)(g.now - t_pick));
+    T_LOG("SEARCH's BIND to UP %ums", (unsigned)(g.now - t_pick));
     CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_ADDR), DIAL_TEXT);
-    tap_row(&wireless_pane_scan_row);
-    pick(1);
+    again();
     run(100u);
     CHECK_EQ(g.scan_lines, 2u);
     CHECK_STR_EQ(value_of(&wireless_pane_scan_row), TR(DIAL_SCAN_RUNS));
@@ -639,73 +680,73 @@ TEST_CASE(the_scan_row_reading_found_opens_the_list_and_binds)
 }
 
 /* BOUND DIAL tapped with no list to pick from: before any scan, and after
- * one that found none.  The band says why; nothing is queued. */
-TEST_CASE(a_bound_dial_tap_with_no_list_says_why)
+ * one that found none.  SEARCH opens on why, lists nothing and queues
+ * nothing. */
+TEST_CASE(a_bound_dial_tap_with_no_list_shows_why)
 {
     start("", 0u, false);
-    const uint32_t n0 = ui_router_alert_number();
     tap_row(&wireless_pane_bind_row);
-    CHECK(ui_router_alert_number() != n0);
-    CHECK_STR_EQ(band(), TR(DIAL_BIND_EMPTY));
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK_STR_EQ(wbr_state(), TR(WLS_NO_SCAN));
     dial_cmd_t c;
     CHECK(!wireless_pane_take_dial(&c));
     gfx_rect_t r;
-    CHECK(!choice_rect(0, &r));
+    CHECK(!found_rect(0, &r));
     /* A scan that hears nothing. */
     g.peer[OWN_DIAL].nadv = 0u;
     tap_row(&wireless_pane_scan_row);
     run(10500u);
     CHECK_STR_EQ(value_of(&wireless_pane_scan_row), TR(DIAL_SCAN_NONE));
-    const uint32_t n1 = ui_router_alert_number();
     tap_row(&wireless_pane_bind_row);
-    CHECK(ui_router_alert_number() != n1);
-    CHECK_STR_EQ(band(), TR(DIAL_BIND_EMPTY));
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK_STR_EQ(wbr_state(), TR(DIAL_SCAN_NONE));
+    CHECK(!found_rect(0, &r));
     CHECK_EQ(g.bound_lines + g.refused_lines, 0u);
 }
 
-/* (b) SCAN AGAIN, the found list's last row, starts a second scan; BOUND
- * DIAL tapped during it says the scan runs, and binds once it ended. */
-TEST_CASE(a_pick_while_a_second_scan_runs_says_so)
+/* (b) SCAN AGAIN starts a second scan: SEARCH lists nothing while it runs
+ * (the controller clears the list at its start), and BOUND DIAL's SEARCH
+ * shows the scan running; once it ended the Dial is listed again and a
+ * pick binds. */
+TEST_CASE(a_second_scan_lists_nothing_until_it_ends)
 {
     start("", 0u, false);
     (void)scan();
-    tap_row(&wireless_pane_scan_row);
-    pick(1);
+    again();
     run(100u);
     CHECK_STR_EQ(value_of(&wireless_pane_scan_row), TR(DIAL_SCAN_RUNS));
     CHECK_EQ(g.scan_lines, 2u);
-    const uint32_t n0 = ui_router_alert_number();
-    tap_row(&wireless_pane_bind_row);
-    CHECK(ui_router_alert_number() != n0);
-    CHECK_STR_EQ(band(), TR(DIAL_BIND_SCANNING));
     gfx_rect_t r;
-    CHECK(!choice_rect(0, &r));
+    CHECK(!found_rect(0, &r));
+    tap_row(&wireless_pane_bind_row);
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK(!found_rect(0, &r));
+    wls_view_t v;
+    wl_search_view(&v);
+    CHECK(v.scanning);
+    CHECK(v.scan_left_s > 0u && v.scan_left_s <= 10u);
     /* The scan's end: the list back, a pick binds. */
     run(10500u);
-    tap_row(&wireless_pane_bind_row);
     pick(0);
     run(200u);
     CHECK_EQ(g.bound_lines, 1u);
     CHECK(until_up(2000u) < 2000u);
 }
 
-/* (b) The popup open on FOUND 1, a scan asked in the same frame as the
- * pick (the controller runs SCAN before BIND): the controller refuses the
- * bind, and the band says so instead of nothing. */
+/* (b) The question open on FOUND 1 and a scan started in the controller
+ * before the BIND reaches it, which SEARCH's view does not show yet: the
+ * controller refuses the bind, and the band says so instead of nothing. */
 TEST_CASE(a_bind_the_controller_refuses_says_so)
 {
     start("", 0u, false);
     (void)scan();
-    tap_row(&wireless_pane_bind_row);
-    gfx_rect_t r;
-    CHECK(choice_rect(0, &r));
-    /* The SCAN as the row's tap queues it, then the pick's UP. */
-    wireless_pane_scan_row.tap();
-    down(r.x + r.w / 2, r.y + r.h / 2);
-    up(r.x + r.w / 2, r.y + r.h / 2);
+    ask(0);
+    const gfx_rect_t b = wbr_part(WLS_PART_BIND);
+    CHECK_EQ(dial_ctl_scan(&g.c, false, g.now), DIAL_SCAN_STARTED);
+    down(b.x + b.w / 2, b.y + b.h / 2);
+    up(b.x + b.w / 2, b.y + b.h / 2);
     const uint32_t n0 = ui_router_alert_number();
     run(3u * FRAME_MS);
-    CHECK_EQ(g.scan_lines, 2u);
     CHECK_EQ(g.refused_lines, 1u);
     CHECK_EQ(g.bound_lines, 0u);
     CHECK(ui_router_alert_number() != n0);
@@ -713,7 +754,9 @@ TEST_CASE(a_bind_the_controller_refuses_says_so)
     CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_ADDR), "");
     /* The same refusal with no scan running: the list changed. */
     run(10500u);
-    wireless_pane_bind_row.pick(0);
+    ask(0);
+    down(b.x + b.w / 2, b.y + b.h / 2);
+    up(b.x + b.w / 2, b.y + b.h / 2);
     g.c.found_n = 0u;
     const uint32_t n1 = ui_router_alert_number();
     run(3u * FRAME_MS);
@@ -729,9 +772,8 @@ TEST_CASE(a_settings_post_between_bind_and_write_back_keeps_the_bind)
 {
     start("", 0u, false);
     (void)scan();
-    tap_row(&wireless_pane_bind_row);
-    gfx_rect_t r;
-    CHECK(choice_rect(0, &r));
+    ask(0);
+    const gfx_rect_t r = wbr_part(WLS_PART_BIND);
     const int px = r.x + r.w / 2, py = r.y + r.h / 2;
     down(px, py);
     run(TAP_MS);
@@ -788,9 +830,9 @@ static waits_t worst_wait(unsigned others)
         start("", others, false);
         run(lead);
         (void)scan();
-        tap_row(&wireless_pane_bind_row);
+        ask(0);
         const uint32_t t_pick = g.now;
-        pick(0);
+        bind_it();
         const uint32_t up_ms = until_up(40000u);
         CHECK(up_ms < 40000u);
         CHECK_EQ(g.bound_lines, 1u);
@@ -858,9 +900,9 @@ TEST_CASE(a_bind_drops_the_backoff_of_an_old_dial)
     CHECK_EQ(dial_ctl_link(&g.c), DIAL_LINK_CONNECTING);
     g.peer[OWN_DIAL].absent = false;
     (void)scan();
-    tap_row(&wireless_pane_bind_row);
+    ask(0);
     const uint32_t t_pick = g.now;
-    pick(0);
+    bind_it();
     const uint32_t up_ms = until_up(10000u);
     CHECK(up_ms < 10000u);
     T_LOG("old backoff: pick to CONNECT %ums, to UP %ums",
@@ -869,9 +911,11 @@ TEST_CASE(a_bind_drops_the_backoff_of_an_old_dial)
     CHECK_STR_EQ(settings_text(SET_TEXT_DIAL_ADDR), DIAL_TEXT);
 }
 
-/* (e) The popup at 1024x600: its box inside the pane, beside its row and
- * not over it, and a DOWN and UP anywhere on choice 0 binds index 0. */
-TEST_CASE(the_popup_choice_lands_on_index_0_at_1024x600)
+/* (e) SEARCH at 1024x600: the found Dial's row and the question's BIND
+ * inside the body and over the alert band, BIND inside the question's
+ * box, and a DOWN and UP anywhere on the row and then on BIND binds index
+ * 0: the corners, 1px in, and the middle. */
+TEST_CASE(the_found_row_and_bind_land_on_index_0_at_1024x600)
 {
     CHECK_EQ(UI_PANEL_W, 1024);
     CHECK_EQ(UI_PANEL_H, 600);
@@ -880,31 +924,28 @@ TEST_CASE(the_popup_choice_lands_on_index_0_at_1024x600)
     for (unsigned k = 0; k < sizeof inset / sizeof inset[0]; ++k) {
         start("", 0u, false);
         (void)scan();
-        tap_row(&wireless_pane_bind_row);
-        gfx_rect_t r, again;
-        CHECK(choice_rect(1, &again));
-        CHECK(!choice_rect(2, &r));
-        CHECK(choice_rect(0, &r));
-        /* SCAN AGAIN right under the Dial, not over it. */
-        CHECK_EQ(again.x, r.x);
-        CHECK_EQ(again.y, r.y + r.h);
-        const gfx_rect_t row = settings_screen_row_rect(
-            custom_row(&wireless_pane_bind_row));
-        const int row_top = UI_BAND_H + row.y;
-        const gfx_rect_t list = settings_screen_list_rect();
-        CHECK(r.x >= list.x && r.x + r.w <= list.x + list.w);
-        CHECK(r.y >= UI_BAND_H + list.y);
-        CHECK(r.y + r.h <= UI_BAND_H + list.y + list.h);
-        CHECK(r.y >= row_top + row.h || r.y + r.h <= row_top);
-        CHECK(r.x >= 0 && r.x + r.w <= UI_PANEL_W);
-        /* The corners, 1px in, and the middle. */
-        const int x = k == 4u ? r.x + r.w / 2
-                              : (inset[k][0] == 0 ? r.x : r.x + r.w - 1);
-        const int y = k == 4u ? r.y + r.h / 2
-                              : (inset[k][1] == 0 ? r.y : r.y + r.h - 1);
-        down(x, y);
-        run(TAP_MS);
-        up(x, y);
+        gfx_rect_t r;
+        CHECK(found_rect(0, &r));
+        CHECK(!found_rect(1, &r));
+        CHECK(found_rect(0, &r));
+        const gfx_rect_t b = wbr_part(WLS_PART_BIND);
+        const gfx_rect_t box = wbr_part(WLS_PART_BOX);
+        const gfx_rect_t rects[2] = { r, b };
+        for (int i = 0; i < 2; ++i) {
+            const gfx_rect_t q = rects[i];
+            CHECK(q.x >= 0 && q.x + q.w <= UI_PANEL_W);
+            CHECK(q.y >= UI_BAND_H && q.y + q.h <= UI_ALERT_Y);
+            const int x = k == 4u ? q.x + q.w / 2
+                                  : (inset[k][0] == 0 ? q.x : q.x + q.w - 1);
+            const int y = k == 4u ? q.y + q.h / 2
+                                  : (inset[k][1] == 0 ? q.y : q.y + q.h - 1);
+            down(x, y);
+            run(TAP_MS);
+            up(x, y);
+            CHECK(i == 1 || wl_search_asking());
+        }
+        CHECK(b.x >= box.x && b.x + b.w <= box.x + box.w);
+        CHECK(b.y >= box.y && b.y + b.h <= box.y + box.h);
         run(100u);
         CHECK_EQ(g.bound_lines, 1u);
         CHECK_STR_EQ(g.c.cfg.addr, DIAL_TEXT);
@@ -914,13 +955,13 @@ TEST_CASE(the_popup_choice_lands_on_index_0_at_1024x600)
 int main(void)
 {
     RUN(a_pick_in_the_frame_found_shows_binds_and_connects);
-    RUN(the_scan_row_reading_found_opens_the_list_and_binds);
-    RUN(a_bound_dial_tap_with_no_list_says_why);
-    RUN(a_pick_while_a_second_scan_runs_says_so);
+    RUN(the_scan_row_opens_search_and_binds);
+    RUN(a_bound_dial_tap_with_no_list_shows_why);
+    RUN(a_second_scan_lists_nothing_until_it_ends);
     RUN(a_bind_the_controller_refuses_says_so);
     RUN(a_settings_post_between_bind_and_write_back_keeps_the_bind);
     RUN(a_pick_waits_for_one_running_attempt_at_most);
     RUN(a_bind_drops_the_backoff_of_an_old_dial);
-    RUN(the_popup_choice_lands_on_index_0_at_1024x600);
+    RUN(the_found_row_and_bind_land_on_index_0_at_1024x600);
     return test_summary("dial_bind");
 }

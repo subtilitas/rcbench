@@ -279,32 +279,36 @@ Panels, mit einem Connect oder Scan zur Zeit zwischen ihnen.
 
 ### Suchen und Binden
 
-DIAL SUCHEN sucht 10.000ms und listet bis zu 8 Geräte, die den
-dialknob-Dienst senden, das stärkste zuerst, mit Namen und RSSI. Ist der
-Prüfstand ARMED oder wartet ein Arm, wird die Suche abgelehnt, und das Band
-zeigt `KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
-läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. Eine bei SAFE
-gestartete Suche endet beim Schalten auf ARMED, und DIAL SUCHEN zeigt
-`DURCH ARM BEENDET`. Ein Tippen auf GEBUNDENES DIAL, oder auf DIAL SUCHEN,
-solange es `n GEFUNDEN` zeigt, listet die Dials der letzten Suche, bis zu
-6, und zuletzt `AKTUALISIEREN`, das eine neue Suche mit denselben
-Ablehnungen startet. Ein Tippen auf ein Dial bindet es: Das Panel behält Adresse
-und Namen in SETUP (`dial_ble`, `dial_name`) und fragt nach dem Speichern.
-Es ist immer ein Dial gebunden oder keins. Das Panel verbindet sich über
-die Adresse mit ihm, ohne Suche, bei Dial EIN, beim Start und nach jedem
-Verlust.
+DIAL SUCHEN öffnet SEARCH ([Bildschirme](Screens-de.md#wireless-search))
+und sucht 10.000ms nach bis zu 8 Geräten, die den dialknob-Dienst senden,
+das stärkste zuerst, mit Namen und RSSI; SEARCH zählt die verbleibenden
+Sekunden. Ist der Prüfstand ARMED oder wartet ein Arm, wird die Suche
+abgelehnt, und das Band zeigt
+`KEINE DIAL-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN`; bevor Bluetooth LE
+läuft, zeigt es `BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE`. SEARCH öffnet
+in jedem Fall, mit der letzten Liste. Eine bei SAFE gestartete Suche endet
+beim Schalten auf ARMED, und SEARCH und DIAL SUCHEN zeigen
+`DURCH ARM BEENDET`. GEBUNDENES DIAL öffnet SEARCH mit der Liste der
+letzten Suche, ohne Suche, oder mit dem Grund, warum es keins listet:
+`NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN`, `KEINS GEFUNDEN`.
+AKTUALISIEREN auf SEARCH startet eine neue Suche mit denselben
+Ablehnungen. Ein Tippen auf ein Dial fragt `DIAL BINDEN?`; BINDEN bindet
+es: Das Panel behält Adresse und Namen in SETUP (`dial_ble`, `dial_name`)
+und fragt nach dem Speichern, und SEARCH bleibt offen und hebt das Dial
+hervor, sobald es gebunden ist. Es ist immer ein Dial gebunden oder keins.
+Das Panel verbindet sich über die Adresse mit ihm, ohne Suche, bei Dial
+EIN, beim Start und nach jedem Verlust.
 
-Ein Tippen auf GEBUNDENES DIAL ohne Liste sagt auf dem Band, warum:
-`KEIN DIAL GELISTET: ERST AUF DIAL SUCHEN TIPPEN` vor einer Suche und nach
-einer, die keins fand, `SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`,
-solange eine Suche läuft. Eine Wahl, die der Controller ablehnt, weil zuerst
-eine Suche startete oder sich die Liste darunter änderte, zeigt
-`SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN` oder
-`DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`, und die Konsole
-schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
+BINDEN während einer Suche, und ein Tippen auf ein Dial dann, zeigt
+`SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN`; BINDEN, nachdem sich die
+Liste unter der Frage änderte, zeigt
+`DIAL NICHT GEBUNDEN: LISTE GEÄNDERT, ERNEUT WÄHLEN`. Beides bindet nichts.
+Eine Bindung, die der Controller ablehnt, weil zuerst eine Suche startete
+oder sich die Liste darunter änderte, zeigt dieselben Texte, und die
+Konsole schreibt `dial: bind of n refused`. Ein gebundenes Dial schreibt
 `dial: bound <Adresse> <Name>`.
-Ein Tippen auf DIAL SUCHEN, während eine Suche läuft, startet keine; das
-Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`.
+Ein Tippen auf DIAL SUCHEN oder AKTUALISIEREN, während eine Suche läuft,
+startet keine; das Band zeigt `SUCHE LÄUFT: SIE ENDET SPÄTESTENS NACH 10s`.
 
 Der Connect nach dem Binden startet sofort, wenn die Central frei ist. Eine
 IMU oder ein Knoten, EIN und an ein Gerät außer Reichweite gebunden, hält
@@ -387,6 +391,7 @@ Bildschirme:
 | SERVO | die 8 Kacheln, dann SETTINGS; die offene SETTINGS-Liste wie eine Liste von SETUP |
 | OUTPUTS, Platinenansicht | das Feld der Protokollliste, CLEAR ALL, solange angeboten, dann je eine Pin-Taste |
 | eine offene Auswahlliste | ihre Zeilen, der Fokus auf der gültigen |
+| SEARCH | die gefundenen Geräte, dann AKTUALISIEREN; bei offener Bindungsfrage ABBRECHEN und BINDEN, der Fokus auf ABBRECHEN |
 | die Warnung beim Verlassen | STAY, DISCARD, SAVE |
 
 | Geste | Navigation | SET |

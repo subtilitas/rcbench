@@ -52,8 +52,9 @@ LANG_DIR = {"en": "", "de": "de/"}
 # nothing to do.
 NO_PAGE = {"SCREEN_SPLASH"}
 
-# SERVO's function screens, which the hub opens: each is described on the
-# page named here (its id), not on a page of its own.
+# SERVO's function screens, which the hub opens, and SEARCH, which
+# WIRELESS' scan and bound rows open: each is described on the page named
+# here (its id), not on a page of its own.
 COVERED_BY = {
     "SCREEN_SERVO_LIVE": "servo",
     "SCREEN_SERVO_SWEEP": "servo",
@@ -63,6 +64,7 @@ COVERED_BY = {
     "SCREEN_SERVO_RAUTO": "servo-rudder",
     "SCREEN_SERVO_KST": "servo-programmer",
     "SCREEN_SERVO_HITEC": "servo-programmer",
+    "SCREEN_WL_SEARCH": "setup-wireless",
 }
 
 HEADER_KEYS = ("screen", "title", "order")

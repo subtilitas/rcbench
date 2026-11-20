@@ -294,7 +294,7 @@ void panel_dial_blec_publish(uint32_t now)
     dial_input_t in;
     dial_ctl_take(&s_ctl, &in);
     s_detents += (uint32_t)(in.detents < 0 ? -in.detents : in.detents);
-    dial_ctl_view(&s_ctl, &s_view_next);
+    dial_ctl_view(&s_ctl, now, &s_view_next);
     const dial_link_t link = (dial_link_t)s_view_next.link;
     if (link != s_was) {
         ESP_LOGI(TAG, "link %d -> %d, error %d code 0x%X, protocol %u",

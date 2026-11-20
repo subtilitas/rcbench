@@ -107,9 +107,11 @@ ARMED is no error, and its keys work while ARMED.
 
 1. SETUP > WIRELESS > BALANCE NODE: Balance node ON, then Scan for node
    (10s, SAFE only: a scan while ARMED is refused, and a switch to ARMED
-   stops a running one). Bound node, or Scan for node while it reads
-   `FOUND n`, lists the nodes found, `rcbench-bal-XXXX`, and `SCAN AGAIN`
-   last; a tap binds one and keeps it over a restart. Node battery shows the cell
+   stops a running one). Scan for node opens SEARCH
+   ([Screens](Screens.md#wireless-search)), which lists the nodes found,
+   `rcbench-bal-XXXX`, when the scan ends; Bound node opens it on the last
+   list. A tap on a node and BIND bind it and keep it over a restart.
+   Node battery shows the cell
    from the STATUS packets the node sends beside its reports.
 2. Set the blade count and the rotor type on BALANCE. The panel writes the
    blade count to the node (BLADES).

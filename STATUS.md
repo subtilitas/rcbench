@@ -1298,19 +1298,27 @@ SAFE move nothing, PRESS and HOLD; `test_servo_dial_runs`: the HOLD ends
 RUDDER AUTO and a limit run in each phase, the phases that hold the bench
 SAFE included, and takes back an ARM on its way), SETUP > WIRELESS > DIAL
 (`shared/ui/wireless_pane.c`, `test_wireless_pane`; `test_dial_bind` from
-the tap on SCAN FOR DIAL and BOUND DIAL, the found list with SCAN AGAIN,
-through a model of the frame and `blec` glue, the controller and the hub
+the tap on SCAN FOR DIAL and BOUND DIAL, SEARCH's found list, its bind
+question and SCAN AGAIN, through a model of the frame and `blec` glue, the
+controller and the hub
 to the link UP, with an IMU and a power node bound to absent peers: the
 pick's connect at most 5061ms after the tap; `test_wireless_pnode`,
-`test_wireless_bal` the nodes' rows alike), and the `blec` task's
+`test_wireless_bal` the nodes' rows alike; SEARCH, the screen the scan
+and bound rows of all three open, `shared/ui/wl_search.c`,
+`wl_search_draw.c`, `test_wl_search`: each row opens it and the home tag
+returns to the entry, the state line in each state, the found rows and
+the bind question drawn where their taps land, BIND and CANCEL, a scan
+refused while ARMED and while one runs, a bind refused behind a scan and
+after the list changed between the tap and BIND or under the finger, and
+40 view updates that keep the question and a held press), and the `blec` task's
 and the control task's side (`firmware/panel/main/panel_dial.c`,
 `panel_supply.c`). Built and host-tested, not run with a Dial: navigation
 and SET (`shared/ui/ui_focus.c`, `ui_focus_list.c`, `ui_focus_screens.c`,
 `test_dial_nav`, `test_dial_nav_hold`: the focus moves and wraps on the
 menu, SETUP, SERVO's tiles and OUTPUTS' board view; a SELECT opens what a
 tap opens; a SELECT on CLEAR ALL completes no hold; a number kept and
-cancelled on its keypad, an on/off stepped and restored; a choice list
-picked and closed; no focus while the Dial is off or the bench ARMED; a
+cancelled on its keypad, an on/off stepped and restored; SEARCH's devices,
+SCAN AGAIN and its bind question; no focus while the Dial is off or the bench ARMED; a
 ring move writes two rings and leaves the screen as drawn; a list of 70
 rows keeps RESET and SAVE; a dimmed panel woken by the Dial), with the
 `overview-focus` frame-cost mode. The programmers' screens take no focus
@@ -1341,8 +1349,9 @@ the totals baseline at 500ms and 501ms, and the ARM refusal with the node
 OFF or without a reading in the last 100ms). SETUP > WIRELESS > POWER NODE with
 INA228 SOURCE, which keeps its value while ARMED and says so on the band
 at a press (`shared/ui/wireless_pnode.c`, `test_wireless_pnode`;
-`test_pnode_bind` from the tap on SCAN FOR NODE and BOUND NODE through a
-model of the frame and `blec` glue to the controller and a node: a bind or
+`test_pnode_bind` from the tap on SCAN FOR NODE and BOUND NODE through
+SEARCH and a model of the frame and `blec` glue to the controller and a
+node: SEARCH's seconds left counted by the controller, a bind or
 a scan the controller refuses says why on the band, a scan tapped while
 one runs too, and an INA228 SOURCE change read before the frame kept a
 bind leaves the bind and the address SETUP keeps), the
@@ -1708,7 +1717,7 @@ have no compile command; `tools/render_ui.py` builds the first with `-Werror`, a
 reads both. The firmware check enables cppcheck's warning, performance and portability
 classes. A completed CI wait for `docs.yml` and `release.yml` is not recorded here.
 
-The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
+The host suite is 611 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_gfx_subpixel`, `test_gfx_clip`, `test_gfx_damage`, `test_gfx_turn`, `test_gfx_sprite`,
 `test_gfx_ring`,
 `test_layout`, `test_touch_map`, `test_overlays`, `test_touch_merge`,
@@ -1825,7 +1834,7 @@ The host suite is 610 binaries, one line per case: `test_gfx`, `test_gfx_faces`,
 `test_dial_ctl`, `test_dial_stream`, `test_dial_motor`, `test_dial_servo`, `test_dial_nav`,
 `test_dial_nav_hold`, `test_dial_bind`, `test_wireless_pane`,
 `test_pnode_meter`, `test_pnode_ctl`, `test_wireless_pnode`, `test_pnode_bind`,
-`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`,
+`test_settings_panes`, `test_bal_ctl`, `test_node_balance`, `test_wireless_bal`, `test_bal_bind`, `test_wl_search`,
 `test_motor_balance`,
 `test_dial_face`, `test_dial_fit`, `test_dial_button`,
 `test_imu`, `test_imu_filter`, `test_imu_angles`,
@@ -2342,7 +2351,7 @@ Coverage floors: 94% overall, 85% for every file. `tools/coverage.py --check` fa
 of the table below and of the figure in the two READMEs, and on a C file under `shared/` or
 a core file under `protocols/` that is in neither of its two lists, is not compiled, or has
 no counters. `render_ui.py --check`, `render_dial.py --check` and `render_node.py --check` hold
-1016 committed screenshots to the current render, 508 in English and the same 508 in German, and `render_ui.py --fit` fails on a string that
+1022 committed screenshots to the current render, 511 in English and the same 511 in German, and `render_ui.py --fit` fails on a string that
 overflows where it is drawn, in either language, except an English overflow it lists as
 known (none listed). `image_slot.py` holds the panel image to the smaller of its two update
 slots.

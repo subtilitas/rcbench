@@ -545,6 +545,8 @@ void pnode_ctl_view(const pnode_ctl_t *c, uint32_t now_ms, pnode_view_t *out)
     out->scan_done = c->scan_done;
     out->scan_cut = c->scan_cut;
     out->found_n = c->found_n;
+    out->scan_left_s =
+        (uint8_t)((bleu_scan_left_ms(&c->b, now_ms) + 999u) / 1000u);
     memcpy(out->found, c->found, sizeof(out->found));
     out->hidden = c->hidden;
     if (c->b.bound) {

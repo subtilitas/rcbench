@@ -78,6 +78,10 @@ typedef enum {
     SCREEN_SERVO_RAUTO,
     SCREEN_SERVO_KST,
     SCREEN_SERVO_HITEC,
+    /* SEARCH, from SETUP > WIRELESS' scan and bound rows of the Dial and
+     * the nodes: the found devices and the bind (wl_search.h); its home
+     * tag returns to WIRELESS on the device's entry. */
+    SCREEN_WL_SEARCH,
     SCREEN_COUNT
 } ui_screen_id_t;
 

@@ -136,6 +136,19 @@ history is in git.
 
 ### Fixed
 
+- SETUP > WIRELESS: the found list of SCAN FOR DIAL, SCAN FOR NODE, BOUND
+  DIAL and BOUND NODE opened without being drawn. SETUP's render drew a
+  list's rows, strip and SAVE but no open choice list, so a tap on
+  `FOUND n` showed nothing and the next tap picked or closed the hidden
+  list. SETUP draws an open choice list. The rows open SEARCH in its
+  place: SCAN FOR ... opens it and scans 10s, BOUND ... opens it on the
+  last list; it shows the seconds left, up to 8 found devices with their
+  RSSI, the bound one lit, and SCAN AGAIN; a tap on a device asks
+  `BIND ...?` with CANCEL and BIND
+  ([Screens](docs/Screens.md#wireless-search)). The Dial, the power node
+  and the balance node share it; the views carry the scan's seconds left
+  (`scan_left_s`, `bleu_scan_left_ms()`). `NO DIAL LISTED: ...` and
+  `NO NODE LISTED: ...` are gone: SEARCH shows why it lists nothing.
 - IMU: a scan tapped after the ARM hold and before the IOmcu reports ARMED
   reads `NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST` on the band. The
   controller refused it with no text; it counts the refusal in the view

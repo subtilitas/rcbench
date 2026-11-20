@@ -1,9 +1,9 @@
 /*
  * SETUP > WIRELESS > POWER NODE from the glass to the link: SCAN FOR NODE
- * and BOUND NODE tapped through the setlist's touch path, the pane's
- * queue, the panel's frame and `blec` glue (a model of panel_pnode.c's
- * order), the controller (pnode_ctl.h) and a node that answers at once
- * (wl_bind_rig.h).
+ * and BOUND NODE tapped through the setlist's touch path, SEARCH's found
+ * list and its bind question (wl_search.h), the pane's queue, the panel's
+ * frame and `blec` glue (a model of panel_pnode.c's order), the controller
+ * (pnode_ctl.h) and a node that answers at once (wl_bind_rig.h).
  *
  * The failures this is about: a bind the controller refuses without a word
  * on the band, a bind that a settings post read before the frame kept it
@@ -17,6 +17,7 @@
  * - a_source_change_between_bind_and_write_back_keeps_the_bind
  * - a_scan_tap_while_a_scan_runs_says_so
  * - a_scan_the_controller_refuses_says_so
+ * - search_counts_the_scan_down_and_lists_the_node
  *
  * SPDX-License-Identifier: MIT
  */
@@ -221,20 +222,35 @@ static void tap_at(int x, int y)
     wbr_up(x, y);
 }
 
-/** @brief A tap on the row of @p c. */
+/** @brief A tap in the middle of @p r, panel coordinates. */
+static void tap_rect(gfx_rect_t r)
+{
+    tap_at(r.x + r.w / 2, r.y + r.h / 2);
+}
+
+/** @brief A tap on the row of @p c, SEARCH left by its home tag first. */
 static void tap_row(const ui_setlist_custom_t *c)
 {
+    if (ui_router_current() == SCREEN_WL_SEARCH) {
+        int hx, hy;
+        wbr_home_at(&hx, &hy);
+        tap_at(hx, hy);
+    }
+    CHECK_EQ(ui_router_current(), SCREEN_SETUP);
     int x, y;
     wbr_row_mid(ENTRY, c, &x, &y);
     tap_at(x, y);
 }
 
-/** @brief The popup's choice @p k tapped in its middle. */
+/** @brief SEARCH's found node @p k tapped, then the question's BIND. */
 static void pick(int k)
 {
     gfx_rect_t r;
-    CHECK(wbr_choice(k, &r));
-    tap_at(r.x + r.w / 2, r.y + r.h / 2);
+    CHECK(wbr_found(k, &r));
+    tap_rect(r);
+    CHECK(wl_search_asking());
+    tap_rect(wbr_part(WLS_PART_BIND));
+    CHECK(!wl_search_asking());
 }
 
 /** @brief The rows under test. @{ */
@@ -286,8 +302,8 @@ static bool linked(void)
 
 /* ---------------------------------------------------------------- cases */
 
-/* A scan and a pick from BOUND NODE's popup: bound, kept in SETUP with its
- * name, linked; a second later still so. */
+/* A scan, then BOUND NODE's SEARCH and a pick there: bound, kept in SETUP
+ * with its name, linked, and marked on SEARCH; a second later still so. */
 TEST_CASE(a_pick_binds_keeps_and_links_the_node)
 {
     start();
@@ -295,6 +311,8 @@ TEST_CASE(a_pick_binds_keeps_and_links_the_node)
     scan();
     CHECK_EQ(g.scan_lines, 1u);
     tap_row(BIND_ROW);
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK_EQ(g.scan_lines, 1u);
     pick(0);
     run(200u);
     CHECK_EQ(g.bound_lines, 1u);
@@ -302,6 +320,12 @@ TEST_CASE(a_pick_binds_keeps_and_links_the_node)
     CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_ADDR), NODE_TEXT);
     CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_NAME), NODE_NAME);
     CHECK_STR_EQ(wbr_value(BIND_ROW), NODE_NAME);
+    /* SEARCH stays and shows the node bound. */
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    wls_view_t v;
+    wl_search_view(&v);
+    CHECK_STR_EQ(v.bound_addr, NODE_TEXT);
+    CHECK_STR_EQ(v.found[0].addr, NODE_TEXT);
     CHECK(linked());
     run(1000u);
     CHECK(linked());
@@ -309,24 +333,25 @@ TEST_CASE(a_pick_binds_keeps_and_links_the_node)
     CHECK_EQ(g.q_drops, 0u);
 }
 
-/* The popup open on FOUND 1, a scan asked in the same frame as the pick
- * (the controller runs SCAN before BIND): the controller refuses the bind,
- * and the band says so instead of nothing.  The same with no scan running
- * and the list emptied under the pick: the list changed. */
+/* The question open on FOUND 1 and a scan started in the controller
+ * before the BIND reaches it, which the screen's view does not show yet:
+ * the controller refuses the bind, and the band says so instead of
+ * nothing.  The same with no scan running and the list emptied under the
+ * BIND: the list changed. */
 TEST_CASE(a_bind_the_controller_refuses_says_so)
 {
     start();
     scan();
-    tap_row(BIND_ROW);
     gfx_rect_t r;
-    CHECK(wbr_choice(0, &r));
-    /* The SCAN as the row's tap queues it, then the pick's UP. */
-    SCAN_ROW->tap();
-    wbr_down(r.x + r.w / 2, r.y + r.h / 2);
-    wbr_up(r.x + r.w / 2, r.y + r.h / 2);
+    CHECK(wbr_found(0, &r));
+    tap_rect(r);
+    CHECK(wl_search_asking());
+    const gfx_rect_t b = wbr_part(WLS_PART_BIND);
+    CHECK_EQ(pnode_ctl_scan(&g.c, false, g.now), PNODE_SCAN_STARTED);
+    wbr_down(b.x + b.w / 2, b.y + b.h / 2);
+    wbr_up(b.x + b.w / 2, b.y + b.h / 2);
     const uint32_t n0 = ui_router_alert_number();
     run(3u * FRAME_MS);
-    CHECK_EQ(g.scan_lines, 2u);
     CHECK_EQ(g.refused_lines, 1u);
     CHECK_EQ(g.bound_lines, 0u);
     CHECK_EQ(g.c.bind_refused, 1u);
@@ -334,7 +359,10 @@ TEST_CASE(a_bind_the_controller_refuses_says_so)
     CHECK_STR_EQ(wbr_band(), TR(NODE_BIND_SCANNING));
     CHECK_STR_EQ(settings_text(SET_TEXT_PNODE_ADDR), "");
     run(BLEU_SCAN_MS + 500u);
-    BIND_ROW->pick(0);
+    CHECK(wbr_found(0, &r));
+    tap_rect(r);
+    wbr_down(b.x + b.w / 2, b.y + b.h / 2);
+    wbr_up(b.x + b.w / 2, b.y + b.h / 2);
     g.c.found_n = 0u;
     const uint32_t n1 = ui_router_alert_number();
     run(3u * FRAME_MS);
@@ -351,9 +379,10 @@ TEST_CASE(a_source_change_between_bind_and_write_back_keeps_the_bind)
 {
     start();
     scan();
-    tap_row(BIND_ROW);
     gfx_rect_t r;
-    CHECK(wbr_choice(0, &r));
+    CHECK(wbr_found(0, &r));
+    tap_rect(r);
+    r = wbr_part(WLS_PART_BIND);
     const int px = r.x + r.w / 2, py = r.y + r.h / 2;
     wbr_down(px, py);
     run(TAP_MS);
@@ -383,8 +412,8 @@ TEST_CASE(a_source_change_between_bind_and_write_back_keeps_the_bind)
     CHECK(!g.c.b.bound);
 }
 
-/* SCAN FOR NODE tapped while its scan runs: the band says so, and no
- * second scan is asked. */
+/* SCAN AGAIN, and SCAN FOR NODE once more from SETUP, tapped while the
+ * scan runs: the band says so each time, and no second scan is asked. */
 TEST_CASE(a_scan_tap_while_a_scan_runs_says_so)
 {
     start();
@@ -393,9 +422,15 @@ TEST_CASE(a_scan_tap_while_a_scan_runs_says_so)
     CHECK_EQ(g.scan_lines, 1u);
     CHECK_STR_EQ(wbr_value(SCAN_ROW), TR(DIAL_SCAN_RUNS));
     const uint32_t n0 = ui_router_alert_number();
-    tap_row(SCAN_ROW);
+    tap_rect(wbr_part(WLS_PART_AGAIN));
     run(3u * FRAME_MS);
     CHECK(ui_router_alert_number() != n0);
+    CHECK_STR_EQ(wbr_band(), TR(NODE_SCAN_RUNNING));
+    const uint32_t n1 = ui_router_alert_number();
+    tap_row(SCAN_ROW);
+    run(3u * FRAME_MS);
+    CHECK_EQ(ui_router_current(), SCREEN_WL_SEARCH);
+    CHECK(ui_router_alert_number() != n1);
     CHECK_STR_EQ(wbr_band(), TR(NODE_SCAN_RUNNING));
     CHECK_EQ(g.scan_lines, 1u);
     CHECK_EQ(g.scan_no_lines, 0u);
@@ -426,6 +461,31 @@ TEST_CASE(a_scan_the_controller_refuses_says_so)
     CHECK_STR_EQ(wbr_band(), TR(PNODE_SCAN_ARMED));
 }
 
+/* SEARCH during the scan SCAN FOR NODE asked: the seconds left counted
+ * down from 10s by the controller over an empty list (the controller
+ * clears it at the scan's start and fills it at its end), then FOUND 1
+ * and the node listed. */
+TEST_CASE(search_counts_the_scan_down_and_lists_the_node)
+{
+    start();
+    tap_row(SCAN_ROW);
+    run(3u * FRAME_MS);
+    char want[48];
+    snprintf(want, sizeof want, TR(WLS_SCANNING), 10u);
+    CHECK_STR_EQ(wbr_state(), want);
+    run(3000u);
+    snprintf(want, sizeof want, TR(WLS_SCANNING), 7u);
+    CHECK_STR_EQ(wbr_state(), want);
+    gfx_rect_t r;
+    CHECK(!wbr_found(0, &r));
+    run(BLEU_SCAN_MS);
+    snprintf(want, sizeof want, TR(WLS_FOUND), 1u);
+    CHECK_STR_EQ(wbr_state(), want);
+    CHECK(wbr_found(0, &r));
+    CHECK(!wbr_found(1, &r));
+    CHECK_EQ(g.scan_lines, 1u);
+}
+
 int main(void)
 {
     RUN(a_pick_binds_keeps_and_links_the_node);
@@ -433,5 +493,6 @@ int main(void)
     RUN(a_source_change_between_bind_and_write_back_keeps_the_bind);
     RUN(a_scan_tap_while_a_scan_runs_says_so);
     RUN(a_scan_the_controller_refuses_says_so);
+    RUN(search_counts_the_scan_down_and_lists_the_node);
     return test_summary("pnode_bind");
 }

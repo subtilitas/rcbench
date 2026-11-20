@@ -253,7 +253,8 @@ TEST_CASE(notifications_off_the_link_are_not_stream_bytes)
     CHECK(s3.angles > 0u);
 }
 
-/* The scan's start tick in scan_case(). */
+/* The scan's start tick in scan_case(); the time left it reads
+ * (bleu_scan_left_ms()) on the way. */
 static void scan_ends_at_its_limit(uint32_t t0)
 {
     bsim_t s;
@@ -263,9 +264,17 @@ static void scan_ends_at_its_limit(uint32_t t0)
     bleu_init(&b);
     bleu_enable(&b, true, t0);
     CHECK_EQ(b.st, BLEU_ST_IDLE);
+    CHECK_EQ(bleu_scan_left_ms(&b, t0), 0u);
+    CHECK_EQ(bleu_scan_left_ms(NULL, t0), 0u);
     CHECK(bleu_scan(&b, t0));
     CHECK(!bleu_scan(&b, t0));
+    /* Asked, not yet handed to the host stack: the whole of it. */
+    CHECK_EQ(bleu_scan_left_ms(&b, t0 + 500u), BLEU_SCAN_MS);
     bsim_tick(&s, &b, t0);
+    CHECK_EQ(bleu_scan_left_ms(&b, t0), BLEU_SCAN_MS);
+    CHECK_EQ(bleu_scan_left_ms(&b, t0 + 3000u), BLEU_SCAN_MS - 3000u);
+    CHECK_EQ(bleu_scan_left_ms(&b, t0 + BLEU_SCAN_MS - 1u), 1u);
+    CHECK_EQ(bleu_scan_left_ms(&b, t0 + BLEU_SCAN_MS), 0u);
     const bsim_log_t *l = bsim_nth(&s, BLEU_ACT_SCAN, 0);
     CHECK(l != NULL);
     if (l == NULL) {
@@ -278,6 +287,7 @@ static void scan_ends_at_its_limit(uint32_t t0)
     CHECK_EQ(bsim_count(&s, BLEU_ACT_SCAN_STOP), 0);
     bsim_tick(&s, &b, t0 + BLEU_SCAN_MS);
     CHECK(!b.scanning);
+    CHECK_EQ(bleu_scan_left_ms(&b, t0 + BLEU_SCAN_MS), 0u);
     CHECK_EQ(bsim_count(&s, BLEU_ACT_SCAN_STOP), 1);
     CHECK_EQ(bsim_last(&s, BLEU_ACT_SCAN_STOP)->t, t0 + BLEU_SCAN_MS);
     CHECK_EQ(b.list.found_n, 1);

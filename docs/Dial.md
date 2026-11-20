@@ -264,29 +264,32 @@ connect or scan at a time between them.
 
 ### Scan and bind
 
-SCAN FOR DIAL scans 10,000ms and lists up to 8 devices that advertise the
-dialknob service, strongest first, with name and RSSI. While the bench is
-ARMED, or an arm waits, the scan is refused and the band reads
+SCAN FOR DIAL opens SEARCH ([Screens](Screens.md#wireless-search)) and
+scans 10,000ms for up to 8 devices that advertise the dialknob service,
+strongest first, with name and RSSI; SEARCH counts the seconds left. While
+the bench is ARMED, or an arm waits, the scan is refused and the band reads
 `NO DIAL SCAN WHILE ARMED: SWITCH TO SAFE FIRST`; before Bluetooth LE runs it
-reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. A scan started while SAFE
-stops at the switch to ARMED, and SCAN FOR DIAL reads `STOPPED BY ARM`. A
-tap on BOUND DIAL, or on SCAN FOR DIAL while it reads `FOUND n`, lists the
-Dials the last scan found, up to 6, and `SCAN AGAIN` last, which starts a
-new scan with the same refusals. A tap on a Dial binds it: the panel keeps its address and name in SETUP (`dial_ble`,
-`dial_name`) and asks for a save. One Dial is bound at a time. The panel
-connects to it by its address, without a scan, at Dial ON, at start-up and
-after each loss.
+reads `BLUETOOTH IS NOT READY: NO DIAL SCAN`. SEARCH opens either way, on
+the last list. A scan started while SAFE stops at the switch to ARMED, and
+SEARCH and SCAN FOR DIAL read `STOPPED BY ARM`. BOUND DIAL opens SEARCH on
+the last scan's list without a scan, or on why it lists none:
+`NO SCAN YET: TAP SCAN AGAIN`, `NONE FOUND`. SCAN AGAIN on SEARCH starts a
+new scan with the same refusals. A tap on a Dial asks `BIND DIAL?`; BIND
+binds it: the panel keeps its address and name in SETUP (`dial_ble`,
+`dial_name`) and asks for a save, and SEARCH stays open and lights the Dial
+once it is bound. One Dial is bound at a time. The panel connects to it by
+its address, without a scan, at Dial ON, at start-up and after each loss.
 
-A tap on BOUND DIAL with no list says why on the band:
-`NO DIAL LISTED: TAP SCAN FOR DIAL FIRST` before a scan and after one that
-found none, `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` while a scan runs.
-A pick the controller refuses, because a scan started first or the list
-changed under it, reads `A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS` or
-`DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`, and the console logs
+BIND while a scan runs, and a tap on a Dial then, reads
+`A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS`; BIND after the list
+changed under the question reads
+`DIAL NOT BOUND: THE LIST CHANGED, PICK IT AGAIN`. Neither binds. A bind
+the controller refuses, because a scan started first or the list
+changed under it, reads the same texts, and the console logs
 `dial: bind of n refused`. A bound Dial logs `dial: bound <address>
 <name>`.
-A tap on SCAN FOR DIAL while a scan runs starts none; the band reads
-`A SCAN IS RUNNING: IT ENDS WITHIN 10s`.
+A tap on SCAN FOR DIAL or SCAN AGAIN while a scan runs starts none; the
+band reads `A SCAN IS RUNNING: IT ENDS WITHIN 10s`.
 
 The connect after a bind starts at once while the central is free. An IMU
 or a node that is ON and bound to a device out of range holds the one
@@ -363,6 +366,7 @@ While the Dial is linked and the bench is SAFE, it navigates these screens:
 | SERVO | the 8 tiles, then SETTINGS; the open SETTINGS list as a SETUP list |
 | OUTPUTS, board view | the protocol list's face, CLEAR ALL while offered, then a pin button each |
 | an open choice list | its rows, the focus on the one in force |
+| SEARCH | the found devices, then SCAN AGAIN; with the bind question open CANCEL and BIND, the focus on CANCEL |
 | the leave warning | STAY, DISCARD, SAVE |
 
 | Gesture | Navigation | SET |

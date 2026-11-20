@@ -2435,6 +2435,26 @@ UI_TEXT(HG_IM_CAL, 0,
 UI_TEXT(HG_IM_OPTIONS, 0,
     "Opens the IMU entry of SENSORS on SETUP; its home tag returns here.",
     "Öffnet den IMU-Eintrag von SENSORS in SETUP; sein Home-Feld führt hierher zurück.")
+/* SEARCH's guide (wl_search_draw.c): the list, then the card and SCAN
+ * AGAIN. */
+UI_TEXT(HG_WLS_TITLE_LIST, 0,
+    "SEARCH: THE LIST",
+    "SEARCH: DIE LISTE")
+UI_TEXT(HG_WLS_TITLE_CARD, 0,
+    "SEARCH: THE DEVICE",
+    "SEARCH: DAS GERÄT")
+UI_TEXT(HG_WLS_LIST_NAME, 0,
+    "FOUND",
+    "GEFUNDEN")
+UI_TEXT(HG_WLS_LIST, 0,
+    "The devices the last scan found, strongest first, with their signal in dBm. The bound one is lit. A tap asks whether to bind one.",
+    "Die Geräte der letzten Suche, das stärkste zuerst, mit ihrem Signal in dBm. Das gebundene ist hervorgehoben. Tippen fragt, ob eines gebunden wird.")
+UI_TEXT(HG_WLS_CARD, 0,
+    "The device's kind, its link and the bound device. SETUP keeps a bind and asks for a save.",
+    "Art des Geräts, seine Verbindung und das gebundene Gerät. SETUP behält eine Bindung und fordert Speichern an.")
+UI_TEXT(HG_WLS_AGAIN, 0,
+    "Scans 10s again. Refused while ARMED and while a scan runs; the band says why.",
+    "Sucht erneut 10s. Abgelehnt bei ARMED und während einer Suche; das Band nennt den Grund.")
 
 /* ---------------------------------------------------------------- LOGS */
 UI_TEXT(LOG_NO_SOURCE, 36,
@@ -12924,14 +12944,14 @@ UI_TEXT(DIAL_ROW_SCAN, 43,
     "Scan for Dial",
     "Dial suchen")
 UI_TEXT(DIAL_ROW_SCAN_HELP, 43,
-    "Lists the Dials in range for 10s",
-    "Listet 10s lang Dials in Reichweite")
+    "Opens SEARCH and scans 10s for Dials",
+    "Öffnet SEARCH, sucht 10s nach Dials")
 UI_TEXT(DIAL_ROW_BIND, 43,
     "Bound Dial",
     "Gebundenes Dial")
 UI_TEXT(DIAL_ROW_BIND_HELP, 43,
-    "A tap lists the Dials the last scan found",
-    "Tippen listet die Dials der letzten Suche")
+    "Opens SEARCH on the last scan's Dials",
+    "Öffnet SEARCH mit den Dials der Suche")
 UI_TEXT(DIAL_SCAN_GO, 18,
     "SCAN",
     "SUCHEN")
@@ -12961,24 +12981,41 @@ UI_TEXT(DIAL_SCAN_ARMED, 94,
 UI_TEXT(DIAL_SCAN_OFF, 94,
     "BLUETOOTH IS NOT READY: NO DIAL SCAN",
     "BLUETOOTH NICHT BEREIT: KEINE DIAL-SUCHE")
-/* BOUND DIAL tapped with no list to pick from, and a bind the controller
- * refused: a scan runs, or the list changed under the pick. */
-UI_TEXT(DIAL_BIND_EMPTY, 94,
-    "NO DIAL LISTED: TAP SCAN FOR DIAL FIRST",
-    "KEIN DIAL GELISTET: ERST AUF DIAL SUCHEN TIPPEN")
+/* A bind refused: a scan runs, or the list changed under the pick. */
 UI_TEXT(DIAL_BIND_SCANNING, 94,
     "A SCAN IS RUNNING: PICK THE DIAL WHEN IT ENDS",
     "SUCHE LÄUFT: DAS DIAL NACH DEM ENDE WÄHLEN")
-/* A found list's last row, on SCAN FOR DIAL, SCAN FOR NODE and the BOUND
- * rows: a new scan. */
-UI_TEXT(WL_SCAN_AGAIN, 40,
+/* SEARCH (wl_search.h), the screen SCAN FOR DIAL, SCAN FOR NODE and the
+ * BOUND rows open: SCAN AGAIN, a new scan; the scan's state over the
+ * list; BOUND over the bound device; the bind question and its BIND. */
+UI_TEXT(WL_SCAN_AGAIN, 0,
     "SCAN AGAIN",
     "AKTUALISIEREN")
-/* BOUND NODE tapped with no list to pick from, on POWER NODE and BALANCE
- * NODE. */
-UI_TEXT(NODE_BIND_EMPTY, 94,
-    "NO NODE LISTED: TAP SCAN FOR NODE FIRST",
-    "KEIN KNOTEN GELISTET: ERST AUF KNOTEN SUCHEN TIPPEN")
+UI_TEXT(WLS_SCANNING, 0,
+    "SCANNING: %us LEFT",
+    "SUCHE LÄUFT: NOCH %us")
+UI_TEXT(WLS_FOUND, 0,
+    "FOUND %u: TAP ONE TO BIND IT",
+    "%u GEFUNDEN: ZUM BINDEN EINES ANTIPPEN")
+UI_TEXT(WLS_NO_SCAN, 53,
+    "NO SCAN YET: TAP SCAN AGAIN",
+    "NOCH KEINE SUCHE: AKTUALISIEREN ANTIPPEN")
+UI_TEXT(WLS_BOUND, 0,
+    "BOUND",
+    "GEBUNDEN")
+UI_TEXT(WLS_ASK_TITLE, 0,
+    "BIND %s?",
+    "%s BINDEN?")
+UI_TEXT(WLS_ASK_WAS, 0,
+    "IN PLACE OF %s",
+    "ANSTELLE VON %s")
+UI_TEXT(WLS_ASK_KEEP, 0,
+    "SETUP KEEPS THE BIND AND ASKS FOR A SAVE",
+    "SETUP BEHÄLT DIE BINDUNG UND FORDERT SPEICHERN AN")
+UI_TEXT(WLS_BIND, 0,
+    "BIND",
+    "BINDEN")
+/* A node's bind refused while a scan runs. */
 UI_TEXT(NODE_BIND_SCANNING, 94,
     "A SCAN IS RUNNING: PICK THE NODE WHEN IT ENDS",
     "SUCHE LÄUFT: DEN KNOTEN NACH DEM ENDE WÄHLEN")
@@ -13052,14 +13089,14 @@ UI_TEXT(PNODE_ROW_SCAN, 43,
     "Scan for node",
     "Knoten suchen")
 UI_TEXT(PNODE_ROW_SCAN_HELP, 43,
-    "Lists the power nodes in range for 10s",
-    "Listet 10s lang Knoten in Reichweite")
+    "Opens SEARCH, scans 10s for power nodes",
+    "Öffnet SEARCH, sucht 10s nach Knoten")
 UI_TEXT(PNODE_ROW_BIND, 43,
     "Bound node",
     "Gebundener Knoten")
 UI_TEXT(PNODE_ROW_BIND_HELP, 43,
-    "A tap lists the nodes the last scan found",
-    "Tippen listet die Knoten der letzten Suche")
+    "Opens SEARCH on the last scan's nodes",
+    "Öffnet SEARCH mit den Knoten der Suche")
 UI_TEXT(PNODE_ROW_BAT, 43,
     "Node battery",
     "Knotenakku")
@@ -13140,14 +13177,14 @@ UI_TEXT(BNODE_ROW_SCAN, 43,
     "Scan for node",
     "Knoten suchen")
 UI_TEXT(BNODE_ROW_SCAN_HELP, 43,
-    "Lists the balance nodes in range for 10s",
-    "Listet 10s lang Knoten in Reichweite")
+    "Opens SEARCH, scans 10s for balance nodes",
+    "Öffnet SEARCH, sucht 10s nach Knoten")
 UI_TEXT(BNODE_ROW_BIND, 43,
     "Bound node",
     "Gebundener Knoten")
 UI_TEXT(BNODE_ROW_BIND_HELP, 43,
-    "A tap lists the nodes the last scan found",
-    "Tippen listet die Knoten der letzten Suche")
+    "Opens SEARCH on the last scan's nodes",
+    "Öffnet SEARCH mit den Knoten der Suche")
 UI_TEXT(BNODE_ROW_BAT, 43,
     "Node battery",
     "Knotenakku")

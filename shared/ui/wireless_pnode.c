@@ -15,6 +15,7 @@
 #include "ui_screen.h"
 #include "ui_text.h"
 #include "ui_theme.h"
+#include "wl_search.h"
 
 /** @brief The node as the panel last read it. */
 static pnode_view_t s_node;
@@ -72,6 +73,7 @@ static bool view_same(const pnode_view_t *a, const pnode_view_t *b)
 {
     if (a->link != b->link || a->scan_done != b->scan_done
         || a->scan_cut != b->scan_cut || a->found_n != b->found_n
+        || a->scan_left_s != b->scan_left_s
         || a->hidden != b->hidden || a->proto != b->proto
         || a->have_status != b->have_status || a->bat_low != b->bat_low
         || a->bat_none != b->bat_none || a->bat_err != b->bat_err
@@ -142,7 +144,7 @@ static void scan_value(char *out, size_t n)
     }
 }
 
-/** @brief SCAN FOR NODE tapped: refused while ARMED or while a scan runs,
+/** @brief A scan for SEARCH: refused while ARMED or while a scan runs,
  *         each with its text on the band, else asked. */
 static void scan_tap(void)
 {
@@ -173,109 +175,78 @@ static void bind_value(char *out, size_t n)
     }
 }
 
-/** @brief The nodes the found list shows. @return The count. */
-static int listed_n(void)
-{
-    return wireless_list_devices(s_node.found_n);
-}
-
-/** @brief The found list's rows, SCAN AGAIN last. @return The count. */
-static int bind_choices(void)
-{
-    return wireless_list_rows(s_node.scan_done && s_node.link != PNODE_LINK_SCANNING,
-                              s_node.found_n);
-}
-
-/** @brief SCAN FOR NODE's list: BOUND NODE's while it reads FOUND n.
- *  @return The count, 0 to scan at a tap. */
-static int scan_choices(void)
-{
-    return s_node.scan_cut ? 0 : bind_choices();
-}
-
 /**
- * @brief A row of the found list: a node's name or address and its RSSI,
- *        or SCAN AGAIN.
- * @param i The row.
- * @return The text, valid until the next call.
+ * @brief SEARCH's view of the node: the scan, the found nodes, the bound
+ *        one and the link state.
+ * @param out The view, zeroed.
  */
-static const char *bind_choice(int i)
+static void search_view(wls_view_t *out)
 {
-    static char line[48];
-    if (i == listed_n()) {
-        return TR(WL_SCAN_AGAIN);
+    out->scanning = s_node.link == PNODE_LINK_SCANNING;
+    out->scan_left_s = s_node.scan_left_s;
+    out->scan_done = s_node.scan_done;
+    out->scan_cut = s_node.scan_cut;
+    const unsigned n = s_node.found_n < PNODE_FOUND_MAX ? s_node.found_n
+                                                        : PNODE_FOUND_MAX;
+    out->found_n = (uint8_t)n;
+    for (unsigned i = 0u; i < n; ++i) {
+        wl_search_put(out, i, s_node.found[i].addr, s_node.found[i].name,
+                      s_node.found[i].rssi);
     }
-    if (i < 0 || i > listed_n()) {
-        return "";
-    }
-    const pnode_dev_t *d = &s_node.found[i];
-    snprintf(line, sizeof(line), TR(DIAL_FOUND_ROW),
-             d->name[0] != '\0' ? d->name : d->addr, (int)d->rssi);
-    return line;
+    snprintf(out->bound_addr, sizeof(out->bound_addr), "%s",
+             s_node.bound_addr);
+    snprintf(out->bound_name, sizeof(out->bound_name), "%s",
+             s_node.bound_name);
+    (void)wireless_pane_pnode_word(&s_node, out->word, sizeof(out->word),
+                                   &out->word_ink);
 }
 
-/** @brief The found node that is bound. @return Its row, -1 none. */
-static int bind_chosen(void)
-{
-    for (int i = 0; i < listed_n(); ++i) {
-        if (strcmp(s_node.found[i].addr, s_node.bound_addr) == 0) {
-            return i;
-        }
-    }
-    return -1;
-}
-
-/** @brief A row of the found list tapped: SCAN AGAIN scans, a node is
- *         bound; a scan that runs refuses the bind on the band.  SCAN
- *         AGAIN never reaches the controller as an index.
+/** @brief SEARCH's bind of found node @p i, queued for the controller.
  *  @param i Its row. */
-static void bind_pick(int i)
+static void search_bind(uint8_t i)
 {
-    if (i == listed_n()) {
-        scan_tap();
-        return;
-    }
-    if (s_node.link == PNODE_LINK_SCANNING) {
-        ui_router_set_alert(TR(NODE_BIND_SCANNING));
-        return;
-    }
-    if (i >= 0 && i < listed_n()) {
-        push(PNODE_CMD_BIND, (uint8_t)i);
-    }
+    push(PNODE_CMD_BIND, i);
 }
 
-/** @brief BOUND NODE tapped with no list to open: the band says why, a
- *         scan that runs or none that found a node. */
-static void bind_tap(void)
+/** @brief The node's entry as SEARCH asks it. */
+static const wls_device_t k_search = {
+    .entry = WL_ENTRY_PNODE,
+    .kind = TX_PNODE_ENTRY,
+    .bind_scanning = TX_NODE_BIND_SCANNING,
+    .bind_gone = TX_NODE_BIND_GONE,
+    .view = search_view,
+    .scan = scan_tap,
+    .bind = search_bind,
+};
+
+/** @brief SCAN FOR NODE tapped: SEARCH opens and a scan is asked. */
+static void scan_open(void)
 {
-    ui_router_set_alert(s_node.link == PNODE_LINK_SCANNING ? TR(NODE_BIND_SCANNING)
-                                       : TR(NODE_BIND_EMPTY));
+    wl_search_open(&k_search, true);
 }
 
-/** @brief SCAN FOR NODE: the last scan's result; a tap scans, or while it
- *         reads FOUND n opens the found list. */
+/** @brief BOUND NODE tapped: SEARCH opens on the last scan's list. */
+static void bind_open(void)
+{
+    wl_search_open(&k_search, false);
+}
+
+/** @brief SCAN FOR NODE: the last scan's result; a tap opens SEARCH and
+ *         scans. */
 const ui_setlist_custom_t wireless_pane_pnode_scan_row = {
     .label = TX_PNODE_ROW_SCAN,
     .help = TX_PNODE_ROW_SCAN_HELP,
     .value_text = scan_value,
-    .tap = scan_tap,
-    .choices = scan_choices,
-    .choice = bind_choice,
-    .chosen = bind_chosen,
-    .pick = bind_pick,
+    .tap = scan_open,
 };
 
-/** @brief BOUND NODE: the bound node, the last scan's list, a pick binds;
- *         a tap with no list says why on the band. */
+/** @brief BOUND NODE: the bound node; a tap opens SEARCH on the last
+ *         scan's list. */
 const ui_setlist_custom_t wireless_pane_pnode_bind_row = {
     .label = TX_PNODE_ROW_BIND,
     .help = TX_PNODE_ROW_BIND_HELP,
     .value_text = bind_value,
-    .tap = bind_tap,
-    .choices = bind_choices,
-    .choice = bind_choice,
-    .chosen = bind_chosen,
-    .pick = bind_pick,
+    .tap = bind_open,
 };
 
 /* ----------------------------------------------------------- NODE BATTERY */
