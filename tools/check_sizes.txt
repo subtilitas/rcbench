@@ -38,6 +38,7 @@ firmware/panel/components/wifi_access/wifi_access.c | 1643 +-100 | one state str
 tools/check_docs.py | none | one tool
 tools/sense_trace.py | none | one tool
 tools/render_ui.py | none | one tool: the view table holds a line per committed view
+tools/make_video.py | none | one tool: the checks of every scene field stand beside the scene they hold
 test/host/test_sense_trace_tool.py | none | the cases of one tool
 test/tools/test_check_protocols.py | none | the cases of one tool
 test/host/render_screen.c | none | F11: one view table
