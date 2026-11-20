@@ -1318,7 +1318,8 @@ and SET (`shared/ui/ui_focus.c`, `ui_focus_list.c`, `ui_focus_screens.c`,
 menu, SETUP, SERVO's tiles and OUTPUTS' board view; a SELECT opens what a
 tap opens; a SELECT on CLEAR ALL completes no hold; a number kept and
 cancelled on its keypad, an on/off stepped and restored; SEARCH's devices,
-SCAN AGAIN and its bind question; no focus while the Dial is off or the bench ARMED; a
+SCAN AGAIN and its bind question; SERVO's SETTINGS list, with no focus
+while a row's keyboard is open; no focus while the Dial is off or the bench ARMED; a
 ring move writes two rings and leaves the screen as drawn; a list of 70
 rows keeps RESET and SAVE; a dimmed panel woken by the Dial), with the
 `overview-focus` frame-cost mode. The programmers' screens take no focus

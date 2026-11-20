@@ -357,6 +357,34 @@ TEST_CASE(the_servo_hub_moves_and_opens_a_tile)
     CHECK(!ui_focus_shown());
 }
 
+/* SERVO's SETTINGS list, the hub's profile: the focus walks it as a SETUP
+ * list, a string row's item reads its name, and its keyboard takes the
+ * focus away until BACK closes it and the rows take it again. */
+TEST_CASE(the_servo_settings_list_takes_the_focus_and_a_string_row)
+{
+    on(SCREEN_SERVO);
+    CHECK(ui_focus_turn(-1));
+    CHECK_STR_EQ(ui_focus_label(ui_focus_index()), TR(FOOT_SETTINGS));
+    CHECK(ui_focus_press());
+    const ui_setlist_t *sl = servo_screen_list();
+    CHECK(sl->open);
+    CHECK(ui_focus_shown());
+    const int n = ui_focus_count();
+    CHECK(n > 2);
+    CHECK(focus_on(ui_tr(TX_SET_DUT_NAME)));
+    const int at = ui_focus_index();
+    CHECK(ui_focus_press());
+    CHECK(sl->tk.open);
+    CHECK(!ui_focus_shown());
+    CHECK(!ui_focus_turn(1));
+    CHECK(ui_router_home());
+    CHECK(!sl->tk.open);
+    CHECK(sl->open);
+    CHECK(ui_focus_shown());
+    CHECK_EQ(ui_focus_count(), n);
+    CHECK_STR_EQ(ui_focus_label(at), ui_tr(TX_SET_DUT_NAME));
+}
+
 TEST_CASE(nothing_shows_while_the_dial_is_off)
 {
     on(SCREEN_SETUP);
@@ -886,6 +914,7 @@ int main(void)
     RUN(an_on_off_row_steps_and_cancels);
     RUN(search_takes_the_focus_and_a_pick);
     RUN(the_servo_hub_moves_and_opens_a_tile);
+    RUN(the_servo_settings_list_takes_the_focus_and_a_string_row);
     RUN(nothing_shows_while_the_dial_is_off);
     RUN(armed_moves_no_focus);
     RUN(the_dial_shows_nav_and_value);

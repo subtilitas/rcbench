@@ -362,10 +362,9 @@ While the Dial is linked and the bench is SAFE, it navigates these screens:
 | --- | --- |
 | the menu | its 8 tiles, row by row |
 | SETUP's tiles | the tiles, then SAVE while a save is offered |
-| a SETUP list | its rows, then RESET and SAVE; on SENSORS and WIRELESS the entries on the left first |
+| a SETUP list | its rows, then RESET and SAVE; on SENSORS and WIRELESS the entries on the left first; none while a row's keyboard is open |
 | SERVO | the 8 tiles, then SETTINGS; the open SETTINGS list as a SETUP list |
 | OUTPUTS, board view | the protocol list's face, CLEAR ALL while offered, then a pin button each |
-| an open choice list | its rows, the focus on the one in force |
 | SEARCH | the found devices, then SCAN AGAIN; with the bind question open CANCEL and BIND, the focus on CANCEL |
 | the leave warning | STAY, DISCARD, SAVE |
 
@@ -373,7 +372,7 @@ While the Dial is linked and the bench is SAFE, it navigates these screens:
 | --- | --- | --- |
 | turn | the focus moves one item a detent and wraps at either end; a row out of sight scrolls into it | the value moves one step a detent, inside its range |
 | PRESS | SELECT: a tap on the focused item | KEEP |
-| HOLD | BACK: what the home tag does, a choice list or the keypad closes | CANCEL: the value as it was |
+| HOLD | BACK: what the home tag does, the bind question or the keypad closes | CANCEL: the value as it was |
 
 The panel draws a 2px ring in the accent colour round the focused item. The
 ring keeps the pixels under it per frame buffer and puts them back when it

@@ -387,10 +387,9 @@ Bildschirme:
 | --- | --- |
 | das Menü | seine 8 Kacheln, Zeile für Zeile |
 | die Kacheln von SETUP | die Kacheln, dann SAVE, solange Speichern angeboten ist |
-| eine Liste von SETUP | ihre Zeilen, dann RESET und SAVE; auf SENSORS und WIRELESS zuerst die Einträge links |
+| eine Liste von SETUP | ihre Zeilen, dann RESET und SAVE; auf SENSORS und WIRELESS zuerst die Einträge links; keine, solange die Tastatur einer Zeile offen ist |
 | SERVO | die 8 Kacheln, dann SETTINGS; die offene SETTINGS-Liste wie eine Liste von SETUP |
 | OUTPUTS, Platinenansicht | das Feld der Protokollliste, CLEAR ALL, solange angeboten, dann je eine Pin-Taste |
-| eine offene Auswahlliste | ihre Zeilen, der Fokus auf der gültigen |
 | SEARCH | die gefundenen Geräte, dann AKTUALISIEREN; bei offener Bindungsfrage ABBRECHEN und BINDEN, der Fokus auf ABBRECHEN |
 | die Warnung beim Verlassen | STAY, DISCARD, SAVE |
 
@@ -398,7 +397,7 @@ Bildschirme:
 | --- | --- | --- |
 | Drehen | der Fokus geht eine Rastung einen Eintrag weiter und läuft an beiden Enden um; eine Zeile außer Sicht rollt herein | der Wert geht eine Rastung einen Schritt, innerhalb seines Bereichs |
 | PRESS | SELECT: ein Tippen auf den Eintrag im Fokus | KEEP |
-| HOLD | BACK: was das Home-Tag tut, eine Auswahlliste oder das Ziffernfeld schließt | CANCEL: der Wert wie vorher |
+| HOLD | BACK: was das Home-Tag tut, die Bindungsfrage oder das Ziffernfeld schließt | CANCEL: der Wert wie vorher |
 
 Das Panel zeichnet einen 2px-Rahmen in der Akzentfarbe um den Eintrag im
 Fokus. Der Rahmen hebt die Pixel darunter je Framebuffer auf und setzt sie
