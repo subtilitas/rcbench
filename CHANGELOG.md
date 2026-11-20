@@ -119,6 +119,10 @@ history is in git.
   row a position. A run with one write a side takes 130s to 187s on the
   settle tests' curves, the search 42s to 49s of it
   ([AUTO end points](docs/Servo.md#auto-end-points)).
+- Host tests: `test_esc_link_run` holds the ESC_WIRE read copy's two
+  bounds without the restart in `absorb()`. A fetch counts its blocks by
+  the LEN it started with, and a block number from `LINK_ED_BACKUP` on
+  copies nothing into the copy or past it.
 
 ### Fixed
 
