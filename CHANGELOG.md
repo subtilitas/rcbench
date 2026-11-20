@@ -8,6 +8,13 @@ history is in git.
 
 ### Added
 
+- `tools/check_mutants.py`: `--check` holds the weekly mutation run's
+  figures in `mutation.yml`, `STATUS.md`, `CONTRIBUTING.md` and
+  `docs/Building*.md` to the mutants of the tree, run in CI; `--update`
+  writes them. The run reaches about 1,869 mutants of `shared/outputs`,
+  2,568 in all (428 a shard).
+- `test_mutate.py` runs `mutate.py` with `mutation.yml`'s own arguments
+  and fails when the run no longer lists `shared/safety` first.
 - `hardware/mechanical/`: `servo_standard.step`, a standard size servo with
   a round horn, black with the white print "Standard Servo", from an owner
   sketch with dimensions: case 40.5mm x 20.0mm x 36.3mm, 2 ears with 2 open
@@ -55,6 +62,9 @@ history is in git.
   flash gate have their own reasons.
 - C6 radio: a tap on the grey hold during the restart wait reads
   `C6 radio updated. The panel restarts once SAFE with all outputs off.`
+- STATUS.md: `mutate.py` on `shared/safety/heartbeat.c` makes 45 mutants,
+  the suite fails on 42; the 3 others are named with the reason no input
+  tells them from the original.
 - RUDDER AUTO: MARGIN lies in the pulse length. 1000us and 2000us aim at
   TARGET itself, 20.0° at TARGET 20.0°; MARGIN p% writes a KST or
   Chaservo servo's PULSE LOWER 1000us - (N - 1000us) x p/100 and PULSE
