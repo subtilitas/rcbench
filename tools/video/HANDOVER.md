@@ -38,7 +38,7 @@ a new session needs beyond it.
 | `storyboards/rbmod-first-program.json`, `player/part3d.js`, `player/windows.js`, `web/capture.js` | first programming of a bench with the rbmod carrier in 6 chapters, 321.22s, narrated, bed `pachelbel-canon` at half level; STEP models of the panel, the carrier and the RP2350-CAN, captures of the releases page and of the ESP Web Tool, a drawn Windows desktop for the drive RP2350 |
 | `storyboards/auto-rudder.json`, `player/rudder3d.js`, `test/host/video_rauto.c` | setting a rudder's end points with RUDDER AUTO in 4 steps, 303.59s, narrated, bed `pachelbel-canon` at half level; the wing slice, the IMU on gel tape, the Dial in its base and the cased bench in one 3D scene, the display and the flap following one run of the host suites' rig |
 | `storyboards/thumbnail.json` | thumbnail of the feature tour, `--stills 3` |
-| `test/tools/test_make_video.py` | 46 cases; the storyboard check, the script, the freezes |
+| `test/tools/test_make_video.py` | 52 cases; the storyboard check, the script, the freezes, the phonemes and the trim of the narration |
 
 No pull request is open. CI has not been looked at for this branch.
 
@@ -54,7 +54,8 @@ No pull request is open. CI has not been looked at for this branch.
 | `kokoro-v1.0.onnx`, `voices-v1.0.bin` | 354MB | github.com/thewh1teagle/kokoro-onnx, release `model-files-v1.0` | `tools/video/tts/` |
 | `node_modules/` | | `npm install` in `tools/video/` | `tools/video/` |
 
-Python packages: `pillow numpy kokoro-onnx cadquery-ocp==8.0.1.1.0`.
+Python packages: `pillow numpy kokoro-onnx misaki==0.9.4 spacy num2words espeakng-loader phonemizer piper-tts cadquery-ocp==8.0.1.1.0`, and `en_core_web_sm` 3.8.0 from
+github.com/explosion/spacy-models for spacy. misaki goes in without its `en` extra, which pulls in PyTorch.
 Node needs `playwright` with its Chromium. ffmpeg and a C compiler are
 needed.
 

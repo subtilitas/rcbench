@@ -22,6 +22,18 @@ from huggingface.co/rhasspy/piper-voices, de/de_DE/thorsten/high.  A
 storyboard with "lang": "de" is written out for a German speaker by
 SPELL_DE in place of SPELL.
 
+Kokoro reads phonemes.  For a voice with "lang" en-us or en-gb they come
+from misaki, the grapheme-to-phoneme converter Kokoro was trained with:
+its American or its British dictionary, and espeak-ng for a word the
+dictionary does not hold.  Any other "lang" is phonemized by kokoro-onnx
+through espeak-ng.  A word ending in n't keeps its full vowel ("isn't"
+as ˈɪzənt, not ˈɪzᵊnt), since Kokoro drops the reduced one, and a
+letter said on its own keeps the full stop after it ("I M U.").
+
+Every clip, Kokoro's and Piper's, is cut to its sound: the samples
+before the first and after the last one above TRIM_DB of the clip's
+peak go, except TRIM_LEAD_S before and TRIM_TAIL_S after.
+
 A storyboard with "voice" is spoken.  A step of a screen or tour scene
 says its "say", or its title and text; a chapter card its number, title
 and text.  A case scene says the cues of its "say" list at their times,
@@ -30,15 +42,24 @@ shorter than its sentence is stretched.  A case or board scene whose cue
 runs into the next one is stretched as well: every time of the scene
 moves with the cues.
 
-    python3 tools/video_voice.py features          # the lines, as spoken
+    python3 tools/video_voice.py features            # the lines, as spoken
+    python3 tools/video_voice.py features --unknown  # words misaki lacks
 
-script() needs Python only.  narrate() needs numpy, kokoro-onnx and the
-model.
+script() needs Python only.  narrate() needs numpy, kokoro-onnx, misaki
+0.9.4 without its "en" extra, spacy with en_core_web_sm 3.8.0, num2words,
+espeakng-loader and phonemizer, and the model.  --unknown needs
+misaki and spacy.
 
 Attributes:
     RATE: Samples per second of the clips narrate() returns.
     LEAD_S: Seconds from a step's start to its first word.
     TAIL_S: Seconds a step lasts after its last word.
+    TRIM_DB: The level, in dB relative to a clip's peak, below which the
+        ends of a clip count as silence.
+    TRIM_LEAD_S: Seconds a clip keeps before its first sample above
+        TRIM_DB.
+    TRIM_TAIL_S: Seconds a clip keeps after its last sample above
+        TRIM_DB.
     SPELL: What is said for a name the speaker would not read as meant,
         as (pattern, replacement) in order.
 
@@ -57,6 +78,12 @@ import sys
 RATE = 44100
 LEAD_S = 0.45
 TAIL_S = 0.75
+TRIM_DB = -40.0
+TRIM_LEAD_S = 0.02
+TRIM_TAIL_S = 0.04
+# The voices' "lang" values misaki reads, and whether its British
+# dictionary does.
+MISAKI = {"en-us": False, "en-gb": True}
 SPELL = (
     (r"<[^>]+>", " "),
     (r"SEARCH \+ PROGRAM", "search and program"),
@@ -271,7 +298,105 @@ def model_dir() -> pathlib.Path:
     return pathlib.Path(os.environ.get("RCBENCH_TTS_DIR", here))
 
 
+def trim(clip, rate: int, db: float = TRIM_DB, lead: float = TRIM_LEAD_S,
+         tail: float = TRIM_TAIL_S):
+    """Cut the silence at both ends of a clip.
+
+    Args:
+        clip: The samples as a numpy array.
+        rate: Their samples per second.
+        db: The level, relative to the clip's peak, a sample has to
+            exceed to count as sound.
+        lead: Seconds kept before the first such sample.
+        tail: Seconds kept after the last one.
+
+    Returns:
+        The clip from @p lead before its first sound to @p tail after its
+        last; a clip without a sample above zero is returned whole.
+    """
+    import numpy as np
+
+    level = np.abs(np.asarray(clip))
+    peak = float(level.max()) if len(level) else 0.0
+    if peak <= 0.0:
+        return clip
+    loud = np.flatnonzero(level > peak * 10 ** (db / 20))
+    start = max(0, int(loud[0]) - int(round(lead * rate)))
+    end = min(len(clip), int(loud[-1]) + 1 + int(round(tail * rate)))
+    return clip[start:end]
+
+
+def phonemes(text: str, g2p) -> str:
+    """Turn a line into the phonemes Kokoro reads.
+
+    Args:
+        text: The line as spoken(), in English.
+        g2p: A misaki en.G2P, or a callable like it that returns the
+            phoneme string and the tokens with their "text", "phonemes"
+            and "whitespace".
+
+    Returns:
+        The tokens' phonemes joined with their whitespace; a word ending
+        in n't has the full vowel ə in place of the reduced ᵊ, a letter
+        said on its own keeps the full stop after it, and a token without
+        phonemes is left out.
+    """
+    out = []
+    for token in g2p(text)[1]:
+        said = token.phonemes or ""
+        if re.search(r"n['’]t$", token.text, re.IGNORECASE):
+            said = said.replace("ᵊnt", "ənt")
+        # misaki reads "U." and "U-S-B." as initials and drops the stop,
+        # and the pause with it: "I M U. Tap" runs on as one sentence.
+        if re.search(r"(^|-)[A-Za-z]\.$", token.text) \
+                and not said.endswith("."):
+            said += "."
+        out.append(said + token.whitespace)
+    return "".join(out).strip()
+
+
+def unknown(texts: list, british: bool = False) -> list:
+    """Find the words misaki's dictionary cannot read.
+
+    Args:
+        texts: The lines as spoken().
+        british: Whether to ask the British dictionary.
+
+    Returns:
+        (word, line) per word that misaki, without a fallback, leaves
+        without phonemes, in the order of the lines.
+    """
+    from misaki import en
+
+    g2p = en.G2P(trf=False, british=british, fallback=None, unk="\u2753")
+    found = []
+    for text in texts:
+        for token in g2p(text)[1]:
+            if token.phonemes is None or "\u2753" in token.phonemes:
+                found.append((token.text, text))
+    return found
+
+
 _SPEAKER = None
+_G2P = {}
+
+
+def _misaki(british: bool):
+    """Load misaki's English converter once per worker.
+
+    Args:
+        british: Whether to load the British dictionary.
+
+    Returns:
+        An en.G2P with espeak-ng as the fallback for unknown words.
+    """
+    if british not in _G2P:
+        from misaki import en, espeak
+
+        _G2P[british] = en.G2P(
+            trf=False, british=british, unk="",
+            fallback=espeak.EspeakFallback(british=british))
+    return _G2P[british]
 
 
 def _start(files: list, threads: int) -> None:
@@ -305,7 +430,7 @@ def _speak(job: tuple):
         job: (text, voice) with the storyboard's "voice" object.
 
     Returns:
-        The samples as a numpy array, peak 1.
+        The samples as a numpy array, peak 1, cut by trim().
     """
     import numpy as np
 
@@ -318,17 +443,23 @@ def _speak(job: tuple):
             length_scale=1.0 / voice.get("speed", 1.0))))
         raw = np.concatenate([c.audio_int16_array for c in chunks]).astype(
             float)
-        return _to_rate(raw, chunks[0].sample_rate)
+        rate = chunks[0].sample_rate
+        return _to_rate(trim(raw, rate), rate)
     # A blend is the weighted mean of the voices' style vectors.
     style = voice.get("name")
     if "blend" in voice:
         whole = sum(voice["blend"].values())
         style = sum(_SPEAKER.get_voice_style(name) * (part / whole)
                     for name, part in voice["blend"].items())
+    lang = voice.get("lang", "en-us")
+    if lang in MISAKI:
+        text = phonemes(text, _misaki(MISAKI[lang]))
+    # kokoro-onnx cuts each batch at -60dB itself and adds the pause the
+    # punctuation asks for between batches; trim() cuts the ends further.
     raw, rate = _SPEAKER.create(text, voice=style,
                                 speed=voice.get("speed", 1.0),
-                                lang=voice.get("lang", "en-us"))
-    return _to_rate(np.asarray(raw, dtype=float), rate)
+                                lang=lang, is_phonemes=lang in MISAKI)
+    return _to_rate(trim(np.asarray(raw, dtype=float), rate), rate)
 
 
 def _to_rate(raw, rate: int):
@@ -357,8 +488,9 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
 
     Lines are spoken in parallel worker processes.  With @p cache, each
     spoken line is kept there as a .npy file named by a hash of its
-    text, the voice, the model files' sizes and this module's source,
-    and a later run reads it back instead of speaking it.
+    text, the voice, the model files' sizes, this module's source and
+    the versions of the speech packages, and a later run reads it back
+    instead of speaking it.
 
     Args:
         board: A storyboard that passed make_video.check(), with "voice".
@@ -373,17 +505,28 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
     import hashlib
     import json
 
+    import importlib.metadata
+
     piper = board["voice"].get("engine") == "piper"
+    packages = ["piper-tts"] if piper else ["kokoro-onnx"]
+    if not piper and board["voice"].get("lang", "en-us") in MISAKI:
+        packages.append("misaki")
     try:
         import numpy as np
         if piper:
             import piper as _piper  # noqa: F401
         else:
             import kokoro_onnx  # noqa: F401
+            if "misaki" in packages:
+                import misaki.en  # noqa: F401
+                import misaki.espeak  # noqa: F401
+        versions = [importlib.metadata.version(name) for name in packages]
     except ImportError:
-        sys.exit("the narration needs numpy and kokoro-onnx, or piper-tts "
-                 "for a voice of Piper: pip install numpy kokoro-onnx "
-                 "piper-tts")
+        sys.exit("the narration needs numpy and kokoro-onnx with misaki, "
+                 "or piper-tts for a voice of Piper: pip install numpy "
+                 "kokoro-onnx misaki==0.9.4 spacy num2words "
+                 "espeakng-loader phonemizer piper-tts, and "
+                 "en_core_web_sm 3.8.0 for spacy")
     files = [model_dir() / "kokoro-v1.0.onnx", model_dir() / "voices-v1.0.bin"]
     if piper:
         name = board["voice"]["name"]
@@ -402,7 +545,8 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
         if cache is None:
             return None
         key = hashlib.sha256(json.dumps(
-            [text, voice, RATE, sizes, source]).encode()).hexdigest()[:20]
+            [text, voice, RATE, sizes, source, versions]).encode()
+        ).hexdigest()[:20]
         return cache / f"{key}.npy"
 
     spoken = {}
@@ -471,20 +615,35 @@ def narrate(board: dict, cache: pathlib.Path | None = None) -> tuple:
 def main() -> int:
     """Print what a storyboard says, one line per line.
 
+    With --unknown, print each word misaki's dictionary cannot read and
+    the line it stands in instead.
+
     Returns:
-        The exit status.
+        The exit status: with --unknown, 1 when a word is found.
     """
     import make_video
 
     ap = argparse.ArgumentParser()
     ap.add_argument("storyboard")
+    ap.add_argument("--unknown", action="store_true",
+                    help="list the words misaki reads only through its "
+                         "fallback, with their lines")
     args = ap.parse_args()
     path = pathlib.Path(args.storyboard)
     if not path.suffix:
         path = make_video.VIDEO / "storyboards" / f"{args.storyboard}.json"
-    for _, _, _, text in script(make_video.load(path)):
-        print(text)
-    return 0
+    board = make_video.load(path)
+    texts = [text for _, _, _, text in script(board)]
+    if not args.unknown:
+        print("\n".join(texts))
+        return 0
+    if board.get("lang", "en") != "en":
+        sys.exit("--unknown reads English storyboards only")
+    british = MISAKI.get(board.get("voice", {}).get("lang"), False)
+    found = unknown(texts, british)
+    for word, text in found:
+        print(f"{word}\t{text}")
+    return 1 if found else 0
 
 
 if __name__ == "__main__":

@@ -754,3 +754,89 @@ def test_a_face_names_a_screen_the_knob_does_nothing_on():
     assert render_dial.other("other") is None
     assert render_dial.other("other-rudder-auto") is None
     assert render_dial.other("navigation") is None
+
+
+def _g2p(words):
+    """A stand-in for misaki's en.G2P over (text, phonemes) pairs."""
+    import types
+
+    tokens = [types.SimpleNamespace(text=text, phonemes=said, whitespace=" ")
+              for text, said in words]
+    tokens[-1].whitespace = ""
+    return lambda text: ("", tokens)
+
+
+def test_a_negation_keeps_its_vowel_and_a_letter_its_stop():
+    """A negation is read with ə; "U." and "U-S-B." end a sentence."""
+    said = video_voice.phonemes("", _g2p([
+        ("It", "ˌɪt"), ("isn't", "ˈɪzᵊnt"), ("I", "ˌI"), ("M", "ˈɛm"),
+        ("U.", "jˈu"), ("Over", "ˈOvəɹ"), ("U-S-B.", "jˌuˈɛsbˈi"),
+        ("student", "stˈudᵊnt"), ("e.g.", "ˌiʤˈi"), ("x", None),
+        ("end", "ˈɛnd."),
+    ]))
+    assert said == ("ˌɪt ˈɪzənt ˌI ˈɛm jˈu. ˈOvəɹ jˌuˈɛsbˈi. stˈudᵊnt "
+                    "ˌiʤˈi  ˈɛnd.")
+
+
+class _Kokoro:
+    """A stand-in for kokoro_onnx.Kokoro that records create()."""
+
+    def __init__(self):
+        self.calls = []
+
+    def create(self, text, **kwargs):
+        import numpy as np
+
+        self.calls.append((text, kwargs))
+        clip = np.zeros(24000)
+        clip[6000:18000] = 0.5
+        return clip, 24000
+
+
+def test_kokoro_reads_misaki_phonemes(monkeypatch):
+    """en-us and en-gb go through misaki; another language does not."""
+    np = import_or_fail("numpy", "needs numpy")
+
+    speaker, asked = _Kokoro(), []
+    monkeypatch.setattr(video_voice, "_SPEAKER", speaker)
+    monkeypatch.setattr(video_voice, "_misaki", lambda british: (
+        asked.append(british) or _g2p([("isn't", "ˈɪzᵊnt")])))
+    clip = video_voice._speak(("isn't", {"name": "af_heart",
+                                         "lang": "en-us"}))
+    video_voice._speak(("isn't", {"name": "bm_george", "lang": "en-gb"}))
+    video_voice._speak(("n'est", {"name": "ff_siwis", "lang": "fr-fr"}))
+    assert asked == [False, True]
+    assert [(text, kw["is_phonemes"], kw["lang"])
+            for text, kw in speaker.calls] == [
+        ("ˈɪzənt", True, "en-us"), ("ˈɪzənt", True, "en-gb"),
+        ("n'est", False, "fr-fr")]
+    # 0.5s of sound inside 1s: trimmed to the sound and its margins.
+    want = 0.5 + video_voice.TRIM_LEAD_S + video_voice.TRIM_TAIL_S
+    assert abs(len(clip) / video_voice.RATE - want) < 0.002
+    assert np.abs(clip).max() == 1.0
+
+
+def test_trim_keeps_the_sound_and_its_margins():
+    """Silence goes from both ends; a quiet consonant above -40dB stays."""
+    np = import_or_fail("numpy", "needs numpy")
+
+    rate = 24000
+    t = np.arange(rate) / rate
+    loud = np.sin(2 * np.pi * 200 * t)
+    soft = 0.02 * np.cos(2 * np.pi * 3000 * t[: rate // 20])    # -34dB
+    hiss = 0.005 * np.sin(2 * np.pi * 3000 * t[: rate // 20])   # -46dB
+    clip = np.concatenate([np.zeros(rate * 3 // 10), hiss, soft, loud,
+                           np.zeros(rate // 2)])
+    cut = video_voice.trim(clip, rate)
+    first = rate * 3 // 10 + len(hiss)
+    lead = round(video_voice.TRIM_LEAD_S * rate)
+    tail = round(video_voice.TRIM_TAIL_S * rate)
+    assert np.array_equal(cut, clip[first - lead:first + len(soft)
+                                    + len(loud) + tail])
+    # Margins stop at the clip's ends; a silent clip stays whole.
+    assert np.array_equal(video_voice.trim(loud, rate), loud)
+    assert len(video_voice.trim(np.zeros(100), rate)) == 100
+    # Kokoro's own padding: 0.3s before and 0.5s after the sound.
+    padded = np.concatenate([np.zeros(rate * 3 // 10), loud,
+                             np.zeros(rate // 2)])
+    assert abs(len(video_voice.trim(padded, rate)) / rate - 1.06) < 0.001

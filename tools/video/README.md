@@ -36,6 +36,22 @@ tree: `kokoro-v1.0.onnx` and `voices-v1.0.bin` from the release
 recogniser (Whisper small.en) returned the lines of `features` with
 their words and names; the voice has not been judged by ear.
 
+Kokoro is given phonemes, not text. For a voice with `lang` `en-us` or
+`en-gb` they come from misaki 0.9.4, the grapheme-to-phoneme converter
+Kokoro was trained with, through its American or British dictionary;
+espeak-ng reads only the words the dictionary lacks. A word ending in
+n't keeps its full vowel (`ˈɪzənt`, not `ˈɪzᵊnt`), and a letter said on
+its own keeps the full stop after it. `SPELL` runs before misaki.
+
+Every clip, Kokoro's and Piper's, is cut to its sound: it keeps 0.02s
+before its first sample above -40dB of its peak and 0.04s after its
+last. Before the cut, kokoro-onnx's own trim at -60dB leaves 0.026s to
+0.075s before and 0.053s to 0.194s after the sound of `auto-rudder`'s 25
+lines, and Piper's `de_DE-thorsten-high` 0s to 0.30s before and 0.05s
+to 0.24s after the 25 lines of `auto-rudder-de`. Piper's speech varies
+from run to run, and some of its clips start with sound at their first
+sample.
+
 The screens are drawn by the host renderer (`tools/render_ui.py`) from the
 panel's own UI (user interface) code. A step names a renderer view; no
 screen is recorded or drawn by hand.
@@ -69,6 +85,7 @@ python3 tools/make_video.py features --music bach-prelude,pachelbel-canon
 python3 tools/make_video.py features --no-voice    # no narrator, lengths as written
 python3 tools/make_video.py features --no-sound    # the picture alone
 python3 tools/video_voice.py features              # the lines as spoken
+python3 tools/video_voice.py features --unknown    # words misaki's dictionary lacks
 python3 tools/video_audio.py features -o /tmp/features.wav
 python3 tools/make_video.py --check                # every storyboard
 ```
@@ -90,9 +107,14 @@ The frames are drawn by SwiftShader, a software rasteriser. With
 A GPU render's pixels differ from SwiftShader's by 0.031 of 255 on
 average on the Dial video, so one video takes one of the two.
 
-A render needs a C compiler, Pillow, numpy for the sound, `kokoro-onnx`
-and its model for the narration, Node.js with the `playwright` package and
-its Chromium, and ffmpeg. `--check` needs only Python; the
+A render needs a C compiler, Pillow, numpy for the sound, Node.js with
+the `playwright` package and its Chromium, and ffmpeg. The narration
+needs `kokoro-onnx` and its model, `misaki==0.9.4` without its `en`
+extra (the extra pulls in PyTorch), `spacy` with `en_core_web_sm` 3.8.0,
+`num2words`, `espeakng-loader` and `phonemizer`; `piper-tts` speaks a
+voice of Piper. The set in use is kokoro-onnx 0.6.1, misaki 0.9.4,
+spacy 3.8.18, num2words 0.5.14, espeakng-loader 0.2.4, phonemizer 3.6.0
+and piper-tts 1.8.0 on Python 3.12. `--check` needs only Python; the
 pytest case `test/tools/test_make_video.py` runs it in CI (continuous
 integration). The 100.4s of `kst-rbmod` are 3012 frames. `features` is
 755.92s with its narration, 22678 frames. On a software rasteriser its render
