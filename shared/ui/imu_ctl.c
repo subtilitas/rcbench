@@ -186,6 +186,7 @@ void imu_ctl_view(const imu_ctl_t *c, imu_view_t *out)
         return;
     }
     out->link = imu_ctl_link(c);
+    out->scan_armed = (uint16_t)c->refused;
     imu_ble_view(&c->ble, out);
     if (imu_ble_bound(&c->ble)) {
         memcpy(out->bound_addr, c->cfg.addr, sizeof(out->bound_addr));

@@ -15,6 +15,7 @@
 
 #include <string.h>
 
+#include "imu_ctl.h"
 #include "imu_screen.h"
 #include "imu_screen_int.h"
 #include "splash_screen.h"
@@ -283,6 +284,40 @@ TEST_CASE(a_scan_while_armed_is_refused_with_a_band_text)
     set_armed(false);
     tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
     CHECK_EQ(took().kind, IMU_CMD_SCAN);
+}
+
+/* An ARM hold completed and ARMED not reported yet: the band reads SAFE,
+ * so SCAN posts its command, and the controller, which counts the arm on
+ * its way as ARMED, refuses it.  The next view says why on the band; a
+ * view with the same count says nothing, a second refusal says it again. */
+TEST_CASE(a_scan_refused_while_an_arm_waits_says_why_on_the_band)
+{
+    imu_view_t v = view_connected();
+    on_imu(&v);
+    set_armed(false);
+    imu_ctl_t c;
+    imu_ctl_init(&c);
+    const imu_cfg_t cfg = { .en = true };
+    imu_ctl_config(&c, &cfg, 0u);
+    imu_ctl_live(&c, true);             /* the arm waits */
+    tap_rect(imu_screen_row_rect(IMS_ROW_SCAN));
+    imu_cmd_t cmd = took();
+    CHECK_EQ(cmd.kind, IMU_CMD_SCAN);
+    CHECK(!imu_ctl_command(&c, &cmd, 0u));
+    CHECK(!hint_shows(TX_IMU_SCAN_ARMED));
+    imu_view_t seen;
+    imu_ctl_view(&c, &seen);
+    imu_screen_set(&seen);
+    CHECK(hint_shows(TX_IMU_SCAN_ARMED));
+
+    ui_router_set_alert(NULL);
+    seen.r.taken_ms += 20u;             /* a new reading, the same count */
+    imu_screen_set(&seen);
+    CHECK(!hint_shows(TX_IMU_SCAN_ARMED));
+    CHECK(!imu_ctl_command(&c, &cmd, 0u));
+    imu_ctl_view(&c, &seen);
+    imu_screen_set(&seen);
+    CHECK(hint_shows(TX_IMU_SCAN_ARMED));
 }
 
 /* A scan owed while Bluetooth LE starts ends when the start ends in NO
@@ -741,6 +776,7 @@ int main(void)
     RUN(scan_posts_the_command_and_the_list_shows_the_found_devices);
     RUN(scan_with_the_imu_off_switches_it_on_and_scans_once_bluetooth_runs);
     RUN(a_scan_while_armed_is_refused_with_a_band_text);
+    RUN(a_scan_refused_while_an_arm_waits_says_why_on_the_band);
     RUN(a_scan_owed_since_no_bluetooth_is_dropped);
     RUN(a_scan_owed_is_dropped_by_armed_and_by_close);
     RUN(a_tap_on_a_device_posts_bind_with_its_index);

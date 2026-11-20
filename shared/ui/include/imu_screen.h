@@ -93,6 +93,12 @@ typedef struct {
     uint16_t      err_code;        /**< the host stack's status for it */
     imu_cal_t     cal;             /**< the calibration */
     uint32_t      cal_left_ms;     /**< of the 3s hold still */
+    /**
+     * @brief Scans the controller refused while ARMED or while an arm
+     *        waits (imu_ctl_live()), counted: a change raises
+     *        IMU_SCAN_ARMED on the band (imu_screen_set()).
+     */
+    uint16_t      scan_armed;
     imu_reading_t r;               /**< the reading */
 } imu_view_t;
 

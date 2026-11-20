@@ -108,6 +108,13 @@ history is in git.
   settle tests' curves, the search 42s to 49s of it
   ([AUTO end points](docs/Servo.md#auto-end-points)).
 
+### Fixed
+
+- IMU: a scan tapped after the ARM hold and before the IOmcu reports ARMED
+  reads `NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST` on the band. The
+  controller refused it with no text; it counts the refusal in the view
+  (`imu_view_t.scan_armed`).
+
 ## 0.23.15 - 2026-11-18
 
 0.23.15 is a testing release. It adds a watchdog on the IOmcu's main loop

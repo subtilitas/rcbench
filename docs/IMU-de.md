@@ -95,7 +95,9 @@ schaltet.
 
 Solange die Bench ARMED ist, starten SENSOREN SUCHEN, AKTUALISIEREN und
 IMU SUCHEN auf SERVO keinen Scan, und das Band zeigt `KEINE IMU-SUCHE BEI
-ARMED: ERST AUF SAFE SCHALTEN`. Ein Scan, der beim Schalten auf ARMED
+ARMED: ERST AUF SAFE SCHALTEN`. Dasselbe gilt, solange ein ARM wartet:
+vom Ende des ARM-Haltens bis zur ersten ARMED-Meldung des IOmcu öffnet
+sich die Liste, kein Scan läuft, und das Band zeigt denselben Text. Ein Scan, der beim Schalten auf ARMED
 läuft, wird beendet; die Liste behält, was er bis dahin gehört hat. Die
 Scans des Dial und der Knoten folgen derselben Regel
 ([Dial](Dial-de.md)).
