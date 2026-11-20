@@ -51,7 +51,7 @@ Eine Suche dauert 10s. Sie listet die Geräte, die den Dienst des WitMotion-Sens
 | `KEIN SENSOR GEFUNDEN: IST ER AN, KEIN HANDY DRAN?` | die Suche listete keinen Sensor |
 | `KEIN ANDERER SENSOR: DER GEBUNDENE IST VERBUNDEN` | die Suche listete keinen Sensor, während der gebundene verbunden ist; ein verbundener Sensor sendet keine Advertisements |
 | `DIE SUCHE STARTETE NICHT: CODE <n>` | Bluetooth lehnte die Suche mit diesem Code ab |
-| `KEINE IMU-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` | im Alarmband: die Bench ist ARMED, und SENSOREN SUCHEN und AKTUALISIEREN starten keine Suche; eine Suche, die beim Schalten auf ARMED läuft, endet |
+| `KEINE IMU-SUCHE BEI ARMED: ERST AUF SAFE SCHALTEN` | im Alarmband: die Bench ist ARMED oder ein ARM wartet, und SENSOREN SUCHEN und AKTUALISIEREN starten keine Suche; eine Suche, die beim Schalten auf ARMED läuft, endet |
 
 ## Verwandte Seiten
 

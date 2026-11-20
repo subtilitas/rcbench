@@ -1155,10 +1155,17 @@ TABLE lists four channels, each with its extreme value. A channel with no
 reading shows `--`.
 
 The speed reads up to 65,535rpm, the ceiling of the IOmcu's register. A
-speed above it shows `>65535` on the card and in TABLE. A peak of 65,535rpm
-or more shows `>65535`. The plot draws such a speed at 65,535rpm. rpm/V and
-the Dial show no speed while it is above the ceiling, and the balance node
-gets none.
+speed above it shows `>65535` on the card and in TABLE, and so does a peak
+above it. A peak of exactly 65,535rpm shows 65535. An IOmcu of link
+protocol 4.39 or older (firmware 0.23.15 or older) does not mark its peak:
+a peak above 65,535rpm shows 65535. The plot draws a speed above the
+ceiling at 65,535rpm. rpm/V shows no speed while it is above the ceiling.
+Current limitations: the Dial's LIVE_MOTOR has no bit for a speed above
+the ceiling, so the Dial shows no speed while the speed is above
+65,535rpm. In its no-index mode the balance node takes the bench's speed
+as RPM, 1 to 60,000rpm: while the speed is above 65,535rpm the panel sends
+it 0, which returns the node to the index, and from 60,000 to 65,535rpm it
+sends 60,000.
 
 When the INA228 is enabled under SETUP > SENSORS and answers (BENCH flag
 bit 5), it supplies voltage, current and power. These are the means of the

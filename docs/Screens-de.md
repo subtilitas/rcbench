@@ -1246,10 +1246,18 @@ TABELLE zeigt vier Kanäle mit je einem Extremwert. Ein Kanal ohne Messwert
 zeigt `--`.
 
 Die Drehzahl reicht bis 65.535rpm, die Obergrenze des Registers im IOmcu.
-Eine Drehzahl darüber steht als `>65535` auf der Karte und in TABELLE. Eine
-Spitze von 65.535rpm oder mehr steht als `>65535`. Der Plot zeichnet eine
-solche Drehzahl bei 65.535rpm. rpm/V und das Dial zeigen keine Drehzahl,
-solange sie über der Obergrenze liegt, und der Auswuchtknoten bekommt keine.
+Eine Drehzahl darüber steht als `>65535` auf der Karte und in TABELLE,
+ebenso eine Spitze darüber. Eine Spitze von genau 65.535rpm steht als
+65535. Ein IOmcu mit Link-Protokoll 4.39 oder älter (Firmware 0.23.15 oder
+älter) markiert seine Spitze nicht: Eine Spitze über 65.535rpm steht als
+65535. Der Plot zeichnet eine Drehzahl über der Obergrenze bei 65.535rpm.
+rpm/V zeigt keine Drehzahl, solange sie über der Obergrenze liegt.
+Derzeitige Einschränkungen: LIVE_MOTOR des Dial hat kein Bit für eine
+Drehzahl über der Obergrenze, also zeigt das Dial keine Drehzahl, solange
+sie über 65.535rpm liegt. Im Modus ohne Index nimmt der Auswuchtknoten die
+Drehzahl des Prüfstands als RPM, 1 bis 60.000rpm: Solange die Drehzahl
+über 65.535rpm liegt, sendet das Panel ihm 0, was den Knoten zum Index
+zurückbringt, und von 60.000 bis 65.535rpm sendet es 60.000.
 
 Ist der INA228 unter SETUP > SENSORS eingeschaltet und antwortet er
 (BENCH-Flag Bit 5), liefert er Spannung, Strom und Leistung. Angezeigt

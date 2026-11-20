@@ -176,7 +176,13 @@ void imu_screen_set(const imu_view_t *v)
     /* The reading alone, the view's last member: the card's lines that
      * read differently repaint on their own (ims_render()). */
     const bool alone = memcmp(v, &ims.v, offsetof(imu_view_t, r)) == 0;
+    /* A SCAN the controller refused after the screen passed it on: tapped
+     * while an arm waits, before the band reads ARMED. */
+    const bool armed_no = v->scan_armed != ims.v.scan_armed;
     ims.v = *v;
+    if (armed_no) {
+        ui_router_set_alert(TR(IMU_SCAN_ARMED));
+    }
     drop_hold_if_gone();
     search_follow();
     if (alone) {
@@ -241,7 +247,9 @@ bool imu_view_bound_linked(const imu_view_t *v)
 bool imu_screen_search(void)
 {
     if (ui_router_status()->armed) {
-        /* As the Dial's and the node's scans: none while ARMED. */
+        /* As the Dial's and the node's scans: none while ARMED.  One
+         * tapped while an arm waits passes here; the controller refuses
+         * it and imu_screen_set() says so on the band. */
         ui_router_set_alert(TR(IMU_SCAN_ARMED));
         return false;
     }

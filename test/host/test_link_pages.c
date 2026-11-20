@@ -638,6 +638,7 @@ TEST_CASE(the_bench_flags_add_bits_5_and_6_and_move_none)
     CHECK_EQ(LINK_BN_SENSED, 0x20u);
     CHECK_EQ(LINK_BN_TOTALS_OK, 0x40u);
     CHECK_EQ(LINK_BN_SIMULATED, 0x80u);
+    CHECK_EQ(LINK_BN_RPM_MAX_OVER, 0x100u);     /* 4.40 */
     CHECK_EQ(LINK_BN_CHARGE_MAH, 6);
     CHECK_EQ(LINK_BN_ENERGY_DWH, 7);
 }
@@ -1700,7 +1701,8 @@ TEST_CASE(the_status_page_counts_refused_frames_after_its_old_registers)
  */
 TEST_CASE(the_frozen_registers_keep_their_numbers)
 {
-    CHECK_EQ(LINK_PROTOCOL_MINOR, 39u);
+    CHECK_EQ(LINK_PROTOCOL_MINOR, 40u);
+    CHECK_EQ(LINK_MINOR_RPM_MAX_OVER, 40u);
     CHECK_EQ(LINK_MINOR_WATCHDOG, 39u);
     CHECK_EQ(LINK_MINOR_BIND_WHY, 38u);
     CHECK_EQ(LINK_BD_COMMIT, 0);

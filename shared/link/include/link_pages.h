@@ -155,7 +155,10 @@ typedef enum {
  * on a board that has one; an older IOmcu refuses it with
  * LINK_NACK_BAD_PAGE.  From 4.39 STATUS sets fault bit 7
  * (LINK_FAULT_WATCHDOG) after a restart by the IOmcu's own watchdog; an
- * older IOmcu has no such watchdog and never sets it.
+ * older IOmcu has no such watchdog and never sets it.  From 4.40 BENCH
+ * sets flag bit 8 (LINK_BN_RPM_MAX_OVER) while the peak speed is above
+ * RPM_MAX's ceiling of 65,535rpm; an older IOmcu never sets it, and the
+ * panel reads its RPM_MAX of 65535 as 65,535rpm.
  * An IOmcu never asks the panel's minor; a page an older panel does not
  * know is a page it never writes.
  *
@@ -168,9 +171,9 @@ typedef enum {
  * major change; it is a new page.
  */
 #define LINK_PROTOCOL_MAJOR 4u
-/** @brief The minor this build speaks: 39, STATUS fault bit 7
- *         (LINK_MINOR_WATCHDOG). */
-#define LINK_PROTOCOL_MINOR 39u
+/** @brief The minor this build speaks: 40, BENCH flag bit 8
+ *         (LINK_MINOR_RPM_MAX_OVER). */
+#define LINK_PROTOCOL_MINOR 40u
 
 /** @brief The first minor that serves BIND_CFG, BIND_OUT and BIND. */
 #define LINK_MINOR_BIND 10u
@@ -417,6 +420,16 @@ typedef enum {
  * an older panel shows the bit as one it has no name for.
  */
 #define LINK_MINOR_WATCHDOG 39u
+
+/**
+ * @brief The first minor whose BENCH page sets flag bit 8,
+ *        LINK_BN_RPM_MAX_OVER, while the peak speed is above 65,535rpm.
+ *
+ * An older IOmcu never sets the bit: its RPM_MAX of 65535 stands for
+ * 65,535rpm or more, and the panel reads it as 65,535rpm.  An older panel
+ * ignores the bit.
+ */
+#define LINK_MINOR_RPM_MAX_OVER 40u
 
 /* ----------------------------------------------------------------- outputs */
 
@@ -1143,6 +1156,14 @@ typedef enum {
      * missing measurements have their validity bits cleared.
      */
     LINK_BN_SIMULATED  = 1u << 7,
+    /**
+     * @brief The peak speed is above RPM_MAX's ceiling (protocol 4.40):
+     * RPM_MAX reads 65535 as a bound, not a reading.
+     *
+     * Clear with RPM_MAX at 65535, the peak is 65,535rpm.  An older IOmcu
+     * never sets it.
+     */
+    LINK_BN_RPM_MAX_OVER = 1u << 8,
 } link_bench_flag_t;
 
 /* --------------------------------------------------------------- catalogue */

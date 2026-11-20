@@ -449,7 +449,8 @@ TEST_CASE(a_speed_above_65535rpm_loses_its_valid_bit)
     bench_state_to_regs(&in, regs);
     CHECK_EQ(regs[LINK_BN_RPM], 65535u);
     CHECK_EQ(regs[LINK_BN_RPM_MAX], 65535u);
-    CHECK_EQ(regs[LINK_BN_FLAGS], (uint16_t)LINK_BN_VOLTAGE_OK);
+    CHECK_EQ(regs[LINK_BN_FLAGS],
+             (uint16_t)(LINK_BN_VOLTAGE_OK | LINK_BN_RPM_MAX_OVER));
     bench_state_t out;
     memset(&out, 0, sizeof(out));
     bench_state_from_regs(&out, regs, 0, LINK_BN_COUNT);
@@ -473,11 +474,108 @@ TEST_CASE(a_speed_above_65535rpm_loses_its_valid_bit)
     in.rpm = 90000.0f;
     in.flags = LINK_BN_VOLTAGE_OK;
     bench_state_to_regs(&in, regs);
-    CHECK_EQ(regs[LINK_BN_FLAGS], (uint16_t)LINK_BN_VOLTAGE_OK);
+    CHECK_EQ(regs[LINK_BN_FLAGS] & LINK_BN_RPM_OK, 0u);
     memset(&out, 0, sizeof(out));
     CHECK(!bench_state_rpm_over(&out));
     CHECK(!bench_state_rpm_over(NULL));
     CHECK(!bench_state_rpm_max_over(NULL));
+}
+
+/*
+ * The peak's register has no valid bit, so a bit of its own (4.40) says
+ * 65535 is a bound: a peak of exactly 65,535rpm is a reading, one of
+ * 65,536rpm is the bound, both ways round the wire.
+ */
+TEST_CASE(a_peak_of_exactly_65535rpm_is_a_reading_and_one_above_a_bound)
+{
+    bench_state_t in;
+    memset(&in, 0, sizeof(in));
+    in.rpm     = 1000.0f;
+    in.flags   = LINK_BN_RPM_OK;
+    in.rpm_max = 65535.0f;
+    uint16_t regs[LINK_BN_COUNT];
+    bench_state_to_regs(&in, regs);
+    CHECK_EQ(regs[LINK_BN_RPM_MAX], 65535u);
+    CHECK_EQ(regs[LINK_BN_FLAGS] & LINK_BN_RPM_MAX_OVER, 0u);
+    bench_state_t out;
+    memset(&out, 0, sizeof(out));
+    bench_state_from_regs(&out, regs, 0, LINK_BN_COUNT);
+    CHECK_FEQ(out.rpm_max, 65535.0f);
+    CHECK(!bench_state_rpm_max_over(&out));
+
+    in.rpm_max = 65536.0f;
+    bench_state_to_regs(&in, regs);
+    CHECK_EQ(regs[LINK_BN_RPM_MAX], 65535u);
+    CHECK((regs[LINK_BN_FLAGS] & LINK_BN_RPM_MAX_OVER) != 0u);
+    bench_state_from_regs(&out, regs, 0, LINK_BN_COUNT);
+    CHECK(bench_state_rpm_max_over(&out));
+
+    /* The bit decoded comes back out: the panel's state is the IOmcu's. */
+    uint16_t again[LINK_BN_COUNT];
+    bench_state_to_regs(&out, again);
+    CHECK_EQ(again[LINK_BN_FLAGS], regs[LINK_BN_FLAGS]);
+}
+
+/*
+ * An IOmcu of 4.39 or older has no bit for the peak: its RPM_MAX of 65535
+ * reads as 65,535rpm, and the live speed's bound keeps its own rule.
+ */
+TEST_CASE(a_4_39_iomcu_peak_of_65535_reads_as_65535rpm)
+{
+    uint16_t regs[LINK_BN_COUNT];
+    memset(regs, 0, sizeof(regs));
+    regs[LINK_BN_RPM]     = 65535u;
+    regs[LINK_BN_RPM_MAX] = 65535u;
+    regs[LINK_BN_FLAGS]   = (uint16_t)LINK_BN_RPM_OK;
+    bench_state_t out;
+    memset(&out, 0, sizeof(out));
+    bench_state_from_regs(&out, regs, 0, LINK_BN_COUNT);
+    CHECK(!bench_state_rpm_over(&out));
+    CHECK(!bench_state_rpm_max_over(&out));
+    CHECK_FEQ(out.rpm_max, 65535.0f);
+}
+
+/* A peak reset starts the peak at the live speed: a bound when the live
+ * speed is one, a reading when it is one, whatever the peak was before. */
+TEST_CASE(a_peak_reset_takes_the_live_speeds_bound)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    b.rpm     = 65535.0f;               /* the bound: RPM_OK clear */
+    b.rpm_max = 40000.0f;
+    bench_state_reset_peaks(&b);
+    CHECK(bench_state_rpm_max_over(&b));
+
+    b.rpm   = 1000.0f;
+    b.flags = (uint16_t)(LINK_BN_RPM_OK | LINK_BN_RPM_MAX_OVER);
+    bench_state_reset_peaks(&b);
+    CHECK(!bench_state_rpm_max_over(&b));
+    CHECK_FEQ(b.rpm_max, 1000.0f);
+    CHECK((b.flags & LINK_BN_RPM_OK) != 0u);
+}
+
+/* The run's clock sums whole ms: one hour of 50ms steps is 3,600,000ms
+ * exactly (a float sum reads 3,602.3s), and the sum stops at its top. */
+TEST_CASE(the_run_clock_sums_whole_ms_without_drift)
+{
+    bench_state_t b;
+    memset(&b, 0, sizeof(b));
+    bench_totals_t t;
+    bench_totals_reset(&t);
+    for (int i = 0; i < 72000; ++i) {
+        bench_totals_count(&t, &b, 0.05f, true);
+    }
+    CHECK_EQ(t.run_ms, 3600000u);
+    bench_totals_count(&t, &b, 0.05f, false);       /* not driving */
+    bench_totals_count(&t, &b, -1.0f, true);
+    CHECK_EQ(t.run_ms, 3600000u);
+    bench_totals_count(&t, &b, 5.0f, true);         /* clamped to 1s */
+    CHECK_EQ(t.run_ms, 3601000u);
+    t.run_ms = UINT32_MAX - 10u;
+    bench_totals_count(&t, &b, 0.05f, true);
+    CHECK_EQ(t.run_ms, UINT32_MAX);
+    bench_totals_reset(&t);
+    CHECK_EQ(t.run_ms, 0u);
 }
 
 TEST_CASE(the_panel_counts_50mA_up_to_100000mAh)
@@ -607,7 +705,7 @@ TEST_CASE(a_run_start_takes_the_last_runs_totals_off_the_page)
     bench_state_from_regs(&panel, regs, 0u, LINK_BN_COUNT);
     bench_totals_t t;
     bench_totals_reset(&t);
-    t.run_s = BENCH_TOTALS_SETTLE_S;      /* past the panel's own guard */
+    t.run_ms = BENCH_TOTALS_SETTLE_MS;      /* past the panel's own guard */
     bench_totals_count(&t, &panel, 0.05f, true);
     CHECK(t.mah < 1.0f);
 
@@ -667,7 +765,7 @@ TEST_CASE(the_totals_go_on_past_benchs_bounds)
 
     bench_totals_t t;
     bench_totals_reset(&t);
-    t.run_s = BENCH_TOTALS_SETTLE_S;
+    t.run_ms = BENCH_TOTALS_SETTLE_MS;
 
     /* SENSE read in the poll: its figures, above the ceiling. */
     bench_state_t b;
@@ -720,7 +818,7 @@ TEST_CASE(the_totals_go_on_past_benchs_bounds)
     bench_state_to_regs(&src, regs);
     CHECK_EQ(regs[LINK_BN_CHARGE_MAH], 0u);
     bench_totals_reset(&t);
-    t.run_s = BENCH_TOTALS_SETTLE_S;
+    t.run_ms = BENCH_TOTALS_SETTLE_MS;
 
     bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
     bench_state_fine_totals(&b, -3500, 40u);
@@ -747,7 +845,7 @@ TEST_CASE(the_totals_go_on_past_benchs_bounds)
 
     /* A count that is not below the floor follows BENCH as before. */
     bench_totals_reset(&t);
-    t.run_s = BENCH_TOTALS_SETTLE_S;
+    t.run_ms = BENCH_TOTALS_SETTLE_MS;
     bench_state_from_regs(&b, regs, 0u, LINK_BN_COUNT);
     bench_totals_count(&t, &b, 0.05f, true);
     CHECK_FEQ(t.mah, 0.0f);
@@ -1079,6 +1177,10 @@ int main(void)
     RUN(one_count_runs_through_a_change_of_source);
     RUN(the_totals_outlast_the_run_and_reset_at_the_next);
     RUN(a_speed_above_65535rpm_loses_its_valid_bit);
+    RUN(a_peak_of_exactly_65535rpm_is_a_reading_and_one_above_a_bound);
+    RUN(a_4_39_iomcu_peak_of_65535_reads_as_65535rpm);
+    RUN(a_peak_reset_takes_the_live_speeds_bound);
+    RUN(the_run_clock_sums_whole_ms_without_drift);
     RUN(the_panel_counts_50mA_up_to_100000mAh);
     RUN(a_stalled_loop_counts_at_most_one_step);
     RUN(the_ina228_counts_while_its_totals_are_the_runs);
