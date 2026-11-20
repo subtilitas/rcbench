@@ -272,7 +272,7 @@
      ],
      "side": "r",
      "n": 1,
-     "title": "Gel-Klebeband (Gecko Tape)",
+     "title": "Gecko Tape",
      "text": "Ein Pad unter der ganzen Grundfläche des Sensors. Es hält auf der Schale und löst sich ohne Rückstand."
     },
     {
@@ -329,7 +329,7 @@
     },
     {
      "at": 30.52,
-     "text": "Schritt 1. Ein Pad doppelseitiges Gel-Klebeband, Gecko Tape, auf die Klappe kleben."
+     "text": "Schritt 1. Ein Pad Gecko Tape auf die Klappe kleben."
     },
     {
      "at": 36.24,
@@ -1276,7 +1276,7 @@
    "dur": 9,
    "heading": "Ruder eingestellt",
    "items": [
-    "Gel-Klebeband und Sensor auf dem Ruder",
+    "Gecko Tape und Sensor auf dem Ruder",
     "IMU › suchen, RUDER › WINKEL: der Sensor",
     "Dial: scharf schalten, drehen, beide Seiten prüfen",
     "RUDER AUTO: Sollwerte, NULLPUNKT, ARM + START halten",
