@@ -24,16 +24,16 @@
   {
    "type": "case",
    "model": "rudder",
-   "dur": 51.12,
+   "dur": 50.24,
    "run": {
     "kind": "nav",
     "view": "overview",
     "screen": "overview",
     "from": 0.2,
-    "to": 50.919999999999995,
+    "to": 50.04,
     "ops": [
      [
-      49.12,
+      48.24,
       "t1"
      ]
     ]
@@ -111,7 +111,7 @@
      ]
     ],
     [
-     45.46,
+     44.58,
      [
       150,
       105,
@@ -124,7 +124,7 @@
      ]
     ],
     [
-     47.56,
+     46.68,
      [
       30,
       470,
@@ -137,7 +137,7 @@
      ]
     ],
     [
-     51.12,
+     50.24,
      [
       30,
       470,
@@ -193,11 +193,11 @@
       1
      ],
      [
-      36.64,
+      35.76,
       1
      ],
      [
-      38.24,
+      37.36,
       0
      ]
     ],
@@ -207,11 +207,11 @@
       1
      ],
      [
-      46.56,
+      45.68,
       1
      ],
      [
-      48.96,
+      48.08,
       0
      ]
     ]
@@ -232,7 +232,7 @@
     },
     {
      "from": 30.52,
-     "to": 51.12,
+     "to": 50.24,
      "n": 1,
      "text": "Mount the sensor"
     }
@@ -267,7 +267,7 @@
     },
     {
      "from": 30.72,
-     "to": 35.24,
+     "to": 34.36,
      "anchor": "tape",
      "at": [
       140,
@@ -275,12 +275,12 @@
      ],
      "side": "r",
      "n": 1,
-     "title": "Double-sided gel tape",
+     "title": "Gecko Tape",
      "text": "A pad under the sensor's whole base. It holds on the skin and comes off without a trace."
     },
     {
-     "from": 36.44,
-     "to": 44.96,
+     "from": 35.56,
+     "to": 44.08,
      "anchor": "imu",
      "at": [
       140,
@@ -292,8 +292,8 @@
      "text": "A WitMotion sensor. It rides on the flap and reports its angle over Bluetooth."
     },
     {
-     "from": 36.44,
-     "to": 44.96,
+     "from": 35.56,
+     "to": 44.08,
      "anchor": "hinge",
      "at": [
       1330,
@@ -307,8 +307,8 @@
      "text": "The sensor's X or Y axis lies along it."
     },
     {
-     "from": 46.16,
-     "to": 50.12,
+     "from": 45.28,
+     "to": 49.24,
      "anchor": "lead",
      "at": [
       150,
@@ -332,14 +332,14 @@
     },
     {
      "at": 30.52,
-     "text": "Step 1. Stick a pad of double sided gel tape onto the flap."
+     "text": "Step 1. Stick a pad of Gecko Tape onto the flap."
     },
     {
-     "at": 36.24,
+     "at": 35.36,
      "text": "Press the sensor onto the pad. Its X or Y axis has to run along the hinge line. The bench refuses the Z axis."
     },
     {
-     "at": 45.96,
+     "at": 45.08,
      "text": "Plug the servo into a programming port of the bench."
     }
    ]
@@ -1279,7 +1279,7 @@
    "dur": 9,
    "heading": "Rudder set",
    "items": [
-    "Gel tape and the sensor on the rudder",
+    "Gecko Tape and the sensor on the rudder",
     "IMU › scan, RUDDER › ANGLE: the sensor",
     "Dial: arm, turn, check both sides",
     "RUDDER AUTO: targets, ZERO, hold ARM + START",
