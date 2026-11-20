@@ -1924,8 +1924,11 @@ fixed seeds, reads each with `tools/gen_esc_profiles.py` and, through
 the other refuses or the two read differently.
 
 It takes 6.2s on one x86-64 host, 8.1s in the sanitizer build, and ctest stops it after
-120s. `tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0` makes 36 mutants
-and the suite fails on each. A defined test case that is never called fails the build
+120s. `tools/mutate.py --files shared/safety/heartbeat.c --max-mutants 0` makes 45 mutants
+and the suite fails on 42. The other 3 give the result of the original for every input, so
+no test can fail on them: in `heartbeat_mon_window()`, `>` to `>=` and `HEARTBEAT_MAX_GAP_MS`
+to `HEARTBEAT_MAX_GAP_MS - 1` on line 70 set a window of exactly 150ms to the 150ms it
+already is, and `>` to `>=` on line 73 stores the window already stored. A defined test case that is never called fails the build
 (`-Werror=unused-function`). `tools/check_docs.py` holds this list to
 `test/host/CMakeLists.txt`. Of the 32 `test_kst_*` binaries, 31 run against the servo and
 line model in `test/host/kst_sim.h`; no servo is connected. 5 run the core of

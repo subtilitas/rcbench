@@ -50,6 +50,9 @@ history is in git.
 
 ### Changed
 
+- STATUS.md: `mutate.py` on `shared/safety/heartbeat.c` makes 45 mutants,
+  the suite fails on 42; the 3 others are named with the reason no input
+  tells them from the original.
 - RUDDER AUTO: MARGIN lies in the pulse length. 1000us and 2000us aim at
   TARGET itself, 20.0° at TARGET 20.0°; MARGIN p% writes a KST or
   Chaservo servo's PULSE LOWER 1000us - (N - 1000us) x p/100 and PULSE
