@@ -106,7 +106,8 @@ SPELL = (
     (r"\bESCs\b", "electronic speed controllers"),
     (r"\bESC\b", "electronic speed controller"),
     (r"\bKST\b", "K S T"),
-    (r"\bChaservo\b", "Cha servo"),
+    # "Chaservo servo" would be said "Cha servo servo".
+    (r"\bChaservo( servo)?(s?)\b", r"Cha servo\2"),
     (r"\bHitec\b|\bHITEC\b", "High tech"),
     (r"\bDShot\b", "D shot"),
     (r"\brpm\b", "R P M"),
@@ -155,7 +156,7 @@ SPELL_DE = (
     (r"\bIOmcu\b", "I O M C U"),
     (r"\brcbench\b|\bRCBench\b", "R C Bench"),
     (r"\bKST\b", "K S T"),
-    (r"\bChaservo\b", "Tscha-Servo"),
+    (r"\bChaservo(-Servo)?(s?)\b", r"Tscha-Servo\2"),
     (r"\bHitec\b|\bHITEC\b", "Hai-Teck"),
     (r"\bX10\b", "X 10"),
     (r"\bM5Stack Dial\b", "M 5 Stack Dail"),

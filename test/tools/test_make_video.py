@@ -740,6 +740,12 @@ def test_a_german_storyboard_is_written_out_for_a_german_speaker():
     assert video_voice.spoken("über eine Schubstange.", "de") == (
         "über eine Schub Stange.")
     assert video_voice.spoken("hold 2 s", "en") == "hold 2 seconds"
+    assert video_voice.spoken("A KST or Chaservo servo holds") == (
+        "A K S T or Cha servo holds")
+    assert video_voice.spoken("KST and Chaservo servos, a Chaservo") == (
+        "K S T and Cha servos, a Cha servo")
+    assert video_voice.spoken("KST- oder Chaservo-Servos", "de") == (
+        "K S T- oder Tscha-Servos")
     board = {"lang": "de", "scenes": [{"type": "end", "dur": 5,
                                        "say": "Der Dial am KST X10"}]}
     assert video_voice.script(board)[0][3] == "Der Dail am K S T X 10"
