@@ -49,6 +49,7 @@ The panel image carries every other image, so PANEL comes first. A newer release
 | `NOT CHECKED` | PANEL: no check since the start |
 | `NO LINK`, `NOT CONNECTED`, `NOT BOUND` | no IOmcu answers; a bound device is not connected; no device of the kind is bound |
 | `OFF` | a bound device is switched OFF on WIRELESS; its step never waits, and the last card lists it |
+| `NO BLUETOOTH` | a bound device is ON, and Bluetooth LE cannot link it (no link to the C6, or no sync); its step never waits, and the last card lists it |
 | `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to update here; the card of the last step lists these steps |
 
 ![A step held while ARMED](view:updates-held)
@@ -260,7 +261,7 @@ The DIAL FIRMWARE row shows the linked Dial's version and the version of the Dia
 3. The Dial writes the image; the button reads `DIAL UPDATE 37%`.
 4. The Dial checks the image's SHA-256 (Secure Hash Algorithm, 256 bits), installs it and restarts. The alert reads `Dial updated to 0.22.0. It connects again by itself.`
 
-Any other end reads `Dial update stopped: <reason>. Previous firmware is running.`, for example `not accepted within 30s` or `image arrived damaged`; the Dial keeps the firmware it ran. When the link drops after the last byte, the Dial may be installing: the panel waits up to 60s for its version and reports what it finds, or `Dial did not report after its update. Check its version on UPDATES.` While the update runs, ARM is refused with `Cannot switch to ARMED: a wireless device update is running.` and the C6 radio's update waits. The knob does not drive the panel until its link connects again; that gap is no loss error.
+Any other end reads `Dial update stopped: <reason>. Previous firmware is running.`, for example `not accepted within 30s` or `image arrived damaged`; the Dial keeps the firmware it ran. When the link drops after the last byte, the Dial may be installing: the panel waits up to 60s for its version and reports what it finds, or `Dial did not report after its update. Check its version on UPDATES.` While the update runs, ARM is refused with `Cannot switch to ARMED: a wireless device update is running.` and the C6 radio's update waits. The supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused with an alert that names the update, for example `Supply output not switched on: the Dial update is running.` The knob does not drive the panel until its link connects again; that gap is no loss error.
 
 The image carries no signature: the Dial accepts any Dial image a nearby device sends once its screen button is pressed. It refuses another device's image before writing anything. A new image that restarts before its first connection goes back to the one before it; a Dial last flashed over USB before this firmware has no such rollback until it is flashed once over USB.
 
@@ -275,7 +276,7 @@ The POWER NODE FIRMWARE and BALANCE NODE FIRMWARE rows show the node's version, 
 3. The node writes the image; the button reads `POWER NODE UPDATE 37%`.
 4. The node checks the image, installs it and restarts. The alert reads `Power node updated to 0.23.15. It connects again by itself.` The node's link connects again from SETUP's values, and the row reads the new version from the node's first STATUS packet.
 
-A power node's readings and a balance node's reports stop from the hold until the node is back. That gap is no loss: the band shows no `POWER NODE LOST`. Any other end reads `Balance node update stopped: <reason>. Previous firmware is running.` with the Dial's reasons, and the node keeps the firmware it ran. A node refuses the other role's image before writing anything.
+A power node's readings and a balance node's reports stop from the hold until the node is back. That gap is no loss: the band shows no `POWER NODE LOST`. Any other end reads `Balance node update stopped: <reason>. Previous firmware is running.` with the Dial's reasons, and the node keeps the firmware it ran. A node refuses the other role's image before writing anything. As under the Dial's update, the supply's OUTPUT ON, PROG 5V ON and a programmer's start are refused, for example with `Programmer not started: the power node update is running.`
 
 ## Current limitations
 

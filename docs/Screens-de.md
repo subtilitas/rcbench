@@ -5640,7 +5640,11 @@ startet neu.
 
 Der Splash zeigt die neue Version, und das Band sagt
 `Panel-Firmware 0.22.1 installiert.`. Schlägt das Schreiben fehl, bleibt der bisherige Build als Startbuild
-ausgewählt. SCHLIESSEN führt zum Menü zurück; nach einem Download von GitHub
+ausgewählt. Die Zeile unter `Schreiben fehlgeschlagen.` nennt in der Warnfarbe
+den Grund, den die Konsolenzeile nennt: zum Beispiel `WLAN ging nicht
+innerhalb von 20s aus.`, `Die Steuerung stand nicht innerhalb von 1500ms
+still.` oder `Löschen, Schreiben oder Prüfen des Flash ist
+fehlgeschlagen.`. SCHLIESSEN führt zum Menü zurück; nach einem Download von GitHub
 führt es dorthin, wo der Download begann.
 
 ![Das Schreiben schlug fehl](img/de/panel-update-failed.png)
@@ -7268,7 +7272,10 @@ Nach dem vollständigen Halten beginnt das Update. Die normale
 Verbindung zum IOmcu wird unterbrochen, die Ausgänge sind aus, und der
 IOmcu lehnt ARM bis zum Ende des Updates ab. Die Fortschrittsanzeige füllt
 den Bildschirm. Er hat kein Band und kein STOP, wie der Bus-Fehler-Bildschirm:
-hinter ihm kann der Prüfstand nicht auf ARMED schalten.
+hinter ihm kann der Prüfstand nicht auf ARMED schalten. Bis zum Ende des
+Updates lehnt das Panel AUSGANG EIN des Netzteils, PROG 5V EIN und den Start
+einer Programmierung ab, zum Beispiel mit `Netzteilausgang nicht
+eingeschaltet: Das IOmcu-Update läuft.`
 
 ![Der Fortschritt](img/de/coproc-update-progress.png)
 
@@ -7453,6 +7460,7 @@ Warnfarbe, und das Halten ist der neue Versuch.
 | `OHNE VERBINDUNG`, `NICHT VERBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden |
 | `NICHT GEBUNDEN` | kein Gerät der Art ist auf WIRELESS gebunden |
 | `AUS` | ein Gerät ist gebunden, und sein Schalter auf WIRELESS steht auf AUS: Das Panel hält keine Verbindung zu ihm |
+| `KEIN BLUETOOTH` | ein Gerät ist gebunden und EIN, und Bluetooth LE kann es nicht verbinden: Die Verbindung zum C6 schlug fehl, oder der Host hat keinen Sync mit dem C6 |
 | `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | nichts zu tun: Das Panel bringt kein Image mit, das mitgebrachte Image besteht seine Prüfung nicht, die Build-Prüfung des IOmcu gab keine Antwort, der IOmcu nimmt kein Update über CAN an, die Verbindung zum C6 schlug fehl, der C6 nannte keine Version |
 
 Ein Schritt, bei dem nichts zu tun ist, wird übergangen. Steht nach einem
@@ -7464,7 +7472,11 @@ ein gebundenes, nicht verbundenes Gerät: Die Karte sagt
 verbindet. Außerhalb eines Laufs werden sie übergangen und auf der letzten
 Karte genannt. Ein gebundenes Gerät, dessen Schalter auf WIRELESS auf AUS
 steht, wartet nie, weder in einem Lauf noch außerhalb: Seine Zeile zeigt
-`AUS`, und die letzte Karte nennt es.
+`AUS`, und die letzte Karte nennt es. Ebenso wenig wartet ein gebundenes
+Gerät, das EIN ist, solange Bluetooth LE es nicht verbinden kann: Seine
+Zeile zeigt `KEIN BLUETOOTH`, und die letzte Karte nennt es. Während
+Bluetooth LE startet, wartet ein gebundenes Gerät, das EIN ist, in einem
+Lauf.
 
 ![Ein Schritt, gesperrt bei ARMED](img/de/updates-held.png)
 
@@ -7510,7 +7522,7 @@ Unter der Überschrift stehen
 die laufende Version, das Heimnetz, das Ergebnis der letzten Suche und
 die übergangenen Schritte: `Nicht verbunden: LEISTUNGSKNOTEN.`,
 `Kein Update hier: C6-FUNK. Die Liste nennt den Grund.` (darunter ein
-Gerät, das `AUS` zeigt) und
+Gerät, das `AUS` oder `KEIN BLUETOOTH` zeigt) und
 `Übersprungen: DIAL.`, danach die Hinweise zur Erinnerung und zu
 RELEASES. ÜBERSPRUNGENE SCHRITTE ZEIGEN steht darunter, solange ein
 Schritt übersprungen ist. NACH UPDATES SUCHEN ist in der Akzentfarbe
@@ -7871,7 +7883,8 @@ es grau, und ein Tippen darauf zeigt den ersten Grund im Alarmband:
 | `Das C6-Update wartet: Bluetooth startet.` | Die Start-Task `blestart` von Bluetooth LE läuft. |
 | `Das C6-Update wartet auf das Ende des Funkgeräte-Updates.` | Das Update eines Dial läuft oder wurde angefordert ([Das Dial](#das-dial)). |
 | `Das C6-Update erfordert geschlossene Servo- und ESC-Programmierung. Wähle dort VERLASSEN.` | Eine KST-, Hitec- oder ESC-Programmierung belegt einen Port, oder eine Sitzung startet. |
-| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück, oder das Update ist beendet und der Neustart des Panels steht an. |
+| `Das C6-Update wartet auf die letzte Antwort des C6-Funks.` | Ein Schritt eines beendeten Updates ist aus seinem Aufruf noch nicht zurück. |
+| `C6-Funk aktualisiert. Neustart, sobald SAFE und alle Ausgänge aus sind.` | Das Update endete erfolgreich, und der Neustart des Panels steht an: frühestens 3s nach dem Ende, und nur bei einem Prüfstand in SAFE mit allen Ausgängen aus. |
 
 Ein C6, der keine Version meldet, wie der ausgelieferte, bekommt das Update
 angeboten. Ein C6, der die mitgebrachte Version meldet, bekommt die
@@ -8001,7 +8014,10 @@ verloren`.
 | `Fehler 6` | ein anderer Code des Dial, etwa 6 für ein Schreiben außer der Reihe ([protocols/bleota](https://github.com/subtilitas/rcbench/blob/main/protocols/bleota/README.md)) |
 
 Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines
-Funkgeräts läuft.` abgelehnt, und das Update des C6 wartet. Download und
+Funkgeräts läuft.` abgelehnt, und das Update des C6 wartet. AUSGANG EIN des
+Netzteils, PROG 5V EIN und der Start einer Programmierung werden mit einem
+Alarm abgelehnt, der das Update nennt, zum Beispiel `Netzteilausgang nicht
+eingeschaltet: Das Dial-Update läuft.`. Download und
 Installation der Panel-Firmware warten ebenfalls, mit `Wartet auf das Ende
 des Funkgeräte-Updates.`: Ihr Neustart würde die Übertragung abbrechen, und
 das Gerät verwirft ein halbes Image. Der Knopf

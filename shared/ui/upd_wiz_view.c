@@ -231,6 +231,7 @@ static const char *tag_text(upd_wiz_tag_t t)
         [UPD_WIZ_TAG_NOT_CONNECTED] = TX_UPD_WIZ_T_NOT_CONNECTED,
         [UPD_WIZ_TAG_NOT_BOUND]     = TX_UPD_WIZ_T_NOT_BOUND,
         [UPD_WIZ_TAG_OFF]           = TX_UPD_WIZ_T_OFF,
+        [UPD_WIZ_TAG_NO_BLE]        = TX_UPD_WIZ_T_NO_BLE,
     };
     const size_t n = sizeof(k_tag) / sizeof(k_tag[0]);
     return ui_tr(k_tag[(size_t)t < n ? (size_t)t : 0u]);

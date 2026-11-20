@@ -2862,6 +2862,8 @@ static void pose_update(const char *view)
     } else if (strcmp(view, "panel-update-failed") == 0) {
         u.written = 262144u;
         u.state = UPDATE_FAILED;
+        snprintf(u.what, sizeof(u.what), "%s",
+                 update_fail_text(FW_ERR_FLASH));
     }
     update_screen_set(&u);
 }

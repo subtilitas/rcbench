@@ -11,12 +11,13 @@
  * block for up to 15s: c6upd takes a step from a queue of one, runs its
  * calls and answers on a queue of one.  A step past its limit ends the
  * update on app_main; c6upd's late answer is then ignored, and the gates
- * stay closed (FW_C6_WHY_ENDING) until c6upd is out of the call.
+ * stay closed (FW_C6_WHY_ENDING) until c6upd is out of the call; after a
+ * success they stay closed until the restart (FW_C6_WHY_RESTART).
  *
  * While an update runs, c6upd is in a call or a restart is due,
  * panel_c6_busy() is true: Wi-Fi does not start, ARM, the supply's ON, the
  * PROG ports' 5V ON and a programmer session's start are refused
- * (fw_c6_refuses()), and the panel's own install, the GitHub check and the
+ * (fw_c6_refuses(), panel_upd_refuses()), and the panel's own install, the GitHub check and the
  * IOmcu's update wait.  An update that ends FW_C6_RES_UPDATED restarts the
  * panel, so the host side and the C6 start their link afresh: 3s later at
  * the earliest, and only on a bench that is SAFE with the supply and the

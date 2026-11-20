@@ -97,6 +97,34 @@ bool update_screen_take_cancel(void)
     return was;
 }
 
+const char *update_fail_text(fw_err_t e)
+{
+    static const ui_text_id_t k_why[FW_ERR_COUNT] = {
+        [FW_OK]            = TX_UP_WHY_OTHER,
+        [FW_ERR_EMPTY]     = TX_UP_WHY_EMPTY,
+        [FW_ERR_SHORT]     = TX_UP_WHY_SHORT,
+        [FW_ERR_TOO_BIG]   = TX_UP_WHY_TOO_BIG,
+        [FW_ERR_NOT_IMAGE] = TX_UP_WHY_NOT_IMAGE,
+        [FW_ERR_CHIP]      = TX_UP_WHY_CHIP,
+        [FW_ERR_NO_DESC]   = TX_UP_WHY_NO_DESC,
+        [FW_ERR_PROJECT]   = TX_UP_WHY_PROJECT,
+        [FW_ERR_VERSION]   = TX_UP_WHY_VERSION,
+        [FW_ERR_NO_HASH]   = TX_UP_WHY_NO_HASH,
+        [FW_ERR_LENGTH]    = TX_UP_WHY_LENGTH,
+        [FW_ERR_HASH]      = TX_UP_WHY_HASH,
+        [FW_ERR_READ]      = TX_UP_WHY_READ,
+        [FW_ERR_RUNNING]   = TX_UP_WHY_RUNNING,
+        [FW_ERR_MEMORY]    = TX_UP_WHY_MEMORY,
+        [FW_ERR_FLASH]     = TX_UP_WHY_FLASH,
+        [FW_ERR_BUSY]      = TX_UP_WHY_BUSY,
+        [FW_ERR_QUIET]     = TX_UP_WHY_QUIET,
+        [FW_ERR_RADIO]     = TX_UP_WHY_RADIO,
+        [FW_ERR_GATE]      = TX_UP_WHY_GATE,
+    };
+    const unsigned i = (unsigned)e;
+    return ui_tr(i < (unsigned)FW_ERR_COUNT ? k_why[i] : TX_UP_WHY_OTHER);
+}
+
 /**
  * @brief The one button: CLOSE after a failure, CANCEL while downloading.
  */
@@ -235,7 +263,13 @@ static void u_render(gfx_canvas_t *c, int buffer_index)
                            48, TR(UP_RESTART), U_FONT_HEAD, UI_OK);
     } else if (failed) {
         u_line(c, y, TR(UP_FAILED), U_FONT_HEAD, UI_DANGER);
-        u_line(c, y2, TR(UP_FAILED_2), U_FONT_BODY, UI_TEXT_DIM);
+        int ly = y2;
+        if (u.v.what[0] != '\0') {
+            /* The reason the console line names, as FETCH_FAILED's. */
+            u_line(c, ly, u.v.what, U_FONT_BODY, UI_WARN);
+            ly += U_PITCH + 12;
+        }
+        u_line(c, ly, TR(UP_FAILED_2), U_FONT_BODY, UI_TEXT_DIM);
         ui_button_font(c, U_CLOSE, TR(UP_CLOSE), UI_PANEL_HI, u.pressed,
                        true, U_FONT_LABEL);
     } else {

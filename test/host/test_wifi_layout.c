@@ -6,7 +6,8 @@
  *        in English or German; the longest texts stay inside their cards
  *        and buttons; an SSID of 32 characters shows whole in the list,
  *        the rows, the joining line and the keyboard's title; a full list
- *        of 16 networks and an empty one.
+ *        of 16 networks and an empty one; PANEL UPDATE's failed write
+ *        naming its reason.
  *
  * Cases:
  * - the_spots_are_a_finger_tall_and_end_above_the_alert_band
@@ -17,9 +18,11 @@
  * - an_ssid_of_32_characters_shows_whole
  * - a_full_list_takes_16_rows_and_an_empty_one_none
  * - wifi_has_no_stop_control
+ * - a_failed_write_names_its_reason
  *
  * SPDX-License-Identifier: MIT
  */
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -610,6 +613,66 @@ TEST_CASE(wifi_has_no_stop_control)
     CHECK(scr()->safe_at == NULL);
 }
 
+/** @brief Pixels of @p col in PANEL UPDATE's rows @p y0 to @p y1 of
+ *         @p buf. */
+static int update_pixels(const gfx_color_t *buf, gfx_color_t col, int y0,
+                         int y1)
+{
+    int n = 0;
+    for (int y = y0; y < y1; ++y) {
+        for (int x = 0; x < UI_PANEL_W; ++x) {
+            n += buf[y * UI_PANEL_W + x] == col;
+        }
+    }
+    return n;
+}
+
+/* CLEANUP item 3: a failed write names the reason its console line names,
+ * in the warning colour on the line under "Writing failed."; each reason
+ * has a line of its own in both languages. */
+TEST_CASE(a_failed_write_names_its_reason)
+{
+    for (int lang = 0; lang < 2; ++lang) {
+        ui_text_set_language(lang ? UI_LANG_DE : UI_LANG_EN);
+        for (int e = FW_ERR_EMPTY; e < FW_ERR_COUNT; ++e) {
+            const char *t = update_fail_text((fw_err_t)e);
+            CHECK(t != NULL && t[0] != '\0');
+            CHECK(strcmp(t, TR(UP_WHY_OTHER)) != 0);
+            for (int f = FW_ERR_EMPTY; f < e; ++f) {
+                CHECK(strcmp(t, update_fail_text((fw_err_t)f)) != 0);
+            }
+        }
+        CHECK_STR_EQ(update_fail_text(FW_OK), TR(UP_WHY_OTHER));
+        CHECK_STR_EQ(update_fail_text(FW_ERR_COUNT), TR(UP_WHY_OTHER));
+    }
+    ui_text_set_language(UI_LANG_EN);
+    CHECK_STR_EQ(update_fail_text(FW_ERR_RADIO),
+                 "Wi-Fi did not switch off within 20s.");
+    CHECK_STR_EQ(update_fail_text(FW_ERR_QUIET),
+                 "The control task did not stand still within 1500ms.");
+
+    static gfx_color_t upd_px[UI_PANEL_W * UI_PANEL_H];
+    gfx_canvas_t full;
+    gfx_canvas_init(&full, upd_px, UI_PANEL_W, UI_PANEL_H, UI_PANEL_W);
+    const ui_screen_t *u = update_screen();
+    u->reset();
+    update_view_t w = { .state = UPDATE_FAILED, .written = 65536u,
+                        .total = 1900000u };
+    strcpy(w.version, "0.20.0");
+    update_screen_set(&w);
+    memset(upd_px, 0, sizeof(upd_px));
+    u->render(&full, 0);
+    /* The line under the verdict, 48px below its top (208px). */
+    CHECK_EQ(update_pixels(upd_px, UI_WARN, 256, 284), 0);
+    snprintf(w.what, sizeof(w.what), "%s", update_fail_text(FW_ERR_FLASH));
+    update_screen_set(&w);
+    memset(upd_px, 0, sizeof(upd_px));
+    u->render(&full, 0);
+    CHECK(update_pixels(upd_px, UI_WARN, 256, 284) > 100);
+    /* The line that the firmware stays still shows, under the reason. */
+    CHECK(update_pixels(upd_px, UI_TEXT_DIM, 296, 324) > 100);
+}
+
 int main(void)
 {
     RUN(the_spots_are_a_finger_tall_and_end_above_the_alert_band);
@@ -620,5 +683,6 @@ int main(void)
     RUN(an_ssid_of_32_characters_shows_whole);
     RUN(a_full_list_takes_16_rows_and_an_empty_one_none);
     RUN(wifi_has_no_stop_control);
+    RUN(a_failed_write_names_its_reason);
     return test_summary("wifi_layout");
 }

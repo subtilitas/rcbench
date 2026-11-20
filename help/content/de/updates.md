@@ -49,6 +49,7 @@ Das Panel-Image bringt jedes andere Image mit, darum kommt PANEL zuerst. Ein neu
 | `NICHT GESUCHT` | PANEL: keine Suche seit dem Start |
 | `OHNE VERBINDUNG`, `NICHT VERBUNDEN`, `NICHT GEBUNDEN` | kein IOmcu antwortet; ein gebundenes Gerät ist nicht verbunden; kein Gerät der Art ist gebunden |
 | `AUS` | ein gebundenes Gerät ist auf WIRELESS ausgeschaltet; sein Schritt wartet nie, und die letzte Karte nennt es |
+| `KEIN BLUETOOTH` | ein gebundenes Gerät ist EIN, und Bluetooth LE kann es nicht verbinden (keine Verbindung zum C6 oder kein Sync); sein Schritt wartet nie, und die letzte Karte nennt es |
 | `KEINE FIRMWARE`, `FIRMWARE DEFEKT`, `PRÜFFEHLER`, `NUR USB`, `KEINE ANTWORT`, `NICHT GEMELDET` | hier nichts zu aktualisieren; die letzte Karte nennt diese Schritte |
 
 ![Ein Schritt, gesperrt bei ARMED](view:updates-held)
@@ -260,7 +261,7 @@ Die Zeile DIAL-FIRMWARE zeigt die Version des verbundenen Dial und die Version d
 3. Das Dial schreibt das Image; die Taste zeigt `DIAL-UPDATE 37%`.
 4. Das Dial prüft den SHA-256 (Secure Hash Algorithm, 256 Bit) des Images, installiert es und startet neu. Der Alarm lautet `Dial auf 0.22.0 aktualisiert. Verbindet sich von selbst neu.`
 
-Jedes andere Ende lautet `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.`, zum Beispiel `nicht innerhalb von 30s angenommen` oder `Image beschädigt angekommen`; das Dial behält die Firmware, mit der es lief. Bricht der Link nach dem letzten Byte ab, kann das Dial gerade installieren: Das Panel wartet bis zu 60s auf seine Version und meldet, was es findet, oder `Dial hat sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines Funkgeräts läuft.` abgelehnt, und das Update des C6-Funks wartet. Der Knopf steuert das Panel nicht, bis sich sein Link wieder verbindet; diese Lücke ist kein Verlustfehler.
+Jedes andere Ende lautet `Dial-Update abgebrochen: <Grund>. Vorherige Firmware läuft.`, zum Beispiel `nicht innerhalb von 30s angenommen` oder `Image beschädigt angekommen`; das Dial behält die Firmware, mit der es lief. Bricht der Link nach dem letzten Byte ab, kann das Dial gerade installieren: Das Panel wartet bis zu 60s auf seine Version und meldet, was es findet, oder `Dial hat sich nach dem Update nicht gemeldet. Prüfe seine Version auf UPDATES.` Während das Update läuft, wird ARM mit `ARMED gesperrt: Ein Update eines Funkgeräts läuft.` abgelehnt, und das Update des C6-Funks wartet. AUSGANG EIN des Netzteils, PROG 5V EIN und der Start einer Programmierung werden mit einem Alarm abgelehnt, der das Update nennt, zum Beispiel `Netzteilausgang nicht eingeschaltet: Das Dial-Update läuft.` Der Knopf steuert das Panel nicht, bis sich sein Link wieder verbindet; diese Lücke ist kein Verlustfehler.
 
 Das Image trägt keine Signatur: Das Dial nimmt jedes Dial-Image an, das ein Gerät in der Nähe sendet, sobald seine Bildschirmtaste gedrückt wird. Das Image eines anderen Geräts lehnt es ab, bevor es etwas schreibt. Ein neues Image, das vor seiner ersten Verbindung neu startet, geht zum Image davor zurück; ein Dial, das zuletzt vor dieser Firmware über USB geflasht wurde, hat diesen Rollback erst nach einem USB-Flash.
 
@@ -275,7 +276,7 @@ Die Zeilen LEISTUNGSKNOTEN-FIRMWARE und AUSWUCHTKNOTEN-FIRMWARE zeigen die Versi
 3. Der Knoten schreibt das Image; die Taste zeigt `LEISTUNGSKNOTEN-UPDATE 37%`.
 4. Der Knoten prüft das Image, installiert es und startet neu. Der Alarm lautet `Leistungsknoten auf 0.23.15 aktualisiert. Verbindet sich von selbst neu.` Der Link des Knotens verbindet sich wieder aus den Werten von SETUP, und die Zeile liest die neue Version aus dem ersten STATUS-Paket des Knotens.
 
-Die Messwerte eines Leistungsknotens und die Messungen eines Auswuchtknotens ruhen vom Halten an, bis der Knoten zurück ist. Diese Lücke ist kein Verlust: Das Band zeigt kein `LEISTUNGSKNOTEN VERLOREN`. Jedes andere Ende lautet `Auswuchtknoten-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` mit den Gründen des Dial, und der Knoten behält die Firmware, mit der er lief. Ein Knoten lehnt das Image der anderen Rolle ab, bevor er etwas schreibt.
+Die Messwerte eines Leistungsknotens und die Messungen eines Auswuchtknotens ruhen vom Halten an, bis der Knoten zurück ist. Diese Lücke ist kein Verlust: Das Band zeigt kein `LEISTUNGSKNOTEN VERLOREN`. Jedes andere Ende lautet `Auswuchtknoten-Update abgebrochen: <Grund>. Vorherige Firmware läuft.` mit den Gründen des Dial, und der Knoten behält die Firmware, mit der er lief. Ein Knoten lehnt das Image der anderen Rolle ab, bevor er etwas schreibt. Wie beim Update des Dial werden AUSGANG EIN des Netzteils, PROG 5V EIN und der Start einer Programmierung abgelehnt, zum Beispiel mit `Programmierung nicht gestartet: Das Leistungsknoten-Update läuft.`
 
 ## Aktuelle Einschränkungen
 

@@ -23,6 +23,7 @@
 #include "link_pages.h"
 #include "outputs.h"
 #include "panel.h"
+#include "panel_devupd.h"
 #include "prog5v_box.h"
 #include "prog_link.h"
 #include "sense_link.h"
@@ -35,6 +36,7 @@
 #include "storage.h"
 #include "tone_link.h"
 #include "ui_text.h"
+#include "upd_c6.h"
 
 /* The current monitors' pages, SENSE and SERVO_SENSE (4.7); see
  * sense_link_service().  Control task only. */
@@ -115,20 +117,33 @@ atomic_uint s_prog_band = PROG5V_HELD_NONE;
  *         (fw_c6.h); control task only. */
 static fw_c6_prog_t s_c6_prog;
 
-bool prog_start_refused_c6(void)
+bool panel_upd_refuses(fw_c6_ask_t ask)
+{
+    const fw_upd_t running = fw_upd_running(panel_c6_busy(), panel_cu_busy(),
+                                            panel_devupd_running());
+    char line[ALERT_MAX];
+    if (!fw_upd_refuses(running, ask)
+        || !upd_refusal_line(line, sizeof(line), running, ask)) {
+        return false;
+    }
+    control_alert(line);
+    return true;
+}
+
+bool prog_start_refused_upd(void)
 {
     /* The claim published before the update's flag is read: the render
      * side publishes its flag before it reads this one, so the two never
      * both start (fw_c6_prog_t). */
     fw_c6_prog_claim(&s_c6_prog, now_ms());
     atomic_store(&s_prog_open, true);
-    if (!fw_c6_refuses(panel_c6_busy(), FW_C6_ASK_SESSION)) {
+    if (!panel_upd_refuses(FW_C6_ASK_SESSION)) {
         return false;
     }
-    /* The C6 radio's update ends in a restart of the panel.  s_prog_open
+    /* The C6 radio's update ends in a restart of the panel, the IOmcu's in
+     * the IOmcu's, and a device's holds that device's link.  s_prog_open
      * follows at the next kst_port_look(). */
     fw_c6_prog_release(&s_c6_prog);
-    control_alert(TR(ALERT_PROG_C6));
     return true;
 }
 
@@ -705,7 +720,7 @@ __attribute__((noinline)) void kst_commands(void)
              * REBOOT is the CONNECT that switches the supply off first. */
             const bool takes = cmd.req.op == LINK_KST_OP_ENTER
                                || cmd.req.op == LINK_KST_OP_REBOOT;
-            const bool c6 = takes && prog_start_refused_c6();
+            const bool c6 = takes && prog_start_refused_upd();
             s_kst_answer    = ((takes && outputs_armed(&s_out)) || c6)
                                   ? KST_LINK_START_BUSY
                                   : kst_link_start(&s_kst_link, &cmd.req);

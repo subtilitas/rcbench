@@ -2,7 +2,8 @@
  * SETUP > UPDATES > SINGLE UPDATES' C6 RADIO row (upd_c6.c), the page
  * opened from OPTIONS first: the hold at 1,999ms and at
  * 2,000ms, once; a short press's hint on the band; a tap on the grey hold
- * naming why on the band, for every state and reason; a state change
+ * naming why on the band, for every state and reason, the restart wait's
+ * own; the refusal under an update naming the update; a state change
  * under the finger ending the hold unfired; sliding off; one press at a
  * time with the page's IOmcu hold and BACK; the versions' line and the button's
  * label in both languages inside the row, at every state.
@@ -181,6 +182,7 @@ TEST_CASE(a_tap_on_the_grey_hold_says_why_on_the_band)
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_DEVICE,  TX_C6_WHY_DEVICE },
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_PROG,    TX_C6_WHY_PROG },
         { FW_C6_ROW_BLOCKED,     FW_C6_WHY_ENDING,  TX_C6_WHY_ENDING },
+        { FW_C6_ROW_BLOCKED,     FW_C6_WHY_RESTART, TX_C6_WHY_RESTART },
     };
     for (size_t i = 0; i < sizeof(k) / sizeof(k[0]); ++i) {
         on_updates();
@@ -197,6 +199,88 @@ TEST_CASE(a_tap_on_the_grey_hold_says_why_on_the_band)
     const upd_c6_view_t ready = view_of(FW_C6_ROW_READY, FW_C6_WHY_NONE);
     CHECK(upd_c6_reason(&ready) == NULL);
     CHECK(upd_c6_reason(NULL) == NULL);
+}
+
+/* CLEANUP item 6: the restart wait after a success holds the gate as the
+ * update does, and its tap names that wait: the panel restarts once SAFE
+ * with all outputs off. */
+TEST_CASE(the_restart_wait_holds_the_gate_and_names_the_wait)
+{
+    const upd_c6_view_t rst = view_of(FW_C6_ROW_BLOCKED, FW_C6_WHY_RESTART);
+    const upd_c6_view_t end = view_of(FW_C6_ROW_BLOCKED, FW_C6_WHY_ENDING);
+    const upd_c6_view_t arm = view_of(FW_C6_ROW_BLOCKED, FW_C6_WHY_ARMED);
+    CHECK(upd_c6_holds(&rst));
+    CHECK(upd_c6_holds(&end));
+    CHECK(!upd_c6_holds(&arm));
+    CHECK_STR_EQ(upd_c6_reason(&rst),
+                 "C6 radio updated. The panel restarts once SAFE with all "
+                 "outputs off.");
+    CHECK(strcmp(upd_c6_reason(&rst), upd_c6_reason(&end)) != 0);
+}
+
+/* CLEANUP item 1: the refusal under an update names it, in both languages;
+ * under the C6's update the words are the C6 gate's. */
+TEST_CASE(a_refusal_names_the_update_that_runs)
+{
+    char line[128];
+    CHECK(upd_refusal_line(line, sizeof(line), FW_UPD_C6,
+                           FW_C6_ASK_SUPPLY_ON));
+    CHECK_STR_EQ(line, "Supply output not switched on: the C6 radio update "
+                       "is running.");
+    CHECK(upd_refusal_line(line, sizeof(line), FW_UPD_DIAL,
+                           FW_C6_ASK_SUPPLY_ON));
+    CHECK_STR_EQ(line, "Supply output not switched on: the Dial update is "
+                       "running.");
+    CHECK(upd_refusal_line(line, sizeof(line), FW_UPD_IOMCU,
+                           FW_C6_ASK_PROG5V_ON));
+    CHECK_STR_EQ(line, "PROG ports 5V not switched on: the IOmcu update is "
+                       "running.");
+    CHECK(upd_refusal_line(line, sizeof(line), FW_UPD_PNODE,
+                           FW_C6_ASK_SESSION));
+    CHECK_STR_EQ(line, "Programmer not started: the power node update is "
+                       "running.");
+    CHECK(upd_refusal_line(line, sizeof(line), FW_UPD_BAL,
+                           FW_C6_ASK_SESSION));
+    CHECK_STR_EQ(line, "Programmer not started: the balance node update is "
+                       "running.");
+    ui_text_set_language(UI_LANG_DE);
+    CHECK(upd_refusal_line(line, sizeof(line), FW_UPD_C6,
+                           FW_C6_ASK_PROG5V_ON));
+    CHECK_STR_EQ(line, "PROG-Ports 5V nicht eingeschaltet: Das C6-Funk-Update "
+                       "läuft.");
+    CHECK(upd_refusal_line(line, sizeof(line), FW_UPD_PNODE,
+                           FW_C6_ASK_SUPPLY_ON));
+    CHECK_STR_EQ(line, "Netzteilausgang nicht eingeschaltet: Das "
+                       "Leistungsknoten-Update läuft.");
+    ui_text_set_language(UI_LANG_EN);
+    /* Every update, every ask it refuses: a line that names the update. */
+    static const struct {
+        fw_upd_t     run;
+        ui_text_id_t name;
+    } k[] = {
+        { FW_UPD_C6, TX_UPD_RUNS_C6 },       { FW_UPD_IOMCU, TX_UPD_RUNS_IOMCU },
+        { FW_UPD_DIAL, TX_UPD_RUNS_DIAL },   { FW_UPD_PNODE, TX_UPD_RUNS_PNODE },
+        { FW_UPD_BAL, TX_UPD_RUNS_BAL },
+    };
+    static const fw_c6_ask_t asks[] = { FW_C6_ASK_SUPPLY_ON,
+                                        FW_C6_ASK_PROG5V_ON,
+                                        FW_C6_ASK_SESSION };
+    for (size_t r = 0; r < sizeof(k) / sizeof(k[0]); ++r) {
+        for (size_t a = 0; a < sizeof(asks) / sizeof(asks[0]); ++a) {
+            CHECK(upd_refusal_line(line, sizeof(line), k[r].run, asks[a]));
+            CHECK(strstr(line, ui_tr(k[r].name)) != NULL);
+        }
+    }
+    /* Nothing runs, an OFF, an ARM (alerts of its own): no line. */
+    CHECK(!upd_refusal_line(line, sizeof(line), FW_UPD_NONE,
+                            FW_C6_ASK_SUPPLY_ON));
+    CHECK_STR_EQ(line, "");
+    CHECK(!upd_refusal_line(line, sizeof(line), FW_UPD_DIAL,
+                            FW_C6_ASK_OFF));
+    CHECK(!upd_refusal_line(line, sizeof(line), FW_UPD_DIAL,
+                            FW_C6_ASK_ARM));
+    CHECK(!upd_refusal_line(NULL, 8u, FW_UPD_DIAL, FW_C6_ASK_SESSION));
+    CHECK(!upd_refusal_line(line, 0u, FW_UPD_DIAL, FW_C6_ASK_SESSION));
 }
 
 TEST_CASE(a_release_off_the_grey_hold_says_nothing)
@@ -371,6 +455,8 @@ int main(void)
     RUN(a_short_press_shows_the_hint_and_asks_nothing);
     RUN(the_reinstall_hold_fires_at_2s_and_names_the_reinstall);
     RUN(a_tap_on_the_grey_hold_says_why_on_the_band);
+    RUN(the_restart_wait_holds_the_gate_and_names_the_wait);
+    RUN(a_refusal_names_the_update_that_runs);
     RUN(a_release_off_the_grey_hold_says_nothing);
     RUN(a_state_change_under_the_finger_ends_the_hold_unfired);
     RUN(sliding_off_and_leaving_abandon_the_hold);

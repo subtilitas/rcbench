@@ -5192,7 +5192,11 @@ the panel restarts.
 ![Written and checked](img/panel-update-done.png)
 
 The splash shows the new version, and the band says
-`Panel firmware 0.22.1 installed.`. If writing fails, the installed build remains the startup build. CLOSE
+`Panel firmware 0.22.1 installed.`. If writing fails, the installed build remains the startup build. The
+line under `Writing failed.` names the reason the console line names, in the
+warning colour: for example `Wi-Fi did not switch off within 20s.`, `The
+control task did not stand still within 1500ms.` or `An erase, a write or the
+final check of the flash failed.`. CLOSE
 returns to the menu or, after a GitHub download, to the screen that started
 the download.
 
@@ -6701,7 +6705,9 @@ Once the hold completes, the update occupies the panel: the link to
 the IOmcu goes down, the outputs are off, the IOmcu refuses ARM
 until the update ends, and the progress fills the screen. It has no band and
 no STOP, as the bus-fault screen has none: the bench cannot switch to ARMED
-behind it.
+behind it. Until the update ends the panel refuses the supply's OUTPUT ON,
+PROG 5V ON and a programmer session's start, for example with `Supply
+output not switched on: the IOmcu update is running.`
 
 ![The progress](img/coproc-update-progress.png)
 
@@ -6874,6 +6880,7 @@ alert's line in the warning colour, and the hold is the retry.
 | `NO LINK`, `NOT CONNECTED` | no IOmcu answers; a bound device is not connected |
 | `NOT BOUND` | no device of the kind is bound on WIRELESS |
 | `OFF` | a device is bound and its switch on WIRELESS is OFF: the panel runs no link to it |
+| `NO BLUETOOTH` | a device is bound and ON, and Bluetooth LE cannot link it: the C6's link failed, or the host has no sync with the C6 |
 | `NO FIRMWARE`, `BAD FIRMWARE`, `CHECK FAILED`, `USB ONLY`, `NO ANSWER`, `NOT REPORTED` | nothing to act on: the panel carries no image, the carried image fails its check, the IOmcu's build check gave no answer, the IOmcu takes no update over CAN, the C6 failed its link, the C6 named no version |
 
 A step with nothing to act on is passed. While an update run stands after
@@ -6883,7 +6890,10 @@ or `Switch the Dial on and keep it within range.`, with SKIP THIS STEP,
 and the step goes on by itself once the target links. Outside a run they
 are passed and named on the last card. A bound device whose switch on
 WIRELESS is OFF never waits, in a run or outside one: its row reads `OFF`
-and the last card names it.
+and the last card names it. Nor does a bound device that is ON while
+Bluetooth LE cannot link it: its row reads `NO BLUETOOTH` and the last card
+names it. While Bluetooth LE starts, a bound device that is ON waits in a
+run.
 
 ![A step held while ARMED](img/updates-held.png)
 
@@ -6927,7 +6937,7 @@ Under the heading: the
 running version, the home network, the last check's result, and the steps
 that were passed: `Not connected: POWER NODE.`,
 `No update here: C6 RADIO. The list names the reason.` (a device that
-reads `OFF` among them) and
+reads `OFF` or `NO BLUETOOTH` among them) and
 `Skipped: DIAL.`, then the notes on the reminder and RELEASES. SHOW
 SKIPPED STEPS stands under them while a step is skipped. CHECK FOR
 UPDATES is drawn in the accent colour.
@@ -7273,7 +7283,8 @@ grey, and a tap on it shows the first reason on the alert band:
 | `The C6 update waits: Bluetooth is starting.` | Bluetooth LE's start task `blestart` runs. |
 | `The C6 update waits for the wireless device update to finish.` | A Dial's update runs or was asked for ([The Dial](#the-dial)). |
 | `The C6 update requires the servo and ESC programmers closed. Select LEAVE there first.` | A KST, Hitec or ESC programmer holds a port, or a session starts. |
-| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call, or the update ended and the panel's restart is due. |
+| `The C6 update waits for the C6 radio's last answer.` | A step of an ended update has not returned from its call. |
+| `C6 radio updated. The panel restarts once SAFE with all outputs off.` | The update ended with a success and the panel's restart is due: 3s after the end at the earliest, and only on a bench that is SAFE with all outputs off. |
 
 A C6 that reports no version, as the shipped one does, is offered the
 update. A C6 that reports the carried version is offered the reinstall:
@@ -7399,6 +7410,9 @@ another version as stopped, `connection lost`.
 
 While the update runs, ARM is refused with `Cannot switch to ARMED: a
 wireless device update is running.`, and the C6's update waits. The
+supply's OUTPUT ON, PROG 5V ON and a programmer session's start are
+refused with an alert that names the update, for example `Supply output
+not switched on: the Dial update is running.`. The
 panel's own download and install wait as well, with `Waiting for the
 wireless device update to finish.`: their restart would cut the transfer,
 and the device drops a partial image. The knob

@@ -261,6 +261,7 @@ static void c6_blocked(upd_wiz_step_t *st, fw_c6_why_t why)
     case FW_C6_WHY_INSTALL:
     case FW_C6_WHY_DEVICE:
     case FW_C6_WHY_ENDING:
+    case FW_C6_WHY_RESTART:
         set(st, UPD_WIZ_PENDING, UPD_WIZ_TAG_CHECKING, UPD_WIZ_WHY_BUSY);
         break;
     default:
@@ -273,8 +274,8 @@ static void c6_blocked(upd_wiz_step_t *st, fw_c6_why_t why)
  * @brief C6 RADIO from its row.  The step is OPEN only while the C6
  *        reports a version other than the carried one; REINSTALL, and a
  *        blocked row on the carried version, are DONE.  A row whose own
- *        update still ends (FW_C6_WHY_ENDING: its last step out, or the
- *        restart after a success owed) is PENDING on any version: the
+ *        update still ends (FW_C6_WHY_ENDING: its last step out;
+ *        FW_C6_WHY_RESTART: the restart after a success owed) is PENDING on any version: the
  *        update's gate holds until the panel restarts.
  * @param st the step
  * @param v  the row, or NULL
@@ -315,7 +316,8 @@ static void c6_step(upd_wiz_step_t *st, const upd_c6_view_t *v)
     /* A row whose own update still ends is blocked on any version: the
      * update's gate holds until the panel restarts. */
     const bool ending = v->row == FW_C6_ROW_BLOCKED
-                        && v->why == FW_C6_WHY_ENDING;
+                        && (v->why == FW_C6_WHY_ENDING
+                            || v->why == FW_C6_WHY_RESTART);
     if (!ending && !v->known) {
         set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_NOT_REPORTED, UPD_WIZ_WHY_NONE);
     } else if (!ending && !v->have_image) {
@@ -334,8 +336,10 @@ static void c6_step(upd_wiz_step_t *st, const upd_c6_view_t *v)
 /**
  * @brief A device's step from its row.  A device that is not connected is
  *        ABSENT whatever the row's gate says, and WAITING in a run when it
- *        is bound and its switch on WIRELESS is ON.  With the switch OFF
- *        the panel runs no link to it: it never waits and reads OFF.
+ *        is bound, its switch on WIRELESS is ON and Bluetooth LE can link
+ *        it.  With the switch OFF the panel runs no link to it: it never
+ *        waits and reads OFF.  With Bluetooth LE unable to link (no C6
+ *        link, no sync) it never waits either and reads NO BLUETOOTH.
  * @param st  the step
  * @param v   the row, or NULL
  * @param run an update run stands
@@ -365,6 +369,8 @@ static void dev_step(upd_wiz_step_t *st, const upd_dev_view_t *v, bool run)
         set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_NOT_BOUND, UPD_WIZ_WHY_NONE);
     } else if (v->off && !v->known) {
         set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_OFF, UPD_WIZ_WHY_NONE);
+    } else if (v->no_ble && !v->known) {
+        set(st, UPD_WIZ_ABSENT, UPD_WIZ_TAG_NO_BLE, UPD_WIZ_WHY_NONE);
     } else if (!v->known || v->row == DEVUPD_ROW_NOT_LINKED) {
         set(st, run ? UPD_WIZ_WAITING : UPD_WIZ_ABSENT,
             UPD_WIZ_TAG_NOT_CONNECTED, UPD_WIZ_WHY_NONE);

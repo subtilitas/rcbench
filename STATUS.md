@@ -1405,9 +1405,13 @@ every IOmcu section state, C6 row and reason, and device row with
 not bound, bound and not connected, and connected mapped to one step
 state, the current step as the lowest that blocks or the one whose update
 runs, a newer panel release making PANEL current again, ABSENT waiting
-only in a run, SKIP and a failed attempt (`shared/ui/upd_wizard.c`,
-`test_upd_wizard`, `test_upd_wizard_map`), fed `bound` apart from
-connected by `panel_devupd.c`; UPDATES' steps drawn: on a 16px grid over
+only in a run, a bound device OFF on WIRELESS or ON while Bluetooth LE
+cannot link it never waiting, SKIP and a failed attempt
+(`shared/ui/upd_wizard.c`, `test_upd_wizard`, `test_upd_wizard_map`), fed
+`bound` apart from connected and Bluetooth LE's state by `panel_devupd.c`;
+the refusal of the supply's ON, PROG 5V's ON and a programmer's start under
+each update and the alert that names it (`fw_upd_refuses()`,
+`upd_refusal_line()`, `test_fw_c6`, `test_upd_c6`); UPDATES' steps drawn: on a 16px grid over
 the body only the current step's control, SKIP, CHECK and OPTIONS take a
 press in each step, the rows none; each step's hold fires its own latch
 at 2.00s and not at 1.99s; a grey hold names its reason on the band for

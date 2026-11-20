@@ -43,6 +43,18 @@ history is in git.
 
 ### Changed
 
+- The IOmcu's update and the update of the Dial, the power node and the
+  balance node refuse the supply's OUTPUT ON, PROG 5V ON and a programmer
+  session's start while they run, as the C6 radio's update does; the alert
+  names the running update.
+- UPDATES: a bound device that is ON while Bluetooth LE cannot link it (no
+  C6 link, no sync) never waits in an update run; its row reads
+  `NO BLUETOOTH` / `KEIN BLUETOOTH` and the last card names it.
+- PANEL UPDATE: a failed write names its reason under `Writing failed.`,
+  one line per reason the console names; a radio still on and a closed
+  flash gate have their own reasons.
+- C6 radio: a tap on the grey hold during the restart wait reads
+  `C6 radio updated. The panel restarts once SAFE with all outputs off.`
 - RUDDER AUTO: MARGIN lies in the pulse length. 1000us and 2000us aim at
   TARGET itself, 20.0° at TARGET 20.0°; MARGIN p% writes a KST or
   Chaservo servo's PULSE LOWER 1000us - (N - 1000us) x p/100 and PULSE

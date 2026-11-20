@@ -49,9 +49,10 @@ static esc_link_outcome_t s_esc_outcome;
 
 /**
  * @brief Carry out one command.  No pin is taken on an armed bench: an OPEN is
- *        answered BUSY and nothing is sent.  While the C6 radio's update runs
- *        an OPEN and an ENTER, which powers the ESC, are answered BUSY.  With a stop latched only what gives
- *        the pin back or cuts goes (esc_prog_cmd_allowed()).
+ *        answered BUSY and nothing is sent.  While an update runs (the C6
+ *        radio's, the IOmcu's or a wireless device's) an OPEN and an ENTER,
+ *        which powers the ESC, are answered BUSY.  With a stop latched only
+ *        what gives the pin back or cuts goes (esc_prog_cmd_allowed()).
  * @param c The command.
  */
 static void esc_command(const esc_prog_cmd_t *c)
@@ -64,7 +65,7 @@ static void esc_command(const esc_prog_cmd_t *c)
         return;
     }
     if ((c->kind == ESC_PROG_CMD_OPEN || c->kind == ESC_PROG_CMD_ENTER)
-        && prog_start_refused_c6()) {
+        && prog_start_refused_upd()) {
         s_esc_answer = (uint8_t)ESC_LINK_START_BUSY;
         s_esc_answer_id = c->id;
         return;

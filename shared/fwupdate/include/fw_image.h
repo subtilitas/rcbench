@@ -79,6 +79,8 @@ typedef enum {
     FW_ERR_FLASH,      /**< an erase, a write or the final check failed     */
     FW_ERR_BUSY,       /**< another image is being received or waits        */
     FW_ERR_QUIET,      /**< the control task did not stand still in time    */
+    FW_ERR_RADIO,      /**< the radio did not switch off before the write   */
+    FW_ERR_GATE,       /**< the bench shut the flash gate before the write  */
     FW_ERR_COUNT
 } fw_err_t;
 
