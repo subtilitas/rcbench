@@ -114,6 +114,12 @@ history is in git.
   reads `NO IMU SCAN WHILE ARMED: SWITCH TO SAFE FIRST` on the band. The
   controller refused it with no text; it counts the refusal in the view
   (`imu_view_t.scan_armed`).
+- Link protocol 4.40: BENCH flag bit 8, `LINK_BN_RPM_MAX_OVER`, marks a
+  peak speed above 65,535rpm. A peak of exactly 65,535rpm reads 65535 on
+  MOTOR & ESC, a peak above it `>65535`. From an IOmcu of 4.39 or older,
+  which never sets the bit, a peak of 65535 reads 65535.
+- The run's driving time (`bench_totals_t.run_ms`) sums whole ms: a float
+  sum of 50ms steps read 3,602.3s after 1h.
 
 ## 0.23.15 - 2026-11-18
 

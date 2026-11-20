@@ -125,7 +125,7 @@ TEST_CASE(a_servo_rail_counts_50mA_up_to_100000mAh)
 {
     /* One hour of 50mA in 50ms rows adds 50mAh and 0.3Wh at 6.00V, from
      * every total up to 100,000mAh.  A float sum adds 35mAh from 4,096mAh
-     * and nothing from 16,384mAh. */
+     * and nothing from 16,384mAh.  The run's clock reads 3,600,000ms. */
     static const double k_from[] = { 0.0, 4096.0, 16384.0, 40000.0, 99950.0 };
     supply_state_t s = pd_mini();
     s.v = 6.0f; s.i = 0.05f; s.p = 0.3f;
@@ -142,6 +142,7 @@ TEST_CASE(a_servo_rail_counts_50mA_up_to_100000mAh)
         CHECK_NEAR(t.mah - k_from[k], 50.0, 0.01);
         CHECK_NEAR(t.wh - k_from[k] * 0.006, 0.3, 0.0001);
         CHECK_NEAR(r.charge_mah, k_from[k] + 50.0, 0.01);
+        CHECK_EQ(t.run_ms, 3600000u);   /* whole ms: no drift in 1h */
     }
 }
 
