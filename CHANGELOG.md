@@ -15,7 +15,7 @@ history is in git.
   the drive RP2350 runs on a drawn Windows desktop
   ([Videos from storyboards](tools/video/README.md)).
 - Storyboard `auto-rudder`: RUDDER AUTO setting a rudder's end points in 4
-  steps, narrated, 302.70s. One 3D scene holds a wing slice with its flap,
+  steps, narrated, 300.77s. One 3D scene holds a wing slice with its flap,
   the IMU on double-sided gel tape, the M5Stack Dial in its base and the
   cased bench; `test/host/video_rauto.c` runs RUDDER AUTO on the host
   suites' rig, and the display and the flap follow that run.
